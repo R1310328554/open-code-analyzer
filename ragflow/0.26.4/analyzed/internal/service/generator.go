@@ -16,6 +16,8 @@
 
 package service
 
+// generator.go 封装 LLM 驱动的关键词、跨语言与完整问题生成工具函数。
+
 import (
 	"bytes"
 	"context"
@@ -32,7 +34,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// KeywordExtraction extracts keywords from content using LLM.
+// KeywordExtraction 使用 LLM 从文本提取 Top-N 关键词（逗号分隔）。
 //
 // Uses ChatModel to call the LLM with a keyword extraction prompt.
 // Returns comma-separated top N important keywords/phrases from the content.
@@ -96,7 +98,7 @@ func KeywordExtraction(ctx context.Context, chatModel *modelModule.ChatModel, co
 	return result, nil
 }
 
-// CrossLanguages translates a question into multiple languages using LLM.
+// CrossLanguages 将用户问题翻译为多种目标语言，内部解析租户默认或指定模型。
 // The model is fetched internally based on llmID:
 //   - If llmID is empty, fetches tenant's default chat model
 //   - If llmID is not empty, fetches the specified model (or image2text if type matches)
@@ -214,7 +216,7 @@ func CrossLanguages(ctx context.Context, tenantID string, llmID string, query st
 	return query, nil
 }
 
-// fullQuestionTmpl mirrors the Python Jinja2 template
+// fullQuestionTmpl 对齐 Python full_question_prompt.md 的 Go text/template。
 // rag/prompts/full_question_prompt.md. The rendered output is used as the
 // system message; the user message is just "Output: ".
 var fullQuestionTmpl = template.Must(template.New("full_question").Parse(`## Role
@@ -282,7 +284,7 @@ USER: What's about tomorrow in Rochester?
 
 var errorMarkerRE = regexp.MustCompile(`\*\*ERROR\*\*`)
 
-// FullQuestion rewrites the latest user question in light of prior
+// FullQuestion 结合对话上下文改写最新用户问题；LLM 失败时回退原句。
 // conversation context (pronouns, dates, follow-ups). Falls back to the
 // latest user message on LLM error.
 // When language is empty, the original language is preserved (matching Python).
@@ -361,7 +363,7 @@ func FullQuestion(
 	return cleaned, nil
 }
 
-// fallbackToLatestUser returns the last user message, or "" if none.
+// fallbackToLatestUser 返回最后一条用户消息，无则空串。
 func fallbackToLatestUser(messages []map[string]interface{}) string {
 	for i := len(messages) - 1; i >= 0; i-- {
 		role, _ := messages[i]["role"].(string)
@@ -374,3 +376,4 @@ func fallbackToLatestUser(messages []map[string]interface{}) string {
 	}
 	return ""
 }
+// generator.go — LLM 辅助生成：关键词提取、跨语言翻译与对话上下文问题补全。

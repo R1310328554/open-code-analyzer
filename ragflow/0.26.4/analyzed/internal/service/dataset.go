@@ -16,6 +16,8 @@
 
 package service
 
+// dataset.go 实现知识库（Dataset）相关 REST API，对齐 Python dataset_api.py。
+
 import (
 	"archive/zip"
 	"bytes"
@@ -91,7 +93,7 @@ var (
 )
 
 const (
-	// Keep the legacy worker marker in queue payloads; persisted tasks use a real document ID.
+	// 队列消息保留 legacy 占位 doc_id；持久化任务使用真实文档 ID。
 	graphRaptorQueueDocID    = "graph_raptor_x"
 	maximumPageNumber        = int64(100000)
 	maximumTaskPageNumber    = int64(100000000)
@@ -102,7 +104,7 @@ const (
 	graphPhaseCommunityDone  = "community_done"
 )
 
-// DatasetService implements the RESTful dataset APIs from dataset_api.py.
+// DatasetService 知识库服务，封装 dataset_api.py 中的 REST 接口逻辑。
 type DatasetService struct {
 	kbDAO          *dao.KnowledgebaseDAO
 	documentDAO    *dao.DocumentDAO
@@ -118,7 +120,7 @@ type DatasetService struct {
 	engineType     server.EngineType
 }
 
-// NewDatasetService creates a new datasets service.
+// NewDatasetService 构造 DatasetService，注入 DAO、搜索引擎与嵌入缓存。
 func NewDatasetService() *DatasetService {
 	cfg := server.GetConfig()
 	engineType := server.EngineType("")
@@ -183,7 +185,7 @@ func (d *DatasetService) UpdateDocumentMetadataConfig(userID, datasetID, documen
 	return updatedDoc, common.CodeSuccess, nil
 }
 
-// checkType reports whether indexType is supported by dataset index APIs.
+// checkType 判断索引类型（graph/raptor/mindmap）是否受支持。
 func checkType(indexType string) bool {
 	haveType := false
 	for _, t := range validIndexTypes {
@@ -430,7 +432,7 @@ func clearGraphPhaseMarkers(redisClient *redisengine.RedisClient, datasetID stri
 	}
 }
 
-// RunIndex Run an indexing task (graph/raptor/mindmap) for a dataset.
+// RunIndex 为知识库启动 graph/raptor/mindmap 索引任务并入队。
 func (d *DatasetService) RunIndex(userID, datasetID, indexType string) (map[string]interface{}, common.ErrorCode, error) {
 	if !checkType(indexType) {
 		return nil, common.CodeDataError, fmt.Errorf("Invalid index type '%s'. Must be one of %v", indexType, validIndexTypes)
@@ -539,7 +541,7 @@ type TraceIndexRequest struct {
 	Type string `json:"type" binding:"required"`
 }
 
-// TraceIndex Trace an indexing task (graph/raptor/mindmap) for a dataset.
+// TraceIndex 查询知识库当前索引任务状态与进度。
 func (d *DatasetService) TraceIndex(datasetID, userID, indexType string) (*entity.Task, common.ErrorCode, error) {
 	if !checkType(indexType) {
 		return nil, common.CodeDataError, fmt.Errorf("Invalid index type '%s'. Must be one of %v", indexType, validIndexTypes)
@@ -629,7 +631,7 @@ type datasetParsePageRange struct {
 	to   int64
 }
 
-// RunEmbedding runs embedding for all documents in a dataset.
+// RunEmbedding 对知识库内全部文档批量触发嵌入/解析队列任务。
 func (d *DatasetService) RunEmbedding(userID, datasetID string) (map[string]interface{}, common.ErrorCode, error) {
 	if datasetID == "" {
 		return nil, common.CodeDataError, errors.New(`Lack of "Dataset ID"`)
@@ -836,7 +838,7 @@ func (d *DatasetService) beginDatasetParseDocument(docID string) error {
 	}).Error
 }
 
-// CheckEmbedding checks whether a new embedding model is compatible with stored vectors.
+// CheckEmbedding 抽样比对存量向量与新嵌入模型，评估兼容性。
 func (d *DatasetService) CheckEmbedding(userID, datasetID string, req *CheckEmbeddingRequest) (*EmbeddingCheckResponse, common.ErrorCode, error) {
 	if datasetID == "" {
 		return nil, common.CodeDataError, errors.New(`Lack of "Dataset ID"`)
@@ -1692,7 +1694,7 @@ func (d *DatasetService) DeleteIndex(userID, datasetID, indexType string, wipe b
 	return common.CodeSuccess, nil
 }
 
-// SearchDatasetsRequest is the request structure for searching chunks across datasets.
+// SearchDatasetsRequest 跨多个知识库检索分块的请求体。
 type SearchDatasetsRequest struct {
 	DatasetIDs             []string               `json:"dataset_ids" binding:"required"`
 	Question               string                 `json:"question" binding:"required"`
@@ -1711,7 +1713,7 @@ type SearchDatasetsRequest struct {
 	ForceRefresh           bool                   `json:"force_refresh"`
 }
 
-// SearchDatasetsResponse is the response structure for dataset search results.
+// SearchDatasetsResponse 跨库检索结果响应结构。
 type SearchDatasetsResponse struct {
 	Chunks  []map[string]interface{} `json:"chunks"`
 	DocAggs []map[string]interface{} `json:"doc_aggs"`
@@ -1719,7 +1721,7 @@ type SearchDatasetsResponse struct {
 	Total   int64                    `json:"total"`
 }
 
-// SearchDatasetRequest is the request structure for searching chunks within one dataset.
+// SearchDatasetRequest 单知识库内检索分块的请求体。
 type SearchDatasetRequest struct {
 	Question               string                 `json:"question"`
 	Page                   *int                   `json:"page,omitempty"`
@@ -1736,7 +1738,7 @@ type SearchDatasetRequest struct {
 	VectorSimilarityWeight *float64               `json:"vector_similarity_weight,omitempty"`
 }
 
-// ToSearchDatasetsRequest converts a single-dataset search request into the multi-dataset form.
+// ToSearchDatasetsRequest 将单库检索请求转换为多库检索请求格式。
 func (req *SearchDatasetRequest) ToSearchDatasetsRequest(datasetID string) *SearchDatasetsRequest {
 	if req == nil {
 		return &SearchDatasetsRequest{DatasetIDs: []string{datasetID}}
@@ -1759,7 +1761,7 @@ func (req *SearchDatasetRequest) ToSearchDatasetsRequest(datasetID string) *Sear
 	}
 }
 
-// SearchDataset searches chunks within one knowledge base based on a question.
+// SearchDataset 在单个知识库内按问题检索相关分块。
 func (d *DatasetService) SearchDataset(datasetID, userID string, req *SearchDatasetRequest) (*SearchDatasetsResponse, error) {
 	if datasetID == "" {
 		return nil, fmt.Errorf("dataset_id is required")
@@ -1767,7 +1769,7 @@ func (d *DatasetService) SearchDataset(datasetID, userID string, req *SearchData
 	return d.SearchDatasets(req.ToSearchDatasetsRequest(datasetID), userID)
 }
 
-// SearchDatasets searches chunks across one or more knowledge bases based on a question.
+// SearchDatasets 在一个或多个知识库中检索分块，支持嵌入、重排与过滤。
 // It retrieves relevant chunks using embedding and optional reranking, applying filters,
 // cross-language translation, and keyword extraction as configured.
 func (d *DatasetService) SearchDatasets(req *SearchDatasetsRequest, userID string) (*SearchDatasetsResponse, error) {
@@ -2156,7 +2158,7 @@ type MetadataConfigRequest struct {
 	BuiltInMetadata []MetadataConfigField `json:"built_in_metadata"`
 }
 
-// CreateDatasetRequest represents the request for creating a dataset.
+// CreateDatasetRequest 创建知识库的请求参数。
 type CreateDatasetRequest struct {
 	Name               string                 `json:"name" binding:"required"`
 	Avatar             *string                `json:"avatar,omitempty"`
@@ -2171,7 +2173,7 @@ type CreateDatasetRequest struct {
 	Ext                map[string]interface{} `json:"ext,omitempty"`
 }
 
-// ListDatasets lists datasets with pagination and filtering.
+// ListDatasets 分页列出用户可访问的知识库，支持关键字与排序。
 func (d *DatasetService) ListDatasets(id, name string, page, pageSize int, orderby string, desc bool, keywords string, ownerIDs []string, parserID, userID string) ([]map[string]interface{}, int64, common.ErrorCode, error) {
 	id = strings.TrimSpace(id)
 	if id != "" {
@@ -2253,7 +2255,7 @@ func (d *DatasetService) ListDatasets(id, name string, page, pageSize int, order
 	return data, total, common.CodeSuccess, nil
 }
 
-// CreateDataset creates a new dataset.
+// CreateDataset 创建知识库并初始化默认解析配置与文件夹映射。
 func (d *DatasetService) CreateDataset(req *CreateDatasetRequest, tenantID string) (map[string]interface{}, common.ErrorCode, error) {
 	if !common.IsValidString(req.Name) {
 		return nil, common.CodeDataError, errors.New("Dataset name must be string.")
@@ -2501,7 +2503,7 @@ func (d *DatasetService) CreateDataset(req *CreateDatasetRequest, tenantID strin
 	return datasetToMap(createdKB), common.CodeSuccess, nil
 }
 
-// DeleteDatasets deletes multiple datasets.
+// DeleteDatasets 批量删除知识库及其关联文档与索引数据。
 func (d *DatasetService) DeleteDatasets(ids []string, deleteAll bool, tenantID string) (map[string]interface{}, common.ErrorCode, error) {
 	normalizedIDs := make([]string, 0, len(ids))
 	seenIDs := make(map[string]struct{}, len(ids))
@@ -2581,7 +2583,7 @@ func (d *DatasetService) DeleteDatasets(ids []string, deleteAll bool, tenantID s
 	}, common.CodeSuccess, nil
 }
 
-// GetDataset gets a single dataset with its size and linked connectors.
+// GetDataset 获取单个知识库详情，含存储占用与连接器信息。
 func (d *DatasetService) GetDataset(datasetID, userID string) (map[string]interface{}, common.ErrorCode, error) {
 	datasetID = strings.TrimSpace(datasetID)
 	if datasetID == "" {
@@ -2643,7 +2645,7 @@ type UpdateDatasetRequest struct {
 	Ext                map[string]interface{}     `json:"ext,omitempty"`
 }
 
-// UpdateDataset Update a dataset
+// UpdateDataset 更新知识库配置（解析器、嵌入模型、权限等）。
 func (d *DatasetService) UpdateDataset(datasetID, tenantID string, req UpdateDatasetRequest) (map[string]interface{}, common.ErrorCode, error) {
 	kb, err := d.kbDAO.GetByID(datasetID)
 	if err != nil {
@@ -2987,7 +2989,7 @@ func datasetBoolValue(value interface{}) bool {
 	}
 }
 
-// GetMetadataConfig gets the auto-metadata configuration for a dataset.
+// GetMetadataConfig 读取知识库自动元数据抽取配置。
 func (d *DatasetService) GetMetadataConfig(datasetID, tenantID string) (map[string]interface{}, common.ErrorCode, error) {
 	kb, err := d.kbDAO.GetByIDAndTenantID(datasetID, tenantID)
 	if err != nil {
@@ -3006,7 +3008,7 @@ func (d *DatasetService) GetMetadataConfig(datasetID, tenantID string) (map[stri
 	}, common.CodeSuccess, nil
 }
 
-// UpdateMetadataConfig updates the auto-metadata configuration for a dataset.
+// UpdateMetadataConfig 更新知识库自动元数据字段定义与规则。
 func (d *DatasetService) UpdateMetadataConfig(datasetID, tenantID string, req *MetadataConfigRequest) (map[string]interface{}, common.ErrorCode, error) {
 	datasetID = strings.TrimSpace(datasetID)
 	tenantID = strings.TrimSpace(tenantID)
@@ -3052,7 +3054,7 @@ func (d *DatasetService) UpdateMetadataConfig(datasetID, tenantID string, req *M
 	}, common.CodeSuccess, nil
 }
 
-// Accessible checks if a knowledge base is accessible by a user
+// Accessible 判断用户是否有权访问指定知识库。
 func (d *DatasetService) Accessible(kbID, userID string) bool {
 	return d.kbDAO.Accessible(kbID, userID)
 }
@@ -3061,7 +3063,7 @@ func (d *DatasetService) GetByID(kbID string) (*entity.Knowledgebase, error) {
 	return d.kbDAO.GetByID(kbID)
 }
 
-// GetKnowledgebaseByID resolves a dataset entity without applying permission
+// GetKnowledgebaseByID 按 ID 加载知识库实体，不做权限过滤。
 // checks. Upload needs the same existence-then-auth ordering as Python.
 func (d *DatasetService) GetKnowledgebaseByID(datasetID string) (*entity.Knowledgebase, error) {
 	datasetID = strings.TrimSpace(datasetID)
@@ -3075,7 +3077,7 @@ func (d *DatasetService) GetKnowledgebaseByID(datasetID string) (*entity.Knowled
 	return d.kbDAO.GetByID(normalizedID)
 }
 
-// CheckKBTeamPermission mirrors Python check_kb_team_permission.
+// CheckKBTeamPermission 校验用户对知识库所属租户/团队的访问权限。
 func (d *DatasetService) CheckKBTeamPermission(kb *entity.Knowledgebase, userID string) bool {
 	return hasKBTeamPermission(kb, userID, d.tenantDAO)
 }
@@ -3271,7 +3273,7 @@ func (d *DatasetService) ListTags(datasetID, userID string) ([]map[string]interf
 	return result, common.CodeSuccess, nil
 }
 
-// GetIngestionSummary returns dataset-level ingestion counters together with
+// GetIngestionSummary 返回知识库级摄取汇总计数与最近任务概况。
 // the aggregated document parsing status, mirroring
 // dataset_api_service.get_ingestion_summary.
 func (d *DatasetService) GetIngestionSummary(datasetID, userID string) (map[string]interface{}, common.ErrorCode, error) {
@@ -3302,7 +3304,7 @@ func (d *DatasetService) GetIngestionSummary(datasetID, userID string) (map[stri
 	}, common.CodeSuccess, nil
 }
 
-// ListIngestionLogs lists ingestion logs for a dataset, mirroring
+// ListIngestionLogs 分页列出知识库摄取/解析流水线日志。
 // dataset_api_service.list_ingestion_logs. log_type selects between
 // dataset-level logs ("dataset") and per-file logs ("file").
 func (d *DatasetService) ListIngestionLogs(datasetID, userID string, page, pageSize int, orderby string, desc bool, operationStatus []string, createDateFrom, createDateTo, logType, keywords string) (map[string]interface{}, common.ErrorCode, error) {
@@ -3351,7 +3353,7 @@ func (d *DatasetService) ListIngestionLogs(datasetID, userID string, page, pageS
 	}, common.CodeSuccess, nil
 }
 
-// GetIngestionLog returns a single ingestion log, mirroring
+// GetIngestionLog 按 ID 获取单条摄取日志详情。
 // dataset_api_service.get_ingestion_log. It returns the full record (including
 // the `dsl`, `document_id`, `parser_id`, etc.) so that the front-end
 // dataflow-result page can render the pipeline timeline and chunks. The
@@ -3836,3 +3838,4 @@ func (d *DatasetService) RenameTag(datasetID, userID, fromTag, toTag string) (ma
 func (d *DatasetService) GetFieldMap(ids []string) (map[string]interface{}, error) {
 	return d.kbDAO.GetFieldMap(ids)
 }
+// dataset.go — 知识库（Dataset）REST 服务：CRUD、索引/嵌入任务、检索与元数据配置。

@@ -16,6 +16,8 @@
 
 package service
 
+// deep_researcher.go 实现递归查询分解式深度检索，对齐 Python DeepResearcher。
+
 import (
 	"bytes"
 	"context"
@@ -40,7 +42,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Prompt templates
+// 提示词模板（充分性判定与多查询生成）
 
 const sufficiencyCheckTemplate = `You are a information retrieval evaluation expert. Please assess whether the currently retrieved content is sufficient to answer the user's question.
 
@@ -107,31 +109,31 @@ Requirements:
 6. Reasoning explains the generation strategy.
 `
 
-// Types
+// 类型定义
 
-// KBRetrieveFunc is the signature for knowledge base retrieval.
+// KBRetrieveFunc 知识库检索回调函数签名。
 type KBRetrieveFunc func(ctx context.Context, question string) (*nlp.RetrievalResult, error)
 
-// sufficiencyResult is the sufficiency_check JSON output.
+// sufficiencyResult LLM 充分性判定 JSON 输出结构。
 type sufficiencyResult struct {
 	IsSufficient       bool     `json:"is_sufficient"`
 	Reasoning          string   `json:"reasoning"`
 	MissingInformation []string `json:"missing_information"`
 }
 
-// queryPair is a {question, query} entry.
+// queryPair 子问题与对应检索 query 对。
 type queryPair struct {
 	Question string `json:"question"`
 	Query    string `json:"query"`
 }
 
-// multiQueriesResult is the multi_queries_gen JSON output.
+// multiQueriesResult 多查询生成 LLM 输出结构。
 type multiQueriesResult struct {
 	Reasoning string      `json:"reasoning"`
 	Questions []queryPair `json:"questions"`
 }
 
-// DeepResearcher implements recursive query-decomposition retrieval.
+// DeepResearcher 递归查询分解检索：检索 → 充分性检查 → 子查询 → 并行递归。
 // Each level: retrieve → sufficiency check → if insufficient, generate
 // sub-queries → recurse. Accumulates chunks into a shared chunkInfo map.
 type DeepResearcher struct {
@@ -152,7 +154,7 @@ type DeepResearcher struct {
 	tavilyURL string
 }
 
-// NewDeepResearcher constructs a DeepResearcher.
+// NewDeepResearcher 构造深度检索器，注入聊天模型、KB 检索与图谱依赖。
 func NewDeepResearcher(
 	chatModel *modelModule.ChatModel,
 	promptConfig map[string]interface{},
@@ -178,7 +180,7 @@ func NewDeepResearcher(
 	}
 }
 
-// Research runs the recursive tree search, accumulating chunks into chunkInfo.
+// Research 执行递归树搜索，将分块累积写入 chunkInfo 并回调进度。
 func (dr *DeepResearcher) Research(
 	ctx context.Context,
 	chunkInfo map[string]interface{},
@@ -213,7 +215,7 @@ func (dr *DeepResearcher) Research(
 	return err
 }
 
-// _research is the recursive depth-first worker.
+// _research 深度优先递归 worker：检索、合并、判定、生成子查询并并行下探。
 func (dr *DeepResearcher) _research(
 	ctx context.Context,
 	chunkInfo map[string]interface{},
@@ -337,10 +339,10 @@ func (dr *DeepResearcher) _research(
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// Retrieval (KB + optional Web)
+// 信息检索（知识库 + 可选网页）
 // ──────────────────────────────────────────────────────────────────────
 
-// _retrieve_information does KB + optional web retrieval.
+// _retrieve_information 执行 KB、Tavily 网页与可选知识图谱检索并合并。
 func (dr *DeepResearcher) _retrieve_information(ctx context.Context, query string) (map[string]interface{}, error) {
 	kbinfos := map[string]interface{}{
 		"total":    int64(0),
@@ -409,7 +411,7 @@ func (dr *DeepResearcher) _retrieve_information(ctx context.Context, query strin
 	return kbinfos, nil
 }
 
-// tavilyRetrieve calls the Tavily Search API.
+// tavilyRetrieve 调用 Tavily 搜索 API 并将结果转为 chunk 格式。
 func (dr *DeepResearcher) tavilyRetrieve(ctx context.Context, query string) (map[string]interface{}, error) {
 	reqBody := map[string]interface{}{
 		"query":        query,
@@ -490,7 +492,7 @@ func (dr *DeepResearcher) tavilyRetrieve(ctx context.Context, query string) (map
 	}, nil
 }
 
-// mergeChunkInfo merges kbinfos into chunkInfo, deduplicating by chunk_id / doc_id.
+// mergeChunkInfo 将新检索结果合并入 chunkInfo，按 chunk_id/doc_id 去重。
 func (dr *DeepResearcher) mergeChunkInfo(
 	chunkInfo map[string]interface{},
 	kbinfos map[string]interface{},
@@ -572,7 +574,7 @@ func (dr *DeepResearcher) mergeChunkInfo(
 	chunkInfo["total"] = existingTotal + newTotal
 }
 
-// genJSON calls the LLM with a system prompt and retries on parse failure.
+// genJSON 调用 LLM 生成 JSON，解析失败时附带错误信息重试。
 func (dr *DeepResearcher) genJSON(
 	ctx context.Context,
 	systemPrompt string,
@@ -615,7 +617,7 @@ func (dr *DeepResearcher) genJSON(
 	return fmt.Errorf("genJSON: failed after %d attempts: %s", maxRetry, lastErr)
 }
 
-// sufficiencyCheck asks the LLM whether retrieved content is sufficient.
+// sufficiencyCheck 询问 LLM 当前检索内容是否足以回答问题。
 func (dr *DeepResearcher) sufficiencyCheck(
 	ctx context.Context,
 	question string,
@@ -632,7 +634,7 @@ func (dr *DeepResearcher) sufficiencyCheck(
 	return &result, nil
 }
 
-// multiQueriesGen asks the LLM to generate sub-queries from missing info.
+// multiQueriesGen 根据缺失信息让 LLM 生成互补子查询。
 func (dr *DeepResearcher) multiQueriesGen(
 	ctx context.Context,
 	originalQuestion string,
@@ -652,7 +654,7 @@ func (dr *DeepResearcher) multiQueriesGen(
 	return &result, nil
 }
 
-// chatOnce is a single-turn LLM call. Returns the answer text.
+// chatOnce 单轮 LLM 调用，返回原始文本应答。
 func (dr *DeepResearcher) chatOnce(
 	ctx context.Context,
 	systemPrompt string,
@@ -700,12 +702,12 @@ func cleanLLMResponse(raw string) string {
 
 // repairJSON: see metadata_filter.go:737 (canonical implementation).
 
-// ChatModelMaxTokens returns the token budget for kb_prompt sizing (default 6000).
+// ChatModelMaxTokens 返回 kb_prompt 截断用的 token 预算（默认 6000）。
 func (dr *DeepResearcher) ChatModelMaxTokens() int {
 	return 6000
 }
 
-// kbPrompt formats retrieval results into knowledge blocks, truncating at 97% of maxTokens.
+// kbPrompt 将检索结果格式化为知识块列表，按 97% token 上限截断。
 func kbPrompt(kbinfos map[string]interface{}, maxTokens int, hashID bool) []string {
 	chunksRaw, _ := kbinfos["chunks"].([]map[string]interface{})
 	if len(chunksRaw) == 0 {
@@ -778,7 +780,7 @@ func kbPrompt(kbinfos map[string]interface{}, maxTokens int, hashID bool) []stri
 	return knowledges
 }
 
-// drawNode formats a key-value line with tree-drawing prefix.
+// drawNode 以树形前缀格式化键值行，供 LLM 阅读。
 func drawNode(k string, v interface{}) string {
 	var line string
 	switch val := v.(type) {
@@ -811,7 +813,7 @@ func drawNode(k string, v interface{}) string {
 	return fmt.Sprintf("\n├── %s: %s", k, line)
 }
 
-// hashStrToInt is an FNV-1a hash modulo mod.
+// hashStrToInt 对字符串做 FNV-1a 哈希后取模，生成稳定整数 ID。
 func hashStrToInt(s string, mod int) int {
 	if s == "" || mod <= 0 {
 		return 0
@@ -824,7 +826,7 @@ func hashStrToInt(s string, mod int) int {
 	return int(h % uint64(mod))
 }
 
-// getMapString gets a string from a map, trying multiple keys.
+// getMapString 从 map 中按多个候选键依次取字符串值。
 func getMapString(m map[string]interface{}, keys ...string) string {
 	for _, k := range keys {
 		if v, ok := m[k]; ok {
@@ -836,7 +838,7 @@ func getMapString(m map[string]interface{}, keys ...string) string {
 	return ""
 }
 
-// mapStringValue extracts a string value from a map by key.
+// mapStringValue 从 map 按单键提取字符串。
 func mapStringValue(m map[string]interface{}, key string) string {
 	if v, ok := m[key]; ok {
 		if s, ok := v.(string); ok {
@@ -846,7 +848,7 @@ func mapStringValue(m map[string]interface{}, key string) string {
 	return ""
 }
 
-// chunksFromKBInfos extracts chunks list from kbinfos for counting.
+// chunksFromKBInfos 从 kbinfos 提取 chunks 列表用于计数。
 func chunksFromKBInfos(kbinfos map[string]interface{}) []map[string]interface{} {
 	if ch, ok := kbinfos["chunks"].([]map[string]interface{}); ok {
 		return ch
@@ -856,3 +858,4 @@ func chunksFromKBInfos(kbinfos map[string]interface{}) []map[string]interface{} 
 
 // Ensure time is referenced (avoids unused import in some build configurations).
 var _ = time.Now
+// deep_researcher.go — 递归深度检索：充分性判定、子查询生成、KB/网页/图谱多源合并。

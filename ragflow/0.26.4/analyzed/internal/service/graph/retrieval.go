@@ -1,5 +1,7 @@
 package graph
 
+// retrieval.go 提供图谱检索便捷入口与索引/社区报告辅助逻辑。
+
 import (
 	"context"
 	"encoding/json"
@@ -11,7 +13,7 @@ import (
 	modelModule "ragflow/internal/entity/models"
 )
 
-// Retrieval performs a full knowledge graph retrieval and returns
+// Retrieval 执行完整 KG 检索并返回合成 chunk（Pipeline 包装）。
 // a synthetic chunk. Convenience wrapper around Pipeline.
 func Retrieval(
 	ctx context.Context,
@@ -40,7 +42,7 @@ func Retrieval(
 	return p.Retrieval(ctx)
 }
 
-// makeIndexNames converts tenant IDs to search index names.
+// makeIndexNames 将租户 ID 列表转为 ES 索引名 ragflow_{tenant}。
 func makeIndexNames(tenantIDs []string) []string {
 	idxnms := make([]string, len(tenantIDs))
 	for i, tid := range tenantIDs {
@@ -49,12 +51,12 @@ func makeIndexNames(tenantIDs []string) []string {
 	return idxnms
 }
 
-// indexName builds the search index name from a tenant ID.
+// indexName 由租户 ID 构造单条索引名。
 func indexName(tenantID string) string {
 	return "ragflow_" + tenantID
 }
 
-// searchTypeSamples searches for ty2ents data.
+// searchTypeSamples 检索 ty2ents 类型→实体样例映射数据。
 func searchTypeSamples(ctx context.Context, docEngine engine.DocEngine, idxnms []string, kbIDs []string) (map[string][]string, error) {
 	req := &types.SearchRequest{
 		IndexNames:   idxnms,
@@ -84,7 +86,7 @@ func searchTypeSamples(ctx context.Context, docEngine engine.DocEngine, idxnms [
 	return typeMap, nil
 }
 
-// searchCommunityContent searches for community reports and formats them.
+// searchCommunityContent 检索社区报告并按剩余 token 预算格式化拼接。
 func searchCommunityContent(ctx context.Context, docEngine engine.DocEngine, idxnms []string, kbIDs []string, scoredEnts []ScoredEntity, topN int, maxToken *int) string {
 	if maxToken == nil || len(scoredEnts) == 0 || *maxToken <= 0 {
 		return ""
@@ -142,7 +144,7 @@ func searchCommunityContent(ctx context.Context, docEngine engine.DocEngine, idx
 	return bld
 }
 
-// entityFromChunk parses a single entity chunk into a KGEntity.
+// entityFromChunk 将 ES chunk 解析为 KGEntity（含 N 跳路径）。
 func entityFromChunk(name string, chunk map[string]interface{}) KGEntity {
 	e := KGEntity{}
 	if v, ok := chunk["_score"].(float64); ok {
@@ -171,7 +173,7 @@ func entityFromChunk(name string, chunk map[string]interface{}) KGEntity {
 	return e
 }
 
-// relationFromChunk parses a single relation chunk into a KGRelation.
+// relationFromChunk 将 ES chunk 解析为 KGRelation 与 Edge。
 func relationFromChunk(chunk map[string]interface{}) (Edge, KGRelation) {
 	r := KGRelation{}
 	r.Description, _ = chunk["content_with_weight"].(string)
@@ -190,7 +192,7 @@ func relationFromChunk(chunk map[string]interface{}) (Edge, KGRelation) {
 	return Edge{From: from, To: to}, r
 }
 
-// buildSearchExprs constructs MatchExprs for KG entity/relation search.
+// buildSearchExprs 构建文本/稠密/融合混合检索表达式。
 // When embModel is nil, returns text-only match expression.
 // When embModel is non-nil, embeds the question and returns hybrid
 // (text + dense + fusion) expressions for vector+keyword search.
@@ -208,7 +210,7 @@ func buildSearchExprs(embModel *modelModule.EmbeddingModel, matchText *types.Mat
 	return []interface{}{matchText, denseExpr, fusionExpr}
 }
 
-// buildMatchDenseExpr constructs a MatchDenseExpr from an embedding vector.
+// buildMatchDenseExpr 由向量构造 MatchDenseExpr。
 func buildMatchDenseExpr(vector []float64, topN int, similarity float64) *types.MatchDenseExpr {
 	vectorColumnName := fmt.Sprintf("q_%d_vec", len(vector))
 	return &types.MatchDenseExpr{
@@ -221,7 +223,7 @@ func buildMatchDenseExpr(vector []float64, topN int, similarity float64) *types.
 	}
 }
 
-// buildFusionExpr constructs a FusionExpr for weighted-sum hybrid search.
+// buildFusionExpr 构造加权融合表达式。
 func buildFusionExpr(textWeight, vectorWeight float64, topN int) *types.FusionExpr {
 	return &types.FusionExpr{
 		Method: "weighted_sum",
@@ -232,7 +234,7 @@ func buildFusionExpr(textWeight, vectorWeight float64, topN int) *types.FusionEx
 	}
 }
 
-// queryRewrite attempts LLM-based query rewrite, falling back to raw question.
+// queryRewrite 尝试 LLM 查询改写，失败则回退原始问题。
 func queryRewrite(chatModel *modelModule.ChatModel, question string, ty2entsJSON string) (typeKeywords, entities []string) {
 	if question == "" {
 		return nil, nil
@@ -254,7 +256,7 @@ func queryRewrite(chatModel *modelModule.ChatModel, question string, ty2entsJSON
 	return nil, []string{question}
 }
 
-// Python alignment defaults
+// 与 Python 实现对齐的默认常量
 const (
 	defaultSimThreshold = 0.3
 	defaultDenseTopK    = 1024
@@ -262,3 +264,4 @@ const (
 	defaultTextWeight   = 0.5
 	defaultVectorWeight = 0.5
 )
+// graph/retrieval.go — 图谱检索入口与索引名、类型样本、社区报告内容组装。

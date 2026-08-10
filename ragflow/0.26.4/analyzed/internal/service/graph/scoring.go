@@ -16,6 +16,8 @@
 
 package graph
 
+// scoring.go 实现图谱检索后的 N 跳分析、打分融合与 CSV 内容组装。
+
 import (
 	"bytes"
 	"encoding/csv"
@@ -27,7 +29,7 @@ import (
 	"ragflow/internal/tokenizer"
 )
 
-// AnalyzeNHopPaths decomposes N-hop paths into edges with distance-decayed scores.
+// AnalyzeNHopPaths 分解 N 跳路径为边并按距离衰减累加相似度。
 // Python equivalent: rag/graphrag/search.py lines 172-187
 func AnalyzeNHopPaths(entsFromQuery map[string]*KGEntity) map[Edge]EdgeScore {
 	nhopPathes := make(map[Edge]EdgeScore)
@@ -50,7 +52,7 @@ func AnalyzeNHopPaths(entsFromQuery map[string]*KGEntity) map[Edge]EdgeScore {
 	return nhopPathes
 }
 
-// DoubleHitBoost doubles the similarity of entities found in both
+// DoubleHitBoost 对关键词检索与类型检索双命中实体相似度加倍。
 // keyword search and type search. Python equivalent: lines 194-198
 func DoubleHitBoost(entsFromQuery map[string]*KGEntity, entsFromTypes map[string]struct{}) {
 	for ent := range entsFromQuery {
@@ -60,7 +62,7 @@ func DoubleHitBoost(entsFromQuery map[string]*KGEntity, entsFromTypes map[string
 	}
 }
 
-// FuseRelationScores integrates N-hop contributions and type boosts
+// FuseRelationScores 将 N 跳与类型加成融入关系得分，并补充新边。
 // into relation scores. New edges from N-hop are added as relations.
 // Python equivalent: lines 200-222
 func FuseRelationScores(
@@ -100,7 +102,7 @@ func FuseRelationScores(
 	}
 }
 
-// SortAndTrimEntities sorts entities by sim*pagerank and takes top N.
+// SortAndTrimEntities 按 sim×PageRank 排序实体并取 TopN。
 // Python equivalent: lines 224-225
 func SortAndTrimEntities(entsFromQuery map[string]*KGEntity, topN int) []ScoredEntity {
 	if topN <= 0 {
@@ -123,7 +125,7 @@ func SortAndTrimEntities(entsFromQuery map[string]*KGEntity, topN int) []ScoredE
 	return scored
 }
 
-// SortAndTrimRelations sorts relations by sim*pagerank and takes top N.
+// SortAndTrimRelations 按 sim×PageRank 排序关系并取 TopN。
 // Python equivalent: lines 226-227
 func SortAndTrimRelations(relsFromText map[Edge]*KGRelation, topN int) []ScoredRelation {
 	if topN <= 0 {
@@ -147,19 +149,19 @@ func SortAndTrimRelations(relsFromText map[Edge]*KGRelation, topN int) []ScoredR
 	return scored
 }
 
-// NumTokensFromString estimates the number of tokens in a string.
+// NumTokensFromString 估算字符串 token 数（委托 tokenizer 包）。
 // Delegates to the shared implementation in the parent service package.
 func NumTokensFromString(s string) int {
 	return tokenizer.NumTokensFromString(s)
 }
 
-// TrimContentToTokenLimit truncates s to at most limit tokens.
+// TrimContentToTokenLimit 将内容截断至不超过 limit 个 token。
 // Delegates to the shared implementation in the tokenizer package.
 func TrimContentToTokenLimit(s string, limit int) string {
 	return tokenizer.TrimContentToTokenLimit(s, limit)
 }
 
-// formatCSVLine formats fields as a single CSV record with trailing newline.
+// formatCSVLine 格式化为单行 CSV 记录（正确处理引号与逗号）。
 // Handles commas, quotes, and newlines in field values correctly — unlike fmt.Sprintf.
 // Matches Python: pd.DataFrame(...).to_csv() quoting behavior.
 func formatCSVLine(fields ...string) string {
@@ -170,7 +172,7 @@ func formatCSVLine(fields ...string) string {
 	return buf.String()
 }
 
-// FilterChunksByScore filters chunks where _score >= threshold.
+// FilterChunksByScore 按 _score 阈值过滤检索 chunk。
 // Chunks missing _score are treated as score=0.
 // Pure function — no I/O, no external dependencies.
 // Matches Python: _ent_info_from_ and _relation_info_from_ sim_thr filtering.
@@ -193,7 +195,7 @@ func FilterChunksByScore(chunks []map[string]interface{}, threshold float64) []m
 	return result
 }
 
-// FormatEntitiesToCSV formats scored entities as a CSV string and tracks token count.
+// FormatEntitiesToCSV 将实体格式化为 CSV 并扣减 token 预算。
 func FormatEntitiesToCSV(entities []ScoredEntity, maxToken int) (csv string, remainingToken int) {
 	if len(entities) == 0 {
 		return "", maxToken
@@ -214,7 +216,7 @@ func FormatEntitiesToCSV(entities []ScoredEntity, maxToken int) (csv string, rem
 	return b.String(), maxToken
 }
 
-// FormatRelationsToCSV formats scored relations as a CSV string and tracks token count.
+// FormatRelationsToCSV 将关系格式化为 CSV 并扣减 token 预算。
 func FormatRelationsToCSV(relations []ScoredRelation, maxToken int) (csv string, remainingToken int) {
 	if len(relations) == 0 {
 		return "", maxToken
@@ -235,7 +237,7 @@ func FormatRelationsToCSV(relations []ScoredRelation, maxToken int) (csv string,
 	return b.String(), maxToken
 }
 
-// BuildContent assembles the final knowledge graph content string.
+// BuildContent 拼接实体与关系 CSV 为最终 KG 上下文文本。
 // Python equivalent: lines 267-291
 func BuildContent(
 	entities []ScoredEntity,
@@ -247,7 +249,7 @@ func BuildContent(
 	return entityCSV + relCSV
 }
 
-// extractDescription tries to parse a description from a JSON-like string.
+// extractDescription 尝试从 JSON 字符串提取 description 字段。
 // Python equivalent: json.loads(desc).get("description", "")
 func extractDescription(desc string) string {
 	if desc == "" {
@@ -264,3 +266,4 @@ func extractDescription(desc string) string {
 	}
 	return desc
 }
+// graph/scoring.go — N 跳路径分析、双命中加权、关系融合与 CSV 格式化输出。

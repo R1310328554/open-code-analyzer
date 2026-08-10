@@ -16,6 +16,8 @@
 
 package service
 
+// langfuse.go 封装 Langfuse 追踪客户端，用于 LLM 调用可观测性上报。
+
 import (
 	"bytes"
 	"context"
@@ -39,7 +41,7 @@ type langfuseCtxKeyType struct{}
 
 var langfuseCtxKey = langfuseCtxKeyType{}
 
-// LangfuseClientFromTenant returns a tracing client for the given tenant,
+// LangfuseClientFromTenant 按租户凭证构造 Langfuse 客户端，未配置则 nil。
 // or nil if Langfuse is not configured. Failures to look up credentials
 // are non-fatal; Langfuse is observability, not a chat path requirement.
 func LangfuseClientFromTenant(ctx context.Context, tenantID, userID, chatID, modelName string) *LangfuseClient {
@@ -56,7 +58,7 @@ func LangfuseClientFromTenant(ctx context.Context, tenantID, userID, chatID, mod
 	return NewLangfuseClient(creds.Host, creds.PublicKey, creds.SecretKey)
 }
 
-// getTenantLangfuse returns the Langfuse credentials for a tenant, or
+// getTenantLangfuse 读取租户 Langfuse 凭证，无记录返回 (nil, nil)。
 // (nil, nil) when no row exists.
 func getTenantLangfuse(tenantID string) (*entity.TenantLangfuse, error) {
 	if tenantID == "" {
@@ -73,7 +75,7 @@ func getTenantLangfuse(tenantID string) (*entity.TenantLangfuse, error) {
 	return &row, nil
 }
 
-// LangfuseClient posts trace and observation events to a Langfuse ingestion
+// LangfuseClient 异步向 Langfuse 上报 trace/observation 事件。
 // endpoint. All writes are async (background worker drains a buffered
 // channel); reads (none in this minimal version) are direct.
 type LangfuseClient struct {
@@ -88,7 +90,7 @@ type LangfuseClient struct {
 	once    sync.Once
 }
 
-// NewLangfuseClient constructs a LangfuseClient with a 2-second HTTP timeout
+// NewLangfuseClient 创建客户端并启动后台 worker 消费事件队列。
 // and starts a background worker. Call Shutdown to drain pending events.
 func NewLangfuseClient(host, publicKey, secretKey string) *LangfuseClient {
 	c := &LangfuseClient{
@@ -104,7 +106,7 @@ func NewLangfuseClient(host, publicKey, secretKey string) *LangfuseClient {
 	return c
 }
 
-// LangfuseTrace is a single Langfuse trace (one per request).
+// LangfuseTrace 单次请求的 Langfuse trace 记录。
 type LangfuseTrace struct {
 	ID        string                 `json:"id"`
 	Name      string                 `json:"name"`
@@ -114,7 +116,7 @@ type LangfuseTrace struct {
 	Timestamp string                 `json:"timestamp"`
 }
 
-// LangfuseSpan is a unit of work within a trace (e.g. "Pre-retrieval processing").
+// LangfuseSpan trace 内的工作单元（如检索前处理）。
 type LangfuseSpan struct {
 	ID                  string                 `json:"id"`
 	TraceID             string                 `json:"traceId"`
@@ -127,7 +129,7 @@ type LangfuseSpan struct {
 	Output              interface{}            `json:"output,omitempty"`
 }
 
-// LangfuseGeneration is a span with model, usage, and LLM-specific fields.
+// LangfuseGeneration 带模型名与 token 用量的 LLM generation span。
 type LangfuseGeneration struct {
 	ID                  string                 `json:"id"`
 	TraceID             string                 `json:"traceId"`
@@ -142,7 +144,7 @@ type LangfuseGeneration struct {
 	Usage               *LangfuseUsage         `json:"usage,omitempty"`
 }
 
-// LangfuseUsage records prompt/completion/total token counts.
+// LangfuseUsage 记录 prompt/completion/total token 计数。
 type LangfuseUsage struct {
 	PromptTokens     int `json:"promptTokens"`
 	CompletionTokens int `json:"completionTokens"`
@@ -262,7 +264,7 @@ func basicAuth(public, secret string) string {
 	return "Basic " + base64.StdEncoding.EncodeToString([]byte(public+":"+secret))
 }
 
-// ErrLangfuseUnauthorized indicates the Langfuse credentials were rejected
+// ErrLangfuseUnauthorized Langfuse 凭证被拒绝。
 var ErrLangfuseUnauthorized = errors.New("langfuse: unauthorized")
 
 type LangfuseAPIError struct {
@@ -282,7 +284,7 @@ func IsLangfuseAPIError(err error) bool {
 	return errors.As(err, &apiErr)
 }
 
-// langfuseProjectsResponse mirrors the body of GET /api/public/projects.
+// langfuseProjectsResponse GET /api/public/projects 响应体。
 type langfuseProjectsResponse struct {
 	Data []struct {
 		ID   string `json:"id"`
@@ -290,7 +292,7 @@ type langfuseProjectsResponse struct {
 	} `json:"data"`
 }
 
-// GetProject calls GET {host}/api/public/projects and returns the first
+// GetProject 调用 Langfuse projects API 并返回首个项目 id/name。
 // project's id and name.
 func (c *LangfuseClient) GetProject(ctx context.Context) (string, string, error) {
 	if c == nil {
@@ -336,7 +338,7 @@ func (c *LangfuseClient) GetProject(ctx context.Context) (string, string, error)
 	return parsed.Data[0].ID, parsed.Data[0].Name, nil
 }
 
-// AuthCheck verifies the credentials are valid, mirroring the Python langfuse
+// AuthCheck 校验凭证有效性，对齐 Python SDK auth_check()。
 // SDK's auth_check(). It returns (false, nil) when the credentials are
 // rejected, and (false, err) for transport/remote errors.
 func (c *LangfuseClient) AuthCheck(ctx context.Context) (bool, error) {
@@ -349,3 +351,4 @@ func (c *LangfuseClient) AuthCheck(ctx context.Context) (bool, error) {
 	}
 	return true, nil
 }
+// langfuse.go — Langfuse 可观测性客户端：异步 trace/span/generation 上报与凭证校验。

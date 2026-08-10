@@ -16,6 +16,8 @@
 
 package service
 
+// file.go 实现租户虚拟文件系统的列表、上传、移动、删除与远程拉取。
+
 import (
 	"context"
 	"encoding/base64"
@@ -39,14 +41,14 @@ import (
 	"time"
 )
 
-// FileService file service
+// FileService 文件管理服务。
 type FileService struct {
 	fileDAO          *dao.FileDAO
 	file2DocumentDAO *dao.File2DocumentDAO
 	documentService  *DocumentService
 }
 
-// NewFileService create file service
+// NewFileService 构造 FileService。
 func NewFileService() *FileService {
 	return &FileService{
 		fileDAO:          dao.NewFileDAO(),
@@ -55,7 +57,7 @@ func NewFileService() *FileService {
 	}
 }
 
-// FileInfo file info with additional fields
+// FileInfo 文件详情，含大小、子文件夹标记与关联 KB 信息。
 type FileInfo struct {
 	*entity.File
 	Size           int64                    `json:"size"`
@@ -63,14 +65,14 @@ type FileInfo struct {
 	HasChildFolder bool                     `json:"has_child_folder,omitempty"`
 }
 
-// ListFilesResponse list files response
+// ListFilesResponse 列出文件夹内容的 API 响应。
 type ListFilesResponse struct {
 	Total        int64                    `json:"total"`
 	Files        []map[string]interface{} `json:"files"`
 	ParentFolder map[string]interface{}   `json:"parent_folder"`
 }
 
-// GetRootFolder gets or creates root folder for tenant
+// GetRootFolder 获取或创建租户根目录。
 func (s *FileService) GetRootFolder(tenantID string) (map[string]interface{}, error) {
 	file, err := s.fileDAO.GetRootFolder(tenantID)
 	if err != nil {
@@ -79,7 +81,7 @@ func (s *FileService) GetRootFolder(tenantID string) (map[string]interface{}, er
 	return s.toFileResponse(file), nil
 }
 
-// ListFiles lists files by parent folder ID (matching Python /files endpoint)
+// ListFiles 按父文件夹列出文件，空 parent 时初始化 dataset/skills 目录。
 // This method includes init_dataset_docs initialization when parent_id is empty
 func (s *FileService) ListFiles(tenantID, pfID string, page, pageSize int, orderby string, desc bool, keywords string) (*ListFilesResponse, error) {
 	// If pfID is empty, get root folder and initialize dataset docs
@@ -159,19 +161,19 @@ func (s *FileService) ListFiles(tenantID, pfID string, page, pageSize int, order
 	}, nil
 }
 
-// initDatasetDocs initializes dataset documents for tenant
+// initDatasetDocs 初始化租户 .knowledgebase 数据集文档映射。
 // This matches Python's FileService.init_dataset_docs method
 func (s *FileService) initDatasetDocs(rootID, tenantID string) error {
 	return s.fileDAO.InitDatasetDocs(rootID, tenantID, s.file2DocumentDAO)
 }
 
-// DatasetFolderName is the folder name for dataset
+// DatasetFolderName 知识库虚拟文件夹名。
 const DatasetFolderName = ".knowledgebase"
 
-// SkillsFolderName is the folder name for skills
+// SkillsFolderName 技能空间文件夹名。
 const SkillsFolderName = "skills"
 
-// initSkillsFolder initializes the skills folder under the root folder.
+// initSkillsFolder 在根目录下创建 skills 文件夹并去重并发重复项。
 // Deduplicates duplicate entries that may have been created by
 // concurrent race conditions (TOCTOU).
 func (s *FileService) initSkillsFolder(rootID, tenantID string) error {
@@ -209,7 +211,7 @@ func (s *FileService) initSkillsFolder(rootID, tenantID string) error {
 	return s.fileDAO.Insert(folder)
 }
 
-// FileSourceDataset represents dataset as file source
+// FileSourceDataset 标识文件来源为知识库同步。
 const FileSourceDataset = "knowledgebase"
 
 var (
@@ -217,7 +219,7 @@ var (
 	pinnedHTTPClient = utility.PinnedHTTPClient
 )
 
-// toFileResponse converts file model to response format
+// toFileResponse 将 File 实体转为 API map。
 func (s *FileService) toFileResponse(file *entity.File) map[string]interface{} {
 	result := map[string]interface{}{
 		"id":          file.ID,
@@ -239,7 +241,7 @@ func (s *FileService) toFileResponse(file *entity.File) map[string]interface{} {
 	return result
 }
 
-// toFileInfo converts file model to FileInfo
+// toFileInfo 将 File 转为 FileInfo 包装。
 func (s *FileService) toFileInfo(file *entity.File) *FileInfo {
 	return &FileInfo{
 		File:           file,
@@ -249,7 +251,7 @@ func (s *FileService) toFileInfo(file *entity.File) *FileInfo {
 	}
 }
 
-// fileInfoToResponse converts FileInfo to response map
+// fileInfoToResponse 将 FileInfo 序列化为响应 map。
 func (s *FileService) fileInfoToResponse(info *FileInfo) map[string]interface{} {
 	result := map[string]interface{}{
 		"id":          info.File.ID,
@@ -276,7 +278,7 @@ func (s *FileService) fileInfoToResponse(info *FileInfo) map[string]interface{} 
 	return result
 }
 
-// GetParentFolder gets parent folder of a file with permission check
+// GetParentFolder 获取文件父目录并校验团队权限。
 func (s *FileService) GetParentFolder(userID, fileID string) (map[string]interface{}, error) {
 	// Get file
 	file, err := s.fileDAO.GetByID(fileID)
@@ -298,7 +300,7 @@ func (s *FileService) GetParentFolder(userID, fileID string) (map[string]interfa
 	return s.toFileResponse(parentFolder), nil
 }
 
-// GetAllParentFolders gets all parent folders in path with permission check
+// GetAllParentFolders 获取路径上全部祖先文件夹。
 func (s *FileService) GetAllParentFolders(userID, fileID string) ([]map[string]interface{}, error) {
 	// Get file
 	file, err := s.fileDAO.GetByID(fileID)
@@ -331,13 +333,13 @@ const (
 	FileTypeVirtual = "virtual"
 )
 
-// GetDocCount gets document count for a tenant
+// GetDocCount 统计租户文档总数（免费用户配额校验用）。
 func (s *FileService) GetDocCount(tenantID string) (int64, error) {
 	documentDAO := dao.NewDocumentDAO()
 	return documentDAO.CountByTenantID(tenantID)
 }
 
-// UploadFile uploads files to a folder
+// UploadFile 上传文件到指定文件夹，自动创建中间路径。
 func (s *FileService) UploadFile(tenantID, parentID string, files []*multipart.FileHeader) ([]map[string]interface{}, error) {
 	if parentID == "" {
 		rootFolder, err := s.fileDAO.GetRootFolder(tenantID)
@@ -452,7 +454,7 @@ func (s *FileService) UploadFile(tenantID, parentID string, files []*multipart.F
 	return result, nil
 }
 
-// UploadInfos mirrors Python's upload_info file branch: store raw bytes in the
+// UploadInfos 将原始字节存入 downloads 桶并返回轻量描述符（非完整 File 树）。
 // per-user downloads bucket and return lightweight upload descriptors instead
 // of creating full File rows in the file-management tree.
 func (s *FileService) UploadInfos(userID string, files []*multipart.FileHeader) ([]map[string]interface{}, error) {
@@ -549,7 +551,7 @@ func (s *FileService) getUniqueFilename(name, parentID, tenantID string) string 
 	}
 }
 
-// CreateFolder creates a new folder or virtual file
+// CreateFolder 在父目录下创建文件夹或虚拟文件节点。
 func (s *FileService) CreateFolder(tenantID, name, parentID, fileType string) (map[string]interface{}, error) {
 	if parentID == "" {
 		rootFolder, err := s.fileDAO.GetRootFolder(tenantID)
@@ -586,7 +588,7 @@ func (s *FileService) CreateFolder(tenantID, name, parentID, fileType string) (m
 	return s.toFileResponse(folder), nil
 }
 
-// DeleteFiles deletes files by IDs
+// DeleteFiles 按 ID 批量删除文件/文件夹，跳过 dataset 来源项。
 // Returns (success, message) where success is true if all files were deleted
 func (s *FileService) DeleteFiles(ctx context.Context, uid string, fileIDs []string) (bool, string) {
 	for _, fileID := range fileIDs {
@@ -631,7 +633,7 @@ func (s *FileService) DeleteFiles(ctx context.Context, uid string, fileIDs []str
 	return true, ""
 }
 
-// checkFileTeamPermission checks if user has permission to access the file
+// checkFileTeamPermission 校验用户对文件或其关联 KB 的访问权限。
 // Matches Python's check_file_team_permission function
 func (s *FileService) checkFileTeamPermission(file *entity.File, uid string) bool {
 	// File's tenant directly authorized
@@ -661,13 +663,13 @@ func (s *FileService) checkFileTeamPermission(file *entity.File, uid string) boo
 	return false
 }
 
-// checkDatasetTeamPermission checks if user has permission to access the dataset
+// checkDatasetTeamPermission 校验用户对知识库的团队权限。
 // Matches Python's check_kb_team_permission function
 func (s *FileService) checkDatasetTeamPermission(ds *entity.Knowledgebase, uid string) bool {
 	return hasKBTeamPermission(ds, uid, dao.NewTenantDAO())
 }
 
-// deleteSingleFile deletes a single file (not folder)
+// deleteSingleFile 删除单个文件：存储对象、file2document 与文档。
 // Matches Python's _delete_single_file function
 func (s *FileService) deleteSingleFile(ctx context.Context, file *entity.File) error {
 	// 1. Delete storage object
@@ -710,7 +712,7 @@ func (s *FileService) deleteSingleFile(ctx context.Context, file *entity.File) e
 	return nil
 }
 
-// deleteFolderRecursive recursively deletes a folder and its contents
+// deleteFolderRecursive 递归删除文件夹及全部子项。
 // Matches Python's _delete_folder_recursive function
 func (s *FileService) deleteFolderRecursive(ctx context.Context, folder *entity.File, uid string) error {
 	// Get all sub-files
@@ -741,14 +743,14 @@ func (s *FileService) deleteFolderRecursive(ctx context.Context, folder *entity.
 	return nil
 }
 
-// MoveFileReq represents the request body for move files operation
+// MoveFileReq 移动/重命名文件的请求体。
 type MoveFileReq struct {
 	SrcFileIDs []string `json:"src_file_ids" binding:"required,min=1"`
 	DestFileID string   `json:"dest_file_id"`
 	NewName    string   `json:"new_name"`
 }
 
-// MoveFiles moves and/or renames files
+// MoveFiles 移动和/或重命名文件，遵循 Linux mv 语义。
 // Follows Linux mv semantics:
 // - new_name only: rename in place (no storage operation)
 // - dest_file_id only: move to new folder (keep names)
@@ -897,7 +899,7 @@ func (s *FileService) MoveFiles(uid string, srcFileIDs []string, destFileID stri
 	return true, ""
 }
 
-// moveEntryRecursive recursively moves a file or folder entry
+// moveEntryRecursive 递归移动文件或文件夹条目并同步存储层。
 func (s *FileService) moveEntryRecursive(sourceFile *entity.File, destFolder *entity.File, overrideName string) error {
 	effectiveName := overrideName
 	if effectiveName == "" {
@@ -993,7 +995,7 @@ func (s *FileService) moveEntryRecursive(sourceFile *entity.File, destFolder *en
 	return nil
 }
 
-// GetFileContent gets file metadata and checks permission for download
+// GetFileContent 获取文件元数据并校验下载权限。
 // Matches Python's file_api_service.get_file_content function
 func (s *FileService) GetFileContent(uid, fileID string) (*entity.File, error) {
 	file, err := s.fileDAO.GetByID(fileID)
@@ -1006,13 +1008,13 @@ func (s *FileService) GetFileContent(uid, fileID string) (*entity.File, error) {
 	return file, nil
 }
 
-// StorageAddress represents bucket and object name for storage
+// StorageAddress 对象存储 bucket 与 object 名。
 type StorageAddress struct {
 	Bucket string
 	Name   string
 }
 
-// GetStorageAddress gets storage address for a file (fallback for when direct blob is empty)
+// GetStorageAddress 解析 file2document 映射得到实际存储地址。
 // Matches Python's File2DocumentService.get_storage_address function
 func (s *FileService) GetStorageAddress(fileID string) (*StorageAddress, error) {
 	// Get file2document mapping
@@ -1062,7 +1064,7 @@ func (s *FileService) GetStorageAddress(fileID string) (*StorageAddress, error) 
 	}, nil
 }
 
-// DownloadAgentFile downloads an agent-generated file directly from MinIO without querying the database.
+// DownloadAgentFile 从租户 downloads 桶直接读取 Agent 生成文件。
 func (s *FileService) DownloadAgentFile(tenantID, location string) ([]byte, error) {
 	storageImpl := storage.GetStorageFactory().GetStorage()
 	if storageImpl == nil {
@@ -1079,7 +1081,7 @@ func (s *FileService) DownloadAgentFile(tenantID, location string) ([]byte, erro
 	return blob, nil
 }
 
-// GetFileContents fetches file contents (text + image) from storage
+// GetFileContents 批量读取文件内容，图片可 base64 或原始字节返回。
 // for the given file dicts.
 //   - raw=false: images returned as base64 data URIs in images; non-images parsed and returned as text.
 //   - raw=true:  images returned as raw bytes in images; non-images parsed and returned as text.
@@ -1121,7 +1123,7 @@ func (s *FileService) GetFileContents(uid string, fileDicts []map[string]interfa
 	return texts, images, nil
 }
 
-// parseFileContent tries to parse a file's contents using the appropriate parser.
+// parseFileContent 按扩展名选择解析器提取文本，失败则回退原始字符串。
 // Falls back to returning raw text if no parser is available.
 func parseFileContent(filename string, data []byte) string {
 	fileType := utility.GetFileType(filename)
@@ -1174,7 +1176,7 @@ func (s *FileService) toUploadInfoResponse(file *entity.File, mimeType string) m
 // maxRemoteFileSize bounds the body of a ?url= upload (100 MB).
 const maxRemoteFileSize = 100 << 20
 
-// UploadFromURL fetches a remote URL, saves the content to the tenant's root
+// UploadFromURL 安全拉取远程 URL 内容并存入 downloads 桶（SSRF 防护）。
 // folder, and returns the file metadata map — mirroring Python
 // FileService.upload_info(tenant_id, None, url).
 //
@@ -1213,7 +1215,7 @@ func (s *FileService) UploadFromURL(tenantID, rawURL string) (map[string]interfa
 	return s.storeUploadInfoBlob(storageImpl, tenantID, filename, contentType, data)
 }
 
-// fetchRemoteFileSafely downloads rawURL with SSRF protection, connect/overall
+// fetchRemoteFileSafely 带 SSRF 防护、超时与大小上限的远程下载。
 // timeouts, and a hard size cap that rejects (rather than truncates) oversized
 // bodies.
 func fetchRemoteFileSafely(rawURL string, maxSize int64) ([]byte, http.Header, string, error) {
@@ -1278,7 +1280,7 @@ func fetchRemoteFileSafely(rawURL string, maxSize int64) ([]byte, http.Header, s
 	return nil, nil, "", fmt.Errorf("stopped after too many redirects")
 }
 
-// isPublicIP reports whether ip is a globally routable address. It mirrors the
+// isPublicIP 判断 IP 是否为公网可路由地址（防 SSRF）。
 // allowlist intent of Python's assert_url_is_safe (which requires ip.is_global)
 // by rejecting loopback, private, link-local, multicast, unspecified, and
 // carrier-grade NAT ranges. IPv4-mapped IPv6 addresses are handled by the
@@ -1423,7 +1425,7 @@ var reservedDeviceNames = map[string]bool{
 	"LPT6": true, "LPT7": true, "LPT8": true, "LPT9": true,
 }
 
-// sanitizeFilename produces a safe, filesystem-friendly filename from an
+// sanitizeFilename 将 URL 路径段清洗为安全文件名。
 // arbitrary URL path segment: it strips directory components, replaces unsafe /
 // control characters, rejects reserved names, bounds the length, and falls back
 // to "download".
@@ -1456,3 +1458,4 @@ func sanitizeFilename(name string) string {
 	}
 	return name
 }
+// file.go — 租户文件树 CRUD、上传/移动/删除、远程 URL 拉取与权限校验。

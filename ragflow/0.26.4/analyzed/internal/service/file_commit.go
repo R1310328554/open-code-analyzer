@@ -16,6 +16,8 @@
 
 package service
 
+// file_commit.go 为工作区文件夹提供类 Git 提交、差异与版本历史能力。
+
 import (
 	"crypto/sha256"
 	"encoding/hex"
@@ -33,14 +35,14 @@ import (
 	"gorm.io/gorm"
 )
 
-// FileCommitService file commit service
+// FileCommitService 文件版本提交服务。
 type FileCommitService struct {
 	commitDAO     *dao.FileCommitDAO
 	commitItemDAO *dao.FileCommitItemDAO
 	fileDAO       *dao.FileDAO
 }
 
-// NewFileCommitService create file commit service
+// NewFileCommitService 构造 FileCommitService。
 func NewFileCommitService() *FileCommitService {
 	return &FileCommitService{
 		commitDAO:     dao.NewFileCommitDAO(),
@@ -49,7 +51,7 @@ func NewFileCommitService() *FileCommitService {
 	}
 }
 
-// CreateCommit creates a new commit for a workspace folder
+// CreateCommit 为工作区创建新提交：更新 tree_state 并持久化变更项。
 func (s *FileCommitService) CreateCommit(folderID, authorID, message string, changes []entity.FileChange) (*entity.FileCommit, error) {
 	// 1. Get the latest commit for this folder
 	latestCommit, _ := s.commitDAO.GetLatestByFolderID(folderID)
@@ -232,22 +234,22 @@ func (s *FileCommitService) CreateCommit(folderID, authorID, message string, cha
 	return commit, nil
 }
 
-// ListCommits lists commits for a workspace folder with pagination
+// ListCommits 分页列出文件夹提交历史。
 func (s *FileCommitService) ListCommits(folderID string, page, pageSize int, orderBy string, desc bool) ([]*entity.FileCommit, int64, error) {
 	return s.commitDAO.ListByFolderID(folderID, page, pageSize, orderBy, desc)
 }
 
-// GetCommit gets a single commit by ID
+// GetCommit 按 ID 获取提交详情。
 func (s *FileCommitService) GetCommit(commitID string) (*entity.FileCommit, error) {
 	return s.commitDAO.GetByID(commitID)
 }
 
-// ListCommitFiles lists all file change items for a commit
+// ListCommitFiles 列出某次提交包含的全部文件变更项。
 func (s *FileCommitService) ListCommitFiles(commitID string) ([]*entity.FileCommitItem, error) {
 	return s.commitItemDAO.ListByCommitID(commitID)
 }
 
-// DiffCommits compares two commits and returns the diff
+// DiffCommits 对比两次提交，返回 add/modify/delete 差异列表。
 func (s *FileCommitService) DiffCommits(fromID, toID string) ([]entity.DiffEntry, error) {
 	fromItems, err := s.commitItemDAO.ListByCommitID(fromID)
 	if err != nil {
@@ -346,7 +348,7 @@ func (s *FileCommitService) DiffCommits(fromID, toID string) ([]entity.DiffEntry
 	return diff, nil
 }
 
-// GetUncommittedChanges gets uncommitted changes for a workspace folder.
+// GetUncommittedChanges 对比最新提交树与实时文件，列出未提交变更。
 // Recursively scans all sub-folders.
 func (s *FileCommitService) GetUncommittedChanges(folderID string) ([]entity.DiffEntry, error) {
 	// Get latest commit tree state
@@ -416,7 +418,7 @@ func (s *FileCommitService) GetUncommittedChanges(folderID string) ([]entity.Dif
 	return changes, nil
 }
 
-// collectAllFilesRecursive recursively collects all non-folder files under a folder.
+// collectAllFilesRecursive 递归收集文件夹下全部非目录文件。
 func (s *FileCommitService) collectAllFilesRecursive(folderID string) map[string]*entity.File {
 	result := make(map[string]*entity.File)
 	// Direct files (non-folder)
@@ -435,7 +437,7 @@ func (s *FileCommitService) collectAllFilesRecursive(folderID string) map[string
 	return result
 }
 
-// GetCommitTree gets the tree state snapshot for a commit as a hierarchical tree.
+// GetCommitTree 将提交的扁平 tree_state 构建为层级树 JSON。
 func (s *FileCommitService) GetCommitTree(commitID string) (map[string]interface{}, error) {
 	commit, err := s.commitDAO.GetByID(commitID)
 	if err != nil {
@@ -451,7 +453,7 @@ func (s *FileCommitService) GetCommitTree(commitID string) (map[string]interface
 	return s.buildHierarchicalTree(flat, commit.FolderID), nil
 }
 
-// buildHierarchicalTree builds a recursive tree from a flat tree_state map.
+// buildHierarchicalTree 根据 parent_id 将扁平 map 组装为嵌套树结构。
 // Sub-folder hierarchy is resolved from the File table's parent_id.
 func (s *FileCommitService) buildHierarchicalTree(flat map[string]interface{}, rootFolderID string) map[string]interface{} {
 	// Collect all unique folder IDs
@@ -538,7 +540,7 @@ func (s *FileCommitService) buildHierarchicalTree(flat map[string]interface{}, r
 	return buildNode(rootFolderID)
 }
 
-// GetCommitFileContent gets file content as it existed in a given commit
+// GetCommitFileContent 读取指定提交时某文件的内容快照（按 hash 寻址）。
 func (s *FileCommitService) GetCommitFileContent(folderID, commitID, fileID string) ([]byte, error) {
 	_, err := s.commitDAO.GetByID(commitID)
 	if err != nil {
@@ -576,7 +578,7 @@ func (s *FileCommitService) GetCommitFileContent(folderID, commitID, fileID stri
 	return blob, nil
 }
 
-// GetFileVersionHistory gets version history for a specific file
+// GetFileVersionHistory 返回单文件跨提交的版本历史。
 func (s *FileCommitService) GetFileVersionHistory(fileID string) ([]entity.VersionEntry, error) {
 	items, err := s.commitItemDAO.ListByFileID(fileID)
 	if err != nil {
@@ -609,7 +611,7 @@ func (s *FileCommitService) GetFileVersionHistory(fileID string) ([]entity.Versi
 	return versions, nil
 }
 
-// computeLiveFileHash computes the SHA256 hash of current file content from storage
+// computeLiveFileHash 从存储读取当前文件内容并计算 SHA256。
 func computeLiveFileHash(folderID, fileID string, file *entity.File) string {
 	if file.Location == nil || *file.Location == "" {
 		return ""
@@ -628,3 +630,4 @@ func computeLiveFileHash(folderID, fileID string, file *entity.File) string {
 	hash := sha256.Sum256(data)
 	return hex.EncodeToString(hash[:])
 }
+// file_commit.go — 工作区文件版本提交：树状态快照、差异对比与历史内容读取。

@@ -16,6 +16,8 @@
 
 package graph
 
+// pipeline.go 封装知识图谱检索主流水线，对齐 Python KGSearch。
+
 import (
 	"context"
 	"encoding/json"
@@ -30,7 +32,7 @@ import (
 	modelModule "ragflow/internal/entity/models"
 )
 
-// Pipeline encapsulates the knowledge graph retrieval pipeline.
+// Pipeline 知识图谱检索流水线，对应 Python rag/graphrag/search.py::KGSearch。
 // Matches Python: rag/graphrag/search.py::KGSearch
 type Pipeline struct {
 	docEngine engine.DocEngine
@@ -50,22 +52,22 @@ type Pipeline struct {
 	maxToken        int
 }
 
-// Option configures a Pipeline.
+// Option Pipeline 可选配置函数。
 type Option func(*Pipeline)
 
-// WithSimThreshold sets the similarity threshold for entity and relation search.
+// WithSimThreshold 设置实体/关系检索相似度阈值（默认 0.3）。
 // Default: 0.3 (matches Python ent_sim_threshold, rel_sim_threshold).
 func WithSimThreshold(v float64) Option {
 	return func(p *Pipeline) { p.entSimThreshold = v; p.relSimThreshold = v }
 }
 
-// WithDenseTopK sets the TopK for dense vector search.
+// WithDenseTopK 设置稠密向量检索 TopK（默认 1024）。
 // Default: 1024 (matches Python get_vector topk).
 func WithDenseTopK(v int) Option {
 	return func(p *Pipeline) { p.denseTopK = v }
 }
 
-// NewPipeline creates a KG search pipeline with the given dependencies.
+// NewPipeline 创建 KG 检索流水线，tenantIDs 转为索引名。
 //
 //	docEngine: search engine backend
 //	kbIDs:     knowledge base IDs to search
@@ -106,17 +108,17 @@ func NewPipeline(
 	return p
 }
 
-// SetChatModel sets the chat model for LLM-based query rewrite.
+// SetChatModel 注入聊天模型用于 LLM 查询改写。
 func (p *Pipeline) SetChatModel(chatModel *modelModule.ChatModel) {
 	p.chatModel = chatModel
 }
 
-// SetEmbModel sets the embedding model for dense/hybrid search.
+// SetEmbModel 注入嵌入模型以启用混合检索。
 func (p *Pipeline) SetEmbModel(embModel *modelModule.EmbeddingModel) {
 	p.embModel = embModel
 }
 
-// Retrieval runs the full KG retrieval pipeline and returns a synthetic chunk.
+// Retrieval 执行完整 KG 检索并返回合成 chunk（实体+关系+社区报告）。
 func (p *Pipeline) Retrieval(ctx context.Context) (map[string]interface{}, error) {
 	// 1. Query rewrite via LLM, or fall back to raw question
 	ty2entsJSON := ""
@@ -191,7 +193,7 @@ func (p *Pipeline) Retrieval(ctx context.Context) (map[string]interface{}, error
 	}, nil
 }
 
-// searchEntities searches KG entities by keyword text and optional dense vector.
+// searchEntities 按关键词/向量检索 KG 实体并过滤低分结果。
 func (p *Pipeline) searchEntities(ctx context.Context, entities []string) (map[string]*KGEntity, error) {
 	entsReq := &types.SearchRequest{
 		IndexNames:   p.idxnms,
@@ -223,7 +225,7 @@ func (p *Pipeline) searchEntities(ctx context.Context, entities []string) (map[s
 	return result, nil
 }
 
-// searchEntityTypes searches KG entities by type keywords.
+// searchEntityTypes 按实体类型关键词批量检索实体名集合。
 func (p *Pipeline) searchEntityTypes(ctx context.Context, typeKeywords []string) map[string]struct{} {
 	typesReq := &types.SearchRequest{
 		IndexNames:   p.idxnms,
@@ -253,7 +255,7 @@ func (p *Pipeline) searchEntityTypes(ctx context.Context, typeKeywords []string)
 	return result
 }
 
-// searchRelations searches KG relations by entity text and optional dense vector.
+// searchRelations 检索 KG 关系边并按阈值过滤。
 func (p *Pipeline) searchRelations(ctx context.Context, entities []string) map[Edge]*KGRelation {
 	relsReq := &types.SearchRequest{
 		IndexNames:   p.idxnms,
@@ -284,3 +286,4 @@ func (p *Pipeline) searchRelations(ctx context.Context, entities []string) map[E
 	}
 	return result
 }
+// graph/pipeline.go — 知识图谱检索流水线：查询改写、实体/关系/社区报告检索与合成 chunk。

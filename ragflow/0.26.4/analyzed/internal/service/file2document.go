@@ -16,6 +16,8 @@
 
 package service
 
+// file2document.go 将文件管理树中的文件关联到知识库并异步转换为文档。
+
 import (
 	"errors"
 	"path/filepath"
@@ -29,22 +31,22 @@ import (
 	"ragflow/internal/utility"
 )
 
-// Sentinel errors returned by File2DocumentService. Handlers map these to
+// File2DocumentService 哨兵错误，Handler 映射为 Python 兼容响应码。
 // Python-compatible response codes/messages. Returning sentinels (instead of
 // wrapped DAO/runtime errors) prevents internal DB details from leaking through
 // the API response path.
 var (
-	// ErrLinkFileNotFound mirrors Python "File not found!".
+	// ErrLinkFileNotFound 文件不存在（对齐 Python）。
 	ErrLinkFileNotFound = errors.New("File not found!")
-	// ErrLinkDatasetNotFound mirrors Python "Can't find this dataset!".
+	// ErrLinkDatasetNotFound 知识库不存在。
 	ErrLinkDatasetNotFound = errors.New("Can't find this dataset!")
-	// ErrLinkNoAuthorization mirrors Python "No authorization.".
+	// ErrLinkNoAuthorization 无访问权限。
 	ErrLinkNoAuthorization = errors.New("No authorization.")
-	// ErrLinkInternal is a generic, safe-to-expose internal failure.
+	// ErrLinkInternal 可安全暴露的通用内部错误。
 	ErrLinkInternal = errors.New("Internal server error.")
 )
 
-// File2DocumentService handles linking files to datasets.
+// File2DocumentService 处理文件与知识库的关联转换。
 type File2DocumentService struct {
 	fileDAO          *dao.FileDAO
 	file2DocumentDAO *dao.File2DocumentDAO
@@ -53,7 +55,7 @@ type File2DocumentService struct {
 	documentSvc      *DocumentService
 }
 
-// NewFile2DocumentService creates a File2DocumentService.
+// NewFile2DocumentService 构造服务实例。
 func NewFile2DocumentService() *File2DocumentService {
 	return &File2DocumentService{
 		fileDAO:          dao.NewFileDAO(),
@@ -64,13 +66,13 @@ func NewFile2DocumentService() *File2DocumentService {
 	}
 }
 
-// LinkToDatasetsRequest is the body for POST /files/link-to-datasets.
+// LinkToDatasetsRequest POST /files/link-to-datasets 请求体。
 type LinkToDatasetsRequest struct {
 	FileIDs []string `json:"file_ids"`
 	KbIDs   []string `json:"kb_ids"`
 }
 
-// LinkToDatasets validates inputs, expands folders, checks permissions, and
+// LinkToDatasets 校验输入、展开文件夹、鉴权后在后台 goroutine 执行 convertFiles。
 // schedules convertFiles in a goroutine — mirroring Python convert().
 // Returns immediately (fire-and-forget for the heavy DB work).
 //
@@ -155,7 +157,7 @@ func (s *File2DocumentService) LinkToDatasets(userID string, req *LinkToDatasets
 	return nil
 }
 
-// convertFiles mirrors Python _convert_files: for each file, remove existing
+// convertFiles 对齐 Python _convert_files：清理旧文档后在各 KB 创建新文档与映射。
 // documents (routing through DocumentService so KB counters are updated), drop
 // the file2document mappings, then create a new document in each target KB and
 // a fresh mapping.
@@ -239,7 +241,7 @@ func (s *File2DocumentService) convertFiles(fileIDs, kbIDs []string, userID stri
 	return nil
 }
 
-// getAllInnermostFileIDs recursively collects all non-folder file IDs under a folder.
+// getAllInnermostFileIDs 递归收集文件夹下全部叶子文件 ID。
 // Mirrors Python FileService.get_all_innermost_file_ids.
 func (s *File2DocumentService) getAllInnermostFileIDs(folderID string) ([]string, error) {
 	children, err := s.fileDAO.ListByParentID(folderID)
@@ -261,7 +263,7 @@ func (s *File2DocumentService) getAllInnermostFileIDs(folderID string) ([]string
 	return ids, nil
 }
 
-// checkFileTeamPermission mirrors Python check_file_team_permission:
+// checkFileTeamPermission 校验文件团队权限（租户或 KB 团队）。
 // true when file.TenantID == userID or user is in the file tenant's team.
 func (s *File2DocumentService) checkFileTeamPermission(file *entity.File, userID string) bool {
 	if file.TenantID == userID {
@@ -285,13 +287,13 @@ func (s *File2DocumentService) checkFileTeamPermission(file *entity.File, userID
 	return false
 }
 
-// checkKBTeamPermission mirrors Python check_kb_team_permission:
+// checkKBTeamPermission 校验知识库团队权限。
 // true when kb.TenantID == userID or user is in the KB tenant's team.
 func (s *File2DocumentService) checkKBTeamPermission(kb *entity.Knowledgebase, userID string) bool {
 	return hasKBTeamPermission(kb, userID, dao.NewTenantDAO())
 }
 
-// dedupeStrings returns the input slice with duplicates removed, preserving the
+// dedupeStrings 去重字符串切片并保持首次出现顺序。
 // first-seen order.
 func dedupeStrings(in []string) []string {
 	seen := make(map[string]struct{}, len(in))
@@ -305,3 +307,4 @@ func dedupeStrings(in []string) []string {
 	}
 	return out
 }
+// file2document.go — 文件关联知识库：校验权限、展开文件夹并异步转换为文档。

@@ -16,6 +16,8 @@
 
 package service
 
+// document.go 提供文档 CRUD、解析队列、元数据与上传等核心服务逻辑。
+
 import (
 	"archive/zip"
 	"bytes"
@@ -57,7 +59,7 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-// DocumentService document service
+// DocumentService 文档服务，协调 DAO、搜索引擎与摄取任务。
 type DocumentService struct {
 	documentDAO         *dao.DocumentDAO
 	kbDAO               *dao.KnowledgebaseDAO
@@ -73,7 +75,7 @@ type DocumentService struct {
 	api4ConvDAO         *dao.API4ConversationDAO
 }
 
-// NewDocumentService create document service
+// NewDocumentService 构造 DocumentService 并注入依赖。
 func NewDocumentService() *DocumentService {
 	cfg := server.GetConfig()
 	return &DocumentService{
@@ -92,7 +94,7 @@ func NewDocumentService() *DocumentService {
 	}
 }
 
-// CreateDocumentRequest create document request
+// CreateDocumentRequest 创建文档的请求体。
 type CreateDocumentRequest struct {
 	Name      string `json:"name" binding:"required"`
 	KbID      string `json:"kb_id" binding:"required"`
@@ -102,7 +104,7 @@ type CreateDocumentRequest struct {
 	Source    string `json:"source"`
 }
 
-// UpdateDocumentRequest update document request
+// UpdateDocumentRequest 更新文档字段的请求体。
 type UpdateDocumentRequest struct {
 	Name        *string  `json:"name"`
 	Run         *string  `json:"run"`
@@ -112,7 +114,7 @@ type UpdateDocumentRequest struct {
 	ProgressMsg *string  `json:"progress_msg"`
 }
 
-// DocumentResponse document response
+// DocumentResponse 文档 API 响应 DTO。
 type DocumentResponse struct {
 	ID              string  `json:"id"`
 	Name            *string `json:"name,omitempty"`
@@ -164,7 +166,7 @@ type UpdateDatasetDocumentRequest struct {
 	MetaFields   map[string]any `json:"meta_fields"`
 }
 
-// PATCH /api/v1/datasets/:dataset_id/documents/:document_id.
+// PATCH /api/v1/datasets/:dataset_id/documents/:document_id 更新响应。
 type UpdateDatasetDocumentResponse struct {
 	ID              string                 `json:"id"`
 	Thumbnail       *string                `json:"thumbnail,omitempty"`
@@ -233,7 +235,7 @@ var artifactForceAttachmentContentTypes = map[string]struct{}{
 
 var artifactUnsafeFilenameChars = regexp.MustCompile(`[^\pL\pN_.-]`)
 
-// GetDocumentImage retrieves an image object from storage.
+// GetDocumentImage 从对象存储读取文档关联图片二进制。
 func (s *DocumentService) GetDocumentImage(imageID string) ([]byte, error) {
 	parts := strings.SplitN(imageID, "-", 2)
 	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
@@ -248,7 +250,7 @@ func (s *DocumentService) GetDocumentImage(imageID string) ([]byte, error) {
 	return storageImpl.Get(parts[0], parts[1])
 }
 
-// GetDocumentArtifact retrieves a sandbox artifact from object storage.
+// GetDocumentArtifact 读取 CodeExec 沙箱制品，先校验用户会话授权再访问存储。
 //
 // userID scopes the lookup: a CodeExec sandbox artifact is only
 // returned when the caller owns (or has team access to) at least
@@ -405,7 +407,7 @@ func sandboxArtifactBucket() string {
 	return "sandbox-artifacts"
 }
 
-// Accessible reports whether docID belongs to a knowledge base
+// Accessible 判断用户是否可访问指定文档所属知识库（Agent 端点鉴权用）。
 // reachable by userID. Used by agent endpoints (e.g. RerunAgent,
 // PR #15145) to gate destructive / run-again actions on a document
 // the caller has access to. Returns false on any lookup failure or
@@ -556,7 +558,7 @@ func (s *DocumentService) DownloadDocument(datasetID, docID string) (*DownloadDo
 	}, nil
 }
 
-// CreateDocument create document
+// CreateDocument 插入新文档记录。
 func (s *DocumentService) CreateDocument(req *CreateDocumentRequest) (*entity.Document, error) {
 	document := &entity.Document{
 		ID:           utility.GenerateUUID(),
@@ -578,7 +580,7 @@ func (s *DocumentService) CreateDocument(req *CreateDocumentRequest) (*entity.Do
 	return document, nil
 }
 
-// GetDocumentByID get document by ID
+// GetDocumentByID 按 ID 查询文档。
 func (s *DocumentService) GetDocumentByID(id string) (*DocumentResponse, error) {
 	document, err := s.documentDAO.GetByID(id)
 	if err != nil {
@@ -588,7 +590,7 @@ func (s *DocumentService) GetDocumentByID(id string) (*DocumentResponse, error) 
 	return s.toResponse(document), nil
 }
 
-// UpdateDocument update document
+// UpdateDocument 更新文档字段。
 func (s *DocumentService) UpdateDocument(id string, req *UpdateDocumentRequest) error {
 	document, err := s.documentDAO.GetByID(id)
 	if err != nil {
@@ -617,12 +619,12 @@ func (s *DocumentService) UpdateDocument(id string, req *UpdateDocumentRequest) 
 	return s.documentDAO.Update(document)
 }
 
-// DeleteDocument delete document — delegates to full cleanup logic.
+// DeleteDocument 删除文档并清理分块、存储与 KB 计数。
 func (s *DocumentService) DeleteDocument(id string) error {
 	return s.deleteDocumentFull(id)
 }
 
-// DeleteDocuments deletes multiple documents under a dataset.
+// DeleteDocuments 批量删除知识库下多个文档。
 //
 //	ids: specific document IDs; deleteAll: delete all docs in the dataset.
 //	Returns the number of successfully deleted documents.
@@ -689,7 +691,7 @@ func (s *DocumentService) deleteDocumentFull(docID string) error {
 	return nil
 }
 
-// RemoveDocumentKeepFile removes a document's chunks/metadata and the document
+// RemoveDocumentKeepFile 删除文档及索引数据但保留关联 File 记录（重新关联用）。
 // row, decrementing the KB counters (doc_num/chunk_num/token_num), WITHOUT
 // deleting the underlying file record, its storage blob, or its file2document
 // mappings. Mirrors Python DocumentService.remove_document — the caller is
@@ -706,7 +708,7 @@ func (s *DocumentService) RemoveDocumentKeepFile(docID string) error {
 	return s.deleteDocRecordWithCounters(doc, kb.ID)
 }
 
-// InsertDocument creates a document row and increments the owning KB's doc_num
+// InsertDocument 事务内创建文档并递增 KB doc_num 计数。
 // counter in a single transaction. Mirrors Python DocumentService.insert, which
 // updates dataset/document counters on insert. The document's ID and timestamps
 // are populated by the caller / model hooks before insertion.
@@ -861,7 +863,7 @@ func (s *DocumentService) cleanupFileReferences(docID string) {
 	}
 }
 
-// ListDocuments list documents
+// ListDocuments 分页列出文档。
 func (s *DocumentService) ListDocuments(page, pageSize int) ([]*DocumentResponse, int64, error) {
 	offset := (page - 1) * pageSize
 	documents, total, err := s.documentDAO.List(offset, pageSize)
@@ -1010,7 +1012,7 @@ func (s *DocumentService) BatchUpdateDocumentStatus(userID, datasetID, status st
 	return result, common.CodeSuccess, nil
 }
 
-// ListDocumentsByDatasetID list documents by knowledge base ID
+// ListDocumentsByDatasetID 按知识库 ID 列出文档。
 func (s *DocumentService) ListDocumentsByDatasetID(kbID, keywords string, page, pageSize int) ([]*entity.DocumentListItem, int64, error) {
 	return s.ListDocumentsByDatasetIDWithOptions(dao.DocumentListOptions{
 		KbID:     kbID,
@@ -1020,7 +1022,7 @@ func (s *DocumentService) ListDocumentsByDatasetID(kbID, keywords string, page, 
 	}, page, pageSize)
 }
 
-// ListDocumentsByDatasetIDWithOptions lists documents by knowledge base ID with filters.
+// ListDocumentsByDatasetIDWithOptions 带过滤/排序/分页列出知识库文档。
 func (s *DocumentService) ListDocumentsByDatasetIDWithOptions(opts dao.DocumentListOptions, page, pageSize int) ([]*entity.DocumentListItem, int64, error) {
 	opts.Offset = (page - 1) * pageSize
 	opts.Limit = pageSize
@@ -1040,7 +1042,7 @@ func (s *DocumentService) ListDocumentsByDatasetIDWithOptions(opts dao.DocumentL
 	return responses, total, nil
 }
 
-// GetDocumentFiltersByDatasetID returns aggregate filter values for documents in a dataset.
+// GetDocumentFiltersByDatasetID 返回数据集文档筛选项聚合值。
 func (s *DocumentService) GetDocumentFiltersByDatasetID(opts dao.DocumentListOptions) (map[string]interface{}, int64, error) {
 	filters, total, err := s.documentDAO.GetFilterByKBID(opts)
 	if err != nil {
@@ -2003,7 +2005,7 @@ func (s *DocumentService) ParseDocuments(datasetID, userID string, docIDs []stri
 	return responses, nil
 }
 
-// StopParseDocuments stops parsing for the given documents in a dataset.
+// StopParseDocuments 取消指定文档解析任务并更新 run 状态为 CANCEL。
 // It sets Redis cancel signals for associated tasks and updates doc.run to CANCEL.
 // Returns a map with success_count and optionally errors.
 func (s *DocumentService) StopParseDocuments(datasetID string, docIDs []string) (map[string]interface{}, error) {
@@ -2159,7 +2161,7 @@ type GetMetadataSummaryResponse struct {
 	Summary map[string]interface{} `json:"summary"`
 }
 
-// GetMetadataSummary get metadata summary for documents
+// GetMetadataSummary 汇总知识库文档元数据字段分布。
 func (s *DocumentService) GetMetadataSummary(kbID string, docIDs []string) (map[string]interface{}, error) {
 	tenantID, err := s.metadataSvc.GetTenantIDByKBID(kbID)
 	if err != nil {
@@ -2175,7 +2177,7 @@ func (s *DocumentService) GetMetadataSummary(kbID string, docIDs []string) (map[
 	return aggregateMetadata(searchResult.MetadataRecords), nil
 }
 
-// SetDocumentMetadata sets metadata for a document in the document engine
+// SetDocumentMetadata 在搜索引擎中为文档写入元数据键值。
 func (s *DocumentService) SetDocumentMetadata(docID string, meta map[string]interface{}) error {
 	// Get document to find kb_id
 	doc, err := s.documentDAO.GetByID(docID)
@@ -2196,7 +2198,7 @@ func (s *DocumentService) SetDocumentMetadata(docID string, meta map[string]inte
 	return nil
 }
 
-// DeleteDocumentMetadata deletes metadata keys for a document in the document engine
+// DeleteDocumentMetadata 删除文档在引擎中的指定元数据键。
 func (s *DocumentService) DeleteDocumentMetadata(docID string, keys []string) error {
 	// Get document to find kb_id
 	doc, err := s.documentDAO.GetByID(docID)
@@ -3171,7 +3173,7 @@ func mapDocumentRunStatus(run *string) string {
 	}
 }
 
-// UploadLocalDocuments stores each uploaded file in object storage and inserts a
+// UploadLocalDocuments 将上传文件写入存储并创建文档记录，对齐 Python upload_document。
 // matching Document row into the dataset. It mirrors Python
 // FileService.upload_document: it derives parser_id by filetype, merges the
 // optional parser_config override into the dataset config, dedup-renames the
@@ -3271,7 +3273,7 @@ func (s *DocumentService) UploadLocalDocuments(kb *entity.Knowledgebase, tenantI
 	return results, errMsgs
 }
 
-// UploadEmptyDocument inserts a zero-byte "virtual" document into the dataset.
+// UploadEmptyDocument 插入零字节虚拟文档占位记录。
 func (s *DocumentService) UploadEmptyDocument(kb *entity.Knowledgebase, tenantID, name string) (map[string]interface{}, common.ErrorCode, error) {
 	// A transient lookup failure means the existing-name set is unknown; fail
 	// rather than write blind and risk a duplicate.
@@ -3594,7 +3596,7 @@ type BatchUpdateDocumentMetadatasResponse struct {
 	MatchedDocs int `json:"matched_docs"`
 }
 
-// BatchUpdateDocumentMetadatas implements the shared logic for
+// BatchUpdateDocumentMetadatas 批量更新/删除文档元数据的共享实现。
 // PATCH /datasets/:dataset_id/documents/metadatas  and
 // POST  /datasets/:dataset_id/metadata/update.
 func (s *DocumentService) BatchUpdateDocumentMetadatas(
@@ -4027,3 +4029,4 @@ func firstScalarMetadataValue(value interface{}) (interface{}, bool) {
 	}
 	return value, true
 }
+// document.go — 文档生命周期：上传、解析、分块、元数据、沙箱制品与批量操作。

@@ -16,6 +16,8 @@
 
 package service
 
+// kb_prompt.go 将检索分块格式化为 ask/RAG 提示词上下文。
+
 import (
 	"fmt"
 	"strings"
@@ -23,7 +25,7 @@ import (
 	"ragflow/internal/tokenizer"
 )
 
-// ChunksFormat normalizes retrieval chunks into the response format expected by
+// ChunksFormat 将 SourcedChunk 规范化为 ask 端点期望的响应 map 列表。
 // the ask endpoint.  It matches the Python chunks_format() in rag/prompts/generator.py.
 // Returns an empty slice for nil or empty input.
 func ChunksFormat(chunks []SourcedChunk) []map[string]interface{} {
@@ -52,7 +54,7 @@ func ChunksFormat(chunks []SourcedChunk) []map[string]interface{} {
 	return out
 }
 
-// KbPrompt builds a knowledge-base context string from retrieved chunks for use
+// KbPrompt 从检索分块构建 kb_prompt 上下文字符串，按 token 预算截断。
 // in the LLM system prompt.  Truncation uses the C++ tokenizer when available;
 // falls back to a character-based approximation on systems where the tokenizer
 // dictionary is not installed.
@@ -79,7 +81,7 @@ func KbPrompt(chunks []SourcedChunk, maxTokens int) string {
 	return b.String()
 }
 
-// formatChunkEntry renders a single chunk as a tree-structured entry for the
+// formatChunkEntry 将单分块渲染为树形 LLM 提示条目（ID/Title/URL/Content）。
 // LLM prompt.  Format matches Python kb_prompt() in rag/prompts/generator.py:
 //
 //	ID: <id>
@@ -107,3 +109,4 @@ func formatChunkEntry(ck SourcedChunk) string {
 	b.WriteString("\n\n")
 	return b.String()
 }
+// kb_prompt.go — 检索分块格式化与 kb_prompt 上下文拼接（对齐 Python generator）。

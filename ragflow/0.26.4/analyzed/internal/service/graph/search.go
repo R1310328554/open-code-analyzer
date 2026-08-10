@@ -1,5 +1,7 @@
 package graph
 
+// search.go 构建图谱 ES 检索请求并解析实体/关系/社区 chunk。
+
 import (
 	"context"
 	"fmt"
@@ -10,7 +12,7 @@ import (
 	modelModule "ragflow/internal/entity/models"
 )
 
-// NhopEntityNames extracts unique entity names from an n_hop_with_weight JSON string.
+// NhopEntityNames 从 n_hop_with_weight JSON 提取唯一实体名列表。
 func NhopEntityNames(nHopJSON string) []string {
 	if nHopJSON == "" {
 		return nil
@@ -35,7 +37,7 @@ func NhopEntityNames(nHopJSON string) []string {
 	return result
 }
 
-// SearchEntities searches for KG entities matching a question.
+// SearchEntities 按问题检索 KG 实体（混合向量+文本）。
 func SearchEntities(ctx context.Context, docEngine engine.DocEngine, kbIDs []string, question string, embModel *modelModule.EmbeddingModel, topN int) ([]KGEntity, error) {
 	dense, err := buildDenseExpr(embModel, question, topN)
 	if err != nil {
@@ -49,7 +51,7 @@ func SearchEntities(ctx context.Context, docEngine engine.DocEngine, kbIDs []str
 	return ParseEntityChunks(result.Chunks), nil
 }
 
-// SearchEntitiesByTypes searches for KG entities by type keywords.
+// SearchEntitiesByTypes 按实体类型关键词检索实体。
 func SearchEntitiesByTypes(ctx context.Context, docEngine engine.DocEngine, kbIDs []string, typeKeywords []string, topN int) ([]KGEntity, error) {
 	searchReq := buildEntityTypeSearchRequest(kbIDs, typeKeywords, topN)
 	result, err := docEngine.Search(ctx, searchReq)
@@ -59,7 +61,7 @@ func SearchEntitiesByTypes(ctx context.Context, docEngine engine.DocEngine, kbID
 	return ParseEntityChunks(result.Chunks), nil
 }
 
-// SearchRelations searches for KG relations matching a question.
+// SearchRelations 按问题检索 KG 关系。
 func SearchRelations(ctx context.Context, docEngine engine.DocEngine, kbIDs []string, question string, embModel *modelModule.EmbeddingModel, topN int) ([]KGRelation, error) {
 	dense, err := buildDenseExpr(embModel, question, topN)
 	if err != nil {
@@ -73,7 +75,7 @@ func SearchRelations(ctx context.Context, docEngine engine.DocEngine, kbIDs []st
 	return ParseRelationChunks(result.Chunks), nil
 }
 
-// SearchCommunityReports searches for community reports related to given entities.
+// SearchCommunityReports 检索与给定实体相关的社区报告。
 func SearchCommunityReports(ctx context.Context, docEngine engine.DocEngine, kbIDs []string, entityNames []string, topN int) ([]KGCommunityReport, error) {
 	searchReq := buildCommunitySearchRequest(kbIDs, entityNames, topN)
 	result, err := docEngine.Search(ctx, searchReq)
@@ -83,7 +85,7 @@ func SearchCommunityReports(ctx context.Context, docEngine engine.DocEngine, kbI
 	return ParseCommunityReportChunks(result.Chunks), nil
 }
 
-// SearchTypeSamples retrieves the typeu2192entities mapping from ES.
+// SearchTypeSamples 从 ES 读取类型→实体样例映射。
 func SearchTypeSamples(ctx context.Context, docEngine engine.DocEngine, kbIDs []string) (map[string][]string, error) {
 	searchReq := buildTypeSamplesSearchRequest(kbIDs)
 	result, err := docEngine.Search(ctx, searchReq)
@@ -93,7 +95,7 @@ func SearchTypeSamples(ctx context.Context, docEngine engine.DocEngine, kbIDs []
 	return ParseTypeSamplesChunks(result.Chunks), nil
 }
 
-// buildDenseExpr computes the query vector and returns a MatchDenseExpr.
+// buildDenseExpr 对问题做嵌入并构造稠密检索表达式。
 func buildDenseExpr(embModel *modelModule.EmbeddingModel, question string, topN int) (*types.MatchDenseExpr, error) {
 	if embModel == nil || question == "" {
 		return nil, nil
@@ -117,7 +119,7 @@ func buildDenseExpr(embModel *modelModule.EmbeddingModel, question string, topN 
 	}, nil
 }
 
-// buildHybridExpr returns MatchExprs for hybrid search (dense + text + fusion).
+// buildHybridExpr 返回稠密+文本+融合的 MatchExprs。
 func buildHybridExpr(dense *types.MatchDenseExpr, text *types.MatchTextExpr, topN int) []interface{} {
 	if dense == nil {
 		return []interface{}{text}
@@ -126,7 +128,7 @@ func buildHybridExpr(dense *types.MatchDenseExpr, text *types.MatchTextExpr, top
 	return []interface{}{dense, text, fusion}
 }
 
-// buildEntitySearchRequest constructs a SearchRequest for KG entities.
+// buildEntitySearchRequest 构造 KG 实体 SearchRequest。
 func buildEntitySearchRequest(kbIDs []string, question string, dense *types.MatchDenseExpr, topN int) *types.SearchRequest {
 	req := &types.SearchRequest{
 		KbIDs:        kbIDs,
@@ -145,7 +147,7 @@ func buildEntitySearchRequest(kbIDs []string, question string, dense *types.Matc
 	return req
 }
 
-// buildEntityTypeSearchRequest constructs a SearchRequest for KG entities by type.
+// buildEntityTypeSearchRequest 构造按类型过滤实体的 SearchRequest。
 func buildEntityTypeSearchRequest(kbIDs []string, typeKeywords []string, topN int) *types.SearchRequest {
 	req := &types.SearchRequest{
 		KbIDs:        kbIDs,
@@ -163,7 +165,7 @@ func buildEntityTypeSearchRequest(kbIDs []string, typeKeywords []string, topN in
 	return req
 }
 
-// buildRelationSearchRequest constructs a SearchRequest for KG relations.
+// buildRelationSearchRequest 构造 KG 关系 SearchRequest。
 func buildRelationSearchRequest(kbIDs []string, question string, dense *types.MatchDenseExpr, topN int) *types.SearchRequest {
 	req := &types.SearchRequest{
 		KbIDs:        kbIDs,
@@ -182,7 +184,7 @@ func buildRelationSearchRequest(kbIDs []string, question string, dense *types.Ma
 	return req
 }
 
-// buildCommunitySearchRequest constructs a SearchRequest for KG community reports.
+// buildCommunitySearchRequest 构造社区报告 SearchRequest。
 func buildCommunitySearchRequest(kbIDs []string, entityNames []string, topN int) *types.SearchRequest {
 	req := &types.SearchRequest{
 		KbIDs:        kbIDs,
@@ -201,7 +203,7 @@ func buildCommunitySearchRequest(kbIDs []string, entityNames []string, topN int)
 	return req
 }
 
-// buildTypeSamplesSearchRequest constructs a SearchRequest for type samples.
+// buildTypeSamplesSearchRequest 构造 ty2ents 样例 SearchRequest。
 func buildTypeSamplesSearchRequest(kbIDs []string) *types.SearchRequest {
 	return &types.SearchRequest{
 		KbIDs:        kbIDs,
@@ -211,7 +213,7 @@ func buildTypeSamplesSearchRequest(kbIDs []string) *types.SearchRequest {
 	}
 }
 
-// ParseEntityChunks converts raw search result chunks into KGEntity slices.
+// ParseEntityChunks 将原始 chunk 列表解析为 []KGEntity。
 func ParseEntityChunks(chunks []map[string]interface{}) []KGEntity {
 	var entities []KGEntity
 	for _, chunk := range chunks {
@@ -241,7 +243,7 @@ func ParseEntityChunks(chunks []map[string]interface{}) []KGEntity {
 	return entities
 }
 
-// ParseRelationChunks converts raw search result chunks into KGRelation slices.
+// ParseRelationChunks 将原始 chunk 解析为 []KGRelation。
 func ParseRelationChunks(chunks []map[string]interface{}) []KGRelation {
 	var relations []KGRelation
 	for _, chunk := range chunks {
@@ -267,7 +269,7 @@ func ParseRelationChunks(chunks []map[string]interface{}) []KGRelation {
 	return relations
 }
 
-// ParseCommunityReportChunks converts raw search result chunks into KGCommunityReport slices.
+// ParseCommunityReportChunks 将 chunk 解析为 []KGCommunityReport。
 func ParseCommunityReportChunks(chunks []map[string]interface{}) []KGCommunityReport {
 	var reports []KGCommunityReport
 	for _, chunk := range chunks {
@@ -286,7 +288,7 @@ func ParseCommunityReportChunks(chunks []map[string]interface{}) []KGCommunityRe
 	return reports
 }
 
-// ParseTypeSamplesChunks converts raw search result chunks into a typeu2192entities map.
+// ParseTypeSamplesChunks 将 chunk 解析为类型→实体列表 map。
 func ParseTypeSamplesChunks(chunks []map[string]interface{}) map[string][]string {
 	typeMap := make(map[string][]string)
 	for _, chunk := range chunks {
@@ -304,3 +306,4 @@ func ParseTypeSamplesChunks(chunks []map[string]interface{}) map[string][]string
 	}
 	return typeMap
 }
+// graph/search.go — 图谱 ES 检索请求构建与实体/关系/社区报告 chunk 解析。
