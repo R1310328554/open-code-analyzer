@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T10:10:56Z",
-  "files": [
-    "scim/model/src/main/java/org/keycloak/scim/model/filter/ScimJPAPredicateEvaluator.java",
-    "scim/model/src/main/java/org/keycloak/scim/model/filter/ScimJPAPredicateProvider.java",
-    "scim/model/src/main/java/org/keycloak/scim/model/group/GroupCoreModelSchema.java",
-    "scim/model/src/main/java/org/keycloak/scim/model/group/GroupResourceTypeProvider.java",
-    "scim/model/src/main/java/org/keycloak/scim/model/group/GroupResourceTypeProviderFactory.java",
-    "scim/model/src/main/java/org/keycloak/scim/model/resourcetype/ResourceTypeProvider.java",
-    "scim/model/src/main/java/org/keycloak/scim/model/resourcetype/ResourceTypeProviderFactory.java",
-    "scim/model/src/main/java/org/keycloak/scim/model/schema/SchemaResourceTypeProvider.java",
-    "scim/model/src/main/java/org/keycloak/scim/model/schema/SchemaResourceTypeProviderFactory.java",
-    "scim/model/src/main/java/org/keycloak/scim/model/user/AbstractUserModelSchema.java",
-    "scim/model/src/main/java/org/keycloak/scim/model/user/UserCoreModelSchema.java",
-    "scim/model/src/main/java/org/keycloak/scim/model/user/UserEnterpriseModelSchema.java",
-    "scim/model/src/main/java/org/keycloak/scim/model/user/UserExtensionModelSchema.java",
-    "scim/model/src/main/java/org/keycloak/scim/model/user/UserResourceTypeProvider.java",
-    "scim/model/src/main/java/org/keycloak/scim/model/user/UserResourceTypeProviderFactory.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 3088,
-  "done": 2895
+  "done": 2910
 }
