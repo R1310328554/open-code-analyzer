@@ -15,23 +15,8 @@
     "cmd/drone-server/inject_store.go",
     "cmd/drone-server/main.go",
     "cmd/drone-server/wire.go",
-    "cmd/drone-server/wire_gen.go",
-    "core/admission.go",
-    "core/batch.go",
-    "core/build.go",
-    "core/cancel.go",
-    "core/card.go",
-    "core/commit.go",
-    "core/config.go",
-    "core/convert.go",
-    "core/cron.go",
-    "core/event.go",
-    "core/file.go",
-    "core/hook.go",
-    "core/license.go",
-    "core/linker.go",
-    "core/logs.go"
+    "cmd/drone-server/wire_gen.go"
   ],
   "remaining_pending": 358,
-  "done": 0
+  "done": 15
 }
