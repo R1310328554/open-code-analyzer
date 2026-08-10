@@ -35,6 +35,9 @@ import org.keycloak.truststore.TruststoreProvider;
 import org.jboss.logging.Logger;
 
 /**
+ * X509 证书吊销列表（CRL）校验工具。
+ * <p>验证 CRL 签名并检查客户端证书是否已被吊销。</p>
+ *
  * @author <a href="mailto:brat000012001@gmail.com">Peter Nalyvayko</a>
  * @version $Revision: 1 $
  * @since 10/31/2016
@@ -46,11 +49,12 @@ public final class CRLUtils {
 
 
     /**
-     * Check the signature on CRL and check if 1st certificate from the chain ((The actual certificate from the client)) is valid and not available on CRL.
+     * 校验 CRL 签名，并检查证书链首项（客户端证书）是否未被吊销。
      *
-     * @param certs The 1st certificate is the actual certificate of the user. The other certificates represents the certificate chain
-     * @param crl Given CRL
-     * @throws GeneralSecurityException if some error in validation happens. Typically certificate not valid, or CRL signature not valid
+     * @param certs 首项为客户端证书，其余为证书链
+     * @param crl 待校验的 CRL
+     * @param session Keycloak 会话（用于访问信任库）
+     * @throws GeneralSecurityException 签名无效、证书已吊销或信任链不完整时抛出
      */
     public static void check(X509Certificate[] certs, X509CRL crl, KeycloakSession session) throws GeneralSecurityException {
         if (certs == null || certs.length < 1) {
@@ -60,7 +64,7 @@ public final class CRLUtils {
         X500Principal crlIssuerPrincipal = crl.getIssuerX500Principal();
         X509Certificate crlSignatureCertificate = null;
 
-        // Try to find the certificate in the CA chain, which was used to sign the CRL
+        // 在 CA 证书链中查找签发 CRL 的证书
         for (X509Certificate currentCACert: certs) {
             if (crlIssuerPrincipal.equals(currentCACert.getSubjectX500Principal())) {
                 crlSignatureCertificate = currentCACert;
@@ -70,16 +74,16 @@ public final class CRLUtils {
             }
         }
 
-        // Try to find the CRL issuer certificate in the truststore
+        // 证书链中未找到时，回退到信任库查找 CRL 签发者
         if (crlSignatureCertificate == null) {
             log.tracef("Not found CRL issuer '%s' in the CA chain of the certificate. Fallback to lookup CRL issuer in the truststore", crlIssuerPrincipal);
             findCRLSignatureCertificateInTruststore(session, certs, crl);
         } else {
-            // Verify signature on CRL with the previous found certificate
+            // 用找到的证书验证 CRL 签名
             crl.verify(crlSignatureCertificate.getPublicKey());
         }
 
-        // Finally check if
+        // 最后检查客户端证书是否在 CRL 中
         if (crl.isRevoked(certs[0])) {
             String message = String.format("Certificate has been revoked, certificate's subject: %s", certs[0].getSubjectDN().getName());
             log.debug(message);
@@ -88,6 +92,7 @@ public final class CRLUtils {
     }
 
 
+    /** 在信任库中定位 CRL 签发者证书并验证与客户端证书链的信任锚关系。 */
     private static X509Certificate findCRLSignatureCertificateInTruststore(KeycloakSession session, X509Certificate[] certs, X509CRL crl) throws GeneralSecurityException {
         TruststoreProvider truststoreProvider = session.getProvider(TruststoreProvider.class);
         if (truststoreProvider == null || truststoreProvider.getTruststore() == null) {
@@ -121,7 +126,7 @@ public final class CRLUtils {
             log.tracef("Found CRL issuer certificate with subject '%s' in the truststore. Verifying trust anchor", crlIssuerPrincipal);
         }
 
-        // Check if CRL issuer has trust anchor with the checked certificate (See https://tools.ietf.org/html/rfc5280#section-6.3.3 , paragraph (f))
+        // 检查 CRL 签发者与待验证书链是否存在信任锚（RFC 5280 §6.3.3(f)）
         Set<X500Principal> certificateCAPrincipals = Arrays.asList(certs).stream()
                 .map(X509Certificate::getIssuerX500Principal)
                 .collect(Collectors.toSet());
@@ -135,7 +140,7 @@ public final class CRLUtils {
             }
         }
 
-        // Anchor was not in the provided certificate chain, check the truststore
+        // 信任锚不在提供的证书链中，继续在信任库中查找
         List<X509Certificate> currentCRLAnchorCertificates = intermediateCerts.get(currentCRLAnchorPrincipal);
         if (currentCRLAnchorCertificates == null) {
             currentCRLAnchorCertificates = rootCerts.get(currentCRLAnchorPrincipal);

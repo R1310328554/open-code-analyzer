@@ -26,13 +26,14 @@ import org.keycloak.validate.ValidationError;
 import org.keycloak.validate.ValidatorConfig;
 
 /**
- * Validator to check that User Profile username is provided. Expects List of Strings as input.
- * 
- * @author Vlastimil Elias <velias@redhat.com>
+ * 校验用户 Profile 用户名已提供且非空白。
+ * <p>输入为 {@code List<String>}，取首个元素校验。</p>
  *
+ * @author Vlastimil Elias <velias@redhat.com>
  */
 public class UsernameHasValueValidator implements SimpleValidator {
 
+    /** 校验器 SPI ID。 */
     public static final String ID = "up-username-has-value";
 
     @Override

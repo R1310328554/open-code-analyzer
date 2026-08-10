@@ -9,19 +9,22 @@ import java.nio.file.Paths;
 import org.keycloak.services.clientpolicy.ClientPoliciesUtil;
 
 /**
+ * 配置文件读取工具。
+ * <p>优先从 classpath 加载 JSON，否则从 JBoss 配置目录读取。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class FileUtils {
 
     /**
-     * Read the input stream from the specified file
+     * 从 classpath 或 JBoss 配置目录读取 JSON 文件输入流。
      *
-     * @param fileName file name without path
-     * @return input stream
-     * @throws IOException
+     * @param fileName 不含路径的文件名
+     * @return 文件输入流
+     * @throws IOException 文件不存在或不可读时抛出
      */
     public static InputStream getJsonFileFromClasspathOrConfFolder(String fileName) throws IOException {
-        // first try to read the json configuration file from classpath
+        // 优先从 classpath 读取 JSON 配置
         InputStream is = ClientPoliciesUtil.class.getResourceAsStream("/" + fileName);
         if (is == null) {
             Path path = Paths.get(System.getProperty("jboss.server.config.dir")).resolve(fileName);

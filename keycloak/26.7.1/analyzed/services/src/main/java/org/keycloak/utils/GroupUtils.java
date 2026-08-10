@@ -21,35 +21,34 @@ import org.keycloak.services.resources.admin.fgap.GroupPermissionEvaluator;
 
 
 
+/**
+ * 组层级构建与成员关系查询工具。
+ * <p>支持权限感知的组树填充及组织组简化版本。</p>
+ */
 public class GroupUtils {
 
-    /**
-     * Functional interface for converting a GroupModel to GroupRepresentation.
-     */
+    /** 将 {@link GroupModel} 转换为 {@link GroupRepresentation} 的函数式接口。 */
     @FunctionalInterface
     private interface GroupToRepresentationMapper {
         GroupRepresentation apply(GroupModel group);
     }
 
-    /**
-     * Functional interface for filtering groups based on permissions or other criteria.
-     */
+    /** 按权限或其他条件过滤组的函数式接口。 */
     @FunctionalInterface
     private interface GroupFilter {
         boolean shouldInclude(GroupModel group);
     }
 
     /**
-     * Core implementation for building group hierarchy from subgroups.
-     * This private method contains the shared logic used by both public variants.
+     * 从子组向上构建组层级树的核心实现（两个公开方法的共享逻辑）。
      *
-     * @param session The active keycloak session
-     * @param realm The realm to operate on
-     * @param groups The groups that we want to populate the hierarchy for
-     * @param mapper Function to convert GroupModel to GroupRepresentation
-     * @param filter Function to determine if a group should be included based on permissions
-     * @param subGroupsCount Whether to populate subgroup counts
-     * @return A stream of groups that contain all relevant groups from the root down with no extra siblings
+     * @param session 当前 Keycloak 会话
+     * @param realm 目标领域
+     * @param groups 待填充层级的起始组流
+     * @param mapper 组模型到表示对象的转换函数
+     * @param filter 是否包含某组的过滤函数
+     * @param subGroupsCount 是否填充子组计数
+     * @return 从根到叶、无多余兄弟节点的组表示流
      */
     private static Stream<GroupRepresentation> buildGroupHierarchy(
             KeycloakSession session,
@@ -73,7 +72,7 @@ public class GroupUtils {
         Map<String, GroupRepresentation> groupIdToGroups = new HashMap<>();
 
         groups.forEach(group -> {
-            // Permission check using filter
+            // 通过过滤器进行权限检查
             if (!filter.shouldInclude(group)) {
                 return;
             }
@@ -89,7 +88,7 @@ public class GroupUtils {
             while (currGroup.getParentId() != null && !currGroup.getParentId().equals(stopAtParentId)) {
                 GroupModel parentModel = session.groups().getGroupById(realm, currGroup.getParentId());
 
-                // Permission check for parent
+                // 对父组进行权限检查
                 if (!filter.shouldInclude(parentModel)) {
                     groupIdToGroups.remove(currGroup.getId());
                     break;
@@ -106,7 +105,7 @@ public class GroupUtils {
 
                 GroupRepresentation finalCurrGroup = currGroup;
 
-                // Check the parent for existing subgroups that match the group we're currently operating on and merge them if needed
+                // 若父组已有相同子组则合并，否则追加
                 Optional<GroupRepresentation> duplicateGroup = parent.getSubGroups() == null ?
                     Optional.empty() :
                     parent.getSubGroups().stream()
@@ -129,25 +128,28 @@ public class GroupUtils {
     }
 
     /**
-     * This method takes the provided groups and attempts to load their parents all the way to the root group while maintaining the hierarchy data
-     * for each GroupRepresentation object. Each resultant GroupRepresentation object in the stream should contain relevant subgroups to the originally
-     * provided groups
-     * @param session The active keycloak session
-     * @param realm The realm to operate on
-     * @param groups The groups that we want to populate the hierarchy for
-     * @return A stream of groups that contain all relevant groups from the root down with no extra siblings
+     * 从给定子组向上加载父组直至根，构建完整层级树。
+     * <p>结果流中每个 {@link GroupRepresentation} 包含与原始组相关的子组结构。</p>
+     *
+     * @param session 当前 Keycloak 会话
+     * @param realm 目标领域
+     * @param groups 待填充层级的起始组流
+     * @param full 是否生成完整表示（含全部属性）
+     * @param groupEvaluator 组权限评估器
+     * @param subGroupsCount 是否填充子组计数
+     * @return 从根到叶、无多余兄弟节点的组表示流
      */
     public static Stream<GroupRepresentation> populateGroupHierarchyFromSubGroups(KeycloakSession session, RealmModel realm, Stream<GroupModel> groups, boolean full, GroupPermissionEvaluator groupEvaluator, boolean subGroupsCount) {
         return buildGroupHierarchy(
             session,
             realm,
             groups,
-            // Mapper with permission-aware representation
+            // 带权限信息的表示映射
             group -> toRepresentation(groupEvaluator, group, full),
-            // Filter with permission checks
+            // 带权限检查的过滤器
             group -> {
                 if (AdminPermissionsSchema.SCHEMA.isAdminPermissionsEnabled(realm)) {
-                    return true; // FGAP v2 handles permissions differently
+                    return true; // FGAP v2 以不同方式处理权限
                 }
                 //TODO GROUPS do permissions work in such a way that if you can view the children you can definitely view the parents?
                 return groupEvaluator.canView() || groupEvaluator.canView(group);
@@ -157,23 +159,21 @@ public class GroupUtils {
     }
 
     /**
-     * Simplified version of {@link #populateGroupHierarchyFromSubGroups(KeycloakSession, RealmModel, Stream, boolean, GroupPermissionEvaluator, boolean)}
-     * that does not perform permission checks. Suitable for organization groups where access control is handled at the organization level.
+     * {@link #populateGroupHierarchyFromSubGroups(KeycloakSession, RealmModel, Stream, boolean, GroupPermissionEvaluator, boolean)} 的简化版，不做权限检查。
+     * <p>适用于组织组等由组织层控制访问的场景。</p>
      *
-     * @param stopAtParentId If non-null, the hierarchy walk stops when a group's parentId matches this value,
-     *                       preventing the parent from being included. This is used to exclude the internal
-     *                       organization root group from the hierarchy.
+     * @param stopAtParentId 非空时，遍历到 parentId 等于该值的组即停止，不包含其父组；用于排除内部组织根组
      */
     public static Stream<GroupRepresentation> populateGroupHierarchyFromSubGroups(KeycloakSession session, RealmModel realm, Stream<GroupModel> groups, boolean full, boolean subGroupsCount, String stopAtParentId) {
         return buildGroupHierarchy(
             session,
             realm,
             groups,
-            // Simple mapper without permissions
+            // 不含权限信息的简单映射
             group -> full ?
                 ModelToRepresentation.toRepresentation(group, true) :
                 ModelToRepresentation.groupToBriefRepresentation(group),
-            // No filtering - always include all groups
+            // 不过滤，始终包含所有组
             group -> true,
             subGroupsCount,
             stopAtParentId
@@ -181,31 +181,46 @@ public class GroupUtils {
     }
 
     /**
-     * This method's purpose is to look up the subgroup count of a Group and populate it on the representation. This has been kept separate from
-     * {@link #toRepresentation} in order to keep database lookups separate from a function that aims to only convert objects
-     * A way of cohesively ensuring that a GroupRepresentation always has a group count should be considered
+     * 查询组的子组数量并写入表示对象。
+     * <p>与 {@link #toRepresentation} 分离，避免在纯转换逻辑中触发数据库查询。</p>
      *
-     * @param group model
-     * @param representation group representation
-     * @return
+     * @param group 组模型
+     * @param representation 组表示对象
+     * @return 填充子组计数后的表示对象
      */
     public static GroupRepresentation populateSubGroupCount(GroupModel group, GroupRepresentation representation) {
         representation.setSubGroupCount(group.getSubGroupsCount());
         return representation;
     }
 
-    //From org.keycloak.admin.ui.rest.GroupsResource
-    // set fine-grained access for each group in the tree
+    // 源自 org.keycloak.admin.ui.rest.GroupsResource：为树中每组设置细粒度访问权限
+    /**
+     * 将组模型转为表示对象并附加细粒度访问信息。
+     *
+     * @param groupsEvaluator 组权限评估器
+     * @param groupTree 组模型
+     * @param full 是否生成完整表示
+     * @return 含 access 字段的组表示
+     */
     public static GroupRepresentation toRepresentation(GroupPermissionEvaluator groupsEvaluator, GroupModel groupTree, boolean full) {
         GroupRepresentation rep = ModelToRepresentation.toRepresentation(groupTree, full);
         rep.setAccess(groupsEvaluator.getAccess(groupTree));
         return rep;
     }
 
+    /** 获取给定组的全部成员关系（含间接父组），默认 {@code direct=true}。 */
     public static Set<GroupMembership> getAllMemberships(KeycloakSession session, Collection<GroupModel> groups) {
         return getAllMemberships(session, groups, true);
     }
 
+    /**
+     * 递归收集给定组的成员关系集合。
+     *
+     * @param session 当前会话
+     * @param groups 起始组集合
+     * @param direct 当前层级是否为直接成员关系
+     * @return 去重后的成员关系集合
+     */
     public static Set<GroupMembership> getAllMemberships(KeycloakSession session, Collection<GroupModel> groups, boolean direct) {
         Set<GroupMembership> memberships = new HashSet<>();
         Permissions permissions = session.getContext().getPermissions();
@@ -234,6 +249,7 @@ public class GroupUtils {
         return memberships;
     }
 
+    /** 组成员关系记录：{@code direct} 表示是否为直接成员。 */
     public record GroupMembership(GroupModel group, boolean direct) {
 
         @Override

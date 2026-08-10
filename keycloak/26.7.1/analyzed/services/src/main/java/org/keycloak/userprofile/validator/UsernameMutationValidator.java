@@ -31,14 +31,14 @@ import org.keycloak.validate.ValidationError;
 import org.keycloak.validate.ValidatorConfig;
 
 /**
- * Validator to check User Profile username change and prevent it if not allowed in realm. Expects List of Strings as
- * input.
- * 
- * @author Vlastimil Elias <velias@redhat.com>
+ * 校验用户名变更是否在领域策略允许范围内。
+ * <p>领域禁止编辑用户名时拒绝修改；「注册邮箱即用户名」下邮箱同步导致的用户名变更除外。</p>
  *
+ * @author Vlastimil Elias <velias@redhat.com>
  */
 public class UsernameMutationValidator implements SimpleValidator {
 
+    /** 校验器 SPI ID。 */
     public static final String ID = "up-username-mutation";
 
     @Override
@@ -69,8 +69,7 @@ public class UsernameMutationValidator implements SimpleValidator {
         if (!realm.isEditUsernameAllowed() && user != null && !valueLowercased.equals(user.getFirstAttribute(UserModel.USERNAME))) {
             Attributes attributes = attributeContext.getAttributes();
             if (realm.isRegistrationEmailAsUsername() && valueLowercased.equals(attributes.getFirst(UserModel.EMAIL))) {
-                // if username changed is because email as username is allowed so no validation should happen for update profile
-                // it is expected that username changes when attributes are normalized by the provider
+                // 注册邮箱即用户名场景下，用户名随邮箱规范化而变更，更新 Profile 时不应拦截
                 return context;
             }
             context.addError(new ValidationError(ID, inputHint, Messages.READ_ONLY_USERNAME));

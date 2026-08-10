@@ -29,17 +29,21 @@ import freemarker.template.Template;
 import freemarker.template.TemplateException;
 
 /**
+ * FreeMarker 模板加载与渲染工具。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class FreemarkerUtils {
 
     /**
-     * Load the template from classpath
+     * 从 classpath 加载 FreeMarker 模板并渲染为字符串。
      *
-     * @param contextMap map with the attributes passed to freemarker
-     * @param templateFile Name of the file, which is supposed to be available on classpath
-     * @param clazz Class, which should be in same package as the template
-     * @return template from classpath
+     * @param contextMap 传入模板的属性映射
+     * @param templateFile 模板文件名（与 clazz 同包路径）
+     * @param clazz 用于定位模板资源的类
+     * @return 渲染后的模板内容
+     * @throws TemplateException 模板处理失败时抛出
+     * @throws IOException 读取模板失败时抛出
      */
     public static String loadTemplateFromClasspath(Map<String, Object> contextMap, String templateFile, Class<?> clazz) throws TemplateException, IOException {
         Configuration freemarkerConfig = new Configuration(Configuration.VERSION_2_3_32);

@@ -18,13 +18,19 @@
 package org.keycloak.utils;
 
 /**
+ * Keycloak 常用 HTTP 媒体类型常量。
+ * <p>封装 {@link jakarta.ws.rs.core.MediaType} 及自定义 JWT/JWKS 类型。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class MediaType {
 
+    /** UTF-8 HTML 媒体类型字符串。 */
     public static final String TEXT_HTML_UTF_8 = "text/html; charset=utf-8";
+    /** UTF-8 HTML {@link jakarta.ws.rs.core.MediaType} 实例。 */
     public static final jakarta.ws.rs.core.MediaType TEXT_HTML_UTF_8_TYPE = new jakarta.ws.rs.core.MediaType("text", "html", "utf-8");
 
+    /** UTF-8 纯文本媒体类型字符串。 */
     public static final String TEXT_PLAIN_UTF_8 = "text/plain; charset=utf-8";
     public static final jakarta.ws.rs.core.MediaType TEXT_PLAIN_UTF_8_TYPE = new jakarta.ws.rs.core.MediaType("text", "plain", "utf-8");
 
@@ -37,7 +43,9 @@ public class MediaType {
     public static final String APPLICATION_FORM_URLENCODED = jakarta.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED;
     public static final jakarta.ws.rs.core.MediaType APPLICATION_FORM_URLENCODED_TYPE = jakarta.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED_TYPE;
 
+    /** JWT 媒体类型字符串。 */
     public static final String APPLICATION_JWT = "application/jwt";
+    /** JWK Set JSON 媒体类型字符串。 */
     public static final String APPLICATION_JWKS = "application/jwk-set+json";
     public static final jakarta.ws.rs.core.MediaType APPLICATION_JWT_TYPE = new jakarta.ws.rs.core.MediaType("application", "jwt");
 

@@ -27,14 +27,14 @@ import org.keycloak.validate.ValidationError;
 import org.keycloak.validate.ValidatorConfig;
 
 /**
- * Validator to check User Profile username attribute value during Registration when "RegistrationEmailAsUsername()" is
- * enabled. Expects List of Strings as input.
- * 
- * @author Vlastimil Elias <velias@redhat.com>
+ * 启用「注册邮箱即用户名」时，校验注册流程中的用户名属性非空。
+ * <p>输入为 {@code List<String>}；用户名由邮箱同步生成，不得为空。</p>
  *
+ * @author Vlastimil Elias <velias@redhat.com>
  */
 public class RegistrationEmailAsUsernameUsernameValueValidator implements SimpleValidator {
 
+    /** 校验器 SPI ID。 */
     public static final String ID = "up-registration-email-as-username-username-value";
 
     @Override

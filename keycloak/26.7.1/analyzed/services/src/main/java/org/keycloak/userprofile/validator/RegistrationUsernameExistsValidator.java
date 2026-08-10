@@ -30,14 +30,14 @@ import org.keycloak.validate.ValidationError;
 import org.keycloak.validate.ValidatorConfig;
 
 /**
- * Validator to check User Profile username attribute uniqueness during registration (when
- * "RegistrationEmailAsUsername()" is NOT enabled). Expects List of Strings as input.
- * 
- * @author Vlastimil Elias <velias@redhat.com>
+ * 未启用「注册邮箱即用户名」时，校验注册用户名在领域内唯一。
+ * <p>输入为 {@code List<String>}；冲突时返回 HTTP 409。</p>
  *
+ * @author Vlastimil Elias <velias@redhat.com>
  */
 public class RegistrationUsernameExistsValidator implements SimpleValidator {
 
+    /** 校验器 SPI ID。 */
     public static final String ID = "up-registration-username-exists";
 
     @Override

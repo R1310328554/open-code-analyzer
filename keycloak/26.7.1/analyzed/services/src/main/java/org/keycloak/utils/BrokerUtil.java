@@ -32,12 +32,24 @@ import org.keycloak.representations.account.AccountLinkUriRepresentation;
 import org.keycloak.services.Urls;
 
 /**
- * TODO: Remove this class once support for "client initiated account linking" is removed (Probably Keycloak 27)
+ * 客户端发起的账户关联 URI 构建工具。
+ * <p>TODO：待移除「client initiated account linking」支持后删除（预计 Keycloak 27）。</p>
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class BrokerUtil {
 
+    /**
+     * 构建带 nonce/hash 签名的 IdP 账户关联请求 URI。
+     *
+     * @param clientId 发起关联的客户端 ID
+     * @param redirectUri 关联完成后的重定向 URI
+     * @param identityProviderAlias 目标身份提供者别名
+     * @param realmName 领域名称
+     * @param userSessionId 当前用户会话 ID
+     * @param serverBaseUri Keycloak 服务器基 URI
+     * @return 含关联 URI、nonce 与 hash 的表示对象
+     */
     public static AccountLinkUriRepresentation createClientInitiatedLinkURI(String clientId, String redirectUri, String identityProviderAlias, String realmName, String userSessionId, URI serverBaseUri) {
         try {
             String nonce = UUID.randomUUID().toString();

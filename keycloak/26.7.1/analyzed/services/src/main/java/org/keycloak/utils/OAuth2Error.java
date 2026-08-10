@@ -49,6 +49,9 @@ import static org.keycloak.OAuth2Constants.ALGS_ATTRIBUTE;
 import static org.keycloak.services.util.DPoPUtil.DPOP_SCHEME;
 
 /**
+ * OAuth 2.0 错误响应构建器（流式 API）。
+ * <p>根据错误码映射 HTTP 状态，支持 JSON 实体或 {@code WWW-Authenticate} 头。</p>
+ *
  * @author <a href="mailto:dmitryt@backbase.com">Dmitry Telegin</a>
  */
 public class OAuth2Error {
@@ -73,21 +76,25 @@ public class OAuth2Error {
         STATUS_MAP.put(Response.Status.INTERNAL_SERVER_ERROR, InternalServerErrorException.class);
     }
 
+    /** 设置 Keycloak 会话（DPoP 挑战需要）。 */
     public OAuth2Error session(KeycloakSession session) {
         this.session = session;
         return this;
     }
 
+    /** 设置领域（用于 Bearer/DPoP 挑战的 realm 属性）。 */
     public OAuth2Error realm(RealmModel realm) {
         this.realm = realm;
         return this;
     }
 
+    /** 设置认证方案（Bearer 或 DPoP）。 */
     public OAuth2Error authScheme(String authScheme) {
         this.authScheme = authScheme;
         return this;
     }
 
+    /** 设置 OAuth 2.0 错误码并推导默认 HTTP 状态。 */
     public OAuth2Error error(String error) {
 
         this.error = error;
@@ -117,26 +124,31 @@ public class OAuth2Error {
         return this;
     }
 
+    /** 设置人类可读的错误描述。 */
     public OAuth2Error errorDescription(String errorDescription) {
         this.errorDescription = errorDescription;
         return this;
     }
 
+    /** 设置 CORS 处理器（暴露 {@code WWW-Authenticate} 头）。 */
     public OAuth2Error cors(Cors cors) {
         this.cors = Optional.ofNullable(cors);
         return this;
     }
 
+    /** 显式覆盖 HTTP 状态码。 */
     public OAuth2Error status(Response.Status status) {
         this.status = status;
         return this;
     }
 
+    /** 指定响应格式：{@code true} 为 JSON 实体，{@code false} 为纯文本 + 认证挑战头。 */
     public OAuth2Error json(boolean json) {
         this.json = json;
         return this;
     }
 
+    /** 构建带 OAuth 2.0 错误体的 {@link WebApplicationException}。 */
     public WebApplicationException build() {
         clazz = STATUS_MAP.getOrDefault(status, WebApplicationException.class);
         Response.ResponseBuilder builder = Response.status(status);
@@ -165,22 +177,27 @@ public class OAuth2Error {
         }
     }
 
+    /** 快捷构建 {@code insufficient_scope} 错误。 */
     public WebApplicationException insufficientScope(String errorDescription) {
         return this.error(OAuthErrorException.INSUFFICIENT_SCOPE).errorDescription(errorDescription).build();
     }
 
+    /** 快捷构建 {@code invalid_token} 错误。 */
     public WebApplicationException invalidToken(String errorDescription) {
         return this.error(OAuthErrorException.INVALID_TOKEN).errorDescription(errorDescription).build();
     }
 
+    /** 快捷构建 {@code invalid_request} 错误。 */
     public WebApplicationException invalidRequest(String errorDescription) {
         return this.error(OAuthErrorException.INVALID_REQUEST).errorDescription(errorDescription).build();
     }
 
+    /** 快捷构建 HTTP 401 未授权响应。 */
     public WebApplicationException unauthorized() {
         return this.status(Response.Status.UNAUTHORIZED).build();
     }
 
+    /** 组装 {@code WWW-Authenticate} 响应头的内部类。 */
     private static class WWWAuthenticate {
 
         private final List<Challenge> challenges;
@@ -242,6 +259,7 @@ public class OAuth2Error {
             }
         }
 
+        /** 认证挑战基类，支持键值属性序列化。 */
         public static abstract class Challenge {
 
             private final Map<String, String> attributes = new LinkedHashMap<>();
@@ -271,6 +289,7 @@ public class OAuth2Error {
 
         }
 
+        /** HTTP Basic 认证挑战。 */
         public static class BasicChallenge extends Challenge {
 
             private static final String BASIC_SCHEME = "Basic";
@@ -287,6 +306,7 @@ public class OAuth2Error {
 
         }
 
+        /** OAuth Bearer 认证挑战（含 error/error_description 等属性）。 */
         public static class BearerChallenge extends BasicChallenge {
 
             private static final String BEARER_SCHEME = "Bearer";
@@ -319,6 +339,7 @@ public class OAuth2Error {
 
         }
 
+        /** DPoP 认证挑战，附加支持的签名算法列表。 */
         public static class DPoPChallenge extends BearerChallenge {
 
             public DPoPChallenge(KeycloakSession session) {

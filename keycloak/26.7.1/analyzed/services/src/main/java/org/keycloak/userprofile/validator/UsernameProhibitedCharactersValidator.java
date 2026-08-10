@@ -30,21 +30,24 @@ import org.keycloak.validate.ValidationError;
 import org.keycloak.validate.ValidatorConfig;
 
 /**
- * This validator disallowing bunch of characters we really not to expect in username.
- * <p>
- * Validates against hardcoded RegEx pattern - accepts plain string and collection of strings, for basic behavior
- * like null/blank values handling and collections support see {@link AbstractStringValidator}.
+ * 用户名禁止字符校验器。
+ * <p>使用内置正则拒绝 HTML、空白、控制字符等；空值与集合行为参见 {@link AbstractStringValidator}。</p>
  */
 public class UsernameProhibitedCharactersValidator extends AbstractStringValidator implements ConfiguredProvider {
 
+    /** 校验器 SPI ID。 */
     public static final String ID = "username-prohibited-characters";
 
+    /** 单例实例。 */
     public static final UsernameProhibitedCharactersValidator INSTANCE = new UsernameProhibitedCharactersValidator();
 
+    /** 用户名允许字符的正则模式。 */
     protected static final Pattern PATTERN = Pattern.compile("^[^<>&\"'\\s\\v\\h$%!#?§,;:*~/\\\\|^=\\[\\]{}()`\\p{Cntrl}]+$");
 
+    /** 默认错误消息键。 */
     public static final String MESSAGE_NO_MATCH = "error-username-invalid-character";
 
+    /** 自定义错误消息键配置项。 */
     public static final String CFG_ERROR_MESSAGE = "error-message";
 
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<>();
@@ -64,6 +67,7 @@ public class UsernameProhibitedCharactersValidator extends AbstractStringValidat
         return ID;
     }
 
+    /** 值不匹配 {@link #PATTERN} 时添加校验错误；注册邮箱即用户名时跳过。 */
     @Override
     protected void doValidate(String value, String inputHint, ValidationContext context, ValidatorConfig config) {
         KeycloakSession session = context.getSession();
@@ -82,6 +86,7 @@ public class UsernameProhibitedCharactersValidator extends AbstractStringValidat
     }
 
 
+    /** @return 校验器帮助文本（英文，供管理控制台展示） */
     @Override
     public String getHelpText() {
         return "Basic Username validator disallowing bunch of characters we really do not expect in username.";
