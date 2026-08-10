@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T04:22:28Z",
-  "files": [
-    "maintainer-client/src/main/java/com/alibaba/nacos/maintainer/client/ai/PipelineMaintainerService.java",
-    "maintainer-client/src/main/java/com/alibaba/nacos/maintainer/client/ai/PipelineMaintainerServiceImpl.java",
-    "maintainer-client/src/main/java/com/alibaba/nacos/maintainer/client/ai/PromptMaintainerService.java",
-    "maintainer-client/src/main/java/com/alibaba/nacos/maintainer/client/ai/PromptMaintainerServiceImpl.java",
-    "maintainer-client/src/main/java/com/alibaba/nacos/maintainer/client/ai/SkillMaintainerService.java",
-    "maintainer-client/src/main/java/com/alibaba/nacos/maintainer/client/ai/SkillMaintainerServiceImpl.java",
-    "maintainer-client/src/main/java/com/alibaba/nacos/maintainer/client/config/BetaConfigMaintainerService.java",
-    "maintainer-client/src/main/java/com/alibaba/nacos/maintainer/client/config/ConfigHistoryMaintainerService.java",
-    "maintainer-client/src/main/java/com/alibaba/nacos/maintainer/client/config/ConfigMaintainerFactory.java",
-    "maintainer-client/src/main/java/com/alibaba/nacos/maintainer/client/config/ConfigMaintainerService.java",
-    "maintainer-client/src/main/java/com/alibaba/nacos/maintainer/client/config/ConfigOpsMaintainerService.java",
-    "maintainer-client/src/main/java/com/alibaba/nacos/maintainer/client/config/NacosConfigMaintainerServiceImpl.java",
-    "maintainer-client/src/main/java/com/alibaba/nacos/maintainer/client/constants/Constants.java",
-    "maintainer-client/src/main/java/com/alibaba/nacos/maintainer/client/core/AbstractCoreMaintainerService.java",
-    "maintainer-client/src/main/java/com/alibaba/nacos/maintainer/client/core/CoreMaintainerService.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 677,
-  "done": 1845
+  "done": 1860
 }
