@@ -15,23 +15,8 @@
     "pkg/querytee/goldfish/sampler.go",
     "pkg/querytee/goldfish/stats_extractor.go",
     "pkg/querytee/goldfish/storage_factory.go",
-    "pkg/querytee/handler_factory.go",
-    "pkg/querytee/instrumentation.go",
-    "pkg/querytee/non_decodable_response.go",
-    "pkg/querytee/proxy.go",
-    "pkg/querytee/proxy_backend.go",
-    "pkg/querytee/proxy_endpoint.go",
-    "pkg/querytee/proxy_metrics.go",
-    "pkg/querytee/splitting_handler.go",
-    "pkg/queue/mapping.go",
-    "pkg/queue/metrics.go",
-    "pkg/queue/queue.go",
-    "pkg/queue/tenant_queues.go",
-    "pkg/queue/treequeue.go",
-    "pkg/queue/util.go",
-    "pkg/ruler/base/api.go",
-    "pkg/ruler/base/client_pool.go"
+    "pkg/querytee/handler_factory.go"
   ],
   "remaining_pending": 472,
-  "done": 1050
+  "done": 1065
 }
