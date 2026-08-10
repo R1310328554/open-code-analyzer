@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T12:07:02Z",
-  "files": [
-    "services/src/main/java/org/keycloak/protocol/docker/installation/compose/DockerComposeZipContent.java",
-    "services/src/main/java/org/keycloak/protocol/docker/mapper/AllowAllDockerProtocolMapper.java",
-    "services/src/main/java/org/keycloak/protocol/docker/mapper/DockerAuthV2AttributeMapper.java",
-    "services/src/main/java/org/keycloak/protocol/docker/mapper/DockerAuthV2ProtocolMapper.java",
-    "services/src/main/java/org/keycloak/protocol/oauth2/OAuth2WellKnownProviderFactory.java",
-    "services/src/main/java/org/keycloak/protocol/oauth2/cimd/clientpolicy/condition/ClientIdUriSchemeCondition.java",
-    "services/src/main/java/org/keycloak/protocol/oauth2/cimd/clientpolicy/condition/ClientIdUriSchemeConditionFactory.java",
-    "services/src/main/java/org/keycloak/protocol/oauth2/cimd/clientpolicy/context/CimdClientRegisterContext.java",
-    "services/src/main/java/org/keycloak/protocol/oauth2/cimd/clientpolicy/context/CimdClientRegisteredContext.java",
-    "services/src/main/java/org/keycloak/protocol/oauth2/cimd/clientpolicy/context/CimdClientUpdateContext.java",
-    "services/src/main/java/org/keycloak/protocol/oauth2/cimd/clientpolicy/context/CimdClientUpdatedContext.java",
-    "services/src/main/java/org/keycloak/protocol/oauth2/cimd/clientpolicy/executor/AbstractClientIdMetadataDocumentExecutor.java",
-    "services/src/main/java/org/keycloak/protocol/oauth2/cimd/clientpolicy/executor/AbstractClientIdMetadataDocumentExecutorFactory.java",
-    "services/src/main/java/org/keycloak/protocol/oauth2/cimd/clientpolicy/executor/ClientIdMetadataDocumentExecutor.java",
-    "services/src/main/java/org/keycloak/protocol/oauth2/cimd/clientpolicy/executor/ClientIdMetadataDocumentExecutorFactory.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1648,
-  "done": 4335
+  "done": 4350
 }
