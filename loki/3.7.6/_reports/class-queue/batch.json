@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T21:52:45Z",
-  "files": [
-    "pkg/dataobj/internal/util/bufpool/bufpool.go",
-    "pkg/dataobj/internal/util/bufpool/reader.go",
-    "pkg/dataobj/internal/util/bufpool/unsized.go",
-    "pkg/dataobj/internal/util/protocodec/protocodec.go",
-    "pkg/dataobj/internal/util/rangeset/intersect.go",
-    "pkg/dataobj/internal/util/rangeset/rangeset.go",
-    "pkg/dataobj/internal/util/rangeset/union.go",
-    "pkg/dataobj/internal/util/sliceclear/sliceclear.go",
-    "pkg/dataobj/internal/util/slicegrow/slicegrow.go",
-    "pkg/dataobj/internal/util/symbolizer/symbolizer.go",
-    "pkg/dataobj/metastore/config.go",
-    "pkg/dataobj/metastore/index_sections_reader.go",
-    "pkg/dataobj/metastore/iter.go",
-    "pkg/dataobj/metastore/metastore.go",
-    "pkg/dataobj/metastore/metastore.pb.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1162,
-  "done": 375
+  "done": 390
 }
