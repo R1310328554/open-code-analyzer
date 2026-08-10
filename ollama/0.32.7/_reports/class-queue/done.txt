@@ -455,3 +455,9 @@ x/tokenizer/tokenizer.go
 x/tokenizer/tokenizer_bpe.go
 x/tokenizer/tokenizer_decode.go
 x/tokenizer/tokenizer_encode.go
+x/tokenizer/tokenizer_load.go
+x/transfer/download.go
+x/transfer/sparse_other.go
+x/transfer/sparse_windows.go
+x/transfer/transfer.go
+x/transfer/upload.go
