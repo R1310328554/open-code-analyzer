@@ -21,26 +21,36 @@ import org.keycloak.jose.jws.JWSInput;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.KeycloakSession;
 
+/**
+ * 客户端 JWS 非对称签名验证提供者（RSA 等）。
+ * <p>为指定算法创建 {@link ClientAsymmetricSignatureVerifierContext}，从客户端公钥校验令牌签名。</p>
+ */
 public class AsymmetricClientSignatureVerifierProvider implements ClientSignatureVerifierProvider {
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
+    /** JWS 签名算法标识（如 RS256）。 */
     private final String algorithm;
 
+    /** @param session 当前会话 @param algorithm 签名算法名 */
     public AsymmetricClientSignatureVerifierProvider(KeycloakSession session, String algorithm) {
         this.session = session;
         this.algorithm = algorithm;
     }
 
     @Override
+    /** 解析客户端 RSA 公钥并返回签名验证上下文。 */
     public SignatureVerifierContext verifier(ClientModel client, JWSInput input) throws VerificationException {
         return new ClientAsymmetricSignatureVerifierContext(session, client, input);
     }
 
     @Override
+    /** @return 本提供者绑定的 JWS 算法名 */
     public String getAlgorithm() {
         return algorithm;
     }
 
     @Override
+    /** @return 恒为 true，表示非对称签名算法 */
     public boolean isAsymmetricAlgorithm() {
         return true;
     }

@@ -24,9 +24,13 @@ import org.keycloak.models.ClientModel;
 import org.keycloak.models.KeycloakSession;
 
 /**
+ * 客户端 EdDSA（OKP）JWS 签名验证上下文。
+ * <p>要求 Ed25519/Ed448 密钥携带 curve 元数据，算法可与 JWS 头对齐。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class ClientEdDSASignatureVerifierContext extends AsymmetricSignatureVerifierContext {
+    /** @param session 当前会话 @param client 客户端 @param input JWS 输入 */
     public ClientEdDSASignatureVerifierContext(KeycloakSession session, ClientModel client, JWSInput input) throws VerificationException {
         super(getKey(session, client, input));
     }
@@ -43,9 +47,8 @@ public class ClientEdDSASignatureVerifierContext extends AsymmetricSignatureVeri
             throw new VerificationException("EdDSA key should have curve defined");
         }
         if (key.getAlgorithm() == null) {
-            // defaults to the algorithm set to the JWS
-            // validations should be performed prior to verifying signature in case there are restrictions on the algorithms
-            // that can used for signing
+            // 密钥未指定算法时，默认采用 JWS 头中的算法
+            // 验签前应已完成算法白名单等策略校验
             key.setAlgorithm(input.getHeader().getRawAlgorithm());
         }
         return key;

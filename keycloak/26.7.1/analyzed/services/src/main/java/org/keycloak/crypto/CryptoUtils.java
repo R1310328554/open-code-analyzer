@@ -31,14 +31,15 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.util.Strings;
 
 /**
- * Utility class for common cryptographic operations and algorithm discovery.
+ * 加密工具类：签名提供者查找与支持的非对称算法发现。
+ * <p>聚合 {@link SignatureProvider} SPI 与 Realm 密钥流，供令牌/OIDC 能力协商使用。</p>
  *
  * @author <a href="https://github.com/forkimenjeckayang">Forkim Akwichek</a>
  */
 public class CryptoUtils {
 
     /**
-     * Looks up a {@link SignatureProvider} for the given algorithm, throwing if none is registered.
+     * 按算法名查找已注册的 {@link SignatureProvider}，未注册则抛出 {@link VerificationException}。
      */
     public static SignatureProvider getSignatureProvider(KeycloakSession session, String algorithm) throws VerificationException {
         if (algorithm == null) {
@@ -52,9 +53,8 @@ public class CryptoUtils {
     }
 
     /**
-     * Returns the supported asymmetric signature algorithms.
-     * This method discovers all available SignatureProvider implementations and filters
-     * for those that support asymmetric algorithms (RSA, EC, EdDSA, etc.).
+     * 返回当前环境支持的非对称签名算法列表。
+     * <p>遍历 {@link SignatureProvider} 工厂并过滤 {@link SignatureProvider#isAsymmetricAlgorithm()} 为 true 的项。</p>
      *
      * @param session The Keycloak session
      * @return List of asymmetric signature algorithm names
@@ -70,9 +70,8 @@ public class CryptoUtils {
     }
 
     /**
-     * Returns the supported asymmetric encryption algorithms.
-     * This method discovers all available Keys and filters
-     * for those that use asymmetric algorithms (RSA, EC, EdDSA, etc.).
+     * 返回 Realm 中可用于加密的非对称算法列表。
+     * <p>从密钥流筛选 {@link KeyUse#ENC} 且公钥/私钥为 {@link PublicKey}/{@link PrivateKey} 的条目。</p>
      *
      * @param session The Keycloak session
      * @return List of asymmetric encryption algorithm names
@@ -83,7 +82,7 @@ public class CryptoUtils {
                 .filter(key -> KeyUse.ENC.equals(key.getUse()))
                 .filter(key -> {
                     Key k = key.getPublicKey();
-                    // asymmetric keys will have PublicKey/PrivateKey instead of SecretKey
+                    // 非对称密钥持有 PublicKey/PrivateKey，对称密钥为 SecretKey
                     return k instanceof PublicKey || key.getPrivateKey() instanceof PrivateKey;
                 })
                 .map(KeyWrapper::getAlgorithm)

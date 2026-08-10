@@ -22,8 +22,13 @@ import org.keycloak.keys.loader.PublicKeyStorageManager;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.KeycloakSession;
 
+/**
+ * 客户端 RSA JWS 签名验证上下文。
+ * <p>从 {@link PublicKeyStorageManager} 加载客户端公钥，校验密钥类型与算法一致性。</p>
+ */
 public class ClientAsymmetricSignatureVerifierContext extends AsymmetricSignatureVerifierContext {
 
+    /** @param session 当前会话 @param client 待验签客户端 @param input 待验证 JWS */
     public ClientAsymmetricSignatureVerifierContext(KeycloakSession session, ClientModel client, JWSInput input) throws VerificationException {
         super(getKey(session, client, input));
     }
@@ -37,9 +42,8 @@ public class ClientAsymmetricSignatureVerifierContext extends AsymmetricSignatur
             throw new VerificationException("Key Type is not RSA: " + key.getType());
         }
         if (key.getAlgorithm() == null) {
-            // defaults to the algorithm set to the JWS
-            // validations should be performed prior to verifying signature in case there are restrictions on the algorithms
-            // that can used for signing
+            // 密钥未指定算法时，默认采用 JWS 头中的算法
+            // 验签前应已完成算法白名单等策略校验
             key.setAlgorithm(input.getHeader().getRawAlgorithm());
         } else if (!key.getAlgorithm().equals(input.getHeader().getRawAlgorithm())) {
             throw new VerificationException("Key Algorithms are different, key-algorithm=" + key.getAlgorithm()

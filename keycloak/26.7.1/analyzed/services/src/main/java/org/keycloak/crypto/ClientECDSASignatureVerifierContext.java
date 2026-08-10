@@ -24,9 +24,13 @@ import org.keycloak.models.ClientModel;
 import org.keycloak.models.KeycloakSession;
 
 /**
+ * 客户端 ECDSA JWS 签名验证上下文。
+ * <p>加载 EC 公钥，并将 JWS 中 R||S 拼接格式转换为 DER 后验签。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class ClientECDSASignatureVerifierContext extends AsymmetricSignatureVerifierContext {
+    /** @param session 当前会话 @param client 客户端 @param input JWS 输入 */
     public ClientECDSASignatureVerifierContext(KeycloakSession session, ClientModel client, JWSInput input) throws VerificationException {
         super(getKey(session, client, input));
     }
@@ -40,9 +44,8 @@ public class ClientECDSASignatureVerifierContext extends AsymmetricSignatureVeri
             throw new VerificationException("Key Type is not EC: " + key.getType());
         }
         if (key.getAlgorithm() == null) {
-            // defaults to the algorithm set to the JWS
-            // validations should be performed prior to verifying signature in case there are restrictions on the algorithms
-            // that can used for signing
+            // 密钥未指定算法时，默认采用 JWS 头中的算法
+            // 验签前应已完成算法白名单等策略校验
             key.setAlgorithm(input.getHeader().getRawAlgorithm());
         } else if (!key.getAlgorithm().equals(input.getHeader().getRawAlgorithm())) {
             throw new VerificationException("Key Algorithms are different, key-algorithm=" + key.getAlgorithm()
@@ -52,6 +55,7 @@ public class ClientECDSASignatureVerifierContext extends AsymmetricSignatureVeri
     }
 
     @Override
+    /** 将 JWS 拼接签名转为 ASN.1 DER 格式后调用父类验签。 */
     public boolean verify(byte[] data, byte[] signature) throws VerificationException {
         try {
             int expectedSize = ECDSAAlgorithm.getSignatureLength(getAlgorithm());

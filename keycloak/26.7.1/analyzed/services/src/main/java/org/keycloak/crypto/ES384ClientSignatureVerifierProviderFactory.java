@@ -18,16 +18,23 @@ package org.keycloak.crypto;
 
 import org.keycloak.models.KeycloakSession;
 
+/**
+ * ES384（ECDSA P-384）客户端 JWS 验签 SPI 工厂。
+ * <p>注册 ID 为 {@link Algorithm#ES384}，创建 {@link ECDSAClientSignatureVerifierProvider}。</p>
+ */
 public class ES384ClientSignatureVerifierProviderFactory implements ClientSignatureVerifierProviderFactory {
 
+    /** SPI 工厂标识：{@code ES384}。 */
     public static final String ID = Algorithm.ES384;
 
     @Override
+    /** @return {@link #ID} */
     public String getId() {
         return ID;
     }
 
     @Override
+    /** @param session 当前会话 @return ES384 客户端验签提供者 */
     public ClientSignatureVerifierProvider create(KeycloakSession session) {
         return new ECDSAClientSignatureVerifierProvider(session, Algorithm.ES384);
     }

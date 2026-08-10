@@ -24,8 +24,13 @@ import org.keycloak.common.VerificationException;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.KeycloakSession;
 
+/**
+ * 客户端 HMAC JWS 签名验证上下文。
+ * <p>从 Vault 或客户端配置读取共享密钥，构建对称 {@link KeyWrapper} 用于 HS256/384/512 验签。</p>
+ */
 public class ClientMacSignatureVerifierContext extends MacSignatureVerifierContext {
 
+    /** @param session 当前会话 @param client 客户端 @param algorithm HMAC 算法，null 时默认 HS256 */
     public ClientMacSignatureVerifierContext(KeycloakSession session, ClientModel client, String algorithm) throws VerificationException {
         super(getKey(session, client, algorithm));
     }

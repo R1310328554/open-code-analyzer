@@ -18,16 +18,23 @@ package org.keycloak.crypto;
 
 import org.keycloak.models.KeycloakSession;
 
+/**
+ * ES512（ECDSA P-521）客户端 JWS 验签 SPI 工厂。
+ * <p>注册 ID 为 {@link Algorithm#ES512}，创建 {@link ECDSAClientSignatureVerifierProvider}。</p>
+ */
 public class ES512ClientSignatureVerifierProviderFactory  implements ClientSignatureVerifierProviderFactory {
 
+    /** SPI 工厂标识：{@code ES512}。 */
     public static final String ID = Algorithm.ES512;
 
     @Override
+    /** @return {@link #ID} */
     public String getId() {
         return ID;
     }
 
     @Override
+    /** @param session 当前会话 @return ES512 客户端验签提供者 */
     public ClientSignatureVerifierProvider create(KeycloakSession session) {
         return new ECDSAClientSignatureVerifierProvider(session, Algorithm.ES512);
     }

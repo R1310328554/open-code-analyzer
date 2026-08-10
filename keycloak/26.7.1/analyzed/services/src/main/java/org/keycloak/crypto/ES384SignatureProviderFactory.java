@@ -20,21 +20,29 @@ import java.util.Set;
 
 import org.keycloak.models.KeycloakSession;
 
+/**
+ * ES384 服务端签名 SPI 工厂。
+ * <p>创建 {@link ECDSASignatureProvider}，并声明 EC 私钥 JWK 所需 claims。</p>
+ */
 public class ES384SignatureProviderFactory implements SignatureProviderFactory {
 
+    /** SPI 工厂标识：{@code ES384}。 */
     public static final String ID = Algorithm.ES384;
 
     @Override
+    /** @return {@link #ID} */
     public String getId() {
         return ID;
     }
 
     @Override
+    /** @param session 当前会话 @return ES384 签名提供者 */
     public SignatureProvider create(KeycloakSession session) {
         return new ECDSASignatureProvider(session, Algorithm.ES384);
     }
 
     @Override
+    /** @return EC 私钥 JWK 导出所需的 claim 集合 */
     public Set<String> getJwkPrivateKeyClaims() {
         return EC_PRIVATE_JWK_CLAIMS;
     }
