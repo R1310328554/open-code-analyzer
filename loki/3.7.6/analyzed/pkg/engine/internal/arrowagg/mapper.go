@@ -1,9 +1,12 @@
 package arrowagg
 
+// Mapper 在 Arrow schema 中快速定位目标字段索引，并缓存 per-schema 映射结果。
+
 import (
 	"github.com/apache/arrow-go/v18/arrow"
 )
 
+// Mapper 维护 target 字段列表与各 schema 的 lookups 缓存，RemoveSchema/Reset 可失效缓存。
 // Mapper is a utility for quickly finding the index of common fields in a
 // schema.
 //
@@ -14,6 +17,7 @@ type Mapper struct {
 	mappings map[*arrow.Schema]*mapping
 }
 
+// NewMapper 以目标字段切片初始化映射器，后续 FieldIndex 按 target 下标查询。
 // NewMapper creates a new Mapper that locates the target fields in a schema.
 func NewMapper(target []arrow.Field) *Mapper {
 	return &Mapper{
@@ -22,6 +26,7 @@ func NewMapper(target []arrow.Field) *Mapper {
 	}
 }
 
+// FieldIndex 返回 target 字段在 schema 中的列下标，未找到或越界时返回 -1。
 // FieldIndex returns the index of the targetIndex'd field in the schema, or -1
 // if it doesn't exist. targetIndex corresponds to the index of the field in
 // the target slice passed to [NewMapper].
@@ -60,6 +65,7 @@ func (m *Mapper) Reset() {
 	clear(m.mappings)
 }
 
+// mapping 保存某 schema 上 target 各字段对应的列索引 lookups 表。
 type mapping struct {
 	schema  *arrow.Schema
 	checked map[*arrow.Schema]struct{} // schemas that have been checked for equality against this mapping.
@@ -95,3 +101,4 @@ func newMapping(schema *arrow.Schema, to []arrow.Field) *mapping {
 
 	return mapping
 }
+// 同名重复字段时按 Field.Equal 精确匹配，兼容 logfmt/json 解析产生的重名列。

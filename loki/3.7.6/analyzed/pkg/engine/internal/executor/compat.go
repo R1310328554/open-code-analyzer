@@ -1,5 +1,7 @@
 package executor
 
+// ColumnCompat pipeline：解析器列与标签/元数据短名冲突时生成 _extracted 列分流值。
+
 import (
 	"cmp"
 	"context"
@@ -16,6 +18,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/xcap"
 )
 
+// newColumnCompatibilityPipeline 检测 compat.Collisions 与 Source 列短名冲突并重写 batch。
 func newColumnCompatibilityPipeline(compat *physical.ColumnCompat, input Pipeline) Pipeline {
 	const extracted = "_extracted"
 
@@ -287,6 +290,7 @@ func newColumnCompatibilityPipeline(compat *physical.ColumnCompat, input Pipelin
 	}, input)
 }
 
+// allColumnsNull 判断同行所有碰撞列均为 null，此时保留源列原值不写 _extracted。
 // allColumnsNull returns true if all columns are null or invalid at the given row index.
 func allColumnsNull(collisionCols []arrow.Array, rowIdx int) bool {
 	for _, col := range collisionCols {
@@ -298,6 +302,7 @@ func allColumnsNull(collisionCols []arrow.Array, rowIdx int) bool {
 }
 
 // duplicateColumn holds indexes to fields/columns in an [*arrow.Schema].
+// duplicateColumn 记录冲突源列、碰撞列及新建 _extracted 目标列在各 schema 中的索引。
 type duplicateColumn struct {
 	// name is the duplicate column name
 	name string
@@ -313,3 +318,4 @@ type duplicateColumn struct {
 	// lowerExtractedSourceIdx is the old index of the _extracted column with lower priority (from earlier compats)
 	lowerExtractedSourceIdx int
 }
+// 顺序执行 json|logfmt 等 compat 时保留已有 _extracted 值并处理低优先级列合并。

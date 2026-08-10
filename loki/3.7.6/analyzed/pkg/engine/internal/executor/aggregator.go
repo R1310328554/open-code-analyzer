@@ -1,5 +1,7 @@
 package executor
 
+// aggregator 按时间戳与分组标签对样本值做 sum/max/min/count/avg 等聚合。
+
 import (
 	"errors"
 	"maps"
@@ -17,6 +19,7 @@ import (
 
 var ErrSeriesLimitExceeded = errors.New("maximum number of series limit exceeded")
 
+// groupState 保存单组在某时间点的累计值与样本计数，avg 在 BuildRecord 时除 count。
 type groupState struct {
 	value float64 // aggregated value
 	count int64   // values counter
@@ -36,6 +39,7 @@ const (
 )
 
 // aggregator is used to aggregate sample values by a set of grouping keys for each point in time.
+// aggregator 用 xxhash 对 label=name=value 序列哈希分组，并跟踪 uniqueSeries 上限。
 type aggregator struct {
 	points            map[time.Time]map[uint64]*groupState // holds the groupState for each point in time series
 	digest            *xxhash.Digest                       // used to compute key for each group
@@ -48,6 +52,7 @@ type aggregator struct {
 	uniqueSeries map[uint64]map[string]string // tracks unique series across all timestamps
 }
 
+// newAggregator 可选预分配 points 映射容量，operation 决定 Add 时的累加语义。
 // newAggregator creates a new aggregator with the specified grouping.
 func newAggregator(pointsSizeHint int, operation aggregationOperation) *aggregator {
 	a := aggregator{
@@ -67,6 +72,7 @@ func newAggregator(pointsSizeHint int, operation aggregationOperation) *aggregat
 	return &a
 }
 
+// AddLabels 合并多批 record 出现的标签列定义，BuildRecord 时按名字典序输出。
 // AddLabels merges a list of labels that all sample values will have combined. This can be done several times
 // over the lifetime of an aggregator to accommodate processing of multiple records with different schemas.
 func (a *aggregator) AddLabels(labels []arrow.Field) {
@@ -82,6 +88,7 @@ func (a *aggregator) SetMaxSeries(maxSeries int) {
 	a.maxSeries = maxSeries
 }
 
+// Add 对 labelValues 哈希分组；超 maxSeries 时返回 ErrSeriesLimitExceeded。
 // Add adds a new sample value to the aggregation for the given timestamp and grouping label values.
 // It expects labelValues to be in the same order as the groupBy columns.
 func (a *aggregator) Add(ts time.Time, value float64, labels []arrow.Field, labelValues []string) error {
@@ -235,3 +242,4 @@ func (a *aggregator) getSortedTimestamps() []time.Time {
 		return a.Compare(b)
 	})
 }
+// 标签字符串经 strings.Clone 缓存，避免长期持有 Arrow 列缓冲区导致内存膨胀。

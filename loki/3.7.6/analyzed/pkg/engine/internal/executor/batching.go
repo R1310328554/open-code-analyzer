@@ -1,5 +1,7 @@
 package executor
 
+// batchingPipeline 将下游 Pipeline 的小 batch 合并为至多 batchSize 行的 Arrow 记录。
+
 import (
 	"context"
 	"errors"
@@ -11,6 +13,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/xcap"
 )
 
+// batchingPipeline 经 arrowagg.Records 做 schema 对齐；batchSize<=0 时透传。
 // batchingPipeline wraps a [Pipeline] and accumulates records from it into
 // larger batches of at most batchSize rows, performing schema reconciliation
 // across records with different schemas via [arrowagg.Records].
@@ -28,6 +31,7 @@ type batchingPipeline struct {
 	done    bool // inner pipeline is exhausted
 }
 
+// NewBatchingPipeline 使用 DefaultAllocator 构造内部 Records 聚合器。
 // NewBatchingPipeline wraps inner so that each Read call returns a single
 // aggregated batch of up to batchSize rows. When batchSize <= 0, records are
 // passed through unchanged.
@@ -44,6 +48,7 @@ func (p *batchingPipeline) Open(ctx context.Context) error {
 	return p.inner.Open(ctx)
 }
 
+// Read 累积行数至 batchSize 或 inner EOF；溢出单条记录存入 pending 供下次读取。
 // Read implements Pipeline.
 // It reads from the inner pipeline, accumulating records until batchSize rows
 // have been collected or the inner pipeline is exhausted, then returns a single
@@ -118,3 +123,4 @@ func (p *batchingPipeline) Read(ctx context.Context) (arrow.RecordBatch, error) 
 func (p *batchingPipeline) Close() {
 	p.inner.Close()
 }
+// xcap 指标记录接收行数、产出 batch 数与写出总行数，便于观测批处理开销。

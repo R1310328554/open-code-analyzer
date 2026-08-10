@@ -1,5 +1,7 @@
 package executor
 
+// Arrow 标量与数组比较：为排序算子提供 -1/0/1 三态比较及 nullsFirst 语义。
+
 import (
 	"bytes"
 	"cmp"
@@ -10,6 +12,7 @@ import (
 	"github.com/apache/arrow-go/v18/arrow/scalar"
 )
 
+// compareScalars 先处理 null，再按引擎支持的 scalar 类型分派比较逻辑。
 // compareScalars compares two rows from the given arrays and indices, returning:
 //
 // - -1 if left < right
@@ -138,6 +141,7 @@ func compareScalars(left, right scalar.Scalar, nullsFirst bool) (int, error) {
 	return 0, nil
 }
 
+// compareArrays 对 Binary/String/Timestamp 等列类型做逐行比较，未知类型视为相等。
 // compareArrays compares values at the given indices from two arrays, returning:
 //
 // - -1 if left < right
@@ -223,3 +227,4 @@ func compareArrays(left, right arrow.Array, leftIdx, rightIdx int, nullsFirst bo
 
 	return 0, nil
 }
+// Dictionary 与 RunEndEncoded 递归解包后再比较，保证排序键语义一致。

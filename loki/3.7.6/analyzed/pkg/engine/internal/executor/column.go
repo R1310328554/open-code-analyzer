@@ -1,5 +1,7 @@
 package executor
 
+// 列构造辅助：由 Literal 广播生成标量列，以及多列 coalesce 按类型优先级合并。
+
 import (
 	"fmt"
 	"slices"
@@ -11,6 +13,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/engine/internal/types"
 )
 
+// NewScalar 按 Literal 的 Loki 类型选择 Arrow builder 并重复 rows 次写入。
 func NewScalar(value types.Literal, rows int) arrow.Array {
 	builder := array.NewBuilder(memory.DefaultAllocator, value.Type().ArrowType())
 	builder.Reserve(rows)
@@ -69,6 +72,7 @@ func NewScalar(value types.Literal, rows int) arrow.Array {
 	return builder.NewArray()
 }
 
+// NewCoalesce 按 ColumnTypePrecedence 排序后取每行首个非空字符串值。
 func NewCoalesce(columns []*columnWithType) arrow.Array {
 	if len(columns) == 0 {
 		return nil
@@ -96,6 +100,7 @@ func NewCoalesce(columns []*columnWithType) arrow.Array {
 	return builder.NewArray()
 }
 
+// firstNotNullValue 从左到右扫描列，全 null 时返回 isNull=true。
 func firstNotNullValue(i int, columns []*columnWithType) (string, bool) {
 	for _, col := range columns {
 		if col.col.IsNull(i) || !col.col.IsValid(i) {
@@ -105,3 +110,4 @@ func firstNotNullValue(i int, columns []*columnWithType) (string, bool) {
 	}
 	return "", true
 }
+// List literal 当前仅支持 []string，其他元素类型会 panic 提示未实现。

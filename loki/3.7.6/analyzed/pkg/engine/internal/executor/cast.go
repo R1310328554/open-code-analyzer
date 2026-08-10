@@ -1,5 +1,7 @@
 package executor
 
+// cast 一元算子：将字符串列转换为 float64（数值/时长/字节），失败时附带错误列。
+
 import (
 	"fmt"
 	"strconv"
@@ -14,6 +16,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/engine/internal/types"
 )
 
+// castFn 返回 UnaryFunction，按 UnaryOp 选择 convertFloat/Duration/Bytes。
 func castFn(operation types.UnaryOp) UnaryFunction {
 	return UnaryFunc(func(input arrow.Array) (arrow.Array, error) {
 		sourceCol, ok := input.(*array.String)
@@ -34,6 +37,7 @@ func castFn(operation types.UnaryOp) UnaryFunction {
 	})
 }
 
+// conversionFn 解析单行字符串；出错时 castValues 写 0.0 并记录 errorTracker。
 type conversionFn func(value string) (float64, error)
 
 func getConversionFunction(operation types.UnaryOp) conversionFn {
@@ -75,6 +79,7 @@ func castValues(
 	return castBuilder.NewArray(), tracker
 }
 
+// buildValueAndErrorFields 始终含 value 列，有错误时再追加 error 与 error_details。
 func buildValueAndErrorFields(
 	hasErrors bool,
 ) []arrow.Field {
@@ -139,6 +144,7 @@ func convertBytes(v string) (float64, error) {
 	return float64(b), nil
 }
 
+// errorTracker 延迟分配 error/error_details 列，仅在首行转换失败时创建 builder。
 type errorTracker struct {
 	hasErrors      bool
 	errorBuilder   *array.StringBuilder
@@ -177,3 +183,4 @@ func (et *errorTracker) buildArrays() (arrow.Array, arrow.Array) {
 	}
 	return et.errorBuilder.NewArray(), et.detailsBuilder.NewArray()
 }
+// 转换失败默认 0.0 与旧引擎行为一致，错误类型为 SampleExtractionErrorType。

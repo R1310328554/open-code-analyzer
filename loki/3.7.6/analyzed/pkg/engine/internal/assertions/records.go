@@ -1,5 +1,7 @@
 package assertions
 
+// Arrow RecordBatch 断言：检测重复列名与 LogQL 结果标签短名冲突。
+
 import (
 	"fmt"
 
@@ -8,6 +10,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/engine/internal/semconv"
 )
 
+// CheckColumnDuplicates 遍历 schema 全名，发现重复列名即 panic。
 // CheckColumnDuplicates checks for duplicate full column names in the record.
 func CheckColumnDuplicates(record arrow.RecordBatch) {
 	if !Enabled {
@@ -27,6 +30,7 @@ func CheckColumnDuplicates(record arrow.RecordBatch) {
 	}
 }
 
+// CheckLabelValuesDuplicates 按 semconv 短名分组，同行多非空值则 panic。
 // CheckLabelValuesDuplicates checks duplicate short column names in the record and that only one value is present.
 // Short column names are used as labels in the LogQL result. Duplicate short names will collapse into a single label,
 // therefore only one value is allowed. It is valid to have multiple columns with the same short name, but different
@@ -65,3 +69,4 @@ func CheckLabelValuesDuplicates(record arrow.RecordBatch) {
 		}
 	}
 }
+// Compat 后允许多列共享短名但全名不同，此时仅校验同行有效值不超过一个。

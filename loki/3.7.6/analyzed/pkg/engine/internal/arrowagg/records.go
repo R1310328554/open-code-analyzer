@@ -1,5 +1,7 @@
 package arrowagg
 
+// Records 将多个 RecordBatch 按字段并集合并为单一 batch，缺失列以 null 填充。
+
 import (
 	"fmt"
 	"hash/maphash"
@@ -9,6 +11,7 @@ import (
 	"github.com/apache/arrow-go/v18/arrow/memory"
 )
 
+// Records 跟踪已见字段顺序与 schema 哈希，Append 后 Aggregate 输出对齐列。
 // Records allows for aggregating a set of [arrow.RecordBatch]s together into a
 // single, combined record with a combined schema.
 //
@@ -28,6 +31,7 @@ type Records struct {
 	seenSchemas map[uint64]*arrow.Schema // Maps seen schema hashes
 }
 
+// NewRecords 分配 seenFields/seenSchemas 映射并绑定 memory.Allocator。
 // NewRecords creates a new [Records] that aggregates a set of records.
 func NewRecords(mem memory.Allocator) *Records {
 	return &Records{
@@ -37,6 +41,7 @@ func NewRecords(mem memory.Allocator) *Records {
 	}
 }
 
+// Append 处理 schema 去重并 Retain 输入 batch，直至 Aggregate 才释放引用。
 // Append appends the entirety of rec to r. If record contains a field that has
 // not been seen before, it will be added to the schema of r.
 //
@@ -106,6 +111,7 @@ func (r *Records) AppendSlice(rec arrow.RecordBatch, i, j int64) {
 	r.Append(slice)
 }
 
+// Aggregate 用 Mapper 对齐各 batch 列后拼接，完成后 Reset 以便复用聚合器。
 // Aggregate all appended records into a single record.
 // If no records have been appended, Aggregate returns an error.
 //
@@ -152,6 +158,7 @@ func (r *Records) Aggregate() (arrow.RecordBatch, error) {
 	return array.NewRecordBatch(combinedSchema, columns, r.rows), nil
 }
 
+// Reset 清空 records/fields 与哈希缓存，不释放 mem allocator 本身。
 // Reset releases all resources held by r and clears its state, allowing it to
 // be reused for aggregating new records.
 func (r *Records) Reset() {
@@ -164,3 +171,4 @@ func (r *Records) Reset() {
 	clear(r.seenFields)
 	clear(r.seenSchemas)
 }
+// schema/field 哈希碰撞时会 panic，概率极低但需保证 Equal 校验一致。

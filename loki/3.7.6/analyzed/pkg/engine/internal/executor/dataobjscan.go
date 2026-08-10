@@ -1,5 +1,7 @@
 package executor
 
+// dataobjScan Pipeline：从 dataobj logs/streams section 读取并投影为引擎 Arrow schema。
+
 import (
 	"cmp"
 	"context"
@@ -23,6 +25,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/engine/internal/types"
 )
 
+// dataobjScanOptions 绑定 section 引用、StreamIDs 过滤、谓词、投影列与 BatchSize。
 type dataobjScanOptions struct {
 	StreamsSection *streams.Section
 	LogsSection    *logs.Section
@@ -47,6 +50,7 @@ type dataobjScan struct {
 
 var _ Pipeline = (*dataobjScan)(nil)
 
+// newDataobjScanPipeline 构造惰性初始化扫描器，Open 时并行加载 streams 与 logs。
 // newDataobjScanPipeline creates a new Pipeline which emits a single
 // [arrow.RecordBatch] composed of the requested log section in a data object. Rows
 // in the returned record are ordered by timestamp in the direction specified
@@ -141,6 +145,7 @@ func (s *dataobjScan) initStreams(ctx context.Context, columnsToRead []*streams.
 	return streamsView, newStreamInjector(streamsView), nil
 }
 
+// projectedLabelColumns 根据物理投影决定 streams section 需读取的标签列。
 // projectedLabelColumns returns the label columns to read from the given
 // streams section for the provided list of projections. If projections is
 // empty, all stream label columns are returned.
@@ -304,6 +309,7 @@ var logsColumnPrecedence = map[logs.ColumnType]int{
 	logs.ColumnTypeMessage:   4,
 }
 
+// projectedLogsColumns 映射 builtin/metadata 投影到 logs.Column，不含 stream ID。
 // projectedLogsColumns returns the section columns to read from the given logs
 // section for the provided list of projections. If projections is empty, all
 // section columns are returned (except for stream ID).
@@ -383,6 +389,7 @@ NextProjection:
 	return found
 }
 
+// read 批量读 logs、changeSchema 对齐 desiredSchema，再经 streamInjector 注入标签。
 // read reads the entire section into memory and generates an [arrow.RecordBatch]
 // from the data. It returns an error if reading a section resulted in an
 // error.
@@ -426,3 +433,4 @@ func (s *dataobjScan) Close() {
 	s.streamsInjector = nil
 	s.reader = nil
 }
+// Read 路径调用 CheckColumnDuplicates；Close 释放 streamsView 与 logs.Reader 资源。
