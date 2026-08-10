@@ -20,14 +20,22 @@ package org.keycloak.testsuite.broker.oidc;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.services.resource.RealmResourceProvider;
 
+/**
+ * 提供含不支持密钥类型 JWKS 端点的 Realm 资源提供者，用于 broker OIDC 密钥校验测试。
+ */
 public class UnsupportedKeyJwksRealmResourceProvider implements RealmResourceProvider {
 
+    /** 当前 Keycloak 会话。 */
     private KeycloakSession session;
 
+    /**
+     * @param session Keycloak 会话
+     */
     public UnsupportedKeyJwksRealmResourceProvider(KeycloakSession session) {
         this.session = session;
     }
 
+    /** {@inheritDoc} 返回 {@link UnsupportedKeyJwksRestResource} REST 资源实例。 */
     @Override
     public Object getResource() {
         return new UnsupportedKeyJwksRestResource(session);

@@ -30,40 +30,49 @@ import org.keycloak.representations.idm.authorization.AbstractPolicyRepresentati
 import org.keycloak.representations.idm.authorization.PolicyRepresentation;
 
 /**
+ * 测试策略提供者工厂：创建空实现的测试策略，用于授权服务集成测试。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class TestPolicyProviderFactory implements PolicyProviderFactory {
 
+    /** {@inheritDoc} 策略在管理控制台中的显示名称。 */
     @Override
     public String getName() {
         return "Test";
     }
 
+    /** {@inheritDoc} 策略分组为测试套件专用。 */
     @Override
     public String getGroup() {
         return "Test Suite";
     }
 
+    /** {@inheritDoc} 创建绑定授权提供者的 {@link TestPolicyProvider} 实例。 */
     @Override
     public PolicyProvider create(AuthorizationProvider authorization) {
         return new TestPolicyProvider(authorization);
     }
 
+    /** {@inheritDoc} 返回空的策略表示对象。 */
     @Override
     public AbstractPolicyRepresentation toRepresentation(Policy policy, AuthorizationProvider authorization) {
         return new PolicyRepresentation();
     }
 
+    /** {@inheritDoc} 策略表示类型为 {@link PolicyRepresentation}。 */
     @Override
     public Class getRepresentationType() {
         return PolicyRepresentation.class;
     }
 
+    /** {@inheritDoc} 不提供管理 REST 资源。 */
     @Override
     public PolicyProviderAdminService getAdminResource(ResourceServer resourceServer, AuthorizationProvider authorization) {
         return null;
     }
 
+    /** {@inheritDoc} 通过会话创建时不返回实例。 */
     @Override
     public PolicyProvider create(KeycloakSession session) {
         return null;
@@ -84,19 +93,26 @@ public class TestPolicyProviderFactory implements PolicyProviderFactory {
 
     }
 
+    /** {@inheritDoc} 返回 {@code test} 标识符。 */
     @Override
     public String getId() {
         return "test";
     }
 
+    /** 空实现的测试策略提供者，评估时不执行任何操作。 */
     private static class TestPolicyProvider implements PolicyProvider {
 
+        /** 关联的授权提供者，供测试扩展使用。 */
         private final AuthorizationProvider authorization;
 
+        /**
+         * @param authorization 授权提供者实例
+         */
         public TestPolicyProvider(AuthorizationProvider authorization) {
             this.authorization = authorization;
         }
 
+        /** {@inheritDoc} 空实现，不授予也不拒绝。 */
         @Override
         public void evaluate(Evaluation evaluation) {
 

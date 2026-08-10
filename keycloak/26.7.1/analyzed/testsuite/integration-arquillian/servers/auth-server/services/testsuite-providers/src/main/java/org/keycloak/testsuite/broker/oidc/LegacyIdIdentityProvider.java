@@ -23,15 +23,27 @@ import org.keycloak.broker.provider.BrokeredIdentityContext;
 import org.keycloak.models.KeycloakSession;
 
 /**
+ * 在联合身份上下文中设置固定 legacy ID 的 Keycloak OIDC 身份提供者，用于测试旧版 ID 迁移场景。
+ *
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public class LegacyIdIdentityProvider extends KeycloakOIDCIdentityProvider {
+
+    /** 测试用固定 legacy 标识符（π 近似值）。 */
     public static final String LEGACY_ID = "3.14159265359";
 
+    /**
+     * @param session Keycloak 会话
+     * @param config OIDC 身份提供者配置
+     */
     public LegacyIdIdentityProvider(KeycloakSession session, OIDCIdentityProviderConfig config) {
         super(session, config);
     }
 
+    /**
+     * {@inheritDoc}
+     * 在父类解析联合身份后，将 {@link #LEGACY_ID} 写入 {@link BrokeredIdentityContext}。
+     */
     @Override
     public BrokeredIdentityContext getFederatedIdentity(String response) {
         BrokeredIdentityContext user = super.getFederatedIdentity(response);

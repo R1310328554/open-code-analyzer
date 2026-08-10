@@ -38,14 +38,26 @@ import org.keycloak.jose.jwk.JWKBuilder;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 
+/**
+ * 返回 realm 密钥并额外附加不支持曲线类型的 JWK，用于验证 broker 对未知密钥的容错。
+ */
 public class UnsupportedKeyJwksRestResource {
 
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
 
+    /**
+     * @param session Keycloak 会话
+     */
     public UnsupportedKeyJwksRestResource(KeycloakSession session) {
         this.session = session;
     }
 
+    /**
+     * 返回包含 realm 启用密钥及一条不支持 secp256k1 曲线的 EC JWK 的 JWKS。
+     *
+     * @return JSON 格式的 {@link JSONWebKeySet} 响应
+     */
     @GET
     @Path("jwks")
     @Produces(MediaType.APPLICATION_JSON)
@@ -70,7 +82,7 @@ public class UnsupportedKeyJwksRestResource {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(ArrayList::new));
 
-        // Add unsupported jwk
+        // 追加一条不支持的 EC 密钥，曲线为 unsupportedsecp256k1
         JWK unsupported = new JWK();
         unsupported.setKeyType("EC");
         unsupported.setOtherClaims("crv", "unsupportedsecp256k1");

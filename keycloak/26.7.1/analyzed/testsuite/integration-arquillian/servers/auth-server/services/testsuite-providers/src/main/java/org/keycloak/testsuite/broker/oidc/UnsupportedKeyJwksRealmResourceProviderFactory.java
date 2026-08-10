@@ -23,15 +23,21 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.services.resource.RealmResourceProvider;
 import org.keycloak.services.resource.RealmResourceProviderFactory;
 
+/**
+ * {@link UnsupportedKeyJwksRealmResourceProvider} 的 SPI 工厂，注册含不支持密钥的 JWKS 测试端点。
+ */
 public class UnsupportedKeyJwksRealmResourceProviderFactory implements RealmResourceProviderFactory {
 
+    /** Realm 资源提供者标识符。 */
     public static final String ID = "unsupported-key-jwks";
 
+    /** {@inheritDoc} 返回 {@link #ID}。 */
     @Override
     public String getId() {
         return ID;
     }
 
+    /** {@inheritDoc} 创建 {@link UnsupportedKeyJwksRealmResourceProvider} 实例。 */
     @Override
     public RealmResourceProvider create(KeycloakSession session) {
         return new UnsupportedKeyJwksRealmResourceProvider(session);

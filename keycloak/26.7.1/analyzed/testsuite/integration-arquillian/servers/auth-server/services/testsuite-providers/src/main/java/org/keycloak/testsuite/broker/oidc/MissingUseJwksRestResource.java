@@ -36,14 +36,26 @@ import org.keycloak.jose.jwk.JWKBuilder;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 
+/**
+ * 返回 JWKS 但故意省略 {@code use} 字段的 REST 资源，用于验证 broker 对不完整 JWK 的处理。
+ */
 public class MissingUseJwksRestResource {
 
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
 
+    /**
+     * @param session Keycloak 会话
+     */
     public MissingUseJwksRestResource(KeycloakSession session) {
         this.session = session;
     }
 
+    /**
+     * 返回 realm 启用密钥的 JWKS，RSA/EC 密钥的 {@code use} 字段被置为 null。
+     *
+     * @return JSON 格式的 {@link JSONWebKeySet} 响应
+     */
     @GET
     @Path("jwks")
     @Produces(MediaType.APPLICATION_JSON)
@@ -58,6 +70,7 @@ public class MissingUseJwksRestResource {
                         .orElseGet(() -> Collections.singletonList(k.getCertificate()));
                     if (k.getType().equals(KeyType.RSA)) {
                         JWK rsaKey = b.rsa(k.getPublicKey(), certificates, k.getUse());
+                        // 故意清除 use 字段以模拟不规范 JWKS
                         rsaKey.setPublicKeyUse(null);
                         return rsaKey;
                     } else if (k.getType().equals(KeyType.EC)) {

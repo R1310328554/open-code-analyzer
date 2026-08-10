@@ -29,14 +29,19 @@ import org.keycloak.authentication.authenticators.client.ClientAuthUtil;
 import org.keycloak.authentication.authenticators.client.JWTClientAuthenticator;
 
 /**
- * A {@link JWTClientAuthenticator} that requires the optional client_id parameter.
+ * 要求提供 {@code client_id} 参数的 {@link JWTClientAuthenticator} 变体，用于测试套件。
  *
  * @author Justin Tay
  */
 public class ClientIdRequiredJWTClientAuthenticator extends JWTClientAuthenticator {
 
+    /** 测试套件客户端认证器提供商标识符。 */
     public static final String PROVIDER_ID = "testsuite-client-id-required";
 
+    /**
+     * {@inheritDoc}
+     * 在调用父类 JWT 认证前校验表单参数中是否包含 {@code client_id}。
+     */
     @Override
     public void authenticateClient(ClientAuthenticationFlowContext context) {
         MultivaluedMap<String, String> params = context.getHttpRequest().getDecodedFormParameters();
@@ -51,14 +56,19 @@ public class ClientIdRequiredJWTClientAuthenticator extends JWTClientAuthenticat
         super.authenticateClient(context);
     }
 
+    /** {@inheritDoc} 返回 {@link #PROVIDER_ID}。 */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /**
+     * {@inheritDoc}
+     * 返回空集合，避免影响 well-known 端点测试。
+     */
     @Override
     public Set<String> getProtocolAuthenticatorMethods(String loginProtocol) {
-        // Do not add as it will affect the well known provider test
+        // 不注册为协议认证方法，以免影响 well-known 提供者测试
         return Collections.emptySet();
     }
 }

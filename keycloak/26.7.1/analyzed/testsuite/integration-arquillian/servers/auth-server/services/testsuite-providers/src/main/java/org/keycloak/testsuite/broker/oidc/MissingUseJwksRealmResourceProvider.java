@@ -20,14 +20,22 @@ package org.keycloak.testsuite.broker.oidc;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.services.resource.RealmResourceProvider;
 
+/**
+ * 提供缺少 {@code use} 字段 JWKS 端点的 Realm 资源提供者，用于 broker OIDC 测试。
+ */
 public class MissingUseJwksRealmResourceProvider implements RealmResourceProvider {
 
+    /** 当前 Keycloak 会话。 */
     private KeycloakSession session;
 
+    /**
+     * @param session Keycloak 会话
+     */
     public MissingUseJwksRealmResourceProvider(KeycloakSession session) {
         this.session = session;
     }
 
+    /** {@inheritDoc} 返回 {@link MissingUseJwksRestResource} REST 资源实例。 */
     @Override
     public Object getResource() {
         return new MissingUseJwksRestResource(session);

@@ -23,15 +23,21 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.services.resource.RealmResourceProvider;
 import org.keycloak.services.resource.RealmResourceProviderFactory;
 
+/**
+ * {@link MissingUseJwksRealmResourceProvider} 的 SPI 工厂，注册缺少 use 字段的 JWKS 测试端点。
+ */
 public class MissingUseJwksRealmResourceProviderFactory implements RealmResourceProviderFactory {
 
+    /** Realm 资源提供者标识符。 */
     public static final String ID = "missing-use-jwks";
 
+    /** {@inheritDoc} 返回 {@link #ID}。 */
     @Override
     public String getId() {
         return ID;
     }
 
+    /** {@inheritDoc} 创建 {@link MissingUseJwksRealmResourceProvider} 实例。 */
     @Override
     public RealmResourceProvider create(KeycloakSession session) {
         return new MissingUseJwksRealmResourceProvider(session);
