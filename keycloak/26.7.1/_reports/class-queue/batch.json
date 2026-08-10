@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T08:26:58Z",
   "files": [
-    "model/jpa/src/main/java/org/keycloak/models/workflow/conditions/UserAttributeWorkflowConditionFactory.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/conditions/UserAttributeWorkflowConditionProvider.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/events/ClientAuthenticatedWorkflowEventFactory.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/events/ClientAuthenticatedWorkflowEventProvider.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/events/ClientCreatedWorkflowEventFactory.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/events/ClientCreatedWorkflowEventProvider.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/events/UserAuthenticatedWorkflowEventFactory.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/events/UserAuthenticatedWorkflowEventProvider.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/events/UserCreatedWorkflowEventFactory.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/events/UserCreatedWorkflowEventProvider.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/events/UserFedIdentityAddedWorkflowEventFactory.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/events/UserFedIdentityAddedWorkflowEventProvider.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/events/UserFedIdentityRemovedWorkflowEventFactory.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/events/UserFedIdentityRemovedWorkflowEventProvider.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/events/UserGroupMembershipAddedWorkflowEventFactory.java",
     "model/jpa/src/main/java/org/keycloak/models/workflow/events/UserGroupMembershipAddedWorkflowEventProvider.java",
     "model/jpa/src/main/java/org/keycloak/models/workflow/events/UserGroupMembershipRemovedWorkflowEventFactory.java",
     "model/jpa/src/main/java/org/keycloak/models/workflow/events/UserGroupMembershipRemovedWorkflowEventProvider.java",
@@ -33,5 +18,5 @@
     "model/jpa/src/main/java/org/keycloak/models/workflow/expression/EventEvaluator.java"
   ],
   "remaining_pending": 4168,
-  "done": 1800
+  "done": 1815
 }
