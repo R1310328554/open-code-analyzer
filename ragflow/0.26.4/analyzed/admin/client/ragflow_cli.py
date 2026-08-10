@@ -14,6 +14,12 @@
 #  limitations under the License.
 #
 
+
+"""
+RAGFlow 交互式/单条命令 CLI 入口。
+
+基于 cmd.Cmd 读入用户输入，经 Lark 解析后委托 RAGFlowClient 执行；支持 admin 与 user 两种模式及 RSA 密码加密登录。
+"""
 import sys
 import argparse
 import base64
@@ -37,6 +43,10 @@ from user import login_user
 warnings.filterwarnings("ignore", category=getpass.GetPassWarning)
 
 
+"""
+使用内置 RSA 公钥加密敏感字符串（与 Web 端一致）。
+"""
+
 def encrypt(input_string):
     pub = "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArq9XTUSeYr2+N1h3Afl/z8Dse/2yD0ZGrKwx+EEEcdsBLca9Ynmx3nIB5obmLlSfmskLpBo0UACBmB5rEjBp2Q2f3AG3Hjd4B+gNCG6BDaawuDlgANIhGnaTLrIqWrrcm4EMzJOnAOI1fgzJRsOOUEfaS318Eq9OVO3apEyCCt0lOQK6PuksduOjVxtltDav+guVAA068NrPYmRNabVKRNLJpL8w4D44sfth5RvZ3q9t+6RTArpEtc5sh5ChzvqPOzKGMXW83C95TxmXqpbK6olN4RevSfVjEAgCydH6HN6OhtOQEcnrU97r9H0iZOWwbw3pVrZiUkuRD1R56Wzs2wIDAQAB\n-----END PUBLIC KEY-----"
     pub_key = RSA.importKey(pub)
@@ -45,10 +55,18 @@ def encrypt(input_string):
     return base64.b64encode(cipher_text).decode("utf-8")
 
 
+"""
+将字符串编码为 Base64 文本。
+"""
+
 def encode_to_base64(input_string):
     base64_encoded = base64.b64encode(input_string.encode("utf-8"))
     return base64_encoded.decode("utf-8")
 
+
+"""
+RAGFlow 命令行交互壳：解析、鉴权、表格输出与历史记录。
+"""
 
 class RAGFlowCLI(Cmd):
     def __init__(self):
@@ -101,6 +119,10 @@ class RAGFlowCLI(Cmd):
     def default(self, line: str) -> bool:
         return self.onecmd(line)
 
+    """
+    调用 Lark 解析输入行并写入 readline 历史。
+    """
+
     def parse_command(self, command_str: str) -> dict[str, str]:
         if not command_str.strip():
             return {"type": "empty"}
@@ -113,6 +135,10 @@ class RAGFlowCLI(Cmd):
             return result
         except Exception as e:
             return {"type": "error", "message": f"Parse error: {str(e)}"}
+
+    """
+    校验用户名密码并构造 RAGFlowClient；单命令模式仅尝试一次。
+    """
 
     def verify_auth(self, arguments: dict, single_command: bool, auth: bool):
         server_type = arguments.get("type", "admin")
@@ -252,6 +278,10 @@ class RAGFlowCLI(Cmd):
             result = self.parse_command(command)
             self.execute_command(result)
 
+    """
+    解析 -h/-p/-t/-u 等启动参数。
+    """
+
     def parse_connection_args(self, args: List[str]) -> Dict[str, Any]:
         parser = argparse.ArgumentParser(description="RAGFlow CLI Client", add_help=False)
         parser.add_argument("-h", "--host", default="127.0.0.1", help="Admin or RAGFlow service host")
@@ -289,6 +319,10 @@ class RAGFlowCLI(Cmd):
         except SystemExit:
             return {"error": "Invalid connection arguments"}
 
+    """
+    将解析结果交给 run_command 执行。
+    """
+
     def execute_command(self, parsed_command: Dict[str, Any]):
         command_dict: dict
         if isinstance(parsed_command, Tree):
@@ -303,6 +337,10 @@ class RAGFlowCLI(Cmd):
         # print(f"Parsed command: {command_dict}")
         run_command(self.ragflow_client, command_dict)
 
+
+"""
+CLI 主入口：交互模式或单条 command 子命令。
+"""
 
 def main():
 

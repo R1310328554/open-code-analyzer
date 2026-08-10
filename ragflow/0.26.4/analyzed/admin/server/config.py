@@ -15,6 +15,12 @@
 #
 
 
+
+"""
+Admin 监控的服务组件配置模型与加载逻辑。
+
+从 service_conf 读取 MySQL、ES、Redis、MinIO、RAGFlow 等条目，转为带 detail_func_name 的 Pydantic 配置对象列表。
+"""
 import logging
 import threading
 from enum import Enum
@@ -24,6 +30,10 @@ from typing import Any
 from common.config_utils import read_config
 from urllib.parse import urlparse
 
+
+"""
+所有受监控服务条目的公共字段。
+"""
 
 class BaseConfig(BaseModel):
     id: int
@@ -37,6 +47,10 @@ class BaseConfig(BaseModel):
         return {"id": self.id, "name": self.name, "host": self.host, "port": self.port, "service_type": self.service_type}
 
 
+"""
+运行时服务配置列表及线程锁。
+"""
+
 class ServiceConfigs:
     configs = list[BaseConfig]
 
@@ -47,6 +61,10 @@ class ServiceConfigs:
 
 SERVICE_CONFIGS = ServiceConfigs
 
+
+"""
+服务类型枚举：元数据、检索、消息队列等。
+"""
 
 class ServiceType(Enum):
     METADATA = "metadata"
@@ -216,6 +234,10 @@ class MinioConfig(FileStoreConfig):
         result["extra"] = extra_dict
         return result
 
+
+"""
+解析配置文件并构建各组件 BaseConfig 子类实例。
+"""
 
 def load_configurations(config_path: str) -> list[BaseConfig]:
     raw_configs = read_config(config_path)

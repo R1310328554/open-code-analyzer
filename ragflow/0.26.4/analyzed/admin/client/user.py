@@ -14,6 +14,12 @@
 #  limitations under the License.
 #
 
+
+"""
+CLI 侧用户注册、登录与密码 RSA 加密。
+
+与 Web 前端相同：先 Base64 再 PKCS1_v1_5 加密。
+"""
 from http_client import HttpClient
 
 
@@ -23,6 +29,10 @@ class AuthException(Exception):
         self.code = code
         self.message = message
 
+
+"""
+将明文密码加密为服务端可解密的密文。
+"""
 
 def encrypt_password(password_plain: str) -> str:
     try:
@@ -45,6 +55,10 @@ def encrypt_password(password_plain: str) -> str:
     return crypt(password_plain)
 
 
+"""
+调用 /users 注册；已注册邮箱视为成功。
+"""
+
 def register_user(client: HttpClient, email: str, nickname: str, password: str) -> None:
     password_enc = encrypt_password(password)
     payload = {"email": email, "nickname": nickname, "password": password_enc}
@@ -56,6 +70,10 @@ def register_user(client: HttpClient, email: str, nickname: str, password: str) 
         return
     raise AuthException(f"Register failed: {msg}")
 
+
+"""
+admin 走 /admin/login，user 走 /auth/login，返回 Authorization 头。
+"""
 
 def login_user(client: HttpClient, server_type: str, email: str, password: str) -> str:
     password_enc = encrypt_password(password)

@@ -14,6 +14,12 @@
 #  limitations under the License.
 #
 
+
+"""
+RAGFlow Admin HTTP 服务进程入口。
+
+初始化 Flask、Session、LoginManager、默认管理员与服务配置，在 9381 端口提供 /api/v1/admin 管理 API。
+"""
 import time
 
 start_ts = time.time()
@@ -37,6 +43,8 @@ from auth import init_default_admin, setup_auth
 from flask_session import Session
 from common.versions import get_ragflow_version
 
+# 用于协调后台线程退出的全局事件
+# 用于协调后台线程退出的全局事件
 stop_event = threading.Event()
 
 if __name__ == "__main__":

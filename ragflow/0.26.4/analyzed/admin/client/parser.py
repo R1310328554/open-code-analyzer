@@ -14,8 +14,16 @@
 #  limitations under the License.
 #
 
+
+"""
+RAGFlow CLI 的 Lark 语法定义与 AST 转换器。
+
+GRAMMAR 描述 SQL 风格管理命令与用户模式命令；RAGFlowCLITransformer 将解析树转为 type 字段驱动的命令字典。
+"""
 from lark import Transformer
 
+# CLI 命令的 Lark 语法（含 meta 命令 \help 等）
+# CLI 命令的 Lark 语法（含 meta 命令 \help 等）
 GRAMMAR = r"""
 start: command
 
@@ -391,12 +399,22 @@ NUMBER: /[0-9]+/
 """
 
 
+"""
+将 Lark 解析结果转换为 CLI 可执行的命令字典。
+
+每个 sql_command 规则对应一个方法，输出至少包含 type 键。
+"""
+
 class RAGFlowCLITransformer(Transformer):
     def start(self, items):
         return items[0]
 
     def command(self, items):
         return items[0]
+
+    """
+    解析 LOGIN USER 语句，可选带 PASSWORD。
+    """
 
     def login_user(self, items):
         email = items[2].children[0].strip("'\"")
@@ -804,6 +822,10 @@ class RAGFlowCLITransformer(Transformer):
         meta_json = items[6].children[0].strip("'\"")
         return {"type": "set_metadata", "doc_id": doc_id, "meta": meta_json}
 
+    """
+    解析 REMOVE TAGS … FROM DATASET 语句。
+    """
+
     def remove_tags(self, items):
         # items: REMOVE, TAGS, quoted_string(tag1), quoted_string(tag2), ..., FROM, DATASET, quoted_string(dataset_name), ";"
         tags = []
@@ -825,6 +847,10 @@ class RAGFlowCLITransformer(Transformer):
                 dataset_name = items[i + 1].children[0].strip("'\"")
                 break
         return {"type": "remove_tags", "dataset_name": dataset_name, "tags": tags}
+
+    """
+    解析按 chunk 列表或 ALL 删除分块。
+    """
 
     def remove_chunks(self, items):
         # Handle two cases:
@@ -873,6 +899,10 @@ class RAGFlowCLITransformer(Transformer):
 
         return result
 
+    """
+    解析 BENCHMARK 并发压测命令。
+    """
+
     def benchmark(self, items):
         concurrency: int = int(items[1])
         iterations: int = int(items[2])
@@ -881,6 +911,10 @@ class RAGFlowCLITransformer(Transformer):
 
     def action_list(self, items):
         return items
+
+    """
+    解析以反斜杠开头的 meta 命令（如 \q、\help）。
+    """
 
     def meta_command(self, items):
         command_name = str(items[0]).lower()

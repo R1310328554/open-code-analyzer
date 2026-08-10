@@ -13,3 +13,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+
+"""
+Admin 服务的数据模型占位模块。
+
+当前版本无额外 ORM 定义，业务实体复用 api.db 层模型。
+"""

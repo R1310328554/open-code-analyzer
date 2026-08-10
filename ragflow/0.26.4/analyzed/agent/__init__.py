@@ -13,3 +13,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+
+"""
+RAGFlow Agent 包入口。
+
+Agent 子模块（画布、沙箱 Provider 等）由其他包按需导入；本文件保留许可证头作为包占位。
+"""

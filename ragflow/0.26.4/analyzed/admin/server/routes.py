@@ -14,6 +14,12 @@
 #  limitations under the License.
 #
 
+
+"""
+Admin REST API 路由蓝图。
+
+前缀 /api/v1/admin，涵盖用户、服务、角色、变量、沙箱与日志级别等端点。
+"""
 import secrets
 import logging
 from typing import Any
@@ -32,10 +38,16 @@ from common.versions import get_ragflow_version
 from api.utils.api_utils import generate_confirmation_token
 from common.log_utils import get_log_levels, set_log_level
 
+# Admin 管理 API 蓝图
+# Admin 管理 API 蓝图
 admin_bp = Blueprint("admin", __name__, url_prefix="/api/v1/admin")
 
 
 @admin_bp.route("/ping", methods=["GET"])
+"""
+健康检查，返回 pong。
+"""
+
 def ping():
     return success_response(message="pong")
 
@@ -76,6 +88,10 @@ def auth_admin():
 @admin_bp.route("/users", methods=["GET"])
 @login_required
 @check_admin_auth
+"""
+列出全部用户摘要信息。
+"""
+
 def list_users():
     try:
         users = UserMgr.get_all_users()
@@ -241,6 +257,10 @@ def get_user_agents(username):
 @admin_bp.route("/services", methods=["GET"])
 @login_required
 @check_admin_auth
+"""
+列出已配置后台服务及存活状态。
+"""
+
 def get_services():
     try:
         services = ServiceMgr.get_all_services()
@@ -603,6 +623,10 @@ def get_sandbox_config():
 @admin_bp.route("/sandbox/config", methods=["POST"])
 @login_required
 @check_admin_auth
+"""
+更新代码沙箱 Provider 配置。
+"""
+
 def set_sandbox_config():
     """Set sandbox provider configuration."""
     try:

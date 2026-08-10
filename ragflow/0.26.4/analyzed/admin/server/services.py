@@ -14,6 +14,12 @@
 #  limitations under the License.
 #
 
+
+"""
+Admin 业务服务层：用户、租户资源、服务健康、系统设置与沙箱。
+
+路由层通过各 Mgr 类访问数据库与 health_utils。
+"""
 import json
 import os
 import logging
@@ -36,6 +42,10 @@ from api.utils import health_utils
 from api.common.exceptions import AdminException, UserAlreadyExistsError, UserNotFoundError
 from config import SERVICE_CONFIGS
 
+
+"""
+用户 CRUD、密码、激活状态、API Key 与管理员授权。
+"""
 
 class UserMgr:
     @staticmethod
@@ -224,6 +234,10 @@ class UserMgr:
         return "Revoke successfully!"
 
 
+"""
+按用户查询其数据集、Agent 与租户列表。
+"""
+
 class UserServiceMgr:
     @staticmethod
     def get_user_datasets(username):
@@ -266,6 +280,10 @@ class UserServiceMgr:
         tenants: list[dict[str, Any]] = UserTenantService.get_tenants_by_user_id(user.id)
         return tenants
 
+
+"""
+聚合 SERVICE_CONFIGS 并调用健康检查函数。
+"""
 
 class ServiceMgr:
     @staticmethod
@@ -328,6 +346,10 @@ class ServiceMgr:
     def restart_service(service_id: int):
         raise AdminException("restart_service: not implemented")
 
+
+"""
+系统键值设置的读写与类型校验。
+"""
 
 class SettingsMgr:
     @staticmethod
@@ -418,6 +440,10 @@ class SettingsMgr:
             SystemSettingsService.save(**new_setting)
 
 
+"""
+导出当前加载的服务组件配置。
+"""
+
 class ConfigMgr:
     @staticmethod
     def get_all():
@@ -428,6 +454,10 @@ class ConfigMgr:
             result.append(config_dict)
         return result
 
+
+"""
+列出关键部署环境变量。
+"""
 
 class EnvironmentsMgr:
     @staticmethod
@@ -451,6 +481,10 @@ class EnvironmentsMgr:
 
         return result
 
+
+"""
+代码沙箱 Provider 注册、配置 schema 与连通性测试。
+"""
 
 class SandboxMgr:
     """Manager for sandbox provider configuration and operations."""

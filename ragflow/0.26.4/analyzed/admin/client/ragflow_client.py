@@ -13,6 +13,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+
+"""
+RAGFlow CLI 的业务客户端：将解析后的命令映射为 REST API 调用。
+
+admin 模式访问 /admin/*；user 模式访问数据集、对话、检索等用户 API。
+"""
 import json
 import time
 from typing import Any, List, Optional
@@ -43,16 +49,28 @@ def encrypt(input_string):
     return base64.b64encode(cipher_text).decode("utf-8")
 
 
+"""
+从 Lark Tree 或字面量中提取去引号的字符串。
+"""
+
 def _strip_tree_value(value):
     if isinstance(value, Tree):
         value = value.children[0]
     return str(value).strip("'\"")
 
 
+"""
+封装全部 CLI 命令对应的 HTTP 操作与终端表格输出。
+"""
+
 class RAGFlowClient:
     def __init__(self, http_client: HttpClient, server_type: str):
         self.http_client = http_client
         self.server_type = server_type
+
+    """
+    检测服务存活后交互或命令行登录。
+    """
 
     def login_user(self, command):
         try:
@@ -97,6 +115,10 @@ class RAGFlowClient:
                 print("Server is down")
             return None
 
+    """
+    注册用户（仅 user 模式）。
+    """
+
     def register_user(self, command):
         if self.server_type != "user":
             print("This command is only allowed in USER mode")
@@ -115,6 +137,10 @@ class RAGFlowClient:
                 print(f"Fail to register user {username}, code: {res_json['code']}, message: {res_json['message']}")
         else:
             print(f"Fail to register user {username}, code: {res_json['code']}, message: {res_json['message']}")
+
+    """
+    列出后台服务健康状态（仅 admin）。
+    """
 
     def list_services(self):
         if self.server_type != "admin":
@@ -1212,6 +1238,10 @@ class RAGFlowClient:
             return sessions
         self._print_table_simple(sessions)
 
+    """
+    对指定会话发起流式对话补全。
+    """
+
     def chat_on_session(self, command):
         if self.server_type != "user":
             print("This command is only allowed in USER mode")
@@ -1402,6 +1432,10 @@ class RAGFlowClient:
         finally:
             for fh in file_handles:
                 fh.close()
+
+    """
+    跨数据集向量检索。
+    """
 
     def search_on_datasets(self, command_dict):
         if self.server_type != "user":
@@ -1865,6 +1899,10 @@ class RAGFlowClient:
             print(f"{key}: {value}")
 
 
+"""
+根据 command_dict['type'] 分派到具体处理方法。
+"""
+
 def run_command(client: RAGFlowClient, command_dict: dict):
     command_type = command_dict["type"]
 
@@ -2049,6 +2087,10 @@ def _handle_meta_command(command: dict):
         print(f"Meta command '{meta_command}' with args {args}")
 
 
+"""
+打印 CLI 内置帮助文本。
+"""
+
 def show_help():
     """Help info"""
     help_text = """
@@ -2097,6 +2139,10 @@ Meta Commands:
     """
     print(help_text)
 
+
+"""
+按并发度执行压测并统计 QPS。
+"""
 
 def run_benchmark(client: RAGFlowClient, command_dict: dict):
     concurrency = command_dict.get("concurrency", 1)

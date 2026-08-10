@@ -15,6 +15,12 @@
 #
 
 
+
+"""
+Admin 服务的认证与用户引导。
+
+含 Flask-Login 请求加载、默认超级用户创建、管理员登录与装饰器鉴权。
+"""
 import logging
 import uuid
 from functools import wraps
@@ -35,6 +41,10 @@ from common.time_utils import current_timestamp, datetime_format, get_format_tim
 from common.connection_utils import sync_construct_response
 from common import settings
 
+
+"""
+注册 request_loader：JWT 解出 access_token 后查库加载用户。
+"""
 
 def setup_auth(login_manager):
     @login_manager.request_loader
@@ -85,6 +95,10 @@ def setup_auth(login_manager):
             return None
 
 
+"""
+若无超级用户则创建 admin@ragflow.io 并绑定租户。
+"""
+
 def init_default_admin():
     # Verify that at least one active admin user exists. If not, create a default one.
     users = UserService.query(is_superuser=True)
@@ -112,6 +126,10 @@ def init_default_admin():
                 add_tenant_for_admin(default_admin, UserTenantRole.OWNER)
 
 
+"""
+为新管理员创建默认租户及用户-租户关联。
+"""
+
 def add_tenant_for_admin(user_info: dict, role: str):
 
     tenant = {
@@ -133,6 +151,10 @@ def add_tenant_for_admin(user_info: dict, role: str):
     logging.info(f"Added tenant for email: {user_info['email']}, A default tenant has been set; changing the default models after login is strongly recommended.")
 
 
+"""
+装饰器：要求当前用户为激活状态的超级用户。
+"""
+
 def check_admin_auth(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -148,6 +170,10 @@ def check_admin_auth(func):
 
     return wrapper
 
+
+"""
+校验邮箱密码、签发 access_token 并 flask_login 登录。
+"""
 
 def login_admin(email: str, password: str):
     """
@@ -199,6 +225,10 @@ def check_admin(username: str, password: str):
     else:
         return False
 
+
+"""
+HTTP Basic 方式校验管理员（部分路由使用）。
+"""
 
 def login_verify(f):
     @wraps(f)

@@ -13,12 +13,22 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+
+"""
+角色与权限管理的占位实现。
+
+RoleMgr 各方法当前抛出 AdminException，供路由层预留接口。
+"""
 import logging
 
 from typing import Dict, Any
 
 from api.common.exceptions import AdminException
 
+
+"""
+角色 CRUD 与权限授予/撤销（尚未实现）。
+"""
 
 class RoleMgr:
     @staticmethod

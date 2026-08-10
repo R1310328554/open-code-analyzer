@@ -14,6 +14,12 @@
 #  limitations under the License.
 #
 
+
+"""
+RAGFlow 管理端/用户端 CLI 的 HTTP 客户端封装。
+
+负责构造 API 基址、附加认证头，并通过 requests 发送 GET/POST 等请求；支持多次迭代计时（用于 benchmark）。
+"""
 import time
 import json
 import typing
@@ -22,6 +28,12 @@ from typing import Any, Dict, Optional
 import requests
 # from requests.sessions import HTTPAdapter
 
+
+"""
+面向 RAGFlow 服务的轻量 HTTP 客户端。
+
+可配置主机、端口、API 版本、API Key 与登录令牌，并按 auth_kind 选择 Bearer API Key、Web 会话或 Admin 令牌。
+"""
 
 class HttpClient:
     def __init__(
@@ -43,11 +55,19 @@ class HttpClient:
         self.read_timeout = read_timeout
         self.verify_ssl = verify_ssl
 
+    """
+    返回带 /api/{version} 前缀的 API 基址。
+    """
+
     def api_base(self) -> str:
         return f"{self.host}:{self.port}/api/{self.api_version}"
 
     def non_api_base(self) -> str:
         return f"{self.host}:{self.port}/{self.api_version}"
+
+    """
+    根据 path 与是否使用 API 基址拼出完整 URL（http/https）。
+    """
 
     def build_url(self, path: str, use_api_base: bool = True) -> str:
         base = self.api_base() if use_api_base else self.non_api_base()
@@ -55,6 +75,10 @@ class HttpClient:
             return f"https://{base}/{path.lstrip('/')}"
         else:
             return f"http://{base}/{path.lstrip('/')}"
+
+    """
+    按 auth_kind 合并 Authorization 与额外请求头。
+    """
 
     def _headers(self, auth_kind: Optional[str], extra: Optional[Dict[str, str]]) -> Dict[str, str]:
         headers = {}
@@ -69,6 +93,10 @@ class HttpClient:
         if extra:
             headers.update(extra)
         return headers
+
+    """
+    发送 HTTP 请求；iterations>1 时返回各次响应与总耗时字典。
+    """
 
     def request(
         self,
@@ -143,6 +171,10 @@ class HttpClient:
             #     verify=self.verify_ssl,
             # )
 
+    """
+    请求并解析 JSON 响应，非 JSON 时抛出 ValueError。
+    """
+
     def request_json(
         self,
         method: str,
@@ -175,6 +207,10 @@ class HttpClient:
             raise ValueError(f"Non-JSON response from {path}: {exc}") from exc
 
     @staticmethod
+    """
+    将 UTF-8 字节解析为 JSON 字典。
+    """
+
     def parse_json_bytes(raw: bytes) -> Dict[str, Any]:
         try:
             return json.loads(raw.decode("utf-8"))
