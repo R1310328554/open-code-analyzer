@@ -48,6 +48,10 @@ import org.w3c.dom.Document;
 
 import static org.keycloak.saml.common.constants.JBossSAMLURIConstants.ATTRIBUTE_FORMAT_BASIC;
 
+/**
+ * XPath SAML 属性导入映射器：用 XPath 表达式从 SAML 属性 XML 片段提取文本。
+ * <p>属性值被包裹在 {@code <root>} 元素中执行 XPath 求值，支持命名空间前缀。</p>
+ */
 public class XPathAttributeMapper extends AbstractIdentityProviderMapper implements SamlMetadataDescriptorUpdater {
 
     public static final String[] COMPATIBLE_PROVIDERS = {SAMLIdentityProviderFactory.PROVIDER_ID};
@@ -56,9 +60,12 @@ public class XPathAttributeMapper extends AbstractIdentityProviderMapper impleme
 
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<>();
 
+    /** 配置键：XPath 表达式。 */
     public static final String ATTRIBUTE_XPATH = "attribute.xpath";
+    /** 配置键：限定搜索范围的 SAML 属性名。 */
     public static final String ATTRIBUTE_NAME = "attribute.name";
     public static final String ATTRIBUTE_FRIENDLY_NAME = "attribute.friendly.name";
+    /** 配置键：目标 Keycloak 用户属性名。 */
     public static final String USER_ATTRIBUTE = "user.attribute";
     private static final Set<IdentityProviderSyncMode> IDENTITY_PROVIDER_SYNC_MODES = new HashSet<>(Arrays.asList(IdentityProviderSyncMode.values()));
 
@@ -105,6 +112,7 @@ public class XPathAttributeMapper extends AbstractIdentityProviderMapper impleme
         configProperties.add(property);
     }
 
+    /** 映射器 provider id。 */
     public static final String PROVIDER_ID = "saml-xpath-attribute-idp-mapper";
 
     @Override
@@ -137,6 +145,7 @@ public class XPathAttributeMapper extends AbstractIdentityProviderMapper impleme
         return "XPath Attribute Importer";
     }
 
+    /** 预处理：XPath 提取属性值并写入联邦身份用户属性。 */
     @Override
     public void preprocessFederatedIdentity(KeycloakSession session, RealmModel realm, IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
         String attribute = mapperModel.getConfig().get(USER_ATTRIBUTE);
@@ -169,6 +178,7 @@ public class XPathAttributeMapper extends AbstractIdentityProviderMapper impleme
         };
     }
 
+    /** 将 XML 片段包裹 root 元素后执行 XPath，解析 xmlns 前缀命名空间。 */
     private static Function<String, Object> applyXPath(String attributeXPath) {
         return xml -> {
             try {
@@ -223,6 +233,7 @@ public class XPathAttributeMapper extends AbstractIdentityProviderMapper impleme
         };
     }
 
+    /** 从断言属性值执行 XPath 并收集非空结果。 */
     private List<String> findAttributeValuesInContext(String attributeName, String attributeXPath, BrokeredIdentityContext context) {
         AssertionType assertion = (AssertionType) context.getContextData().get(SAMLEndpoint.SAML_ASSERTION);
 
@@ -243,6 +254,7 @@ public class XPathAttributeMapper extends AbstractIdentityProviderMapper impleme
                 .collect(Collectors.toList());
     }
 
+    /** 同步 XPath 提取结果至用户属性。 */
     @Override
     public void updateBrokeredUser(KeycloakSession session, RealmModel realm, UserModel user, IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
         String attribute = mapperModel.getConfig().get(USER_ATTRIBUTE);
@@ -257,12 +269,13 @@ public class XPathAttributeMapper extends AbstractIdentityProviderMapper impleme
         }
     }
 
+    /** @return 通过 XPath 从 SAML 属性提取文本并导入用户属性 */
     @Override
     public String getHelpText() {
         return "Extract text of a saml attribute via XPath expression and import into the specified user property or attribute.";
     }
 
-    // ISpMetadataAttributeProvider interface
+    // SP 元数据 RequestedAttribute 更新
     @Override
     public void updateMetadata(IdentityProviderMapperModel mapperModel, EntityDescriptorType entityDescriptor) {
         RequestedAttributeType requestedAttribute = new RequestedAttributeType(mapperModel.getConfig().get(XPathAttributeMapper.ATTRIBUTE_NAME));
@@ -273,7 +286,7 @@ public class XPathAttributeMapper extends AbstractIdentityProviderMapper impleme
         if (attributeFriendlyName != null && attributeFriendlyName.length() > 0)
             requestedAttribute.setFriendlyName(attributeFriendlyName);
 
-        // Add the requestedAttribute item to any AttributeConsumingServices
+        // 将 RequestedAttribute 添加到所有 AttributeConsumingService
         for (EntityDescriptorType.EDTChoiceType choiceType: entityDescriptor.getChoiceType()) {
             List<EntityDescriptorType.EDTDescriptorChoiceType> descriptors = choiceType.getDescriptors();
 

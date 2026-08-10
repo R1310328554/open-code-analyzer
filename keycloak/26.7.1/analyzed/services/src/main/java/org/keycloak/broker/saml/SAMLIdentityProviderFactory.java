@@ -43,10 +43,13 @@ import org.w3c.dom.Element;
 import static org.keycloak.models.IdentityProviderModel.LEGACY_HIDE_ON_LOGIN_ATTR;
 
 /**
+ * SAML 2.0 身份代理工厂，provider id 为 saml。
+ * <p>支持从 IdP SAML 元数据解析 SSO/SLO 端点、证书与 NameID 格式。</p>
  * @author Pedro Igor
  */
 public class SAMLIdentityProviderFactory extends AbstractIdentityProviderFactory<SAMLIdentityProvider> {
 
+    /** 身份代理提供者标识符。 */
     public static final String PROVIDER_ID = "saml";
 
     private static final String MACEDIR_ENTITY_CATEGORY = "http://macedir.org/entity-category";
@@ -54,21 +57,25 @@ public class SAMLIdentityProviderFactory extends AbstractIdentityProviderFactory
 
     private DestinationValidator destinationValidator;
 
+    /** @return 管理控制台显示名称 SAML v2.0 */
     @Override
     public String getName() {
         return "SAML v2.0";
     }
 
+    /** @return {@link SAMLIdentityProvider} 实例 */
     @Override
     public SAMLIdentityProvider create(KeycloakSession session, IdentityProviderModel model) {
         return new SAMLIdentityProvider(session, new SAMLIdentityProviderConfig(model), destinationValidator);
     }
 
+    /** @return 默认 {@link SAMLIdentityProviderConfig} */
     @Override
     public SAMLIdentityProviderConfig createConfig() {
         return new SAMLIdentityProviderConfig();
     }
 
+    /** 从 IdP SAML 元数据 XML 解析端点、证书、NameID 格式与 hide-from-discovery 属性。 */
     @Override
     public Map<String, String> parseConfig(KeycloakSession session, String config) {
         try {
@@ -159,7 +166,7 @@ public class SAMLIdentityProviderFactory extends AbstractIdentityProviderFactory
                 samlIdentityProviderConfig.setEnabledFromMetadata(entityType.getValidUntil() == null
                         || entityType.getValidUntil().toGregorianCalendar().getTime().after(new Date(System.currentTimeMillis())));
 
-                // check for hide on login attribute
+                // 检查 REFEDS hide-from-discovery 元数据属性以隐藏登录页 IdP
                 if (entityType.getExtensions() != null && entityType.getExtensions().getEntityAttributes() != null) {
                     for (AttributeType attribute : entityType.getExtensions().getEntityAttributes().getAttribute()) {
                         if (MACEDIR_ENTITY_CATEGORY.equals(attribute.getName())
@@ -179,11 +186,13 @@ public class SAMLIdentityProviderFactory extends AbstractIdentityProviderFactory
         return new HashMap<>();
     }
 
+    /** @return provider id saml */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** 初始化 DestinationValidator 以校验 SAML 响应目标 URL。 */
     @Override
     public void init(Scope config) {
         super.init(config);

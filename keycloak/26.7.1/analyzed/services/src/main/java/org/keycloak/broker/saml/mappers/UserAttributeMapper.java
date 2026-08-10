@@ -52,6 +52,8 @@ import org.keycloak.saml.common.util.StringUtil;
 import static org.keycloak.saml.common.constants.JBossSAMLURIConstants.ATTRIBUTE_FORMAT_BASIC;
 
 /**
+ * SAML 属性导入映射器：将断言中的 SAML 属性导入 Keycloak 用户属性或预定义字段。
+ * <p>支持 email/firstName/lastName 快捷映射及 SP 元数据 RequestedAttribute 更新。</p>
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -61,10 +63,14 @@ public class UserAttributeMapper extends AbstractIdentityProviderMapper implemen
 
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<>();
 
+    /** 配置键：SAML 属性名。 */
     public static final String ATTRIBUTE_NAME = "attribute.name";
+    /** 配置键：SAML 属性友好名。 */
     public static final String ATTRIBUTE_FRIENDLY_NAME = "attribute.friendly.name";
     public static final String ATTRIBUTE_NAME_FORMAT = "attribute.name.format";
+    /** 配置键：目标 Keycloak 用户属性名。 */
     public static final String USER_ATTRIBUTE = "user.attribute";
+    /** 配置键：属性为空时是否允许设为 null。 */
     public static final String ALLOW_NULLABLE = "allow.nullable.property";
     private static final String EMAIL = "email";
     private static final String FIRST_NAME = "firstName";
@@ -110,6 +116,7 @@ public class UserAttributeMapper extends AbstractIdentityProviderMapper implemen
         configProperties.add(allowNullableProperty); 
     }
 
+    /** 映射器 provider id。 */
     public static final String PROVIDER_ID = "saml-user-attribute-idp-mapper";
 
     @Override
@@ -142,6 +149,7 @@ public class UserAttributeMapper extends AbstractIdentityProviderMapper implemen
         return "Attribute Importer";
     }
 
+    /** 预处理：从 SAML 断言提取属性并写入联邦身份上下文。 */
     @Override
     public void preprocessFederatedIdentity(KeycloakSession session, RealmModel realm, IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
         String attribute = mapperModel.getConfig().get(USER_ATTRIBUTE);
@@ -164,6 +172,7 @@ public class UserAttributeMapper extends AbstractIdentityProviderMapper implemen
         }
     }
 
+    /** 优先使用 attribute.name，否则回退 attribute.friendly.name。 */
     private String getAttributeNameFromMapperModel(IdentityProviderMapperModel mapperModel) {
         String attributeName = mapperModel.getConfig().get(ATTRIBUTE_NAME);
         if (attributeName == null) {
@@ -200,6 +209,7 @@ public class UserAttributeMapper extends AbstractIdentityProviderMapper implemen
     }
 
 
+    /** 从 SAML 断言 AttributeStatement 收集匹配属性的所有值。 */
     private List<String> findAttributeValuesInContext(String attributeName, BrokeredIdentityContext context) {
         AssertionType assertion = (AssertionType) context.getContextData().get(SAMLEndpoint.SAML_ASSERTION);
 
@@ -212,6 +222,7 @@ public class UserAttributeMapper extends AbstractIdentityProviderMapper implemen
                 .collect(Collectors.toList());
     }
 
+    /** 同步更新用户属性；支持 nullable 模式与多值属性比较。 */
     @Override
     public void updateBrokeredUser(KeycloakSession session, RealmModel realm, UserModel user, IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
         String attribute = mapperModel.getConfig().get(USER_ATTRIBUTE);
@@ -243,25 +254,26 @@ public class UserAttributeMapper extends AbstractIdentityProviderMapper implemen
         } else {
             List<String> currentAttributeValues = user.getAttributes().get(attribute);
             if (attributeValuesInContext == null) {
-                // attribute no longer sent by brokered idp, remove it
+                // IdP 不再发送该属性，移除用户属性
                 user.removeAttribute(attribute);
             } else if (currentAttributeValues == null) {
-                // new attribute sent by brokered idp, add it
+                // IdP 新发送属性，添加至用户
                 user.setAttribute(attribute, attributeValuesInContext);
             } else if (!CollectionUtil.collectionEquals(attributeValuesInContext, currentAttributeValues)) {
-                // attribute sent by brokered idp has different values as before, update it
+                // 属性值变化，更新用户属性
                 user.setAttribute(attribute, attributeValuesInContext);
             }
-            // attribute already set
+            // 属性值未变化，跳过
         }
     }
 
+    /** @return 将 SAML 断言属性导入指定用户属性或预定义字段 */
     @Override
     public String getHelpText() {
         return "Import declared saml attribute if it exists in assertion into the specified user property or attribute.";
     }
 
-    // SamlMetadataDescriptorUpdater interface
+    // SamlMetadataDescriptorUpdater 接口实现
     @Override
     public void updateMetadata(IdentityProviderMapperModel mapperModel, EntityDescriptorType entityDescriptor) {
         String attributeName = mapperModel.getConfig().get(UserAttributeMapper.ATTRIBUTE_NAME);
@@ -274,7 +286,7 @@ public class UserAttributeMapper extends AbstractIdentityProviderMapper implemen
         if (attributeFriendlyName != null && attributeFriendlyName.length() > 0)
             requestedAttribute.setFriendlyName(attributeFriendlyName);
 
-        // Add the requestedAttribute item to any AttributeConsumingServices
+        // 将 RequestedAttribute 添加到所有 AttributeConsumingService
         for (EntityDescriptorType.EDTChoiceType choiceType : entityDescriptor.getChoiceType()) {
             List<EntityDescriptorType.EDTDescriptorChoiceType> descriptors = choiceType.getDescriptors();
             for (EntityDescriptorType.EDTDescriptorChoiceType descriptor : descriptors) {

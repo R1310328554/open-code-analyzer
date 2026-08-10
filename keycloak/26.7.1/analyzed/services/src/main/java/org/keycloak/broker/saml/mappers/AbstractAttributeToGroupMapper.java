@@ -26,13 +26,12 @@ import org.keycloak.models.UserModel;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
 /**
- * Abstract class that handles the logic for importing and updating brokered users for all mappers that map a SAML
- * attribute into a {@code Keycloak} group.
- *
+ * SAML 属性到组映射器抽象基类：按 SAML 断言属性条件将用户加入或移出指定组。
  * @author <a href="mailto:denis.bernard@avanade.com">Denis Bernard</a>,
  */
 public abstract class AbstractAttributeToGroupMapper extends AbstractIdentityProviderMapper {
 
+    /** 首次导入用户时，若 SAML 属性匹配则将用户加入配置的组。 */
     @Override
     public void importNewUser(KeycloakSession session, RealmModel realm, UserModel user, IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
         GroupModel group = KeycloakModelUtils.getGroupForIdpMapper(session, realm, mapperModel, context);
@@ -45,6 +44,7 @@ public abstract class AbstractAttributeToGroupMapper extends AbstractIdentityPro
         }
     }
 
+    /** 同步更新：按属性变化加入或离开组，避免重复处理已分配组。 */
     @Override
     public void updateBrokeredUser(KeycloakSession session, RealmModel realm, UserModel user, IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
         GroupModel group = KeycloakModelUtils.getGroupForIdpMapper(session, realm, mapperModel, context);
@@ -64,12 +64,11 @@ public abstract class AbstractAttributeToGroupMapper extends AbstractIdentityPro
     }
 
     /**
-     * This method must be implemented by subclasses and they must return {@code true} if their mapping can be applied
-     * (i.e. user has the SAML attribute that should be mapped) or {@code false} otherwise.
+     * 子类实现：当用户 SAML 属性满足映射条件时返回 {@code true}。
      *
-     * @param mapperModel a reference to the {@link IdentityProviderMapperModel}.
-     * @param context a reference to the {@link BrokeredIdentityContext}.
-     * @return {@code true} if the mapping can be applied or {@code false} otherwise.
+     * @param mapperModel {@link IdentityProviderMapperModel} 引用
+     * @param context {@link BrokeredIdentityContext} 引用
+     * @return 可应用映射时为 {@code true}
      */
     protected abstract boolean applies(final IdentityProviderMapperModel mapperModel, final BrokeredIdentityContext context);
 

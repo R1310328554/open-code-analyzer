@@ -29,9 +29,8 @@ import org.keycloak.models.utils.KeycloakModelUtils;
 import org.jboss.logging.Logger;
 
 /**
- * Abstract class that handles the logic for importing and updating brokered users for all mappers that map a SAML
- * attribute into a {@code Keycloak} role.
- *
+ * SAML 属性到角色映射器抽象基类：按 SAML 断言属性条件授予或撤销 Keycloak 角色。
+ * <p>处理首次导入与后续同步，并避免多映射器重复授予同一角色。</p>
  * @author <a href="mailto:sguilhen@redhat.com">Stefan Guilhen</a>,
  * <a href="mailto:daniel.fesenmeyer@bosch.io">Daniel Fesenmeyer</a>
  */
@@ -39,6 +38,7 @@ public abstract class AbstractAttributeToRoleMapper extends AbstractIdentityProv
 
     private static final Logger LOG = Logger.getLogger(AbstractAttributeToRoleMapper.class);
 
+    /** 首次导入：SAML 属性匹配时授予配置的角色。 */
     @Override
     public void importNewUser(KeycloakSession session, RealmModel realm, UserModel user, IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
         RoleModel role = this.getRole(session, realm, mapperModel);
@@ -51,6 +51,7 @@ public abstract class AbstractAttributeToRoleMapper extends AbstractIdentityProv
         }
     }
 
+    /** 同步更新角色映射，跳过已由其他映射器授予的角色。 */
     @Override
     public void updateBrokeredUser(KeycloakSession session, RealmModel realm, UserModel user, IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
         RoleModel role = this.getRole(session, realm, mapperModel);
@@ -59,7 +60,7 @@ public abstract class AbstractAttributeToRoleMapper extends AbstractIdentityProv
         }
 
         String roleName = mapperModel.getConfig().get(ConfigConstants.ROLE);
-        // KEYCLOAK-8730 if a previous mapper has already granted the same role, skip the checks so we don't accidentally remove a valid role.
+        // KEYCLOAK-8730：若前序映射器已授予同角色则跳过，避免误删有效角色
         if (!context.hasMapperGrantedRole(roleName)) {
             if (this.applies(mapperModel, context)) {
                 context.addMapperGrantedRole(roleName);
@@ -77,26 +78,23 @@ public abstract class AbstractAttributeToRoleMapper extends AbstractIdentityProv
     }
 
     /**
-     * This method must be implemented by subclasses and they must return {@code true} if their mapping can be applied
-     * (i.e. user has the SAML attribute that should be mapped) or {@code false} otherwise.
+     * 子类实现：SAML 属性满足映射条件时返回 {@code true}。
      *
-     * @param mapperModel a reference to the {@link IdentityProviderMapperModel}.
-     * @param context a reference to the {@link BrokeredIdentityContext}.
-     * @return {@code true} if the mapping can be applied or {@code false} otherwise.
+     * @param mapperModel {@link IdentityProviderMapperModel} 引用
+     * @param context {@link BrokeredIdentityContext} 引用
+     * @return 可应用映射时为 {@code true}
      */
     protected abstract boolean applies(final IdentityProviderMapperModel mapperModel, final BrokeredIdentityContext context);
 
     /**
-     * Obtains the {@link RoleModel} corresponding the role configured in the specified
-     * {@link IdentityProviderMapperModel}. If the role doesn't correspond to one of the realm's client roles or to one
-     * of the realm's roles, this method returns {@code null}.
+     * 解析映射器配置的角色名，返回对应 {@link RoleModel}；未找到时返回 {@code null}。
      *
-     * @param session     the {@link KeycloakSession}.
-     * @param realm       a reference to the realm.
-     * @param mapperModel a reference to the {@link IdentityProviderMapperModel} containing the configured role.
-     * @return the {@link RoleModel} that corresponds to the mapper model role or {@code null}, if the role could not be
-     * found
+     * @param session {@link KeycloakSession}
+     * @param realm realm 引用
+     * @param mapperModel 含角色配置的 {@link IdentityProviderMapperModel}
+     * @return 对应 {@link RoleModel}，未找到时为 {@code null}
      */
+    /** 按配置解析 realm 或 client 角色，找不到时记录警告。 */
     private RoleModel getRole(KeycloakSession session, final RealmModel realm, final IdentityProviderMapperModel mapperModel) {
         String roleName = mapperModel.getConfig().get(ConfigConstants.ROLE);
         RoleModel role = KeycloakModelUtils.getRoleFromString(session, realm, roleName);

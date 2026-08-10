@@ -38,12 +38,17 @@ import org.keycloak.provider.ProviderConfigProperty;
 import static org.keycloak.utils.RegexUtils.valueMatchesRegex;
 
 /**
+ * 高级 SAML 属性到组映射器：要求全部配置的属性均匹配（支持正则值）。
+ * <p>兼容 {@link SAMLIdentityProviderFactory#PROVIDER_ID} 身份代理。</p>
  * @author <a href="mailto:denis.bernard@avanade.com">Denis Bernard</a>
  */
 public class AdvancedAttributeToGroupMapper extends AbstractAttributeToGroupMapper {
 
+    /** 映射器 provider id。 */
     public static final String PROVIDER_ID = "saml-advanced-group-idp-mapper";
+    /** 配置键：属性名到期望值的映射。 */
     public static final String ATTRIBUTE_PROPERTY_NAME = "attributes";
+    /** 配置键：属性值是否按正则解释。 */
     public static final String ARE_ATTRIBUTE_VALUES_REGEX_PROPERTY_NAME = "are.attribute.values.regex";
 
     private static final Set<IdentityProviderSyncMode> IDENTITY_PROVIDER_SYNC_MODES = new HashSet<>(Arrays.asList(IdentityProviderSyncMode.values()));
@@ -103,16 +108,19 @@ public class AdvancedAttributeToGroupMapper extends AbstractAttributeToGroupMapp
         return "Group Importer";
     }
 
+    /** @return 控制台显示类型 Advanced Attribute to Group */
     @Override
     public String getDisplayType() {
         return "Advanced Attribute to Group";
     }
 
+    /** @return 全部 SAML 属性存在且匹配时分配用户到指定组 */
     @Override
     public String getHelpText() {
         return "If all attributes exists, assign the user to the specified group.";
     }
 
+    /** 校验断言中所有配置属性均匹配（可选正则模式）。 */
     @Override
     protected boolean applies(final IdentityProviderMapperModel mapperModel, final BrokeredIdentityContext context) {
         Map<String, List<String>> attributes = mapperModel.getConfigMap(ATTRIBUTE_PROPERTY_NAME);
@@ -131,7 +139,7 @@ public class AdvancedAttributeToGroupMapper extends AbstractAttributeToGroupMapp
                         .flatMap(statements -> statements.getAttributes().stream())
                         .filter(choiceType -> attributeKey.equals(choiceType.getAttribute().getName())
                         || attributeKey.equals(choiceType.getAttribute().getFriendlyName()))
-                        // Several statements with same name are treated like one with several values
+                        // 同名多条 AttributeStatement 视为同一属性的多值
                         .flatMap(choiceType -> choiceType.getAttribute().getAttributeValue().stream())
                         .collect(Collectors.toList());
 

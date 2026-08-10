@@ -18,15 +18,15 @@ import org.keycloak.representations.JsonWebToken;
 import org.jboss.logging.Logger;
 
 /**
- * Implementation for https://datatracker.ietf.org/doc/draft-schwenkschuster-oauth-spiffe-client-auth/
- *
- * Main differences for SPIFFE JWT SVIDs and regular client assertions:
+ * SPIFFE 联邦客户端断言身份代理：实现 OAuth SPIFFE JWT SVID 客户端认证草案。
+ * <p>参见 https://datatracker.ietf.org/doc/draft-schwenkschuster-oauth-spiffe-client-auth/</p>
+ * <p>与常规 client assertion 的主要差异：</p>
  * <ul>
-*  <li><code>jwt-spiffe</code> client assertion type</li>
- * <li><code>iss</code> claim is optional, uses SPIFFE IDs, which includes trust domain instead</li>
- * <li><code>jti</code> claim is optional, and SPIFFE vendors re-use/cache tokens</li>
- * <li><code>sub</code> is a SPIFFE ID with the syntax <code>spiffe://trust-domain/workload-identity</code></li>
- * <li>Keys are fetched from a SPIFFE bundle endpoint, where the JWKS has additional SPIFFE specific fields (<code>spiffe_sequence</code> and <code>spiffe_refresh_hint</code>, the JWK does not set the <code>alg></code></li>
+ * <li>使用 {@code jwt-spiffe} 客户端断言类型</li>
+ * <li>{@code iss} 可选，SPIFFE ID 含 trust domain 替代 issuer</li>
+ * <li>{@code jti} 可选，SPIFFE 实现可能复用/缓存 token</li>
+ * <li>{@code sub} 为 {@code spiffe://trust-domain/workload-identity} 格式</li>
+ * <li>公钥从 SPIFFE bundle 端点获取，JWKS 含 spiffe_sequence/spiffe_refresh_hint，JWK 可能无 alg</li>
  * </ul>
  */
 public class SpiffeIdentityProvider implements ClientAssertionIdentityProvider<SpiffeIdentityProviderConfig> {
@@ -36,16 +36,19 @@ public class SpiffeIdentityProvider implements ClientAssertionIdentityProvider<S
     private final KeycloakSession session;
     private final SpiffeIdentityProviderConfig config;
 
+    /** @param session Keycloak 会话 @param config SPIFFE 身份代理配置 */
     public SpiffeIdentityProvider(KeycloakSession session, SpiffeIdentityProviderConfig config) {
         this.session = session;
         this.config = config;
     }
 
+    /** @return SPIFFE 配置 */
     @Override
     public SpiffeIdentityProviderConfig getConfig() {
         return config;
     }
 
+    /** 校验 SPIFFE JWT SVID：trust domain 前缀、签名与可选过期上限。 */
     @Override
     public boolean verifyClientAssertion(ClientAuthenticationFlowContext context) throws Exception {
         FederatedJWTClientValidator validator = new FederatedJWTClientValidator(context, this::verifySignature,
@@ -66,6 +69,7 @@ public class SpiffeIdentityProvider implements ClientAssertionIdentityProvider<S
         return validator.validate();
     }
 
+    /** 从 SPIFFE bundle 端点加载公钥并验证 JWS 签名。 */
     private boolean verifySignature(AbstractJWTClientValidator validator) {
         try {
             String bundleEndpoint = config.getBundleEndpoint();

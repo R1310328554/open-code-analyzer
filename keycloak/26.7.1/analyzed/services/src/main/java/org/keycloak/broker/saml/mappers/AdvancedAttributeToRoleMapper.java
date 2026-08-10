@@ -38,12 +38,16 @@ import org.keycloak.provider.ProviderConfigProperty;
 import static org.keycloak.utils.RegexUtils.valueMatchesRegex;
 
 /**
- * <a href="mailto:external.benjamin.weimer@bosch.io">Benjamin Weimer</a>,
- * <a href="mailto:external.martin.idel@bosch.io">Martin Idel</a>,
+ * 高级 SAML 属性到角色映射器：要求全部配置属性均匹配（支持正则值）。
+ * <p>兼容 {@link SAMLIdentityProviderFactory#PROVIDER_ID} 身份代理。</p>
+ * @author <a href="mailto:external.benjamin.weimer@bosch.io">Benjamin Weimer</a>,
+ * <a href="mailto:external.martin.idel@bosch.io">Martin Idel</a>
  */
 public class AdvancedAttributeToRoleMapper extends AbstractAttributeToRoleMapper {
 
+    /** 映射器 provider id。 */
     public static final String PROVIDER_ID = "saml-advanced-role-idp-mapper";
+    /** 配置键：属性名到期望值的映射。 */
     public static final String ATTRIBUTE_PROPERTY_NAME = "attributes";
     public static final String ARE_ATTRIBUTE_VALUES_REGEX_PROPERTY_NAME = "are.attribute.values.regex";
 
@@ -111,16 +115,19 @@ public class AdvancedAttributeToRoleMapper extends AbstractAttributeToRoleMapper
         return "Role Importer";
     }
 
+    /** @return 控制台显示类型 Advanced Attribute to Role */
     @Override
     public String getDisplayType() {
         return "Advanced Attribute to Role";
     }
 
+    /** @return 全部 SAML 属性匹配时授予指定 realm 或 client 角色 */
     @Override
     public String getHelpText() {
         return "If the set of attributes exists and can be matched, grant the user the specified realm or client role.";
     }
 
+    /** 校验断言中所有配置属性均匹配（可选正则模式）。 */
     @Override
     protected boolean applies(final IdentityProviderMapperModel mapperModel, final BrokeredIdentityContext context) {
         Map<String, List<String>> attributes = mapperModel.getConfigMap(ATTRIBUTE_PROPERTY_NAME);
@@ -139,7 +146,7 @@ public class AdvancedAttributeToRoleMapper extends AbstractAttributeToRoleMapper
                         .flatMap(statements -> statements.getAttributes().stream())
                         .filter(choiceType -> attributeKey.equals(choiceType.getAttribute().getName())
                         || attributeKey.equals(choiceType.getAttribute().getFriendlyName()))
-                        // Several statements with same name are treated like one with several values
+                        // 同名多条 AttributeStatement 视为同一属性的多值
                         .flatMap(choiceType -> choiceType.getAttribute().getAttributeValue().stream())
                         .collect(Collectors.toList());
 

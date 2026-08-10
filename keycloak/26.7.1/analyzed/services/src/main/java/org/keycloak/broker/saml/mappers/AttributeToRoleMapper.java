@@ -42,6 +42,8 @@ import org.keycloak.provider.ProviderConfigProperty;
 import static org.keycloak.saml.common.constants.JBossSAMLURIConstants.ATTRIBUTE_FORMAT_BASIC;
 
 /**
+ * SAML 属性到角色映射器：断言中存在指定属性且值匹配时授予 realm/client 角色。
+ * <p>实现 {@link SamlMetadataDescriptorUpdater} 以更新 SP 元数据 RequestedAttribute。</p>
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -51,8 +53,11 @@ public class AttributeToRoleMapper extends AbstractAttributeToRoleMapper impleme
 
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<ProviderConfigProperty>();
 
+    /** 配置键：SAML 属性名。 */
     public static final String ATTRIBUTE_NAME = "attribute.name";
+    /** 配置键：SAML 属性友好名。 */
     public static final String ATTRIBUTE_FRIENDLY_NAME = "attribute.friendly.name";
+    /** 配置键：期望属性值。 */
     public static final String ATTRIBUTE_VALUE = "attribute.value";
 
     private static final Set<IdentityProviderSyncMode> IDENTITY_PROVIDER_SYNC_MODES = new HashSet<>(Arrays.asList(IdentityProviderSyncMode.values()));
@@ -85,6 +90,7 @@ public class AttributeToRoleMapper extends AbstractAttributeToRoleMapper impleme
         configProperties.add(property);
     }
 
+    /** 映射器 provider id。 */
     public static final String PROVIDER_ID = "saml-role-idp-mapper";
 
     @Override
@@ -112,11 +118,13 @@ public class AttributeToRoleMapper extends AbstractAttributeToRoleMapper impleme
         return "Role Mapper";
     }
 
+    /** @return 控制台显示类型 SAML Attribute to Role */
     @Override
     public String getDisplayType() {
         return "SAML Attribute to Role";
     }
 
+    /** 在 SAML 断言 AttributeStatement 中查找匹配的属性名/友好名与值。 */
     protected boolean applies(final IdentityProviderMapperModel mapperModel, final BrokeredIdentityContext context) {
         String name = mapperModel.getConfig().get(ATTRIBUTE_NAME);
         if (name != null && name.trim().equals("")) name = null;
@@ -139,12 +147,14 @@ public class AttributeToRoleMapper extends AbstractAttributeToRoleMapper impleme
         return false;
     }
 
+    /** @return 属性存在且值匹配时授予指定 realm 或 client 角色 */
     @Override
     public String getHelpText() {
         return "If an attribute exists, grant the user the specified realm or client role.";
     }
 
-    // SamlMetadataDescriptorUpdater interface
+    // SamlMetadataDescriptorUpdater 接口实现
+    /** 向 SP 元数据 AttributeConsumingService 添加 RequestedAttribute。 */
     @Override
     public void updateMetadata(IdentityProviderMapperModel mapperModel, EntityDescriptorType entityDescriptor) {
         String attributeName = mapperModel.getConfig().get(UserAttributeMapper.ATTRIBUTE_NAME);
@@ -157,7 +167,7 @@ public class AttributeToRoleMapper extends AbstractAttributeToRoleMapper impleme
         if (attributeFriendlyName != null && attributeFriendlyName.length() > 0)
             requestedAttribute.setFriendlyName(attributeFriendlyName);
 
-        // Add the requestedAttribute item to any AttributeConsumingServices
+        // 将 RequestedAttribute 添加到所有 AttributeConsumingService
         for (EntityDescriptorType.EDTChoiceType choiceType: entityDescriptor.getChoiceType()) {
             List<EntityDescriptorType.EDTDescriptorChoiceType> descriptors = choiceType.getDescriptors();
             for (EntityDescriptorType.EDTDescriptorChoiceType descriptor: descriptors) {

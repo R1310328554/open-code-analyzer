@@ -49,6 +49,8 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.jboss.logging.Logger;
 
 /**
+ * SAML 用户名模板映射器：用 ${} 占位符格式化导入用户名。
+ * <p>支持 ALIAS、NAMEID、ATTRIBUTE.* 替换及 uppercase/lowercase/localpart 转换。</p>
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -58,12 +60,18 @@ public class UsernameTemplateMapper extends AbstractIdentityProviderMapper {
 
     public static final String[] COMPATIBLE_PROVIDERS = {SAMLIdentityProviderFactory.PROVIDER_ID};
 
+    /** 配置键：用户名模板字符串。 */
     public static final String TEMPLATE = "template";
+    /** 配置键：模板结果写入目标（LOCAL/BROKER_ID/BROKER_USERNAME）。 */
     public static final String TARGET = "target";
 
+    /** 模板格式化结果的目标字段。 */
     public enum Target  {
+        /** 写入本地数据库用户名。 */
         LOCAL              { public void set(BrokeredIdentityContext context, String value) { context.setModelUsername(value); } },
+        /** 写入联邦查找用的 broker ID。 */
         BROKER_ID          { public void set(BrokeredIdentityContext context, String value) { context.setId(value); } },
+        /** 写入联邦查找用的 broker 用户名。 */
         BROKER_USERNAME    { public void set(BrokeredIdentityContext context, String value) { context.setUsername(value); } };
         public abstract void set(BrokeredIdentityContext context, String value);
     }
@@ -100,8 +108,10 @@ public class UsernameTemplateMapper extends AbstractIdentityProviderMapper {
         TRANSFORMERS.put("localpart", UsernameTemplateMapper::getEmailLocalPart);
     }
 
+    /** 映射器 provider id。 */
     public static final String PROVIDER_ID = "saml-username-idp-mapper";
 
+    /** 提取邮箱 @ 前的本地部分；无 @ 时原样返回。 */
     public static String getEmailLocalPart(String email) {
         int index = email == null ? -1 : email.lastIndexOf('@');
         if (index >= 0) {
@@ -145,10 +155,10 @@ public class UsernameTemplateMapper extends AbstractIdentityProviderMapper {
     public void updateBrokeredUserLegacy(KeycloakSession session, RealmModel realm, UserModel user, IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
     }
 
+    /** TARGET=LOCAL 且未启用 email-as-username 时同步本地用户名。 */
     @Override
     public void updateBrokeredUser(KeycloakSession session, RealmModel realm, UserModel user, IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
-        // preprocessFederatedIdentity gets called anyways, so we only need to set the username if necessary.
-        // However, we don't want to set the username when the email is used as username
+        // preprocessFederatedIdentity 已处理模板；仅在非 email-as-username 时更新本地用户名
         if (getTarget(mapperModel.getConfig().get(TARGET)) == Target.LOCAL && !realm.isRegistrationEmailAsUsername()) {
             user.setUsername(context.getModelUsername());
         }
@@ -156,11 +166,13 @@ public class UsernameTemplateMapper extends AbstractIdentityProviderMapper {
 
     private static final Pattern SUBSTITUTION = Pattern.compile("\\$\\{([^}]+?)(?:\\s*\\|\\s*(\\S+)\\s*)?\\}");
 
+    /** 预处理：按模板格式化用户名并写入目标字段。 */
     @Override
     public void preprocessFederatedIdentity(KeycloakSession session, RealmModel realm, IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
         setUserNameFromTemplate(mapperModel, context);
     }
 
+    /** 解析 ${} 占位符（ALIAS/UUID/NAMEID/ATTRIBUTE.*）并应用转换器。 */
     private void setUserNameFromTemplate(IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
         AssertionType assertion = (AssertionType)context.getContextData().get(SAMLEndpoint.SAML_ASSERTION);
         String template = mapperModel.getConfig().get(TEMPLATE);
@@ -217,11 +229,13 @@ public class UsernameTemplateMapper extends AbstractIdentityProviderMapper {
         t.set(context, hasUnresolvedVariable ? "" : sb.toString());
     }
 
+    /** @return 格式化待导入的用户名 */
     @Override
     public String getHelpText() {
         return "Format the username to import.";
     }
 
+    /** 解析 TARGET 配置，无效或 null 时默认 LOCAL。 */
     public static Target getTarget(String value) {
         try {
             return value == null ? Target.LOCAL : Target.valueOf(value);
