@@ -15,23 +15,8 @@
     "handler/src/main/java/io/netty/handler/ssl/AsyncRunnable.java",
     "handler/src/main/java/io/netty/handler/ssl/BouncyCastleAlpnSslEngine.java",
     "handler/src/main/java/io/netty/handler/ssl/BouncyCastleAlpnSslUtils.java",
-    "handler/src/main/java/io/netty/handler/ssl/BouncyCastlePemReader.java",
-    "handler/src/main/java/io/netty/handler/ssl/CipherSuiteConverter.java",
-    "handler/src/main/java/io/netty/handler/ssl/CipherSuiteFilter.java",
-    "handler/src/main/java/io/netty/handler/ssl/Ciphers.java",
-    "handler/src/main/java/io/netty/handler/ssl/ClientAuth.java",
-    "handler/src/main/java/io/netty/handler/ssl/Conscrypt.java",
-    "handler/src/main/java/io/netty/handler/ssl/ConscryptAlpnSslEngine.java",
-    "handler/src/main/java/io/netty/handler/ssl/DefaultOpenSslCredential.java",
-    "handler/src/main/java/io/netty/handler/ssl/DefaultOpenSslKeyMaterial.java",
-    "handler/src/main/java/io/netty/handler/ssl/DelegatingSslContext.java",
-    "handler/src/main/java/io/netty/handler/ssl/EnhancingX509ExtendedTrustManager.java",
-    "handler/src/main/java/io/netty/handler/ssl/ExtendedOpenSslSession.java",
-    "handler/src/main/java/io/netty/handler/ssl/GroupsConverter.java",
-    "handler/src/main/java/io/netty/handler/ssl/IdentityCipherSuiteFilter.java",
-    "handler/src/main/java/io/netty/handler/ssl/JdkAlpnApplicationProtocolNegotiator.java",
-    "handler/src/main/java/io/netty/handler/ssl/JdkAlpnSslEngine.java"
+    "handler/src/main/java/io/netty/handler/ssl/BouncyCastlePemReader.java"
   ],
   "remaining_pending": 608,
-  "done": 1290
+  "done": 1305
 }
