@@ -27,6 +27,10 @@ import org.keycloak.representations.idm.UserProfileMetadata;
 import org.keycloak.representations.userprofile.config.UPConfig;
 
 /**
+ * 用户配置文件（User Profile）的管理 REST 资源。
+ * <p>
+ * 用于读取和更新领域内用户属性定义、校验规则及元数据。
+ *
  * @author Vlastimil Elias <velias@redhat.com>
  */
 @Consumes(MediaType.APPLICATION_JSON)
@@ -34,22 +38,25 @@ import org.keycloak.representations.userprofile.config.UPConfig;
 public interface UserProfileResource {
 
     /**
-     * @return user profile configuration
+     * 获取用户配置文件配置。
+     *
+     * @return 用户配置文件配置
      */
     @GET
     @Consumes(MediaType.APPLICATION_JSON)
     UPConfig getConfiguration();
 
+    /** 获取用户配置文件的元数据（字段定义、校验规则等）。 */
     @GET
     @Path("/metadata")
     @Consumes(MediaType.APPLICATION_JSON)
     UserProfileMetadata getMetadata();
 
     /**
-     * Updates user profile configuration. Using null as an argument could mean restart of the configuration to the default configuration
+     * 更新用户配置文件配置。传入 null 可能表示将配置重置为默认值
+     * （具体行为取决于服务端实现）。
      *
-     * @param config Could be null, which can mean restart to the default user-profile configuration (Can depend on the implementation)
-     * @return
+     * @param config 新的配置文件配置；可为 null 以恢复默认配置
      */
     @PUT
     @Produces(MediaType.APPLICATION_JSON)

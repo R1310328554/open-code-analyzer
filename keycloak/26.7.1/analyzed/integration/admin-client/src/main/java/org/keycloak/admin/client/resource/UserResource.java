@@ -40,28 +40,48 @@ import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.representations.idm.UserSessionRepresentation;
 
 /**
+ * 单个用户的管理 REST 资源。
+ * <p>
+ * 支持读取、更新、删除用户，管理凭据、组、会话、联合身份、
+ * 角色映射、同意记录及可验证凭证等。
+ *
  * @author rodrigo.sasaki@icarros.com.br
  */
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public interface UserResource {
 
+    /** 获取用户表示对象。 */
     @GET
     UserRepresentation toRepresentation();
 
+    /**
+     * 获取用户表示对象。
+     *
+     * @param userProfileMetadata 是否包含用户配置文件元数据
+     */
     @GET
     UserRepresentation toRepresentation(@QueryParam("userProfileMetadata") boolean userProfileMetadata);
 
+    /** 更新用户信息。 */
     @PUT
     void update(UserRepresentation userRepresentation);
 
+    /** 删除当前用户。 */
     @DELETE
     void remove();
 
+    /** 列出用户所属的全部组。 */
     @Path("groups")
     @GET
     List<GroupRepresentation> groups();
 
+    /**
+     * 分页列出用户所属组。
+     *
+     * @param firstResult 分页起始偏移
+     * @param maxResults 分页最大条数
+     */
     @Path("groups")
     @GET
     List<GroupRepresentation> groups(@QueryParam("first") Integer firstResult,
@@ -91,14 +111,21 @@ public interface UserResource {
                                      @QueryParam("max") Integer maxResults,
                                      @QueryParam("briefRepresentation") @DefaultValue("true") boolean briefRepresentation);
 
+    /**
+     * 统计用户所属组的数量。
+     *
+     * @param search 组名搜索关键字
+     */
     @Path("groups/count")
     @GET
     Map<String, Long> groupsCount(@QueryParam("search") String search);
 
+    /** 将用户加入指定组。 */
     @Path("groups/{groupId}")
     @PUT
     void joinGroup(@PathParam("groupId") String groupId);
 
+    /** 将用户移出指定组。 */
     @Path("groups/{groupId}")
     @DELETE
     void leaveGroup(@PathParam("groupId") String groupId);
@@ -106,12 +133,14 @@ public interface UserResource {
 
 
 
+    /** 注销用户的所有会话。 */
     @POST
     @Path("logout")
     void logout();
 
 
 
+    /** 列出用户的所有凭据。 */
     @GET
     @Path("credentials")
     @Produces(MediaType.APPLICATION_JSON)
@@ -119,44 +148,41 @@ public interface UserResource {
 
 
     /**
-     * Return credential types, which are provided by the user storage where user is stored. Returned values can contain for example "password", "otp" etc.
-     * This will always return empty list for "local" users, which are not backed by any user storage
+     * 返回用户所在用户存储提供程序支持的凭据类型，例如 "password"、"otp" 等。
+     * 对于未关联用户存储的本地用户，始终返回空列表。
      *
-     * @return
+     * @return 凭据类型列表
      */
     @GET
     @Path("configured-user-storage-credential-types")
     @Produces(MediaType.APPLICATION_JSON)
     List<String> getConfiguredUserStorageCredentialTypes();
 
-    /**
-     * Remove a credential for a user
-     *
-     */
+    /** 移除用户的指定凭据。 */
     @DELETE
     @Path("credentials/{credentialId}")
     void removeCredential(@PathParam("credentialId")String credentialId);
 
-    /**
-     * Update a credential label for a user
-     */
+    /** 更新用户凭据的用户标签。 */
     @PUT
     @Consumes(jakarta.ws.rs.core.MediaType.TEXT_PLAIN)
     @Path("credentials/{credentialId}/userLabel")
     void setCredentialUserLabel(final @PathParam("credentialId") String credentialId, String userLabel);
 
     /**
-     * Move a credential to a first position in the credentials list of the user
-     * @param credentialId The credential to move
+     * 将凭据移至用户凭据列表的首位。
+     *
+     * @param credentialId 要移动的凭据 ID
      */
     @Path("credentials/{credentialId}/moveToFirst")
     @POST
     void moveCredentialToFirst(final @PathParam("credentialId") String credentialId);
 
     /**
-     * Move a credential to a position behind another credential
-     * @param credentialId The credential to move
-     * @param newPreviousCredentialId The credential that will be the previous element in the list. If set to null, the moved credential will be the first element in the list.
+     * 将凭据移动到另一凭据之后。
+     *
+     * @param credentialId 要移动的凭据 ID
+     * @param newPreviousCredentialId 移动后位于其后的凭据 ID；为 null 时移至首位
      */
     @Path("credentials/{credentialId}/moveAfter/{newPreviousCredentialId}")
     @POST
@@ -164,26 +190,25 @@ public interface UserResource {
 
 
     /**
-     * Disables or deletes all credentials for specific types.
-     * Type examples "otp", "password"
+     * 禁用或删除指定类型的所有凭据，例如 "otp"、"password"。
+     * <p>
+     * 通常仅适用于由用户存储提供程序支持的用户。可通过
+     * {@link UserRepresentation#getDisableableCredentialTypes()} 查看该用户可禁用的凭据类型。
      *
-     * This is typically supported just for the users backed by user storage providers. See {@link UserRepresentation#getDisableableCredentialTypes()}
-     * to see what credential types can be disabled for the particular user
-     *
-     * @param credentialTypes
+     * @param credentialTypes 要禁用的凭据类型列表
      */
     @Path("disable-credential-types")
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     void disableCredentialType(List<String> credentialTypes);
 
+    /** 重置用户密码。 */
     @PUT
     @Path("reset-password")
     void resetPassword(CredentialRepresentation credentialRepresentation);
 
     /**
-     * Use executeActionsEmail and pass in the UPDATE_PASSWORD required action
-     *
+     * 已弃用：请改用 {@link #executeActionsEmail(java.util.List)} 并传入 UPDATE_PASSWORD 必需操作。
      */
     @PUT
     @Path("reset-password-email")
@@ -191,8 +216,9 @@ public interface UserResource {
     void resetPasswordEmail();
 
     /**
-     * Use executeActionsEmail and pass in the UPDATE_PASSWORD required action
+     * 已弃用：请改用 {@link #executeActionsEmail(java.util.List)} 并传入 UPDATE_PASSWORD 必需操作。
      *
+     * @param clientId 客户端 ID
      */
     @PUT
     @Path("reset-password-email")
@@ -200,44 +226,38 @@ public interface UserResource {
     void resetPasswordEmail(@QueryParam("client_id") String clientId);
 
     /**
-     * Sends an email to the user with a link within it.  If they click on the link they will be asked to perform some actions
-     * i.e. {@code VERIFY_EMAIL, UPDATE_PROFILE, CONFIGURE_TOTP, UPDATE_PASSWORD, TERMS_AND_CONDITIONS}, etc.
+     * 向用户发送包含操作链接的邮件。用户点击链接后需执行指定必需操作，
+     * 例如 {@code VERIFY_EMAIL}、{@code UPDATE_PROFILE}、{@code CONFIGURE_TOTP}、
+     * {@code UPDATE_PASSWORD}、{@code TERMS_AND_CONDITIONS} 等。
      *
-     * @param actions a {@link List} of string representation of {@link org.keycloak.models.UserModel.RequiredAction}
+     * @param actions {@link org.keycloak.models.UserModel.RequiredAction} 的字符串表示列表
      */
     @PUT
     @Path("execute-actions-email")
     void executeActionsEmail(List<String> actions);
 
     /**
-     * Sends an email to the user with a link within it.  If they click on the link they will be asked to perform some actions
-     * i.e. {@code VERIFY_EMAIL, UPDATE_PROFILE, CONFIGURE_TOTP, UPDATE_PASSWORD, TERMS_AND_CONDITIONS}, etc.
+     * 向用户发送包含操作链接的邮件，可指定链接令牌有效期。
+     * <p>
+     * 默认有效期为 12 小时。用户点击链接后需执行指定必需操作。
      *
-     * The lifespan decides the number of seconds after which the generated token in the email link expires. The default
-     * value is 12 hours.
-     *
-     * @param actions a {@link List} of string representation of {@link org.keycloak.models.UserModel.RequiredAction}
-     * @param lifespan
+     * @param actions {@link org.keycloak.models.UserModel.RequiredAction} 的字符串表示列表
+     * @param lifespan 邮件链接中令牌的有效期（秒）
      */
     @PUT
     @Path("execute-actions-email")
     void executeActionsEmail(List<String> actions, @QueryParam("lifespan") Integer lifespan);
 
     /**
-     * Sends an email to the user with a link within it.  If they click on the link they will be asked to perform some actions
-     * i.e. {@code VERIFY_EMAIL, UPDATE_PROFILE, CONFIGURE_TOTP, UPDATE_PASSWORD, TERMS_AND_CONDITIONS}, etc.
+     * 向用户发送包含操作链接的邮件，可指定客户端、重定向 URI 及令牌有效期。
+     * <p>
+     * 若 redirectUri 不为 null，则必须指定 clientId。操作完成后将跳转至该 URI；
+     * 若两者均为 null，则流程结束后不跳转任何页面。默认令牌有效期为 12 小时。
      *
-     * If redirectUri is not null, then you must specify a client id.  This will set the URI you want the flow to link
-     * to after the email link is clicked and actions completed.  If both parameters are null, then no page is linked to
-     * at the end of the flow.
-     *
-     * The lifespan decides the number of seconds after which the generated token in the email link expires. The default
-     * value is 12 hours.
-     *
-     * @param clientId
-     * @param redirectUri
-     * @param lifespan
-     * @param actions a {@link List} of string representation of {@link org.keycloak.models.UserModel.RequiredAction}
+     * @param clientId 客户端 ID
+     * @param redirectUri 操作完成后的重定向 URI
+     * @param lifespan 邮件链接中令牌的有效期（秒）
+     * @param actions {@link org.keycloak.models.UserModel.RequiredAction} 的字符串表示列表
      */
     @PUT
     @Path("execute-actions-email")
@@ -247,21 +267,19 @@ public interface UserResource {
                              List<String> actions);
 
     /**
-     * Sends an email to the user with a link within it.  If they click on the link they will be asked to perform some actions
-     * i.e. {@code VERIFY_EMAIL, UPDATE_PROFILE, CONFIGURE_TOTP, UPDATE_PASSWORD, TERMS_AND_CONDITIONS}, etc.
+     * 向用户发送包含操作链接的邮件，可指定客户端与重定向 URI。
+     * <p>
+     * 若 redirectUri 不为 null，则必须指定 clientId；若两者均为 null，则流程结束后不跳转任何页面。
      *
-     * If redirectUri is not null, then you must specify a client id.  This will set the URI you want the flow to link
-     * to after the email link is clicked and actions completed.  If both parameters are null, then no page is linked to
-     * at the end of the flow.
-     *
-     * @param clientId
-     * @param redirectUri
-     * @param actions a {@link List} of string representation of {@link org.keycloak.models.UserModel.RequiredAction}
+     * @param clientId 客户端 ID
+     * @param redirectUri 操作完成后的重定向 URI
+     * @param actions {@link org.keycloak.models.UserModel.RequiredAction} 的字符串表示列表
      */
     @PUT
     @Path("execute-actions-email")
     void executeActionsEmail(@QueryParam("client_id") String clientId, @QueryParam("redirect_uri") String redirectUri, List<String> actions);
 
+    /** 向用户发送邮箱验证邮件。 */
     @PUT
     @Path("send-verify-email")
     void sendVerifyEmail();
@@ -279,68 +297,88 @@ public interface UserResource {
     void sendVerifyEmail(@QueryParam("lifespan") Integer lifespan);
 
     /**
-     * Send an email-verification email to the user
+     * 向用户发送邮箱验证邮件。
+     * <p>
+     * 邮件包含验证链接。redirectUri 与 clientId 为可选参数；
+     * 默认重定向至 account 客户端，默认令牌有效期为 12 小时。
      *
-     * An email contains a link the user can click to verify their email address.
-     * The redirectUri and clientId parameters are optional. The default for the
-     * redirect is the account client. The default for the lifespan is 12 hours.
-     *
-     * @param redirectUri Redirect uri
-     * @param clientId Client id
-     * @param lifespan Number of seconds after which the generated token expires
-     * @return
+     * @param clientId 客户端 ID
+     * @param redirectUri 重定向 URI
+     * @param lifespan 生成令牌的有效期（秒）
      */
     @PUT
     @Path("send-verify-email")
     void sendVerifyEmail(@QueryParam("client_id") String clientId, @QueryParam("redirect_uri") String redirectUri, @QueryParam("lifespan") Integer lifespan);
 
+    /** 获取用户的在线会话列表。 */
     @GET
     @Path("sessions")
     List<UserSessionRepresentation> getUserSessions();
 
+    /**
+     * 获取用户在指定客户端下的离线会话。
+     *
+     * @param clientId 客户端 ID
+     */
     @GET
     @Path("offline-sessions/{clientId}")
     List<UserSessionRepresentation> getOfflineSessions(@PathParam("clientId") String clientId);
 
+    /** 列出用户的联合身份信息。 */
     @GET
     @Path("federated-identity")
     List<FederatedIdentityRepresentation> getFederatedIdentity();
 
+    /**
+     * 为用户添加联合身份。
+     *
+     * @param provider 身份提供程序名称
+     * @param rep 联合身份表示对象
+     */
     @POST
     @Path("federated-identity/{provider}")
     Response addFederatedIdentity(@PathParam("provider") String provider, FederatedIdentityRepresentation rep);
 
+    /** 移除用户的指定联合身份。 */
     @Path("federated-identity/{provider}")
     @DELETE
     void removeFederatedIdentity(final @PathParam("provider") String provider);
 
+    /** 获取用户角色映射子资源。 */
     @Path("role-mappings")
     RoleMappingResource roles();
 
 
+    /** 列出用户已授予的客户端同意记录。 */
     @GET
     @Path("consents")
     List<Map<String, Object>> getConsents();
 
+    /** 撤销用户对指定客户端的同意。 */
     @DELETE
     @Path("consents/{client}")
     void revokeConsent(@PathParam("client") String clientId);
 
     /**
+     * 获取用户可验证凭证子资源。
+     *
+     * @return 用于管理用户可验证凭证及已签发凭证的 {@link UserVerifiableCredentialResource}
      * @since Keycloak server 26.7.0
-     * @return {@link UserVerifiableCredentialResource} with further methods to deal with credentials and issued credentials of the user
      */
     @Path("vc")
     UserVerifiableCredentialResource verifiableCredentials();
 
+    /** 以当前用户身份发起模拟登录。 */
     @POST
     @Path("impersonation")
     @Produces(MediaType.APPLICATION_JSON)
     Map<String, Object> impersonate();
 
     /**
+     * 获取用户的非托管属性。
+     *
+     * @return 非托管属性映射
      * @since Keycloak server 24.0.6
-     * @return unmanaged attributes of the user
      */
     @GET
     @Path("unmanagedAttributes")

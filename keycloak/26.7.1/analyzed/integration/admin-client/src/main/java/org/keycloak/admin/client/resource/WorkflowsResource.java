@@ -17,6 +17,12 @@ import org.keycloak.representations.workflows.WorkflowRepresentation;
 import com.fasterxml.jackson.jakarta.rs.yaml.YAMLMediaTypes;
 
 /**
+ * 工作流（Workflow）集合的管理 REST 资源。
+ * <p>
+ * 自 Keycloak 26.4.0 起可用。需启用特性
+ * {@link org.keycloak.common.Profile.Feature#WORKFLOWS}。该特性在 26.5.0 中为预览状态，
+ * 后续版本可能存在不兼容变更。
+ *
  * @since Keycloak server 26.4.0. All the child endpoints are also available since that version<p>
  *
  * This endpoint including all the child endpoints require feature {@link org.keycloak.common.Profile.Feature#WORKFLOWS} to be enabled. Note that feature is preview in 26.5.0 and there might be
@@ -24,14 +30,24 @@ import com.fasterxml.jackson.jakarta.rs.yaml.YAMLMediaTypes;
  */
 public interface WorkflowsResource {
 
+    /** 创建新工作流（支持 JSON 或 YAML 格式）。 */
     @POST
     @Consumes({MediaType.APPLICATION_JSON, YAMLMediaTypes.APPLICATION_JACKSON_YAML})
     Response create(WorkflowRepresentation representation);
 
+    /** 列出所有工作流。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<WorkflowRepresentation> list();
 
+    /**
+     * 分页搜索工作流。
+     *
+     * @param search 搜索关键字
+     * @param exact 是否精确匹配
+     * @param firstResult 分页起始偏移
+     * @param maxResults 分页最大条数
+     */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<WorkflowRepresentation> list(
@@ -41,20 +57,30 @@ public interface WorkflowsResource {
             @QueryParam("max") Integer maxResults
     );
 
+    /**
+     * 获取指定资源已调度的工作流列表。
+     *
+     * @param resourceId 资源 ID
+     */
     @Path("scheduled/{resource-id}")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<WorkflowRepresentation> getScheduledWorkflows(@PathParam("resource-id") String resourceId);
 
+    /**
+     * 按 ID 获取单个工作流子资源。
+     *
+     * @param id 工作流 ID
+     */
     @Path("{id}")
     WorkflowResource workflow(@PathParam("id") String id);
 
     /**
-     * Migrate scheduled resources from one step to another
+     * 将已调度资源从一个步骤迁移到另一个步骤。
      *
-     * @param stepFrom A String representing the id of the step to migrate from
-     * @param stepTo A String representing the id of the step to migrate to
-     * @return No content response (status 204) if everything is OK. Error response (status 400) otherwise
+     * @param stepFrom 源步骤 ID
+     * @param stepTo 目标步骤 ID
+     * @return 成功时返回 204 无内容响应；失败时返回 400 错误响应
      * @since Keycloak server 26.6.0
      */
     @POST

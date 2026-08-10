@@ -29,18 +29,40 @@ import jakarta.ws.rs.core.Response;
 import org.keycloak.representations.idm.authorization.UserPolicyRepresentation;
 
 /**
+ * 用户策略（User Policy）集合的管理 REST 资源。
+ * <p>
+ * 提供创建用户策略、按 ID 或名称查询，以及导航至单个策略子资源的能力。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface UserPoliciesResource {
 
+    /**
+     * 创建新的用户策略。
+     *
+     * @param representation 用户策略表示对象
+     * @return 包含新建策略信息的 HTTP 响应
+     */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     Response create(UserPolicyRepresentation representation);
 
+    /**
+     * 按 ID 获取单个用户策略子资源。
+     *
+     * @param id 策略 ID
+     * @return 用户策略子资源
+     */
     @Path("{id}")
     UserPolicyResource findById(@PathParam("id") String id);
 
+    /**
+     * 按名称搜索用户策略。
+     *
+     * @param name 策略名称
+     * @return 匹配的用户策略表示对象
+     */
     @Path("/search")
     @GET
     @Produces(MediaType.APPLICATION_JSON)

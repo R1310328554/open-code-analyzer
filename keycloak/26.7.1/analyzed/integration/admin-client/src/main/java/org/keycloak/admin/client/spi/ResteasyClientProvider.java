@@ -23,26 +23,28 @@ import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.WebTarget;
 
 /**
- * An SPI for using the JAX-RS Client API regardless of the underlying stack.
+ * 用于屏蔽底层 JAX-RS 实现差异的客户端 SPI。
+ * <p>
+ * 使 admin-client 可在不同 RESTEasy 版本或实现上统一创建客户端与资源代理。
  */
 public interface ResteasyClientProvider {
 
     /**
-     * Creates a new {@link Client}.
+     * 创建新的 {@link Client} 实例。
      *
-     * @param messageHandler a {@link jakarta.ws.rs.ext.MessageBodyReader} and/or {@link jakarta.ws.rs.ext.MessageBodyWriter} instance.
-     * @param sslContext an optional {@link SSLContext}
-     * @param disableTrustManager if the client should not validate the server certificates when using TLS
-     * @return
+     * @param messageHandler {@link jakarta.ws.rs.ext.MessageBodyReader} 和/或 {@link jakarta.ws.rs.ext.MessageBodyWriter} 实例
+     * @param sslContext 可选的 {@link SSLContext}
+     * @param disableTrustManager 使用 TLS 时是否跳过服务端证书校验
+     * @return 配置完成的 JAX-RS 客户端
      */
     Client newRestEasyClient(Object messageHandler, SSLContext sslContext, boolean disableTrustManager);
 
     /**
-     * Creates a implementation-specific proxy for a given {@code targetClass}.
+     * 为指定 {@code targetClass} 创建实现相关的资源代理。
      *
-     * @param target the {@link WebTarget} instance
-     * @param targetClass the JAX-RS client resource class
-     * @return an instance of {@code targetClass}
+     * @param target {@link WebTarget} 实例
+     * @param targetClass JAX-RS 客户端资源接口类
+     * @return {@code targetClass} 的代理实例
      */
     <R> R targetProxy(WebTarget target, Class<R> targetClass);
 }

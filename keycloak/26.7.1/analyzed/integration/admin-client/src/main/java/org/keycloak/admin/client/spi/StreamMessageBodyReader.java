@@ -29,7 +29,10 @@ import org.jboss.resteasy.plugins.providers.sse.EventInput;
 import org.jboss.resteasy.specimpl.ResponseBuilderImpl;
 
 /**
- * Provides a way to read Streams incrementally - valid only for Resteasy Classic
+ * 提供 {@link Stream} 的增量式 JSON 数组反序列化能力，仅适用于 RESTEasy Classic。
+ * <p>
+ * 通过 Jackson 逐元素解析响应体，避免一次性加载大型数组；返回的 Stream 同时标记为
+ * {@link EventInput}，以防止 RESTEasy 过早关闭底层输入流。
  */
 public class StreamMessageBodyReader implements MessageBodyReader<Stream<?>> {
 
@@ -43,8 +46,7 @@ public class StreamMessageBodyReader implements MessageBodyReader<Stream<?>> {
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
             throws IOException, WebApplicationException {
 
-        // workaround to obtain an ObjectCodec - it would be better to work directly from a mapper, but
-        // there's no good assumption to make about how to obtain that
+        // 获取 ObjectCodec 的变通方案——理想情况下应直接使用 Mapper，但此处无法可靠推断其来源
         ObjectCodec codec = new ResponseBuilderImpl()
                 .entity(new ByteArrayInputStream("[]".getBytes(StandardCharsets.UTF_8))).status(200).type(mediaType)
                 .build().readEntity(JsonParser.class).getCodec();
@@ -90,7 +92,7 @@ public class StreamMessageBodyReader implements MessageBodyReader<Stream<?>> {
                 throw new UncheckedIOException(e);
             }
         });
-        // return a Stream also marked as an EventInput to prevent the premature closure of the result
+        // 返回同时实现 EventInput 的 Stream 代理，防止 RESTEasy 提前关闭结果流
         return (Stream<?>) Proxy.newProxyInstance(EventInput.class.getClassLoader(), new Class<?>[] {Stream.class, EventInput.class}, (proxy, method, args) -> {
             try {
                 return method.invoke(targetStream, args);

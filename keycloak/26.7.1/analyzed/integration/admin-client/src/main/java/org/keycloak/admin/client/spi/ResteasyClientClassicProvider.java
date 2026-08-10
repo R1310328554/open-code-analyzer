@@ -28,7 +28,9 @@ import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
 
 /**
- * An implementation of {@link ResteasyClientProvider} based on RESTEasy classic.
+ * 基于 RESTEasy Classic 的 {@link ResteasyClientProvider} 实现。
+ * <p>
+ * 负责创建 RESTEasy 客户端实例并生成 JAX-RS 资源代理。
  */
 public class ResteasyClientClassicProvider implements ResteasyClientProvider {
 
@@ -49,8 +51,9 @@ public class ResteasyClientClassicProvider implements ResteasyClientProvider {
     }
 
     /**
-     * Create a new client builder instance with common defaults and provider registrations
-     * @return a new client builder
+     * 创建带有通用默认配置和提供程序注册的客户端构建器实例。
+     *
+     * @return 新的 RESTEasy 客户端构建器
      */
     public static ResteasyClientBuilderImpl createClientBuilder() {
         return new ResteasyClientBuilderImpl().connectionPoolSize(10).register(StreamMessageBodyReader.class);

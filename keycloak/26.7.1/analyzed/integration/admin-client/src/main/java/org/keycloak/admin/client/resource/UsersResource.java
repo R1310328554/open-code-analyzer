@@ -32,8 +32,14 @@ import jakarta.ws.rs.core.Response;
 
 import org.keycloak.representations.idm.UserRepresentation;
 
+/**
+ * 用户集合的管理 REST 资源。
+ * <p>
+ * 支持创建、搜索、统计、删除用户，并提供多种过滤、分页与属性查询方式。
+ */
 public interface UsersResource {
 
+    /** 按用户名、姓名、邮箱等条件搜索用户。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<UserRepresentation> search(@QueryParam("username") String username,
@@ -55,22 +61,21 @@ public interface UsersResource {
                                     @QueryParam("briefRepresentation") Boolean briefRepresentation);
 
     /**
-     * Search for users based on the given filters.
+     * 按给定过滤条件搜索用户。
      *
-     * @param username a value contained in username
-     * @param firstName a value contained in first name
-     * @param lastName a value contained in last name
-     * @param email a value contained in email
-     * @param emailVerified whether the email has been verified
-     * @param idpAlias the alias of the Identity Provider
-     * @param idpUserId the userId at the Identity Provider
-     * @param firstResult the position of the first result to retrieve
-     * @param maxResults the maximum number of results to retrieve
-     * @param enabled only return enabled or disabled users
-     * @param briefRepresentation Only return basic information (only guaranteed to return id, username, created, first
-     *        and last name, email, enabled state, email verification state, federation link, and access.
-     *        Note that it means that namely user attributes, required actions, and not before are not returned.)
-     * @return a list of {@link UserRepresentation}
+     * @param username 用户名包含的值
+     * @param firstName 名字包含的值
+     * @param lastName 姓氏包含的值
+     * @param email 邮箱包含的值
+     * @param emailVerified 邮箱是否已验证
+     * @param idpAlias 身份提供程序别名
+     * @param idpUserId 身份提供程序中的用户 ID
+     * @param firstResult 分页起始偏移
+     * @param maxResults 分页最大条数
+     * @param enabled 是否仅返回启用或禁用的用户
+     * @param briefRepresentation 是否仅返回基本信息（保证包含 id、username、created、姓名、email、
+     *        enabled 状态、邮箱验证状态、联合链接及 access；不包含用户属性、必需操作及 notBefore）
+     * @return {@link UserRepresentation} 列表
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -106,10 +111,12 @@ public interface UsersResource {
                                     @QueryParam("enabled") Boolean enabled,
                                     @QueryParam("briefRepresentation") Boolean briefRepresentation);
 
+    /** 按用户名搜索用户。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<UserRepresentation> search(@QueryParam("username") String username);
 
+    /** 按自定义属性查询表达式搜索用户。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
@@ -144,37 +151,39 @@ public interface UsersResource {
     @Produces(MediaType.APPLICATION_JSON)
     List<UserRepresentation> search(@QueryParam("username") String username, @QueryParam("exact") Boolean exact);
 
+    /** 按用户名搜索用户，可指定是否精确匹配。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<UserRepresentation> searchByUsername(@QueryParam("username") String username, @QueryParam("exact") Boolean exact);
 
+    /** 按邮箱搜索用户，可指定是否精确匹配。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<UserRepresentation> searchByEmail(@QueryParam("email") String email, @QueryParam("exact") Boolean exact);
 
+    /** 按名字搜索用户，可指定是否精确匹配。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<UserRepresentation> searchByFirstName(@QueryParam("firstName") String email, @QueryParam("exact") Boolean exact);
 
+    /** 按姓氏搜索用户，可指定是否精确匹配。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<UserRepresentation> searchByLastName(@QueryParam("lastName") String email, @QueryParam("exact") Boolean exact);
 
     /**
-     * Search for users based on the given filters.
+     * 按给定过滤条件搜索用户，支持精确匹配。
      *
-     * @param username a value contained in username
-     * @param firstName a value contained in first name
-     * @param lastName a value contained in last name
-     * @param email a value contained in email
-     * @param firstResult the position of the first result to retrieve
-     * @param maxResults the maximum number of results to retrieve
-     * @param enabled only return enabled or disabled users
-     * @param briefRepresentation Only return basic information (only guaranteed to return id, username, created, first
-     *        and last name, email, enabled state, email verification state, federation link, and access.
-     *        Note that it means that namely user attributes, required actions, and not before are not returned.)
-     * @param exact search with exact matching by filters (username, email, firstName, lastName)
-     * @return a list of {@link UserRepresentation}
+     * @param username 用户名包含的值
+     * @param firstName 名字包含的值
+     * @param lastName 姓氏包含的值
+     * @param email 邮箱包含的值
+     * @param firstResult 分页起始偏移
+     * @param maxResults 分页最大条数
+     * @param enabled 是否仅返回启用或禁用的用户
+     * @param briefRepresentation 是否仅返回基本信息
+     * @param exact 是否对 username、email、firstName、lastName 精确匹配
+     * @return {@link UserRepresentation} 列表
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -189,17 +198,15 @@ public interface UsersResource {
                                     @QueryParam("exact") Boolean exact);
 
     /**
-     * Search for users whose username or email matches the value provided by {@code search}. The {@code search}
-     * argument also allows finding users by specific attributes as follows:
-     *
+     * 搜索用户名或邮箱匹配 {@code search} 的用户。{@code search} 也支持按特定属性查询，例如：
      * <ul>
-     *     <li><i>id:</i> - Find users by identifier. For instance, <i>id:aa497859-bbf5-44ac-bf1a-74dbffcaf197</i></li>
+     *     <li><i>id:</i> - 按标识符查找，如 <i>id:aa497859-bbf5-44ac-bf1a-74dbffcaf197</i></li>
      * </ul>
      *
-     * @param search the value to search. It can be the username, email or any of the supported options to query based on user attributes
-     * @param firstResult the position of the first result to retrieve
-     * @param maxResults the maximum number of results to retrieve
-     * @return a list of {@link UserRepresentation}
+     * @param search 搜索值，可为 username、email 或支持的属性查询表达式
+     * @param firstResult 分页起始偏移
+     * @param maxResults 分页最大条数
+     * @return {@link UserRepresentation} 列表
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -208,20 +215,13 @@ public interface UsersResource {
                                     @QueryParam("max") Integer maxResults);
 
     /**
-     * Search for users whose username or email matches the value provided by {@code search}. The {@code search}
-     * argument also allows finding users by specific attributes as follows:
+     * 搜索用户名或邮箱匹配 {@code search} 的用户，可控制返回详略。
      *
-     * <ul>
-     *     <li><i>id:</i> - Find users by identifier. For instance, <i>id:aa497859-bbf5-44ac-bf1a-74dbffcaf197</i></li>
-     * </ul>
-     *
-     * @param search the value to search. It can be the username, email or any of the supported options to query based on user attributes
-     * @param firstResult the position of the first result to retrieve
-     * @param maxResults the maximum number of results to retrieve
-     * @param briefRepresentation Only return basic information (only guaranteed to return id, username, created, first and last name,
-     *      email, enabled state, email verification state, federation link, and access.
-     *      Note that it means that namely user attributes, required actions, and not before are not returned.)
-     * @return a list of {@link UserRepresentation}
+     * @param search 搜索值
+     * @param firstResult 分页起始偏移
+     * @param maxResults 分页最大条数
+     * @param briefRepresentation 是否仅返回基本信息
+     * @return {@link UserRepresentation} 列表
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -231,18 +231,13 @@ public interface UsersResource {
                                     @QueryParam("briefRepresentation") Boolean briefRepresentation);
 
     /**
-     * Search for users whose username, first or last name or email matches the value provided by {@code search}. The {@code search}
-     * argument also allows finding users by specific attributes as follows:
+     * 搜索用户名、姓名或邮箱匹配 {@code search} 的用户，可按启用状态过滤。
      *
-     * <ul>
-     *     <li><i>id:</i> - Find users by identifier. For instance, <i>id:aa497859-bbf5-44ac-bf1a-74dbffcaf197</i></li>
-     * </ul>
-     *
-     * @param search the value to search. It can be the username, email or any of the supported options to query based on user attributes
-     * @param enabled if true, only users that are enabled are returned
-     * @param firstResult the position of the first result to retrieve
-     * @param maxResults the maximum number of results to retrieve
-     * @return a list of {@link UserRepresentation}
+     * @param search 搜索值
+     * @param enabled 为 true 时仅返回启用的用户
+     * @param firstResult 分页起始偏移
+     * @param maxResults 分页最大条数
+     * @return {@link UserRepresentation} 列表
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -252,16 +247,16 @@ public interface UsersResource {
       @QueryParam("max") Integer maxResults);
 
     /**
-     * Returns the users that can be viewed and match the given filters.
+     * 返回当前用户有权查看且匹配给定过滤条件的用户列表。
      *
-     * @param search        arbitrary search string for all the fields below
-     * @param last          last name field of a user
-     * @param first         first name field of a user
-     * @param email         email field of a user
-     * @param emailVerified emailVerified field of a user
-     * @param username      username field of a user
-     * @param enabled       Boolean representing if user is enabled or not
-     * @return the list of users matching the given filters
+     * @param search 通用搜索字符串
+     * @param last 姓氏
+     * @param first 名字
+     * @param email 邮箱
+     * @param emailVerified 邮箱是否已验证
+     * @param username 用户名
+     * @param enabled 用户是否启用
+     * @return 匹配的用户列表
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -275,22 +270,22 @@ public interface UsersResource {
                   @QueryParam("q") String searchQuery);
 
     /**
-     * Search for users based on the given filters, including creation timestamp filters.
+     * 按给定过滤条件搜索用户，支持创建时间范围过滤。
      *
-     * @param username a value contained in username
-     * @param firstName a value contained in first name
-     * @param lastName a value contained in last name
-     * @param email a value contained in email
-     * @param emailVerified whether the email has been verified
-     * @param idpAlias the alias of the Identity Provider
-     * @param idpUserId the userId at the Identity Provider
-     * @param firstResult the position of the first result to retrieve
-     * @param maxResults the maximum number of results to retrieve
-     * @param enabled only return enabled or disabled users
-     * @param briefRepresentation Only return basic information
-     * @param createdAfter only return users created after (inclusive) the given date, in ISO-8601 format (yyyy-MM-dd) or epoch milliseconds
-     * @param createdBefore only return users created before (inclusive) the given date, in ISO-8601 format (yyyy-MM-dd) or epoch milliseconds
-     * @return a list of {@link UserRepresentation}
+     * @param username 用户名包含的值
+     * @param firstName 名字包含的值
+     * @param lastName 姓氏包含的值
+     * @param email 邮箱包含的值
+     * @param emailVerified 邮箱是否已验证
+     * @param idpAlias 身份提供程序别名
+     * @param idpUserId 身份提供程序中的用户 ID
+     * @param firstResult 分页起始偏移
+     * @param maxResults 分页最大条数
+     * @param enabled 是否仅返回启用或禁用的用户
+     * @param briefRepresentation 是否仅返回基本信息
+     * @param createdAfter 仅返回此日期（含）之后创建的用户，ISO-8601（yyyy-MM-dd）或 epoch 毫秒
+     * @param createdBefore 仅返回此日期（含）之前创建的用户，ISO-8601（yyyy-MM-dd）或 epoch 毫秒
+     * @return {@link UserRepresentation} 列表
      * @since Keycloak server 26.7.0
      */
     @GET
@@ -309,23 +304,26 @@ public interface UsersResource {
                                     @QueryParam("createdAfter") String createdAfter,
                                     @QueryParam("createdBefore") String createdBefore);
 
+    /** 分页列出用户。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<UserRepresentation> list(@QueryParam("first") Integer firstResult,
                                   @QueryParam("max") Integer maxResults);
 
+    /** 列出所有用户。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<UserRepresentation> list();
 
+    /** 创建新用户。 */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     Response create(UserRepresentation userRepresentation);
 
     /**
-     * Returns the number of users that can be viewed.
+     * 返回当前用户有权查看的用户总数。
      *
-     * @return number of users
+     * @return 用户数量
      */
     @Path("count")
     @GET
@@ -333,11 +331,10 @@ public interface UsersResource {
     Integer count();
 
     /**
-     * Returns the number of users that can be viewed and match the given search criteria.
-     * If none is specified this is equivalent to {{@link #count()}}.
+     * 返回匹配搜索条件的用户数量；未指定条件时等价于 {@link #count()}。
      *
-     * @param search criteria to search for
-     * @return number of users matching the search criteria
+     * @param search 搜索条件
+     * @return 匹配的用户数量
      */
     @Path("count")
     @GET
@@ -345,14 +342,13 @@ public interface UsersResource {
     Integer count(@QueryParam("search") String search);
 
     /**
-     * Returns the number of users that can be viewed and match the given filters.
-     * If none of the filters is specified this is equivalent to {{@link #count()}}.
+     * 返回匹配给定过滤条件的用户数量；未指定任何过滤条件时等价于 {@link #count()}。
      *
-     * @param last     last name field of a user
-     * @param first    first name field of a user
-     * @param email    email field of a user
-     * @param username username field of a user
-     * @return number of users matching the given filters
+     * @param last 姓氏
+     * @param first 名字
+     * @param email 邮箱
+     * @param username 用户名
+     * @return 匹配的用户数量
      */
     @Path("count")
     @GET
@@ -363,15 +359,14 @@ public interface UsersResource {
                   @QueryParam("username") String username);
 
     /**
-     * Returns the number of users that can be viewed and match the given filters.
-     * If none of the filters is specified this is equivalent to {{@link #count()}}.
+     * 返回匹配给定过滤条件的用户数量；未指定任何过滤条件时等价于 {@link #count()}。
      *
-     * @param last          last name field of a user
-     * @param first         first name field of a user
-     * @param email         email field of a user
-     * @param emailVerified emailVerified field of a user
-     * @param username      username field of a user
-     * @return number of users matching the given filters
+     * @param last 姓氏
+     * @param first 名字
+     * @param email 邮箱
+     * @param emailVerified 邮箱是否已验证
+     * @param username 用户名
+     * @return 匹配的用户数量
      */
     @Path("count")
     @GET
@@ -383,17 +378,16 @@ public interface UsersResource {
                   @QueryParam("username") String username);
 
     /**
-     * Returns the number of users that can be viewed and match the given filters.
-     * If none of the filters is specified this is equivalent to {{@link #count()}}.
+     * 返回匹配给定过滤条件的用户数量；未指定任何过滤条件时等价于 {@link #count()}。
      *
-     * @param search        arbitrary search string for all the fields below
-     * @param last          last name field of a user
-     * @param first         first name field of a user
-     * @param email         email field of a user
-     * @param emailVerified emailVerified field of a user
-     * @param username      username field of a user
-     * @param enabled       Boolean representing if user is enabled or not
-     * @return number of users matching the given filters
+     * @param search 通用搜索字符串
+     * @param last 姓氏
+     * @param first 名字
+     * @param email 邮箱
+     * @param emailVerified 邮箱是否已验证
+     * @param username 用户名
+     * @param enabled 用户是否启用
+     * @return 匹配的用户数量
      */
     @Path("count")
     @GET
@@ -408,19 +402,18 @@ public interface UsersResource {
                   @QueryParam("q") String searchQuery);
 
     /**
-     * Returns the number of users that can be viewed and match the given filters.
-     * If none of the filters is specified this is equivalent to {{@link #count()}}.
+     * 返回匹配给定过滤条件的用户数量；未指定任何过滤条件时等价于 {@link #count()}。
      *
-     * @param search        arbitrary search string for all the fields below
-     * @param last          last name field of a user
-     * @param first         first name field of a user
-     * @param email         email field of a user
-     * @param emailVerified emailVerified field of a user
-     * @param username      username field of a user
-     * @param enabled       Boolean representing if user is enabled or not
-     * @param idpAlias The alias of an Identity Provider linked to the user. Parameter supported since Keycloak server 26.4.0
-     * @param idpUserId The userId at an Identity Provider linked to the user. Parameter supported since Keycloak server 26.4.0
-     * @return number of users matching the given filters
+     * @param search 通用搜索字符串
+     * @param last 姓氏
+     * @param first 名字
+     * @param email 邮箱
+     * @param emailVerified 邮箱是否已验证
+     * @param username 用户名
+     * @param enabled 用户是否启用
+     * @param idpAlias 关联身份提供程序别名（自 Keycloak 26.4.0 起支持）
+     * @param idpUserId 关联身份提供程序中的用户 ID（自 Keycloak 26.4.0 起支持）
+     * @return 匹配的用户数量
      */
     @Path("count")
     @GET
@@ -437,21 +430,20 @@ public interface UsersResource {
                   @QueryParam("q") String searchQuery);
 
     /**
-     * Returns the number of users that can be viewed and match the given filters.
-     * Includes support for exact matching.
+     * 返回匹配给定过滤条件的用户数量，支持精确匹配。
      *
-     * @param search        arbitrary search string for all the fields below
-     * @param last          last name field of a user
-     * @param first         first name field of a user
-     * @param email         email field of a user
-     * @param emailVerified emailVerified field of a user
-     * @param username      username field of a user
-     * @param enabled       Boolean representing if user is enabled or not
-     * @param idpAlias      The alias of an Identity Provider linked to the user
-     * @param idpUserId     The userId at an Identity Provider linked to the user
-     * @param exact         Boolean which defines whether the params must match exactly
-     * @param searchQuery   A query to search for custom attributes
-     * @return number of users matching the given filters
+     * @param search 通用搜索字符串
+     * @param last 姓氏
+     * @param first 名字
+     * @param email 邮箱
+     * @param emailVerified 邮箱是否已验证
+     * @param username 用户名
+     * @param enabled 用户是否启用
+     * @param idpAlias 关联身份提供程序别名
+     * @param idpUserId 关联身份提供程序中的用户 ID
+     * @param exact 是否精确匹配各参数
+     * @param searchQuery 自定义属性查询表达式
+     * @return 匹配的用户数量
      */
     @Path("count")
     @GET
@@ -469,23 +461,22 @@ public interface UsersResource {
                   @QueryParam("q") String searchQuery);
 
     /**
-     * Returns the number of users that can be viewed and match the given filters,
-     * including creation timestamp filters.
+     * 返回匹配给定过滤条件的用户数量，支持创建时间范围过滤。
      *
-     * @param search        arbitrary search string for all the fields below
-     * @param last          last name field of a user
-     * @param first         first name field of a user
-     * @param email         email field of a user
-     * @param emailVerified emailVerified field of a user
-     * @param username      username field of a user
-     * @param enabled       Boolean representing if user is enabled or not
-     * @param idpAlias      The alias of an Identity Provider linked to the user
-     * @param idpUserId     The userId at an Identity Provider linked to the user
-     * @param exact         Boolean which defines whether the params must match exactly
-     * @param searchQuery   A query to search for custom attributes
-     * @param createdAfter  only count users created after (inclusive) the given date, in ISO-8601 format (yyyy-MM-dd) or epoch milliseconds
-     * @param createdBefore only count users created before (inclusive) the given date, in ISO-8601 format (yyyy-MM-dd) or epoch milliseconds
-     * @return number of users matching the given filters
+     * @param search 通用搜索字符串
+     * @param last 姓氏
+     * @param first 名字
+     * @param email 邮箱
+     * @param emailVerified 邮箱是否已验证
+     * @param username 用户名
+     * @param enabled 用户是否启用
+     * @param idpAlias 关联身份提供程序别名
+     * @param idpUserId 关联身份提供程序中的用户 ID
+     * @param exact 是否精确匹配各参数
+     * @param searchQuery 自定义属性查询表达式
+     * @param createdAfter 仅统计此日期（含）之后创建的用户
+     * @param createdBefore 仅统计此日期（含）之前创建的用户
+     * @return 匹配的用户数量
      */
     @Path("count")
     @GET
@@ -505,24 +496,26 @@ public interface UsersResource {
                   @QueryParam("createdBefore") String createdBefore);
 
     /**
-     * Returns the number of users with the given status for emailVerified.
-     * If none of the filters is specified this is equivalent to {{@link #count()}}.
+     * 返回邮箱验证状态匹配给定条件的用户数量。
      *
-     * @param emailVerified emailVerified field of a user
-     * @return number of users matching the given filters
+     * @param emailVerified 邮箱是否已验证
+     * @return 匹配的用户数量
      */
     @Path("count")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     Integer countEmailVerified(@QueryParam("emailVerified") Boolean emailVerified);
 
+    /** 按 ID 获取单个用户子资源。 */
     @Path("{id}")
     UserResource get(@PathParam("id") String id);
 
+    /** 删除指定 ID 的用户。 */
     @Path("{id}")
     @DELETE
     Response delete(@PathParam("id") String id);
 
+    /** 获取用户配置文件子资源。 */
     @Path("profile")
     UserProfileResource userProfile();
 

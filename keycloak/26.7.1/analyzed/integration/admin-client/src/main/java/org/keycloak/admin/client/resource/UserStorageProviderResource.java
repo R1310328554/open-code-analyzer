@@ -26,19 +26,22 @@ import jakarta.ws.rs.core.MediaType;
 import org.keycloak.representations.idm.SynchronizationResultRepresentation;
 
 /**
+ * 用户存储提供程序的管理 REST 资源。
+ * <p>
+ * 支持触发用户同步、移除或解绑导入用户，以及 LDAP 映射器数据同步。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface UserStorageProviderResource {
     /**
-     * If the provider supports synchronization, this will invoke it.
+     * 若提供程序支持同步，则触发用户同步。
+     * <p>
+     * action 可为 {@code triggerFullSync} 或 {@code triggerChangedUsersSync}。
      *
-     * Action can be "triggerFullSync" or "triggerChangedUsersSync"
-     *
-     *
-     * @param componentId
-     * @param action
-     * @return
+     * @param componentId 用户存储组件 ID
+     * @param action 同步动作类型
+     * @return 同步结果
      */
     @POST
     @Path("{componentId}/sync")
@@ -46,11 +49,9 @@ public interface UserStorageProviderResource {
     SynchronizationResultRepresentation syncUsers(@PathParam("componentId") String componentId, @QueryParam("action") String action);
 
     /**
-     * Remove imported users
+     * 移除已导入的用户。
      *
-     *
-     * @param componentId
-     * @return
+     * @param componentId 用户存储组件 ID
      */
     @POST
     @Path("{componentId}/remove-imported-users")
@@ -58,10 +59,9 @@ public interface UserStorageProviderResource {
     void removeImportedUsers(@PathParam("componentId") String componentId);
 
     /**
-     * Unlink imported users from a storage provider
+     * 将已导入用户与用户存储提供程序解绑。
      *
-     * @param componentId
-     * @return
+     * @param componentId 用户存储组件 ID
      */
     @POST
     @Path("{componentId}/unlink-users")
@@ -69,16 +69,14 @@ public interface UserStorageProviderResource {
     void unlink(@PathParam("componentId") String componentId);
 
     /**
-     * REST invocation for initiating sync for an ldap mapper.  This method may be moved in the future.  Right now
-     * don't have a good place for it.
+     * 触发 LDAP 映射器数据同步的 REST 调用。
+     * <p>
+     * direction 可为 {@code fedToKeycloak} 或 {@code keycloakToFed}。
      *
-     * direction is "fedToKeycloak" or "keycloakToFed"
-     *
-     *
-     * @param componentId
-     * @param mapperId
-     * @param direction
-     * @return
+     * @param componentId 用户存储组件 ID
+     * @param mapperId 映射器 ID
+     * @param direction 同步方向
+     * @return 同步结果
      */
     @POST
     @Path("{componentId}/mappers/{mapperId}/sync")

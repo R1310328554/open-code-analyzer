@@ -40,9 +40,15 @@ import static org.keycloak.OAuth2Constants.SCOPE;
 import static org.keycloak.OAuth2Constants.USERNAME;
 
 /**
+ * admin-client 的访问令牌生命周期管理器。
+ * <p>
+ * 负责获取、刷新、注销 OAuth2 访问令牌，并在令牌即将过期时自动刷新。
+ * 支持密码授权、刷新令牌及 DPoP 绑定。
+ *
  * @author rodrigo.sasaki@icarros.com.br
  */
 public class TokenManager {
+    /** 默认最小有效余量（秒），在此时间内视为令牌即将过期。 */
     private static final long DEFAULT_MIN_VALIDITY = 30;
 
     private AccessTokenResponse currentToken;
@@ -54,6 +60,12 @@ public class TokenManager {
     private final String accessTokenGrantType;
     private final KeyPair dpopKeyPair;
 
+    /**
+     * 构造令牌管理器并初始化令牌服务端点。
+     *
+     * @param config 客户端配置
+     * @param client JAX-RS 客户端实例
+     */
     public TokenManager(Config config, Client client) {
         this.config = config;
         WebTarget target = client.target(config.getServerUrl());
@@ -72,10 +84,16 @@ public class TokenManager {
         this.accessTokenGrantType = config.getGrantType();
     }
 
+    /** 获取当前访问令牌的字符串形式。 */
     public String getAccessTokenString() {
         return getAccessToken().getToken();
     }
 
+    /**
+     * 获取当前有效的访问令牌，必要时自动申请或刷新。
+     *
+     * @return 访问令牌响应
+     */
     public synchronized AccessTokenResponse getAccessToken() {
         if (currentToken == null) {
             grantToken();
@@ -85,6 +103,11 @@ public class TokenManager {
         return currentToken;
     }
 
+    /**
+     * 使用配置的授权类型申请新令牌。
+     *
+     * @return 新签发的访问令牌响应
+     */
     public AccessTokenResponse grantToken() {
         Form form = new Form().param(GRANT_TYPE, accessTokenGrantType);
         if (PASSWORD.equals(accessTokenGrantType)) {
@@ -109,6 +132,11 @@ public class TokenManager {
         return currentToken;
     }
 
+    /**
+     * 使用刷新令牌续期访问令牌；若刷新失败则重新申请。
+     *
+     * @return 刷新后的访问令牌响应
+     */
     public synchronized AccessTokenResponse refreshToken() {
         if (currentToken.getRefreshToken() == null || refreshTokenExpired()) {
             return grantToken();
@@ -132,6 +160,7 @@ public class TokenManager {
         }
     }
 
+    /** 注销当前会话并使刷新令牌失效。 */
     public synchronized void logout() {
         if (currentToken == null || currentToken.getRefreshToken() == null || refreshTokenExpired()) {
             return;
@@ -147,33 +176,42 @@ public class TokenManager {
         currentToken = null;
     }
 
+    /**
+     * 设置令牌被视为即将过期的最小有效余量（秒）。
+     *
+     * @param minTokenValidity 最小有效余量
+     */
     public synchronized void setMinTokenValidity(long minTokenValidity) {
         this.minTokenValidity = minTokenValidity;
     }
 
+    /** 判断访问令牌是否已过期或即将过期。 */
     private synchronized boolean tokenExpired() {
         return (Time.currentTime() + minTokenValidity) >= expirationTime;
     }
 
+    /** 判断刷新令牌是否已过期或即将过期。 */
     private synchronized boolean refreshTokenExpired() { return (Time.currentTime() + minTokenValidity) >= refreshExpirationTime; }
 
     /**
-     * Invalidates the current token, but only when it is equal to the token passed as an argument.
+     * 使当前令牌失效，但仅当传入令牌与当前令牌相同时才执行。
      *
-     * @param token the token to invalidate (cannot be null).
+     * @param token 要失效的令牌（不可为 null）
      */
     public synchronized void invalidate(String token) {
         if (currentToken == null) {
-            return; // There's nothing to invalidate.
+            return; // 无令牌可失效
         }
         if (token.equals(currentToken.getToken())) {
-            // When used next, this cause a refresh attempt, that in turn will cause a grant attempt if refreshing fails.
+            // 下次使用时将触发刷新；若刷新失败则重新申请
             expirationTime = -1;
         }
     }
 
     /**
-     * @return dpopKeyPair if it was generated or null if DPoP is not being requested by the configuration
+     * 获取 DPoP 密钥对；若配置未启用 DPoP 则返回 null。
+     *
+     * @return 已生成的 dpopKeyPair，或未启用 DPoP 时为 null
      */
     public KeyPair getDpopKeyPair() {
         return dpopKeyPair;
