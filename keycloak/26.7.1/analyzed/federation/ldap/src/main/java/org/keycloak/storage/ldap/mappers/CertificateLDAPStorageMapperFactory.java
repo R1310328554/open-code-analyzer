@@ -11,6 +11,9 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.provider.ProviderConfigurationBuilder;
 import org.keycloak.storage.ldap.LDAPStorageProvider;
 
+/**
+ * 证书 LDAP 映射器工厂，注册 {@link CertificateLDAPStorageMapper} 及 DER 格式配置项。
+ */
 public class CertificateLDAPStorageMapperFactory extends UserAttributeLDAPStorageMapperFactory {
 
   public static final String PROVIDER_ID = "certificate-ldap-mapper";
@@ -21,6 +24,7 @@ public class CertificateLDAPStorageMapperFactory extends UserAttributeLDAPStorag
     certificateConfigProperties = getCertificateConfigProperties(null);
   }
 
+  /** 构建证书映射器专用配置属性列表。 */
   private static List<ProviderConfigProperty> getCertificateConfigProperties(ComponentModel p) {
     List<ProviderConfigProperty> configProps = new ArrayList<>(getConfigProps(null));
 
@@ -35,21 +39,25 @@ public class CertificateLDAPStorageMapperFactory extends UserAttributeLDAPStorag
     return configProps;
   }
 
+  /** {@inheritDoc} */
   @Override
   public String getHelpText() {
     return "Used to map single attribute which contains a certificate from LDAP user to attribute of UserModel in Keycloak DB";
   }
 
+  /** {@inheritDoc} */
   @Override
   public List<ProviderConfigProperty> getConfigProperties() {
     return certificateConfigProperties;
   }
 
+  /** {@inheritDoc} */
   @Override
   public String getId() {
     return PROVIDER_ID;
   }
 
+  /** {@inheritDoc} DER 格式启用时必须同时启用二进制属性。 */
   @Override
   public void validateConfiguration(KeycloakSession session, RealmModel realm, ComponentModel config) throws ComponentValidationException {
     super.validateConfiguration(session, realm, config);
@@ -62,11 +70,13 @@ public class CertificateLDAPStorageMapperFactory extends UserAttributeLDAPStorag
 
   }
 
+  /** {@inheritDoc} */
   @Override
   protected AbstractLDAPStorageMapper createMapper(ComponentModel mapperModel, LDAPStorageProvider federationProvider) {
     return new CertificateLDAPStorageMapper(mapperModel, federationProvider);
   }
 
+  /** {@inheritDoc} */
   @Override
   public List<ProviderConfigProperty> getConfigProperties(RealmModel realm, ComponentModel parent) {
     return getCertificateConfigProperties(parent);

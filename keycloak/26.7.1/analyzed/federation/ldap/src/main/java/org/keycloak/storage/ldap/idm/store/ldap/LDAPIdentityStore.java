@@ -66,7 +66,7 @@ import org.keycloak.storage.ldap.mappers.LDAPOperationDecorator;
 import org.jboss.logging.Logger;
 
 /**
- * An IdentityStore implementation backed by an LDAP directory
+ * 基于 LDAP 目录的 {@link org.keycloak.storage.ldap.idm.store.IdentityStore} 实现，封装 CRUD、查询、凭证与组 membership。
  *
  * @author Shane Bryzak
  * @author Anil Saldhana
@@ -85,14 +85,16 @@ public class LDAPIdentityStore implements IdentityStore {
         this.operationManager = new LDAPOperationManager(session, config);
     }
 
+    /** {@inheritDoc} */
     @Override
     public LDAPConfig getConfig() {
         return this.config;
     }
 
+    /** {@inheritDoc} 在 LDAP 中创建条目，UUID 由服务器分配。 */
     @Override
     public void add(LDAPObject ldapObject) {
-        // id will be assigned by the ldap server
+        // UUID 由 LDAP 服务器分配
         if (ldapObject.getUuid() != null) {
             throw new ModelException("Can't add object with already assigned uuid");
         }
@@ -105,9 +107,10 @@ public class LDAPIdentityStore implements IdentityStore {
         }
     }
 
+    /** {@inheritDoc} 向组添加成员属性值。 */
     @Override
     public void addMemberToGroup(LdapName groupDn, String memberAttrName, String value) {
-        // do not check EMPTY_MEMBER_ATTRIBUTE_VALUE, we save one useless query
+        // 不检查 EMPTY_MEMBER_ATTRIBUTE_VALUE，避免多余查询
         // the value will be there forever for objectclasses that enforces the attribute as MUST
         BasicAttribute attr = new BasicAttribute(memberAttrName, value);
         ModificationItem item = new ModificationItem(DirContext.ADD_ATTRIBUTE, attr);
@@ -120,6 +123,7 @@ public class LDAPIdentityStore implements IdentityStore {
         }
     }
 
+    /** {@inheritDoc} 从组移除成员；schema 违反时尝试写入空成员占位值。 */
     @Override
     public void removeMemberFromGroup(LdapName groupDn, String memberAttrName, String value) {
         BasicAttribute attr = new BasicAttribute(memberAttrName, value);
@@ -129,7 +133,7 @@ public class LDAPIdentityStore implements IdentityStore {
         } catch (NoSuchAttributeException e) {
             logger.debugf("Group %s does not contain the member %s", groupDn, value);
         } catch (SchemaViolationException e) {
-            // schema violation removing one member => add the empty attribute, it cannot be other thing
+            // 移除唯一成员导致 schema 违反时，添加空成员占位属性
             logger.infof("Schema violation in group %s removing member %s. Trying adding empty member attribute.", groupDn, value);
             try {
                 this.operationManager.modifyAttributesNaming(groupDn,
@@ -143,6 +147,7 @@ public class LDAPIdentityStore implements IdentityStore {
         }
     }
 
+    /** {@inheritDoc} 更新 LDAP 条目，必要时重命名 DN。 */
     @Override
     public void update(LDAPObject ldapObject) {
         checkRename(ldapObject);
@@ -157,6 +162,7 @@ public class LDAPIdentityStore implements IdentityStore {
         }
     }
 
+    /** 检测 RDN 变更并在需要时执行 LDAP rename。 */
     protected void checkRename(LDAPObject ldapObject) {
         LDAPDn.RDN firstRdn = ldapObject.getDn().getFirstRdn();
         LdapName oldDn = ldapObject.getDn().getLdapName();
@@ -226,6 +232,7 @@ public class LDAPIdentityStore implements IdentityStore {
         }
     }
 
+    /** {@inheritDoc} 从 LDAP 删除条目。 */
     @Override
     public void remove(LDAPObject ldapObject) {
         this.operationManager.removeEntry(ldapObject.getDn().getLdapName());
@@ -236,6 +243,7 @@ public class LDAPIdentityStore implements IdentityStore {
     }
 
 
+    /** {@inheritDoc} 执行 LDAP 查询并填充 {@link LDAPObject} 列表。 */
     @Override
     public List<LDAPObject> fetchQueryResults(LDAPQuery identityQuery) {
         if (identityQuery.getSorting() != null && !identityQuery.getSorting().isEmpty()) {
@@ -295,6 +303,7 @@ public class LDAPIdentityStore implements IdentityStore {
         return results;
     }
 
+    /** {@inheritDoc} 通过临时取消 limit 统计查询结果数。 */
     @Override
     public int countQueryResults(LDAPQuery identityQuery) {
         int limit = identityQuery.getLimit();
@@ -308,6 +317,7 @@ public class LDAPIdentityStore implements IdentityStore {
         return resultCount;
     }
 
+    /** {@inheritDoc} 查询 root DSE 支持的 LDAP 控制、扩展与特性。 */
     @Override
     public Set<LDAPCapabilityRepresentation> queryServerCapabilities() {
         Set<LDAPCapabilityRepresentation> result = new LinkedHashSet<>();
@@ -344,8 +354,9 @@ public class LDAPIdentityStore implements IdentityStore {
         }
     }
 
-    // *************** CREDENTIALS AND USER SPECIFIC STUFF
+    // ========== 凭证与用户相关操作 ==========
 
+    /** {@inheritDoc} 使用用户 DN 与密码进行 LDAP 绑定验证。 */
     @Override
     public void validatePassword(LDAPObject user, String password) throws AuthenticationException {
         if (logger.isTraceEnabled()) {
@@ -355,6 +366,7 @@ public class LDAPIdentityStore implements IdentityStore {
         operationManager.authenticate(user.getDn().getLdapName(), password);
     }
 
+    /** {@inheritDoc} 更新 LDAP 用户密码（AD unicodePwd 或标准 userPassword/扩展操作）。 */
     @Override
     public void updatePassword(LDAPObject user, String password, LDAPOperationDecorator passwordUpdateDecorator) {
         if (logger.isDebugEnabled()) {
@@ -382,6 +394,7 @@ public class LDAPIdentityStore implements IdentityStore {
         }
     }
 
+    /** Active Directory 专用：以 UTF-16LE 引号串写入 unicodePwd。 */
     private void updateADPassword(LdapName userDN, String password, LDAPOperationDecorator passwordUpdateDecorator) {
         try {
             // Replace the "unicdodePwd" attribute with a new value
@@ -404,6 +417,7 @@ public class LDAPIdentityStore implements IdentityStore {
 
     // ************ END CREDENTIALS AND USER SPECIFIC STUFF
 
+    /** 为查询附加 objectClass 条件并合并为 AND 过滤器。 */
     protected Condition createIdentityTypeSearchFilter(final LDAPQuery identityQuery) {
         LDAPQueryConditionsBuilder conditionsBuilder = new LDAPQueryConditionsBuilder();
         Set<Condition> conditions = new LinkedHashSet<>(identityQuery.getConditions());
@@ -426,6 +440,7 @@ public class LDAPIdentityStore implements IdentityStore {
     }
 
 
+    /** 将 {@link SearchResult} 转为 {@link LDAPObject}，处理 ranged 属性与二进制 UUID。 */
     private LDAPObject populateAttributedType(SearchResult searchResult, LDAPQuery ldapQuery) {
         Set<String> readOnlyAttrNames = ldapQuery.getReturningReadOnlyLdapAttributes();
         Set<String> lowerCasedAttrNames = new TreeSet<>();
@@ -515,6 +530,7 @@ public class LDAPIdentityStore implements IdentityStore {
     }
 
 
+    /** 从 {@link LDAPObject} 提取待写入 LDAP 的 {@link BasicAttributes}。 */
     protected BasicAttributes extractAttributesForSaving(LDAPObject ldapObject, boolean isCreate) {
         BasicAttributes entryAttributes = new BasicAttributes();
 
@@ -600,6 +616,7 @@ public class LDAPIdentityStore implements IdentityStore {
         return attr;
     }
 
+    /** 返回当前 LDAP 类型对应的密码修改时间属性名。 */
     public String getPasswordModificationTimeAttributeName() {
         if (getConfig().isActiveDirectory()) {
             return LDAPConstants.PWD_LAST_SET;

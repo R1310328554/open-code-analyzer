@@ -26,7 +26,7 @@ import org.jboss.logging.Logger;
 
 
 /**
- * Implements (parts of) draft-behera-ldap-password-policy
+ * 实现 draft-behera-ldap-password-policy 密码策略响应控制（部分字段）。
  */
 public class PasswordPolicyControl implements Control {
 
@@ -35,8 +35,10 @@ public class PasswordPolicyControl implements Control {
 
     private static final Logger logger = Logger.getLogger(PasswordPolicyControl.class);
 
+    /** 错误码：重置后必须修改密码。 */
     private static final int ERROR_CHANGE_AFTER_RESET = 2;
 
+    /** 是否要求重置后修改密码。 */
     private boolean changeAfterReset;
 
     /*
@@ -59,6 +61,7 @@ public class PasswordPolicyControl implements Control {
      *       passwordTooLong             (9) } OPTIONAL }
      */
 
+    /** 从 BER 编码的响应值解析密码策略控制。 */
     PasswordPolicyControl(byte[] encodedValue) {
         if (encodedValue == null || encodedValue.length == 0) {
             return;
@@ -81,20 +84,24 @@ public class PasswordPolicyControl implements Control {
         }
     }
 
+    /** 是否指示“重置后必须修改密码”。 */
     public boolean changeAfterReset() {
         return changeAfterReset;
     }
 
+    /** {@inheritDoc} */
     @Override
     public String getID() {
         return OID;
     }
 
+    /** {@inheritDoc} 始终为非关键控制。 */
     @Override
     public boolean isCritical() {
         return Control.NONCRITICAL;
     }
 
+    /** {@inheritDoc} 响应控制无请求载荷。 */
     @Override
     public byte[] getEncodedValue() {
         return new byte[0];

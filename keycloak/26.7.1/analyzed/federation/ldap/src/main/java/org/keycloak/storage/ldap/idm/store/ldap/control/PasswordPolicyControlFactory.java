@@ -21,8 +21,12 @@ import javax.naming.NamingException;
 import javax.naming.ldap.Control;
 import javax.naming.ldap.ControlFactory;
 
+/**
+ * {@link PasswordPolicyControl} 的 JNDI 控制工厂，将 LDAP 密码策略响应控制解码为 Java 对象。
+ */
 public class PasswordPolicyControlFactory extends ControlFactory {
 
+    /** {@inheritDoc} 识别密码策略 OID 并构造 {@link PasswordPolicyControl}。 */
     @Override
     public Control getControlInstance(Control ctl) throws NamingException {
         if (ctl.getID().equals(PasswordPolicyControl.OID)) {

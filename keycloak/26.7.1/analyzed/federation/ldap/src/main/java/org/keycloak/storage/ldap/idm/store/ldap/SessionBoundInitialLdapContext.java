@@ -25,11 +25,15 @@ import javax.naming.ldap.InitialLdapContext;
 import org.keycloak.models.KeycloakSession;
 
 /**
- * A {@link InitialLdapContext} that binds instances of this class with the {@link KeycloakSession} so that any resource
- * acquired during the session lifetime is closed when the session is closed.
+ * 与会话绑定的 {@link InitialLdapContext}，在 {@link KeycloakSession} 关闭时自动释放 LDAP 资源。
  */
 public final class SessionBoundInitialLdapContext extends InitialLdapContext {
 
+    /**
+     * @param session Keycloak 会话
+     * @param environment JNDI 环境属性
+     * @param connCtls 连接控制
+     */
     public SessionBoundInitialLdapContext(KeycloakSession session, Hashtable<?, ?> environment, Control[] connCtls) throws NamingException {
         super(environment, connCtls);
         session.enlistForClose(() -> {
@@ -41,6 +45,7 @@ public final class SessionBoundInitialLdapContext extends InitialLdapContext {
         });
     }
 
+    /** LDAP 上下文关闭失败时抛出运行时异常。 */
     private void failedToCloseLdapContext(NamingException e) {
         throw new RuntimeException("Failed to close LDAP context", e);
     }

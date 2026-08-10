@@ -66,7 +66,7 @@ import org.keycloak.truststore.TruststoreProvider;
 import org.jboss.logging.Logger;
 
 /**
- * <p>This class provides a set of operations to manage LDAP trees.</p>
+ * <p>LDAP 目录操作管理器：搜索、修改、认证、分页、密码扩展操作等。</p>
  *
  * @author Anil Saldhana
  * @author <a href="mailto:psilva@redhat.com">Pedro Silva</a>
@@ -80,6 +80,10 @@ public class LDAPOperationManager {
     private final KeycloakSession session;
     private final LDAPConfig config;
 
+    /**
+     * @param session Keycloak 会话
+     * @param config LDAP 配置
+     */
     public LDAPOperationManager(KeycloakSession session, LDAPConfig config) {
         this.session = session;
         this.config = config;
@@ -87,8 +91,7 @@ public class LDAPOperationManager {
 
     /**
      * <p>
-     * Modifies the given {@link javax.naming.directory.Attribute} instance using the given DN. This method performs a REPLACE_ATTRIBUTE
-     * operation.
+     * 对指定 DN 执行 REPLACE_ATTRIBUTE 修改单个 {@link javax.naming.directory.Attribute}。
      * </p>
      *
      * @param dn
@@ -101,8 +104,7 @@ public class LDAPOperationManager {
 
     /**
      * <p>
-     * Modifies the given {@link Attribute} instances using the given DN. This method performs a REPLACE_ATTRIBUTE
-     * operation.
+     * 对指定 DN 批量 REPLACE_ATTRIBUTE 修改多个 {@link Attribute}。
      * </p>
      *
      * @param dn
@@ -125,8 +127,7 @@ public class LDAPOperationManager {
 
     /**
      * <p>
-     * Removes the given {@link Attribute} instance using the given DN. This method performs a REMOVE_ATTRIBUTE
-     * operation.
+     * 对指定 DN 执行 REMOVE_ATTRIBUTE 移除属性。
      * </p>
      *
      * @param dn
@@ -139,7 +140,7 @@ public class LDAPOperationManager {
 
     /**
      * <p>
-     * Adds the given {@link Attribute} instance using the given DN. This method performs a ADD_ATTRIBUTE operation.
+     * 对指定 DN 执行 ADD_ATTRIBUTE 添加属性。
      * </p>
      *
      * @param dn
@@ -152,7 +153,7 @@ public class LDAPOperationManager {
 
     /**
      * <p>
-     * Removes the object from the LDAP tree
+     * 从 LDAP 树中递归删除条目及其子条目。
      * </p>
      */
     public void removeEntry(final LdapName entryDn) {
@@ -184,13 +185,12 @@ public class LDAPOperationManager {
 
 
     /**
-     * Rename LDAPObject name (DN)
+     * 重命名 LDAP 条目（修改 DN）
      *
      * @param oldDn
      * @param newDn
-     * @param fallback With fallback=true, we will try to find the another DN in case of conflict. For example if there is an
-     *                 attempt to rename to "CN=John Doe", but there is already existing "CN=John Doe", we will try "CN=John Doe0"
-     * @return the non-conflicting DN, which was used in the end
+     * @param fallback 为 true 时 DN 冲突则尝试追加数字后缀（如 CN=John Doe0）
+     * @return 最终使用的无冲突 DN
      */
     public LdapName renameEntry(LdapName oldDn, LdapName newDn, boolean fallback) {
         try {
@@ -200,7 +200,7 @@ public class LDAPOperationManager {
                 public LdapName execute(LdapContext context) throws NamingException {
                     LdapName dn = newDn;
 
-                    // Max 5 attempts for now
+                    // 最多尝试 5 次备选 DN
                     int max = 5;
                     for (int i=0 ; i<max ; i++) {
                         try {
@@ -241,6 +241,7 @@ public class LDAPOperationManager {
         }
     }
 
+    /** 生成冲突重命名时的备选 DN（RDN 值追加计数器）。 */
     private LdapName findNextDNForFallback(LdapName newDn, int counter) {
         LDAPDn dn = LDAPDn.fromLdapName(newDn);
         LDAPDn.RDN firstRdn = dn.getFirstRdn();
@@ -251,6 +252,7 @@ public class LDAPOperationManager {
         return parentDn.getLdapName();
     }
 
+    /** 在 baseDN 下按条件与范围执行 LDAP 搜索。 */
     public List<SearchResult> search(final LdapName baseDN, final Condition condition, Collection<String> returningAttributes, int searchScope) throws NamingException {
         final List<SearchResult> result = new ArrayList<>();
         final SearchControls cons = getSearchControls(returningAttributes, searchScope);
@@ -291,12 +293,13 @@ public class LDAPOperationManager {
         }
     }
 
+    /** 使用 PagedResultsControl 执行分页搜索。 */
     public List<SearchResult> searchPaginated(final LdapName baseDN, final Condition condition, final LDAPQuery identityQuery) throws NamingException {
         final List<SearchResult> result = new ArrayList<>();
         final SearchControls cons = getSearchControls(identityQuery.getReturningLdapAttributes(), identityQuery.getSearchScope());
         final String filter = condition.toFilter();
 
-        // Very 1st page. Pagination context is not yet present
+        // 首页：分页上下文尚未初始化
         if (identityQuery.getPaginationContext() == null) {
             identityQuery.initPagination();
         }
@@ -365,6 +368,7 @@ public class LDAPOperationManager {
         }
     }
 
+    /** 构造 {@link SearchControls}，自动附加 UUID 与 objectClass 返回属性。 */
     private SearchControls getSearchControls(Collection<String> returningAttributes, int searchScope) {
         final SearchControls cons = new SearchControls();
 
@@ -377,6 +381,7 @@ public class LDAPOperationManager {
         return cons;
     }
 
+    /** 根据条目 ID 构造 LDAP 过滤器（含 objectGUID/eDirectory GUID 编码）。 */
     public Condition getFilterById(String id) {
         LDAPQueryConditionsBuilder builder = new LDAPQueryConditionsBuilder();
         Condition conditionId;
@@ -398,6 +403,7 @@ public class LDAPOperationManager {
         }
     }
 
+    /** 按 UUID/ID 在 baseDN 下查找单条 {@link SearchResult}。 */
     public SearchResult lookupById(final LdapName baseDN, final String id, final Collection<String> returningAttributes) {
         final String filter = getFilterById(id).toFilter();
 
@@ -442,7 +448,7 @@ public class LDAPOperationManager {
 
     /**
      * <p>
-     * Destroys a subcontext with the given DN from the LDAP tree.
+     * 递归删除指定 DN 及其所有子上下文。
      * </p>
      *
      * @param dn
@@ -475,7 +481,7 @@ public class LDAPOperationManager {
 
     /**
      * <p>
-     * Performs a simple authentication using the given DN and password to bind to the authentication context.
+     * 使用给定 DN 与密码进行简单绑定认证。
      * </p>
      *
      * @param dn
@@ -498,17 +504,17 @@ public class LDAPOperationManager {
         try {
             Hashtable<Object, Object> env = LDAPContextManager.getNonAuthConnectionProperties(config);
 
-            // Never use connection pool to prevent password caching
+            // 禁用连接池，避免密码被缓存
             env.put("com.sun.jndi.ldap.connect.pool", "false");
 
-            // Prepare to receive password policy response control.
+            // 注册密码策略响应控制工厂
             env.put(LdapContext.CONTROL_FACTORIES, PasswordPolicyControlFactory.class.getName());
 
-            // Create connection but avoid triggering automatic bind request by not setting security principal and credentials yet.
+            // 创建连接但不立即绑定，以便先完成 StartTLS by not setting security principal and credentials yet.
             // That allows us to send optional StartTLS request before binding.
             authCtx = new InitialLdapContext(env, null);
 
-            // Send StartTLS request and setup SSL context if needed.
+            // 按需发起 StartTLS 并配置 SSL
             if (config.isStartTls()) {
                 SSLSocketFactory sslSocketFactory = null;
                 if (LDAPUtil.shouldUseTruststoreSpi(config)) {
@@ -524,15 +530,15 @@ public class LDAPOperationManager {
                 }
             }
 
-            // Configure given credentials.
+            // 配置用户凭证
             authCtx.addToEnvironment(Context.SECURITY_AUTHENTICATION, "simple");
             authCtx.addToEnvironment(Context.SECURITY_PRINCIPAL, dn.toString());
             authCtx.addToEnvironment(Context.SECURITY_CREDENTIALS, password);
 
-            // Send bind request. Throws AuthenticationException when authentication fails.
+            // 发送 bind 请求；失败时抛出 AuthenticationException
             authCtx.reconnect(getControls());
 
-            // Check for password policy response control in the response.
+            // 检查响应中的密码策略控制
             // If present and forced password change is required, throw an exception.
             Control[] responseControls = authCtx.getResponseControls();
             if (responseControls != null) {
@@ -582,6 +588,7 @@ public class LDAPOperationManager {
         }
     }
 
+    /** 修改条目属性（可抛出 {@link NamingException}）。 */
     public void modifyAttributesNaming(final LdapName dn, final ModificationItem[] mods, LDAPOperationDecorator decorator) throws NamingException {
         if (logger.isTraceEnabled()) {
             logger.tracef("Modifying attributes for entry [%s]: [", dn);
@@ -625,6 +632,7 @@ public class LDAPOperationManager {
         }, decorator);
     }
 
+    /** 修改条目属性，失败时包装为 {@link ModelException}。 */
     public void modifyAttributes(final LdapName dn, final ModificationItem[] mods, LDAPOperationDecorator decorator) {
         try {
             modifyAttributesNaming(dn, mods, decorator);
@@ -633,6 +641,7 @@ public class LDAPOperationManager {
         }
     }
 
+    /** 在 LDAP 中创建子上下文并返回新条目的 UUID。 */
     public String createSubContext(final LdapName name, final Attributes attributes) {
         try {
             if (logger.isTraceEnabled()) {
@@ -688,18 +697,21 @@ public class LDAPOperationManager {
         }
     }
 
+    /** 若启用密码策略，返回非关键 PasswordPolicy 请求控制。 */
     private Control[] getControls() {
-        // If enabled, send a passwordPolicyRequest control as non-critical.
+        // 启用时发送非关键 PasswordPolicy 请求控制
         if (config.isEnableLdapPasswordPolicy()) {
             return new Control[] { new BasicControl(PasswordPolicyControl.OID, false, null) };
         }
         return null;
     }
 
+    /** 返回配置中的 UUID LDAP 属性名。 */
     private String getUuidAttributeName() {
         return this.config.getUuidLDAPAttributeName();
     }
 
+    /** 按 entryUUID 在 baseDN 下加载条目属性。 */
     public Attributes getAttributes(final String entryUUID, final LdapName baseDN, Set<String> returningAttributes) {
         SearchResult search = lookupById(baseDN, entryUUID, returningAttributes);
 
@@ -710,6 +722,7 @@ public class LDAPOperationManager {
         return search.getAttributes();
     }
 
+    /** 将 LDAP 返回的 UUID 原始值解码为字符串（AD/eDirectory 二进制或普通字符串）。 */
     public String decodeEntryUUID(final Object entryUUID) {
         if (entryUUID instanceof byte[]) {
             if (this.config.isObjectGUID()) {
@@ -723,13 +736,14 @@ public class LDAPOperationManager {
     }
 
     /**
-     * Execute the LDAP Password Modify Extended Operation to update the password for the given DN.
+     * 执行 RFC 3062 密码修改扩展操作更新指定 DN 的密码。
      *
      * @param dn distinguished name of the entry.
      * @param password the new password.
      * @param decorator A decorator to apply to the ldap operation.
      */
 
+    /** {@inheritDoc} */
     public void passwordModifyExtended(LdapName dn, String password, LDAPOperationDecorator decorator) {
         try {
             execute(context -> {
@@ -793,10 +807,12 @@ public class LDAPOperationManager {
         }
     }
 
+    /** 在 {@link LdapContext} 上执行的 LDAP 操作回调。 */
     public interface LdapOperation<R> {
         R execute(LdapContext context) throws NamingException;
     }
 
+    /** 确保返回属性集合包含 UUID 与 objectClass。 */
     private Set<String> getReturningAttributes(final Collection<String> returningAttributes) {
         Set<String> result = new HashSet<String>();
 

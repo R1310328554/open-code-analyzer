@@ -30,7 +30,7 @@ import org.keycloak.storage.ldap.LDAPConfig;
 import org.jboss.logging.Logger;
 
 /**
- * <p>Utility class for working with LDAP.</p>
+ * <p>LDAP 通用工具类：日期格式化、GUID 编解码、Truststore SPI 判定等。</p>
  *
  * @author Pedro Igor
  */
@@ -39,11 +39,11 @@ public class LDAPUtil {
     private static final Logger logger = Logger.getLogger(LDAPUtil.class);
 
     /**
-     * <p>Formats the given date.</p>
+     * <p>将日期格式化为 LDAP 通用时间字符串。</p>
      *
-     * @param date The Date to format.
+     * @param date 待格式化的日期
      *
-     * @return A String representing the formatted date.
+     * @return 格式化后的 UTC 时间字符串
      */
     public static final String formatDate(Date date) {
         if (date == null) {
@@ -59,7 +59,7 @@ public class LDAPUtil {
 
     /**
      * <p>
-     * Parses dates/time stamps stored in LDAP. Some possible values:
+     * 解析 LDAP 中存储的日期/时间戳，支持多种常见格式：
      * </p>
      * <ul>
      *     <li>20020228150820</li>
@@ -68,9 +68,9 @@ public class LDAPUtil {
      *     <li>20060711011740.0Z</li>
      * </ul>
      *
-     * @param date The date string to parse from.
+     * @param date LDAP 日期字符串
      *
-     * @return the Date.
+     * @return 解析后的 {@link Date}
      */
     public static final Date parseDate(String date) {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
@@ -91,19 +91,17 @@ public class LDAPUtil {
 
 
     /**
-     * <p>Creates a byte-based {@link String} representation of a raw byte array representing the value of the
-     * <code>objectGUID</code> attribute retrieved from Active Directory.</p>
+     * <p>将 Active Directory {@code objectGUID} 原始字节数组转为 LDAP 过滤器可用的字节串表示。</p>
      *
-     * <p>The returned string is useful to perform queries on AD based on the <code>objectGUID</code> value. Eg.:</p>
+     * <p>示例过滤器：</p>
      *
      * <p>
      * String filter = "(&(objectClass=*)(objectGUID" + EQUAL + convertObjectGUIDToByteString(objectGUID) + "))";
      * </p>
      *
-     * @param objectGUID A raw byte array representing the value of the <code>objectGUID</code> attribute retrieved from
-     * Active Directory.
+     * @param objectGUID AD 返回的 objectGUID 字节数组
      *
-     * @return A byte-based String representation in the form of \[0]\[1]\[2]\[3]\[4]\[5]\[6]\[7]\[8]\[9]\[10]\[11]\[12]\[13]\[14]\[15]
+     * @return 形如 \[0]\[1]...\[15] 的字节串
      */
     public static String convertObjectGUIDToByteString(byte[] objectGUID) {
         StringBuilder result = new StringBuilder();
@@ -118,11 +116,12 @@ public class LDAPUtil {
     }
 
     /**
-     * see http://support.novell.com/docs/Tids/Solutions/10096551.html
+     * 将带连字符的 GUID 转为 eDirectory 十六进制转义串。
+     * 参见 http://support.novell.com/docs/Tids/Solutions/10096551.html
      *
-     * @param guid A GUID in the form of a dashed String as the result of (@see LDAPUtil#convertToDashedString)
+     * @param guid 带连字符的 GUID 字符串（参见 {@link #decodeObjectGUID(byte[])} 等）
      *
-     * @return A String representation in the form of \[0][1]\[2][3]\[4][5]\[6][7]\[8][9]\[10][11]\[12][13]\[14][15]
+     * @return 形如 \[0][1]\[2]...\[15] 的转义串
      */
     public static String convertGUIDToEdirectoryHexString(String guid) {
         String withoutDash = guid.replace("-", "");
@@ -138,9 +137,9 @@ public class LDAPUtil {
     }
 
     /**
-     * Converts the EDirectory GUID string into the byte array.
-     * @param guid
-     * @return
+     * 将 eDirectory GUID 字符串编码为字节数组。
+     * @param guid 带连字符或不带连字符的十六进制 GUID
+     * @return 16 字节 GUID
      */
     public static byte[] encodeObjectEDirectoryGUID(String guid) {
         String withoutDash = guid.replace("-", "");
@@ -155,13 +154,11 @@ public class LDAPUtil {
     }
 
     /**
-     * <p>Encode a string representing the display value of the <code>objectGUID</code> attribute retrieved from Active
-     * Directory.</p>
+     * <p>将 AD objectGUID 显示字符串编码为原始 16 字节数组。</p>
      *
-     * @param displayString A string representing the decoded value in the form of [3][2][1][0]-[5][4]-[7][6]-[8][9]-[10][11][12][13][14][15].
+     * @param displayString 解码后的 GUID 字符串，形如 [3][2][1][0]-[5][4]-...
      *
-     * @return A raw byte array representing the value of the <code>objectGUID</code> attribute retrieved from
-     * Active Directory.
+     * @return objectGUID 原始字节数组
      */
     public static byte[] encodeObjectGUID(String displayString) {
         byte [] objectGUID = new byte[16];
@@ -206,10 +203,9 @@ public class LDAPUtil {
     }
 
     /**
-     * <p>Decode a raw byte array representing the value of the <code>objectGUID</code> attribute retrieved from Active
-     * Directory.</p>
+     * <p>将 AD objectGUID 原始字节解码为带连字符的 GUID 字符串，可直接用于条目绑定。</p>
      *
-     * <p>The returned string is useful to directly bind an entry. Eg.:</p>
+     * <p>示例：</p>
      *
      * <p>
      * String bindingString = decodeObjectGUID(objectGUID);
@@ -217,10 +213,9 @@ public class LDAPUtil {
      * Attributes attributes = ctx.getAttributes(bindingString);
      * </p>
      *
-     * @param objectGUID A raw byte array representing the value of the <code>objectGUID</code> attribute retrieved from
-     * Active Directory.
+     * @param objectGUID AD objectGUID 字节数组
      *
-     * @return A string representing the decoded value in the form of [3][2][1][0]-[5][4]-[7][6]-[8][9]-[10][11][12][13][14][15].
+     * @return 形如 [3][2][1][0]-[5][4]-... 的 GUID 字符串
      */
     public static String decodeObjectGUID(byte[] objectGUID) {
         StringBuilder displayStr = new StringBuilder();
@@ -231,13 +226,11 @@ public class LDAPUtil {
     }
 
     /**
-     * <p>Decode a raw byte array representing the value of the <code>guid</code> attribute retrieved from Novell
-     * eDirectory.</p>
+     * <p>将 Novell eDirectory {@code guid} 属性字节解码为带连字符的 GUID 字符串。</p>
      *
-     * @param guid A raw byte array representing the value of the <code>guid</code> attribute retrieved from
-     * Novell eDirectory.
+     * @param guid eDirectory guid 字节数组
      *
-     * @return A string representing the decoded value in the form of [0][1][2][3]-[4][5]-[6][7]-[8][9]-[10][11][12][13][14][15].
+     * @return 形如 [0][1][2][3]-[4][5]-... 的 GUID 字符串
      */
     public static String decodeGuid(byte[] guid) {
         byte[] withBigEndian = new byte[] { guid[3], guid[2], guid[1], guid[0],
@@ -249,14 +242,13 @@ public class LDAPUtil {
     }
 
     /**
-     * Decodes a base64-encoded binary UUID attribute value into a GUID string representation.
-     * Uses {@link #decodeObjectGUID(byte[])} for Active Directory or {@link #decodeGuid(byte[])} for eDirectory,
-     * based on the provided LDAP configuration. Returns the original base64 value if the configuration doesn't
-     * match a known UUID format.
+     * 将 Base64 编码的二进制 UUID 属性解码为 GUID 字符串。
+     * 根据 {@link LDAPConfig} 选用 {@link #decodeObjectGUID(byte[])}（AD）或 {@link #decodeGuid(byte[])}（eDirectory）；
+     * 无法识别时返回原始 Base64 值。
      *
-     * @param base64Value the base64-encoded binary value of the UUID attribute.
-     * @param config the LDAP configuration used to determine the UUID decoding strategy.
-     * @return the decoded UUID string, or the original base64 value if no matching decoder is found.
+     * @param base64Value UUID 属性的 Base64 编码值
+     * @param config 用于选择解码策略的 LDAP 配置
+     * @return 解码后的 UUID 字符串，或原 Base64 值
      */
     public static String decodeBase64ToUuid(String base64Value, LDAPConfig config) {
         if (base64Value == null) return null;
@@ -274,6 +266,7 @@ public class LDAPUtil {
         return base64Value;
     }
 
+    /** 将 16 字节 GUID 转为带连字符的十六进制字符串（AD 字节序）。 */
     private static String convertToDashedString(byte[] objectGUID) {
         StringBuilder displayStr = new StringBuilder();
 
@@ -301,6 +294,7 @@ public class LDAPUtil {
         return displayStr.toString();
     }
 
+    /** 将 0–255 的整数格式化为两位十六进制（不足补零）。 */
     private static String prefixZeros(int value) {
         if (value <= 0xF) {
             StringBuilder sb = new StringBuilder("0");
@@ -311,6 +305,13 @@ public class LDAPUtil {
         }
     }
 
+    /**
+     * 判断是否应使用 Keycloak Truststore SPI 提供的 SSL 套接字工厂。
+     * LDAPS 或 StartTLS 时默认启用，除非配置为 {@code never}。
+     *
+     * @param ldapConfig LDAP 配置
+     * @return 是否使用 Truststore SPI
+     */
     public static boolean shouldUseTruststoreSpi(LDAPConfig ldapConfig) {
         boolean useSSL = ldapConfig.getConnectionUrl().toLowerCase().contains("ldaps://");
         boolean defaultUseTruststore = useSSL || ldapConfig.isStartTls();

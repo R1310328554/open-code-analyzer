@@ -36,12 +36,13 @@ import org.keycloak.storage.ldap.idm.query.internal.EqualCondition;
 import org.keycloak.storage.ldap.idm.query.internal.LDAPQuery;
 
 /**
- * Mapper useful for the LDAP deployments when some attribute (usually CN) is mapped to full name of user
+ * 全名映射器：将 LDAP 单一属性（通常为 CN）与 Keycloak 用户的 firstName/lastName 互相同步。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class FullNameLDAPStorageMapper extends AbstractLDAPStorageMapper {
 
+    /** 配置：LDAP 全名属性名，默认 CN。 */
     public static final String LDAP_FULL_NAME_ATTRIBUTE = "ldap.full.name.attribute";
     public static final String READ_ONLY = "read.only";
     public static final String WRITE_ONLY = "write.only";
@@ -51,6 +52,7 @@ public class FullNameLDAPStorageMapper extends AbstractLDAPStorageMapper {
         super(mapperModel, ldapProvider);
     }
 
+    /** {@inheritDoc} 从 LDAP 导入时将全名拆分为名/姓写入 UserModel。 */
     @Override
     public void onImportUserFromLDAP(LDAPObject ldapUser, UserModel user, RealmModel realm, boolean isCreate) {
         if (isWriteOnly()) {
@@ -75,6 +77,7 @@ public class FullNameLDAPStorageMapper extends AbstractLDAPStorageMapper {
         }
     }
 
+    /** {@inheritDoc} 注册到 LDAP 时将 firstName/lastName 合并写入全名属性。 */
     @Override
     public void onRegisterUserToLDAP(LDAPObject ldapUser, UserModel localUser, RealmModel realm) {
         String ldapFullNameAttrName = getLdapFullNameAttrName();
@@ -86,6 +89,7 @@ public class FullNameLDAPStorageMapper extends AbstractLDAPStorageMapper {
         }
     }
 
+    /** {@inheritDoc} 可写模式下代理 UserModel，在事务内同步全名到 LDAP。 */
     @Override
     public UserModel proxy(LDAPObject ldapUser, UserModel delegate, RealmModel realm) {
         if (ldapProvider.getEditMode() == UserStorageProvider.EditMode.WRITABLE && !isReadOnly()) {
@@ -93,7 +97,7 @@ public class FullNameLDAPStorageMapper extends AbstractLDAPStorageMapper {
 
             TxAwareLDAPUserModelDelegate txDelegate = new TxAwareLDAPUserModelDelegate(delegate, ldapProvider, ldapUser) {
 
-                // Per-transaction state. Useful due the fact that "setFirstName" and "setLastName" called within same transaction
+                // 事务内缓存 firstName/lastName，因 setFirstName 与 setLastName 可能在同一事务中先后调用
                 private String firstName;
                 private String lastName;
 
@@ -164,6 +168,7 @@ public class FullNameLDAPStorageMapper extends AbstractLDAPStorageMapper {
                 }
 
 
+                /** 将当前 firstName/lastName 合并后写入 LDAP 全名属性。 */
                 private void setFullNameToLDAPObject() {
                     String fullName = getFullNameForWriteToLDAP(getFirstName(), getLastName(), getUsername());
                     if (logger.isTraceEnabled()) {
@@ -184,6 +189,7 @@ public class FullNameLDAPStorageMapper extends AbstractLDAPStorageMapper {
         }
     }
 
+    /** {@inheritDoc} 将 firstName/lastName 等值条件合并为全名 LDAP 等值条件。 */
     @Override
     public void beforeLDAPQuery(LDAPQuery query) {
         if (isWriteOnly()) {
@@ -193,7 +199,7 @@ public class FullNameLDAPStorageMapper extends AbstractLDAPStorageMapper {
         String ldapFullNameAttrName = getLdapFullNameAttrName();
         query.addReturningLdapAttribute(ldapFullNameAttrName);
 
-        // Change conditions and compute condition for fullName from the conditions for firstName and lastName. Right now just "equal" condition is supported
+        // 从 firstName/lastName 条件推导全名条件；当前仅支持 equal
         EqualCondition firstNameCondition = null;
         EqualCondition lastNameCondition = null;
         Set<Condition> conditionsCopy = new HashSet<Condition>(query.getConditions());
@@ -207,10 +213,9 @@ public class FullNameLDAPStorageMapper extends AbstractLDAPStorageMapper {
                     lastNameCondition = (EqualCondition) condition;
                     query.getConditions().remove(condition);
                 } else if (paramName.equals(LDAPConstants.GIVENNAME)) {
-                    // Some previous mapper already converted it to LDAP name
+                    // 前置映射器可能已转换为 LDAP 属性名
                     firstNameCondition = (EqualCondition) condition;
                 } else if (paramName.equals(LDAPConstants.SN)) {
-                    // Some previous mapper already converted it to LDAP name
                     lastNameCondition = (EqualCondition) condition;
                 }
             }
@@ -232,16 +237,19 @@ public class FullNameLDAPStorageMapper extends AbstractLDAPStorageMapper {
         query.addWhereCondition(fullNameCondition);
     }
 
+    /** {@inheritDoc} */
     @Override
     public Set<String> getUserAttributes() {
         return new HashSet<>(List.of(UserModel.FIRST_NAME, UserModel.LAST_NAME));
     }
 
+    /** 返回 LDAP 全名属性名，未配置时默认 CN。 */
     protected String getLdapFullNameAttrName() {
         String ldapFullNameAttrName = mapperModel.getConfig().getFirst(LDAP_FULL_NAME_ATTRIBUTE);
         return ldapFullNameAttrName == null ? LDAPConstants.CN : ldapFullNameAttrName;
     }
 
+    /** 根据名、姓、用户名生成写入 LDAP 的全名字符串。 */
     protected String getFullNameForWriteToLDAP(String firstName, String lastName, String username) {
         if (!isBlank(firstName) && !isBlank(lastName)) {
             return firstName + " " + lastName;
@@ -269,7 +277,7 @@ public class FullNameLDAPStorageMapper extends AbstractLDAPStorageMapper {
     }
 
 
-    // Used just in case that we have Writable LDAP and fullName is mapped to "cn", which is used as RDN (this typically happens only on MSAD)
+    /** 可写 LDAP 且全名映射到 RDN 属性（如 MSAD 的 cn）时，无姓名则回退到 username。 */
     private boolean isFallbackToUsername() {
         String rdnLdapAttrConfig = getLdapProvider().getLdapIdentityStore().getConfig().getRdnLdapAttribute();
         return !isReadOnly() && getLdapFullNameAttrName().equalsIgnoreCase(rdnLdapAttrConfig);

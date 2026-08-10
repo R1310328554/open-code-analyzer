@@ -24,7 +24,7 @@ import org.keycloak.representations.idm.ComponentRepresentation;
 import org.keycloak.storage.ldap.LDAPStorageProvider;
 
 /**
- * Configuration specific to {@link LDAPStorageProvider}
+ * {@link LDAPStorageProvider} 专用的 Kerberos 配置封装。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
@@ -38,10 +38,12 @@ public class LDAPProviderKerberosConfig extends CommonKerberosConfig {
         super(componentRep);
     }
 
+    /** 是否使用 Kerberos 进行密码认证。 */
     public boolean isUseKerberosForPasswordAuthentication() {
         return Boolean.valueOf(getConfig().getFirst(KerberosConstants.USE_KERBEROS_FOR_PASSWORD_AUTHENTICATION));
     }
 
+    /** 返回 LDAP 中存储 Kerberos 主体名的属性名。 */
     public String getKerberosPrincipalAttribute() {
         return getConfig().getFirst(KerberosConstants.KERBEROS_PRINCIPAL_ATTRIBUTE);
     }

@@ -20,7 +20,7 @@ package org.keycloak.storage.ldap.idm.store.ldap.control;
 import javax.naming.AuthenticationException;
 
 /**
- * PasswordPolicyPasswordChangeException is thrown when LDAP password policy response control indicates error "changeAfterReset".
+ * LDAP 密码策略响应控制指示 {@code changeAfterReset} 错误时抛出的认证异常。
  */
 public class PasswordPolicyPasswordChangeException extends AuthenticationException {
 

@@ -21,19 +21,16 @@ import javax.naming.ldap.ExtendedRequest;
 import javax.naming.ldap.ExtendedResponse;
 
 /**
- * An implementation of the
- * <a target="_blank" href="https://tools.ietf.org/html/rfc3062">
- * LDAP Password Modify Extended Operation
- * </a>
- * client request.
+ * RFC 3062 LDAP 密码修改扩展操作（Password Modify Extended Operation）的客户端请求实现。
  * <p>
- * Can be directed at any LDAP server that supports the Password Modify Extended Operation.
+ * 可用于支持该扩展操作的任意 LDAP 服务器。
  *
  * @author Josh Cummings
  * @since 4.2.9
  */
 public final class PasswordModifyRequest implements ExtendedRequest {
 
+  /** 密码修改扩展操作 OID。 */
   public static final String PASSWORD_MODIFY_OID = "1.3.6.1.4.1.4203.1.11.1";
 
   private static final byte SEQUENCE_TYPE = 48;
@@ -43,6 +40,13 @@ public final class PasswordModifyRequest implements ExtendedRequest {
 
   private final ByteArrayOutputStream value = new ByteArrayOutputStream();
 
+  /**
+   * 构造密码修改请求。
+   *
+   * @param userIdentity 用户标识（DN 或空表示当前绑定用户）
+   * @param oldPassword 旧密码，可为 null
+   * @param newPassword 新密码，可为 null
+   */
   public PasswordModifyRequest(String userIdentity, String oldPassword, String newPassword) {
     ByteArrayOutputStream elements = new ByteArrayOutputStream();
 
@@ -61,26 +65,27 @@ public final class PasswordModifyRequest implements ExtendedRequest {
     berEncode(SEQUENCE_TYPE, elements.toByteArray(), this.value);
   }
 
+  /** {@inheritDoc} */
   @Override
   public String getID() {
     return PASSWORD_MODIFY_OID;
   }
 
+  /** {@inheritDoc} */
   @Override
   public byte[] getEncodedValue() {
     return this.value.toByteArray();
   }
 
+  /** {@inheritDoc} 本实现不解析扩展响应。 */
   @Override
   public ExtendedResponse createExtendedResponse(String id, byte[] berValue, int offset, int length) {
     return null;
   }
 
   /**
-   * Only minimal support for
-   * <a target="_blank" href="https://www.itu.int/ITU-T/studygroups/com17/languages/X.690-0207.pdf">
-   * BER encoding
-   * </a>; just what is necessary for the Password Modify request.
+   * 最小 BER 编码实现，仅满足密码修改请求所需。
+   * 参见 <a target="_blank" href="https://www.itu.int/ITU-T/studygroups/com17/languages/X.690-0207.pdf">X.690</a>。
    */
   private void berEncode(byte type, byte[] src, ByteArrayOutputStream dest) {
     int length = src.length;

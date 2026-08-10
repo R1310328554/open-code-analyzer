@@ -25,6 +25,8 @@ import org.jboss.logging.Logger;
 import static javax.naming.Context.SECURITY_CREDENTIALS;
 
 /**
+ * LDAP 连接上下文管理器，负责创建、认证与关闭 {@link LdapContext}，支持 StartTLS 与连接池。
+ *
  * @author mhajas
  */
 public final class LDAPContextManager implements AutoCloseable {
@@ -45,15 +47,14 @@ public final class LDAPContextManager implements AutoCloseable {
         return new LDAPContextManager(session, connectionProperties);
     }
 
-    // Create connection that is authenticated as admin user.
+    /** 以管理员身份创建并认证 LDAP 连接。 */
     private void createLdapContext() throws NamingException {
         var tracing = session.getProvider(TracingProvider.class);
         tracing.startSpan(LDAPContextManager.class, "createLdapContext");
         try {
             Hashtable<Object, Object> connProp = getNonAuthConnectionProperties(ldapConfig);
 
-            // Without StartTLS, bind via the initial env so the pooled connection is reused, not re-bound per operation
-            // With StartTLS the bind is deferred until after the negotiation
+            // 非 StartTLS 时在初始环境中绑定，以便连接池复用；StartTLS 则推迟到协商完成后再绑定
             if (!ldapConfig.isStartTls()) {
                 setAuthConnectionProperties(connProp, ldapConfig, getBindPassword());
             }
@@ -64,7 +65,7 @@ public final class LDAPContextManager implements AutoCloseable {
 
             ldapContext = new SessionBoundInitialLdapContext(session, connProp, null);
 
-            // Send StartTLS request and setup SSL context if needed.
+            // 按需发送 StartTLS 请求并配置 SSL 上下文
             if (ldapConfig.isStartTls()) {
                 SSLSocketFactory sslSocketFactory = null;
                 if (LDAPUtil.shouldUseTruststoreSpi(ldapConfig)) {
@@ -74,12 +75,12 @@ public final class LDAPContextManager implements AutoCloseable {
 
                 tlsResponse = startTLS(ldapContext, sslSocketFactory);
 
-                // Exception should be already thrown by LDAPContextManager.startTLS if "startTLS" could not be established, but rather do some additional check
+                // startTLS 失败时 LDAPContextManager.startTLS 应已抛异常，此处再做一次防御性检查
                 if (tlsResponse == null) {
                     throw new NamingException("Wasn't able to establish LDAP connection through StartTLS");
                 }
 
-                // StartTLS must complete before authenticating, so bind only now.
+                // StartTLS 完成后才能进行认证绑定
                 setAdminConnectionAuthProperties(ldapContext);
             }
         } catch (NamingException e) {
@@ -89,8 +90,7 @@ public final class LDAPContextManager implements AutoCloseable {
             tracing.endSpan();
         }
 
-        // Bind will be automatically called when operations are executed on the context,
-        // or it can be explicitly called by invoking the reconnect() method (e.g., authentication test in LDAPServerCapabilitiesManager.testLDAP()).
+        // 绑定会在上下文上执行操作时自动触发，也可显式调用 reconnect()（如 LDAPServerCapabilitiesManager.testLDAP() 中的认证测试）
     }
 
     public LdapContext getLdapContext() throws NamingException {
@@ -99,12 +99,19 @@ public final class LDAPContextManager implements AutoCloseable {
         return ldapContext;
     }
 
-    // Get bind password from vault or from directly from configuration, may be null.
+    /** 从 Vault 或配置读取 bind 密码，可能为 null。 */
     private String getBindPassword() {
         VaultStringSecret vaultSecret = session.vault().getStringSecret(ldapConfig.getBindCredential());
         return vaultSecret.get().orElse(ldapConfig.getBindCredential());
     }
 
+    /**
+     * 在已有 {@link LdapContext} 上发起 StartTLS 协商。
+     *
+     * @param ldapContext LDAP 上下文
+     * @param sslSocketFactory SSL 套接字工厂，可为 null
+     * @return StartTLS 响应
+     */
     public static StartTlsResponse startTLS(LdapContext ldapContext, SSLSocketFactory sslSocketFactory) throws NamingException {
         StartTlsResponse tls = null;
 
@@ -121,7 +128,7 @@ public final class LDAPContextManager implements AutoCloseable {
         return tls;
     }
 
-    // Fill auth properties into the initial connection env so the bound connection can be pooled and reused.
+    /** 将认证相关属性写入初始连接环境，使已绑定连接可被连接池复用。 */
     static void setAuthConnectionProperties(Hashtable<Object, Object> connProp, LDAPConfig ldapConfig, String bindPassword) {
         String authType = ldapConfig.getAuthType();
         if (authType != null) {
@@ -142,7 +149,7 @@ public final class LDAPContextManager implements AutoCloseable {
         logConnectionProperties(connProp);
     }
 
-    // Fill in the connection properties to authenticate as admin.
+    /** 在已有上下文上配置管理员认证属性。 */
     private void setAdminConnectionAuthProperties(LdapContext ldapContext) throws NamingException {
         String authType = ldapConfig.getAuthType();
         if (authType != null) {
@@ -164,7 +171,7 @@ public final class LDAPContextManager implements AutoCloseable {
         logConnectionProperties(ldapContext.getEnvironment());
     }
 
-    // Log the connection environment with the bind credentials masked.
+    /** 记录连接环境（bind 凭证已脱敏）。 */
     private static void logConnectionProperties(Map<?, ?> env) {
         if (logger.isDebugEnabled()) {
             Map<Object, Object> copyEnv = new Hashtable<>(env);
@@ -177,12 +184,11 @@ public final class LDAPContextManager implements AutoCloseable {
 
 
     /**
-     * This method is used for admin connection and user authentication. Hence it returns just connection properties NOT related to
-     * authentication (properties like bindType, bindDn, bindPassword). Caller of this method needs to fill auth-related connection properties
-     * based on the fact whether he does admin connection or user authentication
+     * 返回与认证无关的连接属性（不含 bindType、bindDn、bindPassword）。
+     * 供管理员连接与用户认证共用；调用方需按场景自行填充认证属性。
      *
-     * @param ldapConfig
-     * @return
+     * @param ldapConfig LDAP 配置
+     * @return 非认证连接属性表
      */
     public static Hashtable<Object, Object> getNonAuthConnectionProperties(LDAPConfig ldapConfig) {
         HashMap<String, Object> env = new HashMap<>();
@@ -202,8 +208,7 @@ public final class LDAPContextManager implements AutoCloseable {
             logger.warn("LDAP URL is null. LDAPOperationManager won't work correctly");
         }
 
-        // when using Start TLS, use default socket factory for LDAP client but pass the TrustStore SSL socket factory later
-        // when calling StartTlsResponse.negotiate(trustStoreSSLSocketFactory)
+        // StartTLS 时使用默认套接字工厂，TrustStore SSL 工厂在 StartTlsResponse.negotiate() 时传入
         if (!ldapConfig.isStartTls() && LDAPUtil.shouldUseTruststoreSpi(ldapConfig)) {
             env.put("java.naming.ldap.factory.socket", "org.keycloak.truststore.SSLSocketFactory");
         }
@@ -223,7 +228,7 @@ public final class LDAPContextManager implements AutoCloseable {
             env.put("com.sun.jndi.ldap.read.timeout", readTimeout);
         }
 
-        // Just dump the additional properties
+        // 合并额外连接属性
         Properties additionalProperties = ldapConfig.getAdditionalConnectionProperties();
         if (additionalProperties != null) {
             for (Object key : additionalProperties.keySet()) {
@@ -255,6 +260,7 @@ public final class LDAPContextManager implements AutoCloseable {
         return new Hashtable<>(env);
     }
 
+    /** {@inheritDoc} 关闭 StartTLS 响应与 LDAP 上下文。 */
     @Override
     public void close() {
         if (tlsResponse != null) {

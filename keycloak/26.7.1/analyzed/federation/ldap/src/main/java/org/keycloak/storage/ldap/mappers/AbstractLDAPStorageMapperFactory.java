@@ -30,30 +30,36 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.storage.ldap.LDAPStorageProvider;
 
 /**
+ * LDAP 存储映射器工厂抽象基类，负责从会话获取 {@link LDAPStorageProvider} 并创建映射器实例。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public abstract class AbstractLDAPStorageMapperFactory implements LDAPStorageMapperFactory<LDAPStorageMapper> {
 
+    /** {@inheritDoc} 默认无初始化逻辑。 */
     @Override
     public void init(Config.Scope config) {
     }
 
+    /** {@inheritDoc} 从会话属性获取父 LDAP 提供者并创建映射器。 */
     @Override
     public LDAPStorageMapper create(KeycloakSession session, ComponentModel model) {
-        // LDAPStorageProvider is in the session already as mappers are always called from it
+        // LDAPStorageProvider 已在会话中，映射器总是由其调用
         String ldapProviderModelId = model.getParentId();
         LDAPStorageProvider ldapProvider = (LDAPStorageProvider) session.getAttribute(ldapProviderModelId);
 
         return createMapper(model, ldapProvider);
     }
 
-    // Used just by LDAPFederationMapperBridge.
+    /** 由子类实现；仅供 LDAPFederationMapperBridge 等内部使用。 */
     protected abstract AbstractLDAPStorageMapper createMapper(ComponentModel mapperModel, LDAPStorageProvider federationProvider);
 
+    /** {@inheritDoc} 默认无后置初始化。 */
     @Override
     public void postInit(KeycloakSessionFactory factory) {
     }
 
+    /** {@inheritDoc} 默认不支持双向同步。 */
     @Override
     public Map<String, Object> getTypeMetadata() {
         Map<String, Object> metadata = new HashMap<>();
@@ -63,10 +69,12 @@ public abstract class AbstractLDAPStorageMapperFactory implements LDAPStorageMap
         return metadata;
     }
 
+    /** {@inheritDoc} 默认无资源需释放。 */
     @Override
     public void close() {
     }
 
+    /** 构造提供者配置属性。 */
     public static ProviderConfigProperty createConfigProperty(String name, String label, String helpText, String type, List<String> options) {
         ProviderConfigProperty configProperty = new ProviderConfigProperty();
         configProperty.setName(name);
@@ -77,12 +85,14 @@ public abstract class AbstractLDAPStorageMapperFactory implements LDAPStorageMap
         return configProperty;
     }
 
+    /** 构造必填的提供者配置属性。 */
     public static ProviderConfigProperty createConfigProperty(String name, String label, String helpText, String type, List<String> options, boolean required) {
         ProviderConfigProperty property = createConfigProperty(name, label, helpText, type, options);
         property.setRequired(required);
         return property;
     }
 
+    /** 校验映射器配置中指定属性非空。 */
     protected void checkMandatoryConfigAttribute(String name, String displayName, ComponentModel mapperModel) throws ComponentValidationException {
         String attrConfigValue = mapperModel.getConfig().getFirst(name);
         if (attrConfigValue == null || attrConfigValue.trim().isEmpty()) {
