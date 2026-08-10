@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T17:50:32Z",
   "files": [
-    "internal/cli/filesystem/skill_install.go",
-    "internal/cli/filesystem/skill_uninstall.go",
-    "internal/cli/filesystem/types.go",
-    "internal/cli/filesystem/utils.go",
-    "internal/cli/filesystem_command.go",
-    "internal/cli/http_client.go",
-    "internal/cli/lexer.go",
-    "internal/cli/parser.go",
-    "internal/cli/response.go",
-    "internal/cli/table.go",
-    "internal/cli/types.go",
-    "internal/cli/user_command.go",
-    "internal/cli/user_parser.go",
-    "internal/common/app_name.go",
-    "internal/common/constants.go",
     "internal/common/error_code.go",
     "internal/common/format.go",
     "internal/common/idenfication.go",
@@ -33,5 +18,5 @@
     "internal/common/reference_metadata.go"
   ],
   "remaining_pending": 1194,
-  "done": 540
+  "done": 555
 }
