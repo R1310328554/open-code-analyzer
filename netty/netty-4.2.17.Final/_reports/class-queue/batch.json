@@ -15,23 +15,8 @@
     "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2PriorityFrame.java",
     "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2PromisedRequestVerifier.java",
     "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2PushPromiseFrame.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2RemoteFlowController.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2ResetFrame.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2SecurityUtil.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2ServerUpgradeCodec.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2Settings.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2SettingsAckFrame.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2SettingsFrame.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2SettingsReceivedConsumer.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2Stream.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2StreamChannel.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2StreamChannelBootstrap.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2StreamChannelId.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2StreamChannelOption.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2StreamFrame.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2StreamFrameToHttpObjectCodec.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2StreamVisitor.java"
+    "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2RemoteFlowController.java"
   ],
   "remaining_pending": 1178,
-  "done": 720
+  "done": 735
 }
