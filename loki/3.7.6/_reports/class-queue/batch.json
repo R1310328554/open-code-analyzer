@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T23:09:42Z",
-  "files": [
-    "pkg/storage/chunk/cache/resultscache/types.pb.go",
-    "pkg/storage/chunk/cache/resultscache/util.go",
-    "pkg/storage/chunk/cache/snappy.go",
-    "pkg/storage/chunk/cache/stats.go",
-    "pkg/storage/chunk/cache/stop_once.go",
-    "pkg/storage/chunk/cache/tiered.go",
-    "pkg/storage/chunk/chunk.go",
-    "pkg/storage/chunk/client/alibaba/oss_object_client.go",
-    "pkg/storage/chunk/client/aws/config.go",
-    "pkg/storage/chunk/client/aws/dynamodb_index_reader.go",
-    "pkg/storage/chunk/client/aws/dynamodb_metrics.go",
-    "pkg/storage/chunk/client/aws/dynamodb_storage_client.go",
-    "pkg/storage/chunk/client/aws/dynamodb_table_client.go",
-    "pkg/storage/chunk/client/aws/fixtures.go",
-    "pkg/storage/chunk/client/aws/metrics_autoscaling.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 322,
-  "done": 1215
+  "done": 1230
 }
