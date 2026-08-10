@@ -2128,3 +2128,18 @@
 2026-08-10T09:03:15Z DONE quarkus/deployment/src/main/java/org/keycloak/quarkus/deployment/ValidatePersistenceUnitsBuildItem.java wave72b database + quarkus deployment + Environment
 2026-08-10T09:03:15Z DONE quarkus/deployment/src/main/java/org/keycloak/quarkus/deployment/WebAuthnMetadataBuildItem.java wave72b database + quarkus deployment + Environment
 2026-08-10T09:03:15Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/Environment.java wave72b database + quarkus deployment + Environment
+2026-08-10T09:05:15Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/AbstractCommand.java wave73b quarkus CLI commands
+2026-08-10T09:05:15Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/AbstractNonServerCommand.java wave73b quarkus CLI commands
+2026-08-10T09:05:15Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/AbstractUpdatesCommand.java wave73b quarkus CLI commands
+2026-08-10T09:05:15Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/BootstrapAdmin.java wave73b quarkus CLI commands
+2026-08-10T09:05:15Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/BootstrapAdminService.java wave73b quarkus CLI commands
+2026-08-10T09:05:15Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/BootstrapAdminUser.java wave73b quarkus CLI commands
+2026-08-10T09:05:15Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/Build.java wave73b quarkus CLI commands
+2026-08-10T09:05:15Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/BuildPasswordDenylist.java wave73b quarkus CLI commands
+2026-08-10T09:05:15Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/Completion.java wave73b quarkus CLI commands
+2026-08-10T09:05:15Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/DryRunMixin.java wave73b quarkus CLI commands
+2026-08-10T09:05:15Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/Export.java wave73b quarkus CLI commands
+2026-08-10T09:05:15Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/HelpAllMixin.java wave73b quarkus CLI commands
+2026-08-10T09:05:15Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/Import.java wave73b quarkus CLI commands
+2026-08-10T09:05:15Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/ImportRealmMixin.java wave73b quarkus CLI commands
+2026-08-10T09:05:15Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/Main.java wave73b quarkus CLI commands

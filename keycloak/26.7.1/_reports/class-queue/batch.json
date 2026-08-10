@@ -15,23 +15,8 @@
     "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/PropertyException.java",
     "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/ShortErrorMessageHandler.java",
     "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/SubCommandListRenderer.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/AbstractAutoBuildCommand.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/AbstractCommand.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/AbstractNonServerCommand.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/AbstractUpdatesCommand.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/BootstrapAdmin.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/BootstrapAdminService.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/BootstrapAdminUser.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/Build.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/BuildPasswordDenylist.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/Completion.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/DryRunMixin.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/Export.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/HelpAllMixin.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/Import.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/ImportRealmMixin.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/Main.java"
+    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/AbstractAutoBuildCommand.java"
   ],
   "remaining_pending": 3808,
-  "done": 2160
+  "done": 2175
 }
