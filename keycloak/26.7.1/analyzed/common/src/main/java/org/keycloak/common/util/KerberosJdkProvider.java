@@ -43,7 +43,7 @@ import org.ietf.jgss.Oid;
 import org.jboss.logging.Logger;
 
 /**
- * Provides abstraction to handle differences between various JDK vendors (Sun, IBM)
+ * 抽象不同 JDK 厂商（Sun/Oracle、IBM）在 Kerberos/JAAS 集成上的差异。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
@@ -51,19 +51,23 @@ public abstract class KerberosJdkProvider {
 
     private static final Logger logger = Logger.getLogger(KerberosJdkProvider.class);
 
+    /** 创建服务端 keytab 登录的 JAAS 配置。 */
     public abstract Configuration createJaasConfigurationForServer(String keytab, String serverPrincipal, boolean debug);
+    /** 创建用户名/密码 Kerberos 登录的 JAAS 配置。 */
     public abstract Configuration createJaasConfigurationForUsernamePasswordLogin(boolean debug);
 
+    /** 将 {@link GSSCredential} 转换回 {@link KerberosTicket}（厂商实现不同）。 */
     public abstract KerberosTicket gssCredentialToKerberosTicket(KerberosTicket kerberosTicket, GSSCredential gssCredential);
 
 
 
+    /** 使用默认生命周期与 INITIATE_ONLY 用途将 Kerberos 票据转为 GSS 凭证。 */
     public GSSCredential kerberosTicketToGSSCredential(KerberosTicket kerberosTicket) {
         return kerberosTicketToGSSCredential(kerberosTicket, GSSCredential.DEFAULT_LIFETIME, GSSCredential.INITIATE_ONLY);
     }
 
     /**
-     * @return true if Kerberos (GSS API) is available in underlying JDK and it is possible to use it. False otherwise
+     * @return 底层 JDK 是否支持 Kerberos（GSS API）；不支持时记录警告
      */
     public boolean isKerberosAvailable() {
         GSSManager gssManager = GSSManager.getInstance();
@@ -76,7 +80,7 @@ public abstract class KerberosJdkProvider {
         }
     }
 
-    // Actually can use same on both JDKs
+    // Sun 与 IBM JDK 均可使用相同实现
     public GSSCredential kerberosTicketToGSSCredential(KerberosTicket kerberosTicket, final int lifetime, final int usage) {
         try {
             final GSSManager gssManager = GSSManager.getInstance();
@@ -104,6 +108,7 @@ public abstract class KerberosJdkProvider {
     }
 
 
+    /** 按 JVM 厂商返回 {@link SunJDKProvider} 或 {@link IBMJDKProvider}。 */
     public static KerberosJdkProvider getProvider() {
         if (Environment.IS_IBM_JAVA) {
             return new IBMJDKProvider();
@@ -113,10 +118,10 @@ public abstract class KerberosJdkProvider {
     }
 
 
-    // IMPL Subclasses
+    // 实现子类
 
 
-    // Works for Oracle and OpenJDK
+    /** 适用于 Oracle JDK 与 OpenJDK。 */
     private static class SunJDKProvider extends KerberosJdkProvider {
 
 
@@ -158,7 +163,7 @@ public abstract class KerberosJdkProvider {
         }
 
 
-        // Note: input kerberosTicket is null for Sun based JDKs
+        // 注：Sun JDK 上输入 kerberosTicket 为 null
         @Override
         public KerberosTicket gssCredentialToKerberosTicket(KerberosTicket kerberosTicket, GSSCredential gssCredential) {
             try {
@@ -182,7 +187,7 @@ public abstract class KerberosJdkProvider {
     }
 
 
-    // Works for IBM JDK
+    /** 适用于 IBM JDK。 */
     private static class IBMJDKProvider extends KerberosJdkProvider {
 
         @Override
@@ -234,7 +239,7 @@ public abstract class KerberosJdkProvider {
         }
 
 
-        // For IBM, kerberosTicket was set on JAAS Subject, so we can just return it
+        // IBM 上 kerberosTicket 已置于 JAAS Subject，直接返回即可
         @Override
         public KerberosTicket gssCredentialToKerberosTicket(KerberosTicket kerberosTicket, GSSCredential gssCredential) {
             if (kerberosTicket == null) {

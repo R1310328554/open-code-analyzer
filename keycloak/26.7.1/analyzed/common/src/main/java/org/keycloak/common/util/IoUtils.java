@@ -19,8 +19,18 @@ package org.keycloak.common.util;
 
 import java.io.Console;
 
+/**
+ * 控制台交互读取工具（密码与普通行输入）。
+ */
 public class IoUtils {
 
+    /**
+     * 从控制台读取输入；无控制台且无默认值时抛出异常。
+     *
+     * @param kind 提示中的输入类型描述
+     * @param defaultValue 默认值，可为 null
+     * @param password 是否按密码方式读取（不回显）
+     */
     public static String readFromConsole(String kind, String defaultValue, boolean password) {
         Console cons = System.console();
         if (cons == null) {
@@ -41,10 +51,12 @@ public class IoUtils {
         throw new RuntimeException(String.format("No %s provided", kind));
     }
 
+    /** 从控制台读取密码。 */
     public static String readPasswordFromConsole(String kind) {
         return readFromConsole(kind, null, true);
     }
     
+    /** 从控制台读取一行文本，支持默认值。 */
     public static String readLineFromConsole(String kind, String defaultValue) {
         return readFromConsole(kind, defaultValue, false);
     }

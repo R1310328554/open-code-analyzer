@@ -4,6 +4,9 @@ import java.time.Duration;
 import java.time.format.DateTimeParseException;
 import java.util.regex.Pattern;
 
+/**
+ * 字符串时长解析工具，支持秒、毫秒、ISO-8601 及简写单位（h/m/s/d）。
+ */
 public class DurationConverter {
 
     private static final String PERIOD = "P";
@@ -14,17 +17,15 @@ public class DurationConverter {
     private static final Pattern MILLIS = Pattern.compile("^[-+]?\\d+(?i)ms$");
 
     /**
-     * If the {@code value} starts with a number, then:
+     * 若 {@code value} 以数字开头，则：
      * <ul>
-     * <li>If the value is only a number, it is treated as a number of seconds.</li>
-     * <li>If the value is a number followed by {@code ms}, it is treated as a number of milliseconds.</li>
-     * <li>If the value is a number followed by {@code h}, {@code m}, or {@code s}, it is prefixed with {@code PT}
-     * and {@link Duration#parse(CharSequence)} is called.</li>
-     * <li>If the value is a number followed by {@code d}, it is prefixed with {@code P}
-     * and {@link Duration#parse(CharSequence)} is called.</li>
+     * <li>纯数字视为秒数；</li>
+     * <li>数字后接 {@code ms} 视为毫秒；</li>
+     * <li>数字后接 {@code h}/{@code m}/{@code s} 时前缀 {@code PT} 后调用 {@link Duration#parse(CharSequence)}；</li>
+     * <li>数字后接 {@code d} 时前缀 {@code P} 后调用 {@link Duration#parse(CharSequence)}。</li>
      * </ul>
      *
-     * Otherwise, {@link Duration#parse(CharSequence)} is called.
+     * 否则直接调用 {@link Duration#parse(CharSequence)}。
      *
      * @param value a string duration
      * @return the parsed {@link Duration}
@@ -54,7 +55,7 @@ public class DurationConverter {
     }
 
     /**
-     * Checks whether the given value represents a positive duration.
+     * 判断给定字符串是否表示正时长。
      *
      * @param value a string duration following the same format as in {@link #parseDuration(String)}
      * @return true if the value represents a positive duration, false otherwise

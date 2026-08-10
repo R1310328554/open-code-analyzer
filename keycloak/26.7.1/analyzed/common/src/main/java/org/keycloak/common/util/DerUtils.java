@@ -34,8 +34,7 @@ import java.util.Base64;
 import org.keycloak.common.crypto.CryptoIntegration;
 
 /**
- * Extract PrivateKey, PublicKey, and X509Certificate from a DER encoded byte array or file.  Usually
- * generated from openssl
+ * 从 DER 编码字节流或文件中解析私钥、公钥与 X509 证书（通常由 OpenSSL 生成）。
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
@@ -45,6 +44,7 @@ public final class DerUtils {
     private DerUtils() {
     }
 
+    /** 从输入流读取 DER 私钥。 */
     public static PrivateKey decodePrivateKey(InputStream is)
             throws Exception {
 
@@ -56,19 +56,23 @@ public final class DerUtils {
         return decodePrivateKey(keyBytes);
     }
 
+    /** 从 Base64 编码字符串解码 RSA 公钥。 */
     public static PublicKey decodePublicKey(String encoded) throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchProviderException {
         return decodePublicKey(encoded, "RSA");
     }
 
+    /** 从 Base64 字符串按指定算法类型解码公钥。 */
     public static PublicKey decodePublicKey(String encoded, String type) throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchProviderException {
         byte[] der = Base64.getDecoder().decode(encoded);
         return decodePublicKey(der, type);
     }
 
+    /** 从 DER 字节数组解码 RSA 公钥。 */
     public static PublicKey decodePublicKey(byte[] der) throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchProviderException {
         return decodePublicKey(der, "RSA");
     }
 
+    /** 从 DER 字节数组按指定算法类型解码公钥。 */
     public static PublicKey decodePublicKey(byte[] der, String type) throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchProviderException {
         X509EncodedKeySpec spec =
                 new X509EncodedKeySpec(der);
@@ -76,6 +80,7 @@ public final class DerUtils {
         return kf.generatePublic(spec);
     }
 
+    /** 从输入流解码 X509 证书。 */
     public static X509Certificate decodeCertificate(InputStream is) throws Exception {
         CertificateFactory cf = CryptoIntegration.getProvider().getX509CertFactory();
         X509Certificate cert = (X509Certificate) cf.generateCertificate(is);
@@ -83,6 +88,7 @@ public final class DerUtils {
         return cert;
     }
 
+    /** 从 DER 字节数组解码私钥，依次尝试 RSA 与 EC 算法。 */
     public static PrivateKey decodePrivateKey(byte[] der) throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchProviderException {
         PKCS8EncodedKeySpec spec =
                 new PKCS8EncodedKeySpec(der);
@@ -91,7 +97,7 @@ public final class DerUtils {
             try {
                 return CryptoIntegration.getProvider().getKeyFactory(algorithm).generatePrivate(spec);
             } catch (InvalidKeySpecException e) {
-                // Ignore and try the next algorithm.
+                // 忽略并尝试下一算法
             }
         }
         throw new InvalidKeySpecException("Unable to decode the private key with supported algorithms: " + String.join(", ", algorithms));

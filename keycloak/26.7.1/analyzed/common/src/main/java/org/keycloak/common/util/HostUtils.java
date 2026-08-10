@@ -21,15 +21,18 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 /**
+ * 本机主机名与 IP 地址解析工具。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class HostUtils {
 
-    // Best effort to find the most proper hostname of this server.
+    /** 尽力解析本服务器最合适的主机名（小写、去首尾空白）。 */
     public static String getHostName() {
         return getHostNameImpl().trim().toLowerCase();
     }
 
+    /** 根据主机名解析 IP 地址。 */
     public static String getIpAddress() {
         try {
             String hostname = getHostName();
@@ -40,26 +43,25 @@ public class HostUtils {
     }
 
     private static String getHostNameImpl() {
-        // Return bind address if available
+        // 优先使用 JBoss 绑定地址
         String bindAddr = System.getProperty("jboss.bind.address");
         if (bindAddr != null && !bindAddr.trim().equals("0.0.0.0")) {
             return bindAddr;
         }
 
-        // Fallback to qualified name
+        // 回退到 JBoss 限定主机名
         String qualifiedHostName = System.getProperty("jboss.qualified.host.name");
         if (qualifiedHostName != null) {
             return qualifiedHostName;
         }
 
-        // If not on jboss env, let's try other possible fallbacks
-        // POSIX-like OSes including Mac should have this set
+        // 非 JBoss 环境：POSIX 系统常用 HOSTNAME
         qualifiedHostName = System.getenv("HOSTNAME");
         if (qualifiedHostName != null) {
             return qualifiedHostName;
         }
 
-        // Certain versions of Windows
+        // Windows 部分版本使用 COMPUTERNAME
         qualifiedHostName = System.getenv("COMPUTERNAME");
         if (qualifiedHostName != null) {
             return qualifiedHostName;
@@ -74,7 +76,7 @@ public class HostUtils {
     }
 
     /**
-     * Methods returns InetAddress for localhost
+     * 返回 localhost 的 {@link InetAddress}。
      *
      * @return InetAddress of the localhost
      * @throws UnknownHostException if localhost could not be resolved
@@ -83,7 +85,7 @@ public class HostUtils {
         InetAddress addr;
         try {
             addr = InetAddress.getLocalHost();
-        } catch (ArrayIndexOutOfBoundsException e) {  //this is workaround for mac osx bug see AS7-3223 and JGRP-1404
+        } catch (ArrayIndexOutOfBoundsException e) {  // macOS 缺陷 workaround，见 AS7-3223 与 JGRP-1404
             addr = InetAddress.getByName(null);
         }
         return addr;

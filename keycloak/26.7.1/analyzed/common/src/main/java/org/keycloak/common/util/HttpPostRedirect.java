@@ -20,22 +20,20 @@ import java.util.Map;
 
 
 /**
- * Helper class to do a browser redirect via a POST.
+ * 通过 HTML 表单 POST 实现浏览器重定向的辅助类。
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
- * @deprecated Class is deprecated and may be removed in the future. Use org.keycloak.saml.BaseSAML2BindingBuilder#buildHtml instead
+ * @deprecated 已废弃，未来可能移除；请使用 org.keycloak.saml.BaseSAML2BindingBuilder#buildHtml
  */
 @Deprecated
 public class HttpPostRedirect {
 
     /**
-     * Generate an HTML page that does a browser redirect via a POST.  The HTML document uses Javascript to automatically
-     * submit a FORM post when loaded.
+     * 生成在页面加载时通过 JavaScript 自动提交 POST 表单的 HTML 文档，
+     * 行为类似 SAML POST Binding。
      *
-     * This is similar to what the SAML Post Binding does.
-     *
-     * Here's an example
+     * 示例结构：
      *
      * <pre>
      * {@code
@@ -55,7 +53,6 @@ public class HttpPostRedirect {
      * </HTML>
      * }
      * </pre>
-
      *
      * @param title may be null.  Just the title of the HTML document
      * @param actionUrl URL to redirect to

@@ -27,11 +27,18 @@ import java.util.Set;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 跨 JDK 版本委托 {@link ObjectInputStream} 反序列化过滤器的工具类。
+ *
+ * <p>Java 6–8 使用 {@code sun.misc.ObjectInputFilter}，Java 9+ 使用 {@code java.io.ObjectInputFilter}，
+ * 通过反射适配不同 API，并提供 {@link FilterPatternBuilder} 构建白名单模式。</p>
+ */
 public class DelegatingSerializationFilter {
     private static final Logger LOG = Logger.getLogger(DelegatingSerializationFilter.class.getName());
 
     private static final SerializationFilterAdapter serializationFilterAdapter = isJava6To8() ? createOnJava6To8Adapter() : createOnJavaAfter8Adapter();
 
+    /** 判断当前 JVM 是否为 Java 6/7/8。 */
     private static boolean isJava6To8() {
         List<String> olderVersions = Arrays.asList("1.6", "1.7", "1.8");
         return olderVersions.contains(System.getProperty("java.specification.version"));
@@ -40,10 +47,12 @@ public class DelegatingSerializationFilter {
     private DelegatingSerializationFilter() {
     }
 
+    /** 创建 {@link FilterPatternBuilder} 以构建反序列化白名单。 */
     public static DelegatingSerializationFilter.FilterPatternBuilder builder() {
         return new DelegatingSerializationFilter.FilterPatternBuilder();
     }
 
+    /** 若流尚未设置过滤器，则应用给定模式。 */
     private void setFilter(ObjectInputStream ois, String filterPattern) {
         LOG.debug("Using: " + serializationFilterAdapter.getClass().getSimpleName());
 
@@ -52,6 +61,7 @@ public class DelegatingSerializationFilter {
         }
     }
 
+    /** 适配不同 JDK 的 ObjectInputFilter API。 */
     interface SerializationFilterAdapter {
 
         Object getObjectInputFilter(ObjectInputStream ois);
@@ -97,7 +107,7 @@ public class DelegatingSerializationFilter {
         }
     }
 
-    // If codebase stays on Java 8 for a while you could use Java 8 classes directly without reflection
+    // 若代码库长期停留在 Java 8，可直接使用 Java 8 类而无需反射
     static class OnJava6To8 implements SerializationFilterAdapter {
 
         private final Method getObjectInputFilterMethod;
@@ -130,6 +140,7 @@ public class DelegatingSerializationFilter {
     }
 
 
+    /** 无法配置过滤器时的空实现。 */
     static class EmptyFilterAdapter implements SerializationFilterAdapter {
 
         @Override
@@ -145,7 +156,7 @@ public class DelegatingSerializationFilter {
     }
 
 
-    // If codebase moves to Java 9+ could use Java 9+ classes directly without reflection and keep the old variant with reflection
+    // 若迁移至 Java 9+，可直接使用新 API 并保留反射版以兼容旧 JDK
     static class OnJavaAfter8 implements SerializationFilterAdapter {
 
         private final Method getObjectInputFilterMethod;
@@ -178,19 +189,20 @@ public class DelegatingSerializationFilter {
     }
 
 
+    /** 构建 ObjectInputFilter 白名单模式的流式 API。 */
     public static class FilterPatternBuilder {
 
         private Set<Class> classes = new HashSet<>();
         private Set<String> patterns = new HashSet<>();
 
         public FilterPatternBuilder() {
-            // Add "java.util" package by default (contains all the basic collections)
+            // 默认允许 java.util 包（含基础集合类）
             addAllowedPattern("java.util.*");
         }
 
         /**
-         * This is used when the caller of this method can't use the {@link #addAllowedClass(Class)}. For example because the
-         * particular is private or it is not available at the compile time. Or when adding the whole package like "java.util.*"
+         * 当无法使用 {@link #addAllowedClass(Class)} 时添加包或类模式，
+         * 例如类为 private、编译期不可见，或需允许整个包如 {@code java.util.*}。
          *
          * @param pattern
          * @return
@@ -200,6 +212,7 @@ public class DelegatingSerializationFilter {
             return this;
         }
 
+        /** 允许反序列化指定类。 */
         public FilterPatternBuilder addAllowedClass(Class javaClass) {
             this.classes.add(javaClass);
             return this;
@@ -221,6 +234,7 @@ public class DelegatingSerializationFilter {
             return builder.toString();
         }
 
+        /** 将当前模式应用到 {@link ObjectInputStream}。 */
         public void setFilter(ObjectInputStream ois) {
             DelegatingSerializationFilter filter = new DelegatingSerializationFilter();
             String filterPattern = this.toString();

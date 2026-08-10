@@ -23,15 +23,19 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
+ * 线程安全的 {@link MultivaluedMap} 实现，基于 {@link ConcurrentHashMap} 与 {@link CopyOnWriteArrayList}。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 @SuppressWarnings("serial")
 public class ConcurrentMultivaluedHashMap<K, V> extends ConcurrentHashMap<K, List<V>> implements MultivaluedMap<K, V>
 {
+    /** 创建空的多值映射。 */
     public ConcurrentMultivaluedHashMap() {
     }
 
+    /** 从已有映射复制条目。 */
     public ConcurrentMultivaluedHashMap(Map<K, List<V>> map) {
         if (map == null) {
             throw new IllegalArgumentException("Map can not be null");
@@ -39,6 +43,7 @@ public class ConcurrentMultivaluedHashMap<K, V> extends ConcurrentHashMap<K, Lis
         putAll(map);
     }
 
+   /** 创建用于存储值的 {@link CopyOnWriteArrayList} 实例。 */
    @Override
    public List<V> createListInstance() {
       return new CopyOnWriteArrayList<>();

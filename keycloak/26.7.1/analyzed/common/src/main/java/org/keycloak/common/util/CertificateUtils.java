@@ -26,22 +26,23 @@ import java.util.Date;
 import org.keycloak.common.crypto.CryptoIntegration;
 
 /**
- * The Class CertificateUtils provides utility functions for generation of V1 and V3 {@link java.security.cert.X509Certificate}
+ * X509 证书生成工具类，提供 V1 与 V3 版本 {@link java.security.cert.X509Certificate} 的创建方法。
  *
+ * <p>具体加解密与证书构建逻辑委托给 {@link org.keycloak.common.crypto.CryptoIntegration} 所选 Provider。</p>
  */
 public class CertificateUtils {
 
 
     /**
-     * Generates version 3 {@link java.security.cert.X509Certificate}.
+     * 生成 V3 版本 {@link java.security.cert.X509Certificate}。
      *
      * @param keyPair the key pair
      * @param caPrivateKey the CA private key
      * @param caCert the CA certificate
      * @param subject the subject name
-     * 
+     *
      * @return the x509 certificate
-     * 
+     *
      * @throws Exception the exception
      */
     public static X509Certificate generateV3Certificate(KeyPair keyPair, PrivateKey caPrivateKey,
@@ -51,23 +52,25 @@ public class CertificateUtils {
     }
 
     /**
-     * Generate version 1 self signed {@link java.security.cert.X509Certificate}..
+     * 生成 V1 自签名 {@link java.security.cert.X509Certificate}。
      *
      * @param caKeyPair the CA key pair
      * @param subject the subject name
-     * 
+     *
      * @return the x509 certificate
-     * 
+     *
      * @throws Exception the exception
      */
     public static X509Certificate generateV1SelfSignedCertificate(KeyPair caKeyPair, String subject) {
         return CryptoIntegration.getProvider().getCertificateUtils().generateV1SelfSignedCertificate(caKeyPair, subject);
     } 
 
+    /** 生成带指定序列号的 V1 自签名证书。 */
     public static X509Certificate generateV1SelfSignedCertificate(KeyPair caKeyPair, String subject, BigInteger serialNumber) {
         return CryptoIntegration.getProvider().getCertificateUtils().generateV1SelfSignedCertificate(caKeyPair, subject, serialNumber);
     }
 
+    /** 生成带序列号与有效期截止时间的 V1 自签名证书。 */
     public static X509Certificate generateV1SelfSignedCertificate(KeyPair caKeyPair, String subject, BigInteger serialNumber, Date validityEndDate) {
         return CryptoIntegration.getProvider().getCertificateUtils().generateV1SelfSignedCertificate(caKeyPair, subject, serialNumber, validityEndDate);
     }

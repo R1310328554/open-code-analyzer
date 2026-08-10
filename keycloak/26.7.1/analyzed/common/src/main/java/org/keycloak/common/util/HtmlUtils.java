@@ -17,12 +17,14 @@
 package org.keycloak.common.util;
 
 /**
+ * HTML 转义工具，防止 XSS。
+ *
  * @author pedroigor
  */
 public class HtmlUtils {
 
     /**
-     * <p>Escapes the value for a HTML element attribute.</p>
+     * <p>转义 HTML 元素属性值中的特殊字符。</p>
      *
      * @param value
      * @return

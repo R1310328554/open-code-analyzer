@@ -32,6 +32,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
+ * URI 各组件（路径、查询、片段、用户信息等）的 RFC 3986 编码/解码工具。
+ *
+ * <p>源自 RESTEasy，支持保留已有百分号编码与 URI 模板参数 {@code {x}}。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -51,7 +55,7 @@ public class Encode
    static
    {
       /*
-       * Encode via <a href="http://ietf.org/rfc/rfc3986.txt">RFC 3986</a>.  PCHAR is allowed allong with '/'
+       * 按 <a href="http://ietf.org/rfc/rfc3986.txt">RFC 3986</a> 编码，允许 PCHAR 与 '/'
        *
        * unreserved  = ALPHA / DIGIT / "-" / "." / "_" / "~"
        * sub-delims  = "!" / "$" / "&" / "'" / "(" / ")"
@@ -212,7 +216,7 @@ public class Encode
    }
 
    /**
-    * Keep encoded values "%..." and template parameters intact.
+    * 保留已有 "%..." 编码与 URI 模板参数。
     */
    public static String encodeQueryString(String value)
    {
@@ -220,7 +224,7 @@ public class Encode
    }
 
    /**
-    * Keep encoded values "%..." but not the template parameters.
+    * 保留 "%..." 编码，但不保留模板参数。
     * @param value
     * @return
     */
@@ -229,7 +233,7 @@ public class Encode
    }
 
    /**
-    * Keep encoded values "%..." and template parameters intact.
+    * 保留已有 "%..." 编码与 URI 模板参数。
     * @param value The user-info value to encode
     * @return The user-info encoded
     */
@@ -238,7 +242,7 @@ public class Encode
    }
 
    /**
-    * Keep encoded values "%..." but not the template parameters.
+    * 保留 "%..." 编码，但不保留模板参数。
     * @param value The user-info to encode
     * @return The user-info encoded
     */
@@ -247,7 +251,7 @@ public class Encode
    }
 
    /**
-    * Keep encoded values "%...", matrix parameters, template parameters, and '/' characters intact.
+    * 保留 "%..." 编码、矩阵参数、模板参数与 '/' 字符。
     */
    public static String encodePath(String value)
    {
@@ -255,7 +259,7 @@ public class Encode
    }
 
    /**
-    * Keep encoded values "%...", matrix parameters and template parameters intact.
+    * 保留 "%..." 编码、矩阵参数与模板参数。
     */
    public static String encodePathSegment(String value)
    {
@@ -263,7 +267,7 @@ public class Encode
    }
 
    /**
-    * Keep encoded values "%..." and template parameters intact.
+    * 保留已有 "%..." 编码与 URI 模板参数。
     */
    public static String encodeFragment(String value)
    {
@@ -271,7 +275,7 @@ public class Encode
    }
 
    /**
-    * Keep encoded values "%..." but not the template parameters.
+    * 保留 "%..." 编码，但不保留模板参数。
     * @param value
     * @return
     */
@@ -281,7 +285,7 @@ public class Encode
    }
 
    /**
-    * Keep encoded values "%..." and template parameters intact.
+    * 保留已有 "%..." 编码与 URI 模板参数。
     */
    public static String encodeMatrixParam(String value)
    {
@@ -289,7 +293,7 @@ public class Encode
    }
 
    /**
-    * Keep encoded values "%..." and template parameters intact.
+    * 保留已有 "%..." 编码与 URI 模板参数。
     */
    public static String encodeQueryParam(String value)
    {
@@ -340,7 +344,7 @@ public class Encode
    }
 
    /**
-    * Encode '%' if it is not an encoding sequence
+    * 若 '%' 非合法编码序列则将其编码为 %25
     *
     * @param string
     * @return
@@ -351,7 +355,7 @@ public class Encode
       StringBuilder builder = new StringBuilder();
 
 
-      // FYI: we do not use the no-arg matcher.find()
+      // 不使用无参 matcher.find()，避免漏编码第二个 %
       //      coupled with matcher.appendReplacement()
       //      because the matched text may contain
       //      a second % and we must make sure we
@@ -371,7 +375,7 @@ public class Encode
    public static boolean savePathParams(String segment, StringBuilder newSegment, List<String> params)
    {
       boolean foundParam = false;
-      // Regular expressions can have '{' and '}' characters.  Replace them to do match
+      // 正则中可能含 '{' '}'，先替换以便匹配
       segment = PathHelper.replaceEnclosedCurlyBraces(segment);
       Matcher matcher = PathHelper.URI_TEMPLATE_PATTERN.matcher(segment);
       int start = 0;
@@ -380,7 +384,7 @@ public class Encode
     	 newSegment.append(segment, start, matcher.start());
          foundParam = true;
          String group = matcher.group();
-         // Regular expressions can have '{' and '}' characters.  Recover earlier replacement
+         // 恢复先前替换的大括号
          params.add(PathHelper.recoverEnclosedCurlyBraces(group));
          newSegment.append("_resteasy_uri_parameter");
          start = matcher.end();
@@ -390,7 +394,7 @@ public class Encode
    }
 
    /**
-    * Keep encoded values "%..." and template parameters intact i.e. "{x}"
+    * 保留 "%..." 编码与模板参数 "{x}"
     *
     * @param segment
     * @param encoding
@@ -417,7 +421,7 @@ public class Encode
    }
 
    /**
-    * Encode via <a href="http://ietf.org/rfc/rfc3986.txt">RFC 3986</a>.  PCHAR is allowed along with '/'
+    * 按 <a href="http://ietf.org/rfc/rfc3986.txt">RFC 3986</a> 编码，允许 PCHAR 与 '/'
     * <p/>
     * unreserved  = ALPHA / DIGIT / "-" / "." / "_" / "~"
     * sub-delims  = "!" / "$" / "&" / "'" / "(" / ")"
@@ -430,7 +434,7 @@ public class Encode
    }
 
    /**
-    * Keep any valid encodings from string i.e. keep "%2D" but don't keep "%p"
+    * 保留合法编码（如 %2D），非法序列（如 %p）会被重新编码
     *
     * @param segment
     * @return
@@ -443,7 +447,7 @@ public class Encode
    }
 
    /**
-    * Encode via <a href="http://ietf.org/rfc/rfc3986.txt">RFC 3986</a>.  PCHAR is allowed along with '/'
+    * 按 <a href="http://ietf.org/rfc/rfc3986.txt">RFC 3986</a> 编码，允许 PCHAR 与 '/'
     * <p/>
     * unreserved  = ALPHA / DIGIT / "-" / "." / "_" / "~"
     * sub-delims  = "!" / "$" / "&" / "'" / "(" / ")"
@@ -456,7 +460,7 @@ public class Encode
    }
 
    /**
-    * Keep any valid encodings from string i.e. keep "%2D" but don't keep "%p"
+    * 保留合法编码（如 %2D），非法序列（如 %p）会被重新编码
     *
     * @param segment
     * @return
@@ -470,7 +474,7 @@ public class Encode
 
 
    /**
-    * Encodes everything of a query parameter name or value.
+    * 对查询参数名或值进行完整编码。
     *
     * @param nameOrValue
     * @return
@@ -481,7 +485,7 @@ public class Encode
    }
 
    /**
-    * Keep any valid encodings from string i.e. keep "%2D" but don't keep "%p"
+    * 保留合法编码（如 %2D），非法序列（如 %p）会被重新编码
     *
     * @param segment
     * @return
@@ -494,7 +498,7 @@ public class Encode
    }
 
    /**
-    * Encodes everything in user-info
+    * 对用户信息部分进行完整编码。
     *
     * @param nameOrValue
     * @return
@@ -505,7 +509,7 @@ public class Encode
    }
 
    /**
-    * Keep any valid encodings from string i.e. keep "%2D" but don't keep "%p"
+    * 保留合法编码（如 %2D），非法序列（如 %p）会被重新编码
     *
     * @param segment
     * @return
@@ -549,7 +553,7 @@ public class Encode
    /**
     * @param zhar        integer representation of character
     * @param encodingMap encoding map
-    * @return URL encoded character
+    * @return URL 编码后的字符
     */
    private static String encode(int zhar, String[] encodingMap)
    {
@@ -591,7 +595,7 @@ public class Encode
    }
 
    /**
-    * decode an encoded map
+    * 解码已 URL 编码的多值映射
     *
     * @param map
     * @return
@@ -618,7 +622,7 @@ public class Encode
    }
    
    /**
-    * decode an encoded map
+    * 解码已 URL 编码的多值映射
     *
     * @param map
     * @param charset
@@ -685,7 +689,7 @@ public class Encode
 
    /**
     * @param string
-    * @return URL encoded input
+    * @return URL 编码结果
     */
    public static String urlEncode(String string) {
       try {
@@ -697,7 +701,7 @@ public class Encode
 
    /**
     * @param string
-    * @return URL decoded input
+    * @return URL 解码结果
     */
    public static String urlDecode(String string) {
       return decode(string);

@@ -24,14 +24,19 @@ import java.io.InputStream;
 import org.keycloak.common.constants.GenericConstants;
 
 /**
+ * 按 classpath 或文件系统路径定位并打开 Keycloak 配置文件输入流。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class FindFile {
+    /**
+     * 解析配置路径：{@code classpath:} 前缀从类路径加载，否则按文件路径打开。
+     */
     public static InputStream findFile(String keycloakConfigFile) {
         if (keycloakConfigFile.startsWith(GenericConstants.PROTOCOL_CLASSPATH)) {
             String classPathLocation = keycloakConfigFile.replace(GenericConstants.PROTOCOL_CLASSPATH, "");
-            // Try current class classloader first
+            // 优先当前类加载器
             InputStream is = FindFile.class.getClassLoader().getResourceAsStream(classPathLocation);
             if (is == null) {
                 is = Thread.currentThread().getContextClassLoader().getResourceAsStream(classPathLocation);
@@ -43,7 +48,7 @@ public class FindFile {
                 throw new RuntimeException("Unable to find config from classpath: " + keycloakConfigFile);
             }
         } else {
-            // Fallback to file
+            // 回退到文件系统
             try {
                 return new FileInputStream(keycloakConfigFile);
             } catch (FileNotFoundException fnfe) {

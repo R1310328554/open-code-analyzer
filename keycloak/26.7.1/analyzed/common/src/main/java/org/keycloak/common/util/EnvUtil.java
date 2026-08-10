@@ -21,7 +21,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Replaces any ${} strings with their corresponding system property.
+ * 将字符串中的 {@code ${...}} 占位符替换为对应系统属性值。
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
@@ -34,7 +34,8 @@ public final class EnvUtil {
     }
 
     /**
-     * Replaces any ${} strings with their corresponding system property.
+     * 将 {@code ${propertyName}} 替换为 {@link System#getProperty(String)} 返回值；
+     * 属性不存在时使用 {@code NOT-SPECIFIED}。
      *
      * @param val
      * @return
