@@ -29,14 +29,17 @@ import org.keycloak.models.credential.PasswordCredentialModel;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * 密码表单认证器工厂，注册在独立页面校验用户密码的认证器。
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class PasswordFormFactory implements AuthenticatorFactory {
 
+    /** 提供者 ID：auth-password-form。 */
     public static final String PROVIDER_ID = "auth-password-form";
 
     @Override
+    /** @return 新建 {@link PasswordForm} 实例 */
     public Authenticator create(KeycloakSession session) {
         return new PasswordForm(session);
     }
@@ -57,41 +60,49 @@ public class PasswordFormFactory implements AuthenticatorFactory {
     }
 
     @Override
+    /** @return 认证器提供者 ID */
     public String getId() {
         return PROVIDER_ID;
     }
 
     @Override
+    /** @return 密码凭证类型引用分类 */
     public String getReferenceCategory() {
         return PasswordCredentialModel.TYPE;
     }
 
     @Override
+    /** @return 是否可配置（密码表单不可配置） */
     public boolean isConfigurable() {
         return false;
     }
 
     @Override
+    /** @return 允许的执行要求选项 */
     public AuthenticationExecutionModel.Requirement[] getRequirementChoices() {
         return REQUIREMENT_CHOICES;
     }
 
     @Override
+    /** @return 管理控制台显示名称 */
     public String getDisplayType() {
         return "Password Form";
     }
 
     @Override
+    /** @return 认证器帮助说明文本 */
     public String getHelpText() {
         return "Validates a password from login form.";
     }
 
     @Override
+    /** @return 可配置属性列表（本认证器无配置项） */
     public List<ProviderConfigProperty> getConfigProperties() {
         return null;
     }
 
     @Override
+    /** @return 是否允许用户自助配置 */
     public boolean isUserSetupAllowed() {
         return false;
     }

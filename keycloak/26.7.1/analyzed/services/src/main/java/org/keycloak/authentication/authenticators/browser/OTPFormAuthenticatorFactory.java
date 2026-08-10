@@ -29,15 +29,19 @@ import org.keycloak.models.credential.OTPCredentialModel;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * OTP 表单认证器工厂，注册在独立 OTP 表单页校验一次性密码的认证器。
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class OTPFormAuthenticatorFactory implements AuthenticatorFactory {
 
+    /** 提供者 ID：auth-otp-form。 */
     public static final String PROVIDER_ID = "auth-otp-form";
+    /** 单例 {@link OTPFormAuthenticator} 实例。 */
     public static final OTPFormAuthenticator SINGLETON = new OTPFormAuthenticator();
 
     @Override
+    /** @return 单例 OTP 表单认证器 */
     public Authenticator create(KeycloakSession session) {
         return SINGLETON;
     }
@@ -58,41 +62,49 @@ public class OTPFormAuthenticatorFactory implements AuthenticatorFactory {
     }
 
     @Override
+    /** @return 认证器提供者 ID */
     public String getId() {
         return PROVIDER_ID;
     }
 
     @Override
+    /** @return OTP 凭证类型引用分类 */
     public String getReferenceCategory() {
         return OTPCredentialModel.TYPE;
     }
 
     @Override
+    /** @return 是否可配置（OTP 表单不可配置） */
     public boolean isConfigurable() {
         return false;
     }
 
     @Override
+    /** @return 是否允许用户自助配置 OTP */
     public boolean isUserSetupAllowed() {
         return true;
     }
 
     @Override
+    /** @return 允许的执行要求选项 */
     public AuthenticationExecutionModel.Requirement[] getRequirementChoices() {
         return REQUIREMENT_CHOICES;
     }
 
     @Override
+    /** @return 管理控制台显示名称 */
     public String getDisplayType() {
         return "OTP Form";
     }
 
     @Override
+    /** @return 认证器帮助说明文本 */
     public String getHelpText() {
         return "Validates a OTP on a separate OTP form.";
     }
 
     @Override
+    /** @return 可配置属性列表（本认证器无配置项） */
     public List<ProviderConfigProperty> getConfigProperties() {
         return null;
     }

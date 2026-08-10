@@ -17,6 +17,7 @@
  */
 
 /**
+ * Passkeys 条件式 UI 认证器（已弃用），在浏览器登录页自动展示设备上已存储的 Passkeys 列表，适用于无用户名（login-less）认证场景。
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 package org.keycloak.authentication.authenticators.browser;
@@ -29,11 +30,13 @@ import org.keycloak.models.KeycloakSession;
 @Deprecated(since = "26.3", forRemoval = true)
 public class PasskeysConditionalUIAuthenticator extends WebAuthnPasswordlessAuthenticator {
 
+    /** @param session 当前 Keycloak 会话 */
     public PasskeysConditionalUIAuthenticator(KeycloakSession session) {
         super(session);
     }
 
     @Override
+    /** 调用父类认证逻辑后，渲染 Passkeys 条件式 UI 登录表单。 */
     public void authenticate(AuthenticationFlowContext context) {
         super.authenticate(context);
         Response challenge = context.form()

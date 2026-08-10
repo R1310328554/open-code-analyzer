@@ -33,6 +33,7 @@ import org.keycloak.scripting.ScriptingProvider;
 import org.jboss.logging.Logger;
 
 /**
+ * 可在认证流程中执行已配置脚本的 {@link Authenticator}。
  * An {@link Authenticator} that can execute a configured script during authentication flow.
  * <p>
  * Scripts must at least provide one of the following functions:
@@ -92,27 +93,35 @@ public class ScriptBasedAuthenticator implements Authenticator {
 
     private static final Logger LOGGER = Logger.getLogger(ScriptBasedAuthenticator.class);
 
+    /** 配置项键：脚本源代码。 */
     static final String SCRIPT_CODE = "scriptCode";
+    /** 配置项键：脚本名称。 */
     static final String SCRIPT_NAME = "scriptName";
+    /** 配置项键：脚本描述。 */
     static final String SCRIPT_DESCRIPTION = "scriptDescription";
 
+    /** 脚本中 action 处理函数名。 */
     static final String ACTION_FUNCTION_NAME = "action";
+    /** 脚本中 authenticate 处理函数名。 */
     static final String AUTHENTICATE_FUNCTION_NAME = "authenticate";
 
     @Override
+    /** 调用脚本中的 authenticate 函数处理认证步骤。 */
     public void authenticate(AuthenticationFlowContext context) {
         tryInvoke(AUTHENTICATE_FUNCTION_NAME, context);
     }
 
     @Override
+    /** 调用脚本中的 action 函数处理表单提交。 */
     public void action(AuthenticationFlowContext context) {
         tryInvoke(ACTION_FUNCTION_NAME, context);
     }
 
+    /** 尝试调用脚本指定函数；未配置或函数未定义时静默跳过，执行异常则标记 INTERNAL_ERROR。 */
     private void tryInvoke(String functionName, AuthenticationFlowContext context) {
 
         if (!hasAuthenticatorConfig(context)) {
-            // this is an empty not yet configured script authenticator
+            // 尚未配置的脚本认证器，标记成功以免因配置不完整锁定用户
             // we mark this execution as success to not lock out users due to incompletely configured authenticators.
             context.success();
             return;
@@ -125,7 +134,7 @@ public class ScriptBasedAuthenticator implements Authenticator {
         }
 
         try {
-            //should context be wrapped in a read-only wrapper?
+            // 是否应将 context 包装为只读？
             invocableScriptAdapter.invokeFunction(functionName, context);
         } catch (ScriptExecutionException e) {
             LOGGER.error(e);
@@ -133,6 +142,7 @@ public class ScriptBasedAuthenticator implements Authenticator {
         }
     }
 
+    /** @return 认证器是否已有非空配置 */
     private boolean hasAuthenticatorConfig(AuthenticationFlowContext context) {
         if (context == null)
             return false;
@@ -142,10 +152,12 @@ public class ScriptBasedAuthenticator implements Authenticator {
                 && !config.getConfig().isEmpty();
     }
 
+    /** @return 当前执行的认证器配置模型 */
     protected AuthenticatorConfigModel getAuthenticatorConfig(AuthenticationFlowContext context) {
         return context.getAuthenticatorConfig();
     }
 
+    /** 从配置创建 JavaScript 脚本并准备可调用适配器及绑定变量。 */
     private InvocableScriptAdapter getInvocableScriptAdapter(AuthenticationFlowContext context) {
 
         Map<String, String> config = getAuthenticatorConfig(context).getConfig();
@@ -158,10 +170,10 @@ public class ScriptBasedAuthenticator implements Authenticator {
 
         ScriptingProvider scripting = context.getSession().getProvider(ScriptingProvider.class);
 
-        //TODO lookup script by scriptId instead of creating it every time
+        // TODO：按 scriptId 查找脚本，避免每次创建
         ScriptModel script = scripting.createScript(realm.getId(), ScriptModel.TEXT_JAVASCRIPT, scriptName, scriptCode, scriptDescription);
 
-        //how to deal with long running scripts -> timeout?
+        // 如何处理长时间运行脚本 -> 超时？
         return scripting.prepareInvocableScript(script, bindings -> {
             bindings.put("script", script);
             bindings.put("realm", context.getRealm());
@@ -174,18 +186,21 @@ public class ScriptBasedAuthenticator implements Authenticator {
     }
 
     @Override
+    /** @return 本步骤不要求上下文中已有用户（脚本内按需使用 user 变量） */
     public boolean requiresUser() {
         return false;
     }
 
     @Override
+    /** @return 始终已配置（对所有用户适用） */
     public boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user) {
         return true;
     }
 
     @Override
+    /** 无操作（TODO：可通过脚本配置必需操作）。 */
     public void setRequiredActions(KeycloakSession session, RealmModel realm, UserModel user) {
-        //TODO make RequiredActions configurable in the script
+        // TODO：使 RequiredActions 可在脚本中配置
         //NOOP
     }
 

@@ -37,22 +37,27 @@ import static org.keycloak.provider.ProviderConfigProperty.SCRIPT_TYPE;
 import static org.keycloak.provider.ProviderConfigProperty.STRING_TYPE;
 
 /**
+ * {@link ScriptBasedAuthenticator} 的 {@link AuthenticatorFactory} 工厂，支持通过 JavaScript 定义自定义认证逻辑。
  * An {@link AuthenticatorFactory} for {@link ScriptBasedAuthenticator}s.
  *
  * @author <a href="mailto:thomas.darimont@gmail.com">Thomas Darimont</a>
  */
 public class ScriptBasedAuthenticatorFactory implements AuthenticatorFactory, EnvironmentDependentProviderFactory {
 
+    /** 提供者 ID：auth-script-based。 */
     public static final String PROVIDER_ID = "auth-script-based";
 
+    /** 允许的执行要求：REQUIRED、ALTERNATIVE 或 DISABLED。 */
     static final AuthenticationExecutionModel.Requirement[] REQUIREMENT_CHOICES = {
             AuthenticationExecutionModel.Requirement.REQUIRED,
             AuthenticationExecutionModel.Requirement.ALTERNATIVE,
             AuthenticationExecutionModel.Requirement.DISABLED};
 
+    /** 单例 {@link ScriptBasedAuthenticator} 实例。 */
     static final ScriptBasedAuthenticator SINGLETON = new ScriptBasedAuthenticator();
 
     @Override
+    /** @return 单例脚本认证器 */
     public Authenticator create(KeycloakSession session) {
 
         /*
@@ -80,41 +85,49 @@ public class ScriptBasedAuthenticatorFactory implements AuthenticatorFactory, En
     }
 
     @Override
+    /** @return 认证器提供者 ID */
     public String getId() {
         return PROVIDER_ID;
     }
 
     @Override
+    /** @return 引用分类：script */
     public String getReferenceCategory() {
         return "script";
     }
 
     @Override
+    /** @return 是否可配置脚本名称、描述与源代码 */
     public boolean isConfigurable() {
         return true;
     }
 
     @Override
+    /** @return 是否允许用户自助配置 */
     public boolean isUserSetupAllowed() {
         return true;
     }
 
     @Override
+    /** @return 允许的执行要求选项 */
     public AuthenticationExecutionModel.Requirement[] getRequirementChoices() {
         return REQUIREMENT_CHOICES;
     }
 
     @Override
+    /** @return 管理控制台显示名称 */
     public String getDisplayType() {
         return "Script";
     }
 
     @Override
+    /** @return 认证器帮助说明文本 */
     public String getHelpText() {
         return "Script based authentication. Allows to define custom authentication logic via JavaScript.";
     }
 
     @Override
+    /** @return 脚本名称、描述与源代码配置项列表 */
     public List<ProviderConfigProperty> getConfigProperties() {
 
         ProviderConfigProperty name = new ProviderConfigProperty();
@@ -142,6 +155,7 @@ public class ScriptBasedAuthenticatorFactory implements AuthenticatorFactory, En
     }
 
     @Override
+    /** @return 是否启用 SCRIPTS 特性 */
     public boolean isSupported(Config.Scope config) {
         return Profile.isFeatureEnabled(Profile.Feature.SCRIPTS);
     }

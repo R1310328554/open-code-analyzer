@@ -32,14 +32,17 @@ import org.keycloak.models.credential.WebAuthnCredentialModel;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * 用户名密码表单认证器工厂，注册联合校验用户名与密码的浏览器表单认证器；Passkeys 启用时可选引用无密码 WebAuthn 凭证分类。
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class UsernamePasswordFormFactory implements AuthenticatorFactory {
 
+    /** 提供者 ID：auth-username-password-form。 */
     public static final String PROVIDER_ID = "auth-username-password-form";
 
     @Override
+    /** @return 新建 {@link UsernamePasswordForm} 实例 */
     public Authenticator create(KeycloakSession session) {
         return new UsernamePasswordForm(session);
     }
@@ -60,16 +63,19 @@ public class UsernamePasswordFormFactory implements AuthenticatorFactory {
     }
 
     @Override
+    /** @return 认证器提供者 ID */
     public String getId() {
         return PROVIDER_ID;
     }
 
     @Override
+    /** @return 密码凭证类型引用分类 */
     public String getReferenceCategory() {
         return PasswordCredentialModel.TYPE;
     }
 
     @Override
+    /** @return Passkeys 启用时额外引用无密码 WebAuthn 凭证分类 */
     public Set<String> getOptionalReferenceCategories(KeycloakSession session) {
         return WebAuthnConditionalUIAuthenticator.isPasskeysEnabled(session)
                 ? Collections.singleton(WebAuthnCredentialModel.TYPE_PASSWORDLESS)
@@ -77,34 +83,41 @@ public class UsernamePasswordFormFactory implements AuthenticatorFactory {
     }
 
     @Override
+    /** @return 是否可配置（用户名密码表单不可配置） */
     public boolean isConfigurable() {
         return false;
     }
+    /** 允许的执行要求：仅 REQUIRED。 */
     public static final AuthenticationExecutionModel.Requirement[] REQUIREMENT_CHOICES = {
             AuthenticationExecutionModel.Requirement.REQUIRED
     };
 
     @Override
+    /** @return 允许的执行要求选项 */
     public AuthenticationExecutionModel.Requirement[] getRequirementChoices() {
         return REQUIREMENT_CHOICES;
     }
 
     @Override
+    /** @return 管理控制台显示名称 */
     public String getDisplayType() {
         return "Username Password Form";
     }
 
     @Override
+    /** @return 认证器帮助说明文本 */
     public String getHelpText() {
         return "Validates a username and password from login form.";
     }
 
     @Override
+    /** @return 可配置属性列表（本认证器无配置项） */
     public List<ProviderConfigProperty> getConfigProperties() {
         return null;
     }
 
     @Override
+    /** @return 是否允许用户自助配置 */
     public boolean isUserSetupAllowed() {
         return false;
     }

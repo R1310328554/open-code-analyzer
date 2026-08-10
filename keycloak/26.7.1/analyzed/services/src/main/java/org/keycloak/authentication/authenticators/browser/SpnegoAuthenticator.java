@@ -42,6 +42,7 @@ import org.keycloak.services.messages.Messages;
 import org.jboss.logging.Logger;
 
 /**
+ * SPNEGO/Kerberos 认证器，通过 HTTP Authorization 头中的 Negotiate 令牌发起 SPNEGO 协议协商，支持多轮 Kerberos 握手及可选执行时的 401 挑战重定向。
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -49,23 +50,26 @@ public class SpnegoAuthenticator extends AbstractUsernameFormAuthenticator imple
     private static final Logger logger = Logger.getLogger(SpnegoAuthenticator.class);
 
     @Override
+    /** @return 本步骤不要求上下文中已有用户 */
     public boolean requiresUser() {
         return false;
     }
 
     @Override
+    /** 表单提交时标记为 attempted（SPNEGO 通常由浏览器自动发起）。 */
     public void action(AuthenticationFlowContext context) {
         context.attempted();
         return;
     }
 
     @Override
+    /** 解析 Authorization 头中的 SPNEGO 令牌并委派用户存储校验 Kerberos 凭证。 */
     public void authenticate(AuthenticationFlowContext context) {
         HttpRequest request = context.getHttpRequest();
         String authHeader = request.getHttpHeaders().getRequestHeaders().getFirst(HttpHeaders.AUTHORIZATION);
         if (authHeader == null) {
             if (context.getAuthenticationSession().getAuthNote(AuthenticationProcessor.FORKED_FROM) != null) {
-                // skip spnego authentication if it was forked (reset-credentials)
+                // 若流程由重置凭证分叉而来，跳过 SPNEGO 认证
                 context.attempted();
                 return;
             }
@@ -118,6 +122,7 @@ public class SpnegoAuthenticator extends AbstractUsernameFormAuthenticator imple
         }
     }
 
+    /** 发送 WWW-Authenticate: Negotiate 挑战；REQUIRED 执行时返回错误页，否则返回可选重定向页。 */
     private Response challengeNegotiation(AuthenticationFlowContext context, final String negotiateToken) {
         String negotiateHeader = negotiateToken == null ? KerberosConstants.NEGOTIATE : KerberosConstants.NEGOTIATE + " " + negotiateToken;
 
@@ -134,16 +139,18 @@ public class SpnegoAuthenticator extends AbstractUsernameFormAuthenticator imple
         }
     }
 
-    // This is used for testing only.  Selenium will execute the HTML challenge sent back which results in the javascript
+    // 仅用于测试：Selenium 执行返回 HTML 挑战中的 JavaScript 重定向
     // redirecting.  Our old Selenium tests expect that the current URL will be the original openid redirect.
+    /** 测试标志：是否跳过挑战页中的 JavaScript 自动提交。 */
     public static boolean bypassChallengeJavascript = false;
 
     /**
-     * 401 challenge sent back that bypasses
+     * 返回 401 挑战页，Kerberos 不可用时通过 HTML 表单引导用户改用其他登录方式
      * @param context
      * @param negotiateHeader
      * @return
      */
+    /** 构建带 Negotiate 头的 401 HTML 挑战页，含 JavaScript 自动提交表单。 */
     protected Response optionalChallengeRedirect(AuthenticationFlowContext context, String negotiateHeader) {
         String accessCode = context.generateAccessCode();
         URI action = context.getActionUrl(accessCode);
@@ -176,6 +183,7 @@ public class SpnegoAuthenticator extends AbstractUsernameFormAuthenticator imple
 
 
     @Override
+    /** @return 始终已配置（对所有用户适用） */
     public boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user) {
         return true;
     }

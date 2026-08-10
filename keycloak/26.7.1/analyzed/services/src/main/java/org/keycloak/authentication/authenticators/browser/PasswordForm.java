@@ -30,25 +30,31 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.services.messages.Messages;
 
+/**
+ * 密码表单认证器，在用户名已确定后单独展示密码输入页并校验密码凭证；支持 Passkeys 条件式 UI 与已用无密码凭证认证时的跳过逻辑。
+ */
 public class PasswordForm extends UsernamePasswordForm implements CredentialValidator<PasswordCredentialProvider> {
 
+    /** @param session 当前 Keycloak 会话 */
     public PasswordForm(KeycloakSession session) {
         super(session);
     }
 
     @Override
+    /** 仅校验密码字段（用户名已由前置步骤确定）。 */
     protected boolean validateForm(AuthenticationFlowContext context, MultivaluedMap<String, String> formData) {
         return validatePassword(context, context.getUser(), formData, false);
     }
 
     @Override
+    /** 若已用无密码凭证认证则直接成功，否则展示密码登录表单。 */
     public void authenticate(AuthenticationFlowContext context) {
         if (alreadyAuthenticatedUsingPasswordlessCredential(context)) {
             context.success();
             return;
         }
 
-        // setup webauthn data when passkeys enabled
+        // 启用 Passkeys 时填充 WebAuthn 表单上下文
         if (isConditionalPasskeysEnabled(context.getUser())) {
             webauthnAuth.fillContextForm(context);
         }
@@ -58,6 +64,7 @@ public class PasswordForm extends UsernamePasswordForm implements CredentialVali
     }
 
     @Override
+    /** @return 用户是否已配置密码、Passkeys 或已通过无密码凭证认证 */
     public boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user) {
         return user.credentialManager().isConfiguredFor(getCredentialProvider(session).getType())
                 || (isConditionalPasskeysEnabled(user))
@@ -65,21 +72,25 @@ public class PasswordForm extends UsernamePasswordForm implements CredentialVali
     }
 
     @Override
+    /** @return 本步骤要求上下文中已有用户 */
     public boolean requiresUser() {
         return true;
     }
 
     @Override
+    /** @return 仅含密码字段的登录表单 */
     protected Response createLoginForm(LoginFormsProvider form) {
         return form.createLoginPassword();
     }
 
     @Override
+    /** @return 密码校验失败时的默认错误消息键 */
     protected String getDefaultChallengeMessage(AuthenticationFlowContext context) {
         return Messages.INVALID_PASSWORD;
     }
 
     @Override
+    /** @return 密码凭证提供者 */
     public PasswordCredentialProvider getCredentialProvider(KeycloakSession session) {
         return (PasswordCredentialProvider)session.getProvider(CredentialProvider.class, "keycloak-password");
     }

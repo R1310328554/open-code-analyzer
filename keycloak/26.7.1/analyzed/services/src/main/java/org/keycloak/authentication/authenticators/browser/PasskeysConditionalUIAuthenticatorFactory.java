@@ -25,6 +25,7 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 
 /**
+ * Passkeys 条件式 UI 认证器工厂（已弃用）。Passkeys 已集成到默认用户名认证器中，待 Passkeys 功能稳定后将移除此工厂。
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  * @deprecated Factory is deprecated as passkeys are now integrated with the
  * default username authenticators. It will be removed in future versions
@@ -33,19 +34,23 @@ import org.keycloak.provider.EnvironmentDependentProviderFactory;
 @Deprecated(since = "26.3", forRemoval = true)
 public class PasskeysConditionalUIAuthenticatorFactory extends WebAuthnPasswordlessAuthenticatorFactory implements EnvironmentDependentProviderFactory {
 
+    /** 提供者 ID：passkeys-authenticator。 */
     public static final String PROVIDER_ID = "passkeys-authenticator";
 
     @Override
+    /** @return 管理控制台显示名称 */
     public String getDisplayType() {
         return "Passkeys Conditional UI Authenticator";
     }
 
     @Override
+    /** @return 认证器帮助说明文本 */
     public String getHelpText() {
         return "Authenticator for Passkeys with conditional UI. A list of passkeys stored on a device where a browser is running is automatically shown. Due to characteristics of conditional UI, it is used for login-less authentication.";
     }
 
     @Override
+    /** @return 新建 {@link PasskeysConditionalUIAuthenticator} 实例 */
     public Authenticator create(KeycloakSession session) {
         return new PasskeysConditionalUIAuthenticator(session);
     }
@@ -55,11 +60,13 @@ public class PasskeysConditionalUIAuthenticatorFactory extends WebAuthnPasswordl
     }
 
     @Override
+    /** @return 是否启用 PASSKEYS_CONDITIONAL_UI_AUTHENTICATOR 特性 */
     public boolean isSupported(Config.Scope config) {
         return Profile.isFeatureEnabled(Profile.Feature.PASSKEYS_CONDITIONAL_UI_AUTHENTICATOR);
     }
 
     @Override
+    /** @return 认证器提供者 ID */
     public String getId() {
         return PROVIDER_ID;
     }
