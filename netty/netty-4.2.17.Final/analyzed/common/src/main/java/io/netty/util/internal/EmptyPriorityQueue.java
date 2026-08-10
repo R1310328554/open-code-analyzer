@@ -20,7 +20,11 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+/**
+ * 始终为空的 {@link PriorityQueue} 单例实现，避免在无需调度时分配堆结构。
+ */
 public final class EmptyPriorityQueue<T> implements PriorityQueue<T> {
+    /** 全局共享的空优先队列实例（类型擦除为 Object）。 */
     private static final PriorityQueue<Object> INSTANCE = new EmptyPriorityQueue<Object>();
 
     private EmptyPriorityQueue() {
@@ -28,22 +32,27 @@ public final class EmptyPriorityQueue<T> implements PriorityQueue<T> {
 
     /**
      * Returns an unmodifiable empty {@link PriorityQueue}.
+     *
+     * <p>返回不可修改的空 {@link PriorityQueue} 单例。</p>
      */
     @SuppressWarnings("unchecked")
     public static <V> EmptyPriorityQueue<V> instance() {
         return (EmptyPriorityQueue<V>) INSTANCE;
     }
 
+    /** 空队列中不存在带类型节点，移除恒为 false。 */
     @Override
     public boolean removeTyped(T node) {
         return false;
     }
 
+    /** 空队列不包含任何节点。 */
     @Override
     public boolean containsTyped(T node) {
         return false;
     }
 
+    /** 空队列无需响应优先级变更。 */
     @Override
     public void priorityChanged(T node) {
     }
@@ -115,10 +124,12 @@ public final class EmptyPriorityQueue<T> implements PriorityQueue<T> {
     public void clear() {
     }
 
+    /** 空实现：无节点索引需要清理。 */
     @Override
     public void clearIgnoringIndexes() {
     }
 
+    /** 与任意空 {@link PriorityQueue} 相等。 */
     @Override
     public boolean equals(Object o) {
         return o instanceof PriorityQueue && ((PriorityQueue) o).isEmpty();
@@ -134,6 +145,7 @@ public final class EmptyPriorityQueue<T> implements PriorityQueue<T> {
         return false;
     }
 
+    /** 空队列调用 remove 抛出 {@link NoSuchElementException}。 */
     @Override
     public T remove() {
         throw new NoSuchElementException();
@@ -144,6 +156,7 @@ public final class EmptyPriorityQueue<T> implements PriorityQueue<T> {
         return null;
     }
 
+    /** 空队列调用 element 抛出 {@link NoSuchElementException}。 */
     @Override
     public T element() {
         throw new NoSuchElementException();

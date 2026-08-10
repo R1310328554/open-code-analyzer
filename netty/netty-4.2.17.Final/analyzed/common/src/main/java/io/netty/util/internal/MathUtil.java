@@ -16,6 +16,8 @@ package io.netty.util.internal;
 
 /**
  * Math utility methods.
+ *
+ * <p>数学工具方法：2 的幂、边界检查及已弃用的比较封装。</p>
  */
 public final class MathUtil {
 
@@ -30,6 +32,8 @@ public final class MathUtil {
      *
      * @param value from which to search for next power of 2
      * @return The next power of 2 or the value itself if it is a power of 2
+     *
+     * <p>快速求不小于 value 的最小 2 的幂；value≤0 时行为由调用方断言约束。</p>
      */
     public static int findNextPositivePowerOfTwo(final int value) {
         assert value > Integer.MIN_VALUE && value < 0x40000000;
@@ -47,6 +51,8 @@ public final class MathUtil {
      *     <li>{@code <= 0} -> 1</li>
      *     <li>{@code >= 2^30} -> 2^30</li>
      * </ul>
+     *
+     * <p>带运行时边界的 2 的幂查找，避免非法输入。</p>
      */
     public static int safeFindNextPositivePowerOfTwo(final int value) {
         return value <= 0 ? 1 : value >= 0x40000000 ? 0x40000000 : findNextPositivePowerOfTwo(value);
@@ -59,6 +65,8 @@ public final class MathUtil {
      * @param capacity The capacity that {@code index + length} is allowed to be within.
      * @return {@code false} if the requested {@code index} and {@code length} will fit within {@code capacity}.
      * {@code true} if this would result in an index out of bounds exception.
+     *
+     * <p>单次位运算检测 index/length/capacity 是否越界（含溢出）。</p>
      */
     public static boolean isOutOfBounds(int index, int length, int capacity) {
         return (index | length | capacity | index + length) < 0 || index + length > capacity;
@@ -73,6 +81,8 @@ public final class MathUtil {
      * @return the value {@code 0} if {@code x == y};
      *         {@code -1} if {@code x < y}; and
      *         {@code 1} if {@code x > y}
+     *
+     * <p>已弃用：请直接使用 {@link Integer#compare(int, int)}。</p>
      */
     @Deprecated
     public static int compare(final int x, final int y) {
@@ -91,6 +101,8 @@ public final class MathUtil {
      * <li>{@code > 0} if {@code x > y}</li>
      * <li>{@code < 0} if {@code x < y}</li>
      * </ul>
+     *
+     * <p>已弃用：请直接使用 {@link Long#compare(long, long)}。</p>
      */
     @Deprecated
     public static int compare(long x, long y) {

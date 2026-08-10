@@ -33,18 +33,25 @@ import static java.lang.Math.max;
  * anymore.
  *
  * @deprecated The object cleaner is deprecated for removal.
+ *
+ * <p>在对象被 GC 回收时异步执行清理任务；基于 {@link ReferenceQueue} 与守护线程。
+ * 开销较大，已弃用。</p>
  */
 @Deprecated
 public final class ObjectCleaner {
+    /** 引用队列 poll 超时（毫秒），至少 500ms。 */
     private static final int REFERENCE_QUEUE_POLL_TIMEOUT_MS =
             max(500, getInt("io.netty.util.internal.ObjectCleaner.refQueuePollTimeout", 10000));
 
     // Package-private for testing
     static final String CLEANER_THREAD_NAME = ObjectCleaner.class.getSimpleName() + "Thread";
     // This will hold a reference to the AutomaticCleanerReference which will be removed once we called cleanup()
+    /** 仍待清理的弱引用集合。 */
     private static final Set<AutomaticCleanerReference> LIVE_SET = ConcurrentHashMap.newKeySet();
     private static final ReferenceQueue<Object> REFERENCE_QUEUE = new ReferenceQueue<>();
+    /** 清理线程是否在运行。 */
     private static final AtomicBoolean CLEANER_RUNNING = new AtomicBoolean(false);
+    /** 后台循环：poll 引用队列并执行 cleanup，LIVE_SET 空且 CAS 失败时退出。 */
     private static final Runnable CLEANER_TASK = new Runnable() {
         @Override
         public void run() {
@@ -94,6 +101,8 @@ public final class ObjectCleaner {
      *
      * This should only be used if there are no other ways to execute some cleanup once the Object is not reachable
      * anymore because it is not a cheap way to handle the cleanup.
+     *
+     * <p>注册弱引用与清理任务；必要时启动守护清理线程（{@link FastThreadLocalThread}）。</p>
      */
     public static void register(Object object, Runnable cleanupTask) {
         AutomaticCleanerReference reference = new AutomaticCleanerReference(object,
@@ -127,6 +136,7 @@ public final class ObjectCleaner {
         }
     }
 
+    /** 返回当前 LIVE_SET 中待清理条目数（测试/诊断用）。 */
     public static int getLiveSetCount() {
         return LIVE_SET.size();
     }
@@ -135,6 +145,7 @@ public final class ObjectCleaner {
         // Only contains a static method.
     }
 
+    /** 带清理任务的弱引用，入队后触发 {@link Runnable#run()}。 */
     private static final class AutomaticCleanerReference extends WeakReference<Object> {
         private final Runnable cleanupTask;
 

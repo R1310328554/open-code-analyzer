@@ -18,8 +18,11 @@ package io.netty.util.internal;
 
 /**
  * @deprecated For removal in netty 4.2
+ *
+ * <p>可变的 int 包装器，曾用于线程本地计数器哈希码；Netty 4.2 起移除。</p>
  */
 @Deprecated
 public final class IntegerHolder {
+    /** 持有的整数值，公开字段供旧 API 直接读写。 */
     public int value;
 }

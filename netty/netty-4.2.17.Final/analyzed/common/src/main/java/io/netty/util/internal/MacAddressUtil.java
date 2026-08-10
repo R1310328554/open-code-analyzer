@@ -32,10 +32,15 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import static io.netty.util.internal.EmptyArrays.EMPTY_BYTES;
 
+/**
+ * 本机 MAC 地址选取、解析与格式化工具，用于生成机器标识（如 channelId）。
+ */
 public final class MacAddressUtil {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(MacAddressUtil.class);
 
+    /** EUI-64 MAC 长度（字节）。 */
     private static final int EUI64_MAC_ADDRESS_LENGTH = 8;
+    /** EUI-48 / MAC-48 长度（字节）。 */
     private static final int EUI48_MAC_ADDRESS_LENGTH = 6;
 
     /**
@@ -44,6 +49,8 @@ public final class MacAddressUtil {
      * networks is better than a local network interface.
      *
      * @return byte array containing a MAC. null if no MAC can be found.
+     *
+     * <p>遍历网卡，按 MAC 质量与绑定 IP 优选硬件地址；EUI-48 会转换为 EUI-64。</p>
      */
     public static byte[] bestAvailableMac() {
         // Find the best MAC address available.
@@ -108,6 +115,7 @@ public final class MacAddressUtil {
         }
 
         if (bestMacAddr.length == EUI48_MAC_ADDRESS_LENGTH) { // EUI-48 - convert to EUI-64
+            // EUI-48 嵌入 FF:FE 转为 EUI-64
             byte[] newAddr = new byte[EUI64_MAC_ADDRESS_LENGTH];
             System.arraycopy(bestMacAddr, 0, newAddr, 0, 3);
             newAddr[3] = (byte) 0xFF;
@@ -125,6 +133,8 @@ public final class MacAddressUtil {
     /**
      * Returns the result of {@link #bestAvailableMac()} if non-{@code null} otherwise returns a random EUI-64 MAC
      * address.
+     *
+     * <p>优先真实 MAC；不可用时生成随机 EUI-64 并打 warn 日志。</p>
      */
     public static byte[] defaultMachineId() {
         byte[] bestMacAddr = bestAvailableMac();
@@ -142,6 +152,8 @@ public final class MacAddressUtil {
      * Parse a EUI-48, MAC-48, or EUI-64 MAC address from a {@link String} and return it as a {@code byte[]}.
      * @param value The string representation of the MAC address.
      * @return The byte representation of the MAC address.
+     *
+     * <p>解析 MAC-48 / EUI-48 / EUI-64 字符串（分隔符 {@code :} 或 {@code -}）。</p>
      */
     public static byte[] parseMAC(String value) {
         final byte[] machineId;
@@ -177,6 +189,7 @@ public final class MacAddressUtil {
         return machineId;
     }
 
+    /** 校验 MAC 字符串分隔符为 {@code :} 或 {@code -}。 */
     private static void validateMacSeparator(char separator) {
         if (separator != ':' && separator != '-') {
             throw new IllegalArgumentException("unsupported separator: " + separator + " (expected: [:-])");
@@ -186,6 +199,8 @@ public final class MacAddressUtil {
     /**
      * @param addr byte array of a MAC address.
      * @return hex formatted MAC address.
+     *
+     * <p>格式化为小写十六进制，冒号分隔。</p>
      */
     public static String formatAddress(byte[] addr) {
         StringBuilder buf = new StringBuilder(24);
@@ -197,6 +212,8 @@ public final class MacAddressUtil {
 
     /**
      * @return positive - current is better, 0 - cannot tell from MAC addr, negative - candidate is better.
+     *
+     * <p>比较两个 MAC 优劣：过滤全 0/1、组播、优先全局唯一地址。</p>
      */
     // visible for testing
     static int compareAddresses(byte[] current, byte[] candidate) {
@@ -244,11 +261,14 @@ public final class MacAddressUtil {
 
     /**
      * @return positive - current is better, 0 - cannot tell, negative - candidate is better
+     *
+     * <p>按绑定 IP 地址类型打分比较（公网 &gt; 站点本地 &gt; 链路本地等）。</p>
      */
     private static int compareAddresses(InetAddress current, InetAddress candidate) {
         return scoreAddress(current) - scoreAddress(candidate);
     }
 
+    /** 为 InetAddress 分配优先级分数，越高越优选。 */
     private static int scoreAddress(InetAddress addr) {
         if (addr.isAnyLocalAddress() || addr.isLoopbackAddress()) {
             return 0;

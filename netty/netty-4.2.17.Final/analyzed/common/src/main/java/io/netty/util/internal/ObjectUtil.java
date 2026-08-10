@@ -19,6 +19,8 @@ import java.util.Map;
 
 /**
  * A grab-bag of useful utility methods.
+ *
+ * <p>参数校验与空值/范围/非空检查的实用工具集，失败时抛出 NPE 或 IAE。</p>
  */
 public final class ObjectUtil {
 
@@ -34,6 +36,8 @@ public final class ObjectUtil {
     /**
      * Checks that the given argument is not null. If it is, throws {@link NullPointerException}.
      * Otherwise, returns the argument.
+     *
+     * <p>非 null 检查，失败抛 {@link NullPointerException}。</p>
      */
     public static <T> T checkNotNull(T arg, String text) {
         if (arg == null) {
@@ -48,6 +52,8 @@ public final class ObjectUtil {
      *
      * If it is, throws {@link NullPointerException}.
      * Otherwise, returns the argument.
+     *
+     * <p>可变参数数组及其元素均不可为 null。</p>
      */
     public static <T> T[] deepCheckNotNull(String text, T... varargs) {
         if (varargs == null) {
@@ -65,6 +71,8 @@ public final class ObjectUtil {
     /**
      * Checks that the given argument is not null. If it is, throws {@link IllegalArgumentException}.
      * Otherwise, returns the argument.
+     *
+     * <p>非 null 检查，失败抛 {@link IllegalArgumentException}（带参数名）。</p>
      */
     public static <T> T checkNotNullWithIAE(final T arg, final String paramName) throws IllegalArgumentException {
         if (arg == null) {
@@ -83,6 +91,8 @@ public final class ObjectUtil {
      * @param value to check.
      * @return the given argument value.
      * @throws IllegalArgumentException if value is null.
+     *
+     * <p>数组元素非 null 检查，异常信息含索引与参数名。</p>
      */
     public static <T> T checkNotNullArrayParam(T value, int index, String name) throws IllegalArgumentException {
         if (value == null) {
@@ -95,6 +105,8 @@ public final class ObjectUtil {
     /**
      * Checks that the given argument is strictly positive. If it is not, throws {@link IllegalArgumentException}.
      * Otherwise, returns the argument.
+     *
+     * <p>int 必须严格大于 0。</p>
      */
     public static int checkPositive(int i, String name) {
         if (i <= INT_ZERO) {
@@ -106,6 +118,8 @@ public final class ObjectUtil {
     /**
      * Checks that the given argument is strictly positive. If it is not, throws {@link IllegalArgumentException}.
      * Otherwise, returns the argument.
+     *
+     * <p>long 必须严格大于 0。</p>
      */
     public static long checkPositive(long l, String name) {
         if (l <= LONG_ZERO) {
@@ -117,6 +131,8 @@ public final class ObjectUtil {
     /**
      * Checks that the given argument is strictly positive. If it is not, throws {@link IllegalArgumentException}.
      * Otherwise, returns the argument.
+     *
+     * <p>double 必须严格大于 0。</p>
      */
     public static double checkPositive(final double d, final String name) {
         if (d <= DOUBLE_ZERO) {
@@ -128,6 +144,8 @@ public final class ObjectUtil {
     /**
      * Checks that the given argument is strictly positive. If it is not, throws {@link IllegalArgumentException}.
      * Otherwise, returns the argument.
+     *
+     * <p>float 必须严格大于 0。</p>
      */
     public static float checkPositive(final float f, final String name) {
         if (f <= FLOAT_ZERO) {
@@ -139,6 +157,8 @@ public final class ObjectUtil {
     /**
      * Checks that the given argument is positive or zero. If it is not , throws {@link IllegalArgumentException}.
      * Otherwise, returns the argument.
+     *
+     * <p>short 必须严格大于 0（注释与实现一致）。</p>
      */
     public static short checkPositive(short s, String name) {
         if (s <= SHORT_ZERO) {
@@ -150,6 +170,8 @@ public final class ObjectUtil {
     /**
      * Checks that the given argument is positive or zero. If it is not , throws {@link IllegalArgumentException}.
      * Otherwise, returns the argument.
+     *
+     * <p>int 必须 ≥ 0。</p>
      */
     public static int checkPositiveOrZero(int i, String name) {
         if (i < INT_ZERO) {
@@ -161,6 +183,8 @@ public final class ObjectUtil {
     /**
      * Checks that the given argument is positive or zero. If it is not, throws {@link IllegalArgumentException}.
      * Otherwise, returns the argument.
+     *
+     * <p>long 必须 ≥ 0。</p>
      */
     public static long checkPositiveOrZero(long l, String name) {
         if (l < LONG_ZERO) {
@@ -172,6 +196,8 @@ public final class ObjectUtil {
     /**
      * Checks that the given argument is positive or zero. If it is not, throws {@link IllegalArgumentException}.
      * Otherwise, returns the argument.
+     *
+     * <p>double 必须 ≥ 0。</p>
      */
     public static double checkPositiveOrZero(final double d, final String name) {
         if (d < DOUBLE_ZERO) {
@@ -183,6 +209,8 @@ public final class ObjectUtil {
     /**
      * Checks that the given argument is positive or zero. If it is not, throws {@link IllegalArgumentException}.
      * Otherwise, returns the argument.
+     *
+     * <p>float 必须 ≥ 0。</p>
      */
     public static float checkPositiveOrZero(final float f, final String name) {
         if (f < FLOAT_ZERO) {
@@ -194,6 +222,8 @@ public final class ObjectUtil {
     /**
      * Checks that the given argument is in range. If it is not, throws {@link IllegalArgumentException}.
      * Otherwise, returns the argument.
+     *
+     * <p>int 必须在 [start, end] 闭区间内。</p>
      */
     public static int checkInRange(int i, int start, int end, String name) {
         if (i < start || i > end) {
@@ -205,6 +235,8 @@ public final class ObjectUtil {
     /**
      * Checks that the given argument is in range. If it is not, throws {@link IllegalArgumentException}.
      * Otherwise, returns the argument.
+     *
+     * <p>long 必须在 [start, end] 闭区间内。</p>
      */
     public static long checkInRange(long l, long start, long end, String name) {
         if (l < start || l > end) {
@@ -216,6 +248,8 @@ public final class ObjectUtil {
     /**
      * Checks that the given argument is in range. If it is not, throws {@link IllegalArgumentException}.
      * Otherwise, returns the argument.
+     *
+     * <p>double 必须在 [start, end] 闭区间内。</p>
      */
     public static double checkInRange(double d, double start, double end, String name) {
         if (d < start || d > end) {
@@ -228,6 +262,8 @@ public final class ObjectUtil {
      * Checks that the given argument is neither null nor empty.
      * If it is, throws {@link NullPointerException} or {@link IllegalArgumentException}.
      * Otherwise, returns the argument.
+     *
+     * <p>泛型数组非 null 且 length &gt; 0。</p>
      */
     public static <T> T[] checkNonEmpty(T[] array, String name) {
         //No String concatenation for check
@@ -241,6 +277,8 @@ public final class ObjectUtil {
      * Checks that the given argument is neither null nor empty.
      * If it is, throws {@link NullPointerException} or {@link IllegalArgumentException}.
      * Otherwise, returns the argument.
+     *
+     * <p>byte 数组非 null 且非空。</p>
      */
     public static byte[] checkNonEmpty(byte[] array, String name) {
         //No String concatenation for check
@@ -254,6 +292,8 @@ public final class ObjectUtil {
      * Checks that the given argument is neither null nor empty.
      * If it is, throws {@link NullPointerException} or {@link IllegalArgumentException}.
      * Otherwise, returns the argument.
+     *
+     * <p>char 数组非 null 且非空。</p>
      */
     public static char[] checkNonEmpty(char[] array, String name) {
         //No String concatenation for check
@@ -267,6 +307,8 @@ public final class ObjectUtil {
      * Checks that the given argument is neither null nor empty.
      * If it is, throws {@link NullPointerException} or {@link IllegalArgumentException}.
      * Otherwise, returns the argument.
+     *
+     * <p>Collection 非 null 且非 empty。</p>
      */
     public static <T extends Collection<?>> T checkNonEmpty(T collection, String name) {
         //No String concatenation for check
@@ -280,6 +322,8 @@ public final class ObjectUtil {
      * Checks that the given argument is neither null nor empty.
      * If it is, throws {@link NullPointerException} or {@link IllegalArgumentException}.
      * Otherwise, returns the argument.
+     *
+     * <p>String 非 null 且非 empty。</p>
      */
     public static String checkNonEmpty(final String value, final String name) {
         if (checkNotNull(value, name).isEmpty()) {
@@ -292,6 +336,8 @@ public final class ObjectUtil {
      * Checks that the given argument is neither null nor empty.
      * If it is, throws {@link NullPointerException} or {@link IllegalArgumentException}.
      * Otherwise, returns the argument.
+     *
+     * <p>Map 非 null 且非 empty。</p>
      */
     public static <K, V, T extends Map<K, V>> T checkNonEmpty(T value, String name) {
         if (checkNotNull(value, name).isEmpty()) {
@@ -304,6 +350,8 @@ public final class ObjectUtil {
      * Checks that the given argument is neither null nor empty.
      * If it is, throws {@link NullPointerException} or {@link IllegalArgumentException}.
      * Otherwise, returns the argument.
+     *
+     * <p>CharSequence 非 null 且 length &gt; 0。</p>
      */
     public static CharSequence checkNonEmpty(final CharSequence value, final String name) {
         if (checkNotNull(value, name).length() == 0) {
@@ -322,6 +370,8 @@ public final class ObjectUtil {
      * @return the trimmed (not the original) value.
      * @throws NullPointerException if value is null.
      * @throws IllegalArgumentException if the trimmed value is empty.
+     *
+     * <p>trim 后非空检查，返回 trim 后的字符串。</p>
      */
     public static String checkNonEmptyAfterTrim(final String value, final String name) {
         String trimmed = checkNotNull(value, name).trim();
@@ -333,6 +383,8 @@ public final class ObjectUtil {
      * @param wrapper the wrapper
      * @param defaultValue the default value
      * @return the primitive value
+     *
+     * <p>Integer 为 null 时返回 defaultValue。</p>
      */
     public static int intValue(Integer wrapper, int defaultValue) {
         return wrapper != null ? wrapper : defaultValue;
@@ -343,6 +395,8 @@ public final class ObjectUtil {
      * @param wrapper the wrapper
      * @param defaultValue the default value
      * @return the primitive value
+     *
+     * <p>Long 为 null 时返回 defaultValue。</p>
      */
     public static long longValue(Long wrapper, long defaultValue) {
         return wrapper != null ? wrapper : defaultValue;

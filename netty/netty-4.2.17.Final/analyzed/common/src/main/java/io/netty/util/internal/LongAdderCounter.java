@@ -19,10 +19,13 @@ import java.util.concurrent.atomic.LongAdder;
 
 /**
  * @deprecated please use {@link LongAdder} instead.
+ *
+ * <p>基于 {@link LongAdder} 的 {@link LongCounter} 适配器，低竞争场景下累加长整型。</p>
  */
 @Deprecated
 final class LongAdderCounter extends LongAdder implements LongCounter {
 
+    /** 返回当前累计值，委托 {@link LongAdder#longValue()}。 */
     @Override
     public long value() {
         return longValue();

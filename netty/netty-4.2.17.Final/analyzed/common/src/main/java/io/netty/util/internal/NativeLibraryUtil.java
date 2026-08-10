@@ -24,12 +24,17 @@ package io.netty.util.internal;
  * ClassLoader when it is undefined. And therefore, when the defined new helper is invoked,
  * the native library would be loaded into the native library's ClassLoader, not the
  * caller's ClassLoader.
+ *
+ * <p>{@code System.load/loadLibrary} 为 CallerSensitive，库会加载到调用者 ClassLoader。
+ * 本辅助类被注入目标 ClassLoader，使 JNI 库绑定到 Netty 模块而非 OSGi 调用方。</p>
  */
 final class NativeLibraryUtil {
     /**
      * Delegate the calling to {@link System#load(String)} or {@link System#loadLibrary(String)}.
      * @param libName - The native library path or name
      * @param absolute - Whether the native library will be loaded by path or by name
+     *
+     * <p>按 absolute 选择 {@link System#load(String)} 或 {@link System#loadLibrary(String)}。</p>
      */
     public static void loadLibrary(String libName, boolean absolute) {
         if (absolute) {

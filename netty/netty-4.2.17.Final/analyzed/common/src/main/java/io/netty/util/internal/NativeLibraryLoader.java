@@ -46,18 +46,26 @@ import java.util.concurrent.ThreadLocalRandom;
 /**
  * Helper class to load JNI resources.
  *
+ * <p>JNI 本地库加载器：依次尝试 java.library.path、从 classpath 解压到临时目录再 load；
+ * 支持 shade 包名前缀、macOS install_name 修补、重复 jar 检测与 OSGi ClassLoader 注入。</p>
  */
 public final class NativeLibraryLoader {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(NativeLibraryLoader.class);
 
+    /** classpath 内 native 资源根路径。 */
     private static final String NATIVE_RESOURCE_HOME = "META-INF/native/";
+    /** 解压 native 库的临时工作目录。 */
     private static final File WORKDIR;
+    /** load 成功后是否立即删除临时 .so/.dylib 文件。 */
     private static final boolean DELETE_NATIVE_LIB_AFTER_LOADING;
+    /** macOS 上是否尝试 patch shaded 库的 install_name 并重签名。 */
     private static final boolean TRY_TO_PATCH_SHADED_ID;
+    /**  classpath 存在同名不同内容 native 资源时是否抛错。 */
     private static final boolean DETECT_NATIVE_LIBRARY_DUPLICATES;
 
     // Just use a-Z and numbers as valid ID bytes.
+    /** 生成随机库 ID 时使用的 ASCII 字符集。 */
     private static final byte[] UNIQUE_ID_BYTES =
             "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".getBytes(CharsetUtil.US_ASCII);
 
@@ -102,6 +110,8 @@ public final class NativeLibraryLoader {
      *
      * @throws IllegalArgumentException
      *         if none of the given libraries load successfully.
+     *
+     * <p>按名称顺序尝试 load，全部失败则聚合 suppressed 异常抛出。</p>
      */
     public static void loadFirstAvailable(ClassLoader loader, String... names) {
         List<Throwable> suppressed = new ArrayList<Throwable>();
@@ -139,6 +149,8 @@ public final class NativeLibraryLoader {
      * </ul>
      *
      * @throws UnsatisfiedLinkError if the shader used something other than a prefix
+     *
+     * <p>从本类全限定名反推 shade 添加的包前缀（与 JNI C 端 parsePackagePrefix 规则一致）。</p>
      */
     private static String calculateMangledPackagePrefix() {
         String maybeShaded = NativeLibraryLoader.class.getName();
@@ -156,6 +168,8 @@ public final class NativeLibraryLoader {
 
     /**
      * Load the given library with the specified {@link ClassLoader}
+     *
+     * <p>加载流程：加 mangled 前缀 → java.library.path → 解压 META-INF/native → load 绝对路径。</p>
      */
     public static void load(String originalName, ClassLoader loader) {
         String mangledPackagePrefix = calculateMangledPackagePrefix();
@@ -177,6 +191,7 @@ public final class NativeLibraryLoader {
         try {
             if (url == null) {
                 if (PlatformDependent.isOsx()) {
+                    // macOS 上 .jnilib 与 .dynlib 互为备选
                     String fileName = path.endsWith(".jnilib") ? NATIVE_RESOURCE_HOME + "lib" + name + ".dynlib" :
                             NATIVE_RESOURCE_HOME + "lib" + name + ".jnilib";
                     url = getResource(fileName, loader);
@@ -255,6 +270,9 @@ public final class NativeLibraryLoader {
         }
     }
 
+    /**
+     * 从 ClassLoader 查找 classpath 资源；多 URL 时可选 SHA-256 内容比对。
+     */
     private static URL getResource(String path, ClassLoader loader) {
         final Enumeration<URL> urls;
         try {
@@ -311,6 +329,7 @@ public final class NativeLibraryLoader {
         }
     }
 
+    /** 对 URL 内容做 SHA-256；读失败返回 null。 */
     private static byte[] digest(MessageDigest digest, URL url) {
         try (InputStream in = url.openStream()) {
             byte[] bytes = new byte[8192];
@@ -325,6 +344,9 @@ public final class NativeLibraryLoader {
         }
     }
 
+    /**
+     * macOS：用 install_name_tool 改库 ID 并用 codesign 重签（需 Command Line Tools）。
+     */
     static void tryPatchShadedLibraryIdAndSign(File libraryFile, String originalName) {
         if (!new File("/Library/Developer/CommandLineTools").exists()) {
             logger.debug("Can't patch shaded library id as CommandLineTools are not installed." +
@@ -339,6 +361,7 @@ public final class NativeLibraryLoader {
         tryExec("codesign -s - " + libraryFile.getAbsolutePath());
     }
 
+    /** 执行 shell 命令，exit 0 为成功。 */
     private static boolean tryExec(String cmd) {
         try {
             int exitValue = Runtime.getRuntime().exec(cmd).waitFor();
@@ -358,10 +381,12 @@ public final class NativeLibraryLoader {
         return false;
     }
 
+    /** 是否需要在 macOS 上 patch shaded 库 ID。 */
     private static boolean shouldShadedLibraryIdBePatched(String packagePrefix) {
         return TRY_TO_PATCH_SHADED_ID && PlatformDependent.isOsx() && !packagePrefix.isEmpty();
     }
 
+    /** 生成长度为 length 的随机 ASCII ID 字节。 */
     private static byte[] generateUniqueId(int length) {
         byte[] idBytes = new byte[length];
         for (int i = 0; i < idBytes.length; i++) {
@@ -377,6 +402,8 @@ public final class NativeLibraryLoader {
      * @param loader - The {@link ClassLoader} where the native library will be loaded into
      * @param name - The native library path or name
      * @param absolute - Whether the native library will be loaded by path or by name
+     *
+     * <p>优先将 {@link NativeLibraryUtil} 注入目标 ClassLoader 再 load；失败则回退本地调用。</p>
      */
     private static void loadLibrary(final ClassLoader loader, final String name, final boolean absolute) {
         Throwable suppressed = null;
@@ -408,6 +435,7 @@ public final class NativeLibraryLoader {
         }
     }
 
+    /** 反射调用目标 ClassLoader 中 NativeLibraryUtil.loadLibrary。 */
     private static void loadLibraryByHelper(final Class<?> helper, final String name, final boolean absolute)
             throws UnsatisfiedLinkError {
         Object ret = AccessController.doPrivileged(new PrivilegedAction<Object>() {
@@ -443,6 +471,8 @@ public final class NativeLibraryLoader {
      * @param helper - The helper {@link Class}
      * @return A new helper Class defined in the specified ClassLoader.
      * @throws ClassNotFoundException Helper class not found or loading failed
+     *
+     * <p>目标 ClassLoader 无 helper 时，defineClass 注入字节码副本。</p>
      */
     private static Class<?> tryToLoadClass(final ClassLoader loader, final Class<?> helper)
             throws ClassNotFoundException {
@@ -484,6 +514,8 @@ public final class NativeLibraryLoader {
      * @param clazz - The helper {@link Class} provided by this bundle
      * @return The binary content of helper {@link Class}.
      * @throws ClassNotFoundException Helper class not found or loading failed
+     *
+     * <p>读取 helper 的 .class 字节以便 defineClass。</p>
      */
     private static byte[] classToByteArray(Class<?> clazz) throws ClassNotFoundException {
         String fileName = clazz.getName();
@@ -511,6 +543,7 @@ public final class NativeLibraryLoader {
         // Utility
     }
 
+    /** 检测临时 native 文件是否因 noexec 挂载而无法执行。 */
     private static final class NoexecVolumeDetector {
 
         private static boolean canExecuteExecutable(File file) throws IOException {

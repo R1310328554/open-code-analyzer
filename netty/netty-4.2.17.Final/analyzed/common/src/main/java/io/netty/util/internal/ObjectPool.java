@@ -21,6 +21,8 @@ import io.netty.util.Recycler;
  * Light-weight object pool.
  *
  * @param <T> the type of the pooled object
+ *
+ * <p>轻量对象池抽象；已弃用，请改用 {@link Recycler}。</p>
  */
 public abstract class ObjectPool<T> {
 
@@ -31,6 +33,8 @@ public abstract class ObjectPool<T> {
      * {@link ObjectCreator#newObject(Handle)} if no pooled {@link Object} is ready to be reused.
      *
      * @deprecated For removal. Please use {@link Recycler#get()} instead.
+     *
+     * <p>从池中取对象；无可用实例时通过 {@link ObjectCreator} 新建。</p>
      */
     @Deprecated
     public abstract T get();
@@ -39,10 +43,14 @@ public abstract class ObjectPool<T> {
      * Handle for an pooled {@link Object} that will be used to notify the {@link ObjectPool} once it can
      * reuse the pooled {@link Object} again.
      * @param <T>
+     *
+     * <p>池化对象持有的句柄，用于归还（recycle）到池。</p>
      */
     public interface Handle<T> {
         /**
          * Recycle the {@link Object} if possible and so make it ready to be reused.
+         *
+         * <p>将对象归还池中以便复用。</p>
          */
         void recycle(T self);
     }
@@ -54,6 +62,8 @@ public abstract class ObjectPool<T> {
      * @param <T> the type of the pooled object
      *
      * @deprecated For removal. Please use {@link Recycler()} instead.
+     *
+     * <p>工厂：创建持有 {@link Handle} 的新对象，用完后通过 handle 回收。</p>
      */
     @Deprecated
     public interface ObjectCreator<T> {
@@ -63,6 +73,8 @@ public abstract class ObjectPool<T> {
          * {@link Handle#recycle(Object)}.
          *
          * @param handle can NOT be null.
+         *
+         * <p>创建新对象；handle 不可为 null。</p>
          */
         T newObject(Handle<T> handle);
     }
@@ -72,12 +84,15 @@ public abstract class ObjectPool<T> {
      * that should be pooled.
      *
      * @deprecated For removal. Please use {@link Recycler()} instead.
+     *
+     * <p>基于 {@link ObjectCreator} 构造 {@link Recycler} 包装的 {@link ObjectPool}。</p>
      */
     @Deprecated
     public static <T> ObjectPool<T> newPool(final ObjectCreator<T> creator) {
         return new RecyclerObjectPool<T>(ObjectUtil.checkNotNull(creator, "creator"));
     }
 
+    /** 内部实现：委托 {@link Recycler} 完成分配与回收。 */
     @Deprecated
     private static final class RecyclerObjectPool<T> extends ObjectPool<T> {
         private final Recycler<T> recycler;

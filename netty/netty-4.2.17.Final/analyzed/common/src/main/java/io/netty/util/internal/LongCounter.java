@@ -17,10 +17,16 @@ package io.netty.util.internal;
 
 /**
  * Counter for long.
+ *
+ * <p>长整型计数器抽象，支持增减与读取当前值；实现类可选用 {@link LongAdder} 等。</p>
  */
 public interface LongCounter {
+    /** 加上 delta。 */
     void add(long delta);
+    /** 自增 1。 */
     void increment();
+    /** 自减 1。 */
     void decrement();
+    /** 读取当前累计值。 */
     long value();
 }

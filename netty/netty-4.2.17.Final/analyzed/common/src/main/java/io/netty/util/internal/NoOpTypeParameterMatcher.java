@@ -16,7 +16,11 @@
 
 package io.netty.util.internal;
 
+/**
+ * 空操作的类型参数匹配器：对所有消息均返回 true，用于无泛型约束的 Handler。
+ */
 public final class NoOpTypeParameterMatcher extends TypeParameterMatcher {
+    /** 不做类型检查，始终接受。 */
     @Override
     public boolean match(Object msg) {
         return true;
