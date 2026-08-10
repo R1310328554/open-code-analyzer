@@ -88,69 +88,84 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
 /**
- * JRaft server instance, away from Spring IOC management.
- *
+ * JRaft 服务端实例，脱离 Spring IOC 容器独立管理生命周期。
  * <p>
- * Why do we need to create a raft group based on the value of LogProcessor group (), that is, each function module has
- * its own state machine. Because each LogProcessor corresponds to a different functional module, such as Nacos's naming
- * module and config module, these two modules are independent of each other and do not affect each other. If we have
- * only one state machine, it is equal to the log of all functional modules The processing is loaded together. Any
- * module that has an exception during the log processing and a long block operation will affect the normal operation of
- * other functional modules.
+ * 为何按 {@code LogProcessor.group()} 创建多个 Raft Group：每个功能模块（如 naming、config）拥有独立状态机，日志处理互不阻塞。若共用一个状态机，任一模块日志处理异常或长时间阻塞都会影响其他模块。
  * </p>
+ * JRaft server instance, away from Spring IOC management.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 @SuppressWarnings("all")
 public class JRaftServer {
     
-    // Existential life cycle
+    // 生命周期核心组件
     
+    /** JRaft 节点间通信 RPC 服务端。 */
     private RpcServer rpcServer;
     
+    /** CLI 客户端服务，用于向 Leader 转发读写请求。 */
     private CliClientServiceImpl cliClientService;
     
+    /** JRaft 集群管理 CLI 服务（增删节点、查询 peers 等）。 */
     private CliService cliService;
     
-    // Ordinary member variable
+    // 运行时状态
     
+    /** 多 Raft Group 注册表：groupName → 节点元组。 */
     private Map<String, RaftGroupTuple> multiRaftGroup = new ConcurrentHashMap<>();
     
+    /** 服务端是否已完成启动。 */
     private volatile boolean isStarted = false;
     
+    /** 是否已进入关闭流程。 */
     private volatile boolean isShutdown = false;
     
+    /** 集群初始成员配置（Peer 列表）。 */
     private Configuration conf;
     
+    /** 用户自定义 RPC 处理器（预留扩展点）。 */
     private RpcProcessor userProcessor;
     
+    /** 创建各 Raft Group 时复用的节点选项模板。 */
     private NodeOptions nodeOptions;
     
+    /** 请求/响应序列化器。 */
     private Serializer serializer;
     
+    /** 已注册的 CP 请求处理器集合（线程安全）。 */
     private Collection<RequestProcessor4CP> processors =
         Collections.synchronizedSet(new HashSet<>());
     
+    /** 本机 IP（从 selfMember 解析）。 */
     private String selfIp;
     
+    /** 本机 Raft 端口。 */
     private int selfPort;
     
+    /** Raft 协议运行时配置。 */
     private RaftConfig raftConfig;
     
+    /** 本节点在集群中的 PeerId。 */
     private PeerId localPeerId;
     
+    /** 请求转发失败时的重试次数上限。 */
     private int failoverRetries;
     
+    /** 向 Leader 发起 RPC 的超时时间（毫秒）。 */
     private int rpcRequestTimeoutMs;
     
+    /** 构造空配置的服务端实例。 */
     public JRaftServer() {
         this.conf = new Configuration();
     }
     
+    /** 设置请求转发失败重试次数。 */
     public void setFailoverRetries(int failoverRetries) {
         this.failoverRetries = failoverRetries;
     }
     
+    /** 根据配置初始化选举超时、RPC 超时、CLI 服务等核心组件。 */
     void init(RaftConfig config) {
         this.raftConfig = config;
         this.serializer = SerializeFactory.getDefault();
@@ -164,7 +179,7 @@ public class JRaftServer {
         localPeerId = PeerId.parsePeer(self);
         nodeOptions = new NodeOptions();
         
-        // Set the election timeout time. The default is 5 seconds.
+        // 设置选举超时，默认 5 秒。
         int electionTimeout = Math.max(
             ConvertUtils.toInt(config.getVal(RaftSysConstants.RAFT_ELECTION_TIMEOUT_MS),
                 RaftSysConstants.DEFAULT_ELECTION_TIMEOUT),
@@ -182,7 +197,7 @@ public class JRaftServer {
         nodeOptions.setElectionTimeoutMs(electionTimeout);
         RaftOptions raftOptions = RaftOptionsBuilder.initRaftOptions(raftConfig);
         nodeOptions.setRaftOptions(raftOptions);
-        // open jraft node metrics record function
+        // 开启 JRaft 节点指标采集
         nodeOptions.setEnableMetrics(true);
         
         CliOptions cliOptions = new CliOptions();
@@ -192,11 +207,12 @@ public class JRaftServer {
             (CliClientServiceImpl) ((CliServiceImpl) this.cliService).getCliClientService();
     }
     
+    /** 启动 RPC 服务并创建所有已注册 Processor 对应的 Raft Group。 */
     synchronized void start() {
         if (!isStarted) {
             Loggers.RAFT.info("========= The raft protocol is starting... =========");
             try {
-                // init raft group node
+                // 初始化集群成员并注册地址
                 com.alipay.sofa.jraft.NodeManager raftNodeManager =
                     com.alipay.sofa.jraft.NodeManager.getInstance();
                 for (String address : raftConfig.getMembers()) {
@@ -213,7 +229,7 @@ public class JRaftServer {
                     throw new RuntimeException("Fail to init [BaseRpcServer].");
                 }
                 
-                // Initialize multi raft group service framework
+                // 按 Processor 批量创建多 Raft Group
                 isStarted = true;
                 createMultiRaftGroup(processors);
                 Loggers.RAFT.info("========= The raft protocol start finished... =========");
@@ -224,8 +240,9 @@ public class JRaftServer {
         }
     }
     
+    /** 为每个 CP Processor 创建独立 Raft Group 与状态机；未启动时仅缓存 Processor。 */
     synchronized void createMultiRaftGroup(Collection<RequestProcessor4CP> processors) {
-        // There is no reason why the LogProcessor cannot be processed because of the synchronization
+        // 未启动时先缓存 Processor，避免同步阻塞
         if (!this.isStarted) {
             this.processors.addAll(processors);
             return;
@@ -240,24 +257,23 @@ public class JRaftServer {
                 throw new DuplicateRaftGroupException(groupName);
             }
             
-            // Ensure that each Raft Group has its own configuration and NodeOptions
+            // 每个 Group 使用独立 Configuration 与 NodeOptions 副本
             Configuration configuration = conf.copy();
             NodeOptions copy = nodeOptions.copy();
             JRaftUtils.initDirectory(parentPath, groupName, copy);
             
-            // Here, the LogProcessor is passed into StateMachine, and when the StateMachine
-            // triggers onApply, the onApply of the LogProcessor is actually called
+            // LogProcessor 注入状态机，onApply 时回调 Processor.onApply
             NacosStateMachine machine = new NacosStateMachine(this, processor);
             
             copy.setFsm(machine);
             copy.setInitialConf(configuration);
             
-            // Set snapshot interval, default 1800 seconds
+            // 快照间隔默认 1800 秒
             int doSnapshotInterval =
                 ConvertUtils.toInt(raftConfig.getVal(RaftSysConstants.RAFT_SNAPSHOT_INTERVAL_SECS),
                     RaftSysConstants.DEFAULT_RAFT_SNAPSHOT_INTERVAL_SECS);
             
-            // If the business module does not implement a snapshot processor, cancel the snapshot
+            // 业务未实现快照处理器则禁用定时快照
             doSnapshotInterval =
                 CollectionUtils.isEmpty(processor.loadSnapshotOperate()) ? 0 : doSnapshotInterval;
             
@@ -266,7 +282,7 @@ public class JRaftServer {
             RaftGroupService raftGroupService =
                 new RaftGroupService(groupName, localPeerId, copy, rpcServer, true);
             
-            // Because BaseRpcServer has been started before, it is not allowed to start again here
+            // RPC 服务已启动，此处不再重复 start RPC
             Node node = raftGroupService.start(false);
             machine.setNode(node);
             RouteTable.getInstance().updateConfiguration(groupName, configuration);
@@ -274,7 +290,7 @@ public class JRaftServer {
             RaftExecutor.executeByCommon(
                 () -> registerSelfToCluster(groupName, localPeerId, configuration));
             
-            // Turn on the leader auto refresh for this group
+            // 为该 Group 开启 Leader/路由表定时刷新
             long period =
                 nodeOptions.getElectionTimeoutMs() + ThreadLocalRandom.current().nextInt(5 * 1000);
             RaftExecutor.scheduleRaftMemberRefreshJob(() -> refreshRouteTable(groupName),
@@ -284,6 +300,7 @@ public class JRaftServer {
         }
     }
     
+    /** 线性一致读：优先 ReadIndex，失败则降级为 Leader 读。 */
     CompletableFuture<Response> get(final ReadRequest request) {
         final String group = request.getGroup();
         CompletableFuture<Response> future = new CompletableFuture<>();
@@ -329,11 +346,13 @@ public class JRaftServer {
         }
     }
     
+    /** ReadIndex 失败时的 Leader 读降级入口。 */
     public void readFromLeader(final ReadRequest request,
         final CompletableFuture<Response> future) {
         commit(request.getGroup(), request, future);
     }
     
+    /** 提交读写请求：本机为 Leader 则直接 apply，否则转发 Leader。 */
     public CompletableFuture<Response> commit(final String group, final Message data,
         final CompletableFuture<Response> future) {
         LoggerUtils.printIfDebugEnabled(Loggers.RAFT, "data requested this time : {}", data);
@@ -348,17 +367,17 @@ public class JRaftServer {
         
         final Node node = tuple.node;
         if (node.isLeader()) {
-            // The leader node directly applies this request
+            // Leader 本地直接 apply
             applyOperation(node, data, closure);
         } else {
-            // Forward to Leader for request processing
+            // Follower 转发至 Leader 处理
             invokeToLeader(group, data, rpcRequestTimeoutMs, closure);
         }
         return future;
     }
     
     /**
-     * Add yourself to the Raft cluster
+     * 将本节点加入指定 Raft Group 集群（启动后异步执行，失败则每秒重试）。
      *
      * @param groupId raft group
      * @param selfIp  local raft node address
@@ -384,10 +403,12 @@ public class JRaftServer {
         }
     }
     
+    /** 从路由表查询指定 Group 的当前 Leader。 */
     protected PeerId getLeader(final String raftGroupId) {
         return RouteTable.getInstance().selectLeader(raftGroupId);
     }
     
+    /** 关闭所有 Raft Group、CLI 服务与 RPC 客户端。 */
     synchronized void shutdown() {
         if (isShutdown) {
             return;
@@ -412,6 +433,7 @@ public class JRaftServer {
         }
     }
     
+    /** 构造带读写类型标记的 Task 并提交到 Raft 节点 apply。 */
     public void applyOperation(Node node, Message data, FailoverClosure closure) {
         final Task task = new Task();
         task.setDone(new NacosClosure(data, status -> {
@@ -421,7 +443,7 @@ public class JRaftServer {
             closure.run(nacosStatus);
         }));
         
-        // add request type field at the head of task data.
+        // 在 Task 数据头部附加请求类型字段（读/写）。
         byte[] requestTypeFieldBytes = new byte[2];
         requestTypeFieldBytes[0] = ProtoMessageUtil.REQUEST_TYPE_FIELD_TAG;
         if (data instanceof ReadRequest) {
@@ -437,6 +459,7 @@ public class JRaftServer {
         node.apply(task);
     }
     
+    /** 异步 RPC 调用 Leader 处理请求，结果通过 FailoverClosure 回传。 */
     private void invokeToLeader(final String group, final Message request, final int timeoutMillis,
         FailoverClosure closure) {
         try {
@@ -471,8 +494,9 @@ public class JRaftServer {
         }
     }
     
+    /** 处理集群成员变更：更新配置并对各 Group 执行 remove peers 维护命令。 */
     boolean peerChange(JRaftMaintainService maintainService, Set<String> newPeers) {
-        // This is only dealing with node deletion, the Raft protocol, where the node adds itself to the cluster when it starts up
+        // 仅处理节点删除；新节点启动时会自行 join 集群
         Set<String> oldPeers = new HashSet<>(this.raftConfig.getMembers());
         this.raftConfig.setMembers(localPeerId.toString(), newPeers);
         oldPeers.removeAll(newPeers);
@@ -502,6 +526,7 @@ public class JRaftServer {
         return successCnt.get() == multiRaftGroup.size();
     }
     
+    /** 定时刷新指定 Group 的 Leader 与成员配置到 RouteTable。 */
     void refreshRouteTable(String group) {
         if (isShutdown) {
             return;
@@ -515,7 +540,7 @@ public class JRaftServer {
             String oldLeader =
                 Optional.ofNullable(instance.selectLeader(groupName)).orElse(PeerId.emptyPeer())
                     .getEndpoint().toString();
-            // fix issue #3661  https://github.com/alibaba/nacos/issues/3661
+            // 修复 #3661：Leader 与配置需定期刷新
             status = instance.refreshLeader(this.cliClientService, groupName, rpcRequestTimeoutMs);
             if (!status.isOk()) {
                 Loggers.RAFT.error("Fail to refresh leader for group : {}, status is : {}",
@@ -534,11 +559,13 @@ public class JRaftServer {
         }
     }
     
+    /** 按 group 名查找 RaftGroupTuple。 */
     public RaftGroupTuple findTupleByGroup(final String group) {
         RaftGroupTuple tuple = multiRaftGroup.get(group);
         return tuple;
     }
     
+    /** 按 group 名查找 JRaft Node，不存在返回 null。 */
     public Node findNodeByGroup(final String group) {
         final RaftGroupTuple tuple = multiRaftGroup.get(group);
         if (Objects.nonNull(tuple)) {
@@ -547,6 +574,7 @@ public class JRaftServer {
         return null;
     }
     
+    /** 严格模式下要求各 Group 均已选出 Leader；否则仅检查是否已启动。 */
     public boolean isReady() {
         if (raftConfig.isStrictMode()) {
             for (RequestProcessor4CP each : processors) {
@@ -558,33 +586,43 @@ public class JRaftServer {
         return isStarted;
     }
     
+    /** 返回多 Group 注册表（包内可见）。 */
     Map<String, RaftGroupTuple> getMultiRaftGroup() {
         return multiRaftGroup;
     }
     
     @JustForTest
+    /** 测试用：注入 mock 的多 Group 映射。 */
     void mockMultiRaftGroup(Map<String, RaftGroupTuple> map) {
         this.multiRaftGroup = map;
     }
     
+    /** 返回 JRaft CLI 服务实例。 */
     CliService getCliService() {
         return cliService;
     }
     
+    /** 单个 Raft Group 的运行时元组：节点、Processor、服务与状态机。 */
     public static class RaftGroupTuple {
         
+        /** 该 Group 绑定的 CP 请求处理器。 */
         private RequestProcessor processor;
         
+        /** JRaft Raft 节点实例。 */
         private Node node;
         
+        /** 封装 Node 生命周期的 Group 服务。 */
         private RaftGroupService raftGroupService;
         
+        /** 该 Group 对应的 Nacos 状态机。 */
         private NacosStateMachine machine;
         
         @JustForTest
+        /** 测试用无参构造。 */
         public RaftGroupTuple() {
         }
         
+        /** 组装 Group 元组四元组。 */
         public RaftGroupTuple(Node node, RequestProcessor processor,
             RaftGroupService raftGroupService,
             NacosStateMachine machine) {
@@ -594,14 +632,17 @@ public class JRaftServer {
             this.machine = machine;
         }
         
+        /** 返回 JRaft Node。 */
         public Node getNode() {
             return node;
         }
         
+        /** 返回绑定的 RequestProcessor。 */
         public RequestProcessor getProcessor() {
             return processor;
         }
         
+        /** 返回 RaftGroupService。 */
         public RaftGroupService getRaftGroupService() {
             return raftGroupService;
         }

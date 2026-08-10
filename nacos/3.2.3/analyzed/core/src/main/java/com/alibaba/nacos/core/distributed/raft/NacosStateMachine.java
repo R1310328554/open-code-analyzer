@@ -62,28 +62,37 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 
 /**
- * JRaft StateMachine implemented.
+ * Nacos JRaft 状态机实现：将已提交日志分发给 {@link RequestProcessor}，并桥接快照、Leader 变更与集群配置事件到 {@link RaftEvent}。
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 class NacosStateMachine extends StateMachineAdapter {
     
+    /** 所属 JRaft 服务端引用。 */
     protected final JRaftServer server;
     
+    /** 本 Group 绑定的 CP 请求处理器。 */
     protected final RequestProcessor processor;
     
+    /** 当前节点是否为 Leader。 */
     private final AtomicBoolean isLeader = new AtomicBoolean(false);
     
+    /** Raft Group 标识。 */
     private final String groupId;
     
+    /** 由业务 SnapshotOperation 适配而来的快照操作列表。 */
     private Collection<JSnapshotOperation> operations;
     
+    /** 关联的 JRaft Node（启动后注入）。 */
     private Node node;
     
+    /** 当前 Raft 任期号。 */
     private volatile long term = -1;
     
+    /** 当前已知 Leader 地址。 */
     private volatile String leaderIp = "unknown";
     
+    /** 绑定服务端与 Processor，并适配业务快照操作。 */
     NacosStateMachine(JRaftServer server, RequestProcessor4CP processor) {
         this.server = server;
         this.processor = processor;
@@ -108,7 +117,7 @@ class NacosStateMachine extends StateMachineAdapter {
                         final ByteBuffer data = iter.getData();
                         message = ProtoMessageUtil.parse(data.array());
                         if (message instanceof ReadRequest) {
-                            //'iter.done() == null' means current node is follower, ignore read operation
+                            // iter.done()==null 表示 Follower 重放读日志，跳过
                             applied++;
                             index++;
                             iter.next();
@@ -149,6 +158,7 @@ class NacosStateMachine extends StateMachineAdapter {
         }
     }
     
+    /** 注入 JRaft Node 引用。 */
     public void setNode(Node node) {
         this.node = node;
     }
@@ -229,10 +239,12 @@ class NacosStateMachine extends StateMachineAdapter {
                 .build());
     }
     
+    /** 返回本节点是否为 Leader。 */
     public boolean isLeader() {
         return isLeader.get();
     }
     
+    /** 收集当前 Group 全部 Peer 地址（Leader 用 listPeers，Follower 查 RouteTable）。 */
     private List<String> allPeers() {
         if (node == null) {
             return Collections.emptyList();
@@ -246,16 +258,19 @@ class NacosStateMachine extends StateMachineAdapter {
             .toStrings(RouteTable.getInstance().getConfiguration(node.getGroupId()).getPeers());
     }
     
+    /** 将 Processor 返回的 Response 写入 Closure。 */
     private void postProcessor(Response data, NacosClosure closure) {
         if (Objects.nonNull(closure)) {
             closure.setResponse(data);
         }
     }
     
+    /** 返回当前任期。 */
     public long getTerm() {
         return term;
     }
     
+    /** 将 Nacos SnapshotOperation 适配为 JSnapshotOperation 列表。 */
     private void adapterToJraftSnapshot(Collection<SnapshotOperation> userOperates) {
         List<JSnapshotOperation> tmp = new ArrayList<>();
         
@@ -272,8 +287,7 @@ class NacosStateMachine extends StateMachineAdapter {
                 public void onSnapshotSave(SnapshotWriter writer, Closure done) {
                     final Writer wCtx = new Writer(writer.getPath());
                     
-                    // Do a layer of proxy operation to shield different Raft
-                    // components from implementing snapshots
+                    // 代理层屏蔽 JRaft 与 Nacos 快照 API 差异
                     
                     final BiConsumer<Boolean, Throwable> callFinally = (result, t) -> {
                         Boolean[] results = new Boolean[wCtx.listFiles().size()];

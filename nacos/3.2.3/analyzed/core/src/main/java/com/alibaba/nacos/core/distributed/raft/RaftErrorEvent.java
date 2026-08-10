@@ -19,21 +19,24 @@ package com.alibaba.nacos.core.distributed.raft;
 import com.alibaba.nacos.common.notify.Event;
 
 /**
- * The RAFT protocol runs an exception event. If this event is published, it means that the current raft Group cannot
- * continue to run normally
+ * Raft 协议致命异常事件：发布后表示对应 Raft Group 已无法正常运行，需上层介入处理。
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public class RaftErrorEvent extends Event {
     
+    /** 序列化版本号。 */
     private static final long serialVersionUID = 3016514657754158167L;
     
+    /** 发生异常的 Raft Group 名称。 */
     private String groupName;
     
+    /** 返回异常 Group 名称。 */
     public String getGroupName() {
         return groupName;
     }
     
+    /** 设置异常 Group 名称。 */
     public void setGroupName(String groupName) {
         this.groupName = groupName;
     }

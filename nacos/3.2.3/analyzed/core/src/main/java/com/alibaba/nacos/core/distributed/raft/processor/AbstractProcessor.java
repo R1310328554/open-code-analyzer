@@ -27,15 +27,17 @@ import com.google.protobuf.Message;
 import java.util.Objects;
 
 /**
- * abstract rpc processor.
+ * Raft RPC 处理器抽象基类：校验 Group 与 Leader 后在本机 apply 或返回错误响应。
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public abstract class AbstractProcessor {
     
+    /** 默认构造。 */
     public AbstractProcessor() {
     }
     
+    /** 统一入口：查找 Group、校验 Leader，非 Leader 则返回错误。 */
     protected void handleRequest(final JRaftServer server, final String group,
         final RpcContext rpcCtx, Message message) {
         try {
@@ -59,12 +61,15 @@ public abstract class AbstractProcessor {
         }
     }
     
+    /** Leader 节点执行 applyOperation，结果经 FailoverClosure 异步写回 RPC。 */
     protected void execute(JRaftServer server, final RpcContext asyncCtx, final Message message,
         final JRaftServer.RaftGroupTuple tuple) {
         FailoverClosure closure = new FailoverClosure() {
             
+            /** apply 成功后的业务响应。 */
             Response data;
             
+            /** apply 过程中的异常。 */
             Throwable ex;
             
             @Override

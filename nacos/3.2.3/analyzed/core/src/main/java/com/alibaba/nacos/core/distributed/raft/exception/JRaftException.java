@@ -17,25 +17,30 @@
 package com.alibaba.nacos.core.distributed.raft.exception;
 
 /**
- * Abnormal JRaft.
+ * JRaft 协议运行时异常：启动失败、apply 错误等不可恢复场景的统一包装。
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public class JRaftException extends RuntimeException {
     
+    /** 序列化版本号。 */
     private static final long serialVersionUID = 8802314713344513544L;
     
+    /** 无参构造。 */
     public JRaftException() {
     }
     
+    /** 带消息的构造。 */
     public JRaftException(String message) {
         super(message);
     }
     
+    /** 带消息与原因的构造。 */
     public JRaftException(String message, Throwable cause) {
         super(message, cause);
     }
     
+    /** 以原异常为原因的构造。 */
     public JRaftException(Throwable cause) {
         super(cause);
     }

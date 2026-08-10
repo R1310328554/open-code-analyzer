@@ -25,14 +25,14 @@ import com.alipay.sofa.jraft.storage.snapshot.SnapshotWriter;
 import com.google.protobuf.ZeroByteStringHelper;
 
 /**
- * JRaft snapshot operation.
+ * JRaft 快照操作适配接口：将 Nacos 一致性层快照语义映射到 JRaft {@link SnapshotWriter}/{@link SnapshotReader}。
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 interface JSnapshotOperation {
     
     /**
-     * do snapshot save operation.
+     * 执行快照保存：将状态持久化到 writer 指定路径。
      *
      * @param writer {@link SnapshotWriter}
      * @param done   {@link Closure}
@@ -40,7 +40,7 @@ interface JSnapshotOperation {
     void onSnapshotSave(SnapshotWriter writer, Closure done);
     
     /**
-     * do snapshot load operation.
+     * 从 reader 加载快照并恢复状态；成功返回 true。
      *
      * @param reader {@link SnapshotReader}
      * @return operation label
@@ -48,14 +48,14 @@ interface JSnapshotOperation {
     boolean onSnapshotLoad(SnapshotReader reader);
     
     /**
-     * return actually snapshot executor.
+     * 返回快照执行器标识（用于日志与排错）。
      *
      * @return name
      */
     String info();
     
     /**
-     * Metadata information for snapshot files.
+     * 将 Nacos {@link LocalFileMeta} 序列化为 JRaft 快照文件元数据。
      *
      * @param metadata meta data
      * @return {@link LocalFileMetaOutter.LocalFileMeta}

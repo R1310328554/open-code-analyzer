@@ -22,28 +22,33 @@ import com.alipay.sofa.jraft.rpc.RpcContext;
 import com.alipay.sofa.jraft.rpc.RpcProcessor;
 
 /**
- * nacos request processor for {@link com.alibaba.nacos.consistency.entity.ReadRequest}.
+ * {@link ReadRequest} 的 JRaft RPC 处理器：Follower 收到 Leader 转发的线性读请求时在本机 apply。
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public class NacosReadRequestProcessor extends AbstractProcessor
     implements RpcProcessor<ReadRequest> {
     
+    /** RpcProcessor 注册的兴趣类名。 */
     private static final String INTEREST_NAME = ReadRequest.class.getName();
     
+    /** 关联的 JRaft 服务端。 */
     private final JRaftServer server;
     
+    /** 注入 JRaftServer 并注册为 ReadRequest 处理器。 */
     public NacosReadRequestProcessor(JRaftServer server) {
         super();
         this.server = server;
     }
     
     @Override
+    /** 处理入站 ReadRequest RPC。 */
     public void handleRequest(RpcContext rpcCtx, ReadRequest request) {
         handleRequest(server, request.getGroup(), rpcCtx, request);
     }
     
     @Override
+    /** 返回 {@link ReadRequest} 全限定类名。 */
     public String interest() {
         return INTEREST_NAME;
     }

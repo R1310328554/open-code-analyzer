@@ -17,14 +17,16 @@
 package com.alibaba.nacos.core.distributed.raft.exception;
 
 /**
- * Duplicate groupId when creating Raft Group throws this exception.
+ * 创建 Raft Group 时 groupId 重复则抛出此运行时异常。
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public class DuplicateRaftGroupException extends RuntimeException {
     
+    /** 序列化版本号。 */
     private static final long serialVersionUID = -6276695537457486790L;
     
+    /** 构造异常并指明重复的 Group 名称。 */
     public DuplicateRaftGroupException(String group) {
         super("The Raft Group [" + group + "] is already used");
     }

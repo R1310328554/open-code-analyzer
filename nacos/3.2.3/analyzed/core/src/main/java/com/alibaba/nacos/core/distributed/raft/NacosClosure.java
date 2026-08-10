@@ -23,18 +23,22 @@ import com.alipay.sofa.jraft.error.RaftError;
 import com.google.protobuf.Message;
 
 /**
- * implement jraft closure.
+ * Nacos 对 JRaft {@link Closure} 的封装：在 Raft apply 完成后将 Status、Response 与异常一并回传上层。
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public class NacosClosure implements Closure {
     
+    /** 本次 apply 对应的 Protobuf 请求消息。 */
     private Message message;
     
+    /** 外层回调 Closure（通常包装 FailoverClosure）。 */
     private Closure closure;
     
+    /** 携带业务响应与异常的扩展 Status。 */
     private NacosStatus nacosStatus = new NacosStatus();
     
+    /** 绑定请求消息与完成回调。 */
     public NacosClosure(Message message, Closure closure) {
         this.message = message;
         this.closure = closure;
@@ -47,32 +51,40 @@ public class NacosClosure implements Closure {
         clear();
     }
     
+    /** apply 完成后释放引用，避免内存泄漏。 */
     private void clear() {
         message = null;
         closure = null;
         nacosStatus = null;
     }
     
+    /** 由状态机设置业务层 Response。 */
     public void setResponse(Response response) {
         this.nacosStatus.setResponse(response);
     }
     
+    /** 由状态机设置 apply 过程中的异常。 */
     public void setThrowable(Throwable throwable) {
         this.nacosStatus.setThrowable(throwable);
     }
     
+    /** 返回原始请求消息。 */
     public Message getMessage() {
         return message;
     }
     
-    // Pass the Throwable inside the state machine to the outer layer
+    // 将状态机内部 Throwable 透传至外层
     
+    /** 扩展 JRaft Status，附加 Nacos Response 与 Throwable。 */
     public static class NacosStatus extends Status {
         
+        /** 底层 JRaft Status 委托对象。 */
         private Status status;
         
+        /** 业务处理结果。 */
         private Response response = null;
         
+        /** apply 或 onRequest 抛出的异常。 */
         private Throwable throwable = null;
         
         public void setStatus(Status status) {

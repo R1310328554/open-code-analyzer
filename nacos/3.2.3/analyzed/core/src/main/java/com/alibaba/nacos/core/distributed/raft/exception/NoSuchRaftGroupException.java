@@ -17,25 +17,30 @@
 package com.alibaba.nacos.core.distributed.raft.exception;
 
 /**
- * no this raft group exception.
+ * 请求的 Raft Group 不存在或未注册时抛出。
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public class NoSuchRaftGroupException extends RuntimeException {
     
+    /** 序列化版本号。 */
     private static final long serialVersionUID = 1755681688785678765L;
     
+    /** 无参构造。 */
     public NoSuchRaftGroupException() {
     }
     
+    /** 带消息的构造。 */
     public NoSuchRaftGroupException(String message) {
         super(message);
     }
     
+    /** 带消息与原因的构造。 */
     public NoSuchRaftGroupException(String message, Throwable cause) {
         super(message, cause);
     }
     
+    /** 以原异常为原因的构造。 */
     public NoSuchRaftGroupException(Throwable cause) {
         super(cause);
     }
