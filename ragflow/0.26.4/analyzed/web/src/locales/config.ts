@@ -1,3 +1,5 @@
+// config.ts — i18next 初始化、懒加载语言包与切换/持久化逻辑。
+
 import { LanguageAbbreviation } from '@/constants/common';
 import storage from '@/utils/authorization-util';
 import dayjs from 'dayjs';
@@ -7,10 +9,10 @@ import { upperFirst } from 'lodash';
 import { initReactI18next } from 'react-i18next';
 import translation_en from './en';
 
-//The language is based on the .ng file stored in the client's local storage.
-// The language stored in the database is for agent template resources, as these resources reside on the server.
-// When a user logs in from a different machine, the login page language is the language configured by VITE_DEFAULT_LANGUAGE_CODE.
+// 界面语言取自客户端 localStorage；库内语言用于服务端 Agent 模板资源。
+// 跨设备登录时，登录页语言由 VITE_DEFAULT_LANGUAGE_CODE 决定。
 
+/** 各语言代码 → 动态 import 工厂，用于按需加载 translation 包。 */
 const languageImports: Record<string, () => Promise<{ default: any }>> = {
   [LanguageAbbreviation.En]: () => import('./en'),
   [LanguageAbbreviation.Zh]: () => import('./zh'),
@@ -33,6 +35,7 @@ const languageImports: Record<string, () => Promise<{ default: any }>> = {
 const supportedLanguageCodes: Intl.UnicodeBCP47LocaleIdentifier[] =
   Object.keys(languageImports);
 
+/** 支持语言列表：code、Intl.Locale 与本地化 displayName。 */
 export const supportedLanguages = supportedLanguageCodes.map((code) => {
   const locale = new Intl.Locale(code);
 
@@ -45,6 +48,7 @@ export const supportedLanguages = supportedLanguageCodes.map((code) => {
   };
 });
 
+/** 默认语言：环境变量 VITE_DEFAULT_LANGUAGE_CODE 或英语。 */
 export const DEFAULT_LANGUAGE_CODE =
   import.meta.env.VITE_DEFAULT_LANGUAGE_CODE || LanguageAbbreviation.En;
 
@@ -52,6 +56,7 @@ const resources = {
   [LanguageAbbreviation.En]: translation_en,
 };
 
+/** 同步 html lang/dir 与 dayjs 区域设置。 */
 const updateDocumentLocale = (lng: string) => {
   document.documentElement.lang = lng;
   document.documentElement.dir = 'ltr';
@@ -75,6 +80,7 @@ i18n
     },
   });
 
+/** 懒加载指定语言包并注册到 i18n translation 命名空间。 */
 export const loadLanguageAsync = async (lng: string): Promise<void> => {
   const normalizedLng = lng;
 
@@ -97,6 +103,7 @@ export const loadLanguageAsync = async (lng: string): Promise<void> => {
   }
 };
 
+/** 切换语言：必要时先 load，写入 storage 并更新 document/dayjs。 */
 export const changeLanguageAsync = async (lng: string): Promise<void> => {
   const normalizedLng = lng;
 
@@ -114,6 +121,7 @@ export const changeLanguageAsync = async (lng: string): Promise<void> => {
   await i18n.changeLanguage(normalizedLng);
 };
 
+/** 应用启动：从 storage 或默认语言初始化 i18n。 */
 export const initLanguage = async (): Promise<void> => {
   const currentLng = storage.getLanguage() || DEFAULT_LANGUAGE_CODE;
 

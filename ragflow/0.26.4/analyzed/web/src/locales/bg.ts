@@ -1,3 +1,5 @@
+// bg.ts — 保加利亚语（bg）界面文案字典；键对齐 translation 结构，值为保语用户可见字符串。
+
 export default {
   translation: {
     common: {

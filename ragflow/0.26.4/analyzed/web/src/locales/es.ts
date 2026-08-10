@@ -1,3 +1,5 @@
+// es.ts — 西班牙语（es）界面文案字典；键对齐 translation 结构，值为西语用户可见字符串。
+
 export default {
   translation: {
     common: {

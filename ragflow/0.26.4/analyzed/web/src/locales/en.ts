@@ -1,3 +1,5 @@
+// en.ts — 英语（en）默认界面文案字典；内置于 i18n 初始 resources，其余语言懒加载。
+
 export default {
   translation: {
     common: {

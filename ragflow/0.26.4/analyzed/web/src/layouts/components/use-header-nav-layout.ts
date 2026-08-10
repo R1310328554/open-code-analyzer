@@ -1,8 +1,13 @@
+// use-header-nav-layout.ts — 顶栏导航自适应：空间不足时切换紧凑布局。
+
 import { useLayoutEffect, useRef, useState } from 'react';
 
+// 顶栏左右区域与导航之间的预留间距（px）
 const LAYOUT_GAP = 48;
+// 判定是否紧凑模式的额外缓冲（px）
 const FIT_BUFFER = 16;
 
+/** 测量 logo、右侧区与导航宽度，返回 refs 与 isCompact 状态。 */
 export function useHeaderNavLayout(measureKey = '') {
   const headerRef = useRef<HTMLElement>(null);
   const logoRef = useRef<HTMLDivElement>(null);

@@ -1,3 +1,5 @@
+// ar.ts — 阿拉伯语（ar）界面文案字典；键对齐 translation 结构，值为阿语用户可见字符串。
+
 export default {
   translation: {
     common: {
