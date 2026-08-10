@@ -1,3 +1,4 @@
+// 终端进度条：百分比、速率、ETA 与 Unicode 块渲染。
 package progress
 
 import (
@@ -12,6 +13,7 @@ import (
 	"github.com/ollama/ollama/format"
 )
 
+// Bar 表示可并发更新的下载/传输进度条。
 type Bar struct {
 	// mu guards all fields below: Set is called from download progress
 	// callbacks while String is called from the Progress render goroutine.
@@ -30,11 +32,13 @@ type Bar struct {
 	buckets    []bucket
 }
 
+// bucket 记录某一时刻的进度采样点。
 type bucket struct {
 	updated time.Time
 	value   int64
 }
 
+// NewBar 创建进度条；initialValue>=maxValue 时视为已完成。
 func NewBar(message string, maxValue, initialValue int64) *Bar {
 	b := Bar{
 		message:      message,
@@ -53,6 +57,7 @@ func NewBar(message string, maxValue, initialValue int64) *Bar {
 	return &b
 }
 
+// formatDuration 将 Duration 格式化为最多两个时间单位。
 // formatDuration limits the rendering of a time.Duration to 2 units
 func formatDuration(d time.Duration) string {
 	switch {
@@ -156,6 +161,7 @@ func (b *Bar) String() string {
 	return pre.String() + mid.String() + suf.String()
 }
 
+// Set 更新当前进度值并维护速率采样桶。
 func (b *Bar) Set(value int64) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
@@ -182,6 +188,7 @@ func (b *Bar) Set(value int64) {
 	}
 }
 
+// percent 计算完成百分比（调用方须持有 b.mu）。
 // percent must be called with b.mu held.
 func (b *Bar) percent() float64 {
 	if b.maxValue > 0 {
@@ -191,6 +198,7 @@ func (b *Bar) percent() float64 {
 	return 0
 }
 
+// rate 估算字节/秒传输速率（调用方须持有 b.mu）。
 // rate must be called with b.mu held.
 func (b *Bar) rate() float64 {
 	var numerator, denominator float64
@@ -219,6 +227,7 @@ func (b *Bar) rate() float64 {
 	return 0
 }
 
+// repeat 安全重复字符串 n 次。
 func repeat(s string, n int) string {
 	if n > 0 {
 		return strings.Repeat(s, n)

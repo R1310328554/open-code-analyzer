@@ -1,3 +1,4 @@
+// 交互式 readline：原始模式、键绑定、历史与多行粘贴。
 package readline
 
 import (
@@ -8,6 +9,7 @@ import (
 	"strings"
 )
 
+// Prompt 表示主/续行 prompt 与占位符。
 type Prompt struct {
 	Prompt         string
 	AltPrompt      string
@@ -30,12 +32,14 @@ func (p *Prompt) placeholder() string {
 	return p.Placeholder
 }
 
+// Terminal 封装 stdin 原始模式与 bufio 读取。
 type Terminal struct {
 	reader  *bufio.Reader
 	rawmode bool
 	termios any
 }
 
+// Instance 组合 Prompt、Terminal、History 与粘贴状态。
 type Instance struct {
 	Prompt      *Prompt
 	Terminal    *Terminal
@@ -45,6 +49,7 @@ type Instance struct {
 	pastedLines []string
 }
 
+// New 创建 readline 实例并初始化终端与历史。
 func New(prompt Prompt) (*Instance, error) {
 	term, err := NewTerminal()
 	if err != nil {
@@ -63,6 +68,7 @@ func New(prompt Prompt) (*Instance, error) {
 	}, nil
 }
 
+// Readline 读取一行或多行输入，处理 Emacs 风格键绑定。
 func (i *Instance) Readline() (string, error) {
 	if !i.Terminal.rawmode {
 		fd := os.Stdin.Fd()
@@ -340,14 +346,17 @@ func (i *Instance) Readline() (string, error) {
 	}
 }
 
+// HistoryEnable 启用历史记录。
 func (i *Instance) HistoryEnable() {
 	i.History.Enabled = true
 }
 
+// HistoryDisable 禁用历史记录。
 func (i *Instance) HistoryDisable() {
 	i.History.Enabled = false
 }
 
+// historyPrev 切换到上一条历史并保存当前草稿。
 func (i *Instance) historyPrev(buf *Buffer, currentLineBuf *[]rune) {
 	if i.History.Pos > 0 {
 		if i.History.Pos == i.History.Size() {
@@ -357,6 +366,7 @@ func (i *Instance) historyPrev(buf *Buffer, currentLineBuf *[]rune) {
 	}
 }
 
+// historyNext 切换到下一条历史或恢复草稿。
 func (i *Instance) historyNext(buf *Buffer, currentLineBuf *[]rune) {
 	if i.History.Pos < i.History.Size() {
 		buf.Replace([]rune(i.History.Next()))
@@ -366,6 +376,7 @@ func (i *Instance) historyNext(buf *Buffer, currentLineBuf *[]rune) {
 	}
 }
 
+// NewTerminal 探测 raw 模式能力并创建 Terminal。
 func NewTerminal() (*Terminal, error) {
 	fd := os.Stdin.Fd()
 	termios, err := SetRawMode(fd)
@@ -391,6 +402,7 @@ func (t *Terminal) Read() (rune, error) {
 	return r, nil
 }
 
+// SetRawModeOn 启用 raw 模式并保持至 SetRawModeOff。
 // SetRawModeOn enables raw terminal mode and keeps it on.
 // Call SetRawModeOff to restore when done.
 func (i *Instance) SetRawModeOn() error {
@@ -407,6 +419,7 @@ func (i *Instance) SetRawModeOn() error {
 	return nil
 }
 
+// SetRawModeOff 恢复终端至先前模式。
 // SetRawModeOff restores the terminal to its previous mode.
 func (i *Instance) SetRawModeOff() {
 	if !i.Terminal.rawmode {
@@ -418,6 +431,7 @@ func (i *Instance) SetRawModeOff() {
 	i.Terminal.rawmode = false
 }
 
+// ReadRaw 读取单个 rune；未处于 raw 模式时临时切换。
 // ReadRaw reads a single rune. If the terminal is already in raw mode
 // (via SetRawModeOn), it reads directly. Otherwise it temporarily enters
 // raw mode for the read.

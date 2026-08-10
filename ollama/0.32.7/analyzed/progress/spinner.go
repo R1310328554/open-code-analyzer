@@ -1,3 +1,4 @@
+// Braille 字符旋转 spinner 动画。
 package progress
 
 import (
@@ -8,6 +9,7 @@ import (
 	"time"
 )
 
+// Spinner 表示带可选消息前缀的终端 spinner。
 type Spinner struct {
 	message atomic.Value
 
@@ -26,6 +28,7 @@ type Spinner struct {
 	done chan struct{}
 }
 
+// NewSpinner 创建 spinner 并启动动画 goroutine。
 func NewSpinner(message string) *Spinner {
 	s := &Spinner{
 		parts: []string{
@@ -39,6 +42,7 @@ func NewSpinner(message string) *Spinner {
 	return s
 }
 
+// SetMessage 原子更新 spinner 前缀消息。
 func (s *Spinner) SetMessage(message string) {
 	s.message.Store(message)
 }
@@ -72,6 +76,7 @@ func (s *Spinner) String() string {
 	return sb.String()
 }
 
+// start 驱动 Braille 帧轮换。
 func (s *Spinner) start() {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
@@ -88,6 +93,7 @@ func (s *Spinner) start() {
 	}
 }
 
+// Stop 标记 spinner 停止并关闭动画循环。
 func (s *Spinner) Stop() {
 	s.mu.Lock()
 	if s.stopped.IsZero() {

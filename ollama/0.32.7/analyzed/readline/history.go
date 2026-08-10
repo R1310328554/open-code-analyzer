@@ -1,3 +1,4 @@
+// ~/.ollama/history 持久化命令历史。
 package readline
 
 import (
@@ -12,6 +13,7 @@ import (
 	"github.com/emirpasic/gods/v2/lists/arraylist"
 )
 
+// History 管理内存历史与可选自动保存。
 type History struct {
 	Buf      *arraylist.List[string]
 	Autosave bool
@@ -21,6 +23,7 @@ type History struct {
 	Enabled  bool
 }
 
+// NewHistory 创建历史并从 ~/.ollama/history 加载。
 func NewHistory() (*History, error) {
 	h := &History{
 		Buf:      arraylist.New[string](),
@@ -37,6 +40,7 @@ func NewHistory() (*History, error) {
 	return h, nil
 }
 
+// Init 确定历史文件路径并读取已有条目。
 func (h *History) Init() error {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -80,6 +84,7 @@ func (h *History) Init() error {
 	return nil
 }
 
+// Add 追加条目、压缩超限并可选自动保存。
 func (h *History) Add(s string) {
 	h.Buf.Add(s)
 	h.Compact()
@@ -89,6 +94,7 @@ func (h *History) Add(s string) {
 	}
 }
 
+// Compact 丢弃超出 Limit 的最旧条目。
 func (h *History) Compact() {
 	s := h.Buf.Size()
 	if s > h.Limit {
@@ -102,6 +108,7 @@ func (h *History) Clear() {
 	h.Buf.Clear()
 }
 
+// Prev 上移历史位置并返回条目。
 func (h *History) Prev() (line string) {
 	if h.Pos > 0 {
 		h.Pos -= 1
@@ -110,6 +117,7 @@ func (h *History) Prev() (line string) {
 	return line
 }
 
+// Next 下移历史位置并返回条目。
 func (h *History) Next() (line string) {
 	if h.Pos < h.Buf.Size() {
 		h.Pos += 1
@@ -122,6 +130,7 @@ func (h *History) Size() int {
 	return h.Buf.Size()
 }
 
+// Save 原子写入历史文件（tmp+rename）。
 func (h *History) Save() error {
 	if !h.Enabled {
 		return nil

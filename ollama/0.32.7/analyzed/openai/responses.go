@@ -1,3 +1,4 @@
+// OpenAI Responses API 类型定义、请求转换与流式 SSE 事件生成。
 package openai
 
 import (
@@ -10,6 +11,7 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+// ResponsesContent 为输入内容的可区分联合类型接口。
 // ResponsesContent is a discriminated union for input content types.
 // Concrete types: ResponsesTextContent, ResponsesImageContent,
 // ResponsesOutputTextContent, ResponsesFileContent.
@@ -17,6 +19,7 @@ type ResponsesContent interface {
 	responsesContent() // unexported marker method
 }
 
+// ResponsesTextContent 表示 input_text 输入。
 type ResponsesTextContent struct {
 	Type string `json:"type"` // always "input_text"
 	Text string `json:"text"`
@@ -24,6 +27,7 @@ type ResponsesTextContent struct {
 
 func (ResponsesTextContent) responsesContent() {}
 
+// ResponsesImageContent 表示 input_image 输入。
 type ResponsesImageContent struct {
 	Type string `json:"type"` // always "input_image"
 	// TODO(drifkin): is this really required? that seems verbose and a default is specified in the docs
@@ -34,6 +38,7 @@ type ResponsesImageContent struct {
 
 func (ResponsesImageContent) responsesContent() {}
 
+// ResponsesOutputTextContent 表示历史 assistant 输出文本。
 // ResponsesOutputTextContent represents output text from a previous assistant response
 // that is being passed back as part of the conversation history.
 type ResponsesOutputTextContent struct {
@@ -43,6 +48,7 @@ type ResponsesOutputTextContent struct {
 
 func (ResponsesOutputTextContent) responsesContent() {}
 
+// ResponsesFileContent 表示 input_file 输入。
 type ResponsesFileContent struct {
 	Type     string `json:"type"` // always "input_file"
 	FileData string `json:"file_data,omitempty"`
@@ -53,6 +59,7 @@ type ResponsesFileContent struct {
 
 func (ResponsesFileContent) responsesContent() {}
 
+// ResponsesInputMessage 表示 type=message 的输入项。
 type ResponsesInputMessage struct {
 	Type    string             `json:"type"` // always "message"
 	Role    string             `json:"role"` // one of `user`, `system`, `developer`
@@ -104,6 +111,7 @@ func (m *ResponsesInputMessage) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// unmarshalResponsesContent 按 type 字段反序列化具体内容类型。
 func unmarshalResponsesContent(data []byte) (ResponsesContent, error) {
 	// Peek at the type field to determine which concrete type to use
 	var typeField struct {
@@ -145,6 +153,7 @@ func unmarshalResponsesContent(data []byte) (ResponsesContent, error) {
 
 type ResponsesOutputMessage struct{}
 
+// ResponsesInputItem 为输入项的可区分联合类型。
 // ResponsesInputItem is a discriminated union for input items.
 // Concrete types: ResponsesInputMessage (more to come)
 type ResponsesInputItem interface {
@@ -153,6 +162,7 @@ type ResponsesInputItem interface {
 
 func (ResponsesInputMessage) responsesInputItem() {}
 
+// ResponsesFunctionCall 表示对话历史中的 function_call 项。
 // ResponsesFunctionCall represents an assistant's function call in conversation history.
 type ResponsesFunctionCall struct {
 	ID        string `json:"id,omitempty"` // item ID
@@ -164,6 +174,7 @@ type ResponsesFunctionCall struct {
 
 func (ResponsesFunctionCall) responsesInputItem() {}
 
+// ResponsesFunctionCallOutput 表示客户端返回的 function_call_output。
 // ResponsesFunctionCallOutput represents a function call result from the client.
 type ResponsesFunctionCallOutput struct {
 	Type   string `json:"type"`    // always "function_call_output"
@@ -227,6 +238,7 @@ func (o *ResponsesFunctionCallOutput) UnmarshalJSON(data []byte) error {
 
 func (ResponsesFunctionCallOutput) responsesInputItem() {}
 
+// ResponsesReasoningInput 表示作为输入回传的 reasoning 项。
 // ResponsesReasoningInput represents a reasoning item passed back as input.
 // This is used when the client sends previous reasoning back for context.
 type ResponsesReasoningInput struct {
@@ -238,6 +250,7 @@ type ResponsesReasoningInput struct {
 
 func (ResponsesReasoningInput) responsesInputItem() {}
 
+// unmarshalResponsesInputItem 反序列化单条输入项。
 // unmarshalResponsesInputItem unmarshals a single input item from JSON.
 func unmarshalResponsesInputItem(data []byte) (ResponsesInputItem, error) {
 	var typeField struct {
@@ -288,6 +301,7 @@ func unmarshalResponsesInputItem(data []byte) (ResponsesInputItem, error) {
 	}
 }
 
+// ResponsesInput 可为纯字符串或输入项数组。
 // ResponsesInput can be either:
 // - a string (equivalent to a text input with the user role)
 // - an array of input items (see ResponsesInputItem)
@@ -322,6 +336,7 @@ func (r *ResponsesInput) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// ResponsesReasoning 表示请求中的推理配置。
 type ResponsesReasoning struct {
 	// originally: optional, default is per-model
 	Effort string `json:"effort,omitempty"`
@@ -333,6 +348,7 @@ type ResponsesReasoning struct {
 	Summary string `json:"summary,omitempty"`
 }
 
+// ResponsesTextFormat 指定输出文本/JSON Schema 格式。
 type ResponsesTextFormat struct {
 	Type   string          `json:"type"`             // "text", "json_schema"
 	Name   string          `json:"name,omitempty"`   // for json_schema
@@ -340,10 +356,12 @@ type ResponsesTextFormat struct {
 	Strict *bool           `json:"strict,omitempty"` // for json_schema
 }
 
+// ResponsesText 包装文本格式配置。
 type ResponsesText struct {
 	Format *ResponsesTextFormat `json:"format,omitempty"`
 }
 
+// ResponsesTool 表示 Responses API 工具声明（与 api.Tool 结构不同）。
 // ResponsesTool represents a tool in the Responses API format.
 // Note: This differs from api.Tool which nests fields under "function".
 type ResponsesTool struct {
@@ -359,6 +377,7 @@ type ResponsesTool struct {
 	Tools []ResponsesTool `json:"tools,omitempty"`
 }
 
+// ResponsesRequest 表示 /v1/responses 请求体。
 type ResponsesRequest struct {
 	Model string `json:"model"`
 
@@ -406,6 +425,7 @@ type ResponsesRequest struct {
 	Stream *bool `json:"stream,omitempty"`
 }
 
+// FromResponsesRequest 将 ResponsesRequest 转为 api.ChatRequest。
 // FromResponsesRequest converts a ResponsesRequest to api.ChatRequest
 func FromResponsesRequest(r ResponsesRequest) (*api.ChatRequest, error) {
 	var messages []api.Message
@@ -573,6 +593,7 @@ func FromResponsesRequest(r ResponsesRequest) (*api.ChatRequest, error) {
 	}, nil
 }
 
+// convertTools 将 Responses 工具声明转为 api.Tool；namespace 展开为限定名成员。
 // convertTools converts one Responses-API tool declaration to api.Tools. A
 // "namespace" declaration groups member functions under a common name; it
 // expands to those members with namespace-qualified names, since api.Tool
@@ -604,6 +625,7 @@ func convertTools(t ResponsesTool) ([]api.Tool, error) {
 	return tools, nil
 }
 
+// convertTool 转换单条非 namespace 工具。
 func convertTool(t ResponsesTool) (api.Tool, error) {
 	// Convert parameters from map[string]any to api.ToolFunctionParameters
 	var params api.ToolFunctionParameters
@@ -633,6 +655,7 @@ func convertTool(t ResponsesTool) (api.Tool, error) {
 	}, nil
 }
 
+// convertInputMessage 将 Responses 输入消息转为 api.Message。
 func convertInputMessage(m ResponsesInputMessage) (api.Message, error) {
 	content, images, err := convertResponsesContent(m.Content)
 	if err != nil {
@@ -646,6 +669,7 @@ func convertInputMessage(m ResponsesInputMessage) (api.Message, error) {
 	}, nil
 }
 
+// convertResponsesContent 聚合文本内容与图像附件。
 func convertResponsesContent(contents []ResponsesContent) (string, []api.ImageData, error) {
 	var content string
 	var images []api.ImageData
@@ -677,28 +701,33 @@ func convertResponsesContent(contents []ResponsesContent) (string, []api.ImageDa
 
 // Response types for the Responses API
 
+// ResponsesTextField 表示响应中的 text 输出配置。
 // ResponsesTextField represents the text output configuration in the response.
 type ResponsesTextField struct {
 	Format ResponsesTextFormat `json:"format"`
 }
 
+// ResponsesReasoningOutput 表示响应中的 reasoning 配置。
 // ResponsesReasoningOutput represents reasoning configuration in the response.
 type ResponsesReasoningOutput struct {
 	Effort  *string `json:"effort,omitempty"`
 	Summary *string `json:"summary,omitempty"`
 }
 
+// ResponsesError 表示响应内嵌错误。
 // ResponsesError represents an error in the response.
 type ResponsesError struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
 }
 
+// ResponsesIncompleteDetails 说明响应未完成的原因。
 // ResponsesIncompleteDetails represents details about why a response was incomplete.
 type ResponsesIncompleteDetails struct {
 	Reason string `json:"reason"`
 }
 
+// ResponsesResponse 表示完整 Responses API 响应。
 type ResponsesResponse struct {
 	ID                 string                      `json:"id"`
 	Object             string                      `json:"object"`
@@ -733,6 +762,7 @@ type ResponsesResponse struct {
 	PromptCacheKey     *string                     `json:"prompt_cache_key"`
 }
 
+// ResponsesOutputItem 表示 output 数组中的单条输出项。
 type ResponsesOutputItem struct {
 	ID        string                   `json:"id"`
 	Type      string                   `json:"type"` // "message", "function_call", or "reasoning"
@@ -748,11 +778,13 @@ type ResponsesOutputItem struct {
 	EncryptedContent string                      `json:"encrypted_content,omitempty"` // for reasoning
 }
 
+// ResponsesReasoningSummary 表示 reasoning 摘要文本。
 type ResponsesReasoningSummary struct {
 	Type string `json:"type"` // "summary_text"
 	Text string `json:"text"`
 }
 
+// ResponsesOutputContent 表示 message 内的 output_text 内容。
 type ResponsesOutputContent struct {
 	Type        string `json:"type"` // "output_text"
 	Text        string `json:"text"`
@@ -768,6 +800,7 @@ type ResponsesOutputTokensDetails struct {
 	ReasoningTokens int `json:"reasoning_tokens"`
 }
 
+// ResponsesUsage 表示 Responses API token 用量。
 type ResponsesUsage struct {
 	InputTokens         int                          `json:"input_tokens"`
 	OutputTokens        int                          `json:"output_tokens"`
@@ -776,6 +809,7 @@ type ResponsesUsage struct {
 	OutputTokensDetails ResponsesOutputTokensDetails `json:"output_tokens_details"`
 }
 
+// derefFloat64 解引用 *float64，nil 时返回默认值。
 // derefFloat64 returns the value of a float64 pointer, or a default if nil.
 func derefFloat64(p *float64, def float64) float64 {
 	if p != nil {
@@ -784,6 +818,7 @@ func derefFloat64(p *float64, def float64) float64 {
 	return def
 }
 
+// ToResponse 将 ChatResponse 转为 Responses API 响应并回显请求参数。
 // ToResponse converts an api.ChatResponse to a Responses API response.
 // The request is used to echo back request parameters in the response.
 func ToResponse(model, responseID, itemID string, chatResponse api.ChatResponse, request ResponsesRequest) ResponsesResponse {
@@ -913,12 +948,14 @@ func ToResponse(model, responseID, itemID string, chatResponse api.ChatResponse,
 
 // Streaming events: <https://platform.openai.com/docs/api-reference/responses-streaming>
 
+// ResponsesStreamEvent 表示 Responses API 的单条 SSE 事件。
 // ResponsesStreamEvent represents a single Server-Sent Event for the Responses API.
 type ResponsesStreamEvent struct {
 	Event string // The event type (e.g., "response.created")
 	Data  any    // The event payload (will be JSON-marshaled)
 }
 
+// ResponsesStreamConverter 跨多次 Process 维护状态，生成流式事件序列。
 // ResponsesStreamConverter converts api.ChatResponse objects to Responses API
 // streaming events. It maintains state across multiple calls to handle the
 // streaming event sequence correctly.
@@ -949,6 +986,7 @@ type ResponsesStreamConverter struct {
 }
 
 // newEvent creates a ResponsesStreamEvent with the sequence number included in the data.
+// newEvent 构造带递增 sequence_number 的流式事件。
 func (c *ResponsesStreamConverter) newEvent(eventType string, data map[string]any) ResponsesStreamEvent {
 	data["type"] = eventType
 	data["sequence_number"] = c.sequenceNumber
@@ -959,6 +997,7 @@ func (c *ResponsesStreamConverter) newEvent(eventType string, data map[string]an
 	}
 }
 
+// NewResponsesStreamConverter 创建流式转换器。
 // NewResponsesStreamConverter creates a new converter with the given configuration.
 func NewResponsesStreamConverter(responseID, itemID, model string, request ResponsesRequest) *ResponsesStreamConverter {
 	return &ResponsesStreamConverter{
@@ -970,6 +1009,7 @@ func NewResponsesStreamConverter(responseID, itemID, model string, request Respo
 	}
 }
 
+// Process 将 ChatResponse 转为应发送的 SSE 事件列表。
 // Process takes a ChatResponse and returns the events that should be emitted.
 // Events are returned in order. The caller is responsible for serializing
 // and sending these events.
@@ -1011,6 +1051,7 @@ func (c *ResponsesStreamConverter) Process(r api.ChatResponse) []ResponsesStream
 }
 
 // buildResponseObject creates a full response object with all required fields for streaming events.
+// buildResponseObject 构造流式事件中的完整 response 对象。
 func (c *ResponsesStreamConverter) buildResponseObject(status string, output []any, usage map[string]any) map[string]any {
 	var instructions any = nil
 	if c.request.Instructions != "" {
@@ -1127,6 +1168,7 @@ func (c *ResponsesStreamConverter) createResponseInProgressEvent() ResponsesStre
 	})
 }
 
+// processThinking 处理 reasoning 流式增量事件。
 func (c *ResponsesStreamConverter) processThinking(thinking string) []ResponsesStreamEvent {
 	var events []ResponsesStreamEvent
 
@@ -1164,6 +1206,7 @@ func (c *ResponsesStreamConverter) processThinking(thinking string) []ResponsesS
 	return events
 }
 
+// finishReasoning 结束 reasoning 项并发出 done 事件。
 func (c *ResponsesStreamConverter) finishReasoning() []ResponsesStreamEvent {
 	if !c.reasoningStarted || c.reasoningDone {
 		return nil
@@ -1192,6 +1235,7 @@ func (c *ResponsesStreamConverter) finishReasoning() []ResponsesStreamEvent {
 	return events
 }
 
+// processToolCalls 将工具调用转为 function_call 流式事件。
 func (c *ResponsesStreamConverter) processToolCalls(toolCalls []api.ToolCall) []ResponsesStreamEvent {
 	var events []ResponsesStreamEvent
 
@@ -1260,6 +1304,7 @@ func (c *ResponsesStreamConverter) processToolCalls(toolCalls []api.ToolCall) []
 	return events
 }
 
+// processTextContent 将正文增量转为 output_text 流式事件。
 func (c *ResponsesStreamConverter) processTextContent(content string) []ResponsesStreamEvent {
 	var events []ResponsesStreamEvent
 
@@ -1311,6 +1356,7 @@ func (c *ResponsesStreamConverter) processTextContent(content string) []Response
 	return events
 }
 
+// buildFinalOutput 组装 response.completed 的最终 output 数组。
 func (c *ResponsesStreamConverter) buildFinalOutput() []any {
 	var output []any
 
@@ -1348,6 +1394,7 @@ func (c *ResponsesStreamConverter) buildFinalOutput() []any {
 	return output
 }
 
+// processCompletion 在 Done 时发出文本/项完成与 response.completed 事件。
 func (c *ResponsesStreamConverter) processCompletion(r api.ChatResponse) []ResponsesStreamEvent {
 	var events []ResponsesStreamEvent
 

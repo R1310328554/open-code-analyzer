@@ -1,3 +1,4 @@
+// openai 包提供与 OpenAI REST API 部分兼容的核心转换逻辑。
 // openai package provides core transformation logic for partial compatibility with the OpenAI REST API
 package openai
 
@@ -19,6 +20,7 @@ import (
 	"github.com/ollama/ollama/types/model"
 )
 
+// Error 表示 OpenAI 风格 API 错误详情。
 type Error struct {
 	Message string  `json:"message"`
 	Type    string  `json:"type"`
@@ -26,10 +28,12 @@ type Error struct {
 	Code    *string `json:"code"`
 }
 
+// ErrorResponse 为错误响应包装。
 type ErrorResponse struct {
 	Error Error `json:"error"`
 }
 
+// Message 表示聊天消息（角色、内容、工具调用等）。
 type Message struct {
 	Role       string     `json:"role"`
 	Content    any        `json:"content"`
@@ -39,6 +43,7 @@ type Message struct {
 	ToolCallID string     `json:"tool_call_id,omitempty"`
 }
 
+// Delta 用于流式 chunk 响应；字段 omitempty 使结束 chunk 的 delta 为 {}。
 // Delta is used in streaming chunk responses. All fields use omitempty so
 // that a finish chunk produces a truly empty delta `{}` matching the OpenAI spec.
 type Delta struct {
@@ -48,10 +53,12 @@ type Delta struct {
 	ToolCalls []ToolCall `json:"tool_calls,omitempty"`
 }
 
+// ChoiceLogprobs 包装选项的对数概率。
 type ChoiceLogprobs struct {
 	Content []api.Logprob `json:"content"`
 }
 
+// Choice 表示非流式 chat completion 的单个选项。
 type Choice struct {
 	Index        int             `json:"index"`
 	Message      Message         `json:"message"`
@@ -59,6 +66,7 @@ type Choice struct {
 	Logprobs     *ChoiceLogprobs `json:"logprobs,omitempty"`
 }
 
+// ChunkChoice 表示流式 chunk 的单个选项。
 type ChunkChoice struct {
 	Index        int             `json:"index"`
 	Delta        Delta           `json:"delta"`
@@ -66,6 +74,7 @@ type ChunkChoice struct {
 	Logprobs     *ChoiceLogprobs `json:"logprobs,omitempty"`
 }
 
+// CompleteChunkChoice 表示文本补全流/非流式选项。
 type CompleteChunkChoice struct {
 	Text         string          `json:"text"`
 	Index        int             `json:"index"`
@@ -73,21 +82,25 @@ type CompleteChunkChoice struct {
 	Logprobs     *ChoiceLogprobs `json:"logprobs,omitempty"`
 }
 
+// Usage 表示 token 用量统计。
 type Usage struct {
 	PromptTokens     int `json:"prompt_tokens"`
 	CompletionTokens int `json:"completion_tokens"`
 	TotalTokens      int `json:"total_tokens"`
 }
 
+// ResponseFormat 指定结构化输出格式。
 type ResponseFormat struct {
 	Type       string      `json:"type"`
 	JsonSchema *JsonSchema `json:"json_schema,omitempty"`
 }
 
+// JsonSchema 携带 JSON Schema 定义。
 type JsonSchema struct {
 	Schema json.RawMessage `json:"schema"`
 }
 
+// EmbedRequest 表示嵌入 API 请求。
 type EmbedRequest struct {
 	Input          any    `json:"input"`
 	Model          string `json:"model"`
@@ -95,14 +108,17 @@ type EmbedRequest struct {
 	EncodingFormat string `json:"encoding_format,omitempty"` // "float" or "base64"
 }
 
+// StreamOptions 控制流式响应选项（如是否包含 usage）。
 type StreamOptions struct {
 	IncludeUsage bool `json:"include_usage"`
 }
 
+// Reasoning 表示推理/思考 effort 配置。
 type Reasoning struct {
 	Effort string `json:"effort,omitempty"`
 }
 
+// ChatCompletionRequest 表示 /v1/chat/completions 请求。
 type ChatCompletionRequest struct {
 	Model            string          `json:"model"`
 	Messages         []Message       `json:"messages"`
@@ -124,6 +140,7 @@ type ChatCompletionRequest struct {
 	DebugRenderOnly  bool            `json:"_debug_render_only"`
 }
 
+// ChatCompletion 表示完整 chat completion 响应。
 type ChatCompletion struct {
 	Id                string         `json:"id"`
 	Object            string         `json:"object"`
@@ -135,6 +152,7 @@ type ChatCompletion struct {
 	DebugInfo         *api.DebugInfo `json:"_debug_info,omitempty"`
 }
 
+// ChatCompletionChunk 表示流式 chat completion chunk。
 type ChatCompletionChunk struct {
 	Id                string        `json:"id"`
 	Object            string        `json:"object"`
@@ -146,6 +164,7 @@ type ChatCompletionChunk struct {
 }
 
 // TODO (https://github.com/ollama/ollama/issues/5259): support []string, []int and [][]int
+// CompletionRequest 表示 /v1/completions 请求。
 type CompletionRequest struct {
 	Model            string         `json:"model"`
 	Prompt           string         `json:"prompt"`
@@ -163,6 +182,7 @@ type CompletionRequest struct {
 	DebugRenderOnly  bool           `json:"_debug_render_only"`
 }
 
+// Completion 表示完整文本补全响应。
 type Completion struct {
 	Id                string                `json:"id"`
 	Object            string                `json:"object"`
@@ -173,6 +193,7 @@ type Completion struct {
 	Usage             Usage                 `json:"usage,omitempty"`
 }
 
+// CompletionChunk 表示流式文本补全 chunk。
 type CompletionChunk struct {
 	Id                string                `json:"id"`
 	Object            string                `json:"object"`
@@ -183,6 +204,7 @@ type CompletionChunk struct {
 	Usage             *Usage                `json:"usage,omitempty"`
 }
 
+// ToolCall 表示 OpenAI 格式的工具调用。
 type ToolCall struct {
 	ID       string `json:"id"`
 	Index    int    `json:"index"`
@@ -193,6 +215,7 @@ type ToolCall struct {
 	} `json:"function"`
 }
 
+// Model 表示模型列表项。
 type Model struct {
 	Id      string `json:"id"`
 	Object  string `json:"object"`
@@ -200,17 +223,20 @@ type Model struct {
 	OwnedBy string `json:"owned_by"`
 }
 
+// Embedding 表示单条嵌入向量（float 或 base64）。
 type Embedding struct {
 	Object    string `json:"object"`
 	Embedding any    `json:"embedding"` // Can be []float32 (float format) or string (base64 format)
 	Index     int    `json:"index"`
 }
 
+// ListCompletion 表示 /v1/models 列表响应。
 type ListCompletion struct {
 	Object string  `json:"object"`
 	Data   []Model `json:"data"`
 }
 
+// EmbeddingList 表示嵌入 API 列表响应。
 type EmbeddingList struct {
 	Object string         `json:"object"`
 	Data   []Embedding    `json:"data"`
@@ -218,11 +244,13 @@ type EmbeddingList struct {
 	Usage  EmbeddingUsage `json:"usage,omitempty"`
 }
 
+// EmbeddingUsage 表示嵌入请求的 token 用量。
 type EmbeddingUsage struct {
 	PromptTokens int `json:"prompt_tokens"`
 	TotalTokens  int `json:"total_tokens"`
 }
 
+// NewError 按 HTTP 状态码构造 OpenAI 风格错误响应。
 func NewError(code int, message string) ErrorResponse {
 	var etype string
 	switch code {
@@ -237,6 +265,7 @@ func NewError(code int, message string) ErrorResponse {
 	return ErrorResponse{Error{Type: etype, Message: message}}
 }
 
+// ToUsage 将 api.ChatResponse 指标转换为 Usage。
 // ToUsage converts an api.ChatResponse to Usage
 func ToUsage(r api.ChatResponse) Usage {
 	return Usage{
@@ -246,6 +275,7 @@ func ToUsage(r api.ChatResponse) Usage {
 	}
 }
 
+// ToToolCalls 将 api.ToolCall 转为 OpenAI ToolCall 格式。
 // ToToolCalls converts api.ToolCall to OpenAI ToolCall format
 func ToToolCalls(tc []api.ToolCall) []ToolCall {
 	toolCalls := make([]ToolCall, len(tc))
@@ -266,6 +296,7 @@ func ToToolCalls(tc []api.ToolCall) []ToolCall {
 	return toolCalls
 }
 
+// ToChatCompletion 将 api.ChatResponse 转为 ChatCompletion。
 // ToChatCompletion converts an api.ChatResponse to ChatCompletion
 func ToChatCompletion(id string, r api.ChatResponse) ChatCompletion {
 	toolCalls := ToToolCalls(r.Message.ToolCalls)
@@ -299,6 +330,7 @@ func ToChatCompletion(id string, r api.ChatResponse) ChatCompletion {
 	}
 }
 
+// toChunk 构造单个 ChatCompletionChunk。
 func toChunk(id string, r api.ChatResponse, includeRole bool) ChatCompletionChunk {
 	toolCalls := ToToolCalls(r.Message.ToolCalls)
 
@@ -339,6 +371,7 @@ func toChunk(id string, r api.ChatResponse, includeRole bool) ChatCompletionChun
 	}
 }
 
+// ToStreamChunks 将响应转为一个或多个 chunk；混合思考/正文时拆成多块。
 // ToStreamChunks converts an api.ChatResponse to one or more ChatCompletionChunk values.
 // includeRole controls whether the "role" field appears in the delta (should be true
 // only for the first chunk in a stream, matching the OpenAI spec).
@@ -365,6 +398,7 @@ func ToStreamChunks(id string, r api.ChatResponse, includeRole bool) []ChatCompl
 	}
 }
 
+// FinishChunk 创建仅含 finish_reason 的空 delta 结束 chunk。
 // FinishChunk creates a dedicated finish-reason chunk with an empty delta,
 // matching the OpenAI spec where finish_reason is sent on its own chunk.
 func FinishChunk(id string, r api.ChatResponse, toolCallSent bool) ChatCompletionChunk {
@@ -395,6 +429,7 @@ func FinishChunk(id string, r api.ChatResponse, toolCallSent bool) ChatCompletio
 	}
 }
 
+// ToUsageGenerate 将 GenerateResponse 指标转为 Usage。
 // ToUsageGenerate converts an api.GenerateResponse to Usage
 func ToUsageGenerate(r api.GenerateResponse) Usage {
 	return Usage{
@@ -404,6 +439,7 @@ func ToUsageGenerate(r api.GenerateResponse) Usage {
 	}
 }
 
+// ToCompletion 将 GenerateResponse 转为 Completion。
 // ToCompletion converts an api.GenerateResponse to Completion
 func ToCompletion(id string, r api.GenerateResponse) Completion {
 	return Completion{
@@ -426,6 +462,7 @@ func ToCompletion(id string, r api.GenerateResponse) Completion {
 	}
 }
 
+// ToCompleteChunk 将 GenerateResponse 转为 CompletionChunk。
 // ToCompleteChunk converts an api.GenerateResponse to CompletionChunk
 func ToCompleteChunk(id string, r api.GenerateResponse) CompletionChunk {
 	return CompletionChunk{
@@ -447,6 +484,7 @@ func ToCompleteChunk(id string, r api.GenerateResponse) CompletionChunk {
 	}
 }
 
+// ToListCompletion 将 api.ListResponse 转为 ListCompletion。
 // ToListCompletion converts an api.ListResponse to ListCompletion
 func ToListCompletion(r api.ListResponse) ListCompletion {
 	var data []Model
@@ -470,6 +508,7 @@ func ToListCompletion(r api.ListResponse) ListCompletion {
 	}
 }
 
+// ToEmbeddingList 将 EmbedResponse 转为 EmbeddingList（支持 float/base64）。
 // ToEmbeddingList converts an api.EmbedResponse to EmbeddingList
 // encodingFormat can be "float", "base64", or empty (defaults to "float")
 func ToEmbeddingList(model string, r api.EmbedResponse, encodingFormat string) EmbeddingList {
@@ -504,6 +543,7 @@ func ToEmbeddingList(model string, r api.EmbedResponse, encodingFormat string) E
 	return EmbeddingList{}
 }
 
+// floatsToBase64 将 []float32 小端编码为 base64 字符串。
 // floatsToBase64 encodes a []float32 to a base64 string
 func floatsToBase64(floats []float32) string {
 	var buf bytes.Buffer
@@ -511,6 +551,7 @@ func floatsToBase64(floats []float32) string {
 	return base64.StdEncoding.EncodeToString(buf.Bytes())
 }
 
+// ToModel 将 ShowResponse 转为 Model。
 // ToModel converts an api.ShowResponse to Model
 func ToModel(r api.ShowResponse, m string) Model {
 	return Model{
@@ -521,6 +562,7 @@ func ToModel(r api.ShowResponse, m string) Model {
 	}
 }
 
+// FromChatRequest 将 OpenAI ChatCompletionRequest 转为 api.ChatRequest。
 // FromChatRequest converts a ChatCompletionRequest to api.ChatRequest
 func FromChatRequest(r ChatCompletionRequest) (*api.ChatRequest, error) {
 	var messages []api.Message
@@ -705,6 +747,7 @@ func FromChatRequest(r ChatCompletionRequest) (*api.ChatRequest, error) {
 	}, nil
 }
 
+// nameFromToolCallID 按 tool_call_id 逆查函数名（后写覆盖）。
 func nameFromToolCallID(messages []Message, toolCallID string) string {
 	// iterate backwards to be more resilient to duplicate tool call IDs (this
 	// follows "last one wins")
@@ -719,6 +762,7 @@ func nameFromToolCallID(messages []Message, toolCallID string) string {
 	return ""
 }
 
+// decodeImageURL 将 base64 data URI 解码为原始图像字节。
 // decodeImageURL decodes a base64 data URI into raw image bytes.
 func decodeImageURL(url string) (api.ImageData, error) {
 	if strings.HasPrefix(url, "http://") || strings.HasPrefix(url, "https://") {
@@ -752,6 +796,7 @@ func decodeImageURL(url string) (api.ImageData, error) {
 	return img, nil
 }
 
+// FromCompletionToolCall 将 OpenAI ToolCall 转为 api.ToolCall。
 // FromCompletionToolCall converts OpenAI ToolCall format to api.ToolCall
 func FromCompletionToolCall(toolCalls []ToolCall) ([]api.ToolCall, error) {
 	apiToolCalls := make([]api.ToolCall, len(toolCalls))
@@ -767,6 +812,7 @@ func FromCompletionToolCall(toolCalls []ToolCall) ([]api.ToolCall, error) {
 	return apiToolCalls, nil
 }
 
+// FromCompleteRequest 将 CompletionRequest 转为 api.GenerateRequest。
 // FromCompleteRequest converts a CompletionRequest to api.GenerateRequest
 func FromCompleteRequest(r CompletionRequest) (api.GenerateRequest, error) {
 	options := make(map[string]any)
@@ -829,11 +875,13 @@ func FromCompleteRequest(r CompletionRequest) (api.GenerateRequest, error) {
 	}, nil
 }
 
+// TranscriptionResponse 表示 /v1/audio/transcriptions 响应。
 // TranscriptionResponse is the response format for /v1/audio/transcriptions.
 type TranscriptionResponse struct {
 	Text string `json:"text"`
 }
 
+// TranscriptionRequest 保存 multipart 表单解析后的转录字段。
 // TranscriptionRequest holds parsed fields from the multipart form.
 type TranscriptionRequest struct {
 	Model          string
@@ -843,6 +891,7 @@ type TranscriptionRequest struct {
 	Prompt         string
 }
 
+// FromTranscriptionRequest 将转录请求包装为带 system 提示的 ChatRequest。
 // FromTranscriptionRequest converts a transcription request into a ChatRequest
 // by wrapping the audio with a system prompt for transcription.
 func FromTranscriptionRequest(r TranscriptionRequest) (*api.ChatRequest, error) {

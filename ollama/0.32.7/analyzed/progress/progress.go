@@ -1,3 +1,4 @@
+// 多行终端进度渲染：缓冲输出、同步刷新与 spinner 协调。
 package progress
 
 import (
@@ -16,10 +17,12 @@ const (
 	defaultTermHeight = 24
 )
 
+// State 表示可渲染的单行进度状态（Bar/Spinner/StepBar）。
 type State interface {
 	String() string
 }
 
+// Progress 管理多行进度状态的后台渲染循环。
 type Progress struct {
 	mu sync.Mutex
 	// buffer output to minimize flickering on all terminals
@@ -34,12 +37,14 @@ type Progress struct {
 	done chan struct{}
 }
 
+// NewProgress 创建 Progress 并启动 100ms 刷新 goroutine。
 func NewProgress(w io.Writer) *Progress {
 	p := &Progress{w: bufio.NewWriter(w), done: make(chan struct{})}
 	go p.start()
 	return p
 }
 
+// stop 停止渲染循环并先停止 spinner；返回是否首次停止及上次行数。
 // stop halts the render loop, stopping any spinners first. It reports whether
 // rendering was active and how many lines were last rendered.
 func (p *Progress) stop() (bool, int) {
@@ -64,6 +69,7 @@ func (p *Progress) stop() (bool, int) {
 	return stopped, p.pos
 }
 
+// Stop 停止渲染并在 stderr 换行。
 func (p *Progress) Stop() bool {
 	stopped, _ := p.stop()
 	if stopped {
@@ -73,6 +79,7 @@ func (p *Progress) Stop() bool {
 	return stopped
 }
 
+// StopAndClear 停止渲染并清除已绘制的进度行。
 func (p *Progress) StopAndClear() bool {
 	defer p.w.Flush()
 
@@ -93,6 +100,7 @@ func (p *Progress) StopAndClear() bool {
 	return stopped
 }
 
+// Add 追加一条进度状态（key 当前未用于索引）。
 func (p *Progress) Add(key string, state State) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -107,6 +115,7 @@ func (p *Progress) render() {
 	p.renderLocked()
 }
 
+// renderLocked 在持有 p.mu 时重绘进度行。
 // renderLocked renders with p.mu held.
 func (p *Progress) renderLocked() {
 	_, termHeight, err := term.GetSize(int(os.Stderr.Fd()))
@@ -141,6 +150,7 @@ func (p *Progress) renderLocked() {
 	p.pos = len(p.states)
 }
 
+// start 为渲染循环入口（ticker 驱动）。
 func (p *Progress) start() {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()

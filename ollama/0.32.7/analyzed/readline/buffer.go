@@ -1,3 +1,4 @@
+// 多行 readline 编辑缓冲：光标移动、插入/删除与终端 ANSI 控制。
 package readline
 
 import (
@@ -9,6 +10,7 @@ import (
 	"golang.org/x/term"
 )
 
+// Buffer 管理编辑缓冲、显示位置与换行状态。
 type Buffer struct {
 	DisplayPos int
 	Pos        int
@@ -21,6 +23,7 @@ type Buffer struct {
 	Height       int
 }
 
+// NewBuffer 按终端尺寸与 prompt 宽度初始化缓冲。
 func NewBuffer(prompt *Prompt) (*Buffer, error) {
 	fd := int(os.Stdout.Fd())
 	width, height := 80, 24
@@ -49,6 +52,7 @@ func (b *Buffer) GetLineSpacing(line int) bool {
 	return hasSpace
 }
 
+// MoveLeft 光标左移一个 rune（处理换行与宽字符）。
 func (b *Buffer) MoveLeft() {
 	if b.Pos > 0 {
 		// asserts that we retrieve a rune
@@ -77,6 +81,7 @@ func (b *Buffer) MoveLeft() {
 	}
 }
 
+// MoveLeftWord 按词边界左移光标。
 func (b *Buffer) MoveLeftWord() {
 	if b.Pos > 0 {
 		var foundNonspace bool
@@ -98,6 +103,7 @@ func (b *Buffer) MoveLeftWord() {
 	}
 }
 
+// MoveRight 光标右移一个 rune。
 func (b *Buffer) MoveRight() {
 	if b.Pos < b.Buf.Size() {
 		if r, ok := b.Buf.Get(b.Pos); ok {
@@ -121,6 +127,7 @@ func (b *Buffer) MoveRight() {
 	}
 }
 
+// MoveRightWord 按词边界右移光标。
 func (b *Buffer) MoveRightWord() {
 	if b.Pos < b.Buf.Size() {
 		for {
@@ -137,6 +144,7 @@ func (b *Buffer) MoveRightWord() {
 	}
 }
 
+// MoveToStart 将光标移到行首。
 func (b *Buffer) MoveToStart() {
 	if b.Pos > 0 {
 		currLine := b.DisplayPos / b.LineWidth
@@ -151,6 +159,7 @@ func (b *Buffer) MoveToStart() {
 	}
 }
 
+// MoveToEnd 将光标移到文本末尾。
 func (b *Buffer) MoveToEnd() {
 	if b.Pos < b.Buf.Size() {
 		currLine := b.DisplayPos / b.LineWidth
@@ -170,6 +179,7 @@ func (b *Buffer) MoveToEnd() {
 	}
 }
 
+// DisplaySize 返回缓冲内容的显示宽度（runewidth 累加）。
 func (b *Buffer) DisplaySize() int {
 	sum := 0
 	for i := range b.Buf.Size() {
@@ -181,6 +191,7 @@ func (b *Buffer) DisplaySize() int {
 	return sum
 }
 
+// Add 在光标处或末尾插入 rune。
 func (b *Buffer) Add(r rune) {
 	if b.Pos == b.Buf.Size() {
 		b.AddChar(r, false)
@@ -189,6 +200,7 @@ func (b *Buffer) Add(r rune) {
 	}
 }
 
+// AddChar 插入字符并更新终端显示与 LineHasSpace 状态。
 func (b *Buffer) AddChar(r rune, insert bool) {
 	rLength := runewidth.RuneWidth(r)
 	b.DisplayPos += rLength
@@ -257,6 +269,7 @@ func (b *Buffer) countRemainingLineWidth(place int) int {
 	return sum
 }
 
+// drawRemaining 重绘光标后剩余文本（插入/删除后刷新）。
 func (b *Buffer) drawRemaining() {
 	var place int
 	remainingText := b.StringN(b.Pos)
@@ -331,6 +344,7 @@ func (b *Buffer) drawRemaining() {
 	fmt.Print(CursorShow)
 }
 
+// Remove 退格删除光标前一个 rune。
 func (b *Buffer) Remove() {
 	if b.Buf.Size() > 0 && b.Pos > 0 {
 		if r, ok := b.Buf.Get(b.Pos - 1); ok {
@@ -395,6 +409,7 @@ func (b *Buffer) Remove() {
 	}
 }
 
+// Delete 删除光标处 rune（非退格）。
 func (b *Buffer) Delete() {
 	if b.Buf.Size() > 0 && b.Pos < b.Buf.Size() {
 		b.Buf.Remove(b.Pos)
@@ -410,6 +425,7 @@ func (b *Buffer) Delete() {
 	}
 }
 
+// DeleteBefore 删除光标前全部字符。
 func (b *Buffer) DeleteBefore() {
 	if b.Pos > 0 {
 		for cnt := b.Pos - 1; cnt >= 0; cnt-- {
@@ -418,6 +434,7 @@ func (b *Buffer) DeleteBefore() {
 	}
 }
 
+// DeleteRemaining 删除光标后全部字符。
 func (b *Buffer) DeleteRemaining() {
 	if b.DisplaySize() > 0 && b.Pos < b.DisplaySize() {
 		charsToDel := b.Buf.Size() - b.Pos
@@ -427,6 +444,7 @@ func (b *Buffer) DeleteRemaining() {
 	}
 }
 
+// DeleteWord 按词边界向前删除。
 func (b *Buffer) DeleteWord() {
 	if b.Buf.Size() > 0 && b.Pos > 0 {
 		var foundNonspace bool
@@ -450,6 +468,7 @@ func (b *Buffer) DeleteWord() {
 	}
 }
 
+// ClearScreen 清屏并重绘当前缓冲与占位符。
 func (b *Buffer) ClearScreen() {
 	fmt.Print(ClearScreen + CursorReset + b.Prompt.prompt())
 	if b.IsEmpty() {
@@ -486,6 +505,7 @@ func (b *Buffer) IsEmpty() bool {
 	return b.Buf.Empty()
 }
 
+// Replace 清空缓冲并用新 rune 序列替换。
 func (b *Buffer) Replace(r []rune) {
 	b.DisplayPos = 0
 	b.Pos = 0

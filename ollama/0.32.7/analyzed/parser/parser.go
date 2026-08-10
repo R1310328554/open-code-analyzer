@@ -1,3 +1,4 @@
+// Modelfile 解析：命令解析、路径展开与 CreateRequest 构建。
 package parser
 
 import (
@@ -25,8 +26,10 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+// ErrModelNotFound 表示目录中未找到可识别模型文件。
 var ErrModelNotFound = errors.New("no Modelfile or safetensors files found")
 
+// Modelfile 表示解析后的 Modelfile 命令序列。
 type Modelfile struct {
 	Commands []Command
 }
@@ -52,6 +55,7 @@ var deprecatedParameters = []string{
 	"mirostat_eta",
 }
 
+// CreateRequest 从 Modelfile 命令构建 api.CreateRequest。
 // CreateRequest creates a new *api.CreateRequest from an existing Modelfile
 func (f Modelfile) CreateRequest(relativeDir string) (*api.CreateRequest, error) {
 	req := &api.CreateRequest{}
@@ -182,6 +186,7 @@ func (f Modelfile) CreateRequest(relativeDir string) (*api.CreateRequest, error)
 	return req, nil
 }
 
+// rejectMatchingLocalPath 禁止 DRAFT/FROM 引用同一本地路径。
 func rejectMatchingLocalPath(name, path string, existing []string) error {
 	for _, candidate := range existing {
 		same, err := sameLocalPath(path, candidate)
@@ -195,6 +200,7 @@ func rejectMatchingLocalPath(name, path string, existing []string) error {
 	return nil
 }
 
+// sameLocalPath 比较两条路径是否指向同一本地文件。
 func sameLocalPath(a, b string) (bool, error) {
 	aa, err := canonicalLocalPath(a)
 	if err != nil {
@@ -207,6 +213,7 @@ func sameLocalPath(a, b string) (bool, error) {
 	return aa == bb, nil
 }
 
+// canonicalLocalPath 解析绝对路径并求值符号链接。
 func canonicalLocalPath(path string) (string, error) {
 	abs, err := filepath.Abs(path)
 	if err != nil {
@@ -215,6 +222,7 @@ func canonicalLocalPath(path string) (string, error) {
 	return filepath.EvalSymlinks(abs)
 }
 
+// fileDigestMap 计算文件或目录下各模型文件的 sha256 摘要映射。
 func fileDigestMap(path string) (map[string]string, error) {
 	fl := make(map[string]string)
 
@@ -278,6 +286,7 @@ func fileDigestMap(path string) (map[string]string, error) {
 	return fl, nil
 }
 
+// digestForFile 计算单文件 sha256 摘要。
 func digestForFile(filename string) (string, error) {
 	filepath, err := filepath.EvalSymlinks(filename)
 	if err != nil {
@@ -297,6 +306,7 @@ func digestForFile(filename string) (string, error) {
 	return fmt.Sprintf("sha256:%x", hash.Sum(nil)), nil
 }
 
+// filesForModel 按 glob 识别 safetensors/pytorch/gguf 等模型与配置文件。
 func filesForModel(path string) ([]string, error) {
 	detectContentType := func(path string) (string, error) {
 		f, err := os.Open(path)
@@ -400,6 +410,7 @@ func filesForModel(path string) ([]string, error) {
 	return files, nil
 }
 
+// Command 表示单条 Modelfile 命令（名称与参数字符串）。
 type Command struct {
 	Name string
 	Args string
@@ -422,6 +433,7 @@ func (c Command) String() string {
 	return sb.String()
 }
 
+// state 表示 Modelfile 词法解析状态。
 type state int
 
 const (
@@ -439,6 +451,7 @@ var (
 	errInvalidCommand     = errors.New("command must be one of \"from\", \"license\", \"template\", \"system\", \"adapter\", \"draft\", \"renderer\", \"parser\", \"parameter\", \"message\", or \"requires\"")
 )
 
+// ParserError 携带行号的解析错误。
 type ParserError struct {
 	LineNumber int
 	Msg        string
@@ -451,6 +464,7 @@ func (e *ParserError) Error() string {
 	return e.Msg
 }
 
+// ParseFile 从 Reader 解析 Modelfile，要求至少一条 FROM。
 func ParseFile(r io.Reader) (*Modelfile, error) {
 	var cmd Command
 	var curr state
@@ -582,6 +596,7 @@ func ParseFile(r io.Reader) (*Modelfile, error) {
 	return nil, errMissingFrom
 }
 
+// parseRuneForState 按当前状态处理单个 rune 并返回下一状态。
 func parseRuneForState(r rune, cs state) (state, rune, error) {
 	switch cs {
 	case stateNil:
@@ -641,6 +656,7 @@ func parseRuneForState(r rune, cs state) (state, rune, error) {
 	}
 }
 
+// quote 按 Modelfile 规则为参数加引号。
 func quote(s string) string {
 	if strings.Contains(s, "\n") || strings.HasPrefix(s, " ") || strings.HasSuffix(s, " ") {
 		if strings.Contains(s, "\"") {
@@ -653,6 +669,7 @@ func quote(s string) string {
 	return s
 }
 
+// unquote 解析 Modelfile 引号字符串。
 func unquote(s string) (string, bool) {
 	// TODO: single quotes
 	if len(s) >= 3 && s[:3] == `"""` {
@@ -703,6 +720,7 @@ func isValidCommand(cmd string) bool {
 	}
 }
 
+// expandPathImpl 展开 ~、相对路径与绝对路径（可注入用户查找函数）。
 func expandPathImpl(path, relativeDir string, currentUserFunc func() (*user.User, error), lookupUserFunc func(string) (*user.User, error)) (string, error) {
 	if filepath.IsAbs(path) || strings.HasPrefix(path, "\\") || strings.HasPrefix(path, "/") {
 		return filepath.Abs(path)
@@ -740,6 +758,7 @@ func expandPathImpl(path, relativeDir string, currentUserFunc func() (*user.User
 	return filepath.Abs(path)
 }
 
+// expandPath 展开 Modelfile 中的模型/适配器路径。
 func expandPath(path, relativeDir string) (string, error) {
 	return expandPathImpl(path, relativeDir, user.Current, user.Lookup)
 }
