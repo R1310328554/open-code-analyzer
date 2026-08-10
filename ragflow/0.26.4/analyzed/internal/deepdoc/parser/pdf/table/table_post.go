@@ -1,3 +1,5 @@
+// table_post.go — 表格提取后处理与 figure 合并：将表格区域替换为 HTML 框、跨页合并、锚点插入、数据来源过滤与 figure  consolidation。
+
 package table
 
 import (
@@ -8,8 +10,8 @@ import (
 	pdf "ragflow/internal/deepdoc/parser/pdf/type"
 )
 
-// FilterBoxesByRemoveSet filters boxes by index set
-// removeSet: key is index to remove, value=true means remove
+// FilterBoxesByRemoveSet 按索引集合过滤待移除文本框。
+// removeSet：键为待移除索引，值为 true 表示移除。
 func FilterBoxesByRemoveSet(boxes []pdf.TextBox, removeSet map[int]bool) []pdf.TextBox {
 	if len(removeSet) == 0 {
 		return boxes
@@ -17,8 +19,8 @@ func FilterBoxesByRemoveSet(boxes []pdf.TextBox, removeSet map[int]bool) []pdf.T
 	if len(boxes) == 0 {
 		return boxes
 	}
-	// Pre-allocate: estimate final size to avoid resizing
-	// Use max to prevent negative capacity when len(removeSet) > len(boxes)
+	// 预分配容量以减少扩容。
+	// 用 max 防止 removeSet 大于 boxes 时容量为负。
 	estimatedCap := len(boxes) - len(removeSet)
 	if estimatedCap < 0 {
 		estimatedCap = 0
@@ -32,7 +34,7 @@ func FilterBoxesByRemoveSet(boxes []pdf.TextBox, removeSet map[int]bool) []pdf.T
 	return out
 }
 
-// createTableBoxFromItem creates HTML-containing TextBox from TableItem
+// createTableBoxFromItem 从 TableItem 创建含 HTML 的 TextBox。
 func createTableBoxFromItem(tbl *pdf.TableItem, html string) pdf.TextBox {
 	pg := 0
 	if len(tbl.Positions) > 0 && len(tbl.Positions[0].PageNumbers) > 0 {
@@ -54,7 +56,7 @@ func createTableBoxFromItem(tbl *pdf.TableItem, html string) pdf.TextBox {
 	}
 }
 
-// handleImageOnlyPDFs handles cases with no boxes but tables (Image-only PDF)
+// handleImageOnlyPDFs 处理无文本框但有表格的纯图片 PDF。
 func handleImageOnlyPDFs(tables []pdf.TableItem) []pdf.TextBox {
 	var out []pdf.TextBox
 	for ti := range tables {
@@ -72,9 +74,7 @@ func handleImageOnlyPDFs(tables []pdf.TableItem) []pdf.TextBox {
 	return out
 }
 
-// findTableAnchors finds the best insertion position for each table by finding
-// the spatially nearest non-table text box. Returns a list of (tableIndex, position)
-// pairs sorted by position.
+// findTableAnchors 为每张表找空间最近的非 table/figure 文本框作为 HTML 插入锚点，按位置排序。
 func findTableAnchors(boxes []pdf.TextBox, tables []pdf.TableItem) []struct{ ti, pos int } {
 	replacedByTable := make(map[int]int)
 
@@ -122,7 +122,7 @@ func findTableAnchors(boxes []pdf.TextBox, tables []pdf.TableItem) []struct{ ti,
 		}
 	}
 
-	// Build the anchor list and sort by position
+	// 构建锚点列表并按位置排序。
 	anchorList := make([]struct{ ti, pos int }, 0, len(replacedByTable))
 	for ti, pos := range replacedByTable {
 		anchorList = append(anchorList, struct{ ti, pos int }{ti, pos})
@@ -131,18 +131,17 @@ func findTableAnchors(boxes []pdf.TextBox, tables []pdf.TableItem) []struct{ ti,
 	return anchorList
 }
 
-// buildTableHTMLs constructs HTML for each table, converting cells to page space first.
-// Returns a map from table index to HTML string.
+// buildTableHTMLs 先将 cells 转为页面空间再构造各表 HTML，返回表索引→HTML 映射。
 func buildTableHTMLs(boxes []pdf.TextBox, tables []pdf.TableItem) map[int]string {
 	htmls := make(map[int]string)
 	for ti := range tables {
 		if len(tables[ti].Cells) == 0 {
 			continue
 		}
-		// Convert TSR cells from crop-pixel space to page-global 72 DPI
+		// 将 TSR 单元格从 crop 像素转为页面 72 DPI 空间。
 		s := tables[ti].Scale
 		pageGlobalCells := CellSliceToPageSpace(tables[ti].Cells, tables[ti].CropOffX, tables[ti].CropOffY, s)
-		// Collect only table-labelled boxes
+		// 仅收集 layout 为 table 且与表位置重叠的框。
 		var tableBoxes []pdf.TextBox
 		for i := range boxes {
 			if boxes[i].LayoutType != pdf.LayoutTypeTable {
@@ -161,14 +160,14 @@ func buildTableHTMLs(boxes []pdf.TextBox, tables []pdf.TableItem) map[int]string
 	return htmls
 }
 
-// insertTableBoxes filters out boxes in removeSet and inserts table HTML boxes at anchor positions.
+// insertTableBoxes 过滤 removeSet 中的框，在锚点位置插入表格 HTML 框。
 func insertTableBoxes(boxes []pdf.TextBox, tables []pdf.TableItem, removeSet map[int]bool,
 	anchors []struct{ ti, pos int }, htmls map[int]string) []pdf.TextBox {
 
 	out := make([]pdf.TextBox, 0, len(boxes)-len(removeSet)+len(anchors))
 	anchorIdx := 0
 	for i, b := range boxes {
-		// Insert any HTML boxes whose anchor position is before or at i
+		// 在索引 i 之前或等于 i 的锚点处插入 HTML 框。
 		for anchorIdx < len(anchors) && anchors[anchorIdx].pos <= i {
 			ti := anchors[anchorIdx].ti
 			if html, ok := htmls[ti]; ok && html != "" {
@@ -181,7 +180,7 @@ func insertTableBoxes(boxes []pdf.TextBox, tables []pdf.TableItem, removeSet map
 			out = append(out, b)
 		}
 	}
-	// Insert remaining anchors after last box
+	// 在最后一个框之后插入剩余锚点。
 	for anchorIdx < len(anchors) {
 		ti := anchors[anchorIdx].ti
 		if html, ok := htmls[ti]; ok && html != "" {
@@ -194,17 +193,9 @@ func insertTableBoxes(boxes []pdf.TextBox, tables []pdf.TableItem, removeSet map
 	return out
 }
 
-// extractTableAndReplace pops table boxes and replaces them with consolidated
-// HTML boxes (one per table).  This matches Python's _extract_table_figure which
-// pops all boxes inside a table DLA region and inserts a single HTML box.
-//
-// Table boxes whose text matches the data-source discard pattern
-// (r"(数据|资料|图表)*来源[:： ]") are removed entirely without replacement —
-// matching Python's _extract_table_figure discard behavior.
+// ExtractTableAndReplace 弹出表格区域内框并替换为 consolidated HTML 框（每表一个），对齐 Python _extract_table_figure；数据来源行整框丢弃不替换。
 
-// MarkNoMergeTables traverses boxes in page order. When a caption, title, or
-// reference immediately follows a table, the preceding table is marked NoMerge
-// to prevent cross-page merge. Matches Python's nomerge_lout_no.
+// MarkNoMergeTables 按页序遍历：表格后紧跟 caption/title/reference 时标记 NoMerge，对齐 Python nomerge_lout_no。
 func MarkNoMergeTables(boxes []pdf.TextBox, tables []pdf.TableItem) {
 	var lastTableTI int = -1
 	for i := range boxes {
@@ -231,16 +222,13 @@ func MarkNoMergeTables(boxes []pdf.TextBox, tables []pdf.TableItem) {
 	}
 }
 
-// boxes must be post-TextMerge + post-VerticalMerge.  pdf.TableItem.Cells are in
-// crop pixel space; boxes are in PDF point space — conversion via Scale/CropOff.
-// replacement pairs a table index with the box index it replaces.
+// 输入 boxes 须已完成 TextMerge 与 VerticalMerge。TableItem.Cells 在 crop 像素空间，boxes 在 PDF 点空间，经 Scale/CropOff 转换。replacement 记录表索引与被替换框索引。
 type replacement struct {
 	tableIdx int
 	boxIdx   int
 }
 
-// buildRemoveSet scans for data-source-attribution boxes to remove.
-// Does NOT depend on table indices — safe to call before MergeTablesAcrossPages.
+// buildRemoveSet 扫描数据来源 attribution 框加入 removeSet，可在 MergeTablesAcrossPages 之前调用。
 func buildRemoveSet(boxes []pdf.TextBox) map[int]bool {
 	removeSet := make(map[int]bool)
 	for i := range boxes {
@@ -251,9 +239,7 @@ func buildRemoveSet(boxes []pdf.TextBox) map[int]bool {
 	return removeSet
 }
 
-// buildReplacementsAfterMerge maps each table to overlapping table-layout boxes,
-// producing the replacement list. Must be called AFTER MergeTablesAcrossPages so
-// that tableIdx in each replacement refers to the correct merged-table slot.
+// buildReplacementsAfterMerge 在合并后将各表映射到重叠 table 框，须在 MergeTablesAcrossPages 之后调用。
 func buildReplacementsAfterMerge(boxes []pdf.TextBox, tables []pdf.TableItem, removeSet map[int]bool) []replacement {
 	var reps []replacement
 	for ti := range tables {
@@ -272,10 +258,7 @@ func buildReplacementsAfterMerge(boxes []pdf.TextBox, tables []pdf.TableItem, re
 	return reps
 }
 
-// buildReplacements scans for data-source-attribution boxes to remove and maps
-// each table to overlapping table-layout boxes, producing the replacement list.
-// Deprecated: pre-merge variant kept for compatibility; prefer calling
-// buildRemoveSet + MergeTablesAcrossPages + buildReplacementsAfterMerge.
+// buildReplacements 已弃用：合并前版本，请改用 buildRemoveSet + MergeTablesAcrossPages + buildReplacementsAfterMerge。
 func buildReplacements(boxes []pdf.TextBox, tables []pdf.TableItem) (map[int]bool, []replacement) {
 	removeSet := buildRemoveSet(boxes)
 	reps := buildReplacementsAfterMerge(boxes, tables, removeSet)
@@ -291,7 +274,7 @@ func ExtractTableAndReplace(boxes []pdf.TextBox, tables []pdf.TableItem) []pdf.T
 	MarkNoMergeTables(boxes, tables)
 	tables = MergeTablesAcrossPages(tables, nil)
 
-	// Build replacements AFTER merge so tableIdx refers to the merged slice.
+	// 合并后再建 replacement，确保 tableIdx 指向合并后切片。
 	replacements := buildReplacementsAfterMerge(boxes, tables, removeSet)
 
 	if len(replacements) == 0 && len(boxes) == 0 {
@@ -304,7 +287,7 @@ func ExtractTableAndReplace(boxes []pdf.TextBox, tables []pdf.TableItem) []pdf.T
 	return processTablesWithReplacements(boxes, tables, removeSet, replacements)
 }
 
-// buildAndSortAnchors creates and sorts anchor list
+// buildAndSortAnchors 构建并排序锚点列表。
 func buildAndSortAnchors(anchors map[int]int) []struct{ ti, pos int } {
 	result := make([]struct{ ti, pos int }, 0, len(anchors))
 	for ti, pos := range anchors {
@@ -314,7 +297,7 @@ func buildAndSortAnchors(anchors map[int]int) []struct{ ti, pos int } {
 	return result
 }
 
-// processTablesWithReplacements handles normal flow with replacements
+// processTablesWithReplacements 带 replacement 的正常表格替换流程。
 func processTablesWithReplacements(
 	boxes []pdf.TextBox,
 	tables []pdf.TableItem,
@@ -330,24 +313,23 @@ func processTablesWithReplacements(
 	return insertTableBoxes(boxes, tables, removeSet, anchorList, htmls)
 }
 
-// findTableAnchorsWithReplacements is like findTableAnchors but falls back to
-// replacement positions when no text box anchor is found.
+// findTableAnchorsWithReplacements 同 findTableAnchors，无文本锚点时回退到 replacement 位置。
 func findTableAnchorsWithReplacements(boxes []pdf.TextBox, tables []pdf.TableItem,
 	replacements []replacement) map[int]int {
 
-	// First get anchors from findTableAnchors
+	// 先从 findTableAnchors 获取锚点。
 	anchorList := findTableAnchors(boxes, tables)
 	result := make(map[int]int, len(anchorList))
 	for _, a := range anchorList {
 		result[a.ti] = a.pos
 	}
 
-	// Fill in any missing tables using replacements
+	// 用 replacement 补全缺失表的锚点。
 	for ti := range tables {
 		if _, has := result[ti]; has {
 			continue
 		}
-		// Find the earliest replacement for this table
+		// 取该表最早的 replacement 框索引。
 		for _, r := range replacements {
 			if r.tableIdx == ti {
 				if _, ok := result[ti]; !ok || r.boxIdx < result[ti] {
@@ -359,13 +341,13 @@ func findTableAnchorsWithReplacements(boxes []pdf.TextBox, tables []pdf.TableIte
 	return result
 }
 
-// figKey groups figure boxes by page and layout number
+// figKey 按页码与 LayoutNo 分组 figure 框。
 type figKey struct {
 	page int
 	ln   string
 }
 
-// markDataSourceBoxesForRemoval marks data source attribution figure boxes for removal
+// markDataSourceBoxesForRemoval 标记数据来源 figure 框待移除。
 func markDataSourceBoxesForRemoval(boxes []pdf.TextBox) map[int]bool {
 	removeSet := make(map[int]bool)
 	for i, b := range boxes {
@@ -376,7 +358,7 @@ func markDataSourceBoxesForRemoval(boxes []pdf.TextBox) map[int]bool {
 	return removeSet
 }
 
-// groupFigureBoxes groups figure boxes by (page, layoutno)
+// groupFigureBoxes 按 (page, layoutno) 分组 figure 框。
 func groupFigureBoxes(boxes []pdf.TextBox, removeSet map[int]bool) map[figKey][]int {
 	groups := make(map[figKey][]int)
 	for i, b := range boxes {
@@ -389,7 +371,7 @@ func groupFigureBoxes(boxes []pdf.TextBox, removeSet map[int]bool) map[figKey][]
 	return groups
 }
 
-// mergeFigureGroups merges figure boxes within groups
+// mergeFigureGroups 合并同组内多个 figure 框的文字与边界。
 func mergeFigureGroups(boxes []pdf.TextBox, groups map[figKey][]int, removeSet map[int]bool) {
 	for _, indices := range groups {
 		if len(indices) <= 1 {
@@ -408,15 +390,7 @@ func mergeFigureGroups(boxes []pdf.TextBox, groups map[figKey][]int, removeSet m
 	}
 }
 
-// ConsolidateFigures merges figure boxes that share the same LayoutNo
-// (i.e., belong to the same DLA figure region) into a single pdf.TextBox.
-// Matches Python's _extract_table_figure + insert_table_figures which pops
-// individual figure boxes and re-inserts one consolidated figure block
-// per DLA region with combined text.
-//
-// Figure boxes whose text matches the data-source discard pattern
-// (r"(数据|资料|图表)*来源[:： ]") are removed entirely — matching Python's
-// _extract_table_figure discard behavior (pdf_parser.py:1050-1052).
+// ConsolidateFigures 合并同 LayoutNo（同一 DLA figure 区域）的 figure 框为单个 TextBox，对齐 Python insert_table_figures；数据来源 figure 整框丢弃。
 func ConsolidateFigures(boxes []pdf.TextBox) []pdf.TextBox {
 	removeSet := markDataSourceBoxesForRemoval(boxes)
 	groups := groupFigureBoxes(boxes, removeSet)
@@ -428,13 +402,11 @@ func ConsolidateFigures(boxes []pdf.TextBox) []pdf.TextBox {
 	return FilterBoxesByRemoveSet(boxes, removeSet)
 }
 
-// boxOverlapsPosition checks if a pdf.TextBox overlaps a pdf.Position with margin.
+// boxOverlapsPosition 判断 TextBox 是否与 Position 重叠（含 margin 容差）。
 func boxOverlapsPosition(box pdf.TextBox, pos pdf.Position) bool {
 	const margin = 2.0
 	return box.X0 <= pos.Right+margin && box.X1 >= pos.Left-margin &&
 		box.Top <= pos.Bottom+margin && box.Bottom >= pos.Top-margin
 }
 
-// rowsToHTML converts grouped TSR cell rows to an HTML table string.
-// spanInfo maps (row,col) → (colspan, rowspan) for spanning cells;
-// covered marks cells hidden by a span. Both may be nil.
+// 注：RowsToHTML 在 table_html.go 中实现；此处为历史注释占位。

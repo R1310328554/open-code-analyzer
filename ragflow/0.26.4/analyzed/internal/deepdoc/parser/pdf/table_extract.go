@@ -1,3 +1,5 @@
+// table_extract.go — DeepDoc 表格提取主流程：逐页 DLA+TSR、方向校正、OCR 填格、网格分组与注释写回 ParseResult。
+
 package pdf
 
 import (
@@ -12,21 +14,18 @@ import (
 	util "ragflow/internal/deepdoc/parser/pdf/util"
 )
 
-// enrichWithDeepDoc runs DLA+TSR via docAnalyzer and returns detected tables.
-// pageImages optionally provides pre-rendered page images to avoid re-rendering.
+// enrichWithDeepDoc 通过 docAnalyzer 执行 DLA+TSR 并返回 TableItem 列表；pageImages 可选传入预渲染页图避免重复渲染。
 func (p *Parser) enrichWithDeepDoc(ctx context.Context, result *pdf.ParseResult, engine pdf.PDFEngine, boxes []pdf.TextBox, pageImages map[int]image.Image, docAnalyzer pdf.DocAnalyzer, tb pdf.TableBuilder) []pdf.TableItem {
 	if !docAnalyzer.Health() {
 		return nil
 	}
-	// Group boxes by page for annotation write-back.
+	// 按页分组文本框索引以便注释写回。
 	byPage := make(map[int][]int)
 	for i, b := range boxes {
 		byPage[b.PageNumber] = append(byPage[b.PageNumber], i)
 	}
 
-	// Collect all pages that have images (from pageImages) or boxes.
-	// This matches Python's __images__ which processes every page regardless
-	// of embedded chars — image-only PDFs still get DLA+TSR.
+	// 收集有 pageImages 或 boxes 的所有页，对齐 Python __images__：纯图片 PDF 仍跑 DLA+TSR。
 	allPages := make(map[int]bool)
 	for pg := range pageImages {
 		allPages[pg] = true
@@ -52,7 +51,7 @@ func (p *Parser) enrichWithDeepDoc(ctx context.Context, result *pdf.ParseResult,
 		}
 		tables := p.extractTableBoxes(ctx, result, pageBoxes, engine, pg, pageImages, len(tableItems), docAnalyzer, tb)
 		tableItems = append(tableItems, tables...)
-		// Write back DLA and TSR annotations (R/C/H/SP) to the original boxes.
+		// 将 DLA 与 TSR 注释（R/C/H/SP）写回原始 boxes 切片。
 		for i, idx := range indices {
 			if pageBoxes[i].LayoutType != "" {
 				boxes[idx].LayoutType = pageBoxes[i].LayoutType
@@ -84,11 +83,11 @@ func (p *Parser) extractTableBoxesFromImage(ctx context.Context, result *pdf.Par
 		slog.Warn("DLA failed", "page", pageNum, "err", err)
 		return nil
 	}
-	// Collect DLA debug intermediates.
+	// 收集 DLA 调试中间结果。
 	if result != nil {
 		result.DLADebug = append(result.DLADebug, pdf.DLAPageRegions{Page: pageNum, Regions: regions})
 	}
-	// Annotate boxes with DLA layout types (title, text, figure, table, ...).
+	// 用 DLA 区域为文本框标注 layout 类型。
 	scale := pdf.DlaScale
 	boxes = tbl.AnnotateBoxLayouts(boxes, regions, scale, float64(pageImg.Bounds().Dy()))
 
@@ -103,7 +102,7 @@ func (p *Parser) extractTableBoxesFromImage(ctx context.Context, result *pdf.Par
 	return items
 }
 
-// processOneTable handles DLA+TSR+OCR for a single table region match.
+// processOneTable 对单个表格 DLA 匹配区域执行裁剪、方向检测、TSR、OCR 与注释写回。
 func (p *Parser) processOneTable(ctx context.Context, result *pdf.ParseResult, boxes []pdf.TextBox, pageImg image.Image, pageNum int, docAnalyzer pdf.DocAnalyzer, tb pdf.TableBuilder, tm tbl.TableMatch, scale float64, tableIdx int) pdf.TableItem {
 	cropped, cropErr := util.CropImageRegion(pageImg, tm.Region)
 	if cropErr != nil {

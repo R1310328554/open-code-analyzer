@@ -1,3 +1,5 @@
+// table_orient.go — 表格方向检测：对裁剪图尝试 0/90/180/270° 旋转，用 OCR 检测区域数与面积评分选最佳朝向。
+
 package table
 
 import (
@@ -11,15 +13,7 @@ import (
 	"ragflow/internal/deepdoc/parser/pdf/util"
 )
 
-// EvaluateTableOrientation tests 4 rotation angles (0/90/180/270) and picks
-// the best orientation based on OCR detect-region count and area coverage.
-//
-// Returns bestAngle (0/90/180/270), the rotated image, and per-angle scores.
-//
-// Absolute threshold: non-0° wins only if its combined score exceeds 0° by
-// more than 1.4× AND the 0° score is below 6.0.
-//
-// Python: pdf_parser.py:314 _evaluate_table_orientation()
+// EvaluateTableOrientation 测试四向旋转，按 OCR 检测框数量与面积比评分选最佳角度。非 0° 须得分>1.4×0° 且 0°<6.0 才采纳。对齐 Python _evaluate_table_orientation。
 func EvaluateTableOrientation(ctx context.Context, tableImg image.Image, doc pdf.DocAnalyzer) (bestAngle int, bestImg image.Image, scores map[int]float64) {
 	rotations := []struct {
 		angle int
@@ -52,7 +46,7 @@ func EvaluateTableOrientation(ctx context.Context, tableImg image.Image, doc pdf
 			continue
 		}
 
-		// Score by detect-region count (primary) + area (tiebreaker).
+		// 评分：检测区域数为主，面积占比为 tiebreaker。
 		imageArea := float64(rotated.Bounds().Dx() * rotated.Bounds().Dy())
 		totalRegions := 0
 		var totalArea float64
@@ -88,8 +82,7 @@ func EvaluateTableOrientation(ctx context.Context, tableImg image.Image, doc pdf
 		}
 	}
 
-	// Absolute threshold: only accept non-0° if region count is clearly
-	// higher (≥1.4×) AND 0° has few regions (< 6).
+	// 绝对阈值：仅当非 0° 得分≥1.4×0° 且 0° 区域数<6 时才采用旋转。
 	score0 := scores[0]
 	if bestAngle != 0 && score0 > 0 {
 		if !(bestScore > score0*1.4 && score0 < 6.0) {

@@ -1,3 +1,5 @@
+// table_annotate.go — PDF 表格解析中的 DLA 区域匹配与布局标注：将 DLA 检测区域与文本框配对、按优先级写入 layout 类型，并为表格单元格写入 R/C/H/SP 网格注释，对齐 Python LayoutRecognizer 与 _table_transformer_job。
+
 package table
 
 import (
@@ -8,16 +10,17 @@ import (
 	"ragflow/internal/deepdoc/parser/pdf/util"
 )
 
-// ── region matching ────────────────────────────────────────────────────
+// ── 区域匹配 ──
 
-// tableMatch pairs a DLA table region with the indices of boxes that overlap it.
+// TableMatch 将 DLA 表格区域与与之重叠的文本框索引列表配对。
 type TableMatch struct {
 	Region pdf.DLARegion
 	BoxIdx []int
 }
 
-// ── region matching ────────────────────────────────────────────────────
 
+
+// regionOverlapsBox 判断 DLA 区域与文本框是否重叠≥40%（按框面积计）。
 func regionOverlapsBox(region pdf.DLARegion, box pdf.TextBox, scale float64) bool {
 	rx0 := region.X0 / scale
 	ry0 := region.Y0 / scale
@@ -29,13 +32,10 @@ func regionOverlapsBox(region pdf.DLARegion, box pdf.TextBox, scale float64) boo
 	if boxArea <= 0 {
 		return false
 	}
-	return inter/boxArea >= 0.4 // matches Python thr=0.4
+	return inter/boxArea >= 0.4 // 与 Python thr=0.4 一致
 }
 
-// matchTableRegions pairs DLA table regions with boxes that overlap them.
-// Each table region is matched if at least one box overlaps it (>40% of box
-// area) or if there are no boxes at all (image-only PDF), matching Python's
-// _table_transformer_job which processes every table DLA region.
+// MatchTableRegions 将 DLA 表格区域与重叠文本框配对。至少一个框重叠面积≥40%，或无文本框（纯图片 PDF）时仍保留该区域，对齐 Python _table_transformer_job。
 func MatchTableRegions(boxes []pdf.TextBox, regions []pdf.DLARegion, scale float64) []TableMatch {
 	var matches []TableMatch
 	for _, r := range regions {
@@ -55,31 +55,15 @@ func MatchTableRegions(boxes []pdf.TextBox, regions []pdf.DLARegion, scale float
 	return matches
 }
 
-// ── layout annotation ──────────────────────────────────────────────────
+// ── 布局标注 ──
 
-// annotateBoxLayouts sets LayoutType and LayoutNo on each box, matching
-// Python's LayoutRecognizer.__call__ which assigns layout types in priority
-// order (footer→header→…→equation) with an overlap threshold of 40% of the
-// box's area.
-//
-// Python: _layouts_rec (pdf_parser.py:827) → LayoutRecognizer.__call__ →
-//
-//	for lt in priority_order: findLayout(lt)
-//
-// Each findLayout(ty): for each unannotated box, find the DLA region of
-// type ty with max overlap ≥ 0.4 × box_area.  First type to match wins.
-//
-// CID-pattern boxes (e.g. "(cid:123)") are skipped as garbage.
-// annotateBoxLayouts assigns LayoutType and LayoutNo to boxes based on DLA
-// regions.  Returns the filtered slice (Python pops CID-garbled boxes and
-// garbage-layout boxes at wrong positions — Go mirrors with compact).
-// Also creates synthetic figure boxes for unmatched figure/equation regions.
+// AnnotateBoxLayouts 按 DLA 区域为文本框写入 LayoutType/LayoutNo，优先级顺序 footer→header→…→equation，重叠阈值 40%。跳过 CID 乱码框，压缩移除垃圾布局框，并为未匹配的 figure/equation 区域合成空文本框。对齐 Python LayoutRecognizer.__call__ 与 _layouts_rec。
 func AnnotateBoxLayouts(boxes []pdf.TextBox, regions []pdf.DLARegion, scale float64, pageImgHeight float64) []pdf.TextBox {
 	if len(regions) == 0 {
 		return boxes
 	}
 
-	// Scale all regions to PDF space once.
+	// 一次性将所有 DLA 区域缩放到 PDF 坐标空间。
 	type scaledRegion struct {
 		x0, y0, x1, y1 float64
 		label          string
@@ -93,15 +77,13 @@ func AnnotateBoxLayouts(boxes []pdf.TextBox, regions []pdf.DLARegion, scale floa
 		}
 	}
 
-	// DLA confidence filter — matches Python's `score >= 0.4`.
+	// DLA 置信度过滤，对齐 Python score >= 0.4。
 	regionOK := make([]bool, len(regions))
 	for i, r := range regions {
 		regionOK[i] = r.Confidence >= 0.4 || !isGarbageLayoutType(r.Label)
 	}
 
-	// Pre-compute per-type index for each region (Python: matched index within
-	// filtered layouts_of_type list). "text" regions get 0,1,2... independent
-	// of "figure" regions.
+	// 预计算各 layout 类型内的序号（Python matched 索引），text 与 figure 各自独立计数。
 	typeIndex := make([]int, len(regions))
 	typeCounters := make(map[string]int)
 	for j, r := range scaled {
@@ -111,13 +93,13 @@ func AnnotateBoxLayouts(boxes []pdf.TextBox, regions []pdf.DLARegion, scale floa
 		}
 	}
 
-	// Track visited regions (Python: layout["visited"] = True).
+	// 标记已访问区域（Python layout["visited"]）。
 	visited := make([]bool, len(regions))
 
-	// Marks for Python-style pop removal.
+	// 标记待 pop 移除的框（Python bxs.pop）。
 	dropped := make([]bool, len(boxes))
 
-	// Priority order matching Python's findLayout loop.
+	// 与 Python findLayout 循环一致的优先级顺序。
 	priorityOrder := []string{
 		pdf.LayoutTypeFooter, pdf.LayoutTypeHeader, pdf.LayoutTypeReference,
 		pdf.DLALabelFigureCaption, pdf.DLALabelTableCaption,
@@ -129,7 +111,7 @@ func AnnotateBoxLayouts(boxes []pdf.TextBox, regions []pdf.DLARegion, scale floa
 			if boxes[i].LayoutType != "" || dropped[i] {
 				continue
 			}
-			// CID garbage: pop the box entirely (Python: bxs.pop(i)).
+			// CID 乱码：整框 pop 移除。
 			if util.CIDPattern.MatchString(boxes[i].Text) {
 				dropped[i] = true
 				continue
@@ -157,30 +139,25 @@ func AnnotateBoxLayouts(boxes []pdf.TextBox, regions []pdf.DLARegion, scale floa
 				}
 			}
 			if bestJ >= 0 && bestOverlap >= 0.4 {
-				// Garbage layout not at page edge → pop (Python: bxs.pop(i)).
+				// 非页边垃圾布局 → pop 移除。
 				if isGarbageLayoutType(ty) && pageImgHeight > 0 && !garbageKeepFeat(ty, boxes[i], pageImgHeight/scale) {
 					dropped[i] = true
 					continue
 				}
 				visited[bestJ] = true
-				// Python: equation mapped to "figure" for layout_type
+				// Python：equation 映射为 figure 的 layout_type
 				if ty == pdf.LayoutTypeEquation {
 					boxes[i].LayoutType = pdf.LayoutTypeFigure
 				} else {
 					boxes[i].LayoutType = ty
 				}
-				// Python: f"{layout_type}-{matched}" where matched is per-type index
+				// Python：LayoutNo 格式为 "{layout_type}-{matched}"，matched 为类型内序号
 				boxes[i].LayoutNo = fmt.Sprintf("%s-%d", ty, typeIndex[bestJ])
 			}
 		}
 	}
 
-	// Compact: remove popped boxes into a new backing array (Python
-	// bxs.pop).  Allocating a fresh slice is deliberate: annotations were
-	// set in-place on the input elements, and callers (enrichWithDeepDoc)
-	// rely on positional stability of the original slice for their
-	// write-back loop.  Reusing the input backing array would shift
-	// survivors forward and break that index mapping.
+	// 压缩：将未 pop 的框写入新切片（Python bxs.pop）。故意分配新数组：调用方 enrichWithDeepDoc 依赖原索引写回，复用原 backing 会破坏映射。
 	survivors := 0
 	for i := range boxes {
 		if !dropped[i] {
@@ -195,8 +172,7 @@ func AnnotateBoxLayouts(boxes []pdf.TextBox, regions []pdf.DLARegion, scale floa
 	}
 	boxes = compacted
 
-	// Synthetic figure boxes for unmatched figure/equation regions (Python:
-	// dla_cli.py:187-195). Use a fresh per-type counter for synthetic boxes.
+	// 为未匹配的 figure/equation 区域合成空文本框（Python dla_cli.py:187-195）。
 	synthIdx := 0
 	for j, r := range scaled {
 		if !regionOK[j] || visited[j] {
@@ -220,19 +196,18 @@ func AnnotateBoxLayouts(boxes []pdf.TextBox, regions []pdf.DLARegion, scale floa
 	return boxes
 }
 
-// ── garbage layout helpers ────────────────────────────────────────────
-// garbageLayoutTypes matches Python's self.garbage_layouts.
+// ── 垃圾布局辅助 ──
+// garbageLayoutTypes 对应 Python self.garbage_layouts。
 var garbageLayoutTypes = map[string]bool{
 	pdf.LayoutTypeFooter: true, pdf.LayoutTypeHeader: true, pdf.LayoutTypeReference: true,
 }
 
+// isGarbageLayoutType 判断 layout 类型是否为页眉/页脚/参考文献等垃圾布局。
 func isGarbageLayoutType(ty string) bool {
 	return garbageLayoutTypes[ty]
 }
 
-// garbageKeepFeat matches Python's keep_feats in LayoutRecognizer.__call__:
-// footer near page bottom (>90% of page height) or header near page top (<10%)
-// are real page decorations — keep them.  Others are DLA noise.
+// garbageKeepFeat 对齐 Python keep_feats：页脚靠近底边或页眉靠近顶边视为真实页眉页脚，其余为 DLA 噪声。
 func garbageKeepFeat(ty string, box pdf.TextBox, pageImgHeight float64) bool {
 	switch ty {
 	case pdf.LayoutTypeFooter:
@@ -243,9 +218,7 @@ func garbageKeepFeat(ty string, box pdf.TextBox, pageImgHeight float64) bool {
 	return false
 }
 
-// writeTableAnnotations annotates boxes at boxIdx with table cell grid
-// information (R/C/H/SP).  Cells are offset by cropOff, grouped into a grid,
-// and annotation fields are scaled back to PDF space for each box.
+// WriteTableAnnotations 为 boxIdx 指定框写入表格网格注释 R/C/H/SP：单元格加 crop 偏移、分组为 grid，再将注释坐标缩放回 PDF 空间。
 func WriteTableAnnotations(boxes []pdf.TextBox, boxIdx []int, cells []pdf.TSRCell, scale, cropOffX, cropOffY float64, tb pdf.TableBuilder) {
 	tableCells := make([]pdf.TSRCell, len(cells))
 	for k := range cells {

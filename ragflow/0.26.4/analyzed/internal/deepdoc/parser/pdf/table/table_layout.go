@@ -1,3 +1,5 @@
+// table_layout.go — TSR 后布局清理与表格框 R/C/H/SP 标注：单元格排序、重叠去重、阈值匹配与网格注释写入，对齐 Python pdf_parser gather/layouts_cleanup。
+
 package table
 
 import (
@@ -7,11 +9,9 @@ import (
 	"sort"
 )
 
-// ── Post-TSR layout annotation (Python: pdf_parser.py gather/layouts_cleanup) ──
+// ── TSR 后布局标注（Python pdf_parser gather/layouts_cleanup）──
 
-// SortYFirstly sorts cells by top, with fuzzy threshold: if two cells are
-// within threshold Y pixels, sort by X instead (same-row ordering).
-// Python: Recognizer.sort_Y_firstly(arr, threshold)
+// SortYFirstly 按 Y0 排序；Y 差小于阈值时改按 X 排序（同行内从左到右），对齐 Python sort_Y_firstly。
 func SortYFirstly(cells []pdf.TSRCell, threshold float64) {
 	sort.Slice(cells, func(i, j int) bool {
 		diff := cells[i].Y0 - cells[j].Y0
@@ -22,7 +22,7 @@ func SortYFirstly(cells []pdf.TSRCell, threshold float64) {
 	})
 }
 
-// SortXFirstly sorts cells by x0, with fuzzy threshold for top.
+// SortXFirstly 按 X0 排序；X 差小于阈值时改按 Y 排序。
 func SortXFirstly(cells []pdf.TSRCell, threshold float64) {
 	sort.Slice(cells, func(i, j int) bool {
 		diff := cells[i].X0 - cells[j].X0
@@ -33,14 +33,9 @@ func SortXFirstly(cells []pdf.TSRCell, threshold float64) {
 	})
 }
 
-// layoutCleanup removes duplicate/overlapping cells of the same type.
-// Python: Recognizer.layouts_cleanup(boxes, layouts, far=2, thr=0.7)
-//
-// For each cell, checks the next `far` cells; if they overlap significantly
-// AND have the same label type, the one with lower score (or less box overlap
-// area) is removed.
+// layoutCleanup 移除同类型重叠单元格，对齐 Python layouts_cleanup(far=2, thr=0.7)。在后续 far 个单元格中找重叠且同 label 者，保留与文本框重叠更多的一方。
 func layoutCleanup(cells []pdf.TSRCell, boxes []pdf.TextBox, far int, thr float64) []pdf.TSRCell {
-	// cells are assumed pre-sorted (caller sorts before passing)
+	// 调用方传入前须已排序。
 	out := make([]pdf.TSRCell, len(cells))
 	copy(out, cells)
 
@@ -58,7 +53,7 @@ func layoutCleanup(cells []pdf.TSRCell, boxes []pdf.TextBox, far int, thr float6
 			i++
 			continue
 		}
-		// Cells i and j overlap and have same type. Keep one.
+		// 单元格 i 与 j 重叠且同类型，保留其一。
 		areaI := util.OverlapRatioA(&out[i], &out[j])
 		areaJ := util.OverlapRatioA(&out[j], &out[i])
 		if areaI < thr && areaJ < thr {
@@ -66,7 +61,7 @@ func layoutCleanup(cells []pdf.TSRCell, boxes []pdf.TextBox, far int, thr float6
 			continue
 		}
 
-		// Prefer the one that overlaps more with text boxes.
+		// 优先保留与文本框重叠面积更大者。
 		boxAreaI, boxAreaJ := 0.0, 0.0
 		for _, b := range boxes {
 			if !tsrBoxOverlap(b, out[i]) {
@@ -85,27 +80,24 @@ func layoutCleanup(cells []pdf.TSRCell, boxes []pdf.TextBox, far int, thr float6
 	return out
 }
 
-// notOverlapped returns true if cells a and b do NOT overlap.
+// notOverlapped 判断两 TSR 单元格是否不重叠。
 func notOverlapped(a, b pdf.TSRCell) bool {
 	return a.X1 < b.X0 || a.X0 > b.X1 || a.Y1 < b.Y0 || a.Y0 > b.Y1
 }
 
-// tsrBoxOverlap returns true if a pdf.TextBox and a pdf.TSRCell do NOT overlap.
+// tsrBoxOverlap 判断 TextBox 与 TSR 单元格是否不重叠。
 func tsrBoxOverlap(b pdf.TextBox, c pdf.TSRCell) bool {
 	return b.X1 < c.X0 || b.X0 > c.X1 || b.Bottom < c.Y0 || b.Top > c.Y1
 }
 
-// findOverlappedWithThreshold returns the index of the cell with the best
-// bidirectional overlap >= thr, or -1 if none.
-// Python: Recognizer.find_overlapped_with_threshold(box, boxes, thr=0.3)
-// Python uses max(boxRatio, cellRatio) for both gate and scoring.
+// findOverlappedWithThreshold 返回双向重叠≥thr 的最佳单元格索引，对齐 Python find_overlapped_with_threshold。
 func findOverlappedWithThreshold(box pdf.TextBox, cells []pdf.TSRCell, thr float64) int {
 	boxArea := util.Area(&box)
 	if boxArea <= 0 {
 		return -1
 	}
 	bestIdx := -1
-	bestOverlap := thr // Python: max_overlap starts at thr
+	bestOverlap := thr // Python：max_overlap 初始为 thr
 	for i, c := range cells {
 		cellArea := util.Area(&c)
 		if cellArea <= 0 {
@@ -117,7 +109,7 @@ func findOverlappedWithThreshold(box pdf.TextBox, cells []pdf.TSRCell, thr float
 		}
 		boxRatio := ol / boxArea
 		cellRatio := ol / cellArea
-		// Python: max(cls.overlapped_area(box, layout), cls.overlapped_area(layout, box))
+		// Python：取 box 与 cell 双向重叠比的最大值
 		overlap := math.Max(boxRatio, cellRatio)
 		if overlap >= bestOverlap {
 			bestOverlap = overlap
@@ -127,16 +119,12 @@ func findOverlappedWithThreshold(box pdf.TextBox, cells []pdf.TSRCell, thr float
 	return bestIdx
 }
 
-// findHorizontallyTightestFit returns the index of the column cell that
-// horizontally contains the box with minimal width difference.
-// Python: Recognizer.find_horizontally_tightest_fit(b, clmns)
-// findHorizontallyTightestFit returns the column index with minimum
-// edge distance to the box.  Python: Recognizer.find_horizontally_tightest_fit.
+// findHorizontallyTightestFit 返回与框水平边缘距离最小的列索引，对齐 Python find_horizontally_tightest_fit。
 func findHorizontallyTightestFit(box pdf.TextBox, clmns []pdf.TSRCell) int {
 	best := -1
 	bestDist := float64(1<<63 - 1)
 	for i, c := range clmns {
-		// Minimum edge distance between box and column boundaries.
+		// 框与列边界的最小边缘距离。
 		dl := math.Abs(box.X0 - c.X0)
 		dr := math.Abs(box.X1 - c.X1)
 		d := math.Min(dl, dr)
@@ -148,12 +136,9 @@ func findHorizontallyTightestFit(box pdf.TextBox, clmns []pdf.TSRCell) int {
 	return best
 }
 
-// annotateTableBoxes tags table boxes with row/header/column indices using
-// TSR cell labels. Matching Python's R/H/C/SP annotation logic.
-//
-// Python: pdf_parser.py:518-554
+// AnnotateTableBoxes 用 TSR 网格为表格 TextBox 写入 R/H/C/SP 注释，对齐 Python pdf_parser.py:518-554。
 func AnnotateTableBoxes(boxes []pdf.TextBox, grid [][]pdf.TSRCell) {
-	// grid[0] is the header row.  Spans are computed by calSpans later.
+	// grid[0] 为表头行；span 由 CalSpans 后续计算。
 	var headers, spans []pdf.TSRCell
 	var clmns []pdf.TSRCell
 	if len(grid) > 0 {
@@ -167,7 +152,7 @@ func AnnotateTableBoxes(boxes []pdf.TextBox, grid [][]pdf.TSRCell) {
 		if boxes[i].LayoutType != pdf.LayoutTypeTable {
 			continue
 		}
-		// Grid-based R/C: match box to the row and column it overlaps.
+		// 基于 grid：按重叠匹配行 R 与列 C。
 		for ri, row := range grid {
 			if idx := findOverlappedWithThreshold(boxes[i], row, 0.3); idx >= 0 {
 				boxes[i].R = ri
@@ -203,10 +188,9 @@ func AnnotateTableBoxes(boxes []pdf.TextBox, grid [][]pdf.TSRCell) {
 		}
 	}
 
-	// Two-pass C fallback: after all R values are assigned, compute C by X-order within each row.
-	// This matches Python's behavior when TSR provides few "table column" cells.
+	// 两遍 C 回退：列 TSR 不足时，各行内按 X 顺序分配列号 C，对齐 Python 行为。
 	if len(clmns) <= 1 {
-		// Collect all table boxes grouped by R.
+		// 按 R 分组收集所有表格 TextBox。
 		rBoxes := make(map[int][]int)
 		for i := range boxes {
 			if boxes[i].LayoutType == pdf.LayoutTypeTable {

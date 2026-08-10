@@ -1,3 +1,5 @@
+// table_construct.go — 表格 HTML 构造与后处理：从 TSR 单元格/注释框生成 HTML、清理 orphan 列、剥离 caption 与数据来源行。
+
 package table
 
 import (
@@ -9,41 +11,26 @@ import (
 	pdf "ragflow/internal/deepdoc/parser/pdf/type"
 )
 
-// constructTable produces an HTML table string from TSR cells and text boxes.
-// Both cells and boxes must be in the same coordinate space (crop pixel space).
-// Fills item.Rows so downstream consumers don't need to re-group cells.
-//
-// Python equivalent: TableStructureRecognizer.construct_table()
-// stripCaptionFromCells clears caption-like text from TSR cells.
-// This catches captions that fillCellTextFromBoxes missed (e.g. text
-// that doesn't match isCaptionBox patterns like "公司差旅费管理办法").
-// Only clears cells whose text matches caption patterns or that contain
-// only number+separator text (pure "1. ", "一、" etc. without data).
+// ConstructTable 从 TSR 单元格与文本框生成 HTML 表格（须同一 crop 像素坐标系）。填充 item.Rows 供下游使用。StripCaptionFromCells 清除 caption 类文字（含 fillCellTextFromBoxes 漏网项）。对齐 Python TableStructureRecognizer.construct_table。
 func StripCaptionFromCells(cells []pdf.TSRCell) {
 	for i := range cells {
 		t := strings.TrimSpace(cells[i].Text)
 		if t == "" {
 			continue
 		}
-		// Clear cells that match caption patterns (e.g. "表1", "Table 1").
+		// 清除匹配 caption 模式（如「表1」「Table 1」）的单元格文字。
 		if IsCaptionBox(t, "") {
 			cells[i].Text = ""
 		}
 	}
-	// Second pass: if the first row (lowest Y) has all-numeric/numbering text
-	// (e.g. "1", "1.", "一"), it's likely a caption numbering line — clear it.
-	// But don't clear actual numeric data cells.
-	// This pass is intentionally conservative — only clears clearly-non-data text.
+	// 第二遍：首行若全为序号类文字可能是 caption 编号行 — 保守清除，不误伤真实数据。
 }
 
 func ConstructTable(cells []pdf.TSRCell, boxes []pdf.TextBox, caption string, item *pdf.TableItem) string {
-	// Strip caption-like text from cells (defense-in-depth: fillCellTextFromBoxes
-	// may include caption text that doesn't match isCaptionBox patterns).
+	// 深度防御：剥离单元格中 caption 类文字。
 	StripCaptionFromCells(cells)
 
-	// Use the pre-computed grid from pdf.TableBuilder.GroupCells.
-	// Falls back to cell-level grouping only when called directly by tests
-	// without a pre-computed Grid (production always sets it).
+	// 优先使用 TableBuilder.GroupCells 预计算的 grid；测试无 grid 时回退 GroupTSRCellsToRows。
 	var rows [][]pdf.TSRCell
 	if item != nil {
 		rows = item.Grid
@@ -60,7 +47,7 @@ func ConstructTable(cells []pdf.TSRCell, boxes []pdf.TextBox, caption string, it
 		spanInfo, covered := CalSpans(rows)
 		return RowsToHTML(rows, caption, hdrs, spanInfo, covered)
 	}
-	// Fallback: boxes with R/C annotations.
+	// 回退：使用带 R/C 注释的文本框分组。
 	if len(boxes) > 0 && BoxesHaveAnnotations(boxes) {
 		rows := GroupBoxesByRC(boxes)
 		if HasText(rows) {
@@ -71,8 +58,7 @@ func ConstructTable(cells []pdf.TSRCell, boxes []pdf.TextBox, caption string, it
 			return RowsToHTML(rows, caption, BoxHeaderSet(rows, boxes), spanInfo, covered)
 		}
 	}
-	// Test-only: Y/X coordinate grouping (matching Python construct_table).
-	// Used by table_parity_test.go to verify pipeline with Python boxes.
+	// 仅测试：按 Y/X 坐标分组（table_parity_test.go 与 Python 框对齐验证）。
 	if len(boxes) > 0 && !BoxesHaveAnnotations(boxes) {
 		rows := GroupBoxesByYX(boxes)
 		if HasText(rows) {
@@ -86,7 +72,7 @@ func ConstructTable(cells []pdf.TSRCell, boxes []pdf.TextBox, caption string, it
 	return ""
 }
 
-// boxHeaderSet returns rows that contain boxes with H annotations.
+// BoxHeaderSet 返回含 H 注释框所在的行索引集合。
 func BoxHeaderSet(rows [][]pdf.TSRCell, boxes []pdf.TextBox) map[int]bool {
 	hdrs := make(map[int]bool)
 	for _, b := range boxes {
@@ -97,11 +83,9 @@ func BoxHeaderSet(rows [][]pdf.TSRCell, boxes []pdf.TextBox) map[int]bool {
 	return hdrs
 }
 
-// fillCellTextFromAnnotations fills cell text from text boxes using R/C labels.
-// This matches Python's construct_table which assigns boxes to cells by their
-// R (row) and C (col) annotations rather than spatial overlap.
+// FillCellTextFromAnnotations 按 R/C 注释（非空间重叠）将文本框文字填入单元格，对齐 Python construct_table。
 func FillCellTextFromAnnotations(rows [][]pdf.TSRCell, boxes []pdf.TextBox) {
-	// Build R→(C→text) map: row index → (col index → text).
+	// 构建 R→(C→text) 映射：行索引 → 列索引 → 文本列表。
 	rBoxes := make(map[int]map[int][]string)
 	for _, b := range boxes {
 		if b.Text == "" {
@@ -112,13 +96,13 @@ func FillCellTextFromAnnotations(rows [][]pdf.TSRCell, boxes []pdf.TextBox) {
 		}
 		rBoxes[b.R][b.C] = append(rBoxes[b.R][b.C], b.Text)
 	}
-	// Fill each cell from the matching R/C position.
+	// 按 R/C 位置填充各单元格。
 	for ri, row := range rows {
 		colMap := rBoxes[ri]
 		if colMap == nil {
 			continue
 		}
-		// Build sorted column list for positional matching.
+		// 构建排序后的列列表以便按位置匹配。
 		type colEntry struct {
 			c     int
 			texts []string
@@ -138,30 +122,21 @@ func FillCellTextFromAnnotations(rows [][]pdf.TSRCell, boxes []pdf.TextBox) {
 	}
 }
 
-// dataSourceRe matches table/figure boxes that should be discarded as
-// data-source attribution lines rather than extracted content.
-//
-// Python: pdf_parser.py:1040-1042, 1050-1052
-//
-//	re.match(r"(数据|资料|图表)*来源[:： ]", self.boxes[i]["text"])
+// dataSourceRe 匹配应丢弃的数据来源 attribution 行，对齐 Python pdf_parser.py:1040-1052。
 var dataSourceRe = regexp.MustCompile(`^(数据|资料|图表)*来源[:： ]`)
 
-// isDataSourceBox returns true if the box text matches the data-source
-// discard pattern (Python's _extract_table_figure data-source filter).
+// isDataSourceBox 判断文本框是否为数据来源行（Python _extract_table_figure 过滤）。
 func isDataSourceBox(text string) bool {
 	return dataSourceRe.MatchString(text)
 }
 
-// tableRegionBox returns a pdf.TextBox for a table replacement, using DLA region
-// boundaries when available (Region* set), falling back to anchor box coordinates.
-// Python's insert_table_figures uses DLA layout region boundaries; the fallback
-// handles test TableItems or bare engines without DLA.
+// tableRegionBox 生成表格替换用 TextBox：优先 DLA Region* 边界，否则用锚点框坐标。
 func tableRegionBox(tbl *pdf.TableItem, ref *pdf.TextBox, html string) pdf.TextBox {
 	pg := 0
 	if len(tbl.Positions) > 0 && len(tbl.Positions[0].PageNumbers) > 0 {
 		pg = tbl.Positions[0].PageNumbers[0]
 	}
-	// Use DLA region boundaries when set.
+	// 已设置 Region* 时使用 DLA 区域边界。
 	if tbl.RegionLeft != 0 || tbl.RegionRight != 0 || tbl.RegionTop != 0 || tbl.RegionBottom != 0 {
 		return pdf.TextBox{
 			X0:         tbl.RegionLeft,
@@ -173,7 +148,7 @@ func tableRegionBox(tbl *pdf.TableItem, ref *pdf.TextBox, html string) pdf.TextB
 			LayoutType: pdf.LayoutTypeTable,
 		}
 	}
-	// Fallback: use anchor box coordinates.
+	// 回退：使用锚点文本框坐标。
 	x0, x1, top, bot := ref.X0, ref.X1, ref.Top, ref.Bottom
 	return pdf.TextBox{
 		X0:         x0,
@@ -186,9 +161,7 @@ func tableRegionBox(tbl *pdf.TableItem, ref *pdf.TextBox, html string) pdf.TextB
 	}
 }
 
-// minRectangleDistance computes the Euclidean distance between two rectangles.
-// Returns 0 when rectangles overlap.  Matches Python's min_rectangle_distance
-// in insert_table_figures (pdf_parser.py:1609-1626).
+// minRectangleDistance 计算两矩形欧氏距离，重叠时为 0，对齐 Python insert_table_figures。
 func minRectangleDistance(left1, right1, top1, bottom1, left2, right2, top2, bottom2 float64) float64 {
 	if right1 >= left2 && right2 >= left1 && bottom1 >= top2 && bottom2 >= top1 {
 		return 0
@@ -207,10 +180,9 @@ func minRectangleDistance(left1, right1, top1, bottom1, left2, right2, top2, bot
 	return math.Sqrt(dx*dx + dy*dy)
 }
 
-// Orphan column/row cleanup (Python: construct_table lines 256-368)
+// 孤儿列清理（Python construct_table 256-368 行）
 
-// CleanupOrphanColumns removes columns that have only a single non-empty cell
-// when there are ≥4 rows. Matches Python's construct_table column cleanup.
+// CleanupOrphanColumns 当行数≥4 时移除仅有一个非空单元格的孤儿列，对齐 Python construct_table。
 func CleanupOrphanColumns(rows [][]pdf.TSRCell) [][]pdf.TSRCell {
 	if len(rows) < 4 || len(rows) == 0 {
 		return rows
@@ -219,40 +191,39 @@ func CleanupOrphanColumns(rows [][]pdf.TSRCell) [][]pdf.TSRCell {
 
 	j := 0
 	for j < nCols {
-		// Step 1: Count non-empty cells in column
+		// 步骤 1：统计列内非空单元格数
 		e, ii := countNonEmptyCells(rows, j)
 		if e > 1 {
 			j++
 			continue
 		}
 
-		// Step 2: Check adjacent columns
+		// 步骤 2：检查相邻列是否有文字
 		hasLeftText, hasRightText := checkAdjacentColumns(rows, j, ii)
 		if hasLeftText && hasRightText {
 			j++
 			continue
 		}
 
-		// Step 3: Calculate merge distance
+		// 步骤 3：计算向左/右合并的距离
 		leftDist, rightDist := calculateMergeDistance(rows, j, ii, nCols, hasLeftText, hasRightText)
 
-		// Step 4: Merge the column
+		// 步骤 4：合并孤儿列到左或右邻列
 		if leftDist < rightDist && j > 0 {
 			mergeColumnIntoLeft(rows, j)
 		} else if j+1 < nCols {
 			mergeColumnIntoRight(rows, j)
 		}
 
-		// Step 5: Remove the column
+		// 步骤 5：删除该列
 		rows = removeColumn(rows, j)
 		nCols--
-		// Don't increment j — the next column shifted into position j.
+		// 不递增 j — 下一列已移入位置 j。
 	}
 	return rows
 }
 
-// countNonEmptyCells counts non-empty cells in a column and returns the count
-// and the index of the last non-empty row.
+// countNonEmptyCells 统计列内非空单元格数及最后一个非空行索引。
 func countNonEmptyCells(rows [][]pdf.TSRCell, col int) (count int, lastRow int) {
 	count = 0
 	lastRow = 0
@@ -265,14 +236,14 @@ func countNonEmptyCells(rows [][]pdf.TSRCell, col int) (count int, lastRow int) 
 	return count, lastRow
 }
 
-// checkAdjacentColumns checks if left and right adjacent columns have text in the given row.
+// checkAdjacentColumns 检查给定行上左右邻列是否有文字。
 func checkAdjacentColumns(rows [][]pdf.TSRCell, col int, row int) (hasLeft bool, hasRight bool) {
 	hasLeft = (col > 0 && col-1 < len(rows[row]) && strings.TrimSpace(rows[row][col-1].Text) != "") || col == 0
 	hasRight = (col+1 < len(rows[row]) && strings.TrimSpace(rows[row][col+1].Text) != "") || col+1 >= len(rows[row])
 	return hasLeft, hasRight
 }
 
-// calculateMergeDistance calculates the minimum distance to merge into left or right column.
+// calculateMergeDistance 计算向左/右列合并的最小距离。
 func calculateMergeDistance(rows [][]pdf.TSRCell, col int, row int, nCols int, hasLeft bool, hasRight bool) (leftDist float64, rightDist float64) {
 	leftDist = 1e9
 	rightDist = 1e9
@@ -300,7 +271,7 @@ func calculateMergeDistance(rows [][]pdf.TSRCell, col int, row int, nCols int, h
 	return leftDist, rightDist
 }
 
-// mergeColumn merges column src into column dst.
+// mergeColumn 将 src 列文字合并到 dst 列。
 func mergeColumn(rows [][]pdf.TSRCell, src, dst int) {
 	for i := range rows {
 		if src < len(rows[i]) && dst < len(rows[i]) {
@@ -317,17 +288,17 @@ func mergeColumn(rows [][]pdf.TSRCell, src, dst int) {
 	}
 }
 
-// mergeColumnIntoLeft merges column j into column j-1.
+// mergeColumnIntoLeft 将第 j 列合并到 j-1 列。
 func mergeColumnIntoLeft(rows [][]pdf.TSRCell, j int) {
 	mergeColumn(rows, j, j-1)
 }
 
-// mergeColumnIntoRight merges column j into column j+1.
+// mergeColumnIntoRight 将第 j 列合并到 j+1 列。
 func mergeColumnIntoRight(rows [][]pdf.TSRCell, j int) {
 	mergeColumn(rows, j, j+1)
 }
 
-// removeColumn removes column j from all rows.
+// removeColumn 从所有行删除第 j 列。
 func removeColumn(rows [][]pdf.TSRCell, j int) [][]pdf.TSRCell {
 	for i := range rows {
 		if j < len(rows[i]) {

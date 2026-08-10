@@ -1,4 +1,6 @@
 
+// table_merge.go — 跨页表格合并：将相邻页 X 重叠且 Y 邻近的 TableItem 合并为一张表，尊重 NoMerge 标记。
+
 package table
 
 import (
@@ -7,14 +9,12 @@ import (
 	pdf "ragflow/internal/deepdoc/parser/pdf/type"
 )
 
-// MergeTablesAcrossPages merges TableItems on consecutive pages with
-// overlapping X and close Y proximity.  Matches Python's
-// _extract_table_figure table merge (pdf_parser.py:1061-1080).
+// MergeTablesAcrossPages 合并连续页 X 重叠且 Y 邻近的 TableItem，对齐 Python _extract_table_figure 表格合并。
 func MergeTablesAcrossPages(tables []pdf.TableItem, medianHeights map[int]float64) []pdf.TableItem {
 	if len(tables) <= 1 {
 		return tables
 	}
-	// Sort by position for deterministic adjacency.
+	// 按页码与 top 排序以保证确定性邻接关系。
 	type indexed struct {
 		idx int
 		pg  int
@@ -49,8 +49,7 @@ func MergeTablesAcrossPages(tables []pdf.TableItem, medianHeights map[int]float6
 		anchor := tables[it.idx]
 		merged[it.idx] = true
 
-		// Python nomerge_lout_no: tables whose box is followed by a
-		// caption/title/reference should not be merged cross-page.
+		// Python nomerge_lout_no：其后紧跟 caption/title/reference 的表格禁止跨页合并。
 		if anchor.NoMerge {
 			result = append(result, anchor)
 			continue
@@ -59,18 +58,17 @@ func MergeTablesAcrossPages(tables []pdf.TableItem, medianHeights map[int]float6
 		anchorPg := it.pg
 		anchorBtm := anchor.Positions[0].Bottom
 
-		// Look for consecutive-page continuations.
+		// 查找连续页的续表候选。
 		for _, jt := range items {
 			if merged[jt.idx] || jt.pg <= anchorPg {
 				continue
 			}
-			// Python nomerge_lout_no: skip continuation candidates
-			// tagged as no-merge.
+			// Python nomerge_lout_no：跳过已标记 NoMerge 的候选。
 			if tables[jt.idx].NoMerge {
 				continue
 			}
 			if jt.pg-anchorPg > 1 {
-				break // pages must be consecutive
+				break // 页码必须连续
 			}
 			if len(tables[jt.idx].Positions) == 0 {
 				continue
@@ -83,13 +81,12 @@ func MergeTablesAcrossPages(tables []pdf.TableItem, medianHeights map[int]float6
 			if bpg != anchorPg+1 {
 				continue
 			}
-			// Check X overlap.
+			// 检查 X 方向重叠。
 			ap := anchor.Positions[0]
 			if ap.Right < bp.Left || bp.Right < ap.Left {
 				continue
 			}
-			// Check Y proximity: page 1 table top should be close below
-			// page 0 table bottom.  Python: y_dis <= mh * 23.
+			// 检查 Y 邻近：续表 top 应靠近前表 bottom，Python：y_dis <= mh * 23。
 			mh := 10.0
 			if medianHeights != nil {
 				if h, ok := medianHeights[anchorPg]; ok && h > 0 {
@@ -100,7 +97,7 @@ func MergeTablesAcrossPages(tables []pdf.TableItem, medianHeights map[int]float6
 			if yDis > mh*23 {
 				continue
 			}
-			// Merge: combine cells and positions.
+			// 合并：拼接 cells 与 positions，合并 caption。
 			anchor.Cells = append(anchor.Cells, tables[jt.idx].Cells...)
 			anchor.Positions = append(anchor.Positions, tables[jt.idx].Positions...)
 			if tables[jt.idx].Caption != "" {
@@ -116,8 +113,7 @@ func MergeTablesAcrossPages(tables []pdf.TableItem, medianHeights map[int]float6
 		}
 		result = append(result, anchor)
 	}
-	// Append unprocessed tables (those with empty Positions) so they
-	// are not silently dropped from the output.
+	// 追加 Positions 为空的未处理表，避免静默丢失。
 	for i := range tables {
 		if !merged[i] {
 			result = append(result, tables[i])

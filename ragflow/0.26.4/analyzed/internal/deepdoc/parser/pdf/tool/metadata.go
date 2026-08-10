@@ -1,3 +1,5 @@
+// metadata.go — 从输出文本 #@meta 行读取管道阶段元数据：解析 Python 与 Go 批处理 txt 末尾 JSON，供 CompareWithPython 对齐指标。
+
 package tool
 
 import (
@@ -8,7 +10,7 @@ import (
 	"unicode/utf8"
 )
 
-// ReadPythonTextMeta reads Python pipeline stage data from #@meta lines.
+// ReadPythonTextMeta 从 Python 输出 txt 的 #@meta 行读取管道阶段统计。
 func ReadPythonTextMeta(pyTextDir string) ([]PyResult, error) {
 	entries, err := os.ReadDir(pyTextDir)
 	if err != nil {
@@ -47,7 +49,7 @@ func ReadPythonTextMeta(pyTextDir string) ([]PyResult, error) {
 	return results, nil
 }
 
-// ReadGoTextMeta reads Go pipeline stage data from #@meta lines.
+// ReadGoTextMeta 从 Go 输出 txt 的 #@meta 行读取管道阶段统计。
 func ReadGoTextMeta(goTextDir string) ([]BatchResult, error) {
 	entries, err := os.ReadDir(goTextDir)
 	if err != nil {
@@ -68,7 +70,7 @@ func ReadGoTextMeta(goTextDir string) ([]BatchResult, error) {
 			TextLen: utf8.RuneCount(data),
 		}
 		if idx := strings.LastIndex(string(data), "\n#@meta"); idx >= 0 {
-			r.TextLen = utf8.RuneCount(data[:idx]) // text only, exclude #@meta
+			r.TextLen = utf8.RuneCount(data[:idx]) // 仅正文长度，不含 #@meta
 			var meta struct {
 				Chars    int `json:"chars"`
 				BoxesIn  int `json:"boxes_initial"`

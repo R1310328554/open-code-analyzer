@@ -1,12 +1,14 @@
+// table_coords.go — 表格相关坐标空间转换：在 crop 像素空间、页面 72 DPI 空间之间转换 TSR 单元格与 TextBox，并复制网格注释字段。
+
 package table
 
 import (
 	pdf "ragflow/internal/deepdoc/parser/pdf/type"
 )
 
-// ── coordinate space conversion helpers ──────────────────────────────
+// ── 坐标空间转换辅助 ──
 
-// CellToPageSpace converts from crop-pixel space to page-global 72-DPI space.
+// CellToPageSpace 将单元格从 crop 像素空间转为页面全局 72 DPI 空间。
 func CellToPageSpace(c pdf.TSRCell, cropOffX, cropOffY, scale float64) pdf.TSRCell {
 	return pdf.TSRCell{
 		X0: (c.X0 + cropOffX) / scale, Y0: (c.Y0 + cropOffY) / scale,
@@ -15,7 +17,7 @@ func CellToPageSpace(c pdf.TSRCell, cropOffX, cropOffY, scale float64) pdf.TSRCe
 	}
 }
 
-// CellAddOffset applies a crop offset to cell coordinates (stays in pixel space).
+// CellAddOffset 对单元格坐标加 crop 偏移（仍在像素空间）。
 func CellAddOffset(c pdf.TSRCell, offX, offY float64) pdf.TSRCell {
 	return pdf.TSRCell{
 		X0: c.X0 + offX, Y0: c.Y0 + offY, X1: c.X1 + offX, Y1: c.Y1 + offY,
@@ -23,7 +25,7 @@ func CellAddOffset(c pdf.TSRCell, offX, offY float64) pdf.TSRCell {
 	}
 }
 
-// CellSliceToPageSpace converts a slice of cells from crop-pixel to page DPI space.
+// CellSliceToPageSpace 批量将单元格从 crop 像素转为页面 DPI 空间。
 func CellSliceToPageSpace(cells []pdf.TSRCell, cropOffX, cropOffY, scale float64) []pdf.TSRCell {
 	out := make([]pdf.TSRCell, len(cells))
 	for i, c := range cells {
@@ -32,7 +34,7 @@ func CellSliceToPageSpace(cells []pdf.TSRCell, cropOffX, cropOffY, scale float64
 	return out
 }
 
-// BoxToCropSpace converts a pdf.TextBox from PDF-point space to crop-pixel space.
+// BoxToCropSpace 将 TextBox 从 PDF 点空间转为 crop 像素空间。
 func BoxToCropSpace(b pdf.TextBox, scale, cropOffX, cropOffY float64) pdf.TextBox {
 	return pdf.TextBox{
 		X0: b.X0*scale - cropOffX, X1: b.X1*scale - cropOffX,
@@ -41,7 +43,7 @@ func BoxToCropSpace(b pdf.TextBox, scale, cropOffX, cropOffY float64) pdf.TextBo
 	}
 }
 
-// CopyBoxAnnotations copies the DLA/TSR annotation fields from src to dst.
+// CopyBoxAnnotations 将 src 的 DLA/TSR 注释字段（R/C/H/SP 等）复制到 dst。
 func CopyBoxAnnotations(dst, src *pdf.TextBox) {
 	dst.R = src.R
 	dst.C = src.C

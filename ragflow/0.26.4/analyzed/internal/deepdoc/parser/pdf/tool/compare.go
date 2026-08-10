@@ -1,3 +1,5 @@
+// compare.go — Go 与 Python PDF 管道输出对比：逐 PDF 统计 boxes/sections/文本相似度，生成 CSV/Excel 报告及 DLA/TSR/表格中间结果对比。
+
 package tool
 
 import (
@@ -16,7 +18,7 @@ import (
 	"golang.org/x/text/unicode/norm"
 )
 
-// Diff stores per-PDF comparison metrics between Go and Python output.
+// Diff 存储单个 PDF 的 Go 与 Python 输出对比指标。
 type Diff struct {
 	File             string
 	PagesOk          bool
@@ -33,7 +35,7 @@ type Diff struct {
 	RawLcsSim        float64 // LcsSim without space stripping
 }
 
-// CompareWithPython compares Go results against Python reference.
+// CompareWithPython 将 Go 批处理结果与 Python 参考输出逐项对比并打印汇总。
 func CompareWithPython(log TLogger, goResults []BatchResult, pyResults []PyResult, goTextDir, pyTextDir string) {
 	pyMap := make(map[string]PyResult, len(pyResults))
 	for _, pr := range pyResults {
@@ -85,14 +87,13 @@ func CompareWithPython(log TLogger, goResults []BatchResult, pyResults []PyResul
 		if goTxt, err := os.ReadFile(goTextPath); err == nil {
 			if pyTxt, err := os.ReadFile(pyTextPath); err == nil {
 				goStr, pyStr := string(goTxt), string(pyTxt)
-				// NFKC normalisation: fullwidth→halfwidth (e.g. "，（" → ",(")
+				// NFKC 归一化：全角→半角（如「，（」→「,(」）
 				goStr = norm.NFKC.String(goStr)
 				pyStr = norm.NFKC.String(pyStr)
 				d.CharSim = CharSimilarity(goStr, pyStr)
-				// Section-level LCS: align sections by position window,
-				// compute per-section LCS, bidirectional F1.
+				// 段落级 LCS：按位置窗口对齐段落，逐段 LCS 再双向 F1。
 				d.LcsSim = SectionAlignedScore(goStr, pyStr)
-				// Raw metrics without NFKC / space stripping.
+				// 原始指标：不做 NFKC/去空格。
 				d.RawCharSim = RawCharSimilarity(string(goTxt), string(pyTxt))
 				d.RawLcsSim = SectionAlignedScore(string(goTxt), string(pyTxt))
 			}
@@ -178,8 +179,8 @@ func CompareWithPython(log TLogger, goResults []BatchResult, pyResults []PyResul
 	log.Logf("  %s", label("RawCharDiff", computeStats(func(d Diff) float64 { return 100 - d.RawCharSim })))
 	log.Logf("  %s", label("RawLcsDiff ", computeStats(func(d Diff) float64 { return 100 - d.RawLcsSim })))
 
-	// Auto-generate xlsx report with timestamp.
-	mode := filepath.Base(filepath.Dir(goTextDir)) // "ocr"
+	// 自动生成带时间戳的 xlsx 报告。
+	mode := filepath.Base(filepath.Dir(goTextDir)) // 通常为 "ocr"
 	ts := time.Now().Format("20060102_1504")
 	xlsxDir := filepath.Join("testdata", "output")
 	os.MkdirAll(xlsxDir, 0755)
@@ -190,7 +191,7 @@ func CompareWithPython(log TLogger, goResults []BatchResult, pyResults []PyResul
 		log.Logf("Excel report: %s", xlsxPath)
 	}
 
-	// Also write CSV if BATCH_CSV env is set (backward compat).
+	// 若设置 BATCH_CSV 环境变量则另写 CSV（向后兼容）。
 	if csvPath := os.Getenv("BATCH_CSV"); csvPath != "" {
 		if err := WriteCSV(csvPath, diffs); err != nil {
 			log.Logf("CSV write error: %v", err)
@@ -200,8 +201,7 @@ func CompareWithPython(log TLogger, goResults []BatchResult, pyResults []PyResul
 	}
 }
 
-// WriteCSV writes comparison results to a CSV file using encoding/csv
-// for proper field escaping (filenames may contain commas/quotes).
+// WriteCSV 用 encoding/csv 写入对比结果，正确转义含逗号/引号的文件名。
 func WriteCSV(path string, diffs []Diff) error {
 	f, err := os.Create(path)
 	if err != nil {
@@ -237,14 +237,14 @@ func WriteCSV(path string, diffs []Diff) error {
 	return w.Error()
 }
 
-// WriteExcel writes comparison results to an xlsx file with formatting.
+// WriteExcel 写入带条件着色的 xlsx 对比报告。
 func WriteExcel(path string, diffs []Diff) error {
 	f := excelize.NewFile()
 	defer f.Close()
 	sheet := "Comparison"
 	f.SetSheetName("Sheet1", sheet)
 
-	// Styles.
+	// 定义表头/绿黄红条件格式样式。
 	headerStyle, _ := f.NewStyle(&excelize.Style{
 		Font:      &excelize.Font{Bold: true},
 		Fill:      excelize.Fill{Type: "pattern", Pattern: 1, Color: []string{"D9E1F2"}},
@@ -263,7 +263,7 @@ func WriteExcel(path string, diffs []Diff) error {
 		NumFmt: 2,
 	})
 
-	// Header row.
+	// 写入表头行。
 	headers := []string{"File", "Init%", "TM%", "VM%", "Sec%", "Txt%", "TabsD", "ChrDiff%", "LcsDiff%"}
 	for i, h := range headers {
 		cell, _ := excelize.CoordinatesToCellName(i+1, 1)
@@ -271,7 +271,7 @@ func WriteExcel(path string, diffs []Diff) error {
 		f.SetCellStyle(sheet, cell, cell, headerStyle)
 	}
 
-	// Data rows.
+	// 写入数据行。
 	for row, d := range diffs {
 		r := row + 2 // 1-indexed, skip header
 		vals := []float64{
@@ -281,16 +281,16 @@ func WriteExcel(path string, diffs []Diff) error {
 			100 - d.CharSim, 100 - d.LcsSim,
 		}
 
-		// File name (column A).
+		// A 列：文件名。
 		f.SetCellValue(sheet, cellName(1, r), d.File)
 
-		// Numeric columns (B-I).
+		// B-I 列：数值指标。
 		for col := 2; col <= 9; col++ {
 			cell := cellName(col, r)
 			v := vals[col-1]
 			f.SetCellValue(sheet, cell, v)
-			// Color: green <5, yellow 5-20, red >=20.
-			if col == 7 { // TabsD is a count, not percentage
+			// 着色：绿<5%、黄 5-20%、红≥20%（TabsD 为计数不着色）。
+			if col == 7 { // TabsD 为计数非百分比，不着色
 				continue
 			}
 			abs := math.Abs(v)
@@ -305,11 +305,11 @@ func WriteExcel(path string, diffs []Diff) error {
 		}
 	}
 
-	// Column widths.
+	// 设置列宽。
 	f.SetColWidth(sheet, "A", "A", 45)
 	f.SetColWidth(sheet, "B", "I", 12)
 
-	// Freeze header row.
+	// 冻结首行。
 	f.SetPanes(sheet, &excelize.Panes{
 		Freeze:      true,
 		Split:       false,
@@ -327,7 +327,7 @@ func cellName(col, row int) string {
 	return s
 }
 
-// including per-cell text comparison.
+// CompareTablesWithPython 含逐单元格文本对比。
 func CompareTablesWithPython(log TLogger, goTablesDir, pyTablesDir string) {
 	goEntries, err := os.ReadDir(goTablesDir)
 	if err != nil {
@@ -375,7 +375,7 @@ func CompareTablesWithPython(log TLogger, goTablesDir, pyTablesDir string) {
 			continue
 		}
 
-		// Read Go tables.
+		// 读取 Go 侧表格 JSON。
 		goData, _ := os.ReadFile(goPath)
 		var goTables []goTable
 		if err := json.Unmarshal(goData, &goTables); err != nil {
@@ -383,7 +383,7 @@ func CompareTablesWithPython(log TLogger, goTablesDir, pyTablesDir string) {
 			continue
 		}
 
-		// Read Python tables.
+		// 读取 Python 侧表格 JSON。
 		pyData, _ := os.ReadFile(pyPath)
 		var pyF pyFile
 		if err := json.Unmarshal(pyData, &pyF); err != nil {
@@ -393,7 +393,7 @@ func CompareTablesWithPython(log TLogger, goTablesDir, pyTablesDir string) {
 
 		matched++
 
-		// Count cells.
+		// 统计单元格总数。
 		goTotalCells := 0
 		for _, t := range goTables {
 			for _, row := range t.Rows {
@@ -411,7 +411,7 @@ func CompareTablesWithPython(log TLogger, goTablesDir, pyTablesDir string) {
 			}
 		}
 
-		// Cell-level text comparison (table by table, row by row, cell by cell).
+		// 逐表逐行逐单元格文本比对。
 		cellsCompared, cellsMatched := 0, 0
 		nTables := min(len(goTables), len(pyF.Results))
 		for ti := 0; ti < nTables; ti++ {
@@ -432,7 +432,7 @@ func CompareTablesWithPython(log TLogger, goTablesDir, pyTablesDir string) {
 		totalCellsCompared += cellsCompared
 		totalCellsMatched += cellsMatched
 
-		// Status.
+		// 汇总匹配状态 emoji。
 		status := "✅"
 		txtMatch := ""
 		if len(goTables) != len(pyF.Results) {
@@ -478,23 +478,22 @@ func CompareTablesWithPython(log TLogger, goTablesDir, pyTablesDir string) {
 	log.Logf("Cell text match: %d/%d (%.1f%%)", totalCellsMatched, totalCellsCompared, txtPct)
 }
 
-// ── DLA intermediate comparison ──────────────────────────────────────────
+// ── DLA 中间结果对比 ──
 
 type jsonDlaPage struct {
 	Page    int             `json:"page"`
 	Regions []jsonDlaRegion `json:"regions"`
 }
 type jsonDlaRegion struct {
-	Label string  `json:"label"` // Go uses "label"
-	Type  string  `json:"type"`  // Python uses "type"
+	Label string  `json:"label"` // Go 使用 "label" 字段
+	Type  string  `json:"type"`  // Python 使用 "type" 字段
 	X0    float64 `json:"x0"`
 	Y0    float64 `json:"y0"`
 	X1    float64 `json:"x1"`
 	Y1    float64 `json:"y1"`
 }
 
-// CompareDLAWithPython compares per-page DLA layout regions.
-// Both dirs contain {pdf}.json files with []dlaPageRegion.
+// CompareDLAWithPython 对比逐页 DLA layout 区域，两目录均为 {pdf}.json。
 func CompareDLAWithPython(log TLogger, goDLADir, pyDLADir string) {
 	goEntries, _ := os.ReadDir(goDLADir)
 	pyEntries, _ := os.ReadDir(pyDLADir)
@@ -550,7 +549,7 @@ func CompareDLAWithPython(log TLogger, goDLADir, pyDLADir string) {
 	}
 }
 
-// ── TSR raw intermediate comparison ──────────────────────────────────────
+// ── TSR 原始中间结果对比 ──
 
 type tsrRawCell struct {
 	TableIndex int     `json:"table_index"`
@@ -563,8 +562,7 @@ type tsrRawCell struct {
 	Text       string  `json:"text"`
 }
 
-// CompareTSRRawWithPython compares raw TSR cells per table.
-// Both dirs contain {pdf}.json files with []tsrRawCell (Go) or []tsrRawCell (Py).
+// CompareTSRRawWithPython 对比各表原始 TSR 单元格与 label 差异。
 func CompareTSRRawWithPython(log TLogger, goTSRDir, pyTSRDir string) {
 	goEntries, _ := os.ReadDir(goTSRDir)
 	pyEntries, _ := os.ReadDir(pyTSRDir)
@@ -592,7 +590,7 @@ func CompareTSRRawWithPython(log TLogger, goTSRDir, pyTSRDir string) {
 		var pyCells []tsrRawCell
 		json.Unmarshal(pyData, &pyCells)
 
-		// Group by table.
+		// 按 table_index 分组。
 		goByTable := map[int][]tsrRawCell{}
 		pyByTable := map[int][]tsrRawCell{}
 		for _, c := range goCells {

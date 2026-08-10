@@ -1,3 +1,5 @@
+// char_adapter.go — Python 字符引擎适配器：从 charspy JSON 加载 Python 导出的字符流，供 Go 管道 parity 测试使用。
+
 package tool
 
 import (
@@ -9,16 +11,13 @@ import (
 	pdf "ragflow/internal/deepdoc/parser/pdf/type"
 )
 
-// PythonCharEngine implements pdf.PDFEngine by loading chars from a
-// charspy/{pdf}.json file exported by dump_py_results.py.
-// It is used for pipeline parity testing — same input chars as Python,
-// so any difference in pipeline output is a Go pipeline logic bug.
+// PythonCharEngine 从 charspy/{pdf}.json 加载字符实现 pdf.PDFEngine，与 Python 同输入做 parity 测试，输出差异即 Go 管道逻辑问题。
 type PythonCharEngine struct {
 	chars map[int][]pdf.TextChar // pageNum → chars
 	pages int
 }
 
-// LoadPythonChars loads chars from a charspy/{name}.json file.
+// LoadPythonChars 从 charspy JSON 文件加载字符数据。
 func LoadPythonChars(jsonPath string) (*PythonCharEngine, error) {
 	data, err := os.ReadFile(jsonPath)
 	if err != nil {
@@ -59,7 +58,7 @@ func LoadPythonChars(jsonPath string) (*PythonCharEngine, error) {
 	return &PythonCharEngine{chars: chars, pages: len(wrapper.Pages)}, nil
 }
 
-// ExtractChars returns all characters for the given page (0-indexed).
+// ExtractChars 返回指定页（0 起）的全部字符。
 func (e *PythonCharEngine) ExtractChars(pageNum int) ([]pdf.TextChar, error) {
 	if pageNum < 0 || pageNum >= e.pages {
 		return nil, fmt.Errorf("page %d out of range [0, %d)", pageNum, e.pages)
@@ -67,28 +66,27 @@ func (e *PythonCharEngine) ExtractChars(pageNum int) ([]pdf.TextChar, error) {
 	return e.chars[pageNum], nil
 }
 
-// RenderPage returns a 1x1 placeholder PNG (not used in parity tests).
+// RenderPage 不支持渲染，parity 测试不使用。
 func (e *PythonCharEngine) RenderPage(pageNum int, dpi float64) ([]byte, error) {
 	return nil, fmt.Errorf("PythonCharEngine: RenderPage not supported")
 }
 
-// RenderPageImage returns a 1x1 placeholder image (not used in parity tests).
+// RenderPageImage 不支持，parity 测试不使用。
 func (e *PythonCharEngine) RenderPageImage(pageNum int, dpi float64) (image.Image, error) {
 	return nil, fmt.Errorf("PythonCharEngine: RenderPageImage not supported")
 }
 
-// PageCount returns the number of pages.
+// PageCount 返回 PDF 页数。
 func (e *PythonCharEngine) PageCount() (int, error) {
 	return e.pages, nil
 }
 
-// RawData returns nil — this engine only supplies pre-loaded chars
-// for pipeline parity tests and does not hold PDF bytes.
+// RawData 返回 nil — 本引擎仅提供预加载字符，不持有 PDF 字节。
 func (e *PythonCharEngine) RawData() []byte { return nil }
 
 func (e *PythonCharEngine) Outlines() ([]pdf.Outline, error) { return nil, nil }
 
-// Close is a no-op.
+// Close 空操作。
 func (e *PythonCharEngine) Close() error {
 	return nil
 }
