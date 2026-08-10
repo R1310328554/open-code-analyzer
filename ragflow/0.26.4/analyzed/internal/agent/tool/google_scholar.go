@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// google_scholar.go — Google Scholar 学术搜索：无公开 API，抓取 HTML 并解析 .gs_rt/.gs_a/.gs_rs 字段。
+
 //
 
 package tool
@@ -35,12 +37,14 @@ const googleScholarToolName = "google_scholar"
 const googleScholarToolDescription = "Search Google Scholar for academic articles. Returns {title, link, snippet, authors, year}."
 
 // googleScholarParams is the JSON shape the model sends into InvokableRun.
+// googleScholarParams 为模型传入的搜索参数 JSON。
 type googleScholarParams struct {
 	Query      string `json:"query"`
 	MaxResults int    `json:"max_results"`
 }
 
 // googleScholarResult is one row in the parsed result list.
+// googleScholarResult 为解析后的单条学术文献。
 type googleScholarResult struct {
 	Title   string `json:"title"`
 	Link    string `json:"link"`
@@ -50,6 +54,7 @@ type googleScholarResult struct {
 }
 
 // googleScholarEnvelope is what the model sees.
+// googleScholarEnvelope 为返回给模型的 JSON 形状。
 type googleScholarEnvelope struct {
 	Results []googleScholarResult `json:"results"`
 	Error   string                `json:"_ERROR,omitempty"`
@@ -57,24 +62,28 @@ type googleScholarEnvelope struct {
 
 // googleScholarEndpoint is the Google Scholar search URL. Exposed as
 // a package var so tests can substitute a httptest.Server URL.
+// googleScholarEndpoint 为 Scholar 搜索根 URL，单测可替换。
 var googleScholarEndpoint = "https://scholar.google.com/scholar"
 
 // GoogleScholarTool is the
 // Google Scholar search tool.
 // There is no public Scholar API, so we fetch the search-results
 // HTML and parse it with golang.org/x/net/html.
+// GoogleScholarTool 抓取 Scholar 搜索结果页并用 html 包解析。
 type GoogleScholarTool struct {
 	helper *HTTPHelper
 }
 
 // NewGoogleScholarTool returns a GoogleScholarTool using the default
 // HTTPHelper.
+// NewGoogleScholarTool 使用默认 HTTPHelper 构造工具。
 func NewGoogleScholarTool() *GoogleScholarTool {
 	return NewGoogleScholarToolWith(NewHTTPHelper())
 }
 
 // NewGoogleScholarToolWith returns a GoogleScholarTool that uses the
 // provided HTTPHelper. Useful for tests.
+// NewGoogleScholarToolWith 注入自定义 HTTPHelper。
 func NewGoogleScholarToolWith(h *HTTPHelper) *GoogleScholarTool {
 	if h == nil {
 		h = NewHTTPHelper()
@@ -83,6 +92,7 @@ func NewGoogleScholarToolWith(h *HTTPHelper) *GoogleScholarTool {
 }
 
 // Info returns the tool's metadata for the chat model.
+// Info 返回工具名称、描述与参数 schema。
 func (g *GoogleScholarTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 	return &schema.ToolInfo{
 		Name: googleScholarToolName,
@@ -104,6 +114,7 @@ func (g *GoogleScholarTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 
 // buildGoogleScholarURL composes the Scholar query URL. Centralized
 // for testability.
+// buildGoogleScholarURL 组装 Scholar 查询 URL。
 func buildGoogleScholarURL(query string, maxResults int) string {
 	if maxResults <= 0 {
 		maxResults = 5
@@ -119,6 +130,7 @@ func buildGoogleScholarURL(query string, maxResults int) string {
 }
 
 // InvokableRun performs the Google Scholar search.
+// InvokableRun 抓取 HTML 并解析为结构化结果列表。
 func (g *GoogleScholarTool) InvokableRun(ctx context.Context, argsJSON string, _ ...tool.Option) (string, error) {
 	var p googleScholarParams
 	if err := json.Unmarshal([]byte(argsJSON), &p); err != nil {
@@ -161,6 +173,7 @@ func (g *GoogleScholarTool) InvokableRun(ctx context.Context, argsJSON string, _
 // deliberately stay defensive: Scholar's markup changes without
 // notice, so we tolerate missing fields and silently skip articles
 // that are missing the title.
+// parseGoogleScholarHTML 遍历 DOM 提取 .gs_ri 结果卡片。
 func parseGoogleScholarHTML(body interface {
 	Read(p []byte) (int, error)
 }, maxResults int) ([]googleScholarResult, error) {
@@ -200,6 +213,7 @@ func parseGoogleScholarHTML(body interface {
 // extractScholarResult pulls title/link, snippet, and authors/year
 // from a single .gs_ri node. Returns ok=false when the title anchor
 // is missing (e.g. PDF / citation links the search layout omits).
+// extractScholarResult 从单张 .gs_ri 卡片提取标题、链接、作者与摘要。
 func extractScholarResult(card *html.Node) (googleScholarResult, bool) {
 	res := googleScholarResult{}
 
@@ -230,6 +244,7 @@ func extractScholarResult(card *html.Node) (googleScholarResult, bool) {
 // first <a> descendant of n whose ancestor chain contains an element
 // with `want` in its class list. The `want` argument lets callers
 // pin the search to a specific Scholar sub-element (e.g. .gs_rt).
+// findFirstAnchorInClassedAncestor 在指定 class 子树中查找首个 <a>。
 func findFirstAnchorInClassedAncestor(n *html.Node, want string) (string, string) {
 	var text, href string
 	var found bool
@@ -268,6 +283,7 @@ func findFirstAnchorInClassedAncestor(n *html.Node, want string) (string, string
 // findTextWithClass returns the concatenated text of the first
 // descendant element that has `want` in its class list. If the
 // matched element is empty, the search continues into its subtree.
+// findTextWithClass 返回首个匹配 class 元素的文本内容。
 func findTextWithClass(n *html.Node, want string) string {
 	var found string
 	var walk func(*html.Node)
@@ -293,6 +309,7 @@ func findTextWithClass(n *html.Node, want string) string {
 
 // collectText concatenates all text nodes under n (trimmed of
 // surrounding whitespace per node).
+// collectText 递归拼接节点下所有文本节点。
 func collectText(n *html.Node) string {
 	var b strings.Builder
 	var walk func(*html.Node)
@@ -313,6 +330,7 @@ func collectText(n *html.Node) string {
 // the first 4-digit year out and treat everything before " - " as
 // the author list. Anything we can't parse is returned verbatim so
 // the model can still see it.
+// splitScholarAuthorsYear 解析 .gs_a 行的作者与年份。
 func splitScholarAuthorsYear(line string) (authors, year string) {
 	cleaned := strings.TrimSpace(line)
 	// The hyphen between authors and venue is the unicode dash "-".
@@ -328,6 +346,7 @@ func splitScholarAuthorsYear(line string) (authors, year string) {
 
 // firstFourDigitYear returns the first 4-digit year in s, or "" if
 // none is found. Years 1900-2099 are recognized.
+// firstFourDigitYear 提取字符串中首个 1900–2099 四位年份。
 func firstFourDigitYear(s string) string {
 	for i := 0; i+4 <= len(s); i++ {
 		candidate := s[i : i+4]

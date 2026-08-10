@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// keenable.go — Keenable AI 搜索工具：默认免密钥公开端点，支持 site/mode/top_n 过滤。
+
 //
 
 package tool
@@ -42,6 +44,7 @@ const keenableToolDescription = `Keenable is a web search API built for AI agent
 // site is an optional single-domain filter. mode is "pro" (default,
 // deeper) or "realtime" (requires a server-configured key). top_n caps
 // how many results we keep from the upstream `results` array.
+// keenableParams 为模型传入的搜索参数；mode 为 pro 或 realtime。
 type keenableParams struct {
 	Query string `json:"query"`
 	Site  string `json:"site"`
@@ -52,6 +55,7 @@ type keenableParams struct {
 // keenableRequestBody is the JSON body POSTed to the Keenable search
 // endpoint. Mirrors the upstream Python tool — query, mode, and an
 // optional site filter.
+// keenableRequestBody 为 POST 至 Keenable 搜索端点的 JSON 体。
 type keenableRequestBody struct {
 	Query string `json:"query"`
 	Mode  string `json:"mode"`
@@ -62,6 +66,7 @@ type keenableRequestBody struct {
 // The Python tool's _retrieve_chunks reads `title`, `url`, `description`,
 // so we model those fields and pass everything else through verbatim
 // when serializing to the model.
+// keenableResult 对应上游 results 数组单条，含 title/url/description。
 type keenableResult struct {
 	Title       string `json:"title"`
 	URL         string `json:"url"`
@@ -71,12 +76,14 @@ type keenableResult struct {
 // keenableResponse is the envelope returned by Keenable. We only model
 // the fields we care about; the upstream API has more, but they are
 // ignored.
+// keenableResponse 为 Keenable 上游响应信封。
 type keenableResponse struct {
 	Results []keenableResult `json:"results"`
 }
 
 // keenableEnvelope is the shape the model actually sees, identical to
 // the Python tool's output convention.
+// keenableEnvelope 为返回给模型的 JSON 形状。
 type keenableEnvelope struct {
 	Results []keenableResult `json:"results"`
 	Error   string           `json:"_ERROR,omitempty"`
@@ -86,6 +93,7 @@ type keenableEnvelope struct {
 // request to the public keyless endpoint by default and to the keyed
 // endpoint (with X-API-Key) when an API key is provided. The upstream
 // `results` array is returned as JSON.
+// KeenableTool 向 Keenable API POST 搜索请求并返回 results 数组。
 type KeenableTool struct {
 	helper *HTTPHelper
 	apiKey string
@@ -99,12 +107,14 @@ type KeenableTool struct {
 
 // NewKeenableTool returns a KeenableTool using the default HTTPHelper
 // and the KEENABLE_API_URL env var for base-URL resolution.
+// NewKeenableTool 使用默认 HTTPHelper 与 KEENABLE_API_URL 环境变量。
 func NewKeenableTool() *KeenableTool {
 	return NewKeenableToolWith(NewHTTPHelper())
 }
 
 // NewKeenableToolWithAPIKey returns a KeenableTool that uses a
 // server-provided API key instead of model-visible runtime args.
+// NewKeenableToolWithAPIKey 注入服务端 API 密钥，启用 keyed 端点。
 func NewKeenableToolWithAPIKey(h *HTTPHelper, apiKey string) *KeenableTool {
 	t := NewKeenableToolWith(h)
 	t.apiKey = strings.TrimSpace(apiKey)
@@ -113,6 +123,7 @@ func NewKeenableToolWithAPIKey(h *HTTPHelper, apiKey string) *KeenableTool {
 
 // NewKeenableToolWith returns a KeenableTool that uses the provided
 // HTTPHelper. Useful for tests that want to inject a custom transport.
+// NewKeenableToolWith 注入自定义 HTTPHelper。
 func NewKeenableToolWith(h *HTTPHelper) *KeenableTool {
 	if h == nil {
 		h = NewHTTPHelper()
@@ -123,6 +134,7 @@ func NewKeenableToolWith(h *HTTPHelper) *KeenableTool {
 // NewKeenableToolWithEnvBaseURL returns a KeenableTool with a custom
 // base-URL resolver. Useful for tests that want to inject a fake env
 // without mutating process state.
+// NewKeenableToolWithEnvBaseURL 注入自定义 base URL 解析函数，便于单测。
 func NewKeenableToolWithEnvBaseURL(h *HTTPHelper, envBaseURL func() string) *KeenableTool {
 	if h == nil {
 		h = NewHTTPHelper()
@@ -136,6 +148,7 @@ func NewKeenableToolWithEnvBaseURL(h *HTTPHelper, envBaseURL func() string) *Kee
 // defaultKeenableEnvBaseURL is the production base-URL resolver.
 // Pulled out as a named function (not a var) so tests cannot
 // accidentally mutate it via package-var assignment.
+// defaultKeenableEnvBaseURL 从 KEENABLE_API_URL 读取或使用生产默认地址。
 func defaultKeenableEnvBaseURL() string {
 	if v := strings.TrimSpace(os.Getenv("KEENABLE_API_URL")); v != "" {
 		return v
@@ -148,6 +161,7 @@ func defaultKeenableEnvBaseURL() string {
 // use plain http for local development. Mirrors the Python tool's
 // _base_url() guard — a misconfigured URL fails fast at request time
 // rather than silently making a request to the wrong host.
+// resolveKeenableBaseURL 校验 base URL 必须为 HTTPS（回环可 HTTP）。
 func resolveKeenableBaseURL(raw string) (string, error) {
 	raw = strings.TrimRight(strings.TrimSpace(raw), "/")
 	if raw == "" {
@@ -180,6 +194,7 @@ func resolveKeenableBaseURL(raw string) (string, error) {
 // Info returns the tool's metadata for the chat model. The description
 // is the short prose above; the parameter schema lists the model-emitted
 // fields with sane defaults documented inline.
+// Info 返回工具描述与参数 schema。
 func (k *KeenableTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 	return &schema.ToolInfo{
 		Name: keenableToolName,
@@ -210,6 +225,7 @@ func (k *KeenableTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 }
 
 // InvokableRun performs the Keenable search.
+// InvokableRun 执行 Keenable 搜索并按 top_n 截断结果。
 func (k *KeenableTool) InvokableRun(ctx context.Context, argsJSON string, _ ...tool.Option) (string, error) {
 	var p keenableParams
 	if err := json.Unmarshal([]byte(argsJSON), &p); err != nil {

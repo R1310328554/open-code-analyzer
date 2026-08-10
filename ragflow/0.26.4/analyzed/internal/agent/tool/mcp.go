@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// mcp.go — MCP（Model Context Protocol）工具适配器：将 MCP 服务端发现的工具包装为 eino InvokableTool。
+
 //
 
 // Package tool — MCP (Model Context Protocol) wrapper.
@@ -48,6 +50,7 @@ import (
 // needs to call back into the server. Adapters built without
 // a URL (legacy callers) fall back to the "not yet wired"
 // sentinel so existing call sites don't break.
+// MCPToolAdapter 将单个 MCP 工具描述符包装为 eino 可调用工具。
 type MCPToolAdapter struct {
 	mcpTool    mcpclient.Tool
 	serverURL  string
@@ -60,6 +63,7 @@ type MCPToolAdapter struct {
 // The returned adapter has no MCP server URL and so cannot be
 // invoked — use NewMCPToolAdapterWithServer for adapters that
 // need to call back into the server.
+// NewMCPToolAdapter 构造无服务端 URL 的占位适配器（不可调用）。
 func NewMCPToolAdapter(t mcpclient.Tool) *MCPToolAdapter {
 	return &MCPToolAdapter{mcpTool: t}
 }
@@ -67,6 +71,7 @@ func NewMCPToolAdapter(t mcpclient.Tool) *MCPToolAdapter {
 // NewMCPToolAdapterWithServer constructs a wrapper that knows
 // the MCP server URL + transport headers. InvokableRun uses this
 // to route InvokableRun into mcpclient.CallTool.
+// NewMCPToolAdapterWithServer 构造可经 mcpclient.CallTool 回调的适配器。
 func NewMCPToolAdapterWithServer(t mcpclient.Tool, serverURL string, headers map[string]string, timeout time.Duration) *MCPToolAdapter {
 	return &MCPToolAdapter{
 		mcpTool:   t,
@@ -80,6 +85,7 @@ func NewMCPToolAdapterWithServer(t mcpclient.Tool, serverURL string, headers map
 // callers can also pass an *http.Client (e.g. an httptest server's
 // Client, or a custom transport with mTLS) so the underlying
 // CallTool call doesn't have to fall back to a pinned client.
+// NewMCPToolAdapterFull 最完整构造器，可注入自定义 http.Client。
 func NewMCPToolAdapterFull(t mcpclient.Tool, serverURL string, headers map[string]string, timeout time.Duration, client *http.Client) *MCPToolAdapter {
 	return &MCPToolAdapter{
 		mcpTool:    t,
@@ -91,10 +97,12 @@ func NewMCPToolAdapterFull(t mcpclient.Tool, serverURL string, headers map[strin
 }
 
 // Name returns the underlying MCP tool name.
+// Name 返回底层 MCP 工具名称。
 func (m *MCPToolAdapter) Name() string { return m.mcpTool.Name }
 
 // Info returns eino-compatible tool metadata. InputSchema is
 // translated from the MCP tool's JSON Schema.
+// Info 将 MCP inputSchema 翻译为 eino ParameterInfo 映射。
 func (m *MCPToolAdapter) Info(_ context.Context) (*schema.ToolInfo, error) {
 	// eino's schema.ParameterInfo shape: name → description.
 	// We translate the MCP tool's inputSchema.properties into a
@@ -119,6 +127,7 @@ func (m *MCPToolAdapter) Info(_ context.Context) (*schema.ToolInfo, error) {
 // built with a server URL, dispatch through mcpclient.CallTool.
 // Legacy adapters (no URL) keep the "not yet wired" sentinel
 // so existing tests that pin the error message don't break.
+// InvokableRun 经 streamable-HTTP 调用 mcpclient.CallTool 执行工具。
 func (m *MCPToolAdapter) InvokableRun(ctx context.Context, argumentsInJSON string, _ ...tool.Option) (string, error) {
 	if m.serverURL == "" {
 		return "", fmt.Errorf("mcp tool %q: tools/call not yet implemented in mcpclient; arguments were: %s",
@@ -159,6 +168,7 @@ func (m *MCPToolAdapter) InvokableRun(ctx context.Context, argumentsInJSON strin
 // calling Close explicitly drops those idle connections so they don't
 // accumulate across many adapter instances over long-running processes.
 // Mirrors Python's close_sync() in common/mcp_tool_call_conn.py.
+// Close 释放 http.Client 空闲连接，对齐 Python close_sync。
 func (m *MCPToolAdapter) Close() {
 	if m.httpClient != nil {
 		m.httpClient.CloseIdleConnections()
@@ -169,6 +179,7 @@ func (m *MCPToolAdapter) Close() {
 // eino InvokableTool. Returned slice is suitable for handing to
 // agenttool.NewRetrieverTool / NewMCPToolAdapter paths or directly to
 // the Agent's tool list.
+// BuildMCPToolAdapters 批量将 MCP 工具描述符包装为 InvokableTool 切片。
 func BuildMCPToolAdapters(tools []mcpclient.Tool) []tool.InvokableTool {
 	out := make([]tool.InvokableTool, 0, len(tools))
 	for _, t := range tools {
@@ -181,6 +192,7 @@ func BuildMCPToolAdapters(tools []mcpclient.Tool) []tool.InvokableTool {
 // implementation. The argumentsInJSON string from eino is
 // round-tripped through json.RawMessage before being passed to the
 // MCP server so the server's expected payload structure is preserved.
+// marshalArguments 校验并保留 eino 传入的 JSON 参数字符串。
 func marshalArguments(argumentsInJSON string) (json.RawMessage, error) {
 	if argumentsInJSON == "" || argumentsInJSON == "{}" {
 		return json.RawMessage("{}"), nil

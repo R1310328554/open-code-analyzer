@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// registry.go — Agent 工具工厂注册表：按 DSL 可见名称解析为 eino BaseTool 实例。
+
 //
 
 package tool
@@ -26,6 +28,7 @@ import (
 // Factory builds a tool instance by DSL / Agent-visible name and
 // optional node-level configuration. The config map belongs to the
 // Agent node / DSL, not to the model-emitted function-call args.
+// Factory 按节点级配置 map 构造工具实例，非模型 function-call 参数。
 type Factory func(params map[string]any) (einotool.BaseTool, error)
 
 var registry = map[string]Factory{
@@ -58,6 +61,7 @@ var registry = map[string]Factory{
 	"yahoo_finance":     noConfig("yahoo_finance", func() einotool.BaseTool { return NewYahooFinanceTool() }),
 }
 
+// noConfig 包装无节点级参数的工具工厂。
 func noConfig(name string, fn func() einotool.BaseTool) Factory {
 	return func(params map[string]any) (einotool.BaseTool, error) {
 		if len(params) != 0 {
@@ -68,6 +72,7 @@ func noConfig(name string, fn func() einotool.BaseTool) Factory {
 }
 
 // BuildByName resolves a tool name into an Eino BaseTool.
+// BuildByName 按名称（大小写不敏感）查找工厂并构造工具。
 func BuildByName(name string, params map[string]any) (einotool.BaseTool, error) {
 	key := strings.ToLower(strings.TrimSpace(name))
 	if key == "" {
@@ -85,6 +90,7 @@ func BuildByName(name string, params map[string]any) (einotool.BaseTool, error) 
 
 // BuildAll resolves a list of tool names into Eino BaseTool instances.
 // perToolParams is keyed by the Agent-visible tool name.
+// BuildAll 批量解析工具名列表，perToolParams 按名称索引节点配置。
 func BuildAll(names []string, perToolParams map[string]map[string]any) ([]einotool.BaseTool, error) {
 	if len(names) == 0 {
 		return nil, nil
@@ -107,6 +113,7 @@ func BuildAll(names []string, perToolParams map[string]map[string]any) ([]einoto
 	return tools, nil
 }
 
+// buildAkShareTool 解析 top_n 节点参数并构造 AkShare 工具。
 func buildAkShareTool(params map[string]any) (einotool.BaseTool, error) {
 	topN := defaultAkShareTopN
 	if len(params) != 0 {
@@ -125,6 +132,7 @@ func buildAkShareTool(params map[string]any) (einotool.BaseTool, error) {
 	return NewAkShareToolWithTopN(nil, topN), nil
 }
 
+// buildExeSQLTool 解码数据库连接参数并构造 ExeSQL 工具。
 func buildExeSQLTool(params map[string]any) (einotool.BaseTool, error) {
 	conn, err := decodeExeSQLConnParams(params)
 	if err != nil {
@@ -133,6 +141,7 @@ func buildExeSQLTool(params map[string]any) (einotool.BaseTool, error) {
 	return NewExeSQLTool(conn), nil
 }
 
+// buildKeenableTool 可选注入 api_key 节点参数。
 func buildKeenableTool(params map[string]any) (einotool.BaseTool, error) {
 	if len(params) == 0 {
 		return NewKeenableTool(), nil
@@ -149,6 +158,7 @@ func buildKeenableTool(params map[string]any) (einotool.BaseTool, error) {
 	return NewKeenableToolWithAPIKey(nil, apiKey), nil
 }
 
+// decodeExeSQLConnParams 从节点 map 解析 SQL 连接配置。
 func decodeExeSQLConnParams(params map[string]any) (exesqlConnParams, error) {
 	if len(params) == 0 {
 		return exesqlConnParams{}, fmt.Errorf(
@@ -184,6 +194,7 @@ func decodeExeSQLConnParams(params map[string]any) (exesqlConnParams, error) {
 	return conn, nil
 }
 
+// stringParam 安全读取 map 中的字符串参数。
 func stringParam(params map[string]any, key string) (string, bool) {
 	v, ok := params[key]
 	if !ok {
@@ -193,6 +204,7 @@ func stringParam(params map[string]any, key string) (string, bool) {
 	return s, ok
 }
 
+// intParam 安全读取 map 中的整型参数，容忍 JSON 数字类型。
 func intParam(params map[string]any, key string) (int, bool) {
 	v, ok := params[key]
 	if !ok {

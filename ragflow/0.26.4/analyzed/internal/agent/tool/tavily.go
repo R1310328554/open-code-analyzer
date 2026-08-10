@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// tavily.go — Tavily 网页搜索工具：POST api.tavily.com/search 返回 url/title/content 列表。
+
 //
 
 package tool
@@ -34,6 +36,7 @@ const tavilyToolDescription = "Search the web via the Tavily API. Returns a list
 // tavilyParams is the JSON shape the model sends into InvokableRun. The
 // api_key may be omitted when the env var TAVILY_API_KEY is set; the tool
 // resolves it from the environment in that case.
+// tavilyParams 为模型传入参数；api_key 可省略并由 TAVILY_API_KEY 补全。
 type tavilyParams struct {
 	APIKey      string `json:"api_key"`
 	Query       string `json:"query"`
@@ -43,6 +46,7 @@ type tavilyParams struct {
 
 // tavilyRequestBody is the JSON body POSTed to the Tavily /search endpoint.
 // The struct matches the upstream API (https://docs.tavily.com).
+// tavilyRequestBody 为 POST 至 Tavily /search 的 JSON 体。
 type tavilyRequestBody struct {
 	Query       string `json:"query"`
 	MaxResults  int    `json:"max_results"`
@@ -51,6 +55,7 @@ type tavilyRequestBody struct {
 
 // tavilyResult mirrors one element of the upstream `results` array. We
 // return these verbatim to the model.
+// tavilyResult 对应上游 results 数组单条。
 type tavilyResult struct {
 	URL     string `json:"url"`
 	Title   string `json:"title"`
@@ -59,12 +64,14 @@ type tavilyResult struct {
 
 // tavilyResponse is the envelope returned by Tavily. We only model the
 // fields we care about; the upstream API has more, but they are ignored.
+// tavilyResponse 为 Tavily 上游响应信封。
 type tavilyResponse struct {
 	Results []tavilyResult `json:"results"`
 }
 
 // tavilyEnvelope is the shape the model actually sees, identical to the
 // Python tool's output convention.
+// tavilyEnvelope 为返回给模型的 JSON 形状。
 type tavilyEnvelope struct {
 	Results []tavilyResult `json:"results"`
 	Error   string         `json:"_ERROR,omitempty"`
@@ -74,6 +81,7 @@ type tavilyEnvelope struct {
 // tool. It POSTs a search request
 // to https://api.tavily.com/search using the shared HTTPHelper and returns
 // the upstream `results` array as JSON.
+// TavilyTool 经共享 HTTPHelper 向 Tavily API 发起搜索。
 type TavilyTool struct {
 	helper *HTTPHelper
 	envKey func() string
@@ -81,12 +89,14 @@ type TavilyTool struct {
 
 // NewTavilyTool returns a TavilyTool using the default HTTPHelper and
 // the TAVILY_API_KEY env var for credential resolution.
+// NewTavilyTool 使用默认 HTTPHelper 与 TAVILY_API_KEY 环境变量。
 func NewTavilyTool() *TavilyTool {
 	return NewTavilyToolWith(NewHTTPHelper())
 }
 
 // NewTavilyToolWith returns a TavilyTool that uses the provided
 // HTTPHelper. Useful for tests that want to inject a custom transport.
+// NewTavilyToolWith 注入自定义 HTTPHelper。
 func NewTavilyToolWith(h *HTTPHelper) *TavilyTool {
 	if h == nil {
 		h = NewHTTPHelper()
@@ -97,6 +107,7 @@ func NewTavilyToolWith(h *HTTPHelper) *TavilyTool {
 // NewTavilyToolWithEnvKey returns a TavilyTool with a custom env-key
 // resolver. Useful for tests that want to inject a fake credential
 // without mutating process state.
+// NewTavilyToolWithEnvKey 注入自定义凭据解析函数，便于单测。
 func NewTavilyToolWithEnvKey(h *HTTPHelper, envKey func() string) *TavilyTool {
 	if envKey == nil {
 		envKey = defaultTavilyEnvKey
@@ -107,9 +118,11 @@ func NewTavilyToolWithEnvKey(h *HTTPHelper, envKey func() string) *TavilyTool {
 // defaultTavilyEnvKey is the production env-key resolver. Pulled out
 // as a named function (not a var) so tests cannot accidentally
 // mutate it via package-var assignment.
+// defaultTavilyEnvKey 从 TAVILY_API_KEY 环境变量读取 API 密钥。
 func defaultTavilyEnvKey() string { return os.Getenv("TAVILY_API_KEY") }
 
 // Info returns the tool's metadata for the chat model.
+// Info 返回工具元数据与参数 schema。
 func (t *TavilyTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 	return &schema.ToolInfo{
 		Name: tavilyToolName,
@@ -142,10 +155,12 @@ func (t *TavilyTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 // tavilyEndpoint is the Tavily /search URL. Exposed as a package var so
 // tests can substitute a httptest.Server URL. Tests must serialize
 // access with tavilyEndpointMu if running in parallel.
+// tavilyEndpoint 为 Tavily /search URL，单测可替换。
 var tavilyEndpoint = "https://api.tavily.com/search"
 
 // InvokableRun performs the Tavily search. The api_key may come from the
 // argument or the TAVILY_API_KEY env var.
+// InvokableRun 执行 Tavily 搜索并返回 results JSON。
 func (t *TavilyTool) InvokableRun(ctx context.Context, argsJSON string, _ ...tool.Option) (string, error) {
 	var p tavilyParams
 	if err := json.Unmarshal([]byte(argsJSON), &p); err != nil {

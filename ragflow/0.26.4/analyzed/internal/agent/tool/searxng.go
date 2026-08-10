@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// searxng.go — 自托管 SearXNG 元搜索工具：调用 /search?format=json 返回 title/url/content。
+
 //
 
 package tool
@@ -35,6 +37,7 @@ const searxngToolDescription = "Search a self-hosted SearXNG instance. Returns r
 // searxngParams is the JSON shape the model sends into InvokableRun.
 // base_url is the SearXNG root (no trailing slash); the default points
 // at a local instance on port 8888.
+// searxngParams 为模型传入参数；base_url 默认 localhost:8888。
 type searxngParams struct {
 	BaseURL    string `json:"base_url"`
 	Query      string `json:"query"`
@@ -42,6 +45,7 @@ type searxngParams struct {
 }
 
 // searxngResult mirrors one element of the upstream `results` array.
+// searxngResult 对应上游 results 数组单条。
 type searxngResult struct {
 	Title   string `json:"title"`
 	URL     string `json:"url"`
@@ -49,11 +53,13 @@ type searxngResult struct {
 }
 
 // searxngResponse is the upstream SearXNG JSON envelope.
+// searxngResponse 为 SearXNG JSON 响应信封。
 type searxngResponse struct {
 	Results []searxngResult `json:"results"`
 }
 
 // searxngEnvelope is the JSON shape the model sees.
+// searxngEnvelope 为返回给模型的 JSON 形状。
 type searxngEnvelope struct {
 	Results []searxngResult `json:"results"`
 	Error   string          `json:"_ERROR,omitempty"`
@@ -62,17 +68,20 @@ type searxngEnvelope struct {
 // SearXNGTool is the SearXNG
 // meta-search tool. It calls
 // a self-hosted SearXNG instance via the shared HTTPHelper.
+// SearXNGTool 经共享 HTTPHelper 调用自托管 SearXNG 实例。
 type SearXNGTool struct {
 	helper *HTTPHelper
 }
 
 // NewSearXNGTool returns a SearXNGTool using the default HTTPHelper.
+// NewSearXNGTool 使用默认 HTTPHelper 构造工具。
 func NewSearXNGTool() *SearXNGTool {
 	return NewSearXNGToolWith(NewHTTPHelper())
 }
 
 // NewSearXNGToolWith returns a SearXNGTool that uses the provided
 // HTTPHelper. Useful for tests.
+// NewSearXNGToolWith 注入自定义 HTTPHelper。
 func NewSearXNGToolWith(h *HTTPHelper) *SearXNGTool {
 	if h == nil {
 		h = NewHTTPHelper()
@@ -81,6 +90,7 @@ func NewSearXNGToolWith(h *HTTPHelper) *SearXNGTool {
 }
 
 // Info returns the tool's metadata for the chat model.
+// Info 返回工具元数据与参数 schema。
 func (s *SearXNGTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 	return &schema.ToolInfo{
 		Name: searxngToolName,
@@ -108,6 +118,7 @@ func (s *SearXNGTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 // buildSearXNGURL constructs the SearXNG /search URL. The base URL is
 // normalized to drop trailing slashes. We use url.JoinPath-style
 // construction (manual) so the function works on Go 1.19 as well.
+// buildSearXNGURL 构造 SearXNG /search JSON 查询 URL。
 func buildSearXNGURL(baseURL, query string, maxResults int) string {
 	if baseURL == "" {
 		baseURL = "http://localhost:8888"
@@ -124,6 +135,7 @@ func buildSearXNGURL(baseURL, query string, maxResults int) string {
 }
 
 // InvokableRun performs the SearXNG search.
+// InvokableRun 执行 SearXNG 搜索并返回 results 数组。
 func (s *SearXNGTool) InvokableRun(ctx context.Context, argsJSON string, _ ...tool.Option) (string, error) {
 	var p searxngParams
 	if err := json.Unmarshal([]byte(argsJSON), &p); err != nil {

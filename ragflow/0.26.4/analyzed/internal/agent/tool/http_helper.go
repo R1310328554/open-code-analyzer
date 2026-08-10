@@ -40,6 +40,7 @@ import (
 // (3 attempts, 200ms base, 3s max backoff) apply when the
 // corresponding field is zero. HTTPHelper{} and NewHTTPHelper()
 // are interchangeable.
+// RetryConfig 控制 HTTPHelper 重试策略；零值字段使用默认 3 次/200ms/3s。
 type RetryConfig struct {
 	// MaxAttempts is the total number of attempts (including the first one).
 	// Values < 1 are clamped to 1 (no retry). Default 3.
@@ -50,6 +51,7 @@ type RetryConfig struct {
 	MaxBackoff time.Duration
 }
 
+// withDefaults 为零值字段填充默认重试参数。
 func (c RetryConfig) withDefaults() RetryConfig {
 	if c.MaxAttempts < 1 {
 		c.MaxAttempts = 3
@@ -70,6 +72,7 @@ func (c RetryConfig) withDefaults() RetryConfig {
 // RetryConfig.
 //
 // HTTPHelper is safe for concurrent use by multiple goroutines.
+// HTTPHelper 为各 HTTP 工具共享的上下文感知客户端，并发安全。
 type HTTPHelper struct {
 	// baseTransport is the source-of-truth *http.Transport. Do wraps it
 	// with otelhttp and stores the result in h.client. DoPinned clones it
@@ -93,6 +96,7 @@ type HTTPHelper struct {
 }
 
 // NewHTTPHelper returns a HTTPHelper with default retry/timeout settings.
+// NewHTTPHelper 返回带默认超时与重试的 HTTPHelper。
 func NewHTTPHelper() *HTTPHelper {
 	base := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
@@ -118,6 +122,7 @@ func NewHTTPHelper() *HTTPHelper {
 
 // NewHTTPHelperWithRetry returns a HTTPHelper with a custom retry policy.
 // Pass RetryConfig{} to use defaults.
+// NewHTTPHelperWithRetry 使用自定义重试策略构造 HTTPHelper。
 func NewHTTPHelperWithRetry(rc RetryConfig) *HTTPHelper {
 	h := NewHTTPHelper()
 	h.retry = rc.withDefaults()
@@ -132,6 +137,7 @@ func NewHTTPHelperWithRetry(rc RetryConfig) *HTTPHelper {
 // installed here does NOT participate in DNS-rebinding pinning. To
 // customise pinning behaviour (RootCAs, etc.) mutate baseTransport
 // directly — typically only tests do this.
+// WithClient 替换 Do 使用的 http.Client，仅影响非 pinned 路径。
 func (h *HTTPHelper) WithClient(c *http.Client) *HTTPHelper {
 	if c != nil {
 		h.client = c
@@ -153,6 +159,7 @@ func (h *HTTPHelper) WithClient(c *http.Client) *HTTPHelper {
 //   - 2xx / 3xx: returned as-is
 //
 // The context is honored on every attempt; cancellation aborts the loop.
+// Do 发起 HTTP 请求；5xx 与网络错误重试，4xx 不重试，调用方须关闭 Body。
 func (h *HTTPHelper) Do(
 	ctx context.Context,
 	method, url, body, contentType string,
@@ -191,6 +198,7 @@ func (h *HTTPHelper) Do(
 // SSRF guard just closed — and the pinned dialer would otherwise
 // rewrite the proxy's own dial target to pinnedIP:proxyPort, breaking
 // the connection. Operators who want proxied outbound should use Do.
+// DoPinned 在传输层将连接固定到 pinnedIP，防御 DNS 重绑定 SSRF。
 func (h *HTTPHelper) DoPinned(
 	ctx context.Context,
 	method, url, body, contentType string,
@@ -245,6 +253,7 @@ func (h *HTTPHelper) DoPinned(
 // DoPinnedWithProxy (or an HTTPHelper config option that takes an
 // already-pinned IP) — do not silently re-enable Proxy here without
 // also re-deriving the SSRF guarantee for that path.
+// pinnedClient 构建一次性客户端，Dial 改写为目标 IP:port。
 func (h *HTTPHelper) pinnedClient(pinnedIP net.IP) *http.Client {
 	base := h.baseTransport.Clone()
 	base.Proxy = nil
@@ -266,11 +275,13 @@ func (h *HTTPHelper) pinnedClient(pinnedIP net.IP) *http.Client {
 // address is discarded; only the port is preserved. The host of the
 // HTTP request is not in scope here — that lives on the request, where
 // it is used by the TLS layer for SNI / cert verification.
+// pinnedDialer 将 Dial 目标地址改写为 pinnedIP，保留 SNI 用原始主机名。
 type pinnedDialer struct {
 	pinnedIP net.IP
 	base     *net.Dialer
 }
 
+// DialContext 忽略 addr 中的主机，仅保留端口并连到 pinnedIP。
 func (d *pinnedDialer) DialContext(ctx context.Context, network, addr string) (net.Conn, error) {
 	_, port, err := net.SplitHostPort(addr)
 	if err != nil {
@@ -283,6 +294,7 @@ func (d *pinnedDialer) DialContext(ctx context.Context, network, addr string) (n
 // client decides the transport (and therefore the dialer); Do uses the
 // helper's default OTel-wrapped client, DoPinned uses a per-call client
 // with a transport-level pinned dialer.
+// doRawWithClient 为 Do/DoPinned 共享的重试循环实现。
 func (h *HTTPHelper) doRawWithClient(
 	ctx context.Context,
 	client *http.Client,
@@ -350,6 +362,7 @@ func (h *HTTPHelper) doRawWithClient(
 
 // backoff returns an exponentially increasing duration with full jitter,
 // capped at max. attempt is 1-indexed; the first retry uses BaseBackoff.
+// backoff 计算带全抖动的指数退避时长。
 func backoff(base, max time.Duration, attempt int) time.Duration {
 	if attempt < 1 {
 		attempt = 1
@@ -367,6 +380,7 @@ func backoff(base, max time.Duration, attempt int) time.Duration {
 }
 
 // sleepCtx waits for d, returning early if ctx is canceled.
+// sleepCtx 等待 d 时长，context 取消时提前返回。
 func sleepCtx(ctx context.Context, d time.Duration) {
 	if d <= 0 {
 		return
@@ -382,6 +396,7 @@ func sleepCtx(ctx context.Context, d time.Duration) {
 // isRetryableNetError reports whether a transport-level error should trigger
 // a retry. Context cancellation / deadline-exceeded are NOT retryable — the
 // caller explicitly asked for that.
+// isRetryableNetError 判断传输层错误是否应触发重试。
 func isRetryableNetError(err error) bool {
 	if err == nil {
 		return false

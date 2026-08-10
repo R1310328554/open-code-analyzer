@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// retrieval_nlp.go — NLPRetrievalAdapter：将 agent RetrievalService 接口桥接至生产 nlp.RetrievalService。
+
 //
 
 // retrieval_nlp.go — NLPRetrievalAdapter wiring.
@@ -71,17 +73,20 @@ import (
 // share across goroutines — the wrapped service is stateless
 // beyond its docEngine + documentDAO handles, both of which the
 // nlp package treats as concurrent-safe.
+// NLPRetrievalAdapter 包装 *nlp.RetrievalService，并发安全可共享。
 type NLPRetrievalAdapter struct {
 	svc   *nlp.RetrievalService
 	kbDAO knowledgebaseLookup
 }
 
+// knowledgebaseLookup 为解析租户 ID 所需的最小知识库 DAO 接口。
 type knowledgebaseLookup interface {
 	GetByIDs(ids []string) ([]*entity.Knowledgebase, error)
 }
 
 // NewNLPRetrievalAdapter wraps an already-constructed
 // *nlp.RetrievalService.
+// NewNLPRetrievalAdapter 包装已构造的 nlp.RetrievalService。
 func NewNLPRetrievalAdapter(svc *nlp.RetrievalService) *NLPRetrievalAdapter {
 	return &NLPRetrievalAdapter{
 		svc:   svc,
@@ -96,6 +101,7 @@ func NewNLPRetrievalAdapter(svc *nlp.RetrievalService) *NLPRetrievalAdapter {
 //
 // matches chat_session.go's newChatSessionServiceWithRetrieval
 // call site.
+// NewNLPRetrievalAdapterFromDeps 从 DocEngine 与 DocumentDAO 便捷构造适配器。
 func NewNLPRetrievalAdapterFromDeps(docEngine engine.DocEngine, documentDAO *dao.DocumentDAO) *NLPRetrievalAdapter {
 	return &NLPRetrievalAdapter{
 		svc:   nlp.NewRetrievalService(docEngine, documentDAO),
@@ -105,6 +111,7 @@ func NewNLPRetrievalAdapterFromDeps(docEngine engine.DocEngine, documentDAO *dao
 
 // Search implements RetrievalService. The translation rules live
 // at the top of this file.
+// Search 将 tool.RetrievalRequest 翻译为 nlp.RetrievalRequest 并返回 chunks。
 func (a *NLPRetrievalAdapter) Search(ctx context.Context, req RetrievalRequest) ([]RetrievalChunk, error) {
 	if a == nil || a.svc == nil {
 		return nil, ErrRetrievalServiceMissing
@@ -161,6 +168,7 @@ func (a *NLPRetrievalAdapter) Search(ctx context.Context, req RetrievalRequest) 
 	return out, nil
 }
 
+// resolveTenantIDs 从请求中提取去重后的租户 ID 列表。
 func (a *NLPRetrievalAdapter) resolveTenantIDs(req RetrievalRequest) []string {
 	seen := map[string]struct{}{}
 	tenantIDs := make([]string, 0, 1)
@@ -183,6 +191,7 @@ func (a *NLPRetrievalAdapter) resolveTenantIDs(req RetrievalRequest) []string {
 // Tolerates missing fields (returns zero values) and wrong types
 // (returns zero values) so a single bad chunk from the doc engine
 // can't break the whole result list.
+// translateChunk 将 nlp chunk map 转为 flat RetrievalChunk。
 func translateChunk(raw map[string]any) RetrievalChunk {
 	return RetrievalChunk{
 		ID:         stringFromMap(raw, "chunk_id"),
@@ -194,6 +203,7 @@ func translateChunk(raw map[string]any) RetrievalChunk {
 
 // stringFromMap returns raw[key].(string) or "" if missing / wrong
 // type. Keeps the translator compact.
+// stringFromMap 安全读取 map 字符串字段，类型不符返回空串。
 func stringFromMap(raw map[string]any, key string) string {
 	if v, ok := raw[key]; ok {
 		if s, ok := v.(string); ok {
@@ -208,6 +218,7 @@ func stringFromMap(raw map[string]any, key string) string {
 // content_ltks (the tokenised form). content_with_weight is what
 // the model sees in Python; we use it here too. Empty / missing →
 // fall back to content_ltks; both empty → empty string.
+// contentFromMap 优先取 content_with_weight，否则回退 content_ltks。
 func contentFromMap(raw map[string]any) string {
 	if v := stringFromMap(raw, "content_with_weight"); v != "" {
 		return v
@@ -220,6 +231,7 @@ func contentFromMap(raw map[string]any) string {
 // vector_similarity (cosine). We prefer similarity; if absent or
 // zero, average the two sub-scores. Wrong-type values → fall through
 // to sub-scores; missing sub-scores → 0.
+// scoreFromMap 优先 similarity，缺失时平均 term/vector 相似度。
 func scoreFromMap(raw map[string]any) float64 {
 	if f, ok := numberFromMap(raw, "similarity"); ok {
 		return f
@@ -240,6 +252,7 @@ func scoreFromMap(raw map[string]any) float64 {
 
 // numberFromMap returns raw[key].(float64) with a tolerant path
 // for ints. JSON unmarshaling can produce either.
+// numberFromMap 容忍 float64/int 类型的数值字段读取。
 func numberFromMap(raw map[string]any, key string) (float64, bool) {
 	v, ok := raw[key]
 	if !ok {
@@ -258,4 +271,5 @@ func numberFromMap(raw map[string]any, key string) (float64, bool) {
 	return 0, false
 }
 
+// boolPtr 返回 bool 指针，供 nlp 请求可选字段使用。
 func boolPtr(b bool) *bool { return &b }

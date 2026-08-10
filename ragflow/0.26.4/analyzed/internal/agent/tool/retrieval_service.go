@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// retrieval_service.go — 检索服务抽象接口与全局注册表：RetrievalTool 通过 GetRetrievalService 分派实现。
+
 //
 
 // RetrievalService is the abstract interface for retrieval.
@@ -32,6 +34,7 @@ import (
 // RetrievalChunk is the minimal shape RetrievalService returns. The
 // full Chunk type (with document_id, docnm_kwd, position, etc.)
 // lives in internal/entity and is wired in by a follow-up phase.
+// RetrievalChunk 为 RetrievalService 返回的最小 chunk 形状。
 type RetrievalChunk struct {
 	ID         string
 	Content    string
@@ -40,6 +43,7 @@ type RetrievalChunk struct {
 }
 
 // RetrievalRequest is the input to RetrievalService.Search.
+// RetrievalRequest 为 RetrievalService.Search 的输入参数。
 type RetrievalRequest struct {
 	Query               string
 	DatasetIDs          []string
@@ -61,6 +65,7 @@ type RetrievalRequest struct {
 // RetrievalService is the interface the Retrieval tool uses.
 // Today only the stub impl exists; production code can register
 // a real impl via SetRetrievalService during boot.
+// RetrievalService 为检索工具使用的抽象接口，启动时注册真实实现。
 type RetrievalService interface {
 	Search(ctx context.Context, req RetrievalRequest) ([]RetrievalChunk, error)
 }
@@ -73,6 +78,7 @@ type RetrievalService interface {
 // EmbeddingModel field. Splitting the registries means each
 // adapter can be tested in isolation and wired independently
 // at boot.
+// KGRetrievalService 为 GraphRAG 检索独立接口，与 KB 检索分注册。
 type KGRetrievalService interface {
 	Search(ctx context.Context, req RetrievalRequest) ([]RetrievalChunk, error)
 }
@@ -87,6 +93,7 @@ var (
 	retrievalServiceImpl RetrievalService = stubRetrievalService{}
 )
 
+// SetRetrievalService 注册或重置（nil）KB 检索服务实现。
 func SetRetrievalService(svc RetrievalService) {
 	retrievalServiceMu.Lock()
 	defer retrievalServiceMu.Unlock()
@@ -97,12 +104,14 @@ func SetRetrievalService(svc RetrievalService) {
 	retrievalServiceImpl = svc
 }
 
+// GetRetrievalService 返回当前注册的 RetrievalService，永不为 nil。
 func GetRetrievalService() RetrievalService {
 	retrievalServiceMu.RLock()
 	defer retrievalServiceMu.RUnlock()
 	return retrievalServiceImpl
 }
 
+// stubRetrievalService 默认占位实现，返回 ErrRetrievalServiceMissing。
 type stubRetrievalService struct{}
 
 func (stubRetrievalService) Search(_ context.Context, _ RetrievalRequest) ([]RetrievalChunk, error) {
@@ -114,6 +123,7 @@ func (stubRetrievalService) Search(_ context.Context, _ RetrievalRequest) ([]Ret
 // development and integration tests; the production impl lands
 // when the boot path wires internal/service.ChunkService into
 // SetRetrievalService.
+// simpleRetrievalService 确定性合成 chunk 实现，供开发与集成测试。
 type simpleRetrievalService struct{}
 
 func (simpleRetrievalService) Search(_ context.Context, req RetrievalRequest) ([]RetrievalChunk, error) {
@@ -152,6 +162,7 @@ func (simpleRetrievalService) Search(_ context.Context, req RetrievalRequest) ([
 // SetRetrievalService with a real implementation backed by
 // internal/service.ChunkService — see design doc §4.2
 // RetrievalService.
+// SetSimpleRetrievalService 安装 simpleRetrievalService 合成实现。
 func SetSimpleRetrievalService() {
 	SetRetrievalService(simpleRetrievalService{})
 }
@@ -176,6 +187,7 @@ var (
 // nil reverts to the stub that returns ErrKGRetrievalServiceMissing.
 // Idempotent: safe to call from cmd/server_main.go once at boot
 // and from tests that want to swap the impl.
+// SetKGRetrievalService 注册或重置 GraphRAG 检索适配器。
 func SetKGRetrievalService(svc KGRetrievalService) {
 	kgRetrievalServiceMu.Lock()
 	defer kgRetrievalServiceMu.Unlock()
@@ -188,12 +200,14 @@ func SetKGRetrievalService(svc KGRetrievalService) {
 
 // GetKGRetrievalService returns the registered KGRetrievalService.
 // Always non-nil — defaults to the stub.
+// GetKGRetrievalService 返回当前 KGRetrievalService，默认 stub。
 func GetKGRetrievalService() KGRetrievalService {
 	kgRetrievalServiceMu.RLock()
 	defer kgRetrievalServiceMu.RUnlock()
 	return kgRetrievalServiceImpl
 }
 
+// stubKGRetrievalService GraphRAG 占位实现，返回 ErrKGRetrievalServiceMissing。
 type stubKGRetrievalService struct{}
 
 func (stubKGRetrievalService) Search(_ context.Context, _ RetrievalRequest) ([]RetrievalChunk, error) {

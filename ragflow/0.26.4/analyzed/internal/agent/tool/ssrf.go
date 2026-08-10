@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// ssrf.go — SSRF 防护：解析 URL/DB 主机并拒绝内网、回环与云元数据地址。
+
 //
 
 package tool
@@ -32,6 +34,7 @@ import (
 // non-public IP range. This blocks the standard SSRF probes against
 // internal services and cloud metadata endpoints (AWS, GCP, Azure,
 // Alibaba all expose 169.254.169.254).
+// ErrSSRFBlocked 当目标主机解析至非公开 IP 时返回。
 var ErrSSRFBlocked = errors.New("ssrf: target host is blocked by SSRF guard")
 
 // credentialQueryParams is the lower-cased set of query-parameter names
@@ -53,6 +56,7 @@ var credentialQueryParams = map[string]struct{}{
 // every returned A/AAAA record because a name that resolves to a mix
 // of public and private IPs is also dangerous (DNS-rebinding /
 // multi-A-record pinning).
+// validateURLForSSRF 解析 URL 并对所有 A/AAAA 记录执行 SSRF 黑名单检查。
 func validateURLForSSRF(rawURL string) error {
 	_, _, err := ResolveAndValidate(rawURL)
 	return err
@@ -73,6 +77,7 @@ func validateURLForSSRF(rawURL string) error {
 // become the IP and cert verification would target the IP. The
 // transport-layer approach keeps the URL host as the original hostname,
 // preserving correct SNI / cert verification for any HTTPS endpoint.
+// ResolveAndValidate 解析 URL、校验 SSRF 并返回可固定拨号的 IP。
 func ResolveAndValidate(rawURL string) (originalHost string, pinnedIP net.IP, err error) {
 	u, perr := url.Parse(rawURL)
 	if perr != nil {
@@ -142,6 +147,7 @@ func ResolveAndValidate(rawURL string) (originalHost string, pinnedIP net.IP, er
 // (169.254.0.0/16, fe80::/10) is rejected because that is where cloud
 // metadata services live; multicast and the unspecified address are
 // also rejected.
+// isPrivateOrLoopback 保守判断 IP 是否属于拒绝访问的私有/链路本地范围。
 func isPrivateOrLoopback(ip net.IP) bool {
 	if ip == nil {
 		return true
@@ -153,6 +159,7 @@ func isPrivateOrLoopback(ip net.IP) bool {
 	return false
 }
 
+// allowAnyHost 读取 ALLOW_ANY_HOST 环境变量，开发/测试时可绕过 SSRF。
 func allowAnyHost() bool {
 	switch strings.ToLower(strings.TrimSpace(os.Getenv("ALLOW_ANY_HOST"))) {
 	case "1", "true", "yes", "on":
@@ -176,6 +183,7 @@ func allowAnyHost() bool {
 // a generic URL guard: callers feed the result straight into a SQL
 // driver DSN, where the format differs from URL parsing rules (IPv6
 // literals need brackets in URL hostnames but not in DSNs).
+// ValidateDBHost 校验数据库主机仅解析至公开 IP，返回安全连接地址。
 func ValidateDBHost(host string) (string, error) {
 	host = strings.TrimSpace(host)
 	if host == "" {
@@ -246,6 +254,7 @@ func ValidateDBHost(host string) (string, error) {
 // request URL do not leak API keys. Anything else is preserved. The
 // returned string is always a valid URL; on parse failure the original
 // is returned unchanged.
+// SanitizeURL 脱敏 URL 查询参数中的 API 密钥，防止日志泄露。
 func SanitizeURL(rawURL string) string {
 	u, err := url.Parse(rawURL)
 	if err != nil {

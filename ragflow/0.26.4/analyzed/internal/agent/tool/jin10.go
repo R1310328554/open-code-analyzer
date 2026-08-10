@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// jin10.go — 金十数据快讯工具占位：无公开 REST API，Go Canvas 暂未实现 WebSocket 订阅。
+
 //
 
 package tool
@@ -40,6 +42,7 @@ const jin10UnsupportedMessage = "Jin10 requires WebSocket subscription — not y
 // Python implementation accepts a category (e.g. "all", "global", "cny")
 // and an optional speed filter. The Go stub preserves the shape for
 // future WebSocket client compatibility but rejects every invocation.
+// jin10Params 保留与 Python 版一致的参数形状，供未来 WebSocket 客户端兼容。
 type jin10Params struct {
 	Category string `json:"category"`
 	Speed    string `json:"speed,omitempty"`
@@ -47,6 +50,7 @@ type jin10Params struct {
 
 // jin10Envelope is the model-facing JSON shape. The stub always
 // returns a populated Error.
+// jin10Envelope 为模型可见 JSON；占位实现始终填充 Error。
 type jin10Envelope struct {
 	Items []any  `json:"items,omitempty"`
 	Error string `json:"_ERROR,omitempty"`
@@ -62,13 +66,16 @@ type jin10Envelope struct {
 // invocation fails fast with a clear "use Python Canvas" message.
 //
 // Jin10Tool does not own an HTTPHelper — it never makes network calls.
+// Jin10Tool 为金十快讯占位工具，不持有 HTTPHelper、不发起网络请求。
 type Jin10Tool struct{}
 
 // NewJin10Tool returns a Jin10Tool. No HTTPHelper is allocated; the
 // stub never issues network requests.
+// NewJin10Tool 返回 Jin10Tool 占位实例。
 func NewJin10Tool() *Jin10Tool { return &Jin10Tool{} }
 
 // Info returns the tool's metadata for the chat model.
+// Info 返回工具元数据，使 DSL 中 jin10 引用仍可解析。
 func (j *Jin10Tool) Info(_ context.Context) (*schema.ToolInfo, error) {
 	return &schema.ToolInfo{
 		Name: jin10ToolName,
@@ -91,6 +98,7 @@ func (j *Jin10Tool) Info(_ context.Context) (*schema.ToolInfo, error) {
 // InvokableRun validates the input shape (category is optional with
 // default "all") and returns a clear "use Python Canvas" error. The
 // model receives a JSON envelope with the message in the `_ERROR` field.
+// InvokableRun 校验参数后快速失败，提示使用 Python Canvas。
 func (j *Jin10Tool) InvokableRun(_ context.Context, argsJSON string, _ ...tool.Option) (string, error) {
 	var p jin10Params
 	if argsJSON != "" {

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// retrieval.go — 知识库检索工具：校验 use_kg 并分派至已注册的 RetrievalService。
+
 //
 
 package tool
@@ -35,6 +37,7 @@ import (
 // callers pass use_kg=true. GraphRAG support is a future
 // enhancement; users must either disable use_kg or fall back to
 // the Python Canvas.
+// ErrGraphRAGNotSupported 在 use_kg=true 时返回，GraphRAG 尚未在 Go Canvas 实现。
 var ErrGraphRAGNotSupported = errors.New("GraphRAG 检索暂不支持，请使用 Python Canvas 或关闭 use_kg")
 
 // ErrRetrievalServiceMissing is returned when the
@@ -54,6 +57,7 @@ const retrievalToolDescription = "This tool can be utilized for relevant content
 // retrievalArgs is the JSON schema the model sends into InvokableRun. We
 // accept both `query` (canonical) and `dataset_ids` / `use_kg` etc. to
 // match the Python ToolMeta field set.
+// retrievalArgs 为模型传入的检索参数，对齐 Python ToolMeta 字段集。
 type retrievalArgs struct {
 	Query      string   `json:"query"`
 	DatasetIDs []string `json:"dataset_ids,omitempty"`
@@ -64,6 +68,7 @@ type retrievalArgs struct {
 // retrievalResult is the JSON shape returned to the model. The `_ERROR`
 // field matches the Python tool's output convention; downstream components
 // can pattern-match on it.
+// retrievalResult 为返回给模型的 JSON 形状，含 _ERROR 约定字段。
 type retrievalResult struct {
 	FormalizedContent string         `json:"formalized_content,omitempty"`
 	Chunks            []chunkPayload `json:"chunks,omitempty"`
@@ -74,6 +79,7 @@ type retrievalResult struct {
 // chunkPayload is the minimal chunk shape we surface. We don't try to
 // match every Python field — the stub returns empty data; the wired
 // implementation will populate the real shape.
+// chunkPayload 为对外暴露的最小 chunk 结构。
 type chunkPayload struct {
 	ID         string  `json:"id,omitempty"`
 	Content    string  `json:"content,omitempty"`
@@ -86,16 +92,19 @@ type chunkPayload struct {
 // dispatches to the registered RetrievalService via
 // SetRetrievalService. When no service is registered, the call
 // surfaces ErrRetrievalServiceMissing.
+// RetrievalTool 实现 eino InvokableTool，分派至 RetrievalService。
 type RetrievalTool struct{}
 
 // NewRetrievalTool returns a RetrievalTool implementing eino's
 // tool.InvokableTool interface.
+// NewRetrievalTool 返回 RetrievalTool 实例。
 func NewRetrievalTool() *RetrievalTool {
 	return &RetrievalTool{}
 }
 
 // Info returns the tool's metadata for the chat model. The schema mirrors
 // the Python RetrievalParam ToolMeta (plan , 字段对齐).
+// Info 返回工具 schema，名称保留 Python 拼写错误 dateset 以兼容 DSL。
 func (r *RetrievalTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 	return &schema.ToolInfo{
 		Name: retrievalToolName,
@@ -129,6 +138,7 @@ func (r *RetrievalTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 // dispatches to the registered RetrievalService. When no
 // service is registered, the call surfaces
 // ErrRetrievalServiceMissing.
+// InvokableRun 校验参数、调用 RetrievalService 并将 chunks 写入画布状态。
 func (r *RetrievalTool) InvokableRun(ctx context.Context, argumentsInJSON string, _ ...tool.Option) (string, error) {
 	var args retrievalArgs
 	if argumentsInJSON != "" {
@@ -220,6 +230,7 @@ func (r *RetrievalTool) InvokableRun(ctx context.Context, argumentsInJSON string
 // readable content string. Mirrors Python's
 // `kb_prompt(kbinfos, ...)` format: each chunk gets a header
 // line with its ID and document, then the content.
+// renderChunks 将 chunk 列表拼接为可读 formalized_content 字符串。
 func renderChunks(chunks []RetrievalChunk, query string) string {
 	var sb strings.Builder
 	for _, c := range chunks {
@@ -230,6 +241,7 @@ func renderChunks(chunks []RetrievalChunk, query string) string {
 
 // stubJSONWithErr is the (string, error) variant for call sites
 // that need to propagate marshal failures.
+// stubJSONWithErr 序列化结果并向上传播 marshal 错误。
 func stubJSONWithErr(r retrievalResult) (string, error) {
 	b, err := json.Marshal(r)
 	if err != nil {
@@ -241,6 +253,7 @@ func stubJSONWithErr(r retrievalResult) (string, error) {
 // stubJSON marshals the result and returns it as a string. Marshaling
 // failures are converted to a plain string error so the model can still
 // surface something to the user.
+// stubJSON 序列化结果；失败时返回含 _ERROR 的兜底 JSON。
 func stubJSON(r retrievalResult) string {
 	b, err := json.Marshal(r)
 	if err != nil {

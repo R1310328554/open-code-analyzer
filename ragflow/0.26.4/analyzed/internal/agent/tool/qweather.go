@@ -35,6 +35,7 @@ const qweatherToolDescription = "Fetch current weather conditions from 和风天
 
 // qweatherEndpoint is the QWeather v7 "now" endpoint. Exposed as a
 // package var so tests can substitute a httptest.Server URL.
+// qweatherEndpoint 为和风 v7 实时天气端点，单测可替换。
 var qweatherEndpoint = "https://devapi.qweather.com/v7/weather/now"
 
 // qweatherParams is the JSON shape the model sends into InvokableRun.
@@ -44,6 +45,7 @@ var qweatherEndpoint = "https://devapi.qweather.com/v7/weather/now"
 //     or a lat,lon string "39.904,116.405".
 //   - Lang (optional): language code for `text` and `windDir`. Defaults
 //     to "zh" per the inbox spec.
+// qweatherParams 为模型传入参数；location 可为城市 ID 或 lat,lon。
 type qweatherParams struct {
 	APIKey   string `json:"api_key"`
 	Location string `json:"location"`
@@ -51,6 +53,7 @@ type qweatherParams struct {
 }
 
 // qweatherNow is the upstream `now` object.
+// qweatherNow 对应上游 now 对象各字段。
 type qweatherNow struct {
 	Temp      string `json:"temp"`      // "23"
 	FeelsLike string `json:"feelsLike"` // "22"
@@ -62,12 +65,14 @@ type qweatherNow struct {
 // qweatherResponse is the upstream QWeather envelope. We model only
 // the fields the inbox spec calls out; additional fields from QWeather
 // (obsTime, precip, pressure, ...) are ignored.
+// qweatherResponse 为和风 API 响应信封，code=200 表示成功。
 type qweatherResponse struct {
 	Code string      `json:"code"` // "200" = OK
 	Now  qweatherNow `json:"now"`
 }
 
 // qweatherEnvelope is the model-facing JSON shape.
+// qweatherEnvelope 为返回给模型的 JSON 形状。
 type qweatherEnvelope struct {
 	Temp      string `json:"temp,omitempty"`
 	FeelsLike string `json:"feels_like,omitempty"`
@@ -84,17 +89,20 @@ type qweatherEnvelope struct {
 //
 // QWeatherTool uses the shared HTTPHelper for retry/timeout/OTel
 // propagation.
+// QWeatherTool 经共享 HTTPHelper 查询实时天气。
 type QWeatherTool struct {
 	helper *HTTPHelper
 }
 
 // NewQWeatherTool returns a QWeatherTool using the default HTTPHelper.
+// NewQWeatherTool 使用默认 HTTPHelper 构造工具。
 func NewQWeatherTool() *QWeatherTool {
 	return NewQWeatherToolWith(NewHTTPHelper())
 }
 
 // NewQWeatherToolWith returns a QWeatherTool that uses the provided
 // HTTPHelper. Useful for tests.
+// NewQWeatherToolWith 注入自定义 HTTPHelper。
 func NewQWeatherToolWith(h *HTTPHelper) *QWeatherTool {
 	if h == nil {
 		h = NewHTTPHelper()
@@ -103,6 +111,7 @@ func NewQWeatherToolWith(h *HTTPHelper) *QWeatherTool {
 }
 
 // Info returns the tool's metadata for the chat model.
+// Info 返回工具元数据与参数 schema。
 func (q *QWeatherTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 	return &schema.ToolInfo{
 		Name: qweatherToolName,
@@ -129,6 +138,7 @@ func (q *QWeatherTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 
 // buildQWeatherURL composes the devapi.qweather.com URL. Centralized
 // for testability.
+// buildQWeatherURL 组装 devapi 查询 URL，lang 默认 zh。
 func buildQWeatherURL(p qweatherParams) string {
 	q := url.Values{}
 	q.Set("location", p.Location)
@@ -141,6 +151,7 @@ func buildQWeatherURL(p qweatherParams) string {
 }
 
 // InvokableRun performs the QWeather current-conditions GET.
+// InvokableRun 执行和风实时天气 GET 并映射 now 字段。
 func (q *QWeatherTool) InvokableRun(ctx context.Context, argsJSON string, _ ...tool.Option) (string, error) {
 	var p qweatherParams
 	if err := json.Unmarshal([]byte(argsJSON), &p); err != nil {
@@ -207,6 +218,7 @@ func qweatherErrJSON(err error) string {
 
 // formatQWeatherError joins a non-2xx status with the upstream code so
 // the model can see both signals. Exposed for testability.
+// formatQWeatherError 拼接 HTTP 状态与上游业务 code 供模型诊断。
 func formatQWeatherError(status int, upstreamCode string) string {
 	if strings.TrimSpace(upstreamCode) == "" {
 		return fmt.Sprintf("qweather: upstream returned %d", status)

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// pubmed.go — PubMed 文献检索：NCBI E-utilities 两步 esearch→esummary 获取 PMID 与摘要。
+
 //
 
 package tool
@@ -35,12 +37,14 @@ const pubmedToolName = "pubmed"
 const pubmedToolDescription = "Search PubMed via NCBI E-utilities. Returns {pmid, title, authors, journal, year}."
 
 // pubmedParams is the JSON shape the model sends into InvokableRun.
+// pubmedParams 为模型传入的 PubMed 搜索参数。
 type pubmedParams struct {
 	Query      string `json:"query"`
 	MaxResults int    `json:"max_results"`
 }
 
 // pubmedResult is one row in the returned record list.
+// pubmedResult 为返回给模型的单条文献记录。
 type pubmedResult struct {
 	PMID    string `json:"pmid"`
 	Title   string `json:"title"`
@@ -50,6 +54,7 @@ type pubmedResult struct {
 }
 
 // pubmedEnvelope is what the model sees.
+// pubmedEnvelope 为模型可见 JSON 信封。
 type pubmedEnvelope struct {
 	Results []pubmedResult `json:"results"`
 	Error   string         `json:"_ERROR,omitempty"`
@@ -62,27 +67,32 @@ const pubmedUserAgent = "ragflow/1.0"
 
 // pubmedESearchEndpoint is the E-utilities esearch URL. Exposed as a
 // package var so tests can substitute a httptest.Server URL.
+// pubmedESearchEndpoint 为 esearch 端点，单测可替换。
 var pubmedESearchEndpoint = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
 
 // pubmedESummaryEndpoint is the E-utilities esummary URL. Exposed
 // as a package var so tests can substitute a httptest.Server URL.
+// pubmedESummaryEndpoint 为 esummary 端点，单测可替换。
 var pubmedESummaryEndpoint = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi"
 
 // PubMedTool is the PubMed
 // search tool. It uses NCBI
 // E-utilities: esearch returns a list of PMIDs, then esummary fetches
 // the full records for those PMIDs.
+// PubMedTool 经 E-utilities 执行 esearch+esummary 两步检索。
 type PubMedTool struct {
 	helper *HTTPHelper
 }
 
 // NewPubMedTool returns a PubMedTool using the default HTTPHelper.
+// NewPubMedTool 使用默认 HTTPHelper 构造 PubMedTool。
 func NewPubMedTool() *PubMedTool {
 	return NewPubMedToolWith(NewHTTPHelper())
 }
 
 // NewPubMedToolWith returns a PubMedTool that uses the provided
 // HTTPHelper. Useful for tests.
+// NewPubMedToolWith 注入自定义 HTTPHelper。
 func NewPubMedToolWith(h *HTTPHelper) *PubMedTool {
 	if h == nil {
 		h = NewHTTPHelper()
@@ -91,6 +101,7 @@ func NewPubMedToolWith(h *HTTPHelper) *PubMedTool {
 }
 
 // Info returns the tool's metadata for the chat model.
+// Info 返回工具元数据与参数 schema。
 func (p *PubMedTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 	return &schema.ToolInfo{
 		Name: pubmedToolName,
@@ -112,6 +123,7 @@ func (p *PubMedTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 
 // buildPubMedESearchURL composes the esearch URL. Centralized for
 // testability.
+// buildPubMedESearchURL 组装 esearch 查询 URL。
 func buildPubMedESearchURL(query string, maxResults int) string {
 	if maxResults <= 0 {
 		maxResults = 5
@@ -129,6 +141,7 @@ func buildPubMedESearchURL(query string, maxResults int) string {
 
 // buildPubMedESummaryURL composes the esummary URL for a list of
 // PMIDs. Centralized for testability.
+// buildPubMedESummaryURL 组装 esummary 批量查询 URL。
 func buildPubMedESummaryURL(pmids []string) string {
 	q := url.Values{}
 	q.Set("db", "pubmed")
@@ -182,6 +195,7 @@ func mustReadAll(r io.Reader) []byte {
 // A single JSON decode into map[string]Article would fail on `uids`
 // because Go's encoding/json cannot store arrays in a struct-typed
 // map; the RawMessage indirection sidesteps that.
+// decodePubMedESummary 解析 esummary 响应，跳过 uids 数组键。
 func decodePubMedESummary(body []byte) (map[string]pubmedESummaryArticle, error) {
 	var raw pubmedESummaryResponse
 	if err := json.Unmarshal(body, &raw); err != nil {
@@ -203,6 +217,7 @@ func decodePubMedESummary(body []byte) (map[string]pubmedESummaryArticle, error)
 }
 
 // InvokableRun performs the two-step PubMed lookup.
+// InvokableRun 执行 esearch 获取 PMID 列表，再 esummary 拉取详情。
 func (p *PubMedTool) InvokableRun(ctx context.Context, argsJSON string, _ ...tool.Option) (string, error) {
 	var params pubmedParams
 	if err := json.Unmarshal([]byte(argsJSON), &params); err != nil {
@@ -283,6 +298,7 @@ func (p *PubMedTool) InvokableRun(ctx context.Context, argsJSON string, _ ...too
 // joinAuthorNames joins the first N authors with ", " and adds
 // "et al." for any beyond N. We use N=3 to mirror the convention
 // common in academic citation styles.
+// joinAuthorNames 拼接作者列表，超过 3 人追加 et al.。
 func joinAuthorNames(authors []pubmedESummaryAuthor) string {
 	const cap = 3
 	if len(authors) == 0 {
