@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T18:19:26Z",
-  "files": [
-    "internal/handler/agent.go",
-    "internal/handler/agent_attachment.go",
-    "internal/handler/agent_component.go",
-    "internal/handler/agent_download.go",
-    "internal/handler/agent_upload.go",
-    "internal/handler/agent_webhook.go",
-    "internal/handler/agent_webhook_schema.go",
-    "internal/handler/agent_webhook_security.go",
-    "internal/handler/api_token.go",
-    "internal/handler/auth.go",
-    "internal/handler/bot.go",
-    "internal/handler/chat.go",
-    "internal/handler/chat_channel.go",
-    "internal/handler/chat_recommendation.go",
-    "internal/handler/chat_session.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 954,
-  "done": 795
+  "done": 810
 }
