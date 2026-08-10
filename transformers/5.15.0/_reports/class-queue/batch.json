@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T23:51:38Z",
   "files": [
-    "src/transformers/cli/serving/server.py",
-    "src/transformers/cli/serving/transcription.py",
-    "src/transformers/cli/serving/utils.py",
-    "src/transformers/cli/system.py",
-    "src/transformers/cli/transformers.py",
-    "src/transformers/configuration_utils.py",
-    "src/transformers/conversion_mapping.py",
-    "src/transformers/convert_slow_tokenizer.py",
-    "src/transformers/convert_slow_tokenizers_checkpoints_to_fast.py",
-    "src/transformers/core_model_loading.py",
-    "src/transformers/data/__init__.py",
-    "src/transformers/data/data_collator.py",
-    "src/transformers/data/datasets/__init__.py",
-    "src/transformers/data/datasets/glue.py",
-    "src/transformers/data/datasets/squad.py",
     "src/transformers/data/metrics/__init__.py",
     "src/transformers/data/metrics/squad_metrics.py",
     "src/transformers/data/processors/__init__.py",
@@ -33,5 +18,5 @@
     "src/transformers/distributed/sharding_utils.py"
   ],
   "remaining_pending": 2619,
-  "done": 30
+  "done": 45
 }
