@@ -20,18 +20,24 @@ import com.alibaba.nacos.api.ai.model.prompt.Prompt;
 import com.alibaba.nacos.api.remote.response.Response;
 
 /**
- * Nacos AI module query prompt response.
+ * 查询 Prompt 配置的远程响应。
+ *
+ * <p>继承 {@link com.alibaba.nacos.api.remote.response.Response}，
+ * 通过 {@link #promptInfo} 返回 {@link com.alibaba.nacos.api.ai.model.prompt.Prompt} 完整内容。</p>
  *
  * @author nacos
  */
 public class QueryPromptResponse extends Response {
     
+    /** 查询到的 Prompt 完整信息。 */
     private Prompt promptInfo;
     
+    /** 获取 Prompt 完整信息。 */
     public Prompt getPromptInfo() {
         return promptInfo;
     }
     
+    /** 设置 Prompt 完整信息。 */
     public void setPromptInfo(Prompt promptInfo) {
         this.promptInfo = promptInfo;
     }

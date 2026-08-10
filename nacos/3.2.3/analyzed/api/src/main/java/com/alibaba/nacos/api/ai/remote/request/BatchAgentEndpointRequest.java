@@ -22,25 +22,29 @@ import com.alibaba.nacos.api.ai.remote.AiRemoteConstants;
 import java.util.Collection;
 
 /**
- * Batch Register endpoints for agent to nacos AI module request.
+ * 批量向 Nacos AI 模块注册 Agent 端点的远程请求。
+ *
+ * <p>一次提交多个 {@link com.alibaba.nacos.api.ai.model.a2a.AgentEndpoint}，
+ * 请求类型固定为 {@link AiRemoteConstants#BATCH_REGISTER_ENDPOINT}。</p>
  *
  * @author xiweng.yy
  */
 public class BatchAgentEndpointRequest extends AbstractAgentRequest {
     
+    /** 待批量注册的 Agent 端点集合。 */
     private Collection<AgentEndpoint> endpoints;
     
+    /** 获取待批量注册的端点集合。 */
     public Collection<AgentEndpoint> getEndpoints() {
         return endpoints;
     }
     
+    /** 设置待批量注册的端点集合。 */
     public void setEndpoints(Collection<AgentEndpoint> endpoints) {
         this.endpoints = endpoints;
     }
     
-    /**
-     * Should be {@link AiRemoteConstants#BATCH_REGISTER_ENDPOINT}.
-     */
+    /** 返回批量注册请求类型 {@link AiRemoteConstants#BATCH_REGISTER_ENDPOINT}。 */
     public String getType() {
         return AiRemoteConstants.BATCH_REGISTER_ENDPOINT;
     }

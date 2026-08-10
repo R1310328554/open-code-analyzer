@@ -17,18 +17,23 @@
 package com.alibaba.nacos.api.ai.remote.request;
 
 /**
- * Nacos AI module query mcp request.
+ * 查询 Nacos AI 模块中 MCP Server 详情的远程请求。
+ *
+ * <p>继承 {@link AbstractMcpRequest}，通过 {@link #version} 指定目标版本。</p>
  *
  * @author xiweng.yy
  */
 public class QueryMcpServerRequest extends AbstractMcpRequest {
     
+    /** 目标 MCP Server 版本号；为空时返回最新或默认版本。 */
     private String version;
     
+    /** 获取查询目标版本号。 */
     public String getVersion() {
         return version;
     }
     
+    /** 设置查询目标版本号。 */
     public void setVersion(String version) {
         this.version = version;
     }

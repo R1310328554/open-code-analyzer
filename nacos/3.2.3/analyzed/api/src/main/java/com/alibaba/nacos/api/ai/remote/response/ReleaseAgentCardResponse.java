@@ -19,7 +19,11 @@ package com.alibaba.nacos.api.ai.remote.response;
 import com.alibaba.nacos.api.remote.response.Response;
 
 /**
- * Nacos AI module release new agent card or new version of exist agent card response.
+ * 发布 Agent Card 的远程响应。
+ *
+ * <p>继承 {@link com.alibaba.nacos.api.remote.response.Response}，
+ * 成功时通过基类 {@code resultCode} 与 {@code message} 字段返回操作结果；
+ * 本类无额外业务字段，表示发布操作已完成。</p>
  *
  * @author xiweng.yy
  */

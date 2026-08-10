@@ -17,28 +17,36 @@
 package com.alibaba.nacos.api.ai.remote.request;
 
 /**
- * Nacos AI module query agent card request.
+ * 查询 Nacos AI 模块中 Agent Card 的远程请求。
+ *
+ * <p>可按 {@link #version} 与 {@link #registrationType} 筛选目标 Agent Card 详情。</p>
  *
  * @author xiweng.yy
  */
 public class QueryAgentCardRequest extends AbstractAgentRequest {
     
+    /** 目标 Agent Card 版本号；为空时返回最新或默认版本。 */
     private String version;
     
+    /** 注册类型（如 service 端点类型），用于区分不同注册方式。 */
     private String registrationType;
     
+    /** 获取查询目标版本号。 */
     public String getVersion() {
         return version;
     }
     
+    /** 设置查询目标版本号。 */
     public void setVersion(String version) {
         this.version = version;
     }
     
+    /** 获取注册类型筛选条件。 */
     public String getRegistrationType() {
         return registrationType;
     }
     
+    /** 设置注册类型筛选条件。 */
     public void setRegistrationType(String registrationType) {
         this.registrationType = registrationType;
     }

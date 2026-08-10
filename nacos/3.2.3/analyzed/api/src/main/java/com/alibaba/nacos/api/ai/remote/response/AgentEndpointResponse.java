@@ -20,22 +20,24 @@ import com.alibaba.nacos.api.ai.remote.AiRemoteConstants;
 import com.alibaba.nacos.api.remote.response.Response;
 
 /**
- * Register or Deregister endpoint for agent to nacos AI module response.
+ * Agent 端点注册/注销操作的远程响应。
+ *
+ * <p>继承 {@link com.alibaba.nacos.api.remote.response.Response}，
+ * {@link #type} 标识本次响应对应的请求类型。</p>
  *
  * @author xiweng.yy
  */
 public class AgentEndpointResponse extends Response {
     
-    /**
-     * Should be {@link AiRemoteConstants#REGISTER_ENDPOINT}, {@link AiRemoteConstants#DE_REGISTER_ENDPOINT},
-     * {@link AiRemoteConstants#BATCH_REGISTER_ENDPOINT}.
-     */
+    /** 响应对应的请求类型，取值为 {@link AiRemoteConstants#REGISTER_ENDPOINT}、{@link AiRemoteConstants#DE_REGISTER_ENDPOINT} 或 {@link AiRemoteConstants#BATCH_REGISTER_ENDPOINT}。 */
     private String type;
     
+    /** 获取响应对应的请求类型。 */
     public String getType() {
         return type;
     }
     
+    /** 设置响应对应的请求类型。 */
     public void setType(String type) {
         this.type = type;
     }

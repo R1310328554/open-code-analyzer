@@ -19,18 +19,24 @@ package com.alibaba.nacos.api.ai.remote.response;
 import com.alibaba.nacos.api.remote.response.Response;
 
 /**
- * Nacos AI module release new mcp server or new version of exist mcp server response.
+ * 发布 MCP Server 的远程响应。
+ *
+ * <p>继承 {@link com.alibaba.nacos.api.remote.response.Response}，
+ * 通过 {@link #mcpId} 返回已创建或更新的 MCP Server 唯一标识。</p>
  *
  * @author xiweng.yy
  */
 public class ReleaseMcpServerResponse extends Response {
     
+    /** 已发布 MCP Server 的唯一标识 ID。 */
     private String mcpId;
     
+    /** 获取 MCP Server 唯一标识。 */
     public String getMcpId() {
         return mcpId;
     }
     
+    /** 设置 MCP Server 唯一标识。 */
     public void setMcpId(String mcpId) {
         this.mcpId = mcpId;
     }

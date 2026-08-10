@@ -20,18 +20,24 @@ import com.alibaba.nacos.api.ai.model.a2a.AgentCardDetailInfo;
 import com.alibaba.nacos.api.remote.response.Response;
 
 /**
- * Nacos AI module query agent card response.
+ * 查询 Agent Card 的远程响应，携带完整详情信息。
+ *
+ * <p>继承 {@link com.alibaba.nacos.api.remote.response.Response}，
+ * 通过 {@link #agentCardDetailInfo} 返回 {@link com.alibaba.nacos.api.ai.model.a2a.AgentCardDetailInfo}。</p>
  *
  * @author xiweng.yy
  */
 public class QueryAgentCardResponse extends Response {
     
+    /** 查询到的 Agent Card 详情信息。 */
     private AgentCardDetailInfo agentCardDetailInfo;
     
+    /** 获取 Agent Card 详情信息。 */
     public AgentCardDetailInfo getAgentCardDetailInfo() {
         return agentCardDetailInfo;
     }
     
+    /** 设置 Agent Card 详情信息。 */
     public void setAgentCardDetailInfo(AgentCardDetailInfo agentCardDetailInfo) {
         this.agentCardDetailInfo = agentCardDetailInfo;
     }

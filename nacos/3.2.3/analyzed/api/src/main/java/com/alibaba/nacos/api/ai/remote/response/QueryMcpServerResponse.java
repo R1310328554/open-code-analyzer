@@ -20,18 +20,24 @@ import com.alibaba.nacos.api.ai.model.mcp.McpServerDetailInfo;
 import com.alibaba.nacos.api.remote.response.Response;
 
 /**
- * Nacos AI module query mcp server response.
+ * 查询 MCP Server 详情的远程响应。
+ *
+ * <p>继承 {@link com.alibaba.nacos.api.remote.response.Response}，
+ * 通过 {@link #mcpServerDetailInfo} 返回 {@link com.alibaba.nacos.api.ai.model.mcp.McpServerDetailInfo}。</p>
  *
  * @author xiweng.yy
  */
 public class QueryMcpServerResponse extends Response {
     
+    /** 查询到的 MCP Server 详情信息。 */
     private McpServerDetailInfo mcpServerDetailInfo;
     
+    /** 获取 MCP Server 详情信息。 */
     public McpServerDetailInfo getMcpServerDetailInfo() {
         return mcpServerDetailInfo;
     }
     
+    /** 设置 MCP Server 详情信息。 */
     public void setMcpServerDetailInfo(McpServerDetailInfo mcpServerDetailInfo) {
         this.mcpServerDetailInfo = mcpServerDetailInfo;
     }
