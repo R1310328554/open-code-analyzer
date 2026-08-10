@@ -25,7 +25,9 @@ import com.alibaba.nacos.api.selector.AbstractSelector;
 import java.util.Map;
 
 /**
- * Operations related to Nacos.
+ * Nacos 命名服务运维维护接口（已废弃）。
+ *
+ * <p>提供实例更新、服务 CRUD 等管理操作；3.3.0 起请迁移至 {@link com.alibaba.nacos.maintainer.client.naming.NamingMaintainerService}。</p>
  *
  * @author liaochuntao
  * @since 1.0.1
@@ -41,6 +43,7 @@ public interface NamingMaintainService {
      * @param serviceName service name
      * @param instance    instance
      * @throws NacosException nacos exception
+      * <p>命名运维 API 方法；参数含义见 @param。</p>
      */
     @Since("1.0.1")
     void updateInstance(String serviceName, Instance instance) throws NacosException;
@@ -52,6 +55,7 @@ public interface NamingMaintainService {
      * @param groupName   group name
      * @param instance    instance
      * @throws NacosException nacos exception
+      * <p>命名运维 API 方法；参数含义见 @param。</p>
      */
     @Since("1.0.1")
     void updateInstance(String serviceName, String groupName, Instance instance)
@@ -63,6 +67,7 @@ public interface NamingMaintainService {
      * @param serviceName service name
      * @return service
      * @throws NacosException nacos exception
+      * <p>命名运维 API 方法；参数含义见 @param。</p>
      */
     @Since("1.0.1")
     Service queryService(String serviceName) throws NacosException;
@@ -74,6 +79,7 @@ public interface NamingMaintainService {
      * @param groupName   group name
      * @return service
      * @throws NacosException nacos exception
+      * <p>命名运维 API 方法；参数含义见 @param。</p>
      */
     @Since("1.0.1")
     Service queryService(String serviceName, String groupName) throws NacosException;
@@ -83,6 +89,7 @@ public interface NamingMaintainService {
      *
      * @param serviceName name of service
      * @throws NacosException nacos exception
+      * <p>命名运维 API 方法；参数含义见 @param。</p>
      */
     @Since("1.0.1")
     void createService(String serviceName) throws NacosException;
@@ -93,6 +100,7 @@ public interface NamingMaintainService {
      * @param serviceName name of service
      * @param groupName   group of service
      * @throws NacosException nacos exception
+      * <p>命名运维 API 方法；参数含义见 @param。</p>
      */
     @Since("1.0.1")
     void createService(String serviceName, String groupName) throws NacosException;
@@ -104,6 +112,7 @@ public interface NamingMaintainService {
      * @param groupName        group of service
      * @param protectThreshold protectThreshold of service
      * @throws NacosException nacos exception
+      * <p>命名运维 API 方法；参数含义见 @param。</p>
      */
     @Since("1.0.1")
     void createService(String serviceName, String groupName, float protectThreshold)
@@ -117,6 +126,7 @@ public interface NamingMaintainService {
      * @param protectThreshold protectThreshold of service
      * @param expression       expression of selector
      * @throws NacosException nacos exception
+      * <p>命名运维 API 方法；参数含义见 @param。</p>
      */
     @Since("1.0.1")
     void createService(String serviceName, String groupName, float protectThreshold,
@@ -129,6 +139,7 @@ public interface NamingMaintainService {
      * @param service  name of service
      * @param selector selector
      * @throws NacosException nacos exception
+      * <p>命名运维 API 方法；参数含义见 @param。</p>
      */
     @Since("1.0.1")
     void createService(Service service, AbstractSelector selector) throws NacosException;
@@ -139,6 +150,7 @@ public interface NamingMaintainService {
      * @param serviceName name of service
      * @return if delete service success return true
      * @throws NacosException nacos exception
+      * <p>命名运维 API 方法；参数含义见 @param。</p>
      */
     @Since("1.0.1")
     boolean deleteService(String serviceName) throws NacosException;
@@ -150,6 +162,7 @@ public interface NamingMaintainService {
      * @param groupName   group of service
      * @return if delete service success return true
      * @throws NacosException nacos exception
+      * <p>命名运维 API 方法；参数含义见 @param。</p>
      */
     @Since("1.0.1")
     boolean deleteService(String serviceName, String groupName) throws NacosException;
@@ -161,6 +174,7 @@ public interface NamingMaintainService {
      * @param groupName        group of service
      * @param protectThreshold protectThreshold of service
      * @throws NacosException nacos exception
+      * <p>命名运维 API 方法；参数含义见 @param。</p>
      */
     @Since("1.0.1")
     void updateService(String serviceName, String groupName, float protectThreshold)
@@ -174,6 +188,7 @@ public interface NamingMaintainService {
      * @param protectThreshold protectThreshold of service
      * @param metadata         metadata of service
      * @throws NacosException nacos exception
+      * <p>命名运维 API 方法；参数含义见 @param。</p>
      */
     @Since("1.0.1")
     void updateService(String serviceName, String groupName, float protectThreshold,
@@ -186,6 +201,7 @@ public interface NamingMaintainService {
      * @param service  {@link Service} pojo of service
      * @param selector {@link AbstractSelector} pojo of selector
      * @throws NacosException nacos exception
+      * <p>命名运维 API 方法；参数含义见 @param。</p>
      */
     @Since("1.0.1")
     void updateService(Service service, AbstractSelector selector) throws NacosException;
@@ -194,6 +210,7 @@ public interface NamingMaintainService {
      * Shutdown the resource service.
      *
      * @throws NacosException exception.
+      * <p>命名运维 API 方法；参数含义见 @param。</p>
      */
     @Since("1.4.0")
     void shutDown() throws NacosException;

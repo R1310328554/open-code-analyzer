@@ -22,7 +22,9 @@ import java.lang.reflect.Constructor;
 import java.util.Properties;
 
 /**
- * Maintain service factory.
+ * {@link NamingMaintainService} 工厂类（已废弃）。
+ *
+ * <p>通过反射加载 {@code NacosNamingMaintainService} 实现；3.3.0 起请改用 nacos-maintainer-client 中的 {@link com.alibaba.nacos.maintainer.client.naming.NamingMaintainerFactory}。</p>
  *
  * @author liaochuntao
  * @since 1.0.1
@@ -32,11 +34,11 @@ import java.util.Properties;
 public class NamingMaintainFactory {
     
     /**
-     * create a new maintain service.
+     * 根据服务器地址列表创建运维维护服务。
      *
-     * @param serverList server list
-     * @return new maintain service
-     * @throws NacosException nacos exception
+     * @param serverList Nacos 服务器地址列表
+     * @return 新的 {@link NamingMaintainService}
+     * @throws NacosException 实例化失败时抛出
      */
     public static NamingMaintainService createMaintainService(String serverList)
         throws NacosException {
@@ -51,11 +53,11 @@ public class NamingMaintainFactory {
     }
     
     /**
-     * create a new maintain service.
+     * 根据配置属性创建运维维护服务。
      *
-     * @param properties properties
-     * @return new maintain service
-     * @throws NacosException nacos exception
+     * @param properties 客户端配置
+     * @return 新的 {@link NamingMaintainService}
+     * @throws NacosException 实例化失败时抛出
      */
     public static NamingMaintainService createMaintainService(Properties properties)
         throws NacosException {

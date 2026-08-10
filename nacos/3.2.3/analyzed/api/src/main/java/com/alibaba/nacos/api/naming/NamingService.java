@@ -30,7 +30,9 @@ import java.util.List;
 import java.util.concurrent.Future;
 
 /**
- * Naming Service.
+ * Nacos 命名服务客户端核心接口。
+ *
+ * <p>涵盖实例注册/注销、服务订阅、实例查询、模糊监听（fuzzy watch）等能力，由 {@link NamingFactory} 创建具体实现。</p>
  *
  * @author nkorange
  */
@@ -43,6 +45,7 @@ public interface NamingService {
      * @param ip          instance ip
      * @param port        instance port
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.2.0")
     void registerInstance(String serviceName, String ip, int port) throws NacosException;
@@ -55,6 +58,7 @@ public interface NamingService {
      * @param ip          instance ip
      * @param port        instance port
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.2.0")
     void registerInstance(String serviceName, String groupName, String ip, int port)
@@ -68,6 +72,7 @@ public interface NamingService {
      * @param port        instance port
      * @param clusterName instance cluster name
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.2.0")
     void registerInstance(String serviceName, String ip, int port, String clusterName)
@@ -82,6 +87,7 @@ public interface NamingService {
      * @param port        instance port
      * @param clusterName instance cluster name
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("1.0.0")
     void registerInstance(String serviceName, String groupName, String ip, int port,
@@ -94,6 +100,7 @@ public interface NamingService {
      * @param serviceName name of service
      * @param instance    instance to register
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.2.0")
     void registerInstance(String serviceName, Instance instance) throws NacosException;
@@ -105,6 +112,7 @@ public interface NamingService {
      * @param groupName   group of service
      * @param instance    instance to register
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.2.0")
     void registerInstance(String serviceName, String groupName, Instance instance)
@@ -118,6 +126,7 @@ public interface NamingService {
      * @param instances   instances to register
      * @throws NacosException nacos exception
      * @since 2.1.1
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("2.1.1")
     void batchRegisterInstance(String serviceName, String groupName, List<Instance> instances)
@@ -131,6 +140,7 @@ public interface NamingService {
      * @param instances   instances to deRegister
      * @throws NacosException nacos exception
      * @since 2.2.0
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("2.2.0")
     void batchDeregisterInstance(String serviceName, String groupName, List<Instance> instances)
@@ -143,6 +153,7 @@ public interface NamingService {
      * @param ip          instance ip
      * @param port        instance port
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.2.0")
     void deregisterInstance(String serviceName, String ip, int port) throws NacosException;
@@ -155,6 +166,7 @@ public interface NamingService {
      * @param ip          instance ip
      * @param port        instance port
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.2.0")
     void deregisterInstance(String serviceName, String groupName, String ip, int port)
@@ -168,6 +180,7 @@ public interface NamingService {
      * @param port        instance port
      * @param clusterName instance cluster name
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.2.0")
     void deregisterInstance(String serviceName, String ip, int port, String clusterName)
@@ -182,6 +195,7 @@ public interface NamingService {
      * @param port        instance port
      * @param clusterName instance cluster name
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("1.0.0")
     void deregisterInstance(String serviceName, String groupName, String ip, int port,
@@ -194,6 +208,7 @@ public interface NamingService {
      * @param serviceName name of service
      * @param instance    instance
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("1.1.0")
     void deregisterInstance(String serviceName, Instance instance) throws NacosException;
@@ -205,6 +220,7 @@ public interface NamingService {
      * @param groupName   group of service
      * @param instance    instance information
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.2.0")
     void deregisterInstance(String serviceName, String groupName, Instance instance)
@@ -216,6 +232,7 @@ public interface NamingService {
      * @param serviceName name of service
      * @return A list of instance
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.2.0")
     List<Instance> getAllInstances(String serviceName) throws NacosException;
@@ -227,6 +244,7 @@ public interface NamingService {
      * @param groupName   group of service
      * @return A list of instance
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.2.0")
     List<Instance> getAllInstances(String serviceName, String groupName) throws NacosException;
@@ -238,6 +256,7 @@ public interface NamingService {
      * @param subscribe   if subscribe the service
      * @return A list of instance
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.2.0")
     List<Instance> getAllInstances(String serviceName, boolean subscribe) throws NacosException;
@@ -250,6 +269,7 @@ public interface NamingService {
      * @param subscribe   if subscribe the service
      * @return A list of instance
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.8.0")
     List<Instance> getAllInstances(String serviceName, String groupName, boolean subscribe)
@@ -262,6 +282,7 @@ public interface NamingService {
      * @param clusters    list of cluster
      * @return A list of qualified instance
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.2.0")
     List<Instance> getAllInstances(String serviceName, List<String> clusters) throws NacosException;
@@ -274,6 +295,7 @@ public interface NamingService {
      * @param clusters    list of cluster
      * @return A list of qualified instance
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.8.0")
     List<Instance> getAllInstances(String serviceName, String groupName, List<String> clusters)
@@ -287,6 +309,7 @@ public interface NamingService {
      * @param subscribe   if subscribe the service
      * @return A list of qualified instance
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.8.0")
     List<Instance> getAllInstances(String serviceName, List<String> clusters, boolean subscribe)
@@ -301,6 +324,7 @@ public interface NamingService {
      * @param subscribe   if subscribe the service
      * @return A list of qualified instance
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("1.0.0")
     List<Instance> getAllInstances(String serviceName, String groupName, List<String> clusters,
@@ -314,6 +338,7 @@ public interface NamingService {
      * @param healthy     a flag to indicate returning healthy or unhealthy instances
      * @return A qualified list of instance
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.2.0")
     List<Instance> selectInstances(String serviceName, boolean healthy) throws NacosException;
@@ -326,6 +351,7 @@ public interface NamingService {
      * @param healthy     a flag to indicate returning healthy or unhealthy instances
      * @return A qualified list of instance
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.2.0")
     List<Instance> selectInstances(String serviceName, String groupName, boolean healthy)
@@ -339,6 +365,7 @@ public interface NamingService {
      * @param subscribe   if subscribe the service
      * @return A qualified list of instance
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.2.0")
     List<Instance> selectInstances(String serviceName, boolean healthy, boolean subscribe)
@@ -353,6 +380,7 @@ public interface NamingService {
      * @param subscribe   if subscribe the service
      * @return A qualified list of instance
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.8.0")
     List<Instance> selectInstances(String serviceName, String groupName, boolean healthy,
@@ -367,6 +395,7 @@ public interface NamingService {
      * @param healthy     a flag to indicate returning healthy or unhealthy instances
      * @return A qualified list of instance
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.2.0")
     List<Instance> selectInstances(String serviceName, List<String> clusters, boolean healthy)
@@ -381,6 +410,7 @@ public interface NamingService {
      * @param healthy     a flag to indicate returning healthy or unhealthy instances
      * @return A qualified list of instance
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.8.0")
     List<Instance> selectInstances(String serviceName, String groupName, List<String> clusters,
@@ -396,6 +426,7 @@ public interface NamingService {
      * @param subscribe   if subscribe the service
      * @return A qualified list of instance
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.8.0")
     List<Instance> selectInstances(String serviceName, List<String> clusters, boolean healthy,
@@ -412,6 +443,7 @@ public interface NamingService {
      * @param subscribe   if subscribe the service
      * @return A qualified list of instance
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("1.0.0")
     List<Instance> selectInstances(String serviceName, String groupName, List<String> clusters,
@@ -424,6 +456,7 @@ public interface NamingService {
      * @param serviceName name of service
      * @return qualified instance
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.2.0")
     Instance selectOneHealthyInstance(String serviceName) throws NacosException;
@@ -435,6 +468,7 @@ public interface NamingService {
      * @param groupName   group of service
      * @return qualified instance
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.2.0")
     Instance selectOneHealthyInstance(String serviceName, String groupName) throws NacosException;
@@ -446,6 +480,7 @@ public interface NamingService {
      * @param subscribe   if subscribe the service
      * @return qualified instance
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.2.0")
     Instance selectOneHealthyInstance(String serviceName, boolean subscribe) throws NacosException;
@@ -458,6 +493,7 @@ public interface NamingService {
      * @param subscribe   if subscribe the service
      * @return qualified instance
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.8.0")
     Instance selectOneHealthyInstance(String serviceName, String groupName, boolean subscribe)
@@ -470,6 +506,7 @@ public interface NamingService {
      * @param clusters    a list of clusters should the instance belongs to
      * @return qualified instance
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.2.0")
     Instance selectOneHealthyInstance(String serviceName, List<String> clusters)
@@ -483,6 +520,7 @@ public interface NamingService {
      * @param clusters    a list of clusters should the instance belongs to
      * @return qualified instance
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.8.0")
     Instance selectOneHealthyInstance(String serviceName, String groupName, List<String> clusters)
@@ -496,6 +534,7 @@ public interface NamingService {
      * @param subscribe   if subscribe the service
      * @return qualified instance
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.8.0")
     Instance selectOneHealthyInstance(String serviceName, List<String> clusters, boolean subscribe)
@@ -510,6 +549,7 @@ public interface NamingService {
      * @param subscribe   if subscribe the service
      * @return qualified instance
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("1.0.0")
     Instance selectOneHealthyInstance(String serviceName, String groupName, List<String> clusters,
@@ -522,6 +562,7 @@ public interface NamingService {
      * @param serviceName name of service
      * @param listener    event listener
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.2.0")
     void subscribe(String serviceName, EventListener listener) throws NacosException;
@@ -533,6 +574,7 @@ public interface NamingService {
      * @param groupName   group of service
      * @param listener    event listener
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.2.0")
     void subscribe(String serviceName, String groupName, EventListener listener)
@@ -545,6 +587,7 @@ public interface NamingService {
      * @param clusters    list of cluster
      * @param listener    event listener
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.2.0")
     void subscribe(String serviceName, List<String> clusters, EventListener listener)
@@ -558,6 +601,7 @@ public interface NamingService {
      * @param clusters    list of cluster
      * @param listener    event listener
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("1.0.0")
     void subscribe(String serviceName, String groupName, List<String> clusters,
@@ -571,6 +615,7 @@ public interface NamingService {
      * @param selector    selector of instances
      * @param listener    event listener
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.2.0")
     void subscribe(String serviceName, NamingSelector selector, EventListener listener)
@@ -584,6 +629,7 @@ public interface NamingService {
      * @param selector    selector of instances
      * @param listener    event listener
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("1.0.0")
     void subscribe(String serviceName, String groupName, NamingSelector selector,
@@ -596,6 +642,7 @@ public interface NamingService {
      * @param serviceName name of service
      * @param listener    event listener
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.2.0")
     void unsubscribe(String serviceName, EventListener listener) throws NacosException;
@@ -607,6 +654,7 @@ public interface NamingService {
      * @param groupName   group of service
      * @param listener    event listener
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.2.0")
     void unsubscribe(String serviceName, String groupName, EventListener listener)
@@ -619,6 +667,7 @@ public interface NamingService {
      * @param clusters    list of cluster
      * @param listener    event listener
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.2.0")
     void unsubscribe(String serviceName, List<String> clusters, EventListener listener)
@@ -632,6 +681,7 @@ public interface NamingService {
      * @param clusters    list of cluster
      * @param listener    event listener
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("1.0.0")
     void unsubscribe(String serviceName, String groupName, List<String> clusters,
@@ -645,6 +695,7 @@ public interface NamingService {
      * @param selector    selector of instances
      * @param listener    event listener
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.2.0")
     void unsubscribe(String serviceName, NamingSelector selector, EventListener listener)
@@ -658,6 +709,7 @@ public interface NamingService {
      * @param selector    selector of instances
      * @param listener    event listener
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("1.0.0")
     void unsubscribe(String serviceName, String groupName, NamingSelector selector,
@@ -672,6 +724,7 @@ public interface NamingService {
      * @param groupNamePattern  group name pattern for fuzzy watch
      * @param listener event listener
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("3.0.0")
     void fuzzyWatch(String groupNamePattern, FuzzyWatchEventWatcher listener) throws NacosException;
@@ -686,6 +739,7 @@ public interface NamingService {
      * @param groupNamePattern  group name pattern for fuzzy watch
      * @param listener event listener
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("3.0.0")
     void fuzzyWatch(String serviceNamePattern, String groupNamePattern,
@@ -700,6 +754,7 @@ public interface NamingService {
      * @param listener event listener
      * @return matched service keys.
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("3.0.0")
     Future<ListView<String>> fuzzyWatchWithServiceKeys(String groupNamePattern,
@@ -716,6 +771,7 @@ public interface NamingService {
      * @param listener event listener
      * @return matched service keys.
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("3.0.0")
     Future<ListView<String>> fuzzyWatchWithServiceKeys(String serviceNamePattern,
@@ -728,6 +784,7 @@ public interface NamingService {
      * @param groupNamePattern  group name for fuzzy watch
      * @param listener event listener
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("3.0.0")
     void cancelFuzzyWatch(String groupNamePattern, FuzzyWatchEventWatcher listener)
@@ -740,6 +797,7 @@ public interface NamingService {
      * @param groupNamePattern fixed group name for fuzzy watch
      * @param listener event listener
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("3.0.0")
     void cancelFuzzyWatch(String serviceNamePattern, String groupNamePattern,
@@ -752,6 +810,7 @@ public interface NamingService {
      * @param pageSize page size
      * @return list of service names
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.2.0")
     ListView<String> getServicesOfServer(int pageNo, int pageSize) throws NacosException;
@@ -764,6 +823,7 @@ public interface NamingService {
      * @param groupName group name
      * @return list of service names
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.7.0")
     ListView<String> getServicesOfServer(int pageNo, int pageSize, String groupName)
@@ -779,6 +839,7 @@ public interface NamingService {
      * @throws NacosException nacos exception
      * @since 0.7.0
      * @deprecated after 3.3.0.
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.7.0")
     @Deprecated
@@ -795,6 +856,7 @@ public interface NamingService {
      * @return list of service names
      * @throws NacosException nacos exception
      * @deprecated after 3.3.0.
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("1.0.0")
     @Deprecated
@@ -807,6 +869,7 @@ public interface NamingService {
      *
      * @return subscribed services
      * @throws NacosException nacos exception
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.2.0")
     List<ServiceInfo> getSubscribeServices() throws NacosException;
@@ -815,6 +878,7 @@ public interface NamingService {
      * get server health status.
      *
      * @return is server healthy
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("0.2.0")
     String getServerStatus();
@@ -823,6 +887,7 @@ public interface NamingService {
      * Shutdown the resource service.
      *
      * @throws NacosException exception.
+      * <p>命名服务 API 方法；参数含义见 @param。</p>
      */
     @Since("1.3.1")
     void shutDown() throws NacosException;

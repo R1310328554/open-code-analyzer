@@ -20,28 +20,32 @@ import java.io.Serializable;
 import java.util.Objects;
 
 /**
- * naming abilities of nacos server.
+ * Nacos 命名服务端能力描述。
+ *
+ * <p>描述集群是否启用 JRaft 持久化等特性，供客户端或运维工具探测。</p>
  *
  * @author liuzunfei
  * @version $Id: ServerNamingAbility.java, v 0.1 2021年01月24日 00:09 AM liuzunfei Exp $
  */
 public class ServerNamingAbility implements Serializable {
     
+    /** 序列化版本号。 */
     private static final long serialVersionUID = 8308895444341445512L;
     
-    /**
-     * Nacos server can use SOFA-Jraft to handle persist service and metadata.
-     */
+    /** 服务端是否使用 SOFA-JRaft 持久化服务与元数据。 */
     private boolean supportJraft;
     
+    /** 是否支持 JRaft 持久化。 */
     public boolean isSupportJraft() {
         return supportJraft;
     }
     
+    /** 设置 JRaft 支持标志。 */
     public void setSupportJraft(boolean supportJraft) {
         this.supportJraft = supportJraft;
     }
     
+    /** 按 {@link #supportJraft} 比较能力是否相同。 */
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -54,6 +58,7 @@ public class ServerNamingAbility implements Serializable {
         return supportJraft == that.supportJraft;
     }
     
+    /** 基于 JRaft 支持标志的哈希码。 */
     @Override
     public int hashCode() {
         return Objects.hash(supportJraft);

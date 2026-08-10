@@ -19,25 +19,30 @@ package com.alibaba.nacos.api.naming.listener;
 import java.util.concurrent.Executor;
 
 /**
- * Abstract fuzzy watch event listener, to support handle event by user custom executor.
+ * 模糊监听（Fuzzy Watch）事件观察者抽象基类。
+ *
+ * <p>同时实现 {@link FuzzyWatchEventWatcher} 与 {@link FuzzyWatchLoadWatcher}，提供默认空实现的限流回调，子类可覆写 {@link #getExecutor()} 指定执行器。</p>
  *
  * @author tanyongquan
  */
 public abstract class AbstractFuzzyWatchEventWatcher
     implements FuzzyWatchEventWatcher, FuzzyWatchLoadWatcher {
     
+    /** 默认在通知线程同步处理事件。 */
     @Override
     public Executor getExecutor() {
         return null;
     }
     
+    /** 监听模式数量超限时回调（默认无操作）。 */
     @Override
     public void onPatternOverLimit() {
-        //do nothing default
+        // 默认不做处理
     }
     
+    /** 匹配服务数达到上限时回调（默认无操作）。 */
     @Override
     public void onServiceReachUpLimit() {
-        //do nothing default
+        // 默认不做处理
     }
 }

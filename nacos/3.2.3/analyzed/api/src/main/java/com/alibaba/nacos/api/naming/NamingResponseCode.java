@@ -19,23 +19,19 @@ package com.alibaba.nacos.api.naming;
 import com.alibaba.nacos.api.common.ResponseCode;
 
 /**
- * Business response code of naming module
+ * 命名模块业务响应码常量。
  *
- * <p>Every code stays between 20001 and 29999.
+ * <p>各常量取值介于 20001–29999，继承自 {@link ResponseCode}，供命名 REST/gRPC 返回使用。</p>
  *
  * @author nkorange
  * @author 1.2.0
  */
 public class NamingResponseCode extends ResponseCode {
     
-    /**
-     * The requested resource is not found.
-     */
+    /** 请求的资源不存在（HTTP 404 语义，码值 20404）。 */
     public static final int RESOURCE_NOT_FOUND = 20404;
     
-    /**
-     * Stop or no need to retry.
-     */
+    /** 无需继续重试（客户端应停止退避重试，码值 21600）。 */
     public static final int NO_NEED_RETRY = 21600;
     
 }

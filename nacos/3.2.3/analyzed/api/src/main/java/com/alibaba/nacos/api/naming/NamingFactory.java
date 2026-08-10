@@ -22,18 +22,20 @@ import java.lang.reflect.Constructor;
 import java.util.Properties;
 
 /**
- * Naming Factory.
+ * {@link NamingService} 工厂类。
+ *
+ * <p>通过反射加载客户端实现 {@code com.alibaba.nacos.client.naming.NacosNamingService}，避免 API 模块直接依赖 client 包。</p>
  *
  * @author nkorange
  */
 public class NamingFactory {
     
     /**
-     * Create a new naming service.
+     * 根据服务器地址列表创建命名服务客户端。
      *
-     * @param serverList server list
-     * @return new naming service
-     * @throws NacosException nacos exception
+     * @param serverList 逗号分隔的 Nacos 服务器地址
+     * @return 新的 {@link NamingService} 实例
+     * @throws NacosException 反射实例化失败时抛出
      */
     public static NamingService createNamingService(String serverList) throws NacosException {
         try {
@@ -47,11 +49,11 @@ public class NamingFactory {
     }
     
     /**
-     * Create a new naming service.
+     * 根据 {@link Properties} 配置创建命名服务客户端。
      *
-     * @param properties naming service properties
-     * @return new naming service
-     * @throws NacosException nacos exception
+     * @param properties 命名服务配置（namespace、serverAddr 等）
+     * @return 新的 {@link NamingService} 实例
+     * @throws NacosException 反射实例化失败时抛出
      */
     public static NamingService createNamingService(Properties properties) throws NacosException {
         try {

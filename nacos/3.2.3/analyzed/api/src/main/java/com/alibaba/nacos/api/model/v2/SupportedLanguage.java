@@ -18,37 +18,38 @@
 package com.alibaba.nacos.api.model.v2;
 
 /**
- * Supported languages for announcements.
+ * 公告/通知支持的语言枚举。
+ *
+ * <p>每个常量对应 BCP 47 语言标签，供控制台公告模块校验请求语言。</p>
  *
  * @author zhangyukun on:2024/9/24
  */
 public enum SupportedLanguage {
     
-    /**
-     * Chinese language.
-     */
+    /** 简体中文（zh-CN）。 */
     ZH_CN("zh-CN"),
     
-    /**
-     * English language.
-     */
+    /** 美式英语（en-US）。 */
     EN_US("en-US");
     
+    /** BCP 47 语言标签。 */
     private final String language;
     
+    /** 绑定语言标签。 */
     SupportedLanguage(String language) {
         this.language = language;
     }
     
+    /** 返回 BCP 47 语言标签。 */
     public String getLanguage() {
         return language;
     }
     
     /**
-     * Check if the given language is supported.
+     * 判断给定语言标签是否受支持。
      *
-     * @param language the language to check
-     * @return true if the language is supported, false otherwise
+     * @param language 待校验的语言标签
+     * @return 支持则 {@code true}
      */
     public static boolean isSupported(String language) {
         for (SupportedLanguage lang : SupportedLanguage.values()) {

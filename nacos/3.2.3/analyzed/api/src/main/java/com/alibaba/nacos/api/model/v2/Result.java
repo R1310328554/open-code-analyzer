@@ -19,108 +19,134 @@ package com.alibaba.nacos.api.model.v2;
 import java.io.Serializable;
 
 /**
- * Response Result.
+ * Open API v2 统一响应封装。
+ *
+ * <p>携带业务错误码 {@link #code}、消息 {@link #message} 与泛型载荷 {@link #data}，供 REST 接口返回 JSON 时使用。</p>
  *
  * @author dongyafei
  * @date 2022/7/12
  */
 public class Result<T> implements Serializable {
     
+    /** 序列化版本号。 */
     private static final long serialVersionUID = 6258345442767540526L;
     
+    /** 业务错误码，成功时为 {@link ErrorCode#SUCCESS} 对应值。 */
     private final Integer code;
     
+    /** 人类可读的错误或成功消息。 */
     private final String message;
     
+    /** 响应载荷（可为 {@code null}）。 */
     private final T data;
     
+    /**
+     * 构造完整响应。
+     *
+     * @param code    错误码
+     * @param message 消息
+     * @param data    载荷
+     */
     public Result(Integer code, String message, T data) {
         this.code = code;
         this.message = message;
         this.data = data;
     }
     
+    /** 构造空载荷的成功响应。 */
     public Result() {
         this(null);
     }
     
+    /** 以成功码构造带载荷的响应。 */
     public Result(T data) {
         this(ErrorCode.SUCCESS.getCode(), ErrorCode.SUCCESS.getMsg(), data);
     }
     
+    /** 构造无载荷的响应。 */
     public Result(Integer code, String message) {
         this(code, message, null);
     }
     
     /**
-     * Success return with nothing.
-     * @param <T> data type
-     * @return Result
+     * 返回无载荷的成功结果。
+     *
+     * @param <T> 载荷类型
+     * @return 成功 {@link Result}
      */
     public static <T> Result<T> success() {
         return new Result<>();
     }
     
     /**
-     * Success return with data.
-     * @param <T> data type
-     * @return Result
+     * 返回带载荷的成功结果。
+     *
+     * @param <T> 载荷类型
+     * @return 成功 {@link Result}
      */
     public static <T> Result<T> success(T data) {
         return new Result<>(data);
     }
     
     /**
-     * Failed return with message and detail error information.
-     * @return Result
+     * 返回服务端错误，附带自定义消息。
+     *
+     * @return 失败 {@link Result}
      */
     public static Result<String> failure(String message) {
         return new Result<>(ErrorCode.SERVER_ERROR.getCode(), message);
     }
     
     /**
-     * Failed return with errorCode and message.
-     * @param <T> data type
-     * @return Result
+     * 按 {@link ErrorCode} 返回失败结果。
+     *
+     * @param <T> 载荷类型
+     * @return 失败 {@link Result}
      */
     public static <T> Result<T> failure(ErrorCode errorCode) {
         return new Result<>(errorCode.getCode(), errorCode.getMsg());
     }
     
     /**
-     * Failed return with errorCode, message and data.
-     * @param <T> data type
-     * @return Result
+     * 按 {@link ErrorCode} 返回失败结果并携带附加数据。
+     *
+     * @param <T> 载荷类型
+     * @return 失败 {@link Result}
      */
     public static <T> Result<T> failure(ErrorCode errorCode, T data) {
         return new Result<>(errorCode.getCode(), errorCode.getMsg(), data);
     }
     
     /**
-     * Failed return with code, message and data.
-     * @param <T>  data type
-     * @param code error code
-     * @param msg  error message
-     * @return Result
+     * 按自定义错误码与消息返回失败结果。
+     *
+     * @param <T>  载荷类型
+     * @param code 错误码
+     * @param msg  错误消息
+     * @return 失败 {@link Result}
      */
     public static <T> Result<T> failure(Integer code, String msg, T data) {
         return new Result<>(code, msg, data);
     }
     
+    /** 返回包含 code、message、data 的字符串表示。 */
     @Override
     public String toString() {
         return "Result{" + "errorCode=" + code + ", message='" + message + '\'' + ", data=" + data
             + '}';
     }
     
+    /** 获取业务错误码。 */
     public Integer getCode() {
         return code;
     }
     
+    /** 获取响应消息。 */
     public String getMessage() {
         return message;
     }
     
+    /** 获取响应载荷。 */
     public T getData() {
         return data;
     }

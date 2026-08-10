@@ -17,7 +17,9 @@
 package com.alibaba.nacos.api.naming.listener;
 
 /**
- * Event Interface.
+ * 命名服务变更事件标记接口。
+ *
+ * <p>具体事件类型如 {@code NamingEvent} 携带服务名与实例列表快照，由 {@link EventListener} 接收。</p>
  *
  * @author nkorange
  */

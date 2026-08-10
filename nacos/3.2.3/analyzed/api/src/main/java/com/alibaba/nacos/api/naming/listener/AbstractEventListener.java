@@ -19,7 +19,9 @@ package com.alibaba.nacos.api.naming.listener;
 import java.util.concurrent.Executor;
 
 /**
- * Abstract event listener, to support handle event by user custom executor.
+ * 命名事件监听器抽象基类。
+ *
+ * <p>子类可覆写 {@link #getExecutor()} 指定回调线程池，避免在 Nacos 内部线程上执行耗时逻辑。</p>
  *
  * @author horizonzy
  * @since 1.4.1
@@ -27,9 +29,9 @@ import java.util.concurrent.Executor;
 public abstract class AbstractEventListener implements EventListener {
     
     /**
-     * Get executor for execute this receive.
+     * 获取处理 {@link EventListener#onEvent(Event)} 回调的线程池。
      *
-     * @return Executor
+     * @return 自定义 {@link Executor}；默认 {@code null} 表示在通知线程同步执行
      */
     public Executor getExecutor() {
         return null;

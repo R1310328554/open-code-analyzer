@@ -17,16 +17,18 @@
 package com.alibaba.nacos.api.naming.listener;
 
 /**
- * Event Listener.
+ * 命名服务实例变更监听器。
+ *
+ * <p>通过 {@link NamingService#subscribe} 注册后，在实例上下线或健康状态变化时收到 {@link Event} 回调。</p>
  *
  * @author Nacos
  */
 public interface EventListener {
     
     /**
-     * callback event.
+     * 实例或服务变更时的回调入口。
      *
-     * @param event event
+     * @param event 变更事件（通常为 {@code NamingEvent}）
      */
     void onEvent(Event event);
 }
