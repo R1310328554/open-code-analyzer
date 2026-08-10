@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T04:00:56Z",
   "files": [
-    "core/src/main/java/com/alibaba/nacos/core/control/http/NacosHttpTpsControlRegistration.java",
-    "core/src/main/java/com/alibaba/nacos/core/control/http/NacosHttpTpsFilter.java",
-    "core/src/main/java/com/alibaba/nacos/core/control/remote/RemoteTpsCheckRequestParser.java",
-    "core/src/main/java/com/alibaba/nacos/core/control/remote/RemoteTpsCheckRequestParserRegistry.java",
-    "core/src/main/java/com/alibaba/nacos/core/control/remote/TpsControlRequestFilter.java",
-    "core/src/main/java/com/alibaba/nacos/core/controller/compatibility/Compatibility.java",
-    "core/src/main/java/com/alibaba/nacos/core/controller/v3/CoreOpsControllerV3.java",
-    "core/src/main/java/com/alibaba/nacos/core/controller/v3/NacosClusterControllerV3.java",
-    "core/src/main/java/com/alibaba/nacos/core/controller/v3/NamespaceControllerV3.java",
-    "core/src/main/java/com/alibaba/nacos/core/controller/v3/PluginControllerV3.java",
-    "core/src/main/java/com/alibaba/nacos/core/controller/v3/ServerLoaderControllerV3.java",
-    "core/src/main/java/com/alibaba/nacos/core/controller/v3/ServerStateController.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/AbstractConsistencyProtocol.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/ConsistencyConfiguration.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/ProtocolExecutor.java",
     "core/src/main/java/com/alibaba/nacos/core/distributed/ProtocolManager.java",
     "core/src/main/java/com/alibaba/nacos/core/distributed/distro/DistroConfig.java",
     "core/src/main/java/com/alibaba/nacos/core/distributed/distro/DistroConstants.java",
@@ -33,5 +18,5 @@
     "core/src/main/java/com/alibaba/nacos/core/distributed/distro/monitor/DistroRecordsHolder.java"
   ],
   "remaining_pending": 977,
-  "done": 1530
+  "done": 1545
 }
