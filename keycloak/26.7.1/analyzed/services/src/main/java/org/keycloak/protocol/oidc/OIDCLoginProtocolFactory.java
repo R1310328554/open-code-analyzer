@@ -76,15 +76,16 @@ import static org.keycloak.representations.IDToken.MAY_ACT;
 import static org.keycloak.representations.JsonWebToken.SUBJECT;
 
 /**
+ * OpenID Connect 登录协议工厂。
+ * <p>注册内置协议映射器、默认客户端 scope、OIDC 端点及提供者级配置元数据。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class OIDCLoginProtocolFactory extends AbstractLoginProtocolFactory {
     private static final Logger logger = Logger.getLogger(OIDCLoginProtocolFactory.class);
 
-    /**
-     * determines the order in which the login protocols are displayed in the dropdown boxes in the UI
-     */
+    /** 管理控制台登录协议下拉框中的显示顺序。 */
     public static final int UI_ORDER = 100;
 
     public static final String USERNAME = "username";
@@ -141,15 +142,14 @@ public class OIDCLoginProtocolFactory extends AbstractLoginProtocolFactory {
     public static final String CONFIG_OIDC_ADD_REQ_PARAMS_FAIL_FAST = "add-req-params-fail-fast";
     public static final String CONFIG_OIDC_ADD_REQ_TOKEN_PARAMS_FAIL_FAST = "add-req-token-params-fail-fast";
 
-    /**
-     * @deprecated To be removed in Keycloak 27
-     */
+    /** @deprecated Keycloak 27 将移除：JWT 客户端认证允许多 aud。 */
     public static final String CONFIG_OIDC_ALLOW_MULTIPLE_AUDIENCES_FOR_JWT_CLIENT_AUTHENTICATION = "allow-multiple-audiences-for-jwt-client-authentication";
 
     public static final String CONFIG_ALLOW_TOKEN_INTROSPECTION_WITHOUT_AUDIENCE_CHECK = "allow-token-introspection-without-audience-check";
 
     public static final String CONFIG_ALLOW_USERINFO_WITH_LIGHTWEIGHT_ACCESS_TOKEN = "allow-userinfo-with-lightweight-access-token";
 
+    /** OIDC 提供者全局配置。 */
     private OIDCProviderConfig providerConfig;
 
     @Override
@@ -187,8 +187,10 @@ public class OIDCLoginProtocolFactory extends AbstractLoginProtocolFactory {
         return builtins;
     }
 
+    /** 内置协议映射器（按显示名索引）。 */
     private Map<String, ProtocolMapperModel> builtins = new HashMap<>();
 
+    /** 初始化 profile/email/roles 等内置 OIDC 协议映射器。 */
     void initBuiltIns() {
         ProtocolMapperModel model;
         model = UserAttributeMapper.createClaimMapper(USERNAME,
@@ -298,9 +300,10 @@ public class OIDCLoginProtocolFactory extends AbstractLoginProtocolFactory {
         builtins.put(name, model);
     }
 
+    /** 为新领域创建 profile、email、roles、acr 等默认/可选 OIDC 客户端 scope。 */
     @Override
     protected void createDefaultClientScopesImpl(RealmModel newRealm) {
-        //name, family_name, given_name, middle_name, nickname, preferred_username, profile, picture, website, gender, birthdate, zoneinfo, locale, and updated_at.
+        // OpenID Connect profile scope 标准声明集合
         ClientScopeModel profileScope = newRealm.addClientScope(OAuth2Constants.SCOPE_PROFILE);
         profileScope.setDescription("OpenID Connect built-in scope: profile");
         profileScope.setDisplayOnConsentScreen(true);
@@ -348,7 +351,7 @@ public class OIDCLoginProtocolFactory extends AbstractLoginProtocolFactory {
         phoneScope.addProtocolMapper(builtins.get(PHONE_NUMBER));
         phoneScope.addProtocolMapper(builtins.get(PHONE_NUMBER_VERIFIED));
 
-        // 'profile' and 'email' will be default scopes for now. 'address' and 'phone' will be optional scopes
+        // profile/email 为默认 scope；address/phone 为可选
         newRealm.addDefaultClientScope(profileScope, true);
         newRealm.addDefaultClientScope(emailScope, true);
         newRealm.addDefaultClientScope(addressScope, false);
@@ -439,11 +442,9 @@ public class OIDCLoginProtocolFactory extends AbstractLoginProtocolFactory {
     }
 
     /**
-     * Adds the {@code microprofile-jwt} optional client scope to the specified realm. If a {@code microprofile-jwt} client scope
-     * already exists in the realm then the existing scope is returned. Otherwise, a new scope is created and returned.
-     *
-     * @param newRealm the realm to which the {@code microprofile-jwt} scope is to be added.
-     * @return a reference to the {@code microprofile-jwt} client scope that was either created or already exists in the realm.
+     * 向领域添加 {@code microprofile-jwt} 可选客户端 scope（已存在则复用）。
+     * @param newRealm 目标领域
+     * @return microprofile-jwt scope 实例
      */
     public ClientScopeModel addMicroprofileJWTClientScope(RealmModel newRealm) {
         ClientScopeModel microprofileScope = KeycloakModelUtils.getClientScopeByName(newRealm, MICROPROFILE_JWT_SCOPE);
@@ -553,6 +554,7 @@ public class OIDCLoginProtocolFactory extends AbstractLoginProtocolFactory {
         return OIDCLoginProtocol.LOGIN_PROTOCOL;
     }
 
+    /** 新建 OIDC 客户端时填充 redirect、public/confidential、流开关及登出默认值。 */
     @Override
     public void setupClientDefaults(ClientRepresentation rep, ClientModel newClient) {
         if (rep.getRootUrl() != null && (rep.getRedirectUris() == null || rep.getRedirectUris().isEmpty())) {
@@ -567,13 +569,13 @@ public class OIDCLoginProtocolFactory extends AbstractLoginProtocolFactory {
             origins.add(origin);
             newClient.setWebOrigins(origins);
         }
-        // if no client type provided, default to public client
+        // 未指定客户端类型时默认为 public
         if (rep.isBearerOnly() == null
                 && rep.isPublicClient() == null) {
             newClient.setPublicClient(true);
             newClient.setSecret(null);
         } else if (!(Boolean.TRUE.equals(rep.isBearerOnly()) || Boolean.TRUE.equals(rep.isPublicClient()))) {
-            // if client is confidential, generate a secret if none is defined
+            // confidential 客户端无密钥时自动生成
             if (newClient.getSecret() == null) {
                 KeycloakModelUtils.generateSecret(newClient);
             }
@@ -584,7 +586,7 @@ public class OIDCLoginProtocolFactory extends AbstractLoginProtocolFactory {
         }
 
 
-        // Backwards compatibility only
+        // 兼容 directGrantsOnly 旧字段
         if (rep.isDirectGrantsOnly() != null) {
             ServicesLogger.LOGGER.usingDeprecatedDirectGrantsOnly();
             newClient.setStandardFlowEnabled(!rep.isDirectGrantsOnly());
@@ -605,14 +607,13 @@ public class OIDCLoginProtocolFactory extends AbstractLoginProtocolFactory {
         }
     }
 
-    /**
-     * defines the option-order in the admin-ui
-     */
+    /** 管理 UI 中协议选项排序权重。 */
     @Override
     public int order() {
         return UI_ORDER;
     }
 
+    /** @return OIDC 请求参数长度限制等提供者配置元数据 */
     @Override
     public List<ProviderConfigProperty> getConfigMetadata() {
         return ProviderConfigurationBuilder.create()

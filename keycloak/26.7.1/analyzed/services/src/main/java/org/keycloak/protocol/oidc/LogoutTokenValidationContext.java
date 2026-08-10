@@ -25,12 +25,17 @@ import org.keycloak.broker.oidc.OIDCIdentityProvider;
 import org.keycloak.representations.LogoutToken;
 
 /**
+ * Logout Token 校验上下文，携带令牌、状态码及通过校验的 IdP 列表。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class LogoutTokenValidationContext {
 
+    /** 已解析的 logout token（可为 null）。 */
     private final LogoutToken logoutToken;
+    /** 校验状态码。 */
     private final LogoutTokenValidationCode status;
+    /** 校验通过的 OIDC 身份提供者列表。 */
     private final List<OIDCIdentityProvider> validIdentityProviders;
 
     LogoutTokenValidationContext(LogoutTokenValidationCode status) {
@@ -43,14 +48,17 @@ public class LogoutTokenValidationContext {
         this.validIdentityProviders = validIdentityProviders;
     }
 
+    /** @return logout token */
     public LogoutToken getLogoutToken() {
         return logoutToken;
     }
 
+    /** @return 校验状态码 */
     public LogoutTokenValidationCode getStatus() {
         return status;
     }
 
+    /** @return 有效的 OIDC IdP 列表 */
     public List<OIDCIdentityProvider> getValidIdentityProviders() {
         return validIdentityProviders;
     }

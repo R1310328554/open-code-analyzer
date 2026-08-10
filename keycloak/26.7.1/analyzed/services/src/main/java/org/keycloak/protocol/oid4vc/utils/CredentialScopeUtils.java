@@ -22,13 +22,25 @@ import org.jboss.logging.Logger;
 
 import static org.keycloak.constants.OID4VCIConstants.OID4VC_PROTOCOL;
 
+/**
+ * OID4VCI 凭证 scope（客户端 scope）查找与展示工具。
+ * <p>按凭证配置 ID、scope 名称或授权请求解析 {@link CredentialScopeModel}，并生成本地化凭证显示名。</p>
+ */
 public class CredentialScopeUtils {
 
+    /** 日志记录器。 */
     private static final Logger log = Logger.getLogger(CredentialScopeUtils.class);
 
-    // Hide ctor
+    // 工具类，隐藏构造器
     private CredentialScopeUtils() {}
 
+    /**
+     * 按凭证配置 ID 查找唯一 {@link CredentialScopeModel}。
+     * @param realmModel 领域
+     * @param supplier 客户端 scope 流供应器
+     * @param credConfigId 凭证配置标识
+     * @return 匹配的凭证 scope，无匹配或多匹配时返回 null 并记录警告
+     */
     public static CredentialScopeModel findCredentialScopeModelByConfigurationId(RealmModel realmModel, Supplier<Stream<ClientScopeModel>> supplier, String credConfigId) {
         if (Strings.isEmpty(credConfigId)) {
             return null;
@@ -52,6 +64,13 @@ public class CredentialScopeUtils {
         }
     }
 
+    /**
+     * 按 scope 名称查找唯一 {@link CredentialScopeModel}。
+     * @param realmModel 领域
+     * @param supplier 客户端 scope 流供应器
+     * @param scope scope 名称
+     * @return 匹配的凭证 scope，无匹配或多匹配时返回 null
+     */
     public static CredentialScopeModel findCredentialScopeModelByName(RealmModel realmModel, Supplier<Stream<ClientScopeModel>> supplier, String scope) {
         if (Strings.isEmpty(scope)) {
             return null;
@@ -71,7 +90,10 @@ public class CredentialScopeUtils {
     }
 
     /**
-     * Get the list of credential scopes associated by the given and requested by the given authorization request
+     * 根据授权请求中的 scope 参数，返回与该客户端关联且被请求的 OID4VCI 凭证 scope 列表。
+     * @param client 客户端
+     * @param request 授权端点请求
+     * @return 凭证 scope 列表
      */
     public static List<CredentialScopeModel> getCredentialScopesForAuthorization(ClientModel client, AuthorizationEndpointRequest request) {
 
@@ -80,7 +102,7 @@ public class CredentialScopeUtils {
                 .map(Arrays::asList)
                 .orElse(List.of());
 
-        // Get the list of requested credential scopes that are associated with this client
+        // 筛选客户端已关联且请求中声明的 OID4VCI 凭证 scope
         //
         Map<String, ClientScopeModel> clientScopes = client.getClientScopes(false);
         List<CredentialScopeModel> credScopes = requestScopes.stream()
@@ -94,13 +116,12 @@ public class CredentialScopeUtils {
     }
 
     /**
-     * Return display name of the credential according to preferred locale of current user and according to "vc.display" attribute specified for current OID4VCI client
-     * scope. Will fallback to client scope name if client scope does not contain "vc.display" or if "vc.display" is incorrectly formatted
-     *
-     * @param session Keycloak session
-     * @param user user
-     * @param credScope OID4VCI client scope
-     * @return user-friendly name of the VC localized in the preference of the current user
+     * 按用户语言偏好与 {@code vc.display} 属性返回凭证的友好显示名。
+     * <p>无有效 display 配置时回退到凭证配置 ID 或客户端 scope 名称。</p>
+     * @param session Keycloak 会话
+     * @param user 用户
+     * @param credScope OID4VCI 客户端 scope
+     * @return 本地化后的凭证显示名
      */
     public static String getCredentialDisplayName(KeycloakSession session, UserModel user, CredentialScopeModel credScope) {
         List<DisplayObject> displayDatas = DisplayObject.parse(credScope);
@@ -114,7 +135,7 @@ public class CredentialScopeUtils {
             }
         }
 
-        // Fallback
+        // 回退到配置 ID 或 scope 名称
         String display = credScope.getCredentialConfigurationId();
         return StringUtil.isNotBlank(display) ? display :  credScope.getName();
     }

@@ -79,21 +79,30 @@ import static org.keycloak.protocol.oidc.grants.device.DeviceGrantType.denyOAuth
 import static org.keycloak.protocol.oidc.grants.device.DeviceGrantType.isOAuth2DeviceVerificationFlow;
 
 /**
+ * OpenID Connect 登录协议实现（{@link LoginProtocol}）。
+ * <p>处理授权码/隐式/混合流认证成功响应、错误重定向、前后端通道登出、浏览器登出完成及重新认证判定等 OIDC 核心流程。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class OIDCLoginProtocol implements LoginProtocol {
 
+    /** 协议 ID：openid-connect。 */
     public static final String LOGIN_PROTOCOL = Constants.OIDC_PROTOCOL;
+    /** OAuth2/OIDC state 参数名。 */
     public static final String STATE_PARAM = "state";
+    /** scope 参数名。 */
     public static final String SCOPE_PARAM = "scope";
     public static final String RESOURCE_PARAM = OAuth2Constants.RESOURCE;
+    /** 授权码参数名。 */
     public static final String CODE_PARAM = "code";
+    /** response_type 参数名。 */
     public static final String RESPONSE_TYPE_PARAM = "response_type";
     public static final String GRANT_TYPE_PARAM = "grant_type";
     public static final String REDIRECT_URI_PARAM = "redirect_uri";
     public static final String POST_LOGOUT_REDIRECT_URI_PARAM = "post_logout_redirect_uri";
     public static final String CLIENT_ID_PARAM = "client_id";
+    /** nonce 参数名。 */
     public static final String NONCE_PARAM = "nonce";
     public static final String MAX_AGE_PARAM = OAuth2Constants.MAX_AGE;
     public static final String PROMPT_PARAM = OAuth2Constants.PROMPT;
@@ -104,6 +113,7 @@ public class OIDCLoginProtocol implements LoginProtocol {
     public static final String CLAIMS_PARAM = "claims";
     public static final String ACR_PARAM = "acr_values";
     public static final String ID_TOKEN_HINT = "id_token_hint";
+    /** 会话同意注释键。 */
     public static final String CONSENT_NOTE = "session_consent";
 
     public static final String LOGOUT_STATE_PARAM = "OIDC_LOGOUT_STATE_PARAM";
@@ -111,6 +121,7 @@ public class OIDCLoginProtocol implements LoginProtocol {
     public static final String LOGOUT_VALIDATED_ID_TOKEN_SESSION_STATE = "OIDC_LOGOUT_VALIDATED_ID_TOKEN_SESSION_STATE";
     public static final String LOGOUT_VALIDATED_ID_TOKEN_ISSUED_AT = "OIDC_LOGOUT_VALIDATED_ID_TOKEN_ISSUED_AT";
 
+    /** issuer（iss）会话注释键。 */
     public static final String ISSUER = "iss";
 
     public static final String RESPONSE_MODE_PARAM = "response_mode";
@@ -121,7 +132,7 @@ public class OIDCLoginProtocol implements LoginProtocol {
     public static final String PROMPT_VALUE_CREATE = "create";
     public static final String PROMPT_VALUE_SELECT_ACCOUNT = "select_account";
 
-    // Client authentication methods
+    // 客户端认证方法常量
     public static final String CLIENT_SECRET_BASIC = "client_secret_basic";
     public static final String CLIENT_SECRET_POST = "client_secret_post";
     public static final String CLIENT_SECRET_JWT = "client_secret_jwt";
@@ -130,47 +141,60 @@ public class OIDCLoginProtocol implements LoginProtocol {
     public static final String ATTEST_JWT_CLIENT_AUTH = "attest_jwt_client_auth";
 
     /**
-     * This is just for legacy setups which expect an unencoded, non-RFC6749 compliant client secret send from Keycloak to an IdP.
+     * 遗留 IdP 集成：发送未按 RFC6749 编码的 client_secret（已弃用）。
      */
     @Deprecated(since = "26.5", forRemoval = true)
     public static final String CLIENT_SECRET_BASIC_UNENCODED = "client_secret_basic_unencoded";
 
-    // https://tools.ietf.org/html/rfc7636#section-4.3
+    // PKCE code_challenge（RFC 7636 §4.3）
     public static final String CODE_CHALLENGE_PARAM = "code_challenge";
     public static final String CODE_CHALLENGE_METHOD_PARAM = "code_challenge_method";
 
-    // https://tools.ietf.org/html/rfc7636#section-4.2
+    // PKCE code_challenge 长度限制（RFC 7636 §4.2）
     public static final int PKCE_CODE_CHALLENGE_MIN_LENGTH = 43;
     public static final int PKCE_CODE_CHALLENGE_MAX_LENGTH = 128;
 
-    // https://tools.ietf.org/html/rfc7636#section-4.1
+    // PKCE code_verifier 长度限制（RFC 7636 §4.1）
     public static final int PKCE_CODE_VERIFIER_MIN_LENGTH = 43;
     public static final int PKCE_CODE_VERIFIER_MAX_LENGTH = 128;
 
-    // https://tools.ietf.org/html/rfc7636#section-6.2.2
+    // PKCE 方法 plain / S256（RFC 7636 §6.2.2）
     public static final String PKCE_METHOD_PLAIN = "plain";
     public static final String PKCE_METHOD_S256 = "S256";
 
-    // https://datatracker.ietf.org/doc/html/rfc9449#section-12.3
+    // DPoP 公钥指纹参数 dpop_jkt（RFC 9449）
     public static final String DPOP_JKT = "dpop_jkt";
 
     private static final Logger logger = Logger.getLogger(OIDCLoginProtocol.class);
 
+    /** Keycloak 会话。 */
     protected KeycloakSession session;
 
+    /** 当前领域。 */
     protected RealmModel realm;
 
+    /** JAX-RS URI 信息。 */
     protected UriInfo uriInfo;
 
+    /** HTTP 请求头。 */
     protected HttpHeaders headers;
 
+    /** 事件构建器。 */
     protected EventBuilder event;
 
+    /** 解析后的 response_type。 */
     protected OIDCResponseType responseType;
+    /** 解析后的 response_mode。 */
     protected OIDCResponseMode responseMode;
 
+    /** OIDC 提供者级配置。 */
     protected OIDCProviderConfig providerConfig;
 
+    /**
+     * 构造完整上下文下的 OIDC 协议实例。
+     * @param session 会话 @param realm 领域 @param uriInfo URI
+     * @param headers 请求头 @param event 事件
+     */
     public OIDCLoginProtocol(KeycloakSession session, RealmModel realm, UriInfo uriInfo, HttpHeaders headers, EventBuilder event) {
         this.session = session;
         this.realm = realm;
@@ -179,6 +203,7 @@ public class OIDCLoginProtocol implements LoginProtocol {
         this.event = event;
     }
 
+    /** @param providerConfig 仅配置注入的轻量构造 */
     public OIDCLoginProtocol(OIDCProviderConfig providerConfig) {
         this.providerConfig = providerConfig;
     }
@@ -191,39 +216,52 @@ public class OIDCLoginProtocol implements LoginProtocol {
     }
 
     @Override
+    /** 设置Session 配置。 */
     public OIDCLoginProtocol setSession(KeycloakSession session) {
         this.session = session;
         return this;
     }
 
     @Override
+    /** 设置Realm 配置。 */
     public OIDCLoginProtocol setRealm(RealmModel realm) {
         this.realm = realm;
         return this;
     }
 
     @Override
+    /** 设置UriInfo 配置。 */
     public OIDCLoginProtocol setUriInfo(UriInfo uriInfo) {
         this.uriInfo = uriInfo;
         return this;
     }
 
     @Override
+    /** 设置HttpHeaders 配置。 */
     public OIDCLoginProtocol setHttpHeaders(HttpHeaders headers) {
         this.headers = headers;
         return this;
     }
 
     @Override
+    /** 设置EventBuilder 配置。 */
     public OIDCLoginProtocol setEventBuilder(EventBuilder event) {
         this.event = event;
         return this;
     }
 
+    /** @return OIDC 提供者配置 */
     public OIDCProviderConfig getConfig() {
         return this.providerConfig;
     }
 
+    /**
+     * 认证成功后构建授权响应（code/token/id_token 等）并重定向。
+     * @param authSession 认证会话
+     * @param userSession 用户会话
+     * @param clientSessionCtx 客户端会话上下文
+     * @return 重定向响应
+     */
     @Override
     public Response authenticated(AuthenticationSessionModel authSession, UserSessionModel userSession, ClientSessionContext clientSessionCtx) {
         AuthenticatedClientSessionModel clientSession = clientSessionCtx.getClientSession();
@@ -263,7 +301,7 @@ public class OIDCLoginProtocol implements LoginProtocol {
             redirectUri.addParam(Constants.KC_ACTION_STATUS, kcActionStatus);
         }
 
-        // Standard or hybrid flow
+        // 标准或混合流：签发授权码
         String code = null;
         if (responseType.hasResponseType(OIDCResponseType.CODE)) {
             OAuth2Code codeData = new OAuth2Code(SecretGenerator.getInstance().generateSecureID(),
@@ -281,7 +319,7 @@ public class OIDCLoginProtocol implements LoginProtocol {
             redirectUri.addParam(OAuth2Constants.CODE, code);
         }
 
-        // Implicit or hybrid flow
+        // 隐式或混合流：签发 access/id token
         if (responseType.isImplicitOrHybridFlow()) {
             org.keycloak.protocol.oidc.TokenManager tokenManager = new org.keycloak.protocol.oidc.TokenManager();
             org.keycloak.protocol.oidc.TokenManager.AccessTokenResponseBuilder responseBuilder = tokenManager.responseBuilder(realm, clientSession.getClient(), event, session, userSession, clientSessionCtx)
@@ -299,7 +337,7 @@ public class OIDCLoginProtocol implements LoginProtocol {
                     responseBuilder.generateCodeHash(code);
                 }
 
-                // Financial API - Part 2: Read and Write API Security Profile
+                // FAPI Part 2：生成 state/at_hash/c_hash 等哈希
                 // http://openid.net/specs/openid-financial-api-part-2.html#authorization-server
                 if (state != null && !state.isEmpty())
                     responseBuilder.generateStateHash(state);
@@ -334,7 +372,7 @@ public class OIDCLoginProtocol implements LoginProtocol {
 
             boolean offlineTokenRequested = clientSessionCtx.isOfflineTokenRequested();
             if (!responseType.isImplicitFlow() && offlineTokenRequested) {
-                // Allow creating offline token early, so the tokens issued from authz-enpdpoint can lookup offline-user-session if used before code-to-token request
+                // 混合流+offline_access：提前创建 offline 会话供授权端点令牌使用
                 responseBuilder.createOrUpdateOfflineSession();
             }
         }
@@ -343,10 +381,8 @@ public class OIDCLoginProtocol implements LoginProtocol {
     }
 
     /**
-     * this method can be used in extension-implementations to the {@link OIDCLoginProtocol} to add additional
-     * parameters to the redirectUri after successful authentication and to store these e.g. in the clientSession
-     *
-     * @see https://github.com/keycloak/keycloak/issues/31086
+     * 扩展点：认证成功后向重定向 URI 附加参数（可写入 clientSession）。
+     * @see <a href="https://github.com/keycloak/keycloak/issues/31086">Keycloak #31086</a>
      */
     public Response buildRedirectUri(OIDCRedirectUriBuilder redirectUriBuilder,
                                      AuthenticationSessionModel authSession,
@@ -356,10 +392,8 @@ public class OIDCLoginProtocol implements LoginProtocol {
     }
 
     /**
-     * this method can be used in extension-implementations to the {@link OIDCLoginProtocol} to add additional
-     * parameters to the redirectUri after failed authentication
-     *
-     * @see https://github.com/keycloak/keycloak/issues/31086
+     * 扩展点：认证失败/error 响应时向重定向 URI 附加参数。
+     * @see <a href="https://github.com/keycloak/keycloak/issues/31086">Keycloak #31086</a>
      */
     public Response buildRedirectUri(OIDCRedirectUriBuilder redirectUriBuilder,
                                      AuthenticationSessionModel authSession,
@@ -370,13 +404,14 @@ public class OIDCLoginProtocol implements LoginProtocol {
         return redirectUriBuilder.build();
     }
 
-    // For FAPI 1.0 Advanced
+    // FAPI 1.0 Advanced：ID Token  detached signature
     private boolean isIdTokenAsDetachedSignature(ClientModel client) {
         if (client == null) return false;
         return Boolean.valueOf(Optional.ofNullable(client.getAttribute(OIDCConfigAttributes.ID_TOKEN_AS_DETACHED_SIGNATURE)).orElse(Boolean.FALSE.toString())).booleanValue();
     }
 
     @Override
+    /** sendError 相关操作。 */
     public Response sendError(AuthenticationSessionModel authSession, Error error, String errorMessage) {
         if (isOAuth2DeviceVerificationFlow(authSession)) {
             return denyOAuth2DeviceAuthorization(authSession, error, session);
@@ -390,7 +425,7 @@ public class OIDCLoginProtocol implements LoginProtocol {
 
         OIDCRedirectUriBuilder redirectUri = buildErrorRedirectUri(redirect, state, error, errorMessage);
 
-        // Remove authenticationSession from current tab
+        // 从当前浏览器标签移除认证会话
         new AuthenticationSessionManager(session).removeTabIdInAuthenticationSession(realm, authSession);
 
         return buildRedirectUri(redirectUri, authSession, null, null, null, error);
@@ -410,7 +445,7 @@ public class OIDCLoginProtocol implements LoginProtocol {
             redirectUri.addParam(OAuth2Constants.STATE, state);
         }
 
-        // RFC 9207 support + compatibility flag
+        // RFC 9207 iss 参数及客户端兼容开关
         OIDCAdvancedConfigWrapper clientConfig = OIDCAdvancedConfigWrapper.fromClientModel(session.getContext().getClient());
         if (!clientConfig.isExcludeIssuerFromAuthResponse()) {
             redirectUri.addParam(OAuth2Constants.ISSUER, Urls.realmIssuer(session.getContext().getUri().getBaseUri(), realm.getName()));
@@ -420,6 +455,7 @@ public class OIDCLoginProtocol implements LoginProtocol {
     }
 
     @Override
+    /** 获取ClientData 配置值。 */
     public ClientData getClientData(AuthenticationSessionModel authSession) {
         return new ClientData(authSession.getRedirectUri(),
             authSession.getClientNote(OIDCLoginProtocol.RESPONSE_TYPE_PARAM),
@@ -428,10 +464,11 @@ public class OIDCLoginProtocol implements LoginProtocol {
     }
 
     @Override
+    /** sendError 相关操作。 */
     public Response sendError(ClientModel client, ClientData clientData, Error error) {
         logger.tracef("Calling sendError with clientData when authenticating with client '%s' in realm '%s'. Error: %s", client.getClientId(), realm.getName(), error);
 
-        // Should check if clientData are valid for current client
+        // 校验 clientData 对当前客户端有效
         AuthorizationEndpointRequest req = AuthorizationEndpointRequest.fromClientData(clientData);
         AuthorizationEndpointChecker checker = new AuthorizationEndpointChecker()
             .event(event)
@@ -473,6 +510,7 @@ public class OIDCLoginProtocol implements LoginProtocol {
         }
     }
 
+    /** 后端通道登出：调用客户端 backchannel_logout_uri 或本地会话注销。 */
     @Override
     public Response backchannelLogout(UserSessionModel userSession, AuthenticatedClientSessionModel clientSession) {
         ClientModel client = clientSession.getClient();
@@ -483,6 +521,7 @@ public class OIDCLoginProtocol implements LoginProtocol {
         }
     }
 
+    /** 注册需 iframe 前端登出的客户端。 */
     @Override
     public Response frontchannelLogout(UserSessionModel userSession, AuthenticatedClientSessionModel clientSession) {
         if (clientSession != null) {
@@ -496,6 +535,7 @@ public class OIDCLoginProtocol implements LoginProtocol {
         return null;
     }
 
+    /** 浏览器登出收尾：渲染前端登出页或发送最终重定向。 */
     @Override
     public Response finishBrowserLogout(UserSessionModel userSession, AuthenticationSessionModel logoutSession) {
         event.event(EventType.LOGOUT);
@@ -515,16 +555,19 @@ public class OIDCLoginProtocol implements LoginProtocol {
         return LogoutUtil.sendResponseAfterLogoutFinished(session, logoutSession);
     }
 
+    /** 是否因 prompt=login、max_age 或 KC 动作需强制重新认证。 */
     @Override
     public boolean requireReauthentication(UserSessionModel userSession, AuthenticationSessionModel authSession) {
         return isPromptLogin(authSession) || isAuthTimeExpired(userSession, authSession) || isReAuthRequiredForKcAction(userSession, authSession);
     }
 
+    /** @param authSession 认证会话 @return 是否 prompt=login */
     protected boolean isPromptLogin(AuthenticationSessionModel authSession) {
         String prompt = authSession.getClientNote(OIDCLoginProtocol.PROMPT_PARAM);
         return TokenUtil.hasPrompt(prompt, OIDCLoginProtocol.PROMPT_VALUE_LOGIN);
     }
 
+    /** 根据 max_age 判断 auth_time 是否过期。 */
     protected boolean isAuthTimeExpired(UserSessionModel userSession, AuthenticationSessionModel authSession) {
         if (userSession == null) {
             return false;
@@ -547,6 +590,7 @@ public class OIDCLoginProtocol implements LoginProtocol {
         return false;
     }
 
+    /** KC 必需动作是否超过 Provider 定义的 max auth age。 */
     protected boolean isReAuthRequiredForKcAction(UserSessionModel userSession, AuthenticationSessionModel authSession) {
         if (userSession != null && authSession.getClientNote(Constants.KC_ACTION) != null) {
             String providerId = authSession.getClientNote(Constants.KC_ACTION);
@@ -563,6 +607,7 @@ public class OIDCLoginProtocol implements LoginProtocol {
         }
     }
 
+    /** 向适配器 management URL 推送 not-before 撤销策略。 */
     @Override
     public boolean sendPushRevocationPolicyRequest(RealmModel realm, ClientModel resource, int notBefore, String managementUrl) {
         PushNotBeforeAction adminAction = new PushNotBeforeAction(TokenIdGenerator.generateId(), Time.currentTime() + 30, resource.getClientId(), notBefore);
@@ -580,9 +625,10 @@ public class OIDCLoginProtocol implements LoginProtocol {
         }
     }
 
+    /** 认证完成回调：PAR request_uri 一次性消费等。 */
     @Override
     public void authenticationComplete(AuthenticationSessionModel authSession) {
-        // Authorization servers that enforce one-time use of request_uri values do so at the point of authorization,
+        // PAR request_uri 在授权完成点一次性失效
         // not at the point of visiting the authorization endpoint
         String requestUri = authSession.getAuthNote(Constants.AUTHORIZATION_REQUEST_URI);
         RequestUriType requestUriType = Optional.ofNullable(requestUri)
@@ -594,6 +640,7 @@ public class OIDCLoginProtocol implements LoginProtocol {
     }
 
     @Override
+    /** close 相关操作。 */
     public void close() {
     }
 }

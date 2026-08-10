@@ -24,18 +24,23 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
+ * OIDC 客户端描述转换器工厂，识别含 {@code redirect_uris} 的 JSON 客户端元数据。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class OIDCClientDescriptionConverterFactory implements ClientDescriptionConverterFactory {
 
+    /** 工厂标识：openid-connect。 */
     public static final String ID = "openid-connect";
 
+    /** @param description 客户端描述文本 @return 是否为 OIDC JSON 格式 */
     @Override
     public boolean isSupported(String description) {
         description = description.trim();
         return (description.startsWith("{") && description.endsWith("}") && description.contains("\"redirect_uris\""));
     }
 
+    /** @param session Keycloak 会话 @return 转换器实例 */
     @Override
     public ClientDescriptionConverter create(KeycloakSession session) {
         return new OIDCClientDescriptionConverter(session);
@@ -53,6 +58,7 @@ public class OIDCClientDescriptionConverterFactory implements ClientDescriptionC
     public void close() {
     }
 
+    /** @return 工厂 ID */
     @Override
     public String getId() {
         return ID;

@@ -53,30 +53,50 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.jboss.logging.Logger;
 
 /**
+ * 访问令牌（Access Token）自省（Introspection）提供者。
+ * <p>验证令牌签名与生命周期，校验客户端、用户会话与受众，并返回 RFC 7662 风格的 active/claims JSON。</p>
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class AccessTokenIntrospectionProvider<T extends AccessToken> implements TokenIntrospectionProvider {
 
+    /** Keycloak 会话。 */
     protected final KeycloakSession session;
+    /** 令牌管理器。 */
     protected final TokenManager tokenManager;
+    /** 当前领域。 */
     protected final RealmModel realm;
+    /** 日志记录器。 */
     private static final Logger logger = Logger.getLogger(AccessTokenIntrospectionProvider.class);
+    /** 当前自省事件构建器。 */
     protected EventBuilder eventBuilder;
 
-    // Those are set after successfully verified
+    // 校验成功后填充的上下文
+    /** 已验证的原始令牌。 */
     protected T token;
 
+    /** 经协议映射器转换后的令牌视图。 */
     protected AccessToken transformedToken;
+    /** 令牌所属客户端。 */
     protected ClientModel client;
+    /** 关联用户会话。 */
     protected UserSessionModel userSession;
+    /** 令牌主体用户。 */
     protected UserModel user;
 
+    /** @param session Keycloak 会话 */
     public AccessTokenIntrospectionProvider(KeycloakSession session) {
         this.session = session;
         this.realm = session.getContext().getRealm();
         this.tokenManager = new TokenManager();
     }
 
+    /**
+     * 执行令牌自省并返回 JSON 响应。
+     * @param tokenStr 待自省令牌字符串
+     * @param eventBuilder 事件构建器
+     * @return 含 active 及声明的 HTTP 响应
+     */
     @Override
     public Response introspect(String tokenStr, EventBuilder eventBuilder) {
         this.eventBuilder = eventBuilder;
@@ -108,7 +128,7 @@ public class AccessTokenIntrospectionProvider<T extends AccessToken> implements 
 
                 String actor = userSession.getNote(ImpersonationSessionNote.IMPERSONATOR_USERNAME.toString());
                 if (actor != null) {
-                    // for token exchange delegation semantics when an entity (actor) other than the subject is the acting party to whom authority has been delegated
+                    // 令牌交换委托语义：记录实际行使权限的 actor（非 subject）
                     tokenMetadata.putObject("act").put("sub", actor);
                 }
 
@@ -121,11 +141,11 @@ public class AccessTokenIntrospectionProvider<T extends AccessToken> implements 
                 tokenMetadata.put("active", false);
             }
 
-            // if consumer requests application/jwt return a JWT representation of the introspection contents in an jwt field
+            // 若 Accept 为 application/jwt 且客户端启用，则在响应中附加 jwt 字段
             if (transformedToken != null) {
                 boolean isJwtRequest = org.keycloak.utils.MediaType.APPLICATION_JWT.equals(session.getContext().getRequestHeaders().getHeaderString(HttpHeaders.ACCEPT));
                 if (isJwtRequest && Boolean.parseBoolean(authenticatedClient.getAttribute(Constants.SUPPORT_JWT_CLAIM_IN_INTROSPECTION_RESPONSE_ENABLED))) {
-                    // consumers can use this to convert an opaque token into an JWT based token
+                    // 供调用方将不透明令牌转为 JWT 形式
                     tokenMetadata.put("jwt", session.tokens().encode(transformedToken));
                 }
             }
@@ -141,6 +161,12 @@ public class AccessTokenIntrospectionProvider<T extends AccessToken> implements 
     }
 
 
+    /**
+     * 按客户端会话与 scope 对访问令牌做自省专用转换。
+     * @param token 原始令牌
+     * @param userSession 用户会话
+     * @return 转换后的令牌
+     */
     public AccessToken transformAccessToken(AccessToken token, UserSessionModel userSession) {
         ClientModel client = realm.getClientByClientId(token.getIssuedFor());
         AuthenticatedClientSessionModel clientSession = userSession.getAuthenticatedClientSessionByClient(client.getId());
@@ -154,7 +180,7 @@ public class AccessTokenIntrospectionProvider<T extends AccessToken> implements 
     }
 
     private AccessToken getAccessTokenFromStoredData(AccessToken token) {
-        // Copy just "basic" claims from the initial token. The same like filled in TokenManager.initToken. The rest should be possibly added by protocol mappers (only if configured for introspection response)
+        // 仅复制基础声明（同 TokenManager.initToken）；其余由协议映射器按需加入自省响应
         AccessToken newToken = new AccessToken();
         newToken.id(token.getId());
         newToken.type(token.getType());
@@ -167,19 +193,18 @@ public class AccessTokenIntrospectionProvider<T extends AccessToken> implements 
         newToken.setScope(token.getScope());
         newToken.setSessionId(token.getSessionId());
 
-        // In the case of a refresh token, aud is a basic claim.
+        // 刷新令牌场景下 aud 亦为基础声明
         newToken.audience(token.getAudience());
 
-        // The cnf is not a claim controlled by the protocol mapper.
+        // cnf 不由协议映射器控制
         newToken.setConfirmation(token.getConfirmation());
         return newToken;
     }
 
     /**
-     * Performs introspection checks related to token, client, userSession, user etc. If some of the checks failed, this method is supposed to already set an error event.
-     * If all the checks are successful, the instance variables are supposed to be set
-     *
-     * @return true just if all the checks are working
+     * 串联令牌、客户端、用户会话等自省校验；失败时已写入错误事件。
+     * 全部通过时填充实例字段。
+     * @return 全部校验通过为 true
      */
     protected boolean introspectionChecks(String tokenStr) {
         if (!verifyToken(tokenStr)) {
@@ -231,6 +256,7 @@ public class AccessTokenIntrospectionProvider<T extends AccessToken> implements 
         return true;
     }
 
+    /** 验证 JWT 签名与基本有效性。 @param tokenStr 令牌字符串 @return 通过为 true */
     protected boolean verifyToken(String tokenStr) {
         try {
             TokenVerifier<T> verifier = TokenVerifier.create(tokenStr, getTokenClass())
@@ -261,10 +287,12 @@ public class AccessTokenIntrospectionProvider<T extends AccessToken> implements 
     }
 
 
+    /** @return 令牌类型 Class */
     protected Class<T> getTokenClass() {
         return (Class<T>) AccessToken.class;
     }
 
+    /** 校验令牌 issued_for 对应客户端存在且启用。 @return 通过为 true */
     protected boolean verifyClient() {
         eventBuilder.detail(Details.TOKEN_ISSUED_FOR, token.getIssuedFor());
         ClientModel client = realm.getClientByClientId(token.getIssuedFor());
@@ -297,27 +325,28 @@ public class AccessTokenIntrospectionProvider<T extends AccessToken> implements 
         }
     }
 
+    /** 校验自省客户端位于令牌 aud 中，或允许跳过受众检查。 @return 通过为 true */
     protected boolean verifyAudience() {
         ClientModel authenticatedClient = session.getContext().getClient();
 
-        // Check if the authenticated client is in the token's audience (original or transformed)
+        // 检查已认证客户端是否在令牌 aud（原始或转换后）中
         String[] audiences = token.getAudience() != null ? token.getAudience() : transformedToken.getAudience();
         if (audiences != null && Arrays.asList(audiences).contains(authenticatedClient.getClientId())) {
             return true;
         }
 
-        // Get server-wide configuration from OIDCLoginProtocol
+        // 读取 OIDC 服务端全局配置
         OIDCLoginProtocol loginProtocol = (OIDCLoginProtocol) session.getProvider(LoginProtocol.class, OIDCLoginProtocol.LOGIN_PROTOCOL);
         OIDCProviderConfig config = loginProtocol.getConfig();
 
-        // Check if server-wide backwards compatibility option is enabled
+        // 服务端是否允许跳过受众检查（兼容选项）
         if (config.isAllowTokenIntrospectionWithoutAudienceCheck()) {
             logger.warnf("Client '%s' introspecting token for '%s' without audience check (server-wide setting)",
                     authenticatedClient.getClientId(), token.getIssuedFor());
             return true;
         }
 
-        // Check client option on the authenticated client
+        // 自省客户端自身是否允许跳过受众检查
         OIDCAdvancedConfigWrapper clientConfig = OIDCAdvancedConfigWrapper.fromClientModel(authenticatedClient);
         if (clientConfig.isAllowTokenIntrospectionWithoutAudienceCheck()) {
             logger.warnf("Client '%s' introspecting token for '%s' without audience check (per-client setting on '%s')",
@@ -332,11 +361,13 @@ public class AccessTokenIntrospectionProvider<T extends AccessToken> implements 
         return false;
     }
 
+    /** @return 用户会话校验结果 */
     protected UserSessionUtil.UserSessionValidationResult verifyUserSession() {
         return UserSessionUtil.findValidSessionForAccessToken(session, realm, token, client, (invalidUserSession -> {}));
     }
 
 
+    /** 子类可覆盖以检测令牌重用。 @return 默认 true */
     protected boolean verifyTokenReuse() {
         return true;
     }

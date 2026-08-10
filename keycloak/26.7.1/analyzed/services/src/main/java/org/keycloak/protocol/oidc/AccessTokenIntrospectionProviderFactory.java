@@ -22,12 +22,16 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
+ * 访问令牌自省提供者工厂，标识为 {@link #ACCESS_TOKEN_TYPE}。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class AccessTokenIntrospectionProviderFactory implements TokenIntrospectionProviderFactory {
 
+    /** 自省令牌类型标识：access_token。 */
     public static final String ACCESS_TOKEN_TYPE = "access_token";
 
+    /** @param session Keycloak 会话 @return 访问令牌自省提供者实例 */
     @Override
     public TokenIntrospectionProvider create(KeycloakSession session) {
         return new AccessTokenIntrospectionProvider(session);
@@ -48,6 +52,7 @@ public class AccessTokenIntrospectionProviderFactory implements TokenIntrospecti
 
     }
 
+    /** @return 提供者 ID（access_token） */
     @Override
     public String getId() {
         return ACCESS_TOKEN_TYPE;

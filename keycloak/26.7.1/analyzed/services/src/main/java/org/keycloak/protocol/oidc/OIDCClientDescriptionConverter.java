@@ -27,17 +27,26 @@ import org.keycloak.services.clientregistration.oidc.DescriptionConverter;
 import org.keycloak.util.JsonSerialization;
 
 /**
+ * 将 OIDC 动态客户端注册 JSON 描述转换为内部 {@link ClientRepresentation}。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class OIDCClientDescriptionConverter implements ClientDescriptionConverter {
 
+    /** Keycloak 会话。 */
     private final KeycloakSession session;
 
+    /** @param session Keycloak 会话 */
     public OIDCClientDescriptionConverter(KeycloakSession session) {
         this.session = session;
     }
 
 
+    /**
+     * 解析 OIDC 客户端 JSON 并转为 Keycloak 内部表示。
+     * @param description OIDC 客户端 JSON 字符串
+     * @return 内部 ClientRepresentation
+     */
     @Override
     public ClientRepresentation convertToInternal(String description) {
         try {
