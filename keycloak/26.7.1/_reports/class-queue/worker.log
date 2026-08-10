@@ -883,3 +883,18 @@
 2026-08-10T06:52:49Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/util/OutputFormat.java wave30b admin-cli util
 2026-08-10T06:52:49Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/util/OutputUtil.java wave30b admin-cli util
 2026-08-10T06:52:49Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/util/ParseUtil.java wave30b admin-cli util
+2026-08-10T06:55:01Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/util/ReturnFields.java wave31a registration-cli
+2026-08-10T06:55:01Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/registration/cli/CmdStdinContext.java wave31a registration-cli
+2026-08-10T06:55:01Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/registration/cli/EndpointType.java wave31a registration-cli
+2026-08-10T06:55:01Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/registration/cli/EndpointTypeConverter.java wave31a registration-cli
+2026-08-10T06:55:01Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/registration/cli/KcRegMain.java wave31a registration-cli
+2026-08-10T06:55:01Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/registration/cli/ReflectionUtil.java wave31a registration-cli
+2026-08-10T06:55:01Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/registration/cli/commands/AbstractAuthOptionsCmd.java wave31a registration-cli
+2026-08-10T06:55:01Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/registration/cli/commands/AttrsCmd.java wave31a registration-cli
+2026-08-10T06:55:01Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/registration/cli/commands/ConfigCmd.java wave31a registration-cli
+2026-08-10T06:55:01Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/registration/cli/commands/ConfigCredentialsCmd.java wave31a registration-cli
+2026-08-10T06:55:01Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/registration/cli/commands/ConfigInitialTokenCmd.java wave31a registration-cli
+2026-08-10T06:55:01Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/registration/cli/commands/ConfigRegistrationTokenCmd.java wave31a registration-cli
+2026-08-10T06:55:01Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/registration/cli/commands/ConfigTruststoreCmd.java wave31a registration-cli
+2026-08-10T06:55:01Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/registration/cli/commands/CreateCmd.java wave31a registration-cli
+2026-08-10T06:55:01Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/registration/cli/commands/DeleteCmd.java wave31a registration-cli
