@@ -1,5 +1,7 @@
 package httpgrpc
 
+// httpgrpc 包实现 OpenTelemetry TextMapCarrier，在 gRPC HTTP 请求头与 trace context 间传递。
+
 import (
 	"context"
 
@@ -10,11 +12,13 @@ import (
 	"github.com/grafana/loki/v3/pkg/querier/queryrange"
 )
 
+// Request 抽象 QueryRequest 与 HttpRequest，ExtractSpanFromRequest 按类型选择传播载体。
 type Request interface {
 	GetQueryRequest() *queryrange.QueryRequest
 	GetHttpRequest() *weaveworks_httpgrpc.HTTPRequest
 }
 
+// HeadersCarrier 包装 httpgrpc.HTTPRequest，实现 propagation.TextMapCarrier 读写 trace 头。
 // Used to transfer trace information from/to HTTP request.
 type HeadersCarrier weaveworks_httpgrpc.HTTPRequest
 
@@ -43,6 +47,7 @@ func (c *HeadersCarrier) Keys() []string {
 	return keys
 }
 
+// Set 向 Headers 追加新 Header 条目，供 Inject 阶段写入 traceparent 等字段。
 func (c *HeadersCarrier) Set(key, val string) {
 	c.Headers = append(c.Headers, &weaveworks_httpgrpc.Header{
 		Key:    key,
@@ -61,6 +66,7 @@ func (c *HeadersCarrier) ForeachKey(handler func(key, val string) error) error {
 	return nil
 }
 
+// ExtractSpanFromHTTPRequest 用全局 TextMapPropagator 从 HTTP 头提取父 span 上下文。
 func ExtractSpanFromHTTPRequest(ctx context.Context, req *weaveworks_httpgrpc.HTTPRequest) context.Context {
 	return otel.GetTextMapPropagator().Extract(ctx, (*HeadersCarrier)(req))
 }
@@ -80,3 +86,4 @@ func ExtractSpanFromRequest(ctx context.Context, req Request) context.Context {
 
 	return ctx
 }
+// ExtractSpanFromRequest 优先 QueryRequest，否则 HttpRequest，均无则原样返回 ctx。

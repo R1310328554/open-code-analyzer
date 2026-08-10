@@ -1,5 +1,7 @@
 package flagext
 
+// LabelSet 将 Prometheus model.LabelSet 包装为 flag.Value，支持 key=value 与 CSV 多标签格式。
+
 import (
 	"bytes"
 	"encoding/csv"
@@ -12,11 +14,13 @@ import (
 	"github.com/grafana/loki/v3/pkg/util"
 )
 
+// LabelSet 内联 model.LabelSet，可用于命令行、YAML 与 JSON 配置中的静态标签。
 // LabelSet is a labelSet that can be used as a flag.
 type LabelSet struct {
 	model.LabelSet `yaml:",inline"`
 }
 
+// String 输出 [a=1,b=2] 形式，多标签时用 csv.Writer 正确转义含逗号的值。
 // String implements flag.Value
 // Format: a=1,b=2
 func (v LabelSet) String() string {
@@ -37,6 +41,7 @@ func (v LabelSet) String() string {
 	return "[" + strings.TrimSpace(buf.String()) + "]"
 }
 
+// Set 解析单对 key=value 或 CSV 多对，经 model.LabelSet.Validate 校验标签合法性。
 // Set implements flag.Value
 func (v *LabelSet) Set(s string) error {
 	var ss []string
@@ -71,6 +76,7 @@ func (v *LabelSet) Set(s string) error {
 	return nil
 }
 
+// UnmarshalYAML 直接反序列化为 model.LabelSet 并赋值给内嵌字段。
 // UnmarshalYAML the Unmarshaler interface of the yaml pkg.
 func (v *LabelSet) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	lbSet := model.LabelSet{}
@@ -90,3 +96,4 @@ func (v LabelSet) MarshalYAML() (interface{}, error) {
 	}
 	return string(out), nil
 }
+// MarshalYAML 经 util.ModelLabelSetToMap 转为 map 再 yaml.Marshal，输出标准 YAML 结构。

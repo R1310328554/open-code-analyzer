@@ -1,5 +1,7 @@
 package httpreq
 
+// httpreq 编码标志：通过 X-Loki-Response-Encoding-Flags 头声明响应侧可选编码行为。
+
 import (
 	"context"
 	"net/http"
@@ -53,6 +55,7 @@ const (
 	EncodeFlagsDelimiter = ","
 )
 
+// AddEncodingFlags 将非空 flags 写入标准 http.Request 的 Loki 编码头。
 func AddEncodingFlags(req *http.Request, flags EncodingFlags) {
 	if len(flags) == 0 {
 		return
@@ -74,6 +77,7 @@ func ExtractEncodingFlags(req *http.Request) EncodingFlags {
 	return ParseEncodingFlags(rawValue)
 }
 
+// ExtractEncodingFlagsFromProto 从 gRPC 封装的 HTTPRequest 头列表解析编码标志。
 func ExtractEncodingFlagsFromProto(req *httpgrpc.HTTPRequest) EncodingFlags {
 	var rawValue string
 	for _, header := range req.GetHeaders() {
@@ -95,6 +99,7 @@ func ExtractEncodingFlagsFromCtx(ctx context.Context) EncodingFlags {
 	return ParseEncodingFlags(rawValue)
 }
 
+// ParseEncodingFlags 按 EncodeFlagsDelimiter 拆分并填充 map，空串返回 nil。
 func ParseEncodingFlags(rawFlags string) EncodingFlags {
 	if rawFlags == "" {
 		return nil
@@ -107,3 +112,4 @@ func ParseEncodingFlags(rawFlags string) EncodingFlags {
 	}
 	return flags
 }
+// AddEncodingFlagsToContext 经 InjectHeader 写入 context，供无原生 Request 的链路传递。

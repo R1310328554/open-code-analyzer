@@ -1,5 +1,7 @@
 package limiter
 
+// limiter.CombinedLimits 聚合 Loki 各子系统 Limits 接口，供单配置结构体统一注入限流策略。
+
 import (
 	bloombuilder "github.com/grafana/loki/v3/pkg/bloombuild/builder"
 	bloomplanner "github.com/grafana/loki/v3/pkg/bloombuild/planner"
@@ -17,6 +19,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/storage/bucket"
 )
 
+// CombinedLimits 嵌入 compactor/distributor/ingester/querier/ruler 等组件的 Limits 约束。
 type CombinedLimits interface {
 	compactor.Limits
 	distributor.Limits
@@ -33,3 +36,4 @@ type CombinedLimits interface {
 	pattern.Limits
 	bucket.SSEConfigProvider
 }
+// 同时覆盖 bloomgateway、bloombuild、pattern、indexgateway 与 bucket SSE 等扩展模块限额。

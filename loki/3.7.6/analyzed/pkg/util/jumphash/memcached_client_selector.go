@@ -1,5 +1,7 @@
 package jumphash
 
+// jumphash 包实现 memcache ServerSelector：Jump Consistent Hash 将键稳定映射到 Memcached 节点。
+
 import (
 	"net"
 	"strings"
@@ -14,6 +16,7 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// Selector 用 xxhash 对 key 哈希后 Jump Hash 选桶；扩缩容仅约 1/N 键迁移，适合 DNS 有序节点。
 // Selector implements the memcache.ServerSelector
 // interface. Selector utilizes a jump hash to
 // distribute keys to servers.
@@ -55,6 +58,7 @@ func DefaultSelector(name string) *Selector {
 // any net.Addr.
 //
 // Copied from github.com/grafana/gomemcache/selector.go.
+// staticAddr 缓存 net.Addr 的 Network/String，避免 DNS 解析结果随 TTL 变化导致路由漂移。
 type staticAddr struct {
 	network, str string
 }
@@ -69,6 +73,7 @@ func newStaticAddr(a net.Addr) net.Addr {
 func (a *staticAddr) Network() string { return a.network }
 func (a *staticAddr) String() string  { return a.str }
 
+// SetServers 自然排序后解析 TCP/Unix 地址，任一失败则整批不更新；重复条目等权加权。
 // SetServers changes a MemcachedJumpHashSelector's set of servers at
 // runtime and is safe for concurrent use by multiple goroutines.
 //
@@ -122,6 +127,7 @@ func addresses(addrs []net.Addr) []string {
 	return servers
 }
 
+// Hash 实现 Jump Consistent Hash 算法，numBuckets>=1，源自 dgryski/go-jump。
 // Hash consistently chooses a hash bucket number in the range [0, numBuckets) for the given key.
 // numBuckets must be >= 1.
 //
@@ -140,6 +146,7 @@ func Hash(key uint64, numBuckets int) int32 {
 	return int32(b)
 }
 
+// PickServer/FromString 对字符串 key 做 xxhash 后选节点；FromUInt64 直接对 uint64 哈希。
 // PickServer returns the server address that a given item
 // should be shared onto.
 func (s *Selector) PickServer(key string) (net.Addr, error) {
@@ -171,6 +178,7 @@ func (s *Selector) FromUInt64(key uint64) (net.Addr, error) {
 	return s.addrs[idx], nil
 }
 
+// Each 在 RLock 下遍历全部 addrs，f 返回非 nil 错误时立即停止并向上传递。
 // Each iterates over each server and calls the given function.
 // If f returns a non-nil error, iteration will stop and that
 // error will be returned.
@@ -190,3 +198,4 @@ func (s *Selector) Addrs() []net.Addr {
 	defer s.mu.RUnlock()
 	return s.addrs
 }
+// DefaultSelector 使用 net.ResolveUnixAddr/TCPAddr 作为默认解析器构造生产可用选择器。

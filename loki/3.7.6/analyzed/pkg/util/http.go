@@ -1,5 +1,7 @@
 package util //nolint:revive
 
+// util HTTP 辅助：认证配置、JSON/YAML/HTML 响应、Snappy 压缩 protobuf 解析与序列化。
+
 import (
 	"bytes"
 	"context"
@@ -37,11 +39,13 @@ const (
 	HTTPClientError  = "client_error"
 )
 
+// IsRequestBodyTooLarge 检测 net/http 请求体超限错误，便于统一返回 413。
 // IsRequestBodyTooLarge returns true if the error is "http: request body too large".
 func IsRequestBodyTooLarge(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "http: request body too large")
 }
 
+// BasicAuth 配置 HTTP 基本认证用户名与 flagext.Secret 密码，可覆盖 URL 内嵌凭据。
 // BasicAuth configures basic authentication for HTTP clients.
 type BasicAuth struct {
 	Username string         `yaml:"basic_auth_username"`
@@ -58,6 +62,7 @@ func (b BasicAuth) IsEnabled() bool {
 	return b.Username != "" || b.Password.String() != ""
 }
 
+// HeaderAuth 支持 Bearer 等自定义 Authorization 头或 credentials_file 外部凭据。
 // HeaderAuth condigures header based authorization for HTTP clients.
 type HeaderAuth struct {
 	Type            string         `yaml:"type,omitempty"`
@@ -76,6 +81,7 @@ func (h HeaderAuth) IsEnabled() bool {
 	return h.Credentials.String() != "" || h.CredentialsFile != ""
 }
 
+// WriteJSONResponse 设置 application/json 并序列化 v；marshal 失败返回 500。
 // WriteJSONResponse writes some JSON as a HTTP response.
 func WriteJSONResponse(w http.ResponseWriter, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
@@ -167,12 +173,14 @@ const (
 	RawSnappy
 )
 
+// ParseProtoReader 已弃用，请改用 ParseProtoReaderWithLimits 分别限制压缩与解压大小。
 // ParseProtoReader parses a compressed proto from an io.Reader.
 // Deprecated: Use ParseProtoReaderWithLimits for separate compressed/decompressed limits.
 func ParseProtoReader(ctx context.Context, reader io.Reader, expectedSize, maxSize int, req proto.Message, compression CompressionType) error {
 	return ParseProtoReaderWithLimits(ctx, reader, expectedSize, maxSize, int64(maxSize), req, compression)
 }
 
+// ParseProtoReaderWithLimits 解压后自定义 Unmarshal 路径，兼容 proto.Unmarshaler 接口。
 // ParseProtoReaderWithLimits parses a compressed proto from an io.Reader with separate size limits.
 // maxCompressedSize limits the compressed input size, maxDecompressedSize limits the decompressed output size.
 func ParseProtoReaderWithLimits(ctx context.Context, reader io.Reader, expectedSize, maxCompressedSize int, maxDecompressedSize int64, req proto.Message, compression CompressionType) error {
@@ -200,6 +208,7 @@ func ParseProtoReaderWithLimits(ctx context.Context, reader io.Reader, expectedS
 	return nil
 }
 
+// decompressRequest 优先尝试 httpgrpc BytesBuffer 零拷贝路径，否则流式 LimitReader 读取。
 func decompressRequest(reader io.Reader, expectedSize, maxCompressedSize int, maxDecompressedSize int64, compression CompressionType, sp trace.Span) (body []byte, err error) {
 	defer func() {
 		if err != nil && maxDecompressedSize > 0 && int64(len(body)) > maxDecompressedSize {
@@ -285,6 +294,7 @@ func tryBufferFromReader(reader io.Reader) (*bytes.Buffer, bool) {
 	return nil, false
 }
 
+// SerializeProtoResponse 可选 Snappy 压缩后写入响应体，marshal 或 write 失败返回 500。
 // SerializeProtoResponse serializes a protobuf response into an HTTP response.
 func SerializeProtoResponse(w http.ResponseWriter, resp proto.Message, compression CompressionType) error {
 	data, err := proto.Marshal(resp)
@@ -326,6 +336,7 @@ func IsValidURL(endpoint string) bool {
 	return u.Scheme != "" && u.Host != ""
 }
 
+// ErrorTypeFromHTTPStatus 将 HTTP 状态映射为 rate_limited/server_error/client_error 等指标标签。
 func ErrorTypeFromHTTPStatus(status int) string {
 	errorType := HTTPErrorUnknown
 	if status == 429 {
@@ -350,3 +361,4 @@ func IsServerError(status int) bool {
 func IsRateLimited(status int) bool {
 	return status == 429
 }
+// CompressionType 枚举 NoCompression 与 RawSnappy，控制请求体与响应体的压缩编解码方式。

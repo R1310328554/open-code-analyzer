@@ -1,5 +1,7 @@
 package httpreq
 
+// 查询标签中间件：从 X-Query-Tags 与 X-Query-Queue-Time 头提取元数据写入 context 供日志与限流。
+
 import (
 	"context"
 	"net/http"
@@ -12,6 +14,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/constants"
 )
 
+// ctxKey 自定义类型避免 linter 禁止 string 作 context key 的规范问题。
 // NOTE(kavi): Why new type?
 // Our linter won't allow to use basic types like string to be used as key in context.
 // TODO(chaudum): Can we safely change the type of the header key?
@@ -24,6 +27,7 @@ var (
 	QueryQueueTimeHTTPHeader ctxKey = "X-Query-Queue-Time"
 )
 
+// ExtractQueryTagsMiddleware 读取并 sanitize 查询标签头，InjectQueryTags 后传递给下游 handler。
 func ExtractQueryTagsMiddleware() middleware.Interface {
 	return middleware.Func(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -38,6 +42,7 @@ func ExtractQueryTagsMiddleware() middleware.Interface {
 	})
 }
 
+// ExtractQueryTagsFromHTTP 用 safeQueryTags 正则剔除非法字符，防止日志注入。
 func ExtractQueryTagsFromHTTP(req *http.Request) string {
 	tags := req.Header.Get(string(QueryTagsHTTPHeader))
 	return safeQueryTags.ReplaceAllString(tags, "_")
@@ -54,6 +59,7 @@ func InjectQueryTags(ctx context.Context, tags string) context.Context {
 	return context.WithValue(ctx, QueryTagsHTTPHeader, tags)
 }
 
+// ExtractQueryMetricsMiddleware 解析 X-Query-Queue-Time 为 time.Duration 写入 context。
 func ExtractQueryMetricsMiddleware() middleware.Interface {
 	return middleware.Func(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -73,6 +79,7 @@ func ExtractQueryMetricsMiddleware() middleware.Interface {
 	})
 }
 
+// TagsToKeyValues 将 Source=foo,Feature=beta 转为小写键值交替的 []interface{} 供结构化日志。
 // TagsToKeyValues converts QueryTags to form that is easy to log.
 // e.g: `Source=foo,Feature=beta` -> []interface{}{"source", "foo", "feature", "beta"}
 // so that we could log nicely!
@@ -104,6 +111,7 @@ func TagsToKeyValues(queryTags string) []interface{} {
 	return res
 }
 
+// IsLogsDrilldownRequest 检查 source 标签是否等于 Logs Drilldown 应用名常量。
 // IsLogsDrilldownRequest checks if the request comes from Logs Drilldown by examining the X-Query-Tags header
 func IsLogsDrilldownRequest(ctx context.Context) bool {
 	tags := ExtractQueryTagsFromContext(ctx)
@@ -127,3 +135,4 @@ func IsLogsDrilldownRequest(ctx context.Context) bool {
 	}
 	return false
 }
+// InjectQueryTags 写入前同样经 safeQueryTags 过滤，保证 context 内标签字符集安全。

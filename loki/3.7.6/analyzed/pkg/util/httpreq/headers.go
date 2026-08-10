@@ -1,5 +1,7 @@
 package httpreq
 
+// httpreq 请求头上下文：在 codec 编解码丢失头信息时，经 middleware 将头存入 context 供下游恢复。
+
 import (
 	"context"
 	"net/http"
@@ -11,7 +13,8 @@ import (
 type headerContextKey struct{}
 
 var (
-	// LokiActorPathHeader is the name of the header e.g. used to enqueue requests in hierarchical queues.
+	// LokiActorPathHeader 标识分层队列 actor 路径，分隔符 LokiActorPathDelimiter 为竖线。
+// LokiActorPathHeader is the name of the header e.g. used to enqueue requests in hierarchical queues.
 	LokiActorPathHeader               = "X-Loki-Actor-Path"
 	LokiDisablePipelineWrappersHeader = "X-Loki-Disable-Pipeline-Wrappers"
 
@@ -26,6 +29,7 @@ const (
 	AcceptEncodingHeader = "Accept-Encoding"
 )
 
+// PropagateAllHeadersMiddleware 过滤 ignoreList 后将剩余头注入 context，供 gRPC 往返恢复。
 // PropagateAllHeadersMiddleware stores all HTTP headers in context for downstream restoration.
 // This is useful when requests go through a codec decode/encode cycle that loses headers.
 // Headers in the ignoreList will not be propagated.
@@ -52,6 +56,7 @@ func PropagateAllHeadersMiddleware(ignoreList ...string) middleware.Interface {
 	})
 }
 
+// ExtractAllHeaders 从 headerContextKey 读取 http.Header，未设置时返回 nil。
 // ExtractAllHeaders retrieves all headers stored in context by PropagateAllHeadersMiddleware.
 func ExtractAllHeaders(ctx context.Context) http.Header {
 	ctxHeaders, _ := ctx.Value(headerContextKey{}).(http.Header)
@@ -66,6 +71,7 @@ func ExtractHeader(ctx context.Context, name string) string {
 	return ""
 }
 
+// ExtractActorPath 解析 X-Loki-Actor-Path 为分段路径切片，空则 nil。
 // ExtractActorPath retrieves the actor path from context.
 func ExtractActorPath(ctx context.Context) []string {
 	value := ExtractHeader(ctx, LokiActorPathHeader)
@@ -75,6 +81,7 @@ func ExtractActorPath(ctx context.Context) []string {
 	return strings.Split(value, LokiActorPathDelimiter)
 }
 
+// InjectHeader 懒创建 context 内 Header map 并 Set 单键值，支持链式追加。
 // InjectHeader adds a header to the context's header map.
 func InjectHeader(ctx context.Context, key, value string) context.Context {
 	headers, ok := ctx.Value(headerContextKey{}).(http.Header)
@@ -108,3 +115,4 @@ func InjectAllHeaders(ctx context.Context, h http.Header) context.Context {
 func InjectActorPath(ctx context.Context, value string) context.Context {
 	return InjectHeader(ctx, LokiActorPathHeader, value)
 }
+// InjectAllHeaders 批量 Add 多值头；Authorization 等敏感头可在 middleware ignoreList 中排除。

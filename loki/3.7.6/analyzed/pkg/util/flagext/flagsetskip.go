@@ -1,5 +1,7 @@
 package flagext
 
+// FlagSetWithSkip 包装标准 flag.FlagSet，注册时可跳过指定 flag 名，避免重复定义冲突。
+
 import (
 	"flag"
 	"time"
@@ -22,6 +24,7 @@ func (f *FlagSetWithSkip) ToFlagSet() *flag.FlagSet {
 	return f.FlagSet
 }
 
+// DurationVar 等包装方法仅在 name 不在 skip 集合时才调用底层 FlagSet 注册。
 func (f *FlagSetWithSkip) DurationVar(p *time.Duration, name string, value time.Duration, usage string) {
 	if _, ok := f.skip[name]; !ok {
 		f.FlagSet.DurationVar(p, name, value, usage)
@@ -52,4 +55,5 @@ func (f *FlagSetWithSkip) Var(value flag.Value, name string, usage string) {
 	}
 }
 
+// 可按需继续包装 Int64Var、Float64Var 等 flag 注册方法以扩展跳过能力。
 // TODO: Add more methods as needed.
