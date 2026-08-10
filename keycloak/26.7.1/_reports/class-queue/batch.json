@@ -15,23 +15,8 @@
     "services/src/main/java/org/keycloak/broker/provider/TrustMaterialResolver.java",
     "services/src/main/java/org/keycloak/broker/saml/SAMLDataMarshaller.java",
     "services/src/main/java/org/keycloak/broker/saml/SAMLEndpoint.java",
-    "services/src/main/java/org/keycloak/broker/saml/SAMLIdentityProvider.java",
-    "services/src/main/java/org/keycloak/broker/saml/SAMLIdentityProviderConfig.java",
-    "services/src/main/java/org/keycloak/broker/saml/SAMLIdentityProviderFactory.java",
-    "services/src/main/java/org/keycloak/broker/saml/mappers/AbstractAttributeToGroupMapper.java",
-    "services/src/main/java/org/keycloak/broker/saml/mappers/AbstractAttributeToRoleMapper.java",
-    "services/src/main/java/org/keycloak/broker/saml/mappers/AdvancedAttributeToGroupMapper.java",
-    "services/src/main/java/org/keycloak/broker/saml/mappers/AdvancedAttributeToRoleMapper.java",
-    "services/src/main/java/org/keycloak/broker/saml/mappers/AttributeToRoleMapper.java",
-    "services/src/main/java/org/keycloak/broker/saml/mappers/UserAttributeMapper.java",
-    "services/src/main/java/org/keycloak/broker/saml/mappers/UsernameTemplateMapper.java",
-    "services/src/main/java/org/keycloak/broker/saml/mappers/XPathAttributeMapper.java",
-    "services/src/main/java/org/keycloak/broker/spiffe/SpiffeBundleEndpointLoader.java",
-    "services/src/main/java/org/keycloak/broker/spiffe/SpiffeClientAssertionStrategy.java",
-    "services/src/main/java/org/keycloak/broker/spiffe/SpiffeConstants.java",
-    "services/src/main/java/org/keycloak/broker/spiffe/SpiffeIdentityProvider.java",
-    "services/src/main/java/org/keycloak/broker/spiffe/SpiffeIdentityProviderConfig.java"
+    "services/src/main/java/org/keycloak/broker/saml/SAMLIdentityProvider.java"
   ],
   "remaining_pending": 1978,
-  "done": 3990
+  "done": 4005
 }
