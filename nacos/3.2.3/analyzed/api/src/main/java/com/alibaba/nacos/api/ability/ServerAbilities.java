@@ -24,7 +24,9 @@ import java.io.Serializable;
 import java.util.Objects;
 
 /**
- * abilities of nacos server.
+ * Nacos 服务端能力描述（远程、配置、命名各子模块能力聚合）。
+ *
+ * <p>已废弃，保留用于旧版 RPC 握手兼容；新代码请使用 {@link com.alibaba.nacos.api.ability.register.impl.ServerAbilities} 能力表。</p>
  *
  * @author liuzunfei
  * @version $Id: ServerAbilities.java, v 0.1 2021年01月24日 00:09 AM liuzunfei Exp $
@@ -40,6 +42,7 @@ public class ServerAbilities implements Serializable {
     
     private ServerNamingAbility namingAbility = new ServerNamingAbility();
     
+    /** 获取远程通信子模块能力。 */
     public ServerRemoteAbility getRemoteAbility() {
         return remoteAbility;
     }
@@ -48,6 +51,7 @@ public class ServerAbilities implements Serializable {
         this.remoteAbility = remoteAbility;
     }
     
+    /** 获取配置中心子模块能力。 */
     public ServerConfigAbility getConfigAbility() {
         return configAbility;
     }
@@ -56,6 +60,7 @@ public class ServerAbilities implements Serializable {
         this.configAbility = configAbility;
     }
     
+    /** 获取服务发现子模块能力。 */
     public ServerNamingAbility getNamingAbility() {
         return namingAbility;
     }

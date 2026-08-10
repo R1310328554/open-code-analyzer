@@ -17,25 +17,19 @@
 package com.alibaba.nacos.api.ability.constant;
 
 /**
- * Ability mode.
+ * 能力端点类型枚举，标识能力归属 Nacos 服务端、SDK 客户端或集群客户端。
  *
  * @author Daydreamer
  * @date 2023/9/25 12:32
  **/
 public enum AbilityMode {
     
-    /**
-     * for server ability.
-     */
+    /** Nacos 服务端能力。 */
     SERVER,
     
-    /**
-     * for sdk client.
-     */
+    /** SDK 客户端能力。 */
     SDK_CLIENT,
     
-    /**
-     * for cluster client.
-     */
+    /** 集群内客户端（如 Naming 集群节点）能力。 */
     CLUSTER_CLIENT;
 }

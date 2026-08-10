@@ -23,96 +23,70 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Ability key constant. It is used to constrain the ability key.<br/>
- * <strong>Ensure that return value of {@link AbilityKey#getName()} is unique under one specify {@link AbilityMode}</strong>.
+ * 能力键枚举，约束各端点（服务端/SDK/集群客户端）支持的功能标识。
+ *
+ * <p>同一 {@link AbilityMode} 下 {@link #getName()} 返回值必须唯一；
+ * 静态块启动时会校验重复键名。</p>
  *
  * @author Daydreamer
  * @date 2022/8/31 12:27
  **/
 public enum AbilityKey {
     
-    /**
-     * Server support register or deregister persistent instance by grpc.
-     */
+    /** 服务端是否支持通过 gRPC 注册/注销持久化实例。 */
     SERVER_PERSISTENT_INSTANCE_BY_GRPC("supportPersistentInstanceByGrpc",
         "support persistent instance by grpc",
         AbilityMode.SERVER),
     
-    /**
-     * For fuzzy watch naming or config.
-     */
+    /** 服务端是否支持配置/命名的模糊 Watch。 */
     SERVER_FUZZY_WATCH("fuzzyWatch", "Server whether support fuzzy watch service or config",
         AbilityMode.SERVER),
     
-    /**
-     * For Distributed Lock.
-     */
+    /** 服务端是否支持分布式锁。 */
     SERVER_DISTRIBUTED_LOCK("lock", "Server whether support distributed lock", AbilityMode.SERVER),
     
-    /**
-     * For AI module MCP registry.
-     */
+    /** 服务端是否支持 MCP 服务器发布与端点注册。 */
     SERVER_MCP_REGISTRY("mcp",
         "Server whether support release mcp server and register endpoint for mcp server",
         AbilityMode.SERVER),
     
-    /**
-     * For AI module Agent & Agent Card registry.
-     */
+    /** 服务端是否支持 Agent 与 Agent Card 发布及端点注册。 */
     SERVER_AGENT_REGISTRY("agent",
         "Server whether support release agent server and register endpoint for agent server",
         AbilityMode.SERVER),
     
-    /**
-     * For AI module A2A AgentCard 1.0 protocol.
-     */
+    /** 服务端是否支持 A2A AgentCard 1.0 协议。 */
     SERVER_AGENT_CARD_V1("agentCardV1", "Server whether support A2A AgentCard 1.0 protocol",
         AbilityMode.SERVER),
     
-    /**
-     * For fuzzy watch naming or config.
-     */
+    /** SDK 客户端是否支持配置/命名的模糊 Watch。 */
     SDK_CLIENT_FUZZY_WATCH("fuzzyWatch", "Client whether support fuzzy watch service or config",
         AbilityMode.SDK_CLIENT),
     
-    /**
-     * For Distributed Lock.
-     */
+    /** SDK 客户端是否支持分布式锁。 */
     SDK_CLIENT_DISTRIBUTED_LOCK("lock", "Client whether support distributed lock",
         AbilityMode.SDK_CLIENT),
     
-    /**
-     * For AI module MCP registry.
-     */
+    /** SDK 客户端是否支持 MCP 服务器发布与端点注册。 */
     SDK_MCP_REGISTRY("mcp",
         "Client whether support release mcp server and register endpoint for mcp server",
         AbilityMode.SDK_CLIENT),
     
-    /**
-     * For AI module Agent & Agent Card registry.
-     */
+    /** SDK 客户端是否支持 Agent 与 Agent Card 发布及端点注册。 */
     SDK_AGENT_REGISTRY("agent",
         "Client whether support release agent server and register endpoint for agent server",
         AbilityMode.SDK_CLIENT),
     
-    /**
-     * For Test temporarily.
-     */
+    /** 集群客户端能力测试项（仅单元测试使用）。 */
     CLUSTER_CLIENT_TEST_1("test_1", "just for junit test", AbilityMode.CLUSTER_CLIENT);
     
-    /**
-     * the name of a certain ability.
-     */
+    /** 能力键名字符串，用于序列化与能力表索引。 */
     private final String keyName;
     
-    /**
-     * description or comment about this ability.
-     */
+    /** 能力的人类可读描述。 */
     private final String description;
     
-    /**
-     * ability mode, which endpoint hold this ability.
-     */
+    /** 能力所属端点类型（服务端/SDK/集群客户端）。 */
     private final AbilityMode mode;
     
     AbilityKey(String keyName, String description, AbilityMode mode) {
@@ -133,13 +107,11 @@ public enum AbilityKey {
         return mode;
     }
     
-    /**
-     * All key set.
-     */
+    /** 按 {@link AbilityMode} 分组的全部能力键索引。 */
     private static final Map<AbilityMode, Map<String, AbilityKey>> ALL_ABILITIES = new HashMap<>();
     
     /**
-     * Get all keys.
+     * 获取指定模式下全部能力键枚举值。
      *
      * @return all keys
      */
@@ -148,7 +120,7 @@ public enum AbilityKey {
     }
     
     /**
-     * Get all names.
+     * 获取指定模式下全部能力键名字符串。
      *
      * @return all names
      */
@@ -157,7 +129,7 @@ public enum AbilityKey {
     }
     
     /**
-     * Whether contains this name.
+     * 判断指定模式下是否存在给定键名。
      *
      * @param name key name
      * @return whether contains
@@ -167,7 +139,7 @@ public enum AbilityKey {
     }
     
     /**
-     * Map the string key to enum.
+     * 将字符串键→布尔值映射转换为 {@link AbilityKey}→布尔值映射（过滤非法键）。
      *
      * @param abilities map
      * @return enum map
@@ -183,7 +155,7 @@ public enum AbilityKey {
     }
     
     /**.
-     * Map the string key to enum
+     * 将 {@link AbilityKey}→布尔值映射转换为字符串键→布尔值映射。
      *
      * @param abilities map
      * @return enum map
@@ -197,7 +169,7 @@ public enum AbilityKey {
     }
     
     /**.
-     * getter to obtain enum
+     * 按模式与键名获取对应枚举常量。
      *
      * @param key string key
      * @return enum
@@ -207,8 +179,7 @@ public enum AbilityKey {
     }
     
     static {
-        // check for developer
-        // ensure that name filed is unique under a AbilityMode
+        // 开发者自检：确保同一 AbilityMode 下键名唯一
         try {
             for (AbilityKey value : AbilityKey.values()) {
                 AbilityMode mode = value.getMode();
@@ -222,7 +193,7 @@ public enum AbilityKey {
                 ALL_ABILITIES.put(mode, map);
             }
         } catch (Throwable t) {
-            // for developer checking
+            // 启动时打印重复键异常，便于开发者排查
             t.printStackTrace();
         }
     }

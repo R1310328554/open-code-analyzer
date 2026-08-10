@@ -22,7 +22,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-/**.
+/**
+ * 能力注册表抽象基类，维护静态能力位图（键→是否支持）。
+ *
  * @author Daydreamer
  * @description Operation for bit table.
  * @date 2022/7/12 19:23
@@ -32,7 +34,7 @@ public abstract class AbstractAbilityRegistry {
     protected final Map<AbilityKey, Boolean> supportedAbilities = new HashMap<>();
     
     /**.
-     * get static ability current server supports
+     * 返回当前端点静态声明的支持能力映射（不可变视图）。
      *
      * @return static ability
      */

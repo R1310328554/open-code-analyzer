@@ -17,7 +17,9 @@
 package com.alibaba.nacos.api.ability.initializer;
 
 /**
- * Nacos ability initializer.
+ * Nacos 能力初始化器 SPI 接口（已废弃）。
+ *
+ * <p>在能力对象创建后填充各子模块默认能力位。</p>
  *
  * @author xiweng.yy
  */
@@ -25,7 +27,7 @@ package com.alibaba.nacos.api.ability.initializer;
 public interface AbilityInitializer<A> {
     
     /**
-     * Initialize target type abilities content.
+     * 初始化目标类型能力对象的内容。
      *
      * @param abilities abilities
      */

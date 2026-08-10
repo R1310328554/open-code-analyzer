@@ -22,14 +22,14 @@ import java.lang.reflect.Constructor;
 import java.util.Properties;
 
 /**
- * Nacos AI client factory.
+ * Nacos AI 客户端工厂，反射创建 {@link AiService} 实现实例。
  *
  * @author xiweng.yy
  */
 public class AiFactory {
     
     /**
-     * Create a new AI service.
+     * 根据 Properties 创建 AI 服务实例（默认实现 {@code com.alibaba.nacos.client.ai.NacosAiService}）。
      *
      * @param properties ai service properties
      * @return new ai service

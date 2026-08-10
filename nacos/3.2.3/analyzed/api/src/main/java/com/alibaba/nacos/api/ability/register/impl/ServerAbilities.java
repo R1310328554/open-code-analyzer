@@ -22,7 +22,9 @@ import com.alibaba.nacos.api.ability.register.AbstractAbilityRegistry;
 import java.util.Map;
 
 /**
- * It is used to register server abilities.
+ * Nacos 服务端静态能力注册表，声明服务端支持的功能集合。
+ *
+ * <p>包含 gRPC 持久实例、模糊 Watch、分布式锁及 AI 模块 MCP/Agent 等能力。</p>
  *
  * @author Daydreamer
  * @date 2022/8/31 12:32
@@ -33,18 +35,12 @@ public class ServerAbilities extends AbstractAbilityRegistry {
     
     {
         /*
-         * example:
-         *   There is a function named "compression".
-         *   The key is from <p>AbilityKey</p>, the value is whether turn on.
-         *
-         *   You can add a new public field in <p>AbilityKey</p> like:
-         *       <code>DATA_COMPRESSION("compression", "description about this ability")</code>
-         *
-         *   And then you need to declare whether turn on in the ability table, you can:
-         *       <code>supportedAbilities.put(AbilityKey.DATA_COMPRESSION, true);</code> means that current client support compression.
-         *
+         * 示例：新增能力 "compression"
+         *   1. 在 AbilityKey 中增加枚举常量，如 DATA_COMPRESSION("compression", "描述")
+         *   2. 在本实例块中声明：supportedAbilities.put(AbilityKey.DATA_COMPRESSION, true)
+         *   键来自 AbilityKey，值为是否开启该能力。
          */
-        // put ability here, which you want current server supports
+        // 在此注册当前服务端支持的能力项
         supportedAbilities.put(AbilityKey.SERVER_PERSISTENT_INSTANCE_BY_GRPC, true);
         supportedAbilities.put(AbilityKey.SERVER_FUZZY_WATCH, true);
         supportedAbilities.put(AbilityKey.SERVER_DISTRIBUTED_LOCK, true);
@@ -54,7 +50,7 @@ public class ServerAbilities extends AbstractAbilityRegistry {
     }
     
     /**.
-     * get static ability current server supports
+     * 获取服务端当前静态支持的能力映射。
      *
      * @return static ability
      */

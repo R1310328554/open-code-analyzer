@@ -22,7 +22,9 @@ import com.alibaba.nacos.api.ability.register.AbstractAbilityRegistry;
 import java.util.Map;
 
 /**
- * It is used to register client abilities.
+ * SDK 客户端静态能力注册表，声明 Java SDK 支持的功能集合。
+ *
+ * <p>包含模糊 Watch、分布式锁、MCP 与 Agent 注册等 AI 相关能力。</p>
  *
  * @author Daydreamer
  * @date 2022/8/31 12:32
@@ -33,18 +35,12 @@ public class SdkClientAbilities extends AbstractAbilityRegistry {
     
     {
         /*
-         * example:
-         *   There is a function named "compression".
-         *   The key is from <p>AbilityKey</p>, the value is whether turn on.
-         *
-         *   You can add a new public field in <p>AbilityKey</p> like:
-         *       <code>DATA_COMPRESSION("compression", "description about this ability")</code>
-         *
-         *   And then you need to declare whether turn on in the ability table, you can:
-         *       <code>supportedAbilities.put(AbilityKey.DATA_COMPRESSION, true);</code> means that current client support compression.
-         *
+         * 示例：新增能力 "compression"
+         *   1. 在 AbilityKey 中增加枚举常量，如 DATA_COMPRESSION("compression", "描述")
+         *   2. 在本实例块中声明：supportedAbilities.put(AbilityKey.DATA_COMPRESSION, true)
+         *   键来自 AbilityKey，值为是否开启该能力。
          */
-        // put ability here, which you want current client supports
+        // 在此注册当前端点支持的能力项
         supportedAbilities.put(AbilityKey.SDK_CLIENT_FUZZY_WATCH, true);
         supportedAbilities.put(AbilityKey.SDK_CLIENT_DISTRIBUTED_LOCK, true);
         supportedAbilities.put(AbilityKey.SDK_MCP_REGISTRY, true);
@@ -52,7 +48,7 @@ public class SdkClientAbilities extends AbstractAbilityRegistry {
     }
     
     /**.
-     * get static ability current server supports
+     * 获取 SDK 客户端当前静态支持的能力映射。
      *
      * @return static ability
      */

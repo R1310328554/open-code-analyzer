@@ -16,25 +16,21 @@
 
 package com.alibaba.nacos.api.ability.constant;
 
-/**.
+/**
+ * 能力支持状态枚举，表示对某项能力是否可用或未知。
+ *
  * @author Daydreamer
  * @description It is used to know a certain ability whether supporting.
  * @date 2022/8/31 12:27
  **/
 public enum AbilityStatus {
     
-    /**.
-     * Support a certain ability
-     */
+    /** 支持该能力。 */
     SUPPORTED,
     
-    /**.
-     * Not support a certain ability
-     */
+    /** 不支持该能力。 */
     NOT_SUPPORTED,
     
-    /**.
-     * Cannot find ability table, unknown
-     */
+    /** 未找到能力表，状态未知。 */
     UNKNOWN
 }

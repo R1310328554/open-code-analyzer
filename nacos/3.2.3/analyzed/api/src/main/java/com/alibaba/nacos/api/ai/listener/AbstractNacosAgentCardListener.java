@@ -17,7 +17,10 @@
 package com.alibaba.nacos.api.ai.listener;
 
 /**
- * Nacos AI module agent card event lister.
+ * Agent Card 变更事件监听器抽象基类。
+ *
+ * <p>实现 {@link NacosAiListener}{@code <}{@link NacosAgentCardEvent}{@code >}，
+ * 供 {@link A2aService#subscribeAgentCard} 注册回调。</p>
  *
  * @author xiweng.yy
  */

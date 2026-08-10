@@ -22,14 +22,16 @@ import com.alibaba.nacos.api.ability.constant.AbilityMode;
 import java.util.Map;
 
 /**
- * Nacos ability post processor, load by spi.
+ * Nacos 能力后处理器 SPI，在能力表加载前介入修改。
+ *
+ * <p>通过 Java SPI 发现，由 Ability Controller 在加载静态能力表前调用。</p>
  *
  * @author Daydreamer-ia
  */
 public interface AbilityPostProcessor {
     
     /**
-     * process before loading by <code>Ability Controller </code>.
+     * 在 Ability Controller 加载能力表之前执行后处理逻辑。
      *
      * @param mode      mode: sdk client, server or cluster client
      * @param abilities abilities

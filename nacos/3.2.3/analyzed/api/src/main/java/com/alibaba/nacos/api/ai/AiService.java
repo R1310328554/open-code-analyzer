@@ -31,14 +31,16 @@ import com.alibaba.nacos.api.ai.model.prompt.Prompt;
 import com.alibaba.nacos.api.exception.NacosException;
 
 /**
- * Nacos AI client service interface.
+ * Nacos AI 客户端服务接口，聚合 MCP、Skill、AgentSpec、Prompt 与 A2A 能力。
+ *
+ * <p>继承 {@link A2aService}，通过 {@link AiFactory#createAiService(java.util.Properties)} 创建实例。</p>
  *
  * @author xiweng.yy
  */
 public interface AiService extends A2aService {
     
     /**
-     * Get mcp server detail info for latest version.
+     * 获取 MCP 服务器最新版本详情。
      *
      * @param mcpName name of mcp server
      * @return detail information of MCP server
@@ -50,7 +52,7 @@ public interface AiService extends A2aService {
     }
     
     /**
-     * Get mcp server detail info.
+     * 按版本获取 MCP 服务器详情（version 为空则取最新）。
      *
      * @param mcpName name of MCP name
      * @param version version of MCP, if null, will get the latest version
@@ -61,7 +63,7 @@ public interface AiService extends A2aService {
     McpServerDetailInfo getMcpServer(String mcpName, String version) throws NacosException;
     
     /**
-     * Release new mcp server or release new version of exist mcp server request.
+     * 发布新 MCP 服务器或已有服务器的新版本。
      *
      * <p>
      *     If mcp server is not exist, will create an new mcp server with parameter specification.
@@ -89,6 +91,7 @@ public interface AiService extends A2aService {
      * @param resourceSpecification mcp server resource specification
      * @return mcp id
      * @throws NacosException if request parameter is invalid or handle error
+      * <p>Nacos 能力/AI API 模块；详见上方英文说明。</p>
      */
     @Since("3.2.1")
     default String releaseMcpServer(McpServerBasicInfo serverSpecification,
@@ -112,6 +115,7 @@ public interface AiService extends A2aService {
      * @param endpointSpecification mcp server endpoint specification, optional, if null, will create ref service auto.
      * @return mcp id
      * @throws NacosException if request parameter is invalid or handle error
+      * <p>Nacos 能力/AI API 模块；详见上方英文说明。</p>
      */
     @Since("3.0.3")
     String releaseMcpServer(McpServerBasicInfo serverSpecification,
@@ -127,6 +131,7 @@ public interface AiService extends A2aService {
      * @param endpointSpecification mcp server endpoint specification, optional, if null, will create ref service auto.
      * @return mcp id
      * @throws NacosException if request parameter is invalid or handle error
+      * <p>Nacos 能力/AI API 模块；详见上方英文说明。</p>
      */
     @Since("3.2.1")
     String releaseMcpServer(McpServerBasicInfo serverSpecification,
@@ -135,7 +140,7 @@ public interface AiService extends A2aService {
         throws NacosException;
     
     /**
-     * Register an endpoint into target mcp server for all version.
+     * 向 MCP 服务器注册端点（适用于全部版本）。
      *
      * @param mcpName   name of mcp server
      * @param address   address of endpoint
@@ -149,7 +154,7 @@ public interface AiService extends A2aService {
     }
     
     /**
-     * Register an endpoint into target mcp server for target version.
+     * 向指定版本的 MCP 服务器注册端点。
      *
      * @param mcpName   name of mcp server
      * @param address   address of endpoint
@@ -162,7 +167,7 @@ public interface AiService extends A2aService {
         throws NacosException;
     
     /**
-     * Deregister an endpoint from target mcp server for any version.
+     * 从 MCP 服务器注销本客户端注册的端点。
      *
      * <p>
      *     The registered endpoint must be registered by this client service.
@@ -179,7 +184,7 @@ public interface AiService extends A2aService {
         throws NacosException;
     
     /**
-     * Subscribe mcp server.
+     * 订阅 MCP 服务器变更。
      *
      * @param mcpName           name of mcp server
      * @param mcpServerListener listener of mcp server, callback when mcp server is changed
@@ -201,13 +206,14 @@ public interface AiService extends A2aService {
      * @param mcpServerListener listener of mcp server, callback when mcp server is changed
      * @return The detail info of mcp server at current time, nullable if agent card not found
      * @throws NacosException if request parameter is invalid or handle error
+      * <p>Nacos 能力/AI API 模块；详见上方英文说明。</p>
      */
     @Since("3.0.3")
     McpServerDetailInfo subscribeMcpServer(String mcpName, String version,
         AbstractNacosMcpServerListener mcpServerListener) throws NacosException;
     
     /**
-     * Un-subscribe mcp server.
+     * 取消 MCP 服务器订阅。
      *
      * @param mcpName           name of mcp server
      * @param mcpServerListener listener of mcp server
@@ -227,6 +233,7 @@ public interface AiService extends A2aService {
      * @param version           version of mcp server
      * @param mcpServerListener listener of mcp server
      * @throws NacosException if request parameter is invalid or handle error
+      * <p>Nacos 能力/AI API 模块；详见上方英文说明。</p>
      */
     @Since("3.0.3")
     void unsubscribeMcpServer(String mcpName, String version,
@@ -234,7 +241,7 @@ public interface AiService extends A2aService {
         throws NacosException;
     
     /**
-     * Download skill as ZIP byte array by skill name. Defaults to latest version.
+     * 按名称下载 Skill ZIP（默认最新版本）。
      *
      * <p>The ZIP contains the skill directory structure: SKILL.md and all resource files.
      * Binary resources are decoded from Base64 back to raw bytes.</p>
@@ -247,7 +254,7 @@ public interface AiService extends A2aService {
     byte[] downloadSkillZip(String skillName) throws NacosException;
     
     /**
-     * Download skill as ZIP byte array by skill name and target version.
+     * 按名称与版本下载 Skill ZIP。
      *
      * @param skillName skill name (unique identifier)
      * @param version   target skill version, if null, will get latest version
@@ -258,7 +265,7 @@ public interface AiService extends A2aService {
     byte[] downloadSkillZipByVersion(String skillName, String version) throws NacosException;
     
     /**
-     * Download skill as ZIP byte array by skill name and target label.
+     * 按名称与标签下载 Skill ZIP。
      *
      * @param skillName skill name (unique identifier)
      * @param label     target skill label (e.g. "latest", "stable")
@@ -268,10 +275,10 @@ public interface AiService extends A2aService {
     @Since("3.2.0")
     byte[] downloadSkillZipByLabel(String skillName, String label) throws NacosException;
     
-    // ==================== AgentSpec Management APIs ====================
+    // ==================== AgentSpec 管理 API ====================
     
     /**
-     * Load agent spec by agent spec name.
+     * 按名称加载完整 AgentSpec（含全部资源配置）。
      *
      * <p>
      * This method will query the agent spec main configuration and all resource configurations,
@@ -286,7 +293,7 @@ public interface AiService extends A2aService {
     AgentSpec loadAgentSpec(String agentSpecName) throws NacosException;
     
     /**
-     * Subscribe agent spec.
+     * 订阅 AgentSpec 配置变更。
      *
      * @param agentSpecName       name of agent spec
      * @param agentSpecListener   listener of agent spec, callback when agent spec configuration is changed
@@ -299,7 +306,7 @@ public interface AiService extends A2aService {
         throws NacosException;
     
     /**
-     * Un-subscribe agent spec.
+     * 取消 AgentSpec 订阅。
      *
      * @param agentSpecName       name of agent spec
      * @param agentSpecListener   listener of agent spec
@@ -310,10 +317,10 @@ public interface AiService extends A2aService {
         AbstractNacosAgentSpecListener agentSpecListener)
         throws NacosException;
     
-    // ==================== Prompt Management APIs ====================
+    // ==================== Prompt 管理 API ====================
     
     /**
-     * Get prompt by prompt key.
+     * 按 promptKey 获取 Prompt（当前版本）。
      *
      * @param promptKey prompt key (unique identifier)
      * @return prompt object with current version
@@ -323,7 +330,7 @@ public interface AiService extends A2aService {
     Prompt getPrompt(String promptKey) throws NacosException;
     
     /**
-     * Get prompt by prompt key and target version.
+     * 按 promptKey 与版本获取 Prompt。
      *
      * @param promptKey prompt key (unique identifier)
      * @param version target prompt version, if null, will get latest version
@@ -334,7 +341,7 @@ public interface AiService extends A2aService {
     Prompt getPromptByVersion(String promptKey, String version) throws NacosException;
     
     /**
-     * Get prompt by prompt key and target label.
+     * 按 promptKey 与标签获取 Prompt。
      *
      * @param promptKey prompt key (unique identifier)
      * @param label target prompt label
@@ -345,7 +352,7 @@ public interface AiService extends A2aService {
     Prompt getPromptByLabel(String promptKey, String label) throws NacosException;
     
     /**
-     * Subscribe prompt changes.
+     * 订阅 Prompt 配置变更。
      *
      * @param promptKey      prompt key
      * @param version        target prompt version, optional
@@ -359,7 +366,7 @@ public interface AiService extends A2aService {
         AbstractNacosPromptListener promptListener) throws NacosException;
     
     /**
-     * Un-subscribe prompt changes.
+     * 取消 Prompt 订阅。
      *
      * @param promptKey      prompt key
      * @param version        target prompt version, optional
@@ -372,7 +379,7 @@ public interface AiService extends A2aService {
         AbstractNacosPromptListener promptListener) throws NacosException;
     
     /**
-     * Subscribe skill changes.
+     * 订阅 Skill 变更，返回当前 ZIP 字节。
      *
      * @param skillName     skill name
      * @param version       target skill version, optional
@@ -386,7 +393,7 @@ public interface AiService extends A2aService {
         AbstractNacosSkillListener skillListener) throws NacosException;
     
     /**
-     * Un-subscribe skill changes.
+     * 取消 Skill 订阅。
      *
      * @param skillName     skill name
      * @param version       target skill version, optional
@@ -400,7 +407,7 @@ public interface AiService extends A2aService {
         AbstractNacosSkillListener skillListener) throws NacosException;
     
     /**
-     * Shutdown the AI service and close resources.
+     * 关闭 AI 服务并释放资源。
      *
      * @throws NacosException exception.
      */

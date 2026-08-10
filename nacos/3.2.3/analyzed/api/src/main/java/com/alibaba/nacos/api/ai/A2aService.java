@@ -28,14 +28,16 @@ import com.alibaba.nacos.api.utils.StringUtils;
 import java.util.Collection;
 
 /**
- * Nacos AI A2A client service interface.
+ * Nacos AI A2A（Agent-to-Agent）客户端服务接口。
+ *
+ * <p>提供 Agent Card 查询/发布、端点注册与订阅等 A2A 协议能力。</p>
  *
  * @author xiweng.yy
  */
 public interface A2aService {
     
     /**
-     * Get agent card with nacos extension detail with latest version.
+     * 获取最新版本 Agent Card 及 Nacos 扩展详情。
      *
      * @param agentName name of agent card
      * @return agent card with nacos extension detail
@@ -47,7 +49,7 @@ public interface A2aService {
     }
     
     /**
-     * Get agent card with nacos extension detail with target version.
+     * 按指定版本获取 Agent Card 及 Nacos 扩展详情。
      *
      * @param agentName name of agent card
      * @param version   target version, if null or empty, get latest version
@@ -70,13 +72,14 @@ public interface A2aService {
      *                         setting in nacos.
      * @return agent card with nacos extension detail
      * @throws NacosException if request parameter is invalid or agent card not found or handle error
+      * <p>Nacos 能力/AI API 模块；详见上方英文说明。</p>
      */
     @Since("3.1.0")
     AgentCardDetailInfo getAgentCard(String agentName, String version, String registrationType)
         throws NacosException;
     
     /**
-     * Release new agent card or new version with default service type endpoint.
+     * 以默认 SERVICE 类型端点发布新 Agent Card 或新版本。
      *
      * <p>
      * If current agent card and version exist, This API will do nothing. If current agent card exist but version not
@@ -93,7 +96,7 @@ public interface A2aService {
     }
     
     /**
-     * Release new agent card or new version.
+     * 发布新 Agent Card 或新版本（可指定端点注册类型）。
      *
      * <p>
      * If current agent card and version exist, This API will do nothing. If current agent card exist but version not
@@ -128,13 +131,14 @@ public interface A2aService {
      *                         new version is released. If current agent card not exist, whatever this parameter is, it
      *                         will be set as latest.
      * @throws NacosException if request parameter is invalid or handle error
+      * <p>Nacos 能力/AI API 模块；详见上方英文说明。</p>
      */
     @Since("3.1.0")
     void releaseAgentCard(AgentCard agentCard, String registrationType, boolean setAsLatest)
         throws NacosException;
     
     /**
-     * Register endpoint to agent card.
+     * 向 Agent Card 注册服务端点。
      *
      * @param agentName name of agent
      * @param version   version of this endpoint
@@ -158,6 +162,7 @@ public interface A2aService {
      * @param port      port of this endpoint
      * @param transport supported transport, according to A2A protocol, it should be `JSONRPC`, `GRPC` and `HTTP+JSON`
      * @throws NacosException if request parameter is invalid or handle error or agent not found
+      * <p>Nacos 能力/AI API 模块；详见上方英文说明。</p>
      */
     @Since("3.1.0")
     default void registerAgentEndpoint(String agentName, String version, String address, int port,
@@ -176,6 +181,7 @@ public interface A2aService {
      * @param transport supported transport, according to A2A protocol, it should be `JSONRPC`, `GRPC` and `HTTP+JSON`
      * @param path      The path of endpoint request
      * @throws NacosException if request parameter is invalid or handle error or agent not found
+      * <p>Nacos 能力/AI API 模块；详见上方英文说明。</p>
      */
     @Since("3.1.0")
     default void registerAgentEndpoint(String agentName, String version, String address, int port,
@@ -195,6 +201,7 @@ public interface A2aService {
      * @param path       The path of endpoint request
      * @param supportTls whether support tls
      * @throws NacosException if request parameter is invalid or handle error or agent not found
+      * <p>Nacos 能力/AI API 模块；详见上方英文说明。</p>
      */
     @Since("3.1.0")
     default void registerAgentEndpoint(String agentName, String version, String address, int port,
@@ -216,12 +223,13 @@ public interface A2aService {
      * @param agentName name of agent
      * @param endpoint  endpoint info
      * @throws NacosException if request parameter is invalid or handle error or agent not found
+      * <p>Nacos 能力/AI API 模块；详见上方英文说明。</p>
      */
     @Since("3.1.0")
     void registerAgentEndpoint(String agentName, AgentEndpoint endpoint) throws NacosException;
     
     /**
-     * Batch register endpoints to agent card.
+     * 批量注册 Agent Card 端点（会覆盖此前单条注册的端点）。
      *
      * <p>
      * Conflict with {@link #registerAgentEndpoint(String, AgentEndpoint)}, this API will overwrite all endpoint
@@ -238,7 +246,7 @@ public interface A2aService {
         throws NacosException;
     
     /**
-     * Deregister endpoint from agent card which registered by this client.
+     * 注销本客户端注册的 Agent Card 端点。
      *
      * <p>
      * Only endpoint registered by this client can be deregistered. Other endpoint registered by other clients, call
@@ -272,12 +280,13 @@ public interface A2aService {
      * @param agentName name of agent
      * @param endpoint  endpoint info
      * @throws NacosException if request parameter is invalid or handle error or agent not found
+      * <p>Nacos 能力/AI API 模块；详见上方英文说明。</p>
      */
     @Since("3.1.0")
     void deregisterAgentEndpoint(String agentName, AgentEndpoint endpoint) throws NacosException;
     
     /**
-     * Subscribe agent card.
+     * 订阅 Agent Card 变更并接收回调。
      *
      * @param agentName         name of agent
      * @param agentCardListener the callback listener for agent card
@@ -299,13 +308,14 @@ public interface A2aService {
      * @param agentCardListener the callback listener for agent card
      * @return current agent card when subscribe success, nullable if agent card not found
      * @throws NacosException if request parameter is invalid or handle error
+      * <p>Nacos 能力/AI API 模块；详见上方英文说明。</p>
      */
     @Since("3.1.0")
     AgentCardDetailInfo subscribeAgentCard(String agentName, String version,
         AbstractNacosAgentCardListener agentCardListener) throws NacosException;
     
     /**
-     * Unsubscribe agent card.
+     * 取消 Agent Card 订阅。
      *
      * @param agentName         name of agent
      * @param agentCardListener the callback listener for agent card
@@ -325,6 +335,7 @@ public interface A2aService {
      * @param version           version of agent, if empty or null, means unsubscribe latest version
      * @param agentCardListener the callback listener for agent card
      * @throws NacosException if request parameter is invalid or handle error
+      * <p>Nacos 能力/AI API 模块；详见上方英文说明。</p>
      */
     @Since("3.1.0")
     void unsubscribeAgentCard(String agentName, String version,

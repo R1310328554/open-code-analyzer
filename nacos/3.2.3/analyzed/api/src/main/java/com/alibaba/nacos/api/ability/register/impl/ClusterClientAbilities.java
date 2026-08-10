@@ -22,7 +22,9 @@ import com.alibaba.nacos.api.ability.register.AbstractAbilityRegistry;
 import java.util.Map;
 
 /**
- * It is used to register cluster client abilities.
+ * 集群客户端静态能力注册表，声明集群内节点支持的功能集合。
+ *
+ * <p>单例模式，通过 {@link #getStaticAbilities()} 获取不可变能力映射。</p>
  *
  * @author Daydreamer
  **/
@@ -32,22 +34,16 @@ public class ClusterClientAbilities extends AbstractAbilityRegistry {
     
     {
         /*
-         * example:
-         *   There is a function named "compression".
-         *   The key is from <p>AbilityKey</p>, the value is whether turn on.
-         *
-         *   You can add a new public field in <p>AbilityKey</p> like:
-         *       <code>DATA_COMPRESSION("compression", "description about this ability")</code>
-         *
-         *   And then you need to declare whether turn on in the ability table, you can:
-         *       <code>supportedAbilities.put(AbilityKey.DATA_COMPRESSION, true);</code> means that current client support compression.
-         *
+         * 示例：新增能力 "compression"
+         *   1. 在 AbilityKey 中增加枚举常量，如 DATA_COMPRESSION("compression", "描述")
+         *   2. 在本实例块中声明：supportedAbilities.put(AbilityKey.DATA_COMPRESSION, true)
+         *   键来自 AbilityKey，值为是否开启该能力。
          */
-        // put ability here, which you want current client supports
+        // 在此注册当前端点支持的能力项
     }
     
     /**
-     * get static ability current cluster client supports.
+     * 获取集群客户端当前静态支持的能力映射。
      *
      * @return static ability
      */
