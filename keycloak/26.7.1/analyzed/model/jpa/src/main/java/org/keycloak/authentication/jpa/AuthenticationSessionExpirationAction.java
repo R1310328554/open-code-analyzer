@@ -24,9 +24,11 @@ import org.keycloak.expiration.jpa.ExpirationAction;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.utils.SessionExpiration;
 
+/** 按域清理过期的根认证会话及其子会话的 {@link ExpirationAction} 实现。 */
 enum AuthenticationSessionExpirationAction implements ExpirationAction {
     INSTANCE;
 
+    /** 查询并批量删除超出 lifespan 的根认证会话，返回是否可能还有更多待清理条目。 */
     @Override
     public boolean removeExpired(KeycloakSession session, String realmId, int currentTime, int maxRemoval, IntConsumer removeCount) {
         var realm = session.realms().getRealm(realmId);

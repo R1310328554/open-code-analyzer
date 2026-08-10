@@ -43,6 +43,7 @@ import org.keycloak.sessions.AuthenticationSessionProviderFactory;
 
 import org.jboss.logging.Logger;
 
+/** JPA 认证会话 Provider 工厂；在 {@link Profile.Feature#STATELESS} 启用时注册并调度过期清理任务。 */
 public class JpaAuthenticationSessionProviderFactory implements AuthenticationSessionProviderFactory<AuthenticationSessionProvider>, EnvironmentDependentProviderFactory, ServerInfoAwareProviderFactory {
 
     private final static Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
@@ -106,6 +107,7 @@ public class JpaAuthenticationSessionProviderFactory implements AuthenticationSe
         return Set.copyOf(deps);
     }
 
+    /** 仅在 STATELESS 特性启用时激活此 Provider。 */
     @Override
     public boolean isSupported(Config.Scope config) {
         return Profile.isFeatureEnabled(Profile.Feature.STATELESS);

@@ -38,6 +38,7 @@ import org.keycloak.sessions.RootAuthenticationSessionModel;
 
 import org.jboss.logging.Logger;
 
+/** 基于 JPA 的认证会话 Provider，在 STATELESS 特性下替代 Infinispan 实现。 */
 public class JpaAuthenticationSessionProvider extends AbstractKeycloakTransaction implements AuthenticationSessionProvider {
 
     private final static Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
@@ -55,8 +56,7 @@ public class JpaAuthenticationSessionProvider extends AbstractKeycloakTransactio
     @Override
     public RootAuthenticationSessionModel createRootAuthenticationSession(RealmModel realm) {
         var model = RootAuthenticationSessionAdapter.create(session, realm, SecretGenerator.SECURE_ID_GENERATOR.get(), Time.currentTimeSeconds(), authSessionsLimit);
-        // Those newly created authentication sessions with a random ID do not exist in the database, so there can not be any conflict.
-        // For resource owner password grants, those sessions are created temporarily, so we only insert them if they are not removed within the same session.
+        // 随机 ID 的新会话尚未入库，不存在冲突；ROPC 等临时会话仅在本次请求内未删除时才 persist
         transientSessions.put(model.getEntity().getId(), model);
         prepareTransaction();
         return model;
@@ -90,7 +90,7 @@ public class JpaAuthenticationSessionProvider extends AbstractKeycloakTransactio
         var lifespan = SessionExpiration.getAuthSessionLifespan(realm);
         if (entity.getTimestamp() + lifespan < Time.currentTimeSeconds()) {
             logger.debugf("Root authentication session with id '%s' is expired.", id);
-            // let's restart it
+            // 过期则重置时间戳并清空子会话，相当于重启
             entity.setTimestamp(Time.currentTimeSeconds());
             entity.getAuthenticationSessions().clear();
         }
@@ -104,8 +104,7 @@ public class JpaAuthenticationSessionProvider extends AbstractKeycloakTransactio
         }
         var model = transientSessions.get(id);
         if (model != null && Objects.equals(model.getRealm().getId(), realm.getId())) {
-            // NOTE: Check if this session belongs to the correct realm to avoid a wrong cross-reference
-            // as a second line of defense.
+            // 二次校验：防止跨域错误引用
             return model;
         }
 
@@ -159,6 +158,7 @@ public class JpaAuthenticationSessionProvider extends AbstractKeycloakTransactio
         return session.getProvider(JpaConnectionProvider.class).getEntityManager();
     }
 
+    /** 提交时将暂存的新根会话批量 persist 到数据库。 */
     @Override
     protected void commitImpl() {
         transientSessions.forEach((key, value) -> getEntityManager().persist(value.getEntity()));

@@ -37,54 +37,70 @@ import org.hibernate.annotations.DynamicUpdate;
 @Table(name = "AUTH_SESSION")
 @DynamicUpdate
 @IdClass(AuthenticationSessionKey.class)
+/** JPA 实体，映射 AUTH_SESSION 表，表示单个浏览器标签页下的认证会话。 */
 public class AuthenticationSessionEntity implements AsynchronousCommitAllowed {
 
+    /** 所属根认证会话（复合主键之一）。 */
     @Id
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ROOT_AUTH_SESSION_ID")
     private RootAuthenticationSessionEntity rootAuthenticationSession;
 
+    /** 浏览器标签页 ID（复合主键之一）。 */
     @Id
     @Column(name = "TAB_ID", length = 36)
     private String tabId;
 
+    /** 发起认证的客户端 UUID。 */
     @Column(name = "CLIENT_UUID")
     private String clientUUID;
 
+    /** 已认证用户 ID，未登录时为 null。 */
     @Column(name = "AUTH_USER_ID")
     private String authUserId;
 
+    /** 创建或最后活动时间戳（秒）。 */
     @Column(name = "TIMESTAMP")
     private long timestamp;
 
+    /** 乐观锁版本号。 */
     @Version
     @Column(name = "VERSION")
     private int version;
 
+    /** OAuth/OIDC 重定向 URI。 */
     @Column(name = "REDIRECT_URI", columnDefinition = "TEXT")
     private String redirectUri;
 
+    /** 当前认证流程动作。 */
     @Column(name = "ACTION")
     private String action;
 
+    /** 使用的协议（如 openid-connect）。 */
     @Column(name = "PROTOCOL")
     private String protocol;
 
+    /** 客户端 scope 集合（JSON 序列化）。 */
     @Column(name = "CLIENT_SCOPES", columnDefinition = "TEXT")
     private String clientScopes;
 
+    /** 认证器执行状态映射（JSON 序列化）。 */
     @Column(name = "EXECUTION_STATUS", columnDefinition = "TEXT")
     private String executionStatus;
 
+    /** 客户端 notes（JSON 序列化）。 */
     @Column(name = "CLIENT_NOTES", columnDefinition = "TEXT")
     private String clientNotes;
 
+    /** 认证 notes（JSON 序列化）。 */
     @Column(name = "AUTH_NOTES", columnDefinition = "TEXT")
     private String authNotes;
 
+    /** 待执行的 required actions（JSON 序列化）。 */
     @Column(name = "REQUIRED_ACTIONS", columnDefinition = "TEXT")
     private String requiredActions;
 
+    /** 用户会话 notes（JSON 序列化，含轻量用户序列化数据）。 */
     @Column(name = "USER_SESSION_NOTES", columnDefinition = "TEXT")
     private String userSessionNotes;
 
@@ -224,7 +240,7 @@ public class AuthenticationSessionEntity implements AsynchronousCommitAllowed {
     public String toString() {
         return "AuthenticationSessionEntity{" +
                 "tabId='" + tabId + '\'' +
-                ", rootAuthenticationSessionId=" + (rootAuthenticationSession != null ? rootAuthenticationSession.getId() : null) + // avoid lazy-load just for a log message.
+                ", rootAuthenticationSessionId=" + (rootAuthenticationSession != null ? rootAuthenticationSession.getId() : null) + // 避免仅为日志触发懒加载
                 '}';
     }
 

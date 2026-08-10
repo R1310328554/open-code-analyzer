@@ -22,18 +22,20 @@ import org.keycloak.models.sessions.infinispan.entities.EmbeddedClientSessionKey
 import org.infinispan.distribution.group.Grouper;
 
 /**
- * A {@link Grouper} implementation that uses the User Session ID to assign the Client Session to the cache segment. It
- * groups all the Client Sessions belonging to the same User Session in the same node where the User Session lives.
+ * 基于用户会话 ID 对客户端会话进行分组的 {@link Grouper} 实现。
+ * <p>
+ * 同一用户会话下的所有客户端会话会被路由到与用户会话相同的缓存节点，避免跨节点访问。
  */
 public enum ClientSessionKeyGrouper implements Grouper<EmbeddedClientSessionKey> {
 
     INSTANCE;
 
-    // The Infinispan parser expects a constructor or a static "getInstance" method; fixes ClusterConfigKeepAliveDistTest.
+    // Infinispan 解析器要求存在构造函数或静态 getInstance 方法；修复 ClusterConfigKeepAliveDistTest。
     public static ClientSessionKeyGrouper getInstance() {
         return INSTANCE;
     }
 
+    /** 以用户会话 ID 作为分组键，使客户端会话与用户会话共置。 */
     @Override
     public Object computeGroup(EmbeddedClientSessionKey key, Object group) {
         return key.userSessionId();

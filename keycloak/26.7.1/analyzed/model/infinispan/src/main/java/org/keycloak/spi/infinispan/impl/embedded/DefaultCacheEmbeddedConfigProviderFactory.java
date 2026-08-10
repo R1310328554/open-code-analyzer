@@ -61,13 +61,10 @@ import static org.keycloak.spi.infinispan.impl.embedded.CacheConfigurator.addExp
 import static org.keycloak.spi.infinispan.impl.embedded.JGroupsConfigurator.createJGroupsProperties;
 
 /**
- * The default implementation of {@link CacheEmbeddedConfigProviderFactory}.
+ * {@link CacheEmbeddedConfigProviderFactory} 的默认实现。
  * <p>
- * It builds a {@link ConfigurationBuilderHolder} based on the Keycloak configuration.
- * <p>
- * Advanced users may extend this class and overwrite the method {@link #createConfiguration(KeycloakSessionFactory)}.
- * They have access to the {@link ConfigurationBuilderHolder}, and they can modify it as needed for their custom
- * providers.
+ * 根据 Keycloak 配置构建 {@link ConfigurationBuilderHolder}，支持单站点（持久化/易失会话）与多站点部署。
+ * 高级用户可继承并重写 {@link #createConfiguration(KeycloakSessionFactory)} 以定制缓存配置。
  */
 public class DefaultCacheEmbeddedConfigProviderFactory implements CacheEmbeddedConfigProviderFactory {
 
@@ -75,7 +72,7 @@ public class DefaultCacheEmbeddedConfigProviderFactory implements CacheEmbeddedC
 
     public static final String PROVIDER_ID = "default";
 
-    // Configuration
+    // 配置项键名
     public static final String CONFIG = "configFile";
     public static final String CONFIG_MUTATE = "configMutate";
     public static final String TRACING = "tracingEnabled";
@@ -144,6 +141,7 @@ public class DefaultCacheEmbeddedConfigProviderFactory implements CacheEmbeddedC
         return Set.of(JGroupsCertificateProvider.class);
     }
 
+    /** 根据部署模式（远程/持久化/易失）选择对应的缓存配置路径。 */
     protected ConfigurationBuilderHolder createConfiguration(KeycloakSessionFactory factory) throws IOException {
         var holder = parseConfiguration(keycloakConfig, factory);
         if (InfinispanUtils.isRemoteInfinispan()) {
@@ -172,8 +170,7 @@ public class DefaultCacheEmbeddedConfigProviderFactory implements CacheEmbeddedC
         CacheConfigurator.removeClusteredCaches(holder);
         CacheConfigurator.checkCachesExist(holder, Arrays.stream(LOCAL_CACHE_NAMES));
         configureMetrics(keycloakConfig, holder);
-        // Disable JGroups, not required when the data is stored in the Remote Cache.
-        // The existing caches are local and do not require JGroups to work properly.
+        // 多站点模式下禁用 JGroups：数据存于远程缓存，本地缓存无需集群传输
         holder.getGlobalConfigurationBuilder().nonClusteredDefault();
         return holder;
     }
@@ -191,8 +188,7 @@ public class DefaultCacheEmbeddedConfigProviderFactory implements CacheEmbeddedC
         logger.debugf("Parsing Infinispan configuration from file: %s", path);
         var holder = new ParserRegistry(DefaultCacheEmbeddedConfigProviderFactory.class.getClassLoader())
                 .parseFile(path);
-        // We must disable the Infinispan default ShutdownHook as we manage the EmbeddedCacheManager lifecycle explicitly
-        // with #shutdown and multiple calls to EmbeddedCacheManager#stop can lead to Exceptions being thrown.
+        // 显式禁用 Infinispan 默认 ShutdownHook，由 Keycloak 管理 EmbeddedCacheManager 生命周期
         holder.getGlobalConfigurationBuilder().shutdown().hookBehavior(ShutdownHookBehavior.DONT_REGISTER);
         Marshalling.configure(holder.getGlobalConfigurationBuilder());
         holder.getGlobalConfigurationBuilder()
@@ -219,7 +215,7 @@ public class DefaultCacheEmbeddedConfigProviderFactory implements CacheEmbeddedC
     }
 
     private static void configureMetrics(Config.Scope keycloakConfig, ConfigurationBuilderHolder holder) {
-        //metrics are disabled by default (check MetricsOptions class)
+        // 指标默认关闭（参见 MetricsOptions）
         if (keycloakConfig.root().getBoolean(MetricsOptions.METRICS_ENABLED.getKey(), Boolean.FALSE)) {
             logger.debug("Enabling Infinispan metrics");
             var builder = holder.getGlobalConfigurationBuilder();

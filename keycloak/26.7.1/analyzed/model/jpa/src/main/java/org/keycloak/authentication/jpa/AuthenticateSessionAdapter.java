@@ -37,9 +37,10 @@ import static org.keycloak.models.Constants.SESSION_NOTE_LIGHTWEIGHT_USER;
 import static org.keycloak.models.light.LightweightUserAdapter.isLightweightUser;
 
 /**
- * Adapter for {@link AuthenticationSessionEntity}. All mutations are applied directly to the underlying JPA entity,
- * with collection fields (notes, execution status, required actions, etc.) lazily deserialized from JSON on first
- * access and re-serialized on every write.
+ * {@link AuthenticationSessionEntity} 的适配器。
+ * <p>
+ * 所有变更直接写入底层 JPA 实体；notes、执行状态、required actions 等集合字段在首次访问时从 JSON 惰性反序列化，
+ * 每次写入后重新序列化回数据库列。
  */
 class AuthenticateSessionAdapter implements AuthenticationSessionModel {
 
@@ -61,16 +62,15 @@ class AuthenticateSessionAdapter implements AuthenticationSessionModel {
     }
 
     /**
-     * Creates a new {@link AuthenticateSessionAdapter} backed by a fresh {@link AuthenticationSessionEntity}.
+     * 创建由新 {@link AuthenticationSessionEntity} 支撑的适配器。
      *
-     * @param parentSession the parent root authentication session adapter.
-     * @param session       the current Keycloak session.
-     * @param tabId         the tab identifier for this authentication session.
-     * @param clientUUID    the UUID of the client initiating the authentication.
-     * @param timestamp     the creation timestamp.
-     * @return a new adapter instance. The underlying entity is not persisted; the caller must persist it.
-     * @throws NullPointerException if {@code parentSession}, {@code session}, {@code tabId}, or {@code clientUUID} is
-     *                              {@code null}.
+     * @param parentSession 父根认证会话适配器。
+     * @param session       当前 Keycloak 会话。
+     * @param tabId         本认证会话的标签页 ID。
+     * @param clientUUID    发起认证的客户端 UUID。
+     * @param timestamp     创建时间戳。
+     * @return 新适配器实例；底层实体尚未持久化，需由调用方 persist。
+     * @throws NullPointerException 若 {@code parentSession}、{@code session}、{@code tabId} 或 {@code clientUUID} 为 {@code null}。
      */
     public static AuthenticateSessionAdapter create(RootAuthenticationSessionAdapter parentSession, KeycloakSession session, String tabId, String clientUUID, long timestamp) {
         var authEntity = new AuthenticationSessionEntity();
@@ -137,6 +137,7 @@ class AuthenticateSessionAdapter implements AuthenticationSessionModel {
         entity.setProtocol(method);
     }
 
+    /** 获取已认证用户；启用 TRANSIENT_USERS 时优先从 userSessionNotes 反序列化轻量用户。 */
     @Override
     public UserModel getAuthenticatedUser() {
         if (entity.getAuthUserId() == null) {

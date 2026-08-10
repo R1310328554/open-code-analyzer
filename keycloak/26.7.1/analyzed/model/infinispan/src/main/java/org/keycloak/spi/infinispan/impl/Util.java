@@ -21,7 +21,7 @@ import org.keycloak.config.Option;
 import org.keycloak.provider.ProviderConfigurationBuilder;
 
 /**
- * Utility method for this package and subpackages
+ * 本包及子包共用的工具方法。
  */
 public final class Util {
 
@@ -29,14 +29,16 @@ public final class Util {
     }
 
     /**
-     * Copies the {@link Option} information into the {@link ProviderConfigurationBuilder}.
+     * 将 {@link Option} 的配置元数据复制到 {@link ProviderConfigurationBuilder}。
+     * <p>
+     * 包括描述、默认值、可选值及是否标记为密钥字段。
      *
-     * @param builder  The property to set/configure.
-     * @param name     The desired property name.
-     * @param label    The label of the property's argument.
-     * @param type     The type of the property's value.
-     * @param option   The source {@link Option} to gather the information.
-     * @param isSecret {@code true} if the property is a secret.
+     * @param builder  待填充的 Provider 配置构建器。
+     * @param name     目标属性名。
+     * @param label    属性参数的标签。
+     * @param type     属性值的类型。
+     * @param option   源 {@link Option}，提供描述与默认值等信息。
+     * @param isSecret {@code true} 表示该属性为密钥（secret）。
      */
     public static void copyFromOption(ProviderConfigurationBuilder builder, String name, String label, String type, Option<?> option, boolean isSecret) {
         var property = builder.property()

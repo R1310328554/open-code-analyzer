@@ -29,8 +29,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import static org.keycloak.sessions.CommonClientSessionModel.ExecutionStatus;
 
 /**
- * Helper for serializing and deserializing {@link AuthenticationSessionEntity} collection fields (notes, execution
- * status, required actions, client scopes) to and from their JSON text column representation.
+ * {@link AuthenticationSessionEntity} 集合字段（notes、执行状态、required actions 等）与 JSON 文本列之间的序列化辅助类。
  */
 final class AuthenticationSessionSerialization {
 

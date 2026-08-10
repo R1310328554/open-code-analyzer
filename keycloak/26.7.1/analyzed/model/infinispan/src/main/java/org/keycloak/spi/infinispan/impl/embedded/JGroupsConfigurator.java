@@ -93,7 +93,7 @@ import static org.infinispan.configuration.global.TransportConfiguration.CLUSTER
 import static org.infinispan.configuration.global.TransportConfiguration.STACK;
 
 /**
- * Utility class to configure JGroups based on the Keycloak configuration.
+ * 根据 Keycloak 配置设置 JGroups 集群传输与 JDBC_PING 服务发现。
  */
 public final class JGroupsConfigurator {
 
@@ -109,39 +109,39 @@ public final class JGroupsConfigurator {
     }
 
     static {
-        // Use custom Keycloak JDBC_PING implementation that workarounds issue https://issues.redhat.com/browse/JGRP-2870
-        // The id 1025 follows this instruction: https://github.com/belaban/JGroups/blob/38219e9ec1c629fa2f7929e3b53d1417d8e60b61/conf/jg-protocol-ids.xml#L85
+        // 使用 Keycloak 定制 JDBC_PING，规避 https://issues.redhat.com/browse/JGRP-2870
+        // id 1025 遵循 JGroups 协议 ID 分配规范
         ClassConfigurator.addProtocol((short) 1025, KEYCLOAK_JDBC_PING2.class);
         ClassConfigurator.addProtocol((short) 1026, OPEN_TELEMETRY.class);
         ClassConfigurator.add(TracerHeader.ID, TracerHeader.class);
     }
 
     /**
-     * Checks if Infinispan is configured with or without a clustering.
+     * 判断 Infinispan 是否未配置集群传输（本地模式）。
      *
-     * @param holder The {@link ConfigurationBuilderHolder} with the Infinispan configuration.
-     * @return {@code true} if Infinispan is configured without clustering.
+     * @param holder Infinispan 配置 holder。
+     * @return {@code true} 表示无集群传输。
      */
     public static boolean isLocal(ConfigurationBuilderHolder holder) {
         return transportOf(holder).getTransport() == null;
     }
 
     /**
-     * Checks if Infinispan is configured with or without a clustering.
+     * 判断 Infinispan 是否已启用集群传输。
      *
-     * @param holder The {@link ConfigurationBuilderHolder} with the Infinispan configuration.
-     * @return {@code true} if Infinispan is configured with clustering enabled.
+     * @param holder Infinispan 配置 holder。
+     * @return {@code true} 表示已配置集群。
      */
     public static boolean isClustered(ConfigurationBuilderHolder holder) {
         return transportOf(holder).getTransport() != null;
     }
 
     /**
-     * Configures JGroups based on the Keycloak configuration.
+     * 根据 Keycloak 配置设置 JGroups 协议栈、服务发现、TLS 与拓扑。
      *
-     * @param config  The Keycloak configuration.
-     * @param holder  The {@link ConfigurationBuilderHolder} where the transport is configured.
-     * @param session The {@link KeycloakSession} sessions for Database access.
+     * @param config  Keycloak SPI 配置。
+     * @param holder  传输配置所在的 holder。
+     * @param session 用于数据库访问的 {@link KeycloakSession}。
      */
     public static void configureJGroups(Config.Scope config, ConfigurationBuilderHolder holder, KeycloakSession session) {
         if (isLocal(holder)) {
@@ -160,10 +160,10 @@ public final class JGroupsConfigurator {
     }
 
     /**
-     * Configures the topology information in the Infinispan transport.
+     * 在 Infinispan 传输层写入站点、机架、节点等拓扑标识。
      *
-     * @param config The Keycloak configuration.
-     * @param holder The {@link ConfigurationBuilderHolder} where the transport is configured.
+     * @param config Keycloak 配置。
+     * @param holder 传输配置 holder。
      */
     public static void configureTopology(Config.Scope config, ConfigurationBuilderHolder holder) {
         if (System.getProperty(JBOSS_SITE_NAME) != null) {
@@ -177,7 +177,7 @@ public final class JGroupsConfigurator {
                             JBOSS_NODE_NAME, PROVIDER_ID));
         }
         var transport = transportOf(holder);
-        //legacy option, for backwards compatibility --spi-connections-infinispan-quarkus-site-name
+        // 旧版选项，向后兼容 --spi-connections-infinispan-quarkus-site-name
         var legacySiteName = Config.scope(InfinispanConnectionSpi.SPI_NAME, "quarkus").get("site-name");
         if (legacySiteName != null) {
             logger.warn("--spi-connections-infinispan-quarkus-site-name is deprecated and may be removed in the future. Use --spi-cache-embedded-%s-site-name".formatted(PROVIDER_ID));
@@ -258,7 +258,7 @@ public final class JGroupsConfigurator {
 
         logger.debug("JDBC_PING discovery enabled.");
         if (!stackXmlAttribute.isModified()) {
-            // defaults to jdbc-ping
+            // 默认使用 jdbc-ping 协议栈
             transportOf(holder).stack("jdbc-ping");
         }
 
@@ -281,10 +281,10 @@ public final class JGroupsConfigurator {
     }
 
     /**
-     * Generate the next sequence of the address, and place it into the JGROUPS_PING table so other nodes can see it.
-     * If we are the first = smallest entry, the other nodes will wait for us to become a coordinator
-     * for max_join_attempts x all_clients_retry_timeout = 10 x 100 ms = 1 second. Otherwise, we will wait for that
-     * one second. This prevents a split-brain scenario on a concurrent startup.
+     * 生成节点地址序列号并写入 JGROUPS_PING 表，供其他节点发现。
+     * <p>
+     * 若本节点序号为最小，其他节点最多等待 max_join_attempts × all_clients_retry_timeout（约 1 秒）；
+     * 否则本节点同样等待，以避免并发启动时的脑裂。
      */
     private static Address prepareJGroupsAddress(KeycloakSession session, String clusterName) {
         var cp = session.getProvider(JpaConnectionProvider.class);
@@ -315,9 +315,7 @@ public final class JGroupsConfigurator {
     }
 
     private static long getNextSequence(KeycloakSessionFactory sf, long highestSequence) {
-        // Run this in a separate transaction so that we already write the new ID to the database.
-        // This helps us in case there is an inconsistency if some old restored database and some inconsistent nodes writing
-        // their node IDs to the table. Given this is being called in a retry loop, we'll be making some progress.
+        // 在独立事务中写入新 ID，便于在重试循环中推进进度，应对数据库恢复后的 ID 不一致
         return KeycloakModelUtils.runJobInTransactionWithResult(sf, session -> {
             var storage = session.getProvider(ServerConfigStorageProvider.class);
             String seq = storage.loadOrCreate(JGROUPS_ADDRESS_SEQUENCE, () -> "0");
@@ -347,17 +345,16 @@ public final class JGroupsConfigurator {
         var list = new ArrayList<ProtocolConfiguration>(4);
         list.add(new ProtocolConfiguration(KEYCLOAK_JDBC_PING2.class.getName(),
               Map.of(
-                    // Leave initialize_sql blank as table is already created by Keycloak
+                    // initialize_sql 留空，表已由 Keycloak 迁移创建
                     "initialize_sql", "",
-                    // Explicitly specify clear and select_all SQL to ensure "cluster_name" column is used, as the default
-                    // "cluster" cannot be used with Oracle DB as it's a reserved word.
+                    // 显式指定 clear/select SQL，使用 cluster_name 列（Oracle 中 cluster 为保留字）
                     "clear_sql", String.format("DELETE from %s WHERE cluster_name=?", tableName),
                     "delete_single_sql", String.format("DELETE from %s WHERE address=?", tableName),
                     "insert_single_sql", String.format("INSERT INTO %s (address, name, cluster_name, ip, coord, last_update, coordinated_by) values (?, ?, ?, ?, ?, ?, ?)", tableName),
                     "select_all_pingdata_sql", String.format("SELECT address, name, ip, coord, coordinated_by, last_update FROM %s WHERE cluster_name=?", tableName),
-                    // This guarantees cleanup of stale data
+                    // 视图变更时清理陈旧数据
                     "remove_all_data_on_view_change", "true",
-                    // This guarantees that merging happens even after the info writer completed
+                    // find 完成后也写入，保证合并仍能进行
                     "write_data_on_find", "true",
                     "register_shutdown_hook", "false",
                     "stack.combine", "REPLACE",
@@ -412,7 +409,7 @@ public final class JGroupsConfigurator {
     private static void validateTlsAvailable(ConfigurationBuilderHolder holder) {
         var stackName = transportStackOf(holder).get();
         if (stackName == null) {
-            // unable to validate
+            // 无法校验
             return;
         }
         var config = transportOf(holder).build();
@@ -489,7 +486,7 @@ public final class JGroupsConfigurator {
         void set(Config.Scope config) {
             String userConfig = fromConfig(config);
             if (userConfig == null) {
-                // User property is either already set or missing, so do nothing
+                // 用户属性已设置或缺失，无需覆盖
                 return;
             }
             checkPropertyAlreadySet(userConfig, property);
@@ -518,7 +515,7 @@ public final class JGroupsConfigurator {
         }
 
         String configKey() {
-            // Strip the scope from the key and convert to camelCase
+            // 从 option key 去掉 scope 前缀并转为 camelCase
             String key = option.getKey().substring(CACHE_EMBEDDED_PREFIX.length() + 1);
             StringBuilder sb = new StringBuilder(key);
             for (int i = 0; i < sb.length(); i++) {

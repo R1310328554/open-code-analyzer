@@ -19,6 +19,7 @@ package org.keycloak.authentication.jpa;
 
 import java.util.Objects;
 
+/** 认证会话复合主键：根认证会话实体 + 浏览器标签页 ID。 */
 public record AuthenticationSessionKey(RootAuthenticationSessionEntity rootAuthenticationSession, String tabId) {
     public AuthenticationSessionKey {
         Objects.requireNonNull(rootAuthenticationSession);

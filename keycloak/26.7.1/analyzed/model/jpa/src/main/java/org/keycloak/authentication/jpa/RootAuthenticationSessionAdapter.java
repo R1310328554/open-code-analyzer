@@ -34,8 +34,9 @@ import org.keycloak.sessions.AuthenticationSessionModel;
 import org.keycloak.sessions.RootAuthenticationSessionModel;
 
 /**
- * Adapter for {@link RootAuthenticationSessionEntity}. All mutations are applied directly to the underlying JPA
- * entity. Child {@link AuthenticateSessionAdapter} instances are lazily created and cached on first access.
+ * {@link RootAuthenticationSessionEntity} 的适配器。
+ * <p>
+ * 所有变更直接写入底层 JPA 实体；子 {@link AuthenticateSessionAdapter} 在首次访问时惰性创建并缓存。
  */
 class RootAuthenticationSessionAdapter implements RootAuthenticationSessionModel {
 
@@ -46,16 +47,15 @@ class RootAuthenticationSessionAdapter implements RootAuthenticationSessionModel
     private Map<String, AuthenticateSessionAdapter> adapters;
 
     /**
-     * Creates a new {@link RootAuthenticationSessionAdapter} backed by a fresh
-     * {@link RootAuthenticationSessionEntity}.
+     * 创建由新 {@link RootAuthenticationSessionEntity} 支撑的适配器。
      *
-     * @param session           the current Keycloak session.
-     * @param realm             the realm this authentication session belongs to.
-     * @param id                the unique identifier for the root authentication session.
-     * @param timestamp         the creation timestamp.
-     * @param authSessionsLimit the maximum number of concurrent authentication sessions.
-     * @return a new adapter instance. The underlying entity is not persisted; the caller must persist it.
-     * @throws NullPointerException if {@code session}, {@code id}, or {@code realm} is {@code null}.
+     * @param session           当前 Keycloak 会话。
+     * @param realm             认证会话所属域。
+     * @param id                根认证会话唯一 ID。
+     * @param timestamp         创建时间戳。
+     * @param authSessionsLimit 每个根会话允许的最大并发认证会话数。
+     * @return 新适配器实例；底层实体尚未持久化，需由调用方 persist。
+     * @throws NullPointerException 若 {@code session}、{@code id} 或 {@code realm} 为 {@code null}。
      */
     public static RootAuthenticationSessionAdapter create(KeycloakSession session, RealmModel realm, String id, long timestamp, int authSessionsLimit) {
         assert session != null;
@@ -71,14 +71,14 @@ class RootAuthenticationSessionAdapter implements RootAuthenticationSessionModel
     }
 
     /**
-     * Wraps an existing {@link RootAuthenticationSessionEntity} in an adapter.
+     * 将已有 {@link RootAuthenticationSessionEntity} 包装为适配器。
      *
-     * @param session           the current Keycloak session.
-     * @param realm             the realm this authentication session belongs to.
-     * @param entity            the JPA entity to wrap.
-     * @param authSessionsLimit the maximum number of concurrent authentication sessions.
-     * @return a new adapter instance, or {@code null} if the entity's realm does not match {@code realm}.
-     * @throws NullPointerException if {@code session}, {@code realm}, or {@code entity} is {@code null}.
+     * @param session           当前 Keycloak 会话。
+     * @param realm             认证会话所属域。
+     * @param entity            待包装的 JPA 实体。
+     * @param authSessionsLimit 每个根会话允许的最大并发认证会话数。
+     * @return 新适配器实例；若实体 realm 与参数不匹配则返回 {@code null}。
+     * @throws NullPointerException 若 {@code session}、{@code realm} 或 {@code entity} 为 {@code null}。
      */
     public static RootAuthenticationSessionAdapter wrapEntity(KeycloakSession session, RealmModel realm, RootAuthenticationSessionEntity entity, int authSessionsLimit) {
         assert session != null;
@@ -142,6 +142,7 @@ class RootAuthenticationSessionAdapter implements RootAuthenticationSessionModel
         var tabId = Base64Url.encode(SecretGenerator.getInstance().randomBytes(8));
         var timestamp = Time.currentTimeSeconds();
 
+        // 超出上限时淘汰时间戳最早的子认证会话
         if (entity.getAuthenticationSessions().size() >= authSessionsLimit) {
             entity.getAuthenticationSessions().values().stream()
                     .min(Comparator.comparingLong(AuthenticationSessionEntity::getTimestamp))
@@ -165,6 +166,7 @@ class RootAuthenticationSessionAdapter implements RootAuthenticationSessionModel
         if (adapters != null) {
             adapters.remove(tabId);
         }
+        // 子会话清空后一并删除根实体
         if (entity.getAuthenticationSessions().isEmpty()) {
             session.getProvider(JpaConnectionProvider.class).getEntityManager().remove(entity);
         }

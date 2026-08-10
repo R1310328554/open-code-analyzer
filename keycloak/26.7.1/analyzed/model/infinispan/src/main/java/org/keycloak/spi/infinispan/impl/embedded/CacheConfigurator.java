@@ -87,10 +87,9 @@ import static org.keycloak.connections.infinispan.InfinispanConnectionProvider.U
 import static org.keycloak.connections.infinispan.InfinispanConnectionProvider.WORK_CACHE_NAME;
 
 /**
- * Utility class related to the Infinispan cache configuration.
+ * Infinispan 缓存配置工具类。
  * <p>
- * This class contains methods to configure caches based on the SPI configuration options, and it provides cache
- * configuration defaults.
+ * 根据 SPI 配置选项设置各缓存的 max-count、owners、lifespan 等参数，并提供嵌入式与远程缓存的默认配置模板。
  */
 public final class CacheConfigurator {
 
@@ -108,32 +107,29 @@ public final class CacheConfigurator {
     }
 
     /**
-     * Configures the Infinispan local caches used by Keycloak (e.g., for realm or user data) using the provided
-     * Keycloak configuration.
+     * 根据 Keycloak 配置初始化本地缓存（realm、user、authorization 等）。
      *
-     * @param keycloakConfig The Keycloak configuration.
-     * @param holder         The {@link ConfigurationBuilderHolder} where the caches will be defined.
-     * @throws IllegalStateException if an Infinispan cache is not defined. This could indicate a missing or incorrect
-     *                               configuration.
+     * @param keycloakConfig Keycloak SPI 配置作用域。
+     * @param holder         待写入缓存定义的 {@link ConfigurationBuilderHolder}。
+     * @throws IllegalStateException 若某缓存未在 holder 中定义。
      */
     public static void configureLocalCaches(Config.Scope keycloakConfig, ConfigurationBuilderHolder holder) {
         logger.debug("Configuring embedded local caches");
-        // configure local caches except revision caches
+        // 配置除 revision 缓存外的本地 max-count 缓存
         configureCacheMaxCount(keycloakConfig, holder, Arrays.stream(LOCAL_MAX_COUNT_CACHES));
-        // configure revision caches
+        // 配置 revision 缓存（容量为对应主缓存的两倍）
         configureRevisionCache(holder, REALM_CACHE_NAME, REALM_REVISIONS_CACHE_NAME, REALM_REVISIONS_CACHE_DEFAULT_MAX);
         configureRevisionCache(holder, USER_CACHE_NAME, USER_REVISIONS_CACHE_NAME, USER_REVISIONS_CACHE_DEFAULT_MAX);
         configureRevisionCache(holder, AUTHORIZATION_CACHE_NAME, AUTHORIZATION_REVISIONS_CACHE_NAME, AUTHORIZATION_REVISIONS_CACHE_DEFAULT_MAX);
-        // check all caches are defined
+        // 校验所有本地缓存均已定义
         checkCachesExist(holder, Arrays.stream(LOCAL_CACHE_NAMES));
     }
 
     /**
-     * Applies the default Infinispan cache configuration to the {@code holder}, if the cache is not present.
-     * <p>
-     * Each cache may have its own default configuration.
+     * 为 holder 中缺失的缓存填充默认配置；若用户已自定义部分缓存且未开启 configMutate 则告警。
      *
-     * @param holder The {@link ConfigurationBuilderHolder} where the caches will be defined.
+     * @param holder     缓存配置 holder。
+     * @param warnMutate 是否在检测到用户自定义配置时输出弃用警告。
      */
     public static void applyDefaultConfiguration(ConfigurationBuilderHolder holder, boolean warnMutate) {
         var configs = holder.getNamedConfigurationBuilders();
@@ -186,7 +182,7 @@ public final class CacheConfigurator {
             throw cacheNotFound(WORK_CACHE_NAME);
         }
         if (!isClustered(holder)) {
-            // non-clustered, Keycloak started in dev mode?
+            // 非集群模式（开发模式？）跳过 work 缓存校验
             return;
         }
         var cacheMode = cacheBuilder.clustering().cacheMode();
@@ -225,7 +221,7 @@ public final class CacheConfigurator {
             var maxCount = keycloakConfig.getLong(maxCountConfigKey(name));
             if (maxCount != null) {
                 if (maxCount < 0) {
-                    // Prevent users setting an unbounded max-count for any cache that already has a default max-count defined
+                    // 禁止用户将已有默认 max-count 的缓存设为无界
                     maxCount = builder.memory().maxCount();
                     if (maxCount > -1)
                         logger.infof("Ignoring unbounded max-count for cache '%s', reverting to default max of %d entries.", name, maxCount);
@@ -238,11 +234,10 @@ public final class CacheConfigurator {
     }
 
     /**
-     * Configures all the sessions caches when persistent user sessions feature is enabled.
+     * 启用持久化用户会话时配置会话相关缓存：限制内存、owners=1、禁用 state-transfer。
      *
-     * @param holder The {@link ConfigurationBuilderHolder} where the caches are configured.
-     * @throws IllegalStateException if an Infinispan cache from the provided {@code caches} stream is not defined in
-     *                               the {@code holder}. This could indicate a missing or incorrect configuration.
+     * @param keycloakConfig Keycloak 配置。
+     * @param holder         缓存配置 holder。
      */
     public static void configureSessionsCachesForPersistentSessions(Config.Scope keycloakConfig, ConfigurationBuilderHolder holder) {
         logger.debug("Configuring session cache (persistent user sessions)");
@@ -257,25 +252,23 @@ public final class CacheConfigurator {
                 logger.infof("Persistent user sessions enabled and no memory limit found in configuration. Setting max entries for %s to %d entries.", name, SESSIONS_CACHE_DEFAULT_MAX);
                 builder.memory().maxCount(SESSIONS_CACHE_DEFAULT_MAX);
             }
-            /* The number of owners for these caches then need to be set to `1` to avoid backup owners with inconsistent data.
-             As primary owner evicts a key based on its locally evaluated maxCount setting, it wouldn't tell the backup owner about this, and then the backup owner would be left with a soon-to-be-outdated key.
-             While a `remove` is forwarded to the backup owner regardless if the key exists on the primary owner, a `computeIfPresent` is not, and it would leave a backup owner with an outdated key.
-             With the number of owners set to `1`, there will be no backup owners, so this is the setting to choose with persistent sessions enabled to ensure consistent data in the caches. */
+            /* 持久化会话下 owners 须设为 1，避免备份节点持有与主节点不一致的条目：
+             主节点按本地 maxCount 驱逐时不会通知备份；computeIfPresent 也不会转发到备份，导致数据陈旧。
+             owners=1 即无备份，与持久化存储配合保证一致性。 */
             builder.clustering().hash().numOwners(1);
             if (sessionCaches.contains(name)) {
                 configureSessionExpirationReaper(builder);
-                // Disable state-transfer to reduce the overhead of new nodes joining
+                // 禁用 state-transfer，降低新节点加入开销
                 builder.clustering().stateTransfer().fetchInMemoryState(false);
             }
         }
     }
 
     /**
-     * Configures all the sessions caches when persistent user sessions feature is enabled.
+     * 未启用持久化用户会话时配置会话缓存：在线会话不设内存上限，离线会话保留 max-count。
      *
-     * @param holder The {@link ConfigurationBuilderHolder} where the caches are configured.
-     * @throws IllegalStateException if an Infinispan cache from the provided {@code caches} stream is not defined in
-     *                               the {@code holder}. This could indicate a missing or incorrect configuration.
+     * @param keycloakConfig Keycloak 配置。
+     * @param holder         缓存配置 holder。
      */
     public static void configureSessionsCachesForVolatileSessions(Config.Scope keycloakConfig, ConfigurationBuilderHolder holder) {
         logger.debug("Configuring session cache (volatile user sessions)");
@@ -317,20 +310,15 @@ public final class CacheConfigurator {
                 builder.clustering().hash().numOwners(1);
             }
             configureSessionExpirationReaper(builder);
-            // Disable state-transfer to reduce the overhead of new nodes joining
+            // 禁用 state-transfer，降低新节点加入开销
             builder.clustering().stateTransfer().fetchInMemoryState(false);
         }
     }
 
     /**
-     * Configures the caches "actionToken", "authenticationSessions", and "loginFailures" with the minimum number of
-     * owners to prevent data loss in a single instance crash.
-     * <p>
-     * The data in those caches only exist in memory, therefore they must have more than one owner configured.
+     * 为纯内存缓存（actionToken、authenticationSessions、loginFailures）设置最少 2 个 owner，防止单节点崩溃丢数据。
      *
-     * @param holder The {@link ConfigurationBuilderHolder} where the caches are configured.
-     * @throws IllegalStateException if an Infinispan cache is not defined in the {@code holder}. This could indicate a
-     *                               missing or incorrect configuration.
+     * @param holder 缓存配置 holder。
      */
     public static void ensureMinimumOwners(ConfigurationBuilderHolder holder) {
         for (var name : Arrays.asList(
@@ -371,17 +359,14 @@ public final class CacheConfigurator {
     }
 
     /**
-     * Creates a {@link ConfigurationBuilder} for a cache in a remote Infinispan cluster.
+     * 为远程 Infinispan 集群创建指定缓存的 {@link ConfigurationBuilder} 模板。
      * <p>
-     * The returned builder is a template based on the provider's default configuration, which can be freely modified by
-     * the caller before use.
+     * 返回的 builder 基于 Provider 默认配置，调用方可自由修改后再提交。
      *
-     * @param cacheName The name of the cache for which to create the configuration.
-     * @param config    The provider's base configuration scope, which may contain cache-specific customizations.
-     * @param sites     An array of remote site names for cross-site replication backups. If null or empty, cross-site
-     *                  replication will be disabled.
-     * @return A {@link ConfigurationBuilder} for the specified cache, or {@code null} if no configuration exists for
-     * the given {@code cacheName}.
+     * @param cacheName 缓存名称。
+     * @param config    Provider 基础配置作用域，可含缓存级自定义项。
+     * @param sites     跨站点复制备份的远程站点名数组；null 或空则禁用跨站点复制。
+     * @return 指定缓存的配置 builder；若 cacheName 无对应模板则返回 {@code null}。
      */
     public static ConfigurationBuilder getRemoteCacheConfiguration(String cacheName, Config.Scope config, String[] sites) {
         return switch (cacheName) {
@@ -430,7 +415,7 @@ public final class CacheConfigurator {
                         .add());
     }
 
-    // private methods below
+    // 私有方法
 
     private static void configureSessionExpirationReaper(ConfigurationBuilder builder) {
         builder.expiration().enableReaper().wakeUpInterval(InfinispanUserSessionProviderFactory.getExpirationPeriod(TimeUnit.MILLISECONDS));
@@ -457,7 +442,7 @@ public final class CacheConfigurator {
             return builder;
         }
 
-        // we need transactions for cross-site to detect deadlock and rollback any changes.
+        // 跨站点复制需要事务以检测死锁并回滚
         builder.transaction()
                 .transactionMode(TransactionMode.TRANSACTIONAL)
                 .useSynchronization(false)
@@ -495,10 +480,10 @@ public final class CacheConfigurator {
     }
 
     /**
-     * Returns the SPI configuration key for the lifespan of the given cache.
+     * 返回缓存的 SPI lifespan 配置键，例如 {@code "realmLifespan"}。
      *
-     * @param name The cache name.
-     * @return The configuration key, e.g. {@code "realmLifespan"}.
+     * @param name 缓存名称。
+     * @return 配置键字符串。
      */
     public static String lifespanConfigKey(String name) {
         return name + LIFESPAN_SUFFIX;
@@ -512,7 +497,7 @@ public final class CacheConfigurator {
         return new IllegalStateException("Infinispan cache '%s' not found.".formatted(cache));
     }
 
-    // cache configuration below
+    // 缓存默认配置
 
     public static ConfigurationBuilder getCrlCacheConfig() {
         return getCacheConfiguration(CRL_CACHE_NAME, true);
@@ -523,7 +508,7 @@ public final class CacheConfigurator {
         builder.simpleCache(false);
         builder.invocationBatching().enable().transaction().transactionMode(TransactionMode.TRANSACTIONAL);
 
-        // Use Embedded manager even in managed ( wildfly/eap ) environment. We don't want infinispan to participate in global transaction
+        // 即使在 WildFly/EAP 托管环境也使用 Embedded 事务管理器，避免 Infinispan 参与全局 XA 事务
         builder.transaction().transactionManagerLookup(new EmbeddedTransactionManagerLookup());
 
         builder.transaction().lockingMode(LockingMode.PESSIMISTIC);
@@ -539,26 +524,27 @@ public final class CacheConfigurator {
     public static ConfigurationBuilder createCacheConfigurationBuilder() {
         ConfigurationBuilder builder = new ConfigurationBuilder();
 
-        // need to force the encoding to application/x-java-object to avoid unnecessary conversion of keys/values. See WFLY-14356.
+        // 强制 application/x-java-object 编码，避免键值不必要的转换（参见 WFLY-14356）
         builder.encoding().mediaType(MediaType.APPLICATION_OBJECT_TYPE);
 
-        // needs to be disabled if transaction is enabled
+        // 启用事务时必须禁用 simpleCache
         builder.simpleCache(true);
 
         return builder;
     }
 
     /**
-     * Returns a cache's default configuration.
-     * Revision caches are not returned as their configuration depends on their associated cache's configuration.
+     * 返回指定缓存的默认配置。
+     * <p>
+     * revision 缓存不在此返回，其配置依赖关联主缓存的 max-count。
      */
     public static ConfigurationBuilder getCacheConfiguration(String cacheName, boolean clustered) {
         var builder = new ConfigurationBuilder();
         switch (cacheName) {
-            // Distributed Caches
+            // 分布式缓存
             case CLIENT_SESSION_CACHE_NAME:
             case OFFLINE_CLIENT_SESSION_CACHE_NAME:
-                // Groups keys by user session ID.
+                // 按用户会话 ID 分组键
                 if (clustered) {
                     builder.clustering().hash().groups()
                             .enabled()
@@ -579,7 +565,7 @@ public final class CacheConfigurator {
                 }
                 builder.encoding().mediaType(MediaType.APPLICATION_OBJECT_TYPE);
                 return builder;
-            // Local Caches
+            // 本地缓存
             case CRL_CACHE_NAME:
                 builder.simpleCache(true);
                 builder.memory().whenFull(EvictionStrategy.REMOVE).maxCount(CRL_CACHE_DEFAULT_MAX);
@@ -595,7 +581,7 @@ public final class CacheConfigurator {
                 builder.simpleCache(true);
                 builder.memory().whenFull(EvictionStrategy.REMOVE).maxCount(10000);
                 return builder;
-            // Replicated caches
+            // 复制缓存
             case WORK_CACHE_NAME:
                 if (clustered) {
                     builder.clustering().cacheMode(CacheMode.REPL_SYNC);

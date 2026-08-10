@@ -30,12 +30,15 @@ import org.keycloak.spi.infinispan.CacheRemoteConfigProviderFactory;
 import org.infinispan.client.hotrod.configuration.Configuration;
 
 /**
- * Implementation used when an external Infinispan cluster is not configured.
+ * 未配置外部 Infinispan 集群时使用的占位实现。
+ * <p>
+ * 当 {@link InfinispanUtils#isRemoteInfinispan()} 为 {@code false} 时激活，{@link #configuration()} 始终返回空。
  */
 public class DisabledCacheRemoteConfigProviderFactory implements CacheRemoteConfigProviderFactory, CacheRemoteConfigProvider, EnvironmentDependentProviderFactory {
 
     private static final String PROVIDER_ID = "disabled";
 
+    /** 仅在未启用远程 Infinispan 时支持此 Provider。 */
     @Override
     public boolean isSupported(Config.Scope config) {
         return !InfinispanUtils.isRemoteInfinispan();
