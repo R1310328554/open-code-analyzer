@@ -20,10 +20,13 @@ import org.jboss.logging.Logger;
 public class WebAuthnMetadataService {
 
     private static final Logger logger = Logger.getLogger(WebAuthnMetadataService.class);
+    /** 元数据 JSON 文件名。 */
     private static final String FILE_NAME = "keycloak-webauthn-metadata.json";
 
+    /** AAGUID 到认证器元数据的缓存映射。 */
     private static volatile Map<String, WebAuthnAuthenticatorMetadata> aaguidToMetadata;
 
+    /** 测试或启动时注入默认元数据（仅首次生效）。 */
     public static void setDefaultMetadata(Map<String, WebAuthnAuthenticatorMetadata> metadata) {
         if (aaguidToMetadata == null) {
             aaguidToMetadata = metadata;
@@ -41,6 +44,7 @@ public class WebAuthnMetadataService {
         return aaguidToMetadata;
     }
 
+    /** 从 classpath 或 conf 目录解析并校验元数据文件。 */
     public static Map<String, WebAuthnAuthenticatorMetadata> parseMetadata() {
         try {
             try (InputStream is = FileUtils.getJsonFileFromClasspathOrConfFolder(FILE_NAME)) {
@@ -57,10 +61,14 @@ public class WebAuthnMetadataService {
         }
     }
 
+    /** @param aaguid 认证器 AAGUID
+     * @return 对应元数据，不存在时返回 null */
     public WebAuthnAuthenticatorMetadata getAuthenticatorMetadata(String aaguid) {
         return aaguid == null ? null : getAaguidToMetadata().get(aaguid);
     }
 
+    /** @param aaguid 认证器 AAGUID
+     * @return 认证器提供商可读名称 */
     public String getAuthenticatorProvider(String aaguid) {
         WebAuthnAuthenticatorMetadata metadata = getAuthenticatorMetadata(aaguid);
         return metadata == null ? null : metadata.name();

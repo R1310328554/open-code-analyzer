@@ -23,11 +23,20 @@ import jakarta.ws.rs.core.Response;
 import org.keycloak.representations.idm.OAuth2ErrorRepresentation;
 
 /**
+ * 客户端认证工具类：构建标准 OAuth2 JSON 错误响应。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ClientAuthUtil {
 
 
+    /**
+     * 构建 OAuth2 错误 JSON 响应。
+     * @param status HTTP 状态码
+     * @param error OAuth2 error 字段
+     * @param errorDescription 错误描述
+     * @return JAX-RS Response
+     */
     public static Response errorResponse(int status, String error, String errorDescription) {
         OAuth2ErrorRepresentation errorRep = new OAuth2ErrorRepresentation(error, errorDescription);
         return Response.status(status).entity(errorRep).type(MediaType.APPLICATION_JSON_TYPE).build();

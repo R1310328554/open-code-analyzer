@@ -26,13 +26,17 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.jboss.logging.Logger;
 
 /**
+ * 客户端认证器抽象基类：同时实现 {@link ClientAuthenticator} 与 {@link ClientAuthenticatorFactory}，提供工厂方法的默认空实现。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public abstract class AbstractClientAuthenticator implements ClientAuthenticator, ClientAuthenticatorFactory {
 
+    /** 子类共享的日志记录器。 */
     protected final Logger logger = Logger.getLogger(getClass());
 
     @Override
+    /** @return 自身作为单例认证器实例 */
     public ClientAuthenticator create() {
         return this;
     }
@@ -43,6 +47,7 @@ public abstract class AbstractClientAuthenticator implements ClientAuthenticator
     }
 
     @Override
+    /** @return 自身作为单例认证器实例 */
     public ClientAuthenticator create(KeycloakSession session) {
         return this;
     }

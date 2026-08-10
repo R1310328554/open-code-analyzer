@@ -29,16 +29,22 @@ import org.keycloak.models.credential.WebAuthnCredentialModel;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 
+/**
+ * WebAuthn 双因素认证器工厂：在启用 WEB_AUTHN 特性时注册 {@link WebAuthnAuthenticator}。
+ */
 public class WebAuthnAuthenticatorFactory implements AuthenticatorFactory, EnvironmentDependentProviderFactory {
 
+    /** Provider ID：webauthn-authenticator。 */
     public static final String PROVIDER_ID = "webauthn-authenticator";
 
     @Override
+    /** @return 管理控制台显示名称 */
     public String getDisplayType() {
         return "WebAuthn Authenticator";
     }
 
     @Override
+    /** @return 参考类别（双因素 WebAuthn 凭证类型） */
     public String getReferenceCategory() {
         return WebAuthnCredentialModel.TYPE_TWOFACTOR;
     }
@@ -59,6 +65,7 @@ public class WebAuthnAuthenticatorFactory implements AuthenticatorFactory, Envir
     }
 
     @Override
+    /** @return 帮助说明：WebAuthn 双因素认证 */
     public String getHelpText() {
         return "Authenticator for WebAuthn. Usually used for WebAuthn two-factor authentication";
     }
@@ -70,6 +77,7 @@ public class WebAuthnAuthenticatorFactory implements AuthenticatorFactory, Envir
     }
 
     @Override
+    /** @return 新建 {@link WebAuthnAuthenticator} 实例 */
     public Authenticator create(KeycloakSession session) {
         return new WebAuthnAuthenticator(session);
     }
@@ -90,11 +98,13 @@ public class WebAuthnAuthenticatorFactory implements AuthenticatorFactory, Envir
     }
 
     @Override
+    /** @return Provider ID */
     public String getId() {
         return PROVIDER_ID;
     }
 
     @Override
+    /** @return 是否启用 WEB_AUTHN 特性 */
     public boolean isSupported(Config.Scope config) {
         return Profile.isFeatureEnabled(Profile.Feature.WEB_AUTHN);
     }

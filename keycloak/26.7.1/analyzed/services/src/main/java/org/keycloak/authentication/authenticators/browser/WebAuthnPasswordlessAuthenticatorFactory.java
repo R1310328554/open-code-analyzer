@@ -23,33 +23,41 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.credential.WebAuthnCredentialModel;
 
 /**
+ * 无密码 WebAuthn 认证器工厂：注册 {@link WebAuthnPasswordlessAuthenticator}。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class WebAuthnPasswordlessAuthenticatorFactory extends WebAuthnAuthenticatorFactory {
 
+    /** Provider ID：webauthn-authenticator-passwordless。 */
     public static final String PROVIDER_ID = "webauthn-authenticator-passwordless";
 
     @Override
+    /** @return 参考类别（passwordless 凭证类型） */
     public String getReferenceCategory() {
         return WebAuthnCredentialModel.TYPE_PASSWORDLESS;
     }
 
     @Override
+    /** @return 管理控制台显示名称 */
     public String getDisplayType() {
         return "WebAuthn Passwordless Authenticator";
     }
 
     @Override
+    /** @return 帮助说明：无密码 WebAuthn 认证 */
     public String getHelpText() {
         return "Authenticator for Passwordless WebAuthn authentication";
     }
 
     @Override
+    /** @return 新建 {@link WebAuthnPasswordlessAuthenticator} 实例 */
     public Authenticator create(KeycloakSession session) {
         return new WebAuthnPasswordlessAuthenticator(session);
     }
 
     @Override
+    /** @return Provider ID */
     public String getId() {
         return PROVIDER_ID;
     }

@@ -47,26 +47,31 @@ import org.keycloak.utils.StringUtil;
  */
 public class WebAuthnPasswordlessAuthenticator extends WebAuthnAuthenticator {
 
+    /** @param session 当前 Keycloak 会话 */
     public WebAuthnPasswordlessAuthenticator(KeycloakSession session) {
         super(session);
     }
 
     @Override
+    /** @return 领域无密码 WebAuthn 策略 */
     protected WebAuthnPolicy getWebAuthnPolicy(AuthenticationFlowContext context) {
         return context.getRealm().getWebAuthnPolicyPasswordless();
     }
 
     @Override
+    /** @return 凭证类型（passwordless） */
     protected String getCredentialType() {
         return WebAuthnCredentialModel.TYPE_PASSWORDLESS;
     }
 
     @Override
+    /** @return 无密码场景不展示已注册认证器列表 */
     protected boolean shouldDisplayAuthenticators(AuthenticationFlowContext context){
         return false;
     }
 
     @Override
+    /** 若用户未注册无密码 WebAuthn 凭证，添加注册必需操作。 */
     public void setRequiredActions(KeycloakSession session, RealmModel realm, UserModel user) {
         // ask the user to do required action to register webauthn authenticator
         AuthenticationSessionModel authenticationSession = session.getContext().getAuthenticationSession();
@@ -76,22 +81,26 @@ public class WebAuthnPasswordlessAuthenticator extends WebAuthnAuthenticator {
     }
 
     @Override
+    /** @return 无密码 WebAuthn 注册必需操作工厂列表 */
     public List<RequiredActionFactory> getRequiredActions(KeycloakSession session) {
         return Collections.singletonList((WebAuthnPasswordlessRegisterFactory)session.getKeycloakSessionFactory().getProviderFactory(RequiredActionProvider.class, WebAuthnPasswordlessRegisterFactory.PROVIDER_ID));
     }
 
 
     @Override
+    /** @return 无密码 WebAuthn 凭证 Provider */
     public WebAuthnPasswordlessCredentialProvider getCredentialProvider(KeycloakSession session) {
         return (WebAuthnPasswordlessCredentialProvider)session.getProvider(CredentialProvider.class, WebAuthnPasswordlessCredentialProviderFactory.PROVIDER_ID);
     }
 
     @Override
+    /** @return 无密码场景不要求前置用户识别 */
     public boolean requiresUser() {
         return false;
     }
 
     @Override
+    /** 处理取消、用户名输入或 WebAuthn 凭证选择，再委托父类完成验证。 */
     public void action(AuthenticationFlowContext context) {
         MultivaluedMap<String, String> formData = context.getHttpRequest().getDecodedFormParameters();
         if (formData.containsKey("cancel")) {
@@ -101,27 +110,28 @@ public class WebAuthnPasswordlessAuthenticator extends WebAuthnAuthenticator {
 
         String username = formData.getFirst(AuthenticationManager.FORM_USERNAME);
         if (StringUtil.isNotBlank(username)) {
-            // user entered a username directly, check if user exists
+            // 用户直接输入用户名，校验是否存在
             boolean validUsername = validateUsername(context, formData, username);
             if (!validUsername) {
                 context.attempted();
                 return;
             }
         } else if (!formData.containsKey(WebAuthnConstants.USER_HANDLE)) {
-            // user submitted an empty form without webauthn credential selection
+            // 空表单且无 WebAuthn 凭证选择
             context.attempted();
             return;
         }
 
-        // process rememberMe if present
+        // 处理「记住我」选项
         if (formData.containsKey("rememberMe")) {
             AuthenticatorUtils.processRememberMe(context, formData);
         }
 
-        // user selected a webauthn credential, proceed with webauthn authentication
+        // 用户选择了 WebAuthn 凭证，继续 WebAuthn 认证
         super.action(context);
     }
 
+    /** 校验用户输入的用户名是否存在。 */
     protected boolean validateUsername(AuthenticationFlowContext context, MultivaluedMap<String, String> formData, String username) {
         return new UsernameForm().validateUser(context, formData);
     }

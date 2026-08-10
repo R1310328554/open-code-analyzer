@@ -84,11 +84,16 @@ import static org.keycloak.OAuthErrorException.INVALID_CLIENT_ATTESTATION;
  */
 public class AttestationBasedClientAuthenticator extends AbstractClientAuthenticator implements EnvironmentDependentProviderFactory {
 
+    /** Provider ID：attestation-based。 */
     public static final String PROVIDER_ID = "attestation-based";
+    /** HTTP 头：客户端证明 JWT。 */
     public static final String OAUTH_CLIENT_ATTESTATION_HEADER = "OAuth-Client-Attestation";
+    /** HTTP 头：客户端证明 PoP JWT。 */
     public static final String OAUTH_CLIENT_ATTESTATION_POP_HEADER = "OAuth-Client-Attestation-PoP";
 
+    /** JWS typ：客户端证明 JWT。 */
     public static final String OAUTH_CLIENT_ATTESTATION_JWT_TYPE = "oauth-client-attestation+jwt";
+    /** JWS typ：客户端证明 PoP JWT。 */
     public static final String OAUTH_CLIENT_ATTESTATION_POP_JWT_TYPE = "oauth-client-attestation-pop+jwt";
 
     /**
@@ -97,6 +102,7 @@ public class AttestationBasedClientAuthenticator extends AbstractClientAuthentic
     public static final String OAUTH_CLIENT_ATTESTATION_CONFIG_TRUST_IDPS = "attester_trust_idps";
 
     /** The token confirmation type */
+    /** 令牌确认类型：Client-Attestation。 */
     public static final String ABCA_JKT_TYPE = "Client-Attestation";
 
     @Override
@@ -105,6 +111,7 @@ public class AttestationBasedClientAuthenticator extends AbstractClientAuthentic
     }
 
     @Override
+    /** 校验 OAuth-Client-Attestation 与 PoP 头中的 JWT，完成 ABCA 客户端认证。 */
     public void authenticateClient(ClientAuthenticationFlowContext context) {
 
         KeycloakSession session = context.getSession();
@@ -112,7 +119,7 @@ public class AttestationBasedClientAuthenticator extends AbstractClientAuthentic
         String attestationValue = headers.getHeaderString(OAUTH_CLIENT_ATTESTATION_HEADER);
         String attestationPoPValue = headers.getHeaderString(OAUTH_CLIENT_ATTESTATION_POP_HEADER);
 
-        // At least one of the header must be present
+        // 至少需存在一个证明相关 HTTP 头
         //
         if (attestationValue == null && attestationPoPValue == null) {
             return;
@@ -148,11 +155,13 @@ public class AttestationBasedClientAuthenticator extends AbstractClientAuthentic
     }
 
     @Override
+    /** @return 管理控制台显示名称 */
     public String getDisplayType() {
         return "Attestation-Based";
     }
 
     @Override
+    /** @return 帮助说明：基于 Client Attestation JWT 与 PoP JWT 的客户端认证 */
     public String getHelpText() {
         return "Validates client based on a Client Attestation JWT and a PoP JWT which proves possession of the private key";
     }
@@ -189,6 +198,7 @@ public class AttestationBasedClientAuthenticator extends AbstractClientAuthentic
     }
 
     @Override
+    /** @return 是否启用 CLIENT_AUTH_ABCA 特性 */
     public boolean isSupported(Config.Scope config) {
         return Profile.isFeatureEnabled(Profile.Feature.CLIENT_AUTH_ABCA);
     }
@@ -204,6 +214,7 @@ public class AttestationBasedClientAuthenticator extends AbstractClientAuthentic
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown = true)
+    /** 客户端证明 JWT 载荷，含 cnf（确认密钥）声明。 */
     public static class ClientAttestationJwt extends JsonWebToken {
 
         @JsonProperty("cnf")
@@ -242,6 +253,7 @@ public class AttestationBasedClientAuthenticator extends AbstractClientAuthentic
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown = true)
+    /** cnf 声明：持有 PoP JWT 签名所用公钥的 JWK。 */
     public static class Confirmation {
 
         @JsonProperty("jwk")
@@ -259,6 +271,7 @@ public class AttestationBasedClientAuthenticator extends AbstractClientAuthentic
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown = true)
+    /** 客户端证明 PoP JWT 载荷，含 challenge 等声明。 */
     public static class ClientAttestationPoPJwt extends JsonWebToken {
 
         @JsonProperty("challenge")
@@ -339,7 +352,7 @@ public class AttestationBasedClientAuthenticator extends AbstractClientAuthentic
         return kw;
     }
 
-    // Validate the Client Attestation JWT
+    // 校验客户端证明 JWT（draft-07 §5.1）
     // https://www.ietf.org/archive/id/draft-ietf-oauth-attestation-based-client-auth-07.html#section-5.1
     private void validateClientAttestationJwt(ClientAuthenticationFlowContext context, ABCAResult abcaResult) throws Exception {
 
@@ -419,7 +432,7 @@ public class AttestationBasedClientAuthenticator extends AbstractClientAuthentic
         // [TODO] The key contained in the cnf claim of the Client Attestation JWT is not a private key
     }
 
-    // Validate the Client Attestation PoP JWT
+    // 校验客户端证明 PoP JWT（draft-07 §5.2）
     // https://www.ietf.org/archive/id/draft-ietf-oauth-attestation-based-client-auth-07.html#section-5.2
     private void validateClientAttestationPoPJwt(ClientAuthenticationFlowContext context, ABCAResult abcaResult) throws Exception {
 
@@ -499,11 +512,13 @@ public class AttestationBasedClientAuthenticator extends AbstractClientAuthentic
         // [TODO] Additional checks to guarantee replay protection for the Client Attestation PoP JWT might need to be applied
     }
 
+    /** ABCA 校验结果，存入 KeycloakSession 属性供后续使用。 */
     public static class ABCAResult {
 
         /**
          *  A key to a KeycloakSession attribute that contains the ABCA validation result
          */
+        /** Session 属性键：ABCA 校验结果。 */
         public static final String ABCA_RESULT = "ABCAResult";
 
         private ClientAttestationJwt attestationJwt;
@@ -534,6 +549,7 @@ public class AttestationBasedClientAuthenticator extends AbstractClientAuthentic
             this.attestedClient = client;
         }
 
+        /** @return 是否已成功验证并绑定客户端 */
         public boolean isVerified() {
             return attestedClient != null;
         }

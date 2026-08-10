@@ -10,7 +10,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @param iconDark icon for dark theme (data URI)
  */
 public record WebAuthnAuthenticatorMetadata(
+        /** 认证器可读名称。 */
         String name,
+        /** 浅色主题图标（data URI）。 */
         @JsonProperty("icon_light") String iconLight,
+        /** 深色主题图标（data URI）。 */
         @JsonProperty("icon_dark") String iconDark) {
 }

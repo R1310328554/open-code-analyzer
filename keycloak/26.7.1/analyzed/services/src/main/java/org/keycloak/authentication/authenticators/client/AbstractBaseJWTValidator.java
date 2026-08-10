@@ -38,28 +38,39 @@ public abstract class AbstractBaseJWTValidator {
 
     private static final Logger logger = Logger.getLogger(AbstractBaseJWTValidator.class);
 
+    /** 客户端断言解析状态。 */
     protected final ClientAssertionState clientAssertionState;
+    /** 当前 Keycloak 会话。 */
     protected final KeycloakSession session;
+    /** 校验时的当前 Unix 时间戳（秒）。 */
     protected final int currentTime;
 
+    /**
+     * @param session 当前 Keycloak 会话
+     * @param clientAssertionState 已解析的客户端断言状态
+     */
     public AbstractBaseJWTValidator(KeycloakSession session, ClientAssertionState clientAssertionState) {
         this.session = session;
         this.clientAssertionState = clientAssertionState;
         this.currentTime = Time.currentTime();
     }
 
+    /** @return 客户端断言状态 */
     public ClientAssertionState getState() {
         return clientAssertionState;
     }
 
+    /** @return 原始 client_assertion 字符串 */
     public String getClientAssertion() {
         return clientAssertionState.getClientAssertion();
     }
 
+    /** @return 解析后的 JWS 输入 */
     public JWSInput getJws() {
         return clientAssertionState.getJws();
     }
 
+    /** 校验 exp/iat 时效、最大寿命及 jti 是否允许重用。 */
     public boolean validateTokenActive(int allowedClockSkew, int maxExp, boolean reusePermitted) {
         JsonWebToken token = clientAssertionState.getToken();
         long lifespan;
@@ -104,6 +115,7 @@ public abstract class AbstractBaseJWTValidator {
         return true;
     }
 
+    /** 将 jti 写入单次使用缓存，检测令牌重放。 */
     protected boolean validateTokenReuse(long lifespanInSecs) {
         final JsonWebToken token = clientAssertionState.getToken();
         final String tokenId = token.getId();
@@ -119,10 +131,12 @@ public abstract class AbstractBaseJWTValidator {
         return true;
     }
 
+    /** @return jti 缓存键前缀（默认为类名小写） */
     protected String getJtiCacheKeyPrefix() {
         return getClass().getSimpleName().toLowerCase();
     }
 
+    /** 校验 aud 声明是否匹配预期受众。 */
     public boolean validateTokenAudience(List<String> expectedAudiences, boolean multipleAudienceAllowed) {
         JsonWebToken token = clientAssertionState.getToken();
         if (!token.hasAnyAudience(expectedAudiences)) {
@@ -140,10 +154,12 @@ public abstract class AbstractBaseJWTValidator {
      * By default, symmetric algorithms are not allowed
      * @return false by default
      */
+    /** @return 是否允许对称签名算法（默认 false） */
     protected boolean isSymmetricAlgorithmAllowed() {
         return false;
     }
 
+    /** 校验 JWS 头中的 alg 是否为允许的（非 none）非对称算法。 */
     public boolean validateSignatureAlgorithm(String expectedSignatureAlg) {
         JWSInput jws = clientAssertionState.getJws();
 
@@ -178,5 +194,6 @@ public abstract class AbstractBaseJWTValidator {
         return false;
     }
 
+    /** 校验失败时的回调（由子类实现具体错误响应）。 */
     protected abstract void failureCallback(String errorDescription);
 }

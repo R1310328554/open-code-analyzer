@@ -41,12 +41,22 @@ public abstract class AbstractJWTClientValidator extends AbstractBaseJWTValidato
 
     private static final Logger logger = Logger.getLogger(AbstractJWTClientValidator.class);
 
+    /** 客户端认证流程上下文。 */
     protected final ClientAuthenticationFlowContext context;
+    /** 当前领域模型。 */
     protected final RealmModel realm;
+    /** 签名验证策略。 */
     protected final SignatureValidator signatureValidator;
+    /** 期望的客户端认证器 Provider ID。 */
     protected final String clientAuthenticatorProviderId;
+    /** 期望的 client_assertion_type（默认 JWT）。 */
     protected String expectedClientAssertionType = OAuth2Constants.CLIENT_ASSERTION_TYPE_JWT;
 
+    /**
+     * @param context 客户端认证流程上下文
+     * @param signatureValidator 签名验证策略
+     * @param clientAuthenticatorProviderId 期望的认证器 Provider ID
+     */
     public AbstractJWTClientValidator(ClientAuthenticationFlowContext context, SignatureValidator signatureValidator, String clientAuthenticatorProviderId) throws Exception {
         super(context.getSession(), context.getState(ClientAssertionState.class, ClientAssertionState.supplier()));
         this.context = context;
@@ -55,14 +65,17 @@ public abstract class AbstractJWTClientValidator extends AbstractBaseJWTValidato
         this.clientAuthenticatorProviderId = clientAuthenticatorProviderId;
     }
 
+    /** @return 客户端认证流程上下文 */
     public ClientAuthenticationFlowContext getContext() {
         return context;
     }
 
+    /** @return 已解析的客户端模型 */
     public ClientModel getClient() {
         return clientAssertionState.getClient();
     }
 
+    /** 执行完整的 JWT 客户端断言校验链。 */
     public boolean validate() {
         return validateClientAssertionParameters() &&
                 validateClient() &&
@@ -72,6 +85,7 @@ public abstract class AbstractJWTClientValidator extends AbstractBaseJWTValidato
                 validateTokenActive(getAllowedClockSkew(), getMaximumExpirationTime(), isReusePermitted());
     }
 
+    /** 校验 client_assertion_type 与 client_assertion 参数。 */
     protected boolean validateClientAssertionParameters() {
         String clientAssertionType = clientAssertionState.getClientAssertionType();
         String clientAssertion = clientAssertionState.getClientAssertion();
@@ -92,6 +106,7 @@ public abstract class AbstractJWTClientValidator extends AbstractBaseJWTValidato
         return true;
     }
 
+    /** 校验 sub/iss、客户端存在性、启用状态及认证器配置。 */
     protected boolean validateClient() {
         JsonWebToken token = clientAssertionState.getToken();
 
@@ -132,10 +147,12 @@ public abstract class AbstractJWTClientValidator extends AbstractBaseJWTValidato
         return true;
     }
 
+    /** 委托 {@link SignatureValidator} 验证 JWS 签名。 */
     protected boolean validateSignature() {
         return signatureValidator.verifySignature(this);
     }
 
+    /** 以 400 状态返回 invalid_client 错误。 */
     public boolean failure(String errorDescription) {
         return failure(errorDescription, Response.Status.BAD_REQUEST.getStatusCode());
     }
@@ -163,8 +180,10 @@ public abstract class AbstractJWTClientValidator extends AbstractBaseJWTValidato
         failure(errorDescription);
     }
 
+    /** @return 期望的令牌 iss 声明 */
     protected abstract String getExpectedTokenIssuer();
 
+    /** @return 期望的 aud 受众列表 */
     protected abstract List<String> getExpectedAudiences();
 
     protected abstract boolean isMultipleAudienceAllowed();
@@ -175,10 +194,13 @@ public abstract class AbstractJWTClientValidator extends AbstractBaseJWTValidato
 
     protected abstract boolean isReusePermitted();
 
+    /** @return 期望的 JWS 签名算法 */
     protected abstract String getExpectedSignatureAlgorithm();
 
+    /** JWT 签名验证策略接口。 */
     public interface SignatureValidator {
 
+        /** 验证客户端断言 JWS 签名。 */
         boolean verifySignature(AbstractJWTClientValidator validator);
 
     }

@@ -71,14 +71,18 @@ import static org.keycloak.services.messages.Messages.WEBAUTHN_ERROR_USER_NOT_FO
  */
 public class WebAuthnAuthenticator implements Authenticator, CredentialValidator<WebAuthnCredentialProvider> {
 
+    /** 日志记录器。 */
     private static final Logger logger = Logger.getLogger(WebAuthnAuthenticator.class);
+    /** 当前 Keycloak 会话。 */
     protected final KeycloakSession session;
 
+    /** @param session 当前 Keycloak 会话 */
     public WebAuthnAuthenticator(KeycloakSession session) {
         this.session = session;
     }
 
     @Override
+    /** 渲染 WebAuthn 登录挑战页；若用户尚未注册凭证则跳过。 */
     public void authenticate(AuthenticationFlowContext context) {
         LoginFormsProvider form = fillContextForm(context);
         if (form != null) {
@@ -86,6 +90,7 @@ public class WebAuthnAuthenticator implements Authenticator, CredentialValidator
         }
     }
 
+    /** 填充 WebAuthn 表单属性：挑战值、RP ID、策略选项及已注册认证器列表。 */
     public LoginFormsProvider fillContextForm(AuthenticationFlowContext context) {
         LoginFormsProvider form = context.form();
  
@@ -102,22 +107,22 @@ public class WebAuthnAuthenticator implements Authenticator, CredentialValidator
         UserModel user = context.getUser();
         boolean isUserIdentified = false;
         if (user != null) {
-            // in 2 Factor Scenario where the user has already been identified
+            // 双因素场景：用户已在前置步骤识别
             WebAuthnMetadataService metadataService = getCredentialProvider(context.getSession()).getMetadataService();
             WebAuthnAuthenticatorsBean authenticators = new WebAuthnAuthenticatorsBean(context.getSession(), context.getRealm(), user, getCredentialType(), metadataService);
             if (authenticators.getAuthenticators().isEmpty()) {
-                // require the user to register webauthn authenticator
+                // 用户尚未注册 WebAuthn 凭证，跳过挑战
                 return null;
             }
             isUserIdentified = true;
             form.setAttribute(WebAuthnConstants.ALLOWED_AUTHENTICATORS, authenticators);
         } else {
-            // in ID-less & Password-less Scenario
+            // 无标识 / 无密码场景
             // NOP
         }
         form.setAttribute(WebAuthnConstants.IS_USER_IDENTIFIED, Boolean.toString(isUserIdentified));
 
-        // read options from policy
+        // 从策略读取 WebAuthn 选项
         String userVerificationRequirement = policy.getUserVerificationRequirement();
         form.setAttribute(WebAuthnConstants.USER_VERIFICATION, userVerificationRequirement);
         form.setAttribute(WebAuthnConstants.SHOULD_DISPLAY_AUTHENTICATORS, shouldDisplayAuthenticators(context));
@@ -127,10 +132,12 @@ public class WebAuthnAuthenticator implements Authenticator, CredentialValidator
         return form;
     }
 
+    /** @return 领域 WebAuthn 双因素策略 */
     protected WebAuthnPolicy getWebAuthnPolicy(AuthenticationFlowContext context) {
         return context.getRealm().getWebAuthnPolicy();
     }
 
+    /** @return 依赖方 ID（RP ID），未配置时使用请求主机名 */
     protected String getRpID(AuthenticationFlowContext context){
         WebAuthnPolicy policy = getWebAuthnPolicy(context);
         String rpId = policy.getRpId();
@@ -138,21 +145,24 @@ public class WebAuthnAuthenticator implements Authenticator, CredentialValidator
         return rpId;
     }
 
+    /** @return 凭证类型（双因素 WebAuthn） */
     protected String getCredentialType() {
         return WebAuthnCredentialModel.TYPE_TWOFACTOR;
     }
 
+    /** @return 是否在前端展示已注册认证器列表 */
     protected boolean shouldDisplayAuthenticators(AuthenticationFlowContext context) {
         return context.getUser() != null;
     }
 
     @Override
+    /** 处理 WebAuthn API 返回的凭证数据，校验签名并确定用户身份。 */
     public void action(AuthenticationFlowContext context) {
         MultivaluedMap<String, String> params = context.getHttpRequest().getDecodedFormParameters();
 
         context.getEvent().detail(Details.CREDENTIAL_TYPE, getCredentialType());
 
-        // receive error from navigator.credentials.get()
+        // 接收 navigator.credentials.get() 返回的错误
         String errorMsgFromWebAuthnApi = params.getFirst(WebAuthnConstants.ERROR);
         if (StringUtil.isNotBlank(errorMsgFromWebAuthnApi)) {
             setErrorResponse(context, WEBAUTHN_ERROR_API_GET, errorMsgFromWebAuthnApi);
@@ -185,9 +195,9 @@ public class WebAuthnAuthenticator implements Authenticator, CredentialValidator
 
         final String userHandle = params.getFirst(WebAuthnConstants.USER_HANDLE);
         final String userId;
-        // existing User Handle means that the authenticator used Resident Key supported public key credential
+        // 存在 User Handle 表示使用了支持 Resident Key 的公钥凭证
         if (StringUtil.isBlank(userHandle)) {
-            // Resident Key not supported public key credential was used
+            // 未使用 Resident Key，依赖前置步骤已识别的用户
             // so rely on the user set in a previous step (if available)
             if (context.getUser() != null) {
                 userId = context.getUser().getId();
@@ -278,16 +288,19 @@ public class WebAuthnAuthenticator implements Authenticator, CredentialValidator
     }
 
     @Override
+    /** @return 双因素场景下要求前置步骤已识别用户 */
     public boolean requiresUser() {
         return true;
     }
 
     @Override
+    /** @return 用户是否已配置 WebAuthn 双因素凭证 */
     public boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user) {
         return user.credentialManager().isConfiguredFor(getCredentialType());
     }
 
     @Override
+    /** 若用户未注册 WebAuthn 凭证，添加注册必需操作。 */
     public void setRequiredActions(KeycloakSession session, RealmModel realm, UserModel user) {
         // ask the user to do required action to register webauthn authenticator
         AuthenticationSessionModel authenticationSession = session.getContext().getAuthenticationSession();
@@ -297,20 +310,24 @@ public class WebAuthnAuthenticator implements Authenticator, CredentialValidator
     }
 
     @Override
+    /** @return WebAuthn 注册必需操作工厂列表 */
     public List<RequiredActionFactory> getRequiredActions(KeycloakSession session) {
         return Collections.singletonList((WebAuthnRegisterFactory)session.getKeycloakSessionFactory().getProviderFactory(RequiredActionProvider.class, WebAuthnRegisterFactory.PROVIDER_ID));
     }
 
     @Override
+    /** 关闭认证器（无资源需释放）。 */
     public void close() {
         // NOP
     }
 
     @Override
+    /** @return WebAuthn 凭证 Provider */
     public WebAuthnCredentialProvider getCredentialProvider(KeycloakSession session) {
         return (WebAuthnCredentialProvider)session.getProvider(CredentialProvider.class, WebAuthnCredentialProviderFactory.PROVIDER_ID);
     }
 
+    /** 根据错误类型记录事件并返回对应失败响应。 */
     protected void setErrorResponse(AuthenticationFlowContext context, final String errorCase, final String errorMessage) {
         Response errorResponse = null;
         switch (errorCase) {
@@ -361,6 +378,7 @@ public class WebAuthnAuthenticator implements Authenticator, CredentialValidator
         }
     }
 
+    /** 构建 WebAuthn 错误页，已识别用户时附带可用认证器列表。 */
     protected Response createErrorResponse(AuthenticationFlowContext context, final String errorCase) {
         LoginFormsProvider provider = context.form().setError(errorCase, "");
         UserModel user = context.getUser();

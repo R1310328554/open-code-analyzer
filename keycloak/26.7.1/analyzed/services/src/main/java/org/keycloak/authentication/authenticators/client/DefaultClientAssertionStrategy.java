@@ -10,14 +10,20 @@ import org.keycloak.models.ClientModel;
 import org.keycloak.models.IdentityProviderModel;
 import org.keycloak.models.IdentityProviderType;
 
+/**
+ * 默认客户端断言策略：通过 JWT iss 查找 IdP，再按 federated subject 与 issuer 别名匹配本地客户端。
+ */
 public class DefaultClientAssertionStrategy implements ClientAssertionIdentityProviderFactory.ClientAssertionStrategy {
 
     @Override
+    /** @param assertionType 断言类型
+     * @return 是否为 JWT 客户端断言类型 */
     public boolean isSupportedAssertionType(String  assertionType) {
         return OAuth2Constants.CLIENT_ASSERTION_TYPE_JWT.equals(assertionType);
     }
 
     @Override
+    /** 根据 JWT iss/sub 查找联邦 IdP 及对应的本地客户端。 */
     public ClientAssertionIdentityProviderFactory.LookupResult lookup(ClientAuthenticationFlowContext context) throws Exception {
         ClientAssertionState clientAssertionState = context.getState(ClientAssertionState.class, ClientAssertionState.supplier());
         AlternativeLookupProvider lookupProvider = context.getSession().getProvider(AlternativeLookupProvider.class);

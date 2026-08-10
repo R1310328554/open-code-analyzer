@@ -54,9 +54,11 @@ import org.keycloak.utils.StringUtil;
  */
 public class ClientIdAndSecretAuthenticator extends AbstractClientAuthenticator {
 
+    /** Provider ID：client-secret。 */
     public static final String PROVIDER_ID = "client-secret";
 
     @Override
+    /** 从 Basic 头或表单参数提取 client_id/client_secret 并校验。 */
     public void authenticateClient(ClientAuthenticationFlowContext context) {
         String client_id = null;
         String clientSecret = null;
@@ -78,7 +80,7 @@ public class ClientIdAndSecretAuthenticator extends AbstractClientAuthenticator 
                 clientSecretRetrievalUsedMethod = OIDCLoginProtocol.CLIENT_SECRET_BASIC;
             } else {
 
-                // Don't send 401 if client_id parameter was sent in request. For example IE may automatically send "Authorization: Negotiate" in XHR requests even for public clients
+                // 若请求已含 client_id 则不返回 401（避免 IE 等自动发送 Negotiate 头干扰公开客户端）
                 if (formData != null && !formData.containsKey(OAuth2Constants.CLIENT_ID)) {
                     Response challengeResponse = Response.status(Response.Status.UNAUTHORIZED).header(HttpHeaders.WWW_AUTHENTICATE, "Basic realm=\"" + context.getRealm().getName() + "\"").build();
                     context.challenge(challengeResponse);
@@ -88,7 +90,7 @@ public class ClientIdAndSecretAuthenticator extends AbstractClientAuthenticator 
         }
 
         if (formData != null) {
-            // even if basic challenge response exist, we check if client id was explicitly set in the request as a form param,
+            // 即使存在 Basic 挑战，仍检查表单是否显式设置了 client_id，
             // so we can also support clients overriding flows and using challenges (e.g: basic) to authenticate their users
             if (formData.containsKey(OAuth2Constants.CLIENT_ID)) {
                 client_id = formData.getFirst(OAuth2Constants.CLIENT_ID);
@@ -124,7 +126,7 @@ public class ClientIdAndSecretAuthenticator extends AbstractClientAuthenticator 
             return;
         }
 
-        // Skip client_secret validation for public client
+        // 公开客户端跳过 client_secret 校验
         if (client.isPublicClient()) {
             context.success();
             return;
@@ -167,6 +169,7 @@ public class ClientIdAndSecretAuthenticator extends AbstractClientAuthenticator 
     }
 
     @Override
+    /** @return 管理控制台显示名称 */
     public String getDisplayType() {
         return "Client Id and Secret";
     }
@@ -182,6 +185,7 @@ public class ClientIdAndSecretAuthenticator extends AbstractClientAuthenticator 
     }
 
     @Override
+    /** @return 帮助说明：基于 client_id 与 client_secret 的客户端认证 */
     public String getHelpText() {
         return "Validates client based on 'client_id' and 'client_secret' sent either in request parameters or in 'Authorization: Basic' header";
     }
@@ -198,6 +202,7 @@ public class ClientIdAndSecretAuthenticator extends AbstractClientAuthenticator 
     }
 
     @Override
+    /** @return 适配器所需的 client secret 配置（优先从 vault 读取） */
     public Map<String, Object> getAdapterConfiguration(KeycloakSession session, ClientModel client) {
         Map<String, Object> result = new HashMap<>();
         String secret = client.getSecret();
@@ -206,6 +211,7 @@ public class ClientIdAndSecretAuthenticator extends AbstractClientAuthenticator 
     }
 
     @Override
+    /** @return Provider ID */
     public String getId() {
         return PROVIDER_ID;
     }
@@ -237,10 +243,12 @@ public class ClientIdAndSecretAuthenticator extends AbstractClientAuthenticator 
     }
 
     @Override
+    /** @return 本认证器支持客户端密钥 */
     public boolean supportsSecret() {
         return true;
     }
 
+    /** 记录无效客户端凭证并返回 401 错误。 */
     private void reportFailedAuth(ClientAuthenticationFlowContext context) {
         Response challengeResponse = ClientAuthUtil.errorResponse(Response.Status.UNAUTHORIZED.getStatusCode(), "unauthorized_client", "Invalid client or Invalid client credentials");
         context.failure(AuthenticationFlowError.INVALID_CLIENT_CREDENTIALS, challengeResponse);
