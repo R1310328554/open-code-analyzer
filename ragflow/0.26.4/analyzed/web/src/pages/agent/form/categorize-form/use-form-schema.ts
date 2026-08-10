@@ -1,7 +1,10 @@
+// use-form-schema.ts — Categorize 节点 Zod 校验：LLM 参数、历史窗口与分类 items。
+
 import { LlmSettingSchema } from '@/components/llm-setting-items/next';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 
+/** 构建 Categorize 表单 schema：query、parameter、LlmSetting 与 items 数组。 */
 export function useCreateCategorizeFormSchema() {
   const { t } = useTranslation();
 
@@ -31,6 +34,7 @@ export function useCreateCategorizeFormSchema() {
   return FormSchema;
 }
 
+/** useCreateCategorizeFormSchema 返回的 ZodObject 类型。 */
 export type CreateCategorizeFormSchema = ReturnType<
   typeof useCreateCategorizeFormSchema
 >;

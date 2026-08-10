@@ -1,3 +1,5 @@
+// use-watch-change.ts — Code 表单监听：arguments 对象化、output 契约序列化与语言切换。
+
 import { CodeTemplateStrMap, ProgrammingLanguage } from '@/constants/agent';
 import { isEmpty } from 'lodash';
 import { useCallback, useEffect } from 'react';
@@ -10,6 +12,7 @@ import {
   serializeCodeOutputContract,
 } from './utils';
 
+/** 将 arguments 数组还原为 DSL 所需的 Record<string, string>。 */
 function convertToObject(list: FormSchemaType['arguments'] = []) {
   return list.reduce<Record<string, string>>((pre, cur) => {
     pre[cur.name] = cur.type;
@@ -18,6 +21,7 @@ function convertToObject(list: FormSchemaType['arguments'] = []) {
   }, {});
 }
 
+/** 脏变更时写回 Code 节点：arguments 对象化，output 序列化为 outputs 并删顶层 output。 */
 export function useWatchFormChange(
   id?: string,
   form?: UseFormReturn<FormSchemaType>,
@@ -27,10 +31,11 @@ export function useWatchFormChange(
   const getNode = useGraphStore((state) => state.getNode);
 
   useEffect(() => {
-    // Manually triggered form updates are synchronized to the canvas
+    // 用户编辑触发的表单变更同步到画布
     if (id) {
       const values = form?.getValues() || watchedValues || {};
       const currentOutputs = getNode(id)?.data?.form?.outputs;
+      // 多 output 旧图且 output 字段未脏改时保留现有 outputs
       const shouldPreserveLegacyOutputs =
         hasLegacyMultiOutputs(currentOutputs) &&
         isEmpty(form?.formState.dirtyFields?.output);
@@ -66,6 +71,7 @@ export function useWatchFormChange(
   ]);
 }
 
+/** 切换编程语言时替换 script 模板，必要时补默认 output 并局部 updateNodeForm。 */
 export function useHandleLanguageChange(
   id?: string,
   form?: UseFormReturn<FormSchemaType>,

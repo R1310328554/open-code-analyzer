@@ -1,8 +1,11 @@
+// use-values.ts — Categorize 节点表单初始值：LLM 预设参数与 items 列表。
+
 import { ModelVariableType } from '@/constants/knowledge';
 import { RAGFlowNodeType } from '@/interfaces/database/agent';
 import { isEmpty, isPlainObject } from 'lodash';
 import { useMemo } from 'react';
 
+/** 空节点默认：Precise parameter、历史窗口 1 与各 LLM 开关启用。 */
 const defaultValues = {
   parameter: ModelVariableType.Precise,
   message_history_window_size: 1,
@@ -14,6 +17,7 @@ const defaultValues = {
   items: [],
 };
 
+/** 从 node.data.form 读取 Categorize 表单值，空则返回 defaultValues。 */
 export function useValues(node?: RAGFlowNodeType) {
   const values = useMemo(() => {
     const formData = node?.data?.form;

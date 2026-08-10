@@ -6,6 +6,8 @@
  *
  */
 
+// theme.ts — Prompt 编辑器 Lexical 主题：各节点/文本样式对应的 CSS class 名。
+
 export default {
   code: 'editor-code',
   heading: {
