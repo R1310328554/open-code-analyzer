@@ -15,23 +15,8 @@
     "rag/flow/parser/parser.py",
     "rag/flow/parser/pdf_chunk_metadata.py",
     "rag/flow/parser/schema.py",
-    "rag/flow/parser/utils.py",
-    "rag/flow/pipeline.py",
-    "rag/flow/tokenizer/__init__.py",
-    "rag/flow/tokenizer/schema.py",
-    "rag/flow/tokenizer/tokenizer.py",
-    "rag/graphrag/__init__.py",
-    "rag/graphrag/checkpoints.py",
-    "rag/graphrag/entity_resolution.py",
-    "rag/graphrag/entity_resolution_prompt.py",
-    "rag/graphrag/general/__init__.py",
-    "rag/graphrag/general/community_report_prompt.py",
-    "rag/graphrag/general/community_reports_extractor.py",
-    "rag/graphrag/general/entity_embedding.py",
-    "rag/graphrag/general/extractor.py",
-    "rag/graphrag/general/graph_extractor.py",
-    "rag/graphrag/general/graph_prompt.py"
+    "rag/flow/parser/utils.py"
   ],
   "remaining_pending": 534,
-  "done": 1200
+  "done": 1215
 }
