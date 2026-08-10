@@ -15,23 +15,8 @@
     "transport-classes-kqueue/src/main/java/io/netty/channel/kqueue/AbstractKQueueChannel.java",
     "transport-classes-kqueue/src/main/java/io/netty/channel/kqueue/AbstractKQueueDatagramChannel.java",
     "transport-classes-kqueue/src/main/java/io/netty/channel/kqueue/AbstractKQueueServerChannel.java",
-    "transport-classes-kqueue/src/main/java/io/netty/channel/kqueue/AbstractKQueueStreamChannel.java",
-    "transport-classes-kqueue/src/main/java/io/netty/channel/kqueue/AcceptFilter.java",
-    "transport-classes-kqueue/src/main/java/io/netty/channel/kqueue/BsdSocket.java",
-    "transport-classes-kqueue/src/main/java/io/netty/channel/kqueue/KQueue.java",
-    "transport-classes-kqueue/src/main/java/io/netty/channel/kqueue/KQueueChannelConfig.java",
-    "transport-classes-kqueue/src/main/java/io/netty/channel/kqueue/KQueueChannelOption.java",
-    "transport-classes-kqueue/src/main/java/io/netty/channel/kqueue/KQueueDatagramChannel.java",
-    "transport-classes-kqueue/src/main/java/io/netty/channel/kqueue/KQueueDatagramChannelConfig.java",
-    "transport-classes-kqueue/src/main/java/io/netty/channel/kqueue/KQueueDomainDatagramChannel.java",
-    "transport-classes-kqueue/src/main/java/io/netty/channel/kqueue/KQueueDomainDatagramChannelConfig.java",
-    "transport-classes-kqueue/src/main/java/io/netty/channel/kqueue/KQueueDomainSocketChannel.java",
-    "transport-classes-kqueue/src/main/java/io/netty/channel/kqueue/KQueueDomainSocketChannelConfig.java",
-    "transport-classes-kqueue/src/main/java/io/netty/channel/kqueue/KQueueEventArray.java",
-    "transport-classes-kqueue/src/main/java/io/netty/channel/kqueue/KQueueEventLoopGroup.java",
-    "transport-classes-kqueue/src/main/java/io/netty/channel/kqueue/KQueueIoEvent.java",
-    "transport-classes-kqueue/src/main/java/io/netty/channel/kqueue/KQueueIoHandle.java"
+    "transport-classes-kqueue/src/main/java/io/netty/channel/kqueue/AbstractKQueueStreamChannel.java"
   ],
   "remaining_pending": 98,
-  "done": 1800
+  "done": 1815
 }
