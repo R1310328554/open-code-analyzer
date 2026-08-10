@@ -16,6 +16,8 @@
 
 package oauth
 
+// github.go 实现 GitHub OAuth，补全隐藏邮箱用户的主邮箱。
+
 import (
 	"context"
 	"encoding/json"
@@ -25,10 +27,7 @@ import (
 	"strings"
 )
 
-// gitHubClient overrides the OAuth endpoints with GitHub's well-known URLs
-// and reaches into /user/emails to recover the primary email, since
-// GitHub's /user response omits it when the user has hidden email
-// visibility.
+// gitHubClient 使用 GitHub 固定端点，并从 /user/emails 获取主邮箱。
 type gitHubClient struct {
 	*oauthClient
 }
@@ -47,8 +46,7 @@ func newGitHubClient(cfg Config) (*gitHubClient, error) {
 	return &gitHubClient{oauthClient: base}, nil
 }
 
-// FetchUserInfo overrides the base implementation to merge the primary
-// email from /user/emails. Mirrors GithubOAuthClient.fetch_user_info.
+// FetchUserInfo 合并 /user 与 /user/emails 的主邮箱。
 func (c *gitHubClient) FetchUserInfo(ctx context.Context, accessToken, idToken string) (*UserInfo, error) {
 	raw, err := c.fetchUserinfoRaw(ctx, c.cfg.UserinfoURL, accessToken)
 	if err != nil {
@@ -94,7 +92,7 @@ func (c *gitHubClient) fetchPrimaryEmail(ctx context.Context, accessToken string
 			return addr, nil
 		}
 	}
-	// Fall back to the first verified email if no primary is flagged.
+	// 无 primary 标记时回退到首个已验证邮箱。
 	for _, e := range emails {
 		verified, _ := e["verified"].(bool)
 		addr, _ := e["email"].(string)
@@ -105,9 +103,7 @@ func (c *gitHubClient) fetchPrimaryEmail(ctx context.Context, accessToken string
 	return "", nil
 }
 
-// normalizeGitHubUserInfo mirrors GithubOAuthClient.normalize_user_info:
-// username comes from "login", nickname from "name", avatar from
-// "avatar_url".
+// normalizeGitHubUserInfo 按 GitHub 字段映射：login/name/avatar_url。
 func normalizeGitHubUserInfo(raw map[string]interface{}) *UserInfo {
 	ui := &UserInfo{}
 	if v, ok := raw["email"].(string); ok {
@@ -132,3 +128,4 @@ func normalizeGitHubUserInfo(raw map[string]interface{}) *UserInfo {
 	}
 	return ui
 }
+// github.go — GitHub OAuth 客户端，从 /user/emails 补全主邮箱。

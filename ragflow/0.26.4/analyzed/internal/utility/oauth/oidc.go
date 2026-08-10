@@ -16,6 +16,8 @@
 
 package oauth
 
+// oidc.go 实现 OIDC 客户端，自动发现授权/令牌/userinfo 端点。
+
 import (
 	"context"
 	"encoding/json"
@@ -25,16 +27,7 @@ import (
 	"strings"
 )
 
-// oidcClient is the OIDC flavor: it resolves the authorization /
-// token / userinfo URLs from the Issuer's discovery document
-// (.well-known/openid-configuration) before delegating the OAuth flow to
-// oauthClient.
-//
-// We do not currently verify or parse the id_token: id_token claims are
-// only used as enrichment in the Python implementation, and the /userinfo
-// endpoint (already called) returns the same canonical claims authenticated
-// via the access_token. Tracked as a follow-up to add full JWKS-based
-// id_token verification once a JWT library is vendored.
+// oidcClient 从 Issuer 发现文档解析端点后委托 oauthClient；暂不校验 id_token。
 type oidcClient struct {
 	*oauthClient
 	issuer string
@@ -67,7 +60,7 @@ func newOIDCClient(cfg Config) (*oidcClient, error) {
 	return &oidcClient{oauthClient: base, issuer: cfg.Issuer}, nil
 }
 
-// oidcMetadata is the subset of fields we use from the discovery document.
+// oidcMetadata 为发现文档中使用的字段子集。
 type oidcMetadata struct {
 	Issuer                string `json:"issuer"`
 	AuthorizationEndpoint string `json:"authorization_endpoint"`
@@ -76,8 +69,7 @@ type oidcMetadata struct {
 	JWKSURI               string `json:"jwks_uri"`
 }
 
-// loadOIDCMetadata is the indirection used to fetch a provider's discovery
-// document. Tests override it.
+// loadOIDCMetadata 获取 OIDC 发现文档，测试可覆盖。
 var loadOIDCMetadata = func(issuer string) (*oidcMetadata, error) {
 	metadataURL := strings.TrimRight(issuer, "/") + "/.well-known/openid-configuration"
 	ctx, cancel := context.WithTimeout(context.Background(), HTTPRequestTimeout)
@@ -105,3 +97,4 @@ var loadOIDCMetadata = func(issuer string) (*oidcMetadata, error) {
 	}
 	return meta, nil
 }
+// oidc.go — OIDC 客户端，通过 .well-known/openid-configuration 自动发现端点。

@@ -15,6 +15,8 @@
 
 package utility
 
+// version.go 读取 RAGFlow 版本号。
+
 import (
 	"os"
 	"os/exec"
@@ -28,8 +30,7 @@ var (
 	versionOnce        sync.Once
 )
 
-// GetRAGFlowVersion gets the RAGFlow version information
-// It reads from VERSION file or falls back to git describe command
+// GetRAGFlowVersion 获取 RAGFlow 版本（VERSION 文件或 git describe）。
 func GetRAGFlowVersion() string {
 	versionOnce.Do(func() {
 		ragflowVersionInfo = getRAGFlowVersionInternal()
@@ -37,17 +38,15 @@ func GetRAGFlowVersion() string {
 	return ragflowVersionInfo
 }
 
-// getRAGFlowVersionInternal internal function to get version
+// getRAGFlowVersionInternal 内部版本读取逻辑。
 func getRAGFlowVersionInternal() string {
-	// Get the path to VERSION file
-	// Assuming this file is in internal/utility, VERSION is in project root
+	// 从可执行文件向上查找 VERSION 文件
 	exePath, err := os.Executable()
 	if err != nil {
 		return getClosestTagAndCount()
 	}
 
-	// Try to find VERSION file in project root
-	// Start from executable directory and go up
+	// 最多向上 5 层目录查找 VERSION
 	dir := filepath.Dir(exePath)
 	for i := 0; i < 5; i++ { // Try up to 5 levels up
 		versionPath := filepath.Join(dir, "VERSION")
@@ -62,11 +61,11 @@ func getRAGFlowVersionInternal() string {
 		dir = parent
 	}
 
-	// Fallback to git command
+	// 回退到 git describe
 	return getClosestTagAndCount()
 }
 
-// getClosestTagAndCount gets version info from git describe command
+// getClosestTagAndCount 通过 git describe 获取最近 tag。
 func getClosestTagAndCount() string {
 	cmd := exec.Command("git", "describe", "--tags", "--match=v*", "--first-parent", "--always")
 	output, err := cmd.Output()
@@ -75,3 +74,4 @@ func getClosestTagAndCount() string {
 	}
 	return strings.TrimSpace(string(output))
 }
+// version.go — RAGFlow 版本号读取（VERSION 文件或 git describe 回退）。

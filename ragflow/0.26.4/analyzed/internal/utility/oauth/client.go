@@ -14,21 +14,9 @@
 //  limitations under the License.
 //
 
-// Package oauth ports the auth-client surface from api/apps/auth (Python)
-// to Go. It wires three flavors of OAuth/OIDC providers behind a common
-// Client interface so the login + callback handlers can stay flavor-blind:
-//
-//   - "oauth2": vanilla OAuth 2.0 authorization-code flow with a
-//     provider-supplied /userinfo endpoint
-//   - "oidc": OAuth 2.0 + OIDC discovery via .well-known/openid-configuration
-//   - "GitHub": OAuth 2.0 plus GitHub's split user / emails endpoints
-//
-// Note on OIDC ID-token validation: the Python OIDCClient verifies the
-// id_token signature against the discovered JWKS and pulls extra claims out
-// of it. We deliberately do not yet pull in a JWT library here; the
-// /userinfo endpoint returns the same claims authenticated via the
-// access_token, which is the path we use exclusively. This is documented on
-// OIDCClient and tracked as a follow-up.
+// Package oauth 将 Python api/apps/auth 认证客户端移植到 Go。
+// 统一 oauth2 / oidc / github 三种 OAuth 风格于 Client 接口。
+// 当前不校验 id_token 签名，仅通过 access_token 调用 /userinfo。
 package oauth
 
 import (
@@ -42,9 +30,7 @@ import (
 	"time"
 )
 
-// Config is the channel configuration consumed by NewClient. It mirrors the
-// shape of server.OAuthConfig but is copied here to keep this package free
-// of imports from the rest of the server.
+// Config 为 OAuth 渠道配置，独立于 server 包以避免循环依赖。
 type Config struct {
 	Type             string
 	ClientID         string
@@ -57,9 +43,7 @@ type Config struct {
 	Issuer           string
 }
 
-// UserInfo is the normalized user profile returned by FetchUserInfo. Email
-// is the only field treated as required by the callback handler; the rest
-// are best-effort.
+// UserInfo 为归一化用户资料；Email 为回调必需字段，其余尽力填充。
 type UserInfo struct {
 	Email     string `json:"email"`
 	Username  string `json:"username"`
@@ -67,15 +51,14 @@ type UserInfo struct {
 	AvatarURL string `json:"avatar_url"`
 }
 
-// Client is the auth-client surface used by the login + callback handlers.
+// Client 为登录与回调 Handler 使用的认证客户端接口。
 type Client interface {
 	AuthorizationURL(state string) (string, error)
 	ExchangeCodeForToken(ctx context.Context, code string) (*TokenResponse, error)
 	FetchUserInfo(ctx context.Context, accessToken, idToken string) (*UserInfo, error)
 }
 
-// TokenResponse is the subset of fields we use from the token endpoint
-// response.
+// TokenResponse 为令牌端点响应中使用的字段子集。
 type TokenResponse struct {
 	AccessToken string `json:"access_token"`
 	TokenType   string `json:"token_type,omitempty"`
@@ -84,12 +67,10 @@ type TokenResponse struct {
 	Scope       string `json:"scope,omitempty"`
 }
 
-// HTTPRequestTimeout is the per-request timeout applied to token and
-// userinfo calls. Matches the Python http_request_timeout (7s).
+// HTTPRequestTimeout 为 token/userinfo 请求超时，对齐 Python 7 秒。
 const HTTPRequestTimeout = 7 * time.Second
 
-// NewClient returns the Client implementation matching cfg.Type. When type
-// is empty, Issuer presence selects OIDC; otherwise OAuth2.
+// NewClient 按 cfg.Type 返回对应 Client；空类型时 Issuer 存在则选 OIDC。
 func NewClient(cfg Config) (Client, error) {
 	t := strings.ToLower(strings.TrimSpace(cfg.Type))
 	if t == "" {
@@ -111,8 +92,7 @@ func NewClient(cfg Config) (Client, error) {
 	}
 }
 
-// oauthClient is the base OAuth 2.0 implementation. The OIDC and GitHub
-// flavors embed it and override fetchUserInfo.
+// oauthClient 为基础 OAuth 2.0 实现；OIDC/GitHub 嵌入并覆盖 FetchUserInfo。
 type oauthClient struct {
 	cfg        Config
 	httpClient *http.Client
@@ -137,8 +117,7 @@ func newOAuthClient(cfg Config) (*oauthClient, error) {
 	}, nil
 }
 
-// AuthorizationURL builds the URL the browser should be redirected to.
-// Mirrors OAuthClient.get_authorization_url.
+// AuthorizationURL 构建浏览器跳转的授权 URL。
 func (c *oauthClient) AuthorizationURL(state string) (string, error) {
 	params := url.Values{}
 	params.Set("client_id", c.cfg.ClientID)
@@ -157,8 +136,7 @@ func (c *oauthClient) AuthorizationURL(state string) (string, error) {
 	return c.cfg.AuthorizationURL + sep + params.Encode(), nil
 }
 
-// ExchangeCodeForToken exchanges an authorization code for an access token.
-// Mirrors OAuthClient.exchange_code_for_token.
+// ExchangeCodeForToken 用授权码换取 access_token。
 func (c *oauthClient) ExchangeCodeForToken(ctx context.Context, code string) (*TokenResponse, error) {
 	form := url.Values{}
 	form.Set("client_id", c.cfg.ClientID)
@@ -190,8 +168,7 @@ func (c *oauthClient) ExchangeCodeForToken(ctx context.Context, code string) (*T
 
 	token := &TokenResponse{}
 	if jerr := json.Unmarshal(body, token); jerr != nil {
-		// Some providers (notably GitHub when Accept is not set) return
-		// application/x-www-form-urlencoded here instead of JSON.
+		// 部分提供商（如 GitHub）返回 form-urlencoded 而非 JSON。
 		if values, perr := url.ParseQuery(string(body)); perr == nil {
 			token.AccessToken = values.Get("access_token")
 			token.TokenType = values.Get("token_type")
@@ -207,8 +184,7 @@ func (c *oauthClient) ExchangeCodeForToken(ctx context.Context, code string) (*T
 	return token, nil
 }
 
-// FetchUserInfo fetches user information using the access token.
-// Mirrors OAuthClient.fetch_user_info / normalize_user_info.
+// FetchUserInfo 用 access_token 拉取用户信息并归一化。
 func (c *oauthClient) FetchUserInfo(ctx context.Context, accessToken, idToken string) (*UserInfo, error) {
 	if c.cfg.UserinfoURL == "" {
 		return nil, fmt.Errorf("failed to fetch user info: userinfo_url is required")
@@ -248,9 +224,7 @@ func (c *oauthClient) fetchUserinfoRaw(ctx context.Context, endpoint, accessToke
 	return out, nil
 }
 
-// normalizeUserInfo mirrors the Python normalize_user_info defaults: username
-// falls back to the email local part, nickname falls back to username, and
-// avatar_url falls back to OIDC's "picture" claim.
+// normalizeUserInfo 归一化用户资料：username/nickname/avatar 按 Python 默认回退。
 func normalizeUserInfo(raw map[string]interface{}) *UserInfo {
 	ui := &UserInfo{}
 	if v, ok := raw["email"].(string); ok {
@@ -277,3 +251,4 @@ func normalizeUserInfo(raw map[string]interface{}) *UserInfo {
 	}
 	return ui
 }
+// client.go — OAuth/OIDC/GitHub 统一认证客户端，移植自 Python api/apps/auth。

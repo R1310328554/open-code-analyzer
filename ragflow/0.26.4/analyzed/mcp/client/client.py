@@ -15,26 +15,35 @@
 #
 
 
+"""MCP SSE 客户端示例：连接 RAGFlow 并调用 ragflow_retrieval 工具。"""
+
 from mcp.client.session import ClientSession
 from mcp.client.sse import sse_client
 
 
 async def main():
     try:
-        # To access RAGFlow server in `host` mode, you need to attach `api_key` for each request to indicate identification.
-        # async with sse_client("http://localhost:9382/sse", headers={"api_key": "ragflow-IyMGI1ZDhjMTA2ZTExZjBiYTMyMGQ4Zm"}) as streams:
-        # Or follow the requirements of OAuth 2.1 Section 5 with Authorization header
-        # async with sse_client("http://localhost:9382/sse", headers={"Authorization": "Bearer ragflow-IyMGI1ZDhjMTA2ZTExZjBiYTMyMGQ4Zm"}) as streams:
+        # host 模式下需在请求头附加 api_key 标识身份。
+        # async with sse_client("http://localhost:9382/sse", headers={"api_key": "..."}) as streams:
+        # 或使用 OAuth 2.1 Section 5 要求的 Authorization: Bearer 头。
+        # async with sse_client(..., headers={"Authorization": "Bearer ..."}) as streams:
 
         async with sse_client("http://localhost:9382/sse") as streams:
             async with ClientSession(
                 streams[0],
                 streams[1],
             ) as session:
-                await session.initialize()
-                tools = await session.list_tools()
+                await session.initialize()  # 初始化 MCP 会话
+                tools = await session.list_tools()  # 列出可用工具
                 print(f"{tools.tools=}")
-                response = await session.call_tool(name="ragflow_retrieval", arguments={"dataset_ids": ["ce3bb17cf27a11efa69751e139332ced"], "document_ids": [], "question": "How to install neovim?"})
+                response = await session.call_tool(  # 调用 ragflow_retrieval 检索工具
+                    name="ragflow_retrieval",
+                    arguments={
+                        "dataset_ids": ["ce3bb17cf27a11efa69751e139332ced"],
+                        "document_ids": [],
+                        "question": "How to install neovim?",
+                    },
+                )
                 print(f"Tool response: {response.model_dump()}")
 
     except Exception as e:
@@ -45,3 +54,4 @@ if __name__ == "__main__":
     from anyio import run
 
     run(main)
+# client.py — MCP SSE 客户端示例：连接 RAGFlow 服务器并调用 ragflow_retrieval 工具。

@@ -16,6 +16,8 @@
 
 package utility
 
+// ssrf.go 提供 SSRF 防护与 DNS 固定 HTTP 客户端。
+
 import (
 	"context"
 	"fmt"
@@ -28,41 +30,21 @@ import (
 	"time"
 )
 
-// AllowedURLSchemes are the schemes accepted by AssertURLSafe.
+// AllowedURLSchemes 为 AssertURLSafe 允许的 URL scheme（http/https）。
 var AllowedURLSchemes = []string{"http", "https"}
 
-// LookupHost is the indirection used to resolve hostnames. Tests override it.
+// LookupHost 为 DNS 解析函数，测试可覆盖。
 var LookupHost = net.LookupHost
 
-// AllowAnyHostForTest is a test-only override that bypasses the
-// SSRF guard (no public-IP check, no DNS resolution, no DNS
-// pinning). Production code MUST leave this at its zero value
-// (false). Tests that need to talk to a local httptest server
-// flip it on and reset it in t.Cleanup.
-//
-// The previous form (env-var ALLOW_ANY_HOST) was a live runtime
-// toggle that any operator could flip to disable the SSRF guard
-// globally — including the DNS pinning that the Invoke component
-// relies on. PR review round 6, Major #3: this variable lives in
-// process memory only, so it cannot be enabled by an env var or
-// a deployment mistake. The explicit "_ForTest" suffix is the
-// signal that production code must never touch it.
+// AllowAnyHostForTest 为测试专用开关，生产代码必须保持 false。
 var AllowAnyHostForTest = false
 
-// allowAnyHost reads the test-only override. Kept as a private
-// helper so the call sites don't all have to know about the
-// exported variable name.
+// allowAnyHost 读取测试专用 SSRF 绕过开关。
 func allowAnyHost() bool {
 	return AllowAnyHostForTest
 }
 
-// AssertURLSafe parses rawURL and rejects it if the scheme is disallowed,
-// the host is missing, or any resolved IP is not globally routable
-// (private, loopback, link-local, multicast, reserved). Returns the hostname
-// and the first validated public IP so callers can DNS-pin the address and
-// prevent rebinding between validation and the actual TCP connection.
-//
-// Mirrors common/ssrf_guard.py:assert_url_is_safe.
+// AssertURLSafe 校验 URL 并拒绝非公网 IP，返回主机名与首个公网 IP 供 DNS 固定。
 func AssertURLSafe(rawURL string) (hostname, resolvedIP string, err error) {
 	parsed, err := url.Parse(strings.TrimSpace(rawURL))
 	if err != nil {
@@ -105,9 +87,7 @@ func AssertURLSafe(rawURL string) (hostname, resolvedIP string, err error) {
 	return hostname, resolvedIP, nil
 }
 
-// effectiveIP unwraps IPv4-mapped IPv6 addresses (e.g. ::ffff:127.0.0.1) so
-// the routability check sees the IPv4 form. Without this, an attacker could
-// bypass the guard with an IPv4-mapped IPv6 representation of a private host.
+// effectiveIP 解包 IPv4-mapped IPv6，防止绕过私网检测。
 func effectiveIP(ip net.IP) net.IP {
 	if v4 := ip.To4(); v4 != nil {
 		return v4
@@ -115,24 +95,21 @@ func effectiveIP(ip net.IP) net.IP {
 	return ip
 }
 
-// isGlobalIP mirrors Python's ipaddress.IPv*Address.is_global: an address is
-// global if it is none of {unspecified, loopback, multicast, link-local,
-// private (including CGNAT and IPv6 ULA), benchmarking, documentation,
-// reserved}.
+// isGlobalIP 判断是否为全球可路由公网地址，对齐 Python ipaddress.is_global。
 func isGlobalIP(ip net.IP) bool {
 	if ip == nil || ip.IsUnspecified() || ip.IsLoopback() || ip.IsMulticast() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip.IsInterfaceLocalMulticast() || ip.IsPrivate() {
 		return false
 	}
 	if v4 := ip.To4(); v4 != nil {
-		// CGNAT 100.64.0.0/10 — not flagged by IsPrivate in older Go versions.
+		// CGNAT 100.64.0.0/10 — 旧版 Go IsPrivate 未覆盖
 		if v4[0] == 100 && v4[1]&0xC0 == 64 {
 			return false
 		}
-		// 192.0.0.0/24 reserved for IETF protocol assignments.
+		// 192.0.0.0/24 IETF 协议保留段
 		if v4[0] == 192 && v4[1] == 0 && v4[2] == 0 {
 			return false
 		}
-		// 192.0.2.0/24, 198.51.100.0/24, 203.0.113.0/24 documentation (TEST-NET-1/2/3).
+		// TEST-NET 文档地址段
 		if v4[0] == 192 && v4[1] == 0 && v4[2] == 2 {
 			return false
 		}
@@ -142,20 +119,20 @@ func isGlobalIP(ip net.IP) bool {
 		if v4[0] == 203 && v4[1] == 0 && v4[2] == 113 {
 			return false
 		}
-		// 198.18.0.0/15 benchmarking.
+		// 198.18.0.0/15 基准测试段
 		if v4[0] == 198 && (v4[1] == 18 || v4[1] == 19) {
 			return false
 		}
-		// 240.0.0.0/4 reserved (excluding 255.255.255.255 which IsUnspecified misses).
+		// 240.0.0.0/4 保留段
 		if v4[0] >= 240 {
 			return false
 		}
 	} else if v6 := ip.To16(); v6 != nil {
-		// 2001:db8::/32 documentation prefix.
+		// 2001:db8::/32 IPv6 文档前缀
 		if v6[0] == 0x20 && v6[1] == 0x01 && v6[2] == 0x0d && v6[3] == 0xb8 {
 			return false
 		}
-		// 100::/64 discard-only address block.
+		// 100::/64 仅丢弃地址块
 		if v6[0] == 0x01 && v6[1] == 0x00 && allZero(v6[2:8]) {
 			return false
 		}
@@ -172,19 +149,14 @@ func allZero(b []byte) bool {
 	return true
 }
 
-// PinnedHTTPClient returns an HTTP client whose Transport rewrites every
-// outbound dial for hostname:port to resolvedIP:port, closing the TOCTOU
-// window between AssertURLSafe and the actual TCP connection. Pins are
-// scoped to this client only.
+// PinnedHTTPClient 返回 DNS 固定 HTTP 客户端，消除校验与连接间的 TOCTOU 窗口。
 func PinnedHTTPClient(hostname, resolvedIP string, timeout time.Duration) *http.Client {
 	dialer := &net.Dialer{
 		Timeout:   timeout,
 		KeepAlive: 30 * time.Second,
 	}
 	transport := &http.Transport{
-		// Disable environment proxy: HTTP_PROXY / HTTPS_PROXY would route
-		// the connection through the proxy host instead of the pinned
-		// resolvedIP, bypassing the SSRF guard.
+		// 禁用环境代理，防止绕过 DNS 固定
 		Proxy: nil,
 		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 			host, port, splitErr := net.SplitHostPort(addr)
@@ -203,3 +175,4 @@ func PinnedHTTPClient(hostname, resolvedIP string, timeout time.Duration) *http.
 		Timeout:   timeout,
 	}
 }
+// ssrf.go — SSRF 防护：URL 校验、公网 IP 过滤与 DNS 固定 HTTP 客户端。

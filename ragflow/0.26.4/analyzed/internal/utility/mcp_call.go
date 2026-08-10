@@ -14,16 +14,9 @@
 //  limitations under the License.
 //
 
-// Phase 3.7: MCP tools/call implementation. The mcp_client.go
-// file handles tools/list discovery; this file adds the
-// tools/call invocation path so the MCPToolAdapter can return
-// real results instead of "not yet implemented" errors.
-//
-// The implementation focuses on the streamable-HTTP transport
-// (spec 2025-03-26) because that is the dominant transport for
-// modern MCP servers. The legacy SSE transport's session
-// lifecycle is more complex; deferring it matches the rest of
-// the package's "loud-fail with a clear error" pattern.
+// Phase 3.7：MCP tools/call 实现。mcp_client.go 负责 tools/list 发现；
+// 本文件补充 tools/call 调用路径，使 MCPToolAdapter 返回真实结果。
+// 优先实现 streamable-HTTP（2025-03-26 规范）；legacy SSE 会话较复杂，暂推迟。
 
 package utility
 
@@ -36,10 +29,7 @@ import (
 	"time"
 )
 
-// CallOptions controls a single tools/call invocation. The same
-// URL safety / DNS pinning guarantees that FetchTools applies
-// (AssertURLSafe + PinnedHTTPClient) are reused so this path
-// cannot be coerced into SSRF via a malicious MCP server.
+// CallOptions 控制单次 tools/call 调用，复用 FetchTools 的 URL 安全与 DNS 固定。
 type CallOptions struct {
 	URL        string
 	ServerType string
@@ -51,28 +41,14 @@ type CallOptions struct {
 	HTTPClient *http.Client
 }
 
-// CallResult is the parsed tools/call response. The MCP spec
-// (2025-03-26 §4.3) defines the result envelope as
-// { "content": [ ... ], "isError": bool } where each content
-// entry is one of {type: "text", text: "..."} or {type:
-// "image"|"audio"|"resource", ...}.
-//
-// For the Phase 3.7 milestone the Go side surfaces Text
-// (concatenated text content) and the structured content list
-// so callers can branch on type when they care. IsError is
-// surfaced so a tool that returns a structured error message
-// (rather than a JSON-RPC error) is still distinguishable.
+// CallResult 为 tools/call 响应：Text 拼接文本块，Content 保留结构化内容，IsError 标识工具级错误。
 type CallResult struct {
 	Text    string           `json:"text"`
 	Content []map[string]any `json:"content"`
 	IsError bool             `json:"is_error"`
 }
 
-// CallTool invokes an MCP tool by name. URL safety is enforced
-// the same way FetchTools does it; the same protocol constants
-// (protocolVersion, clientName, etc.) apply. The session is
-// per-call (initialize + notifications/initialized +
-// tools/call) — a future optimization can pool sessions.
+// CallTool 按名称调用 MCP 工具；每调用独立会话（initialize → initialized → tools/call）。
 func CallTool(ctx context.Context, opts CallOptions) (*CallResult, error) {
 	if opts.URL == "" {
 		return nil, errors.New("Invalid url.")
@@ -99,9 +75,7 @@ func CallTool(ctx context.Context, opts CallOptions) (*CallResult, error) {
 
 	switch opts.ServerType {
 	case TransportStreamableHTTP, "":
-		// Empty ServerType is treated as streamable-http because
-		// that is the default per the spec. Servers explicitly
-		// declaring the legacy SSE transport get the legacy path.
+		// 空 ServerType 默认 streamable-http；显式声明 SSE 时走 legacy 路径。
 		return callToolStreamableHTTP(connectCtx, opts.URL, headers, opts.HTTPClient, opts.ToolName, opts.Arguments)
 	case TransportSSE:
 		return nil, errors.New("MCP tools/call on legacy SSE transport is not yet implemented in Go (Phase 3.7 deferred; use streamable-http)")
@@ -110,10 +84,7 @@ func CallTool(ctx context.Context, opts CallOptions) (*CallResult, error) {
 	}
 }
 
-// callToolStreamableHTTP drives the streamable-HTTP session:
-// initialize → notifications/initialized → tools/call. The
-// session is torn down at the end (the server is free to
-// garbage-collect the session id; future calls re-initialize).
+// callToolStreamableHTTP 驱动 streamable-HTTP 会话：initialize → initialized → tools/call。
 func callToolStreamableHTTP(ctx context.Context, endpoint string, headers map[string]string, client *http.Client, toolName string, args json.RawMessage) (*CallResult, error) {
 	sessionID, initRes, err := streamableSend(ctx, client, endpoint, "", headers, jsonRPCRequest{
 		JSONRPC: jsonRPCVersion,
@@ -159,12 +130,7 @@ func callToolStreamableHTTP(ctx context.Context, endpoint string, headers map[st
 	return parseCallResult(callRes.Result)
 }
 
-// parseCallResult decodes the tools/call response envelope.
-// The result is { "content": [ {type, ...}, ...], "isError":
-// bool }. Text content blocks are concatenated into Result.Text
-// (most agents consume a single string); the full Content
-// slice is preserved for callers that need to distinguish
-// text / image / resource blocks.
+// parseCallResult 解析 tools/call 响应，文本块拼接为 Text，完整 Content 保留供类型分支。
 func parseCallResult(raw json.RawMessage) (*CallResult, error) {
 	if len(raw) == 0 {
 		return &CallResult{}, nil
@@ -194,3 +160,4 @@ func parseCallResult(raw json.RawMessage) (*CallResult, error) {
 	}
 	return out, nil
 }
+// mcp_call.go — MCP tools/call 调用实现（streamable-HTTP 传输），复用 SSRF 防护与 DNS 固定。

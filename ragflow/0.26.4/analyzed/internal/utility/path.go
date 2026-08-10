@@ -16,6 +16,8 @@ limitations under the License.
 
 package utility
 
+// path.go 解析项目根目录与 conf 配置文件路径。
+
 import (
 	"fmt"
 	"os"
@@ -23,9 +25,9 @@ import (
 	"runtime"
 )
 
-// GetProjectRoot returns the project root directory
+// GetProjectRoot 返回项目根目录（环境变量 → go.mod 向上 → 可执行文件上级）。
 func GetProjectRoot() string {
-	// Try environment variable first
+	// 优先读取环境变量 RAGFLOW_CONF_DIR / RAG_PROJECT_BASE / RAG_DEPLOY_BASE
 	if confDir := os.Getenv("RAGFLOW_CONF_DIR"); confDir != "" {
 		return confDir
 	}
@@ -36,7 +38,7 @@ func GetProjectRoot() string {
 		return d
 	}
 
-	// Find project root by looking for go.mod from this source file.
+	// 从当前源文件向上查找 go.mod
 	_, curFile, _, ok := runtime.Caller(0)
 	if ok {
 		dir := filepath.Dir(curFile)
@@ -52,7 +54,7 @@ func GetProjectRoot() string {
 		}
 	}
 
-	// Deployment binaries are normally at <project_root>/bin/.
+	// 部署二进制通常在 <project_root>/bin/，取其上两级
 	exe, err := os.Executable()
 	if err != nil {
 		return "."
@@ -109,3 +111,4 @@ func FindConfFileInProject(fileName string) (*string, error) {
 		dir = parent
 	}
 }
+// path.go — 项目根目录与 conf 配置文件路径解析（环境变量 / go.mod / 可执行文件）。

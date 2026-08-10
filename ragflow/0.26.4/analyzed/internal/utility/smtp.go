@@ -16,6 +16,8 @@
 
 package utility
 
+// smtp.go 实现密码重置 OTP 邮件发送。
+
 import (
 	"crypto/tls"
 	"fmt"
@@ -28,26 +30,21 @@ import (
 	"go.uber.org/zap"
 )
 
-// SMTPNotConfiguredError is returned when an SMTP send is attempted but the
-// active config has no mail server. Lets the caller distinguish a config
-// problem from a transient delivery failure.
+// SMTPNotConfiguredError 表示未配置邮件服务器。
 type SMTPNotConfiguredError struct{}
 
 func (SMTPNotConfiguredError) Error() string {
 	return "SMTP is not configured"
 }
 
-// SMTPInsecureAuthError is returned when authentication is requested over
-// an unencrypted SMTP connection (neither MailUseSSL nor MailUseTLS set).
-// Sending credentials in the clear is refused on principle.
+// SMTPInsecureAuthError 表示拒绝在明文连接上认证。
 type SMTPInsecureAuthError struct{}
 
 func (SMTPInsecureAuthError) Error() string {
 	return "SMTP authentication refused over plaintext connection (set mail_use_ssl or mail_use_tls)"
 }
 
-// SendResetCodeEmail delivers the password-reset OTP email. It is the Go
-// analogue of:
+// SendResetCodeEmail 发送密码重置 OTP 邮件，对齐 Python send_email_html。
 //
 //	await send_email_html(
 //	    subject="Your Password Reset Code",
@@ -93,8 +90,7 @@ func SendResetCodeEmail(cfg common.SMTPConfig, toEmail, otp string, ttlMinutes i
 	return nil
 }
 
-// buildPlainEmail composes an RFC 5322 plain-text message. CRLF line
-// endings are required by the SMTP DATA spec.
+// buildPlainEmail 组装 RFC 5322 纯文本邮件（CRLF 换行）。
 func buildPlainEmail(from, to, subject, body string) []byte {
 	headers := []string{
 		"From: " + from,
@@ -107,13 +103,7 @@ func buildPlainEmail(from, to, subject, body string) []byte {
 	return []byte(strings.Join(headers, "\r\n") + "\r\n\r\n" + body)
 }
 
-// sendMail dispatches the message over implicit TLS, STARTTLS, or plain
-// — matching how the Python aiosmtplib client is configured by the
-// `mail_use_ssl` / `mail_use_tls` flags.
-//
-// Authentication is only attempted over an encrypted session. If the
-// caller asks for auth (MailUsername set) on a plaintext connection,
-// SMTPInsecureAuthError is returned before any credential is written.
+// sendMail 按 MailUseSSL/MailUseTLS 选择隐式 TLS、STARTTLS 或明文；明文拒绝认证。
 func sendMail(cfg common.SMTPConfig, from, to string, msg []byte) error {
 	if cfg.MailUsername != "" && !cfg.MailUseSSL && !cfg.MailUseTLS {
 		return SMTPInsecureAuthError{}
@@ -123,7 +113,7 @@ func sendMail(cfg common.SMTPConfig, from, to string, msg []byte) error {
 	auth := smtp.PlainAuth("", cfg.MailUsername, cfg.MailPassword, cfg.MailServer)
 
 	if cfg.MailUseSSL {
-		// Implicit TLS (typical port 465). Dial TLS first, then SMTP.
+		// 隐式 TLS（通常 465 端口）：先 TLS 再 SMTP。
 		tlsCfg := &tls.Config{
 			ServerName: cfg.MailServer,
 			MinVersion: tls.VersionTLS12,
@@ -146,7 +136,7 @@ func sendMail(cfg common.SMTPConfig, from, to string, msg []byte) error {
 		return deliverMail(client, from, to, msg)
 	}
 
-	// STARTTLS (typical port 587) or plain (auth refused above).
+	// STARTTLS（通常 587）或明文（上方已拒绝认证）。
 	client, err := smtp.Dial(addr)
 	if err != nil {
 		return fmt.Errorf("SMTP dial: %w", err)
@@ -166,7 +156,7 @@ func sendMail(cfg common.SMTPConfig, from, to string, msg []byte) error {
 			}
 		}
 	}
-	// Plaintext: no auth performed (refused at the top of the function).
+	// 明文模式不执行认证。
 	return deliverMail(client, from, to, msg)
 }
 
@@ -195,3 +185,4 @@ func deliverMail(client *smtp.Client, from, to string, msg []byte) error {
 	}
 	return nil
 }
+// smtp.go — 密码重置 OTP 邮件发送（隐式 TLS / STARTTLS / 明文，拒绝明文认证）。

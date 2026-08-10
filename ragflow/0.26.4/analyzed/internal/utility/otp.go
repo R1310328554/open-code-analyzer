@@ -14,9 +14,7 @@
 //  limitations under the License.
 //
 
-// OTP / captcha helpers for the forgot-password flow.
-// Constants and key shapes mirror api/utils/web_utils.py so the Python
-// and Go backends share the same Redis namespace and contract.
+// otp.go 提供忘记密码 OTP/验证码辅助函数，Redis 键与 Python web_utils 对齐。
 package utility
 
 import (
@@ -30,7 +28,7 @@ import (
 	"time"
 )
 
-// Forgot-password constants — match api/utils/web_utils.py.
+// 忘记密码常量，对齐 api/utils/web_utils.py。
 const (
 	OTPLength              = 4
 	OTPTTL                 = 5 * time.Minute
@@ -155,3 +153,4 @@ func randomStringFromAlphabet(alphabet string, length int) (string, error) {
 	}
 	return string(out), nil
 }
+// otp.go — 忘记密码流程的 OTP/验证码生成、哈希与 Redis 键命名（对齐 Python web_utils）。

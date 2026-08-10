@@ -16,6 +16,8 @@
 
 package utility
 
+// http_client.go 提供带 Builder 模式的可配置 HTTP 客户端。
+
 import (
 	"bytes"
 	"crypto/tls"
@@ -26,7 +28,7 @@ import (
 	"time"
 )
 
-// HTTPClient is a configurable HTTP client
+// HTTPClient 是可配置的 HTTP 客户端，封装主机、端口、SSL、超时与请求头。
 type HTTPClient struct {
 	host       string
 	port       int
@@ -36,12 +38,12 @@ type HTTPClient struct {
 	httpClient *http.Client
 }
 
-// HTTPClientBuilder is a builder for HTTPClient
+// HTTPClientBuilder 用于链式构建 HTTPClient。
 type HTTPClientBuilder struct {
 	client *HTTPClient
 }
 
-// NewHTTPClientBuilder creates a new HTTPClientBuilder with default values
+// NewHTTPClientBuilder 创建 Builder，默认 localhost:80、30s 超时。
 func NewHTTPClientBuilder() *HTTPClientBuilder {
 	return &HTTPClientBuilder{
 		client: &HTTPClient{
@@ -54,37 +56,37 @@ func NewHTTPClientBuilder() *HTTPClientBuilder {
 	}
 }
 
-// WithHost sets the host
+// WithHost 设置目标主机。
 func (b *HTTPClientBuilder) WithHost(host string) *HTTPClientBuilder {
 	b.client.host = host
 	return b
 }
 
-// WithPort sets the port
+// WithPort 设置目标端口。
 func (b *HTTPClientBuilder) WithPort(port int) *HTTPClientBuilder {
 	b.client.port = port
 	return b
 }
 
-// WithSSL enables or disables SSL
+// WithSSL 启用或禁用 HTTPS（关闭时允许 InsecureSkipVerify）。
 func (b *HTTPClientBuilder) WithSSL(useSSL bool) *HTTPClientBuilder {
 	b.client.useSSL = useSSL
 	return b
 }
 
-// WithTimeout sets the timeout duration
+// WithTimeout 设置请求超时。
 func (b *HTTPClientBuilder) WithTimeout(timeout time.Duration) *HTTPClientBuilder {
 	b.client.timeout = timeout
 	return b
 }
 
-// WithHeader adds a single header
+// WithHeader 添加单个请求头。
 func (b *HTTPClientBuilder) WithHeader(key, value string) *HTTPClientBuilder {
 	b.client.headers[key] = value
 	return b
 }
 
-// WithHeaders sets multiple headers
+// WithHeaders 批量设置请求头。
 func (b *HTTPClientBuilder) WithHeaders(headers map[string]string) *HTTPClientBuilder {
 	for key, value := range headers {
 		b.client.headers[key] = value
@@ -92,7 +94,7 @@ func (b *HTTPClientBuilder) WithHeaders(headers map[string]string) *HTTPClientBu
 	return b
 }
 
-// Build creates the HTTPClient
+// Build 构建并返回配置完成的 HTTPClient。
 func (b *HTTPClientBuilder) Build() *HTTPClient {
 	transport := &http.Transport{
 		TLSClientConfig: &tls.Config{
@@ -100,7 +102,7 @@ func (b *HTTPClientBuilder) Build() *HTTPClient {
 		},
 	}
 
-	// If SSL is disabled, allow insecure connections
+	// 未启用 SSL 时允许跳过证书校验（内网/开发场景）
 	if !b.client.useSSL {
 		transport.TLSClientConfig.InsecureSkipVerify = true
 	}
@@ -113,43 +115,43 @@ func (b *HTTPClientBuilder) Build() *HTTPClient {
 	return b.client
 }
 
-// SetHost sets the host
+// SetHost 运行时修改主机。
 func (c *HTTPClient) SetHost(host string) {
 	c.host = host
 }
 
-// SetPort sets the port
+// SetPort 运行时修改端口。
 func (c *HTTPClient) SetPort(port int) {
 	c.port = port
 }
 
-// SetSSL enables or disables SSL
+// SetSSL 运行时切换 SSL。
 func (c *HTTPClient) SetSSL(useSSL bool) {
 	c.useSSL = useSSL
 }
 
-// SetTimeout sets the timeout duration
+// SetTimeout 运行时修改超时并同步更新 http.Client。
 func (c *HTTPClient) SetTimeout(timeout time.Duration) {
 	c.timeout = timeout
 	c.httpClient.Timeout = timeout
 }
 
-// SetHeader sets a single header
+// SetHeader 设置单个请求头。
 func (c *HTTPClient) SetHeader(key, value string) {
 	c.headers[key] = value
 }
 
-// SetHeaders sets multiple headers
+// SetHeaders 替换全部请求头。
 func (c *HTTPClient) SetHeaders(headers map[string]string) {
 	c.headers = headers
 }
 
-// AddHeader adds a header without removing existing ones
+// AddHeader 追加请求头，保留已有项。
 func (c *HTTPClient) AddHeader(key, value string) {
 	c.headers[key] = value
 }
 
-// GetHeaders returns a copy of all headers
+// GetHeaders 返回请求头副本，避免外部修改。
 func (c *HTTPClient) GetHeaders() map[string]string {
 	headersCopy := make(map[string]string)
 	for k, v := range c.headers {
@@ -158,7 +160,7 @@ func (c *HTTPClient) GetHeaders() map[string]string {
 	return headersCopy
 }
 
-// GetBaseURL returns the base URL
+// GetBaseURL 返回 scheme://host:port 形式的基础 URL。
 func (c *HTTPClient) GetBaseURL() string {
 	scheme := "http"
 	if c.useSSL {
@@ -167,7 +169,7 @@ func (c *HTTPClient) GetBaseURL() string {
 	return fmt.Sprintf("%s://%s:%d", scheme, c.host, c.port)
 }
 
-// GetFullURL returns the full URL for a given path
+// GetFullURL 拼接基础 URL 与路径（自动补前导 /）。
 func (c *HTTPClient) GetFullURL(path string) string {
 	baseURL := c.GetBaseURL()
 	// Ensure path starts with /
@@ -177,14 +179,14 @@ func (c *HTTPClient) GetFullURL(path string) string {
 	return baseURL + path
 }
 
-// prepareRequest creates an HTTP request with configured headers
+// prepareRequest 创建带已配置请求头的 HTTP 请求。
 func (c *HTTPClient) prepareRequest(method, urlStr string, body io.Reader) (*http.Request, error) {
 	req, err := http.NewRequest(method, urlStr, body)
 	if err != nil {
 		return nil, err
 	}
 
-	// Add configured headers
+	// 注入 Builder/Set 阶段配置的请求头
 	for key, value := range c.headers {
 		req.Header.Set(key, value)
 	}
@@ -192,7 +194,7 @@ func (c *HTTPClient) prepareRequest(method, urlStr string, body io.Reader) (*htt
 	return req, nil
 }
 
-// Get performs a GET request
+// Get 发起 GET 请求。
 func (c *HTTPClient) Get(path string) (*http.Response, error) {
 	urlStr := c.GetFullURL(path)
 	req, err := c.prepareRequest(http.MethodGet, urlStr, nil)
@@ -202,7 +204,7 @@ func (c *HTTPClient) Get(path string) (*http.Response, error) {
 	return c.httpClient.Do(req)
 }
 
-// GetWithParams performs a GET request with query parameters
+// GetWithParams 发起带 query 参数的 GET 请求。
 func (c *HTTPClient) GetWithParams(path string, params map[string]string) (*http.Response, error) {
 	urlStr := c.GetFullURL(path)
 	u, err := url.Parse(urlStr)
@@ -223,7 +225,7 @@ func (c *HTTPClient) GetWithParams(path string, params map[string]string) (*http
 	return c.httpClient.Do(req)
 }
 
-// Post performs a POST request
+// Post 发起 POST 请求。
 func (c *HTTPClient) Post(path string, body []byte) (*http.Response, error) {
 	urlStr := c.GetFullURL(path)
 	req, err := c.prepareRequest(http.MethodPost, urlStr, bytes.NewReader(body))
@@ -233,13 +235,13 @@ func (c *HTTPClient) Post(path string, body []byte) (*http.Response, error) {
 	return c.httpClient.Do(req)
 }
 
-// PostJSON performs a POST request with JSON content type
+// PostJSON 以 application/json 发起 POST。
 func (c *HTTPClient) PostJSON(path string, body []byte) (*http.Response, error) {
 	c.SetHeader("Content-Type", "application/json")
 	return c.Post(path, body)
 }
 
-// Put performs a PUT request
+// Put 发起 PUT 请求。
 func (c *HTTPClient) Put(path string, body []byte) (*http.Response, error) {
 	urlStr := c.GetFullURL(path)
 	req, err := c.prepareRequest(http.MethodPut, urlStr, bytes.NewReader(body))
@@ -249,7 +251,7 @@ func (c *HTTPClient) Put(path string, body []byte) (*http.Response, error) {
 	return c.httpClient.Do(req)
 }
 
-// Delete performs a DELETE request
+// Delete 发起 DELETE 请求。
 func (c *HTTPClient) Delete(path string) (*http.Response, error) {
 	urlStr := c.GetFullURL(path)
 	req, err := c.prepareRequest(http.MethodDelete, urlStr, nil)
@@ -259,7 +261,7 @@ func (c *HTTPClient) Delete(path string) (*http.Response, error) {
 	return c.httpClient.Do(req)
 }
 
-// Do performs a request with the given method
+// Do 以指定 HTTP 方法发起通用请求。
 func (c *HTTPClient) Do(method, path string, body []byte) (*http.Response, error) {
 	urlStr := c.GetFullURL(path)
 	var bodyReader io.Reader
@@ -272,3 +274,4 @@ func (c *HTTPClient) Do(method, path string, body []byte) (*http.Response, error
 	}
 	return c.httpClient.Do(req)
 }
+// http_client.go — 可配置 HTTP 客户端与 Builder，封装 GET/POST/PUT/DELETE 及 JSON 请求。

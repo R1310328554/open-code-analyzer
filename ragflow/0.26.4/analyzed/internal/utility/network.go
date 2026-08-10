@@ -16,12 +16,14 @@
 
 package utility
 
+// network.go 提供本机网络地址查询工具。
+
 import (
 	"errors"
 	"net"
 )
 
-// GetLocalIP returns the first non-loopback local IP address of the host
+// GetLocalIP 返回主机首个非回环 IPv4 地址。
 func GetLocalIP() (string, error) {
 	addresses, err := net.InterfaceAddrs()
 	if err != nil {
@@ -29,7 +31,7 @@ func GetLocalIP() (string, error) {
 	}
 
 	for _, addr := range addresses {
-		// Check the address type and skip loopback addresses
+		// 跳过回环地址，仅返回 IPv4
 		if ipNet, ok := addr.(*net.IPNet); ok && !ipNet.IP.IsLoopback() {
 			if ipNet.IP.To4() != nil {
 				return ipNet.IP.String(), nil
@@ -39,3 +41,4 @@ func GetLocalIP() (string, error) {
 
 	return "", errors.New("no ip address")
 }
+// network.go — 获取本机首个非回环 IPv4 地址。

@@ -16,6 +16,8 @@
 
 package utility
 
+// token.go 提供访问令牌签名/验签与随机令牌生成。
+
 import (
 	"crypto/rand"
 	"crypto/sha1"
@@ -29,22 +31,16 @@ import (
 	"github.com/iromli/go-itsdangerous"
 )
 
-// ExtractAccessToken extract access token from authorization header
-// This is equivalent to: str(jwt.loads(authorization)) in Python
-// Uses github.com/iromli/go-itsdangerous for itsdangerous compatibility
+// ExtractAccessToken 从 Authorization 头解析 access_token，对齐 Python jwt.loads。
 func ExtractAccessToken(authorization, secretKey string) (string, error) {
 	if authorization == "" {
 		return "", errors.New("empty authorization")
 	}
 
-	// Strip "Bearer " prefix if present
+	// 去除 Bearer 前缀
 	token := strings.TrimPrefix(authorization, "Bearer ")
 
-	// Create URLSafeTimedSerializer with correct configuration
-	// Matching Python itsdangerous configuration:
-	// - salt: "itsdangerous"
-	// - key_derivation: "django-concat"
-	// - digest_method: sha1
+	// 创建 itsdangerous 兼容签名器（salt/key_derivation/digest 对齐 Python）
 	algo := &itsdangerous.HMACAlgorithm{DigestMethod: sha1.New}
 	signer := itsdangerous.NewTimestampSignature(
 		secretKey,
@@ -55,19 +51,19 @@ func ExtractAccessToken(authorization, secretKey string) (string, error) {
 		algo,
 	)
 
-	// Unsign the token (verifies signature and extracts payload)
+	// 验签并提取 payload
 	encodedValue, err := signer.Unsign(token, 0)
 	if err != nil {
 		return "", fmt.Errorf("failed to decode token: %w", err)
 	}
 
-	// Base64 decode the payload
+	// Base64 解码 payload
 	jsonValue, err := urlSafeB64Decode(encodedValue)
 	if err != nil {
 		return "", fmt.Errorf("failed to decode payload: %w", err)
 	}
 
-	// Parse JSON string (remove surrounding quotes)
+	// 解析 JSON 字符串（去除引号）
 	value := string(jsonValue)
 	if strings.HasPrefix(value, "\"") && strings.HasSuffix(value, "\"") {
 		value = value[1 : len(value)-1]
@@ -76,9 +72,7 @@ func ExtractAccessToken(authorization, secretKey string) (string, error) {
 	return value, nil
 }
 
-// DumpAccessToken creates an authorization token from access token
-// This is equivalent to: jwt.dumps(access_token) in Python
-// Uses github.com/iromli/go-itsdangerous for itsdangerous compatibility
+// DumpAccessToken 将 access_token 签名打包为 Authorization 令牌。
 func DumpAccessToken(accessToken, secretKey string) (string, error) {
 	if accessToken == "" {
 		return "", errors.New("empty access token")
@@ -99,11 +93,11 @@ func DumpAccessToken(accessToken, secretKey string) (string, error) {
 		algo,
 	)
 
-	// Encode the access token as JSON string (add surrounding quotes)
+	// 将 access_token 编码为 JSON 字符串
 	jsonValue := fmt.Sprintf("\"%s\"", accessToken)
 	encodedValue := urlSafeB64Encode([]byte(jsonValue))
 
-	// Sign the token (creates signature)
+	// 签名生成最终令牌
 	token, err := signer.Sign(encodedValue)
 	if err != nil {
 		return "", fmt.Errorf("failed to sign token: %w", err)
@@ -112,9 +106,9 @@ func DumpAccessToken(accessToken, secretKey string) (string, error) {
 	return token, nil
 }
 
-// urlSafeB64Decode URL-safe base64 decode
+// urlSafeB64Decode URL 安全 Base64 解码（自动补 padding）。
 func urlSafeB64Decode(s string) ([]byte, error) {
-	// Add padding if needed
+	// 不足 4 倍数时补 = padding
 	padding := 4 - len(s)%4
 	if padding != 4 {
 		s += strings.Repeat("=", padding)
@@ -122,14 +116,14 @@ func urlSafeB64Decode(s string) ([]byte, error) {
 	return base64.URLEncoding.DecodeString(s)
 }
 
-// urlSafeB64Encode URL-safe base64 encode (without padding)
+// urlSafeB64Encode URL 安全 Base64 编码（无 padding）。
 func urlSafeB64Encode(data []byte) string {
 	encoded := base64.URLEncoding.EncodeToString(data)
-	// Remove padding
+	// 去除末尾 = padding
 	return strings.TrimRight(encoded, "=")
 }
 
-// GenerateSecretKey generates a 32-byte hex string (equivalent to Python's secrets.token_hex(32))
+// GenerateSecretKey 生成 32 字节 hex 密钥（256 位）。
 func GenerateSecretKey() (string, error) {
 	bytes := make([]byte, 32) // 32 bytes = 256 bits
 	if _, err := rand.Read(bytes); err != nil {
@@ -142,7 +136,7 @@ func GenerateToken() string {
 	return strings.ReplaceAll(uuid.New().String(), "-", "")
 }
 
-// GenerateUUID generates a UUID without dashes
+// GenerateUUID 生成无连字符 UUID（最多 32 字符）。
 func GenerateUUID() string {
 	newID := strings.ReplaceAll(uuid.New().String(), "-", "")
 	if len(newID) > 32 {
@@ -151,19 +145,20 @@ func GenerateUUID() string {
 	return newID
 }
 
-// GenerateAPIToken generates secure random access key
+// GenerateAPIToken 生成 ragflow- 前缀的安全 API 密钥。
 func GenerateAPIToken() string {
-	// Generate 32 random bytes
+	// 生成 32 字节随机数
 	bytes := make([]byte, 32)
 	if _, err := rand.Read(bytes); err != nil {
-		// Fallback to UUID if random generation fails
+		// 随机失败时回退 UUID
 		return "ragflow-" + strings.ReplaceAll(uuid.New().String(), "-", "")
 	}
-	// Use URL-safe base64 encoding
+	// URL 安全 Base64 编码
 	return "ragflow-" + base64.RawURLEncoding.EncodeToString(bytes)
 }
 
-// GenerateBetaAPIToken generates a beta access key
+// GenerateBetaAPIToken 生成 beta 访问密钥（等同 GenerateUUID）。
 func GenerateBetaAPIToken() string {
 	return GenerateUUID()
 }
+// token.go — 访问令牌签名/验签（itsdangerous 兼容）及各类随机令牌生成。

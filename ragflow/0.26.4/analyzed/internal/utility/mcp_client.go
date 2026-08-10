@@ -14,20 +14,9 @@
 //  limitations under the License.
 //
 
-// Package mcpclient is a minimal Model Context Protocol (MCP) client used by
-// the Go MCP-management endpoints to list a remote server's tools during
-// import and the "test" endpoint. It implements just enough of the spec to
-// negotiate a session and call tools/list:
-//
-//   - streamable-HTTP transport (spec 2025-03-26): single endpoint, JSON-RPC
-//     requests via POST, responses either as application/json or as an SSE
-//     stream sharing the same connection.
-//   - SSE transport (spec 2024-11-05, legacy): server returns an "endpoint"
-//     event whose data is the URL the client POSTs JSON-RPC requests to;
-//     responses are pushed back on the same SSE stream.
-//
-// The full Python implementation lives in common/mcp_tool_call_conn.py; this
-// is a reduced port focused on tools/list discovery.
+// Package utility（mcp_client）提供精简 MCP 客户端，用于导入/测试时 tools/list 发现。
+// 支持 streamable-HTTP（2025-03-26）与 legacy SSE（2024-11-05）两种传输。
+// 完整 Python 实现在 common/mcp_tool_call_conn.py；此处为 tools/list 精简移植。
 package utility
 
 import (
@@ -45,7 +34,7 @@ import (
 	"time"
 )
 
-// Transport identifiers. Mirrors common.constants.MCPServerType.
+// 传输类型标识，对齐 common.constants.MCPServerType。
 const (
 	TransportSSE            = "sse"
 	TransportStreamableHTTP = "streamable-http"
@@ -58,9 +47,7 @@ const (
 	jsonRPCVersion  = "2.0"
 )
 
-// Tool is the subset of an MCP Tool descriptor returned by tools/list.
-// Extra fields surfaced by the server are preserved in Raw so callers can
-// round-trip them into variables.tools without losing data.
+// Tool 为 tools/list 返回的工具描述子集；Raw 保留服务端额外字段以便往返。
 type Tool struct {
 	Name        string                 `json:"name"`
 	Description string                 `json:"description,omitempty"`
@@ -68,7 +55,7 @@ type Tool struct {
 	Raw         map[string]interface{} `json:"-"`
 }
 
-// FetchOptions controls a single tools/list discovery call.
+// FetchOptions 控制单次 tools/list 发现调用。
 type FetchOptions struct {
 	URL         string
 	ServerType  string
@@ -80,10 +67,7 @@ type FetchOptions struct {
 	pinIP       string
 }
 
-// FetchTools opens a connection to the MCP server described by opts and
-// returns the tools advertised by tools/list. URL safety / DNS pinning is
-// performed here so callers get the same SSRF guarantees the Python path
-// has via pin_dns_global + assert_url_is_safe.
+// FetchTools 连接 MCP 服务器并返回 tools/list 工具列表，内置 SSRF 防护与 DNS 固定。
 func FetchTools(ctx context.Context, opts FetchOptions) ([]Tool, error) {
 	if opts.URL == "" {
 		return nil, errors.New("Invalid url.")
@@ -120,9 +104,7 @@ func FetchTools(ctx context.Context, opts FetchOptions) ([]Tool, error) {
 	}
 }
 
-// renderHeaders applies ${name} substitution to header keys and values using
-// the supplied variables map, mirroring the Template.safe_substitute pass in
-// common/mcp_tool_call_conn.py. Empty keys (after substitution) are dropped.
+// renderHeaders 对请求头键值做 ${name} 模板替换，空键丢弃。
 func renderHeaders(raw map[string]string, vars map[string]string) (map[string]string, error) {
 	rendered := map[string]string{}
 	for k, v := range raw {
@@ -136,9 +118,7 @@ func renderHeaders(raw map[string]string, vars map[string]string) (map[string]st
 	return rendered, nil
 }
 
-// substituteTemplate replaces ${name} occurrences (Python string.Template
-// safe-substitute semantics) with values from vars. Unknown keys are left
-// in place, matching safe_substitute's behavior.
+// substituteTemplate 按 Python safe_substitute 语义替换 ${name}，未知键保留。
 func substituteTemplate(s string, vars map[string]string) string {
 	if vars == nil || !strings.Contains(s, "${") {
 		return s
@@ -172,7 +152,7 @@ func substituteTemplate(s string, vars map[string]string) string {
 	return b.String()
 }
 
-// jsonRPCRequest is a JSON-RPC 2.0 request envelope.
+// jsonRPCRequest 为 JSON-RPC 2.0 请求信封。
 type jsonRPCRequest struct {
 	JSONRPC string      `json:"jsonrpc"`
 	ID      interface{} `json:"id,omitempty"`
@@ -180,7 +160,7 @@ type jsonRPCRequest struct {
 	Params  interface{} `json:"params,omitempty"`
 }
 
-// jsonRPCResponse is a JSON-RPC 2.0 response. Either Result or Error is set.
+// jsonRPCResponse 为 JSON-RPC 2.0 响应，Result 与 Error 互斥。
 type jsonRPCResponse struct {
 	JSONRPC string          `json:"jsonrpc"`
 	ID      interface{}     `json:"id,omitempty"`
@@ -205,7 +185,7 @@ func initializeParams() map[string]interface{} {
 	}
 }
 
-// ---------- streamable-HTTP transport ----------
+// ---------- streamable-HTTP 传输 ----------
 
 const sessionHeader = "Mcp-Session-Id"
 
@@ -244,10 +224,7 @@ func fetchToolsStreamableHTTP(ctx context.Context, endpoint string, headers map[
 	return parseToolsResult(listRes.Result)
 }
 
-// streamableSend POSTs a JSON-RPC payload to the streamable-HTTP endpoint.
-// When expectResponse is false (notifications), the response body is not
-// parsed. The session id returned by the initial initialize call is
-// propagated via the Mcp-Session-Id header per the spec.
+// streamableSend 向 streamable-HTTP 端点 POST JSON-RPC；通知类请求不解析响应体。
 func streamableSend(ctx context.Context, client *http.Client, endpoint, sessionID string, headers map[string]string, payload jsonRPCRequest, expectResponse bool) (string, *jsonRPCResponse, error) {
 	body, err := json.Marshal(payload)
 	if err != nil {
@@ -313,7 +290,7 @@ func streamableSend(ctx context.Context, client *http.Client, endpoint, sessionI
 	return sessionID, parsed, nil
 }
 
-// ---------- SSE transport ----------
+// ---------- SSE 传输 ----------
 
 func fetchToolsSSE(ctx context.Context, endpoint string, headers map[string]string, client *http.Client) ([]Tool, error) {
 	streamReq, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
@@ -428,10 +405,7 @@ func fetchToolsSSE(ctx context.Context, endpoint string, headers map[string]stri
 	return parseToolsResult(listRes.Result)
 }
 
-// waitForEndpoint reads SSE events until an "endpoint" event arrives and
-// returns the URL to POST JSON-RPC requests to. The data may be either a
-// fully-qualified URL or a path; relative paths are resolved against the
-// original SSE endpoint.
+// waitForEndpoint 读取 SSE 直至 endpoint 事件，返回 JSON-RPC POST 目标 URL。
 func waitForEndpoint(ctx context.Context, stream *sseReader, base string) (string, error) {
 	for {
 		event, err := stream.nextEvent(ctx)
@@ -462,9 +436,7 @@ func waitForEndpoint(ctx context.Context, stream *sseReader, base string) (strin
 	}
 }
 
-// originalHost extracts the hostname from the original SSE endpoint so the
-// caller can detect when the server-advertised post URL has moved to a
-// different host (and a fresh pinned client is required).
+// originalHost 提取原始 SSE 端点主机名，用于检测 POST URL 是否换主机。
 func originalHost(endpoint string) string {
 	u, err := url.Parse(endpoint)
 	if err != nil {
@@ -473,9 +445,7 @@ func originalHost(endpoint string) string {
 	return u.Hostname()
 }
 
-// sseTimeoutFrom recovers a non-zero timeout from the request context so
-// the freshly-pinned post-phase client has the same deadline as the rest
-// of the SSE flow.
+// sseTimeoutFrom 从 context 恢复超时，使 POST 阶段客户端与 SSE 流一致。
 func sseTimeoutFrom(ctx context.Context) time.Duration {
 	if deadline, ok := ctx.Deadline(); ok {
 		if d := time.Until(deadline); d > 0 {
@@ -485,8 +455,7 @@ func sseTimeoutFrom(ctx context.Context) time.Duration {
 	return 10 * time.Second
 }
 
-// pendingResponses correlates outstanding JSON-RPC ids with channels that
-// receive the corresponding response from the SSE dispatcher.
+// pendingResponses 将待响应 JSON-RPC id 与 SSE 分发通道关联。
 type pendingResponses struct {
 	mu      sync.Mutex
 	waiters map[string]chan *jsonRPCResponse
@@ -496,16 +465,13 @@ func newPendingResponses() *pendingResponses {
 	return &pendingResponses{waiters: map[string]chan *jsonRPCResponse{}}
 }
 
-// pendingWaiter is the handle returned by register; the caller passes it to
-// await once the request has been sent.
+// pendingWaiter 为 register 返回的等待句柄，供 await 使用。
 type pendingWaiter struct {
 	key string
 	ch  chan *jsonRPCResponse
 }
 
-// register reserves a waiter slot for the given JSON-RPC id BEFORE the
-// request is sent, so a server that responds before await() is called still
-// has somewhere to deliver to.
+// register 在发送请求前注册 waiter，防止快速响应丢失。
 func (p *pendingResponses) register(id interface{}) pendingWaiter {
 	key := normalizeID(id)
 	ch := make(chan *jsonRPCResponse, 1)
@@ -515,8 +481,7 @@ func (p *pendingResponses) register(id interface{}) pendingWaiter {
 	return pendingWaiter{key: key, ch: ch}
 }
 
-// cancel drops a previously registered waiter. Used when the POST fails so
-// a late server delivery cannot block forever in the waiters map.
+// cancel 取消已注册 waiter，POST 失败时避免永久阻塞。
 func (p *pendingResponses) cancel(id interface{}) {
 	key := normalizeID(id)
 	p.mu.Lock()
@@ -524,8 +489,7 @@ func (p *pendingResponses) cancel(id interface{}) {
 	p.mu.Unlock()
 }
 
-// await blocks until the registered waiter's response arrives, the SSE
-// stream closes, or ctx expires.
+// await 阻塞直至响应到达、SSE 关闭或 context 超时。
 func (p *pendingResponses) await(ctx context.Context, w pendingWaiter, streamDone <-chan error) (*jsonRPCResponse, error) {
 	defer func() {
 		p.mu.Lock()
@@ -575,7 +539,7 @@ func normalizeID(id interface{}) string {
 	}
 }
 
-// ---------- SSE parsing ----------
+// ---------- SSE 解析 ----------
 
 type sseEvent struct {
 	event string
@@ -590,8 +554,7 @@ func newSSEReader(r io.Reader) *sseReader {
 	return &sseReader{rd: bufio.NewReaderSize(r, 64*1024)}
 }
 
-// nextEvent returns the next SSE event (event: + data:) from the stream, or
-// nil when the stream is closed cleanly.
+// nextEvent 从 SSE 流读取下一个 event/data 事件。
 func (s *sseReader) nextEvent(ctx context.Context) (*sseEvent, error) {
 	ev := &sseEvent{}
 	var dataLines []string
@@ -634,8 +597,7 @@ func (s *sseReader) nextEvent(ctx context.Context) (*sseEvent, error) {
 	}
 }
 
-// dispatch reads events off the SSE stream and forwards JSON-RPC responses
-// to the matching waiter. It returns when the stream closes.
+// dispatch 读取 SSE 事件并将 JSON-RPC 响应分发给对应 waiter。
 func (s *sseReader) dispatch(ctx context.Context, pending *pendingResponses) error {
 	for {
 		ev, err := s.nextEvent(ctx)
@@ -657,16 +619,14 @@ func (s *sseReader) dispatch(ctx context.Context, pending *pendingResponses) err
 			continue
 		}
 		if parsed.Method != "" && parsed.ID == nil {
-			// Server-initiated notification; nothing to deliver.
+			// 服务端主动通知，无需分发。
 			continue
 		}
 		pending.deliver(parsed)
 	}
 }
 
-// readJSONRPCFromSSE consumes a single JSON-RPC response off an inline SSE
-// stream returned by a streamable-HTTP POST. The response with matching id
-// is returned; everything else is skipped.
+// readJSONRPCFromSSE 从 streamable-HTTP POST 返回的内联 SSE 流读取匹配 id 的响应。
 func readJSONRPCFromSSE(r io.Reader, wantID interface{}) (*jsonRPCResponse, error) {
 	stream := newSSEReader(r)
 	for {
@@ -694,7 +654,7 @@ func readJSONRPCFromSSE(r io.Reader, wantID interface{}) (*jsonRPCResponse, erro
 	}
 }
 
-// ---------- shared helpers ----------
+// ---------- 共享辅助函数 ----------
 
 func parseJSONRPC(raw []byte, wantID interface{}) (*jsonRPCResponse, error) {
 	dec := json.NewDecoder(bytes.NewReader(raw))
@@ -747,11 +707,11 @@ func formatMCPError(method string, e *jsonRPCError) error {
 	return fmt.Errorf("MCP %s failed (%d): %s", method, e.Code, e.Message)
 }
 
-// mapMCPConnectionError surfaces the same wording the Python session uses
-// when a low-level connection fails (authentication / network).
+// mapMCPConnectionError 映射连接失败为与 Python 一致的友好错误信息。
 func mapMCPConnectionError(err error) error {
 	if errors.Is(err, context.DeadlineExceeded) {
 		return errors.New("timeout connecting to MCP server")
 	}
 	return fmt.Errorf("connection failed (possibly due to auth error). Please check authentication settings first: %v", err)
 }
+// mcp_client.go — 精简 MCP 客户端，支持 tools/list 发现（streamable-HTTP 与 legacy SSE）。

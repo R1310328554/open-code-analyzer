@@ -16,6 +16,8 @@
 
 package utility
 
+// scheduled_task.go 提供周期性定时任务与节点状态上报。
+
 import (
 	"encoding/json"
 	"fmt"
@@ -26,6 +28,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// StatusMessage 为节点向 admin 上报的状态消息。
 type StatusMessage struct {
 	ID        int       `json:"id"`
 	Version   string    `json:"version"`
@@ -45,17 +48,17 @@ func NewStatusMessage(id int, version string, nodeName string, extInfo string) *
 }
 
 func StatusMessageSending() {
-	// Construct status message
+	// 构造并序列化状态消息
 	statusMessage := NewStatusMessage(0, "v1", "ragflow", "")
 
-	// Serialize to JSON
+	// 序列化为 JSON
 	jsonData, err := json.Marshal(statusMessage)
 	if err != nil {
 		common.Error("Failed to marshal status message", err)
 		return
 	}
 
-	// Create HTTP client
+	// 创建指向本地 admin 的 HTTP 客户端
 	client := NewHTTPClientBuilder().
 		WithHost("127.0.0.1").
 		WithPort(9381).
@@ -63,7 +66,7 @@ func StatusMessageSending() {
 		WithTimeout(10 * time.Second).
 		Build()
 
-	// Send POST request
+	// POST 到 /v1/admin/status
 	resp, err := client.PostJSON("/v1/admin/status", jsonData)
 	if err != nil {
 		common.Error("Error sending status message", err)
@@ -76,7 +79,7 @@ func StatusMessageSending() {
 	}
 }
 
-// ScheduledTask represents a periodic task
+// ScheduledTask 表示按固定间隔执行的周期性任务。
 type ScheduledTask struct {
 	Name      string
 	Interval  time.Duration
@@ -86,7 +89,7 @@ type ScheduledTask struct {
 	executing int32 // atomic flag: 0 - not executed, 1 running
 }
 
-// NewScheduledTask creates a new simple task
+// NewScheduledTask 创建定时任务（名称、间隔、回调）。
 func NewScheduledTask(name string, interval time.Duration, job func()) *ScheduledTask {
 	return &ScheduledTask{
 		Name:     name,
@@ -96,7 +99,7 @@ func NewScheduledTask(name string, interval time.Duration, job func()) *Schedule
 	}
 }
 
-// Start begins the periodic task
+// Start 启动后台 goroutine 按 ticker 周期执行。
 func (t *ScheduledTask) Start() {
 	if t.running {
 		return
@@ -121,15 +124,15 @@ func (t *ScheduledTask) Start() {
 	}()
 }
 
-// runSafely executes the job with panic recovery and prevents overlap
+// runSafely 执行 Job，含 panic 恢复与 atomic 防重入。
 func (t *ScheduledTask) runSafely() {
-	// Attempt to set the flag
+	// CAS 设置 executing 标志，上一轮未完成则跳过
 	if !atomic.CompareAndSwapInt32(&t.executing, 0, 1) {
 		common.Warn("Task skipped - previous execution still running", zap.String("name", t.Name))
 		return
 	}
 
-	// Clear atomic flag after execution
+	// 执行完毕清除 executing 标志
 	defer atomic.StoreInt32(&t.executing, 0)
 
 	defer func() {
@@ -141,7 +144,7 @@ func (t *ScheduledTask) runSafely() {
 	t.Job()
 }
 
-// Stop stops the periodic task
+// Stop 关闭 stop 通道并停止 ticker。
 func (t *ScheduledTask) Stop() {
 	if !t.running {
 		return
@@ -150,7 +153,8 @@ func (t *ScheduledTask) Stop() {
 	close(t.stop)
 }
 
-// IsExecuting returns whether the task is currently executing
+// IsExecuting 返回任务是否正在执行。
 func (t *ScheduledTask) IsExecuting() bool {
 	return atomic.LoadInt32(&t.executing) == 1
 }
+// scheduled_task.go — 周期性定时任务调度器，含 panic 恢复与防重入。
