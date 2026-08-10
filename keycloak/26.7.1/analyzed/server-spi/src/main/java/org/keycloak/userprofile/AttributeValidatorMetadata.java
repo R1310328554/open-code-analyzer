@@ -28,26 +28,35 @@ import org.keycloak.validate.ValidatorConfig;
 import org.keycloak.validate.Validators;
 
 /**
+ * 用户配置属性校验器元数据：绑定校验器 ID 与配置，并执行校验。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  * @author Vlastimil Elias <velias@redhat.com>
  */
 public final class AttributeValidatorMetadata {
 
+    /** 校验器标识符。 */
     private final String validatorId;
+    /** 校验器配置。 */
     private final ValidatorConfig validatorConfig;
 
+    /** 仅指定校验器 ID（空配置）。
+     * @param validatorId 校验器 ID */
     public AttributeValidatorMetadata(String validatorId) {
         this.validatorId = validatorId;
         this.validatorConfig = ValidatorConfig.configFromMap(null);
     }
 
+    /** 指定校验器 ID 与配置。
+     * @param validatorId 校验器 ID
+     * @param validatorConfig 配置 */
     public AttributeValidatorMetadata(String validatorId, ValidatorConfig validatorConfig) {
         this.validatorId = validatorId;
         this.validatorConfig = validatorConfig;
     }
 
     /**
-     * Getters so we can collect validation configurations and provide them to GUI for dynamic client side validations.
+     * 供 GUI 收集校验配置以支持客户端动态校验。
      * 
      * @return the validatorId
      */
@@ -56,7 +65,7 @@ public final class AttributeValidatorMetadata {
     }
     
     /**
-     * Get validator configuration as map.
+     * 以 Map 形式返回校验器配置。
      * 
      * @return never null
      */
@@ -65,7 +74,7 @@ public final class AttributeValidatorMetadata {
     }
     
     /**
-     * Run validation for given AttributeContext.
+     * 对给定 {@link AttributeContext} 执行校验。
      * 
      * @param context to validate
      * @return context containing errors if any found

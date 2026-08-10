@@ -32,6 +32,10 @@ import org.keycloak.validate.ValidationError;
 import static java.util.Optional.ofNullable;
 
 /**
+ * 用户配置属性集合：封装与用户档案关联的属性，提供读写、校验与元数据访问。
+ * <p>属性分为<b>受管</b>（配置中定义）与<b>非受管</b>（配置外、由 {@link org.keycloak.representations.userprofile.config.UPConfig.UnmanagedAttributePolicy} 策略处理）。
+ * 每个受管属性对应 {@link AttributeMetadata}，描述约束与在 {@link UserProfileContext} 中的可见性。
+ * <p>
  * <p>This interface wraps the attributes associated with a user profile. Different operations are provided to access and
  * manage these attributes.
  *
@@ -58,11 +62,14 @@ import static java.util.Optional.ofNullable;
 public interface Attributes {
 
     /**
+     * 无值属性使用的空列表默认值。
      * Default value for attributes with no value set.
      */
+    /** 空值占位列表。 */
     List<String> EMPTY_VALUE = Collections.emptyList();
 
     /**
+     * 返回指定属性的第一个值。
      * Returns the first value associated with the attribute with the given {@name}.
      *
      * @param name the name of the attribute
@@ -80,6 +87,7 @@ public interface Attributes {
     }
 
     /**
+     * 返回指定属性的全部值。
      * Returns all values for an attribute with the given {@code name}.
      *
      * @param name the name of the attribute
@@ -89,6 +97,7 @@ public interface Attributes {
     List<String> get(String name);
 
     /**
+     * 判断属性是否只读。
      * Checks whether an attribute is read-only.
      *
      * @param name the attribute name
@@ -98,6 +107,7 @@ public interface Attributes {
     boolean isReadOnly(String name);
 
     /**
+     * 校验指定属性；失败时通过 listeners 报告错误。
      * Validates the attribute with the given {@code name}.
      *
      * @param name the name of the attribute
@@ -109,6 +119,7 @@ public interface Attributes {
     boolean validate(String name, Consumer<ValidationError>... listeners);
 
     /**
+     * 判断属性是否已定义。
      * Checks whether an attribute with the given {@code name} is defined.
      *
      * @param name the name of the attribute
@@ -118,6 +129,7 @@ public interface Attributes {
     boolean contains(String name);
 
     /**
+     * 返回所有已定义属性名。
      * Returns the names of all defined attributes.
      *
      * @return the set of attribute names
@@ -125,6 +137,7 @@ public interface Attributes {
     Set<String> nameSet();
 
     /**
+     * 返回当前上下文可写属性映射。
      * Returns all the attributes with read-write permissions in a particular {@link UserProfileContext}.
      *
      * @return the attributes
@@ -132,6 +145,7 @@ public interface Attributes {
     Map<String, List<String>> getWritable();
 
     /**
+     * 返回属性元数据副本（原始元数据不可变）。
      * <p>Returns the metadata associated with the attribute with the given {@code name}.
      *
      * <p>The {@link AttributeMetadata} is a copy of the original metadata. The original metadata
@@ -143,6 +157,7 @@ public interface Attributes {
     AttributeMetadata getMetadata(String name);
 
     /**
+     * 判断属性是否必填。
      * Returns whether the attribute with the given {@code name} is required.
      *
      * @param name the attribute name
@@ -151,6 +166,7 @@ public interface Attributes {
     boolean isRequired(String name);
 
     /**
+     * 返回当前上下文可读属性。
      * Returns only the attributes that have read permissions in a particular {@link UserProfileContext}.
      *
      * @return the attributes with read permission.
@@ -158,6 +174,7 @@ public interface Attributes {
     Map<String, List<String>> getReadable();
 
     /**
+     * 返回当前上下文可访问的全部属性 Map。
      * Returns the attributes as a {@link Map} that are accessible to a particular {@link UserProfileContext}.
      *
      * @return a map with all the attributes
@@ -165,6 +182,7 @@ public interface Attributes {
     Map<String, List<String>> toMap();
 
     /**
+     * 返回非受管属性 Map。
      * Returns a {@link Map} holding any unmanaged attribute.
      *
      * @return a map with any unmanaged attribute
@@ -172,6 +190,7 @@ public interface Attributes {
     Map<String, List<String>> getUnmanagedAttributes();
 
     /**
+     * 返回属性注解（可动态解析）。
      * <p>Returns the annotations for an attribute with the given {@code name}.
      *
      * <p>The annotations returned by this method might differ from those returned directly from
@@ -192,6 +211,7 @@ public interface Attributes {
     }
 
     /**
+     * 返回内置默认属性及其值。
      * Returns the default attributes and their values.
      *
      * @return the default attributes and their values
@@ -210,6 +230,7 @@ public interface Attributes {
     }
 
     /**
+     * 判断是否为内置默认属性。
      * Returns whether the attribute with the given {@code name} is a default attribute.
      *
      * @param name the attribute name

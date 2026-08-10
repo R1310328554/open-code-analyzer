@@ -22,26 +22,32 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 主题资源 SPI：注册 {@link ThemeResourceProvider} 及其工厂。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class ThemeResourceSpi implements Spi {
 
     @Override
+    /** @return 是否为内部 SPI（本 SPI 对外可见，返回 {@code false}） */
     public boolean isInternal() {
         return false;
     }
 
     @Override
+    /** @return SPI 名称 {@code themeResource} */
     public String getName() {
         return "themeResource";
     }
 
     @Override
+    /** @return Provider 接口类型 */
     public Class<? extends Provider> getProviderClass() {
         return ThemeResourceProvider.class;
     }
 
     @Override
+    /** @return ProviderFactory 接口类型 */
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return ThemeResourceProviderFactory.class;
     }

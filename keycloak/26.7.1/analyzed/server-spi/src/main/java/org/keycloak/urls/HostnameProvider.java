@@ -25,6 +25,13 @@ import org.keycloak.models.KeycloakContext;
 import org.keycloak.provider.Provider;
 
 /**
+ * 主机名提供者：决定 Keycloak 前端与后端请求的 URL（scheme、host、port、context-path）。
+ * 可基于请求头（如 Host）或固定配置；前端与后端可使用不同 URL。
+ * <p>
+ * 注意：勿在实现中调用 {@link KeycloakContext#getUri()}，否则会无限递归。
+ * <p>
+ * 注意：传入的 {@link UriInfo} 在无活动上下文时会抛出 {@link ContextNotActiveException}。
+ * <p>
  * The Hostname provider is used by Keycloak to decide URLs for frontend and backend requests. A provider can either
  * base the URL on the request (Host header for example) or based on hard-coded URLs. Further, it is possible to have
  * different URLs on frontend requests and backend requests.
@@ -36,6 +43,7 @@ import org.keycloak.provider.Provider;
 public interface HostnameProvider extends Provider {
 
     /**
+     * 返回 URL scheme；未实现时委托 {@link #getScheme(UriInfo)}。
      * Returns the URL scheme. If not implemented will delegate to {@link #getScheme(UriInfo)}.
      *
      * @param originalUriInfo the original URI
@@ -47,6 +55,7 @@ public interface HostnameProvider extends Provider {
     }
 
     /**
+     * 返回 URL scheme；未实现时从请求读取。
      * Returns the URL scheme. If not implemented will get the scheme from the request.
      *
      * @param originalUriInfo the original URI
@@ -57,6 +66,7 @@ public interface HostnameProvider extends Provider {
     }
 
     /**
+     * 返回主机名；未实现时委托 {@link #getHostname(UriInfo)}。
      * Returns the host. If not implemented will delegate to {@link #getHostname(UriInfo)}.
      *
      * @param originalUriInfo the original URI
@@ -68,6 +78,7 @@ public interface HostnameProvider extends Provider {
     }
 
     /**
+     * 返回主机名；未实现时从请求读取。
      *  Returns the host. If not implemented will get the host from the request.
      * @param originalUriInfo
      * @return the host
@@ -77,6 +88,7 @@ public interface HostnameProvider extends Provider {
     }
 
     /**
+     * 返回端口（默认端口为 -1）；未实现时委托 {@link #getPort(UriInfo)}。
      * Returns the port (or -1 for default port). If not implemented will delegate to {@link #getPort(UriInfo)}
      *
      * @param originalUriInfo the original URI
@@ -88,6 +100,7 @@ public interface HostnameProvider extends Provider {
     }
 
     /**
+     * 返回端口；未实现时从请求读取。
      * Returns the port (or -1 for default port). If not implemented will get the port from the request.
      *
      * @param originalUriInfo the original URI
@@ -98,6 +111,7 @@ public interface HostnameProvider extends Provider {
     }
 
     /**
+     * 返回 Keycloak 上下文路径（反向代理场景）；未实现时委托 {@link #getContextPath(UriInfo)}。
      * Returns the context-path for Keycloak. This is useful when Keycloak is exposed on a different context-path on
      * a reverse proxy. If not implemented will delegate to {@link #getContextPath(UriInfo)}
      *
@@ -110,6 +124,7 @@ public interface HostnameProvider extends Provider {
     }
 
     /**
+     * 返回上下文路径；未实现时使用请求中的路径（默认 /auth）。
      * Returns the context-path for Keycloak This is useful when Keycloak is exposed on a different context-path on
      * a reverse proxy. If not implemented will use the context-path from the request, which by default is /auth
      *
@@ -125,6 +140,7 @@ public interface HostnameProvider extends Provider {
     }
 
     /**
+     * 按 {@link UrlType} 组装 Keycloak 基础 URI。
      * Returns the base URI for Keycloak with the scheme, host, port, and context-path set for the given UrlType
      *
      * @param originalUriInfo the original URI

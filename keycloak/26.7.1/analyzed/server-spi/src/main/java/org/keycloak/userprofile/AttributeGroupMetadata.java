@@ -21,17 +21,24 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * 用户配置属性组元数据：名称、展示标题/描述及扩展注解。
+ *
  * Configuration of the attribute group.
  *
  * @author <a href="joerg.matysiak@bosch.io">Jörg Matysiak</a>
  */
 public class AttributeGroupMetadata {
 
+    /** 属性组名称。 */
     private String name;
+    /** UI 展示标题。 */
     private String displayHeader;
+    /** UI 展示描述。 */
     private String displayDescription;
+    /** 扩展注解映射。 */
     private Map<String, Object> annotations;
 
+    /** 构造属性组元数据。 */
     public AttributeGroupMetadata(String name, String displayHeader, String displayDescription, Map<String, Object> annotations) {
         this.name = name;
         this.displayHeader = displayHeader;
@@ -41,37 +48,50 @@ public class AttributeGroupMetadata {
         }
     }
 
+    /** @return 属性组名称 */
     public String getName() {
         return name;
     }
 
+    /** 设置属性组名称（trim）。
+     * @param name 名称
+     * @return this */
     public AttributeGroupMetadata setName(String name) {
         this.name = name != null ? name.trim() : null;
         return this;
     }
 
+    /** @return 展示标题 */
     public String getDisplayHeader() {
         return displayHeader;
     }
 
+    /** 设置展示标题。
+     * @return this */
     public AttributeGroupMetadata setDisplayHeader(String displayHeader) {
         this.displayHeader = displayHeader;
         return this;
     }
 
+    /** @return 展示描述 */
     public String getDisplayDescription() {
         return displayDescription;
     }
 
+    /** 设置展示描述。
+     * @return this */
     public AttributeGroupMetadata setDisplayDescription(String displayDescription) {
         this.displayDescription = displayDescription;
         return this;
     }
 
+    /** @return 注解映射 */
     public Map<String, Object> getAnnotations() {
         return annotations;
     }
 
+    /** 合并注解。
+     * @return this */
     public AttributeGroupMetadata addAnnotations(Map<String, Object> annotations) {
         if(annotations != null) {
             if(this.annotations == null) {
@@ -83,6 +103,7 @@ public class AttributeGroupMetadata {
         return this;
     }
 
+    /** @return 浅拷贝副本 */
     public AttributeGroupMetadata clone() {
         return new AttributeGroupMetadata(name, displayHeader, displayDescription, annotations);
     }

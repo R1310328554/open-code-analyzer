@@ -22,15 +22,21 @@ import org.keycloak.common.Profile;
 import org.keycloak.provider.Provider;
 
 /**
+ * 主题选择器：根据主题类型（登录、账户、管理等）解析应使用的主题名称。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface ThemeSelectorProvider extends Provider {
 
+    /** 默认主题名。 */
     String DEFAULT = "keycloak";
+    /** 第二版默认主题名。 */
     String DEFAULT_V2 = "keycloak.v2";
+    /** 第三版默认主题名（账户 v3）。 */
     String DEFAULT_V3 = "keycloak.v3";
 
     /**
+     * 返回指定主题类型应使用的主题名称。
      * Return the theme name to use for the specified type
      *
      * @param type
@@ -38,6 +44,9 @@ public interface ThemeSelectorProvider extends Provider {
      */
     String getThemeName(Theme.Type type);
 
+    /** 解析指定类型的默认主题名（配置项、Profile 特性与内置默认值）。
+     * @param type 主题类型
+     * @return 主题名称 */
     default String getDefaultThemeName(Theme.Type type) {
         String name = Config.scope("theme").get("default");
         if (name != null && !name.isEmpty()) {

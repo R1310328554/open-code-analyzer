@@ -20,17 +20,23 @@ import org.keycloak.Config;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderFactory;
 
+/** {@link HostnameProvider} 的工厂 SPI。 */
 public interface HostnameProviderFactory extends ProviderFactory<HostnameProvider> {
 
     @Override
+    /** 关闭工厂（默认空实现）。 */
     default void close() {
     }
 
     @Override
+    /** 启动时初始化（默认空实现）。
+     * @param config 配置作用域 */
     default void init(Config.Scope config) {
     }
 
     @Override
+    /** 所有工厂初始化完成后回调（默认空实现）。
+     * @param factory 会话工厂 */
     default void postInit(KeycloakSessionFactory factory) {
     }
 

@@ -26,6 +26,9 @@ import java.util.Properties;
 import org.keycloak.provider.Provider;
 
 /**
+ * 主题资源提供者：加载额外的模板与静态资源。例如自定义认证器需要额外模板或 JavaScript 文件时可使用。
+ * 查找顺序为先主题、后主题资源提供者；主题中的同名资源可覆盖提供者中的资源。
+ *
  * A theme resource provider can be used to load additional templates and resources. An example use of this would be
  * a custom authenticator that requires an additional template and a JavaScript file.
  *
@@ -37,6 +40,7 @@ import org.keycloak.provider.Provider;
 public interface ThemeResourceProvider extends Provider {
 
     /**
+     * 按名称加载模板。
      * Load the template for the specific name
      *
      * @param name the template name
@@ -46,6 +50,7 @@ public interface ThemeResourceProvider extends Provider {
     URL getTemplate(String name) throws IOException;
 
     /**
+     * 按路径加载资源流。
      * Load the resource for the specific path
      *
      * @param path the resource path
@@ -55,6 +60,7 @@ public interface ThemeResourceProvider extends Provider {
     InputStream getResourceAsStream(String path) throws IOException;
 
     /**
+     * 按 bundle 基名与区域设置加载消息包。
      * Load the message bundle for the specific name and locale
      * 
      * @param baseBundlename The base name of the bundle, such as "messages" in

@@ -20,24 +20,29 @@ import org.keycloak.provider.Provider;
 import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
+/** 主机名 SPI：注册 {@link HostnameProvider} 及其工厂。 */
 public class HostnameSpi implements Spi {
 
     @Override
+    /** @return 是否为内部 SPI（本 SPI 对外可见） */
     public boolean isInternal() {
         return false;
     }
 
     @Override
+    /** @return SPI 名称 {@code hostname} */
     public String getName() {
         return "hostname";
     }
 
     @Override
+    /** @return Provider 接口类型 */
     public Class<? extends Provider> getProviderClass() {
         return HostnameProvider.class;
     }
 
     @Override
+    /** @return ProviderFactory 接口类型 */
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return HostnameProviderFactory.class;
     }

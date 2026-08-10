@@ -20,6 +20,8 @@ package org.keycloak.theme;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link ThemeResourceProvider} 的工厂 SPI。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface ThemeResourceProviderFactory extends ProviderFactory<ThemeResourceProvider> {
