@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T19:01:46Z",
-  "files": [
-    "internal/service/api_token.go",
-    "internal/service/ask_service.go",
-    "internal/service/bot.go",
-    "internal/service/bot_completion.go",
-    "internal/service/canvas_decode.go",
-    "internal/service/chat.go",
-    "internal/service/chat_channel.go",
-    "internal/service/chat_pipeline.go",
-    "internal/service/chat_session.go",
-    "internal/service/chunk/chunk.go",
-    "internal/service/chunk/vector.go",
-    "internal/service/chunk_types.go",
-    "internal/service/citation.go",
-    "internal/service/components_service.go",
-    "internal/service/connector.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 684,
-  "done": 1065
+  "done": 1080
 }
