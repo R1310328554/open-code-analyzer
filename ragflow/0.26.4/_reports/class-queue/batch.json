@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T19:29:30Z",
-  "files": [
-    "rag/utils/opendal_conn.py",
-    "rag/utils/opensearch_conn.py",
-    "rag/utils/oss_conn.py",
-    "rag/utils/raptor_utils.py",
-    "rag/utils/redis_conn.py",
-    "rag/utils/s3_conn.py",
-    "rag/utils/storage_factory.py",
-    "rag/utils/table_es_metadata.py",
-    "rag/utils/tavily_conn.py",
-    "rag/utils/tts_cache.py",
-    "ragflow_deps/download_deps.py",
-    "ragflow_deps/download_go_deps.py",
-    "run_tests.py",
-    "sdk/python/hello_ragflow.py",
-    "sdk/python/ragflow_sdk/__init__.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 444,
-  "done": 1305
+  "done": 1320
 }
