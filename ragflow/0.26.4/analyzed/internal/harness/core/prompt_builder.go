@@ -1,5 +1,8 @@
 package core
 
+// prompt_builder.go — 系统提示构建器：动态上下文、指令文件发现、字符预算与分段组装（对标 claw-code SystemPromptBuilder）。
+
+
 import (
 	"fmt"
 	"os"
@@ -10,23 +13,23 @@ import (
 	"time"
 )
 
-// PromptBuilder builds a system prompt with dynamic context, instruction files,
-// and character budgets. It mirrors claw-code's SystemPromptBuilder.
+// PromptBuilder 组装含动态上下文与指令文件的系统提示。
+// 支持字符预算与分段截断，设计对标 claw-code。
 type PromptBuilder struct {
 	buf strings.Builder
 }
 
-// NewPromptBuilder creates a new PromptBuilder.
+// NewPromptBuilder 创建空构建器。
 func NewPromptBuilder() *PromptBuilder {
 	return &PromptBuilder{}
 }
 
-// PromptBudget defines character limits for prompt sections.
+// PromptBudget 定义各段落字符上限。
 type PromptBudget struct {
-	PerFile     int // Max chars per instruction file (default: 4000)
-	TotalFiles  int // Max total chars from all instruction files (default: 12000)
-	GitDiff     int // Max chars for git diff (default: 50000)
-	MaxSections int // Max number of sections (default: 20)
+	PerFile     int // 单指令文件最大字符（默认 4000）
+	TotalFiles  int // 全部指令文件合计上限（默认 12000）
+	GitDiff     int // Git diff 段落上限（默认 50000）
+	MaxSections int // 最大段落数（默认 20）
 }
 
 func (b *PromptBudget) defaults() {
@@ -44,7 +47,7 @@ func (b *PromptBudget) defaults() {
 	}
 }
 
-// Build constructs the final prompt string.
+// Build 按预算拼接各 PromptSection 为最终字符串。
 func (pb *PromptBuilder) Build(parts []PromptSection, budget *PromptBudget) string {
 	budget.defaults()
 	pb.buf.Reset()
@@ -69,25 +72,25 @@ func (pb *PromptBuilder) Build(parts []PromptSection, budget *PromptBudget) stri
 	return pb.buf.String()
 }
 
-// PromptSection is a named section of the prompt.
+// PromptSection 具名提示段落。
 type PromptSection struct {
 	Name           string
 	Content        string
-	TruncateTo     int // Max chars for this section (0 = no limit)
+	TruncateTo     int // 本段最大字符（0 表示不单独限制）
 	AppendNewline  bool
 	PrependNewline bool
 }
 
-// ---- Instruction file discovery ----
+// ---- 指令文件发现 ----
 
-// InstructionFile represents a discovered instruction file.
+// InstructionFile 已发现的指令文件及其内容。
 type InstructionFile struct {
 	Path    string
 	Content string
 }
 
-// DiscoverInstructionFiles finds instruction files by walking up from startDir
-// to the git root. Searches for: CLAUDE.md, CLAW.md, AGENTS.md, and .claw/rules/*.md
+// DiscoverInstructionFiles 从 startDir 向上找到 git 根并扫描指令文件。
+// 查找 CLAUDE.md、CLAW.md、AGENTS.md 及 .claw/rules/*.md
 func DiscoverInstructionFiles(startDir string) ([]InstructionFile, error) {
 	root := findGitRoot(startDir)
 	if root == "" {
@@ -109,7 +112,7 @@ func DiscoverInstructionFiles(startDir string) ([]InstructionFile, error) {
 		files = append(files, InstructionFile{Path: path, Content: string(content)})
 	}
 
-	// Load rules directory
+	// 加载 .claw/rules 目录下 md/txt
 	rulesDir := filepath.Join(root, ".claw", "rules")
 	if entries, err := os.ReadDir(rulesDir); err == nil {
 		for _, e := range entries {
@@ -127,7 +130,7 @@ func DiscoverInstructionFiles(startDir string) ([]InstructionFile, error) {
 	return files, nil
 }
 
-// InstructionFileSections converts instruction files to prompt sections with budget.
+// InstructionFileSections 将指令文件转为带预算的 PromptSection。
 func InstructionFileSections(files []InstructionFile, budget *PromptBudget) []PromptSection {
 	budget.defaults()
 	var sections []PromptSection
@@ -157,9 +160,9 @@ func InstructionFileSections(files []InstructionFile, budget *PromptBudget) []Pr
 	return sections
 }
 
-// ---- Dynamic context sections ----
+// ---- 动态上下文段落 ----
 
-// EnvSection creates a prompt section with OS, date, and CWD information.
+// EnvSection 生成环境信息段（日期、OS、主机、CWD）。
 func EnvSection() PromptSection {
 	hostname, _ := os.Hostname()
 	cwd, _ := os.Getwd()
@@ -174,7 +177,7 @@ func EnvSection() PromptSection {
 	}
 }
 
-// GitDiffSection creates a prompt section with git diff output.
+// GitDiffSection 生成 Git 工作区变更摘要段。
 func GitDiffSection(budgetChars int) PromptSection {
 	diff, _ := execGitDiff()
 	if diff == "" {
@@ -207,7 +210,7 @@ func execGitDiff() (string, error) {
 	return fmt.Sprintf("HEAD: %s", ref), nil
 }
 
-// findGitRoot walks up from dir to find the .git directory.
+// findGitRoot 向上遍历查找 .git 目录。
 func findGitRoot(dir string) string {
 	dir, err := filepath.Abs(dir)
 	if err != nil {
@@ -225,7 +228,7 @@ func findGitRoot(dir string) string {
 	}
 }
 
-// GroupSectionsWithBudget appends sections respecting a total character budget.
+// GroupSectionsWithBudget 在总预算内追加段落。
 func GroupSectionsWithBudget(sections []PromptSection, budget int) []PromptSection {
 	var result []PromptSection
 	remaining := budget
@@ -246,7 +249,7 @@ func GroupSectionsWithBudget(sections []PromptSection, budget int) []PromptSecti
 	return result
 }
 
-// DeduplicateSections removes sections with duplicate content (by exact match).
+// DeduplicateSections 按内容精确匹配去重。
 func DeduplicateSections(sections []PromptSection) []PromptSection {
 	seen := make(map[string]bool)
 	var result []PromptSection
@@ -261,7 +264,7 @@ func DeduplicateSections(sections []PromptSection) []PromptSection {
 	return result
 }
 
-// SortSections puts core sections first, then by name.
+// SortSections 将 Environment/Capabilities/Instructions 优先，其余按名称排序。
 func SortSections(sections []PromptSection) {
 	sort.SliceStable(sections, func(i, j int) bool {
 		core := map[string]int{
@@ -275,3 +278,5 @@ func SortSections(sections []PromptSection) {
 		return sections[i].Name < sections[j].Name
 	})
 }
+
+// execGitDiff 当前仅读取 HEAD ref 作为占位；完整 diff 可后续扩展。

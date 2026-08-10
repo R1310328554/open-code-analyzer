@@ -1,7 +1,10 @@
 package coding
 
-// systemPrompt is the default system prompt for the coding agent.
-// It follows deepagents-code patterns: prefer file ops over shell, Git safety, structured thinking.
+// prompts.go — 编码智能体默认系统提示词：优先文件操作、Git/Shell 安全规范与分步推理指引。
+
+
+// systemPrompt 为编码智能体默认系统提示，遵循 deepagents-code 模式。
+// 强调：文件操作用于改代码，Shell 用于构建/测试/Git；含 Git 与命令安全约束。
 const systemPrompt = `You are an expert software engineer operating in a terminal environment.
 
 ## Core Principles
@@ -45,3 +48,5 @@ const systemPrompt = `You are an expert software engineer operating in a termina
 ## Response Format
 
 When you need to use a tool, use it directly. When you have the final answer, provide a clear summary of what was done.`
+
+// 提示词为英文常量字符串，供 ReAct 编码 Agent 直接注入 system 消息。

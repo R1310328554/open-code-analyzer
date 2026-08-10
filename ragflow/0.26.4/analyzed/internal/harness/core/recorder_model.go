@@ -1,5 +1,8 @@
 package core
 
+// recorder_model.go — 模型调用事件记录：WrapModel 包装 Model，将 Generate 调用写入 context 中的 EventRecorder。
+
+
 import (
 	"context"
 	"time"
@@ -8,10 +11,10 @@ import (
 	"ragflow/internal/harness/events"
 )
 
-// ---- Model Wrapper: records LLM calls via EventRecorder from context ----
+// ---- 模型包装器：经 context EventRecorder 记录 LLM 调用 ----
 
-// eventRecorderModelWrapper wraps a Model and records each invocation to the
-// EventRecorder found in the context (via events.RecorderFromContext).
+// eventRecorderModelWrapper 包装 Model，记录每次 Generate。
+// 通过 events.RecorderFromContext 获取 Recorder。
 type eventRecorderModelWrapper[M MessageType] struct {
 	inner Model[M]
 }
@@ -30,9 +33,9 @@ func (w *eventRecorderModelWrapper[M]) Generate(ctx context.Context, msgs []M, o
 		for _, m := range msgs {
 			msgsAny = append(msgsAny, any(m))
 		}
-		// We record the model as "unknown" when the name isn't accessible here.
-		// The agent sets model name via BindTools / config; that info can be
-		// added by providing it through the context in a future iteration.
+		// 此处无法获取模型名时记为 "unknown"。
+		// 模型名可通过 context 传递，后续迭代可改进。
+		// 当前仅记录消息、输出内容与耗时。
 		rec.RecordModelCall(ctx, "unknown", "", msgsAny, contentOf(resp), events.TokenUsage{}, durMs, 0)
 	}
 	return resp, err
@@ -46,12 +49,12 @@ func (w *eventRecorderModelWrapper[M]) BindTools(tools []*schema.ToolInfo) error
 	return w.inner.BindTools(tools)
 }
 
-// ---- Handler that injects the wrapper via TypedReActMiddleware.WrapModel ----
+// ---- 经 WrapModel 注入包装器的中间件处理器 ----
 
 type eventRecorderModelHandler[M MessageType] struct{}
 
-// NewEventRecorderModelWrapper creates a middleware handler that wraps the model
-// to record LLM invocations to the EventRecorder stored in context.
+// NewEventRecorderModelWrapper 创建记录模型调用的中间件。
+// context 无 Recorder 时透传原 Model。
 // Usage:
 //
 //	recorder := events.NewEventRecorder(store)
@@ -87,7 +90,7 @@ func (h *eventRecorderModelHandler[M]) AfterModelRewrite(ctx context.Context, st
 	return ctx, st, nil
 }
 
-// contentOf extracts the text content from a response message.
+// contentOf 从响应消息提取文本内容。
 func contentOf[M MessageType](resp M) string {
 	if msg, ok := any(resp).(*schema.Message); ok && msg != nil {
 		return msg.Content
@@ -97,3 +100,5 @@ func contentOf[M MessageType](resp M) string {
 	}
 	return ""
 }
+
+// 使用前需 events.ContextWithRecorder(ctx, recorder) 注入 Recorder。

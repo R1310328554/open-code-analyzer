@@ -1,20 +1,21 @@
-// Package agentcore provides a graph-level ReAct loop using the project's own
-// StateGraph engine, with built-in checkpoint/interrupt/resume support at each
-// iteration boundary.
+// react_graph.go — 图级 ReAct 循环：StateGraph 节点化 model_generate/execute_tools，集成 checkpoint 与 interrupt。
+// 本文件将 ReAct 循环映射为 StateGraph，由 Pregel 引擎驱动。
+// 每次迭代边界自动 checkpoint，支持工具执行前 interrupt。
+// 替代 chatmodel_react.go 中的简单 for 循环。
 //
-// The ReActGraph wraps a TypedChatModelAgent's loop into StateGraph nodes so that
-// the graph engine's checkpointing (via graph.WithCheckpointer) and interrupt/resume
-// (via graph.WithInterrupts) apply at each superstep automatically. This replaces
-// the simple for-loop in chatmodel_react.go with the full Pregel execution engine.
+// ReActGraph 将 ChatModelAgent 循环拆为图节点。
+// graph.WithCheckpointer 与 WithInterrupts 在 superstep 边界生效。
+// 完整中间件链与 ToolsNode 均保留。
+// 支持 *schema.Message 与 *schema.AgenticMessage（类型注册）。
 //
-// Key features:
-//   - Checkpoint at every model_generate and execute_tools node boundary
-//   - Interrupt before execute_tools for human-in-the-loop tool approval
-//   - Resume from interrupt via graph checkpoint restoration
-//   - Full middleware chain (BeforeAgent, BeforeModelRewrite, AfterModelRewrite, AfterAgent)
-//   - ToolsNode integration with ToolCallMiddlewares
-//   - Streaming events via pregel.StreamManager
-//   - Generic: supports both *schema.Message and *schema.AgenticMessage
+// 关键特性：
+//   - model_generate / execute_tools 节点边界 checkpoint
+//   - execute_tools 前 interrupt 供人工审批
+//   - 从 checkpoint 恢复中断执行
+//   - 完整 Before/After 中间件链
+//   - ToolsNode 与 ToolCallMiddlewares 集成
+//   - pregel.StreamManager 流式事件
+//   - 泛型支持 Message 与 AgenticMessage
 package core
 
 import (
@@ -35,8 +36,8 @@ func init() {
 	schema.RegisterType("_harness_react_graph_state", func() any { return &ReActGraphState{} })
 }
 
-// ReActGraphState is the shared state for the graph-level ReAct loop.
-// It persists across supersteps, enabling checkpoint and interrupt/resume.
+// ReActGraphState 图级 ReAct 共享状态。
+// 跨 superstep 持久化，支持 checkpoint 与 interrupt/resume。
 type ReActGraphState struct {
 	Messages       []*schema.Message
 	ToolInfos      []*schema.ToolInfo
@@ -44,18 +45,18 @@ type ReActGraphState struct {
 	MaxIterations  int
 	AgentName      string
 	Instruction    string
-	HasToolCall    bool // signals whether the last model output had tool calls
+	HasToolCall    bool // 标记上一轮模型输出是否含 tool calls
 
-	// ToolExecutedCache caches completed tool call results for interrupt/resume.
-	// Key = tool call ID, value = result content string.
-	// After successful completion of all tools in a superstep, this is cleared.
-	// On interrupt, it persists via the Pregel checkpoint and allows skipping
-	// already-executed tools on resume (equivalent to Eino's ToolsInterruptAndRerunExtra).
+	// ToolExecutedCache 缓存已完成 tool 结果，中断恢复时跳过重复执行。
+	// 键为 tool call ID，值为结果内容。
+	// 本 superstep 全部完成后清空。
+	// 中断时经 Pregel checkpoint 持久化。
+	// 恢复时跳过已缓存 tool（类似 Eino ToolsInterruptAndRerunExtra）。
 	ToolExecutedCache map[string]string
 }
 
-// ReActGraph wraps a ChatModelAgent's loop into a StateGraph with automatic
-// checkpoint at each iteration and interrupt before tool execution.
+// ReActGraph 将 ChatModelAgent 循环编译为 StateGraph。
+// 每轮迭代 checkpoint，工具执行前可 interrupt。
 type ReActGraph struct {
 	compiled types.CompiledGraph
 	config   *ReActConfig[*schema.Message]
@@ -64,32 +65,32 @@ type ReActGraph struct {
 	allTools []Tool             // merged config + contributor tools
 }
 
-// ReActGraphConfig holds options for building a ReActGraph.
+// ReActGraphConfig 构建 ReActGraph 的选项。
 type ReActGraphConfig struct {
 	Checkpointer    checkpoint.BaseCheckpointer
-	InterruptBefore []string // node names to interrupt before (default: "execute_tools")
+	InterruptBefore []string // 中断前节点名（默认 execute_tools）
 	RecursionLimit  int
 }
 
-// NewReActGraph builds a StateGraph with nodes:
+// NewReActGraph 构建含以下节点的 StateGraph：
 //
 //	prepare_input → model_generate → execute_tools → check_done
 //	                                                ↘ [end]
 //
-// Interrupt is set at "execute_tools" by default. With a Checkpointer, each node
-// transition automatically saves a checkpoint via the Pregel engine.
+// 默认在 execute_tools 设置 interrupt；有 Checkpointer 时每节点 transition 存 checkpoint。
+// Pregel 引擎自动持久化状态。
 //
-// The graph applies the full middleware chain:
-//   - prepare_input: BeforeAgent
-//   - model_generate: BeforeModelRewrite → model call → AfterModelRewrite
-//   - check_done (on exit): AfterAgent
+// 图节点对应中间件：
+//   - prepare_input：BeforeAgent
+//   - model_generate：BeforeModelRewrite → 模型 → AfterModelRewrite
+//   - check_done：AfterAgent
 func NewReActGraph(agent *ReActAgent[*schema.Message], cfg *ReActGraphConfig, allToolInfos []*schema.ToolInfo) (*ReActGraph, error) {
 	if cfg == nil {
 		cfg = &ReActGraphConfig{}
 	}
 	agentCfg := agent.config
-	// Fallback: when allToolInfos is nil, derive from the agent's tools
-	// so model wrappers always have tool metadata.
+	// allToolInfos 为 nil 时从 Agent 工具推导
+	// 确保模型包装器始终有 tool 元数据。
 	if allToolInfos == nil {
 		allToolInfos = toolsToInfosTyped[*schema.Message](agentCfg.Tools)
 		if agentCfg.ToolsConfig != nil {
@@ -98,15 +99,15 @@ func NewReActGraph(agent *ReActAgent[*schema.Message], cfg *ReActGraphConfig, al
 	}
 	sg := graph.NewStateGraph(&ReActGraphState{})
 
-	// Register channels for state fields used by the graph engine.
+	// 为图引擎注册 state 字段 channel。
 	sg.AddChannel("messages", channels.NewLastValue([]*schema.Message{}))
 	sg.AddChannel("iterations_left", channels.NewLastValue(0))
 	sg.AddChannel("has_tool_call", channels.NewLastValue(false))
 	sg.AddChannel("tool_cache", channels.NewLastValue(map[string]string{}))
 
-	// --- Node: prepare_input ---
-	// Runs once at the start. Applies BeforeAgent middleware.
-	// Build allTools and allRD from config + contributor tools.
+	// --- 节点：prepare_input ---
+	// 启动时运行一次，执行 BeforeAgent。
+	// 合并 config 与 contributor 的工具与 ReturnDirectly。
 	allTools := make([]Tool, 0, len(agent.config.Tools))
 	allTools = append(allTools, agent.config.Tools...)
 	allRD := make(map[string]bool)
@@ -141,10 +142,10 @@ func NewReActGraph(agent *ReActAgent[*schema.Message], cfg *ReActGraphConfig, al
 		return s, nil
 	})
 
-	// --- Node: model_generate ---
-	// Calls the LLM with the current message history. Applies BeforeModelRewrite
-	// and AfterModelRewrite middleware chains.
-	// Clears the tool cache so each iteration starts fresh.
+	// --- 节点：model_generate ---
+	// 用当前消息历史调用 LLM，执行 Before/AfterModelRewrite。
+	// 每轮开始清空 ToolExecutedCache。
+	// 递减 IterationsLeft 并检测 tool calls。
 	sg.AddNode("model_generate", func(ctx context.Context, state interface{}) (interface{}, error) {
 		s := state.(*ReActGraphState)
 		if s.IterationsLeft <= 0 {
@@ -168,7 +169,7 @@ func NewReActGraph(agent *ReActAgent[*schema.Message], cfg *ReActGraphConfig, al
 			ModelFailoverConfig: agentCfg.FailoverConfig,
 		}
 
-		// BeforeModelRewrite middleware chain.
+		// BeforeModelRewrite 中间件链。
 		for _, mw := range agentCfg.Middlewares {
 			if mw == nil {
 				continue
@@ -181,7 +182,7 @@ func NewReActGraph(agent *ReActAgent[*schema.Message], cfg *ReActGraphConfig, al
 		}
 		s.Messages = typedState.Messages
 
-		// StateModifier hook (e.g., context window trimming).
+		// StateModifier 钩子（如上下文裁剪）。
 		if agentCfg.StateModifier != nil {
 			var err error
 			typedState, err = agentCfg.StateModifier(ctx, typedState)
@@ -191,7 +192,7 @@ func NewReActGraph(agent *ReActAgent[*schema.Message], cfg *ReActGraphConfig, al
 			s.Messages = typedState.Messages
 		}
 
-		// Build model input (via GenModelInput or default).
+		// GenModelInput 或默认方式构建模型输入。
 		var modelMsgs []*schema.Message
 		if agentCfg.GenModelInput != nil {
 			var err error
@@ -204,14 +205,14 @@ func NewReActGraph(agent *ReActAgent[*schema.Message], cfg *ReActGraphConfig, al
 			modelMsgs = buildModelInputFromState(s.Messages, s.Instruction)
 		}
 
-		// Call model.
+		// 调用模型 Generate。
 		resp, err := model.Generate(ctx, modelMsgs)
 		if err != nil {
 			return nil, fmt.Errorf("model: %w", err)
 		}
 		s.Messages = append(s.Messages, resp)
 
-		// AfterModelRewrite middleware chain.
+		// AfterModelRewrite 中间件链。
 		typedState.Messages = s.Messages
 		for _, mw := range agentCfg.Middlewares {
 			if mw == nil {
@@ -225,18 +226,18 @@ func NewReActGraph(agent *ReActAgent[*schema.Message], cfg *ReActGraphConfig, al
 		}
 		s.Messages = typedState.Messages
 
-		// Detect if the model produced tool calls.
+		// 检测响应是否含 tool calls。
 		toolCalls := extractToolCalls(resp)
 		s.HasToolCall = len(toolCalls) > 0
 
 		return s, nil
 	})
 
-	// --- Node: execute_tools ---
-	// Executes tool calls found in the last model response using ToolsNode.
-	// Supports interrupt/resume via ToolExecutedCache: on interrupt, completed
-	// tool results are saved to the cache (persisted via Pregel channel checkpoint).
-	// On resume, already-cached tools are skipped.
+	// --- 节点：execute_tools ---
+	// 用 ToolsNode 执行最后一条 assistant 消息中的 tool calls。
+	// ToolExecutedCache 支持 interrupt/resume。
+	// 中断时已完成的 tool 结果写入 cache。
+	// 恢复时跳过 cache 中已有 ID。
 	sg.AddNode("execute_tools", func(ctx context.Context, state interface{}) (interface{}, error) {
 		s := state.(*ReActGraphState)
 		if len(s.Messages) == 0 {
@@ -248,13 +249,13 @@ func NewReActGraph(agent *ReActAgent[*schema.Message], cfg *ReActGraphConfig, al
 			return s, nil
 		}
 
-		// Restore or initialize the tool execution cache.
+		// 恢复或初始化 tool 执行 cache。
 		cache := s.ToolExecutedCache
 		if cache == nil {
 			cache = make(map[string]string)
 		}
 
-		// Filter out already-cached (previously completed) tool calls.
+		// 过滤已缓存（已完成）的 tool calls。
 		var pendingCalls []schema.ToolCall
 		for _, tc := range toolCalls {
 			if _, done := cache[tc.ID]; !done {
@@ -272,8 +273,8 @@ func NewReActGraph(agent *ReActAgent[*schema.Message], cfg *ReActGraphConfig, al
 		)
 		typedState := (*TypedReActAgentState[*schema.Message])(agentState)
 
-		// Build ToolsNode from config ToolsConfig (for ToolInvokeMiddlewares etc.)
-		// but overlay allTools (config + contributor).
+		// 从 ToolsConfig 构建 ToolsNode，overlay allTools。
+		// 保留 ToolInvokeMiddlewares 等配置。
 		tnCfg := &ToolsNodeConfig{}
 		if agentCfg.ToolsConfig != nil {
 			*tnCfg = *agentCfg.ToolsConfig
@@ -282,12 +283,12 @@ func NewReActGraph(agent *ReActAgent[*schema.Message], cfg *ReActGraphConfig, al
 		tnCfg.ReturnDirectly = allRD
 		tn := NewToolsNode[*schema.Message](tnCfg)
 
-		// Execute pending calls one at a time so we can track per-call results.
-		// Each call uses a single-tool-call message to keep tracking simple.
+		// 逐个执行 pending tool call 以便追踪结果。
+		// 每次仅用单 tool call 消息简化追踪。
 		var firstErr error
 		var toolInterrupted bool
 		for _, tc := range pendingCalls {
-			// Build a fresh message containing only this tool call.
+			// 构造仅含单个 tool call 的 assistant 消息。
 			singleMsg := &schema.Message{
 				Role:      schema.RoleAssistant,
 				Content:   "",
@@ -297,12 +298,12 @@ func NewReActGraph(agent *ReActAgent[*schema.Message], cfg *ReActGraphConfig, al
 			var toolResults []*schema.Message
 			toolResults, action, firstErr = tn.Execute(ctx, singleMsg, typedState, nil)
 			if firstErr != nil {
-				// Check if this is a tool interrupt (not a real error).
+				// 区分 tool interrupt 与真实错误。
 				var ir *interruptResult
 				if errors.As(firstErr, &ir) {
 					toolInterrupted = true
 					firstErr = nil
-					// Tool interrupted — still save its message to state.
+					// interrupt 时仍将 tool 消息写入 state 并缓存。
 					for _, tr := range toolResults {
 						s.Messages = append(s.Messages, tr)
 						if tr != nil && tr.Content != "" {
@@ -311,7 +312,7 @@ func NewReActGraph(agent *ReActAgent[*schema.Message], cfg *ReActGraphConfig, al
 					}
 					break
 				}
-				// Real error — stop.
+				// 真实错误则中止。
 				break
 			}
 			for _, tr := range toolResults {
@@ -333,18 +334,18 @@ func NewReActGraph(agent *ReActAgent[*schema.Message], cfg *ReActGraphConfig, al
 		}
 
 		if toolInterrupted {
-			// Save cache and return cleanly so Pregel engine checkpoints the state.
+			// 中断时保存 cache 并正常返回以便 checkpoint。
 			s.ToolExecutedCache = cache
 			return s, nil
 		}
 
-		// All tools completed successfully — clear cache for next iteration.
+		// 全部成功则清空 cache 进入下一轮。
 		s.ToolExecutedCache = nil
 		return s, nil
 	})
 
-	// --- Node: check_done ---
-	// Emits AfterAgent middleware and writes the final output.
+	// --- 节点：check_done ---
+	// 执行 AfterAgent 并将 OutputKey 写入 session。
 	sg.AddNode("check_done", func(ctx context.Context, state interface{}) (interface{}, error) {
 		s := state.(*ReActGraphState)
 		agentState := NewReActAgentState(
@@ -365,7 +366,7 @@ func NewReActGraph(agent *ReActAgent[*schema.Message], cfg *ReActGraphConfig, al
 			}
 		}
 
-		// Store output in session if configured.
+		// 若配置 OutputKey 则存储最终输出。
 		if agentCfg.OutputKey != "" && len(s.Messages) > 0 {
 			last := s.Messages[len(s.Messages)-1]
 			setOutputToSession(ctx, last, agentCfg.OutputKey)
@@ -373,11 +374,11 @@ func NewReActGraph(agent *ReActAgent[*schema.Message], cfg *ReActGraphConfig, al
 		return s, nil
 	})
 
-	// --- Edges ---
+	// --- 边 ---
 	sg.AddEdge(constants.Start, "prepare_input")
 	sg.AddEdge("prepare_input", "model_generate")
 
-	// Conditional: if no tool calls → check_done (which goes to end), else → execute_tools
+	// 条件边：无 tool call 或迭代耗尽 → check_done，否则 → execute_tools
 	sg.AddConditionalEdges("model_generate", func(ctx context.Context, state interface{}) (interface{}, error) {
 		s := state.(*ReActGraphState)
 		if s.IterationsLeft <= 0 || !s.HasToolCall {
@@ -389,10 +390,10 @@ func NewReActGraph(agent *ReActAgent[*schema.Message], cfg *ReActGraphConfig, al
 		"execute_tools": "execute_tools",
 	})
 
-	sg.AddEdge("execute_tools", "model_generate") // loop back for next iteration
-	sg.AddEdge("check_done", constants.End)       // terminal node
+	sg.AddEdge("execute_tools", "model_generate") // 执行工具后回到 model_generate
+	sg.AddEdge("check_done", constants.End)       // 终止节点
 
-	// --- Compile with checkpoint and interrupt ---
+	// --- 编译：checkpoint + interrupt ---
 	interrupts := cfg.InterruptBefore
 	if len(interrupts) == 0 {
 		interrupts = []string{"execute_tools"}
@@ -425,9 +426,9 @@ func NewReActGraph(agent *ReActAgent[*schema.Message], cfg *ReActGraphConfig, al
 	}, nil
 }
 
-// Invoke runs the graph-level ReAct loop synchronously via the Pregel engine.
-// When input is nil (resume path), the graph restores state from the checkpoint;
-// buildInitialState returns nil to let the engine handle it.
+// Invoke 经 Pregel 同步运行图级 ReAct。
+// input 为 nil 时从 checkpoint 恢复（resume 路径）。
+// buildInitialState 返回 nil 交由引擎处理。
 func (rg *ReActGraph) Invoke(ctx context.Context, input *AgentInput, config *types.RunnableConfig) (*ReActGraphState, error) {
 	var state interface{}
 	if input != nil {
@@ -445,17 +446,17 @@ func (rg *ReActGraph) Invoke(ctx context.Context, input *AgentInput, config *typ
 	return outState, nil
 }
 
-// Stream runs the graph-level ReAct loop with streaming events via Pregel.
-// Returns (outputCh, errCh). The outputCh yields pregel.StreamEvent values
-// including checkpoint, task start/end, values, and final state.
+// Stream 返回 Pregel 流式事件 channel。
+// outputCh 产出 checkpoint/task/values 等 StreamEvent。
+// errCh 传递运行错误。
 func (rg *ReActGraph) Stream(ctx context.Context, input *AgentInput, config *types.RunnableConfig, mode types.StreamMode) (<-chan interface{}, <-chan error) {
 	state := rg.buildInitialState(input)
 	return rg.compiled.Stream(ctx, state, mode, config)
 }
 
-// Resume resumes a previously interrupted graph execution from its checkpoint.
+// Resume 从 checkpoint 恢复中断的图执行。
 func (rg *ReActGraph) Resume(ctx context.Context, config *types.RunnableConfig) (*ReActGraphState, error) {
-	// Pass config so Pregel engine can restore the correct checkpoint.
+	// 需传入 RunnableConfig 以定位 checkpoint。
 	result, err := rg.compiled.Invoke(ctx, nil, config)
 	if err != nil {
 		return nil, err
@@ -467,15 +468,15 @@ func (rg *ReActGraph) Resume(ctx context.Context, config *types.RunnableConfig) 
 	return outState, nil
 }
 
-// ResumeStream resumes a previously interrupted graph with streaming.
+// ResumeStream 流式恢复。
 func (rg *ReActGraph) ResumeStream(ctx context.Context, config *types.RunnableConfig, mode types.StreamMode) (<-chan interface{}, <-chan error) {
 	return rg.compiled.Stream(ctx, nil, mode, config)
 }
 
-// Compile returns the underlying compiled graph for direct access.
+// Compile 返回底层 CompiledGraph。
 func (rg *ReActGraph) Compile() types.CompiledGraph { return rg.compiled }
 
-// ---- helpers ----
+// ---- 辅助 ----
 
 func (rg *ReActGraph) buildInitialState(input *AgentInput) *ReActGraphState {
 	maxIter := rg.config.MaxIterations
@@ -489,7 +490,7 @@ func (rg *ReActGraph) buildInitialState(input *AgentInput) *ReActGraphState {
 		AgentName:      rg.agent.name,
 		Instruction:    rg.config.Instruction,
 	}
-	// Use merged tool infos (config + contributor).
+	// 使用合并后的 tool infos。
 	state.ToolInfos = make([]*schema.ToolInfo, len(rg.allInfos))
 	copy(state.ToolInfos, rg.allInfos)
 	return state
@@ -503,5 +504,7 @@ func messageSliceToAny(msgs []*schema.Message) []Message {
 	return r
 }
 
-// Ensure pregel is imported for side effects (engine registration).
+// 确保 pregel 包 side-effect 导入（引擎注册）。
 var _ = pregel.Engine{}
+
+// 图拓扑：Start → prepare_input → model_generate ⇄ execute_tools → check_done → End。

@@ -1,9 +1,10 @@
-// Package profile provides a dual-track configuration system for agentcore:
+// profile.go — 双轨配置系统：ProviderProfile 管模型构造，HarnessProfile 管运行时行为，AgentConfig 一键建 Agent。
+// Package profile 提供 agentcore 双轨配置系统：
 //
-//   - ProviderProfile: controls how an LLM model is constructed per provider
-//     (api_key, temperature, max_tokens, api_base, use_responses_api, etc.)
-//   - HarnessProfile: controls the agent's runtime behaviour per use-case
-//     (system prompt, tool descriptions, middleware exclusions, recursion depth)
+//   - ProviderProfile：按厂商构造 LLM（api_key、temperature 等）
+//     支持 api_base、use_responses_api 等选项。
+//   - HarnessProfile：按场景控制运行时（提示词、工具、中间件、迭代深度）
+//     含工具描述覆盖、中间件排除与子 Agent 递归深度。
 //
 // Usage:
 //
@@ -27,7 +28,7 @@
 //	    Tools:              []core.Tool{myTool},
 //	})
 //
-// Config precedence (highest wins): user > HarnessProfile > ProviderProfile > defaults.
+// 配置优先级（高者覆盖低者）：用户 > HarnessProfile > ProviderProfile > 默认。
 package profile
 
 import (
@@ -43,71 +44,71 @@ import (
 )
 
 // ========================================================================
-// Phase 1: Core types + global registry
+// 阶段 1：核心类型与全局注册表
 // ========================================================================
 
-// ProviderProfile controls how a model is constructed for a given provider.
-// Each provider (Anthropic, OpenAI, Google, …) registers one ProviderProfile
-// that knows how to build a concrete Model from a model name + options.
+// ProviderProfile 定义某厂商如何构造 Model。
+// 各厂商注册一个 ProviderProfile。
+// InitModel 根据模型名与 opts 创建具体 Model。
 type ProviderProfile struct {
-	// Name identifies the provider, e.g. "anthropic", "openai".
+	// Name 厂商标识，如 anthropic、openai。
 	Name string
 
-	// InitModel creates a Model instance for the given model name and options.
-	// opts typically carries "api_key", "temperature", "max_tokens", "api_base", etc.
+	// InitModel 创建 Model 实例。
+	// opts 通常含 api_key、temperature、max_tokens、api_base 等。
 	InitModel func(ctx context.Context, modelName string, opts map[string]any) (core.Model[*schema.Message], error)
 
-	// DefaultModel is returned when no model name is specified.
+	// DefaultModel 未指定模型名时的默认值。
 	DefaultModel string
 
-	// DefaultOpts are the default options passed to InitModel.
-	// Can be overridden by HarnessProfile or user config.
+	// DefaultOpts InitModel 默认选项，可被 Harness 或用户覆盖。
+	// HarnessProfile 或 AgentConfig.ProviderOpts 可覆盖。
 	DefaultOpts map[string]any
 }
 
-// HarnessProfile controls the agent's runtime behaviour for a specific use-case.
-// The same model can be used with different harness profiles (coding, chat, research, …).
+// HarnessProfile 控制特定场景下的 Agent 运行时行为。
+// 同一模型可搭配不同 Harness 配置。
 type HarnessProfile struct {
-	// Name identifies the profile, e.g. "coding-agent", "research-agent".
+	// Name 配置名，如 coding-agent。
 	Name string
 
-	// BaseSystemPrompt replaces the default system prompt entirely.
-	// When nil, the system default is used.
+	// BaseSystemPrompt 完全替换默认系统提示；nil 则用系统默认。
+	// nil 时使用 internal.DefaultSystemPrompt。
 	BaseSystemPrompt *string
 
-	// SystemPromptSuffix is appended to the system prompt after BaseSystemPrompt.
+	// SystemPromptSuffix 追加在 BaseSystemPrompt 之后。
 	SystemPromptSuffix string
 
-	// ToolDescriptionOverrides replaces the Description() of matching tools.
-	// Key = tool name, value = new description.
+	// ToolDescriptionOverrides 按工具名覆盖 Description。
+	// 键为工具名，值为新描述。
 	ToolDescriptionOverrides map[string]string
 
-	// ExcludedToolNames removes matching tools from the agent's tool list.
+	// ExcludedToolNames 从工具列表移除指定工具。
 	ExcludedToolNames []string
 
-	// ExcludedMiddlewareNames removes matching middlewares from the agent's
-	// middleware chain. Matching uses fmt.Sprintf("%T", mw) — include the
-	// fully qualified type name, e.g. "*subagent.SubAgentMiddleware".
+	// ExcludedMiddlewareNames 按类型名排除中间件。
+	// 匹配 fmt.Sprintf("%T", mw)，需写完整类型名。
+	// 例如 "*subagent.SubAgentMiddleware"。
 	ExcludedMiddlewareNames []string
 
-	// ExtraMiddlewares are appended to the agent's middleware chain at the end.
+	// ExtraMiddlewares 追加到中间件链末尾。
 	ExtraMiddlewares []core.ReActMiddleware
 
-	// MaxIterations overrides the ReAct loop iteration limit. 0 = use default.
+	// MaxIterations 覆盖 ReAct 最大迭代次数；0 表示默认。
 	MaxIterations int
 
-	// RecursionDepth sets the sub-agent recursion depth limit.
-	// 0 = unlimited (system default).
+	// RecursionDepth 子 Agent 递归深度上限。
+	// 0 表示使用系统默认（无限制）。
 	RecursionDepth int
 }
 
-// Global registries.
+// 全局注册表（sync.Map）。
 var (
 	providers sync.Map // map[string]*ProviderProfile
 	harnesses sync.Map // map[string]*HarnessProfile
 )
 
-// RegisterProvider registers a provider profile. Panics on duplicate name.
+// RegisterProvider 注册 Provider；重名 panic。
 func RegisterProvider(p *ProviderProfile) {
 	if p == nil {
 		panic("profile: RegisterProvider called with nil")
@@ -120,7 +121,7 @@ func RegisterProvider(p *ProviderProfile) {
 	}
 }
 
-// RegisterHarness registers a harness profile. Panics on duplicate name.
+// RegisterHarness 注册 Harness；重名 panic。
 func RegisterHarness(h *HarnessProfile) {
 	if h == nil {
 		panic("profile: RegisterHarness called with nil")
@@ -133,7 +134,7 @@ func RegisterHarness(h *HarnessProfile) {
 	}
 }
 
-// LookupProvider returns the registered provider, or nil if not found.
+// LookupProvider 查找 Provider，未找到返回 nil。
 func LookupProvider(name string) *ProviderProfile {
 	if v, ok := providers.Load(name); ok {
 		return v.(*ProviderProfile)
@@ -141,7 +142,7 @@ func LookupProvider(name string) *ProviderProfile {
 	return nil
 }
 
-// LookupHarness returns the registered harness profile, or nil if not found.
+// LookupHarness 查找 Harness，未找到返回 nil。
 func LookupHarness(name string) *HarnessProfile {
 	if v, ok := harnesses.Load(name); ok {
 		return v.(*HarnessProfile)
@@ -149,9 +150,9 @@ func LookupHarness(name string) *HarnessProfile {
 	return nil
 }
 
-// ParseModelSpec parses "provider:model" strings.
-// Returns ("anthropic", "claude-sonnet-4-6") from "anthropic:claude-sonnet-4-6".
-// If no colon, returns ("", raw, error).
+// ParseModelSpec 解析 "provider:model" 规格字符串。
+// 例如 "anthropic:claude-sonnet-4-6" → (anthropic, claude-sonnet-4-6)。
+// 无冒号则返回格式错误。
 func ParseModelSpec(spec string) (provider, model string, err error) {
 	parts := strings.SplitN(spec, ":", 2)
 	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
@@ -161,66 +162,66 @@ func ParseModelSpec(spec string) (provider, model string, err error) {
 }
 
 // ========================================================================
-// AgentConfig combines model spec + harness profile + user overrides.
+// AgentConfig 声明式组合模型规格、Harness 与用户覆盖项。
 // ========================================================================
 
-// AgentConfig is a high-level declarative config for creating a ReActAgent.
-// It combines model selection (via ModelSpec), runtime behaviour (via
-// HarnessProfileName), and direct user overrides.
+// AgentConfig 高层声明式配置，用于一键创建 ReActAgent。
+// 通过 ModelSpec 选模型，HarnessProfileName 选运行时配置。
+// 用户字段优先级最高。
 type AgentConfig struct {
-	// ModelSpec in "provider:model" format, e.g. "anthropic:claude-sonnet-4-6".
+	// ModelSpec 格式 provider:model。
 	ModelSpec string
 
-	// HarnessProfileName selects a registered HarnessProfile.
-	// Empty string means no harness profile.
+	// HarnessProfileName 选择已注册 Harness；空串表示不用。
+	// 空串时不应用 Harness 层覆盖。
 	HarnessProfileName string
 
-	// ProviderOpts overrides or augments the ProviderProfile's DefaultOpts.
+	// ProviderOpts 覆盖或补充 Provider DefaultOpts。
 	ProviderOpts map[string]any
 
-	// Instruction overrides the system prompt. When non-nil, it takes
-	// precedence over both HarnessProfile.BaseSystemPrompt and the system default.
+	// Instruction 非 nil 时覆盖系统提示（最高优先级）。
+	// 优先于 Harness.BaseSystemPrompt 与系统默认。
 	Instruction *string
 
-	// Tools available to the agent. When non-nil, replaces all previous tool lists.
+	// Tools 非 nil 时替换全部工具列表。
 	Tools []core.Tool
 
-	// Middlewares to apply. Appended after HarnessProfile.ExtraMiddlewares.
+	// Middlewares 追加在 Harness.ExtraMiddlewares 之后。
 	Middlewares []core.ReActMiddleware
 
-	// MaxIterations overrides both HarnessProfile and system default.
+	// MaxIterations 覆盖 Harness 与系统默认。
 	MaxIterations int
 
-	// SubAgentSpecs declares sub-agents. The SubAgentMiddleware is automatically
-	// created with recursion depth from the active HarnessProfile.
+	// SubAgentSpecs 声明子 Agent，自动创建 SubAgentMiddleware。
+	// 递归深度取自当前 HarnessProfile.RecursionDepth。
 	SubAgentSpecs []subagent.SubAgentSpec
 }
 
 // ========================================================================
-// Phase 3: Override chain with precedence rules
+// 阶段 3：带优先级的覆盖链
 // ========================================================================
 
-// NewAgent creates a ReActAgent from a declarative AgentConfig.
+// NewAgent 从 AgentConfig 创建 ReActAgent。
 //
-// Precedence (highest wins): user explicit > HarnessProfile > ProviderProfile > defaults.
+// 优先级：用户显式配置 > Harness > Provider > 默认。
 func NewAgent(ctx context.Context, cfg *AgentConfig) (core.Agent, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("profile: AgentConfig is nil")
 	}
 
-	// 1. Resolve model from ModelSpec.
+	// 1. 从 ModelSpec 解析并构造 Model。
 	model, err := buildModel(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	// 2. Build ReActConfig via override chain.
+	// 2. 经覆盖链构建 ReActConfig。
 	reactCfg := buildReactConfig(ctx, cfg)
 
-	// 3. Set the resolved model.
+	// 3. 写入解析后的 Model。
 	reactCfg.Model = model
 
-	// 4. Handle HarnessProfile's ExcludedToolNames.
+	// 4. 应用 ExcludedToolNames 过滤工具。
 	if harness := lookupHarness(cfg.HarnessProfileName); harness != nil && len(harness.ExcludedToolNames) > 0 {
 		excluded := makeMap(harness.ExcludedToolNames)
 		filtered := make([]core.Tool, 0, len(reactCfg.Tools))
@@ -233,7 +234,7 @@ func NewAgent(ctx context.Context, cfg *AgentConfig) (core.Agent, error) {
 		reactCfg.Tools = filtered
 	}
 
-	// 5. Apply tool description overrides (wrap matching tools).
+	// 5. 用 descriptionOverrideTool 包装描述覆盖。
 	if harness := lookupHarness(cfg.HarnessProfileName); harness != nil && len(harness.ToolDescriptionOverrides) > 0 {
 		for i, t := range reactCfg.Tools {
 			if newDesc, ok := harness.ToolDescriptionOverrides[t.Name()]; ok && newDesc != "" {
@@ -242,7 +243,7 @@ func NewAgent(ctx context.Context, cfg *AgentConfig) (core.Agent, error) {
 		}
 	}
 
-	// 6. Handle SubAgentSpecs — create SubAgentMiddleware and init.
+	// 6. 处理 SubAgentSpecs，创建并 Init SubAgentMiddleware。
 	if len(cfg.SubAgentSpecs) > 0 {
 		subCfg := &subagent.Config{}
 		if harness := lookupHarness(cfg.HarnessProfileName); harness != nil && harness.RecursionDepth > 0 {
@@ -256,7 +257,7 @@ func NewAgent(ctx context.Context, cfg *AgentConfig) (core.Agent, error) {
 	return core.NewReActAgent(reactCfg), nil
 }
 
-// buildModel resolves the model from ModelSpec + ProviderProfile.
+// buildModel 从 ModelSpec 与 ProviderProfile 构造 Model。
 func buildModel(ctx context.Context, cfg *AgentConfig) (core.Model[*schema.Message], error) {
 	providerName, modelName, err := ParseModelSpec(cfg.ModelSpec)
 	if err != nil {
@@ -268,7 +269,7 @@ func buildModel(ctx context.Context, cfg *AgentConfig) (core.Model[*schema.Messa
 		return nil, fmt.Errorf("profile: unknown provider %q (registered: %s)", providerName, listProviders())
 	}
 
-	// Merge options: DefaultOpts ← ProviderOpts.
+	// 合并选项：DefaultOpts 被 ProviderOpts 覆盖。
 	opts := copyMap(provider.DefaultOpts)
 	for k, v := range cfg.ProviderOpts {
 		opts[k] = v
@@ -281,9 +282,9 @@ func buildModel(ctx context.Context, cfg *AgentConfig) (core.Model[*schema.Messa
 	return m, nil
 }
 
-// buildReactConfig applies the override chain for non-model config fields.
+// buildReactConfig 对非模型字段应用覆盖链。
 func buildReactConfig(ctx context.Context, cfg *AgentConfig) *core.ReActConfig[*schema.Message] {
-	// Start with system defaults.
+	// 从系统默认值起步。
 	result := &core.ReActConfig[*schema.Message]{
 		MaxIterations: 10,
 		Instruction:   internal.DefaultSystemPrompt,
@@ -291,7 +292,7 @@ func buildReactConfig(ctx context.Context, cfg *AgentConfig) *core.ReActConfig[*
 
 	harness := lookupHarness(cfg.HarnessProfileName)
 
-	// Layer 1: HarnessProfile.
+	// 第 1 层：HarnessProfile。
 	if harness != nil {
 		if harness.MaxIterations > 0 {
 			result.MaxIterations = harness.MaxIterations
@@ -301,11 +302,11 @@ func buildReactConfig(ctx context.Context, cfg *AgentConfig) *core.ReActConfig[*
 		}
 		result.Instruction += harness.SystemPromptSuffix
 
-		// Extra middlewares (appended; ExcludedMiddlewareNames applied later).
+		// 追加 ExtraMiddlewares；ExcludedMiddlewareNames 稍后过滤。
 		result.Middlewares = append(result.Middlewares, harness.ExtraMiddlewares...)
 	}
 
-	// Layer 2: User explicit config (highest priority).
+	// 第 2 层：用户显式配置（最高优先级）。
 	if cfg.Instruction != nil {
 		result.Instruction = *cfg.Instruction
 	}
@@ -319,7 +320,7 @@ func buildReactConfig(ctx context.Context, cfg *AgentConfig) *core.ReActConfig[*
 		result.Middlewares = append(result.Middlewares, cfg.Middlewares...)
 	}
 
-	// Apply ExcludedMiddlewareNames from HarnessProfile.
+	// 应用 Harness 的中间件排除列表。
 	if harness != nil && len(harness.ExcludedMiddlewareNames) > 0 {
 		result.Middlewares = filterMiddlewareByTypeName(result.Middlewares, harness.ExcludedMiddlewareNames)
 	}
@@ -328,7 +329,7 @@ func buildReactConfig(ctx context.Context, cfg *AgentConfig) *core.ReActConfig[*
 }
 
 // ========================================================================
-// Helpers
+// 辅助函数
 // ========================================================================
 
 func lookupHarness(name string) *HarnessProfile {
@@ -366,8 +367,8 @@ func makeMap(keys []string) map[string]bool {
 	return m
 }
 
-// filterMiddlewareByTypeName removes middlewares whose fmt.Sprintf("%T") matches
-// any name in the exclusion list.
+// filterMiddlewareByTypeName 按类型名排除中间件。
+// exclude 列表中的类型名将被移除。
 func filterMiddlewareByTypeName(mws []core.ReActMiddleware, exclude []string) []core.ReActMiddleware {
 	if len(exclude) == 0 {
 		return mws
@@ -387,7 +388,7 @@ func filterMiddlewareByTypeName(mws []core.ReActMiddleware, exclude []string) []
 	return filtered
 }
 
-// descriptionOverrideTool wraps a Tool to override its Description().
+// descriptionOverrideTool 包装 Tool 以覆盖 Description。
 type descriptionOverrideTool struct {
 	core.Tool
 	newDesc string
@@ -395,10 +396,10 @@ type descriptionOverrideTool struct {
 
 func (t *descriptionOverrideTool) Description() string { return t.newDesc }
 
-// StrPtr is a helper for creating *string literals.
+// StrPtr 创建 *string 字面量辅助函数。
 func StrPtr(s string) *string { return &s }
 
-// Validate checks the AgentConfig for common errors and returns them all at once.
+// Validate 批量校验 AgentConfig 常见错误。
 func Validate(cfg *AgentConfig) []error {
 	var errs []error
 	if cfg == nil {
@@ -415,24 +416,26 @@ func Validate(cfg *AgentConfig) []error {
 	return errs
 }
 
-// ClearProviders removes all registered providers. Used in tests for isolation.
+// ClearProviders 清空 Provider 注册表（测试隔离）。
 func ClearProviders() {
 	providers = sync.Map{}
 }
 
-// ClearHarnesses removes all registered harness profiles. Used in tests.
+// ClearHarnesses 清空 Harness 注册表（测试隔离）。
 func ClearHarnesses() {
 	harnesses = sync.Map{}
 }
 
-// RegisterProviderModel is a convenience wrapper that registers both a provider
-// profile (using ProviderProfile.Name) AND a harness profile for each supported
-// model. This matches deepagents' double-registration pattern.
+// RegisterProviderModel 同时注册 Provider 与多个 Harness（便捷包装）。
+// 匹配 deepagents 双重注册模式。
+// 已废弃：建议分别调用 RegisterProvider / RegisterHarness。
 //
-// Deprecated: Use separate RegisterProvider and RegisterHarness calls instead.
+// Deprecated：请改用独立 Register 调用。
 func RegisterProviderModel(provider *ProviderProfile, harnessProfiles ...*HarnessProfile) {
 	RegisterProvider(provider)
 	for _, h := range harnessProfiles {
 		RegisterHarness(h)
 	}
 }
+
+// NewAgent 是 profile 包主入口：解析 ModelSpec、合并三层配置并返回 ReActAgent。

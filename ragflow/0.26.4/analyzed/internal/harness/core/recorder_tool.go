@@ -1,5 +1,8 @@
 package core
 
+// recorder_tool.go — 工具调用事件记录：ToolInvokeMiddleware 记录每次工具调用的参数、结果与耗时。
+
+
 import (
 	"context"
 	"encoding/json"
@@ -9,8 +12,8 @@ import (
 	"ragflow/internal/harness/events"
 )
 
-// NewEventRecorderToolMiddleware creates a ToolInvokeMiddleware that records
-// every tool invocation to the EventRecorder found in the context.
+// NewEventRecorderToolMiddleware 创建工具调用记录中间件。
+// 每次 InvokeTool 前后计时并写入 EventRecorder。
 //
 // Usage:
 //
@@ -35,7 +38,7 @@ func NewEventRecorderToolMiddleware() ToolInvokeMiddleware {
 				return result, err
 			}
 
-			// Extract tool arguments as map (parse from JSON string).
+			// 将 JSON 参数字符串解析为 map 记录。
 			var args map[string]any
 			if ictx.Arguments != nil && ictx.Arguments.Arguments != "" {
 				json.Unmarshal([]byte(ictx.Arguments.Arguments), &args)
@@ -57,3 +60,5 @@ func NewEventRecorderToolMiddleware() ToolInvokeMiddleware {
 		}
 	}
 }
+
+// 配置于 ToolsNodeConfig.ToolInvokeMiddlewares；无 Recorder 时零开销透传。

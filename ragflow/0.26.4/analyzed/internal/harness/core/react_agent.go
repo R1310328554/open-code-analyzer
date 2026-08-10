@@ -1,5 +1,8 @@
 package core
 
+// react_agent.go — ReActAgent 核心实现：配置冻结、Run/Resume、中间件链、ToolsNode 与可选 GraphReAct 图引擎。
+
+
 import (
 	"context"
 	"fmt"
@@ -12,7 +15,7 @@ import (
 	"ragflow/internal/harness/core/schema"
 )
 
-// ReActConfig holds configuration for TypedReActAgent.
+// ReActConfig TypedReActAgent 配置。
 type ReActConfig[M MessageType] struct {
 	Model              Model[M]
 	Tools              []Tool
@@ -27,17 +30,17 @@ type ReActConfig[M MessageType] struct {
 	StateModifier      StateModifier[M]
 	ToolsConfig        *ToolsNodeConfig
 	EmitInternalEvents bool
-	// GraphReAct enables graph-based ReAct execution using the project's own
-	// StateGraph/Pregel engine. When true, each ReAct iteration runs as a graph
-	// node, providing automatic checkpoint, interrupt, and resume via the engine.
-	// Default: false (uses the simple for-loop in chatmodel_react.go).
+	// GraphReAct 启用基于 StateGraph/Pregel 的 ReAct 执行。
+	// 为 true 时每次迭代作为图节点，支持 checkpoint/interrupt/resume。
+	// 默认 false，使用 react_loop.go 中的 for 循环。
+	// 默认走简单 for 循环路径。
 	GraphReAct bool
-	// GraphReActCheckpointer is the checkpointer used when GraphReAct is enabled.
-	// If nil, no checkpointing is performed (but interrupt is still available
-	// via WithInterrupts).
+	// GraphReActCheckpointer GraphReAct 模式的检查点存储。
+	// nil 时不持久化 checkpoint，但仍可通过 WithInterrupts 中断。
+	// 中断行为由 graph.WithInterrupts 控制。
 	GraphReActCheckpointer checkpoint.BaseCheckpointer
-	// GraphReActInterruptBefore lists node names to interrupt before.
-	// Default: ["execute_tools"] (pause before tool execution for human approval).
+	// GraphReActInterruptBefore 指定中断前节点名列表。
+	// 默认 ["execute_tools"]，工具执行前暂停供人工审批。
 	GraphReActInterruptBefore []string
 }
 
@@ -45,22 +48,22 @@ func DefaultReActConfig[M MessageType]() *ReActConfig[M] {
 	return &ReActConfig[M]{MaxIterations: 10, Instruction: internal.DefaultSystemPrompt}
 }
 
-// ReActAgentResumeData holds data provided during resume to modify agent behavior.
+// ReActAgentResumeData Resume 时可携带的历史修改器等数据。
 type ReActAgentResumeData struct {
 	HistoryModifier func(ctx context.Context, messages []Message) []Message
 }
 
-// ReActAgent implements the ReAct (Reasoning + Acting) pattern.
+// ReActAgent 实现 ReAct（推理 + 行动）模式。
 //
-// Production features:
-//   - freeze-once: after first Run/Resume, configuration is frozen (atomic)
-//   - ToolsNode abstraction with middleware chain support
-//   - Enhanced Tool (4 endpoint types) support via handler interface
-//   - DeferredToolInfos for server-side tool search
-//   - EmitInternalEvents for AgentTool event forwarding
-//   - AfterToolCallsHook for AgentLoop integration
-//   - ResumeWithData / HistoryModifier for resume customization
-//   - gob encodability check on SetRunLocalValue
+// 生产特性：
+//   - freeze-once：首次 Run/Resume 后配置原子冻结
+//   - ToolsNode 抽象与工具调用中间件链
+//   - Enhanced Tool 四端点类型支持
+//   - DeferredToolInfos 服务端工具搜索
+//   - EmitInternalEvents 转发 AgentTool 事件
+//   - AfterToolCallsHook 供 AgentLoop 集成
+//   - ResumeWithData / HistoryModifier 定制恢复行为
+//   - SetRunLocalValue 时 gob 可编码性检查
 type ReActAgent[M MessageType] struct {
 	name   string
 	desc   string
@@ -77,7 +80,7 @@ var _ TypedResumableAgent[*schema.AgenticMessage] = &ReActAgent[*schema.AgenticM
 
 type TypedGenModelInput[M MessageType] func(ctx context.Context, instruction string, input *TypedAgentInput[M]) ([]M, error)
 
-// StateModifier allows transforming the agent state before model invocation.
+// StateModifier 在调用模型前变换 Agent 状态。
 type StateModifier[M MessageType] func(ctx context.Context, state *TypedReActAgentState[M]) (*TypedReActAgentState[M], error)
 
 func defaultGenModelInput(ctx context.Context, instruction string, input *AgentInput) ([]Message, error) {
@@ -121,7 +124,7 @@ func (a *ReActAgent[M]) Name(_ context.Context) string           { return a.name
 func (a *ReActAgent[M]) Description(_ context.Context) string    { return a.desc }
 func (a *ReActAgent[M]) GetType() string                         { return "ReActAgent" }
 
-// ---- Freeze mechanism ----
+// ---- 冻结机制 ----
 
 func (a *ReActAgent[M]) IsFrozen() bool { return atomic.LoadUint32(&a.frozen) == 1 }
 
@@ -173,7 +176,7 @@ func (a *ReActAgent[M]) Resume(ctx context.Context, info *ResumeInfo, opts ...Ru
 	return it
 }
 
-// ---- Internal types ----
+// ---- 内部类型 ----
 
 type typedRunFunc[M MessageType] func(ctx context.Context, p *typedRunParams[M])
 
@@ -186,8 +189,8 @@ type typedRunParams[M MessageType] struct {
 	afterToolCallsHook func(ctx context.Context) error
 }
 
-// reActExecCtx carries per-execution state for event sending, cancellation,
-// retry signal propagation, and after-tool-calls hooks.
+// reActExecCtx 单次执行上下文：事件发送、取消、重试信号等。
+// 供模型包装器与流式重试共享。
 type reActExecCtx struct {
 	generator          *AsyncGenerator[*TypedAgentEvent[*schema.Message]]
 	cancelCtx          *cancelContext
@@ -213,13 +216,13 @@ type execContext struct {
 	toolSearchTool     *schema.ToolInfo
 	emitInternalEvents bool
 
-	// ToolContributor results (collected once in once.Do).
+	// ToolContributor 中间件贡献的工具（once.Do 收集一次）。
 	contribTools          []Tool
 	contribToolInfos      []*schema.ToolInfo
 	contribReturnDirectly map[string]bool
 }
 
-// ---- Run function builder ----
+// ---- Run 函数构建器 ----
 
 func (a *ReActAgent[M]) buildRunFunc(ctx context.Context) typedRunFunc[M] {
 	var onceRun typedRunFunc[M]
@@ -231,7 +234,7 @@ func (a *ReActAgent[M]) buildRunFunc(ctx context.Context) typedRunFunc[M] {
 			return
 		}
 		a.exeCtx = ec
-		// Check for tools: config.Tools + ToolContributor tools
+		// 判断是否有工具：config.Tools + Contributor 工具
 		hasTools := len(a.config.Tools) > 0 ||
 			(a.config.ToolsConfig != nil && len(a.config.ToolsConfig.Tools) > 0) ||
 			len(ec.contribTools) > 0
@@ -257,12 +260,12 @@ func (a *ReActAgent[M]) prepareExecContext(ctx context.Context) (*execContext, e
 		rd = make(map[string]bool)
 	}
 
-	// Collect from ToolContributor middlewares.
+	// 从 ToolContributor 中间件收集工具与 ReturnDirectly。
 	contribTools := collectContributorTools(ctx, a.config.Middlewares)
 	contribInfos := collectContributorToolInfos(ctx, a.config.Middlewares)
 	contribRD := collectContributorReturnDirectly(ctx, a.config.Middlewares)
 
-	// Merge return-directly.
+	// 合并 ReturnDirectly 映射。
 	mergedRD := make(map[string]bool, len(rd)+len(contribRD))
 	for k, v := range rd {
 		mergedRD[k] = v
@@ -271,9 +274,9 @@ func (a *ReActAgent[M]) prepareExecContext(ctx context.Context) (*execContext, e
 		mergedRD[k] = v
 	}
 
-	// Merge tool infos from a single source to avoid duplicates:
-	// when ToolsConfig is nil, NewReActAgent populates ToolsConfig.Tools with a.config.Tools,
-	// so building from both sources would produce duplicate entries.
+	// 合并 ToolInfo 时避免 Tools 与 ToolsConfig 重复来源。
+	// ToolsConfig 为 nil 时 NewReActAgent 会用 config.Tools 填充。
+	// 因此只选单一来源构建 baseInfos。
 	var baseInfos []*schema.ToolInfo
 	if a.config.ToolsConfig != nil && len(a.config.ToolsConfig.Tools) > 0 {
 		baseInfos = toolsToInfosTyped[M](a.config.ToolsConfig.Tools)
@@ -295,16 +298,16 @@ func (a *ReActAgent[M]) prepareExecContext(ctx context.Context) (*execContext, e
 	}, nil
 }
 
-// ---- No-tools run function ----
+// ---- 无工具 Run 路径 ----
 
 func (a *ReActAgent[M]) buildNoToolsRunFunc() typedRunFunc[M] {
 	return func(ctx context.Context, p *typedRunParams[M]) {
-		// Build allTools: config.Tools + contribTools
+		// 合并 config.Tools 与 contribTools
 		allTools := make([]Tool, 0, len(a.config.Tools)+len(a.exeCtx.contribTools))
 		allTools = append(allTools, a.config.Tools...)
 		allTools = append(allTools, a.exeCtx.contribTools...)
 
-		// BeforeAgent middleware
+		// BeforeAgent 中间件链
 		rc := &ReActAgentContext{Instruction: a.exeCtx.instruction, Tools: allTools, ReturnDirectly: a.exeCtx.returnDirectly}
 		if err := a.runBeforeAgent(&ctx, rc, p.generator); err != nil {
 			return
@@ -313,7 +316,7 @@ func (a *ReActAgent[M]) buildNoToolsRunFunc() typedRunFunc[M] {
 		model := BuildModelWrapperChain(a.config.Model, nil, a.config, a.exeCtx.toolInfos)
 		state := NewReActAgentState(p.input.Messages, a.exeCtx.toolInfos, a.config.MaxIterations)
 
-		// BeforeModelRewrite middleware
+		// BeforeModelRewrite 中间件链
 		mc := &TypedModelContext[M]{Tools: state.ToolInfos, ModelRetryConfig: a.config.RetryConfig, ModelFailoverConfig: a.config.FailoverConfig}
 		if err := a.runBeforeModelRewrite(&ctx, &state, mc, p.generator); err != nil {
 			return
@@ -337,7 +340,7 @@ func (a *ReActAgent[M]) buildNoToolsRunFunc() typedRunFunc[M] {
 		p.generator.Send(typedModelOutputEvent(resp, nil))
 		state.Messages = append(state.Messages, resp)
 
-		// AfterModelRewrite middleware
+		// AfterModelRewrite 中间件链
 		if err := a.runAfterModelRewrite(&ctx, &state, mc, p.generator); err != nil {
 			return
 		}
@@ -346,13 +349,13 @@ func (a *ReActAgent[M]) buildNoToolsRunFunc() typedRunFunc[M] {
 			setOutputToSession(ctx, resp, a.config.OutputKey)
 		}
 
-		// AfterAgent middleware
+		// AfterAgent 中间件链
 		a.runAfterAgent(&ctx, state, p.generator)
 	}
 }
 
-// runBeforeAgent executes the BeforeAgent middleware chain.
-// Returns a non-nil error if any middleware signals termination.
+// runBeforeAgent 执行 BeforeAgent 链；错误则终止。
+// 任一中间件返回 error 则中止 Run。
 func (a *ReActAgent[M]) runBeforeAgent(ctx *context.Context, rc *ReActAgentContext, gen *AsyncGenerator[*TypedAgentEvent[M]]) error {
 	for _, mw := range a.config.Middlewares {
 		if mw == nil {
@@ -368,7 +371,7 @@ func (a *ReActAgent[M]) runBeforeAgent(ctx *context.Context, rc *ReActAgentConte
 	return nil
 }
 
-// runBeforeModelRewrite executes the BeforeModelRewrite middleware chain.
+// runBeforeModelRewrite 执行 BeforeModelRewrite 链。
 func (a *ReActAgent[M]) runBeforeModelRewrite(ctx *context.Context, state **TypedReActAgentState[M], mc *TypedModelContext[M], gen *AsyncGenerator[*TypedAgentEvent[M]]) error {
 	for _, mw := range a.config.Middlewares {
 		if mw == nil {
@@ -384,7 +387,7 @@ func (a *ReActAgent[M]) runBeforeModelRewrite(ctx *context.Context, state **Type
 	return nil
 }
 
-// runAfterModelRewrite executes the AfterModelRewrite middleware chain.
+// runAfterModelRewrite 执行 AfterModelRewrite 链。
 func (a *ReActAgent[M]) runAfterModelRewrite(ctx *context.Context, state **TypedReActAgentState[M], mc *TypedModelContext[M], gen *AsyncGenerator[*TypedAgentEvent[M]]) error {
 	for _, mw := range a.config.Middlewares {
 		if mw == nil {
@@ -400,7 +403,7 @@ func (a *ReActAgent[M]) runAfterModelRewrite(ctx *context.Context, state **Typed
 	return nil
 }
 
-// runAfterAgent executes the AfterAgent middleware chain.
+// runAfterAgent 执行 AfterAgent 链。
 func (a *ReActAgent[M]) runAfterAgent(ctx *context.Context, state *TypedReActAgentState[M], gen *AsyncGenerator[*TypedAgentEvent[M]]) {
 	for _, mw := range a.config.Middlewares {
 		if mw == nil {
@@ -415,7 +418,7 @@ func (a *ReActAgent[M]) runAfterAgent(ctx *context.Context, state *TypedReActAge
 	}
 }
 
-// ---- Helpers ----
+// ---- 辅助函数 ----
 
 func buildModelInputFromState[M MessageType](messages []M, instruction string) []M {
 	var msgs []M
@@ -466,7 +469,7 @@ func extractTextContent[M MessageType](msg M) string {
 	}
 }
 
-// findTool finds a tool by name from a list of tools.
+// findTool 按名称查找工具。
 func findTool(tools []Tool, name string) Tool {
 	for _, t := range tools {
 		if t.Name() == name {
@@ -476,8 +479,8 @@ func findTool(tools []Tool, name string) Tool {
 	return nil
 }
 
-// extractToolCalls extracts tool calls from a model response message.
-// It handles both *schema.Message (with ToolCalls field) and generic types.
+// extractToolCalls 从模型响应提取 ToolCalls。
+// 支持 *schema.Message 与 *schema.AgenticMessage。
 func extractToolCalls[M MessageType](resp M) []schema.ToolCall {
 	switch v := any(resp).(type) {
 	case *schema.Message:
@@ -499,7 +502,7 @@ func extractToolCalls[M MessageType](resp M) []schema.ToolCall {
 	return nil
 }
 
-// streamWithCancel wraps a streaming model call with cancel detection.
+// streamWithCancel 包装流式调用以响应取消信号。
 func streamWithCancel[M MessageType](s *schema.StreamReader[M], cc *cancelContext) *schema.StreamReader[M] {
 	if cc == nil {
 		return s
@@ -566,35 +569,35 @@ func streamWithCancel[M MessageType](s *schema.StreamReader[M], cc *cancelContex
 	return r
 }
 
-// getChatModelExecCtx retrieves the chat model execution context from context.
+// getChatModelExecCtx 从 context 取 reActExecCtx。
 func getChatModelExecCtx(ctx context.Context) *reActExecCtx {
 	rc := getRunCtx(ctx)
 	if rc == nil {
 		return nil
 	}
-	// The exec ctx is stored on the run session or passed via context value
+	// 存储在 run session Values["__exec_ctx"]。
 	if ec, ok := rc.Session.Values["__exec_ctx"].(*reActExecCtx); ok {
 		return ec
 	}
 	return nil
 }
 
-// getReActExecCtx retrieves the typed execution context from context.
+// getReActExecCtx 类型化封装。
 func getReActExecCtx[M MessageType](ctx context.Context) *reActExecCtx {
 	return getChatModelExecCtx(ctx)
 }
 
-// CheckpointDataVersion is the version of checkpoint data format for forward compatibility.
+// CheckpointDataVersion checkpoint 数据格式版本。
 type CheckpointDataVersion int
 
 const CheckpointDataV1 CheckpointDataVersion = 1
 
-// preprocessCheckpointData performs forward-compatible migration on resume data.
+// preprocessCheckpointData 恢复时向前兼容迁移。
 func preprocessCheckpointData(data any) any { return data }
 
-// WithGraphReAct enables the graph-based ReAct execution engine for a ReActConfig.
-// When enabled, each ReAct iteration runs as a StateGraph node with the Pregel engine,
-// providing automatic checkpoint, interrupt before tool execution, and resume support.
+// WithGraphReAct 为 ReActConfig 启用图引擎 ReAct。
+// 每次迭代为 StateGraph 节点，自动 checkpoint/interrupt/resume。
+// 可选 MemorySaver 等 Checkpointer。
 //
 // Usage:
 //
@@ -606,41 +609,41 @@ func WithGraphReAct[M MessageType](cfg *ReActConfig[M], cptr checkpoint.BaseChec
 	cfg.GraphReActCheckpointer = cptr
 }
 
-// WithGraphReActInterrupt sets which graph nodes to interrupt before.
-// Default: ["execute_tools"]. Use this to customize interrupt behavior.
+// WithGraphReActInterrupt 自定义中断前节点列表。
+// 默认 execute_tools，可定制人工审批点。
 func WithGraphReActInterrupt[M MessageType](cfg *ReActConfig[M], interruptBefore ...string) {
 	cfg.GraphReActInterruptBefore = interruptBefore
 }
 
-// ---- Graph-based ReAct run function ----
+// ---- 基于图的 ReAct Run 路径 ----
 //
-// When GraphReAct is enabled, the ReAct loop runs as a StateGraph with the
-// Pregel engine. Each iteration is a superstep, providing:
-//   - Automatic checkpoint at every node boundary (via graph.WithCheckpointer)
-//   - Interrupt before tool execution (via graph.WithInterrupts)
-//   - Resume from checkpoint on restart (via graph.Invoke with same config)
-//   - Streaming events via pregel.StreamManager
+// GraphReAct 启用时由 ReActGraph + Pregel 驱动循环。
+// 每轮 superstep 提供：
+//   - 节点边界自动 checkpoint
+//   - 工具执行前 interrupt
+//   - 同 config 从 checkpoint 恢复
+//   - pregel.StreamManager 流式事件
 
 func (a *ReActAgent[M]) buildGraphReActRunFunc() typedRunFunc[M] {
 	return func(ctx context.Context, p *typedRunParams[M]) {
-		// Graph-based ReAct currently supports *schema.Message only.
-		// For AgenticMessage, fall back to the simple for-loop.
+		// 图 ReAct 当前仅支持 *schema.Message。
+		// AgenticMessage 回退到 for 循环实现。
 		var zero M
 		_, isMessage := any(zero).(*schema.Message)
 		if !isMessage {
-			// Fallback: use standard for-loop for non-Message types.
+			// 非 Message 类型同样回退。
 			a.buildReActRunFunc()(ctx, p)
 			return
 		}
 
-		// Build graph config from agent config.
+		// 从 Agent 配置构建 ReActGraphConfig。
 		graphCfg := &ReActGraphConfig{
 			Checkpointer:    a.config.GraphReActCheckpointer,
 			InterruptBefore: a.config.GraphReActInterruptBefore,
-			RecursionLimit:  a.config.MaxIterations * 2, // each iter = 2 nodes, so allow extra
+			RecursionLimit:  a.config.MaxIterations * 2, // 每轮约 2 个节点，RecursionLimit 留余量
 		}
 
-		// Type-assert the agent to *ReActAgent[*schema.Message].
+		// 类型断言为 *ReActAgent[*schema.Message]。
 		msgAgent, ok := any(a).(*ReActAgent[*schema.Message])
 		if !ok {
 			p.generator.Send(&TypedAgentEvent[M]{Err: fmt.Errorf("graph ReAct: agent type assertion failed")})
@@ -653,17 +656,17 @@ func (a *ReActAgent[M]) buildGraphReActRunFunc() typedRunFunc[M] {
 			return
 		}
 
-		// Build agent input.
+		// 构建 AgentInput。
 		input := &AgentInput{Messages: messageSliceToAny2(p.input.Messages)}
 
-		// Run the graph (synchronous invoke or streaming).
+		// 同步 Invoke 图。
 		state, err := rg.Invoke(ctx, input, nil)
 		if err != nil {
 			p.generator.Send(&TypedAgentEvent[M]{Err: err})
 			return
 		}
 
-		// Emit the final model response as an event.
+		// 发送最终模型输出事件。
 		if len(state.Messages) > 0 {
 			last := state.Messages[len(state.Messages)-1]
 			if !isNilMessage(last) {
@@ -671,7 +674,7 @@ func (a *ReActAgent[M]) buildGraphReActRunFunc() typedRunFunc[M] {
 			}
 		}
 
-		// Emit afterToolCallsHook if configured.
+		// 执行 afterToolCallsHook（若配置）。
 		if p.afterToolCallsHook != nil {
 			if err := p.afterToolCallsHook(ctx); err != nil {
 				p.generator.Send(&TypedAgentEvent[M]{Err: fmt.Errorf("after_tool_calls_hook: %w", err)})
@@ -680,16 +683,18 @@ func (a *ReActAgent[M]) buildGraphReActRunFunc() typedRunFunc[M] {
 	}
 }
 
-// messageSliceToAny2 converts a []M (MessageType) to []*schema.Message for graph ReAct.
+// messageSliceToAny2 将 []M 转为 []*schema.Message 供图使用。
 func messageSliceToAny2[M MessageType](msgs []M) []*schema.Message {
 	r := make([]*schema.Message, len(msgs))
 	for i, m := range msgs {
 		if msg, ok := any(m).(*schema.Message); ok {
 			r[i] = msg
 		} else {
-			// Fallback: skip non-Message items.
+			// 非 Message 项置 nil。
 			r[i] = nil
 		}
 	}
 	return r
 }
+
+// buildRunFunc 在 once.Do 中选择无工具/for 循环/GraphReAct 三条执行路径之一。

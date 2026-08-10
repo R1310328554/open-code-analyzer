@@ -1,12 +1,13 @@
-// Package planexecute provides the Plan-Execute-Replan agent pattern.
+// plan_execute.go — Plan-Execute-Replan 模式：Sequential(Planner, Loop(Executor, Replanner)) 分步规划、执行与重规划。
+// Package planexecute 实现 Plan-Execute-Replan 智能体模式。
 //
 // Architecture:
 //
 //	SequentialAgent(Planner, LoopAgent(Executor, Replanner))
 //
-// The Planner generates an initial step-by-step plan.
-// The Executor executes the first uncompleted step.
-// The Replanner evaluates progress and either replans (plan_tool) or responds (respond_tool).
+// Planner 生成初始分步计划。
+// Executor 执行首个未完成步骤。
+// Replanner 评估进度，重规划或最终回复。
 // The loop repeats until MaxLoopIterations is reached. The respond_tool is configured
 // as ReturnDirectly, which causes the replanner sub-agent to return early, but does NOT
 // propagate a BreakLoopAction to the outer LoopAgent — loop termination is guaranteed
@@ -25,7 +26,7 @@ import (
 )
 
 // ============================================================
-// Session value keys
+// 会话本地键
 // ============================================================
 
 const (
@@ -34,17 +35,17 @@ const (
 )
 
 // ============================================================
-// Plan interface and default implementation
+// Plan 接口与默认实现
 // ============================================================
 
-// Plan represents a structured step-by-step plan.
+// Plan 结构化分步计划接口。
 type Plan interface {
 	json.Marshaler
 	json.Unmarshaler
 	Steps() []string
 }
 
-// defaultPlan is the default Plan implementation.
+// defaultPlan 默认 Plan 实现。
 type defaultPlan struct {
 	StepList []string `json:"steps"`
 }
@@ -67,40 +68,40 @@ func (p *defaultPlan) UnmarshalJSON(data []byte) error {
 }
 
 // ============================================================
-// Config
+// 配置
 // ============================================================
 
-// PlannerConfig configures the planner agent.
+// PlannerConfig 规划器配置。
 type PlannerConfig struct {
 	Model       core.Model[*schema.Message]
-	Instruction string // overrides default PlannerPrompt
+	Instruction string // 覆盖默认 PlannerPrompt
 }
 
-// ExecutorConfig configures the executor agent.
+// ExecutorConfig 执行器配置。
 type ExecutorConfig struct {
 	Model       core.Model[*schema.Message]
 	Instruction string // overrides default ExecutorPrompt
 	Tools       []core.Tool
 }
 
-// ReplannerConfig configures the replanner agent.
+// ReplannerConfig 重规划器配置。
 type ReplannerConfig struct {
 	Model       core.Model[*schema.Message]
 	Instruction string // overrides default ReplannerPrompt
 	Tools       []core.Tool
 }
 
-// Config configures the PlanExecute agent.
+// Config PlanExecute 整体配置。
 type Config struct {
 	Planner           *PlannerConfig
 	Executor          *ExecutorConfig
 	Replanner         *ReplannerConfig
 	Name              string
-	MaxLoopIterations int // default 10
+	MaxLoopIterations int // 默认 10 次
 }
 
 // ============================================================
-// Tool definitions
+// 工具定义
 // ============================================================
 
 const (
@@ -108,8 +109,8 @@ const (
 	toolRespond = "respond_tool"
 )
 
-// planTool allows the planner to output a structured plan.
-// The replanner uses it to update the plan.
+// planTool 供规划器输出结构化计划。
+// Replanner 也用它更新计划。
 var planToolDef = core.NewBaseTool(
 	toolPlan,
 	`Create or update a step-by-step plan. Args: {"steps":["step1","step2",...]}`,
@@ -124,7 +125,7 @@ var planToolDef = core.NewBaseTool(
 		if err := core.SetRunLocalValue(ctx, sessionKeyPlan, plan); err != nil {
 			return "", err
 		}
-		// Reset steps done when plan changes
+		// 计划变更时重置已完成步数计数
 		if err := core.SetRunLocalValue(ctx, sessionKeyStepsDone, 0); err != nil {
 			return "", err
 		}
@@ -132,7 +133,7 @@ var planToolDef = core.NewBaseTool(
 	},
 )
 
-// respondTool allows the replanner to signal completion.
+// respondTool 供 Replanner 发出完成信号。
 var respondToolDef = core.NewBaseTool(
 	toolRespond,
 	`Signal that the task is complete and respond to the user. Args: {"response":"your final answer"}`,
@@ -148,7 +149,7 @@ var respondToolDef = core.NewBaseTool(
 )
 
 // ============================================================
-// Prompts
+// 提示词常量
 // ============================================================
 
 const PlannerPrompt = `You are a planner agent. Your job is to create a detailed step-by-step plan to accomplish the user's task.
@@ -194,7 +195,7 @@ Current plan: {plan}
 Completed steps: {completed_steps}`
 
 // ============================================================
-// Agent names
+// 子 Agent 名称常量
 // ============================================================
 
 const (
@@ -205,10 +206,10 @@ const (
 )
 
 // ============================================================
-// New — main constructor
+// New 主构造函数
 // ============================================================
 
-// New creates a Plan-Execute-Replan agent as a ResumableAgent.
+// New 创建可恢复 ResumableAgent。
 func New(ctx context.Context, cfg *Config) (core.ResumableAgent, error) {
 	if cfg == nil {
 		cfg = &Config{}
@@ -220,7 +221,7 @@ func New(ctx context.Context, cfg *Config) (core.ResumableAgent, error) {
 		cfg.Name = "plan_execute_agent"
 	}
 
-	// Validate configs
+	// 校验各子 Agent 模型配置
 	if cfg.Planner == nil || cfg.Planner.Model == nil {
 		return nil, fmt.Errorf("planexecute: Planner.Model is required")
 	}
@@ -231,7 +232,7 @@ func New(ctx context.Context, cfg *Config) (core.ResumableAgent, error) {
 		return nil, fmt.Errorf("planexecute: Replanner.Model is required")
 	}
 
-	// ---- Create Planner ----
+	// ---- 创建 Planner ----
 	plannerInstruction := cfg.Planner.Instruction
 	if plannerInstruction == "" {
 		plannerInstruction = PlannerPrompt
@@ -245,7 +246,7 @@ func New(ctx context.Context, cfg *Config) (core.ResumableAgent, error) {
 		GenModelInput: genPlannerInput,
 	}).WithName(agentNamePlanner).WithDescription("Generates a step-by-step plan")
 
-	// ---- Create Executor ----
+	// ---- 创建 Executor ----
 	executorInstruction := cfg.Executor.Instruction
 	if executorInstruction == "" {
 		executorInstruction = ExecutorPrompt
@@ -262,7 +263,7 @@ func New(ctx context.Context, cfg *Config) (core.ResumableAgent, error) {
 		GenModelInput: genExecutorInput,
 	}).WithName(agentNameExecutor).WithDescription("Executes the current plan step")
 
-	// ---- Create Replanner ----
+	// ---- 创建 Replanner ----
 	replannerInstruction := cfg.Replanner.Instruction
 	if replannerInstruction == "" {
 		replannerInstruction = ReplannerPrompt
@@ -271,7 +272,7 @@ func New(ctx context.Context, cfg *Config) (core.ResumableAgent, error) {
 	replannerTools := make([]core.Tool, 0, len(cfg.Replanner.Tools)+2)
 	replannerTools = append(replannerTools, cfg.Replanner.Tools...)
 	replannerTools = append(replannerTools, planToolDef)
-	// respond_tool is marked as ReturnDirectly so the agent exits after using it
+	// respond_tool 标记 ReturnDirectly，使用后 Replanner 直接返回
 	returnDirectly := map[string]bool{toolRespond: true}
 
 	replanner := core.NewReActAgent(&core.ReActConfig[*schema.Message]{
@@ -283,8 +284,8 @@ func New(ctx context.Context, cfg *Config) (core.ResumableAgent, error) {
 		GenModelInput:  genReplannerInput,
 	}).WithName(agentNameReplanner).WithDescription("Evaluates progress and replans or responds")
 
-	// ---- Compose: Sequential(Planner, Loop(Executor, Replanner)) ----
-	// The Loop runs: Executor -> Replanner, repeating until Replanner signals done
+	// ---- 组合：Sequential(Planner, Loop(Executor, Replanner)) ----
+	// Loop 循环 Executor → Replanner，直至达到 MaxLoopIterations
 	loopAgent, err := core.NewLoop(ctx, &core.LoopConfig{
 		Name:          agentNameLoop,
 		Description:   "Plan-Execute-Replan loop",
@@ -295,7 +296,7 @@ func New(ctx context.Context, cfg *Config) (core.ResumableAgent, error) {
 		return nil, fmt.Errorf("planexecute: create loop: %w", err)
 	}
 
-	// Sequential: Planner -> Loop
+	// Sequential：Planner → Loop
 	seqAgent, err := core.NewSequential(ctx, &core.SequentialConfig{
 		Name:        cfg.Name,
 		Description: "Plan-Execute-Replan agent",
@@ -309,10 +310,10 @@ func New(ctx context.Context, cfg *Config) (core.ResumableAgent, error) {
 }
 
 // ============================================================
-// GenModelInput functions
+// GenModelInput 输入构建函数
 // ============================================================
 
-// genPlannerInput builds the input for the planner.
+// genPlannerInput 构建 Planner 模型输入。
 func genPlannerInput(ctx context.Context, instruction string, input *core.AgentInput) ([]*schema.Message, error) {
 	msgs := make([]*schema.Message, 0, len(input.Messages)+1)
 	if instruction != "" {
@@ -322,7 +323,7 @@ func genPlannerInput(ctx context.Context, instruction string, input *core.AgentI
 	return msgs, nil
 }
 
-// genContextualInput builds input with plan context substituted into the instruction.
+// genContextualInput 将 {objective}/{plan}/{completed_steps} 注入指令。
 func genContextualInput(ctx context.Context, instruction string, input *core.AgentInput) ([]*schema.Message, error) {
 	planStr := getPlanStr(ctx)
 	stepsDone := getStepsDone(ctx)
@@ -340,16 +341,16 @@ func genContextualInput(ctx context.Context, instruction string, input *core.Age
 	return msgs, nil
 }
 
-// genExecutorInput delegates to the shared helper.
+// genExecutorInput 委托给 genContextualInput。
 func genExecutorInput(ctx context.Context, instruction string, input *core.AgentInput) ([]*schema.Message, error) {
 	return genContextualInput(ctx, instruction, input)
 }
 
-// genReplannerInput increments the step counter, then delegates to the shared helper.
+// genReplannerInput 递增已完成步数后构建输入。
 func genReplannerInput(ctx context.Context, instruction string, input *core.AgentInput) ([]*schema.Message, error) {
-	// Increment steps done: each time the replanner runs, it means the executor
-	// just completed a step. The counter is reset to 0 by planTool when the plan
-	// is updated, making the next count start fresh.
+	// 每次 Replanner 运行表示 Executor 刚完成一步
+	// planTool 更新计划时将计数重置为 0
+	// 使下一轮计数从零开始。
 	currentSteps := getStepsDone(ctx)
 	currentSteps++
 	_ = core.SetRunLocalValue(ctx, sessionKeyStepsDone, currentSteps)
@@ -357,10 +358,10 @@ func genReplannerInput(ctx context.Context, instruction string, input *core.Agen
 }
 
 // ============================================================
-// Helpers
+// 辅助函数
 // ============================================================
 
-// getPlanStr retrieves the plan from session and formats it.
+// getPlanStr 从会话读取计划并格式化为编号列表。
 func getPlanStr(ctx context.Context) string {
 	v, ok, err := core.GetRunLocalValue(ctx, sessionKeyPlan)
 	if err != nil || !ok || v == nil {
@@ -384,7 +385,7 @@ func getPlanStr(ctx context.Context) string {
 	return sb.String()
 }
 
-// getStepsDone retrieves the number of completed steps.
+// getStepsDone 读取已完成步骤数。
 func getStepsDone(ctx context.Context) int {
 	v, ok, err := core.GetRunLocalValue(ctx, sessionKeyStepsDone)
 	if err != nil || !ok {
@@ -396,7 +397,7 @@ func getStepsDone(ctx context.Context) int {
 	return 0
 }
 
-// getObjective extracts the objective from user messages.
+// getObjective 从用户消息提取任务目标。
 func getObjective(msgs []*schema.Message) string {
 	for _, m := range msgs {
 		if m.Role == schema.RoleUser {
@@ -409,3 +410,5 @@ func getObjective(msgs []*schema.Message) string {
 func init() {
 	schema.RegisterName[defaultPlan]("planexecute_default_plan")
 }
+
+// respond_tool 的 ReturnDirectly 不会向外层 Loop 传播 BreakLoop；终止依赖 MaxLoopIterations。

@@ -1,11 +1,12 @@
-// Package providers contains built-in provider adapters for the profile system.
-// Each adapter registers itself in the global provider registry.
+// providers.go — 内置 LLM 厂商适配器：Anthropic Messages API 与 OpenAI Chat Completions，纯 net/http 无外部 SDK。
+// Package providers 提供 profile 系统的内置厂商适配器。
+// 各适配器向全局 Provider 注册表注册。
 //
-// Supported providers:
-//   - Anthropic ("anthropic"): Claude models via Anthropic Messages API
-//   - OpenAI ("openai"): GPT models via OpenAI Chat Completions API
+// 支持的厂商：
+//   - Anthropic：Claude 系列，Messages API
+//   - OpenAI：GPT 系列，Chat Completions API
 //
-// Both use net/http directly (no external SDK dependency).
+// 均直接使用 net/http，无第三方 SDK 依赖。
 package providers
 
 import (
@@ -24,7 +25,7 @@ import (
 )
 
 // ========================================================================
-// Shared HTTP helpers
+// 共享 HTTP 辅助
 // ========================================================================
 
 const defaultTimeout = 60 * time.Second
@@ -61,14 +62,14 @@ func doRequest(ctx context.Context, client httpClient, req *http.Request, dst an
 }
 
 // ========================================================================
-// Anthropic provider
+// Anthropic 厂商
 // ========================================================================
 
 const defaultAnthropicBaseURL = "https://api.anthropic.com/v1"
 
 type anthropicProvider struct{}
 
-// AnthropicConfig carries provider-level settings for the Anthropic adapter.
+// AnthropicConfig Anthropic 适配器级配置。
 type AnthropicConfig struct {
 	APIKey      string
 	BaseURL     string
@@ -76,7 +77,7 @@ type AnthropicConfig struct {
 	MaxTokens   int
 }
 
-// RegisterAnthropic registers the Anthropic provider with the global registry.
+// RegisterAnthropic 注册 Anthropic Provider。
 func RegisterAnthropic(cfg AnthropicConfig) {
 	if cfg.BaseURL == "" {
 		cfg.BaseURL = defaultAnthropicBaseURL
@@ -121,19 +122,19 @@ type anthropicModel struct {
 	tools       []*schema.ToolInfo
 }
 
-// ---- Anthropic API types ----
+// ---- Anthropic API 类型 ----
 
 type anthropicMessage struct {
 	Role    string `json:"role"`
-	Content any    `json:"content"` // string or []contentBlock
+	Content any    `json:"content"` // string 或 []contentBlock
 }
 
 type contentBlock struct {
 	Type  string `json:"type"`
 	Text  string `json:"text,omitempty"`
-	Name  string `json:"name,omitempty"` // for tool_use
+	Name  string `json:"name,omitempty"` // tool_use 块
 	Input any    `json:"input,omitempty"`
-	ID    string `json:"id,omitempty"` // for tool_use/result
+	ID    string `json:"id,omitempty"` // tool_use / tool_result
 }
 
 type anthropicRequest struct {
@@ -179,7 +180,7 @@ func (m *anthropicModel) Generate(ctx context.Context, msgs []*schema.Message, o
 }
 
 func (m *anthropicModel) Stream(ctx context.Context, msgs []*schema.Message, opts ...core.ModelOption) (*schema.StreamReader[*schema.Message], error) {
-	// Non-streaming fallback for simplicity.
+	// 流式暂未实现，回退为 Generate 后包装为 StreamReader。
 	msg, err := m.Generate(ctx, msgs, opts...)
 	if err != nil {
 		return nil, err
@@ -237,7 +238,7 @@ func (m *anthropicModel) buildRequest(msgs []*schema.Message) *anthropicRequest 
 		req.System = strings.TrimSuffix(systemText, "\n")
 	}
 
-	// Populate tools.
+	// 填充 tools 定义。
 	for _, t := range m.tools {
 		req.Tools = append(req.Tools, anthropicToolDef{
 			Name:        t.Name,
@@ -259,7 +260,7 @@ func (m *anthropicModel) convertResponse(resp *anthropicResponse) *schema.Messag
 		Role:    schema.RoleAssistant,
 		Content: content,
 	}
-	// Tool calls.
+	// 解析 tool_use 为 ToolCalls。
 	for _, block := range resp.Content {
 		if block.Type == "tool_use" && block.ID != "" {
 			args, _ := json.Marshal(block.Input)
@@ -276,14 +277,14 @@ func (m *anthropicModel) convertResponse(resp *anthropicResponse) *schema.Messag
 }
 
 // ========================================================================
-// OpenAI provider
+// OpenAI 厂商
 // ========================================================================
 
 const defaultOpenAIBaseURL = "https://api.openai.com/v1"
 
 type openAIProvider struct{}
 
-// OpenAIConfig carries provider-level settings for the OpenAI adapter.
+// OpenAIConfig OpenAI 适配器级配置。
 type OpenAIConfig struct {
 	APIKey      string
 	BaseURL     string
@@ -291,7 +292,7 @@ type OpenAIConfig struct {
 	MaxTokens   int
 }
 
-// RegisterOpenAI registers the OpenAI provider with the global registry.
+// RegisterOpenAI 注册 OpenAI Provider。
 func RegisterOpenAI(cfg OpenAIConfig) {
 	if cfg.BaseURL == "" {
 		cfg.BaseURL = defaultOpenAIBaseURL
@@ -335,11 +336,11 @@ type openAIModel struct {
 	client      httpClient
 }
 
-// ---- OpenAI API types ----
+// ---- OpenAI API 类型 ----
 
 type openAIMessage struct {
 	Role       string           `json:"role"`
-	Content    any              `json:"content,omitempty"` // string or []contentPart
+	Content    any              `json:"content,omitempty"` // string 或 []contentPart
 	ToolCalls  []openAIToolCall `json:"tool_calls,omitempty"`
 	ToolCallID string           `json:"tool_call_id,omitempty"`
 }
@@ -478,7 +479,7 @@ func (m *openAIModel) convertMessage(om *openAIMessage) *schema.Message {
 }
 
 // ========================================================================
-// Utility functions
+// 工具函数
 // ========================================================================
 
 func getStr(m map[string]any, key string, defaults ...string) string {
@@ -518,9 +519,11 @@ func getStringContent(content any) string {
 	}
 }
 
-// RegisterAll is a convenience function that registers both Anthropic and OpenAI
-// providers with their respective configs. Call it once in your main function.
+// RegisterAll 一次性注册 Anthropic 与 OpenAI。
+// 在 main 中调用一次即可。
 func RegisterAll(anthropicCfg AnthropicConfig, openaiCfg OpenAIConfig) {
 	RegisterAnthropic(anthropicCfg)
 	RegisterOpenAI(openaiCfg)
 }
+
+// buildRequest/convertResponse 负责 schema.Message 与厂商 API 格式的双向映射。

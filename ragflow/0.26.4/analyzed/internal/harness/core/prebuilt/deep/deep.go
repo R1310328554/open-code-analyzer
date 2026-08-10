@@ -1,6 +1,7 @@
-// Package deep provides DeepAgent — a depth-first task decomposition and execution agent.
-// It combines a ReAct loop with built-in task management, filesystem access,
-// and optional shell execution for a production-grade coding/operations agent.
+// deep.go — DeepAgent 深度优先任务分解智能体：ReAct 循环 + 内置任务管理、可选 Shell 与子 Agent 委托。
+// Package deep 提供 DeepAgent —— 深度优先任务分解与执行智能体。
+// 结合 ReAct 循环、任务管理、文件系统访问与可选 Shell 执行。
+// 适用于生产级编码/运维场景。
 package deep
 
 import (
@@ -14,25 +15,25 @@ import (
 	"ragflow/internal/harness/core/schema"
 )
 
-// SubAgentSpec defines a sub-agent available for task delegation.
+// SubAgentSpec 定义可委托任务的子智能体。
 type SubAgentSpec struct {
 	Name        string
 	Description string
 	Agent       core.Agent
 }
 
-// Config holds configuration for the Deep Agent.
+// Config Deep Agent 配置项。
 type Config struct {
 	Name          string
 	Description   string
 	Model         core.Model[*schema.Message]
 	Tools         []core.Tool
 	MaxIterations int
-	Instruction   string                      // Custom system prompt (overrides default)
-	EnableShell   bool                        // Enable shell command execution tool
-	SubAgents     []SubAgentSpec              // NEW: Sub-agents for task delegation
-	FailoverModel core.Model[*schema.Message] // NEW: Failover model
-	OutputKey     string                      // NEW: Session output storage key
+	Instruction   string                      // 自定义系统提示（覆盖默认）
+	EnableShell   bool                        // 是否启用 Shell 执行工具
+	SubAgents     []SubAgentSpec              // 子智能体列表，用于任务委托
+	FailoverModel core.Model[*schema.Message] // 故障转移备用模型
+	OutputKey     string                      // 会话输出存储键
 }
 
 func DefaultConfig() *Config {
@@ -44,7 +45,7 @@ func DefaultConfig() *Config {
 	}
 }
 
-// NewTyped creates a new DeepAgent as a TypedReActAgent.
+// NewTyped 创建 TypedReActAgent 形式的 DeepAgent。
 func NewTyped(cfg *Config) *core.ReActAgent[*schema.Message] {
 	if cfg == nil {
 		cfg = DefaultConfig()
@@ -61,16 +62,16 @@ func NewTyped(cfg *Config) *core.ReActAgent[*schema.Message] {
 		instruction = systemPrompt
 	}
 
-	// Append OutputKey hint to system prompt if set
+	// 若配置 OutputKey，在系统提示末尾追加存储指引
 	if cfg.OutputKey != "" {
 		instruction += "\n\nStore the final answer in the session under key {" + cfg.OutputKey + "}."
 	}
 
-	// Build tool set: user tools + task management
+	// 组装工具集：用户工具 + 任务管理工具
 	tools := make([]core.Tool, 0, len(cfg.Tools)+8)
 	tools = append(tools, cfg.Tools...)
 
-	// Task management (write_todos)
+	// 任务管理（write_todos / list / update）
 	taskMgr := NewTaskManager()
 	tools = append(tools,
 		TaskCreateTool(taskMgr),
@@ -78,7 +79,7 @@ func NewTyped(cfg *Config) *core.ReActAgent[*schema.Message] {
 		TaskUpdateTool(taskMgr),
 	)
 
-	// Optional shell tool
+	// 可选 Shell 工具
 	if cfg.EnableShell {
 		tools = append(tools, ShellTool("."))
 	}
@@ -91,7 +92,7 @@ func NewTyped(cfg *Config) *core.ReActAgent[*schema.Message] {
 		OutputKey:     cfg.OutputKey,
 	}
 
-	// Set up failover if configured
+	// 配置 FailoverModel 时启用故障转移
 	if cfg.FailoverModel != nil {
 		chatCfg.FailoverConfig = &core.FailoverConfig[*schema.Message]{
 			Models: []core.Model[*schema.Message]{cfg.FailoverModel},
@@ -102,9 +103,9 @@ func NewTyped(cfg *Config) *core.ReActAgent[*schema.Message] {
 	return a.WithName(cfg.Name).WithDescription(cfg.Description)
 }
 
-// NewWithSubAgents creates a DeepAgent with sub-agent delegation support.
-// The deep agent can transfer tasks to sub-agents and receive results.
-// If no sub-agents are configured, returns the plain deep agent.
+// NewWithSubAgents 创建支持子 Agent 委托的 DeepAgent。
+// 可将任务转移给子 Agent 并接收结果。
+// 无子 Agent 时返回普通 Deep Agent。
 func NewWithSubAgents(ctx context.Context, cfg *Config) (core.ResumableAgent, error) {
 	if cfg == nil {
 		cfg = DefaultConfig()
@@ -120,16 +121,16 @@ func NewWithSubAgents(ctx context.Context, cfg *Config) (core.ResumableAgent, er
 	return core.SetSubAgents(ctx, deep, subs)
 }
 
-// New creates a DeepAgent as a generic agent.
+// New 返回通用 Agent 接口。
 func New(cfg *Config) core.Agent { return NewTyped(cfg) }
 
-// Prompt returns the default system prompt.
+// Prompt 返回默认系统提示词。
 func Prompt() string { return systemPrompt }
 
-// ---- Shell Tool ----
+// ---- Shell 工具 ----
 
-// ShellTool creates a tool that executes shell commands.
-// WARNING: Enable only in trusted environments. This provides arbitrary code execution.
+// ShellTool 创建执行 Shell 命令的工具。
+// 警告：仅在可信环境启用，存在任意代码执行风险。
 func ShellTool(workDir string) core.Tool {
 	return core.NewBaseTool(
 		"shell",
@@ -169,7 +170,7 @@ type shellResult struct {
 	ExitCode int    `json:"exit_code"`
 }
 
-// StreamingShellTool creates a streaming version of shell execution.
+// StreamingShellTool 流式 Shell 执行工具。
 func StreamingShellTool(workDir string) core.Tool {
 	return core.NewBaseTool(
 		"streaming_shell",
@@ -205,9 +206,9 @@ func escapeShell(s string) string {
 	return s
 }
 
-// ---- Task Manager (embedded in Deep Agent) ----
+// ---- 任务管理器（内嵌于 Deep Agent）----
 
-// TaskState represents the lifecycle state of a sub-task.
+// TaskState 子任务生命周期状态。
 type TaskState string
 
 const (
@@ -217,7 +218,7 @@ const (
 	TaskFailed    TaskState = "failed"
 )
 
-// Task is a unit of work tracked by the Deep Agent's task manager.
+// Task 由任务管理器跟踪的工作单元。
 type Task struct {
 	ID           string    `json:"id"`
 	Description  string    `json:"description"`
@@ -227,7 +228,7 @@ type Task struct {
 	Dependencies []string  `json:"dependencies,omitempty"`
 }
 
-// TaskManager tracks sub-tasks within a Deep Agent session.
+// TaskManager 在会话内跟踪子任务列表。
 type TaskManager struct{ tasks []*Task }
 
 func NewTaskManager() *TaskManager { return &TaskManager{} }
@@ -262,7 +263,7 @@ func (m *TaskManager) Update(id, result string, state TaskState) error {
 	return nil
 }
 
-// TaskCreateTool returns an core.Tool for creating sub-tasks.
+// TaskCreateTool 返回创建子任务（write_todos）的工具。
 func TaskCreateTool(m *TaskManager) core.Tool {
 	return core.NewBaseTool(
 		"write_todos",
@@ -288,7 +289,7 @@ func TaskCreateTool(m *TaskManager) core.Tool {
 	)
 }
 
-// TaskListTool returns an core.Tool for listing all sub-tasks.
+// TaskListTool 返回列出全部子任务的工具。
 func TaskListTool(m *TaskManager) core.Tool {
 	return core.NewBaseTool(
 		"list_todos",
@@ -300,7 +301,7 @@ func TaskListTool(m *TaskManager) core.Tool {
 	)
 }
 
-// TaskUpdateTool returns an core.Tool for updating a sub-task's status.
+// TaskUpdateTool 返回更新子任务状态的工具。
 func TaskUpdateTool(m *TaskManager) core.Tool {
 	return core.NewBaseTool(
 		"update_todo",
@@ -323,7 +324,7 @@ func TaskUpdateTool(m *TaskManager) core.Tool {
 	)
 }
 
-// ---- i18n Prompts ----
+// ---- 多语言提示词 ----
 
 const systemPrompt = `You are a Deep Agent — a depth-first task decomposition and execution agent.
 
@@ -368,3 +369,5 @@ func SelectPrompt(lang string) string {
 	}
 	return systemPrompt
 }
+
+// SelectPrompt 按语言代码选择系统提示；deep 包已内置中英文 prompts 映射。

@@ -1,5 +1,8 @@
 package core
 
+// react_loop.go — ReAct 经典 for 循环执行路径：迭代调用模型、ToolsNode 执行 tool calls，含 Resume 历史修改。
+
+
 import (
 	"context"
 	"fmt"
@@ -7,7 +10,7 @@ import (
 	"ragflow/internal/harness/core/schema"
 )
 
-// ---- ReAct run function ----
+// ---- ReAct Run 函数（for 循环）----
 
 func (a *ReActAgent[M]) buildReActRunFunc() typedRunFunc[M] {
 	return func(ctx context.Context, p *typedRunParams[M]) {
@@ -23,7 +26,7 @@ func (a *ReActAgent[M]) buildReActRunFunc() typedRunFunc[M] {
 			state = NewReActAgentState(p.input.Messages, a.exeCtx.toolInfos, maxIter)
 		}
 
-		// Deep copy input messages to prevent middleware side-effects
+		// 深拷贝输入消息，防止中间件副作用污染 state
 		if len(state.Messages) > 0 {
 			copied := make([]M, len(state.Messages))
 			for i, m := range state.Messages {
@@ -32,11 +35,11 @@ func (a *ReActAgent[M]) buildReActRunFunc() typedRunFunc[M] {
 			state.Messages = copied
 		}
 
-		// Apply history modifier for resume
+		// Resume 时应用 historyModifier 改写历史
 		if p.historyModifier != nil && len(state.Messages) > 0 {
 			switch any(state.Messages[0]).(type) {
 			case *schema.Message:
-				// Collect only successfully asserted messages to avoid zero-value holes.
+				// 仅收集类型断言成功的消息，避免零值空洞
 				var msgs []Message
 				for _, m := range state.Messages {
 					if msg, ok := any(m).(Message); ok {
@@ -54,7 +57,7 @@ func (a *ReActAgent[M]) buildReActRunFunc() typedRunFunc[M] {
 			}
 		}
 
-		// Build allTools: config.Tools + ToolsConfig.Tools + contribTools
+		// 合并 config.Tools、ToolsConfig.Tools 与 contribTools
 		tcTools := 0
 		if a.config.ToolsConfig != nil {
 			tcTools = len(a.config.ToolsConfig.Tools)
@@ -66,7 +69,7 @@ func (a *ReActAgent[M]) buildReActRunFunc() typedRunFunc[M] {
 		}
 		allTools = append(allTools, a.exeCtx.contribTools...)
 
-		// Build merged return-directly
+		// 合并 ReturnDirectly 映射
 		allRD := make(map[string]bool, len(a.exeCtx.returnDirectly)+len(a.exeCtx.contribReturnDirectly))
 		for k, v := range a.exeCtx.returnDirectly {
 			allRD[k] = v
@@ -75,18 +78,18 @@ func (a *ReActAgent[M]) buildReActRunFunc() typedRunFunc[M] {
 			allRD[k] = v
 		}
 
-		// BeforeAgent middlewares
+		// BeforeAgent 中间件链
 		rc := &ReActAgentContext{Instruction: a.exeCtx.instruction, Tools: allTools, ReturnDirectly: allRD, ToolSearchTool: a.exeCtx.toolSearchTool}
 		if err := a.runBeforeAgent(&ctx, rc, p.generator); err != nil {
 			return
 		}
-		// Capture runtime tool/return-directly mutations made by BeforeAgent middleware.
+		// 捕获 BeforeAgent 对 Tools/ReturnDirectly 的运行时修改
 		allTools = rc.Tools
 		allRD = rc.ReturnDirectly
 
 		model := BuildModelWrapperChain(a.config.Model, nil, a.config, a.exeCtx.toolInfos)
 
-		// Build ToolsNode from merged tools, preserving ToolInvokeMiddlewares from config.
+		// 从合并工具构建 ToolsNode，保留 ToolInvokeMiddlewares
 		var tn *ToolsNode[M]
 		if len(allTools) > 0 {
 			tnCfg := &ToolsNodeConfig{
@@ -183,3 +186,5 @@ func (a *ReActAgent[M]) buildReActRunFunc() typedRunFunc[M] {
 		a.runAfterAgent(&ctx, state, p.generator)
 	}
 }
+
+// 迭代耗尽时发送 exceeded max iterations 错误；OutputKey 与 AfterAgent 在循环结束后处理。

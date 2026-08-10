@@ -1,5 +1,8 @@
 package core
 
+// retry.go — 模型调用重试：TypedModelRetryConfig、ShouldRetry 决策、流式首块校验与 WillRetryError 事件。
+
+
 import (
 	"context"
 	"errors"
@@ -15,7 +18,7 @@ var (
 	ErrExceedMaxRetries = errors.New("exceeds max retries")
 )
 
-// RetryExhaustedError is returned when all retry attempts are exhausted.
+// RetryExhaustedError 重试次数耗尽时返回。
 type RetryExhaustedError struct {
 	LastErr      error
 	TotalRetries int
@@ -30,7 +33,7 @@ func (e *RetryExhaustedError) Error() string {
 
 func (e *RetryExhaustedError) Unwrap() error { return ErrExceedMaxRetries }
 
-// WillRetryError is emitted when a retryable error occurs and a retry will be attempted.
+// WillRetryError 即将重试时作为事件发送给客户端。
 type WillRetryError struct {
 	ErrStr       string
 	RetryAttempt int
@@ -46,7 +49,7 @@ func init() {
 	schema.RegisterType("agentcore_will_retry_error", func() any { return &WillRetryError{} })
 }
 
-// RetryContext contains context passed to ShouldRetry during a retry decision.
+// TypedRetryContext 传给 ShouldRetry 的重试决策上下文。
 type TypedRetryContext[M MessageType] struct {
 	RetryAttempt  int
 	InputMessages []M
@@ -56,7 +59,7 @@ type TypedRetryContext[M MessageType] struct {
 
 type RetryContext = TypedRetryContext[*schema.Message]
 
-// RetryDecision represents the decision made by ShouldRetry.
+// TypedRetryDecision ShouldRetry 的决策结果。
 type TypedRetryDecision[M MessageType] struct {
 	Retry                        bool
 	RewriteError                 error
@@ -69,7 +72,7 @@ type TypedRetryDecision[M MessageType] struct {
 
 type RetryDecision = TypedRetryDecision[*schema.Message]
 
-// ModelRetryConfig configures retry behavior for the Model.
+// TypedModelRetryConfig 配置 Model 重试行为。
 type TypedModelRetryConfig[M MessageType] struct {
 	MaxRetries  int
 	ShouldRetry func(ctx context.Context, retryCtx *TypedRetryContext[M]) *TypedRetryDecision[M]
@@ -91,7 +94,7 @@ func defaultBackoff(_ context.Context, attempt int) time.Duration {
 	return p.CalculateBackoff(attempt)
 }
 
-// typedRetryModelWrapper wraps a Model with retry logic.
+// typedRetryModelWrapper 为 Model 添加重试逻辑。
 type typedRetryModelWrapper[M MessageType] struct {
 	inner  Model[M]
 	config *TypedModelRetryConfig[M]
@@ -194,7 +197,7 @@ func (r *typedRetryModelWrapper[M]) generateWithShouldRetry(ctx context.Context,
 			break
 		}
 
-		// Emit WillRetryError event before sleeping
+		// 休眠重试前发送 WillRetryError 事件
 		if execCtx != nil && execCtx.generator != nil {
 			willRetry := &WillRetryError{ErrStr: lastErr.Error(), RetryAttempt: attempt + 1, rejectReason: decision.RejectReason, err: lastErr}
 			execCtx.send(&TypedAgentEvent[M]{Err: any(willRetry).(error)})
@@ -246,7 +249,7 @@ func (r *typedRetryModelWrapper[M]) streamLegacy(ctx context.Context, input []M,
 			}
 			continue
 		}
-		// Verify the stream is healthy by reading one chunk
+		// 流式路径读取首块验证流健康
 		chunk, streamErr := stream.Recv()
 		if streamErr == nil {
 			outStream := schema.NewStreamReader[M]()
@@ -341,7 +344,7 @@ func (r *typedRetryModelWrapper[M]) streamWithShouldRetry(ctx context.Context, i
 			continue
 		}
 
-		// Read first chunk for verification
+		// ShouldRetry 流式路径同样读首块验证
 		chunk, streamErr := stream.Recv()
 		if streamErr != nil && streamErr != io.EOF {
 			stream.Close()
@@ -379,7 +382,7 @@ func (r *typedRetryModelWrapper[M]) streamWithShouldRetry(ctx context.Context, i
 			continue
 		}
 
-		// Collect all chunks for output event, forward to caller
+		// 收集全部 chunk 合并后发送 output 事件并转发给调用方
 		var allChunks []M
 		if streamErr != io.EOF {
 			allChunks = append(allChunks, chunk)
@@ -401,7 +404,7 @@ func (r *typedRetryModelWrapper[M]) streamWithShouldRetry(ctx context.Context, i
 				allChunks = append(allChunks, c)
 				callerCh.Send(c, nil)
 			}
-			// Send output event with merged message
+			// 流结束后发送合并后的 model output 事件
 			if execCtx != nil && execCtx.generator != nil && len(allChunks) > 0 {
 				if merged, err := mergeChunks(allChunks); err == nil {
 					execCtx.send(typedModelOutputEvent(merged, nil))
@@ -422,11 +425,11 @@ func (r *typedRetryModelWrapper[M]) BindTools(tools []*schema.ToolInfo) error {
 	return r.inner.BindTools(tools)
 }
 
-// WithModelRetry wraps a Model with retry logic.
-// When cfg.ShouldRetry is set but MaxRetries is 0, the loop runs exactly once
-// (attempt 0), so ShouldRetry returning Retry:true will immediately exhaust
-// with RetryExhaustedError{TotalRetries: 0}. Set MaxRetries >= 1 to allow
-// ShouldRetry-driven retries to actually retry.
+// WithModelRetry 包装 Model 启用重试。
+// ShouldRetry 非 nil 但 MaxRetries 为 0 时仅尝试一次
+// Retry:true 将立即 RetryExhaustedError{TotalRetries:0}
+// 需 MaxRetries >= 1 才允许多次 ShouldRetry 驱动重试
+// legacy 路径用 IsRetryAble + BackoffFunc。
 func WithModelRetry[M MessageType](inner Model[M], cfg *TypedModelRetryConfig[M]) Model[M] {
 	if cfg == nil || (cfg.MaxRetries <= 0 && cfg.ShouldRetry == nil) {
 		return inner
@@ -438,8 +441,8 @@ func applyRetryDecision[M MessageType](input *[]M, opts *[]ModelOption, decision
 	if decision.ModifiedInputMessages != nil && decision.PersistModifiedInputMessages {
 		*input = decision.ModifiedInputMessages
 	} else if decision.ModifiedInputMessages != nil {
-		// Apply for the next attempt but don't persist to the original input.
-		// Caller must handle revert externally.
+		// 仅下次尝试使用 ModifiedInputMessages，不持久化到原始 input
+		// 调用方需自行处理回滚。
 		tmp := make([]M, len(decision.ModifiedInputMessages))
 		copy(tmp, decision.ModifiedInputMessages)
 		*input = tmp
@@ -483,7 +486,7 @@ func mergeChunks[M MessageType](chunks []M) (M, error) {
 	return chunks[0], nil
 }
 
-// streamRetryVerdict is the internal retry signal for streaming retry.
+// streamRetryVerdict 流式重试内部信号。
 type streamRetryVerdict struct {
 	WillRetry    bool
 	Err          error
@@ -506,7 +509,9 @@ func (rs *retrySignal) consume() streamRetryVerdict {
 	}
 }
 
-// WithRetry attaches retry configuration to an option.
+// WithRetry 将重试配置附加为 ModelOption。
 func WithRetry[M MessageType](cfg *TypedModelRetryConfig[M]) ModelOption {
 	return &typedModelOption[M]{f: func(o *modelOptions[M]) { o.RetryConfig = cfg }}
 }
+
+// generateWithShouldRetry 重试期间 suppressEventSend，成功后再补发 model output 事件。

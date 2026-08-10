@@ -1,6 +1,7 @@
-// Package supervisor provides a Supervisor agent pattern for harness-go.
-// The Supervisor uses an LLM to route user requests to specialized sub-agents,
-// each with their own tools and expertise.
+// supervisor.go — Supervisor 路由模式：LLM 分析用户请求并将任务转移给专业子 Agent。
+// Package supervisor 提供 harness-go 的 Supervisor 路由模式。
+// Supervisor 用 LLM 将请求路由到具备专长的子 Agent。
+// 各子 Agent 拥有独立工具与领域能力。
 package supervisor
 
 import (
@@ -12,16 +13,16 @@ import (
 	"ragflow/internal/harness/core/schema"
 )
 
-// Config configures the Supervisor agent.
+// Config Supervisor 配置。
 type Config struct {
 	Name        string
 	Description string
 	Model       core.Model[*schema.Message]
-	Agents      []AgentSpec // Available sub-agents
-	OutputKey   string      // Store final answer to session under this key
+	Agents      []AgentSpec // 可用子 Agent 列表
+	OutputKey   string      // 最终答案写入会话的键
 }
 
-// AgentSpec defines a sub-agent available to the supervisor.
+// AgentSpec 定义 Supervisor 可调度的子 Agent。
 type AgentSpec struct {
 	Name        string
 	Description string
@@ -35,7 +36,7 @@ func DefaultConfig() *Config {
 	}
 }
 
-// New creates a new Supervisor as a flow agent with transfer capability.
+// New 创建带 transfer 能力的 Flow Agent。
 func New(ctx context.Context, cfg *Config) (core.ResumableAgent, error) {
 	if cfg == nil {
 		cfg = DefaultConfig()
@@ -44,12 +45,12 @@ func New(ctx context.Context, cfg *Config) (core.ResumableAgent, error) {
 		return nil, fmt.Errorf("supervisor requires a Model")
 	}
 
-	// Build agent descriptions for the prompt
+	// 构建子 Agent 描述注入系统提示
 	agentDescs := buildAgentDescriptions(cfg.Agents)
 
 	instruction := fmt.Sprintf(systemPrompt, agentDescs)
 
-	// The supervisor itself is a ReActAgent that only transfers to sub-agents
+	// Supervisor 本身为 ReActAgent，主要通过 transfer 委派
 	sup := core.NewReActAgent(&core.ReActConfig[*schema.Message]{
 		Model:       cfg.Model,
 		Instruction: instruction,
@@ -57,8 +58,8 @@ func New(ctx context.Context, cfg *Config) (core.ResumableAgent, error) {
 
 	supAgent := sup.WithName(cfg.Name).WithDescription(cfg.Description)
 
-	// Wrap sub-agents with deterministic transfer constraint.
-	// Each sub-agent can only transfer back to the supervisor.
+	// 包装子 Agent：仅允许 transfer 回 Supervisor。
+	// 防止子 Agent 之间随意跳转。
 	wrappedSubs := make([]core.Agent, 0, len(cfg.Agents))
 	for _, as := range cfg.Agents {
 		wrapped := core.AgentWithDeterministicTransfer(ctx, &core.DeterministicTransferConfig{
@@ -68,9 +69,9 @@ func New(ctx context.Context, cfg *Config) (core.ResumableAgent, error) {
 		wrappedSubs = append(wrappedSubs, wrapped)
 	}
 
-	// TODO: Add unified tracing container for supervisor identification.
-	// Currently NewReActAgent returns a concrete type, so we cannot
-	// easily add a GetType() method to identify the supervisor.
+	// TODO：统一 tracing 容器以识别 Supervisor。
+	// 当前 NewReActAgent 返回具体类型，暂难扩展 GetType。
+	// 后续可抽象接口以支持链路追踪。
 
 	flow, err := core.SetSubAgents(ctx, supAgent, wrappedSubs)
 	if err != nil {
@@ -104,10 +105,12 @@ Instructions:
 
 You should always try to route to a specialist agent when one matches the request domain.`
 
-// ---- Convenience constructor with common patterns ----
+// ---- 便捷构造函数 ----
 
-// NewWithRouter creates a supervisor using a pure routing approach:
-// the LLM chooses which agent handles the request, then transfers to it.
+// NewWithRouter 纯路由方式创建 Supervisor。
+// LLM 选择最合适的 Agent 并 transfer 过去。
 func NewWithRouter(ctx context.Context, model core.Model[*schema.Message], agents []AgentSpec) (core.ResumableAgent, error) {
 	return New(ctx, &Config{Model: model, Agents: agents})
 }
+
+// 子 Agent 经 AgentWithDeterministicTransfer 限制回传路径，保证控制流可预测。
