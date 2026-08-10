@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T12:04:19Z",
-  "files": [
-    "services/src/main/java/org/keycloak/protocol/ProtocolMapperUtils.java",
-    "services/src/main/java/org/keycloak/protocol/RestartLoginCookie.java",
-    "services/src/main/java/org/keycloak/protocol/docker/DockerAuthV2Protocol.java",
-    "services/src/main/java/org/keycloak/protocol/docker/DockerAuthV2ProtocolFactory.java",
-    "services/src/main/java/org/keycloak/protocol/docker/DockerAuthenticator.java",
-    "services/src/main/java/org/keycloak/protocol/docker/DockerAuthenticatorFactory.java",
-    "services/src/main/java/org/keycloak/protocol/docker/DockerEndpoint.java",
-    "services/src/main/java/org/keycloak/protocol/docker/DockerKeyIdentifier.java",
-    "services/src/main/java/org/keycloak/protocol/docker/DockerV2LoginProtocolService.java",
-    "services/src/main/java/org/keycloak/protocol/docker/installation/DockerComposeYamlInstallationProvider.java",
-    "services/src/main/java/org/keycloak/protocol/docker/installation/DockerRegistryConfigFileInstallationProvider.java",
-    "services/src/main/java/org/keycloak/protocol/docker/installation/DockerVariableOverrideInstallationProvider.java",
-    "services/src/main/java/org/keycloak/protocol/docker/installation/compose/DockerCertFileUtils.java",
-    "services/src/main/java/org/keycloak/protocol/docker/installation/compose/DockerComposeCertsDirectory.java",
-    "services/src/main/java/org/keycloak/protocol/docker/installation/compose/DockerComposeYamlFile.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1678,
-  "done": 4305
+  "done": 4320
 }
