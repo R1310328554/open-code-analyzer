@@ -2323,3 +2323,18 @@
 2026-08-10T09:23:29Z DONE rest/admin-v2/api/src/main/java/org/keycloak/representations/admin/v2/validation/UuidUnmodified.java wave79a admin-v2 nxt reps + validation
 2026-08-10T09:23:29Z DONE rest/admin-v2/api/src/main/java/org/keycloak/representations/admin/v2/validation/ValidAuthMethod.java wave79a admin-v2 nxt reps + validation
 2026-08-10T09:23:29Z DONE rest/admin-v2/api/src/main/java/org/keycloak/representations/admin/v2/validation/ValidCanonicalizationMethod.java wave79a admin-v2 nxt reps + validation
+2026-08-10T09:23:53Z DONE rest/admin-v2/api/src/main/java/org/keycloak/representations/admin/v2/validation/ValidRedirectUris.java wave79b admin-v2 openapi/mappers/validators
+2026-08-10T09:23:53Z DONE rest/admin-v2/api/src/main/java/org/keycloak/representations/admin/v2/validation/ValidWebOrigin.java wave79b admin-v2 openapi/mappers/validators
+2026-08-10T09:23:53Z DONE rest/admin-v2/services/src/main/java/org/keycloak/admin/internal/openapi/JavaDocExampleGenerator.java wave79b admin-v2 openapi/mappers/validators
+2026-08-10T09:23:53Z DONE rest/admin-v2/services/src/main/java/org/keycloak/admin/internal/openapi/OASModelFilter.java wave79b admin-v2 openapi/mappers/validators
+2026-08-10T09:23:53Z DONE rest/admin-v2/services/src/main/java/org/keycloak/admin/internal/openapi/ValidationAnnotationScanner.java wave79b admin-v2 openapi/mappers/validators
+2026-08-10T09:23:53Z DONE rest/admin-v2/services/src/main/java/org/keycloak/events/admin/v2/AdminEventV2Builder.java wave79b admin-v2 openapi/mappers/validators
+2026-08-10T09:23:53Z DONE rest/admin-v2/services/src/main/java/org/keycloak/models/mapper/BaseClientModelMapper.java wave79b admin-v2 openapi/mappers/validators
+2026-08-10T09:23:53Z DONE rest/admin-v2/services/src/main/java/org/keycloak/models/mapper/ClientModelMapper.java wave79b admin-v2 openapi/mappers/validators
+2026-08-10T09:23:53Z DONE rest/admin-v2/services/src/main/java/org/keycloak/models/mapper/ClientModelMappers.java wave79b admin-v2 openapi/mappers/validators
+2026-08-10T09:23:53Z DONE rest/admin-v2/services/src/main/java/org/keycloak/models/mapper/OIDCClientModelMapper.java wave79b admin-v2 openapi/mappers/validators
+2026-08-10T09:23:53Z DONE rest/admin-v2/services/src/main/java/org/keycloak/models/mapper/RepModelMapper.java wave79b admin-v2 openapi/mappers/validators
+2026-08-10T09:23:53Z DONE rest/admin-v2/services/src/main/java/org/keycloak/models/mapper/SAMLClientModelMapper.java wave79b admin-v2 openapi/mappers/validators
+2026-08-10T09:23:53Z DONE rest/admin-v2/services/src/main/java/org/keycloak/models/utils/StripSecretsUtilsV2.java wave79b admin-v2 openapi/mappers/validators
+2026-08-10T09:23:53Z DONE rest/admin-v2/services/src/main/java/org/keycloak/representations/admin/v2/validators/ClientSecretNotBlankValidator.java wave79b admin-v2 openapi/mappers/validators
+2026-08-10T09:23:53Z DONE rest/admin-v2/services/src/main/java/org/keycloak/representations/admin/v2/validators/ClientUuidProvider.java wave79b admin-v2 openapi/mappers/validators
