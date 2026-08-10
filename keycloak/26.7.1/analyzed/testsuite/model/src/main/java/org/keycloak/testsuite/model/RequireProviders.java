@@ -22,6 +22,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
+ * {@link RequireProvider} 的可重复容器注解。
  *
  * @author hmlnarik
  */

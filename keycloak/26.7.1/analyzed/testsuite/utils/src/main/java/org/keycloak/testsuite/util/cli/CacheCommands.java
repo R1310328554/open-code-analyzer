@@ -27,10 +27,13 @@ import org.keycloak.models.RealmModel;
 import org.infinispan.Cache;
 
 /**
+ * Infinispan 缓存相关的测试套件 CLI 命令集合。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class CacheCommands {
 
+    /** 列出所有可用 Infinispan 缓存名称。 */
     public static class ListCachesCommand extends AbstractCommand {
 
         @Override
@@ -48,6 +51,7 @@ public class CacheCommands {
     }
 
 
+    /** 打印指定缓存的内容摘要。 */
     public static class GetCacheCommand extends AbstractCommand {
 
         @Override
@@ -68,11 +72,13 @@ public class CacheCommands {
             printCache(cache);
         }
 
+        /** 输出缓存名称、大小及条目（大缓存跳过明细）。 */
         private void printCache(Cache<Object, Object> cache) {
             int size = cache.size();
             log.infof("Cache %s, size: %d", cache.getName(), size);
 
             if (size > 50) {
+                // 缓存过大时跳过逐条打印
                 log.info("Skip printing cache records due to big size");
             } else {
                 for (Map.Entry<Object, Object> entry : cache.entrySet()) {
@@ -89,6 +95,7 @@ public class CacheCommands {
     }
 
 
+    /** 将指定 realm 的对象预热到缓存。 */
     public static class CacheRealmObjectsCommand extends AbstractCommand {
 
         @Override

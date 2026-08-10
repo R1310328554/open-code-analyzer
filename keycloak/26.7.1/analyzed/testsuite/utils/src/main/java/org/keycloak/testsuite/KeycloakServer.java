@@ -87,21 +87,32 @@ import org.xnio.Options;
 import org.xnio.SslClientAuthMode;
 
 /**
+ * 嵌入式 Keycloak 测试服务器：基于 Undertow 启动 REST 端点，支持 realm 导入与开发配置。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class KeycloakServer {
 
     private static final Logger log = Logger.getLogger(KeycloakServer.class);
+    /** JBoss 数据目录系统属性名。 */
     public static final String JBOSS_SERVER_DATA_DIR = "jboss.server.data.dir";
 
+    /** 是否将信息输出到标准输出而非日志。 */
     private boolean sysout = false;
 
+    /** 嵌入式服务器运行时配置。 */
     public static class KeycloakServerConfig {
+        /** HTTP 绑定主机。 */
         private String host = "localhost";
+        /** HTTP 端口。 */
         private int port = 8081;
+        /** 上下文路径。 */
         private String path = "/auth";
+        /** HTTPS 端口（-1 表示禁用）。 */
         private int portHttps = -1;
+        /** Undertow 工作线程数。 */
         private int workerThreads = Math.max(Runtime.getRuntime().availableProcessors(), 2) * 8;
+        /** 资源根目录（主题等）。 */
         private String resourcesHome;
 
         public String getHost() {
@@ -153,6 +164,7 @@ public class KeycloakServer {
         }
     }
 
+    /** 从输入流反序列化 JSON 为指定类型。 */
     public static <T> T loadJson(InputStream is, Class<T> type) {
         try {
             return JsonSerialization.readValue(is, type);
@@ -161,6 +173,7 @@ public class KeycloakServer {
         }
     }
 
+    /** 程序入口：引导并启动嵌入式 Keycloak 服务器。 */
     public static void main(String[] args) throws Throwable {
         if (!System.getenv().containsKey("MAVEN_CMD_LINE_ARGS")) {
             Version.BUILD_TIME = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date());
@@ -169,6 +182,12 @@ public class KeycloakServer {
         bootstrapKeycloakServer(args);
     }
 
+    /**
+     * 解析命令行与系统属性，配置并启动嵌入式服务器。
+     *
+     * @param args 命令行参数（{@code -b} 主机、{@code -p} 端口、{@code -import} realm 文件等）
+     * @return 已启动的服务器实例
+     */
     public static KeycloakServer bootstrapKeycloakServer(String[] args) throws Throwable {
         File f = new File(System.getProperty("user.home"), ".keycloak-server.properties");
         if (f.isFile()) {
@@ -293,6 +312,7 @@ public class KeycloakServer {
         return keycloak;
     }
 
+    /** 检测并设置 {@link #JBOSS_SERVER_DATA_DIR} 数据目录。 */
     public static void configureDataDirectory() {
         String dataPath = detectDataDirectory();
         System.setProperty(JBOSS_SERVER_DATA_DIR, dataPath);
@@ -300,18 +320,17 @@ public class KeycloakServer {
     }
 
   /**
-   * Detects the {@code jboss.server.data.dir} to use.
-   * If the System property {@code jboss.server.data.dir} is already set then the property value is used,
-   * otherwise a temporary data dir is created that will be deleted on JVM exit.
+   * 检测要使用的 {@code jboss.server.data.dir}。
+   * 若系统属性已设置则直接使用，否则创建临时目录并在 JVM 退出时删除。
    *
-   * @return
+   * @return 数据目录绝对路径
    */
   public static String detectDataDirectory() {
 
         String dataPath = System.getProperty(JBOSS_SERVER_DATA_DIR);
 
         if (dataPath != null){
-            // we assume jboss.server.data.dir is managed externally so just use it as is.
+            // 假定数据目录由外部管理，直接使用
             File dataDir = new File(dataPath);
             if (!dataDir.exists() || !dataDir.isDirectory()) {
                 throw new RuntimeException("Invalid " + JBOSS_SERVER_DATA_DIR + " resources directory: " + dataPath);
@@ -320,10 +339,11 @@ public class KeycloakServer {
             return dataPath;
         }
 
-        // we generate a dynamic jboss.server.data.dir and remove it at the end.
+        // 动态创建临时数据目录
         return initTempDirectory("keycloak-data").toFile().getAbsolutePath();
     }
   
+    /** 在构建目录或系统临时目录下创建/重建指定名称的目录。 */
     public static Path initTempDirectory(String name) {
         String buildDir = System.getProperty("project.build.directory");
         if (buildDir == null) {
@@ -345,37 +365,47 @@ public class KeycloakServer {
         }
     }
 
+    /** 服务器配置。 */
     private KeycloakServerConfig config;
 
+    /** Keycloak 会话工厂。 */
     private DefaultKeycloakSessionFactory sessionFactory;
 
+    /** Undertow JAX-RS 服务器。 */
     private UndertowJaxrsServer server;
 
+    /** 使用默认配置创建服务器。 */
     public KeycloakServer() {
         this(new KeycloakServerConfig());
     }
 
+    /** 使用指定配置创建服务器。 */
     public KeycloakServer(KeycloakServerConfig config) {
         this.config = config;
     }
 
+    /** 返回会话工厂。 */
     public KeycloakSessionFactory getSessionFactory() {
         return sessionFactory;
     }
 
+    /** 返回 Undertow 服务器实例。 */
     public UndertowJaxrsServer getServer() {
         return server;
     }
 
+    /** 返回服务器配置。 */
     public KeycloakServerConfig getConfig() {
         return config;
     }
 
+    /** 从 JSON 输入流导入 realm。 */
     public void importRealm(InputStream realm) {
         RealmRepresentation rep = loadJson(realm, RealmRepresentation.class);
         importRealm(rep);
     }
 
+    /** 导入 realm 表示对象（已存在则跳过）。 */
     public void importRealm(RealmRepresentation rep) {
 
         try (KeycloakSession session = sessionFactory.create()) {
@@ -397,6 +427,7 @@ public class KeycloakServer {
         }
     }
 
+    /** 开发模式：若无 master 用户则创建 admin/admin。 */
     protected void setupDevConfig() {
         if (System.getProperty("keycloak.createAdminUser", "true").equals("true")) {
             try (KeycloakSession session = sessionFactory.create()) {
@@ -409,6 +440,7 @@ public class KeycloakServer {
         }
     }
 
+    /** 启动 Undertow、部署 Keycloak 应用并完成开发配置。 */
     public void start() throws Throwable {
         long start = System.currentTimeMillis();
 
@@ -439,8 +471,7 @@ public class KeycloakServer {
 
             di.setDefaultServletConfig(new DefaultServletConfig(true));
 
-            // Note that the ResteasyServlet is configured via server.undertowDeployment(...);
-            // KEYCLOAK-14178
+            // ResteasyServlet 通过 undertowDeployment 配置（KEYCLOAK-14178）
             deployment.setProperty(ResteasyContextParameters.RESTEASY_DISABLE_HTML_SANITIZER, true);
 
             InstanceHandle<Filter> filterInstance = new InstanceHandle<Filter>() {
@@ -481,6 +512,7 @@ public class KeycloakServer {
         }
     }
 
+    /** 按配置输出信息到 stdout 或日志。 */
     private void info(String message) {
         if (sysout) {
             System.out.println(message);
@@ -489,6 +521,7 @@ public class KeycloakServer {
         }
     }
 
+    /** 关闭会话工厂并停止 Undertow 服务器。 */
     public void stop() {
         sessionFactory.close();
         server.stop();
@@ -496,6 +529,7 @@ public class KeycloakServer {
         info("Stopped Keycloak");
     }
 
+    /** 拼接路径片段为 {@link File}。 */
     private static File file(String... path) {
         StringBuilder s = new StringBuilder();
         for (String p : path) {
@@ -506,10 +540,11 @@ public class KeycloakServer {
     }
 
 
+    /** 根据端口或系统属性设置 Infinispan 节点名。 */
     private static void detectNodeName(KeycloakServerConfig config) {
         String nodeName = System.getProperty(InfinispanConnectionProvider.JBOSS_NODE_NAME);
         if (nodeName == null) {
-            // Try to autodetect "jboss.node.name" from the port
+            // 根据端口自动推断 jboss.node.name
             Map<Integer, String> nodesCfg = new HashMap<>();
             nodesCfg.put(8181, "node1");
             nodesCfg.put(8182, "node2");
@@ -525,6 +560,7 @@ public class KeycloakServer {
         }
     }
 
+    /** 从密钥库/信任库创建 TLS {@link SSLContext}。 */
     private SSLContext createSSLContext() throws Exception {
         KeyManager[] keyManagers = getKeyManagers();
 
@@ -540,6 +576,7 @@ public class KeycloakServer {
     }
 
 
+    /** 加载 TLS 密钥库并创建 KeyManager 数组。 */
     private KeyManager[] getKeyManagers() throws Exception {
         String keyStorePath = System.getProperty("keycloak.tls.keystore.path");
 
@@ -568,6 +605,7 @@ public class KeycloakServer {
     }
 
 
+    /** 加载 TLS 信任库并创建 TrustManager 数组。 */
     private TrustManager[] getTrustManagers() throws Exception {
         String trustStorePath = System.getProperty("keycloak.tls.truststore.path");
 
@@ -595,6 +633,7 @@ public class KeycloakServer {
         }
     }
 
+    /** 从 {@code META-INF/keycloak-scripts.json} 注册脚本型 Provider。 */
     public static void registerScriptProviders(DefaultKeycloakSessionFactory sessionFactory) {
         InputStream scriptProviderStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("META-INF/keycloak-scripts.json");
 
@@ -627,6 +666,7 @@ public class KeycloakServer {
         }
     }
 
+    /** 将脚本元数据转换为 Provider 并加入部署信息。 */
     private static void addScriptProvider(KeycloakDeploymentInfo info, List<ScriptProviderMetadata> scriptsMetadata, Class<? extends Spi> spiType, Function<ScriptProviderMetadata, ProviderFactory> providerCreator) {
         for (ScriptProviderMetadata metadata : scriptsMetadata) {
             String fileName = metadata.getFileName();

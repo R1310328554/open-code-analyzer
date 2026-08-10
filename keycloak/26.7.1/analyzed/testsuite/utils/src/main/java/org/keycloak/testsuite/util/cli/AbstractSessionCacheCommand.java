@@ -39,10 +39,13 @@ import org.infinispan.Cache;
 import org.infinispan.context.Flag;
 
 /**
+ * 会话缓存 CLI 命令基类，支持对 Infinispan 用户/客户端会话缓存进行读写操作。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public abstract class AbstractSessionCacheCommand extends AbstractCommand {
 
+    /** 支持的会话缓存名称集合。 */
     private static final Set<String> SUPPORTED_CACHE_NAMES = new TreeSet<>(Arrays.asList(
       InfinispanConnectionProvider.USER_SESSION_CACHE_NAME,
       InfinispanConnectionProvider.OFFLINE_USER_SESSION_CACHE_NAME,
@@ -75,6 +78,7 @@ public abstract class AbstractSessionCacheCommand extends AbstractCommand {
         }));
     }
 
+    /** 打印用户会话摘要或“未找到”提示。 */
     protected void printSession(String id, UserSessionEntity userSession) {
         if (userSession == null) {
             log.info("Not found session with Id: " + id);
@@ -83,6 +87,7 @@ public abstract class AbstractSessionCacheCommand extends AbstractCommand {
         }
     }
 
+    /** 格式化用户会话实体为可读字符串。 */
     protected String toString(UserSessionEntity userSession) {
         int clientSessionsSize = userSession.getClientSessions().size();
         return "ID: " + userSession.getId() + ", realm: " + userSession.getRealmId()+ ", lastAccessTime: " + Time.toDate(userSession.getLastSessionRefresh()) +
@@ -94,11 +99,13 @@ public abstract class AbstractSessionCacheCommand extends AbstractCommand {
         return getName() + " <cache-name>";
     }
 
+    /** 子类实现的缓存操作逻辑。 */
     protected abstract void doRunCacheCommand(KeycloakSession session, Cache<String, SessionEntityWrapper> cache);
 
 
-    // IMPLS
+    // 具体命令实现
 
+    /** 向缓存写入用户会话实体。 */
     public static class PutCommand extends AbstractSessionCacheCommand {
 
         @Override
@@ -122,6 +129,7 @@ public abstract class AbstractSessionCacheCommand extends AbstractCommand {
     }
 
 
+    /** 按 ID 读取并打印用户会话。 */
     public static class GetCommand extends AbstractSessionCacheCommand {
 
         @Override
@@ -142,7 +150,7 @@ public abstract class AbstractSessionCacheCommand extends AbstractCommand {
         }
     }
 
-    // Just to check performance of multiple get calls. And comparing what's the change between the case when item is available locally or not.
+    /** 多次 get 性能测试命令。 */
     public static class GetMultipleCommand extends AbstractSessionCacheCommand {
 
         @Override
@@ -171,6 +179,7 @@ public abstract class AbstractSessionCacheCommand extends AbstractCommand {
     }
 
 
+    /** 从缓存移除指定会话。 */
     public static class RemoveCommand extends AbstractSessionCacheCommand {
 
         @Override
@@ -191,6 +200,7 @@ public abstract class AbstractSessionCacheCommand extends AbstractCommand {
     }
 
 
+    /** 清空整个会话缓存。 */
     public static class ClearCommand extends AbstractSessionCacheCommand {
 
         @Override
@@ -205,6 +215,7 @@ public abstract class AbstractSessionCacheCommand extends AbstractCommand {
     }
 
 
+    /** 打印缓存条目数量。 */
     public static class SizeCommand extends AbstractSessionCacheCommand {
 
         @Override
@@ -219,6 +230,7 @@ public abstract class AbstractSessionCacheCommand extends AbstractCommand {
     }
 
 
+    /** 列出缓存中所有用户会话。 */
     public static class ListCommand extends AbstractSessionCacheCommand {
 
         @Override
@@ -240,6 +252,7 @@ public abstract class AbstractSessionCacheCommand extends AbstractCommand {
     }
 
 
+    /** 以本地缓存模式读取会话（不访问远程节点）。 */
     public static class GetLocalCommand extends AbstractSessionCacheCommand {
 
         @Override
@@ -263,6 +276,7 @@ public abstract class AbstractSessionCacheCommand extends AbstractCommand {
     }
 
 
+    /** 打印本地节点上的缓存大小。 */
     public static class SizeLocalCommand extends AbstractSessionCacheCommand {
 
         @Override
@@ -277,6 +291,7 @@ public abstract class AbstractSessionCacheCommand extends AbstractCommand {
     }
 
 
+    /** 批量直接向缓存写入用户会话实体。 */
     public static class CreateManySessionsCommand extends AbstractSessionCacheCommand {
 
         @Override
@@ -313,7 +328,7 @@ public abstract class AbstractSessionCacheCommand extends AbstractCommand {
     }
 
 
-    // This will propagate creating sessions to remoteCache too
+    /** 通过 Provider API 创建会话，变更会传播到远程缓存。 */
     public static class CreateManySessionsProviderCommand extends AbstractSessionCacheCommand {
 
         @Override

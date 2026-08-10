@@ -32,14 +32,20 @@ import org.keycloak.models.utils.KeycloakModelUtils;
 
 import org.jboss.resteasy.core.ResteasyContext;
 
+/**
+ * Undertow 请求过滤器：在事务内绑定 {@link KeycloakSession} 与 HTTP 请求到 Resteasy 上下文。
+ */
 public class UndertowRequestFilter implements Filter {
 
+    /** Keycloak 会话工厂。 */
     private final KeycloakSessionFactory factory;
 
+    /** 创建过滤器并注入会话工厂。 */
     public UndertowRequestFilter(KeycloakSessionFactory factory) {
         this.factory = factory;
     }
 
+    /** 在 Keycloak 事务中执行过滤链并推送会话上下文。 */
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain)
             throws UnsupportedEncodingException {
@@ -57,10 +63,12 @@ public class UndertowRequestFilter implements Filter {
         });
     }
 
+    /** 过滤器初始化（无操作）。 */
     @Override
     public void init(FilterConfig filterConfig) {
     }
 
+    /** 过滤器销毁（无操作）。 */
     @Override
     public void destroy() {
     }

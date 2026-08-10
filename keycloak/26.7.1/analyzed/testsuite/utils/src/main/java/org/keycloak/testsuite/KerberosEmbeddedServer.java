@@ -50,31 +50,44 @@ import org.apache.directory.shared.kerberos.codec.types.EncryptionType;
 import org.jboss.logging.Logger;
 
 /**
+ * 嵌入式 Kerberos/LDAP 测试服务器，集成 ApacheDS KDC 与多种 SASL 机制。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class KerberosEmbeddedServer extends LDAPEmbeddedServer {
 
     private static final Logger log = Logger.getLogger(KerberosEmbeddedServer.class);
 
+    /** Kerberos realm 配置属性名。 */
     public static final String PROPERTY_KERBEROS_REALM = "kerberos.realm";
+    /** KDC 监听端口配置属性名。 */
     public static final String PROPERTY_KDC_PORT = "kerberos.port";
+    /** KDC 加密类型配置属性名。 */
     public static final String PROPERTY_KDC_ENCTYPES = "kerberos.encTypes";
 
+    /** 默认 Kerberos 用户 LDIF 资源路径。 */
     private static final String DEFAULT_KERBEROS_LDIF_FILE = "classpath:kerberos/default-users.ldif";
 
+    /** 默认 Kerberos realm。 */
     public static final String DEFAULT_KERBEROS_REALM = "KEYCLOAK.ORG";
+    /** 第二个测试 realm。 */
     public static final String DEFAULT_KERBEROS_REALM_2 = "KC2.COM";
 
     private static final String DEFAULT_KDC_PORT = "6088";
     private static final String DEFAULT_KDC_ENCRYPTION_TYPES = "aes128-cts-hmac-sha1-96, des-cbc-md5, des3-cbc-sha1-kd";
 
+    /** 当前 Kerberos realm 名称。 */
     private final String kerberosRealm;
+    /** KDC UDP 端口。 */
     private final int kdcPort;
+    /** 允许的加密类型列表（逗号分隔）。 */
     private final String kdcEncryptionTypes;
 
+    /** ApacheDS KDC 服务器实例。 */
     private KdcServer kdcServer;
 
 
+    /** 独立启动嵌入式 Kerberos/LDAP 服务器。 */
     public static void main(String[] args) throws Exception {
         Properties defaultProperties = new Properties();
         defaultProperties.put(PROPERTY_DSF, DSF_FILE);
@@ -86,10 +99,11 @@ public class KerberosEmbeddedServer extends LDAPEmbeddedServer {
     }
 
 
+    /** 根据 realm 名称填充默认 LDAP/KDC 配置属性。 */
     public static void configureDefaultPropertiesForRealm(String kerberosRealm, Properties properties) {
         log.infof("Using kerberos realm: %s", kerberosRealm);
         if (DEFAULT_KERBEROS_REALM.equals(kerberosRealm)) {
-            // No more configs
+            // 默认 realm 无需额外配置
         } else if (DEFAULT_KERBEROS_REALM_2.equals(kerberosRealm)) {
             properties.put(PROPERTY_BASE_DN, "dc=kc2,dc=com");
             properties.put(PROPERTY_BIND_PORT, "11389");
@@ -104,6 +118,7 @@ public class KerberosEmbeddedServer extends LDAPEmbeddedServer {
     }
 
 
+    /** 创建、启动服务器并注册关闭钩子。 */
     public static void execute(String[] args, Properties defaultProperties) throws Exception {
         final KerberosEmbeddedServer kerberosEmbeddedServer = new KerberosEmbeddedServer(defaultProperties);
         kerberosEmbeddedServer.init();
@@ -124,6 +139,7 @@ public class KerberosEmbeddedServer extends LDAPEmbeddedServer {
     }
 
 
+    /** 从属性文件构造嵌入式 Kerberos 服务器。 */
     public KerberosEmbeddedServer(Properties defaultProperties) {
         super(defaultProperties);
 
@@ -141,6 +157,7 @@ public class KerberosEmbeddedServer extends LDAPEmbeddedServer {
     }
 
 
+    /** 初始化 LDAP 目录并启动 KDC。 */
     @Override
     public void init() throws Exception {
         super.init();
@@ -150,6 +167,7 @@ public class KerberosEmbeddedServer extends LDAPEmbeddedServer {
     }
 
 
+    /** 创建目录服务并注册 Kerberos 密钥派生拦截器。 */
     @Override
     protected DirectoryService createDirectoryService() throws Exception {
         DirectoryService directoryService = super.createDirectoryService();
@@ -159,6 +177,7 @@ public class KerberosEmbeddedServer extends LDAPEmbeddedServer {
     }
 
 
+    /** 创建 LDAP 服务器并注册 SASL 机制处理器。 */
     @Override
     protected LdapServer createLdapServer() {
         LdapServer ldapServer = super.createLdapServer();
@@ -178,6 +197,7 @@ public class KerberosEmbeddedServer extends LDAPEmbeddedServer {
     }
 
 
+    /** 配置并启动嵌入式 KDC 服务器。 */
     protected KdcServer createAndStartKdcServer() throws Exception {
         KerberosConfig kdcConfig = new KerberosConfig();
         kdcConfig.setServicePrincipal("krbtgt/" + this.kerberosRealm + "@" + this.kerberosRealm);
@@ -196,13 +216,14 @@ public class KerberosEmbeddedServer extends LDAPEmbeddedServer {
 
         kdcServer.setDirectoryService(directoryService);
 
-        // Launch the server
+        // 启动 KDC 服务
         kdcServer.start();
 
         return kdcServer;
     }
 
 
+    /** 停止 LDAP、KDC 并关闭目录服务。 */
     public void stop() throws Exception {
         stopLdapServer();
         stopKerberosServer();
@@ -210,12 +231,14 @@ public class KerberosEmbeddedServer extends LDAPEmbeddedServer {
     }
 
 
+    /** 停止 KDC 服务器。 */
     protected void stopKerberosServer() {
         log.info("Stopping Kerberos server.");
         kdcServer.stop();
     }
 
 
+    /** 将配置字符串解析为加密类型集合并按强度排序。 */
     private Set<EncryptionType> convertEncryptionTypes() {
         Set<EncryptionType> encryptionTypes = new HashSet<EncryptionType>();
         String[] configEncTypes = kdcEncryptionTypes.split(",");
@@ -234,25 +257,22 @@ public class KerberosEmbeddedServer extends LDAPEmbeddedServer {
     }
 
 
-    // Forked from sun.security.krb5.PrincipalName constructor
+    // 改编自 sun.security.krb5.PrincipalName 构造函数的主机名规范化逻辑
+    /** 获取用于 SASL 主体名的规范化主机名。 */
     private String getHostnameForSASLPrincipal(String hostName) {
         try {
-            // RFC4120 does not recommend canonicalizing a hostname.
-            // However, for compatibility reason, we will try
-            // canonicalize it and see if the output looks better.
+            // RFC4120 不建议规范化主机名，但为兼容性仍尝试规范化
 
             String canonicalized = (InetAddress.getByName(hostName)).
                     getCanonicalHostName();
 
-            // Looks if canonicalized is a longer format of hostName,
-            // we accept cases like
-            //     bunny -> bunny.rabbit.hole
+            // 若规范化结果是原主机名的 FQDN 扩展则采用
             if (canonicalized.toLowerCase(Locale.ENGLISH).startsWith(
                     hostName.toLowerCase(Locale.ENGLISH)+".")) {
                 hostName = canonicalized;
             }
         } catch (UnknownHostException | SecurityException e) {
-            // not canonicalized or no permission to do so, use old
+            // 无法规范化或无权限时使用原值
         }
         return hostName.toLowerCase(Locale.ENGLISH);
     }
@@ -260,7 +280,7 @@ public class KerberosEmbeddedServer extends LDAPEmbeddedServer {
 
 
     /**
-     * Replacement of apacheDS KdcServer class with disabled ticket replay cache.
+     * 禁用票据重放缓存的 KDC 服务器替代实现。
      *
      * @author Dominik Pospisil <dpospisi@redhat.com>
      */
@@ -271,9 +291,8 @@ public class KerberosEmbeddedServer extends LDAPEmbeddedServer {
         }
 
         /**
-         *
-         * Dummy implementation of the ApacheDS kerberos replay cache. Essentially disables kerbores ticket replay checks.
-         * https://issues.jboss.org/browse/JBPAPP-10974
+         * ApacheDS Kerberos 重放缓存空实现，实质禁用票据重放检查。
+         * 参见 https://issues.jboss.org/browse/JBPAPP-10974
          *
          * @author Dominik Pospisil <dpospisi@redhat.com>
          */
@@ -305,7 +324,7 @@ public class KerberosEmbeddedServer extends LDAPEmbeddedServer {
 
             try {
 
-                // override initialized replay cache with a dummy implementation
+                // 用空实现替换已初始化的重放缓存
                 Field replayCacheField = KdcServer.class.getDeclaredField("replayCache");
                 replayCacheField.setAccessible(true);
                 replayCacheField.set(this, new DummyReplayCache());

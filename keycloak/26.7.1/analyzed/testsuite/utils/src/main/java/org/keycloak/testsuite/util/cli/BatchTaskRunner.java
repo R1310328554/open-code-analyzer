@@ -23,10 +23,21 @@ import org.keycloak.models.KeycloakSessionTask;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
 /**
+ * 将大批量操作拆分为多个 Keycloak 事务批次执行的工具类。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 class BatchTaskRunner {
 
+    /**
+     * 按批次在独立事务中执行任务。
+     *
+     * @param first          起始偏移
+     * @param count          总数量
+     * @param batchCount     每批大小
+     * @param sessionFactory 会话工厂
+     * @param batchTask      批次任务回调
+     */
     static void runInBatches(int first, int count, int batchCount, KeycloakSessionFactory sessionFactory, BatchTask batchTask) {
 
         final StateHolder state = new StateHolder();
@@ -42,7 +53,7 @@ class BatchTaskRunner {
                 }
             });
 
-            // update state
+            // 更新下一批次的偏移与剩余数量
             state.firstInThisBatch = state.firstInThisBatch + state.countInThisBatch;
             state.remaining = state.remaining - state.countInThisBatch;
             state.countInThisBatch = Math.min(batchCount, state.remaining);
@@ -50,16 +61,22 @@ class BatchTaskRunner {
     }
 
 
+    /** 批次迭代状态。 */
     private static class StateHolder {
+        /** 当前批次起始索引。 */
         int firstInThisBatch;
+        /** 当前批次数量。 */
         int countInThisBatch;
+        /** 剩余待处理数量。 */
         int remaining;
     };
 
 
+    /** 单批次任务函数式接口。 */
     @FunctionalInterface
     public interface BatchTask {
 
+        /** 执行一个批次内的操作。 */
         void run(KeycloakSession session, int firstInThisIteration, int countInThisIteration);
 
     }

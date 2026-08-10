@@ -28,8 +28,12 @@ import org.keycloak.models.utils.Base32;
 import org.keycloak.models.utils.TimeBasedOTP;
 
 
+/**
+ * 交互式 TOTP 生成器：读取 Base32 密钥并周期性输出一次性密码。
+ */
 public class TotpGenerator {
 
+    /** 从控制台读取密钥并定时打印 TOTP。 */
     public static void main(String[] args) throws IOException {
 
         Timer timer = new Timer();
@@ -49,13 +53,17 @@ public class TotpGenerator {
         }
     }
 
+    /** 定时生成并输出 TOTP 的任务。 */
     private static class TotpTask extends TimerTask {
+        /** Base32 编码的共享密钥。 */
         private String secret;
 
+        /** 绑定密钥。 */
         private TotpTask(String secret) {
             this.secret = secret;
         }
 
+        /** 解码密钥并生成当前时间窗口的 TOTP。 */
         @Override
         public void run() {
             String google = new String(Base32.decode(secret));
