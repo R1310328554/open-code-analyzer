@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T18:23:05Z",
   "files": [
-    "internal/handler/chunk.go",
-    "internal/handler/common.go",
-    "internal/handler/components.go",
-    "internal/handler/connector.go",
-    "internal/handler/dataset.go",
-    "internal/handler/dify_retrieval_handler.go",
-    "internal/handler/document.go",
-    "internal/handler/error.go",
-    "internal/handler/file.go",
-    "internal/handler/file_commit.go",
-    "internal/handler/langfuse.go",
-    "internal/handler/llm.go",
-    "internal/handler/mcp.go",
-    "internal/handler/mcp_server.go",
-    "internal/handler/memory.go",
     "internal/handler/mindmap.go",
     "internal/handler/models.go",
     "internal/handler/oauth_login.go",
@@ -33,5 +18,5 @@
     "internal/harness/core/agent_handoff.go"
   ],
   "remaining_pending": 924,
-  "done": 810
+  "done": 825
 }
