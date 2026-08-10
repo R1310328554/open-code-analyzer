@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T14:57:24Z",
   "files": [
-    "core/netrc.go",
-    "core/org.go",
-    "core/perm.go",
-    "core/pubsub.go",
-    "core/registry.go",
-    "core/renewer.go",
-    "core/repo.go",
-    "core/sched.go",
-    "core/secret.go",
-    "core/session.go",
-    "core/stage.go",
-    "core/status.go",
-    "core/step.go",
-    "core/syncer.go",
-    "core/system.go",
     "core/template.go",
     "core/transfer.go",
     "core/trigger.go",
@@ -33,5 +18,5 @@
     "handler/api/builds/builds.go"
   ],
   "remaining_pending": 328,
-  "done": 30
+  "done": 45
 }
