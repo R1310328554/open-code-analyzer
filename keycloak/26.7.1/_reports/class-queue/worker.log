@@ -2263,3 +2263,18 @@
 2026-08-10T09:16:45Z DONE rest/admin-ui-ext/src/main/java/org/keycloak/admin/ui/rest/RoleCompositeResource.java wave77b vault/tx + admin-ui-ext rest
 2026-08-10T09:16:45Z DONE rest/admin-ui-ext/src/main/java/org/keycloak/admin/ui/rest/RoleMappingDeleteResource.java wave77b vault/tx + admin-ui-ext rest
 2026-08-10T09:16:45Z DONE rest/admin-ui-ext/src/main/java/org/keycloak/admin/ui/rest/RoleMappingResource.java wave77b vault/tx + admin-ui-ext rest
+2026-08-10T09:17:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/storage/database/jpa/NamedJpaConnectionProviderFactory.java wave77a jpa/liquibase/themes/otel
+2026-08-10T09:17:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/storage/database/jpa/QuarkusJpaConnectionProviderFactory.java wave77a jpa/liquibase/themes/otel
+2026-08-10T09:17:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/storage/database/liquibase/FastServiceLocator.java wave77a jpa/liquibase/themes/otel
+2026-08-10T09:17:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/storage/database/liquibase/KeycloakLogService.java wave77a jpa/liquibase/themes/otel
+2026-08-10T09:17:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/storage/database/liquibase/KeycloakLogger.java wave77a jpa/liquibase/themes/otel
+2026-08-10T09:17:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/storage/database/liquibase/QuarkusJpaUpdaterProvider.java wave77a jpa/liquibase/themes/otel
+2026-08-10T09:17:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/storage/database/liquibase/QuarkusJpaUpdaterProviderFactory.java wave77a jpa/liquibase/themes/otel
+2026-08-10T09:17:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/storage/database/liquibase/QuarkusLiquibaseConnectionProvider.java wave77a jpa/liquibase/themes/otel
+2026-08-10T09:17:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/storage/database/liquibase/database/CustomMSSQLDatabase.java wave77a jpa/liquibase/themes/otel
+2026-08-10T09:17:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/themes/FlatClasspathThemeResourceProviderFactory.java wave77a jpa/liquibase/themes/otel
+2026-08-10T09:17:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/themes/QuarkusFolderThemeProviderFactory.java wave77a jpa/liquibase/themes/otel
+2026-08-10T09:17:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/themes/QuarkusJarThemeProviderFactory.java wave77a jpa/liquibase/themes/otel
+2026-08-10T09:17:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/tracing/OTelHttpClientFactory.java wave77a jpa/liquibase/themes/otel
+2026-08-10T09:17:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/tracing/OTelTracingProvider.java wave77a jpa/liquibase/themes/otel
+2026-08-10T09:17:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/tracing/OTelTracingProviderFactory.java wave77a jpa/liquibase/themes/otel

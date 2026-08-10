@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T09:14:51Z",
-  "files": [
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/storage/database/jpa/NamedJpaConnectionProviderFactory.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/storage/database/jpa/QuarkusJpaConnectionProviderFactory.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/storage/database/liquibase/FastServiceLocator.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/storage/database/liquibase/KeycloakLogService.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/storage/database/liquibase/KeycloakLogger.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/storage/database/liquibase/QuarkusJpaUpdaterProvider.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/storage/database/liquibase/QuarkusJpaUpdaterProviderFactory.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/storage/database/liquibase/QuarkusLiquibaseConnectionProvider.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/storage/database/liquibase/database/CustomMSSQLDatabase.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/themes/FlatClasspathThemeResourceProviderFactory.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/themes/QuarkusFolderThemeProviderFactory.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/themes/QuarkusJarThemeProviderFactory.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/tracing/OTelHttpClientFactory.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/tracing/OTelTracingProvider.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/tracing/OTelTracingProviderFactory.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 3688,
-  "done": 2295
+  "done": 2310
 }
