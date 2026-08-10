@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T22:22:59Z",
-  "files": [
-    "pkg/goldfish/storage_mysql.go",
-    "pkg/goldfish/storage_noop.go",
-    "pkg/goldfish/types.go",
-    "pkg/indexgateway/client.go",
-    "pkg/indexgateway/client_pool.go",
-    "pkg/indexgateway/config.go",
-    "pkg/indexgateway/gateway.go",
-    "pkg/indexgateway/grpc.go",
-    "pkg/indexgateway/metrics.go",
-    "pkg/indexgateway/shufflesharding.go",
-    "pkg/ingester/checkpoint.go",
-    "pkg/ingester/checkpoint.pb.go",
-    "pkg/ingester/client/client.go",
-    "pkg/ingester/client/compat.go",
-    "pkg/ingester/client/fnv.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 862,
-  "done": 675
+  "done": 690
 }
