@@ -1,5 +1,5 @@
-// Package pregel wires itself via types.SetPregelRunFunc so that
-// types.CompiledGraph.Invoke uses the Pregel execution engine.
+// Package pregel 通过 init 注册 Pregel 运行函数，
+// 使 types.CompiledGraph.Invoke 走 Pregel 执行引擎。
 package pregel
 
 import (
@@ -13,6 +13,7 @@ func init() {
 	types.SetPregelRunFunc(runCompiledGraph)
 }
 
+// runCompiledGraph 将 CompiledGraph 编译结果桥接到 Pregel Engine.RunSync。
 func runCompiledGraph(
 	ctx context.Context,
 	cg types.CompiledGraph,

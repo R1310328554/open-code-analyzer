@@ -1,4 +1,6 @@
-// Package pregel provides streaming support for Pregel execution.
+// Package pregel 为 Pregel 执行提供流式事件支持。
+//
+// StreamManager 按 StreamMode 过滤并广播检查点、任务、状态更新等事件。
 package pregel
 
 import (
@@ -11,31 +13,31 @@ import (
 	"ragflow/internal/harness/graph/types"
 )
 
-// StreamEventType represents the type of stream event.
+// StreamEventType 流式事件类型枚举。
 type StreamEventType string
 
 const (
-	// EventTypeCheckpoint is emitted when a checkpoint is created
+	// EventTypeCheckpoint 超步开始时发出检查点快照
 	EventTypeCheckpoint StreamEventType = "checkpoint"
-	// EventTypeTaskStart is emitted when a task starts
+	// EventTypeTaskStart 任务开始执行
 	EventTypeTaskStart StreamEventType = "task_start"
-	// EventTypeTaskEnd is emitted when a task completes
+	// EventTypeTaskEnd 任务执行结束
 	EventTypeTaskEnd StreamEventType = "task_end"
-	// EventTypeUpdate is emitted when a node updates state
+	// EventTypeUpdate 节点更新状态
 	EventTypeUpdate StreamEventType = "update"
-	// EventTypeValues is emitted when state values are emitted
+	// EventTypeValues 发出当前通道值快照
 	EventTypeValues StreamEventType = "values"
-	// EventTypeInterrupt is emitted when execution is interrupted
+	// EventTypeInterrupt 执行被中断
 	EventTypeInterrupt StreamEventType = "interrupt"
-	// EventTypeError is emitted when an error occurs
+	// EventTypeError 执行出错
 	EventTypeError StreamEventType = "error"
-	// EventTypeFinal is emitted when execution completes
+	// EventTypeFinal 执行完成并携带最终状态
 	EventTypeFinal StreamEventType = "final"
-	// EventTypeDebug is emitted for debug information
+	// EventTypeDebug 调试信息
 	EventTypeDebug StreamEventType = "debug"
 )
 
-// StreamEvent represents a stream event.
+// StreamEvent 流式事件记录。
 type StreamEvent struct {
 	// Type is the event type
 	Type StreamEventType
@@ -53,7 +55,7 @@ type StreamEvent struct {
 	Error error
 }
 
-// NewStreamEvent creates a new stream event.
+// NewStreamEvent 创建带时间戳的流式事件。
 func NewStreamEvent(eventType StreamEventType, step int) *StreamEvent {
 	return &StreamEvent{
 		Type:      eventType,
@@ -63,12 +65,12 @@ func NewStreamEvent(eventType StreamEventType, step int) *StreamEvent {
 	}
 }
 
-// ToJSON converts the event to JSON.
+// ToJSON 序列化为 JSON。
 func (e *StreamEvent) ToJSON() ([]byte, error) {
 	return json.Marshal(e)
 }
 
-// StreamManager manages streaming for Pregel execution.
+// StreamManager 管理 Pregel 流式事件的发射与过滤。
 type StreamManager struct {
 	mode          types.StreamMode
 	eventCh       chan *StreamEvent
@@ -81,7 +83,7 @@ type StreamManager struct {
 	}
 }
 
-// NewStreamManager creates a new stream manager.
+// NewStreamManager 创建流管理器，按 mode 配置过滤。
 func NewStreamManager(mode types.StreamMode, bufferSize int) *StreamManager {
 	if bufferSize <= 0 {
 		bufferSize = 100
@@ -101,7 +103,7 @@ func NewStreamManager(mode types.StreamMode, bufferSize int) *StreamManager {
 	return sm
 }
 
-// setupIncludeFilter configures which events to include based on stream mode.
+// setupIncludeFilter 根据 StreamMode 配置事件白名单。
 func (sm *StreamManager) setupIncludeFilter() {
 	switch sm.mode {
 	case types.StreamModeValues:
@@ -141,14 +143,14 @@ func (sm *StreamManager) setupIncludeFilter() {
 	}
 }
 
-// shouldEmit checks if an event should be emitted based on stream mode.
+// shouldEmit 检查事件类型是否应发射。
 func (sm *StreamManager) shouldEmit(eventType StreamEventType) bool {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 	return sm.includeFilter[eventType]
 }
 
-// EmitCheckpoint emits a checkpoint event.
+// EmitCheckpoint 发射检查点事件。
 func (sm *StreamManager) EmitCheckpoint(step int, checkpoint map[string]any) {
 	if !sm.shouldEmit(EventTypeCheckpoint) {
 		return
@@ -162,7 +164,7 @@ func (sm *StreamManager) EmitCheckpoint(step int, checkpoint map[string]any) {
 	sm.emit(event)
 }
 
-// EmitTaskStart emits a task start event.
+// EmitTaskStart 发射任务开始事件。
 func (sm *StreamManager) EmitTaskStart(step int, node string, taskID string) {
 	if !sm.shouldEmit(EventTypeTaskStart) {
 		return
@@ -179,7 +181,7 @@ func (sm *StreamManager) EmitTaskStart(step int, node string, taskID string) {
 	sm.emit(event)
 }
 
-// EmitTaskEnd emits a task end event.
+// EmitTaskEnd 发射任务结束事件（含耗时）。
 func (sm *StreamManager) EmitTaskEnd(step int, node string, taskID string, output any, duration time.Duration, err error) {
 	if !sm.shouldEmit(EventTypeTaskEnd) {
 		return
@@ -199,7 +201,7 @@ func (sm *StreamManager) EmitTaskEnd(step int, node string, taskID string, outpu
 	sm.emit(event)
 }
 
-// EmitUpdate emits a state update event.
+// EmitUpdate 发射状态更新事件。
 func (sm *StreamManager) EmitUpdate(step int, node string, output any) {
 	if !sm.shouldEmit(EventTypeUpdate) {
 		return
@@ -215,7 +217,7 @@ func (sm *StreamManager) EmitUpdate(step int, node string, output any) {
 	sm.emit(event)
 }
 
-// EmitValues emits state values event.
+// EmitValues 发射通道值快照事件。
 func (sm *StreamManager) EmitValues(step int, values map[string]any) {
 	if !sm.shouldEmit(EventTypeValues) {
 		return
@@ -229,7 +231,7 @@ func (sm *StreamManager) EmitValues(step int, values map[string]any) {
 	sm.emit(event)
 }
 
-// EmitInterrupt emits an interrupt event.
+// EmitInterrupt 发射中断事件。
 func (sm *StreamManager) EmitInterrupt(step int, interrupts []string) {
 	if !sm.shouldEmit(EventTypeInterrupt) {
 		return
@@ -243,7 +245,7 @@ func (sm *StreamManager) EmitInterrupt(step int, interrupts []string) {
 	sm.emit(event)
 }
 
-// EmitError emits an error event.
+// EmitError 发射错误事件。
 func (sm *StreamManager) EmitError(step int, err error, node string) {
 	if !sm.shouldEmit(EventTypeError) {
 		return
@@ -260,7 +262,7 @@ func (sm *StreamManager) EmitError(step int, err error, node string) {
 	sm.emit(event)
 }
 
-// EmitDebug emits a debug event.
+// EmitDebug 发射调试事件。
 func (sm *StreamManager) EmitDebug(step int, message string, data any) {
 	if !sm.shouldEmit(EventTypeDebug) {
 		return
@@ -275,7 +277,7 @@ func (sm *StreamManager) EmitDebug(step int, message string, data any) {
 	sm.emit(event)
 }
 
-// EmitFinal emits final event with complete state.
+// EmitFinal 阻塞发送最终状态事件（保证 RunSync 不丢数据）。
 // Uses blocking channel send to guarantee delivery — dropping the final event
 // would cause RunSync to return nil state (silent data loss).
 func (sm *StreamManager) EmitFinal(step int, state any) {
@@ -290,7 +292,7 @@ func (sm *StreamManager) EmitFinal(step int, state any) {
 	sm.eventCh <- event
 }
 
-// emit sends an event to the channel.
+// emit 非阻塞发送事件；通道满时丢弃。
 func (sm *StreamManager) emit(event *StreamEvent) {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
@@ -307,17 +309,17 @@ func (sm *StreamManager) emit(event *StreamEvent) {
 	}
 }
 
-// Events returns the event channel.
+// Events 返回事件通道（只读）。
 func (sm *StreamManager) Events() <-chan *StreamEvent {
 	return sm.eventCh
 }
 
-// Errors returns the error channel.
+// Errors 返回错误通道（只读）。
 func (sm *StreamManager) Errors() <-chan error {
 	return sm.errorCh
 }
 
-// Close closes the stream manager.
+// Close 关闭流管理器并关闭通道。
 func (sm *StreamManager) Close() {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
@@ -329,14 +331,14 @@ func (sm *StreamManager) Close() {
 	}
 }
 
-// StreamWriter provides a streaming output for node functions.
+// StreamWriter 为节点函数提供流式调试输出。
 type StreamWriter struct {
 	streamManager *StreamManager
 	step          int
 	node          string
 }
 
-// NewStreamWriter creates a new stream writer.
+// NewStreamWriter 创建流式写入器。
 func NewStreamWriter(sm *StreamManager, step int, node string) *StreamWriter {
 	return &StreamWriter{
 		streamManager: sm,
@@ -345,13 +347,13 @@ func NewStreamWriter(sm *StreamManager, step int, node string) *StreamWriter {
 	}
 }
 
-// Write writes data to the stream.
+// Write 将数据作为调试事件写入流。
 func (w *StreamWriter) Write(data any) error {
 	w.streamManager.EmitDebug(w.step, fmt.Sprintf("custom output from node %s", w.node), data)
 	return nil
 }
 
-// WriteJSON writes JSON data to the stream.
+// WriteJSON 序列化后写入流。
 func (w *StreamWriter) WriteJSON(data any) error {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
@@ -360,7 +362,7 @@ func (w *StreamWriter) WriteJSON(data any) error {
 	return w.Write(jsonData)
 }
 
-// EventStream represents a stream of execution events.
+// EventStream 独立的事件流（含 context 生命周期）。
 type EventStream struct {
 	ctx          context.Context
 	cancel       context.CancelFunc
@@ -368,7 +370,7 @@ type EventStream struct {
 	streamErrors chan error
 }
 
-// NewEventStream creates a new event stream.
+// NewEventStream 创建可取消的事件流。
 func NewEventStream(ctx context.Context) *EventStream {
 	ctx, cancel := context.WithCancel(ctx)
 	return &EventStream{
@@ -379,19 +381,19 @@ func NewEventStream(ctx context.Context) *EventStream {
 	}
 }
 
-// Context returns the stream's context.
+// Context 返回流的 context。
 func (es *EventStream) Context() context.Context {
 	return es.ctx
 }
 
-// Cancel cancels the stream.
+// Cancel 取消流并关闭通道。
 func (es *EventStream) Cancel() {
 	es.cancel()
 	close(es.streamEvents)
 	close(es.streamErrors)
 }
 
-// Emit emits an event to the stream.
+// Emit 向流发送事件。
 func (es *EventStream) Emit(event *StreamEvent) {
 	select {
 	case es.streamEvents <- event:
@@ -399,7 +401,7 @@ func (es *EventStream) Emit(event *StreamEvent) {
 	}
 }
 
-// EmitError emits an error to the stream.
+// EmitError 向流发送错误。
 func (es *EventStream) EmitError(err error) {
 	select {
 	case es.streamErrors <- err:
@@ -407,19 +409,19 @@ func (es *EventStream) EmitError(err error) {
 	}
 }
 
-// Stream returns the event and error channels.
+// Stream 返回事件与错误通道。
 func (es *EventStream) Stream() (<-chan *StreamEvent, <-chan error) {
 	return es.streamEvents, es.streamErrors
 }
 
-// StreamProcessor processes stream events.
+// StreamProcessor 流事件处理器（过滤/变换/处理链）。
 type StreamProcessor struct {
 	filter    func(*StreamEvent) bool
 	transform func(*StreamEvent) (*StreamEvent, error)
 	handler   func(*StreamEvent)
 }
 
-// NewStreamProcessor creates a new stream processor.
+// NewStreamProcessor 创建默认流处理器。
 func NewStreamProcessor() *StreamProcessor {
 	return &StreamProcessor{
 		filter:    func(e *StreamEvent) bool { return true },
@@ -428,25 +430,25 @@ func NewStreamProcessor() *StreamProcessor {
 	}
 }
 
-// WithFilter sets an event filter.
+// WithFilter 设置事件过滤器。
 func (sp *StreamProcessor) WithFilter(filter func(*StreamEvent) bool) *StreamProcessor {
 	sp.filter = filter
 	return sp
 }
 
-// WithTransform sets an event transformer.
+// WithTransform 设置事件变换器。
 func (sp *StreamProcessor) WithTransform(transform func(*StreamEvent) (*StreamEvent, error)) *StreamProcessor {
 	sp.transform = transform
 	return sp
 }
 
-// WithHandler sets an event handler.
+// WithHandler 设置事件处理函数。
 func (sp *StreamProcessor) WithHandler(handler func(*StreamEvent)) *StreamProcessor {
 	sp.handler = handler
 	return sp
 }
 
-// Process processes a stream event.
+// Process 过滤 → 变换 → 处理单条事件。
 func (sp *StreamProcessor) Process(event *StreamEvent) error {
 	if !sp.filter(event) {
 		return nil
@@ -461,7 +463,7 @@ func (sp *StreamProcessor) Process(event *StreamEvent) error {
 	return nil
 }
 
-// ProcessStream processes all events from a stream.
+// ProcessStream 消费事件通道直至关闭或 ctx 取消。
 func (sp *StreamProcessor) ProcessStream(ctx context.Context, eventCh <-chan *StreamEvent) error {
 	for {
 		select {

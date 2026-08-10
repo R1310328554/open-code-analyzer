@@ -1,4 +1,6 @@
-// Package pregel provides caching support for Pregel execution.
+// Package pregel 为 Pregel 节点执行提供结果缓存能力。
+//
+// 支持内存缓存（LRU/LFU/Random 淘汰）、缓存键生成与 CachedExecutor 包装。
 package pregel
 
 import (
@@ -13,19 +15,19 @@ import (
 	"ragflow/internal/harness/graph/types"
 )
 
-// Cache is the interface for caching node outputs.
+// Cache 节点输出缓存接口。
 type Cache interface {
-	// Get retrieves a value from the cache.
+	// Get 读取缓存；过期条目视为未命中。
 	Get(ctx context.Context, key string) (any, bool)
-	// Set stores a value in the cache.
+	// Set 写入缓存；满时按策略淘汰一条。
 	Set(ctx context.Context, key string, value any, ttl time.Duration)
-	// Delete removes a value from the cache.
+	// Delete 删除指定键。
 	Delete(ctx context.Context, key string)
-	// Clear clears all values from the cache.
+	// Clear 清空全部缓存条目。
 	Clear()
 }
 
-// MemoryCache is an in-memory cache implementation.
+// MemoryCache 线程安全的内存缓存实现。
 type MemoryCache struct {
 	mu       sync.RWMutex
 	data     map[string]*cacheEntry
@@ -40,19 +42,19 @@ type cacheEntry struct {
 	hits       int64
 }
 
-// EvictionPolicy determines how entries are evicted when cache is full.
+// EvictionPolicy 缓存满时的淘汰策略。
 type EvictionPolicy int
 
 const (
-	// EvictLRU evicts least recently used entries.
+	// EvictLRU 淘汰最近最少使用的条目。
 	EvictLRU EvictionPolicy = iota
-	// EvictLFU evicts least frequently used entries.
+	// EvictLFU 淘汰访问频率最低的条目。
 	EvictLFU
-	// EvictRandom evicts random entries.
+	// EvictRandom 随机淘汰条目。
 	EvictRandom
 )
 
-// NewMemoryCache creates a new in-memory cache.
+// NewMemoryCache 创建内存缓存，指定容量与淘汰策略。
 func NewMemoryCache(maxSize int, eviction EvictionPolicy) *MemoryCache {
 	return &MemoryCache{
 		data:     make(map[string]*cacheEntry),
@@ -61,7 +63,7 @@ func NewMemoryCache(maxSize int, eviction EvictionPolicy) *MemoryCache {
 	}
 }
 
-// Get retrieves a value from the cache.
+// Get 读取缓存；过期条目视为未命中。
 func (c *MemoryCache) Get(ctx context.Context, key string) (any, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -81,7 +83,7 @@ func (c *MemoryCache) Get(ctx context.Context, key string) (any, bool) {
 	return entry.value, true
 }
 
-// Set stores a value in the cache.
+// Set 写入缓存；满时按策略淘汰一条。
 func (c *MemoryCache) Set(ctx context.Context, key string, value any, ttl time.Duration) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -104,21 +106,21 @@ func (c *MemoryCache) Set(ctx context.Context, key string, value any, ttl time.D
 	}
 }
 
-// Delete removes a value from the cache.
+// Delete 删除指定键。
 func (c *MemoryCache) Delete(ctx context.Context, key string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	delete(c.data, key)
 }
 
-// Clear clears all values from the cache.
+// Clear 清空全部缓存条目。
 func (c *MemoryCache) Clear() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.data = make(map[string]*cacheEntry)
 }
 
-// evict removes an entry based on the eviction policy.
+// evict 按策略淘汰一条缓存条目。
 func (c *MemoryCache) evict() {
 	if len(c.data) == 0 {
 		return
@@ -158,7 +160,7 @@ func (c *MemoryCache) evict() {
 	}
 }
 
-// GenerateCacheKey generates a cache key from the given input.
+// GenerateCacheKey 由节点名与输入 JSON 的 SHA-256 生成缓存键。
 func GenerateCacheKey(nodeName string, input any) string {
 	data, err := json.Marshal(input)
 	if err != nil {
@@ -169,13 +171,13 @@ func GenerateCacheKey(nodeName string, input any) string {
 	return fmt.Sprintf("%s:%s", nodeName, hex.EncodeToString(hash[:]))
 }
 
-// CachedExecutor wraps a function with caching.
+// CachedExecutor 包装节点函数，命中缓存时跳过实际执行。
 type CachedExecutor struct {
 	cache       Cache
 	cachePolicy *types.CachePolicy
 }
 
-// NewCachedExecutor creates a new cached executor.
+// NewCachedExecutor 创建带缓存的执行器。
 func NewCachedExecutor(cache Cache, policy *types.CachePolicy) *CachedExecutor {
 	return &CachedExecutor{
 		cache:       cache,
@@ -183,7 +185,7 @@ func NewCachedExecutor(cache Cache, policy *types.CachePolicy) *CachedExecutor {
 	}
 }
 
-// Execute executes a function with caching.
+// Execute 先查缓存，未命中则执行 fn 并写入缓存。
 func (e *CachedExecutor) Execute(ctx context.Context, nodeName string, input any, fn func(context.Context, any) (any, error)) (any, error) {
 	// Generate cache key
 	var key string
@@ -214,19 +216,19 @@ func (e *CachedExecutor) Execute(ctx context.Context, nodeName string, input any
 	return result, nil
 }
 
-// NoopCache is a cache that doesn't store anything.
+// NoopCache 空实现缓存，始终未命中（默认禁用缓存）。
 type NoopCache struct{}
 
-// Get always returns false.
+// Get 始终返回未命中。
 func (n *NoopCache) Get(ctx context.Context, key string) (any, bool) {
 	return nil, false
 }
 
-// Set is a no-op.
+// Set 空操作。
 func (n *NoopCache) Set(ctx context.Context, key string, value any, ttl time.Duration) {}
 
-// Delete is a no-op.
+// Delete 空操作。
 func (n *NoopCache) Delete(ctx context.Context, key string) {}
 
-// Clear is a no-op.
+// Clear 空操作。
 func (n *NoopCache) Clear() {}

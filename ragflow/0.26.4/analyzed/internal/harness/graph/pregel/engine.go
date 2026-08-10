@@ -1,4 +1,6 @@
-// Package pregel provides the Pregel execution algorithm for graph processing.
+// Package pregel 实现 StateGraph 的 Pregel（Bulk-Synchronous Parallel）执行算法。
+//
+// Engine 管理通道状态、并发任务执行、流式事件、检查点持久化与人机协同中断。
 package pregel
 
 import (
@@ -22,7 +24,7 @@ import (
 	"ragflow/internal/harness/graph/types"
 )
 
-// Engine implements the Pregel (bulk-synchronous parallel) execution model
+// Engine 实现 Pregel 批量同步并行执行模型
 // for StateGraph. It manages channel-based state communication, concurrent
 // task execution via AsyncPipeline, streaming event emission, and checkpoint
 // persistence.
@@ -34,25 +36,25 @@ import (
 //	    WithRecursionLimit(50),
 //	)
 type Engine struct {
-	graph               types.StateGraph
-	checkpointer        checkpoint.BaseCheckpointer
-	interrupts          map[string]bool
-	interruptsAfter     map[string]bool
-	recursionLimit      int
+	graph               types.StateGraph // 绑定的状态图 // 绑定的状态图
+	checkpointer        checkpoint.BaseCheckpointer // 检查点存储器 // 检查点存储器
+	interrupts          map[string]bool // 执行前中断节点集合 // 执行前中断节点集合
+	interruptsAfter     map[string]bool // 执行后中断节点集合 // 执行后中断节点集合
+	recursionLimit      int // 超步递归上限 // 超步递归上限
 	debug               bool
 	config              *types.RunnableConfig
-	maxConcurrency      int
-	retryPolicy         *types.RetryPolicy
-	currentCheckpoint   *checkpoint.Checkpoint
-	channelVersions     map[string]int
-	versionsSeen        map[string]map[string]int
-	cache               Cache
-	backgroundExec      *BackgroundExecutor
-	callbacks           *CallbackManager   // lifecycle callbacks (event recording, metrics)
-	deferredCheckpoints []deferredCheckpoint // for DurabilityExit mode
+	maxConcurrency      int // 节点最大并发数 // 节点最大并发数
+	retryPolicy         *types.RetryPolicy // 默认重试策略 // 默认重试策略
+	currentCheckpoint   *checkpoint.Checkpoint // 当前检查点对象 // 当前检查点对象
+	channelVersions     map[string]int // 通道版本号追踪 // 通道版本号追踪
+	versionsSeen        map[string]map[string]int // 节点已读通道版本 // 节点已读通道版本
+	cache               Cache // 节点输出缓存 // 节点输出缓存
+	backgroundExec      *BackgroundExecutor // 后台任务执行器 // 后台任务执行器
+	callbacks           *CallbackManager   // 生命周期回调   // 生命周期回调   // lifecycle callbacks (event recording, metrics)
+	deferredCheckpoints []deferredCheckpoint // DurabilityExit 延迟检查点 // DurabilityExit 延迟检查点 // for DurabilityExit mode
 }
 
-// deferredCheckpoint stores checkpoint data for deferred saving (DurabilityExit mode)
+// deferredCheckpoint DurabilityExit 模式下延迟保存的检查点数据
 type deferredCheckpoint struct {
 	ThreadID     string
 	CheckpointID string
@@ -60,7 +62,7 @@ type deferredCheckpoint struct {
 	Checkpoint   map[string]any
 }
 
-// NewEngine creates a new Pregel engine bound to a StateGraph.
+// NewEngine 创建绑定 StateGraph 的 Pregel 引擎，可复用于多次 Run。
 // Options configure checkpointer, recursion limit, concurrency, retry, cache, etc.
 //
 // The engine is reusable across multiple Run calls. Each call creates its own
@@ -92,20 +94,20 @@ func NewEngine(g types.StateGraph, opts ...EngineOption) *Engine {
 	return eng
 }
 
-// EngineOption is an option for configuring the Pregel engine.
+// EngineOption 引擎配置选项函数。
 // Available options: WithCheckpointer, WithInterrupts, WithRecursionLimit,
 // WithDebug, WithConfig, WithMaxConcurrency, WithRetryPolicy, WithCache,
 // WithBackgroundExecutor.
 type EngineOption func(*Engine)
 
-// WithCheckpointer sets the checkpointer.
+// WithCheckpointer 设置检查点存储器。
 func WithCheckpointer(cp checkpoint.BaseCheckpointer) EngineOption {
 	return func(e *Engine) {
 		e.checkpointer = cp
 	}
 }
 
-// WithInterrupts sets the interrupt nodes.
+// WithInterrupts 设置执行前中断节点。
 func WithInterrupts(nodes ...string) EngineOption {
 	return func(e *Engine) {
 		for _, node := range nodes {
@@ -114,7 +116,7 @@ func WithInterrupts(nodes ...string) EngineOption {
 	}
 }
 
-// WithInterruptsAfter sets the after-execution interrupt nodes.
+// WithInterruptsAfter 设置执行后中断节点。
 func WithInterruptsAfter(nodes ...string) EngineOption {
 	return func(e *Engine) {
 		for _, node := range nodes {
@@ -123,28 +125,28 @@ func WithInterruptsAfter(nodes ...string) EngineOption {
 	}
 }
 
-// WithRecursionLimit sets the recursion limit.
+// WithRecursionLimit 设置超步递归上限。
 func WithRecursionLimit(limit int) EngineOption {
 	return func(e *Engine) {
 		e.recursionLimit = limit
 	}
 }
 
-// WithDebug enables debug mode.
+// WithDebug 启用调试模式。
 func WithDebug(debug bool) EngineOption {
 	return func(e *Engine) {
 		e.debug = debug
 	}
 }
 
-// WithConfig sets the runnable config.
+// WithConfig 设置 RunnableConfig（线程 ID、持久化模式等）。
 func WithConfig(cfg *types.RunnableConfig) EngineOption {
 	return func(e *Engine) {
 		e.config = cfg
 	}
 }
 
-// WithMaxConcurrency sets the maximum concurrency for node execution.
+// WithMaxConcurrency 设置节点最大并发数。
 func WithMaxConcurrency(max int) EngineOption {
 	return func(e *Engine) {
 		if max > 0 {
@@ -153,28 +155,28 @@ func WithMaxConcurrency(max int) EngineOption {
 	}
 }
 
-// WithRetryPolicy sets the retry policy for node execution.
+// WithRetryPolicy 设置节点重试策略。
 func WithRetryPolicy(policy *types.RetryPolicy) EngineOption {
 	return func(e *Engine) {
 		e.retryPolicy = policy
 	}
 }
 
-// WithCache sets the cache for the engine.
+// WithCache 设置节点输出缓存。
 func WithCache(cache Cache) EngineOption {
 	return func(e *Engine) {
 		e.cache = cache
 	}
 }
 
-// WithBackgroundExecutor sets the background executor for the engine.
+// WithBackgroundExecutor 设置后台任务执行器。
 func WithBackgroundExecutor(exec *BackgroundExecutor) EngineOption {
 	return func(e *Engine) {
 		e.backgroundExec = exec
 	}
 }
 
-// WithCallbacks sets the callback manager for the engine.
+// WithCallbacks 设置生命周期回调管理器。
 // Callbacks are dispatched during graph execution (run start/end, step start/end,
 // node start/end, checkpoint save/load, interrupt/resume).
 func WithCallbacks(cb *CallbackManager) EngineOption {
@@ -183,7 +185,7 @@ func WithCallbacks(cb *CallbackManager) EngineOption {
 	}
 }
 
-// ExecuteResult represents the result of graph execution.
+// ExecuteResult 图执行结果（最终状态、检查点 ID、元数据）。
 type ExecuteResult struct {
 	// Final state of the graph.
 	State any
@@ -193,7 +195,8 @@ type ExecuteResult struct {
 	Metadata map[string]any
 }
 
-// Run executes the graph using the Pregel algorithm and returns streaming events.
+// Run 异步执行图，返回流式事件通道与错误通道。
+// 调用方必须读尽 outputCh 直至关闭，否则可能 goroutine 泄漏。
 // outputCh yields StreamEvent values (checkpoints, task start/end, state updates,
 // and a final event with the complete state). errCh receives a single error on failure
 // or nil on clean completion.
@@ -714,7 +717,7 @@ func (e *Engine) Run(ctx context.Context, input any, mode types.StreamMode) (<-c
 	return outputCh, errCh
 }
 
-// prepareNextTasks determines which tasks to execute next.
+// prepareNextTasks 确定下一超步要执行的任务（for_execution=true）。
 // This is the standard version that prepares tasks for execution.
 func (e *Engine) prepareNextTasks(
 	ctx context.Context,
@@ -726,7 +729,8 @@ func (e *Engine) prepareNextTasks(
 	return e.prepareNextTasksWithMode(ctx, registry, completedTasks, lastCompletedNode, currentState, true)
 }
 
-// prepareNextTasksWithMode determines which tasks to execute next with for_execution mode.
+// prepareNextTasksWithMode 按 forExecution 标志准备任务。
+// AllPredecessor（DAG）要求全部前驱完成；AnyPredecessor（BSP 默认）任一前驱完成即触发。
 // When forExecution is true, tasks are prepared for actual execution.
 // When forExecution is false, only task information is prepared (for inspection/planning).
 //
@@ -818,7 +822,7 @@ func (e *Engine) prepareNextTasksWithMode(
 	return tasks, triggerToNodes, nil
 }
 
-// prepareNextTasksDAG prepares tasks in DAG (AllPredecessor) mode.
+// prepareNextTasksDAG DAG 模式下扫描全部未完成任务，前驱均完成则调度。
 // It scans all nodes and schedules those whose incoming-edge sources
 // have all completed. This is O(n) per call but correct for fan-in patterns.
 func (e *Engine) prepareNextTasksDAG(
@@ -883,7 +887,7 @@ func (e *Engine) prepareNextTasksDAG(
 	return tasks, triggerToNodes, nil
 }
 
-// buildIncomingEdges builds a reverse-adjacency map: node → list of nodes with edges TO it.
+// buildIncomingEdges 构建反向邻接表（入边来源节点）。
 func (e *Engine) buildIncomingEdges() map[string][]string {
 	adj := make(map[string][]string)
 	for _, edge := range e.graph.GetEdges() {
@@ -892,7 +896,7 @@ func (e *Engine) buildIncomingEdges() map[string][]string {
 	return adj
 }
 
-// shouldInterrupt checks if graph should be interrupted.
+// shouldInterrupt 检查是否应在执行前中断。
 func (e *Engine) shouldInterrupt(
 	registry *channels.Registry,
 	tasks []*Task,
@@ -915,7 +919,8 @@ func (e *Engine) shouldInterrupt(
 	return interrupted
 }
 
-// shouldInterruptAfter checks if any SUCCESSFULLY completed task's node name
+// shouldInterruptAfter 检查成功完成的任务是否触发执行后中断。
+// 在检查点已保存后调用，确保输出已持久化。
 // is in interruptsAfter. Called AFTER execution and checkpoint save so the
 // checkpoint already captures the node's output.
 func (e *Engine) shouldInterruptAfter(results []*TaskResult) bool {
@@ -934,7 +939,7 @@ func (e *Engine) shouldInterruptAfter(results []*TaskResult) bool {
 	return false
 }
 
-// applyWrites applies task outputs to channels with version management and write merging.
+// applyWrites 将任务输出写入通道，含版本管理与写入合并。
 func (e *Engine) applyWrites(
 	registry *channels.Registry,
 	results []*TaskResult,
@@ -1073,7 +1078,7 @@ func (e *Engine) applyWrites(
 	return updatedChannels, nil
 }
 
-// markSeen marks that a node has seen a channel's version.
+// markSeen 标记节点已读通道当前版本。
 func (e *Engine) markSeen(node, channel string) {
 	if e.versionsSeen[node] == nil {
 		e.versionsSeen[node] = make(map[string]int)
@@ -1085,7 +1090,7 @@ func (e *Engine) markSeen(node, channel string) {
 	}
 }
 
-// hasSeen checks if a node has seen a channel's current version.
+// hasSeen 检查节点是否已读通道最新版本。
 func (e *Engine) hasSeen(node, channel string) bool {
 	if versions, ok := e.versionsSeen[node]; ok {
 		if version, ok := versions[channel]; ok {
@@ -1095,7 +1100,7 @@ func (e *Engine) hasSeen(node, channel string) bool {
 	return false
 }
 
-// executeTasks executes the given tasks concurrently.
+// executeTasks 并发执行多个任务（基础版）。
 func (e *Engine) executeTasks(
 	ctx context.Context,
 	tasks []*Task,
@@ -1123,7 +1128,7 @@ func (e *Engine) executeTasks(
 	return results, nil
 }
 
-// executeTasksAsync executes tasks using async pipeline with streaming.
+// executeTasksAsync 通过 AsyncPipeline 并发执行任务并发射流式事件。
 func (e *Engine) executeTasksAsync(
 	ctx context.Context,
 	tasks []*Task,
@@ -1220,7 +1225,7 @@ func (e *Engine) executeTasksAsync(
 	return results, nil
 }
 
-// executeTask executes a single task with retry logic.
+// executeTask 执行单个任务，集成 RetryExecutor。
 func (e *Engine) executeTask(
 	ctx context.Context,
 	task *Task,
@@ -1284,8 +1289,8 @@ func (e *Engine) executeTask(
 	}
 }
 
-// readTaskInput reads the input for a task from channels.
-// mapToStateSchema converts a map[string]any state to the graph's state schema
+// readTaskInput 从通道读取任务输入。
+// mapToStateSchema 将 map 输入转换为图状态 schema 结构体类型。
 // type if it is a struct (or pointer to struct). If the schema is a map or
 // nil, the map input is returned as-is.
 func (e *Engine) mapToStateSchema(input any) any {
@@ -1369,7 +1374,7 @@ func (e *Engine) readTaskInput(registry *channels.Registry, task *Task) (any, er
 	return values, nil
 }
 
-// Task represents a task to execute.
+// Task 待执行的 Pregel 任务。
 type Task struct {
 	ID          string
 	Name        string
@@ -1380,7 +1385,7 @@ type Task struct {
 	RetryPolicy *types.RetryPolicy
 }
 
-// TaskResult represents the result of executing a task.
+// TaskResult 任务执行结果。
 type TaskResult struct {
 	Name   string
 	Output any
@@ -1388,7 +1393,7 @@ type TaskResult struct {
 	Path   []string // Task path for deterministic ordering (like Python's task_path)
 }
 
-// TaskPathStr generates a deterministic string representation of the task path.
+// TaskPathStr 生成任务路径的确定性字符串（对应 Python task_path_str）。
 // This corresponds to Python's task_path_str function in _algo.py
 func TaskPathStr(path []string) string {
 	if len(path) == 0 {
@@ -1398,7 +1403,7 @@ func TaskPathStr(path []string) string {
 	return strings.Join(path, "/")
 }
 
-// ParseTaskPath parses a task path string back into a path array.
+// ParseTaskPath 解析任务路径字符串。
 func ParseTaskPath(pathStr string) []string {
 	if pathStr == "" {
 		return []string{}
@@ -1406,7 +1411,7 @@ func ParseTaskPath(pathStr string) []string {
 	return strings.Split(pathStr, "/")
 }
 
-// BuildTaskPath builds a task path from components.
+// BuildTaskPath 从组件构建任务路径。
 // Supports nested paths like Python's tuple-based paths.
 func BuildTaskPath(components ...any) []string {
 	path := make([]string, 0, len(components))
@@ -1429,7 +1434,7 @@ func BuildTaskPath(components ...any) []string {
 	return path
 }
 
-// Helper methods that access the StateGraph
+// ---- StateGraph 辅助方法 ----
 func (e *Engine) getGraphChannels() map[string]channels.Channel {
 	raw := e.graph.GetChannels()
 	result := make(map[string]channels.Channel, len(raw))
@@ -1621,7 +1626,7 @@ func (e *Engine) applyInput(registry *channels.Registry, input any) error {
 	return nil
 }
 
-// caseFoldKey attempts to locate a registered channel whose name differs from
+// caseFoldKey 尝试按首字母大小写匹配已注册通道名。
 // key only by the case of the first character (e.g. struct field "Counter" vs
 // input map key "counter").  Returns the matched channel name, or "".
 func caseFoldKey(registry *channels.Registry, key string) string {
@@ -1698,7 +1703,7 @@ func (e *Engine) mergeStates(existing, next any) any {
 	return next
 }
 
-// toMap converts a struct or map to a map[string]any.
+// toMap 将 struct 或 map 转为 map[string]any。
 func toMap(val any) (map[string]any, error) {
 	if val == nil {
 		return nil, fmt.Errorf("nil value")
@@ -1746,7 +1751,7 @@ func toMap(val any) (map[string]any, error) {
 	return result, nil
 }
 
-// saveCheckpoint saves a checkpoint to the checkpointer.
+// saveCheckpoint 持久化检查点到 checkpointer。
 func (e *Engine) saveCheckpoint(ctx context.Context, threadID, checkpointID string, step int, checkpoint map[string]any) error {
 	if e.checkpointer == nil {
 		return nil
@@ -1758,7 +1763,7 @@ func (e *Engine) saveCheckpoint(ctx context.Context, threadID, checkpointID stri
 	}, checkpoint)
 }
 
-// deferCheckpoint defers a checkpoint save for DurabilityExit mode.
+// deferCheckpoint 延迟保存检查点（DurabilityExit）。
 func (e *Engine) deferCheckpoint(threadID, checkpointID string, step int, checkpoint map[string]any) {
 	e.deferredCheckpoints = append(e.deferredCheckpoints, deferredCheckpoint{
 		ThreadID:     threadID,
@@ -1768,7 +1773,7 @@ func (e *Engine) deferCheckpoint(threadID, checkpointID string, step int, checkp
 	})
 }
 
-// saveDeferredCheckpoints saves all deferred checkpoints (called at exit for DurabilityExit mode).
+// saveDeferredCheckpoints 退出时批量保存延迟检查点。
 func (e *Engine) saveDeferredCheckpoints(ctx context.Context) error {
 	if e.checkpointer == nil || len(e.deferredCheckpoints) == 0 {
 		return nil
@@ -1787,7 +1792,7 @@ func (e *Engine) saveDeferredCheckpoints(ctx context.Context) error {
 	return lastErr
 }
 
-// RunSync executes the graph synchronously and returns the final state.
+// RunSync 同步执行图并返回最终状态（阻塞 API）。
 // This is a convenience wrapper around Run() for callers that want a blocking API.
 //
 // RunSync first drains all events from outputCh (reading until it is closed),
@@ -1822,7 +1827,7 @@ func (e *Engine) RunSync(ctx context.Context, input any) (any, error) {
 	return finalState, nil
 }
 
-// applyFieldMapping filters and remaps an output map according to FieldMapping rules.
+// applyFieldMapping 按 FieldMapping 规则过滤并重映射输出。
 // If no mappings are specified, the entire output map is passed through unchanged.
 // Each mapping specifies a source field path (From) and a target field path (To).
 func applyFieldMapping(output map[string]any, mappings []types.FieldMapping) map[string]any {
@@ -1839,7 +1844,7 @@ func applyFieldMapping(output map[string]any, mappings []types.FieldMapping) map
 	return result
 }
 
-// getNestedField retrieves a value from a nested map using a dot-separated path.
+// getNestedField 按点分路径从嵌套 map 取值。
 func getNestedField(m map[string]any, path string) any {
 	if path == "" {
 		return m // return entire map
@@ -1859,7 +1864,7 @@ func getNestedField(m map[string]any, path string) any {
 	return cur
 }
 
-// setNestedField sets a value in a nested map using a dot-separated path.
+// setNestedField 按点分路径向嵌套 map 写值。
 func setNestedField(m map[string]any, path string, val any) {
 	if path == "" {
 		for k, v := range val.(map[string]any) {
@@ -1885,7 +1890,7 @@ func setNestedField(m map[string]any, path string, val any) {
 	m[parts[len(parts)-1]] = val
 }
 
-// serializeStringSet encodes a map[string]bool to a NUL-separated string
+// serializeStringSet 将 map[string]bool 编码为 NUL 分隔字符串。
 // for storage in the checkpoint payload.
 func serializeStringSet(set map[string]bool) string {
 	if len(set) == 0 {
@@ -1906,7 +1911,7 @@ func serializeStringSet(set map[string]bool) string {
 	return string(out)
 }
 
-// deserializeStringSet decodes a NUL-separated string back to a
+// deserializeStringSet 解码 NUL 分隔字符串为 map[string]bool。
 // map[string]bool.
 func deserializeStringSet(encoded string) map[string]bool {
 	if encoded == "" {

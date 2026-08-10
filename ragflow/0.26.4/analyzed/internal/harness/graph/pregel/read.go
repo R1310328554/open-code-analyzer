@@ -1,3 +1,4 @@
+// read.go — 通道读取抽象：选择器、变换器与触发器。
 package pregel
 
 import (
@@ -8,8 +9,8 @@ import (
 	"ragflow/internal/harness/graph/channels"
 )
 
-// ChannelRead represents a read operation from channels.
-// It encapsulates the logic for reading state from multiple channels.
+// ChannelRead 封装从多个通道读取状态的逻辑。
+// 支持选择器（Selector）与变换器（Transformer）组合。
 type ChannelRead struct {
 	registry    *channels.Registry
 	selector    ChannelSelector
@@ -17,17 +18,17 @@ type ChannelRead struct {
 	mu          sync.RWMutex
 }
 
-// ChannelSelector selects which channels to read.
+// ChannelSelector 选择要读取的通道集合。
 type ChannelSelector interface {
 	Select(registry *channels.Registry) ([]string, error)
 }
 
-// ChannelTransformer transforms the raw channel values.
+// ChannelTransformer 对读取的通道值做变换。
 type ChannelTransformer interface {
 	Transform(values map[string]any) (map[string]any, error)
 }
 
-// NewChannelRead creates a new channel read operation.
+// NewChannelRead 创建通道读取操作，默认全通道+恒等变换。
 func NewChannelRead(registry *channels.Registry, opts ...ChannelReadOption) *ChannelRead {
 	cr := &ChannelRead{
 		registry:    registry,
@@ -42,24 +43,24 @@ func NewChannelRead(registry *channels.Registry, opts ...ChannelReadOption) *Cha
 	return cr
 }
 
-// ChannelReadOption configures a ChannelRead.
+// ChannelReadOption ChannelRead 配置选项。
 type ChannelReadOption func(*ChannelRead)
 
-// WithSelector sets the channel selector.
+// WithSelector 设置通道选择器。
 func WithSelector(selector ChannelSelector) ChannelReadOption {
 	return func(cr *ChannelRead) {
 		cr.selector = selector
 	}
 }
 
-// WithTransformer sets the channel transformer.
+// WithTransformer 设置通道变换器。
 func WithTransformer(transformer ChannelTransformer) ChannelReadOption {
 	return func(cr *ChannelRead) {
 		cr.transformer = transformer
 	}
 }
 
-// Read performs the read operation.
+// Read 执行读取：选择通道 → 取值 → 变换。
 func (cr *ChannelRead) Read(ctx context.Context) (map[string]any, error) {
 	cr.mu.RLock()
 	defer cr.mu.RUnlock()
@@ -93,7 +94,7 @@ func (cr *ChannelRead) Read(ctx context.Context) (map[string]any, error) {
 	return values, nil
 }
 
-// ReadChannel reads a single channel by name.
+// ReadChannel 读取单个命名通道。
 func (cr *ChannelRead) ReadChannel(ctx context.Context, name string) (any, error) {
 	cr.mu.RLock()
 	defer cr.mu.RUnlock()
@@ -105,7 +106,7 @@ func (cr *ChannelRead) ReadChannel(ctx context.Context, name string) (any, error
 	return nil, fmt.Errorf("channel not found: %s", name)
 }
 
-// HasChannel checks if a channel exists.
+// HasChannel 检查通道是否已注册。
 func (cr *ChannelRead) HasChannel(name string) bool {
 	cr.mu.RLock()
 	defer cr.mu.RUnlock()
@@ -113,28 +114,28 @@ func (cr *ChannelRead) HasChannel(name string) bool {
 	return ok
 }
 
-// ListChannels returns all available channel names.
+// ListChannels 返回全部通道名称。
 func (cr *ChannelRead) ListChannels() []string {
 	cr.mu.RLock()
 	defer cr.mu.RUnlock()
 	return cr.registry.List()
 }
 
-// ==================== Channel Selectors ====================
+// ==================== 通道选择器 ====================
 
-// AllChannelsSelector selects all available channels.
+// AllChannelsSelector 选择所有已注册通道。
 type AllChannelsSelector struct{}
 
 func (s *AllChannelsSelector) Select(registry *channels.Registry) ([]string, error) {
 	return registry.List(), nil
 }
 
-// SpecificChannelsSelector selects specific channels.
+// SpecificChannelsSelector 选择指定名称的通道。
 type SpecificChannelsSelector struct {
 	channels []string
 }
 
-// NewSpecificChannelsSelector creates a selector for specific channels.
+// NewSpecificChannelsSelector 创建指定通道选择器。
 func NewSpecificChannelsSelector(channels ...string) *SpecificChannelsSelector {
 	return &SpecificChannelsSelector{channels: channels}
 }
@@ -149,12 +150,12 @@ func (s *SpecificChannelsSelector) Select(registry *channels.Registry) ([]string
 	return result, nil
 }
 
-// PrefixChannelsSelector selects channels with a specific prefix.
+// PrefixChannelsSelector 按前缀筛选通道。
 type PrefixChannelsSelector struct {
 	prefix string
 }
 
-// NewPrefixChannelsSelector creates a selector for channels with a prefix.
+// NewPrefixChannelsSelector 创建前缀选择器。
 func NewPrefixChannelsSelector(prefix string) *PrefixChannelsSelector {
 	return &PrefixChannelsSelector{prefix: prefix}
 }
@@ -170,7 +171,7 @@ func (s *PrefixChannelsSelector) Select(registry *channels.Registry) ([]string, 
 	return result, nil
 }
 
-// AvailableChannelsSelector selects only available (non-empty) channels.
+// AvailableChannelsSelector 仅选择有值的通道。
 type AvailableChannelsSelector struct{}
 
 func (s *AvailableChannelsSelector) Select(registry *channels.Registry) ([]string, error) {
@@ -184,21 +185,21 @@ func (s *AvailableChannelsSelector) Select(registry *channels.Registry) ([]strin
 	return result, nil
 }
 
-// ==================== Channel Transformers ====================
+// ==================== 通道变换器 ====================
 
-// IdentityTransformer returns values as-is.
+// IdentityTransformer 恒等变换，原样返回。
 type IdentityTransformer struct{}
 
 func (t *IdentityTransformer) Transform(values map[string]any) (map[string]any, error) {
 	return values, nil
 }
 
-// MappingTransformer renames channels.
+// MappingTransformer 重命名通道键。
 type MappingTransformer struct {
 	mappings map[string]string
 }
 
-// NewMappingTransformer creates a transformer with channel name mappings.
+// NewMappingTransformer 创建键名映射变换器。
 func NewMappingTransformer(mappings map[string]string) *MappingTransformer {
 	return &MappingTransformer{mappings: mappings}
 }
@@ -215,12 +216,12 @@ func (t *MappingTransformer) Transform(values map[string]any) (map[string]any, e
 	return result, nil
 }
 
-// FilterTransformer filters channels.
+// FilterTransformer 白名单过滤通道。
 type FilterTransformer struct {
 	filter map[string]bool
 }
 
-// NewFilterTransformer creates a transformer that filters channels.
+// NewFilterTransformer 创建过滤变换器。
 func NewFilterTransformer(keep ...string) *FilterTransformer {
 	filter := make(map[string]bool)
 	for _, name := range keep {
@@ -239,12 +240,12 @@ func (t *FilterTransformer) Transform(values map[string]any) (map[string]any, er
 	return result, nil
 }
 
-// DefaultTransformer provides default values for missing channels.
+// DefaultTransformer 为缺失通道填充默认值。
 type DefaultTransformer struct {
 	defaults map[string]any
 }
 
-// NewDefaultTransformer creates a transformer with default values.
+// NewDefaultTransformer 创建带默认值的变换器。
 func NewDefaultTransformer(defaults map[string]any) *DefaultTransformer {
 	return &DefaultTransformer{defaults: defaults}
 }
@@ -267,13 +268,13 @@ func (t *DefaultTransformer) Transform(values map[string]any) (map[string]any, e
 	return result, nil
 }
 
-// MergingTransformer merges channels into a single value.
+// MergingTransformer 将多通道值合并为单一值。
 type MergingTransformer struct {
 	target string
 	merger func([]any) (any, error)
 }
 
-// NewMergingTransformer creates a transformer that merges channels.
+// NewMergingTransformer 创建合并变换器。
 func NewMergingTransformer(target string, merger func([]any) (any, error)) *MergingTransformer {
 	return &MergingTransformer{
 		target: target,
@@ -298,26 +299,26 @@ func (t *MergingTransformer) Transform(values map[string]any) (map[string]any, e
 	return map[string]any{t.target: merged}, nil
 }
 
-// ==================== Triggers ====================
+// ==================== 读取触发器 ====================
 
-// Trigger determines when a channel read should execute.
+// Trigger 决定通道读取是否应触发。
 type Trigger interface {
 	ShouldTrigger(registry *channels.Registry) bool
 }
 
-// AlwaysTrigger always triggers.
+// AlwaysTrigger 始终触发。
 type AlwaysTrigger struct{}
 
 func (t *AlwaysTrigger) ShouldTrigger(registry *channels.Registry) bool {
 	return true
 }
 
-// AnyAvailableTrigger triggers when any selected channel is available.
+// AnyAvailableTrigger 任一选定通道有值时触发。
 type AnyAvailableTrigger struct {
 	channels []string
 }
 
-// NewAnyAvailableTrigger creates a trigger that fires when any channel is available.
+// NewAnyAvailableTrigger 创建任一可用触发器。
 func NewAnyAvailableTrigger(channels ...string) *AnyAvailableTrigger {
 	return &AnyAvailableTrigger{channels: channels}
 }
@@ -331,12 +332,12 @@ func (t *AnyAvailableTrigger) ShouldTrigger(registry *channels.Registry) bool {
 	return false
 }
 
-// AllAvailableTrigger triggers when all selected channels are available.
+// AllAvailableTrigger 全部选定通道有值时触发。
 type AllAvailableTrigger struct {
 	channels []string
 }
 
-// NewAllAvailableTrigger creates a trigger that fires when all channels are available.
+// NewAllAvailableTrigger 创建全部可用触发器。
 func NewAllAvailableTrigger(channels ...string) *AllAvailableTrigger {
 	return &AllAvailableTrigger{channels: channels}
 }
@@ -350,13 +351,13 @@ func (t *AllAvailableTrigger) ShouldTrigger(registry *channels.Registry) bool {
 	return true
 }
 
-// ChannelChangedTrigger triggers when a specific channel's value changes.
+// ChannelChangedTrigger 指定通道版本变更时触发。
 type ChannelChangedTrigger struct {
 	channel     string
 	lastVersion int64
 }
 
-// NewChannelChangedTrigger creates a trigger that fires when a channel changes.
+// NewChannelChangedTrigger 创建通道变更触发器。
 func NewChannelChangedTrigger(channel string) *ChannelChangedTrigger {
 	return &ChannelChangedTrigger{
 		channel:     channel,
@@ -380,9 +381,9 @@ func (t *ChannelChangedTrigger) ShouldTrigger(registry *channels.Registry) bool 
 	return false
 }
 
-// ==================== Utility Functions ====================
+// ==================== 工具类型 ====================
 
-// ReadContext represents the context of a channel read operation.
+// ReadContext 节点级通道读取上下文（含触发器与多读取器）。
 type ReadContext struct {
 	Node     string
 	Step     int
@@ -390,7 +391,7 @@ type ReadContext struct {
 	Readers  map[string]*ChannelRead
 }
 
-// NewReadContext creates a new read context.
+// NewReadContext 创建读取上下文。
 func NewReadContext(node string, step int) *ReadContext {
 	return &ReadContext{
 		Node:     node,
@@ -400,17 +401,17 @@ func NewReadContext(node string, step int) *ReadContext {
 	}
 }
 
-// AddReader adds a channel reader.
+// AddReader 注册命名读取器。
 func (rc *ReadContext) AddReader(name string, reader *ChannelRead) {
 	rc.Readers[name] = reader
 }
 
-// GetReader gets a channel reader by name.
+// GetReader 按名称获取读取器。
 func (rc *ReadContext) GetReader(name string) *ChannelRead {
 	return rc.Readers[name]
 }
 
-// ShouldExecute checks if any trigger fires.
+// ShouldExecute 检查是否有触发器满足条件。
 func (rc *ReadContext) ShouldExecute(registry *channels.Registry) bool {
 	if len(rc.Triggers) == 0 {
 		return true
@@ -425,7 +426,7 @@ func (rc *ReadContext) ShouldExecute(registry *channels.Registry) bool {
 	return false
 }
 
-// ReadAll executes all readers and combines their results.
+// ReadAll 执行全部读取器并合并结果（键前缀为读取器名）。
 func (rc *ReadContext) ReadAll(ctx context.Context) (map[string]any, error) {
 	combined := make(map[string]any)
 	for name, reader := range rc.Readers {

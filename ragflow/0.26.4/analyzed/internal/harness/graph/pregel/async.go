@@ -1,4 +1,7 @@
-// Package pregel provides async execution pipeline for Pregel.
+// Package pregel 为 Pregel 图执行提供异步并发管道。
+//
+// 包含 AsyncExecutor（受控并发任务执行）、AsyncPipeline（Pregel 循环异步管线）、
+// ConcurrencyLimiter（按节点限流）与 PriorityExecutor（优先级调度）。
 package pregel
 
 import (
@@ -11,26 +14,26 @@ import (
 	"ragflow/internal/harness/graph/types"
 )
 
-// AsyncExecutor provides async execution of nodes with concurrency control.
+// AsyncExecutor 异步执行节点函数，通过 worker 池控制最大并发数。
 type AsyncExecutor struct {
-	maxConcurrency int
-	workerPool     chan struct{}
-	results        chan *asyncTaskResult
+	maxConcurrency int // 最大并发 worker 数 // 最大并发 worker 数
+	workerPool     chan struct{} // worker 令牌池 // worker 令牌池
+	results        chan *asyncTaskResult // 结果广播通道 // 结果广播通道
 	mu             sync.Mutex
-	activeTasks    map[string]*asyncTask
+	activeTasks    map[string]*asyncTask // 活跃任务索引 // 活跃任务索引
 }
 
-// asyncTask represents an asynchronous task.
+// asyncTask 表示一个异步执行任务。
 type asyncTask struct {
-	ID       string
-	Name     string
+	ID       string // 任务 UUID // 任务 UUID
+	Name     string // 任务/节点名称 // 任务/节点名称
 	Func     func(context.Context) (any, error)
 	Context  context.Context
 	Cancel   context.CancelFunc
-	Priority int
+	Priority int // 优先级（数值越大越高） // 优先级（数值越大越高）
 }
 
-// asyncTaskResult represents the result of an async task.
+// asyncTaskResult 封装异步任务的执行结果与耗时。
 type asyncTaskResult struct {
 	TaskID   string
 	Name     string
@@ -39,7 +42,7 @@ type asyncTaskResult struct {
 	Duration time.Duration
 }
 
-// NewAsyncExecutor creates a new async executor.
+// NewAsyncExecutor 创建异步执行器；maxConcurrency≤0 时默认 10。
 func NewAsyncExecutor(maxConcurrency int) *AsyncExecutor {
 	if maxConcurrency <= 0 {
 		maxConcurrency = 10 // Default concurrency
@@ -60,7 +63,7 @@ func NewAsyncExecutor(maxConcurrency int) *AsyncExecutor {
 	return exec
 }
 
-// Execute executes a single task asynchronously.
+// Execute 异步执行单个任务，返回带缓冲的结果通道。
 func (e *AsyncExecutor) Execute(ctx context.Context, name string, fn func(context.Context) (any, error)) <-chan *asyncTaskResult {
 	resultCh := make(chan *asyncTaskResult, 1)
 
@@ -119,7 +122,7 @@ func (e *AsyncExecutor) Execute(ctx context.Context, name string, fn func(contex
 	return resultCh
 }
 
-// ExecuteBatch executes multiple tasks concurrently with controlled concurrency.
+// ExecuteBatch 批量并发执行任务，受 worker 池容量限制。
 func (e *AsyncExecutor) ExecuteBatch(ctx context.Context, tasks []asyncTask) <-chan *asyncTaskResult {
 	resultCh := make(chan *asyncTaskResult, len(tasks))
 
@@ -178,7 +181,7 @@ func (e *AsyncExecutor) ExecuteBatch(ctx context.Context, tasks []asyncTask) <-c
 	return resultCh
 }
 
-// ExecuteWithRetry executes a task with retry logic.
+// ExecuteWithRetry 在异步执行中集成 RetryExecutor 重试逻辑。
 func (e *AsyncExecutor) ExecuteWithRetry(ctx context.Context, name string, fn func(context.Context) (any, error), retryConfig *RetryConfig) <-chan *asyncTaskResult {
 	resultCh := make(chan *asyncTaskResult, 1)
 
@@ -220,7 +223,7 @@ func (e *AsyncExecutor) ExecuteWithRetry(ctx context.Context, name string, fn fu
 	return resultCh
 }
 
-// Cancel cancels all active tasks by invoking their cancel functions.
+// Cancel 取消所有活跃任务（调用各任务的 context.CancelFunc）。
 func (e *AsyncExecutor) Cancel() {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -233,14 +236,14 @@ func (e *AsyncExecutor) Cancel() {
 	}
 }
 
-// GetActiveTaskCount returns the number of currently active tasks.
+// GetActiveTaskCount 返回当前活跃任务数量。
 func (e *AsyncExecutor) GetActiveTaskCount() int {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	return len(e.activeTasks)
 }
 
-// Wait waits for all active tasks to complete.
+// Wait 轮询等待所有活跃任务完成，ctx 取消时返回错误。
 func (e *AsyncExecutor) Wait(ctx context.Context) error {
 	ticker := time.NewTicker(10 * time.Millisecond)
 	defer ticker.Stop()
@@ -257,22 +260,22 @@ func (e *AsyncExecutor) Wait(ctx context.Context) error {
 	}
 }
 
-// AsyncPipeline provides an async execution pipeline for the Pregel loop.
+// AsyncPipeline 为 Pregel 主循环提供异步执行管线，含事件/错误通道。
 type AsyncPipeline struct {
-	executor *AsyncExecutor
-	retryer  *RetryExecutor
+	executor *AsyncExecutor // 底层异步执行器 // 底层异步执行器
+	retryer  *RetryExecutor // 重试执行器 // 重试执行器
 
 	// Stream channels
-	events chan any
-	errors chan error
+	events chan any // 管线事件通道 // 管线事件通道
+	errors chan error // 管线错误通道 // 管线错误通道
 
 	// Control
 	mu      sync.RWMutex
 	cancel  context.CancelFunc
-	running bool
+	running bool // 管线是否运行中 // 管线是否运行中
 }
 
-// NewAsyncPipeline creates a new async pipeline.
+// NewAsyncPipeline 创建异步管线，绑定 RetryExecutor。
 func NewAsyncPipeline(maxConcurrency int, retryPolicy *types.RetryPolicy) *AsyncPipeline {
 	return &AsyncPipeline{
 		executor: NewAsyncExecutor(maxConcurrency),
@@ -283,7 +286,7 @@ func NewAsyncPipeline(maxConcurrency int, retryPolicy *types.RetryPolicy) *Async
 	}
 }
 
-// Start starts the async pipeline.
+// Start 启动管线，重建事件通道并返回可取消的子 context。
 func (p *AsyncPipeline) Start(ctx context.Context) context.Context {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -302,7 +305,7 @@ func (p *AsyncPipeline) Start(ctx context.Context) context.Context {
 	return ctx
 }
 
-// Stop stops the async pipeline.
+// Stop 停止管线：取消 context、取消所有任务、关闭通道。
 func (p *AsyncPipeline) Stop() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -321,7 +324,7 @@ func (p *AsyncPipeline) Stop() {
 	p.running = false
 }
 
-// ExecuteNode executes a node in the pipeline.
+// ExecuteNode 在管线中执行节点，可选重试配置。
 func (p *AsyncPipeline) ExecuteNode(ctx context.Context, name string, fn func(context.Context) (any, error), retryConfig *RetryConfig) <-chan *asyncTaskResult {
 	if retryConfig != nil {
 		return p.executor.ExecuteWithRetry(ctx, name, fn, retryConfig)
@@ -329,17 +332,17 @@ func (p *AsyncPipeline) ExecuteNode(ctx context.Context, name string, fn func(co
 	return p.executor.Execute(ctx, name, fn)
 }
 
-// Events returns the event channel.
+// Events 返回事件广播通道（只读）。
 func (p *AsyncPipeline) Events() <-chan any {
 	return p.events
 }
 
-// Errors returns the error channel.
+// Errors 返回错误广播通道（只读）。
 func (p *AsyncPipeline) Errors() <-chan error {
 	return p.errors
 }
 
-// EmitEvent emits an event to the pipeline.
+// EmitEvent 非阻塞发送事件；通道满时丢弃。
 func (p *AsyncPipeline) EmitEvent(event any) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
@@ -353,7 +356,7 @@ func (p *AsyncPipeline) EmitEvent(event any) {
 	}
 }
 
-// EmitError emits an error to the pipeline.
+// EmitError 非阻塞发送错误；通道满时丢弃。
 func (p *AsyncPipeline) EmitError(err error) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
@@ -367,27 +370,27 @@ func (p *AsyncPipeline) EmitError(err error) {
 	}
 }
 
-// IsRunning returns whether the pipeline is running.
+// IsRunning 返回管线是否处于运行状态。
 func (p *AsyncPipeline) IsRunning() bool {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	return p.running
 }
 
-// ConcurrencyLimiter limits concurrency for specific nodes.
+// ConcurrencyLimiter 为指定节点设置独立并发上限。
 type ConcurrencyLimiter struct {
-	limits map[string]chan struct{}
+	limits map[string]chan struct{} // 节点→令牌通道 // 节点→令牌通道
 	mu     sync.RWMutex
 }
 
-// NewConcurrencyLimiter creates a new concurrency limiter.
+// NewConcurrencyLimiter 创建空的节点级并发限流器。
 func NewConcurrencyLimiter() *ConcurrencyLimiter {
 	return &ConcurrencyLimiter{
 		limits: make(map[string]chan struct{}),
 	}
 }
 
-// SetLimit sets the concurrency limit for a node.
+// SetLimit 为节点预填充令牌通道，限制同时执行数。
 func (l *ConcurrencyLimiter) SetLimit(node string, limit int) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -399,7 +402,7 @@ func (l *ConcurrencyLimiter) SetLimit(node string, limit int) {
 	l.limits[node] = ch
 }
 
-// Acquire acquires a slot for a node.
+// Acquire 获取节点执行槽位，ctx 取消时返回错误。
 func (l *ConcurrencyLimiter) Acquire(ctx context.Context, node string) error {
 	l.mu.RLock()
 	ch, ok := l.limits[node]
@@ -418,7 +421,7 @@ func (l *ConcurrencyLimiter) Acquire(ctx context.Context, node string) error {
 	}
 }
 
-// Release releases a slot for a node.
+// Release 归还节点执行槽位。
 func (l *ConcurrencyLimiter) Release(node string) {
 	l.mu.RLock()
 	ch, ok := l.limits[node]
@@ -435,26 +438,26 @@ func (l *ConcurrencyLimiter) Release(node string) {
 	}
 }
 
-// PriorityTask represents a prioritized task.
+// PriorityTask 带优先级的可执行任务。
 type PriorityTask struct {
 	Func     func(context.Context) (any, error)
 	Priority int
 }
 
-// PriorityExecutor executes tasks with priority scheduling.
+// PriorityExecutor 按优先级调度任务（简化实现）。
 type PriorityExecutor struct {
 	tasks chan PriorityTask
 	mu    sync.Mutex
 }
 
-// NewPriorityExecutor creates a new priority executor.
+// NewPriorityExecutor 创建优先级执行器。
 func NewPriorityExecutor(bufferSize int) *PriorityExecutor {
 	return &PriorityExecutor{
 		tasks: make(chan PriorityTask, bufferSize),
 	}
 }
 
-// Submit submits a task with priority.
+// Submit 提交带优先级的任务；队列满时返回错误。
 func (e *PriorityExecutor) Submit(task PriorityTask) error {
 	select {
 	case e.tasks <- task:
@@ -464,7 +467,7 @@ func (e *PriorityExecutor) Submit(task PriorityTask) error {
 	}
 }
 
-// Execute executes tasks in priority order.
+// Execute 从任务队列取出并执行任务，结果写入通道。
 func (e *PriorityExecutor) Execute(ctx context.Context, maxConcurrency int) <-chan any {
 	resultCh := make(chan any, maxConcurrency)
 

@@ -1,4 +1,6 @@
-// Package pregel provides background execution support for Pregel.
+// Package pregel 提供 Pregel 后台任务执行支持。
+//
+// BackgroundExecutor 维护固定 worker 池，支持优先级队列与优雅关闭。
 package pregel
 
 import (
@@ -10,7 +12,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// BackgroundTask represents a background task.
+// BackgroundTask 表示提交到后台 worker 池的任务。
 type BackgroundTask struct {
 	ID       string
 	Name     string
@@ -22,7 +24,7 @@ type BackgroundTask struct {
 	Created  time.Time
 }
 
-// BackgroundTaskResult represents the result of a background task.
+// BackgroundTaskResult 封装后台任务的执行结果。
 type BackgroundTaskResult struct {
 	TaskID   string
 	Name     string
@@ -31,7 +33,7 @@ type BackgroundTaskResult struct {
 	Duration time.Duration
 }
 
-// BackgroundExecutor executes tasks in a background worker pool.
+// BackgroundExecutor 在固定 worker 池中执行后台任务。
 type BackgroundExecutor struct {
 	maxWorkers      int
 	taskQueue       chan *BackgroundTask
@@ -45,14 +47,14 @@ type BackgroundExecutor struct {
 	shutdownTimeout time.Duration
 }
 
-// backgroundWorker represents a worker goroutine.
+// backgroundWorker 表示单个 worker 协程。
 type backgroundWorker struct {
 	id       int
 	executor *BackgroundExecutor
 	stopCh   chan struct{}
 }
 
-// NewBackgroundExecutor creates a new background executor.
+// NewBackgroundExecutor 创建后台执行器；默认 10 worker、队列 100。
 func NewBackgroundExecutor(maxWorkers int, queueSize int) *BackgroundExecutor {
 	if maxWorkers <= 0 {
 		maxWorkers = 10
@@ -72,7 +74,7 @@ func NewBackgroundExecutor(maxWorkers int, queueSize int) *BackgroundExecutor {
 	}
 }
 
-// Start starts the background executor.
+// Start 启动 worker 池，每个 worker 独立协程消费任务队列。
 func (e *BackgroundExecutor) Start(ctx context.Context) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -97,7 +99,7 @@ func (e *BackgroundExecutor) Start(ctx context.Context) {
 	}
 }
 
-// Stop stops the background executor gracefully.
+// Stop 优雅关闭：通知 worker 退出，等待完成或超时。
 func (e *BackgroundExecutor) Stop() {
 	e.mu.Lock()
 	if !e.running {
@@ -126,7 +128,7 @@ func (e *BackgroundExecutor) Stop() {
 	close(e.results)
 }
 
-// Submit submits a task for background execution.
+// Submit 提交任务到队列；队列满时 5 秒超时返回错误。
 func (e *BackgroundExecutor) Submit(ctx context.Context, name string, fn func(context.Context) (any, error), priority int) (*BackgroundTask, error) {
 	e.mu.RLock()
 	if !e.running {
@@ -163,12 +165,12 @@ func (e *BackgroundExecutor) Submit(ctx context.Context, name string, fn func(co
 	}
 }
 
-// GetResult gets the result channel for receiving task results.
+// GetResult 返回全局结果广播通道。
 func (e *BackgroundExecutor) GetResult() <-chan *BackgroundTaskResult {
 	return e.results
 }
 
-// CancelTask cancels a specific task.
+// CancelTask 按 ID 取消指定任务。
 func (e *BackgroundExecutor) CancelTask(taskID string) bool {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -180,7 +182,7 @@ func (e *BackgroundExecutor) CancelTask(taskID string) bool {
 	return false
 }
 
-// GetActiveTasks returns the list of active task IDs.
+// GetActiveTasks 返回当前活跃任务 ID 列表。
 func (e *BackgroundExecutor) GetActiveTasks() []string {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
@@ -192,7 +194,7 @@ func (e *BackgroundExecutor) GetActiveTasks() []string {
 	return tasks
 }
 
-// run is the worker goroutine.
+// run worker 主循环：从任务队列取任务并执行。
 func (w *backgroundWorker) run() {
 	defer w.executor.wg.Done()
 
@@ -209,7 +211,7 @@ func (w *backgroundWorker) run() {
 	}
 }
 
-// executeTask executes a single task.
+// executeTask 执行单个任务并将结果写入任务通道与全局通道。
 func (w *backgroundWorker) executeTask(task *BackgroundTask) {
 	startTime := time.Now()
 
@@ -244,7 +246,7 @@ func (w *backgroundWorker) executeTask(task *BackgroundTask) {
 	}
 }
 
-// TaskPriority constants for common priorities.
+// TaskPriority 常用任务优先级常量。
 const (
 	PriorityLow      = 0
 	PriorityNormal   = 5
@@ -252,20 +254,20 @@ const (
 	PriorityCritical = 20
 )
 
-// PriorityQueue implements a priority queue for tasks.
+// PriorityQueue 基于最大堆的后台任务优先级队列。
 type PriorityQueue struct {
 	tasks []*BackgroundTask
 	mu    sync.RWMutex
 }
 
-// NewPriorityQueue creates a new priority queue.
+// NewPriorityQueue 创建空优先级队列。
 func NewPriorityQueue() *PriorityQueue {
 	return &PriorityQueue{
 		tasks: make([]*BackgroundTask, 0),
 	}
 }
 
-// Push adds a task to the queue.
+// Push 将任务入堆并上浮维护堆序。
 func (pq *PriorityQueue) Push(task *BackgroundTask) {
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
@@ -274,7 +276,7 @@ func (pq *PriorityQueue) Push(task *BackgroundTask) {
 	pq.heapifyUp(len(pq.tasks) - 1)
 }
 
-// Pop removes and returns the highest priority task.
+// Pop 弹出最高优先级任务并下沉维护堆序。
 func (pq *PriorityQueue) Pop() (*BackgroundTask, bool) {
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
@@ -294,14 +296,14 @@ func (pq *PriorityQueue) Pop() (*BackgroundTask, bool) {
 	return task, true
 }
 
-// Len returns the number of tasks in the queue.
+// Len 返回队列中任务数量。
 func (pq *PriorityQueue) Len() int {
 	pq.mu.RLock()
 	defer pq.mu.RUnlock()
 	return len(pq.tasks)
 }
 
-// heapifyUp maintains heap property when adding.
+// heapifyUp 上浮调整堆序（高优先级在上）。
 func (pq *PriorityQueue) heapifyUp(index int) {
 	for index > 0 {
 		parent := (index - 1) / 2
@@ -313,7 +315,7 @@ func (pq *PriorityQueue) heapifyUp(index int) {
 	}
 }
 
-// heapifyDown maintains heap property when removing.
+// heapifyDown 下沉调整堆序。
 func (pq *PriorityQueue) heapifyDown(index int) {
 	n := len(pq.tasks)
 	for {

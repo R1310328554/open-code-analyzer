@@ -1,4 +1,6 @@
-// Package pregel provides asynchronous caching support for Pregel execution.
+// Package pregel 为 Pregel 提供异步缓存操作支持。
+//
+// AsyncMemoryCache 通过 worker 池异步处理 Get/Set/Delete，避免阻塞主执行路径。
 package pregel
 
 import (
@@ -6,38 +8,38 @@ import (
 	"time"
 )
 
-// AsyncCache extends the Cache interface with asynchronous operations.
+// AsyncCache 扩展 Cache 接口，提供异步读写操作。
 type AsyncCache interface {
 	Cache
 
-	// AGet asynchronously retrieves a value from the cache.
+	// AGet 异步读取，结果通过通道返回。
 	// Returns a channel that will receive the result.
 	AGet(ctx context.Context, key string) <-chan CacheResult
 
-	// ASet asynchronously stores a value in the cache.
+	// ASet 异步写入，完成时 done 通道收到 nil。
 	// Returns a channel that will be closed when the operation completes.
 	ASet(ctx context.Context, key string, value any, ttl time.Duration) <-chan error
 
-	// ADelete asynchronously removes a value from the cache.
+	// ADelete 异步删除指定键。
 	// Returns a channel that will be closed when the operation completes.
 	ADelete(ctx context.Context, key string) <-chan error
 }
 
-// CacheResult represents the result of an asynchronous cache get operation.
+// CacheResult 异步缓存读取的结果包装。
 type CacheResult struct {
 	Value any
 	Found bool
 	Error error
 }
 
-// AsyncMemoryCache is an asynchronous in-memory cache implementation.
+// AsyncMemoryCache 基于 MemoryCache 的异步实现，worker 池处理操作。
 type AsyncMemoryCache struct {
 	*MemoryCache
 	workerCh chan asyncCacheOp
 	stopCh   chan struct{}
 }
 
-// asyncCacheOp represents an asynchronous cache operation.
+// asyncCacheOp 异步缓存操作请求（get/set/delete）。
 type asyncCacheOp struct {
 	ctx    context.Context
 	opType string // "get", "set", "delete"
@@ -48,7 +50,7 @@ type asyncCacheOp struct {
 	done   chan<- error
 }
 
-// NewAsyncMemoryCache creates a new asynchronous in-memory cache.
+// NewAsyncMemoryCache 创建异步内存缓存，默认 4 个 worker。
 func NewAsyncMemoryCache(maxSize int, eviction EvictionPolicy, numWorkers int) *AsyncMemoryCache {
 	if numWorkers <= 0 {
 		numWorkers = 4
@@ -68,7 +70,7 @@ func NewAsyncMemoryCache(maxSize int, eviction EvictionPolicy, numWorkers int) *
 	return cache
 }
 
-// worker processes asynchronous cache operations.
+// worker 消费操作队列并调用 processOp。
 func (c *AsyncMemoryCache) worker() {
 	for {
 		select {
@@ -80,7 +82,7 @@ func (c *AsyncMemoryCache) worker() {
 	}
 }
 
-// processOp processes a single cache operation.
+// processOp 分发单条缓存操作到 MemoryCache。
 func (c *AsyncMemoryCache) processOp(op asyncCacheOp) {
 	switch op.opType {
 	case "get":
@@ -101,7 +103,7 @@ func (c *AsyncMemoryCache) processOp(op asyncCacheOp) {
 	}
 }
 
-// AGet asynchronously retrieves a value from the cache.
+// AGet 异步读取，结果通过通道返回。
 func (c *AsyncMemoryCache) AGet(ctx context.Context, key string) <-chan CacheResult {
 	resultCh := make(chan CacheResult, 1)
 
@@ -120,7 +122,7 @@ func (c *AsyncMemoryCache) AGet(ctx context.Context, key string) <-chan CacheRes
 	return resultCh
 }
 
-// ASet asynchronously stores a value in the cache.
+// ASet 异步写入，完成时 done 通道收到 nil。
 func (c *AsyncMemoryCache) ASet(ctx context.Context, key string, value any, ttl time.Duration) <-chan error {
 	doneCh := make(chan error, 1)
 
@@ -141,7 +143,7 @@ func (c *AsyncMemoryCache) ASet(ctx context.Context, key string, value any, ttl 
 	return doneCh
 }
 
-// ADelete asynchronously removes a value from the cache.
+// ADelete 异步删除指定键。
 func (c *AsyncMemoryCache) ADelete(ctx context.Context, key string) <-chan error {
 	doneCh := make(chan error, 1)
 
@@ -160,12 +162,12 @@ func (c *AsyncMemoryCache) ADelete(ctx context.Context, key string) <-chan error
 	return doneCh
 }
 
-// Stop stops the async cache workers.
+// Stop 关闭 worker 池（关闭 stopCh）。
 func (c *AsyncMemoryCache) Stop() {
 	close(c.stopCh)
 }
 
-// AsyncCachePolicy configures async cache behavior.
+// AsyncCachePolicy 异步缓存行为配置。
 type AsyncCachePolicy struct {
 	// KeyFunc generates the cache key.
 	KeyFunc func(context.Context, any) string
@@ -177,13 +179,13 @@ type AsyncCachePolicy struct {
 	Async bool
 }
 
-// AsyncCachedExecutor wraps a function with async caching.
+// AsyncCachedExecutor 包装节点函数，支持异步缓存读写。
 type AsyncCachedExecutor struct {
 	cache       AsyncCache
 	cachePolicy *AsyncCachePolicy
 }
 
-// NewAsyncCachedExecutor creates a new async cached executor.
+// NewAsyncCachedExecutor 创建异步缓存执行器。
 func NewAsyncCachedExecutor(cache AsyncCache, policy *AsyncCachePolicy) *AsyncCachedExecutor {
 	return &AsyncCachedExecutor{
 		cache:       cache,
@@ -191,7 +193,7 @@ func NewAsyncCachedExecutor(cache AsyncCache, policy *AsyncCachePolicy) *AsyncCa
 	}
 }
 
-// Execute executes a function with async caching.
+// Execute 异步查缓存；写入可 fire-and-forget。
 func (e *AsyncCachedExecutor) Execute(
 	ctx context.Context,
 	nodeName string,
@@ -250,7 +252,7 @@ func (e *AsyncCachedExecutor) Execute(
 	return result, nil
 }
 
-// WaitForPending waits for all pending async operations to complete.
+// WaitForPending 等待挂起的异步操作完成（简化实现）。
 func (e *AsyncCachedExecutor) WaitForPending(timeout time.Duration) bool {
 	// In a real implementation, this would track pending operations
 	// For now, just sleep briefly to allow operations to complete

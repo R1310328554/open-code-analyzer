@@ -1,7 +1,6 @@
-// Package pregel provides OpenTelemetry tracing for Pregel graph execution.
+// Package pregel 为 Pregel 图执行提供 OpenTelemetry 分布式追踪。
 //
-// This adds spans at the Pregel engine level: graph run, each superstep,
-// node execution, checkpoint operations, and interrupts.
+// 在图运行、超步、节点执行、检查点与中断等关键路径创建 Span。
 package pregel
 
 import (
@@ -14,15 +13,14 @@ import (
 
 const tracerName = "ragflow/internal/harness/graph/pregel"
 
-// Tracer holds the OpenTelemetry tracer for the Pregel engine.
-// It is lazily initialized from the global TracerProvider.
+// Tracer Pregel 引擎的全局 OpenTelemetry Tracer。
 var tracer trace.Tracer
 
 func init() {
 	tracer = otel.Tracer(tracerName)
 }
 
-// SpanAttr keys for Pregel engine events.
+// SpanAttr Pregel 引擎 Span 属性键名。
 const (
 	AttrStepNum        = "pregel.step"
 	AttrGraphName      = "pregel.graph.name"
@@ -46,7 +44,7 @@ const (
 	AttrTaskDuration   = "pregel.task.duration_ms"
 )
 
-// Span names for tracing.
+// Span 名称常量。
 const (
 	SpanGraphRun      = "pregel.Run"
 	SpanGraphStep     = "pregel.Superstep"
@@ -60,7 +58,7 @@ const (
 	SpanSearchChannel = "pregel.SearchChannel"
 )
 
-// TraceOption is a functional option for tracing configuration.
+// TraceOption 追踪配置函数选项。
 type TraceOption func(*traceConfig)
 
 type traceConfig struct {
@@ -79,27 +77,27 @@ func defaultTraceConfig() *traceConfig {
 	}
 }
 
-// WithTraceDisabled disables tracing for this engine.
+// WithTraceDisabled 禁用追踪。
 func WithTraceDisabled() TraceOption {
 	return func(c *traceConfig) { c.enabled = false }
 }
 
-// WithTraceNoArgs disables recording of argument sizes.
+// WithTraceNoArgs 不记录参数大小。
 func WithTraceNoArgs() TraceOption {
 	return func(c *traceConfig) { c.recordArguments = false }
 }
 
-// WithTraceNoResults disables recording of result sizes.
+// WithTraceNoResults 不记录结果大小。
 func WithTraceNoResults() TraceOption {
 	return func(c *traceConfig) { c.recordResults = false }
 }
 
-// WithTraceAttrFilter sets a filter function for attribute recording.
+// WithTraceAttrFilter 设置属性过滤函数。
 func WithTraceAttrFilter(fn func(key, value string) bool) TraceOption {
 	return func(c *traceConfig) { c.attrFilter = fn }
 }
 
-// startGraphSpan starts a root span for a full graph run.
+// startGraphSpan 创建图运行的根 Span。
 // It returns the span and context with the span attached.
 func startGraphSpan(ctx context.Context, graphName string, nodeCount, edgeCount, recLimit int, threadID string, durability, streamMode string) (context.Context, trace.Span) {
 	if tracer == nil {
@@ -123,7 +121,7 @@ func startGraphSpan(ctx context.Context, graphName string, nodeCount, edgeCount,
 	return ctx, span
 }
 
-// endGraphSpan ends the root graph span with status.
+// endGraphSpan 结束根 Span 并设置状态。
 func endGraphSpan(span trace.Span, err error) {
 	if span == nil || !span.IsRecording() {
 		return
@@ -137,7 +135,7 @@ func endGraphSpan(span trace.Span, err error) {
 	span.End()
 }
 
-// startStepSpan starts a span for a single Pregel superstep.
+// startStepSpan 创建超步 Span。
 func startStepSpan(ctx context.Context, step int, taskCount int) (context.Context, trace.Span) {
 	if tracer == nil {
 		return ctx, trace.SpanFromContext(ctx)
@@ -152,7 +150,7 @@ func startStepSpan(ctx context.Context, step int, taskCount int) (context.Contex
 	return ctx, span
 }
 
-// endStepSpan ends the step span.
+// endStepSpan 结束超步 Span。
 func endStepSpan(span trace.Span, err error) {
 	if span == nil || !span.IsRecording() {
 		return
@@ -166,7 +164,7 @@ func endStepSpan(span trace.Span, err error) {
 	span.End()
 }
 
-// startNodeSpan starts a span for a single node execution.
+// startNodeSpan 创建节点执行 Span。
 func startNodeSpan(ctx context.Context, nodeName string, triggerCount int, inputSize int) (context.Context, trace.Span) {
 	if tracer == nil {
 		return ctx, trace.SpanFromContext(ctx)
@@ -182,7 +180,7 @@ func startNodeSpan(ctx context.Context, nodeName string, triggerCount int, input
 	return ctx, span
 }
 
-// endNodeSpan ends the node span with output stats.
+// endNodeSpan 结束节点 Span 并记录输出大小。
 func endNodeSpan(span trace.Span, outputSize int, err error) {
 	if span == nil || !span.IsRecording() {
 		return
@@ -197,7 +195,7 @@ func endNodeSpan(span trace.Span, outputSize int, err error) {
 	span.End()
 }
 
-// startCheckpointSpan starts a span for a checkpoint save/load.
+// startCheckpointSpan 创建检查点操作 Span。
 func startCheckpointSpan(ctx context.Context, operation string, threadID, checkpointID string, stateSize int) (context.Context, trace.Span) {
 	if tracer == nil {
 		return ctx, trace.SpanFromContext(ctx)
@@ -218,12 +216,12 @@ func startCheckpointSpan(ctx context.Context, operation string, threadID, checkp
 	return ctx, span
 }
 
-// endCheckpointSpan ends the checkpoint span.
+// endCheckpointSpan 结束检查点 Span。
 func endCheckpointSpan(span trace.Span, err error) {
 	endSpan(span, err)
 }
 
-// endSpan ends any span with status.
+// endSpan 通用 Span 结束（含错误状态）。
 func endSpan(span trace.Span, err error) {
 	if span == nil || !span.IsRecording() {
 		return
@@ -237,7 +235,7 @@ func endSpan(span trace.Span, err error) {
 	span.End()
 }
 
-// startInterruptSpan starts a span for an interrupt.
+// startInterruptSpan 创建中断 Span。
 func startInterruptSpan(ctx context.Context, nodeNames []string) (context.Context, trace.Span) {
 	if tracer == nil {
 		return ctx, trace.SpanFromContext(ctx)
@@ -253,7 +251,7 @@ func startInterruptSpan(ctx context.Context, nodeNames []string) (context.Contex
 	return ctx, span
 }
 
-// startPrepareTasksSpan starts a span for prepareNextTasks.
+// startPrepareTasksSpan 创建任务准备 Span。
 func startPrepareTasksSpan(ctx context.Context, completedCount int) (context.Context, trace.Span) {
 	if tracer == nil {
 		return ctx, trace.SpanFromContext(ctx)
@@ -265,7 +263,7 @@ func startPrepareTasksSpan(ctx context.Context, completedCount int) (context.Con
 	return ctx, span
 }
 
-// endPrepareTasksSpan ends the prepare-tasks span with task count.
+// endPrepareTasksSpan 结束任务准备 Span。
 func endPrepareTasksSpan(span trace.Span, taskCount int) {
 	if span == nil || !span.IsRecording() {
 		return
@@ -275,7 +273,7 @@ func endPrepareTasksSpan(span trace.Span, taskCount int) {
 	span.End()
 }
 
-// startApplyWritesSpan starts a span for applyWrites.
+// startApplyWritesSpan 创建写入应用 Span。
 func startApplyWritesSpan(ctx context.Context, resultCount int) (context.Context, trace.Span) {
 	if tracer == nil {
 		return ctx, trace.SpanFromContext(ctx)
@@ -287,7 +285,7 @@ func startApplyWritesSpan(ctx context.Context, resultCount int) (context.Context
 	return ctx, span
 }
 
-// endApplyWritesSpan ends the apply-writes span.
+// endApplyWritesSpan 结束写入应用 Span。
 func endApplyWritesSpan(span trace.Span, err error) {
 	endSpan(span, err)
 }

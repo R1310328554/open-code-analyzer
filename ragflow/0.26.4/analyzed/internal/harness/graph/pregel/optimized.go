@@ -1,4 +1,7 @@
-// Package pregel provides Pregel algorithm optimizations for graph execution.
+// Package pregel 提供 Pregel 算法优化扩展。
+//
+// PregelOptimizedEngine 在标准 Engine 上增加 bump_step、finish 通知、
+// 任务优先级队列等 Python LangGraph 风格优化。
 package pregel
 
 import (
@@ -11,14 +14,14 @@ import (
 	"ragflow/internal/harness/graph/channels"
 )
 
-// OptimizedEngineConfig configures the optimized Pregel engine.
+// OptimizedEngineConfig 优化引擎开关配置。
 type OptimizedEngineConfig struct {
 	BumpStep           bool
 	FinishNotification bool
 	TaskPriority       bool
 }
 
-// PregelOptimizedEngine extends Engine with Python-style Pregel algorithm optimizations.
+// PregelOptimizedEngine 扩展 Engine，集成 Python 风格 Pregel 优化。
 type PregelOptimizedEngine struct {
 	*Engine
 	config            *OptimizedEngineConfig
@@ -32,7 +35,7 @@ type PregelOptimizedEngine struct {
 	mu                sync.RWMutex
 }
 
-// TaskWithPriority extends Task with priority information.
+// TaskWithPriority 带优先级与命名空间的任务。
 type TaskWithPriority struct {
 	*Task
 	Priority  int
@@ -40,7 +43,7 @@ type TaskWithPriority struct {
 	Path      []string
 }
 
-// NewPregelOptimizedEngine creates an optimized Pregel engine.
+// NewPregelOptimizedEngine 创建优化版 Pregel 引擎。
 func NewPregelOptimizedEngine(baseEngine *Engine, config *OptimizedEngineConfig) *PregelOptimizedEngine {
 	if config == nil {
 		config = &OptimizedEngineConfig{
@@ -63,7 +66,7 @@ func NewPregelOptimizedEngine(baseEngine *Engine, config *OptimizedEngineConfig)
 	}
 }
 
-// BumpStep implements Python-style bump_step optimization.
+// BumpStep 实现 bump_step：任务完成后为依赖任务推进超步。
 // When a task finishes, bump step for all dependent tasks
 // that haven't seen the latest channel values.
 func (e *PregelOptimizedEngine) BumpStep(
@@ -115,7 +118,7 @@ func (e *PregelOptimizedEngine) BumpStep(
 	return nil
 }
 
-// FinishNotification sends Python-style finish notifications.
+// FinishNotification 发送任务完成通知（finish notification）。
 // When a task completes, notify all waiting tasks and streams.
 func (e *PregelOptimizedEngine) FinishNotification(
 	ctx context.Context,
@@ -150,7 +153,7 @@ func (e *PregelOptimizedEngine) FinishNotification(
 	_ = notification // Mark as used to avoid unused variable error
 }
 
-// compareTaskPriority compares two tasks for priority ordering.
+// compareTaskPriority 比较两任务优先级（路径长度、字典序）。
 // Returns negative if t1 has higher priority, positive if t2 has higher priority, zero if equal.
 func (e *PregelOptimizedEngine) compareTaskPriority(t1, t2 *Task) int {
 	// Compare by path length (shorter path = higher priority)
@@ -176,7 +179,7 @@ func (e *PregelOptimizedEngine) compareTaskPriority(t1, t2 *Task) int {
 	return 0
 }
 
-// OptimizedApplyWrites implements optimized apply_writes with bump_step and finish notification.
+// OptimizedApplyWrites 优化版 apply_writes，含 bump_step 与 finish 通知。
 // This corresponds to Python's apply_writes function in _algo.py
 func (e *PregelOptimizedEngine) OptimizedApplyWrites(
 	ctx context.Context,
@@ -286,7 +289,7 @@ func (e *PregelOptimizedEngine) OptimizedApplyWrites(
 	return updatedChannels, nil
 }
 
-// AddTaskDependency adds a dependency relationship between tasks.
+// AddTaskDependency 添加任务间依赖关系。
 func (e *PregelOptimizedEngine) AddTaskDependency(fromTask, toTask string) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -299,7 +302,7 @@ func (e *PregelOptimizedEngine) AddTaskDependency(fromTask, toTask string) {
 	e.taskDependencies[toTask] = append(e.taskDependencies[toTask], fromTask)
 }
 
-// GetTaskDependencies returns dependencies for a task.
+// GetTaskDependencies 返回任务的依赖列表。
 func (e *PregelOptimizedEngine) GetTaskDependencies(taskName string) []string {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
@@ -310,7 +313,7 @@ func (e *PregelOptimizedEngine) GetTaskDependencies(taskName string) []string {
 	return []string{}
 }
 
-// IsTaskReady checks if a task is ready to execute.
+// IsTaskReady 检查任务是否满足执行条件（依赖已完成）。
 func (e *PregelOptimizedEngine) IsTaskReady(taskName string) bool {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
@@ -331,14 +334,14 @@ func (e *PregelOptimizedEngine) IsTaskReady(taskName string) bool {
 	return true
 }
 
-// getNamespace retrieves the current namespace from context.
+// getNamespace 从 context 获取当前命名空间。
 func (e *PregelOptimizedEngine) getNamespace(ctx context.Context) string {
 	// Simplified implementation - in practice this would use context values
 	// For now, return empty namespace
 	return ""
 }
 
-// FinishNotification represents a task completion notification.
+// FinishNotification 任务完成通知载荷。
 type FinishNotification struct {
 	TaskName  string    `json:"task_name"`
 	Output    any       `json:"output"`
@@ -348,14 +351,14 @@ type FinishNotification struct {
 	Namespace string    `json:"namespace,omitempty"`
 }
 
-// TaskPriority represents task execution priority.
+// TaskPriority 任务执行优先级描述。
 type TaskPriority struct {
 	Name     string
 	Path     []string
 	Priority int
 }
 
-// NewTaskPriority creates a new task priority.
+// NewTaskPriority 创建任务优先级对象。
 func NewTaskPriority(name string, path []string, priority int) *TaskPriority {
 	return &TaskPriority{
 		Name:     name,
@@ -364,7 +367,7 @@ func NewTaskPriority(name string, path []string, priority int) *TaskPriority {
 	}
 }
 
-// Compare compares two task priorities.
+// Compare 比较两个 TaskPriority。
 func (tp *TaskPriority) Compare(other *TaskPriority) int {
 	// Compare by priority first
 	if tp.Priority != other.Priority {
@@ -389,7 +392,7 @@ func (tp *TaskPriority) Compare(other *TaskPriority) int {
 	return 0
 }
 
-// OptimizedRun executes the graph with optimizations enabled.
+// OptimizedRun 启用优化后执行图（委托 RunSync）。
 // It delegates to the base Engine's RunSync, which applies the full Pregel execution
 // loop with async pipeline, streaming, checkpoint, and interrupt support.
 // BumpStep, FinishNotification, and other optimized methods are available for
@@ -401,7 +404,7 @@ func (e *PregelOptimizedEngine) OptimizedRun(
 	return e.RunSync(ctx, input)
 }
 
-// ExecuteTaskWithPriority executes a task with priority queue support.
+// ExecuteTaskWithPriority 带优先级队列入队并执行任务。
 func (e *PregelOptimizedEngine) ExecuteTaskWithPriority(
 	ctx context.Context,
 	task *Task,
@@ -429,7 +432,7 @@ func (e *PregelOptimizedEngine) ExecuteTaskWithPriority(
 	}
 }
 
-// GetNextPriorityTask gets the next task from priority queue.
+// GetNextPriorityTask 从优先级队列取出下一任务。
 func (e *PregelOptimizedEngine) GetNextPriorityTask() *TaskWithPriority {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -464,7 +467,7 @@ func (e *PregelOptimizedEngine) GetNextPriorityTask() *TaskWithPriority {
 	return task
 }
 
-// ClearFinishedTasks clears the finished tasks map.
+// ClearFinishedTasks 清空已完成任务记录。
 func (e *PregelOptimizedEngine) ClearFinishedTasks() {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -472,7 +475,7 @@ func (e *PregelOptimizedEngine) ClearFinishedTasks() {
 	e.finishedTasks = make(map[string]bool)
 }
 
-// GetFinishedTasks returns all finished task names.
+// GetFinishedTasks 返回已完成任务名称列表。
 func (e *PregelOptimizedEngine) GetFinishedTasks() []string {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
@@ -485,7 +488,7 @@ func (e *PregelOptimizedEngine) GetFinishedTasks() []string {
 	return tasks
 }
 
-// Reset clears all optimization state.
+// Reset 重置全部优化状态。
 func (e *PregelOptimizedEngine) Reset() {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -497,19 +500,19 @@ func (e *PregelOptimizedEngine) Reset() {
 	e.finishedTasks = make(map[string]bool)
 }
 
-// PriorityTaskQueue implements a priority queue for tasks based on path length.
+// PriorityTaskQueue 基于路径长度的任务优先级队列。
 type PriorityTaskQueue struct {
 	tasks []*Task
 }
 
-// NewPriorityTaskQueue creates a new priority task queue.
+// NewPriorityTaskQueue 创建优先级任务队列。
 func NewPriorityTaskQueue() *PriorityTaskQueue {
 	return &PriorityTaskQueue{
 		tasks: make([]*Task, 0),
 	}
 }
 
-// Push adds a task to the queue.
+// Push 入队并按路径长度排序。
 func (pq *PriorityTaskQueue) Push(task *Task) {
 	pq.tasks = append(pq.tasks, task)
 	// Simple insertion sort by path length (shorter first)
@@ -523,7 +526,7 @@ func (pq *PriorityTaskQueue) Push(task *Task) {
 	}
 }
 
-// Pop removes and returns the highest priority task.
+// Pop 弹出最高优先级任务。
 func (pq *PriorityTaskQueue) Pop() *Task {
 	if len(pq.tasks) == 0 {
 		return nil
@@ -533,22 +536,22 @@ func (pq *PriorityTaskQueue) Pop() *Task {
 	return task
 }
 
-// Len returns the number of tasks in the queue.
+// Len 返回队列长度。
 func (pq *PriorityTaskQueue) Len() int {
 	return len(pq.tasks)
 }
 
-// isNodeReady checks if a node is ready to execute (alias for IsTaskReady).
+// isNodeReady IsTaskReady 别名。
 func (e *PregelOptimizedEngine) isNodeReady(nodeName string) bool {
 	return e.IsTaskReady(nodeName)
 }
 
-// getDependencies returns dependencies for a task (alias for GetTaskDependencies).
+// getDependencies GetTaskDependencies 别名。
 func (e *PregelOptimizedEngine) getDependencies(taskName string) []string {
 	return e.GetTaskDependencies(taskName)
 }
 
-// hasSeenChannel checks if a task has seen a specific channel.
+// hasSeenChannel 检查任务是否已读指定通道。
 func (e *PregelOptimizedEngine) hasSeenChannel(taskName, channel string) bool {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
@@ -559,7 +562,7 @@ func (e *PregelOptimizedEngine) hasSeenChannel(taskName, channel string) bool {
 	return false
 }
 
-// getTriggersForNode returns triggers for a node.
+// getTriggersForNode 返回节点的触发通道集合。
 func (e *PregelOptimizedEngine) getTriggersForNode(nodeName string) map[string]struct{} {
 	// Guard against uninitialized engine (e.g., in tests).
 	if e.Engine == nil || e.Engine.graph == nil {
@@ -577,7 +580,7 @@ func (e *PregelOptimizedEngine) getTriggersForNode(nodeName string) map[string]s
 	return result
 }
 
-// getCurrentNamespace returns the current namespace.
+// getCurrentNamespace 从配置读取当前命名空间。
 func (e *PregelOptimizedEngine) getCurrentNamespace() string {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
@@ -593,7 +596,7 @@ func (e *PregelOptimizedEngine) getCurrentNamespace() string {
 	return ""
 }
 
-// PrepareNextTasksOptimized prepares next tasks with optimization.
+// PrepareNextTasksOptimized 优化版任务准备（委托 prepareNextTasks）。
 // It delegates to the base Engine's prepareNextTasks for standard task discovery,
 // which handles entry points, conditional edges, regular edges, and branches.
 func (e *PregelOptimizedEngine) PrepareNextTasksOptimized(

@@ -1,7 +1,7 @@
-// Package pregel provides lifecycle callbacks for graph execution.
+// Package pregel 提供图执行生命周期回调。
 //
-// Callbacks enable instrumentation, logging, and custom hook points
-// throughout the Pregel execution lifecycle.
+// 回调贯穿 Pregel 全流程：运行起止、超步、节点、检查点、中断/恢复，
+// 用于埋点、日志、事件记录与自定义扩展。
 package pregel
 
 import (
@@ -9,9 +9,9 @@ import (
 	"sync"
 )
 
-// ---- Callback types ----
+// ---- 回调接口类型 ----
 
-// RunCallback is called at the start/end of a full graph run.
+// RunCallback 图完整运行开始/结束时触发。
 type RunCallback interface {
 	// OnRunStart is called when a graph run begins.
 	OnRunStart(ctx context.Context, graphName string, threadID string)
@@ -19,7 +19,7 @@ type RunCallback interface {
 	OnRunEnd(ctx context.Context, graphName string, threadID string, err error)
 }
 
-// StepCallback is called at the start/end of each Pregel superstep.
+// StepCallback 每个 Pregel 超步开始/结束时触发。
 type StepCallback interface {
 	// OnStepStart is called before a superstep begins.
 	OnStepStart(ctx context.Context, step int, taskCount int)
@@ -27,7 +27,7 @@ type StepCallback interface {
 	OnStepEnd(ctx context.Context, step int, err error)
 }
 
-// NodeCallback is called before/after each node execution.
+// NodeCallback 每个节点执行前/后触发。
 type NodeCallback interface {
 	// OnNodeStart is called before a node executes.
 	OnNodeStart(ctx context.Context, nodeName string, step int)
@@ -35,7 +35,7 @@ type NodeCallback interface {
 	OnNodeEnd(ctx context.Context, nodeName string, step int, output interface{}, err error)
 }
 
-// CheckpointCallback is called when checkpoints are created or loaded.
+// CheckpointCallback 检查点保存/加载/手动更新时触发。
 type CheckpointCallback interface {
 	// OnCheckpointSave is called after a checkpoint is saved.
 	OnCheckpointSave(ctx context.Context, threadID, checkpointID string, step int)
@@ -45,7 +45,7 @@ type CheckpointCallback interface {
 	OnCheckpointUpdate(ctx context.Context, threadID string, asNode string)
 }
 
-// InterruptCallback is called when execution is interrupted.
+// InterruptCallback 图中断或恢复时触发。
 type InterruptCallback interface {
 	// OnInterrupt is called when the graph is interrupted.
 	OnInterrupt(ctx context.Context, nodeNames []string, step int)
@@ -53,7 +53,7 @@ type InterruptCallback interface {
 	OnResume(ctx context.Context, threadID string)
 }
 
-// GraphCallback aggregates all callback interfaces into one.
+// GraphCallback 聚合全部回调接口，便于一次注册。
 type GraphCallback interface {
 	RunCallback
 	StepCallback
@@ -62,10 +62,9 @@ type GraphCallback interface {
 	InterruptCallback
 }
 
-// ---- Callback manager ----
+// ---- 回调管理器 ----
 
-// CallbackManager manages a collection of callbacks.
-// All methods are safe for concurrent use.
+// CallbackManager 管理多组回调，并发安全；按类型分派到注册的观察者。
 type CallbackManager struct {
 	mu                  sync.RWMutex
 	runCallbacks        []RunCallback
@@ -75,47 +74,47 @@ type CallbackManager struct {
 	interruptCallbacks  []InterruptCallback
 }
 
-// NewCallbackManager creates a new callback manager.
+// NewCallbackManager 创建空回调管理器。
 func NewCallbackManager() *CallbackManager {
 	return &CallbackManager{}
 }
 
-// AddRunCallback adds a run callback.
+// AddRunCallback 注册运行级回调。
 func (m *CallbackManager) AddRunCallback(cb RunCallback) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.runCallbacks = append(m.runCallbacks, cb)
 }
 
-// AddStepCallback adds a step callback.
+// AddStepCallback 注册超步级回调。
 func (m *CallbackManager) AddStepCallback(cb StepCallback) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.stepCallbacks = append(m.stepCallbacks, cb)
 }
 
-// AddNodeCallback adds a node callback.
+// AddNodeCallback 注册节点级回调。
 func (m *CallbackManager) AddNodeCallback(cb NodeCallback) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.nodeCallbacks = append(m.nodeCallbacks, cb)
 }
 
-// AddCheckpointCallback adds a checkpoint callback.
+// AddCheckpointCallback 注册检查点回调。
 func (m *CallbackManager) AddCheckpointCallback(cb CheckpointCallback) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.checkpointCallbacks = append(m.checkpointCallbacks, cb)
 }
 
-// AddInterruptCallback adds an interrupt callback.
+// AddInterruptCallback 注册中断/恢复回调。
 func (m *CallbackManager) AddInterruptCallback(cb InterruptCallback) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.interruptCallbacks = append(m.interruptCallbacks, cb)
 }
 
-// AddCallback adds a GraphCallback (implements all callback interfaces).
+// AddCallback 注册实现 GraphCallback 的全量回调。
 func (m *CallbackManager) AddCallback(cb GraphCallback) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -126,9 +125,9 @@ func (m *CallbackManager) AddCallback(cb GraphCallback) {
 	m.interruptCallbacks = append(m.interruptCallbacks, cb)
 }
 
-// ---- Dispatch methods ----
+// ---- 分派方法 ----
 
-// RunStart dispatches OnRunStart to all run callbacks.
+// RunStart 分派 OnRunStart 到所有运行回调。
 func (m *CallbackManager) RunStart(ctx context.Context, graphName, threadID string) {
 	m.mu.RLock()
 	cbs := m.runCallbacks
@@ -138,7 +137,7 @@ func (m *CallbackManager) RunStart(ctx context.Context, graphName, threadID stri
 	}
 }
 
-// RunEnd dispatches OnRunEnd to all run callbacks.
+// RunEnd 分派 OnRunEnd 到所有运行回调。
 func (m *CallbackManager) RunEnd(ctx context.Context, graphName, threadID string, err error) {
 	m.mu.RLock()
 	cbs := m.runCallbacks
@@ -148,7 +147,7 @@ func (m *CallbackManager) RunEnd(ctx context.Context, graphName, threadID string
 	}
 }
 
-// StepStart dispatches OnStepStart to all step callbacks.
+// StepStart 分派 OnStepStart 到所有超步回调。
 func (m *CallbackManager) StepStart(ctx context.Context, step, taskCount int) {
 	m.mu.RLock()
 	cbs := m.stepCallbacks
@@ -158,7 +157,7 @@ func (m *CallbackManager) StepStart(ctx context.Context, step, taskCount int) {
 	}
 }
 
-// StepEnd dispatches OnStepEnd to all step callbacks.
+// StepEnd 分派 OnStepEnd 到所有超步回调。
 func (m *CallbackManager) StepEnd(ctx context.Context, step int, err error) {
 	m.mu.RLock()
 	cbs := m.stepCallbacks
@@ -168,7 +167,7 @@ func (m *CallbackManager) StepEnd(ctx context.Context, step int, err error) {
 	}
 }
 
-// NodeStart dispatches OnNodeStart to all node callbacks.
+// NodeStart 分派 OnNodeStart 到所有节点回调。
 func (m *CallbackManager) NodeStart(ctx context.Context, nodeName string, step int) {
 	m.mu.RLock()
 	cbs := m.nodeCallbacks
@@ -178,7 +177,7 @@ func (m *CallbackManager) NodeStart(ctx context.Context, nodeName string, step i
 	}
 }
 
-// NodeEnd dispatches OnNodeEnd to all node callbacks.
+// NodeEnd 分派 OnNodeEnd 到所有节点回调。
 func (m *CallbackManager) NodeEnd(ctx context.Context, nodeName string, step int, output interface{}, err error) {
 	m.mu.RLock()
 	cbs := m.nodeCallbacks
@@ -188,7 +187,7 @@ func (m *CallbackManager) NodeEnd(ctx context.Context, nodeName string, step int
 	}
 }
 
-// CheckpointSave dispatches OnCheckpointSave to all checkpoint callbacks.
+// CheckpointSave 分派 OnCheckpointSave。
 func (m *CallbackManager) CheckpointSave(ctx context.Context, threadID, checkpointID string, step int) {
 	m.mu.RLock()
 	cbs := m.checkpointCallbacks
@@ -198,7 +197,7 @@ func (m *CallbackManager) CheckpointSave(ctx context.Context, threadID, checkpoi
 	}
 }
 
-// CheckpointLoad dispatches OnCheckpointLoad to all checkpoint callbacks.
+// CheckpointLoad 分派 OnCheckpointLoad。
 func (m *CallbackManager) CheckpointLoad(ctx context.Context, threadID, checkpointID string, step int) {
 	m.mu.RLock()
 	cbs := m.checkpointCallbacks
@@ -208,7 +207,7 @@ func (m *CallbackManager) CheckpointLoad(ctx context.Context, threadID, checkpoi
 	}
 }
 
-// CheckpointUpdate dispatches OnCheckpointUpdate to all checkpoint callbacks.
+// CheckpointUpdate 分派 OnCheckpointUpdate（UpdateState）。
 func (m *CallbackManager) CheckpointUpdate(ctx context.Context, threadID, asNode string) {
 	m.mu.RLock()
 	cbs := m.checkpointCallbacks
@@ -218,7 +217,7 @@ func (m *CallbackManager) CheckpointUpdate(ctx context.Context, threadID, asNode
 	}
 }
 
-// Interrupt dispatches OnInterrupt to all interrupt callbacks.
+// Interrupt 分派 OnInterrupt。
 func (m *CallbackManager) Interrupt(ctx context.Context, nodeNames []string, step int) {
 	m.mu.RLock()
 	cbs := m.interruptCallbacks
@@ -228,7 +227,7 @@ func (m *CallbackManager) Interrupt(ctx context.Context, nodeNames []string, ste
 	}
 }
 
-// Resume dispatches OnResume to all interrupt callbacks.
+// Resume 分派 OnResume。
 func (m *CallbackManager) Resume(ctx context.Context, threadID string) {
 	m.mu.RLock()
 	cbs := m.interruptCallbacks
@@ -238,9 +237,9 @@ func (m *CallbackManager) Resume(ctx context.Context, threadID string) {
 	}
 }
 
-// ---- NoopCallback provides default no-op implementations ----
+// ---- NoopCallback 空实现占位 ----
 
-// NoopCallback implements GraphCallback with empty methods.
+// NoopCallback 实现 GraphCallback 全部方法为空操作。
 type NoopCallback struct{}
 
 func (NoopCallback) OnRunStart(_ context.Context, _, _ string)                            {}
@@ -255,7 +254,7 @@ func (NoopCallback) OnCheckpointUpdate(_ context.Context, _, _ string)          
 func (NoopCallback) OnInterrupt(_ context.Context, _ []string, _ int)                     {}
 func (NoopCallback) OnResume(_ context.Context, _ string)                                 {}
 
-// Ensure noop implements the interfaces.
+// 编译期接口检查。
 var (
 	_ RunCallback        = NoopCallback{}
 	_ StepCallback       = NoopCallback{}

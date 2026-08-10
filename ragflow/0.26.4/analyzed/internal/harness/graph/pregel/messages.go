@@ -1,3 +1,4 @@
+// messages.go — LLM 流式消息处理：分块聚合、刷新与发射。
 package pregel
 
 import (
@@ -9,8 +10,8 @@ import (
 	"ragflow/internal/harness/graph/types"
 )
 
-// StreamMessagesHandler handles streaming of messages from LLM nodes.
-// It supports token-by-token streaming and message chunk aggregation.
+// StreamMessagesHandler 处理 LLM 节点的流式消息。
+// 支持逐 token 分块接收与消息聚合后批量刷新。
 type StreamMessagesHandler struct {
 	streams      map[string]*MessageStream
 	mu           sync.RWMutex
@@ -18,7 +19,7 @@ type StreamMessagesHandler struct {
 	flushTrigger FlushTrigger
 }
 
-// MessageStream represents a stream of message chunks from a single node.
+// MessageStream 单个节点的消息分块流。
 type MessageStream struct {
 	node    string
 	chunks  []*MessageChunk
@@ -27,7 +28,7 @@ type MessageStream struct {
 	mu      sync.RWMutex
 }
 
-// MessageChunk represents a chunk of a message.
+// MessageChunk 消息的一个分块（可含工具调用）。
 type MessageChunk struct {
 	Index      int
 	Content    string
@@ -37,14 +38,14 @@ type MessageChunk struct {
 	ToolCalls  []*ToolCall
 }
 
-// ToolCall represents a tool call within a message.
+// ToolCall 消息内嵌的工具调用。
 type ToolCall struct {
 	ID        string
 	Name      string
 	Arguments map[string]any
 }
 
-// FlushTrigger determines when to flush aggregated messages.
+// FlushTrigger 聚合消息的刷新时机。
 type FlushTrigger int
 
 const (
@@ -53,7 +54,7 @@ const (
 	FlushOnEnd                          // Flush on stream end
 )
 
-// NewStreamMessagesHandler creates a new stream messages handler.
+// NewStreamMessagesHandler 创建流式消息处理器。
 func NewStreamMessagesHandler(opts ...StreamMessagesOption) *StreamMessagesHandler {
 	h := &StreamMessagesHandler{
 		streams:      make(map[string]*MessageStream),
@@ -68,17 +69,17 @@ func NewStreamMessagesHandler(opts ...StreamMessagesOption) *StreamMessagesHandl
 	return h
 }
 
-// StreamMessagesOption configures a StreamMessagesHandler.
+// StreamMessagesOption 处理器配置选项。
 type StreamMessagesOption func(*StreamMessagesHandler)
 
-// WithFlushTrigger sets the flush trigger.
+// WithFlushTrigger 设置消息刷新触发策略。
 func WithFlushTrigger(trigger FlushTrigger) StreamMessagesOption {
 	return func(h *StreamMessagesHandler) {
 		h.flushTrigger = trigger
 	}
 }
 
-// OnChunk handles a message chunk from a node.
+// OnChunk 处理节点发来的消息分块，合并到当前消息。
 func (h *StreamMessagesHandler) OnChunk(ctx context.Context, node string, chunk *MessageChunk) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -154,7 +155,7 @@ func (h *StreamMessagesHandler) OnChunk(ctx context.Context, node string, chunk 
 	return nil
 }
 
-// OnComplete marks a node's stream as complete.
+// OnComplete 标记节点流结束，完成待处理分块。
 func (h *StreamMessagesHandler) OnComplete(ctx context.Context, node string) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -183,21 +184,21 @@ func (h *StreamMessagesHandler) OnComplete(ctx context.Context, node string) err
 	return nil
 }
 
-// Flush flushes all pending messages.
+// Flush 刷新所有待发送的聚合消息。
 func (h *StreamMessagesHandler) Flush(ctx context.Context) error {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 	return h.aggregator.Flush(ctx)
 }
 
-// AddEmitter adds a message emitter to the handler.
+// AddEmitter 注册消息发射器（输出目标）。
 func (h *StreamMessagesHandler) AddEmitter(emitter MessageEmitter) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.aggregator.AddEmitter(emitter)
 }
 
-// GetMessages returns all messages from a node.
+// GetMessages 返回指定节点的全部消息分块。
 func (h *StreamMessagesHandler) GetMessages(node string) []*MessageChunk {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
@@ -210,7 +211,7 @@ func (h *StreamMessagesHandler) GetMessages(node string) []*MessageChunk {
 	return nil
 }
 
-// GetAllMessages returns all messages from all nodes.
+// GetAllMessages 返回所有节点的消息分块映射。
 func (h *StreamMessagesHandler) GetAllMessages() map[string][]*MessageChunk {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
@@ -226,7 +227,7 @@ func (h *StreamMessagesHandler) GetAllMessages() map[string][]*MessageChunk {
 	return all
 }
 
-// Close closes all streams and flushes any pending messages.
+// Close 关闭所有流并刷新剩余消息。
 func (h *StreamMessagesHandler) Close(ctx context.Context) error {
 	h.mu.Lock()
 	nodes := make([]string, 0, len(h.streams))
@@ -242,17 +243,17 @@ func (h *StreamMessagesHandler) Close(ctx context.Context) error {
 	return h.aggregator.Flush(ctx)
 }
 
-// MessageAggregator aggregates and emits messages.
+// MessageAggregator 聚合消息并分派到注册的发射器。
 type MessageAggregator struct {
 	messages map[string][]*MessageChunk
 	emitters []MessageEmitter
 	mu       sync.RWMutex
 }
 
-// MessageEmitter is a function that emits aggregated messages.
+// MessageEmitter 聚合消息发射函数类型。
 type MessageEmitter func(ctx context.Context, node string, chunk *MessageChunk) error
 
-// NewMessageAggregator creates a new message aggregator.
+// NewMessageAggregator 创建消息聚合器。
 func NewMessageAggregator() *MessageAggregator {
 	return &MessageAggregator{
 		messages: make(map[string][]*MessageChunk),
@@ -260,7 +261,7 @@ func NewMessageAggregator() *MessageAggregator {
 	}
 }
 
-// AddMessage adds a message to the aggregator.
+// AddMessage 向聚合器追加一条消息。
 func (a *MessageAggregator) AddMessage(node string, chunk *MessageChunk) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -268,7 +269,7 @@ func (a *MessageAggregator) AddMessage(node string, chunk *MessageChunk) {
 	a.messages[node] = append(a.messages[node], chunk)
 }
 
-// Flush emits all pending messages to registered emitters.
+// Flush 将所有待发送消息推送到发射器。
 func (a *MessageAggregator) Flush(ctx context.Context) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -287,14 +288,14 @@ func (a *MessageAggregator) Flush(ctx context.Context) error {
 	return nil
 }
 
-// AddEmitter adds a message emitter.
+// AddEmitter 注册发射器。
 func (a *MessageAggregator) AddEmitter(emitter MessageEmitter) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	a.emitters = append(a.emitters, emitter)
 }
 
-// StreamToChannel emits messages to a stream channel.
+// StreamToChannel 将消息发射到 types.ChannelStream。
 func StreamToChannel(ch *types.ChannelStream) MessageEmitter {
 	return func(ctx context.Context, node string, chunk *MessageChunk) error {
 		chunkData := map[string]any{
@@ -318,7 +319,7 @@ func StreamToChannel(ch *types.ChannelStream) MessageEmitter {
 	}
 }
 
-// StreamToWriter emits messages to an io.Writer.
+// StreamToWriter 将消息格式化写入 io.Writer。
 func StreamToWriter(w io.Writer, format string) MessageEmitter {
 	return func(ctx context.Context, node string, chunk *MessageChunk) error {
 		var output string
@@ -336,7 +337,7 @@ func StreamToWriter(w io.Writer, format string) MessageEmitter {
 	}
 }
 
-// CollectToMap collects messages to a map.
+// CollectToMap 将消息收集到目标 map。
 func CollectToMap(target map[string][]*MessageChunk) MessageEmitter {
 	return func(ctx context.Context, node string, chunk *MessageChunk) error {
 		target[node] = append(target[node], chunk)
@@ -344,13 +345,13 @@ func CollectToMap(target map[string][]*MessageChunk) MessageEmitter {
 	}
 }
 
-// StreamModeMessages integrates with the Pregel engine.
+// StreamModeMessages 创建用于 Pregel 引擎的消息流处理器。
 // This is a helper function to set up message streaming.
 func StreamModeMessages(opts ...StreamMessagesOption) *StreamMessagesHandler {
 	return NewStreamMessagesHandler(opts...)
 }
 
-// ExtractMessagesFromOutput extracts messages from node output.
+// ExtractMessagesFromOutput 从节点输出提取 MessageChunk 列表。
 func ExtractMessagesFromOutput(output any) ([]*MessageChunk, error) {
 	// Check if output is already a MessageChunk
 	if chunk, ok := output.(*MessageChunk); ok {
@@ -381,7 +382,7 @@ func ExtractMessagesFromOutput(output any) ([]*MessageChunk, error) {
 	return nil, fmt.Errorf("cannot extract messages from output of type %T", output)
 }
 
-// ConvertToTaskResult converts message chunks to a task result.
+// ConvertToTaskResult 将消息分块合并为 TaskResult。
 func ConvertToTaskResult(node string, chunks []*MessageChunk) *TaskResult {
 	if len(chunks) == 0 {
 		return &TaskResult{
@@ -429,14 +430,14 @@ func ConvertToTaskResult(node string, chunks []*MessageChunk) *TaskResult {
 	}
 }
 
-// MessageStreamWrapper wraps a stream protocol to handle messages.
+// MessageStreamWrapper 包装 ChannelStream 处理流式消息。
 type MessageStreamWrapper struct {
 	handler *StreamMessagesHandler
 	stream  *types.ChannelStream
 	ctx     context.Context
 }
 
-// NewMessageStreamWrapper creates a new message stream wrapper.
+// NewMessageStreamWrapper 创建消息流包装器。
 func NewMessageStreamWrapper(ctx context.Context, stream *types.ChannelStream, opts ...StreamMessagesOption) *MessageStreamWrapper {
 	handler := NewStreamMessagesHandler(opts...)
 	handler.AddEmitter(StreamToChannel(stream))
@@ -448,22 +449,22 @@ func NewMessageStreamWrapper(ctx context.Context, stream *types.ChannelStream, o
 	}
 }
 
-// HandleChunk handles a message chunk.
+// HandleChunk 处理消息分块。
 func (w *MessageStreamWrapper) HandleChunk(node string, chunk *MessageChunk) error {
 	return w.handler.OnChunk(w.ctx, node, chunk)
 }
 
-// HandleComplete marks a node as complete.
+// HandleComplete 标记节点完成。
 func (w *MessageStreamWrapper) HandleComplete(node string) error {
 	return w.handler.OnComplete(w.ctx, node)
 }
 
-// Close closes the wrapper and flushes all messages.
+// Close 关闭包装器并刷新消息。
 func (w *MessageStreamWrapper) Close() error {
 	return w.handler.Close(w.ctx)
 }
 
-// GetHandler returns the underlying handler.
+// GetHandler 返回底层 StreamMessagesHandler。
 func (w *MessageStreamWrapper) GetHandler() *StreamMessagesHandler {
 	return w.handler
 }

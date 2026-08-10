@@ -8,21 +8,21 @@ import (
 	"ragflow/internal/harness/graph/types"
 )
 
-// MultiPolicyRetryExecutor handles node execution with multiple retry policies.
+// MultiPolicyRetryExecutor 支持多策略重试：按错误类型匹配首个适用策略。
 // The first matching policy is used for each retry attempt.
 // Internally delegates per-policy execution to RetryExecutor.
 type MultiPolicyRetryExecutor struct {
 	policies []types.RetryPolicy
 }
 
-// NewMultiPolicyRetryExecutor creates a new retry executor with multiple policies.
+// NewMultiPolicyRetryExecutor 创建多策略重试执行器。
 func NewMultiPolicyRetryExecutor(policies ...types.RetryPolicy) *MultiPolicyRetryExecutor {
 	return &MultiPolicyRetryExecutor{
 		policies: policies,
 	}
 }
 
-// Execute executes a function with multi-policy retry logic.
+// Execute 执行 fn，每次失败匹配首个适用策略并委托 RetryExecutor。
 // For each attempt, it finds the first matching policy and delegates retry
 // behavior to RetryExecutor with that policy's configuration.
 func (e *MultiPolicyRetryExecutor) Execute(
@@ -80,7 +80,7 @@ func (e *MultiPolicyRetryExecutor) Execute(
 	}
 }
 
-// findMatchingPolicy finds the first policy that matches the error.
+// findMatchingPolicy 查找首个匹配错误的重试策略。
 func (e *MultiPolicyRetryExecutor) findMatchingPolicy(err error) *types.RetryPolicy {
 	for i := range e.policies {
 		policy := &e.policies[i]
@@ -94,7 +94,7 @@ func (e *MultiPolicyRetryExecutor) findMatchingPolicy(err error) *types.RetryPol
 	return nil
 }
 
-// MultiRetryConfig provides configuration for multi-policy retry behavior.
+// MultiRetryConfig 多策略重试配置。
 type MultiRetryConfig struct {
 	Policies      []types.RetryPolicy
 	OnRetry       func(attempt int, policyIndex int, err error)
@@ -102,7 +102,7 @@ type MultiRetryConfig struct {
 	OnPolicyMatch func(attempt int, policyIndex int)
 }
 
-// NewMultiRetryConfig creates a new multi-retry config with defaults.
+// NewMultiRetryConfig 创建多策略重试配置。
 func NewMultiRetryConfig(policies ...types.RetryPolicy) *MultiRetryConfig {
 	if len(policies) == 0 {
 		defaultPolicy := types.DefaultRetryPolicy()
@@ -113,30 +113,30 @@ func NewMultiRetryConfig(policies ...types.RetryPolicy) *MultiRetryConfig {
 	}
 }
 
-// WithOnRetry sets the retry callback.
+// WithOnRetry 设置重试回调（含策略索引）。
 func (c *MultiRetryConfig) WithOnRetry(callback func(attempt int, policyIndex int, err error)) *MultiRetryConfig {
 	c.OnRetry = callback
 	return c
 }
 
-// WithOnSuccess sets the success callback.
+// WithOnSuccess 设置成功回调。
 func (c *MultiRetryConfig) WithOnSuccess(callback func(attempt int)) *MultiRetryConfig {
 	c.OnSuccess = callback
 	return c
 }
 
-// WithOnPolicyMatch sets the policy match callback.
+// WithOnPolicyMatch 设置策略匹配回调。
 func (c *MultiRetryConfig) WithOnPolicyMatch(callback func(attempt int, policyIndex int)) *MultiRetryConfig {
 	c.OnPolicyMatch = callback
 	return c
 }
 
-// CreateExecutor creates a MultiPolicyRetryExecutor from this config.
+// CreateExecutor 从配置创建 MultiPolicyRetryExecutor。
 func (c *MultiRetryConfig) CreateExecutor() *MultiPolicyRetryExecutor {
 	return NewMultiPolicyRetryExecutor(c.Policies...)
 }
 
-// Common policy presets for multi-policy retry.
+// RetryPolicyPresets 多策略重试常用预设。
 // Each preset pairs error-matching predicates with RetryExecutor-compatible policies.
 var RetryPolicyPresets = struct {
 	NetworkErrors   types.RetryPolicy
@@ -200,7 +200,7 @@ var RetryPolicyPresets = struct {
 	},
 }
 
-// CreateDefaultMultiPolicy creates a default multi-policy retry configuration.
+// CreateDefaultMultiPolicy 创建默认四策略组合（网络/临时/超时/资源）。
 func CreateDefaultMultiPolicy() *MultiRetryConfig {
 	return NewMultiRetryConfig(
 		RetryPolicyPresets.NetworkErrors,

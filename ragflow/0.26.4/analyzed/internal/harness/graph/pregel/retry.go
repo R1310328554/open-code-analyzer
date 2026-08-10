@@ -1,4 +1,6 @@
-// Package pregel provides enhanced retry policies for Pregel execution.
+// Package pregel 为 Pregel 节点执行提供增强重试策略。
+//
+// RetryExecutor 封装指数退避、抖动与可配置重试谓词。
 package pregel
 
 import (
@@ -10,12 +12,12 @@ import (
 	"ragflow/internal/harness/graph/types"
 )
 
-// RetryExecutor handles node execution with sophisticated retry logic.
+// RetryExecutor 带重试逻辑的节点执行器。
 type RetryExecutor struct {
 	policy *types.RetryPolicy
 }
 
-// NewRetryExecutor creates a new retry executor with the given policy.
+// NewRetryExecutor 创建重试执行器；policy 为 nil 时用默认策略。
 func NewRetryExecutor(policy *types.RetryPolicy) *RetryExecutor {
 	if policy == nil {
 		defaultPolicy := types.DefaultRetryPolicy()
@@ -24,7 +26,7 @@ func NewRetryExecutor(policy *types.RetryPolicy) *RetryExecutor {
 	return &RetryExecutor{policy: policy}
 }
 
-// Execute executes a function with retry logic.
+// Execute 执行 fn，失败时按策略退避重试；GraphInterrupt 立即传播。
 func (e *RetryExecutor) Execute(ctx context.Context, name string, fn func(context.Context) (any, error)) (output any, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -79,7 +81,7 @@ func (e *RetryExecutor) Execute(ctx context.Context, name string, fn func(contex
 	}
 }
 
-// calculateBackoff calculates the backoff duration with optional jitter.
+// calculateBackoff 计算退避时长（委托 RetryPolicy.CalculateBackoff）。
 // Delegates to the shared RetryPolicy.CalculateBackoff method.
 func (e *RetryExecutor) calculateBackoff(attempt int) time.Duration {
 	if e.policy == nil {
@@ -89,7 +91,7 @@ func (e *RetryExecutor) calculateBackoff(attempt int) time.Duration {
 	return e.policy.CalculateBackoff(attempt)
 }
 
-// RetryExhaustedError is returned when all retry attempts are exhausted.
+// RetryExhaustedError 重试次数耗尽时返回。
 type RetryExhaustedError struct {
 	NodeName   string
 	Attempts   int
@@ -97,23 +99,23 @@ type RetryExhaustedError struct {
 	LastOutput any
 }
 
-// Error implements the error interface.
+// Error 实现 error 接口。
 func (e *RetryExhaustedError) Error() string {
 	return fmt.Sprintf("node %s failed after %d attempts: %v", e.NodeName, e.Attempts, e.LastErr)
 }
 
-// Unwrap returns the underlying error.
+// Unwrap 返回底层错误。
 func (e *RetryExhaustedError) Unwrap() error {
 	return e.LastErr
 }
 
-// IsRetryExhausted checks if an error is a RetryExhaustedError.
+// IsRetryExhausted 判断是否为重试耗尽错误。
 func IsRetryExhausted(err error) bool {
 	_, ok := err.(*RetryExhaustedError)
 	return ok
 }
 
-// RetryPredicates provides common retry condition predicates.
+// RetryPredicates 常用重试条件谓词集合。
 var RetryPredicates = struct {
 	Always          func(error) bool
 	Never           func(error) bool
@@ -174,7 +176,7 @@ var RetryPredicates = struct {
 	},
 }
 
-// contains checks if a string contains a substring (case-insensitive).
+// contains 检查字符串是否包含子串（大小写不敏感）。
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) &&
 		(s == substr ||
@@ -183,14 +185,14 @@ func contains(s, substr string) bool {
 					containsIgnoreCase(s, substr)))
 }
 
-// containsIgnoreCase performs case-insensitive substring check.
+// containsIgnoreCase 大小写不敏感子串检查。
 func containsIgnoreCase(s, substr string) bool {
 	s = toLower(s)
 	substr = toLower(substr)
 	return len(s) >= len(substr) && s[:len(substr)] == substr
 }
 
-// toLower converts a string to lowercase.
+// toLower 将 ASCII 字符串转为小写。
 func toLower(s string) string {
 	result := make([]byte, len(s))
 	for i := 0; i < len(s); i++ {
@@ -203,7 +205,7 @@ func toLower(s string) string {
 	return string(result)
 }
 
-// RetryConfig provides configuration for retry behavior.
+// RetryConfig 重试行为配置（含回调）。
 type RetryConfig struct {
 	// Policy is the retry policy to use
 	Policy *types.RetryPolicy
@@ -213,7 +215,7 @@ type RetryConfig struct {
 	OnSuccess func(attempt int)
 }
 
-// NewRetryConfig creates a new retry config with defaults.
+// NewRetryConfig 创建默认重试配置。
 func NewRetryConfig() *RetryConfig {
 	defaultPolicy := types.DefaultRetryPolicy()
 	return &RetryConfig{
@@ -221,19 +223,19 @@ func NewRetryConfig() *RetryConfig {
 	}
 }
 
-// WithRetryOn sets the retry-on predicate.
+// WithRetryOn 设置重试条件谓词。
 func (c *RetryConfig) WithRetryOn(predicate func(error) bool) *RetryConfig {
 	c.Policy.RetryOn = predicate
 	return c
 }
 
-// WithMaxAttempts sets the maximum number of attempts.
+// WithMaxAttempts 设置最大尝试次数。
 func (c *RetryConfig) WithMaxAttempts(maxAttempts int) *RetryConfig {
 	c.Policy.MaxAttempts = maxAttempts
 	return c
 }
 
-// WithBackoff sets the backoff parameters.
+// WithBackoff 设置退避参数（初始/最大间隔、因子）。
 func (c *RetryConfig) WithBackoff(initial, max time.Duration, factor float64) *RetryConfig {
 	c.Policy.InitialInterval = initial
 	c.Policy.MaxInterval = max
@@ -241,19 +243,19 @@ func (c *RetryConfig) WithBackoff(initial, max time.Duration, factor float64) *R
 	return c
 }
 
-// WithJitter enables or disables jitter.
+// WithJitter 启用/禁用抖动。
 func (c *RetryConfig) WithJitter(enabled bool) *RetryConfig {
 	c.Policy.Jitter = enabled
 	return c
 }
 
-// WithOnRetry sets the callback to call after each retry.
+// WithOnRetry 设置每次重试后的回调。
 func (c *RetryConfig) WithOnRetry(callback func(attempt int, err error)) *RetryConfig {
 	c.OnRetry = callback
 	return c
 }
 
-// WithOnSuccess sets the callback to call on success.
+// WithOnSuccess 设置成功完成后的回调。
 func (c *RetryConfig) WithOnSuccess(callback func(attempt int)) *RetryConfig {
 	c.OnSuccess = callback
 	return c

@@ -1,4 +1,6 @@
-// Package pregel provides remote execution support for Pregel.
+// Package pregel 提供 Pregel 远程节点执行支持。
+//
+// 通过 HTTP 将节点函数委托到远程服务，含 Pregel 消息协议定义。
 package pregel
 
 import (
@@ -13,7 +15,7 @@ import (
 	"ragflow/internal/harness/graph/types"
 )
 
-// RemoteRunnable executes nodes remotely via HTTP.
+// RemoteRunnable 通过 HTTP 远程执行节点。
 type RemoteRunnable struct {
 	url        string
 	headers    map[string]string
@@ -21,7 +23,7 @@ type RemoteRunnable struct {
 	timeout    time.Duration
 }
 
-// RemoteConfig configures a remote runnable.
+// RemoteConfig 远程执行客户端配置。
 type RemoteConfig struct {
 	URL        string
 	Headers    map[string]string
@@ -29,7 +31,7 @@ type RemoteConfig struct {
 	HTTPClient *http.Client
 }
 
-// NewRemoteRunnable creates a new remote runnable.
+// NewRemoteRunnable 创建远程 Runnable，默认超时 30 秒。
 func NewRemoteRunnable(config *RemoteConfig) *RemoteRunnable {
 	timeout := config.Timeout
 	if timeout == 0 {
@@ -58,7 +60,7 @@ func NewRemoteRunnable(config *RemoteConfig) *RemoteRunnable {
 	}
 }
 
-// Execute sends a request to the remote server to execute a node.
+// Execute 向远程服务 POST /execute 执行节点。
 func (r *RemoteRunnable) Execute(ctx context.Context, nodeName string, input any, config *types.RunnableConfig) (any, error) {
 	// Build request
 	reqBody := &RemoteExecuteRequest{
@@ -112,30 +114,30 @@ func (r *RemoteRunnable) Execute(ctx context.Context, nodeName string, input any
 	return result.Output, nil
 }
 
-// RemoteExecuteRequest represents a request to execute a node remotely.
+// RemoteExecuteRequest 远程执行请求体。
 type RemoteExecuteRequest struct {
 	Node   string                `json:"node"`
 	Input  any                   `json:"input"`
 	Config *types.RunnableConfig `json:"config,omitempty"`
 }
 
-// RemoteExecuteResponse represents the response from a remote execution.
+// RemoteExecuteResponse 远程执行响应体。
 type RemoteExecuteResponse struct {
 	Output any    `json:"output,omitempty"`
 	Error  string `json:"error,omitempty"`
 }
 
-// PregelProtocol defines the protocol for remote Pregel execution.
+// PregelProtocol 远程 Pregel 消息协议接口。
 type PregelProtocol interface {
-	// Send sends a message to the remote peer.
+	// Send POST 消息到 /pregel/message。
 	Send(ctx context.Context, message *PregelMessage) error
-	// Receive receives a message from the remote peer.
+	// Receive GET 拉取远程消息（204 表示无消息）。
 	Receive(ctx context.Context) (*PregelMessage, error)
-	// Close closes the protocol connection.
+	// Close 关闭协议连接（HTTP 无状态，空实现）。
 	Close() error
 }
 
-// PregelMessage represents a message in the Pregel protocol.
+// PregelMessage Pregel 协议消息体。
 type PregelMessage struct {
 	Type      MessageType    `json:"type"`
 	ID        string         `json:"id"`
@@ -147,36 +149,36 @@ type PregelMessage struct {
 	Timestamp time.Time      `json:"timestamp"`
 }
 
-// MessageType represents the type of a Pregel message.
+// MessageType Pregel 消息类型枚举。
 type MessageType string
 
 const (
-	// MessageTypeExecute requests node execution.
+	// MessageTypeExecute 请求执行节点。
 	MessageTypeExecute MessageType = "execute"
-	// MessageTypeExecuteResponse is the response to an execute request.
+	// MessageTypeExecuteResponse 执行响应。
 	MessageTypeExecuteResponse MessageType = "execute_response"
-	// MessageTypeCheckpoint sends checkpoint data.
+	// MessageTypeCheckpoint 发送检查点数据。
 	MessageTypeCheckpoint MessageType = "checkpoint"
-	// MessageTypeStateUpdate sends state updates.
+	// MessageTypeStateUpdate 发送状态更新。
 	MessageTypeStateUpdate MessageType = "state_update"
-	// MessageTypeInterrupt sends interrupt information.
+	// MessageTypeInterrupt 发送中断信息。
 	MessageTypeInterrupt MessageType = "interrupt"
-	// MessageTypeResume resumes execution from interrupt.
+	// MessageTypeResume 从中断恢复执行。
 	MessageTypeResume MessageType = "resume"
-	// MessageTypePing is a heartbeat.
+	// MessageTypePing 心跳请求。
 	MessageTypePing MessageType = "ping"
-	// MessageTypePong is a heartbeat response.
+	// MessageTypePong 心跳响应。
 	MessageTypePong MessageType = "pong"
 )
 
-// HTTPPregelProtocol implements PregelProtocol over HTTP.
+// HTTPPregelProtocol 基于 HTTP 的 Pregel 协议实现。
 type HTTPPregelProtocol struct {
 	baseURL    string
 	httpClient *http.Client
 	headers    map[string]string
 }
 
-// NewHTTPPregelProtocol creates a new HTTP Pregel protocol.
+// NewHTTPPregelProtocol 创建 HTTP 协议客户端。
 func NewHTTPPregelProtocol(baseURL string, headers map[string]string) *HTTPPregelProtocol {
 	return &HTTPPregelProtocol{
 		baseURL:    baseURL,
@@ -185,7 +187,7 @@ func NewHTTPPregelProtocol(baseURL string, headers map[string]string) *HTTPPrege
 	}
 }
 
-// Send sends a message to the remote peer.
+// Send POST 消息到 /pregel/message。
 func (p *HTTPPregelProtocol) Send(ctx context.Context, message *PregelMessage) error {
 	data, err := json.Marshal(message)
 	if err != nil {
@@ -216,7 +218,7 @@ func (p *HTTPPregelProtocol) Send(ctx context.Context, message *PregelMessage) e
 	return nil
 }
 
-// Receive receives a message from the remote peer.
+// Receive GET 拉取远程消息（204 表示无消息）。
 func (p *HTTPPregelProtocol) Receive(ctx context.Context) (*PregelMessage, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", p.baseURL+"/pregel/message", nil)
 	if err != nil {
@@ -250,18 +252,18 @@ func (p *HTTPPregelProtocol) Receive(ctx context.Context) (*PregelMessage, error
 	return &message, nil
 }
 
-// Close closes the protocol connection.
+// Close 关闭协议连接（HTTP 无状态，空实现）。
 func (p *HTTPPregelProtocol) Close() error {
 	return nil
 }
 
-// RemoteNode wraps a remote execution capability as a node function.
+// RemoteNode 将远程 Runnable 包装为本地节点函数。
 type RemoteNode struct {
 	runnable *RemoteRunnable
 	nodeName string
 }
 
-// NewRemoteNode creates a new remote node.
+// NewRemoteNode 创建远程节点。
 func NewRemoteNode(runnable *RemoteRunnable, nodeName string) *RemoteNode {
 	return &RemoteNode{
 		runnable: runnable,
@@ -269,12 +271,12 @@ func NewRemoteNode(runnable *RemoteRunnable, nodeName string) *RemoteNode {
 	}
 }
 
-// Execute executes the remote node.
+// Execute 调用远程 Runnable 执行节点。
 func (n *RemoteNode) Execute(ctx context.Context, input any) (any, error) {
 	return n.runnable.Execute(ctx, n.nodeName, input, nil)
 }
 
-// NodeToRemoteRunnable converts a local node to a remote runnable.
+// NodeToRemoteRunnable 将本地节点暴露为远程 Runnable（需 HTTP 服务端配合）。
 func NodeToRemoteRunnable(node types.NodeFunc, url string) *RemoteRunnable {
 	// This would register the node locally and expose it via HTTP
 	// Implementation depends on the HTTP server setup
