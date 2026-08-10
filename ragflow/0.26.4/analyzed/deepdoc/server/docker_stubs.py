@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Generate minimal stub packages for the OSS DeepDoc Docker image.
+"""为 OSS DeepDoc Docker 镜像生成最小桩包，避免拉取 torch/数据库等重型依赖。
+
+Generate minimal stub packages for the OSS DeepDoc Docker image.
 
 The deepdoc vision modules (ocr.py, recognizer.py, etc.) import from
 ``common``, ``rag``, and ``deepdoc`` at module level.  In the full
@@ -22,12 +24,14 @@ TARGET = os.environ.get("STUB_TARGET", "/app")
 
 
 def write(path: str, content: str) -> None:
+    # 在 STUB_TARGET（默认 /app）下写入桩模块文件
     full = os.path.join(TARGET, path)
     os.makedirs(os.path.dirname(full), exist_ok=True)
     with open(full, "w") as f:
         f.write(content.lstrip("\n"))
 
 
+# ── deepdoc 桩：跳过 beartype 与 pdfplumber 等导入 ──
 # ── deepdoc ────────────────────────────────────────────────────────────
 # Real deepdoc/__init__.py calls beartype_this_package() which requires
 # the beartype library.
@@ -56,6 +60,7 @@ __all__ = ["OCR", "Recognizer", "LayoutRecognizer", "TableStructureRecognizer"]
 """,
 )
 
+# ── common 桩：仅保留 PARALLEL_DEVICES 等推理必需项 ──
 # ── common ─────────────────────────────────────────────────────────────
 # Real common.settings imports rag.utils.es_conn and other database/storage
 # connectors.  The server only needs PARALLEL_DEVICES for OCR.
@@ -116,6 +121,7 @@ def pip_install_torch(*args, **kwargs):
 """,
 )
 
+# ── rag 桩：满足 table_structure_recognizer 模块级 import ──
 # ── rag ────────────────────────────────────────────────────────────────
 
 write(

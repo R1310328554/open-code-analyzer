@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+院校实体：加载 schools.csv 与排名/名校白名单，按中英文名或别名匹配学校记录。
+"""
+
+
 
 import os
 import json
@@ -20,6 +25,7 @@ import re
 import copy
 import pandas as pd
 
+# 模块目录，用于定位 res/ 下 CSV 与 JSON 资源
 current_file_path = os.path.dirname(os.path.abspath(__file__))
 TBL = pd.read_csv(os.path.join(current_file_path, "res/schools.csv"), sep="\t", header=0).fillna("")
 TBL["name_en"] = TBL["name_en"].map(lambda x: x.lower().strip())
@@ -29,6 +35,7 @@ GOOD_SCH = set([re.sub(r"[,. &（）()]+", "", c) for c in GOOD_SCH])
 
 
 def loadRank(fnm):
+    # 从 school.rank.csv 回填院校排名到 TBL
     global TBL
     TBL["rank"] = 1000000
     with open(fnm, "r", encoding="utf-8") as f:
@@ -49,6 +56,7 @@ loadRank(os.path.join(current_file_path, "res/school.rank.csv"))
 
 
 def split(txt):
+    # 按空白分词，英文单词间保留空格
     tks = []
     for t in re.sub(r"[ \t]+", " ", txt).split():
         if tks and re.match(r".*[a-zA-Z]$", tks[-1]) and re.match(r"[a-zA-Z]", t) and tks:
@@ -59,6 +67,7 @@ def split(txt):
 
 
 def select(nm):
+    # 归一化校名后按中英文名或 alias 命中，返回首条 JSON 记录
     global TBL
     if not nm:
         return
@@ -79,6 +88,7 @@ def select(nm):
 
 
 def is_good(nm):
+    # 判断校名是否在 good_sch 白名单（去标点归一化后）
     global GOOD_SCH
     nm = re.sub(r"[(（][^()（）]+[)）]", "", nm.lower())
     nm = re.sub(r"[''`‘’“”,. &（）();；]+", "", nm)

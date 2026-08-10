@@ -13,9 +13,15 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+地域词典：省市区及海外地区 ID 树，用于简历地址归一化与地名识别。
+"""
+
+
 
 import re
 
+# 地区 ID -> {name, parent}，parent 指向上级行政区
 TBL = {
     "2": {"name": "北京", "parent": "1"},
     "3": {"name": "天津", "parent": "1"},
@@ -758,10 +764,12 @@ TBL = {
     "7084": {"name": "天门市", "parent": "18"},
 }
 
+# 所有标准地名集合，供 isName 快速匹配
 NM_SET = set([v["name"] for _, v in TBL.items()])
 
 
 def get_names(id):
+    # 由地区 ID 递归取完整地名链；非数字 ID 原样返回
     if not id or str(id).lower() == "none":
         return []
     id = str(id)
@@ -779,6 +787,7 @@ def get_names(id):
 
 
 def isName(nm):
+    # 判断字符串是否为词典中的标准地名（含省/市后缀变体）
     if nm in NM_SET:
         return True
     if nm + "市" in NM_SET:

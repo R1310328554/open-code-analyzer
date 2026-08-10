@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+腾讯云 ADP 文档解析：调用 ReconstructDocumentSSE API，下载 ZIP 结果并转为 RAGFlow 段落。
+"""
+
+
 import base64
 import json
 import logging
@@ -43,6 +48,7 @@ from deepdoc.parser.utils import extract_pdf_outlines
 
 
 class TencentCloudAPIClient:
+    # 封装腾讯云 LKEAP SDK，发起流式文档重建请求
     """Tencent Cloud API client using official SDK"""
 
     def __init__(self, secret_id, secret_key, region):
@@ -66,6 +72,7 @@ class TencentCloudAPIClient:
         self.client = lkeap_client.LkeapClient(self.cred, region, self.clientProfile)
 
     def reconstruct_document_sse(self, file_type, file_url=None, file_base64=None, file_start_page=1, file_end_page=1000, config=None):
+        # 调用 ReconstructDocumentSSE，Progress=100 时返回解析结果字典
         """Call document parsing API using official SDK"""
         try:
             # Instantiate a request object, each interface corresponds to a request object
@@ -164,6 +171,7 @@ class TencentCloudAPIClient:
             return None
 
     def download_result_file(self, download_url, output_dir):
+        # 下载解析结果 ZIP 到临时目录
         """Download parsing result file"""
         if not download_url:
             logging.warning("[TCADP] No downloadable result file")
@@ -198,6 +206,7 @@ class TencentCloudAPIClient:
 
 
 class TCADPParser(RAGFlowPdfParser):
+    # RAGFlow PDF 解析器：优先读 service_conf.yaml 中 tcadp_config
     def __init__(self, secret_id: str = None, secret_key: str = None, region: str = "ap-guangzhou", table_result_type: str = None, markdown_image_response_type: str = None):
         super().__init__()
 

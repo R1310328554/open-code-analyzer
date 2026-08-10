@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+简历解析第二步：特征工程与检索字段生成（教育/工作/项目/姓名拼音等）。
+"""
+
+
 
 import logging
 import re
@@ -29,12 +34,14 @@ from xpinyin import Pinyin
 from contextlib import contextmanager
 
 
+# 解析超时信号
 class TimeoutException(Exception):
     pass
 
 
 @contextmanager
 def time_limit(seconds):
+    # SIGALRM 上下文管理器，限制单条简历处理时长
     def signal_handler(signum, frame):
         raise TimeoutException("Timed out!")
 
@@ -51,10 +58,12 @@ PY = Pinyin()
 
 
 def rmHtmlTag(line):
+    # 剥离 HTML 标签，保留纯文本
     return re.sub(r"<[a-z0-9.\"=';,:\+_/ -]+>", " ", line, count=100000, flags=re.IGNORECASE)
 
 
 def highest_degree(dg):
+    # 从多个学历字符串中取最高等级
     if not dg:
         return ""
     if isinstance(dg, str):
@@ -64,6 +73,7 @@ def highest_degree(dg):
 
 
 def forEdu(cv):
+    # 解析 education_obj：院校排名、985/211 标签、学位与时间关键词
     if not cv.get("education_obj"):
         cv["integerity_flt"] *= 0.8
         return cv
@@ -225,6 +235,7 @@ def forEdu(cv):
 
 
 def forProj(cv):
+    # 提取项目名称与描述并分词
     if not cv.get("project_obj"):
         return cv
 
@@ -254,6 +265,7 @@ def json_loads(line):
 
 
 def forWork(cv):
+    # 解析 work_obj：公司归一化、任职时长、好公司标签与分词字段
     if not cv.get("work_obj"):
         cv["integerity_flt"] *= 0.7
         return cv
@@ -393,6 +405,7 @@ def forWork(cv):
 
 
 def turnTm2Dt(b):
+    # Unix 毫秒时间戳转可读日期字符串
     if not b:
         return None
     b = str(b).strip()
@@ -402,6 +415,7 @@ def turnTm2Dt(b):
 
 
 def getYMD(b):
+    # 从任意日期字符串解析年/月/日三元组
     y, m, d = "", "", "01"
     if not b:
         return y, m, d
@@ -422,6 +436,7 @@ def getYMD(b):
 
 
 def birth(cv):
+    # 由出生日期计算 age_int 与 birthday_kwd
     if not cv.get("birth"):
         cv["integerity_flt"] *= 0.9
         return cv
@@ -437,6 +452,7 @@ def birth(cv):
 
 
 def parse(cv):
+    # 主入口：完整性评分、分词/kwd 字段、调用各段处理器并裁剪输出键
     for k in cv.keys():
         if cv[k] == "\\N":
             cv[k] = ""
@@ -696,6 +712,7 @@ def parse(cv):
 
 
 def dealWithInt64(d):
+    # 递归将 numpy 整型转为 Python int，便于 JSON 序列化
     if isinstance(d, dict):
         for n, v in d.items():
             d[n] = dealWithInt64(v)

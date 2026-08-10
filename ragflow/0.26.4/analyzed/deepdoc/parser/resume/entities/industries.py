@@ -13,7 +13,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+行业分类词典：招聘系统行业 ID 树形表，支持由 ID 递归取完整行业路径名称。
+"""
 
+
+
+# 行业 ID -> {name, parent}，parent 为上级行业 ID
 TBL = {
     "1": {"name": "IT/通信/电子", "parent": "0"},
     "2": {"name": "互联网", "parent": "0"},
@@ -696,6 +702,7 @@ TBL = {
 
 
 def get_names(id):
+    # 由行业 ID 递归向上拼接名称链（子行业在前）
     id = str(id)
     nms = []
     d = TBL.get(id)

@@ -1,4 +1,4 @@
-"""TSR adapter — wraps TableStructureRecognizer and converts output to wire format."""
+"""TSR 适配器：封装表格结构识别，将单元格/行列元素转为 wire 格式 bbox。"""
 
 import io
 import logging
@@ -10,6 +10,7 @@ from deepdoc.vision.table_structure_recognizer import TableStructureRecognizer
 
 logger = logging.getLogger(__name__)
 
+# OSS 标签 -> Go tsrLabels 下标（标签名一致）
 # OSS model label → Go tsrLabels index (labels are identical)
 # Go-side (internal/parser/deepdoc.go):
 #   var tsrLabels = []string{
@@ -28,6 +29,7 @@ TSR_CLASS_MAP = {
 
 
 class TSRAdapter:
+    # 对裁剪表格图推理，输出结构元素 bbox 与 class_id
     """Calls TableStructureRecognizer and converts elements to wire format."""
 
     def __init__(self, model_dir: str, thr: float = 0.2):

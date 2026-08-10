@@ -1,4 +1,6 @@
-"""OCR adapter — wraps OCR model and converts output to wire format.
+"""OCR 适配器：封装 OCR 检测/识别，输出与 Go 嵌套 JSON 结构对齐。
+
+OCR adapter — wraps OCR model and converts output to wire format.
 
 Two modes:
 - detect: 5-level nested JSON matching Go [][][][][]float64
@@ -15,11 +17,13 @@ from deepdoc.vision.ocr import OCR
 
 logger = logging.getLogger(__name__)
 
+# 识别置信度占位：OSS recognize_batch 不返回分数，统一填 1.0
 # Confidence fill value — OSS recognize_batch does not return confidence scores.
 _CONFIDENCE_FILL = 1.0
 
 
 class OCRAdapter:
+    # detect 五层嵌套四边形；recognize 四层嵌套 [text, confidence]
     """Calls OCR.detect() and OCR.recognize_batch(), converts to wire format."""
 
     def __init__(self, model_dir: str):
@@ -47,6 +51,7 @@ class OCRAdapter:
             self._ocr = None
 
     def detect(self, image_data: bytes) -> Dict[str, Any]:
+        # 文本检测，返回 Go [][][][][]float64 对应结构
         """Run text detection.
 
         Returns:
@@ -73,6 +78,7 @@ class OCRAdapter:
         return {"output": output}
 
     def recognize(self, image_data: bytes) -> Dict[str, Any]:
+        # 裁剪区域文字识别，返回 Go [][][][]any 对应结构
         """Run text recognition on a cropped text region.
 
         Returns:

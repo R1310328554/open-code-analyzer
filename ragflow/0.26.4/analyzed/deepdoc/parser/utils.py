@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+解析器通用工具：文本读取（自动编码检测）与 PDF 书签大纲提取。
+"""
+
+
 
 from io import BytesIO
 
@@ -22,6 +27,7 @@ from rag.nlp import find_codec
 
 
 def get_text(fnm: str, binary=None) -> str:
+    # 从路径或二进制读取全文，binary 时用 find_codec 探测编码
     txt = ""
     if binary is not None:
         encoding = find_codec(binary)
@@ -37,6 +43,7 @@ def get_text(fnm: str, binary=None) -> str:
 
 
 def extract_pdf_outlines(source):
+    # DFS 遍历 PDF outline，返回 (标题, 深度, 页码) 列表
     try:
         with pdf2_read(source if isinstance(source, str) else BytesIO(source)) as pdf:
             outlines = []

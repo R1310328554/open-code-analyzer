@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Unified OSS DeepDoc Model Server.
+"""统一 OSS DeepDoc 模型服务：LiteServe 暴露 DLA/OCR/TSR 推理端点。
+
+Unified OSS DeepDoc Model Server.
 
 Serves DLA, OCR, and TSR models via LiteServe using OSS ONNX Runtime models.
 
@@ -28,6 +30,7 @@ logger = logging.getLogger(__name__)
 
 
 def parse_args():
+    # 解析端口、模型目录及各 endpoint 开关
     parser = argparse.ArgumentParser(
         description="Unified OSS DeepDoc Model Server",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -48,6 +51,7 @@ def parse_args():
 
 
 def main():
+    # 组装 LitServer 并注册 /model 元数据路由
     args = parse_args()
     logging.getLogger().setLevel(getattr(logging, args.log_level.upper(), "INFO"))
 

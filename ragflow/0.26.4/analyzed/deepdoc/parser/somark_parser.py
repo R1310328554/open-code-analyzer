@@ -13,7 +13,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-"""SoMark document parser adapter.
+"""SoMark 文档解析适配器：通过异步 HTTP API 解析 PDF 并映射为 RAGFlow 分块三元组。
+
+SoMark document parser adapter.
 
 Bridges RAGFlow's PDF parsing pipeline to the SoMark async HTTP API.
 Submits a PDF, polls the async task until completion,
@@ -52,6 +54,7 @@ if LOCK_KEY_pdfplumber not in sys.modules:
 
 
 class SoMarkBlockType(StrEnum):
+    # SoMark JSON 返回的全部 block.type 枚举
     """All block.type values returned by SoMark JSON output."""
 
     TEXT = "text"
@@ -77,6 +80,7 @@ class SoMarkBlockType(StrEnum):
     CS_EQUATION = "cs_equation"
 
 
+# SoMark 块类型 -> RAGFlow 内部 layout 类型（text/table/image 等）
 # Map each SoMark type to RAGFlow's internal layout type.
 # Internal types used downstream: text / table / image / equation / code / discarded.
 SOMARK_TYPE_TO_RAGFLOW = {
@@ -113,6 +117,7 @@ class SoMarkAPIError(RuntimeError):
 
 
 class SoMarkParser(RAGFlowPdfParser):
+    # 提交 PDF、轮询异步任务并将 SoMark 块转为 (text, layout, tag) 段落
     """Parse a PDF via SoMark's async HTTP API and convert blocks to RAGFlow sections."""
 
     SUBMIT_PATH = "/parse/async"
@@ -193,6 +198,7 @@ class SoMarkParser(RAGFlowPdfParser):
             return False
 
     def check_installation(self) -> tuple[bool, str]:
+        # 校验 base_url 可达性；SaaS 模式额外检查 API Key 与配额
         if not self.base_url:
             return False, "[SoMark] SOMARK_BASE_URL not configured."
         if not self.base_url.startswith(("http://", "https://")):

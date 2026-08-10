@@ -13,10 +13,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+简历解析第一步：从 resume_content JSON 展平为结构化字段，映射学历/行业/地域编码。
+"""
+
+
 
 import json
 from deepdoc.parser.resume.entities import degrees, regions, industries
 
+# 目标输出字段及类型声明（与下游 ES/检索 schema 对齐）
 FIELDS = [
     "address STRING",
     "annual_salary int",
@@ -73,7 +79,9 @@ FIELDS = [
 
 
 def refactor(df):
+    # 解析 JSON 列、抽取嵌套对象并编码归一化，返回首行字段字典
     def deal_obj(obj, k, kk):
+        # 从嵌套 dict 安全取 obj[k][kk]
         if not isinstance(obj, type({})):
             return ""
         obj = obj.get(k, {})
@@ -94,6 +102,7 @@ def refactor(df):
     clms = ["tob_resume_id", "updated_at"]
 
     def extract(nms, cc=None):
+        # 批量从 obj 或 obj[cc] 提取字段写入 df 列
         nonlocal clms
         clms.extend(nms)
         for c in nms:

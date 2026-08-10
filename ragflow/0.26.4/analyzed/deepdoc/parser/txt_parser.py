@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+纯文本解析器：按自定义分隔符与 token 上限将 TXT 切分为检索块。
+"""
+
+
 
 import re
 
@@ -21,6 +26,7 @@ from common.token_utils import num_tokens_from_string
 
 
 class RAGFlowTxtParser:
+    # 读取文件或二进制文本，调用 parser_txt 生成分块列表
     def __call__(self, fnm, binary=None, chunk_token_num=128, delimiter="\n!?;。；！？"):
         txt = get_text(fnm, binary)
         return self.parser_txt(txt, chunk_token_num, delimiter)
@@ -34,6 +40,7 @@ class RAGFlowTxtParser:
         delimiter = delimiter.encode("utf-8").decode("unicode_escape").encode("latin1").decode("utf-8")
 
         def add_chunk(t):
+            # 累积分块直至超过 chunk_token_num 则开新块
             nonlocal cks, tk_nums, delimiter
             tnum = num_tokens_from_string(t)
             if tk_nums[-1] > chunk_token_num:

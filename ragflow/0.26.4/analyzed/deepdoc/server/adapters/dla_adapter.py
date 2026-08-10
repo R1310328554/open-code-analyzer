@@ -1,4 +1,4 @@
-"""DLA adapter — wraps LayoutRecognizer and converts output to wire format."""
+"""DLA 适配器：封装 LayoutRecognizer，将版面检测结果转为 Go wire 格式 bbox 列表。"""
 
 import io
 import logging
@@ -10,6 +10,7 @@ from deepdoc.vision import LayoutRecognizer
 
 logger = logging.getLogger(__name__)
 
+# OSS 模型标签 -> Go dlaClassLabels 下标
 # OSS model label → Go dlaClassLabels index
 # Go-side (internal/parser/deepdoc.go):
 #   var dlaClassLabels = []string{
@@ -30,6 +31,7 @@ DLA_CLASS_MAP = {
 
 
 class DLAAdapter:
+    # 懒加载 LayoutRecognizer，推理后输出 [x0,y0,x1,y1,score,class_id]
     """Calls LayoutRecognizer.forward() and converts bboxes to wire format."""
 
     def __init__(self, model_dir: str, thr: float = 0.2):
@@ -38,6 +40,7 @@ class DLAAdapter:
         self._layouter: LayoutRecognizer | None = None
 
     def load(self):
+        # 每个 worker 进程初始化一次版面模型
         """Initialize the layout recognizer. Called once per worker."""
         self._layouter = LayoutRecognizer("layout")
 
