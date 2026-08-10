@@ -32,11 +32,16 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Abstract base class for {@link EventExecutor} implementations.
+ *
+ * <p>{@link EventExecutor} 抽象基类：桥接 JDK {@link AbstractExecutorService} 与 Netty
+ * {@link Future}/{@link Promise} 模型；自身即 {@link EventExecutorGroup} 的单成员视图（{@link #next()} 返回 this）。</p>
  */
 public abstract class AbstractEventExecutor extends AbstractExecutorService implements EventExecutor {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(AbstractEventExecutor.class);
 
+    /** 优雅关闭默认静默期（秒）。 */
     static final long DEFAULT_SHUTDOWN_QUIET_PERIOD = 2;
+    /** 优雅关闭默认最长等待（秒）。 */
     static final long DEFAULT_SHUTDOWN_TIMEOUT = 15;
 
     private final EventExecutorGroup parent;
@@ -72,6 +77,8 @@ public abstract class AbstractEventExecutor extends AbstractExecutorService impl
 
     /**
      * @deprecated {@link #shutdownGracefully(long, long, TimeUnit)} or {@link #shutdownGracefully()} instead.
+     *
+     * <p>已废弃：请使用 {@link #shutdownGracefully()} 系列方法。</p>
      */
     @Override
     @Deprecated
@@ -79,6 +86,8 @@ public abstract class AbstractEventExecutor extends AbstractExecutorService impl
 
     /**
      * @deprecated {@link #shutdownGracefully(long, long, TimeUnit)} or {@link #shutdownGracefully()} instead.
+     *
+     * <p>已废弃：调用 {@link #shutdown()} 后返回空列表。</p>
      */
     @Override
     @Deprecated
@@ -135,6 +144,8 @@ public abstract class AbstractEventExecutor extends AbstractExecutorService impl
 
     /**
      * Try to execute the given {@link Runnable} and just log if it throws a {@link Throwable}.
+     *
+     * <p>执行 {@link Runnable}，异常仅记录日志不向外传播，用于事件循环内安全执行任务。</p>
      */
     protected static void safeExecute(Runnable task) {
         try {
@@ -154,6 +165,8 @@ public abstract class AbstractEventExecutor extends AbstractExecutorService impl
      * <p>
      * The default implementation just delegates to {@link #execute(Runnable)}.
      * </p>
+     *
+     * <p>惰性提交：不保证立即执行，可能推迟到非 lazy 任务或关闭时；默认等同 {@link #execute(Runnable)}。</p>
      */
     @UnstableApi
     public void lazyExecute(Runnable task) {
@@ -163,6 +176,7 @@ public abstract class AbstractEventExecutor extends AbstractExecutorService impl
     /**
      *  @deprecated override {@link SingleThreadEventExecutor#wakesUpForTask} to re-create this behaviour
      *
+     * <p>标记接口：lazy 任务可能不唤醒事件循环；子类通过 {@link SingleThreadEventExecutor#wakesUpForTask} 控制。</p>
      */
     @Deprecated
     public interface LazyRunnable extends Runnable { }

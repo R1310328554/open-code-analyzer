@@ -25,6 +25,9 @@ import java.util.concurrent.TimeoutException;
  * Abstract {@link Future} implementation which does not allow for cancellation.
  *
  * @param <V>
+ *
+ * <p>不可取消的 {@link Future} 抽象基类：{@link #get()} 通过 {@link #await()} 等待完成后
+ * 读取结果或包装异常；子类实现 {@link #cause()}、{@link #getNow()} 等。</p>
  */
 public abstract class AbstractFuture<V> implements Future<V> {
 

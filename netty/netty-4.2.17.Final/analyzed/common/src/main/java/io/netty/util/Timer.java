@@ -22,6 +22,9 @@ import java.util.concurrent.TimeUnit;
 /**
  * Schedules {@link TimerTask}s for one-time future execution in a background
  * thread.
+ *
+ * <p>定时器接口：在后台线程中调度 {@link TimerTask} 的一次性延迟执行。
+ * 典型实现为 {@link HashedWheelTimer}，适用于连接超时、心跳等场景。</p>
  */
 public interface Timer {
 
@@ -34,6 +37,9 @@ public interface Timer {
      * @throws IllegalStateException       if this timer has been {@linkplain #stop() stopped} already
      * @throws RejectedExecutionException if the pending timeouts are too many and creating new timeout
      *                                    can cause instability in the system.
+     *
+     * <p>在指定延迟后调度任务；返回 {@link Timeout} 句柄供取消或查询状态。
+     * 待处理超时过多时会拒绝新任务以防系统不稳定。</p>
      */
     Timeout newTimeout(TimerTask task, long delay, TimeUnit unit);
 
@@ -43,6 +49,8 @@ public interface Timer {
      *
      * @return the handles associated with the tasks which were canceled by
      *         this method
+     *
+     * <p>停止定时器、释放资源，并取消所有尚未执行的任务；返回被取消任务的句柄集合。</p>
      */
     Set<Timeout> stop();
 }

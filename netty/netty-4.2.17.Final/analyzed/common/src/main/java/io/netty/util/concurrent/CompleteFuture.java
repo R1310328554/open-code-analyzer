@@ -22,6 +22,9 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * A skeletal {@link Future} implementation which represents a {@link Future} which has been completed already.
+ *
+ * <p>已完成状态的 {@link Future} 骨架：{@link #await()} 立即返回，监听器同步通知；
+ * 子类只需提供结果值与关联的 {@link EventExecutor}。</p>
  */
 public abstract class CompleteFuture<V> extends AbstractFuture<V> {
 
@@ -31,6 +34,8 @@ public abstract class CompleteFuture<V> extends AbstractFuture<V> {
      * Creates a new instance.
      *
      * @param executor the {@link EventExecutor} associated with this future
+     *
+     * <p>指定通知监听器时使用的执行器；可为 {@code null}（由 {@link DefaultPromise} 处理）。</p>
      */
     protected CompleteFuture(EventExecutor executor) {
         this.executor = executor;
@@ -38,6 +43,8 @@ public abstract class CompleteFuture<V> extends AbstractFuture<V> {
 
     /**
      * Return the {@link EventExecutor} which is used by this {@link CompleteFuture}.
+     *
+     * <p>返回与此 Future 关联的执行器，用于派发监听器回调。</p>
      */
     protected EventExecutor executor() {
         return executor;
@@ -64,7 +71,7 @@ public abstract class CompleteFuture<V> extends AbstractFuture<V> {
 
     @Override
     public Future<V> removeListener(GenericFutureListener<? extends Future<? super V>> listener) {
-        // NOOP
+        // NOOP — 已完成 Future 无需维护监听器列表
         return this;
     }
 
@@ -142,6 +149,8 @@ public abstract class CompleteFuture<V> extends AbstractFuture<V> {
      * {@inheritDoc}
      *
      * @param mayInterruptIfRunning this value has no effect in this implementation.
+     *
+     * <p>已完成 Future 不可取消，始终返回 {@code false}。</p>
      */
     @Override
     public boolean cancel(boolean mayInterruptIfRunning) {

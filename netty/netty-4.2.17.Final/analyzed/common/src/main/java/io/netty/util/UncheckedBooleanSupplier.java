@@ -17,17 +17,24 @@ package io.netty.util;
 
 /**
  * Represents a supplier of {@code boolean}-valued results which doesn't throw any checked exceptions.
+ *
+ * <p>不抛受检异常的布尔供应器，是 {@link BooleanSupplier} 的无 checked 变体，
+ * 便于在事件循环等不能声明 throws 的上下文中使用。</p>
  */
 public interface UncheckedBooleanSupplier extends BooleanSupplier {
     /**
      * Gets a boolean value.
      * @return a boolean value.
+     *
+     * <p>返回当前布尔值，实现不得抛出受检异常。</p>
      */
     @Override
     boolean get();
 
     /**
      * A supplier which always returns {@code false} and never throws.
+     *
+     * <p>恒为 {@code false} 的单例，避免 lambda 分配。</p>
      */
     UncheckedBooleanSupplier FALSE_SUPPLIER = new UncheckedBooleanSupplier() {
         @Override
@@ -38,6 +45,8 @@ public interface UncheckedBooleanSupplier extends BooleanSupplier {
 
     /**
      * A supplier which always returns {@code true} and never throws.
+     *
+     * <p>恒为 {@code true} 的单例。</p>
      */
     UncheckedBooleanSupplier TRUE_SUPPLIER = new UncheckedBooleanSupplier() {
         @Override

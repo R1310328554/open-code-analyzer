@@ -80,6 +80,8 @@ import static java.util.Objects.requireNonNull;
  * because some null return values cannot be reliably distinguished from
  * the absence of elements.
  *
+ * <p>基于跳表（Skip List）的可扩展并发 int→V 多值映射：键按 int 自然序排序，同一键可对应多个 {@link IntEntry}。期望平均 O(log n) 的 contains/get/put/remove；多线程安全，迭代器弱一致。不支持 {@code putIfPresent}/{@code compute} 等单键原子复合操作。删除采用 marker 节点与 value 置 null 的 lazy deletion 策略（详见类内英文算法说明）。</p>
+ *
  * @param <V> the type of mapped values
  */
 public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentSkipListIntObjMultimap.IntEntry<V>> {
@@ -290,6 +292,8 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
      * thesis (https://www.cs.chalmers.se/~phs/).
      *
      * Notation guide for local variables
+     *
+     * <p>（以下为跳表并发算法实现细节，变量符号见英文说明。）</p>
      * Node:         b, n, f, p for  predecessor, node, successor, aux
      * Index:        q, r, d    for index node, right, down.
      * Head:         h
@@ -298,11 +302,11 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
      * Comparisons:  c
      */
 
-    /** No-key sentinel value */
+    /** 无键哨兵值，用于 marker 节点与空键检测。 */
     private final int noKey;
-    /** Lazily initialized topmost index of the skiplist. */
+    /** 跳表顶层索引头，懒初始化。 */
     private volatile /*XXX: Volatile only required for ARFU; remove if we can use VarHandle*/ Index<V> head;
-    /** Element count */
+    /** 元素计数（LongAdder）。 */
     private final LongAdder adder;
 
     /**
@@ -311,6 +315,8 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
      * headed by a header node accessible as head.node. Headers and
      * marker nodes have null keys. The val field (but currently not
      * the key field) is nulled out upon deletion.
+     *
+     * <p>跳表底层链表节点：有序单链表，删除时 value 置 null 并可能插入 marker。</p>
      */
     static final class Node<V> {
         final int key; // currently, never detached
@@ -325,6 +331,8 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
 
     /**
      * Index nodes represent the levels of the skip list.
+     *
+     * <p>跳表索引层节点：{@code down}/{@code right} 构成二维索引结构。</p>
      */
     static final class Index<V> {
         final Node<V> node;  // currently, never detached
@@ -339,6 +347,8 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
 
     /**
      * The multimap entry type with primitive {@code int} keys.
+     *
+     * <p>int 键条目快照，不可变；不支持 {@code setValue}。</p>
      */
     public static final class IntEntry<V> implements Comparable<IntEntry<V>> {
         private final int key;
@@ -351,6 +361,8 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
 
         /**
          * Get the corresponding key.
+         *
+         * <p>返回 int 键。</p>
          */
         public int getKey() {
             return key;
@@ -358,6 +370,8 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
 
         /**
          * Get the corresponding value.
+         *
+         * <p>返回值。</p>
          */
         public V getValue() {
             return value;
@@ -391,11 +405,13 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
         }
     }
 
-    /* ----------------  Utilities -------------- */
+    /* ----------------  工具方法 -------------- */
 
     /**
      * Compares using comparator or natural ordering if null.
      * Called only by methods that have performed required type checks.
+     *
+     * <p>int 键比较。</p>
      */
     static int cpr(int x, int y) {
         return Integer.compare(x, y);
@@ -403,6 +419,8 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
 
     /**
      * Returns the header for base node list, or null if uninitialized
+     *
+     * <p>返回底层链表头节点；未初始化时为 null。</p>
      */
     final Node<V> baseHead() {
         Index<V> h;
@@ -418,6 +436,8 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
      *
      * @param b if nonnull, predecessor
      * @param n if nonnull, node known to be deleted
+     *
+     * <p>帮助删除：插入 marker 节点后 CAS  unlink 前驱的 next 指针。</p>
      */
     static <V> void unlinkNode(Node<V> b, Node<V> n, int noKey) {
         if (b != null && n != null) {
@@ -440,6 +460,8 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
      * Adds to element count, initializing adder if necessary
      *
      * @param c count to add
+     *
+     * <p>累加元素计数。</p>
      */
     private void addCount(long c) {
         adder.add(c);
@@ -447,13 +469,15 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
 
     /**
      * Returns element count, initializing adder if necessary.
+     *
+     *     * <p>返回近似元素总数。</p>
      */
     final long getAdderCount() {
         long c;
         return (c = adder.sum()) <= 0L ? 0L : c; // ignore transient negatives
     }
 
-    /* ---------------- Traversal -------------- */
+    /* ---------------- 遍历 -------------- */
 
     /**
      * Returns an index node with key strictly less than given key.
@@ -463,6 +487,8 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
      *
      * @param key if nonnull the key
      * @return a predecessor node of key, or null if uninitialized or null key
+     *
+     * <p>在索引层查找严格小于 key 的前驱底层节点，并清理指向已删节点的索引。</p>
      */
     private Node<V> findPredecessor(int key) {
         Index<V> q;
@@ -504,6 +530,8 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
      *
      * @param key the key
      * @return node holding key, or null if no such
+     *
+     * <p>在底层链表中定位 key 对应节点（多值映射下为其中一个）。</p>
      */
     private Node<V> findNode(int key) {
         if (key == noKey) {
@@ -538,6 +566,8 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
      *
      * @param key the key
      * @return the value, or null if absent
+     *
+     * <p>沿索引与底层链表查找，返回首个匹配值。</p>
      */
     private V doGet(int key) {
         Index<V> q;
@@ -588,7 +618,7 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
         return result;
     }
 
-    /* ---------------- Insertion -------------- */
+    /* ---------------- 插入 -------------- */
 
     /**
      * Main insertion method.  Adds element if not present, or
@@ -597,6 +627,8 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
      * @param key the key
      * @param value the value that must be associated with key
      * @param onlyIfAbsent if should not insert if already present
+     *
+     * <p>插入或替换（多值模式下始终可插入同键新节点）；以 1/4 概率建索引层。</p>
      */
     private V doPut(int key, V value, boolean onlyIfAbsent) {
         if (key == noKey) {
@@ -647,7 +679,7 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
                         unlinkNode(b, n, noKey);
                         c = 1;
                     } else if ((c = cpr(key, k)) > 0) {
-                        b = n; // Multimap
+                        b = n; // 多值映射：同键继续向后扫描
 //                    } else if (c == 0 &&
 //                             (onlyIfAbsent || VAL.compareAndSet(n, v, value))) {
 //                        return v;
@@ -703,6 +735,8 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
      * @param q starting index for current level
      * @param skips levels to skip before inserting
      * @param x index for this insertion
+     *
+     * <p>在索引层链入新索引节点，失败时返回 false。</p>
      */
     static <V> boolean addIndices(Index<V> q, int skips, Index<V> x, int noKey) {
         Node<V> z; int key;
@@ -747,7 +781,7 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
         return false;
     }
 
-    /* ---------------- Deletion -------------- */
+    /* ---------------- 删除 -------------- */
 
     /**
      * Main deletion method. Locates node, nulls value, appends a
@@ -758,6 +792,8 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
      * @param value if non-null, the value that must be
      * associated with key
      * @return the node, or null if not found
+     *
+     * <p>删除：value CAS 置 null、unlink、减计数并尝试降低索引层高度。</p>
      */
     final V doRemove(int key, Object value) {
         if (key == noKey) {
@@ -781,7 +817,7 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
                     break outer;
                 } else if (value != null && !value.equals(v)) {
 //                    break outer;
-                    b = n; // Multimap.
+                    b = n; // 多值映射：值不匹配时继续同键扫描
                 } else if (VAL.compareAndSet(n, v, null)) {
                     result = v;
                     unlinkNode(b, n, noKey);
@@ -815,6 +851,8 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
      * number of insertions and removals will have a lot of levels,
      * slowing down access more than would an occasional unwanted
      * reduction.
+     *
+     * <p>启发式降低跳表层级：顶层三层均为空时尝试减一层，偶发误减可快速回滚。</p>
      */
     private void tryReduceLevel() {
         Index<V> h, d, e;
@@ -827,11 +865,13 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
         }
     }
 
-    /* ---------------- Finding and removing first element -------------- */
+    /* ---------------- 首元素查找与移除 -------------- */
 
     /**
      * Gets first valid node, unlinking deleted nodes if encountered.
      * @return first node or null if empty
+     *
+     * <p>返回第一个有效（value 非 null）节点。</p>
      */
     final Node<V> findFirst() {
         Node<V> b, n;
@@ -849,6 +889,8 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
 
     /**
      * Entry snapshot version of findFirst
+     *
+     * <p>{@link #findFirst()} 的条目快照形式。</p>
      */
     final IntEntry<V> findFirstEntry() {
         Node<V> b, n; V v;
@@ -867,6 +909,8 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
     /**
      * Removes first entry; returns its snapshot.
      * @return null if empty, else snapshot of first entry
+     *
+     * <p>移除并返回最小键条目。</p>
      */
     private IntEntry<V> doRemoveFirstEntry() {
         Node<V> b, n; V v;
@@ -887,11 +931,13 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
         return null;
     }
 
-    /* ---------------- Finding and removing last element -------------- */
+    /* ---------------- 末元素查找与移除 -------------- */
 
     /**
      * Specialized version of find to get last valid node.
      * @return last node or null if empty
+     *
+     * <p>沿索引找到最大键的有效节点。</p>
      */
     final Node<V> findLast() {
         outer: for (;;) {
@@ -941,6 +987,8 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
     /**
      * Entry version of findLast
      * @return Entry for last node or null if empty
+     *
+     * <p>{@link #findLast()} 的条目快照形式。</p>
      */
     final IntEntry<V> findLastEntry() {
         for (;;) {
@@ -958,6 +1006,8 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
      * Removes last entry; returns its snapshot.
      * Specialized variant of doRemove.
      * @return null if empty, else snapshot of last entry
+     *
+     * <p>移除并返回最大键条目。</p>
      */
     private IntEntry<V> doRemoveLastEntry() {
         outer: for (;;) {
@@ -1012,7 +1062,7 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
         return null;
     }
 
-    /* ---------------- Relational operations -------------- */
+    /* ---------------- 关系查询（ceiling/floor 等） -------------- */
 
     // Control values OR'ed as arguments to findNear
 
@@ -1078,19 +1128,21 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
         return result;
     }
 
-    /* ---------------- Constructors -------------- */
+    /* ---------------- 构造 -------------- */
 
     /**
      * Constructs a new, empty map, sorted according to the
      * {@linkplain Comparable natural ordering} of the keys.
      * @param noKey The value to use as a sentinel for signaling the absence of a key.
+     *
+     * <p>指定哨兵 int 值，用于 marker 节点与非法键检测。</p>
      */
     public ConcurrentSkipListIntObjMultimap(int noKey) {
         this.noKey = noKey;
         adder = new LongAdder();
     }
 
-    /* ------ Map API methods ------ */
+    /* ------ Map API 方法 ------ */
 
     /**
      * Returns {@code true} if this map contains a mapping for the specified
@@ -1101,6 +1153,8 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
      * @throws ClassCastException if the specified key cannot be compared
      *         with the keys currently in the map
      * @throws NullPointerException if the specified key is null
+     *
+     * <p>是否包含至少一个该键的映射。</p>
      */
     public boolean containsKey(int key) {
         return doGet(key) != null;
@@ -1199,6 +1253,8 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
 
     /**
      * Get the approximate size of the collection.
+     *
+     * <p>近似元素个数（LongAdder 累加，非精确原子快照）。</p>
      */
     public int size() {
         long c;
@@ -1209,6 +1265,8 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
 
     /**
      * Check if the collection is empty.
+     *
+     * <p>是否无任何有效条目。</p>
      */
     public boolean isEmpty() {
         return findFirst() == null;
@@ -1216,6 +1274,8 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
 
     /**
      * Removes all of the mappings from this map.
+     *
+     * <p>清空：逐层移除索引与节点（非原子 bulk 操作）。</p>
      */
     public void clear() {
         Index<V> h, r, d; Node<V> b;
@@ -1249,7 +1309,7 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
         }
     }
 
-    /* ------ ConcurrentMap API methods ------ */
+    /* ------ ConcurrentMap API 方法 ------ */
 
     /**
      * Remove the specific entry with the given key and value, if it exist.
@@ -1295,7 +1355,7 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
         }
     }
 
-    /* ------ SortedMap API methods ------ */
+    /* ------ SortedMap API 方法 ------ */
 
     public int firstKey() {
         Node<V> n = findFirst();
@@ -1313,7 +1373,7 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
         return n.key;
     }
 
-    /* ---------------- Relational operations -------------- */
+    /* ---------------- 关系查询（ceiling/floor 等） -------------- */
 
     /**
      * Returns a key-value mapping associated with the greatest key
@@ -1453,20 +1513,22 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
         return new IntEntry<>(node.key, val);
     }
 
-    /* ---------------- Iterators -------------- */
+    /* ------ 迭代器 ------ */
 
     /**
      * Base of iterator classes
+     *
+     * <p>升序迭代器基类，弱一致，{@code remove} 委托 {@link #remove(int, Object)}。</p>
      */
     abstract class Iter<T> implements Iterator<T> {
-        /** the last node returned by next() */
+        /** {@code next()} 上次返回的节点 */
         Node<V> lastReturned;
-        /** the next node to return from next(); */
+        /** 待返回的下一节点 */
         Node<V> next;
-        /** Cache of next value field to maintain weak consistency */
+        /** 缓存 next 的 value，保证弱一致读取 */
         V nextValue;
 
-        /** Initializes ascending iterator for entire range. */
+        /** 从全范围升序初始化迭代器 */
         Iter() {
             advance(baseHead());
         }
@@ -1476,7 +1538,7 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
             return next != null;
         }
 
-        /** Advances next to higher entry. */
+        /** 推进到下一个有效条目 */
         final void advance(Node<V> b) {
             Node<V> n = null;
             V v = null;
@@ -1553,7 +1615,7 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
         }
     }
 
-    // VarHandle mechanics
+    // VarHandle / ARFU 底层 CAS 机制
     private static final MethodHandle ACQUIRE_FENCE;
     private static final AtomicReferenceFieldUpdater<ConcurrentSkipListIntObjMultimap<?>, Index<?>> HEAD;
     private static final AtomicReferenceFieldUpdater<Node<?>, Node<?>> NEXT;
@@ -1597,6 +1659,8 @@ public class ConcurrentSkipListIntObjMultimap<V> implements Iterable<ConcurrentS
 
     /**
      * Orders LOADS before the fence, with LOADS and STORES after the fence.
+     *
+     * <p>acquire 内存屏障：保证读操作的可见性顺序（RCU 风格）。</p>
      */
     private static void acquireFence() {
         try {

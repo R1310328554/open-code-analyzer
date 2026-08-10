@@ -20,6 +20,9 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Default implementation which uses simple round-robin to choose next {@link EventExecutor}.
+ *
+ * <p>默认 {@link EventExecutorChooserFactory}：简单轮询选择子执行器。
+ * 数量为 2 的幂时用位掩码优化；否则用 {@code long} 计数避免 32 位溢出导致轮询不均。</p>
  */
 public final class DefaultEventExecutorChooserFactory implements EventExecutorChooserFactory {
 
@@ -36,10 +39,12 @@ public final class DefaultEventExecutorChooserFactory implements EventExecutorCh
         }
     }
 
+    /** 判断是否为 2 的幂，用于选择快速轮询实现。 */
     private static boolean isPowerOfTwo(int val) {
         return (val & -val) == val;
     }
 
+    /** 2 的幂长度：{@code idx & (length-1)} 等价于取模。 */
     private static final class PowerOfTwoEventExecutorChooser implements EventExecutorChooser {
         private final AtomicInteger idx = new AtomicInteger();
         private final EventExecutor[] executors;
@@ -54,6 +59,7 @@ public final class DefaultEventExecutorChooserFactory implements EventExecutorCh
         }
     }
 
+    /** 非 2 的幂长度：用 long 计数避免 int 溢出破坏轮询公平性。 */
     private static final class GenericEventExecutorChooser implements EventExecutorChooser {
         // Use a 'long' counter to avoid non-round-robin behaviour at the 32-bit overflow boundary.
         // The 64-bit long solves this by placing the overflow so far into the future, that no system

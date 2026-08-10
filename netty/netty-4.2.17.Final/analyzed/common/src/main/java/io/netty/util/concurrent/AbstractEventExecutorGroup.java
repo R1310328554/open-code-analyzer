@@ -28,6 +28,9 @@ import static io.netty.util.concurrent.AbstractEventExecutor.*;
 
 /**
  * Abstract base class for {@link EventExecutorGroup} implementations.
+ *
+ * <p>{@link EventExecutorGroup} 抽象基类：将 submit、schedule、execute 等操作
+ * 委托给 {@link #next()} 选出的子执行器，子类只需实现成员管理与选择策略。</p>
  */
 public abstract class AbstractEventExecutorGroup implements EventExecutorGroup {
     @Override
@@ -72,6 +75,8 @@ public abstract class AbstractEventExecutorGroup implements EventExecutorGroup {
 
     /**
      * @deprecated {@link #shutdownGracefully(long, long, TimeUnit)} or {@link #shutdownGracefully()} instead.
+     *
+     * <p>已废弃：请使用优雅关闭 API。</p>
      */
     @Override
     @Deprecated

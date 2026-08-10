@@ -43,6 +43,8 @@ import java.util.concurrent.atomic.AtomicReference;
  * Furthermore, to ensure decisions are based on sustained trends rather than transient spikes, the
  * {@code scalingPatienceCycles} defines how many consecutive monitoring windows a condition must be met
  * before a scaling action is triggered.
+ *
+ * <p>基于利用率的 EventLoop 自动伸缩选择器工厂：在 min/max 线程数之间，按监控窗口内的平均利用率决定挂起（scale down）或唤醒（scale up）线程。通过 {@code maxRampUpStep}/{@code maxRampDownStep} 限制单周期变化量，{@code scalingPatienceCycles} 要求条件连续满足若干周期后才触发，避免抖动。</p>
  */
 public final class AutoScalingEventExecutorChooserFactory implements EventExecutorChooserFactory {
 
@@ -50,6 +52,8 @@ public final class AutoScalingEventExecutorChooserFactory implements EventExecut
      * A container for the utilization metric of a single EventExecutor.
      * This object is intended to be created once and have its {@code utilization}
      * field updated periodically.
+     *
+     * <p>单个 {@link EventExecutor} 的利用率快照容器；监控任务周期性更新 {@code utilization}（0.0～1.0）。</p>
      */
     public static final class AutoScalingUtilizationMetric {
         private final EventExecutor executor;
@@ -62,6 +66,8 @@ public final class AutoScalingEventExecutorChooserFactory implements EventExecut
         /**
          * Returns the most recently calculated utilization for the associated executor.
          * @return a value from 0.0 to 1.0.
+         *
+         * <p>最近一次监控周期计算出的利用率。</p>
          */
         public double utilization() {
             return Double.longBitsToDouble(utilizationBits.get());
@@ -70,6 +76,8 @@ public final class AutoScalingEventExecutorChooserFactory implements EventExecut
         /**
          * Returns the {@link EventExecutor} this metric belongs too.
          * @return the executor.
+         *
+         * <p>关联的执行器实例。</p>
          */
         public EventExecutor executor() {
             return executor;
@@ -81,6 +89,7 @@ public final class AutoScalingEventExecutorChooserFactory implements EventExecut
         }
     }
 
+    /** 唤醒挂起 EventLoop 用的空任务。 */
     private static final Runnable NO_OOP_TASK = () -> { };
     private final int minChildren;
     private final int maxChildren;
@@ -103,6 +112,8 @@ public final class AutoScalingEventExecutorChooserFactory implements EventExecut
      * @param maxRampUpStep            the maximum number of threads to add in one cycle.
      * @param maxRampDownStep          the maximum number of threads to remove in one cycle.
      * @param scalingPatienceCycles    the number of consecutive cycles a condition must be met before scaling.
+     *
+     * <p>校验 min≤max、阈值区间及 ramp 参数后保存配置。</p>
      */
     public AutoScalingEventExecutorChooserFactory(int minThreads, int maxThreads, long utilizationWindow,
                                                   TimeUnit windowUnit, double scaleDownThreshold,
@@ -137,6 +148,8 @@ public final class AutoScalingEventExecutorChooserFactory implements EventExecut
     /**
      * An immutable snapshot of the chooser's state. All state transitions
      * are managed by atomically swapping this object.
+     *
+     * <p>不可变状态快照：活跃线程数、下次唤醒起始索引、当前活跃执行器数组及其轮询选择器。通过 CAS 替换整个快照实现无锁状态迁移。</p>
      */
     private static final class AutoScalingState {
         final int activeChildrenCount;
@@ -182,14 +195,16 @@ public final class AutoScalingEventExecutorChooserFactory implements EventExecut
         /**
          * This method is only responsible for picking from the active executors list.
          * The monitor handles all scaling decisions.
+         *
+         * <p>仅从当前活跃列表轮询；伸缩决策由 {@link UtilizationMonitor} 后台任务负责。若无活跃线程则紧急唤醒一个并临时使用全量选择器。</p>
          */
         @Override
         public EventExecutor next() {
-            // Get a snapshot of the current state.
+            // 读取当前状态快照
             AutoScalingState currentState = this.state.get();
 
             if (currentState.activeExecutors.length == 0) {
-                // This is only reachable if minChildren is 0 and the monitor has just suspended the last active thread.
+                // minChildren 为 0 且刚挂起最后一个活跃线程时的兜底路径 and the monitor has just suspended the last active thread.
                 // To prevent an error and ensure the group can recover, we wake one up and use the
                 // chooser that contains all executors as a safe temporary choice.
                 tryScaleUpBy(1);
@@ -203,6 +218,8 @@ public final class AutoScalingEventExecutorChooserFactory implements EventExecut
          * This method is thread-safe and updates the state atomically.
          *
          * @param amount    The desired number of threads to add to the active count.
+         *
+         * <p>从 {@code nextWakeUpIndex} 起扫描挂起的 {@link SingleThreadEventExecutor}，投递空任务唤醒，CAS 更新活跃列表。</p>
          */
         private void tryScaleUpBy(int amount) {
             if (amount <= 0) {
@@ -251,7 +268,7 @@ public final class AutoScalingEventExecutorChooserFactory implements EventExecut
                 if (state.compareAndSet(oldState, newState)) {
                     return;
                 }
-                // CAS failed, another thread changed the state. Loop again to retry.
+                // CAS 失败则重试
             }
         }
 
@@ -272,28 +289,28 @@ public final class AutoScalingEventExecutorChooserFactory implements EventExecut
             @Override
             public void run() {
                 if (executors.length == 0 || executors[0].isShuttingDown()) {
-                    // The group is shutting down, so no scaling decisions should be made.
+                    // 组正在关闭，停止伸缩决策
                     // The lifecycle listener on the terminationFuture will handle the final cancellation.
                     return;
                 }
 
-                // Calculate the actual elapsed time since the last run.
+                // 计算距上次监控的实际经过时间
                 final long now = executors[0].ticker().nanoTime();
                 long totalTime;
 
                 if (lastCheckTimeNanos == 0) {
-                    // On the first run, use the configured period as a baseline to avoid skipping the cycle.
+                    // 首次运行用配置周期作为基准窗口 to avoid skipping the cycle.
                     totalTime = utilizationCheckPeriodNanos;
                 } else {
-                    // On subsequent runs, calculate the actual elapsed time.
+                    // 后续运行用实际时间差
                     totalTime = now - lastCheckTimeNanos;
                 }
 
-                // Always update the timestamp for the next cycle.
+                // 更新下次周期的时间戳
                 lastCheckTimeNanos = now;
 
                 if (totalTime <= 0) {
-                    // Skip this cycle if the clock has issues or the interval is invalid.
+                    // 时钟异常则跳过本周期 or the interval is invalid.
                     return;
                 }
 
@@ -318,18 +335,18 @@ public final class AutoScalingEventExecutorChooserFactory implements EventExecut
                             long lastActivity = eventExecutor.getLastActivityTimeNanos();
                             long idleTime = now - lastActivity;
 
-                            // If the event loop has been idle for less time than our utilization window,
+                            // 空闲时间小于监控窗口 ⇒ 窗口内仍有活跃时间
                             // it means it was active for the remainder of that window.
                             if (idleTime < totalTime) {
                                 activeTime = totalTime - idleTime;
                             }
-                            // If idleTime >= totalTime, it was idle for the whole window, so activeTime remains 0.
+                            // 整窗空闲则利用率为 0
                         }
 
                         utilization = Math.min(1.0, (double) activeTime / totalTime);
 
                         if (utilization < scaleDownThreshold) {
-                            // Utilization is low, increment idle counter and reset busy counter.
+                            // 低利用率：累加 idle 周期，重置 busy
                             int idleCycles = eventExecutor.getAndIncrementIdleCycles();
                             eventExecutor.resetBusyCycles();
                             if (idleCycles >= scalingPatienceCycles &&
@@ -337,14 +354,14 @@ public final class AutoScalingEventExecutorChooserFactory implements EventExecut
                                 consistentlyIdleChildren.add(eventExecutor);
                             }
                         } else if (utilization > scaleUpThreshold) {
-                            // Utilization is high, increment busy counter and reset idle counter.
+                            // 高利用率：累加 busy 周期，重置 idle
                             int busyCycles = eventExecutor.getAndIncrementBusyCycles();
                             eventExecutor.resetIdleCycles();
                             if (busyCycles >= scalingPatienceCycles) {
                                 consistentlyBusyChildren++;
                             }
                         } else {
-                            // Utilization is in the normal range, reset counters.
+                            // 正常区间：重置 idle/busy 计数
                             eventExecutor.resetIdleCycles();
                             eventExecutor.resetBusyCycles();
                         }
@@ -355,21 +372,21 @@ public final class AutoScalingEventExecutorChooserFactory implements EventExecut
 
                 int currentActive = currentState.activeChildrenCount;
 
-                // Make scaling decisions based on stable states.
+                // 基于连续多周期稳定状态做伸缩决策
                 if (consistentlyBusyChildren > 0 && currentActive < maxChildren) {
-                    // Scale Up, we have children that have been busy for multiple cycles.
+                    // 扩容：存在连续 busy 的子线程
                     int threadsToAdd = Math.min(consistentlyBusyChildren, maxRampUpStep);
                     threadsToAdd = Math.min(threadsToAdd, maxChildren - currentActive);
                     if (threadsToAdd > 0) {
                         tryScaleUpBy(threadsToAdd);
-                        // State change is handled by tryScaleUpBy, no need for rebuild here.
+                        // tryScaleUpBy 已更新状态
                         return; // Exit to avoid conflicting scale down logic in the same cycle.
                     }
                 }
 
-                boolean changed = false; // Flag to track if we need to rebuild the active executors list.
+                boolean changed = false; // 缩容后需重建活跃列表
                 if (!consistentlyIdleChildren.isEmpty() && currentActive > minChildren) {
-                    // Scale down, we have children that have been idle for multiple cycles.
+                    // 缩容：存在连续 idle 且无注册 channel 的子线程
 
                     int threadsToRemove = Math.min(consistentlyIdleChildren.size(), maxRampDownStep);
                     threadsToRemove = Math.min(threadsToRemove, currentActive - minChildren);
@@ -377,7 +394,7 @@ public final class AutoScalingEventExecutorChooserFactory implements EventExecut
                     for (int i = 0; i < threadsToRemove; i++) {
                         SingleThreadEventExecutor childToSuspend = consistentlyIdleChildren.get(i);
                         if (childToSuspend.trySuspend()) {
-                            // Reset cycles upon suspension so it doesn't get immediately re-suspended on wake-up.
+                            // 挂起后重置周期计数，避免唤醒后立即再挂
                             childToSuspend.resetBusyCycles();
                             childToSuspend.resetIdleCycles();
                             changed = true;
@@ -385,7 +402,7 @@ public final class AutoScalingEventExecutorChooserFactory implements EventExecut
                     }
                 }
 
-                // If a scale-down occurred, or if the actual state differs from our view, rebuild.
+                // 缩容或状态不一致时重建活跃执行器快照
                 if (changed || currentActive != currentState.activeExecutors.length) {
                     rebuildActiveExecutors();
                 }
@@ -393,6 +410,8 @@ public final class AutoScalingEventExecutorChooserFactory implements EventExecut
 
             /**
              * Atomically updates the state by creating a new snapshot with the current set of active executors.
+             *
+             * <p>扫描未挂起的执行器，CAS 替换 {@link AutoScalingState}。</p>
              */
             private void rebuildActiveExecutors() {
                 for (;;) {
@@ -405,9 +424,9 @@ public final class AutoScalingEventExecutorChooserFactory implements EventExecut
                     }
                     EventExecutor[] newActiveExecutors = active.toArray(new EventExecutor[0]);
 
-                    // If the number of active executors in our scan differs from the count in the state,
+                    // 扫描得到的活跃数可能与快照不一致（并发修改）
                     // another thread likely changed it. We use the count from our fresh scan.
-                    // The nextWakeUpIndex is preserved from the old state as this rebuild is not a scale-up action.
+                    // 重建非扩容操作，保留 nextWakeUpIndex
                     AutoScalingState newState = new AutoScalingState(
                             newActiveExecutors.length, oldState.nextWakeUpIndex, newActiveExecutors);
 

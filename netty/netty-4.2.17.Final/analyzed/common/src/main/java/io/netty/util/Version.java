@@ -36,14 +36,23 @@ import java.util.TreeMap;
  * generated in build time.  Note that it may not be possible to retrieve the information completely, depending on
  * your environment, such as the specified {@link ClassLoader}, the current {@link SecurityManager}.
  * </p>
+ *
+ * <p>从 classpath 中 {@code META-INF/io.netty.versions.properties} 读取各 Netty 构件的版本、
+ * 构建时间、Git 提交等信息；构建时生成，运行时依赖 {@link ClassLoader} 可见性。</p>
  */
 public final class Version {
 
+    /** 属性后缀：版本号。 */
     private static final String PROP_VERSION = ".version";
+    /** 属性后缀：构建日期。 */
     private static final String PROP_BUILD_DATE = ".buildDate";
+    /** 属性后缀：提交日期。 */
     private static final String PROP_COMMIT_DATE = ".commitDate";
+    /** 属性后缀：短 commit hash。 */
     private static final String PROP_SHORT_COMMIT_HASH = ".shortCommitHash";
+    /** 属性后缀：长 commit hash。 */
     private static final String PROP_LONG_COMMIT_HASH = ".longCommitHash";
+    /** 属性后缀：仓库状态（如 clean/dirty）。 */
     private static final String PROP_REPO_STATUS = ".repoStatus";
 
     /**
@@ -51,6 +60,8 @@ public final class Version {
      * {@linkplain Thread#getContextClassLoader() context class loader}.
      *
      * @return A {@link Map} whose keys are Maven artifact IDs and whose values are {@link Version}s
+     *
+     * <p>使用当前线程上下文类加载器扫描 classpath 上所有 Netty 构件版本。</p>
      */
     public static Map<String, Version> identify() {
         return identify(null);
@@ -60,6 +71,8 @@ public final class Version {
      * Retrieves the version information of Netty artifacts using the specified {@link ClassLoader}.
      *
      * @return A {@link Map} whose keys are Maven artifact IDs and whose values are {@link Version}s
+     *
+     * <p>指定 {@link ClassLoader} 加载版本属性；{@code null} 时使用 Netty 默认上下文类加载器。</p>
      */
     public static Map<String, Version> identify(ClassLoader classLoader) {
         if (classLoader == null) {
@@ -67,6 +80,7 @@ public final class Version {
         }
 
         // Collect all properties.
+        // 合并 classpath 上所有 io.netty.versions.properties 条目
         Properties props = new Properties();
         try {
             Enumeration<URL> resources = classLoader.getResources("META-INF/io.netty.versions.properties");
@@ -88,6 +102,7 @@ public final class Version {
         }
 
         // Collect all artifactIds.
+        // 从键名解析 artifactId，并校验必需字段齐全
         Set<String> artifactIds = new HashSet<String>();
         for (Object o: props.keySet()) {
             String k = (String) o;
@@ -129,6 +144,7 @@ public final class Version {
         return versions;
     }
 
+    /** 解析 ISO8601 格式时间戳；失败返回 0。 */
     private static long parseIso8601(String value) {
         try {
             return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z").parse(value).getTime();
@@ -139,6 +155,8 @@ public final class Version {
 
     /**
      * Prints the version information to {@link System#err}.
+     *
+     * <p>命令行入口：向 stderr 打印所有已识别构件的版本字符串。</p>
      */
     public static void main(String[] args) {
         for (Version v: identify().values()) {
@@ -167,30 +185,37 @@ public final class Version {
         this.repositoryStatus = repositoryStatus;
     }
 
+    /** Maven artifactId。 */
     public String artifactId() {
         return artifactId;
     }
 
+    /** 构件版本号。 */
     public String artifactVersion() {
         return artifactVersion;
     }
 
+    /** 构建时间（毫秒）。 */
     public long buildTimeMillis() {
         return buildTimeMillis;
     }
 
+    /** Git 提交时间（毫秒）。 */
     public long commitTimeMillis() {
         return commitTimeMillis;
     }
 
+    /** 短 commit hash。 */
     public String shortCommitHash() {
         return shortCommitHash;
     }
 
+    /** 完整 commit hash。 */
     public String longCommitHash() {
         return longCommitHash;
     }
 
+    /** 仓库状态，如 {@code clean} 或 dirty 描述。 */
     public String repositoryStatus() {
         return repositoryStatus;
     }
