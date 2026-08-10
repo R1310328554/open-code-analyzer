@@ -23,12 +23,15 @@ import org.springframework.context.annotation.ConditionContext;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 
 /**
- * when embeddedStorage==true and nacos.standalone=false
+ * 分布式内嵌存储条件：embeddedStorage 为 true 且非 standalone。
+ *
+ * <p>用于装配集群模式下 Derby 分布式存储相关 Bean。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public class ConditionDistributedEmbedStorage implements Condition {
     
+    /** 内嵌存储开启且运行在非单机模式时匹配。 */
     @Override
     public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
         return DatasourceConfiguration.isEmbeddedStorage() && !EnvUtil.getStandaloneMode();

@@ -22,12 +22,15 @@ import org.springframework.context.annotation.ConditionContext;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 
 /**
- * Judge whether to user ExternalStorage by condition.
+ * 判断是否使用外置存储的 Spring {@link Condition}。
+ *
+ * <p>与 {@link ConditionOnEmbeddedStorage} 互斥，即未启用内嵌存储时匹配。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public class ConditionOnExternalStorage implements Condition {
     
+    /** 未启用内嵌存储（走外置 DB）时条件成立。 */
     @Override
     public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
         return !DatasourceConfiguration.isEmbeddedStorage();

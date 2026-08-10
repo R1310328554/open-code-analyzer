@@ -39,9 +39,9 @@ import java.io.IOException;
 import java.util.Optional;
 
 /**
- * <p>
- * collect client attributes for 1.x.
- * </p>
+ * 1.x 客户端属性采集过滤器。
+ *
+ * <p>在实例注册与心跳请求中收集版本、应用名、客户端 IP 等属性，写入 {@link RequestContextHolder} 或更新 {@link IpPortBasedClient}。</p>
  *
  * @author hujun
  */
@@ -58,6 +58,7 @@ public class ClientAttributesFilter implements Filter {
     @Autowired
     private ClientManager clientManager;
     
+    /** 从请求扩展上下文读取当前客户端属性。 */
     public static Optional<ClientAttributes> getCurrentClientAttributes() {
         Object clientAttributes = RequestContextHolder.getContext()
             .getExtensionContext(ClientAttributes.class.getSimpleName());
@@ -76,12 +77,12 @@ public class ClientAttributesFilter implements Filter {
         String method = request.getMethod();
         try {
             if (isRegisterInstanceUri(uri, method)) {
-                //register
+                // 注册实例：将客户端属性放入请求扩展上下文
                 ClientAttributes attributes = getClientAttributes();
                 RequestContextHolder.getContext()
                     .addExtensionContext(ClientAttributes.class.getSimpleName(), attributes);
             } else if (isBeatUri(uri, method)) {
-                //beat
+                // 心跳：若客户端尚未记录版本等属性则补写
                 String ip = WebUtils.optional(request, IP, StringUtils.EMPTY);
                 int port = Integer.parseInt(WebUtils.optional(request, PORT, ZERO));
                 String clientId = IpPortBasedClient
@@ -89,7 +90,7 @@ public class ClientAttributesFilter implements Filter {
                 IpPortBasedClient client = (IpPortBasedClient) clientManager.getClient(clientId);
                 if (client != null) {
                     ClientAttributes requestClientAttributes = getClientAttributes();
-                    //update clientAttributes,when client version attributes is null,then update.
+                    // 仅当本地客户端缺少版本属性时才用本次请求属性更新
                     if (canUpdateClientAttributes(client, requestClientAttributes)) {
                         client.setAttributes(requestClientAttributes);
                     }
@@ -105,6 +106,7 @@ public class ClientAttributesFilter implements Filter {
         }
     }
     
+    /** 判断是否为 v1/v2 实例心跳 PUT 接口。 */
     private boolean isBeatUri(String uri, String httpMethod) {
         return ((UtilsAndCommons.NACOS_SERVER_CONTEXT + UtilsAndCommons.NACOS_NAMING_CONTEXT
             + UtilsAndCommons.NACOS_NAMING_INSTANCE_CONTEXT + BEAT_URI).equals(uri)
@@ -114,6 +116,7 @@ public class ClientAttributesFilter implements Filter {
             && HttpMethod.PUT.equals(httpMethod);
     }
     
+    /** 判断是否为 v1/v2 实例注册 POST 接口。 */
     private boolean isRegisterInstanceUri(String uri, String httpMethod) {
         return ((UtilsAndCommons.NACOS_SERVER_CONTEXT + UtilsAndCommons.NACOS_NAMING_CONTEXT
             + UtilsAndCommons.NACOS_NAMING_INSTANCE_CONTEXT).equals(uri)
@@ -123,6 +126,7 @@ public class ClientAttributesFilter implements Filter {
             && HttpMethod.POST.equals(httpMethod);
     }
     
+    /** 请求带版本且客户端尚未持久化版本时才允许更新属性。 */
     private boolean canUpdateClientAttributes(IpPortBasedClient client,
         ClientAttributes requestClientAttributes) {
         if (requestClientAttributes
@@ -137,6 +141,7 @@ public class ClientAttributesFilter implements Filter {
         return true;
     }
     
+    /** 从 BasicContext 组装 User-Agent、App、源 IP 等客户端属性。 */
     private ClientAttributes getClientAttributes() {
         String version = RequestContextHolder.getContext().getBasicContext().getUserAgent();
         String app = RequestContextHolder.getContext().getBasicContext().getApp();

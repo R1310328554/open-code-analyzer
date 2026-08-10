@@ -24,7 +24,9 @@ import com.alibaba.nacos.core.utils.ReuseHttpServletRequest;
 import com.alibaba.nacos.naming.healthcheck.RsInfo;
 
 /**
- * Distro IP and port tag generator.
+ * 基于实例 IP:Port 的 Distro 责任标签生成器。
+ *
+ * <p>从请求参数 ip/port 或旧版 beat JSON 解析 {@link RsInfo}，生成 {@code ip:port} 形式的分区键。</p>
  *
  * @author xiweng.yy
  */
@@ -36,12 +38,13 @@ public class DistroIpPortTagGenerator implements DistroTagGenerator {
     
     private static final String PARAMETER_PORT = "port";
     
+    /** 解析请求参数并返回 ip:port 责任标签，缺省端口为 0。 */
     @Override
     public String getResponsibleTag(ReuseHttpServletRequest request) {
         String ip = request.getParameter(PARAMETER_IP);
         String port = request.getParameter(PARAMETER_PORT);
         if (StringUtils.isBlank(ip)) {
-            // some old version clients using beat parameter
+            // 兼容旧客户端：ip 为空时从 beat 参数 JSON 解析 IP 与端口
             String beatStr = request.getParameter(PARAMETER_BEAT);
             if (StringUtils.isNotBlank(beatStr)) {
                 try {

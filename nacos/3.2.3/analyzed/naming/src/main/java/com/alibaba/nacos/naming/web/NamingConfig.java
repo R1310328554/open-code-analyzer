@@ -25,7 +25,9 @@ import org.springframework.context.annotation.Configuration;
 import javax.annotation.PostConstruct;
 
 /**
- * Naming spring configuration.
+ * 命名模块 Web 层 Spring 配置。
+ *
+ * <p>注册 Distro、服务名校验、流量修订与客户端属性等 Servlet Filter，并预热 {@link ControllerMethodsCache}。</p>
  *
  * @author nkorange
  */
@@ -53,11 +55,13 @@ public class NamingConfig {
         this.methodsCache = methodsCache;
     }
     
+    /** 启动时扫描 naming controllers 包，缓存方法元数据供 DistroFilter 使用。 */
     @PostConstruct
     public void init() {
         methodsCache.initClassMethod("com.alibaba.nacos.naming.controllers");
     }
     
+    /** 注册 Distro 过滤器，匹配 v1/v3 命名 API，顺序 7。 */
     @Bean
     public FilterRegistrationBean<DistroFilter> distroFilterRegistration() {
         FilterRegistrationBean<DistroFilter> registration = new FilterRegistrationBean<>();
@@ -68,6 +72,7 @@ public class NamingConfig {
         return registration;
     }
     
+    /** 注册服务名兼容过滤器，顺序 5。 */
     @Bean
     public FilterRegistrationBean<ServiceNameFilter> serviceNameFilterRegistration() {
         FilterRegistrationBean<ServiceNameFilter> registration = new FilterRegistrationBean<>();
@@ -78,6 +83,7 @@ public class NamingConfig {
         return registration;
     }
     
+    /** 注册流量修订过滤器（限流与读写状态），顺序 1。 */
     @Bean
     public FilterRegistrationBean<TrafficReviseFilter> trafficReviseFilterRegistration() {
         FilterRegistrationBean<TrafficReviseFilter> registration = new FilterRegistrationBean<>();
@@ -88,6 +94,7 @@ public class NamingConfig {
         return registration;
     }
     
+    /** 注册客户端属性采集过滤器，匹配 v1/v2，顺序 8。 */
     @Bean
     public FilterRegistrationBean<ClientAttributesFilter> clientAttributesFilterRegistration() {
         FilterRegistrationBean<ClientAttributesFilter> registration =

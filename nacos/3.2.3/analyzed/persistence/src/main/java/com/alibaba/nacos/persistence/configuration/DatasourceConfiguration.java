@@ -23,21 +23,19 @@ import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 
 /**
- * Configuration about datasource.
+ * 持久化数据源配置初始化器。
+ *
+ * <p>在 Spring 上下文启动前根据 platform 与 standalone 模式决定使用外置 DB 还是内嵌存储，并设置 {@link #useExternalDb} 与 {@link #embeddedStorage} 静态标志。</p>
  *
  * @author xiweng.yy
  */
 public class DatasourceConfiguration
     implements ApplicationContextInitializer<ConfigurableApplicationContext> {
     
-    /**
-     * Standalone mode uses DB.
-     */
+    /** 是否使用外置数据库（集群模式默认为 true）。 */
     public static boolean useExternalDb = false;
     
-    /**
-     * Inline storage value = ${nacos.standalone}.
-     */
+    /** 是否启用内嵌存储，初始值取自 standalone 配置。 */
     public static boolean embeddedStorage = EnvUtil.getStandaloneMode();
     
     public static boolean isUseExternalDb() {
@@ -57,7 +55,7 @@ public class DatasourceConfiguration
     }
     
     private void loadDatasourceConfiguration() {
-        // External data sources are used by default in cluster mode
+        // 集群模式默认走外置数据源；platform 非空且非 derby 即视为外置
         String platform = DatasourcePlatformUtil.getDatasourcePlatform("");
         boolean useExternalStorage =
             !PersistenceConstant.EMPTY_DATASOURCE_PLATFORM.equalsIgnoreCase(platform)
@@ -65,8 +63,8 @@ public class DatasourceConfiguration
                     .equalsIgnoreCase(platform);
         setUseExternalDb(useExternalStorage);
         
-        // must initialize after setUseExternalDb
-        // This value is true in stand-alone mode and false in cluster mode
+        // 须在 setUseExternalDb 之后设置 embeddedStorage
+        // 单机通常为 true，集群为 false；集群强制 true 则开启分布式内嵌引擎
         // If this value is set to true in cluster mode, nacos's distributed storage engine is turned on
         // default value is depend on ${nacos.standalone}
         
@@ -77,7 +75,7 @@ public class DatasourceConfiguration
                 isEmbeddedStorage() || Boolean.getBoolean(PersistenceConstant.EMBEDDED_STORAGE);
             setEmbeddedStorage(embeddedStorage);
             
-            // If the embedded data source storage is not turned on, it is automatically
+            // 未开启内嵌存储时自动升级到外置 DB，与历史行为一致
             // upgraded to the external data source storage, as before
             if (!embeddedStorage) {
                 setUseExternalDb(true);
@@ -85,6 +83,7 @@ public class DatasourceConfiguration
         }
     }
     
+    /** ApplicationContextInitializer 入口：加载并固化数据源类型配置。 */
     @Override
     public void initialize(final ConfigurableApplicationContext applicationContext) {
         loadDatasourceConfiguration();

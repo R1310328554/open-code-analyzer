@@ -19,14 +19,16 @@ package com.alibaba.nacos.naming.web;
 import com.alibaba.nacos.core.utils.ReuseHttpServletRequest;
 
 /**
- * Distro tag generator.
+ * Distro 责任标签生成器接口。
+ *
+ * <p>由 {@link DistroFilter} 调用，根据 HTTP 请求内容计算一致性哈希分区键。</p>
  *
  * @author xiweng.yy
  */
 public interface DistroTagGenerator {
     
     /**
-     * Get responsible tag from http request.
+     * 从 HTTP 请求提取 Distro 责任标签。
      *
      * @param request http request.
      * @return responsible tag for distro.

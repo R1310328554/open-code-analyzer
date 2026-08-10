@@ -44,7 +44,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Service util.
+ * 命名服务工具类。
+ *
+ * <p>提供服务详情转换、服务名分页、实例筛选及健康保护阈值逻辑，供订阅推送与 OpenAPI 查询复用。</p>
  *
  * @author xiweng.yy
  */
@@ -53,7 +55,9 @@ public final class ServiceUtil {
     private static final int DEFAULT_PORT = 80;
     
     /**
-     * TODO removed after console controller and console-ui support use ServiceDetailInfo directly.
+     * 将 {@link ServiceDetailInfo} 转为旧版控制台 JSON 结构。
+     *
+     * <p>TODO：控制台全面迁移后可删除。</p>
      *
      * @param serviceDetailInfo serviceDetailInfo
      * @return old console ui custom result
@@ -92,7 +96,7 @@ public final class ServiceUtil {
     }
     
     /**
-     * Page service name.
+     * 对服务名集合分页并去掉 group@@ 前缀。
      *
      * @param pageNo         page number
      * @param pageSize       size per page
@@ -124,12 +128,7 @@ public final class ServiceUtil {
         return result.subList(start, end);
     }
     
-    /**
-     * Select healthy instance of service info.
-     *
-     * @param serviceInfo original service info
-     * @return new service info
-     */
+    /** 仅保留健康实例，返回新的 {@link ServiceInfo} 副本。 */
     public static ServiceInfo selectHealthyInstances(ServiceInfo serviceInfo) {
         return selectInstances(serviceInfo, true, false);
     }
@@ -139,7 +138,9 @@ public final class ServiceUtil {
      *
      * @param serviceInfo original service info
      * @return new service info
+      * <p>Nacos 命名 utils/web 与 persistence 配置：请求工具、Distro 过滤器、服务名/流量修订及数据源条件装配；详见上方类说明。</p>
      */
+    /** 仅保留 enabled 实例。 */
     public static ServiceInfo selectEnabledInstances(ServiceInfo serviceInfo) {
         return selectInstances(serviceInfo, false, true);
     }
@@ -150,7 +151,9 @@ public final class ServiceUtil {
      * @param serviceInfo original service info
      * @param cluster     cluster of instances
      * @return new service info
+      * <p>Nacos 命名 utils/web 与 persistence 配置：请求工具、Distro 过滤器、服务名/流量修订及数据源条件装配；详见上方类说明。</p>
      */
+    /** 按集群名筛选实例。 */
     public static ServiceInfo selectInstances(ServiceInfo serviceInfo, String cluster) {
         return selectInstances(serviceInfo, cluster, false, false);
     }
@@ -162,6 +165,7 @@ public final class ServiceUtil {
      * @param healthyOnly whether only select instance which healthy
      * @param enableOnly  whether only select instance which enabled
      * @return new service info
+      * <p>Nacos 命名 utils/web 与 persistence 配置：请求工具、Distro 过滤器、服务名/流量修订及数据源条件装配；详见上方类说明。</p>
      */
     public static ServiceInfo selectInstances(ServiceInfo serviceInfo, boolean healthyOnly,
         boolean enableOnly) {
@@ -175,6 +179,7 @@ public final class ServiceUtil {
      * @param cluster     cluster of instances
      * @param healthyOnly whether only select instance which healthy
      * @return new service info
+      * <p>Nacos 命名 utils/web 与 persistence 配置：请求工具、Distro 过滤器、服务名/流量修订及数据源条件装配；详见上方类说明。</p>
      */
     public static ServiceInfo selectInstances(ServiceInfo serviceInfo, String cluster,
         boolean healthyOnly) {
@@ -189,6 +194,7 @@ public final class ServiceUtil {
      * @param healthyOnly whether only select instance which healthy
      * @param enableOnly  whether only select instance which enabled
      * @return new service info
+      * <p>Nacos 命名 utils/web 与 persistence 配置：请求工具、Distro 过滤器、服务名/流量修订及数据源条件装配；详见上方类说明。</p>
      */
     public static ServiceInfo selectInstances(ServiceInfo serviceInfo, String cluster,
         boolean healthyOnly,
@@ -203,6 +209,7 @@ public final class ServiceUtil {
      * @param serviceMetadata service meta info
      * @param subscriber subscriber
      * @return new service info
+      * <p>Nacos 命名 utils/web 与 persistence 配置：请求工具、Distro 过滤器、服务名/流量修订及数据源条件装配；详见上方类说明。</p>
      */
     public static ServiceInfo selectInstancesWithHealthyProtection(ServiceInfo serviceInfo,
         ServiceMetadata serviceMetadata, Subscriber subscriber) {
@@ -219,6 +226,7 @@ public final class ServiceUtil {
      * @param enableOnly      whether only select instance which enabled
      * @param subscriber subscriber
      * @return new service info
+      * <p>Nacos 命名 utils/web 与 persistence 配置：请求工具、Distro 过滤器、服务名/流量修订及数据源条件装配；详见上方类说明。</p>
      */
     public static ServiceInfo selectInstancesWithHealthyProtection(ServiceInfo serviceInfo,
         ServiceMetadata serviceMetadata, boolean healthyOnly, boolean enableOnly,
@@ -238,6 +246,7 @@ public final class ServiceUtil {
      * @param enableOnly      whether only select instance which enabled
      * @param subscriberIp subscriber ip address
      * @return new service info
+      * <p>Nacos 命名 utils/web 与 persistence 配置：请求工具、Distro 过滤器、服务名/流量修订及数据源条件装配；详见上方类说明。</p>
      */
     public static ServiceInfo selectInstancesWithHealthyProtection(ServiceInfo serviceInfo,
         ServiceMetadata serviceMetadata, String cluster,
@@ -248,13 +257,13 @@ public final class ServiceUtil {
             }
             allInstances = filteredResult.getHosts();
             int originalTotal = allInstances.size();
-            // filter ips using selector
+            // 使用 Selector 按订阅者 IP 进一步过滤实例列表
             SelectorManager selectorManager = ApplicationUtils.getBean(SelectorManager.class);
             allInstances =
                 selectorManager.select(serviceMetadata.getSelector(), subscriberIp, allInstances);
             filteredResult.setHosts(allInstances);
             
-            // will re-compute healthCount
+            // 过滤后若实例数变化，需重新统计健康实例数
             long newHealthyCount = healthyCount;
             if (originalTotal != allInstances.size()) {
                 newHealthyCount = 0L;
@@ -278,7 +287,7 @@ public final class ServiceUtil {
                         .map(i -> {
                             if (!i.isHealthy()) {
                                 i = InstanceUtil.deepCopy(i);
-                                // set all to `healthy` state to protect
+                                // 健康保护：将不健康实例标记为 healthy 避免全部被摘除
                                 i.setHealthy(true);
                             } // else deepcopy is unnecessary
                             return i;
@@ -299,6 +308,7 @@ public final class ServiceUtil {
      * @param enableOnly  whether only select instance which enabled
      * @param filter      do some other filter operation
      * @return new service info
+      * <p>Nacos 命名 utils/web 与 persistence 配置：请求工具、Distro 过滤器、服务名/流量修订及数据源条件装配；详见上方类说明。</p>
      */
     private static ServiceInfo doSelectInstances(ServiceInfo serviceInfo, String cluster,
         boolean healthyOnly, boolean enableOnly,
@@ -314,9 +324,9 @@ public final class ServiceUtil {
             com.alibaba.nacos.common.utils.StringUtils.isNotBlank(cluster) ? new HashSet<>(
                 Arrays.asList(cluster.split(","))) : new HashSet<>();
         long healthyCount = 0L;
-        // The instance list won't be modified almost time.
+        // 返回副本中的 hosts 列表，通常不修改原始 ServiceInfo
         List<com.alibaba.nacos.api.naming.pojo.Instance> filteredInstances = new LinkedList<>();
-        // The instance list of all filtered by cluster/enabled condition.
+        // 记录经 cluster/enabled 过滤后的全部实例，供健康保护计算比例
         List<com.alibaba.nacos.api.naming.pojo.Instance> allInstances = new LinkedList<>();
         for (com.alibaba.nacos.api.naming.pojo.Instance ip : serviceInfo.getHosts()) {
             if (checkCluster(clusterSets, ip) && checkEnabled(enableOnly, ip)) {
@@ -352,7 +362,7 @@ public final class ServiceUtil {
     private interface InstancesFilter {
         
         /**
-         * Do customized filtering.
+         * 自定义实例过滤回调（如 Selector 与健康保护）。
          *
          * @param filteredResult result with instances already been filtered cluster/enabled/healthy
          * @param allInstances   all instances filtered by cluster/enabled

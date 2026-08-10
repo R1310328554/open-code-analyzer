@@ -37,7 +37,9 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Filter incoming traffic to refuse or revise unexpected requests.
+ * 入站流量修订过滤器。
+ *
+ * <p>按 {@link SwitchDomain} 限流 URL、{@link ServerStatusManager} 节点状态（UP/READ_ONLY/WRITE_ONLY）决定放行或返回 503。</p>
  *
  * @author nkorange
  * @since 1.0.0
@@ -57,7 +59,7 @@ public class TrafficReviseFilter implements Filter {
         HttpServletRequest req = (HttpServletRequest) request;
         HttpServletResponse resp = (HttpServletResponse) response;
         
-        // request limit if exist:
+        // 若配置了 URL 前缀限流，直接返回指定 HTTP 状态码
         String urlString = req.getRequestURI() + "?" + req.getQueryString();
         Map<String, Integer> limitedUrlMap = switchDomain.getLimitedUrlMap();
         
@@ -71,13 +73,13 @@ public class TrafficReviseFilter implements Filter {
             }
         }
         
-        // if server is UP:
+        // 节点 UP 时全部放行
         if (serverStatusManager.getServerStatus() == ServerStatus.UP) {
             filterChain.doFilter(req, resp);
             return;
         }
         
-        // requests from peer server should be let pass:
+        // 来自集群对等节点的请求始终放行
         String agent = WebUtils.getUserAgent(req);
         
         if (StringUtils.startsWith(agent, Constants.NACOS_SERVER_HEADER)) {
@@ -85,14 +87,14 @@ public class TrafficReviseFilter implements Filter {
             return;
         }
         
-        // write operation should be let pass in WRITE_ONLY status:
+        // WRITE_ONLY 状态下允许非 GET 写操作
         if (serverStatusManager.getServerStatus() == ServerStatus.WRITE_ONLY && !HttpMethod.GET
             .equals(req.getMethod())) {
             filterChain.doFilter(req, resp);
             return;
         }
         
-        // read operation should be let pass in READ_ONLY status:
+        // READ_ONLY 状态下允许 GET 读操作
         if (serverStatusManager.getServerStatus() == ServerStatus.READ_ONLY
             && HttpMethod.GET.equals(req.getMethod())) {
             filterChain.doFilter(req, resp);

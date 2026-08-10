@@ -22,12 +22,15 @@ import org.springframework.context.annotation.ConditionContext;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 
 /**
- * Judge whether to user EmbeddedStorage by condition.
+ * 判断是否启用内嵌存储的 Spring {@link Condition}。
+ *
+ * <p>委托 {@link DatasourceConfiguration#isEmbeddedStorage()}。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public class ConditionOnEmbeddedStorage implements Condition {
     
+    /** embeddedStorage 为 true 时条件成立。 */
     @Override
     public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
         return DatasourceConfiguration.isEmbeddedStorage();

@@ -50,7 +50,9 @@ import java.util.Map;
 import static com.alibaba.nacos.common.constant.RequestUrlConstants.HTTP_PREFIX;
 
 /**
- * Distro filter.
+ * Distro 一致性分区 HTTP 过滤器。
+ *
+ * <p>对标注 {@link CanDistro} 的接口按 {@link DistroTagGenerator} 计算责任标签，非本节点负责时将请求代理到 {@link DistroMapper} 映射的目标服务器。</p>
  *
  * @author nacos
  */
@@ -106,12 +108,12 @@ public class DistroFilter implements Filter {
                 return;
             }
             
-            // proxy request to other server if necessary:
+            // 本节点非责任方：将请求代理到集群内负责该 tag 的节点
             String userAgent = req.getHeader(HttpHeaderConsts.USER_AGENT_HEADER);
             
             if (StringUtils.isNotBlank(userAgent)
                 && userAgent.contains(UtilsAndCommons.NACOS_SERVER_HEADER)) {
-                // This request is sent from peer server, should not be redirected again:
+                // 来自对等 Nacos 节点的重定向请求，禁止再次转发以防环路
                 Loggers.SRV_LOG.error("receive invalid redirect request from peer {}",
                     req.getRemoteAddr());
                 resp.sendError(HttpServletResponse.SC_BAD_REQUEST,

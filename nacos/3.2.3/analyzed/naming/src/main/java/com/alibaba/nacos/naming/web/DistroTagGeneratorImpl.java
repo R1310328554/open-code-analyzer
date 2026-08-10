@@ -20,7 +20,9 @@ import com.alibaba.nacos.core.utils.ReuseHttpServletRequest;
 import org.springframework.stereotype.Component;
 
 /**
- * Distro tag generator.
+ * Distro 标签生成器 Spring 默认实现。
+ *
+ * <p>当前集群统一使用 {@link DistroIpPortTagGenerator}；预留按成员版本切换策略的扩展点。</p>
  *
  * @author xiweng.yy
  */
@@ -38,11 +40,9 @@ public class DistroTagGeneratorImpl implements DistroTagGenerator {
     }
     
     /**
-     * Get tag generator according to cluster member ability.
+     * 按集群成员能力选择具体标签生成策略。
      *
-     * <p>
-     * If all member is upper than 2.x. Using {@link DistroIpPortTagGenerator}.
-     * </p>
+     * <p>成员均为 2.x 及以上时使用 {@link DistroIpPortTagGenerator}。</p>
      *
      * @return actual tag generator
      */

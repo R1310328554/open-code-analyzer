@@ -33,10 +33,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 /**
- * Service name filter. This class is created for adapting 1.x. client and old openAPI.
+ * 服务名兼容过滤器，适配 1.x 客户端与旧 OpenAPI。
  * <p>
- * Because the old version will auto combined group and serviceName in old {@link DistroFilter}. So client and openAPI
- * can ignore group name.
+ * 旧版 {@link DistroFilter} 会自动拼接 group 与服务名；本过滤器将 {@code groupName@@serviceName} 写回请求参数并校验格式。
  * </p>
  *
  * @author xiweng.yy
@@ -60,7 +59,7 @@ public class ServiceNameFilter implements Filter {
                 groupName = Constants.DEFAULT_GROUP;
             }
             
-            // use groupName@@serviceName as new service name:
+            // 将 group 与服务名合并为 groupName@@serviceName 标准格式
             String groupedServiceName = serviceName;
             if (StringUtils.isNotBlank(serviceName)
                 && !serviceName.contains(Constants.SERVICE_INFO_SPLITER)) {

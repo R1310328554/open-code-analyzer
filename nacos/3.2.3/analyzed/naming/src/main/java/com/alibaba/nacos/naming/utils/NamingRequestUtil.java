@@ -28,14 +28,18 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 
 /**
- * Naming request util.
+ * 命名服务请求工具类。
+ *
+ * <p>从 {@link RequestContextHolder} 或 HTTP/gRPC 请求中提取客户端源 IP，并校验实例注册权重是否在合法区间内。</p>
  *
  * @author xiweng.yy
  */
 public class NamingRequestUtil {
     
     /**
-     * Get source ip from request context.
+     * 从请求上下文中获取客户端源 IP。
+     *
+     * <p>优先取 {@link AddressContext#getSourceIp()}，为空时回退到 remoteIp。</p>
      *
      * @return source ip, null if not found
      */
@@ -50,14 +54,16 @@ public class NamingRequestUtil {
     }
     
     /**
-     * Get source ip from request context first, if it can't found, get from http request.
+     * 获取 HTTP 请求的客户端源 IP。
+     *
+     * <p>上下文无 IP 时通过 {@link WebUtils#getRemoteIp} 从 Servlet 请求解析。</p>
      *
      * @param httpServletRequest http request
      * @return source ip, null if not found
      */
     public static String getSourceIpForHttpRequest(HttpServletRequest httpServletRequest) {
         String sourceIp = getSourceIp();
-        // If can't get from request context, get from http request.
+        // 上下文未携带 IP 时，从 HTTP 请求头/连接信息解析。
         if (StringUtils.isBlank(sourceIp)) {
             sourceIp = WebUtils.getRemoteIp(httpServletRequest);
         }
@@ -65,14 +71,16 @@ public class NamingRequestUtil {
     }
     
     /**
-     * Get source ip from request context first, if it can't found, get from http request.
+     * 获取 gRPC 请求的客户端源 IP。
+     *
+     * <p>上下文无 IP 时使用 {@link RequestMeta#getClientIp()}。</p>
      *
      * @param meta grpc request meta
      * @return source ip, null if not found
      */
     public static String getSourceIpForGrpcRequest(RequestMeta meta) {
         String sourceIp = getSourceIp();
-        // If can't get from request context, get from grpc request meta.
+        // 上下文未携带 IP 时，从 gRPC RequestMeta 读取 clientIp。
         if (StringUtils.isBlank(sourceIp)) {
             sourceIp = meta.getClientIp();
         }
@@ -80,7 +88,9 @@ public class NamingRequestUtil {
     }
     
     /**
-     * Check request weight is validate.
+     * 校验实例权重是否在允许范围内。
+     *
+     * <p>超出 {@link com.alibaba.nacos.naming.constants.Constants} 定义的最小/最大权重时抛出 {@link NacosApiException}。</p>
      *
      * @param weight weight from request
      * @throws NacosException if weight is invalid

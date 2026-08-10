@@ -20,7 +20,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Annotation to determine if method should be redirected.
+ * 标记 Controller 方法是否参与 Distro 分区路由。
+ *
+ * <p>标注后由 {@link DistroFilter} 判断本节点是否负责该请求，否则代理到负责节点。</p>
  *
  * @author nkorange
  * @since 1.0.0
