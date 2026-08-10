@@ -1,5 +1,8 @@
 package generationnumber
 
+// GenNumberLoader 周期性刷新并缓存各租户结果缓存世代号：
+// querier 合并多租户查询时取最大世代号以协调缓存失效。
+
 import (
 	"context"
 	"fmt"
@@ -15,6 +18,7 @@ import (
 
 const reloadDuration = 5 * time.Minute
 
+// CacheGenClient 抽象从 compactor 获取租户缓存世代号的客户端接口。
 type CacheGenClient interface {
 	GetCacheGenerationNumber(ctx context.Context, userID string) (string, error)
 	Name() string
@@ -29,6 +33,7 @@ type GenNumberLoader struct {
 	metrics      *genLoaderMetrics
 }
 
+// NewGenNumberLoader 启动 reload 循环，nil 客户端时使用 noopNumberGetter。
 func NewGenNumberLoader(g CacheGenClient, registerer prometheus.Registerer) *GenNumberLoader {
 	if g == nil {
 		g = &noopNumberGetter{}
@@ -95,6 +100,7 @@ func (l *GenNumberLoader) getUpdatedGenNumbers() (map[string]string, error) {
 	return updatedGenNumbers, nil
 }
 
+// GetResultsCacheGenNumber 返回多租户中最大的缓存世代号字符串。
 func (l *GenNumberLoader) GetResultsCacheGenNumber(tenantIDs []string) string {
 	return l.getCacheGenNumbersPerTenants(tenantIDs)
 }
@@ -145,6 +151,7 @@ func (l *GenNumberLoader) getCacheGenNumber(userID string) string {
 	return genNumber
 }
 
+// Stop 停止 reload 循环并关闭底层 CacheGenClient。
 func (l *GenNumberLoader) Stop() {
 	close(l.quit)
 	l.numberGetter.Stop()

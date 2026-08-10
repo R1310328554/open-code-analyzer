@@ -1,5 +1,8 @@
 package deletion
 
+// JobRunner 执行 DeletionJob：并发读取 chunk、应用 LogQL 行过滤器、
+// 重建 chunk 上传对象存储，返回 StorageUpdates 供 JobBuilder 汇总。
+
 import (
 	"context"
 	"fmt"
@@ -26,6 +29,7 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// GetChunkClientForTableFunc 按表名返回 chunk 对象存储客户端。
 type GetChunkClientForTableFunc func(table string) (client.Client, error)
 
 type Chunk interface {
@@ -37,6 +41,7 @@ type Chunk interface {
 	GetEntriesCount() uint32
 }
 
+// JobRunner 配置 chunk 处理并发度、表级客户端工厂与运行指标。
 type JobRunner struct {
 	chunkProcessingConcurrency int
 	getChunkClientForTableFunc GetChunkClientForTableFunc
@@ -51,6 +56,7 @@ func NewJobRunner(chunkProcessingConcurrency int, getStorageClientForTableFunc G
 	}
 }
 
+// Run 反序列化 DeletionJob，并发处理每个 chunk 并返回序列化的 StorageUpdates。
 func (jr *JobRunner) Run(ctx context.Context, job *grpc.Job) ([]byte, error) {
 	var deletionJob deletionproto.DeletionJob
 	var updates = deletionproto.StorageUpdates{

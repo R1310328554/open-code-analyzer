@@ -1,5 +1,8 @@
 package deletionmode
 
+// deletionmode 定义租户删除模式枚举：
+// disabled 禁用、filter-only 仅查询过滤、filter-and-delete 过滤并物理删除。
+
 import (
 	"errors"
 	"fmt"
@@ -23,6 +26,7 @@ const (
 	FilterAndDelete
 )
 
+// String 返回模式的配置字符串表示。
 func (m Mode) String() string {
 	switch m {
 	case Disabled:
@@ -39,6 +43,7 @@ func (m Mode) DeleteEnabled() bool {
 	return m == FilterOnly || m == FilterAndDelete
 }
 
+// AllModes 返回所有合法 deletion 模式字符串列表。
 func AllModes() []string {
 	return []string{Disabled.String(), FilterOnly.String(), FilterAndDelete.String()}
 }
@@ -55,6 +60,7 @@ func ParseMode(in string) (Mode, error) {
 	return 0, fmt.Errorf("%w: must be one of %s", ErrUnknownMode, strings.Join(AllModes(), "|"))
 }
 
+// Enabled 解析模式字符串并返回是否启用删除功能。
 func Enabled(in string) (bool, error) {
 	deleteMode, err := ParseMode(in)
 	if err != nil {

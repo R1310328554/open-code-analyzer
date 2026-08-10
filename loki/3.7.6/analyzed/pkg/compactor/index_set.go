@@ -1,5 +1,8 @@
 package compactor
 
+// indexSet 封装单租户或公共索引文件集合：
+// 下载源文件、运行 retention/删除、上传压缩索引并清理源对象。
+
 import (
 	"context"
 	"fmt"
@@ -24,6 +27,7 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// IndexSet 抽象 compactor 对一组索引源文件的操作接口。
 type IndexSet interface {
 	GetTableName() string
 	ListSourceFiles() []storage.IndexFile
@@ -38,6 +42,7 @@ type IndexSet interface {
 	SetCompactedIndex(compactedIndex CompactedIndex, removeSourceFiles bool) error
 }
 
+// CompactedIndex 是压缩后的索引，支持 retention、删除处理与上传。
 // CompactedIndex is built by TableCompactor for IndexSet after compaction.
 // It would be used for:
 // 1. applying custom retention, processing delete requests using IndexProcessor
@@ -54,6 +59,7 @@ type CompactedIndex interface {
 	ToIndexFile() (index.Index, error)
 }
 
+// indexSet 实现 IndexSet，管理 workingDir 中的源文件与 compactedIndex 生命周期。
 // indexSet helps with doing operations on a set of index files belonging to a single user or common index files shared by users.
 type indexSet struct {
 	ctx               context.Context
@@ -69,6 +75,7 @@ type indexSet struct {
 	logger         log.Logger
 }
 
+// newUserIndexSet 为单租户 per-user 索引初始化 indexSet。
 // newUserIndexSet intializes a new index set for user index.
 func newUserIndexSet(ctx context.Context, tableName, userID string, baseUserIndexSet storage.IndexSet, workingDir string, logger log.Logger) (*indexSet, error) {
 	if !baseUserIndexSet.IsUserBasedIndexSet() {
@@ -78,6 +85,7 @@ func newUserIndexSet(ctx context.Context, tableName, userID string, baseUserInde
 	return newIndexSet(ctx, tableName, userID, baseUserIndexSet, workingDir, log.With(logger, "user-id", userID))
 }
 
+// newCommonIndexSet 为多租户共享 common 索引初始化 indexSet。
 // newCommonIndexSet intializes a new index set for common index.
 func newCommonIndexSet(ctx context.Context, tableName string, baseUserIndexSet storage.IndexSet, workingDir string, logger log.Logger) (*indexSet, error) {
 	if baseUserIndexSet.IsUserBasedIndexSet() {
@@ -164,6 +172,7 @@ func (is *indexSet) setCompactedIndex(compactedIndex CompactedIndex, uploadCompa
 	is.removeSourceObjects = removeSourceObjects
 }
 
+// runRetention 调用 TableMarker 标记过期 chunk，决定是否上传或移除源文件。
 // runRetention runs the retention on index set
 func (is *indexSet) runRetention(tableMarker retention.TableMarker) error {
 	if is.compactedIndex == nil {
@@ -195,6 +204,7 @@ func (is *indexSet) chunkExists(lbls labels.Labels, chunkRef logproto.ChunkRef) 
 	return is.compactedIndex.ChunkExists(userIDBytes, lbls, chunkRef)
 }
 
+// applyUpdates 将删除 job 产生的 chunk 重建/去索引变更写入 compactedIndex。
 // applyUpdates applies the given updates to the compacted index. Returns list of chunks which were not indexed due to their missing source chunks.
 func (is *indexSet) applyUpdates(labels labels.Labels, rebuiltChunks map[string]deletion.Chunk, chunksToDeIndex []string) ([]deletion.Chunk, error) {
 	if is.compactedIndex == nil {
@@ -254,6 +264,7 @@ func (is *indexSet) applyUpdates(labels labels.Labels, rebuiltChunks map[string]
 	return chunksNotIndexed, nil
 }
 
+// upload 将 compactedIndex 转为 gzip 索引文件并上传到对象存储。
 // upload uploads the compacted index in compressed format.
 func (is *indexSet) upload() error {
 	if is.compactedIndex == nil {
@@ -337,6 +348,7 @@ func (is *indexSet) upload() error {
 	return is.baseIndexSet.PutFile(is.ctx, is.tableName, is.userID, fmt.Sprintf("%s.gz", fileName), f)
 }
 
+// removeFilesFromStorage 从存储中删除已被 compacted 替代的全部源索引文件。
 // removeFilesFromStorage deletes source objects from storage.
 func (is *indexSet) removeFilesFromStorage() error {
 	level.Info(is.logger).Log("msg", "removing source db files from storage", "count", len(is.sourceObjects))
@@ -351,6 +363,7 @@ func (is *indexSet) removeFilesFromStorage() error {
 	return nil
 }
 
+// done 按标志上传 compacted 索引并/或移除源对象，完成 indexSet 收尾。
 // done takes care of file operations which includes:
 // - upload the compacted db if required.
 // - remove the source objects from storage if required.

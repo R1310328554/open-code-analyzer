@@ -1,5 +1,8 @@
 package deletion
 
+// deletion 包 Prometheus 指标定义：
+// 覆盖删除请求客户端、HTTP 处理器、Manager、JobBuilder 与 JobRunner 各阶段。
+
 import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -35,6 +38,7 @@ func NewDeleteRequestClientMetrics(r prometheus.Registerer) *DeleteRequestClient
 	return &m
 }
 
+// deleteRequestHandlerMetrics 按租户计数 HTTP 删除请求接收量。
 type deleteRequestHandlerMetrics struct {
 	deleteRequestsReceivedTotal *prometheus.CounterVec
 }
@@ -51,6 +55,7 @@ func newDeleteRequestHandlerMetrics(r prometheus.Registerer) *deleteRequestHandl
 	return &m
 }
 
+// deleteRequestsManagerMetrics 跟踪 manifest 构建、chunk 选中与删除处理各阶段。
 type deleteRequestsManagerMetrics struct {
 	deleteRequestsProcessedTotal         *prometheus.CounterVec
 	deleteRequestsChunksSelectedTotal    *prometheus.CounterVec
@@ -117,6 +122,7 @@ func newDeleteRequestsManagerMetrics(r prometheus.Registerer) *deleteRequestsMan
 	return &m
 }
 
+// deletionJobRunnerMetrics 记录 JobRunner 处理的 chunk 数与删除行数。
 type deletionJobRunnerMetrics struct {
 	chunksProcessedTotal prometheus.Counter
 	deletedLinesTotal    *prometheus.CounterVec
@@ -139,6 +145,7 @@ func newDeletionJobRunnerMetrics(r prometheus.Registerer) *deletionJobRunnerMetr
 	return &m
 }
 
+// jobBuilderMetrics 监控 manifest/segment 剩余量、处理失败与存储更新应用计数。
 type jobBuilderMetrics struct {
 	numSegmentsLeftToProcess     prometheus.Gauge
 	numManifestsLeftToProcess    prometheus.Gauge

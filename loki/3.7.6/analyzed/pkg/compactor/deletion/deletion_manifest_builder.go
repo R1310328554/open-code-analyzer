@@ -1,5 +1,8 @@
 package deletion
 
+// deletion_manifest_builder 负责为一批删除请求构建 manifest：
+// 扫描索引序列与 chunk，按删除请求位图分组写入对象存储 segment 文件。
+
 import (
 	"context"
 	"fmt"
@@ -21,6 +24,7 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// ErrNoChunksSelectedForDeletion 表示 manifest 构建阶段未选中任何 chunk。
 var ErrNoChunksSelectedForDeletion = fmt.Errorf("no chunks selected for deletion")
 
 const (
@@ -28,6 +32,7 @@ const (
 	manifestFileName    = "manifest.proto"
 )
 
+// deletionManifestBuilder 将待删 chunk 按请求组合并分段上传，非并发安全。
 // deletionManifestBuilder helps with building the manifest for listing out which chunks to process for a batch of delete requests.
 // It is not meant to be used concurrently.
 type deletionManifestBuilder struct {
@@ -90,6 +95,7 @@ func (d *deletionManifestBuilder) canSkipSeries(userID []byte, lbls labels.Label
 	return true, nil
 }
 
+// AddSeries 将序列及其 chunk 加入当前 segment，用户或表变更时自动 flush。
 // AddSeries adds a series and its chunks to the current segment.
 // It flushes the current segment if the user ID or table name changes.
 // It also ensures that the current segment does not exceed the maximum number of chunks.
@@ -187,6 +193,7 @@ func (d *deletionManifestBuilder) AddSeries(ctx context.Context, tableName strin
 	return nil
 }
 
+// Finish 刷写最后 segment 并上传 manifest.proto 汇总元数据。
 // Finish flushes the current segment and builds the manifest.
 func (d *deletionManifestBuilder) Finish(ctx context.Context) error {
 	if err := d.flushCurrentBatch(ctx); err != nil {
@@ -273,6 +280,7 @@ func (d *deletionManifestBuilder) path() string {
 	return fmt.Sprint(d.creationTime.UnixNano())
 }
 
+// storageHasValidManifest 检查对象存储中是否存在含 manifest.proto 的有效目录。
 func storageHasValidManifest(ctx context.Context, deletionManifestStoreClient client.ObjectClient) (bool, error) {
 	// List all directories in the deletion store
 	_, commonPrefixes, err := deletionManifestStoreClient.List(ctx, "", "/")
@@ -304,6 +312,7 @@ func storageHasValidManifest(ctx context.Context, deletionManifestStoreClient cl
 	return false, nil
 }
 
+// cleanupInvalidManifests 清理缺少 manifest.proto 的无效 manifest 目录。
 func cleanupInvalidManifests(ctx context.Context, deletionManifestStoreClient client.ObjectClient) error {
 	// List all directories in the deletion store
 	_, commonPrefixes, err := deletionManifestStoreClient.List(ctx, "", "/")
@@ -354,6 +363,7 @@ func cleanupInvalidManifests(ctx context.Context, deletionManifestStoreClient cl
 	return firstErr
 }
 
+// objectExists 通过 GetAttributes 判断对象是否存在，规避 GCS 客户端 bug。
 // objectExists checks if an object exists in storage with the given key.
 // We can't use ObjectClient.ObjectExists method due to a bug in the GCS object client implementation of Thanos.
 // (Sandeep): I will fix the bug upstream and remove this once we have the fix merged.

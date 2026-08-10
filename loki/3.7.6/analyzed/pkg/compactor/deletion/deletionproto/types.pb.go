@@ -3,6 +3,9 @@
 
 package deletionproto
 
+// 删除流水线 protobuf 消息定义（protoc-gen-gogo 生成）。
+// 包含 DeleteRequest、DeletionManifest、Segment、DeletionJob 与 StorageUpdates 等 wire 类型。
+
 import (
 	fmt "fmt"
 	_ "github.com/gogo/protobuf/gogoproto"
@@ -27,6 +30,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// DeleteRequest 描述单条删除请求：LogQL 查询、时间范围、状态与租户 ID。
 type DeleteRequest struct {
 	RequestID   string                                  `protobuf:"bytes,1,opt,name=requestID,proto3" json:"request_id"`
 	StartTime   github_com_prometheus_common_model.Time `protobuf:"varint,2,opt,name=startTime,proto3,customtype=github.com/prometheus/common/model.Time" json:"start_time"`
@@ -98,6 +102,7 @@ func (m *DeleteRequest) GetSequenceNum() int64 {
 	return 0
 }
 
+// DeletionManifest 标记 chunk 扫描完成并汇总 segment 数、chunk 数与请求列表。
 // DeletionManifest represents the completion state and summary of chunks which needs processing for a set of delete requests.
 // It serves two purposes:
 // 1. Acts as a marker indicating all chunks for the given delete requests have been found
@@ -173,6 +178,7 @@ func (m *DeletionManifest) GetChunksCount() int32 {
 	return 0
 }
 
+// ChunkIDs 保存同一标签序列下待处理的 chunk 外部键列表。
 type ChunkIDs struct {
 	IDs []string `protobuf:"bytes,1,rep,name=IDs,proto3" json:"IDs,omitempty"`
 }
@@ -216,6 +222,7 @@ func (m *ChunkIDs) GetIDs() []string {
 	return nil
 }
 
+// ChunksGroup 将命中相同删除请求组合的 chunk 按标签分组。
 // ChunksGroup holds a group of chunks selected by the same set of requests
 type ChunksGroup struct {
 	Requests []DeleteRequest     `protobuf:"bytes,1,rep,name=requests,proto3" json:"requests"`
@@ -268,6 +275,7 @@ func (m *ChunksGroup) GetChunks() map[string]ChunkIDs {
 	return nil
 }
 
+// Segment 限制单段 chunk 数量并按用户/表隔离，对应对象存储中的一个 proto 文件。
 // segment holds limited chunks in ChunksGroup.
 // It also helps segregate chunks belonging to different users/tables.
 type Segment struct {
@@ -337,6 +345,7 @@ func (m *Segment) GetChunksCount() int32 {
 	return 0
 }
 
+// DeletionJob 是 JobQueue 下发给 Worker 的单批 chunk 删除任务载荷。
 type DeletionJob struct {
 	TableName      string          `protobuf:"bytes,1,opt,name=tableName,proto3" json:"tableName,omitempty"`
 	UserID         string          `protobuf:"bytes,2,opt,name=userID,proto3" json:"userID,omitempty"`
@@ -404,6 +413,7 @@ func (m *DeletionJob) GetDeleteRequests() []DeleteRequest {
 	return nil
 }
 
+// Chunk 描述重建后 chunk 的指纹、校验和、时间范围与大小元数据。
 type Chunk struct {
 	From        github_com_prometheus_common_model.Time `protobuf:"varint,1,opt,name=from,proto3,customtype=github.com/prometheus/common/model.Time" json:"from"`
 	Through     github_com_prometheus_common_model.Time `protobuf:"varint,2,opt,name=through,proto3,customtype=github.com/prometheus/common/model.Time" json:"through"`
@@ -473,6 +483,7 @@ func (m *Chunk) GetEntries() uint32 {
 	return 0
 }
 
+// StorageUpdates 记录单序列的 chunk 重建与需从索引移除的 chunk ID。
 type StorageUpdates struct {
 	RebuiltChunks   map[string]*Chunk `protobuf:"bytes,1,rep,name=rebuiltChunks,proto3" json:"rebuiltChunks,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	ChunksToDeIndex []string          `protobuf:"bytes,2,rep,name=chunksToDeIndex,proto3" json:"chunksToDeIndex,omitempty"`
@@ -524,6 +535,7 @@ func (m *StorageUpdates) GetChunksToDeIndex() []string {
 	return nil
 }
 
+// StorageUpdatesCollection 聚合单个 Segment 处理完毕后的全部存储更新。
 // StorageUpdatesCollection collects updates to be made to the storage for a single Segment
 type StorageUpdatesCollection struct {
 	TableName      string                    `protobuf:"bytes,1,opt,name=tableName,proto3" json:"tableName,omitempty"`

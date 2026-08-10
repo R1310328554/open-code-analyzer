@@ -25,6 +25,7 @@ import (
 
 const ForQuerytimeFilteringQueryParam = "for_querytime_filtering"
 
+// DeleteRequestHandler 提供删除请求的 HTTP 处理器：增删查与缓存世代号。
 // DeleteRequestHandler provides handlers for delete requests
 type DeleteRequestHandler struct {
 	deleteRequestsStore DeleteRequestsStore
@@ -34,6 +35,7 @@ type DeleteRequestHandler struct {
 	deleteRequestCancelPeriod time.Duration
 }
 
+// NewDeleteRequestHandler 注入存储、最大分片间隔与取消宽限期配置。
 // NewDeleteRequestHandler creates a DeleteRequestHandler
 func NewDeleteRequestHandler(deleteStore DeleteRequestsStore, maxInterval, deleteRequestCancelPeriod time.Duration, registerer prometheus.Registerer) *DeleteRequestHandler {
 	deleteMgr := DeleteRequestHandler{
@@ -46,6 +48,7 @@ func NewDeleteRequestHandler(deleteStore DeleteRequestsStore, maxInterval, delet
 	return &deleteMgr
 }
 
+// AddDeleteRequestHandler 解析 LogQL 与时间范围，含行过滤器时分片写入存储。
 // AddDeleteRequestHandler handles addition of a new delete request
 func (dm *DeleteRequestHandler) AddDeleteRequestHandler(w http.ResponseWriter, r *http.Request) {
 	if dm == nil {
@@ -131,6 +134,7 @@ func (dm *DeleteRequestHandler) interval(params url.Values, startTime, endTime m
 	return interval, nil
 }
 
+// GetAllDeleteRequestsHandler 列出租户删除请求，可选查询时过滤与时间重叠筛选。
 // GetAllDeleteRequestsHandler handles get all delete requests
 func (dm *DeleteRequestHandler) GetAllDeleteRequestsHandler(w http.ResponseWriter, r *http.Request) {
 	if dm == nil {
@@ -191,6 +195,7 @@ func (dm *DeleteRequestHandler) GetAllDeleteRequestsHandler(w http.ResponseWrite
 	}
 }
 
+// mergeDeletes 将同一 RequestID 的分片请求合并为单条并汇总状态。
 func mergeDeletes(reqs []deletionproto.DeleteRequest) []deletionproto.DeleteRequest {
 	if len(reqs) <= 1 {
 		return reqs
@@ -219,6 +224,7 @@ func mergeDeletes(reqs []deletionproto.DeleteRequest) []deletionproto.DeleteRequ
 	return mergedRequests
 }
 
+// mergeData 计算分片组的时间范围并推导合并后的处理状态。
 func mergeData(deletes []deletionproto.DeleteRequest) (model.Time, model.Time, deletionproto.DeleteRequestStatus) {
 	var (
 		startTime    = model.Time(math.MaxInt64)
@@ -243,6 +249,7 @@ func mergeData(deletes []deletionproto.DeleteRequest) (model.Time, model.Time, d
 	return startTime, endTime, deleteRequestStatus(numProcessed, len(deletes))
 }
 
+// deleteRequestStatus 根据已处理分片比例返回 received/processed/百分比状态。
 func deleteRequestStatus(processed, total int) deletionproto.DeleteRequestStatus {
 	if processed == 0 {
 		return deletionproto.StatusReceived
@@ -256,6 +263,7 @@ func deleteRequestStatus(processed, total int) deletionproto.DeleteRequestStatus
 	return deletionproto.DeleteRequestStatus(fmt.Sprintf("%d%% Complete", int(percentCompleted*100)))
 }
 
+// CancelDeleteRequestHandler 取消未完成的删除请求，超期需 force 参数。
 // CancelDeleteRequestHandler handles delete request cancellation
 func (dm *DeleteRequestHandler) CancelDeleteRequestHandler(w http.ResponseWriter, r *http.Request) {
 	if dm == nil {
@@ -302,6 +310,7 @@ func (dm *DeleteRequestHandler) CancelDeleteRequestHandler(w http.ResponseWriter
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// filterProcessed 过滤出状态仍为 received 的未处理删除请求。
 func filterProcessed(reqs []deleteRequest) []deleteRequest {
 	var unprocessed []deleteRequest
 	for _, r := range reqs {
@@ -312,6 +321,7 @@ func filterProcessed(reqs []deleteRequest) []deleteRequest {
 	return unprocessed
 }
 
+// GetCacheGenerationNumberHandler 返回租户结果缓存世代号 JSON。
 // GetCacheGenerationNumberHandler handles requests for a user's cache generation number
 func (dm *DeleteRequestHandler) GetCacheGenerationNumberHandler(w http.ResponseWriter, r *http.Request) {
 	if dm == nil {
@@ -405,6 +415,7 @@ func timeFromInt(in string) (int64, error) {
 	return util.ParseTime(in)
 }
 
+// buildRequests 按 shardByInterval 将大时间范围拆分为多条 DeleteRequest 分片。
 func buildRequests(shardByInterval time.Duration, query, userID string, startTime, endTime model.Time) []deletionproto.DeleteRequest {
 	var deleteRequests []deletionproto.DeleteRequest
 

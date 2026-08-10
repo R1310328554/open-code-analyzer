@@ -1,5 +1,8 @@
 package deletion
 
+// TenantMiddleware 为删除 HTTP 路由提供租户级访问控制：
+// 校验租户 ID 与 deletion 限额，未启用时返回 403 Forbidden。
+
 import (
 	"net/http"
 

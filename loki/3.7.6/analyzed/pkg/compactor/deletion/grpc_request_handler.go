@@ -1,5 +1,8 @@
 package deletion
 
+// GRPCRequestHandler 实现 compactor gRPC 删除请求接口：
+// 按租户拉取删除请求列表与缓存世代号，并校验 deletion 限额。
+
 import (
 	"context"
 	"sort"
@@ -14,6 +17,7 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// GRPCRequestHandler 封装 DeleteRequestsStore 与租户 Limits 配置。
 type GRPCRequestHandler struct {
 	deleteRequestsStore DeleteRequestsStore
 	limits              Limits
@@ -26,6 +30,7 @@ func NewGRPCRequestHandler(deleteRequestsStore DeleteRequestsStore, limits Limit
 	}
 }
 
+// GetDeleteRequests 返回租户删除请求，支持查询时过滤与时间范围重叠筛选。
 func (g *GRPCRequestHandler) GetDeleteRequests(ctx context.Context, req *grpc.GetDeleteRequestsRequest) (*grpc.GetDeleteRequestsResponse, error) {
 	userID, err := tenant.TenantID(ctx)
 	if err != nil {
@@ -69,6 +74,7 @@ func (g *GRPCRequestHandler) GetDeleteRequests(ctx context.Context, req *grpc.Ge
 	return &resp, nil
 }
 
+// GetCacheGenNumbers 返回租户结果缓存世代号，供 querier 缓存失效使用。
 func (g *GRPCRequestHandler) GetCacheGenNumbers(ctx context.Context, _ *grpc.GetCacheGenNumbersRequest) (*grpc.GetCacheGenNumbersResponse, error) {
 	userID, err := tenant.TenantID(ctx)
 	if err != nil {

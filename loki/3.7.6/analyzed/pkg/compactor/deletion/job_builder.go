@@ -1,5 +1,8 @@
 package deletion
 
+// JobBuilder 实现 jobqueue.Builder：从对象存储 manifest 读取 segment，
+// 拆分为 DeletionJob 下发 Worker，汇总 StorageUpdates 并应用索引变更。
+
 import (
 	"bytes"
 	"context"
@@ -35,6 +38,7 @@ const (
 	storageUpdateTypeIndexChunk   = "index_chunk"
 )
 
+// StorageUpdatesIterator 迭代 manifest 各 segment 的存储更新 proto 文件。
 type StorageUpdatesIterator interface {
 	Next() bool
 	UserID() string
@@ -56,6 +60,7 @@ type manifestJobs struct {
 type ApplyStorageUpdatesFunc func(ctx context.Context, iterator StorageUpdatesIterator) error
 type markRequestsAsProcessedFunc func(requests []deletionproto.DeleteRequest)
 
+// JobBuilder 维护当前 manifest 处理状态、在途 job 与 segment 级更新集合。
 type JobBuilder struct {
 	deletionManifestStoreClient client.ObjectClient
 	applyStorageUpdatesFunc     ApplyStorageUpdatesFunc
@@ -89,6 +94,7 @@ func NewJobBuilder(
 	}
 }
 
+// BuildJobs 每 5 分钟轮询 manifest 目录，构建删除 job 并写入 jobsChan。
 // BuildJobs implements jobqueue.Builder interface
 func (b *JobBuilder) BuildJobs(ctx context.Context, jobsChan chan<- *grpc.Job) {
 	ticker := time.NewTicker(5 * time.Minute)
@@ -154,6 +160,7 @@ func (b *JobBuilder) buildJobs(ctx context.Context, jobsChan chan<- *grpc.Job) e
 	return nil
 }
 
+// processManifest 顺序处理 manifest 各 segment，等待 job 完成后上传 storage updates。
 func (b *JobBuilder) processManifest(ctx context.Context, manifest *deletionproto.DeletionManifest, manifestPath string, jobsChan chan<- *grpc.Job) error {
 	level.Info(util_log.Logger).Log("msg", "starting manifest processing", "manifest", manifestPath)
 
@@ -369,6 +376,7 @@ func (b *JobBuilder) createJobsForChunksGroup(ctx context.Context, tableName, us
 	return nil
 }
 
+// OnJobResponse 接收 Worker 返回的 StorageUpdates，失败时取消当前 manifest 处理。
 // OnJobResponse implements jobqueue.Builder interface
 func (b *JobBuilder) OnJobResponse(response *grpc.JobResult) error {
 	b.currentManifestMtx.Lock()
@@ -402,12 +410,14 @@ func (b *JobBuilder) OnJobResponse(response *grpc.JobResult) error {
 	return nil
 }
 
+// applyStorageUpdates 通过迭代器将累积的 chunk 变更应用到索引存储。
 // applyStorageUpdates applies all the storage updates accumulated while processing of the given manifest
 func (b *JobBuilder) applyStorageUpdates(ctx context.Context, manifest *deletionproto.DeletionManifest, manifestPath string) error {
 	storageUpdatesIterator := newStorageUpdatesIterator(ctx, manifestPath, manifest, b.deletionManifestStoreClient, b.metrics.storageUpdatesAppliedTotal)
 	return b.applyStorageUpdatesFunc(ctx, storageUpdatesIterator)
 }
 
+// cleanupManifest 标记请求已处理并删除 manifest 目录下全部对象存储文件。
 // cleanupManifest takes care of post-processing cleanup of given manifest which includes:
 // 1. Marking all the delete requests in manifest as processed.
 // 2. Removing all the object storage files from object storage related to the manifest.
@@ -457,6 +467,7 @@ func (b *JobBuilder) getSegment(ctx context.Context, segmentPath string) (*delet
 }
 
 // storageUpdatesCollection collects updates to be made to the storage for a single segment
+// storageUpdatesCollection 线程安全地收集单个 segment 的 per-label 存储更新。
 type storageUpdatesCollection struct {
 	mtx sync.Mutex
 	deletionproto.StorageUpdatesCollection
@@ -502,6 +513,7 @@ func (i *storageUpdatesCollection) encode() ([]byte, error) {
 }
 
 // storageUpdatesIterator helps with iterating through all the storage updates files built while processing of each segment in a manifest
+// storageUpdatesIterator 按 segment 序号加载并遍历 storage-updates proto 文件。
 type storageUpdatesIterator struct {
 	ctx                         context.Context
 	manifestPath                string
@@ -585,6 +597,7 @@ func (i *storageUpdatesIterator) Err() error {
 	return i.err
 }
 
+// ForEachSeries 对当前 segment 中每个标签序列调用回调并更新 Prometheus 指标。
 // ForEachSeries calls the given callback function for each series in the currently loaded updates collection.
 // It passes the labels for the series and updates to apply to the storage.
 func (i *storageUpdatesIterator) ForEachSeries(callback func(labels string, rebuiltChunks map[string]Chunk, chunksToDeIndex []string) error) error {
