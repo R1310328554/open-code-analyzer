@@ -15,23 +15,8 @@
     "handler/src/main/java/io/netty/handler/ssl/OpenSsl.java",
     "handler/src/main/java/io/netty/handler/ssl/OpenSslApplicationProtocolNegotiator.java",
     "handler/src/main/java/io/netty/handler/ssl/OpenSslAsyncPrivateKeyMethod.java",
-    "handler/src/main/java/io/netty/handler/ssl/OpenSslCachingKeyMaterialProvider.java",
-    "handler/src/main/java/io/netty/handler/ssl/OpenSslCachingX509KeyManagerFactory.java",
-    "handler/src/main/java/io/netty/handler/ssl/OpenSslCertificateCompressionAlgorithm.java",
-    "handler/src/main/java/io/netty/handler/ssl/OpenSslCertificateCompressionConfig.java",
-    "handler/src/main/java/io/netty/handler/ssl/OpenSslCertificateException.java",
-    "handler/src/main/java/io/netty/handler/ssl/OpenSslClientContext.java",
-    "handler/src/main/java/io/netty/handler/ssl/OpenSslClientSessionCache.java",
-    "handler/src/main/java/io/netty/handler/ssl/OpenSslContext.java",
-    "handler/src/main/java/io/netty/handler/ssl/OpenSslContextOption.java",
-    "handler/src/main/java/io/netty/handler/ssl/OpenSslCredential.java",
-    "handler/src/main/java/io/netty/handler/ssl/OpenSslCredentialBuilder.java",
-    "handler/src/main/java/io/netty/handler/ssl/OpenSslCredentialPointer.java",
-    "handler/src/main/java/io/netty/handler/ssl/OpenSslDefaultApplicationProtocolNegotiator.java",
-    "handler/src/main/java/io/netty/handler/ssl/OpenSslEngine.java",
-    "handler/src/main/java/io/netty/handler/ssl/OpenSslEngineMap.java",
-    "handler/src/main/java/io/netty/handler/ssl/OpenSslInternalSession.java"
+    "handler/src/main/java/io/netty/handler/ssl/OpenSslCachingKeyMaterialProvider.java"
   ],
   "remaining_pending": 578,
-  "done": 1320
+  "done": 1335
 }
