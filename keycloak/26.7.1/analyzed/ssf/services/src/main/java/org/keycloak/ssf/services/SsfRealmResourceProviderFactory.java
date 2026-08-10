@@ -10,10 +10,13 @@ import org.keycloak.services.resource.RealmResourceProvider;
 import org.keycloak.services.resource.RealmResourceProviderFactory;
 import org.keycloak.ssf.Ssf;
 
+/**
+ * SSF realm 资源提供者工厂：注册 {@code /ssf} 端点并在 realm 创建/启用时引导 SSF 支持。
+ */
 public class SsfRealmResourceProviderFactory implements RealmResourceProviderFactory, EnvironmentDependentProviderFactory {
 
     /**
-     * The SSF endpoints are available under {@code $KC_ISSUER_URL/ssf}.
+     * SSF 端点挂载于 {@code $KC_ISSUER_URL/ssf} 下。
      */
     @Override
     public String getId() {

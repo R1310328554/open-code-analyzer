@@ -8,7 +8,7 @@ import org.keycloak.services.resources.admin.fgap.AdminPermissionEvaluator;
 import org.keycloak.ssf.transmitter.SsfTransmitter;
 
 /**
- * Exposes the {@link SsfAdminResource}.
+ * 暴露 {@link SsfAdminResource} 管理 REST 资源。
  */
 public class SsfAdminRealmResourceProvider implements AdminRealmResourceProvider {
 

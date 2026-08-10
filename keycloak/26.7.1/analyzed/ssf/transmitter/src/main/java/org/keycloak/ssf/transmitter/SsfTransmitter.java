@@ -6,34 +6,33 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.ssf.SsfException;
 import org.keycloak.ssf.transmitter.support.SsfUtil;
 
+/**
+ * SSF 发送方静态工具类：解析 {@link SsfTransmitterProvider} 与接收方客户端。
+ */
 public final class SsfTransmitter {
 
     private SsfTransmitter() {
     }
 
     /**
-     * Resolves the {@link SsfTransmitterProvider} for the given session.
-     * Single entry point for the lookup so we have one place to add
-     * caching, logging, or test instrumentation around it later.
+     * 解析给定 session 绑定的 {@link SsfTransmitterProvider}。
+     * 统一查找入口，便于后续添加缓存、日志或测试插桩。
      *
-     * @param session the active Keycloak session; must not be {@code null}.
-     * @return the SSF transmitter provider bound to {@code session}.
+     * @param session 当前 Keycloak session，不得为 {@code null}
+     * @return 绑定于 {@code session} 的 SSF 发送方提供者
      */
     public static SsfTransmitterProvider of(KeycloakSession session) {
         return session.getProvider(SsfTransmitterProvider.class);
     }
 
     /**
-     * Looks up an SSF Receiver client by its OAuth {@code client_id} in
-     * the session's current realm and returns it. Throws
-     * {@link SsfException} when the client doesn't exist or isn't
-     * configured as an SSF Receiver — the typical wrong-client failure
-     * for programmatic emit callers, where returning {@code null} would
-     * surface later as a confusing {@code STREAM_NOT_FOUND}.
+     * 在当前 realm 中按 OAuth {@code client_id} 查找 SSF 接收方客户端。
+     * 客户端不存在或未配置为 SSF 接收方时抛出 {@link SsfException}，
+     * 避免程序化 emit 调用方因返回 {@code null} 而后续得到令人困惑的 {@code STREAM_NOT_FOUND}。
      *
-     * @param session         the active Keycloak session
-     * @param clientClientId  OAuth {@code client_id} (not the internal UUID)
-     * @return the resolved receiver client, never {@code null}
+     * @param session 当前 Keycloak session
+     * @param clientClientId OAuth {@code client_id}（非内部 UUID）
+     * @return 解析到的接收方客户端，永不为 {@code null}
      */
     public static ClientModel getReceiverClient(KeycloakSession session, String clientClientId) {
         RealmModel realm = session.getContext().getRealm();

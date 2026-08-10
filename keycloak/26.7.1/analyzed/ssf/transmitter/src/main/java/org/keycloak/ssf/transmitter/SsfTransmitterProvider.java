@@ -26,12 +26,10 @@ import org.keycloak.ssf.transmitter.subject.SubjectManagementService;
 import org.keycloak.ssf.transmitter.support.SsfPushUrlValidator;
 
 /**
- * Provider for the SSF (Shared Signals Framework) Transmitter.
+ * SSF（Shared Signals Framework）发送方 {@link Provider}。
  *
- * <p>The transmitter is responsible for generating and delivering Security Event Tokens (SETs)
- * to registered SSF receivers via configured streams. It exposes services for stream management,
- * stream verification, event mapping, and event dispatching, as well as the JAX-RS sub-resources
- * that implement the SSF Transmitter REST API.
+ * <p>发送方负责生成安全事件令牌（SET）并通过已配置流向已注册 SSF 接收方投递。
+ * 暴露流管理、流验证、事件映射与事件派发服务，以及实现 SSF 发送方 REST API 的 JAX-RS 子资源。</p>
  *
  * @see <a href="https://openid.github.io/sharedsignals/openid-sharedsignals-framework-1_0.html">OpenID Shared Signals Framework 1.0</a>
  */
@@ -41,54 +39,48 @@ public interface SsfTransmitterProvider extends Provider {
     }
 
     /**
-     * Returns the service for handling stream verification requests.
+     * 返回处理流验证请求的服务。
      *
-     * @return the stream verification service
+     * @return 流验证服务
      */
     StreamVerificationService verificationService();
 
     /**
-     * Returns the service for managing transmitter metadata,
-     * such as supported events, delivery methods, and the transmitter configuration endpoint.
+     * 返回管理发送方元数据的服务（支持事件、投递方式、配置端点等）。
      *
-     * @return the transmitter metadata service
+     * @return 发送方元数据服务
      */
     TransmitterMetadataService metadataService();
 
     /**
-     * Returns the mapper that converts Keycloak events (user events, admin events)
-     * into SSF Security Event Tokens (SETs).
+     * 返回将 Keycloak 事件（用户/管理事件）映射为 SSF SET 的映射器。
      *
-     * @return the security event token mapper
+     * @return 安全事件令牌映射器
      */
     SecurityEventTokenMapper securityEventTokenMapper();
 
     /**
-     * Returns the dispatcher responsible for delivering Security Event Tokens
-     * to all applicable streams based on their delivery configuration.
+     * 返回按各流投递配置向适用流投递 SET 的派发器。
      *
-     * @return the security event token dispatcher
+     * @return 安全事件令牌派发器
      */
     SecurityEventTokenDispatcher securityEventTokenDispatcher();
 
     /**
-     * Returns the JWS encoder used to sign outgoing Security Event Tokens.
-     * Cached per session — composite service builders pull this via the
-     * provider so they share one encoder instance with the dispatcher.
+     * 返回用于签名出站 SET 的 JWS 编码器。
+     * 按 session 缓存——组合服务构建器经 provider 复用与 dispatcher 相同的编码器实例。
      */
     SecurityEventTokenEncoder securityEventTokenEncoder();
 
     /**
-     * Returns the HTTP push delivery service. Cached per session for
-     * the same reason as {@link #securityEventTokenEncoder}.
+     * 返回 HTTP push 投递服务。与 {@link #securityEventTokenEncoder} 相同原因按 session 缓存。
      */
     PushDeliveryService pushDeliveryService();
 
     /**
-     * Returns the service responsible for managing subjects (users, clients, etc.)
-     * within the SSF framework.
+     * 返回 SSF 框架内管理主体（用户、客户端等）的服务。
      *
-     * @return the subject management service
+     * @return 主体管理服务
      */
     SubjectManagementService subjectManagementService();
 
@@ -116,75 +108,68 @@ public interface SsfTransmitterProvider extends Provider {
     EventEmitterService eventEmitterService();
 
     /**
-     * Returns the JAX-RS sub-resource for stream CRUD operations (create, read, update, delete).
+     * 返回流 CRUD（创建/读取/更新/删除）的 JAX-RS 子资源。
      *
-     * @return the stream management endpoint
+     * @return 流管理端点
      */
     SsfStreamManagementResource streamManagementResource();
 
     /**
-     * Returns the service responsible for storing and retrieving SSF stream configurations.
+     * 返回存储与读取 SSF 流配置的服务。
      *
-     * @return the SSF stream store service
+     * @return SSF 流存储服务
      */
     SsfStreamStore streamStore();
 
     /**
-     * Returns the service for managing SSF streams (create, update, delete, lookup).
+     * 返回管理 SSF 流（创建/更新/删除/查找）的服务。
      *
-     * @return the stream service
+     * @return 流服务
      */
     StreamService streamService();
 
     /**
-     * Returns the service for handling poll requests.
-     * @return
+     * 返回处理 POLL 拉取请求的服务。
+     * @return POLL 投递服务
      */
     PollDeliveryService pollDeliveryService();
 
     /**
-     * Returns the JAX-RS sub-resource for querying and updating stream status.
+     * 返回查询与更新流状态的 JAX-RS 子资源。
      *
-     * @return the stream status endpoint
+     * @return 流状态端点
      */
     SsfStreamStatusResource streamStatusResource();
 
     /**
-     * Returns the JAX-RS sub-resource for triggering stream verification.
+     * 返回触发流验证的 JAX-RS 子资源。
      *
-     * @return the stream verification endpoint
+     * @return 流验证端点
      */
     SsfStreamVerificationResource streamVerificationResource();
 
     /**
-     * Returns the JAX-RS sub-resource for subject management
-     * (add/remove subject).
+     * 返回主体管理（添加/移除主体）的 JAX-RS 子资源。
      *
-     * @return the subject management endpoint
+     * @return 主体管理端点
      */
     SsfSubjectManagementResource subjectManagementResource();
 
     /**
-     * The default set of supported events.
-     * @return
+     * 默认支持的事件集合。
+     * @return 事件类型 URI 集合
      */
     Set<String> getDefaultSupportedEvents();
 
     /**
-     * Resolves the event alias (e.g. {@code CaepCredentialChange}) for the given
-     * full event type URI. Returns {@code null} if the transmitter does not know
-     * an alias for the given event type — callers can then fall back to the
-     * original URI.
+     * 将完整事件类型 URI 解析为别名（如 {@code CaepCredentialChange}）。
+     * 未知类型返回 {@code null}，调用方可回退原 URI。
      *
-     * <p>The default implementation delegates to the global
-     * {@link SsfEventRegistry}, which is
-     * populated by every registered
-     * {@link SsfEventProviderFactory}; extensions
-     * can therefore add custom event types and aliases without subclassing the
-     * transmitter.
+     * <p>默认实现委托全局 {@link SsfEventRegistry}（由各 {@link SsfEventProviderFactory} 填充），
+     * 扩展可添加自定义事件类型与别名而无需子类化发送方。</p>
      *
-     * @param eventType the long event type URI
-     * @return the matching event alias, or {@code null} if unknown
+     * @param eventType 完整事件类型 URI
+     * @return 匹配别名，未知时为 {@code null}
      */
     String resolveAliasForEventType(String eventType);
 
@@ -213,47 +198,35 @@ public interface SsfTransmitterProvider extends Provider {
     Set<String> getNativelyEmittedEventAliases();
 
     /**
-     * Returns the immutable transmitter-wide configuration snapshot that is
-     * sourced from the {@link SsfTransmitterProviderFactory} SPI configuration.
-     * Consumers should use this to access the effective default push endpoint
-     * timeouts and the transmitter-initiated verification delay.
+     * 返回来源于 {@link SsfTransmitterProviderFactory} SPI 的不可变发送方全局配置快照。
+     * 消费者应通过此方法读取有效默认 push 超时与发送方发起验证延迟。
      */
     SsfTransmitterConfig getConfig();
 
     /**
-     * Returns the shared Prometheus metrics binder for the SSF
-     * transmitter. Hot paths that weren't constructed with a direct
-     * binder reference (in particular the poll endpoint, which is
-     * constructed per request) resolve it through this accessor.
-     * Always non-null — returns
-     * {@link SsfMetricsBinder#NOOP} when metrics are disabled.
+     * 返回 SSF 发送方共享 Prometheus 指标绑定器。
+     * 未直接持有 binder 的热路径（尤其按请求构造的 poll 端点）经此访问器解析。
+     * 永不为 null——指标禁用时返回 {@link SsfMetricsBinder#NOOP}。
      */
     SsfMetricsBinder metrics();
 
     /**
-     * Returns the {@link KeycloakSession} this provider instance is
-     * scoped to. Exposed on the interface so composite service
-     * builders (e.g.
-     * {@link SsfTransmitterServiceBuilder#createDispatcher}) can wire
-     * the session into the services they construct without
-     * downcasting to the default provider implementation.
+     * 返回本 provider 实例绑定的 {@link KeycloakSession}。
+     * 在接口上暴露，使组合服务构建器（如 {@link SsfTransmitterServiceBuilder#createDispatcher}）
+     * 无需向下转型即可将 session 注入所构造的服务。
      */
     KeycloakSession session();
 
     /**
-     * Returns the factory-scoped {@link SsfTransmitterContext}
-     * shared across every per-session provider instance. Carries the
-     * long-lived configuration, the metrics binder, the pending-event
-     * store factory, and the issuer-URL factory.
+     * 返回各 per-session provider 共享的工厂级 {@link SsfTransmitterContext}。
+     * 承载长生命周期配置、指标绑定器、待发事件存储工厂与发行方 URL 工厂。
      */
     SsfTransmitterContext context();
 
     /**
-     * Returns the shared SSRF gate for receiver-supplied push URLs.
-     * Owned by the {@link SsfTransmitterContext} so a single instance
-     * is reused across every per-session provider; custom SPI
-     * implementations can plug in a different validator by overriding
-     * {@link SsfTransmitterServiceBuilder#createPushUrlValidator}.
+     * 返回接收方所供 push URL 的共享 SSRF 防护门。
+     * 由 {@link SsfTransmitterContext} 持有，各 per-session provider 复用同一实例；
+     * 自定义 SPI 可通过覆盖 {@link SsfTransmitterServiceBuilder#createPushUrlValidator} 替换校验器。
      */
     default SsfPushUrlValidator pushUrlValidator() {
         return context().pushUrlValidator();

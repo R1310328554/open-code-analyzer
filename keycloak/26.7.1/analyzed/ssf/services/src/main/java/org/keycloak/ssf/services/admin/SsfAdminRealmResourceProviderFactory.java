@@ -10,14 +10,14 @@ import org.keycloak.services.resources.admin.ext.AdminRealmResourceProviderFacto
 import org.keycloak.ssf.Ssf;
 
 /**
- * Exposes the {@link SsfAdminResource}
+ * 暴露 {@link SsfAdminResource}，挂载于管理 API 的 {@code /admin/realms/{realm}/ssf} 路径下。
  */
 public class SsfAdminRealmResourceProviderFactory implements AdminRealmResourceProviderFactory, EnvironmentDependentProviderFactory {
 
     /**
-     * The SSF endpoints are available under {@code $KC_ADMIN_URL/admin/realms/{realm}/ssf}.
+     * SSF 管理端点位于 {@code $KC_ADMIN_URL/admin/realms/{realm}/ssf}。
      *
-     * @return
+     * @return 提供者标识符
      */
     @Override
     public String getId() {

@@ -8,7 +8,7 @@ import org.keycloak.ssf.Ssf;
 import org.jboss.logging.Logger;
 
 /**
- * Manages SSF client scopes for realms.
+ * 管理 realm 的 SSF 客户端作用域（{@code ssf.read}、{@code ssf.manage}）。
  */
 public class SsfScopes {
 

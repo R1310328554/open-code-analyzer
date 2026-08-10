@@ -9,18 +9,12 @@ import org.keycloak.ssf.transmitter.metrics.SsfMetricsBinder;
 import org.keycloak.ssf.transmitter.support.SsfPushUrlValidator;
 
 /**
- * Factory-scoped context bundle for the SSF transmitter. Holds the
- * long-lived configuration and shared collaborators that don't depend
- * on a {@link KeycloakSession} — created once at SPI {@code init()}
- * time and reused across every per-session
- * {@link SsfTransmitterProvider} instance.
+ * SSF 发送方的工厂级上下文包：持有不依赖 {@link KeycloakSession} 的长生命周期配置与共享协作对象。
+ * 在 SPI {@code init()} 时创建一次，供所有 per-session {@link SsfTransmitterProvider} 实例复用。
  *
- * <p>Deliberately does <em>not</em> hold a {@code KeycloakSession}
- * reference — sessions are per-request and bundling them here would
- * make the lifecycle ambiguous and invite use-after-close bugs.
- * Per-session services materialize lazily on the provider; the
- * provider's {@link SsfTransmitterProvider#session() session()}
- * accessor is the single canonical place a session lives.
+ * <p>刻意<em>不</em>持有 {@code KeycloakSession} 引用——session 按请求生命周期，
+ * 在此捆绑会导致生命周期歧义与 use-after-close 风险。per-session 服务在 provider 上懒加载；
+ * {@link SsfTransmitterProvider#session() session()} 是 session 的唯一规范存放点。</p>
  */
 public final class SsfTransmitterContext {
 
@@ -56,10 +50,8 @@ public final class SsfTransmitterContext {
     }
 
     /**
-     * Aliases (or full URIs) of events the transmitter advertises as
-     * "default supported" for receivers that don't configure their own
-     * list. {@code null} means fall back to every event type known to
-     * the registry.
+     * 发送方向未自行配置列表的接收方所宣传的「默认支持事件」别名（或完整 URI）。
+     * {@code null} 表示回退到注册表中所有已知事件类型。
      */
     public Set<String> defaultSupportedEventAliases() {
         return defaultSupportedEventAliases;
@@ -70,27 +62,24 @@ public final class SsfTransmitterContext {
     }
 
     /**
-     * Resolves an {@link OutboxStore} for the given session.
-     * Indirection so test subclasses can plug in a custom store
-     * without overriding the entire context.
+     * 为给定 session 解析 {@link OutboxStore}。
+     * 间接层便于测试子类注入自定义 store 而无需覆盖整个 context。
      */
     public OutboxStore outboxStore(KeycloakSession session) {
         return outboxStoreFactory.apply(session);
     }
 
     /**
-     * Function reference variant — passed to constructors that want a
-     * {@code Function<KeycloakSession, OutboxStore>} (e.g. the
-     * dispatcher, poll service, and stream service).
+     * 函数引用变体——传给需要 {@code Function<KeycloakSession, OutboxStore>} 的构造器
+     *（如 dispatcher、poll 服务与 stream 服务）。
      */
     public Function<KeycloakSession, OutboxStore> outboxStoreFactory() {
         return outboxStoreFactory;
     }
 
     /**
-     * Resolves the realm-scoped issuer URL ({@code iss} claim) for
-     * the given session. Captured here so the metadata service and
-     * the SET mapper share one source of truth.
+     * 解析给定 session 的 realm 级发行方 URL（{@code iss} 声明）。
+     * 集中于此，使元数据服务与 SET 映射器共享同一来源。
      */
     public String issuerUrl(KeycloakSession session) {
         return issuerUrlFactory.apply(session);
@@ -105,10 +94,9 @@ public final class SsfTransmitterContext {
     }
 
     /**
-     * The shared SSRF gate for receiver-supplied push URLs. Stateless and
-     * config-driven — bound at factory init to the
-     * {@link SsfTransmitterConfig#isAllowInsecurePushTargets()} flag and
-     * reused across every per-session provider instance.
+     * 接收方所供 push URL 的共享 SSRF 防护门。无状态且由配置驱动——
+     * 在工厂 init 时绑定 {@link SsfTransmitterConfig#isAllowInsecurePushTargets()}，
+     * 供所有 per-session provider 实例复用。
      */
     public SsfPushUrlValidator pushUrlValidator() {
         return pushUrlValidator;

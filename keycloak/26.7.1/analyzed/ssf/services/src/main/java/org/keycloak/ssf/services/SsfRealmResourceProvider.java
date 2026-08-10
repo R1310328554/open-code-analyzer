@@ -10,7 +10,7 @@ import org.keycloak.ssf.transmitter.resources.SsfTransmitterResource;
 import org.keycloak.ssf.transmitter.support.SsfAuthUtil;
 
 /**
- * Exposes the realm specific SSF resource endpoints.
+ * 暴露 realm 级 SSF 资源端点。
  */
 public class SsfRealmResourceProvider implements RealmResourceProvider {
 
@@ -26,9 +26,9 @@ public class SsfRealmResourceProvider implements RealmResourceProvider {
     }
 
     /**
-     * Entry point for the SSF transmitter.
+     * SSF 发送方入口。
      *
-     * The endpoint is available via {@code $KC_ISSUER_URL/ssf/transmitter}
+     * 端点路径：{@code $KC_ISSUER_URL/ssf/transmitter}
      */
     @Path(Ssf.SSF_TRANSMITTER_PATH)
     public SsfTransmitterResource transmitter() {

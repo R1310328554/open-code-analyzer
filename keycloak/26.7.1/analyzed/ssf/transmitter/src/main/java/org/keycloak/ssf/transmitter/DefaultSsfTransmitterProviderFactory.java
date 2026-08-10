@@ -46,6 +46,9 @@ import org.keycloak.timer.TimerProvider;
 
 import org.jboss.logging.Logger;
 
+/**
+ * SSF 发送方默认 SPI 工厂：初始化全局配置、指标、outbox drainer 与各 per-session 服务构建。
+ */
 public class DefaultSsfTransmitterProviderFactory implements SsfTransmitterProviderFactory, SsfTransmitterServiceBuilder {
 
     private static final Logger log = Logger.getLogger(DefaultSsfTransmitterProviderFactory.class);
@@ -53,11 +56,9 @@ public class DefaultSsfTransmitterProviderFactory implements SsfTransmitterProvi
     public static final String CONFIG_SUPPORTED_EVENTS = "supported-events";
 
     /**
-     * Name passed to {@link ExecutorsProvider#getExecutor(String)} for
-     * the background outbox cleanup executor the client-/realm-removed
-     * listeners submit to. Kept as a constant so ops teams can surface
-     * the pool in their Quarkus thread-pool configuration if they want
-     * a non-default concurrency / queue-size profile.
+     * 客户端/realm 移除监听器提交后台 outbox 清理任务时，传给
+     * {@link ExecutorsProvider#getExecutor(String)} 的线程池名称。
+     * 常量化便于运维在 Quarkus 线程池配置中显式调整并发与队列。
      */
     public static final String OUTBOX_CLEANUP_EXECUTOR = "ssf-outbox-cleanup";
 
@@ -77,11 +78,7 @@ public class DefaultSsfTransmitterProviderFactory implements SsfTransmitterProvi
 
     public static final int DEFAULT_OUTBOX_DRAINER_BATCH_SIZE = 50;
 
-    /**
-     * Default retention for {@code DEAD_LETTER} outbox rows — 30 days. Set
-     * to {@code 0} to disable the purge and retain dead-letters
-     * indefinitely (e.g. for audit/forensic use cases).
-     */
+    /** {@code DEAD_LETTER} outbox 行默认保留 30 天；{@code 0} 禁用 purge，无限保留（审计/取证）。 */
     public static final long DEFAULT_OUTBOX_DEAD_LETTER_RETENTION_MILLIS = Duration.ofDays(30).toMillis();
 
     /**
@@ -137,20 +134,16 @@ public class DefaultSsfTransmitterProviderFactory implements SsfTransmitterProvi
     protected long outboxPendingMaxAgeMillis = DEFAULT_OUTBOX_PENDING_MAX_AGE_MILLIS;
 
     /**
-     * Shared metrics binder — constructed once at factory init time and
-     * reused across every session-scoped dispatcher, the long-lived
-     * drainer task, and any on-demand lookups (poll endpoint).
-     * Defaults to {@link SsfMetricsBinder#NOOP} until
-     * {@link #init(Config.Scope)} decides whether metrics are enabled.
+     * 共享指标绑定器——factory init 时构造一次，供各 session dispatcher、
+     * 长生命周期 drainer 与按需查询（poll 端点）复用。
+     * {@link #init(Config.Scope)} 决定启用前默认为 {@link SsfMetricsBinder#NOOP}。
      */
     protected SsfMetricsBinder metricsBinder = SsfMetricsBinder.NOOP;
 
     /**
-     * Factory-scoped context bundle. Built in {@link #init} from the
-     * resolved {@link #transmitterConfig}, {@link #metricsBinder},
-     * and method references on this factory. Re-used across every
-     * per-session {@link DefaultSsfTransmitterProvider} instance — the
-     * provider's two-arg constructor takes only {@code (session, ctx)}.
+     * 工厂级上下文包，在 {@link #init} 中由 {@link #transmitterConfig}、
+     * {@link #metricsBinder} 与本 factory 方法引用构建；各 per-session
+     * {@link DefaultSsfTransmitterProvider} 复用，provider 双参构造仅 {@code (session, ctx)}。
      */
     protected SsfTransmitterContext context;
 
@@ -324,10 +317,8 @@ public class DefaultSsfTransmitterProviderFactory implements SsfTransmitterProvi
     }
 
     /**
-     * Picks the real {@link SsfMetricsBinder} or {@link SsfMetricsBinder#NOOP}
-     * based on the SSF-level toggle + Micrometer classpath availability.
-     * Runs at {@code init()} time, so the chosen binder lives for the
-     * duration of the factory.
+     * 根据 SSF 级开关与 Micrometer classpath 可用性选择真实 {@link SsfMetricsBinder}
+     * 或 {@link SsfMetricsBinder#NOOP}；在 {@code init()} 执行，绑定器与 factory 同寿。
      */
     protected SsfMetricsBinder resolveMetricsBinder(SsfTransmitterConfig transmitterConfig) {
         if (!transmitterConfig.isMetricsEnabled()) {
@@ -355,10 +346,8 @@ public class DefaultSsfTransmitterProviderFactory implements SsfTransmitterProvi
 
 
     /**
-     * Session-scoped factory for the generic outbox DAO. Extension
-     * point for deployments that want to plug in a custom
-     * {@link OutboxStore} subclass (e.g. for instrumentation or
-     * schema overrides) — the default is {@code OutboxStore::new}.
+     * 通用 outbox DAO 的 per-session 工厂。
+     * 扩展点：部署可注入自定义 {@link OutboxStore} 子类（插桩或 schema 覆盖），默认 {@code OutboxStore::new}。
      */
     protected OutboxStore createOutboxStore(KeycloakSession session) {
         return new OutboxStore(session);
@@ -518,11 +507,8 @@ public class DefaultSsfTransmitterProviderFactory implements SsfTransmitterProvi
     }
 
     /**
-     * Registers the SSF push outbox drainer with Keycloak's
-     * {@link TimerProvider}, wrapped in a
-     * {@link ClusterAwareScheduledTaskRunner} so that in an HA deployment
-     * only one node drains per interval even though every node schedules
-     * the timer.
+     * 向 Keycloak {@link TimerProvider} 注册 SSF push outbox drainer，
+     * 包装为 {@link ClusterAwareScheduledTaskRunner}，HA 下每间隔仅单节点 drain。
      */
     protected void scheduleOutboxDrainer(KeycloakSessionFactory factory) {
         try (KeycloakSession session = factory.create()) {

@@ -26,23 +26,15 @@ import org.keycloak.ssf.transmitter.subject.SsfSubjectInclusionResolver;
 import org.keycloak.ssf.transmitter.subject.SubjectManagementService;
 
 /**
- * Default per-session SSF transmitter provider. Constructed once per
- * {@link KeycloakSession} by {@link DefaultSsfTransmitterProviderFactory#create};
- * holds lazy-initialized references to the per-session services so a
- * request that touches only the dispatcher (for example) doesn't pay
- * the cost of building the verification service or the stream store.
+ * 默认 per-session SSF 发送方提供者，由 {@link DefaultSsfTransmitterProviderFactory#create}
+ * 为每个 {@link KeycloakSession} 构造一次；懒加载各 per-session 服务，使仅触及 dispatcher 的请求
+ * 不必承担构建 verification 服务或 stream store 的开销。
  *
- * <p>All long-lived state lives on the factory-scoped
- * {@link SsfTransmitterContext}, which this provider takes by
- * reference. The two-arg constructor lets the factory's {@code create}
- * method stay a one-liner — and lets future shared collaborators get
- * added via the context without changing the provider's constructor
- * shape.
+ * <p>所有长生命周期状态位于工厂级 {@link SsfTransmitterContext}，本 provider 仅持有其引用。
+ * 双参构造使 factory {@code create} 保持一行，且未来共享协作对象可通过 context 扩展而无需改构造签名。</p>
  *
- * <p><b>Threading:</b> assumes session-scoped, single-threaded use
- * (the standard Keycloak SPI lifetime). Lazy-init fields are
- * intentionally not synchronized; if a future caller shares a provider
- * across threads, behavior is undefined.
+ * <p><b>线程：</b>假定 session 作用域、单线程使用（标准 Keycloak SPI 生命周期）。
+     * 懒加载字段刻意不同步；跨线程共享 provider 时行为未定义。</p>
  */
 public class DefaultSsfTransmitterProvider implements SsfTransmitterProvider {
 
@@ -240,16 +232,12 @@ public class DefaultSsfTransmitterProvider implements SsfTransmitterProvider {
     }
 
     /**
-     * Converts a set of event-type URIs to their receiver-friendly
-     * aliases. Falls back to the URI for any type without a registered
-     * alias so unknown / custom types stay visible in the UI rather
-     * than being silently dropped.
+     * 将事件类型 URI 集合转换为接收方友好的别名。
+     * 无注册别名的类型回退为 URI，使未知/自定义类型在 UI 中仍可见而非被静默丢弃。
      *
-     * <p>Returns a {@link TreeSet} so the alias order is deterministic
-     * (alphabetical) across calls. The underlying registry sources
-     * the URI list from a {@link java.util.HashMap}, whose iteration
-     * order can shift between processes; without the sort, admin-UI
-     * dropdowns would shuffle on every restart.
+     * <p>返回 {@link TreeSet} 以保证别名顺序跨调用确定（字母序）。
+     * 底层注册表从 {@link java.util.HashMap} 取 URI 列表，迭代顺序可能在进程间变化；
+     * 不排序则管理 UI 下拉框每次重启都会乱序。</p>
      */
     protected Set<String> toAliases(SsfEventRegistry registry, Set<String> eventTypes) {
         Set<String> aliases = new TreeSet<>();

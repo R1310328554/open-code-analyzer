@@ -14,32 +14,22 @@ import org.keycloak.ssf.transmitter.subject.SubjectManagementService;
 import org.keycloak.ssf.transmitter.support.SsfPushUrlValidator;
 
 /**
- * Extension seam for constructing the per-session services that make
- * up an {@link SsfTransmitterProvider}. Default implementation lives
- * on {@link DefaultSsfTransmitterProviderFactory}; deployments that
- * need to swap a single service (e.g. plug in a custom
- * {@link SecurityEventTokenEncoder}) override one method instead of
- * subclassing the entire provider.
+ * 构建 {@link SsfTransmitterProvider} 各 per-session 服务的扩展接缝。
+ * 默认实现位于 {@link DefaultSsfTransmitterProviderFactory}；部署只需替换单个服务
+ *（例如自定义 {@link SecurityEventTokenEncoder}）时，覆盖对应方法即可，无需子类化整个 provider。
  *
- * <h3>Two flavours of factory methods</h3>
+ * <h3>两类工厂方法</h3>
  *
  * <ul>
- *     <li><b>Leaf services</b> — {@code createMapper},
- *         {@code createEncoder}, {@code createPushDelivery},
- *         {@code createStreamStore}, {@code createMetadataService},
- *         {@code createSubjectManagement} — take only
- *         {@code (session, context)}. They have no dependency on
- *         other lazy-cached services.</li>
- *     <li><b>Composite services</b> — {@code createDispatcher},
- *         {@code createVerification}, {@code createPollDelivery} — take
- *         the {@link SsfTransmitterProvider} so they can pull cached
- *         dependencies (mapper, encoder, push delivery) via the
- *         provider's accessors instead of building fresh, redundant
- *         instances. The provider exposes {@link
- *         SsfTransmitterProvider#session() session()} and {@link
- *         SsfTransmitterProvider#context() context()} on the
- *         interface so the composite builders don't need to downcast
- *         to the default impl.</li>
+ *     <li><b>叶子服务</b> — {@code createMapper}、{@code createEncoder}、
+ *         {@code createPushDelivery}、{@code createStreamStore}、
+ *         {@code createMetadataService}、{@code createSubjectManagement} —
+ *         仅接受 {@code (session, context)}，不依赖其他懒加载缓存服务。</li>
+ *     <li><b>组合服务</b> — {@code createDispatcher}、{@code createVerification}、
+ *         {@code createPollDelivery} — 接受 {@link SsfTransmitterProvider}，
+ *         通过 provider 访问器复用已缓存的 mapper/encoder/push 等依赖，避免重复实例化。
+ *         provider 在接口上暴露 {@link SsfTransmitterProvider#session() session()} 与
+ *         {@link SsfTransmitterProvider#context() context()}，组合构建器无需向下转型。</li>
  * </ul>
  */
 public interface SsfTransmitterServiceBuilder {

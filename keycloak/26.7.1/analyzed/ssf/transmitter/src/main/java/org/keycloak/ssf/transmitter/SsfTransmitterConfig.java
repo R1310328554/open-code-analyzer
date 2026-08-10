@@ -9,11 +9,8 @@ import org.keycloak.ssf.metadata.DefaultSubjects;
 import org.keycloak.ssf.subject.IssuerSubjectId;
 
 /**
- * Immutable snapshot of the transmitter-wide SSF configuration that is sourced
- * from the {@link SsfTransmitterProviderFactory} SPI configuration. Exposed via
- * {@link SsfTransmitterProvider#getConfig()} so that consumers can
- * access the effective defaults without having to go through the factory
- * directly.
+ * 发送方全局 SSF 配置的不可变快照，来源于 {@link SsfTransmitterProviderFactory} SPI 配置。
+ * 通过 {@link SsfTransmitterProvider#getConfig()} 暴露，消费者无需直接访问 factory 即可读取有效默认值。
  */
 public class SsfTransmitterConfig {
 
@@ -38,26 +35,17 @@ public class SsfTransmitterConfig {
     public static final String CONFIG_CRITICAL_SUBJECT_MEMBERS = "critical-subject-members";
 
     /**
-     * Toggles the SSF Prometheus metrics binder. When {@code false}
-     * the factory installs a no-op binder and the dispatcher / drainer /
-     * poll endpoint skip every meter call — useful for operators who
-     * don't want SSF label series in their metrics store, or for
-     * debugging a suspected Micrometer issue.
+     * 切换 SSF Prometheus 指标绑定器。{@code false} 时 factory 安装 NOOP 绑定器，
+     * dispatcher/drainer/poll 端点跳过所有 meter 调用——适用于不希望 SSF 标签序列进入指标存储，
+     * 或排查 Micrometer 问题的运维场景。
      */
     public static final String CONFIG_METRICS_ENABLED = "metrics-enabled";
 
     /**
-     * Grace period (seconds) during which the dispatcher continues to
-     * deliver events for a subject after a <em>receiver-driven</em>
-     * {@code POST /streams/subjects/remove} fired. Defends against the
-     * SSF 1.0 §9.3 "Malicious Subject Removal" scenario where a
-     * compromised receiver bearer token silences events for a target
-     * subject during an attack window. Admin-driven removals
-     * deliberately skip the tombstone — operator actions are trusted
-     * and take effect immediately. Default {@code 0} disables the
-     * grace window entirely (current behavior preserved); set to a
-     * positive value (e.g. 3600 for one hour) to enable the
-     * spec-recommended protection.
+     * 接收方发起 {@code POST /streams/subjects/remove} 后，dispatcher 继续向该主体投递事件的宽限期（秒）。
+     * 防御 SSF 1.0 §9.3「恶意主体移除」：被攻陷的接收方 bearer token 在攻击窗口内静默目标主体事件。
+     * 管理员驱动的移除刻意跳过 tombstone——运维操作受信任且立即生效。
+     * 默认 {@code 0} 完全禁用宽限期；设为正值（如 3600）启用规范建议的保护。
      */
     public static final String CONFIG_SUBJECT_REMOVAL_GRACE_SECONDS = "subject-removal-grace-seconds";
 
@@ -77,29 +65,16 @@ public class SsfTransmitterConfig {
      */
     public static final String CONFIG_ALLOW_INSECURE_PUSH_TARGETS = "allow-insecure-push-targets";
 
-    /**
-     * Default connect timeout (in milliseconds) for delivering SSF events via
-     * HTTP push to a receiver's push endpoint.
-     */
+    /** 向接收方 push 端点 HTTP 投递 SSF 事件的默认连接超时（毫秒）。 */
     public static final int DEFAULT_PUSH_ENDPOINT_CONNECT_TIMEOUT_MILLIS = 1000;
 
-    /**
-     * Default socket (read) timeout (in milliseconds) for delivering SSF
-     * events via HTTP push to a receiver's push endpoint.
-     */
+    /** 向接收方 push 端点 HTTP 投递 SSF 事件的默认 socket（读）超时（毫秒）。 */
     public static final int DEFAULT_PUSH_ENDPOINT_SOCKET_TIMEOUT_MILLIS = 1000;
 
-    /**
-     * Default delay (in milliseconds) before the transmitter dispatches a
-     * verification event after a stream has been created or updated.
-     */
+    /** 流创建或更新后，发送方派发验证事件前的默认延迟（毫秒）。 */
     public static final int DEFAULT_TRANSMITTER_INITIATED_VERIFICATION_DELAY_MILLIS = 1500;
 
-    /**
-     * Default minimum amount of time (in seconds) that must pass between
-     * receiver-initiated verification requests. Subsequent requests within
-     * this window are rejected with HTTP 429.
-     */
+    /** 接收方发起验证请求之间的默认最小间隔（秒）；窗口内重复请求返回 HTTP 429。 */
     public static final int DEFAULT_MIN_VERIFICATION_INTERVAL_SECONDS = 60;
 
     /**
@@ -250,9 +225,8 @@ public class SsfTransmitterConfig {
     }
 
     /**
-     * Builds a {@link SsfTransmitterConfig} from the given SPI configuration
-     * scope. Missing properties fall back to the {@code DEFAULT_*} constants
-     * declared on this class.
+     * 从给定 SPI 配置作用域构建 {@link SsfTransmitterConfig}。
+     * 缺失属性回退到本类 {@code DEFAULT_*} 常量。
      */
     public SsfTransmitterConfig(Config.Scope config) {
         this(
@@ -305,9 +279,8 @@ public class SsfTransmitterConfig {
     }
 
     /**
-     * Returns a {@link SsfTransmitterConfig} populated with the {@code DEFAULT_*}
-     * constants. Used as the initial value before the factory has been
-     * initialized with an SPI configuration scope.
+     * 返回填充 {@code DEFAULT_*} 常量的 {@link SsfTransmitterConfig}。
+     * 用作 factory 尚未以 SPI 配置初始化前的初始值。
      */
     public static SsfTransmitterConfig defaults() {
         return new SsfTransmitterConfig(
@@ -326,37 +299,22 @@ public class SsfTransmitterConfig {
                 DEFAULT_ALLOW_INSECURE_PUSH_TARGETS);
     }
 
-    /**
-     * Connect timeout (in milliseconds) used when delivering SSF
-     * events to a receiver's push endpoint if the stream does not define its
-     * own timeout.
-     */
+    /** 流未定义自身超时时，向接收方 push 端点投递 SSF 事件所用的连接超时（毫秒）。 */
     public int getPushEndpointConnectTimeoutMillis() {
         return pushEndpointConnectTimeoutMillis;
     }
 
-    /**
-     * Socket (read) timeout (in milliseconds) used when delivering SSF
-     * events to a receiver's push endpoint if the stream does not define its
-     * own timeout.
-     */
+    /** 流未定义自身超时时，向接收方 push 端点投递 SSF 事件所用的 socket（读）超时（毫秒）。 */
     public int getPushEndpointSocketTimeoutMillis() {
         return pushEndpointSocketTimeoutMillis;
     }
 
-    /**
-     * Delay (in milliseconds) the transmitter waits before dispatching a
-     * verification event after a stream has been created or updated.
-     */
+    /** 流创建或更新后，发送方派发验证事件前等待的延迟（毫秒）。 */
     public int getTransmitterInitiatedVerificationDelayMillis() {
         return transmitterInitiatedVerificationDelayMillis;
     }
 
-    /**
-     * Minimum amount of time (in seconds) that must pass between
-     * receiver-initiated verification requests. Subsequent requests within
-     * this window are rejected with HTTP 429.
-     */
+    /** 接收方发起验证请求之间的最小间隔（秒）；窗口内重复请求返回 HTTP 429。 */
     public int getMinVerificationIntervalSeconds() {
         return minVerificationIntervalSeconds;
     }
@@ -432,9 +390,8 @@ public class SsfTransmitterConfig {
     }
 
     /**
-     * Whether the SSF Prometheus metrics binder is installed. When
-     * {@code false} every meter call is a no-op — see
-     * {@link org.keycloak.ssf.transmitter.metrics.SsfMetricsBinder}.
+     * 是否已安装 SSF Prometheus 指标绑定器。
+     * {@code false} 时所有 meter 调用为 NOOP——参见 {@link org.keycloak.ssf.transmitter.metrics.SsfMetricsBinder}。
      */
     public boolean isMetricsEnabled() {
         return metricsEnabled;

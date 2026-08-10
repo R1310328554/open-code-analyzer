@@ -85,9 +85,9 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.logging.Logger;
 
 /**
- * SsfAdmin resource to manage SSF related components.
+ * SSF 管理 REST 资源，用于管理发送方配置、接收方流、主体订阅与 outbox 事件。
  *
- * The endpoint is available via {@code $KC_ADMIN_URL/admin/realms/{realm}/ssf}
+ * 端点：{@code $KC_ADMIN_URL/admin/realms/{realm}/ssf}
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class SsfAdminResource {
@@ -96,11 +96,9 @@ public class SsfAdminResource {
     public static final String SSF_SYNTHETIC_EVENT_TYPE = "SSF_SYNTHETIC_EVENT";
 
     /**
-     * Outbox entry kinds the admin REST endpoints aggregate across.
-     * SSF stores PUSH and POLL deliveries under separate kinds in
-     * the generic outbox; admin operations (stats, bulk delete,
-     * queued purge) treat the pair as one logical surface so the
-     * REST shape doesn't expose the implementation split.
+     * 管理 REST 聚合的 outbox 条目种类。
+     * SSF 在通用 outbox 中将 PUSH/POLL 分 kind 存储；统计、批量删除、队列 purge 等管理操作
+     * 将二者视为同一逻辑面，REST 不暴露实现拆分。
      */
     public static final List<String> SSF_OUTBOX_KINDS =
             List.of(SsfOutboxKinds.PUSH, SsfOutboxKinds.POLL);
@@ -128,12 +126,8 @@ public class SsfAdminResource {
     }
 
     /**
-     * Convenience accessor — pulls the lazily-built subject management
-     * service off the per-session transmitter provider. Older revisions
-     * of this class held the service as a constructor-injected field;
-     * the lazy-on-provider model keeps the constructor lean and means
-     * a request that never touches subject management doesn't pay for
-     * building it.
+     * 便捷访问器——从 per-session 发送方 provider 懒加载主体管理服务。
+     * 旧版在构造器注入该服务；懒加载模型使构造器精简，且未触及主体管理的请求不必构建它。
      */
     protected SubjectManagementService subjectManagementService() {
         return transmitter.subjectManagementService();
@@ -144,25 +138,19 @@ public class SsfAdminResource {
     }
 
     /**
-     * Builds a 400 BAD_REQUEST response carrying an
-     * {@link SsfErrorRepresentation} with {@code errorCode} as its
-     * machine-readable category. Used by {@link #emitEvent} to surface
-     * each {@link EmitEventStatus} client-error category with its own
-     * specific code (e.g. {@code unknown_event_type},
-     * {@code subject_not_found}) so callers and tests can distinguish
-     * the failure reason from the wire response, while still preserving
-     * any service-supplied detail message.
+     * 构建携带 {@link SsfErrorRepresentation} 的 400 BAD_REQUEST 响应，
+     * {@code errorCode} 为机器可读类别。{@link #emitEvent} 用以为各 {@link EmitEventStatus}
+     * 客户端错误暴露专用码（如 {@code unknown_event_type}、{@code subject_not_found}），
+     * 便于调用方与测试区分失败原因，同时保留服务层详细消息。
      */
     protected Response invalidRequest(String errorCode, String message, String fallback) {
         return invalidRequest(errorCode, message, fallback, null);
     }
 
     /**
-     * Variant of {@link #invalidRequest(String, String, String)} that
-     * attaches a structured {@code params} map to the response so the
-     * admin UI can parameterize a translated message (e.g. inject the
-     * offending {@code subjectType}/{@code subjectValue}) without
-     * re-parsing the free-form {@code error_description}.
+     * {@link #invalidRequest(String, String, String)} 变体，附加结构化 {@code params}，
+     * 供管理 UI 参数化翻译消息（如注入 {@code subjectType}/{@code subjectValue}），
+     * 无需重新解析自由文本 {@code error_description}。
      */
     protected Response invalidRequest(String errorCode, String message, String fallback,
                                       Map<String, String> params) {
@@ -171,14 +159,10 @@ public class SsfAdminResource {
     }
 
     /**
-     * Builds an SSF error {@link Response} carrying an
-     * {@link SsfErrorRepresentation} JSON body. Sets the
-     * {@code APPLICATION_JSON} media type explicitly so the error body is
-     * never dropped — a response with no Content-Type is rejected by
-     * {@link org.keycloak.headers.DefaultSecurityHeadersProvider}
-     * ("MediaType not set ...") and surfaces as an opaque 500 instead of
-     * the actionable error. Returned by {@link #invalidRequest} and the
-     * stream create/update error paths.
+     * 构建携带 {@link SsfErrorRepresentation} JSON 的 SSF 错误 {@link Response}。
+     * 显式设置 {@code APPLICATION_JSON}，避免无 Content-Type 被
+     * {@link org.keycloak.headers.DefaultSecurityHeadersProvider} 拒绝而变成 opaque 500。
+     * 由 {@link #invalidRequest} 与流创建/更新错误路径返回。
      */
     protected Response errorResponse(Response.Status status, String errorCode, String message,
                                           Map<String, String> params) {
@@ -188,11 +172,7 @@ public class SsfAdminResource {
                 .build();
     }
 
-    /**
-     * Sums per-status counts from one outbox kind into the running
-     * accumulator. Used by the realm- and owner-scoped stats endpoints
-     * that aggregate across {@link #SSF_OUTBOX_KINDS}.
-     */
+    /** 将单一 outbox kind 的各状态计数累加入运行累加器；用于 realm/owner 级统计端点聚合 {@link #SSF_OUTBOX_KINDS}。 */
     private static void mergeCounts(Map<OutboxEntryStatus, Long> accumulator,
                                     Map<OutboxEntryStatus, Long> increment) {
         for (Map.Entry<OutboxEntryStatus, Long> entry : increment.entrySet()) {
@@ -200,11 +180,7 @@ public class SsfAdminResource {
         }
     }
 
-    /**
-     * Folds per-status oldest-{@code createdAt} timestamps from one
-     * outbox kind into the running accumulator, keeping the earlier of
-     * the two values per status.
-     */
+    /** 将单一 outbox kind 各状态最旧 {@code createdAt} 合并入累加器，每状态保留较早时间戳。 */
     private static void mergeOldest(Map<OutboxEntryStatus, Instant> accumulator,
                                     Map<OutboxEntryStatus, Instant> increment) {
         for (Map.Entry<OutboxEntryStatus, Instant> entry : increment.entrySet()) {
@@ -213,12 +189,7 @@ public class SsfAdminResource {
         }
     }
 
-    /**
-     * Builds the wire-shape representation from the merged
-     * (count, oldestCreatedAt) maps. Statuses with zero rows aren't
-     * in the accumulator (the underlying GROUP BY doesn't synthesize
-     * zero rows) so they're naturally absent from the response.
-     */
+    /** 由合并后的（计数、最旧 createdAt）映射构建 wire 表示；零行状态不在累加器中，响应中自然缺失。 */
     private static SsfEventStatsRepresentation toEventStatsRepresentation(
             Map<OutboxEntryStatus, Long> counts,
             Map<OutboxEntryStatus, Instant> oldest) {
@@ -233,14 +204,9 @@ public class SsfAdminResource {
     }
 
     /**
-     * Returns the current SSF configuration for this realm, including default
-     * values used by the SSF Transmitter (e.g. the set of event types supported
-     * by default when a receiver client does not configure its own).
-     *
-     * Additional realm/transmitter-level SSF settings can be added to
-     * {@link SsfConfigRepresentation} as the SSF feature evolves.
-     *
-     * The endpoint is available via {@code $KC_ADMIN_URL/admin/realms/{realm}/ssf/config}
+     * 返回当前 realm 的 SSF 配置，含发送方默认值（如接收方未配置时的默认支持事件集）。
+     * 随 SSF 演进可向 {@link SsfConfigRepresentation} 追加 realm/发送方级设置。
+     * 端点：{@code $KC_ADMIN_URL/admin/realms/{realm}/ssf/config}
      */
     @GET
     @Path("config")
@@ -279,14 +245,9 @@ public class SsfAdminResource {
     }
 
     /**
-     * Returns the current SSF stream state for a single receiver client, including
-     * the events that the transmitter currently delivers to it.
-     *
-     * Returns 404 if the client does not exist or has no SSF stream registered yet
-     * (i.e. the receiver has not created a stream via the SSF Transmitter API).
-     *
-     * The endpoint is available via
-     * {@code $KC_ADMIN_URL/admin/realms/{realm}/ssf/clients/{clientId}/stream}
+     * 返回单个接收方客户端当前 SSF 流状态及发送方向其投递的事件。
+     * 客户端不存在或尚未通过发送方 API 注册流时返回 404。
+     * 端点：{@code $KC_ADMIN_URL/admin/realms/{realm}/ssf/clients/{clientId}/stream}
      */
     @GET
     @Path("clients/{clientId}/stream")
@@ -387,10 +348,8 @@ public class SsfAdminResource {
     }
 
     /**
-     * Builds the admin wire representation from a stored {@link StreamConfig}
-     * and the receiver client that owns it. Shared by {@code getClientStream}
-     * and {@code createClientStream} so both endpoints return exactly the
-     * same shape.
+     * 由已存 {@link StreamConfig} 与所属接收方客户端构建管理 wire 表示。
+     * {@code getClientStream} 与 {@code createClientStream} 共用，保证响应形状一致。
      */
     protected SsfClientStreamRepresentation toClientStreamRepresentation(StreamConfig streamConfig, ClientModel client) {
 
@@ -1826,10 +1785,8 @@ public class SsfAdminResource {
     }
 
     /**
-     * Converts the given full event type URIs to their event aliases (e.g.
-     * {@code CaepCredentialChange}) using the transmitter's mapping. Unknown
-     * event types are passed through unchanged so the admin UI still shows
-     * something meaningful.
+     * 使用发送方映射将完整事件类型 URI 转为别名（如 {@code CaepCredentialChange}）。
+     * 未知类型原样保留，管理 UI 仍可显示有意义文本。
      */
     protected Set<String> toEventAliases(SsfTransmitterProvider transmitter, Set<String> eventTypes) {
         if (eventTypes == null) {
