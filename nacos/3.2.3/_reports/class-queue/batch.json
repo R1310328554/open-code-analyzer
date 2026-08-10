@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T04:05:16Z",
   "files": [
-    "core/src/main/java/com/alibaba/nacos/core/distributed/raft/utils/FailoverClosure.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/raft/utils/FailoverClosureImpl.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/raft/utils/JRaftConstants.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/raft/utils/JRaftLogOperation.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/raft/utils/JRaftOps.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/raft/utils/JRaftUtils.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/raft/utils/RaftExecutor.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/raft/utils/RaftOptionsBuilder.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/raft/utils/RetryRunner.java",
-    "core/src/main/java/com/alibaba/nacos/core/exception/ErrorCode.java",
-    "core/src/main/java/com/alibaba/nacos/core/exception/KvStorageException.java",
-    "core/src/main/java/com/alibaba/nacos/core/exception/NacosApiExceptionHandler.java",
-    "core/src/main/java/com/alibaba/nacos/core/listener/LoggingApplicationListener.java",
-    "core/src/main/java/com/alibaba/nacos/core/listener/NacosApplicationListener.java",
-    "core/src/main/java/com/alibaba/nacos/core/listener/StartingApplicationListener.java",
     "core/src/main/java/com/alibaba/nacos/core/listener/startup/AbstractNacosStartUp.java",
     "core/src/main/java/com/alibaba/nacos/core/listener/startup/NacosCoreStartUp.java",
     "core/src/main/java/com/alibaba/nacos/core/listener/startup/NacosStartUp.java",
@@ -33,5 +18,5 @@
     "core/src/main/java/com/alibaba/nacos/core/monitor/topn/FixedSizePriorityQueue.java"
   ],
   "remaining_pending": 917,
-  "done": 1590
+  "done": 1605
 }
