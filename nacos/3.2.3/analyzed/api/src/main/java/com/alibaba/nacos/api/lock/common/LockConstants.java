@@ -17,12 +17,13 @@
 package com.alibaba.nacos.api.lock.common;
 
 /**
- * lock constant.
+ * Nacos 分布式锁通用常量。
  *
  * @author 985492783@qq.com
  * @date 2023/8/23 15:53
  */
 public class LockConstants {
     
+    /** 锁类型标识：Nacos 内置分布式锁。 */
     public static final String NACOS_LOCK_TYPE = "NACOS_LOCK";
 }

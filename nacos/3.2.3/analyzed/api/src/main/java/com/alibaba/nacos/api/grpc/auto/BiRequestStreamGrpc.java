@@ -22,6 +22,9 @@ import static io.grpc.stub.ServerCalls.asyncBidiStreamingCall;
 import static io.grpc.stub.ServerCalls.asyncUnimplementedStreamingCall;
 
 /**
+ * gRPC 双向流服务 {@code BiRequestStream} 的生成桩代码。
+ *
+ * <p>基于 {@code nacos_grpc_service.proto}，客户端与服务端通过 {@link Payload} 进行双向流式通信。</p>
  */
 @javax.annotation.Generated(
     value = "by gRPC proto compiler (version 1.14.0)",
@@ -30,6 +33,7 @@ public final class BiRequestStreamGrpc {
 
   private BiRequestStreamGrpc() {}
 
+  /** gRPC 服务名：{@code BiRequestStream}。 */
   public static final String SERVICE_NAME = "BiRequestStream";
 
   // Static method descriptors that strictly reflect the proto.
@@ -66,14 +70,20 @@ public final class BiRequestStreamGrpc {
   }
 
   /**
-   * Creates a new async stub that supports all call types for the service
+   * 创建支持全部调用类型的异步 Stub。
+   *
+   * @param channel gRPC 通道
+   * @return 异步 Stub 实例
    */
   public static BiRequestStreamStub newStub(io.grpc.Channel channel) {
     return new BiRequestStreamStub(channel);
   }
 
   /**
-   * Creates a new blocking-style stub that supports unary and streaming output calls on the service
+   * 创建阻塞式 Stub（本服务主要为流式，通常使用 {@link #newStub}）。
+   *
+   * @param channel gRPC 通道
+   * @return 阻塞 Stub 实例
    */
   public static BiRequestStreamBlockingStub newBlockingStub(
       io.grpc.Channel channel) {
@@ -81,7 +91,10 @@ public final class BiRequestStreamGrpc {
   }
 
   /**
-   * Creates a new ListenableFuture-style stub that supports unary calls on the service
+   * 创建基于 ListenableFuture 的 Stub。
+   *
+   * @param channel gRPC 通道
+   * @return Future Stub 实例
    */
   public static BiRequestStreamFutureStub newFutureStub(
       io.grpc.Channel channel) {
@@ -89,13 +102,15 @@ public final class BiRequestStreamGrpc {
   }
 
   /**
+    * <p>gRPC 生成桩代码；详见类级说明。</p>
    */
   public static abstract class BiRequestStreamImplBase implements io.grpc.BindableService {
 
     /**
-     * <pre>
-     * Sends a commonRequest
-     * </pre>
+     * 双向流 RPC：发送并接收 {@link Payload} 消息流。
+     *
+     * @param responseObserver 响应流观察者
+     * @return 请求流观察者
      */
     public io.grpc.stub.StreamObserver<com.alibaba.nacos.api.grpc.auto.Payload> requestBiStream(
         io.grpc.stub.StreamObserver<com.alibaba.nacos.api.grpc.auto.Payload> responseObserver) {
@@ -116,6 +131,7 @@ public final class BiRequestStreamGrpc {
   }
 
   /**
+    * <p>gRPC 生成桩代码；详见类级说明。</p>
    */
   public static final class BiRequestStreamStub extends io.grpc.stub.AbstractStub<BiRequestStreamStub> {
     private BiRequestStreamStub(io.grpc.Channel channel) {
@@ -137,6 +153,7 @@ public final class BiRequestStreamGrpc {
      * <pre>
      * Sends a commonRequest
      * </pre>
+      * <p>gRPC 生成桩代码；详见类级说明。</p>
      */
     public io.grpc.stub.StreamObserver<com.alibaba.nacos.api.grpc.auto.Payload> requestBiStream(
         io.grpc.stub.StreamObserver<com.alibaba.nacos.api.grpc.auto.Payload> responseObserver) {
@@ -146,6 +163,7 @@ public final class BiRequestStreamGrpc {
   }
 
   /**
+    * <p>gRPC 生成桩代码；详见类级说明。</p>
    */
   public static final class BiRequestStreamBlockingStub extends io.grpc.stub.AbstractStub<BiRequestStreamBlockingStub> {
     private BiRequestStreamBlockingStub(io.grpc.Channel channel) {
@@ -165,6 +183,7 @@ public final class BiRequestStreamGrpc {
   }
 
   /**
+    * <p>gRPC 生成桩代码；详见类级说明。</p>
    */
   public static final class BiRequestStreamFutureStub extends io.grpc.stub.AbstractStub<BiRequestStreamFutureStub> {
     private BiRequestStreamFutureStub(io.grpc.Channel channel) {

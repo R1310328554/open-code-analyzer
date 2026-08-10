@@ -17,7 +17,9 @@
 package com.alibaba.nacos.api.grpc.auto;
 
 /**
- * Protobuf type {@code Payload}
+ * Nacos gRPC 统一消息载荷（Protobuf {@code Payload}）。
+ *
+ * <p>由 {@link Metadata} 元数据与 {@code google.protobuf.Any} 业务 body 组成，用于 Request/BiRequestStream 等 RPC。</p>
  */
 public  final class Payload extends
     com.google.protobuf.GeneratedMessageV3 implements
@@ -123,18 +125,23 @@ private static final long serialVersionUID = 0L;
   private Metadata metadata_;
   /**
    * <code>.Metadata metadata = 2;</code>
+    * <p>Protobuf 生成消息类；详见类级说明。</p>
    */
+  /** 是否已设置 metadata 字段。 */
   public boolean hasMetadata() {
     return metadata_ != null;
   }
   /**
    * <code>.Metadata metadata = 2;</code>
+    * <p>Protobuf 生成消息类；详见类级说明。</p>
    */
+  /** 获取消息元数据。 */
   public Metadata getMetadata() {
     return metadata_ == null ? Metadata.getDefaultInstance() : metadata_;
   }
   /**
    * <code>.Metadata metadata = 2;</code>
+    * <p>Protobuf 生成消息类；详见类级说明。</p>
    */
   public MetadataOrBuilder getMetadataOrBuilder() {
     return getMetadata();
@@ -144,18 +151,22 @@ private static final long serialVersionUID = 0L;
   private com.google.protobuf.Any body_;
   /**
    * <code>.google.protobuf.Any body = 3;</code>
+    * <p>Protobuf 生成消息类；详见类级说明。</p>
    */
   public boolean hasBody() {
     return body_ != null;
   }
   /**
    * <code>.google.protobuf.Any body = 3;</code>
+    * <p>Protobuf 生成消息类；详见类级说明。</p>
    */
+  /** 获取业务消息体（Any 类型，按 metadata.type 解析）。 */
   public com.google.protobuf.Any getBody() {
     return body_ == null ? com.google.protobuf.Any.getDefaultInstance() : body_;
   }
   /**
    * <code>.google.protobuf.Any body = 3;</code>
+    * <p>Protobuf 生成消息类；详见类级说明。</p>
    */
   public com.google.protobuf.AnyOrBuilder getBodyOrBuilder() {
     return getBody();
@@ -319,6 +330,7 @@ private static final long serialVersionUID = 0L;
 
   @Override
   public Builder newBuilderForType() { return newBuilder(); }
+  /** 创建 Payload 构建器。 */
   public static Builder newBuilder() {
     return DEFAULT_INSTANCE.toBuilder();
   }
@@ -339,6 +351,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * Protobuf type {@code Payload}
+    * <p>Protobuf 生成消息类；详见类级说明。</p>
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
@@ -511,12 +524,14 @@ private static final long serialVersionUID = 0L;
         Metadata, Metadata.Builder, MetadataOrBuilder> metadataBuilder_;
     /**
      * <code>.Metadata metadata = 2;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
     public boolean hasMetadata() {
       return metadataBuilder_ != null || metadata_ != null;
     }
     /**
      * <code>.Metadata metadata = 2;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
     public Metadata getMetadata() {
       if (metadataBuilder_ == null) {
@@ -527,6 +542,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <code>.Metadata metadata = 2;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
     public Builder setMetadata(Metadata value) {
       if (metadataBuilder_ == null) {
@@ -543,6 +559,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <code>.Metadata metadata = 2;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
     public Builder setMetadata(
         Metadata.Builder builderForValue) {
@@ -557,6 +574,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <code>.Metadata metadata = 2;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
     public Builder mergeMetadata(Metadata value) {
       if (metadataBuilder_ == null) {
@@ -575,6 +593,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <code>.Metadata metadata = 2;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
     public Builder clearMetadata() {
       if (metadataBuilder_ == null) {
@@ -589,6 +608,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <code>.Metadata metadata = 2;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
     public Metadata.Builder getMetadataBuilder() {
       
@@ -597,6 +617,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <code>.Metadata metadata = 2;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
     public MetadataOrBuilder getMetadataOrBuilder() {
       if (metadataBuilder_ != null) {
@@ -608,6 +629,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <code>.Metadata metadata = 2;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
     private com.google.protobuf.SingleFieldBuilderV3<
         Metadata, Metadata.Builder, MetadataOrBuilder>
@@ -627,12 +649,14 @@ private static final long serialVersionUID = 0L;
         com.google.protobuf.Any, com.google.protobuf.Any.Builder, com.google.protobuf.AnyOrBuilder> bodyBuilder_;
     /**
      * <code>.google.protobuf.Any body = 3;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
     public boolean hasBody() {
       return bodyBuilder_ != null || body_ != null;
     }
     /**
      * <code>.google.protobuf.Any body = 3;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
     public com.google.protobuf.Any getBody() {
       if (bodyBuilder_ == null) {
@@ -643,6 +667,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <code>.google.protobuf.Any body = 3;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
     public Builder setBody(com.google.protobuf.Any value) {
       if (bodyBuilder_ == null) {
@@ -659,6 +684,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <code>.google.protobuf.Any body = 3;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
     public Builder setBody(
         com.google.protobuf.Any.Builder builderForValue) {
@@ -673,6 +699,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <code>.google.protobuf.Any body = 3;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
     public Builder mergeBody(com.google.protobuf.Any value) {
       if (bodyBuilder_ == null) {
@@ -691,6 +718,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <code>.google.protobuf.Any body = 3;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
     public Builder clearBody() {
       if (bodyBuilder_ == null) {
@@ -705,6 +733,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <code>.google.protobuf.Any body = 3;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
     public com.google.protobuf.Any.Builder getBodyBuilder() {
       
@@ -713,6 +742,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <code>.google.protobuf.Any body = 3;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
     public com.google.protobuf.AnyOrBuilder getBodyOrBuilder() {
       if (bodyBuilder_ != null) {
@@ -724,6 +754,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <code>.google.protobuf.Any body = 3;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
     private com.google.protobuf.SingleFieldBuilderV3<
         com.google.protobuf.Any, com.google.protobuf.Any.Builder, com.google.protobuf.AnyOrBuilder> 
@@ -759,6 +790,7 @@ private static final long serialVersionUID = 0L;
     DEFAULT_INSTANCE = new Payload();
   }
 
+  /** 获取 Payload 默认空实例。 */
   public static Payload getDefaultInstance() {
     return DEFAULT_INSTANCE;
   }

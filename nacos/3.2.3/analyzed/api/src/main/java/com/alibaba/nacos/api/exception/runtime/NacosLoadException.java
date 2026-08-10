@@ -17,7 +17,9 @@
 package com.alibaba.nacos.api.exception.runtime;
 
 /**
- * Nacos load exception.
+ * Nacos 资源加载运行时异常。
+ *
+ * <p>在客户端或插件加载配置、类资源失败时使用，携带可读错误消息。</p>
  *
  * @author hujun
  */
@@ -25,6 +27,11 @@ public class NacosLoadException extends RuntimeException {
     
     private static final long serialVersionUID = 3513491993982295562L;
     
+    /**
+     * 构造带错误消息的加载异常。
+     *
+     * @param errMsg 错误描述
+     */
     public NacosLoadException(String errMsg) {
         super(errMsg);
     }

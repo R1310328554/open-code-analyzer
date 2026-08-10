@@ -21,7 +21,9 @@ import java.lang.reflect.Type;
 import static com.alibaba.nacos.api.common.Constants.Exception.DESERIALIZE_ERROR_CODE;
 
 /**
- * Nacos deserialization exception.
+ * Nacos 反序列化运行时异常。
+ *
+ * <p>在 JSON/Protobuf 等反序列化失败时抛出，错误码为 {@link com.alibaba.nacos.api.common.Constants.Exception#DESERIALIZE_ERROR_CODE}。</p>
  *
  * @author yangyi
  */
@@ -37,38 +39,68 @@ public class NacosDeserializationException extends NacosRuntimeException {
     private static final String ERROR_MSG_FOR_SPECIFIED_CLASS =
         "Nacos deserialize for class [%s] failed, cause error[%s]. ";
     
+    /** 反序列化失败的目标类型（若已知）。 */
     private Class<?> targetClass;
     
+    /** 构造默认反序列化异常。 */
     public NacosDeserializationException() {
         super(DESERIALIZE_ERROR_CODE);
     }
     
+    /**
+     * 构造指定目标类型的反序列化异常。
+     *
+     * @param targetClass 反序列化失败的目标类
+     */
     public NacosDeserializationException(Class<?> targetClass) {
         super(DESERIALIZE_ERROR_CODE,
             String.format(MSG_FOR_SPECIFIED_CLASS, targetClass.getName()));
         this.targetClass = targetClass;
     }
     
+    /**
+     * 构造指定目标 {@link Type} 的反序列化异常。
+     *
+     * @param targetType 反序列化失败的目标类型
+     */
     public NacosDeserializationException(Type targetType) {
         super(DESERIALIZE_ERROR_CODE,
             String.format(MSG_FOR_SPECIFIED_CLASS, targetType.toString()));
     }
     
+    /**
+     * 构造带根因的反序列化异常。
+     *
+     * @param throwable 根因异常
+     */
     public NacosDeserializationException(Throwable throwable) {
         super(DESERIALIZE_ERROR_CODE, DEFAULT_MSG, throwable);
     }
     
+    /**
+     * 构造指定目标类与根因的反序列化异常。
+     *
+     * @param targetClass 反序列化失败的目标类
+     * @param throwable   根因异常
+     */
     public NacosDeserializationException(Class<?> targetClass, Throwable throwable) {
         super(DESERIALIZE_ERROR_CODE, String.format(ERROR_MSG_FOR_SPECIFIED_CLASS,
             targetClass.getName(), throwable.getMessage()), throwable);
         this.targetClass = targetClass;
     }
     
+    /**
+     * 构造指定目标类型与根因的反序列化异常。
+     *
+     * @param targetType 反序列化失败的目标类型
+     * @param throwable  根因异常
+     */
     public NacosDeserializationException(Type targetType, Throwable throwable) {
         super(DESERIALIZE_ERROR_CODE, String.format(ERROR_MSG_FOR_SPECIFIED_CLASS,
             targetType.toString(), throwable.getMessage()), throwable);
     }
     
+    /** 获取反序列化失败的目标类（可能为 {@code null}）。 */
     public Class<?> getTargetClass() {
         return targetClass;
     }

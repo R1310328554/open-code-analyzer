@@ -16,6 +16,11 @@
 
 package com.alibaba.nacos.api.grpc.auto;
 
+/**
+ * Nacos gRPC Protobuf 注册入口（由 {@code nacos_grpc_service.proto} 生成）。
+ *
+ * <p>持有 {@link Metadata}、{@link Payload} 等消息描述符，供 gRPC 桩代码初始化使用。</p>
+ */
 public final class NacosGrpcService {
   private NacosGrpcService() {}
   public static void registerAllExtensions(
@@ -43,6 +48,11 @@ public final class NacosGrpcService {
     com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
       internal_static_Payload_fieldAccessorTable;
 
+  /**
+   * 获取 proto 文件描述符。
+   *
+   * @return {@code nacos_grpc_service.proto} 的 FileDescriptor
+   */
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
     return descriptor;

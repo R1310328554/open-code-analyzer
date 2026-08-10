@@ -22,7 +22,9 @@ import java.lang.reflect.Constructor;
 import java.util.Properties;
 
 /**
- * lock Factory.
+ * Nacos 分布式锁服务工厂。
+ *
+ * <p>通过反射创建 {@link LockService} 客户端实现（默认 {@code com.alibaba.nacos.client.lock.NacosLockService}）。</p>
  *
  * @author 985492783@qq.com
  * @date 2023/8/25 0:40
@@ -30,11 +32,11 @@ import java.util.Properties;
 public class NacosLockFactory {
     
     /**
-     * Create a new lock service.
+     * 根据初始化属性创建锁服务实例。
      *
-     * @param properties lock service properties
-     * @return new lock service
-     * @throws NacosException nacos exception
+     * @param properties 锁客户端配置（如 serverAddr、namespace 等）
+     * @return 新的 {@link LockService} 实例
+     * @throws NacosException 实现类加载或实例化失败时抛出
      */
     public static LockService createLockService(Properties properties) throws NacosException {
         try {

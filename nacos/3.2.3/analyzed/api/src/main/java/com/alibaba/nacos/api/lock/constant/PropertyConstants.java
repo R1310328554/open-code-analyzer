@@ -17,13 +17,15 @@
 package com.alibaba.nacos.api.lock.constant;
 
 /**
- * lock properties constants.
+ * 锁客户端配置属性键常量。
+ *
  * @author 985492783@qq.com
  * @description PropertyConstants
  * @date 2023/6/28 17:38
  */
 public class PropertyConstants {
     
+    /** 锁请求超时时间属性键（毫秒）。 */
     public static final String LOCK_REQUEST_TIMEOUT = "lockRequestTimeout";
     
 }

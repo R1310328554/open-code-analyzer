@@ -16,52 +16,69 @@
 
 package com.alibaba.nacos.api.grpc.auto;
 
+/**
+ * {@link Metadata} 的 Protobuf 构建器接口。
+ *
+ * <p>提供 type、clientIp 与 headers 等字段的只读访问。</p>
+ */
 public interface MetadataOrBuilder extends
     // @@protoc_insertion_point(interface_extends:Metadata)
     com.google.protobuf.MessageOrBuilder {
 
   /**
-   * <code>string type = 3;</code>
+   * 获取消息类型标识。
+   *
+   * <p>对应 Protobuf 字段 {@code type = 3}。</p>
    */
   String getType();
   /**
    * <code>string type = 3;</code>
+    * <p>Nacos API；详见上方说明。</p>
    */
   com.google.protobuf.ByteString
       getTypeBytes();
 
   /**
-   * <code>string clientIp = 8;</code>
+   * 获取客户端 IP 地址。
+   *
+   * <p>对应 Protobuf 字段 {@code clientIp = 8}。</p>
    */
   String getClientIp();
   /**
    * <code>string clientIp = 8;</code>
+    * <p>Nacos API；详见上方说明。</p>
    */
   com.google.protobuf.ByteString
       getClientIpBytes();
 
   /**
-   * <code>map&lt;string, string&gt; headers = 7;</code>
+   * 获取扩展头数量。
+   *
+   * <p>对应 Protobuf map 字段 {@code headers = 7}。</p>
    */
   int getHeadersCount();
   /**
    * <code>map&lt;string, string&gt; headers = 7;</code>
+    * <p>Nacos API；详见上方说明。</p>
    */
   boolean containsHeaders(
       String key);
   /**
    * Use {@link #getHeadersMap()} instead.
+    * <p>Nacos API；详见上方说明。</p>
    */
   @Deprecated
   java.util.Map<String, String>
   getHeaders();
   /**
    * <code>map&lt;string, string&gt; headers = 7;</code>
+    * <p>Nacos API；详见上方说明。</p>
    */
   java.util.Map<String, String>
   getHeadersMap();
   /**
    * <code>map&lt;string, string&gt; headers = 7;</code>
+    * <p>Nacos API；详见上方说明。</p>
    */
 
   String getHeadersOrDefault(
@@ -69,6 +86,7 @@ public interface MetadataOrBuilder extends
       String defaultValue);
   /**
    * <code>map&lt;string, string&gt; headers = 7;</code>
+    * <p>Nacos API；详见上方说明。</p>
    */
 
   String getHeadersOrThrow(

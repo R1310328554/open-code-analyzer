@@ -16,33 +16,32 @@
 
 package com.alibaba.nacos.api.grpc.auto;
 
+/**
+ * {@link Payload} 的 Protobuf 构建器接口。
+ *
+ * <p>提供 metadata 与 body 字段的只读访问。</p>
+ */
 public interface PayloadOrBuilder extends
     // @@protoc_insertion_point(interface_extends:Payload)
     com.google.protobuf.MessageOrBuilder {
 
-  /**
-   * <code>.Metadata metadata = 2;</code>
-   */
+  /** 是否已设置 metadata 字段。 */
   boolean hasMetadata();
-  /**
-   * <code>.Metadata metadata = 2;</code>
-   */
+  /** 获取消息元数据。 */
   Metadata getMetadata();
   /**
    * <code>.Metadata metadata = 2;</code>
+    * <p>Nacos API；详见上方说明。</p>
    */
   MetadataOrBuilder getMetadataOrBuilder();
 
-  /**
-   * <code>.google.protobuf.Any body = 3;</code>
-   */
+  /** 是否已设置 body 字段。 */
   boolean hasBody();
-  /**
-   * <code>.google.protobuf.Any body = 3;</code>
-   */
+  /** 获取业务消息体。 */
   com.google.protobuf.Any getBody();
   /**
    * <code>.google.protobuf.Any body = 3;</code>
+    * <p>Nacos API；详见上方说明。</p>
    */
   com.google.protobuf.AnyOrBuilder getBodyOrBuilder();
 }

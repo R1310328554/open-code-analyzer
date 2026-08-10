@@ -17,7 +17,9 @@
 package com.alibaba.nacos.api.grpc.auto;
 
 /**
- * Protobuf type {@code Metadata}
+ * gRPC 消息元数据（Protobuf {@code Metadata}）。
+ *
+ * <p>携带请求类型、客户端 IP 及扩展 HTTP 风格头信息，封装在 {@link Payload} 中传输。</p>
  */
 public  final class Metadata extends
     com.google.protobuf.GeneratedMessageV3 implements
@@ -137,6 +139,7 @@ private static final long serialVersionUID = 0L;
   private volatile Object type_;
   /**
    * <code>string type = 3;</code>
+    * <p>Protobuf 生成消息类；详见类级说明。</p>
    */
   public String getType() {
     Object ref = type_;
@@ -152,6 +155,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <code>string type = 3;</code>
+    * <p>Protobuf 生成消息类；详见类级说明。</p>
    */
   public com.google.protobuf.ByteString
       getTypeBytes() {
@@ -171,6 +175,7 @@ private static final long serialVersionUID = 0L;
   private volatile Object clientIp_;
   /**
    * <code>string clientIp = 8;</code>
+    * <p>Protobuf 生成消息类；详见类级说明。</p>
    */
   public String getClientIp() {
     Object ref = clientIp_;
@@ -186,6 +191,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <code>string clientIp = 8;</code>
+    * <p>Protobuf 生成消息类；详见类级说明。</p>
    */
   public com.google.protobuf.ByteString
       getClientIpBytes() {
@@ -229,6 +235,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <code>map&lt;string, string&gt; headers = 7;</code>
+    * <p>Protobuf 生成消息类；详见类级说明。</p>
    */
 
   public boolean containsHeaders(
@@ -238,6 +245,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * Use {@link #getHeadersMap()} instead.
+    * <p>Protobuf 生成消息类；详见类级说明。</p>
    */
   @Deprecated
   public java.util.Map<String, String> getHeaders() {
@@ -245,6 +253,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <code>map&lt;string, string&gt; headers = 7;</code>
+    * <p>Protobuf 生成消息类；详见类级说明。</p>
    */
 
   public java.util.Map<String, String> getHeadersMap() {
@@ -252,6 +261,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <code>map&lt;string, string&gt; headers = 7;</code>
+    * <p>Protobuf 生成消息类；详见类级说明。</p>
    */
 
   public String getHeadersOrDefault(
@@ -264,6 +274,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <code>map&lt;string, string&gt; headers = 7;</code>
+    * <p>Protobuf 生成消息类；详见类级说明。</p>
    */
 
   public String getHeadersOrThrow(
@@ -465,6 +476,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * Protobuf type {@code Metadata}
+    * <p>Protobuf 生成消息类；详见类级说明。</p>
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
@@ -650,6 +662,7 @@ private static final long serialVersionUID = 0L;
     private Object type_ = "";
     /**
      * <code>string type = 3;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
     public String getType() {
       Object ref = type_;
@@ -665,6 +678,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <code>string type = 3;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
     public com.google.protobuf.ByteString
         getTypeBytes() {
@@ -681,6 +695,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <code>string type = 3;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
     public Builder setType(
         String value) {
@@ -694,6 +709,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <code>string type = 3;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
     public Builder clearType() {
       
@@ -703,6 +719,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <code>string type = 3;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
     public Builder setTypeBytes(
         com.google.protobuf.ByteString value) {
@@ -719,6 +736,7 @@ private static final long serialVersionUID = 0L;
     private Object clientIp_ = "";
     /**
      * <code>string clientIp = 8;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
     public String getClientIp() {
       Object ref = clientIp_;
@@ -734,6 +752,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <code>string clientIp = 8;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
     public com.google.protobuf.ByteString
         getClientIpBytes() {
@@ -750,6 +769,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <code>string clientIp = 8;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
     public Builder setClientIp(
         String value) {
@@ -763,6 +783,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <code>string clientIp = 8;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
     public Builder clearClientIp() {
       
@@ -772,6 +793,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <code>string clientIp = 8;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
     public Builder setClientIpBytes(
         com.google.protobuf.ByteString value) {
@@ -813,6 +835,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <code>map&lt;string, string&gt; headers = 7;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
 
     public boolean containsHeaders(
@@ -822,6 +845,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * Use {@link #getHeadersMap()} instead.
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
     @Deprecated
     public java.util.Map<String, String> getHeaders() {
@@ -829,6 +853,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <code>map&lt;string, string&gt; headers = 7;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
 
     public java.util.Map<String, String> getHeadersMap() {
@@ -836,6 +861,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <code>map&lt;string, string&gt; headers = 7;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
 
     public String getHeadersOrDefault(
@@ -848,6 +874,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <code>map&lt;string, string&gt; headers = 7;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
 
     public String getHeadersOrThrow(
@@ -868,6 +895,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <code>map&lt;string, string&gt; headers = 7;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
 
     public Builder removeHeaders(
@@ -879,6 +907,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * Use alternate mutation accessors instead.
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
     @Deprecated
     public java.util.Map<String, String>
@@ -887,6 +916,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <code>map&lt;string, string&gt; headers = 7;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
     public Builder putHeaders(
         String key,
@@ -899,6 +929,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <code>map&lt;string, string&gt; headers = 7;</code>
+      * <p>Protobuf 生成消息类；详见类级说明。</p>
      */
 
     public Builder putAllHeaders(

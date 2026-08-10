@@ -21,11 +21,10 @@ import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.lock.model.LockInstance;
 
 /**
- * Nacos Lock Process.
+ * Nacos 分布式锁服务接口。
  *
- * <p>lock => {@link LockService#lock(LockInstance)} -> {@link LockInstance#lock(LockService)} ->
- * {@link  LockService#remoteTryLock(LockInstance)} <br/> unLock => {@link LockService#unLock(LockInstance)} ->
- * {@link LockInstance#unLock(LockService)} -> {@link LockService#remoteReleaseLock(LockInstance)}
+ * <p>加锁流程：{@link #lock(LockInstance)} → {@link LockInstance#lock(LockService)} → {@link #remoteTryLock(LockInstance)}<br/>
+ * 解锁流程：{@link #unLock(LockInstance)} → {@link LockInstance#unLock(LockService)} → {@link #remoteReleaseLock(LockInstance)}</p>
  *
  * @author 985492783@qq.com
  * @date 2023/8/24 19:49
@@ -33,51 +32,49 @@ import com.alibaba.nacos.api.lock.model.LockInstance;
 public interface LockService {
     
     /**
-     * Real lock method expose to user to acquire the lock.<br/> It will call {@link LockInstance#lock(LockService)}
-     * <br/>
+     * 向用户暴露的加锁入口，内部委托 {@link LockInstance#lock(LockService)}。
      *
-     * @param instance instance
-     * @return Boolean
-     * @throws NacosException NacosException
+     * @param instance 锁实例描述
+     * @return 加锁成功返回 {@code true}
+     * @throws NacosException 远程调用或参数错误时抛出
      */
     @Since("3.0.0")
     Boolean lock(LockInstance instance) throws NacosException;
     
     /**
-     * Real lock method expose to user to release the lock.<br/> It will call {@link LockInstance#unLock(LockService)}
-     * <br/>
+     * 向用户暴露的解锁入口，内部委托 {@link LockInstance#unLock(LockService)}。
      *
-     * @param instance instance
-     * @return Boolean
-     * @throws NacosException NacosException
+     * @param instance 锁实例描述
+     * @return 解锁成功返回 {@code true}
+     * @throws NacosException 远程调用或参数错误时抛出
      */
     @Since("3.0.0")
     Boolean unLock(LockInstance instance) throws NacosException;
     
     /**
-     * use grpc request to try lock.
+     * 通过 gRPC 远程尝试加锁。
      *
-     * @param instance instance
-     * @return Boolean
-     * @throws NacosException NacosException
+     * @param instance 锁实例描述
+     * @return 加锁成功返回 {@code true}
+     * @throws NacosException 远程调用失败时抛出
      */
     @Since("3.0.0")
     Boolean remoteTryLock(LockInstance instance) throws NacosException;
     
     /**
-     * use grpc request to release lock.
+     * 通过 gRPC 远程释放锁。
      *
-     * @param instance instance
-     * @return Boolean
-     * @throws NacosException NacosException
+     * @param instance 锁实例描述
+     * @return 解锁成功返回 {@code true}
+     * @throws NacosException 远程调用失败时抛出
      */
     @Since("3.0.0")
     Boolean remoteReleaseLock(LockInstance instance) throws NacosException;
     
     /**
-     * Shutdown the Resources, such as Thread Pool.
+     * 关闭锁服务占用的资源（如线程池、gRPC 连接）。
      *
-     * @throws NacosException exception.
+     * @throws NacosException 关闭失败时抛出
      */
     @Since("3.0.0")
     void shutdown() throws NacosException;

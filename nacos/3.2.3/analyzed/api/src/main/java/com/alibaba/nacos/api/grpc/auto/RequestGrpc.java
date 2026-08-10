@@ -26,7 +26,9 @@ import static io.grpc.stub.ServerCalls.asyncUnaryCall;
 import static io.grpc.stub.ServerCalls.asyncUnimplementedUnaryCall;
 
 /**
+ * gRPC 一元请求服务 {@code Request} 的生成桩代码。
  *
+ * <p>基于 {@code nacos_grpc_service.proto}，通过 {@link #request} 发送单个 {@link Payload} 并接收响应。</p>
  */
 @javax.annotation.Generated(
     value = "by gRPC proto compiler (version 1.14.0)",
@@ -35,6 +37,7 @@ public final class RequestGrpc {
 
   private RequestGrpc() {}
 
+  /** gRPC 服务名：{@code Request}。 */
   public static final String SERVICE_NAME = "Request";
 
   // Static method descriptors that strictly reflect the proto.
@@ -71,14 +74,20 @@ public final class RequestGrpc {
   }
 
   /**
-   * Creates a new async stub that supports all call types for the service
+   * 创建支持全部调用类型的异步 Stub。
+   *
+   * @param channel gRPC 通道
+   * @return 异步 Stub 实例
    */
   public static RequestStub newStub(io.grpc.Channel channel) {
     return new RequestStub(channel);
   }
 
   /**
-   * Creates a new blocking-style stub that supports unary and streaming output calls on the service
+   * 创建阻塞式 Stub，适用于同步一元调用。
+   *
+   * @param channel gRPC 通道
+   * @return 阻塞 Stub 实例
    */
   public static RequestBlockingStub newBlockingStub(
       io.grpc.Channel channel) {
@@ -86,7 +95,10 @@ public final class RequestGrpc {
   }
 
   /**
-   * Creates a new ListenableFuture-style stub that supports unary calls on the service
+   * 创建基于 ListenableFuture 的 Stub。
+   *
+   * @param channel gRPC 通道
+   * @return Future Stub 实例
    */
   public static RequestFutureStub newFutureStub(
       io.grpc.Channel channel) {
@@ -94,13 +106,15 @@ public final class RequestGrpc {
   }
 
   /**
+    * <p>gRPC 生成桩代码；详见类级说明。</p>
    */
   public static abstract class RequestImplBase implements io.grpc.BindableService {
 
     /**
-     * <pre>
-     * Sends a commonRequest
-     * </pre>
+     * 一元 RPC：发送 {@link Payload} 请求并接收响应。
+     *
+     * @param request          请求载荷
+     * @param responseObserver 响应观察者
      */
     public void request(com.alibaba.nacos.api.grpc.auto.Payload request,
         io.grpc.stub.StreamObserver<com.alibaba.nacos.api.grpc.auto.Payload> responseObserver) {
@@ -121,6 +135,7 @@ public final class RequestGrpc {
   }
 
   /**
+    * <p>gRPC 生成桩代码；详见类级说明。</p>
    */
   public static final class RequestStub extends io.grpc.stub.AbstractStub<RequestStub> {
     private RequestStub(io.grpc.Channel channel) {
@@ -139,9 +154,10 @@ public final class RequestGrpc {
     }
 
     /**
-     * <pre>
-     * Sends a commonRequest
-     * </pre>
+     * 一元 RPC：发送 {@link Payload} 请求并接收响应。
+     *
+     * @param request          请求载荷
+     * @param responseObserver 响应观察者
      */
     public void request(com.alibaba.nacos.api.grpc.auto.Payload request,
         io.grpc.stub.StreamObserver<com.alibaba.nacos.api.grpc.auto.Payload> responseObserver) {
@@ -151,6 +167,7 @@ public final class RequestGrpc {
   }
 
   /**
+    * <p>gRPC 生成桩代码；详见类级说明。</p>
    */
   public static final class RequestBlockingStub extends io.grpc.stub.AbstractStub<RequestBlockingStub> {
     private RequestBlockingStub(io.grpc.Channel channel) {
@@ -172,6 +189,7 @@ public final class RequestGrpc {
      * <pre>
      * Sends a commonRequest
      * </pre>
+      * <p>gRPC 生成桩代码；详见类级说明。</p>
      */
     public com.alibaba.nacos.api.grpc.auto.Payload request(com.alibaba.nacos.api.grpc.auto.Payload request) {
       return blockingUnaryCall(
@@ -180,6 +198,7 @@ public final class RequestGrpc {
   }
 
   /**
+    * <p>gRPC 生成桩代码；详见类级说明。</p>
    */
   public static final class RequestFutureStub extends io.grpc.stub.AbstractStub<RequestFutureStub> {
     private RequestFutureStub(io.grpc.Channel channel) {
@@ -201,6 +220,7 @@ public final class RequestGrpc {
      * <pre>
      * Sends a commonRequest
      * </pre>
+      * <p>gRPC 生成桩代码；详见类级说明。</p>
      */
     public com.google.common.util.concurrent.ListenableFuture<com.alibaba.nacos.api.grpc.auto.Payload> request(
         com.alibaba.nacos.api.grpc.auto.Payload request) {

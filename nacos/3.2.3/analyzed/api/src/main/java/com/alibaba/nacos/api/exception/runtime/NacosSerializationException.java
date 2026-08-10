@@ -19,7 +19,9 @@ package com.alibaba.nacos.api.exception.runtime;
 import static com.alibaba.nacos.api.common.Constants.Exception.SERIALIZE_ERROR_CODE;
 
 /**
- * Nacos serialization exception.
+ * Nacos 序列化运行时异常。
+ *
+ * <p>在对象序列化为 JSON/Protobuf 等格式失败时抛出，错误码为 {@link com.alibaba.nacos.api.common.Constants.Exception#SERIALIZE_ERROR_CODE}。</p>
  *
  * @author yangyi
  */
@@ -31,28 +33,47 @@ public class NacosSerializationException extends NacosRuntimeException {
     
     private static final String MSG_FOR_SPECIFIED_CLASS = "Nacos serialize for class [%s] failed. ";
     
+    /** 序列化失败的目标类型（若已知）。 */
     private Class<?> serializedClass;
     
+    /** 构造默认序列化异常。 */
     public NacosSerializationException() {
         super(SERIALIZE_ERROR_CODE);
     }
     
+    /**
+     * 构造指定目标类的序列化异常。
+     *
+     * @param serializedClass 序列化失败的目标类
+     */
     public NacosSerializationException(Class<?> serializedClass) {
         super(SERIALIZE_ERROR_CODE,
             String.format(MSG_FOR_SPECIFIED_CLASS, serializedClass.getName()));
         this.serializedClass = serializedClass;
     }
     
+    /**
+     * 构造带根因的序列化异常。
+     *
+     * @param throwable 根因异常
+     */
     public NacosSerializationException(Throwable throwable) {
         super(SERIALIZE_ERROR_CODE, DEFAULT_MSG, throwable);
     }
     
+    /**
+     * 构造指定目标类与根因的序列化异常。
+     *
+     * @param serializedClass 序列化失败的目标类
+     * @param throwable       根因异常
+     */
     public NacosSerializationException(Class<?> serializedClass, Throwable throwable) {
         super(SERIALIZE_ERROR_CODE,
             String.format(MSG_FOR_SPECIFIED_CLASS, serializedClass.getName()), throwable);
         this.serializedClass = serializedClass;
     }
     
+    /** 获取序列化失败的目标类（可能为 {@code null}）。 */
     public Class<?> getSerializedClass() {
         return serializedClass;
     }
