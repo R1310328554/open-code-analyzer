@@ -17,12 +17,15 @@
 package org.keycloak.models;
 
 /**
+ * 认证流绑定常量：用于查找 realm/客户端绑定的认证流别名。
  * Defines constants for authentication flow bindings.  Strings used for lookup
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface AuthenticationFlowBindings {
+    /** 浏览器登录认证流绑定键。 */
     String BROWSER_BINDING = "browser";
+    /** 直接授权（Resource Owner Password）认证流绑定键。 */
     String DIRECT_GRANT_BINDING = "direct_grant";
 }

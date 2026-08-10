@@ -23,9 +23,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
-* @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
-* @version $Revision: 1 $
-*/
+ * 认证器配置模型：存储认证器实例的配置项（别名与键值对）。
+ *
+ * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
+ * @version $Revision: 1 $
+ */
 public class AuthenticatorConfigModel implements Serializable {
 
     private String id;
@@ -33,6 +35,7 @@ public class AuthenticatorConfigModel implements Serializable {
     private Map<String, String> config = new HashMap<>();
 
 
+    /** @return 配置内部 ID */
     public String getId() {
         return id;
     }
@@ -41,6 +44,7 @@ public class AuthenticatorConfigModel implements Serializable {
         this.id = id;
     }
 
+    /** @return 配置别名 */
     public String getAlias() {
         return alias;
     }
@@ -51,6 +55,7 @@ public class AuthenticatorConfigModel implements Serializable {
 
 
 
+    /** @return 认证器配置键值对 */
     public Map<String, String> getConfig() {
         return config;
     }
@@ -59,6 +64,7 @@ public class AuthenticatorConfigModel implements Serializable {
         this.config = config;
     }
 
+    /** 按别名排序 {@link AuthenticatorConfigModel} 的比较器。 */
     public static class AuthenticationConfigComparator implements Comparator<AuthenticatorConfigModel> {
         public static final AuthenticatorConfigModel.AuthenticationConfigComparator SINGLETON =
                 new AuthenticatorConfigModel.AuthenticationConfigComparator();

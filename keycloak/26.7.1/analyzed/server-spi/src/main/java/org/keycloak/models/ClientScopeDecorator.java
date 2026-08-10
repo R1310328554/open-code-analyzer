@@ -21,11 +21,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+/**
+ * {@link ClientScopeModel} 装饰器：委托底层作用域并覆盖显示名称。
+ * <p>用于在运行时以不同名称包装同一作用域实例。</p>
+ */
 public class ClientScopeDecorator implements ClientScopeModel {
 
     private final ClientScopeModel delegate;
     private final String name;
 
+    /** @param delegate 被装饰的客户端作用域
+     * @param name 覆盖后的作用域名称 */
     public ClientScopeDecorator(ClientScopeModel delegate, String name) {
         this.delegate = delegate;
         this.name = name;
@@ -36,6 +42,7 @@ public class ClientScopeDecorator implements ClientScopeModel {
         return delegate.getId();
     }
 
+    /** @return 装饰器覆盖的名称 */
     @Override
     public String getName() {
         return name;

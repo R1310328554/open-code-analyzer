@@ -18,6 +18,8 @@
 package org.keycloak.models;
 
 /**
+ * 客户端初始访问令牌模型：限制动态客户端注册的次数与有效期。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class ClientInitialAccessModel {
@@ -32,6 +34,7 @@ public class ClientInitialAccessModel {
 
     private int remainingCount;
 
+    /** @return 初始访问记录 ID */
     public String getId() {
         return id;
     }
@@ -40,6 +43,7 @@ public class ClientInitialAccessModel {
         this.id = id;
     }
 
+    /** @return 创建时间戳（秒） */
     public int getTimestamp() {
         return timestamp;
     }
@@ -48,6 +52,7 @@ public class ClientInitialAccessModel {
         this.timestamp = timestamp;
     }
 
+    /** @return 过期时间（秒，相对创建时间） */
     public int getExpiration() {
         return expiration;
     }
@@ -56,6 +61,7 @@ public class ClientInitialAccessModel {
         this.expiration = expiration;
     }
 
+    /** @return 允许注册的最大客户端数 */
     public int getCount() {
         return count;
     }
@@ -64,6 +70,7 @@ public class ClientInitialAccessModel {
         this.count = count;
     }
 
+    /** @return 剩余可用注册次数 */
     public int getRemainingCount() {
         return remainingCount;
     }

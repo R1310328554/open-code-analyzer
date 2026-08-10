@@ -25,14 +25,23 @@ import java.util.function.Supplier;
 import org.keycloak.jose.jws.Algorithm;
 import org.keycloak.utils.StringUtil;
 
+/**
+ * CIBA（Client Initiated Backchannel Authentication）配置：realm 与客户端级 CIBA 策略。
+ * <p>封装令牌投递模式、过期时间、轮询间隔及用户提示等属性。</p>
+ */
 public class CibaConfig extends AbstractConfig {
 
+    // CIBA 令牌投递模式常量
     // Constants
+    /** 轮询模式：客户端定期查询认证结果。 */
     public static final String CIBA_POLL_MODE = "poll";
+    /** Ping 模式：服务端回调客户端通知端点。 */
     public static final String CIBA_PING_MODE = "ping";
+    /** Push 模式（预留）。 */
     public static final String CIBA_PUSH_MODE = "push";
     public static final List<String> CIBA_SUPPORTED_MODES = Arrays.asList(CIBA_POLL_MODE, CIBA_PING_MODE);
 
+    // Realm 级 CIBA 属性名
     // realm attribute names
     public static final String CIBA_BACKCHANNEL_TOKEN_DELIVERY_MODE = "cibaBackchannelTokenDeliveryMode";
     public static final String CIBA_EXPIRES_IN = "cibaExpiresIn";
@@ -50,6 +59,7 @@ public class CibaConfig extends AbstractConfig {
     private int poolingInterval;
     private String authRequestedUserHint;
 
+    // 客户端级 CIBA 属性名
     // client attribute names
     public static final String OIDC_CIBA_GRANT_ENABLED = "oidc.ciba.grant.enabled";
     public static final String CIBA_BACKCHANNEL_TOKEN_DELIVERY_MODE_PER_CLIENT = "ciba.backchannel.token.delivery.mode";
@@ -57,6 +67,7 @@ public class CibaConfig extends AbstractConfig {
     public static final String CIBA_BACKCHANNEL_AUTH_REQUEST_SIGNING_ALG = "ciba.backchannel.auth.request.signing.alg";
 
     /**
+     * 已弃用：请使用 {@link #fromCache(Supplier, Map)} 或 {@link #fromModel(RealmModel)} 工厂方法。
      * @deprecated use {@link #fromCache(Supplier, Map)} or {@link #fromModel(RealmModel)} factory methods
      */
     @Deprecated(since = "26.6", forRemoval = true)
@@ -86,6 +97,7 @@ public class CibaConfig extends AbstractConfig {
         this.realmForWrite = realmForWrite;
     }
 
+    /** 从 {@link RealmModel} 读取 CIBA 配置。 */
     public static CibaConfig fromModel(RealmModel realm) {
         var backChannelTokenDeliveryMode = Objects.requireNonNullElse(realm.getAttribute(CIBA_BACKCHANNEL_TOKEN_DELIVERY_MODE), DEFAULT_CIBA_POLICY_TOKEN_DELIVERY_MODE);
         var authRequestedUserHint =  Objects.requireNonNullElse(realm.getAttribute(CIBA_AUTH_REQUESTED_USER_HINT),  DEFAULT_CIBA_POLICY_AUTH_REQUESTED_USER_HINT);
@@ -94,6 +106,7 @@ public class CibaConfig extends AbstractConfig {
         return new CibaConfig(() -> realm, authRequestedUserHint,  backChannelTokenDeliveryMode, expiresIn, poolingInterval);
     }
 
+    /** 从缓存的 realm 属性映射构建 CIBA 配置。 */
     public static CibaConfig fromCache(Supplier<RealmModel> realmForWrite, Map<String, String> realmAttributes) {
         var backChannelTokenDeliveryMode = realmAttributes.getOrDefault(CIBA_BACKCHANNEL_TOKEN_DELIVERY_MODE,  DEFAULT_CIBA_POLICY_TOKEN_DELIVERY_MODE);
         var authRequestedUserHint =  realmAttributes.getOrDefault(CIBA_AUTH_REQUESTED_USER_HINT,  DEFAULT_CIBA_POLICY_AUTH_REQUESTED_USER_HINT);
@@ -102,6 +115,7 @@ public class CibaConfig extends AbstractConfig {
         return new CibaConfig(realmForWrite, authRequestedUserHint, backChannelTokenDeliveryMode, expiresIn,  poolingInterval);
     }
 
+    /** 获取客户端级后通道令牌投递模式，缺省回退 realm 配置。 */
     public String getBackchannelTokenDeliveryMode(ClientModel client) {
         String mode = client.getAttribute(CIBA_BACKCHANNEL_TOKEN_DELIVERY_MODE_PER_CLIENT);
         if (StringUtil.isBlank(mode)) {
@@ -174,6 +188,7 @@ public class CibaConfig extends AbstractConfig {
         persistRealmAttribute(CIBA_AUTH_REQUESTED_USER_HINT, hint);
     }
 
+    /** 客户端是否启用 OIDC CIBA 授权类型。 */
     public boolean isOIDCCIBAGrantEnabled(ClientModel client) {
         String enabled = client.getAttribute(OIDC_CIBA_GRANT_ENABLED);
         return Boolean.parseBoolean(enabled);

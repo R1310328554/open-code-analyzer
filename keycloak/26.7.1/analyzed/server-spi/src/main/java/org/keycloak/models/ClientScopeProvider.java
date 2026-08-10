@@ -23,11 +23,13 @@ import org.keycloak.provider.Provider;
 import org.keycloak.storage.clientscope.ClientScopeLookupProvider;
 
 /**
+ * 客户端作用域记录提供者：realm 内 OAuth scope 的 CRUD 与查询。
  * Provider of the client scopes records.
  */
 public interface ClientScopeProvider extends Provider, ClientScopeLookupProvider {
 
     /**
+     * 返回 realm 中全部客户端作用域流。
      * Returns all the client scopes of the given realm as a stream.
      * @param realm Realm.
      * @return Stream of the client scopes. Never returns {@code null}.
@@ -35,6 +37,7 @@ public interface ClientScopeProvider extends Provider, ClientScopeLookupProvider
     Stream<ClientScopeModel> getClientScopesStream(RealmModel realm);
 
     /**
+     * 在 realm 中创建客户端作用域（名称空格转下划线，ID 自动生成）。
      * Creates new client scope with given {@code name} to the given realm.
      * Spaces in {@code name} will be replaced by underscore so that scope name
      * can be used as value of scope parameter. The internal ID will be created automatically.
@@ -77,6 +80,7 @@ public interface ClientScopeProvider extends Provider, ClientScopeLookupProvider
     void removeClientScopes(RealmModel realm);
 
     /**
+     * 按协议筛选 realm 中的客户端作用域。
      * Must retrieve all client scopes of the given realm that are use the given protocol.
      *
      * @param realm    the realm to retrieve the client scopes from.
@@ -85,6 +89,7 @@ public interface ClientScopeProvider extends Provider, ClientScopeLookupProvider
     Stream<ClientScopeModel> getClientScopesByProtocol(RealmModel realm, String protocol);
 
     /**
+     * 按属性键值对过滤客户端作用域（支持 OR/AND 组合）。
      * Allows us to filter for scopes by specific attributes
      *
      * @param realm     Realm.

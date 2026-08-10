@@ -28,12 +28,13 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ * 默认操作令牌键：序列化/反序列化 {@link SingleUseObjectKeyModel} 用于邮件链接等一次性操作。
  *
  * @author hmlnarik
  */
 public class DefaultActionTokenKey extends JsonWebToken implements SingleUseObjectKeyModel {
 
-    /** The authenticationSession note with ID of the user authenticated via the action token */
+    /** 认证会话备注键：通过操作令牌认证的用户 ID */
     public static final String ACTION_TOKEN_USER_ID = "ACTION_TOKEN_USER";
 
     public static final String JSON_FIELD_ACTION_VERIFICATION_NONCE = "nonce";
@@ -44,6 +45,10 @@ public class DefaultActionTokenKey extends JsonWebToken implements SingleUseObje
     public DefaultActionTokenKey() {
     }
 
+    /** @param userId 用户 ID
+     * @param actionId 操作类型 ID
+     * @param absoluteExpirationInSecs 绝对过期时间（秒）
+     * @param actionVerificationNonce 防重放随机数 */
     public DefaultActionTokenKey(String userId, String actionId, int absoluteExpirationInSecs, UUID actionVerificationNonce) {
         this.subject = userId;
         this.type = actionId;
@@ -70,6 +75,7 @@ public class DefaultActionTokenKey extends JsonWebToken implements SingleUseObje
 
     private static final Pattern DOT = Pattern.compile("\\.");
 
+    /** 从点分序列化字符串解析操作令牌键。 */
     public static DefaultActionTokenKey from(String serializedKey) {
         if (serializedKey == null) {
             return null;

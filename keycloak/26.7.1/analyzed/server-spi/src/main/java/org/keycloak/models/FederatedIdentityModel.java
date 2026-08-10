@@ -20,6 +20,8 @@ package org.keycloak.models;
 import org.keycloak.provider.ProviderEvent;
 
 /**
+ * 联邦身份模型：用户与外部 IdP 的关联（提供者别名、联邦用户 ID、用户名、令牌）。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class FederatedIdentityModel {
@@ -29,10 +31,14 @@ public class FederatedIdentityModel {
     private final String identityProvider;
     private final String userName;
 
+    /** @param providerAlias IdP 别名
+     * @param userId 联邦侧用户 ID
+     * @param userName 联邦侧用户名 */
     public FederatedIdentityModel(String providerAlias, String userId, String userName) {
         this(providerAlias, userId, userName, null);
     }
 
+    /** 含访问令牌的构造。 */
     public FederatedIdentityModel(String providerAlias, String userId, String userName, String token) {
         this.identityProvider = providerAlias;
         this.userId = userId;
@@ -40,6 +46,7 @@ public class FederatedIdentityModel {
         this.token = token;
     }
 
+    /** 复制联邦身份并替换用户 ID。 */
     public FederatedIdentityModel(FederatedIdentityModel originalIdentity, String userId) {
         identityProvider = originalIdentity.getIdentityProvider();
         this.userId = userId;
@@ -47,18 +54,22 @@ public class FederatedIdentityModel {
         token = originalIdentity.getToken();
     }
 
+    /** @return 联邦侧用户 ID */
     public String getUserId() {
         return userId;
     }
 
+    /** @return 身份提供者别名 */
     public String getIdentityProvider() {
         return identityProvider;
     }
 
+    /** @return 联邦侧用户名 */
     public String getUserName() {
         return userName;
     }
 
+    /** @return 关联的访问令牌（若有） */
     public String getToken() {
         return this.token;
     }
@@ -88,6 +99,7 @@ public class FederatedIdentityModel {
         return result;
     }
 
+    /** 联邦身份创建事件。 */
     public interface FederatedIdentityCreatedEvent extends ProviderEvent {
         KeycloakSession getKeycloakSession();
         RealmModel getRealm();
@@ -95,6 +107,7 @@ public class FederatedIdentityModel {
         FederatedIdentityModel getFederatedIdentity();
     }
 
+    /** 联邦身份移除事件。 */
     public interface FederatedIdentityRemovedEvent extends ProviderEvent {
         KeycloakSession getKeycloakSession();
         RealmModel getRealm();

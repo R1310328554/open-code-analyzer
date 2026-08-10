@@ -24,6 +24,7 @@ import org.keycloak.provider.Provider;
 import org.keycloak.storage.client.ClientLookupProvider;
 
 /**
+ * 客户端记录提供者：realm 内 OAuth/OIDC 客户端的 CRUD 与作用域关联。
  * Provider of the client records.
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -32,6 +33,7 @@ import org.keycloak.storage.client.ClientLookupProvider;
 public interface ClientProvider extends ClientLookupProvider, Provider {
 
     /**
+     * 分页返回 realm 中的客户端流。
      * Returns the clients of the given realm as a stream.
      * @param realm Realm.
      * @param firstResult First result to return. Ignored if negative or {@code null}.
@@ -41,6 +43,7 @@ public interface ClientProvider extends ClientLookupProvider, Provider {
     Stream<ClientModel> getClientsStream(RealmModel realm, Integer firstResult, Integer maxResults);
 
     /**
+     * 返回 realm 中全部客户端流（等同 {@code getClientsStream(realm, null, null)}）。
      * Returns all the clients of the given realm as a stream.
      * Effectively the same as the call {@code getClientsStream(realm, null, null)}.
      * @param realm Realm.
@@ -51,6 +54,7 @@ public interface ClientProvider extends ClientLookupProvider, Provider {
     }
 
     /**
+     * 在 realm 中创建客户端（内部 ID 自动生成）。
      * Adds a client with given {@code clientId} to the given realm.
      * The internal ID of the client will be created automatically.
      * @param realm Realm owning this client.
@@ -63,6 +67,7 @@ public interface ClientProvider extends ClientLookupProvider, Provider {
     }
 
     /**
+     * 使用指定内部 ID 与 clientId 创建客户端。
      * Adds a client with given internal ID and {@code clientId} to the given realm.
      * @param realm Realm owning this client.
      * @param id Internal ID of the client or {@code null} if one is to be created by the underlying store
@@ -75,6 +80,7 @@ public interface ClientProvider extends ClientLookupProvider, Provider {
     ClientModel addClient(RealmModel realm, String id, String clientId);
 
     /**
+     * 返回 realm 中客户端数量。
      * Returns number of clients in the given realm
      * @param realm Realm.
      * @return Number of the clients in the given realm.
@@ -82,6 +88,7 @@ public interface ClientProvider extends ClientLookupProvider, Provider {
     long getClientsCount(RealmModel realm);
 
     /**
+     * 返回在账户控制台始终显示的客户端流。
      * Returns a stream of clients that are expected to always show up in account console.
      * @param realm Realm owning the clients.
      * @return Stream of the clients. Never returns {@code null}.
@@ -89,6 +96,7 @@ public interface ClientProvider extends ClientLookupProvider, Provider {
     Stream<ClientModel> getAlwaysDisplayInConsoleClientsStream(RealmModel realm);
 
     /**
+     * 从 realm 删除指定客户端。
      * Removes given client from the given realm.
      * @param realm Realm.
      * @param id Internal ID of the client
@@ -103,6 +111,7 @@ public interface ClientProvider extends ClientLookupProvider, Provider {
     void removeClients(RealmModel realm);
 
     /**
+     * 为客户端分配默认或可选作用域。
      * Assign clientScopes to the client. Add as default scopes (if parameter 'defaultScope' is true)
      * or optional scopes (if parameter 'defaultScope' is false)
      *
@@ -123,6 +132,7 @@ public interface ClientProvider extends ClientLookupProvider, Provider {
     void removeClientScope(RealmModel realm, ClientModel client, ClientScopeModel clientScope);
 
     /**
+     * 将作用域批量添加到 realm 内同协议的非 bearer-only 客户端。
      * Add specified client scope to all non bearer-only clients in the realm, which have same protocol as specified client scope.
      *
      * Method may be used just for new client scopes, which are not yet assigned to any clients as if specified clientScope is already assigned

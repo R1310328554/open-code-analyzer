@@ -18,11 +18,14 @@
 package org.keycloak.models;
 
 /**
+ * 声明类型模型：定义用户属性/Token 声明的数据类型（布尔、整型、字符串、JSON）。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class ClaimTypeModel {
 
+    /** 声明值的数据类型枚举。 */
     public enum ValueType {
         BOOLEAN,
         INT,
@@ -35,10 +38,15 @@ public class ClaimTypeModel {
     private boolean builtIn;
     private ValueType type;
 
+    /** 复制构造。 */
     public ClaimTypeModel(ClaimTypeModel copy) {
         this(copy.getId(), copy.getName(), copy.isBuiltIn(), copy.getType());
     }
 
+    /** @param id 声明类型 ID
+     * @param name 声明名称
+     * @param builtIn 是否内置
+     * @param type 值类型 */
     public ClaimTypeModel(String id, String name, boolean builtIn, ValueType type) {
         this.id = id;
         this.name = name;
@@ -49,18 +57,22 @@ public class ClaimTypeModel {
     public ClaimTypeModel() {
     }
 
+    /** @return 声明类型 ID */
     public String getId() {
         return id;
     }
 
+    /** @return 声明名称 */
     public String getName() {
         return name;
     }
 
+    /** @return 是否为内置声明类型 */
     public boolean isBuiltIn() {
         return builtIn;
     }
 
+    /** @return 声明值类型 */
     public ValueType getType() {
         return type;
     }

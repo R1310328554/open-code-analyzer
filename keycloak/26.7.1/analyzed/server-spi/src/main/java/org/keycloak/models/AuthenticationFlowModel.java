@@ -21,6 +21,8 @@ import java.io.Serializable;
 import java.util.Comparator;
 
 /**
+ * 认证流模型：描述 realm 中可配置的认证执行链（别名、提供者、是否内置等）。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -33,6 +35,7 @@ public class AuthenticationFlowModel implements Serializable {
     private boolean topLevel;
     private boolean builtIn;
 
+    /** @return 认证流内部 ID */
     public String getId() {
         return id;
     }
@@ -41,6 +44,7 @@ public class AuthenticationFlowModel implements Serializable {
         this.id = id;
     }
 
+    /** @return 认证流别名（唯一标识） */
     public String getAlias() {
         return alias;
     }
@@ -49,6 +53,7 @@ public class AuthenticationFlowModel implements Serializable {
         this.alias = alias;
     }
 
+    /** @return 认证流描述 */
     public String getDescription() {
         return description;
     }
@@ -57,6 +62,7 @@ public class AuthenticationFlowModel implements Serializable {
         this.description = description;
     }
 
+    /** @return 认证流提供者 ID（如 basic-flow） */
     public String getProviderId() {
         return providerId;
     }
@@ -65,6 +71,7 @@ public class AuthenticationFlowModel implements Serializable {
         this.providerId = providerId;
     }
 
+    /** @return 是否为顶级认证流 */
     public boolean isTopLevel() {
         return topLevel;
     }
@@ -73,6 +80,7 @@ public class AuthenticationFlowModel implements Serializable {
         this.topLevel = topLevel;
     }
 
+    /** @return 是否为内置认证流 */
     public boolean isBuiltIn() {
         return builtIn;
     }
@@ -81,6 +89,7 @@ public class AuthenticationFlowModel implements Serializable {
         this.builtIn = builtIn;
     }
 
+    /** 按别名排序 {@link AuthenticationFlowModel} 的比较器。 */
     public static class AuthenticationFlowComparator implements Comparator<AuthenticationFlowModel> {
         public static final AuthenticationFlowModel.AuthenticationFlowComparator SINGLETON =
                 new AuthenticationFlowModel.AuthenticationFlowComparator();

@@ -26,17 +26,21 @@ import org.keycloak.provider.ProviderEvent;
 import org.keycloak.utils.StringUtil;
 
 /**
+ * 客户端作用域模型：OAuth/OIDC scope 的配置、同意屏、参数化作用域及协议映射。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface ClientScopeModel extends ProtocolMapperContainerModel, ScopeContainerModel, OrderedModel {
 
     /**
+     * 参数化作用域的值分隔符，例如 {@code scope:value}。
      * The character separator used to specify values when the client scope is parameterized. For instance, {@code <scope>:<value>}.
      */
     String VALUE_SEPARATOR = ":";
 
     /**
+     * 当启用参数化作用域特性且该作用域为参数化时返回 true。
      * Returns true when parameterized scopes are enabled and the scope is defined as parameterized.
      *
      * @param scope The scope to check
@@ -54,12 +58,14 @@ public interface ClientScopeModel extends ProtocolMapperContainerModel, ScopeCon
         return isParameterizedScope(scope);
     }
 
+    /** 客户端作用域删除事件。 */
     interface ClientScopeRemovedEvent extends ProviderEvent {
         ClientScopeModel getClientScope();
 
         KeycloakSession getKeycloakSession();
     }
 
+    /** 客户端作用域创建事件。 */
     interface ClientScopeCreatedEvent extends ProviderEvent {
         ClientScopeModel getClientScope();
 
@@ -86,6 +92,7 @@ public interface ClientScopeModel extends ProtocolMapperContainerModel, ScopeCon
     Map<String, String> getAttributes();
 
 
+    // 作用域配置属性键
     // CONFIGS
 
     String DISPLAY_ON_CONSENT_SCREEN = "display.on.consent.screen";
@@ -115,6 +122,7 @@ public interface ClientScopeModel extends ProtocolMapperContainerModel, ScopeCon
         setAttribute(DISPLAY_ON_CONSENT_SCREEN, String.valueOf(displayOnConsentScreen));
     }
 
+    // 同意屏文案缺省时回退到作用域名称
     // Fallback to name if consentScreenText attribute is null
     default String getConsentScreenText() {
         String consentScreenText = getAttribute(CONSENT_SCREEN_TEXT);
@@ -168,6 +176,7 @@ public interface ClientScopeModel extends ProtocolMapperContainerModel, ScopeCon
     }
 
     /**
+     * 从 {@code scopeName:parameterValue} 格式的请求作用域中提取参数值。
      * Extracts the parameter value from a requested scope string in the format {@code scopeName:parameterValue}.
      *
      * @param requestScope the requested scope string, e.g. {@code "my_scope:some_value"}
