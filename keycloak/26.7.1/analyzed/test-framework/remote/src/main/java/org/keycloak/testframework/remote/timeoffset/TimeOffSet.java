@@ -16,6 +16,12 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.StringEntity;
 
+/**
+ * 通过 HTTP 端点同步 Keycloak 服务器与本地测试进程的时间偏移。
+ * <p>
+ * 调用 {@link org.keycloak.common.util.Time#setOffset(int)} 更新客户端侧时间，
+ * 并向 {@code /testing-timeoffset} 发送 JSON 以更新服务端（可选包含缓存）。
+ */
 public class TimeOffSet {
     private int currentOffset;
     private final String KEY_OFFSET = "offset";
@@ -25,6 +31,14 @@ public class TimeOffSet {
     private final String serverUrl;
     private boolean enableForCaches;
 
+    /**
+     * 创建时间偏移控制器；若初始偏移非零则立即应用。
+     *
+     * @param httpClient 用于调用服务端端点的 HTTP 客户端
+     * @param serverUrl Keycloak 服务器基础 URL
+     * @param initOffset 初始偏移秒数
+     * @param enableForCaches 是否同步到底层缓存
+     */
     public TimeOffSet(HttpClient httpClient, String serverUrl, int initOffset, boolean enableForCaches) {
         this.httpClient = httpClient;
         this.serverUrl = serverUrl;
@@ -35,6 +49,9 @@ public class TimeOffSet {
         currentOffset = initOffset;
     }
 
+    /**
+     * 启用缓存时间偏移同步；若已设置非零偏移则刷新服务端状态。
+     */
     public void enableForCaches() {
         this.enableForCaches = true;
         if (currentOffset != 0) {
@@ -43,10 +60,10 @@ public class TimeOffSet {
     }
 
     /**
-     * Set the timeoffset on the Keycloak server
+     * 设置 Keycloak 服务器与本地测试的时间偏移（秒）。
      *
-     * @param offset the timeoffset
-     * @throws RuntimeException
+     * @param offset 偏移秒数，正数表示将时钟拨快
+     * @throws RuntimeException HTTP 调用失败或响应非 200 时抛出
      */
     public void set(int offset) throws RuntimeException {
         currentOffset = offset;
@@ -76,9 +93,9 @@ public class TimeOffSet {
     }
 
     /**
-     * Same as {@link #set(int)} but expecting a {@link Duration}.
+     * 与 {@link #set(int)} 相同，但接受 {@link Duration} 参数。
      *
-     * @param duration the duration
+     * @param duration 时间偏移量，不可为 {@code null}
      */
     public void set(Duration duration) {
         Objects.requireNonNull(duration, "duration can not be null");
@@ -86,14 +103,15 @@ public class TimeOffSet {
     }
 
     /**
-     * Retrive the current time offset
+     * 获取当前已应用的时间偏移（秒）。
      *
-     * @return the time offset
+     * @return 当前偏移秒数
      */
     public int get() {
         return currentOffset;
     }
 
+    /** 是否已应用非零时间偏移。 */
     public boolean hasChanged() {
         return currentOffset != 0;
     }

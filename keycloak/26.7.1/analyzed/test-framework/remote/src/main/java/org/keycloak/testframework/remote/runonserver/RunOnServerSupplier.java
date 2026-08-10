@@ -17,8 +17,14 @@ import org.keycloak.testframework.server.KeycloakServer;
 
 import org.apache.http.client.HttpClient;
 
+/**
+ * 为 {@link InjectRunOnServer} 注解提供 {@link RunOnServerClient} 实例的供应器。
+ * <p>
+ * 组装 HTTP 客户端、Realm URL 与测试类服务器，并注册允许的包前缀。
+ */
 public class RunOnServerSupplier implements Supplier<RunOnServerClient, InjectRunOnServer> {
 
+    /** {@inheritDoc} 声明对 HTTP 客户端、Keycloak 服务器、Realm 及远程组件的依赖。 */
     @Override
     public List<Dependency> getDependencies(RequestedInstance<RunOnServerClient, InjectRunOnServer> instanceContext) {
         return DependenciesBuilder.create(HttpClient.class)
@@ -28,6 +34,7 @@ public class RunOnServerSupplier implements Supplier<RunOnServerClient, InjectRu
                 .add(TestClassServer.class).build();
     }
 
+    /** {@inheritDoc} 创建 RunOnServer 客户端并配置允许的测试类包。 */
     @Override
     public RunOnServerClient getValue(InstanceContext<RunOnServerClient, InjectRunOnServer> instanceContext) {
         KeycloakServer server = instanceContext.getDependency(KeycloakServer.class);
@@ -43,16 +50,19 @@ public class RunOnServerSupplier implements Supplier<RunOnServerClient, InjectRu
         return new RunOnServerClient(httpClient, realm.getBaseUrl(), server.hashCode());
     }
 
+    /** {@inheritDoc} 仅当 {@code realmRef} 相同时视为兼容。 */
     @Override
     public boolean compatible(InstanceContext<RunOnServerClient, InjectRunOnServer> a, RequestedInstance<RunOnServerClient, InjectRunOnServer> b) {
         return a.getAnnotation().realmRef().equals(b.getAnnotation().realmRef());
     }
 
+    /** {@inheritDoc} 默认按测试方法生命周期创建客户端。 */
     @Override
     public LifeCycle getDefaultLifecycle() {
         return LifeCycle.METHOD;
     }
 
+    /** {@inheritDoc} 在 Keycloak 服务器启动前完成依赖准备。 */
     @Override
     public int order() {
         return SupplierOrder.BEFORE_KEYCLOAK_SERVER;
