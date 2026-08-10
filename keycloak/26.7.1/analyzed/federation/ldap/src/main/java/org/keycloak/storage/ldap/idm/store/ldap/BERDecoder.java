@@ -23,28 +23,32 @@ import java.nio.ByteBuffer;
 
 
 /**
- * A decoder for the ASN.1 BER encoding.
- *
- * Very limited implementation, only supports what is needed by the current LDAP extension controls.
+ * ASN.1 BER 编码解码器（精简实现，仅支持当前 LDAP 扩展控制所需特性）。
  */
 public class BERDecoder {
-    // Universal tags.
+    /** Universal tag：SEQUENCE。 */
     public static final int TAG_SEQUENCE = 0x30;
 
-    // Tag classes.
+    /** Tag class：context-specific。 */
     public static final int TAG_CLASS_CONTEXT_SPECIFIC = 0x80;
 
-    // Tag forms.
+    /** Tag form：primitive。 */
     public static final int TAG_FORM_PRIMITIVE = 0x00;
 
+    /** 待解码的字节缓冲区。 */
     private ByteBuffer encoded;
 
+    /**
+     * @param encodedValue BER 编码字节数组
+     */
     public BERDecoder(byte[] encodedValue) {
         this.encoded = ByteBuffer.wrap(encodedValue);
     }
 
     /**
-     * Start decoding a sequence.
+     * 开始解码 SEQUENCE 元素（消费 tag 与 length）。
+     *
+     * @throws DecodeException tag 非 SEQUENCE 或输入不足时
      */
     public void startSequence() throws DecodeException {
         try {
@@ -59,11 +63,14 @@ public class BERDecoder {
     }
 
     /**
-     * Check if the next element matches with the given tag, but do not consume it.
-     * Returns false if there is no more data.
+     * 探测下一元素 tag 是否匹配，但不消费数据；无剩余数据时返回 {@code false}。
+     *
+     * @param clazz tag class
+     * @param form tag form
+     * @param tag tag number
      */
     public boolean isNextTag(int clazz, int form, int tag) {
-        // Check if there is more data to read (e.g. to allow empty SEQUENCE).
+        // 允许空 SEQUENCE 等场景：无剩余数据则直接返回 false
         if (!encoded.hasRemaining()) {
             return false;
         }
@@ -78,11 +85,13 @@ public class BERDecoder {
     }
 
     /**
-     * Skip over the next element.
+     * 跳过下一个 BER 元素（消费 tag、length 与 value 字节）。
+     *
+     * @throws DecodeException 输入不足时
      */
     public void skipElement() throws DecodeException {
         try {
-            encoded.get(); // Consume tag.
+            encoded.get(); // 消费 tag
             int length = readLength();
             encoded.position(encoded.position() + length);
         } catch (BufferUnderflowException e) {
@@ -91,11 +100,13 @@ public class BERDecoder {
     }
 
     /**
-     * Drain the value bytes of the next element.
+     * 读取并返回下一个元素的 value 字节（消费 tag 与 length）。
+     *
+     * @throws DecodeException 输入不足时
      */
     public byte[] drainElementValue() throws DecodeException {
         try {
-            encoded.get(); // Consume tag.
+            encoded.get(); // 消费 tag
             int length = readLength();
             byte[] value = new byte[length];
             encoded.get(value);
@@ -105,10 +116,11 @@ public class BERDecoder {
         }
     }
 
+    /** 读取 BER length 字段（支持短形式与最多 4 字节的长形式）。 */
     private int readLength() throws DecodeException {
         int length = encoded.get() & 0xFF;
 
-        // Short form.
+        // 短形式
         if ((length & 0x80) == 0) {
             if (length > encoded.remaining()) {
                 throw new DecodeException("Length " + length + " exceeds remaining buffer size " + encoded.remaining());
@@ -116,7 +128,7 @@ public class BERDecoder {
             return length;
         }
 
-        // Long form. numBytes == 0 is the indefinite form, which is not supported.
+        // 长形式；numBytes == 0 为不定长形式，不支持
         int numBytes = length & 0x7F;
         if (numBytes == 0 || numBytes > 4) {
             throw new DecodeException("Cannot handle more than 4 bytes of length, got " + numBytes + " bytes");
@@ -134,6 +146,7 @@ public class BERDecoder {
         return length;
     }
 
+    /** BER 解码失败时抛出的受检异常。 */
     public static final class DecodeException extends IOException {
         DecodeException(String message) {
             super(message);

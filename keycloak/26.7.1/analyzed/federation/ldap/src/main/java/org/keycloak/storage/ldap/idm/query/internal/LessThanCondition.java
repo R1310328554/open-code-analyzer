@@ -18,20 +18,30 @@
 package org.keycloak.storage.ldap.idm.query.internal;
 
 /**
+ * LDAP 小于（或小于等于）查询条件，生成 {@code (attr<=value)} 或 {@code (attr<value)} 过滤器。
+ *
  * @author Pedro Igor
  */
 class LessThanCondition extends NamedParameterCondition {
 
+    /** 是否包含等于（{@code <=}）。 */
     private final boolean orEqual;
 
+    /** 比较阈值。 */
     private final Comparable value;
 
+    /**
+     * @param name LDAP 属性名
+     * @param value 比较阈值
+     * @param orEqual 为 {@code true} 时使用 {@code <=}
+     */
     public LessThanCondition(String name, Comparable value, boolean orEqual) {
         super(name);
         this.value = value;
         this.orEqual = orEqual;
     }
 
+    /** {@inheritDoc} 追加小于/小于等于比较过滤器。 */
     @Override
     public void applyCondition(StringBuilder filter) {
         filter.append("(").append(getParameterName()).append(orEqual? "<=" : "<").append(escapeValue(value)).append(")");

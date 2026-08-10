@@ -20,17 +20,25 @@ package org.keycloak.storage.ldap.idm.query.internal;
 import org.keycloak.models.LDAPConstants;
 
 /**
+ * LDAP IN 查询条件，将多个等值条件以 AND 组合，模拟 SQL {@code IN} 语义。
+ *
  * @author Pedro Igor
  */
 class InCondition extends NamedParameterCondition {
 
+    /** 候选值集合。 */
     private final Object[] valuesToCompare;
 
+    /**
+     * @param name LDAP 属性名
+     * @param valuesToCompare 待匹配的候选值数组
+     */
     public InCondition(String name, Object[] valuesToCompare) {
         super(name);
         this.valuesToCompare = valuesToCompare;
     }
 
+    /** {@inheritDoc} 为每个候选值生成等值子条件并以 AND 连接。 */
     @Override
     public void applyCondition(StringBuilder filter) {
 

@@ -18,19 +18,29 @@
 package org.keycloak.storage.ldap.idm.query.internal;
 
 /**
+ * LDAP 区间查询条件，生成 {@code (lower<=attr<=upper)} 形式的过滤器片段。
+ *
  * @author Pedro Igor
  */
 class BetweenCondition extends NamedParameterCondition {
 
+    /** 区间下界（含）。 */
     private final Comparable x;
+    /** 区间上界（含）。 */
     private final Comparable y;
 
+    /**
+     * @param name LDAP 属性名
+     * @param x 区间下界
+     * @param y 区间上界
+     */
     public BetweenCondition(String name, Comparable x, Comparable y) {
         super(name);
         this.x = x;
         this.y = y;
     }
 
+    /** {@inheritDoc} 追加区间比较过滤器。 */
     @Override
     public void applyCondition(StringBuilder filter) {
         filter.append("(").append(escapeValue(x)).append("<=").append(getParameterName()).append("<=").append(escapeValue(y)).append(")");

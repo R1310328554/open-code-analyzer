@@ -30,7 +30,7 @@ import org.keycloak.storage.ldap.idm.query.internal.LDAPQuery;
 import org.keycloak.storage.ldap.mappers.LDAPOperationDecorator;
 
 /**
- * IdentityStore representation providing minimal SPI
+ * 身份存储 SPI 最小抽象，封装 LDAP 条目的 CRUD、查询、凭证与组 membership 操作。
  *
  * TODO: Rather remove this abstraction
  *
@@ -40,7 +40,7 @@ import org.keycloak.storage.ldap.mappers.LDAPOperationDecorator;
 public interface IdentityStore {
 
     /**
-     * Returns the configuration for this IdentityStore instance
+     * 返回本 IdentityStore 实例的 LDAP 配置。
      *
      * @return
      */
@@ -49,46 +49,48 @@ public interface IdentityStore {
     // General
 
     /**
-     * Persists the specified IdentityType
+     * 持久化指定 LDAP 条目。
      *
      * @param ldapObject
      */
     void add(LDAPObject ldapObject);
 
     /**
-     * Updates the specified IdentityType
+     * 更新指定 LDAP 条目。
      *
      * @param ldapObject
      */
     void update(LDAPObject ldapObject);
 
     /**
-     * Removes the specified IdentityType
+     * 删除指定 LDAP 条目。
      *
      * @param ldapObject
      */
     void remove(LDAPObject ldapObject);
 
     /**
-     * Adds a member to a group.
-     * @param groupDn The DN of the group object
-     * @param memberAttrName The member attribute name
-     * @param value The value (it can be uid or dn depending the group type)
+     * 向组添加成员。
+     * @param groupDn 组条目的 DN
+     * @param memberAttrName 成员属性名
+     * @param value 成员值（依组类型可为 uid 或 dn）
      */
     public void addMemberToGroup(LdapName groupDn, String memberAttrName, String value);
 
     /**
-     * Removes a member from a group.
-     * @param groupDn The DN of the group object
-     * @param memberAttrName The member attribute name
-     * @param value The value (it can be uid or dn depending the group type)
+     * 从组移除成员。
+     * @param groupDn 组条目的 DN
+     * @param memberAttrName 成员属性名
+     * @param value 成员值（依组类型可为 uid 或 dn）
      */
     public void removeMemberFromGroup(LdapName groupDn, String memberAttrName, String value);
 
     // Identity query
 
+    /** 执行 {@link LDAPQuery} 并返回匹配条目列表。 */
     List<LDAPObject> fetchQueryResults(LDAPQuery LDAPQuery);
 
+    /** 返回 {@link LDAPQuery} 匹配条目总数。 */
     int countQueryResults(LDAPQuery LDAPQuery);
 
 //    // Relationship query
@@ -98,33 +100,33 @@ public interface IdentityStore {
 //    <V extends Relationship> int countQueryResults(RelationshipQuery<V> query);
 
     /**
-     * Query the LDAP server <a href="https://ldapwiki.com/wiki/RootDSE">RootDSE</a> and extract the {@link LDAPCapabilityRepresentation}
-     * of all supported <i>extensions</i>, <i>controls</i> and <i>features</i> the server announces. The LDAP Wiki
-     * provides a <a href="https://ldapwiki.com/wiki/LDAP%20Extensions%20and%20Controls%20Listing">list of known capabilities</a>.
+     * 查询 LDAP 服务端 <a href="https://ldapwiki.com/wiki/RootDSE">RootDSE</a>，提取其宣告的全部
+     * <i>extensions</i>、<i>controls</i> 与 <i>features</i> 对应的 {@link LDAPCapabilityRepresentation}。
+     * LDAP Wiki 提供<a href="https://ldapwiki.com/wiki/LDAP%20Extensions%20and%20Controls%20Listing">已知能力列表</a>。
      *
-     * Will throw a {@link ModelException} on any LDAP error, or when the searchResult is empty.
+     * <p>LDAP 错误或空搜索结果时抛出 {@link ModelException}。</p>
      *
-     * @return a set of LDAPOid, each representing a server capability (control, extension or feature).
+     * @return 每项代表一项服务端能力（control、extension 或 feature）的集合
      */
     Set<LDAPCapabilityRepresentation> queryServerCapabilities();
 
     // Credentials
 
     /**
-     * Validates the specified credentials.
+     * 校验指定凭证。
      *
-     * @param user Keycloak user
-     * @param password Ldap password
-     * @throws AuthenticationException if authentication is not successful
+     * @param user Keycloak 用户
+     * @param password Ldap 密码
+     * @throws AuthenticationException 认证失败时
      */
     void validatePassword(LDAPObject user, String password) throws AuthenticationException;
 
     /**
-     * Updates the specified credential value.
+     * 更新指定用户的 LDAP 密码。
      *
-     * @param user Keycloak user
-     * @param password Ldap password
-     * @param passwordUpdateDecorator Callback to be executed before/after password update. Can be null
+     * @param user Keycloak 用户
+     * @param password Ldap 密码
+     * @param passwordUpdateDecorator 密码更新前后回调，可为 null
      */
     void updatePassword(LDAPObject user, String password, LDAPOperationDecorator passwordUpdateDecorator);
 

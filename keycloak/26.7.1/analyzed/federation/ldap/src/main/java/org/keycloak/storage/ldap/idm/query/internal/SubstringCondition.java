@@ -19,19 +19,28 @@ package org.keycloak.storage.ldap.idm.query.internal;
 import java.util.Arrays;
 
 /**
- * <p>Substring condition for ldap filters, <em>attrname=*some*thing*</em> for
- * example. The filter is created <em>attrname=[start]*[middle1]*[middle2]*[middleN]*[end]</em>.
- * At least one property (start, middle or end) should contain a non-empty
- * string. The middle array should not contain any null or empty string.</p>
+ * <p>LDAP 子串匹配条件，例如 {@code attrname=*some*thing*}。</p>
+ *
+ * <p>过滤器格式为 {@code attrname=[start]*[middle1]*[middle2]*[middleN]*[end]}；
+ * {@code start}、{@code middle}、{@code end} 至少一项非空，且 {@code middle} 数组不得含空串。</p>
  *
  * @author rmartinc
  */
 public class SubstringCondition extends NamedParameterCondition {
 
+    /** 前缀子串。 */
     private final String start;
+    /** 中间子串数组。 */
     private final String[] middle;
+    /** 后缀子串。 */
     private final String end;
 
+    /**
+     * @param name LDAP 属性名
+     * @param start 前缀子串，可为空
+     * @param middle 中间子串数组，可为空
+     * @param end 后缀子串，可为空
+     */
     public SubstringCondition(String name, String start, String[] middle, String end) {
         super(name);
         this.start = start;
@@ -39,6 +48,7 @@ public class SubstringCondition extends NamedParameterCondition {
         this.end = end;
     }
 
+    /** {@inheritDoc} 按 start/middle/end 拼接子串过滤器。 */
     @Override
     public void applyCondition(StringBuilder filter) {
         filter.append("(").append(getParameterName()).append("=");

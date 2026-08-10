@@ -20,25 +20,34 @@ package org.keycloak.storage.ldap.idm.query.internal;
 import org.keycloak.storage.ldap.idm.query.Condition;
 
 /**
+ * LDAP OR 组合条件，将多个子条件以 {@code (|...)} 逻辑或连接。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 class OrCondition implements Condition {
 
+    /** 子条件数组。 */
     private final Condition[] innerConditions;
 
+    /**
+     * @param innerConditions 至少一个子条件
+     */
     public OrCondition(Condition... innerConditions) {
         this.innerConditions = innerConditions;
     }
 
+    /** {@inheritDoc} OR 组合不绑定单一属性，返回 {@code null}。 */
     @Override
     public String getParameterName() {
         return null;
     }
 
+    /** {@inheritDoc} 无操作。 */
     @Override
     public void setParameterName(String parameterName) {
     }
 
+    /** {@inheritDoc} 递归更新各子条件的属性名映射。 */
     @Override
     public void updateParameterName(String modelParamName, String ldapParamName) {
         for (Condition innerCondition : innerConditions) {
@@ -46,6 +55,7 @@ class OrCondition implements Condition {
         }
     }
 
+    /** {@inheritDoc} 以 {@code (|...)} 形式追加各子条件过滤器。 */
     @Override
     public void applyCondition(StringBuilder filter) {
         filter.append("(|");
@@ -57,10 +67,12 @@ class OrCondition implements Condition {
         filter.append(")");
     }
 
+    /** {@inheritDoc} 无操作。 */
     @Override
     public void setBinary(boolean binary) {
     }
 
+    /** {@inheritDoc} 始终为非二进制模式。 */
     @Override
     public boolean isBinary() {
         return false;

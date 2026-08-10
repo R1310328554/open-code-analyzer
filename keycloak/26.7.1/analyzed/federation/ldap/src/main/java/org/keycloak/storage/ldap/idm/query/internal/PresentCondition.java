@@ -17,16 +17,20 @@
 package org.keycloak.storage.ldap.idm.query.internal;
 
 /**
- * <p>Present LDAP condition <em>attrname=*</em> for filters</p>
+ * <p>LDAP 存在性条件，生成 {@code attrname=*} 过滤器片段。</p>
  *
  * @author rmartinc
  */
 public class PresentCondition extends NamedParameterCondition {
 
+    /**
+     * @param name LDAP 属性名
+     */
     public PresentCondition(String name) {
         super(name);
     }
 
+    /** {@inheritDoc} 追加存在性过滤器 {@code (attr=*)}。 */
     @Override
     public void applyCondition(StringBuilder filter) {
         filter.append("(").append(getParameterName()).append("=*)");
