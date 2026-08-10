@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T23:06:45Z",
   "files": [
-    "pkg/storage/bucket/filesystem/config.go",
-    "pkg/storage/bucket/gcs/bucket_client.go",
-    "pkg/storage/bucket/gcs/config.go",
-    "pkg/storage/bucket/http/config.go",
-    "pkg/storage/bucket/named_stores.go",
-    "pkg/storage/bucket/object_client_adapter.go",
-    "pkg/storage/bucket/oss/bucket_client.go",
-    "pkg/storage/bucket/oss/config.go",
-    "pkg/storage/bucket/prefixed_bucket_client.go",
-    "pkg/storage/bucket/s3/bucket_client.go",
-    "pkg/storage/bucket/s3/config.go",
-    "pkg/storage/bucket/sse_bucket_client.go",
-    "pkg/storage/bucket/swift/bucket_client.go",
-    "pkg/storage/bucket/swift/config.go",
-    "pkg/storage/bucket/user_bucket_client.go",
     "pkg/storage/bucket/xcap_bucket.go",
     "pkg/storage/chunk/cache/background.go",
     "pkg/storage/chunk/cache/cache.go",
@@ -33,5 +18,5 @@
     "pkg/storage/chunk/cache/resultscache/pipelinewrapper_keygen.go"
   ],
   "remaining_pending": 352,
-  "done": 1170
+  "done": 1185
 }
