@@ -32,15 +32,22 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Combined trace events subscriber.
+ * 组合式链路追踪事件订阅者，将插件 {@link NacosTraceSubscriber} 聚合到统一 {@link SmartSubscriber}。
+ *
+ * <p>按事件类型分发到对应插件，支持插件自定义 {@link NacosTraceSubscriber#executor()} 异步执行。</p>
  *
  * @author xiweng.yy
  */
 public class NacosCombinedTraceSubscriber extends SmartSubscriber {
     
+    /** 事件类型到感兴趣插件订阅者的映射。 */
     private final Map<Class<? extends TraceEvent>, Set<NacosTraceSubscriber>> interestedEvents;
     
-    public NacosCombinedTraceSubscriber(Class<? extends TraceEvent> combinedEvent) {
+    /**
+     * 构造并注册组合事件：扫描插件、过滤感兴趣类型并注册到 {@link NotifyCenter}。
+     *
+     * @param combinedEvent 组合追踪事件的基类
+     */
         this.interestedEvents = new ConcurrentHashMap<>();
         TraceEventPublisherFactory.getInstance().addPublisherEvent(combinedEvent);
         for (NacosTraceSubscriber each : NacosTracePluginManager.getInstance()
@@ -50,6 +57,7 @@ public class NacosCombinedTraceSubscriber extends SmartSubscriber {
         NotifyCenter.registerSubscriber(this, TraceEventPublisherFactory.getInstance());
     }
     
+    /** 将插件订阅的事件类型过滤并归入 {@link #interestedEvents}。 */
     private void filterInterestedEvents(NacosTraceSubscriber plugin,
         Class<? extends TraceEvent> combinedEvent) {
         for (Class<? extends TraceEvent> each : plugin.subscribeTypes()) {
@@ -65,11 +73,13 @@ public class NacosCombinedTraceSubscriber extends SmartSubscriber {
         }
     }
     
+    /** {@inheritDoc} 返回本订阅者关注的全部追踪事件类型。 */
     @Override
     public List<Class<? extends Event>> subscribeTypes() {
         return new LinkedList<>(interestedEvents.keySet());
     }
     
+    /** {@inheritDoc} 收到事件后分发给对应插件（同步或提交到插件线程池）。 */
     @Override
     public void onEvent(Event event) {
         Set<NacosTraceSubscriber> subscribers = interestedEvents.get(event.getClass());
@@ -86,6 +96,7 @@ public class NacosCombinedTraceSubscriber extends SmartSubscriber {
         }
     }
     
+    /** 调用单个插件的 {@link NacosTraceSubscriber#onEvent}，异常被吞掉以免阻塞其他插件。 */
     private void onEvent0(NacosTraceSubscriber subscriber, TraceEvent event) {
         try {
             subscriber.onEvent(event);
@@ -93,6 +104,7 @@ public class NacosCombinedTraceSubscriber extends SmartSubscriber {
         }
     }
     
+    /** 从 {@link NotifyCenter} 注销本订阅者。 */
     public void shutdown() {
         NotifyCenter.deregisterSubscriber(this);
     }

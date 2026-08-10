@@ -24,7 +24,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Nacos server state service.
+ * Nacos 服务端状态查询服务，汇总各模块的运行状态键值对。
+ *
+ * <p>从 {@link ModuleStateHolder} 读取已注册模块的 {@link ModuleState} 并扁平化为 Map。</p>
  *
  * @author xiweng.yy
  */
@@ -32,9 +34,9 @@ import java.util.Map;
 public class NacosServerStateService {
     
     /**
-     * Get current server states.
+     * 获取当前服务端各模块状态。
      *
-     * @return server states key-value map.
+     * @return 状态名到字符串值的映射
      */
     public Map<String, String> getServerState() {
         Map<String, String> serverState = new HashMap<>(4);

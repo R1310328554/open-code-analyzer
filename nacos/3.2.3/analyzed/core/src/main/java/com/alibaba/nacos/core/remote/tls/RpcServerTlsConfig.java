@@ -19,54 +19,51 @@ package com.alibaba.nacos.core.remote.tls;
 import com.alibaba.nacos.common.remote.TlsConfig;
 
 /**
- * Represents the TLS configuration for an RPC server.
- * This class extends TlsConfig to inherit common TLS configuration properties.
+ * RPC 服务端的 TLS 配置，继承 {@link com.alibaba.nacos.common.remote.TlsConfig} 的通用 TLS 属性。
+ *
+ * <p>额外提供 SSL 上下文热刷新器名称与兼容模式开关。</p>
  *
  * @author githubcheng2978.
  */
 public class RpcServerTlsConfig extends TlsConfig {
     
-    /**
-     *  The class representing the configuration for SSL context refreshing in the RPC server.
-     */
+    /** SSL 上下文刷新器的 SPI 实现类名（{@link RpcServerSslContextRefresher}）。 */
     private String sslContextRefresher = "";
     
-    /**
-     * Indicates whether compatibility mode is enabled.
-     */
+    /** 是否启用 TLS 兼容模式（默认 {@code true}）。 */
     private Boolean compatibility = true;
     
     /**
-     * Gets the compatibility mode status.
+     * 获取兼容模式是否启用。
      *
-     * @return true if compatibility mode is enabled, false otherwise.
+     * @return {@code true} 表示启用兼容模式
      */
     public Boolean getCompatibility() {
         return compatibility;
     }
     
     /**
-     * Sets the compatibility mode status.
+     * 设置是否启用兼容模式。
      *
-     * @param compatibility true to enable compatibility mode, false otherwise.
+     * @param compatibility {@code true} 启用兼容模式
      */
     public void setCompatibility(Boolean compatibility) {
         this.compatibility = compatibility;
     }
     
     /**
-     * Gets the SSL context refresher.
+     * 获取 SSL 上下文刷新器 SPI 名称。
      *
-     * @return the SSL context refresher.
+     * @return 刷新器实现类名
      */
     public String getSslContextRefresher() {
         return sslContextRefresher;
     }
     
     /**
-     * Sets the SSL context refresher.
+     * 设置 SSL 上下文刷新器 SPI 名称。
      *
-     * @param sslContextRefresher the SSL context refresher to set.
+     * @param sslContextRefresher 刷新器实现类名
      */
     public void setSslContextRefresher(String sslContextRefresher) {
         this.sslContextRefresher = sslContextRefresher;

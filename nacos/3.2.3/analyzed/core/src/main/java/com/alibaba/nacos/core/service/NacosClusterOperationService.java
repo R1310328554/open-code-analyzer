@@ -31,25 +31,36 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * NacosClusterOperationService.
+ * Nacos 集群运维服务，提供控制台所需的成员列表、状态更新与寻址模式切换。
+ *
+ * <p>封装 {@link ServerMemberManager}，对外暴露集群节点查询与批量更新能力。</p>
+ *
  * @author dongyafei
  * @date 2022/8/15
  */
 @Service
 public class NacosClusterOperationService {
     
+    /** 集群成员管理器。 */
     private final ServerMemberManager memberManager;
     
+    /** 注入集群成员管理器。 */
     public NacosClusterOperationService(ServerMemberManager memberManager) {
         this.memberManager = memberManager;
     }
     
+    /** 返回当前节点在集群中的 {@link Member} 信息。 */
     public Member self() {
         return memberManager.getSelf();
     }
     
     /**
-     * The console displays the list of cluster members.
+     * 控制台展示集群成员列表，可按地址前缀与节点状态过滤。
+     *
+     * @param address   地址前缀过滤，空则不过滤
+     * @param nodeState 节点状态过滤，{@code null} 则不过滤
+     * @return 符合条件的成员集合
+     * @throws NacosException 查询失败时抛出
      */
     public Collection<Member> listNodes(String address, NodeState nodeState) throws NacosException {
         
@@ -70,7 +81,10 @@ public class NacosClusterOperationService {
     }
     
     /**
-     * cluster members information update.
+     * 批量更新集群成员信息，非法节点会被跳过。
+     *
+     * @param nodes 待更新的成员列表
+     * @return 固定返回 {@code true}
      */
     public Boolean updateNodes(List<Member> nodes) {
         for (Member node : nodes) {
@@ -94,16 +108,18 @@ public class NacosClusterOperationService {
     }
     
     /**
-     * Addressing mode switch.
+     * 切换集群寻址模式（如 file / address-server）。
+     *
+     * @param request 含目标寻址类型的请求
+     * @return 固定返回 {@code true}
+     * @throws NacosException 切换失败时抛出
      */
     public Boolean updateLookup(LookupUpdateRequest request) throws NacosException {
         memberManager.switchLookup(request.getType());
         return true;
     }
     
-    /**
-     * query health of current node.
-     */
+    /** 查询当前节点健康状态（返回 {@link NodeState} 名称字符串）。 */
     public String selfHealth() {
         return memberManager.getSelf().getState().name();
     }

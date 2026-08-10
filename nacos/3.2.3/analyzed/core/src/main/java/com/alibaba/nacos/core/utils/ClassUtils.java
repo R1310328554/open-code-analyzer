@@ -21,22 +21,25 @@ import org.springframework.core.ResolvableType;
 import java.util.Objects;
 
 /**
- * class operation utils.
+ * 类与泛型解析工具类，基于 Spring {@link ResolvableType} 与反射。
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 @SuppressWarnings("all")
 public final class ClassUtils {
     
+    /** 解析声明类父类上的第一个泛型参数类型。 */
     public static <T> Class<T> resolveGenericType(Class<?> declaredClass) {
         return (Class<T>) ResolvableType.forClass(declaredClass).getSuperType().resolveGeneric(0);
     }
     
+    /** 解析声明类第一个接口上的第一个泛型参数类型。 */
     public static <T> Class<T> resolveGenericTypeByInterface(Class<?> declaredClass) {
         return (Class<T>) ResolvableType.forClass(declaredClass).getInterfaces()[0]
             .resolveGeneric(0);
     }
     
+    /** 按全限定类名加载 Class，失败时抛出 {@link RuntimeException}。 */
     public static Class findClassByName(String className) {
         try {
             return Class.forName(className);
@@ -45,31 +48,37 @@ public final class ClassUtils {
         }
     }
     
+    /** 返回对象的 {@link Class#getName()}。 */
     public static String getName(Object obj) {
         Objects.requireNonNull(obj, "obj");
         return obj.getClass().getName();
     }
     
+    /** 返回对象的 {@link Class#getCanonicalName()}。 */
     public static String getCanonicalName(Object obj) {
         Objects.requireNonNull(obj, "obj");
         return obj.getClass().getCanonicalName();
     }
     
+    /** 返回对象的 {@link Class#getSimpleName()}（方法名拼写保持与历史一致）。 */
     public static String getSimplaName(Object obj) {
         Objects.requireNonNull(obj, "obj");
         return obj.getClass().getSimpleName();
     }
     
+    /** 返回给定 Class 的 {@link Class#getName()}。 */
     public static String getName(Class cls) {
         Objects.requireNonNull(cls, "cls");
         return cls.getName();
     }
     
+    /** 返回给定 Class 的 {@link Class#getCanonicalName()}。 */
     public static String getCanonicalName(Class cls) {
         Objects.requireNonNull(cls, "cls");
         return cls.getCanonicalName();
     }
     
+    /** 返回给定 Class 的 {@link Class#getSimpleName()}。 */
     public static String getSimplaName(Class cls) {
         Objects.requireNonNull(cls, "cls");
         return cls.getSimpleName();

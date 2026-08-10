@@ -19,7 +19,9 @@ package com.alibaba.nacos.core.remote.tls;
 import com.alibaba.nacos.core.remote.BaseRpcServer;
 
 /**
- * ssl context refresher spi holder.
+ * SSL 上下文变更感知接口，供 RPC 服务端在证书热更新时回调。
+ *
+ * <p>实现类通常与 {@link RpcServerSslContextRefresher} 配合，在 {@link #onSslContextChange()} 中重建 gRPC SSL 上下文。</p>
  *
  * @author liuzunfei
  * @version $Id: RequestFilters.java, v 0.1 2023年03月17日 12:00 PM liuzunfei Exp $
@@ -27,19 +29,15 @@ import com.alibaba.nacos.core.remote.BaseRpcServer;
 public interface SslContextChangeAware {
     
     /**
-     * init rpc server ssl context.
+     * 初始化 RPC 服务端的 SSL 上下文。
      *
-     * @param baseRpcServer rpc server.
+     * @param baseRpcServer 待绑定的 RPC 服务端实例
      */
     void init(BaseRpcServer baseRpcServer);
     
-    /**
-     * do something on ssl context change.
-     */
+    /** SSL 上下文发生变更时触发，通常用于热重载证书。 */
     void onSslContextChange();
     
-    /**
-     * shutdown to clear context.
-     */
+    /** 关闭并清理 SSL 上下文相关资源。 */
     void shutdown();
 }

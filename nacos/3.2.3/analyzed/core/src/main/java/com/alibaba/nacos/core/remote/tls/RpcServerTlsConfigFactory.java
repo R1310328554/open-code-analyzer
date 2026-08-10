@@ -36,18 +36,23 @@ import static com.alibaba.nacos.common.remote.client.RpcConstants.ServerSuffix.T
 import static com.alibaba.nacos.common.remote.client.RpcConstants.ServerSuffix.TLS_TRUST_PWD;
 
 /**
- * RpcServerTlsConfigFactory.
+ * RPC 服务端 TLS 配置工厂，从 {@link java.util.Properties} 解析 SDK 与集群通道的 TLS 参数。
+ *
+ * <p>实现 {@link com.alibaba.nacos.common.remote.client.RpcTlsConfigFactory}，按配置前缀（{@code nacos.server.rpc} / {@code nacos.peer.rpc}）组装 {@link RpcServerTlsConfig}。</p>
  *
  * @author stone-98
  * @date 2024/4/8
  */
 public class RpcServerTlsConfigFactory implements RpcTlsConfigFactory {
     
+    /** 单例实例。 */
     private static RpcServerTlsConfigFactory instance;
     
+    /** 私有构造，禁止外部实例化。 */
     private RpcServerTlsConfigFactory() {
     }
     
+    /** 获取工厂单例（懒加载）。 */
     public static synchronized RpcServerTlsConfigFactory getInstance() {
         if (instance == null) {
             instance = new RpcServerTlsConfigFactory();
@@ -56,10 +61,10 @@ public class RpcServerTlsConfigFactory implements RpcTlsConfigFactory {
     }
     
     /**
-     * Create SDK client TLS config.
+     * 创建 SDK 客户端连接对应的 RPC 服务端 TLS 配置。
      *
-     * @param properties Properties containing TLS configuration
-     * @return RpcClientTlsConfig object representing the TLS configuration
+     * @param properties 含 TLS 键值对的配置属性
+     * @return SDK 通道 {@link RpcServerTlsConfig}
      */
     @Override
     public RpcServerTlsConfig createSdkConfig(Properties properties) {
@@ -67,10 +72,10 @@ public class RpcServerTlsConfigFactory implements RpcTlsConfigFactory {
     }
     
     /**
-     * Create cluster client TLS config.
+     * 创建集群节点间 RPC 的 TLS 配置。
      *
-     * @param properties Properties containing TLS configuration
-     * @return RpcClientTlsConfig object representing the TLS configuration
+     * @param properties 含 TLS 键值对的配置属性
+     * @return 集群通道 {@link RpcServerTlsConfig}
      */
     @Override
     public RpcServerTlsConfig createClusterConfig(Properties properties) {
@@ -78,11 +83,11 @@ public class RpcServerTlsConfigFactory implements RpcTlsConfigFactory {
     }
     
     /**
-     * create sdk server tls config.
+     * 按指定前缀从属性中解析并填充 {@link RpcServerTlsConfig}。
      *
-     * @param properties properties
-     * @param prefix     prefix
-     * @return
+     * @param properties 配置属性源
+     * @param prefix     配置键前缀（如 {@code nacos.server.rpc}）
+     * @return 解析后的 TLS 配置对象
      */
     public RpcServerTlsConfig createServerTlsConfig(Properties properties, String prefix) {
         RpcServerTlsConfig tlsConfig = new RpcServerTlsConfig();

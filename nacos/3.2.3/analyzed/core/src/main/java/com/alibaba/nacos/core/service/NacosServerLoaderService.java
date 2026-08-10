@@ -47,25 +47,34 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 /**
- * Nacos Service loader service.
+ * Nacos 服务端连接负载管理服务，支持客户端连接迁移与集群级智能均衡。
+ *
+ * <p>通过 {@link ConnectionManager} 执行单连接/批量重载，并聚合各节点 SDK 连接指标实现 {@link #smartReload(float)}。</p>
  *
  * @author xiweng.yy
  */
 @Service
 public class NacosServerLoaderService {
     
+    /** 本类日志记录器。 */
     private static final Logger LOGGER = LoggerFactory.getLogger(NacosServerLoaderService.class);
     
+    /** 长连接管理器，执行连接重载。 */
     private final ConnectionManager connectionManager;
     
+    /** 集群成员管理器。 */
     private final ServerMemberManager serverMemberManager;
     
+    /** 集群 RPC 客户端代理，向其他节点发起异步请求。 */
     private final ClusterRpcClientProxy clusterRpcClientProxy;
     
+    /** 本节点连接重载请求处理器。 */
     private final ServerReloaderRequestHandler serverReloaderRequestHandler;
     
+    /** 本节点负载指标查询处理器。 */
     private final ServerLoaderInfoRequestHandler serverLoaderInfoRequestHandler;
     
+    /** 构造注入连接管理、集群成员与 RPC 相关依赖。 */
     public NacosServerLoaderService(ConnectionManager connectionManager,
         ServerMemberManager serverMemberManager,
         ClusterRpcClientProxy clusterRpcClientProxy,
@@ -79,47 +88,44 @@ public class NacosServerLoaderService {
     }
     
     /**
-     * Get all current clients upper 2.0 Client which connected by gRPC.
+     * 获取当前所有 gRPC 长连接客户端（2.0+ 客户端）。
      *
-     * @return all current clients
+     * @return 连接 ID 到 {@link Connection} 的映射
      */
     public Map<String, Connection> getAllClients() {
         return connectionManager.currentClients();
     }
     
     /**
-     * Reload single client connection to other server nodes.
+     * 将指定客户端连接重载到其他服务端节点。
      *
-     * @param connectionId    the client want to be reload
-     * @param redirectAddress expected redirect address. optional, if no setting, will random redirect to other server
+     * @param connectionId    待迁移的连接 ID
+     * @param redirectAddress 目标节点地址，为空则随机选择其他节点
      */
     public void reloadClient(String connectionId, String redirectAddress) {
         connectionManager.loadSingle(connectionId, redirectAddress);
     }
     
     /**
-     * Reload client connect to other server nodes by remain count.
+     * 按剩余连接数目标批量重载客户端到其他节点。
      *
-     * @param count           remain connection counts, server will try to reload ${current count} - ${count} clients to
-     *                        other server
-     * @param redirectAddress expected redirect address. optional, if no setting, will random redirect to other server
+     * @param count           期望保留的连接数，超出部分将被迁移
+     * @param redirectAddress 目标节点地址，为空则随机选择
      */
     public void reloadCount(int count, String redirectAddress) {
         connectionManager.loadCount(count, redirectAddress);
     }
     
     /**
-     * According to the total number of sdk connections of all nodes in the nacos cluster, intelligently balance the
-     * number of sdk connections of each node in the nacos cluster.
+     * 根据集群各节点 SDK 连接总数，智能均衡各节点连接数。
      * <p>
-     * Server will calculate a low limit and a upper limit of sdk connections by loaderFactor and avg connection in all
-     * cluster. the low limit is avg connection * (1 - loaderFactor), the upper limit is avg connection * (1 +
-     * loaderFactor) connection count is upper than upper limit, server will try to reload sdk connections to other
-     * server nodes which connection lower than low limit.
+     * 以全集群平均连接数为基准，按 {@code loaderFactor} 计算上下限：
+     * 下限 = 平均 × (1 - loaderFactor)，上限 = 平均 × (1 + loaderFactor)。
+     * 超出上限的节点向低于下限的节点迁移连接。
      * </p>
      *
-     * @param loaderFactor load factor, the default value is 0.1f, the value range is [0,1]
-     * @return {@code true} smart reload success, {@code false} smart reload fail
+     * @param loaderFactor 负载因子，默认 0.1，取值范围 [0, 1]
+     * @return {@code true} 全部重载任务成功，{@code false} 存在失败
      */
     public boolean smartReload(float loaderFactor) {
         ServerLoaderMetrics serverLoadMetrics = getServerLoaderMetrics();
@@ -198,9 +204,9 @@ public class NacosServerLoaderService {
     }
     
     /**
-     * Get server loader metrics.
+     * 聚合集群各节点 SDK 连接负载指标。
      *
-     * @return server loader metrics for nacos server cluster.
+     * @return 含明细、最大/最小/平均连接数等的 {@link ServerLoaderMetrics}
      */
     public ServerLoaderMetrics getServerLoaderMetrics() {
         List<ServerLoaderMetric> responseList = new CopyOnWriteArrayList<>();
@@ -228,6 +234,7 @@ public class NacosServerLoaderService {
         return buildMetrics(responseList, max, min, total);
     }
     
+    /** 获取本节点 SDK 连接负载指标。 */
     private ServerLoaderMetric getSelfServerLoaderMetric() {
         ServerLoaderMetric.Builder builder = ServerLoaderMetric.Builder.newBuilder();
         builder.withAddress(serverMemberManager.getSelf().getAddress());
@@ -242,6 +249,7 @@ public class NacosServerLoaderService {
         return builder.build();
     }
     
+    /** 等待异步拉取其他节点指标完成（最多 1 秒）。 */
     private void waitAsyncGetLoaderMetricFinish(CountDownLatch countDownLatch) {
         try {
             countDownLatch.await(1000, TimeUnit.MILLISECONDS);
@@ -250,6 +258,7 @@ public class NacosServerLoaderService {
         }
     }
     
+    /** 根据各节点指标构建汇总 {@link ServerLoaderMetrics}。 */
     private ServerLoaderMetrics buildMetrics(List<ServerLoaderMetric> responseList, int max,
         int min, int total) {
         ServerLoaderMetrics serverLoaderMetrics = new ServerLoaderMetrics();
@@ -266,6 +275,7 @@ public class NacosServerLoaderService {
         return serverLoaderMetrics;
     }
     
+    /** 异步拉取远程节点负载指标的回调实现。 */
     private static class ServerLoaderMetricCallBack implements RequestCallBack<Response> {
         
         private final Member member;

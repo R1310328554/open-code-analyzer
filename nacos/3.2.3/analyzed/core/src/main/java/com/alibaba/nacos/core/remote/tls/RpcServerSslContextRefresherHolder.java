@@ -25,49 +25,46 @@ import java.util.Collection;
 import java.util.Properties;
 
 /**
- * Holder for managing instances of {@link RpcServerSslContextRefresher}. This class is responsible for initializing and
- * providing instances of the SSL context refresher based on the communication type (SDK or Cluster).
+ * {@link RpcServerSslContextRefresher} 实例的持有者，负责按通信类型（SDK 或 Cluster）初始化并提供 SSL 上下文刷新器。
+ *
+ * <p>通过 SPI 加载刷新器实现，并与 {@link RpcServerTlsConfigFactory} 生成的 TLS 配置匹配。</p>
  *
  * @author liuzunfei
  * @version $Id: RpcServerSslContextRefresherHolder.java, v 0.1 2023年03月17日 12:00 PM liuzunfei Exp $
  */
 public class RpcServerSslContextRefresherHolder {
     
-    /**
-     * The instance of {@link RpcServerSslContextRefresher} for SDK communication.
-     */
+    /** SDK 通信通道对应的 {@link RpcServerSslContextRefresher} 实例。 */
     private static RpcServerSslContextRefresher sdkInstance;
     
-    /**
-     * The instance of {@link RpcServerSslContextRefresher} for Cluster communication.
-     */
+    /** 集群通信通道对应的 {@link RpcServerSslContextRefresher} 实例。 */
     private static RpcServerSslContextRefresher clusterInstance;
     
+    /** 类加载时初始化 SDK 与 Cluster 两套 SSL 上下文刷新器。 */
     static {
         init();
     }
     
     /**
-     * Gets the instance of {@link RpcServerSslContextRefresher} for SDK communication.
+     * 获取 SDK 通信通道的 {@link RpcServerSslContextRefresher} 实例。
      *
-     * @return The instance of {@link RpcServerSslContextRefresher} for SDK communication.
+     * @return SDK 通道 SSL 上下文刷新器，未配置时可能为 {@code null}
      */
     public static RpcServerSslContextRefresher getSdkInstance() {
         return sdkInstance;
     }
     
     /**
-     * Gets the instance of {@link RpcServerSslContextRefresher} for Cluster communication.
+     * 获取集群通信通道的 {@link RpcServerSslContextRefresher} 实例。
      *
-     * @return The instance of {@link RpcServerSslContextRefresher} for Cluster communication.
+     * @return 集群通道 SSL 上下文刷新器，未配置时可能为 {@code null}
      */
     public static RpcServerSslContextRefresher getClusterInstance() {
         return clusterInstance;
     }
     
     /**
-     * Initializes the holder by loading SSL context refreshers and matching them with the configured types (SDK and
-     * Cluster).
+     * 初始化持有者：加载 SPI 刷新器并按 SDK/Cluster TLS 配置匹配对应实现。
      */
     private static void init() {
         synchronized (RpcServerSslContextRefresherHolder.class) {
@@ -85,11 +82,11 @@ public class RpcServerSslContextRefresherHolder {
     }
     
     /**
-     * Initializes the SSL context refresher instance based on the specified configuration.
+     * 根据 TLS 配置从 SPI 集合中选取并初始化 SSL 上下文刷新器。
      *
-     * @param refreshers        Collection of SSL context refreshers to choose from.
-     * @param serverTlsConfig   Configuration instance for the SSL context refresher.
-     * @return The instance of {@link RpcServerSslContextRefresher}.
+     * @param refreshers      SPI 加载的全部刷新器实现
+     * @param serverTlsConfig 对应通道的 TLS 配置（含刷新器名称）
+     * @return 匹配到的刷新器实例，未配置或未找到时返回 {@code null}
      */
     private static RpcServerSslContextRefresher getSslContextRefresher(
         Collection<RpcServerSslContextRefresher> refreshers, RpcServerTlsConfig serverTlsConfig) {
