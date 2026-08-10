@@ -1,3 +1,7 @@
+// keycloak.v2 主题：客户端密码策略实时校验
+// keycloak.v2 主题：客户端密码策略实时校验
+// 各策略名称对应的校验函数，失败时返回本地化错误消息
+// 各策略名称对应的校验函数，失败时返回本地化错误消息
 const policies = {
   length: (policy, value) => {
     if (value.length < policy.value) {
@@ -39,8 +43,10 @@ const policies = {
   },
 };
 
+// 将策略模板中的 {0} 替换为策略阈值
 const templateError = (policy) => policy.error.replace("{0}", policy.value);
 
+// 对密码依次执行激活的策略，返回所有未通过的错误消息列表
 export function validatePassword(password, activePolicies) {
   const errors = [];
   for (const p of activePolicies) {

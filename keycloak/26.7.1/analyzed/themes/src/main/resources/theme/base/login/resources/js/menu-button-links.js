@@ -12,7 +12,9 @@
  *   Source: https://www.w3.org/TR/wai-aria-practices/examples/menu-button/menu-button-links.html
  */
 
+// 基于 WAI-ARIA 实践的链接菜单按钮组件，支持键盘导航与无障碍访问
 class MenuButtonLinks {
+  // 初始化 DOM 节点、菜单项列表及事件绑定
   constructor(domNode) {
     this.domNode = domNode;
     this.buttonNode = domNode.querySelector("button");
@@ -30,6 +32,7 @@ class MenuButtonLinks {
     for (const menuitem of nodes) {
       this.menuitemNodes.push(menuitem);
       menuitem.tabIndex = -1;
+      // 记录各菜单项首字符，用于字母快速跳转
       this.firstChars.push(menuitem.textContent.trim()[0].toLowerCase());
 
       menuitem.addEventListener("keydown", (e) => this.onMenuitemKeydown(e));
@@ -47,6 +50,7 @@ class MenuButtonLinks {
     domNode.addEventListener("focusin", () => this.onFocusin());
     domNode.addEventListener("focusout", () => this.onFocusout());
 
+    // 点击菜单外部区域时关闭弹出层
     window.addEventListener(
       "mousedown",
       (e) => this.onBackgroundMousedown(e),
@@ -54,6 +58,7 @@ class MenuButtonLinks {
     );
   }
 
+  // 将焦点移至指定菜单项并更新 tabIndex
   setFocusToMenuitem = (newMenuitem) =>
     this.menuitemNodes.forEach((item) => {
       if (item === newMenuitem) {
@@ -68,6 +73,7 @@ class MenuButtonLinks {
 
   setFocusToLastMenuitem = () => this.setFocusToMenuitem(this.lastMenuitem);
 
+  // 焦点移至上一项，首项时循环至末项
   setFocusToPreviousMenuitem = (currentMenuitem) => {
     let newMenuitem, index;
 
@@ -83,6 +89,7 @@ class MenuButtonLinks {
     return newMenuitem;
   };
 
+  // 焦点移至下一项，末项时循环至首项
   setFocusToNextMenuitem = (currentMenuitem) => {
     let newMenuitem, index;
 
@@ -97,6 +104,7 @@ class MenuButtonLinks {
     return newMenuitem;
   };
 
+  // 按首字符在菜单项间跳转焦点
   setFocusByFirstCharacter = (currentMenuitem, char) => {
     let start, index;
 
@@ -106,27 +114,25 @@ class MenuButtonLinks {
 
     char = char.toLowerCase();
 
-    // Get start index for search based on position of currentItem
+    // 从当前项之后开始搜索匹配首字符
     start = this.menuitemNodes.indexOf(currentMenuitem) + 1;
     if (start >= this.menuitemNodes.length) {
       start = 0;
     }
 
-    // Check remaining slots in the menu
     index = this.firstChars.indexOf(char, start);
 
-    // If not found in remaining slots, check from beginning
+    // 未找到则从列表开头继续搜索
     if (index === -1) {
       index = this.firstChars.indexOf(char, 0);
     }
 
-    // If match was found...
     if (index > -1) {
       this.setFocusToMenuitem(this.menuitemNodes[index]);
     }
   };
 
-  // Utilities
+  // 工具方法：从指定索引起查找首字符匹配项
 
   getIndexFirstChars = (startIndex, char) => {
     for (let i = startIndex; i < this.firstChars.length; i++) {
@@ -137,7 +143,7 @@ class MenuButtonLinks {
     return -1;
   };
 
-  // Popup menu methods
+  // 弹出菜单显示/隐藏
 
   openPopup = () => {
     this.menuNode.style.display = "block";
@@ -155,7 +161,7 @@ class MenuButtonLinks {
     return this.buttonNode.getAttribute("aria-expanded") === "true";
   };
 
-  // Menu event handlers
+  // 焦点进入/离开容器时的样式处理
 
   onFocusin = () => {
     this.domNode.classList.add("focus");
@@ -165,6 +171,7 @@ class MenuButtonLinks {
     this.domNode.classList.remove("focus");
   };
 
+  // 菜单按钮键盘事件：打开/关闭菜单并移动焦点
   onButtonKeydown = (event) => {
     const key = event.key;
     let flag = false;
@@ -203,6 +210,7 @@ class MenuButtonLinks {
     }
   };
 
+  // 按钮点击：切换弹出菜单开关状态
   onButtonClick(event) {
     if (this.isOpen()) {
       this.closePopup();
@@ -216,6 +224,7 @@ class MenuButtonLinks {
     event.preventDefault();
   }
 
+  // 菜单项键盘导航：跳转链接、上下移动、首末项、字母筛选等
   onMenuitemKeydown(event) {
     const tgt = event.currentTarget;
     const key = event.key;
@@ -294,11 +303,13 @@ class MenuButtonLinks {
     }
   }
 
+  // 鼠标悬停时将焦点移至对应菜单项
   onMenuitemMouseover(event) {
     const tgt = event.currentTarget;
     tgt.focus();
   }
 
+  // 在菜单区域外按下鼠标时关闭弹出层
   onBackgroundMousedown(event) {
     if (!this.domNode.contains(event.target)) {
       if (this.isOpen()) {
@@ -309,6 +320,7 @@ class MenuButtonLinks {
   }
 }
 
+// 初始化页面上所有 .menu-button-links 容器
 const menuButtons = document.querySelectorAll(".menu-button-links");
 for (const button of menuButtons) {
   new MenuButtonLinks(button);

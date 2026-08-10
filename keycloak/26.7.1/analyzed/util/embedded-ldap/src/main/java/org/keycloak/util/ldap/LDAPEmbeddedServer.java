@@ -59,6 +59,10 @@ import org.apache.directory.server.protocol.shared.transport.Transport;
 import org.jboss.logging.Logger;
 
 /**
+ * 嵌入式 ApacheDS LDAP 服务器，用于 Keycloak 集成测试与本地开发。
+ * <p>
+ * 支持内存/文件分区、LDIF 导入、SSL/StartTLS、密码策略及 AD 风格范围属性模拟。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class LDAPEmbeddedServer {
@@ -72,6 +76,7 @@ public class LDAPEmbeddedServer {
     private static final Logger log = Logger.getLogger(LDAPEmbeddedServer.class);
     private static final int PAGE_SIZE = 30;
 
+    /** 系统属性：LDAP 基准 DN */
     public static final String PROPERTY_BASE_DN = "ldap.baseDN";
     public static final String PROPERTY_BIND_HOST = "ldap.host";
     public static final String PROPERTY_BIND_PORT = "ldap.port";
@@ -121,14 +126,17 @@ public class LDAPEmbeddedServer {
     protected DirectoryService directoryService;
     protected LdapServer ldapServer;
 
+    /** @return LDAP 明文绑定端口 */
     public int getBindPort() {
         return bindPort;
     }
 
+    /** @return LDAPS 绑定端口 */
     public int getBindLdapsPort() {
         return bindLdapsPort;
     }
 
+    /** 独立进程入口：使用文件分区启动嵌入式 LDAP。 */
     public static void main(String[] args) throws Exception {
         Properties defaultProperties = new Properties();
         defaultProperties.put(PROPERTY_DSF, DSF_FILE);
@@ -136,6 +144,13 @@ public class LDAPEmbeddedServer {
         execute(args, defaultProperties);
     }
 
+    /**
+     * 程序化启动入口，注册 JVM 关闭钩子以优雅停止服务。
+     *
+     * @param args 命令行参数（当前未使用）
+     * @param defaultProperties 默认配置属性
+     * @throws Exception 初始化或启动失败时
+     */
     public static void execute(String[] args, Properties defaultProperties) throws Exception {
         final LDAPEmbeddedServer ldapEmbeddedServer = new LDAPEmbeddedServer(defaultProperties);
         ldapEmbeddedServer.init();
@@ -155,6 +170,11 @@ public class LDAPEmbeddedServer {
         });
     }
 
+    /**
+     * 从系统属性与默认 Properties 读取 LDAP 服务配置。
+     *
+     * @param defaultProperties 缺省配置项
+     */
     public LDAPEmbeddedServer(Properties defaultProperties) {
         this.defaultProperties = defaultProperties;
 
@@ -178,6 +198,13 @@ public class LDAPEmbeddedServer {
         this.ppolicyMustChange = Boolean.valueOf(readProperty(PROPERTY_PPOLICY_MUST_CHANGE, "false"));
     }
 
+    /**
+     * 读取配置：优先系统属性，其次 defaultProperties，最后默认值。
+     *
+     * @param propertyName 属性名
+     * @param defaultValue  fallback 默认值
+     * @return 解析后的配置值
+     */
     protected String readProperty(String propertyName, String defaultValue) {
         String value = System.getProperty(propertyName);
 
@@ -193,6 +220,7 @@ public class LDAPEmbeddedServer {
     }
 
 
+    /** 创建 DirectoryService、导入 LDIF、创建 LdapServer 并可选启用密码策略。 */
     public void init() throws Exception {
         log.info("Creating LDAP Directory Service. Config: baseDN=" + baseDN + ", bindHost=" + bindHost + ", bindPort=" + bindPort +
                 ", ldapSaslPrincipal=" + ldapSaslPrincipal + ", directoryServiceFactory=" + directoryServiceFactory + ", ldif=" + ldifFile +
@@ -213,6 +241,7 @@ public class LDAPEmbeddedServer {
     }
 
 
+    /** 启动 LDAP 服务并校验 DirectoryService 与 LdapServer 均已就绪。 */
     public void start() throws Exception {
         log.info("Starting LDAP server..");
         ldapServer.start();
@@ -227,6 +256,7 @@ public class LDAPEmbeddedServer {
     }
 
 
+    /** 根据 DSF 配置创建分区、导入根条目，内存模式下注入范围属性拦截器。 */
     protected DirectoryService createDirectoryService() throws Exception {
         // Parse "keycloak" from "dc=keycloak,dc=org"
         String dcName = baseDN.split(",")[0];
@@ -297,6 +327,7 @@ public class LDAPEmbeddedServer {
     }
 
 
+    /** 配置传输层、SSL/StartTLS、扩展操作及访问控制/匿名访问策略。 */
     protected LdapServer createLdapServer() {
         LdapServer ldapServer = new LdapServer();
 
@@ -412,6 +443,7 @@ public class LDAPEmbeddedServer {
     }
 
 
+    /** 停止 LDAP 服务并关闭 DirectoryService；内存模式下删除工作目录。 */
     public void stop() throws Exception {
         stopLdapServer();
         shutdownDirectoryService();
@@ -453,6 +485,12 @@ public class LDAPEmbeddedServer {
         authenticationInterceptor.setPwdPolicies( policyContainer );
     }
 
+    /**
+     * 通过管理会话设置用户的 pwdReset 操作属性（密码策略）。
+     *
+     * @param userDn 用户 DN
+     * @param value 是否要求下次登录修改密码
+     */
     public void setPwdReset(String userDn, boolean value) {
         // pwdReset is a ppolicy operational attribute that can only be modified via the
         // embedded server's internal admin session, not through the LDAP protocol.

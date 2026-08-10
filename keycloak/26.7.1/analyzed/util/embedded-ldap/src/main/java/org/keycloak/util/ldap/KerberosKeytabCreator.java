@@ -32,7 +32,7 @@ import org.apache.directory.shared.kerberos.codec.types.EncryptionType;
 import org.apache.directory.shared.kerberos.components.EncryptionKey;
 
 /**
- * Helper utility for creating Keytab files.
+ * 创建 Kerberos Keytab 文件的工具类，供嵌入式 LDAP/Kerberos 测试使用。
  *
  * @author Josef Cacek
  */
@@ -41,10 +41,10 @@ public class KerberosKeytabCreator {
     // Public methods --------------------------------------------------------
 
     /**
-     * The main.
+     * 命令行入口：根据主体名、口令与输出路径生成 keytab。
      *
-     * @param args
-     * @throws java.io.IOException
+     * @param args 三个参数：principalName、passPhrase、outputKeytabFile
+     * @throws java.io.IOException 写入 keytab 失败时
      */
     public static void main(String[] args) throws IOException {
         if (args == null || args.length != 3) {
@@ -60,18 +60,18 @@ public class KerberosKeytabCreator {
         }
     }
 
-    // Just for the reflection purposes
+    /** 供反射调用的包装入口。 */
     public static void execute(String[] args, Properties defaultProperties) throws Exception {
         main(args);
     }
 
     /**
-     * Creates a keytab file for given principal.
+     * 为指定 Kerberos 主体生成 keytab 文件，包含多种加密类型的密钥条目。
      *
-     * @param principalName
-     * @param passPhrase
-     * @param keytabFile
-     * @throws IOException
+     * @param principalName Kerberos 主体名
+     * @param passPhrase 用于派生密钥的口令
+     * @param keytabFile 输出 keytab 文件路径
+     * @throws IOException 写入失败时
      */
     public static void createKeytab(final String principalName, final String passPhrase, final File keytabFile)
             throws IOException {

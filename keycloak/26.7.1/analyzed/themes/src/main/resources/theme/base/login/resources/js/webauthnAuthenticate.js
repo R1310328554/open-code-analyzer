@@ -1,11 +1,12 @@
+// WebAuthn 认证流程：凭证获取、表单回填与错误提交
 import { base64url } from "rfc4648";
 
-// singleton
+// 单例 AbortController，用于取消进行中的 WebAuthn 调用
 let abortController = undefined;
 
+// 中止上一次 pending 调用并返回新 signal
 export function signal() {
     if (abortController) {
-        // abort the previous call
         const abortError = new Error("Cancelling pending WebAuthn call");
         abortError.name = "AbortError";
         abortController.abort(abortError);
@@ -15,6 +16,7 @@ export function signal() {
     return abortController.signal;
 }
 
+// 按钮触发的 WebAuthn 认证入口
 export async function authenticateByWebAuthn(input) {
     const allowCredentials = input.isUserIdentified ? getAllowCredentials() : [];
     try {
@@ -26,8 +28,8 @@ export async function authenticateByWebAuthn(input) {
 }
 
 /**
- * Reads the allowed credentials from the hidden authn_select form.
- * Exported so that passkeysConditionalAuth.js can use them as well.
+ * 从隐藏表单 authn_select 读取允许的凭证列表。
+ * 导出供 passkeysConditionalAuth.js 复用。
  */
 export function getAllowCredentials() {
     const allowCredentials = [];
@@ -50,15 +52,13 @@ export function getAllowCredentials() {
 }
 
 /**
- * Core function for navigator.credentials.get().
- * Exported so that passkeysConditionalAuth.js does not need its own copy.
+ * navigator.credentials.get() 核心封装，供条件式认证复用。
  *
  * input: { challenge, userVerification, rpId, createTimeout, errmsg,
  *           allowCredentials?: PublicKeyCredentialDescriptor[],
- *           additionalOptions?: object  ← e.g. { mediation: "conditional" | "optional" | "required" | "silent" } }
+ *           additionalOptions?: object  ← 如 { mediation: "conditional" | "optional" | "required" | "silent" } }
  */
 export function doAuthenticate(input) {
-    // Check if WebAuthn is supported by this browser
     if (!window.PublicKeyCredential) {
         returnFailure(input.errmsg);
         return;
@@ -88,6 +88,7 @@ export function doAuthenticate(input) {
     });
 }
 
+// 将认证成功响应写入隐藏字段并提交 webauth 表单
 export function returnSuccess(result) {
     document.getElementById("clientDataJSON").value = base64url.stringify(new Uint8Array(result.response.clientDataJSON), { pad: false });
     document.getElementById("authenticatorData").value = base64url.stringify(new Uint8Array(result.response.authenticatorData), { pad: false });
@@ -107,6 +108,7 @@ export function returnSuccess(result) {
     document.getElementById("webauth").requestSubmit();
 }
 
+// 将错误信息写入隐藏字段并提交表单
 export function returnFailure(err) {
     document.getElementById("error").value = err;
     document.getElementById("webauth").requestSubmit();

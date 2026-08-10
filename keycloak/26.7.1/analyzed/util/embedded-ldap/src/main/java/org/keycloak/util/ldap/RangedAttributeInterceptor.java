@@ -37,13 +37,13 @@ import org.apache.directory.server.core.api.interceptor.BaseInterceptor;
 import org.apache.directory.server.core.api.interceptor.context.SearchOperationContext;
 
 /**
- * <p>Ranged interceptor to emulate the behavior of AD. AD has a limit in
- * the number of attributes that return (15000 by default in MaxValRange).
- * See this MS link for AD limits:</p>
+ * 范围属性拦截器，模拟 Active Directory 的多值属性分页返回行为。
+ * <p>AD 对单次返回的属性值数量有限制（MaxValRange 默认约 15000）。
+ * 参见 AD 策略说明：</p>
  *
  * https://support.microsoft.com/en-us/help/315071/how-to-view-and-set-ldap-policy-in-active-directory-by-using-ntdsutil
  *
- * <p>And this other link to know how range attribute search works:</p>
+ * <p>范围检索机制说明：</p>
  *
  * https://docs.microsoft.com/en-us/previous-versions/windows/desktop/ldap/searching-using-range-retrieval
  *
@@ -51,6 +51,8 @@ import org.apache.directory.server.core.api.interceptor.context.SearchOperationC
  */
 public class RangedAttributeInterceptor extends BaseInterceptor {
 
+    /** 包装搜索游标，在返回条目前裁剪多值属性的可见范围。 */
+    /** 包装搜索游标，在返回条目前裁剪多值属性的可见范围。 */
     private static class RangedEntryFilteringCursor implements EntryFilteringCursor {
 
         private final EntryFilteringCursor c;
@@ -66,6 +68,8 @@ public class RangedAttributeInterceptor extends BaseInterceptor {
             AttributeType type = new AttributeType(name);
         }
 
+        /** 按 min/max 裁剪指定属性值并设置 ;range= 后缀。 */
+        /** 按 min/max 裁剪指定属性值并设置 ;range= 后缀。 */
         private Entry prepareEntry(Entry e) {
             Attribute attr = e.get(name);
             if (attr != null) {
@@ -211,11 +215,21 @@ public class RangedAttributeInterceptor extends BaseInterceptor {
     private final String name;
     private final int max;
 
+    /**
+     * @param name 要限制的多值属性名（如 member）
+     * @param max 单次返回的最大值个数
+     */
+    /**
+     * @param name 要限制的多值属性名（如 member）
+     * @param max 单次返回的最大值个数
+     */
     public RangedAttributeInterceptor(String name, int max) {
         this.name = name;
         this.max = max - 1;
     }
 
+    /** 解析请求中的 range= 选项并返回带范围裁剪的搜索游标。 */
+    /** 解析请求中的 range= 选项并返回带范围裁剪的搜索游标。 */
     @Override
     public EntryFilteringCursor search(SearchOperationContext sc) throws LdapException {
         Set<AttributeTypeOptions> attrs = sc.getReturningAttributes();

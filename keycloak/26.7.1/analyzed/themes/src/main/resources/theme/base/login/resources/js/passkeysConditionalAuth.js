@@ -1,10 +1,11 @@
+// 通行密钥（Passkey）条件式/模态中介自动认证入口
 import { doAuthenticate, returnSuccess } from "./webauthnAuthenticate.js";
 
+// sessionStorage 键：记录用户在本认证会话中已关闭模态对话框
 const PASSKEY_MODAL_DISMISSED = 'kc_passkey_modal_dismissed';
 
 /**
- * Returns the current cookie KC_AUTH_SESSION_HASH value if present.
- * Undefined if not present.
+ * 若存在则返回 KC_AUTH_SESSION_HASH Cookie 值，否则为 undefined。
  */
 function getModalDismissedHash() {
     for (const cookie of document.cookie.split(';')) {
@@ -17,21 +18,19 @@ function getModalDismissedHash() {
 }
 
 /**
- * Entry point for passkey authentication on page load.
+ * 页面加载时通行密钥认证的入口。
  *
- * Calls navigator.credentials.get() once with the mediation value configured
- * in the WebAuthn Passwordless Policy (conditional/none/optional/required/silent).
- * For "none", unsupported browsers, or an already-identified user, nothing is
- * attempted automatically — the user can always initiate via the button.
+ * 根据 WebAuthn 无密码策略配置的中介模式（conditional/none/optional/required/silent），
+ * 调用一次 navigator.credentials.get()。
+ * 模式为 none、浏览器不支持或用户已识别时不会自动尝试，用户仍可通过按钮手动发起。
  *
- * For modal mediations (optional/required), the dialog is shown at most once
- * per authentication session: if the user dismisses it, it will not reappear
- * on subsequent page loads (e.g. after a failed password attempt).
+ * 模态中介（optional/required）下，每个认证会话最多弹出一次对话框；
+ * 用户关闭后，后续页面加载（如密码失败后）不再重复弹出。
  */
 export async function initAuthenticate(input, availableCallback = () => {}) {
-    // Check if WebAuthn is supported by this browser
+    // 检查浏览器是否支持 WebAuthn
     if (!window.PublicKeyCredential) {
-        // Fail silently as WebAuthn Conditional UI is not required
+        // 条件式 UI 非必需，静默失败
         return;
     }
 
@@ -48,8 +47,7 @@ export async function initAuthenticate(input, availableCallback = () => {}) {
         return;
     }
 
-    // The isConditionalMediationAvailable() check is only relevant for
-    // conditional (autofill) mediation — other modes do not depend on it.
+    // isConditionalMediationAvailable 仅对 conditional（自动填充）中介有意义
     if (mediation === 'conditional') {
         if (typeof PublicKeyCredential.isConditionalMediationAvailable === 'undefined') {
             availableCallback(false);
@@ -57,7 +55,7 @@ export async function initAuthenticate(input, availableCallback = () => {}) {
         }
         const isAvailable = await PublicKeyCredential.isConditionalMediationAvailable();
         if (!isAvailable) {
-            // Treat unavailable conditional UI the same as 'none'
+            // 条件式 UI 不可用时等同 none 模式
             availableCallback(false);
             return;
         }
@@ -66,8 +64,7 @@ export async function initAuthenticate(input, availableCallback = () => {}) {
         availableCallback(false);
     }
 
-    // For modal mediations, skip if the user already dismissed the dialog in
-    // this authentication session — avoids re-interrupting on every page load.
+    // 模态中介下，若用户已在本会话关闭过对话框则跳过，避免每次加载都打断用户
     const modalDismissedHash = getModalDismissedHash();
     if ((!modalDismissedHash || modalDismissedHash === sessionStorage.getItem(PASSKEY_MODAL_DISMISSED)) &&
             (mediation === 'optional' || mediation === 'required')) {
@@ -82,8 +79,7 @@ export async function initAuthenticate(input, availableCallback = () => {}) {
         });
         if (result) returnSuccess(result);
     } catch (err) {
-        // If the user explicitly dismissed the modal, remember it so it is not
-        // shown again during the same authentication session.
+        // 用户主动关闭模态框时记住状态，同一会话内不再弹出
         if ((mediation === 'optional' || mediation === 'required') &&
                 (err?.name === 'NotAllowedError' || err?.name === 'AbortError')) {
             sessionStorage.setItem(PASSKEY_MODAL_DISMISSED, modalDismissedHash);

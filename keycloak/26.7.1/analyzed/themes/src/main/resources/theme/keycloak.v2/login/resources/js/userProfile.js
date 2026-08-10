@@ -1,10 +1,13 @@
 // @ts-check
 /**
+ * keycloak.v2 用户资料表单：MutationObserver 驱动的 data-* 注解注册。
  * @typedef {Object} AnnotationDescriptor
- * @property {string} name - The name of the field to register (e.g. `numberFormat`).
- * @property {(element: HTMLElement) => (() => void) | void} onAdd - The function to call when a new element is added to the DOM.
+ * @property {string} name - 要注册的字段名（如 `numberFormat`）。
+ * @property {(element: HTMLElement) => (() => void) | void} onAdd - 元素加入 DOM 时调用的初始化函数。
  */
 
+// 监听 body 子树 DOM 变更
+// 监听 body 子树 DOM 变更
 const observer = new MutationObserver(onMutate);
 observer.observe(document.body, { childList: true, subtree: true });
 
@@ -15,6 +18,7 @@ const descriptors = [];
 const cleanupFunctions = new WeakMap();
 
 /**
+ * 注册注解描述符并扫描已有匹配 input 元素。
  * @param {AnnotationDescriptor} descriptor
  */
 export function registerElementAnnotatedBy(descriptor) {
@@ -28,6 +32,7 @@ export function registerElementAnnotatedBy(descriptor) {
 }
 
 /**
+ * 处理节点增删：清理移除项、为新增 input 绑定注解。
  * @type {MutationCallback}
  */
 function onMutate(mutations) {
@@ -60,6 +65,7 @@ function onMutate(mutations) {
 }
 
 /**
+ * 对新元素执行 onAdd 并保存可选清理回调。
  * @param {HTMLElement} element
  * @param {AnnotationDescriptor} descriptor
  */
