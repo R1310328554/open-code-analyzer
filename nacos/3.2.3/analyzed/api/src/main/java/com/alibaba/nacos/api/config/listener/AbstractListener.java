@@ -19,15 +19,16 @@ package com.alibaba.nacos.api.config.listener;
 import java.util.concurrent.Executor;
 
 /**
- * Listener Adapter,use default notify thread.
+ * 配置监听器适配器，使用默认通知线程。
+ *
+ * <p>继承 {@link Listener} 并固定 {@link #getExecutor()} 返回 {@code null}，
+ * 子类只需实现 {@link Listener#receiveConfigInfo} 即可接收配置变更。</p>
  *
  * @author water.lyl
  */
 public abstract class AbstractListener implements Listener {
     
-    /**
-     * Use default executor.
-     */
+    /** 使用 Nacos 客户端默认通知线程执行回调。 */
     @Override
     public Executor getExecutor() {
         return null;

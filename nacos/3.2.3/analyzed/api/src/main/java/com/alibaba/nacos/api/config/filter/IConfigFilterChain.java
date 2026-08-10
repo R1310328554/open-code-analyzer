@@ -19,18 +19,20 @@ package com.alibaba.nacos.api.config.filter;
 import com.alibaba.nacos.api.exception.NacosException;
 
 /**
- * Config Filter Chain Interface.
+ * 配置过滤器链接口。
+ *
+ * <p>由框架实现，供 {@link IConfigFilter#doFilter} 调用以驱动后续过滤器执行。</p>
  *
  * @author Nacos
  */
 public interface IConfigFilterChain {
     
     /**
-     * Filter action.
+     * 继续执行过滤器链中的下一环节。
      *
-     * @param request  request
-     * @param response response
-     * @throws NacosException NacosException
+     * @param request  配置请求
+     * @param response 配置响应
+     * @throws NacosException 过滤过程异常
      */
     void doFilter(IConfigRequest request, IConfigResponse response) throws NacosException;
     

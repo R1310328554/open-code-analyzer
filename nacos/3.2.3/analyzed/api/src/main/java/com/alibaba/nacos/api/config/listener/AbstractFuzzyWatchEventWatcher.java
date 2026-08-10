@@ -19,8 +19,10 @@ package com.alibaba.nacos.api.config.listener;
 import java.util.concurrent.Executor;
 
 /**
- * AbstractFuzzyListenListener is an abstract class that provides basic functionality for listening to fuzzy
- * configuration changes in Nacos.
+ * 模糊监听（Fuzzy Watch）事件观察者的抽象基类。
+ *
+ * <p>同时实现 {@link FuzzyWatchEventWatcher} 与 {@link FuzzyWatchLoadWatcher}，
+ * 提供默认空实现的负载上限回调，子类只需关注 {@link FuzzyWatchEventWatcher#onEvent}。</p>
  *
  * @author stone-98
  * @date 2024/3/4
@@ -29,9 +31,11 @@ public abstract class AbstractFuzzyWatchEventWatcher
     implements FuzzyWatchEventWatcher, FuzzyWatchLoadWatcher {
     
     /**
-     * Get executor for execute this receive.
+     * 获取执行回调的线程池。
      *
-     * @return Executor
+     * <p>默认返回 {@code null}，由 Nacos 客户端使用内置通知线程执行。</p>
+     *
+     * @return 自定义 {@link Executor}，或 {@code null} 使用默认线程
      */
     public Executor getExecutor() {
         return null;
@@ -39,7 +43,7 @@ public abstract class AbstractFuzzyWatchEventWatcher
     
     @Override
     public void onPatternOverLimit() {
-        // do nothing default
+        // 默认空实现，子类可按需覆盖
     }
     
     @Override

@@ -17,19 +17,18 @@
 package com.alibaba.nacos.api.config.listener;
 
 /**
- * config fuzzy watch watcher that triggered when loader over limit.
+ * 模糊监听负载超限时的回调接口。
+ *
+ * <p>当服务端模式数量或匹配配置数量超过限制时触发相应告警回调。</p>
+ *
  * @author shiyiyue
  */
 public interface FuzzyWatchLoadWatcher {
     
-    /**
-     * triggered when server pattern count over limit.
-     */
+    /** 服务端已注册的模糊监听模式数量超过上限时触发。 */
     void onPatternOverLimit();
     
-    /**
-     *  triggered when pattern match config count over limit.
-     */
+    /** 单个模式匹配到的配置数量超过上限时触发。 */
     void onConfigReachUpLimit();
     
 }

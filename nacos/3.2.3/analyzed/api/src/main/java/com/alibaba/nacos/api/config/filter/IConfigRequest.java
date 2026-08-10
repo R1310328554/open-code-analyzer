@@ -17,32 +17,34 @@
 package com.alibaba.nacos.api.config.filter;
 
 /**
- * Config Request Interface.
+ * 配置过滤器请求接口。
+ *
+ * <p>封装一次配置读写请求的参数与 {@link IConfigContext} 上下文。</p>
  *
  * @author Nacos
  */
 public interface IConfigRequest {
     
     /**
-     * put param.
+     * 写入请求参数。
      *
-     * @param key   key
-     * @param value value
+     * @param key   参数键
+     * @param value 参数值
      */
     void putParameter(String key, Object value);
     
     /**
-     * get param.
+     * 读取请求参数。
      *
-     * @param key key
-     * @return value
+     * @param key 参数键
+     * @return 参数值
      */
     Object getParameter(String key);
     
     /**
-     * get config context.
+     * 获取配置上下文。
      *
-     * @return {@link IConfigContext}
+     * @return {@link IConfigContext} 实例
      */
     IConfigContext getConfigContext();
     

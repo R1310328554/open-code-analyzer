@@ -17,25 +17,27 @@
 package com.alibaba.nacos.api.config.filter;
 
 /**
- * Config Context Interface.
+ * 配置过滤器上下文接口。
+ *
+ * <p>在 {@link IConfigFilter} 链式处理过程中传递键值参数，供各过滤器读写共享状态。</p>
  *
  * @author Nacos
  */
 public interface IConfigContext {
     
     /**
-     * Get context param by key.
+     * 按键获取上下文参数。
      *
-     * @param key parameter key
-     * @return context
+     * @param key 参数键
+     * @return 参数值，不存在时返回 {@code null}
      */
     Object getParameter(String key);
     
     /**
-     * Set context param.
+     * 设置上下文参数。
      *
-     * @param key   key
-     * @param value value
+     * @param key   参数键
+     * @param value 参数值
      */
     void setParameter(String key, Object value);
 }

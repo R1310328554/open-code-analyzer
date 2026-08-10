@@ -21,9 +21,9 @@ import com.alibaba.nacos.api.exception.NacosException;
 import java.util.Properties;
 
 /**
- * Config Filter Interface.
+ * 配置过滤器接口。
  *
- * <p>DO NOT implement this interface directly, you should extend <code>AbstractConfigFilter</code>.
+ * <p>请勿直接实现本接口，应继承 {@link AbstractConfigFilter} 以获得默认实现与排序支持。</p>
  *
  * @author Nacos
  * @see AbstractConfigFilter
@@ -31,34 +31,37 @@ import java.util.Properties;
 public interface IConfigFilter {
     
     /**
-     * Init.
+     * 初始化过滤器。
      *
-     * @param properties Filter Config
+     * @param properties 过滤器配置属性
      */
     void init(Properties properties);
     
     /**
-     * do filter.
+     * 执行过滤逻辑。
      *
-     * @param request     request
-     * @param response    response
-     * @param filterChain filter Chain
-     * @throws NacosException exception
+     * <p>可在处理前后修改 {@link IConfigRequest} 与 {@link IConfigResponse}，
+     * 并通过 {@link IConfigFilterChain#doFilter} 继续调用链中下一过滤器。</p>
+     *
+     * @param request     配置请求
+     * @param response    配置响应
+     * @param filterChain 过滤器链
+     * @throws NacosException 过滤过程异常
      */
     void doFilter(IConfigRequest request, IConfigResponse response, IConfigFilterChain filterChain)
         throws NacosException;
     
     /**
-     * Get order.
+     * 获取过滤器执行顺序。
      *
-     * @return order number
+     * @return 顺序值，数值越小越先执行
      */
     int getOrder();
     
     /**
-     * Get filterName.
+     * 获取过滤器名称。
      *
-     * @return filter name
+     * @return 过滤器唯一标识名
      */
     String getFilterName();
     

@@ -19,7 +19,9 @@ package com.alibaba.nacos.api.config.listener;
 import java.util.concurrent.Executor;
 
 /**
- * fuzzy watch config changes.
+ * 模糊监听配置变更的观察者接口。
+ *
+ * <p>注册模糊匹配模式后，当匹配的配置发生变更时回调 {@link #onEvent}。</p>
  *
  * @author stone-98
  * @date 2024/3/4
@@ -27,16 +29,16 @@ import java.util.concurrent.Executor;
 public interface FuzzyWatchEventWatcher {
     
     /**
-     * Callback method invoked when a fuzzy configuration change event occurs.
+     * 模糊配置变更事件回调。
      *
-     * @param event The fuzzy configuration change event
+     * @param event 变更事件详情
      */
     void onEvent(ConfigFuzzyWatchChangeEvent event);
     
     /**
-     * Get executor for execute this receive.
+     * 获取执行回调的线程池。
      *
-     * @return Executor
+     * @return 自定义 {@link Executor}，或 {@code null} 使用默认通知线程
      */
     Executor getExecutor();
     

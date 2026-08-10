@@ -19,23 +19,25 @@ package com.alibaba.nacos.api.config.listener;
 import java.util.concurrent.Executor;
 
 /**
- * Listener for watch config.
+ * 配置变更监听器接口。
+ *
+ * <p>客户端订阅指定 dataId/group 后，配置内容变化时回调 {@link #receiveConfigInfo}。</p>
  *
  * @author Nacos
  */
 public interface Listener {
     
     /**
-     * Get executor for execute this receive.
+     * 获取执行回调的线程池。
      *
-     * @return Executor
+     * @return 自定义 {@link Executor}，或 {@code null} 使用默认通知线程
      */
     Executor getExecutor();
     
     /**
-     * Receive config info.
+     * 接收最新配置内容。
      *
-     * @param configInfo config info
+     * @param configInfo 变更后的完整配置文本
      */
     void receiveConfigInfo(final String configInfo);
 }
