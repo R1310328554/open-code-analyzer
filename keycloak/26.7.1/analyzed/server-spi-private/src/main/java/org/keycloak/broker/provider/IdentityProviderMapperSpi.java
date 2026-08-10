@@ -22,25 +22,31 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 身份提供方映射器 SPI 定义，注册 {@link IdentityProviderMapper} 提供者类型。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class IdentityProviderMapperSpi implements Spi {
 
+    /** 内部 SPI，不对扩展模块公开。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** SPI 名称：{@code identity-provider-mapper}。 */
     @Override
     public String getName() {
         return "identity-provider-mapper";
     }
 
+    /** 映射器提供者接口类型。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return IdentityProviderMapper.class;
     }
 
+    /** 映射器工厂类型（与提供者接口相同）。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return IdentityProviderMapper.class;

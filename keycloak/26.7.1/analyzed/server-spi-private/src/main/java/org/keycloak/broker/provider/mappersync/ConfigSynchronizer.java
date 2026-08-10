@@ -22,6 +22,8 @@ import org.keycloak.provider.ProviderEvent;
 import org.jboss.logging.Logger;
 
 /**
+ * 映射器配置同步器：当组路径、角色名等引用变更时更新 IdP 映射器配置。
+ *
  * Interface for updating references in mapper configs, when references (like group path) change.
  *
  * @author <a href="mailto:daniel.fesenmeyer@bosch.io">Daniel Fesenmeyer</a>
@@ -29,10 +31,13 @@ import org.jboss.logging.Logger;
 public interface ConfigSynchronizer<T extends ProviderEvent> {
     Logger LOG = Logger.getLogger(ConfigSynchronizer.class);
 
+    /** 返回此同步器处理的 {@link ProviderEvent} 类型。 */
     Class<T> getEventClass();
 
+    /** 处理匹配事件并更新相关映射器配置。 */
     void handleEvent(T event);
 
+    /** 记录配置引用从旧值到新值的调整日志。 */
     default void logEventProcessed(String configPropertyName, String previousValue, String newValue, String realmName,
                                      String mapperName, String idpAlias) {
         LOG.infof(

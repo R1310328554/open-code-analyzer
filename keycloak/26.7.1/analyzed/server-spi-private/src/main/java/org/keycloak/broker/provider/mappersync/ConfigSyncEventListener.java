@@ -26,6 +26,8 @@ import org.keycloak.provider.ProviderEventListener;
 import org.jboss.logging.Logger;
 
 /**
+ * 映射器配置同步事件监听器：当组路径、客户端 ID 或角色名变更时更新映射器引用。
+ *
  * Event listener which synchronizes mapper configs, when references change.
  *
  * @author <a href="mailto:daniel.fesenmeyer@bosch.io">Daniel Fesenmeyer</a>
@@ -38,6 +40,7 @@ public final class ConfigSyncEventListener implements ProviderEventListener {
             Arrays.asList(GroupConfigPropertyByPathSynchronizer.INSTANCE,
                     RoleConfigPropertyByClientIdSynchronizer.INSTANCE, RoleConfigPropertyByRoleNameSynchronizer.INSTANCE);
 
+    /** 遍历全部 {@link ConfigSynchronizer}，将匹配事件分派给对应处理器。 */
     @Override
     public void onEvent(ProviderEvent event) {
         for (ConfigSynchronizer<? extends ProviderEvent> s : SYNCHRONIZERS) {
@@ -52,6 +55,7 @@ public final class ConfigSyncEventListener implements ProviderEventListener {
         }
     }
 
+    /** 判断事件类型是否为同步器声明的处理类型。 */
     private static boolean eventMatchesSynchronizer(ProviderEvent event,
             ConfigSynchronizer<? extends ProviderEvent> synchronizer) {
         Class<? extends ProviderEvent> handledClass = synchronizer.getEventClass();

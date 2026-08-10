@@ -24,12 +24,15 @@ import org.keycloak.models.ClientModel;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
 /**
+ * 客户端 ID 变更同步器：更新映射器 {@link ConfigConstants#ROLE} 中与该客户端关联的角色引用。
+ *
  * Updates a role reference in a mapper config, when a client ID changes.
  *
  * @author <a href="mailto:daniel.fesenmeyer@bosch.io">Daniel Fesenmeyer</a>
  */
 public class RoleConfigPropertyByClientIdSynchronizer implements ConfigSynchronizer<ClientModel.ClientIdChangeEvent> {
 
+    /** 单例实例。 */
     public static final RoleConfigPropertyByClientIdSynchronizer INSTANCE =
             new RoleConfigPropertyByClientIdSynchronizer();
 
@@ -42,9 +45,10 @@ public class RoleConfigPropertyByClientIdSynchronizer implements ConfigSynchroni
         return ClientModel.ClientIdChangeEvent.class;
     }
 
+    /** 处理 {@link ClientModel.ClientIdChangeEvent}，重建角色限定符中的客户端 ID 部分。 */
     @Override
     public void handleEvent(ClientModel.ClientIdChangeEvent event) {
-        // find all mappers that have a role config property that maps to a role associated with the changed client.
+        // 查找角色配置指向变更客户端下角色的映射器。
         event.getKeycloakSession().identityProviders().getMappersStream(Map.of(ConfigConstants.ROLE, event.getPreviousClientId() + ".*"), null, null)
                 .forEach(idpMapper -> {
                     String currentRoleValue = idpMapper.getConfig().get(ConfigConstants.ROLE);

@@ -9,10 +9,14 @@ import org.keycloak.models.UserModel;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 映射器同步模式委托：合并 IdP 与映射器同步设置，并路由到 legacy 或 force 更新路径。
+ */
 public final class IdentityProviderMapperSyncModeDelegate {
 
     protected static final Logger logger = Logger.getLogger(IdentityProviderMapperSyncModeDelegate.class);
 
+    /** 按有效同步模式调用 {@link IdentityProviderMapper#updateBrokeredUserLegacy} 或 {@link IdentityProviderMapper#updateBrokeredUser}。 */
     public static void delegateUpdateBrokeredUser(KeycloakSession session, RealmModel realm, UserModel user, IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context, IdentityProviderMapper mapper) {
         IdentityProviderSyncMode idpSyncMode = context.getIdpConfig().getSyncMode();
         if (idpSyncMode == null) {
@@ -31,6 +35,7 @@ public final class IdentityProviderMapperSyncModeDelegate {
         }
     }
 
+    /** 映射器为 INHERIT 时沿用 IdP 同步模式，否则使用映射器自身模式。 */
     public static IdentityProviderSyncMode combineIdpAndMapperSyncMode(IdentityProviderSyncMode syncMode, IdentityProviderMapperSyncMode mapperSyncMode) {
         return IdentityProviderMapperSyncMode.INHERIT.equals(mapperSyncMode) ? syncMode : IdentityProviderSyncMode.valueOf(mapperSyncMode.toString());
     }

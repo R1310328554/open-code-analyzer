@@ -24,12 +24,15 @@ import org.keycloak.models.RoleModel;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
 /**
+ * 角色名变更同步器：更新映射器 {@link ConfigConstants#ROLE} 中与旧角色名精确匹配的引用。
+ *
  * Updates a role reference a in mapper config, when a role name changes.
  *
  * @author <a href="mailto:daniel.fesenmeyer@bosch.io">Daniel Fesenmeyer</a>
  */
 public class RoleConfigPropertyByRoleNameSynchronizer implements ConfigSynchronizer<RoleModel.RoleNameChangeEvent> {
 
+    /** 单例实例。 */
     public static final RoleConfigPropertyByRoleNameSynchronizer INSTANCE =
             new RoleConfigPropertyByRoleNameSynchronizer();
 
@@ -42,9 +45,10 @@ public class RoleConfigPropertyByRoleNameSynchronizer implements ConfigSynchroni
         return RoleModel.RoleNameChangeEvent.class;
     }
 
+    /** 处理 {@link RoleModel.RoleNameChangeEvent}，将角色名更新为新值。 */
     @Override
     public void handleEvent(RoleModel.RoleNameChangeEvent event) {
-        // first find all mappers that have a role config property that maps exactly to the changed path.
+        // 查找角色配置与变更前角色限定符完全匹配的映射器。
         String currentRoleValue = KeycloakModelUtils.buildRoleQualifier(event.getClientId(), event.getPreviousName());
         event.getKeycloakSession().identityProviders().getMappersStream(Map.of(ConfigConstants.ROLE, currentRoleValue), null, null)
                 .forEach(idpMapper -> {

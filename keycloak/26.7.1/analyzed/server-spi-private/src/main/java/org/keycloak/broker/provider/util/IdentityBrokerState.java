@@ -27,6 +27,8 @@ import org.keycloak.models.ClientModel;
 import org.keycloak.models.RealmModel;
 
 /**
+ * 身份联邦 state/RelayState 参数的编解码工具，支持客户端 ID 的 UUID 压缩编码。
+ *
  * Encapsulates parsing logic related to state passed to identity provider in "state" (or RelayState) parameter
  *
  *
@@ -37,12 +39,13 @@ public class IdentityBrokerState {
     private static final Pattern DOT = Pattern.compile("\\.");
 
 
+    /** 从明文 state 组件构建编码后的 {@link IdentityBrokerState}（出站 IdP 请求）。 */
     public static IdentityBrokerState decoded(String state, String clientId, String clientClientId, String tabId, String clientData) {
 
         String clientIdEncoded = clientClientId; // Default use the client.clientId
         boolean isUuid = false;
         if (clientId != null) {
-            // According to (http://docs.oasis-open.org/security/saml/v2.0/saml-bindings-2.0-os.pdf) there is a limit on the relaystate of 80 bytes.
+            // SAML RelayState 上限约 80 字节，UUID 形式的 client.id 优先 Base64 压缩编码。
             // in order to try to adher to the SAML specification we use an encoded value of the client.id (probably UUID) instead of the with
             // probability bigger client.clientId. If the client.id is not in UUID format we just use the client.clientid as is
             try {
@@ -54,7 +57,7 @@ public class IdentityBrokerState {
                 clientIdEncoded = Base64Url.encode(clientUuidBytes);
                 isUuid = true;
             } catch (RuntimeException e) {
-                // Ignore...the clientid in the database was not in UUID format. Just use as is.
+                // 非 UUID client.id 时回退使用 client.clientId。
             }
         }
         if (!isUuid && clientIdEncoded != null) {
@@ -69,6 +72,7 @@ public class IdentityBrokerState {
     }
 
 
+    /** 解析 IdP 回调中的编码 state，还原客户端与 tab 上下文（入站）。 */
     public static IdentityBrokerState encoded(String encodedState, RealmModel realmModel) {
         String[] decoded = DOT.split(encodedState, 4);
 
@@ -80,7 +84,7 @@ public class IdentityBrokerState {
 
         if (clientId != null) {
             try {
-                // If this decoding succeeds it was the result of the encoding of a UUID client.id - if it fails we interpret it as client.clientId
+                // 解码成功则为 UUID client.id 编码；否则按 client.clientId 处理。
                 // in accordance to the method decoded above
                 byte[] decodedClientId = Base64Url.decode(clientId);
                 ByteBuffer bb = ByteBuffer.wrap(decodedClientId);
@@ -94,7 +98,7 @@ public class IdentityBrokerState {
                     isUuid = true;
                 }
             } catch (RuntimeException e) {
-                // Ignore...the clientid was not in encoded uuid format. Just use as it is.
+                // 非 UUID 编码格式时忽略异常并继续。
             }
             if (!isUuid) {
                 clientId = new String(Base64Url.decode(clientId), StandardCharsets.UTF_8);
@@ -111,7 +115,7 @@ public class IdentityBrokerState {
     private final String tabId;
     private final String clientData;
 
-    // Encoded form of whole state
+    // 完整 state 的编码形式
     private final String encoded;
 
     private IdentityBrokerState(String decodedStateParam, String clientId, String tabId, String clientData, String encoded) {
@@ -123,22 +127,27 @@ public class IdentityBrokerState {
     }
 
 
+    /** 原始认证 state 字符串。 */
     public String getDecodedState() {
         return decodedState;
     }
 
+    /** 关联客户端的 clientId。 */
     public String getClientId() {
         return clientId;
     }
 
+    /** 浏览器标签页标识。 */
     public String getTabId() {
         return tabId;
     }
 
+    /** 附加客户端上下文数据。 */
     public String getClientData() {
         return clientData;
     }
 
+    /** 完整编码 state 字符串。 */
     public String getEncoded() {
         return encoded;
     }

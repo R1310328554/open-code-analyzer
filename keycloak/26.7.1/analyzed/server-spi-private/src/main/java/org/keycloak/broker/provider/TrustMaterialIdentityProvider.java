@@ -23,11 +23,14 @@ import org.keycloak.jose.jwk.JWK;
 import org.keycloak.models.IdentityProviderModel;
 
 /**
+ * 可暴露可复用信任材料的身份提供方，用于客户端证明或 OID4VCI 密钥证明等流程。
+ *
  * Identity providers that expose reusable trust material for flows such as
  * client attestation or OID4VCI key attestation.
  */
 public interface TrustMaterialIdentityProvider<C extends IdentityProviderModel> extends IdentityProvider<C> {
 
+    /** 按 {@link TrustMaterialRequest} 条件解析并返回 JWK 密钥流。 */
     Stream<JWK> resolveKeys(TrustMaterialRequest request);
 
 }
