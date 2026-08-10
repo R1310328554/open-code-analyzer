@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T20:57:04Z",
-  "files": [
-    "web/ui/mantine-ui/src/api/responseTypes/relabel_steps.ts",
-    "web/ui/mantine-ui/src/api/responseTypes/rules.ts",
-    "web/ui/mantine-ui/src/api/responseTypes/scrapePools.ts",
-    "web/ui/mantine-ui/src/api/responseTypes/selfMetrics.ts",
-    "web/ui/mantine-ui/src/api/responseTypes/series.ts",
-    "web/ui/mantine-ui/src/api/responseTypes/targets.ts",
-    "web/ui/mantine-ui/src/api/responseTypes/tsdbStatus.ts",
-    "web/ui/mantine-ui/src/api/responseTypes/walreplay.ts",
-    "web/ui/mantine-ui/src/codemirror/theme.ts",
-    "web/ui/mantine-ui/src/lib/escapeString.ts",
-    "web/ui/mantine-ui/src/lib/formatFloatValue.ts",
-    "web/ui/mantine-ui/src/lib/formatSeries.ts",
-    "web/ui/mantine-ui/src/lib/formatTime.test.ts",
-    "web/ui/mantine-ui/src/lib/formatTime.ts",
-    "web/ui/mantine-ui/src/pages/query/HistogramHelpers.ts"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 84,
-  "done": 435
+  "done": 450
 }
