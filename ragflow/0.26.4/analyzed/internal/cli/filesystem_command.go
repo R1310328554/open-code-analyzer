@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// filesystem_command.go — CLI 文件系统命令入口：解析 ls/search/cat 与 install/uninstall-skill 并捕获 stdout 输出。
+
 //
 
 package cli
@@ -29,6 +31,7 @@ import (
 )
 
 // ExecuteFilesystemCommand ExecuteFilesystem executes a Filesystem command and returns a ResponseIf.
+// ExecuteFilesystemCommand 通过管道捕获文件系统子命令的标准输出。
 func (c *CLI) ExecuteFilesystemCommand(cmd *Command) (ResponseIf, error) {
 	if c.Config.CLIMode != APIMode {
 		return nil, fmt.Errorf("this command is only allowed in USER mode")
@@ -66,6 +69,7 @@ func (c *CLI) ExecuteFilesystemCommand(cmd *Command) (ResponseIf, error) {
 
 // executeFilesystemInner executes a Filesystem command and writes output to stdout.
 // It is called by executeFilesystem which captures the stdout output.
+// executeFilesystemInner 解析输入并分派 ls/search/cat/技能安装等子命令。
 func (c *CLI) executeFilesystemInner(input string) error {
 	// Parse input into arguments
 	var args []string
@@ -244,6 +248,7 @@ func (c *CLI) executeFilesystemInner(input string) error {
 
 // parseFilesystemArgs parses Filesystem command arguments
 // Supports simple space-separated args and quoted strings
+// parseFilesystemArgs 支持引号与空格的 Shell 风格参数拆分。
 func parseFilesystemArgs(input string) []string {
 	var args []string
 	var current strings.Builder
@@ -287,6 +292,7 @@ func parseFilesystemArgs(input string) []string {
 }
 
 // printFilesystemResult prints the result of a filesystem command
+// printFilesystemResult 按命令类型与输出格式渲染列表或搜索结果。
 func (c *CLI) printFilesystemResult(result *filesystem.Result, cmdType filesystem.CommandType, format OutputFormat, limit int) {
 	if result == nil {
 		return
@@ -435,6 +441,7 @@ func (c *CLI) printFilesystemResult(result *filesystem.Result, cmdType filesyste
 }
 
 // printSkillSearchResults prints skill search results with full details
+// printSkillSearchResults 打印技能搜索的 BM25/向量分数等详情。
 func (c *CLI) printSkillSearchResults(result *filesystem.Result, format OutputFormat) {
 	if result == nil || len(result.Nodes) == 0 {
 		if format == OutputFormatJSON {
@@ -525,6 +532,7 @@ func (c *CLI) printSkillSearchResults(result *filesystem.Result, format OutputFo
 }
 
 // isBinaryContent checks if content is binary (contains null bytes or invalid UTF-8)
+// isBinaryContent 检测 cat 内容是否含空字节或非 UTF-8 序列。
 func isBinaryContent(content []byte) bool {
 	// Check for null bytes (binary file indicator)
 	for _, b := range content {
@@ -537,6 +545,7 @@ func isBinaryContent(content []byte) bool {
 }
 
 // SearchCommandOptions holds parsed search command options
+// SearchCommandOptions 保存 search 子命令解析后的查询与目录参数。
 type SearchCommandOptions struct {
 	Query     string
 	TopK      int
@@ -545,6 +554,7 @@ type SearchCommandOptions struct {
 }
 
 // ListCommandOptions holds parsed list command options
+// ListCommandOptions 保存 ls 子命令的路径与显示条数限制。
 type ListCommandOptions struct {
 	Path  string
 	Limit int
@@ -554,6 +564,7 @@ type ListCommandOptions struct {
 // Format: search <query> [path] [-n number]
 //
 //	search -h|--help (shows help)
+// parseSearchCommandArgs 解析 search <query> [path] [-n N]。
 func parseSearchCommandArgs(args []string) (*SearchCommandOptions, error) {
 	opts := &SearchCommandOptions{
 		TopK:      10,
@@ -643,6 +654,7 @@ Examples:
 
 // parseListCommandArgs parses list/ls command arguments
 // Format: ls [path] [-n limit] [-h|--help]
+// parseListCommandArgs 解析 ls [path] [-n limit]。
 func parseListCommandArgs(args []string) (*ListCommandOptions, error) {
 	opts := &ListCommandOptions{
 		Path:  "", // Empty path means list root (all providers and file_manager folders)

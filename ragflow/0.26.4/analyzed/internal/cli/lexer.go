@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// lexer.go — RAGFlow CLI 词法分析器：将 SQL 风格 DSL 输入切分为关键字、字面量与标点令牌。
+
 //
 
 package cli
@@ -22,6 +24,7 @@ import (
 )
 
 // Lexer performs lexical analysis of the input
+// Lexer 维护输入串、当前位置与待读字符。
 type Lexer struct {
 	input   string
 	pos     int
@@ -30,6 +33,7 @@ type Lexer struct {
 }
 
 // NewLexer creates a new lexer for the given input
+// NewLexer 创建词法分析器并读取首个字符。
 func NewLexer(input string) *Lexer {
 	l := &Lexer{input: input}
 	l.readChar()
@@ -53,6 +57,7 @@ func (l *Lexer) peekChar() byte {
 	return l.input[l.readPos]
 }
 
+// peekToken 向前查看下一个标识符而不消费输入。
 func (l *Lexer) peekToken() string {
 	// Skip whitespace starting from readPos
 	skipPos := l.readPos
@@ -76,6 +81,7 @@ func (l *Lexer) skipWhitespace() {
 }
 
 // NextToken returns the next token from the input
+// NextToken 跳过空白后返回下一个令牌（关键字、字符串、数字等）。
 func (l *Lexer) NextToken() Token {
 	var tok Token
 
@@ -129,6 +135,7 @@ func (l *Lexer) NextToken() Token {
 	return tok
 }
 
+// readMetaCommand 读取反斜杠开头的元命令（如 \help）。
 func (l *Lexer) readMetaCommand() string {
 	start := l.pos
 	l.readChar() // consume backslash
@@ -142,6 +149,7 @@ func newToken(tokenType int, ch byte) Token {
 	return Token{Type: tokenType, Value: string(ch)}
 }
 
+// readIdentifier 读取标识符（含连字符与点号）。
 func (l *Lexer) readIdentifier() string {
 	start := l.pos
 	for isLetter(l.ch) || isDigit(l.ch) || l.ch == '_' || l.ch == '-' || l.ch == '.' {
@@ -150,6 +158,7 @@ func (l *Lexer) readIdentifier() string {
 	return l.input[start:l.pos]
 }
 
+// readNumber 读取整数或浮点数字面量。
 func (l *Lexer) readNumber() (string, int) {
 	start := l.pos
 	tokenType := TokenInteger
@@ -184,6 +193,7 @@ func (l *Lexer) readQuotedString(quote byte) string {
 	return str
 }
 
+// lookupIdent 将标识符映射为 LOGIN/LIST 等关键字令牌。
 func (l *Lexer) lookupIdent(ident string) Token {
 	upper := strings.ToUpper(ident)
 	switch upper {

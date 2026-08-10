@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// types.go — 虚拟文件系统核心类型：节点、命令、列表/搜索选项及 Provider 元数据定义。
+
 //
 
 package filesystem
@@ -19,8 +21,10 @@ package filesystem
 import "time"
 
 // NodeType represents the type of a node in the virtual filesystem
+// NodeType 表示上下文文件系统中的节点种类（目录、数据集、聊天等）。
 type NodeType string
 
+// 通用错误消息常量，供各 Provider 返回一致的错误文本。
 const (
 	NodeTypeDirectory NodeType = "directory"
 	NodeTypeFile      NodeType = "file"
@@ -33,6 +37,7 @@ const (
 
 // Node represents a node in the context filesystem
 // This is the unified output format for all providers
+// Node 为各 Provider 统一的输出节点结构（名称、路径、元数据）。
 type Node struct {
 	Name      string                 `json:"name"`
 	Path      string                 `json:"path"`
@@ -44,6 +49,7 @@ type Node struct {
 }
 
 // CommandType represents the type of command
+// CommandType 标识 ls/search/cat 等文件系统子命令。
 type CommandType string
 
 const (
@@ -53,6 +59,7 @@ const (
 )
 
 // Command represents a filesystem command
+// Command 描述一次文件系统操作的类型、路径与参数。
 type Command struct {
 	Type   CommandType            `json:"type"`
 	Path   string                 `json:"path"`
@@ -60,6 +67,7 @@ type Command struct {
 }
 
 // ListOptions represents options for list operations
+// ListOptions 控制列表递归、分页与排序。
 type ListOptions struct {
 	Recursive bool   `json:"recursive,omitempty"`
 	Limit     int    `json:"limit,omitempty"`
@@ -69,6 +77,7 @@ type ListOptions struct {
 }
 
 // SearchOptions represents options for search operations
+// SearchOptions 封装语义搜索的 query、top_k、阈值与目录范围。
 type SearchOptions struct {
 	Query     string   `json:"query"`
 	Limit     int      `json:"limit,omitempty"`
@@ -80,6 +89,7 @@ type SearchOptions struct {
 }
 
 // Result represents the result of a command execution
+// Result 为命令执行结果：节点列表、总数与分页游标。
 type Result struct {
 	Nodes      []*Node `json:"nodes"`
 	Total      int     `json:"total"`
@@ -89,6 +99,7 @@ type Result struct {
 }
 
 // PathInfo represents parsed path information
+// PathInfo 解析路径后的 Provider 名、组件与资源 ID。
 type PathInfo struct {
 	Provider     string   // The provider name (e.g., "datasets", "chats")
 	Path         string   // The full path
@@ -99,6 +110,7 @@ type PathInfo struct {
 }
 
 // ProviderInfo holds metadata about a provider
+// ProviderInfo 描述单个 Provider 的名称、说明与根路径。
 type ProviderInfo struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`

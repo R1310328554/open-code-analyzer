@@ -12,10 +12,13 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// constants.go — 全局共享常量：检索字段名、任务状态与对话有效状态枚举。
+
 //
 
 package common
 
+// 检索与 Elasticsearch 相关字段/窗口常量。
 const (
 	// PAGERANK_FLD is the field name for pagerank score
 	PAGERANK_FLD = "pagerank_fea"
@@ -28,7 +31,8 @@ const (
 	SearchAfterBatchSize = 1000
 )
 
-// task status
+// task status — 异步任务生命周期状态字符串。
+
 const (
 	CREATED   = "CREATED"
 	RUNNING   = "RUNNING"
@@ -38,6 +42,7 @@ const (
 	STOPPING  = "STOPPING"
 )
 
+// StatusDialogValid 为对外 Bot 可用的 dialog.status 值（对应 Python StatusEnum.VALID）。
 // StatusDialogValid is the dialog.status value that gates public bot
 // access. Mirrors Python's StatusEnum.VALID.value at
 // api/common/constants.py (the string "1"). All chatbot/agentbot
@@ -46,4 +51,5 @@ const StatusDialogValid = "1"
 
 // DialogStatus is a typed alias for dialog.status to avoid raw string
 // comparisons in call sites.
+// DialogStatus 为 dialog.status 的类型别名，避免裸字符串比较。
 type DialogStatus string

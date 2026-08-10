@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// utils.go — 文件系统输出与路径工具：节点格式化、表格打印、路径校验与拼接辅助函数。
+
 //
 
 package filesystem
@@ -23,6 +25,7 @@ import (
 )
 
 // FormatNode formats a node for display
+// FormatNode 按 json/table/plain 格式将 Node 转为展示用 map。
 func FormatNode(node *Node, format string) map[string]interface{} {
 	switch format {
 	case "json":
@@ -55,6 +58,7 @@ func FormatNode(node *Node, format string) map[string]interface{} {
 }
 
 // FormatNodes formats a list of nodes for display
+// FormatNodes 批量格式化节点列表。
 func FormatNodes(nodes []*Node, format string) []map[string]interface{} {
 	result := make([]map[string]interface{}, 0, len(nodes))
 	for _, node := range nodes {
@@ -64,6 +68,7 @@ func FormatNodes(nodes []*Node, format string) []map[string]interface{} {
 }
 
 // formatSize formats a size in bytes to human-readable format
+// formatSize 将字节数格式化为 B/KB/MB/GB/TB 可读字符串。
 func formatSize(size int64) string {
 	if size == 0 {
 		return "-"
@@ -99,6 +104,7 @@ func formatTime(t time.Time) string {
 }
 
 // ResultToMap converts a Result to a map for JSON serialization
+// ResultToMap 将 Result 转为 JSON 可序列化的 map。
 func ResultToMap(result *Result) map[string]interface{} {
 	if result == nil {
 		return map[string]interface{}{
@@ -153,6 +159,7 @@ func (r *Result) MarshalJSON() ([]byte, error) {
 }
 
 // PrintResult prints a result in the specified format
+// PrintResult 按指定格式将结果输出到标准输出。
 func PrintResult(result *Result, format string) {
 	if result == nil {
 		fmt.Println("No results")
@@ -173,6 +180,7 @@ func PrintResult(result *Result, format string) {
 }
 
 // printTable prints nodes in a simple table format
+// printTable 以固定列宽表格打印节点列表。
 func printTable(nodes []*Node) {
 	if len(nodes) == 0 {
 		fmt.Println("No results")
@@ -204,6 +212,7 @@ func truncateString(s string, maxLen int) string {
 }
 
 // IsValidPath checks if a path is valid
+// IsValidPath 检查路径是否不含 ..、通配符等非法字符。
 func IsValidPath(path string) bool {
 	if path == "" {
 		return false
@@ -231,6 +240,7 @@ func containsString(s, substr string) bool {
 }
 
 // JoinPath joins path components
+// JoinPath 拼接路径组件并规范化斜杠。
 func JoinPath(components ...string) string {
 	if len(components) == 0 {
 		return ""
@@ -260,6 +270,7 @@ func JoinPath(components ...string) string {
 }
 
 // GetParentPath returns the parent path of a given path
+// GetParentPath 返回路径的父目录部分。
 func GetParentPath(path string) string {
 	path = normalizePath(path)
 	parts := SplitPath(path)
@@ -284,6 +295,7 @@ func GetBaseName(path string) string {
 }
 
 // HasPrefix checks if a path has the given prefix
+// HasPrefix 判断规范化后的路径是否以给定前缀开头。
 func HasPrefix(path, prefix string) bool {
 	path = normalizePath(path)
 	prefix = normalizePath(prefix)

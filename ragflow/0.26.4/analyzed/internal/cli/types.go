@@ -12,17 +12,21 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// types.go — CLI 核心类型：Command 结构体与 Lexer 关键字/字面量令牌常量定义。
+
 //
 
 package cli
 
 // Command represents a parsed command from the CLI
+// Command 表示解析后的 CLI 命令类型与参数字典。
 type Command struct {
 	Type   string
 	Params map[string]interface{}
 }
 
-// Token types for the lexer
+// Token types for the lexer — 词法分析器令牌类型常量（关键字从 TokenLogin 起）。
+
 const (
 	// Keywords
 	TokenLogin = iota
@@ -223,12 +227,14 @@ const (
 )
 
 // Token represents a lexical token
+// Token 为词法单元：类型枚举与原始字符串值。
 type Token struct {
 	Type  int
 	Value string
 }
 
 // NewCommand creates a new command with the given type
+// NewCommand 创建带空 Params 映射的命令对象。
 func NewCommand(cmdType string) *Command {
 	return &Command{
 		Type:   cmdType,

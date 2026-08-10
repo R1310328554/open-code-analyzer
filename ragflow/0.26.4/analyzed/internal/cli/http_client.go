@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// http_client.go — RAGFlow API HTTP 客户端：构建 URL、鉴权头、JSON/流式/多部分上传及基准测试请求。
+
 //
 
 package cli
@@ -28,6 +30,7 @@ import (
 )
 
 // HTTPClient handles HTTP requests to the RAGFlow server
+// HTTPClient 封装与 RAGFlow 服务器通信的主机、端口、令牌与超时配置。
 type HTTPClient struct {
 	Host           string
 	Port           int
@@ -42,6 +45,7 @@ type HTTPClient struct {
 }
 
 // NewHTTPClient creates a new HTTP client
+// NewHTTPClient 使用默认 127.0.0.1:9382 与 TLS 跳过验证创建客户端。
 func NewHTTPClient() *HTTPClient {
 	transport := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -61,6 +65,7 @@ func NewHTTPClient() *HTTPClient {
 }
 
 // APIBase returns the API base URL
+// APIBase 返回 /api/{version} 前缀 URL。
 func (c *HTTPClient) APIBase() string {
 	return fmt.Sprintf("%s:%d/api/%s", c.Host, c.Port, c.APIVersion)
 }
@@ -71,6 +76,7 @@ func (c *HTTPClient) NonAPIBase() string {
 }
 
 // BuildURL builds the full URL for a given path
+// BuildURL 拼接完整 HTTP(S) 请求 URL。
 func (c *HTTPClient) BuildURL(path string) string {
 	base := c.APIBase()
 	if c.VerifySSL {
@@ -80,6 +86,7 @@ func (c *HTTPClient) BuildURL(path string) string {
 }
 
 // Headers builds the request headers
+// Headers 按 api/web/admin 模式注入 Bearer 或 Web 令牌。
 func (c *HTTPClient) Headers(authKind string, extra map[string]string) map[string]string {
 	headers := make(map[string]string)
 
@@ -104,6 +111,7 @@ func (c *HTTPClient) Headers(authKind string, extra map[string]string) map[strin
 }
 
 // Response represents an HTTP response
+// Response 封装 HTTP 状态码、响应体、头与耗时。
 type Response struct {
 	StatusCode int
 	Body       []byte
@@ -121,6 +129,7 @@ func (r *Response) JSON() (map[string]interface{}, error) {
 }
 
 // Request makes an HTTP request
+// Request 发起单次 HTTP 请求并读取完整响应体。
 func (c *HTTPClient) Request(method, path string, authKind string, headers map[string]string, jsonBody map[string]interface{}) (*Response, error) {
 	if c == nil {
 		return nil, fmt.Errorf("HTTP Client is nil")
@@ -175,6 +184,7 @@ func (c *HTTPClient) Request(method, path string, authKind string, headers map[s
 
 // RequestWithIterations makes multiple HTTP requests for benchmarking
 // Returns a map with "duration" (total time in seconds) and "response_list"
+// RequestWithIterations 重复请求用于 BENCHMARK 压测统计。
 func (c *HTTPClient) RequestWithIterations(method, path string, authKind string, headers map[string]string, jsonBody map[string]interface{}, iterations int) (*BenchmarkResponse, error) {
 	response := new(BenchmarkResponse)
 
@@ -277,6 +287,7 @@ func (c *HTTPClient) RequestJSON(method, path string, authKind string, headers m
 }
 
 // UploadMultipart uploads data using multipart/form-data
+// UploadMultipart 以 multipart/form-data 上传文件流。
 func (c *HTTPClient) UploadMultipart(path string, contentType string, body io.Reader) error {
 	url := c.BuildURL(path)
 
@@ -321,6 +332,7 @@ func (c *HTTPClient) UploadMultipart(path string, contentType string, body io.Re
 }
 
 // RequestStream makes an HTTP request for SSE streaming and returns the response body reader
+// RequestStream 发起 SSE 流式请求并返回可读 Body。
 func (c *HTTPClient) RequestStream(method, path string, authKind string, headers map[string]string, jsonBody map[string]interface{}) (io.ReadCloser, error) {
 	url := c.BuildURL(path)
 	mergedHeaders := c.Headers(authKind, headers)
@@ -378,6 +390,7 @@ type CurrentModel struct {
 }
 
 // httpClientAdapter adapts HTTPClient to ce.HTTPClientInterface
+// httpClientAdapter 将 HTTPClient 适配为 filesystem.HTTPClientInterface。
 type httpClientAdapter struct {
 	client *HTTPClient
 }

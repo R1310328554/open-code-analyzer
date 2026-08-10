@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// parser.go — RAGFlow CLI 语法分析器：递归下降解析 Admin/API 模式命令并构建 Command 结构。
+
 //
 
 package cli
@@ -24,6 +26,7 @@ import (
 )
 
 // Parser implements a recursive descent parser for RAGFlow CLI commands
+// Parser 持有 Lexer 与 cur/peek 双令牌缓冲。
 type Parser struct {
 	lexer     *Lexer
 	curToken  Token
@@ -32,6 +35,7 @@ type Parser struct {
 }
 
 // NewParser creates a new parser
+// NewParser 创建解析器并预读两个令牌。
 func NewParser(input string) *Parser {
 	l := NewLexer(input)
 	p := &Parser{lexer: l, original: input}
@@ -47,6 +51,7 @@ func (p *Parser) nextToken() {
 }
 
 // Parse parses the input and returns a Command
+// Parse 入口：处理元命令或按模式分派到 Admin/User 解析。
 func (p *Parser) Parse(cliMode CommandLineMode) (*Command, error) {
 	if p.curToken.Type == TokenEOF {
 		return nil, nil
@@ -60,6 +65,7 @@ func (p *Parser) Parse(cliMode CommandLineMode) (*Command, error) {
 	return p.parseCommand(cliMode)
 }
 
+// parseMetaCommand 解析 \command 形式的 liner 元命令。
 func (p *Parser) parseMetaCommand() (*Command, error) {
 	cmd := NewCommand("meta")
 	cmdName := strings.TrimPrefix(p.curToken.Value, "\\")
@@ -77,6 +83,7 @@ func (p *Parser) parseMetaCommand() (*Command, error) {
 	return cmd, nil
 }
 
+// parseAdminCommand 按首令牌分派管理端 LOGIN/LIST/CREATE 等子命令。
 func (p *Parser) parseAdminCommand() (*Command, error) {
 
 	switch p.curToken.Type {
@@ -139,6 +146,7 @@ func (p *Parser) parseAdminCommand() (*Command, error) {
 	}
 }
 
+// parseUserCommand 按首令牌分派 API 用户模式子命令。
 func (p *Parser) parseUserCommand() (*Command, error) {
 
 	switch p.curToken.Type {
@@ -229,6 +237,7 @@ func (p *Parser) parseUserCommand() (*Command, error) {
 	}
 }
 
+// parseCommand 根据 AdminMode/APIMode 选择解析分支。
 func (p *Parser) parseCommand(cliMode CommandLineMode) (*Command, error) {
 	if p.curToken.Type != TokenIdentifier && !isKeyword(p.curToken.Type) {
 		return nil, fmt.Errorf("expected command, got %s", p.curToken.Value)
@@ -268,6 +277,7 @@ func isKeyword(tokenType int) bool {
 }
 
 // isCECommand checks if the given string is a Filesystem command
+// isCECommand 判断字符串是否为上下文引擎文件系统命令。
 func isCECommand(s string) bool {
 	upper := strings.ToUpper(s)
 	switch upper {
@@ -329,6 +339,7 @@ func (p *Parser) parseFloat() (float64, error) {
 //
 // Empty list [] is allowed. The cursor must be positioned on '[' when called;
 // on return, the cursor is positioned just past the closing ']'.
+// parseQuotedStringList 解析 ['a','b'] 形式的引号字符串列表。
 func (p *Parser) parseQuotedStringList() ([]string, error) {
 	if p.curToken.Type != TokenLBracket {
 		return nil, fmt.Errorf("expected '[', got %s", p.curToken.Value)
@@ -388,6 +399,7 @@ func tokenTypeToString(t int) string {
 	return fmt.Sprintf("token(%d)", t)
 }
 
+// parseFileSystemCommands 将 LS/CAT/SEARCH 整行保留为 file_system_command。
 func (p *Parser) parseFileSystemCommands() (*Command, error) {
 	p.nextToken() // consume COMMAND
 

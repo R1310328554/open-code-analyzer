@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// user_command.go — API 用户模式命令实现：LIST/CREATE/CHAT/EMBED 等 REST 调用与响应包装。
+
 //
 
 package cli
@@ -36,6 +38,7 @@ import (
 	"time"
 )
 
+// APIShowVersionCommand 查询 RAGFlow 服务器版本，支持 benchmark 多次迭代。
 // Show server version to show RAGFlow server version
 // Returns benchmark result map if iterations > 1, otherwise prints status
 func (c *CLI) APIShowVersionCommand(cmd *Command) (ResponseIf, error) {
@@ -72,6 +75,7 @@ func (c *CLI) APIShowVersionCommand(cmd *Command) (ResponseIf, error) {
 	return &result, nil
 }
 
+// ListConfigs 获取系统配置并扁平化为 key/value 表格行。
 func (c *CLI) ListConfigs(cmd *Command) (ResponseIf, error) {
 	if c.Config.CLIMode != APIMode {
 		return nil, fmt.Errorf("this command is only allowed in USER mode")
@@ -114,6 +118,7 @@ func (c *CLI) ListConfigs(cmd *Command) (ResponseIf, error) {
 	return &result, nil
 }
 
+// GetConfigs 从嵌套配置 map 提取 redis/doc_engine/database 等键值。
 func GetConfigs(config *map[string]interface{}) ([]map[string]interface{}, error) {
 	if config == nil {
 		return nil, fmt.Errorf("config is nil")
@@ -249,6 +254,7 @@ func (c *CLI) APISetLogLevelCommand(cmd *Command) (ResponseIf, error) {
 	return HandleSimpleResponse(resp, "change log level")
 }
 
+// RegisterUser 调用注册 API 创建新用户账号。
 func (c *CLI) RegisterUser(cmd *Command) (ResponseIf, error) {
 	if c.Config.CLIMode != APIMode {
 		return nil, fmt.Errorf("this command is only allowed in USER mode")
@@ -321,6 +327,7 @@ func (c *CLI) RegisterUser(cmd *Command) (ResponseIf, error) {
 
 // APIListDatasetsCommand lists datasets for current user (user mode)
 // Returns (result_map, error) - result_map is non-nil for benchmark mode
+// APIListDatasetsCommand 列出当前租户的全部知识库。
 func (c *CLI) APIListDatasetsCommand(cmd *Command) (ResponseIf, error) {
 	if c.Config.CLIMode != APIMode {
 		return nil, fmt.Errorf("this command is only allowed in USER mode")
@@ -791,6 +798,7 @@ func formatEmptyArray(v interface{}) string {
 
 // SearchOnDatasets searches for chunks in specified datasets
 // Returns (result_map, error) - result_map is non-nil for benchmark mode
+// SearchOnDatasets 在指定数据集上执行语义检索。
 func (c *CLI) SearchOnDatasets(cmd *Command) (ResponseIf, error) {
 	if c.Config.CLIMode != APIMode {
 		return nil, fmt.Errorf("this command is only allowed in USER mode")
@@ -1007,6 +1015,7 @@ func (c *CLI) APICreateAPIKeyCommand(cmd *Command) (ResponseIf, error) {
 	return &result, nil
 }
 
+// APICreateDatasetCommand 创建新知识库。
 func (c *CLI) APICreateDatasetCommand(cmd *Command) (ResponseIf, error) {
 	if c.Config.CLIMode != APIMode {
 		return nil, fmt.Errorf("this command is only allowed in USER mode")
@@ -1677,6 +1686,7 @@ func (c *CLI) APIDeleteProviderCommand(cmd *Command) (ResponseIf, error) {
 }
 
 // APIDropDatasetCommand DROP DATASET 'dataset_name'
+// APIDropDatasetCommand 删除指定名称的知识库。
 func (c *CLI) APIDropDatasetCommand(cmd *Command) (ResponseIf, error) {
 	if c.Config.CLIMode != APIMode {
 		return nil, fmt.Errorf("this command is only allowed in USER mode")
@@ -1972,6 +1982,7 @@ func isValidURL(str string) bool {
 	return u.Scheme != "" && u.Host != ""
 }
 
+// APIChatToModelCommand 向当前模型发起聊天（支持流式与非流式）。
 func (c *CLI) APIChatToModelCommand(cmd *Command) (ResponseIf, error) {
 	if c.Config.CLIMode != APIMode {
 		return nil, fmt.Errorf("this command is only allowed in USER mode")
@@ -2240,6 +2251,7 @@ func (c *CLI) APIChatToModelCommand(cmd *Command) (ResponseIf, error) {
 	return &result, nil
 }
 
+// EmbedUserTextCommand 调用嵌入模型将文本向量化。
 func (c *CLI) EmbedUserTextCommand(cmd *Command) (ResponseIf, error) {
 	if c.APIServerClientMap[c.Config.APIClientConfig.CurrentAPIServer].APIKey == nil && c.APIServerClientMap[c.Config.APIClientConfig.CurrentAPIServer].LoginToken == nil {
 		return nil, fmt.Errorf("API key not set. Please login first")
@@ -2323,6 +2335,7 @@ func (c *CLI) EmbedUserTextCommand(cmd *Command) (ResponseIf, error) {
 	return &result, nil
 }
 
+// APIRerankUserDocumentCommand 对查询-文档对执行重排序。
 func (c *CLI) APIRerankUserDocumentCommand(cmd *Command) (ResponseIf, error) {
 	if c.APIServerClientMap[c.Config.APIClientConfig.CurrentAPIServer].APIKey == nil && c.APIServerClientMap[c.Config.APIClientConfig.CurrentAPIServer].LoginToken == nil {
 		return nil, fmt.Errorf("API key not set. Please login first")

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// skill_install.go — 技能安装 CLI：解析来源引用、安全扫描、强制重装并写入 skills 空间。
+
 //
 
 package filesystem
@@ -35,6 +37,7 @@ import (
 )
 
 // InstallSkillArgs holds the parsed arguments for install-skill command
+// InstallSkillArgs 保存 install-skill 命令解析后的空间、来源与选项。
 type InstallSkillArgs struct {
 	SpaceID    string // Target skills space ID
 	SourceRef  string // Source reference (path or identifier)
@@ -46,6 +49,7 @@ type InstallSkillArgs struct {
 }
 
 // SkillInstallCommand handles the install-skill command
+// SkillInstallCommand 协调来源解析、扫描、上传与索引更新。
 type SkillInstallCommand struct {
 	client         HTTPClientInterface
 	fileProvider   *FileProvider
@@ -57,11 +61,13 @@ type SkillInstallCommand struct {
 
 // sourceHTTPClientAdapter adapts filesystem.HTTPClientInterface to source.HTTPClientInterface
 // This allows us to use the existing HTTP client infrastructure with the source package
+// sourceHTTPClientAdapter 将 CLI HTTP 客户端适配为 source 包所需接口。
 type sourceHTTPClientAdapter struct {
 	client     HTTPClientInterface
 	httpClient *http.Client
 }
 
+// Do 使用标准 http.Client 直连外部 URL（绕过 RAGFlow API 基址）。
 func (a *sourceHTTPClientAdapter) Do(req *http.Request) (*http.Response, error) {
 	// Use standard http.Client for direct requests (e.g., GitHub API)
 	// This bypasses the RAGFlow API client which adds its own base URL
@@ -77,6 +83,7 @@ func (a *sourceHTTPClientAdapter) Get(url string) (*http.Response, error) {
 }
 
 // NewInstallSkillCommand creates a new install-skill command handler
+// NewInstallSkillCommand 初始化 HTTP/2 传输、Cookie Jar 与安全扫描组件。
 func NewInstallSkillCommand(client HTTPClientInterface, fileProvider *FileProvider, skillProvider Provider) *SkillInstallCommand {
 	// Log proxy settings
 	if httpProxy := os.Getenv("http_proxy"); httpProxy != "" {
@@ -138,6 +145,7 @@ func NewInstallSkillCommand(client HTTPClientInterface, fileProvider *FileProvid
 }
 
 // Execute runs the install-skill command
+// Execute 执行完整安装流程：解析来源、拉取包、扫描、上传与索引。
 func (c *SkillInstallCommand) Execute(args []string) error {
 	parsedArgs, err := c.parseArgs(args)
 	if err != nil {
@@ -231,6 +239,7 @@ func (c *SkillInstallCommand) Execute(args []string) error {
 }
 
 // uninstallSkill removes an existing skill (for --force mode)
+// uninstallSkill 在 --force 模式下删除已有技能的索引与文件夹。
 func (c *SkillInstallCommand) uninstallSkill(ctx stdctx.Context, spaceID, skillName string) error {
 	var indexErr, folderErr error
 
@@ -264,6 +273,7 @@ func (c *SkillInstallCommand) uninstallSkill(ctx stdctx.Context, spaceID, skillN
 }
 
 // installSkill installs a skill bundle using existing SkillUploader
+// installSkill 将 SkillBundle 写入临时目录并调用 SkillUploader 上传。
 func (c *SkillInstallCommand) installSkill(ctx stdctx.Context, spaceID string, bundle *source.SkillBundle, force bool) error {
 	// Create a temporary directory to hold the skill files
 	tempDir, err := os.MkdirTemp("", "skill-install-*")
@@ -303,6 +313,7 @@ func (c *SkillInstallCommand) installSkill(ctx stdctx.Context, spaceID string, b
 }
 
 // skillExists checks if a skill already exists
+// skillExists 通过 List 探测 skills/{space}/{name} 是否已存在。
 func (c *SkillInstallCommand) skillExists(ctx stdctx.Context, spaceID, skillName string) (bool, error) {
 	folderPath := fmt.Sprintf("skills/%s/%s", spaceID, skillName)
 	_, err := c.fileProvider.List(ctx, folderPath, nil)
@@ -322,6 +333,7 @@ func (c *SkillInstallCommand) updateIndex(ctx stdctx.Context, spaceID, skillName
 }
 
 // parseArgs parses command arguments
+// parseArgs 解析 space、source 及 --version/--name/--force 等标志。
 func (c *SkillInstallCommand) parseArgs(args []string) (*InstallSkillArgs, error) {
 	result := &InstallSkillArgs{}
 
@@ -373,6 +385,7 @@ func (c *SkillInstallCommand) parseArgs(args []string) (*InstallSkillArgs, error
 }
 
 // PrintHelp prints the help message
+// PrintHelp 输出 install-skill 用法、安全说明与示例。
 func (c *SkillInstallCommand) PrintHelp() {
 	fmt.Println(`Usage: install-skill <space> <source> [options]
 

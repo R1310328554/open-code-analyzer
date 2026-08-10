@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// table.go — CLI 表格输出：支持 table/plain/json 三种格式的列对齐与 CJK 宽度计算。
+
 //
 
 package cli
@@ -23,10 +25,12 @@ import (
 	"strings"
 )
 
+// maxColWidth 限制单列最大显示宽度，防止终端被撑爆。
 const maxColWidth = 256
 
 // PrintTableSimple prints data in a simple table format (default: table format with borders)
 // Similar to Python's _print_table_simple
+// PrintTableSimple 默认以 table 格式打印键值行数据。
 func PrintTableSimple(data []map[string]interface{}) {
 	PrintTableSimpleByFormat(data, OutputFormatTable)
 }
@@ -37,6 +41,7 @@ func PrintTableSimple(data []map[string]interface{}) {
 // - Two spaces between columns
 // - Numeric columns right-aligned
 // - URI/path columns not truncated
+// PrintTableSimpleByFormat 按 format 选择边框表格、纯文本或 JSON。
 func PrintTableSimpleByFormat(data []map[string]interface{}, format OutputFormat) {
 	if len(data) == 0 {
 		if format == OutputFormatJSON {
@@ -198,6 +203,7 @@ func PrintTableSimpleByFormat(data []map[string]interface{}, format OutputFormat
 }
 
 // formatValue formats a value for display
+// formatValue 将 interface{} 格式化为字符串用于单元格显示。
 func formatValue(v interface{}) string {
 	if v == nil {
 		return ""
@@ -219,6 +225,7 @@ func formatValue(v interface{}) string {
 }
 
 // isNumericValue checks if a value is numeric
+// isNumericValue 判断列值是否全为数字以决定右对齐。
 func isNumericValue(v interface{}) bool {
 	if v == nil {
 		return false
@@ -239,6 +246,7 @@ func isNumericValue(v interface{}) bool {
 }
 
 // truncateStringByWidth truncates a string to fit within maxWidth display width
+// truncateStringByWidth 按显示宽度截断并追加省略号。
 func truncateStringByWidth(runes []rune, maxWidth int) string {
 	width := 0
 	for i, r := range runes {
@@ -255,6 +263,7 @@ func truncateStringByWidth(runes []rune, maxWidth int) string {
 }
 
 // padCell pads a string to the specified width for alignment
+// padCell 按宽度与对齐方式填充单元格内容。
 func padCell(content string, width int, alignRight bool) string {
 	contentWidth := getStringWidth(content)
 	if contentWidth >= width {
@@ -269,6 +278,7 @@ func padCell(content string, width int, alignRight bool) string {
 
 // getStringWidth calculates the display width of a string
 // Treats CJK characters as width 2
+// getStringWidth 计算字符串终端显示宽度（CJK 计为 2）。
 func getStringWidth(text string) int {
 	width := 0
 	for _, r := range text {
@@ -282,6 +292,7 @@ func getStringWidth(text string) int {
 }
 
 // isHalfWidth checks if a rune is half-width
+// isHalfWidth 判断 rune 是否为半角 ASCII 可打印字符。
 func isHalfWidth(r rune) bool {
 	// ASCII printable characters and common whitespace
 	if r >= 0x20 && r <= 0x7E {

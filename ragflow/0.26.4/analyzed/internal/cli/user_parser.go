@@ -1,3 +1,5 @@
+// user_parser.go — API 用户模式 DSL 解析：将 LOGIN USER、LIST DATASETS 等语句解析为 Command。
+
 package cli
 
 import (
@@ -8,6 +10,7 @@ import (
 	"strings"
 )
 
+// tokenTypeDescription 生成调试用的令牌类型描述字符串。
 func tokenTypeDescription(t int, tok Token) string {
 	if tok.Type == t && tok.Value != "" {
 		return fmt.Sprintf("%s %q", tokenTypeToString(t), tok.Value)
@@ -16,6 +19,7 @@ func tokenTypeDescription(t int, tok Token) string {
 }
 
 // Command parsers
+// parseAPILoginUser 解析 LOGIN USER 'email' [PASSWORD 'pwd']。
 func (p *Parser) parseAPILoginUser() (*Command, error) {
 	cmd := NewCommand("api_login_user")
 
@@ -72,6 +76,7 @@ func (p *Parser) parseAPIPingServer() (*Command, error) {
 	return cmd, nil
 }
 
+// parseAPIRegister 解析 REGISTER USER ... AS ... PASSWORD ...。
 func (p *Parser) parseAPIRegister() (*Command, error) {
 	cmd := NewCommand("api_register_user")
 
@@ -119,12 +124,14 @@ func (p *Parser) parseAPIRegister() (*Command, error) {
 	return cmd, nil
 }
 
-// region LIST commands
+// region LIST commands — LIST CONFIGS/DATASETS/PROVIDERS 等查询命令。
+
 
 // LIST CONFIGS;
 // LIST PROVIDER 'provider_name' MODELS;
 // LIST PROVIDER 'provider_name' INSTANCE 'instance_name' MODELS
 // LIST MODELS;
+// parseAPIListCommands 按 LIST 后首关键字分派到各列表解析器。
 func (p *Parser) parseAPIListCommands() (*Command, error) {
 	p.nextToken() // consume LIST
 
@@ -529,8 +536,10 @@ func (p *Parser) parseAPIListVariables() (*Command, error) {
 
 // endregion LIST commands
 
-// region SHOW commands
+// region SHOW commands — SHOW VERSION/KEY/CURRENT 等展示命令。
 
+
+// parseAPIShowCommands 分派 SHOW 子命令解析。
 func (p *Parser) parseAPIShowCommands() (*Command, error) {
 	p.nextToken() // consume SHOW
 	switch p.curToken.Type {
@@ -815,8 +824,10 @@ func (p *Parser) parseShowLogLevel() (*Command, error) {
 
 // endregion SHOW commands
 
-// region CREATE commands
+// region CREATE commands — CREATE DATASET/CHAT/AGENT 等创建命令。
 
+
+// parseAPICreateCommands 分派 CREATE 子命令解析。
 func (p *Parser) parseAPICreateCommands() (*Command, error) {
 	p.nextToken() // consume CREATE
 
@@ -1032,7 +1043,9 @@ optionsLoop:
 
 // endregion CREATE commands
 
-// region DROP commands
+// region DROP commands — DROP DATASET/CHAT 等删除命令。
+
+// parseAPIDropCommands 分派 DROP 子命令解析。
 func (p *Parser) parseAPIDropCommands() (*Command, error) {
 	p.nextToken() // consume DROP
 
@@ -2699,6 +2712,7 @@ func (p *Parser) parseAPIDisable() (*Command, error) {
 // region MODEL commands
 // CHAT 'model@instance@provider' 'hello world'
 // CHAT WITH 'model@instance@provider' MESSAGE 'hello world' 'who are you' IMAGE 'url1' 'file0' VIDEO "url2.mov" "file1" FILE "url" "path file2" AUDIO "file.wav"
+// parseAPIChat 解析 CHAT 语句（消息、附件与模型选项）。
 func (p *Parser) parseAPIChat() (*Command, error) {
 	p.nextToken() // consume CHAT
 
@@ -2905,6 +2919,7 @@ func (p *Parser) parseAPIThink() (*Command, error) {
 	return command, nil
 }
 
+// parseAPIStream 解析 STREAM 流式聊天命令。
 func (p *Parser) parseAPIStream() (*Command, error) {
 
 	p.nextToken() // consume STREAM

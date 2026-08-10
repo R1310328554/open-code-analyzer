@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// skill_uninstall.go — 技能卸载 CLI：删除指定空间内技能的搜索索引与文件系统目录。
+
 //
 
 package filesystem
@@ -23,6 +25,7 @@ import (
 )
 
 // UninstallSkillArgs holds the parsed arguments for uninstall-skill command
+// UninstallSkillArgs 保存 uninstall-skill 的空间 ID 与技能名。
 type UninstallSkillArgs struct {
 	SkillName string
 	SpaceID   string
@@ -30,6 +33,7 @@ type UninstallSkillArgs struct {
 }
 
 // SkillUninstallCommand handles the uninstall-skill command
+// SkillUninstallCommand 持有 HTTP 客户端与技能/文件 Provider。
 type SkillUninstallCommand struct {
 	client        HTTPClientInterface
 	skillProvider Provider
@@ -37,6 +41,7 @@ type SkillUninstallCommand struct {
 }
 
 // NewUninstallSkillCommand creates a new uninstall-skill command handler
+// NewUninstallSkillCommand 构造卸载命令处理器。
 func NewUninstallSkillCommand(client HTTPClientInterface, skillProvider Provider, fileProvider *FileProvider) *SkillUninstallCommand {
 	return &SkillUninstallCommand{
 		client:        client,
@@ -46,6 +51,7 @@ func NewUninstallSkillCommand(client HTTPClientInterface, skillProvider Provider
 }
 
 // Execute runs the uninstall-skill command
+// Execute 解析参数后调用 uninstallSkill 执行删除。
 func (c *SkillUninstallCommand) Execute(args []string) error {
 	parsedArgs, err := c.parseArgs(args)
 	if err != nil {
@@ -61,6 +67,7 @@ func (c *SkillUninstallCommand) Execute(args []string) error {
 }
 
 // uninstallSkill deletes a skill and its index
+// uninstallSkill 依次删除搜索索引与 skills/{space}/{name} 文件夹。
 func (c *SkillUninstallCommand) uninstallSkill(ctx stdctx.Context, spaceID, skillName string) error {
 	if c.skillProvider == nil {
 		return fmt.Errorf("skill provider not available")
@@ -113,6 +120,7 @@ func (c *SkillUninstallCommand) uninstallSkill(ctx stdctx.Context, spaceID, skil
 }
 
 // parseArgs parses command arguments
+// parseArgs 解析 <space> <skill-name> 位置参数。
 func (c *SkillUninstallCommand) parseArgs(args []string) (*UninstallSkillArgs, error) {
 	result := &UninstallSkillArgs{}
 
@@ -146,6 +154,7 @@ func (c *SkillUninstallCommand) parseArgs(args []string) (*UninstallSkillArgs, e
 }
 
 // PrintHelp prints the help message
+// PrintHelp 输出 uninstall-skill 用法与示例。
 func (c *SkillUninstallCommand) PrintHelp() {
 	fmt.Println(`Usage: uninstall-skill <space> <skill-name>
 

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// app_name.go — 应用命名工具：冲突时自动追加 (n) 后缀并校验 UTF-8 字节长度上限。
+
 //
 
 package common
@@ -37,6 +39,7 @@ import (
 //
 //	splitNameCounter("test(5)") returns ("test", 5)
 //	splitNameCounter("test") returns ("test", nil)
+// splitNameCounter 拆分 filename(123) 形式的基础名与计数器。
 func splitNameCounter(filename string) (string, *int) {
 	re := regexp.MustCompile(`^(.+)\((\d+)\)$`)
 	matches := re.FindStringSubmatch(filename)
@@ -64,6 +67,7 @@ func splitNameCounter(filename string) (string, *int) {
 //
 //	DuplicateName(func(name string, tid string) bool { return false }, "test", "tenant1") returns "test"
 //	DuplicateName(func(name string, tid string) bool { return true }, "test", "tenant1") returns "test(1)"
+// DuplicateName 在名称冲突时递增 (n) 后缀直至唯一或达到重试上限。
 func DuplicateName(queryFunc func(name string, tenantID string) bool, name string, tenantID string) (string, error) {
 	const maxRetries = 1000
 
@@ -96,8 +100,10 @@ func DuplicateName(queryFunc func(name string, tenantID string) bool, name strin
 	return "", fmt.Errorf("failed to generate unique name after %d attempts, conflict name: %s", maxRetries, originalName)
 }
 
+// AppNameLimit 应用名称 UTF-8 字节长度上限（与 Python 侧一致）。
 const AppNameLimit = 256
 
+// ValidateName 校验名称非空且字节长度不超过 AppNameLimit。
 func ValidateName(name string) error {
 	// Validate name is not empty after trimming
 	trimmedName := strings.TrimSpace(name)

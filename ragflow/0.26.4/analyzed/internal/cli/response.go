@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// response.go — CLI 响应类型体系：实现 ResponseIf 接口的各类 API 响应解析与表格/JSON 输出。
+
 //
 
 package cli
@@ -22,6 +24,7 @@ import (
 	"strings"
 )
 
+// ResponseIf 统一命令响应的打印、耗时与输出格式接口。
 type ResponseIf interface {
 	Type() string
 	PrintOut()
@@ -29,6 +32,7 @@ type ResponseIf interface {
 	SetOutputFormat(format OutputFormat)
 }
 
+// CommonResponse 通用 code/data/message 列表响应。
 type CommonResponse struct {
 	Code         int                      `json:"code"`
 	Data         []map[string]interface{} `json:"data"`
@@ -58,6 +62,7 @@ func (r *CommonResponse) PrintOut() {
 	}
 }
 
+// HandleCommonResponse 校验 HTTP 200 与 code=0 并包装 CommonResponse。
 func HandleCommonResponse(response *Response, command string) (ResponseIf, error) {
 	if response.StatusCode != 200 {
 		return nil, fmt.Errorf("failed to %s: HTTP %d, body: %s", command, response.StatusCode, string(response.Body))
@@ -76,6 +81,7 @@ func HandleCommonResponse(response *Response, command string) (ResponseIf, error
 	return &result, nil
 }
 
+// ModelsResponse 按 Provider 分组的模型列表响应。
 type ModelsResponse struct {
 	Code         int                                 `json:"code"`
 	Data         map[string][]map[string]interface{} `json:"data"`
@@ -106,6 +112,7 @@ func (r *ModelsResponse) PrintOut() {
 	}
 }
 
+// CommonDataResponse 单对象 data 字段的 SHOW 类响应。
 type CommonDataResponse struct {
 	Code         int                    `json:"code"`
 	Data         map[string]interface{} `json:"data"`
@@ -173,6 +180,7 @@ func HandleCommonDataResponse(response *Response, command string) (ResponseIf, e
 	return &result, nil
 }
 
+// ListDocumentsResponse 数据集文档列表（total + docs）。
 type ListDocumentsResponse struct {
 	Code         int                    `json:"code"`
 	Data         map[string]interface{} `json:"data"`
@@ -615,6 +623,7 @@ func (r *RegisterResponse) PrintOut() {
 	}
 }
 
+// BenchmarkResponse 基准测试的 QPS、成功/失败计数。
 type BenchmarkResponse struct {
 	Code         int     `json:"code"`
 	Duration     float64 `json:"duration"`
@@ -797,6 +806,7 @@ func (r *ExplainResponse) PrintOut() {
 }
 
 // FileSystemResponse wraps the raw text output from executeFilesystem().
+// FileSystemResponse 包装文件系统子命令捕获的原始文本输出。
 type FileSystemResponse struct {
 	Output       string
 	Duration     float64
@@ -810,6 +820,7 @@ func (r *FileSystemResponse) PrintOut() {
 	fmt.Print(r.Output)
 }
 
+// OpenAIChatResponse 兼容 OpenAI Chat Completions 格式的聊天响应。
 type OpenAIChatResponse struct {
 	Code         int             `json:"code,omitempty"`
 	Data         *openAIChatData `json:"data,omitempty"`
@@ -925,6 +936,7 @@ func (r *OpenAIChatResponse) PrintOut() {
 
 // printReferenceChunks parses a reference JSON blob and prints each chunk
 // together with its document_metadata (if any).
+// printReferenceChunks 解析并打印检索引用块与 document_metadata。
 func printReferenceChunks(raw json.RawMessage) {
 	var chunks []map[string]interface{}
 
@@ -992,6 +1004,7 @@ func chunkDocName(c map[string]interface{}) string {
 	return ""
 }
 
+// UserIndexResponse 用户索引概览与 indices 明细。
 type UserIndexResponse struct {
 	CommonDataResponse
 }
@@ -1178,6 +1191,7 @@ func (r *OrderedCommonDataResponse) PrintOut() {
 	}
 }
 
+// QuotaSummaryResponse 按 storage/apps/api 分段展示配额摘要。
 type QuotaSummaryResponse struct {
 	CommonDataResponse
 }
@@ -1237,6 +1251,7 @@ func (r *QuotaSummaryResponse) PrintOut() {
 // JSON shape:
 //
 //	{"code":0,"data":{"answer":"...","reference":...},"message":""}
+// ChatCompletionsResponse RAGFlow 内部 /chat/completions 非 OpenAI 格式响应。
 type ChatCompletionsResponse struct {
 	Code         int                 `json:"code"`
 	Data         *chatCompletionData `json:"data"`
