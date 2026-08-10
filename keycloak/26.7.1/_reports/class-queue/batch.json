@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T05:27:42Z",
   "files": [
-    ".github/scripts/parse-webauthn-metadata.py",
-    "adapters/saml/core-public/src/main/java/org/keycloak/adapters/saml/SamlAuthenticationError.java",
-    "adapters/saml/core-public/src/main/java/org/keycloak/adapters/saml/SamlPrincipal.java",
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/cloned/AdapterHttpClientConfig.java",
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/cloned/HttpAdapterUtils.java",
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/cloned/HttpClientAdapterException.java",
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/cloned/HttpClientBuilder.java",
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/cloned/SniSSLSocketFactory.java",
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/saml/AbstractInitiateLogin.java",
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/saml/AdapterConstants.java",
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/saml/DefaultSamlDeployment.java",
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/saml/OnSessionCreated.java",
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/saml/PropertiesBasedRoleMapper.java",
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/saml/RoleMappingsProvider.java",
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/saml/RoleMappingsProviderUtils.java",
     "adapters/saml/core/src/main/java/org/keycloak/adapters/saml/SamlAuthenticator.java",
     "adapters/saml/core/src/main/java/org/keycloak/adapters/saml/SamlConfigResolver.java",
     "adapters/saml/core/src/main/java/org/keycloak/adapters/saml/SamlDeployment.java",
@@ -33,5 +18,5 @@
     "adapters/saml/core/src/main/java/org/keycloak/adapters/saml/config/parsers/HttpClientParser.java"
   ],
   "remaining_pending": 5968,
-  "done": 0
+  "done": 15
 }
