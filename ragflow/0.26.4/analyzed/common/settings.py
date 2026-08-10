@@ -1,3 +1,7 @@
+"""
+全局运行时配置：数据库、文档引擎、LLM 模型、存储后端与邮件等启动期初始化。
+"""
+
 #
 #  Copyright 2025 The InfiniFlow Authors. All Rights Reserved.
 #
@@ -13,6 +17,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+全局运行时配置：数据库、文档引擎、LLM 模型、存储后端与邮件等启动期初始化。
+"""
+
+
 import os
 import json
 import secrets
@@ -45,8 +54,10 @@ import memory.utils.es_conn as memory_es_conn
 import memory.utils.infinity_conn as memory_infinity_conn
 import memory.utils.ob_conn as memory_ob_conn
 
+# 默认时区
 TIMEZONE = os.getenv("TZ", "Asia/Shanghai")
 
+# 全局 LLM 与各类模型标识（启动后由 init_settings 填充）
 LLM = None
 LLM_FACTORY = None
 LLM_BASE_URL = None
@@ -73,6 +84,7 @@ ALLOWED_LLM_FACTORIES = None
 DATABASE_TYPE = os.getenv("DB_TYPE", "mysql")
 DATABASE = decrypt_database_config(name=DATABASE_TYPE)
 
+# 认证相关开关与 OAuth 配置占位
 # authentication
 AUTHENTICATION_CONF = None
 
@@ -87,6 +99,7 @@ DOC_ENGINE_INFINITY = DOC_ENGINE.lower() == "infinity"
 DOC_ENGINE_OCEANBASE = DOC_ENGINE.lower() == "oceanbase"
 
 
+# 文档向量库与消息存储连接、检索器实例
 docStoreConn = None
 msgStoreConn = None
 
@@ -136,6 +149,8 @@ STORAGE_IMPL = None
 
 def get_svr_queue_name(priority: int, suffix: str = "common") -> str:
     """
+    按优先级与任务后缀生成 Redis 任务队列名。
+
     Generate queue name with two dimensions: priority and suffix.
 
     Args:
@@ -200,6 +215,7 @@ def _get_or_create_secret_key():
 
 
 class StorageFactory:
+    # 按 Storage 枚举创建 MinIO/S3/Azure/OSS 等对象存储实现
     storage_mapping = {
         Storage.MINIO: RAGFlowMinio,
         Storage.AZURE_SPN: RAGFlowAzureSpnBlob,
@@ -216,6 +232,7 @@ class StorageFactory:
 
 
 def init_settings():
+    # 从 conf 与环境变量加载全部服务配置并初始化连接
     global DATABASE_TYPE, DATABASE
     DATABASE_TYPE = os.getenv("DB_TYPE", "mysql")
     DATABASE = decrypt_database_config(name=DATABASE_TYPE)
@@ -401,6 +418,7 @@ def init_settings():
 
 
 def check_and_install_torch():
+    # 按需安装 PyTorch 并探测可用 GPU 数量
     global PARALLEL_DEVICES
     try:
         pip_install_torch()

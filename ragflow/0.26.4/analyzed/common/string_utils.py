@@ -1,3 +1,7 @@
+"""
+字符串清洗：标点旁冗余空格、Markdown 代码块包裹及空内容判定。
+"""
+
 #
 #  Copyright 2025 The InfiniFlow Authors. All Rights Reserved.
 #
@@ -13,12 +17,19 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+字符串清洗：标点旁冗余空格、Markdown 代码块包裹及空内容判定。
+"""
+
+
 
 import re
 
 
 def remove_redundant_spaces(txt: str):
     """
+    去除标点符号两侧多余空格，保留语义性空格。
+
     Remove redundant spaces around punctuation marks while preserving meaningful spaces.
 
     This function performs two main operations:
@@ -48,6 +59,8 @@ def remove_redundant_spaces(txt: str):
 
 def clean_markdown_block(text):
     """
+    剥离文本首尾 ```markdown 代码块标记。
+
     Remove Markdown code block syntax from the beginning and end of text.
 
     This function cleans Markdown code blocks by removing:
@@ -74,4 +87,5 @@ def clean_markdown_block(text):
 
 
 def is_content_empty(content: str) -> bool:
+    # None 或仅空白视为空内容
     return content is None or not str(content).strip()

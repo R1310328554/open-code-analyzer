@@ -1,3 +1,7 @@
+"""
+tiktoken 分词与 Agent 运行期 token 用量聚合（ContextVar + 线程锁）。
+"""
+
 #
 #  Copyright 2025 The InfiniFlow Authors. All Rights Reserved.
 #
@@ -13,6 +17,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+tiktoken 分词与 Agent 运行期 token 用量聚合（ContextVar + 线程锁）。
+"""
+
+
 
 import contextvars
 import hashlib
@@ -26,6 +35,7 @@ from common.file_utils import get_project_base_directory
 
 
 def _ensure_tiktoken_cache() -> str:
+    # 配置 TIKTOKEN_CACHE_DIR 并将内置 cl100k_base 复制到缓存路径
     cache_dir = get_project_base_directory()
     os.environ["TIKTOKEN_CACHE_DIR"] = cache_dir
 
@@ -45,7 +55,7 @@ os.environ["TIKTOKEN_CACHE_DIR"] = tiktoken_cache_dir
 encoder = tiktoken.get_encoding("cl100k_base")
 
 
-# Per-run token usage sink. An agent run (Canvas.run) installs a mutable dict here
+# 单次 Agent 运行 token 用量累加器；Canvas.run 在每轮开始时安装可变 dict
 # at the start of each turn; every LLMBundle chat call adds its provider-reported
 # usage to it. This is the single chokepoint that aggregates token usage across all
 # LLM calls in a run (query rewriting, cross-language translation, tool reasoning,
@@ -53,20 +63,23 @@ encoder = tiktoken.get_encoding("cl100k_base")
 # call. Default None means "not inside a tracked run" and callers must no-op.
 token_usage_sink: contextvars.ContextVar = contextvars.ContextVar("ragflow_token_usage_sink", default=None)
 
-# Per-run Langfuse correlating attributes (e.g. {"session_id": ..., "user_id": ...}).
+# 单次运行的 Langfuse 关联属性（session_id、user_id 等）
 # Installed by Canvas.run so RAGFlow's own Langfuse generations can be grouped by
 # session and user even though the agent's LLMBundles are created without them.
 langfuse_run_attrs: contextvars.ContextVar = contextvars.ContextVar("ragflow_langfuse_run_attrs", default=None)
 
 
-# Guards sink mutations: concurrent tool calls (asyncio.gather + thread_pool_exec,
+# 并发工具调用时保护 sink 读改写，避免计数竞态
 # which copies the context so worker threads share the same sink dict) can otherwise
 # race on the read-modify-write of the counters.
 _sink_lock = threading.Lock()
 
 
 def record_run_token_usage(prompt_tokens: int = 0, completion_tokens: int = 0, total_tokens: int = 0) -> None:
-    """Add a single LLM call's token usage to the active run sink, if any.
+    """
+    将单次 LLM 调用的 token 用量累加到当前运行 sink；无 sink 时静默跳过。
+
+    Add a single LLM call's token usage to the active run sink, if any.
 
     Safe to call from anywhere: when no run sink is installed it does nothing.
     """
@@ -86,7 +99,10 @@ def record_run_token_usage(prompt_tokens: int = 0, completion_tokens: int = 0, t
 
 
 def usage_from_response(resp) -> dict:
-    """Extract a {prompt_tokens, completion_tokens, total_tokens} split from an LLM response.
+    """
+    从 OpenAI/OpenRouter 等响应对象或 dict 中提取 token 用量三元组。
+
+    Extract a {prompt_tokens, completion_tokens, total_tokens} split from an LLM response.
 
     Handles OpenAI/OpenRouter-style ``resp.usage`` objects and dict variants. Missing
     fields default to 0; ``total_tokens`` falls back to prompt+completion when absent.
@@ -124,7 +140,10 @@ def usage_from_response(resp) -> dict:
 
 
 def num_tokens_from_string(string: str) -> int:
-    """Returns the number of tokens in a text string."""
+    """
+    使用 cl100k_base 编码计算字符串 token 数；失败返回 0。
+
+    Returns the number of tokens in a text string."""
     try:
         code_list = encoder.encode(string)
         return len(code_list)
@@ -134,6 +153,8 @@ def num_tokens_from_string(string: str) -> int:
 
 def total_token_count_from_response(resp):
     """
+    兼容多厂商响应结构，提取 total_tokens；无法解析时返回 0。
+
     Extract token count from LLM response in various formats.
 
     Handles None responses and different response structures from various LLM providers.
@@ -181,5 +202,8 @@ def total_token_count_from_response(resp):
 
 
 def truncate(string: str, max_len: int) -> str:
-    """Returns truncated text if the length of text exceed max_len."""
+    """
+    按 token 数截断文本（非字符数）。
+
+    Returns truncated text if the length of text exceed max_len."""
     return encoder.decode(encoder.encode(string)[:max_len])

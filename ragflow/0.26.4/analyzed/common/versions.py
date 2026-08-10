@@ -1,3 +1,7 @@
+"""
+RAGFlow 版本号解析：优先读 VERSION 文件，否则 git describe 最近 tag。
+"""
+
 #
 #  Copyright 2025 The InfiniFlow Authors. All Rights Reserved.
 #
@@ -13,14 +17,21 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+RAGFlow 版本号解析：优先读 VERSION 文件，否则 git describe 最近 tag。
+"""
+
+
 
 import os
 import subprocess
 
+# 进程内缓存的版本字符串
 RAGFLOW_VERSION_INFO = "unknown"
 
 
 def get_ragflow_version() -> str:
+    # 懒加载并缓存 RAGFlow 发行版本
     global RAGFLOW_VERSION_INFO
     if RAGFLOW_VERSION_INFO != "unknown":
         return RAGFLOW_VERSION_INFO
@@ -34,6 +45,7 @@ def get_ragflow_version() -> str:
 
 
 def get_closest_tag_and_count():
+    # 无 VERSION 文件时通过 git describe 获取最近 v* tag
     try:
         # Get the current commit hash
         version_info = subprocess.check_output(["git", "describe", "--tags", "--match=v*", "--first-parent", "--always"]).strip().decode("utf-8")

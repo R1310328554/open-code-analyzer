@@ -1,3 +1,7 @@
+"""
+Docling PDF 解析器：本地 DocumentConverter 或远程 docling-serve，输出带坐标的 sections/tables。
+"""
+
 #
 #  Copyright 2025 The InfiniFlow Authors. All Rights Reserved.
 #
@@ -13,6 +17,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+Docling PDF 解析器：本地 DocumentConverter 或远程 docling-serve，输出带坐标的 sections/tables。
+"""
+
+
 from __future__ import annotations
 
 import logging
@@ -54,6 +63,7 @@ from deepdoc.parser.utils import extract_pdf_outlines
 
 
 class DoclingContentType(str, Enum):
+    # Docling 文档块类型：图片、表格、正文、公式
     IMAGE = "image"
     TABLE = "table"
     TEXT = "text"
@@ -62,6 +72,7 @@ class DoclingContentType(str, Enum):
 
 @dataclass
 class _BBox:
+    # 页码与归一化边界框（左下原点）
     page_no: int
     x0: float
     y0: float
@@ -70,6 +81,7 @@ class _BBox:
 
 
 def _extract_bbox_from_prov(item, prov_attr: str = "prov") -> Optional[_BBox]:
+    # 从 Docling prov 属性提取首个有效 bbox
     prov = getattr(item, prov_attr, None)
     if not prov:
         return None
@@ -88,6 +100,7 @@ def _extract_bbox_from_prov(item, prov_attr: str = "prov") -> Optional[_BBox]:
 
 
 class DoclingParser(RAGFlowPdfParser):
+    # 继承 PDF 基类：支持远程服务、本地转换及页面裁剪
     def __init__(self, docling_server_url: str = "", request_timeout: int = 600):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.page_images: list[Image.Image] = []
@@ -113,6 +126,7 @@ class DoclingParser(RAGFlowPdfParser):
                 return False
 
     def check_installation(self, docling_server_url: Optional[str] = None) -> bool:
+        # 探测远程 OpenAPI 或本地 docling 包是否可用
         server_url = self._effective_server_url(docling_server_url)
         if server_url:
             for path in ("/openapi.json", "/docs", "/v1/convert/source"):
@@ -132,6 +146,7 @@ class DoclingParser(RAGFlowPdfParser):
             return False
 
     def __images__(self, fnm, zoomin: int = 1, page_from=0, page_to=MAXIMUM_PAGE_NUMBER, callback=None):
+        # 用 pdfplumber 渲染指定页为 PIL 图像供 crop 使用
         self.page_from = page_from
         self.page_to = page_to
         bytes_io = None
@@ -151,6 +166,7 @@ class DoclingParser(RAGFlowPdfParser):
                 bytes_io.close()
 
     def _make_line_tag(self, bbox: _BBox) -> str:
+        # 生成 @@页码\t坐标## 位置标签供下游定位
         if bbox is None:
             return ""
         x0, x1, top, bott = bbox.x0, bbox.x1, bbox.y0, bbox.y1
@@ -169,6 +185,7 @@ class DoclingParser(RAGFlowPdfParser):
         return poss
 
     def crop(self, text: str, ZM: int = 1, need_position: bool = False):
+        # 按位置标签拼接跨页区域并可选返回坐标列表
         imgs = []
         poss = self.extract_positions(text)
         if not poss:
@@ -221,6 +238,7 @@ class DoclingParser(RAGFlowPdfParser):
         return (pic, positions) if need_position else pic
 
     def _iter_doc_items(self, doc) -> Iterable[tuple[str, Any, Optional[_BBox]]]:
+        # 遍历 docling 文档 texts：公式、正文、列表项
         for t in getattr(doc, "texts", []):
             label = getattr(t, "label", "")
             if label in ("formula",):
@@ -237,6 +255,7 @@ class DoclingParser(RAGFlowPdfParser):
                 yield (DoclingContentType.TEXT.value, text, bbox)
 
     def _transfer_to_sections(self, doc, parse_method: str) -> list[tuple[str, ...]]:
+        # 按 parse_method 将文本块转为 RAGFlow section 元组
         sections: list[tuple[str, ...]] = []
         for typ, payload, bbox in self._iter_doc_items(doc):
             if typ == DoclingContentType.TEXT.value:
@@ -288,6 +307,7 @@ class DoclingParser(RAGFlowPdfParser):
         return crop, [pos]
 
     def _transfer_to_tables(self, doc):
+        # 导出表格 HTML 与图片 caption，并裁剪表格/图片区域
         tables = []
         for tab in getattr(doc, "tables", []):
             img = None
@@ -358,6 +378,8 @@ class DoclingParser(RAGFlowPdfParser):
         request_timeout: Optional[int] = None,
     ):
         """
+        通过远程 Docling 服务解析 PDF；优先原生分块端点以防 token 溢出。
+
         Parses a PDF document using a remote Docling server.
 
         Prioritizes native chunking endpoints (/v1/chunk/source, /v1alpha/chunk/source)
@@ -523,6 +545,7 @@ class DoclingParser(RAGFlowPdfParser):
         docling_server_url: Optional[str] = None,
         request_timeout: Optional[int] = None,
     ):
+        # 提取 PDF 大纲；远程不可用时走本地 DocumentConverter
         self.outlines = extract_pdf_outlines(binary if binary is not None else filepath)
 
         if not self.check_installation(docling_server_url=docling_server_url):

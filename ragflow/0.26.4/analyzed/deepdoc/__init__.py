@@ -1,3 +1,7 @@
+"""
+deepdoc 包入口：对整包启用 beartype 运行时类型检查。
+"""
+
 #
 #  Copyright 2025 The InfiniFlow Authors. All Rights Reserved.
 #
@@ -13,7 +17,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+deepdoc 包入口：对整包启用 beartype 运行时类型检查。
+"""
+
+
 
 from beartype.claw import beartype_this_package
 
-beartype_this_package()
+beartype_this_package()  # 导入时自动为 deepdoc 子模块注入 beartype 校验

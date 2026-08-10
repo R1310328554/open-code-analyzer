@@ -13,7 +13,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-"""Shared SSRF-guard utilities.
+"""
+共享 SSRF 防护工具：DNS 固定、URL/主机公网校验，仅依赖标准库。
+
+Shared SSRF-guard utilities.
 
 Uses only the standard library so it can be imported from both ``api/`` and
 ``common/`` without pulling in any heavyweight dependencies.
@@ -30,7 +33,7 @@ from urllib.parse import urlparse
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# DNS pinning — closes the TOCTOU / rebinding window between SSRF validation
+# DNS 固定：在 SSRF 校验与实际 TCP 连接之间消除 TOCTOU/重绑定窗口
 # and the actual TCP connection.  The monkey-patch is a no-op for any host
 # that has no active pin, so it cannot affect unrelated code.
 # ---------------------------------------------------------------------------
@@ -42,6 +45,7 @@ _orig_getaddrinfo = socket.getaddrinfo
 
 
 def _getaddrinfo_with_pins(host, port, *args, **kwargs):
+    # 拦截 getaddrinfo：对已 pin 的主机直接返回固定 IP
     # Thread-local pins (synchronous callers: requests.get in the same thread)
     local_pins: dict = getattr(_tl, "dns_pins", {})
     if host in local_pins:
@@ -62,7 +66,10 @@ socket.getaddrinfo = _getaddrinfo_with_pins
 
 @contextmanager
 def pin_dns(hostname: str, ip: str):
-    """Pin *hostname* → *ip* in the current thread for the duration of this context.
+    """
+    线程级 DNS 固定：同步 requests 调用期间防止重绑定。
+
+    Pin *hostname* → *ip* in the current thread for the duration of this context.
 
     Use for synchronous ``requests.get()`` callers to prevent DNS rebinding
     between SSRF validation and the actual TCP connection.
@@ -77,7 +84,10 @@ def pin_dns(hostname: str, ip: str):
 
 @contextmanager
 def pin_dns_global(hostname: str, ip: str):
-    """Pin *hostname* → *ip* across all threads for the duration of this context.
+    """
+    进程级 DNS 固定：异步/线程池场景下跨线程生效。
+
+    Pin *hostname* → *ip* across all threads for the duration of this context.
 
     Use for async callers (e.g. asyncio-based crawlers) where DNS resolution
     may happen in thread-pool executor threads rather than the calling thread.
@@ -102,7 +112,10 @@ def _allow_any_host() -> bool:
 def _effective_ip(
     ip: ipaddress.IPv4Address | ipaddress.IPv6Address,
 ) -> ipaddress.IPv4Address | ipaddress.IPv6Address:
-    """Return the IPv4 equivalent for IPv4-mapped IPv6 addresses, unchanged otherwise.
+    """
+    将 IPv4 映射的 IPv6 地址（如 ::ffff:127.0.0.1）归一化为 IPv4 再校验。
+
+    Return the IPv4 equivalent for IPv4-mapped IPv6 addresses, unchanged otherwise.
 
     Without this normalization ``::ffff:127.0.0.1`` would pass ``is_global``
     as an IPv6Address in some Python versions, bypassing the loopback check.
@@ -119,7 +132,10 @@ def assert_url_is_safe(
     *,
     allowed_schemes: frozenset[str] = _DEFAULT_ALLOWED_SCHEMES,
 ) -> tuple[str, str]:
-    """Raise ``ValueError`` if *url* is not safe to fetch (SSRF guard).
+    """
+    URL 级 SSRF 校验：scheme、主机解析及全局可路由 IP 白名单；返回可 pin 的首个公网 IP。
+
+    Raise ``ValueError`` if *url* is not safe to fetch (SSRF guard).
 
     Checks performed in order:
 
@@ -188,7 +204,10 @@ def assert_url_is_safe(
 
 
 def assert_host_is_safe(host: str) -> str:
-    """Raise ``ValueError`` if *host* resolves to a non-public IP (SSRF guard for raw host/port connections).
+    """
+    主机级 SSRF 校验：供数据库驱动等非 HTTP 连接场景使用。
+
+    Raise ``ValueError`` if *host* resolves to a non-public IP (SSRF guard for raw host/port connections).
 
     This is the host-level counterpart of :func:`assert_url_is_safe`, intended
     for callers that connect via database drivers or other non-HTTP protocols

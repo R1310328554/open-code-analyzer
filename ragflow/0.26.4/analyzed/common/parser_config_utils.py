@@ -1,3 +1,7 @@
+"""
+解析器配置工具：将 UI 传入的布局识别器字符串规范化为引擎名与完整模型标识。
+"""
+
 #
 #  Copyright 2025 The InfiniFlow Authors. All Rights Reserved.
 #
@@ -13,11 +17,17 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+解析器配置工具：将 UI 传入的布局识别器字符串规范化为引擎名与完整模型标识。
+"""
+
+
 
 from typing import Any
 
 
 def normalize_layout_recognizer(layout_recognizer_raw: Any) -> tuple[Any, str | None]:
+    # 解析 @mineru/@paddleocr 等后缀，返回 (引擎名, 原始 provider 实例名)
     parser_model_name: str | None = None
     layout_recognizer = layout_recognizer_raw
 

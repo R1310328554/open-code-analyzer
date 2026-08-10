@@ -1,3 +1,7 @@
+"""
+Word DOCX 解析：段落按页拆分、表格语义化拼接及内嵌图片 LazyImage 提取。
+"""
+
 #
 #  Copyright 2025 The InfiniFlow Authors. All Rights Reserved.
 #
@@ -13,6 +17,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+Word DOCX 解析：段落按页拆分、表格语义化拼接及内嵌图片 LazyImage 提取。
+"""
+
+
 
 from docx import Document
 import re
@@ -31,7 +40,9 @@ from rag.utils.lazy_image import LazyImage
 
 
 class RAGFlowDocxParser:
+    # 基于 python-docx 解析段落、表格与图片
     def get_picture(self, document, paragraph):
+        # 从段落 pic 元素提取嵌入图片 blob，封装为 LazyImage
         imgs = paragraph._element.xpath(".//pic:pic")
         if not imgs:
             return None
@@ -71,14 +82,17 @@ class RAGFlowDocxParser:
         return LazyImage(image_blobs)
 
     def __extract_table_content(self, tb):
+        # 将 Word 表格行转为 DataFrame 再语义化拼接
         df = []
         for row in tb.rows:
             df.append([c.text for c in row.cells])
         return self.__compose_table_content(pd.DataFrame(df))
 
     def __compose_table_content(self, df):
+        # 按单元格类型（日期/数字/文本等）推断表头并生成 key:value 行
 
         def blockType(b):
+            # 启发式分类单元格：Dt 日期、Nu 数字、Tx 短文本、Lx 长文本等
             pattern = [
                 ("^(20|19)[0-9]{2}[年/-][0-9]{1,2}[月/-][0-9]{1,2}日*$", "Dt"),
                 (r"^(20|19)[0-9]{2}年$", "Dt"),
@@ -158,6 +172,7 @@ class RAGFlowDocxParser:
         return ["\n".join(lines)]
 
     def __call__(self, fnm, from_page=0, to_page=MAXIMUM_PAGE_NUMBER):
+        # 返回 (段落列表, 表格列表)；通过 lastRenderedPageBreak 计页
         self.doc = Document(fnm) if isinstance(fnm, str) else Document(BytesIO(fnm))
         pn = 0  # parsed page
         secs = []  # parsed contents

@@ -1,3 +1,7 @@
+"""
+Unix 信号处理：SIGUSR1 启动 tracemalloc 快照，SIGUSR2 停止内存追踪。
+"""
+
 #
 #  Copyright 2025 The InfiniFlow Authors. All Rights Reserved.
 #
@@ -13,6 +17,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+Unix 信号处理：SIGUSR1 启动 tracemalloc 快照，SIGUSR2 停止内存追踪。
+"""
+
+
 
 import os
 import sys
@@ -22,8 +31,9 @@ import tracemalloc
 from common.log_utils import get_project_base_directory
 
 
-# SIGUSR1 handler: start tracemalloc and take snapshot
+# SIGUSR1：启动 tracemalloc 并写入内存快照到 logs 目录
 def start_tracemalloc_and_snapshot(signum, frame):
+    # 首次调用启动追踪；每次触发 dump 快照并记录 RSS/峰值
     if not tracemalloc.is_tracing():
         logging.info("start tracemalloc")
         tracemalloc.start()
@@ -49,8 +59,9 @@ def start_tracemalloc_and_snapshot(signum, frame):
     logging.info(f"taken snapshot {snapshot_file}. max RSS={max_rss / 1000:.2f} MB, current memory usage: {current / 10**6:.2f} MB, Peak memory usage: {peak / 10**6:.2f} MB")
 
 
-# SIGUSR2 handler: stop tracemalloc
+# SIGUSR2：停止 tracemalloc 追踪
 def stop_tracemalloc(signum, frame):
+    # 若正在追踪则停止，否则仅记录日志
     if tracemalloc.is_tracing():
         logging.info("stop tracemalloc")
         tracemalloc.stop()

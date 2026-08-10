@@ -13,6 +13,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+"""
+时间戳与日期字符串互转、ISO8601 解析及 datetime 微秒截断工具。
+"""
+
 import datetime
 import logging
 import time
@@ -20,6 +24,8 @@ import time
 
 def current_timestamp():
     """
+    返回当前 Unix 毫秒时间戳（13 位整数）。
+
     Get the current timestamp in milliseconds.
 
     Returns:
@@ -34,6 +40,8 @@ def current_timestamp():
 
 def timestamp_to_date(timestamp, format_string="%Y-%m-%d %H:%M:%S"):
     """
+    毫秒时间戳格式化为本地日期字符串；空值回退当前时间。
+
     Convert a timestamp to formatted date string.
 
     Args:
@@ -58,6 +66,8 @@ def timestamp_to_date(timestamp, format_string="%Y-%m-%d %H:%M:%S"):
 
 def date_string_to_timestamp(time_str, format_string="%Y-%m-%d %H:%M:%S"):
     """
+    按指定格式将日期字符串转为毫秒时间戳。
+
     Convert a date string to timestamp in milliseconds.
 
     Args:
@@ -78,6 +88,8 @@ def date_string_to_timestamp(time_str, format_string="%Y-%m-%d %H:%M:%S"):
 
 def datetime_format(date_time: datetime.datetime) -> datetime.datetime:
     """
+    重建 datetime，丢弃微秒分量。
+
     Normalize a datetime object by removing microsecond component.
 
     Creates a new datetime object with only year, month, day, hour, minute, second.
@@ -99,6 +111,8 @@ def datetime_format(date_time: datetime.datetime) -> datetime.datetime:
 
 def get_format_time() -> datetime.datetime:
     """
+    获取当前时间并去除微秒。
+
     Get current datetime normalized without microseconds.
 
     Returns:
@@ -113,6 +127,8 @@ def get_format_time() -> datetime.datetime:
 
 def delta_seconds(date_string: str):
     """
+    计算给定日期字符串距现在的秒数。
+
     Calculate seconds elapsed from a given date string to now.
 
     Args:
@@ -131,6 +147,8 @@ def delta_seconds(date_string: str):
 
 def format_iso_8601_to_ymd_hms(time_str: str) -> str:
     """
+    ISO 8601 字符串转为 YYYY-MM-DD HH:MM:SS；解析失败原样返回。
+
     Convert ISO 8601 formatted string to "YYYY-MM-DD HH:MM:SS" format.
 
     Args:

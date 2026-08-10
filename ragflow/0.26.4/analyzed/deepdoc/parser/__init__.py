@@ -1,3 +1,7 @@
+"""
+deepdoc.parser 公共导出：各格式文档解析器统一别名与 __all__ 列表。
+"""
+
 #
 #  Copyright 2025 The InfiniFlow Authors. All Rights Reserved.
 #
@@ -13,7 +17,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+deepdoc.parser 公共导出：各格式文档解析器统一别名与 __all__ 列表。
+"""
 
+
+
+# 各格式解析器 re-export，供上层按 DocxParser/PdfParser 等名称引用
 from .docx_parser import RAGFlowDocxParser as DocxParser
 from .epub_parser import RAGFlowEpubParser as EpubParser
 from .excel_parser import RAGFlowExcelParser as ExcelParser

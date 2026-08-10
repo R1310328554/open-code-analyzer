@@ -1,3 +1,7 @@
+"""
+标签特征解析：将 JSON/字面量映射为 tag→数值分，并做类型与正数校验。
+"""
+
 #
 #  Copyright 2026 The InfiniFlow Authors. All Rights Reserved.
 #
@@ -13,6 +17,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+标签特征解析：将 JSON/字面量映射为 tag→数值分，并做类型与正数校验。
+"""
+
+
 
 import ast
 import json
@@ -20,6 +29,7 @@ import math
 
 
 def parse_tag_features(raw, *, allow_json_string=True, allow_python_literal=False):
+    # 宽松解析：支持 JSON 字符串或 Python 字面量，过滤非有限数值
     if raw is None:
         return {}
 
@@ -62,6 +72,7 @@ def parse_tag_features(raw, *, allow_json_string=True, allow_python_literal=Fals
 
 
 def validate_tag_features(raw):
+    # 严格校验：键为非空字符串，值为有限正数
     if raw is None:
         return None
 

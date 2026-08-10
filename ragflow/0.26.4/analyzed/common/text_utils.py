@@ -1,3 +1,7 @@
+"""
+多语言文本规范化：阿拉伯-印度数字与展示形字符转标准 Unicode。
+"""
+
 #
 #  Copyright 2025 The InfiniFlow Authors. All Rights Reserved.
 #
@@ -13,6 +17,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+多语言文本规范化：阿拉伯-印度数字与展示形字符转标准 Unicode。
+"""
+
+
 
 from __future__ import annotations
 
@@ -20,10 +29,12 @@ import re
 import unicodedata
 
 
+# 匹配阿拉伯语展示形字符区间
 ARABIC_PRESENTATION_FORMS_RE = re.compile(r"[\uFB50-\uFDFF\uFE70-\uFEFF]")
 
 
 def normalize_arabic_digits(text: str | None) -> str | None:
+    # 将阿拉伯/波斯数字（U+0660–U+06F9）映射为 ASCII 0–9
     if text is None or not isinstance(text, str):
         return text
 
@@ -40,7 +51,10 @@ def normalize_arabic_digits(text: str | None) -> str | None:
 
 
 def normalize_arabic_presentation_forms(text: str | None) -> str | None:
-    """Normalize Arabic presentation forms to canonical text when present."""
+    """
+    若含阿拉伯展示形字符，经 NFKC 归一化为规范字形。
+
+    Normalize Arabic presentation forms to canonical text when present."""
     if text is None or not isinstance(text, str):
         return text
     if not ARABIC_PRESENTATION_FORMS_RE.search(text):
