@@ -1,23 +1,7 @@
 {
-  "claimed_at": "2026-08-10T16:13:04Z",
-  "files": [
-    "tokenizer/sentencepiece.go",
-    "tokenizer/tokenizer.go",
-    "tokenizer/vocabulary.go",
-    "tokenizer/wordpiece.go",
-    "tools/template.go",
-    "tools/tools.go",
-    "types/errtypes/errtypes.go",
-    "types/model/capability.go",
-    "types/model/config.go",
-    "types/model/name.go",
-    "types/syncmap/syncmap.go",
-    "version/version.go",
-    "x/create/blockfp8.go",
-    "x/create/classify.go",
-    "x/create/client/create.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "note": "wave12",
-  "done": 345,
+  "done": 360,
   "remaining_pending": 103
 }
