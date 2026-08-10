@@ -1,3 +1,5 @@
+// use-upload-file.ts — 聊天附件上传：isNew 时先建会话，维护 files 与 fileMap。
+
 import { FileUploadProps } from '@/components/file-upload';
 import {
   useGetChatSearchParams,
@@ -7,6 +9,7 @@ import { useCallback, useState } from 'react';
 import { useChatUrlParams } from './use-chat-url';
 import { useSetConversation } from './use-set-conversation';
 
+/** 管理聊天输入区文件上传、解析结果列表及移除逻辑。 */
 export function useUploadFile() {
   const { uploadAndParseFile, loading, cancel } = useUploadAndParseFile();
   const [currentFiles, setCurrentFiles] = useState<Record<string, any>[]>([]);
@@ -21,6 +24,7 @@ export function useUploadFile() {
     NonNullable<FileUploadProps['onUpload']>
   >;
 
+  /** 逐文件 uploadAndParseFile，成功则写入 currentFiles 与 fileMap。 */
   const handleUploadFile = useCallback(
     async (
       files: FileUploadParameters[0],
@@ -48,6 +52,7 @@ export function useUploadFile() {
     [uploadAndParseFile],
   );
 
+  /** 对外暴露的上传入口：无会话时先用文件名创建 conversation。 */
   const createConversationBeforeUploadFile: NonNullable<
     FileUploadProps['onUpload']
   > = useCallback(
@@ -76,11 +81,13 @@ export function useUploadFile() {
     ],
   );
 
+  /** 发送消息后清空已选附件。 */
   const clearFiles = useCallback(() => {
     setCurrentFiles([]);
     setFileMap(new Map());
   }, []);
 
+  /** 移除单个附件；上传进行中则 cancel 当前请求。 */
   const removeFile = useCallback(
     (file: File) => {
       if (loading) {

@@ -1,9 +1,12 @@
+// use-create-chat.ts — 新建聊天助手弹窗：默认模型、初始 prompt 与 createChat 提交。
+
 import { useSetModalState } from '@/hooks/common-hooks';
 import { useCreateChat } from '@/hooks/use-chat-request';
 import { useFetchDefaultModelDictionary } from '@/hooks/use-llm-request';
 import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
+/** 管理「创建聊天助手」弹窗状态及提交逻辑。 */
 export const useCreateChatDialog = () => {
   const {
     visible: createChatVisible,
@@ -15,6 +18,7 @@ export const useCreateChatDialog = () => {
   const defaultModelDictionary =
     useFetchDefaultModelDictionary(createChatVisible);
 
+  // 弹窗表单默认值：含 prompt_config、检索参数与默认 llm_id
   const InitialData = useMemo(
     () => ({
       name: '',
@@ -45,6 +49,7 @@ export const useCreateChatDialog = () => {
     [t, defaultModelDictionary?.llm_id],
   );
 
+  /** 确认创建：合并 InitialData 与名称，成功后关闭弹窗。 */
   const onCreateChatOk = useCallback(
     async (name: string) => {
       const ret = await createChat({ ...InitialData, name });

@@ -1,3 +1,5 @@
+// use-send-single-message.ts — 单聊天框发送 hook，供多框对比调试等场景复用。
+
 import { NextMessageInputOnPressEnterParameter } from '@/components/message-input/next';
 import { MessageType } from '@/constants/chat';
 import {
@@ -14,11 +16,15 @@ import { v4 as uuid } from 'uuid';
 import { CreateConversationBeforeSendMessageReturnType } from './use-chat-url';
 import { useUploadFile } from './use-upload-file';
 
+/** useSendSingleMessage 入参：controller、输入值与附件状态。 */
 export type UseSendSingleMessageParameter = {
   controller: AbortController;
 } & Pick<ReturnType<typeof useHandleMessageInputChange>, 'value' | 'setValue'> &
   Pick<ReturnType<typeof useUploadFile>, 'files' | 'clearFiles'>;
 
+/**
+ * 与 useSendMessage 类似的发送逻辑，但会话 ID 由调用方传入（多框并行）。
+ */
 export function useSendSingleMessage({
   controller,
   value,
@@ -52,6 +58,7 @@ export function useSendSingleMessage({
     }
   }, [answer, addNewestAnswer]);
 
+  /** SSE completion；失败时恢复输入并移除最新占位消息。 */
   const sendMessage = useCallback(
     async ({
       message,
@@ -103,6 +110,7 @@ export function useSendSingleMessage({
     ],
   );
 
+  /** 由外层已创建会话后调用：追加问题并发送，参数含 targetConversationId。 */
   const handlePressEnter = useCallback(
     async ({
       enableThinking,
@@ -159,6 +167,7 @@ export function useSendSingleMessage({
   };
 }
 
+/** handlePressEnter 函数类型，供父组件组合多个聊天框。 */
 export type HandlePressEnterType = ReturnType<
   typeof useSendSingleMessage
 >['handlePressEnter'];

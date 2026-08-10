@@ -1,3 +1,5 @@
+// use-send-chat-message.ts — 主聊天页消息列表派生、SSE 发送与回车发送流程。
+
 import { NextMessageInputOnPressEnterParameter } from '@/components/message-input/next';
 import { MessageType } from '@/constants/chat';
 import {
@@ -17,6 +19,7 @@ import { useCreateConversationBeforeSendMessage } from './use-chat-url';
 import { useFindPrologueFromDialogList } from './use-select-conversation-list';
 import { useUploadFile } from './use-upload-file';
 
+/** 派生消息列表；新建会话时自动插入助手开场白。 */
 export const useSelectNextMessages = () => {
   const {
     scrollRef,
@@ -33,6 +36,7 @@ export const useSelectNextMessages = () => {
   const { id: dialogId } = useParams();
   const prologue = useFindPrologueFromDialogList();
 
+  /** isNew 会话在 UI 中展示 prologue 作为首条助手消息。 */
   const addPrologue = useCallback(() => {
     if (dialogId !== '' && isNew === 'true') {
       const nextMessage = {
@@ -63,6 +67,9 @@ export const useSelectNextMessages = () => {
   };
 };
 
+/**
+ * 主聊天发送逻辑：建会话、追加问题、SSE completion、失败回滚与自动滚动。
+ */
 export const useSendMessage = (controller: AbortController) => {
   const { conversationId, isNew } = useGetChatSearchParams();
   const { handleInputChange, value, setValue } = useHandleMessageInputChange();
@@ -84,6 +91,7 @@ export const useSendMessage = (controller: AbortController) => {
     setDerivedMessages,
   } = useSelectNextMessages();
 
+  /** 调用 completion API，失败时恢复输入并移除占位回答。 */
   const sendMessage = useCallback(
     async ({
       message,
@@ -116,7 +124,7 @@ export const useSendMessage = (controller: AbortController) => {
       );
 
       if (res && (res?.response.status !== 200 || res?.data?.code !== 0)) {
-        // cancel loading
+        // 请求失败：恢复输入框并撤销刚追加的问题占位
         setValue(message.content);
         console.info('removeLatestMessage111');
         removeLatestMessage();
@@ -142,6 +150,7 @@ export const useSendMessage = (controller: AbortController) => {
   const { createConversationBeforeSendMessage } =
     useCreateConversationBeforeSendMessage();
 
+  /** 回车发送：先 ensure 会话存在，再乐观追加用户消息并触发 SSE。 */
   const handlePressEnter = useCallback(
     async ({
       enableThinking,
@@ -186,7 +195,7 @@ export const useSendMessage = (controller: AbortController) => {
 
       clearFiles();
 
-      // Auto scroll to bottom when sending new message
+      // 发送后滚动消息容器到底部
       if (messageContainerRef.current) {
         const el = messageContainerRef.current;
 
@@ -211,7 +220,7 @@ export const useSendMessage = (controller: AbortController) => {
   );
 
   useEffect(() => {
-    //  #1289
+    // #1289：非 isNew 会话才将 SSE 增量答案写入列表
     if (answer.answer && conversationId && isNew !== 'true') {
       addNewestAnswer(answer);
     }
