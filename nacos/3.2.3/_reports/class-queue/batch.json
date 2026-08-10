@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T02:08:40Z",
-  "files": [
-    "ai/src/main/java/com/alibaba/nacos/ai/pipeline/repository/PipelineExecutionRepositoryImpl.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/plugin/AiPipelinePluginProvider.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/plugin/AiStoragePluginProvider.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/remote/handler/McpServerEndpointRequestHandler.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/remote/handler/QueryMcpServerRequestHandler.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/remote/handler/QueryPromptRequestHandler.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/remote/handler/ReleaseMcpServerRequestHandler.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/remote/handler/a2a/AgentEndpointRequestHandler.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/remote/handler/a2a/BatchAgentEndpointRequestHandler.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/remote/handler/a2a/QueryAgentCardRequestHandler.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/remote/handler/a2a/ReleaseAgentCardRequestHandler.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/remote/manager/AiConnectionBasedClientManager.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/service/McpEndpointOperationService.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/service/McpExternalDataAdaptor.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/service/McpLegacyImportAdapter.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2387,
-  "done": 135
+  "done": 150
 }
