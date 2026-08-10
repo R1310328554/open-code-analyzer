@@ -15,23 +15,8 @@
     "server-spi-private/src/main/java/org/keycloak/protocol/oidc/TokenExchangeContext.java",
     "server-spi-private/src/main/java/org/keycloak/protocol/oidc/TokenExchangeProvider.java",
     "server-spi-private/src/main/java/org/keycloak/protocol/oidc/TokenExchangeProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/protocol/oidc/TokenExchangeSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/protocol/oidc/TokenIntrospectionProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/protocol/oidc/TokenIntrospectionProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/protocol/oidc/TokenIntrospectionSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/protocol/oidc/grants/OAuth2GrantType.java",
-    "server-spi-private/src/main/java/org/keycloak/protocol/oidc/grants/OAuth2GrantTypeFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/protocol/oidc/grants/OAuth2GrantTypeSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/protocol/oidc/rar/AuthorizationDetailsProcessor.java",
-    "server-spi-private/src/main/java/org/keycloak/protocol/oidc/rar/AuthorizationDetailsProcessorFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/protocol/oidc/rar/AuthorizationDetailsProcessorSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/protocol/oidc/rar/AuthorizationRequestParserProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/protocol/oidc/rar/AuthorizationRequestParserProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/protocol/oidc/rar/AuthorizationRequestParserSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/protocol/oidc/rar/InvalidAuthorizationDetailsException.java",
-    "server-spi-private/src/main/java/org/keycloak/protocol/oidc/scope/InvalidScopeParameterException.java",
-    "server-spi-private/src/main/java/org/keycloak/protocol/oidc/scope/ParameterizedScopeTypeProvider.java"
+    "server-spi-private/src/main/java/org/keycloak/protocol/oidc/TokenExchangeSpi.java"
   ],
   "remaining_pending": 2608,
-  "done": 3360
+  "done": 3375
 }
