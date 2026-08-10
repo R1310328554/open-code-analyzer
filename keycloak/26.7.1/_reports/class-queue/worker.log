@@ -2218,3 +2218,18 @@
 2026-08-10T09:12:04Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/configuration/mappers/MetricsPropertyMappers.java wave75a property mappers batch1
 2026-08-10T09:12:04Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/configuration/mappers/OpenApiPropertyMappers.java wave75a property mappers batch1
 2026-08-10T09:12:04Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/configuration/mappers/PropertyMapper.java wave75a property mappers batch1
+2026-08-10T09:14:22Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/policy/QuarkusDenylistPasswordPolicyProviderFactory.java wave76b policy/services/health/metrics/jpa
+2026-08-10T09:14:22Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/services/BootstrapFilter.java wave76b policy/services/health/metrics/jpa
+2026-08-10T09:14:22Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/services/RejectNonNormalizedPathFilter.java wave76b policy/services/health/metrics/jpa
+2026-08-10T09:14:22Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/services/RejectSourceMapFilter.java wave76b policy/services/health/metrics/jpa
+2026-08-10T09:14:22Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/services/health/BootstrapReadyHealthCheck.java wave76b policy/services/health/metrics/jpa
+2026-08-10T09:14:22Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/services/health/KeycloakClusterReadyHealthCheck.java wave76b policy/services/health/metrics/jpa
+2026-08-10T09:14:22Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/services/health/KeycloakClusterReadyHealthCheckProducer.java wave76b policy/services/health/metrics/jpa
+2026-08-10T09:14:22Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/services/health/KeycloakReadyHealthCheck.java wave76b policy/services/health/metrics/jpa
+2026-08-10T09:14:22Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/services/metrics/HistogramMeterFilter.java wave76b policy/services/health/metrics/jpa
+2026-08-10T09:14:22Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/services/metrics/events/MicrometerUserEventMetricsEventListenerProvider.java wave76b policy/services/health/metrics/jpa
+2026-08-10T09:14:22Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/services/metrics/events/MicrometerUserEventMetricsEventListenerProviderFactory.java wave76b policy/services/health/metrics/jpa
+2026-08-10T09:14:22Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/services/resources/ConstantsDebugHostname.java wave76b policy/services/health/metrics/jpa
+2026-08-10T09:14:22Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/services/resources/DebugHostnameSettingsResource.java wave76b policy/services/health/metrics/jpa
+2026-08-10T09:14:22Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/storage/database/jpa/AbstractJpaConnectionProviderFactory.java wave76b policy/services/health/metrics/jpa
+2026-08-10T09:14:22Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/storage/database/jpa/DatabaseIndexChecker.java wave76b policy/services/health/metrics/jpa
