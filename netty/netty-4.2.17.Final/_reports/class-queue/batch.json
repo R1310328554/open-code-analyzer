@@ -15,23 +15,8 @@
     "codec-stomp/src/main/java/io/netty/handler/codec/stomp/StompHeadersSubframe.java",
     "codec-stomp/src/main/java/io/netty/handler/codec/stomp/StompSubframe.java",
     "codec-stomp/src/main/java/io/netty/handler/codec/stomp/StompSubframeAggregator.java",
-    "codec-stomp/src/main/java/io/netty/handler/codec/stomp/StompSubframeDecoder.java",
-    "codec-stomp/src/main/java/io/netty/handler/codec/stomp/StompSubframeEncoder.java",
-    "codec-xml/src/main/java/io/netty/handler/codec/xml/XmlAttribute.java",
-    "codec-xml/src/main/java/io/netty/handler/codec/xml/XmlCdata.java",
-    "codec-xml/src/main/java/io/netty/handler/codec/xml/XmlCharacters.java",
-    "codec-xml/src/main/java/io/netty/handler/codec/xml/XmlComment.java",
-    "codec-xml/src/main/java/io/netty/handler/codec/xml/XmlContent.java",
-    "codec-xml/src/main/java/io/netty/handler/codec/xml/XmlDTD.java",
-    "codec-xml/src/main/java/io/netty/handler/codec/xml/XmlDecoder.java",
-    "codec-xml/src/main/java/io/netty/handler/codec/xml/XmlDocumentEnd.java",
-    "codec-xml/src/main/java/io/netty/handler/codec/xml/XmlDocumentStart.java",
-    "codec-xml/src/main/java/io/netty/handler/codec/xml/XmlElement.java",
-    "codec-xml/src/main/java/io/netty/handler/codec/xml/XmlElementEnd.java",
-    "codec-xml/src/main/java/io/netty/handler/codec/xml/XmlElementStart.java",
-    "codec-xml/src/main/java/io/netty/handler/codec/xml/XmlEntityReference.java",
-    "codec-xml/src/main/java/io/netty/handler/codec/xml/XmlFrameDecoder.java"
+    "codec-stomp/src/main/java/io/netty/handler/codec/stomp/StompSubframeDecoder.java"
   ],
   "remaining_pending": 848,
-  "done": 1050
+  "done": 1065
 }
