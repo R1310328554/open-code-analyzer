@@ -15,23 +15,8 @@
     "services/src/main/java/org/keycloak/services/clientpolicy/executor/SecureSigningAlgorithmForSignedJwtExecutor.java",
     "services/src/main/java/org/keycloak/services/clientpolicy/executor/SecureSigningAlgorithmForSignedJwtExecutorFactory.java",
     "services/src/main/java/org/keycloak/services/clientpolicy/executor/SuppressRefreshTokenRotationExecutor.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/SuppressRefreshTokenRotationExecutorFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/TlsClientAuthCASubjectDNExecutor.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/TlsClientAuthCASubjectDNExecutorFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/UseLightweightAccessTokenExecutor.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/UseLightweightAccessTokenExecutorFactory.java",
-    "services/src/main/java/org/keycloak/services/clientregistration/AbstractClientRegistrationContext.java",
-    "services/src/main/java/org/keycloak/services/clientregistration/AbstractClientRegistrationProvider.java",
-    "services/src/main/java/org/keycloak/services/clientregistration/AdapterInstallationClientRegistrationProvider.java",
-    "services/src/main/java/org/keycloak/services/clientregistration/AdapterInstallationClientRegistrationProviderFactory.java",
-    "services/src/main/java/org/keycloak/services/clientregistration/ClientRegistrationAuth.java",
-    "services/src/main/java/org/keycloak/services/clientregistration/ClientRegistrationContext.java",
-    "services/src/main/java/org/keycloak/services/clientregistration/ClientRegistrationException.java",
-    "services/src/main/java/org/keycloak/services/clientregistration/ClientRegistrationProvider.java",
-    "services/src/main/java/org/keycloak/services/clientregistration/ClientRegistrationProviderFactory.java",
-    "services/src/main/java/org/keycloak/services/clientregistration/ClientRegistrationService.java",
-    "services/src/main/java/org/keycloak/services/clientregistration/ClientRegistrationSpi.java"
+    "services/src/main/java/org/keycloak/services/clientpolicy/executor/SuppressRefreshTokenRotationExecutorFactory.java"
   ],
   "remaining_pending": 1048,
-  "done": 4920
+  "done": 4935
 }
