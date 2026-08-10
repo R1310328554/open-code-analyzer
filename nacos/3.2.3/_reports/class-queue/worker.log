@@ -1468,3 +1468,18 @@
 2026-08-10T03:53:18Z DONE console/src/main/java/com/alibaba/nacos/console/proxy/config/HistoryProxy.java nacos wave48a [0:15] console proxies + ServiceHandler
 2026-08-10T03:53:18Z DONE console/src/main/java/com/alibaba/nacos/console/proxy/core/ClusterProxy.java nacos wave48a [0:15] console proxies + ServiceHandler
 2026-08-10T03:53:18Z DONE console/src/main/java/com/alibaba/nacos/console/proxy/core/NamespaceProxy.java nacos wave48a [0:15] console proxies + ServiceHandler
+2026-08-10T03:54:44Z DONE copilot/src/main/java/com/alibaba/nacos/copilot/form/SkillGenerationForm.java nacos wave49a [0:15] copilot forms/models
+2026-08-10T03:54:44Z DONE copilot/src/main/java/com/alibaba/nacos/copilot/form/SkillOptimizationForm.java nacos wave49a [0:15] copilot forms/models
+2026-08-10T03:54:44Z DONE copilot/src/main/java/com/alibaba/nacos/copilot/model/ChatMessage.java nacos wave49a [0:15] copilot forms/models
+2026-08-10T03:54:44Z DONE copilot/src/main/java/com/alibaba/nacos/copilot/model/ChatRequest.java nacos wave49a [0:15] copilot forms/models
+2026-08-10T03:54:44Z DONE copilot/src/main/java/com/alibaba/nacos/copilot/model/ChatResponse.java nacos wave49a [0:15] copilot forms/models
+2026-08-10T03:54:44Z DONE copilot/src/main/java/com/alibaba/nacos/copilot/model/ConversationHistory.java nacos wave49a [0:15] copilot forms/models
+2026-08-10T03:54:44Z DONE copilot/src/main/java/com/alibaba/nacos/copilot/model/ConversationMessage.java nacos wave49a [0:15] copilot forms/models
+2026-08-10T03:54:44Z DONE copilot/src/main/java/com/alibaba/nacos/copilot/model/OptimizationChange.java nacos wave49a [0:15] copilot forms/models
+2026-08-10T03:54:44Z DONE copilot/src/main/java/com/alibaba/nacos/copilot/model/PromptDebugRequest.java nacos wave49a [0:15] copilot forms/models
+2026-08-10T03:54:44Z DONE copilot/src/main/java/com/alibaba/nacos/copilot/model/PromptDebugResponse.java nacos wave49a [0:15] copilot forms/models
+2026-08-10T03:54:44Z DONE copilot/src/main/java/com/alibaba/nacos/copilot/model/PromptOptimizationRequest.java nacos wave49a [0:15] copilot forms/models
+2026-08-10T03:54:44Z DONE copilot/src/main/java/com/alibaba/nacos/copilot/model/PromptOptimizationResponse.java nacos wave49a [0:15] copilot forms/models
+2026-08-10T03:54:44Z DONE copilot/src/main/java/com/alibaba/nacos/copilot/model/SkillGenerationRequest.java nacos wave49a [0:15] copilot forms/models
+2026-08-10T03:54:44Z DONE copilot/src/main/java/com/alibaba/nacos/copilot/model/SkillGenerationResponse.java nacos wave49a [0:15] copilot forms/models
+2026-08-10T03:54:44Z DONE copilot/src/main/java/com/alibaba/nacos/copilot/model/SkillOptimizationRequest.java nacos wave49a [0:15] copilot forms/models
