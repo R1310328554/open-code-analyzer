@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T08:01:47Z",
-  "files": [
-    "model/jpa/src/main/java/org/keycloak/authorization/jpa/store/PolicyAdapter.java",
-    "model/jpa/src/main/java/org/keycloak/authorization/jpa/store/ResourceAdapter.java",
-    "model/jpa/src/main/java/org/keycloak/authorization/jpa/store/ResourceServerAdapter.java",
-    "model/jpa/src/main/java/org/keycloak/authorization/jpa/store/ScopeAdapter.java",
-    "model/jpa/src/main/java/org/keycloak/cluster/jpa/ClusterEventEntity.java",
-    "model/jpa/src/main/java/org/keycloak/cluster/jpa/ClusterEventKey.java",
-    "model/jpa/src/main/java/org/keycloak/cluster/jpa/JpaClusterEventStoreProvider.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/AsyncCommitIntegrator.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/AsynchronousCommitAllowed.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/DefaultJpaConnectionProvider.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/DefaultJpaConnectionProviderFactory.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/HibernateStatsReporter.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/JndiEntityManagerLookup.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/JpaConnectionProvider.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/JpaConnectionProviderFactory.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 4408,
-  "done": 1575
+  "done": 1590
 }
