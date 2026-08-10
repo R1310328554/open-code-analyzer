@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T03:42:37Z",
-  "files": [
-    "console/src/main/java/com/alibaba/nacos/console/NacosConsole.java",
-    "console/src/main/java/com/alibaba/nacos/console/NacosConsoleStartUp.java",
-    "console/src/main/java/com/alibaba/nacos/console/aot/AotConfiguration.java",
-    "console/src/main/java/com/alibaba/nacos/console/aot/NacosRuntimeHints.java",
-    "console/src/main/java/com/alibaba/nacos/console/cluster/RemoteServerMemberManager.java",
-    "console/src/main/java/com/alibaba/nacos/console/config/ConsoleAuthModuleStateBuilder.java",
-    "console/src/main/java/com/alibaba/nacos/console/config/ConsoleCorsConfig.java",
-    "console/src/main/java/com/alibaba/nacos/console/config/ConsoleDeploymentConfig.java",
-    "console/src/main/java/com/alibaba/nacos/console/config/ConsoleFunctionEnabledConfig.java",
-    "console/src/main/java/com/alibaba/nacos/console/config/ConsoleModuleStateBuilder.java",
-    "console/src/main/java/com/alibaba/nacos/console/config/ConsolePackageExcludeFilter.java",
-    "console/src/main/java/com/alibaba/nacos/console/config/ConsoleWebConfig.java",
-    "console/src/main/java/com/alibaba/nacos/console/config/NacosConsoleAuthConfig.java",
-    "console/src/main/java/com/alibaba/nacos/console/config/NacosConsoleBeanPostProcessorConfiguration.java",
-    "console/src/main/java/com/alibaba/nacos/console/controller/ConsoleRedirectController.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1217,
-  "done": 1305
+  "done": 1320
 }

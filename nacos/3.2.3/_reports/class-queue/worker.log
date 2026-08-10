@@ -1333,3 +1333,18 @@
 2026-08-10T03:43:41Z DONE consistency/src/main/java/com/alibaba/nacos/consistency/snapshot/SnapshotOperation.java nacos wave44a [0:15] consistency + Nacos entry
 2026-08-10T03:43:41Z DONE consistency/src/main/java/com/alibaba/nacos/consistency/snapshot/Writer.java nacos wave44a [0:15] consistency + Nacos entry
 2026-08-10T03:43:41Z DONE console/src/main/java/com/alibaba/nacos/Nacos.java nacos wave44a [0:15] consistency + Nacos entry
+2026-08-10T03:43:57Z DONE console/src/main/java/com/alibaba/nacos/console/NacosConsole.java nacos wave44b [15:30] console startup/config
+2026-08-10T03:43:57Z DONE console/src/main/java/com/alibaba/nacos/console/NacosConsoleStartUp.java nacos wave44b [15:30] console startup/config
+2026-08-10T03:43:57Z DONE console/src/main/java/com/alibaba/nacos/console/aot/AotConfiguration.java nacos wave44b [15:30] console startup/config
+2026-08-10T03:43:57Z DONE console/src/main/java/com/alibaba/nacos/console/aot/NacosRuntimeHints.java nacos wave44b [15:30] console startup/config
+2026-08-10T03:43:57Z DONE console/src/main/java/com/alibaba/nacos/console/cluster/RemoteServerMemberManager.java nacos wave44b [15:30] console startup/config
+2026-08-10T03:43:57Z DONE console/src/main/java/com/alibaba/nacos/console/config/ConsoleAuthModuleStateBuilder.java nacos wave44b [15:30] console startup/config
+2026-08-10T03:43:57Z DONE console/src/main/java/com/alibaba/nacos/console/config/ConsoleCorsConfig.java nacos wave44b [15:30] console startup/config
+2026-08-10T03:43:57Z DONE console/src/main/java/com/alibaba/nacos/console/config/ConsoleDeploymentConfig.java nacos wave44b [15:30] console startup/config
+2026-08-10T03:43:57Z DONE console/src/main/java/com/alibaba/nacos/console/config/ConsoleFunctionEnabledConfig.java nacos wave44b [15:30] console startup/config
+2026-08-10T03:43:57Z DONE console/src/main/java/com/alibaba/nacos/console/config/ConsoleModuleStateBuilder.java nacos wave44b [15:30] console startup/config
+2026-08-10T03:43:57Z DONE console/src/main/java/com/alibaba/nacos/console/config/ConsolePackageExcludeFilter.java nacos wave44b [15:30] console startup/config
+2026-08-10T03:43:57Z DONE console/src/main/java/com/alibaba/nacos/console/config/ConsoleWebConfig.java nacos wave44b [15:30] console startup/config
+2026-08-10T03:43:57Z DONE console/src/main/java/com/alibaba/nacos/console/config/NacosConsoleAuthConfig.java nacos wave44b [15:30] console startup/config
+2026-08-10T03:43:57Z DONE console/src/main/java/com/alibaba/nacos/console/config/NacosConsoleBeanPostProcessorConfiguration.java nacos wave44b [15:30] console startup/config
+2026-08-10T03:43:57Z DONE console/src/main/java/com/alibaba/nacos/console/controller/ConsoleRedirectController.java nacos wave44b [15:30] console startup/config
