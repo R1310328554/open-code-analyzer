@@ -17,12 +17,16 @@
 package com.alibaba.nacos.api.remote.request;
 
 /**
- * get server node loader info.
+ * 查询服务端节点负载信息的内部请求。
+ *
+ * <p>集群管理或运维场景下获取各节点连接数、负载等指标。</p>
+ *
  * @author liuzunfei
  * @version $Id: ServerLoaderInfoRequest.java, v 0.1 2020年09月03日 2:45 PM liuzunfei Exp $
  */
 public class ServerLoaderInfoRequest extends InternalRequest {
     
+    /** 无参构造，供序列化框架使用。 */
     public ServerLoaderInfoRequest() {
     }
 }

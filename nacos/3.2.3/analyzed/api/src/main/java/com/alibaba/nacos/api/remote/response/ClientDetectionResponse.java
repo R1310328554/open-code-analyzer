@@ -17,7 +17,9 @@
 package com.alibaba.nacos.api.remote.response;
 
 /**
- * response of client active detection check.
+ * 客户端存活探测的响应。
+ *
+ * <p>客户端收到 {@link com.alibaba.nacos.api.remote.request.ClientDetectionRequest} 后回复，表明连接仍活跃；空响应体，成功由 {@link Response#isSuccess()} 判定。</p>
  *
  * @author liuzunfei
  * @version $Id: ServerCheckResponse.java, v 0.1 2021年01月20日 10:37 PM liuzunfei Exp $

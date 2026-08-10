@@ -17,7 +17,9 @@
 package com.alibaba.nacos.api.remote.response;
 
 /**
- * connection reset response.
+ * 连接重置请求的响应。
+ *
+ * <p>客户端收到 {@link com.alibaba.nacos.api.remote.request.ConnectResetRequest} 并完成重连流程后回复；空响应体表示已收到重置指令。</p>
  *
  * @author liuzunfei
  * @version $Id: ConnectResetResponse.java, v 0.1 2020年09月01日 2:43 PM liuzunfei Exp $

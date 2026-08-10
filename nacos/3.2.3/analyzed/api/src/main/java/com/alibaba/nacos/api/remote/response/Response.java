@@ -19,102 +19,93 @@ package com.alibaba.nacos.api.remote.response;
 import com.alibaba.nacos.api.remote.Payload;
 
 /**
- * abstract response model via rpc channel.
+ * 远程 RPC 响应的抽象基类，实现 {@link com.alibaba.nacos.api.remote.Payload}。
+ *
+ * <p>携带 {@link #resultCode}、{@link #errorCode}、{@link #message} 与 {@link #requestId}；通过 {@link #isSuccess()} 判断调用是否成功，失败时可调用 {@link #setErrorInfo(int, String)} 填充错误详情。</p>
  *
  * @author liuzunfei
  * @version $Id: Response.java, v 0.1 2020年07月13日 6:03 PM liuzunfei Exp $
  */
 public abstract class Response implements Payload {
     
+    /** 结果码，默认 {@link ResponseCode#SUCCESS}。 */
     int resultCode = ResponseCode.SUCCESS.getCode();
     
+    /** 业务错误码（失败时有效）。 */
     int errorCode;
     
+    /** 错误或提示消息。 */
     String message;
     
+    /** 关联的请求 ID。 */
     String requestId;
     
-    /**
-     * Getter method for property <tt>requestId</tt>.
-     *
-     * @return property value of requestId
-     */
+    /** 返回关联的请求 ID。 */
     public String getRequestId() {
         return requestId;
     }
     
     /**
-     * Setter method for property <tt>requestId</tt>.
+     * 设置关联的请求 ID。
      *
-     * @param requestId value to be assigned to property requestId
+     * @param requestId 请求标识
      */
     public void setRequestId(String requestId) {
         this.requestId = requestId;
     }
     
     /**
-     * Check Response  is Successed.
+     * 判断响应是否成功。
      *
-     * @return success or not.
+     * @return {@code resultCode} 为 SUCCESS 时返回 {@code true}
      */
     public boolean isSuccess() {
         return this.resultCode == ResponseCode.SUCCESS.getCode();
     }
     
-    /**
-     * Getter method for property <tt>resultCode</tt>.
-     *
-     * @return property value of resultCode
-     */
+    /** 返回结果码。 */
     public int getResultCode() {
         return resultCode;
     }
     
     /**
-     * Setter method for property <tt>resultCode</tt>.
+     * 设置结果码。
      *
-     * @param resultCode value to be assigned to property resultCode
+     * @param resultCode 结果码
      */
     public void setResultCode(int resultCode) {
         this.resultCode = resultCode;
     }
     
-    /**
-     * Getter method for property <tt>message</tt>.
-     *
-     * @return property value of message
-     */
+    /** 返回消息内容。 */
     public String getMessage() {
         return message;
     }
     
     /**
-     * Setter method for property <tt>message</tt>.
+     * 设置消息内容。
      *
-     * @param message value to be assigned to property message
+     * @param message 消息字符串
      */
     public void setMessage(String message) {
         this.message = message;
     }
     
-    /**
-     * Getter method for property <tt>errorCode</tt>.
-     *
-     * @return property value of errorCode
-     */
+    /** 返回业务错误码。 */
     public int getErrorCode() {
         return errorCode;
     }
     
     /**
-     * Setter method for property <tt>errorCode</tt>.
+     * 设置业务错误码。
      *
-     * @param errorCode value to be assigned to property errorCode
+     * @param errorCode 错误码
      */
     public void setErrorCode(int errorCode) {
         this.errorCode = errorCode;
     }
     
+    /** 一次性设置失败结果码、错误码与错误消息。 */
     public void setErrorInfo(int errorCode, String errorMsg) {
         this.resultCode = ResponseCode.FAIL.getCode();
         this.errorCode = errorCode;

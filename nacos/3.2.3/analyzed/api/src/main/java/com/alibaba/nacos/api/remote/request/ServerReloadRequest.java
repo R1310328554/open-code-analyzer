@@ -17,39 +17,41 @@
 package com.alibaba.nacos.api.remote.request;
 
 /**
- * reload long connection request.
+ * 长连接重载/迁移请求。
+ *
+ * <p>集群扩缩容或节点下线时，通知客户端将连接迁移至 {@link #reloadServer}；{@link #reloadCount} 记录已重载次数。</p>
  *
  * @author liuzunfei
  * @version $Id: ServerReloadRequest.java, v 0.1 2020年11月09日 4:35 PM liuzunfei Exp $
  */
 public class ServerReloadRequest extends InternalRequest {
     
+    /** 已执行的重载次数。 */
     int reloadCount = 0;
     
+    /** 目标重连服务端地址。 */
     String reloadServer;
     
-    /**
-     * Getter method for property <tt>reloadCount</tt>.
-     *
-     * @return property value of reloadCount
-     */
+    /** 返回已重载次数。 */
     public int getReloadCount() {
         return reloadCount;
     }
     
     /**
-     * Setter method for property <tt>reloadCount</tt>.
+     * 设置已重载次数。
      *
-     * @param reloadCount value to be assigned to property reloadCount
+     * @param reloadCount 重载计数
      */
     public void setReloadCount(int reloadCount) {
         this.reloadCount = reloadCount;
     }
     
+    /** 返回目标重连服务端地址。 */
     public String getReloadServer() {
         return reloadServer;
     }
     
+    /** 设置目标重连服务端地址。 */
     public void setReloadServer(String reloadServer) {
         this.reloadServer = reloadServer;
     }

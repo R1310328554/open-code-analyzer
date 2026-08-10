@@ -17,7 +17,9 @@
 package com.alibaba.nacos.api.remote.request;
 
 /**
- * ServerPushResponse.
+ * 服务端主动发起的 RPC 请求抽象基类。
+ *
+ * <p>与客户端发起的 {@link Request} 相对，用于推送、探测、连接重置等由服务端驱动下发的消息；典型子类包括 {@link ClientDetectionRequest} 与 {@link SetupAckRequest}。</p>
  *
  * @author liuzunfei
  * @version $Id: ServerPushResponse.java, v 0.1 2020年07月20日 1:21 PM liuzunfei Exp $

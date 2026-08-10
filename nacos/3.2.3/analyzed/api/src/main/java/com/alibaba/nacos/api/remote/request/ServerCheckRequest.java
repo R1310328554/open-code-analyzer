@@ -17,7 +17,9 @@
 package com.alibaba.nacos.api.remote.request;
 
 /**
- * request to check server if unimpeded.
+ * 服务端可达性检查请求。
+ *
+ * <p>客户端在连接建立后发送，验证服务端是否正常响应；与 {@link HealthCheckRequest} 类似，属于内部模块探测消息。</p>
  *
  * @author liuzunfei
  * @version $Id: ServerCheckRequest.java, v 0.1 2020年07月22日 8:32 PM liuzunfei Exp $

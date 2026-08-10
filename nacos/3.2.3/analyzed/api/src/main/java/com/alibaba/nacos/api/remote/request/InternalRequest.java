@@ -19,13 +19,16 @@ package com.alibaba.nacos.api.remote.request;
 import static com.alibaba.nacos.api.common.Constants.Remote.INTERNAL_MODULE;
 
 /**
- * internal request .
+ * Nacos 内部模块 RPC 请求的抽象基类。
+ *
+ * <p>固定 {@link #getModule()} 返回 {@link com.alibaba.nacos.api.common.Constants.Remote#INTERNAL_MODULE}，用于连接管理、健康检查、推送 ACK 等非业务模块消息。</p>
  *
  * @author liuzunfei
  * @version $Id: InternalRequest.java, v 0.1 2020年07月22日 8:33 PM liuzunfei Exp $
  */
 public abstract class InternalRequest extends Request {
     
+    /** {@inheritDoc} 返回内部模块标识。 */
     @Override
     public String getModule() {
         return INTERNAL_MODULE;

@@ -17,7 +17,9 @@
 package com.alibaba.nacos.api.remote.response;
 
 /**
- * response of server check.
+ * 健康检查请求的响应。
+ *
+ * <p>服务端收到 {@link com.alibaba.nacos.api.remote.request.HealthCheckRequest} 后回复，表明链路畅通；空响应体，成功由 {@link Response#isSuccess()} 判定。</p>
  *
  * @author liuzunfei
  * @version $Id: ServerCheckResponse.java, v 0.1 2020年07月22日 8:37 PM liuzunfei Exp $

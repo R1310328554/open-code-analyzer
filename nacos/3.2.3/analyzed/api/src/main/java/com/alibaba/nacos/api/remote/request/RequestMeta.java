@@ -25,25 +25,39 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * RequestMeta info.
+ * RPC 请求的客户端连接元数据。
+ *
+ * <p>服务端在处理 {@link Request} 时附加，包含 {@link #connectionId}、{@link #clientIp}、{@link #clientVersion}、标签与 {@link #abilityTable} 能力表，供路由、鉴权与能力协商使用。</p>
  *
  * @author liuzunfei
  * @version $Id: RequestMeta.java, v 0.1 2020年07月14日 10:32 AM liuzunfei Exp $
  */
 public class RequestMeta {
     
+    /** gRPC 连接唯一标识。 */
     private String connectionId = "";
     
+    /** 客户端 IP 地址。 */
     private String clientIp = "";
     
+    /** 客户端 SDK 版本号。 */
     private String clientVersion = "";
     
+    /** 连接标签（来源、模块、应用名等）。 */
     private Map<String, String> labels = new HashMap<>();
     
+    /** 从 labels 提取的应用级标签（去除 {@link Constants#APP_CONN_PREFIX} 前缀）。 */
     private Map<String, String> appLabels = new HashMap<>();
     
+    /** 客户端能力表（特性名 → 是否支持）。 */
     private Map<String, Boolean> abilityTable;
     
+    /**
+     * 查询连接对指定能力的支持状态。
+     *
+     * @param abilityKey 能力键
+     * @return 支持、不支持或未知
+     */
     public AbilityStatus getConnectionAbility(AbilityKey abilityKey) {
         if (abilityTable == null || !abilityTable.containsKey(abilityKey.getName())) {
             return AbilityStatus.UNKNOWN;
@@ -53,51 +67,44 @@ public class RequestMeta {
     }
     
     /**
-     * Setter method for property <tt>abilityTable</tt>.
+     * 设置客户端能力表。
      *
-     * @param  abilityTable property value of clientVersion
+     * @param abilityTable 能力映射
      */
     public void setAbilityTable(Map<String, Boolean> abilityTable) {
         this.abilityTable = abilityTable;
     }
     
-    /**
-     * Getter method for property <tt>clientVersion</tt>.
-     *
-     * @return property value of clientVersion
-     */
+    /** 返回客户端 SDK 版本号。 */
     public String getClientVersion() {
         return clientVersion;
     }
     
     /**
-     * Setter method for property <tt>clientVersion</tt>.
+     * 设置客户端 SDK 版本号。
      *
-     * @param clientVersion value to be assigned to property clientVersion
+     * @param clientVersion 版本字符串
      */
     public void setClientVersion(String clientVersion) {
         this.clientVersion = clientVersion;
     }
     
-    /**
-     * Getter method for property <tt>labels</tt>.
-     *
-     * @return property value of labels
-     */
+    /** 返回连接标签映射。 */
     public Map<String, String> getLabels() {
         return labels;
     }
     
     /**
-     * Setter method for property <tt>labels</tt>.
+     * 设置连接标签并刷新 {@link #appLabels}。
      *
-     * @param labels value to be assigned to property labels
+     * @param labels 标签映射
      */
     public void setLabels(Map<String, String> labels) {
         this.labels = labels;
         extractAppLabels();
     }
     
+    /** 从 {@link #labels} 提取应用级标签（过滤 {@link Constants#APP_CONN_PREFIX} 前缀）。 */
     private void extractAppLabels() {
         HashMap<String, String> applabelsMap = new HashMap<String, String>(8) {
             
@@ -120,47 +127,38 @@ public class RequestMeta {
     }
     
     /**
-     * get labels map with filter of starting with prefix #{@link Constants#APP_CONN_PREFIX} and return a new map trim
-     * the prefix #{@link Constants#APP_CONN_PREFIX}.
+     * 返回应用级标签映射（已去除 {@link Constants#APP_CONN_PREFIX} 前缀）。
      *
-     * @return map of labels.
+     * @return 应用标签映射
      * @date 2024/2/29
      */
     public Map<String, String> getAppLabels() {
         return appLabels;
     }
     
-    /**
-     * Getter method for property <tt>connectionId</tt>.
-     *
-     * @return property value of connectionId
-     */
+    /** 返回 gRPC 连接 ID。 */
     public String getConnectionId() {
         return connectionId;
     }
     
     /**
-     * Setter method for property <tt>connectionId</tt>.
+     * 设置 gRPC 连接 ID。
      *
-     * @param connectionId value to be assigned to property connectionId
+     * @param connectionId 连接标识
      */
     public void setConnectionId(String connectionId) {
         this.connectionId = connectionId;
     }
     
-    /**
-     * Getter method for property <tt>clientIp</tt>.
-     *
-     * @return property value of clientIp
-     */
+    /** 返回客户端 IP。 */
     public String getClientIp() {
         return clientIp;
     }
     
     /**
-     * Setter method for property <tt>clientIp</tt>.
+     * 设置客户端 IP。
      *
-     * @param clientIp value to be assigned to property clientIp
+     * @param clientIp IP 地址
      */
     public void setClientIp(String clientIp) {
         this.clientIp = clientIp;

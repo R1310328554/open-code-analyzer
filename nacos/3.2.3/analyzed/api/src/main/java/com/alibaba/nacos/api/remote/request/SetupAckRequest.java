@@ -21,30 +21,41 @@ import java.util.Map;
 import static com.alibaba.nacos.api.common.Constants.Remote.INTERNAL_MODULE;
 
 /**
- * Server tells the client that the connection is established.
+ * 连接建立确认请求（Setup ACK）。
+ *
+ * <p>服务端在收到 {@link com.alibaba.nacos.api.remote.request.ConnectionSetupRequest} 后回复，携带 {@link #abilityTable} 声明服务端能力，通知客户端连接已就绪。</p>
  *
  * @author Daydreamer.
  * @date 2022/7/12 19:21
  **/
 public class SetupAckRequest extends ServerRequest {
     
+    /** 服务端能力表（特性名 → 是否支持）。 */
     private Map<String, Boolean> abilityTable;
     
+    /** 无参构造，供序列化框架使用。 */
     public SetupAckRequest() {
     }
     
-    public SetupAckRequest(Map<String, Boolean> abilityTable) {
+    /**
+     * 指定服务端能力表构造 ACK。
+     *
+     * @param abilityTable 能力映射
+     */
         this.abilityTable = abilityTable;
     }
     
+    /** 返回服务端能力表。 */
     public Map<String, Boolean> getAbilityTable() {
         return abilityTable;
     }
     
+    /** 设置服务端能力表。 */
     public void setAbilityTable(Map<String, Boolean> abilityTable) {
         this.abilityTable = abilityTable;
     }
     
+    /** {@inheritDoc} 返回内部模块标识。 */
     @Override
     public String getModule() {
         return INTERNAL_MODULE;

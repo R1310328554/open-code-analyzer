@@ -17,24 +17,30 @@
 package com.alibaba.nacos.api.remote.request;
 
 /**
- * push ack request.
+ * 客户端对服务端推送消息的 ACK 确认请求。
+ *
+ * <p>推送方在收到此 ACK 后调用 {@link com.alibaba.nacos.api.remote.PushCallBack#onSuccess()}；失败时携带 {@link #exception} 并标记 {@link #success} 为 {@code false}。</p>
  *
  * @author liuzunfei
  * @version $Id: PushAckRequest.java, v 0.1 2020年07月29日 8:25 PM liuzunfei Exp $
  */
 public class PushAckRequest extends InternalRequest {
     
+    /** 被确认推送的原始请求 ID。 */
     private String requestId;
     
+    /** 推送处理是否成功。 */
     private boolean success;
     
+    /** 推送失败时的异常信息。 */
     private Exception exception;
     
     /**
-     * build push ack request.
+     * 构建推送 ACK 请求。
      *
-     * @param requestId requestId.
-     * @return request.
+     * @param requestId 原始推送请求 ID
+     * @param success   是否成功
+     * @return ACK 请求实例
      */
     public static PushAckRequest build(String requestId, boolean success) {
         PushAckRequest request = new PushAckRequest();
@@ -43,58 +49,46 @@ public class PushAckRequest extends InternalRequest {
         return request;
     }
     
-    /**
-     * Getter method for property <tt>requestId</tt>.
-     *
-     * @return property value of requestId
-     */
+    /** 返回被确认推送的请求 ID。 */
     @Override
     public String getRequestId() {
         return requestId;
     }
     
     /**
-     * Setter method for property <tt>requestId</tt>.
+     * 设置被确认推送的请求 ID。
      *
-     * @param requestId value to be assigned to property requestId
+     * @param requestId 请求标识
      */
     @Override
     public void setRequestId(String requestId) {
         this.requestId = requestId;
     }
     
-    /**
-     * Getter method for property <tt>success</tt>.
-     *
-     * @return property value of success
-     */
+    /** 返回推送处理是否成功。 */
     public boolean isSuccess() {
         return success;
     }
     
     /**
-     * Setter method for property <tt>success</tt>.
+     * 设置推送处理结果。
      *
-     * @param success value to be assigned to property success
+     * @param success 是否成功
      */
     public void setSuccess(boolean success) {
         this.success = success;
     }
     
     /**
-     * Setter method for property <tt>exception</tt>.
+     * 设置推送失败时的异常。
      *
-     * @param exception value to be assigned to property exception
+     * @param exception 异常对象
      */
     public void setException(Exception exception) {
         this.exception = exception;
     }
     
-    /**
-     * Getter method for property <tt>exception</tt>.
-     *
-     * @return property value of exception
-     */
+    /** 返回推送失败时的异常。 */
     public Exception getException() {
         return exception;
     }
