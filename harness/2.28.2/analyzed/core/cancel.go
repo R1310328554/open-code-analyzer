@@ -16,12 +16,11 @@ package core
 
 import "context"
 
-// Canceler cancels a build.
+// Canceler 负责取消正在执行或排队中的构建。
 type Canceler interface {
-	// Cancel cancels the provided build.
+	// Cancel 取消指定的构建。
 	Cancel(context.Context, *Repository, *Build) error
 
-	// CancelPending cancels all pending builds of the same
-	// type of as the provided build.
+	// CancelPending 取消与给定构建同类型的所有待处理构建。
 	CancelPending(context.Context, *Repository, *Build) error
 }

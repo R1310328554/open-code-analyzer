@@ -20,31 +20,26 @@ import (
 	"time"
 )
 
-// License types.
+// 许可证类型常量。
 const (
-	LicenseFoss     = "foss"
-	LicenseFree     = "free"
-	LicensePersonal = "personal"
-	LicenseStandard = "standard"
-	LicenseTrial    = "trial"
+	LicenseFoss     = "foss"     // 开源版
+	LicenseFree     = "free"     // 免费版
+	LicensePersonal = "personal" // 个人版
+	LicenseStandard = "standard" // 标准商业版
+	LicenseTrial    = "trial"    // 试用版
 )
 
-// ErrUserLimit is returned when attempting to create a new
-// user but the maximum number of allowed user accounts
-// is exceeded.
+// ErrUserLimit 在创建用户时超出许可证允许的用户数上限时返回。
 var ErrUserLimit = errors.New("User limit exceeded")
 
-// ErrRepoLimit is returned when attempting to create a new
-// repository but the maximum number of allowed repositories
-// is exceeded.
+// ErrRepoLimit 在创建仓库时超出许可证允许的仓库数上限时返回。
 var ErrRepoLimit = errors.New("Repository limit exceeded")
 
-// ErrBuildLimit is returned when attempting to create a new
-// build but the maximum number of allowed builds is exceeded.
+// ErrBuildLimit 在创建构建时超出许可证允许的构建数上限时返回。
 var ErrBuildLimit = errors.New("Build limit exceeded")
 
 type (
-	// License defines software license parameters.
+	// License 定义软件许可证的配额与有效期等参数。
 	License struct {
 		Licensor     string    `json:"-"`
 		Subscription string    `json:"-"`
@@ -56,20 +51,17 @@ type (
 		Nodes        int64     `json:"nodes,omitempty"`
 	}
 
-	// LicenseService provides access to the license
-	// service and can be used to check for violations
-	// and expirations.
+	// LicenseService 提供许可证校验，用于检测配额超限与过期。
 	LicenseService interface {
-		// Exceeded returns true if the system has exceeded
-		// its limits as defined in the license.
+		// Exceeded 若当前用量已超过许可证定义的上限则返回 true。
 		Exceeded(context.Context) (bool, error)
 
-		// Expired returns true if the license is expired.
+		// Expired 若许可证已过期则返回 true。
 		Expired(context.Context) bool
 	}
 )
 
-// Expired returns true if the license is expired.
+// Expired 若许可证设置了过期时间且当前时间已过则返回 true。
 func (l *License) Expired() bool {
 	return l.Expires.IsZero() == false && time.Now().After(l.Expires)
 }

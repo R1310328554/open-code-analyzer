@@ -16,7 +16,7 @@ package core
 
 import "context"
 
-// Build represents a build execution.
+// Build 表示一次 CI/CD 构建执行记录。
 type Build struct {
 	ID           int64             `db:"build_id"             json:"id"`
 	RepoID       int64             `db:"build_repo_id"        json:"repo_id"`
@@ -55,69 +55,64 @@ type Build struct {
 	Stages       []*Stage          `db:"-"                    json:"stages,omitempty"`
 }
 
-// BuildStore defines operations for working with builds.
+// BuildStore 定义构建记录的持久化与查询操作。
 type BuildStore interface {
-	// Find returns a build from the datastore.
+	// Find 按主键从数据存储中查找构建。
 	Find(context.Context, int64) (*Build, error)
 
-	// FindNumber returns a build from the datastore by build number.
+	// FindNumber 按仓库 ID 与构建编号查找构建。
 	FindNumber(context.Context, int64, int64) (*Build, error)
 
-	// FindLast returns the last build from the datastore by ref.
+	// FindRef 按仓库 ID 与 Git 引用查找最近一次构建。
 	FindRef(context.Context, int64, string) (*Build, error)
 
-	// List returns a list of builds from the datastore by repository id.
+	// List 按仓库 ID 分页列出构建记录。
 	List(context.Context, int64, int, int) ([]*Build, error)
 
-	// ListRef returns a list of builds from the datastore by ref.
+	// ListRef 按仓库 ID 与引用分页列出构建记录。
 	ListRef(context.Context, int64, string, int, int) ([]*Build, error)
 
-	// LatestBranches returns the latest builds from the
-	// datastore by branch.
+	// LatestBranches 返回各分支在数据存储中的最新构建。
 	LatestBranches(context.Context, int64) ([]*Build, error)
 
-	// LatestPulls returns the latest builds from the
-	// datastore by pull request.
+	// LatestPulls 返回各 Pull Request 在数据存储中的最新构建。
 	LatestPulls(context.Context, int64) ([]*Build, error)
 
-	// LatestDeploys returns the latest builds from the
-	// datastore by deployment target.
+	// LatestDeploys 返回各部署目标在数据存储中的最新构建。
 	LatestDeploys(context.Context, int64) ([]*Build, error)
 
-	// Pending returns a list of pending builds from the
-	// datastore by repository id (DEPRECATED).
+	// Pending 列出所有待处理构建（已弃用）。
 	Pending(context.Context) ([]*Build, error)
 
-	// Running returns a list of running builds from the
-	// datastore by repository id (DEPRECATED).
+	// Running 列出所有运行中构建（已弃用）。
 	Running(context.Context) ([]*Build, error)
 
-	// Create persists a build to the datastore.
+	// Create 将新构建及其阶段持久化到数据存储。
 	Create(context.Context, *Build, []*Stage) error
 
-	// Update updates a build in the datastore.
+	// Update 更新数据存储中的构建记录。
 	Update(context.Context, *Build) error
 
-	// Delete deletes a build from the datastore.
+	// Delete 从数据存储中删除构建。
 	Delete(context.Context, *Build) error
 
-	// DeletePull deletes a pull request index from the datastore.
+	// DeletePull 删除 Pull Request 索引。
 	DeletePull(context.Context, int64, int) error
 
-	// DeleteBranch deletes a branch index from the datastore.
+	// DeleteBranch 删除分支索引。
 	DeleteBranch(context.Context, int64, string) error
 
-	// DeleteDeploy deletes a deploy index from the datastore.
+	// DeleteDeploy 删除部署目标索引。
 	DeleteDeploy(context.Context, int64, string) error
 
-	// Purge deletes builds from the database where the build number is less than n.
+	// Purge 删除构建编号小于 n 的历史构建。
 	Purge(context.Context, int64, int64) error
 
-	// Count returns a count of builds.
+	// Count 返回构建总数。
 	Count(context.Context) (int64, error)
 }
 
-// IsDone returns true if the build has a completed state.
+// IsDone 若构建已处于终态（非等待/排队/运行/阻塞）则返回 true。
 func (b *Build) IsDone() bool {
 	switch b.Status {
 	case StatusWaiting,
@@ -130,7 +125,7 @@ func (b *Build) IsDone() bool {
 	}
 }
 
-// IsFailed returns true if the build has failed
+// IsFailed 若构建已失败、被终止或出错则返回 true。
 func (b *Build) IsFailed() bool {
 	switch b.Status {
 	case StatusFailing,

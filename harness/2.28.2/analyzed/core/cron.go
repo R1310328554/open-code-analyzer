@@ -30,7 +30,7 @@ var (
 )
 
 type (
-	// Cron defines a cron job.
+	// Cron 定义仓库上的定时触发任务。
 	Cron struct {
 		ID       int64  `json:"id"`
 		RepoID   int64  `json:"repo_id"`
@@ -47,32 +47,32 @@ type (
 		Version  int64  `json:"version"`
 	}
 
-	// CronStore persists cron information to storage.
+	// CronStore 持久化定时任务并在调度时查询就绪任务。
 	CronStore interface {
-		// List returns a cron list from the datastore.
+		// List 列出指定仓库的全部定时任务。
 		List(context.Context, int64) ([]*Cron, error)
 
-		// Ready returns a cron list from the datastore ready for execution.
+		// Ready 返回当前已到执行时间的定时任务列表。
 		Ready(context.Context, int64) ([]*Cron, error)
 
-		// Find returns a cron job from the datastore.
+		// Find 按主键查找定时任务。
 		Find(context.Context, int64) (*Cron, error)
 
-		// FindName returns a cron job from the datastore.
+		// FindName 按仓库 ID 与任务名称查找定时任务。
 		FindName(context.Context, int64, string) (*Cron, error)
 
-		// Create persists a new cron job to the datastore.
+		// Create 持久化新的定时任务。
 		Create(context.Context, *Cron) error
 
-		// Update persists an updated cron job to the datastore.
+		// Update 持久化更新后的定时任务。
 		Update(context.Context, *Cron) error
 
-		// Delete deletes a cron job from the datastore.
+		// Delete 删除定时任务。
 		Delete(context.Context, *Cron) error
 	}
 )
 
-// Validate validates the required fields and formats.
+// Validate 校验必填字段与 cron 表达式、名称 slug 等格式约束。
 func (c *Cron) Validate() error {
 	_, err := cron.Parse(c.Expr)
 	if err != nil {
@@ -90,8 +90,7 @@ func (c *Cron) Validate() error {
 	}
 }
 
-// SetExpr sets the cron expression name and updates
-// the next execution date.
+// SetExpr 设置 cron 表达式并重新计算下次执行时间。
 func (c *Cron) SetExpr(expr string) error {
 	_, err := cron.Parse(expr)
 	if err != nil {
@@ -101,12 +100,12 @@ func (c *Cron) SetExpr(expr string) error {
 	return c.Update()
 }
 
-// SetName sets the cronjob name.
+// SetName 将任务名称规范化为 URL 友好的 slug 并赋值。
 func (c *Cron) SetName(name string) {
 	c.Name = slug.Make(name)
 }
 
-// Update updates the next Cron execution date.
+// Update 根据当前表达式计算并更新 Next 字段为下次 Unix 时间戳。
 func (c *Cron) Update() error {
 	sched, err := cron.Parse(c.Expr)
 	if err != nil {

@@ -19,52 +19,48 @@ import (
 	"io"
 )
 
-// Line represents a line in the logs.
+// Line 表示构建日志中的一行输出。
 type Line struct {
-	Number    int    `json:"pos"`
-	Message   string `json:"out"`
-	Timestamp int64  `json:"time"`
+	Number    int    `json:"pos"`  // 行号
+	Message   string `json:"out"`  // 日志正文
+	Timestamp int64  `json:"time"` // Unix 时间戳
 }
 
-// LogStore persists build output to storage.
+// LogStore 将构建步骤日志持久化到存储后端。
 type LogStore interface {
-	// Find returns a log stream from the datastore.
+	// Find 从数据存储读取指定阶段的日志流。
 	Find(ctx context.Context, stage int64) (io.ReadCloser, error)
 
-	// Create writes copies the log stream from Reader r to the datastore.
+	// Create 将读取器 r 中的日志内容写入数据存储。
 	Create(ctx context.Context, stage int64, r io.Reader) error
 
-	// Update writes copies the log stream from Reader r to the datastore.
+	// Update 用读取器 r 中的内容覆盖已有日志。
 	Update(ctx context.Context, stage int64, r io.Reader) error
 
-	// Delete purges the log stream from the datastore.
+	// Delete 从数据存储中清除指定阶段的日志。
 	Delete(ctx context.Context, stage int64) error
 }
 
-// LogStream manages a live stream of logs.
+// LogStream 管理构建步骤的实时日志流（内存/发布订阅）。
 type LogStream interface {
-	// Create creates the log stream for the step ID.
+	// Create 为指定步骤 ID 创建日志流。
 	Create(context.Context, int64) error
 
-	// Delete deletes the log stream for the step ID.
+	// Delete 删除指定步骤 ID 的日志流。
 	Delete(context.Context, int64) error
 
-	// Writes writes to the log stream.
+	// Write 向日志流追加一行输出。
 	Write(context.Context, int64, *Line) error
 
-	// Tail tails the log stream.
+	// Tail 订阅并尾随指定步骤的实时日志。
 	Tail(context.Context, int64) (<-chan *Line, <-chan error)
 
-	// Info returns internal stream information.
+	// Info 返回内部流统计信息，便于监控订阅数。
 	Info(context.Context) *LogStreamInfo
 }
 
-// LogStreamInfo provides internal stream information. This can
-// be used to monitor the number of registered streams and
-// subscribers.
+// LogStreamInfo 描述当前注册的日志流及每个流的订阅者数量。
 type LogStreamInfo struct {
-	// Streams is a key-value pair where the key is the step
-	// identifier, and the value is the count of subscribers
-	// streaming the logs.
+	// Streams 键为步骤 ID，值为正在订阅该流日志的客户端数量。
 	Streams map[int64]int `json:"streams"`
 }

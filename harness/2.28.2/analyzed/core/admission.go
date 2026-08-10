@@ -16,10 +16,10 @@ package core
 
 import "context"
 
-// AdmissionService grants access to the system. The service can
-// be used to restrict access to authorized users, such as
-// members of an organization in your source control management
-// system.
+// AdmissionService 控制系统准入权限。
+// 可用于限制仅授权用户访问，例如仅允许源代码管理
+// 系统中某组织的成员登录或使用系统。
 type AdmissionService interface {
+	// Admit 判定给定用户是否允许进入系统。
 	Admit(context.Context, *User) error
 }

@@ -17,7 +17,7 @@ package core
 import "context"
 
 type (
-	// Commit represents a git commit.
+	// Commit 表示 Git 提交元数据。
 	Commit struct {
 		Sha       string
 		Ref       string
@@ -27,7 +27,7 @@ type (
 		Link      string
 	}
 
-	// Committer represents the commit author.
+	// Committer 表示提交作者或提交者信息。
 	Committer struct {
 		Name   string
 		Email  string
@@ -36,7 +36,7 @@ type (
 		Avatar string
 	}
 
-	// Change represents a file change in a commit.
+	// Change 表示某次提交中的单个文件变更。
 	Change struct {
 		Path    string
 		Added   bool
@@ -44,16 +44,16 @@ type (
 		Deleted bool
 	}
 
-	// CommitService provides access to the commit history from
-	// the external source code management service (e.g. GitHub).
+	// CommitService 从外部源代码管理服务（如 GitHub）
+	// 读取提交历史与变更详情。
 	CommitService interface {
-		// Find returns the commit information by sha.
+		// Find 按提交 SHA 获取提交信息。
 		Find(ctx context.Context, user *User, repo, sha string) (*Commit, error)
 
-		// FindRef returns the commit information by reference.
+		// FindRef 按 Git 引用获取对应提交信息。
 		FindRef(ctx context.Context, user *User, repo, ref string) (*Commit, error)
 
-		// ListChanges returns the files change by sha or reference.
+		// ListChanges 按 SHA 或引用列出该提交涉及的文件变更。
 		ListChanges(ctx context.Context, user *User, repo, sha, ref string) ([]*Change, error)
 	}
 )

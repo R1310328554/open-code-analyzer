@@ -16,8 +16,8 @@ package core
 
 import "context"
 
-// Linker provides a deep link to a git resource in the
-// source control management system for a given build.
+// Linker 为给定构建在 SCM 中生成 Git 资源（提交、文件等）的深链接 URL。
 type Linker interface {
+	// Link 根据仓库名、引用与 SHA 返回可访问的 Web 链接。
 	Link(ctx context.Context, repo, ref, sha string) (string, error)
 }

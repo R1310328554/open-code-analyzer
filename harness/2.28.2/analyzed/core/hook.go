@@ -19,16 +19,16 @@ import (
 	"net/http"
 )
 
-// Hook action constants.
+// 钩子动作常量，描述 SCM Webhook 载荷中的细粒度动作。
 const (
-	ActionOpen   = "open"
-	ActionClose  = "close"
-	ActionCreate = "create"
-	ActionDelete = "delete"
-	ActionSync   = "sync"
+	ActionOpen   = "open"   // 打开（如 PR 创建）
+	ActionClose  = "close"  // 关闭
+	ActionCreate = "create" // 创建
+	ActionDelete = "delete" // 删除
+	ActionSync   = "sync"   // 同步
 )
 
-// Hook represents the payload of a post-commit hook.
+// Hook 表示 post-commit Webhook 的标准化载荷。
 type Hook struct {
 	Parent       int64             `json:"parent"`
 	Trigger      string            `json:"trigger"`
@@ -56,15 +56,16 @@ type Hook struct {
 	Params       map[string]string `json:"params"`
 }
 
-// HookService manages post-commit hooks in the external
-// source code management service (e.g. GitHub).
+// HookService 在外部 SCM（如 GitHub）上注册或删除 post-commit 钩子。
 type HookService interface {
+	// Create 为仓库创建 Webhook。
 	Create(ctx context.Context, user *User, repo *Repository) error
+	// Delete 删除仓库 Webhook。
 	Delete(ctx context.Context, user *User, repo *Repository) error
 }
 
-// HookParser parses a post-commit hook from the source
-// code management system, and returns normalized data.
+// HookParser 解析 SCM 原始 Webhook 请求并返回规范化 Hook 与仓库信息。
 type HookParser interface {
+	// Parse 从 HTTP 请求解析钩子，secretFunc 用于按仓库名查找签名密钥。
 	Parse(req *http.Request, secretFunc func(string) string) (*Hook, *Repository, error)
 }

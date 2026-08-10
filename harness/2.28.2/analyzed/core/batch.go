@@ -16,16 +16,17 @@ package core
 
 import "context"
 
-// Batch represents a Batch request to synchronize the local
-// repository and permission store for a user account.
+// Batch 表示一次批量同步请求，用于将用户账户对应的
+// 本地仓库列表与权限存储与外部源保持一致。
 type Batch struct {
-	Insert []*Repository `json:"insert"`
-	Update []*Repository `json:"update"`
-	Rename []*Repository `json:"rename"`
-	Revoke []*Repository `json:"revoke"`
+	Insert []*Repository `json:"insert"` // 待新增的仓库
+	Update []*Repository `json:"update"` // 待更新的仓库
+	Rename []*Repository `json:"rename"` // 待重命名的仓库
+	Revoke []*Repository `json:"revoke"` // 待撤销权限的仓库
 }
 
-// Batcher batch updates the user account.
+// Batcher 对用户账户执行批量仓库与权限更新。
 type Batcher interface {
+	// Batch 应用一批仓库变更到指定用户。
 	Batch(context.Context, *User, *Batch) error
 }

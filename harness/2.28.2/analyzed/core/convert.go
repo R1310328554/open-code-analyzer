@@ -17,8 +17,7 @@ package core
 import "context"
 
 type (
-	// ConvertArgs represents a request to the pipeline
-	// conversion service.
+	// ConvertArgs 表示调用流水线格式转换服务的请求参数。
 	ConvertArgs struct {
 		User   *User       `json:"-"`
 		Repo   *Repository `json:"repo,omitempty"`
@@ -26,10 +25,10 @@ type (
 		Config *Config     `json:"config,omitempty"`
 	}
 
-	// ConvertService converts non-native pipeline
-	// configuration formats to native configuration
-	// formats (e.g. jsonnet to yaml).
+	// ConvertService 将非原生流水线配置格式转换为
+	// 系统原生格式（例如 jsonnet 转 yaml）。
 	ConvertService interface {
+		// Convert 执行配置格式转换并返回原生 Config。
 		Convert(context.Context, *ConvertArgs) (*Config, error)
 	}
 )

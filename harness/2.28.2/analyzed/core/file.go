@@ -17,24 +17,22 @@ package core
 import "context"
 
 type (
-	// File represents the raw file contents in the remote
-	// version control system.
+	// File 表示远程版本控制系统中的原始文件内容。
 	File struct {
-		Data []byte
-		Hash []byte
+		Data []byte // 文件字节内容
+		Hash []byte // 内容哈希
 	}
 
-	// FileArgs provides repository and commit details required
-	// to fetch the file from the  remote source code management
-	// service.
+	// FileArgs 提供从远程 SCM 拉取文件所需的仓库与提交信息。
 	FileArgs struct {
-		Commit string
-		Ref    string
+		Commit string // 提交 SHA
+		Ref    string // Git 引用
 	}
 
-	// FileService provides access to contents of files in
-	// the remote source code management service (e.g. GitHub).
+	// FileService 从远程源代码管理服务（如 GitHub）
+	// 读取指定路径的文件内容。
 	FileService interface {
+		// Find 按提交/引用与路径获取文件。
 		Find(ctx context.Context, user *User, repo, commit, ref, path string) (*File, error)
 	}
 )

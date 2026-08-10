@@ -14,13 +14,13 @@
 
 package core
 
-// Hook event constants.
+// 钩子事件类型常量，标识触发构建的 SCM 事件种类。
 const (
-	EventCron        = "cron"
-	EventCustom      = "custom"
-	EventPush        = "push"
-	EventPullRequest = "pull_request"
-	EventTag         = "tag"
-	EventPromote     = "promote"
-	EventRollback    = "rollback"
+	EventCron        = "cron"         // 定时任务触发
+	EventCustom      = "custom"       // 自定义事件
+	EventPush        = "push"         // 推送
+	EventPullRequest = "pull_request" // Pull Request
+	EventTag         = "tag"          // 标签
+	EventPromote     = "promote"      // 晋升/晋级部署
+	EventRollback    = "rollback"     // 回滚
 )
