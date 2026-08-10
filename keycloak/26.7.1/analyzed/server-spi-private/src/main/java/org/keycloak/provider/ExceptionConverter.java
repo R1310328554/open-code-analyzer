@@ -21,7 +21,8 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
- * Use to unwrap exceptions specifically if there is an exception at JTA commit
+ * 异常转换器：解包 JTA 提交等场景下的包装异常，还原真实根因。
+ * <p>Use to unwrap exceptions specifically if there is an exception at JTA commit</p>
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
@@ -29,6 +30,7 @@ import org.keycloak.models.KeycloakSessionFactory;
 public interface ExceptionConverter extends Provider, ProviderFactory<ExceptionConverter> {
 
     /**
+     * 尝试转换异常；无法处理时返回 {@code null}。
      * Return null if the provider doesn't handle this type
      *
      * @param t
@@ -36,21 +38,25 @@ public interface ExceptionConverter extends Provider, ProviderFactory<ExceptionC
      */
     Throwable convert(Throwable t);
 
+    /** 单例模式：直接返回自身。 */
     @Override
     default ExceptionConverter create(KeycloakSession session) {
         return this;
     }
 
+    /** 默认无初始化逻辑。 */
     @Override
     default void init(Config.Scope config) {
 
     }
 
+    /** 默认无后置初始化逻辑。 */
     @Override
     default void postInit(KeycloakSessionFactory factory) {
 
     }
 
+    /** 默认无关闭资源逻辑。 */
     @Override
     default void close() {
 

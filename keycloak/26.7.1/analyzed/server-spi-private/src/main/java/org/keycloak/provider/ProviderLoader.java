@@ -20,17 +20,22 @@ package org.keycloak.provider;
 import java.util.List;
 
 /**
+ * 提供者加载器：从部署单元加载 SPI 定义与提供者工厂。
+ * <p>由 {@link ProviderLoaderFactory} 创建，支持 JAR、目录等多种加载方式。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface ProviderLoader {
 
     /**
+     * 加载 SPI 定义列表。
      * Load the SPI definitions themselves.
      * @return a list of Spi definition objects
      */
     List<Spi> loadSpis();
 
     /**
+     * 加载指定 SPI 的全部提供者工厂。
      * Load all provider factories of a specific SPI.
      * @param spi the Spi definition
      * @return a list of provider factories

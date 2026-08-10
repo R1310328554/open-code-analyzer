@@ -24,24 +24,31 @@ import org.keycloak.component.ComponentValidationException;
 import org.keycloak.utils.StringUtil;
 
 /**
+ * 组件配置校验辅助类：对 {@link ComponentModel} 配置项进行类型、必填与选项校验。
+ * <p>采用链式调用，校验失败时抛出 {@link ComponentValidationException}。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class ConfigurationValidationHelper {
 
+    /** 待校验的组件模型。 */
     private ComponentModel model;
 
     private ConfigurationValidationHelper(ComponentModel model) {
         this.model = model;
     }
 
+    /** 创建校验辅助实例。 */
     public static ConfigurationValidationHelper check(ComponentModel model) {
         return new ConfigurationValidationHelper(model);
     }
 
+    /** 校验整型配置项。 */
     public ConfigurationValidationHelper checkInt(ProviderConfigProperty property, boolean required) throws ComponentValidationException {
         return checkInt(property.getName(), property.getLabel(), required);
     }
 
+    /** 校验枚举列表配置项（值须在 {@link ProviderConfigProperty#getOptions()} 中）。 */
     public ConfigurationValidationHelper checkList(ProviderConfigProperty property, boolean required) throws ComponentValidationException {
         checkSingle(property.getName(), property.getLabel(), required);
 
@@ -54,6 +61,7 @@ public class ConfigurationValidationHelper {
         return this;
     }
 
+    /** 按 key/label 校验整型配置项。 */
     public ConfigurationValidationHelper checkInt(String key, String label, boolean required) throws ComponentValidationException {
         checkSingle(key, label, required);
 
@@ -69,10 +77,12 @@ public class ConfigurationValidationHelper {
         return this;
     }
 
+    /** 校验长整型配置项。 */
     public ConfigurationValidationHelper checkLong(ProviderConfigProperty property, boolean required) throws ComponentValidationException {
         return checkLong(property.getName(), property.getLabel(), required);
     }
 
+    /** 按 key/label 校验长整型配置项。 */
     public ConfigurationValidationHelper checkLong(String key, String label, boolean required) throws ComponentValidationException {
         checkSingle(key, label, required);
 
@@ -88,10 +98,12 @@ public class ConfigurationValidationHelper {
         return this;
     }
 
+    /** 校验配置项为单值。 */
     public ConfigurationValidationHelper checkSingle(ProviderConfigProperty property, boolean required) throws ComponentValidationException {
         return checkSingle(property.getName(), property.getLabel(), required);
     }
 
+    /** 按 key/label 校验配置项为单值，可选必填。 */
     public ConfigurationValidationHelper checkSingle(String key, String label, boolean required) throws ComponentValidationException {
         if (model.getConfig().containsKey(key) && model.getConfig().get(key).size() > 1) {
             throw new ComponentValidationException("''{0}'' should be a single entry", label);
@@ -104,10 +116,12 @@ public class ConfigurationValidationHelper {
         return this;
     }
 
+    /** 校验配置项必填。 */
     public ConfigurationValidationHelper checkRequired(ProviderConfigProperty property) throws ComponentValidationException {
         return checkRequired(property.getName(), property.getLabel());
     }
 
+    /** 按 key/label 校验配置项必填。 */
     public ConfigurationValidationHelper checkRequired(String key, String label) throws ComponentValidationException {
         List<String> values = model.getConfig().get(key);
         if (values == null) {
@@ -117,10 +131,12 @@ public class ConfigurationValidationHelper {
         return this;
     }
 
+    /** 校验布尔配置项（值为 {@code true} 或 {@code false}）。 */
     public ConfigurationValidationHelper checkBoolean(ProviderConfigProperty property, boolean required) throws ComponentValidationException {
         return checkBoolean(property.getName(), property.getLabel(), required);
     }
 
+    /** 按 key/label 校验布尔配置项。 */
     public ConfigurationValidationHelper checkBoolean(String key, String label, boolean required) {
         checkSingle(key, label, required);
 

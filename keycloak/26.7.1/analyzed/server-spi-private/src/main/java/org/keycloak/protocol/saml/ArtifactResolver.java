@@ -7,11 +7,13 @@ import org.keycloak.provider.Provider;
 
 
 /**
- * Provides a way to create and resolve artifacts for SAML Artifact binding
+ * SAML Artifact 绑定解析器：创建、存储与解析 Artifact。
+ * <p>Provides a way to create and resolve artifacts for SAML Artifact binding</p>
  */
 public interface ArtifactResolver extends Provider {
 
     /**
+     * 根据 Artifact 查找签发该 Artifact 的客户端。
      * Returns client model that issued artifact
      *
      * @param session KeycloakSession for searching for client corresponding client
@@ -22,6 +24,7 @@ public interface ArtifactResolver extends Provider {
     ClientModel selectSourceClient(KeycloakSession session, String artifact) throws ArtifactResolverProcessingException;
 
     /**
+     * 创建并存储 SAML Artifact，关联序列化的 ArtifactResponse。
      * Creates and stores an artifact
      *
      * @param clientSessionModel client session model that can be used for storing the response for artifact
@@ -33,6 +36,7 @@ public interface ArtifactResolver extends Provider {
     String buildArtifact(AuthenticatedClientSessionModel clientSessionModel, String entityId, String artifactResponse) throws ArtifactResolverProcessingException;
 
     /**
+     * 解析 Artifact，返回对应的序列化 SAML ArtifactResponse。
      * Returns a serialized Saml ArtifactResponse corresponding to the artifact that was created by
      * {@link #buildArtifact(AuthenticatedClientSessionModel, String, String) buildArtifact}
      *

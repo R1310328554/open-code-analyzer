@@ -19,25 +19,31 @@ package org.keycloak.provider;
 
 
 /**
+ * 异常转换器 SPI：注册 {@link ExceptionConverter} 提供者。
+ *
  * @author <a href="mailto:bburke@redhat.com">Bill Burke</a>
  */
 public class ExceptionConverterSpi implements Spi {
 
+    /** @return 内部 SPI */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return SPI 名称 {@code exception-converter} */
     @Override
     public String getName() {
         return "exception-converter";
     }
 
+    /** @return 提供者接口 {@link ExceptionConverter} */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return ExceptionConverter.class;
     }
 
+    /** @return 工厂接口（与 {@link ExceptionConverter} 合并） */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return ExceptionConverter.class;

@@ -20,14 +20,16 @@ package org.keycloak.provider;
 import org.keycloak.Config;
 
 /**
- * Providers that are only supported in some environments can implement this interface to be able to determine if they
- * should be available or not.
+ * 环境相关提供者工厂：仅在特定运行环境下可用的提供者实现此接口。
+ * <p>Providers that are only supported in some environments can implement this interface to be able to determine if they
+ * should be available or not.</p>
  *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface EnvironmentDependentProviderFactory {
 
     /**
+     * 根据提供者配置判断当前环境是否支持并应加载该提供者。
      * Check if the provider is supported and should be available based on the provider configuration.
      *
      * @param config the provider configuration

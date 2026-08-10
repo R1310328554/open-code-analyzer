@@ -20,13 +20,16 @@ package org.keycloak.provider;
 import java.util.Map;
 
 /**
- * Marker interface for {@link ProviderFactory} of Provider which wants to show some info on "Server Info" page in Admin console.
+ * 服务器信息感知提供者工厂标记接口。
+ * <p>实现此接口的 {@link ProviderFactory} 可在管理控制台「Server Info」页面展示运行状态与配置信息。</p>
+ * <p>Marker interface for {@link ProviderFactory} of Provider which wants to show some info on "Server Info" page in Admin console.</p>
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
 public interface ServerInfoAwareProviderFactory {
 
     /**
+     * 返回提供者的运行信息（配置摘要、连接状态、错误等），供 Server Info 页面展示。
      * Return actual info about the provider. This info contains information about provider's configuration and operational conditions (eg. errors in connection to remote systems etc) which is
      * shown on "Server Info" page then.
      * 

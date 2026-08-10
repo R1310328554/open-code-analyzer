@@ -18,12 +18,21 @@
 package org.keycloak.provider;
 
 /**
+ * 提供者加载器工厂：根据部署类型创建 {@link ProviderLoader} 实例。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface ProviderLoaderFactory {
 
+    /** @param type 部署类型标识
+     * @return 是否支持该部署类型 */
     boolean supports(String type);
 
+    /** 创建提供者加载器。
+     * @param info 部署信息
+     * @param baseClassLoader 基础类加载器
+     * @param resource 资源路径或标识
+     * @return {@link ProviderLoader} 实例 */
     ProviderLoader create(KeycloakDeploymentInfo info, ClassLoader baseClassLoader, String resource);
 
 }
