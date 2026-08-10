@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T14:48:11Z",
-  "files": [
-    "testsuite/utils/src/main/java/org/keycloak/testsuite/util/cli/ClusterProviderTaskCommand.java",
-    "testsuite/utils/src/main/java/org/keycloak/testsuite/util/cli/GroupCommands.java",
-    "testsuite/utils/src/main/java/org/keycloak/testsuite/util/cli/LdapManyGroupsInitializerCommand.java",
-    "testsuite/utils/src/main/java/org/keycloak/testsuite/util/cli/LdapManyObjectsInitializerCommand.java",
-    "testsuite/utils/src/main/java/org/keycloak/testsuite/util/cli/LoadPersistentSessionsCommand.java",
-    "testsuite/utils/src/main/java/org/keycloak/testsuite/util/cli/PersistSessionsCommand.java",
-    "testsuite/utils/src/main/java/org/keycloak/testsuite/util/cli/RoleCommands.java",
-    "testsuite/utils/src/main/java/org/keycloak/testsuite/util/cli/SyncDummyFederationProviderCommand.java",
-    "testsuite/utils/src/main/java/org/keycloak/testsuite/util/cli/TestCacheUtils.java",
-    "testsuite/utils/src/main/java/org/keycloak/testsuite/util/cli/TestsuiteCLI.java",
-    "testsuite/utils/src/main/java/org/keycloak/testsuite/util/cli/UserCommands.java",
-    "themes/src/main/resources/theme/base/login/resources/js/authChecker.js",
-    "themes/src/main/resources/theme/base/login/resources/js/common.js",
-    "themes/src/main/resources/theme/base/login/resources/js/kcMultivalued.js",
-    "themes/src/main/resources/theme/base/login/resources/js/kcNumberFormat.js"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 0,
-  "done": 5983
+  "done": 5998
 }
