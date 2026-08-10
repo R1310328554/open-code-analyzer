@@ -21,6 +21,8 @@ import io.netty.buffer.ByteBufHolder;
 
 /**
  * See <a href="https://public.dhe.ibm.com/software/dw/webservices/ws-mqtt/mqtt-v3r1.html#publish">MQTTV3.1/publish</a>
+ * <p>PUBLISH 报文：向主题投递应用消息。实现 {@link ByteBufHolder} 以参与 Netty
+ * 引用计数生命周期，避免载荷 {@link ByteBuf} 泄漏。</p>
  */
 public class MqttPublishMessage extends MqttMessage implements ByteBufHolder {
 

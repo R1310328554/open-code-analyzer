@@ -20,9 +20,12 @@ import io.netty.util.internal.StringUtil;
 
 /**
  * Variable Header containing Packet Id, reason code and Properties as in MQTT v5 spec.
+ * <p>MQTT v5 发布应答类可变头（PUBACK/PUBREC/PUBREL/PUBCOMP）：在报文 ID 之后
+ * 附加 1 字节原因码与属性，用于说明处理结果（如无匹配订阅者、配额超限等）。</p>
  */
 public final class MqttPubReplyMessageVariableHeader extends MqttMessageIdVariableHeader {
 
+    /** 原因码 0 表示成功（与 v3 仅含 packetId 的行为兼容）。 */
     private final byte reasonCode;
     private final MqttProperties properties;
 

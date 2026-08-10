@@ -24,10 +24,12 @@ import java.util.ArrayList;
 
 /**
  * MQTT Properties container
+ * <p>MQTT v5 属性容器：按属性 ID 存储键值对，支持整数、字符串、二进制及可重复出现的
+ * 用户属性与订阅标识符。编码时写入可变头末尾的属性长度字段之后。</p>
  * */
 public final class MqttProperties {
 
-    // single byte properties
+    // single byte properties — 单字节布尔/枚举型属性 ID
     public static final int PAYLOAD_FORMAT_INDICATOR = 0x01;
     public static final int REQUEST_PROBLEM_INFORMATION = 0x17;
     public static final int REQUEST_RESPONSE_INFORMATION = 0x19;
@@ -37,22 +39,22 @@ public final class MqttProperties {
     public static final int SUBSCRIPTION_IDENTIFIER_AVAILABLE = 0x29;
     public static final int SHARED_SUBSCRIPTION_AVAILABLE = 0x2A;
 
-    // two bytes properties
+    // two bytes properties — 双字节无符号整数属性 ID
     public static final int SERVER_KEEP_ALIVE = 0x13;
     public static final int RECEIVE_MAXIMUM = 0x21;
     public static final int TOPIC_ALIAS_MAXIMUM = 0x22;
     public static final int TOPIC_ALIAS = 0x23;
 
-    // four bytes properties
+    // four bytes properties — 四字节无符号整数属性 ID
     public static final int PUBLICATION_EXPIRY_INTERVAL = 0x02;
     public static final int SESSION_EXPIRY_INTERVAL = 0x11;
     public static final int WILL_DELAY_INTERVAL = 0x18;
     public static final int MAXIMUM_PACKET_SIZE = 0x27;
 
-    // Variable Byte Integer
+    // Variable Byte Integer — 可变长整数，订阅标识符可多次出现
     public static final int SUBSCRIPTION_IDENTIFIER = 0x0B;
 
-    // UTF-8 Encoded String properties
+    // UTF-8 Encoded String properties — UTF-8 字符串属性 ID
     public static final int CONTENT_TYPE = 0x03;
     public static final int RESPONSE_TOPIC = 0x08;
     public static final int ASSIGNED_CLIENT_IDENTIFIER = 0x12;
@@ -62,7 +64,7 @@ public final class MqttProperties {
     public static final int REASON_STRING = 0x1F;
     public static final int USER_PROPERTY = 0x26;
 
-    // Binary Data
+    // Binary Data — 二进制块属性 ID
     public static final int CORRELATION_DATA = 0x09;
     public static final int AUTHENTICATION_DATA = 0x16;
 
@@ -140,8 +142,10 @@ public final class MqttProperties {
         }
     }
 
+    /** 不可变的空属性集，解码时 null 会归一化为此实例。 */
     public static final MqttProperties NO_PROPERTIES = new MqttProperties(false);
 
+    /** null 安全包装：未提供属性时返回 {@link #NO_PROPERTIES}。 */
     static MqttProperties withEmptyDefaults(MqttProperties properties) {
         if (properties == null) {
             return NO_PROPERTIES;
@@ -151,6 +155,7 @@ public final class MqttProperties {
 
     /**
      * MQTT property base class
+     * <p>属性条目基类，持有协议定义的 propertyId 与强类型 value。</p>
      *
      * @param <T> property type
      */
@@ -252,6 +257,7 @@ public final class MqttProperties {
 
     //User properties are the only properties that may be included multiple times and
     //are the only properties where ordering is required. Therefore, they need a special handling
+    // 用户属性可重复且顺序有意义，单独用 List 存储而非 IntObjectHashMap
     public static final class UserProperties extends MqttProperty<List<StringPair>> {
         public UserProperties() {
             super(USER_PROPERTY, new ArrayList<>());
@@ -330,11 +336,16 @@ public final class MqttProperties {
         this.canModify = canModify;
     }
 
+    /** 除用户属性与订阅 ID 外的单值属性，按 propertyId 索引。 */
     private IntObjectHashMap<MqttProperty> props;
+    /** 用户属性列表，保持 Wire 上的出现顺序。 */
     private List<UserProperty> userProperties;
+    /** 订阅标识符可多次出现，单独列表存储。 */
     private List<IntegerProperty> subscriptionIds;
+    /** {@link #NO_PROPERTIES} 为 false，禁止后续 add。 */
     private final boolean canModify;
 
+    /** 按属性类型分流：普通属性入 map，用户属性/订阅 ID 入专用列表。 */
     public void add(MqttProperty property) {
         if (!canModify) {
             throw new UnsupportedOperationException("adding property isn't allowed");

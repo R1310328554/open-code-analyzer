@@ -21,11 +21,15 @@ import io.netty.util.internal.StringUtil;
 /**
  * Variable Header containing only Message Id
  * See <a href="https://public.dhe.ibm.com/software/dw/webservices/ws-mqtt/mqtt-v3r1.html#msg-id">MQTTV3.1/msg-id</a>
+ * <p>仅含 16 位报文标识符的可变头。QoS&gt;0 的 PUBLISH 及 SUBSCRIBE/PUBACK 等
+ * 请求-响应型报文用同一 ID 配对，取值范围 1～65535（0 保留）。</p>
  */
 public class MqttMessageIdVariableHeader {
 
+    /** 报文标识符，用于关联 PUBLISH 与其 PUBACK/PUBREC 等应答。 */
     private final int messageId;
 
+    /** 校验范围后创建实例，非法 ID 立即抛异常。 */
     public static MqttMessageIdVariableHeader from(int messageId) {
       if (messageId < 1 || messageId > 0xffff) {
         throw new IllegalArgumentException("messageId: " + messageId + " (expected: 1 ~ 65535)");
@@ -50,6 +54,7 @@ public class MqttMessageIdVariableHeader {
             .toString();
     }
 
+    /** 升级为 v5 可变头，附加空属性集。 */
     public MqttMessageIdAndPropertiesVariableHeader withEmptyProperties() {
         return new MqttMessageIdAndPropertiesVariableHeader(messageId, MqttProperties.NO_PROPERTIES);
     }

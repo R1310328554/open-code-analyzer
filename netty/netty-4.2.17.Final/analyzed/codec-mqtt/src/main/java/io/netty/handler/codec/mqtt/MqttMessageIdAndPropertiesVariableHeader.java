@@ -20,9 +20,12 @@ import io.netty.util.internal.StringUtil;
 
 /**
  * Variable Header containing, Packet Id and Properties as in MQTT v5 spec.
+ * <p>MQTT v5 扩展可变头：在报文标识符之后附加属性列表，用于 SUBSCRIBE、SUBACK、
+ * UNSUBSCRIBE、UNSUBACK 等需要关联多个 in-flight 请求的场景。</p>
  */
 public final class MqttMessageIdAndPropertiesVariableHeader extends MqttMessageIdVariableHeader {
 
+    /** v5 属性集；未指定时使用 {@link MqttProperties#NO_PROPERTIES} 空集合。 */
     private final MqttProperties properties;
 
     public MqttMessageIdAndPropertiesVariableHeader(int messageId, MqttProperties properties) {

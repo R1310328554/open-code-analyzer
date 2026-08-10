@@ -20,10 +20,14 @@ import io.netty.util.internal.StringUtil;
 
 /**
  * Variable Header of the {@link MqttPublishMessage}
+ * <p>PUBLISH 可变头：UTF-8 主题名、QoS&gt;0 时的报文标识符，以及 MQTT v5 属性
+ * （如主题别名、消息过期间隔、响应主题等）。</p>
  */
 public final class MqttPublishVariableHeader {
 
+    /** 消息投递的目标主题（非通配符订阅侧格式）。 */
     private final String topicName;
+    /** QoS 0 时为 0；QoS 1/2 时用于与 PUBACK/PUBREC 配对。 */
     private final int packetId;
     private final MqttProperties properties;
 

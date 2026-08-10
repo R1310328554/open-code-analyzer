@@ -18,6 +18,8 @@ package io.netty.handler.codec.mqtt;
 
 /**
  * MQTT Message Types.
+ * <p>MQTT 控制报文类型枚举，数值对应固定头高 4 位（1=CONNECT … 15=AUTH）。
+ * 通过 {@link #VALUES} 数组实现 O(1) 的 {@link #valueOf(int)} 反查。</p>
  */
 public enum MqttMessageType {
     CONNECT(1),
@@ -36,11 +38,13 @@ public enum MqttMessageType {
     DISCONNECT(14),
     AUTH(15);
 
+    /** 按协议数值索引的查找表，下标即 type 字段值。 */
     private static final MqttMessageType[] VALUES;
 
     static {
         // this prevent values to be assigned with the wrong order
         // and ensure valueOf to work fine
+        // 显式按 value 填入数组，避免 enum 声明顺序与协议编号不一致
         final MqttMessageType[] values = values();
         VALUES = new MqttMessageType[values.length + 1];
         for (MqttMessageType mqttMessageType : values) {
@@ -52,6 +56,7 @@ public enum MqttMessageType {
         }
     }
 
+    /** 协议规定的 4 位类型码。 */
     private final int value;
 
     MqttMessageType(int value) {
@@ -62,6 +67,7 @@ public enum MqttMessageType {
         return value;
     }
 
+    /** 从固定头 type 字段解析；未知值抛 {@link IllegalArgumentException}。 */
     public static MqttMessageType valueOf(int type) {
         if (type <= 0 || type >= VALUES.length) {
             throw new IllegalArgumentException("unknown message type: " + type);

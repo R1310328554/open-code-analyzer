@@ -25,8 +25,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * MQTT 报文 fluent 构建器集合。
+ * <p>通过 {@link #connect()}、{@link #publish()} 等静态工厂获取 Builder，
+ * 链式设置字段后 {@code build()} 产出对应 {@link MqttMessage} 子类，便于单元测试与客户端编码。</p>
+ */
 public final class MqttMessageBuilders {
 
+    /** 构造 PUBLISH 报文：主题、QoS、Retain、载荷与 v5 属性。 */
     public static final class PublishBuilder {
         private String topic;
         private boolean retained;
@@ -76,6 +82,7 @@ public final class MqttMessageBuilders {
         }
     }
 
+    /** 构造 CONNECT 报文：协议版本、客户端 ID、遗嘱、认证与 v5 连接属性。 */
     public static final class ConnectBuilder {
 
         private MqttVersion version = MqttVersion.MQTT_3_1_1;
@@ -213,6 +220,7 @@ public final class MqttMessageBuilders {
         }
     }
 
+    /** 构造 SUBSCRIBE 报文；固定头 QoS 必须为 1（协议要求）。 */
     public static final class SubscribeBuilder {
 
         private List<MqttTopicSubscription> subscriptions;
@@ -260,6 +268,7 @@ public final class MqttMessageBuilders {
         }
     }
 
+    /** 构造 UNSUBSCRIBE 报文，批量取消主题过滤器的订阅。 */
     public static final class UnsubscribeBuilder {
 
         private List<String> topicFilters;
@@ -297,10 +306,12 @@ public final class MqttMessageBuilders {
         }
     }
 
+    /** 函数式接口，用于在 Builder 上批量配置 v5 属性子构建器。 */
     public interface PropertiesInitializer<T> {
         void apply(T builder);
     }
 
+    /** 构造 CONNACK 报文：连接返回码、会话存在标志与服务器能力属性。 */
     public static final class ConnAckBuilder {
 
         private MqttConnectReturnCode returnCode;
@@ -346,6 +357,7 @@ public final class MqttMessageBuilders {
         }
     }
 
+    /** CONNACK 专用属性构建器，映射 MQTT v5 连接确认属性 ID。 */
     public static final class ConnAckPropertiesBuilder {
         private String clientId;
         private Long sessionExpiryInterval;
@@ -518,6 +530,7 @@ public final class MqttMessageBuilders {
         }
     }
 
+    /** 构造 PUBACK 报文（v5 含原因码与属性）。 */
     public static final class PubAckBuilder {
 
         private int packetId;
@@ -559,6 +572,7 @@ public final class MqttMessageBuilders {
         }
     }
 
+    /** 构造 SUBACK 报文，顺序添加与 SUBSCRIBE 对应的 granted QoS。 */
     public static final class SubAckBuilder {
 
         private int packetId;
@@ -602,7 +616,7 @@ public final class MqttMessageBuilders {
             MqttMessageIdAndPropertiesVariableHeader mqttSubAckVariableHeader =
                     new MqttMessageIdAndPropertiesVariableHeader(packetId, properties);
 
-            //transform to primitive types
+            //transform to primitive types — 载荷为 int[] 原因码/QoS 数组
             int[] grantedQoses = new int[this.grantedQoses.size()];
             int i = 0;
             for (MqttQoS grantedQos : this.grantedQoses) {
@@ -614,6 +628,7 @@ public final class MqttMessageBuilders {
         }
     }
 
+    /** 构造 UNSUBACK 报文，每个取消订阅对应一个 v5 原因码。 */
     public static final class UnsubAckBuilder {
 
         private int packetId;
@@ -662,6 +677,7 @@ public final class MqttMessageBuilders {
         }
     }
 
+    /** 构造 DISCONNECT 报文，携带断开原因码与可选属性。 */
     public static final class DisconnectBuilder {
 
         private MqttProperties properties;
@@ -690,6 +706,7 @@ public final class MqttMessageBuilders {
         }
     }
 
+    /** 构造 AUTH 报文，用于 MQTT v5 增强认证握手。 */
     public static final class AuthBuilder {
 
         private MqttProperties properties;

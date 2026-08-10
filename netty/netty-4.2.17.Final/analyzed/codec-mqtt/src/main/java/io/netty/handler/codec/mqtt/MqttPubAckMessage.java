@@ -18,6 +18,8 @@ package io.netty.handler.codec.mqtt;
 
 /**
  * See <a href="https://public.dhe.ibm.com/software/dw/webservices/ws-mqtt/mqtt-v3r1.html#puback">MQTTV3.1/puback</a>
+ * <p>PUBACK 报文：服务端（或 QoS 1 订阅方）对 QoS 1 PUBLISH 的确认。
+ * 可变头含与原始 PUBLISH 相同的报文标识符；v5 还可携带原因码与属性。</p>
  */
 public final class MqttPubAckMessage extends MqttMessage {
 

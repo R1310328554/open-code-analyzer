@@ -20,12 +20,15 @@ import io.netty.util.internal.StringUtil;
 
 /**
  * Variable Header for AUTH and DISCONNECT messages represented by {@link MqttMessage}
+ * <p>DISCONNECT 与 AUTH 报文的可变头：1 字节原因码说明断开或认证阶段的结果，
+ * 后跟 v5 属性（如会话过期间隔、服务端引用、认证方法/数据等）。</p>
  */
 public final class MqttReasonCodeAndPropertiesVariableHeader {
 
     private final byte reasonCode;
     private final MqttProperties properties;
 
+    /** 正常断开或认证成功。 */
     public static final byte REASON_CODE_OK = 0;
 
     public MqttReasonCodeAndPropertiesVariableHeader(byte reasonCode,

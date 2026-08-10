@@ -18,6 +18,8 @@ package io.netty.handler.codec.mqtt;
 
 /**
  * Provides a set of enumeration that exposes standard MQTT 5 reason codes used by various messages.
+ * <p>MQTT v5 原因码注册表：按报文类型分组的枚举，字节值与规范一致。
+ * 各内部枚举通过 {@code VALUES[unsignedByte]} 实现 O(1) 反查。</p>
  * */
 public final class MqttReasonCodes {
 
@@ -26,6 +28,7 @@ public final class MqttReasonCodes {
 
     /**
      * @return the corresponding enum value to the hex value.
+     * <p>将无符号字节索引到预建查找表；越界视为未知原因码。</p>
      * */
     private static <E> E valueOfHelper(byte b, E[] values) {
         try {
@@ -37,9 +40,10 @@ public final class MqttReasonCodes {
 
     /**
      * Reason codes for MQTT Disconnect message.
+     * <p>DISCONNECT 原因码：涵盖正常关闭、协议/实现错误、配额与能力协商失败等。</p>
      */
     public enum Disconnect {
-        NORMAL_DISCONNECT((byte) 0x00), //sent by: client or server
+        NORMAL_DISCONNECT((byte) 0x00), //sent by: client or server — 正常断开
         DISCONNECT_WITH_WILL_MESSAGE((byte) 0x04), //sent by: client
         UNSPECIFIED_ERROR((byte) 0x80), //sent by: client or server
         MALFORMED_PACKET((byte) 0x81), //sent by: client or server
@@ -105,9 +109,10 @@ public final class MqttReasonCodes {
 
     /**
      * Reason codes for MQTT Auth message.
+     * <p>AUTH 握手阶段：成功、继续认证或请求重新认证。</p>
      */
     public enum Auth {
-        SUCCESS((byte) 0x00), //sent by: Server
+        SUCCESS((byte) 0x00), //sent by: Server — 认证完成
         CONTINUE_AUTHENTICATION((byte) 0x18), //sent by: Client or Server
         REAUTHENTICATE((byte) 0x19); //sent by: Client
 
@@ -147,6 +152,7 @@ public final class MqttReasonCodes {
 
     /**
      * Reason codes for MQTT PubAck message.
+     * <p>PUBACK 专用：发布确认成功或拒绝（如无订阅者、配额超限）。</p>
      */
     public enum PubAck {
         SUCCESS((byte) 0x00),
@@ -195,6 +201,7 @@ public final class MqttReasonCodes {
 
     /**
      * Reason codes for MQTT PubRec message.
+     * <p>PUBREC（QoS 2 第一步应答）原因码，语义与 PubAck 类似。</p>
      */
     public enum PubRec {
         SUCCESS((byte) 0x00),
@@ -243,6 +250,7 @@ public final class MqttReasonCodes {
 
     /**
      * Reason codes for MQTT PubRel message.
+     * <p>PUBREL（QoS 2 释放）原因码：成功或 packetId 未找到。</p>
      */
     public enum PubRel {
         SUCCESS((byte) 0x00),
@@ -284,6 +292,7 @@ public final class MqttReasonCodes {
 
     /**
      * Reason codes for MQTT PubComp message.
+     * <p>PUBCOMP（QoS 2 完成）原因码，与 PubRel 共用部分错误码。</p>
      */
     public enum PubComp {
         SUCCESS((byte) 0x00),
@@ -325,6 +334,7 @@ public final class MqttReasonCodes {
 
     /**
      * Reason codes for MQTT SubAck message.
+     * <p>SUBACK 载荷中每项：granted QoS 0/1/2 或 0x80 起的服务端拒绝码。</p>
      */
     public enum SubAck {
         GRANTED_QOS_0((byte) 0x00),
@@ -376,6 +386,7 @@ public final class MqttReasonCodes {
 
     /**
      * Reason codes for MQTT UnsubAck message.
+     * <p>UNSUBACK 载荷：每个主题过滤器对应一条取消订阅结果。</p>
      */
     public enum UnsubAck {
         SUCCESS((byte) 0x00),
