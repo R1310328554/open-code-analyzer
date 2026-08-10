@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T10:24:36Z",
-  "files": [
-    "server-spi-private/src/main/java/org/keycloak/broker/provider/util/SimpleHttp.java",
-    "server-spi-private/src/main/java/org/keycloak/broker/social/SocialIdentityProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/broker/social/SocialIdentityProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/broker/social/SocialProviderSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/cache/AlternativeLookupProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/cache/AlternativeLookupProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/cache/AlternativeLookupSPI.java",
-    "server-spi-private/src/main/java/org/keycloak/cache/LocalCache.java",
-    "server-spi-private/src/main/java/org/keycloak/cache/LocalCacheConfiguration.java",
-    "server-spi-private/src/main/java/org/keycloak/cache/LocalCacheProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/cache/LocalCacheProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/cache/LocalCacheSPI.java",
-    "server-spi-private/src/main/java/org/keycloak/client/clienttype/ClientType.java",
-    "server-spi-private/src/main/java/org/keycloak/client/clienttype/ClientTypeException.java",
-    "server-spi-private/src/main/java/org/keycloak/client/clienttype/ClientTypeManager.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2938,
-  "done": 3045
+  "done": 3060
 }
