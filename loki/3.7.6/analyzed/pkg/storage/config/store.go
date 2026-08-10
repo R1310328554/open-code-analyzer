@@ -1,5 +1,7 @@
 package config
 
+// store 配置 chunk 存储层缓存：L1/L2 chunk cache、写去重 cache 及查询回写策略等参数。
+
 import (
 	"flag"
 	"time"
@@ -28,11 +30,13 @@ type ChunkStoreConfig struct {
 	DisableIndexDeduplication bool `yaml:"-"`
 }
 
+// ChunkCacheStubs 返回是否仅向缓存写入 stub 条目而非完整 chunk 字节。
 func (cfg *ChunkStoreConfig) ChunkCacheStubs() bool {
 	return cfg.chunkCacheStubs
 }
 
 // RegisterFlags adds the flags required to configure this flag set.
+// RegisterFlags 注册 store.chunks-cache.* 等命令行 flag，与 YAML 配置互补。
 func (cfg *ChunkStoreConfig) RegisterFlags(f *flag.FlagSet) {
 	cfg.ChunkCacheConfig.RegisterFlagsWithPrefix("store.chunks-cache.", "", f)
 	cfg.ChunkCacheConfigL2.RegisterFlagsWithPrefix("store.chunks-cache-l2.", "", f)
@@ -47,3 +51,4 @@ func (cfg *ChunkStoreConfig) RegisterFlags(f *flag.FlagSet) {
 func (cfg *ChunkStoreConfig) Validate() error {
 	return nil
 }
+// SkipQueryWritebackOlderThan 跳过过旧 chunk 的查询侧写回；WriteDedupeCache 随旧索引类型弃用。

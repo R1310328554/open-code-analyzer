@@ -1,10 +1,13 @@
 package config
 
+// Tags 为 string→string 映射，实现 flag.Value 与 yaml.Unmarshaler，用于 DynamoDB 等托管表标签。
+
 import (
 	"fmt"
 	"strings"
 )
 
+// Tags 类型表示云资源标签键值对，可通过命令行 key=value 或 YAML map 配置。
 // Tags is a string-string map that implements flag.Value.
 type Tags map[string]string
 
@@ -18,6 +21,7 @@ func (ts Tags) String() string {
 }
 
 // Set implements flag.Value
+// Set 解析单个 key=value 标签并写入 map，格式错误返回 error。
 func (ts *Tags) Set(s string) error {
 	if *ts == nil {
 		*ts = map[string]string{}
@@ -42,6 +46,7 @@ func (ts *Tags) UnmarshalYAML(unmarshal func(interface{}) error) error {
 }
 
 // Equals returns true is other matches ts.
+// Equals 逐键比较两 Tags 是否完全相同（键集与值均一致）。
 func (ts Tags) Equals(other Tags) bool {
 	if len(ts) != len(other) {
 		return false
@@ -56,3 +61,4 @@ func (ts Tags) Equals(other Tags) bool {
 
 	return true
 }
+// String 将 nil Tags 转为空串，非 nil 时委托 fmt 打印底层 map 内容。

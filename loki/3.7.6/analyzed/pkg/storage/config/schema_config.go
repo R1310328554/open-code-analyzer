@@ -1,5 +1,7 @@
 package config
 
+// schema_config 管理 Loki chunk/索引 schema 的多周期配置：PeriodConfig、表号范围、ExternalKey 编码及 YAML/flag 加载校验。
+
 import (
 	"errors"
 	"flag"
@@ -54,6 +56,7 @@ var (
 
 // ExtractTableNumberFromName extracts the table number from a given tableName.
 // returns -1 on error.
+// ExtractTableNumberFromName 用正则提取表名末尾数字，失败返回 -1 与 errInvalidTableName。
 func ExtractTableNumberFromName(tableName string) (int64, error) {
 	match := extractTableNumberRegex.Find([]byte(tableName))
 	if match == nil {
@@ -70,6 +73,7 @@ func ExtractTableNumberFromName(tableName string) (int64, error) {
 
 // TableRange represents a range of table numbers built based on the configured schema start/end date and the table period.
 // Both Start and End are inclusive.
+// TableRange 表示某 schema 周期内索引表号的闭区间 [Start, End] 及对应 PeriodConfig。
 type TableRange struct {
 	Start, End   int64
 	PeriodConfig *PeriodConfig
@@ -134,6 +138,7 @@ func (t TableRange) ConfigForTableNumber(tableNumber int64) *PeriodConfig {
 }
 
 // PeriodConfig defines the schema and tables to use for a period of time
+// PeriodConfig 描述一段时期的 index/chunk store 类型、schema 版本、表前缀与 row_shards。
 type PeriodConfig struct {
 	// used when working with config
 	From DayTime `yaml:"from" doc:"description=The date of the first day that index buckets should be created. Use a date in the past if this is your only period_config, otherwise use a date when you want the schema to switch over. In YYYY-MM-DD format, for example: 2018-04-15."`
@@ -272,6 +277,7 @@ func (d DayTable) Addr() string {
 }
 
 // SchemaConfig contains the config for our chunk index schemas
+// SchemaConfig 聚合多个 PeriodConfig，支持 Clone、Validate 及按时间选取生效 schema。
 type SchemaConfig struct {
 	Configs []PeriodConfig `yaml:"configs"`
 
@@ -308,6 +314,7 @@ func (cfg *SchemaConfig) loadFromFile() error {
 
 // Validate the schema config and returns an error if the validation
 // doesn't pass
+// Validate 校验 configs 非空、from 递增、boltdb-shipper/tsdb 须 24h 周期等约束。
 func (cfg *SchemaConfig) Validate() error {
 	if len(cfg.Configs) == 0 {
 		return errZeroLengthConfig
@@ -344,6 +351,7 @@ func (cfg *SchemaConfig) Validate() error {
 
 // ActivePeriodConfig returns index of active PeriodicConfig which would be applicable to logs that would be pushed starting now.
 // Note: Another PeriodicConfig might be applicable for future logs which can change index type.
+// ActivePeriodConfig 返回当前时刻适用的 PeriodConfig 在 configs 切片中的索引。
 func ActivePeriodConfig(configs []PeriodConfig) int {
 	now := model.Now()
 	i := sort.Search(len(configs), func(i int) bool {
@@ -756,6 +764,7 @@ func (cfg *PeriodicTableConfig) tableForPeriod(i int64) string {
 }
 
 // Generate the appropriate external key based on cfg.Schema, chunk.Checksum, and chunk.From
+// ExternalKey 按 chunk From 时间选 schema，v12+ 使用带额外路径层的新键格式。
 func (cfg SchemaConfig) ExternalKey(ref logproto.ChunkRef) string {
 	p, err := cfg.SchemaForTime(ref.From)
 	v, _ := p.VersionAsInt()
@@ -801,3 +810,4 @@ func GetIndexStoreTableRanges(indexType string, periodicConfigs []PeriodConfig) 
 
 	return ranges
 }
+// DayTime 对齐 UTC 日界并以 YYYY-MM-DD 序列化；ObjectStorageIndexRequiredPeriod 固定为 24h。

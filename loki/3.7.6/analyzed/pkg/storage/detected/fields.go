@@ -1,5 +1,7 @@
 package detected
 
+// detected 包处理 logproto.DetectedField：反序列化 HyperLogLog sketch、合并同名字段并估算基数，供日志模式检测 API 使用。
+
 import (
 	"slices"
 
@@ -15,6 +17,7 @@ type UnmarshaledDetectedField struct {
 	Sketch  *hyperloglog.Sketch
 }
 
+// UnmarshalDetectedField 将 protobuf 中的二进制 sketch 反序列化为 hyperloglog.Sketch。
 func UnmarshalDetectedField(f *logproto.DetectedField) (*UnmarshaledDetectedField, error) {
 	sketch := hyperloglog.New()
 	err := sketch.UnmarshalBinary(f.Sketch)
@@ -30,6 +33,7 @@ func UnmarshalDetectedField(f *logproto.DetectedField) (*UnmarshaledDetectedFiel
 	}, nil
 }
 
+// Merge 合并同标签字段：类型冲突降级为 string，解析器列表去重排序后合并 sketch。
 func (f *UnmarshaledDetectedField) Merge(df *logproto.DetectedField) error {
 	sketch := hyperloglog.New()
 	err := sketch.UnmarshalBinary(df.Sketch)
@@ -51,6 +55,7 @@ func (f *UnmarshaledDetectedField) Merge(df *logproto.DetectedField) error {
 	return f.Sketch.Merge(sketch)
 }
 
+// MergeFields 按 label 聚合 DetectedField，受 limit 约束，输出带 Estimate 基数的 protobuf 列表。
 func MergeFields(
 	fields []*logproto.DetectedField,
 	limit uint32,
@@ -102,6 +107,7 @@ func MergeFields(
 	return result, nil
 }
 
+// MergeValues 对字符串值去重合并，跳过空串并在达到 limit 时停止收集。
 func MergeValues(
 	values []string,
 	limit uint32,
@@ -128,3 +134,4 @@ func MergeValues(
 
 	return result, nil
 }
+// MergeFields 在 limit 内保留先出现的字段标签；基数由 Sketch.Estimate 近似而非精确计数。

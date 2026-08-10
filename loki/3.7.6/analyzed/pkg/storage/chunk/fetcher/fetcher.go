@@ -1,5 +1,7 @@
 package fetcher
 
+// fetcher 协调 chunk 缓存（L1/L2）与底层存储：命中缓存并行解码，未命中回源并异步写回缓存。
+
 import (
 	"context"
 	"sync"
@@ -44,6 +46,7 @@ const chunkDecodeParallelism = 16
 // Fetcher deals with fetching chunk contents from the cache/store,
 // and writing back any misses to the cache.  Also responsible for decoding
 // chunks from the cache, in parallel.
+// Fetcher 持有 schema、storage client、双层 cache 及固定数量的 decode worker。
 type Fetcher struct {
 	schema     config.SchemaConfig
 	storage    client.Client
@@ -60,6 +63,7 @@ type Fetcher struct {
 	stopOnce sync.Once
 }
 
+// decodeRequest 将缓存字节 buf 与待解码 chunk 及响应 channel 绑定。
 type decodeRequest struct {
 	chunk     chunk.Chunk
 	buf       []byte
@@ -72,6 +76,7 @@ type decodeResponse struct {
 }
 
 // New makes a new ChunkFetcher.
+// New 启动 chunkDecodeParallelism 个 worker 从 decodeRequests 通道消费解码任务。
 func New(cache cache.Cache, cachel2 cache.Cache, cacheStubs bool, schema config.SchemaConfig, storage client.Client, l2CacheHandoff time.Duration, skipQueryWritebackOlderThan time.Duration) (*Fetcher, error) {
 	c := &Fetcher{
 		schema:                           schema,
@@ -125,6 +130,7 @@ func (c *Fetcher) Client() client.Client {
 }
 
 // FetchChunks fetches a set of chunks from cache and store. Note, returned chunks are not in the same order they are passed in
+// FetchChunks 先查 L1/L2 缓存，缺失部分从 storage 拉取并 WriteBackCache，返回顺序可能与输入不同。
 func (c *Fetcher) FetchChunks(ctx context.Context, chunks []chunk.Chunk) ([]chunk.Chunk, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
@@ -232,6 +238,7 @@ func (c *Fetcher) FetchChunks(ctx context.Context, chunks []chunk.Chunk) ([]chun
 	return allChunks, nil
 }
 
+// WriteBackCache 按 chunk 时间戳与 l2CacheHandoff 决定写入 L1 或 L2，cacheStubs 时仅写占位。
 func (c *Fetcher) WriteBackCache(ctx context.Context, chunks []chunk.Chunk) error {
 	keys := make([]string, 0, len(chunks))
 	bufs := make([][]byte, 0, len(chunks))
@@ -279,6 +286,7 @@ func (c *Fetcher) WriteBackCache(ctx context.Context, chunks []chunk.Chunk) erro
 
 // ProcessCacheResponse decodes the chunks coming back from the cache, separating
 // hits and misses.
+// processCacheResponse 匹配缓存命中并并行解码，未命中 chunk 归入 missing 列表。
 func (c *Fetcher) processCacheResponse(ctx context.Context, chunks []chunk.Chunk, keys []string, bufs [][]byte) ([]chunk.Chunk, []chunk.Chunk, error) {
 	var (
 		requests  = make([]decodeRequest, 0, len(keys))
@@ -330,3 +338,4 @@ func (c *Fetcher) processCacheResponse(ctx context.Context, chunks []chunk.Chunk
 func (c *Fetcher) IsChunkNotFoundErr(err error) bool {
 	return c.storage.IsChunkNotFoundErr(err)
 }
+// L2 handoff 窗口扩展 10% 以应对滑动边界；解码损坏会递增 cache_corrupt_chunks_total 指标。

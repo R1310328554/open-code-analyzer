@@ -1,5 +1,7 @@
 package config
 
+// table_provisioning 描述 DynamoDB 索引/chunk 表的预置与自动扩缩容配置，以及活跃/非活跃表的 TableDesc 构建逻辑。
+
 import "flag"
 
 // ProvisionConfig holds config for provisioning capacity for index and chunk tables (on DynamoDB for now)
@@ -65,6 +67,7 @@ func (cfg *InactiveTableProvisionConfig) RegisterFlags(argPrefix string, f *flag
 }
 
 // TableDesc describes a table.
+// TableDesc 描述单张表的名称、按需 IO 模式、读写吞吐量、标签及 AutoScaling 配置。
 type TableDesc struct {
 	Name              string
 	UseOnDemandIOMode bool
@@ -76,6 +79,7 @@ type TableDesc struct {
 }
 
 // Equals returns true if other matches desc.
+// Equals 比较两 TableDesc 是否在扩缩容、预置吞吐量、按需模式与 Tags 上一致。
 func (desc TableDesc) Equals(other TableDesc) bool {
 	if desc.WriteScale != other.WriteScale {
 		return false
@@ -107,6 +111,7 @@ func (desc TableDesc) Equals(other TableDesc) bool {
 	return true
 }
 
+// BuildTableDesc 为活跃表填充预置吞吐量；启用 WriteScale/ReadScale 时关闭按需模式。
 func (cfg ActiveTableProvisionConfig) BuildTableDesc(tableName string, tags Tags) TableDesc {
 	table := TableDesc{
 		Name:              tableName,
@@ -129,6 +134,7 @@ func (cfg ActiveTableProvisionConfig) BuildTableDesc(tableName string, tags Tags
 	return table
 }
 
+// BuildTableDesc 构建非活跃表描述，disableAutoscale 为 true 时不附加 Inactive*Scale。
 func (cfg InactiveTableProvisionConfig) BuildTableDesc(tableName string, tags Tags, disableAutoscale bool) TableDesc {
 	table := TableDesc{
 		Name:              tableName,
@@ -152,3 +158,4 @@ func (cfg InactiveTableProvisionConfig) BuildTableDesc(tableName string, tags Ta
 
 	return table
 }
+// InactiveWriteScaleLastN 控制最近 N 张非活跃表仍保留写自动扩缩，便于保留期边界平滑过渡。

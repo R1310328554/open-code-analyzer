@@ -14,6 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// chunk 包核心接口定义：Data 表示可追加/序列化的 chunk 载荷，Filterer 用于按标签过滤查询涉及的 chunk。
+
 package chunk
 
 import (
@@ -27,6 +29,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/filter"
 )
 
+// ChunkLen 为 chunk 字节长度常量（1024），供序列化布局参考。
 // ChunkLen is the length of a chunk in bytes.
 const ChunkLen = 1024
 
@@ -35,6 +38,7 @@ var (
 	ErrSliceChunkOverflow = errors.New("slicing should not overflow a chunk")
 )
 
+// Data 定义 chunk 通用行为：追加样本、编解码、Rewrite 过滤及容量统计，非 goroutine 安全。
 // Data is the interface for all chunks. Chunks are generally not
 // goroutine-safe.
 type Data interface {
@@ -59,12 +63,15 @@ type Data interface {
 }
 
 // RequestChunkFilterer creates ChunkFilterer for a given request context.
+// RequestChunkFilterer 按请求 context 构造 Filterer，实现 per-request 过滤策略。
 type RequestChunkFilterer interface {
 	ForRequest(ctx context.Context) Filterer
 }
 
 // Filterer filters chunks based on the metric.
+// Filterer 根据 metric 标签决定是否跳过 chunk，RequiredLabelNames 声明依赖的标签键。
 type Filterer interface {
 	ShouldFilter(metric labels.Labels) bool
 	RequiredLabelNames() []string
 }
+// ErrRewriteNoDataLeft 与 ErrSliceChunkOverflow 表示 Rewrite 或切片后 chunk 无效的边界情况。
