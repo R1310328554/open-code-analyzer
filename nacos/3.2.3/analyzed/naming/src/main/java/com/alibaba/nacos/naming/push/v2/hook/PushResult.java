@@ -21,7 +21,9 @@ import com.alibaba.nacos.naming.core.v2.pojo.Service;
 import com.alibaba.nacos.naming.pojo.Subscriber;
 
 /**
- * Nacos naming push result.
+ * 命名服务推送结果封装。
+ *
+ * <p>不可变值对象，携带推送成败、订阅客户端、目标 {@link Service}、实际 {@link ServiceInfo}、订阅者、网络/总耗时、SLA 及异常；由 {@link PushExecuteTask} 构建并交给 {@link PushResultHook} 处理。</p>
  *
  * @author xiweng.yy
  */
@@ -63,9 +65,7 @@ public class PushResult {
         this.isPushToAll = isPushToAll;
     }
     
-    /**
-     * Build a successful push result.
-     */
+    /** 构建推送成功的结果对象，网络耗时与 SLA 为有效正值。 */
     public static PushResult pushSuccess(Service service, String subscribeClientId,
         ServiceInfo data,
         Subscriber subscriber, long networkCost, long allCost, long sla, boolean isPushToAll) {
@@ -74,9 +74,7 @@ public class PushResult {
             isPushToAll);
     }
     
-    /**
-     * Build a failed push result.
-     */
+    /** 构建推送失败的结果对象，网络耗时与 SLA 置为 -1。 */
     public static PushResult pushFailed(Service service, String subscribeClientId, ServiceInfo data,
         Subscriber subscriber, long allCost, Throwable exception, boolean isPushToAll) {
         return new PushResult(false, subscribeClientId, service, data, subscriber, -1, allCost, -1,
@@ -84,14 +82,17 @@ public class PushResult {
             isPushToAll);
     }
     
+    /** 是否推送成功。 */
     public boolean isPushSuccess() {
         return pushSuccess;
     }
     
+    /** 获取订阅方客户端 ID。 */
     public String getSubscribeClientId() {
         return subscribeClientId;
     }
     
+    /** 获取被推送的目标服务。 */
     public Service getService() {
         return service;
     }

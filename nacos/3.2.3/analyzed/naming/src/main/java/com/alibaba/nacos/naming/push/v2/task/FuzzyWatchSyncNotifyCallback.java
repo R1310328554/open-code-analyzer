@@ -26,6 +26,11 @@ import static com.alibaba.nacos.api.common.Constants.FINISH_FUZZY_WATCH_INIT_NOT
 import static com.alibaba.nacos.api.common.Constants.FUZZY_WATCH_INIT_NOTIFY;
 import static com.alibaba.nacos.naming.push.v2.task.FuzzyWatchPushDelayTaskEngine.getTaskKey;
 
+/**
+ * 模糊订阅同步/初始化通知 RPC 推送回调。
+ *
+ * <p>处理 {@link FuzzyWatchSyncNotifyTask} 批量同步与初始化完成通知；初始化批次全部成功后调度 FINISH 任务。</p>
+ */
 class FuzzyWatchSyncNotifyCallback implements PushCallBack {
     
     private FuzzyWatchSyncNotifyTask fuzzyWatchSyncNotifyTask;
@@ -47,6 +52,7 @@ class FuzzyWatchSyncNotifyCallback implements PushCallBack {
         return PushConfig.getInstance().getPushTaskTimeout();
     }
     
+    /** 同步推送成功：记录批次进度，初始化全部完成时触发 FINISH 任务。 */
     @Override
     public void onSuccess() {
         
@@ -63,7 +69,7 @@ class FuzzyWatchSyncNotifyCallback implements PushCallBack {
                 fuzzyWatchSyncNotifyTask.getClientId(),
                 fuzzyWatchSyncNotifyTask.getSyncServiceKeys().size(),
                 fuzzyWatchSyncNotifyTask.getCurrentBatch());
-            // if total batch is success sync to client send
+            // 初始化通知各批次均成功后向客户端发送完成通知
             if (isInitNotifyTask()) {
                 Loggers.PUSH.info(
                     "[fuzzy watch] init notify push success  ,clientId={}, pattern ={} ,currentBatch={},totalBatch={}",
@@ -90,14 +96,17 @@ class FuzzyWatchSyncNotifyCallback implements PushCallBack {
         }
     }
     
+    /** 是否为初始化完成（FINISH）阶段任务。 */
     private boolean isFinishInitTask() {
         return FINISH_FUZZY_WATCH_INIT_NOTIFY.equals(fuzzyWatchSyncNotifyTask.getSyncType());
     }
     
+    /** 是否为初始化同步（INIT）阶段任务。 */
     private boolean isInitNotifyTask() {
         return FUZZY_WATCH_INIT_NOTIFY.equals(fuzzyWatchSyncNotifyTask.getSyncType());
     }
     
+    /** 推送失败且需重试时重新加入延迟任务引擎。 */
     @Override
     public void onFail(Throwable e) {
         Loggers.PUSH.warn(

@@ -25,7 +25,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Nacos naming fuzzy watch initial push delay task.
+ * 模糊订阅同步/初始化延迟任务。
+ *
+ * <p>携带 pattern、syncType、分批 serviceKey 集合及 {@link BatchTaskCounter}，支持 merge 合并同 pattern 的待同步服务；到期后由引擎调度 {@link FuzzyWatchSyncNotifyExecuteTask}。</p>
  *
  * @author tanyongquan
  */
@@ -77,6 +79,7 @@ public class FuzzyWatchSyncNotifyTask extends AbstractDelayTask {
         this.currentBatch = currentBatch;
     }
     
+    /** 合并同 pattern 的同步任务，合并 serviceKey 并取最早处理时间。 */
     @Override
     public void merge(AbstractDelayTask task) {
         if (!(task instanceof FuzzyWatchSyncNotifyTask)) {
@@ -91,14 +94,17 @@ public class FuzzyWatchSyncNotifyTask extends AbstractDelayTask {
         Loggers.PUSH.info("[FUZZY-WATCH-INIT-PUSH] Task merge for pattern {}", pattern);
     }
     
+    /** 获取模糊订阅匹配 pattern。 */
     public String getPattern() {
         return pattern;
     }
     
+    /** 获取本批次待同步的服务上下文集合。 */
     public Set<NamingFuzzyWatchSyncRequest.Context> getSyncServiceKeys() {
         return syncServiceKeys;
     }
     
+    /** 获取同步类型（INIT 或 FINISH 等）。 */
     public String getSyncType() {
         return syncType;
     }

@@ -20,7 +20,9 @@ import com.alibaba.nacos.api.naming.remote.request.NamingFuzzyWatchSyncRequest;
 import com.alibaba.nacos.common.task.AbstractExecuteTask;
 
 /**
- * Nacos naming fuzzy watch initial push execute task.
+ * 模糊订阅同步/初始化通知执行任务。
+ *
+ * <p>根据 {@link FuzzyWatchSyncNotifyTask} 构建 {@link NamingFuzzyWatchSyncRequest}，通过 {@link PushExecutor} 向客户端推送并绑定 {@link FuzzyWatchSyncNotifyCallback}。</p>
  *
  * @author tanyongquan
  */
@@ -43,6 +45,7 @@ public class FuzzyWatchSyncNotifyExecuteTask extends AbstractExecuteTask {
         this.delayTask = delayTask;
     }
     
+    /** 组装同步请求并发起带回调的模糊订阅 RPC 推送。 */
     @Override
     public void run() {
         

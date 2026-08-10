@@ -19,7 +19,9 @@ package com.alibaba.nacos.naming.push.v2.task;
 import com.alibaba.nacos.common.task.AbstractDelayTask;
 
 /**
- * Nacos naming fuzzy watch notify service change push delay task.
+ * 模糊订阅服务变更通知延迟任务。
+ *
+ * <p>封装 serviceKey、变更类型与目标 clientId，由 {@link FuzzyWatchPushDelayTaskEngine} 到期后转为 {@link FuzzyWatchChangeNotifyExecuteTask} 执行。</p>
  *
  * @author tanyongquan
  */
@@ -42,10 +44,12 @@ public class FuzzyWatchChangeNotifyTask extends AbstractDelayTask {
         
     }
     
+    /** 获取服务变更类型（如注册/注销）。 */
     public String getChangedType() {
         return changedType;
     }
     
+    /** 获取待通知的模糊订阅客户端 ID。 */
     public String getClientId() {
         return clientId;
     }
@@ -58,6 +62,7 @@ public class FuzzyWatchChangeNotifyTask extends AbstractDelayTask {
         return serviceKey;
     }
     
+    /** 变更通知任务不支持合并，留空实现。 */
     @Override
     public void merge(AbstractDelayTask task) {
         

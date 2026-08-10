@@ -35,7 +35,9 @@ import com.alibaba.nacos.naming.push.v2.hook.PushResultHookHolder;
 import java.util.Collection;
 
 /**
- * Nacos naming push execute task.
+ * 命名服务推送执行任务。
+ *
+ * <p>从 {@link PushDelayTaskExecuteEngine} 获取推送数据，遍历目标订阅客户端调用 {@link PushExecutor#doPushWithCallback}；成功/失败通过 {@link PushResultHookHolder} 与链路追踪事件上报。</p>
  *
  * @author xiweng.yy
  */
@@ -54,6 +56,7 @@ public class PushExecuteTask extends AbstractExecuteTask {
         this.delayTask = delayTask;
     }
     
+    /** 生成推送数据并向各目标订阅者发起带回调 RPC 推送。 */
     @Override
     public void run() {
         try {
@@ -62,11 +65,11 @@ public class PushExecuteTask extends AbstractExecuteTask {
             for (String each : getTargetClientIds()) {
                 Client client = clientManager.getClient(each);
                 if (null == client) {
-                    // means this client has disconnect
+                    // 客户端已断开，跳过推送
                     continue;
                 }
                 Subscriber subscriber = client.getSubscriber(service);
-                // skip if null
+                // 非订阅者则跳过
                 if (subscriber == null) {
                     continue;
                 }
@@ -81,6 +84,7 @@ public class PushExecuteTask extends AbstractExecuteTask {
         }
     }
     
+    /** 从存储与元数据管理器组装 {@link PushDataWrapper}。 */
     private PushDataWrapper generatePushData() {
         ServiceInfo serviceInfo = delayTaskEngine.getServiceStorage().getPushData(service);
         ServiceMetadata serviceMetadata =
@@ -88,6 +92,7 @@ public class PushExecuteTask extends AbstractExecuteTask {
         return new PushDataWrapper(serviceMetadata, serviceInfo);
     }
     
+    /** 根据 pushToAll 返回全部订阅客户端或任务指定集合。 */
     private Collection<String> getTargetClientIds() {
         return delayTask.isPushToAll()
             ? delayTaskEngine.getIndexesManager().getAllClientsSubscribeService(service)
@@ -102,17 +107,12 @@ public class PushExecuteTask extends AbstractExecuteTask {
         
         private final ServiceInfo serviceInfo;
         
-        /**
-         * Record the push task execute start time.
-         */
+        /** 记录本次 RPC 推送开始时间，用于耗时统计。 */
         private final long executeStartTime;
         
         private final boolean isPushToAll;
         
-        /**
-         * The actual pushed service info, the host list of service info may be changed by selector. Detail see
-         * implement of {@link com.alibaba.nacos.naming.push.v2.executor.PushExecutor}.
-         */
+        /** 经 selector 过滤后实际推送的 ServiceInfo，hosts 可能与原始数据不同。 */
         private ServiceInfo actualServiceInfo;
         
         private ServicePushCallback(String clientId, Subscriber subscriber, ServiceInfo serviceInfo,
@@ -130,6 +130,7 @@ public class PushExecuteTask extends AbstractExecuteTask {
             return PushConfig.getInstance().getPushTaskTimeout();
         }
         
+        /** 推送成功：打日志、发布 Trace 事件并通知钩子。 */
         @Override
         public void onSuccess() {
             long pushFinishTime = System.currentTimeMillis();
@@ -159,6 +160,7 @@ public class PushExecuteTask extends AbstractExecuteTask {
             PushResultHookHolder.getInstance().pushSuccess(result);
         }
         
+        /** 推送失败：记录日志、按需重试并入队，通知失败钩子。 */
         @Override
         public void onFail(Throwable e) {
             long pushCostTime = System.currentTimeMillis() - executeStartTime;

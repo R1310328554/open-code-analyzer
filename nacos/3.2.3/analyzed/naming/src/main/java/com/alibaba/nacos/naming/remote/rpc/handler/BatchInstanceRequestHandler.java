@@ -38,7 +38,9 @@ import com.alibaba.nacos.plugin.auth.constant.ActionTypes;
 import org.springframework.stereotype.Component;
 
 /**
- * The client registers multiple service instance request.
+ * 批量实例注册 RPC 请求处理器。
+ *
+ * <p>处理 {@link BatchInstanceRequest}，当前支持 {@link NamingRemoteConstants#BATCH_REGISTER_INSTANCE}；经命名空间校验、TPS 限流与鉴权后，委托 {@link EphemeralClientOperationServiceImpl#batchRegisterInstance} 批量注册临时实例并发布链路追踪事件。</p>
  *
  * @author <a href="mailto:chenhao26@xiaomi.com">chenhao26</a>
  */
@@ -59,6 +61,7 @@ public class BatchInstanceRequestHandler
         name = "RemoteNamingInstanceBatchRegister")
     @Secured(action = ActionTypes.WRITE)
     @ExtractorManager.Extractor(rpcExtractor = BatchInstanceRequestParamExtractor.class)
+    /** 解析请求、补全 instanceId 并按 type 分发批量注册逻辑。 */
     public BatchInstanceResponse handle(BatchInstanceRequest request, RequestMeta meta)
         throws NacosException {
         Service service = Service.newService(request.getNamespace(), request.getGroupName(),
@@ -75,6 +78,7 @@ public class BatchInstanceRequestHandler
         }
     }
     
+    /** 执行批量注册并返回 BATCH_REGISTER_INSTANCE 响应。 */
     private BatchInstanceResponse batchRegisterInstance(Service service,
         BatchInstanceRequest request,
         RequestMeta meta) {
@@ -84,6 +88,7 @@ public class BatchInstanceRequestHandler
         return new BatchInstanceResponse(NamingRemoteConstants.BATCH_REGISTER_INSTANCE);
     }
     
+    /** 为每个实例发布 {@link BatchRegisterInstanceTraceEvent} 链路事件。 */
     private void publishBatchRegisterInstanceTraceEvent(Service service,
         BatchInstanceRequest request,
         RequestMeta meta) {

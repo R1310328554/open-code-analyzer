@@ -20,15 +20,17 @@ import com.alibaba.nacos.api.naming.pojo.ServiceInfo;
 import com.alibaba.nacos.api.remote.PushCallBack;
 
 /**
- * Push callback for Naming.
+ * 命名模块 RPC 推送回调接口。
+ *
+ * <p>扩展 {@link PushCallBack}，允许 {@link PushExecutor} 在 selector 过滤后回写实际推送的 {@link ServiceInfo}。</p>
  *
  * @author xiweng.yy
  */
 public interface NamingPushCallback extends PushCallBack {
     
     /**
-     * Set actual pushed service info, the host list of service info may be changed by selector. Detail see implement of
-     * {@link com.alibaba.nacos.naming.push.v2.executor.PushExecutor}.
+     * 设置经 selector 过滤后实际推送的 ServiceInfo（hosts 可能已变更）。
+     * 详见 {@link com.alibaba.nacos.naming.push.v2.executor.PushExecutor} 实现。
      *
      * @param serviceInfo actual pushed service info
      */

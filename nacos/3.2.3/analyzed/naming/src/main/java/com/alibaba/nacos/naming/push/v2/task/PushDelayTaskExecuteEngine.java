@@ -30,7 +30,9 @@ import com.alibaba.nacos.naming.misc.SwitchDomain;
 import com.alibaba.nacos.naming.push.v2.executor.PushExecutor;
 
 /**
- * Nacos naming push delay task execute engine.
+ * 命名推送延迟任务执行引擎。
+ *
+ * <p>持有 ClientManager、索引、ServiceStorage、元数据与 PushExecutor，到期 {@link PushDelayTask} 经 {@link NamingExecuteTaskDispatcher} 转为 {@link PushExecuteTask} 执行；受 {@link SwitchDomain} 推送开关控制。</p>
  *
  * @author xiweng.yy
  */
@@ -62,6 +64,7 @@ public class PushDelayTaskExecuteEngine extends NacosDelayTaskExecuteEngine {
         setDefaultTaskProcessor(new PushDelayTaskProcessor(this));
     }
     
+    /** 获取客户端管理器。 */
     public ClientManager getClientManager() {
         return clientManager;
     }
@@ -78,10 +81,12 @@ public class PushDelayTaskExecuteEngine extends NacosDelayTaskExecuteEngine {
         return metadataManager;
     }
     
+    /** 获取推送执行器。 */
     public PushExecutor getPushExecutor() {
         return pushExecutor;
     }
     
+    /** 推送全局开关关闭时跳过延迟任务处理。 */
     @Override
     protected void processTasks() {
         if (!switchDomain.isPushEnabled()) {
@@ -98,6 +103,7 @@ public class PushDelayTaskExecuteEngine extends NacosDelayTaskExecuteEngine {
             this.executeEngine = executeEngine;
         }
         
+        /** 将 PushDelayTask 分派为 PushExecuteTask 异步执行。 */
         @Override
         public boolean process(NacosTask task) {
             PushDelayTask pushDelayTask = (PushDelayTask) task;

@@ -28,7 +28,9 @@ import com.alibaba.nacos.naming.push.v2.executor.PushExecutorDelegate;
 import org.springframework.stereotype.Component;
 
 /**
- * Nacos naming fuzzy watch notify service change push delay task execute engine.
+ * 模糊订阅推送延迟任务执行引擎。
+ *
+ * <p>Spring {@link Component}，继承 {@link NacosDelayTaskExecuteEngine}，处理 {@link FuzzyWatchChangeNotifyTask} 与 {@link FuzzyWatchSyncNotifyTask}；推送开关关闭时跳过调度。</p>
  *
  * @author tanyongquan
  */
@@ -47,10 +49,12 @@ public class FuzzyWatchPushDelayTaskEngine extends NacosDelayTaskExecuteEngine {
         setDefaultTaskProcessor(new WatchPushDelayTaskProcessor(this));
     }
     
+    /** 获取委托推送执行器。 */
     public PushExecutor getPushExecutor() {
         return pushExecutor;
     }
     
+    /** 全局推送开关开启时才处理到期延迟任务。 */
     @Override
     protected void processTasks() {
         if (!switchDomain.isPushEnabled()) {
@@ -72,7 +76,7 @@ public class FuzzyWatchPushDelayTaskEngine extends NacosDelayTaskExecuteEngine {
         public boolean process(NacosTask task) {
             
             if (task instanceof FuzzyWatchChangeNotifyTask) {
-                //process  fuzzy watch change notify when a service changed
+                // 服务变更时处理模糊订阅变更通知任务
                 FuzzyWatchChangeNotifyTask fuzzyWatchChangeNotifyTask =
                     (FuzzyWatchChangeNotifyTask) task;
                 NamingExecuteTaskDispatcher.getInstance().dispatchAndExecuteTask(getTaskKey(task),
@@ -81,7 +85,7 @@ public class FuzzyWatchPushDelayTaskEngine extends NacosDelayTaskExecuteEngine {
                         fuzzyWatchChangeNotifyTask.getChangedType(),
                         fuzzyWatchChangeNotifyTask.getClientId()));
             } else if (task instanceof FuzzyWatchSyncNotifyTask) {
-                //process fuzzy watch sync notify when a new client fuzzy watch a pattern
+                // 客户端新建模糊订阅时处理同步通知任务
                 FuzzyWatchSyncNotifyTask fuzzyWatchSyncNotifyTask = (FuzzyWatchSyncNotifyTask) task;
                 String pattern = fuzzyWatchSyncNotifyTask.getPattern();
                 String clientId = fuzzyWatchSyncNotifyTask.getClientId();
@@ -95,6 +99,7 @@ public class FuzzyWatchPushDelayTaskEngine extends NacosDelayTaskExecuteEngine {
         
     }
     
+    /** 根据任务类型生成引擎内唯一 taskKey。 */
     public static String getTaskKey(NacosTask task) {
         if (task instanceof FuzzyWatchChangeNotifyTask) {
             return "fwcnT-" + ((FuzzyWatchChangeNotifyTask) task).getClientId()

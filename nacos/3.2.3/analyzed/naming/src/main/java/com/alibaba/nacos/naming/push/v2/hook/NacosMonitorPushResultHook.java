@@ -20,12 +20,15 @@ import com.alibaba.nacos.naming.monitor.MetricsMonitor;
 import com.alibaba.nacos.naming.monitor.NamingTpsMonitor;
 
 /**
- * Nacos naming monitor push result hook.
+ * 命名推送结果监控钩子实现。
+ *
+ * <p>实现 {@link PushResultHook}，在推送成功/失败后更新 {@link MetricsMonitor} 计数与耗时，并通过 {@link NamingTpsMonitor} 记录 RPC 推送 TPS；空推送单独计数。</p>
  *
  * @author xiweng.yy
  */
 public class NacosMonitorPushResultHook implements PushResultHook {
     
+    /** 推送成功：累加推送次数、耗时、最大耗时，空推送与 TPS 成功指标。 */
     @Override
     public void pushSuccess(PushResult result) {
         MetricsMonitor.incrementPush();
@@ -38,6 +41,7 @@ public class NacosMonitorPushResultHook implements PushResultHook {
             result.getSubscriber().getIp());
     }
     
+    /** 推送失败：累加总推送与失败次数，并记录 TPS 失败指标。 */
     @Override
     public void pushFailed(PushResult result) {
         MetricsMonitor.incrementPush();

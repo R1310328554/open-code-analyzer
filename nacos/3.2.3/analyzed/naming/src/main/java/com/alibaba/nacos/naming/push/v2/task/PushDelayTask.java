@@ -24,7 +24,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Nacos naming push delay task.
+ * 命名服务推送延迟任务。
+ *
+ * <p>关联 {@link Service}，可推送给全部订阅者或指定 clientId 集合；同服务多次入队时 merge 合并目标（任一为全量则变为 pushToAll）。</p>
  *
  * @author xiweng.yy
  */
@@ -36,6 +38,7 @@ public class PushDelayTask extends AbstractDelayTask {
     
     private Set<String> targetClients;
     
+    /** 构造推送给该服务全部订阅者的延迟任务。 */
     public PushDelayTask(Service service, long delay) {
         this.service = service;
         pushToAll = true;
@@ -44,6 +47,7 @@ public class PushDelayTask extends AbstractDelayTask {
         setLastProcessTime(System.currentTimeMillis());
     }
     
+    /** 构造仅推送给指定客户端的延迟任务。 */
     public PushDelayTask(Service service, long delay, String targetClient) {
         this.service = service;
         this.pushToAll = false;
@@ -53,6 +57,7 @@ public class PushDelayTask extends AbstractDelayTask {
         setLastProcessTime(System.currentTimeMillis());
     }
     
+    /** 合并同服务推送任务：全量优先，否则合并目标客户端集合。 */
     @Override
     public void merge(AbstractDelayTask task) {
         if (!(task instanceof PushDelayTask)) {

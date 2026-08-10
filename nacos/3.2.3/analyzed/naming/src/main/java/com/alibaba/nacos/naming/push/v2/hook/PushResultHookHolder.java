@@ -21,7 +21,9 @@ import com.alibaba.nacos.common.spi.NacosServiceLoader;
 import java.util.Collection;
 
 /**
- * Push result hook holder for SPI.
+ * 推送结果钩子 SPI 持有者（单例）。
+ *
+ * <p>通过 {@link NacosServiceLoader} 加载所有 {@link PushResultHook} 实现，对外统一转发 pushSuccess/pushFailed，供 {@link PushExecuteTask} 调用。</p>
  *
  * @author xiweng.yy
  */
@@ -35,15 +37,18 @@ public class PushResultHookHolder implements PushResultHook {
         hooks = NacosServiceLoader.load(PushResultHook.class);
     }
     
+    /** 获取全局单例持有者。 */
     public static PushResultHookHolder getInstance() {
         return INSTANCE;
     }
     
+    /** 依次调用所有已加载钩子的 pushSuccess。 */
     @Override
     public void pushSuccess(PushResult result) {
         hooks.forEach(each -> each.pushSuccess(result));
     }
     
+    /** 依次调用所有已加载钩子的 pushFailed。 */
     @Override
     public void pushFailed(PushResult result) {
         hooks.forEach(each -> each.pushFailed(result));
