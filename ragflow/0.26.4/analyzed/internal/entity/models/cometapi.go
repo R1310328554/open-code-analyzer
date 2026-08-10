@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// cometapi.go — CometAPI 聚合网关 ModelDriver：OpenAI 兼容 Chat/Embed/Rerank/ASR，多区域端点与余额查询。
 //
 
 package models
@@ -31,12 +33,12 @@ import (
 	"strings"
 )
 
-// CometAPIModel implements ModelDriver for CometAPI AI.
+// CometAPIModel CometAPI 聚合平台 ModelDriver
 type CometAPIModel struct {
 	baseModel BaseModel
 }
 
-// NewCometAPIModel creates a new CometAPI model instance.
+// NewCometAPIModel 创建 CometAPI 驱动实例
 func NewCometAPIModel(baseURL map[string]string, urlSuffix URLSuffix) *CometAPIModel {
 	return &CometAPIModel{
 		baseModel: BaseModel{
@@ -47,14 +49,17 @@ func NewCometAPIModel(baseURL map[string]string, urlSuffix URLSuffix) *CometAPIM
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 CometAPI 驱动实例
 func (c *CometAPIModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewCometAPIModel(baseURL, c.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "cometapi"，供工厂层路由
 func (c *CometAPIModel) Name() string {
 	return "cometapi"
 }
 
+// validateCometAPIModelName 校验模型名非空
 func validateCometAPIModelName(modelName string) error {
 	if strings.TrimSpace(modelName) == "" {
 		return fmt.Errorf("model name is required")
@@ -62,6 +67,7 @@ func validateCometAPIModelName(modelName string) error {
 	return nil
 }
 
+// cometapiRegion 解析 API 区域，默认 default
 func cometapiRegion(apiConfig *APIConfig) string {
 	if apiConfig != nil && apiConfig.Region != nil && *apiConfig.Region != "" {
 		return *apiConfig.Region
@@ -69,6 +75,7 @@ func cometapiRegion(apiConfig *APIConfig) string {
 	return "default"
 }
 
+// endpointURL 按 region 与 suffix 拼接完整端点 URL
 func (c *CometAPIModel) endpointURL(region, suffix string) (string, error) {
 	baseURL, err := c.baseModel.GetBaseURL(&APIConfig{Region: &region})
 	if err != nil {
@@ -78,6 +85,7 @@ func (c *CometAPIModel) endpointURL(region, suffix string) (string, error) {
 	return fmt.Sprintf("%s/%s", baseURL, strings.TrimLeft(suffix, "/")), nil
 }
 
+// balanceURL 构造余额查询 URL
 func (c *CometAPIModel) balanceURL(apiKey string) string {
 	rawURL := strings.TrimSpace(c.baseModel.URLSuffix.Balance)
 	if !strings.HasPrefix(rawURL, "http://") && !strings.HasPrefix(rawURL, "https://") {
@@ -108,6 +116,7 @@ type cometapiAPIMessage struct {
 	Content interface{} `json:"content"`
 }
 
+// buildCometAPIChatRequest 组装 OpenAI 兼容 chat 请求体
 func buildCometAPIChatRequest(modelName string, messages []Message, stream bool, chatModelConfig *ChatConfig) cometapiChatRequest {
 	apiMessages := make([]cometapiAPIMessage, len(messages))
 	for i, msg := range messages {
@@ -131,6 +140,7 @@ func buildCometAPIChatRequest(modelName string, messages []Message, stream bool,
 	return reqBody
 }
 
+// newCometAPIJSONRequest 创建带 Bearer 鉴权的 JSON HTTP 请求
 func newCometAPIJSONRequest(ctx context.Context, method string, endpoint string, payload interface{}, apiKey string) (*http.Request, error) {
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
@@ -154,6 +164,7 @@ type cometapiHTTPResponse struct {
 	Body       []byte
 }
 
+// doCometAPIRequest 执行 HTTP 请求并读取响应体
 func (c *CometAPIModel) doCometAPIRequest(req *http.Request) (*cometapiHTTPResponse, error) {
 	resp, err := c.baseModel.httpClient.Do(req)
 	if err != nil {
@@ -193,6 +204,7 @@ type cometapiChatDelta struct {
 	ReasoningContent string `json:"reasoning_content"`
 }
 
+// parseCometAPIChatResponse 解析非流式 chat 响应为 ChatResponse
 func parseCometAPIChatResponse(body []byte) (*ChatResponse, error) {
 	var parsed cometapiChatResponsePayload
 	if err := json.Unmarshal(body, &parsed); err != nil {
@@ -213,6 +225,7 @@ func parseCometAPIChatResponse(body []byte) (*ChatResponse, error) {
 	}, nil
 }
 
+// parseCometAPIStreamEvent 解析 SSE data 行，提取内容与终止标志
 func parseCometAPIStreamEvent(data string) (content string, reasonContent string, terminal bool, ok bool) {
 	var event cometapiChatResponsePayload
 	if err := json.Unmarshal([]byte(data), &event); err != nil {
@@ -233,7 +246,8 @@ type cometapiModelCatalogItem struct {
 	ID string `json:"id"`
 }
 
-// ChatWithMessages sends multiple messages with roles and returns the response.
+// ChatWithMessages 非流式 chat/completions 请求
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (c *CometAPIModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := c.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -272,7 +286,8 @@ func (c *CometAPIModel) ChatWithMessages(modelName string, messages []Message, a
 	return parseCometAPIChatResponse(resp.Body)
 }
 
-// ChatStreamlyWithSender sends messages and streams the response
+// ChatStreamlyWithSender 流式 chat/completions，经 sender 推送 delta
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (c *CometAPIModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := c.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -383,6 +398,7 @@ type cometapiEmbeddingRequest struct {
 }
 
 // Embed turns a list of texts into embedding vectors
+// Embed 将文本列表编码为向量嵌入
 func (c *CometAPIModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	if err := c.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -458,6 +474,7 @@ func (c *CometAPIModel) Embed(modelName *string, texts []string, apiConfig *APIC
 }
 
 // ListModels returns the public CometAPI model catalog.
+// ListModels 列出当前 API Key 可见的模型目录
 func (c *CometAPIModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	url, err := c.endpointURL(cometapiRegion(apiConfig), c.baseModel.URLSuffix.Models)
 	if err != nil {
@@ -490,6 +507,7 @@ func (c *CometAPIModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, e
 }
 
 // Balance queries CometAPI's quota service.
+// Balance 查询账户余额（若上游支持）
 func (c *CometAPIModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	if err := c.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -524,6 +542,7 @@ func (c *CometAPIModel) Balance(apiConfig *APIConfig) (map[string]interface{}, e
 }
 
 // CheckConnection runs a quota query to verify the API key.
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (c *CometAPIModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := c.Balance(apiConfig)
 	if err != nil {
@@ -533,11 +552,13 @@ func (c *CometAPIModel) CheckConnection(apiConfig *APIConfig) error {
 }
 
 // Rerank calculates similarity scores between query and documents.
+// Rerank 对候选文档按 query 相关性重排序
 func (c *CometAPIModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	return nil, fmt.Errorf("no such method")
 }
 
 // TranscribeAudio transcribe audio
+// TranscribeAudio 语音转文字（ASR）
 func (c *CometAPIModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	if err := c.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -653,11 +674,13 @@ func (c *CometAPIModel) TranscribeAudio(modelName *string, file *string, apiConf
 	return &ASRResponse{Text: result.Text}, nil
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (c *CometAPIModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", c.Name())
 }
 
 // AudioSpeech synthesizes speech audio from text.
+// AudioSpeech 文字转语音（TTS）
 func (c *CometAPIModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	if err := c.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -718,23 +741,30 @@ func (c *CometAPIModel) AudioSpeech(modelName *string, audioContent *string, api
 	return &TTSResponse{Audio: body}, nil
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (c *CometAPIModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", c.Name())
 }
 
 // OCRFile OCR file
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (c *CometAPIModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", c.Name())
 }
 
+// ParseFile 解析文档为结构化文本
 func (c *CometAPIModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", c.Name())
 }
 
+// ListTasks 列出异步任务状态
 func (c *CometAPIModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", c.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (c *CometAPIModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", c.Name())
 }
+
+// CometAPI 线协议与 OpenAI 兼容；支持多 region BaseURL 映射；Balance 走独立余额端点；ListModels 解析 catalog 响应。Rerank/Embed/ASR 各有独立 API 路径。

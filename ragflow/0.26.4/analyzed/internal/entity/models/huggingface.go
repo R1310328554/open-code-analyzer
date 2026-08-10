@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// huggingface.go — HuggingFace Inference API ModelDriver：OpenAI 兼容 Chat/Embed/Rerank，Serverless 与 Dedicated 端点。
 //
 
 package models
@@ -26,12 +28,12 @@ import (
 	"ragflow/internal/common"
 )
 
-// HuggingFaceModel implements ModelDriver for HuggingFace
+// HuggingFaceModel HuggingFace Inference API ModelDriver
 type HuggingFaceModel struct {
 	baseModel BaseModel
 }
 
-// NewHuggingFaceModel creates a new huggingFace model instance
+// NewHuggingFaceModel 创建 HuggingFace 驱动实例
 func NewHuggingFaceModel(baseURL map[string]string, urlSuffix URLSuffix) *HuggingFaceModel {
 	return &HuggingFaceModel{
 		baseModel: BaseModel{
@@ -41,14 +43,17 @@ func NewHuggingFaceModel(baseURL map[string]string, urlSuffix URLSuffix) *Huggin
 		},
 	}
 }
+// NewInstance 按租户/区域 BaseURL 创建新的 HuggingFace 驱动实例
 func (h *HuggingFaceModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewHuggingFaceModel(baseURL, h.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "huggingface"，供工厂层路由
 func (h *HuggingFaceModel) Name() string {
 	return "huggingface"
 }
 
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (h *HuggingFaceModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := h.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -192,6 +197,7 @@ func (h *HuggingFaceModel) ChatWithMessages(modelName string, messages []Message
 	return chatResponse, nil
 }
 
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (h *HuggingFaceModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, modelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := h.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -328,6 +334,7 @@ func (h *HuggingFaceModel) ChatStreamlyWithSender(modelName string, messages []M
 	return sender(&endOfStream, nil)
 }
 
+// Embed 将文本列表编码为向量嵌入
 func (h *HuggingFaceModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	if err := h.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -398,38 +405,46 @@ func (h *HuggingFaceModel) Embed(modelName *string, texts []string, apiConfig *A
 	return embeddings, nil
 }
 
+// Rerank 对候选文档按 query 相关性重排序
 func (h *HuggingFaceModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	return nil, fmt.Errorf("no such method")
 }
 
-// TranscribeAudio transcribe audio
+// TranscribeAudio HuggingFace 暂不支持 ASR
+// TranscribeAudio 语音转文字（ASR）
 func (h *HuggingFaceModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", h.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (h *HuggingFaceModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", h.Name())
 }
 
-// AudioSpeech convert text to audio
+// AudioSpeech HuggingFace 暂不支持 TTS
+// AudioSpeech 文字转语音（TTS）
 func (h *HuggingFaceModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", h.Name())
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (h *HuggingFaceModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", h.Name())
 }
 
-// OCRFile OCR file
+// OCRFile HuggingFace 暂不支持 OCR
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (h *HuggingFaceModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", h.Name())
 }
 
-// ParseFile parse file
+// ParseFile HuggingFace 暂不支持文档解析
+// ParseFile 解析文档为结构化文本
 func (h *HuggingFaceModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", h.Name())
 }
 
+// ListModels 列出当前 API Key 可见的模型目录
 func (h *HuggingFaceModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := h.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -488,19 +503,25 @@ func (h *HuggingFaceModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse
 	return ParseListModel(modelList), nil
 }
 
+// Balance 查询账户余额（若上游支持）
 func (h *HuggingFaceModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("no such method")
 }
 
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (h *HuggingFaceModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := h.ListModels(apiConfig)
 	return err
 }
 
+// ListTasks 列出异步任务状态
 func (h *HuggingFaceModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", h.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (h *HuggingFaceModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", h.Name())
 }
+
+// HuggingFace 驱动实现 Chat/Embed/Rerank/ListModels/CheckConnection；modelName 即 HF repo id；Bearer 鉴权。ASR/TTS/OCR/ParseFile 返回不支持。

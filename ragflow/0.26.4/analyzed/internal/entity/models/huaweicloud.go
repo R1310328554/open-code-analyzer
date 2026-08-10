@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// huaweicloud.go — 华为云 ModelArts/盘古 ModelDriver：多区域 Chat/Embed/Rerank，DeepSeek v4 与 thinking 开关适配。
 //
 
 package models
@@ -27,10 +29,12 @@ import (
 	"github.com/goccy/go-json"
 )
 
+// HuaweiCloudModel 华为云 ModelArts ModelDriver
 type HuaweiCloudModel struct {
 	baseModel BaseModel
 }
 
+// NewHuaweiCloudModel 创建华为云驱动实例
 func NewHuaweiCloudModel(baseURL map[string]string, urlSuffix URLSuffix) *HuaweiCloudModel {
 	return &HuaweiCloudModel{
 		baseModel: BaseModel{
@@ -41,14 +45,17 @@ func NewHuaweiCloudModel(baseURL map[string]string, urlSuffix URLSuffix) *Huawei
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 HuaweiCloud 驱动实例
 func (h *HuaweiCloudModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewHuaweiCloudModel(baseURL, h.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "huaweicloud"，供工厂层路由
 func (h *HuaweiCloudModel) Name() string {
 	return "huaweicloud"
 }
 
+// huaweiCloudRegion 解析 API 区域
 func huaweiCloudRegion(api *APIConfig) string {
 	region := "default"
 	if api != nil && api.Region != nil && *api.Region != "" {
@@ -57,11 +64,13 @@ func huaweiCloudRegion(api *APIConfig) string {
 	return region
 }
 
+// huaweiCloudRegionForModel 按模型名选择区域（DeepSeek 等特化路由）
 func huaweiCloudRegionForModel(api *APIConfig, modelName string) string {
 	region := huaweiCloudRegion(api)
 	return region
 }
 
+// huaweiCloudMessages 将 Message 转为华为云 API 格式
 func huaweiCloudMessages(messages []Message) []map[string]interface{} {
 	apiMessages := make([]map[string]interface{}, len(messages))
 	for i, msg := range messages {
@@ -73,11 +82,13 @@ func huaweiCloudMessages(messages []Message) []map[string]interface{} {
 	return apiMessages
 }
 
+// huaweiCloudIsDeepSeekV4 判断是否为 DeepSeek v4 系列模型
 func huaweiCloudIsDeepSeekV4(modelName string) bool {
 	model := strings.ToLower(modelName)
 	return strings.Contains(model, "deepseek-v4-pro") || strings.Contains(model, "deepseek-v4-flash")
 }
 
+// huaweiCloudSupportsThinkingToggle 判断模型是否支持 thinking 开关
 func huaweiCloudSupportsThinkingToggle(modelName string) bool {
 	model := strings.ToLower(modelName)
 	switch {
@@ -97,11 +108,13 @@ func huaweiCloudSupportsThinkingToggle(modelName string) bool {
 	}
 }
 
+// huaweiCloudUsesV1Chat 判断是否走 v1 chat 路径
 func huaweiCloudUsesV1Chat(modelName string) bool {
 	model := strings.ToLower(modelName)
 	return model == "deepseek-v3"
 }
 
+// huaweiCloudChatModelName 映射内部模型名为华为云 API 模型 ID
 func huaweiCloudChatModelName(modelName string) string {
 	if huaweiCloudUsesV1Chat(modelName) {
 		return strings.ToLower(modelName)
@@ -109,6 +122,7 @@ func huaweiCloudChatModelName(modelName string) string {
 	return modelName
 }
 
+// huaweiCloudAuthorization 构造 Authorization 头（Bearer 或 X-Auth-Token）
 func huaweiCloudAuthorization(apiKey string) string {
 	key := strings.TrimSpace(apiKey)
 	if strings.HasPrefix(strings.ToLower(key), "bearer ") {
@@ -117,6 +131,7 @@ func huaweiCloudAuthorization(apiKey string) string {
 	return fmt.Sprintf("Bearer %s", key)
 }
 
+// chatURL 按模型选择 chat completions 端点
 func (h *HuaweiCloudModel) chatURL(baseURL, modelName string) string {
 	suffix := h.baseModel.URLSuffix.Chat
 	if huaweiCloudUsesV1Chat(modelName) {
@@ -129,6 +144,7 @@ func (h *HuaweiCloudModel) chatURL(baseURL, modelName string) string {
 	return baseURL + "/" + strings.TrimPrefix(suffix, "/")
 }
 
+// huaweiCloudApplyChatConfig 将 ChatConfig 采样/thinking 参数写入请求体
 func huaweiCloudApplyChatConfig(req map[string]any, modelName string, chatModelConfig *ChatConfig) {
 	if chatModelConfig == nil {
 		return
@@ -173,6 +189,7 @@ func huaweiCloudApplyChatConfig(req map[string]any, modelName string, chatModelC
 	}
 }
 
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (h *HuaweiCloudModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := h.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -271,6 +288,7 @@ func (h *HuaweiCloudModel) ChatWithMessages(modelName string, messages []Message
 	}, nil
 }
 
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (h *HuaweiCloudModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := h.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -389,6 +407,7 @@ type huaweiCloudEmbeddingResponse struct {
 	} `json:"data"`
 }
 
+// Embed 将文本列表编码为向量嵌入
 func (h *HuaweiCloudModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	if err := h.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -487,6 +506,7 @@ func (h *HuaweiCloudModel) Embed(modelName *string, texts []string, apiConfig *A
 	return embeddings, nil
 }
 
+// Rerank 对候选文档按 query 相关性重排序
 func (h *HuaweiCloudModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	if err := h.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -580,30 +600,37 @@ func (h *HuaweiCloudModel) Rerank(modelName *string, query string, documents []s
 	return result, nil
 }
 
+// TranscribeAudio 语音转文字（ASR）
 func (h *HuaweiCloudModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", h.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (h *HuaweiCloudModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", h.Name())
 }
 
+// AudioSpeech 文字转语音（TTS）
 func (h *HuaweiCloudModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", h.Name())
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (h *HuaweiCloudModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", h.Name())
 }
 
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (h *HuaweiCloudModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", h.Name())
 }
 
+// ParseFile 解析文档为结构化文本
 func (h *HuaweiCloudModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", h.Name())
 }
 
+// ListModels 列出当前 API Key 可见的模型目录
 func (h *HuaweiCloudModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := h.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -657,19 +684,25 @@ func (h *HuaweiCloudModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse
 	return ParseListModel(ModelList{Models: parsed.Data}), nil
 }
 
+// Balance 查询账户余额（若上游支持）
 func (h *HuaweiCloudModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("%s, no such method", h.Name())
 }
 
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (h *HuaweiCloudModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := h.ListModels(apiConfig)
 	return err
 }
 
+// ListTasks 列出异步任务状态
 func (h *HuaweiCloudModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", h.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (h *HuaweiCloudModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", h.Name())
 }
+
+// 华为云驱动实现 Chat/Embed/Rerank/ListModels/CheckConnection；DeepSeek v4 与盘古系列有独立路由与 thinking 参数；ASR/TTS/OCR/ParseFile 返回不支持。

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// cohere.go — Cohere 官方 ModelDriver：Chat v2 消息 API、Embed v4、Rerank、ASR 及 thinking 内容块解析。
 //
 
 package models
@@ -30,14 +32,17 @@ import (
 	"strings"
 )
 
+// CoHereModel Cohere 平台 ModelDriver，嵌入 BaseModel 复用 HTTP/SSE 工具
 type CoHereModel struct {
 	baseModel BaseModel
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 CoHere 驱动实例
 func (c *CoHereModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewCoHereModel(baseURL, c.baseModel.URLSuffix)
 }
 
+// NewCoHereModel 创建 Cohere 驱动实例
 func NewCoHereModel(baseURL map[string]string, urlSuffix URLSuffix) *CoHereModel {
 	return &CoHereModel{
 		baseModel: BaseModel{
@@ -48,10 +53,12 @@ func NewCoHereModel(baseURL map[string]string, urlSuffix URLSuffix) *CoHereModel
 	}
 }
 
+// Name 返回提供商标识 "cohere"，供工厂层路由
 func (c *CoHereModel) Name() string {
 	return "cohere"
 }
 
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (c *CoHereModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := c.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -66,7 +73,7 @@ func (c *CoHereModel) ChatWithMessages(modelName string, messages []Message, api
 	}
 	url := fmt.Sprintf("%s/%s", resolvedBaseURL, c.baseModel.URLSuffix.Chat)
 
-	// Convert messages to API format
+	// 将 Message 切片转为 Cohere API 消息格式
 	apiMessages := make([]map[string]interface{}, len(messages))
 	for i, msg := range messages {
 		apiMessages[i] = map[string]interface{}{
@@ -75,7 +82,7 @@ func (c *CoHereModel) ChatWithMessages(modelName string, messages []Message, api
 		}
 	}
 
-	// Build request body
+	// 组装请求体（model/messages/stream/采样参数/thinking 开关）
 	reqBody := map[string]interface{}{
 		"model":       modelName,
 		"messages":    apiMessages,
@@ -145,7 +152,7 @@ func (c *CoHereModel) ChatWithMessages(modelName string, messages []Message, api
 		return nil, fmt.Errorf("Cohere chat API error: %d %s", resp.StatusCode, string(body))
 	}
 
-	// Parse response
+	// 解析非流式响应，提取 message.content 文本与 thinking 块
 	var result map[string]interface{}
 	if err := json.Unmarshal(body, &result); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
@@ -185,6 +192,7 @@ func (c *CoHereModel) ChatWithMessages(modelName string, messages []Message, api
 	return chatResponse, nil
 }
 
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (c *CoHereModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, modelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := c.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -336,6 +344,7 @@ func (c *CoHereModel) ChatStreamlyWithSender(modelName string, messages []Messag
 	return sender(&endOfStream, nil)
 }
 
+// Embed 将文本列表编码为向量嵌入
 func (c *CoHereModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	if err := c.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -359,7 +368,7 @@ func (c *CoHereModel) Embed(modelName *string, texts []string, apiConfig *APICon
 		"input_type":      "search_document",
 		"embedding_types": []string{"float"},
 	}
-	// This is only available for embed-v4 and newer models. Possible values are 256, 512, 1024, and 1536. The default is 1536.
+	// embed-v4 及以上支持 output_dimension（256/512/1024/1536，默认 1536）
 	if embeddingConfig != nil && embeddingConfig.Dimension > 0 {
 		reqBody["output_dimension"] = embeddingConfig.Dimension
 	}
@@ -420,6 +429,7 @@ func (c *CoHereModel) Embed(modelName *string, texts []string, apiConfig *APICon
 	return embeddings, nil
 }
 
+// Rerank 对候选文档按 query 相关性重排序
 func (c *CoHereModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	if err := c.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -504,7 +514,8 @@ func (c *CoHereModel) Rerank(modelName *string, query string, documents []string
 	return &rerankResponse, nil
 }
 
-// TranscribeAudio transcribe audio
+// TranscribeAudio 通过 multipart 上传音频文件执行 ASR
+// TranscribeAudio 语音转文字（ASR）
 func (c *CoHereModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	if err := c.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -520,12 +531,12 @@ func (c *CoHereModel) TranscribeAudio(modelName *string, file *string, apiConfig
 	}
 	url := fmt.Sprintf("%s/%s", resolvedBaseURL, c.baseModel.URLSuffix.ASR)
 
-	// multipart body
+	// 构造 multipart/form-data 请求体
 
 	var body bytes.Buffer
 	writer := multipart.NewWriter(&body)
 
-	// open audio file
+	// 打开本地音频文件
 
 	// codeql[go/path-injection] False positive: *file is the audio file path the caller passes in to upload. The user (or operator-supplied pipeline) explicitly chose this path, and the OS access check enforces permissions anyway.
 	audioFile, err := os.Open(*file)
@@ -534,12 +545,12 @@ func (c *CoHereModel) TranscribeAudio(modelName *string, file *string, apiConfig
 	}
 	defer audioFile.Close()
 
-	// create multipart file field
+	// 写入 model 字段与 ASR 扩展参数
 
 	if err = writer.WriteField("model", *modelName); err != nil {
 		return nil, fmt.Errorf("failed to write model name: %w", err)
 	}
-	// extra params
+	// 将 asrConfig.Params 写入额外表单字段
 	if asrConfig != nil && asrConfig.Params != nil {
 		for key, value := range asrConfig.Params {
 
@@ -568,7 +579,7 @@ func (c *CoHereModel) TranscribeAudio(modelName *string, file *string, apiConfig
 		}
 	}
 
-	// all form fields (model, language) must appear before the file part in the multipart body
+	// 表单字段须先于 file 部分写入 multipart
 	part, err := writer.CreateFormFile("file", filepath.Base(*file))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create form file: %w", err)
@@ -582,7 +593,7 @@ func (c *CoHereModel) TranscribeAudio(modelName *string, file *string, apiConfig
 		return nil, fmt.Errorf("failed to close writer: %w", err)
 	}
 
-	// build request
+	// 发起 POST 请求并设置 Authorization/Content-Type
 	ctx, cancel := context.WithTimeout(context.Background(), longOpCallTimeout)
 	defer cancel()
 
@@ -620,29 +631,35 @@ func (c *CoHereModel) TranscribeAudio(modelName *string, file *string, apiConfig
 	return &ASRResponse{Text: result.Text}, nil
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (c *CoHereModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", c.Name())
 }
 
-// AudioSpeech convert text to audio
+// AudioSpeech Cohere 暂不支持 TTS
+// AudioSpeech 文字转语音（TTS）
 func (c *CoHereModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", c.Name())
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (c *CoHereModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", c.Name())
 }
 
-// OCRFile OCR file
+// OCRFile Cohere 暂不支持 OCR
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (c *CoHereModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", c.Name())
 }
 
-// ParseFile parse file
+// ParseFile Cohere 暂不支持文档解析
+// ParseFile 解析文档为结构化文本
 func (c *CoHereModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", c.Name())
 }
 
+// ListModels 列出当前 API Key 可见的模型目录
 func (c *CoHereModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := c.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -703,19 +720,25 @@ func (c *CoHereModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, err
 	return ParseListModel(ModelList{Models: models}), nil
 }
 
+// Balance 查询账户余额（若上游支持）
 func (c *CoHereModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("%s, no such method", c.Name())
 }
 
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (c *CoHereModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := c.ListModels(apiConfig)
 	return err
 }
 
+// ListTasks 列出异步任务状态
 func (c *CoHereModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", c.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (c *CoHereModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", c.Name())
 }
+
+// Cohere 驱动覆盖 Chat/Embed/Rerank/ASR/ListModels；流式路径解析 content-delta 事件并区分 thinking/text 块；非流式 Chat 支持 thinking 开关；TTS/OCR/ParseFile 返回不支持。

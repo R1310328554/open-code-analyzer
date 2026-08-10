@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// deepinfra.go — DeepInfra 推理平台 ModelDriver：OpenAI 兼容 Chat/Embed/Rerank/ASR/TTS 及余额查询。
 //
 
 package models
@@ -33,10 +35,12 @@ import (
 	"strings"
 )
 
+// DeepInfraModel DeepInfra 托管推理 ModelDriver
 type DeepInfraModel struct {
 	baseModel BaseModel
 }
 
+// NewDeepInfraModel 创建 DeepInfra 驱动实例
 func NewDeepInfraModel(baseURL map[string]string, urlSuffix URLSuffix) *DeepInfraModel {
 	return &DeepInfraModel{
 		baseModel: BaseModel{
@@ -47,14 +51,17 @@ func NewDeepInfraModel(baseURL map[string]string, urlSuffix URLSuffix) *DeepInfr
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 DeepInfra 驱动实例
 func (d *DeepInfraModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewDeepInfraModel(baseURL, d.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "deepinfra"，供工厂层路由
 func (d *DeepInfraModel) Name() string {
 	return "deepinfra"
 }
 
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (d *DeepInfraModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := d.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -188,6 +195,7 @@ func (d *DeepInfraModel) ChatWithMessages(modelName string, messages []Message, 
 	return chatResponse, nil
 }
 
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (d *DeepInfraModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, modelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := d.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -338,6 +346,7 @@ func (d *DeepInfraModel) ChatStreamlyWithSender(modelName string, messages []Mes
 	return sender(&endOfStream, nil)
 }
 
+// Embed 将文本列表编码为向量嵌入
 func (d *DeepInfraModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	if err := d.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -415,12 +424,13 @@ func (d *DeepInfraModel) Embed(modelName *string, texts []string, apiConfig *API
 	return embeddings, nil
 }
 
-// deepinfraRerankResponse is the JSON body returned by DeepInfra reranker models.
+// deepinfraRerankResponse DeepInfra rerank API 响应体
 type deepinfraRerankResponse struct {
 	Scores []float64 `json:"scores"`
 }
 
-// Rerank scores documents against a query using DeepInfra's inference endpoint.
+// Rerank 调用 DeepInfra rerank 端点对文档按 query 打分
+// Rerank 对候选文档按 query 相关性重排序
 func (d *DeepInfraModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	if err := d.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -510,6 +520,7 @@ func (d *DeepInfraModel) Rerank(modelName *string, query string, documents []str
 	return &RerankResponse{Data: results}, nil
 }
 
+// TranscribeAudio 语音转文字（ASR）
 func (d *DeepInfraModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	if err := d.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -627,10 +638,12 @@ func (d *DeepInfraModel) TranscribeAudio(modelName *string, file *string, apiCon
 	}, nil
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (d *DeepInfraModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s no such method", d.Name())
 }
 
+// AudioSpeech 文字转语音（TTS）
 func (d *DeepInfraModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	if err := d.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -708,6 +721,7 @@ func (d *DeepInfraModel) AudioSpeech(modelName *string, audioContent *string, ap
 	return &TTSResponse{Audio: body}, nil
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (d *DeepInfraModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	if err := d.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -806,14 +820,17 @@ func (d *DeepInfraModel) AudioSpeechWithSender(modelName *string, audioContent *
 	return nil
 }
 
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (d *DeepInfraModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s no such method", d.Name())
 }
 
+// ParseFile 解析文档为结构化文本
 func (d *DeepInfraModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s no such method", d.Name())
 }
 
+// ListModels 列出当前 API Key 可见的模型目录
 func (d *DeepInfraModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 
 	resolvedBaseURL, err := d.baseModel.GetBaseURL(apiConfig)
@@ -875,6 +892,7 @@ func (d *DeepInfraModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, 
 	return ParseListModel(ModelList{Models: models}), nil
 }
 
+// Balance 查询账户余额（若上游支持）
 func (d *DeepInfraModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	if err := d.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -926,15 +944,20 @@ func (d *DeepInfraModel) Balance(apiConfig *APIConfig) (map[string]interface{}, 
 	}, nil
 }
 
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (d *DeepInfraModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := d.ListModels(apiConfig)
 	return err
 }
 
+// ListTasks 列出异步任务状态
 func (d *DeepInfraModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s no such method", d.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (d *DeepInfraModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s no such method", d.Name())
 }
+
+// DeepInfra 驱动实现 Chat/Embed/Rerank/ASR/TTS/Balance/ListModels；Chat 支持 reasoning_content 字段；OCR/ParseFile 返回不支持。Balance 查询账户可用额度。

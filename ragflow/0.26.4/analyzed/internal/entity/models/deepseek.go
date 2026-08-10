@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// deepseek.go — DeepSeek 官方 ModelDriver：OpenAI 兼容 Chat/Embed，reasoning_content 推理链及余额 API。
 //
 
 package models
@@ -28,12 +30,12 @@ import (
 	"strings"
 )
 
-// DeepSeekModel implements ModelDriver for DeepSeek
+// DeepSeekModel DeepSeek 平台 ModelDriver
 type DeepSeekModel struct {
 	baseModel BaseModel
 }
 
-// NewDeepSeekModel creates a new DeepSeek model instance
+// NewDeepSeekModel 创建 DeepSeek 驱动实例
 func NewDeepSeekModel(baseURL map[string]string, urlSuffix URLSuffix) *DeepSeekModel {
 	return &DeepSeekModel{
 		baseModel: BaseModel{
@@ -44,14 +46,17 @@ func NewDeepSeekModel(baseURL map[string]string, urlSuffix URLSuffix) *DeepSeekM
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 DeepSeek 驱动实例
 func (d *DeepSeekModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewDeepSeekModel(baseURL, d.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "deepseek"，供工厂层路由
 func (d *DeepSeekModel) Name() string {
 	return "deepseek"
 }
 
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (d *DeepSeekModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := d.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -223,7 +228,8 @@ func (d *DeepSeekModel) ChatWithMessages(modelName string, messages []Message, a
 	return chatResponse, nil
 }
 
-// ChatStreamlyWithSender sends messages and streams response via sender function (best performance, no channel)
+// ChatStreamlyWithSender 流式对话，经 sender 推送 delta 与 reasoning_content
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (d *DeepSeekModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := d.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -403,17 +409,20 @@ func (d *DeepSeekModel) ChatStreamlyWithSender(modelName string, messages []Mess
 	return sender(&endOfStream, nil)
 }
 
-// Embed embeds a list of texts into embeddings
+// Embed 批量文本向量化
+// Embed 将文本列表编码为向量嵌入
 func (d *DeepSeekModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	return nil, fmt.Errorf("%s, no such method", d.Name())
 }
 
+// DSModel DeepSeek 模型列表单条元数据
 type DSModel struct {
 	ID      string `json:"id"`
 	Object  string `json:"object"`
 	OwnedBy string `json:"owned_by"`
 }
 
+// ListModels 列出当前 API Key 可见的模型目录
 func (d *DeepSeekModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := d.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -468,9 +477,7 @@ func (d *DeepSeekModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, e
 	return ParseListModel(modelList), nil
 }
 
-// deepseekBalanceResponse is the shape returned by
-// GET /user/balance. The balance fields are strings in the
-// upstream API, so we parse them on our side.
+// deepseekBalanceResponse GET /user/balance 响应体；余额字段为字符串需本地解析
 type deepseekBalanceResponse struct {
 	IsAvailable  bool `json:"is_available"`
 	BalanceInfos []struct {
@@ -481,10 +488,8 @@ type deepseekBalanceResponse struct {
 	} `json:"balance_infos"`
 }
 
-// Balance returns the user's available balance on DeepSeek by
-// calling GET /user/balance with the configured Bearer token.
-// The result map matches the shape used by the Moonshot driver,
-// so the UI can render it without provider-specific code.
+// Balance 调用 GET /user/balance 查询可用余额；返回 map 形态与 Moonshot 驱动一致，UI 无需厂商特化
+// Balance 查询账户余额（若上游支持）
 func (d *DeepSeekModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	if err := d.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -545,6 +550,7 @@ func (d *DeepSeekModel) Balance(apiConfig *APIConfig) (map[string]interface{}, e
 	}, nil
 }
 
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (d *DeepSeekModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := d.ListModels(apiConfig)
 	if err != nil {
@@ -553,43 +559,54 @@ func (d *DeepSeekModel) CheckConnection(apiConfig *APIConfig) error {
 	return nil
 }
 
-// Rerank calculates similarity scores between query and documents
+// Rerank DeepSeek 暂不支持 rerank
+// Rerank 对候选文档按 query 相关性重排序
 func (d *DeepSeekModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	return nil, fmt.Errorf("%s, Rerank not implemented", d.Name())
 }
 
-// TranscribeAudio transcribe audio
+// TranscribeAudio DeepSeek 暂不支持 ASR
+// TranscribeAudio 语音转文字（ASR）
 func (d *DeepSeekModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", d.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (d *DeepSeekModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", d.Name())
 }
 
-// AudioSpeech convert text to audio
+// AudioSpeech DeepSeek 暂不支持 TTS
+// AudioSpeech 文字转语音（TTS）
 func (d *DeepSeekModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", d.Name())
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (d *DeepSeekModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", d.Name())
 }
 
-// OCRFile OCR file
+// OCRFile DeepSeek 暂不支持 OCR
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (d *DeepSeekModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", d.Name())
 }
 
-// ParseFile parse file
+// ParseFile DeepSeek 暂不支持文档解析
+// ParseFile 解析文档为结构化文本
 func (d *DeepSeekModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", d.Name())
 }
 
+// ListTasks 列出异步任务状态
 func (d *DeepSeekModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", d.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (d *DeepSeekModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", d.Name())
 }
+
+// DeepSeek Chat 解析 reasoning_content 为 ReasonContent；ListModels 返回静态 catalog；Balance 与 Moonshot 共用 UI 渲染格式。Rerank/ASR/TTS/OCR 返回不支持。

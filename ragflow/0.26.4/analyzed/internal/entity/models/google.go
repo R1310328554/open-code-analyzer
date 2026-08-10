@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// google.go — Google Gemini ModelDriver：基于 google.golang.org/genai SDK 的 Chat/Embed/ListModels。
 //
 
 package models
@@ -25,11 +27,13 @@ import (
 	"google.golang.org/genai"
 )
 
+// googleModelPage 分页模型列表中间结构
 type googleModelPage struct {
 	items         []DSModel
 	nextPageToken string
 }
 
+// collectGoogleModelNames 分页拉取 Google 模型名并 ParseListModel 规范化
 func collectGoogleModelNames(ctx context.Context, listPage func(context.Context, string) (googleModelPage, error)) ([]ListModelResponse, error) {
 	var models []DSModel
 	pageToken := ""
@@ -77,12 +81,12 @@ var googleListModels = func(ctx context.Context, config *genai.ClientConfig) ([]
 	})
 }
 
-// GoogleModel implements ModelDriver for Google AI
+// GoogleModel Google Gemini ModelDriver，走 genai SDK
 type GoogleModel struct {
 	baseModel BaseModel
 }
 
-// NewGoogleModel creates a new Google AI model instance
+// NewGoogleModel 创建 Google 驱动实例
 func NewGoogleModel(baseURL map[string]string, urlSuffix URLSuffix) *GoogleModel {
 	return &GoogleModel{
 		baseModel: BaseModel{
@@ -92,18 +96,22 @@ func NewGoogleModel(baseURL map[string]string, urlSuffix URLSuffix) *GoogleModel
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 Google 驱动实例
 func (g *GoogleModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewGoogleModel(baseURL, g.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "google"，供工厂层路由
 func (g *GoogleModel) Name() string {
 	return "google"
 }
 
+// clientConfig 构造 genai 客户端配置（Gemini API + 自定义 BaseURL）
 func (g *GoogleModel) clientConfig(apiKey string, apiConfig *APIConfig) *genai.ClientConfig {
 	return &genai.ClientConfig{APIKey: apiKey, Backend: genai.BackendGeminiAPI, HTTPOptions: genai.HTTPOptions{BaseURL: g.baseURL(apiConfig)}}
 }
 
+// baseURL 解析租户自定义或默认 Gemini 端点
 func (g *GoogleModel) baseURL(apiConfig *APIConfig) string {
 	baseURL, err := g.baseModel.GetBaseURL(apiConfig)
 	if err != nil {
@@ -119,6 +127,7 @@ func (g *GoogleModel) baseURL(apiConfig *APIConfig) string {
 	return strings.TrimSpace(baseURL)
 }
 
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (g *GoogleModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := g.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -193,6 +202,7 @@ func (g *GoogleModel) ChatWithMessages(modelName string, messages []Message, api
 }
 
 // ChatStreamlyWithSender sends messages and streams response via sender function (best performance, no channel)
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (g *GoogleModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := g.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -298,6 +308,7 @@ func (g *GoogleModel) ChatStreamlyWithSender(modelName string, messages []Messag
 
 // Embed generates embeddings for a batch of texts using the Gemini embeddings API.
 // The SDK routes to batchEmbedContents internally, so all texts are sent in one request.
+// Embed 将文本列表编码为向量嵌入
 func (g *GoogleModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	if err := g.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -352,6 +363,7 @@ func (g *GoogleModel) Embed(modelName *string, texts []string, apiConfig *APICon
 	return result, nil
 }
 
+// ListModels 列出当前 API Key 可见的模型目录
 func (g *GoogleModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := g.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -360,52 +372,65 @@ func (g *GoogleModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, err
 	return googleListModels(context.Background(), g.clientConfig(strings.TrimSpace(*apiConfig.ApiKey), apiConfig))
 }
 
+// Balance 查询账户余额（若上游支持）
 func (g *GoogleModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("no such method")
 }
 
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (g *GoogleModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := g.ListModels(apiConfig)
 	return err
 }
 
 // Rerank calculates similarity scores between query and documents
+// Rerank 对候选文档按 query 相关性重排序
 func (g *GoogleModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	return nil, fmt.Errorf("%s, Rerank not implemented", g.Name())
 }
 
 // TranscribeAudio transcribe audio
+// TranscribeAudio 语音转文字（ASR）
 func (g *GoogleModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", g.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (g *GoogleModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", g.Name())
 }
 
 // AudioSpeech convert text to audio
+// AudioSpeech 文字转语音（TTS）
 func (g *GoogleModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", g.Name())
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (g *GoogleModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", g.Name())
 }
 
 // OCRFile OCR file
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (g *GoogleModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", g.Name())
 }
 
 // ParseFile parse file
+// ParseFile 解析文档为结构化文本
 func (g *GoogleModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", g.Name())
 }
 
+// ListTasks 列出异步任务状态
 func (g *GoogleModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", g.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (g *GoogleModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", g.Name())
 }
+
+// Google 驱动通过 genai SDK 调用 Gemini API；Chat/Embed 使用 GenerateContent/EmbedContent；ListModels 分页遍历 Models.List。Rerank/ASR/TTS/OCR 返回不支持。

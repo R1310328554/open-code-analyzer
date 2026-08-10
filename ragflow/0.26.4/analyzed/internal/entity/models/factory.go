@@ -14,22 +14,24 @@
 //  limitations under the License.
 //
 
+// factory.go — ModelDriver 工厂：按 providerName 字符串分发到各 SaaS/本地推理驱动构造函数。
+
 package models
 
 import (
 	"strings"
 )
 
-// ModelFactory creates ModelDriver instances based on provider name
+// ModelFactory 根据厂商名称创建 ModelDriver 实例
 type ModelFactory struct {
 }
 
-// NewModelFactory creates a new ModelFactory
+// NewModelFactory 创建模型工厂单例
 func NewModelFactory() *ModelFactory {
 	return &ModelFactory{}
 }
 
-// CreateModelDriver creates a ModelDriver for the given provider and model
+// CreateModelDriver 按 providerName 构造对应 ModelDriver（未知厂商走 Dummy）
 func (f *ModelFactory) CreateModelDriver(providerName string, baseURL map[string]string, urlSuffix URLSuffix) (ModelDriver, error) {
 	providerLower := strings.ToLower(providerName)
 	switch providerLower {
@@ -157,3 +159,5 @@ func (f *ModelFactory) CreateModelDriver(providerName string, baseURL map[string
 		return NewDummyModel(baseURL, urlSuffix), nil
 	}
 }
+
+// CreateModelDriver 将 providerName 转小写后 switch 分发；传入 baseURL map 与 URLSuffix 供各驱动解析端点；default 分支返回 DummyModel 避免 nil 驱动。

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// futurmix.go — FuturMix OpenAI 兼容网关 ModelDriver：Chat 非流式/流式，Embed/Rerank/ListModels 未公开暴露。
 //
 
 package models
@@ -26,12 +28,12 @@ import (
 	"strings"
 )
 
-// FuturMixModel implements ModelDriver for FuturMix
+// FuturMixModel FuturMix 聚合网关 ModelDriver
 type FuturMixModel struct {
 	baseModel BaseModel
 }
 
-// NewFuturMixModel creates a new FuturMix model instance.
+// NewFuturMixModel 创建 FuturMix 驱动实例
 func NewFuturMixModel(baseURL map[string]string, urlSuffix URLSuffix) *FuturMixModel {
 	return &FuturMixModel{
 		baseModel: BaseModel{
@@ -42,14 +44,17 @@ func NewFuturMixModel(baseURL map[string]string, urlSuffix URLSuffix) *FuturMixM
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 FuturMix 驱动实例
 func (f *FuturMixModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewFuturMixModel(baseURL, f.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "futurmix"，供工厂层路由
 func (f *FuturMixModel) Name() string {
 	return "futurmix"
 }
 
+// endpointURL 按 region 拼接 FuturMix 端点
 func (f *FuturMixModel) endpointURL(region, suffix string) (string, error) {
 	baseURL, err := f.baseModel.GetBaseURL(&APIConfig{Region: &region})
 	if err != nil {
@@ -59,6 +64,7 @@ func (f *FuturMixModel) endpointURL(region, suffix string) (string, error) {
 	return fmt.Sprintf("%s/%s", baseURL, strings.TrimLeft(suffix, "/")), nil
 }
 
+// futurmixRegion 解析 API 区域
 func futurmixRegion(apiConfig *APIConfig) string {
 	if apiConfig != nil && apiConfig.Region != nil && *apiConfig.Region != "" {
 		return *apiConfig.Region
@@ -102,6 +108,7 @@ type futurmixChatRequest struct {
 	Stop        *[]string            `json:"stop,omitempty"`
 }
 
+// buildFuturMixChatRequest 组装 OpenAI 兼容 chat 请求
 func buildFuturMixChatRequest(modelName string, messages []Message, stream bool, chatModelConfig *ChatConfig) futurmixChatRequest {
 	apiMessages := make([]futurmixAPIMessage, len(messages))
 	for i, msg := range messages {
@@ -144,7 +151,8 @@ type futurmixChatResponse struct {
 	Choices []futurmixChatChoice `json:"choices"`
 }
 
-// ChatWithMessages sends a non-streaming chat completion
+// ChatWithMessages 非流式 chat/completions
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (f *FuturMixModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := f.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -206,7 +214,8 @@ func (f *FuturMixModel) ChatWithMessages(modelName string, messages []Message, a
 	}, nil
 }
 
-// ChatStreamlyWithSender sends a streaming chat completion
+// ChatStreamlyWithSender 流式 chat/completions
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (f *FuturMixModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := f.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -284,65 +293,80 @@ func (f *FuturMixModel) ChatStreamlyWithSender(modelName string, messages []Mess
 	return sender(&endOfStream, nil)
 }
 
-// Embed is not exposed by the FuturMix API per the public docs.
+// Embed FuturMix 公开文档未暴露 embed API
+// Embed 将文本列表编码为向量嵌入
 func (f *FuturMixModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	return nil, fmt.Errorf("%s, no such method", f.Name())
 }
 
-// Rerank is not exposed by the FuturMix API per the public docs.
+// Rerank FuturMix 公开文档未暴露 rerank API
+// Rerank 对候选文档按 query 相关性重排序
 func (f *FuturMixModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", f.Name())
 }
 
-// ListModels is not documented as a public endpoint by FuturMix.
+// ListModels FuturMix 未文档化 models 列表端点
+// ListModels 列出当前 API Key 可见的模型目录
 func (f *FuturMixModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", f.Name())
 }
 
 // CheckConnection is not exposed by the FuturMix API.
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (f *FuturMixModel) CheckConnection(apiConfig *APIConfig) error {
 	return fmt.Errorf("%s, no such method", f.Name())
 }
 
 // Balance is not exposed by the FuturMix public API.
+// Balance 查询账户余额（若上游支持）
 func (f *FuturMixModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("%s, no such method", f.Name())
 }
 
 // TranscribeAudio is not exposed by the FuturMix API per the docs.
+// TranscribeAudio 语音转文字（ASR）
 func (f *FuturMixModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", f.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (f *FuturMixModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", f.Name())
 }
 
 // AudioSpeech is not exposed by the FuturMix API per the docs.
+// AudioSpeech 文字转语音（TTS）
 func (f *FuturMixModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", f.Name())
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (f *FuturMixModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", f.Name())
 }
 
 // OCRFile is not exposed by the FuturMix API per the docs.
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (f *FuturMixModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", f.Name())
 }
 
 // ParseFile is not exposed by the FuturMix API per the docs.
+// ParseFile 解析文档为结构化文本
 func (f *FuturMixModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", f.Name())
 }
 
 // ListTasks is not exposed by the FuturMix API per the docs.
+// ListTasks 列出异步任务状态
 func (f *FuturMixModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", f.Name())
 }
 
 // ShowTask is not exposed by the FuturMix API per the docs.
+// ShowTask 按 taskID 查询单个异步任务详情
 func (f *FuturMixModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", f.Name())
 }
+
+// FuturMix 线协议与 OpenAI 兼容；Bearer 鉴权；SSE 流以 [DONE] 终止。Embed/Rerank/ListModels 返回不支持；ASR/TTS/OCR 同理。

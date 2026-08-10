@@ -14,10 +14,13 @@
 //  limitations under the License.
 //
 
+// common.go — 模型响应解析公共工具：按模型族归一化名称，从 Qwen3 回复中提取 <think> 思维链与正文。
+
 package models
 
 import "strings"
 
+// GetThinkingAndAnswer 按模型族拆分思维链与最终答案（当前支持 qwen3）
 func GetThinkingAndAnswer(modelType *string, content *string) (*string, *string) {
 	if content == nil {
 		return nil, nil
@@ -30,7 +33,7 @@ func GetThinkingAndAnswer(modelType *string, content *string) (*string, *string)
 	return nil, content
 }
 
-// NormalizeModelFamily normalizes provider-prefixed model class/name strings for shared response parsing.
+// NormalizeModelFamily 归一化带厂商前缀的 modelType 字符串，供共享响应解析逻辑使用
 func NormalizeModelFamily(modelType *string) string {
 	if modelType == nil {
 		return ""
@@ -56,6 +59,7 @@ func NormalizeModelFamily(modelType *string) string {
 	return family
 }
 
+// extractThinkContent 从 Qwen3 回复中提取 <think> 块与后续正文
 func extractThinkContent(content *string) (*string, *string) {
 	if content == nil {
 		return nil, nil
@@ -79,3 +83,5 @@ func extractThinkContent(content *string) (*string, *string) {
 
 	return &thinking, &answer
 }
+
+// NormalizeModelFamily 去除 vendor/ 前缀并按连字符截断族名；qwen3/qwen3-* 统一映射为 qwen3。extractThinkContent 在标签缺失时返回 nil 思维链与原始 content。

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// gpustack.go — GPUStack 本地推理 ModelDriver：OpenAI 兼容 Chat/Embed，自托管 vLLM 等后端。
 //
 
 package models
@@ -26,11 +28,12 @@ import (
 	"strings"
 )
 
-// GPUStackModel implements ModelDriver for GPUStack
+// GPUStackModel GPUStack 自托管推理 ModelDriver
 type GPUStackModel struct {
 	baseModel BaseModel
 }
 
+// NewGPUStackModel 创建 GPUStack 驱动实例
 func NewGPUStackModel(baseURL map[string]string, urlSuffix URLSuffix) *GPUStackModel {
 	return &GPUStackModel{
 		baseModel: BaseModel{
@@ -42,15 +45,18 @@ func NewGPUStackModel(baseURL map[string]string, urlSuffix URLSuffix) *GPUStackM
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 GPUStack 驱动实例
 func (g *GPUStackModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewGPUStackModel(baseURL, g.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "gpustack"，供工厂层路由
 func (g *GPUStackModel) Name() string {
 	return "gpustack"
 }
 
-// ChatWithMessages sends multiple messages and returns the response.
+// ChatWithMessages 非流式 chat/completions
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (g *GPUStackModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := g.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -162,7 +168,8 @@ func (g *GPUStackModel) ChatWithMessages(modelName string, messages []Message, a
 	}, nil
 }
 
-// ChatStreamlyWithSender streams the response via the sender.
+// ChatStreamlyWithSender 流式 chat/completions
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (g *GPUStackModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := g.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -303,6 +310,7 @@ type gpustackModelsResponse struct {
 	Data []DSModel `json:"data"`
 }
 
+// ListModels 列出当前 API Key 可见的模型目录
 func (g *GPUStackModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := g.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -349,23 +357,24 @@ func (g *GPUStackModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, e
 	return ParseListModel(ModelList{Models: parsed.Data}), nil
 }
 
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (g *GPUStackModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := g.ListModels(apiConfig)
 	return err
 }
 
-// gpustackEmbeddingData is one element in a GPUStack embeddings response.
+// gpustackEmbeddingData GPUStack embed 响应单条向量
 type gpustackEmbeddingData struct {
 	Embedding []float64 `json:"embedding"`
 	Index     *int      `json:"index"`
 }
 
-// gpustackEmbeddingResponse is the JSON body returned by GPUStack embeddings API.
+// gpustackEmbeddingResponse GPUStack embed API 响应体
 type gpustackEmbeddingResponse struct {
 	Data []gpustackEmbeddingData `json:"data"`
 }
 
-// Embed requests embedding vectors via GPUStack's v1-openai/embeddings endpoint.
+// Embed 调用 GPUStack v1-openai/embeddings 获取向量
 func (g *GPUStackModel) Embed(
 	modelName *string,
 	texts []string,
@@ -467,42 +476,54 @@ func (g *GPUStackModel) Embed(
 	return embeddings, nil
 }
 
+// Rerank 对候选文档按 query 相关性重排序
 func (g *GPUStackModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", g.Name())
 }
 
+// Balance 查询账户余额（若上游支持）
 func (g *GPUStackModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("%s, no such method", g.Name())
 }
 
+// TranscribeAudio 语音转文字（ASR）
 func (g *GPUStackModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", g.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (g *GPUStackModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", g.Name())
 }
 
+// AudioSpeech 文字转语音（TTS）
 func (g *GPUStackModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", g.Name())
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (g *GPUStackModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", g.Name())
 }
 
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (g *GPUStackModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", g.Name())
 }
 
+// ParseFile 解析文档为结构化文本
 func (g *GPUStackModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", g.Name())
 }
 
+// ListTasks 列出异步任务状态
 func (g *GPUStackModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", g.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (g *GPUStackModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", g.Name())
 }
+
+// GPUStack 驱动实现 Chat/Embed/ListModels/CheckConnection；BaseURL 指向自托管 GPUStack 实例；Rerank/ASR/TTS/OCR 返回不支持。

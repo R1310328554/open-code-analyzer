@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// gitee.go — 模力方舟（Gitee AI）ModelDriver：Chat/Embed/Rerank/OCR/文档解析异步任务及余额查询。
 //
 
 package models
@@ -29,12 +31,12 @@ import (
 	"time"
 )
 
-// GiteeModel implements ModelDriver for Gitee
+// GiteeModel 模力方舟（Gitee AI）ModelDriver
 type GiteeModel struct {
 	baseModel BaseModel
 }
 
-// NewGiteeModel creates a new Gitee model instance
+// NewGiteeModel 创建 Gitee 驱动实例
 func NewGiteeModel(baseURL map[string]string, urlSuffix URLSuffix) *GiteeModel {
 	return &GiteeModel{
 		baseModel: BaseModel{
@@ -45,15 +47,18 @@ func NewGiteeModel(baseURL map[string]string, urlSuffix URLSuffix) *GiteeModel {
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 Gitee 驱动实例
 func (g *GiteeModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewGiteeModel(baseURL, g.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "gitee"，供工厂层路由
 func (g *GiteeModel) Name() string {
 	return "gitee"
 }
 
-// ChatWithMessages sends multiple messages with roles and returns response
+// ChatWithMessages 非流式多轮对话
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (g *GiteeModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := g.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -207,7 +212,8 @@ func (g *GiteeModel) ChatWithMessages(modelName string, messages []Message, apiC
 	return chatResponse, nil
 }
 
-// ChatStreamlyWithSender sends messages and streams response via sender function (best performance, no channel)
+// ChatStreamlyWithSender 流式对话，经 sender 推送 delta
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (g *GiteeModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := g.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -402,7 +408,8 @@ type giteeUsage struct {
 	TotalTokens  int `json:"total_tokens"`
 }
 
-// Embed embeds a list of texts into embeddings
+// Embed 批量文本向量化
+// Embed 将文本列表编码为向量嵌入
 func (g *GiteeModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	if err := g.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -487,7 +494,8 @@ type giteeRerankRequest struct {
 	ReturnDocuments bool     `json:"return_documents"`
 }
 
-// Rerank calculates similarity scores between query and documents
+// Rerank 对候选文档按 query 重排序
+// Rerank 对候选文档按 query 相关性重排序
 func (g *GiteeModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	if err := g.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -561,20 +569,24 @@ func (g *GiteeModel) Rerank(modelName *string, query string, documents []string,
 	return &rerankResponse, nil
 }
 
-// TranscribeAudio transcribe audio
+// TranscribeAudio Gitee 暂不支持 ASR
+// TranscribeAudio 语音转文字（ASR）
 func (g *GiteeModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", g.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (g *GiteeModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", g.Name())
 }
 
-// AudioSpeech convert text to audio
+// AudioSpeech Gitee 暂不支持 TTS
+// AudioSpeech 文字转语音（TTS）
 func (g *GiteeModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", g.Name())
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (g *GiteeModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", g.Name())
 }
@@ -584,7 +596,8 @@ type giteeOCRResponse struct {
 	Prompt string `json:"prompt"`
 }
 
-// OCRFile OCR file
+// OCRFile 对图片执行 OCR 识别
+// OCRFile 支持字节流或 imageURL 输入
 func (g *GiteeModel) OCRFile(modelName *string, content []byte, imageURL *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	if err := g.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -681,7 +694,8 @@ type giteeURLs struct {
 	Cancel string `json:"cancel"`
 }
 
-// ParseFile parse file
+// ParseFile 提交文档解析异步任务并轮询结果
+// ParseFile 创建解析任务并通过 getParseFile 轮询完成
 func (g *GiteeModel) ParseFile(modelName *string, content []byte, documentURL *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	if err := g.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -772,6 +786,7 @@ func (g *GiteeModel) ParseFile(modelName *string, content []byte, documentURL *s
 type giteeGetParseFileResponse struct {
 }
 
+// getParseFile 轮询文档解析任务状态直至完成或超时
 func (g *GiteeModel) getParseFile(baseURL *string, apiKey, taskID *string, timeOut time.Duration, count int) (*giteeGetParseFileResponse, error) {
 	url := fmt.Sprintf("%s/task/%s/status", strings.TrimSuffix(*baseURL, "/"), *taskID)
 
@@ -828,6 +843,7 @@ func (g *GiteeModel) getParseFile(baseURL *string, apiKey, taskID *string, timeO
 	return nil, nil
 }
 
+// ListModels 列出当前 API Key 可见的模型目录
 func (g *GiteeModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 
 	resolvedBaseURL, err := g.baseModel.GetBaseURL(apiConfig)
@@ -878,6 +894,7 @@ func (g *GiteeModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, erro
 	return ParseListModel(modelList), nil
 }
 
+// Balance 查询账户余额（若上游支持）
 func (g *GiteeModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	if err := g.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -939,6 +956,7 @@ func (g *GiteeModel) Balance(apiConfig *APIConfig) (map[string]interface{}, erro
 	return response, nil
 }
 
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (g *GiteeModel) CheckConnection(apiConfig *APIConfig) error {
 	if err := g.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -1017,6 +1035,7 @@ type giteeTaskURLs struct {
 	Cancel string `json:"cancel"`
 }
 
+// ListTasks 列出异步任务状态
 func (g *GiteeModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	if err := g.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -1078,6 +1097,7 @@ func (g *GiteeModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return taskListResp, nil
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (g *GiteeModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	if err := g.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -1139,3 +1159,5 @@ func (g *GiteeModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskRespons
 
 	return taskResp, nil
 }
+
+// Gitee 驱动覆盖 Chat/Embed/Rerank/OCR/ParseFile/Balance/ListTasks；ParseFile 为异步任务需轮询；ListTasks/ShowTask 管理解析任务队列。ASR/TTS 返回不支持。
