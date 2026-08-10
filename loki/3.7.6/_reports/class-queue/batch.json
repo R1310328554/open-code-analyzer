@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T22:06:24Z",
-  "files": [
-    "pkg/engine/internal/planner/logical/format_tree.go",
-    "pkg/engine/internal/planner/logical/function_op.go",
-    "pkg/engine/internal/planner/logical/grouping.go",
-    "pkg/engine/internal/planner/logical/logical.go",
-    "pkg/engine/internal/planner/logical/logical_optimize.go",
-    "pkg/engine/internal/planner/logical/node_base.go",
-    "pkg/engine/internal/planner/logical/node_binop.go",
-    "pkg/engine/internal/planner/logical/node_limit.go",
-    "pkg/engine/internal/planner/logical/node_literal.go",
-    "pkg/engine/internal/planner/logical/node_logql_compat.go",
-    "pkg/engine/internal/planner/logical/node_maketable.go",
-    "pkg/engine/internal/planner/logical/node_project.go",
-    "pkg/engine/internal/planner/logical/node_range_aggregate.go",
-    "pkg/engine/internal/planner/logical/node_return.go",
-    "pkg/engine/internal/planner/logical/node_select.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1012,
-  "done": 525
+  "done": 540
 }
