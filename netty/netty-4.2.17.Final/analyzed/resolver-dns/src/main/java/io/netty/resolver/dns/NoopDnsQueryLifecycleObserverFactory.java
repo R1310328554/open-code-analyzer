@@ -17,7 +17,12 @@ package io.netty.resolver.dns;
 
 import io.netty.handler.codec.dns.DnsQuestion;
 
+/**
+ * 空操作的 {@link DnsQueryLifecycleObserverFactory} 实现。
+ * <p>每次查询均返回 {@link NoopDnsQueryLifecycleObserver}，不记录日志也不收集指标。</p>
+ */
 public final class NoopDnsQueryLifecycleObserverFactory implements DnsQueryLifecycleObserverFactory {
+    /** 全局单例，可直接作为默认工厂使用。 */
     public static final NoopDnsQueryLifecycleObserverFactory INSTANCE = new NoopDnsQueryLifecycleObserverFactory();
 
     private NoopDnsQueryLifecycleObserverFactory() {

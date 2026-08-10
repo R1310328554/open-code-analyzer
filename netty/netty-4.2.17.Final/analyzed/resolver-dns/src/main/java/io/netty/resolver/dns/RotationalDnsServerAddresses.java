@@ -20,11 +20,16 @@ import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
+/**
+ * 轮转式 DNS 服务器地址集合：每次 {@link #stream()} 从不同起始下标顺序遍历。
+ * <p>对应 resolv.conf 中 {@code options rotate} 的语义。</p>
+ */
 final class RotationalDnsServerAddresses extends DefaultDnsServerAddresses {
 
     private static final AtomicIntegerFieldUpdater<RotationalDnsServerAddresses> startIdxUpdater =
             AtomicIntegerFieldUpdater.newUpdater(RotationalDnsServerAddresses.class, "startIdx");
 
+    /** 下次 stream 的起始下标，CAS 递增实现轮转。 */
     @SuppressWarnings("UnusedDeclaration")
     private volatile int startIdx;
 

@@ -20,22 +20,21 @@ import java.net.InetSocketAddress;
 import static io.netty.resolver.dns.DnsServerAddresses.sequential;
 
 /**
- * A {@link DnsServerAddressStreamProvider} which is backed by a sequential list of DNS servers.
+ * 基于顺序 DNS 服务器列表的 {@link DnsServerAddressStreamProvider}。
+ * <p>无论 hostname 为何，均按相同顺序返回服务器地址。</p>
  */
 public final class SequentialDnsServerAddressStreamProvider extends UniSequentialDnsServerAddressStreamProvider {
     /**
-     * Create a new instance.
-     * @param addresses The addresses which will be returned in sequential order via
-     * {@link #nameServerAddressStream(String)}
+     * 创建新实例。
+     * @param addresses 通过 {@link #nameServerAddressStream(String)} 按顺序返回的地址
      */
     public SequentialDnsServerAddressStreamProvider(InetSocketAddress... addresses) {
         super(sequential(addresses));
     }
 
     /**
-     * Create a new instance.
-     * @param addresses The addresses which will be returned in sequential order via
-     * {@link #nameServerAddressStream(String)}
+     * 创建新实例。
+     * @param addresses 通过 {@link #nameServerAddressStream(String)} 按顺序返回的地址
      */
     public SequentialDnsServerAddressStreamProvider(Iterable<? extends InetSocketAddress> addresses) {
         super(sequential(addresses));

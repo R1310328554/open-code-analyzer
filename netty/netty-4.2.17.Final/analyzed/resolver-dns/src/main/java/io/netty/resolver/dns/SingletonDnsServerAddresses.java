@@ -18,10 +18,16 @@ package io.netty.resolver.dns;
 
 import java.net.InetSocketAddress;
 
+/**
+ * 仅包含一个 DNS 服务器地址的 {@link DnsServerAddresses} 实现。
+ * <p>{@link #stream()} 每次 {@link DnsServerAddressStream#next()} 均返回同一地址。</p>
+ */
 final class SingletonDnsServerAddresses extends DnsServerAddresses {
 
+    /** 唯一的 DNS 服务器地址。 */
     private final InetSocketAddress address;
 
+    /** 始终返回 {@link #address} 的单元素流。 */
     private final DnsServerAddressStream stream = new DnsServerAddressStream() {
         @Override
         public InetSocketAddress next() {

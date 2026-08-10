@@ -16,12 +16,15 @@
 package io.netty.resolver.dns;
 
 /**
- * Represents options defined in a file of the format <a href=https://linux.die.net/man/5/resolver>etc/resolv.conf</a>.
+ * 表示 <a href=https://linux.die.net/man/5/resolver>etc/resolv.conf</a> 格式文件中定义的解析选项。
  */
 final class UnixResolverOptions {
 
+    /** 触发绝对查询前 hostname 中所需的最少点数。 */
     private final int ndots;
+    /** 单次 DNS 查询超时（秒）。 */
     private final int timeout;
+    /** 解析主机名时允许发送的最大查询次数。 */
     private final int attempts;
 
     UnixResolverOptions(int ndots, int timeout, int attempts) {
@@ -35,24 +38,24 @@ final class UnixResolverOptions {
     }
 
     /**
-     * The number of dots which must appear in a name before an initial absolute query is made.
-     * The default value is {@code 1}.
+     * 在发起首次绝对查询前，名称中必须出现的点数。
+     * 默认值为 {@code 1}。
      */
     int ndots() {
         return ndots;
     }
 
     /**
-     * The timeout of each DNS query performed by this resolver (in seconds).
-     * The default value is {@code 5}.
+     * 本解析器每次 DNS 查询的超时时间（秒）。
+     * 默认值为 {@code 5}。
      */
     int timeout() {
         return timeout;
     }
 
     /**
-     * The maximum allowed number of DNS queries to send when resolving a host name.
-     * The default value is {@code 16}.
+     * 解析主机名时允许发送的 DNS 查询次数上限。
+     * 默认值为 {@code 16}。
      */
     int attempts() {
         return attempts;
@@ -67,6 +70,7 @@ final class UnixResolverOptions {
                 '}';
     }
 
+    /** 可变构建器，默认值与 glibc 常见 resolv.conf 缺省一致。 */
     static final class Builder {
 
         private int ndots = 1;

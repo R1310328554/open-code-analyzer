@@ -27,28 +27,28 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Looks up the {@code nameserver}s from the {@code /etc/resolv.conf} file, intended for Linux and macOS.
+ * 从 {@code /etc/resolv.conf} 解析 {@code nameserver} 条目，适用于 Linux 与 macOS。
  */
 final class ResolvConf {
+    /** 解析得到的 DNS 服务器地址列表（不可变）。 */
     private final List<InetSocketAddress> nameservers;
 
     /**
-     * Reads from the given reader and extracts the {@code nameserver}s using the syntax of the
-     * {@code /etc/resolv.conf} file, see {@code man resolv.conf}.
+     * 从给定 {@link BufferedReader} 读取并按 {@code resolv.conf} 语法提取 {@code nameserver}。
+     * <p>参见 {@code man resolv.conf}。</p>
      *
-     * @param reader contents of {@code resolv.conf} are read from this {@link BufferedReader},
-     *              up to the caller to close it
+     * @param reader 从中读取配置内容，由调用方负责关闭
      */
     static ResolvConf fromReader(BufferedReader reader) throws IOException {
         return new ResolvConf(reader);
     }
 
     /**
-     * Reads the given file and extracts the {@code nameserver}s using the syntax of the
-     * {@code /etc/resolv.conf} file, see {@code man resolv.conf}.
+     * 从给定文件读取并按 {@code resolv.conf} 语法提取 {@code nameserver}。
+     * <p>参见 {@code man resolv.conf}。</p>
      */
     static ResolvConf fromFile(String file) throws IOException {
-        // Use 1 MB to be a bit conservative
+        // 限制 1 MB 读取量，避免异常大文件
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(
                 new BoundedInputStream(new FileInputStream(file), 1024 * 1024)))) {
             return fromReader(reader);
@@ -56,8 +56,8 @@ final class ResolvConf {
     }
 
     /**
-     * Returns the {@code nameserver}s from the {@code /etc/resolv.conf} file. The file is only read once
-     * during the lifetime of this class.
+     * 返回系统 {@code /etc/resolv.conf} 中的 {@code nameserver} 列表。
+     * <p>类加载期间仅读取一次。</p>
      */
     static ResolvConf system() {
         ResolvConf resolvConv = ResolvConfLazy.machineResolvConf;
@@ -78,6 +78,7 @@ final class ResolvConf {
 
             if (ln.startsWith("nameserver")) {
                 ln = ln.substring("nameserver".length());
+                // 截断行内注释
                 int cIndex = ln.indexOf('#');
                 if (cIndex != -1) {
                     ln = ln.substring(0, cIndex);
@@ -92,10 +93,12 @@ final class ResolvConf {
         this.nameservers = Collections.unmodifiableList(nameservers);
     }
 
+    /** 返回解析到的 nameserver 地址列表。 */
     List<InetSocketAddress> getNameservers() {
         return nameservers;
     }
 
+    /** 懒加载系统 resolv.conf，失败时 {@code machineResolvConf} 为 null。 */
     private static final class ResolvConfLazy {
         static final ResolvConf machineResolvConf;
 

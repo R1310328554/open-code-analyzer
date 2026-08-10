@@ -28,9 +28,8 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
 /**
- * A {@link AddressResolverGroup} of {@link DnsNameResolver}s that supports random selection of destination addresses if
- * multiple are provided by the nameserver. This is ideal for use in applications that use a pool of connections, for
- * which connecting to a single resolved address would be inefficient.
+ * 支持对解析出的多个目标地址轮询选择的 {@link DnsNameResolver} {@link AddressResolverGroup}。
+ * <p>适用于连接池等场景：若始终连向单一解析地址会导致负载不均。</p>
  */
 public class RoundRobinDnsAddressResolverGroup extends DnsAddressResolverGroup {
 
@@ -51,11 +50,9 @@ public class RoundRobinDnsAddressResolverGroup extends DnsAddressResolverGroup {
     }
 
     /**
-     * We need to override this method, not
-     * {@link #newNameResolver(EventLoop, ChannelFactory, DnsServerAddressStreamProvider)},
-     * because we need to eliminate possible caching of {@link io.netty.resolver.NameResolver#resolve}
-     * by {@link InflightNameResolver} created in
-     * {@link #newResolver(EventLoop, ChannelFactory, DnsServerAddressStreamProvider)}.
+     * 必须重写本方法而非 {@link #newNameResolver(EventLoop, ChannelFactory, DnsServerAddressStreamProvider)}，
+     * 以避免 {@link #newResolver(EventLoop, ChannelFactory, DnsServerAddressStreamProvider)} 中
+     * {@link InflightNameResolver} 对 {@link NameResolver#resolve} 结果的缓存，从而保证轮询生效。
      */
     @Override
     protected final AddressResolver<InetSocketAddress> newAddressResolver(EventLoop eventLoop,

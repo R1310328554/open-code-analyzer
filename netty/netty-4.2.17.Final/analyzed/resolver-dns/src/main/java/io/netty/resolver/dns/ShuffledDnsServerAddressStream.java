@@ -21,15 +21,20 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
+/**
+ * 随机打乱顺序后循环返回 DNS 服务器地址的 {@link DnsServerAddressStream} 实现。
+ * <p>每轮遍历结束后重新洗牌，降低对固定顺序的依赖。</p>
+ */
 final class ShuffledDnsServerAddressStream implements DnsServerAddressStream {
 
+    /** 可修改的地址列表，用于就地洗牌。 */
     private final List<InetSocketAddress> addresses;
+    /** 当前轮次中的读取下标。 */
     private int i;
 
     /**
-     * Create a new instance.
-     * @param addresses The addresses are not cloned. It is assumed the caller has cloned this array or otherwise will
-     *                  not modify the contents.
+     * 创建新实例。
+     * @param addresses 地址列表不会被克隆；调用方应已克隆或保证不再修改其内容
      */
     ShuffledDnsServerAddressStream(List<InetSocketAddress> addresses) {
         this.addresses = addresses;
@@ -42,6 +47,7 @@ final class ShuffledDnsServerAddressStream implements DnsServerAddressStream {
         i = startIdx;
     }
 
+    /** 使用线程本地随机源打乱地址顺序。 */
     private void shuffle() {
         Collections.shuffle(addresses, ThreadLocalRandom.current());
     }

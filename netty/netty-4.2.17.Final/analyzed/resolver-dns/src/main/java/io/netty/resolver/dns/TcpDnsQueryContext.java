@@ -28,6 +28,10 @@ import io.netty.util.concurrent.Promise;
 
 import java.net.InetSocketAddress;
 
+/**
+ * 通过 TCP 传输 DNS 查询的 {@link DnsQueryContext} 实现。
+ * <p>TCP 模式下不启用 UDP 失败后的重试逻辑。</p>
+ */
 final class TcpDnsQueryContext extends DnsQueryContext {
 
     TcpDnsQueryContext(Channel channel,
@@ -39,7 +43,7 @@ final class TcpDnsQueryContext extends DnsQueryContext {
                        DnsQuestion question, DnsRecord[] additionals,
                        Promise<AddressedEnvelope<DnsResponse, InetSocketAddress>> promise) {
         super(channel, nameServerAddr, queryContextManager, lifecycleObserver, maxPayLoadSize, recursionDesired,
-                // No retry via TCP.
+                // TCP 不走 UDP 重试路径
                 queryTimeoutMillis, question, additionals, promise, null, false);
     }
 

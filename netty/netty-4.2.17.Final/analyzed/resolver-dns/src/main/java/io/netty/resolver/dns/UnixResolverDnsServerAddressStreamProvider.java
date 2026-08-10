@@ -39,9 +39,9 @@ import static io.netty.util.internal.StringUtil.indexOfNonWhiteSpace;
 import static io.netty.util.internal.StringUtil.indexOfWhiteSpace;
 
 /**
- * Able to parse files such as <a href="https://linux.die.net/man/5/resolver">/etc/resolv.conf</a> and
+ * 解析 <a href="https://linux.die.net/man/5/resolver">/etc/resolv.conf</a> 与
  * <a href="https://developer.apple.com/legacy/library/documentation/Darwin/Reference/ManPages/man5/resolver.5.html">
- * /etc/resolver</a> to respect the system default domain servers.
+ * /etc/resolver</a> 等 Unix 系统 DNS 配置，按域选择 nameserver。
  */
 public final class UnixResolverDnsServerAddressStreamProvider implements DnsServerAddressStreamProvider {
     private static final InternalLogger logger =
@@ -60,12 +60,14 @@ public final class UnixResolverDnsServerAddressStreamProvider implements DnsServ
     private static final String SEARCH_ROW_LABEL = "search";
     private static final String PORT_ROW_LABEL = "port";
 
+    /** 无域专属配置时使用的默认 DNS 服务器集合。 */
     private final DnsServerAddresses defaultNameServerAddresses;
+    /** 域名后缀到专属 DNS 服务器集合的映射。 */
     private final Map<String, DnsServerAddresses> domainToNameServerStreamMap;
 
     /**
-     * Attempt to parse {@code /etc/resolv.conf} and files in the {@code /etc/resolver} directory by default.
-     * A failure to parse will return {@link DefaultDnsServerAddressStreamProvider}.
+     * 静默解析默认路径 {@code /etc/resolv.conf} 与 {@code /etc/resolver} 目录。
+     * <p>解析失败时回退为 {@link DefaultDnsServerAddressStreamProvider}。</p>
      */
     static DnsServerAddressStreamProvider parseSilently() {
         try {
@@ -82,17 +84,15 @@ public final class UnixResolverDnsServerAddressStreamProvider implements DnsServ
     }
 
     /**
-     * Parse a file of the format <a href="https://linux.die.net/man/5/resolver">/etc/resolv.conf</a> which may contain
-     * the default DNS server to use, and also overrides for individual domains. Also parse list of files of the format
-     * <a href="
+     * 解析 <a href="https://linux.die.net/man/5/resolver">/etc/resolv.conf</a> 格式的默认 DNS 服务器及按域覆盖项，
+     * 并解析 <a href="
      * https://developer.apple.com/legacy/library/documentation/Darwin/Reference/ManPages/man5/resolver.5.html">
-     * /etc/resolver</a> which may contain multiple files to override the name servers used for multiple domains.
-     * @param etcResolvConf <a href="https://linux.die.net/man/5/resolver">/etc/resolv.conf</a>.
-     * @param etcResolverFiles List of files of the format defined in
-     * <a href="
+     * /etc/resolver</a> 目录下各域专属配置文件。
+     * @param etcResolvConf <a href="https://linux.die.net/man/5/resolver">/etc/resolv.conf</a> 文件。
+     * @param etcResolverFiles <a href="
      * https://developer.apple.com/legacy/library/documentation/Darwin/Reference/ManPages/man5/resolver.5.html">
-     * /etc/resolver</a>.
-     * @throws IOException If an error occurs while parsing the input files.
+     * /etc/resolver</a> 目录中的配置文件列表。
+     * @throws IOException 解析输入文件时发生 I/O 错误。
      */
     public UnixResolverDnsServerAddressStreamProvider(File etcResolvConf, File... etcResolverFiles) throws IOException {
         Map<String, DnsServerAddresses> etcResolvConfMap = parse(checkNotNull(etcResolvConf, "etcResolvConf"));
@@ -117,23 +117,21 @@ public final class UnixResolverDnsServerAddressStreamProvider implements DnsServ
     }
 
     /**
-     * Parse a file of the format <a href="https://linux.die.net/man/5/resolver">/etc/resolv.conf</a> which may contain
-     * the default DNS server to use, and also overrides for individual domains. Also parse a directory of the format
-     * <a href="
+     * 解析 resolv.conf 文件及 resolver 目录（路径字符串形式）。
+     * @param etcResolvConf <a href="https://linux.die.net/man/5/resolver">/etc/resolv.conf</a> 路径。
+     * @param etcResolverDir 含域专属配置的 <a href="
      * https://developer.apple.com/legacy/library/documentation/Darwin/Reference/ManPages/man5/resolver.5.html">
-     * /etc/resolver</a> which may contain multiple files to override the name servers used for multiple domains.
-     * @param etcResolvConf <a href="https://linux.die.net/man/5/resolver">/etc/resolv.conf</a>.
-     * @param etcResolverDir Directory containing files of the format defined in
-     * <a href="
-     * https://developer.apple.com/legacy/library/documentation/Darwin/Reference/ManPages/man5/resolver.5.html">
-     * /etc/resolver</a>.
-     * @throws IOException If an error occurs while parsing the input files.
+     * /etc/resolver</a> 目录路径。
+     * @throws IOException 解析输入文件时发生 I/O 错误。
      */
     public UnixResolverDnsServerAddressStreamProvider(String etcResolvConf, String etcResolverDir) throws IOException {
         this(etcResolvConf == null ? null : new File(etcResolvConf),
              etcResolverDir == null ? null : new File(etcResolverDir).listFiles());
     }
 
+    /**
+     * 按 hostname 后缀最长匹配选择 DNS 服务器流；无匹配时使用默认集合。
+     */
     @Override
     public DnsServerAddressStream nameServerAddressStream(String hostname) {
         for (;;) {
@@ -147,14 +145,17 @@ public final class UnixResolverDnsServerAddressStreamProvider implements DnsServ
                 return addresses.stream();
             }
 
+            // 剥掉最左侧标签，尝试更短后缀
             hostname = hostname.substring(i + 1);
         }
     }
 
+    /** 判断是否解析出可覆盖系统默认的 nameserver 配置。 */
     private boolean mayOverrideNameServers() {
         return !domainToNameServerStreamMap.isEmpty() || defaultNameServerAddresses.stream().next() != null;
     }
 
+    /** 逐文件解析 resolv.conf / resolver 条目，构建域名到地址流的映射。 */
     private static Map<String, DnsServerAddresses> parse(File... etcResolverFiles) throws IOException {
         Map<String, DnsServerAddresses> domainToNameServerStreamMap =
                 new HashMap<String, DnsServerAddresses>(etcResolverFiles.length << 1);
@@ -201,7 +202,7 @@ public final class UnixResolverDnsServerAddressStreamProvider implements DnsServ
                                 maybeIP = line.substring(i, x);
                             }
 
-                            // There may be a port appended onto the IP address so we attempt to extract it.
+                            // IP 后可能附带端口（如 192.0.2.1.5353）
                             if (!NetUtil.isValidIpV4Address(maybeIP) && !NetUtil.isValidIpV6Address(maybeIP)) {
                                 i = maybeIP.lastIndexOf('.');
                                 if (i + 1 >= maybeIP.length()) {
@@ -212,10 +213,7 @@ public final class UnixResolverDnsServerAddressStreamProvider implements DnsServ
                                 maybeIP = maybeIP.substring(0, i);
                             }
                             InetSocketAddress addr = SocketUtils.socketAddress(maybeIP, port);
-                            // Check if the address is resolved and only if this is the case use it. Otherwise just
-                            // ignore it. This is needed to filter out invalid entries, as if for example an ipv6
-                            // address is used with a scope that represent a network interface that does not exists
-                            // on the host.
+                            // 仅采纳已解析地址，过滤无效 scope 的 IPv6 等条目
                             if (!addr.isUnresolved()) {
                                 addresses.add(addr);
                             }
@@ -262,7 +260,7 @@ public final class UnixResolverDnsServerAddressStreamProvider implements DnsServ
                                     String domainName,
                                     List<InetSocketAddress> addresses,
                                     boolean rotate) {
-        // TODO(scott): sortlist is being ignored.
+        // sortlist 暂未实现
         DnsServerAddresses addrs = rotate
             ? DnsServerAddresses.rotational(addresses)
             : DnsServerAddresses.sequential(addresses);
@@ -283,21 +281,20 @@ public final class UnixResolverDnsServerAddressStreamProvider implements DnsServ
     }
 
     /**
-     * Parse <a href="https://linux.die.net/man/5/resolver">/etc/resolv.conf</a> and return options of interest, namely:
-     * timeout, attempts and ndots.
-     * @return The options values provided by /etc/resolve.conf.
-     * @throws IOException If a failure occurs parsing the file.
+     * 解析 <a href="https://linux.die.net/man/5/resolver">/etc/resolv.conf</a> 中的 options 行，
+     * 提取 timeout、attempts、ndots 等选项。
+     * @return /etc/resolv.conf 提供的选项值。
+     * @throws IOException 解析文件失败时抛出。
      */
     static UnixResolverOptions parseEtcResolverOptions() throws IOException {
         return parseEtcResolverOptions(new File(ETC_RESOLV_CONF_FILE));
     }
 
     /**
-     * Parse a file of the format <a href="https://linux.die.net/man/5/resolver">/etc/resolv.conf</a> and return options
-     * of interest, namely: timeout, attempts and ndots.
-     * @param etcResolvConf a file of the format <a href="https://linux.die.net/man/5/resolver">/etc/resolv.conf</a>.
-     * @return The options values provided by /etc/resolve.conf.
-     * @throws IOException If a failure occurs parsing the file.
+     * 解析指定 resolv.conf 文件中的 options 行。
+     * @param etcResolvConf <a href="https://linux.die.net/man/5/resolver">/etc/resolv.conf</a> 格式文件。
+     * @return 文件中提供的选项值。
+     * @throws IOException 解析文件失败时抛出。
      */
     static UnixResolverOptions parseEtcResolverOptions(File etcResolvConf) throws IOException {
         UnixResolverOptions.Builder optionsBuilder = UnixResolverOptions.newBuilder();
@@ -321,7 +318,7 @@ public final class UnixResolverDnsServerAddressStreamProvider implements DnsServ
             }
         }
 
-        // amend options
+        // 合并 RES_OPTIONS 环境变量中的覆盖项
         if (RES_OPTIONS != null) {
             parseResOptions(RES_OPTIONS, optionsBuilder);
         }
@@ -341,7 +338,7 @@ public final class UnixResolverDnsServerAddressStreamProvider implements DnsServ
                     builder.setTimeout(parseResIntOption(opt, "timeout:"));
                 }
             } catch (NumberFormatException ignore) {
-                // skip bad int values from resolv.conf to keep value already set in UnixResolverOptions
+                // 跳过非法整数值，保留 builder 中已有设置
             }
         }
     }
@@ -352,21 +349,19 @@ public final class UnixResolverDnsServerAddressStreamProvider implements DnsServ
     }
 
     /**
-     * Parse a file of the format <a href="https://linux.die.net/man/5/resolver">/etc/resolv.conf</a> and return the
-     * list of search domains found in it or an empty list if not found.
-     * @return List of search domains.
-     * @throws IOException If a failure occurs parsing the file.
+     * 解析默认 {@code /etc/resolv.conf} 中的 search 域列表。
+     * @return search 域列表，未找到时返回空列表。
+     * @throws IOException 解析文件失败时抛出。
      */
     static List<String> parseEtcResolverSearchDomains() throws IOException {
         return parseEtcResolverSearchDomains(new File(ETC_RESOLV_CONF_FILE));
     }
 
     /**
-     * Parse a file of the format <a href="https://linux.die.net/man/5/resolver">/etc/resolv.conf</a> and return the
-     * list of search domains found in it or an empty list if not found.
-     * @param etcResolvConf a file of the format <a href="https://linux.die.net/man/5/resolver">/etc/resolv.conf</a>.
-     * @return List of search domains.
-     * @throws IOException If a failure occurs parsing the file.
+     * 解析指定 resolv.conf 文件中的 search / domain 行。
+     * @param etcResolvConf <a href="https://linux.die.net/man/5/resolver">/etc/resolv.conf</a> 格式文件。
+     * @return search 域列表。
+     * @throws IOException 解析文件失败时抛出。
      */
     static List<String> parseEtcResolverSearchDomains(File etcResolvConf) throws IOException {
         String localDomain = null;
@@ -386,8 +381,8 @@ public final class UnixResolverDnsServerAddressStreamProvider implements DnsServ
                 } else if (line.startsWith(SEARCH_ROW_LABEL)) {
                     int i = indexOfNonWhiteSpace(line, SEARCH_ROW_LABEL.length());
                     if (i >= 0) {
-                        // May contain more then one entry, either separated by whitespace or tab.
-                        // See https://linux.die.net/man/5/resolver
+                        // 一行可含多个 search 域，以空白或 Tab 分隔
+                        // 参见 https://linux.die.net/man/5/resolver
                         String[] domains = WHITESPACE_PATTERN.split(line.substring(i));
                         Collections.addAll(searchDomains, domains);
                     }
@@ -401,7 +396,7 @@ public final class UnixResolverDnsServerAddressStreamProvider implements DnsServ
             }
         }
 
-        // return what was on the 'domain' line only if there were no 'search' lines
+        // 无 search 行时回退使用 domain 行
         return localDomain != null && searchDomains.isEmpty()
                 ? Collections.singletonList(localDomain)
                 : searchDomains;

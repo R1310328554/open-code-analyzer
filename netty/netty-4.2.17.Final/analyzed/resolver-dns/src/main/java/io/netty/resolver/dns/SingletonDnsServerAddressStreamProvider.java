@@ -18,12 +18,12 @@ package io.netty.resolver.dns;
 import java.net.InetSocketAddress;
 
 /**
- * A {@link DnsServerAddressStreamProvider} which always uses a single DNS server for resolution.
+ * 始终使用单一 DNS 服务器进行解析的 {@link DnsServerAddressStreamProvider}。
  */
 public final class SingletonDnsServerAddressStreamProvider extends UniSequentialDnsServerAddressStreamProvider {
     /**
-     * Create a new instance.
-     * @param address The singleton address to use for every DNS resolution.
+     * 创建新实例。
+     * @param address 每次 DNS 解析使用的固定服务器地址
      */
     public SingletonDnsServerAddressStreamProvider(final InetSocketAddress address) {
         super(DnsServerAddresses.singleton(address));

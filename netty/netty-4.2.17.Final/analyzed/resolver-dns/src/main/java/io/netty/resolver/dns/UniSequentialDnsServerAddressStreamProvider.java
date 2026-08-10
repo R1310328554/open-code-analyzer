@@ -18,9 +18,11 @@ package io.netty.resolver.dns;
 import io.netty.util.internal.ObjectUtil;
 
 /**
- * A {@link DnsServerAddressStreamProvider} which is backed by a single {@link DnsServerAddresses}.
+ * 由单一 {@link DnsServerAddresses} 支撑的 {@link DnsServerAddressStreamProvider} 抽象基类。
+ * <p>忽略 hostname，对所有查询返回同一地址流策略。</p>
  */
 abstract class UniSequentialDnsServerAddressStreamProvider implements DnsServerAddressStreamProvider {
+    /** 固定的 DNS 服务器地址集合策略。 */
     private final DnsServerAddresses addresses;
 
     UniSequentialDnsServerAddressStreamProvider(DnsServerAddresses addresses) {

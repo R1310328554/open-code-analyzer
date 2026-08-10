@@ -20,9 +20,14 @@ import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * 按固定顺序循环返回 DNS 服务器地址的 {@link DnsServerAddressStream} 实现。
+ */
 final class SequentialDnsServerAddressStream implements DnsServerAddressStream {
 
+    /** 共享的地址列表（只读引用）。 */
     private final List<? extends InetSocketAddress> addresses;
+    /** 下次 {@link #next()} 返回的下标。 */
     private int i;
 
     SequentialDnsServerAddressStream(List<? extends InetSocketAddress> addresses, int startIdx) {
@@ -37,6 +42,7 @@ final class SequentialDnsServerAddressStream implements DnsServerAddressStream {
         if (++ i < addresses.size()) {
             this.i = i;
         } else {
+            // 遍历完毕后从头开始
             this.i = 0;
         }
         return next;
@@ -57,6 +63,7 @@ final class SequentialDnsServerAddressStream implements DnsServerAddressStream {
         return toString("sequential", i, addresses);
     }
 
+    /** 生成带类型、当前下标与地址列表的调试字符串。 */
     static String toString(String type, int index, Collection<? extends InetSocketAddress> addresses) {
         final StringBuilder buf = new StringBuilder(type.length() + 2 + addresses.size() * 16);
         buf.append(type).append("(index: ").append(index);
