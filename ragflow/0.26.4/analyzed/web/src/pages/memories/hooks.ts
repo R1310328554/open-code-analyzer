@@ -1,3 +1,7 @@
+/**
+ * memories/hooks.ts — 记忆库列表页数据层：CRUD、筛选、重命名弹窗与 React Query 缓存。
+ */
+
 // src/pages/next-memoryes/hooks.ts
 
 import { FilterCollection } from '@/components/list-filter-bar/interface';
@@ -29,6 +33,7 @@ import {
   MemoryListResponse,
 } from './interface';
 
+/** 调用 createMemory 接口并在成功时弹出 created 提示。 */
 export const useCreateMemory = () => {
   const { t } = useTranslation();
 
@@ -49,10 +54,12 @@ export const useCreateMemory = () => {
   return { createMemory };
 };
 
+/** 分页 + 关键词 + memoryType/storageType/owner 筛选拉取记忆库列表。 */
 export const useFetchMemoryList = () => {
   const { handleInputChange, searchString, pagination, setPagination } =
     useHandleSearchChange();
   const { filterValue, handleFilterSubmit } = useHandleFilterSubmit();
+  // 搜索框输入防抖 500ms，减少列表接口频率
   const debouncedSearchString = useDebounce(searchString, { wait: 500 });
 
   const memoryType = Array.isArray(filterValue.memoryType)
@@ -122,6 +129,7 @@ export const useFetchMemoryList = () => {
   };
 };
 
+/** 按路由 id 或 shared_id 拉取记忆库详情；分享链接需 tenantId。 */
 export const useFetchMemoryDetail = (tenantId?: string) => {
   const { id } = useParams();
 
@@ -137,6 +145,7 @@ export const useFetchMemoryDetail = (tenantId?: string) => {
       tenant_id: tenantId,
     };
   }
+  // 分享场景走 getMemoryDetailShare，否则走常规详情接口
   const fetchMemoryDetailFunc = shared_id
     ? memoryService.getMemoryDetailShare
     : memoryService.getMemoryDetail;
@@ -156,6 +165,7 @@ export const useFetchMemoryDetail = (tenantId?: string) => {
   return { data: data?.data, isLoading, isError };
 };
 
+/** 删除记忆库并在成功后 invalidate memoryList 查询。 */
 export const useDeleteMemory = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -194,6 +204,7 @@ export const useDeleteMemory = () => {
   return { data, isError, deleteMemory };
 };
 
+/** 按 id 更新记忆库配置，成功后刷新 memoryDetail 缓存。 */
 export const useUpdateMemory = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -230,6 +241,7 @@ export const useUpdateMemory = () => {
   return { data, isError, updateMemory };
 };
 
+/** 新建/重命名弹窗：无 id 时 create，有 id 时 update 名称。 */
 export const useRenameMemory = () => {
   const [memory, setMemory] = useState<IMemory>({} as IMemory);
   const {
@@ -245,6 +257,7 @@ export const useRenameMemory = () => {
   const handleShowChatRenameModal = useCallback(
     (record?: IMemory) => {
       if (record) {
+        // 打开编辑弹窗时补齐默认 embedding / LLM 模型 ID
         const embd_id = record.embd_id || defaultModelDictionary?.embd_id;
         const llm_id = record.llm_id || defaultModelDictionary?.llm_id;
         setMemory({
@@ -299,6 +312,7 @@ export const useRenameMemory = () => {
   };
 };
 
+/** 从当前列表数据聚合 memoryType、storageType 与 owner 筛选项。 */
 export function useSelectFilters() {
   const { t } = useTranslation();
   const { data: res } = useFetchMemoryList();

@@ -1,3 +1,7 @@
+/**
+ * memory-message/hook.ts — 记忆消息列表：分页搜索、Agent 筛选与删除/启停/内容预览。
+ */
+
 import { FilterCollection } from '@/components/list-filter-bar/interface';
 import { useHandleFilterSubmit } from '@/components/list-filter-bar/use-handle-filter-submit';
 import message from '@/components/ui/message';
@@ -15,6 +19,7 @@ import {
 } from '../memory-message/interface';
 import { IMessageInfo } from './interface';
 
+/** 按 memoryBaseId 拉取消息表格数据，支持 keywords 与 agentId 过滤。 */
 export const useFetchMemoryMessageList = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
@@ -59,6 +64,7 @@ export const useFetchMemoryMessageList = () => {
   };
 };
 
+/** 消息行操作：删除确认、启用/禁用状态、弹窗查看 message content。 */
 export const useMessageAction = () => {
   const queryClient = useQueryClient();
   const { id: memoryId } = useParams();
@@ -71,6 +77,7 @@ export const useMessageAction = () => {
     setShowDeleteDialog(true);
   }, []);
 
+  /** 确认删除选中 message_id 并刷新 FetchMemoryMessage 查询。 */
   const handleDeleteMessage = useCallback(() => {
     // delete message
     memoryService
@@ -87,6 +94,7 @@ export const useMessageAction = () => {
     setShowDeleteDialog(false);
   }, [selectedMessage.message_id, queryClient]);
 
+  /** 更新消息 status（启用/禁用），成功后 invalidate 列表。 */
   const handleUpdateMessageState = useCallback(
     (messageInfo: IMessageInfo, enable: boolean) => {
       // delete message
@@ -133,6 +141,7 @@ export const useMessageAction = () => {
       selectedMessage.message_id,
     ],
 
+    /** 打开内容弹窗并请求 getMessageContent 填充 selectedMessageContent。 */
     mutationFn: async (selectedMessage: IMessageInfo) => {
       setShowMessageContentDialog(true);
       const res = await memoryService.getMessageContent({
@@ -175,6 +184,7 @@ export const useMessageAction = () => {
   };
 };
 
+/** 从消息列表聚合 agent_id -> agent_name 供筛选栏使用。 */
 export function useSelectFilters() {
   const { data } = useFetchMemoryMessageList();
   const agentId = useMemo(() => {
