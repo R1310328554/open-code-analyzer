@@ -15,23 +15,8 @@
     "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/resources/SsfStreamVerificationResource.java",
     "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/resources/SsfSubjectManagementResource.java",
     "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/resources/SsfTransmitterResource.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/stream/DuplicateStreamConfigException.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/stream/ManagedBy.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/stream/SsfEventsConfig.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/stream/StreamConfig.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/stream/StreamConfigInputRepresentation.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/stream/StreamConfigUpdateRepresentation.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/stream/StreamDeliveryConfig.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/stream/StreamService.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/stream/StreamVerificationConfig.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/stream/StreamVerificationRequest.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/stream/StreamVerificationService.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/stream/storage/SsfStreamStore.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/stream/storage/client/ClientStreamStore.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/subject/AdminSubjectResult.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/subject/DefaultSsfSubjectInclusionResolver.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/subject/SsfNotifyAttributes.java"
+    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/stream/DuplicateStreamConfigException.java"
   ],
   "remaining_pending": 538,
-  "done": 5430
+  "done": 5445
 }
