@@ -20,6 +20,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Exception thrown if an error happens during QPACK processing.
+ * <p>编解码、动态表或 Huffman 字面量违规时抛出；常映射为 {@code QPACK_*_STREAM_ERROR} 关闭连接。
  */
 public final class QpackException extends Exception {
 
@@ -28,6 +29,7 @@ public final class QpackException extends Exception {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 
+    /** 预分配栈轨迹的静态异常实例，热路径解码失败时复用。 */
     static QpackException newStatic(Class<?> clazz, String method, String message) {
         return ThrowableUtil.unknownStackTrace(new QpackException(message, null, false, false), clazz, method);
     }

@@ -31,6 +31,10 @@ import static io.netty.handler.codec.http3.QpackUtil.MAX_UNSIGNED_INT;
 import static io.netty.handler.codec.http3.QpackUtil.decodePrefixedIntegerAsInt;
 import static io.netty.util.internal.ObjectUtil.checkInRange;
 
+/**
+ * 解析 QPACK encoder 单向流上的编码器指令，更新本地 {@link QpackDecoder} 动态表。
+ * <p>处理 Set Dynamic Table Capacity、Insert、Duplicate；需 decoder 流就绪才能应用插入类指令。
+ */
 final class QpackEncoderHandler extends ByteToMessageDecoder {
     private static final QpackException INVALID_LENGTH_STRING_LITERAL =
             QpackException.newStatic(QpackEncoderHandler.class, "decodeStringLiteral(...)",
@@ -63,6 +67,7 @@ final class QpackEncoderHandler extends ByteToMessageDecoder {
         //+---+---+---+---+---+---+---+---+
         //| 0 | 0 | 1 |   Capacity (5+)   |
         //+---+---+---+-------------------+
+        // Set Dynamic Table Capacity（首 3 比特 001）
         if ((b & 0b1110_0000) == 0b0010_0000) {
             // new capacity
             long capacity = QpackUtil.decodePrefixedInteger(in, 5);
@@ -81,6 +86,7 @@ final class QpackEncoderHandler extends ByteToMessageDecoder {
 
         final QpackAttributes qpackAttributes = Http3.getQpackAttributes(ctx.channel().parent());
         assert qpackAttributes != null;
+        // 插入类指令需经 decoder 单向流回传 Insert Count Increment，故 decoder 流未就绪则暂缓解析
         if (!qpackAttributes.dynamicTableDisabled() && !qpackAttributes.decoderStreamAvailable()) {
             // We need the decoder stream to update the decoder with these instructions.
             return;

@@ -24,6 +24,10 @@ import io.netty.util.concurrent.Promise;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * 绑定 QUIC 连接上的 QPACK 编解码专用单向流及其就绪 {@link Promise}。
+ * <p>动态表禁用时 encoder/decoder 流 promise 为 null；否则在流创建后 {@code setSuccess} 供编解码器写入指令。
+ */
 final class QpackAttributes {
     private final QuicChannel channel;
     private final boolean dynamicTableDisabled;
@@ -33,6 +37,7 @@ final class QpackAttributes {
     private QuicStreamChannel encoderStream;
     private QuicStreamChannel decoderStream;
 
+    /** @param disableDynamicTable 为 true 时不使用 QPACK 动态表及专用流。 */
     QpackAttributes(QuicChannel channel, boolean disableDynamicTable) {
         this.channel = channel;
         dynamicTableDisabled = disableDynamicTable;
@@ -92,6 +97,7 @@ final class QpackAttributes {
         encoderStreamPromise.setSuccess(encoderStream);
     }
 
+    /** 编码器流异常关闭时，令等待 {@link #encoderStream()} 的 listener 以 failure 结束。 */
     void encoderStreamInactive(Throwable cause) {
         assert channel.eventLoop().inEventLoop();
         assert !dynamicTableDisabled;

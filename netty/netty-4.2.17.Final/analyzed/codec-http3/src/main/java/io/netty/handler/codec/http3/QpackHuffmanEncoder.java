@@ -20,6 +20,9 @@ import io.netty.util.AsciiString;
 import io.netty.util.ByteProcessor;
 import io.netty.util.internal.ObjectUtil;
 
+/**
+ * QPACK 字符串字面量 Huffman 编码器：查 {@link QpackUtil#HUFFMAN_CODES} 表逐字节输出并填充 EOS 前缀。
+ */
 final class QpackHuffmanEncoder {
 
     private final int[] codes;
@@ -47,6 +50,7 @@ final class QpackHuffmanEncoder {
      *
      * @param out the output stream for the compressed data
      * @param data the string literal to be Huffman encoded
+     * <p>{@link AsciiString} 走零拷贝 {@link ByteProcessor} 快路径；末尾按 RFC 7541 写入 EOS 位填充。
      */
     public void encode(ByteBuf out, CharSequence data) {
         ObjectUtil.checkNotNull(out, "out");
@@ -86,7 +90,7 @@ final class QpackHuffmanEncoder {
 
         if (n > 0) {
             current <<= 8 - n;
-            current |= 0xFF >>> n; // this should be EOS symbol
+            current |= 0xFF >>> n; // EOS 符号的位填充，标记 Huffman 串结束
             out.writeByte((int) current);
         }
     }

@@ -19,6 +19,10 @@ import io.netty.buffer.ByteBuf;
 import io.netty.util.AsciiString;
 import io.netty.util.ByteProcessor;
 
+/**
+ * QPACK/HPACK 共用 Huffman 字面量解码器：基于预生成 {@link #HUFFS} 状态表逐 nibble 解码。
+ * <p>大数组为 RFC 7541 Appendix B 查表数据，由生成器产出，勿手改。
+ */
 final class QpackHuffmanDecoder implements ByteProcessor {
 
     /* Scroll to the bottom! */
@@ -35,6 +39,7 @@ final class QpackHuffmanDecoder implements ByteProcessor {
      * A table of byte tuples (state, flags, output).   They are packed together as:
      * <p>
      * state<<16 + flags<<8 + output
+     * <p>每个 int 打包下一状态、完成/发符号/失败标志及可选输出字节。
      */
     private static final int[] HUFFS = new int[] {
             // Node 0 (Root Node, never emits symbols.)
@@ -4664,6 +4669,7 @@ final class QpackHuffmanDecoder implements ByteProcessor {
      * @param buf the string literal to be decoded
      * @return the output stream for the compressed data
      * @throws QpackException EOS Decoded
+     * <p>按 {@code length} 读取压缩字节，经 {@link ByteProcessor} 驱动状态机；必须以 EOS 前缀正确结束。
      */
     public AsciiString decode(ByteBuf buf, int length) throws QpackException {
         if (length == 0) {
@@ -4707,6 +4713,7 @@ final class QpackHuffmanDecoder implements ByteProcessor {
     }
 
     private boolean processNibble(int input) {
+        // 用当前 state 高 12 位与输入半字节索引 HUFFS；flags 仅占低 3 位故高 nibble 恒为 0
         // The high nibble of the flags byte of each row is always zero
         // (low nibble after shifting row by 12), since there are only 3 flag bits
         int index = state >> 12 | (input & 0x0F);

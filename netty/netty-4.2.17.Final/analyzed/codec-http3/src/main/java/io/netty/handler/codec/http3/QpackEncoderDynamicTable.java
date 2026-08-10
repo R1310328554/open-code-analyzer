@@ -28,6 +28,10 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.Math.toIntExact;
 
+/**
+ * 编码端 QPACK 动态表：哈希表 + 插入序链表，跟踪 refCount、draining/dropping 区间与 known received count。
+ * <p>实现 RFC 9204 §2.1.1.1 启发式，避免插入解码端尚未确认的「禁止插入」条目。
+ */
 final class QpackEncoderDynamicTable {
     private static final QpackException INVALID_KNOW_RECEIVED_COUNT_INCREMENT =
             QpackException.newStatic(QpackDecoder.class, "incrementKnownReceivedCount(...)",
@@ -74,6 +78,7 @@ final class QpackEncoderDynamicTable {
     private long maxTableCapacity = -1;
 
     /*
+     * 下列指针实现 RFC 9204 §2.1.1.1「避免禁止插入」的区间划分：
      * The below indexes follow the suggested heuristics in Section 2.1.1.1 Avoiding Prohibited insertions
      * https://www.rfc-editor.org/rfc/rfc9204.html#name-avoiding-prohibited-inserti
      *
@@ -136,6 +141,7 @@ final class QpackEncoderDynamicTable {
      * @param headerSize    the size of the header.
      * @return              the absolute index or {@code -1) if it could not be added.
      */
+    /** 插入条目并返回绝对索引；空间不足或 index 将溢出时返回 -1。 */
     int add(CharSequence name, CharSequence value, long headerSize) {
         if (maxTableCapacity - size < headerSize) {
             return -1;
@@ -349,6 +355,7 @@ final class QpackEncoderDynamicTable {
         throw new IllegalArgumentException("Index " + idx + " not found");
     }
 
+    /** 条目落在 draining 区且再插入会超容量时，需通过 Duplicate 指令复制而非直接引用。 */
     boolean requiresDuplication(int idx, long size) {
         assert head != tail;
 

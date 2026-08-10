@@ -33,6 +33,7 @@ package io.netty.handler.codec.http3;
  * compression-based side channels (RFC 9204 7.1) for credentials such as
  * {@code Authorization}, {@code Cookie}, {@code Set-Cookie} and
  * {@code Proxy-Authorization}.</p>
+ * <p>敏感头设 {@code N=1} 且不入动态表，降低压缩侧信道泄露凭证的风险；跨连接共享实现须线程安全。
  * If the object can be dynamically modified and shared across multiple connections it may need to be thread safe.
  */
 public interface QpackSensitivityDetector {
@@ -40,6 +41,7 @@ public interface QpackSensitivityDetector {
     /**
      * Treats every header field as non-sensitive. This is the historical default
      * behaviour of the QPACK encoder and is the backward-compatible choice.
+     * <p>历史默认：所有头均可索引，与旧版 QPACK 编码行为兼容。
      */
     QpackSensitivityDetector NEVER_SENSITIVE = (name, value) -> false;
 

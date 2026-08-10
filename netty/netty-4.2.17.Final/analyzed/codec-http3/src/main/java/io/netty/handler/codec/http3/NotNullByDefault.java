@@ -33,6 +33,8 @@ import java.lang.annotation.Target;
  * <p>
  * Any nullness annotations explicitly applied to a parameter or return value within a package will override
  * the default nullness behavior specified by {@link NotNullByDefault}.
+ * <p>包级默认非空约定：静态分析工具将本包内方法参数与返回值视为 {@link org.jetbrains.annotations.NotNull}，
+ * 显式 {@link org.jetbrains.annotations.Nullable} 可覆盖。
  */
 @Documented
 @TypeQualifierDefault({ ElementType.PARAMETER, ElementType.METHOD })

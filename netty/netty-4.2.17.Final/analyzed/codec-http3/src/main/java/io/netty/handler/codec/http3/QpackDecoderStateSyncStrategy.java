@@ -20,6 +20,7 @@ package io.netty.handler.codec.http3;
  * A strategy that determines when to send <a
  * href="https://www.rfc-editor.org/rfc/rfc9204.html#name-section-acknowledgment">acknowledgment</a> of new table
  * entries on the QPACK decoder stream.
+ * <p>控制何时在 decoder 单向流上发送 Insert Count Increment，避免与 Section Ack 重复确认同一插入。
  */
 public interface QpackDecoderStateSyncStrategy {
 
@@ -63,6 +64,7 @@ public interface QpackDecoderStateSyncStrategy {
             }
 
             @Override
+            /** 每条动态表插入后立即 increment，除非 Section Ack 已隐含确认到该计数。 */
             public boolean entryAdded(int insertCount) {
                 if (lastCountAcknowledged < insertCount) {
                     lastCountAcknowledged = insertCount;

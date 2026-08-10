@@ -24,6 +24,9 @@ import static io.netty.handler.codec.http3.QpackUtil.MIN_HEADER_TABLE_SIZE;
 import static io.netty.handler.codec.http3.QpackUtil.toIntOrThrow;
 import static java.lang.Math.floorDiv;
 
+/**
+ * 解码端 QPACK 动态表：环形数组存储 {@link QpackHeaderField}，按 RFC 9204 相对索引寻址。
+ */
 final class QpackDecoderDynamicTable {
     private static final QpackException GET_ENTRY_ILLEGAL_INDEX_VALUE =
             QpackException.newStatic(QpackDecoderDynamicTable.class, "getEntry(...)",
@@ -31,7 +34,7 @@ final class QpackDecoderDynamicTable {
     private static final QpackException HEADER_TOO_LARGE =
             QpackException.newStatic(QpackDecoderDynamicTable.class, "add(...)", "QPACK - header entry too large.");
 
-    // a circular queue of header fields
+    /** 环形队列存放已插入的头部条目；head 为下一插入位置，tail 为最旧条目。 */
     private QpackHeaderField[] fields;
     private int head;
     private int tail;
@@ -62,6 +65,7 @@ final class QpackDecoderDynamicTable {
         return entry;
     }
 
+    /** 字段行编码用的相对索引（相对 Base）。 */
     QpackHeaderField getEntryRelativeEncodedField(int index) throws QpackException {
         // https://www.rfc-editor.org/rfc/rfc9204.html#name-relative-indexing
         return getEntry(moduloIndex(index));
@@ -78,6 +82,7 @@ final class QpackDecoderDynamicTable {
         if (headerSize > capacity) {
             throw HEADER_TOO_LARGE;
         }
+        // 容量不足时逐条驱逐最旧条目（FIFO）
         while (capacity - size < headerSize) {
             remove();
         }

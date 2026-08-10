@@ -34,12 +34,16 @@ import static io.netty.handler.codec.http3.QpackUtil.encodePrefixedInteger;
 
 /**
  * A QPACK encoder.
+ * <p>将 {@link Http3Headers} 编码为 QPACK 头部块：选择静态/动态表索引或字面量，
+ * 经 encoder 单向流插入动态表，并跟踪 Section Ack / 流取消以维护引用计数。
  */
 final class QpackEncoder {
     private static final QpackException INVALID_SECTION_ACKNOWLEDGMENT =
             QpackException.newStatic(QpackDecoder.class, "sectionAcknowledgment(...)",
                     "QPACK - section acknowledgment received for unknown stream.");
+    /** 未写入动态表引用，但可能已在 encoder 流上插入条目。 */
     private static final int DYNAMIC_TABLE_ENCODE_NOT_DONE = -1;
+    /** 动态表不可用或为避免阻塞流而未在头部块中引用。 */
     private static final int DYNAMIC_TABLE_ENCODE_NOT_POSSIBLE = -2;
 
     private final QpackHuffmanEncoder huffmanEncoder;
@@ -101,7 +105,7 @@ final class QpackEncoder {
                 }
             }
 
-            // Track all the indices that we need to ack later.
+            // 记录本头部块引用的动态表索引，待 decoder 发送 Section Ack 后递减 refCount
             if (dynamicTableIndices != null) {
                 assert streamSectionTrackers != null;
                 streamSectionTrackers.computeIfAbsent(streamId, __ -> new ArrayDeque<>())
@@ -153,6 +157,7 @@ final class QpackEncoder {
      *
      * @param streamId For which the header fields section is acknowledged.
      */
+    /** decoder 流 Section Ack：释放该 streamId 对应头部块对动态表条目的引用。 */
     void sectionAcknowledgment(long streamId) throws QpackException {
         assert streamSectionTrackers != null;
         final Queue<Indices> tracker = streamSectionTrackers.get(streamId);
@@ -569,6 +574,7 @@ final class QpackEncoder {
         huffmanEncoder.encode(out, value);
     }
 
+    /** 接近 SETTINGS 上限时只插入表项、不在当前头部块引用，以免阻塞流等待动态表。 */
     private boolean mayNotBlockStream() {
         return blockedStreams >= maxBlockedStreams - 1;
     }

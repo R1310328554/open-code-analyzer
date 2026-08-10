@@ -17,6 +17,7 @@ package io.netty.handler.codec.http3;
 
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
+/** QPACK 静态/动态表中的一条 name-value 及其 RFC 9204 计尺寸规则。 */
 class QpackHeaderField {
 
     /**
@@ -27,6 +28,7 @@ class QpackHeaderField {
      */
     static final int ENTRY_OVERHEAD = 32;
 
+    /** 条目占用字节 = 名长 + 值长 + {@link #ENTRY_OVERHEAD}（固定 32）。 */
     static long sizeOf(CharSequence name, CharSequence value) {
         return name.length() + value.length() + ENTRY_OVERHEAD;
     }
@@ -34,7 +36,7 @@ class QpackHeaderField {
     final CharSequence name;
     final CharSequence value;
 
-    // This constructor can only be used if name and value are ISO-8859-1 encoded.
+    // name/value 须为 ISO-8859-1（HTTP 头字段字节语义）
     QpackHeaderField(CharSequence name, CharSequence value) {
         this.name = checkNotNull(name, "name");
         this.value = checkNotNull(value, "value");

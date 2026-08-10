@@ -34,6 +34,10 @@ import static io.netty.handler.codec.http3.QpackUtil.firstByteEquals;
 import static io.netty.handler.codec.http3.QpackUtil.toIntOrThrow;
 import static java.lang.Math.floorDiv;
 
+/**
+ * QPACK 解码器：解析头部块字段行、维护解码端动态表，并在所需插入计数未满足时阻塞流。
+ * <p>解码成功后经 decoder 单向流发送 Section Ack；动态表更新时发送 Insert Count Increment。
+ */
 final class QpackDecoder {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(QpackDecoder.class);
     private static final QpackException DYNAMIC_TABLE_CAPACITY_EXCEEDS_MAX =
@@ -68,6 +72,7 @@ final class QpackDecoder {
     /**
      * Hashmap with key as the required insert count to unblock the stream and the value a {@link List} of
      * {@link Runnable} to invoke when the stream can be unblocked.
+     * <p>键为解除阻塞所需的 insert count，值为待恢复的解码回调（RFC 9204 blocked streams）。
      */
     private final IntObjectHashMap<List<Runnable>> blockedStreams;
 
@@ -117,6 +122,7 @@ final class QpackDecoder {
             throws QpackException {
         final int initialReaderIdx = in.readerIndex();
         final int requiredInsertCount = decodeRequiredInsertCount(qpackAttributes, in);
+        // 动态表条目尚未插入到位：登记 whenDecoded，回退 readerIndex，返回 false 表示流被阻塞
         if (shouldWaitForDynamicTableUpdates(requiredInsertCount)) {
             blockedStreamsCount++;
             blockedStreams.computeIfAbsent(requiredInsertCount, __ -> new ArrayList<>(2)).add(whenDecoded);
@@ -143,6 +149,7 @@ final class QpackDecoder {
                 throw UNKNOWN_TYPE;
             }
         }
+        // Required Insert Count > 0 时向 decoder 流发送 Section Acknowledgment（首比特 1）
         if (requiredInsertCount > 0) {
             assert !qpackAttributes.dynamicTableDisabled();
             assert qpackAttributes.decoderStreamAvailable();

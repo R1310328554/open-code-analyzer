@@ -64,10 +64,14 @@ import static io.netty.util.internal.StringUtil.unescapeCsvFields;
 
 /**
  * Provides utility methods and constants for the HTTP/3 to HTTP conversion
+ * <p>在 {@link Http3FrameToHttpObjectCodec} 等路径上，将 HTTP/3 伪头部与 QPACK 解码结果
+ * 映射为 HTTP/1.x {@link HttpMessage}，或反向生成 {@link Http3Headers}；处理 RFC 禁传头、
+ * Cookie 拆分/合并、TE 过滤及 CONNECT 请求的特殊 authority 规则。
  */
 public final class HttpConversionUtil {
     /**
      * The set of headers that should not be directly copied when converting headers from HTTP to HTTP/3.
+     * <p>Connection/Host/Transfer-Encoding 等由 HTTP/3 语义替代或已编码为伪头部，直接复制会违规。
      */
     private static final CharSequenceMap<AsciiString> HTTP_TO_HTTP3_HEADER_BLACKLIST =
             new CharSequenceMap<>();
@@ -87,6 +91,7 @@ public final class HttpConversionUtil {
         HTTP_TO_HTTP3_HEADER_BLACKLIST.add(ExtensionHeaderNames.PATH.text(), EMPTY_STRING);
     }
 
+    /** HTTP/3 :path 为空时 RFC 要求使用 {@code /}。 */
     /**
      * <a href="https://tools.ietf.org/html/rfc7540#section-8.1.2.3">[RFC 7540], 8.1.2.3</a> states the path must not
      * be empty, and instead should be {@code /}.
@@ -98,6 +103,7 @@ public final class HttpConversionUtil {
 
     /**
      * Provides the HTTP header extensions used to carry HTTP/3 information in HTTP objects
+     * <p>HTTP/3 无 Host/:path 等常规头，转 HTTP/1 时用 {@code x-http3-*} 扩展头保留流 ID 与伪头部。
      */
     public enum ExtensionHeaderNames {
         /**
@@ -200,7 +206,7 @@ public final class HttpConversionUtil {
 
     private static CharSequence extractPath(CharSequence method, Http3Headers headers) {
         if (HttpMethod.CONNECT.asciiName().contentEqualsIgnoreCase(method)) {
-            // See https://tools.ietf.org/html/rfc7231#section-4.3.6
+            // CONNECT 在 HTTP/1 请求行用 authority 而非 path（RFC 7231 §4.3.6）
             return checkNotNull(headers.authority(),
                     "authority header cannot be null in the conversion to HTTP/1.x");
         } else {
@@ -346,6 +352,7 @@ public final class HttpConversionUtil {
                     "HTTP/3 to HTTP/1.x headers conversion error", t);
         }
 
+        // HTTP/3 无 chunked/TE 语义，转 HTTP/1 时移除并由 Keep-Alive 扩展流 ID
         outputHeaders.remove(HttpHeaderNames.TRANSFER_ENCODING);
         outputHeaders.remove(HttpHeaderNames.TRAILER);
         if (!isTrailer) {
@@ -373,7 +380,7 @@ public final class HttpConversionUtil {
             out.method(request.method().asciiName());
             setHttp3Scheme(inHeaders, requestTargetUri, out);
 
-            // Attempt to take from HOST header before taking from the request-line
+            // 优先 Host 头构造 :authority，否则从绝对 URI 提取（origin/asterisk 形式除外）
             String host = inHeaders.getAsString(HttpHeaderNames.HOST);
             if (host != null && !host.isEmpty()) {
                 setHttp3Authority(host, out);
@@ -457,6 +464,7 @@ public final class HttpConversionUtil {
 
     static void toHttp3Headers(HttpHeaders inHeaders, Http3Headers out) {
         Iterator<Entry<CharSequence, CharSequence>> iter = inHeaders.iteratorCharSequence();
+        // Connection 头列出的 hop-by-hop 头在 HTTP/3 中同样不得出现，预解析为小写集合
         // Choose 8 as a default size because it is unlikely we will see more than 4 Connection headers values, but
         // still allowing for "enough" space in the map to reduce the chance of hash code collision.
         CharSequenceMap<AsciiString> connectionBlacklist =
@@ -471,7 +479,7 @@ public final class HttpConversionUtil {
                     toHttp3HeadersFilterTE(entry, out);
                 } else if (aName.contentEqualsIgnoreCase(COOKIE)) {
                     AsciiString value = AsciiString.of(entry.getValue());
-                    // split up cookies to allow for better compression
+                    // 按分号拆成多条 cookie 头，便于 QPACK 静态/动态表压缩
                     try {
                         int index = value.forEachByte(FIND_SEMI_COLON);
                         if (index != -1) {
@@ -566,6 +574,7 @@ public final class HttpConversionUtil {
 
     /**
      * Utility which translates HTTP/3 headers to HTTP/1 headers.
+     * <p>伪头部映射为 Host 或 {@link ExtensionHeaderNames}；多条 Cookie 合并为 HTTP/1 单头。
      */
     private static final class Http3ToHttpHeaderTranslator {
         /**

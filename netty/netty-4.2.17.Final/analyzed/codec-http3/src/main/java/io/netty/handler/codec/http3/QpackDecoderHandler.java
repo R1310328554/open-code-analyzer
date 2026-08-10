@@ -26,6 +26,10 @@ import static io.netty.handler.codec.http3.Http3CodecUtils.connectionError;
 import static io.netty.handler.codec.http3.Http3ErrorCode.QPACK_DECODER_STREAM_ERROR;
 import static io.netty.handler.codec.http3.QpackUtil.decodePrefixedIntegerAsInt;
 
+/**
+ * 解析 QPACK decoder 单向流上的解码器反馈指令，转发给对端 {@link QpackEncoder}。
+ * <p>处理 Section Ack、Stream Cancellation、Insert Count Increment；非法指令触发连接错误。
+ */
 final class QpackDecoderHandler extends ByteToMessageDecoder {
 
     private boolean discard;
@@ -53,6 +57,7 @@ final class QpackDecoderHandler extends ByteToMessageDecoder {
         // +---+---+---+---+---+---+---+---+
         // | 1 |      Stream ID (7+)       |
         // +---+---------------------------+
+        // Section Acknowledgment：告知编码器某流的头部块已被成功解码
         if ((b & 0b1000_0000) == 0b1000_0000) {
             long streamId = QpackUtil.decodePrefixedInteger(in, 7);
             if (streamId < 0) {
@@ -74,6 +79,7 @@ final class QpackDecoderHandler extends ByteToMessageDecoder {
         // +---+---+---+---+---+---+---+---+
         // | 0 | 1 |     Stream ID (6+)    |
         // +---+---+-----------------------+
+        // Stream Cancellation：双向流放弃时释放对该头部块动态表引用的追踪
         if ((b & 0b1100_0000) == 0b0100_0000) {
             long streamId = QpackUtil.decodePrefixedInteger(in, 6);
             if (streamId < 0) {
@@ -95,6 +101,7 @@ final class QpackDecoderHandler extends ByteToMessageDecoder {
         // +---+---+---+---+---+---+---+---+
         // | 0 | 0 |     Increment (6+)    |
         // +---+---+-----------------------+
+        // Insert Count Increment：解码端已知接收计数前进，编码端可驱逐无引用条目
         if ((b & 0b1100_0000) == 0b0000_0000) {
             int increment = decodePrefixedIntegerAsInt(in, 6);
             if (increment == 0) {
