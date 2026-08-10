@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T15:54:36Z",
-  "files": [
-    "convert/convert_gemma3.go",
-    "convert/convert_gemma3n.go",
-    "convert/convert_gemma4.go",
-    "convert/convert_glm4moelite.go",
-    "convert/convert_glmocr.go",
-    "convert/convert_gptoss.go",
-    "convert/convert_laguna.go",
-    "convert/convert_lfm2.go",
-    "convert/convert_lfm2_vl.go",
-    "convert/convert_llama.go",
-    "convert/convert_llama4.go",
-    "convert/convert_llama_adapter.go",
-    "convert/convert_mistral.go",
-    "convert/convert_mistral_causal.go",
-    "convert/convert_mixtral.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 283,
-  "done": 165
+  "done": 180
 }
