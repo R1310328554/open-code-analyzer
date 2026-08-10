@@ -39,12 +39,16 @@ import liquibase.structure.core.Schema;
 import liquibase.structure.core.Table;
 
 /**
+ * 为缺少 {@code CODE_SECRET} 的领域生成随机密钥的 Liquibase 自定义变更。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class AddRealmCodeSecret implements CustomSqlChange {
 
+    /** 迁移完成后的确认消息。 */
     private String confirmationMessage;
 
+    /** 扫描 REALM 表中 CODE_SECRET 为空的行并生成 UPDATE 语句。 */
     @Override
     public SqlStatement[] generateStatements(Database database) throws CustomChangeException {
         try {

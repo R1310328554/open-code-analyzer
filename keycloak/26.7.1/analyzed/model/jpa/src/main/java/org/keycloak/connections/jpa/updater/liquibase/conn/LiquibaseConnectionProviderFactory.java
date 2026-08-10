@@ -20,6 +20,8 @@ package org.keycloak.connections.jpa.updater.liquibase.conn;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link LiquibaseConnectionProvider} 的工厂接口。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface LiquibaseConnectionProviderFactory extends ProviderFactory<LiquibaseConnectionProvider> {

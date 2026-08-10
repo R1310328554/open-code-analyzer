@@ -24,12 +24,17 @@ import org.keycloak.provider.Provider;
 import liquibase.exception.LiquibaseException;
 
 /**
+ * 为 Keycloak 提供 Liquibase 连接与实例的 SPI 提供者。
+ * <p>封装标准 schema 迁移与自定义 changelog 两种场景的 {@link KeycloakLiquibase} 构建。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface LiquibaseConnectionProvider extends Provider {
 
+    /** 基于主 changelog 创建 Liquibase 实例，用于常规 JPA schema 升级。 */
     KeycloakLiquibase getLiquibase(Connection connection, String defaultSchema) throws LiquibaseException;
 
+    /** 为自定义 changelog 与独立变更表创建 Liquibase 实例（如实体扩展迁移）。 */
     KeycloakLiquibase getLiquibaseForCustomUpdate(Connection connection, String defaultSchema, String changelogLocation, ClassLoader classloader, String changelogTableName) throws LiquibaseException;
 
 }

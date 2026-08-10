@@ -28,10 +28,14 @@ import liquibase.statement.core.InsertStatement;
 import liquibase.structure.core.Table;
 
 /**
+ * 将 REALM 表内嵌的 RSA 密钥对迁移至 Component 模型（2.3.0 schema 变更）。
+ * <p>为每个领域创建 {@code rsa} 类型的 {@link KeyProvider} 组件及 privateKey/certificate 配置。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ExtractRealmKeysFromRealmTable extends CustomKeycloakTask {
 
+    /** 读取 REALM.PRIVATE_KEY/CERTIFICATE 并写入 COMPONENT 结构。 */
     @Override
     protected void generateStatementsImpl() throws CustomChangeException {
         try {
@@ -74,6 +78,7 @@ public class ExtractRealmKeysFromRealmTable extends CustomKeycloakTask {
         }
     }
 
+    /** 构造 COMPONENT_CONFIG 插入语句。 */
     private InsertStatement componentConfigStatement(String componentId, String name, String value) {
         return new InsertStatement(null, null, database.correctObjectName("COMPONENT_CONFIG", Table.class))
                 .addColumnValue("ID", KeycloakModelUtils.generateId())

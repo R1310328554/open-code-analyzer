@@ -29,11 +29,16 @@ import liquibase.structure.core.Table;
 import org.jboss.logging.Logger;
 
 /**
+ * 用户联邦（User Federation）迁移至 Component 模型的抽象基类。
+ * <p>将 {@code USER_FEDERATION_PROVIDER} 及其配置、映射器行转换为 {@code COMPONENT} / {@code COMPONENT_CONFIG} 结构。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public abstract class AbstractUserFedToComponent extends CustomKeycloakTask {
     private final Logger logger = Logger.getLogger(getClass());
+
+    /** 将指定 providerId 的联邦提供者及其配置迁移为 Component 模型，可选同时迁移映射器。 */
     protected void convertFedProviderToComponent(String providerId, String newMapperType) throws CustomChangeException {
         try {
             PreparedStatement statement = jdbcConnection.prepareStatement("select ID, REALM_ID, PRIORITY, DISPLAY_NAME, FULL_SYNC_PERIOD, CHANGED_SYNC_PERIOD, LAST_SYNC from " + getTableName("USER_FEDERATION_PROVIDER") + " WHERE PROVIDER_NAME=?");
@@ -75,7 +80,7 @@ public abstract class AbstractUserFedToComponent extends CustomKeycloakTask {
                                 while (configSet.next()) {
                                     String name = configSet.getString(1);
                                     String value = configSet.getString(2);
-                                    //logger.info("adding component config: " + name + ": " + value);
+                                    // 逐条复制联邦配置项到 COMPONENT_CONFIG
                                     statements.add(componentConfigStatement(id, name, value));
                                 }
                             } finally {
@@ -89,6 +94,7 @@ public abstract class AbstractUserFedToComponent extends CustomKeycloakTask {
                             convertFedMapperToComponent(realmId, id, newMapperType);
                         }
 
+                        // 删除旧联邦配置与提供者行
                         DeleteStatement configDelete = new DeleteStatement(null, null, database.correctObjectName("USER_FEDERATION_CONFIG", Table.class));
                         configDelete.setWhere("USER_FEDERATION_PROVIDER_ID=?");
                         configDelete.addWhereParameters(id);
@@ -113,6 +119,7 @@ public abstract class AbstractUserFedToComponent extends CustomKeycloakTask {
         }
     }
 
+    /** 构造 COMPONENT_CONFIG 插入语句。 */
     protected InsertStatement componentConfigStatement(String componentId, String name, String value) {
         return new InsertStatement(null, null, database.correctObjectName("COMPONENT_CONFIG", Table.class))
                 .addColumnValue("ID", KeycloakModelUtils.generateId())
@@ -121,6 +128,7 @@ public abstract class AbstractUserFedToComponent extends CustomKeycloakTask {
                 .addColumnValue("VALUE", value);
     }
 
+    /** 将联邦映射器及其配置迁移为 Component 子节点。 */
     protected void convertFedMapperToComponent(String realmId, String parentId, String newMapperType) throws CustomChangeException {
         try {
             PreparedStatement statement = jdbcConnection.prepareStatement("select ID, NAME, FEDERATION_MAPPER_TYPE from " + getTableName("USER_FEDERATION_MAPPER") + " WHERE FEDERATION_PROVIDER_ID=?");

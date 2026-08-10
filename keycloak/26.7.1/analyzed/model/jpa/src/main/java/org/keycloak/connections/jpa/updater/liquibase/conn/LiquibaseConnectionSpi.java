@@ -22,10 +22,13 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * Liquibase 连接 SPI 定义，将 {@link LiquibaseConnectionProvider} 注册到 Keycloak 提供者体系。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class LiquibaseConnectionSpi implements Spi {
 
+    /** 内部 SPI，不对外暴露给管理员配置。 */
     @Override
     public boolean isInternal() {
         return true;

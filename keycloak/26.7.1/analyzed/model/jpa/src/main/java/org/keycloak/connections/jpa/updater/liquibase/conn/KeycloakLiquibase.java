@@ -23,18 +23,19 @@ import liquibase.database.Database;
 import liquibase.resource.ResourceAccessor;
 
 /**
- * Custom subclass to expose protected liquibase API.
+ * Keycloak 定制的 {@link Liquibase} 子类，公开受保护的 API 并统一迁移摘要输出。
  */
 public class KeycloakLiquibase extends Liquibase {
 
+    /** 创建实例并将更新摘要写入日志。 */
     public KeycloakLiquibase(String changeLogFile, ResourceAccessor resourceAccessor, Database database) {
         super(changeLogFile, resourceAccessor, database);
         this.setShowSummaryOutput(UpdateSummaryOutputEnum.LOG);
     }
 
+    /** 公开父类受保护的 resetServices，避免反射调用。 */
     @Override
     public void resetServices() {
-        // expose protected method for use without reflection
         super.resetServices();
     }
 }

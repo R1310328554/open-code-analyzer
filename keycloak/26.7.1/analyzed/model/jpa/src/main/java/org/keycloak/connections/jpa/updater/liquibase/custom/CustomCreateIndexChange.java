@@ -50,19 +50,25 @@ import liquibase.structure.core.Table;
 import org.jboss.logging.Logger;
 
 /**
+ * 按表行数阈值条件创建索引的 Liquibase Change。
+ * <p>大表在线建索引可能长时间锁表；超过 {@link DefaultLiquibaseConnectionProvider#INDEX_CREATION_THRESHOLD_PARAM} 时跳过执行并记录 WARN，供 DBA 手动创建。</p>
+ *
  * @author <a href="mailto:yoshiyuki.tabata.jy@hitachi.com">Yoshiyuki Tabata</a>
  */
 @DatabaseChange(name = "createIndex", description = "Creates an index on an existing column or set of columns conditionally based on the number of records.", priority = ChangeMetaData.PRIORITY_DEFAULT
     + 1, appliesTo = "index")
 public class CustomCreateIndexChange extends CreateIndexChange {
     private static final Logger logger = Logger.getLogger(CustomCreateIndexChange.class);
+    /** 来自 Database 配置的索引创建行数阈值。 */
     private long indexCreationThreshold;
+    /** 缓存的目标表行数估计值。 */
     private Long entriesInTable = null;
+    /** 是否已输出跳过建索引的 WARN 日志。 */
     private boolean logged;
 
     @Override
     public SqlStatement[] generateStatements(Database database) {
-        // This check is for manual migration
+        // 手动迁移模式（LoggingExecutor）直接生成标准建索引语句
         if (getExecutor(database) instanceof LoggingExecutor)
             return super.generateStatements(database);
 
@@ -77,7 +83,7 @@ public class CustomCreateIndexChange extends CreateIndexChange {
             return super.generateStatements(database);
         }
         try {
-            // To check that the table already exists or not on which the index will be created.
+            // 确认目标表已存在
             if (getTableName() == null || !SnapshotGeneratorFactory.getInstance()
                 .has(new Table().setName(getTableName()).setSchema(new Schema(getCatalogName(), getSchemaName())), database)) {
                 return super.generateStatements(database);
@@ -85,6 +91,7 @@ public class CustomCreateIndexChange extends CreateIndexChange {
 
             Long entriesInTable = computeEntriesInTable(database);
 
+            // 超过阈值：跳过在线建索引，将 DDL 写入 changelog 注释供手动执行
             if (entriesInTable > this.indexCreationThreshold) {
                 String loggingString = createLoggingString(database);
                 if (!logged) {
@@ -102,10 +109,12 @@ public class CustomCreateIndexChange extends CreateIndexChange {
         return super.generateStatements(database);
     }
 
+    /** 供测试或外部调用：始终生成标准建索引语句（忽略阈值）。 */
     public SqlStatement[] generateOriginalStatement(Database database) {
         return super.generateStatements(database);
     }
 
+    /** 估算目标表行数；PostgreSQL 优先用 pg_class 统计，否则 COUNT 或带上限 COUNT。 */
     private Long computeEntriesInTable(Database database) throws DatabaseException {
         if (entriesInTable != null) {
             return entriesInTable;
@@ -113,17 +122,17 @@ public class CustomCreateIndexChange extends CreateIndexChange {
 
         if (database instanceof PostgresDatabase) {
             try {
-                // This avoids locking all rows in the database table to get an exact count and instead takes an estimate
+                // 用 pg_class.reltuples 估计行数，避免全表 COUNT 锁行
                 entriesInTable = getExecutor(database)
                         .queryForLong(new RawParameterizedSqlStatement("SELECT reltuples::bigint AS estimate FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = current_schema AND UPPER(c.relname) = UPPER(?)", getTableName()));
-                // Check if statistics exist for this table
+                // 统计信息有效时直接返回
                 if (entriesInTable > 0) {
                     return entriesInTable;
                 }
             } catch (UnexpectedLiquibaseException e) {
                 logger.warn("No permissions to run SELECT on the pg_class and pg_namespace tables, therefore can't estimate row count. Falling back to slower method to count entries with SELECT COUNT(*).", e);
             }
-            // This avoids selecting all rows in the database table to get an exact count, but instead only establishes a lower bound
+            // 带上限的 COUNT，仅建立行数下界而非精确值
             entriesInTable = getExecutor(database)
                     .queryForLong(new RawParameterizedSqlStatement(String.format("SELECT COUNT(*) FROM (SELECT 1 FROM %s LIMIT ?) t", getTableNameForSqlSelects(database, getTableName())), this.indexCreationThreshold + 1));
             return entriesInTable;
@@ -143,6 +152,7 @@ public class CustomCreateIndexChange extends CreateIndexChange {
         return LiquibaseJpaUpdaterProvider.getTable(tableName, correctedSchemaName);
     }
 
+    /** 将 CREATE INDEX 语句格式化为可记录的字符串。 */
     private String createLoggingString(Database database) throws DatabaseException {
         StringWriter writer = new StringWriter();
         LoggingExecutor loggingExecutor = new LoggingExecutor(getExecutor(database), writer, database);
@@ -231,8 +241,7 @@ public class CustomCreateIndexChange extends CreateIndexChange {
         return changeValidationErrors;
     }
 
-    // The default impls seems to be just fine, so this is just to remove the
-    // "class does not implement the 'supports(Database)' method" warnings
+    // 显式声明 supports 以消除 "class does not implement the 'supports(Database)' method" 警告
     @Override
     public boolean supports(Database database) {
         return super.supports(database);

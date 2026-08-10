@@ -11,11 +11,12 @@ import liquibase.sqlgenerator.core.AbstractSqlGenerator;
 import liquibase.statement.core.RawSqlStatement;
 
 /**
- * Rejects {@code CREATE TABLE ... AS SELECT} on MySQL — incompatible with Group Replication (ERROR 3098).
- * Only raw SQL from {@link CustomKeycloakTask} subclasses needs guarding, as XML changelogs cannot express this pattern.
+ * 拦截 MySQL 上的 {@code CREATE TABLE ... AS SELECT} 原始 SQL。
+ * <p>该语法与 Group Replication 不兼容（ERROR 3098）；仅需防护 {@link CustomKeycloakTask} 子类发出的 RawSqlStatement，XML changelog 无法表达此模式。</p>
  */
 public class CreateTableAsSelectGuard extends AbstractSqlGenerator<RawSqlStatement> {
 
+    /** 匹配 CTAS 语句的正则（不区分大小写）。 */
     private static final Pattern CTAS_PATTERN = Pattern.compile("(?i)CREATE\\s+TABLE\\s+\\S+\\s+AS\\s+SELECT");
 
     @Override
@@ -33,6 +34,7 @@ public class CreateTableAsSelectGuard extends AbstractSqlGenerator<RawSqlStateme
         return new ValidationErrors();
     }
 
+    /** 检测到 CTAS 时抛出运行时异常，提示改用 CREATE TABLE + INSERT INTO ... SELECT。 */
     @Override
     public Sql[] generateSql(RawSqlStatement statement, Database database, SqlGeneratorChain<RawSqlStatement> chain) {
         String sql = statement.getSql().trim();

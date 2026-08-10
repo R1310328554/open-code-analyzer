@@ -35,11 +35,14 @@ import liquibase.structure.core.Schema;
 import liquibase.structure.core.Table;
 
 /**
+ * MySQL 专用的变更历史服务：为 DATABASECHANGELOG 表补建复合主键。
+ * <p>解决 MySQL Group Replication 要求每张表必须有主键的限制。</p>
  *
  * @author hmlnarik
  */
 public class MySQLCustomChangeLogHistoryService extends StandardChangeLogHistoryService {
 
+    /** 防止 init 重复执行 PK 补建逻辑。 */
     private boolean serviceInitialized;
 
     @Override
@@ -56,7 +59,7 @@ public class MySQLCustomChangeLogHistoryService extends StandardChangeLogHistory
         serviceInitialized = true;
 
 
-        // Skip execution in manual migration mode - the PK statement is added to the export by LiquibaseJpaUpdaterProvider
+        // 手动迁移模式跳过执行——PK 语句由 LiquibaseJpaUpdaterProvider 写入导出脚本
         ExecutorService executorService = Scope.getCurrentScope().getSingleton(ExecutorService.class);
         if (executorService.getExecutor(LiquibaseConstants.JDBC_EXECUTOR, getDatabase()) instanceof LoggingExecutor) {
             return;
@@ -67,11 +70,13 @@ public class MySQLCustomChangeLogHistoryService extends StandardChangeLogHistory
         }
     }
 
+    /** 优先级高于标准实现，确保 MySQL 走本服务。 */
     @Override
     public int getPriority() {
-        return super.getPriority() + 1; // Ensure bigger priority than StandardChangeLogHistoryService
+        return super.getPriority() + 1; // 确保优先于 StandardChangeLogHistoryService
     }
 
+    /** 检查 DATABASECHANGELOG 表是否已有主键。 */
     private boolean existsDatabaseChangelogPK() throws DatabaseException {
         try {
             PrimaryKey example = new PrimaryKey();
@@ -85,19 +90,21 @@ public class MySQLCustomChangeLogHistoryService extends StandardChangeLogHistory
         }
     }
 
+    /** 为 DATABASECHANGELOG 添加 (ID, AUTHOR, FILENAME) 复合主键；若已存在则忽略异常。 */
     private void createDatabaseChangelogPK() throws DatabaseException {
         AddPrimaryKeyStatement pkStatement = getAddDatabaseChangeLogPKStatement();
         try {
             ChangelogJdbcMdcListener.execute(getDatabase(), ex -> ex.execute(pkStatement));
             getDatabase().commit();
         } catch (DatabaseException e) {
-            // if PK already exists just ignore the exception
+            // 主键已存在时忽略异常
             if (!existsDatabaseChangelogPK()) {
                 throw e;
             }
         }
     }
 
+    /** 构造 DATABASECHANGELOG 复合主键的 DDL 语句。 */
     public AddPrimaryKeyStatement getAddDatabaseChangeLogPKStatement() {
         return new AddPrimaryKeyStatement(getLiquibaseCatalogName(), getLiquibaseSchemaName(), getDatabaseChangeLogTableName(),
                 ColumnConfig.arrayFromNames("ID, AUTHOR, FILENAME"), "PK_DATABASECHANGELOG");

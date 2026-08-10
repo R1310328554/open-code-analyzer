@@ -41,25 +41,30 @@ import liquibase.ui.LoggerUIService;
 import org.jboss.logging.Logger;
 
 /**
+ * Liquibase 连接的默认 SPI 实现。
+ * <p>负责 JVM 级 Liquibase Scope 初始化、按 Keycloak 配置选择 {@link Database} 实现，并构建 {@link KeycloakLiquibase}。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class DefaultLiquibaseConnectionProvider implements LiquibaseConnectionProviderFactory, LiquibaseConnectionProvider {
 
     private static final Logger logger = Logger.getLogger(DefaultLiquibaseConnectionProvider.class);
 
+    /** 写入 {@link AbstractJdbcDatabase} 的索引创建行数阈值参数名。 */
     public static final String INDEX_CREATION_THRESHOLD_PARAM = "keycloak.indexCreationThreshold";
 
+    /** 表行数超过此阈值时，{@link CustomCreateIndexChange} 可能跳过在线建索引。 */
     private long indexCreationThreshold;
+    /** 由 Keycloak 数据库别名映射得到的 Liquibase Database 类。 */
     private Class<? extends Database> liquibaseDatabaseClazz;
 
+    /** 保证同一 JVM 内 Liquibase 只初始化一次（多 Undertow/并行测试场景）。 */
     private static final AtomicBoolean INITIALIZATION = new AtomicBoolean(false);
     
     @Override
     public LiquibaseConnectionProvider create(KeycloakSession session) {
         if (! INITIALIZATION.get()) {
-            // We need critical section synchronized on some static final field, otherwise
-            // e.g. several Undertows or parallel model tests could attempt initializing Liquibase
-            // in the same JVM at the same time which leads to concurrency failures
+            // 需同步临界区：多 Undertow 或并行模型测试可能同时初始化 Liquibase，导致并发失败
             synchronized (INITIALIZATION) {
                 if (! INITIALIZATION.get()) {
                     baseLiquibaseInitialization();
@@ -70,8 +75,9 @@ public class DefaultLiquibaseConnectionProvider implements LiquibaseConnectionPr
         return this;
     }
 
+    /** 初始化 Liquibase Scope：正确类加载器、资源访问器与 UI 服务。 */
     protected void baseLiquibaseInitialization() {
-        // we need to initialize the scope using the right classloader, or else Liquibase won't be able to locate the extensions.
+        // 必须用正确 ClassLoader 初始化 Scope，否则 Liquibase 无法加载扩展
         ClassLoader currentClassLoader = Thread.currentThread().getContextClassLoader();
         try {
             Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
@@ -81,8 +87,7 @@ public class DefaultLiquibaseConnectionProvider implements LiquibaseConnectionPr
             Thread.currentThread().setContextClassLoader(currentClassLoader);
         }
 
-        // using the initialized scope, create a child scope that sets the classloader and resource accessor so that any attempt
-        // by Liquibase to load a class (e.g. custom change) using the scope's classloader uses the correct classloader.
+        // 子 Scope 绑定 ClassLoader 与 ResourceAccessor，确保自定义 Change 能正确加载
         final Map<String, Object> scopeValues = new HashMap<>();
         scopeValues.put(Scope.Attr.resourceAccessor.name(), new ClassLoaderResourceAccessor(this.getClass().getClassLoader()));
         scopeValues.put(Scope.Attr.classLoader.name(), this.getClass().getClassLoader());
@@ -100,12 +105,11 @@ public class DefaultLiquibaseConnectionProvider implements LiquibaseConnectionPr
         indexCreationThreshold = config.getLong("indexCreationThreshold", 300000L);
         logger.debugf("indexCreationThreshold is %d", indexCreationThreshold);
 
-        // We need to explicitly handle the default here as Config might not be MicroProfile and hence no actually server config exists
+        // 显式处理默认值：Config 可能非 MicroProfile，尚无实际 server 配置
         String dbAlias = config.root().get(DatabaseOptions.DB.getKey(), "dev-file");
         logger.debugf("dbAlias is %s", dbAlias);
 
-        // We're not using the Liquibase logic to get the DB. That is because we already know which DB class we want to use
-        // for which DB vendor. We don't want to rely on auto-detection in Liquibase as it might make wrong assumptions (e.g. EDB).
+        // 不依赖 Liquibase 自动探测 DB（可能对 EDB 等误判），按 Keycloak 厂商映射选定 Database 类
         String liquibaseType = org.keycloak.config.database.Database.getVendor(dbAlias).orElseThrow().getLiquibaseType();
         logger.debugf("liquibaseType is %s", liquibaseType);
 
@@ -130,6 +134,7 @@ public class DefaultLiquibaseConnectionProvider implements LiquibaseConnectionPr
         return "default";
     }
 
+    /** 构建用于标准 JPA changelog 的 {@link KeycloakLiquibase}，并注入索引创建阈值。 */
     @Override
     public KeycloakLiquibase getLiquibase(Connection connection, String defaultSchema) throws LiquibaseException {
         Database database = getLiquibaseDatabase(connection);
@@ -146,6 +151,7 @@ public class DefaultLiquibaseConnectionProvider implements LiquibaseConnectionPr
         return new KeycloakLiquibase(changelog, resourceAccessor, database);
     }
 
+    /** 构建用于自定义 changelog 与独立变更表的 {@link KeycloakLiquibase}。 */
     @Override
     public KeycloakLiquibase getLiquibaseForCustomUpdate(Connection connection, String defaultSchema, String changelogLocation, ClassLoader classloader, String changelogTableName) throws LiquibaseException {
         Database database = getLiquibaseDatabase(connection);
@@ -161,11 +167,11 @@ public class DefaultLiquibaseConnectionProvider implements LiquibaseConnectionPr
         return new KeycloakLiquibase(changelogLocation, resourceAccessor, database);
     }
 
-    // Similarly to Hibernate, we want to enforce Liquibase to use the same DB as configured in Keycloak
+    /** 与 Hibernate 类似，强制 Liquibase 使用 Keycloak 配置的 Database 实现而非自动探测。 */
     private Database getLiquibaseDatabase(Connection connection) {
         Database liquibaseDatabase;
 
-        // Mimic what DatabaseFactory#findCorrectDatabaseImplementation does: create DB instance using reflections
+        // 模拟 DatabaseFactory#findCorrectDatabaseImplementation：反射实例化已选定的 Database 类
         try {
             liquibaseDatabase = liquibaseDatabaseClazz.getConstructor().newInstance();
         } catch (Exception e) {

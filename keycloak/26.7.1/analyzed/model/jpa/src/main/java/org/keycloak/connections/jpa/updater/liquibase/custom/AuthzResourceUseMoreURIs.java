@@ -8,9 +8,12 @@ import liquibase.statement.core.InsertStatement;
 import liquibase.structure.core.Table;
 
 /**
+ * 将授权资源单 URI 列迁移至 {@code RESOURCE_URIS} 多 URI 表（4.2.0  schema 变更）。
+ *
  * @author mhajas
  */
 public class AuthzResourceUseMoreURIs extends CustomKeycloakTask {
+    /** 读取 RESOURCE_SERVER_RESOURCE.URI 并写入 RESOURCE_URIS。 */
     @Override
     protected void generateStatementsImpl() throws CustomChangeException {
         try {
