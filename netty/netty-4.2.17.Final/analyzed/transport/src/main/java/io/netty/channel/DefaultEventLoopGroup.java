@@ -20,12 +20,15 @@ import java.util.concurrent.ThreadFactory;
 
 /**
  * {@link MultithreadEventLoopGroup} which must be used for the local transport.
+ * <p>本地传输专用的 {@link MultithreadEventLoopGroup}，子线程为 {@link DefaultEventLoop}。
+ * 已废弃，新代码应使用对应 transport 模块的 EventLoopGroup。</p>
  */
 @Deprecated
 public class DefaultEventLoopGroup extends MultithreadEventLoopGroup {
 
     /**
      * Create a new instance with the default number of threads.
+     * <p>使用默认线程数（通常为 CPU 核数 × 2）创建实例。</p>
      */
     public DefaultEventLoopGroup() {
         this(0);
@@ -33,6 +36,7 @@ public class DefaultEventLoopGroup extends MultithreadEventLoopGroup {
 
     /**
      * Create a new instance
+     * <p>指定线程数创建 EventLoopGroup。</p>
      *
      * @param nThreads          the number of threads to use
      */
@@ -42,6 +46,7 @@ public class DefaultEventLoopGroup extends MultithreadEventLoopGroup {
 
     /**
      * Create a new instance with the default number of threads and the given {@link ThreadFactory}.
+     * <p>使用默认线程数与指定 {@link ThreadFactory} 创建。</p>
      *
      * @param threadFactory     the {@link ThreadFactory} or {@code null} to use the default
      */
@@ -51,6 +56,7 @@ public class DefaultEventLoopGroup extends MultithreadEventLoopGroup {
 
     /**
      * Create a new instance
+     * <p>指定线程数与 {@link ThreadFactory} 创建。</p>
      *
      * @param nThreads          the number of threads to use
      * @param threadFactory     the {@link ThreadFactory} or {@code null} to use the default
@@ -61,6 +67,7 @@ public class DefaultEventLoopGroup extends MultithreadEventLoopGroup {
 
     /**
      * Create a new instance
+     * <p>指定线程数与 {@link Executor} 创建。</p>
      *
      * @param nThreads          the number of threads to use
      * @param executor          the Executor to use, or {@code null} if the default should be used.
@@ -69,6 +76,7 @@ public class DefaultEventLoopGroup extends MultithreadEventLoopGroup {
         super(nThreads, executor);
     }
 
+    /** 为每个子线程创建 {@link DefaultEventLoop} 实例。 */
     @Override
     protected EventLoop newChild(Executor executor, Object... args) throws Exception {
         return new DefaultEventLoop(this, executor);

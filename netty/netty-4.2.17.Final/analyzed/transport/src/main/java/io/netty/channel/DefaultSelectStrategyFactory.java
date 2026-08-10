@@ -17,12 +17,15 @@ package io.netty.channel;
 
 /**
  * Factory which uses the default select strategy.
+ * <p>返回 {@link DefaultSelectStrategy} 单例的 {@link SelectStrategyFactory}。</p>
  */
 public final class DefaultSelectStrategyFactory implements SelectStrategyFactory {
+    /** 全局默认工厂单例 */
     public static final SelectStrategyFactory INSTANCE = new DefaultSelectStrategyFactory();
 
     private DefaultSelectStrategyFactory() { }
 
+    /** 始终返回 {@link DefaultSelectStrategy#INSTANCE}。 */
     @Override
     public SelectStrategy newSelectStrategy() {
         return DefaultSelectStrategy.INSTANCE;

@@ -19,12 +19,18 @@ import io.netty.util.IntSupplier;
 
 /**
  * Default select strategy.
+ * <p>默认 {@link SelectStrategy}：有待处理任务时使用 {@link IntSupplier} 提供的超时（通常为 0），
+ * 否则阻塞 {@link SelectStrategy#SELECT} 等待 I/O 就绪。</p>
  */
 final class DefaultSelectStrategy implements SelectStrategy {
+    /** 单例策略实例 */
     static final SelectStrategy INSTANCE = new DefaultSelectStrategy();
 
     private DefaultSelectStrategy() { }
 
+    /**
+     * <p>{@code hasTasks} 为 true 时立即/select 非阻塞；否则正常 select 等待事件。</p>
+     */
     @Override
     public int calculateStrategy(IntSupplier selectSupplier, boolean hasTasks) throws Exception {
         return hasTasks ? selectSupplier.get() : SelectStrategy.SELECT;

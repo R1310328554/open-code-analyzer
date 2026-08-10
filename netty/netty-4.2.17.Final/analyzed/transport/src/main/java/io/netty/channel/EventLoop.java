@@ -22,9 +22,13 @@ import io.netty.util.concurrent.OrderedEventExecutor;
  *
  * One {@link EventLoop} instance will usually handle more than one {@link Channel} but this may depend on
  * implementation details and internals.
+ * <p>{@link Channel} 注册后由其 {@link EventLoop} 线程串行处理 I/O 与 pipeline 任务。
+ * 一个 EventLoop 通常绑定多个 Channel（具体取决于实现）。同时继承
+ * {@link OrderedEventExecutor} 与 {@link EventLoopGroup} 能力。</p>
  *
  */
 public interface EventLoop extends OrderedEventExecutor, EventLoopGroup {
+    /** 返回创建本 EventLoop 的父 {@link EventLoopGroup}。 */
     @Override
     EventLoopGroup parent();
 }

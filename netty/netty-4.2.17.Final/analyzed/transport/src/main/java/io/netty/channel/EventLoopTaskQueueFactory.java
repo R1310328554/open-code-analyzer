@@ -22,14 +22,18 @@ import java.util.Queue;
  *
  * Generally speaking the returned {@link Queue} MUST be thread-safe and depending on the {@link EventLoop}
  * implementation must be of type {@link java.util.concurrent.BlockingQueue}.
+ * <p>为 {@link EventLoop} 创建任务队列的工厂。返回的 {@link Queue} 须线程安全，
+ * 部分实现要求 {@link java.util.concurrent.BlockingQueue}。</p>
  *
  * @deprecated Not used anymore by new {@link IoEventLoopGroup} and {@link IoEventLoop} implementations
+ * <p>新 {@link IoEventLoopGroup}/{@link IoEventLoop} 已不再使用。</p>
  */
 @Deprecated
 public interface EventLoopTaskQueueFactory {
 
     /**
      * Returns a new {@link Queue} to use.
+     * <p>创建容量上限为 {@code maxCapacity} 的新任务队列。</p>
      * @param maxCapacity the maximum amount of elements that can be stored in the {@link Queue} at a given point
      *                    in time.
      * @return the new queue.

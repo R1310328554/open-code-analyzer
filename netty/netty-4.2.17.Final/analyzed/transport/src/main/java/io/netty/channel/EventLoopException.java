@@ -18,6 +18,8 @@ package io.netty.channel;
 /**
  * Special {@link ChannelException} which will be thrown by {@link EventLoop} and {@link EventLoopGroup}
  * implementations when an error occurs.
+ * <p>{@link EventLoop} / {@link EventLoopGroup} 实现发生不可恢复错误时抛出的专用异常，
+ * 继承自 {@link ChannelException}。</p>
  */
 public class EventLoopException extends ChannelException {
 

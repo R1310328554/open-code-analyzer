@@ -28,13 +28,21 @@ import java.util.concurrent.TimeoutException;
 
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
+/**
+ * <p>将 {@link ChannelFuture} 完成结果转发到另一 {@link ChannelPromise} 的监听器，
+ * 同时实现 {@link ChannelPromise} 接口以便作为占位 promise 使用。
+ * 适用于聚合写操作或桥接多个 future 的场景。</p>
+ */
 @UnstableApi
 public final class DelegatingChannelPromiseNotifier implements ChannelPromise, ChannelFutureListener {
     private static final InternalLogger logger =
             InternalLoggerFactory.getInstance(DelegatingChannelPromiseNotifier.class);
+    /** 接收通知的目标 promise */
     private final ChannelPromise delegate;
+    /** 通知失败时是否记录日志（{@link VoidChannelPromise} 默认不记录） */
     private final boolean logNotifyFailure;
 
+    /** 对非 {@link VoidChannelPromise} 委托默认开启失败日志。 */
     public DelegatingChannelPromiseNotifier(ChannelPromise delegate) {
         this(delegate, !(delegate instanceof VoidChannelPromise));
     }
@@ -44,6 +52,9 @@ public final class DelegatingChannelPromiseNotifier implements ChannelPromise, C
         this.logNotifyFailure = logNotifyFailure;
     }
 
+    /**
+     * <p>{@link ChannelFuture} 完成时，将成功/取消/失败状态同步到 {@link #delegate}。</p>
+     */
     @Override
     public void operationComplete(ChannelFuture future) throws Exception {
         InternalLogger internalLogger = logNotifyFailure ? logger : null;
@@ -142,6 +153,7 @@ public final class DelegatingChannelPromiseNotifier implements ChannelPromise, C
         return delegate.isVoid();
     }
 
+    /** void promise 需包装新的 notifier 以绑定可写 promise。 */
     @Override
     public ChannelPromise unvoid() {
         return isVoid() ? new DelegatingChannelPromiseNotifier(delegate.unvoid()) : this;

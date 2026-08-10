@@ -20,32 +20,45 @@ import io.netty.util.concurrent.DefaultThreadFactory;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 
+/**
+ * <p>默认单线程 {@link EventLoop}：从任务队列取任务执行，并在确认关闭后退出循环。
+ * 通常由 {@link DefaultEventLoopGroup} 创建，用于本地传输（local transport）。</p>
+ */
 public class DefaultEventLoop extends SingleThreadEventLoop {
 
+    /** 使用默认线程工厂创建独立 EventLoop。 */
     public DefaultEventLoop() {
         this((EventLoopGroup) null);
     }
 
+    /** 使用指定 {@link ThreadFactory} 创建。 */
     public DefaultEventLoop(ThreadFactory threadFactory) {
         this(null, threadFactory);
     }
 
+    /** 使用指定 {@link Executor} 创建。 */
     public DefaultEventLoop(Executor executor) {
         this(null, executor);
     }
 
+    /** 作为 {@link EventLoopGroup} 子线程创建，使用默认线程工厂。 */
     public DefaultEventLoop(EventLoopGroup parent) {
         this(parent, new DefaultThreadFactory(DefaultEventLoop.class));
     }
 
+    /** 作为子 EventLoop，使用指定 {@link ThreadFactory}。 */
     public DefaultEventLoop(EventLoopGroup parent, ThreadFactory threadFactory) {
         super(parent, threadFactory, true);
     }
 
+    /** 作为子 EventLoop，使用指定 {@link Executor}。 */
     public DefaultEventLoop(EventLoopGroup parent, Executor executor) {
         super(parent, executor, true);
     }
 
+    /**
+     * <p>EventLoop 主循环：阻塞取任务、执行任务、更新执行时间，并在收到关闭信号后退出。</p>
+     */
     @Override
     protected void run() {
         for (;;) {

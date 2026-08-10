@@ -24,10 +24,15 @@ import io.netty.util.UncheckedBooleanSupplier;
 /**
  * Default implementation of {@link MaxMessagesRecvByteBufAllocator} which respects {@link ChannelConfig#isAutoRead()}
  * and also prevents overflow.
+ * <p>{@link MaxMessagesRecvByteBufAllocator} 抽象基类：限制单次 read 循环处理的消息条数，
+ * 尊重 {@link ChannelConfig#isAutoRead()}，并防止字节计数溢出。</p>
  */
 public abstract class DefaultMaxMessagesRecvByteBufAllocator implements MaxMessagesRecvByteBufAllocator {
+    /** 为 true 时 continueReading 不依赖 totalBytesRead &gt; 0 */
     private final boolean ignoreBytesRead;
+    /** 单次 read 循环最多处理的消息数 */
     private volatile int maxMessagesPerRead;
+    /** 是否在「可能无更多数据」时提前停止读（节省系统调用） */
     private volatile boolean respectMaybeMoreData = true;
 
     public DefaultMaxMessagesRecvByteBufAllocator() {
@@ -66,6 +71,8 @@ public abstract class DefaultMaxMessagesRecvByteBufAllocator implements MaxMessa
      *          attempt to read.</li>
      * </ul>
      * @return {@code this}.
+     * <p>配置后续 {@link #newHandle()} 是否在推测无更多数据时停止读。
+     * {@code true} 可少一次 read 系统调用，但在竞态下可能未读满 {@link #maxMessagesPerRead()} 配额。</p>
      */
     public DefaultMaxMessagesRecvByteBufAllocator respectMaybeMoreData(boolean respectMaybeMoreData) {
         this.respectMaybeMoreData = respectMaybeMoreData;
@@ -82,6 +89,7 @@ public abstract class DefaultMaxMessagesRecvByteBufAllocator implements MaxMessa
      *     <li>{@code false} to keep reading (up to {@link #maxMessagesPerRead()}) or until there is no data when we
      *          attempt to read.</li>
      * </ul>
+     * <p>返回是否启用「可能无更多数据则停读」策略。</p>
      */
     public final boolean respectMaybeMoreData() {
         return respectMaybeMoreData;
@@ -89,14 +97,19 @@ public abstract class DefaultMaxMessagesRecvByteBufAllocator implements MaxMessa
 
     /**
      * Focuses on enforcing the maximum messages per read condition for {@link #continueReading()}.
+     * <p>抽象 {@link Handle}：在 {@link #continueReading()} 中强制执行单次 read 最大消息数限制。</p>
      */
     public abstract class MaxMessageHandle implements ExtendedHandle {
         private ChannelConfig config;
+        /** 本 read 循环的消息上限快照 */
         private int maxMessagePerRead;
+        /** 已读消息条数 */
         private int totalMessages;
+        /** 已读字节累计 */
         private int totalBytesRead;
         private int attemptedBytesRead;
         private int lastBytesRead;
+        /** 创建 handle 时冻结的配置 */
         private final boolean respectMaybeMoreData = DefaultMaxMessagesRecvByteBufAllocator.this.respectMaybeMoreData;
         private final UncheckedBooleanSupplier defaultMaybeMoreSupplier = new UncheckedBooleanSupplier() {
             @Override
@@ -107,6 +120,7 @@ public abstract class DefaultMaxMessagesRecvByteBufAllocator implements MaxMessa
 
         /**
          * Only {@link ChannelConfig#getMaxMessagesPerRead()} is used.
+         * <p>read 循环开始时重置计数器并读取配置。</p>
          */
         @Override
         public void reset(ChannelConfig config) {
@@ -145,6 +159,7 @@ public abstract class DefaultMaxMessagesRecvByteBufAllocator implements MaxMessa
 
         @Override
         public boolean continueReading(UncheckedBooleanSupplier maybeMoreDataSupplier) {
+            // autoRead 开启、（可选）仍有数据、未达消息上限、且已读到字节（或忽略字节检查）
             return config.isAutoRead() &&
                    (!respectMaybeMoreData || maybeMoreDataSupplier.get()) &&
                    totalMessages < maxMessagePerRead && (ignoreBytesRead || totalBytesRead > 0);
@@ -164,6 +179,7 @@ public abstract class DefaultMaxMessagesRecvByteBufAllocator implements MaxMessa
             attemptedBytesRead = bytes;
         }
 
+        /** 返回累计读字节数，溢出时视为 {@link Integer#MAX_VALUE}。 */
         protected final int totalBytesRead() {
             return totalBytesRead < 0 ? Integer.MAX_VALUE : totalBytesRead;
         }

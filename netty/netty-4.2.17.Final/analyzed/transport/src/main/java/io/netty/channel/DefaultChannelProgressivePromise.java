@@ -25,15 +25,21 @@ import io.netty.util.concurrent.GenericFutureListener;
  * The default {@link ChannelProgressivePromise} implementation.  It is recommended to use
  * {@link Channel#newProgressivePromise()} to create a new {@link ChannelProgressivePromise} rather than calling the
  * constructor explicitly.
+ * <p>默认 {@link ChannelProgressivePromise} 实现：绑定 {@link Channel}，支持进度通知，
+ * 并实现 {@link FlushCheckpoint} 以参与 flush 顺序追踪。建议通过
+ * {@link Channel#newProgressivePromise()} 创建实例。</p>
  */
 public class DefaultChannelProgressivePromise
         extends DefaultProgressivePromise<Void> implements ChannelProgressivePromise, FlushCheckpoint {
 
+    /** 关联的 {@link Channel} */
     private final Channel channel;
+    /** flush 检查点，用于 {@link ChannelFlushPromiseNotifier} 排序 */
     private long checkpoint;
 
     /**
      * Creates a new instance.
+     * <p>创建与指定 {@link Channel} 绑定的渐进式 Promise。</p>
      *
      * @param channel
      *        the {@link Channel} associated with this future
@@ -44,6 +50,7 @@ public class DefaultChannelProgressivePromise
 
     /**
      * Creates a new instance.
+     * <p>使用指定 {@link EventExecutor} 创建实例。</p>
      *
      * @param channel
      *        the {@link Channel} associated with this future
@@ -53,6 +60,7 @@ public class DefaultChannelProgressivePromise
         this.channel = channel;
     }
 
+    /** 未显式指定 executor 时回退到 {@link Channel#eventLoop()}。 */
     @Override
     protected EventExecutor executor() {
         EventExecutor e = super.executor();
@@ -90,6 +98,7 @@ public class DefaultChannelProgressivePromise
         return this;
     }
 
+    /** 更新进度并通知监听器。 */
     @Override
     public ChannelProgressivePromise setProgress(long progress, long total) {
         super.setProgress(progress, total);
@@ -145,11 +154,13 @@ public class DefaultChannelProgressivePromise
         return this;
     }
 
+    /** 返回当前 flush 检查点。 */
     @Override
     public long flushCheckpoint() {
         return checkpoint;
     }
 
+    /** 设置 flush 检查点。 */
     @Override
     public void flushCheckpoint(long checkpoint) {
         this.checkpoint = checkpoint;
@@ -160,6 +171,7 @@ public class DefaultChannelProgressivePromise
         return this;
     }
 
+    /** 仅在 Channel 已注册时检测 EventLoop 死锁。 */
     @Override
     protected void checkDeadLock() {
         if (channel().isRegistered()) {
@@ -172,6 +184,7 @@ public class DefaultChannelProgressivePromise
         return this;
     }
 
+    /** 非 void promise，始终返回 {@code false}。 */
     @Override
     public boolean isVoid() {
         return false;
