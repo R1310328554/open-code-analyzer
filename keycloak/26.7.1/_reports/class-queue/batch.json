@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T09:53:32Z",
-  "files": [
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/assertion/SAMLAttributeParser.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/assertion/SAMLAttributeStatementParser.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/assertion/SAMLAttributeValueParser.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/assertion/SAMLAudienceRestrictionParser.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/assertion/SAMLAuthnContextParser.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/assertion/SAMLAuthnStatementParser.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/assertion/SAMLConditionsParser.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/assertion/SAMLEncryptedAssertionParser.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/assertion/SAMLProxyRestrictionParser.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/assertion/SAMLSubjectConfirmationDataParser.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/assertion/SAMLSubjectConfirmationParser.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/assertion/SAMLSubjectParser.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/mdattr/SAMLEntityAttributesParser.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/mdui/SAMLUIInfoParser.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/metadata/AbstractStaxSamlMetadataParser.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 3268,
-  "done": 2715
+  "done": 2730
 }
