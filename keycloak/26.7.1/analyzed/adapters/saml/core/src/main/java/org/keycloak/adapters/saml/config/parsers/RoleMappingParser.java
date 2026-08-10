@@ -26,26 +26,32 @@ import org.keycloak.saml.common.exceptions.ParsingException;
 import org.keycloak.saml.common.util.StaxParserUtil;
 
 /**
+ * 解析 {@code <RoleIdentifiers>}，收集用于角色映射的 SAML Attribute 名称。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class RoleMappingParser extends AbstractKeycloakSamlAdapterV1Parser<Set<String>> {
 
+    /** 单例解析器实例。 */
     private static final RoleMappingParser INSTANCE = new RoleMappingParser();
 
     private RoleMappingParser() {
         super(KeycloakSamlAdapterV1QNames.ROLE_IDENTIFIERS);
     }
 
+    /** @return 共享的 {@link RoleMappingParser} 实例 */
     public static RoleMappingParser getInstance() {
         return INSTANCE;
     }
 
+    /** 创建空的角色属性名集合。 */
     @Override
     protected Set<String> instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException {
         return new HashSet<>();
     }
 
+    /** 将每个 {@code <Attribute name="..."/>} 的 name 属性加入集合。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, Set<String> target, KeycloakSamlAdapterV1QNames element, StartElement elementDetail) throws ParsingException {
         switch (element) {

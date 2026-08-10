@@ -25,21 +25,26 @@ import org.keycloak.saml.common.exceptions.ParsingException;
 import org.keycloak.saml.common.util.StaxParserUtil;
 
 /**
+ * 解析 {@code <PrincipalNameMapping>}，配置 SAML 主体到应用用户名的映射策略。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class PrincipalNameMappingParser extends AbstractKeycloakSamlAdapterV1Parser<SP.PrincipalNameMapping> {
 
+    /** 单例解析器实例。 */
     private static final PrincipalNameMappingParser INSTANCE = new PrincipalNameMappingParser();
 
     private PrincipalNameMappingParser() {
         super(KeycloakSamlAdapterV1QNames.PRINCIPAL_NAME_MAPPING);
     }
 
+    /** @return 共享的 {@link PrincipalNameMappingParser} 实例 */
     public static PrincipalNameMappingParser getInstance() {
         return INSTANCE;
     }
 
+    /** 读取 policy 与 attribute 属性，构建主体名称映射配置。 */
     @Override
     protected SP.PrincipalNameMapping instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException {
         final SP.PrincipalNameMapping mapping = new SP.PrincipalNameMapping();
@@ -50,6 +55,7 @@ public class PrincipalNameMappingParser extends AbstractKeycloakSamlAdapterV1Par
         return mapping;
     }
 
+    /** 本元素无子节点，无需额外处理。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, SP.PrincipalNameMapping target, KeycloakSamlAdapterV1QNames element, StartElement elementDetail) throws ParsingException {
     }

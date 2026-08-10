@@ -45,17 +45,23 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 /**
- * Goes through the given XML file and extracts names, certificates and keys from the KeyInfo elements.
+ * 从 SAML IdP 元数据描述符 XML 中提取 {@link KeyInfo} 密钥材料。
+ *
+ * <p>遍历 EntityDescriptor/IDPSSODescriptor/KeyDescriptor 节点，
+ * 按 use 属性（signing/encryption）分组返回证书与密钥信息。</p>
+ *
  * @author hmlnarik
  */
 public class SamlDescriptorIDPKeysExtractor {
 
+    /** XPath 命名空间前缀：m=元数据，dsig=XML 数字签名。 */
     private static final NamespaceContext NS_CONTEXT = new NamespaceContext();
     static {
         NS_CONTEXT.addNsUriPair("m", JBossSAMLURIConstants.METADATA_NSURI.get());
         NS_CONTEXT.addNsUriPair("dsig", JBossSAMLURIConstants.XMLDSIG_NSURI.get());
     }
 
+    /** 用于反序列化 KeyInfo DOM 节点的工厂。 */
     private final KeyInfoFactory kif = KeyInfoFactory.getInstance();
 
     private final XPathFactory xPathfactory = XPathFactory.newInstance();
@@ -64,6 +70,13 @@ public class SamlDescriptorIDPKeysExtractor {
         xpath.setNamespaceContext(NS_CONTEXT);
     }
 
+    /**
+     * 解析 IdP 元数据流，提取所有 KeyDescriptor 中的 {@link KeyInfo}。
+     *
+     * @param stream SAML 元数据 XML 输入流
+     * @return 按 use 属性分组的 KeyInfo 多值映射
+     * @throws ParsingException 解析或 XPath 评估失败时抛出
+     */
     public MultivaluedHashMap<String, KeyInfo> parse(InputStream stream) throws ParsingException {
         MultivaluedHashMap<String, KeyInfo> res = new MultivaluedHashMap<>();
 
@@ -89,6 +102,7 @@ public class SamlDescriptorIDPKeysExtractor {
         return res;
     }
 
+    /** 从单个 KeyDescriptor 元素 unmarshals 首个 ds:KeyInfo 子节点。 */
     private KeyInfo processKeyDescriptor(Element keyDescriptor) throws MarshalException {
         NodeList childNodes = keyDescriptor.getElementsByTagNameNS(JBossSAMLURIConstants.XMLDSIG_NSURI.get(), XmlDSigQNames.KEY_INFO.getQName().getLocalPart());
 

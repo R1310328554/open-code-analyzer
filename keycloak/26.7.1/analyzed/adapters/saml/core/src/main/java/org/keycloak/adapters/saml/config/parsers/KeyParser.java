@@ -27,21 +27,28 @@ import org.keycloak.saml.common.exceptions.ParsingException;
 import org.keycloak.saml.common.util.StaxParserUtil;
 
 /**
+ * 解析 {@code <Key>} 元素，描述 SAML 签名/加密密钥配置。
+ *
+ * <p>支持 KeyStore、PEM 证书/公钥/私钥等子元素，并对 PEM 文本做系统属性占位符替换。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class KeyParser extends AbstractKeycloakSamlAdapterV1Parser<Key> {
 
+    /** 单例解析器实例。 */
     private static final KeyParser INSTANCE = new KeyParser();
 
     private KeyParser() {
         super(KeycloakSamlAdapterV1QNames.KEY);
     }
 
+    /** @return 共享的 {@link KeyParser} 实例 */
     public static KeyParser getInstance() {
         return INSTANCE;
     }
 
+    /** 读取 signing/encryption 布尔属性，初始化 {@link Key} 对象。 */
     @Override
     protected Key instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException {
         Key key = new Key();
@@ -50,6 +57,7 @@ public class KeyParser extends AbstractKeycloakSamlAdapterV1Parser<Key> {
         return key;
     }
 
+    /** 解析 KeyStore 或 PEM 子元素，写入目标 {@link Key}。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, Key target, KeycloakSamlAdapterV1QNames element, StartElement elementDetail) throws ParsingException {
         String value;
@@ -78,6 +86,7 @@ public class KeyParser extends AbstractKeycloakSamlAdapterV1Parser<Key> {
         }
     }
 
+    /** 将 PEM 文本中的 {@code ${...}} 占位符替换为系统/环境属性值。 */
     private String replaceProperties(String value) {
         return StringPropertyReplacer.replaceProperties(value, SystemEnvProperties.UNFILTERED::getProperty);
     }

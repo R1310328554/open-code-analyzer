@@ -26,22 +26,27 @@ import org.keycloak.saml.common.exceptions.ParsingException;
 import org.keycloak.saml.common.util.StaxParserUtil;
 
 /**
- * A parser for the {@code <RoleMappingsProvider>} element., represented by the role-mappings-provider-type in the schema.
+ * 解析 {@code <RoleMappingsProvider>} 元素（schema 中 role-mappings-provider-type）。
+ *
+ * <p>读取提供者 id 及嵌套 Property 键值对，供 SPI 实现初始化使用。</p>
  *
  * @author <a href="mailto:sguilhen@redhat.com">Stefan Guilhen</a>
  */
 public class RoleMappingsProviderParser extends AbstractKeycloakSamlAdapterV1Parser<SP.RoleMappingsProviderConfig> {
 
+    /** 单例解析器实例。 */
     private static final RoleMappingsProviderParser INSTANCE = new RoleMappingsProviderParser();
 
     private RoleMappingsProviderParser() {
         super(KeycloakSamlAdapterV1QNames.ROLE_MAPPINGS_PROVIDER);
     }
 
+    /** @return 共享的 {@link RoleMappingsProviderParser} 实例 */
     public static RoleMappingsProviderParser getInstance() {
         return INSTANCE;
     }
 
+    /** 读取 id 属性并初始化空的 Properties 配置容器。 */
     @Override
     protected SP.RoleMappingsProviderConfig instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException {
         SP.RoleMappingsProviderConfig providerConfig = new SP.RoleMappingsProviderConfig();
@@ -50,6 +55,7 @@ public class RoleMappingsProviderParser extends AbstractKeycloakSamlAdapterV1Par
         return providerConfig;
     }
 
+    /** 解析 Property 子元素，将 name/value 写入提供者配置。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, SP.RoleMappingsProviderConfig target, KeycloakSamlAdapterV1QNames element, StartElement elementDetail) throws ParsingException {
         switch(element) {

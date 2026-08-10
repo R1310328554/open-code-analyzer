@@ -21,32 +21,56 @@ import javax.xml.namespace.QName;
 import org.keycloak.saml.processing.core.parsers.util.HasQName;
 
 /**
+ * Keycloak SAML 适配器 V1 配置 schema 的元素与属性 QName 枚举。
+ *
+ * <p>命名空间 URI 为 {@link #NS_URI}；枚举值涵盖 IdP/SP、密钥、角色映射及 HTTP 客户端等配置节点。</p>
  *
  * @author hmlnarik
  */
 public enum KeycloakSamlAdapterV1QNames implements HasQName {
 
+    /** 允许的 SAML 断言时钟偏差。 */
     ALLOWED_CLOCK_SKEW("AllowedClockSkew"),
+    /** SAML 属性名（角色映射等）。 */
     ATTRIBUTE("Attribute"),
+    /** KeyStore 内证书条目。 */
     CERTIFICATE("Certificate"),
+    /** PEM 格式证书文本。 */
     CERTIFICATE_PEM("CertificatePem"),
+    /** IdP HTTP 客户端 TLS/连接配置。 */
     HTTP_CLIENT("HttpClient"),
+    /** 身份提供者根元素。 */
     IDP("IDP"),
+    /** 单个签名/加密密钥。 */
     KEY("Key"),
+    /** 适配器配置文档根元素。 */
     KEYCLOAK_SAML_ADAPTER("keycloak-saml-adapter"),
+    /** 密钥列表容器。 */
     KEYS("Keys"),
+    /** Java KeyStore 配置。 */
     KEY_STORE("KeyStore"),
+    /** 主体名称映射策略。 */
     PRINCIPAL_NAME_MAPPING("PrincipalNameMapping"),
+    /** KeyStore 私钥条目。 */
     PRIVATE_KEY("PrivateKey"),
+    /** PEM 格式私钥文本。 */
     PRIVATE_KEY_PEM("PrivateKeyPem"),
+    /** 键值对属性（角色映射提供者等）。 */
     PROPERTY("Property"),
+    /** PEM 格式公钥文本。 */
     PUBLIC_KEY_PEM("PublicKeyPem"),
+    /** 角色标识符（SAML Attribute 名）集合。 */
     ROLE_IDENTIFIERS("RoleIdentifiers"),
+    /** 角色映射 SPI 提供者配置。 */
     ROLE_MAPPINGS_PROVIDER("RoleMappingsProvider"),
+    /** 单点登出服务端点。 */
     SINGLE_LOGOUT_SERVICE("SingleLogoutService"),
+    /** 单点登录服务端点。 */
     SINGLE_SIGN_ON_SERVICE("SingleSignOnService"),
+    /** 服务提供者根元素。 */
     SP("SP"),
 
+    /** KeyStore/证书条目别名。 */
     ATTR_ALIAS(null, "alias"),
     ATTR_ALLOW_ANY_HOSTNAME(null, "allowAnyHostname"),
     ATTR_ASSERTION_CONSUMER_SERVICE_URL(null, "assertionConsumerServiceUrl"),
@@ -98,27 +122,34 @@ public enum KeycloakSamlAdapterV1QNames implements HasQName {
 
     UNKNOWN_ELEMENT("");
 
+    /** V1 适配器配置 XML 的标准命名空间 URI。 */
     public static final String NS_URI = "urn:keycloak:saml:adapter";
 
+    /** 元素或属性对应的 {@link QName}。 */
     private final QName qName;
 
+    /** 使用标准命名空间构造元素 QName。 */
     private KeycloakSamlAdapterV1QNames(String localName) {
         this(NS_URI, localName);
     }
 
+    /** 从已有 {@link HasQName} 复制 QName。 */
     private KeycloakSamlAdapterV1QNames(HasQName source) {
         this.qName = source.getQName();
     }
 
+    /** 显式指定命名空间 URI 与 localName。 */
     private KeycloakSamlAdapterV1QNames(String nsUri, String localName) {
         this.qName = new QName(nsUri == null ? null : nsUri, localName);
     }
 
+    /** @return 本枚举项的 {@link QName} */
     @Override
     public QName getQName() {
         return qName;
     }
 
+    /** @return 带指定前缀的 {@link QName} 副本 */
     public QName getQName(String prefix) {
         return new QName(this.qName.getNamespaceURI(), this.qName.getLocalPart(), prefix);
     }

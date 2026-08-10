@@ -26,21 +26,29 @@ import org.keycloak.saml.common.exceptions.ParsingException;
 import org.keycloak.saml.common.util.StaxParserUtil;
 
 /**
+ * 解析 {@code <IDP>} 元素，构建身份提供者（IdP）配置。
+ *
+ * <p>读取实体 ID、签名策略、元数据 URL 等属性，并递归解析 HTTP 客户端、密钥、
+ * SSO/SLO 服务端点及允许的时钟偏差。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class IdpParser extends AbstractKeycloakSamlAdapterV1Parser<IDP> {
 
+    /** 单例解析器实例。 */
     private static final IdpParser INSTANCE = new IdpParser();
 
     private IdpParser() {
         super(KeycloakSamlAdapterV1QNames.IDP);
     }
 
+    /** @return 共享的 {@link IdpParser} 实例 */
     public static IdpParser getInstance() {
         return INSTANCE;
     }
 
+    /** 从起始元素属性填充 IdP 基本配置（实体 ID、签名要求、算法等）。 */
     @Override
     protected IDP instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException {
         final IDP idp = new IDP();
@@ -55,6 +63,7 @@ public class IdpParser extends AbstractKeycloakSamlAdapterV1Parser<IDP> {
         return idp;
     }
 
+    /** 按子元素类型委派至对应解析器，或解析时钟偏差数值。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, IDP target, KeycloakSamlAdapterV1QNames element, StartElement elementDetail) throws ParsingException {
         switch (element) {
@@ -75,6 +84,7 @@ public class IdpParser extends AbstractKeycloakSamlAdapterV1Parser<IDP> {
                 break;
 
             case ALLOWED_CLOCK_SKEW:
+                // 解析时钟偏差数值及其时间单位（默认秒）
                 String timeUnitString = StaxParserUtil.getAttributeValueRP(elementDetail, KeycloakSamlAdapterV1QNames.ATTR_UNIT);
                 target.setAllowedClockSkewUnit(timeUnitString == null ? TimeUnit.SECONDS : TimeUnit.valueOf(timeUnitString));
                 StaxParserUtil.advance(xmlEventReader);

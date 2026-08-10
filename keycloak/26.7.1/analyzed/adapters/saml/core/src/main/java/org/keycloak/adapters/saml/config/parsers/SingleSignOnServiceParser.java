@@ -25,21 +25,26 @@ import org.keycloak.saml.common.exceptions.ParsingException;
 import org.keycloak.saml.common.util.StaxParserUtil;
 
 /**
+ * 解析 {@code <SingleSignOnService>}，配置 IdP 单点登录（SSO）端点与断言验签策略。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class SingleSignOnServiceParser extends AbstractKeycloakSamlAdapterV1Parser<IDP.SingleSignOnService> {
 
+    /** 单例解析器实例。 */
     private static final SingleSignOnServiceParser INSTANCE = new SingleSignOnServiceParser();
 
     private SingleSignOnServiceParser() {
         super(KeycloakSamlAdapterV1QNames.SINGLE_SIGN_ON_SERVICE);
     }
 
+    /** @return 共享的 {@link SingleSignOnServiceParser} 实例 */
     public static SingleSignOnServiceParser getInstance() {
         return INSTANCE;
     }
 
+    /** 从属性读取 SSO 绑定、ACS URL 及请求/响应/断言签名验证选项。 */
     @Override
     protected IDP.SingleSignOnService instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException {
         final IDP.SingleSignOnService sso = new IDP.SingleSignOnService();
@@ -55,6 +60,7 @@ public class SingleSignOnServiceParser extends AbstractKeycloakSamlAdapterV1Pars
         return sso;
     }
 
+    /** SSO 元素无子节点。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, IDP.SingleSignOnService target, KeycloakSamlAdapterV1QNames element, StartElement elementDetail) throws ParsingException {
     }

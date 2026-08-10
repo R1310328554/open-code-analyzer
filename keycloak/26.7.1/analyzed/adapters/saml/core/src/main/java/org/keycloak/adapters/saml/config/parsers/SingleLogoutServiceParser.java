@@ -25,21 +25,26 @@ import org.keycloak.saml.common.exceptions.ParsingException;
 import org.keycloak.saml.common.util.StaxParserUtil;
 
 /**
+ * 解析 {@code <SingleLogoutService>}，配置 IdP 单点登出（SLO）端点与签名策略。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class SingleLogoutServiceParser extends AbstractKeycloakSamlAdapterV1Parser<IDP.SingleLogoutService> {
 
+    /** 单例解析器实例。 */
     private static final SingleLogoutServiceParser INSTANCE = new SingleLogoutServiceParser();
 
     private SingleLogoutServiceParser() {
         super(KeycloakSamlAdapterV1QNames.SINGLE_LOGOUT_SERVICE);
     }
 
+    /** @return 共享的 {@link SingleLogoutServiceParser} 实例 */
     public static SingleLogoutServiceParser getInstance() {
         return INSTANCE;
     }
 
+    /** 从属性读取 SLO 绑定 URL、签名与验签开关。 */
     @Override
     protected IDP.SingleLogoutService instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException {
         final IDP.SingleLogoutService slo = new IDP.SingleLogoutService();
@@ -56,6 +61,7 @@ public class SingleLogoutServiceParser extends AbstractKeycloakSamlAdapterV1Pars
         return slo;
     }
 
+    /** SLO 元素无子节点。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, IDP.SingleLogoutService target, KeycloakSamlAdapterV1QNames element, StartElement elementDetail) throws ParsingException {
     }

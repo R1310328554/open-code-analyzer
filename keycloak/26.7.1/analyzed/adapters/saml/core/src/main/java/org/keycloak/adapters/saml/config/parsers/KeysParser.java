@@ -26,26 +26,32 @@ import org.keycloak.adapters.saml.config.Key;
 import org.keycloak.saml.common.exceptions.ParsingException;
 
 /**
+ * 解析 {@code <Keys>} 容器，收集多个 {@link Key} 子元素。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class KeysParser extends AbstractKeycloakSamlAdapterV1Parser<List<Key>> {
 
+    /** 单例解析器实例。 */
     private static final KeysParser INSTANCE = new KeysParser();
 
     private KeysParser() {
         super(KeycloakSamlAdapterV1QNames.KEYS);
     }
 
+    /** @return 共享的 {@link KeysParser} 实例 */
     public static KeysParser getInstance() {
         return INSTANCE;
     }
 
+    /** 创建空的密钥列表。 */
     @Override
     protected List<Key> instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException {
         return new LinkedList<>();
     }
 
+    /** 将每个 {@code <Key>} 子元素解析后追加到列表。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, List<Key> target, KeycloakSamlAdapterV1QNames element, StartElement elementDetail) throws ParsingException {
         switch (element) {

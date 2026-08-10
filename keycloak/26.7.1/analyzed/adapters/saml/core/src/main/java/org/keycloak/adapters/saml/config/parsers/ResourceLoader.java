@@ -20,9 +20,17 @@ package org.keycloak.adapters.saml.config.parsers;
 import java.io.InputStream;
 
 /**
+ * 从类路径或文件系统加载 SAML 适配器配置资源的回调接口。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface ResourceLoader {
+    /**
+     * 按资源路径打开输入流。
+     *
+     * @param resource 资源标识（如 classpath 路径）
+     * @return 可读的资源流，不存在时由实现决定返回 null 或抛异常
+     */
     InputStream getResourceAsStream(String resource);
 }

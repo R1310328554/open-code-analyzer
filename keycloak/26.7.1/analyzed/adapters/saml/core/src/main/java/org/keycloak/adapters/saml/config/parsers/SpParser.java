@@ -25,21 +25,28 @@ import org.keycloak.saml.common.exceptions.ParsingException;
 import org.keycloak.saml.common.util.StaxParserUtil;
 
 /**
+ * 解析 {@code <SP>} 元素，构建服务提供者（SP）SAML 适配器配置。
+ *
+ * <p>涵盖实体 ID、SSL 策略、NameID 格式及嵌套的密钥、角色映射与 IdP 引用。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class SpParser extends AbstractKeycloakSamlAdapterV1Parser<SP> {
 
+    /** 单例解析器实例。 */
     private static final SpParser INSTANCE = new SpParser();
 
     private SpParser() {
         super(KeycloakSamlAdapterV1QNames.SP);
     }
 
+    /** @return 共享的 {@link SpParser} 实例 */
     public static SpParser getInstance() {
         return INSTANCE;
     }
 
+    /** 从起始元素属性填充 SP 基本 SAML 行为与 TLS 策略。 */
     @Override
     protected SP instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException {
         final SP sp = new SP();
@@ -58,6 +65,7 @@ public class SpParser extends AbstractKeycloakSamlAdapterV1Parser<SP> {
         return sp;
     }
 
+    /** 委派解析 Keys、PrincipalNameMapping、角色映射及 IdP 等子配置。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, SP target, KeycloakSamlAdapterV1QNames element, StartElement elementDetail) throws ParsingException {
         switch (element) {

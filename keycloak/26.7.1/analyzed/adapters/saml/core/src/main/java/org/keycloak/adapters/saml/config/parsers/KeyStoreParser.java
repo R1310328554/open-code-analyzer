@@ -26,21 +26,28 @@ import org.keycloak.saml.common.exceptions.ParsingException;
 import org.keycloak.saml.common.util.StaxParserUtil;
 
 /**
+ * 解析 {@code <KeyStore>} 元素，配置 Java KeyStore 路径与访问凭据。
+ *
+ * <p>要求至少指定 file 或 resource 之一；可嵌套 Certificate/PrivateKey 别名配置。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class KeyStoreParser extends AbstractKeycloakSamlAdapterV1Parser<KeyStoreConfig> {
 
+    /** 单例解析器实例。 */
     private static final KeyStoreParser INSTANCE = new KeyStoreParser();
 
     private KeyStoreParser() {
         super(KeycloakSamlAdapterV1QNames.KEY_STORE);
     }
 
+    /** @return 共享的 {@link KeyStoreParser} 实例 */
     public static KeyStoreParser getInstance() {
         return INSTANCE;
     }
 
+    /** 从属性读取类型、别名、文件/资源路径及密码，并校验路径已配置。 */
     @Override
     protected KeyStoreConfig instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException {
         final KeyStoreConfig keyStore = new Key.KeyStoreConfig();
@@ -57,6 +64,7 @@ public class KeyStoreParser extends AbstractKeycloakSamlAdapterV1Parser<KeyStore
         return keyStore;
     }
 
+    /** 解析 Certificate 或 PrivateKey 子元素，设置条目别名与私钥密码。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, KeyStoreConfig target, KeycloakSamlAdapterV1QNames element, StartElement elementDetail) throws ParsingException {
         switch (element) {

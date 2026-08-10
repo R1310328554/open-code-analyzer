@@ -25,26 +25,34 @@ import org.keycloak.saml.common.exceptions.ParsingException;
 import org.keycloak.saml.common.util.StaxParserUtil;
 
 /**
+ * 解析 {@code <keycloak-saml-adapter>} 根元素，组装 V1 适配器部署配置。
+ *
+ * <p>当前版本主要解析嵌套的 {@code <SP>} 服务提供者配置；未知子元素将被跳过。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class KeycloakSamlAdapterV1Parser extends AbstractKeycloakSamlAdapterV1Parser<KeycloakSamlAdapter> {
 
+    /** 单例解析器实例。 */
     private static final KeycloakSamlAdapterV1Parser INSTANCE = new KeycloakSamlAdapterV1Parser();
 
     private KeycloakSamlAdapterV1Parser() {
         super(KeycloakSamlAdapterV1QNames.KEYCLOAK_SAML_ADAPTER);
     }
 
+    /** @return 共享的 {@link KeycloakSamlAdapterV1Parser} 实例 */
     public static KeycloakSamlAdapterV1Parser getInstance() {
         return INSTANCE;
     }
 
+    /** 创建空的 {@link KeycloakSamlAdapter} 容器对象。 */
     @Override
     protected KeycloakSamlAdapter instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException {
         return new KeycloakSamlAdapter();
     }
 
+    /** 解析 SP 子配置；其余未知标签直接 bypass。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, KeycloakSamlAdapter target, KeycloakSamlAdapterV1QNames element, StartElement elementDetail) throws ParsingException {
         switch (element) {
@@ -53,7 +61,7 @@ public class KeycloakSamlAdapterV1Parser extends AbstractKeycloakSamlAdapterV1Pa
                 break;
 
             default:
-                // Ignore unknown tags
+                // 忽略未识别的子标签
                 StaxParserUtil.bypassElementBlock(xmlEventReader);
         }
     }
