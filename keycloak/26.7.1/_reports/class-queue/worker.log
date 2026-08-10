@@ -1633,3 +1633,18 @@
 2026-08-10T08:11:57Z DONE model/jpa/src/main/java/org/keycloak/events/jpa/JpaAdminEventQuery.java wave56a Liquibase lock/log + JPA event store
 2026-08-10T08:11:57Z DONE model/jpa/src/main/java/org/keycloak/events/jpa/JpaEventQuery.java wave56a Liquibase lock/log + JPA event store
 2026-08-10T08:11:57Z DONE model/jpa/src/main/java/org/keycloak/events/jpa/JpaEventStoreProvider.java wave56a Liquibase lock/log + JPA event store
+2026-08-10T08:12:24Z DONE model/jpa/src/main/java/org/keycloak/events/jpa/JpaEventStoreProviderFactory.java wave56b event outbox + JPA expiration
+2026-08-10T08:12:24Z DONE model/jpa/src/main/java/org/keycloak/events/outbox/OutboxBackoff.java wave56b event outbox + JPA expiration
+2026-08-10T08:12:24Z DONE model/jpa/src/main/java/org/keycloak/events/outbox/OutboxCleanupTask.java wave56b event outbox + JPA expiration
+2026-08-10T08:12:24Z DONE model/jpa/src/main/java/org/keycloak/events/outbox/OutboxConfig.java wave56b event outbox + JPA expiration
+2026-08-10T08:12:24Z DONE model/jpa/src/main/java/org/keycloak/events/outbox/OutboxDeliveryHandler.java wave56b event outbox + JPA expiration
+2026-08-10T08:12:24Z DONE model/jpa/src/main/java/org/keycloak/events/outbox/OutboxDeliveryOutcome.java wave56b event outbox + JPA expiration
+2026-08-10T08:12:24Z DONE model/jpa/src/main/java/org/keycloak/events/outbox/OutboxDeliveryResult.java wave56b event outbox + JPA expiration
+2026-08-10T08:12:24Z DONE model/jpa/src/main/java/org/keycloak/events/outbox/OutboxDrainerTask.java wave56b event outbox + JPA expiration
+2026-08-10T08:12:24Z DONE model/jpa/src/main/java/org/keycloak/events/outbox/OutboxStore.java wave56b event outbox + JPA expiration
+2026-08-10T08:12:24Z DONE model/jpa/src/main/java/org/keycloak/expiration/jpa/ExpirationAction.java wave56b event outbox + JPA expiration
+2026-08-10T08:12:24Z DONE model/jpa/src/main/java/org/keycloak/expiration/jpa/ExpirationHelper.java wave56b event outbox + JPA expiration
+2026-08-10T08:12:24Z DONE model/jpa/src/main/java/org/keycloak/expiration/jpa/ExpirationListener.java wave56b event outbox + JPA expiration
+2026-08-10T08:12:24Z DONE model/jpa/src/main/java/org/keycloak/expiration/jpa/ExpirationTask.java wave56b event outbox + JPA expiration
+2026-08-10T08:12:24Z DONE model/jpa/src/main/java/org/keycloak/expiration/jpa/ExpirationTaskBuilder.java wave56b event outbox + JPA expiration
+2026-08-10T08:12:24Z DONE model/jpa/src/main/java/org/keycloak/expiration/jpa/Outcome.java wave56b event outbox + JPA expiration
