@@ -16,12 +16,15 @@
 package io.netty.channel;
 
 /**
- * Factory that creates a new {@link SelectStrategy} every time.
+ * 每次调用时创建新 {@link SelectStrategy} 实例的工厂。
+ * <p>
+ * EventLoop 在初始化时通过本工厂获取策略对象，以定制 select 循环行为。
+ * </p>
  */
 public interface SelectStrategyFactory {
 
     /**
-     * Creates a new {@link SelectStrategy}.
+     * 创建新的 {@link SelectStrategy} 实例。
      */
     SelectStrategy newSelectStrategy();
 }

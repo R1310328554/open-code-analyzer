@@ -17,7 +17,16 @@ package io.netty.channel;
 
 import io.netty.util.internal.ObjectUtil;
 
+/**
+ * 跟踪 Channel 待发送（pending）出站字节数的抽象基类。
+ * <p>
+ * 同时实现 {@link MessageSizeEstimator.Handle}，复用消息大小估算逻辑；
+ * 根据 Pipeline 类型委托给 {@link DefaultChannelPipeline}、
+ * {@link ChannelOutboundBuffer} 或空实现。
+ * </p>
+ */
 abstract class PendingBytesTracker implements MessageSizeEstimator.Handle {
+    /** 底层消息大小估算句柄 */
     private final MessageSizeEstimator.Handle estimatorHandle;
 
     private PendingBytesTracker(MessageSizeEstimator.Handle estimatorHandle) {
@@ -29,23 +38,33 @@ abstract class PendingBytesTracker implements MessageSizeEstimator.Handle {
         return estimatorHandle.size(msg);
     }
 
+    /** 增加待发送出站字节计数。 */
     public abstract void incrementPendingOutboundBytes(long bytes);
+    /** 减少待发送出站字节计数。 */
     public abstract void decrementPendingOutboundBytes(long bytes);
 
+    /**
+     * 根据 Channel 的 Pipeline 与出站缓冲区状态创建合适的 tracker。
+     * <p>
+     * 若 Channel 在构造 tracker 时已关闭，{@link Channel#unsafe()#outboundBuffer()} 可能为 null，
+     * 此时使用 {@link NoopPendingBytesTracker}。参见
+     * <a href="https://github.com/netty/netty/issues/3967">netty#3967</a>。
+     * </p>
+     */
     static PendingBytesTracker newTracker(Channel channel) {
         if (channel.pipeline() instanceof DefaultChannelPipeline) {
             return new DefaultChannelPipelinePendingBytesTracker((DefaultChannelPipeline) channel.pipeline());
         } else {
             ChannelOutboundBuffer buffer = channel.unsafe().outboundBuffer();
             MessageSizeEstimator.Handle handle = channel.config().getMessageSizeEstimator().newHandle();
-            // We need to guard against null as channel.unsafe().outboundBuffer() may returned null
-            // if the channel was already closed when constructing the PendingBytesTracker.
-            // See https://github.com/netty/netty/issues/3967
+            // channel.unsafe().outboundBuffer() 在 Channel 已关闭时可能为 null
+            // 参见 https://github.com/netty/netty/issues/3967
             return buffer == null ?
                     new NoopPendingBytesTracker(handle) : new ChannelOutboundBufferPendingBytesTracker(buffer, handle);
         }
     }
 
+    /** 委托 {@link DefaultChannelPipeline} 维护 pending 字节计数。 */
     private static final class DefaultChannelPipelinePendingBytesTracker extends PendingBytesTracker {
         private final DefaultChannelPipeline pipeline;
 
@@ -65,6 +84,7 @@ abstract class PendingBytesTracker implements MessageSizeEstimator.Handle {
         }
     }
 
+    /** 委托 {@link ChannelOutboundBuffer} 维护 pending 字节计数。 */
     private static final class ChannelOutboundBufferPendingBytesTracker extends PendingBytesTracker {
         private final ChannelOutboundBuffer buffer;
 
@@ -85,6 +105,7 @@ abstract class PendingBytesTracker implements MessageSizeEstimator.Handle {
         }
     }
 
+    /** Channel 已关闭或无需统计时的空实现。 */
     private static final class NoopPendingBytesTracker extends PendingBytesTracker {
 
         NoopPendingBytesTracker(MessageSizeEstimator.Handle estimatorHandle) {
@@ -93,12 +114,12 @@ abstract class PendingBytesTracker implements MessageSizeEstimator.Handle {
 
         @Override
         public void incrementPendingOutboundBytes(long bytes) {
-            // Noop
+            // 无操作
         }
 
         @Override
         public void decrementPendingOutboundBytes(long bytes) {
-            // Noop
+            // 无操作
         }
     }
 }

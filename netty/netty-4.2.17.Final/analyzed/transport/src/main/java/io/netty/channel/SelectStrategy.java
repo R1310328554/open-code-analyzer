@@ -18,35 +18,28 @@ package io.netty.channel;
 import io.netty.util.IntSupplier;
 
 /**
- * Select strategy interface.
- *
- * Provides the ability to control the behavior of the select loop. For example a blocking select
- * operation can be delayed or skipped entirely if there are events to process immediately.
+ * select 循环策略接口。
+ * <p>
+ * 用于控制 EventLoop 在 I/O 多路复用时的行为：例如当已有就绪事件或待处理任务时，
+ * 可跳过或延迟阻塞式 select，以降低延迟。
+ * </p>
  */
 public interface SelectStrategy {
 
-    /**
-     * Indicates a blocking select should follow.
-     */
+    /** 表示下一步应执行阻塞式 select。 */
     int SELECT = -1;
-    /**
-     * Indicates the IO loop should be retried, no blocking select to follow directly.
-     */
+    /** 表示应重试 I/O 循环，不立即进入阻塞 select。 */
     int CONTINUE = -2;
-    /**
-     * Indicates the IO loop to poll for new events without blocking.
-     */
+    /** 表示以非阻塞方式 poll 新事件。 */
     int BUSY_WAIT = -3;
 
     /**
-     * The {@link SelectStrategy} can be used to steer the outcome of a potential select
-     * call.
+     * 根据当前状态决定下一次 select 相关操作。
      *
-     * @param selectSupplier The supplier with the result of a select result.
-     * @param hasTasks true if tasks are waiting to be processed.
-     * @return {@link #SELECT} if the next step should be blocking select {@link #CONTINUE} if
-     *         the next step should be to not select but rather jump back to the IO loop and try
-     *         again. Any value >= 0 is treated as an indicator that work needs to be done.
+     * @param selectSupplier 封装 select 调用结果的供应器
+     * @param hasTasks       是否有待处理任务
+     * @return {@link #SELECT} 表示下一步阻塞 select；{@link #CONTINUE} 表示跳过 select 回到 I/O 循环；
+     *         任意 {@code >= 0} 的值表示仍有工作待处理
      */
     int calculateStrategy(IntSupplier selectSupplier, boolean hasTasks) throws Exception;
 }

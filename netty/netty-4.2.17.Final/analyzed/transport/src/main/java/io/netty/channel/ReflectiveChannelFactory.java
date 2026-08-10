@@ -22,12 +22,22 @@ import io.netty.util.internal.StringUtil;
 import java.lang.reflect.Constructor;
 
 /**
- * A {@link ChannelFactory} that instantiates a new {@link Channel} by invoking its default constructor reflectively.
+ * 通过反射调用 Channel 无参公共构造函数来实例化 {@link Channel} 的 {@link ChannelFactory}。
+ * <p>
+ * 构造时缓存 {@link Constructor}；若目标类缺少 public 无参构造，则抛出
+ * {@link IllegalArgumentException}。
+ * </p>
  */
 public class ReflectiveChannelFactory<T extends Channel> implements ChannelFactory<T> {
 
+    /** 目标 Channel 类的无参构造函数 */
     private final Constructor<? extends T> constructor;
 
+    /**
+     * 解析并缓存 {@code clazz} 的 public 无参构造函数。
+     *
+     * @param clazz 须实现 {@link Channel} 且具备 public 无参构造的具体类
+     */
     public ReflectiveChannelFactory(Class<? extends T> clazz) {
         ObjectUtil.checkNotNull(clazz, "clazz");
         try {

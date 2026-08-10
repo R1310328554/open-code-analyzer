@@ -16,9 +16,14 @@
 package io.netty.channel;
 
 /**
- * {@link MaxMessagesRecvByteBufAllocator} implementation which should be used for {@link ServerChannel}s.
+ * 专用于 {@link ServerChannel} 的 {@link MaxMessagesRecvByteBufAllocator} 实现。
+ * <p>
+ * 默认每次读循环仅处理一条消息（{@code maxMessagesPerRead = 1}），
+ * 且初始接收缓冲区容量猜测值为 128 字节，适合 accept 等轻量服务端读场景。
+ * </p>
  */
 public final class ServerChannelRecvByteBufAllocator extends DefaultMaxMessagesRecvByteBufAllocator {
+    /** 构造服务端 Channel 专用分配器：单次读一条消息。 */
     public ServerChannelRecvByteBufAllocator() {
         super(1, true);
     }
@@ -26,6 +31,7 @@ public final class ServerChannelRecvByteBufAllocator extends DefaultMaxMessagesR
     @Override
     public Handle newHandle() {
         return new MaxMessageHandle() {
+            /** 服务端读操作通常较短，默认猜测 128 字节容量。 */
             @Override
             public int guess() {
                 return 128;

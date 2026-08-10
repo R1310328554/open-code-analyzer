@@ -23,103 +23,108 @@ import io.netty.util.internal.UnstableApi;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * Allocates a new receive buffer whose capacity is probably large enough to read all inbound data and small enough
- * not to waste its space.
+ * 为入站读操作分配合适容量的接收缓冲区。
+ * <p>
+ * 目标是在一次读操作中尽量读满数据，同时避免分配过大造成内存浪费；
+ * 具体策略由实现类与 {@link Handle} 维护的历史统计决定。
+ * </p>
  */
 public interface RecvByteBufAllocator {
     /**
-     * Creates a new handle.  The handle provides the actual operations and keeps the internal information which is
-     * required for predicting an optimal buffer capacity.
+     * 创建新的操作句柄；句柄保存预测最优缓冲容量所需的内部状态。
      */
     Handle newHandle();
 
     /**
-     * @deprecated Use {@link ExtendedHandle}.
+     * @deprecated 请使用 {@link ExtendedHandle}。
      */
     @Deprecated
     interface Handle {
         /**
-         * Creates a new receive buffer whose capacity is probably large enough to read all inbound data and small
-         * enough not to waste its space.
+         * 分配新的接收缓冲区，容量应能容纳预期入站数据且不过度浪费。
          */
         ByteBuf allocate(ByteBufAllocator alloc);
 
         /**
-         * Similar to {@link #allocate(ByteBufAllocator)} except that it does not allocate anything but just tells the
-         * capacity.
+         * 与 {@link #allocate(ByteBufAllocator)} 类似，但不实际分配，仅返回建议容量。
          */
         int guess();
 
         /**
-         * Reset any counters that have accumulated and recommend how many messages/bytes should be read for the next
-         * read loop.
+         * 重置累计计数，并为下一次读循环给出建议的消息/字节读取量。
          * <p>
-         * This may be used by {@link #continueReading()} to determine if the read operation should complete.
+         * {@link #continueReading()} 可能据此判断是否结束读循环；仅为提示，实现可忽略。
          * </p>
-         * This is only ever a hint and may be ignored by the implementation.
-         * @param config The channel configuration which may impact this object's behavior.
+         *
+         * @param config 可能影响行为的 Channel 配置
          */
         void reset(ChannelConfig config);
 
         /**
-         * Increment the number of messages that have been read for the current read loop.
-         * @param numMessages The amount to increment by.
+         * 增加当前读循环已读消息数。
+         *
+         * @param numMessages 增量
          */
         void incMessagesRead(int numMessages);
 
         /**
-         * Set the bytes that have been read for the last read operation.
-         * This may be used to increment the number of bytes that have been read.
-         * @param bytes The number of bytes from the previous read operation. This may be negative if an read error
-         * occurs. If a negative value is seen it is expected to be return on the next call to
-         * {@link #lastBytesRead()}. A negative value will signal a termination condition enforced externally
-         * to this class and is not required to be enforced in {@link #continueReading()}.
+         * 记录上一次读操作实际读取的字节数。
+         * <p>
+         * 读错误时可为负值；负值应在下次 {@link #lastBytesRead()} 中返回，并可能作为
+         * 外部终止条件，{@link #continueReading()} 不必强制处理。
+         * </p>
+         *
+         * @param bytes 上次读操作的字节数
          */
         void lastBytesRead(int bytes);
 
         /**
-         * Get the amount of bytes for the previous read operation.
-         * @return The amount of bytes for the previous read operation.
+         * 获取上一次读操作实际读取的字节数。
+         *
+         * @return 上次读操作的字节数
          */
         int lastBytesRead();
 
         /**
-         * Set how many bytes the read operation will (or did) attempt to read.
-         * @param bytes How many bytes the read operation will (or did) attempt to read.
+         * 设置本次读操作尝试读取的字节数（计划值或已完成值）。
+         *
+         * @param bytes 尝试读取的字节数
          */
         void attemptedBytesRead(int bytes);
 
         /**
-         * Get how many bytes the read operation will (or did) attempt to read.
-         * @return How many bytes the read operation will (or did) attempt to read.
+         * 获取本次读操作尝试读取的字节数。
+         *
+         * @return 尝试读取的字节数
          */
         int attemptedBytesRead();
 
         /**
-         * Determine if the current read loop should continue.
-         * @return {@code true} if the read loop should continue reading. {@code false} if the read loop is complete.
+         * 判断当前读循环是否应继续读取。
+         *
+         * @return {@code true} 表示继续读；{@code false} 表示本次读循环结束
          */
         boolean continueReading();
 
-        /**
-         * The read has completed.
-         */
+        /** 本次读循环已全部完成时调用。 */
         void readComplete();
     }
 
     @SuppressWarnings("deprecation")
     interface ExtendedHandle extends Handle {
         /**
-         * Same as {@link Handle#continueReading()} except "more data" is determined by the supplier parameter.
-         * @param maybeMoreDataSupplier A supplier that determines if there maybe more data to read.
+         * 与 {@link Handle#continueReading()} 类似，但由 {@code maybeMoreDataSupplier} 判断是否还有数据。
+         *
+         * @param maybeMoreDataSupplier 判断是否可能还有数据可读
          */
         boolean continueReading(UncheckedBooleanSupplier maybeMoreDataSupplier);
     }
 
     /**
-     * A {@link Handle} which delegates all call to some other {@link Handle}.
+     * 将所有调用委托给另一 {@link Handle} 的包装实现。
      */
     class DelegatingHandle implements Handle {
+        /** 被委托的句柄 */
         private final Handle delegate;
 
         public DelegatingHandle(Handle delegate) {
@@ -127,8 +132,9 @@ public interface RecvByteBufAllocator {
         }
 
         /**
-         * Get the {@link Handle} which all methods will be delegated to.
-         * @return the {@link Handle} which all methods will be delegated to.
+         * 返回所有方法委托的目标 {@link Handle}。
+         *
+         * @return 委托目标句柄
          */
         protected final Handle delegate() {
             return delegate;

@@ -16,23 +16,29 @@
 package io.netty.channel;
 
 /**
- * Responsible to estimate the size of a message. The size represents approximately how much memory the message will
- * reserve in memory.
+ * 负责估算消息占用内存的大小。
+ * <p>
+ * 返回值近似表示该消息在内存中可能占用的字节数，用于流控、
+ * {@link Channel#isWritable()} 判断以及待发送字节统计等场景。
+ * </p>
  */
 public interface MessageSizeEstimator {
 
     /**
-     * Creates a new handle. The handle provides the actual operations.
+     * 创建新的估算句柄；实际计算由 {@link Handle} 完成。
      */
     Handle newHandle();
 
+    /**
+     * 消息大小估算句柄，通常与单个 Channel 或 Pipeline 绑定使用。
+     */
     interface Handle {
 
         /**
-         * Calculate the size of the given message.
+         * 计算给定消息的大小。
          *
-         * @param msg       The message for which the size should be calculated
-         * @return size     The size in bytes. The returned size must be >= 0
+         * @param msg       待估算的消息对象
+         * @return size     字节数，必须 {@code >= 0}
          */
         int size(Object msg);
     }

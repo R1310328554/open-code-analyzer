@@ -19,9 +19,9 @@ import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.TypeParameterMatcher;
 
 /**
- * {@link ChannelInboundHandlerAdapter} which allows to conveniently only handle a specific type of user events.
+ * 仅处理指定类型用户事件的 {@link ChannelInboundHandlerAdapter} 便捷基类。
  *
- * For example, here is an implementation which only handle {@link String} user events.
+ * <p>示例：只处理 {@link String} 用户事件：</p>
  *
  * <pre>
  *     public class StringEventHandler extends
@@ -35,27 +35,30 @@ import io.netty.util.internal.TypeParameterMatcher;
  *     }
  * </pre>
  *
- * Be aware that depending of the constructor parameters it will release all handled events by passing them to
- * {@link ReferenceCountUtil#release(Object)}. In this case you may need to use
- * {@link ReferenceCountUtil#retain(Object)} if you pass the object to the next handler in the {@link ChannelPipeline}.
+ * <p>
+ * 根据构造参数，已处理的事件可能通过 {@link ReferenceCountUtil#release(Object)} 自动释放。
+ * 若需将事件传给 Pipeline 中下一 Handler，可能需要 {@link ReferenceCountUtil#retain(Object)}。
+ * </p>
  */
 public abstract class SimpleUserEventChannelHandler<I> extends ChannelInboundHandlerAdapter {
 
+    /** 用户事件类型匹配器 */
     private final TypeParameterMatcher matcher;
+    /** 是否在处理后自动 release 事件 */
     private final boolean autoRelease;
 
     /**
-     * see {@link #SimpleUserEventChannelHandler(boolean)} with {@code true} as boolean parameter.
+     * 等价于 {@link #SimpleUserEventChannelHandler(boolean)}，{@code autoRelease} 为 {@code true}。
      */
     protected SimpleUserEventChannelHandler() {
         this(true);
     }
 
     /**
-     * Create a new instance which will try to detect the types to match out of the type parameter of the class.
+     * 从子类泛型参数自动推断待匹配的事件类型。
      *
-     * @param autoRelease   {@code true} if handled events should be released automatically by passing them to
-     *                      {@link ReferenceCountUtil#release(Object)}.
+     * @param autoRelease   为 {@code true} 时，已处理事件会通过
+     *                      {@link ReferenceCountUtil#release(Object)} 自动释放
      */
     protected SimpleUserEventChannelHandler(boolean autoRelease) {
         matcher = TypeParameterMatcher.find(this, SimpleUserEventChannelHandler.class, "I");
@@ -63,18 +66,17 @@ public abstract class SimpleUserEventChannelHandler<I> extends ChannelInboundHan
     }
 
     /**
-     * see {@link #SimpleUserEventChannelHandler(Class, boolean)} with {@code true} as boolean value.
+     * 等价于 {@link #SimpleUserEventChannelHandler(Class, boolean)}，{@code autoRelease} 为 {@code true}。
      */
     protected SimpleUserEventChannelHandler(Class<? extends I> eventType) {
         this(eventType, true);
     }
 
     /**
-     * Create a new instance
+     * 显式指定要匹配的用户事件类型。
      *
-     * @param eventType      The type of events to match
-     * @param autoRelease    {@code true} if handled events should be released automatically by passing them to
-     *                       {@link ReferenceCountUtil#release(Object)}.
+     * @param eventType      要处理的事件类型
+     * @param autoRelease    为 {@code true} 时自动释放已处理事件
      */
     protected SimpleUserEventChannelHandler(Class<? extends I> eventType, boolean autoRelease) {
         matcher = TypeParameterMatcher.get(eventType);
@@ -82,8 +84,11 @@ public abstract class SimpleUserEventChannelHandler<I> extends ChannelInboundHan
     }
 
     /**
-     * Returns {@code true} if the given user event should be handled. If {@code false} it will be passed to the next
-     * {@link ChannelInboundHandler} in the {@link ChannelPipeline}.
+     * 判断给定用户事件是否应由本 Handler 处理。
+     * <p>
+     * 返回 {@code false} 时事件会传递给 {@link ChannelPipeline} 中的下一个
+     * {@link ChannelInboundHandler}。
+     * </p>
      */
     protected boolean acceptEvent(Object evt) throws Exception {
         return matcher.match(evt);
@@ -109,12 +114,12 @@ public abstract class SimpleUserEventChannelHandler<I> extends ChannelInboundHan
     }
 
     /**
-     * Is called for each user event triggered of type {@link I}.
+     * 对类型为 {@link I} 的每个用户事件调用。
      *
-     * @param ctx the {@link ChannelHandlerContext} which this {@link SimpleUserEventChannelHandler} belongs to
-     * @param evt the user event to handle
+     * @param ctx 本 Handler 所属的 {@link ChannelHandlerContext}
+     * @param evt 待处理的用户事件
      *
-     * @throws Exception is thrown if an error occurred
+     * @throws Exception 处理出错时抛出
      */
     protected abstract void eventReceived(ChannelHandlerContext ctx, I evt) throws Exception;
 }

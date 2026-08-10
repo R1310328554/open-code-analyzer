@@ -22,17 +22,25 @@ import io.netty.util.internal.ObjectUtil;
 import io.netty.util.internal.UnstableApi;
 
 /**
- * Wraps another {@link ByteBufAllocator} and use heapbuffers everywhere except when a direct buffer is explicit
- * requested.
+ * 包装另一个 {@link ByteBufAllocator}，默认分配堆内存缓冲区，仅在显式请求时使用直接内存。
+ * <p>
+ * 适用于希望减少直接内存使用、或便于与堆上数组交互的场景；调用 {@link #directBuffer()} 系列方法
+ * 仍会分配直接缓冲区。
+ * </p>
  */
 @UnstableApi
 public final class PreferHeapByteBufAllocator implements ByteBufAllocator {
+    /** 被包装的底层分配器 */
     private final ByteBufAllocator allocator;
 
+    /**
+     * @param allocator 底层 {@link ByteBufAllocator}，不可为 null
+     */
     public PreferHeapByteBufAllocator(ByteBufAllocator allocator) {
         this.allocator = ObjectUtil.checkNotNull(allocator, "allocator");
     }
 
+    /** 分配默认容量的堆缓冲区。 */
     @Override
     public ByteBuf buffer() {
         return allocator.heapBuffer();
@@ -48,6 +56,7 @@ public final class PreferHeapByteBufAllocator implements ByteBufAllocator {
         return allocator.heapBuffer(initialCapacity, maxCapacity);
     }
 
+    /** I/O 场景下仍优先使用堆缓冲区。 */
     @Override
     public ByteBuf ioBuffer() {
         return allocator.heapBuffer();
@@ -78,6 +87,7 @@ public final class PreferHeapByteBufAllocator implements ByteBufAllocator {
         return allocator.heapBuffer(initialCapacity, maxCapacity);
     }
 
+    /** 显式请求时仍分配直接缓冲区。 */
     @Override
     public ByteBuf directBuffer() {
         return allocator.directBuffer();
@@ -93,6 +103,7 @@ public final class PreferHeapByteBufAllocator implements ByteBufAllocator {
         return allocator.directBuffer(initialCapacity, maxCapacity);
     }
 
+    /** 默认创建堆复合缓冲区。 */
     @Override
     public CompositeByteBuf compositeBuffer() {
         return allocator.compositeHeapBuffer();

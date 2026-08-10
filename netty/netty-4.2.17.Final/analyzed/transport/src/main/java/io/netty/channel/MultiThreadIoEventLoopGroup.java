@@ -25,18 +25,19 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 
 /**
- * {@link IoEventLoopGroup} implementation that will handle its tasks with multiple threads.
+ * 使用多线程处理 I/O 与任务的 {@link IoEventLoopGroup} 实现。
  * <p>
- * This group supports advanced thread management strategies, such as dynamic auto-scaling,
- * by providing a custom {@link EventExecutorChooserFactory}. To enable utilization-based
- * auto-scaling, pass an instance of
- * {@link io.netty.util.concurrent.AutoScalingEventExecutorChooserFactory}.
+ * 可通过自定义 {@link EventExecutorChooserFactory} 实现高级线程管理策略（如动态扩缩容）；
+ * 若需基于利用率的自动扩缩容，可传入
+ * {@link io.netty.util.concurrent.AutoScalingEventExecutorChooserFactory} 实例。
+ * </p>
  */
 public class MultiThreadIoEventLoopGroup extends MultithreadEventLoopGroup implements IoEventLoopGroup {
 
     /**
-     * Creates a new instance of the {@link MultiThreadIoEventLoopGroup} using the default number
-     * of threads and default {@link ThreadFactory}.
+     * 使用默认线程数与默认 {@link ThreadFactory} 创建 {@link MultiThreadIoEventLoopGroup}。
+     *
+     * @param ioHandlerFactory 创建 {@link IoHandler} 的工厂
      */
     public MultiThreadIoEventLoopGroup(IoHandlerFactory ioHandlerFactory) {
         this(0, ioHandlerFactory);
@@ -44,34 +45,30 @@ public class MultiThreadIoEventLoopGroup extends MultithreadEventLoopGroup imple
 
     /**
      /**
-     * Creates a new instance of the {@link MultiThreadIoEventLoopGroup} using the default {@link ThreadFactory}.
+     * 使用默认 {@link ThreadFactory} 创建实例。
      *
-     * @param nThreads          the number of threads and so {@link EventLoop}s that are created.
-     * @param ioHandlerFactory  the {@link IoHandlerFactory} that will be used to create {@link IoHandler} for handling
-     *                          IO.
+     * @param nThreads          创建的线程数，即 {@link EventLoop} 数量
+     * @param ioHandlerFactory  用于创建处理 I/O 的 {@link IoHandler} 的工厂
      */
     public MultiThreadIoEventLoopGroup(int nThreads, IoHandlerFactory ioHandlerFactory) {
         this(nThreads, (Executor) null, ioHandlerFactory);
     }
 
     /**
-     * Create a new instance using the default number of thread.
+     * 使用默认线程数创建实例。
      *
-     * @param threadFactory     the {@link ThreadFactory} that is used.
-     * @param ioHandlerFactory  the {@link IoHandlerFactory} that will be used to create {@link IoHandler} for handling
-     *                          IO.
+     * @param threadFactory     创建 EventLoop 线程的 {@link ThreadFactory}
+     * @param ioHandlerFactory  用于创建处理 I/O 的 {@link IoHandler} 的工厂
      */
     public MultiThreadIoEventLoopGroup(ThreadFactory threadFactory, IoHandlerFactory ioHandlerFactory) {
         this(0, threadFactory, ioHandlerFactory);
     }
 
     /**
-     * Creates a new instance of the {@link MultiThreadIoEventLoopGroup} using the default number
-     * of threads.
+     * 使用默认线程数创建实例。
      *
-     * @param executor          the {@link Executor} that is used.
-     * @param ioHandlerFactory  the {@link IoHandlerFactory} that will be used to create {@link IoHandler} for handling
-     *                          IO.
+     * @param executor          执行任务的 {@link Executor}
+     * @param ioHandlerFactory  用于创建处理 I/O 的 {@link IoHandler} 的工厂
      */
     public MultiThreadIoEventLoopGroup(Executor executor,
                                        IoHandlerFactory ioHandlerFactory) {
@@ -79,12 +76,11 @@ public class MultiThreadIoEventLoopGroup extends MultithreadEventLoopGroup imple
     }
 
     /**
-     * Creates a new instance of the {@link MultiThreadIoEventLoopGroup}.
+     * 创建 {@link MultiThreadIoEventLoopGroup}。
      *
-     * @param nThreads          the number of threads and so {@link EventLoop}s that are created.
-     * @param executor          the {@link Executor} that is used.
-     * @param ioHandlerFactory  the {@link IoHandlerFactory} that will be used to create {@link IoHandler} for handling
-     *                          IO.
+     * @param nThreads          创建的线程数，即 {@link EventLoop} 数量
+     * @param executor          执行任务的 {@link Executor}
+     * @param ioHandlerFactory  用于创建处理 I/O 的 {@link IoHandler} 的工厂
      */
     public MultiThreadIoEventLoopGroup(int nThreads, Executor executor,
                                        IoHandlerFactory ioHandlerFactory) {
@@ -92,12 +88,11 @@ public class MultiThreadIoEventLoopGroup extends MultithreadEventLoopGroup imple
     }
 
     /**
-     * Creates a new instance of the {@link MultiThreadIoEventLoopGroup}.
+     * 创建 {@link MultiThreadIoEventLoopGroup}。
      *
-     * @param nThreads          the number of threads and so {@link EventLoop}s that are created.
-     * @param threadFactory     the {@link ThreadFactory} that is used.
-     * @param ioHandlerFactory  the {@link IoHandlerFactory} that will be used to create {@link IoHandler} for handling
-     *                          IO.
+     * @param nThreads          创建的线程数，即 {@link EventLoop} 数量
+     * @param threadFactory     创建 EventLoop 线程的 {@link ThreadFactory}
+     * @param ioHandlerFactory  用于创建处理 I/O 的 {@link IoHandler} 的工厂
      */
     public MultiThreadIoEventLoopGroup(int nThreads, ThreadFactory threadFactory,
                                        IoHandlerFactory ioHandlerFactory) {
@@ -105,15 +100,12 @@ public class MultiThreadIoEventLoopGroup extends MultithreadEventLoopGroup imple
     }
 
     /**
-     * Creates a new instance of the {@link MultiThreadIoEventLoopGroup}.
+     * 创建 {@link MultiThreadIoEventLoopGroup}，可指定 EventLoop 选择策略。
      *
-     * @param nThreads          the number of threads and so {@link EventLoop}s that are created.
-     * @param executor          the {@link Executor} that is used.
-     * @param chooserFactory    the {@link EventExecutorChooserFactory} that is used to choose the
-     *                          {@link IoEventLoop} when {@link MultiThreadIoEventLoopGroup#next()} is
-     *                          called.
-     * @param ioHandlerFactory  the {@link IoHandlerFactory} that will be used to create {@link IoHandler} for handling
-     *                          IO.
+     * @param nThreads          创建的线程数，即 {@link EventLoop} 数量
+     * @param executor          执行任务的 {@link Executor}
+     * @param chooserFactory    {@link MultiThreadIoEventLoopGroup#next()} 时选择 {@link IoEventLoop} 的策略
+     * @param ioHandlerFactory  用于创建处理 I/O 的 {@link IoHandler} 的工厂
      */
     public MultiThreadIoEventLoopGroup(int nThreads, Executor executor,
                                        EventExecutorChooserFactory chooserFactory,
@@ -122,13 +114,12 @@ public class MultiThreadIoEventLoopGroup extends MultithreadEventLoopGroup imple
     }
 
     /**
-     * Creates a new instance of the {@link MultiThreadIoEventLoopGroup}.
+     * 子类扩展用构造器；额外参数会传给 {@link #newChild(Executor, Object...)}。
      *
-     * @param nThreads          the number of threads and so {@link EventLoop}s that are created.
-     * @param executor          the {@link Executor} that is used.
-     * @param ioHandlerFactory  the {@link IoHandlerFactory} that will be used to create {@link IoHandler} for handling
-     *                          IO.
-     * @param args              extra args that are passed to {@link #newChild(Executor, Object...)} method.
+     * @param nThreads          创建的线程数
+     * @param executor          执行任务的 {@link Executor}
+     * @param ioHandlerFactory  用于创建 {@link IoHandler} 的工厂
+     * @param args              传给 {@link #newChild(Executor, Object...)} 的额外参数
      */
     protected MultiThreadIoEventLoopGroup(int nThreads, Executor executor,
                                           IoHandlerFactory ioHandlerFactory, Object... args) {
@@ -136,13 +127,12 @@ public class MultiThreadIoEventLoopGroup extends MultithreadEventLoopGroup imple
     }
 
     /**
-     * Creates a new instance of the {@link MultiThreadIoEventLoopGroup}.
+     * 子类扩展用构造器；额外参数会传给 {@link #newChild(Executor, Object...)}。
      *
-     * @param nThreads          the number of threads and so {@link EventLoop}s that are created.
-     * @param threadFactory     the {@link ThreadFactory} that is used.
-     * @param ioHandlerFactory  the {@link IoHandlerFactory} that will be used to create {@link IoHandler} for handling
-     *                          IO.
-     * @param args              extra args that are passed to {@link #newChild(Executor, Object...)} method.
+     * @param nThreads          创建的线程数
+     * @param threadFactory     创建 EventLoop 线程的 {@link ThreadFactory}
+     * @param ioHandlerFactory  用于创建 {@link IoHandler} 的工厂
+     * @param args              传给 {@link #newChild(Executor, Object...)} 的额外参数
      */
     protected MultiThreadIoEventLoopGroup(int nThreads, ThreadFactory threadFactory,
                                           IoHandlerFactory ioHandlerFactory, Object... args) {
@@ -150,14 +140,13 @@ public class MultiThreadIoEventLoopGroup extends MultithreadEventLoopGroup imple
     }
 
     /**
-     * Creates a new instance of the {@link MultiThreadIoEventLoopGroup}.
+     * 子类扩展用构造器；额外参数会传给 {@link #newChild(Executor, Executor, Object...)}。
      *
-     * @param nThreads          the number of threads and so {@link EventLoop}s that are created.
-     * @param threadFactory     the {@link ThreadFactory} that is used.
-     * @param ioHandlerFactory  the {@link IoHandlerFactory} that will be used to create {@link IoHandler} for handling
-     *                          IO.
-     * @param chooserFactory    the {@link EventExecutorChooserFactory} that is used to choose the
-     * @param args              extra args that are passed to {@link #newChild(Executor, Object...)} method.
+     * @param nThreads          创建的线程数
+     * @param threadFactory     创建 EventLoop 线程的 {@link ThreadFactory}
+     * @param ioHandlerFactory  用于创建 {@link IoHandler} 的工厂
+     * @param chooserFactory    EventLoop 选择策略
+     * @param args              传给 {@link #newChild(Executor, Object...)} 的额外参数
      */
     protected MultiThreadIoEventLoopGroup(int nThreads, ThreadFactory threadFactory,
                                           IoHandlerFactory ioHandlerFactory,
@@ -167,14 +156,13 @@ public class MultiThreadIoEventLoopGroup extends MultithreadEventLoopGroup imple
     }
 
     /**
-     * Creates a new instance of the {@link MultiThreadIoEventLoopGroup}.
+     * 子类扩展用构造器；额外参数会传给 {@link #newChild(Executor, Object...)}。
      *
-     * @param nThreads          the number of threads and so {@link EventLoop}s that are created.
-     * @param executor          the {@link Executor} that is used.
-     * @param ioHandlerFactory  the {@link IoHandlerFactory} that will be used to create {@link IoHandler} for handling
-     *                          IO.
-     * @param chooserFactory    the {@link EventExecutorChooserFactory} that is used to choose the
-     * @param args              extra args that are passed to {@link #newChild(Executor, Object...)} method.
+     * @param nThreads          创建的线程数
+     * @param executor          执行任务的 {@link Executor}
+     * @param ioHandlerFactory  用于创建 {@link IoHandler} 的工厂
+     * @param chooserFactory    EventLoop 选择策略
+     * @param args              传给 {@link #newChild(Executor, Object...)} 的额外参数
      */
     protected MultiThreadIoEventLoopGroup(int nThreads, Executor executor,
                                           IoHandlerFactory ioHandlerFactory,
@@ -183,8 +171,7 @@ public class MultiThreadIoEventLoopGroup extends MultithreadEventLoopGroup imple
         super(nThreads, executor, chooserFactory, combine(ioHandlerFactory, args));
     }
 
-    // The return type should be IoHandleEventLoop but we choose EventLoop to allow us to introduce the IoHandle
-    // concept without breaking API.
+    // 返回类型本应为 IoHandleEventLoop，为引入 IoHandle 概念且不破坏 API 而声明为 EventLoop
     @Override
     protected EventLoop newChild(Executor executor, Object... args) throws Exception {
         IoHandlerFactory handlerFactory = (IoHandlerFactory) args[0];
@@ -199,13 +186,12 @@ public class MultiThreadIoEventLoopGroup extends MultithreadEventLoopGroup imple
     }
 
     /**
-     * Creates a new {@link IoEventLoop} to use with the given {@link Executor} and {@link IoHandler}.
+     * 使用给定 {@link Executor} 与 {@link IoHandlerFactory} 创建新的 {@link IoEventLoop}。
      *
-     * @param executor              the {@link Executor} that should be used to handle execution of tasks and IO.
-     * @param ioHandlerFactory      the {@link IoHandlerFactory} that should be used to obtain {@link IoHandler} to
-     *                              handle IO.
-     * @param args                  extra arguments that are based by the constructor.
-     * @return                      the created {@link IoEventLoop}.
+     * @param executor              执行任务与 I/O 的 {@link Executor}
+     * @param ioHandlerFactory      获取 {@link IoHandler} 的工厂
+     * @param args                  构造器传入的额外参数
+     * @return                      新创建的 {@link IoEventLoop}
      */
     protected IoEventLoop newChild(Executor executor, IoHandlerFactory ioHandlerFactory,
                                    @SuppressWarnings("unused") Object... args) {
@@ -217,6 +203,7 @@ public class MultiThreadIoEventLoopGroup extends MultithreadEventLoopGroup imple
         return (IoEventLoop) super.next();
     }
 
+    /** 将 handler 工厂与额外参数合并为 {@link #newChild} 所需的 args 数组。 */
     private static Object[] combine(IoHandlerFactory handlerFactory, Object... args) {
         List<Object> combinedList = new ArrayList<Object>();
         combinedList.add(handlerFactory);

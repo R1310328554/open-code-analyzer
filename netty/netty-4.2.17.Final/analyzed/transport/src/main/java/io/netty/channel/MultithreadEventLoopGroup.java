@@ -27,13 +27,17 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 
 /**
- * Abstract base class for {@link EventLoopGroup} implementations that handles their tasks with multiple threads at
- * the same time.
+ * 使用多线程并行处理任务的 {@link EventLoopGroup} 抽象基类。
+ * <p>
+ * 当构造时 {@code nThreads} 为 0 时，线程数取系统属性 {@code io.netty.eventLoopThreads}
+ * 或 {@link NettyRuntime#availableProcessors()} 的两倍（至少为 1）。
+ * </p>
  */
 public abstract class MultithreadEventLoopGroup extends MultithreadEventExecutorGroup implements EventLoopGroup {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(MultithreadEventLoopGroup.class);
 
+    /** 未显式指定线程数时的默认 EventLoop 线程数 */
     private static final int DEFAULT_EVENT_LOOP_THREADS;
 
     static {
@@ -81,11 +85,13 @@ public abstract class MultithreadEventLoopGroup extends MultithreadEventExecutor
     @Override
     protected abstract EventLoop newChild(Executor executor, Object... args) throws Exception;
 
+    /** 将 Channel 注册到 {@link #next()} 选出的 EventLoop。 */
     @Override
     public ChannelFuture register(Channel channel) {
         return next().register(channel);
     }
 
+    /** 使用给定 promise 将 Channel 注册到 {@link #next()} 选出的 EventLoop。 */
     @Override
     public ChannelFuture register(ChannelPromise promise) {
         return next().register(promise);

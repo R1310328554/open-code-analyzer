@@ -18,10 +18,11 @@ package io.netty.channel;
 import io.netty.channel.socket.ServerSocketChannel;
 
 /**
- * A {@link Channel} that accepts an incoming connection attempt and creates
- * its child {@link Channel}s by accepting them.  {@link ServerSocketChannel} is
- * a good example.
+ * 接受入站连接并为每个连接创建子 {@link Channel} 的服务端 {@link Channel} 标记接口。
+ * <p>
+ * {@link ServerSocketChannel} 是典型实现：监听端口、accept 后注册子 Channel 到 EventLoop。
+ * </p>
  */
 public interface ServerChannel extends Channel {
-    // This is a tag interface.
+    // 标记接口，无额外方法
 }
