@@ -403,3 +403,18 @@
 2026-08-10T06:05:46Z DONE core/src/main/java/org/keycloak/representations/idm/ComponentExportRepresentation.java wave14a idm client policy representations
 2026-08-10T06:05:46Z DONE core/src/main/java/org/keycloak/representations/idm/ComponentRepresentation.java wave14a idm client policy representations
 2026-08-10T06:05:46Z DONE core/src/main/java/org/keycloak/representations/idm/ComponentTypeRepresentation.java wave14a idm client policy representations
+2026-08-10T06:06:29Z DONE core/src/main/java/org/keycloak/representations/idm/ConfigPropertyRepresentation.java wave14b idm credential/idp/group reps
+2026-08-10T06:06:29Z DONE core/src/main/java/org/keycloak/representations/idm/CredentialRepresentation.java wave14b idm credential/idp/group reps
+2026-08-10T06:06:29Z DONE core/src/main/java/org/keycloak/representations/idm/ErrorRepresentation.java wave14b idm credential/idp/group reps
+2026-08-10T06:06:29Z DONE core/src/main/java/org/keycloak/representations/idm/EventRepresentation.java wave14b idm credential/idp/group reps
+2026-08-10T06:06:29Z DONE core/src/main/java/org/keycloak/representations/idm/FederatedIdentityRepresentation.java wave14b idm credential/idp/group reps
+2026-08-10T06:06:29Z DONE core/src/main/java/org/keycloak/representations/idm/GroupRepresentation.java wave14b idm credential/idp/group reps
+2026-08-10T06:06:29Z DONE core/src/main/java/org/keycloak/representations/idm/IdentityProviderMapperRepresentation.java wave14b idm credential/idp/group reps
+2026-08-10T06:06:29Z DONE core/src/main/java/org/keycloak/representations/idm/IdentityProviderMapperTypeRepresentation.java wave14b idm credential/idp/group reps
+2026-08-10T06:06:29Z DONE core/src/main/java/org/keycloak/representations/idm/IdentityProviderRepresentation.java wave14b idm credential/idp/group reps
+2026-08-10T06:06:29Z DONE core/src/main/java/org/keycloak/representations/idm/KeysMetadataRepresentation.java wave14b idm credential/idp/group reps
+2026-08-10T06:06:29Z DONE core/src/main/java/org/keycloak/representations/idm/LDAPCapabilityRepresentation.java wave14b idm credential/idp/group reps
+2026-08-10T06:06:29Z DONE core/src/main/java/org/keycloak/representations/idm/ManagementPermissionReference.java wave14b idm credential/idp/group reps
+2026-08-10T06:06:29Z DONE core/src/main/java/org/keycloak/representations/idm/ManagementPermissionRepresentation.java wave14b idm credential/idp/group reps
+2026-08-10T06:06:29Z DONE core/src/main/java/org/keycloak/representations/idm/MappingsRepresentation.java wave14b idm credential/idp/group reps
+2026-08-10T06:06:29Z DONE core/src/main/java/org/keycloak/representations/idm/MemberRepresentation.java wave14b idm credential/idp/group reps
