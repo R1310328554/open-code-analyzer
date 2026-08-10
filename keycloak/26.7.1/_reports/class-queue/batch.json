@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T10:34:58Z",
-  "files": [
-    "server-spi-private/src/main/java/org/keycloak/health/LoadBalancerCheckProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/health/LoadBalancerCheckProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/health/LoadBalancerCheckSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/http/simple/SimpleHttp.java",
-    "server-spi-private/src/main/java/org/keycloak/http/simple/SimpleHttpMethod.java",
-    "server-spi-private/src/main/java/org/keycloak/http/simple/SimpleHttpRequest.java",
-    "server-spi-private/src/main/java/org/keycloak/http/simple/SimpleHttpResponse.java",
-    "server-spi-private/src/main/java/org/keycloak/keys/KeyProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/keys/KeyProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/keys/KeySpi.java",
-    "server-spi-private/src/main/java/org/keycloak/keys/PublicKeyLoader.java",
-    "server-spi-private/src/main/java/org/keycloak/keys/PublicKeyStorageProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/keys/PublicKeyStorageProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/keys/PublicKeyStorageSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/keys/PublicKeyStorageUtils.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2818,
-  "done": 3165
+  "done": 3180
 }
