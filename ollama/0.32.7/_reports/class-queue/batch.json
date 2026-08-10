@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T15:58:02Z",
-  "files": [
-    "convert/tensor.go",
-    "convert/tokenizer.go",
-    "convert/tokenizer_spm.go",
-    "discover/amd.go",
-    "discover/cpu_linux.go",
-    "discover/cpu_windows.go",
-    "discover/cuda_compat.go",
-    "discover/gpu.go",
-    "discover/gpu_darwin.go",
-    "discover/llama_server.go",
-    "discover/native_probe.go",
-    "discover/native_probe_linux.go",
-    "discover/native_probe_linux_nocgo.go",
-    "discover/native_probe_platform.go",
-    "discover/native_probe_stub.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 253,
-  "done": 195
+  "done": 210
 }
