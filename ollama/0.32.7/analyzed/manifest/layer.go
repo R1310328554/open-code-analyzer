@@ -1,3 +1,4 @@
+// 模型层 blob 创建、引用与生命周期管理。
 package manifest
 
 import (
@@ -9,20 +10,23 @@ import (
 	"time"
 )
 
+// Layer 表示 manifest 中的单层（张量/draft/配置等）。
 type Layer struct {
 	MediaType string `json:"mediaType"`
 	Digest    string `json:"digest"`
 	Size      int64  `json:"size"`
 	From      string `json:"from,omitempty"`
-	Name      string `json:"name,omitempty"` // tensor name, e.g., "text_encoder/model.embed_tokens.weight"
+	Name      string `json:"name,omitempty"` // 张量名称，如 text_encoder/model.embed_tokens.weight
 	Status    string `json:"-"`
 }
 
+// 层媒体类型常量。
 const (
 	MediaTypeImageTensor = "application/vnd.ollama.image.tensor"
 	MediaTypeImageDraft  = "application/vnd.ollama.image.draft"
 )
 
+// NewLayer 从 reader 流式写入 blob 存储并返回 sha256 摘要层。
 func NewLayer(r io.Reader, mediatype string) (Layer, error) {
 	blobs, err := BlobsPath("")
 	if err != nil {
@@ -74,6 +78,7 @@ func NewLayer(r io.Reader, mediatype string) (Layer, error) {
 	}, nil
 }
 
+// NewLayerFromLayer 引用已有 digest 创建层（不复制 blob）。
 func NewLayerFromLayer(digest, mediatype, from string) (Layer, error) {
 	if digest == "" {
 		return Layer{}, errors.New("creating new layer from layer with empty digest")
@@ -101,11 +106,13 @@ func NewLayerFromLayer(digest, mediatype, from string) (Layer, error) {
 	}, nil
 }
 
+// touchLayer 更新 blob 访问时间，用于 LRU 清理。
 func touchLayer(path string) error {
 	now := time.Now()
 	return os.Chtimes(path, now, now)
 }
 
+// Open 按 digest 打开 blob 文件供读取。
 func (l *Layer) Open() (io.ReadSeekCloser, error) {
 	if l.Digest == "" {
 		return nil, errors.New("opening layer with empty digest")
@@ -119,11 +126,13 @@ func (l *Layer) Open() (io.ReadSeekCloser, error) {
 	return os.Open(blob)
 }
 
+// Remove 若无其他 manifest 引用则删除 blob。
 func (l *Layer) Remove() error {
 	if l.Digest == "" {
 		return nil
 	}
 
+	// 忽略损坏 manifest，避免阻塞刚 orphaned 层的删除。
 	// Ignore corrupt manifests to avoid blocking deletion of layers that are freshly orphaned
 	ms, err := Manifests(true)
 	if err != nil {
@@ -133,6 +142,7 @@ func (l *Layer) Remove() error {
 	for _, m := range ms {
 		for _, layer := range append(m.Layers, m.Config) {
 			if layer.Digest == l.Digest {
+				// 仍有 manifest 引用此层，跳过删除。
 				// something is using this layer
 				return nil
 			}

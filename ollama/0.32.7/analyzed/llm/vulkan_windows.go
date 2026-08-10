@@ -1,3 +1,4 @@
+// Windows Vulkan 加载器选择与库路径调整。
 //go:build windows
 
 package llm
@@ -12,8 +13,10 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+// windowsVulkanRuntimeDLLName 主机 Vulkan 加载器 DLL 名称。
 const windowsVulkanRuntimeDLLName = "vulkan-1.dll"
 
+// WindowsVulkanRuntimeDLLPath 定位 vulkan-1.dll 绝对路径。
 func WindowsVulkanRuntimeDLLPath(libDirs []string) (string, error) {
 	systemDir, err := windows.GetSystemDirectory()
 	if err != nil {
@@ -22,6 +25,7 @@ func WindowsVulkanRuntimeDLLPath(libDirs []string) (string, error) {
 	return windowsVulkanRuntimeDLLPath(systemDir, os.Getenv("PATH"), libDirs, fileExists)
 }
 
+// adjustWindowsVulkanLibraryPaths 将主机加载器目录插入 GPU 库路径之前。
 func adjustWindowsVulkanLibraryPaths(paths, gpuLibs []string) []string {
 	vulkanDir := firstWindowsVulkanLibDir(gpuLibs)
 	if vulkanDir == "" {
@@ -39,6 +43,8 @@ func adjustWindowsVulkanLibraryPaths(paths, gpuLibs []string) []string {
 	return insertPathBefore(paths, filepath.Dir(vulkanPath), vulkanDir)
 }
 
+// windowsVulkanRuntimeDLLPath 优先 System32，再搜 PATH（排除后端库目录）。
+// Ollama 不再打包加载器，避免旧版 app-local 副本遮蔽主机运行时。
 // Use the host Vulkan loader supplied by the installed Vulkan runtime or GPU
 // driver. Ollama no longer packages the loader; exclude backend library
 // directories from PATH probing so stale app-local copies from older installs
@@ -63,6 +69,7 @@ func windowsVulkanRuntimeDLLPath(
 	return "", errors.New("no host vulkan-1.dll runtime DLL found")
 }
 
+// firstWindowsVulkanRuntimeDLLOnPath 在 PATH 中查找 vulkan-1.dll，跳过 excludedDirs。
 func firstWindowsVulkanRuntimeDLLOnPath(pathEnv string, excludedDirs []string, exists func(string) bool) string {
 	for _, dir := range filepath.SplitList(pathEnv) {
 		dir = strings.Trim(filepath.Clean(strings.Trim(dir, `"`)), `"`)
@@ -78,6 +85,7 @@ func firstWindowsVulkanRuntimeDLLOnPath(pathEnv string, excludedDirs []string, e
 	return ""
 }
 
+// windowsDirInList 判断目录是否在排除列表或其子路径下。
 func windowsDirInList(dir string, dirs []string) bool {
 	dir = strings.ToLower(filepath.Clean(dir))
 	for _, candidate := range dirs {
@@ -92,6 +100,7 @@ func windowsDirInList(dir string, dirs []string) bool {
 	return false
 }
 
+// firstWindowsVulkanLibDir 定位首个 Vulkan/ggml-vulkan 库目录。
 func firstWindowsVulkanLibDir(libDirs []string) string {
 	for _, dir := range libDirs {
 		if dir == "" {

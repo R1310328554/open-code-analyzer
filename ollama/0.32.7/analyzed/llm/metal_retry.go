@@ -1,3 +1,4 @@
+// macOS Metal 张量 API 初始化失败时的保守重试策略。
 package llm
 
 import (
@@ -5,6 +6,8 @@ import (
 	"strings"
 )
 
+// ShouldRetryWithMetalTensorDisabled 检测 Metal 张量 API 初始化失败，
+// 若 ggml 探测通过但内核编译或上下文创建失败，应设 GGML_METAL_TENSOR_DISABLE=1 重试。
 // ShouldRetryWithMetalTensorDisabled detects Metal tensor API initialization
 // failures where ggml's probe can pass but real kernel compilation or context
 // creation fails. Retrying with GGML_METAL_TENSOR_DISABLE=1 keeps discovery and

@@ -1,3 +1,4 @@
+// Anthropic Messages API 中间件：格式转换与 web_search 工具循环。
 package middleware
 
 import (
@@ -21,6 +22,7 @@ import (
 	"github.com/ollama/ollama/logutil"
 )
 
+// AnthropicWriter 包装 ResponseWriter，将 Ollama 响应转为 Anthropic 格式。
 // AnthropicWriter wraps the response writer to transform Ollama responses to Anthropic format
 type AnthropicWriter struct {
 	BaseWriter
@@ -29,11 +31,13 @@ type AnthropicWriter struct {
 	converter *anthropic.StreamConverter
 }
 
+// writeError 将上游错误 JSON 转为 Anthropic 错误响应。
 func (w *AnthropicWriter) writeError(data []byte) (int, error) {
 	var errData struct {
 		Error string `json:"error"`
 	}
 	if err := json.Unmarshal(data, &errData); err != nil {
+		// 非 JSON 错误体直接使用原始字节作为错误消息。
 		// If the error response isn't valid JSON, use the raw bytes as the
 		// error message rather than surfacing a confusing JSON parse error.
 		errData.Error = string(data)
@@ -47,10 +51,12 @@ func (w *AnthropicWriter) writeError(data []byte) (int, error) {
 	return len(data), nil
 }
 
+// writeEvent 写入单条 SSE 事件。
 func (w *AnthropicWriter) writeEvent(eventType string, data any) error {
 	return writeSSE(w.ResponseWriter, eventType, data)
 }
 
+// writeResponse 解析 ChatResponse 并输出 Anthropic 流式或非流式响应。
 func (w *AnthropicWriter) writeResponse(data []byte) (int, error) {
 	var chatResponse api.ChatResponse
 	err := json.Unmarshal(data, &chatResponse)
@@ -77,6 +83,7 @@ func (w *AnthropicWriter) writeResponse(data []byte) (int, error) {
 	return len(data), json.NewEncoder(w.ResponseWriter).Encode(response)
 }
 
+// Write 根据 HTTP 状态码分发错误或正常响应处理。
 func (w *AnthropicWriter) Write(data []byte) (int, error) {
 	code := w.ResponseWriter.Status()
 	if code != http.StatusOK {
@@ -86,6 +93,7 @@ func (w *AnthropicWriter) Write(data []byte) (int, error) {
 	return w.writeResponse(data)
 }
 
+// WebSearchAnthropicWriter 拦截 web_search 工具调用，执行搜索并组装 Anthropic 响应。
 // WebSearchAnthropicWriter intercepts responses containing web_search tool calls,
 // executes the search, re-invokes the model with results, and assembles the
 // Anthropic-format response (server_tool_use + web_search_tool_result + text).
@@ -115,13 +123,15 @@ type WebSearchAnthropicWriter struct {
 	streamNextIndex      int
 }
 
-const maxWebSearchLoops = 3
+const maxWebSearchLoops = 3 // web_search 最大循环次数
 
+// webSearchLoopResult 异步 web_search 循环的结果或错误。
 type webSearchLoopResult struct {
 	response anthropic.MessagesResponse
 	loopErr  *webSearchLoopError
 }
 
+// webSearchLoopError 封装 web_search 循环中的错误码与用量。
 type webSearchLoopError struct {
 	code  string
 	query string
@@ -136,6 +146,7 @@ func (e *webSearchLoopError) Error() string {
 	return fmt.Sprintf("%s: %v", e.code, e.err)
 }
 
+// Write 检测 web_search 工具调用并启动同步或异步搜索循环。
 func (w *WebSearchAnthropicWriter) Write(data []byte) (int, error) {
 	if w.terminalSent {
 		return len(data), nil
@@ -169,6 +180,7 @@ func (w *WebSearchAnthropicWriter) Write(data []byte) (int, error) {
 		"other_tools", hasOtherTools,
 	)
 	if hasWebSearch && hasOtherTools {
+		// 同块含 server 与 client 工具时优先 web_search。
 		// Prefer web_search if both server and client tools are present in one chunk.
 		slog.Debug("preferring web_search tool call over client tool calls in mixed tool response")
 	}
@@ -184,6 +196,7 @@ func (w *WebSearchAnthropicWriter) Write(data []byte) (int, error) {
 	}
 
 	if w.stream {
+		// 流式模式下原生成继续，web_search 并行执行。
 		// Let the original generation continue to completion while web search runs in parallel.
 		logutil.Trace("anthropic middleware: starting async web_search loop",
 			"tool_call", anthropic.TraceToolCall(webSearchCall),
@@ -222,6 +235,7 @@ func (w *WebSearchAnthropicWriter) Write(data []byte) (int, error) {
 	return len(data), nil
 }
 
+// runWebSearchLoop 执行搜索、follow-up chat 并最多循环 maxWebSearchLoops 次。
 func (w *WebSearchAnthropicWriter) runWebSearchLoop(ctx context.Context, initialResponse api.ChatResponse, initialToolCall api.ToolCall, initialUsage anthropic.Usage) (anthropic.MessagesResponse, *webSearchLoopError) {
 	followUpMessages := make([]api.Message, 0, len(w.chatReq.Messages)+maxWebSearchLoops*2)
 	followUpMessages = append(followUpMessages, w.chatReq.Messages...)
@@ -375,6 +389,7 @@ func (w *WebSearchAnthropicWriter) runWebSearchLoop(ctx context.Context, initial
 	return maxResponse, nil
 }
 
+// startLoopWorker 在 goroutine 中异步运行 web_search 循环。
 func (w *WebSearchAnthropicWriter) startLoopWorker(initialResponse api.ChatResponse, initialToolCall api.ToolCall) {
 	if w.loopInFlight {
 		return
@@ -405,6 +420,7 @@ func (w *WebSearchAnthropicWriter) startLoopWorker(initialResponse api.ChatRespo
 	}()
 }
 
+// writeLoopResult 等待异步循环完成并写入终端响应。
 func (w *WebSearchAnthropicWriter) writeLoopResult() error {
 	if w.loopResultCh == nil {
 		return w.sendError("api_error", "", w.currentObservedUsage())
@@ -434,6 +450,7 @@ func (w *WebSearchAnthropicWriter) applyObservedUsageDelta(response *anthropic.M
 	w.applyObservedUsageDeltaToUsage(&response.Usage)
 }
 
+// recordObservedUsage 跟踪流式 chunk 中观察到的 token 用量。
 func (w *WebSearchAnthropicWriter) recordObservedUsage(metrics api.Metrics) {
 	if metrics.PromptEvalCount > w.observedPromptEvalCount {
 		w.observedPromptEvalCount = metrics.PromptEvalCount
@@ -443,6 +460,7 @@ func (w *WebSearchAnthropicWriter) recordObservedUsage(metrics api.Metrics) {
 	}
 }
 
+// applyObservedUsageDeltaToUsage 将流式观察到的增量合并到 usage。
 func (w *WebSearchAnthropicWriter) applyObservedUsageDeltaToUsage(usage *anthropic.Usage) {
 	if deltaIn := w.observedPromptEvalCount - w.loopBaseInputTok; deltaIn > 0 {
 		usage.InputTokens += deltaIn
@@ -466,6 +484,7 @@ func (w *WebSearchAnthropicWriter) startLoopContext() (context.Context, context.
 	return context.WithTimeout(context.Background(), 5*time.Minute)
 }
 
+// combineServerAndFinalContent 合并 server_tool_use 块与最终文本内容。
 func (w *WebSearchAnthropicWriter) combineServerAndFinalContent(serverContent []anthropic.ContentBlock, finalResponse api.ChatResponse, usage anthropic.Usage) anthropic.MessagesResponse {
 	converted := anthropic.ToMessagesResponse(w.inner.id, finalResponse)
 
@@ -485,6 +504,7 @@ func (w *WebSearchAnthropicWriter) combineServerAndFinalContent(serverContent []
 	}
 }
 
+// buildWebSearchAssistantMessage 构造含 web_search 工具调用的 assistant 消息。
 func buildWebSearchAssistantMessage(response api.ChatResponse, webSearchCall api.ToolCall) api.Message {
 	assistantMsg := api.Message{
 		Role:      "assistant",
@@ -499,6 +519,7 @@ func buildWebSearchAssistantMessage(response api.ChatResponse, webSearchCall api
 	return assistantMsg
 }
 
+// formatWebSearchResultsForToolMessage 将搜索结果格式化为 tool 消息文本。
 func formatWebSearchResultsForToolMessage(results []anthropic.OllamaWebSearchResult) string {
 	var resultText strings.Builder
 	for _, r := range results {
@@ -511,6 +532,7 @@ func formatWebSearchResultsForToolMessage(results []anthropic.OllamaWebSearchRes
 	return resultText.String()
 }
 
+// findWebSearchToolCall 查找 web_search 调用并标记是否含其他工具。
 func findWebSearchToolCall(toolCalls []api.ToolCall) (api.ToolCall, bool, bool) {
 	var webSearchCall api.ToolCall
 	hasWebSearch := false
@@ -530,6 +552,7 @@ func findWebSearchToolCall(toolCalls []api.ToolCall) (api.ToolCall, bool, bool) 
 	return webSearchCall, hasWebSearch, hasOtherTools
 }
 
+// loopServerToolUseID 为多次搜索循环生成唯一 server tool use ID。
 func loopServerToolUseID(messageID string, loop int) string {
 	base := serverToolUseID(messageID)
 	if loop <= 1 {
@@ -538,6 +561,7 @@ func loopServerToolUseID(messageID string, loop int) string {
 	return fmt.Sprintf("%s_%d", base, loop)
 }
 
+// callFollowUpChat 向本地 /api/chat 发送非流式 follow-up 请求。
 func (w *WebSearchAnthropicWriter) callFollowUpChat(ctx context.Context, messages []api.Message, tools api.Tools) (api.ChatResponse, error) {
 	streaming := false
 	followUp := api.ChatRequest{
@@ -588,6 +612,7 @@ func (w *WebSearchAnthropicWriter) callFollowUpChat(ctx context.Context, message
 	return chatResp, nil
 }
 
+// writePassthroughStreamChunk 无 web_search 时将流式 chunk 透传为 SSE。
 func (w *WebSearchAnthropicWriter) writePassthroughStreamChunk(chatResponse api.ChatResponse) error {
 	events := w.inner.converter.Process(chatResponse)
 	for _, event := range events {
@@ -721,6 +746,7 @@ func (w *WebSearchAnthropicWriter) writeStreamContentBlocks(content []anthropic.
 	return nil
 }
 
+// writeTerminalResponse 输出最终 JSON 或 SSE message_stop 序列。
 func (w *WebSearchAnthropicWriter) writeTerminalResponse(response anthropic.MessagesResponse) error {
 	if w.terminalSent {
 		return nil
@@ -768,6 +794,7 @@ func (w *WebSearchAnthropicWriter) writeTerminalResponse(response anthropic.Mess
 	return nil
 }
 
+// streamResponse 将完整 MessagesResponse 作为 SSE 事件序列发出。
 // streamResponse emits a complete MessagesResponse as SSE events.
 func (w *WebSearchAnthropicWriter) streamResponse(response anthropic.MessagesResponse) error {
 	return w.writeTerminalResponse(response)
@@ -802,6 +829,7 @@ func (w *WebSearchAnthropicWriter) webSearchErrorResponse(errorCode, query strin
 	}
 }
 
+// sendError 发送 web_search 错误格式的 Anthropic 响应。
 // sendError sends a web search error response.
 func (w *WebSearchAnthropicWriter) sendError(errorCode, query string, usage anthropic.Usage) error {
 	response := w.webSearchErrorResponse(errorCode, query, usage)
@@ -809,6 +837,7 @@ func (w *WebSearchAnthropicWriter) sendError(errorCode, query string, usage anth
 	return w.writeTerminalResponse(response)
 }
 
+// AnthropicMessagesMiddleware Gin 中间件：绑定 Anthropic 请求并包装响应 writer。
 // AnthropicMessagesMiddleware handles Anthropic Messages API requests
 func AnthropicMessagesMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -842,6 +871,7 @@ func AnthropicMessagesMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		// Anthropic API 路径下 relax thinking，便于 Claude Code 等工具连接。
 		// Set think to nil when being used with Anthropic API to connect to tools like claude code
 		c.Set("relax_thinking", true)
 
@@ -855,6 +885,7 @@ func AnthropicMessagesMiddleware() gin.HandlerFunc {
 
 		messageID := anthropic.GenerateMessageID()
 
+		// 流式模式下预估输入 token（实际用量需等生成结束）。
 		// Estimate input tokens for streaming (actual count not available until generation completes)
 		estimatedTokens := anthropic.EstimateInputTokens(req)
 
@@ -872,7 +903,9 @@ func AnthropicMessagesMiddleware() gin.HandlerFunc {
 		}
 
 		if hasWebSearchTool(req.Tools) {
+			// 云模型需检查 OLLAMA_NO_CLOUD/server.json 是否禁用 web_search。
 			// Guard against runtime cloud-disable policy (OLLAMA_NO_CLOUD/server.json)
+			// 本地模型仍可声明 web_search 工具，执行时在工具调用处校验。
 			// for cloud models. Local models may still receive web_search tool definitions;
 			// execution is validated when the model actually emits a web_search tool call.
 			if isCloudModelName(req.Model) {
@@ -901,6 +934,7 @@ func AnthropicMessagesMiddleware() gin.HandlerFunc {
 	}
 }
 
+// hasWebSearchTool 判断请求 tools 是否含 web_search 类型。
 // hasWebSearchTool checks if the request tools include a web_search tool
 func hasWebSearchTool(tools []anthropic.Tool) bool {
 	for _, tool := range tools {
@@ -911,10 +945,12 @@ func hasWebSearchTool(tools []anthropic.Tool) bool {
 	return false
 }
 
+// isCloudModelName 判断模型名是否显式指向云源。
 func isCloudModelName(name string) bool {
 	return modelref.HasExplicitCloudSource(name)
 }
 
+// extractQueryFromToolCall 从 web_search 工具调用参数提取 query。
 // extractQueryFromToolCall extracts the search query from a web_search tool call
 func extractQueryFromToolCall(tc *api.ToolCall) string {
 	q, ok := tc.Function.Arguments.Get("query")
@@ -927,6 +963,7 @@ func extractQueryFromToolCall(tc *api.ToolCall) string {
 	return ""
 }
 
+// writeSSE 写入 SSE event/data 行并 flush。
 // writeSSE writes a Server-Sent Event
 func writeSSE(w http.ResponseWriter, eventType string, data any) error {
 	d, err := json.Marshal(data)
@@ -942,6 +979,7 @@ func writeSSE(w http.ResponseWriter, eventType string, data any) error {
 	return nil
 }
 
+// queryArgs 构造仅含 query 键的工具参数。
 // queryArgs creates a ToolCallFunctionArguments with a single "query" key.
 func queryArgs(query string) api.ToolCallFunctionArguments {
 	args := api.NewToolCallFunctionArguments()
@@ -949,6 +987,7 @@ func queryArgs(query string) api.ToolCallFunctionArguments {
 	return args
 }
 
+// serverToolUseID 由 message ID 派生 server_tool_use 块 ID。
 // serverToolUseID derives a server tool use ID from a message ID
 func serverToolUseID(messageID string) string {
 	return "srvtoolu_" + strings.TrimPrefix(messageID, "msg_")

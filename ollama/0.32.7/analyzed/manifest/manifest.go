@@ -1,3 +1,4 @@
+// Ollama 模型 manifest 解析、写入与层清理。
 package manifest
 
 import (
@@ -13,6 +14,7 @@ import (
 	"github.com/ollama/ollama/types/model"
 )
 
+// Manifest 表示 Docker v2 风格的 Ollama 模型 manifest。
 type Manifest struct {
 	SchemaVersion int     `json:"schemaVersion"`
 	MediaType     string  `json:"mediaType"`
@@ -24,6 +26,7 @@ type Manifest struct {
 	digest   string
 }
 
+// Size 返回 config 与各 layer 字节总和。
 func (m *Manifest) Size() (size int64) {
 	for _, layer := range append(m.Layers, m.Config) {
 		size += layer.Size
@@ -32,14 +35,17 @@ func (m *Manifest) Size() (size int64) {
 	return
 }
 
+// Digest 返回 manifest JSON 内容的 sha256 十六进制摘要。
 func (m *Manifest) Digest() string {
 	return m.digest
 }
 
+// FileInfo 返回 manifest 文件的 os.FileInfo。
 func (m *Manifest) FileInfo() os.FileInfo {
 	return m.fi
 }
 
+// ReadConfigJSON 按 configPath 名称查找 JSON 层并反序列化。
 // ReadConfigJSON reads and unmarshals a config layer as JSON.
 func (m *Manifest) ReadConfigJSON(configPath string, v any) error {
 	for _, layer := range m.Layers {
@@ -58,6 +64,7 @@ func (m *Manifest) ReadConfigJSON(configPath string, v any) error {
 	return fmt.Errorf("config %q not found in manifest", configPath)
 }
 
+// Remove 删除 manifest 文件并 prune 空目录。
 func (m *Manifest) Remove() error {
 	if err := os.Remove(m.filepath); err != nil {
 		return err
@@ -71,12 +78,14 @@ func (m *Manifest) Remove() error {
 	return PruneDirectory(manifests)
 }
 
+// RemoveLayers 删除仅被本 manifest 引用的 orphan blob。
 func (m *Manifest) RemoveLayers() error {
 	ms, err := Manifests(true)
 	if err != nil {
 		return err
 	}
 
+	// 收集其他 manifest 仍引用的 digest 集合。
 	// Build set of digests still in use by other manifests
 	inUse := make(map[string]struct{})
 	for _, other := range ms {
@@ -87,6 +96,7 @@ func (m *Manifest) RemoveLayers() error {
 		}
 	}
 
+	// 删除未被任何 manifest 引用的层 blob。
 	// Remove layers not used by any other manifest
 	for _, layer := range append(m.Layers, m.Config) {
 		if layer.Digest == "" {
@@ -109,6 +119,7 @@ func (m *Manifest) RemoveLayers() error {
 	return nil
 }
 
+// ParseNamedManifest 按完全限定模型名读取并解析 manifest。
 func ParseNamedManifest(n model.Name) (*Manifest, error) {
 	if !n.IsFullyQualified() {
 		return nil, model.Unqualified(n)
@@ -145,6 +156,7 @@ func ParseNamedManifest(n model.Name) (*Manifest, error) {
 	return &m, nil
 }
 
+// WriteManifest 将 manifest 写入模型名对应路径。
 func WriteManifest(name model.Name, config Layer, layers []Layer) error {
 	manifests, err := Path()
 	if err != nil {
@@ -172,6 +184,7 @@ func WriteManifest(name model.Name, config Layer, layers []Layer) error {
 	return json.NewEncoder(f).Encode(m)
 }
 
+// Manifests 扫描 manifests 目录，返回所有有效 manifest 映射。
 func Manifests(continueOnError bool) (map[model.Name]*Manifest, error) {
 	manifests, err := Path()
 	if err != nil {

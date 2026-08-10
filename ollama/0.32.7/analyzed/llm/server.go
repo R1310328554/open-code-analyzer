@@ -1,3 +1,4 @@
+// LlamaServer 接口、模型加载与请求/响应类型定义。
 package llm
 
 import (
@@ -17,10 +18,13 @@ import (
 	"github.com/ollama/ollama/ml"
 )
 
+// ErrLoadRequiredFull 表示无法在 GPU 上完整加载模型。
 var ErrLoadRequiredFull = errors.New("unable to load full model on GPU")
 
+// filteredEnv 用于 slog 中过滤敏感 GPU/路径环境变量。
 type filteredEnv []string
 
+// LogValue 将允许记录的环境变量键值对转为 slog 属性组。
 func (e filteredEnv) LogValue() slog.Value {
 	var attrs []slog.Attr
 	for _, env := range e {
@@ -33,6 +37,7 @@ func (e filteredEnv) LogValue() slog.Value {
 	return slog.GroupValue(attrs...)
 }
 
+// filteredEnvLogKey 判断环境变量键是否允许写入日志。
 func filteredEnvLogKey(key string) bool {
 	return strings.HasPrefix(key, "CUDA_") ||
 		strings.HasPrefix(key, "ROCR_") ||
@@ -47,6 +52,7 @@ func filteredEnvLogKey(key string) bool {
 		}, key)
 }
 
+// filteredEnvLogValue 对含 API/KEY 等敏感词的值脱敏。
 func filteredEnvLogValue(key, value string) string {
 	for _, token := range []string{"API", "KEY", "TOKEN", "SECRET", "PASSWORD", "PASS", "CREDENTIAL", "AUTH"} {
 		if strings.Contains(strings.ToUpper(key), token) {
@@ -56,6 +62,7 @@ func filteredEnvLogValue(key, value string) string {
 	return value
 }
 
+// LlamaServer 抽象 llama-server runner 的加载、推理与生命周期操作。
 type LlamaServer interface {
 	ModelPath() string
 	Load(ctx context.Context, systemInfo ml.SystemInfo, gpus []ml.DeviceInfo, requireFull bool) ([]ml.DeviceID, error)
@@ -77,6 +84,7 @@ type LlamaServer interface {
 	ContextLength() int
 }
 
+// LlamaServerConfig 控制 Jinja、context shift、MTP 等 runner 行为。
 type LlamaServerConfig struct {
 	DisableJinja   bool
 	ContextShift   bool
@@ -84,6 +92,7 @@ type LlamaServerConfig struct {
 	DraftModelPath string
 }
 
+// LoadModel 从磁盘加载 GGML/GGUF 模型并解码元数据。
 // LoadModel will load a model from disk. The model must be in the GGML format.
 //
 // It collects array values for arrays with a size less than or equal to
@@ -103,11 +112,13 @@ func LoadModel(model string, maxArraySize int) (*ggml.GGML, error) {
 	return ggml.Decode(f, maxArraySize)
 }
 
+// NewLlamaServer 校验上下文长度并创建 llama-server runner。
 // NewLlamaServer creates a new llama-server runner for the given model.
 // All GGML models are served via the upstream llama-server subprocess.
 func NewLlamaServer(systemInfo ml.SystemInfo, gpus []ml.DeviceInfo, modelPath string, f *ggml.GGML, adapters, projectors []string, opts api.Options, numParallel int, config LlamaServerConfig) (LlamaServer, error) {
 	slog.Info("using llama-server for model", "model", modelPath)
 
+	// 请求的 num_ctx 不得超过模型训练上下文长度。
 	// Verify the requested context size is <= the model training size
 	trainCtx := f.KV().ContextLength()
 	if opts.NumCtx > int(trainCtx) && trainCtx > 0 {
@@ -119,8 +130,10 @@ func NewLlamaServer(systemInfo ml.SystemInfo, gpus []ml.DeviceInfo, modelPath st
 	return NewLlamaServerRunner(gpus, modelPath, f, adapters, projectors, opts, numParallel, kvct, config)
 }
 
+// 服务器状态枚举
 // Server status types
 
+// ServerStatus 表示 llama-server 健康/加载/错误状态。
 type ServerStatus int
 
 const (
@@ -132,6 +145,7 @@ const (
 	ServerStatusError
 )
 
+// String 返回人类可读的状态描述。
 func (s ServerStatus) String() string {
 	switch s {
 	case ServerStatusReady:
@@ -149,19 +163,23 @@ func (s ServerStatus) String() string {
 	}
 }
 
+// ServerStatusResponse 对应 /health 端点 JSON 响应。
 type ServerStatusResponse struct {
 	Status   ServerStatus `json:"status"`
 	Progress float32      `json:"progress"`
 }
 
+// 推理请求与响应类型
 // Request/Response types
 
 const (
-	llamaServerStreamInitialBufferSize = 64 * 1024
+	llamaServerStreamInitialBufferSize = 64 * 1024 // SSE 流初始读缓冲
+	// llamaServerStreamMaxBufferSize 限制单行 SSE 响应最大 8 MiB。
 	// llamaServerStreamMaxBufferSize bounds a single runner response stream line.
 	llamaServerStreamMaxBufferSize = 8 * format.MegaByte
 )
 
+// MediaKind 区分图像、音频与未知媒体。
 type MediaKind string
 
 const (
@@ -170,12 +188,14 @@ const (
 	MediaKindAudio   MediaKind = "audio"
 )
 
+// MediaData 携带多模态输入的原始字节、ID 与类型。
 type MediaData struct {
 	Data []byte `json:"data"`
 	ID   int    `json:"id"`
 	Kind MediaKind
 }
 
+// Message 为 llama-server 聊天路径使用的内部消息结构。
 type Message struct {
 	Role       string
 	Content    string
@@ -186,6 +206,7 @@ type Message struct {
 	ToolCallID string
 }
 
+// MessageFromAPI 将 API Message 转为内部 Message（含图像 MediaData）。
 func MessageFromAPI(msg api.Message) Message {
 	media := make([]MediaData, len(msg.Images))
 	for i, data := range msg.Images {
@@ -203,6 +224,7 @@ func MessageFromAPI(msg api.Message) Message {
 	}
 }
 
+// CompletionRequest 封装补全请求的 prompt、媒体、grammar 与 logprobs 选项。
 type CompletionRequest struct {
 	Prompt  string
 	Format  json.RawMessage
@@ -216,13 +238,16 @@ type CompletionRequest struct {
 	ToolCallTag     string   // raw generic tool parser tag, if any
 	LeadingBOS      string   // textual BOS emitted by Go rendering, if any
 
+	// Logprobs 是否在响应中包含 log 概率。
 	// Logprobs specifies whether to include log probabilities in the response
 	Logprobs bool
 
+	// TopLogprobs 返回的 top-k 备选 token 数量（0-20）。
 	// TopLogprobs specifies the number of most likely alternative tokens to return (0-20)
 	TopLogprobs int
 }
 
+// ChatRequest 封装多轮聊天、工具与 thinking 选项。
 type ChatRequest struct {
 	Messages []api.Message
 	Tools    api.Tools
@@ -235,6 +260,7 @@ type ChatRequest struct {
 	TopLogprobs int
 }
 
+// ChatResponse 为流式/非流式聊天单块响应。
 type ChatResponse struct {
 	Message            api.Message   `json:"message"`
 	DoneReason         DoneReason    `json:"done_reason"`
@@ -246,6 +272,7 @@ type ChatResponse struct {
 	Logprobs           []Logprob     `json:"logprobs,omitempty"`
 }
 
+// DoneReason 表示生成结束原因（stop/length/连接关闭）。
 // DoneReason represents the reason why a completion response is done
 type DoneReason int
 
@@ -255,6 +282,7 @@ const (
 	DoneReasonConnectionClosed
 )
 
+// String 返回 "stop"、"length" 或空字符串。
 func (d DoneReason) String() string {
 	switch d {
 	case DoneReasonLength:
@@ -266,18 +294,21 @@ func (d DoneReason) String() string {
 	}
 }
 
+// TokenLogprob 单个备选 token 的 log 概率。
 // TokenLogprob represents log probability information for a single token alternative.
 type TokenLogprob struct {
 	Token   string  `json:"token"`
 	Logprob float64 `json:"logprob"`
 }
 
+// Logprob 包含生成 token 及其 top-k 备选 log 概率。
 // Logprob contains log probability information for a generated token.
 type Logprob struct {
 	TokenLogprob
 	TopLogprobs []TokenLogprob `json:"top_logprobs,omitempty"`
 }
 
+// CompletionResponse 为补全流式/非流式单块响应。
 type CompletionResponse struct {
 	Content            string        `json:"content"`
 	DoneReason         DoneReason    `json:"done_reason"`
@@ -287,6 +318,7 @@ type CompletionResponse struct {
 	EvalCount          int           `json:"eval_count"`
 	EvalDuration       time.Duration `json:"eval_duration"`
 
+	// Logprobs 在请求时包含 log 概率列表。
 	// Logprobs contains log probability information if requested
 	Logprobs []Logprob `json:"logprobs,omitempty"`
 }

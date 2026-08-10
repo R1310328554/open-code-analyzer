@@ -1,3 +1,4 @@
+// Windows ROCm 运行时 DLL 选择与库路径注入。
 //go:build windows
 
 package llm
@@ -15,6 +16,7 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+// windowsROCmRuntimeDLLNames 按优先级列出 amdhip64 运行时 DLL 名称。
 var (
 	windowsROCmRuntimeDLLNames          = []string{"amdhip64_7.dll", "amdhip64_6.dll", "amdhip64.dll"}
 	windowsROCmRuntimeCompanionDLLNames = map[string][]string{
@@ -24,6 +26,7 @@ var (
 	}
 )
 
+// windowsROCmRuntimeDLL 记录 bunded 与 system 两路 ROCm 运行时选择结果。
 type windowsROCmRuntimeDLL struct {
 	path         string
 	source       string
@@ -38,16 +41,19 @@ type windowsROCmRuntimeDLL struct {
 	bundledDir   string
 }
 
+// windowsFileVersion 封装 Windows 文件版本 MS/LS 双字。
 type windowsFileVersion struct {
 	ms uint32
 	ls uint32
 }
 
+// windowsVersionTranslation 表示版本资源中的语言/代码页。
 type windowsVersionTranslation struct {
 	language uint16
 	codePage uint16
 }
 
+// WindowsROCmRuntimeDLLPath 返回应使用的 amdhip64 运行时 DLL 绝对路径。
 func WindowsROCmRuntimeDLLPath(libDirs []string) (string, error) {
 	choice, err := windowsROCmRuntimeDLLChoice(libDirs)
 	if err != nil {
@@ -56,11 +62,13 @@ func WindowsROCmRuntimeDLLPath(libDirs []string) (string, error) {
 	return choice.path, nil
 }
 
+// adjustPlatformLibraryPaths 依次调整 ROCm 与 Vulkan 库搜索路径。
 func adjustPlatformLibraryPaths(paths, gpuLibs []string) []string {
 	paths = adjustWindowsROCmLibraryPaths(paths, gpuLibs)
 	return adjustWindowsVulkanLibraryPaths(paths, gpuLibs)
 }
 
+// adjustWindowsROCmLibraryPaths 若选用 System32 运行时，将其目录插入 PATH 前缀。
 func adjustWindowsROCmLibraryPaths(paths, gpuLibs []string) []string {
 	rocmDir := firstWindowsROCmLibDir(gpuLibs)
 	if rocmDir == "" {
@@ -95,6 +103,8 @@ func adjustWindowsROCmLibraryPaths(paths, gpuLibs []string) []string {
 	return insertPathBefore(paths, choice.systemDir, before)
 }
 
+// windowsROCmRuntimeDLLChoice 在 bundled 与 System32 间选较新版本；
+// 同主版本内优先较新驱动或 bundled 副本，不搜索 ROCm SDK 安装路径。
 // AMD's Windows driver also ships ROCm runtime DLLs in System32. Within the
 // same DLL name/major, use the newer driver or bundled copy; never search the
 // ROCm SDK installation paths.
@@ -154,6 +164,7 @@ func windowsROCmRuntimeDLLChoice(libDirs []string) (windowsROCmRuntimeDLL, error
 	return windowsROCmRuntimeDLL{}, errors.New("no amdhip64 runtime DLL found")
 }
 
+// systemROCmCompanionDLLsCompatible 校验 System32 配套 amd_comgr DLL 版本不低于 bundled。
 func systemROCmCompanionDLLsCompatible(libDirs []string, runtimeName, systemDir string) bool {
 	for _, name := range windowsROCmRuntimeCompanionDLLNames[strings.ToLower(runtimeName)] {
 		bundledPath := firstExistingFile(libDirs, name)
@@ -189,6 +200,7 @@ func systemROCmCompanionDLLsCompatible(libDirs []string, runtimeName, systemDir 
 	return true
 }
 
+// firstWindowsROCmLibDir 从 GPU 库目录列表中定位首个 ROCm/HIP 目录。
 func firstWindowsROCmLibDir(libDirs []string) string {
 	for _, dir := range libDirs {
 		if dir == "" {
@@ -205,6 +217,7 @@ func firstWindowsROCmLibDir(libDirs []string) string {
 	return ""
 }
 
+// firstExistingFile 在多个目录中查找首个存在的文件名。
 func firstExistingFile(dirs []string, name string) string {
 	for _, dir := range dirs {
 		if dir == "" {
@@ -218,6 +231,7 @@ func firstExistingFile(dirs []string, name string) string {
 	return ""
 }
 
+// insertPathBefore 将 insert 目录插入 paths 中 before 之前（去重）。
 func insertPathBefore(paths []string, insert, before string) []string {
 	insert = filepath.Clean(insert)
 	before = filepath.Clean(before)
@@ -244,11 +258,13 @@ func insertPathBefore(paths []string, insert, before string) []string {
 	return out
 }
 
+// fileExists 判断路径是否为存在的普通文件。
 func fileExists(path string) bool {
 	info, err := os.Stat(path)
 	return err == nil && !info.IsDir()
 }
 
+// readWindowsFileVersion 读取 PE 文件版本资源。
 func readWindowsFileVersion(path string) (windowsFileVersion, bool) {
 	var zero windows.Handle
 	infoSize, err := windows.GetFileVersionInfoSize(path, &zero)
@@ -276,6 +292,7 @@ func readWindowsFileVersion(path string) (windowsFileVersion, bool) {
 	return windowsFileVersion{ms: fixedInfo.FileVersionMS, ls: fixedInfo.FileVersionLS}, true
 }
 
+// readWindowsStringFileVersion 从 StringFileInfo 解析四段版本号。
 func readWindowsStringFileVersion(versionInfo []byte) (windowsFileVersion, bool) {
 	translations := windowsVersionTranslations(versionInfo)
 	if len(translations) == 0 {
@@ -298,6 +315,7 @@ func readWindowsStringFileVersion(versionInfo []byte) (windowsFileVersion, bool)
 	return windowsFileVersion{}, false
 }
 
+// windowsVersionTranslations 提取版本资源中的语言/代码页列表。
 func windowsVersionTranslations(versionInfo []byte) []windowsVersionTranslation {
 	var translations *windowsVersionTranslation
 	var translationsLen uint32
@@ -310,6 +328,7 @@ func windowsVersionTranslations(versionInfo []byte) []windowsVersionTranslation 
 	return unsafe.Slice(translations, int(translationsLen)/int(unsafe.Sizeof(windowsVersionTranslation{})))
 }
 
+// windowsVersionString 读取指定翻译块下的 FileVersion/ProductVersion 字符串。
 func windowsVersionString(versionInfo []byte, translation windowsVersionTranslation, name string) (string, bool) {
 	subBlock := fmt.Sprintf(`\StringFileInfo\%04x%04x\%s`, translation.language, translation.codePage, name)
 	var value *uint16
@@ -323,6 +342,7 @@ func windowsVersionString(versionInfo []byte, translation windowsVersionTranslat
 	return windows.UTF16PtrToString(value), true
 }
 
+// parseWindowsFileVersionString 将 "a.b.c.d" 字符串解析为 MS/LS 版本。
 func parseWindowsFileVersionString(s string) (windowsFileVersion, bool) {
 	parts := strings.FieldsFunc(s, func(r rune) bool {
 		return r < '0' || r > '9'
@@ -346,6 +366,7 @@ func parseWindowsFileVersionString(s string) (windowsFileVersion, bool) {
 	}, true
 }
 
+// Compare 比较两个文件版本，返回 -1/0/1。
 func (v windowsFileVersion) Compare(other windowsFileVersion) int {
 	if v.ms < other.ms {
 		return -1
@@ -362,6 +383,7 @@ func (v windowsFileVersion) Compare(other windowsFileVersion) int {
 	return 0
 }
 
+// String 格式化为 "major.minor.build.revision"。
 func (v windowsFileVersion) String() string {
 	if v.ms == 0 && v.ls == 0 {
 		return ""
