@@ -1993,3 +1993,18 @@
 2026-08-10T04:35:20Z DONE naming/src/main/java/com/alibaba/nacos/naming/exception/ResponseExceptionHandler.java wave66a [0:15] naming v2 metadata/pojo/client ops/health
 2026-08-10T04:35:20Z DONE naming/src/main/java/com/alibaba/nacos/naming/healthcheck/HealthCheckReactor.java wave66a [0:15] naming v2 metadata/pojo/client ops/health
 2026-08-10T04:35:20Z DONE naming/src/main/java/com/alibaba/nacos/naming/healthcheck/HealthCheckStatus.java wave66a [0:15] naming v2 metadata/pojo/client ops/health
+2026-08-10T04:35:37Z DONE naming/src/main/java/com/alibaba/nacos/naming/healthcheck/NacosHealthCheckTask.java wave66b [15:30] naming healthcheck extend/heartbeat
+2026-08-10T04:35:37Z DONE naming/src/main/java/com/alibaba/nacos/naming/healthcheck/RsInfo.java wave66b [15:30] naming healthcheck extend/heartbeat
+2026-08-10T04:35:37Z DONE naming/src/main/java/com/alibaba/nacos/naming/healthcheck/extend/AbstractHealthCheckProcessorExtend.java wave66b [15:30] naming healthcheck extend/heartbeat
+2026-08-10T04:35:37Z DONE naming/src/main/java/com/alibaba/nacos/naming/healthcheck/extend/HealthCheckExtendProvider.java wave66b [15:30] naming healthcheck extend/heartbeat
+2026-08-10T04:35:37Z DONE naming/src/main/java/com/alibaba/nacos/naming/healthcheck/extend/HealthCheckProcessorExtendV2.java wave66b [15:30] naming healthcheck extend/heartbeat
+2026-08-10T04:35:37Z DONE naming/src/main/java/com/alibaba/nacos/naming/healthcheck/heartbeat/AbstractBeatCheckInterceptor.java wave66b [15:30] naming healthcheck extend/heartbeat
+2026-08-10T04:35:37Z DONE naming/src/main/java/com/alibaba/nacos/naming/healthcheck/heartbeat/BeatCheckTask.java wave66b [15:30] naming healthcheck extend/heartbeat
+2026-08-10T04:35:37Z DONE naming/src/main/java/com/alibaba/nacos/naming/healthcheck/heartbeat/BeatProcessor.java wave66b [15:30] naming healthcheck extend/heartbeat
+2026-08-10T04:35:37Z DONE naming/src/main/java/com/alibaba/nacos/naming/healthcheck/heartbeat/ClientBeatCheckTaskV2.java wave66b [15:30] naming healthcheck extend/heartbeat
+2026-08-10T04:35:37Z DONE naming/src/main/java/com/alibaba/nacos/naming/healthcheck/heartbeat/ClientBeatProcessorV2.java wave66b [15:30] naming healthcheck extend/heartbeat
+2026-08-10T04:35:37Z DONE naming/src/main/java/com/alibaba/nacos/naming/healthcheck/heartbeat/ClientBeatUpdateTask.java wave66b [15:30] naming healthcheck extend/heartbeat
+2026-08-10T04:35:37Z DONE naming/src/main/java/com/alibaba/nacos/naming/healthcheck/heartbeat/ExpiredInstanceChecker.java wave66b [15:30] naming healthcheck extend/heartbeat
+2026-08-10T04:35:37Z DONE naming/src/main/java/com/alibaba/nacos/naming/healthcheck/heartbeat/InstanceBeatCheckResponsibleInterceptor.java wave66b [15:30] naming healthcheck extend/heartbeat
+2026-08-10T04:35:37Z DONE naming/src/main/java/com/alibaba/nacos/naming/healthcheck/heartbeat/InstanceBeatCheckTask.java wave66b [15:30] naming healthcheck extend/heartbeat
+2026-08-10T04:35:37Z DONE naming/src/main/java/com/alibaba/nacos/naming/healthcheck/heartbeat/InstanceBeatCheckTaskInterceptorChain.java wave66b [15:30] naming healthcheck extend/heartbeat

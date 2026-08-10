@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T04:33:31Z",
-  "files": [
-    "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/NacosHealthCheckTask.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/RsInfo.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/extend/AbstractHealthCheckProcessorExtend.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/extend/HealthCheckExtendProvider.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/extend/HealthCheckProcessorExtendV2.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/heartbeat/AbstractBeatCheckInterceptor.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/heartbeat/BeatCheckTask.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/heartbeat/BeatProcessor.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/heartbeat/ClientBeatCheckTaskV2.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/heartbeat/ClientBeatProcessorV2.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/heartbeat/ClientBeatUpdateTask.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/heartbeat/ExpiredInstanceChecker.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/heartbeat/InstanceBeatCheckResponsibleInterceptor.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/heartbeat/InstanceBeatCheckTask.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/heartbeat/InstanceBeatCheckTaskInterceptorChain.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 557,
-  "done": 1965
+  "done": 1980
 }
