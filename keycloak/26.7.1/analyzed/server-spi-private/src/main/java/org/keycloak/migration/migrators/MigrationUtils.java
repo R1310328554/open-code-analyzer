@@ -36,10 +36,14 @@ import org.keycloak.models.UserModel;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
 /**
+ * 迁移过程共用的静态工具方法。
+ * <p>包括管理角色补全、OTP 必需操作重命名、协议映射器升级与离线令牌兼容等。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class MigrationUtils {
 
+    /** 在 master 与 realm-management 客户端上添加管理角色并挂入复合角色。 */
     public static void addAdminRole(RealmModel realm, String roleName) {
         ClientModel client = realm.getMasterAdminClient();
         if (client != null && client.getRole(roleName) == null) {
@@ -60,6 +64,7 @@ public class MigrationUtils {
         }
     }
 
+    /** 将旧版 "Configure Totp" 必需操作显示名更新为 "Configure OTP"。 */
     public static void updateOTPRequiredAction(RequiredActionProviderModel otpAction) {
         if (otpAction == null) return;
         if (!UserModel.RequiredAction.CONFIGURE_TOTP.name().equals(otpAction.getProviderId())) return;
@@ -68,6 +73,7 @@ public class MigrationUtils {
         otpAction.setName("Configure OTP");
     }
     
+    /** 为缺少 userinfo.token.claim 的映射器同步 id.token.claim 配置。 */
     public static void updateProtocolMappers(ProtocolMapperContainerModel client) {
         client.getProtocolMappersStream()
                 .filter(mapper -> !mapper.getConfig().containsKey("userinfo.token.claim") && mapper.getConfig().containsKey("id.token.claim"))
@@ -77,7 +83,8 @@ public class MigrationUtils {
     }
 
 
-    // Called when offline token older than 4.0 (Offline token without clientScopeIds) is called
+    // 4.0 之前无 clientScopeIds 的离线令牌被使用时调用
+    /** 为旧版离线令牌自动补全 offline_access 与用户同意记录。 */
     public static void migrateOldOfflineToken(KeycloakSession session, RealmModel realm, ClientModel client, UserModel user) throws OAuthErrorException {
         ClientScopeModel offlineScope = KeycloakModelUtils.getClientScopeByName(realm, OAuth2Constants.OFFLINE_ACCESS);
         if (offlineScope == null) {
@@ -99,10 +106,12 @@ public class MigrationUtils {
         }
     }
 
+    /** 将客户端认证类型设为当前默认实现。 */
     public static void setDefaultClientAuthenticatorType(ClientModel s) {
         s.setClientAuthenticatorType(KeycloakModelUtils.getDefaultClientAuthenticatorType());
     }
 
+    /** 是否为 OIDC 协议且非 bearer-only 的客户端。 */
     public static boolean isOIDCNonBearerOnlyClient(ClientModel c) {
         return (c.getProtocol() == null || "openid-connect".equals(c.getProtocol())) && !c.isBearerOnly();
     }

@@ -23,17 +23,19 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.representations.idm.RealmRepresentation;
 
 /**
+ * 单次模型版本迁移步骤接口。
+ * <p>实现类在启动迁移链中按 {@link #getVersion()} 顺序执行 {@link #migrate}。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface Migration {
 
+    /** 执行本版本的数据库/模型结构迁移。 */
     void migrate(KeycloakSession session);
 
     /**
-     * Called after full import of representation.
-     *
-     * Implementations of this method should try not make assumptions about what was imported from the representations.
-     * We have no idea what the user will do to an exported json file.
+     * 领域 JSON 完整导入后调用，用于补充迁移逻辑。
+     * <p>实现不应假设导入文件内容与导出时完全一致。</p>
      *
      * @param session
      * @param realm
@@ -45,6 +47,7 @@ public interface Migration {
 
     }
 
+    /** 本迁移步骤对应的目标模型版本。 */
     ModelVersion getVersion();
 
 }

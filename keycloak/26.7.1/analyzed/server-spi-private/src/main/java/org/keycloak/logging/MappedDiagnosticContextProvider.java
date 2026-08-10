@@ -9,19 +9,18 @@ import org.keycloak.provider.Provider;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
 /**
- * Provider interface for updating the Mapped Diagnostic Context (MDC) with key/value pairs based on the current keycloak context.
- * All keys in the MDC will be prefixed with "kc." to avoid conflicts.
+ * 映射诊断上下文（MDC）提供者 SPI：根据当前 Keycloak 上下文写入日志 MDC 键值对。
+ * <p>所有 MDC 键均带 {@code kc.} 前缀，避免与应用程序日志上下文冲突。</p>
  *
  * @author <a href="mailto:b.eicki@gmx.net">Björn Eickvonder</a>
  */
 public interface MappedDiagnosticContextProvider extends Provider {
 
+    /** MDC 键的统一前缀。 */
     String MDC_PREFIX = "kc.";
 
     /**
-     * Updates the Mapped Diagnostic Context (MDC) with key/value pairs based on the current Keycloak context.
-     * This method is called when a Keycloak Session is set and when the authentication session property of the
-     * Keycloak context is updated.
+     * 根据认证会话更新 MDC（设置 Keycloak 会话或认证会话属性变更时调用）。
      *
      * @param keycloakContext the current Keycloak context, never null
      * @param session the authentication session
@@ -29,9 +28,7 @@ public interface MappedDiagnosticContextProvider extends Provider {
     void update(KeycloakContext keycloakContext, AuthenticationSessionModel session);
 
     /**
-     * Updates the Mapped Diagnostic Context (MDC) with key/value pairs based on the current Keycloak context.
-     * This method is called when a Keycloak Session is set and when the realm property of the Keycloak context
-     * is updated.
+     * 根据领域更新 MDC（设置 Keycloak 会话或领域属性变更时调用）。
      *
      * @param keycloakContext the current Keycloak context, never null
      * @param realm the realm
@@ -39,9 +36,7 @@ public interface MappedDiagnosticContextProvider extends Provider {
     void update(KeycloakContext keycloakContext, RealmModel realm);
 
     /**
-     * Updates the Mapped Diagnostic Context (MDC) with key/value pairs based on the current Keycloak context.
-     * This method is called when a Keycloak Session is set and when the client property of the Keycloak context
-     * is updated.
+     * 根据客户端更新 MDC（设置 Keycloak 会话或客户端属性变更时调用）。
      *
      * @param keycloakContext the current Keycloak context, never null
      * @param client the client
@@ -49,9 +44,7 @@ public interface MappedDiagnosticContextProvider extends Provider {
     void update(KeycloakContext keycloakContext, ClientModel client);
 
     /**
-     * Updates the Mapped Diagnostic Context (MDC) with key/value pairs based on the current Keycloak context.
-     * This method is called when a Keycloak Session is set and when the organization property of the Keycloak context
-     * is updated.
+     * 根据组织更新 MDC（设置 Keycloak 会话或组织属性变更时调用）。
      *
      * @param keycloakContext the current Keycloak context, never null
      * @param organization the organization
@@ -59,9 +52,7 @@ public interface MappedDiagnosticContextProvider extends Provider {
     void update(KeycloakContext keycloakContext, OrganizationModel organization);
 
     /**
-     * Updates the Mapped Diagnostic Context (MDC) with key/value pairs based on the current Keycloak context.
-     * This method is called when a Keycloak Session is set and when the user session property of the Keycloak context
-     * is updated.
+     * 根据用户会话更新 MDC（设置 Keycloak 会话或用户会话属性变更时调用）。
      *
      * @param keycloakContext the current Keycloak context, never null
      * @param userSession the user session

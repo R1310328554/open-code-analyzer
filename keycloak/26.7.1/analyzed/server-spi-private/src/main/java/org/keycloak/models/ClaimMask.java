@@ -18,10 +18,14 @@
 package org.keycloak.models;
 
 /**
+ * 1.1.0 客户端声明（claim）位掩码常量，用于迁移至协议映射器。
+ * <p>每位对应一种用户属性是否包含在令牌声明中；{@link MigrationProvider#getMappersForClaimMask} 消费此掩码。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class ClaimMask {
+    /** 包含 {@code name} 声明。 */
     public static final long NAME = 0x01L;
     public static final long USERNAME = 0x02L;
     public static final long PROFILE = 0x04L;
@@ -33,14 +37,18 @@ public class ClaimMask {
     public static final long ADDRESS = 0x100L;
     public static final long PHONE = 0x200L;
 
+    /** 所有声明位的并集。 */
     public static final long ALL = NAME | USERNAME | PROFILE | PICTURE | WEBSITE | EMAIL | GENDER | LOCALE | ADDRESS | PHONE;
 
+    /** 掩码是否包含 name 位。 */
     public static boolean hasName(long mask) {
         return (mask & NAME) > 0;
     }
+    /** 掩码是否包含 username 位。 */
     public static boolean hasUsername(long mask) {
         return (mask & USERNAME) > 0;
     }
+    /** 掩码是否包含 profile 位。 */
     public static boolean hasProfile(long mask) {
         return (mask & PROFILE) > 0;
     }
@@ -50,6 +58,7 @@ public class ClaimMask {
     public static boolean hasWebsite(long mask) {
         return (mask & WEBSITE) > 0;
     }
+    /** 掩码是否包含 email 位。 */
     public static boolean hasEmail(long mask) {
         return (mask & EMAIL) > 0;
     }

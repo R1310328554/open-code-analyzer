@@ -20,6 +20,8 @@ package org.keycloak.migration;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link MigrationProvider} 的 {@link ProviderFactory} 工厂接口。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface MigrationProviderFactory extends ProviderFactory<MigrationProvider> {

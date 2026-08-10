@@ -24,15 +24,21 @@ import java.util.Set;
 import org.keycloak.Config;
 
 /**
+ * 管理控制台与 realm-management 客户端角色名称及判定工具。
+ * <p>区分 master 领域全局管理与各领域的 {@code realm-admin} 细粒度权限。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class AdminRoles {
 
+    /** master 领域管理客户端 ID 后缀。 */
     public static final String APP_SUFFIX = "-realm";
 
+    /** master 领域超级管理员角色。 */
     public static final String ADMIN = "admin";
 
-    // for admin client local to each realm
+    // 各领域 realm-management 客户端上的管理员角色
+    /** 领域级管理员复合角色。 */
     public static final String REALM_ADMIN = "realm-admin";
 
     public static final String CREATE_REALM = "create-realm";
@@ -74,6 +80,7 @@ public class AdminRoles {
         ALL_ROLES.add(REALM_ADMIN);
     }
 
+    /** 判断角色是否为已知管理角色且容器合法（master 或 realm-management）。 */
     public static boolean isAdminRole(RoleModel role) {
         if (role == null) {
             return false;
@@ -100,10 +107,12 @@ public class AdminRoles {
         return false;
     }
 
+    /** 角色本身或其复合子角色中是否包含管理角色。 */
     public static boolean isAdminRoleOrComposite(RoleModel role) {
         return isAdminRole(role, new HashSet<>());
     }
 
+    /** 用户组或其父组是否映射了管理角色（含复合）。 */
     public static boolean groupHasAdminRoles(GroupModel group) {
         GroupModel current = group;
         while (current != null) {
@@ -128,6 +137,7 @@ public class AdminRoles {
         return role.getCompositesStream().anyMatch(child -> isAdminRole(child, visited));
     }
 
+    /** 复合角色树中是否包含任意管理角色。 */
     public static boolean containsAdminRole(RoleModel role) {
         return containsAdminRole(role, new HashSet<>());
     }

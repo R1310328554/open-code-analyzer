@@ -27,25 +27,29 @@ import org.keycloak.provider.Provider;
 import org.keycloak.representations.idm.ProtocolMapperRepresentation;
 
 /**
- * Various common utils needed for migration from older version to newer
+ * 数据库/模型版本迁移提供者 SPI：提供跨版本升级所需的通用操作。
+ * <p>包括 claim 掩码映射、内置协议映射器、OIDC 默认客户端范围创建等。</p>
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface MigrationProvider extends Provider {
 
     /**
+     * 将 1.1.0 客户端 {@link ClaimMask} 转换为 1.2.0.Beta1 协议映射器列表。
      * @param claimMask mask used on ClientModel in 1.1.0
      * @return set of 1.2.0.Beta1 protocol mappers corresponding to given claimMask
      */
     List<ProtocolMapperRepresentation> getMappersForClaimMask(Long claimMask);
 
+    /** 获取指定协议的内置协议映射器模板。 */
     Map<String, ProtocolMapperModel> getBuiltinMappers(String protocol);
 
+    /** 为领域配置 admin-cli 客户端及所需角色。 */
     void setupAdminCli(RealmModel realm);
 
 
     /**
-     * Add 'roles' client scope or return it if already exists
+     * 添加 {@code roles} OIDC 客户端范围，已存在则直接返回。
      *
      * @param realm
      * @return created or already existing client scope 'roles'
@@ -54,7 +58,7 @@ public interface MigrationProvider extends Provider {
 
 
     /**
-     * Add 'web-origins' client scope or return it if already exists
+     * 添加 {@code web-origins} OIDC 客户端范围，已存在则直接返回。
      *
      * @param realm
      * @return created or already existing client scope 'web-origins'
@@ -62,8 +66,7 @@ public interface MigrationProvider extends Provider {
     ClientScopeModel addOIDCWebOriginsClientScope(RealmModel realm);
 
     /**
-     * Adds the {@code microprofile-jwt} optional client scope to the realm and returns the created scope. If the scope
-     * already exists in the realm then the existing scope is returned.
+     * 添加可选客户端范围 {@code microprofile-jwt}，已存在则返回现有范围。
      *
      * @param realm the realm to which the scope is to be added.
      * @return a reference to the {@code microprofile-jwt} client scope that was either created or already exists in the realm.
@@ -71,7 +74,7 @@ public interface MigrationProvider extends Provider {
     ClientScopeModel addOIDCMicroprofileJWTClientScope(RealmModel realm);
 
     /**
-     * Add 'acr' client scope or return it if already exists
+     * 添加 {@code acr} OIDC 客户端范围，已存在则直接返回。
      *
      * @param realm
      * @return created or already existing client scope 'acr'
@@ -79,7 +82,7 @@ public interface MigrationProvider extends Provider {
     ClientScopeModel addOIDCAcrClientScope(RealmModel realm);
 
     /**
-     * Add 'basic' client scope or return it if already exists
+     * 添加 {@code basic} OIDC 客户端范围，已存在则直接返回。
      *
      * @param realm
      * @return created or already existing client scope 'basic'
@@ -87,7 +90,7 @@ public interface MigrationProvider extends Provider {
     ClientScopeModel addOIDCBasicClientScope(RealmModel realm);
 
     /**
-     * Add 'service_account' client scope or return it if already exists
+     * 添加 {@code service_account} OIDC 客户端范围，已存在则直接返回。
      *
      * @param realm
      * @return created or already existing client scope 'service_account'
@@ -95,7 +98,7 @@ public interface MigrationProvider extends Provider {
     ClientScopeModel addOIDCServiceAccountClientScope(RealmModel realm);
 
     /**
-     * Add the SAML mapper for the step-up <em>AuthnContextClassRef</em> authentication to the realm.
+     * 为领域添加 SAML 步进认证 {@code AuthnContextClassRef} 映射器客户端范围。
      * @param realm
      * @return created, already existing client scope or null if not step-up not enabled
      */

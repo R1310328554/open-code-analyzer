@@ -20,9 +20,12 @@ package org.keycloak.migration;
 import org.jboss.logging.Logger;
 
 /**
-* @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
-* @version $Revision: 1 $
-*/
+ * Keycloak 模型语义化版本号，用于迁移器版本比较。
+ * <p>支持 {@code major.minor.micro} 及可选 qualifier 解析与 {@link #lessThan} 比较。</p>
+ *
+ * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
+ * @version $Revision: 1 $
+ */
 public class ModelVersion {
     private static Logger logger = Logger.getLogger(ModelVersion.class);
 
@@ -31,12 +34,14 @@ public class ModelVersion {
     int micro;
     String qualifier;
 
+    /** 以整数分量构造版本号。 */
     public ModelVersion(int major, int minor, int micro) {
         this.major = major;
         this.minor = minor;
         this.micro = micro;
     }
 
+    /** 从版本字符串解析（忽略 {@code -} 后缀与 redhat qualifier）。 */
     public ModelVersion(String version) {
         version = version.split("-")[0];
 
@@ -79,6 +84,7 @@ public class ModelVersion {
         return qualifier;
     }
 
+    /** 判断本版本是否严格小于给定版本。 */
     public boolean lessThan(ModelVersion version) {
         if (major < version.major) {
             return true;
@@ -111,6 +117,7 @@ public class ModelVersion {
         return false;
     }
 
+    /** 主版本与次版本是否相同。 */
     public boolean hasSameMajorMinor(ModelVersion v2) {
         return major == v2.major && minor == v2.minor;
     }

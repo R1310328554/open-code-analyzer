@@ -22,25 +22,32 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 模型迁移 SPI，注册 {@link MigrationProvider} 提供者类型。
+ * <p>启动时按 {@link ModelVersion} 顺序执行各 {@link Migration} 实现。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class MigrationSpi implements Spi {
 
+    /** 内部 SPI，不对扩展模块公开。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** SPI 名称：{@code migration}。 */
     @Override
     public String getName() {
         return "migration";
     }
 
+    /** 迁移提供者接口类型。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return MigrationProvider.class;
     }
 
+    /** 迁移工厂类型。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return MigrationProviderFactory.class;
