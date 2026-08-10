@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T22:27:05Z",
-  "files": [
-    "pkg/limits/limit.go",
-    "pkg/limits/partition_lifecycler.go",
-    "pkg/limits/partition_manager.go",
-    "pkg/limits/producer.go",
-    "pkg/limits/proto/limits.pb.go",
-    "pkg/limits/reason.go",
-    "pkg/limits/service.go",
-    "pkg/limits/store.go",
-    "pkg/logcli/client/client.go",
-    "pkg/logcli/client/file.go",
-    "pkg/logcli/delete/delete.go",
-    "pkg/logcli/detected/fields.go",
-    "pkg/logcli/index/stats.go",
-    "pkg/logcli/index/volume.go",
-    "pkg/logcli/labelquery/labels.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 802,
-  "done": 735
+  "done": 750
 }
