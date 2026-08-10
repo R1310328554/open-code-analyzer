@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T22:59:56Z",
-  "files": [
-    "pkg/ruler/evaluator_jitter.go",
-    "pkg/ruler/evaluator_local.go",
-    "pkg/ruler/evaluator_remote.go",
-    "pkg/ruler/grouploader.go",
-    "pkg/ruler/memstore.go",
-    "pkg/ruler/registry.go",
-    "pkg/ruler/ruler.go",
-    "pkg/ruler/rulespb/compat.go",
-    "pkg/ruler/rulespb/custom.go",
-    "pkg/ruler/rulespb/rules.pb.go",
-    "pkg/ruler/rulestore/bucketclient/bucket_client.go",
-    "pkg/ruler/rulestore/config.go",
-    "pkg/ruler/rulestore/local/local.go",
-    "pkg/ruler/rulestore/objectclient/rule_store.go",
-    "pkg/ruler/rulestore/store.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 442,
-  "done": 1095
+  "done": 1110
 }
