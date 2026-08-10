@@ -28,6 +28,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
+ * 标记 AI 功能已启用时才会注册的控制台 Handler 实现类。
+ * 结合 {@link ConditionFunctionEnabled.ConditionAiEnabled} 与 {@link AiEnabledFilter#AI_ENABLED_KEY} 条件装配。
  * Using Inner handler to handle console API request.
  *
  * @author xiweng.yy

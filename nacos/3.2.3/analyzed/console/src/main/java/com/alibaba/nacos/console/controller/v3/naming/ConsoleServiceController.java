@@ -64,6 +64,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
+ * 控制台 v3 服务管理 REST 控制器：服务的 CRUD、订阅者查询、集群健康检查配置等。
  * Controller for handling HTTP requests related to service operations.
  *
  * @author zhangyukun on:2024/8/16
@@ -74,16 +75,20 @@ import java.util.Optional;
 @ExtractorManager.Extractor(httpExtractor = NamingDefaultHttpParamExtractor.class)
 public class ConsoleServiceController {
     
+    /** 服务操作代理，对接 naming 服务维护层 */
     private final ServiceProxy serviceProxy;
     
+    /** 路由选择器管理器，用于解析服务关联的选择器 JSON */
     private final SelectorManager selectorManager;
     
+    /** 注入服务代理与选择器管理器 */
     public ConsoleServiceController(ServiceProxy serviceProxy, SelectorManager selectorManager) {
         this.serviceProxy = serviceProxy;
         this.selectorManager = selectorManager;
     }
     
     /**
+     * 创建新服务（默认创建持久化服务并写入元数据与选择器）。
      * Create a new service. This API will create a persistence service.
      */
     @Since("3.0.0")
@@ -103,6 +108,7 @@ public class ConsoleServiceController {
     }
     
     /**
+     * 删除指定命名空间下的服务。
      * Remove service.
      */
     @Since("3.0.0")
@@ -117,6 +123,7 @@ public class ConsoleServiceController {
     }
     
     /**
+     * 更新服务保护阈值、元数据与路由选择器。
      * Update service.
      */
     @Since("3.0.0")
@@ -135,9 +142,10 @@ public class ConsoleServiceController {
     }
     
     /**
+     * 获取控制台支持的全部 {@link Selector} 类型名称。
      * Get all {@link Selector} types.
      *
-     * @return {@link Selector} types.
+     * @return {@link Selector} 类型列表
      */
     @Since("3.0.0")
     @GetMapping("/selector/types")
@@ -149,13 +157,14 @@ public class ConsoleServiceController {
     }
     
     /**
+     * 分页查询指定服务的订阅者列表，可选聚合模式。
      * get subscriber list.
      *
-     * @param serviceForm     service form data
-     * @param pageForm        page form data
-     * @param aggregationForm whether aggregation form data
-     * @return subscribes result data.
-     * @throws Exception any exception during get subscriber list.
+     * @param serviceForm     服务定位表单
+     * @param pageForm        分页参数
+     * @param aggregationForm 是否启用聚合查询
+     * @return 订阅者分页结果
+     * @throws Exception 查询过程中的任意异常
      */
     @Since("3.0.0")
     @GetMapping("/subscribers")
@@ -177,11 +186,12 @@ public class ConsoleServiceController {
     }
     
     /**
+     * 分页列出服务详情；是否附带实例由 withInstances 参数决定。
      * List service detail information.
      *
-     * @param serviceListForm service list form
-     * @param pageForm        page form
-     * @return list service detail, depend on withInstances parameters, return ServiceDetailInfo or ServiceView.
+     * @param serviceListForm 服务列表查询表单
+     * @param pageForm        分页参数
+     * @return 服务详情或视图列表（取决于 withInstances）
      */
     @Since("3.0.0")
     @Secured(action = ActionTypes.READ, apiType = ApiType.CONSOLE_API)
@@ -202,11 +212,12 @@ public class ConsoleServiceController {
     }
     
     /**
+     * 获取单个服务的完整详情。
      * Get service detail.
      *
-     * @param serviceForm service form data
-     * @return service detail information
-     * @throws NacosException nacos exception
+     * @param serviceForm 服务定位表单
+     * @return 服务详情信息
+     * @throws NacosException Nacos 业务异常
      */
     @Since("3.0.0")
     @Secured(action = ActionTypes.READ, apiType = ApiType.CONSOLE_API)
@@ -220,11 +231,12 @@ public class ConsoleServiceController {
     }
     
     /**
+     * 更新服务下某集群的健康检查端口、检查器与扩展元数据。
      * Update cluster.
      *
-     * @param updateClusterForm update cluster form.
-     * @return 'ok' if success
-     * @throws Exception if failed
+     * @param updateClusterForm 集群更新表单
+     * @return 成功时返回 'ok'
+     * @throws Exception 更新失败时抛出
      */
     @Since("3.0.0")
     @PutMapping("/cluster")

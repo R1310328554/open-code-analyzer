@@ -46,6 +46,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
+ * 控制台 v3 服务实例 REST 控制器：分页列表、更新与注销持久化实例。
  * Controller for handling HTTP requests related to instance operations.
  *
  * @author zhangyukun on:2024/8/16
@@ -56,23 +57,26 @@ import org.springframework.web.bind.annotation.RestController;
 @ExtractorManager.Extractor(httpExtractor = NamingDefaultHttpParamExtractor.class)
 public class ConsoleInstanceController {
     
+    /** 实例操作代理，对接 naming 实例维护服务 */
     private final InstanceProxy instanceProxy;
     
     /**
+     * 注入实例代理并构造控制器。
      * Constructs a new ConsoleInstanceController with the provided InstanceProxy.
      *
-     * @param instanceProxy the proxy used for handling instance-related operations
+     * @param instanceProxy 处理实例相关操作的代理组件
      */
     public ConsoleInstanceController(InstanceProxy instanceProxy) {
         this.instanceProxy = instanceProxy;
     }
     
     /**
+     * 分页查询指定服务下的实例列表。
      * List instances of special service.
      *
-     * @param instanceForm instance list form
-     * @param pageForm     Page form
-     * @return instances information
+     * @param instanceForm 实例列表查询表单
+     * @param pageForm     分页参数表单
+     * @return 实例分页结果
      */
     @Since("3.0.0")
     @Secured(action = ActionTypes.READ, apiType = ApiType.CONSOLE_API)
@@ -91,6 +95,7 @@ public class ConsoleInstanceController {
     }
     
     /**
+     * 更新实例元数据（权重、健康状态、元数据等），受 TPS 与 Distro 约束。
      * Update instance.
      */
     @Since("3.0.0")
@@ -99,16 +104,17 @@ public class ConsoleInstanceController {
     @TpsControl(pointName = "NamingInstanceUpdate", name = "HttpNamingInstanceUpdate")
     @Secured(action = ActionTypes.WRITE, apiType = ApiType.CONSOLE_API)
     public Result<String> updateInstance(InstanceForm instanceForm) throws NacosException {
-        // check param
+        // 校验请求参数
         instanceForm.validate();
         checkWeight(instanceForm.getWeight());
-        // build instance
+        // 由表单构建 {@link Instance} 对象
         Instance instance = buildInstance(instanceForm);
         instanceProxy.updateInstance(instanceForm, instance);
         return Result.success("ok");
     }
     
     /**
+     * 注销持久化实例（控制台不支持注销临时实例）。
      * Remove instance.
      */
     @Since("3.2.2")
@@ -153,7 +159,7 @@ public class ConsoleInstanceController {
                 .setMetadata(UtilsAndCommons.parseMetadata(instanceForm.getMetadata()))
                 .setEphemeral(instanceForm.getEphemeral()).build();
         if (instanceForm.getEphemeral() == null) {
-            // register instance by console default is persistent instance.
+            // 控制台注册/更新时未指定 ephemeral 则默认为持久实例
             instance.setEphemeral(false);
         }
         return instance;

@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 控制台 v3 插件管理 REST 控制器：查询、启停、配置插件及查看集群可用性。
  * Controller for handling HTTP requests related to plugin operations.
  *
  * @author WangzJi
@@ -55,17 +56,20 @@ import java.util.Map;
 @ExtractorManager.Extractor(httpExtractor = ConsoleDefaultHttpParamExtractor.class)
 public class ConsolePluginController {
     
+    /** 插件操作代理，对接 core 插件管理服务 */
     private final PluginProxy pluginProxy;
     
+    /** 注入插件代理并构造控制器 */
     public ConsolePluginController(PluginProxy pluginProxy) {
         this.pluginProxy = pluginProxy;
     }
     
     /**
+     * 获取插件列表，可按插件类型过滤。
      * Get plugin list.
      *
-     * @param pluginType plugin type filter (optional)
-     * @return plugin list
+     * @param pluginType 插件类型过滤条件（可选）
+     * @return 插件信息列表
      */
     @Since("3.2.0")
     @GetMapping("/list")
@@ -79,11 +83,12 @@ public class ConsolePluginController {
     }
     
     /**
+     * 查询指定插件的详细配置与状态。
      * Get plugin detail.
      *
-     * @param pluginType plugin type
-     * @param pluginName plugin name
-     * @return plugin detail
+     * @param pluginType 插件类型
+     * @param pluginName 插件名称
+     * @return 插件详情视图
      */
     @Since("3.2.0")
     @GetMapping
@@ -96,12 +101,13 @@ public class ConsolePluginController {
     }
     
     /**
+     * 启用或禁用指定插件，支持仅本地节点生效。
      * Enable or disable plugin.
      *
-     * @param pluginType plugin type
-     * @param pluginName plugin name
-     * @param enabled    enable or disable
-     * @return success result
+     * @param pluginType 插件类型
+     * @param pluginName 插件名称
+     * @param enabled    是否启用
+     * @return 操作成功提示
      */
     @Since("3.2.0")
     @PutMapping("/status")
@@ -117,10 +123,11 @@ public class ConsolePluginController {
     }
     
     /**
+     * 更新插件运行配置（校验类型、名称与配置体非空）。
      * Update plugin configuration.
      *
-     * @param form plugin config form
-     * @return success result
+     * @param form 插件配置表单
+     * @return 操作成功提示
      */
     @Since("3.2.0")
     @PutMapping("/config")
@@ -145,11 +152,12 @@ public class ConsolePluginController {
     }
     
     /**
+     * 查询插件在各集群节点上的可用性分布。
      * Get plugin availability across cluster nodes.
      *
-     * @param pluginType plugin type
-     * @param pluginName plugin name
-     * @return node availability map
+     * @param pluginType 插件类型
+     * @param pluginName 插件名称
+     * @return 节点地址到可用性布尔值的映射
      */
     @Since("3.2.0")
     @GetMapping("/availability")

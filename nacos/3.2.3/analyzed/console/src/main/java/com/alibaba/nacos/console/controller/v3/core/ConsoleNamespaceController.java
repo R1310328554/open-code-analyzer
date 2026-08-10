@@ -44,6 +44,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
+ * 控制台 v3 命名空间 REST 控制器：提供命名空间的增删改查及存在性校验接口。
  * Controller for handling HTTP requests related to namespace operations.
  *
  * @author zhangyukun on:2024/8/27
@@ -54,16 +55,19 @@ import java.util.List;
 @ExtractorManager.Extractor(httpExtractor = ConsoleDefaultHttpParamExtractor.class)
 public class ConsoleNamespaceController {
     
+    /** 命名空间操作代理，转发至 core 命名空间服务 */
     private final NamespaceProxy namespaceProxy;
     
+    /** 注入命名空间代理并构造控制器 */
     public ConsoleNamespaceController(NamespaceProxy namespaceProxy) {
         this.namespaceProxy = namespaceProxy;
     }
     
     /**
+     * 获取全部命名空间列表。
      * Get namespace list.
      *
-     * @return namespace list
+     * @return 命名空间列表
      */
     @Since("3.0.0")
     @GetMapping("/list")
@@ -75,10 +79,11 @@ public class ConsoleNamespaceController {
     }
     
     /**
+     * 按命名空间 ID 查询完整命名空间详情。
      * get namespace all info by namespace id.
      *
-     * @param namespaceId namespaceId
-     * @return namespace all info
+     * @param namespaceId 命名空间 ID
+     * @return 命名空间完整信息
      */
     @Since("3.0.0")
     @GetMapping()
@@ -91,10 +96,11 @@ public class ConsoleNamespaceController {
     }
     
     /**
+     * 创建新命名空间（校验表单后调用代理创建）。
      * create namespace.
      *
-     * @param namespaceForm create namespace form.
-     * @return whether create ok
+     * @param namespaceForm 创建命名空间表单
+     * @return 是否创建成功
      */
     @Since("3.0.0")
     @PostMapping
@@ -112,10 +118,11 @@ public class ConsoleNamespaceController {
     }
     
     /**
+     * 编辑已有命名空间元数据。
      * edit namespace.
      *
-     * @param namespaceForm namespace form
-     * @return whether edit ok
+     * @param namespaceForm 命名空间编辑表单
+     * @return 是否更新成功
      */
     @Since("3.0.0")
     @PutMapping
@@ -128,10 +135,11 @@ public class ConsoleNamespaceController {
     }
     
     /**
+     * 按 ID 删除命名空间。
      * delete namespace by id.
      *
-     * @param namespaceId namespace ID
-     * @return whether delete ok
+     * @param namespaceId 待删除的命名空间 ID
+     * @return 是否删除成功
      */
     @Since("3.0.0")
     @DeleteMapping
@@ -144,10 +152,11 @@ public class ConsoleNamespaceController {
     }
     
     /**
+     * 校验自定义命名空间 ID 是否已存在（空 ID 表示将使用 UUID 创建）。
      * check namespaceId exist.
      *
-     * @param namespaceId namespace id
-     * @return true if exist, otherwise false
+     * @param namespaceId 自定义命名空间 ID
+     * @return 已存在返回 true，否则 false
      */
     @Since("3.0.0")
     @GetMapping("/exist")
@@ -157,7 +166,7 @@ public class ConsoleNamespaceController {
     public Result<Boolean> checkNamespaceIdExist(
         @RequestParam("customNamespaceId") String namespaceId)
         throws NacosException {
-        // customNamespaceId if blank means create new namespace with uuid.
+        // customNamespaceId 为空表示将使用 UUID 创建新命名空间
         if (StringUtils.isBlank(namespaceId)) {
             return Result.success(false);
         }

@@ -24,24 +24,29 @@ import com.alibaba.nacos.core.code.ControllerMethodsCache;
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
+ * Nacos 控制台 Web 鉴权过滤器：继承 {@link AbstractWebAuthFilter}，按控制台鉴权配置拦截请求。
  * Nacos Console web auth filter.
  *
  * @author xiweng.yy
  */
 public class NacosConsoleAuthFilter extends AbstractWebAuthFilter {
     
+    /** 控制台鉴权配置，用于判断是否启用鉴权 */
     private final NacosAuthConfig authConfig;
     
+    /** 构造过滤器并注入鉴权配置与控制器方法缓存（供 {@link Secured} 解析） */
     public NacosConsoleAuthFilter(NacosAuthConfig authConfig, ControllerMethodsCache methodsCache) {
         super(authConfig, methodsCache);
         this.authConfig = authConfig;
     }
     
+    /** {@inheritDoc} 是否启用控制台鉴权，读取 {@link NacosAuthConfig#isAuthEnabled()} */
     @Override
     protected boolean isAuthEnabled() {
         return authConfig.isAuthEnabled();
     }
     
+    /** {@inheritDoc} 控制台不启用 Server Identity 校验，始终返回未匹配 */
     @Override
     protected ServerIdentityResult checkServerIdentity(HttpServletRequest request,
         Secured secured) {

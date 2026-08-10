@@ -25,15 +25,21 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 /**
+ * XSS 防护过滤器：为每个响应设置 Content-Security-Policy，限制脚本仅来自同源。
  * XSS filter.
  * @author onewe
  */
 public class XssFilter extends OncePerRequestFilter {
     
+    /** CSP 响应头名称 */
     private static final String CONTENT_SECURITY_POLICY_HEADER = "Content-Security-Policy";
     
+    /** 仅允许加载同源脚本的 CSP 策略值 */
     private static final String CONTENT_SECURITY_POLICY = "script-src 'self'";
     
+    /**
+     * 在请求链继续前写入 CSP 响应头，降低反射型 XSS 风险。
+     */
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
         FilterChain filterChain)

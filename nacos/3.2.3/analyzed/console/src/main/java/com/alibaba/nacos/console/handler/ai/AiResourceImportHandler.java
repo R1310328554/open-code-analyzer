@@ -28,6 +28,7 @@ import com.alibaba.nacos.api.exception.NacosException;
 import java.util.List;
 
 /**
+ * 控制台 AI 资源导入处理器接口：列举导入源、搜索、校验与执行外部资源导入。
  * Handler for Console AI resource import operations.
  *
  * @author xiweng.yy
@@ -36,40 +37,44 @@ import java.util.List;
 public interface AiResourceImportHandler {
     
     /**
+     * 列出已配置的 AI 资源导入源，可按资源类型过滤。
      * List import sources.
      *
-     * @param resourceType optional resource type filter
-     * @return source list
-     * @throws NacosException if source configuration is invalid
+     * @param resourceType 可选的资源类型过滤
+     * @return 导入源信息列表
+     * @throws NacosException 源配置无效
      */
     List<AiResourceImportSourceInfo> listSources(String resourceType) throws NacosException;
     
     /**
+     * 在外部导入源中搜索候选资源。
      * Search external candidates.
      *
-     * @param request search request
-     * @return search response
-     * @throws NacosException if the source cannot be searched
+     * @param request 搜索请求
+     * @return 搜索响应
+     * @throws NacosException 源不可搜索
      */
     AiResourceImportSearchResponse search(AiResourceImportSearchRequest request)
         throws NacosException;
     
     /**
+     * 校验已选候选资源是否符合导入条件。
      * Validate selected candidates.
      *
-     * @param request validate request
-     * @return validation response
-     * @throws NacosException if validation cannot start
+     * @param request 校验请求
+     * @return 校验结果响应
+     * @throws NacosException 无法启动校验
      */
     AiResourceImportValidateResponse validate(AiResourceImportValidateRequest request)
         throws NacosException;
     
     /**
+     * 对已通过校验的候选资源执行导入。
      * Execute import for selected candidates.
      *
-     * @param request execute request
-     * @return execute response
-     * @throws NacosException if import cannot start
+     * @param request 执行导入请求
+     * @return 导入执行响应
+     * @throws NacosException 无法启动导入
      */
     AiResourceImportExecuteResponse execute(AiResourceImportExecuteRequest request)
         throws NacosException;

@@ -21,6 +21,7 @@ import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.model.v2.Result;
 
 /**
+ * 控制台健康检查处理器接口：供独立部署与内嵌模式分别实现就绪探针逻辑。
  * Interface for handling health check operations.
  *
  * @author zhangyukun
@@ -28,10 +29,11 @@ import com.alibaba.nacos.api.model.v2.Result;
 public interface HealthHandler {
     
     /**
+     * 执行就绪检查，判断 Nacos 是否可对外提供服务。
      * Perform readiness check to determine if Nacos is ready to handle requests.
      *
-     * @return readiness result
-     * @throws NacosException if an error occurs during readiness check
+     * @return 就绪检查结果
+     * @throws NacosException 就绪检查过程中发生错误
      */
     Result<String> checkReadiness() throws NacosException;
 }
