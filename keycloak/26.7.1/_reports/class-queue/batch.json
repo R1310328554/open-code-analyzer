@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T10:37:09Z",
-  "files": [
-    "server-spi-private/src/main/java/org/keycloak/logging/MappedDiagnosticContextProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/logging/MappedDiagnosticContextProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/logging/MappedDiagnosticContextSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/logging/MappedDiagnosticContextUtil.java",
-    "server-spi-private/src/main/java/org/keycloak/logging/NoopMappedDiagnosticContextProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/migration/MigrationProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/migration/MigrationProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/migration/MigrationSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/migration/ModelVersion.java",
-    "server-spi-private/src/main/java/org/keycloak/migration/migrators/Migration.java",
-    "server-spi-private/src/main/java/org/keycloak/migration/migrators/MigrationUtils.java",
-    "server-spi-private/src/main/java/org/keycloak/models/AccountRoles.java",
-    "server-spi-private/src/main/java/org/keycloak/models/AdminRoles.java",
-    "server-spi-private/src/main/java/org/keycloak/models/BrowserSecurityHeaders.java",
-    "server-spi-private/src/main/java/org/keycloak/models/ClaimMask.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2788,
-  "done": 3195
+  "done": 3210
 }
