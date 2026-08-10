@@ -808,3 +808,18 @@
 2026-08-10T06:47:57Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/spi/ResteasyClientProvider.java wave28a admin-client user/token/spi
 2026-08-10T06:47:57Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/spi/StreamMessageBodyReader.java wave28a admin-client user/token/spi
 2026-08-10T06:47:57Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/token/TokenManager.java wave28a admin-client user/token/spi
+2026-08-10T06:48:05Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/token/TokenService.java wave28b admin-cli + TokenService
+2026-08-10T06:48:05Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/CmdStdinContext.java wave28b admin-cli + TokenService
+2026-08-10T06:48:05Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/KcAdmMain.java wave28b admin-cli + TokenService
+2026-08-10T06:48:05Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/ReflectionUtil.java wave28b admin-cli + TokenService
+2026-08-10T06:48:05Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/commands/AbstractAuthOptionsCmd.java wave28b admin-cli + TokenService
+2026-08-10T06:48:05Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/commands/AbstractRequestCmd.java wave28b admin-cli + TokenService
+2026-08-10T06:48:05Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/commands/AbstractTargetAuthOptionsCmd.java wave28b admin-cli + TokenService
+2026-08-10T06:48:05Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/commands/AddRolesCmd.java wave28b admin-cli + TokenService
+2026-08-10T06:48:05Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/commands/ConfigCmd.java wave28b admin-cli + TokenService
+2026-08-10T06:48:05Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/commands/ConfigCredentialsCmd.java wave28b admin-cli + TokenService
+2026-08-10T06:48:05Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/commands/ConfigTruststoreCmd.java wave28b admin-cli + TokenService
+2026-08-10T06:48:05Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/commands/CreateCmd.java wave28b admin-cli + TokenService
+2026-08-10T06:48:05Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/commands/DeleteCmd.java wave28b admin-cli + TokenService
+2026-08-10T06:48:05Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/commands/GetCmd.java wave28b admin-cli + TokenService
+2026-08-10T06:48:05Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/commands/GetRolesCmd.java wave28b admin-cli + TokenService
