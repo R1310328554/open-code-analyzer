@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T15:37:54Z",
-  "files": [
-    "app/server/server.go",
-    "app/server/server_unix.go",
-    "app/server/server_windows.go",
-    "app/store/cloud_config.go",
-    "app/store/database.go",
-    "app/store/image.go",
-    "app/store/store.go",
-    "app/tools/browser.go",
-    "app/tools/browser_crawl.go",
-    "app/tools/browser_websearch.go",
-    "app/tools/cloud_policy.go",
-    "app/tools/tools.go",
-    "app/tools/url_policy.go",
-    "app/tools/web_fetch.go",
-    "app/tools/web_search.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 403,
-  "done": 45
+  "done": 60
 }
