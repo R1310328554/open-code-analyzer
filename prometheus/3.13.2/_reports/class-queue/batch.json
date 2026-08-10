@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T20:23:30Z",
-  "files": [
-    "discovery/outscale/vm.go",
-    "discovery/ovhcloud/dedicated_server.go",
-    "discovery/ovhcloud/metrics.go",
-    "discovery/ovhcloud/ovhcloud.go",
-    "discovery/ovhcloud/vps.go",
-    "discovery/puppetdb/metrics.go",
-    "discovery/puppetdb/puppetdb.go",
-    "discovery/puppetdb/resources.go",
-    "discovery/refresh/refresh.go",
-    "discovery/registry.go",
-    "discovery/scaleway/baremetal.go",
-    "discovery/scaleway/instance.go",
-    "discovery/scaleway/metrics.go",
-    "discovery/scaleway/scaleway.go",
-    "discovery/stackit/metrics.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 414,
-  "done": 105
+  "done": 120
 }
