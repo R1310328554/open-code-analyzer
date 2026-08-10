@@ -25,6 +25,7 @@ import java.io.Serial;
 
 /**
  * Pipeline list query form for listPipelines API.
+ * <p>流水线列表查询表单，用于 listPipelines API；resourceType 必填，可按 resourceName、namespaceId、version 进一步筛选。</p>
  *
  * @author kiro
  * @since 3.2.0
@@ -34,12 +35,16 @@ public class PipelineListForm implements NacosForm {
     @Serial
     private static final long serialVersionUID = 1L;
     
+    /** 关联资源类型（如 prompt、skill、agentspec），列表查询必填。 */
     private String resourceType;
     
+    /** 资源名称，可选筛选条件。 */
     private String resourceName;
     
+    /** 命名空间 ID，可选筛选条件。 */
     private String namespaceId;
     
+    /** 资源版本号，可选筛选条件。 */
     private String version;
     
     @Override

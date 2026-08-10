@@ -28,6 +28,7 @@ import java.io.Serial;
  *
  * <p>When {@code basedOnVersion} is set, forks from that version and {@code template} is optional.
  * Otherwise {@code template} is required for brand-new content.</p>
+ * <p>Prompt 草稿创建表单：指定 basedOnVersion 时可 fork 已有版本且 template 可选；否则必须提供 template 作为全新内容。</p>
  *
  * @author nacos
  */
@@ -36,18 +37,25 @@ public class PromptDraftCreateForm extends PromptForm {
     @Serial
     private static final long serialVersionUID = 1L;
     
+    /** 基于哪个已有版本 fork，设置后 template 可选。 */
     private String basedOnVersion;
     
+    /** 目标草稿版本号，未指定时由服务端分配。 */
     private String targetVersion;
     
+    /** Prompt 模板正文，全新创建时必填。 */
     private String template;
     
+    /** 模板变量定义 JSON。 */
     private String variables;
     
+    /** 版本级提交说明。 */
     private String commitMsg;
     
+    /** Prompt 描述信息。 */
     private String description;
     
+    /** 业务标签 JSON 数组。 */
     private String bizTags;
     
     @Override

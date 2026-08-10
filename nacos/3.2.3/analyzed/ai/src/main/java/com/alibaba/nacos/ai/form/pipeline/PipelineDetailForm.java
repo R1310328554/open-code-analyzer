@@ -25,6 +25,7 @@ import java.io.Serial;
 
 /**
  * Pipeline execution detail query form for {@code GET .../detail}.
+ * <p>流水线执行详情查询表单，用于 {@code GET .../detail} 接口；pipelineId 为必填参数，标识一次流水线运行实例。</p>
  *
  * @author nacos
  */
@@ -33,6 +34,7 @@ public class PipelineDetailForm implements NacosForm {
     @Serial
     private static final long serialVersionUID = 1L;
     
+    /** 流水线执行实例 ID，查询详情时必填。 */
     private String pipelineId;
     
     @Override

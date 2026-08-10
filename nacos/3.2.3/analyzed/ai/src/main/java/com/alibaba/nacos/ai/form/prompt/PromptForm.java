@@ -27,6 +27,7 @@ import java.io.Serial;
 
 /**
  * Prompt form base class.
+ * <p>Prompt 管理端请求表单基类，封装 namespaceId 与 promptKey；校验时 promptKey 必填，命名空间为空时由 {@link com.alibaba.nacos.common.utils.NamespaceUtil} 处理默认值。</p>
  *
  * @author nacos
  */
@@ -35,8 +36,10 @@ public class PromptForm implements NacosForm {
     @Serial
     private static final long serialVersionUID = 1L;
     
+    /** 命名空间 ID，为空时自动填充默认命名空间。 */
     private String namespaceId;
     
+    /** Prompt 资源唯一键，多数管理端操作必填。 */
     private String promptKey;
     
     @Override
@@ -48,6 +51,7 @@ public class PromptForm implements NacosForm {
         }
     }
     
+    /** 命名空间参数为空时填充并规范化 namespaceId。 */
     protected void fillDefaultNamespaceId() {
         namespaceId = NamespaceUtil.processNamespaceParameter(namespaceId);
     }

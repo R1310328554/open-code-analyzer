@@ -23,11 +23,13 @@ import com.alibaba.nacos.common.utils.StringUtils;
 
 /**
  * Prompt label form.
+ * <p>Prompt 标签操作基础表单（删除/查询等），label 为必填非空字符串。</p>
  *
  * @author nacos
  */
 public class PromptLabelForm extends PromptForm {
     
+    /** 目标语义标签名，操作必填。 */
     private String label;
     
     @Override

@@ -23,13 +23,16 @@ import com.alibaba.nacos.common.utils.StringUtils;
 
 /**
  * Prompt label bind form.
+ * <p>Prompt 语义标签绑定表单，将 label 指向指定 version；label 与 version 均为必填非空字符串。</p>
  *
  * @author nacos
  */
 public class PromptLabelBindForm extends PromptForm {
     
+    /** 语义标签名，例如 latest、stable。 */
     private String label;
     
+    /** 标签绑定的目标版本号。 */
     private String version;
     
     @Override

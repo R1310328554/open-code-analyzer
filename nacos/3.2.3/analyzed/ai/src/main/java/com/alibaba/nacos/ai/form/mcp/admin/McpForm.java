@@ -27,6 +27,7 @@ import java.io.Serial;
 
 /**
  * Nacos AI Mcp Server request form.
+ * <p>MCP 管理端请求表单基类，封装 mcpId、mcpName、namespaceId 与 version 等公共字段；校验时要求 mcpId 与 mcpName 至少提供一个，命名空间为空时填充 MCP 默认命名空间。</p>
  *
  * @author xiweng.yy
  */
@@ -35,12 +36,16 @@ public class McpForm implements NacosForm {
     @Serial
     private static final long serialVersionUID = 1314659974972866397L;
     
+    /** MCP 资源唯一标识，与 mcpName 二选一必填。 */
     private String mcpId;
     
+    /** 命名空间 ID，为空时使用 {@link com.alibaba.nacos.api.ai.constant.AiConstants.Mcp#MCP_DEFAULT_NAMESPACE}。 */
     private String namespaceId;
     
+    /** MCP 服务名称，与 mcpId 二选一必填。 */
     private String mcpName;
     
+    /** 版本号，部分查询与更新操作使用。 */
     private String version;
     
     @Override
@@ -52,6 +57,7 @@ public class McpForm implements NacosForm {
         }
     }
     
+    /** 命名空间为空时填充 MCP 默认命名空间。 */
     protected void fillDefaultValue() {
         if (StringUtils.isEmpty(namespaceId)) {
             namespaceId = AiConstants.Mcp.MCP_DEFAULT_NAMESPACE;

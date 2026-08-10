@@ -25,6 +25,7 @@ import java.io.Serial;
 
 /**
  * Prompt description update form.
+ * <p>Prompt 描述信息更新表单，description 为必填非空字符串，用于展示 Prompt 用途与变更说明。</p>
  *
  * @author nacos
  */
@@ -33,6 +34,7 @@ public class PromptDescriptionUpdateForm extends PromptForm {
     @Serial
     private static final long serialVersionUID = 1L;
     
+    /** Prompt 描述文本，更新时必填且不可为空白。 */
     private String description;
     
     @Override

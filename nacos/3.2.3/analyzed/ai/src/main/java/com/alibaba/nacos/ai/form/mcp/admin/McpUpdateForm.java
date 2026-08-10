@@ -20,6 +20,7 @@ import java.io.Serial;
 
 /**
  * Mcp server update form.
+ * <p>MCP 更新发布表单，继承 {@link McpDetailForm}；latest 控制是否标记为最新版本，overrideExisting 决定是否覆盖同版本已有内容。</p>
  *
  * @author xinluo
  */
@@ -28,8 +29,10 @@ public class McpUpdateForm extends McpDetailForm {
     @Serial
     private static final long serialVersionUID = 4144251088520249913L;
     
+    /** 发布后是否将当前版本标记为 latest。 */
     private boolean latest = true;
     
+    /** 目标版本已存在时是否覆盖写入。 */
     private boolean overrideExisting = false;
     
     public Boolean getLatest() {

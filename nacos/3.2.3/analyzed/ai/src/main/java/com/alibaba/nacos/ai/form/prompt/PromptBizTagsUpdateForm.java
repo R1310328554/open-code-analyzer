@@ -22,6 +22,7 @@ import java.io.Serial;
 
 /**
  * Prompt biz tags update form.
+ * <p>Prompt 业务标签更新表单，bizTags 为 JSON 数组字符串，例如 {@code ["tag1","tag2"]}，用于分类与检索 Prompt 资源。</p>
  *
  * @author nacos
  */
@@ -32,6 +33,7 @@ public class PromptBizTagsUpdateForm extends PromptForm {
     
     /**
      * JSON string: ["tag1","tag2"].
+     * <p>业务标签 JSON 数组，键值均为字符串标签名。</p>
      */
     private String bizTags;
     

@@ -25,6 +25,7 @@ import java.io.Serial;
 
 /**
  * Prompt draft update form.
+ * <p>Prompt 当前草稿更新表单，template 必填；可同时更新 variables 与 commitMsg。</p>
  *
  * @author nacos
  */
@@ -33,10 +34,13 @@ public class PromptDraftUpdateForm extends PromptForm {
     @Serial
     private static final long serialVersionUID = 1L;
     
+    /** 更新后的 Prompt 模板正文，必填。 */
     private String template;
     
+    /** 模板变量定义 JSON。 */
     private String variables;
     
+    /** 本次草稿更新的提交说明。 */
     private String commitMsg;
     
     @Override

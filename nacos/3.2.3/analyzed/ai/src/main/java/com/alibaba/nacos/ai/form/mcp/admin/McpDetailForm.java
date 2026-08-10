@@ -25,6 +25,7 @@ import java.io.Serial;
 
 /**
  * Nacos AI Mcp Server request detail form, used in create or update.
+ * <p>MCP 创建/更新详情表单，继承 {@link McpForm}；必须提供 serverSpecification（McpServerBasicInfo JSON），tool/resource/endpoint 规格为可选扩展字段。</p>
  *
  * @author xiweng.yy
  */
@@ -33,12 +34,16 @@ public class McpDetailForm extends McpForm {
     @Serial
     private static final long serialVersionUID = 8016131725604983670L;
     
+    /** MCP 服务端基础规格 JSON（McpServerBasicInfo），创建/更新时必填。 */
     private String serverSpecification;
     
+    /** MCP 工具规格 JSON，描述可调用的 tool 列表。 */
     private String toolSpecification;
     
+    /** MCP 资源规格 JSON，描述可访问的 resource 定义。 */
     private String resourceSpecification;
     
+    /** MCP 端点规格 JSON，描述连接与传输层配置。 */
     private String endpointSpecification;
     
     @Override

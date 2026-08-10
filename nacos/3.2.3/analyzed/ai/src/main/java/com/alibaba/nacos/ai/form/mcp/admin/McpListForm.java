@@ -25,6 +25,7 @@ import java.io.Serial;
 
 /**
  * Nacos AI Mcp Server request form.
+ * <p>MCP 分页列表查询表单，继承 {@link McpForm}；search 指定精确（accurate）或模糊（blur）匹配模式，默认 accurate。</p>
  *
  * @author xiweng.yy
  */
@@ -32,6 +33,7 @@ public class McpListForm extends McpForm {
     
     /**
      * blur or accurate.
+     * <p>搜索模式：{@code accurate} 精确匹配或 {@code blur} 模糊匹配。</p>
      */
     private String search;
     
