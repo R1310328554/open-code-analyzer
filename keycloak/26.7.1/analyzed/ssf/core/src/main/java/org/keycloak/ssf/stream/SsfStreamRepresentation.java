@@ -8,7 +8,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 /**
- * See: https://openid.net/specs/openid-sharedsignals-framework-1_0.html#name-stream-configuration
+ * SSF 事件流的完整配置表示，对应规范中的 Stream Configuration JSON 对象。
+ * <p>参见 https://openid.net/specs/openid-sharedsignals-framework-1_0.html#name-stream-configuration</p>
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({"iss", "aud", "events_supported", "events_requested", "events_delivered", "delivery", "min_verification_interval", "format"})
@@ -16,57 +17,39 @@ public class SsfStreamRepresentation {
 
     //see: https://openid.net/specs/openid-sharedsignals-framework-1_0.html#section-7.1.1
 
-    /**
-     * Transmitter-Supplied, REQUIRED. A string that uniquely identifies the stream. A Transmitter MUST generate a unique ID for each of its non-deleted streams at the time of stream creation.
-     */
+    /** 发送方提供，REQUIRED。唯一标识该流的字符串；创建非删除流时发送方 MUST 生成唯一 ID。 */
     @JsonProperty("stream_id")
     private String id;
 
-    /**
-     * Receiver-Supplied, OPTIONAL. A string that describes the properties of the stream. This is useful in multi-stream systems to identify the stream for human actors. The transmitter MAY truncate the string beyond an allowed max length.
-     */
+    /** 接收方提供，OPTIONAL。流的描述性字符串，便于多流场景下人工识别；发送方 MAY 截断超长内容。 */
     @JsonProperty("description")
     private String description;
 
-    /**
-     * Transmitter-Supplied, REQUIRED. A URL using the https scheme with no query or fragment component that the Transmitter asserts as its Issuer Identifier. This MUST be identical to the "iss" Claim value in Security Event Tokens issued from this Transmitter.
-     */
+    /** 发送方提供，REQUIRED。发送方声明的 Issuer 标识（https URL，无 query/fragment），MUST 与该发送方签发的 SET 中 {@code iss} 声明一致。 */
     @JsonProperty("iss")
     private URI issuer;
 
-    /**
-     * Transmitter-Supplied, REQUIRED. A string or an array of strings containing an audience claim as defined in JSON Web Token (JWT)[RFC7519] that identifies the Event Receiver(s) for the Event Stream. This property cannot be updated. If multiple Receivers are specified then the Transmitter SHOULD know that these Receivers are the same entity.
-     */
+    /** 发送方提供，REQUIRED。JWT 风格的 audience 声明（字符串或字符串数组），标识事件接收方；创建后不可更新。 */
     @JsonProperty("aud")
     private Object audience; // Can be URI or List<URI>
 
-    /**
-     * Transmitter-Supplied, OPTIONAL. An array of URIs identifying the set of events supported by the Transmitter for this Receiver. If omitted, Event Transmitters SHOULD make this set available to the Event Receiver via some other means (e.g. publishing it in online documentation).
-     */
+    /** 发送方提供，OPTIONAL。该接收方所支持的事件类型 URI 列表；若省略，发送方 SHOULD 通过其他途径（如在线文档）告知。 */
     @JsonProperty("events_supported")
     private List<URI> eventsSupported;
 
-    /**
-     * Receiver-Supplied, OPTIONAL. An array of URIs identifying the set of events that the Receiver requested. A Receiver SHOULD request only the events that it understands and it can act on. This is configurable by the Receiver. A Transmitter MUST ignore any array values that it does not understand. This array SHOULD NOT be empty.
-     */
+    /** 接收方提供，OPTIONAL。接收方请求订阅的事件类型 URI 列表；接收方 SHOULD 仅请求其理解且能处理的事件，且数组 SHOULD NOT 为空。 */
     @JsonProperty("events_requested")
     private List<URI> eventsRequested;
 
-    /**
-     * Transmitter-Supplied, REQUIRED. An array of URIs identifying the set of events that the Transmitter MUST include in the stream. This is a subset (not necessarily a proper subset) of the intersection of "events_supported" and "events_requested". A Receiver MUST rely on the values received in this field to understand which event types it can expect from the Transmitter.
-     */
+    /** 发送方提供，REQUIRED。发送方 MUST 在该流中投递的事件类型 URI 列表，为 events_supported 与 events_requested 交集的子集；接收方 MUST 据此判断可收到的事件类型。 */
     @JsonProperty("events_delivered")
     private List<URI> eventsDelivered;
 
-    /**
-     * REQUIRED. A JSON object containing a set of name/value pairs specifying configuration parameters for the SET delivery method. The actual delivery method is identified by the special key "method" with the value being a URI as defined in Section 10.3.1. The value of the "delivery" field contains two sub-fields:
-     */
+    /** REQUIRED. SET 投递方式的配置对象（name/value 对）；{@code method} 键标识具体投递 URI，参见规范 10.3.1。 */
     @JsonProperty("delivery")
     private AbstractDeliveryMethodRepresentation delivery;
 
-    /**
-     * Transmitter-Supplied, OPTIONAL. An integer indicating the minimum amount of time in seconds that must pass in between verification requests. If an Event Receiver submits verification requests more frequently than this, the Event Transmitter MAY respond with a 429 status code. An Event Transmitter SHOULD NOT respond with a 429 status code if an Event Receiver is not exceeding this frequency.
-     */
+    /** 发送方提供，OPTIONAL。两次验证请求之间的最小间隔（秒）；接收方超频时发送方 MAY 返回 429。 */
     @JsonProperty("min_verification_interval")
     private Integer minVerificationInterval;
 

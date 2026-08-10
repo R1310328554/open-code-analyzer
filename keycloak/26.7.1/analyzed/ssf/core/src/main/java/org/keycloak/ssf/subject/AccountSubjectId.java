@@ -1,12 +1,14 @@
 package org.keycloak.ssf.subject;
 
 /**
- * See: https://datatracker.ietf.org/doc/html/rfc9493#name-email-identifier-format
+ * RFC 9493 account 格式的主体标识符，以 URI 引用账户资源。
+ * <p>参见 https://datatracker.ietf.org/doc/html/rfc9493#name-account-identifier-format</p>
  */
 public class AccountSubjectId extends SubjectId {
 
     public static final String TYPE = "account";
 
+    /** 账户资源的 URI 标识。 */
     protected String uri;
 
     public AccountSubjectId() {

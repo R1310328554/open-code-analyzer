@@ -3,12 +3,14 @@ package org.keycloak.ssf.subject;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * See: https://datatracker.ietf.org/doc/html/rfc9493#name-decentralized-identifier-di
+ * RFC 9493 去中心化标识符（DID）格式的主体标识。
+ * <p>参见 https://datatracker.ietf.org/doc/html/rfc9493#name-decentralized-identifier-di</p>
  */
 public class DidSubjectId extends SubjectId {
 
     public static final String DID = "did";
 
+    /** DID 文档或解析端点的 URL。 */
     @JsonProperty("url")
     protected String url;
 

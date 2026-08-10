@@ -4,16 +4,16 @@ import org.keycloak.ssf.subject.SubjectId;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * 从 SSF 流中移除主体的管理 API 请求体。
+ * <p>对应 SSF Management API 的 remove-subject 操作。</p>
+ */
 public class RemoveSubjectRequest {
-        /**
-         * REQUIRED. A string identifying the stream to which the subject is being added.
-         */
+        /** REQUIRED. 标识待移除主体所属流的 stream_id。 */
         @JsonProperty("stream_id")
         private String streamId;
 
-        /**
-         * REQUIRED. A Subject claim identifying the subject to be added.
-         */
+        /** REQUIRED. 标识待移除主体的 Subject 声明（{@link SubjectId}）。 */
         @JsonProperty("subject")
         private SubjectId subject;
 

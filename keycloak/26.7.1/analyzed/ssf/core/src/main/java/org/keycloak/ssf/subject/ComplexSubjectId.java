@@ -6,67 +6,49 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 /**
- * See: https://openid.net/specs/openid-sse-framework-1_0.html#complex-subjects
+ * 复合主体标识符，将 user、device、session 等多个 {@link SubjectId} 子字段组合为单一 Subject。
+ * <p>参见 https://openid.net/specs/openid-sse-framework-1_0.html#complex-subjects</p>
  *
- * <p>Every nested field is typed as the abstract {@link SubjectId} and
- * therefore annotated with {@link JsonDeserialize} using
- * {@link SubjectIdJsonDeserializer}, which dispatches on the {@code format}
- * discriminator. Without this, Jackson's default bean deserialization tries
- * to instantiate the abstract class and fails — a path hit as soon as a
- * receiver parses a real transmitter-emitted SET that carries a complex
- * subject (e.g. {@code ComplexSubjectId{user: IssuerSubjectId, session:
- * OpaqueSubjectId}} on a {@link CaepSessionRevoked}
- * event).
+ * <p>各嵌套字段类型均为抽象 {@link SubjectId}，须配合 {@link JsonDeserialize}
+ * 与 {@link SubjectIdJsonDeserializer} 按 {@code format} 判别式反序列化；
+ * 否则 Jackson 默认 bean 反序列化会尝试实例化抽象类而失败——接收方解析携带复合主体的
+ * SET（如 {@link CaepSessionRevoked} 事件上的 {@code ComplexSubjectId{user: IssuerSubjectId, session: OpaqueSubjectId}}）时即会触发。</p>
  */
 public class ComplexSubjectId extends SubjectId {
 
     public static final String TYPE = "complex";
 
-    /**
-     * The user involved with the event
-     */
+    /** 与事件相关的用户主体。 */
     @JsonProperty("user")
     @JsonDeserialize(using = SubjectIdJsonDeserializer.class)
     protected SubjectId user;
 
-    /**
-     * The device involved with the event
-     */
+    /** 与事件相关的设备主体。 */
     @JsonProperty("device")
     @JsonDeserialize(using = SubjectIdJsonDeserializer.class)
     protected SubjectId device;
 
-    /**
-     * The session involved with the event
-     */
+    /** 与事件相关的会话主体。 */
     @JsonProperty("session")
     @JsonDeserialize(using = SubjectIdJsonDeserializer.class)
     protected SubjectId session;
 
-    /**
-     * The application involved with the event
-     */
+    /** 与事件相关的应用主体。 */
     @JsonProperty("application")
     @JsonDeserialize(using = SubjectIdJsonDeserializer.class)
     protected SubjectId application;
 
-    /**
-     * The tenant involved with the event
-     */
+    /** 与事件相关的租户主体。 */
     @JsonProperty("tenant")
     @JsonDeserialize(using = SubjectIdJsonDeserializer.class)
     protected SubjectId tenant;
 
-    /**
-     * The org_unit involved with the event
-     */
+    /** 与事件相关的组织单元主体。 */
     @JsonProperty("org_unit")
     @JsonDeserialize(using = SubjectIdJsonDeserializer.class)
     protected SubjectId orgUnit;
 
-    /**
-     * The group involved with the event
-     */
+    /** 与事件相关的组主体。 */
     @JsonProperty("group")
     @JsonDeserialize(using = SubjectIdJsonDeserializer.class)
     protected SubjectId group;

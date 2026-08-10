@@ -1,22 +1,24 @@
 package org.keycloak.ssf.stream;
 
+/**
+ * SSF 流生命周期状态枚举，规范定义的三态：enabled、paused、disabled。
+ * <p>发送方 MUST 按当前状态决定是否投递、缓存或丢弃事件。</p>
+ */
 public enum StreamStatusValue {
 
-    /**
-     * The Transmitter MUST transmit events over the stream, according to the stream's configured delivery method.
-     */
+    /** 发送方 MUST 按流配置的投递方式正常投递事件。 */
     enabled,
 
     /**
-     * The Transmitter MUST NOT transmit events over the stream. The Transmitter will hold any events it would have transmitted while paused, and SHOULD transmit them when the stream's status becomes "enabled". If a Transmitter holds successive events that affect the same Subject Principal, then the Transmitter MUST make sure that those events are transmitted in the order of time that they were generated OR the Transmitter MUST send only the last events that do not require the previous events affecting the same Subject Principal to be processed by the Receiver, because the previous events are either cancelled by the later events or the previous events are outdated.
+     * 发送方 MUST NOT 投递事件，但 SHOULD 缓存暂停期间产生的事件，待恢复为 enabled 后补发。
+     * 若同一主体_principal 有多条待补发事件，MUST 按生成时间顺序投递，或仅发送无需前置事件即可处理的最新事件。
      */
     paused,
 
-    /**
-     * The Transmitter MUST NOT transmit events over the stream and will not hold any events for later transmission.
-     */
+    /** 发送方 MUST NOT 投递事件，且不会缓存待后续补发。 */
     disabled;
 
+    /** @return 规范 wire 格式的小写状态码（与枚举名一致） */
     public String getStatusCode() {
         return name().toLowerCase();
     }
