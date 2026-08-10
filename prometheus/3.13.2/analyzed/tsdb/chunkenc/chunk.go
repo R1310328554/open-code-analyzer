@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// chunkenc 核心抽象：Encoding/Chunk/Appender/Iterator 定义 XOR/直方图 chunk 的编解码、追加与迭代接口，Pool 复用 chunk 对象减少分配。
+
 package chunkenc
 
 import (
@@ -21,6 +23,7 @@ import (
 	"github.com/prometheus/prometheus/model/histogram"
 )
 
+// Encoding 标识 chunk 编码类型（XOR、XOR2、整数/浮点直方图等）。
 // Encoding is the identifier for a chunk encoding.
 type Encoding uint8
 
@@ -49,6 +52,7 @@ func (e Encoding) String() string {
 	return "<unknown>"
 }
 
+// IsValidEncoding 判断编码是否为 TSDB 支持的 chunk 格式。
 // IsValidEncoding returns true for supported encodings.
 func IsValidEncoding(e Encoding) bool {
 	return e == EncXOR || e == EncHistogram || e == EncFloatHistogram || e == EncXOR2
@@ -71,6 +75,7 @@ const (
 	MinSamplesPerHistogramChunk = 10
 )
 
+// Chunk 接口：Bytes/Encoding/Appender/Iterator/NumSamples/Compact/Reset。
 // Chunk holds a sequence of sample pairs that can be iterated over and appended to.
 type Chunk interface {
 	Iterable
@@ -107,6 +112,7 @@ type Iterable interface {
 	Iterator(Iterator) Iterator
 }
 
+// Appender 追加 float/直方图样本；直方图路径可触发新 chunk 或 recode。
 // Appender adds sample with start timestamp, timestamp, and value to a chunk.
 type Appender interface {
 	// Append may panic if the chunk is already at full capacity. It is the
@@ -133,6 +139,7 @@ type Appender interface {
 	AppendFloatHistogram(prev Appender, st, t int64, h *histogram.FloatHistogram, appendOnly bool) (c Chunk, isRecoded bool, app Appender, err error)
 }
 
+// Iterator 按时间升序迭代样本，支持 Seek 与 float/直方图 At* 方法。
 // Iterator is a simple iterator that can only get the next value.
 // Iterator iterates over the samples of a time series, in timestamp-increasing order.
 type Iterator interface {
@@ -175,6 +182,7 @@ type Iterator interface {
 	Err() error
 }
 
+// ValueType 区分 ValNone/ValFloat/ValHistogram/ValFloatHistogram。
 // ValueType defines the type of a value an Iterator points to.
 type ValueType uint8
 
@@ -222,6 +230,7 @@ func (v ValueType) NewChunk(useXOR2 bool) (Chunk, error) {
 	return NewEmptyChunk(v.ChunkEncoding(useXOR2))
 }
 
+// CompatibleValues 判断两编码是否可同 chunk 续写（XOR 与 XOR2 互兼容）。
 // CompatibleValues reports whether two encodings are mutually compatible with
 // respect to sample-value encoding, meaning a chunk opened with one encoding can
 // continue to receive appends even when the desired encoding changes to the other,
@@ -317,6 +326,7 @@ func (nopIterator) AtT() int64  { return math.MinInt64 }
 func (nopIterator) AtST() int64 { return 0 }
 func (nopIterator) Err() error  { return nil }
 
+// Pool 通过 sync.Pool 复用 XOR/直方图/XOR2 chunk 实例。
 // Pool is used to create and reuse chunk references to avoid allocations.
 type Pool interface {
 	Put(Chunk) error
@@ -407,6 +417,7 @@ func (p *pool) Put(c Chunk) error {
 	return nil
 }
 
+// FromData 从原始字节构造对应编码的 Chunk（供外部解码使用）。
 // FromData returns a chunk from a byte slice of chunk data.
 // This is there so that users of the library can easily create chunks from
 // bytes.
@@ -424,6 +435,7 @@ func FromData(e Encoding, d []byte) (Chunk, error) {
 	return nil, fmt.Errorf("invalid chunk encoding %q", e)
 }
 
+// NewEmptyChunk 创建指定编码的空 chunk 供 Head 追加。
 // NewEmptyChunk returns an empty chunk for the given encoding.
 func NewEmptyChunk(e Encoding) (Chunk, error) {
 	switch e {

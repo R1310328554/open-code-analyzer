@@ -11,10 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 直方图 appendable 接口子集：供 AppendHistogram/AppendFloatHistogram 检测跨 chunk 的计数器重置与 bucket 布局兼容性，避免调用方强制类型断言。
+
 package chunkenc
 
 import "github.com/prometheus/prometheus/model/histogram"
 
+// histogramAppendable 抽象整数直方图 appender 的 appendable 方法，供跨 chunk 衔接。
 // histogramAppendable is the subset of an integer-histogram appender's API
 // that AppendHistogram needs from a previous chunk's appender in order to
 // detect counter resets across chunks. It is satisfied by *HistogramAppender
@@ -29,6 +32,7 @@ type histogramAppendable interface {
 	)
 }
 
+// floatHistogramAppendable 为浮点直方图版本，counter reset 以 bool 而非 CounterResetHeader 表示。
 // floatHistogramAppendable is the float-histogram counterpart of
 // histogramAppendable. Note the asymmetry with the integer version: float
 // histograms surface a bool counter-reset flag rather than the richer

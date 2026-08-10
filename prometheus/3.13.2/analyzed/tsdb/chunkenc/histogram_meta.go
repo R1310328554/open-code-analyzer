@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 直方图 chunk 元数据编解码：layout（schema/spans/custom bounds）、zero threshold、Insert 与 span 双向扩展算法。
+
 package chunkenc
 
 import (
@@ -32,6 +34,7 @@ func writeHistogramChunkLayout(
 	}
 }
 
+// readHistogramChunkLayout 从位流解析直方图 layout 元数据。
 func readHistogramChunkLayout(b *bstreamReader) (
 	schema int32, zeroThreshold float64,
 	positiveSpans, negativeSpans []histogram.Span,
@@ -227,6 +230,7 @@ func readCustomBound(br *bstreamReader) (float64, error) {
 	}
 }
 
+// bucketIterator 按 span 顺序遍历 bucket 索引。
 type bucketIterator struct {
 	spans  []histogram.Span
 	span   int // Span position of last yielded bucket.
@@ -273,6 +277,7 @@ func (b *bucketIterator) Next() (int, bool) {
 	return 0, false
 }
 
+// Insert 描述在指定 bucket 索引前需插入的新 bucket 数量。
 // An Insert describes how many new buckets have to be inserted before
 // processing the pos'th bucket from the original slice.
 type Insert struct {
@@ -290,6 +295,7 @@ type Insert struct {
 // inserts to expand 'a' to also cover all the buckets exclusively covered by
 // 'b', and it returns the “backward” inserts to expand 'b' to also cover all
 // the buckets exclusively covered by 'a'.
+// expandSpansBothWays 双向扩展 span 以覆盖两 layout 的并集 bucket 范围。
 func expandSpansBothWays(a, b []histogram.Span) (forward, backward []Insert, mergedSpans []histogram.Span) {
 	ai := newBucketIterator(a)
 	bi := newBucketIterator(b)
@@ -392,6 +398,7 @@ type bucketValue interface {
 // insert merges 'in' with the provided inserts and writes them into 'out',
 // which must already have the appropriate length. 'out' is also returned for
 // convenience.
+// insert 按 Insert 列表在 bucket 切片中插入零值或 delta 占位。
 func insert[BV bucketValue](in, out []BV, inserts []Insert, deltas bool) []BV {
 	var (
 		oi int // Position in out.
@@ -468,6 +475,7 @@ func insert[BV bucketValue](in, out []BV, inserts []Insert, deltas bool) []BV {
 
 // counterResetHint returns a CounterResetHint based on the CounterResetHeader
 // and on the position into the chunk.
+// counterResetHint 根据 chunk 头与已读样本数推导 CounterResetHint。
 func counterResetHint(crh CounterResetHeader, numRead uint16) histogram.CounterResetHint {
 	switch {
 	case crh == GaugeType:

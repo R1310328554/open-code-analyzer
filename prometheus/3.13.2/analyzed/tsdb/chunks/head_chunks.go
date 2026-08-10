@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Head chunk 磁盘映射：ChunkDiskMapper 将 Head 内存 chunk 异步写入 head chunk 文件，mmap 读取、Truncate 旧文件并处理乱序 encoding 掩码。
+
 package chunks
 
 import (
@@ -72,6 +74,7 @@ const (
 	DefaultWriteQueueSize = 0
 )
 
+// ChunkDiskMapperRef 高 4 字节为 head chunk 文件序号，低 4 字节为文件内偏移。
 // ChunkDiskMapperRef represents the location of a head chunk on disk.
 // The upper 4 bytes hold the index of the head chunk file and
 // the lower 4 bytes hold the byte offset in the head chunk file where the chunk starts.
@@ -99,6 +102,7 @@ func (ref ChunkDiskMapperRef) GreaterThan(r ChunkDiskMapperRef) bool {
 	return s1 > s2 || (s1 == s2 && o1 > o2)
 }
 
+// CorruptionErr 封装 head chunk 文件 corruption 位置与底层错误。
 // CorruptionErr is an error that's returned when corruption is encountered.
 type CorruptionErr struct {
 	Dir       string
@@ -116,6 +120,7 @@ func (e *CorruptionErr) Unwrap() error {
 
 // chunkPos keeps track of the position in the head chunk files.
 // chunkPos is not thread-safe, a lock must be used to protect it.
+// chunkPos 跟踪当前写文件序号、偏移及是否应在下次写时 cut 新文件。
 type chunkPos struct {
 	seq     uint64 // Index of chunk file.
 	offset  uint64 // Offset within chunk file.
@@ -188,6 +193,7 @@ func (*chunkPos) bytesToWriteForChunk(chkLen uint64) uint64 {
 	return bytes
 }
 
+// ChunkDiskMapper 管理 head chunk 文件创建、mmap、异步写队列与 Truncate。
 // ChunkDiskMapper is for writing the Head block chunks to disk
 // and access chunks via mmapped files.
 type ChunkDiskMapper struct {
@@ -237,6 +243,7 @@ type mmappedChunkFile struct {
 	maxt      int64 // Max timestamp among all of this file's chunks.
 }
 
+// NewChunkDiskMapper 打开目录、修复末文件并可选启动 chunkWriteQueue。
 // NewChunkDiskMapper returns a new ChunkDiskMapper against the given directory
 // using the default head chunk file duration.
 // NOTE: 'IterateAllChunks' method needs to be called at least once after creating ChunkDiskMapper
@@ -277,6 +284,7 @@ func NewChunkDiskMapper(reg prometheus.Registerer, dir string, pool chunkenc.Poo
 	return m, m.openMMapFiles()
 }
 
+// ApplyOutOfOrderMask/IsOutOfOrderChunk 为 Head 内部乱序 chunk 编码打掩码。
 // Chunk encodings for out-of-order chunks.
 // These encodings must be only used by the Head block for its internal bookkeeping.
 const (
@@ -452,6 +460,7 @@ func repairLastChunkFile(files map[int]string) (_ map[int]string, returnErr erro
 	return files, nil
 }
 
+// WriteChunk 分配 ChunkDiskMapperRef 并入队或同步写入 head chunk 文件。
 // WriteChunk writes the chunk to disk.
 // The returned chunk ref is the reference from where the chunk encoding starts for the chunk.
 func (cdm *ChunkDiskMapper) WriteChunk(seriesRef HeadSeriesRef, mint, maxt int64, chk chunkenc.Chunk, isOOO bool, callback func(err error)) (chkRef ChunkDiskMapperRef) {
@@ -564,6 +573,7 @@ func (cdm *ChunkDiskMapper) writeChunk(seriesRef HeadSeriesRef, mint, maxt int64
 	return nil
 }
 
+// CutNewFile 标记下次写入时切换到新 head chunk 文件。
 // CutNewFile makes that a new file will be created the next time a chunk is written.
 func (cdm *ChunkDiskMapper) CutNewFile() {
 	cdm.evtlPosMtx.Lock()
@@ -694,6 +704,7 @@ func (cdm *ChunkDiskMapper) flushBuffer() error {
 	return nil
 }
 
+// Chunk 按 ChunkDiskMapperRef mmap 读取并解码 head chunk（含 CRC 校验）。
 // Chunk returns a chunk from a given reference.
 func (cdm *ChunkDiskMapper) Chunk(ref ChunkDiskMapperRef) (chunkenc.Chunk, error) {
 	cdm.readPathMtx.RLock()
@@ -825,6 +836,7 @@ func (cdm *ChunkDiskMapper) Chunk(ref ChunkDiskMapperRef) (chunkenc.Chunk, error
 	return chk, nil
 }
 
+// IterateAllChunks 顺序遍历所有 mmap 文件中的 chunk 元数据（启动后至少调用一次）。
 // IterateAllChunks iterates all mmappedChunkFiles (in order of head chunk file name/number) and all the chunks within it
 // and runs the provided function with information about each chunk. It returns on the first error encountered.
 // NOTE: This method needs to be called at least once after creating ChunkDiskMapper
@@ -948,6 +960,7 @@ func (cdm *ChunkDiskMapper) IterateAllChunks(f func(seriesRef HeadSeriesRef, chu
 	return nil
 }
 
+// Truncate 删除序号小于 fileNo 的 head chunk 文件并更新 mmap 表。
 // Truncate deletes the head chunk files with numbers less than the given fileNo.
 func (cdm *ChunkDiskMapper) Truncate(fileNo uint32) error {
 	cdm.readPathMtx.RLock()
@@ -1030,6 +1043,7 @@ func (cdm *ChunkDiskMapper) deleteFiles(removedFiles []int) ([]int, error) {
 	return nil, nil
 }
 
+// DeleteCorrupted 从 corruption 文件起删除后续 head chunk 文件。
 // DeleteCorrupted deletes all the head chunk files after the one which had the corruption
 // (including the corrupt file).
 func (cdm *ChunkDiskMapper) DeleteCorrupted(originalErr error) error {
@@ -1119,6 +1133,7 @@ func closeAllFromMap(cs map[int]io.Closer) error {
 const inBufferShards = 128 // 128 is a randomly chosen number.
 
 // chunkBuffer is a thread safe lookup table for chunks by their ref.
+// chunkBuffer 缓存刚写入、尚未 mmap 可见的 chunk 供 Chunk() 读取。
 type chunkBuffer struct {
 	inBufferChunks     [inBufferShards]map[ChunkDiskMapperRef]chunkenc.Chunk
 	inBufferChunksMtxs [inBufferShards]sync.RWMutex

@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// HistogramChunk：整数计数稀疏直方图 chunk 编码，含 CounterResetHeader、span/bucket delta 与 gauge/counter 两种追加路径。
+
 package chunkenc
 
 import (
@@ -23,6 +25,7 @@ import (
 	"github.com/prometheus/prometheus/model/value"
 )
 
+// HistogramChunk 存储整数 bucket 计数的位流编码 chunk。
 // HistogramChunk holds encoded sample data for a sparse, high-resolution
 // histogram.
 //
@@ -65,6 +68,7 @@ func (c *HistogramChunk) NumSamples() int {
 	return int(binary.BigEndian.Uint16(c.Bytes()))
 }
 
+// CounterResetHeader 占用 chunk 头 2 位，标记 counter/gauge 与 reset 提示。
 // CounterResetHeader defines the first 2 bits of the chunk header.
 type CounterResetHeader byte
 
@@ -178,6 +182,7 @@ func (c *HistogramChunk) Iterator(it Iterator) Iterator {
 	return c.iterator(it)
 }
 
+// HistogramAppender 实现整数直方图追加、appendable 检测与 recode。
 // HistogramAppender is an Appender implementation for sparse histograms.
 type HistogramAppender struct {
 	b *bstream
@@ -368,6 +373,7 @@ func (a *HistogramAppender) appendable(h *histogram.Histogram) (
 // spans themselves, thanks to the iterators we get to work with the more useful
 // bucket indices (which of course directly correspond to the buckets we have to
 // adjust).
+// expandIntSpansAndBuckets 合并 bucket layout，返回 forward/backward Insert 列表。
 func expandIntSpansAndBuckets(a, b []histogram.Span, aBuckets, bBuckets []int64) (forward, backward []Insert, ok bool) {
 	ai := newBucketIterator(a)
 	bi := newBucketIterator(b)
@@ -876,6 +882,7 @@ func (a *HistogramAppender) AppendHistogram(prev Appender, _, t int64, h *histog
 	return nil, false, a, nil
 }
 
+// CounterResetHintToHeader 将 model 层 CounterResetHint 映射为 chunk 头 2 位。
 func CounterResetHintToHeader(hint histogram.CounterResetHint) CounterResetHeader {
 	switch hint {
 	case histogram.CounterReset:
@@ -889,6 +896,7 @@ func CounterResetHintToHeader(hint histogram.CounterResetHint) CounterResetHeade
 	}
 }
 
+// histogramIterator 解码位流中的整数直方图样本。
 type histogramIterator struct {
 	br       bstreamReader
 	numTotal uint16

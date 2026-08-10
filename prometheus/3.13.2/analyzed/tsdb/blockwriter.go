@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// BlockWriter：基于临时 Head 累积样本并按 blockSize 刷写 TSDB block 到目标目录，Flush 通过 LeveledCompactor 原子 rename 落盘。
+
 package tsdb
 
 import (
@@ -28,6 +30,7 @@ import (
 	"github.com/prometheus/prometheus/tsdb/chunkenc"
 )
 
+// BlockWriter 封装 Head 与临时 chunk 目录，供离线/工具场景批量写 block。
 // BlockWriter is a block writer that allows appending and flushing series to disk.
 type BlockWriter struct {
 	logger         *slog.Logger
@@ -38,9 +41,11 @@ type BlockWriter struct {
 	chunkDir  string
 }
 
+// ErrNoSeriesAppended 表示 Flush 时 Head 无任何 series，中止写 block。
 // ErrNoSeriesAppended is returned if the series count is zero while flushing blocks.
 var ErrNoSeriesAppended = errors.New("no series appended, aborting")
 
+// NewBlockWriter 初始化临时 Head，blockSize 决定 chunk 时间范围（毫秒）。
 // NewBlockWriter creates a new block writer.
 //
 // The returned writer accumulates all the series in the Head block until `Flush` is called.
@@ -61,6 +66,7 @@ func NewBlockWriter(logger *slog.Logger, dir string, blockSize int64) (*BlockWri
 	return w, nil
 }
 
+// initHead 在系统临时目录创建 chunkDir 并 Init Head（MinInt64 起始）。
 // initHead creates and initialises a new TSDB head.
 func (w *BlockWriter) initHead() error {
 	chunkDir, err := os.MkdirTemp(os.TempDir(), "head")
@@ -80,18 +86,21 @@ func (w *BlockWriter) initHead() error {
 	return w.head.Init(math.MinInt64)
 }
 
+// Appender 委托 Head.Appender；BlockWriter 侧不可并发调用 Appender。
 // Appender returns a new appender on the database.
 // Appender can't be called concurrently. However, the returned Appender can safely be used concurrently.
 func (w *BlockWriter) Appender(ctx context.Context) storage.Appender {
 	return w.head.Appender(ctx)
 }
 
+// AppenderV2 委托 Head.AppenderV2，支持统一 Append 接口。
 // AppenderV2 returns a new appender on the database.
 // AppenderV2 can't be called concurrently. However, the returned AppenderV2 can safely be used concurrently.
 func (w *BlockWriter) AppenderV2(ctx context.Context) storage.AppenderV2 {
 	return w.head.AppenderV2(ctx)
 }
 
+// Flush 取 Head 时间范围并调用 compactor.Write，返回首个 block ULID。
 // Flush implements the Writer interface. This is where actual block writing
 // happens. After flush completes, no writes can be done.
 func (w *BlockWriter) Flush(ctx context.Context) (ulid.ULID, error) {

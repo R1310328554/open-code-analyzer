@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Head chunk 异步写队列：chunkWriteQueue 缓冲 WriteChunk 任务，后台 goroutine 顺序落盘并在队列空时收缩 chunkRef 映射释放内存。
+
 package chunks
 
 import (
@@ -35,6 +37,7 @@ const (
 	maxChunkQueueSegmentSize = 8192
 )
 
+// chunkWriteJob 描述一次待写入的 head chunk（seriesRef、时间范围、编码等）。
 type chunkWriteJob struct {
 	cutFile   bool
 	seriesRef HeadSeriesRef
@@ -47,6 +50,7 @@ type chunkWriteJob struct {
 }
 
 // chunkWriteQueue is a queue for writing chunks to disk in a non-blocking fashion.
+// chunkWriteQueue 非阻塞入队（队列满时阻塞），异步消费 writeChunk 回调。
 // Chunks that shall be written get added to the queue, which is consumed asynchronously.
 // Adding jobs to the queue is non-blocking as long as the queue isn't full.
 type chunkWriteQueue struct {
@@ -79,6 +83,7 @@ type chunkWriteQueue struct {
 // writeChunkF is a function which writes chunks, it is dynamic to allow mocking in tests.
 type writeChunkF func(HeadSeriesRef, int64, int64, chunkenc.Chunk, ChunkDiskMapperRef, bool, bool) error
 
+// newChunkWriteQueue 创建带 Prometheus 指标的定长写队列并启动 worker。
 func newChunkWriteQueue(reg prometheus.Registerer, size int, writeChunk writeChunkF) *chunkWriteQueue {
 	counters := prometheus.NewCounterVec(
 		prometheus.CounterOpts{
@@ -127,6 +132,7 @@ func (c *chunkWriteQueue) start() {
 	c.isRunningMtx.Unlock()
 }
 
+// processJob 执行单条写任务，失败时记录 metrics 并回调 error。
 func (c *chunkWriteQueue) processJob(job chunkWriteJob) {
 	err := c.writeChunk(job.seriesRef, job.mint, job.maxt, job.chk, job.ref, job.isOOO, job.cutFile)
 	if job.callback != nil {
@@ -146,6 +152,7 @@ func (c *chunkWriteQueue) processJob(job chunkWriteJob) {
 // shrinkChunkRefMap checks whether the conditions to shrink the chunkRefMap are met,
 // if so chunkRefMap is reinitialized. The chunkRefMapMtx must be held when calling this method.
 //
+// shrinkChunkRefMap 在队列空时用新 map 替换旧 map，促使 GC 释放哈希桶内存。
 // We do this because Go runtime doesn't release internal memory used by map after map has been emptied.
 // To achieve that we create new map instead and throw the old one away.
 func (c *chunkWriteQueue) shrinkChunkRefMap() {
@@ -177,6 +184,7 @@ func (c *chunkWriteQueue) shrinkChunkRefMap() {
 	c.shrink.Inc()
 }
 
+// addJob 非阻塞入队；队列满时返回错误或阻塞（取决于调用上下文）。
 func (c *chunkWriteQueue) addJob(job chunkWriteJob) (err error) {
 	defer func() {
 		if err == nil {
@@ -211,6 +219,7 @@ func (c *chunkWriteQueue) addJob(job chunkWriteJob) (err error) {
 	return nil
 }
 
+// get 从 chunkRef 缓存取刚写入、尚未 mmap 的 chunk 副本。
 func (c *chunkWriteQueue) get(ref ChunkDiskMapperRef) chunkenc.Chunk {
 	c.chunkRefMapMtx.RLock()
 	defer c.chunkRefMapMtx.RUnlock()

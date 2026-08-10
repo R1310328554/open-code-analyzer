@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 变长位编码：put/read VarbitInt/Uint 为直方图与 XOR chunk 压缩整数 delta，按数值范围选择最短位宽分支。
+
 package chunkenc
 
 import (
@@ -32,6 +34,7 @@ import (
 // which would maybe convince us to invest the increased coding/decoding cost.
 //
 // TODO(XOR2): Once XOR2 is stable, merge putVarbitInt and putVarbitIntFast.
+// putVarbitInt 将有符号整数按变长位模式写入位流（多分支范围优化）。
 func putVarbitInt(b *bstream, val int64) {
 	switch {
 	case val == 0: // Precisely 0, needs 1 bit.
@@ -68,6 +71,7 @@ func putVarbitInt(b *bstream, val int64) {
 // path. It is used by XOR2 encoding.
 //
 // TODO(XOR2): Once XOR2 is stable, merge putVarbitInt and putVarbitIntFast.
+// putVarbitIntFast 为 XOR2 热路径优化的 putVarbitInt 变体。
 func putVarbitIntFast(b *bstream, val int64) {
 	uval := uint64(val)
 	switch {
@@ -94,6 +98,7 @@ func putVarbitIntFast(b *bstream, val int64) {
 }
 
 // readVarbitInt reads an int64 encoded with putVarbitInt.
+// readVarbitInt 读取 putVarbitInt 编码的有符号整数。
 func readVarbitInt(b *bstreamReader) (int64, error) {
 	var d byte
 	for range 8 {
@@ -167,6 +172,7 @@ func bitRangeUint(x uint64, nbits int) bool {
 
 // putVarbitUint writes a uint64 using varbit encoding. It uses the same bit
 // buckets as putVarbitInt.
+// putVarbitUint 将无符号整数按变长位模式写入位流。
 func putVarbitUint(b *bstream, val uint64) {
 	switch {
 	case val == 0: // Precisely 0, needs 1 bit.
@@ -199,6 +205,7 @@ func putVarbitUint(b *bstream, val uint64) {
 }
 
 // readVarbitUint reads a uint64 encoded with putVarbitUint.
+// readVarbitUint 读取 putVarbitUint 编码的无符号整数。
 func readVarbitUint(b *bstreamReader) (uint64, error) {
 	var d byte
 	for range 8 {

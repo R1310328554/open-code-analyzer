@@ -11,10 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 非 Windows 平台 head chunk 文件预分配大小：小量预分配避免单测 mmap flake。
+
 //go:build !windows
 
 package chunks
 
+// HeadChunkFilePreallocationSize 新建 head chunk 文件时的预分配字节数（非 Windows）。
 // HeadChunkFilePreallocationSize is the size to which the m-map file should be preallocated when a new file is cut.
 // Windows needs pre-allocations while the other OS does not. But we observed that a 0 pre-allocation causes unit tests to flake.
 // This small allocation for non-Windows OSes removes the flake.

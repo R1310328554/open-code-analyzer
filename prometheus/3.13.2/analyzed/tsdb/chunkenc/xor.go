@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// XORChunk：Gorilla 论文 XOR 浮点压缩，时间戳 delta-of-delta + 值 XOR 位编码，适用于规律 scrape 的 float 时序。
+
 // The code in this file was largely written by Damian Gryski as part of
 // https://github.com/dgryski/go-tsz and published under the license below.
 // It was modified to accommodate reading from byte slices without modifying
@@ -57,11 +59,13 @@ const (
 	chunkCompactCapacityThreshold = 32
 )
 
+// XORChunk 封装 bstream 位流，存储 XOR 编码的 float 样本序列。
 // XORChunk holds XOR encoded sample data.
 type XORChunk struct {
 	b bstream
 }
 
+// NewXORChunk 创建空 XOR chunk 并初始化 bstream。
 // NewXORChunk returns a new chunk with XOR encoding.
 func NewXORChunk() *XORChunk {
 	b := make([]byte, chunkHeaderSize, chunkAllocationSize)
@@ -147,6 +151,7 @@ func (c *XORChunk) Iterator(it Iterator) Iterator {
 	return c.iterator(it)
 }
 
+// xorAppender 维护上一时间戳/值及 leading/trailing 位用于 XOR 增量编码。
 type xorAppender struct {
 	b *bstream
 
@@ -235,6 +240,7 @@ func (*xorAppender) AppendFloatHistogram(Appender, int64, int64, *histogram.Floa
 	panic("appended a float histogram sample to a float chunk")
 }
 
+// xorIterator 解码 XOR chunk 位流并迭代 float 样本。
 type xorIterator struct {
 	br       bstreamReader
 	numTotal uint16
@@ -409,6 +415,7 @@ func (it *xorIterator) readValue() ValueType {
 	return ValFloat
 }
 
+// xorWrite 将 float XOR delta 按 leading/trailing 位宽写入位流。
 func xorWrite(b *bstream, newValue, currentValue float64, leading, trailing *uint8) {
 	delta := math.Float64bits(newValue) ^ math.Float64bits(currentValue)
 
@@ -449,6 +456,7 @@ func xorWrite(b *bstream, newValue, currentValue float64, leading, trailing *uin
 	b.writeBits(delta>>newTrailing, int(sigbits))
 }
 
+// xorRead 从位流解码 XOR 压缩的 float 值并更新 leading/trailing。
 func xorRead(br *bstreamReader, value *float64, leading, trailing *uint8) error {
 	bit, err := br.readBitFast()
 	if err != nil {

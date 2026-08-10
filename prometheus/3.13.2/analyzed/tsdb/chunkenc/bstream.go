@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 位流读写工具（源自 go-tsz）：bstream 按位追加/读取，bstreamReader 缓冲 8 字节加速 XOR/XOR2 解码。
+
 // The code in this file was largely written by Damian Gryski as part of
 // https://github.com/dgryski/go-tsz and published under the license below.
 // It received minor modifications to suit Prometheus's needs.
@@ -46,12 +48,14 @@ import (
 	"io"
 )
 
+// bstream 维护字节流与当前字节剩余可写位数（count）。
 // bstream is a stream of bits.
 type bstream struct {
 	stream []byte // The data stream.
 	count  uint8  // How many right-most bits are available for writing in the current byte (the last byte of the stream).
 }
 
+// Reset 绑定已有字节切片并重置写指针。
 // Reset resets b around stream.
 func (b *bstream) Reset(stream []byte) {
 	b.stream = stream
@@ -99,6 +103,7 @@ func (b *bstream) writeByte(byt byte) {
 	b.stream = append(b.stream, byt<<b.count)
 }
 
+// writeBits 将 u 的高 nbits 位从左到右写入位流。
 // writeBits writes the nbits right-most bits of u to the stream
 // in left-to-right order.
 // TODO: Once XOR2 stabilizes, replace writeBits with the writeBitsFast implementation and remove writeBitsFast.
@@ -118,6 +123,7 @@ func (b *bstream) writeBits(u uint64, nbits int) {
 	}
 }
 
+// writeBitsFast 内联处理尾字节，减少 writeByte 调用开销。
 // writeBitsFast is like writeBits but handles the partial last byte inline to
 // avoid per-byte writeByte calls, and writes complete bytes directly to the
 // stream slice.
@@ -152,6 +158,7 @@ func (b *bstream) writeBitsFast(u uint64, nbits int) {
 	}
 }
 
+// bstreamReader 用 64 位 buffer 批量预读，支持 XOR2 控制前缀快速路径。
 type bstreamReader struct {
 	stream       []byte
 	streamOffset int // The offset from which read the next byte from the stream.
@@ -183,6 +190,7 @@ func (b *bstreamReader) readBit() (bit, error) {
 	return b.readBitFast()
 }
 
+// readBitFast 为热路径叶子函数，buffer 空时返回 io.EOF 供外层重试。
 // readBitFast is like readBit but can return io.EOF if the internal buffer is empty.
 // If it returns io.EOF, the caller should retry reading bits calling readBit().
 // This function must be kept small and a leaf in order to help the compiler inlining it
@@ -279,6 +287,7 @@ func (b *bstreamReader) readXOR2ControlFast() (uint8, bool) {
 	return 0, false
 }
 
+// readXOR2Control 解析 XOR2 六种联合控制前缀（dod/val 编码分支）。
 // readXOR2Control reads the XOR2 variable-length joint control prefix
 // and returns 0-5 mapping to the six encoding cases:
 //
@@ -368,6 +377,7 @@ func (b *bstreamReader) readXOR2Control() (uint8, error) {
 	return 5, nil
 }
 
+// readUvarint 避免 binary.ReadUvarint 的接口逃逸，直接读字节解码。
 // readUvarint decodes a varint-encoded uint64 using direct method calls,
 // avoiding the io.ByteReader interface dispatch used by binary.ReadUvarint,
 // which causes the receiver to escape to the heap.
@@ -400,6 +410,7 @@ func (b *bstreamReader) readVarint() (int64, error) {
 	return x, err
 }
 
+// loadNextBuffer 预读最多 8 字节；末字节用初始化副本避免并发写竞态。
 // loadNextBuffer loads the next bytes from the stream into the internal buffer.
 // The input nbits is the minimum number of bits that must be read, but the implementation
 // can read more (if possible) to improve performances.

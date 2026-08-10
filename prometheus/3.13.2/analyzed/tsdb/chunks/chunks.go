@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 持久化 block chunk 层：ChunkRef/Meta/Writer/Reader 实现分段文件读写、CRC32 校验与 Head/Block 引用打包工具。
+
 package chunks
 
 import (
@@ -49,14 +51,17 @@ const (
 	ChunkEncodingSize = 1
 )
 
+// ChunkRef 为读取 chunk 数据的通用引用类型别名。
 // ChunkRef is a generic reference for reading chunk data. In prometheus it
 // is either a HeadChunkRef or BlockChunkRef, though other implementations
 // may have their own reference types.
 type ChunkRef uint64
 
+// HeadSeriesRef 标识 Head 内存中的 series。
 // HeadSeriesRef refers to in-memory series.
 type HeadSeriesRef uint64
 
+// HeadChunkRef 将 HeadSeriesRef（5 字节）与 ChunkID（3 字节）打包为 64 位 ID。
 // HeadChunkRef packs a HeadSeriesRef and a ChunkID into a global 8 Byte ID.
 // The HeadSeriesRef and ChunkID may not exceed 5 and 3 bytes respectively.
 type HeadChunkRef uint64
@@ -100,6 +105,7 @@ func (p HeadChunkRef) Unpack() (HeadSeriesRef, HeadChunkID) {
 //	|                14 | memSeries.headChunks -> *memChunk{next: ^}
 type HeadChunkID uint64
 
+// BlockChunkRef 高 4 字节为 segment 序号，低 4 字节为文件内偏移。
 // BlockChunkRef refers to a chunk within a persisted block.
 // The upper 4 bytes are for the segment index and
 // the lower 4 bytes are for the segment offset where the data starts for this chunk.
@@ -116,6 +122,7 @@ func (b BlockChunkRef) Unpack() (int, int) {
 	return sgmIndex, chkStart
 }
 
+// Meta 记录 chunk 时间范围、样本数、编码与 MinTime/MaxTime。
 // Meta holds information about one or more chunks.
 // For examples of when chunks.Meta could refer to multiple chunks, see
 // ChunkReader.ChunkOrIterable().
@@ -233,6 +240,7 @@ func ChunkMetasToSamples(chunks []Meta) (result []Sample) {
 	return result
 }
 
+// Iterator 按时间顺序迭代单 series 的多个 chunk Meta。
 // Iterator iterates over the chunks of a single time series.
 type Iterator interface {
 	// At returns the current meta.
@@ -287,6 +295,7 @@ func checkCRC32(data, sum []byte) error {
 	return nil
 }
 
+// Writer 将 Meta 序列化写入编号递增的 chunk segment 文件。
 // Writer implements the ChunkWriter interface for the standard
 // serialization format.
 type Writer struct {
@@ -331,6 +340,7 @@ func WithSegmentSize(segmentSize int64) WriterOption {
 	}
 }
 
+// NewWriter 创建 chunk 目录写入器，默认 segment 大小 DefaultChunkSegmentSize。
 // NewWriter returns a new writer against the given directory.
 // It uses DefaultChunkSegmentSize as the default segment size.
 func NewWriter(dir string, opts ...WriterOption) (*Writer, error) {
@@ -499,6 +509,7 @@ func (w *Writer) write(b []byte) error {
 	return err
 }
 
+// WriteChunks 批量写入 chunk，segment 满时自动 cut 新文件。
 // WriteChunks writes as many chunks as possible to the current segment,
 // cuts a new segment when the current segment is full and
 // writes the rest of the chunks in the new segment.
@@ -630,6 +641,7 @@ func (b realByteSlice) Range(start, end int) []byte {
 	return b[start:end]
 }
 
+// Reader 从 mmap/字节切片读取 block chunk 并解码为 chunkenc.Chunk。
 // Reader implements a ChunkReader for a serialized byte stream
 // of series data.
 type Reader struct {
@@ -661,6 +673,7 @@ func newReader(bs []ByteSlice, cs []io.Closer, pool chunkenc.Pool) (*Reader, err
 	return &cr, nil
 }
 
+// NewDirReader 扫描目录中顺序编号的 chunk 文件并 mmap 打开。
 // NewDirReader returns a new Reader against sequentially numbered files in the
 // given directory.
 func NewDirReader(dir string, pool chunkenc.Pool) (*Reader, error) {
@@ -707,6 +720,7 @@ func (s *Reader) Size() int64 {
 	return s.size
 }
 
+// ChunkOrIterable 按 Meta 定位字节范围并返回 Chunk 或 Iterable。
 // ChunkOrIterable returns a chunk from a given reference.
 func (s *Reader) ChunkOrIterable(meta Meta) (chunkenc.Chunk, chunkenc.Iterable, error) {
 	sgmIndex, chkStart := BlockChunkRef(meta.Ref).Unpack()

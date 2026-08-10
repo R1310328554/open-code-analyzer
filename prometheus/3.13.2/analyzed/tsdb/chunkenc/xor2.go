@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// XOR2Chunk：联合时间戳+值控制位的 XOR 变体，支持 start timestamp（ST）与更紧凑的 dod/val 编码（六种控制前缀）。
+
+// XOR2Chunk 在 XOR 基础上合并 dod 与 val 控制前缀，可选编码 ST delta。
 // XOR2Chunk implements XOR encoding with joint timestamp+value control bits
 // and byte-packed dod encoding for efficient appending. It also has an extra
 // header byte after the sample count to allow for optionally encoding start
@@ -100,6 +103,7 @@ func readSTHeader(b []byte) (firstSTKnown bool, firstSTChangeOn uint8) {
 	return firstSTKnown, b[0] & mask
 }
 
+// XOR2Chunk 结构体持有 bstream 与 XOR2 编码样本（含可选 ST）。
 // XOR2Chunk holds XOR2 encoded samples with optional start
 // timestamp per chunk or per sample.
 type XOR2Chunk struct {
@@ -195,6 +199,7 @@ func (c *XOR2Chunk) Iterator(it Iterator) Iterator {
 // xor2Appender appends samples with optional start timestamps using
 // the XOR2 joint control bit encoding for regular timestamp and value,
 // and putVarbitIntFast for the start timestamp delta.
+// xor2Appender 维护 ST 状态、joint 编码上下文与首样本 header 位。
 type xor2Appender struct {
 	b *bstream
 
@@ -395,6 +400,7 @@ func (a *xor2Appender) Append(st, t int64, v float64) {
 
 // encodeJoint writes the XOR2 joint timestamp+value control sequence for
 // samples >= 2.
+// encodeJoint 根据 dod 与 val 选择六种 XOR2 控制分支并写入位流。
 func (a *xor2Appender) encodeJoint(dod int64, v float64) {
 	if dod == 0 {
 		if value.IsStaleNaN(v) {
@@ -512,6 +518,7 @@ func (*xor2Appender) AppendFloatHistogram(Appender, int64, int64, *histogram.Flo
 }
 
 // xor2Iterator decodes XOR2 chunks.
+// xor2Iterator 解码 XOR2 联合控制前缀与 val/dod 位流。
 type xor2Iterator struct {
 	br       bstreamReader
 	numTotal uint16
@@ -765,6 +772,7 @@ func (it *xor2Iterator) readDod(w uint8) error {
 //	`10`  → reuse previous leading/trailing window
 //	`110` → new leading/trailing window
 //	`111` → stale NaN
+// decodeValue 按当前 leading/trailing 解码 XOR2 压缩的 float 值。
 func (it *xor2Iterator) decodeValue() error {
 	// Fast path: 3 bits available — read the full control prefix in one shot.
 	// Encoding: `0`=unchanged, `10`=reuse window, `110`=new window, `111`=stale NaN.

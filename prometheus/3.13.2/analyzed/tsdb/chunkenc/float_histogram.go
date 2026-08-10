@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// FloatHistogramChunk：稀疏高分辨率浮点直方图 chunk 编码，bucket 计数用 XOR 压缩，支持 span 扩展、counter reset 检测与 recode。
+
 package chunkenc
 
 import (
@@ -23,6 +25,7 @@ import (
 	"github.com/prometheus/prometheus/model/value"
 )
 
+// FloatHistogramChunk 存储浮点 bucket 计数的位流编码 chunk。
 // FloatHistogramChunk holds encoded sample data for a sparse, high-resolution
 // float histogram.
 //
@@ -51,6 +54,7 @@ func (c *FloatHistogramChunk) Reset(stream []byte) {
 
 // xorValue holds all the necessary information to encode
 // and decode XOR encoded float64 values.
+// xorValue 缓存 XOR 压缩浮点 bucket 的前导/尾随零位与 delta。
 type xorValue struct {
 	value    float64
 	leading  uint8
@@ -166,6 +170,7 @@ func (c *FloatHistogramChunk) Iterator(it Iterator) Iterator {
 	return c.iterator(it)
 }
 
+// FloatHistogramAppender 实现浮点直方图追加、recode 与 counter reset 判定。
 // FloatHistogramAppender is an Appender implementation for float histograms.
 type FloatHistogramAppender struct {
 	b *bstream
@@ -198,6 +203,7 @@ func (a *FloatHistogramAppender) setNumSamples(num int) {
 	binary.BigEndian.PutUint16(a.b.bytes(), uint16(num))
 }
 
+// Append 对 float 样本 panic，本 appender 仅支持 AppendFloatHistogram。
 // Append implements Appender. This implementation panics because normal float
 // samples must never be appended to a histogram chunk.
 func (*FloatHistogramAppender) Append(int64, int64, float64) {
@@ -332,6 +338,7 @@ func (a *FloatHistogramAppender) appendable(h *histogram.FloatHistogram) (
 // spans themselves, thanks to the iterators we get to work with the more useful
 // bucket indices (which of course directly correspond to the buckets we have to
 // adjust).
+// expandFloatSpansAndBuckets 合并两 layout 的 span/bucket，检测 counter reset 并生成 Insert。
 func expandFloatSpansAndBuckets(a, b []histogram.Span, aBuckets []xorValue, bBuckets []float64) (forward, backward []Insert, ok bool) {
 	ai := newBucketIterator(a)
 	bi := newBucketIterator(b)
@@ -830,6 +837,7 @@ func (a *FloatHistogramAppender) AppendFloatHistogram(prev Appender, _, t int64,
 	return nil, false, a, nil
 }
 
+// floatHistogramIterator 解码位流中的浮点直方图样本并支持 Seek。
 type floatHistogramIterator struct {
 	br       bstreamReader
 	numTotal uint16

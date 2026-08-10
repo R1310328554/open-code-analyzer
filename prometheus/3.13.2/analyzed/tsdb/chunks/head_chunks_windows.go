@@ -11,8 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Windows 平台 head chunk 文件预分配：Windows mmap 要求预分配至 MaxHeadChunkFileSize。
+
 package chunks
 
+// HeadChunkFilePreallocationSize 在 Windows 上预分配至 MaxHeadChunkFileSize 以支持 mmap。
 // HeadChunkFilePreallocationSize is the size to which the m-map file should be preallocated when a new file is cut.
 // Windows needs pre-allocation to m-map the file.
 var HeadChunkFilePreallocationSize int64 = MaxHeadChunkFileSize
