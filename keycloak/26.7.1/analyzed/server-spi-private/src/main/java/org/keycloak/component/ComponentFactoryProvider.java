@@ -19,6 +19,8 @@ package org.keycloak.component;
 import org.keycloak.provider.Provider;
 
 /**
+ * 组件工厂 SPI 的会话级 {@link Provider} 标记接口。
+ * <p>实际工厂逻辑由 {@link ComponentFactoryProviderFactory} 提供。</p>
  *
  * @author hmlnarik
  */

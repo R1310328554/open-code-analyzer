@@ -21,7 +21,8 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * Limit the amount of data read to prevent a {@link OutOfMemoryError}.
+ * 限制读取字节数的安全 {@link InputStream} 包装，防止 {@link OutOfMemoryError}。
+ * <p>超过 {@code maxBytesToConsume} 时抛出 {@link IOException}。</p>
  *
  * @author Alexander Schwartz
  */
@@ -31,6 +32,10 @@ public class SafeInputStream extends InputStream {
     private final InputStream delegate;
     private final long maxBytesToConsume;
 
+    /**
+     * @param delegate 被包装的输入流
+     * @param maxBytesToConsume 允许读取的最大字节数
+     */
     public SafeInputStream(InputStream delegate, long maxBytesToConsume) {
         this.delegate = delegate;
         this.maxBytesToConsume = maxBytesToConsume;

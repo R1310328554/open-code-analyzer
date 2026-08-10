@@ -22,6 +22,8 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * HTTP 客户端连接 SPI，注册 {@link HttpClientProvider} 及 {@link HttpClientFactory}。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class HttpClientSpi implements Spi {

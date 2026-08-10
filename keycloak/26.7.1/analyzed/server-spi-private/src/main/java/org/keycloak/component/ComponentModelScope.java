@@ -22,6 +22,8 @@ import org.keycloak.Config.AbstractScope;
 import org.keycloak.Config.Scope;
 
 /**
+ * 将 {@link ComponentModel} 配置与底层 {@link Scope} 合并的配置作用域。
+ * <p>组件属性优先于工厂级配置；支持嵌套 scope 前缀。</p>
  *
  * @author hmlnarik
  */
@@ -31,32 +33,39 @@ public class ComponentModelScope extends AbstractScope {
     private final ComponentModel componentConfig;
     private final String prefix;
 
+    /** 以空前缀将组件配置叠加到原始 Scope 上。 */
     public ComponentModelScope(Scope origScope, ComponentModel componentConfig) {
         this(origScope, componentConfig, "");
     }
 
+    /** 以指定键前缀构造组件配置作用域。 */
     public ComponentModelScope(Scope origScope, ComponentModel componentConfig, String prefix) {
         this.origScope = origScope;
         this.componentConfig = componentConfig;
         this.prefix = prefix;
     }
 
+    /** 返回组件 ID。 */
     public String getComponentId() {
         return componentConfig.getId();
     }
 
+    /** 返回组件显示名称。 */
     public String getComponentName() {
         return componentConfig.getName();
     }
 
+    /** 读取组件附注（note）属性。 */
     public <T> T getComponentNote(String key) {
         return componentConfig.getNote(key);
     }
 
+    /** 返回父组件 ID。 */
     public String getComponentParentId() {
         return componentConfig.getParentId();
     }
 
+    /** 返回组件子类型。 */
     public String getComponentSubType() {
         return componentConfig.getSubType();
     }
@@ -77,6 +86,7 @@ public class ComponentModelScope extends AbstractScope {
         throw new UnsupportedOperationException("Not implemented");
     }
 
+    /** 返回底层 {@link ComponentModel}。 */
     public ComponentModel getComponentModel() {
         return componentConfig;
     }

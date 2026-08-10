@@ -42,6 +42,9 @@ import org.keycloak.models.ModelIllegalStateException;
 import org.hibernate.exception.ConstraintViolationException;
 
 /**
+ * {@link EntityManager} 动态代理，统一异常转换与可选批量 flush 优化。
+ * <p>将 JPA/Hibernate 异常映射为 {@link ModelException} 子类，并在批量模式下按阈值 flush/clear。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class EntityManagerProxy {
@@ -54,11 +57,16 @@ public class EntityManagerProxy {
     private final int batchSize;
     private int changeCount = 0;
 
+    /**
+     * 为会话创建带代理的 {@link EntityManager}。
+     * @param session Keycloak 会话
+     * @param em 底层实体管理器
+     * @param sessionManaged 是否由会话跟踪代理实例
+     */
     public static EntityManager create(KeycloakSession session, EntityManager em, boolean sessionManaged) {
         Set<EntityManagerProxy> entityManagerProxies = null;
         if (sessionManaged) {
-            // the alternative to this tracking is to have a method on the session for
-            // getting the in use providers - not something that will create all providers
+            // 替代方案是在 session 上提供获取在用 provider 的方法，但会触发全部 provider 创建
             entityManagerProxies = session.getAttribute(EntityManagers.ENTITY_MANAGER_PROXIES, Set.class);
             if (entityManagerProxies == null) {
                 entityManagerProxies = new HashSet<>();
@@ -126,7 +134,8 @@ public class EntityManagerProxy {
         }
     }
 
-    // For JTA, the database operations are executed during the commit phase of a transaction, and DB exceptions can be propagated differently
+    // JTA 下数据库操作在提交阶段执行，异常传播路径可能不同
+    /** 将底层异常链转换为 Keycloak {@link ModelException}。 */
     public static ModelException convert(Throwable t) {
         Predicate<Throwable> throwModelDuplicateEx = throwable ->
                 throwable instanceof EntityExistsException
@@ -149,9 +158,9 @@ public class EntityManagerProxy {
     }
 
     /**
-     * SQL state class 23 captures errors like 23505 = UNIQUE VIOLATION et al.
-     * This captures, for example, a BatchUpdateException which is not mapped to the other exception types
-     * https://en.wikipedia.org/wiki/SQLSTATE
+     * SQLSTATE 23 类表示完整性约束违反（如 23505 UNIQUE VIOLATION）。
+     * 捕获未映射到其他异常类型的 BatchUpdateException 等。
+     * @see <a href="https://en.wikipedia.org/wiki/SQLSTATE">SQLSTATE</a>
      */
     private static boolean isSqlStateClass23(Throwable t) {
         return t instanceof SQLException bue

@@ -30,8 +30,13 @@ import org.keycloak.models.KeycloakSession;
 
 import org.hibernate.Session;
 
+/**
+ * JPA {@link EntityManager} 批量模式与会话级 flush 工具。
+ * <p>通过 {@link ThreadLocal} 标记批量上下文，并协调多个 {@link EntityManagerProxy}。</p>
+ */
 public class EntityManagers {
 
+    /** 会话属性键：当前活跃的 {@link EntityManagerProxy} 集合。 */
     static final String ENTITY_MANAGER_PROXIES = "ENTITY_MANAGER_PROXIES";
 
     private static final ThreadLocal<Boolean> batchMode = new ThreadLocal<Boolean>();
@@ -48,6 +53,7 @@ public class EntityManagers {
         }
     }
 
+    /** 当前线程是否处于批量模式。 */
     public static boolean isBatchMode() {
         return Boolean.TRUE.equals(batchMode.get());
     }
@@ -67,9 +73,7 @@ public class EntityManagers {
                 .map(Set::stream).orElse(Stream.of());
     }
 
-    /**
-     * Flush and optionally clear all the currently in use {@link EntityManager}s
-     */
+    /** 对所有在用 {@link EntityManager} 执行 flush，可选 clear。 */
     public static void flush(KeycloakSession session, boolean clear) {
         forEachEntityManager(session, em -> {
             em.flush(); // TODO: avoid if read-only
@@ -80,27 +84,18 @@ public class EntityManagers {
     }
 
     /**
-     * Run the operation in batch mode with a pre-flush.
-     * <p>
-     * It is desirable to use nestedEntityManagers=true to keep the existing context free of newly created entities.
-     * <p>
-     * flush and detach operations are NOT automatically inhibited in batch mode. For even greater performance, and
-     * statement level batching by Hibernate, you may use the {@link #isBatchMode()} to conditionally not perform those
-     * operations - however keep in mind that especially when running with nestedEntityManagers=false, the current
-     * persistence context will accumulate anything that is not detached.
-     * <p>
-     * WARNING: Any queries run while batching will be in COMMIT mode, so they cannot see non-flushed changes made
-     * within the batch. Most of Keycloak's JPA code however persists and flushes together.
+     * 在批量模式下运行操作，执行前先 flush。
+     * <p>建议 {@code nestedEntityManagers=true} 以隔离持久化上下文。批量模式下查询为 COMMIT flush 模式，无法看到批内未 flush 的变更。</p>
+     * <p>警告：传入任务的待持久化实体不得已关联打开的 EntityManager。</p>
      *
-     * @param nestedEntityManagers - if true run with isolated EntityManagers WARNING: Any entities passed into the task that
-     *   that will get persisted must not already be associated with an open EntityManager.
+     * @param nestedEntityManagers 为 true 时使用隔离 EntityManager
      */
     public static void runInBatch(KeycloakSession session, Runnable runnable, boolean nestedEntityManagers) {
         Map<EntityManagerProxy, Session> previous = new HashMap<EntityManagerProxy, Session>();
 
-        flush(session, false); // make sure the state entering the batch processing is committed
+        flush(session, false); // 进入批处理前确保当前状态已提交
 
-        // create a localized entitymanager with a shared transaction coordinator, so nothing is left behind
+        // 创建共享事务协调器的局部 EntityManager，避免批处理后残留状态
         if (nestedEntityManagers) {
             getEntityManagerProxies(session).forEach(p -> {
                 if (!p.getEntityManager().isOpen()) {
@@ -119,7 +114,7 @@ public class EntityManagers {
                 flush(session, true);
             }
         } finally {
-            // restablish the old entitymanagers
+            // 恢复原有 EntityManager
             if (nestedEntityManagers) {
                 getEntityManagerProxies(session).forEach(p -> {
                     EntityManager current = p.getEntityManager();
@@ -129,7 +124,7 @@ public class EntityManagers {
                             current.close();
                         }
                         p.setEntityManager(old);
-                    } // else - created during the batch run, so it's enough that it was flushed / cleared
+                    } // 批处理期间新建，已 flush/clear 即可
                 });
             }
         }

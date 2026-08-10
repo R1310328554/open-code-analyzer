@@ -21,11 +21,13 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 组件工厂 SPI 定义，将 {@link ComponentFactoryProvider} 注册到 Keycloak 提供者体系。
  *
  * @author hmlnarik
  */
 public class ComponentFactorySpi implements Spi {
 
+    /** SPI 名称常量 {@value}。 */
     public static final String NAME = "componentFactory";
 
     @Override

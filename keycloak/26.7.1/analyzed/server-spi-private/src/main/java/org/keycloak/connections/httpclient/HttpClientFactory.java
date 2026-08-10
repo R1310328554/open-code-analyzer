@@ -20,6 +20,8 @@ package org.keycloak.connections.httpclient;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * HTTP 客户端 SPI 的 {@link ProviderFactory} 接口。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface HttpClientFactory extends ProviderFactory<HttpClientProvider> {

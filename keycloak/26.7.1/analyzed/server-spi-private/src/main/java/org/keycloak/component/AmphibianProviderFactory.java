@@ -29,18 +29,12 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.provider.ProviderFactory;
 
 /**
- * Ancestor for a provider factory for both a standalone {@link ProviderFactory} and a {@link ComponentFactory}. It
- * behaves as usual for a standalone provider, and for a component creates a factory customized according to
- * configuration of this component. The component creation then behaves in the same way as if it was
- * a standalone component, i.e.:
+ * 两栖提供者工厂：同时充当独立 {@link ProviderFactory} 与 {@link ComponentFactory} 的基类。
+ * <p>独立部署时行为与普通工厂一致；作为组件时按组件配置创建专用工厂实例，流程如下：</p>
  * <ul>
- * <li>The component-specific factory is initialized via {@link #init} method where the configuration
- *     is taken from the component configuration, converted into a {@link Scope}. The
- *     component configuration takes precedence over configuration of the provider factory.</li>
- * <li>Creation of the instances is done via standard {@link #create(KeycloakSession)} method even for components,
- *     since there is now a specific factory per component.</li>
- * <li>Component-specific factories are cached inside the provider factory
- *     similarly to how provider factories are cached in the session factory.</li>
+ * <li>组件工厂通过 {@link #init} 初始化，配置取自组件模型并转为 {@link Scope}，组件配置优先于工厂级配置。</li>
+ * <li>实例创建统一走 {@link #create(KeycloakSession)}，每个组件对应独立工厂。</li>
+ * <li>组件工厂在提供者工厂内缓存，类似会话工厂对提供者工厂的缓存机制。</li>
  * </ul>
  *
  * @see ComponentFactoryProviderFactory

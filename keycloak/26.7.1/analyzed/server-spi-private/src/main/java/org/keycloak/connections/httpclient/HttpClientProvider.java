@@ -25,79 +25,73 @@ import org.keycloak.provider.Provider;
 import org.apache.http.impl.client.CloseableHttpClient;
 
 /**
+ * HTTP 客户端 SPI 提供者，封装 Apache HttpClient 及常用 GET/POST 辅助方法。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface HttpClientProvider extends Provider {
     /**
-     * Returns the {@code CloseableHttpClient} that can be freely used.
+     * 返回可自由使用的 {@code CloseableHttpClient}。
      * <p>
-     * <b>The returned {@code HttpClient} instance must never be {@code close()}d by the caller.</b>
+     * <b>调用方不得对返回的 {@code HttpClient} 实例调用 {@code close()}。</b>
      * <p>
-     * Closing the {@code HttpClient} instance is responsibility of this provider. However,
-     * the objects created via the returned {@code HttpClient} need to be closed properly
-     * by the code that instantiated them.
-     * @return 
+     * 关闭客户端由本提供者负责；但通过该客户端创建的对象须由调用方正确关闭。
+     * @return 共享 HTTP 客户端实例
      */
     CloseableHttpClient getHttpClient();
 
     /**
-     * Helper method
+     * 向 URI 发送纯文本 POST 请求。
      *
-     * @param uri
-     * @param text
-     * @return http response status
-     * @throws IOException
+     * @param uri 目标 URI
+     * @param text 请求体文本
+     * @return HTTP 响应状态码
+     * @throws IOException 网络或 I/O 错误
      */
     public int postText(String uri, String text) throws IOException;
 
     /**
-     * Helper method to retrieve the contents of a URL as a String.
-     * Decoding response with the correct character set is performed according to the headers returned in the server's response.
-     * To retrieve binary data, use {@link #getInputStream(String)}
-     * 
-     * Implementations should limit the amount of data returned to avoid an {@link OutOfMemoryError}.
+     * 以字符串形式获取 URL 响应体，按响应头选择字符集解码。
+     * <p>二进制数据请使用 {@link #getInputStream(String)}。实现应限制读取量以防 {@link OutOfMemoryError}。</p>
      *
-     * @param uri URI with data to receive.
-     * @return Body of the response as a String.
-     * @throws IOException On network errors, no content being returned or a non-2xx HTTP status code
+     * @param uri 待请求的 URI
+     * @return 响应体字符串
+     * @throws IOException 网络错误、无内容或非 2xx 状态码
      */
     String getString(String uri) throws IOException;
 
     /**
-     * Helper method to retrieve the contents of a URL as an InputStream.
-     * Use this to retrieve binary data where no additional HTTP headers need to be considered.
-     * The caller is required to close the returned InputStream to prevent a resource leak.
-     * <p>
-     * To retrieve strings that depend on their encoding, use {@link #getString(String)}
+     * 以 {@link InputStream} 获取 URL 响应体，适用于二进制数据。
+     * <p>调用方须关闭返回流以防资源泄漏。文本内容请使用 {@link #getString(String)}。</p>
      *
-     * @param uri URI with data to receive.
-     * @return Body of the response as an InputStream. The caller is required to close the returned InputStream to prevent a resource leak.
-     * @throws IOException On network errors, no content being returned or a non-2xx HTTP status code.
+     * @param uri 待请求的 URI
+     * @return 响应体输入流
+     * @throws IOException 网络错误、无内容或非 2xx 状态码
      */
     InputStream getInputStream(String uri) throws IOException;
 
     /**
-     * Helper method.
-     * The caller is required to close the returned InputStream to prevent a resource leak.
-
-     * @deprecated For String content, use  {@link #getString(String)}, for binary data use {@link #getInputStream(String)}.
-     * To be removed in Keycloak 27.
+     * 辅助方法，委托 {@link #getInputStream(String)}。
+     * <p>调用方须关闭返回流以防资源泄漏。</p>
      *
-     * @param uri URI with data to receive.
-     * @return Body of the response as an InputStream. The caller is required to close the returned InputStream to prevent a resource leak.
-     * @throws IOException On network errors, no content being returned or a non-2xx HTTP status code.
+     * @deprecated 字符串请用 {@link #getString(String)}，二进制请用 {@link #getInputStream(String)}，Keycloak 27 移除。
+     *
+     * @param uri 待请求的 URI
+     * @return 响应体输入流
+     * @throws IOException 网络错误、无内容或非 2xx 状态码
      */
     @Deprecated
     default InputStream get(String uri) throws IOException {
         return getInputStream(uri);
     }
 
+    /** 默认最大可消费响应体字节数（10 MB）。 */
     long DEFAULT_MAX_CONSUMED_RESPONSE_SIZE = 10_000_000L;
 
     /**
-     * Get the configured limit for the response size.
+     * 获取配置的响应体大小上限。
      *
-     * @return number of bytes
+     * @return 最大字节数
      */
     default long getMaxConsumedResponseSize() {
         return DEFAULT_MAX_CONSUMED_RESPONSE_SIZE;

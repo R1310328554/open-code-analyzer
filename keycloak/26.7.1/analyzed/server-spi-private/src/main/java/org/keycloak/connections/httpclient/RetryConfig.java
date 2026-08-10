@@ -18,46 +18,29 @@
 package org.keycloak.connections.httpclient;
 
 /**
- * Configuration for HTTP client retry behavior.
+ * HTTP 客户端重试行为配置。
  * <p>
- * This class provides configuration options for HTTP client retry behavior when
- * making requests. It allows customization of the maximum number of retry
- * attempts, exponential backoff settings, jitter for backoff times, and
- * connection/socket timeouts.
+ * 可定制最大重试次数、指数退避、抖动因子及连接/套接字超时。
+ * 默认 0 次重试（不重试），退避从 1000ms 起每次乘以 2.0，默认启用 0.5 抖动以防重试风暴。
+ * </p>
  * <p>
- * The default configuration is 0 retry attempts (no retries), with exponential backoff starting
- * at 1000ms and multiplying by 2.0 for each retry. Jitter is enabled by
- * default with a factor of 0.5 to prevent synchronized retry storms.
- * <p>
- * This configuration is used internally by {@link HttpClientProvider#getHttpClient()}
- * to create HTTP clients with server-wide retry capabilities. The configuration
- * is set globally through the HTTP client provider SPI configuration.
- * <p>
- * Server-wide SPI properties for configuring retry behavior:
+ * 由 {@link HttpClientProvider#getHttpClient()} 内部使用，通过 HTTP 客户端 SPI 全局配置。
+ * </p>
+ * <p>服务端 SPI 属性：</p>
  * <ul>
- * <li>{@code spi-connections-http-client-default-max-retries} - Maximum number
- * of retry attempts (default: 0)</li>
- * <li>{@code spi-connections-http-client-default-initial-backoff-millis} - Initial
- * backoff time in milliseconds (default: 1000)</li>
- * <li>{@code spi-connections-http-client-default-backoff-multiplier} - Multiplier
- * for exponential backoff (default: 2.0)</li>
- * <li>{@code spi-connections-http-client-default-jitter-factor} - Random jitter
- * factor to apply to backoff times (default: 0.5)</li>
- * <li>{@code spi-connections-http-client-default-use-jitter} - Whether to apply
- * jitter to backoff times (default: true)</li>
+ * <li>{@code spi-connections-http-client-default-max-retries} — 最大重试次数（默认 0）</li>
+ * <li>{@code spi-connections-http-client-default-initial-backoff-millis} — 初始退避毫秒（默认 1000）</li>
+ * <li>{@code spi-connections-http-client-default-backoff-multiplier} — 指数退避乘数（默认 2.0）</li>
+ * <li>{@code spi-connections-http-client-default-jitter-factor} — 抖动因子（默认 0.5）</li>
+ * <li>{@code spi-connections-http-client-default-use-jitter} — 是否启用抖动（默认 true）</li>
  * </ul>
- * <p>
- * Example configuration:
- *
+ * <p>示例：</p>
  * <pre>
  * spi-connections-http-client-default-max-retries=3
  * spi-connections-http-client-default-initial-backoff-millis=1000
  * spi-connections-http-client-default-backoff-multiplier=2.0
  * </pre>
- *
- * This configuration applies to all outgoing HTTP requests from Keycloak,
- * including OCSP validation, identity provider communication, and other
- * external HTTP calls.
+ * <p>适用于 Keycloak 所有出站 HTTP 请求（OCSP、IdP 通信等）。</p>
  */
 public class RetryConfig {
     private final int maxRetries;
@@ -78,71 +61,41 @@ public class RetryConfig {
         this.socketTimeoutMillis = builder.socketTimeoutMillis;
     }
 
-    /**
-     * Gets the maximum number of retry attempts.
-     *
-     * @return The maximum number of retry attempts
-     */
+    /** 返回最大重试次数。 @return The maximum number of retry attempts */
     public int getMaxRetries() {
         return maxRetries;
     }
 
-    /**
-     * Gets the initial backoff time in milliseconds before the first retry attempt.
-     *
-     * @return The initial backoff time in milliseconds
-     */
+    /** 返回首次重试前的初始退避毫秒数。 @return The initial backoff time in milliseconds */
     public long getInitialBackoffMillis() {
         return initialBackoffMillis;
     }
 
-    /**
-     * Gets the multiplier used for exponential backoff between retry attempts.
-     *
-     * @return The backoff multiplier
-     */
+    /** 返回指数退避乘数。 @return The backoff multiplier */
     public double getBackoffMultiplier() {
         return backoffMultiplier;
     }
 
-    /**
-     * Gets the connection timeout in milliseconds.
-     *
-     * @return The connection timeout in milliseconds
-     */
+    /** 返回连接超时毫秒数。 @return The connection timeout in milliseconds */
     public int getConnectionTimeoutMillis() {
         return connectionTimeoutMillis;
     }
 
-    /**
-     * Gets the socket timeout in milliseconds.
-     *
-     * @return The socket timeout in milliseconds
-     */
+    /** 返回套接字超时毫秒数。 @return The socket timeout in milliseconds */
     public int getSocketTimeoutMillis() {
         return socketTimeoutMillis;
     }
 
     /**
-     * Determines whether to apply jitter to backoff times.
-     * <p>
-     * Jitter adds randomness to backoff times to prevent synchronized retry storms
-     * when multiple clients are retrying at the same time.
-     *
-     * @return {@code true} if jitter should be applied, {@code false} otherwise
+     * 是否对退避时间施加抖动，避免多客户端同步重试。
+     * @return {@code true} 启用抖动
      */
     public boolean isUseJitter() {
         return useJitter;
     }
 
     /**
-     * Gets the jitter factor to apply to backoff times.
-     * <p>
-     * The jitter factor determines how much randomness to apply to the backoff
-     * time.
-     * A value of 0.5 means the actual backoff time will be between 50% and 150% of
-     * the calculated exponential backoff time.
-     *
+     * 返回抖动因子；0.5 表示实际退避在计算值的 50%–150% 之间。
      * @return The jitter factor
      */
     public double getJitterFactor() {
@@ -199,16 +152,7 @@ public class RetryConfig {
     }
 
     /**
-     * Builder for creating {@link RetryConfig} instances.
-     * <p>
-     * This builder uses the following defaults:
-     * <ul>
-     * <li>maxRetries = 0</li>
-     * <li>initialBackoffMillis = 1000</li>
-     * <li>backoffMultiplier = 2.0</li>
-     * <li>connectionTimeoutMillis = 10000</li>
-     * <li>socketTimeoutMillis = 10000</li>
-     * </ul>
+     * 构建 {@link RetryConfig} 的 Builder，默认 maxRetries=0、initialBackoffMillis=1000、backoffMultiplier=2.0、connectionTimeoutMillis=10000、socketTimeoutMillis=10000。
      */
     public static class Builder {
         private int maxRetries = 0;
@@ -330,11 +274,7 @@ public class RetryConfig {
             return this;
         }
 
-        /**
-         * Builds a new {@link RetryConfig} instance with the current builder settings.
-         *
-         * @return A new {@link RetryConfig} instance
-         */
+        /** 根据当前 Builder 设置构建 {@link RetryConfig}。 @return A new {@link RetryConfig} instance */
         public RetryConfig build() {
             return new RetryConfig(this);
         }
