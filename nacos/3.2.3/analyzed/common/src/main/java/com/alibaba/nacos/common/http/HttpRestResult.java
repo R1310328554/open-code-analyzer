@@ -21,13 +21,16 @@ import com.alibaba.nacos.common.model.RestResult;
 
 /**
  * Http RestResult.
+ * <p>带 HTTP 响应头的 {@link com.alibaba.nacos.common.model.RestResult} 扩展，在业务码与数据之外保留 {@link com.alibaba.nacos.common.http.param.Header} 供调用方读取。</p>
  *
  * @author mai.jh
  */
 public class HttpRestResult<T> extends RestResult<T> {
     
+    /** 序列化版本号 */
     private static final long serialVersionUID = 3766947816720175947L;
     
+    /** HTTP 响应头 */
     private Header header;
     
     public HttpRestResult() {

@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Create a rest template to ensure that each custom client config and rest template are in one-to-one correspondence.
+ * <p>HTTP 客户端 Bean 持有者：按 {@link HttpClientFactory} 实现类名缓存同步/异步 {@link NacosRestTemplate} 与 {@link NacosAsyncRestTemplate} 单例，注册 JVM 关闭钩子统一销毁连接。</p>
  *
  * @author mai.jh
  */
@@ -36,11 +37,14 @@ public final class HttpClientBeanHolder {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpClientBeanHolder.class);
     
+    /** 同步 RestTemplate 单例缓存，键为工厂类全名 */
     private static final Map<String, NacosRestTemplate> SINGLETON_REST = new HashMap<>(10);
     
+    /** 异步 RestTemplate 单例缓存，键为工厂类全名 */
     private static final Map<String, NacosAsyncRestTemplate> SINGLETON_ASYNC_REST =
         new HashMap<>(10);
     
+    /** 防止重复执行 shutdown 的标志位 */
     private static final AtomicBoolean ALREADY_SHUTDOWN = new AtomicBoolean(false);
     
     static {
@@ -96,6 +100,7 @@ public final class HttpClientBeanHolder {
     
     /**
      * Shutdown common http client.
+     * <p>JVM 关闭钩子：销毁默认工厂对应的 HTTP 客户端并释放连接池。</p>
      */
     private static void shutdown() {
         if (!ALREADY_SHUTDOWN.compareAndSet(false, true)) {
@@ -115,6 +120,7 @@ public final class HttpClientBeanHolder {
     
     /**
      * Shutdown http client holder and close remove template.
+     * <p>按工厂类名关闭同步与异步 RestTemplate 并移出缓存。</p>
      *
      * @param className HttpClientFactory implement class name
      * @throws Exception ex
@@ -129,6 +135,7 @@ public final class HttpClientBeanHolder {
      *
      * @param className HttpClientFactory implement class name
      * @throws Exception ex
+      * <p>HTTP RestTemplate 单例持有者；详见类级说明。</p>
      */
     public static void shutdownNacosSyncRest(String className) throws Exception {
         final NacosRestTemplate nacosRestTemplate = SINGLETON_REST.get(className);
@@ -143,6 +150,7 @@ public final class HttpClientBeanHolder {
      *
      * @param className HttpClientFactory implement class name
      * @throws Exception ex
+      * <p>HTTP RestTemplate 单例持有者；详见类级说明。</p>
      */
     public static void shutdownNacosAsyncRest(String className) throws Exception {
         final NacosAsyncRestTemplate nacosAsyncRestTemplate = SINGLETON_ASYNC_REST.get(className);

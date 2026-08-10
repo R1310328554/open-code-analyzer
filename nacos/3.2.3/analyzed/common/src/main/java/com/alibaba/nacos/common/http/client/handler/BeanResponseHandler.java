@@ -26,6 +26,7 @@ import java.lang.reflect.Type;
 /**
  * bean response handler,
  * Mainly converter response type as bean type.
+ * <p>Bean 响应处理器：使用 {@link com.alibaba.nacos.common.utils.JacksonUtils} 将 JSON 响应体反序列化为 {@code responseType} 指定类型。</p>
  *
  * @author mai.jh
  */

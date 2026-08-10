@@ -27,6 +27,7 @@ import java.lang.reflect.Type;
 
 /**
  * Byte array response handler, reads raw bytes from the response body without JSON deserialization.
+ * <p>字节数组响应处理器：将响应体原样读入 {@code byte[]}，不做 JSON 解析，适用于文件下载或二进制协议场景。</p>
  *
  * @author nacos
  */

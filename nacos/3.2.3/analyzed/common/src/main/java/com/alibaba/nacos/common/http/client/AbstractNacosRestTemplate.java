@@ -32,6 +32,7 @@ import java.util.Map;
 
 /**
  * For NacosRestTemplate and NacosAsyncRestTemplate, provide initialization and register of response converter.
+ * <p>RestTemplate 抽象基类：预注册字符串、RestResult、字节数组与 Bean 等默认 {@link ResponseHandler}，支持按响应类型或自定义类型名选择并转换 HTTP 响应。</p>
  *
  * @author mai.jh
  */
@@ -49,7 +50,7 @@ public abstract class AbstractNacosRestTemplate {
     }
     
     private void initDefaultResponseHandler() {
-        // init response handler
+        // 注册内置响应处理器映射
         responseHandlerMap.put(ResponseHandlerType.STRING_TYPE, new StringResponseHandler());
         responseHandlerMap.put(ResponseHandlerType.RESTRESULT_TYPE,
             new RestResultResponseHandler());
@@ -59,6 +60,7 @@ public abstract class AbstractNacosRestTemplate {
     
     /**
      * register customization Response Handler.
+     * <p>按类型键注册自定义 {@link ResponseHandler}，覆盖或扩展默认映射。</p>
      *
      * @param responseHandler {@link ResponseHandler}
      */
@@ -72,6 +74,7 @@ public abstract class AbstractNacosRestTemplate {
      *
      * @param responseType responseType
      * @return ResponseHandler
+      * <p>RestTemplate 响应处理器基类；详见类级说明。</p>
      */
     protected ResponseHandler selectResponseHandler(Type responseType) {
         ResponseHandler responseHandler = null;
@@ -83,8 +86,7 @@ public abstract class AbstractNacosRestTemplate {
             String name = javaType.getRawClass().getName();
             responseHandler = responseHandlerMap.get(name);
         }
-        // When the corresponding type of response handler cannot be obtained,
-        // the default bean response handler is used
+        // 未匹配到专用处理器时回退到默认 Bean 反序列化处理器
         if (responseHandler == null) {
             responseHandler = responseHandlerMap.get(ResponseHandlerType.DEFAULT_BEAN_TYPE);
         }

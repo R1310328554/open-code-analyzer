@@ -26,11 +26,13 @@ import java.lang.reflect.Type;
 
 /**
  * Abstract response handler.
+ * <p>响应处理器抽象基类：非 200 状态码时将响应体作为错误消息封装为 {@link HttpRestResult}，200 时委托子类 {@link #convertResult} 完成反序列化。</p>
  *
  * @author mai.jh
  */
 public abstract class AbstractResponseHandler<T> implements ResponseHandler<T> {
     
+    /** 由模板注入的期望响应 Java 类型 */
     private Type responseType;
     
     @Override
@@ -59,6 +61,7 @@ public abstract class AbstractResponseHandler<T> implements ResponseHandler<T> {
      * @param responseType responseType
      * @return HttpRestResult
      * @throws Exception ex
+      * <p>响应处理器抽象基类；详见类级说明。</p>
      */
     public abstract HttpRestResult<T> convertResult(HttpClientResponse response, Type responseType)
         throws Exception;

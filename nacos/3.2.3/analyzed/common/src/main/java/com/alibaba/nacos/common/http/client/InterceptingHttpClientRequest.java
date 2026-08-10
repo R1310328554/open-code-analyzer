@@ -26,13 +26,16 @@ import java.util.Iterator;
 
 /**
  * Wrap http client request and perform corresponding interception.
+ * <p>带拦截链的 {@link HttpClientRequest} 装饰器：依次询问拦截器，首个 {@link HttpClientRequestInterceptor#isIntercept} 为 true 的拦截器处理请求，否则委托底层客户端执行。</p>
  *
  * @author mai.jh
  */
 public class InterceptingHttpClientRequest implements HttpClientRequest {
     
+    /** 被装饰的实际 HTTP 客户端请求实现 */
     private final HttpClientRequest httpClientRequest;
     
+    /** 按注册顺序遍历的拦截器迭代器 */
     private final Iterator<HttpClientRequestInterceptor> interceptors;
     
     public InterceptingHttpClientRequest(HttpClientRequest httpClientRequest,

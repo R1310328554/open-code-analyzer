@@ -21,6 +21,7 @@ import com.alibaba.nacos.common.http.client.NacosRestTemplate;
 
 /**
  * http Client Factory.
+ * <p>HTTP 客户端工厂 SPI：由模块实现以定制 {@link HttpClientConfig}，并创建同步 {@link NacosRestTemplate} 与异步 {@link NacosAsyncRestTemplate}。</p>
  *
  * @author mai.jh
  */
@@ -28,6 +29,7 @@ public interface HttpClientFactory {
     
     /**
      * create new nacost rest.
+     * <p>创建新的同步 {@link NacosRestTemplate} 实例。</p>
      *
      * @return NacosRestTemplate
      */
@@ -35,6 +37,7 @@ public interface HttpClientFactory {
     
     /**
      * create new nacos async rest.
+     * <p>创建新的异步 {@link NacosAsyncRestTemplate} 实例。</p>
      *
      * @return NacosAsyncRestTemplate
      */

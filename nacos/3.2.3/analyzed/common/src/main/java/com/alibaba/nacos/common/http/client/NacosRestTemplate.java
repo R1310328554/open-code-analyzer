@@ -41,6 +41,7 @@ import java.util.Map;
 
 /**
  * Nacos rest template Interface specifying a basic set of RESTful operations.
+ * <p>Nacos 同步 REST 客户端模板：提供 GET/POST/PUT/DELETE 及 Json/Form/File 等便捷方法，支持 {@link HttpClientConfig}  per-request 配置与 {@link HttpClientRequestInterceptor} 拦截链，返回带响应头的 {@link HttpRestResult}。</p>
  *
  * @author mai.jh
  * @see HttpClientRequest
@@ -48,8 +49,10 @@ import java.util.Map;
  */
 public class NacosRestTemplate extends AbstractNacosRestTemplate {
     
+    /** 底层同步 HTTP 请求客户端 */
     private final HttpClientRequest requestClient;
     
+    /** 请求拦截器列表，非空时通过 {@link InterceptingHttpClientRequest} 包装执行 */
     private final List<HttpClientRequestInterceptor> interceptors = new ArrayList<>();
     
     public NacosRestTemplate(Logger logger, HttpClientRequest requestClient) {
@@ -68,6 +71,7 @@ public class NacosRestTemplate extends AbstractNacosRestTemplate {
      * @param responseType return type
      * @return {@link HttpRestResult}
      * @throws Exception ex
+      * <p>同步 REST 模板；详见类级说明。</p>
      */
     public <T> HttpRestResult<T> get(String url, Header header, Query query, Type responseType)
         throws Exception {
@@ -88,6 +92,7 @@ public class NacosRestTemplate extends AbstractNacosRestTemplate {
      * @param responseType return type
      * @return {@link HttpRestResult}
      * @throws Exception ex
+      * <p>同步 REST 模板；详见类级说明。</p>
      */
     public <T> HttpRestResult<T> get(String url, HttpClientConfig config, Header header,
         Query query, Type responseType)
@@ -112,6 +117,7 @@ public class NacosRestTemplate extends AbstractNacosRestTemplate {
      * @param responseType return type
      * @return {@link HttpRestResult}
      * @throws Exception ex
+      * <p>同步 REST 模板；详见类级说明。</p>
      */
     public <T> HttpRestResult<T> getLarge(String url, Header header, Query query, Object body,
         Type responseType)
@@ -131,6 +137,7 @@ public class NacosRestTemplate extends AbstractNacosRestTemplate {
      * @param responseType return type
      * @return {@link HttpRestResult}
      * @throws Exception ex
+      * <p>同步 REST 模板；详见类级说明。</p>
      */
     public <T> HttpRestResult<T> delete(String url, Header header, Query query, Type responseType)
         throws Exception {
@@ -151,6 +158,7 @@ public class NacosRestTemplate extends AbstractNacosRestTemplate {
      * @param responseType return type
      * @return {@link HttpRestResult}
      * @throws Exception ex
+      * <p>同步 REST 模板；详见类级说明。</p>
      */
     public <T> HttpRestResult<T> delete(String url, HttpClientConfig config, Header header,
         Query query,
@@ -173,6 +181,7 @@ public class NacosRestTemplate extends AbstractNacosRestTemplate {
      * @param responseType return type
      * @return {@link HttpRestResult}
      * @throws Exception ex
+      * <p>同步 REST 模板；详见类级说明。</p>
      */
     public <T> HttpRestResult<T> put(String url, Header header, Query query, Object body,
         Type responseType)
@@ -196,6 +205,7 @@ public class NacosRestTemplate extends AbstractNacosRestTemplate {
      * @param responseType return type
      * @return {@link HttpRestResult}
      * @throws Exception ex
+      * <p>同步 REST 模板；详见类级说明。</p>
      */
     public <T> HttpRestResult<T> putJson(String url, Header header, Query query, String body,
         Type responseType)
@@ -218,6 +228,7 @@ public class NacosRestTemplate extends AbstractNacosRestTemplate {
      * @param responseType return type
      * @return {@link HttpRestResult}
      * @throws Exception ex
+      * <p>同步 REST 模板；详见类级说明。</p>
      */
     public <T> HttpRestResult<T> putJson(String url, Header header, String body, Type responseType)
         throws Exception {
@@ -242,6 +253,7 @@ public class NacosRestTemplate extends AbstractNacosRestTemplate {
      * @param responseType return type
      * @return {@link HttpRestResult}
      * @throws Exception ex
+      * <p>同步 REST 模板；详见类级说明。</p>
      */
     public <T> HttpRestResult<T> putForm(String url, Header header, Query query,
         Map<String, String> bodyValues,
@@ -263,6 +275,7 @@ public class NacosRestTemplate extends AbstractNacosRestTemplate {
      * @param responseType return type
      * @return {@link HttpRestResult}
      * @throws Exception ex
+      * <p>同步 REST 模板；详见类级说明。</p>
      */
     public <T> HttpRestResult<T> putForm(String url, Header header, Map<String, String> bodyValues,
         Type responseType)
@@ -287,6 +300,7 @@ public class NacosRestTemplate extends AbstractNacosRestTemplate {
      * @param responseType return type
      * @return {@link HttpRestResult}
      * @throws Exception ex
+      * <p>同步 REST 模板；详见类级说明。</p>
      */
     public <T> HttpRestResult<T> putForm(String url, HttpClientConfig config, Header header,
         Map<String, String> bodyValues, Type responseType) throws Exception {
@@ -309,6 +323,7 @@ public class NacosRestTemplate extends AbstractNacosRestTemplate {
      * @param responseType return type
      * @return {@link HttpRestResult}
      * @throws Exception ex
+      * <p>同步 REST 模板；详见类级说明。</p>
      */
     public <T> HttpRestResult<T> post(String url, Header header, Query query, Object body,
         Type responseType)
@@ -332,6 +347,7 @@ public class NacosRestTemplate extends AbstractNacosRestTemplate {
      * @param responseType return type
      * @return {@link HttpRestResult}
      * @throws Exception ex
+      * <p>同步 REST 模板；详见类级说明。</p>
      */
     public <T> HttpRestResult<T> postJson(String url, Header header, Query query, String body,
         Type responseType)
@@ -354,6 +370,7 @@ public class NacosRestTemplate extends AbstractNacosRestTemplate {
      * @param responseType return type
      * @return {@link HttpRestResult}
      * @throws Exception ex
+      * <p>同步 REST 模板；详见类级说明。</p>
      */
     public <T> HttpRestResult<T> postJson(String url, Header header, String body, Type responseType)
         throws Exception {
@@ -378,6 +395,7 @@ public class NacosRestTemplate extends AbstractNacosRestTemplate {
      * @param responseType return type
      * @return {@link HttpRestResult}
      * @throws Exception ex
+      * <p>同步 REST 模板；详见类级说明。</p>
      */
     public <T> HttpRestResult<T> postForm(String url, Header header, Query query,
         Map<String, String> bodyValues,
@@ -399,6 +417,7 @@ public class NacosRestTemplate extends AbstractNacosRestTemplate {
      * @param responseType return type
      * @return {@link HttpRestResult}
      * @throws Exception ex
+      * <p>同步 REST 模板；详见类级说明。</p>
      */
     public <T> HttpRestResult<T> postForm(String url, Header header, Map<String, String> bodyValues,
         Type responseType)
@@ -423,6 +442,7 @@ public class NacosRestTemplate extends AbstractNacosRestTemplate {
      * @param responseType return type
      * @return {@link HttpRestResult}
      * @throws Exception ex
+      * <p>同步 REST 模板；详见类级说明。</p>
      */
     public <T> HttpRestResult<T> postForm(String url, HttpClientConfig config, Header header,
         Map<String, String> bodyValues, Type responseType) throws Exception {
@@ -431,6 +451,18 @@ public class NacosRestTemplate extends AbstractNacosRestTemplate {
         return execute(url, HttpMethod.POST, requestHttpEntity, responseType);
     }
     
+    /**
+     * 上传文件 POST 请求。
+     * <p>使用 {@link HttpClientConfig} 指定超时等参数，请求体为 {@link File}。</p>
+     *
+     * @param url          目标 URL
+     * @param config       HTTP 客户端配置
+     * @param header       请求头
+     * @param file         待上传文件
+     * @param responseType 响应类型
+     * @return {@link HttpRestResult}
+     * @throws Exception 请求或 IO 异常
+     */
     public <T> HttpRestResult<T> postFile(String url, HttpClientConfig config, Header header,
         File file, Type responseType) throws Exception {
         RequestHttpEntity requestHttpEntity = new RequestHttpEntity(config, header, file);
@@ -449,6 +481,7 @@ public class NacosRestTemplate extends AbstractNacosRestTemplate {
      * @param responseType return type
      * @return {@link HttpRestResult}
      * @throws Exception ex
+      * <p>同步 REST 模板；详见类级说明。</p>
      */
     public <T> HttpRestResult<T> exchangeForm(String url, Header header, Query query,
         Map<String, String> bodyValues,
@@ -471,6 +504,7 @@ public class NacosRestTemplate extends AbstractNacosRestTemplate {
      * @param responseType return type
      * @return {@link HttpRestResult}
      * @throws Exception ex
+      * <p>同步 REST 模板；详见类级说明。</p>
      */
     public <T> HttpRestResult<T> exchange(String url, HttpClientConfig config, Header header,
         Query query,
@@ -483,6 +517,7 @@ public class NacosRestTemplate extends AbstractNacosRestTemplate {
      * Set the request interceptors that this accessor should use.
      *
      * @param interceptors {@link HttpClientRequestInterceptor}
+      * <p>同步 REST 模板；详见类级说明。</p>
      */
     public void setInterceptors(List<HttpClientRequestInterceptor> interceptors) {
         if (this.interceptors != interceptors) {
@@ -495,6 +530,7 @@ public class NacosRestTemplate extends AbstractNacosRestTemplate {
      * Return the request interceptors that this accessor uses.
      *
      * <p>The returned {@link List} is active and may get appended to.
+      * <p>同步 REST 模板；详见类级说明。</p>
      */
     public List<HttpClientRequestInterceptor> getInterceptors() {
         return interceptors;
@@ -534,6 +570,7 @@ public class NacosRestTemplate extends AbstractNacosRestTemplate {
     
     /**
      * close request client.
+      * <p>同步 REST 模板；详见类级说明。</p>
      */
     public void close() throws Exception {
         requestClient.close();

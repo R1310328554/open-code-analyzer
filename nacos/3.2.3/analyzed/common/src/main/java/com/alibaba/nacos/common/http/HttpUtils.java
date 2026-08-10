@@ -57,11 +57,13 @@ import static com.alibaba.nacos.common.constant.RequestUrlConstants.HTTP_PREFIX;
 
 /**
  * Http utils.
+ * <p>HTTP 请求/URL 工具集：初始化 Apache HttpClient5 请求头与实体、拼接 URL、编解码查询参数、构建 {@link URI}、判断超时异常，以及生成 Nacos 客户端标准请求头。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public final class HttpUtils {
     
+    /** 检测路径中连续斜杠的正则，用于 {@link #buildUrl} 校验 */
     private static final Pattern CONTEXT_PATH_MATCH = Pattern.compile("(\\/)\\1+");
     
     /**
@@ -69,6 +71,7 @@ public final class HttpUtils {
      *
      * @param requestBase requestBase {@link HttpUriRequestBase}
      * @param header      header
+      * <p>HTTP 请求与 URL 工具；详见类级说明。</p>
      */
     public static void initRequestHeader(ClassicHttpRequest requestBase, Header header) {
         Iterator<Map.Entry<String, String>> iterator = header.iterator();
@@ -85,6 +88,7 @@ public final class HttpUtils {
      * @param body        body
      * @param header      request header
      * @throws Exception exception
+      * <p>HTTP 请求与 URL 工具；详见类级说明。</p>
      */
     public static void initRequestEntity(ClassicHttpRequest requestBase, Object body, Header header)
         throws Exception {
@@ -115,6 +119,7 @@ public final class HttpUtils {
      * @param body        body map
      * @param charset     charset of entity
      * @throws Exception exception
+      * <p>HTTP 请求与 URL 工具；详见类级说明。</p>
      */
     public static void initRequestFromEntity(ClassicHttpRequest requestBase,
         Map<String, String> body, String charset)
@@ -140,6 +145,7 @@ public final class HttpUtils {
      * @param serverAddr server ip/address
      * @param subPaths   api path
      * @return URL string
+      * <p>HTTP 请求与 URL 工具；详见类级说明。</p>
      */
     public static String buildUrl(boolean isHttps, String serverAddr, String... subPaths) {
         StringBuilder sb = new StringBuilder();
@@ -182,6 +188,7 @@ public final class HttpUtils {
      * @param parameterMap parameter map
      * @return parameter map
      * @throws Exception exception
+      * <p>HTTP 请求与 URL 工具；详见类级说明。</p>
      */
     public static Map<String, String> translateParameterMap(Map<String, String[]> parameterMap)
         throws Exception {
@@ -199,6 +206,7 @@ public final class HttpUtils {
      * @param encoding encoding charset
      * @return url string
      * @throws UnsupportedEncodingException if encoding string is illegal
+      * <p>HTTP 请求与 URL 工具；详见类级说明。</p>
      */
     public static String encodingParams(Map<String, String> params, String encoding)
         throws UnsupportedEncodingException {
@@ -226,6 +234,7 @@ public final class HttpUtils {
      * @param encoding    encoding charset
      * @return url string
      * @throws UnsupportedEncodingException if encoding string is illegal
+      * <p>HTTP 请求与 URL 工具；详见类级说明。</p>
      */
     public static String encodingParams(List<String> paramValues, String encoding)
         throws UnsupportedEncodingException {
@@ -254,6 +263,7 @@ public final class HttpUtils {
      * @param url   url
      * @param query query param {@link Query}
      * @return {@link URI}
+      * <p>HTTP 请求与 URL 工具；详见类级说明。</p>
      */
     public static URI buildUri(String url, Query query) throws URISyntaxException {
         if (query != null && !query.isEmpty()) {
@@ -267,6 +277,7 @@ public final class HttpUtils {
      *
      * @param throwable http request throwable
      * @return boolean
+      * <p>HTTP 请求与 URL 工具；详见类级说明。</p>
      */
     public static boolean isTimeoutException(Throwable throwable) {
         return throwable instanceof SocketTimeoutException
@@ -279,6 +290,7 @@ public final class HttpUtils {
      * Build header.
      *
      * @return header
+      * <p>HTTP 请求与 URL 工具；详见类级说明。</p>
      */
     public static Header builderHeader(String module) {
         Header header = Header.newInstance();
@@ -293,8 +305,7 @@ public final class HttpUtils {
     
     private static String innerDecode(String pre, String now, String encode)
         throws UnsupportedEncodingException {
-        // Because the data may be encoded by the URL more than once,
-        // it needs to be decoded recursively until it is fully successful
+        // 数据可能被 URL 编码多次，需递归解码直至结果稳定
         if (StringUtils.equals(pre, now)) {
             return pre;
         }

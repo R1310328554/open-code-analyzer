@@ -20,13 +20,16 @@ import org.slf4j.Logger;
 
 /**
  * default http client factory.
+ * <p>默认 HTTP 客户端工厂：从系统属性 {@code nacos.http.timeout} 读取超时（默认 5000ms），连接超时为全值、读超时为一半，供 {@link HttpClientBeanHolder} 创建共享 RestTemplate。</p>
  *
  * @author mai.jh
  */
 public class DefaultHttpClientFactory extends AbstractHttpClientFactory {
     
+    /** HTTP 超时毫秒数，可通过 JVM 属性 {@code nacos.http.timeout} 覆盖 */
     private static final int TIMEOUT = Integer.getInteger("nacos.http.timeout", 5000);
     
+    /** 创建 RestTemplate 时使用的日志记录器 */
     private final Logger logger;
     
     public DefaultHttpClientFactory(Logger logger) {

@@ -24,6 +24,7 @@ import java.lang.reflect.Type;
 /**
  * Response Handler abstract interface,
  * the actual processing of the response conversion is done by a concrete implementation class.
+ * <p>HTTP 响应处理器接口：由具体实现将 {@link HttpClientResponse} 转为 {@link HttpRestResult}，调用前通过 {@link #setResponseType} 指定目标泛型类型。</p>
  *
  * @author mai.jh
  */
@@ -33,6 +34,7 @@ public interface ResponseHandler<T> {
      * set response type.
      *
      * @param responseType responseType
+      * <p>响应处理器接口；详见类级说明。</p>
      */
     void setResponseType(Type responseType);
     
@@ -42,6 +44,7 @@ public interface ResponseHandler<T> {
      * @param response http response
      * @return HttpRestResult {@link HttpRestResult}
      * @throws Exception ex
+      * <p>响应处理器接口；详见类级说明。</p>
      */
     HttpRestResult<T> handle(HttpClientResponse response) throws Exception;
     

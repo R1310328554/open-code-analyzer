@@ -34,6 +34,7 @@ import java.util.Map;
 
 /**
  * Nacos async rest template.
+ * <p>Nacos 异步 REST 客户端模板：封装 GET/POST/PUT/DELETE 及 Large/Json/Form 变体，通过 {@link Callback} 异步返回 {@link com.alibaba.nacos.common.model.RestResult}，底层使用 {@link AsyncHttpClientRequest} 非阻塞执行。</p>
  *
  * @author mai.jh
  * @see AsyncHttpClientRequest
@@ -41,6 +42,7 @@ import java.util.Map;
  */
 public class NacosAsyncRestTemplate extends AbstractNacosRestTemplate {
     
+    /** 底层异步 HTTP 请求客户端 */
     private final AsyncHttpClientRequest clientRequest;
     
     public NacosAsyncRestTemplate(Logger logger, AsyncHttpClientRequest clientRequest) {
@@ -61,6 +63,7 @@ public class NacosAsyncRestTemplate extends AbstractNacosRestTemplate {
      * @param header       http header param
      * @param query        http query param
      * @param callback     callback {@link Callback#onReceive(com.alibaba.nacos.common.model.RestResult)}
+      * <p>异步 REST 模板；详见类级说明。</p>
      */
     public <T> void get(String url, Header header, Query query, Type responseType,
         Callback<T> callback) {
@@ -82,6 +85,7 @@ public class NacosAsyncRestTemplate extends AbstractNacosRestTemplate {
      * @param body         get with body
      * @param responseType return type
      * @param callback     callback {@link Callback#onReceive(com.alibaba.nacos.common.model.RestResult)}
+      * <p>异步 REST 模板；详见类级说明。</p>
      */
     public <T> void getLarge(String url, Header header, Query query, Object body, Type responseType,
         Callback<T> callback) {
@@ -102,6 +106,7 @@ public class NacosAsyncRestTemplate extends AbstractNacosRestTemplate {
      * @param query        http query param
      * @param responseType return type
      * @param callback     callback {@link Callback#onReceive(com.alibaba.nacos.common.model.RestResult)}
+      * <p>异步 REST 模板；详见类级说明。</p>
      */
     public <T> void delete(String url, Header header, Query query, Type responseType,
         Callback<T> callback) {
@@ -123,6 +128,7 @@ public class NacosAsyncRestTemplate extends AbstractNacosRestTemplate {
      * @param body         body
      * @param responseType return type
      * @param callback     callback {@link Callback#onReceive(com.alibaba.nacos.common.model.RestResult)}
+      * <p>异步 REST 模板；详见类级说明。</p>
      */
     public <T> void delete(String url, Header header, String body, Type responseType,
         Callback<T> callback) {
@@ -148,6 +154,7 @@ public class NacosAsyncRestTemplate extends AbstractNacosRestTemplate {
      * @param body         http body param
      * @param responseType return type
      * @param callback     callback {@link Callback#onReceive(com.alibaba.nacos.common.model.RestResult)}
+      * <p>异步 REST 模板；详见类级说明。</p>
      */
     public <T> void put(String url, Header header, Query query, Object body, Type responseType,
         Callback<T> callback) {
@@ -172,6 +179,7 @@ public class NacosAsyncRestTemplate extends AbstractNacosRestTemplate {
      * @param body         http body param
      * @param responseType return type
      * @param callback     callback {@link Callback#onReceive(com.alibaba.nacos.common.model.RestResult)}
+      * <p>异步 REST 模板；详见类级说明。</p>
      */
     public <T> void putJson(String url, Header header, Query query, String body, Type responseType,
         Callback<T> callback) {
@@ -195,6 +203,7 @@ public class NacosAsyncRestTemplate extends AbstractNacosRestTemplate {
      * @param body         http body param
      * @param responseType return type
      * @param callback     callback {@link Callback#onReceive(com.alibaba.nacos.common.model.RestResult)}
+      * <p>异步 REST 模板；详见类级说明。</p>
      */
     public <T> void putJson(String url, Header header, String body, Type responseType,
         Callback<T> callback) {
@@ -220,6 +229,7 @@ public class NacosAsyncRestTemplate extends AbstractNacosRestTemplate {
      * @param bodyValues   http body param
      * @param responseType return type
      * @param callback     callback {@link Callback#onReceive(com.alibaba.nacos.common.model.RestResult)}
+      * <p>异步 REST 模板；详见类级说明。</p>
      */
     public <T> void putForm(String url, Header header, Query query, Map<String, String> bodyValues,
         Type responseType,
@@ -244,6 +254,7 @@ public class NacosAsyncRestTemplate extends AbstractNacosRestTemplate {
      * @param bodyValues   http body param
      * @param responseType return type
      * @param callback     callback {@link Callback#onReceive(com.alibaba.nacos.common.model.RestResult)}
+      * <p>异步 REST 模板；详见类级说明。</p>
      */
     public <T> void putForm(String url, Header header, Map<String, String> bodyValues,
         Type responseType,
@@ -270,6 +281,7 @@ public class NacosAsyncRestTemplate extends AbstractNacosRestTemplate {
      * @param body         http body param
      * @param responseType return type
      * @param callback     callback {@link Callback#onReceive(com.alibaba.nacos.common.model.RestResult)}
+      * <p>异步 REST 模板；详见类级说明。</p>
      */
     public <T> void post(String url, Header header, Query query, Object body, Type responseType,
         Callback<T> callback) {
@@ -294,6 +306,7 @@ public class NacosAsyncRestTemplate extends AbstractNacosRestTemplate {
      * @param body         http body param
      * @param responseType return type
      * @param callback     callback {@link Callback#onReceive(com.alibaba.nacos.common.model.RestResult)}
+      * <p>异步 REST 模板；详见类级说明。</p>
      */
     public <T> void postJson(String url, Header header, Query query, String body, Type responseType,
         Callback<T> callback) {
@@ -317,6 +330,7 @@ public class NacosAsyncRestTemplate extends AbstractNacosRestTemplate {
      * @param body         http body param
      * @param responseType return type
      * @param callback     callback {@link Callback#onReceive(com.alibaba.nacos.common.model.RestResult)}
+      * <p>异步 REST 模板；详见类级说明。</p>
      */
     public <T> void postJson(String url, Header header, String body, Type responseType,
         Callback<T> callback) {
@@ -342,6 +356,7 @@ public class NacosAsyncRestTemplate extends AbstractNacosRestTemplate {
      * @param bodyValues   http body param
      * @param responseType return type
      * @param callback     callback {@link Callback#onReceive(com.alibaba.nacos.common.model.RestResult)}
+      * <p>异步 REST 模板；详见类级说明。</p>
      */
     public <T> void postForm(String url, Header header, Query query, Map<String, String> bodyValues,
         Type responseType,
@@ -366,6 +381,7 @@ public class NacosAsyncRestTemplate extends AbstractNacosRestTemplate {
      * @param bodyValues   http body param
      * @param responseType return type
      * @param callback     callback {@link Callback#onReceive(com.alibaba.nacos.common.model.RestResult)}
+      * <p>异步 REST 模板；详见类级说明。</p>
      */
     public <T> void postForm(String url, Header header, Map<String, String> bodyValues,
         Type responseType,
@@ -389,13 +405,14 @@ public class NacosAsyncRestTemplate extends AbstractNacosRestTemplate {
             ResponseHandler<T> responseHandler = super.selectResponseHandler(type);
             clientRequest.execute(uri, httpMethod, requestEntity, responseHandler, callback);
         } catch (Exception e) {
-            // When an exception occurs, use Callback to pass it instead of throw it directly.
+            // 异常通过 Callback 回调传递，避免在异步线程直接抛出
             callback.onError(e);
         }
     }
     
     /**
      * close request client.
+      * <p>异步 REST 模板；详见类级说明。</p>
      */
     public void close() throws Exception {
         clientRequest.close();

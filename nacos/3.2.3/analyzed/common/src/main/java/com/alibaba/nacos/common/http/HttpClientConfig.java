@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * http client config build.
+ * <p>HTTP 客户端不可变配置：封装连接/读超时、连接存活时间、连接池大小、压缩开关、IO 线程数与 User-Agent 等，通过 {@link HttpClientConfigBuilder} 构建。</p>
  *
  * @author mai.jh
  */
@@ -29,56 +30,67 @@ public class HttpClientConfig {
     
     /**
      * connect time out.
+     * <p>建立 TCP 连接的超时时间（毫秒）。</p>
      */
     private final int conTimeOutMillis;
     
     /**
      * read time out.
+     * <p>等待响应数据的读超时时间（毫秒）。</p>
      */
     private final int readTimeOutMillis;
     
     /**
      * connTimeToLive.
+     * <p>连接在连接池中的最大存活时间。</p>
      */
     private final long connTimeToLive;
     
     /**
      * connTimeToLiveTimeUnit.
+      * <p>HTTP 客户端配置与 Builder；详见类级说明。</p>
      */
     private final TimeUnit connTimeToLiveTimeUnit;
     
     /**
      * connectionRequestTimeout.
+      * <p>HTTP 客户端配置与 Builder；详见类级说明。</p>
      */
     private final int connectionRequestTimeout;
     
     /**
      * max redirect.
+      * <p>HTTP 客户端配置与 Builder；详见类级说明。</p>
      */
     private final int maxRedirects;
     
     /**
      * max connect total.
+     * <p>连接池允许的最大连接总数（0 表示使用客户端默认值）。</p>
      */
     private final int maxConnTotal;
     
     /**
      * Assigns maximum connection per route value.
+      * <p>HTTP 客户端配置与 Builder；详见类级说明。</p>
      */
     private final int maxConnPerRoute;
     
     /**
      * is HTTP compression enabled.
+     * <p>是否启用 HTTP 内容压缩（如 gzip）。</p>
      */
     private final boolean contentCompressionEnabled;
     
     /**
      * io thread count.
+      * <p>HTTP 客户端配置与 Builder；详见类级说明。</p>
      */
     private final int ioThreadCount;
     
     /**
      * user agent.
+      * <p>HTTP 客户端配置与 Builder；详见类级说明。</p>
      */
     private final String userAgent;
     
@@ -149,6 +161,7 @@ public class HttpClientConfig {
     
     public static final class HttpClientConfigBuilder {
         
+        /** 连接超时默认值（HttpClient5 不允许负数） */
         // not allow negative number in httpclient5
         private int conTimeOutMillis = 180_000;
         
@@ -229,6 +242,7 @@ public class HttpClientConfig {
         
         /**
          * build http client config.
+         * <p>根据 Builder 当前字段值构造不可变 {@link HttpClientConfig}。</p>
          *
          * @return HttpClientConfig
          */
