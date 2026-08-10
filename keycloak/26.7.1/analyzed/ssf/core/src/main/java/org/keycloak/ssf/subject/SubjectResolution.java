@@ -4,11 +4,9 @@ import org.keycloak.models.OrganizationModel;
 import org.keycloak.models.UserModel;
 
 /**
- * Result of a {@link SubjectResolver#resolve} call. Unsealed so
- * third-party code can add custom variants (e.g. a
- * {@code Group(GroupModel)} record) and handle them via overridden
- * {@code resolveSubject} / {@code applySubjectResolution} methods
- * in the transmitter's extension points.
+ * {@link SubjectResolver#resolve} 的解析结果。接口未密封（unsealed），
+ * 以便第三方代码添加自定义变体（例如 {@code Group(GroupModel)} record），
+ * 并在发送方扩展点的 {@code resolveSubject} / {@code applySubjectResolution} 方法中处理。
  */
 public interface SubjectResolution {
 

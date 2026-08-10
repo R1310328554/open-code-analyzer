@@ -13,10 +13,24 @@ import org.keycloak.urls.UrlType;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 将 {@link SubjectId} 解析为 {@link UserModel} 的查找工具。
+ * <p>支持 {@link EmailSubjectId}、{@link OpaqueSubjectId} 与 {@link IssuerSubjectId}；
+ * 对 {@link IssuerSubjectId}，若 iss 匹配当前 realm 发行方则按本地用户 ID 查找，
+ * 否则按外部 IdP 的 federated identity 链接查找。</p>
+ */
 public class SubjectUserLookup {
 
     protected static final Logger log = Logger.getLogger(SubjectUserLookup.class);
 
+    /**
+     * 根据主体类型在 realm 中查找对应用户。
+     *
+     * @param session 当前 Keycloak 会话
+     * @param realm 目标 realm
+     * @param subjectId 待查找的主体标识符
+     * @return 匹配的用户，未找到或不支持的类型时返回 {@code null}
+     */
     public static UserModel lookupUser(KeycloakSession session, RealmModel realm, SubjectId subjectId) {
 
         if (subjectId instanceof EmailSubjectId) {

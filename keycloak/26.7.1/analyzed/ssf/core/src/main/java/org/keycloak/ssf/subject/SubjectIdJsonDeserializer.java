@@ -9,7 +9,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Custom dezerializer to deal with legacy SubjectIds.
+ * 自定义反序列化器，按 {@code format} 判别式将 JSON 映射为具体 {@link SubjectId} 子类，
+ * 并兼容旧版 OpenID RISC 事件类型使用的 {@code subject_type} 字段。
  */
 public class SubjectIdJsonDeserializer extends JsonDeserializer<SubjectId> {
 

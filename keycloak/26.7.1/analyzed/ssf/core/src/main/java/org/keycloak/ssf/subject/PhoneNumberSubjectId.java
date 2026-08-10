@@ -3,12 +3,14 @@ package org.keycloak.ssf.subject;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * See: https://datatracker.ietf.org/doc/html/rfc9493#name-phone-number-identifier-for
+ * RFC 9493 phone_number 格式的主体标识符，以电话号码标识主体。
+ * <p>参见 https://datatracker.ietf.org/doc/html/rfc9493#name-phone-number-identifier-for</p>
  */
 public class PhoneNumberSubjectId extends SubjectId {
 
     public static final String TYPE = "phone_number";
 
+    /** 主体的电话号码。 */
     @JsonProperty("phone_number")
     protected String phoneNumber;
 

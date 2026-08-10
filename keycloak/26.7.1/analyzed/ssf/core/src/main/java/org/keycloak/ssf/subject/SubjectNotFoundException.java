@@ -3,13 +3,10 @@ package org.keycloak.ssf.subject;
 import org.keycloak.ssf.SsfException;
 
 /**
- * Signals that an admin-supplied {@code (subjectType, subjectValue)}
- * shorthand could not be resolved to a known user or organization.
- * Distinct from the generic {@link SsfException} so the admin emit
- * endpoint can surface a category-specific {@code subject_not_found}
- * code, and carries the offending {@code subjectType}/{@code subjectValue}
- * as structured fields so callers (logging, response shaping) don't
- * have to parse them back out of the message.
+ * 表示管理员提供的 {@code (subjectType, subjectValue)} 简写无法解析为已知用户或组织。
+ * 与通用 {@link SsfException} 区分，以便管理端 emit 接口返回专用的 {@code subject_not_found} 错误码；
+ * 并将违规的 {@code subjectType}/{@code subjectValue} 作为结构化字段携带，
+ * 供调用方（日志、响应构造）直接使用而无需从消息中反解析。
  */
 public class SubjectNotFoundException extends SsfException {
 

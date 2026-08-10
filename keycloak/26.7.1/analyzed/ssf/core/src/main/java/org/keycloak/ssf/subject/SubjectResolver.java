@@ -10,27 +10,28 @@ import org.keycloak.organization.utils.Organizations;
 import org.jboss.logging.Logger;
 
 /**
- * Resolves a {@link SubjectId} to a concrete Keycloak entity. Widens
- * {@link SubjectUserLookup}'s scope to also handle organization
- * subjects via {@link ComplexSubjectId#getTenant()}.
+ * 将 {@link SubjectId} 解析为 Keycloak 领域实体。在 {@link SubjectUserLookup} 用户查找基础上
+ * 扩展组织主体解析，通过 {@link ComplexSubjectId#getTenant()} 处理租户组件。
  *
- * <p>Supported subject shapes:
+ * <p>支持的主体形态：
  * <ul>
- *     <li>User-identifying ({@code email}, {@code iss_sub}, user-opaque)
- *         → resolves to a {@link UserModel}.</li>
- *     <li>Complex subject with a {@code tenant} component whose inner
- *         subject carries an opaque id → resolves to an
- *         {@code OrganizationModel} (only when
- *         {@link Profile.Feature#ORGANIZATION} is enabled).</li>
+ *     <li>用户标识类（{@code email}、{@code iss_sub}、用户 opaque）→ 解析为 {@link UserModel}。</li>
+ *     <li>含 {@code tenant} 组件的复合主体，且内层主体携带 opaque id → 解析为
+ *         {@code OrganizationModel}（仅当 {@link Profile.Feature#ORGANIZATION} 启用时）。</li>
  * </ul>
- * Everything else yields {@link SubjectResolution.UnsupportedFormat}.
+ * 其余形态返回 {@link SubjectResolution.UnsupportedFormat}。
  */
 public class SubjectResolver {
 
     private static final Logger log = Logger.getLogger(SubjectResolver.class);
 
     /**
-     * Attempts to resolve the given subject to a Keycloak entity.
+     * 尝试将给定主体解析为 Keycloak 实体。
+     *
+     * @param session 当前 Keycloak 会话
+     * @param realm 目标 realm
+     * @param subjectId 待解析的主体标识符
+     * @return 解析结果，见 {@link SubjectResolution}
      */
     public static SubjectResolution resolve(KeycloakSession session, RealmModel realm, SubjectId subjectId) {
 

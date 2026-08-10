@@ -5,15 +5,12 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Registry of SubjectId formats defined in RFC9493 Subject Identifiers.
- * <p>
- * See: https://datatracker.ietf.org/doc/html/rfc9493
+ * RFC 9493 主体标识符格式的注册表，维护 {@code format} 字符串到具体 {@link SubjectId} 实现类的映射。
+ * <p>参见 https://datatracker.ietf.org/doc/html/rfc9493</p>
  */
 public class SubjectIds {
 
-    /**
-     * Holds all known standard SUBJECT_ID_FORMATS
-     */
+    /** 所有已知标准 SUBJECT_ID_FORMATS 的 format → 实现类映射。 */
     public final static Map<String, Class<? extends SubjectId>> SUBJECT_ID_FORMAT_TYPES;
 
     static {
@@ -34,6 +31,12 @@ public class SubjectIds {
         SUBJECT_ID_FORMAT_TYPES = map;
     }
 
+    /**
+     * 根据 format 字符串返回对应的 {@link SubjectId} 实现类；未知 format 时返回 {@link GenericSubjectId}。
+     *
+     * @param format RFC 9493 定义的 format 判别式
+     * @return 具体 SubjectId 类型，或 {@link GenericSubjectId}
+     */
     public static Class<? extends SubjectId> getSubjectIdType(String format) {
         var subjectIdType = SUBJECT_ID_FORMAT_TYPES.get(format);
         if (subjectIdType != null) {

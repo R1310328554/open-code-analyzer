@@ -3,15 +3,18 @@ package org.keycloak.ssf.subject;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * See: https://openid.net/specs/openid-sse-framework-1_0.html#sub-id-jwt-id
+ * OpenID SSE 框架 jwt_id 格式的主体标识符，以 JWT 发行方（iss）与 JWT ID（jti）标识主体。
+ * <p>参见 https://openid.net/specs/openid-sse-framework-1_0.html#sub-id-jwt-id</p>
  */
 public class JwtSubjectId extends SubjectId {
 
     public static final String TYPE = "jwt_id";
 
+    /** JWT 发行方标识。 */
     @JsonProperty("iss")
     protected String iss;
 
+    /** JWT 唯一标识符（jti）。 */
     @JsonProperty("jti")
     protected String jti;
 
