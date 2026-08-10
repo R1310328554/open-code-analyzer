@@ -21,28 +21,26 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Provides utilities related to security requirements specific to HTTP/2.
+ * HTTP/2 专用 TLS 安全工具：提供符合 RFC 7540 的推荐密码套件列表。
  */
 public final class Http2SecurityUtil {
     /**
-     * The following list is derived from <a
+     * 推荐密码套件列表，来源为 <a
      * href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/SunProviders.html">SunJSSE Supported
-     * Ciphers</a> and <a
+     * Ciphers</a> 与 <a
      * href="https://wiki.mozilla.org/Security/Server_Side_TLS#Modern_compatibility">Mozilla Modern Cipher
-     * Suites</a> in accordance with the <a
-     * href="https://tools.ietf.org/html/rfc7540#section-9.2.2">HTTP/2 Specification</a>.
+     * Suites</a>，并剔除 <a
+     * href="https://tools.ietf.org/html/rfc7540#section-9.2.2">HTTP/2 规范</a> 禁止的套件。
      *
-     * According to the <a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/StandardNames.html">
-     * JSSE documentation</a> "the names mentioned in the TLS RFCs prefixed with TLS_ are functionally equivalent
-     * to the JSSE cipher suites prefixed with SSL_".
-     * Both variants are used to support JVMs supporting the one or the other.
+     * <p>根据 <a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/StandardNames.html">
+     * JSSE 文档</a>，TLS RFC 中以 {@code TLS_} 为前缀的名称与 JSSE 中以 {@code SSL_} 为前缀的套件功能等价；
+     * 此处仅列出 {@code TLS_} 变体，由调用方按需映射。
      */
     public static final List<String> CIPHERS;
 
     /**
-     * <a href="https://wiki.mozilla.org/Security/Server_Side_TLS#Intermediate_compatibility_.28recommended.29"
-     * >Mozilla Modern Cipher Suites Intermediate compatibility</a> minus the following cipher suites that are black
-     * listed by the <a href="https://tools.ietf.org/html/rfc7540#appendix-A">HTTP/2 RFC</a>.
+     * Mozilla Modern 中间兼容套件，减去 <a href="https://tools.ietf.org/html/rfc7540#appendix-A">HTTP/2 RFC 附录 A</a>
+     * 列出的黑名单套件。
      */
     private static final List<String> CIPHERS_JAVA_MOZILLA_MODERN_SECURITY = Collections.unmodifiableList(Arrays
             .asList(
@@ -70,6 +68,7 @@ public final class Http2SecurityUtil {
             ));
 
     static {
+        // 防御性拷贝，避免外部修改内部列表
         CIPHERS = Collections.unmodifiableList(new ArrayList<String>(CIPHERS_JAVA_MOZILLA_MODERN_SECURITY));
     }
 

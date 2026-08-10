@@ -18,12 +18,14 @@ package io.netty.handler.codec.http2;
 import io.netty.channel.ChannelId;
 
 /**
- * ChannelId implementation which is used by our {@link Http2StreamChannel} implementation.
+ * {@link Http2StreamChannel} 的 {@link ChannelId} 实现：在父连接 ID 后追加流 ID，形如 {@code parentId/streamId}。
  */
 final class Http2StreamChannelId implements ChannelId {
     private static final long serialVersionUID = -6642338822166867585L;
 
+    /** HTTP/2 流标识符（同一父连接内唯一）。 */
     private final int id;
+    /** 底层 TCP/TLS 父连接的 ChannelId。 */
     private final ChannelId parentId;
 
     Http2StreamChannelId(ChannelId parentId, int id) {
@@ -69,6 +71,7 @@ final class Http2StreamChannelId implements ChannelId {
         return id == otherId.id && parentId.equals(otherId.parentId);
     }
 
+    /** 返回 HTTP/2 流 ID（即 sequence id）。 */
     public int getSequenceId() {
         return id;
     }

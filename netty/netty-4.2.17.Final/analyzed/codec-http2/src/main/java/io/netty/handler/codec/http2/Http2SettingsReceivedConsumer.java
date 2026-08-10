@@ -15,11 +15,12 @@
 package io.netty.handler.codec.http2;
 
 /**
- * Provides a Consumer like interface to consume remote settings received but not yet ACKed.
+ * 消费端接口：处理已收到但尚未发送 ACK 的对端 SETTINGS。
+ * <p>典型用于在 ACK 发出前预览或暂存对端参数，避免设置立即生效。
  */
 public interface Http2SettingsReceivedConsumer {
     /**
-     * Consume the most recently received but not yet ACKed settings.
+     * 消费最近收到、尚未 ACK 的设置项。
      */
     void consumeReceivedSettings(Http2Settings settings);
 }

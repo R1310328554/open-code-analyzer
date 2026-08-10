@@ -35,6 +35,11 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * 出站 {@link Http2StreamChannel} 的引导类：在已有 HTTP/2 父连接上创建客户端发起的逻辑流通道。
+ * <p>用法类似 {@link io.netty.bootstrap.Bootstrap}，需父 pipeline 中已安装
+ * {@link Http2MultiplexCodec} 或 {@link Http2MultiplexHandler}。
+ */
 public final class Http2StreamChannelBootstrap {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(Http2StreamChannelBootstrap.class);
     @SuppressWarnings("unchecked")
@@ -42,14 +47,13 @@ public final class Http2StreamChannelBootstrap {
     @SuppressWarnings("unchecked")
     private static final Map.Entry<AttributeKey<?>, Object>[] EMPTY_ATTRIBUTE_ARRAY = new Map.Entry[0];
 
-    // The order in which ChannelOptions are applied is important they may depend on each other for validation
-    // purposes.
+    // ChannelOption 应用顺序可能影响校验，故用 LinkedHashMap 保序
     private final Map<ChannelOption<?>, Object> options = new LinkedHashMap<ChannelOption<?>, Object>();
     private final Map<AttributeKey<?>, Object> attrs = new ConcurrentHashMap<AttributeKey<?>, Object>();
     private final Channel channel;
     private volatile ChannelHandler handler;
 
-    // Cache the ChannelHandlerContext to speed up open(...) operations.
+    // 缓存 multiplex handler 的 Context，加速重复 open
     private volatile ChannelHandlerContext multiplexCtx;
 
     public Http2StreamChannelBootstrap(Channel channel) {
@@ -57,8 +61,7 @@ public final class Http2StreamChannelBootstrap {
     }
 
     /**
-     * Allow to specify a {@link ChannelOption} which is used for the {@link Http2StreamChannel} instances once they got
-     * created. Use a value of {@code null} to remove a previous set {@link ChannelOption}.
+     * 指定新建 {@link Http2StreamChannel} 的 {@link ChannelOption}；{@code value} 为 {@code null} 时移除先前设置。
      */
     public <T> Http2StreamChannelBootstrap option(ChannelOption<T> option, T value) {
         ObjectUtil.checkNotNull(option, "option");
@@ -74,8 +77,7 @@ public final class Http2StreamChannelBootstrap {
     }
 
     /**
-     * Allow to specify an initial attribute of the newly created {@link Http2StreamChannel}.  If the {@code value} is
-     * {@code null}, the attribute of the specified {@code key} is removed.
+     * 指定新建通道的初始 {@link AttributeKey} 属性；{@code value} 为 {@code null} 时移除该键。
      */
     public <T> Http2StreamChannelBootstrap attr(AttributeKey<T> key, T value) {
         ObjectUtil.checkNotNull(key, "key");
@@ -88,7 +90,7 @@ public final class Http2StreamChannelBootstrap {
     }
 
     /**
-     * the {@link ChannelHandler} to use for serving the requests.
+     * 绑定处理该流上消息的 {@link ChannelHandler}。
      */
     public Http2StreamChannelBootstrap handler(ChannelHandler handler) {
         this.handler = ObjectUtil.checkNotNull(handler, "handler");
@@ -96,7 +98,7 @@ public final class Http2StreamChannelBootstrap {
     }
 
     /**
-     * Open a new {@link Http2StreamChannel} to use.
+     * 打开新的出站 {@link Http2StreamChannel}。
      * @return the {@link Future} that will be notified once the channel was opened successfully or it failed.
      */
     public Future<Http2StreamChannel> open() {
@@ -104,7 +106,7 @@ public final class Http2StreamChannelBootstrap {
     }
 
     /**
-     * Open a new {@link Http2StreamChannel} to use and notifies the given {@link Promise}.
+     * 打开新的出站 {@link Http2StreamChannel}，结果通过给定 {@link Promise} 通知。
      * @return the {@link Future} that will be notified once the channel was opened successfully or it failed.
      */
     public Future<Http2StreamChannel> open(final Promise<Http2StreamChannel> promise) {
@@ -134,7 +136,7 @@ public final class Http2StreamChannelBootstrap {
 
     @SuppressWarnings("deprecation")
     private ChannelHandlerContext findCtx() throws ClosedChannelException {
-        // First try to use cached context and if this not work lets try to lookup the context.
+        // 优先使用缓存；失效时在 pipeline 中查找 Multiplex 处理器
         ChannelHandlerContext ctx = multiplexCtx;
         if (ctx != null && !ctx.isRemoved()) {
             return ctx;
@@ -184,6 +186,7 @@ public final class Http2StreamChannelBootstrap {
             promise.setFailure(e);
             return;
         }
+        // 注册到 EventLoop 后才对用户可见
         ChannelFuture future = ctx.channel().eventLoop().register(streamChannel);
         future.addListener(f -> {
             if (f.isSuccess()) {
@@ -202,6 +205,7 @@ public final class Http2StreamChannelBootstrap {
         });
     }
 
+    /** 向新通道 pipeline 追加 handler 并应用 option/attribute。 */
     private void init(Channel channel) {
         ChannelPipeline p = channel.pipeline();
         ChannelHandler handler = this.handler;

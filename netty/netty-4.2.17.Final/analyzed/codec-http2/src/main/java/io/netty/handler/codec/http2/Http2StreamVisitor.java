@@ -15,13 +15,13 @@
 package io.netty.handler.codec.http2;
 
 /**
- * A visitor that allows iteration over a collection of streams.
+ * 流集合访问器，供 {@link Http2Connection#forEachActiveStream(Http2StreamVisitor)} 等遍历回调使用。
  */
 public interface Http2StreamVisitor {
     /**
      * @return <ul>
-     *         <li>{@code true} if the visitor wants to continue the loop and handle the entry.</li>
-     *         <li>{@code false} if the visitor wants to stop handling headers and abort the loop.</li>
+     *         <li>{@code true} — 继续遍历下一条流。</li>
+     *         <li>{@code false} — 提前终止遍历。</li>
      *         </ul>
      */
     boolean visit(Http2Stream stream) throws Http2Exception;

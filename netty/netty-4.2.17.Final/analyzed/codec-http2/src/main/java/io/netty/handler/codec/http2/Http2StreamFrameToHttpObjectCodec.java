@@ -48,13 +48,8 @@ import io.netty.util.AttributeKey;
 import java.util.List;
 
 /**
- * This handler converts from {@link Http2StreamFrame} to {@link HttpObject},
- * and back. It can be used as an adapter in conjunction with {@link
- * Http2MultiplexCodec} to make http/2 connections backward-compatible with
- * {@link ChannelHandler}s expecting {@link HttpObject}
- *
- * For simplicity, it converts to chunked encoding unless the entire stream
- * is a single header.
+ * {@link Http2StreamFrame} 与 {@link HttpObject} 双向适配器，使基于 HTTP/1 语义的 handler 可在 HTTP/2 流通道上复用。
+ * <p>通常与 {@link Http2MultiplexCodec} 配合；无 Content-Length 时默认转为 chunked 编码，除非整条消息仅含单个头部帧。
  */
 @Sharable
 public class Http2StreamFrameToHttpObjectCodec extends MessageToMessageCodec<Http2StreamFrame, HttpObject> {
@@ -91,8 +86,7 @@ public class Http2StreamFrameToHttpObjectCodec extends MessageToMessageCodec<Htt
 
             final CharSequence status = headers.status();
 
-            // 1xx response (excluding 101) is a special case where Http2HeadersFrame#isEndStream=false
-            // but we need to decode it as a FullHttpResponse to play nice with HttpObjectAggregator.
+            // 1xx 响应（除 101）：Http2HeadersFrame 的 isEndStream 为 false，但需解码为 FullHttpResponse 以兼容 HttpObjectAggregator
             if (null != status && isInformationalResponseHeaderFrame(status)) {
                 final FullHttpMessage fullMsg = newFullMessage(id, headers, ctx.alloc());
                 out.add(fullMsg);
@@ -101,6 +95,7 @@ public class Http2StreamFrameToHttpObjectCodec extends MessageToMessageCodec<Htt
 
             if (headersFrame.isEndStream()) {
                 if (headers.method() == null && status == null) {
+                    // 仅 trailers、无正文
                     LastHttpContent last = new DefaultLastHttpContent(Unpooled.EMPTY_BUFFER, validateHeaders);
                     HttpConversionUtil.addHttp2ToHttpHeaders(id, headers, last.trailingHeaders(),
                                                              HttpVersion.HTTP_1_1, true, true);
@@ -151,15 +146,12 @@ public class Http2StreamFrameToHttpObjectCodec extends MessageToMessageCodec<Htt
      */
     @Override
     protected void encode(ChannelHandlerContext ctx, HttpObject obj, List<Object> out) throws Exception {
-        // 1xx (excluding 101) is typically a FullHttpResponse, but the decoded
-        // Http2HeadersFrame should not be marked as endStream=true
+        // 1xx（除 101）编码为 isEndStream=false 的 HEADERS 帧
         if (obj instanceof HttpResponse) {
             final HttpResponse res = (HttpResponse) obj;
             final HttpResponseStatus status = res.status();
             final int code = status.code();
             final HttpStatusClass statusClass = status.codeClass();
-            // An informational response using a 1xx status code other than 101 is
-            // transmitted as a HEADERS frame
             if (statusClass == HttpStatusClass.INFORMATIONAL && code != 101) {
                 if (res instanceof FullHttpResponse) {
                     final Http2Headers headers = toHttp2Headers(ctx, res);
@@ -220,11 +212,7 @@ public class Http2StreamFrameToHttpObjectCodec extends MessageToMessageCodec<Htt
     public void handlerAdded(final ChannelHandlerContext ctx) throws Exception {
         super.handlerAdded(ctx);
 
-        // this handler is typically used on an Http2StreamChannel. At this
-        // stage, ssl handshake should've been established. checking for the
-        // presence of SslHandler in the parent's channel pipeline to
-        // determine the HTTP scheme should suffice, even for the case where
-        // SniHandler is used.
+        // 通常在 Http2StreamChannel 上使用；此时 TLS 握手应已完成，检查父 pipeline 中的 SslHandler 即可推断 scheme
         final Attribute<HttpScheme> schemeAttribute = connectionSchemeAttribute(ctx);
         if (schemeAttribute.get() == null) {
             final HttpScheme scheme = isSsl(ctx) ? HttpScheme.HTTPS : HttpScheme.HTTP;
@@ -252,10 +240,7 @@ public class Http2StreamFrameToHttpObjectCodec extends MessageToMessageCodec<Htt
         return ch instanceof Http2StreamChannel ? ch.parent() : ch;
     }
 
-    /**
-     *    An informational response using a 1xx status code other than 101 is
-     *    transmitted as a HEADERS frame
-     */
+    /** 1xx 状态码（101 除外）以 HEADERS 帧传输。 */
     private static boolean isInformationalResponseHeaderFrame(CharSequence status) {
         if (status.length() == 3) {
             char char0 = status.charAt(0);
@@ -269,8 +254,7 @@ public class Http2StreamFrameToHttpObjectCodec extends MessageToMessageCodec<Htt
     }
 
     /*
-     * https://datatracker.ietf.org/doc/html/rfc9113#section-8.1.1
-     * '204' or '304' responses contain no content
+     * RFC 9113 §8.1.1：204/304 响应不得携带正文
      */
     private static boolean isContentAlwaysEmpty(CharSequence status) {
         if (status.length() == 3) {

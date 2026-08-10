@@ -17,10 +17,11 @@
 package io.netty.handler.codec.http2;
 
 /**
- * HTTP/2 SETTINGS frame.
+ * HTTP/2 SETTINGS 帧：携带连接级参数协商，作用于整个连接而非单个流。
  */
 public interface Http2SettingsFrame extends Http2Frame {
 
+    /** 本帧携带的设置项集合。 */
     Http2Settings settings();
 
     @Override

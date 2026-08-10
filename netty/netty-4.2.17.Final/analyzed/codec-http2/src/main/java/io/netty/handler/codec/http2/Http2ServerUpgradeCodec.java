@@ -38,7 +38,9 @@ import static io.netty.handler.codec.http2.Http2CodecUtil.writeFrameHeader;
 import static io.netty.handler.codec.http2.Http2FrameTypes.SETTINGS;
 
 /**
- * Server-side codec for performing a cleartext upgrade from HTTP/1.x to HTTP/2.
+ * 服务端明文升级编解码器：将 HTTP/1.x 连接通过 {@code Upgrade: h2c} 切换为 HTTP/2。
+ * <p>实现 {@link HttpServerUpgradeHandler.UpgradeCodec}，解析 {@code HTTP2-Settings} 头并注入
+ * {@link Http2ConnectionHandler}。
  */
 public class Http2ServerUpgradeCodec implements HttpServerUpgradeHandler.UpgradeCodec {
 
@@ -52,6 +54,7 @@ public class Http2ServerUpgradeCodec implements HttpServerUpgradeHandler.Upgrade
     private final ChannelHandler[] handlers;
     private final Http2FrameReader frameReader;
 
+    /** 从升级请求中解析出的对端 SETTINGS，在 {@link #upgradeTo} 时交给连接处理器。 */
     private Http2Settings settings;
 
     /**
@@ -123,15 +126,13 @@ public class Http2ServerUpgradeCodec implements HttpServerUpgradeHandler.Upgrade
     public boolean prepareUpgradeResponse(ChannelHandlerContext ctx, FullHttpRequest upgradeRequest,
             HttpHeaders headers) {
         try {
-            // Decode the HTTP2-Settings header and set the settings on the handler to make
-            // sure everything is fine with the request.
+            // 解码 HTTP2-Settings 头，验证格式合法后再同意升级
             List<String> upgradeHeaders = upgradeRequest.headers().getAll(HTTP_UPGRADE_SETTINGS_HEADER);
             if (upgradeHeaders.size() != 1) {
                 throw new IllegalArgumentException("There must be 1 and only 1 "
                         + HTTP_UPGRADE_SETTINGS_HEADER + " header.");
             }
             settings = decodeSettingsHeader(ctx, upgradeHeaders.get(0));
-            // Everything looks good.
             return true;
         } catch (Throwable cause) {
             logger.info("{} Error during upgrade to HTTP/2", ctx.channel(), cause);
@@ -142,11 +143,10 @@ public class Http2ServerUpgradeCodec implements HttpServerUpgradeHandler.Upgrade
     @Override
     public void upgradeTo(final ChannelHandlerContext ctx, FullHttpRequest upgradeRequest) {
         try {
-            // Add the HTTP/2 connection handler to the pipeline immediately following the current handler.
+            // 在当前 handler 之后插入 HTTP/2 连接处理器
             ctx.pipeline().addAfter(ctx.name(), handlerName, connectionHandler);
 
-            // Add also all extra handlers as these may handle events / messages produced by the connectionHandler.
-            // See https://github.com/netty/netty/issues/9314
+            // 逆序追加额外 handler，确保其位于 connectionHandler 之后（见 issue #9314）
             if (handlers != null) {
                 final String name = ctx.pipeline().context(connectionHandler).name();
                 for (int i = handlers.length - 1; i >= 0; i--) {
@@ -161,28 +161,25 @@ public class Http2ServerUpgradeCodec implements HttpServerUpgradeHandler.Upgrade
     }
 
     /**
-     * Decodes the settings header and returns a {@link Http2Settings} object.
+     * 将 Base64 编码的 HTTP2-Settings 头解码为 {@link Http2Settings}。
      */
     private Http2Settings decodeSettingsHeader(ChannelHandlerContext ctx, CharSequence settingsHeader)
             throws Http2Exception {
         ByteBuf header = ByteBufUtil.encodeString(ctx.alloc(), CharBuffer.wrap(settingsHeader), CharsetUtil.UTF_8);
         try {
-            // Decode the SETTINGS payload.
+            // URL-safe Base64 解码得到 SETTINGS 载荷
             ByteBuf payload = Base64.decode(header, URL_SAFE);
 
-            // Create an HTTP/2 frame for the settings.
+            // 包装成完整 SETTINGS 帧以便复用帧读取器
             ByteBuf frame = createSettingsFrame(ctx, payload);
 
-            // Decode the SETTINGS frame and return the settings object.
             return decodeSettings(ctx, frame);
         } finally {
             header.release();
         }
     }
 
-    /**
-     * Decodes the settings frame and returns the settings.
-     */
+    /** 用帧读取器解析 SETTINGS 帧并提取设置项。 */
     private Http2Settings decodeSettings(ChannelHandlerContext ctx, ByteBuf frame) throws Http2Exception {
         try {
             final Http2Settings decodedSettings = new Http2Settings();
@@ -199,7 +196,7 @@ public class Http2ServerUpgradeCodec implements HttpServerUpgradeHandler.Upgrade
     }
 
     /**
-     * Creates an HTTP2-Settings header with the given payload. The payload buffer is released.
+     * 用给定载荷构造 SETTINGS 帧；调用后 {@code payload} 会被释放。
      */
     private static ByteBuf createSettingsFrame(ChannelHandlerContext ctx, ByteBuf payload) {
         ByteBuf frame = ctx.alloc().buffer(FRAME_HEADER_LENGTH + payload.readableBytes());

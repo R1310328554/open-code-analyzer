@@ -15,11 +15,11 @@
  */
 package io.netty.handler.codec.http2;
 
-/** HTTP/2 RST_STREAM frame. */
+/** HTTP/2 RST_STREAM 帧：单方面终止流，不经过正常 END_STREAM 握手。 */
 public interface Http2ResetFrame extends Http2StreamFrame {
 
     /**
-     * The reason for resetting the stream. Represented as an HTTP/2 error code.
+     * 重置原因，以 HTTP/2 错误码表示（如 {@code CANCEL}、{@code PROTOCOL_ERROR}）。
      */
     long errorCode();
 }

@@ -16,20 +16,19 @@
 package io.netty.handler.codec.http2;
 
 /**
- * A frame whose meaning <em>may</em> apply to a particular stream, instead of the entire connection. It is still
- * possible for this frame type to apply to the entire connection. In such cases, the {@link #stream()} must return
- * {@code null}. If the frame applies to a stream, the {@link Http2FrameStream#id()} must be greater than zero.
+ * 可能与特定流关联的帧（如 DATA、HEADERS、RST_STREAM），区别于纯连接级帧（如 SETTINGS、PING）。
+ * <p>若语义作用于整个连接，{@link #stream()} 返回 {@code null}；若绑定流，则
+ * {@link Http2FrameStream#id()} 必须大于 0。
  */
 public interface Http2StreamFrame extends Http2Frame {
 
     /**
-     * Set the {@link Http2FrameStream} object for this frame.
+     * 绑定或更新本帧所属的 {@link Http2FrameStream}。
      */
     Http2StreamFrame stream(Http2FrameStream stream);
 
     /**
-     * Returns the {@link Http2FrameStream} object for this frame, or {@code null} if the frame has yet to be associated
-     * with a stream.
+     * 返回关联的 {@link Http2FrameStream}；尚未绑定流时返回 {@code null}。
      */
     Http2FrameStream stream();
 }

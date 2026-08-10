@@ -18,14 +18,17 @@ package io.netty.handler.codec.http2;
 
 import io.netty.channel.Channel;
 
-// TODO: Should we have an extra method to "open" the stream and so Channel and take care of sending the
-//       Http2HeadersFrame under the hood ?
-// TODO: Should we extend SocketChannel and map input and output state to the stream state ?
+// TODO: 是否增加显式 open 方法，在内部自动发送 Http2HeadersFrame？
+// TODO: 是否继承 SocketChannel 并将读写状态映射到流状态？
 //
+/**
+ * HTTP/2 单条逻辑流的 {@link Channel} 视图，由 {@link Http2MultiplexCodec} 在父连接上 multiplex 出子通道。
+ * <p>每条流拥有独立 pipeline，可挂载常规 HTTP 处理器；{@link #parent()} 指向底层 TCP/TLS 连接。
+ */
 public interface Http2StreamChannel extends Channel {
 
     /**
-     * Returns the {@link Http2FrameStream} that belongs to this channel.
+     * 返回与本通道绑定的 {@link Http2FrameStream} 元数据（流 ID、状态等）。
      */
     Http2FrameStream stream();
 }

@@ -16,12 +16,13 @@
 package io.netty.handler.codec.http2;
 
 /**
- * An ack for a previously received {@link Http2SettingsFrame}.
+ * 对已收到的 {@link Http2SettingsFrame} 的 ACK 确认帧。
  * <p>
- * The <a href="https://tools.ietf.org/html/rfc7540#section-6.5">HTTP/2 protocol</a> enforces that ACKs are applied in
- * order, so this ACK will apply to the earliest received and not yet ACKed {@link Http2SettingsFrame} frame.
+ * 按 <a href="https://tools.ietf.org/html/rfc7540#section-6.5">HTTP/2 协议</a>，ACK 必须按序生效；
+ * 本 ACK 对应最早收到且尚未确认的那条 {@link Http2SettingsFrame}。
  */
 public interface Http2SettingsAckFrame extends Http2Frame {
+    /** 单例：SETTINGS ACK 帧无载荷，所有实例语义相同。 */
     Http2SettingsAckFrame INSTANCE = new DefaultHttp2SettingsAckFrame();
 
     @Override
