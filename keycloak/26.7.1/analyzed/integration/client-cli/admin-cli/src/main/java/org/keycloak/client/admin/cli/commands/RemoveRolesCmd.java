@@ -40,6 +40,11 @@ import static org.keycloak.client.cli.util.ConfigUtil.loadConfig;
 import static org.keycloak.client.cli.util.OsUtil.PROMPT;
 
 /**
+ * {@code remove-roles} 子命令：从用户、组或复合角色上移除领域/客户端角色。
+ * <p>
+ * 支持通过用户名/ID、组名/路径/ID 或复合角色名/ID 定位目标，
+ * 并可指定客户端以移除客户端角色而非领域角色。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 @Command(name = "remove-roles", description = "[ARGUMENTS]")
@@ -78,6 +83,7 @@ public class RemoveRolesCmd extends AbstractAuthOptionsCmd {
     @Option(names = "--roleid", description = "Role's 'id' attribute")
     List<String> roleIds = new ArrayList<>();
 
+    /** 校验选项互斥性后，调用 Operations 类完成角色移除 REST 调用。 */
     @Override
     protected void process() {
         if (uid != null && uusername != null) {
@@ -146,7 +152,7 @@ public class RemoveRolesCmd extends AbstractAuthOptionsCmd {
                 uid = UserOperations.getIdFromUsername(adminRoot, realm, auth, uusername);
             }
             if (isClientSpecified()) {
-                // remove client roles from a user
+                // 从用户移除客户端角色
                 if (cid == null) {
                     cid = ClientOperations.getIdFromClientId(adminRoot, realm, auth, cclientid);
                 }
@@ -154,7 +160,7 @@ public class RemoveRolesCmd extends AbstractAuthOptionsCmd {
                 List<ObjectNode> roles = RoleOperations.getClientRoles(adminRoot, realm, cid, auth);
                 Set<ObjectNode> rolesToAdd = getRoleRepresentations(roleNames, roleIds, new LocalSearch(roles));
 
-                // now remove the roles
+                // 执行角色移除
                 UserOperations.removeClientRoles(adminRoot, realm, auth, uid, cid, new ArrayList<>(rolesToAdd));
 
             } else {
@@ -162,7 +168,7 @@ public class RemoveRolesCmd extends AbstractAuthOptionsCmd {
                 Set<ObjectNode> rolesToAdd = getRoleRepresentations(roleNames, roleIds,
                         new LocalSearch(RoleOperations.getRealmRolesAsNodes(adminRoot, realm, auth)));
 
-                // now remove the roles
+                // 执行领域角色移除
                 UserOperations.removeRealmRoles(adminRoot, realm, auth, uid, new ArrayList<>(rolesToAdd));
             }
 
@@ -173,7 +179,7 @@ public class RemoveRolesCmd extends AbstractAuthOptionsCmd {
                 gid = GroupOperations.getIdFromPath(adminRoot, realm, auth, gpath);
             }
             if (isClientSpecified()) {
-                // remove client roles from a group
+                // 从组移除客户端角色
                 if (cid == null) {
                     cid = ClientOperations.getIdFromClientId(adminRoot, realm, auth, cclientid);
                 }
@@ -181,7 +187,7 @@ public class RemoveRolesCmd extends AbstractAuthOptionsCmd {
                 List<ObjectNode> roles = RoleOperations.getClientRoles(adminRoot, realm, cid, auth);
                 Set<ObjectNode> rolesToAdd = getRoleRepresentations(roleNames, roleIds, new LocalSearch(roles));
 
-                // now remove the roles
+                // 执行角色移除
                 GroupOperations.removeClientRoles(adminRoot, realm, auth, gid, cid, new ArrayList<>(rolesToAdd));
 
             } else {
@@ -189,7 +195,7 @@ public class RemoveRolesCmd extends AbstractAuthOptionsCmd {
                 Set<ObjectNode> rolesToAdd = getRoleRepresentations(roleNames, roleIds,
                         new LocalSearch(RoleOperations.getRealmRolesAsNodes(adminRoot, realm, auth)));
 
-                // now remove the roles
+                // 执行领域角色移除
                 GroupOperations.removeRealmRoles(adminRoot, realm, auth, gid, new ArrayList<>(rolesToAdd));
             }
 
@@ -198,7 +204,7 @@ public class RemoveRolesCmd extends AbstractAuthOptionsCmd {
                 rid = RoleOperations.getIdFromRoleName(adminRoot, realm, auth, rname);
             }
             if (isClientSpecified()) {
-                // remove client roles from a role
+                // 从复合角色移除客户端角色
                 if (cid == null) {
                     cid = ClientOperations.getIdFromClientId(adminRoot, realm, auth, cclientid);
                 }
@@ -206,14 +212,14 @@ public class RemoveRolesCmd extends AbstractAuthOptionsCmd {
                 List<ObjectNode> roles = RoleOperations.getClientRoles(adminRoot, realm, cid, auth);
                 Set<ObjectNode> rolesToAdd = getRoleRepresentations(roleNames, roleIds, new LocalSearch(roles));
 
-                // now remove the roles
+                // 执行角色移除
                 RoleOperations.removeClientRoles(adminRoot, realm, auth, rid, new ArrayList<>(rolesToAdd));
 
             } else {
                 Set<ObjectNode> rolesToAdd = getRoleRepresentations(roleNames, roleIds,
                         new LocalSearch(RoleOperations.getRealmRolesAsNodes(adminRoot, realm, auth)));
 
-                // now remove the roles
+                // 执行领域角色移除
                 RoleOperations.removeRealmRoles(adminRoot, realm, auth, rid, new ArrayList<>(rolesToAdd));
             }
 
@@ -223,11 +229,12 @@ public class RemoveRolesCmd extends AbstractAuthOptionsCmd {
         }
     }
 
+    /** 按角色名或 ID 在本地搜索结果中精确匹配，返回待移除的角色表示集合。 */
     private Set<ObjectNode> getRoleRepresentations(List<String> roleNames, List<String> roleIds,
             LocalSearch roleSearch) {
         Set<ObjectNode> rolesToAdd = new HashSet<>();
 
-        // now we process roles
+        // 按名称解析角色
         for (String name : roleNames) {
             ObjectNode r = roleSearch.exactMatchOne(name, "name");
             if (r == null) {

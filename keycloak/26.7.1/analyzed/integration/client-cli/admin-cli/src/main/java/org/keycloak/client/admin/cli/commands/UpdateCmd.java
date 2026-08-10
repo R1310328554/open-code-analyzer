@@ -28,11 +28,17 @@ import static org.keycloak.client.cli.util.OsUtil.OS_ARCH;
 import static org.keycloak.client.cli.util.OsUtil.PROMPT;
 
 /**
+ * {@code update} 子命令：通过 Admin REST API 更新服务器上的现有资源。
+ * <p>
+ * 默认 HTTP 动词为 PUT，支持 {@code --set} 属性变更、{@code --merge} 合并模式、
+ * 从文件/stdin 读取模板及响应字段过滤等选项。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 @Command(name = "update", description = "CLIENT_ID [ARGUMENTS]")
 public class UpdateCmd extends AbstractRequestCmd {
 
+    /** 构造 update 命令，固定使用 PUT 方法。 */
     public UpdateCmd() {
         this.httpVerb = "put";
     }
@@ -77,6 +83,7 @@ public class UpdateCmd extends AbstractRequestCmd {
         this.compressed = compressed;
     }
 
+    /** 生成 {@code update} 子命令的详细用法、合并模式说明及示例。 */
     @Override
     protected String help() {
         StringWriter sb = new StringWriter();

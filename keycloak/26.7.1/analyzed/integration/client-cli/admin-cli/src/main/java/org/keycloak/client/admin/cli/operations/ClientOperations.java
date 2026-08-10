@@ -17,10 +17,23 @@
 package org.keycloak.client.admin.cli.operations;
 
 /**
+ * 客户端相关 Admin REST 操作的静态工具类。
+ * <p>
+ * 封装按 {@code clientId} 查询客户端内部 ID 等常用调用。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public class ClientOperations {
 
+    /**
+     * 根据 {@code clientId} 属性查找客户端的内部 ID。
+     *
+     * @param rootUrl  Admin REST 根 URL
+     * @param realm    目标领域
+     * @param auth     Bearer 令牌（可为 null）
+     * @param clientId 客户端标识符
+     * @return 客户端 UUID
+     */
     public static String getIdFromClientId(String rootUrl, String realm, String auth, String clientId) {
         return OperationUtils.getIdForType(rootUrl, realm, auth, "clients", "clientId", clientId, "clientId");
     }

@@ -33,23 +33,32 @@ import static org.keycloak.client.cli.util.OsUtil.PROMPT;
 import static org.keycloak.common.util.IoUtils.readPasswordFromConsole;
 
 /**
+ * {@code set-password} 子命令：重置指定用户的密码。
+ * <p>
+ * 支持通过用户名或用户 ID 定位目标，可设置临时密码（用户下次登录须修改）。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 @Command(name = "set-password", description = "[ARGUMENTS]")
 public class SetPasswordCmd extends AbstractAuthOptionsCmd {
 
+    /** 目标用户的用户名。 */
     @Option(names = "--username", description = "Username")
     String username;
 
+    /** 目标用户的 ID。 */
     @Option(names = "--userid", description = "User ID")
     String userid;
 
+    /** 新密码；未指定时从环境变量 {@code KC_CLI_PASSWORD} 或控制台读取。 */
     @Option(names = {"-p", "--new-password"}, description = "New password", defaultValue = "${env:KC_CLI_PASSWORD}")
     String pass;
 
+    /** 是否将新密码标记为临时密码。 */
     @Option(names = {"-t", "--temporary"}, description = "is password temporary")
     boolean temporary;
 
+    /** 解析用户标识并调用 Admin REST 重置密码。 */
     @Override
     protected void process() {
         if (userid == null && username == null) {
@@ -83,7 +92,7 @@ public class SetPasswordCmd extends AbstractAuthOptionsCmd {
         final String realm = getTargetRealm(config);
         final String adminRoot = adminRestRoot != null ? adminRestRoot : composeAdminRoot(server);
 
-        // if username is specified resolve id
+        // 若指定用户名，先解析为内部 ID
         if (username != null) {
             userid = getIdFromUsername(adminRoot, realm, auth, username);
         }

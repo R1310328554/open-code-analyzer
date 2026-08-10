@@ -45,20 +45,29 @@ import static org.keycloak.client.cli.util.OutputUtil.MAPPER;
 import static org.keycloak.client.cli.util.ParseUtil.parseKeyVal;
 
 /**
+ * {@code new-object} 子命令：在本地组合或修改 JSON 对象，不发起任何服务器请求。
+ * <p>
+ * 支持从文件/stdin 读取、通过 {@code --set} 设置属性，并可选美化输出。
+ * 其功能已集成到 {@code create}、{@code update}、{@code delete} 中，本命令主要作辅助工具。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 @Command(name = "new-object", description = "Command to create new JSON objects locally")
 public class NewObjectCmd extends BaseGlobalOptionsCmd implements GlobalOptionsCmdHelper {
 
+    /** 输入 JSON 文件路径，{@code -} 表示从标准输入读取。 */
     @Option(names = {"-f", "--file"}, description = "Read object from file or standard input if FILENAME is set to '-'")
     String file;
 
+    /** 是否以压缩形式输出（不美化 JSON）。 */
     @Option(names = {"-c", "--compressed"}, description = "Don't pretty print the output")
     boolean compressed;
 
+    /** {@code NAME=VALUE} 形式的属性设置列表。 */
     @Option(names = {"-s", "--set"}, description = "Set a specific attribute NAME to a specified value VALUE")
     List<String> values = new ArrayList<>();
 
+    /** 解析输入、合并属性变更并输出 JSON（默认美化）。 */
     @Override
     public void process() {
         List<AttributeOperation> attrs = values.stream().map(it -> {
@@ -90,7 +99,7 @@ public class NewObjectCmd extends BaseGlobalOptionsCmd implements GlobalOptionsC
 
             try {
                 JsonNode rootNode = MAPPER.readValue(buffer.toByteArray(), JsonNode.class);
-                // now pretty print it to output
+                // 美化后写入标准输出
                 MAPPER.writeValue(abos, rootNode);
             } catch (Exception ignored) {
                 copyStream(new ByteArrayInputStream(buffer.toByteArray()), abos);
@@ -115,6 +124,7 @@ public class NewObjectCmd extends BaseGlobalOptionsCmd implements GlobalOptionsC
         return usage();
     }
 
+    /** 生成 {@code new-object} 子命令的详细用法与示例。 */
     public static String usage() {
         StringWriter sb = new StringWriter();
         PrintWriter out = new PrintWriter(sb);

@@ -6,16 +6,29 @@ import java.util.Deque;
 
 import org.keycloak.client.cli.util.OutputUtil;
 
+/**
+ * CLI JSON 输出的 ANSI 终端语法高亮工具。
+ * <p>
+ * 基于 Jackson 流式解析器逐 token 着色：键名、字符串、数字、布尔值、null 及嵌套层级使用不同颜色。
+ */
 public final class CliJsonOutputHighlighter {
 
+    /** ANSI 转义序列前缀。 */
     public static final String ESC = "\033[";
+    /** 重置所有 ANSI 样式。 */
     public static final String RESET = ESC + "0m";
+    /** 键名颜色（标准青色）。 */
     public static final String COLOR_KEY     = ESC + "36m"; // Standard Cyan
+    /** 字符串值颜色（标准绿色）。 */
     public static final String COLOR_STRING  = ESC + "32m"; // Standard Green
+    /** 数值颜色（标准洋红）。 */
     public static final String COLOR_NUMBER  = ESC + "35m"; // Standard Magenta
+    /** 布尔值颜色（标准红色）。 */
     public static final String COLOR_BOOLEAN = ESC + "31m"; // Standard Red
+    /** null 值颜色（亮红色）。 */
     public static final String COLOR_NULL    = ESC + "91m"; // Bright Red
 
+    /** 对象嵌套层级循环使用的颜色表。 */
     private static final String[] OBJECT_COLORS = {
             ESC + "1;37m",  // Level 1: Bold White
             ESC + "37m",  // Level 2: Light Gray / Standard White
@@ -37,22 +50,33 @@ public final class CliJsonOutputHighlighter {
     private CliJsonOutputHighlighter() {
     }
 
+    /** 返回给定对象嵌套深度对应的颜色码。 */
     public static String objectColorAtDepth(int depth) {
         return OBJECT_COLORS[Math.floorMod(depth, getObjectDepthCycle())];
     }
 
+    /** 返回给定数组嵌套深度对应的颜色码。 */
     public static String arrayColorAtDepth(int depth) {
         return ARRAY_COLORS[Math.floorMod(depth, getArrayDepthCycle())];
     }
 
+    /** 对象嵌套深度的颜色循环周期。 */
     public static int getObjectDepthCycle() {
         return OBJECT_COLORS.length;
     }
 
+    /** 数组嵌套深度的颜色循环周期。 */
     public static int getArrayDepthCycle() {
         return ARRAY_COLORS.length;
     }
 
+    /**
+     * 对 JSON 字符串施加 ANSI 语法高亮。
+     *
+     * @param json 原始 JSON 文本
+     * @return 带 ANSI 转义序列的高亮字符串
+     * @throws IOException 解析失败时抛出
+     */
     public static String highlight(String json) throws IOException {
         final StringBuilder sb = new StringBuilder();
         final Deque<Integer> contextStack = new ArrayDeque<>();
@@ -144,7 +168,7 @@ public final class CliJsonOutputHighlighter {
         return sb.toString();
     }
 
-    // Copies the gap between tokens (whitespace, separators) verbatim, except : and , which get colored
+    // 复制 token 间隙文本（空白等），并对冒号与逗号按当前嵌套上下文着色
     private static void copyGapWithColoredSeparators(StringBuilder sb, String json, int from, int to,
                                                       Deque<Integer> contextStack, int objectDepth, int arrayDepth) {
         for (int i = from; i < to; i++) {

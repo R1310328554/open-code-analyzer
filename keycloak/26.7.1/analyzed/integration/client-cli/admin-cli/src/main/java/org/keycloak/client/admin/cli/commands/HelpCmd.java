@@ -23,12 +23,19 @@ import picocli.CommandLine.Parameters;
 
 import static org.keycloak.client.cli.util.IoUtil.printOut;
 
+/**
+ * {@code help} 子命令：输出 Admin CLI 总览或指定子命令的详细用法。
+ * <p>
+ * 无参数时打印 {@link KcAdmCmd#usage()}；带参数时按命令名分派到对应 {@code help()} 方法。
+ */
 @Command(name = "help", description = "This Help")
 public class HelpCmd implements Runnable {
 
+    /** 可选的子命令名称列表（如 {@code create}、{@code config credentials}）。 */
     @Parameters
     List<String> args;
 
+    /** 根据参数输出全局或子命令帮助文本。 */
     @Override
     public void run() {
         if (args == null || args.size() == 0) {

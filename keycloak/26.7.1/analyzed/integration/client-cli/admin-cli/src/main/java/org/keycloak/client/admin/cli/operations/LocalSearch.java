@@ -23,16 +23,29 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
+ * 本地 JSON 对象列表的精确匹配搜索工具。
+ * <p>
+ * 在已获取的角色/客户端等列表中按属性值查找唯一匹配项，供 add/remove-roles 等命令使用。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public class LocalSearch {
 
+    /** 待搜索的 JSON 对象列表。 */
     private List<ObjectNode> items;
 
+    /** 使用给定对象列表构造搜索器。 */
     public LocalSearch(List<ObjectNode> items) {
         this.items = items;
     }
 
+    /**
+     * 在指定属性上精确匹配唯一对象。
+     *
+     * @param value 待匹配的属性值
+     * @param attrs 依次尝试的属性名列表
+     * @return 唯一匹配项；无匹配返回 null；多条匹配抛出异常
+     */
     public ObjectNode exactMatchOne(String value, String ... attrs) {
 
         List<ObjectNode> matched = new LinkedList<>();

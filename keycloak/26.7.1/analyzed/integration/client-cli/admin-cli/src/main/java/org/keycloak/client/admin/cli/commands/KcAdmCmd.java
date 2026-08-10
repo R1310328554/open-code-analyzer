@@ -28,6 +28,11 @@ import picocli.CommandLine.Command;
 import static org.keycloak.client.admin.cli.KcAdmMain.CMD;
 import static org.keycloak.client.cli.util.OsUtil.PROMPT;
 
+/**
+ * Keycloak Admin CLI（{@code kcadm}）根命令，注册 config、create、get、update 等全部 v1 子命令。
+ * <p>
+ * 继承 {@link BaseGlobalOptionsCmd} 以支持全局选项（{@code --config}、{@code -x} 等）。
+ */
 @Command(name = "kcadm",
 header = {
         "Keycloak - Open Source Identity and Access Management",
@@ -52,9 +57,11 @@ subcommands = {
 })
 public class KcAdmCmd extends BaseGlobalOptionsCmd {
 
+    /** Picocli 命令规格，供运行时内省子命令结构。 */
     @CommandLine.Spec
     CommandLine.Model.CommandSpec spec;
 
+    /** 根命令无独立业务逻辑，始终视为“无操作”。 */
     @Override
     protected boolean nothingToDo() {
         return true;
@@ -65,6 +72,7 @@ public class KcAdmCmd extends BaseGlobalOptionsCmd {
         return usage();
     }
 
+    /** 生成 Admin CLI 全局用法说明（命令列表、全局选项及登录示例）。 */
     public static String usage() {
         StringWriter sb = new StringWriter();
         PrintWriter out = new PrintWriter(sb);

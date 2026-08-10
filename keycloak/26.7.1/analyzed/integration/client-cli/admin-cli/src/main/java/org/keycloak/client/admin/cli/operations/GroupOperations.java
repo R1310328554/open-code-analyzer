@@ -23,33 +23,43 @@ import static org.keycloak.client.cli.util.HttpUtil.doDeleteJSON;
 import static org.keycloak.client.cli.util.HttpUtil.doPostJSON;
 
 /**
+ * 用户组相关 Admin REST 操作的静态工具类。
+ * <p>
+ * 提供按名称/路径解析组 ID，以及为用户组添加/移除领域与客户端角色的方法。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public class GroupOperations {
 
+    /** 按组名精确搜索并返回组 ID。 */
     public static String getIdFromName(String rootUrl, String realm, String auth, String groupname) {
         return OperationUtils.getIdForType(rootUrl, realm, auth, "groups", "search", groupname, "name", () -> new String[] { "exact", "true" });
     }
 
+    /** 按组路径属性查找并返回组 ID。 */
     public static String getIdFromPath(String rootUrl, String realm, String auth, String path) {
         return OperationUtils.getIdForType(rootUrl, realm, auth, "groups", "path", path, "path");
     }
 
+    /** 为组添加领域角色映射。 */
     public static void addRealmRoles(String rootUrl, String realm, String auth, String groupid, List<?> roles) {
         String resourceUrl = composeResourceUrl(rootUrl, realm, "groups/" + groupid + "/role-mappings/realm");
         doPostJSON(resourceUrl, auth, roles);
     }
 
+    /** 为组添加指定客户端的角色映射。 */
     public static void addClientRoles(String rootUrl, String realm, String auth, String groupid, String idOfClient, List<?> roles) {
         String resourceUrl = composeResourceUrl(rootUrl, realm, "groups/" + groupid + "/role-mappings/clients/" + idOfClient);
         doPostJSON(resourceUrl, auth, roles);
     }
 
+    /** 从组移除领域角色映射。 */
     public static void removeRealmRoles(String rootUrl, String realm, String auth, String groupid, List<?> roles) {
         String resourceUrl = composeResourceUrl(rootUrl, realm, "groups/" + groupid + "/role-mappings/realm");
         doDeleteJSON(resourceUrl, auth, roles);
     }
 
+    /** 从组移除指定客户端的角色映射。 */
     public static void removeClientRoles(String rootUrl, String realm, String auth, String groupid, String idOfClient, List<?> roles) {
         String resourceUrl = composeResourceUrl(rootUrl, realm, "groups/" + groupid + "/role-mappings/clients/" + idOfClient);
         doDeleteJSON(resourceUrl, auth, roles);

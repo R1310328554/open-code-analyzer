@@ -26,12 +26,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.keycloak.client.cli.util.HttpUtil.normalize;
 
+/**
+ * 全局选项命令的辅助接口，提供 Admin REST 根路径拼接、URI 解析及响应字段过滤等默认实现。
+ * <p>
+ * 由 {@code create}、{@code get}、{@code update} 等子命令通过 mixin 方式复用。
+ */
 public interface GlobalOptionsCmdHelper {
 
+    /** 根据服务器基址拼接 Admin REST 根路径（{@code .../admin}）。 */
     default String composeAdminRoot(String server) {
         return normalize(server) + "admin";
     }
 
+    /** 从资源 URI 末段提取类型名，并去掉复数后缀 {@code s}。 */
     default String extractTypeNameFromUri(String resourceUrl) {
         String type = extractLastComponentOfUri(resourceUrl);
         if (type.endsWith("s")) {
@@ -40,6 +47,7 @@ public interface GlobalOptionsCmdHelper {
         return type;
     }
 
+    /** 提取 URI 路径的最后一段（忽略末尾斜杠）。 */
     default String extractLastComponentOfUri(String resourceUrl) {
         int endPos = resourceUrl.endsWith("/") ? resourceUrl.length()-2 : resourceUrl.length()-1;
         int pos = resourceUrl.lastIndexOf("/", endPos);
@@ -47,8 +55,16 @@ public interface GlobalOptionsCmdHelper {
         return resourceUrl.substring(pos+1, endPos+1);
     }
 
+    /**
+     * 按 {@link ReturnFields} 规则过滤 JSON 响应，仅保留指定字段。
+     *
+     * @param mapper       Jackson 对象映射器
+     * @param rootNode     原始 JSON 根节点
+     * @param returnFields 字段过滤模式
+     * @return 过滤后的 JSON 节点
+     */
     default JsonNode applyFieldFilter(ObjectMapper mapper, JsonNode rootNode, ReturnFields returnFields) {
-        // construct new JsonNode that satisfies filtering specified by returnFields
+        // 构造满足 returnFields 过滤条件的新 JsonNode
         try {
             return FilterUtil.copyFilteredObject(rootNode, returnFields);
         } catch (IOException e) {
