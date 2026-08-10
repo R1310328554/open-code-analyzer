@@ -22,8 +22,8 @@ import java.util.Iterator;
 import java.util.Map;
 
 /**
- * Helper class in process of parsing signature out of SAML token.
- * usage example:
+ * XPath 命名空间上下文辅助类，用于 SAML 令牌签名解析。
+ * <p>用法示例：</p>
  * <code>
  * xpath.setNamespaceContext(
  * NamespaceContext.create()
@@ -36,30 +36,29 @@ import java.util.Map;
 
 public class NamespaceContext implements javax.xml.namespace.NamespaceContext {
 
+    /** 前缀到命名空间 URI 的映射。 */
     private Map<String, String> nsMap = new HashMap<>();
 
+    /** 创建空的命名空间上下文。 */
     public NamespaceContext() {
     }
 
+    /**
+     * 创建含单个前缀-URI 对的命名空间上下文。
+     *
+     * @param prefix 命名空间前缀
+     * @param uri 命名空间 URI
+     */
     public NamespaceContext(String prefix, String uri) {
         nsMap.put(prefix, uri);
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see
-     * javax.xml.namespace.NamespaceContext#getNamespaceURI(java.lang.String)
-     */
+    /** 根据前缀获取命名空间 URI。 */
     public String getNamespaceURI(String prefix) {
         return nsMap.get(prefix);
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see javax.xml.namespace.NamespaceContext#getPrefix(java.lang.String)
-     */
+    /** 根据命名空间 URI 获取前缀。 */
     public String getPrefix(String namespaceURI) {
         for (var entry : nsMap.entrySet()) {
             String value = entry.getValue();
@@ -70,24 +69,21 @@ public class NamespaceContext implements javax.xml.namespace.NamespaceContext {
         return null;
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see javax.xml.namespace.NamespaceContext#getPrefixes(java.lang.String)
-     */
+    /** 获取绑定到指定 URI 的所有前缀迭代器。 */
     public Iterator<String> getPrefixes(String namespaceURI) {
         return nsMap.keySet().iterator();
     }
 
+    /** 添加前缀-URI 映射并返回自身（链式调用）。 */
     public NamespaceContext addNsUriPair(String ns, String uri) {
         nsMap.put(ns, uri);
         return this;
     }
 
     /**
-     * Create new NamespaceContext for use.
+     * 创建新的 {@link NamespaceContext} 实例。
      *
-     * @return
+     * @return 空的命名空间上下文
      */
     public static NamespaceContext create() {
         return new NamespaceContext();

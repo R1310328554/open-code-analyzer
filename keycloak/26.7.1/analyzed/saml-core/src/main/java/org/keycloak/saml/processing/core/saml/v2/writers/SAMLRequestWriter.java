@@ -44,23 +44,29 @@ import static org.keycloak.saml.common.constants.JBossSAMLURIConstants.NAMEID_FO
 import static org.keycloak.saml.common.constants.JBossSAMLURIConstants.PROTOCOL_NSURI;
 
 /**
- * Writes a SAML2 Request Type to Stream
+ * 将 SAML 2.0 请求类型序列化为 XML 流。
+ * <p>支持 AuthnRequest、LogoutRequest、ArtifactResolve、AttributeQuery 等。</p>
  *
  * @author Anil.Saldhana@redhat.com
  * @since Nov 2, 2010
  */
 public class SAMLRequestWriter extends BaseWriter {
 
+    /**
+     * 构造请求写入器。
+     *
+     * @param writer XML 流写入器
+     */
     public SAMLRequestWriter(XMLStreamWriter writer) {
         super(writer);
     }
 
     /**
-     * Write a {@code AuthnRequestType } to stream
+     * 将 {@code AuthnRequestType} 写入 XML 流。
      *
-     * @param request
+     * @param request 认证请求对象
      *
-     * @throws org.keycloak.saml.common.exceptions.ProcessingException
+     * @throws org.keycloak.saml.common.exceptions.ProcessingException 写入失败时抛出
      */
     public void write(AuthnRequestType request) throws ProcessingException {
         StaxUtil.writeStartElement(writer, PROTOCOL_PREFIX, JBossSAMLConstants.AUTHN_REQUEST.get(), PROTOCOL_NSURI.get());
@@ -68,7 +74,7 @@ public class SAMLRequestWriter extends BaseWriter {
         StaxUtil.writeNameSpace(writer, ASSERTION_PREFIX, ASSERTION_NSURI.get());
         StaxUtil.writeDefaultNameSpace(writer, ASSERTION_NSURI.get());
 
-        // Attributes
+        // 写入请求根属性
         StaxUtil.writeAttribute(writer, JBossSAMLConstants.ID.get(), request.getID());
         StaxUtil.writeAttribute(writer, JBossSAMLConstants.VERSION.get(), request.getVersion());
         StaxUtil.writeAttribute(writer, JBossSAMLConstants.ISSUE_INSTANT.get(), request.getIssueInstant().toString());
@@ -92,9 +98,7 @@ public class SAMLRequestWriter extends BaseWriter {
         }
 
         Boolean isPassive = request.isIsPassive();
-        // The AuthnRequest IsPassive attribute is optional and if omitted its default value is false. 
-        // Some IdPs refuse requests if the IsPassive attribute is present and set to false, so to 
-        // maximize compatibility we emit it only if it is set to true
+        // IsPassive 默认为 false；部分 IdP 拒绝显式 false，故仅在 true 时输出
         if (isPassive != null && isPassive == true) {
             StaxUtil.writeAttribute(writer, JBossSAMLConstants.IS_PASSIVE.get(), isPassive.toString());
         }
@@ -154,11 +158,11 @@ public class SAMLRequestWriter extends BaseWriter {
     }
 
     /**
-     * Write a {@code LogoutRequestType} to stream
+     * 将 {@code LogoutRequestType} 写入 XML 流。
      *
-     * @param logOutRequest
+     * @param logOutRequest 登出请求对象
      *
-     * @throws ProcessingException
+     * @throws ProcessingException 写入失败时抛出
      */
     public void write(LogoutRequestType logOutRequest) throws ProcessingException {
         StaxUtil.writeStartElement(writer, PROTOCOL_PREFIX, JBossSAMLConstants.LOGOUT_REQUEST.get(), PROTOCOL_NSURI.get());
@@ -167,7 +171,7 @@ public class SAMLRequestWriter extends BaseWriter {
         StaxUtil.writeNameSpace(writer, ASSERTION_PREFIX, ASSERTION_NSURI.get());
         StaxUtil.writeDefaultNameSpace(writer, ASSERTION_NSURI.get());
 
-        // Attributes
+        // 写入请求根属性
         StaxUtil.writeAttribute(writer, JBossSAMLConstants.ID.get(), logOutRequest.getID());
         StaxUtil.writeAttribute(writer, JBossSAMLConstants.VERSION.get(), logOutRequest.getVersion());
         StaxUtil.writeAttribute(writer, JBossSAMLConstants.ISSUE_INSTANT.get(), logOutRequest.getIssueInstant().toString());
@@ -215,11 +219,11 @@ public class SAMLRequestWriter extends BaseWriter {
     }
 
     /**
-     * Write a {@code NameIDPolicyType} to stream
+     * 将 {@code NameIDPolicyType} 写入 XML 流。
      *
-     * @param nameIDPolicy
+     * @param nameIDPolicy 名称标识策略
      *
-     * @throws ProcessingException
+     * @throws ProcessingException 写入失败时抛出
      */
     public void write(NameIDPolicyType nameIDPolicy) throws ProcessingException {
         StaxUtil.writeStartElement(writer, PROTOCOL_PREFIX, JBossSAMLConstants.NAMEID_POLICY.get(), PROTOCOL_NSURI.get());
@@ -235,7 +239,7 @@ public class SAMLRequestWriter extends BaseWriter {
         }
 
         Boolean allowCreate = nameIDPolicy.isAllowCreate();
-        // The NameID AllowCreate attribute must not be used when using the transient NameID format.
+        // transient NameID 格式下不得使用 AllowCreate 属性
         if (allowCreate != null && (format == null || !NAMEID_FORMAT_TRANSIENT.get().equals(format.toASCIIString()))) {
             StaxUtil.writeAttribute(writer, JBossSAMLConstants.ALLOW_CREATE.get(), allowCreate.toString());
         }
@@ -245,11 +249,11 @@ public class SAMLRequestWriter extends BaseWriter {
     }
 
     /**
-     * Write a {@code RequestedAuthnContextType} to stream
+     * 将 {@code RequestedAuthnContextType} 写入 XML 流。
      *
-     * @param requestedAuthnContextType
+     * @param requestedAuthnContextType 请求的认证上下文
      *
-     * @throws ProcessingException
+     * @throws ProcessingException 写入失败时抛出
      */
     public void write(RequestedAuthnContextType requestedAuthnContextType) throws ProcessingException {
         StaxUtil.writeStartElement(writer, PROTOCOL_PREFIX, JBossSAMLConstants.REQUESTED_AUTHN_CONTEXT.get(), PROTOCOL_NSURI.get());
@@ -286,13 +290,14 @@ public class SAMLRequestWriter extends BaseWriter {
         StaxUtil.flush(writer);
     }
 
+    /** 写入 ArtifactResolve 请求。 */
     public void write(ArtifactResolveType request) throws ProcessingException {
         StaxUtil.writeStartElement(writer, PROTOCOL_PREFIX, JBossSAMLConstants.ARTIFACT_RESOLVE.get(), PROTOCOL_NSURI.get());
         StaxUtil.writeNameSpace(writer, PROTOCOL_PREFIX, PROTOCOL_NSURI.get());
         StaxUtil.writeNameSpace(writer, ASSERTION_PREFIX, ASSERTION_NSURI.get());
         StaxUtil.writeDefaultNameSpace(writer, ASSERTION_NSURI.get());
 
-        // Attributes
+        // 写入请求根属性
         StaxUtil.writeAttribute(writer, JBossSAMLConstants.ID.get(), request.getID());
         StaxUtil.writeAttribute(writer, JBossSAMLConstants.VERSION.get(), request.getVersion());
         StaxUtil.writeAttribute(writer, JBossSAMLConstants.ISSUE_INSTANT.get(), request.getIssueInstant().toString());
@@ -328,13 +333,14 @@ public class SAMLRequestWriter extends BaseWriter {
         StaxUtil.flush(writer);
     }
 
+    /** 写入 AttributeQuery 属性查询请求。 */
     public void write(AttributeQueryType request) throws ProcessingException {
         StaxUtil.writeStartElement(writer, PROTOCOL_PREFIX, JBossSAMLConstants.ATTRIBUTE_QUERY.get(), PROTOCOL_NSURI.get());
         StaxUtil.writeNameSpace(writer, PROTOCOL_PREFIX, PROTOCOL_NSURI.get());
         StaxUtil.writeNameSpace(writer, ASSERTION_PREFIX, ASSERTION_NSURI.get());
         StaxUtil.writeDefaultNameSpace(writer, ASSERTION_NSURI.get());
 
-        // Attributes
+        // 写入请求根属性
         StaxUtil.writeAttribute(writer, JBossSAMLConstants.ID.get(), request.getID());
         StaxUtil.writeAttribute(writer, JBossSAMLConstants.VERSION.get(), request.getVersion());
         StaxUtil.writeAttribute(writer, JBossSAMLConstants.ISSUE_INSTANT.get(), request.getIssueInstant().toString());

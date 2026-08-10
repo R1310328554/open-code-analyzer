@@ -37,22 +37,24 @@ import org.keycloak.saml.common.util.StaxUtil;
 import org.w3c.dom.Element;
 
 /**
- * Utility methods for stax writing
+ * StAX 写入辅助工具，用于序列化 XML 数字签名 KeyInfo 结构。
+ * <p>支持 X509 证书、RSA/DSA 密钥值的 StAX 输出。</p>
  *
  * @author anil saldhana
  * @since Jan 28, 2013
  */
 public class StaxWriterUtil {
 
+    /** 日志记录器。 */
     private static final PicketLinkLogger logger = PicketLinkLoggerFactory.getLogger();
 
     /**
-     * Write the {@link org.keycloak.dom.xmlsec.w3.xmldsig.KeyInfoType}
+     * 将 {@link org.keycloak.dom.xmlsec.w3.xmldsig.KeyInfoType} 写入 XML 流。
      *
-     * @param writer
-     * @param keyInfo
+     * @param writer XML 流写入器
+     * @param keyInfo 密钥信息对象
      *
-     * @throws org.keycloak.saml.common.exceptions.ProcessingException
+     * @throws org.keycloak.saml.common.exceptions.ProcessingException 写入失败时抛出
      */
     public static void writeKeyInfo(XMLStreamWriter writer, KeyInfoType keyInfo) throws ProcessingException {
         if (keyInfo.getContent() == null || keyInfo.getContent().size() == 0)
@@ -60,7 +62,7 @@ public class StaxWriterUtil {
         StaxUtil.writeStartElement(writer, WSTrustConstants.XMLDSig.DSIG_PREFIX, WSTrustConstants.XMLDSig.KEYINFO,
                 WSTrustConstants.XMLDSig.DSIG_NS);
         StaxUtil.writeNameSpace(writer, WSTrustConstants.XMLDSig.DSIG_PREFIX, WSTrustConstants.XMLDSig.DSIG_NS);
-        // write the keyInfo content.
+        // 写入 KeyInfo 内容
         Object content = keyInfo.getContent().get(0);
         if (content instanceof Element) {
             Element element = (Element) keyInfo.getContent().get(0);
@@ -100,17 +102,18 @@ public class StaxWriterUtil {
         StaxUtil.writeEndElement(writer);
     }
 
+    /** 将 RSA 密钥值类型写入 XML 流。 */
     public static void writeRSAKeyValueType(XMLStreamWriter writer, RSAKeyValueType type) throws ProcessingException {
         String prefix = WSTrustConstants.XMLDSig.DSIG_PREFIX;
 
         StaxUtil.writeStartElement(writer, prefix, WSTrustConstants.XMLDSig.RSA_KEYVALUE, WSTrustConstants.DSIG_NS);
-        // write the rsa key modulus.
+        // 写入 RSA 模数
         byte[] modulus = type.getModulus();
         StaxUtil.writeStartElement(writer, prefix, WSTrustConstants.XMLDSig.MODULUS, WSTrustConstants.DSIG_NS);
         StaxUtil.writeCharacters(writer, new String(modulus, GeneralConstants.SAML_CHARSET));
         StaxUtil.writeEndElement(writer);
 
-        // write the rsa key exponent.
+        // 写入 RSA 指数
         byte[] exponent = type.getExponent();
         StaxUtil.writeStartElement(writer, prefix, WSTrustConstants.XMLDSig.EXPONENT, WSTrustConstants.DSIG_NS);
         StaxUtil.writeCharacters(writer, new String(exponent, GeneralConstants.SAML_CHARSET));
@@ -119,6 +122,7 @@ public class StaxWriterUtil {
         StaxUtil.writeEndElement(writer);
     }
 
+    /** 将 DSA 密钥值类型写入 XML 流。 */
     public static void writeDSAKeyValueType(XMLStreamWriter writer, DSAKeyValueType type) throws ProcessingException {
 
         String prefix = WSTrustConstants.XMLDSig.DSIG_PREFIX;

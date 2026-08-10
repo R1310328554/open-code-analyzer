@@ -33,15 +33,18 @@ import org.w3c.dom.ls.LSInput;
 import org.w3c.dom.ls.LSResourceResolver;
 
 /**
- * An LSResource Resolver for schema validation
+ * Schema 校验用的 LS 资源解析器。
+ * <p>将远程 schema systemId 映射到 classpath 本地资源路径。</p>
  *
  * @author Anil.Saldhana@redhat.com
  * @since Jun 9, 2009
  */
 public class IDFedLSInputResolver implements LSResourceResolver {
 
+    /** 日志记录器。 */
     protected static final Logger logger = Logger.getLogger(IDFedLSInputResolver.class);
 
+    /** systemId 到本地 classpath 路径的映射表。 */
     private static final Map<String, String> schemaLocationMap;
 
     static {
@@ -109,6 +112,7 @@ public class IDFedLSInputResolver implements LSResourceResolver {
         schemaLocationMap = Collections.unmodifiableMap(schemaLocations);
     }
 
+    /** 返回所有已注册的本地 schema 路径集合。 */
     public static Collection<String> schemas() {
         Collection<String> schemaValues = new HashSet<>(schemaLocationMap.values());
         schemaValues.remove("schema/w3c/xmlschema/datatypes.dtd");
@@ -117,6 +121,16 @@ public class IDFedLSInputResolver implements LSResourceResolver {
         return schemaValues;
     }
 
+    /**
+     * 解析 schema 资源引用，返回本地 {@link IDFedLSInput}。
+     *
+     * @param type 资源类型
+     * @param namespaceURI 命名空间 URI
+     * @param publicId 公共标识
+     * @param systemId 系统标识
+     * @param baseURI 基准 URI
+     * @return 本地 LSInput，未映射时返回 {@code null}
+     */
     public IDFedLSInput resolveResource(String type, String namespaceURI, final String publicId, final String systemId, final String baseURI) {
         if (systemId == null) {
             throw new IllegalArgumentException("Expected systemId");
@@ -130,6 +144,7 @@ public class IDFedLSInputResolver implements LSResourceResolver {
         return new IDFedLSInput(baseURI, loc, publicId, systemId);
     }
 
+    /** LSInput 实现，从 classpath 加载 schema 资源。 */
     public static class IDFedLSInput implements LSInput {
 
         private final String baseURI;

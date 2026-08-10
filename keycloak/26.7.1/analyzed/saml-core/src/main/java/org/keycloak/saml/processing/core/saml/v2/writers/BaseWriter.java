@@ -52,33 +52,43 @@ import static org.keycloak.saml.common.constants.JBossSAMLURIConstants.ASSERTION
 import static org.keycloak.saml.common.constants.JBossSAMLURIConstants.PROTOCOL_NSURI;
 
 /**
- * Base Class for the Stax writers for SAML
+ * SAML StAX 写入器基类。
+ * <p>提供 NameID、Attribute、Subject、Extensions 等公共元素的序列化方法。</p>
  *
  * @author Anil.Saldhana@redhat.com
  * @since Nov 2, 2010
  */
 public class BaseWriter {
 
+    /** 日志记录器。 */
     protected static final PicketLinkLogger logger = PicketLinkLoggerFactory.getLogger();
 
+    /** 协议命名空间前缀。 */
     protected static String PROTOCOL_PREFIX = "samlp";
 
+    /** 断言命名空间前缀。 */
     protected static String ASSERTION_PREFIX = "saml";
 
+    /** 底层 XML 流写入器。 */
     protected XMLStreamWriter writer = null;
 
+    /**
+     * 构造写入器。
+     *
+     * @param writer XML 流写入器
+     */
     public BaseWriter(XMLStreamWriter writer) {
         this.writer = writer;
     }
 
     /**
-     * Write {@code NameIDType} to stream
+     * 将 {@code NameIDType} 写入 XML 流。
      *
-     * @param nameIDType
-     * @param tag
-     * @param out
+     * @param nameIDType 名称标识对象
+     * @param tag 目标元素 QName
+     * @param writeNamespace 是否写入命名空间声明
      *
-     * @throws org.keycloak.saml.common.exceptions.ProcessingException
+     * @throws org.keycloak.saml.common.exceptions.ProcessingException 写入失败时抛出
      */
     public void write(NameIDType nameIDType, QName tag, boolean writeNamespace) throws ProcessingException {
         StaxUtil.writeStartElement(writer, tag.getPrefix(), tag.getLocalPart(), tag.getNamespaceURI());
@@ -116,20 +126,17 @@ public class BaseWriter {
         StaxUtil.flush(writer);
     }
 
-    /**
-     * Write {@code NameIDType} to stream without writing a namespace
-     */
+    /** 写入 {@code NameIDType}，不输出命名空间声明。 */
     public void write(NameIDType nameIDType, QName tag) throws ProcessingException {
         this.write(nameIDType, tag, false);
     }
 
     /**
-     * Write an {@code AttributeType} to stream
+     * 将 {@code AttributeType} 写入 XML 流。
      *
-     * @param attributeType
-     * @param out
+     * @param attributeType 属性对象
      *
-     * @throws ProcessingException
+     * @throws ProcessingException 写入失败时抛出
      */
     public void write(AttributeType attributeType) throws ProcessingException {
         StaxUtil.writeStartElement(writer, ASSERTION_PREFIX, JBossSAMLConstants.ATTRIBUTE.get(), ASSERTION_NSURI.get());
@@ -140,6 +147,7 @@ public class BaseWriter {
         StaxUtil.flush(writer);
     }
 
+    /** 写入属性内容（不含 Attribute 根元素）。 */
     public void writeAttributeTypeWithoutRootTag(AttributeType attributeType) throws ProcessingException {
         String attributeName = attributeType.getName();
         if (attributeName != null) {
@@ -156,7 +164,7 @@ public class BaseWriter {
             StaxUtil.writeAttribute(writer, JBossSAMLConstants.NAME_FORMAT.get(), nameFormat);
         }
 
-        // Take care of other attributes such as x500:encoding
+        // 处理 x500:encoding 等扩展属性
         Map<QName, String> otherAttribs = attributeType.getOtherAttributes();
         if (otherAttribs != null) {
             List<String> nameSpacesDealt = new ArrayList<>();
@@ -201,12 +209,14 @@ public class BaseWriter {
         StaxUtil.writeEndElement(writer);
     }
 
+    /** 写入 NameID 类型的 AttributeValue 子元素。 */
     public void writeNameIDTypeAttributeValue(NameIDType attributeValue) throws ProcessingException {
         StaxUtil.writeStartElement(writer, ASSERTION_PREFIX, JBossSAMLConstants.ATTRIBUTE_VALUE.get(), ASSERTION_NSURI.get());
     	write((NameIDType)attributeValue, new QName(ASSERTION_NSURI.get(), JBossSAMLConstants.NAMEID.get(), ASSERTION_PREFIX));
         StaxUtil.writeEndElement(writer);
     }
 
+    /** 写入字符串类型的 AttributeValue 子元素。 */
     public void writeStringAttributeValue(String attributeValue) throws ProcessingException {
         StaxUtil.writeStartElement(writer, ASSERTION_PREFIX, JBossSAMLConstants.ATTRIBUTE_VALUE.get(), ASSERTION_NSURI.get());
 
@@ -223,6 +233,7 @@ public class BaseWriter {
         StaxUtil.writeEndElement(writer);
     }
 
+    /** 写入日期类型的 AttributeValue 子元素。 */
     public void writeDateAttributeValue(XMLGregorianCalendar attributeValue) throws ProcessingException {
         StaxUtil.writeStartElement(writer, ASSERTION_PREFIX, JBossSAMLConstants.ATTRIBUTE_VALUE.get(), ASSERTION_NSURI.get());
 
@@ -239,6 +250,7 @@ public class BaseWriter {
         StaxUtil.writeEndElement(writer);
     }
 
+    /** 写入本地化名称类型元素。 */
     public void writeLocalizedNameType(LocalizedNameType localizedNameType, QName startElement) throws ProcessingException {
         StaxUtil.writeStartElement(writer, startElement.getPrefix(), startElement.getLocalPart(),
                 startElement.getNamespaceURI());
@@ -248,12 +260,11 @@ public class BaseWriter {
     }
 
     /**
-     * write an {@code SubjectType} to stream
+     * 将 {@code SubjectType} 写入 XML 流。
      *
-     * @param subject
-     * @param out
+     * @param subject 主题对象
      *
-     * @throws ProcessingException
+     * @throws ProcessingException 写入失败时抛出
      */
     public void write(SubjectType subject) throws ProcessingException {
         StaxUtil.writeStartElement(writer, ASSERTION_PREFIX, JBossSAMLConstants.SUBJECT.get(), ASSERTION_NSURI.get());
@@ -286,6 +297,7 @@ public class BaseWriter {
         StaxUtil.flush(writer);
     }
 
+    /** 写入协议 Extensions 扩展元素。 */
     public void write(ExtensionsType extensions) throws ProcessingException {
         if (extensions.getAny().isEmpty()) {
             return;
@@ -333,7 +345,7 @@ public class BaseWriter {
         StaxUtil.writeStartElement(writer, ASSERTION_PREFIX, JBossSAMLConstants.SUBJECT_CONFIRMATION_DATA.get(),
                 ASSERTION_NSURI.get());
 
-        // Let us look at attributes
+        // 写入 SubjectConfirmationData 属性
         String inResponseTo = subjectConfirmationData.getInResponseTo();
         if (StringUtil.isNotNull(inResponseTo)) {
             StaxUtil.writeAttribute(writer, JBossSAMLConstants.IN_RESPONSE_TO.get(), inResponseTo);

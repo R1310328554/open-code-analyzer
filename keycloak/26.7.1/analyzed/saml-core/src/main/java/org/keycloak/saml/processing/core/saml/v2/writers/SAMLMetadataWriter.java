@@ -54,19 +54,27 @@ import org.keycloak.saml.common.util.StaxUtil;
 import org.w3c.dom.Element;
 
 /**
- * Write the SAML metadata elements
+ * SAML 2.0 元数据元素写入器。
+ * <p>支持 EntityDescriptor、IDP/SP SSO Descriptor、Organization 等元数据结构。</p>
  *
  * @author Anil.Saldhana@redhat.com
  * @since Dec 14, 2010
  */
 public class SAMLMetadataWriter extends BaseWriter {
 
+    /** 元数据命名空间前缀。 */
     private final String METADATA_PREFIX = "md";
 
+    /**
+     * 构造元数据写入器。
+     *
+     * @param writer XML 流写入器
+     */
     public SAMLMetadataWriter(XMLStreamWriter writer) {
         super(writer);
     }
 
+    /** 写入 EntitiesDescriptor 根元素。 */
     public void writeEntitiesDescriptor(EntitiesDescriptorType entities) throws ProcessingException {
         StaxUtil.writeStartElement(writer, METADATA_PREFIX, JBossSAMLConstants.ENTITIES_DESCRIPTOR.get(), JBossSAMLURIConstants.METADATA_NSURI.get());
 
@@ -110,6 +118,7 @@ public class SAMLMetadataWriter extends BaseWriter {
         StaxUtil.flush(writer);
     }
 
+    /** 写入 EntityDescriptor 元素。 */
     public void writeEntityDescriptor(EntityDescriptorType entityDescriptor) throws ProcessingException {
         StaxUtil.writeStartElement(writer, METADATA_PREFIX, JBossSAMLConstants.ENTITY_DESCRIPTOR.get(), JBossSAMLURIConstants.METADATA_NSURI.get());
         StaxUtil.writeDefaultNameSpace(writer, JBossSAMLURIConstants.METADATA_NSURI.get());
@@ -193,11 +202,12 @@ public class SAMLMetadataWriter extends BaseWriter {
         throw new RuntimeException("should not be called");
     }
 
+    /** 写入 SP SSO 描述符。 */
     public void write(SPSSODescriptorType spSSODescriptor) throws ProcessingException {
         StaxUtil.writeStartElement(writer, METADATA_PREFIX, JBossSAMLConstants.SP_SSO_DESCRIPTOR.get(), JBossSAMLURIConstants.METADATA_NSURI.get());
         writeProtocolSupportEnumeration(spSSODescriptor.getProtocolSupportEnumeration());
 
-        // Write the attributes
+        // 写入 SP 描述符属性
         Boolean authnSigned = spSSODescriptor.isAuthnRequestsSigned();
         if (authnSigned != null) {
             StaxUtil.writeAttribute(writer, new QName(JBossSAMLConstants.AUTHN_REQUESTS_SIGNED.get()),
@@ -209,7 +219,7 @@ public class SAMLMetadataWriter extends BaseWriter {
                     wantAssertionsSigned.toString());
         }
 
-        // Get the key descriptors
+        // 写入密钥描述符
         List<KeyDescriptorType> keyDescriptors = spSSODescriptor.getKeyDescriptor();
         for (KeyDescriptorType keyDescriptor : keyDescriptors) {
             writeKeyDescriptor(keyDescriptor);
@@ -244,6 +254,7 @@ public class SAMLMetadataWriter extends BaseWriter {
         StaxUtil.flush(writer);
     }
 
+    /** 写入 IDP SSO 描述符。 */
     public void write(IDPSSODescriptorType idpSSODescriptor) throws ProcessingException {
         if (idpSSODescriptor == null)
             throw new ProcessingException(logger.nullArgumentError("IDPSSODescriptorType"));
@@ -257,7 +268,7 @@ public class SAMLMetadataWriter extends BaseWriter {
         }
         writeProtocolSupportEnumeration(idpSSODescriptor.getProtocolSupportEnumeration());
 
-        // Get the key descriptors
+        // 写入密钥描述符
         List<KeyDescriptorType> keyDescriptors = idpSSODescriptor.getKeyDescriptor();
         for (KeyDescriptorType keyDescriptor : keyDescriptors) {
             writeKeyDescriptor(keyDescriptor);
@@ -292,6 +303,7 @@ public class SAMLMetadataWriter extends BaseWriter {
         StaxUtil.flush(writer);
     }
 
+    /** 写入属性权威描述符。 */
     public void writeAttributeAuthorityDescriptor(AttributeAuthorityDescriptorType attributeAuthority)
             throws ProcessingException {
         StaxUtil.writeStartElement(writer, METADATA_PREFIX, JBossSAMLConstants.ATTRIBUTE_AUTHORITY_DESCRIPTOR.get(),
@@ -393,6 +405,7 @@ public class SAMLMetadataWriter extends BaseWriter {
         StaxUtil.flush(writer);
     }
 
+    /** 写入 Organization 组织信息。 */
     public void writeOrganization(OrganizationType org) throws ProcessingException {
         if (org == null)
             throw new ProcessingException(logger.nullArgumentError("Organization"));
@@ -403,7 +416,7 @@ public class SAMLMetadataWriter extends BaseWriter {
             write(extensions);
         }
 
-        // Write the name
+        // 写入组织名称
         List<LocalizedNameType> nameList = org.getOrganizationName();
         for (LocalizedNameType localName : nameList) {
             StaxUtil.writeStartElement(writer, METADATA_PREFIX, JBossSAMLConstants.ORGANIZATION_NAME.get(),
@@ -412,7 +425,7 @@ public class SAMLMetadataWriter extends BaseWriter {
             writeLocalizedType(localName);
         }
 
-        // Write the display name
+        // 写入显示名称
         List<LocalizedNameType> displayNameList = org.getOrganizationDisplayName();
         for (LocalizedNameType localName : displayNameList) {
             StaxUtil.writeStartElement(writer, METADATA_PREFIX, JBossSAMLConstants.ORGANIZATION_DISPLAY_NAME.get(),
@@ -420,7 +433,7 @@ public class SAMLMetadataWriter extends BaseWriter {
             writeLocalizedType(localName);
         }
 
-        // Write the url
+        // 写入组织 URL
         List<LocalizedURIType> uriList = org.getOrganizationURL();
         for (LocalizedURIType uri : uriList) {
             StaxUtil.writeStartElement(writer, METADATA_PREFIX, JBossSAMLConstants.ORGANIZATION_URL.get(), JBossSAMLURIConstants.METADATA_NSURI.get());

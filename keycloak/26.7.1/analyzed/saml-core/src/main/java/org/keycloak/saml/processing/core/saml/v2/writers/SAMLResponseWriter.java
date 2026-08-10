@@ -44,27 +44,33 @@ import org.w3c.dom.Element;
 import static org.keycloak.saml.common.constants.JBossSAMLURIConstants.PROTOCOL_NSURI;
 
 /**
- * Write a SAML Response to stream
+ * 将 SAML 2.0 响应序列化为 XML 流。
+ * <p>支持 Response、ArtifactResponse、Status 及嵌套断言。</p>
  *
  * @author Anil.Saldhana@redhat.com
  * @since Nov 2, 2010
  */
 public class SAMLResponseWriter extends BaseWriter {
 
+    /** 嵌套断言写入器。 */
     private final SAMLAssertionWriter assertionWriter;
 
+    /**
+     * 构造响应写入器。
+     *
+     * @param writer XML 流写入器
+     */
     public SAMLResponseWriter(XMLStreamWriter writer) {
         super(writer);
         this.assertionWriter = new SAMLAssertionWriter(writer);
     }
 
     /**
-     * Write a {@code ResponseType} to stream
+     * 将 {@code ResponseType} 写入 XML 流。
      *
-     * @param response
-     * @param out
+     * @param response 响应对象
      *
-     * @throws org.keycloak.saml.common.exceptions.ProcessingException
+     * @throws org.keycloak.saml.common.exceptions.ProcessingException 写入失败时抛出
      */
     public void write(ResponseType response) throws ProcessingException {
         StaxUtil.writeStartElement(writer, PROTOCOL_PREFIX, JBossSAMLConstants.RESPONSE__PROTOCOL.get(), JBossSAMLURIConstants.PROTOCOL_NSURI.get());
@@ -106,6 +112,7 @@ public class SAMLResponseWriter extends BaseWriter {
         StaxUtil.flush(writer);
     }
 
+    /** 写入 ArtifactResponse 响应。 */
     public void write(ArtifactResponseType response) throws ProcessingException {
         StaxUtil.writeStartElement(writer, PROTOCOL_PREFIX, JBossSAMLConstants.ARTIFACT_RESPONSE.get(), JBossSAMLURIConstants.PROTOCOL_NSURI.get());
 
@@ -155,13 +162,12 @@ public class SAMLResponseWriter extends BaseWriter {
     }
 
     /**
-     * Write a {@code StatusResponseType}
+     * 写入 {@code StatusResponseType} 通用状态响应。
      *
-     * @param response
-     * @param qname QName of the starting element
-     * @param out
+     * @param response 状态响应对象
+     * @param qname 根元素 QName
      *
-     * @throws ProcessingException
+     * @throws ProcessingException 写入失败时抛出
      */
     public void write(StatusResponseType response, QName qname) throws ProcessingException {
         if (qname == null) {
@@ -197,12 +203,11 @@ public class SAMLResponseWriter extends BaseWriter {
     }
 
     /**
-     * Write a {@code StatusType} to stream
+     * 将 {@code StatusType} 写入 XML 流。
      *
-     * @param status
-     * @param out
+     * @param status 状态对象
      *
-     * @throws ProcessingException
+     * @throws ProcessingException 写入失败时抛出
      */
     public void write(StatusType status) throws ProcessingException {
         StaxUtil.writeStartElement(writer, PROTOCOL_PREFIX, JBossSAMLConstants.STATUS.get(), JBossSAMLURIConstants.PROTOCOL_NSURI.get());
@@ -226,12 +231,11 @@ public class SAMLResponseWriter extends BaseWriter {
     }
 
     /**
-     * Write a {@code StatusCodeType} to stream
+     * 将 {@code StatusCodeType} 写入 XML 流。
      *
-     * @param statusCodeType
-     * @param out
+     * @param statusCodeType 状态码对象
      *
-     * @throws ProcessingException
+     * @throws ProcessingException 写入失败时抛出
      */
     public void write(StatusCodeType statusCodeType) throws ProcessingException {
         StaxUtil.writeStartElement(writer, PROTOCOL_PREFIX, JBossSAMLConstants.STATUS_CODE.get(), JBossSAMLURIConstants.PROTOCOL_NSURI.get());
@@ -249,12 +253,11 @@ public class SAMLResponseWriter extends BaseWriter {
     }
 
     /**
-     * Write a {@code StatusDetailType} to stream
+     * 将 {@code StatusDetailType} 写入 XML 流。
      *
-     * @param statusDetailType
-     * @param out
+     * @param statusDetailType 状态详情对象
      *
-     * @throws ProcessingException
+     * @throws ProcessingException 写入失败时抛出
      */
     public void write(StatusDetailType statusDetailType) throws ProcessingException {
         StaxUtil.writeStartElement(writer, PROTOCOL_PREFIX, JBossSAMLConstants.STATUS_CODE.get(), JBossSAMLURIConstants.PROTOCOL_NSURI.get());
@@ -262,15 +265,9 @@ public class SAMLResponseWriter extends BaseWriter {
         StaxUtil.flush(writer);
     }
 
-    /**
-     * Write the common attributes for all response types
-     *
-     * @param statusResponse
-     *
-     * @throws ProcessingException
-     */
+    /** 写入所有响应类型共有的基础属性。 */
     private void writeBaseAttributes(StatusResponseType statusResponse) throws ProcessingException {
-        // Attributes
+        // 写入公共响应属性
         StaxUtil.writeAttribute(writer, JBossSAMLConstants.ID.get(), statusResponse.getID());
         StaxUtil.writeAttribute(writer, JBossSAMLConstants.VERSION.get(), statusResponse.getVersion());
         StaxUtil.writeAttribute(writer, JBossSAMLConstants.ISSUE_INSTANT.get(), statusResponse.getIssueInstant().toString());

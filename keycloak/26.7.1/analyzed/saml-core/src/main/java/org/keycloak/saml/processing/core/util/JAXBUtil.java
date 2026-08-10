@@ -39,39 +39,43 @@ import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
 /**
- * Utility to obtain JAXB2 marshaller/unmarshaller etc
+ * JAXB2 序列化/反序列化工具类。
+ * <p>提供 Marshaller、Unmarshaller 及 Schema 校验实例的获取与缓存。</p>
  *
  * @author Anil.Saldhana@redhat.com
  * @since May 26, 2009
  */
 public class JAXBUtil {
 
+    /** 日志记录器。 */
     private static final PicketLinkLogger logger = PicketLinkLoggerFactory.getLogger();
 
+    /** W3C XML Schema 命名空间 URI。 */
     public static final String W3C_XML_SCHEMA_NS_URI = "http://www.w3.org/2001/XMLSchema";
 
+    /** JAXBContext 缓存。 */
     private static final HashMap<String, JAXBContext> jaxbContextHash = new HashMap<String, JAXBContext>();
 
     static {
-        // Useful on Sun VMs. Harmless on other VMs.
+        // Sun VM 上可加速启动；其他 VM 上无害
         SecurityActions.setSystemProperty("com.sun.xml.bind.v2.runtime.JAXBContextImpl.fastBoot", "true");
     }
 
     /**
-     * Get the JAXB Marshaller
+     * 获取带 Schema 校验的 JAXB Marshaller。
      *
-     * @param pkgName The package name for the jaxb context
-     * @param schemaLocation location of the schema to validate against
+     * @param pkgName JAXB 上下文包名
+     * @param schemaLocation Schema 文件路径
      *
-     * @return Marshaller
+     * @return 校验型 Marshaller
      *
-     * @throws JAXBException
-     * @throws SAXException
+     * @throws JAXBException JAXB 异常
+     * @throws SAXException SAX 异常
      */
     public static Marshaller getValidatingMarshaller(String pkgName, String schemaLocation) throws JAXBException, SAXException {
         Marshaller marshaller = getMarshaller(pkgName);
 
-        // Validate against schema
+        // 绑定 Schema 进行校验
         Schema schema = getJAXPSchemaInstance(schemaLocation);
         marshaller.setSchema(schema);
 
@@ -79,13 +83,13 @@ public class JAXBUtil {
     }
 
     /**
-     * Get the JAXB Marshaller
+     * 获取 JAXB Marshaller（不校验 Schema）。
      *
-     * @param pkgName The package name for the jaxb context
+     * @param pkgName JAXB 上下文包名
      *
-     * @return Marshaller
+     * @return Marshaller 实例
      *
-     * @throws JAXBException
+     * @throws JAXBException JAXB 异常
      */
     public static Marshaller getMarshaller(String pkgName) throws JAXBException {
         if (pkgName == null)
@@ -94,18 +98,18 @@ public class JAXBUtil {
         JAXBContext jc = getJAXBContext(pkgName);
         Marshaller marshaller = jc.createMarshaller();
         marshaller.setProperty(Marshaller.JAXB_ENCODING, GeneralConstants.SAML_CHARSET_NAME);
-        marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.FALSE); // Breaks signatures
+        marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.FALSE); // 格式化会破坏签名
         return marshaller;
     }
 
     /**
-     * Get the JAXB Unmarshaller
+     * 获取 JAXB Unmarshaller。
      *
-     * @param pkgName The package name for the jaxb context
+     * @param pkgName JAXB 上下文包名
      *
-     * @return unmarshaller
+     * @return Unmarshaller 实例
      *
-     * @throws JAXBException
+     * @throws JAXBException JAXB 异常
      */
     public static Unmarshaller getUnmarshaller(String pkgName) throws JAXBException {
         if (pkgName == null)
@@ -115,13 +119,13 @@ public class JAXBUtil {
     }
 
     /**
-     * Get the JAXB Unmarshaller for a selected set of package names
+     * 获取多包名组合的 JAXB Unmarshaller。
      *
-     * @param pkgNames
+     * @param pkgNames 包名数组
      *
-     * @return
+     * @return Unmarshaller 实例
      *
-     * @throws JAXBException
+     * @throws JAXBException JAXB 异常
      */
     public static Unmarshaller getUnmarshaller(String... pkgNames) throws JAXBException {
         if (pkgNames == null)
@@ -135,15 +139,15 @@ public class JAXBUtil {
     }
 
     /**
-     * Get the JAXB Unmarshaller
+     * 获取带 Schema 校验的 JAXB Unmarshaller。
      *
-     * @param pkgName The package name for the jaxb context
-     * @param schemaLocation location of the schema to validate against
+     * @param pkgName JAXB 上下文包名
+     * @param schemaLocation Schema 文件路径
      *
-     * @return unmarshaller
+     * @return 校验型 Unmarshaller
      *
-     * @throws JAXBException
-     * @throws SAXException
+     * @throws JAXBException JAXB 异常
+     * @throws SAXException SAX 异常
      */
     public static Unmarshaller getValidatingUnmarshaller(String pkgName, String schemaLocation) throws JAXBException,
             SAXException {
@@ -241,6 +245,7 @@ public class JAXBUtil {
         return scFact;
     }
 
+    /** 获取或创建缓存的 {@link JAXBContext}。 */
     public static JAXBContext getJAXBContext(String path) throws JAXBException {
         JAXBContext jx = jaxbContextHash.get(path);
         if (jx == null) {
@@ -250,6 +255,7 @@ public class JAXBUtil {
         return jx;
     }
 
+    /** 根据多个路径获取或创建缓存的 {@link JAXBContext}。 */
     public static JAXBContext getJAXBContext(String... paths) throws JAXBException {
         int len = paths.length;
         if (len == 0)
@@ -270,6 +276,7 @@ public class JAXBUtil {
         return jx;
     }
 
+    /** 根据 Class 获取或创建缓存的 {@link JAXBContext}。 */
     public static JAXBContext getJAXBContext(Class<?> clazz) throws JAXBException {
         String clazzName = clazz.getName();
 

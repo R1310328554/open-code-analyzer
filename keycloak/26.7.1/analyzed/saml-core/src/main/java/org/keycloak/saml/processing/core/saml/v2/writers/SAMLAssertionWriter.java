@@ -50,30 +50,36 @@ import org.keycloak.saml.processing.core.parsers.saml.assertion.SAMLAssertionQNa
 import static org.keycloak.saml.common.constants.JBossSAMLURIConstants.ASSERTION_NSURI;
 
 /**
- * Write the SAML Assertion to stream
+ * 将 SAML 2.0 断言对象序列化为 XML 流。
+ * <p>支持 Conditions、AuthnStatement、AttributeStatement 等子结构。</p>
  *
  * @author Anil.Saldhana@redhat.com
  * @since Nov 2, 2010
  */
 public class SAMLAssertionWriter extends BaseWriter {
 
+    /**
+     * 构造断言写入器。
+     *
+     * @param writer XML 流写入器
+     */
     public SAMLAssertionWriter(XMLStreamWriter writer) {
         super(writer);
     }
 
     /**
-     * Write an {@code AssertionType} to stream
+     * 将 {@code AssertionType} 写入 XML 流。
      *
-     * @param assertion
+     * @param assertion 断言对象
      *
-     * @throws org.keycloak.saml.common.exceptions.ProcessingException
+     * @throws org.keycloak.saml.common.exceptions.ProcessingException 写入失败时抛出
      */
     public void write(AssertionType assertion) throws ProcessingException {
         StaxUtil.writeStartElement(writer, ASSERTION_PREFIX, JBossSAMLConstants.ASSERTION.get(), ASSERTION_NSURI.get());
         StaxUtil.writeNameSpace(writer, ASSERTION_PREFIX, ASSERTION_NSURI.get());
         StaxUtil.writeDefaultNameSpace(writer, ASSERTION_NSURI.get());
 
-        // Attributes
+        // 写入断言根属性
         StaxUtil.writeAttribute(writer, JBossSAMLConstants.ID.get(), assertion.getID());
         StaxUtil.writeAttribute(writer, JBossSAMLConstants.VERSION.get(), assertion.getVersion());
         StaxUtil.writeAttribute(writer, JBossSAMLConstants.ISSUE_INSTANT.get(), assertion.getIssueInstant().toString());
@@ -151,17 +157,18 @@ public class SAMLAssertionWriter extends BaseWriter {
     }
 
     /**
-     * Write an {@code StatementAbstractType} to stream
+     * 将 {@code StatementAbstractType} 写入流（尚未实现）。
      *
-     * @param statement
+     * @param statement 语句对象
      *
-     * @throws ProcessingException
+     * @throws ProcessingException 写入失败时抛出
      */
     public void write(StatementAbstractType statement) throws ProcessingException {
         // TODO: handle this section
         throw logger.notImplementedYet("NYI");
     }
 
+    /** 写入属性语句（AttributeStatement）。 */
     public void write(AttributeStatementType statement) throws ProcessingException {
         StaxUtil.writeStartElement(writer, ASSERTION_PREFIX, JBossSAMLConstants.ATTRIBUTE_STATEMENT.get(),
                 ASSERTION_NSURI.get());
@@ -184,11 +191,12 @@ public class SAMLAssertionWriter extends BaseWriter {
     }
 
     /**
-     * Write an {@code AuthnStatementType} to stream
+     * 将 {@code AuthnStatementType} 写入 XML 流。
      *
-     * @param authnStatement
+     * @param authnStatement 认证语句
+     * @param includeNamespace 是否输出命名空间声明
      *
-     * @throws ProcessingException
+     * @throws ProcessingException 写入失败时抛出
      */
     public void write(AuthnStatementType authnStatement, boolean includeNamespace) throws ProcessingException {
         StaxUtil.writeStartElement(writer, ASSERTION_PREFIX, JBossSAMLConstants.AUTHN_STATEMENT.get(), ASSERTION_NSURI.get());
@@ -222,11 +230,11 @@ public class SAMLAssertionWriter extends BaseWriter {
     }
 
     /**
-     * Write an {@code AuthnContextType} to stream
+     * 将 {@code AuthnContextType} 写入 XML 流。
      *
-     * @param authContext
+     * @param authContext 认证上下文
      *
-     * @throws ProcessingException
+     * @throws ProcessingException 写入失败时抛出
      */
     public void write(AuthnContextType authContext) throws ProcessingException {
         StaxUtil.writeStartElement(writer, ASSERTION_PREFIX, JBossSAMLConstants.AUTHN_CONTEXT.get(), ASSERTION_NSURI.get());

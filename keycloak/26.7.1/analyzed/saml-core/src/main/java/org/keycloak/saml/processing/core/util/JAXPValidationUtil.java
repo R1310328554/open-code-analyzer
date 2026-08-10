@@ -50,19 +50,24 @@ import static org.keycloak.saml.common.util.DocumentUtil.feature_external_genera
 import static org.keycloak.saml.common.util.DocumentUtil.feature_external_parameter_entities;
 
 /**
- * Utility class associated with JAXP Validation
+ * JAXP Schema 校验工具类。
+ * <p>提供 SAML 文档的 Schema 校验及 Validator 单例管理。</p>
  *
  * @author Anil.Saldhana@redhat.com
  * @since Jun 30, 2011
  */
 public class JAXPValidationUtil {
 
+    /** 日志记录器。 */
     private static final PicketLinkLogger logger = PicketLinkLoggerFactory.getLogger();
 
+    /** 缓存的 Validator 实例。 */
     protected static Validator validator;
 
+    /** 缓存的 SchemaFactory 实例。 */
     protected static SchemaFactory schemaFactory;
 
+    /** 校验输入流中的 SAML XML 文档。 */
     public static void validate(InputStream stream) throws SAXException, IOException {
         try {
             validator().validate(new StAXSource(StaxParserUtil.getXMLEventReader(stream)));
@@ -72,11 +77,11 @@ public class JAXPValidationUtil {
     }
 
     /**
-     * Based on system property "picketlink.schema.validate" set to "true", do schema validation
+     * 根据系统属性 {@code picketlink.schema.validate} 决定是否执行 Schema 校验。
      *
-     * @param samlDocument
+     * @param samlDocument SAML DOM 节点
      *
-     * @throws org.keycloak.saml.common.exceptions.ProcessingException
+     * @throws org.keycloak.saml.common.exceptions.ProcessingException 校验失败时抛出
      */
     public static void checkSchemaValidation(Node samlDocument) throws ProcessingException {
         if (SecurityActions.getSystemProperty("picketlink.schema.validate", "false").equalsIgnoreCase("true")) {
@@ -88,6 +93,7 @@ public class JAXPValidationUtil {
         }
     }
 
+    /** 获取或初始化单例 Validator，并禁用外部实体访问。 */
     public static Validator validator() throws SAXException, IOException {
         SystemPropertiesUtil.ensure();
 
@@ -97,9 +103,7 @@ public class JAXPValidationUtil {
                 throw logger.nullValueError("schema");
 
             validator = schema.newValidator();
-            // Do not optimize the following into setProperty(...) && setProperty(...).
-            // This way if it fails in the first setProperty, it will try the subsequent setProperty anyway
-            // which it would not due to short-circuiting in case of an && expression.
+            // 不可简化为 && 短路：首个 setProperty 失败时仍需尝试后续属性
             boolean successful1 = setProperty(validator, FixXMLConstants.ACCESS_EXTERNAL_DTD, "");
             successful1 &= setProperty(validator, FixXMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
             boolean successful2 = setFeature(validator, feature_disallow_doctype_decl, true);
@@ -174,6 +178,7 @@ public class JAXPValidationUtil {
         return sourceArr;
     }
 
+    /** 自定义 SAX 错误处理器。 */
     private static class CustomErrorHandler implements ErrorHandler {
 
         public void error(SAXParseException ex) throws SAXException {

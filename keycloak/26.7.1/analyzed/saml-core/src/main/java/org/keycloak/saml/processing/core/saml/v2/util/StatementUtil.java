@@ -40,23 +40,25 @@ import org.keycloak.saml.processing.core.constants.AttributeConstants;
 import org.keycloak.saml.processing.core.saml.v2.constants.X500SAMLProfileConstants;
 
 /**
- * Deals with SAML2 Statements
+ * SAML 2.0 语句（Statement）构造与转换工具。
+ * <p>支持认证语句、属性语句的创建，以及属性集合与 Map 的互转。</p>
  *
  * @author Anil.Saldhana@redhat.com
  * @since Aug 31, 2009
  */
 public class StatementUtil {
 
+    /** X500 编码属性的 QName。 */
     public static final QName X500_QNAME = new QName(JBossSAMLURIConstants.X500_NSURI.get(), "Encoding",
             JBossSAMLURIConstants.X500_PREFIX.get());
 
     /**
-     * Create an AuthnStatementType given the issue instant and the type of authentication
+     * 根据签发时刻与认证上下文类引用创建 {@link AuthnStatementType}。
      *
-     * @param instant an instanceof {@link XMLGregorianCalendar}
-     * @param authnContextClassRefValue indicate the type of authentication performed
+     * @param instant 签发时刻，类型为 {@link XMLGregorianCalendar}
+     * @param authnContextClassRefValue 认证上下文类引用 URI
      *
-     * @return {@link AuthnStatementType}
+     * @return {@link AuthnStatementType} 认证语句
      */
     public static AuthnStatementType createAuthnStatement(XMLGregorianCalendar instant, String authnContextClassRefValue) {
         AuthnStatementType authnStatement = new AuthnStatementType(instant);
@@ -74,11 +76,11 @@ public class StatementUtil {
     }
 
     /**
-     * Create an attribute statement with all the attributes
+     * 根据属性映射创建属性语句。
      *
-     * @param attributes a map with keys from {@link AttributeConstants}
+     * @param attributes 属性键值映射，键来自 {@link AttributeConstants}
      *
-     * @return
+     * @return 属性语句，无属性时可能为 {@code null}
      */
     public static AttributeStatementType createAttributeStatement(Map<String, Object> attributes) {
         AttributeStatementType attrStatement = null;
@@ -88,12 +90,12 @@ public class StatementUtil {
         for (var entry : attributes.entrySet()) {
             String key = entry.getKey();
             if (i == 0) {
-                // Deal with the X500 Profile of SAML2
+                // 处理 SAML2 X500 Profile
                 attrStatement = new AttributeStatementType();
                 i++;
             }
 
-            // if the attribute contains roles, add each role as an attribute.
+            // 若属性值为角色集合，则逐个角色添加为属性
             if (AttributeConstants.ROLES.equalsIgnoreCase(key)) {
                 Object value = entry.getValue();
                 if (value instanceof Collection<?>) {
@@ -134,11 +136,11 @@ public class StatementUtil {
     }
 
     /**
-     * Given a set of roles, create an attribute statement
+     * 根据角色列表创建属性语句（每个角色单独一条属性）。
      *
-     * @param roles
+     * @param roles 角色名称列表
      *
-     * @return
+     * @return 属性语句
      */
     public static AttributeStatementType createAttributeStatement(List<String> roles) {
         AttributeStatementType attrStatement = null;
@@ -154,12 +156,12 @@ public class StatementUtil {
     }
 
     /**
-     * Given a set of roles, create an attribute statement
+     * 根据角色列表创建属性语句。
      *
-     * @param roles
-     * @param multivalued if you want the attribute to be multi valued
+     * @param roles 角色名称列表
+     * @param multivalued 是否合并为单条多值属性
      *
-     * @return
+     * @return 属性语句
      */
     public static AttributeStatementType createAttributeStatementForRoles(List<String> roles, boolean multivalued) {
         if (!multivalued) {
@@ -175,12 +177,12 @@ public class StatementUtil {
     }
 
     /**
-     * Given an attribute type and a value, create {@link AttributeStatementType}
+     * 根据单个键值对创建 {@link AttributeStatementType}。
      *
-     * @param key attribute type
-     * @param value attribute value
+     * @param key 属性名
+     * @param value 属性值
      *
-     * @return
+     * @return 属性语句
      */
     public static AttributeStatementType createAttributeStatement(String key, String value) {
         AttributeStatementType attrStatement = new AttributeStatementType();
@@ -191,6 +193,7 @@ public class StatementUtil {
         return attrStatement;
     }
 
+    /** 将属性语句集合转换为 Map（键为友好名或属性名）。 */
     public static Map<String, Object> asMap(Set<AttributeStatementType> attributeStatementTypes) {
         Map<String, Object> attrMap = new HashMap<>();
 
@@ -226,6 +229,7 @@ public class StatementUtil {
         return attrMap;
     }
 
+    /** 创建带 X500 LDAP 编码标记的属性类型。 */
     private static AttributeType getX500Attribute(String name) {
         AttributeType att = new AttributeType(name);
         att.getOtherAttributes().put(X500_QNAME, "LDAP");

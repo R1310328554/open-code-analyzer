@@ -41,23 +41,25 @@ import org.keycloak.saml.processing.core.constants.PicketLinkFederationConstants
 import org.xml.sax.SAXException;
 
 /**
- * Signature utility for signing content
+ * SAML 签名工具类，提供内容签名、验签及密钥值构造。
+ * <p>支持 DSA/RSA 算法，将公钥封装为 {@code KeyValueType}。</p>
  *
  * @author Anil.Saldhana@redhat.com
  * @since Dec 16, 2008
  */
 public class SignatureUtil {
 
+    /** 日志记录器。 */
     private static final PicketLinkLogger logger = PicketLinkLoggerFactory.getLogger();
 
     /**
-     * Marshall a SignatureType to output stream
+     * 将 {@code SignatureType} 序列化到输出流。
      *
-     * @param signature
-     * @param os
+     * @param signature 待序列化的签名对象
+     * @param os 目标输出流
      *
-     * @throws SAXException
-     * @throws JAXBException
+     * @throws SAXException SAX 处理异常
+     * @throws JAXBException JAXB 序列化异常
      */
     public static void marshall(SignatureType signature, OutputStream os) throws JAXBException, SAXException {
         throw logger.notImplementedYet("NYI");
@@ -68,11 +70,11 @@ public class SignatureUtil {
     }
 
     /**
-     * Get the XML Signature URI for the algo (RSA, DSA)
+     * 根据算法名称（RSA/DSA）获取对应的 XML 签名 URI。
      *
-     * @param algo
+     * @param algo 算法名称
      *
-     * @return
+     * @return XML 数字签名算法 URI，未知算法返回 {@code null}
      */
     public static String getXMLSignatureAlgorithmURI(String algo) {
         String xmlSignatureAlgo = null;
@@ -86,14 +88,14 @@ public class SignatureUtil {
     }
 
     /**
-     * Sign a string using the private key
+     * 使用私钥对字符串进行签名。
      *
-     * @param stringToBeSigned
-     * @param signingKey
+     * @param stringToBeSigned 待签名字符串
+     * @param signingKey 签名私钥
      *
-     * @return
+     * @return 签名字节数组
      *
-     * @throws GeneralSecurityException
+     * @throws GeneralSecurityException 签名过程安全异常
      */
     public static byte[] sign(String stringToBeSigned, PrivateKey signingKey) throws GeneralSecurityException {
         if (stringToBeSigned == null)
@@ -109,15 +111,15 @@ public class SignatureUtil {
     }
 
     /**
-     * Validate the signed content with the signature value
+     * 使用公钥验证签名内容。
      *
-     * @param signedContent
-     * @param signatureValue
-     * @param validatingKey
+     * @param signedContent 原始待验签内容
+     * @param signatureValue 签名值
+     * @param validatingKey 验签公钥
      *
-     * @return
+     * @return 验签是否通过
      *
-     * @throws GeneralSecurityException
+     * @throws GeneralSecurityException 验签过程安全异常
      */
     public static boolean validate(byte[] signedContent, byte[] signatureValue, PublicKey validatingKey)
             throws GeneralSecurityException {
@@ -128,8 +130,7 @@ public class SignatureUtil {
         if (validatingKey == null)
             throw logger.nullArgumentError("validatingKey");
 
-        // We assume that the sigatureValue has the same algorithm as the public key
-        // If not, there will be an exception anyway
+        // 假定 signatureValue 与公钥使用相同算法；否则将抛出异常
         String algo = validatingKey.getAlgorithm();
         Signature sig = getSignature(algo);
 
@@ -139,16 +140,16 @@ public class SignatureUtil {
     }
 
     /**
-     * Validate the signature using a x509 certificate
+     * 使用 X509 证书验证签名。
      *
-     * @param signedContent
-     * @param signatureValue
-     * @param signatureAlgorithm
-     * @param validatingCert
+     * @param signedContent 原始待验签内容
+     * @param signatureValue 签名值
+     * @param signatureAlgorithm 签名算法标识
+     * @param validatingCert 验签证书
      *
-     * @return
+     * @return 验签是否通过
      *
-     * @throws GeneralSecurityException
+     * @throws GeneralSecurityException 验签过程安全异常
      */
     public static boolean validate(byte[] signedContent, byte[] signatureValue, String signatureAlgorithm,
                                    X509Certificate validatingCert) throws GeneralSecurityException {
@@ -170,13 +171,12 @@ public class SignatureUtil {
 
     /**
      * <p>
-     * Creates a {@code KeyValueType} that wraps the specified public key. This method supports DSA and RSA keys.
+     * 将指定公钥封装为 {@code KeyValueType}，支持 DSA 与 RSA 密钥。
      * </p>
      *
-     * @param key the {@code PublicKey} that will be represented as a {@code KeyValueType}.
+     * @param key 待表示为 {@code KeyValueType} 的公钥
      *
-     * @return the constructed {@code KeyValueType} or {@code null} if the specified key is neither a DSA nor a RSA
-     *         key.
+     * @return 构造的 {@code KeyValueType}；非 DSA/RSA 密钥时抛出异常
      */
     public static KeyValueType createKeyValue(PublicKey key) {
         if (key instanceof RSAPublicKey) {
@@ -205,6 +205,7 @@ public class SignatureUtil {
         throw logger.unsupportedType(key.toString());
     }
 
+    /** 根据算法名称获取 {@code Signature} 实例。 */
     private static Signature getSignature(String algo) throws GeneralSecurityException {
         Signature sig = null;
 
