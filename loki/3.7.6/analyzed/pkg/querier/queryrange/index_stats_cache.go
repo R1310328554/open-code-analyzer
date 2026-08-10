@@ -1,5 +1,7 @@
 package queryrange
 
+// index_stats_cache 为 IndexStats 查询提供 results cache 中间件：按时间比例 Extract 子区间统计并尊重 max_stats_cache_freshness。
+
 import (
 	"context"
 	"flag"
@@ -19,6 +21,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/validation"
 )
 
+// IndexStatsSplitter 在通用 cache key 前加 indexStats: 前缀区分统计缓存。
 type IndexStatsSplitter struct {
 	cacheKeyLimits
 }
@@ -31,6 +34,7 @@ func (i IndexStatsSplitter) GenerateCacheKey(ctx context.Context, userID string,
 
 type IndexStatsExtractor struct{}
 
+// IndexStatsExtractor 假设日志量均匀分布，按时间因子比例缩放 bytes/entries 等字段。
 // Extract favors the ability to cache over exactness of results. It assumes a constant distribution
 // of log volumes over a range and will extract subsets proportionally.
 func (p IndexStatsExtractor) Extract(start, end int64, res resultscache.Response, resStart, resEnd int64) resultscache.Response {
@@ -54,6 +58,7 @@ func (p IndexStatsExtractor) ResponseWithoutHeaders(resp queryrangebase.Response
 	}
 }
 
+// IndexStatsCacheConfig 嵌入 ResultsCacheConfig，flag 前缀为 frontend.index-stats-results-cache。
 type IndexStatsCacheConfig struct {
 	queryrangebase.ResultsCacheConfig `yaml:",inline"`
 }
@@ -71,6 +76,7 @@ func (cfg *IndexStatsCacheConfig) Validate() error {
 // It is used to allow tests to override the current time.
 var statsCacheMiddlewareNowTimeFunc = model.Now
 
+// shouldCacheStats 在请求结束时间落入 max_stats_cache_freshness 窗口内时跳过缓存。
 // shouldCacheStats returns true if the request should be cached.
 // It returns false if:
 // - The request end time falls within the max_stats_cache_freshness duration.
@@ -127,3 +133,4 @@ func NewIndexStatsCacheMiddleware(
 		metrics,
 	)
 }
+// NewIndexStatsCacheMiddleware 组合 Splitter、Extractor 与租户 freshness 判定注入缓存链。

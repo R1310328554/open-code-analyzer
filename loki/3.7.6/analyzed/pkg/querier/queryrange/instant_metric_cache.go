@@ -1,5 +1,7 @@
 package queryrange
 
+// instant_metric_cache 为即时 metric 查询提供 results cache：cache key 含 currentInterval 与 split duration 防止 interval 变更复用旧条目。
+
 import (
 	"context"
 	"flag"
@@ -13,6 +15,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/storage/chunk/cache/resultscache"
 )
 
+// InstantMetricSplitter 按 InstantMetricQuerySplitDuration 划分时间桶生成缓存键。
 type InstantMetricSplitter struct {
 	Limits
 	transformer UserIDTransformer
@@ -36,6 +39,7 @@ func (i InstantMetricSplitter) GenerateCacheKey(ctx context.Context, userID stri
 	return fmt.Sprintf("instant-metric:%s:%s:%d:%d", userID, r.GetQuery(), currentInterval, split)
 }
 
+// InstantMetricCacheConfig flag 前缀为 frontend.instant-metric-results-cache。
 type InstantMetricCacheConfig struct {
 	queryrangebase.ResultsCacheConfig `yaml:",inline"`
 }
@@ -49,6 +53,7 @@ func (cfg *InstantMetricCacheConfig) Validate() error {
 	return cfg.ResultsCacheConfig.Validate()
 }
 
+// NewInstantMetricCacheMiddleware 复用 PrometheusExtractor 解码 Prom 响应缓存。
 func NewInstantMetricCacheMiddleware(
 	log log.Logger,
 	limits Limits,
@@ -81,3 +86,4 @@ func NewInstantMetricCacheMiddleware(
 		metrics,
 	)
 }
+// UserIDTransformer 可在生成 cache key 前改写 tenant ID 以支持多租户映射场景。

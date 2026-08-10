@@ -1,5 +1,7 @@
 package queryrange
 
+// detected_fields 实现 Detected Fields API：从日志流解析结构化元数据与解析标签，推断字段类型与基数并返回 DetectedFieldsResponse。
+
 import (
 	"context"
 	"net/http"
@@ -24,6 +26,7 @@ import (
 	"github.com/grafana/loki/pkg/push"
 )
 
+// NewDetectedFieldsHandler 将下游日志查询结果聚合为字段列表或指定字段的值集合。
 func NewDetectedFieldsHandler(
 	limitedHandler base.Handler,
 	logHandler base.Handler,
@@ -175,6 +178,7 @@ func parseDetectedFieldValues(limit uint32, streams []push.Stream, name string) 
 	return response
 }
 
+// makeDownstreamRequest 构造 LokiRequest 并注入 CategorizeLabels 头以确保 Parsed 字段填充。
 func makeDownstreamRequest(
 	ctx context.Context,
 	limits Limits,
@@ -208,7 +212,8 @@ func makeDownstreamRequest(
 		AST: expr,
 	}
 
-	// Note(twhitney): The logic for parsing detected fields relies on the Entry.Parsed field being populated.
+	// store 与 ingester 填充 Parsed 的行为不同，需通过编码标志头统一行为。
+// Note(twhitney): The logic for parsing detected fields relies on the Entry.Parsed field being populated.
 	// The behavior of populating Entry.Parsed is different in ingesters and stores.
 	// We need to set this header to make sure Entry.Parsed is populated when getting logs from the store.
 	// Entries from the head block in the ingester always have the Parsed field populated.
@@ -223,6 +228,7 @@ func makeDownstreamRequest(
 	return limitedHandler.Do(ctx, lokiReq)
 }
 
+// parsedFields 用 HyperLogLog 估算字段基数，并记录类型、解析器与 JSON 路径。
 type parsedFields struct {
 	sketch    *hyperloglog.Sketch
 	fieldType logproto.DetectedFieldType
@@ -384,6 +390,7 @@ func getStructuredMetadata(entry push.Entry) map[string][]string {
 	return result
 }
 
+// parseEntry 合并 Entry.Parsed 与 json/logfmt 二次解析结果，排除内部错误标签。
 func parseEntry(entry push.Entry, lbls *logql_log.LabelsBuilder) (map[string][]string, []string) {
 	origParsed := getParsedLabels(entry)
 
@@ -480,3 +487,4 @@ func getParsedLabels(entry push.Entry) map[string][]string {
 
 	return result
 }
+// bytes 类型字段会规范化为 humanize 格式以便用户直接插入 LogQL 查询。

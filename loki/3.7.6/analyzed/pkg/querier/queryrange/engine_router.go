@@ -1,5 +1,7 @@
 package queryrange
 
+// engine_router 中间件按 V2 引擎有效时间范围将查询拆分为 pre/v2/post 三段，分别路由至 V1 或 V2 Handler 后合并响应。
+
 import (
 	"context"
 	"fmt"
@@ -18,6 +20,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/querier/queryrange/queryrangebase"
 )
 
+// RouterConfig 配置 V2 引擎启用开关、有效时间范围、校验函数与专用 Handler。
 // RouterConfig configures sending queries to a separate engine.
 type RouterConfig struct {
 	Enabled bool
@@ -39,6 +42,7 @@ type engineReqResp struct {
 }
 
 // engineRouter handles splitting queries between V1 and V2 engines
+// engineRouter 持有 V1/V2 下游、合并器与 metric/log 查询模式标志。
 type engineRouter struct {
 	forMetricQuery bool
 
@@ -53,6 +57,7 @@ type engineRouter struct {
 	logger log.Logger
 }
 
+// NewEngineRouterMiddleware 在查询与 V2 范围重叠且通过 Validate 时启用拆分路由。
 // NewEngineRouterMiddleware creates a middleware that splits and routes part of the query
 // to v2 engine if the query is supported by it.
 func NewEngineRouterMiddleware(
@@ -138,6 +143,7 @@ func (e engineRouter) isOverlappingV2range(r queryrangebase.Request, start, end 
 	return true
 }
 
+// splitOverlapping 最多生成 pre-v2、v2、post-v2 三个子请求，metric 查询按 step 对齐边界。
 // splitOverlapping creates a set of requests to be made. Returned requests are
 // split up to the boundary of the v2 engine's time range (v2Start, v2End).
 //
@@ -358,3 +364,4 @@ func alignV2Range(step time.Duration, v2Start, v2End time.Time) (v2AlignedStart,
 
 	return v2AlignedStart, v2AlignedEnd
 }
+// V2 返回 StatusNotImplemented 时会 warn 并 fallback 至 V1 引擎以保证可用性。

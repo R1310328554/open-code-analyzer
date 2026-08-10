@@ -1,5 +1,7 @@
 package queryrange
 
+// ordering 提供日志条目按方向合并与限流提取工具：byDir 多流排序合并，priorityqueue 从有序流堆中提取 limit 条。
+
 import (
 	"container/heap"
 	"sort"
@@ -7,6 +9,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/logproto"
 )
 
+// ordering 辅助 merger 在分片响应合并时保持 FORWARD/BACKWARD 时间顺序。
 /*
 Utils for manipulating ordering
 */
@@ -53,6 +56,7 @@ func (a byDir) merge() []logproto.Entry {
 	return result
 }
 
+// priorityqueue 用小根/大根堆维护各 stream 当前首条，Pop 每次取一条并 push 剩余。
 // priorityqueue is used for extracting a limited # of entries from a set of sorted streams
 type priorityqueue struct {
 	streams   []*logproto.Stream
@@ -78,6 +82,7 @@ func (pq *priorityqueue) Push(x interface{}) {
 	pq.streams = append(pq.streams, stream)
 }
 
+// Pop 弹出堆顶 stream 的首条 entry，余下 entries 非空时重新入堆避免内存泄漏。
 // Pop returns a stream with one entry. It pops the first entry of the first stream
 // then re-pushes the remainder of that stream if non-empty back into the queue
 func (pq *priorityqueue) Pop() interface{} {
@@ -96,3 +101,4 @@ func (pq *priorityqueue) Pop() interface{} {
 	stream.Entries = stream.Entries[:1]
 	return stream
 }
+// entries.start 返回切片首条纳秒时间戳，空切片返回 0 供 Less 比较使用。

@@ -1,6 +1,9 @@
+// 本包负责 logqlmodel 与 queryrange Protobuf 双向转换；JSON 序列化见 util/marshal。
 // Package contains methods to marshal logqmodel types to queryrange Protobuf types.
 // Its cousing is util/marshal which converts them to JSON.
 package queryrange
+
+// marshal 提供 Result↔Response、QueryRequest 包装/解包及 gRPC QueryResponse oneof 映射。
 
 import (
 	"context"
@@ -37,6 +40,7 @@ const (
 	ProtobufType = `application/vnd.google.protobuf`
 )
 
+// WriteQueryResponseProtobuf 将查询结果编码为 QueryResponse protobuf 写入 io.Writer。
 // WriteQueryResponseProtobuf marshals the promql.Value to queryrange QueryResonse and then
 // writes it to the provided io.Writer.
 func WriteQueryResponseProtobuf(params logql.Params, v logqlmodel.Result, w io.Writer) error {
@@ -58,6 +62,7 @@ func WriteQueryResponseProtobuf(params logql.Params, v logqlmodel.Result, w io.W
 	return err
 }
 
+// ResultToResponse 支持 Vector/Matrix/Scalar/Streams 及各类 sketch 结果类型。
 // ResultToResponse is the reverse of ResponseToResult below.
 func ResultToResponse(result logqlmodel.Result, params logql.Params) (queryrangebase.Response, error) {
 	switch data := result.Data.(type) {
@@ -227,6 +232,7 @@ func ResponseToResult(resp queryrangebase.Response) (logqlmodel.Result, error) {
 	}
 }
 
+// QueryResponseUnwrap 从 QueryResponse oneof 还原具体 Loki*Response 类型。
 func QueryResponseUnwrap(res *QueryResponse) (queryrangebase.Response, error) {
 	if res.Status != nil && res.Status.Code != int32(rpc.OK) {
 		return nil, status.ErrorProto(res.Status)
@@ -316,6 +322,7 @@ func QueryResponseWrapError(err error) *QueryResponse {
 	}
 }
 
+// QueryRequestUnwrap 从 metadata 恢复 query tags、limits、actor path 与 tracing 上下文。
 func (Codec) QueryRequestUnwrap(ctx context.Context, req *QueryRequest) (queryrangebase.Request, context.Context, error) {
 	if req == nil {
 		return nil, ctx, nil
@@ -494,3 +501,4 @@ func (Codec) QueryRequestWrap(ctx context.Context, r queryrangebase.Request) (*Q
 
 	return result, nil
 }
+// QueryRequestWrap 将 org ID 与 OpenTelemetry propagation 注入 metadata 供跨组件传递。

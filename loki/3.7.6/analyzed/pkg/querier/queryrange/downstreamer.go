@@ -1,5 +1,7 @@
 package queryrange
 
+// downstreamer 将 logql.DownstreamQuery 列表转为 queryrange 请求并并发执行，供 query-frontend 分片后的子查询调度。
+
 import (
 	"context"
 	"fmt"
@@ -25,6 +27,7 @@ const (
 	DefaultDownstreamConcurrency = 128
 )
 
+// DownstreamHandler 持有租户并行度限制与下游 Handler 链。
 type DownstreamHandler struct {
 	limits Limits
 	next   queryrangebase.Handler
@@ -66,6 +69,7 @@ func ParamsToLokiRequest(params logql.Params) queryrangebase.Request {
 	}
 }
 
+// LimitedRoundTripper 已限制并发，此处仍保留信号量以防恶意嵌套查询创建过多 goroutine。
 // Note: After the introduction of the LimitedRoundTripper,
 // bounding concurrency in the downstreamer is mostly redundant
 // The reason we don't remove it is to prevent malicious queries
@@ -98,6 +102,7 @@ func (h DownstreamHandler) Downstreamer(ctx context.Context) logql.Downstreamer 
 }
 
 // instance is an intermediate struct for controlling concurrency across a single query
+// instance 为单次查询维护固定大小的令牌通道，控制 Downstream 并发度。
 type instance struct {
 	parallelism int
 	locks       chan struct{}
@@ -161,6 +166,7 @@ func (in instance) Downstream(ctx context.Context, queries []logql.DownstreamQue
 	})
 }
 
+// For 通过 channel 流式收集子查询结果并写入 Accumulator，保持输入输出索引对应。
 // For runs a function against a list of queries, collecting the results or returning an error. The indices are preserved such that input[i] maps to output[i].
 func (in instance) For(
 	ctx context.Context,
@@ -274,3 +280,4 @@ func sampleStreamToVector(streams []queryrangebase.SampleStream) parser.Value {
 	}
 	return xs
 }
+// splitAlign 模式下 withoutOffset 会剥离 RangeAggregation offset 并相应平移时间窗口。

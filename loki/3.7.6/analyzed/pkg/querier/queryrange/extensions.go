@@ -1,5 +1,7 @@
 package queryrange
 
+// extensions 为 protobuf 生成的 Response 类型补充 GetHeaders/SetHeader/WithHeaders，满足 queryrangebase.Response 接口（gogoproto 不生成 custom type getter）。
+
 import (
 	"fmt"
 
@@ -9,6 +11,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/querier/queryrange/queryrangebase"
 )
 
+// 因 gogoproto 对 Repeated customtype 生成非指针切片，此处手动转换为指针切片。
 // To satisfy queryrange.Response interface(https://github.com/cortexproject/cortex/blob/21bad57b346c730d684d6d0205efef133422ab28/pkg/querier/queryrange/query_range.go#L88)
 // we need to have following method as well on response types:
 // GetHeaders() []*queryrange.PrometheusResponseHeader.
@@ -50,6 +53,7 @@ func (m *LokiSeriesResponse) WithHeaders(h []queryrangebase.PrometheusResponseHe
 	return m
 }
 
+// LokiSeriesResponse.UnmarshalJSON 用 jsonparser 直接从 HTTP JSON 解码 series 数据。
 // UnmarshalJSON decodes from loghttpSeriesResponse JSON format directly into
 // the protobuf LokiSeriesResponse.
 func (m *LokiSeriesResponse) UnmarshalJSON(data []byte) error {
@@ -127,6 +131,7 @@ func (m *LokiResponse) WithHeaders(h []queryrangebase.PrometheusResponseHeader) 
 	return m
 }
 
+// convertPrometheusResponseHeadersToPointers 将值切片转为指针切片供接口返回。
 func convertPrometheusResponseHeadersToPointers(h []queryrangebase.PrometheusResponseHeader) []*queryrangebase.PrometheusResponseHeader {
 	if h == nil {
 		return nil
@@ -140,6 +145,7 @@ func convertPrometheusResponseHeadersToPointers(h []queryrangebase.PrometheusRes
 	return resp
 }
 
+// setHeader 覆盖同名 header 或追加新键值对，不保证顺序稳定。
 // setHeader returns the passed headers with the new key-valur pair. Existing
 // entries with the same key are overridden. The order is *not* maintained.
 func setHeader(headers []queryrangebase.PrometheusResponseHeader, key, value string) []queryrangebase.PrometheusResponseHeader {
@@ -304,3 +310,4 @@ func (m *DetectedLabelsResponse) WithHeaders(h []queryrangebase.PrometheusRespon
 	m.Headers = h
 	return m
 }
+// DetectedFields/QueryPatterns 等较新 Response 类型同样在此统一实现 HTTP 头传播。

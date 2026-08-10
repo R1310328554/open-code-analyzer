@@ -1,5 +1,7 @@
 package queryrange
 
+// metrics 聚合 query-frontend 中间件 Prometheus 指标：instrument、retry、split、log cache、results cache 与 label filter 直方图。
+
 import (
 	"context"
 
@@ -12,6 +14,7 @@ import (
 	v1 "github.com/grafana/loki/v3/pkg/storage/bloom/v1"
 )
 
+// Metrics 嵌入各子中间件 metrics 结构体，由 NewMetrics 统一注册。
 type Metrics struct {
 	*queryrangebase.InstrumentMiddlewareMetrics
 	*queryrangebase.RetryMiddlewareMetrics
@@ -22,6 +25,7 @@ type Metrics struct {
 	*queryrangebase.ResultsCacheMetrics
 }
 
+// MiddlewareMapperMetrics 分别跟踪 shard mapper 与 range mapper 的改写统计。
 type MiddlewareMapperMetrics struct {
 	shardMapper *logql.MapperMetrics
 	rangeMapper *logql.MapperMetrics
@@ -46,6 +50,7 @@ func NewMetrics(registerer prometheus.Registerer, metricsNamespace string) *Metr
 	}
 }
 
+// QueryMetrics 记录每条查询中可测试 label matcher 数量分布。
 type QueryMetrics struct {
 	receivedLabelFilters prometheus.Histogram
 }
@@ -61,6 +66,7 @@ func NewMiddlewareQueryMetrics(registerer prometheus.Registerer, metricsNamespac
 	}
 }
 
+// QueryMetricsMiddleware 从 LokiRequest/LokiInstantRequest Plan.AST 提取 matcher 并 Observe。
 // QueryMetricsMiddleware can be inserted into the middleware chain to expose timing information.
 func QueryMetricsMiddleware(metrics *QueryMetrics) queryrangebase.Middleware {
 	return queryrangebase.MiddlewareFunc(func(next queryrangebase.Handler) queryrangebase.Handler {
@@ -95,3 +101,4 @@ func QueryMetricsMiddleware(metrics *QueryMetrics) queryrangebase.Middleware {
 		})
 	})
 }
+// receivedLabelFilters 使用指数桶 1–256，便于观察高基数 stream selector 查询趋势。

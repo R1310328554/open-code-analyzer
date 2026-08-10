@@ -1,5 +1,7 @@
 package queryrange
 
+// log_result_cache 缓存空 filter 日志查询结果：命中时返回空 LokiResponse 并按需补齐缓存区间外的 gap 请求。
+
 import (
 	"context"
 	"errors"
@@ -28,6 +30,7 @@ import (
 )
 
 // LogResultCacheMetrics is the metrics wrapper used in log result cache.
+// LogResultCacheMetrics 暴露 query_frontend_log_result_cache hit/miss 计数器。
 type LogResultCacheMetrics struct {
 	CacheHit  prometheus.Counter
 	CacheMiss prometheus.Counter
@@ -58,6 +61,7 @@ type LogCacheKeyGenerator interface {
 	GenerateCacheKey(ctx context.Context, tenantIDs []string, req *LokiRequest) string
 }
 
+// defaultLogCacheKeyGenerator 按 QuerySplitDuration 对齐 start 并拼接 tenant、query 与 interval。
 type defaultLogCacheKeyGenerator struct {
 	limits      Limits
 	transformer UserIDTransformer
@@ -92,6 +96,7 @@ func NewDefaultLogCacheKeyGenerator(limits Limits, transformer UserIDTransformer
 	return &defaultLogCacheKeyGenerator{limits: limits, transformer: transformer}
 }
 
+// NewLogResultCache 当前仅缓存空结果；limit>0 的非空响应因大小与 limit 语义暂未缓存。
 // NewLogResultCache creates a new log result cache middleware.
 // Currently it only caches empty filter queries, this is because those are usually easily and freely cacheable.
 // Log hits are difficult to handle because of the limit query parameter and the size of the response.
@@ -124,6 +129,7 @@ func NewLogResultCache(
 	}), nil
 }
 
+// logResultCache 在 MaxCacheFreshness 窗口外跳过缓存，miss 时空结果写入 protobuf 编码的 LokiRequest。
 type logResultCache struct {
 	next        queryrangebase.Handler
 	limits      LogCacheLimits
@@ -219,6 +225,7 @@ func (l *logResultCache) handleMiss(ctx context.Context, cacheKey string, req *L
 	return resp, nil
 }
 
+// handleHit 在缓存区间未完全覆盖时并行拉取首尾 gap，空 gap 可扩展缓存键覆盖范围。
 func (l *logResultCache) handleHit(ctx context.Context, cacheKey string, cachedRequest *LokiRequest, lokiReq *LokiRequest) (queryrangebase.Response, error) {
 	l.metrics.CacheHit.Inc()
 	// we start with an empty response
@@ -400,3 +407,4 @@ func overlap(aFrom, aThrough, bFrom, bThrough time.Time) bool {
 
 	return true
 }
+// pipeline-disabled 前缀区分禁用 pipeline wrapper 时的独立缓存命名空间。

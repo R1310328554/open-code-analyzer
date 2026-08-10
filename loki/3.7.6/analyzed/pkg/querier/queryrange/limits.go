@@ -1,5 +1,7 @@
 package queryrange
 
+// limits 实现 queryrange 租户限制中间件：查询回溯/长度截断、字节读取上限、series 计数、并行度加权与 RequiredLabels 校验。
+
 import (
 	"context"
 	"fmt"
@@ -57,6 +59,7 @@ var ErrMaxQueryParalellism = fmt.Errorf("querying is disabled, please contact yo
 
 type Limits queryrange_limits.Limits
 
+// limits 包装 Limits 接口，指针字段允许 WithSplitByLimits 等覆盖默认 split/并行度。
 type limits struct {
 	Limits
 	// Use pointers so nil value can indicate if the value was set.
@@ -141,6 +144,7 @@ type limitsMiddleware struct {
 	next queryrangebase.Handler
 }
 
+// limitsMiddleware 在 max query lookback/length 边界内裁剪或拒绝请求后转交下游。
 // NewLimitsMiddleware creates a new Middleware that enforces query limits.
 func NewLimitsMiddleware(l Limits) queryrangebase.Middleware {
 	return queryrangebase.MiddlewareFunc(func(next queryrangebase.Handler) queryrangebase.Handler {
@@ -203,6 +207,7 @@ func (l limitsMiddleware) Do(ctx context.Context, r queryrangebase.Request) (que
 	return l.next.Do(ctx, r)
 }
 
+// querySizeLimiter 通过 index stats 估算 matcher 组读取字节数，仅对 TSDB schema 生效。
 type querySizeLimiter struct {
 	logger            log.Logger
 	next              queryrangebase.Handler
@@ -410,6 +415,7 @@ func (q *querySizeLimiter) Do(ctx context.Context, r queryrangebase.Request) (qu
 	return q.next.Do(ctx, r)
 }
 
+// seriesLimiter 按 fingerprint 去重并支持 variant 标签分组限流，drilldown 可返回部分结果。
 type seriesLimiter struct {
 	hashes map[uint64]struct{}
 	// uniqueSeriesPerVariant maps from a variant label value to a map of series fingerprints
@@ -540,6 +546,7 @@ type limitedRoundTripper struct {
 
 var _ queryrangebase.Handler = limitedRoundTripper{}
 
+// limitedRoundTripper 用 SemaphoreWithTiming 限制 sharding 产生的并发下游调用数。
 // NewLimitedRoundTripper creates a new roundtripper that enforces MaxQueryParallelism to the `next` roundtripper across `middlewares`.
 func NewLimitedRoundTripper(next queryrangebase.Handler, limits Limits, configs []config.PeriodConfig, middlewares ...queryrangebase.Middleware) queryrangebase.Handler {
 	transport := limitedRoundTripper{
@@ -626,6 +633,7 @@ func (rt limitedRoundTripper) Do(c context.Context, request queryrangebase.Reque
 		})).Do(ctx, request)
 }
 
+// WeightedParallelism 按查询时间跨度在 TSDB 与非 TSDB period 间加权 max_query_parallelism。
 // WeightedParallelism will calculate the request parallelism to use
 // based on the two fields:
 // 1) `max_query_parallelism`:
@@ -820,3 +828,4 @@ func validateMatchers(ctx context.Context, limits Limits, matchers []*labels.Mat
 
 	return nil
 }
+// validateMatchers 依次检查 RequiredLabels 与 RequiredNumberLabels 防止绕过流选择器约束。

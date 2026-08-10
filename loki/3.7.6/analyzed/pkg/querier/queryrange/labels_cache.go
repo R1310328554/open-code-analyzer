@@ -1,5 +1,7 @@
 package queryrange
 
+// labels_cache 为 labels/label values 元数据查询提供 results cache：recent_metadata_query_window 内使用更细粒度 split interval。
+
 import (
 	"context"
 	"flag"
@@ -14,11 +16,13 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/validation"
 )
 
+// cacheKeyLabels 根据 LabelRequest 类型生成 labels: 或 labelvalues: 前缀缓存键。
 type cacheKeyLabels struct {
 	Limits
 	transformer UserIDTransformer
 }
 
+// metadataSplitIntervalForTimeRange 在 recent 窗口内切换 RecentMetadataQuerySplitDuration。
 // metadataSplitIntervalForTimeRange returns split interval for series and label requests.
 // If `recent_metadata_query_window` is configured and the query start interval is within this window,
 // it returns `split_recent_metadata_queries_by_interval`.
@@ -66,6 +70,7 @@ func (i cacheKeyLabels) GenerateCacheKey(ctx context.Context, userID string, r r
 
 type labelsExtractor struct{}
 
+// labelsExtractor.Extract 为 no-op：标签列表无法按时间区间切分。
 // Extract extracts the labels response for the specific time range.
 // It is a no-op since it is not possible to partition the labels data by time range as it is just a slice of strings.
 func (p labelsExtractor) Extract(_, _ int64, res resultscache.Response, _, _ int64) resultscache.Response {
@@ -95,6 +100,7 @@ func (cfg *LabelsCacheConfig) Validate() error {
 	return cfg.ResultsCacheConfig.Validate()
 }
 
+// NewLabelsCacheMiddleware 通过 shouldCacheMetadataReq 判定是否缓存元数据请求。
 func NewLabelsCacheMiddleware(
 	logger log.Logger,
 	limits Limits,
@@ -124,3 +130,4 @@ func NewLabelsCacheMiddleware(
 		metrics,
 	)
 }
+// LabelsCacheConfig 注册 frontend.label-results-cache 前缀下的 results cache 参数。
