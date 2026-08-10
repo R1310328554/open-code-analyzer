@@ -25,6 +25,7 @@ import com.alibaba.nacos.naming.model.form.InstanceForm;
 import org.springframework.stereotype.Service;
 
 /**
+ * 服务实例代理：将实例分页查询、更新与下线操作委派给 {@link InstanceHandler}，屏蔽部署模式差异。
  * Proxy class for handling instance-related operations.
  *
  * @author zhangyukun
@@ -32,12 +33,14 @@ import org.springframework.stereotype.Service;
 @Service
 public class InstanceProxy {
     
+    /** 实例 Handler，对接 naming 实例维护实现 */
     private final InstanceHandler instanceHandler;
     
     /**
+     * 注入实例 Handler 并构造代理。
      * Constructs a new InstanceProxy with the given InstanceInnerHandler and ConsoleConfig.
      *
-     * @param instanceHandler the default implementation of InstanceHandler
+     * @param instanceHandler 默认的 {@link InstanceHandler} 实现
      */
     public InstanceProxy(InstanceHandler instanceHandler) {
         this.instanceHandler = instanceHandler;
@@ -55,7 +58,9 @@ public class InstanceProxy {
      * @return the page object of {@link Instance}
      * @throws IllegalArgumentException if the deployment type is invalid
      * @throws NacosException           if the list operation fails
+      * <p>服务实例代理；详见类级说明。</p>
      */
+    /** 分页查询指定服务下的实例列表。 */
     public Page<? extends Instance> listInstances(String namespaceId,
         String serviceNameWithoutGroup, String groupName,
         String clusterName, int page, int pageSize) throws NacosException {
@@ -71,7 +76,9 @@ public class InstanceProxy {
      * @param instance     the instance to update
      * @throws NacosException           if the update operation fails
      * @throws IllegalArgumentException if the deployment type is invalid
+      * <p>服务实例代理；详见类级说明。</p>
      */
+    /** 更新实例元数据或健康状态。 */
     public void updateInstance(InstanceForm instanceForm, Instance instance) throws NacosException {
         instanceHandler.updateInstance(instanceForm, instance);
     }
@@ -83,7 +90,9 @@ public class InstanceProxy {
      * @param instance     the instance to remove
      * @throws NacosException           if the remove operation fails
      * @throws IllegalArgumentException if the deployment type is invalid
+      * <p>服务实例代理；详见类级说明。</p>
      */
+    /** 从注册中心移除指定实例。 */
     public void removeInstance(InstanceForm instanceForm, Instance instance) throws NacosException {
         instanceHandler.removeInstance(instanceForm, instance);
     }

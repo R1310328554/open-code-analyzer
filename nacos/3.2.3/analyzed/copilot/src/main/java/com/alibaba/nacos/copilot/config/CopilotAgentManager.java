@@ -30,6 +30,7 @@ import javax.annotation.PostConstruct;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
+ * Copilot Agent 管理器：基于 Nacos 配置或默认属性动态构建 AgentScope {@link ReActAgent}，并可选初始化 Studio 调试环境。
  * Copilot agent manager that manages AgentScope agents with dynamic configuration.
  *
  * @author nacos
@@ -39,11 +40,16 @@ public class CopilotAgentManager {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(CopilotAgentManager.class);
     
+    /** Nacos 配置存储，优先读取远端 copilot-config.json */
     private final CopilotConfigStorage configStorage;
+    /** Spring 绑定的默认 Copilot 配置属性 */
     private final CopilotProperties defaultProperties;
+    /** Spring 环境，用于读取 COPILOT_API_KEY 等环境变量 */
     private final Environment environment;
     
+    /** 当前生效的 Copilot 配置快照（volatile 保证可见性） */
     private volatile CopilotProperties currentConfig;
+    /** 读写锁，保护配置刷新与读取的并发安全 */
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     
     @Autowired
@@ -56,8 +62,8 @@ public class CopilotAgentManager {
     }
     
     /**
-     * Initialize AgentScope Studio if studioUrl is configured.
-     * This method should be called without holding any locks.
+     * 若配置了 studioUrl 则初始化 AgentScope Studio 调试会话。
+     * 调用时不应持有任何锁，避免阻塞配置读写。
      */
     private void initStudio() {
         CopilotProperties config = currentConfig;
@@ -90,6 +96,7 @@ public class CopilotAgentManager {
         }
     }
     
+    /** 启动时加载配置并尝试初始化 Studio。 */
     @PostConstruct
     public void init() {
         refreshConfig();
@@ -97,9 +104,9 @@ public class CopilotAgentManager {
     }
     
     /**
-     * Get current configuration.
+     * 获取当前生效的 Copilot 配置（读锁保护）。
      *
-     * @return current CopilotProperties
+     * @return 当前 {@link CopilotProperties}
      */
     public CopilotProperties getConfig() {
         lock.readLock().lock();
@@ -111,7 +118,7 @@ public class CopilotAgentManager {
     }
     
     /**
-     * Refresh configuration from storage.
+     * 从 Nacos 配置或默认值刷新当前配置，并在锁外重初始化 Studio。
      */
     public void refreshConfig() {
         lock.writeLock().lock();
@@ -127,10 +134,10 @@ public class CopilotAgentManager {
     }
     
     /**
-     * Create AgentScope agent with current configuration.
+     * 基于当前配置创建 DashScope 流式 ReAct Agent。
      *
-     * @param systemPrompt system prompt (optional)
-     * @return ReActAgent instance, or null if not configured
+     * @param systemPrompt 可选系统提示词
+     * @return {@link ReActAgent} 实例；未启用或未配置 API Key 时返回 null
      */
     public ReActAgent createAgent(String systemPrompt) {
         CopilotProperties config = getConfig();
@@ -146,7 +153,7 @@ public class CopilotAgentManager {
             return null;
         }
         
-        // Create model
+        // 构建 DashScope 流式对话模型
         DashScopeChatModel model = DashScopeChatModel.builder()
             .apiKey(apiKey)
             .modelName(config.getModel())
@@ -154,7 +161,7 @@ public class CopilotAgentManager {
             .enableThinking(true)
             .build();
         
-        // Create agent
+        // 组装 ReAct Agent 并注入系统提示词
         ReActAgent.Builder agentBuilder = ReActAgent.builder()
             .name("CopilotAgent")
             .model(model);
@@ -167,9 +174,9 @@ public class CopilotAgentManager {
     }
     
     /**
-     * Check if Copilot is enabled and configured.
+     * 判断 Copilot 是否已启用且 API Key 已配置。
      *
-     * @return true if enabled and configured
+     * @return 启用且可用时返回 true
      */
     public boolean isEnabled() {
         CopilotProperties config = getConfig();
@@ -182,12 +189,12 @@ public class CopilotAgentManager {
     }
     
     /**
-     * Get effective configuration (from Nacos Config or default).
+     * 解析生效配置：优先 Nacos Config，否则回退默认属性。
      *
-     * @return effective CopilotProperties
+     * @return 生效的 {@link CopilotProperties}
      */
     private CopilotProperties getEffectiveConfig() {
-        // First try to get from Nacos Config
+        // 优先从 Nacos 配置中心读取
         if (configStorage != null && configStorage.isAvailable()) {
             CopilotProperties config = configStorage.getConfig();
             if (config != null) {
@@ -196,25 +203,25 @@ public class CopilotAgentManager {
             }
         }
         
-        // Fallback to default properties
+        // 回退至 Spring 默认配置
         LOGGER.debug("Using default Copilot config");
         return defaultProperties;
     }
     
     /**
-     * Get API key from environment variable or config.
+     * 解析 API Key：环境变量 COPILOT_API_KEY 优先于配置项。
      *
-     * @param config CopilotProperties
-     * @return API key
+     * @param config Copilot 配置
+     * @return API Key，未配置时返回 null
      */
     private String getApiKey(CopilotProperties config) {
-        // First try environment variable
+        // 优先读取环境变量
         String apiKey = environment.getProperty("COPILOT_API_KEY");
         if (StringUtils.isNotBlank(apiKey)) {
             return apiKey;
         }
         
-        // Then try config property
+        // 其次读取配置属性
         if (config != null) {
             return config.getApiKey();
         }

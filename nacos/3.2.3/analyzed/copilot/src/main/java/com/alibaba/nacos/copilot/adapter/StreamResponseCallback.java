@@ -17,29 +17,30 @@
 package com.alibaba.nacos.copilot.adapter;
 
 /**
+ * 流式响应回调接口：用于 Copilot 与大模型流式交互时分片接收、错误处理与完成通知。
  * Stream response callback interface.
  *
- * @param <T> response type
+ * @param <T> 响应分片类型
  * @author nacos
  */
 public interface StreamResponseCallback<T> {
     
     /**
-     * Called when a new response chunk is received.
+     * 收到新的流式响应分片时回调。
      *
-     * @param response response chunk
+     * @param response 响应分片内容
      */
     void onNext(T response);
     
     /**
-     * Called when an error occurs.
+     * 流式传输发生异常时回调。
      *
-     * @param t error
+     * @param t 异常对象
      */
     void onError(Throwable t);
     
     /**
-     * Called when the stream is complete.
+     * 流式响应全部接收完毕时回调。
      */
     void onComplete();
 }

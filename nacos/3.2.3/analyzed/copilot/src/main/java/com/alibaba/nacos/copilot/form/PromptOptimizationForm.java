@@ -19,6 +19,7 @@ package com.alibaba.nacos.copilot.form;
 import com.alibaba.nacos.common.utils.StringUtils;
 
 /**
+ * Prompt 优化表单：提交原始 Prompt 及可选优化目标，驱动 Copilot 生成改进版本。
  * Prompt optimization form.
  *
  * @author nacos
@@ -26,18 +27,17 @@ import com.alibaba.nacos.common.utils.StringUtils;
 public class PromptOptimizationForm {
     
     /**
-     * Original Prompt content (required).
+     * 原始 Prompt 内容（必填）。
      */
     private String prompt;
     
     /**
-     * Optimization goal/requirement description (optional).
-     * e.g., "Make response more concise", "Add more examples", "Support multi-language"
+     * 优化目标或需求描述（可选），如「使回复更简洁」「增加示例」「支持多语言」等。
      */
     private String optimizationGoal;
     
     /**
-     * Validate form data.
+     * 校验原始 Prompt 非空。
      */
     public void validate() {
         if (StringUtils.isBlank(prompt)) {

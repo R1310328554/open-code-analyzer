@@ -21,6 +21,7 @@ import com.alibaba.nacos.sys.module.AbstractConsoleModuleStateBuilder;
 import com.alibaba.nacos.sys.module.ModuleState;
 
 /**
+ * Copilot 模块状态构建器：在服务端状态中暴露 {@code copilot_enabled}，供控制台 UI 按条件渲染 Copilot 相关功能。
  * Copilot module state builder. Exposes {@code copilot_enabled} in the server state so that the console UI can
  * conditionally render copilot-related features.
  *
@@ -28,10 +29,13 @@ import com.alibaba.nacos.sys.module.ModuleState;
  */
 public class CopilotModuleStateBuilder extends AbstractConsoleModuleStateBuilder {
     
+    /** 模块标识键名 */
     public static final String COPILOT_MODULE = "copilot";
     
+    /** 模块启用状态键名 */
     public static final String COPILOT_ENABLED = "copilot_enabled";
     
+    /** 构建 Copilot 模块状态，读取 nacos.copilot.enabled 配置项。 */
     @Override
     public ModuleState build() {
         ModuleState result = new ModuleState(COPILOT_MODULE);

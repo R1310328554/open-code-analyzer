@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 插件管理代理：将控制台插件查询、启停、配置与可用性探测请求委派给 {@link PluginHandler}。
  * Proxy class for handling plugin operations.
  *
  * @author WangzJi
@@ -33,8 +34,10 @@ import java.util.Map;
 @Service
 public class PluginProxy {
     
+    /** 插件 Handler，封装本地或远程插件运维实现 */
     private final PluginHandler pluginHandler;
     
+    /** 注入插件 Handler 并构造代理 */
     public PluginProxy(PluginHandler pluginHandler) {
         this.pluginHandler = pluginHandler;
     }
@@ -45,7 +48,9 @@ public class PluginProxy {
      * @param pluginType optional plugin type filter
      * @return list of plugin info VOs
      * @throws NacosException if there is an issue fetching the plugins
+      * <p>插件管理代理；详见类级说明。</p>
      */
+    /** 按类型筛选并列举已安装插件摘要信息。 */
     public List<PluginInfoVO> listPlugins(String pluginType) throws NacosException {
         return pluginHandler.listPlugins(pluginType);
     }
@@ -57,7 +62,9 @@ public class PluginProxy {
      * @param pluginName plugin name
      * @return plugin detail VO
      * @throws NacosException if there is an issue fetching the plugin detail
+      * <p>插件管理代理；详见类级说明。</p>
      */
+    /** 查询指定插件的详细配置与运行状态。 */
     public PluginDetailVO getPluginDetail(String pluginType, String pluginName)
         throws NacosException {
         return pluginHandler.getPluginDetail(pluginType, pluginName);
@@ -71,7 +78,9 @@ public class PluginProxy {
      * @param enabled    whether to enable
      * @param localOnly  whether only apply to local node
      * @throws NacosException if there is an issue updating the plugin status
+      * <p>插件管理代理；详见类级说明。</p>
      */
+    /** 更新插件启用/禁用状态，可选择仅作用于本节点。 */
     public void updatePluginStatus(String pluginType, String pluginName, boolean enabled,
         boolean localOnly)
         throws NacosException {
@@ -86,7 +95,9 @@ public class PluginProxy {
      * @param config     configuration map
      * @param localOnly  whether only apply to local node
      * @throws NacosException if there is an issue updating the plugin config
+      * <p>插件管理代理；详见类级说明。</p>
      */
+    /** 更新插件配置项，支持集群或单节点生效范围。 */
     public void updatePluginConfig(String pluginType, String pluginName, Map<String, String> config,
         boolean localOnly) throws NacosException {
         pluginHandler.updatePluginConfig(pluginType, pluginName, config, localOnly);
@@ -99,7 +110,9 @@ public class PluginProxy {
      * @param pluginName plugin name
      * @return node availability map
      * @throws NacosException if there is an issue fetching the availability
+      * <p>插件管理代理；详见类级说明。</p>
      */
+    /** 查询插件在各集群节点上的可用性分布。 */
     public Map<String, Boolean> getPluginAvailability(String pluginType, String pluginName)
         throws NacosException {
         return pluginHandler.getPluginAvailability(pluginType, pluginName);

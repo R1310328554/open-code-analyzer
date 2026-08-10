@@ -20,6 +20,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 /**
+ * Copilot 配置属性：绑定 {@code nacos.copilot.*} 前缀，涵盖启用开关、模型、API Key 与 Studio 调试参数。
  * Copilot configuration properties.
  *
  * @author nacos
@@ -29,32 +30,32 @@ import org.springframework.stereotype.Component;
 public class CopilotProperties {
     
     /**
-     * Whether Copilot is enabled.
+     * 是否启用 Copilot 功能。
      */
     private boolean enabled = true;
     
     /**
-     * Default namespace.
+     * 默认命名空间 ID。
      */
     private String defaultNamespace = "public";
     
     /**
-     * API Key (from environment variable or config file).
+     * DashScope API Key（可由环境变量或配置文件提供）。
      */
     private String apiKey;
     
     /**
-     * Model name.
+     * 大模型名称，默认 qwen-turbo。
      */
     private String model = "qwen-turbo";
     
     /**
-     * AgentScope Studio URL.
+     * AgentScope Studio 调试服务地址。
      */
     private String studioUrl;
     
     /**
-     * AgentScope Studio Project.
+     * AgentScope Studio 项目名称。
      */
     private String studioProject = "NacosCopilot";
     
@@ -75,7 +76,7 @@ public class CopilotProperties {
     }
     
     /**
-     * Get API Key.
+     * 获取 DashScope API Key。
      *
      * @return API Key
      */
@@ -84,7 +85,7 @@ public class CopilotProperties {
     }
     
     /**
-     * Set API Key.
+     * 设置 DashScope API Key。
      *
      * @param apiKey API Key
      */
@@ -93,25 +94,25 @@ public class CopilotProperties {
     }
     
     /**
-     * Get model name.
+     * 获取大模型名称。
      *
-     * @return model name
+     * @return 模型名称
      */
     public String getModel() {
         return model;
     }
     
     /**
-     * Set model name.
+     * 设置大模型名称。
      *
-     * @param model model name
+     * @param model 模型名称
      */
     public void setModel(String model) {
         this.model = model;
     }
     
     /**
-     * Get Studio URL.
+     * 获取 AgentScope Studio 地址。
      *
      * @return Studio URL
      */
@@ -120,7 +121,7 @@ public class CopilotProperties {
     }
     
     /**
-     * Set Studio URL.
+     * 设置 AgentScope Studio 地址。
      *
      * @param studioUrl Studio URL
      */
@@ -129,18 +130,18 @@ public class CopilotProperties {
     }
     
     /**
-     * Get Studio Project.
+     * 获取 AgentScope Studio 项目名称。
      *
-     * @return Studio Project
+     * @return Studio 项目名
      */
     public String getStudioProject() {
         return studioProject;
     }
     
     /**
-     * Set Studio Project.
+     * 设置 AgentScope Studio 项目名称。
      *
-     * @param studioProject Studio Project
+     * @param studioProject Studio 项目名
      */
     public void setStudioProject(String studioProject) {
         this.studioProject = studioProject;

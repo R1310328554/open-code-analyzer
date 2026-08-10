@@ -17,6 +17,7 @@
 package com.alibaba.nacos.copilot.capability.prompt;
 
 /**
+ * Skill 生成系统提示词模板：指导 Copilot 根据用户背景信息创建符合 Agent Skill 规范的完整 Skill。
  * Skill generation prompt.
  *
  * @author nacos
@@ -24,7 +25,7 @@ package com.alibaba.nacos.copilot.capability.prompt;
 public class SkillGenerationPrompt {
     
     /**
-     * Skill generation system prompt (hardcoded).
+     * Skill 生成能力的系统提示词（硬编码），包含命名、描述、指令与资源等最佳实践约束。
      */
     public static final String SYSTEM_PROMPT =
         """
@@ -124,6 +125,6 @@ public class SkillGenerationPrompt {
             """;
     
     private SkillGenerationPrompt() {
-        // Private constructor to prevent instantiation
+        // 私有构造器，禁止实例化工具类
     }
 }

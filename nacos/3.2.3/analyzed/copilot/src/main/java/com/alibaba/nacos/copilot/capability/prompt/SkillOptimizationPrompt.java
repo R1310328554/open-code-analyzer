@@ -17,6 +17,7 @@
 package com.alibaba.nacos.copilot.capability.prompt;
 
 /**
+ * Skill 优化系统提示词模板：指导 Copilot 在保守原则下分析并改进已有 Agent Skill 的结构与内容。
  * Skill optimization system prompt (hardcoded).
  *
  * @author nacos
@@ -24,7 +25,7 @@ package com.alibaba.nacos.copilot.capability.prompt;
 public class SkillOptimizationPrompt {
     
     /**
-     * Skill optimization system prompt (hardcoded).
+     * Skill 优化能力的系统提示词（硬编码），强调仅在明显可优化时才改动并保持名称不变。
      */
     public static final String SYSTEM_PROMPT = """
         你是一个专业的 Agent Skill 优化专家，擅长分析和优化 Agent Skill 的结构和内容。
@@ -153,6 +154,6 @@ public class SkillOptimizationPrompt {
         """;
     
     private SkillOptimizationPrompt() {
-        // Private constructor to prevent instantiation
+        // 私有构造器，禁止实例化工具类
     }
 }

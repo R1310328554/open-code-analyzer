@@ -19,6 +19,7 @@ package com.alibaba.nacos.copilot.form;
 import com.alibaba.nacos.common.utils.StringUtils;
 
 /**
+ * Prompt 调试表单：携带系统 Prompt 与用户输入，供 Copilot 在线验证 Prompt 效果。
  * Prompt debug form.
  *
  * @author nacos
@@ -26,19 +27,17 @@ import com.alibaba.nacos.common.utils.StringUtils;
 public class PromptDebugForm {
     
     /**
-     * System Prompt content (required).
-     * This is the prompt template that defines the AI's behavior.
+     * 系统 Prompt 内容（必填），定义 AI 角色与行为准则的模板。
      */
     private String prompt;
     
     /**
-     * User input content (required).
-     * This is the user's message to test with the prompt.
+     * 用户输入内容（必填），用于配合 Prompt 进行联调测试。
      */
     private String userInput;
     
     /**
-     * Validate form data.
+     * 校验 Prompt 与用户输入均非空。
      */
     public void validate() {
         if (StringUtils.isBlank(prompt)) {

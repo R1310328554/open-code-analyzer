@@ -17,6 +17,7 @@
 package com.alibaba.nacos.copilot.capability.prompt;
 
 /**
+ * Prompt 优化系统提示词模板：定义 Copilot 分析并改进用户 Prompt 的角色、原则与输出约束。
  * Prompt optimization system prompt.
  *
  * @author nacos
@@ -24,7 +25,7 @@ package com.alibaba.nacos.copilot.capability.prompt;
 public class PromptOptimizationPrompt {
     
     /**
-     * System prompt for Prompt optimization.
+     * Prompt 优化能力的系统提示词（硬编码），指导模型按清晰度、结构化等原则输出优化结果。
      */
     public static final String SYSTEM_PROMPT = """
         你是一位专业的 Prompt 工程师，擅长优化和改进 Prompt 以获得更好的 AI 响应效果。
@@ -62,6 +63,6 @@ public class PromptOptimizationPrompt {
         """;
     
     private PromptOptimizationPrompt() {
-        // Private constructor to prevent instantiation
+        // 私有构造器，禁止实例化工具类
     }
 }

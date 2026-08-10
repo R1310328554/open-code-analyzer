@@ -31,6 +31,7 @@ import javax.annotation.PostConstruct;
 import java.util.Properties;
 
 /**
+ * Copilot 配置持久化：通过 {@link ConfigMaintainerService} 读写 copilot-config.json，实现 Copilot 参数的动态热更新。
  * Copilot configuration storage using Nacos Config.
  *
  * @author nacos
@@ -40,20 +41,26 @@ public class CopilotConfigStorage {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(CopilotConfigStorage.class);
     
+    /** Nacos 配置 dataId */
     private static final String CONFIG_DATA_ID = "copilot-config.json";
+    /** Nacos 配置 group */
     private static final String CONFIG_GROUP = "nacos-copilot";
+    /** 默认命名空间（未显式配置时使用） */
     private static final String DEFAULT_NAMESPACE = "public";
     
+    /** Copilot 配置所在 Nacos 命名空间 */
     @Value("${nacos.copilot.config.namespace:public}")
     private String configNamespace;
     
+    /** Nacos 服务端地址，为空时使用系统属性或本地默认值 */
     @Value("${nacos.copilot.config.serverAddr:}")
     private String serverAddr;
     
+    /** 配置运维客户端，负责 get/publish 操作 */
     private ConfigMaintainerService configMaintainerService;
     
     /**
-     * Initialize config maintainer service.
+     * 初始化配置运维客户端，按 serverAddr 或默认地址连接 Nacos。
      */
     @PostConstruct
     public void init() {
@@ -65,7 +72,7 @@ public class CopilotConfigStorage {
                     ConfigMaintainerFactory.createConfigMaintainerService(properties);
                 LOGGER.info("Copilot config storage initialized with serverAddr: {}", serverAddr);
             } else {
-                // Use default server address from environment
+                // 未配置 serverAddr 时使用环境默认地址
                 String defaultServerAddr =
                     System.getProperty("nacos.server.addr", "127.0.0.1:8848");
                 Properties properties = new Properties();
@@ -82,9 +89,9 @@ public class CopilotConfigStorage {
     }
     
     /**
-     * Get Copilot configuration from Nacos Config.
+     * 从 Nacos 配置中心读取并反序列化 Copilot 配置。
      *
-     * @return CopilotProperties, or null if not configured
+     * @return {@link CopilotProperties}；未配置或解析失败时返回 null
      */
     public CopilotProperties getConfig() {
         if (configMaintainerService == null) {
@@ -109,10 +116,10 @@ public class CopilotConfigStorage {
     }
     
     /**
-     * Save Copilot configuration to Nacos Config.
+     * 将 Copilot 配置序列化后发布至 Nacos 配置中心。
      *
-     * @param config CopilotProperties to save
-     * @return true if saved successfully
+     * @param config 待保存的配置
+     * @return 发布成功返回 true
      */
     public boolean saveConfig(CopilotProperties config) {
         if (configMaintainerService == null) {
@@ -147,9 +154,9 @@ public class CopilotConfigStorage {
     }
     
     /**
-     * Check if config storage is available.
+     * 判断配置运维客户端是否已成功初始化。
      *
-     * @return true if config storage is available
+     * @return 可用时返回 true
      */
     public boolean isAvailable() {
         return configMaintainerService != null;

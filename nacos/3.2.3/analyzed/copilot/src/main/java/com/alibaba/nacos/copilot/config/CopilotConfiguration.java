@@ -22,17 +22,14 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Copilot auto-configuration entry point, loaded via {@code AutoConfiguration.imports}.
- *
- * <p>The {@link ComponentScan} ensures that all copilot components are properly registered as Spring beans
- * in all deployment modes, including standalone console mode where the default package scan does not cover
- * the copilot package.
- *
- * <p>This configuration is guarded by two conditions:
+ * Copilot 模块自动配置入口，通过 {@code AutoConfiguration.imports} 加载。
+ * <p>{@link ComponentScan} 确保 copilot 包下组件在独立控制台等模式下也能注册为 Spring Bean。</p>
+ * <p>启用条件：</p>
  * <ul>
- *     <li>{@code nacos.copilot.enabled} must not be {@code false} (default {@code true})</li>
- *     <li>Deployment type must not be {@code server}</li>
+ *     <li>{@code nacos.copilot.enabled} 不为 {@code false}（默认 {@code true}）</li>
+ *     <li>部署类型不为 {@code server}</li>
  * </ul>
+ * Copilot auto-configuration entry point, loaded via {@code AutoConfiguration.imports}.
  *
  * @author nacos
  */
