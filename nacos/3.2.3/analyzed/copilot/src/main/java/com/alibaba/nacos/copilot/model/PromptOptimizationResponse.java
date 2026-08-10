@@ -19,6 +19,7 @@ package com.alibaba.nacos.copilot.model;
 import java.io.Serializable;
 
 /**
+ * Prompt 优化响应：流式返回优化进度、分片内容与最终结果。
  * Prompt optimization response.
  *
  * @author nacos
@@ -26,27 +27,27 @@ import java.io.Serializable;
 public class PromptOptimizationResponse implements Serializable {
     
     /**
-     * Response type: THINKING, CONTENT, DONE.
+     * 响应类型：THINKING、CONTENT、DONE。
      */
     private StreamResponseType type;
     
     /**
-     * Content fragment (used in stream response).
+     * 内容分片（流式响应时使用）。
      */
     private String chunk;
     
     /**
-     * Optimized Prompt (frontend will parse from accumulated content).
+     * 优化后的 Prompt（前端从累积内容中解析）。
      */
     private String optimizedPrompt;
     
     /**
-     * Optimization explanation (included when type is done).
+     * 优化说明（type 为 done 时附带）。
      */
     private String explanation;
     
     /**
-     * Whether the response is complete.
+     * 响应是否已完成。
      */
     private boolean done;
     

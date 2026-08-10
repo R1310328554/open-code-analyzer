@@ -22,6 +22,7 @@ import java.io.Serializable;
 import java.util.Map;
 
 /**
+ * Skill 优化请求：提交待优化 Skill、目标与会话历史，由 Copilot 改进 Agent Skill。
  * Skill optimization request.
  *
  * @author nacos
@@ -31,32 +32,27 @@ public class SkillOptimizationRequest implements Serializable {
     private static final long serialVersionUID = 1L;
     
     /**
-     * Original Skill (required, frontend should get complete Skill first).
+     * 原始 Skill（必填，前端应先获取完整 Skill）。
      */
     private Skill skill;
     
     /**
-     * Optimization goal (optional, user input optimization direction or requirement).
+     * 优化目标（可选），用户输入的改进方向或需求。
      */
     private String optimizationGoal;
     
     /**
-     * Conversation history (optional).
-     * Contains user inputs, tool calls, and model responses.
-     * The system will analyze this history to determine if it's suitable
-     * for skill optimization and what optimizations should be made.
+     * 会话历史（可选）；系统分析其是否适合 Skill 优化及应做哪些改进。
      */
     private ConversationHistory conversationHistory;
     
     /**
-     * Target file name to optimize (optional).
-     * If specified, only optimize the content of this specific file.
-     * If not specified, optimize the entire Skill.
+     * 待优化目标文件名（可选）；指定则仅优化该文件，否则优化整个 Skill。
      */
     private String targetFileName;
     
     /**
-     * Additional parameters.
+     * 附加参数，扩展优化行为的键值对。
      */
     private Map<String, Object> params;
     

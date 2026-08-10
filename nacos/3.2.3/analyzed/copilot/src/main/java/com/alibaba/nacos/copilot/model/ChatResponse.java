@@ -19,6 +19,7 @@ package com.alibaba.nacos.copilot.model;
 import java.io.Serializable;
 
 /**
+ * LLM 聊天响应：流式返回思考、工具调用、内容分片与完成状态。
  * Chat response from LLM.
  *
  * @author nacos
@@ -28,17 +29,17 @@ public class ChatResponse implements Serializable {
     private static final long serialVersionUID = 1L;
     
     /**
-     * Response type: thinking, tool_call, content, done.
+     * 响应类型，如 thinking、tool_call、content、done。
      */
     private StreamResponseType type;
     
     /**
-     * Content fragment.
+     * 内容分片。
      */
     private String chunk;
     
     /**
-     * Whether the response is complete.
+     * 响应是否已全部完成。
      */
     private boolean done;
     

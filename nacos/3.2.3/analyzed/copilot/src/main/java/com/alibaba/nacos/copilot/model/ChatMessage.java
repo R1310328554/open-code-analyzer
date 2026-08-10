@@ -19,6 +19,7 @@ package com.alibaba.nacos.copilot.model;
 import java.io.Serializable;
 
 /**
+ * 聊天消息模型：表示 LLM 对话中的单条消息，包含角色与文本内容。
  * Chat message.
  *
  * @author nacos
@@ -28,12 +29,12 @@ public class ChatMessage implements Serializable {
     private static final long serialVersionUID = 1L;
     
     /**
-     * Message role: system, user, assistant.
+     * 消息角色，如 system、user、assistant。
      */
     private String role;
     
     /**
-     * Message content.
+     * 消息正文内容。
      */
     private String content;
     

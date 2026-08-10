@@ -20,6 +20,7 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
+ * 会话历史：按时间顺序存储消息序列，可用于 Skill 生成或优化场景。
  * Conversation history containing a sequence of messages.
  * This represents a complete conversation that may be suitable for
  * skill generation or skill optimization.
@@ -31,17 +32,17 @@ public class ConversationHistory implements Serializable {
     private static final long serialVersionUID = 1L;
     
     /**
-     * List of conversation messages in chronological order.
+     * 按时间顺序排列的会话消息列表。
      */
     private List<ConversationMessage> messages;
     
     /**
-     * Conversation context or summary (optional).
+     * 会话上下文或摘要（可选）。
      */
     private String context;
     
     /**
-     * Conversation title or topic (optional).
+     * 会话标题或主题（可选）。
      */
     private String title;
     

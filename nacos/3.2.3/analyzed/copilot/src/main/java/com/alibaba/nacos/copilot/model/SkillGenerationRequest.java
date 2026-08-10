@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * Skill 生成请求：提交背景信息、MCP 工具与会话历史，由 Copilot 生成 Agent Skill。
  * Skill generation request.
  *
  * @author nacos
@@ -30,25 +31,22 @@ public class SkillGenerationRequest implements Serializable {
     private static final long serialVersionUID = 1L;
     
     /**
-     * Background information provided by user (required).
+     * 用户提供的背景信息（必填），描述 Skill 的应用场景与能力需求。
      */
     private String backgroundInfo;
     
     /**
-     * Selected MCP tools (optional).
+     * 选中的 MCP 工具列表（可选），供 Skill 生成时关联外部能力。
      */
     private List<Map<String, Object>> selectedMcpTools;
     
     /**
-     * Conversation history (optional).
-     * Contains user inputs, tool calls, and model responses.
-     * The system will analyze this history to determine if it's suitable
-     * for skill generation or optimization.
+     * 会话历史（可选）；系统将分析其是否适合 Skill 生成或优化。
      */
     private ConversationHistory conversationHistory;
     
     /**
-     * Additional parameters.
+     * 附加参数，扩展生成行为的键值对。
      */
     private Map<String, Object> params;
     

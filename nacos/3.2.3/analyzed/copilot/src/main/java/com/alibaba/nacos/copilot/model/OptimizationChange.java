@@ -19,6 +19,7 @@ package com.alibaba.nacos.copilot.model;
 import java.io.Serializable;
 
 /**
+ * 优化变更信息：记录 Prompt 或 Skill 优化过程中某一字段的改动详情。
  * Optimization change information.
  *
  * @author nacos
@@ -28,22 +29,22 @@ public class OptimizationChange implements Serializable {
     private static final long serialVersionUID = 1L;
     
     /**
-     * Changed field name (e.g., "instruction", "description").
+     * 变更字段名，如 instruction、description。
      */
     private String field;
     
     /**
-     * Change type (e.g., "improved", "added", "removed").
+     * 变更类型，如 improved、added、removed。
      */
     private String type;
     
     /**
-     * Change description.
+     * 变更描述。
      */
     private String description;
     
     /**
-     * Change reason.
+     * 变更原因说明。
      */
     private String reason;
     

@@ -20,6 +20,7 @@ import java.io.Serializable;
 import java.util.Map;
 
 /**
+ * 会话消息：表示历史中的一条记录，可为用户输入、工具调用或模型回复。
  * Conversation message in the conversation history.
  * Represents a single message in a conversation, which can be:
  * - User input
@@ -33,37 +34,37 @@ public class ConversationMessage implements Serializable {
     private static final long serialVersionUID = 1L;
     
     /**
-     * Message type: "user", "tool_call", "model", etc.
+     * 消息类型，如 user、tool_call、model 等。
      */
     private String type;
     
     /**
-     * Message content.
+     * 消息内容。
      */
     private String content;
     
     /**
-     * Tool name (if type is "tool_call").
+     * 工具名称（type 为 tool_call 时有效）。
      */
     private String toolName;
     
     /**
-     * Tool input parameters (if type is "tool_call").
+     * 工具输入参数（type 为 tool_call 时有效）。
      */
     private Map<String, Object> toolInput;
     
     /**
-     * Tool output/result (if type is "tool_call").
+     * 工具输出结果（type 为 tool_call 时有效）。
      */
     private Object toolOutput;
     
     /**
-     * Timestamp of the message (optional).
+     * 消息时间戳（可选）。
      */
     private Long timestamp;
     
     /**
-     * Additional metadata (optional).
+     * 附加元数据（可选）。
      */
     private Map<String, Object> metadata;
     

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * Skill 生成表单：提交用户背景信息、可选 MCP 工具与会话历史，驱动 Copilot 生成 Agent Skill。
  * Skill generation form.
  *
  * @author nacos
@@ -30,23 +31,22 @@ import java.util.Map;
 public class SkillGenerationForm {
     
     /**
-     * Background information provided by user (required).
+     * 用户提供的背景信息（必填），描述 Skill 的应用场景与能力需求。
      */
     private String backgroundInfo;
     
     /**
-     * Selected MCP tools (optional).
+     * 选中的 MCP 工具列表（可选），供 Skill 生成时关联外部能力。
      */
     private List<Map<String, Object>> selectedMcpTools;
     
     /**
-     * Conversation history (optional).
-     * Contains user inputs, tool calls, and model responses.
+     * 会话历史（可选），包含用户输入、工具调用与模型回复。
      */
     private ConversationHistory conversationHistory;
     
     /**
-     * Validate form data.
+     * 校验表单数据：背景信息不能为空。
      */
     public void validate() {
         if (StringUtils.isBlank(backgroundInfo)) {

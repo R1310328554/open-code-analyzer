@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * Skill 优化表单：提交待优化 Skill、目标与上下文，驱动 Copilot 改进已有 Agent Skill。
  * Skill optimization form.
  *
  * @author nacos
@@ -31,35 +32,32 @@ import java.util.Map;
 public class SkillOptimizationForm {
     
     /**
-     * Original Skill (required).
+     * 原始 Skill（必填），待优化的 Agent Skill 对象。
      */
     private Skill skill;
     
     /**
-     * Optimization goal (optional).
+     * 优化目标（可选），用户描述的改进方向或需求。
      */
     private String optimizationGoal;
     
     /**
-     * Selected MCP tools (optional).
+     * 选中的 MCP 工具列表（可选），供优化时关联外部能力。
      */
     private List<Map<String, Object>> selectedMcpTools;
     
     /**
-     * Conversation history (optional).
-     * Contains user inputs, tool calls, and model responses.
+     * 会话历史（可选），包含用户输入、工具调用与模型回复。
      */
     private ConversationHistory conversationHistory;
     
     /**
-     * Target file name to optimize (optional).
-     * If specified, only optimize the content of this specific file.
-     * If not specified, optimize the entire Skill.
+     * 待优化目标文件名（可选）；指定则仅优化该文件内容，否则优化整个 Skill。
      */
     private String targetFileName;
     
     /**
-     * Validate form data.
+     * 校验表单数据：Skill 非空且名称有效。
      */
     public void validate() {
         if (skill == null) {

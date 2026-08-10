@@ -19,6 +19,7 @@ package com.alibaba.nacos.copilot.model;
 import java.io.Serializable;
 
 /**
+ * Prompt 调试响应：流式返回思考过程、内容分片与完成状态。
  * Prompt debug response.
  *
  * @author nacos
@@ -26,17 +27,17 @@ import java.io.Serializable;
 public class PromptDebugResponse implements Serializable {
     
     /**
-     * Response type: THINKING, CONTENT, DONE.
+     * 响应类型：THINKING、CONTENT、DONE。
      */
     private StreamResponseType type;
     
     /**
-     * Content fragment (used in stream response).
+     * 内容分片（流式响应时使用）。
      */
     private String chunk;
     
     /**
-     * Whether the response is complete.
+     * 响应是否已完成。
      */
     private boolean done;
     

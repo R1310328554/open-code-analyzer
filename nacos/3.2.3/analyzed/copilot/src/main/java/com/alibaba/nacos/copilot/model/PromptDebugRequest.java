@@ -17,6 +17,7 @@
 package com.alibaba.nacos.copilot.model;
 
 /**
+ * Prompt 调试请求：携带系统 Prompt 与用户输入，供 Copilot 在线验证效果。
  * Prompt debug request.
  *
  * @author nacos
@@ -24,12 +25,12 @@ package com.alibaba.nacos.copilot.model;
 public class PromptDebugRequest {
     
     /**
-     * System Prompt content.
+     * 系统 Prompt 内容，定义 AI 角色与行为准则。
      */
     private String prompt;
     
     /**
-     * User input content.
+     * 用户输入内容，用于配合 Prompt 进行联调测试。
      */
     private String userInput;
     

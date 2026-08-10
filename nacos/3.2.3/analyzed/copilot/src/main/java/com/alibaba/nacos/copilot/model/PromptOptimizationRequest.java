@@ -17,6 +17,7 @@
 package com.alibaba.nacos.copilot.model;
 
 /**
+ * Prompt 优化请求：提交原始 Prompt 及优化目标，驱动 Copilot 生成改进版本。
  * Prompt optimization request.
  *
  * @author nacos
@@ -24,12 +25,12 @@ package com.alibaba.nacos.copilot.model;
 public class PromptOptimizationRequest {
     
     /**
-     * Original Prompt content.
+     * 原始 Prompt 内容（必填）。
      */
     private String prompt;
     
     /**
-     * Optimization goal/requirement description.
+     * 优化目标或需求描述，如「使回复更简洁」「增加示例」等。
      */
     private String optimizationGoal;
     

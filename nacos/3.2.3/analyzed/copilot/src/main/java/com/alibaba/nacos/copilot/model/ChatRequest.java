@@ -20,6 +20,7 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
+ * LLM 聊天请求：封装会话 ID、用户消息、上下文、历史与流式选项等参数。
  * Chat request for LLM.
  *
  * @author nacos
@@ -29,32 +30,32 @@ public class ChatRequest implements Serializable {
     private static final long serialVersionUID = 1L;
     
     /**
-     * Session ID.
+     * 会话 ID，标识一次对话会话。
      */
     private String sessionId;
     
     /**
-     * User message.
+     * 用户当前输入消息。
      */
     private String message;
     
     /**
-     * Context information (optional).
+     * 上下文信息（可选），补充业务背景。
      */
     private String context;
     
     /**
-     * Conversation history.
+     * 对话历史消息列表。
      */
     private List<ChatMessage> history;
     
     /**
-     * Whether to use stream response.
+     * 是否启用流式响应。
      */
     private boolean stream;
     
     /**
-     * System prompt (optional, used in optimization scenarios).
+     * 系统 Prompt（可选），优化场景下使用。
      */
     private String systemPrompt;
     

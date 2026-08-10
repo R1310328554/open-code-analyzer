@@ -21,6 +21,7 @@ import com.alibaba.nacos.api.ai.model.skills.Skill;
 import java.io.Serializable;
 
 /**
+ * Skill 生成响应：流式返回生成进度、分片与最终 Skill 结果。
  * Skill generation response.
  *
  * @author nacos
@@ -30,27 +31,27 @@ public class SkillGenerationResponse implements Serializable {
     private static final long serialVersionUID = 1L;
     
     /**
-     * Response type: thinking, tool_call, content, done.
+     * 响应类型，如 thinking、tool_call、content、done。
      */
     private StreamResponseType type;
     
     /**
-     * Content fragment (used in stream response).
+     * 内容分片（流式响应时使用）。
      */
     private String chunk;
     
     /**
-     * Generated Skill (included when type is done).
+     * 生成的 Skill（type 为 done 时附带）。
      */
     private Skill skill;
     
     /**
-     * Generation explanation (included when type is done).
+     * 生成说明（type 为 done 时附带）。
      */
     private String explanation;
     
     /**
-     * Whether the response is complete.
+     * 响应是否已完成。
      */
     private boolean done;
     
