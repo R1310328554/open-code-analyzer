@@ -18,12 +18,17 @@
 package org.keycloak.services.clientregistration;
 
 /**
+ * 动态客户端注册错误码常量。
+ * <p>用于 {@link ErrorResponseException} 响应中的 {@code error} 字段。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface ErrorCodes {
 
+    /** 重定向 URI 无效或未通过策略校验 */
     String INVALID_REDIRECT_URI = "invalid_redirect_uri";
 
+    /** 客户端元数据格式或内容无效 */
     String INVALID_CLIENT_METADATA = "invalid_client_metadata";
 
 }

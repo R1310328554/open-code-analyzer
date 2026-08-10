@@ -21,10 +21,18 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.representations.idm.ClientRepresentation;
 
 /**
+ * 默认客户端注册上下文。
+ * <p>用于通用 JSON 客户端表示（{@link ClientRepresentation}）的注册操作。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class DefaultClientRegistrationContext extends AbstractClientRegistrationContext {
 
+    /**
+     * @param session Keycloak 会话
+     * @param client 待注册/更新的客户端表示
+     * @param provider 当前注册 Provider
+     */
     public DefaultClientRegistrationContext(KeycloakSession session, ClientRepresentation client, ClientRegistrationProvider provider) {
         super(session, client, provider);
     }

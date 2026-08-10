@@ -24,17 +24,23 @@ import org.keycloak.representations.JsonWebToken;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ * 初始访问令牌 JWT 表示。
+ * <p>用于动态客户端注册创建操作的一次性/限次访问凭证，可携带允许的 Web 来源。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class InitialAccessToken extends JsonWebToken {
 
+    /** 允许调用注册端点的 Web 来源集合 */
     @JsonProperty("allowed-origins")
     protected Set<String> allowedOrigins;
 
+    /** @return 允许的 Web 来源 */
     public Set<String> getAllowedOrigins() {
         return allowedOrigins;
     }
 
+    /** @param allowedOrigins 允许的 Web 来源 */
     public void setAllowedOrigins(Set<String> allowedOrigins) {
         this.allowedOrigins = allowedOrigins;
     }

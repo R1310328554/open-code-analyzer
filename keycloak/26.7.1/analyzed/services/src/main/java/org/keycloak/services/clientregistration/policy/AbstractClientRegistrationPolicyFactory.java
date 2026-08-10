@@ -28,29 +28,38 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * 客户端注册策略工厂的抽象基类。
+ * <p>提供 {@link ClientRegistrationPolicyFactory} 的默认生命周期与配置校验实现。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public abstract class AbstractClientRegistrationPolicyFactory implements ClientRegistrationPolicyFactory {
 
+    /** Keycloak 会话工厂引用（postInit 后可用） */
     protected KeycloakSessionFactory sessionFactory;
 
+    /** 工厂初始化（无全局配置） */
     @Override
     public void init(Config.Scope config) {
     }
 
+    /** 保存会话工厂引用 */
     @Override
     public void postInit(KeycloakSessionFactory factory) {
         this.sessionFactory = factory;
     }
 
+    /** 工厂关闭钩子 */
     @Override
     public void close() {
     }
 
+    /** 校验组件配置（默认无额外校验） */
     @Override
     public void validateConfiguration(KeycloakSession session, RealmModel realm, ComponentModel config) throws ComponentValidationException {
     }
 
+    /** @param session 当前会话（含领域上下文） @return 可配置属性列表 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties(KeycloakSession session) {
         return getConfigProperties();

@@ -63,21 +63,27 @@ import org.keycloak.services.cors.Cors;
 import org.keycloak.urls.UrlType;
 
 /**
+ * OpenID Connect 动态客户端注册 REST 端点。
+ * <p>接受 {@link OIDCClientRepresentation} JSON，实现 OIDC 规范的客户端注册、查询、更新与删除，并处理 CORS、成对 subject mapper 及协议映射器同步。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class OIDCClientRegistrationProvider extends AbstractClientRegistrationProvider {
 
+    /** @param session Keycloak 会话 */
     public OIDCClientRegistrationProvider(KeycloakSession session) {
         super(session);
     }
 
     @OPTIONS
+    /** CORS 预检请求处理（集合端点） */
     public Response preflight() {
         return Cors.builder().auth().preflight().allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS").add(Response.ok());
     }
 
     @OPTIONS
     @Path("{clientId}")
+    /** CORS 预检请求处理（单客户端端点） */
     public Response preflightClient() {
         return preflight();
     }
@@ -85,6 +91,7 @@ public class OIDCClientRegistrationProvider extends AbstractClientRegistrationPr
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
+    /** 注册新 OIDC 客户端并返回含注册访问令牌的 201 响应 */
     public Response createOIDC(OIDCClientRepresentation clientOIDC) {
         event.event(EventType.CLIENT_REGISTER);
         Cors cors = cors();
@@ -117,6 +124,7 @@ public class OIDCClientRegistrationProvider extends AbstractClientRegistrationPr
     @GET
     @Path("{clientId}")
     @Produces(MediaType.APPLICATION_JSON)
+    /** 查询指定 OIDC 客户端元数据 */
     public Response getOIDC(@PathParam("clientId") String clientId) {
         event.event(EventType.CLIENT_INFO);
         Cors cors = cors();
@@ -132,6 +140,7 @@ public class OIDCClientRegistrationProvider extends AbstractClientRegistrationPr
     @Path("{clientId}")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
+    /** 更新指定 OIDC 客户端配置 */
     public Response updateOIDC(@PathParam("clientId") String clientId, OIDCClientRepresentation clientOIDC) {
         event.event(EventType.CLIENT_UPDATE);
         Cors cors = cors();
@@ -168,6 +177,7 @@ public class OIDCClientRegistrationProvider extends AbstractClientRegistrationPr
 
     @DELETE
     @Path("{clientId}")
+    /** 删除指定 OIDC 客户端 */
     public Response deleteOIDC(@PathParam("clientId") String clientId) {
         event.event(EventType.CLIENT_DELETE);
         Cors cors = cors();
@@ -175,14 +185,16 @@ public class OIDCClientRegistrationProvider extends AbstractClientRegistrationPr
         return cors.add(Response.noContent());
     }
 
+    /** 构建带认证与来源校验的 CORS 处理器 */
     private Cors cors() {
         return Cors.builder().auth().checkAllowedOrigins(getAllowedOrigins());
     }
 
+    /** 根据 subject_type 创建、更新或移除成对 subject 协议映射器 */
     private void updatePairwiseSubMappers(ClientModel clientModel, SubjectType subjectType, String sectorIdentifierUri) {
         if (subjectType == SubjectType.PAIRWISE) {
 
-            // See if we have existing pairwise mapper and update it. Otherwise create new
+            // 查找已有成对 mapper 并更新，否则新建
             AtomicBoolean foundPairwise = new AtomicBoolean(false);
 
             clientModel.getProtocolMappersStream().filter((ProtocolMapperModel mapping) -> {
@@ -197,14 +209,14 @@ public class OIDCClientRegistrationProvider extends AbstractClientRegistrationPr
                 clientModel.updateProtocolMapper(mapping);
             });
 
-            // We don't have existing pairwise mapper. So create new
+            // 无现有成对 mapper 时创建新的
             if (!foundPairwise.get()) {
                 ProtocolMapperRepresentation newPairwise = SHA256PairwiseSubMapper.createPairwiseMapper(sectorIdentifierUri, null);
                 clientModel.addProtocolMapper(RepresentationToModel.toModel(newPairwise));
             }
 
         } else {
-            // Rather find and remove all pairwise mappers
+            // 非成对模式：移除所有成对 subject mapper
             clientModel.getProtocolMappersStream()
                     .filter(mapperRep -> mapperRep.getProtocolMapper().endsWith(AbstractPairwiseSubMapper.PROVIDER_ID_SUFFIX))
                     .toList()
@@ -212,12 +224,14 @@ public class OIDCClientRegistrationProvider extends AbstractClientRegistrationPr
         }
     }
 
+    /** 将客户端协议映射器同步到表示对象 */
     private void updateClientRepWithProtocolMappers(ClientModel clientModel, ClientRepresentation rep) {
         List<ProtocolMapperRepresentation> mappings =
                 clientModel.getProtocolMappersStream().map(ModelToRepresentation::toRepresentation).collect(Collectors.toList());
         rep.setProtocolMappers(mappings);
     }
 
+    /** @return 该客户端的 registration_client_uri */
     private URI getRegistrationClientUri(ClientModel client) {
         KeycloakContext context = session.getContext();
         RealmModel realm = context.getRealm();

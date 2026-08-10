@@ -24,15 +24,19 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * 客户端注册策略 Provider 工厂接口。
+ * <p>扩展 {@link ComponentFactory}，为领域级可配置的注册策略提供实例化能力。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface ClientRegistrationPolicyFactory extends ComponentFactory<ClientRegistrationPolicy, ClientRegistrationPolicy> {
 
     /**
-     * Get config properties filled for particular session. It assumes the session.getContext() has set realm
+     * 获取当前会话上下文下的可配置属性列表。
+     * <p>假定 {@code session.getContext()} 已设置领域。</p>
      *
-     * @param session
-     * @return
+     * @param session Keycloak 会话
+     * @return 可配置属性列表
      */
     List<ProviderConfigProperty> getConfigProperties(KeycloakSession session);
 }

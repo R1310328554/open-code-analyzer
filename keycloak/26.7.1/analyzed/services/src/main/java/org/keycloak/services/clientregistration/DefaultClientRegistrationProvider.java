@@ -37,10 +37,14 @@ import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.authorization.ResourceServerRepresentation;
 
 /**
+ * 默认动态客户端注册 REST 端点。
+ * <p>接受通用 {@link ClientRepresentation} JSON，提供创建、查询、更新与删除操作。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class DefaultClientRegistrationProvider extends AbstractClientRegistrationProvider {
 
+    /** @param session Keycloak 会话 */
     public DefaultClientRegistrationProvider(KeycloakSession session) {
         super(session);
     }
@@ -48,6 +52,7 @@ public class DefaultClientRegistrationProvider extends AbstractClientRegistratio
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
+    /** 创建新客户端并返回 201 Created 响应 */
     public Response createDefault(ClientRepresentation client) {
         DefaultClientRegistrationContext context = new DefaultClientRegistrationContext(session, client, this);
         client = create(context);
@@ -59,6 +64,7 @@ public class DefaultClientRegistrationProvider extends AbstractClientRegistratio
     @GET
     @Path("{clientId}")
     @Produces(MediaType.APPLICATION_JSON)
+    /** 按 clientId 查询客户端元数据 */
     public Response getDefault(@PathParam("clientId") String clientId) {
         ClientModel client = session.getContext().getRealm().getClientByClientId(clientId);
         ClientRepresentation clientRepresentation = get(client);
@@ -69,6 +75,7 @@ public class DefaultClientRegistrationProvider extends AbstractClientRegistratio
     @Path("{clientId}")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
+    /** 更新指定客户端的配置 */
     public Response updateDefault(@PathParam("clientId") String clientId, ClientRepresentation client) {
         DefaultClientRegistrationContext context = new DefaultClientRegistrationContext(session, client, this);
         ResourceServerRepresentation authorizationSettings = client.getAuthorizationSettings();
@@ -80,10 +87,12 @@ public class DefaultClientRegistrationProvider extends AbstractClientRegistratio
 
     @DELETE
     @Path("{clientId}")
+    /** 删除指定客户端 */
     public void deleteDefault(@PathParam("clientId") String clientId) {
         delete(clientId);
     }
 
+    /** 在更新后恢复授权服务设置 */
     private void updateAuthorizationSettings(ClientRepresentation rep, ResourceServerRepresentation authorizationSettings) {
         rep.setAuthorizationSettings(authorizationSettings);
         ClientModel client = session.getContext().getRealm().getClientByClientId(rep.getClientId());

@@ -20,28 +20,37 @@ package org.keycloak.services.clientregistration.policy;
 import org.keycloak.component.ComponentModel;
 
 /**
+ * 客户端注册策略拒绝请求时抛出的异常。
+ * <p>可关联触发拒绝的 {@link ComponentModel} 策略组件以生成详细错误消息。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ClientRegistrationPolicyException extends RuntimeException {
 
+    /** 触发拒绝的策略组件模型 */
     private ComponentModel policyModel;
 
+    /** @param message 拒绝原因描述 */
     public ClientRegistrationPolicyException(String message) {
         super(message);
     }
 
+    /** @param message 拒绝原因描述 @param throwable 根因异常 */
     public ClientRegistrationPolicyException(String message, Throwable throwable) {
         super(message, throwable);
     }
 
+    /** @return 关联的策略组件模型 */
     public ComponentModel getPolicyModel() {
         return policyModel;
     }
 
+    /** @param policyModel 关联的策略组件模型 */
     public void setPolicyModel(ComponentModel policyModel) {
         this.policyModel = policyModel;
     }
 
+    /** 若已设置策略模型，则返回含策略名称的格式化消息 */
     @Override
     public String getMessage() {
         return policyModel==null ? super.getMessage() : String.format("Policy '%s' rejected request to client-registration service. Details: %s", policyModel.getName(), super.getMessage());

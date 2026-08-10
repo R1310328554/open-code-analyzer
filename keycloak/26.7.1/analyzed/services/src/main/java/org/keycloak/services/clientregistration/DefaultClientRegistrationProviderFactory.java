@@ -22,27 +22,35 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
+ * {@link DefaultClientRegistrationProvider} 的 Provider 工厂。
+ * <p>注册标识为 {@code default} 的通用客户端注册端点。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class DefaultClientRegistrationProviderFactory implements ClientRegistrationProviderFactory {
 
+    /** @param session Keycloak 会话 @return 新的客户端注册 Provider 实例 */
     @Override
     public ClientRegistrationProvider create(KeycloakSession session) {
         return new DefaultClientRegistrationProvider(session);
     }
 
+    /** 工厂初始化（无全局配置） */
     @Override
     public void init(Config.Scope config) {
     }
 
+    /** 会话工厂就绪回调 */
     @Override
     public void postInit(KeycloakSessionFactory factory) {
     }
 
+    /** 工厂关闭钩子 */
     @Override
     public void close() {
     }
 
+    /** @return Provider 标识符 */
     @Override
     public String getId() {
         return "default";

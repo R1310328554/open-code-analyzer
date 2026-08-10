@@ -26,31 +26,40 @@ import org.keycloak.services.clientregistration.ClientRegistrationContext;
 import org.keycloak.services.clientregistration.ClientRegistrationProvider;
 
 /**
+ * 动态客户端注册策略 SPI 接口。
+ * <p>在注册、更新、查看与删除客户端的生命周期各阶段执行校验与后处理逻辑。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface ClientRegistrationPolicy extends Provider {
 
+    /** 客户端创建前校验 */
     void beforeRegister(ClientRegistrationContext context) throws ClientRegistrationPolicyException;
 
+    /** 客户端创建后处理 */
     void afterRegister(ClientRegistrationContext context, ClientModel clientModel);
 
+    /** 客户端更新前校验 */
     void beforeUpdate(ClientRegistrationContext context, ClientModel clientModel) throws ClientRegistrationPolicyException;
 
+    /** 客户端更新后处理 */
     void afterUpdate(ClientRegistrationContext context, ClientModel clientModel);
 
+    /** 客户端查询前校验 */
     void beforeView(ClientRegistrationProvider provider, ClientModel clientModel) throws ClientRegistrationPolicyException;
 
+    /** 客户端删除前校验 */
     void beforeDelete(ClientRegistrationProvider provider, ClientModel clientModel) throws ClientRegistrationPolicyException;
 
     /**
-     * Extra web origins this policy contributes to the CORS allow-list for responses produced
-     * by the client registration endpoints. Origins are collected up-front so validation can
-     * happen in a single {@code checkAllowedOrigins} call before the handler runs.
+     * 该策略为客户端注册端点响应贡献的额外 CORS 允许来源。
+     * <p>来源在处理器执行前统一收集，以便单次 {@code checkAllowedOrigins} 完成校验。</p>
      */
     default Collection<String> getAllowedOrigins() {
         return Collections.emptyList();
     }
 
+    /** Provider 关闭钩子（默认空实现） */
     @Override
     default void close() {
     }

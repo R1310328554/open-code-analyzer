@@ -24,12 +24,22 @@ import org.keycloak.services.clientregistration.AbstractClientRegistrationContex
 import org.keycloak.services.clientregistration.ClientRegistrationProvider;
 
 /**
+ * OIDC 动态客户端注册上下文。
+ * <p>在通用注册上下文基础上保留原始 {@link OIDCClientRepresentation}，供策略与 Provider 使用。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class OIDCClientRegistrationContext extends AbstractClientRegistrationContext {
 
+    /** 原始 OIDC 客户端元数据表示 */
     private final OIDCClientRepresentation oidcRep;
 
+    /**
+     * @param session Keycloak 会话
+     * @param client 转换后的内部客户端表示
+     * @param provider 当前 OIDC 注册 Provider
+     * @param oidcRep 原始 OIDC 客户端元数据
+     */
     public OIDCClientRegistrationContext(KeycloakSession session, ClientRepresentation client, ClientRegistrationProvider provider, OIDCClientRepresentation oidcRep) {
         super(session, client, provider);
         this.oidcRep = oidcRep;

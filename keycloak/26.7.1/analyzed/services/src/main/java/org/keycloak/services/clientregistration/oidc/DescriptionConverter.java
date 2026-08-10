@@ -72,10 +72,20 @@ import static org.keycloak.models.OAuth2DeviceConfig.OAUTH2_DEVICE_AUTHORIZATION
 import static org.keycloak.protocol.oidc.utils.OIDCResponseType.CODE;
 
 /**
+ * OIDC 客户端元数据与内部 {@link ClientRepresentation} 的双向转换器。
+ * <p>实现 OpenID Connect Dynamic Client Registration 规范中客户端元数据字段与 Keycloak 内部客户端模型之间的映射。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class DescriptionConverter {
 
+    /**
+     * 将 OIDC 动态注册请求中的客户端元数据转换为内部表示。
+     * @param session Keycloak 会话
+     * @param clientOIDC OIDC 客户端元数据
+     * @return 内部 {@link ClientRepresentation}
+     * @throws ClientRegistrationException 元数据无效或冲突时
+     */
     public static ClientRepresentation toInternal(KeycloakSession session, OIDCClientRepresentation clientOIDC) throws ClientRegistrationException {
         ClientRepresentation client = new ClientRepresentation();
 
@@ -94,10 +104,10 @@ public class DescriptionConverter {
         List<String> oidcGrantTypes = clientOIDC.getGrantTypes();
         if (oidcResponseTypes == null || oidcResponseTypes.isEmpty()) {
             if (oidcGrantTypes == null || oidcGrantTypes.isEmpty()) {
-                // OIDC Client registration specs - https://openid.net/specs/openid-connect-registration-1_0.html#ClientMetadata - If omitted, the default is that the Client will use only the code Response Type.
+                // OIDC 客户端注册规范：未指定时默认仅使用 code 响应类型
                 oidcResponseTypes = Collections.singletonList(CODE);
             } else {
-                // Try to compute default responseTypes according to given grant types
+                // 根据授权类型推断默认 response_types
                 oidcResponseTypes = new ArrayList<>();
                 if (oidcGrantTypes.contains(AUTHORIZATION_CODE)) {
                     oidcResponseTypes.add(CODE);
@@ -175,7 +185,7 @@ public class DescriptionConverter {
             configWrapper.setUserInfoEncryptedResponseEnc(clientOIDC.getUserinfoEncryptedResponseEnc());
         }
 
-        // KEYCLOAK-6771 Certificate Bound Token
+        // KEYCLOAK-6771 证书绑定令牌（mTLS HoK）
         // https://tools.ietf.org/html/draft-ietf-oauth-mtls-08#section-6.5
         Boolean tlsClientCertificateBoundAccessTokens = clientOIDC.getTlsClientCertificateBoundAccessTokens();
         if (tlsClientCertificateBoundAccessTokens != null) {
@@ -186,7 +196,7 @@ public class DescriptionConverter {
         if (clientOIDC.getTlsClientAuthSubjectDn() != null) {
             configWrapper.setTlsClientAuthSubjectDn(clientOIDC.getTlsClientAuthSubjectDn());
 
-            // According to specification, attribute tls_client_auth_subject_dn has subject DN in the exact expected format. There is no reason for support regex comparisons
+            // 规范要求 tls_client_auth_subject_dn 为精确 DN 格式，禁用正则比较
             configWrapper.setAllowRegexPatternComparison(false);
         }
 
@@ -244,14 +254,14 @@ public class DescriptionConverter {
             configWrapper.setPostLogoutRedirectUris(clientOIDC.getPostLogoutRedirectUris());
         }
 
-        // OAuth 2.0 DPoP
+        // OAuth 2.0 DPoP 绑定访问令牌
         Boolean dpopBoundAccessTokens = clientOIDC.getDpopBoundAccessTokens();
         if (dpopBoundAccessTokens != null) {
             if (dpopBoundAccessTokens.booleanValue()) configWrapper.setUseDPoP(true);
             else configWrapper.setUseDPoP(false);
         }
 
-        // CIBA
+        // CIBA（客户端发起的后台认证）相关属性
         String backchannelTokenDeliveryMode = clientOIDC.getBackchannelTokenDeliveryMode();
         if (backchannelTokenDeliveryMode != null) {
             Map<String, String> attr = Optional.ofNullable(client.getAttributes()).orElse(new HashMap<>());
@@ -271,7 +281,7 @@ public class DescriptionConverter {
             client.setAttributes(attr);
         }
 
-        // PAR
+        // PAR（推送授权请求）相关属性
         Boolean requirePushedAuthorizationRequests = clientOIDC.getRequirePushedAuthorizationRequests();
         if (requirePushedAuthorizationRequests != null) {
             Map<String, String> attr = Optional.ofNullable(client.getAttributes()).orElse(new HashMap<>());
@@ -281,7 +291,7 @@ public class DescriptionConverter {
 
         configWrapper.setFrontChannelLogoutUrl(Optional.ofNullable(clientOIDC.getFrontChannelLogoutUri()).orElse(null));
         if (clientOIDC.getFrontchannelLogoutSessionRequired() == null) {
-            // False by default per OIDC FrontChannel Logout specification
+            // 按 OIDC 前端通道登出规范，默认 false
             configWrapper.setFrontChannelLogoutSessionRequired(false);
         } else {
             configWrapper.setFrontChannelLogoutSessionRequired(clientOIDC.getFrontchannelLogoutSessionRequired());
@@ -294,6 +304,7 @@ public class DescriptionConverter {
         return client;
     }
 
+    /** 设置 OIDC 扩展授权类型的启用标志 */
     private static void setOidcGrantEnabled(ClientRepresentation client, String grantAttributeName, Boolean isEnabled) {
         if (isEnabled == null) return;
         Map<String, String> attributes = Optional.ofNullable(client.getAttributes()).orElse(new HashMap<>());
@@ -301,6 +312,7 @@ public class DescriptionConverter {
         client.setAttributes(attributes);
     }
 
+    /** 收集当前环境支持的签名/加密算法列表 */
     private static List<String> getSupportedAlgorithms(KeycloakSession session, Class<? extends Provider> clazz, boolean includeNone) {
         Stream<String> supportedAlgorithms = session.getKeycloakSessionFactory().getProviderFactoriesStream(clazz)
                 .map(ProviderFactory::getId);
@@ -311,6 +323,10 @@ public class DescriptionConverter {
         return supportedAlgorithms.collect(Collectors.toList());
     }
 
+    /**
+     * 从 jwks 或 jwks_uri 配置客户端公钥。
+     * @return 是否成功设置签名公钥
+     */
     private static boolean setPublicKey(OIDCClientRepresentation clientOIDC, ClientRepresentation clientRep) {
         OIDCAdvancedConfigWrapper configWrapper = OIDCAdvancedConfigWrapper.fromClientRepresentation(clientRep);
 
@@ -352,6 +368,13 @@ public class DescriptionConverter {
 
     }
 
+    /**
+     * 将内部客户端表示转换为 OIDC 动态注册响应格式。
+     * @param session Keycloak 会话
+     * @param client 内部客户端表示
+     * @param uri 注册客户端 URI
+     * @return OIDC 客户端元数据响应
+     */
     public static OIDCClientRepresentation toExternalResponse(KeycloakSession session, ClientRepresentation client, URI uri) {
         OIDCClientRepresentation response = new OIDCClientRepresentation();
         response.setClientId(client.getClientId());
@@ -416,7 +439,7 @@ public class DescriptionConverter {
         if (Algorithm.RS256.equals(defaultSignatureAlgorithm) || StringUtil.isBlank(defaultSignatureAlgorithm)) {
             defaultSignatureAlgorithm = null;
         }
-        // KEYCLOAK-6771 Certificate Bound Token
+        // KEYCLOAK-6771 证书绑定令牌
         // https://tools.ietf.org/html/draft-ietf-oauth-mtls-08#section-6.5
         if (config.isUseMtlsHokToken()) {
             response.setTlsClientCertificateBoundAccessTokens(Boolean.TRUE);
@@ -485,7 +508,7 @@ public class DescriptionConverter {
         SubjectType subjectType = foundPairwiseMappers.isEmpty() ? SubjectType.PUBLIC : SubjectType.PAIRWISE;
         response.setSubjectType(subjectType.toString().toLowerCase());
         if (subjectType.equals(SubjectType.PAIRWISE)) {
-            // Get sectorIdentifier from 1st found
+            // 从首个成对 subject mapper 获取 sector identifier
             String sectorIdentifierUri = PairwiseSubMapperHelper.getSectorIdentifierUri(foundPairwiseMappers.get(0));
             response.setSectorIdentifierUri(sectorIdentifierUri);
         }
@@ -501,6 +524,7 @@ public class DescriptionConverter {
         return response;
     }
 
+    /** 根据内部流程开关推导 OIDC response_types 列表 */
     private static List<String> getOIDCResponseTypes(ClientRepresentation client) {
         List<String> responseTypes = new ArrayList<>();
         if (client.isStandardFlowEnabled()) {
@@ -519,6 +543,7 @@ public class DescriptionConverter {
         return responseTypes;
     }
 
+    /** 根据内部流程开关推导 OIDC grant_types 列表 */
     private static List<String> getOIDCGrantTypes(ClientRepresentation client) {
         List<String> grantTypes = new ArrayList<>();
         if (client.isStandardFlowEnabled()) {
