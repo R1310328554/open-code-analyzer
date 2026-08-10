@@ -22,6 +22,7 @@ import java.util.List;
 
 /**
  * Repository interface for pipeline execution record persistence.
+ * <p>流水线执行记录持久化仓储接口。</p>
  *
  * @author kiro
  * @since 3.2.0
@@ -30,6 +31,7 @@ public interface PipelineExecutionRepository {
     
     /**
      * Insert a new pipeline execution record.
+     * <p>插入新的流水线执行记录。</p>
      *
      * @param execution the execution record to save
      */
@@ -37,6 +39,7 @@ public interface PipelineExecutionRepository {
     
     /**
      * Update an existing pipeline execution record (status and pipeline JSON).
+     * <p>更新已有执行记录的状态与 pipeline JSON。</p>
      *
      * @param execution the execution record to update
      */
@@ -44,6 +47,7 @@ public interface PipelineExecutionRepository {
     
     /**
      * Find a pipeline execution record by execution ID.
+     * <p>按 executionId 查询单条执行记录。</p>
      *
      * @param executionId the execution ID
      * @return the execution record, or null if not found
@@ -52,6 +56,7 @@ public interface PipelineExecutionRepository {
     
     /**
      * Find the most recent pipeline execution record by resource information.
+     * <p>按资源四元组查询最近一条执行记录。</p>
      *
      * @param resourceType the resource type
      * @param resourceName the resource name
@@ -67,6 +72,7 @@ public interface PipelineExecutionRepository {
      *
      * <p>Supports optional filtering by resourceName, namespaceId, and version.
      * Results are ordered by create_time DESC.</p>
+     * <p>按资源信息分页查询，可选过滤 resourceName/namespaceId/version，按 create_time 降序。</p>
      *
      * @param resourceType the resource type (required)
      * @param resourceName the resource name (optional, ignored if blank)
@@ -84,6 +90,7 @@ public interface PipelineExecutionRepository {
      * Count pipeline execution records by resource information.
      *
      * <p>Uses the same filtering logic as {@link #findByResourceWithPage}.</p>
+     * <p>统计符合相同过滤条件的执行记录总数。</p>
      *
      * @param resourceType the resource type (required)
      * @param resourceName the resource name (optional, ignored if blank)

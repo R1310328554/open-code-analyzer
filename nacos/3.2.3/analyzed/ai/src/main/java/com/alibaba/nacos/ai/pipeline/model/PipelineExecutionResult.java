@@ -20,24 +20,28 @@ import java.util.List;
 
 /**
  * Pipeline execution result returned to the caller via callback.
+ * <p>流水线执行结果，通过回调返回给调用方。</p>
  *
  * @author kiro
  * @since 3.2.0
  */
 public class PipelineExecutionResult {
     
-    /**
-     * Execution ID.
+    /** 执行 ID。 */
+    /** Execution ID.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private String executionId;
     
-    /**
-     * Final status: APPROVED or REJECTED.
+    /** 最终状态：APPROVED 或 REJECTED。 */
+    /** Final status: APPROVED or REJECTED.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private PipelineExecutionStatus status;
     
-    /**
-     * Node execution details.
+    /** 各节点执行详情列表。 */
+    /** Node execution details.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private List<PipelineNodeResult> pipeline;
     

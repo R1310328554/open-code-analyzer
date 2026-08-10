@@ -18,24 +18,28 @@ package com.alibaba.nacos.ai.pipeline.model;
 
 /**
  * Pipeline execution status enumeration.
+ * <p>流水线执行状态枚举。</p>
  *
  * @author kiro
  * @since 3.2.0
  */
 public enum PipelineExecutionStatus {
     
-    /**
-     * Pipeline is currently executing.
+    /** 流水线正在执行中。 */
+    /** Pipeline is currently executing.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     IN_PROGRESS,
     
-    /**
-     * All pipeline nodes passed.
+    /** 全部节点已通过。 */
+    /** All pipeline nodes passed.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     APPROVED,
     
-    /**
-     * At least one pipeline node rejected.
+    /** 至少一个节点未通过或被拒绝。 */
+    /** At least one pipeline node rejected.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     REJECTED
 }

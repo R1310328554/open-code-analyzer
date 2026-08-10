@@ -29,24 +29,28 @@ import java.util.List;
 
 /**
  * Nacos AI Skill param extractor.
+ * <p>Skill 资源 HTTP 请求参数提取器，支持 skillName/name 参数及 skillCard JSON 体解析名称。</p>
  *
  * @author nacos
  */
 public class SkillHttpParamExtractor extends AbstractHttpParamExtractor {
     
+    /** 请求参数名：SkillCard JSON 载荷。 */
     private static final String SKILL_CARD_PARAM = "skillCard";
     
+    /** 管理端 Skill 名称参数。 */
     private static final String SKILL_NAME_PARAM = "skillName";
     
+    /** 客户端 Skill 名称参数。 */
     private static final String SKILL_CLIENT_NAME_PARAM = "name";
     
     @Override
     public List<ParamInfo> extractParam(HttpServletRequest request) throws NacosException {
         ParamInfo paramInfo = new ParamInfo();
-        paramInfo.setNamespaceId(request.getParameter("namespaceId"));
+        paramInfo.setNamespaceId(request.getParameter("namespaceId")); // 命名空间
         String skillName = resolveSkillName(request);
         paramInfo.setSkillName(skillName);
-        if (request.getParameterMap().containsKey(SKILL_CARD_PARAM)) {
+        if (request.getParameterMap().containsKey(SKILL_CARD_PARAM)) { // 优先从 SkillCard JSON 解析
             String parsedSkillName =
                 deserializeAndGetSkillName(request.getParameter(SKILL_CARD_PARAM));
             paramInfo.setSkillName(parsedSkillName);
@@ -54,12 +58,14 @@ public class SkillHttpParamExtractor extends AbstractHttpParamExtractor {
         return Collections.singletonList(paramInfo);
     }
     
+    /** 解析 Skill 名称：优先 skillName，否则取客户端 name 参数。 */
     private String resolveSkillName(HttpServletRequest request) {
         String skillName = request.getParameter(SKILL_NAME_PARAM);
         return StringUtils.isNotBlank(skillName) ? skillName
             : request.getParameter(SKILL_CLIENT_NAME_PARAM);
     }
     
+    /** 反序列化 SkillCard JSON 并提取 name；失败返回空字符串。 */
     private String deserializeAndGetSkillName(String skillCardJson) {
         try {
             Skill skill = JacksonUtils.toObj(skillCardJson, Skill.class);

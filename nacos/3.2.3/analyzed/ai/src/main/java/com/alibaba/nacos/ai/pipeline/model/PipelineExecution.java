@@ -20,54 +20,64 @@ import java.util.List;
 
 /**
  * Pipeline execution record entity, persisted to the database.
+ * <p>流水线执行记录实体，持久化至数据库。</p>
  *
  * @author kiro
  * @since 3.2.0
  */
 public class PipelineExecution {
     
-    /**
-     * Execution ID (UUID).
+    /** 执行 ID（UUID）。 */
+    /** Execution ID (UUID).
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private String executionId;
     
-    /**
-     * Resource type.
+    /** 资源类型。 */
+    /** Resource type.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private String resourceType;
     
-    /**
-     * Resource name.
+    /** 资源名称。 */
+    /** Resource name.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private String resourceName;
     
-    /**
-     * Namespace ID.
+    /** 命名空间 ID。 */
+    /** Namespace ID.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private String namespaceId;
     
-    /**
-     * Resource version.
+    /** 资源版本号。 */
+    /** Resource version.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private String version;
     
-    /**
-     * Execution status: IN_PROGRESS, APPROVED, REJECTED.
+    /** 执行状态：IN_PROGRESS、APPROVED、REJECTED。 */
+    /** Execution status: IN_PROGRESS, APPROVED, REJECTED.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private PipelineExecutionStatus status;
     
-    /**
-     * Node execution details list (serialized as JSON in the pipeline field).
+    /** 各节点执行详情列表（pipeline 字段以 JSON 序列化存储）。 */
+    /** Node execution details list (serialized as JSON in the pipeline field).
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private List<PipelineNodeResult> pipeline;
     
-    /**
-     * Creation time.
+    /** 创建时间戳（毫秒）。 */
+    /** Creation time.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private long createTime;
     
-    /**
-     * Last update time.
+    /** 最后更新时间戳（毫秒）。 */
+    /** Last update time.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private long updateTime;
     

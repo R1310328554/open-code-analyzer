@@ -23,44 +23,52 @@ import java.util.Objects;
 
 /**
  * Result of a single pipeline node execution, stored as JSON in the pipeline field.
+ * <p>单个流水线节点执行结果，以 JSON 存入 pipeline 字段。</p>
  *
  * @author kiro
  * @since 3.2.0
  */
 public class PipelineNodeResult {
     
-    /**
-     * Node ID, corresponding to {@code PublishPipelineService.pipelineId()}.
+    /** 节点 ID，对应 {@code PublishPipelineService.pipelineId()}。 */
+    /** Node ID, corresponding to {@code PublishPipelineService.pipelineId()}.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private String nodeId;
     
-    /**
-     * Execution time.
+    /** 节点执行时刻（ISO-8601 字符串）。 */
+    /** Execution time.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private String executedAt;
     
-    /**
-     * Whether the node passed.
+    /** 节点是否通过。 */
+    /** Whether the node passed.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private boolean passed;
     
-    /**
-     * Review message or error description.
+    /** 审核消息或错误描述。 */
+    /** Review message or error description.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private String message;
     
-    /**
-     * Semantic type of {@link #message} ({@code text}, {@code json}, {@code markdown}, {@code html}).
+    /** {@link #message} 的语义类型（text、json、markdown、html）。 */
+    /** Semantic type of {@link #message} ({@code text}, {@code json}, {@code markdown}, {@code html}).
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private String messageType;
     
-    /**
-     * Per-criterion audit outcomes from the pipeline plugin (e.g. security scanner checkpoints).
+    /** 插件返回的逐项审核结果（如安全扫描检查点）。 */
+    /** Per-criterion audit outcomes from the pipeline plugin (e.g. security scanner checkpoints).
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private List<Checkpoint> checkpoints;
     
-    /**
-     * Execution duration in milliseconds.
+    /** 节点执行耗时（毫秒）。 */
+    /** Execution duration in milliseconds.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private long durationMs;
     

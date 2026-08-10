@@ -40,6 +40,7 @@ import java.util.concurrent.ExecutorService;
 /**
  * Core pipeline execution engine. Asynchronously executes pipeline nodes in serial order,
  * persists execution state, and notifies the caller via callback.
+ * <p>发布流水线核心执行引擎：按序异步执行各节点、持久化执行状态，完成后通过回调通知调用方。</p>
  *
  * @author kiro
  * @since 3.2.0
@@ -75,6 +76,7 @@ public class PublishPipelineExecutor {
      *   <li>Return executionId immediately</li>
      *   <li>Submit async task to execute nodes serially, update state, and invoke callback</li>
      * </ol>
+     * <p>异步执行发布流水线：校验配置与匹配节点后创建 IN_PROGRESS 记录并立即返回 executionId，后台串行执行各节点并回调。</p>
      *
      * @param context  pipeline context containing resource metadata
      * @param callback async callback, invoked exactly once when pipeline execution completes
@@ -89,6 +91,7 @@ public class PublishPipelineExecutor {
      *
      * <p>Callers who need to write pipeline state (e.g. IN_PROGRESS) before the async task
      * starts should pre-generate an executionId and use this overload.</p>
+     * <p>使用预生成的 executionId 异步执行流水线，便于调用方在异步任务启动前写入状态。</p>
      *
      * @param context     pipeline context containing resource metadata
      * @param callback    async callback, invoked exactly once when pipeline execution completes
@@ -97,13 +100,13 @@ public class PublishPipelineExecutor {
      */
     public String execute(PublishPipelineContext context, PipelineCallback callback,
         String executionId) {
-        // Step 1: Check config
+        // 步骤 1：检查流水线全局配置是否启用
         PipelineConfig config = configProvider.getConfig();
         if (!config.isEnabled()) {
             return null;
         }
         
-        // Step 2: Get matching pipeline services
+        // 步骤 2：按资源类型与节点配置匹配 SPI 插件
         List<PublishPipelineService> services =
             pipelineManager.getPipelineServices(context.getResourceType(),
                 config.getNodes());
@@ -111,7 +114,7 @@ public class PublishPipelineExecutor {
             return null;
         }
         
-        // Step 3: Create execution record
+        // 步骤 3：创建 IN_PROGRESS 执行记录并持久化
         long now = System.currentTimeMillis();
         
         PipelineExecution execution = new PipelineExecution();
@@ -132,7 +135,7 @@ public class PublishPipelineExecutor {
                 executionId, e);
         }
         
-        // Step 4: Submit async task
+        // 步骤 4：提交异步任务串行执行各节点
         asyncExecutor.submit(() -> {
             try {
                 boolean allPassed = true;
@@ -181,7 +184,7 @@ public class PublishPipelineExecutor {
                     }
                 }
                 
-                // Set final status
+                // 全部节点通过后设为 APPROVED，否则 REJECTED
                 PipelineExecutionStatus finalStatus = allPassed
                     ? PipelineExecutionStatus.APPROVED : PipelineExecutionStatus.REJECTED;
                 execution.setStatus(finalStatus);
@@ -194,7 +197,7 @@ public class PublishPipelineExecutor {
                         executionId, e);
                 }
                 
-                // Build result and invoke callback
+                // 组装结果并回调调用方（仅调用一次）
                 PipelineExecutionResult result = new PipelineExecutionResult();
                 result.setExecutionId(executionId);
                 result.setStatus(finalStatus);
@@ -203,7 +206,7 @@ public class PublishPipelineExecutor {
             } catch (Exception e) {
                 LOG.error("Unexpected error during pipeline execution for executionId={}",
                     executionId, e);
-                // Ensure callback is called even on unexpected errors
+                // 意外异常时仍回调 REJECTED，避免调用方永久阻塞
                 PipelineExecutionResult result = new PipelineExecutionResult();
                 result.setExecutionId(executionId);
                 result.setStatus(PipelineExecutionStatus.REJECTED);
@@ -217,6 +220,7 @@ public class PublishPipelineExecutor {
     
     /**
      * Read-only check: whether the pipeline is available for the given resource type.
+     * <p>只读探测：流水线已启用且存在匹配该资源类型的节点时返回 true。</p>
      *
      * @param resourceType the resource type to check
      * @return true if pipeline is enabled and has matching service nodes

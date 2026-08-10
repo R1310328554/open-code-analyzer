@@ -18,6 +18,7 @@ package com.alibaba.nacos.ai.pipeline.model;
 
 /**
  * Callback interface for pipeline execution completion notification.
+ * <p>流水线执行完成回调接口，执行结束时恰好调用一次 {@link #onComplete}。</p>
  *
  * @author kiro
  * @since 3.2.0
@@ -26,6 +27,7 @@ public interface PipelineCallback {
     
     /**
      * Called when pipeline execution completes.
+     * <p>流水线全部节点执行完毕（或中途失败终止）时触发。</p>
      *
      * @param result the execution result containing status and node details
      */

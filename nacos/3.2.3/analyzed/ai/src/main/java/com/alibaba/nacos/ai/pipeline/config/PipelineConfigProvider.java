@@ -20,6 +20,7 @@ import com.alibaba.nacos.ai.pipeline.model.PipelineConfig;
 
 /**
  * Abstract provider for pipeline configuration, decoupling the config source (file, database, etc.).
+ * <p>流水线配置提供者接口，解耦配置来源（文件、数据库等）。</p>
  *
  * @author kiro
  * @since 3.2.0
@@ -28,6 +29,7 @@ public interface PipelineConfigProvider {
     
     /**
      * Get the current pipeline configuration.
+     * <p>获取当前流水线全局配置，永不为 null。</p>
      *
      * @return pipeline configuration, never null
      */
@@ -35,6 +37,7 @@ public interface PipelineConfigProvider {
     
     /**
      * Configuration source type identifier, e.g. "file", "database".
+     * <p>配置来源类型标识，如 file、database。</p>
      *
      * @return type string
      */

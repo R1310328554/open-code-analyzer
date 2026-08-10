@@ -20,19 +20,22 @@ import java.util.Properties;
 
 /**
  * Configuration for a single pipeline node, containing the node ID and custom properties.
+ * <p>单个流水线节点配置，包含节点 ID 与自定义属性。</p>
  *
  * @author kiro
  * @since 3.2.0
  */
 public class PipelineNodeConfig {
     
-    /**
-     * Node ID, corresponding to {@code PublishPipelineService.pipelineId()}.
+    /** 节点 ID，对应 {@code PublishPipelineService.pipelineId()}。 */
+    /** Node ID, corresponding to {@code PublishPipelineService.pipelineId()}.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private String pipelineId;
     
-    /**
-     * Custom configuration properties for this node (e.g. endpoint, timeout).
+    /** 节点自定义配置属性（如 endpoint、timeout）。 */
+    /** Custom configuration properties for this node (e.g. endpoint, timeout).
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private Properties properties;
     

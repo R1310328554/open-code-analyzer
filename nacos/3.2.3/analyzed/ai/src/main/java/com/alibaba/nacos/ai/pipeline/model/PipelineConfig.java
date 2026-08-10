@@ -20,19 +20,22 @@ import java.util.List;
 
 /**
  * Pipeline global configuration, containing enabled flag and ordered node list.
+ * <p>流水线全局配置，包含启用开关与有序节点列表。</p>
  *
  * @author kiro
  * @since 3.2.0
  */
 public class PipelineConfig {
     
-    /**
-     * Whether the pipeline is globally enabled.
+    /** 流水线是否全局启用。 */
+    /** Whether the pipeline is globally enabled.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private boolean enabled;
     
-    /**
-     * Ordered list of pipeline node configurations.
+    /** 有序流水线节点配置列表。 */
+    /** Ordered list of pipeline node configurations.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private List<PipelineNodeConfig> nodes;
     

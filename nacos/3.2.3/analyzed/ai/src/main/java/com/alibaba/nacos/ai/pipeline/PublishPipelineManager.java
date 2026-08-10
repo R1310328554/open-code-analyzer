@@ -41,6 +41,7 @@ import java.util.stream.Collectors;
  * <p>Uses {@link ServiceLoader} to discover all {@link PublishPipelineServiceBuilder} implementations,
  * builds {@link PublishPipelineService} instances with per-node configuration properties, and caches
  * them by pipelineId for runtime lookup.</p>
+ * <p>发布流水线 SPI 插件管理器：通过 ServiceLoader 加载 Builder、按节点配置构建服务实例并按 pipelineId 缓存。</p>
  *
  * @author kiro
  * @since 3.2.0
@@ -49,8 +50,9 @@ public class PublishPipelineManager {
     
     private static final Logger LOG = LoggerFactory.getLogger(PublishPipelineManager.class);
     
-    /**
-     * Cached pipeline services keyed by pipelineId.
+    /** 按 pipelineId 缓存的流水线服务实例。 */
+    /** Cached pipeline services keyed by pipelineId.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private final Map<String, PublishPipelineService> serviceMap = new HashMap<>();
     
@@ -60,6 +62,7 @@ public class PublishPipelineManager {
      * <p>For each builder, looks up the corresponding node configuration from the config. If found,
      * passes the node's properties to {@code builder.build(properties)}; otherwise passes empty Properties.
      * If a builder throws an exception, it is logged and skipped.</p>
+     * <p>加载全部 SPI Builder 并构建服务；节点配置缺失时使用空 Properties，构建失败则记录日志并跳过。</p>
      *
      * @param config the pipeline configuration containing node properties
      */
@@ -71,6 +74,7 @@ public class PublishPipelineManager {
     
     /**
      * Initialize the manager with the given builders and config. Package-private for testability.
+     * <p>包内可见，供单元测试注入自定义 Builder 集合。</p>
      *
      * @param builders iterable of pipeline service builders
      * @param config   the pipeline configuration containing node properties
@@ -106,6 +110,7 @@ public class PublishPipelineManager {
      *
      * <p>Filters services that support the specified resource type and whose pipelineId is present
      * in the nodes list. Results are sorted by {@link PublishPipelineService#getPreferOrder()} ascending.</p>
+     * <p>按资源类型与节点列表过滤匹配的服务，并按 preferOrder 升序排序。</p>
      *
      * @param resourceType the resource type to filter by
      * @param nodes        the configured pipeline nodes to match against
@@ -127,6 +132,7 @@ public class PublishPipelineManager {
     
     /**
      * Get all loaded pipeline services.
+     * <p>返回当前已加载并缓存的全部流水线服务。</p>
      *
      * @return collection of all cached pipeline services
      */

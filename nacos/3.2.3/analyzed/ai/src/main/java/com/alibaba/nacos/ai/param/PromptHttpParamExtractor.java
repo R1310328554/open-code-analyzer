@@ -27,19 +27,21 @@ import java.util.List;
 
 /**
  * Nacos AI Prompt param extractor.
+ * <p>Prompt 资源 HTTP 请求参数提取器，从 promptKey 推导 Config 的 dataId（追加 .json 后缀）。</p>
  *
  * @author nacos
  */
 public class PromptHttpParamExtractor extends AbstractHttpParamExtractor {
     
+    /** Prompt 配置 dataId 后缀。 */
     private static final String PROMPT_DATA_ID_SUFFIX = ".json";
     
     @Override
     public List<ParamInfo> extractParam(HttpServletRequest request) throws NacosException {
         ParamInfo paramInfo = new ParamInfo();
-        paramInfo.setNamespaceId(request.getParameter("namespaceId"));
+        paramInfo.setNamespaceId(request.getParameter("namespaceId")); // 命名空间
         String promptKey = request.getParameter("promptKey");
-        if (StringUtils.isNotBlank(promptKey)) {
+        if (StringUtils.isNotBlank(promptKey)) { // promptKey 非空时拼接 dataId
             paramInfo.setDataId(promptKey + PROMPT_DATA_ID_SUFFIX);
         }
         return Collections.singletonList(paramInfo);

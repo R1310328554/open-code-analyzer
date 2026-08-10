@@ -46,6 +46,7 @@ import java.util.TreeMap;
  * {@code nacos.plugin.ai-pipeline.skill-scanner.enabled=true}.
  *
  * <p>Follows the singleton pattern like PushConfig.
+ * <p>基于 application.properties 的流水线配置提供者，从 EnvUtil 读取 ai-pipeline 插件开关、类型及节点属性。</p>
  *
  * @author kiro
  * @since 3.2.0
@@ -53,16 +54,21 @@ import java.util.TreeMap;
 public class FilePipelineConfigProvider extends AbstractDynamicConfig
     implements PipelineConfigProvider {
     
+    /** 动态配置名称，用于 AbstractDynamicConfig。 */
     private static final String CONFIG_NAME = "PipelineConfig";
     
+    /** 插件配置键前缀。 */
     private static final String KEY_PLUGIN_PREFIX = "nacos.plugin.ai-pipeline";
     
+    /** 全局启用开关键。 */
     private static final String KEY_ENABLED = KEY_PLUGIN_PREFIX + ".enabled";
     
+    /** 启用的插件类型列表键（逗号分隔）。 */
     private static final String KEY_TYPE = KEY_PLUGIN_PREFIX + ".type";
     
     private static final FilePipelineConfigProvider INSTANCE = new FilePipelineConfigProvider();
     
+    /** 当前生效的流水线配置快照。 */
     private volatile PipelineConfig currentConfig;
     
     private FilePipelineConfigProvider() {

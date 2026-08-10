@@ -26,6 +26,7 @@ import java.util.List;
 
 /**
  * Nacos AI MCP server param extractor.
+ * <p>MCP 服务 HTTP 请求参数提取器，从请求中解析 namespaceId、mcpName 与 mcpId。</p>
  *
  * @author xiweng.yy
  */
@@ -34,9 +35,9 @@ public class McpHttpParamExtractor extends AbstractHttpParamExtractor {
     @Override
     public List<ParamInfo> extractParam(HttpServletRequest request) throws NacosException {
         ParamInfo paramInfo = new ParamInfo();
-        paramInfo.setNamespaceId(request.getParameter("namespaceId"));
-        paramInfo.setMcpName(request.getParameter("mcpName"));
-        paramInfo.setMcpId(request.getParameter("mcpId"));
+        paramInfo.setNamespaceId(request.getParameter("namespaceId")); // 命名空间
+        paramInfo.setMcpName(request.getParameter("mcpName")); // MCP 服务名称
+        paramInfo.setMcpId(request.getParameter("mcpId")); // MCP 服务 ID
         return Collections.singletonList(paramInfo);
     }
 }
