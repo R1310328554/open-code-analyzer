@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T14:31:58Z",
-  "files": [
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers-deployment/src/main/resources/scripts/always-deny-with-claim-policy.js",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers-deployment/src/main/resources/scripts/auth-example.js",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers-deployment/src/main/resources/scripts/auth-session.js",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers-deployment/src/main/resources/scripts/check-readonly-context-policy.js",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers-deployment/src/main/resources/scripts/default-policy.js",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers-deployment/src/main/resources/scripts/test-bad-script-mapper3.js",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers-deployment/src/main/resources/scripts/test-script-mapper1.js",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers-deployment/src/main/resources/scripts/test-script-mapper2.js",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers-deployment/src/main/resources/scripts/test-script-mapper3.js",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers-deployment/src/main/resources/scripts/withdraw-limit-policy.js",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/actions/DummyConfigurableRequiredActionFactory.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/actions/DummyRequiredActionFactory.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/arquillian/LoadBalancerController.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/authentication/CustomAuthenticationFlowCallback.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/authentication/CustomAuthenticationFlowCallbackFactory.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 178,
-  "done": 5805
+  "done": 5820
 }
