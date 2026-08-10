@@ -793,3 +793,18 @@
 2026-08-10T06:46:00Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/ScopePermissionResource.java wave27b admin-client resource/role/scope resources
 2026-08-10T06:46:00Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/ScopePermissionsResource.java wave27b admin-client resource/role/scope resources
 2026-08-10T06:46:00Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/ServerInfoResource.java wave27b admin-client resource/role/scope resources
+2026-08-10T06:47:57Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/TimePoliciesResource.java wave28a admin-client user/token/spi
+2026-08-10T06:47:57Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/TimePolicyResource.java wave28a admin-client user/token/spi
+2026-08-10T06:47:57Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/UserPoliciesResource.java wave28a admin-client user/token/spi
+2026-08-10T06:47:57Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/UserPolicyResource.java wave28a admin-client user/token/spi
+2026-08-10T06:47:57Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/UserProfileResource.java wave28a admin-client user/token/spi
+2026-08-10T06:47:57Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/UserResource.java wave28a admin-client user/token/spi
+2026-08-10T06:47:57Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/UserStorageProviderResource.java wave28a admin-client user/token/spi
+2026-08-10T06:47:57Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/UserVerifiableCredentialResource.java wave28a admin-client user/token/spi
+2026-08-10T06:47:57Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/UsersResource.java wave28a admin-client user/token/spi
+2026-08-10T06:47:57Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/WorkflowResource.java wave28a admin-client user/token/spi
+2026-08-10T06:47:57Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/WorkflowsResource.java wave28a admin-client user/token/spi
+2026-08-10T06:47:57Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/spi/ResteasyClientClassicProvider.java wave28a admin-client user/token/spi
+2026-08-10T06:47:57Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/spi/ResteasyClientProvider.java wave28a admin-client user/token/spi
+2026-08-10T06:47:57Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/spi/StreamMessageBodyReader.java wave28a admin-client user/token/spi
+2026-08-10T06:47:57Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/token/TokenManager.java wave28a admin-client user/token/spi
