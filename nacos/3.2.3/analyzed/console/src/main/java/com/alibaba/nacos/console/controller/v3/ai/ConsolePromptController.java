@@ -63,6 +63,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 控制台 Prompt 全生命周期治理 REST 控制器。
+ * 涵盖删除/列举、草稿编辑、流水线提交发布、上下线及标签/描述/业务标签管理等接口。
+ *
  * Console prompt controller.
  *
  * <p>Provides REST APIs for prompt management operations in console, including
@@ -76,15 +79,18 @@ import java.util.Map;
 @ExtractorManager.Extractor(httpExtractor = PromptHttpParamExtractor.class)
 public class ConsolePromptController {
     
+    /** Prompt 业务代理。 */
     private final PromptProxy promptProxy;
     
+    /** 构造 Prompt 控制器。 */
     public ConsolePromptController(PromptProxy promptProxy) {
         this.promptProxy = promptProxy;
     }
     
-    // ========== Common endpoints ==========
+    // ========== 通用接口 ==========
     
     /**
+      * 删除 Prompt。
      * Delete prompt.
      */
     @Since("3.2.0")
@@ -100,6 +106,7 @@ public class ConsolePromptController {
     }
     
     /**
+      * 分页列举 Prompt 摘要。
      * List prompts with pagination.
      */
     @Since("3.2.0")
@@ -112,6 +119,7 @@ public class ConsolePromptController {
     }
     
     /**
+      * 分页列举 Prompt 版本历史。
      * List prompt versions with pagination.
      */
     @Since("3.2.0")
@@ -124,9 +132,10 @@ public class ConsolePromptController {
         return Result.success(result);
     }
     
-    // ========== Lifecycle endpoints ==========
+    // ========== 生命周期治理接口 ==========
     
     /**
+      * 获取 Prompt 治理元数据详情。
      * Get prompt governance detail.
      */
     @Since("3.2.1")
@@ -139,6 +148,7 @@ public class ConsolePromptController {
     }
     
     /**
+      * 获取 Prompt 指定版本详情。
      * Get specific version detail.
      */
     @Since("3.2.1")
@@ -152,6 +162,7 @@ public class ConsolePromptController {
     }
     
     /**
+      * 下载 Prompt 指定版本为 Markdown 文档。
      * Download a specific prompt version as a Markdown document.
      *
      * @param form the prompt query form containing promptKey and version
@@ -171,6 +182,7 @@ public class ConsolePromptController {
     }
     
     /**
+      * 创建草稿版本。
      * Create draft version.
      */
     @Since("3.2.1")
@@ -187,6 +199,7 @@ public class ConsolePromptController {
     }
     
     /**
+      * 更新 Prompt 草稿内容。
      * Update draft content.
      */
     @Since("3.2.1")
@@ -200,6 +213,7 @@ public class ConsolePromptController {
     }
     
     /**
+      * 控制台 API：Delete draft version。
      * Delete draft version.
      */
     @Since("3.2.1")
@@ -212,6 +226,7 @@ public class ConsolePromptController {
     }
     
     /**
+      * 提交 Prompt 至流水线审核。
      * Submit for pipeline review.
      */
     @Since("3.2.1")
@@ -225,6 +240,7 @@ public class ConsolePromptController {
     }
     
     /**
+      * 发布已通过审核的版本。
      * Publish an approved reviewing version.
      */
     @Since("3.2.1")
@@ -239,6 +255,7 @@ public class ConsolePromptController {
     }
     
     /**
+      * 强制发布 Prompt，跳过流水线校验。
      * Force-publish bypassing pipeline validation.
      */
     @Since("3.2.1")
@@ -255,6 +272,7 @@ public class ConsolePromptController {
     }
     
     /**
+      * 将已审核 Prompt 版本退回草稿。
      * Re-edit a reviewed prompt version, transitioning it back to draft status.
      */
     @Since("3.2.2")
@@ -267,6 +285,7 @@ public class ConsolePromptController {
     }
     
     /**
+      * 上线 Prompt 版本。
      * Online a prompt version.
      */
     @Since("3.2.1")
@@ -280,6 +299,7 @@ public class ConsolePromptController {
     }
     
     /**
+      * 下线 Prompt 版本。
      * Offline a prompt version.
      */
     @Since("3.2.1")
@@ -293,6 +313,7 @@ public class ConsolePromptController {
     }
     
     /**
+      * 更新运行时路由标签。
      * Update runtime route labels.
      */
     @Since("3.2.1")
@@ -306,6 +327,7 @@ public class ConsolePromptController {
     }
     
     /**
+      * 更新 Prompt 描述。
      * Update prompt description.
      */
     @Since("3.2.1")
@@ -320,6 +342,7 @@ public class ConsolePromptController {
     }
     
     /**
+      * 更新 Prompt 业务标签。
      * Update prompt biz tags.
      */
     @Since("3.2.1")

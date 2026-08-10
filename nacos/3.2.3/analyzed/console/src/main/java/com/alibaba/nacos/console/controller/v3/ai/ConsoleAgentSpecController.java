@@ -59,6 +59,9 @@ import org.springframework.web.multipart.MultipartFile;
 import static com.alibaba.nacos.plugin.auth.constant.Constants.Resource.CONSOLE_RESOURCE_NAME_PREFIX;
 
 /**
+ * 控制台 AgentSpec（Agent 规格）全生命周期治理 REST 控制器。
+ * 支持 ZIP 上传、草稿编辑、流水线提交/发布、上下线及标签/可见性管理等操作。
+ *
  * Console AgentSpec Controller.
  *
  * @author nacos
@@ -69,13 +72,16 @@ import static com.alibaba.nacos.plugin.auth.constant.Constants.Resource.CONSOLE_
 @ExtractorManager.Extractor(httpExtractor = AgentSpecHttpParamExtractor.class)
 public class ConsoleAgentSpecController {
     
+    /** AgentSpec 业务代理。 */
     private final AgentSpecProxy agentSpecProxy;
     
+    /** 构造 AgentSpec 控制器。 */
     public ConsoleAgentSpecController(AgentSpecProxy agentSpecProxy) {
         this.agentSpecProxy = agentSpecProxy;
     }
     
     /**
+      * 查询 AgentSpec 元数据详情。
      * Get agentspec detail.
      *
      * @param form the agentspec form
@@ -91,6 +97,7 @@ public class ConsoleAgentSpecController {
     }
     
     /**
+      * 查询 AgentSpec 指定版本完整内容，供查看或编辑。
      * Get specific version detail of an agentspec for viewing or editing.
      *
      * @param form the agentspec form containing agentSpecName and version
@@ -106,6 +113,7 @@ public class ConsoleAgentSpecController {
     }
     
     /**
+      * 删除 AgentSpec。
      * Delete agentspec.
      *
      * @param form the agentspec form
@@ -122,6 +130,7 @@ public class ConsoleAgentSpecController {
     }
     
     /**
+      * 分页列举 AgentSpec 摘要列表。
      * List agentspecs with pagination.
      *
      * @param agentSpecListForm the list form
@@ -142,6 +151,7 @@ public class ConsoleAgentSpecController {
     }
     
     /**
+      * 从 ZIP 文件上传 AgentSpec。
      * Upload agentspec from zip file.
      *
      * @param request     HTTP servlet request
@@ -167,6 +177,7 @@ public class ConsoleAgentSpecController {
     }
     
     /**
+      * 创建草稿版本。
      * Create draft version.
      *
      * @param form draft create form
@@ -182,6 +193,7 @@ public class ConsoleAgentSpecController {
     }
     
     /**
+      * 更新当前草稿内容。
      * Update current draft content.
      *
      * @param form update form
@@ -198,6 +210,7 @@ public class ConsoleAgentSpecController {
     }
     
     /**
+      * 删除当前草稿版本。
      * Delete current draft version.
      *
      * @param form agentspec form
@@ -214,6 +227,7 @@ public class ConsoleAgentSpecController {
     }
     
     /**
+      * 提交版本至流水线审核。
      * Submit a version for pipeline review.
      *
      * @param form submit form
@@ -229,6 +243,7 @@ public class ConsoleAgentSpecController {
     }
     
     /**
+      * 发布已通过审核的版本。
      * Publish an approved reviewing version.
      *
      * @param form publish form
@@ -245,6 +260,7 @@ public class ConsoleAgentSpecController {
     }
     
     /**
+      * 强制发布 AgentSpec 版本，跳过流水线校验（限管理员）。
      * Force-publish an agentspec version, bypassing pipeline validation. Accepts draft, reviewing, and reviewed
      * versions. Restricted to admin users only (apiType = ADMIN_API enforces global admin check).
      */
@@ -260,6 +276,7 @@ public class ConsoleAgentSpecController {
     }
     
     /**
+      * 将已审核版本退回草稿状态重新编辑。
      * Re-edit a reviewed agent spec version, transitioning it back to draft status.
      *
      * @param form publish form
@@ -276,6 +293,7 @@ public class ConsoleAgentSpecController {
     }
     
     /**
+      * 更新运行时路由标签。
      * Update runtime route labels.
      *
      * @param form labels update form
@@ -292,6 +310,7 @@ public class ConsoleAgentSpecController {
     }
     
     /**
+      * 更新 AgentSpec 业务标签（不改变版本状态）。
      * Update agentspec biz tags without changing version status.
      */
     @Since("3.2.0")
@@ -304,6 +323,7 @@ public class ConsoleAgentSpecController {
     }
     
     /**
+      * 上线操作。
      * Online operation.
      *
      * @param form online form
@@ -320,6 +340,7 @@ public class ConsoleAgentSpecController {
     }
     
     /**
+      * 更新 AgentSpec 可见性范围。
      * Update agentspec visibility scope.
      *
      * @param form scope update form
@@ -336,6 +357,7 @@ public class ConsoleAgentSpecController {
     }
     
     /**
+      * 下线操作。
      * Offline operation.
      *
      * @param form online form

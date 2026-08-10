@@ -31,6 +31,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 
 /**
+ * Copilot SSE 端点专用异常处理器，优先级高于 {@code NacosApiExceptionHandler}，
+ * 确保流式接口的异常以 SSE error 事件返回而非 JSON Result。
+ *
  * Exception handler for Copilot SSE endpoints.
  * This handler has higher priority than NacosApiExceptionHandler to ensure
  * all exceptions are returned as SSE events.
@@ -41,9 +44,11 @@ import java.io.IOException;
 @ControllerAdvice(assignableTypes = ConsoleCopilotController.class)
 public class CopilotSseExceptionHandler {
     
+    /** 日志记录器。 */
     private static final Logger LOGGER = LoggerFactory.getLogger(CopilotSseExceptionHandler.class);
     
     /**
+      * 处理 Copilot SSE 端点的全部异常，以 SSE error 事件返回。
      * Handle all exceptions for SSE endpoints.
      * This ensures exceptions are returned as SSE events instead of Result objects.
      * Only handles SSE endpoints (requests that accept text/event-stream or have SSE path).
@@ -55,18 +60,18 @@ public class CopilotSseExceptionHandler {
     @ExceptionHandler(Exception.class)
     @ResponseBody
     public Object handleException(Exception e, HttpServletRequest request) {
-        // Only handle SSE requests - check Accept header or request path
+        // 仅处理 SSE 请求：检查 Accept 头或请求路径
         String acceptHeader = request.getHeader("Accept");
         String requestPath = request.getRequestURI();
         
-        // Check if this is an SSE endpoint (optimize or generate endpoint) or accepts SSE
+        // 判断是否为 Skill 优化/生成等 SSE 端点
         boolean isSseRequest =
             (acceptHeader != null && acceptHeader.contains(MediaType.TEXT_EVENT_STREAM_VALUE))
                 || (requestPath != null && (requestPath.contains("/skill/optimize")
                     || requestPath.contains("/skill/generate")));
         
         if (!isSseRequest) {
-            // Not an SSE request, rethrow to let other exception handlers process it
+            // 非 SSE 请求则重新抛出，交由其他异常处理器处理
             if (e instanceof RuntimeException) {
                 throw (RuntimeException) e;
             } else {

@@ -44,6 +44,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
+ * 控制台 v3 配置变更历史 REST 控制器，提供历史详情、分页列表、上一版本及按命名空间列举配置等接口。
+ * 映射路径 {@code /v3/console/cs/history}。
+ *
  * Controller for handling HTTP requests related to history operations.
  *
  * @author zhangyukun on:2024/8/16
@@ -54,14 +57,21 @@ import java.util.List;
 @ExtractorManager.Extractor(httpExtractor = ConfigDefaultHttpParamExtractor.class)
 public class ConsoleHistoryController {
     
+    /** 配置历史业务代理。 */
     private final HistoryProxy historyProxy;
     
+    /**
+     * 构造配置历史控制器。
+     *
+     * @param historyProxy 历史业务代理
+     */
     @Autowired
     public ConsoleHistoryController(HistoryProxy historyProxy) {
         this.historyProxy = historyProxy;
     }
     
     /**
+      * 查询指定 nid 的配置变更历史详情。
      * Query the detailed configuration history information. notes:
      *
      * @param nid        history_config_info nid
@@ -83,6 +93,7 @@ public class ConsoleHistoryController {
     }
     
     /**
+      * 分页查询配置变更历史列表。
      * Query the list history config. notes:
      *
      * @param configForm config form
@@ -107,6 +118,7 @@ public class ConsoleHistoryController {
     }
     
     /**
+      * 查询上一版本配置历史详情。
      * Query previous config history information. notes:
      *
      * @param id         config_info id
@@ -127,6 +139,7 @@ public class ConsoleHistoryController {
     }
     
     /**
+      * 按命名空间列举全部配置摘要。
      * Query configs list by namespace.
      *
      * @param namespaceId config_info namespace

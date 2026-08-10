@@ -67,6 +67,9 @@ import static com.alibaba.nacos.api.ai.constant.AiConstants.Mcp.MCP_PROTOCOL_SSE
 import static com.alibaba.nacos.api.ai.constant.AiConstants.Mcp.MCP_PROTOCOL_STREAMABLE;
 
 /**
+ * 控制台 MCP（Model Context Protocol）Server 管理 REST 控制器。
+ * 提供 MCP Server CRUD、工具导入及批量导入校验/执行等接口。
+ *
  * Nacos Console AI MCP Server Constants.
  *
  * @author xiweng.yy
@@ -77,13 +80,16 @@ import static com.alibaba.nacos.api.ai.constant.AiConstants.Mcp.MCP_PROTOCOL_STR
 @ExtractorManager.Extractor(httpExtractor = McpHttpParamExtractor.class)
 public class ConsoleMcpController {
     
+    /** MCP Server 业务代理。 */
     private final McpProxy mcpProxy;
     
+    /** 构造 MCP 控制器。 */
     public ConsoleMcpController(McpProxy mcpProxy) {
         this.mcpProxy = mcpProxy;
     }
     
     /**
+      * 分页列举 MCP Server。
      * List mcp server.
      *
      * @param mcpListForm list mcp servers request form
@@ -106,6 +112,7 @@ public class ConsoleMcpController {
     }
     
     /**
+      * 从外部 MCP Server 导入工具列表。
      * Import tools from mcp result.
      *
      * @param transportType the transport type
@@ -150,13 +157,14 @@ public class ConsoleMcpController {
             McpSchema.ListToolsResult tools = client.listTools();
             return Result.success(tools.tools());
         } catch (Exception e) {
-            // 可以记录日志或抛出 NacosException
+            // 连接 MCP 失败时包装为 NacosException 抛出
             throw new NacosException(NacosException.SERVER_ERROR,
                 "Failed to import tools from MCP server", e);
         }
     }
     
     /**
+      * 查询指定 MCP Server 详情。
      * Get specified mcp server detail info.
      *
      * @param mcpForm get mcp server request form
@@ -174,6 +182,7 @@ public class ConsoleMcpController {
     }
     
     /**
+      * 创建 MCP Server。
      * Create new mcp server.
      *
      * @param mcpForm create mcp server request form
@@ -193,6 +202,7 @@ public class ConsoleMcpController {
     }
     
     /**
+      * 更新已有 MCP Server（namespaceId 与 mcpName 不可变更）。
      * Update existed mcp server.
      *
      * <p>
@@ -217,6 +227,7 @@ public class ConsoleMcpController {
     }
     
     /**
+      * 删除 MCP Server。
      * Delete existed mcp server.
      *
      * @param mcpForm delete mcp server request form
@@ -233,6 +244,7 @@ public class ConsoleMcpController {
     }
     
     /**
+      * 校验 MCP Server 批量导入请求。
      * Validate MCP server import request.
      *
      * @param mcpImportForm import request form
@@ -252,6 +264,7 @@ public class ConsoleMcpController {
     }
     
     /**
+      * 执行 MCP Server 批量导入。
      * Execute MCP server import operation.
      *
      * @param mcpImportForm import request form
@@ -271,6 +284,7 @@ public class ConsoleMcpController {
     }
     
     /**
+      * 将 HTTP 导入表单转换为服务层导入请求。
      * Convert McpImportForm to McpServerImportRequest.
      *
      * @param form the form from HTTP request

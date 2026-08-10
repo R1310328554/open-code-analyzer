@@ -60,6 +60,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * 控制台 Copilot AI 辅助 REST 控制器，提供 Skill/Prompt 优化、生成与调试的 SSE 流式接口。
+ * 映射 {@link com.alibaba.nacos.copilot.constant.CopilotConstants#COPILOT_CONSOLE_PATH}，
+ * 使用 {@link CopilotHttpParamExtractor} 提取权限校验参数。
+ *
  * Console Copilot controller.
  *
  * @author nacos
@@ -70,14 +74,19 @@ import java.util.Map;
 @ExtractorManager.Extractor(httpExtractor = CopilotHttpParamExtractor.class)
 public class ConsoleCopilotController {
     
+    /** 日志记录器。 */
     private static final Logger LOGGER = LoggerFactory.getLogger(ConsoleCopilotController.class);
     
+    /** Skill 优化流式服务。 */
     private final SkillOptimizationService skillOptimizationService;
     
+    /** Skill 生成流式服务。 */
     private final SkillGenerationService skillGenerationService;
     
+    /** Prompt 优化流式服务。 */
     private final PromptOptimizationService promptOptimizationService;
     
+    /** Prompt 调试流式服务。 */
     private final PromptDebugService promptDebugService;
     
     @Autowired
@@ -92,6 +101,7 @@ public class ConsoleCopilotController {
     }
     
     /**
+      * 流式优化 Skill（SSE）。
      * Optimize skill with stream response (SSE).
      *
      * @param form skill optimization form
@@ -105,10 +115,10 @@ public class ConsoleCopilotController {
     @SuppressWarnings("PMD.MethodTooLongRule")
     public SseEmitter optimizeSkillStream(
         @RequestBody(required = false) SkillOptimizationForm form) {
-        // Create SSE emitter with 5 minutes timeout
+        // 创建 5 分钟超时的 SSE 发射器
         SseEmitter emitter = new SseEmitter(300000L);
         
-        // Handle null form or missing request body
+        // 处理空请求体
         if (form == null) {
             try {
                 SkillOptimizationResponse errorResponse = new SkillOptimizationResponse();
@@ -142,28 +152,29 @@ public class ConsoleCopilotController {
             return emitter;
         }
         
-        // Build request
+        // 组装后端请求对象
         SkillOptimizationRequest request = new SkillOptimizationRequest();
         request.setSkill(form.getSkill());
         request.setOptimizationGoal(form.getOptimizationGoal());
         request.setConversationHistory(form.getConversationHistory());
         request.setTargetFileName(form.getTargetFileName());
         
-        // Set selectedMcpTools to params if provided
+        // 若指定 MCP 工具则写入请求参数
         if (form.getSelectedMcpTools() != null && !form.getSelectedMcpTools().isEmpty()) {
             java.util.Map<String, Object> params = new java.util.HashMap<>();
             params.put("selectedMcpTools", form.getSelectedMcpTools());
             request.setParams(params);
         }
         
-        // Call optimization service with stream callback
+        // 调用优化服务并通过流式回调推送 SSE 事件
         skillOptimizationService.optimizeSkillStream(request,
             new StreamResponseCallback<SkillOptimizationResponse>() {
                 
+                /** 流式回调：推送下一条 SSE 消息。 */
                 @Override
                 public void onNext(SkillOptimizationResponse response) {
                     try {
-                        // Filter out SKILL.md from resources before sending to frontend
+                        // 向前端推送前过滤 SKILL.md 资源
                         if (response != null && response.getOptimizedSkill() != null) {
                             Skill optimizedSkill = response.getOptimizedSkill();
                             if (optimizedSkill.getResource() != null
@@ -177,7 +188,7 @@ public class ConsoleCopilotController {
                                     String key = entry.getKey();
                                     SkillResource resource = entry.getValue();
                                     
-                                    // Check if resource name or key is SKILL.md (case-insensitive)
+                                    // 判断资源名或键是否为 SKILL.md（忽略大小写）
                                     String resourceName =
                                         resource != null && resource.getName() != null
                                             ? resource.getName() : "";
@@ -208,7 +219,7 @@ public class ConsoleCopilotController {
                             }
                         }
                         
-                        // Send SSE event
+                        // 发送 SSE 消息事件
                         emitter.send(
                             SseEmitter.event().data(JacksonUtils.toJson(response)).name("message"));
                     } catch (IOException e) {
@@ -228,11 +239,12 @@ public class ConsoleCopilotController {
                     }
                 }
                 
+                /** 流式回调：处理错误并发送 error 事件。 */
                 @Override
                 public void onError(Throwable t) {
                     LOGGER.error("Error in skill optimization stream", t);
                     try {
-                        // Send error response
+                        // 发送错误响应事件
                         SkillOptimizationResponse errorResponse = new SkillOptimizationResponse();
                         errorResponse.setDone(true);
                         errorResponse.setExplanation("优化失败：" + t.getMessage());
@@ -245,6 +257,7 @@ public class ConsoleCopilotController {
                     }
                 }
                 
+                /** 流式回调：完成 SSE 流。 */
                 @Override
                 public void onComplete() {
                     emitter.complete();
@@ -255,6 +268,7 @@ public class ConsoleCopilotController {
     }
     
     /**
+      * 根据背景信息流式生成 Skill（SSE）。
      * Generate skill from background information with stream response (SSE).
      *
      * @param form skill generation form
@@ -310,10 +324,11 @@ public class ConsoleCopilotController {
         request.setSelectedMcpTools(form.getSelectedMcpTools());
         request.setConversationHistory(form.getConversationHistory());
         
-        // Call generation service with stream callback
+        // 调用生成服务并通过流式回调推送 SSE 事件
         skillGenerationService.generateSkillStream(request,
             new StreamResponseCallback<SkillGenerationResponse>() {
                 
+                /** 流式回调：推送下一条 SSE 消息。 */
                 @Override
                 public void onNext(SkillGenerationResponse response) {
                     try {
@@ -336,6 +351,7 @@ public class ConsoleCopilotController {
                     }
                 }
                 
+                /** 流式回调：处理错误并发送 error 事件。 */
                 @Override
                 public void onError(Throwable t) {
                     LOGGER.error("Error in skill generation stream", t);
@@ -353,6 +369,7 @@ public class ConsoleCopilotController {
                     }
                 }
                 
+                /** 流式回调：完成 SSE 流。 */
                 @Override
                 public void onComplete() {
                     emitter.complete();
@@ -363,6 +380,7 @@ public class ConsoleCopilotController {
     }
     
     /**
+      * 流式优化 Prompt（SSE）。
      * Optimize prompt with stream response (SSE).
      *
      * @param form prompt optimization form
@@ -418,10 +436,11 @@ public class ConsoleCopilotController {
         request.setPrompt(form.getPrompt());
         request.setOptimizationGoal(form.getOptimizationGoal());
         
-        // Call optimization service with stream callback
+        // 调用 Prompt 优化服务并通过流式回调推送 SSE 事件
         promptOptimizationService.optimizePromptStream(request,
             new StreamResponseCallback<PromptOptimizationResponse>() {
                 
+                /** 流式回调：推送下一条 SSE 消息。 */
                 @Override
                 public void onNext(PromptOptimizationResponse response) {
                     try {
@@ -445,6 +464,7 @@ public class ConsoleCopilotController {
                     }
                 }
                 
+                /** 流式回调：处理错误并发送 error 事件。 */
                 @Override
                 public void onError(Throwable t) {
                     LOGGER.error("Error in prompt optimization stream", t);
@@ -462,6 +482,7 @@ public class ConsoleCopilotController {
                     }
                 }
                 
+                /** 流式回调：完成 SSE 流。 */
                 @Override
                 public void onComplete() {
                     emitter.complete();
@@ -472,6 +493,7 @@ public class ConsoleCopilotController {
     }
     
     /**
+      * 流式调试 Prompt（SSE），传入用户输入并返回模型响应含思考过程。
      * Debug prompt with stream response (SSE). This allows testing a prompt with user input and returns the model's
      * response including thinking.
      *
@@ -525,10 +547,11 @@ public class ConsoleCopilotController {
         request.setPrompt(form.getPrompt());
         request.setUserInput(form.getUserInput());
         
-        // Call debug service with stream callback
+        // 调用 Prompt 调试服务并通过流式回调推送 SSE 事件
         promptDebugService.debugPromptStream(request,
             new StreamResponseCallback<PromptDebugResponse>() {
                 
+                /** 流式回调：推送下一条 SSE 消息。 */
                 @Override
                 public void onNext(PromptDebugResponse response) {
                     try {
@@ -550,6 +573,7 @@ public class ConsoleCopilotController {
                     }
                 }
                 
+                /** 流式回调：处理错误并发送 error 事件。 */
                 @Override
                 public void onError(Throwable t) {
                     LOGGER.error("Error in prompt debug stream", t);
@@ -566,6 +590,7 @@ public class ConsoleCopilotController {
                     }
                 }
                 
+                /** 流式回调：完成 SSE 流。 */
                 @Override
                 public void onComplete() {
                     emitter.complete();

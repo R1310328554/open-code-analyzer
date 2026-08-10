@@ -62,6 +62,9 @@ import org.springframework.web.multipart.MultipartFile;
 import static com.alibaba.nacos.plugin.auth.constant.Constants.Resource.CONSOLE_RESOURCE_NAME_PREFIX;
 
 /**
+ * 控制台 Skill 全生命周期治理 REST 控制器。
+ * 支持 ZIP 上传/下载、草稿编辑、流水线提交发布、上下线及可见性/标签管理等操作。
+ *
  * Console skill controller.
  *
  * @author nacos
@@ -72,13 +75,16 @@ import static com.alibaba.nacos.plugin.auth.constant.Constants.Resource.CONSOLE_
 @ExtractorManager.Extractor(httpExtractor = SkillHttpParamExtractor.class)
 public class ConsoleSkillController {
     
+    /** Skill 业务代理。 */
     private final SkillProxy skillProxy;
     
+    /** 构造 Skill 控制器。 */
     public ConsoleSkillController(SkillProxy skillProxy) {
         this.skillProxy = skillProxy;
     }
     
     /**
+      * 查询 Skill 元数据。
      * Get skill.
      *
      * @param form the skill form to get
@@ -94,6 +100,7 @@ public class ConsoleSkillController {
     }
     
     /**
+      * 查询 Skill 指定版本完整内容。
      * Get specific version detail of a skill for viewing or editing.
      *
      * @param form the skill form containing skillName and version
@@ -109,6 +116,7 @@ public class ConsoleSkillController {
     }
     
     /**
+      * 下载 Skill 指定版本为 ZIP 文件。
      * Download a specific version of a skill as ZIP file.
      *
      * @param form the skill form containing skillName and version
@@ -125,6 +133,7 @@ public class ConsoleSkillController {
     }
     
     /**
+      * 删除 Skill。
      * Delete skill.
      *
      * @param form the skill form to delete
@@ -141,6 +150,7 @@ public class ConsoleSkillController {
     }
     
     /**
+      * 分页列举 Skill 摘要。
      * List skills.
      *
      * @param skillListForm the skill list form to list
@@ -160,6 +170,7 @@ public class ConsoleSkillController {
     }
     
     /**
+      * 从 ZIP 文件上传 Skill。
      * Upload skill from zip file.
      *
      * @param request     HTTP servlet request
@@ -194,6 +205,7 @@ public class ConsoleSkillController {
     }
     
     /**
+      * 批量上传多个 Skill（ZIP 内需含一级子目录且各含 SKILL.md）。
      * Batch upload multiple skills from a single zip file. The zip must contain one-level subdirectories,
      * each with its own SKILL.md. Uses best-effort strategy.
      *
@@ -221,6 +233,7 @@ public class ConsoleSkillController {
     }
     
     /**
+      * 创建 Skill 草稿（校验在 Form 中完成，控制器仅委托）。
      * Create draft. {@link SkillDraftCreateForm#prepareCreateDraftRequest()} validates here; handler only delegates.
      */
     @Since("3.2.0")
@@ -232,6 +245,7 @@ public class ConsoleSkillController {
     }
     
     /**
+      * 更新当前草稿内容。
      * Update current draft content.
      */
     @Since("3.2.0")
@@ -244,6 +258,7 @@ public class ConsoleSkillController {
     }
     
     /**
+      * 删除当前草稿版本。
      * Delete current draft version.
      */
     @Since("3.2.0")
@@ -256,6 +271,7 @@ public class ConsoleSkillController {
     }
     
     /**
+      * 提交版本至流水线审核。
      * Submit a version for pipeline review.
      */
     @Since("3.2.0")
@@ -267,6 +283,7 @@ public class ConsoleSkillController {
     }
     
     /**
+      * 发布已通过审核的版本。
      * Publish an approved reviewing version.
      */
     @Since("3.2.0")
@@ -279,6 +296,7 @@ public class ConsoleSkillController {
     }
     
     /**
+      * 强制发布 Skill 版本，跳过流水线校验（限管理员）。
      * Force-publish a skill version, bypassing pipeline validation. Accepts draft, reviewing, and reviewed versions.
      * Restricted to admin users only (apiType = ADMIN_API enforces global admin check).
      */
@@ -294,6 +312,7 @@ public class ConsoleSkillController {
     }
     
     /**
+      * 将已审核 Skill 版本退回草稿。
      * Re-edit a reviewed skill version, transitioning it back to draft status.
      */
     @Since("3.2.2")
@@ -306,6 +325,7 @@ public class ConsoleSkillController {
     }
     
     /**
+      * 更新 Skill 运行时路由标签。
      * Update runtime route labels without changing version status.
      */
     @Since("3.2.0")
@@ -318,6 +338,7 @@ public class ConsoleSkillController {
     }
     
     /**
+      * 更新 Skill 业务标签。
      * Update skill biz tags without changing version status.
      */
     @Since("3.2.0")
@@ -330,6 +351,7 @@ public class ConsoleSkillController {
     }
     
     /**
+      * 上线 Skill（按 scope 支持版本级或 Skill 级）。
      * Online operation (version-level or skill-level by scope).
      */
     @Since("3.2.0")
@@ -342,6 +364,7 @@ public class ConsoleSkillController {
     }
     
     /**
+      * 下线 Skill（按 scope 支持版本级或 Skill 级）。
      * Offline operation (version-level or skill-level by scope).
      */
     @Since("3.2.0")
@@ -354,6 +377,7 @@ public class ConsoleSkillController {
     }
     
     /**
+      * 更新 Skill 可见性范围（PUBLIC 或 PRIVATE）。
      * Update skill visibility scope (PUBLIC or PRIVATE).
      */
     @Since("3.2.0")

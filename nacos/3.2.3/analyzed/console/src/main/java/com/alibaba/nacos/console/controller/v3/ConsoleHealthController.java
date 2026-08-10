@@ -31,6 +31,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
+ * 控制台 v3 健康检查 REST 控制器，暴露存活与就绪探针接口。
+ * 映射路径 {@code /v3/console/health}，供 K8s 或负载均衡器探测 Nacos 运行状态。
+ *
  * Controller class for handling health check operations.
  *
  * @author zhangyukun on:2024/8/27
@@ -41,13 +44,20 @@ import org.springframework.web.bind.annotation.RestController;
 @ExtractorManager.Extractor(httpExtractor = ConsoleDefaultHttpParamExtractor.class)
 public class ConsoleHealthController {
     
+    /** 健康检查代理，封装就绪状态的后端查询逻辑。 */
     private final HealthProxy healthProxy;
     
+    /**
+     * 构造健康检查控制器。
+     *
+     * @param healthProxy 健康检查代理
+     */
     public ConsoleHealthController(HealthProxy healthProxy) {
         this.healthProxy = healthProxy;
     }
     
     /**
+     * 存活探针：判断 Nacos 是否处于不可自愈的故障状态。
      * Whether the Nacos is in broken states or not, and cannot recover except by being restarted.
      *
      * @return HTTP code equal to 200 indicates that Nacos is in right states. HTTP code equal to 500 indicates that
@@ -60,6 +70,7 @@ public class ConsoleHealthController {
     }
     
     /**
+     * 就绪探针：判断 Nacos 是否已准备好接收业务请求。
      * Ready to receive the request or not.
      *
      * @return HTTP code equal to 200 indicates that Nacos is ready. HTTP code equal to 500 indicates that Nacos is not

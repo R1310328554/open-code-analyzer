@@ -50,6 +50,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
+ * 控制台 A2A（Agent-to-Agent）Agent 卡片管理 REST 控制器。
+ * 提供 Agent 注册、查询、更新、删除及版本列表等 CRUD 接口，映射 {@link com.alibaba.nacos.ai.constant.Constants.A2A#CONSOLE_PATH}。
+ *
  * Console A2a Controller.
  *
  * @author KiteSoar
@@ -60,13 +63,16 @@ import java.util.List;
 @ExtractorManager.Extractor(httpExtractor = AgentHttpParamExtractor.class)
 public class ConsoleA2aController {
     
+    /** A2A Agent 业务代理，转发请求至 AI 模块服务端。 */
     private final A2aProxy a2aProxy;
     
+    /** 构造 A2A 控制器。 */
     public ConsoleA2aController(A2aProxy a2aProxy) {
         this.a2aProxy = a2aProxy;
     }
     
     /**
+     * 注册新 Agent 卡片。
      * register agent.
      *
      * @param form the agent card form to register
@@ -84,6 +90,7 @@ public class ConsoleA2aController {
     }
     
     /**
+     * 查询指定 Agent 卡片详情。
      * get agent card.
      *
      * @param form the agent form to get
@@ -99,6 +106,7 @@ public class ConsoleA2aController {
     }
     
     /**
+     * 更新 Agent 卡片内容。
      * update agent.
      *
      * @param form the agent update form to update
@@ -116,6 +124,7 @@ public class ConsoleA2aController {
     }
     
     /**
+     * 删除指定 Agent。
      * delete agent.
      *
      * @param form the agent form to delete
@@ -132,6 +141,7 @@ public class ConsoleA2aController {
     }
     
     /**
+     * 分页列举 Agent 卡片及版本摘要。
      * list agents.
      *
      * @param agentListForm the agent list form to list
@@ -151,6 +161,7 @@ public class ConsoleA2aController {
     }
     
     /**
+     * 列举目标 Agent 的全部历史版本明细。
      * List all versions for target Agent.
      *
      * @param agentForm agent form

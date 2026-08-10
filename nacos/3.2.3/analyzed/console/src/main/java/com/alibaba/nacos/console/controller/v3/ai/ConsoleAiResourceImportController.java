@@ -42,6 +42,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
+ * 控制台 AI 资源外部导入 REST 控制器。
+ * 提供导入源列举、候选搜索、校验与执行四步向导式 API。
+ *
  * Console API controller for AI resource import.
  *
  * @author xiweng.yy
@@ -52,13 +55,16 @@ import java.util.List;
 @RequestMapping(Constants.AI_RESOURCE_IMPORT_CONSOLE_PATH)
 public class ConsoleAiResourceImportController {
     
+    /** AI 资源导入业务代理。 */
     private final AiResourceImportProxy importProxy;
     
+    /** 构造 AI 资源导入控制器。 */
     public ConsoleAiResourceImportController(AiResourceImportProxy importProxy) {
         this.importProxy = importProxy;
     }
     
     /**
+     * 列举控制台已配置的 AI 资源导入源。
      * List configured import sources for Console.
      *
      * @param form source list form
@@ -75,6 +81,7 @@ public class ConsoleAiResourceImportController {
     }
     
     /**
+     * 在外部导入源中搜索可导入的 AI 资源候选。
      * Search external import candidates for Console.
      *
      * @param form search form
@@ -91,6 +98,7 @@ public class ConsoleAiResourceImportController {
     }
     
     /**
+     * 校验已选导入候选的合法性与冲突情况。
      * Validate selected import candidates for Console.
      *
      * @param form validate form
@@ -107,6 +115,7 @@ public class ConsoleAiResourceImportController {
     }
     
     /**
+     * 执行 AI 资源导入，将外部候选写入 Nacos。
      * Execute import for selected candidates from Console.
      *
      * @param form execute form

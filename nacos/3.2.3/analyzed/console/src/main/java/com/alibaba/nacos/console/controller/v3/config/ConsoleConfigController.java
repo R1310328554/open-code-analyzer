@@ -69,6 +69,9 @@ import java.util.Map;
 import static com.alibaba.nacos.config.server.utils.RequestUtil.getRemoteIp;
 
 /**
+ * 控制台 v3 配置管理 REST 控制器，提供配置 CRUD、导入导出、克隆、Beta 灰度及监听查询等接口。
+ * 映射路径 {@code /v3/console/cs/config}，委托 {@link ConfigProxy} 访问配置服务端。
+ *
  * Controller for handling HTTP requests related to configuration operations.
  *
  * @author zhangyukun
@@ -79,13 +82,16 @@ import static com.alibaba.nacos.config.server.utils.RequestUtil.getRemoteIp;
 @ExtractorManager.Extractor(httpExtractor = ConfigDefaultHttpParamExtractor.class)
 public class ConsoleConfigController {
     
+    /** 配置业务代理。 */
     private final ConfigProxy configProxy;
     
+    /** 构造配置控制器。 */
     public ConsoleConfigController(ConfigProxy configProxy) {
         this.configProxy = configProxy;
     }
     
     /**
+      * 获取指定配置的详细信息。
      * Get the specific configuration information.
      *
      * @param configForm config form
@@ -104,6 +110,7 @@ public class ConsoleConfigController {
     }
     
     /**
+      * 发布或更新配置。
      * Add or update configuration.
      *
      * @param request    HTTP servlet request.
@@ -116,14 +123,14 @@ public class ConsoleConfigController {
     @Secured(action = ActionTypes.WRITE, signType = SignType.CONFIG, apiType = ApiType.CONSOLE_API)
     public Result<Boolean> publishConfig(HttpServletRequest request, ConfigFormV3 configForm)
         throws NacosException {
-        // check required field
+        // 校验必填字段
         configForm.validateWithContent();
         final boolean namespaceTransferred =
             NamespaceUtil.isNeedTransferNamespace(configForm.getNamespaceId());
         configForm
             .setNamespaceId(NamespaceUtil.processNamespaceParameter(configForm.getNamespaceId()));
         
-        // check param
+        // 校验 dataId、group、content 等参数合法性
         ParamUtils.checkParam(configForm.getDataId(), configForm.getGroup(), "datumId",
             configForm.getContent());
         ParamUtils.checkParamV2(configForm.getTag());
@@ -147,6 +154,7 @@ public class ConsoleConfigController {
     }
     
     /**
+      * 删除配置。
      * Delete configuration.
      *
      * @param request    HTTP servlet request.
@@ -160,7 +168,7 @@ public class ConsoleConfigController {
     public Result<Boolean> deleteConfig(HttpServletRequest request, ConfigFormV3 configForm)
         throws NacosException {
         configForm.validate();
-        //fix issue #9783
+        // 修复 issue #9783：规范化 namespaceId
         String namespaceId = NamespaceUtil.processNamespaceParameter(configForm.getNamespaceId());
         ParamUtils.checkParamV2(configForm.getTag());
         
@@ -175,6 +183,7 @@ public class ConsoleConfigController {
     }
     
     /**
+      * 批量删除配置。
      * Batch delete configurations.
      *
      * @param request HTTP servlet request.
@@ -195,6 +204,7 @@ public class ConsoleConfigController {
     }
     
     /**
+      * 分页获取配置列表。
      * Get configure information list.
      *
      * @param configForm config form
@@ -234,6 +244,7 @@ public class ConsoleConfigController {
     }
     
     /**
+      * 按配置内容搜索配置列表。
      * Search config list by config detail.
      *
      * @param configForm   config form
@@ -279,6 +290,7 @@ public class ConsoleConfigController {
     }
     
     /**
+      * 查询配置的订阅客户端（监听者）信息。
      * Subscribe to configured client information.
      *
      * @param configForm      config form
@@ -303,6 +315,7 @@ public class ConsoleConfigController {
     }
     
     /**
+      * 按客户端 IP 查询其订阅的配置列表。
      * Get subscribe information from client side.
      */
     @Since("3.0.0")
@@ -321,6 +334,7 @@ public class ConsoleConfigController {
     }
     
     /**
+      * 导出配置（v2 格式，含 metadata.yml 元数据文件）。
      * New version export config adds metadata.yml file to record config metadata.
      *
      * @param configForm config form
@@ -346,6 +360,7 @@ public class ConsoleConfigController {
     }
     
     /**
+      * 导入并发布配置。
      * Import and publish configuration.
      *
      * @param request     HTTP servlet request.
@@ -378,6 +393,7 @@ public class ConsoleConfigController {
     }
     
     /**
+      * 克隆配置至目标命名空间。
      * Clone configuration.
      *
      * @param request         HTTP servlet request.
@@ -412,6 +428,7 @@ public class ConsoleConfigController {
     }
     
     /**
+      * 停止 Beta 灰度发布。
      * Execute to remove beta operation.
      *
      * @param httpServletRequest HTTP request containing client details.
@@ -441,6 +458,7 @@ public class ConsoleConfigController {
     }
     
     /**
+      * 查询 Beta 灰度配置详情。
      * Execute to query beta operation.
      *
      * @param configForm config form

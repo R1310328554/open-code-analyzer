@@ -34,6 +34,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 /**
+ * 控制台 v3 服务器状态 REST 控制器，提供运行态、公告与 UI 引导信息查询。
+ * 映射路径 {@code /v3/console/server}。
+ *
  * Controller for managing server state-related operations.
  *
  * @author zhangyukun on:2024/8/27
@@ -44,13 +47,20 @@ import java.util.Map;
 @ExtractorManager.Extractor(httpExtractor = ConsoleDefaultHttpParamExtractor.class)
 public class ConsoleServerStateController {
     
+    /** 服务器状态代理，封装状态、公告与引导信息的查询。 */
     private final ServerStateProxy serverStateProxy;
     
+    /**
+     * 构造服务器状态控制器。
+     *
+     * @param serverStateProxy 服务器状态代理
+     */
     public ConsoleServerStateController(ServerStateProxy serverStateProxy) {
         this.serverStateProxy = serverStateProxy;
     }
     
     /**
+     * 获取当前 Nacos 节点的运行状态 JSON。
      * Get server state of current server.
      *
      * @return state json.
@@ -63,6 +73,7 @@ public class ConsoleServerStateController {
     }
     
     /**
+     * 按指定语言获取控制台公告内容。
      * Get the announcement content based on the specified language.
      *
      * @param language Language for the announcement (default: "zh-CN")
@@ -73,7 +84,7 @@ public class ConsoleServerStateController {
     public Result<String> getAnnouncement(
         @RequestParam(required = false, name = "language",
             defaultValue = "zh-CN") String language) {
-        // Validate the language parameter
+        // 校验语言参数是否在支持列表内
         if (!SupportedLanguage.isSupported(language)) {
             return Result.failure("Unsupported language: " + language);
         }
@@ -82,6 +93,7 @@ public class ConsoleServerStateController {
     }
     
     /**
+     * 获取控制台 UI 引导说明文本。
      * Get the console UI guide information.
      *
      * @return Console UI guide information as a string wrapped in a Result object

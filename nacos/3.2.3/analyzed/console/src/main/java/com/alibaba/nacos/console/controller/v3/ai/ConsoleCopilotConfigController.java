@@ -36,6 +36,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
+ * 控制台 Copilot 配置 REST 控制器，管理 LLM API Key、模型与 Studio 连接参数。
+ * 仅暴露/接受 apiKey、model、studioUrl、studioProject 四个字段的简化视图。
+ *
  * Console Copilot configuration controller.
  *
  * @author nacos
@@ -45,8 +48,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(CopilotConstants.COPILOT_CONSOLE_PATH + "/config")
 public class ConsoleCopilotConfigController {
     
+    /** Copilot 配置持久化存储。 */
     private final CopilotConfigStorage configStorage;
     
+    /** Copilot Agent 管理器，配置变更后需刷新。 */
     private final CopilotAgentManager agentManager;
     
     @Autowired
@@ -57,6 +62,7 @@ public class ConsoleCopilotConfigController {
     }
     
     /**
+      * 获取当前 Copilot 配置（仅返回 apiKey、model、studioUrl、studioProject）。
      * Get current Copilot configuration. Only returns apiKey, model, studioUrl and studioProject fields.
      *
      * @return Simplified CopilotProperties with only apiKey, model, studioUrl and studioProject
@@ -67,11 +73,11 @@ public class ConsoleCopilotConfigController {
     public Result<CopilotProperties> getConfig() throws NacosException {
         CopilotProperties config = configStorage.getConfig();
         if (config == null) {
-            // Return default empty config if not configured
+            // 未配置时返回默认空配置
             config = new CopilotProperties();
         }
         
-        // Create simplified config with only apiKey, model, studioUrl and studioProject
+        // 构造仅含 apiKey、model、studioUrl、studioProject 的简化视图
         CopilotProperties simplifiedConfig = new CopilotProperties();
         simplifiedConfig.setApiKey(config.getApiKey());
         simplifiedConfig.setModel(config.getModel());
@@ -82,6 +88,7 @@ public class ConsoleCopilotConfigController {
     }
     
     /**
+      * 创建或更新 Copilot 配置（仅接受四个简化字段，其余使用默认值）。
      * Create or update Copilot configuration. Only accepts apiKey, model, studioUrl and studioProject fields, other
      * fields use defaults.
      *
@@ -96,19 +103,19 @@ public class ConsoleCopilotConfigController {
             throw new NacosException(NacosException.INVALID_PARAM, "Configuration cannot be null");
         }
         
-        // Get existing config to preserve other fields, or create new one with defaults
+        // 读取已有配置以保留其他字段，或创建带默认值的新配置
         CopilotProperties existingConfig = configStorage.getConfig();
         CopilotProperties fullConfig;
         
         if (existingConfig != null) {
-            // Use existing config and only update apiKey, model, studioUrl and studioProject
+            // 在已有配置上仅更新 apiKey、model、studioUrl、studioProject
             fullConfig = existingConfig;
         } else {
-            // Create new config with default values
+            // 创建带默认值的新配置
             fullConfig = new CopilotProperties();
         }
         
-        // Update only apiKey, model, studioUrl and studioProject
+        // 仅更新 apiKey、model、studioUrl、studioProject 四个字段
         if (config.getApiKey() != null) {
             fullConfig.setApiKey(config.getApiKey());
         }
@@ -125,7 +132,7 @@ public class ConsoleCopilotConfigController {
         boolean success = configStorage.saveConfig(fullConfig);
         
         if (success) {
-            // Refresh configuration after config update
+            // 配置保存成功后刷新 Copilot Agent 运行时
             agentManager.refreshConfig();
         }
         

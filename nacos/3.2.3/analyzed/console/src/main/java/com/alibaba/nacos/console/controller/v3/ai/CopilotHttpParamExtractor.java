@@ -29,21 +29,27 @@ import java.util.Collections;
 import java.util.List;
 
 /**
+ * Copilot SSE 接口 HTTP 参数提取器，从请求体或查询参数解析 Skill 名称与命名空间，
+ * 供 {@link com.alibaba.nacos.core.paramcheck.ExtractorManager} 权限校验使用。
+ *
  * Copilot HTTP parameter extractor.
  *
  * @author nacos
  */
 public class CopilotHttpParamExtractor extends AbstractHttpParamExtractor {
     
+    /** POST 方法常量。 */
     private static final String HTTP_METHOD_POST = "POST";
     
+    /** 请求体 JSON 中 skill 字段键名片段，用于快速判断是否含 Skill 对象。 */
     private static final String SKILL_JSON_KEY = "\"skill\"";
     
+    /** 从 HTTP 请求提取 Copilot 权限校验参数。 */
     @Override
     public List<ParamInfo> extractParam(HttpServletRequest request) throws NacosException {
         ParamInfo paramInfo = new ParamInfo();
         
-        // Try to extract skill name from request body for optimization requests
+        // 尝试从 POST 请求体提取 Skill 名称（用于优化类接口的权限校验）
         if (HTTP_METHOD_POST.equalsIgnoreCase(request.getMethod())) {
             try {
                 StringBuilder body = new StringBuilder();
@@ -55,10 +61,10 @@ public class CopilotHttpParamExtractor extends AbstractHttpParamExtractor {
                 }
                 
                 if (body.length() > 0) {
-                    // Parse JSON body to extract skill name
+                    // 解析 JSON 请求体提取 Skill 名称与命名空间
                     String bodyStr = body.toString();
                     if (bodyStr.contains(SKILL_JSON_KEY)) {
-                        // Extract skill from request body
+                        // 从 skill 嵌套对象反序列化为 Skill 模型
                         try {
                             java.util.Map<String, Object> bodyMap =
                                 JacksonUtils.toObj(bodyStr, java.util.Map.class);
@@ -73,16 +79,16 @@ public class CopilotHttpParamExtractor extends AbstractHttpParamExtractor {
                                 }
                             }
                         } catch (Exception e) {
-                            // Ignore parsing errors
+                            // 解析失败时忽略，回退至查询参数
                         }
                     }
                 }
             } catch (Exception e) {
-                // Ignore errors
+                // 读取请求体失败时忽略
             }
         }
         
-        // Fallback to query parameters
+        // 回退至查询参数 skillName / namespaceId
         if (StringUtils.isBlank(paramInfo.getAgentName())) {
             paramInfo.setAgentName(request.getParameter("skillName"));
         }

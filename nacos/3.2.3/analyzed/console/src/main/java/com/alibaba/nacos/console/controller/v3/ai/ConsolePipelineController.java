@@ -37,6 +37,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
+ * 控制台流水线（Pipeline）执行记录查询 REST 控制器。
+ * 支持分页列举与按 ID 查询 AgentSpec/Prompt/Skill 等资源审批流水线详情。
+ *
  * Console Pipeline Controller for querying pipeline execution records.
  *
  * @author kiro
@@ -47,13 +50,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(Constants.Pipeline.CONSOLE_PATH)
 public class ConsolePipelineController {
     
+    /** 流水线业务代理。 */
     private final PipelineProxy pipelineProxy;
     
+    /** 构造流水线控制器。 */
     public ConsolePipelineController(PipelineProxy pipelineProxy) {
         this.pipelineProxy = pipelineProxy;
     }
     
     /**
+      * 分页列举流水线执行记录。
      * List pipeline executions with pagination.
      */
     @Since("3.2.0")
@@ -70,6 +76,7 @@ public class ConsolePipelineController {
     }
     
     /**
+      * 按 pipelineId 查询参数获取流水线执行详情。
      * Get pipeline execution detail by ID (query parameter {@code pipelineId}).
      */
     @Since("3.2.1")
@@ -82,6 +89,7 @@ public class ConsolePipelineController {
     }
     
     /**
+      * 按路径变量 pipelineId 获取流水线执行详情（已废弃）。
      * Get pipeline execution detail by ID in path.
      *
      * @deprecated since 3.2.1, for removal in a future release. Use {@code GET .../detail?pipelineId=}.
@@ -96,6 +104,7 @@ public class ConsolePipelineController {
     }
     
     /**
+      * 在控制器根路径分页列举流水线（已废弃，请用 /list）。
      * List pipeline executions with pagination at the controller base path.
      *
      * @deprecated since 3.2.1, for removal in a future release. Use {@code GET .../list}.
