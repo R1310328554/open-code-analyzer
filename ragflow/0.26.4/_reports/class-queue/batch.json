@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T17:22:56Z",
   "files": [
-    "common/data_source/rest_api_connector.py",
-    "common/data_source/rss_connector.py",
-    "common/data_source/salesforce_connector.py",
-    "common/data_source/seafile_connector.py",
-    "common/data_source/sharepoint_connector.py",
-    "common/data_source/slack_connector.py",
-    "common/data_source/teams_connector.py",
-    "common/data_source/utils.py",
-    "common/data_source/webdav_connector.py",
-    "common/data_source/zendesk_connector.py",
-    "common/decorator.py",
-    "common/doc_store/__init__.py",
-    "common/doc_store/doc_store_base.py",
-    "common/doc_store/es_conn_base.py",
-    "common/doc_store/es_conn_pool.py",
     "common/doc_store/infinity_conn_base.py",
     "common/doc_store/infinity_conn_pool.py",
     "common/doc_store/ob_conn_base.py",
@@ -33,5 +18,5 @@
     "common/misc_utils.py"
   ],
   "remaining_pending": 1434,
-  "done": 300
+  "done": 315
 }
