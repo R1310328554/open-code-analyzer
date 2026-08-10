@@ -22,10 +22,12 @@ import org.keycloak.common.Profile;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 
 /**
- * Interface for all OID4VC related provider factories, to ensure usage of the same feature flag.
+ * OID4VC 相关 Provider 工厂的公共基接口。
+ * <p>统一通过 {@code OID4VC_VCI} 特性开关控制是否加载。</p>
  */
 public interface OID4VCEnvironmentProviderFactory extends EnvironmentDependentProviderFactory {
 
+    /** {@inheritDoc} 仅在 Realm 启用 OID4VC VCI 特性时可用。 */
     @Override
     default boolean isSupported(Config.Scope config) {
         return Profile.isFeatureEnabled(Profile.Feature.OID4VC_VCI);

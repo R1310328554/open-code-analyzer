@@ -6,7 +6,8 @@ import org.keycloak.provider.EnvironmentDependentProviderFactory;
 import org.keycloak.provider.ProviderFactory;
 
 /**
- * The interface is a factory of {@link ClientIdMetadataDocumentProvider}.
+ * {@link ClientIdMetadataDocumentProvider} 的工厂接口。
+ * <p>仅在启用 {@code CIMD} 特性时受支持。</p>
  *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */

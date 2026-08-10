@@ -4,7 +4,8 @@ import org.keycloak.Config;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
- * The abstract class is the factory class of {@link AbstractPersistentClientIdMetadataDocumentProvider}.
+ * {@link AbstractPersistentClientIdMetadataDocumentProvider} 的抽象工厂。
+ * <p>生命周期钩子默认为空实现，由具体子类提供 Provider 实例。</p>
  *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */

@@ -47,36 +47,18 @@ import org.keycloak.validation.ValidationResult;
 import org.jboss.logging.Logger;
 
 /**
- * The abstract class persists client metadata.
- *
- * <p>Creating and updating a client metadata:
- * The class does almost the same process in Dynamic Client Registration (DCR)in {@code OIDCClientRegistrationProvider}.
- *
- * <p>The reason is that a client sends its metadata to an authorization server in DCR by RFC 7591
- * while an authorization server fetches a client metadata in CIMD,
- * which means that only the method of getting a client metadata is different.
- *
- * <p>The reason why not directly calling methods of {@code OIDCClientRegistrationProvider} is as follows:
+ * 持久化客户端元数据的抽象 CIMD Provider。
+ * <p>创建与更新流程与动态客户端注册（DCR）中的 {@code OIDCClientRegistrationProvider} 基本一致；
+ * 差异仅在于元数据获取方式：DCR 由客户端提交（RFC 7591），CIMD 由授权服务器拉取。</p>
+ * <p>未直接复用 {@code OIDCClientRegistrationProvider} 的原因：</p>
  * <ul>
- *     <li>{@code client_id} property is not allowed in DCR while it is mandatory in CIMD.
- *     {@code OIDCClientRegistrationProvider} does not allow client metadata including {@code client_id}. </li>
- *     <li>A registration access token is issued in DCR
- *     (to say more precisely, RFC 7592 OAuth 2.0 Dynamic Client Registration Management Protocol) while it is not needed in CIMD.
- *     {@code OIDCClientRegistrationProvider} issues the registration access token.</li>
+ *     <li>DCR 不允许 {@code client_id}，CIMD 则强制要求。</li>
+ *     <li>DCR（RFC 7592）会签发注册访问令牌，CIMD 不需要。</li>
  * </ul>
+ * <p>缓存过期时间保存在 {@link ClientRepresentation}/{@link ClientModel} 属性中；
+ * 过期后当前不做删除，未来可结合客户端工作流处理。</p>
+ * <p>抽象类负责持久化通用逻辑；具体子类可读取 {@link AbstractClientIdMetadataDocumentExecutor} 配置并增强元数据，便于自定义 Provider。</p>
  *
- * <p>Cache expiry time:
- * The provider stores the cache expiry time in an attribute of {@link ClientRepresentation}/{@link ClientModel}.
- *
- * <p>Process when a cache expires</p>
- * Do nothing. After keycloak supports workflow for clients, it would be used to delete a client metadata.
- *
- * <p>Roles of the abstract class and its concrete class:
- * The abstract class itself covers all about persisting a client metadata while the concrete class can see
- * a configuration of the concrete class of ({@link AbstractClientIdMetadataDocumentExecutor}) and augment a client metadata based on it.
- * Moreover, the concrete class can add or modify the abstract class, which makes it easy to implement custom persistent CIMD provider.
- *
- * 
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public abstract class AbstractPersistentClientIdMetadataDocumentProvider<CONFIG extends AbstractClientIdMetadataDocumentExecutor.Configuration> implements ClientIdMetadataDocumentProvider<CONFIG> {
@@ -84,10 +66,13 @@ public abstract class AbstractPersistentClientIdMetadataDocumentProvider<CONFIG 
     protected KeycloakSession session;
     protected CONFIG configuration;
 
+    /** 客户端元数据缓存过期时间（Unix 秒）属性键。 */
     public static final String CIMD_CACHE_EXPIRY_TIME_IN_SEC = "cimd.cache.expiry.time.in.sec";
 
+    /** @return 子类使用的日志记录器 */
     protected abstract Logger getLogger();
 
+    /** @param session Keycloak 会话 */
     protected AbstractPersistentClientIdMetadataDocumentProvider(KeycloakSession session) {
         this.session = session;
     }
@@ -108,23 +93,15 @@ public abstract class AbstractPersistentClientIdMetadataDocumentProvider<CONFIG 
         ClientModel existingClientModel = realm.getClientByClientId(clientId);
         if (existingClientModel != null) {
             getLogger().debugv("client already exist: clientId = {0}", clientId);
-            // Client Metadata Caching
-            // if the client metadata remains effective, return
-            // otherwise
-            //   fetch Client ID Metadata
-            //   Client Metadata verification
-            //   Client Metadata validation
-            //   Persist Client Metadata (overwrite)
-            //  TODO: if an error occurs, the client metadata should be removed or remain persisted?
-            //        -> it remains persisted. If client metadata removal by workflow is implemented, the client metadata is automatically removed.
-            //        -> therefore, only returns an error response.
+            // 客户端元数据缓存：仍有效则跳过；否则拉取、校验并覆盖持久化
+            // TODO：出错时是否删除元数据？当前保留，未来可由工作流自动清理，仅返回错误
             if (existingClientModel.getAttribute(CIMD_CACHE_EXPIRY_TIME_IN_SEC) != null) {
                 int i = Integer.parseInt(existingClientModel.getAttribute(CIMD_CACHE_EXPIRY_TIME_IN_SEC));
                 if (Time.currentTime() > i) {
                     getLogger().debugv("client need to update: clientId = {0}", clientId);
                     return AbstractClientIdMetadataDocumentExecutor.FetchOperation.UPDATE;
                 } else {
-                    // persisted client metadata is still effective
+                    // 已持久化的元数据仍在缓存有效期内
                     getLogger().debugv("client no need to update: clientId = {0}", clientId);
                     return AbstractClientIdMetadataDocumentExecutor.FetchOperation.NO_UPDATE;
                 }
@@ -136,17 +113,16 @@ public abstract class AbstractPersistentClientIdMetadataDocumentProvider<CONFIG 
 
     @Override
     public ClientModel createClientMetadata(AbstractClientIdMetadataDocumentExecutor.OIDCClientRepresentationWithCacheControl clientOIDCWithCacheControl) throws ClientPolicyException {
-        // do the same thing as in dynamic client registration except for:
-        //   - not set client registration token
+        // 与动态客户端注册流程相同，但不设置注册访问令牌
         RealmModel realm = session.getContext().getRealm();
         try {
             OIDCClientRepresentation clientOIDC = clientOIDCWithCacheControl.getOidcClientRepresentation();
             ClientRepresentation clientRep = DescriptionConverter.toInternal(session, clientOIDC);
 
-            // set cache expiry time
+            // 写入缓存过期时间
             setCacheExpiryTimeToClientMetadata(clientRep, clientOIDCWithCacheControl.getClientMetadataCacheControl().getCacheExpiryTimeInSec());
 
-            // augment client depending on the configuration of the CIMD executor
+            // 按 CIMD 执行器配置增强客户端元数据
             augmentClientMetadata(clientRep);
 
             if (clientRep.getOptionalClientScopes() != null && clientRep.getDefaultClientScopes() == null) {
@@ -218,7 +194,7 @@ public abstract class AbstractPersistentClientIdMetadataDocumentProvider<CONFIG 
             // set cache expiry time
             setCacheExpiryTimeToClientMetadata(clientRep, clientOIDCWithCacheControl.getClientMetadataCacheControl().getCacheExpiryTimeInSec());
 
-            // augment client depending on configuration
+            // 按配置增强客户端元数据
             augmentClientMetadata(clientRep);
 
             if (clientOIDC.getScope() != null) {
@@ -274,12 +250,12 @@ public abstract class AbstractPersistentClientIdMetadataDocumentProvider<CONFIG 
         return new ClientPolicyException(OAuthErrorException.INVALID_REQUEST, errorDetail);
     }
 
-    // the same as AbstractClientRegistrationProvider.addDefaultRole
+    // 与 AbstractClientRegistrationProvider.addDefaultRole 相同
     private void addDefaultRole(ClientModel client, String name) {
         client.getRealm().getDefaultRole().addCompositeRole(getOrAddRoleId(client, name));
     }
 
-    // the same as AbstractClientRegistrationProvider.getOrAddRoleId
+    // 与 AbstractClientRegistrationProvider.getOrAddRoleId 相同
     private RoleModel getOrAddRoleId(ClientModel client, String name) {
         RoleModel role = client.getRole(name);
         if (role == null) {
@@ -288,18 +264,18 @@ public abstract class AbstractPersistentClientIdMetadataDocumentProvider<CONFIG 
         return role;
     }
 
-    // the same as AbstractClientRegistrationProvider.getDefaultRolesStream
+    // 与 AbstractClientRegistrationProvider.getDefaultRolesStream 相同
     private Stream<String> getDefaultRolesStream(ClientModel client) {
         return client.getRealm().getDefaultRole().getCompositesStream()
                 .filter(role -> role.isClientRole() && Objects.equals(role.getContainerId(), client.getId()))
                 .map(RoleModel::getName);
     }
 
-    // the same as OIDCClientRegistrationProvider.updatePairwiseSubMappers
+    // 与 OIDCClientRegistrationProvider.updatePairwiseSubMappers 相同
     private void updatePairwiseSubMappers(ClientModel clientModel, SubjectType subjectType, String sectorIdentifierUri) {
         if (subjectType == SubjectType.PAIRWISE) {
 
-            // See if we have existing pairwise mapper and update it. Otherwise create new
+            // 更新已有 pairwise 映射器，不存在则新建
             AtomicBoolean foundPairwise = new AtomicBoolean(false);
 
             clientModel.getProtocolMappersStream().filter((ProtocolMapperModel mapping) -> {
@@ -314,14 +290,14 @@ public abstract class AbstractPersistentClientIdMetadataDocumentProvider<CONFIG 
                 clientModel.updateProtocolMapper(mapping);
             });
 
-            // We don't have existing pairwise mapper. So create new
+            // 无现有 pairwise 映射器时创建
             if (!foundPairwise.get()) {
                 ProtocolMapperRepresentation newPairwise = SHA256PairwiseSubMapper.createPairwiseMapper(sectorIdentifierUri, null);
                 clientModel.addProtocolMapper(RepresentationToModel.toModel(newPairwise));
             }
 
         } else {
-            // Rather find and remove all pairwise mappers
+            // 非 pairwise 主题类型时移除所有 pairwise 映射器
             clientModel.getProtocolMappersStream()
                     .filter(mapperRep -> mapperRep.getProtocolMapper().endsWith(AbstractPairwiseSubMapper.PROVIDER_ID_SUFFIX))
                     .toList()
@@ -329,14 +305,14 @@ public abstract class AbstractPersistentClientIdMetadataDocumentProvider<CONFIG 
         }
     }
 
-    // the same as OIDCClientRegistrationProvider.updateClientRepWithProtocolMappers
+    // 与 OIDCClientRegistrationProvider.updateClientRepWithProtocolMappers 相同
     private void updateClientRepWithProtocolMappers(ClientModel clientModel, ClientRepresentation rep) {
         List<ProtocolMapperRepresentation> mappings =
                 clientModel.getProtocolMappersStream().map(ModelToRepresentation::toRepresentation).collect(Collectors.toList());
         rep.setProtocolMappers(mappings);
     }
 
-    // the same as AbstractClientRegistrationProvider.updateClientRepWithProtocolMappers except for error handling
+    // 与 AbstractClientRegistrationProvider 的校验逻辑相同，错误时抛出 ClientPolicyException
     private void validateClient(ClientModel client, OIDCClientRepresentation oidcClient, boolean create) throws ClientPolicyException{
         ClientValidationProvider provider = session.getProvider(ClientValidationProvider.class);
         if (provider != null) {

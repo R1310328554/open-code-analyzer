@@ -13,26 +13,25 @@ import static org.keycloak.models.ClientScopeModel.CONSENT_SCREEN_TEXT;
 import static org.keycloak.models.ClientScopeModel.DISPLAY_ON_CONSENT_SCREEN;
 
 /**
- *  The class is a concrete class of {@link AbstractPersistentClientIdMetadataDocumentProvider}.
- *
- * <p>Client Metadata Augmentation in {@link ClientRepresentation}:
- * The class provide the following policies:
+ * {@link AbstractPersistentClientIdMetadataDocumentProvider} 的默认持久化实现。
+ * <p>在 {@link ClientRepresentation} 上应用 CIMD/MCP 要求的增强策略：</p>
  * <ul>
- *     <li>Consent required: to mitigate the risk of phishing,
- *     the CIMD and MCP specification requires an authorization server to show information on a client on the consent screen.</li>
- *     <li>Full scope allowed: to follow least-privilege principle, only required scopes are permitted to a client.</li>
+ *     <li>强制同意：在同意页展示客户端信息，降低钓鱼风险。</li>
+ *     <li>禁止全范围授权：遵循最小权限，仅允许请求的 scope。</li>
  * </ul>
  *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class PersistentClientIdMetadataDocumentProvider extends AbstractPersistentClientIdMetadataDocumentProvider<ClientIdMetadataDocumentExecutor.Configuration> {
 
+    /** 本 Provider 使用的 JBoss 日志记录器。 */
     protected Logger logger = Logger.getLogger(PersistentClientIdMetadataDocumentProvider.class);
 
     public Logger getLogger() {
         return logger;
     }
 
+    /** @param session Keycloak 会话 */
     public PersistentClientIdMetadataDocumentProvider(KeycloakSession session) {
         super(session);
     }
@@ -52,7 +51,7 @@ public class PersistentClientIdMetadataDocumentProvider extends AbstractPersiste
         clientRep.setConsentRequired(true);
         clientRep.setFullScopeAllowed(false);
 
-        // to show information on a client on the consent screen.
+        // 在同意页展示客户端信息
         clientRep.getAttributes().put(DISPLAY_ON_CONSENT_SCREEN, "true");
         URI uri = null;
         try {
@@ -61,9 +60,7 @@ public class PersistentClientIdMetadataDocumentProvider extends AbstractPersiste
             return;
         }
 
-        // The authorization server SHOULD display the hostname of the client_id on the authorization interface,
-        // in addition to displaying the fetched client information if any.
-        // TODO: better show other information on a client but not determined what information should be shown.
+        // 规范建议在授权界面展示 client_id 的主机名；TODO：后续可展示更多元数据字段
         clientRep.getAttributes().put(CONSENT_SCREEN_TEXT, "The client's hostname is " + uri.getHost());
     }
 }

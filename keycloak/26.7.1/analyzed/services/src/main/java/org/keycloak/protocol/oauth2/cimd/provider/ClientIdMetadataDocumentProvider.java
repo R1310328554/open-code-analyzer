@@ -9,13 +9,12 @@ import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.services.clientpolicy.ClientPolicyException;
 
 /**
- * The interface provides the following features:
- *
+ * Client ID 元数据文档（CIMD）Provider 接口。
  * <ul>
- *     <li>Determining if (re-)fetching a client metadata is needed</li>
- *     <li>Concrete process of caching a client metadata: create and update</li>
- *     <li>Update cache expiry time</li>
- *     <li>Augment a client metadata in {@code ClientRepresentation}</li>
+ *     <li>判断是否需要（重新）拉取客户端元数据</li>
+ *     <li>创建与更新元数据缓存</li>
+ *     <li>设置缓存过期时间</li>
+ *     <li>在 {@code ClientRepresentation} 上增强元数据</li>
  * </ul>
  *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
@@ -23,58 +22,57 @@ import org.keycloak.services.clientpolicy.ClientPolicyException;
 public interface ClientIdMetadataDocumentProvider<CONFIG extends AbstractClientIdMetadataDocumentExecutor.Configuration> extends Provider {
 
     /**
-     * Gets a configuration of an executor for Client ID metadata document.
+     * 获取 CIMD 执行器配置。
      * @return {@code CONFIG extends AbstractClientIdMetadataDocumentExecutor.Configuration}
      */
     CONFIG getConfiguration();
 
     /**
-     * Sets a configuration of an executor for Client ID metadata document.
-     * @param configuration a configuration of an executor for Client ID metadata document, not {@code null}
+     * 设置 CIMD 执行器配置。
+     * @param configuration CIMD 执行器配置，非 {@code null}
      */
     void setConfiguration(CONFIG configuration);
 
     /**
-     * Sets a cache expiry time in sec to a client metadata.
-     * @param clientRep a client metadata in {@code ClientRepresentation}, not {@code null}
-     * @param cacheExpiryTimeInSec when a cache expires in sec
+     * 将缓存过期时间（秒）写入 {@code ClientRepresentation} 元数据。
+     * @param clientRep 客户端表示，非 {@code null}
+     * @param cacheExpiryTimeInSec 缓存过期 Unix 时间（秒）
      */
     void setCacheExpiryTimeToClientMetadata(ClientRepresentation clientRep, int cacheExpiryTimeInSec);
 
     /**
-     * Sets a cache expiry time in sec to a client metadata.
-     * @param clientModel a client metadata in {@code ClientModel}, not {@code null}
-     * @param cacheExpiryTimeInSec when a cache expires in sec
+     * 将缓存过期时间（秒）写入 {@code ClientModel} 元数据。
+     * @param clientModel 客户端模型，非 {@code null}
+     * @param cacheExpiryTimeInSec 缓存过期 Unix 时间（秒）
      */
     void setCacheExpiryTimeToClientMetadata(ClientModel clientModel, int cacheExpiryTimeInSec);
 
     /**
-     * Returns if fetching a client metadata to newly create it is needed, or re-fetching a client metadata to update it is needed,
-     * or re-fetching is not needed because a client metadata does not expire.
-     * @param clientId {@code client_id} parameter of an authorization request, not {@code null}
+     * 根据 {@code client_id} 与缓存状态决定拉取操作：新建、更新或无需更新。
+     * @param clientId 授权请求中的 {@code client_id}，非 {@code null}
      * @return {@link FetchOperation}
      */
     FetchOperation determineFetchOperation(String clientId);
 
     /**
-     * Creates a client metadata.
-     * @param clientOIDCWithCacheControl a combination of a fetched client metadata and Cache-Control header accompanied by it, not {@code null}
-     * @return {@link ClientModel} a created client metadata in {@link ClientModel}
-     * @throws ClientPolicyException when creating a client metadata fails
+     * 根据拉取的 OIDC 客户端元数据及 Cache-Control 创建客户端。
+     * @param clientOIDCWithCacheControl 元数据与缓存控制信息，非 {@code null}
+     * @return 新建 {@link ClientModel}
+     * @throws ClientPolicyException 创建失败时
      */
     ClientModel createClientMetadata(OIDCClientRepresentationWithCacheControl clientOIDCWithCacheControl) throws ClientPolicyException;
 
     /**
-     * Updates a client metadata.
-     * @param clientOIDCWithCacheControl a combination of a re-fetched client metadata and Cache-Control header accompanied by it, not {@code null}
-     * @return {@link ClientModel} an updated client metadata in {@link ClientModel}
-     * @throws ClientPolicyException when updating a client metadata fails
+     * 根据重新拉取的元数据更新已有客户端。
+     * @param clientOIDCWithCacheControl 元数据与缓存控制信息，非 {@code null}
+     * @return 更新后的 {@link ClientModel}
+     * @throws ClientPolicyException 更新失败时
      */
     ClientModel updateClientMetadata(OIDCClientRepresentationWithCacheControl clientOIDCWithCacheControl) throws ClientPolicyException;
 
     /**
-     * Augments a client metadata.
-     * @param clientRep a client metadata in {@link ClientRepresentation}, not {@code null}
+     * 按 Provider 策略增强客户端元数据。
+     * @param clientRep {@link ClientRepresentation}，非 {@code null}
      */
     void augmentClientMetadata(ClientRepresentation clientRep);
 

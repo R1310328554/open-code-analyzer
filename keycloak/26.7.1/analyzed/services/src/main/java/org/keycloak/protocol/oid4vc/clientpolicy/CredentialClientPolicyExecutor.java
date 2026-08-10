@@ -25,24 +25,23 @@ import static org.keycloak.protocol.oid4vc.clientpolicy.CredentialClientPolicies
 import static org.keycloak.services.clientpolicy.ClientPolicyEvent.AUTHORIZATION_REQUEST;
 
 /**
- * This client policy executor can be reference in a client profile definition like this,
- * which we currently don't add to the defaults client profile definitions.
- *
- *     {
- *       "name": "oid4vci-client-profile",
- *       "description": "Client profile, which enforces various policies on oid4vci clients.",
- *       "executors": [
- *         {
- *           "executor": "oid4vci-policy-executor",
- *           "configuration": {}
- *         }
- *       ]
- *     }
+ * OID4VCI 凭证客户端策略执行器：在授权请求阶段校验 Credential Offer 约束。
+ * <p>可在客户端 Profile 中引用（示例 JSON 如下，默认 Profile 尚未内置）：</p>
+ * <pre>
+ * {
+ *   "name": "oid4vci-client-profile",
+ *   "description": "Client profile, which enforces various policies on oid4vci clients.",
+ *   "executors": [
+ *     { "executor": "oid4vci-policy-executor", "configuration": {} }
+ *   ]
+ * }
+ * </pre>
  */
 public class CredentialClientPolicyExecutor implements ClientPolicyExecutorProvider<ClientPolicyExecutorConfigurationRepresentation> {
 
     protected final KeycloakSession session;
 
+    /** @param session Keycloak 会话 */
     public CredentialClientPolicyExecutor(KeycloakSession session) {
         this.session = session;
     }
@@ -66,19 +65,16 @@ public class CredentialClientPolicyExecutor implements ClientPolicyExecutorProvi
         if (client == null)
             throw new ClientPolicyException(OAuthErrorException.INVALID_CLIENT, "No issuing client");
 
-        // Get the list of requested credential scopes that are associated with this client
-        //
+        // 获取与本客户端关联且被请求的凭证 Scope 列表
         AuthorizationEndpointRequest request = context.getAuthorizationEndpointRequest();
         List<CredentialScopeModel> credScopes = CredentialScopeUtils.getCredentialScopesForAuthorization(client, request);
 
-        // Proceed when there are requested credential scopes
-        //
+        // 存在凭证 Scope 请求时才执行策略检查
         if (!credScopes.isEmpty()) {
 
             PredicateCredentialClientPolicy offerRequiredPolicy = VC_POLICY_CREDENTIAL_OFFER_REQUIRED;
 
-            // Get the potential offer state derived from issuer_state
-            //
+            // 从 issuer_state 解析 Credential Offer 状态
             String issuerStateParam = request.getAdditionalReqParams().get(ISSUER_STATE);
             CredentialOfferStorage offerStorage = session.getProvider(CredentialOfferStorage.class);
             CredentialOfferState offerState = Optional.ofNullable(issuerStateParam)
@@ -87,15 +83,13 @@ public class CredentialClientPolicyExecutor implements ClientPolicyExecutorProvi
                     .map(offerStorage::getOfferStateById)
                     .orElse(null);
 
-            // Get the offered credential configuration ids
-            //
+            // 读取 Offer 中包含的 credential_configuration_id 列表
             List<String> offeredConfigurationIds = Optional.ofNullable(offerState)
                     .map(CredentialOfferState::getCredentialsOffer)
                     .map(CredentialsOffer::getCredentialConfigurationIds)
                     .orElse(List.of());
 
-            // Check whether each requested credential_configuration_id has actually been offered
-            //
+            // 校验每个请求的 configuration id 是否已在 Offer 中提供
             for (CredentialScopeModel credScope : credScopes) {
                 String credConfigId = credScope.getCredentialConfigurationId();
                 if (!offeredConfigurationIds.contains(credConfigId)) {

@@ -86,7 +86,8 @@ import static org.keycloak.models.oid4vci.CredentialScopeModel.VC_SUPPORTED_TYPE
 import static org.keycloak.models.oid4vci.CredentialScopeModel.getDefaultTokenJwsTypeForFormat;
 
 /**
- * Factory for creating all OID4VC related endpoints and the default mappers.
+ * OID4VC 登录协议工厂：注册凭证签发端点、内置协议映射器及默认客户端 Scope。
+ * <p>支持多种 {@link VCFormat}，为自然人凭证类型创建默认 Scope 与属性。</p>
  *
  * @author <a href="https://github.com/wistefan">Stefan Wiedemann</a>
  */
@@ -94,16 +95,24 @@ public class OID4VCLoginProtocolFactory implements LoginProtocolFactory, OID4VCE
 
 	private static final Logger LOGGER = Logger.getLogger(OID4VCLoginProtocolFactory.class);
 
+	/** 内置映射器：用户名声明。 */
 	private static final String USERNAME_MAPPER = "username";
+	/** 内置映射器：主体 DID/subject id。 */
 	private static final String SUBJECT_ID_MAPPER = "subject-id";
+	/** 内置映射器：邮箱。 */
 	private static final String EMAIL_MAPPER = "email";
+	/** 内置映射器：姓氏。 */
 	private static final String LAST_NAME_MAPPER = "last-name";
+	/** 内置映射器：名字。 */
 	private static final String FIRST_NAME_MAPPER = "first-name";
 
 	public static final String PROTOCOL_ID = OID4VCIConstants.OID4VC_PROTOCOL;
+    /** 默认可验证凭证类型：自然人。 */
     public static final String CREDENTIAL_TYPE_NATURAL_PERSON = "natural_person";
+    /** 自然人 Scope 在同意页的 i18n 文案键。 */
     public static final String NATURAL_PERSON_SCOPE_CONSENT_TEXT = "${naturalPersonScopeConsentText}";
 
+	/** 协议内置映射器注册表（按别名索引）。 */
 	private final Map<String, ProtocolMapperModel> builtins = new HashMap<>();
 
 	@Override
@@ -115,14 +124,16 @@ public class OID4VCLoginProtocolFactory implements LoginProtocolFactory, OID4VCE
 		builtins.put(LAST_NAME_MAPPER, OID4VCUserAttributeMapper.create(LAST_NAME_MAPPER, "familyName", "lastName", false));
 	}
 
+	/** {@inheritDoc} 无后置初始化逻辑。 */
 	@Override
 	public void postInit(KeycloakSessionFactory factory) {
-		// no-op
+		// 无操作
 	}
 
+	/** {@inheritDoc} 无资源需释放。 */
 	@Override
 	public void close() {
-		// no-op
+		// 无操作
 	}
 
 	@Override
@@ -177,9 +188,10 @@ public class OID4VCLoginProtocolFactory implements LoginProtocolFactory, OID4VCE
         }
     }
 
+    /** {@inheritDoc} OID4VC 客户端无额外默认项。 */
     @Override
     public void setupClientDefaults(ClientRepresentation rep, ClientModel newClient) {
-        //no-op
+        // 无操作
     }
 
     @Override
@@ -196,8 +208,7 @@ public class OID4VCLoginProtocolFactory implements LoginProtocolFactory, OID4VCE
         int idx = scopeName.lastIndexOf(VCFormat.getScopeSuffix(format));
         String credentialType = idx > 0 ? scopeName.substring(0, idx) : scopeName;
 
-        // Note, there is no sensible default for the Issuer's DID unless we generate a did:key:* from the signing key
-        // Leaving vc.issuer_did undefined results in the realm's url being used as the value for the Issuer's ID (iss).
+        // 签发者 DID 无通用默认值；未设置 vc.issuer_did 时使用 Realm URL 作为 iss
         // clientScope.getAttributes().computeIfAbsent(ISSUER_DID, k -> <generate did or use the realm url>)
 
         clientScope.getAttributes().putIfAbsent(INCLUDE_IN_TOKEN_SCOPE, "true");
@@ -247,7 +258,7 @@ public class OID4VCLoginProtocolFactory implements LoginProtocolFactory, OID4VCE
     }
 
     /**
-     * defines the option-order in the admin-ui
+     * 管理控制台中协议选项的排序权重。
      */
     @Override
     public int order() {
@@ -292,12 +303,11 @@ public class OID4VCLoginProtocolFactory implements LoginProtocolFactory, OID4VCE
         }
     }
 
-    // Private ---------------------------------------------------------------------------------------------------------
+    // 私有辅助方法 ---------------------------------------------------------------------------------------------------
     /**
-     * Validates that the refresh interval does not exceed the credential lifetime.
-     *
-     * @param clientScope the client scope representation to validate
-     * @throws ErrorResponseException if refresh interval > credential lifetime
+     * 校验凭证刷新间隔不得超过凭证有效期。
+     * @param clientScope 待校验的客户端 Scope 表示
+     * @throws ErrorResponseException 刷新间隔大于有效期时
      */
     private void validateOID4VCIRefreshInterval(ClientScopeRepresentation clientScope) throws ErrorResponseException {
         if (clientScope.getAttributes() == null) {
@@ -307,13 +317,12 @@ public class OID4VCLoginProtocolFactory implements LoginProtocolFactory, OID4VCE
         String expiryStr = clientScope.getAttributes().get(CredentialScopeModel.VC_EXPIRY_IN_SECONDS);
         String refreshIntervalStr = clientScope.getAttributes().get(CredentialScopeModel.VC_REFRESH_INTERVAL_IN_SECONDS);
 
-        // If either is not set, use defaults
+        // 未配置时使用默认值
         final int expiry;
         final int refreshInterval;
         try {
             expiry = expiryStr != null ? Integer.parseInt(expiryStr) : CredentialScopeModel.VC_EXPIRY_IN_SECONDS_DEFAULT;
-            // Smart default: if refresh interval is not set, use the smaller of 7 days or the credential lifetime
-            // This ensures backward compatibility with existing tests that set short lifetimes
+            // 智能默认：未设置刷新间隔时取 7 天与凭证有效期中的较小值，兼容短生命周期测试
             if (refreshIntervalStr != null) {
                 refreshInterval = Integer.parseInt(refreshIntervalStr);
             } else {
