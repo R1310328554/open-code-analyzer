@@ -1753,3 +1753,18 @@
 2026-08-10T08:24:56Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/conditions/IdentityProviderWorkflowConditionProvider.java wave60b workflow schedule/cluster + condition providers
 2026-08-10T08:24:56Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/conditions/RoleWorkflowConditionFactory.java wave60b workflow schedule/cluster + condition providers
 2026-08-10T08:24:56Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/conditions/RoleWorkflowConditionProvider.java wave60b workflow schedule/cluster + condition providers
+2026-08-10T08:26:11Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/session/PersistentUserSessionEntity.java wave60a JPA session helpers + workflow core
+2026-08-10T08:26:11Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/session/UserSessionAndUser.java wave60a JPA session helpers + workflow core
+2026-08-10T08:26:11Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/session/UserSessionExpirationLogic.java wave60a JPA session helpers + workflow core
+2026-08-10T08:26:11Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/session/UserSessionIdAndClientSessionId.java wave60a JPA session helpers + workflow core
+2026-08-10T08:26:11Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/session/UserSessionIdAndRememberMe.java wave60a JPA session helpers + workflow core
+2026-08-10T08:26:11Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/ClientResourceTypeWorkflowProvider.java wave60a JPA session helpers + workflow core
+2026-08-10T08:26:11Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/DefaultWorkflowExecutionContext.java wave60a JPA session helpers + workflow core
+2026-08-10T08:26:11Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/DefaultWorkflowProvider.java wave60a JPA session helpers + workflow core
+2026-08-10T08:26:11Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/DefaultWorkflowProviderFactory.java wave60a JPA session helpers + workflow core
+2026-08-10T08:26:11Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/EventBasedWorkflow.java wave60a JPA session helpers + workflow core
+2026-08-10T08:26:11Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/JpaWorkflowStateProvider.java wave60a JPA session helpers + workflow core
+2026-08-10T08:26:11Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/JpaWorkflowStateProviderFactory.java wave60a JPA session helpers + workflow core
+2026-08-10T08:26:11Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/RestartWorkflowStepProvider.java wave60a JPA session helpers + workflow core
+2026-08-10T08:26:11Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/RestartWorkflowStepProviderFactory.java wave60a JPA session helpers + workflow core
+2026-08-10T08:26:11Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/RestartWorkflowTask.java wave60a JPA session helpers + workflow core
