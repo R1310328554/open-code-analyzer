@@ -19,18 +19,21 @@ package org.keycloak.models;
 import java.util.Map;
 
 /**
+ * 单次使用对象值模型：集群间共享的 action token 内容。
  * This model represents contents of an action token shareable among Keycloak instances in the cluster.
  * @author hmlnarik
  */
 public interface SingleUseObjectValueModel {
 
     /**
+     * 返回全部 note 的不可变映射。
      * Returns unmodifiable map of all notes.
      * @return see description. Returns empty map if no note is set, never returns {@code null}.
      */
     Map<String,String> getNotes();
 
     /**
+     * 返回指定 note 的值；不存在时返回 {@code null}。
      * Returns value of the given note (or {@code null} when no note of this name is present)
      * @return see description
      */

@@ -21,29 +21,36 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
+ * 作用域容器模型：管理客户端/资源的作用域角色映射。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface ScopeContainerModel {
 
     /**
+     * 以流形式返回此作用域容器的全部作用域映射。
      * Returns scope mappings for this scope container as a stream.
      * @return Stream of {@link RoleModel}. Never returns {@code null}.
      */
     Stream<RoleModel> getScopeMappingsStream();
 
     /**
+     * 从 {@link #getScopeMappingsStream()} 结果中仅返回属于拥有此容器的 Realm 的映射。
      * From the scope mappings returned by {@link #getScopeMappingsStream()} returns only those
      * that belong to the realm that owns this scope container.
      * @return stream of {@link RoleModel}. Never returns {@code null}.
      */
     Stream<RoleModel> getRealmScopeMappingsStream();
 
+    /** @param role 待添加的作用域角色 */
     void addScopeMapping(RoleModel role);
 
+    /** @param role 待删除的作用域角色 */
     void deleteScopeMapping(RoleModel role);
 
     /**
+     * 若作用域中直接包含给定角色则返回 {@code true}。
      * Returns {@code true}, if this object has the given role directly in its scope.
      *
      * @param role the role
@@ -56,6 +63,7 @@ public interface ScopeContainerModel {
     }
 
     /**
+     * 若作用域中直接或间接包含给定角色则返回 {@code true}，否则 {@code false}。
      * Returns {@code true}, if this object has the given role directly or indirectly in its scope, {@code false}
      * otherwise.
      *

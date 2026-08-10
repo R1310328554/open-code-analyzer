@@ -24,12 +24,14 @@ import org.keycloak.provider.Provider;
 import org.keycloak.storage.role.RoleLookupProvider;
 
 /**
+ * 角色记录 Provider：Realm/Client 角色的 CRUD 与查询。
  * Provider of the role records.
  * @author vramik
  */
 public interface RoleProvider extends Provider, RoleLookupProvider {
 
     /**
+     * 向 Realm 添加指定名称的 Realm 角色。
      * Adds a realm role with given {@code name} to the given realm.
      * The internal ID of the role will be created automatically.
      * @param realm Realm owning this role.
@@ -41,6 +43,7 @@ public interface RoleProvider extends Provider, RoleLookupProvider {
     }
 
     /**
+     * 向 Realm 添加指定 ID 与名称的 Realm 角色。
      * Adds a realm role with given internal ID and {@code name} to the given realm.
      * @param realm Realm owning this role.
      * @param id Internal ID of the role or {@code null} if one is to be created by the underlying store
@@ -52,6 +55,7 @@ public interface RoleProvider extends Provider, RoleLookupProvider {
     RoleModel addRealmRole(RealmModel realm, String id, String name);
 
     /**
+     * 以流形式返回 Realm 的全部 Realm 角色。
      * Returns all the realm roles of the given realm as a stream.
      * Effectively the same as the call {@code getRealmRolesStream(realm, null, null)}.
      * @param realm Realm.
@@ -62,6 +66,7 @@ public interface RoleProvider extends Provider, RoleLookupProvider {
     }
 
     /**
+     * 以流形式返回 Realm 的 Realm 角色（分页）。
      * Returns the realm roles of the given realm as a stream.
      * @param realm Realm.
      * @param first First result to return. Ignored if negative or {@code null}.
@@ -71,6 +76,7 @@ public interface RoleProvider extends Provider, RoleLookupProvider {
     Stream<RoleModel> getRealmRolesStream(RealmModel realm, Integer first, Integer max);
 
     /**
+     * 按 ID 与名称/描述搜索返回角色分页流。
      * Returns a paginated stream of roles with given ids and given search value in role names.
      *
      * @param realm Realm. Cannot be {@code null}.
@@ -83,6 +89,7 @@ public interface RoleProvider extends Provider, RoleLookupProvider {
     Stream<RoleModel> getRolesStream(RealmModel realm, Stream<String> ids, String search, Integer first, Integer max);
 
     /**
+     * 批量返回给定父角色的直接复合子角色（去重）。
      * Returns the direct composite child roles of all the given parent roles, de-duplicated.
      * <p>
      * This is the bulk counterpart of {@link RoleModel#getCompositesStream()}: it lets callers expand
@@ -106,6 +113,7 @@ public interface RoleProvider extends Provider, RoleLookupProvider {
     }
 
     /**
+     * 从 Realm 删除指定角色。
      * Removes given realm role from the given realm.
      * @param role Role to be removed.
      * @return {@code true} if the role existed and has been removed, {@code false} otherwise.
@@ -113,12 +121,14 @@ public interface RoleProvider extends Provider, RoleLookupProvider {
     boolean removeRole(RoleModel role);
 
     /**
+     * 删除 Realm 的全部角色。
      * Removes all roles from the given realm.
      * @param realm Realm.
      */
     void removeRoles(RealmModel realm);
 
     /**
+     * 向客户端添加指定名称的客户端角色。
      * Adds a client role with given {@code name} to the given client.
      * The internal ID of the role will be created automatically.
      * @param client Client owning this role.
@@ -130,6 +140,7 @@ public interface RoleProvider extends Provider, RoleLookupProvider {
     }
 
     /**
+     * 向客户端添加指定 ID 与名称的客户端角色。
      * Adds a client role with given internal ID and {@code name} to the given client.
      * @param client Client owning this role.
      * @param id Internal ID of the client role or {@code null} if one is to be created by the underlying store.
@@ -139,6 +150,7 @@ public interface RoleProvider extends Provider, RoleLookupProvider {
     RoleModel addClientRole(ClientModel client, String id, String name);
 
     /**
+     * 以流形式返回客户端的全部角色。
      * Returns all the client roles of the given client.
      * Effectively the same as the call {@code getClientRoles(client, null, null)}.
      * @param client Client.
@@ -149,6 +161,7 @@ public interface RoleProvider extends Provider, RoleLookupProvider {
     }
 
     /**
+     * 以流形式返回客户端角色（分页）。
      * Returns the client roles of the given client.
      * @param client Client.
      * @param first First result to return. Ignored if negative or {@code null}.
@@ -158,6 +171,7 @@ public interface RoleProvider extends Provider, RoleLookupProvider {
     Stream<RoleModel> getClientRolesStream(ClientModel client, Integer first, Integer max);
 
     /**
+     * 删除客户端的全部角色。
      * Removes all roles from the given client.
      * @param client Client.
      */

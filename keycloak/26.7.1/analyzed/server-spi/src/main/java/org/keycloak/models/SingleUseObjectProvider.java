@@ -22,6 +22,7 @@ import java.util.Map;
 import org.keycloak.provider.Provider;
 
 /**
+ * 单次使用对象 Provider：缓存 action token 等单次使用数据。
  * Provides a cache to store data for single-use use case or the details about used action tokens.
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
@@ -29,12 +30,14 @@ import org.keycloak.provider.Provider;
 public interface SingleUseObjectProvider extends Provider {
 
     /**
+     * 标记令牌已撤销的键后缀；撤销令牌仅应使用 {@link #put} 与 {@link #contains}。
      * Suffix appended to a key to indicate that a token is considered revoked. For revoked tokens, only the methods
      * {@link #put} and {@link #contains} must be used.
      */
     String REVOKED_KEY = ".revoked";
 
     /**
+     * 存储数据并保证在指定生命周期内可用。
      * Stores the given data and guarantees that data should be available in the store for at least the time specified
      * by {@code lifespanSeconds} parameter.
      *
@@ -47,6 +50,7 @@ public interface SingleUseObjectProvider extends Provider {
     void put(String key, long lifespanSeconds, Map<String, String> notes);
 
     /**
+     * 获取与键关联的数据。
      * Gets data associated with the given key.
      *
      * @param key identifier for the single-use object. Must not be {@code null}.
@@ -56,6 +60,7 @@ public interface SingleUseObjectProvider extends Provider {
     Map<String, String> get(String key);
 
     /**
+     * 原子移除并返回数据；集群环境下仅允许一次成功。
      * Returns data only if the removal was successful. Implementations must guarantee that removal is single-use: if
      * two threads (even on different cluster nodes or different multi-site nodes) call {@code remove(key)}
      * concurrently, only one of them is allowed to succeed and return data. It must not happen that both succeed.
@@ -67,6 +72,7 @@ public interface SingleUseObjectProvider extends Provider {
     Map<String, String> remove(String key);
 
     /**
+     * 若键存在则替换其关联数据。
      * Replaces data associated with the given key in the store if the store contains the key.
      *
      * @param key   identifier for the single-use object. Must not be {@code null}.
@@ -77,6 +83,7 @@ public interface SingleUseObjectProvider extends Provider {
     boolean replace(String key, Map<String, String> notes);
 
     /**
+     * 仅当键不存在时写入存储。
      * Tries to put the key into the store. It will succeed only if the key is not already present.
      *
      * @param key               identifier for the single-use object. Must not be {@code null}.
@@ -89,6 +96,7 @@ public interface SingleUseObjectProvider extends Provider {
     boolean putIfAbsent(String key, long lifespanInSeconds);
 
     /**
+     * 检查存储中是否存在给定键的记录。
      * Checks if there is a record in the store for the given key.
      *
      * @param key identifier for the single-use object. Must not be {@code null}.

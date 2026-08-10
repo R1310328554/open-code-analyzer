@@ -21,18 +21,22 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
+ * 角色映射模型：管理对象与 Realm/Client 角色的直接及间接映射关系。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface RoleMapperModel {
 
     /**
+     * 返回直接分配给此对象的 Realm 角色流。
      * Returns stream of realm roles that are directly set to this object.
      * @return Stream of {@link RoleModel}. Never returns {@code null}.
      */
     Stream<RoleModel> getRealmRoleMappingsStream();
 
     /**
+     * 返回直接分配给此对象的指定客户端角色流。
      * Returns stream of client roles that are directly set to this object for the given client.
      * @param app {@link ClientModel} Client to get the roles for.
      * @return Stream of {@link RoleModel}. Never returns {@code null}.
@@ -40,6 +44,7 @@ public interface RoleMapperModel {
     Stream<RoleModel> getClientRoleMappingsStream(ClientModel app);
 
     /**
+     * 若此对象直接拥有给定角色则返回 {@code true}。
      * Returns {@code true}, if this object is directly assigned the given role.
      * 
      * @param role the role
@@ -51,6 +56,7 @@ public interface RoleMapperModel {
     }
 
     /**
+     * 若此对象直接或间接拥有给定角色则返回 {@code true}，否则 {@code false}。
      * Returns {@code true} if this object is directly or indirectly assigned the given role, {@code false} otherwise.
      * <p>
      * For example, {@code true} is returned for hasRole(R) if:
@@ -67,18 +73,21 @@ public interface RoleMapperModel {
     boolean hasRole(RoleModel role);
 
     /**
+     * 向此对象授予给定角色。
      * Grants the given role to this object.
      * @param role
      */
     void grantRole(RoleModel role);
 
     /**
+     * 返回直接分配给此对象的全部角色（Realm 与 Client）流。
      * Returns stream of all role (both realm all client) that are directly set to this object.
      * @return Stream of {@link RoleModel}. Never returns {@code null}.
      */
     Stream<RoleModel> getRoleMappingsStream();
 
     /**
+     * 从此对象移除给定角色映射。
      * Removes the given role mapping from this object.
      * @param role Role to remove
      */

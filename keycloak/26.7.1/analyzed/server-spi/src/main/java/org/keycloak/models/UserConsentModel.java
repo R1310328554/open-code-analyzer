@@ -25,6 +25,8 @@ import java.util.Set;
 import org.keycloak.common.util.MultivaluedHashMap;
 
 /**
+ * 用户同意模型：记录用户对客户端/作用域的 OAuth 授权同意。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class UserConsentModel {
@@ -35,18 +37,23 @@ public class UserConsentModel {
     private Long createdDate;
     private Long lastUpdatedDate;
 
+    /** @param client 关联客户端 */
     public UserConsentModel(ClientModel client) {
         this.client = client;
     }
 
+    /** @return 关联客户端 */
     public ClientModel getClient() {
         return client;
     }
 
+    /** @param clientScope 已授权客户端作用域 */
     public void addGrantedClientScope(ClientScopeModel clientScope) {
         addGrantedClientScope(clientScope, null);
     }
 
+    /** @param clientScope 已授权客户端作用域
+     * @param parameter 参数化作用域的参数值 */
     public void addGrantedClientScope(ClientScopeModel clientScope, String parameter) {
         if (clientScope.isAlwaysConsent()) {
             // always consent scopes are skipped
@@ -61,10 +68,13 @@ public class UserConsentModel {
         }
     }
 
+    /** @return 已授权的客户端作用域集合 */
     public Set<ClientScopeModel> getGrantedClientScopes() {
         return clientScopes;
     }
 
+    /** @param clientScope 客户端作用域
+     * @return 参数化作用域的参数值列表 */
     public List<String> getParameters(ClientScopeModel clientScope) {
         if (ClientScopeModel.isParameterizedScope(clientScope)) {
             return parameters.getList(clientScope.getId());
@@ -72,10 +82,15 @@ public class UserConsentModel {
         return Collections.emptyList();
     }
 
+    /** @param clientScope 待检查作用域
+     * @return 是否已授权 */
     public boolean isClientScopeGranted(ClientScopeModel clientScope) {
         return isClientScopeGranted(clientScope, null);
     }
 
+    /** @param clientScope 待检查作用域
+     * @param parameter 参数化作用域参数
+     * @return 是否已授权 */
     public boolean isClientScopeGranted(ClientScopeModel clientScope, String parameter) {
         for (ClientScopeModel apprClientScope : clientScopes) {
             if (apprClientScope.getId().equals(clientScope.getId())) {
@@ -89,18 +104,22 @@ public class UserConsentModel {
         return false;
     }
 
+    /** @return 同意创建时间戳 */
     public Long getCreatedDate() {
         return createdDate;
     }
 
+    /** @param createdDate 同意创建时间戳 */
     public void setCreatedDate(Long createdDate) {
         this.createdDate = createdDate;
     }
 
+    /** @return 同意最后更新时间戳 */
     public Long getLastUpdatedDate() {
         return lastUpdatedDate;
     }
 
+    /** @param lastUpdatedDate 同意最后更新时间戳 */
     public void setLastUpdatedDate(Long lastUpdatedDate) {
         this.lastUpdatedDate = lastUpdatedDate;
     }
