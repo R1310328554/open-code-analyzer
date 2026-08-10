@@ -1,5 +1,7 @@
 package frontend
 
+// frontend 子包提供 CombinedFrontendConfig 与 InitFrontend：按 scheduler 地址、ring 或 downstream URL 选择 V1/V2/代理三种查询前端实现。
+
 import (
 	"flag"
 	"net/http"
@@ -16,6 +18,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/querier/queryrange/queryrangebase"
 )
 
+// CombinedFrontendConfig 合并 Handler 与 V1/V2 配置以保持旧版 YAML 结构兼容。
 // This struct combines several configuration options together to preserve backwards compatibility.
 type CombinedFrontendConfig struct {
 	Handler    transport.HandlerConfig `yaml:",inline"`
@@ -33,12 +36,14 @@ func (cfg *CombinedFrontendConfig) RegisterFlags(f *flag.FlagSet) {
 	f.StringVar(&cfg.DownstreamURL, "frontend.downstream-url", "", "URL of downstream Prometheus.")
 }
 
+// InitFrontend 三分支：downstream 代理、V2+scheduler ring、或经典 V1 frontend。
 // InitFrontend initializes frontend (either V1 -- without scheduler, or V2 -- with scheduler) or no frontend at
 // all if downstream Prometheus URL is used instead.
 //
 // Returned RoundTripper can be wrapped in more round-tripper middlewares, and then eventually registered
 // into HTTP server using the Handler from this package. Returned RoundTripper is always non-nil
 // (if there are no errors), and it uses the returned frontend (if any).
+// InitFrontend 返回 query-range Handler 及可选 V1/V2 实例，供 modules initQueryFrontend 挂载路由。
 func InitFrontend(cfg CombinedFrontendConfig, ring ring.ReadRing, limits v1.Limits, grpcListenPort int, log log.Logger, reg prometheus.Registerer, metricsNamespace string, codec transport.Codec) (queryrangebase.Handler, *v1.Frontend, *v2.Frontend, error) {
 	switch {
 	case cfg.DownstreamURL != "":
@@ -72,3 +77,4 @@ func InitFrontend(cfg CombinedFrontendConfig, ring ring.ReadRing, limits v1.Limi
 		return transport.AdaptGrpcRoundTripperToHandler(fr, codec), fr, nil, nil
 	}
 }
+// V2 未配置 Addr 时从 InfNames 解析首地址；Port 为 0 则回退 grpcListenPort。

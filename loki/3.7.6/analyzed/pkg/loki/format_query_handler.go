@@ -1,5 +1,7 @@
 package loki
 
+// format_query_handler 暴露 /loki/api/v1/format_query：解析 LogQL 并以 Prettify 格式化，供 UI 或 CLI 校验与美化查询表达式。
+
 import (
 	"encoding/json"
 	"net/http"
@@ -44,8 +46,10 @@ func formatQueryHandler() http.HandlerFunc {
 	}
 }
 
+// FormatQueryResponse 统一 status/data/error 三字段，与 Loki API 错误风格一致。
 type FormatQueryResponse struct {
 	Status string `json:"status"`
 	Data   string `json:"data,omitempty"`
 	Err    string `json:"error,omitempty"`
 }
+// 解析失败时 HTTP 400 且 status 为 invalid-query；成功时 data 为格式化后的 LogQL 字符串。

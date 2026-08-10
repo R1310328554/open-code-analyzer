@@ -1,5 +1,7 @@
 package loki
 
+// config_wrapper 在 Config 外层封装命令行标志与 ApplyDynamicConfig 逻辑：按 opinionated 规则自动填充 ring、存储路径、缓存与实例地址等默认值。
+
 import (
 	"flag"
 	"fmt"
@@ -24,6 +26,7 @@ import (
 
 const versionFlag = "version"
 
+// ConfigWrapper 内联 Loki Config 并附加 verify-config、print-config 等 CLI 辅助选项。
 // ConfigWrapper is a struct containing the Loki config along with other values that can be set on the command line
 // for interacting with the config file or the application directly.
 // ConfigWrapper implements cfg.DynamicCloneable, allowing configuration to be dynamically set based
@@ -39,6 +42,7 @@ type ConfigWrapper struct {
 	ConfigExpandEnv bool
 }
 
+// PrintVersion 检测命令行是否包含 -version 标志，用于提前打印版本并退出。
 func PrintVersion(args []string) bool {
 	pattern := regexp.MustCompile(`^-+` + versionFlag + `$`)
 	for _, a := range args {
@@ -71,6 +75,7 @@ func (c *ConfigWrapper) Clone() flagext.Registerer {
 
 const memberlistStr = "memberlist"
 
+// ApplyDynamicConfig 返回 cfg.Source 闭包，在配置克隆阶段批量应用 common 段推导规则。
 // ApplyDynamicConfig satisfies WithCommonCloneable interface, and applies all rules for setting Loki
 // config values from the common section of the Loki config file.
 // This method's purpose is to simplify Loki's config in an opinionated way so that Loki can be run
@@ -201,6 +206,7 @@ func applyCommonReplicationFactor(r, defaults *ConfigWrapper) {
 //
 // When using the ingester or common ring config, the loopback interface will be appended to the end of
 // the list of default interface names.
+// applyDynamicRingConfigs 按优先级复用 common ring、memberlist 或 ingester ring 到各组件。
 func applyDynamicRingConfigs(r, defaults *ConfigWrapper) {
 	if !reflect.DeepEqual(r.Common.Ring, defaults.Common.Ring) {
 		// common ring is provided, use that for all rings, merging with
@@ -228,6 +234,7 @@ func applyDynamicRingConfigs(r, defaults *ConfigWrapper) {
 // ring defined. When `mergeWithExisting` is false, we will not apply any of the ring config to a ring that has
 // any deviations from defaults. When mergeWithExisting is true, the ring config is overlaid on top of any specified
 // derivations, with the derivations taking precedence.
+// applyConfigToRings 将统一 RingConfig 传播到 distributor、ruler、scheduler 等各 ring 实例。
 func applyConfigToRings(r, defaults *ConfigWrapper, rc lokiring.RingConfig, mergeWithExisting bool) {
 	// Ingester - mergeWithExisting is false when applying the ingester config, and we only want to
 	// change ingester ring values when applying the common config, so there's no need for the DeepEqual
@@ -465,6 +472,7 @@ func applyTokensFilePath(cfg *ConfigWrapper) error {
 	return nil
 }
 
+// tokensFile 在 persist_tokens 且 path_prefix 已设时生成各组件 token 文件路径。
 // tokensFile will create a tokens file with the provided name in the common config /tokens directory
 // if and only if:
 // * the common config persist_tokens == true
@@ -586,6 +594,7 @@ func applyMemberlistConfig(r *ConfigWrapper) {
 
 var ErrTooManyStorageConfigs = errors.New("too many storage configs provided in the common config, please only define one storage backend")
 
+// applyStorageConfig 将 common.storage 中单一路径（S3/GCS/Azure 等）同步到 ruler 与 storage_config。
 // applyStorageConfig will attempt to apply a common storage config for either
 // s3, gcs, azure, or swift to all the places we create a storage client.
 // If any specific configs for an object storage client have been provided elsewhere in the
@@ -735,6 +744,7 @@ func betterTSDBShipperDefaults(cfg *ConfigWrapper) {
 	}
 }
 
+// applyEmbeddedCacheConfig 在未配置外部缓存时自动启用 chunk 与 query-range 嵌入式缓存。
 // applyEmbeddedCacheConfig turns on Embedded cache for the chunk store, query range results,
 // index stats and volume results only if no other cache storage is configured (redis or memcache).
 // Not applicable for the index queries cache or for the write dedupe cache.
@@ -795,6 +805,7 @@ func applyIngesterReplicationFactor(cfg *ConfigWrapper) {
 	cfg.Ingester.LifecyclerConfig.RingConfig.ReplicationFactor = cfg.Common.ReplicationFactor
 }
 
+// applyChunkRetain 在 boltdb-shipper 且启用索引查询缓存时，将 RetainPeriod 设为缓存 TTL 加缓冲。
 // applyChunkRetain is used to set chunk retain based on having an index query cache configured
 // We retain chunks for at least as long as the index queries cache TTL. When an index entry is
 // cached, any chunks flushed after that won't be in the cached entry. To make sure their data is
@@ -827,3 +838,4 @@ func applyCommonQuerierWorkerGRPCConfig(cfg, defaults *ConfigWrapper) error {
 
 	return nil
 }
+// mergeWithExisting 为 true 时 overlay common ring；为 false 时仅对仍为默认值的 ring 套用 ingester 配置。

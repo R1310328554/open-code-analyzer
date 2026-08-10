@@ -1,5 +1,7 @@
 package lokifrontend
 
+// lokifrontend 包 Config 聚合 query frontend 传输层、V1/V2 frontend、下游 URL、tail 代理及 Parquet 响应编码等选项。
+
 import (
 	"flag"
 
@@ -10,6 +12,7 @@ import (
 	v2 "github.com/grafana/loki/v3/pkg/lokifrontend/frontend/v2"
 )
 
+// Config 内联 HandlerConfig 与 FrontendV1/V2，并控制 HTTP 响应压缩与 tail TLS。
 type Config struct {
 	Handler    transport.HandlerConfig `yaml:",inline"`
 	FrontendV1 v1.Config               `yaml:",inline"`
@@ -24,6 +27,7 @@ type Config struct {
 	SupportParquetEncoding bool `yaml:"support_parquet_encoding" doc:"description=Support 'application/vnd.apache.parquet' content type in HTTP responses."`
 }
 
+// RegisterFlags 注册 querier 压缩、downstream-url、tail-proxy 及 parquet 支持等标志。
 // RegisterFlags adds the flags required to config this to the given FlagSet.
 func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 	cfg.Handler.RegisterFlags(f)
@@ -37,3 +41,4 @@ func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 
 	f.BoolVar(&cfg.CompressResponses, "frontend.support-parquet-encoding", false, "Support 'application/vnd.apache.parquet' content type in HTTP responses.")
 }
+// DownstreamURL 非空时 querier 直连远程 Loki 而非本地 frontend worker 环。

@@ -1,5 +1,7 @@
 package loki
 
+// loki 包是 Loki 单进程/微服务模式的根入口：定义 Config、Loki 根结构体、模块注册、Run 生命周期与 HTTP 就绪/配置端点。
+
 import (
 	"bytes"
 	"context"
@@ -80,6 +82,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/validation"
 )
 
+// Config 聚合 server、distributor、querier、storage、limits 等全部子系统配置块。
 // Config is the root config for Loki.
 type Config struct {
 	Target       flagext.StringSliceCSV `yaml:"target,omitempty"`
@@ -140,6 +143,7 @@ type Config struct {
 	MetricsNamespace string `yaml:"metrics_namespace"`
 }
 
+// RegisterFlags 注册 target、auth、ballast 及各子 Config 的命令行标志。
 // RegisterFlags registers flag.
 func (c *Config) RegisterFlags(f *flag.FlagSet) {
 	c.Server.MetricsNamespace = constants.Loki
@@ -279,6 +283,7 @@ func (c *Config) Clone() flagext.Registerer {
 	}(*c)
 }
 
+// Validate 串联 schema、storage、limits 及各子系统校验，并调用 wave31b 兼容性检查。
 // Validate the config and returns an error if the validation
 // doesn't pass
 func (c *Config) Validate() error {
@@ -399,6 +404,7 @@ type Codec interface {
 	worker.RequestCodec
 }
 
+// Loki 持有运行时 ModuleManager、各组件指针及 HTTP/gRPC 服务实例。
 // Loki is the root datastructure for Loki.
 type Loki struct {
 	Cfg Config
@@ -474,6 +480,7 @@ type Loki struct {
 }
 
 // New makes a new Loki.
+// New 构造 Loki 实例：设置认证中间件、gRPC recovery 并初始化模块管理器。
 func New(cfg Config) (*Loki, error) {
 	loki := &Loki{
 		Cfg:                 cfg,
@@ -520,6 +527,7 @@ func newDefaultConfig() *Config {
 	return defaultConfig
 }
 
+// RunOpts 允许自定义 /config 处理器及记录进程启动时间用于日志统计。
 // RunOpts configures custom behavior for running Loki.
 type RunOpts struct {
 	// CustomConfigEndpointHandlerFn is the handlerFunc to be used by the /config endpoint.
@@ -558,6 +566,7 @@ func (t *Loki) ListTargets() {
 	}
 }
 
+// Run 初始化模块服务、挂载 /ready 与 /config 等路由，阻塞直至服务管理器停止。
 // Run starts Loki running, and blocks until a Loki stops.
 func (t *Loki) Run(opts RunOpts) error {
 	startTime := time.Now()
@@ -679,6 +688,7 @@ func (t *Loki) Run(opts RunOpts) error {
 	return err
 }
 
+// readyHandler 检查全局服务健康、Ingester/Frontend 等特殊就绪条件后返回 200 或 503。
 func (t *Loki) readyHandler(sm *services.Manager, shutdownRequested *atomic.Bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if shutdownRequested.Load() {
@@ -747,6 +757,7 @@ func (t *Loki) readyHandler(sm *services.Manager, shutdownRequested *atomic.Bool
 	}
 }
 
+// setupModuleManager 注册全部 init 模块、别名 target（all/read/write/backend）及依赖图。
 func (t *Loki) setupModuleManager() error {
 	mm := modules.NewManager(util_log.Logger)
 
@@ -983,3 +994,4 @@ func (t *Loki) recursiveIsModuleActive(target, m string) bool {
 	}
 	return false
 }
+// LegacyReadTarget 将 backend 组件依赖合并到 read target；InternalServer 启用时优先于 Server 注入依赖。

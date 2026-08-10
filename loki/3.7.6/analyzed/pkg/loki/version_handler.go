@@ -1,5 +1,7 @@
 package loki
 
+// version_handler 实现 /loki/api/v1/status/buildinfo：返回与 Prometheus buildinfo 兼容的 JSON 版本信息。
+
 import (
 	"encoding/json"
 	"net/http"
@@ -29,3 +31,4 @@ func versionHandler() http.HandlerFunc {
 		_ = json.NewEncoder(w).Encode(info)
 	}
 }
+// InternalServer 与主 Server 均挂载同一路由，便于 sidecar 或内网探测构建版本。

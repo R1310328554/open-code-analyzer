@@ -1,5 +1,7 @@
 package loki
 
+// config_handler 提供 /config 与租户限额 HTTP 端点：支持 diff/defaults 模式对比配置，并按 allowlist 过滤对外发布的 limits 字段。
+
 import (
 	"encoding/json"
 	"fmt"
@@ -13,6 +15,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/validation"
 )
 
+// yamlMarshalUnmarshal 通过 YAML 往返序列化将任意配置结构转为 map，便于递归 diff。
 func yamlMarshalUnmarshal(in interface{}) (map[interface{}]interface{}, error) {
 	yamlBytes, err := yaml.Marshal(in)
 	if err != nil {
@@ -27,6 +30,7 @@ func yamlMarshalUnmarshal(in interface{}) (map[interface{}]interface{}, error) {
 	return object, nil
 }
 
+// diffConfig 递归比较实际配置与默认值，仅输出与默认不同的键值对。
 func diffConfig(defaultConfig, actualConfig map[interface{}]interface{}) (map[interface{}]interface{}, error) {
 	output := make(map[interface{}]interface{})
 
@@ -84,6 +88,7 @@ func diffConfig(defaultConfig, actualConfig map[interface{}]interface{}) (map[in
 	return output, nil
 }
 
+// configHandler 根据 query mode 返回完整配置、默认值或 diff 结果，以 YAML 文本响应。
 func configHandler(actualCfg any, defaultCfg any) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var output any
@@ -119,7 +124,8 @@ func configHandler(actualCfg any, defaultCfg any) http.HandlerFunc {
 }
 
 func filterLimitFields(limits any, allowlist []string) (map[string]any, error) {
-	// Convert limits to map via JSON marshaling to get proper field names
+	// filterLimitFields 经 JSON 序列化获取 limits 的 JSON 字段名，避免 YAML 键名不一致。
+// Convert limits to map via JSON marshaling to get proper field names
 	// This avoids YAML conversion and gives us the JSON field names directly
 	jsonBytes, err := json.Marshal(limits)
 	if err != nil {
@@ -153,6 +159,7 @@ func filterLimitFields(limits any, allowlist []string) (map[string]any, error) {
 	return filtered, nil
 }
 
+// tenantLimitsHandler 按租户解析 limits，支持 drilldown 场景返回 JSON 包装（含版本与 pattern 开关）。
 func (t *Loki) tenantLimitsHandler(forDrilldown bool) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, _, err := tenant.ExtractTenantIDFromHTTPRequest(r)
@@ -209,6 +216,7 @@ func (t *Loki) tenantLimitsHandler(forDrilldown bool) func(http.ResponseWriter, 
 	}
 }
 
+// writeYAMLResponse 以 text/plain 输出 YAML，便于浏览器直接展示配置内容。
 // writeYAMLResponse writes some YAML as a HTTP response.
 func writeYAMLResponse(w http.ResponseWriter, v any) {
 	// There is not standardised content-type for YAML, text/plain ensures the
@@ -226,3 +234,4 @@ func writeYAMLResponse(w http.ResponseWriter, v any) {
 	// Also this isn't internal error, but error communicating with client.
 	_, _ = w.Write(data)
 }
+// 租户无专属 limits 时回退到 DefaultLimits；allowlist 为空则发布全部 limit 字段。

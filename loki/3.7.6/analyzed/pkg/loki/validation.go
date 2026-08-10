@@ -1,5 +1,7 @@
 package loki
 
+// validation 补充 Config.Validate 的跨字段检查：legacy read 模式、schema 与 structured metadata、索引缓存 TTL 与 chunk retain，以及 shipper 目录是否配置。
+
 import (
 	"fmt"
 	"strings"
@@ -11,6 +13,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util"
 )
 
+// validateBackendAndLegacyReadMode 禁止 legacy read 与 backend target 同时启用。
 func validateBackendAndLegacyReadMode(c *Config) []error {
 	var errs []error
 	// Honor the legacy scalable deployment topology
@@ -22,6 +25,7 @@ func validateBackendAndLegacyReadMode(c *Config) []error {
 	return errs
 }
 
+// validateSchemaRequirements 校验 index cache 与 retain、structured metadata 需 schema v13 与 TSDB。
 func validateSchemaRequirements(c *Config) []error {
 	var errs []error
 	p := config.ActivePeriodConfig(c.SchemaConfig.Configs)
@@ -53,6 +57,7 @@ func validateSchemaRequirements(c *Config) []error {
 	return errs
 }
 
+// validateDirectoriesExist 确保 TSDB/boltdb-shipper 的 active/cache 目录及 compactor working_directory 已设。
 func validateDirectoriesExist(c *Config) []error {
 	var errs []error
 	// If TSDB index exists in any index period, make sure the storage locations are configured, when folks upgrade from boltdb-shipper than can hit this and it fails with a confusing stack trace
@@ -89,6 +94,7 @@ func validateDirectoriesExist(c *Config) []error {
 	return errs
 }
 
+// validateSchemaValues 检查 schema 中 store 与 object_store 类型是否在支持列表或 named_stores 中。
 func validateSchemaValues(c *Config) []error {
 	var errs []error
 	for _, cfg := range c.SchemaConfig.Configs {
@@ -112,3 +118,4 @@ func validateSchemaValues(c *Config) []error {
 	}
 	return errs
 }
+// UseThanosObjstore 为 true 时使用 bucket.SupportedBackends 校验 object_store 类型。

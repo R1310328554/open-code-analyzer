@@ -1,5 +1,7 @@
 package loki
 
+// modules 实现 Loki 各可运行 target 的 init 工厂：从 Server、Distributor、Querier 到 Compactor、IndexGateway 等，按 dskit modules.Manager 依赖顺序构造组件。
+
 import (
 	"context"
 	"errors"
@@ -103,6 +105,7 @@ import (
 
 const maxChunkAgeForTableManager = 12 * time.Hour
 
+// 以下常量定义 CLI -target 可选模块名及 read/write/backend/all 等组合别名。
 // The various modules that make up Loki.
 const (
 	Ring                         = "ring"
@@ -172,6 +175,7 @@ const (
 	bloomGatewayRingKey = "bloom-gateway"
 )
 
+// initServer 创建主 HTTP/gRPC Server，注册 Prometheus 版本与 Go 运行时指标。
 func (t *Loki) initServer() (services.Service, error) {
 	prometheus.MustRegister(version.NewCollector(constants.Loki))
 	// unregister default go collector
@@ -281,6 +285,7 @@ func (t *Loki) initRing() (_ services.Service, err error) {
 	return t.ring, nil
 }
 
+// initRuntimeConfig 加载 runtime_config 文件，热更新租户 overrides 与 multi_kv 配置。
 func (t *Loki) initRuntimeConfig() (services.Service, error) {
 	if len(t.Cfg.RuntimeConfig.LoadPath) == 0 {
 		if len(t.Cfg.LimitsConfig.PerTenantOverrideConfig) != 0 {
@@ -351,6 +356,7 @@ func (t *Loki) initTenantConfigs() (_ services.Service, err error) {
 	return nil, err
 }
 
+// initDistributor 构造写入路径分发器，连接 ring、limits 与 pattern tee 等依赖。
 func (t *Loki) initDistributor() (services.Service, error) {
 	t.Cfg.Distributor.KafkaConfig = t.Cfg.KafkaConfig
 
@@ -535,6 +541,7 @@ func (t *Loki) initIngestLimitsFrontend() (services.Service, error) {
 	return ingestLimitsFrontend, nil
 }
 
+// initQuerier 组装查询引擎、Store、IngesterQuerier 与删除请求客户端等读路径组件。
 func (t *Loki) initQuerier() (services.Service, error) {
 	logger := log.With(util_log.Logger, "component", "querier")
 	if t.Cfg.Ingester.QueryStoreMaxLookBackPeriod != 0 {
@@ -748,6 +755,7 @@ func (t *Loki) initQuerier() (services.Service, error) {
 	return svc, nil
 }
 
+// initIngester 启动 chunk 写入与 WAL，注册 memberlist ring 并挂载 gRPC 推送接口。
 func (t *Loki) initIngester() (_ services.Service, err error) {
 	logger := log.With(util_log.Logger, "component", "ingester")
 	t.Cfg.Ingester.LifecyclerConfig.ListenPort = t.Cfg.Server.GRPCListenPort
@@ -907,6 +915,7 @@ func (t *Loki) initTableManager() (services.Service, error) {
 	return t.tableManager, nil
 }
 
+// initStore 根据 schema 实例化 chunk/index 存储层，含 shipper 与 async store 配置。
 func (t *Loki) initStore() (services.Service, error) {
 	// Set configs pertaining to object storage based indices
 	if config.UsingObjectStorageIndex(t.Cfg.SchemaConfig.Configs) {
@@ -1262,6 +1271,7 @@ func (t *Loki) compactorAddress() (string, bool, error) {
 	return t.Cfg.Common.CompactorAddress, false, nil
 }
 
+// initQueryFrontend 初始化 V1/V2 Frontend 或下游 URL 代理，并挂载 query-range tripperware。
 func (t *Loki) initQueryFrontend() (_ services.Service, err error) {
 	level.Debug(util_log.Logger).Log("msg", "initializing query frontend", "config", fmt.Sprintf("%+v", t.Cfg.Frontend))
 
@@ -1864,6 +1874,7 @@ func (t *Loki) initCompactorWorkerMode() (services.Service, error) {
 	return compactor.NewWorkerManager(t.Cfg.CompactorConfig, compactorClient, t.Cfg.SchemaConfig, chunkClients, prometheus.DefaultRegisterer)
 }
 
+// initCompactor 启动压缩与 retention 服务，可选 worker 模式连接远程 compactor ring。
 func (t *Loki) initCompactor() (services.Service, error) {
 	if t.Cfg.CompactorConfig.HorizontalScalingMode == compactor.HorizontalScalingModeWorker {
 		return t.initCompactorWorkerMode()
@@ -2529,6 +2540,7 @@ func (t *Loki) getDataObjBucket(clientName string) (objstore.Bucket, error) {
 	return objstoreBucket, nil
 }
 
+// deleteRequestsClient 按 retention 与 compactor 地址创建 gRPC/HTTP 删除请求客户端。
 func (t *Loki) deleteRequestsClient(clientType string, limits limiter.CombinedLimits) (deletion.DeleteRequestsClient, error) {
 	if !t.supportIndexDeleteRequest() || !t.Cfg.CompactorConfig.RetentionEnabled {
 		return deletion.NewNoOpDeleteRequestsClient(), nil
@@ -2570,6 +2582,7 @@ func (t *Loki) createRulerQueryEngine(logger log.Logger, deleteStore deletion.De
 	return logql.NewEngine(t.Cfg.Querier.Engine, q, t.Overrides, logger), nil
 }
 
+// calculateMaxLookBack 推导 query_store_max_look_back_period，非 filesystem 对象存储禁止非零值。
 func calculateMaxLookBack(pc config.PeriodConfig, maxLookBackConfig, minDuration time.Duration) (time.Duration, error) {
 	if pc.ObjectType != indexshipper.FilesystemObjectStoreType && maxLookBackConfig.Nanoseconds() != 0 {
 		return 0, errors.New("it is an error to specify a non zero `query_store_max_look_back_period` value when using any object store other than `filesystem`")
@@ -2705,3 +2718,4 @@ func schemaHasBoltDBShipperConfig(scfg config.SchemaConfig) bool {
 
 	return false
 }
+// init 函数返回 services.Service 供 Manager 统一启停；UserInvisibleModule 不在 -list-targets 中展示。

@@ -1,5 +1,7 @@
 package loki
 
+// config_compat 校验 Loki 全局配置与索引分片、聚合分片等特性之间的兼容性，在启动前捕获会导致查询或写入异常的组合。
+
 import (
 	"errors"
 	"fmt"
@@ -22,6 +24,7 @@ func ValidateConfigCompatibility(c Config) []error {
 	return errs
 }
 
+// ensureInvertedIndexShardingCompatibility 确保 Ingester 索引分片因子与各 schema 周期 row_shards 可整除。
 func ensureInvertedIndexShardingCompatibility(c Config) error {
 
 	for i, sc := range c.SchemaConfig.Configs {
@@ -45,9 +48,11 @@ func ensureInvertedIndexShardingCompatibility(c Config) error {
 	return nil
 }
 
+// ensureProtobufEncodingForAggregationSharding 要求启用 shard_aggregation 时 Frontend V2 使用 protobuf 编码。
 func ensureProtobufEncodingForAggregationSharding(c Config) error {
 	if len(c.QueryRange.ShardAggregations) > 0 && c.Frontend.FrontendV2.Encoding != frontend.EncodingProtobuf {
 		return errors.New("shard_aggregation requires frontend.encoding=protobuf")
 	}
 	return nil
 }
+// TSDB 索引使用 bit-prefix 分片校验；其他索引类型则检查 row_shards 与 IndexShards 的整除关系。

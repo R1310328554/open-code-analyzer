@@ -1,5 +1,7 @@
 package loki
 
+// runtime_config 加载并监听 runtime 配置文件：热更新 per-tenant limits、operational configs 及 multi_kv，供 Overrides 与 TenantConfigs 消费。
+
 import (
 	"fmt"
 	"io"
@@ -14,6 +16,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/validation"
 )
 
+// runtimeConfigValues 对应 runtime_config.file 中的 overrides、configs 与 multi_kv_config。
 // runtimeConfigValues are values that can be reloaded from configuration file while Loki is running.
 // Reloading is done by runtimeconfig.Manager, which also keeps the currently loaded config.
 // These values are then pushed to the components that are interested in them.
@@ -24,6 +27,7 @@ type runtimeConfigValues struct {
 	Multi kv.MultiRuntimeConfig `yaml:"multi_kv_config"`
 }
 
+// validate 跳过空租户 limit 并对每条 override 调用 Limits.Validate。
 func (r runtimeConfigValues) validate() error {
 	for t, c := range r.TenantLimits {
 		if c == nil {
@@ -38,6 +42,7 @@ func (r runtimeConfigValues) validate() error {
 	return nil
 }
 
+// loadRuntimeConfig 为 runtimeconfig.Manager 提供的 strict YAML 解码与校验入口。
 func loadRuntimeConfig(r io.Reader) (interface{}, error) {
 	overrides := &runtimeConfigValues{}
 
@@ -52,6 +57,7 @@ func loadRuntimeConfig(r io.Reader) (interface{}, error) {
 	return overrides, nil
 }
 
+// tenantLimitsFromRuntimeConfig 从 Manager 当前快照读取 TenantLimits 映射。
 // tenantLimitsFromRuntimeConfig implements validation.Limits
 type tenantLimitsFromRuntimeConfig struct {
 	c *runtimeconfig.Manager
@@ -91,6 +97,7 @@ func newTenantConfigProvider(c *runtimeconfig.Manager) runtime.TenantConfigProvi
 	return &tenantConfigProvider{c: c}
 }
 
+// TenantConfig 按 userID 返回 operational runtime.Config，无则 nil。
 // TenantConfig returns the user config or default config if none was defined.
 func (t *tenantConfigProvider) TenantConfig(userID string) *runtime.Config {
 	if t.c == nil {
@@ -107,6 +114,7 @@ func (t *tenantConfigProvider) TenantConfig(userID string) *runtime.Config {
 	return nil
 }
 
+// multiClientRuntimeConfigChannel 将 runtime 文件变更推送到 multi KV 客户端配置通道。
 func multiClientRuntimeConfigChannel(manager *runtimeconfig.Manager) func() <-chan kv.MultiRuntimeConfig {
 	if manager == nil {
 		return nil
@@ -133,3 +141,4 @@ func multiClientRuntimeConfigChannel(manager *runtimeconfig.Manager) func() <-ch
 		return outCh
 	}
 }
+// newtenantLimitsFromRuntimeConfig 与 newTenantConfigProvider 在 initRuntimeConfig 中注入各组件。
