@@ -16,18 +16,15 @@ package core
 
 import "net/http"
 
-// Session provides session management for
-// authenticated users.
+// Session 为已认证用户提供基于 Cookie 的会话管理。
 type Session interface {
-	// Create creates a new user session and writes the
-	// session to the http.Response.
+	// Create 创建新用户会话并将 Cookie 写入 HTTP 响应。
 	Create(http.ResponseWriter, *User) error
 
-	// Delete deletes the user session from the http.Response.
+	// Delete 从 HTTP 响应中清除用户会话 Cookie。
 	Delete(http.ResponseWriter) error
 
-	// Get returns the session from the http.Request. If no
-	// session exists a nil user is returned. Returning an
-	// error is optional, for debugging purposes only.
+	// Get 从 HTTP 请求中读取会话并返回关联用户。
+	// 若无有效会话则返回 nil 用户；错误信息仅用于调试。
 	Get(*http.Request) (*User, error)
 }

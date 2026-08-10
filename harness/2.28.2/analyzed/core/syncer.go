@@ -16,7 +16,7 @@ package core
 
 import "context"
 
-// Syncer synchronizes the account repository list.
+// Syncer 将用户账户的仓库列表与外部 SCM 同步到本地数据存储。
 type Syncer interface {
 	Sync(context.Context, *User) (*Batch, error)
 }

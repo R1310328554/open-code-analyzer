@@ -16,22 +16,21 @@ package core
 
 import "context"
 
-// Message defines a build change.
+// Message 定义构建变更事件消息，用于发布/订阅广播。
 type Message struct {
 	Repository string
 	Visibility string
 	Data       []byte
 }
 
-// Pubsub provides publish subscriber capabilities, distributing
-// messages from multiple publishers to multiple subscribers.
+// Pubsub 提供发布/订阅能力，将多个发布者的消息分发给多个订阅者。
 type Pubsub interface {
-	// Publish publishes the message to all subscribers.
+	// Publish 向所有订阅者发布消息。
 	Publish(context.Context, *Message) error
 
-	// Subscribe subscribes to the message broker.
+	// Subscribe 订阅消息代理，返回消息通道与错误通道。
 	Subscribe(context.Context) (<-chan *Message, <-chan error)
 
-	// Subscribers returns a count of subscribers.
+	// Subscribers 返回当前订阅者数量。
 	Subscribers() (int, error)
 }

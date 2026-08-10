@@ -16,21 +16,21 @@ package core
 
 import "context"
 
-// Repository visibility.
+// 仓库可见性常量。
 const (
 	VisibilityPublic   = "public"
 	VisibilityPrivate  = "private"
 	VisibilityInternal = "internal"
 )
 
-// Version control systems.
+// 版本控制系统类型常量。
 const (
 	VersionControlGit       = "git"
 	VersionControlMercurial = "hg"
 )
 
 type (
-	// Repository represents a source code repository.
+	// Repository 表示源代码仓库及其 Drone 配置与元数据。
 	Repository struct {
 		ID            int64  `json:"id"`
 		UID           string `json:"uid"`
@@ -68,6 +68,8 @@ type (
 		Archived      bool   `json:"archived"`
 	}
 
+	// RepoBuildStage 聚合仓库、构建与阶段的运行状态信息，
+	// 用于查询未完成构建的详情。
 	RepoBuildStage struct {
 		RepoNamespace     string `json:"repo_namespace"`
 		RepoName          string `json:"repo_name"`
@@ -97,65 +99,61 @@ type (
 		StageStopped      int64  `json:"stage_stopped"`
 	}
 
-	// RepositoryStore defines operations for working with repositories.
+	// RepositoryStore 定义仓库数据的持久化存储操作。
 	RepositoryStore interface {
-		// List returns a repository list from the datastore.
+		// List 从数据存储中返回指定用户的仓库列表。
 		List(context.Context, int64) ([]*Repository, error)
 
-		// ListLatest returns a unique repository list form
-		// the datastore with the most recent build.
+		// ListLatest 返回去重后的仓库列表，每个仓库附带最近一次构建。
 		ListLatest(context.Context, int64) ([]*Repository, error)
 
-		// ListRecent returns a non-unique repository list form
-		// the datastore with the most recent builds.
+		// ListRecent 返回非去重的仓库列表，包含最近多次构建记录。
 		ListRecent(context.Context, int64) ([]*Repository, error)
 
-		// ListIncomplete returns a non-unique repository list form
-		// the datastore with incomplete builds.
+		// ListIncomplete 返回存在未完成构建的仓库列表。
 		ListIncomplete(context.Context) ([]*Repository, error)
 
-		// ListRunningStatus returns a list of build / repository /stage information for builds that are incomplete.
+		// ListRunningStatus 返回所有未完成构建的仓库/构建/阶段状态信息。
 		ListRunningStatus(context.Context) ([]*RepoBuildStage, error)
 
-		// ListAll returns a paginated list of all repositories
-		// stored in the database, including disabled repositories.
+		// ListAll 分页返回数据库中全部仓库，包括已禁用的仓库。
 		ListAll(ctx context.Context, limit, offset int) ([]*Repository, error)
 
-		// Find returns a repository from the datastore.
+		// Find 按 ID 从数据存储中查询仓库。
 		Find(context.Context, int64) (*Repository, error)
 
-		// FindName returns a named repository from the datastore.
+		// FindName 按命名空间与名称从数据存储中查询仓库。
 		FindName(context.Context, string, string) (*Repository, error)
 
-		// Create persists a new repository in the datastore.
+		// Create 将新仓库持久化到数据存储。
 		Create(context.Context, *Repository) error
 
-		// Activate persists the activated repository to the datastore.
+		// Activate 将仓库的激活状态持久化到数据存储。
 		Activate(context.Context, *Repository) error
 
-		// Update persists repository changes to the datastore.
+		// Update 将仓库变更持久化到数据存储。
 		Update(context.Context, *Repository) error
 
-		// Delete deletes a repository from the datastore.
+		// Delete 从数据存储中删除仓库。
 		Delete(context.Context, *Repository) error
 
-		// Count returns a count of activated repositories.
+		// Count 返回已激活仓库的总数。
 		Count(context.Context) (int64, error)
 
-		// Increment returns an incremented build number
+		// Increment 递增并返回仓库的构建编号。
 		Increment(context.Context, *Repository) (*Repository, error)
 	}
 
-	// RepositoryService provides access to repository information
-	// in the remote source code management system (e.g. GitHub).
+	// RepositoryService 提供对外部源代码管理系统（如 GitHub）
+	// 中仓库信息与权限的查询能力。
 	RepositoryService interface {
-		// List returns a list of repositories.
+		// List 返回用户可访问的仓库列表。
 		List(ctx context.Context, user *User) ([]*Repository, error)
 
-		// Find returns the named repository details.
+		// Find 返回指定名称的仓库详情。
 		Find(ctx context.Context, user *User, repo string) (*Repository, error)
 
-		// FindPerm returns the named repository permissions.
+		// FindPerm 返回指定仓库的用户权限。
 		FindPerm(ctx context.Context, user *User, repo string) (*Perm, error)
 	}
 )

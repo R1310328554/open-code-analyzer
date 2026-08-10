@@ -16,7 +16,7 @@ package core
 
 import "context"
 
-// Status types.
+// 构建/提交状态常量。
 const (
 	StatusSkipped  = "skipped"
 	StatusBlocked  = "blocked"
@@ -31,7 +31,7 @@ const (
 )
 
 type (
-	// Status represents a commit status.
+	// Status 表示回写到 SCM 的提交状态信息。
 	Status struct {
 		State  string
 		Label  string
@@ -39,15 +39,13 @@ type (
 		Target string
 	}
 
-	// StatusInput provides the necessary metadata to
-	// set the commit or deployment status.
+	// StatusInput 提供设置提交或部署状态所需的元数据。
 	StatusInput struct {
 		Repo  *Repository
 		Build *Build
 	}
 
-	// StatusService sends the commit status to an external
-	// source code management service (e.g. GitHub).
+	// StatusService 将构建状态回写到外部源代码管理系统（如 GitHub）。
 	StatusService interface {
 		Send(ctx context.Context, user *User, req *StatusInput) error
 	}

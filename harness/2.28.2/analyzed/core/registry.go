@@ -21,20 +21,19 @@ import (
 )
 
 const (
-	// RegistryPull policy allows pulling from a registry.
+	// RegistryPull 策略：允许从镜像仓库拉取镜像。
 	RegistryPull = "pull"
 
-	// RegistryPush Policy allows pushing to a registry for
-	// all event types except pull requests.
+	// RegistryPush 策略：允许向镜像仓库推送，Pull Request 事件除外。
 	RegistryPush = "push"
 
-	// RegistryPushPullRequest Policy allows pushing to a
-	// registry for all event types, including pull requests.
+	// RegistryPushPullRequest 策略：允许向镜像仓库推送，
+	// 包括 Pull Request 在内的所有事件类型。
 	RegistryPushPullRequest = "push-pull-request"
 )
 
 type (
-	// Registry represents a docker registry with credentials.
+	// Registry 表示带凭证的 Docker 镜像仓库配置。
 	Registry struct {
 		Address  string `json:"address"`
 		Username string `json:"username"`
@@ -42,8 +41,7 @@ type (
 		Policy   string `json:"policy"`
 	}
 
-	// RegistryArgs provides arguments for requesting
-	// registry credentials from the remote service.
+	// RegistryArgs 提供向远程服务请求镜像仓库凭证所需的上下文参数。
 	RegistryArgs struct {
 		Repo     *Repository    `json:"repo,omitempty"`
 		Build    *Build         `json:"build,omitempty"`
@@ -51,11 +49,9 @@ type (
 		Pipeline *yaml.Pipeline `json:"-"`
 	}
 
-	// RegistryService provides registry credentials from an
-	// external service.
+	// RegistryService 从外部插件服务获取镜像仓库凭证。
 	RegistryService interface {
-		// List returns registry credentials from the global
-		// remote registry plugin.
+		// List 从全局远程镜像仓库插件返回凭证列表。
 		List(context.Context, *RegistryArgs) ([]*Registry, error)
 	}
 )

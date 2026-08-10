@@ -14,7 +14,7 @@
 
 package core
 
-// System stores system information.
+// System 存储 Drone 服务器的公开系统信息（协议、主机、链接与版本）。
 type System struct {
 	Proto   string `json:"proto,omitempty"`
 	Host    string `json:"host,omitempty"`

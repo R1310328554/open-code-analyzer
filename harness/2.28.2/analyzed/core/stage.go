@@ -17,7 +17,7 @@ package core
 import "context"
 
 type (
-	// Stage represents a stage of build execution.
+	// Stage 表示构建流水线中的一个执行阶段（对应 YAML 中的 pipeline）。
 	Stage struct {
 		ID        int64             `json:"id"`
 		RepoID    int64             `json:"repo_id"`
@@ -49,38 +49,35 @@ type (
 		Steps     []*Step           `json:"steps,omitempty"`
 	}
 
-	// StageStore persists build stage information to storage.
+	// StageStore 持久化构建阶段信息到存储后端。
 	StageStore interface {
-		// List returns a build stage list from the datastore.
+		// List 从数据存储中返回指定构建的阶段列表。
 		List(context.Context, int64) ([]*Stage, error)
 
-		// List returns a build stage list from the datastore
-		// where the stage is incomplete (pending or running).
+		// ListIncomplete 从数据存储中返回未完成（挂起或运行中）的阶段列表。
 		ListIncomplete(ctx context.Context) ([]*Stage, error)
 
-		// ListSteps returns a build stage list from the datastore,
-		// with the individual steps included.
+		// ListSteps 从数据存储中返回阶段列表，并包含各阶段下的步骤。
 		ListSteps(context.Context, int64) ([]*Stage, error)
 
-		// ListState returns a build stage list from the database
-		// across all repositories.
+		// ListState 跨所有仓库按状态查询阶段列表。
 		ListState(context.Context, string) ([]*Stage, error)
 
-		// Find returns a build stage from the datastore by ID.
+		// Find 按 ID 从数据存储中查询阶段。
 		Find(context.Context, int64) (*Stage, error)
 
-		// FindNumber returns a stage from the datastore by number.
+		// FindNumber 按构建 ID 与阶段序号从数据存储中查询阶段。
 		FindNumber(context.Context, int64, int) (*Stage, error)
 
-		// Create persists a new stage to the datastore.
+		// Create 将新阶段持久化到数据存储。
 		Create(context.Context, *Stage) error
 
-		// Update persists an updated stage to the datastore.
+		// Update 将更新后的阶段持久化到数据存储。
 		Update(context.Context, *Stage) error
 	}
 )
 
-// IsDone returns true if the step has a completed state.
+// IsDone 若阶段已处于终态（非等待/挂起/运行/阻塞）则返回 true。
 func (s *Stage) IsDone() bool {
 	switch s.Status {
 	case StatusWaiting,
@@ -93,7 +90,7 @@ func (s *Stage) IsDone() bool {
 	}
 }
 
-// IsFailed returns true if the step has failed
+// IsFailed 若阶段处于失败、被终止或错误状态则返回 true。
 func (s *Stage) IsFailed() bool {
 	switch s.Status {
 	case StatusFailing,

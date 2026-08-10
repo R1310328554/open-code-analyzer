@@ -21,24 +21,22 @@ import (
 )
 
 type (
-	// Netrc contains login and initialization information used by
-	// an automated login process.
+	// Netrc 包含自动登录流程所需的机器名、用户名与密码信息，
+	// 用于生成 .netrc 格式的 Git 克隆凭证。
 	Netrc struct {
 		Machine  string `json:"machine"`
 		Login    string `json:"login"`
 		Password string `json:"password"`
 	}
 
-	// NetrcService returns a valid netrc file that can be used
-	// to authenticate and clone a private repository. If
-	// authentication is not required or enabled, a nil Netrc
-	// file and nil error are returned.
+	// NetrcService 返回可用于认证并克隆私有仓库的有效 .netrc 内容。
+	// 若无需认证或未启用认证，则返回 nil Netrc 与 nil 错误。
 	NetrcService interface {
 		Create(context.Context, *User, *Repository) (*Netrc, error)
 	}
 )
 
-// SetMachine sets the netrc machine from a URL value.
+// SetMachine 从 URL 地址解析并设置 netrc 的机器名（主机名）。
 func (n *Netrc) SetMachine(address string) error {
 	url, err := url.Parse(address)
 	if err != nil {
@@ -48,7 +46,7 @@ func (n *Netrc) SetMachine(address string) error {
 	return nil
 }
 
-// String returns the string representation of a netrc file.
+// String 返回 .netrc 文件格式的字符串表示。
 func (n *Netrc) String() string {
 	return fmt.Sprintf("machine %s login %s password %s",
 		n.Machine,

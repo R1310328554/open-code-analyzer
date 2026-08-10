@@ -16,9 +16,8 @@ package core
 
 import "context"
 
-// Renewer renews the user account authorization. If
-// successful, the user token and token expiry attributes
-// are updated, and persisted to the datastore.
+// Renewer 刷新用户账户的 OAuth 授权令牌。
+// 成功后更新用户的 token 与过期时间属性，并持久化到数据存储。
 type Renewer interface {
 	Renew(ctx context.Context, user *User, force bool) error
 }

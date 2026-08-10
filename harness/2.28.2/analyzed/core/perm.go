@@ -17,8 +17,7 @@ package core
 import "context"
 
 type (
-	// Perm represents an individuals repository
-	// permission.
+	// Perm 表示用户对仓库的读、写、管理权限记录。
 	Perm struct {
 		UserID  int64  `db:"perm_user_id"  json:"-"`
 		RepoUID string `db:"perm_repo_uid" json:"-"`
@@ -30,9 +29,7 @@ type (
 		Updated int64  `db:"perm_updated"  json:"-"`
 	}
 
-	// Collaborator represents a project collaborator,
-	// and provides the account and repository permissions
-	// details.
+	// Collaborator 表示项目协作者，包含账户信息与仓库权限详情。
 	Collaborator struct {
 		UserID  int64  `db:"perm_user_id"  json:"user_id"`
 		RepoUID string `db:"perm_repo_uid" json:"repo_id"`
@@ -46,23 +43,18 @@ type (
 		Updated int64  `db:"perm_updated"  json:"updated"`
 	}
 
-	// PermStore defines operations for working with
-	// repository permissions.
+	// PermStore 定义仓库权限的持久化存储操作。
 	PermStore interface {
-		// Find returns a project member from the
-		// datastore.
+		// Find 从数据存储中按仓库 UID 与用户 ID 查询权限记录。
 		Find(ctx context.Context, repoUID string, userID int64) (*Perm, error)
 
-		// List returns a list of project members from the
-		// datastore.
+		// List 从数据存储中返回指定仓库的全部协作者列表。
 		List(ctx context.Context, repoUID string) ([]*Collaborator, error)
 
-		// Update persists an updated project member
-		// to the datastore.
+		// Update 将更新后的权限记录持久化到数据存储。
 		Update(context.Context, *Perm) error
 
-		// Delete deletes a project member from the
-		// datastore.
+		// Delete 从数据存储中删除指定权限记录。
 		Delete(context.Context, *Perm) error
 	}
 )

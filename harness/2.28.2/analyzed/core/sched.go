@@ -16,8 +16,7 @@ package core
 
 import "context"
 
-// Filter provides filter criteria to limit stages requested
-// from the scheduler.
+// Filter 提供调度器请求阶段时的过滤条件，用于匹配 Runner 能力。
 type Filter struct {
 	Kind    string
 	Type    string
@@ -28,31 +27,26 @@ type Filter struct {
 	Labels  map[string]string
 }
 
-// Scheduler schedules Build stages for execution.
+// Scheduler 负责将构建阶段（Stage）调度到 Runner 执行。
 type Scheduler interface {
-	// Schedule schedules the stage for execution.
+	// Schedule 将阶段加入调度队列等待执行。
 	Schedule(context.Context, *Stage) error
 
-	// Request requests the next stage scheduled for execution.
+	// Request 按过滤条件请求下一个待执行的阶段。
 	Request(context.Context, Filter) (*Stage, error)
 
-	// Cancel cancels scheduled or running jobs associated
-	// with the parent build ID.
+	// Cancel 取消与指定构建 ID 关联的已调度或运行中的任务。
 	Cancel(context.Context, int64) error
 
-	// Cancelled blocks and listens for a cancellation event and
-	// returns true if the build has been cancelled.
+	// Cancelled 阻塞监听取消事件，若构建已被取消则返回 true。
 	Cancelled(context.Context, int64) (bool, error)
 
-	// Pause pauses the scheduler and prevents new pipelines
-	// from being scheduled for execution.
+	// Pause 暂停调度器，阻止新流水线被调度执行。
 	Pause(context.Context) error
 
-	// Resume unpauses the scheduler, allowing new pipelines
-	// to be scheduled for execution.
+	// Resume 恢复调度器，允许新流水线被调度执行。
 	Resume(context.Context) error
 
-	// Stats provides statistics for underlying scheduler. The
-	// data format is scheduler-specific.
+	// Stats 返回底层调度器的统计信息，数据格式因实现而异。
 	Stats(context.Context) (interface{}, error)
 }
