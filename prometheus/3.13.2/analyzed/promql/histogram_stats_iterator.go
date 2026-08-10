@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// HistogramStatsIterator 包装底层 chunk 迭代器，仅暴露直方图的 sum/count，并在内部处理 counter reset 提示与整数到浮点直方图的转换。
+
 package promql
 
 import (
@@ -19,6 +21,7 @@ import (
 	"github.com/prometheus/prometheus/tsdb/chunkenc"
 )
 
+// 迭代器强制返回 ValFloatHistogram，禁止调用 AtHistogram（会 panic）。
 // HistogramStatsIterator is an iterator that returns histogram objects that
 // have only their sum and count values populated. The iterator handles counter
 // reset detection internally and sets the counter reset hint accordingly in
@@ -34,6 +37,7 @@ type HistogramStatsIterator struct {
 	lastIsCurrent bool
 }
 
+// NewHistogramStatsIterator 用给定底层 Iterator 构造统计直方图视图。
 // NewHistogramStatsIterator creates a new HistogramStatsIterator.
 func NewHistogramStatsIterator(it chunkenc.Iterator) *HistogramStatsIterator {
 	return &HistogramStatsIterator{
@@ -50,6 +54,7 @@ func (hsi *HistogramStatsIterator) Reset(it chunkenc.Iterator) {
 	hsi.lastIsCurrent = false
 }
 
+// Next 将 ValHistogram 统一改写为 ValFloatHistogram 类型码。
 // Next mostly relays to the underlying iterator, but changes a ValHistogram
 // return into a ValFloatHistogram return.
 func (hsi *HistogramStatsIterator) Next() chunkenc.ValueType {

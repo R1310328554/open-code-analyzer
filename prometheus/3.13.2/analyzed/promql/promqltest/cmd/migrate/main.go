@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// PromQL 测试文件语法迁移 CLI：按 strict/basic/tolerant 模式批量将 promqltest 数据目录更新为新格式。
+
 package main
 
 import (

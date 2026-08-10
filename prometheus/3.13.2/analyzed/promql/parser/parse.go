@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// PromQL 语法分析门面与内部 parser：对象池复用、yacc 驱动、语义错误收集及 metric/series 描述等专用解析入口。
+
 package parser
 
 import (
@@ -40,6 +42,7 @@ var parserPool = sync.Pool{
 	},
 }
 
+// Options 控制实验函数、duration 表达式、扩展区间选择器与二元 fill 修饰符。
 // Options holds the configuration for the PromQL parser.
 type Options struct {
 	EnableExperimentalFunctions  bool
@@ -48,6 +51,7 @@ type Options struct {
 	EnableBinopFillModifiers     bool
 }
 
+// Parser 对外暴露表达式、指标标签、选择器与测试序列描述的解析 API。
 // Parser provides PromQL parsing methods. Create one with NewParser.
 type Parser interface {
 	ParseExpr(input string) (Expr, error)
@@ -140,6 +144,7 @@ func (pql *promQLParser) ParseSeriesDesc(input string) (lbls labels.Labels, valu
 	return lbls, values, err
 }
 
+// 内部 parser 持有词法器、选项、函数表及 parse/semantic 错误列表。
 type parser struct {
 	lex Lexer
 
@@ -218,6 +223,7 @@ func (p *parser) Close() {
 	defer parserPool.Put(p)
 }
 
+// ParseErr 携带源码位置与消息，可格式化为 query 中的 line:col 提示。
 // ParseErr wraps a parsing error with line and position context.
 type ParseErr struct {
 	PositionRange posrange.PositionRange
@@ -365,6 +371,7 @@ func (*parser) recover(errp *error) {
 // and error handling.
 //
 // For more information, see https://pkg.go.dev/golang.org/x/tools/cmd/goyacc.
+// Lex 实现 yyLexer 接口，供 generated_parser.y.go 中的 yacc 解析器调用。
 func (p *parser) Lex(lval *yySymType) int {
 	var typ ItemType
 

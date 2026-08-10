@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// info() PromQL 函数实现：用 target_info 等 info 指标为数据序列附加元数据标签，支持可选的标签选择器过滤。
+
 package promql
 
 import (
@@ -29,13 +31,16 @@ import (
 	"github.com/prometheus/prometheus/util/annotations"
 )
 
+// targetInfo 为默认 info 指标名，未指定选择器时使用。
 const targetInfo = "target_info"
 
+// identifyingLabels 定义用于匹配 info 与数据序列的标识标签（当前硬编码 instance/job）。
 // identifyingLabels are the labels we consider as identifying for info metrics.
 // Currently hard coded, so we don't need knowledge of individual info metrics.
 var identifyingLabels = []string{"instance", "job"}
 
 // evalInfo implements the info PromQL function.
+// evalInfo 解析参数、拉取 info 序列并与基础矩阵按时间戳逐点合并标签。
 func (ev *evaluator) evalInfo(ctx context.Context, args parser.Expressions) (parser.Value, annotations.Annotations) {
 	val, annots := ev.eval(ctx, args[0])
 	mat := val.(Matrix)
@@ -146,6 +151,7 @@ func (ev *evaluator) infoSelectHints(expr parser.Expr) storage.SelectHints {
 // fetchInfoSeries fetches info series given matching identifying labels in mat.
 // Series in ignoreSeries are not fetched.
 // dataLabelMatchers may be mutated.
+// fetchInfoSeries 根据基础序列的标识标签值从存储批量查询匹配的 info 序列。
 func (ev *evaluator) fetchInfoSeries(ctx context.Context, mat Matrix, ignoreSeries map[uint64]struct{}, dataLabelMatchers map[string][]*labels.Matcher, selectHints storage.SelectHints) (Matrix, annotations.Annotations, error) {
 	removeNameFromDataLabelMatchers := func() {
 		for name, ms := range dataLabelMatchers {

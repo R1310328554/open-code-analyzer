@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// PromQL 词法分析器：将查询字符串切分为 Item token 流，识别关键字、运算符、聚合器、持续时间与直方图字面量。
+
 package parser
 
 import (
@@ -22,6 +24,7 @@ import (
 	"github.com/prometheus/prometheus/promql/parser/posrange"
 )
 
+// Item 表示单个词法单元，含类型、起始字节位置与原始文本值。
 // Item represents a token or text string returned from the scanner.
 type Item struct {
 	Typ ItemType     // The type of this Item.
@@ -100,6 +103,7 @@ func (i ItemType) IsSetOperator() bool {
 
 type ItemType int
 
+// key 映射 PromQL 保留字到 ItemType；变更时需同步 generated_parser 的 maybe_label 规则。
 // This is a list of all keywords in PromQL.
 // When changing this list, make sure to also change
 // the maybe_label grammar rule in the generated parser
@@ -296,6 +300,7 @@ const (
 )
 
 // Lexer holds the state of the scanner.
+// Lexer 维护输入状态机，通过 NextItem 逐 token 输出供 yacc 调用。
 type Lexer struct {
 	input       string       // The string being scanned.
 	state       stateFn      // The next lexing function to enter.
@@ -403,6 +408,7 @@ func (l *Lexer) NextItem(itemp *Item) {
 }
 
 // Lex creates a new scanner for the input string.
+// Lex 构造并初始化针对给定 PromQL 字符串的词法扫描器。
 func Lex(input string) *Lexer {
 	l := &Lexer{
 		input: input,

@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// PromQL 抽象语法树（AST）节点定义：Statement/Expr 接口及各类选择器、聚合、二元运算与字面量节点结构。
+
 package parser
 
 import (
@@ -23,6 +25,7 @@ import (
 	"github.com/prometheus/prometheus/storage"
 )
 
+// Node 为 AST 通用接口，提供 String/Pretty 与源码位置范围。
 // Node is a generic interface for all nodes in an AST.
 //
 // Whenever numerous nodes are listed such as in a switch-case statement
@@ -49,6 +52,7 @@ type Node interface {
 	PositionRange() posrange.PositionRange
 }
 
+// Statement 标记可独立执行的 PromQL 语句节点（如 EvalStmt）。
 // Statement is a generic interface for all statements.
 type Statement interface {
 	Node
@@ -57,6 +61,7 @@ type Statement interface {
 	PromQLStmt()
 }
 
+// EvalStmt 描述待求值表达式及起止时间、步长与 lookback 配置。
 // EvalStmt holds an expression and information on the range it should
 // be evaluated on.
 type EvalStmt struct {
@@ -73,6 +78,7 @@ type EvalStmt struct {
 
 func (*EvalStmt) PromQLStmt() {}
 
+// Expr 扩展 Node，增加 Type() 返回 PromQL 值类型（vector/matrix/scalar 等）。
 // Expr is a generic interface for all expression types.
 type Expr interface {
 	Node
@@ -88,6 +94,7 @@ type Expr interface {
 type Expressions []Expr
 
 // AggregateExpr represents an aggregation operation on a Vector.
+// AggregateExpr 表示聚合运算（sum/avg/topk 等）及其 by/without 修饰。
 type AggregateExpr struct {
 	Op       ItemType // The used aggregation operation.
 	Expr     Expr     // The Vector expression over which is aggregated.
@@ -203,6 +210,7 @@ func (e *StepInvariantExpr) PositionRange() posrange.PositionRange {
 }
 
 // VectorSelector represents a Vector selection.
+// VectorSelector 表示即时向量选择器，含标签匹配器与 offset 等修饰。
 type VectorSelector struct {
 	Name string
 	// OriginalOffset is the actual offset calculated from OriginalOffsetExpr.
@@ -337,6 +345,7 @@ type VectorMatchFillValues struct {
 // invoked for each node with the path leading to the node provided additionally.
 // If the result visitor w is not nil and no error, Walk visits each of the children
 // of node with the visitor w, followed by a call of w.Visit(nil, nil).
+// Visitor 支持对 AST 进行深度优先遍历与就地改写。
 type Visitor interface {
 	Visit(node Node, path []Node) (w Visitor, err error)
 }

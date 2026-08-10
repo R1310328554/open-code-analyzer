@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// PromQL 内置函数求值实现：将 parser 解析出的函数调用映射为对即时向量、区间向量与标量的具体运算逻辑。
+
 package promql
 
 import (
@@ -36,6 +38,7 @@ import (
 	"github.com/prometheus/prometheus/util/kahansum"
 )
 
+// FunctionCall 为 PromQL 函数实现签名；参数已求值，结果写入 enh.Out。
 // FunctionCall is the type of a PromQL function implementation
 //
 // vals is a list of the evaluated arguments for the function call.
@@ -69,6 +72,7 @@ func funcTime(_ []Vector, _ Matrix, _ parser.Expressions, enh *EvalNodeHelper) (
 // pickOrInterpolateLeft returns the value at the left boundary of the range.
 // If interpolation is needed (when smoothed is true and the first sample is before the range start),
 // it returns the interpolated value at the left boundary; otherwise, it returns the first sample's value.
+// 区间边界插值辅助：在 smoothed 模式下于左端点做线性/计数器感知插值。
 func pickOrInterpolateLeft(floats []FPoint, first int, rangeStart int64, smoothed, isCounter bool) float64 {
 	if smoothed && floats[first].T < rangeStart {
 		return interpolate(floats[first], floats[first+1], rangeStart, isCounter)
@@ -306,6 +310,7 @@ func correctForCounterResetsHistogram(h []HPoint, firstSampleIndex, lastSampleIn
 // It calculates the rate (allowing for counter resets if isCounter is true),
 // interpolates at the first/last sample boundary if needed, and returns
 // the result as either per-second (if isRate is true) or overall.
+// extendedRate 实现 anchored/smoothed 等扩展区间选择器下的 rate 族计算。
 func extendedRate(vals Matrix, args parser.Expressions, enh *EvalNodeHelper, isCounter, isRate bool) (Vector, annotations.Annotations) {
 	var (
 		ms              = args[0].(*parser.MatrixSelector)
@@ -733,6 +738,7 @@ func isStartTimestampReset(prevStartTimestamp, prevTimestamp, currStartTimestamp
 }
 
 // === delta(Matrix parser.ValueTypeMatrix) (Vector, Annotations) ===
+// delta/rate/increase/irate/idelta 等 counter 相关函数的统一入口封装。
 func funcDelta(_ []Vector, matrixVals Matrix, args parser.Expressions, enh *EvalNodeHelper) (Vector, annotations.Annotations) {
 	return extrapolatedRate(matrixVals, args, enh, false, false)
 }
@@ -973,6 +979,7 @@ func filterFloats(v Vector) Vector {
 }
 
 // === sort(node parser.ValueTypeVector) (Vector, Annotations) ===
+// sort 族函数：按样本值或标签对即时向量排序。
 func funcSort(vectorVals []Vector, _ Matrix, _ parser.Expressions, _ *EvalNodeHelper) (Vector, annotations.Annotations) {
 	// NaN should sort to the bottom, so take descending sort with NaN first and
 	// reverse it.
@@ -1125,6 +1132,7 @@ func funcScalar(vectorVals []Vector, _ Matrix, _ parser.Expressions, enh *EvalNo
 	return append(enh.Out, Sample{F: value}), nil
 }
 
+// aggrOverTime 在区间向量上对每个序列应用 *_over_time 聚合回调。
 func aggrOverTime(matrixVal Matrix, enh *EvalNodeHelper, aggrFn func(Series) float64) Vector {
 	if len(matrixVal) == 0 {
 		return enh.Out
@@ -2553,6 +2561,7 @@ func funcYear(vectorVals []Vector, _ Matrix, _ parser.Expressions, enh *EvalNode
 	}), nil
 }
 
+// FunctionCalls 将函数名绑定到 promql 包内的具体实现，供 evaluator 分派。
 // FunctionCalls is a list of all functions supported by PromQL, including their types.
 var FunctionCalls = map[string]FunctionCall{
 	"abs":                          funcAbs,

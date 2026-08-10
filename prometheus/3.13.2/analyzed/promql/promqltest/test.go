@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// PromQL 集成测试框架：解析 load/eval/expect 指令 DSL，在内存 TSDB 上驱动 Engine 执行并断言结果、告警与注释。
+
 package promqltest
 
 import (
@@ -47,6 +49,7 @@ import (
 	"github.com/prometheus/prometheus/util/teststorage"
 )
 
+// 预编译正则匹配 promqltest 脚本中的 load、eval、expect 等命令行。
 var (
 	patSpace       = regexp.MustCompile("[\t ]+")
 	patLoad        = regexp.MustCompile(`^load(?:_(with_nhcb))?\s+(.+?)$`)
@@ -71,6 +74,7 @@ type TBRun interface {
 
 var testStartTime = time.Unix(0, 0).UTC()
 
+// LoadedStorage 仅执行 load 语句并返回填充好的 TestStorage，供单元测试复用。
 // LoadedStorage returns storage with generated data using the provided load statements.
 // Non-load statements will cause test errors.
 func LoadedStorage(t testing.TB, input string) *teststorage.TestStorage {
@@ -183,6 +187,7 @@ func RunBuiltinTestsWithStorage(t TBRun, engine promql.QueryEngine, newStorage f
 }
 
 // RunTest parses and runs the test against the provided engine.
+// RunTest 解析完整测试脚本并在 testing.TB 中断言各 eval/expect 步骤。
 func RunTest(t testing.TB, input string, engine promql.QueryEngine) {
 	RunTestWithStorage(t, input, engine, newTestStorage)
 }
@@ -232,6 +237,7 @@ func runTest(t testing.TB, input string, engine promql.QueryEngine, newStorage f
 
 // test is a sequence of read and write commands that are run
 // against a test storage.
+// test 持有解析后的命令序列、引擎、存储工厂与样本计数等运行态。
 type test struct {
 	testing.TB
 
@@ -813,6 +819,7 @@ func getLines(input string) []string {
 }
 
 // parse the given command sequence and appends it to the test.
+// parse 逐行扫描输入，分派 load/eval/clear/expect 等命令到 test.cmds。
 func (t *test) parse(input string) error {
 	lines := getLines(input)
 	var err error

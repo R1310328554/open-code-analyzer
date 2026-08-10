@@ -11,14 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// PromQL 求值结果类型定义：Value 接口与 instant/range vector、scalar、string 等 ValueType 常量及文档用语映射。
+
 package parser
 
+// Value 为查询求值结果的通用接口，提供类型标识与字符串化。
 // Value is a generic interface for values resulting from a query evaluation.
 type Value interface {
 	Type() ValueType
 	String() string
 }
 
+// ValueType 枚举 PromQL 表达式静态/动态值类别。
 // ValueType describes a type of a value.
 type ValueType string
 
@@ -31,6 +35,7 @@ const (
 	ValueTypeString ValueType = "string"
 )
 
+// DocumentedType 将内部 ValueType 映射为用户文档中的术语（如 instant vector）。
 // DocumentedType returns the internal type to the equivalent
 // user facing terminology as defined in the documentation.
 func DocumentedType(t ValueType) string {

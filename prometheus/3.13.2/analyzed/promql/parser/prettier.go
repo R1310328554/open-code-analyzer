@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// PromQL AST 美化输出：按节点深度与行宽阈值决定是否换行缩进，生成长查询的可读多行格式。
+
 package parser
 
 import (
@@ -43,6 +45,7 @@ import (
 
 var maxCharactersPerLine = 100
 
+// Prettify 从根节点以 depth=0 调用 Node.Pretty 生成格式化 PromQL。
 func Prettify(n Node) string {
 	return n.Pretty(0)
 }

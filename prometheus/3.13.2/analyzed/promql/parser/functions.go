@@ -11,8 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// PromQL 函数元数据表：声明各内置函数的名称、参数类型、可变参数规则、返回类型及是否为实验特性。
+
 package parser
 
+// Function 描述单个 PromQL 函数的静态类型签名，供解析与类型检查使用。
 // Function represents a function of the expression language and is
 // used by function nodes.
 type Function struct {
@@ -23,6 +26,7 @@ type Function struct {
 	Experimental bool
 }
 
+// Functions 为函数名到 Function 元数据的只读注册表（与 promql.FunctionCalls 对应）。
 // Functions is a list of all functions supported by PromQL, including their types.
 var Functions = map[string]*Function{
 	"abs": {

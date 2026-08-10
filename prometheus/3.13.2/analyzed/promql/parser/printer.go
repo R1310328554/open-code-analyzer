@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// PromQL AST 调试打印：Tree 输出层级结构，各节点实现 String()将 AST 还原为合法 PromQL 片段。
+
 package parser
 
 import (
@@ -26,6 +28,7 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 )
 
+// Tree 递归打印节点类型与 ChildrenIter 遍历到的子树，便于调试解析结果。
 // Tree returns a string of the tree structure of the given node.
 func Tree(node Node) string {
 	return tree(node, "")
@@ -49,6 +52,7 @@ func tree(node Node, level string) string {
 	return t.String()
 }
 
+// EvalStmt.String 以 EVAL 前缀输出内部表达式字符串。
 func (node *EvalStmt) String() string {
 	return "EVAL " + node.Expr.String()
 }
