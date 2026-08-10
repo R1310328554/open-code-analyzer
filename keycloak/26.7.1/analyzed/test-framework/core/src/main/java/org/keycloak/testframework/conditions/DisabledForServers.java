@@ -9,7 +9,8 @@ import java.lang.annotation.Target;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Tests annotated with <code>@DisabledForServers</code> will be skipped for the specified server modes
+ * 在指定 Keycloak 服务器 Supplier 别名下跳过测试。
+ * {@code value} 为 {@link org.keycloak.testframework.server.KeycloakServer} 的 Supplier 别名列表。
  */
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith({DisabledForServersCondition.class})
 public @interface DisabledForServers {
 
+    /** @return 需跳过的服务器 Supplier 别名 */
     String[] value() default "";
 
 }

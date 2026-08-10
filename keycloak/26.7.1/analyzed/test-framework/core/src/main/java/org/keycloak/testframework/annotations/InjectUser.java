@@ -9,21 +9,23 @@ import org.keycloak.testframework.injection.LifeCycle;
 import org.keycloak.testframework.realm.DefaultUserConfig;
 import org.keycloak.testframework.realm.UserConfig;
 
+/**
+ * 在测试类字段上注入由测试框架托管的 {@link org.keycloak.testframework.realm.ManagedUser} 实例。
+ * 可通过 {@link org.keycloak.testframework.realm.UserConfig} 子类定制用户属性。
+ */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface InjectUser {
 
+    /** @return 用户配置类，默认 {@link DefaultUserConfig} */
     Class<? extends UserConfig> config() default DefaultUserConfig.class;
 
-    /**
-     * Controls the lifecycle of the resource
-     */
+    /** 控制托管用户的生命周期范围。 */
     LifeCycle lifecycle() default LifeCycle.CLASS;
 
-    /**
-     * A ref must be set if a test requires multiple instances
-     */
+    /** 同一测试中需要多个用户实例时必须设置 ref 以区分。 */
     String ref() default "";
 
+    /** 关联的 Realm 引用名，对应 {@link InjectRealm#ref()}。 */
     String realmRef() default "";
 }

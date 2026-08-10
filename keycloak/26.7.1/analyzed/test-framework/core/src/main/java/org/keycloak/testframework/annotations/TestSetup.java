@@ -6,8 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Methods annotated with <code>@TestSetup</code> are invoked by the test framework after all managed resources are
- * injected into the test and before any test methods are executed
+ * 标记测试初始化方法：在托管资源注入完成之后、任意 {@code @Test} 方法执行之前由框架调用。
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)

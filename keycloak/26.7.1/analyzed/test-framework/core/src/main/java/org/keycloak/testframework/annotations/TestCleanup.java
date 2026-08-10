@@ -6,8 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Methods annotated with <code>@TestCleanup</code> are invoked by the test framework after all tests methods are
- * completed
+ * 标记测试清理方法：在所有测试方法执行完毕后由框架调用，用于释放额外资源或还原状态。
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)

@@ -12,16 +12,14 @@ import org.keycloak.testframework.server.KeycloakServerConfig;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Enables the test framework for tests
+ * 在测试类上启用 Keycloak 集成测试框架，注册 {@link KeycloakIntegrationTestExtension}。
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 @ExtendWith({KeycloakIntegrationTestExtension.class})
 public @interface KeycloakIntegrationTest {
 
-    /**
-     * Used to define custom configuration for the Keycloak server
-     */
+    /** 指定 Keycloak 服务器的自定义 {@link KeycloakServerConfig} 实现类。 */
     Class<? extends KeycloakServerConfig> config() default DefaultKeycloakServerConfig.class;
 
 }
