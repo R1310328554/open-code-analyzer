@@ -1,5 +1,8 @@
 package utils //nolint:revive
 
+// 测试用 Remote Write HTTP 服务端：解析 Snappy 压缩的 logproto.PushRequest，
+// 附带 X-Scope-OrgID 租户 ID 写入 channel，供 Promtail 集成测试断言。
+
 import (
 	"math"
 	"net/http"
@@ -10,11 +13,13 @@ import (
 )
 
 // RemoteWriteRequest wraps the received logs remote write request that is received.
+// 封装一次 remote write 请求的租户 ID 与解码后的 PushRequest 体。
 type RemoteWriteRequest struct {
 	TenantID string
 	Request  logproto.PushRequest
 }
 
+// 启动 httptest.Server，handler 解析 body 后写入 receivedChan 并返回指定状态码。
 // NewRemoteWriteServer creates and starts a new httpserver.Server that can handle remote write request. When a request is handled,
 // the received entries are written to receivedChan, and status is responded.
 func NewRemoteWriteServer(receivedChan chan RemoteWriteRequest, status int) *httptest.Server {
@@ -22,6 +27,7 @@ func NewRemoteWriteServer(receivedChan chan RemoteWriteRequest, status int) *htt
 	return server
 }
 
+// 返回 HandlerFunc：ParseProtoReader 解码 Snappy PushRequest 并转发到 channel。
 func createServerHandler(receivedReqsChan chan RemoteWriteRequest, receivedOKStatus int) http.HandlerFunc {
 	return func(rw http.ResponseWriter, req *http.Request) {
 		// Parse the request

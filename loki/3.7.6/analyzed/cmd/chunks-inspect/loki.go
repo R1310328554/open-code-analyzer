@@ -1,5 +1,8 @@
 package main
 
+// Loki chunk 二进制格式解析：识别 magic/版本/压缩编码，读取块元数据表
+// 与各 block 压缩 payload，解压后逐条还原日志行与结构化元数据。
+
 import (
 	"bytes"
 	"encoding/binary"
@@ -27,6 +30,7 @@ const (
 	chunkFormatV4
 )
 
+// 解析结果：格式版本、codec、blocks 列表及 metadata CRC 校验值。
 type LokiChunk struct {
 	format   byte
 	encoding compression.Codec
@@ -66,6 +70,7 @@ type LokiEntry struct {
 	structuredMetadata []label
 }
 
+// 整段读入 data，按 v1-v4 格式定位 metadata 表并逐 block 切分与校验 CRC。
 func parseLokiChunk(chunkHeader *ChunkHeader, r io.Reader) (*LokiChunk, error) {
 
 	/* Loki Chunk Format
@@ -224,6 +229,7 @@ func parseLokiChunk(chunkHeader *ChunkHeader, r io.Reader) (*LokiChunk, error) {
 	return lokiChunk, nil
 }
 
+// 解压 block 后循环读 timestamp、行长度、行文本及 v4 结构化元数据索引对。
 func parseLokiBlock(format byte, codec compression.Codec, data []byte, symbols []string) ([]byte, []LokiEntry, error) {
 	decompressed, err := decompress(codec, data)
 	if err != nil {
@@ -313,6 +319,7 @@ func readUvarint(prevErr error, buf []byte) (uint64, []byte, error) {
 	return val, buf[n:], nil
 }
 
+// v1 固定 GZIP；v2+ 按 code 字节解析 compression.Codec 并校验支持性。
 func getCompression(format byte, code byte) (compression.Codec, error) {
 	if format == chunkFormatV1 {
 		return compression.GZIP, nil

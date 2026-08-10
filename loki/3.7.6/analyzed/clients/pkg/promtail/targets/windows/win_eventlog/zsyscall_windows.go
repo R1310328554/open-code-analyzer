@@ -27,6 +27,9 @@
 //revive:disable-next-line:var-naming
 package win_eventlog
 
+// Windows 事件 API 底层 syscall 绑定：通过 golang.org/x/sys/windows 懒加载
+// wevtapi.dll，封装 EvtSubscribe/EvtRender/EvtNext 等 C 函数为 Go 可调用形式。
+
 import (
 	"syscall"
 	"unsafe"
@@ -51,6 +54,7 @@ var (
 	errERROR_IO_PENDING error = syscall.Errno(errnoERROR_IO_PENDING)
 )
 
+// EvtFormatMessage 标志：指定格式化事件消息、级别、任务、操作码或关键字字符串。
 // EvtFormatMessageFlag defines the values that specify the message string from
 // the event to format.
 type EvtFormatMessageFlag uint32
@@ -77,6 +81,7 @@ const (
 
 // errnoErr returns common boxed Errno values, to prevent
 // allocations at runtime.
+// 将常见 Win32 Errno 装箱为预分配 error，避免运行时重复分配。
 func errnoErr(e syscall.Errno) error {
 	switch e {
 	case 0:
@@ -101,6 +106,7 @@ var (
 	procEvtUpdateBookmark        = modwevtapi.NewProc("EvtUpdateBookmark")
 )
 
+// 底层 EvtSubscribe：按通道路径与 XPath 查询创建事件订阅句柄。
 func _EvtSubscribe(session EvtHandle, signalEvent uintptr, channelPath *uint16, query *uint16, bookmark EvtHandle, context uintptr, callback syscall.Handle, flags EvtSubscribeFlag) (handle EvtHandle, err error) {
 	r0, _, e1 := syscall.Syscall9(procEvtSubscribe.Addr(), 8, uintptr(session), uintptr(signalEvent), uintptr(unsafe.Pointer(channelPath)), uintptr(unsafe.Pointer(query)), uintptr(bookmark), uintptr(context), uintptr(callback), uintptr(flags), 0)
 	handle = EvtHandle(r0)
@@ -114,6 +120,7 @@ func _EvtSubscribe(session EvtHandle, signalEvent uintptr, channelPath *uint16, 
 	return
 }
 
+// EvtRender 将事件或书签渲染为 XML/JSON 等格式写入调用方缓冲区。
 func _EvtRender(context EvtHandle, fragment EvtHandle, flags EvtRenderFlag, bufferSize uint32, buffer *byte, bufferUsed *uint32, propertyCount *uint32) (err error) {
 	r1, _, e1 := syscall.Syscall9(procEvtRender.Addr(), 7, uintptr(context), uintptr(fragment), uintptr(flags), uintptr(bufferSize), uintptr(unsafe.Pointer(buffer)), uintptr(unsafe.Pointer(bufferUsed)), uintptr(unsafe.Pointer(propertyCount)), 0, 0)
 	if r1 == 0 {
@@ -175,6 +182,7 @@ func _EvtOpenPublisherMetadata(session EvtHandle, publisherIdentity *uint16, log
 	return
 }
 
+// 从 XML 字符串恢复书签，空串则创建空白书签供 EvtUpdateBookmark 定位。
 // CreateBookmark create a new bookmark from a string, if the string is empty a new bookrmak is created.
 // Use update the bookmark with an event to save the position, or render to get the bookmark data to store.
 func CreateBookmark(bookmark string) (EvtHandle, error) {
@@ -193,6 +201,7 @@ func CreateBookmark(bookmark string) (EvtHandle, error) {
 	return handle, nil
 }
 
+// 将当前事件位置写入书签，再 EvtRender 输出可持久化的 XML 字符串。
 func UpdateBookmark(bookmark, event EvtHandle, buf []byte) (string, error) {
 	r1, _, e1 := syscall.Syscall(procEvtUpdateBookmark.Addr(), 2, uintptr(bookmark), uintptr(event), 0)
 	if r1 == 0 {

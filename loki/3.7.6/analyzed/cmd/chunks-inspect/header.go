@@ -1,5 +1,8 @@
 package main
 
+// Loki chunk 文件头解析：读取 metadata 长度、Snappy 解压 JSON 元数据
+// 及 data 段长度，构造 ChunkHeader 供后续 loki.go 解析块体。
+
 import (
 	"bytes"
 	"encoding/binary"
@@ -29,6 +32,7 @@ type ChunkHeader struct {
 	DataLength     uint32
 }
 
+// 顺序读 metadataLen、snappy JSON、dataLen，填充 MetadataLength/DataLength 后返回。
 // Decode the chunk from the given buffer, and confirm the chunk is the one we
 // expected.
 func DecodeHeader(r io.Reader) (*ChunkHeader, error) {

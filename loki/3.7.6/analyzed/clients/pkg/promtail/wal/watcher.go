@@ -1,5 +1,8 @@
 package wal
 
+// Promtail WAL 尾随读取器：基于 Prometheus WAL watcher 改造，LiveReader
+// tail 当前段，解码 Record 后通过 WriteTo 回调转发给 remote write 等下游。
+
 import (
 	"fmt"
 	"io"
@@ -31,6 +34,7 @@ const (
 // for log WAL entries, but also, the writeTo surface has been implemented according to the actions necessary for
 // Promtail's WAL.
 
+// 抽象 Next/Err/Record，便于单元测试注入假 Reader。
 // Reader is a dependency interface to inject generic WAL readers into the Watcher.
 type Reader interface {
 	Next() bool
@@ -45,6 +49,7 @@ type WriteCleanup interface {
 	SeriesReset(segmentNum int)
 }
 
+// WriteTo 组合 WriteCleanup、StoreSeries 与 AppendEntries 三类回调。
 // WriteTo is an interface used by the Watcher to send the samples it's read from the WAL on to
 // somewhere else, or clean them up. It's the intermediary between all information read by the Watcher
 // and the final destination.
@@ -62,6 +67,7 @@ type WriteTo interface {
 	AppendEntries(entries wal.RefEntries) error
 }
 
+// id 标识多 client 场景；readNotify 接收 Writer 写入通知触发读段。
 type Watcher struct {
 	// id identifies the Watcher. Used when one Watcher is instantiated per remote write client, to be able to track to whom
 	// the metric/log line corresponds.
@@ -80,6 +86,7 @@ type Watcher struct {
 	maxReadFreq time.Duration
 }
 
+// 初始化 quit/done channel 与 WatchConfig 中的读频率上下界。
 // NewWatcher creates a new Watcher.
 func NewWatcher(walDir, id string, metrics *WatcherMetrics, writeTo WriteTo, logger log.Logger, config WatchConfig) *Watcher {
 	return &Watcher{
@@ -105,6 +112,7 @@ func (w *Watcher) Start() {
 
 // mainLoop retries when there's an error reading a specific segment or advancing one, but leaving a bigger time in-between
 // retries.
+// 外层循环：run 失败记录错误后等待 5s 或 quit 信号再重试。
 func (w *Watcher) mainLoop() {
 	defer close(w.done)
 	for !isClosed(w.quit) {
@@ -151,6 +159,7 @@ func (w *Watcher) run() error {
 	return nil
 }
 
+// select 监听 quit、段切换 ticker、退避 timer 与 readNotify 四路事件驱动读段。
 // watch will start reading from the segment identified by segmentNum. If an EOF is reached, it will keep
 // reading for more WAL records with a wlog.LiveReader. Periodically, it will check if there's a new segment, and if positive
 // read the remaining from the current one and return.
@@ -251,6 +260,7 @@ func (w *Watcher) readSegment(r *wlog.LiveReader, segmentNum int) (bool, error) 
 
 // decodeAndDispatch first decodes a WAL record. Upon reading either Series or Entries from the WAL record, call the
 // appropriate callbacks in the writeTo.
+// DecodeRecord 后先 StoreSeries 再 AppendEntries，保证 series 先于日志写入。
 func (w *Watcher) decodeAndDispatch(b []byte, segmentNum int) (bool, error) {
 	var readData bool
 
@@ -309,6 +319,7 @@ func (w *Watcher) firstAndLast() (int, int, error) {
 	return first, last, nil
 }
 
+// 非阻塞向 readNotify 发信号；channel 已满则丢弃并递增 dropped 指标。
 // NotifyWrite allows the Watcher to subscribe to write events published by the Writer. When a write event is received
 // we emit the signal to trigger a segment read on the watcher main routine. If the readNotify channel already is not being
 // listened on, that means the main routine is processing a segment,  or waiting because a non-handled error occurred.

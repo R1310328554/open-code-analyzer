@@ -1,5 +1,8 @@
 package wal
 
+// Promtail WAL 写入层：封装 Prometheus tsdb/wlog.WL，将 ingester/wal.Record
+// 编码为 series/entries 字节批量或分次写入磁盘段文件。
+
 import (
 	"fmt"
 	"os"
@@ -18,6 +21,7 @@ var (
 	recordPool = wal.NewRecordPool()
 )
 
+// 抽象 Log/Delete/Sync/Dir/Close/NextSegment，便于测试 mock 与替换实现。
 // WAL is an interface that allows us to abstract ourselves from Prometheus WAL implementation.
 type WAL interface {
 	// Log marshals the records and writes it into the WAL.
@@ -30,11 +34,13 @@ type WAL interface {
 	NextSegment() (int, error)
 }
 
+// 持有底层 wlog.WL 与 logger，实现 WAL 接口的全部方法。
 type wrapper struct {
 	wal *wlog.WL
 	log log.Logger
 }
 
+// wlog.NewSize 创建无压缩、默认段大小的 TSDB WAL 目录。
 // New creates a new wrapper, instantiating the actual wlog.WL underneath.
 func New(cfg Config, log log.Logger, registerer prometheus.Registerer) (WAL, error) {
 	// TODO: We should fine-tune the WAL instantiated here to allow some buffering of written entries, but not written to disk
@@ -64,6 +70,7 @@ func (w *wrapper) Delete() error {
 	return err
 }
 
+// 空记录跳过；同时含 series 与 entries 时走 logBatched 减少刷页。
 func (w *wrapper) Log(record *wal.Record) error {
 	if record == nil || (len(record.Series) == 0 && len(record.RefEntries) == 0) {
 		return nil
@@ -76,6 +83,7 @@ func (w *wrapper) Log(record *wal.Record) error {
 	return w.logSingle(record)
 }
 
+// 从 recordPool 取缓冲，EncodeSeries/EncodeEntries 后一次 wlog.Log 双写。
 // logBatched logs to the WAL both series and records, batching the operation to prevent unnecessary page flushes.
 func (w *wrapper) logBatched(record *wal.Record) error {
 	seriesBuf := recordPool.GetBytes()
@@ -91,6 +99,7 @@ func (w *wrapper) logBatched(record *wal.Record) error {
 	return w.wal.Log(*seriesBuf, *entriesBuf)
 }
 
+// 仅含 series 或 entries 时分两次 Log，每次操作可能触发页刷新。
 // logSingle logs to the WAL series and records in separate WAL operation. This causes a page flush after each operation.
 func (w *wrapper) logSingle(record *wal.Record) error {
 	buf := recordPool.GetBytes()

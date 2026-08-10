@@ -1,5 +1,8 @@
 package main
 
+// chunks-inspect CLI：离线检查 Loki chunk 文件，打印元数据、块统计、
+// CRC 校验及可选日志行；支持 -b/-l/-s 控制输出粒度与块落盘。
+
 import (
 	"crypto/sha256"
 	"flag"
@@ -25,6 +28,7 @@ func main() {
 	}
 }
 
+// DecodeHeader→parseLokiChunk，打印时间范围、标签、块数与校验结果。
 func printFile(filename string, blockDetails, printLines, storeBlocks bool) {
 	f, err := os.Open(filename)
 	if err != nil {
@@ -125,6 +129,7 @@ func printFile(filename string, blockDetails, printLines, storeBlocks bool) {
 	fmt.Println("Total size of original data:", totalSize, "file size:", si.Size(), "ratio:", fmt.Sprintf("%0.3g", float64(totalSize)/float64(si.Size())))
 }
 
+// -s 模式下将压缩或解压后的 block 字节写入 .block.N/.original.N 文件。
 func writeBlockToFile(data []byte, blockIndex int, filename string) {
 	err := os.WriteFile(filename, data, 0640) // #nosec G306 -- this is fencing off the "other" permissions -- nosemgrep: incorrect-default-permissions
 	if err != nil {

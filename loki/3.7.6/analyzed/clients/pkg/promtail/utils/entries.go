@@ -1,5 +1,8 @@
 package utils //nolint:revive
 
+// Promtail 日志条目分发工具：FanoutEntryHandler 将单路 api.Entry 并发
+// 扇出到多个下游 EntryHandler，避免单个阻塞通道拖慢整体 pipeline。
+
 import (
 	"context"
 	"sync"
@@ -8,6 +11,7 @@ import (
 	"github.com/grafana/loki/v3/clients/pkg/promtail/api"
 )
 
+// 维护 entries channel 与多个 handler，Stop 时支持优雅超时或硬取消。
 // FanoutEntryHandler implements api.EntryHandler, fanning out received entries to one or multiple channels.
 type FanoutEntryHandler struct {
 	entries  chan api.Entry
@@ -20,6 +24,7 @@ type FanoutEntryHandler struct {
 	hardStop          context.CancelFunc
 }
 
+// 创建带 cancel context 的 handler 并立即启动后台 fanout goroutine。
 // NewFanoutEntryHandler creates a new FanoutEntryHandler.
 func NewFanoutEntryHandler(sendTimeoutOnStop time.Duration, handlers ...api.EntryHandler) *FanoutEntryHandler {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -34,6 +39,7 @@ func NewFanoutEntryHandler(sendTimeoutOnStop time.Duration, handlers ...api.Entr
 	return eh
 }
 
+// 主循环从 entries 读取，为每个 handler 启动短生命周期 goroutine 并发发送。
 func (eh *FanoutEntryHandler) start(ctx context.Context) {
 	go func() {
 		defer func() {
@@ -65,6 +71,7 @@ func (eh *FanoutEntryHandler) Chan() chan<- api.Entry {
 	return eh.entries
 }
 
+// 关闭 entries 后等待当前条目发送完成；超时则 cancel 所有发送 goroutine。
 // Stop only stops the channel FanoutEntryHandler exposes. It then waits for the entry being processed to be sent successfully.
 // If it times out, it hard stops all sending routines.
 func (eh *FanoutEntryHandler) Stop() {

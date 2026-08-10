@@ -1,5 +1,8 @@
 package main
 
+// Prometheus model.Time 兼容类型：以毫秒 tick 存储，支持 JSON 小数秒
+// 反序列化及转 time.Time，供 chunk 元数据 from/through 字段解析。
+
 import (
 	"fmt"
 	"math"
@@ -17,8 +20,10 @@ const (
 // The number of digits after the dot.
 var dotPrecision = int(math.Log10(float64(second)))
 
+// 内部单位为 minimumTick（1ms）的整数 tick 计数。
 type Time int64
 
+// 将 tick 转为浮点秒字符串，与 Prometheus 时间 JSON 格式一致。
 // String returns a string representation of the Time.
 func (t Time) String() string {
 	return strconv.FormatFloat(float64(t)/float64(second), 'f', -1, 64)
@@ -29,6 +34,7 @@ func (t Time) MarshalJSON() ([]byte, error) {
 	return []byte(t.String()), nil
 }
 
+// 解析整数秒或带小数部分的 JSON 时间，处理 -0.x 负号丢失边界情况。
 // UnmarshalJSON implements the json.Unmarshaler interface.
 func (t *Time) UnmarshalJSON(b []byte) error {
 	p := strings.Split(string(b), ".")
@@ -73,6 +79,7 @@ func (t *Time) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// 拆分为 Unix 秒与纳秒余数，映射为标准 time.Time。
 // Time returns the time.Time representation of t.
 func (t Time) Time() time.Time {
 	return time.Unix(int64(t)/second, (int64(t)%second)*nanosPerTick)

@@ -1,5 +1,8 @@
 package wal
 
+// WAL Watcher Prometheus 指标：记录读取条数、解码失败、丢弃通知、
+// 段读取原因、当前段号及运行中 watcher 数量。
+
 import (
 	"errors"
 
@@ -15,6 +18,7 @@ type WatcherMetrics struct {
 	watchersRunning           *prometheus.GaugeVec
 }
 
+// 创建六组指标并向 registerer 注册；已注册则复用 ExistingCollector 避免 panic。
 func NewWatcherMetrics(reg prometheus.Registerer) *WatcherMetrics {
 	m := &WatcherMetrics{
 		recordsRead: prometheus.NewCounterVec(
@@ -76,6 +80,7 @@ func NewWatcherMetrics(reg prometheus.Registerer) *WatcherMetrics {
 	// Collectors will be re-registered to registry if it's got reloaded
 	// Reuse the old collectors instead of panicking out.
 	if reg != nil {
+// AlreadyRegisteredError 时替换为已有 Collector，支持配置热重载场景。
 		if err := reg.Register(m.recordsRead); err != nil {
 			are := &prometheus.AlreadyRegisteredError{}
 			if errors.As(err, are) {

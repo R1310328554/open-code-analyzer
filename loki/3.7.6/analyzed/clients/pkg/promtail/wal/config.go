@@ -1,5 +1,8 @@
 package wal
 
+// Promtail WAL 配置：开关、目录、旧段清理阈值及 Watcher 轮询频率的
+// YAML 结构体与默认值；WAL 功能仍为 WIP，生产环境勿启用。
+
 import (
 	"time"
 )
@@ -8,6 +11,7 @@ const (
 	defaultMaxSegmentAge = time.Hour
 )
 
+// Watcher 默认轮询间隔：最小 250ms，最大 1s，配合指数退避使用。
 // DefaultWatchConfig is the opinionated defaults for operating the Watcher.
 var DefaultWatchConfig = WatchConfig{
 	MinReadFrequency: time.Millisecond * 250,
@@ -15,6 +19,7 @@ var DefaultWatchConfig = WatchConfig{
 }
 
 // Config contains all WAL-related settings.
+// WAL 总配置：Enabled、Dir、MaxSegmentAge 与嵌套 WatchConfig。
 type Config struct {
 	// Whether WAL-support should be enabled.
 	//
@@ -33,6 +38,7 @@ type Config struct {
 	WatchConfig WatchConfig `yaml:"watchConfig"`
 }
 
+// 控制 Watcher 在 Writer 通知与定时器双机制下的最小/最大读频率。
 // WatchConfig allows the user to configure the Watcher.
 //
 // For the read frequency settings, the Watcher polls the WAL for new records with two mechanisms: First, it gets
@@ -49,6 +55,7 @@ type WatchConfig struct {
 	MaxReadFrequency time.Duration `yaml:"maxReadFrequency"`
 }
 
+// 反序列化前填充 MaxSegmentAge=1h 与 DefaultWatchConfig 默认值。
 // UnmarshalYAML implement YAML Unmarshaler
 func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	// Apply defaults

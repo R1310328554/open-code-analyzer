@@ -1,5 +1,8 @@
 package main
 
+// chunks-inspect 标签工具：有序 Label/Labels 类型，支持 Prometheus 风格
+// 字符串渲染、map 互转与 JSON 序列化，供 chunk 元数据解析使用。
+
 import (
 	"bytes"
 	"encoding/json"
@@ -17,6 +20,7 @@ func (ls Labels) Len() int           { return len(ls) }
 func (ls Labels) Swap(i, j int)      { ls[i], ls[j] = ls[j], ls[i] }
 func (ls Labels) Less(i, j int) bool { return ls[i].Name < ls[j].Name }
 
+// 格式化为 {name="value", ...} 的 Prometheus 标签字符串。
 func (ls Labels) String() string {
 	var b bytes.Buffer
 
@@ -35,6 +39,7 @@ func (ls Labels) String() string {
 	return b.String()
 }
 
+// 将 map[string]string 转为 Label 切片并 New 排序去重。
 // FromMap returns new sorted Labels from the given map.
 func FromMap(m map[string]string) Labels {
 	l := make([]Label, 0, len(m))
@@ -44,6 +49,7 @@ func FromMap(m map[string]string) Labels {
 	return New(l...)
 }
 
+// 拷贝传入 Label 并按 Name 升序 sort.Sort。
 // New returns a sorted Labels from the given labels.
 // The caller has to guarantee that all label names are unique.
 func New(ls ...Label) Labels {

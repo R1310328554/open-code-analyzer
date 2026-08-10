@@ -1,5 +1,8 @@
 package wal
 
+// Promtail WAL Writer：实现 api.EntryHandler，从 channel 收条目写入 WAL，
+// 并定期清理过期段、向 Watcher 订阅者广播写入与清理事件。
+
 import (
 	"fmt"
 	"os"
@@ -27,6 +30,7 @@ const (
 	minimumCleanSegmentsEvery = time.Second
 )
 
+// 实现 WriteCleanup.SeriesReset，在旧段删除后释放内存中的 series 缓存。
 // CleanupEventSubscriber is an interface that objects that want to receive events from the wal Writer can implement. After
 // they can subscribe to events by adding themselves as subscribers on the Writer with writer.SubscribeCleanup.
 type CleanupEventSubscriber interface {
@@ -40,6 +44,7 @@ type WriteEventSubscriber interface {
 	NotifyWrite()
 }
 
+// 双 goroutine：主循环写 WAL 并 NotifyWrite；后台 ticker 清理超龄段文件。
 // Writer implements api.EntryHandler, exposing a channel were scraping targets can write to. Reading from there, it
 // writes incoming entries to a WAL.
 // Also, since Writer is responsible for all changing operations over the WAL, therefore a routine is run for cleaning
@@ -63,6 +68,7 @@ type Writer struct {
 	closeCleaner chan struct{}
 }
 
+// New 启动底层 WAL，注册 reclaimed_space 指标并 launch start 例程。
 // NewWriter creates a new Writer.
 func NewWriter(walCfg Config, logger log.Logger, reg prometheus.Registerer) (*Writer, error) {
 	// Start WAL
@@ -164,6 +170,7 @@ func (wrt *Writer) Stop() {
 // deleted since it's likely there's active readers on it. In case there's multiple segments, each will be deleted if:
 // - It's not the last (highest numbered) segment
 // - It's last modified date is older than the max allowed age
+// 多段时删除非 head 且 mtime 早于阈值的段，并 SeriesReset 通知订阅者。
 func (wrt *Writer) cleanSegments(maxAge time.Duration) error {
 	maxModifiedAt := time.Now().Add(-maxAge)
 	walDir := wrt.wal.Dir()
@@ -224,6 +231,7 @@ func (wrt *Writer) SubscribeWrite(subscriber WriteEventSubscriber) {
 
 // entryWriter writes api.Entry to a WAL, keeping in memory a single Record object that's reused
 // across every write.
+// 复用单个 wal.Record 缓冲，WriteEntry 前清空 RefEntries/Series 切片。
 type entryWriter struct {
 	reusableWALRecord *wal.Record
 }
@@ -240,6 +248,7 @@ func newEntryWriter() *entryWriter {
 
 // WriteEntry writes an api.Entry to a WAL. Note that since it's re-using the same Record object for every
 // write, it first has to be reset, and then overwritten accordingly. Therefore, WriteEntry is not thread-safe.
+// 标签 Hash 得 fp 作为 Ref，同时写入 Series 与 RefEntries 后调用 wl.Log。
 func (ew *entryWriter) WriteEntry(entry api.Entry, wl WAL, _ log.Logger) error {
 	// Reset wal record slices
 	ew.reusableWALRecord.RefEntries = ew.reusableWALRecord.RefEntries[:0]
@@ -272,6 +281,7 @@ type segmentRef struct {
 }
 
 // listSegments list wal segments under the given directory, alongside with some file system information for each.
+// 枚举 WAL 目录数字文件名，校验段号连续并收集大小与修改时间。
 func listSegments(dir string) (refs []segmentRef, err error) {
 	files, err := os.ReadDir(dir)
 	if err != nil {
