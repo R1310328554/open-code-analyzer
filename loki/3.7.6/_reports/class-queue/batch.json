@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T22:27:05Z",
   "files": [
-    "pkg/kafka/testkafka/message.go",
-    "pkg/kafkav2/consumer.go",
-    "pkg/kafkav2/offset.go",
-    "pkg/limits/client/client.go",
-    "pkg/limits/config.go",
-    "pkg/limits/consumer.go",
-    "pkg/limits/evict.go",
-    "pkg/limits/frontend/cache.go",
-    "pkg/limits/frontend/client.go",
-    "pkg/limits/frontend/client/client.go",
-    "pkg/limits/frontend/config.go",
-    "pkg/limits/frontend/frontend.go",
-    "pkg/limits/frontend/http.go",
-    "pkg/limits/frontend/ring.go",
-    "pkg/limits/http.go",
     "pkg/limits/limit.go",
     "pkg/limits/partition_lifecycler.go",
     "pkg/limits/partition_manager.go",
@@ -33,5 +18,5 @@
     "pkg/logcli/labelquery/labels.go"
   ],
   "remaining_pending": 802,
-  "done": 720
+  "done": 735
 }
