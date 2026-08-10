@@ -15,23 +15,8 @@
     "model/jpa/src/main/java/org/keycloak/models/jpa/GroupAdapter.java",
     "model/jpa/src/main/java/org/keycloak/models/jpa/JpaClientProviderFactory.java",
     "model/jpa/src/main/java/org/keycloak/models/jpa/JpaClientScopeProviderFactory.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/JpaDeploymentStateProviderFactory.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/JpaGroupProviderFactory.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/JpaIdentityProviderStorageProvider.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/JpaIdentityProviderStorageProviderFactory.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/JpaModel.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/JpaRealmProvider.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/JpaRealmProviderFactory.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/JpaRoleProviderFactory.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/JpaUserCredentialStore.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/JpaUserCredentialStoreFactory.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/JpaUserPartialEvaluationProvider.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/JpaUserProvider.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/JpaUserProviderFactory.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/MigrationModelAdapter.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/PaginationUtils.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/RealmAdapter.java"
+    "model/jpa/src/main/java/org/keycloak/models/jpa/JpaDeploymentStateProviderFactory.java"
   ],
   "remaining_pending": 4288,
-  "done": 1680
+  "done": 1695
 }
