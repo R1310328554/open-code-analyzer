@@ -15,23 +15,8 @@
     "common/src/main/java/io/netty/util/Signal.java",
     "common/src/main/java/io/netty/util/SuppressForbidden.java",
     "common/src/main/java/io/netty/util/ThreadDeathWatcher.java",
-    "common/src/main/java/io/netty/util/Timeout.java",
-    "common/src/main/java/io/netty/util/Timer.java",
-    "common/src/main/java/io/netty/util/TimerTask.java",
-    "common/src/main/java/io/netty/util/UncheckedBooleanSupplier.java",
-    "common/src/main/java/io/netty/util/Version.java",
-    "common/src/main/java/io/netty/util/concurrent/AbstractEventExecutor.java",
-    "common/src/main/java/io/netty/util/concurrent/AbstractEventExecutorGroup.java",
-    "common/src/main/java/io/netty/util/concurrent/AbstractFuture.java",
-    "common/src/main/java/io/netty/util/concurrent/AbstractScheduledEventExecutor.java",
-    "common/src/main/java/io/netty/util/concurrent/AutoScalingEventExecutorChooserFactory.java",
-    "common/src/main/java/io/netty/util/concurrent/BlockingOperationException.java",
-    "common/src/main/java/io/netty/util/concurrent/CompleteFuture.java",
-    "common/src/main/java/io/netty/util/concurrent/ConcurrentSkipListIntObjMultimap.java",
-    "common/src/main/java/io/netty/util/concurrent/DefaultEventExecutor.java",
-    "common/src/main/java/io/netty/util/concurrent/DefaultEventExecutorChooserFactory.java",
-    "common/src/main/java/io/netty/util/concurrent/DefaultEventExecutorGroup.java"
+    "common/src/main/java/io/netty/util/Timeout.java"
   ],
   "remaining_pending": 788,
-  "done": 1110
+  "done": 1125
 }
