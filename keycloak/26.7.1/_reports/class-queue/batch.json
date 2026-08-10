@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T06:01:42Z",
-  "files": [
-    "core/src/main/java/org/keycloak/representations/adapters/action/PushNotBeforeAction.java",
-    "core/src/main/java/org/keycloak/representations/adapters/action/TestAvailabilityAction.java",
-    "core/src/main/java/org/keycloak/representations/adapters/config/AdapterConfig.java",
-    "core/src/main/java/org/keycloak/representations/adapters/config/AdapterHttpClientConfig.java",
-    "core/src/main/java/org/keycloak/representations/adapters/config/BaseAdapterConfig.java",
-    "core/src/main/java/org/keycloak/representations/adapters/config/BaseRealmConfig.java",
-    "core/src/main/java/org/keycloak/representations/adapters/config/PolicyEnforcerConfig.java",
-    "core/src/main/java/org/keycloak/representations/docker/DockerAccess.java",
-    "core/src/main/java/org/keycloak/representations/docker/DockerError.java",
-    "core/src/main/java/org/keycloak/representations/docker/DockerErrorResponseToken.java",
-    "core/src/main/java/org/keycloak/representations/docker/DockerResponse.java",
-    "core/src/main/java/org/keycloak/representations/docker/DockerResponseToken.java",
-    "core/src/main/java/org/keycloak/representations/dpop/DPoP.java",
-    "core/src/main/java/org/keycloak/representations/idm/AbstractAuthenticationExecutionRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/idm/AbstractUserRepresentation.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 5608,
-  "done": 375
+  "done": 390
 }

@@ -373,3 +373,18 @@
 2026-08-10T06:03:08Z DONE core/src/main/java/org/keycloak/representations/idm/ClientInitialAccessPresentation.java wave13b idm admin/auth representations
 2026-08-10T06:03:08Z DONE core/src/main/java/org/keycloak/representations/idm/ClientMappingsRepresentation.java wave13b idm admin/auth representations
 2026-08-10T06:03:08Z DONE core/src/main/java/org/keycloak/representations/idm/ClientPoliciesRepresentation.java wave13b idm admin/auth representations
+2026-08-10T06:03:36Z DONE core/src/main/java/org/keycloak/representations/adapters/action/PushNotBeforeAction.java wave13a adapter config + docker/dpop reps
+2026-08-10T06:03:36Z DONE core/src/main/java/org/keycloak/representations/adapters/action/TestAvailabilityAction.java wave13a adapter config + docker/dpop reps
+2026-08-10T06:03:36Z DONE core/src/main/java/org/keycloak/representations/adapters/config/AdapterConfig.java wave13a adapter config + docker/dpop reps
+2026-08-10T06:03:36Z DONE core/src/main/java/org/keycloak/representations/adapters/config/AdapterHttpClientConfig.java wave13a adapter config + docker/dpop reps
+2026-08-10T06:03:36Z DONE core/src/main/java/org/keycloak/representations/adapters/config/BaseAdapterConfig.java wave13a adapter config + docker/dpop reps
+2026-08-10T06:03:36Z DONE core/src/main/java/org/keycloak/representations/adapters/config/BaseRealmConfig.java wave13a adapter config + docker/dpop reps
+2026-08-10T06:03:36Z DONE core/src/main/java/org/keycloak/representations/adapters/config/PolicyEnforcerConfig.java wave13a adapter config + docker/dpop reps
+2026-08-10T06:03:36Z DONE core/src/main/java/org/keycloak/representations/docker/DockerAccess.java wave13a adapter config + docker/dpop reps
+2026-08-10T06:03:36Z DONE core/src/main/java/org/keycloak/representations/docker/DockerError.java wave13a adapter config + docker/dpop reps
+2026-08-10T06:03:36Z DONE core/src/main/java/org/keycloak/representations/docker/DockerErrorResponseToken.java wave13a adapter config + docker/dpop reps
+2026-08-10T06:03:36Z DONE core/src/main/java/org/keycloak/representations/docker/DockerResponse.java wave13a adapter config + docker/dpop reps
+2026-08-10T06:03:36Z DONE core/src/main/java/org/keycloak/representations/docker/DockerResponseToken.java wave13a adapter config + docker/dpop reps
+2026-08-10T06:03:36Z DONE core/src/main/java/org/keycloak/representations/dpop/DPoP.java wave13a adapter config + docker/dpop reps
+2026-08-10T06:03:36Z DONE core/src/main/java/org/keycloak/representations/idm/AbstractAuthenticationExecutionRepresentation.java wave13a adapter config + docker/dpop reps
+2026-08-10T06:03:36Z DONE core/src/main/java/org/keycloak/representations/idm/AbstractUserRepresentation.java wave13a adapter config + docker/dpop reps
