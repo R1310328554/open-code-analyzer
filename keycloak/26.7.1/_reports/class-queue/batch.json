@@ -15,23 +15,8 @@
     "rest/admin-v2/services/src/main/java/org/keycloak/rest/admin/api/DefaultAdminRootV2.java",
     "rest/admin-v2/services/src/main/java/org/keycloak/rest/admin/api/client/DefaultClientApi.java",
     "rest/admin-v2/services/src/main/java/org/keycloak/rest/admin/api/client/DefaultClientsApi.java",
-    "rest/admin-v2/services/src/main/java/org/keycloak/services/PatchType.java",
-    "rest/admin-v2/services/src/main/java/org/keycloak/services/RolesService.java",
-    "rest/admin-v2/services/src/main/java/org/keycloak/services/Service.java",
-    "rest/admin-v2/services/src/main/java/org/keycloak/services/ServiceException.java",
-    "rest/admin-v2/services/src/main/java/org/keycloak/services/ServiceExceptionMapper.java",
-    "rest/admin-v2/services/src/main/java/org/keycloak/services/client/ClientService.java",
-    "rest/admin-v2/services/src/main/java/org/keycloak/services/client/DefaultClientService.java",
-    "rest/admin-v2/services/src/main/java/org/keycloak/services/client/query/ClientQueryEvaluator.java",
-    "rest/admin-v2/services/src/main/java/org/keycloak/services/client/query/ClientQueryException.java",
-    "rest/admin-v2/services/src/main/java/org/keycloak/services/client/query/FieldResolver.java",
-    "rest/admin-v2/services/src/main/java/org/keycloak/services/client/query/QueryParseUtils.java",
-    "rest/admin-v2/services/src/main/java/org/keycloak/services/error/ValidationExceptionHandler.java",
-    "rest/admin-v2/services/src/main/java/org/keycloak/services/error/ViolationExceptionResponse.java",
-    "rest/admin-v2/services/src/main/java/org/keycloak/validation/jakarta/HibernateValidatorProvider.java",
-    "rest/admin-v2/services/src/main/java/org/keycloak/validation/jakarta/JakartaValidatorProvider.java",
-    "rest/admin-v2/services/src/main/java/org/keycloak/validation/jakarta/ValidationContext.java"
+    "rest/admin-v2/services/src/main/java/org/keycloak/services/PatchType.java"
   ],
   "remaining_pending": 3598,
-  "done": 2370
+  "done": 2385
 }
