@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T20:20:06Z",
-  "files": [
-    "discovery/moby/metrics_docker.go",
-    "discovery/moby/metrics_dockerswarm.go",
-    "discovery/moby/network.go",
-    "discovery/moby/nodes.go",
-    "discovery/moby/services.go",
-    "discovery/moby/tasks.go",
-    "discovery/nomad/metrics.go",
-    "discovery/nomad/nomad.go",
-    "discovery/openstack/hypervisor.go",
-    "discovery/openstack/instance.go",
-    "discovery/openstack/loadbalancer.go",
-    "discovery/openstack/metrics.go",
-    "discovery/openstack/openstack.go",
-    "discovery/outscale/metrics.go",
-    "discovery/outscale/outscale.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 444,
-  "done": 75
+  "done": 90
 }
