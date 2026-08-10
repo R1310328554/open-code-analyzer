@@ -1,3 +1,5 @@
+// message-item/hooks.ts — 聊天消息项 Hooks：反馈弹窗、删除消息与 SSE 语音朗读。
+
 import { useSetModalState } from '@/hooks/common-hooks';
 import { IRemoveMessageById, useSpeechWithSse } from '@/hooks/logic-hooks';
 import { useDeleteMessage, useFeedback } from '@/hooks/use-chat-request';
@@ -6,6 +8,7 @@ import { hexStringToUint8Array } from '@/utils/common-util';
 import { SpeechPlayer } from 'openai-speech-stream-player';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+/** 管理单条消息的反馈弹窗显隐，提交后将 messageId 一并上报。 */
 export const useSendFeedback = (messageId: string) => {
   const { visible, hideModal, showModal } = useSetModalState();
   const { feedback, loading } = useFeedback();
@@ -33,6 +36,7 @@ export const useSendFeedback = (messageId: string) => {
   };
 };
 
+/** 删除指定 messageId 的消息，成功后同步本地列表 removeMessageById。 */
 export const useRemoveMessage = (
   messageId: string,
   removeMessageById?: IRemoveMessageById['removeMessageById'],
@@ -51,12 +55,14 @@ export const useRemoveMessage = (
   return { onRemoveMessage, loading };
 };
 
+/** 基于 SSE 与 SpeechPlayer 朗读消息文本，支持预置 audioBinary 十六进制流。 */
 export const useSpeech = (content: string, audioBinary?: string) => {
   const ref = useRef<HTMLAudioElement>(null);
   const { read } = useSpeechWithSse();
   const player = useRef<SpeechPlayer>();
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
 
+  /** 初始化 MediaSource 播放器，按浏览器能力选择 audio/mpeg 或 mp4a。 */
   const initialize = useCallback(async () => {
     player.current = new SpeechPlayer({
       audio: ref.current!,
@@ -78,6 +84,7 @@ export const useSpeech = (content: string, audioBinary?: string) => {
     player.current?.pause();
   }, []);
 
+  /** 调用 read SSE 接口获取音频流并喂入播放器。 */
   const speech = useCallback(async () => {
     const response = await read({ text: content });
     if (response) {
@@ -85,6 +92,7 @@ export const useSpeech = (content: string, audioBinary?: string) => {
     }
   }, [read, content]);
 
+  /** 切换播放/暂停：正在播放则 pause，否则发起 speech。 */
   const handleRead = useCallback(async () => {
     if (isPlaying) {
       setIsPlaying(false);

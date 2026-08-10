@@ -1,8 +1,12 @@
+// llm.ts — LLM 厂商枚举、图标映射、模型字段映射与各厂商 API Key 管理页 URL。
+
+/** 租户模型实例启用状态。 */
 export enum ModelStatus {
   Active = 'active',
   Inactive = 'inactive',
 }
 
+/** 支持的 LLM/嵌入/TTS 等模型厂商标识（与后端 factory 字符串一致）。 */
 export enum LLMFactory {
   TongYiQianWen = 'Tongyi-Qianwen',
   Moonshot = 'Moonshot',
@@ -76,7 +80,8 @@ export enum LLMFactory {
   NewAPI = 'New API',
 }
 
-// Please lowercase the file name
+// 图标文件名请使用小写
+/** 厂商 → public 目录下图标资源 basename（小写）。 */
 export const IconMap = {
   [LLMFactory.TongYiQianWen]: 'tongyi-qianwen',
   [LLMFactory.Moonshot]: 'moonshot',
@@ -149,6 +154,7 @@ export const IconMap = {
   [LLMFactory.NewAPI]: 'new-api',
 };
 
+/** 模型能力类型 → 租户配置表单字段名（llm_id、embd_id 等）。 */
 export const ModelTypeToField: Record<string, string> = {
   chat: 'llm_id',
   embedding: 'embd_id',
@@ -158,6 +164,7 @@ export const ModelTypeToField: Record<string, string> = {
   tts: 'tts_id',
 };
 
+/** 配置字段名 → 模型能力类型（chat、embedding、vision 等）。 */
 export const FieldToModelType: Record<string, string> = {
   llm_id: 'chat',
   embd_id: 'embedding',
@@ -167,6 +174,7 @@ export const FieldToModelType: Record<string, string> = {
   tts_id: 'tts',
 };
 
+/** 各厂商控制台 API Key / 凭证申请页 URL，用于设置页跳转。 */
 export const APIMapUrl = {
   [LLMFactory.OpenAI]: 'https://platform.openai.com/api-keys',
   [LLMFactory.Anthropic]: 'https://console.anthropic.com/settings/keys',

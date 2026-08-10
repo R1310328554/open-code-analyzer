@@ -1,3 +1,6 @@
+// file.ts — 上传/列表场景下扩展名到图标类别名的简化映射。
+
+/** 扩展名 → 图标资源类别（doc、excel、ppt 等）。 */
 export const FileIconMap = {
   doc: 'doc',
   docx: 'doc',
