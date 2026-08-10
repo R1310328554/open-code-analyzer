@@ -27,12 +27,30 @@ import org.keycloak.headers.SecurityHeadersProvider;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.services.util.CacheControlUtil;
 
+/**
+ * OIDC iframe 静态资源响应工具。
+ * <p>按版本号返回 classpath 中的 HTML/FTL 资源，并设置缓存控制与安全头（允许任意 frame 祖先）。</p>
+ */
 public class IframeUtil {
 
+    /**
+     * 从 classpath 加载 iframe 资源并返回 HTTP 响应。
+     * @param fileName 资源文件名
+     * @param version 客户端请求的资源版本，须与 {@link org.keycloak.common.Version#RESOURCES_VERSION} 一致
+     * @param session Keycloak 会话
+     * @return 200 含资源体，或 404
+     */
     public static Response returnIframeFromResources(String fileName, String version, KeycloakSession session) {
         return returnIframe(version, session, () -> IframeUtil.class.getResourceAsStream(fileName));
     }
 
+    /**
+     * 通过供应器获取 iframe 实体并构建响应。
+     * @param version 资源版本；null 时不校验版本且禁用缓存
+     * @param session Keycloak 会话
+     * @param responseEntityProvider 响应体供应器
+     * @return 200 含实体，或 404
+     */
     public static Response returnIframe(String version, KeycloakSession session, Supplier<Object> responseEntityProvider) {
         CacheControl cacheControl;
         if (version != null) {

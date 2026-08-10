@@ -62,14 +62,16 @@ import static org.keycloak.OAuth2Constants.AUTHORIZATION_DETAILS;
 import static org.keycloak.protocol.oidc.endpoints.request.AuthorizationEndpointRequestParserProcessor.getRequestUriType;
 
 /**
- * Implements some checks typical for OIDC Authorization Endpoint. Useful to consolidate various checks on single place to avoid duplicated
- * code logic in different contexts (OIDC Authorization Endpoint triggered from browser, PAR)
+ * OIDC 授权端点通用参数校验器。
+ * <p>将 redirect_uri、response_type、PKCE、PAR、DPoP 等校验集中在一处，供浏览器授权端点、PAR 等场景复用，避免重复逻辑。</p>
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class AuthorizationEndpointChecker {
 
+    /** 事件构建器，用于记录校验失败详情。 */
     private EventBuilder event;
+    /** 已解析的授权端点请求。 */
     private AuthorizationEndpointRequest request;
     private KeycloakSession session;
     private ClientModel client;
@@ -80,84 +82,100 @@ public class AuthorizationEndpointChecker {
     private OIDCResponseMode parsedResponseMode;
     private MultivaluedMap<String, String> params;
 
+    /** 日志记录器。 */
     private static final Logger logger = Logger.getLogger(AuthorizationEndpointChecker.class);
 
-    // https://tools.ietf.org/html/rfc7636#section-4.2
+    // RFC 7636 §4.2：PKCE code_challenge 合法字符集
     private static final Pattern VALID_CODE_CHALLENGE_PATTERN = Pattern.compile("^[0-9a-zA-Z\\-\\.~_]+$");
 
+    /** event 相关操作。 */
     public AuthorizationEndpointChecker event(EventBuilder event) {
         this.event = event;
         return this;
     }
 
+    /** request 相关操作。 */
     public AuthorizationEndpointChecker request(AuthorizationEndpointRequest request) {
         this.request = request;
         return this;
     }
 
+    /** session 相关操作。 */
     public AuthorizationEndpointChecker session(KeycloakSession session) {
         this.session = session;
         return this;
     }
 
+    /** client 相关操作。 */
     public AuthorizationEndpointChecker client(ClientModel client) {
         this.client = client;
         return this;
     }
 
+    /** realm 相关操作。 */
     public AuthorizationEndpointChecker realm(RealmModel realm) {
         this.realm = realm;
         return this;
     }
 
+    /** params 相关操作。 */
     public AuthorizationEndpointChecker params(MultivaluedMap<String, String> params) {
         this.params = params;
         return this;
     }
 
+    /** 获取AuthorizationEndpointRequest。 */
     public AuthorizationEndpointRequest getAuthorizationEndpointRequest() {
         return request;
     }
 
+    /** 获取Client。 */
     public ClientModel getClient() {
         return client;
     }
 
+    /** 获取EventBuilder。 */
     public EventBuilder getEventBuilder() {
         return event;
     }
 
+    /** 获取Realm。 */
     public RealmModel getRealm() {
         return realm;
     }
 
+    /** 获取QueryParams。 */
     public MultivaluedMap<String, String> getQueryParams() {
         return params;
     }
 
+    /** 获取RedirectUri。 */
     public String getRedirectUri() {
         return redirectUri;
     }
 
+    /** 获取ParsedResponseType。 */
     public OIDCResponseType getParsedResponseType() {
         return parsedResponseType;
     }
 
+    /** 获取ParsedResponseMode。 */
     public OIDCResponseMode getParsedResponseMode() {
         return parsedResponseMode;
     }
 
+    /** 校验RedirectUri。 */
     public void checkRedirectUri() throws AuthorizationCheckException {
 
         String redirectUri = request.getRedirectUri();
         String scope = request.getScope();
 
-        // The redirect_uri parameter is required for OIDC, but optional for OAuth2
+        // OIDC 要求 redirect_uri；纯 OAuth2 可选
         boolean isOIDCRequest = TokenUtil.isOIDCRequest(scope);
 
         event.detail(Details.REDIRECT_URI, redirectUri);
 
-        // redirect_uri parameter is required per OpenID Connect, but optional per OAuth2
+        // 按 OIDC 规范校验 redirect_uri 是否在客户端白名单内
         this.redirectUri = RedirectUtils.verifyRedirectUri(session, redirectUri, client, isOIDCRequest);
         if (this.redirectUri == null) {
             event.error(Errors.INVALID_REDIRECT_URI);
@@ -165,6 +183,7 @@ public class AuthorizationEndpointChecker {
         }
     }
 
+    /** 校验ResponseType。 */
     public void checkResponseType() throws AuthorizationCheckException {
 
         String responseType = request.getResponseType();
@@ -198,7 +217,7 @@ public class AuthorizationEndpointChecker {
             throw new AuthorizationCheckException(Response.Status.BAD_REQUEST, OAuthErrorException.INVALID_REQUEST, errorMessage);
         }
 
-        // Disallowed by OIDC specs
+        // OIDC 规范禁止隐式/混合流使用 query 响应模式
         if (parsedResponseType.isImplicitOrHybridFlow() && parsedResponseMode == OIDCResponseMode.QUERY) {
             ServicesLogger.LOGGER.responseModeQueryNotAllowed();
             String errorMessage = "Response_mode 'query' not allowed for implicit or hybrid flow";
@@ -227,7 +246,7 @@ public class AuthorizationEndpointChecker {
             throw new AuthorizationCheckException(Response.Status.UNAUTHORIZED, OAuthErrorException.UNAUTHORIZED_CLIENT, errorMessage);
         }
 
-        // DPoP is not supported for implicit nor hybrid flows
+        // DPoP 不支持隐式流与混合流
         OIDCAdvancedConfigWrapper clientConfig = OIDCAdvancedConfigWrapper.fromClientModel(client);
         if (clientConfig.isUseDPoP() && parsedResponseType.isImplicitOrHybridFlow()) {
             ServicesLogger.LOGGER.flowNotAllowed("Implicit/Hybrid with DPoP");
@@ -246,10 +265,12 @@ public class AuthorizationEndpointChecker {
         }
     }
 
+    /** 是否InvalidResponseType。 */
     public boolean isInvalidResponseType(AuthorizationEndpointChecker.AuthorizationCheckException ex) {
         return "Missing parameter: response_type".equals(ex.getErrorDescription()) || OAuthErrorException.UNSUPPORTED_RESPONSE_TYPE.equals(ex.getError());
     }
 
+    /** 校验InvalidRequestMessage。 */
     public void checkInvalidRequestMessage() throws AuthorizationCheckException {
         if (request.getInvalidRequestMessage() != null) {
             event.error(Errors.INVALID_REQUEST);
@@ -257,12 +278,14 @@ public class AuthorizationEndpointChecker {
         }
     }
 
+    /** 校验OIDCRequest。 */
     public void checkOIDCRequest() {
         if (!TokenUtil.isOIDCRequest(request.getScope())) {
             ServicesLogger.LOGGER.oidcScopeMissing();
         }
     }
 
+    /** 校验AuthorizationDetails。 */
     public void checkAuthorizationDetails() throws AuthorizationCheckException {
         String authDetailsParam = request.getAdditionalReqParams().get(AUTHORIZATION_DETAILS);
         if (authDetailsParam != null) {
@@ -275,6 +298,7 @@ public class AuthorizationEndpointChecker {
         }
     }
 
+    /** 校验ValidScope。 */
     public void checkValidScope() throws AuthorizationCheckException {
         if (!TokenManager.isValidScope(session, request.getScope(), request.getAuthorizationRequestContext(), client)) {
             ServicesLogger.LOGGER.invalidParameter(OIDCLoginProtocol.SCOPE_PARAM);
@@ -285,6 +309,7 @@ public class AuthorizationEndpointChecker {
         }
     }
 
+    /** 校验ValidResource。 */
     public void checkValidResource() throws AuthorizationCheckException {
         if (!ResourceIndicatorValidation.isValidResourceIndicator(request.getResource())) {
             ServicesLogger.LOGGER.invalidParameter(OIDCLoginProtocol.SCOPE_PARAM);
@@ -295,8 +320,9 @@ public class AuthorizationEndpointChecker {
         }
     }
 
+    /** 校验OIDCParams。 */
     public void checkOIDCParams() throws AuthorizationCheckException {
-        // If request is not OIDC request, but pure OAuth2 request and response_type is just 'token', then 'nonce' is not mandatory
+        // 纯 OAuth2 且 response_type 仅为 token 时，nonce 非必填
         boolean isOIDCRequest = TokenUtil.isOIDCRequest(request.getScope());
         if (!isOIDCRequest && parsedResponseType.toString().equals(OIDCResponseType.TOKEN)) {
             return;
@@ -314,11 +340,12 @@ public class AuthorizationEndpointChecker {
     }
 
     // https://tools.ietf.org/html/rfc7636#section-4
+    /** 校验PKCEParams。 */
     public void checkPKCEParams() throws AuthorizationCheckException {
         String codeChallenge = request.getCodeChallenge();
         String codeChallengeMethod = request.getCodeChallengeMethod();
 
-        // PKCE not adopted to OAuth2 Implicit Grant and OIDC Implicit Flow,
+        // PKCE 不适用于隐式流；适用于授权码流与混合流
         // adopted to OAuth2 Authorization Code Grant and OIDC Authorization Code Flow, Hybrid Flow
         // Namely, flows using authorization code.
         if (parsedResponseType != null && parsedResponseType.isImplicitFlow()) return;
@@ -328,11 +355,12 @@ public class AuthorizationEndpointChecker {
         if (pkceCodeChallengeMethod != null && !pkceCodeChallengeMethod.isEmpty()) {
             checkParamsForPkceEnforcedClient(codeChallengeMethod, pkceCodeChallengeMethod, codeChallenge);
         } else {
-            // if PKCE Activation is OFF, execute the codes implemented in KEYCLOAK-2604
+            // 未强制 PKCE 时走 KEYCLOAK-2604 兼容逻辑
             checkParamsForPkceNotEnforcedClient(codeChallengeMethod, pkceCodeChallengeMethod, codeChallenge);
         }
     }
 
+    /** 校验ParRequired。 */
     public void checkParRequired() throws AuthorizationCheckException {
         boolean isParRequired = realm.getParPolicy().isRequirePushedAuthorizationRequests(client);
         if (!isParRequired) {
@@ -349,6 +377,7 @@ public class AuthorizationEndpointChecker {
         throw new AuthorizationCheckException(Response.Status.BAD_REQUEST, OAuthErrorException.INVALID_REQUEST, errorMessage);
     }
 
+    /** 校验ParDPoPParams。 */
     public void checkParDPoPParams() throws AuthorizationCheckException {
         DPoP dpop = session.getAttribute(DPoPUtil.DPOP_SESSION_ATTRIBUTE, DPoP.class);
         if (dpop == null) {
@@ -364,6 +393,7 @@ public class AuthorizationEndpointChecker {
         }
     }
 
+    /** 校验ProviderAddOns。 */
     public void checkProviderAddOns() throws AuthorizationCheckException {
         Set<AuthorizationEndpointCheckProvider> additionalChecks = session.getAllProviders(AuthorizationEndpointCheckProvider.class);
         for (AuthorizationEndpointCheckProvider check : additionalChecks) {
@@ -429,7 +459,7 @@ public class AuthorizationEndpointChecker {
             throw new AuthorizationCheckException(Response.Status.BAD_REQUEST,  OAuthErrorException.INVALID_REQUEST, errorMessage);
         }
 
-        // based on code_challenge value decide whether this client(RP) supports PKCE
+        // 根据是否提供 code_challenge 判断 RP 是否支持 PKCE
         if (codeChallenge == null) {
             logger.debug("PKCE non-supporting Client");
             return;
@@ -456,17 +486,20 @@ public class AuthorizationEndpointChecker {
         }
     }
 
+    /** throwAsErrorPageException 相关操作。 */
     public void throwAsErrorPageException(AuthenticationSessionModel authenticationSession, AuthorizationCheckException ex) {
         throw new ErrorPageException(session, authenticationSession, ex.status, ex.error, ex.errorDescription);
     }
 
+    /** throwAsCorsErrorResponseException 相关操作。 */
     public void throwAsCorsErrorResponseException(Cors cors, AuthorizationCheckException ex) {
         event.detail("detail", ex.errorDescription).error(ex.error);
         throw new CorsErrorResponseException(cors, ex.error, ex.errorDescription, ex.status);
     }
 
 
-    // Exception propagated to the caller, which will allow caller to send proper error response based on the context (Browser OIDC Authorization Endpoint, PAR etc)
+    /** 授权校验异常，由调用方按上下文（浏览器端点、PAR 等）转换为错误响应。 */
+    /** 授权端点校验失败时抛出的受检异常。 */
     public static class AuthorizationCheckException extends Exception {
 
         private final Response.Status status;
@@ -479,10 +512,12 @@ public class AuthorizationEndpointChecker {
             this.errorDescription = errorDescription;
         }
 
+        /** 获取Error。 */
         public String getError() {
             return error;
         }
 
+        /** 获取ErrorDescription。 */
         public String getErrorDescription() {
             return errorDescription;
         }

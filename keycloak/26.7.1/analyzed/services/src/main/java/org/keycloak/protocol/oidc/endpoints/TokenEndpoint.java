@@ -79,10 +79,14 @@ import static org.keycloak.events.Details.REASON;
 import static org.keycloak.protocol.oid4vc.model.PreAuthorizedCodeGrant.PRE_AUTH_GRANT_TYPE;
 
 /**
+ * OAuth 2.0 / OIDC 令牌端点。
+ * <p>处理各类 {@code grant_type}（授权码、刷新令牌、客户端凭证、UMA、预授权码等），并委托 {@link org.keycloak.protocol.oidc.grants.OAuth2GrantType} 实现具体逻辑。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class TokenEndpoint {
 
+    /** 日志记录器。 */
     private static final Logger LOGGER = Logger.getLogger(TokenEndpoint.class);
     private MultivaluedMap<String, String> formParams;
     private ClientModel client;
@@ -106,8 +110,14 @@ public class TokenEndpoint {
     private String grantType;
     private OAuth2GrantType grant;
 
+    /** CORS 构建器。 */
     private Cors cors;
 
+    /**
+     * @param session Keycloak 会话
+     * @param tokenManager 令牌管理器
+     * @param event 事件构建器
+     */
     public TokenEndpoint(KeycloakSession session, TokenManager tokenManager, EventBuilder event) {
         this.session = session;
         this.clientConnection = session.getContext().getConnection();
@@ -130,7 +140,7 @@ public class TokenEndpoint {
 
         grantType = formParams.getFirst(OIDCLoginProtocol.GRANT_TYPE_PARAM);
 
-        // https://tools.ietf.org/html/rfc6749#section-5.1
+        // RFC 6749 §5.1：令牌响应须 no-store / no-cache
         // The authorization server MUST include the HTTP "Cache-Control" response header field
         // with a value of "no-store" as well as the "Pragma" response header field with a value of "no-cache".
         httpResponse.setHeader("Cache-Control", "no-store");
@@ -150,7 +160,7 @@ public class TokenEndpoint {
             throw new CorsErrorResponseException(cors, cpe.getError(), cpe.getErrorDetail(), cpe.getErrorStatus());
         }
 
-        // pre-authorized grants are not necessarily used by known clients.
+        // 预授权码等 grant 不一定关联已知客户端，跳过客户端校验
         if (!grantType.equals(UMA_GRANT_TYPE) && !grantType.equals(PRE_AUTH_GRANT_TYPE)) {
             checkClient();
             checkParameterDuplicated();
@@ -159,11 +169,7 @@ public class TokenEndpoint {
         checkParameters();
 
         /*
-         * To request an access token that is bound to a public key using DPoP, the client MUST provide a valid DPoP
-         * proof JWT in a DPoP header when making an access token request to the authorization server's token endpoint.
-         * This is applicable for all access token requests regardless of grant type (e.g., the common
-         * authorization_code and refresh_token grant types and extension grants such as the JWT
-         * authorization grant [RFC7523])
+         * 请求 DPoP 绑定访问令牌时，客户端须在令牌端点请求中携带有效 DPoP Proof JWT（适用于所有 grant_type）。
          */
         DPoPUtil.handleDPoPHeader(session, event, cors, clientConfig);
 
@@ -270,7 +276,7 @@ public class TokenEndpoint {
                     .map(String::length)
                     .reduce(0, Integer::sum);
 
-            // Does this parameter represent a token (typically JWT or SAML assertion)?
+            // 判断该表单参数是否为令牌类参数（JWT/SAML 等）
             boolean isTokenParam = tokenParamNames.contains(paramName);
 
             int maxLength = config.getMaxLengthForTheParameter(paramName, isTokenParam);
@@ -286,10 +292,12 @@ public class TokenEndpoint {
         }
     }
 
+    /** 令牌交换场景下返回 SAML Assertion 的 {@link SamlProtocol} 实现。 */
     public static class TokenExchangeSamlProtocol extends SamlProtocol {
 
         final SamlClient samlClient;
 
+        /** TokenExchangeSamlProtocol 相关操作。 */
         public TokenExchangeSamlProtocol(SamlClient samlClient) {
             this.samlClient = samlClient;
         }

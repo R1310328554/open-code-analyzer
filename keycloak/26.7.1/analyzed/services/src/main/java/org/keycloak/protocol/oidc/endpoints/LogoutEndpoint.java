@@ -96,9 +96,13 @@ import static org.keycloak.models.UserSessionModel.State.LOGGING_OUT;
 import static org.keycloak.services.resources.LoginActionsService.SESSION_CODE;
 
 /**
+ * OIDC 登出端点。
+ * <p>支持 RP 发起的浏览器登出（GET/POST）、刷新令牌登出、登出确认、以及 OpenID Connect 后台通道登出（Back-Channel Logout）。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class LogoutEndpoint {
+    /** 日志记录器。 */
     private static final Logger logger = Logger.getLogger(LogoutEndpoint.class);
 
     private final KeycloakSession session;
@@ -113,8 +117,14 @@ public class LogoutEndpoint {
     private final RealmModel realm;
     private final EventBuilder event;
 
+    /** CORS 构建器（令牌登出等 API 场景）。 */
     private Cors cors;
 
+    /**
+     * @param session Keycloak 会话
+     * @param tokenManager 令牌管理器
+     * @param event 事件构建器
+     */
     public LogoutEndpoint(KeycloakSession session, TokenManager tokenManager, EventBuilder event) {
         this.session = session;
         this.clientConnection = session.getContext().getConnection();
@@ -127,27 +137,21 @@ public class LogoutEndpoint {
 
     @Path("/")
     @OPTIONS
+    /** CORS 预检请求。 @return 204/200 */
     public Response issueUserInfoPreflight() {
         return Cors.builder().auth().preflight().add(Response.ok());
     }
 
     /**
-     * Logout user session.  User must be logged in via a session cookie.
-     *
-     * When the logout is initiated by a remote idp, the parameter "initiating_idp" can be supplied. This param will
-     * prevent upstream logout (since the logout procedure has already been started in the remote idp).
-     *
-     * This endpoint is aligned with OpenID Connect RP-Initiated Logout specification https://openid.net/specs/openid-connect-rpinitiated-1_0.html#RPLogout
-     *
-     * All parameters are optional. Some combinations of parameters are invalid as described in the specification
-     *
-     * @param encodedIdToken Parameter "id_token_hint" as described in the specification.
-     * @param clientId Parameter "client_id" as described in the specification.
-     * @param postLogoutRedirectUri Parameter "post_logout_redirect_uri" as described in the specification with the URL to redirect after logout.
-     * @param state Parameter "state" as described in the specification. Will be used to send "state" when redirecting back to the application after the logout
-     * @param uiLocales Parameter "ui_locales" as described in the specification. Can be used by the client to display pages in specified locale (if any pages are going to be displayed to the user during logout)
-     * @param initiatingIdp The alias of the idp initiating the logout.
-     * @return
+     * RP 发起的浏览器登出（GET）。用户通常需持有会话 Cookie。
+     * <p>远程 IdP 发起时可传 {@code initiating_idp} 以跳过上联登出。符合 <a href="https://openid.net/specs/openid-connect-rpinitiated-1_0.html#RPLogout">OIDC RP-Initiated Logout</a>。参数均可选，部分组合无效。</p>
+     * @param encodedIdToken {@code id_token_hint}
+     * @param clientId {@code client_id}
+     * @param postLogoutRedirectUri 登出后重定向 URI
+     * @param state 登出完成后回传应用的状态值
+     * @param uiLocales 登出页面 UI 语言
+     * @param initiatingIdp 发起登出的 IdP 别名
+     * @return 确认页、执行登出或错误页
      */
     @GET
     @NoCache
@@ -190,13 +194,13 @@ public class LogoutEndpoint {
         }
 
         if (clientId == null) {
-            // Retrieve client from id_token_hint
+            // 从 id_token_hint 解析客户端
             client = (idToken == null || idToken.getIssuedFor() == null) ? null : realm.getClientByClientId(idToken.getIssuedFor());
             if (client != null) {
                 confirmationNeeded = false;
             }
         } else {
-            // Check client_id and id_token_hint point to the same client
+            // 校验 client_id 与 id_token_hint 指向同一客户端
             if (idToken != null && idToken.getIssuedFor() != null) {
                 if (!idToken.getIssuedFor().equals(clientId)) {
                     event.event(EventType.LOGOUT);
@@ -234,7 +238,7 @@ public class LogoutEndpoint {
 
         UserSessionModel userSession = null;
 
-        // Check if we have session in the browser. If yes and it is different session than referenced by id_token_hint, the confirmation should be displayed
+        // 浏览器会话与 id_token_hint 不一致时需显示确认页
         AuthenticationManager.AuthResult authResult = AuthenticationManager.authenticateIdentityCookie(session, realm, false);
         if (authResult != null) {
             userSession = authResult.session();
@@ -242,7 +246,7 @@ public class LogoutEndpoint {
                 forcedConfirmation = true;
             }
         } else {
-            // Skip confirmation in case that valid redirect URI was setup for given client_id and there is no session in the browser as well as no id_token_hint.
+            // 无浏览器会话且无 id_token_hint 但有合法 post_logout_redirect_uri 时可跳过确认
             // We can do automatic redirect as there is no logout needed at all for this scenario (Session was probably already logged-out before)
             if (encodedIdToken == null && client != null && validatedRedirectUri != null) {
                 confirmationNeeded = false;
@@ -276,14 +280,14 @@ public class LogoutEndpoint {
         LoginFormsProvider loginForm = session.getProvider(LoginFormsProvider.class)
                 .setAuthenticationSession(logoutSession);
 
-        // Try to figure user because of localization
+        // 为本地化设置当前用户
         if (userSession != null) {
             UserModel user = userSession.getUser();
             logoutSession.setAuthenticatedUser(user);
             loginForm.setUser(user);
         }
 
-        // Logout confirmation screen will be displayed to the user in this case
+        // 需要或强制显示登出确认页
         if (confirmationNeeded || forcedConfirmation) {
             return displayLogoutConfirmationScreen(loginForm, logoutSession);
         } else {
@@ -301,11 +305,8 @@ public class LogoutEndpoint {
     }
 
     /**
-     * This endpoint can be used either as:
-     *  - OpenID Connect RP-Initiated Logout POST endpoint according to the specification https://openid.net/specs/openid-connect-rpinitiated-1_0.html#RPLogout
-     *  - Legacy Logout endpoint with refresh_token as an argument and client authentication needed. See {@link #logoutToken} for more details
-     *
-     * @return response
+     * POST 登出：RP-Initiated Logout 表单参数，或带 {@code refresh_token} 的传统 API 登出（见 {@link #logoutToken}）。
+     * @return 登出结果响应
      */
     @POST
     @NoCache
@@ -362,7 +363,7 @@ public class LogoutEndpoint {
     }
 
 
-    // Typically shown when user changes localization on the logout confirmation screen
+    // 用户在登出确认页切换语言时触发
     @Path("/logout-confirm")
     @NoCache
     @GET
@@ -403,7 +404,7 @@ public class LogoutEndpoint {
     }
 
 
-    // Method triggered after user eventually confirmed that he wants to logout and all other checks were done
+    // 用户确认登出且校验通过后执行浏览器登出
     private Response doBrowserLogout(AuthenticationSessionModel logoutSession) {
         UserSessionModel userSession = null;
         String userSessionIdFromIdToken = logoutSession.getAuthNote(OIDCLoginProtocol.LOGOUT_VALIDATED_ID_TOKEN_SESSION_STATE);
@@ -419,7 +420,7 @@ public class LogoutEndpoint {
                     AuthenticationSessionModel authSession = context.getAuthenticationSession();
 
                     if (authSession != null) {
-                        // no valid session, make sure the current root auth session is also deleted and restart cookies
+                        // 无有效会话时清理根认证会话并重置 Cookie
                         new AuthenticationSessionManager(session).removeAuthenticationSession(authSession.getRealm(), authSession, true);
                     }
                 } else {
@@ -434,17 +435,17 @@ public class LogoutEndpoint {
             }
         }
 
-        // authenticate identity cookie, but ignore an access token timeout as we're logging out anyways.
+        // 校验身份 Cookie（登出场景忽略访问令牌超时）
         AuthenticationManager.AuthResult authResult = AuthenticationManager.authenticateIdentityCookie(session, realm, false);
         if (authResult != null) {
             userSession = userSession != null ? userSession : authResult.session();
             return initiateBrowserLogout(userSession);
         } else if (userSession != null) {
-            // identity cookie is missing but there's valid id_token_hint which matches session cookie => continue with browser logout
+            // 无身份 Cookie 但 id_token_hint 与会话 Cookie 匹配时继续浏览器登出
             if (AuthenticationManager.compareSessionIdWithSessionCookie(session, userSessionIdFromIdToken)) {
                 return initiateBrowserLogout(userSession);
             }
-            // check if the user session is not logging out or already logged out
+            // 会话未处于登出中/已登出时执行后台登出
             // this might happen when a backChannelLogout is already initiated from AuthenticationManager.authenticateIdentityCookie
             if (userSession.getState() != LOGGING_OUT && userSession.getState() != LOGGED_OUT) {
                 // non browser logout
@@ -467,18 +468,9 @@ public class LogoutEndpoint {
 
 
     /**
-     * Logout a session via a non-browser invocation.  Similar signature to refresh token except there is no grant_type.
-     * You must pass in the refresh token and
-     * authenticate the client if it is not public.
-     *
-     * If the client is a confidential client
-     * you must include the client-id and secret in an Basic Auth Authorization header.
-     *
-     * If the client is a public client, then you must include a "client_id" form parameter.
-     *
-     * returns 204 if successful, 400 if not with a json error response.
-     *
-     * @return
+     * 非浏览器登出：提交 {@code refresh_token} 并校验客户端身份。
+     * <p>机密客户端用 Basic Auth；公开客户端须传 {@code client_id}。成功返回 204。</p>
+     * @return 204 或错误 JSON
      */
     private Response logoutToken() {
         cors = Cors.builder().auth().allowedMethods("POST").auth().exposedHeaders(Cors.ACCESS_CONTROL_ALLOW_METHODS);
@@ -508,7 +500,7 @@ public class LogoutEndpoint {
 
         RefreshToken token = null;
         try {
-            // KEYCLOAK-6771 Certificate Bound Token
+            // KEYCLOAK-6771 证书绑定令牌校验
             token = tokenManager.verifyRefreshToken(session, realm, client, request, refreshToken, false);
 
             boolean offline = TokenUtil.TOKEN_TYPE_OFFLINE.equals(token.getType());
@@ -543,14 +535,9 @@ public class LogoutEndpoint {
     }
 
     /**
-     * Backchannel logout endpoint implementation for Keycloak, which tries to logout the user from all sessions via
-     * POST with a valid LogoutToken.
-     *
-     * Logout a session via a non-browser invocation. Will be implemented as a backchannel logout based on the
-     * specification
-     * https://openid.net/specs/openid-connect-backchannel-1_0.html
-     *
-     * @return
+     * OpenID Connect 后台通道登出：接收有效 {@code logout_token}，注销关联用户会话。
+     * @see <a href="https://openid.net/specs/openid-connect-backchannel-1_0.html">Back-Channel Logout</a>
+     * @return 200/504 等 JSON 响应
      */
     @Path("/backchannel-logout")
     @POST
@@ -649,7 +636,7 @@ public class LogoutEndpoint {
             }
 
             session.sessions().getUserSessionByBrokerUserIdStream(realm, identityProviderAlias + "." + federatedUserId)
-                    .collect(Collectors.toList()) // collect to avoid concurrent modification as backchannelLogout removes the user sessions.
+                    .collect(Collectors.toList()) // 收集列表避免 backchannelLogout 并发修改
                     .forEach(userSession -> {
                         BackchannelLogoutResponse userBackchannelLogoutResponse = this.logoutUserSession(userSession);
                         backchannelLogoutResponse.setLocalLogoutSucceeded(backchannelLogoutResponse.getLocalLogoutSucceeded()

@@ -47,13 +47,16 @@ import org.keycloak.services.clientpolicy.context.TokenIntrospectContext;
 import org.jboss.resteasy.reactive.NoCache;
 
 /**
- * A token introspection endpoint based on RFC-7662.
+ * RFC 7662 令牌自省端点。
+ * <p>机密客户端提交 {@code token}（及可选 {@code token_type_hint}），由 {@link TokenIntrospectionProvider} 返回令牌活跃状态与声明。</p>
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class TokenIntrospectionEndpoint {
 
+    /** 表单参数：令牌类型提示。 */
     public static final String PARAM_TOKEN_TYPE_HINT = "token_type_hint";
+    /** 表单参数：待自省令牌。 */
     public static final String PARAM_TOKEN = "token";
 
     private final KeycloakSession session;
@@ -65,6 +68,7 @@ public class TokenIntrospectionEndpoint {
     private final RealmModel realm;
     private final EventBuilder event;
 
+    /** @param session Keycloak 会话 @param event 事件构建器 */
     public TokenIntrospectionEndpoint(KeycloakSession session, EventBuilder event) {
         this.session = session;
         this.clientConnection = session.getContext().getConnection();
@@ -76,6 +80,10 @@ public class TokenIntrospectionEndpoint {
     @POST
     @NoCache
     @Produces({MediaType.APPLICATION_JSON, org.keycloak.utils.MediaType.APPLICATION_JWT})
+    /**
+     * 执行令牌自省（POST {@code application/x-www-form-urlencoded}）。
+     * @return JSON 或 JWT 格式的自省响应
+     */
     public Response introspect() {
         event.event(EventType.INTROSPECT_TOKEN);
 

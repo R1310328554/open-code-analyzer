@@ -26,7 +26,8 @@ import org.keycloak.models.KeycloakSession;
 import org.jboss.logging.Logger;
 
 /**
- * Parse the parameters from request queryString
+ * 从授权端点查询串解析 OAuth/OIDC 参数。
+ * <p>检测重复参数，并在需要时强制要求 {@code response_type} 出现在查询串中（OIDC Core）。</p>
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
@@ -34,12 +35,20 @@ public class AuthzEndpointQueryStringParser extends AuthzEndpointRequestParser {
 
     private static final Logger logger = Logger.getLogger(AuthzEndpointRequestParser.class);
 
+    /** 原始查询/表单参数映射。 */
     private final MultivaluedMap<String, String> requestParams;
 
+    /** 是否强制查询串包含 response_type。 */
     private final boolean isResponseTypeParameterRequired;
 
+    /** 解析过程中发现的无效请求消息。 */
     private String invalidRequestMessage = null;
 
+    /**
+     * @param keycloakSession Keycloak 会话
+     * @param requestParams 请求参数
+     * @param isResponseTypeParameterRequired 是否要求 response_type
+     */
     public AuthzEndpointQueryStringParser(KeycloakSession keycloakSession, MultivaluedMap<String, String> requestParams, boolean isResponseTypeParameterRequired) {
         super(keycloakSession);
         this.requestParams = requestParams;
@@ -48,7 +57,7 @@ public class AuthzEndpointQueryStringParser extends AuthzEndpointRequestParser {
 
     @Override
     protected void validateResponseTypeParameter(String responseTypeParameter, AuthorizationEndpointRequest request) {
-        // response_type parameter is required in the query string even if present in 'request' object. This is per OIDC core specification
+        // OIDC Core：即使 request 对象含 response_type，查询串仍须携带该参数
         if (isResponseTypeParameterRequired && responseTypeParameter == null) {
             logger.warn("Missing parameter 'response_type' in the OAuth 2.0 request parameters");
             invalidRequestMessage = "Missing parameter: response_type";
@@ -70,6 +79,7 @@ public class AuthzEndpointQueryStringParser extends AuthzEndpointRequestParser {
         return paramVal==null ? null : Integer.valueOf(paramVal);
     }
 
+    /** @return 无效请求错误描述，无错误时 null */
     public String getInvalidRequestMessage() {
         return invalidRequestMessage;
     }

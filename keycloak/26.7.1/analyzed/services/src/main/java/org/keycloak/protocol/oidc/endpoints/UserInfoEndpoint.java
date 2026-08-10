@@ -89,10 +89,14 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.NoCache;
 
 /**
+ * OpenID Connect UserInfo 端点。
+ * <<<p>根据访问令牌返回用户声明；支持 JSON、签名 JWT 及加密 JWT 响应格式。</p>
+ *
  * @author pedroigor
  */
 public class UserInfoEndpoint {
 
+    /** 日志记录器。 */
     private static final Logger logger = Logger.getLogger(UserInfoEndpoint.class);
 
     private final HttpRequest request;
@@ -105,9 +109,12 @@ public class UserInfoEndpoint {
     private final AppAuthManager appAuthManager;
     private final RealmModel realm;
     private final OAuth2Error error;
+    /** CORS 构建器。 */
     private Cors cors;
+    /** 从 Authorization 头或表单解析的访问令牌载体。 */
     private TokenForUserInfo tokenForUserInfo = new TokenForUserInfo();
 
+    /** @param session Keycloak 会话 @param tokenManager 令牌管理器 */
     public UserInfoEndpoint(KeycloakSession session, org.keycloak.protocol.oidc.TokenManager tokenManager) {
         this.session = session;
         this.clientConnection = session.getContext().getConnection();
@@ -146,7 +153,7 @@ public class UserInfoEndpoint {
         setNoCacheHeaders();
         setupCors();
 
-        // Try header first
+        // 优先从 Authorization 头读取令牌
         HttpHeaders headers = request.getHttpHeaders();
         AppAuthManager.AuthHeader authHeader = AppAuthManager.extractAuthorizationHeaderTokenOrReturnNull(headers);
         authorization(authHeader);
@@ -164,7 +171,7 @@ public class UserInfoEndpoint {
                 authorization(authHeader);
             }
         } catch (IllegalArgumentException e) {
-            // not application/x-www-form-urlencoded, ignore
+            // 非表单 Content-Type 则忽略
         }
 
         return issueUserInfo();
@@ -272,7 +279,7 @@ public class UserInfoEndpoint {
             throw error.invalidToken("User not valid");
         }
 
-        // KEYCLOAK-6771 Certificate Bound Token
+        // KEYCLOAK-6771 mTLS 证书绑定令牌校验
         // https://tools.ietf.org/html/draft-ietf-oauth-mtls-08#section-3
         if (OIDCAdvancedConfigWrapper.fromClientModel(clientModel).isUseMtlsHokToken()) {
             if (!MtlsHoKTokenUtil.verifyTokenBindingWithClientCertificate(token, request, session)) {
@@ -282,7 +289,7 @@ public class UserInfoEndpoint {
             }
         }
 
-        // Check for lightweight access token
+        // 检查是否为轻量访问令牌
         TokenContextEncoderProvider encoder = session.getProvider(TokenContextEncoderProvider.class);
         AccessTokenContext tokenContext = encoder.getTokenContextFromTokenId(token.getId());
         boolean isAccessTokenLightweight = AccessTokenContext.TokenType.LIGHTWEIGHT.equals(tokenContext.getTokenType());
@@ -308,7 +315,7 @@ public class UserInfoEndpoint {
             }
         }
 
-        // Existence of authenticatedClientSession for our client already handled before
+        // 客户端认证会话有效性已在前面校验
         AuthenticatedClientSessionModel clientSession = userSession.getAuthenticatedClientSessionByClient(clientModel.getId());
 
         try {
@@ -321,7 +328,7 @@ public class UserInfoEndpoint {
             throw error.error(cpe.getError()).errorDescription(cpe.getErrorDetail()).status(cpe.getErrorStatus()).build();
         }
 
-        // Retrieve by access token scope parameter
+        // 按访问令牌 scope 构建 ClientSessionContext
         ClientSessionContext clientSessionCtx = DefaultClientSessionContext.fromClientSessionAndScopeParameter(clientSession, token.getScope(), session);
 
         AccessToken userInfo = new AccessToken();
@@ -403,7 +410,7 @@ public class UserInfoEndpoint {
     }
 
     private void checkAccessTokenDuplicated(MultivaluedMap<String, String> formParams) {
-        // If access_token is not provided, error is thrown in issueUserInfo().
+        // access_token 缺失时在 issueUserInfo() 中报错；此处仅检查重复参数
         // Only checks duplication of access token parameter in this function.
         if (formParams.containsKey(OAuth2Constants.ACCESS_TOKEN) && formParams.get(OAuth2Constants.ACCESS_TOKEN).size() != 1) {
             throw error.invalidRequest("Duplicate parameter");
@@ -431,14 +438,17 @@ public class UserInfoEndpoint {
         }
     }
 
+    /** UserInfo 请求中携带的访问令牌字符串。 */
     public static class TokenForUserInfo {
 
         private String token;
 
+        /** 获取Token。 */
         public String getToken() {
             return token;
         }
 
+        /** 设置Token。 */
         public void setToken(String token) {
             this.token = token;
         }

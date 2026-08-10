@@ -45,12 +45,25 @@ import org.keycloak.util.TokenUtil;
 import org.jboss.logging.Logger;
 
 /**
+ * 授权端点请求解析协调器。
+ * <p>先解析查询串，再按需合并 {@code request}/{@code request_uri}（含 PAR），并可选构建参数化 scope 的 {@link org.keycloak.rar.AuthorizationRequestContext}。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class AuthorizationEndpointRequestParserProcessor {
 
+    /** 日志记录器。 */
     private static final Logger logger = Logger.getLogger(AuthorizationEndpointRequestParserProcessor.class);
 
+    /**
+     * 解析完整授权端点请求。
+     * @param event 事件构建器
+     * @param session Keycloak 会话
+     * @param client 客户端
+     * @param requestParams HTTP 查询/表单参数
+     * @param endpointType 端点类型（影响 response_type 是否必填）
+     * @return 解析结果；无效时 {@link AuthorizationEndpointRequest#getInvalidRequestMessage()} 非空
+     */
     public static AuthorizationEndpointRequest parseRequest(EventBuilder event, KeycloakSession session, ClientModel client, MultivaluedMap<String, String> requestParams, EndpointType endpointType) {
         try {
             AuthorizationEndpointRequest request = new AuthorizationEndpointRequest();
@@ -88,12 +101,12 @@ public class AuthorizationEndpointRequestParserProcessor {
             if (requestParam != null) {
                 new AuthzEndpointRequestObjectParser(session, requestParam, client).parseRequest(request);
             } else if (requestUriParam != null) {
-                // Define, if the request is `PAR` or usual `Request Object`.
+                // 区分 PAR（urn:ietf:params:oauth:request_uri:）与普通 Request Object URI
                 RequestUriType requestUriType = getRequestUriType(requestUriParam);
                 if (requestUriType == RequestUriType.PAR) {
                     new AuthzEndpointParParser(session, client, requestUriParam).parseRequest(request);
                 } else {
-                    // Validate "requestUriParam" with allowed requestUris
+                    // 校验 request_uri 是否在客户端允许的 request_uris 列表内
                     List<String> requestUris = OIDCAdvancedConfigWrapper.fromClientModel(client).getRequestUris();
                     String requestUri = RedirectUtils.verifyRedirectUri(session, client.getRootUrl(), requestUriParam, new HashSet<>(requestUris), false);
                     if (requestUri == null) {
@@ -118,6 +131,11 @@ public class AuthorizationEndpointRequestParserProcessor {
         }
     }
 
+    /**
+     * 从请求参数提取唯一 {@code client_id}。
+     * @return 客户端 ID
+     * @throws org.keycloak.services.ErrorPageException 缺失或重复时
+     */
     public static String getClientId(EventBuilder event, KeycloakSession session, MultivaluedMap<String, String> requestParams) {
         List<String> clientParam = requestParams.get(OIDCLoginProtocol.CLIENT_ID_PARAM);
         if (clientParam != null && clientParam.size() == 1) {
@@ -131,6 +149,7 @@ public class AuthorizationEndpointRequestParserProcessor {
         }
     }
 
+    /** 判断 {@code request_uri} 为 PAR 还是外部 Request Object URL。 */
     public static RequestUriType getRequestUriType(String requestUri) {
         if (requestUri == null) {
             throw new RuntimeException("'request_uri' parameter is null");
@@ -142,7 +161,7 @@ public class AuthorizationEndpointRequestParserProcessor {
     }
 
 
-    // Parameter 'response_type' is mandatory parameter in the OIDC authentication endpoint request per OIDC Core specification.
+    // OIDC 授权端点通常要求 response_type；PAR 请求等场景例外
     // The only exception when it is not mandatory is the case when request to authentication endpoint was sent after PAR request
     private static boolean isResponseTypeParameterRequired(MultivaluedMap<String, String> requestParams, EndpointType endpointType) {
         if (endpointType != EndpointType.OIDC_AUTH_ENDPOINT) return false;
@@ -160,9 +179,13 @@ public class AuthorizationEndpointRequestParserProcessor {
         return true;
     }
 
+    /** 授权请求来源端点类型。 */
     public enum EndpointType {
+        /** 标准 OIDC 授权端点。 */
         OIDC_AUTH_ENDPOINT,
+        /** OAuth 2.0 设备授权端点。 */
         OAUTH2_DEVICE_ENDPOINT,
+        /** Docker 注册端点。 */
         DOCKER_ENDPOINT
     }
 

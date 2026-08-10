@@ -58,9 +58,13 @@ import org.keycloak.services.util.UserSessionUtil;
 import org.keycloak.util.TokenUtil;
 
 /**
+ * RFC 7009 令牌撤销端点。
+ * <p>客户端提交 {@code token}，撤销刷新/离线令牌关联的客户端会话，或将会话内访问令牌加入撤销列表。</p>
+ *
  * @author <a href="mailto:yoshiyuki.tabata.jy@hitachi.com">Yoshiyuki Tabata</a>
  */
 public class TokenRevocationEndpoint {
+    /** 表单参数：待撤销令牌。 */
     public static final String PARAM_TOKEN = "token";
 
     private final KeycloakSession session;
@@ -73,10 +77,12 @@ public class TokenRevocationEndpoint {
     private ClientModel client;
     private final RealmModel realm;
     private final EventBuilder event;
+    /** CORS 构建器。 */
     private Cors cors;
     private AccessToken token;
     private UserModel user;
 
+    /** @param session Keycloak 会话 @param event 事件构建器 */
     public TokenRevocationEndpoint(KeycloakSession session, EventBuilder event) {
         this.session = session;
         this.clientConnection = session.getContext().getConnection();
@@ -88,6 +94,7 @@ public class TokenRevocationEndpoint {
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    /** 撤销提交的令牌。 @return 200 OK */
     public Response revoke() {
         event.event(EventType.REVOKE_GRANT);
 
@@ -143,6 +150,7 @@ public class TokenRevocationEndpoint {
     }
 
     @OPTIONS
+    /** CORS 预检。 @return 200 */
     public Response preflight() {
         return Cors.builder().auth().preflight().allowedMethods("POST", "OPTIONS").add(Response.ok());
     }
@@ -250,7 +258,7 @@ public class TokenRevocationEndpoint {
                 new UserSessionManager(session).removeClientFromOfflineUserSession(realm, userSession, client, user);
             }
         }
-        // Always remove "online" session as well if exists to make sure that issued access-tokens are revoked as well
+        // 同时移除在线会话以确保已签发访问令牌失效
         UserSessionModel userSession = session.sessions().getUserSession(realm, token.getSessionId());
         if (userSession != null) {
             AuthenticatedClientSessionModel clientSession = userSession.getAuthenticatedClientSessionByClient(client.getId());
@@ -259,7 +267,7 @@ public class TokenRevocationEndpoint {
 
                 revokeTokenExchangeSession(userSession);
 
-                // TODO: Might need optimization to prevent loading client sessions from cache in getAuthenticatedClientSessions()
+                // TODO: 可优化避免从缓存加载全部客户端会话
                 if (userSession.getAuthenticatedClientSessions().isEmpty()) {
                     session.sessions().removeUserSession(realm, userSession);
                 }

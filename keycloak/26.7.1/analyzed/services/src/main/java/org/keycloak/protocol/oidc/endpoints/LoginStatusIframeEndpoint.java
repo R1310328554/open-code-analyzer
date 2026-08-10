@@ -41,20 +41,31 @@ import org.keycloak.utils.SecureContextResolver;
 import org.jboss.logging.Logger;
 
 /**
+ * 登录状态 iframe 端点。
+ * <p>供前端 SPA 检测 SSO 会话是否仍有效；{@code /init} 预检客户端 Web Origin。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class LoginStatusIframeEndpoint {
 
+    /** 日志记录器。 */
     private static final Logger logger = Logger.getLogger(LoginStatusIframeEndpoint.class);
 
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
 
+    /** @param session Keycloak 会话 */
     public LoginStatusIframeEndpoint(KeycloakSession session) {
         this.session = session;
     }
 
     @GET
     @Produces(MediaType.TEXT_HTML_UTF_8)
+    /**
+     * 返回登录状态检测 iframe HTML（Freemarker 模板）。
+     * @param version 主题资源版本
+     * @return iframe 页面响应
+     */
     public Response getLoginStatusIframe(@QueryParam("version") String version) {
         final var map = new HashMap<String, Object>();
         final var isSecureContext = SecureContextResolver.isSecureContext(session);
@@ -74,6 +85,12 @@ public class LoginStatusIframeEndpoint {
 
     @GET
     @Path("init")
+    /**
+     * 校验 {@code origin} 是否在客户端有效 Web Origin 内。
+     * @param clientId 客户端 ID
+     * @param origin 调用方声明的来源
+     * @return 204 允许，403 拒绝
+     */
     public Response preCheck(@QueryParam("client_id") String clientId, @QueryParam("origin") String origin) {
         try {
             UriInfo uriInfo = session.getContext().getUri();

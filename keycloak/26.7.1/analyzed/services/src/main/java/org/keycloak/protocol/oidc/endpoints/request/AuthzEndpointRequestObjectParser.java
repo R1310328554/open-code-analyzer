@@ -33,14 +33,22 @@ import org.keycloak.protocol.oidc.OIDCLoginProtocol;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * Parse the parameters from OIDC "request" object
+ * 从 OIDC {@code request} JWT 解析授权参数。
+ * <p>校验客户端 JWT 签名/加密算法，并将解析结果存入会话属性供后续使用。</p>
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class AuthzEndpointRequestObjectParser extends AuthzEndpointRequestParser {
 
+    /** 解码后的 request 对象 JSON 根节点。 */
     private final JsonNode requestParams;
 
+    /**
+     * 解码并校验 request JWT，准备参数读取。
+     * @param session Keycloak 会话
+     * @param requestObject 编码的 request 字符串
+     * @param client 目标客户端
+     */
     public AuthzEndpointRequestObjectParser(KeycloakSession session, String requestObject, ClientModel client) {
         super(session);
         this.requestParams = session.tokens().decodeClientJWT(requestObject, client, createRequestObjectValidator(session), JsonNode.class, true);
