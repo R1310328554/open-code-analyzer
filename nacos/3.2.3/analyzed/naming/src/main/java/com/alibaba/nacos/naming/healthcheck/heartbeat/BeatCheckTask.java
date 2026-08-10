@@ -17,14 +17,16 @@
 package com.alibaba.nacos.naming.healthcheck.heartbeat;
 
 /**
- * Check and update statues of ephemeral instances, remove them if they have been expired.
+ * 临时实例心跳检查任务接口。
+ *
+ * <p>周期性扫描并更新临时实例状态，超时未心跳则触发下线逻辑。</p>
  *
  * @author xiweng.yy
  */
 public interface BeatCheckTask extends Runnable {
     
     /**
-     * Task key.
+     * 任务调度键，用于去重与分组。
      *
      * @return task key
      */

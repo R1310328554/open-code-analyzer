@@ -26,16 +26,20 @@ import java.util.Iterator;
 import java.util.Set;
 
 /**
- * Health Check Processor Extend V2.
+ * V2 健康检查处理器扩展。
+ *
+ * <p>通过 {@link NacosServiceLoader} 加载 {@link HealthCheckProcessorV2} 实现，注册为 Spring 单例并返回扩展后的类型集合。</p>
  *
  * @author sunmengying
  */
 @Component
 public class HealthCheckProcessorExtendV2 extends AbstractHealthCheckProcessorExtend {
     
+    /** SPI 加载的 V2 处理器集合。 */
     private final Collection<HealthCheckProcessorV2> processors =
         NacosServiceLoader.load(HealthCheckProcessorV2.class);
     
+    /** 遍历 SPI 处理器，校验类型唯一并注册单例 Bean。 */
     @Override
     public Set<String> addProcessor(Set<String> origin) {
         Iterator<HealthCheckProcessorV2> processorIt = processors.iterator();

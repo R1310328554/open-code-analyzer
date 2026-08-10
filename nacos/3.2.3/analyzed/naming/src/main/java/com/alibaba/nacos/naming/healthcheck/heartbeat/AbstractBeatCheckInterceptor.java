@@ -19,13 +19,16 @@ package com.alibaba.nacos.naming.healthcheck.heartbeat;
 import com.alibaba.nacos.naming.interceptor.NacosNamingInterceptor;
 
 /**
- * Abstract Beat check Interceptor.
+ * 实例心跳检查拦截器抽象基类。
+ *
+ * <p>限定拦截目标为 {@link InstanceBeatCheckTask} 及其子类，供责任链在检查前过滤非本节点负责的实例。</p>
  *
  * @author xiweng.yy
  */
 public abstract class AbstractBeatCheckInterceptor
     implements NacosNamingInterceptor<InstanceBeatCheckTask> {
     
+    /** 仅拦截 {@link InstanceBeatCheckTask} 类型任务。 */
     @Override
     public boolean isInterceptType(Class<?> type) {
         return InstanceBeatCheckTask.class.isAssignableFrom(type);

@@ -38,14 +38,15 @@ import com.alibaba.nacos.sys.utils.ApplicationUtils;
 import java.util.Optional;
 
 /**
- * Instance beat checker for expired instance.
+ * 过期实例心跳检查器。
  *
- * <p>Delete the instance if has expired.
+ * <p>当全局配置允许且距最后心跳超过超时阈值时，自动注销该实例并发布相关事件。</p>
  *
  * @author xiweng.yy
  */
 public class ExpiredInstanceChecker implements InstanceBeatChecker {
     
+    /** 若实例心跳超时则触发自动删除。 */
     @Override
     public void doCheck(Client client, Service service, HealthCheckInstancePublishInfo instance) {
         boolean expireInstance = ApplicationUtils.getBean(GlobalConfig.class).isExpireInstance();
@@ -54,11 +55,13 @@ public class ExpiredInstanceChecker implements InstanceBeatChecker {
         }
     }
     
+    /** 判断实例是否已超过删除超时时间。 */
     private boolean isExpireInstance(Service service, HealthCheckInstancePublishInfo instance) {
         long deleteTimeout = getTimeout(service, instance);
         return System.currentTimeMillis() - instance.getLastHeartBeatTime() > deleteTimeout;
     }
     
+    /** 从元数据或扩展字段解析 IP 删除超时毫秒数。 */
     private long getTimeout(Service service, InstancePublishInfo instance) {
         Optional<Object> timeout = getTimeoutFromMetadata(service, instance);
         if (!timeout.isPresent()) {
@@ -68,6 +71,7 @@ public class ExpiredInstanceChecker implements InstanceBeatChecker {
         return timeout.map(ConvertUtils::toLong).orElse(Constants.DEFAULT_IP_DELETE_TIMEOUT);
     }
     
+    /** 从命名元数据管理器读取超时配置。 */
     private Optional<Object> getTimeoutFromMetadata(Service service, InstancePublishInfo instance) {
         Optional<InstanceMetadata> instanceMetadata =
             ApplicationUtils.getBean(NamingMetadataManager.class)
@@ -76,6 +80,7 @@ public class ExpiredInstanceChecker implements InstanceBeatChecker {
             .map(metadata -> metadata.getExtendData().get(PreservedMetadataKeys.IP_DELETE_TIMEOUT));
     }
     
+    /** 移除过期实例并发布注销、元数据与追踪事件。 */
     private void deleteIp(Client client, Service service, InstancePublishInfo instance) {
         Loggers.SRV_LOG.info("[AUTO-DELETE-IP] service: {}, ip: {}", service.toString(),
             JacksonUtils.toJson(instance));

@@ -29,29 +29,37 @@ import java.util.Iterator;
 import java.util.Set;
 
 /**
- * Health check extend provider.
+ * 健康检查扩展提供者。
+ *
+ * <p>启动时通过 SPI 加载 {@link AbstractHealthChecker} 与扩展处理器，校验类型一一对应后注册到 {@link HealthCheckType}。</p>
  *
  * @author XCXCXCXCX
  */
 @Component
 public class HealthCheckExtendProvider {
     
+    /** 日志记录器。 */
     private static final Logger LOGGER = LoggerFactory.getLogger(HealthCheckExtendProvider.class);
     
+    /** SPI 加载的全部健康检查器实现。 */
     private final Collection<AbstractHealthChecker> checkers =
         NacosServiceLoader.load(AbstractHealthChecker.class);
     
+    /** 处理器扩展实现，由 Spring 注入。 */
     private AbstractHealthCheckProcessorExtend healthCheckProcessorExtend;
     
+    /** 设置处理器扩展 Bean。 */
     public void setHealthCheckProcessorExtend(
         AbstractHealthCheckProcessorExtend healthCheckProcessorExtend) {
         this.healthCheckProcessorExtend = healthCheckProcessorExtend;
     }
     
+    /** 初始化并加载健康检查扩展。 */
     public void init() {
         loadExtend();
     }
     
+    /** 合并内置与扩展类型，校验无重复且处理器与检查器类型集合一致。 */
     private void loadExtend() {
         Iterator<AbstractHealthChecker> healthCheckerIt = checkers.iterator();
         

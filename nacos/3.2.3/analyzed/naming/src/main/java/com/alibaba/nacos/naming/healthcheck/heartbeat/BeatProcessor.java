@@ -17,7 +17,9 @@
 package com.alibaba.nacos.naming.healthcheck.heartbeat;
 
 /**
- * Thread to update ephemeral instance triggered by client beat.
+ * 客户端心跳触发的实例更新处理器。
+ *
+ * <p>在独立线程中执行，刷新实例最后心跳时间并恢复不健康实例为健康。</p>
  *
  * @author xiweng.yy
  */

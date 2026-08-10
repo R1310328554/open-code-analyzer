@@ -22,18 +22,23 @@ import com.alibaba.nacos.naming.core.v2.pojo.HealthCheckInstancePublishInfo;
 import com.alibaba.nacos.naming.core.v2.pojo.InstancePublishInfo;
 
 /**
- * Client beat update task.
+ * 客户端心跳批量更新时间任务。
+ *
+ * <p>将客户端下全部实例的最后心跳时间设为当前时刻，并刷新客户端更新时间。</p>
  *
  * @author xiweng.yy
  */
 public class ClientBeatUpdateTask extends AbstractExecuteTask {
     
+    /** 目标客户端。 */
     private final IpPortBasedClient client;
     
+    /** 绑定待更新的客户端。 */
     public ClientBeatUpdateTask(IpPortBasedClient client) {
         this.client = client;
     }
     
+    /** 批量刷新全部实例心跳时间与客户端更新时间。 */
     @Override
     public void run() {
         long currentTime = System.currentTimeMillis();

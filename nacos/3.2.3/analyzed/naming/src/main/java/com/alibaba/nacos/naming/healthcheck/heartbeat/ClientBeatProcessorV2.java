@@ -30,18 +30,24 @@ import com.alibaba.nacos.naming.misc.Loggers;
 import com.alibaba.nacos.naming.misc.UtilsAndCommons;
 
 /**
- * Thread to update ephemeral instance triggered by client beat for v2.x.
+ * V2 客户端心跳处理器。
+ *
+ * <p>解析心跳 {@link RsInfo}，匹配实例后刷新最后心跳时间；若实例原不健康则标记健康并发布服务变更与追踪事件。</p>
  *
  * @author nkorange
  */
 public class ClientBeatProcessorV2 implements BeatProcessor {
     
+    /** 命名空间 ID。 */
     private final String namespace;
     
+    /** 心跳上报的实例与指标信息。 */
     private final RsInfo rsInfo;
     
+    /** 发布该实例的客户端。 */
     private final IpPortBasedClient client;
     
+    /** 构造心跳处理器。 */
     public ClientBeatProcessorV2(String namespace, RsInfo rsInfo,
         IpPortBasedClient ipPortBasedClient) {
         this.namespace = namespace;
@@ -49,6 +55,7 @@ public class ClientBeatProcessorV2 implements BeatProcessor {
         this.client = ipPortBasedClient;
     }
     
+    /** 处理单次客户端心跳：更新心跳时间并在需要时恢复健康状态。 */
     @Override
     public void run() {
         if (Loggers.EVT_LOG.isDebugEnabled()) {

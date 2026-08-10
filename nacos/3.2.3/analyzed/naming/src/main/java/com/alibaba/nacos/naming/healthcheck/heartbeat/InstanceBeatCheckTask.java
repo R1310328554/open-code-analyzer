@@ -26,26 +26,34 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * Instance beat check task.
+ * 单实例心跳检查任务。
+ *
+ * <p>拦截链通过后依次调用内置与 SPI 加载的 {@link InstanceBeatChecker} 执行不健康与过期检测。</p>
  *
  * @author xiweng.yy
  */
 public class InstanceBeatCheckTask implements Interceptable {
     
+    /** 静态检查器链：不健康、过期及 SPI 扩展。 */
     private static final List<InstanceBeatChecker> CHECKERS = new LinkedList<>();
     
+    /** 实例所属客户端。 */
     private final IpPortBasedClient client;
     
+    /** 实例所属服务。 */
     private final Service service;
     
+    /** 待检查的实例发布信息。 */
     private final HealthCheckInstancePublishInfo instancePublishInfo;
     
+    /** 注册默认检查器并加载 SPI 扩展。 */
     static {
         CHECKERS.add(new UnhealthyInstanceChecker());
         CHECKERS.add(new ExpiredInstanceChecker());
         CHECKERS.addAll(NacosServiceLoader.load(InstanceBeatChecker.class));
     }
     
+    /** 构造针对单个实例的检查任务上下文。 */
     public InstanceBeatCheckTask(IpPortBasedClient client, Service service,
         HealthCheckInstancePublishInfo instancePublishInfo) {
         this.client = client;
@@ -53,6 +61,7 @@ public class InstanceBeatCheckTask implements Interceptable {
         this.instancePublishInfo = instancePublishInfo;
     }
     
+    /** 依次执行全部检查器的 {@link InstanceBeatChecker#doCheck}。 */
     @Override
     public void passIntercept() {
         for (InstanceBeatChecker each : CHECKERS) {
@@ -60,18 +69,22 @@ public class InstanceBeatCheckTask implements Interceptable {
         }
     }
     
+    /** 拦截结束后的空实现。 */
     @Override
     public void afterIntercept() {
     }
     
+    /** 返回关联客户端。 */
     public IpPortBasedClient getClient() {
         return client;
     }
     
+    /** 返回关联服务。 */
     public Service getService() {
         return service;
     }
     
+    /** 返回实例发布信息。 */
     public HealthCheckInstancePublishInfo getInstancePublishInfo() {
         return instancePublishInfo;
     }

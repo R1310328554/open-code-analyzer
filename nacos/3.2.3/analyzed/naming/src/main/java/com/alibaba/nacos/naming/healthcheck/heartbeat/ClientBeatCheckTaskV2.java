@@ -29,40 +29,50 @@ import com.alibaba.nacos.sys.utils.ApplicationUtils;
 import java.util.Collection;
 
 /**
- * Client beat check task of service for version 2.x.
+ * V2 客户端心跳检查任务。
+ *
+ * <p>针对 {@link IpPortBasedClient} 发布的全部服务实例，经拦截链执行 {@link InstanceBeatCheckTask} 超时与健康状态检查。</p>
  *
  * @author nkorange
  */
 public class ClientBeatCheckTaskV2 extends AbstractExecuteTask
     implements BeatCheckTask, NacosHealthCheckTask {
     
+    /** 待检查的 IP:Port 客户端。 */
     private final IpPortBasedClient client;
     
+    /** 健康检查任务 ID（通常为 responsibleId）。 */
     private final String taskId;
     
+    /** 实例心跳检查拦截链单例。 */
     private final InstanceBeatCheckTaskInterceptorChain interceptorChain;
     
+    /** 绑定客户端并初始化任务 ID 与拦截链。 */
     public ClientBeatCheckTaskV2(IpPortBasedClient client) {
         this.client = client;
         this.taskId = client.getResponsibleId();
         this.interceptorChain = InstanceBeatCheckTaskInterceptorChain.getInstance();
     }
     
+    /** 获取全局命名配置 Bean。 */
     public GlobalConfig getGlobalConfig() {
         return ApplicationUtils.getBean(GlobalConfig.class);
     }
     
+    /** 生成服务元数据维度的任务键。 */
     @Override
     public String taskKey() {
         return KeyBuilder.buildServiceMetaKey(client.getClientId(),
             String.valueOf(client.isEphemeral()));
     }
     
+    /** 返回负责任务标识。 */
     @Override
     public String getTaskId() {
         return taskId;
     }
     
+    /** 遍历客户端发布的服务，经拦截链执行实例心跳检查。 */
     @Override
     public void doHealthCheck() {
         try {
@@ -77,16 +87,19 @@ public class ClientBeatCheckTaskV2 extends AbstractExecuteTask
         }
     }
     
+    /** 调度线程入口，委托 {@link #doHealthCheck()}。 */
     @Override
     public void run() {
         doHealthCheck();
     }
     
+    /** 拦截通过后直接执行健康检查。 */
     @Override
     public void passIntercept() {
         doHealthCheck();
     }
     
+    /** 拦截结束后的空实现钩子。 */
     @Override
     public void afterIntercept() {
     }

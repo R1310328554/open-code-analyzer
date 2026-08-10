@@ -19,21 +19,23 @@ package com.alibaba.nacos.naming.healthcheck;
 import com.alibaba.nacos.naming.interceptor.Interceptable;
 
 /**
- * Nacos health check task.
+ * Nacos 健康检查任务接口。
+ *
+ * <p>继承 {@link Runnable} 与 {@link Interceptable}，由健康检查调度器周期性触发 {@link #doHealthCheck()} 执行探测。</p>
  *
  * @author xiweng.yy
  */
 public interface NacosHealthCheckTask extends Interceptable, Runnable {
     
     /**
-     * Get task id.
+     * 获取任务唯一标识。
      *
      * @return task id.
      */
     String getTaskId();
     
     /**
-     * Do health check.
+     * 执行一次健康检查逻辑。
      */
     void doHealthCheck();
 }

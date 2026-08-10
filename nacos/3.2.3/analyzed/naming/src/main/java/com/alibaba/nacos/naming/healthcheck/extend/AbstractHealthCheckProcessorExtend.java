@@ -25,22 +25,26 @@ import org.springframework.beans.factory.config.SingletonBeanRegistry;
 import java.util.Set;
 
 /**
- * Abstract Health Check Processor Extend.
+ * 健康检查处理器扩展抽象基类。
+ *
+ * <p>实现 {@link BeanFactoryAware} 以获取 Spring 单例注册表，供子类将 SPI 加载的扩展处理器注册为 Bean。</p>
  *
  * @author sunmengying
  */
 public abstract class AbstractHealthCheckProcessorExtend implements BeanFactoryAware {
     
+    /** Spring 单例 Bean 注册表。 */
     protected SingletonBeanRegistry registry;
     
     /**
-     * Add HealthCheckProcessorV2.
+     * 在内置检查类型集合上追加扩展处理器类型。
      *
      * @param origin Origin Checker Type
      * @return Extend Processor Type
      */
     abstract Set<String> addProcessor(Set<String> origin);
     
+    /** 将类名首字母小写，用作 Spring Bean 名称。 */
     protected String lowerFirstChar(String simpleName) {
         if (StringUtils.isBlank(simpleName)) {
             throw new IllegalArgumentException("can't find extend processor class name");
@@ -48,6 +52,7 @@ public abstract class AbstractHealthCheckProcessorExtend implements BeanFactoryA
         return String.valueOf(simpleName.charAt(0)).toLowerCase() + simpleName.substring(1);
     }
     
+    /** 注入 Bean 工厂并保存单例注册表引用。 */
     @Override
     public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
         if (beanFactory instanceof SingletonBeanRegistry) {

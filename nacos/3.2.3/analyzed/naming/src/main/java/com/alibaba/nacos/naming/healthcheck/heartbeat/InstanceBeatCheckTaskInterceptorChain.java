@@ -19,20 +19,25 @@ package com.alibaba.nacos.naming.healthcheck.heartbeat;
 import com.alibaba.nacos.naming.interceptor.AbstractNamingInterceptorChain;
 
 /**
- * Instance beat check interceptor chain.
+ * 实例心跳检查拦截器链（单例）。
+ *
+ * <p>自动收集 {@link AbstractBeatCheckInterceptor} 子类，按 order 对 {@link InstanceBeatCheckTask} 执行前置过滤。</p>
  *
  * @author xiweng.yy
  */
 public class InstanceBeatCheckTaskInterceptorChain
     extends AbstractNamingInterceptorChain<InstanceBeatCheckTask> {
     
+    /** 全局单例。 */
     private static final InstanceBeatCheckTaskInterceptorChain INSTANCE =
         new InstanceBeatCheckTaskInterceptorChain();
     
+    /** 私有构造，扫描 AbstractBeatCheckInterceptor 实现类。 */
     private InstanceBeatCheckTaskInterceptorChain() {
         super(AbstractBeatCheckInterceptor.class);
     }
     
+    /** 获取拦截链单例。 */
     public static InstanceBeatCheckTaskInterceptorChain getInstance() {
         return INSTANCE;
     }
