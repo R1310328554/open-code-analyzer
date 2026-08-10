@@ -28,3 +28,18 @@
 2026-08-10T05:30:07Z DONE adapters/saml/core/src/main/java/org/keycloak/adapters/saml/config/parsers/AbstractKeycloakSamlAdapterV1Parser.java wave1b [15:30] saml adapter session/config
 2026-08-10T05:30:07Z DONE adapters/saml/core/src/main/java/org/keycloak/adapters/saml/config/parsers/DeploymentBuilder.java wave1b [15:30] saml adapter session/config
 2026-08-10T05:30:07Z DONE adapters/saml/core/src/main/java/org/keycloak/adapters/saml/config/parsers/HttpClientParser.java wave1b [15:30] saml adapter session/config
+2026-08-10T05:32:49Z DONE adapters/saml/core/src/main/java/org/keycloak/adapters/saml/config/parsers/IdpParser.java wave2a [0:15] saml adapter config parsers
+2026-08-10T05:32:49Z DONE adapters/saml/core/src/main/java/org/keycloak/adapters/saml/config/parsers/KeyParser.java wave2a [0:15] saml adapter config parsers
+2026-08-10T05:32:49Z DONE adapters/saml/core/src/main/java/org/keycloak/adapters/saml/config/parsers/KeyStoreParser.java wave2a [0:15] saml adapter config parsers
+2026-08-10T05:32:49Z DONE adapters/saml/core/src/main/java/org/keycloak/adapters/saml/config/parsers/KeycloakSamlAdapterParser.java wave2a [0:15] saml adapter config parsers
+2026-08-10T05:32:49Z DONE adapters/saml/core/src/main/java/org/keycloak/adapters/saml/config/parsers/KeycloakSamlAdapterV1Parser.java wave2a [0:15] saml adapter config parsers
+2026-08-10T05:32:49Z DONE adapters/saml/core/src/main/java/org/keycloak/adapters/saml/config/parsers/KeycloakSamlAdapterV1QNames.java wave2a [0:15] saml adapter config parsers
+2026-08-10T05:32:49Z DONE adapters/saml/core/src/main/java/org/keycloak/adapters/saml/config/parsers/KeysParser.java wave2a [0:15] saml adapter config parsers
+2026-08-10T05:32:49Z DONE adapters/saml/core/src/main/java/org/keycloak/adapters/saml/config/parsers/PrincipalNameMappingParser.java wave2a [0:15] saml adapter config parsers
+2026-08-10T05:32:49Z DONE adapters/saml/core/src/main/java/org/keycloak/adapters/saml/config/parsers/ResourceLoader.java wave2a [0:15] saml adapter config parsers
+2026-08-10T05:32:49Z DONE adapters/saml/core/src/main/java/org/keycloak/adapters/saml/config/parsers/RoleMappingParser.java wave2a [0:15] saml adapter config parsers
+2026-08-10T05:32:49Z DONE adapters/saml/core/src/main/java/org/keycloak/adapters/saml/config/parsers/RoleMappingsProviderParser.java wave2a [0:15] saml adapter config parsers
+2026-08-10T05:32:49Z DONE adapters/saml/core/src/main/java/org/keycloak/adapters/saml/config/parsers/SingleLogoutServiceParser.java wave2a [0:15] saml adapter config parsers
+2026-08-10T05:32:49Z DONE adapters/saml/core/src/main/java/org/keycloak/adapters/saml/config/parsers/SingleSignOnServiceParser.java wave2a [0:15] saml adapter config parsers
+2026-08-10T05:32:49Z DONE adapters/saml/core/src/main/java/org/keycloak/adapters/saml/config/parsers/SpParser.java wave2a [0:15] saml adapter config parsers
+2026-08-10T05:32:49Z DONE adapters/saml/core/src/main/java/org/keycloak/adapters/saml/descriptor/parsers/SamlDescriptorIDPKeysExtractor.java wave2a [0:15] saml adapter config parsers
