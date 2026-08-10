@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// AppenderV2 统一入口：单条 Append 可携带 float/histogram/exemplar/metadata，减少多次 API 调用的批次分裂。
 package tsdb
 
 import (
@@ -27,6 +28,7 @@ import (
 	"github.com/prometheus/prometheus/tsdb/record"
 )
 
+// initAppenderV2 与 initAppender 类似，在首次 Append 时初始化 Head 时间并创建 appenderV2。
 // initAppenderV2 is a helper to initialize the time bounds of the head
 // upon the first sample it receives.
 type initAppenderV2 struct {
@@ -67,6 +69,7 @@ func (a *initAppenderV2) Rollback() error {
 	return a.app.Rollback()
 }
 
+// AppenderV2 返回统一样本写入接口，未初始化 Head 时使用 initAppenderV2。
 // AppenderV2 returns a new AppenderV2 on the database.
 func (h *Head) AppenderV2(context.Context) storage.AppenderV2 {
 	h.metrics.activeAppenders.Inc()
@@ -101,6 +104,7 @@ func (h *Head) appenderV2() *headAppenderV2 {
 	}
 }
 
+// headAppenderV2 嵌入 headAppenderBase，Append 一次处理多种样本与选项。
 type headAppenderV2 struct {
 	headAppenderBase
 }
@@ -219,6 +223,7 @@ func (a *headAppenderV2) Append(ref storage.SeriesRef, ls labels.Labels, st, t i
 	return storage.SeriesRef(s.ref), partialErr
 }
 
+// appendFloat 检查 appendable 后将 RefSample 追加到当前 float batch。
 func (a *headAppenderV2) appendFloat(s *memSeries, st, t int64, v float64, fastRejectOOO bool) error {
 	s.Lock()
 	// TODO(codesome): If we definitely know at this point that the sample is ooo, then optimise
@@ -245,6 +250,7 @@ func (a *headAppenderV2) appendFloat(s *memSeries, st, t int64, v float64, fastR
 	return nil
 }
 
+// appendHistogram 处理原生 histogram，区分 custom bucket 样本类型。
 func (a *headAppenderV2) appendHistogram(s *memSeries, t int64, h *histogram.Histogram, fastRejectOOO bool) error {
 	s.Lock()
 	// TODO(codesome): If we definitely know at this point that the sample is ooo, then optimise
@@ -275,6 +281,7 @@ func (a *headAppenderV2) appendHistogram(s *memSeries, t int64, h *histogram.His
 	return nil
 }
 
+// appendFloatHistogram 写入 float histogram 样本到对应 batch。
 func (a *headAppenderV2) appendFloatHistogram(s *memSeries, t int64, fh *histogram.FloatHistogram, fastRejectOOO bool) error {
 	s.Lock()
 	// TODO(codesome): If we definitely know at this point that the sample is ooo, then optimise
@@ -331,6 +338,7 @@ func (a *headAppenderV2) appendExemplars(s *memSeries, exemplar []exemplar.Exemp
 	return nil
 }
 
+// bestEffortAppendSTZeroSample 在 ST 早于样本时 best-effort 写入零样本表示 counter reset。
 // NOTE(bwplotka): This feature might be deprecated and removed once PROM-60
 // is implemented.
 //

@@ -12,12 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 非 Linux/Darwin 平台 Fdatasync：直接调用 os.File.Sync 刷盘。
+
 //go:build !linux && !darwin
 
 package fileutil
 
 import "os"
 
+// Fdatasync 在非 Linux/Darwin 构建中等价于全量 Sync。
 // Fdatasync is a wrapper around file.Sync(). Special handling is needed on linux platform.
 func Fdatasync(f *os.File) error {
 	return f.Sync()

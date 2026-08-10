@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 非 Linux/Darwin 平台：预分配退化为 preallocExtendTrunc，fixed 预分配为 no-op。
+
 //go:build !linux && !darwin
 
 package fileutil

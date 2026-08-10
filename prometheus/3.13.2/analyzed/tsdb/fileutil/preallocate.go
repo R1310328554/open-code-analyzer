@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// fileutil 文件预分配：按平台调用 fallocate/F_PREALLOCATE 或 Seek+Truncate 扩展文件，减少 WAL/block 写入时的磁盘碎片与延迟。
+
 package fileutil
 
 import (
@@ -19,6 +21,7 @@ import (
 	"os"
 )
 
+// Preallocate 为文件预留 sizeInBytes 空间；extendFile 为 true 时同时扩展逻辑文件大小。
 // Preallocate tries to allocate the space for given
 // file. This operation is only supported on linux by a
 // few filesystems (btrfs, ext4, etc.).
@@ -35,6 +38,7 @@ func Preallocate(f *os.File, sizeInBytes int64, extendFile bool) error {
 	return preallocFixed(f, sizeInBytes)
 }
 
+// preallocExtendTrunc 通过 Seek 到目标偏移并 Truncate 实现通用预分配回退路径。
 func preallocExtendTrunc(f *os.File, sizeInBytes int64) error {
 	curOff, err := f.Seek(0, io.SeekCurrent)
 	if err != nil {

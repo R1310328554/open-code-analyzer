@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Darwin 平台文件预分配：F_PREALLOCATE/fcntl 预留空间，不支持时静默回退。
+
 package fileutil
 
 import (
@@ -27,6 +29,7 @@ func preallocExtend(f *os.File, sizeInBytes int64) error {
 	return preallocExtendTrunc(f, sizeInBytes)
 }
 
+// preallocFixed 使用 F_ALLOCATEALL 从 EOF 向前分配指定长度。
 func preallocFixed(f *os.File, sizeInBytes int64) error {
 	fstore := &unix.Fstore_t{
 		Flags:   unix.F_ALLOCATEALL,

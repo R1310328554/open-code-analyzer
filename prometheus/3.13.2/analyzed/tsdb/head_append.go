@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Head 写入路径：initAppender、headAppender 批量缓冲样本并在 Commit 时写 WAL、更新 series 与 isolation 状态。
 package tsdb
 
 import (
@@ -32,6 +33,7 @@ import (
 	"github.com/prometheus/prometheus/tsdb/record"
 )
 
+// initAppender 在 Head 未初始化时用首个样本时间调用 initTime 并延迟创建真实 appender。
 // initAppender is a helper to initialize the time bounds of the head
 // upon the first sample it receives.
 type initAppender struct {
@@ -114,6 +116,7 @@ func (a *initAppender) AppendSTZeroSample(ref storage.SeriesRef, lset labels.Lab
 	return a.app.AppendSTZeroSample(ref, lset, t, st)
 }
 
+// initTime 原子设置 maxTime 再设 minTime，避免并发 Appender 观察到半初始化状态。
 // initTime initializes a head with the first timestamp. This only needs to be called
 // for a completely fresh head with an empty WAL.
 func (h *Head) initTime(t int64) {
@@ -162,6 +165,7 @@ func (a *initAppender) Rollback() error {
 	return a.app.Rollback()
 }
 
+// Appender 递增 activeAppenders；未初始化 Head 返回 initAppender 包装。
 // Appender returns a new Appender on the database.
 func (h *Head) Appender(context.Context) storage.Appender {
 	h.metrics.activeAppenders.Inc()
@@ -176,6 +180,7 @@ func (h *Head) Appender(context.Context) storage.Appender {
 	return h.appender()
 }
 
+// appender 分配 appendID、缓冲池与 minValidTime，构造 headAppender 实例。
 func (h *Head) appender() *headAppender {
 	minValidTime := h.appendableMinValidTime()
 	appendID, cleanupAppendIDsBelow := h.iso.newAppendID(minValidTime) // Every appender gets an ID that is cleared upon commit/rollback.
@@ -196,6 +201,7 @@ func (h *Head) appender() *headAppender {
 	}
 }
 
+// appendableMinValidTime 取 max(最后持久 block maxt, Head 窗口起点) 作为可写入下界。
 // appendableMinValidTime returns the minimum valid timestamp for appends,
 // such that samples stay ahead of prior blocks and the head compaction window.
 func (h *Head) appendableMinValidTime() int64 {
@@ -405,6 +411,7 @@ func (b *appendBatch) close(h *Head) {
 	b.exemplars = nil
 }
 
+// headAppenderBase 共享 V1/V2 appender 的批次缓冲、series 创建与 Commit 逻辑。
 type headAppenderBase struct {
 	head          *Head
 	minValidTime  int64 // No samples below this timestamp are allowed.
@@ -422,6 +429,7 @@ type headAppenderBase struct {
 	storeST                         bool // Whether start-timestamp storage is enabled for this append.
 	useXOR2                         bool // Whether XOR2 encoding is used for float chunks in this append.
 }
+// headAppender 实现 storage.Appender，按样本类型写入 appendBatch。
 type headAppender struct {
 	headAppenderBase
 	hints *storage.AppendOptions
@@ -542,6 +550,7 @@ func (a *headAppender) AppendSTZeroSample(ref storage.SeriesRef, lset labels.Lab
 	return storage.SeriesRef(s.ref), nil
 }
 
+// getOrCreate 查 hash 创建 memSeries，触发 SeriesLifecycleCallback 并记录 RefSeries。
 func (a *headAppenderBase) getOrCreate(lset labels.Labels) (s *memSeries, created bool, err error) {
 	// Ensure no empty labels have gotten through.
 	lset = lset.WithoutEmpty()
@@ -567,6 +576,7 @@ func (a *headAppenderBase) getOrCreate(lset labels.Labels) (s *memSeries, create
 
 // getCurrentBatch returns the current batch if it fits the provided sampleType
 // for the provided series. Otherwise, it adds a new batch and returns it.
+// getCurrentBatch 按 sampleType 复用或新建 appendBatch，跟踪 batch 内 series 类型。
 func (a *headAppenderBase) getCurrentBatch(st sampleType, s chunks.HeadSeriesRef) *appendBatch {
 	h := a.head
 
@@ -1059,6 +1069,7 @@ func (a *headAppenderBase) GetRef(lset labels.Labels, hash uint64) (storage.Seri
 }
 
 // log writes all headAppender's data to the WAL.
+// log 将 batches 编码写入 WAL/WBL，按 in-order/OOO 分流并更新 Head 时间边界。
 func (a *headAppenderBase) log() error {
 	if a.head.wal == nil {
 		return nil
@@ -1717,6 +1728,7 @@ func (a *headAppenderBase) unmarkCreatedSeriesAsPendingCommit() {
 
 // Commit writes to the WAL and adds the data to the Head.
 // TODO(codesome): Refactor this method to reduce indentation and make it more readable.
+// Commit 写 WAL、提交 exemplar/metadata、应用样本到 series 并释放 isolation appendID。
 func (a *headAppenderBase) Commit() (err error) {
 	if a.closed {
 		return ErrAppenderClosed
@@ -2258,6 +2270,7 @@ func handleChunkWriteError(err error) {
 }
 
 // Rollback removes the samples and exemplars from headAppender and writes any series to WAL.
+// Rollback 丢弃缓冲批次、撤销未提交新建 series 并清理 appendID。
 func (a *headAppenderBase) Rollback() (err error) {
 	if a.closed {
 		return ErrAppenderClosed

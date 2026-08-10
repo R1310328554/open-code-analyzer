@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Head 块实现 TSDB 内存热数据层：WAL 写入、series/chunk 管理、OOO 样本、mmap 与 compaction 前的 truncate/GC。
 package tsdb
 
 import (
@@ -51,13 +52,16 @@ import (
 )
 
 var (
-	// ErrInvalidSample is returned if an appended sample is not valid and can't
+	// ErrInvalidSample 表示样本校验失败，无法写入 Head。
+// ErrInvalidSample is returned if an appended sample is not valid and can't
 	// be ingested.
 	ErrInvalidSample = errors.New("invalid sample")
-	// ErrInvalidExemplar is returned if an appended exemplar is not valid and can't
+	// ErrInvalidExemplar 表示 exemplar 无效或超出存储策略。
+// ErrInvalidExemplar is returned if an appended exemplar is not valid and can't
 	// be ingested.
 	ErrInvalidExemplar = errors.New("invalid exemplar")
-	// ErrAppenderClosed is returned if an appender has already be successfully
+	// ErrAppenderClosed 在 Appender 已 Commit/Rollback 后再次操作时返回。
+// ErrAppenderClosed is returned if an appender has already be successfully
 	// rolled back or committed.
 	ErrAppenderClosed = errors.New("appender closed")
 
@@ -67,6 +71,7 @@ var (
 	defaultWALReplayConcurrency = runtime.GOMAXPROCS(0)
 )
 
+// Head 管理 chunk 时间窗口内的读写：series 索引、WAL/WBL、isolation 与 mmap chunk。
 // Head handles reads and writes of time series data within a time window.
 type Head struct {
 	chunkRange               atomic.Int64
@@ -152,6 +157,7 @@ type Head struct {
 	memTruncationCallBack  func() // For testing purposes.
 }
 
+// ExemplarStorage 扩展 exemplar 查询接口并支持写入、校验与迭代。
 type ExemplarStorage interface {
 	storage.ExemplarQueryable
 	AddExemplar(labels.Labels, exemplar.Exemplar) error
@@ -159,6 +165,7 @@ type ExemplarStorage interface {
 	IterateExemplars(f func(seriesLabels labels.Labels, e exemplar.Exemplar) error) error
 }
 
+// HeadOptions 配置 chunk 范围、Stripe 大小、OOO 窗口、exemplar 与特性开关。
 // HeadOptions are parameters for the Head block.
 type HeadOptions struct {
 	// Runtime reloadable option. At the top of the struct for 32 bit OS:
@@ -254,6 +261,7 @@ func (o *HeadOptions) UseXOR2FloatEncoding() bool {
 	return chunkenc.Encoding(o.FloatChunkEncoding.Load()) == chunkenc.EncXOR2
 }
 
+// SeriesLifecycleCallback 在 series 创建/删除生命周期钩子，供外部 TSDB 嵌入方使用。
 // SeriesLifecycleCallback specifies a list of callbacks that will be called during a lifecycle of a series.
 // It is always a no-op in Prometheus and mainly meant for external users who import TSDB.
 // All the callbacks should be safe to be called concurrently.
@@ -269,6 +277,7 @@ type SeriesLifecycleCallback interface {
 	PostDeletion(map[chunks.HeadSeriesRef]labels.Labels)
 }
 
+// NewHead 初始化内存状态、ChunkDiskMapper 与 headMetrics，尚未 replay WAL。
 // NewHead opens the head block in dir.
 func NewHead(r prometheus.Registerer, l *slog.Logger, wal, wbl *wlog.WL, opts *HeadOptions, stats *HeadStats) (*Head, error) {
 	var err error
@@ -343,6 +352,7 @@ func NewHead(r prometheus.Registerer, l *slog.Logger, wal, wbl *wlog.WL, opts *H
 	return h, nil
 }
 
+// resetInMemoryState 重建 postings、tombstones、stripeSeries 与 exemplar 存储。
 func (h *Head) resetInMemoryState() error {
 	var err error
 	var em *ExemplarMetrics
@@ -400,6 +410,7 @@ func (h *Head) resetWLReplayResources() {
 	h.wlReplayMmapMarkersPool = zeropool.Pool[[]record.RefMmapMarker]{}
 }
 
+// headMetrics 暴露 Head 样本、WAL、GC、OOO 与 appender 相关 Prometheus 指标。
 type headMetrics struct {
 	activeAppenders           prometheus.Gauge
 	series                    prometheus.GaugeFunc
@@ -655,6 +666,7 @@ func newHeadMetrics(h *Head, r prometheus.Registerer) *headMetrics {
 func mmappedChunksDir(dir string) string { return filepath.Join(dir, "chunks_head") }
 
 // HeadStats are the statistics for the head component of the DB.
+// HeadStats 汇总 WAL replay 进度与耗时，供 UI/API 展示。
 type HeadStats struct {
 	WALReplayStatus *WALReplayStatus
 }
@@ -688,6 +700,7 @@ func (s *WALReplayStatus) GetWALReplayStatus() WALReplayStatus {
 
 const cardinalityCacheExpirationTime = time.Duration(30) * time.Second
 
+// Init replay WAL/WBL、恢复 mmap chunk 并设置 minValidTime 与 series 状态。
 // Init loads data from the write ahead log and prepares the head for writes.
 // It should be called before using an appender so that it
 // limits the ingested samples to the head min valid time.
@@ -1084,6 +1097,7 @@ func (h *Head) removeCorruptedMmappedChunks(err error) (map[chunks.HeadSeriesRef
 	return mmappedChunks, oooMmappedChunks, lastRef, nil
 }
 
+// ApplyConfig 热更新 OOO 窗口、exemplar 上限、float chunk 编码与 ST 存储开关。
 func (h *Head) ApplyConfig(cfg *config.Config, wbl *wlog.WL) {
 	oooTimeWindow := int64(0)
 	if cfg.StorageConfig.TSDBConfig != nil {
@@ -1200,6 +1214,7 @@ func (h *Head) SetMinValidTime(minValidTime int64) {
 	h.minValidTime.Store(minValidTime)
 }
 
+// Truncate 按 mint 截断内存 series/chunk、WAL 与 OOO mmap，为 block 持久化腾空间。
 // Truncate removes old data before mint from the head and WAL.
 func (h *Head) Truncate(mint int64) (err error) {
 	initialized := h.initialized()
@@ -1218,6 +1233,7 @@ func (h *Head) OverlapsClosedInterval(mint, maxt int64) bool {
 }
 
 // truncateMemory removes old data before mint from the head.
+// truncateMemory 删除 mint 之前样本并 mmap 仍活跃的 head chunk。
 func (h *Head) truncateMemory(mint int64) (err error) {
 	h.chunkSnapshotMtx.Lock()
 	defer h.chunkSnapshotMtx.Unlock()
@@ -1297,6 +1313,7 @@ func (h *Head) truncateStaleSeries(seriesRefs []storage.SeriesRef, maxt int64) e
 	return nil
 }
 
+// WaitForPendingReadersInTimeRange 在 truncate 前等待隔离区内查询结束。
 // WaitForPendingReadersInTimeRange waits for queries overlapping with given range to finish querying.
 // The query timeout limits the max wait time of this function implicitly.
 // The mint is inclusive and maxt is the truncation time hence exclusive.
@@ -1413,6 +1430,7 @@ func (h *Head) keepSeriesInWALCheckpointFn(mint int64) func(id chunks.HeadSeries
 }
 
 // truncateWAL removes old data before mint from the WAL.
+// truncateWAL Checkpoint 并删除 mint 之前的 WAL 段，保留仍在 Head 的 series 记录。
 func (h *Head) truncateWAL(mint int64) error {
 	h.chunkSnapshotMtx.Lock()
 	defer h.chunkSnapshotMtx.Unlock()
@@ -1569,6 +1587,7 @@ func (h *Head) Stats(statsByLabelName string, limit int) *Stats {
 
 // RangeHead allows querying Head via an IndexReader, ChunkReader and tombstones.Reader
 // but only within a restricted range.  Used for queries and compactions.
+// RangeHead 将 Head 包装为限定 [mint,maxt] 的只读 BlockReader。
 type RangeHead struct {
 	head       *Head
 	mint, maxt int64
@@ -1576,6 +1595,7 @@ type RangeHead struct {
 	isolationOff bool
 }
 
+// NewRangeHead 构造带 isolation 的 Head 时间切片视图。
 // NewRangeHead returns a *RangeHead.
 // There are no restrictions on mint/maxt.
 func NewRangeHead(head *Head, mint, maxt int64) *RangeHead {
@@ -1652,6 +1672,7 @@ func (h *RangeHead) String() string {
 
 // StaleHead allows querying the stale series in the Head via an IndexReader, ChunkReader and tombstones.Reader.
 // Used only for compactions.
+// StaleHead 仅暴露已标记 stale 的 series，供特殊查询路径使用。
 type StaleHead struct {
 	RangeHead
 	staleSeriesRefs staleSeriesRefs
@@ -1699,6 +1720,7 @@ func (h *StaleHead) String() string {
 
 // Delete all samples in the range of [mint, maxt] for series that satisfy the given
 // label matchers.
+// Delete 按 matcher 匹配 series 并写入内存 tombstone。
 func (h *Head) Delete(ctx context.Context, mint, maxt int64, ms ...*labels.Matcher) error {
 	// Do not delete anything beyond the currently valid range.
 	mint, maxt = clampInterval(mint, maxt, h.MinTime(), h.MaxTime())
@@ -1757,6 +1779,7 @@ func (h *Head) Delete(ctx context.Context, mint, maxt int64, ms ...*labels.Match
 // * The actual min times of the chunks present in the Head.
 // * The min OOO time seen during the GC.
 // * Min mmap file number seen in the series (in-order and out-of-order) after gc'ing the series.
+// gc 回收无样本/仅 stale 的 series，更新 OOO 边界并返回 mmap 截断点。
 func (h *Head) gc() (actualInOrderMint, minOOOTime int64, minMmapFile int) {
 	// Only data strictly lower than this timestamp must be deleted.
 	mint := h.MinTime()
@@ -1814,6 +1837,7 @@ func (h *Head) NumStaleSeries() uint64 {
 
 var headULID = ulid.MustParse("0000000000XXXXXXXXXXXXHEAD")
 
+// Meta 生成当前 Head 的 BlockMeta（ULID、时间范围与 compaction 谱系）。
 // Meta returns meta information about the head.
 // The head is dynamic so will return dynamic results.
 func (h *Head) Meta() BlockMeta {
@@ -1868,6 +1892,7 @@ func (h *Head) compactable() bool {
 
 // Close flushes the WAL and closes the head.
 // It also takes a snapshot of in-memory chunks if enabled.
+// Close 停止后台 goroutine、关闭 ChunkDiskMapper 并标记 Head 不可再读写。
 func (h *Head) Close() error {
 	h.closedMtx.Lock()
 	defer h.closedMtx.Unlock()
@@ -2077,6 +2102,7 @@ const (
 // The locks are padded to not be on the same cache line. Filling the padded space
 // with the maps was profiled to be slower – likely due to the additional pointer
 // dereferences.
+// stripeSeries 分条带哈希 map 降低 series 锁竞争，支持按 ID/hash 查找。
 type stripeSeries struct {
 	size                    int
 	series                  []map[chunks.HeadSeriesRef]*memSeries // Sharded by ref. A series ref is the value of `size` when the series was being newly added.
@@ -2512,6 +2538,7 @@ func (s sample) Copy() chunks.Sample {
 
 // memSeries is the in-memory representation of a series. None of its methods
 // are goroutine safe and it is the caller's responsibility to lock it.
+// memSeries 单条时序的内存状态：标签、head/mmap/OOO chunk 链与 append 元数据。
 type memSeries struct {
 	// Members up to the Mutex are not changed after construction, so can be accessed without a lock.
 	ref  chunks.HeadSeriesRef
@@ -2686,6 +2713,7 @@ func (s *memSeries) cleanupAppendIDsBelow(bound uint64) {
 	}
 }
 
+// memChunk 内存 chunk 节点：编码 chunk、时间边界及 head 双向链表指针。
 type memChunk struct {
 	chunk            chunkenc.Chunk
 	minTime, maxTime int64
@@ -2796,6 +2824,7 @@ func (noopSeriesLifecycleCallback) PreCreation(labels.Labels) error             
 func (noopSeriesLifecycleCallback) PostCreation(labels.Labels)                          {}
 func (noopSeriesLifecycleCallback) PostDeletion(map[chunks.HeadSeriesRef]labels.Labels) {}
 
+// Size 估算 Head 占用字节（series、chunk 与 mmap 索引）。
 func (h *Head) Size() int64 {
 	var walSize, wblSize int64
 	if h.wal != nil {

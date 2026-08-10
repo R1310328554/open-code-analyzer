@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// dedupelabels 构建：memSeries.labels 持锁访问；RebuildSymbolTable 去重标签符号表。
+
 //go:build dedupelabels
 
 package tsdb
@@ -21,6 +23,7 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 )
 
+// labels 在 dedupelabels 模式下需加锁读取 lset，避免与符号表重建并发冲突。
 // Helper method to access labels under lock.
 func (s *memSeries) labels() labels.Labels {
 	s.Lock()
@@ -28,6 +31,7 @@ func (s *memSeries) labels() labels.Labels {
 	return s.lset
 }
 
+// RebuildSymbolTable 遍历 Head 与 exemplar，用统一 SymbolTable 替换各 series 标签。
 // RebuildSymbolTable goes through all the series in h, build a SymbolTable with all names and values,
 // replace each series' Labels with one using that SymbolTable.
 func (h *Head) RebuildSymbolTable(logger *slog.Logger) *labels.SymbolTable {
@@ -69,6 +73,7 @@ func (h *Head) RebuildSymbolTable(logger *slog.Logger) *labels.SymbolTable {
 	return st
 }
 
+// ResetSymbolTable 将 exemplar 存储中的 series/exemplar 标签重建为符号表引用。
 func (ce *CircularExemplarStorage) ResetSymbolTable(st *labels.SymbolTable) {
 	builder := labels.NewScratchBuilderWithSymbolTable(st, 0)
 	rebuildLabels := func(lbls labels.Labels) labels.Labels {

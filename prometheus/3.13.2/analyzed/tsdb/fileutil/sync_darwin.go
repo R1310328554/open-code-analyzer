@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Darwin 平台 Fdatasync：当前实现回退为 Sync（注释提及 F_FULLFSYNC 持久化语义）。
+
 //go:build darwin
 
 package fileutil
@@ -20,6 +22,7 @@ import (
 	"os"
 )
 
+// Fdatasync 在 macOS 上应确保持久化到物理介质；此处暂用 Sync 包装。
 // Fdatasync on darwin platform invokes fcntl(F_FULLFSYNC) for actual persistence
 // on physical drive media.
 func Fdatasync(f *os.File) error {

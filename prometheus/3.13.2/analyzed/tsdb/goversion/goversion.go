@@ -13,6 +13,7 @@
 
 //go:build go1.12
 
+// Package goversion 通过构建标签与 init 引用强制 TSDB 模块最低 Go 1.12 版本。
 // Package goversion enforces the go version supported by the tsdb module.
 package goversion
 

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Linux 平台文件预分配：syscall.Fallocate 预留块；ENOTSUP/EINTR 时回退 Seek+Truncate。
+
 package fileutil
 
 import (
@@ -34,6 +36,7 @@ func preallocExtend(f *os.File, sizeInBytes int64) error {
 	return err
 }
 
+// preallocFixed 以 FALLOC_FL_KEEP_SIZE 预分配但不改变 stat 报告的文件大小。
 func preallocFixed(f *os.File, sizeInBytes int64) error {
 	// use mode = 1 to keep size; see FALLOC_FL_KEEP_SIZE
 	err := syscall.Fallocate(int(f.Fd()), 1, 0, sizeInBytes)

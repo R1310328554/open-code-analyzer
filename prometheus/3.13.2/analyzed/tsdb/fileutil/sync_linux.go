@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Linux 平台 Fdatasync：syscall.Fdatasync 仅刷数据页，通常比 fsync 更轻量。
+
 //go:build linux
 
 package fileutil
@@ -21,6 +23,7 @@ import (
 	"syscall"
 )
 
+// Fdatasync 不刷新非检索必需的元数据，适合大块顺序数据写入后落盘。
 // Fdatasync is similar to fsync(), but does not flush modified metadata
 // unless that metadata is needed in order to allow a subsequent data retrieval
 // to be correctly handled.

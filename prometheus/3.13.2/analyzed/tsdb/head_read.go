@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Head 读取路径：IndexReader/ChunkReader 提供 postings、label 查询与 chunk 迭代，配合 isolation 返回一致视图。
 package tsdb
 
 import (
@@ -29,6 +30,7 @@ import (
 	"github.com/prometheus/prometheus/tsdb/index"
 )
 
+// headChunksBufMaxCap 限制 headIndexReader 复用缓冲上限，避免大查询长期占用内存。
 // headChunksBufMaxCap is the maximum capacity for the reusable headChunksBuf
 // slice. If the buffer grows beyond this, it is released to avoid holding
 // oversized backing arrays across many series iterations.
@@ -38,6 +40,7 @@ func (h *Head) ExemplarQuerier(ctx context.Context) (storage.ExemplarQuerier, er
 	return h.exemplars.ExemplarQuerier(ctx)
 }
 
+// Index 返回覆盖全 Head 时间范围的 headIndexReader。
 // Index returns an IndexReader against the block.
 func (h *Head) Index() (IndexReader, error) {
 	return h.indexRange(math.MinInt64, math.MaxInt64), nil
@@ -50,6 +53,7 @@ func (h *Head) indexRange(mint, maxt int64) *headIndexReader {
 	return &headIndexReader{head: h, mint: mint, maxt: maxt}
 }
 
+// headIndexReader 非并发安全，封装 MemPostings 与 series 查找。
 // headIndexReader provides index reading for the head block.
 // Not safe for concurrent use from multiple goroutines.
 type headIndexReader struct {
@@ -68,6 +72,7 @@ func (h *headIndexReader) Symbols() index.StringIter {
 	return h.head.postings.Symbols()
 }
 
+// SortedLabelValues 在 LabelValues 结果上排序返回。
 // SortedLabelValues returns label values present in the head for the
 // specific label name that are within the time range mint to maxt.
 // If matchers are specified the returned result set is reduced
@@ -80,6 +85,7 @@ func (h *headIndexReader) SortedLabelValues(ctx context.Context, name string, hi
 	return values, err
 }
 
+// LabelValues 按 matcher 过滤后返回指定 label 名的取值集合。
 // LabelValues returns label values present in the head for the
 // specific label name that are within the time range mint to maxt.
 // If matchers are specified the returned result set is reduced
@@ -96,6 +102,7 @@ func (h *headIndexReader) LabelValues(ctx context.Context, name string, hints *s
 	return labelValuesWithMatchers(ctx, h, name, hints, matchers...)
 }
 
+// LabelNames 返回 Head 时间范围内出现过的全部 label 名。
 // LabelNames returns all the unique label names present in the head
 // that are within the time range mint to maxt.
 func (h *headIndexReader) LabelNames(ctx context.Context, matchers ...*labels.Matcher) ([]string, error) {
@@ -112,6 +119,7 @@ func (h *headIndexReader) LabelNames(ctx context.Context, matchers ...*labels.Ma
 	return labelNamesWithMatchers(ctx, h, matchers...)
 }
 
+// Postings 返回 label=name,value 匹配的 postings 迭代器。
 // Postings returns the postings list iterator for the label pairs.
 func (h *headIndexReader) Postings(ctx context.Context, name string, values ...string) (index.Postings, error) {
 	return h.head.postings.Postings(ctx, name, values...), nil
@@ -157,6 +165,7 @@ func (h *headIndexReader) SortedPostings(p index.Postings) index.Postings {
 	return index.NewListPostings(ep)
 }
 
+// ShardedPostings 按 series.shardHash 分片，需 EnableSharding 开启。
 // ShardedPostings implements IndexReader. This function returns an failing postings list if sharding
 // has not been enabled in the Head.
 func (h *headIndexReader) ShardedPostings(p index.Postings, shardIndex, shardCount uint64) index.Postings {
@@ -188,6 +197,7 @@ func (h *headIndexReader) ShardedPostings(p index.Postings, shardIndex, shardCou
 	return index.NewListPostings(out)
 }
 
+// Series 按 ref 加载标签与 [mint,maxt] 内 chunk 元数据列表。
 // Series returns the series for the given reference.
 // Chunks are skipped if chks is nil.
 func (h *headIndexReader) Series(ref storage.SeriesRef, builder *labels.ScratchBuilder, chks *[]chunks.Meta) error {
@@ -226,6 +236,7 @@ func (h *Head) staleIndex(mint, maxt int64, staleSeriesRefs staleSeriesRefs) (*h
 // This is only used for stale series compaction at the moment, that will only ask for all
 // the series during compaction. So to make that efficient, this index reader requires the
 // pre-calculated list of stale series refs that can be returned without re-reading the Head.
+// headStaleIndexReader 仅索引 stale series 的 postings 子集。
 type headStaleIndexReader struct {
 	*headIndexReader
 	staleSeriesRefs staleSeriesRefs
@@ -273,6 +284,7 @@ type staleSeriesRefs struct {
 	sortedByLabels []storage.SeriesRef
 }
 
+// SortedPostings 物化 postings 对应 series 并按 labels.Compare 排序。
 // SortedPostings returns the provided postings sorted by labels.
 // This implementation expects the input postings to be the one returned by headStaleIndexReader.Postings() with AllPostingsKey, and will return the pre-sorted postings by labels in that case.
 func (h *headStaleIndexReader) SortedPostings(p index.Postings) index.Postings {
@@ -441,6 +453,7 @@ func (h *headIndexReader) LabelNamesFor(ctx context.Context, series index.Postin
 	return names, nil
 }
 
+// Chunks 返回带全范围 isolation 状态的 headChunkReader。
 // Chunks returns a ChunkReader against the block.
 func (h *Head) Chunks() (ChunkReader, error) {
 	return h.chunksRange(math.MinInt64, math.MaxInt64, h.iso.State(math.MinInt64, math.MaxInt64))
@@ -463,6 +476,7 @@ func (h *Head) chunksRange(mint, maxt int64, is *isolationState) (*headChunkRead
 	}, nil
 }
 
+// headChunkReader 读取 mem/mmap/OOO chunk，range 查询可启用 head chunk 缓存。
 // headChunkReader provides chunk reading for the head block.
 // Not safe for concurrent use from multiple goroutines.
 type headChunkReader struct {
@@ -489,6 +503,7 @@ func (h *headChunkReader) Close() error {
 	return nil
 }
 
+// getOrCollectHeadChunks 在 series 锁内收集或复用 head chunk 切片，避免链表重复遍历。
 // getOrCollectHeadChunks returns the cached head-chunk slice for s, collecting
 // it first if the cache does not match the series' current chunk layout.
 // The series lock must be held; the fingerprint comparison is only consistent
@@ -519,6 +534,7 @@ func (h *headChunkReader) getOrCollectHeadChunks(s *memSeries) []*memChunk {
 	return h.cachedHeadChunks
 }
 
+// ChunkOrIterable 按 Meta.Ref 解码 chunk，不复制开放中的 head chunk。
 // ChunkOrIterable returns the chunk for the reference number.
 func (h *headChunkReader) ChunkOrIterable(meta chunks.Meta) (chunkenc.Chunk, chunkenc.Iterable, error) {
 	chk, _, err := h.chunk(meta, false)
@@ -529,6 +545,7 @@ type ChunkReaderWithCopy interface {
 	ChunkOrIterableWithCopy(meta chunks.Meta) (chunkenc.Chunk, chunkenc.Iterable, int64, error)
 }
 
+// ChunkOrIterableWithCopy 对仍开放的 head chunk 复制字节，避免读写竞态。
 // ChunkOrIterableWithCopy returns the chunk for the reference number.
 // If the chunk is the in-memory chunk, then it makes a copy and returns the copied chunk, plus the max time of the chunk.
 func (h *headChunkReader) ChunkOrIterableWithCopy(meta chunks.Meta) (chunkenc.Chunk, chunkenc.Iterable, int64, error) {
@@ -563,6 +580,7 @@ type wrapOOOHeadChunk struct {
 }
 
 // Call with s locked.
+// chunkFromSeries 解析 OOO/顺序 chunk ID，应用 isolation 并可选复制 head chunk。
 func (h *Head) chunkFromSeries(s *memSeries, cid chunks.HeadChunkID, isOOO bool, mint, maxt int64, isoState *isolationState, copyLastChunk bool, headChunks []*memChunk) (chunkenc.Chunk, int64, error) {
 	if isOOO {
 		chk, maxTime, err := s.oooChunk(cid, h.chunkDiskMapper, &h.memChunkPool)
@@ -608,6 +626,7 @@ func (h *Head) chunkFromSeries(s *memSeries, cid chunks.HeadChunkID, isOOO bool,
 	}, maxTime, nil
 }
 
+// memSeries.chunk 按 HeadChunkID 在 mmap 切片或 head 链表中定位 memChunk。
 // chunk returns the chunk for the HeadChunkID from memory or by m-mapping it from the disk.
 // If headChunk is false, it means that the returned *memChunk
 // (and not the chunkenc.Chunk inside it) can be garbage collected after its usage.
