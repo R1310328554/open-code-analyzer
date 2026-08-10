@@ -18,6 +18,7 @@ package com.alibaba.nacos.cmdb.service;
 
 /**
  * CMDB writer.
+ * <p>CMDB 写侧标记接口：与 {@link CmdbReader} 对称，具体写操作由 {@link com.alibaba.nacos.cmdb.memory.CmdbProvider} 实现。</p>
  *
  * @author nkorange
  * @since 0.7.0

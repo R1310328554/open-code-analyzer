@@ -24,6 +24,7 @@ import java.lang.annotation.Target;
 
 /**
  * Means a class or method is in beta version.
+ * <p>标记类或方法处于 Beta 阶段：API 可能变更，生产环境使用需谨慎。</p>
  *
  * @author wuzhiguo
  */

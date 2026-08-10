@@ -29,6 +29,7 @@ import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * Operation controller.
+ * <p>CMDB 运维 REST 控制器，挂载于 {@link UtilsAndCommons#NACOS_CMDB_CONTEXT}{@code /ops}，提供标签查询等调试/运维接口。</p>
  *
  * @author nkorange
  * @since 0.7.0
@@ -37,11 +38,13 @@ import jakarta.servlet.http.HttpServletRequest;
 @RequestMapping(UtilsAndCommons.NACOS_CMDB_CONTEXT + "/ops")
 public class OperationController {
     
+    /** 内存 CMDB 数据提供者 */
     @Autowired
     private CmdbProvider cmdbProvider;
     
     /**
      * query label.
+     * <p>按实体名 {@code entry} 与标签名 {@code label} 查询 IP 实体的标签值；参数通过 {@link WebUtils#required} 从请求中强制读取。</p>
      *
      * @param request http request
      * @return query result

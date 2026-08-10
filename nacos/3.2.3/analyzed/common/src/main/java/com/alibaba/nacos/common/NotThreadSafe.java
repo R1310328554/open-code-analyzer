@@ -24,6 +24,7 @@ import java.lang.annotation.Target;
 
 /**
  * Annotation that marks a method as not thread safe.
+ * <p>声明被标注的类型或方法非线程安全，调用方需自行同步或限制并发访问。</p>
  *
  * @author zongtanghu
  */

@@ -27,17 +27,20 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Cmdb executor.
+ * <p>CMDB 模块全局调度线程池封装：基于 {@link ExecutorFactory.Managed} 创建单例 {@link ScheduledExecutorService}，供 dump/标签/事件任务延迟调度。</p>
  *
  * @author wangweizZZ
  * @date 2020/7/13 1:54 PM
  */
 public class CmdbExecutor {
     
+    /** CMDB 全局单线程调度池（线程名前缀 {@code com.alibaba.nacos.cmdb.global.executor}） */
     private static final ScheduledExecutorService GLOBAL_EXECUTOR = ExecutorFactory.Managed
         .newScheduledExecutorService(ClassUtils.getCanonicalName(CmdbApp.class),
             EnvUtil.getAvailableProcessors(),
             new NameThreadFactory("com.alibaba.nacos.cmdb.global.executor"));
     
+    /** 在指定延迟后执行 CMDB 后台任务（各 Runnable 通常在 finally 中链式再次调度） */
     public static void scheduleCmdbTask(Runnable runnable, long delay, TimeUnit unit) {
         GLOBAL_EXECUTOR.schedule(runnable, delay, unit);
     }

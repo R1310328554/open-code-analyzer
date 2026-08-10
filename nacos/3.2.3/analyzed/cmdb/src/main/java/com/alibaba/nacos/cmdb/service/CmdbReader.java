@@ -22,6 +22,7 @@ import java.util.List;
 
 /**
  * CMDB Reader.
+ * <p>CMDB 只读查询接口：按实体或标签维度读取内存中的 CMDB 数据。</p>
  *
  * @author nkorange
  * @since 0.7.0
@@ -30,6 +31,7 @@ public interface CmdbReader {
     
     /**
      * Get entity.
+     * <p>按名称与类型查询单个 {@link Entity}。</p>
      *
      * @param entityName name of entity
      * @param entityType type of entity
@@ -39,6 +41,7 @@ public interface CmdbReader {
     
     /**
      * Get label of entity.
+     * <p>读取指定实体上某一标签的值。</p>
      *
      * @param entityName name of entity
      * @param entityType type of entity
@@ -49,6 +52,7 @@ public interface CmdbReader {
     
     /**
      * Get entities of selected label.
+     * <p>按标签名与标签值反查匹配的实体列表。</p>
      *
      * @param labelName  name of label
      * @param labelValue value of label

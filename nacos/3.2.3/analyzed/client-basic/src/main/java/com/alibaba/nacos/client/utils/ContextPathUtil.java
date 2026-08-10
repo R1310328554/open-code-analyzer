@@ -20,15 +20,18 @@ import com.alibaba.nacos.common.utils.StringUtils;
 
 /**
  * Context path Util.
+ * <p>Web 上下文路径规范化工具：将空值、根路径 {@code "/"} 转为空串，非空路径保证以 {@code "/"} 开头，便于客户端拼接 Nacos 服务端 URL。</p>
  *
  * @author Wei.Wang
  */
 public class ContextPathUtil {
     
+    /** Web 根上下文路径常量 */
     private static final String ROOT_WEB_CONTEXT_PATH = "/";
     
     /**
      * normalize context path.
+     * <p>规范化上下文路径：空白或 {@code "/"} 返回空串；否则确保以 {@code "/"} 前缀。</p>
      *
      * @param contextPath origin context path
      * @return normalized context path

@@ -24,15 +24,18 @@ import java.util.concurrent.Callable;
 
 /**
  * Template Utils.
+ * <p>字符串条件执行模板：在字符串非空、为空或空白时分别执行回调，异常统一记录日志而不向上抛出，供客户端初始化逻辑复用。</p>
  *
  * @author Nacos
  */
 public class TemplateUtils {
     
+    /** 本类日志记录器 */
     private static final Logger LOGGER = LoggerFactory.getLogger(TemplateUtils.class);
     
     /**
      * Execute if string not empty.
+     * <p>当 {@code source} 非空时执行 {@code runnable}；执行异常仅打 ERROR 日志。</p>
      *
      * @param source   source
      * @param runnable execute runnable
@@ -51,6 +54,7 @@ public class TemplateUtils {
     
     /**
      * Execute if string empty.
+     * <p>当 {@code source} 为空时调用 {@code callable} 获取默认值；否则对非 null 值 {@code trim()} 后返回。</p>
      *
      * @param source   empty source
      * @param callable execute callable
@@ -72,6 +76,7 @@ public class TemplateUtils {
     
     /**
      * Execute if string blank.
+     * <p>当 {@code source} 为空白（{@link StringUtils#isBlank}）时调用 {@code callable}；否则对非 null 值 {@code trim()} 后返回。</p>
      *
      * @param source   empty source
      * @param callable execute callable

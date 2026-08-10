@@ -21,11 +21,13 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Loggers holder.
+ * <p>CMDB 模块 SLF4J 日志入口聚合，统一使用 logger 名 {@code com.alibaba.nacos.cmdb.main}。</p>
  *
  * @author nacos
  * @since 0.7.0
  */
 public class Loggers {
     
+    /** CMDB 主流程日志（dump/标签/事件任务等） */
     public static final Logger MAIN = LoggerFactory.getLogger("com.alibaba.nacos.cmdb.main");
 }

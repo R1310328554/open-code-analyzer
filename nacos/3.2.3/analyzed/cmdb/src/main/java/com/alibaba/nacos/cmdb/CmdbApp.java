@@ -21,6 +21,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /**
  * CMDB starter.
+ * <p>Nacos CMDB（配置管理数据库）模块 Spring Boot 启动入口，加载 CMDB 内存提供者、定时同步任务与运维 HTTP 接口。</p>
  *
  * @author nkorange
  * @since 0.7.0
@@ -28,6 +29,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class CmdbApp {
     
+    /** JVM 入口：启动 CMDB 独立进程或嵌入 Nacos 时的 CMDB 子应用 */
     public static void main(String[] args) {
         SpringApplication.run(CmdbApp.class, args);
     }

@@ -18,14 +18,17 @@ package com.alibaba.nacos.cmdb.utils;
 
 /**
  * Utils and constants.
+ * <p>CMDB HTTP API 路径常量：基于 Nacos 服务端 v1 前缀拼接 CMDB 上下文根路径。</p>
  *
  * @author nkorange
  * @since 0.7.0
  */
 public class UtilsAndCommons {
     
+    /** Nacos Open API 版本前缀 */
     private static final String NACOS_SERVER_VERSION = "/v1";
     
+    /** CMDB REST 根路径，例如 {@code /v1/cmdb} */
     public static final String NACOS_CMDB_CONTEXT = NACOS_SERVER_VERSION + "/cmdb";
     
 }

@@ -18,6 +18,7 @@ package com.alibaba.nacos.common;
 
 /**
  * Just for test.
+ * <p>标记仅供单元测试或内部调试使用的 API，不应作为对外稳定契约。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
