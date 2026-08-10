@@ -27,11 +27,18 @@ import org.keycloak.adapters.spi.HttpFacade;
 import org.keycloak.saml.common.exceptions.ParsingException;
 
 /**
+ * 多租户 SAML 配置解析器，根据请求中的 realm 参数加载对应 SAML 部署描述。
  *
  * @author rmartinc
  */
 public class SamlMultiTenantResolver implements SamlConfigResolver {
 
+    /**
+     * 根据请求 realm 查询参数解析 SAML 部署配置。
+     *
+     * @param request HTTP 门面请求
+     * @return 对应 realm 的 {@link SamlDeployment}
+     */
     @Override
     public SamlDeployment resolve(HttpFacade.Request request) {
         String realm = request.getQueryParamValue("realm");

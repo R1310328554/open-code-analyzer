@@ -16,14 +16,23 @@
  */
 package org.keycloak.testsuite.utils.arquillian;
 
+/**
+ * Arquillian 集成测试中应用服务器容器名称常量。
+ */
 public interface ContainerConstants {
+    /** 应用服务器容器 ID 前缀。 */
     String APP_SERVER_PREFIX = "app-server-";
 
+    /** WildFly 应用服务器容器名。 */
     String APP_SERVER_WILDFLY = APP_SERVER_PREFIX + "wildfly";
+    /** WildFly 集群双节点容器名（分号分隔）。 */
     String APP_SERVER_WILDFLY_CLUSTER = APP_SERVER_WILDFLY + "-ha-node-1;" + APP_SERVER_WILDFLY + "-ha-node-2";
 
+    /** EAP 应用服务器容器名。 */
     String APP_SERVER_EAP = APP_SERVER_PREFIX + "eap";
+    /** EAP 集群双节点容器名。 */
     String APP_SERVER_EAP_CLUSTER = APP_SERVER_EAP + "-ha-node-1;" + APP_SERVER_EAP + "-ha-node-2";
 
+    /** EAP 8 应用服务器容器名。 */
     String APP_SERVER_EAP8 = APP_SERVER_PREFIX + "eap8";
 }

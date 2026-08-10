@@ -43,6 +43,7 @@ import static org.keycloak.testsuite.utils.io.IOUtil.modifyDocElementAttribute;
 import static org.keycloak.testsuite.utils.io.IOUtil.modifyDocElementValue;
 
 /**
+ * 部署归档处理器工具类，在测试部署前修改 OIDC/SAML 适配器配置与 web.xml。
  *
  * @author <a href="mailto:vramik@redhat.com">Vlasta Ramik</a>
  */
@@ -53,26 +54,44 @@ public class DeploymentArchiveProcessorUtils {
     private static final boolean AUTH_SERVER_SSL_REQUIRED = Boolean.parseBoolean(System.getProperty("auth.server.ssl.required"));
     private static final boolean APP_SERVER_SSL_REQUIRED = Boolean.parseBoolean(System.getProperty("app.server.ssl.required"));
 
+    /** 占位认证服务器 URL，部署时替换为实际上下文根。 */
     private static final String AUTH_SERVER_REPLACED_URL = "http://localhost:8080";
 
+    /** web.xml 在 WAR 中的路径。 */
     public static final String WEBXML_PATH = "/WEB-INF/web.xml";
+    /** OIDC 适配器 JSON 配置路径（WEB-INF）。 */
     public static final String ADAPTER_CONFIG_PATH = "/WEB-INF/keycloak.json";
+    /** OIDC 适配器 JSON 配置路径（根目录）。 */
     public static final String ADAPTER_CONFIG_PATH_JS = "/keycloak.json";
+    /** SAML 适配器 XML 配置路径。 */
     public static final String SAML_ADAPTER_CONFIG_PATH = "/WEB-INF/keycloak-saml.xml";
+    /** JBoss 部署结构描述文件路径。 */
     public static final String JBOSS_DEPLOYMENT_XML_PATH = "/WEB-INF/jboss-deployment-structure.xml";
+    /** 租户 1 SAML 配置路径。 */
     public static final String SAML_ADAPTER_CONFIG_PATH_TENANT1 = "/WEB-INF/classes/tenant1-keycloak-saml.xml";
+    /** 租户 2 SAML 配置路径。 */
     public static final String SAML_ADAPTER_CONFIG_PATH_TENANT2 = "/WEB-INF/classes/tenant2-keycloak-saml.xml";
+    /** 测试信任库默认密码。 */
     public static final String TRUSTSTORE_PASSWORD = "secret";
+    /** 所有需处理的 SAML 配置文件路径集合。 */
     public static final Collection<String> SAML_CONFIGS = Arrays.asList(SAML_ADAPTER_CONFIG_PATH,
             SAML_ADAPTER_CONFIG_PATH_TENANT1, SAML_ADAPTER_CONFIG_PATH_TENANT2);
 
     /**
-     * @return true iff archive's name equals run-on-server-classes.war
+     * 判断归档是否为 run-on-server-classes.war 部署。
+     *
+     * @return 若归档名等于 run-on-server-classes.war 则返回 true
      */
     public static boolean checkRunOnServerDeployment(Archive<?> archive) {
         return archive.getName().equals("run-on-server-classes.war");
     }
 
+    /**
+     * 更新 WAR 中 OIDC 适配器配置：认证服务器 URL、SSL 与信任库设置。
+     *
+     * @param archive 待修改的部署归档
+     * @param adapterConfigPath 适配器配置文件在归档内的路径
+     */
     public static void modifyOIDCAdapterConfig(Archive<?> archive, String adapterConfigPath) {
         try {
             AdapterConfig adapterConfig = IOUtil.loadJson(archive.get(adapterConfigPath)
@@ -87,7 +106,7 @@ public class DeploymentArchiveProcessorUtils {
             if (AUTH_SERVER_SSL_REQUIRED) {
                 String trustStorePathInDeployment = "keycloak.truststore";
                 if (adapterConfigPath.contains("WEB-INF")) {
-                    // This is a Java adapter, we can use classpath
+                    // Java 适配器可使用 classpath 引用信任库
                     trustStorePathInDeployment = "classpath:keycloak.truststore";
                 }
                 adapterConfig.setTruststore(trustStorePathInDeployment);
@@ -112,6 +131,12 @@ public class DeploymentArchiveProcessorUtils {
         }
     }
 
+    /**
+     * 更新 WAR 中 SAML 适配器 XML 配置并附加信任库资源。
+     *
+     * @param archive 待修改的部署归档
+     * @param adapterConfigPath SAML 配置文件路径
+     */
     public static void modifySAMLAdapterConfig(Archive<?> archive, String adapterConfigPath) {
         Document doc = IOUtil.loadXML(archive.get(adapterConfigPath).getAsset().openStream());
 
@@ -129,6 +154,7 @@ public class DeploymentArchiveProcessorUtils {
         ((WebArchive) archive).addAsResource(truststore);
     }
 
+    /** 将 SAML 文档中的占位 URL 替换为当前认证/应用服务器上下文根。 */
     public static void modifySAMLDocument(Document doc) {
         modifyDocElementAttribute(doc, "SingleSignOnService", "bindingUrl", AUTH_SERVER_REPLACED_URL, getAuthServerContextRoot());
         modifyDocElementAttribute(doc, "SingleLogoutService", "postBindingUrl", AUTH_SERVER_REPLACED_URL, getAuthServerContextRoot());
@@ -138,6 +164,12 @@ public class DeploymentArchiveProcessorUtils {
         modifyDocElementAttribute(doc, "SP", "logoutPage", AUTH_SERVER_REPLACED_URL, getAppServerContextRoot());
     }
 
+    /**
+     * 将 web.xml 中 servlet-class 从 javax 迁移为 jakarta.ws.rs.core.Application。
+     *
+     * @param archive 待修改的部署归档
+     * @param adapterConfigPath web.xml 在归档内的路径
+     */
     public static void useJakartaEEServletClass(Archive<?> archive, String adapterConfigPath) {
         final String SERVLET_TAG = "servlet";
         final String SERVLET_CLASS_TAG = "servlet-class";
@@ -174,6 +206,7 @@ public class DeploymentArchiveProcessorUtils {
         }
     }
 
+    /** 根据系统属性构建认证服务器 /auth 基址 URL。 */
     private static String getAuthServerUrl() {
         String scheme = AUTH_SERVER_SSL_REQUIRED ? "https" : "http";
         String host = System.getProperty("auth.server.host", "localhost");

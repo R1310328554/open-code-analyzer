@@ -29,13 +29,17 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.junit.Assert;
 
 /**
+ * 输入表单测试 Servlet，提供受保护 POST 端点及非安全页面以验证适配器行为。
+ *
  * @author <a href="mailto:bburke@redhat.com">Bill Burke</a>
  */
 @WebServlet("/input-portal")
 public class InputServlet extends HttpServlet {
 
+    /** 表单 POST 请求的 Content-Type。 */
     private static final String FORM_URLENCODED = "application/x-www-form-urlencoded";
 
+    /** 渲染输入表单或非安全页面。 */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String appBase = ServletTestUtils.getUrlBase();
@@ -65,6 +69,7 @@ public class InputServlet extends HttpServlet {
 
     }
 
+    /** 处理表单提交并校验 Content-Type。 */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         req.getSession(true);

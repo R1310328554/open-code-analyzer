@@ -20,28 +20,46 @@ package org.keycloak.testsuite.adapter.servlet;
 import static java.lang.Integer.parseInt;
 
 /**
+ * Servlet 集成测试 URL 构建工具，根据系统属性推导认证服务器与应用服务器基址。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ServletTestUtils {
 
+    /** 认证服务器是否要求 SSL。 */
     public static final boolean AUTH_SERVER_SSL_REQUIRED = Boolean.parseBoolean(System.getProperty("auth.server.ssl.required", "true"));
+    /** 认证服务器端口（HTTPS 或 HTTP）。 */
     public static final String AUTH_SERVER_PORT = AUTH_SERVER_SSL_REQUIRED ? System.getProperty("auth.server.https.port", "8543") : System.getProperty("auth.server.http.port", "8180");
+    /** 认证服务器 URL 协议方案。 */
     public static final String AUTH_SERVER_SCHEME = AUTH_SERVER_SSL_REQUIRED ? "https" : "http";
+    /** 认证服务器主机名。 */
     public static final String AUTH_SERVER_HOST = System.getProperty("auth.server.host", "localhost");
 
+    /** 应用服务器是否要求 SSL。 */
     public static final boolean APP_SERVER_SSL_REQUIRED = Boolean.parseBoolean(System.getProperty("app.server.ssl.required", "false"));
+    /** 应用服务器端口（HTTPS 或 HTTP）。 */
     public static final String APP_SERVER_PORT = APP_SERVER_SSL_REQUIRED ? System.getProperty("app.server.https.port", "8643") : System.getProperty("app.server.http.port", "8280");
+    /** 应用服务器 URL 协议方案。 */
     public static final String APP_SERVER_SCHEME = APP_SERVER_SSL_REQUIRED ? "https" : "http";
+    /** 应用服务器主机名。 */
     public static final String APP_SERVER_HOST = System.getProperty("app.server.host", "localhost");
 
+    /** 返回应用服务器根 URL（不含默认端口）。 */
     public static String getUrlBase() {
         return removeDefaultPorts(String.format("%s://%s:%s", APP_SERVER_SCHEME, APP_SERVER_HOST, parseInt(APP_SERVER_PORT)));
     }
 
+    /** 返回认证服务器根 URL（不含默认端口）。 */
     public static String getAuthServerUrlBase() {
         return removeDefaultPorts(String.format("%s://%s:%s", AUTH_SERVER_SCHEME, AUTH_SERVER_HOST, parseInt(AUTH_SERVER_PORT)));
     }
 
+    /**
+     * 从 URL 中移除默认 HTTP(80)/HTTPS(443) 端口。
+     *
+     * @param url 原始 URL
+     * @return 规范化后的 URL
+     */
     public static String removeDefaultPorts(String url) {
         return url != null ? url.replaceFirst("(.*)(:80)(\\/.*)?$", "$1$3").replaceFirst("(.*)(:443)(\\/.*)?$", "$1$3") : null;
     }

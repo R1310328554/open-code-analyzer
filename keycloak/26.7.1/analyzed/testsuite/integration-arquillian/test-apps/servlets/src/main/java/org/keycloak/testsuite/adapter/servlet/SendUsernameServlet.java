@@ -54,6 +54,8 @@ import org.jboss.resteasy.reactive.NoCache;
 import org.w3c.dom.Document;
 
 /**
+ * 返回当前认证主体信息的 REST 端点，用于 SAML/OIDC 适配器集成测试。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @author mhajas
  * @version $Revision: 1 $
@@ -61,14 +63,19 @@ import org.w3c.dom.Document;
 @Path("/")
 public class SendUsernameServlet {
 
+    /** 是否在校验用户角色。 */
     private static boolean checkRoles = false;
+    /** 最近一次捕获的 SAML 认证错误。 */
     private static SamlAuthenticationError authError;
+    /** 最近一次发送的主体对象。 */
     private static Principal sentPrincipal;
+    /** 需要校验的角色列表，默认为 manager。 */
     private static List<String> checkRolesList = Collections.singletonList("manager");
 
     @Context
     private HttpServletRequest httpServletRequest;
 
+    /** 返回请求路径、主体名、会话与角色信息。 */
     @GET
     @NoCache
     public Response doGet(@QueryParam("checkRoles") boolean checkRolesFlag) throws IOException {
@@ -80,6 +87,7 @@ public class SendUsernameServlet {
         return Response.ok(getOutput()).header(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_HTML_TYPE + ";charset=UTF-8").build();
     }
 
+    /** POST 版本的主体信息端点，含角色校验。 */
     @POST
     @NoCache
     public Response doPost(@QueryParam("checkRoles") boolean checkRolesFlag) {
@@ -93,6 +101,7 @@ public class SendUsernameServlet {
 
     }
 
+    /** 保存并返回当前请求主体的 SAML 属性。 */
     @GET
     @Path("getAttributes")
     public Response getSentPrincipal() throws IOException {
@@ -103,6 +112,7 @@ public class SendUsernameServlet {
 
     }
 
+    /** 调用 {@link HttpServletRequest#changeSessionId()} 并返回新会话 ID。 */
     @GET
     @Path("change-session-id")
     public Response changeSessionId() throws IOException {
@@ -112,6 +122,7 @@ public class SendUsernameServlet {
         return Response.ok(sessionId).header(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_PLAIN_TYPE + ";charset=UTF-8").build();
     }
 
+    /** 将 SAML 断言文档序列化为 XML 字符串返回。 */
     @GET
     @Path("getAssertionFromDocument")
     public Response getAssertionFromDocument() throws IOException, TransformerException {
@@ -130,6 +141,7 @@ public class SendUsernameServlet {
         return Response.ok(xml).header(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_PLAIN_TYPE + ";charset=UTF-8").build();
     }
 
+    /** 子路径 GET 请求转发至根路径处理逻辑。 */
     @GET
     @Path("{path}")
     public Response doGetElseWhere(@PathParam("path") String path, @QueryParam("checkRoles") boolean checkRolesFlag) throws IOException {
@@ -137,6 +149,7 @@ public class SendUsernameServlet {
         return doGet(checkRolesFlag);
     }
 
+    /** 子路径 POST 请求转发至根路径处理逻辑。 */
     @POST
     @Path("{path}")
     public Response doPostElseWhere(@PathParam("path") String path, @QueryParam("checkRoles") boolean checkRolesFlag) throws IOException {
@@ -144,6 +157,7 @@ public class SendUsernameServlet {
         return doPost(checkRolesFlag);
     }
 
+    /** 渲染 SAML 认证错误页面（POST）。 */
     @POST
     @Path("error.html")
     public Response errorPagePost() {
@@ -155,6 +169,7 @@ public class SendUsernameServlet {
 
     }
 
+    /** 渲染 SAML 认证错误页面（GET）。 */
     @GET
     @Path("error.html")
     public Response errorPageGet() {
@@ -162,6 +177,7 @@ public class SendUsernameServlet {
     }
 
 
+    /** 启用后续请求的角色校验。 */
     @GET
     @Path("checkRoles")
     public String checkRolesEndPoint() {
@@ -170,6 +186,7 @@ public class SendUsernameServlet {
         return "Roles will be checked";
     }
 
+    /** 禁用角色校验并重置默认角色列表。 */
     @GET
     @Path("uncheckRoles")
     public String uncheckRolesEndPoint() {
@@ -179,6 +196,7 @@ public class SendUsernameServlet {
         return "Roles will not be checked";
     }
 
+    /** 设置需要校验的角色列表（逗号分隔）。 */
     @GET
     @Path("setCheckRoles")
     public String setCheckRoles(@QueryParam("roles") String roles) {
@@ -188,6 +206,7 @@ public class SendUsernameServlet {
         return "These roles will be checked: " + checkRolesList.toString();
     }
 
+    /** 校验当前用户是否拥有 {@link #checkRolesList} 中的全部角色。 */
     private boolean checkRoles() {
         for (String role : checkRolesList) {
             System.out.println("In checkRoles() checking role " + role + " for user " + httpServletRequest.getUserPrincipal().getName());
@@ -200,6 +219,7 @@ public class SendUsernameServlet {
         return true;
     }
 
+    /** 组装主体、会话与角色信息的文本输出。 */
     private String getOutput() {
         String output = "request-path: ";
         output += httpServletRequest.getServletPath();
@@ -220,6 +240,7 @@ public class SendUsernameServlet {
         return output;
     }
 
+    /** 提取 SAML 会话索引与 NotOnOrAfter 时间。 */
     private String getSessionInfo() {
         HttpSession session = httpServletRequest.getSession(false);
 
@@ -239,6 +260,7 @@ public class SendUsernameServlet {
         return "Session doesn't exist";
     }
 
+    /** 列出 SAML 主体 Roles 属性中的角色名。 */
     private String getRoles() {
         StringBuilder output = new StringBuilder("Roles: ");
         for (String role : ((SamlPrincipal) httpServletRequest.getUserPrincipal()).getAttributes("Roles")) {
@@ -248,6 +270,7 @@ public class SendUsernameServlet {
         return output.toString();
     }
 
+    /** 生成包含 HTTP 状态码与认证错误的 HTML 片段。 */
     private String getErrorOutput(Integer statusCode) {
         String output = "<html><head><title>Error Page</title></head><body><h1>There was an error</h1>";
         if (statusCode != null)
@@ -257,6 +280,7 @@ public class SendUsernameServlet {
         return output + "</body></html>";
     }
 
+    /** 使用指定分隔符连接字符串列表。 */
     private static String joinList(String delimeter, List<String> list) {
         if (list == null || list.size() <= 0) return "";
 
@@ -266,7 +290,7 @@ public class SendUsernameServlet {
 
             sb.append(list.get(i));
 
-            // if not the last item
+            // 非最后一项时追加分隔符
             if (i != list.size() - 1) {
                 sb.append(delimeter);
             }
@@ -276,6 +300,7 @@ public class SendUsernameServlet {
         return sb.toString();
     }
 
+    /** 格式化 SAML 主体属性及友好名称属性为 HTML。 */
     private String getAttributes() {
         SamlPrincipal principal = (SamlPrincipal) sentPrincipal;
 
@@ -295,6 +320,7 @@ public class SendUsernameServlet {
         return b.toString();
     }
 
+    /** 返回当前 SAML 断言 Issuer 值。 */
     @GET
     @Path("getAssertionIssuer")
     public Response getAssertionIssuer() throws IOException {

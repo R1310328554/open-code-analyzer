@@ -28,11 +28,15 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.keycloak.adapters.spi.AuthenticationError;
 
 /**
+ * 适配器认证错误展示 Servlet，渲染 HTTP 状态码与 {@link AuthenticationError} 详情。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ErrorServlet extends HttpServlet {
+    /** 从请求属性中提取的认证错误信息。 */
     private AuthenticationError authError;
 
+    /** 处理 GET 请求并输出错误页面 HTML。 */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         authError = (AuthenticationError)req.getAttribute(AuthenticationError.class.getName());
@@ -51,6 +55,7 @@ public class ErrorServlet extends HttpServlet {
         pw.flush();
     }
     
+    /** POST 请求复用 GET 错误页渲染逻辑。 */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         doGet(req, resp);

@@ -42,7 +42,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 /**
- * Simple web.xml parser just to handle our test deployments
+ * 简易 web.xml 解析器，将测试部署描述转换为 Undertow {@link DeploymentInfo}。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
@@ -50,13 +50,19 @@ class SimpleWebXmlParser {
 
     private static final Logger log = Logger.getLogger(SimpleWebXmlParser.class);
 
+    /**
+     * 解析 web.xml 并填充 Undertow 部署信息。
+     *
+     * @param webXml web.xml DOM 文档
+     * @param di 待填充的部署信息
+     */
     void parseWebXml(Document webXml, DeploymentInfo di) {
         try {
             DocumentWrapper document = new DocumentWrapper(webXml);
 
             if (di.getServlets().get("ResteasyServlet") == null) {
 
-                // SERVLETS
+                // Servlet 定义与 URL 映射
                 Map<String, String> servletMappings = new HashMap<>();
                 List<ElementWrapper> sm = document.getElementsByTagName("servlet-mapping");
                 for (ElementWrapper mapping : sm) {
@@ -86,7 +92,7 @@ class SimpleWebXmlParser {
                 }
             }
 
-            // FILTERS
+            // 过滤器定义与映射
             Map<String, String> filterMappings = new HashMap<>();
             List<ElementWrapper> fm = document.getElementsByTagName("filter-mapping");
             for (ElementWrapper mapping : fm) {
@@ -119,7 +125,7 @@ class SimpleWebXmlParser {
                 }
             }
 
-            // CONTEXT PARAMS
+            // 上下文初始化参数
             List<ElementWrapper> contextParams = document.getElementsByTagName("context-param");
             for (ElementWrapper param : contextParams) {
                 String paramName = param.getElementByTagName("param-name").getText();
@@ -128,7 +134,7 @@ class SimpleWebXmlParser {
             }
 
 
-            // ROLES
+            // 安全角色声明
             List<ElementWrapper> securityRoles = document.getElementsByTagName("security-role");
             for (ElementWrapper sr : securityRoles) {
                 String roleName = sr.getElementByTagName("role-name").getText();
@@ -136,7 +142,7 @@ class SimpleWebXmlParser {
             }
 
 
-            // SECURITY CONSTRAINTS
+            // 安全约束（URL 模式与角色）
             List<ElementWrapper> secConstraints = document.getElementsByTagName("security-constraint");
             for (ElementWrapper constraint : secConstraints) {
                 String urlPattern = constraint.getElementByTagName("web-resource-collection")
@@ -161,7 +167,7 @@ class SimpleWebXmlParser {
                 di.addSecurityConstraint(undertowConstraint);
             }
 
-            // LOGIN CONFIG
+            // 登录配置（表单或 BASIC 等）
             ElementWrapper loginCfg = document.getElementByTagName("login-config");
             if (loginCfg != null) {
                 String mech = loginCfg.getElementByTagName("auth-method").getText();
@@ -177,7 +183,7 @@ class SimpleWebXmlParser {
                 }
             }
 
-            // COOKIE CONFIG
+            // 会话 Cookie 配置
             ElementWrapper sessionCfg = document.getElementByTagName("session-config");
             if (sessionCfg != null) {
                 ElementWrapper cookieConfig = sessionCfg.getElementByTagName("cookie-config");
@@ -191,7 +197,7 @@ class SimpleWebXmlParser {
                 di.setServletSessionConfig(cfg);
             }
             
-            // ERROR PAGES
+            // 错误页面映射
             List<ElementWrapper> errorPages = document.getElementsByTagName("error-page");
             for (ElementWrapper errorPageWrapper : errorPages) {
                 String location = errorPageWrapper.getElementByTagName("location").getText();
@@ -214,6 +220,7 @@ class SimpleWebXmlParser {
     }
 
 
+    /** XML 节点遍历抽象基类。 */
     private static abstract class XmlWrapper {
 
 
@@ -248,6 +255,7 @@ class SimpleWebXmlParser {
     }
 
 
+    /** 单个 XML 元素包装，提供标签查询与文本提取。 */
     private static class ElementWrapper extends XmlWrapper {
 
         private final Element element;
@@ -274,6 +282,7 @@ class SimpleWebXmlParser {
     }
 
 
+    /** 整个 XML 文档包装。 */
     private static class DocumentWrapper extends XmlWrapper {
 
         private final Document document;

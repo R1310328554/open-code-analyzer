@@ -49,6 +49,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 /**
+ * 集成测试 IO 与 XML/JSON 操作工具类。
  *
  * @author tkyjovsk
  */
@@ -56,8 +57,17 @@ public class IOUtil {
 
     private static final Logger log = Logger.getLogger(IOUtil.class);
 
+    /** Maven 构建输出目录，默认为 target。 */
     public static final File PROJECT_BUILD_DIRECTORY = new File(System.getProperty("project.build.directory", "target"));
 
+    /**
+     * 从输入流反序列化 JSON 为指定类型。
+     *
+     * @param is JSON 输入流
+     * @param type 目标类型
+     * @param <T> 泛型类型
+     * @return 反序列化结果
+     */
     public static <T> T loadJson(InputStream is, Class<T> type) {
         try {
             return JsonSerialization.readValue(is, type);
@@ -66,10 +76,12 @@ public class IOUtil {
         }
     }
 
+    /** 从类路径资源加载 Realm 表示。 */
     public static RealmRepresentation loadRealm(String realmConfig) {
         return loadRealm(IOUtil.class.getResourceAsStream(realmConfig));
     }
 
+    /** 从文件加载 Realm 表示。 */
     public static RealmRepresentation loadRealm(File realmFile) {
         try {
             return loadRealm(new FileInputStream(realmFile));
@@ -78,12 +90,14 @@ public class IOUtil {
         }
     }
 
+    /** 从输入流加载 Realm 表示并打印 realm 名称。 */
     public static RealmRepresentation loadRealm(InputStream is) {
         RealmRepresentation realm = loadJson(is, RealmRepresentation.class);
         System.out.println("Loaded realm " + realm.getRealm());
         return realm;
     }
 
+    /** 解析 XML 输入流为 DOM 文档。 */
     public static Document loadXML(InputStream is) {
         try {
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
@@ -94,6 +108,7 @@ public class IOUtil {
         }
     }
 
+    /** 将 DOM 文档序列化为字符串。 */
     public static String documentToString(Document newDoc) {
         try {
             DOMSource domSource = new DOMSource(newDoc);
@@ -108,6 +123,7 @@ public class IOUtil {
         }
     }
 
+    /** 将 DOM 文档转换为可重复读取的输入流。 */
     public static InputStream documentToInputStream(Document doc) {
         try {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -122,20 +138,13 @@ public class IOUtil {
     }
 
     /**
-     * Modifies attribute value according to the given regex (first occurrence) iff 
-     * there are following conditions accomplished:
-     * 
-     *  - exactly one node is found within the document
-     *  - the attribute of the node exists
-     *  - the regex is found in the value of the attribute
-     * 
-     * Otherwise there is nothing changed.
-     * 
-     * @param doc
-     * @param tagName
-     * @param attributeName
-     * @param regex
-     * @param replacement
+     * 按正则替换 XML 元素属性值（仅当恰好找到一个匹配节点且属性存在时生效）。
+     *
+     * @param doc XML 文档
+     * @param tagName 元素标签名
+     * @param attributeName 属性名
+     * @param regex 待替换的正则表达式
+     * @param replacement 替换文本
      */
     public static void modifyDocElementAttribute(Document doc, String tagName, String attributeName, String regex, String replacement) {
         NodeList nodes = doc.getElementsByTagName(tagName);
@@ -152,6 +161,15 @@ public class IOUtil {
         node.setTextContent(node.getTextContent().replaceFirst(regex, replacement));
     }
 
+    /**
+     * 按属性值删除指定父节点下的子元素。
+     *
+     * @param doc XML 文档
+     * @param parentTag 父元素标签
+     * @param tagName 待删除子元素标签
+     * @param attributeName 匹配属性名
+     * @param value 匹配属性值
+     */
     public static void removeNodeByAttributeValue(Document doc, String parentTag, String tagName, String attributeName, String value){
         NodeList parentNodes = doc.getElementsByTagName(parentTag);
         if (parentNodes.getLength() != 1) {
@@ -176,18 +194,12 @@ public class IOUtil {
     }
 
     /**
-     * Modifies element text value according to the given regex (first occurrence) iff 
-     * there are following conditions accomplished:
-     * 
-     *  - exactly one node is found within the document
-     *  - the regex is found in the text content of the element
-     * 
-     * Otherwise there is nothing changed.
-     * 
-     * @param doc
-     * @param tagName
-     * @param regex
-     * @param replacement 
+     * 按正则替换 XML 元素文本内容（仅当恰好找到一个匹配节点时生效）。
+     *
+     * @param doc XML 文档
+     * @param tagName 元素标签名
+     * @param regex 待替换的正则表达式
+     * @param replacement 替换文本
      */
     public static void modifyDocElementValue(Document doc, String tagName, String regex, String replacement) {
         NodeList nodes = doc.getElementsByTagName(tagName);
@@ -205,6 +217,7 @@ public class IOUtil {
         node.setTextContent(node.getTextContent().replaceFirst(regex, replacement));
     }
 
+    /** 设置指定标签唯一匹配元素的属性值。 */
     public static void setDocElementAttributeValue(Document doc, String tagName, String attributeName, String value) {
         NodeList nodes = doc.getElementsByTagName(tagName);
         if (nodes.getLength() != 1) {
@@ -221,6 +234,7 @@ public class IOUtil {
         node.setAttribute(attributeName, value);
     }
 
+    /** 从父元素下移除所有指定标签名的子节点。 */
     public static void removeElementsFromDoc(Document doc, String parentTag, String removeNode) {
         NodeList nodes = doc.getElementsByTagName(parentTag);
         if (nodes.getLength() != 1) {
@@ -254,6 +268,13 @@ public class IOUtil {
 
     }
 
+    /**
+     * 按斜杠分隔路径获取元素文本内容。
+     *
+     * @param doc XML 文档
+     * @param path 元素路径，如 root/child/grandchild
+     * @return 文本内容，路径不存在时返回 null
+     */
     public static String getElementTextContent(Document doc, String path) {
         String[] pathSegments = path.split("/");
 
@@ -275,6 +296,7 @@ public class IOUtil {
         return currentElement.getTextContent();
     }
 
+    /** 在指定路径的父元素下追加子节点。 */
     public static void appendChildInDocument(Document doc, String parentPath, Element node) {
         String[] pathSegments = parentPath.split("/");
 
@@ -296,6 +318,7 @@ public class IOUtil {
         currentElement.appendChild(node);
     }
 
+    /** 按路径删除文档中的元素节点。 */
     public static void removeElementFromDoc(Document doc, String path) {
         String[] pathSegments = path.split("/");
 
@@ -317,6 +340,12 @@ public class IOUtil {
         currentElement.getParentNode().removeChild(currentElement);
     }
 
+    /**
+     * 在指定目录执行 shell 命令，超时 10 秒。
+     *
+     * @param command 命令字符串
+     * @param dir 工作目录
+     */
     public static void execCommand(String command, File dir) throws IOException, InterruptedException {
         Process process = Runtime.getRuntime().exec(command, null, dir);
         if (process.waitFor(10, TimeUnit.SECONDS)) {
@@ -335,6 +364,7 @@ public class IOUtil {
         }
     }
 
+    /** 读取并打印子进程标准输出或错误流内容。 */
     public static void getOutput(String type, InputStream is) throws IOException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(is));
         StringBuilder builder = new StringBuilder();

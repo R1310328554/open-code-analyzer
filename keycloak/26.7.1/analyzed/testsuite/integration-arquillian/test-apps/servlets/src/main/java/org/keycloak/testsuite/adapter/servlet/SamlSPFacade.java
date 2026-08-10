@@ -37,30 +37,38 @@ import org.keycloak.saml.common.exceptions.ProcessingException;
 import org.keycloak.saml.processing.api.saml.v2.request.SAML2Request;
 
 /**
-* @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
-* @version $Revision: 1 $
-*/
+ * SAML 服务提供者门面 Servlet，用于发起 AuthnRequest 并接收 SAML 响应。
+ *
+ * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
+ * @version $Revision: 1 $
+ */
 public class SamlSPFacade extends HttpServlet {
+    /** 最近一次收到的 SAML 响应内容。 */
     public static String samlResponse;
+    /** 发起认证请求时使用的 RelayState 值。 */
     public static String RELAY_STATE = "http://test.com/foo/bar";
+    /** IdP 回传的实际 RelayState。 */
     public static String sentRelayState;
 
+    /** 处理 GET 请求。 */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         handler(req, resp);
     }
 
+    /** 处理 POST 请求。 */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         handler(req, resp);
     }
 
+    /** 统一处理 SAML 认证发起与响应接收逻辑。 */
     private void handler(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         System.out.println("In SamlSPFacade Servlet handler()");
         if (req.getParameterMap().isEmpty()) {
             System.out.println("ParameterMap is empty, redirecting to keycloak server ");
             resp.setStatus(302);
-            // Redirect
+            // 重定向至 Keycloak SAML 端点
             UriBuilder builder = UriBuilder.fromUri(getSamlAuthnRequest(req));
             builder.queryParam("RelayState", RELAY_STATE);
             resp.setHeader("Location", builder.build().toString());
@@ -78,11 +86,12 @@ public class SamlSPFacade extends HttpServlet {
     }
 
    /*
-    * https://idp.ssocircle.com/sso/toolbox/samlEncode.jsp
+    * 构建 SAML AuthnRequest 并重定向绑定 URL。
+    * 参考 https://idp.ssocircle.com/sso/toolbox/samlEncode.jsp
     *
-    * returns (https instead of http in case ssl is required)
-    * 
-    * <samlp:AuthnRequest 
+    * 示例请求（启用 SSL 时将 http 替换为 https）：
+    *
+    * <samlp:AuthnRequest
     *     xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" 
     *     xmlns="urn:oasis:names:tc:SAML:2.0:assertion" 
     *     AssertionConsumerServiceURL="http://localhost:8280/employee/" 
@@ -97,6 +106,12 @@ public class SamlSPFacade extends HttpServlet {
     *         <samlp:NameIDPolicy AllowCreate="true" Format="urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified"/> 
     * </samlp:AuthnRequest> 
     */
+    /**
+     * 构造 SAML 2.0 认证请求并返回重定向 URI。
+     *
+     * @param req 当前 HTTP 请求
+     * @return 指向认证服务器的重定向 URI
+     */
     private URI getSamlAuthnRequest(HttpServletRequest req) {
         try {
             BaseSAML2BindingBuilder binding = new BaseSAML2BindingBuilder();

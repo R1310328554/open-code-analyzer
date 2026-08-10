@@ -27,14 +27,23 @@ import org.jboss.shrinkwrap.resolver.api.maven.ScopeType;
 import org.jboss.shrinkwrap.resolver.api.maven.coordinate.MavenDependencies;
 
 /**
+ * Keycloak 模块 Maven 依赖解析器，带内存缓存以避免重复解析。
+ *
  * @author mhajas
  */
 public class KeycloakDependenciesResolver {
 
+    /** 按 Maven 坐标缓存已解析的依赖文件数组。 */
     private static final Map<String, File[]> dependencies = new HashMap<>();
 
     protected static final Logger log = org.jboss.logging.Logger.getLogger(KeycloakDependenciesResolver.class);
 
+    /**
+     * 解析指定 Maven 坐标的编译期依赖（含传递依赖）。
+     *
+     * @param canonicalForm Maven 坐标 canonical 形式
+     * @return 解析得到的 JAR 文件数组
+     */
     public static File[] resolveDependencies(String canonicalForm) {
         if (dependencies.containsKey(canonicalForm)) {
             return dependencies.get(canonicalForm);

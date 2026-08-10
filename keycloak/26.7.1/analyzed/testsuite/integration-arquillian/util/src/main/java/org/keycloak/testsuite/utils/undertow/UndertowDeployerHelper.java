@@ -51,16 +51,27 @@ import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
 /**
+ * Undertow 测试部署辅助类，从 ShrinkWrap WAR 构建 {@link DeploymentInfo}。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class UndertowDeployerHelper {
 
     private static final Logger log = Logger.getLogger(UndertowDeployerHelper.class);
 
+    /** 根据容器配置与 WAR 归档构建部署信息。 */
     public DeploymentInfo getDeploymentInfo(UndertowContainerConfiguration config, WebArchive archive) {
         return getDeploymentInfo(config, archive, null);
     }
 
+    /**
+     * 构建或扩展 Undertow 部署信息。
+     *
+     * @param config Undertow 容器配置
+     * @param archive 待部署的 Web 归档
+     * @param di 可选的已有部署信息，为 null 时新建
+     * @return 完整的部署信息
+     */
     public DeploymentInfo getDeploymentInfo(UndertowContainerConfiguration config, WebArchive archive, DeploymentInfo di) {
         String archiveName = archive.getName();
         String contextPath = getContextPath(archive);
@@ -99,6 +110,7 @@ public class UndertowDeployerHelper {
         }
     }
 
+    /** 为 WAR 归档创建基于 URL 的资源管理器。 */
     private ResourceManager getResourceManager(final String appServerRoot, final WebArchive archive) throws IOException {
         return new ResourceManager() {
 
@@ -156,12 +168,13 @@ public class UndertowDeployerHelper {
 
             @Override
             public void close() throws IOException {
-                // TODO: Should close open streams?
+                // TODO: 是否应关闭已打开的流？
             }
 
         };
     }
 
+    /** 解析 XML 输入流为 DOM 文档。 */
     private Document loadXML(InputStream is) {
         try {
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
@@ -172,6 +185,7 @@ public class UndertowDeployerHelper {
         }
     }
 
+    /** 扫描 WAR 中带 {@link WebServlet} 注解的类并注册为 Servlet。 */
     private void addAnnotatedServlets(DeploymentInfo di, Archive<?> archive) {
         Map<ArchivePath, Node> classNodes = archive.getContent((ArchivePath path) -> {
 
@@ -204,6 +218,7 @@ public class UndertowDeployerHelper {
 
     }
 
+    /** 从 META-INF/context.xml 或 WAR 文件名推导上下文路径。 */
     private String getContextPath(WebArchive archive) {
         if (archive.contains("/META-INF/context.xml") && (archive.get("/META-INF/context.xml").getAsset() instanceof StringAsset)) {
             StringAsset asset = (StringAsset) archive.get("/META-INF/context.xml").getAsset();
