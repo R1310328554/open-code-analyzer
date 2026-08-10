@@ -943,3 +943,18 @@
 2026-08-10T03:13:47Z DONE common/src/main/java/com/alibaba/nacos/common/packagescan/resource/ByteArrayResource.java nacos 3.2.3 wave31a [0:15] common notify/packagescan
 2026-08-10T03:13:47Z DONE common/src/main/java/com/alibaba/nacos/common/packagescan/resource/ClassPathResource.java nacos 3.2.3 wave31a [0:15] common notify/packagescan
 2026-08-10T03:13:47Z DONE common/src/main/java/com/alibaba/nacos/common/packagescan/resource/ContextResource.java nacos 3.2.3 wave31a [0:15] common notify/packagescan
+2026-08-10T03:14:08Z DONE common/src/main/java/com/alibaba/nacos/common/packagescan/resource/DefaultResourceLoader.java nacos 3.2.3 wave31b [15:30] common packagescan resource
+2026-08-10T03:14:08Z DONE common/src/main/java/com/alibaba/nacos/common/packagescan/resource/FileSystemResource.java nacos 3.2.3 wave31b [15:30] common packagescan resource
+2026-08-10T03:14:08Z DONE common/src/main/java/com/alibaba/nacos/common/packagescan/resource/FileUrlResource.java nacos 3.2.3 wave31b [15:30] common packagescan resource
+2026-08-10T03:14:08Z DONE common/src/main/java/com/alibaba/nacos/common/packagescan/resource/InputStreamResource.java nacos 3.2.3 wave31b [15:30] common packagescan resource
+2026-08-10T03:14:08Z DONE common/src/main/java/com/alibaba/nacos/common/packagescan/resource/InputStreamSource.java nacos 3.2.3 wave31b [15:30] common packagescan resource
+2026-08-10T03:14:08Z DONE common/src/main/java/com/alibaba/nacos/common/packagescan/resource/PathMatchingResourcePatternResolver.java nacos 3.2.3 wave31b [15:30] common packagescan resource
+2026-08-10T03:14:08Z DONE common/src/main/java/com/alibaba/nacos/common/packagescan/resource/PathResource.java nacos 3.2.3 wave31b [15:30] common packagescan resource
+2026-08-10T03:14:08Z DONE common/src/main/java/com/alibaba/nacos/common/packagescan/resource/ProtocolResolver.java nacos 3.2.3 wave31b [15:30] common packagescan resource
+2026-08-10T03:14:08Z DONE common/src/main/java/com/alibaba/nacos/common/packagescan/resource/Resource.java nacos 3.2.3 wave31b [15:30] common packagescan resource
+2026-08-10T03:14:08Z DONE common/src/main/java/com/alibaba/nacos/common/packagescan/resource/ResourceLoader.java nacos 3.2.3 wave31b [15:30] common packagescan resource
+2026-08-10T03:14:08Z DONE common/src/main/java/com/alibaba/nacos/common/packagescan/resource/ResourcePatternResolver.java nacos 3.2.3 wave31b [15:30] common packagescan resource
+2026-08-10T03:14:08Z DONE common/src/main/java/com/alibaba/nacos/common/packagescan/resource/UrlResource.java nacos 3.2.3 wave31b [15:30] common packagescan resource
+2026-08-10T03:14:08Z DONE common/src/main/java/com/alibaba/nacos/common/packagescan/resource/VfsPatternUtils.java nacos 3.2.3 wave31b [15:30] common packagescan resource
+2026-08-10T03:14:08Z DONE common/src/main/java/com/alibaba/nacos/common/packagescan/resource/VfsResource.java nacos 3.2.3 wave31b [15:30] common packagescan resource
+2026-08-10T03:14:08Z DONE common/src/main/java/com/alibaba/nacos/common/packagescan/resource/VfsUtils.java nacos 3.2.3 wave31b [15:30] common packagescan resource
