@@ -15,23 +15,8 @@
     "core/src/main/java/org/keycloak/jose/jws/Algorithm.java",
     "core/src/main/java/org/keycloak/jose/jws/AlgorithmType.java",
     "core/src/main/java/org/keycloak/jose/jws/JWSBuilder.java",
-    "core/src/main/java/org/keycloak/jose/jws/JWSHeader.java",
-    "core/src/main/java/org/keycloak/jose/jws/JWSInput.java",
-    "core/src/main/java/org/keycloak/jose/jws/JWSInputException.java",
-    "core/src/main/java/org/keycloak/jose/jws/crypto/ECDSAProvider.java",
-    "core/src/main/java/org/keycloak/jose/jws/crypto/HMACProvider.java",
-    "core/src/main/java/org/keycloak/jose/jws/crypto/HashUtils.java",
-    "core/src/main/java/org/keycloak/jose/jws/crypto/RSAProvider.java",
-    "core/src/main/java/org/keycloak/jose/jws/crypto/SignatureProvider.java",
-    "core/src/main/java/org/keycloak/json/StringListMapDeserializer.java",
-    "core/src/main/java/org/keycloak/json/StringOrArrayDeserializer.java",
-    "core/src/main/java/org/keycloak/json/StringOrArraySerializer.java",
-    "core/src/main/java/org/keycloak/protocol/oidc/client/authentication/ClientCredentialsProvider.java",
-    "core/src/main/java/org/keycloak/protocol/oidc/client/authentication/ClientCredentialsProviderUtils.java",
-    "core/src/main/java/org/keycloak/protocol/oidc/client/authentication/ClientIdAndSecretCredentialsProvider.java",
-    "core/src/main/java/org/keycloak/protocol/oidc/client/authentication/JWTClientCredentialsProvider.java",
-    "core/src/main/java/org/keycloak/protocol/oidc/client/authentication/JWTClientSecretCredentialsProvider.java"
+    "core/src/main/java/org/keycloak/jose/jws/JWSHeader.java"
   ],
   "remaining_pending": 5668,
-  "done": 300
+  "done": 315
 }
