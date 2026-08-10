@@ -22,9 +22,12 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.jce.spec.ECPublicKeySpec;
 import org.bouncycastle.math.ec.ECPoint;
 
+/**
+ * 基于 BouncyCastle 的 ECDSA 密码学辅助实现，处理 JWS/JWK 常用的 R||S 与 ASN.1 DER 签名格式互转。
+ */
 public class BCECDSACryptoProvider implements ECDSACryptoProvider {
 
-
+    /** {@inheritDoc} 将拼接的 R||S 签名转换为 ASN.1 DER 编码。 */
     @Override
     public byte[] concatenatedRSToASN1DER(final byte[] signature, int signLength) throws IOException {
         int len = signLength / 2;
@@ -48,6 +51,7 @@ public class BCECDSACryptoProvider implements ECDSACryptoProvider {
         return bos.toByteArray();
     }
 
+    /** {@inheritDoc} 将 ASN.1 DER 编码的 ECDSA 签名转换为固定长度的 R||S 拼接格式。 */
     @Override
     public byte[] asn1derToConcatenatedRS(final byte[] derEncodedSignatureValue, int signLength) throws IOException {
         int len = signLength / 2;
@@ -70,6 +74,7 @@ public class BCECDSACryptoProvider implements ECDSACryptoProvider {
         return concatenatedSignatureValue;
     }
 
+    /** {@inheritDoc} 由 EC 私钥推导对应的公钥。 */
     @Override
     public ECPublicKey getPublicFromPrivate(ECPrivateKey ecPrivateKey) {
         try {

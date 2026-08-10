@@ -20,14 +20,23 @@
 package org.keycloak.federation.kerberos;
 
 /**
+ * Kerberos 主体名值对象，解析 {@code prefix@REALM} 格式并规范化 realm 为大写。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class KerberosPrincipal {
 
-    // Full principal name like "john@KEYCLOAK.ORG"
+    // 完整主体名，如 "john@KEYCLOAK.ORG"
     private final String kerberosPrincipal;
-    private final String prefix; // Something like "john"
-    private final String realm; // Something like "KEYCLOAK.ORG"
+    /** 主体前缀（用户名部分）。 */
+    private final String prefix;
+    /** Kerberos realm（大写）。 */
+    private final String realm;
+    /**
+     * 从完整 Kerberos 主体字符串构造；格式必须为 {@code name@REALM}。
+     *
+     * @param kerberosPrincipal 完整主体名
+     */
     public KerberosPrincipal(String kerberosPrincipal) {
         String[] parts = kerberosPrincipal.split("@");
         if (parts.length != 2) {

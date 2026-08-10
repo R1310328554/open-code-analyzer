@@ -61,7 +61,7 @@ import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
 import org.bouncycastle.jce.spec.ECNamedCurveSpec;
 
 /**
- * ECDH Ephemeral Static Algorithm Provider.
+ * ECDH 临时-静态（Ephemeral Static）JWE 算法提供器，实现 RFC 7518 密钥协商与 CEK 派生。
  *
  * @author Justin Tay
  * @see <a href=
@@ -70,6 +70,7 @@ import org.bouncycastle.jce.spec.ECNamedCurveSpec;
  */
 public class BCEcdhEsAlgorithmProvider implements JWEAlgorithmProvider {
 
+    /** {@inheritDoc} 解码 CEK：ECDH-ES 直接返回派生密钥，KW 变体先解封 AES Key Wrap。 */
     @Override
     public byte[] decodeCek(byte[] encodedCek, Key encryptionKey, JWEHeader header,
             JWEEncryptionProvider encryptionProvider) throws Exception {
@@ -89,6 +90,7 @@ public class BCEcdhEsAlgorithmProvider implements JWEAlgorithmProvider {
         }
     }
 
+    /** {@inheritDoc} 编码 CEK：生成临时 EC 密钥对、写入 epk 头并派生/封装 CEK。 */
     @Override
     public byte[] encodeCek(JWEEncryptionProvider encryptionProvider, JWEKeyStorage keyStorage, Key encryptionKey,
             JWEHeaderBuilder headerBuilder) throws Exception {
@@ -123,10 +125,12 @@ public class BCEcdhEsAlgorithmProvider implements JWEAlgorithmProvider {
         }
     }
 
+    /** Base64URL 解码，null 视为空字符串。 */
     private byte[] base64UrlDecode(String encoded) {
         return Base64Url.decode(encoded == null ? "" : encoded);
     }
 
+    /** 在指定 EC 参数上生成临时密钥对。 */
     private static KeyPair generateEcKeyPair(ECParameterSpec params) {
         try {
             KeyPairGenerator keyGen = KeyPairGenerator.getInstance("EC");
@@ -138,6 +142,7 @@ public class BCEcdhEsAlgorithmProvider implements JWEAlgorithmProvider {
         }
     }
 
+    /** 按 RFC 7518 构造 Concat KDF 的 OtherInfo 字段。 */
     private static byte[] deriveOtherInfo(int keyDataLength, String algorithmID, byte[] agreementPartyUInfo,
             byte[] agreementPartyVInfo) {
         byte[] algorithmId = encodeDataLengthData(algorithmID.getBytes(Charset.forName("ASCII")));
@@ -148,6 +153,17 @@ public class BCEcdhEsAlgorithmProvider implements JWEAlgorithmProvider {
         return concat(algorithmId, partyUInfo, partyVInfo, suppPubInfo, suppPrivInfo);
     }
 
+    /**
+     * 执行 ECDH 密钥协商并通过 Concat KDF 派生 CEK。
+     *
+     * @param publicKey  对方公钥
+     * @param privateKey 本地私钥
+     * @param keyDataLength 派生密钥长度（位）
+     * @param algorithmID 算法标识
+     * @param agreementPartyUInfo apu 头字段解码值
+     * @param agreementPartyVInfo apv 头字段解码值
+     * @return 派生密钥字节
+     */
     public static byte[] deriveKey(Key publicKey, Key privateKey, int keyDataLength, String algorithmID,
             byte[] agreementPartyUInfo, byte[] agreementPartyVInfo)
             throws InvalidKeyException, NoSuchAlgorithmException, IllegalStateException {
@@ -162,6 +178,7 @@ public class BCEcdhEsAlgorithmProvider implements JWEAlgorithmProvider {
         return derivedKeyBytes;
     }
 
+    /** 将 {@link ECPublicKey} 转换为 JWE 头部 epk 所需的 {@link ECPublicJWK}。 */
     private static ECPublicJWK toECPublicJWK(ECPublicKey ecKey) {
         ECPublicJWK k = new ECPublicJWK();
         int fieldSize = ecKey.getParams().getCurve().getField().getFieldSize();
@@ -172,6 +189,7 @@ public class BCEcdhEsAlgorithmProvider implements JWEAlgorithmProvider {
         return k;
     }
 
+    /** 从 JWK epk 重建 {@link PublicKey}。 */
     private static PublicKey toPublicKey(ECPublicJWK jwk) {
         String crv = jwk.getCrv();
         String xStr = jwk.getX();
@@ -203,6 +221,7 @@ public class BCEcdhEsAlgorithmProvider implements JWEAlgorithmProvider {
         }
     }
 
+    /** 执行 ECDH 并返回共享秘密 Z。 */
     private static byte[] deriveSharedSecret(Key publicKey, Key privateKey)
             throws NoSuchAlgorithmException, InvalidKeyException, IllegalStateException {
         KeyAgreement keyAgreement = KeyAgreement.getInstance("ECDH");
@@ -211,6 +230,7 @@ public class BCEcdhEsAlgorithmProvider implements JWEAlgorithmProvider {
         return keyAgreement.generateSecret();
     }
 
+    /** 根据 JWE alg/enc 确定 Concat KDF 中的 AlgorithmID。 */
     private static String getAlgorithmID(String alg, String enc) {
         if (Algorithm.ECDH_ES_A128KW.equals(alg) || Algorithm.ECDH_ES_A192KW.equals(alg)
                 || Algorithm.ECDH_ES_A256KW.equals(alg)) {
@@ -222,6 +242,7 @@ public class BCEcdhEsAlgorithmProvider implements JWEAlgorithmProvider {
         }
     }
 
+    /** 将 NIST 曲线名（P-256 等）映射为 SEC 曲线名。 */
     private static String nistToSecCurveName(String nistCurveName) {
         switch (nistCurveName) {
         case "P-256":
@@ -235,6 +256,7 @@ public class BCEcdhEsAlgorithmProvider implements JWEAlgorithmProvider {
         }
     }
 
+    /** 根据算法类型返回派生密钥长度（位）。 */
     private static int getKeyDataLength(String alg, JWEEncryptionProvider encryptionProvider) {
         if (Algorithm.ECDH_ES_A128KW.equals(alg)) {
             return 128;
@@ -249,20 +271,24 @@ public class BCEcdhEsAlgorithmProvider implements JWEAlgorithmProvider {
         }
     }
 
+    /** 编码 OtherInfo 中的长度前缀数据段。 */
     private static byte[] encodeDataLengthData(final byte[] data) {
         byte[] databytes = data != null ? data : new byte[0];
         byte[] datalen = toByteArray(databytes.length);
         return concat(datalen, databytes);
     }
 
+    /** 返回空字节数组。 */
     private static byte[] emptyBytes() {
         return new byte[0];
     }
 
+    /** 将 32 位整数编码为 4 字节大端数组。 */
     private static byte[] toByteArray(int intValue) {
         return new byte[] { (byte) (intValue >> 24), (byte) (intValue >> 16), (byte) (intValue >> 8), (byte) intValue };
     }
 
+    /** 拼接多个字节数组。 */
     private static byte[] concat(byte[]... byteArrays) {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             for (byte[] bytes : byteArrays) {

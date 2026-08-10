@@ -36,7 +36,7 @@ import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 
 /**
- * Encodes Key or Certificates to PEM format string
+ * 基于 BCFIPS 的 PEM 编解码工具，将密钥与证书编码为 PEM 字符串。
  *
  * @author <a href="mailto:david.anderson@redhat.com">David Anderson</a>
  * @version $Revision: 1 $
@@ -45,8 +45,8 @@ public class BCFIPSPemUtilsProvider extends PemUtilsProvider {
 
 
     /**
-     * Encode object to JCA PEM String using BC FIPS libraries
-     * 
+     * 使用 BCFIPS 库将对象编码为 JCA PEM 字符串（不含 BEGIN/END 行）。
+     *
      * @param obj
      * @return The encoded PEM string
      */
@@ -72,16 +72,16 @@ public class BCFIPSPemUtilsProvider extends PemUtilsProvider {
     @Override
     public PublicKey decodePublicKey(String pem) {
         try {
-            // try to decode using SubjectPublicKeyInfo which allows to know the key type
+            // 优先通过 SubjectPublicKeyInfo 解析以识别密钥类型
             SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfo.getInstance(pemToDer(pem));
             if (publicKeyInfo != null && publicKeyInfo.getAlgorithm() != null) {
                 return new JcaPEMKeyConverter().getPublicKey(publicKeyInfo);
             }
         } catch (Exception e) {
-            // error reading PEM object just go to previous RSA forced key
+            // 解析失败时回退为强制 RSA 解码
         }
 
-        // assume RSA if it cannot be decoded from BC knowing the key
+        // 无法识别类型时假定 RSA
         return decodePublicKey(pem, "RSA");
     }
 
@@ -94,15 +94,15 @@ public class BCFIPSPemUtilsProvider extends PemUtilsProvider {
         try {
             boolean beginEndAvailable = pem.startsWith("-----BEGIN");
             Object parsedPk;
-            if (beginEndAvailable) { // No fallback needed as BC should know the format of the key (based on the phrase like BEGIN PRIVATE KEY, BEGIN RSA PRIVATE KEY, BEGIN EC PRIVATE KEY etc)
+            if (beginEndAvailable) { // BCFIPS 可根据 BEGIN 行识别 PKCS#8/RSA/EC 等格式，无需回退
                 parsedPk = readPrivateKeyObject(pem);
             } else {
                 try {
-                    // Case for the PEM in traditional format
+                    // 传统 PEM 格式（无 BEGIN 行）
                     String rsaPem = PemUtils.addRsaPrivateKeyBeginEnd(pem);
                     parsedPk = readPrivateKeyObject(rsaPem);
                 } catch (IOException ioe) {
-                    // Case for generic PKCS#8 represented keys
+                    // 通用 PKCS#8 格式
                     pem = PemUtils.addPrivateKeyBeginEnd(pem);
                     parsedPk = readPrivateKeyObject(pem);
                 }
@@ -110,11 +110,11 @@ public class BCFIPSPemUtilsProvider extends PemUtilsProvider {
 
             PrivateKeyInfo privateKeyInfo;
             if (parsedPk instanceof PEMKeyPair) {
-                // Usually for keys of known format (For example when PEM starts with "BEGIN RSA PRIVATE KEY")
+                // 已知格式密钥（如 BEGIN RSA PRIVATE KEY）
                 PEMKeyPair pemKeyPair = (PEMKeyPair)parsedPk;
                 privateKeyInfo = pemKeyPair.getPrivateKeyInfo();
             } else if (parsedPk instanceof PrivateKeyInfo) {
-                // Usually for PKCS#8 formatted keys of unknown type ("BEGIN PRIVATE KEY")
+                // PKCS#8 通用私钥（BEGIN PRIVATE KEY）
                 privateKeyInfo = (PrivateKeyInfo) parsedPk;
             } else {
                 throw new IllegalStateException("Unknown type returned by PEMParser when parsing private key: " + parsedPk.getClass());
@@ -128,6 +128,7 @@ public class BCFIPSPemUtilsProvider extends PemUtilsProvider {
         }
     }
 
+    /** 解析带 BEGIN/END 标记的 PEM 私钥对象。 */
     private Object readPrivateKeyObject(String pemWithBeginEnd) throws IOException {
         PEMParser parser = new PEMParser(new StringReader(pemWithBeginEnd));
         return parser.readObject();

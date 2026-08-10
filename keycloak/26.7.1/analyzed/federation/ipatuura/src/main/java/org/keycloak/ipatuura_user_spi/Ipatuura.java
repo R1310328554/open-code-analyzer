@@ -33,11 +33,16 @@ import org.keycloak.models.UserModel;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.jboss.logging.Logger;
 
+/**
+ * Ipatuura SCIM 后端 HTTP 客户端，负责 CSRF 登录、用户 CRUD 与 Kerberos 桥接认证。
+ */
 public class Ipatuura {
     private static final Logger logger = Logger.getLogger(Ipatuura.class);
 
     private final ComponentModel model;
+    /** SCIM Core User 模式 URI。 */
     public static final String SCHEMA_CORE_USER = "urn:ietf:params:scim:schemas:core:2.0:User";
+    /** SCIM SearchRequest 消息模式 URI。 */
     public static final String SCHEMA_API_MESSAGES_SEARCHREQUEST = "urn:ietf:params:scim:api:messages:2.0:SearchRequest";
 
     String sessionid_cookie;
@@ -47,11 +52,13 @@ public class Ipatuura {
 
     private final KeycloakSession session;
 
+    /** 绑定 Keycloak 会话与用户联邦组件配置。 */
     public Ipatuura(KeycloakSession session, ComponentModel model) {
         this.model = model;
         this.session = session;
     }
 
+    /** 从 Set-Cookie 响应头解析 csrftoken 与 sessionid。 */
     private void parseSetCookie(SimpleHttpResponse response) throws IOException {
         List<String> setCookieHeaders = response.getHeader("Set-Cookie");
 
@@ -59,11 +66,11 @@ public class Ipatuura {
             String[] kv = h.split(";");
             for (String s : kv) {
                 if (s.contains("csrftoken")) {
-                    /* key=value */
+                    /* 解析 key=value Cookie 片段 */
                     csrf_cookie = s;
                     csrf_value = s.substring(s.lastIndexOf("=") + 1);
                 } else if (s.contains("sessionid")) {
-                    /* key=value */
+                    /* 解析 key=value Cookie 片段 */
                     sessionid_cookie = s;
                     csrf_cookie += String.format("; %s", sessionid_cookie);
                 }
@@ -71,16 +78,17 @@ public class Ipatuura {
         }
     }
 
+    /** 向 Ipatuura 管理端登录并缓存 CSRF/session Cookie。 */
     public Integer csrfAuthLogin() {
 
         SimpleHttpResponse response;
 
-        /* Get inputs */
+        /* 读取组件配置的 SCIM URL 与登录凭据 */
         String server = model.getConfig().getFirst("scimurl");
         String username = model.getConfig().getFirst("loginusername");
         String password = model.getConfig().getFirst("loginpassword");
 
-        /* Execute GET to get initial csrftoken */
+        /* GET 登录页以获取初始 csrftoken */
         String url = String.format("https://%s%s", server, "/admin/login/");
 
         try {
@@ -92,9 +100,9 @@ public class Ipatuura {
             throw new RuntimeException(e);
         }
 
-        /* Perform login POST */
+        /* POST 提交用户名密码完成会话建立 */
         try {
-            /* Here we retrieve the Response sessionid and csrftoken cookie */
+            /* 从响应更新 sessionid 与 csrftoken */
             response = SimpleHttp.create(session).doPost(url).header("X-CSRFToken", csrf_value).header("Cookie", csrf_cookie)
                     .header("referer", url).param("username", username).param("password", password).asResponse();
 
@@ -109,13 +117,14 @@ public class Ipatuura {
         return 0;
     }
 
+    /** 通过 Ipatuura simple_pwd 端点校验用户名密码。 */
     public boolean isValid(String username, String password) {
 
         if (!this.logged_in) {
             this.csrfAuthLogin();
         }
 
-        /* Build URL */
+        /* 构造 SCIM 后端 URL */
         String server = model.getConfig().getFirst("scimurl");
         String endpointurl = String.format("https://%s/creds/simple_pwd", server);
 
@@ -133,6 +142,7 @@ public class Ipatuura {
 
     }
 
+    /** 将 SPNEGO token 提交 Kerberos 桥接端点并返回 Remote-User。 */
     public String gssAuth(String spnegoToken) {
 
         String server = model.getConfig().getFirst("scimurl");
@@ -150,6 +160,7 @@ public class Ipatuura {
         }
     }
 
+    /** 已登录状态下向 SCIM 或 domains API 发送 HTTP 请求。 */
     public <T> SimpleHttpResponse clientRequest(String endpoint, String method, T entity) throws Exception {
         SimpleHttpResponse response = null;
 
@@ -157,7 +168,7 @@ public class Ipatuura {
             this.csrfAuthLogin();
         }
 
-        /* Build URL */
+        /* 构造 SCIM 后端 URL */
         String server = model.getConfig().getFirst("scimurl");
         String endpointurl;
         if (endpoint.contains("domain")) {
@@ -180,7 +191,7 @@ public class Ipatuura {
                             .asResponse();
                     break;
                 case "POST":
-                    /* Header is needed for domains endpoint only, but use it here anyway */
+                    /* referer 头主要为 domains 端点所需，此处统一携带 */
                     response = SimpleHttp.create(session).doPost(endpointurl).header("X-CSRFToken", this.csrf_value)
                             .header("Cookie", this.csrf_cookie).header("SessionId", sessionid_cookie)
                             .header("referer", endpointurl).json(entity).asResponse();
@@ -197,10 +208,11 @@ public class Ipatuura {
             throw new Exception();
         }
 
-        /* Caller is responsible for executing .close() */
+        /* 调用方负责关闭响应 */
         return response;
     }
 
+    /** 构造按属性过滤的 SCIM SearchRequest。 */
     private SCIMSearchRequest setupSearch(String username, String attribute) {
         List<String> schemas = new ArrayList<String>();
         SCIMSearchRequest search = new SCIMSearchRequest();
@@ -217,6 +229,7 @@ public class Ipatuura {
         return search;
     }
 
+    /** 通过 SCIM /.search 按指定属性查找用户。 */
     private SCIMUser getUserByAttr(String username, String attribute) {
         SCIMSearchRequest newSearch = setupSearch(username, attribute);
 
@@ -236,26 +249,31 @@ public class Ipatuura {
         return user;
     }
 
+    /** 按 userName 属性查询 SCIM 用户。
     public SCIMUser getUserByUsername(String username) {
         String attribute = "userName";
         return getUserByAttr(username, attribute);
     }
 
+    /** 按 emails.value 属性查询 SCIM 用户。
     public SCIMUser getUserByEmail(String username) {
         String attribute = "emails.value";
         return getUserByAttr(username, attribute);
     }
 
+    /** 按 name.givenName 属性查询 SCIM 用户。
     public SCIMUser getUserByFirstName(String username) {
         String attribute = "name.givenName";
         return getUserByAttr(username, attribute);
     }
 
+    /** 按 name.familyName 属性查询 SCIM 用户。
     public SCIMUser getUserByLastName(String username) {
         String attribute = "name.familyName";
         return getUserByAttr(username, attribute);
     }
 
+    /** 查找并 DELETE SCIM 用户资源。
     public SimpleHttpResponse deleteUser(String username) {
         SCIMUser userobj = getUserByUsername(username);
         SCIMUser.Resource user = userobj.getResources().get(0);
@@ -273,9 +291,8 @@ public class Ipatuura {
         return response;
     }
 
-    /*
-     * Keycloak UserRegistrationProvider addUser() method only provides username as input, here we provide mostly dummy values
-     * which will be replaced by actual user input via appropriate setter methods once in the returned UserModel
+    /**
+     * 为 Keycloak addUser 构造占位 SCIM 用户（姓名/邮箱后续由 setter 更新）。
      */
     private SCIMUser.Resource setupUser(String username) {
         SCIMUser.Resource user = new SCIMUser.Resource();
@@ -305,6 +322,7 @@ public class Ipatuura {
         return user;
     }
 
+    /** 在 SCIM 后端创建新用户。 */
     public SimpleHttpResponse createUser(String username) {
         String usersUrl = "Users";
 
@@ -321,6 +339,7 @@ public class Ipatuura {
         return response;
     }
 
+    /** 将 Keycloak 用户属性映射到 SCIM Resource 字段。 */
     private void setUserAttr(SCIMUser.Resource user, String attr, String value) {
         SCIMUser.Resource.Name name = user.getName();
         SCIMUser.Resource.Email email = new SCIMUser.Resource.Email();
@@ -341,7 +360,7 @@ public class Ipatuura {
                 user.setEmails(emails);
                 break;
             case UserModel.USERNAME:
-                /* Changing username not supported */
+                /* SCIM 后端不支持修改 userName */
                 break;
             default:
                 logger.debug("Unknown user attribute to set: " + attr);
@@ -349,9 +368,10 @@ public class Ipatuura {
         }
     }
 
+    /** 读取现有 SCIM 用户并 PUT 更新指定属性。 */
     public SimpleHttpResponse updateUser(Ipatuura ipatuura, String username, String attr, List<String> values) {
         logger.debug(String.format("Updating %s attribute for %s", attr, username));
-        /* Get existing user */
+        /* 获取现有 SCIM 用户 */
         if (ipatuura.csrfAuthLogin() == null) {
             logger.error("Error during login");
         }
@@ -359,10 +379,10 @@ public class Ipatuura {
         SCIMUser userobj = getUserByUsername(username);
         SCIMUser.Resource user = userobj.getResources().get(0);
 
-        /* Modify attributes */
+        /* 修改本地 Resource 属性 */
         setUserAttr(user, attr, values.get(0));
 
-        /* Update user in SCIM */
+        /* PUT 写回 SCIM 服务端 */
         String modifyUrl = String.format("Users/%s", user.getId());
 
         SimpleHttpResponse response;
@@ -376,30 +396,37 @@ public class Ipatuura {
         return response;
     }
 
+    /** 返回 SCIM 用户 active 标志。
     public boolean getActive(SCIMUser user) {
         return user.getResources().get(0).getActive();
     }
 
+    /** 返回 SCIM 用户主邮箱。
     public String getEmail(SCIMUser user) {
         return user.getResources().get(0).getEmails().get(0).getValue();
     }
 
+    /** 返回 SCIM 用户 givenName。
     public String getFirstName(SCIMUser user) {
         return user.getResources().get(0).getName().getGivenName();
     }
 
+    /** 返回 SCIM 用户 familyName。
     public String getLastName(SCIMUser user) {
         return user.getResources().get(0).getName().getFamilyName();
     }
 
+    /** 返回 SCIM userName。
     public String getUserName(SCIMUser user) {
         return user.getResources().get(0).getUserName();
     }
 
+    /** 返回 SCIM 用户资源 id。
     public String getId(SCIMUser user) {
         return user.getResources().get(0).getId();
     }
 
+    /** 返回 SCIM 用户所属组的 display 名称列表。
     public List<String> getGroupsList(SCIMUser user) {
         List<SCIMUser.Resource.Group> groups = user.getResources().get(0).getGroups();
         List<String> groupnames = new ArrayList<String>();

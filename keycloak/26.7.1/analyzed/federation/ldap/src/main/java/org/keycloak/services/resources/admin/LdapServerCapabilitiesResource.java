@@ -37,6 +37,8 @@ import org.keycloak.services.resources.admin.fgap.AdminPermissionEvaluator;
 import org.jboss.resteasy.reactive.NoCache;
 
 /**
+ * 管理端 REST 资源：查询 LDAP 服务端支持的扩展与能力。
+ *
  * @resource User Storage Provider
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
@@ -65,7 +67,7 @@ public class LdapServerCapabilitiesResource {
     }
 
     /**
-     * Get LDAP supported extensions.
+     * 查询 LDAP 服务端支持的扩展与能力。
      * @param config LDAP configuration
      * @return
      */

@@ -24,7 +24,7 @@ import org.keycloak.representations.idm.ComponentRepresentation;
 import org.keycloak.storage.UserStorageProvider.EditMode;
 
 /**
- * Configuration specific to {@link KerberosFederationProvider}
+ * {@link KerberosFederationProvider} 专用配置，扩展编辑模式与密码认证等选项。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
@@ -38,6 +38,7 @@ public class KerberosConfig extends CommonKerberosConfig {
         super(component);
     }
 
+    /** 返回用户属性编辑模式，未配置时默认为 {@link EditMode#UNSYNCED}。 */
     public EditMode getEditMode() {
         String editModeString = getConfig().getFirst(LDAPConstants.EDIT_MODE);
         if (editModeString == null) {
@@ -47,10 +48,12 @@ public class KerberosConfig extends CommonKerberosConfig {
         }
     }
 
+    /** 是否允许通过 Kerberos 密码（非 SPNEGO）认证。 */
     public boolean isAllowPasswordAuthentication() {
         return Boolean.valueOf(getConfig().getFirst(KerberosConstants.ALLOW_PASSWORD_AUTHENTICATION));
     }
 
+    /** 首次 Kerberos 登录时是否要求用户更新资料。 */
     public boolean isUpdateProfileFirstLogin() {
         return Boolean.valueOf(getConfig().getFirst(KerberosConstants.UPDATE_PROFILE_FIRST_LOGIN));
     }

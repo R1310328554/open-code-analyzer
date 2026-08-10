@@ -32,6 +32,8 @@ import org.keycloak.federation.kerberos.CommonKerberosConfig;
 import org.jboss.logging.Logger;
 
 /**
+ * 使用 keytab 为 Keycloak 服务端登录 Kerberos {@link Subject}，供 SPNEGO 接受客户端上下文。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class KerberosServerSubjectAuthenticator {
@@ -56,6 +58,7 @@ public class KerberosServerSubjectAuthenticator {
     }
 
 
+    /** 通过 JAAS 登录并返回服务端 Kerberos Subject。 */
     public Subject authenticateServerSubject() throws LoginException {
         Configuration config = createJaasConfiguration();
         loginContext = new LoginContext("does-not-matter", null, NO_CALLBACK_HANDLER, config);
@@ -64,6 +67,7 @@ public class KerberosServerSubjectAuthenticator {
     }
 
 
+    /** 注销已登录的服务端 Subject。 */
     public void logoutServerSubject() {
         if (loginContext != null) {
             try {
@@ -75,6 +79,7 @@ public class KerberosServerSubjectAuthenticator {
     }
 
 
+    /** 创建基于 keytab 与服务主体的 JAAS 配置。 */
     protected Configuration createJaasConfiguration() {
         return KerberosJdkProvider.getProvider().createJaasConfigurationForServer(config.getKeyTab(), config.getServerPrincipal(), config.isDebug());
     }

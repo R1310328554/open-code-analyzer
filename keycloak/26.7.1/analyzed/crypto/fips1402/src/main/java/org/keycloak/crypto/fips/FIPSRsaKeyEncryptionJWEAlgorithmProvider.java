@@ -16,19 +16,22 @@ import org.bouncycastle.crypto.asymmetric.AsymmetricRSAPublicKey;
 import org.bouncycastle.crypto.fips.FipsRSA;
 
 /**
- * Fips note: Based on https://downloads.bouncycastle.org/fips-java/BC-FJA-UserGuide-1.0.2.pdf, Section 4
- * There are no direct public/private key ciphers available in approved mode. Available ciphers are
- * restricted to use for key wrapping and key transport, see section 7 and section 8 for details.
- * Our solution is to pull out the CEK signature and encryption keys , encode them separately , and then
+ * FIPS 140-2 环境下的 RSA 密钥封装 JWE 算法提供器（PKCS#1 v1.5 或 OAEP）。
+ * <p>
+ * 批准模式下 RSA 仅可用于密钥封装/传输，故通过 {@link FipsRSA.KeyWrapOperatorFactory} 封装 CEK。
  */
 public class FIPSRsaKeyEncryptionJWEAlgorithmProvider implements JWEAlgorithmProvider {
 
     private final FipsRSA.WrapParameters wrapParameters;
 
+    /**
+     * @param wrapParameters RSA 封装参数（PKCS1v1_5 或 OAEP 变体）
+     */
     public FIPSRsaKeyEncryptionJWEAlgorithmProvider(FipsRSA.WrapParameters wrapParameters) {
         this.wrapParameters = wrapParameters;
     }
 
+    /** {@inheritDoc} 使用 RSA 私钥解封 CEK。 */
     @Override
     public byte[] decodeCek(byte[] encodedCek, Key privateKey, JWEHeader header, JWEEncryptionProvider encryptionProvider) throws Exception {
         AsymmetricRSAPrivateKey rsaPrivateKey =
@@ -43,6 +46,7 @@ public class FIPSRsaKeyEncryptionJWEAlgorithmProvider implements JWEAlgorithmPro
     }
 
 
+    /** {@inheritDoc} 使用 RSA 公钥封装 CEK。 */
     @Override
     public byte[] encodeCek(JWEEncryptionProvider encryptionProvider, JWEKeyStorage keyStorage, Key publicKey, JWEHeaderBuilder headerBuilder) throws Exception {
         AsymmetricRSAPublicKey rsaPubKey =

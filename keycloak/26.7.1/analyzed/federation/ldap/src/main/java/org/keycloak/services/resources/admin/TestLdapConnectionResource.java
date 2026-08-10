@@ -33,6 +33,8 @@ import org.keycloak.services.resources.admin.fgap.AdminPermissionEvaluator;
 import org.jboss.resteasy.reactive.NoCache;
 
 /**
+ * 管理端 REST 资源：测试 LDAP 连接与 bind 认证。
+ *
  * @resource User Storage Provider
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
@@ -51,7 +53,7 @@ public class TestLdapConnectionResource {
     }
 
     /**
-     * Test LDAP connection
+     * 测试 LDAP 连接（表单参数，已弃用）。
      *
      * @param action
      * @param connectionUrl
@@ -81,7 +83,7 @@ public class TestLdapConnectionResource {
     }
 
     /**
-     * Test LDAP connection
+     * 测试 LDAP 连接或认证（JSON 请求体）。
      * @return
      */
     @POST

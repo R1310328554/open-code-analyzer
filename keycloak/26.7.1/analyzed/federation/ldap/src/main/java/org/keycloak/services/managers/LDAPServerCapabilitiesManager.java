@@ -40,6 +40,8 @@ import org.keycloak.utils.StringUtil;
 import org.jboss.logging.Logger;
 
 /**
+ * LDAP 连接测试、认证测试与服务端能力查询的管理器。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class LDAPServerCapabilitiesManager {
@@ -49,7 +51,8 @@ public class LDAPServerCapabilitiesManager {
     public static final String TEST_CONNECTION = "testConnection";
     public static final String TEST_AUTHENTICATION = "testAuthentication";
     public static final String QUERY_SERVER_CAPABILITIES = "queryServerCapabilities";
-    public static final int DEFAULT_TEST_TIMEOUT = 30000; // 30s default test timeout
+    /** 默认 LDAP 测试超时（毫秒）。 */
+    public static final int DEFAULT_TEST_TIMEOUT = 30000;
 
     private static int parseConnectionTimeout(String connectionTimeout) {
         if (StringUtil.isNotBlank(connectionTimeout)) {
@@ -65,11 +68,12 @@ public class LDAPServerCapabilitiesManager {
         return DEFAULT_TEST_TIMEOUT;
     }
 
+    /** 根据测试请求与 realm 组件配置构建临时 {@link LDAPConfig}。 */
     public static LDAPConfig buildLDAPConfig(TestLdapConnectionRepresentation config, RealmModel realm) {
         String bindCredential = config.getBindCredential();
         if (config.getComponentId() != null && !LDAPConstants.AUTH_TYPE_NONE.equals(config.getAuthType())
                 && ComponentRepresentation.SECRET_VALUE.equals(bindCredential)) {
-            // check the connection URL and the bind DN are the same to allow using the same configured password
+            // 连接 URL 与 bind DN 一致时复用组件已配置的密码
             ComponentModel component = realm.getComponent(config.getComponentId());
             if (component != null) {
                 LDAPConfig ldapConfig = new LDAPConfig(component.getConfig());
@@ -85,8 +89,7 @@ public class LDAPServerCapabilitiesManager {
         configMap.putSingle(LDAPConstants.BIND_CREDENTIAL, bindCredential);
         configMap.add(LDAPConstants.CONNECTION_URL, config.getConnectionUrl());
         configMap.add(LDAPConstants.USE_TRUSTSTORE_SPI, config.getUseTruststoreSpi());
-        // set a forced timeout even when the timeout is infinite for testing
-        // this is needed to not wait forever in the test and force connection creation in ldap
+        // 测试时强制设置超时，避免无限等待并触发 LDAP 连接建立
         String timeoutStr = Integer.toString(parseConnectionTimeout(config.getConnectionTimeout()));
         configMap.putSingle(LDAPConstants.CONNECTION_TIMEOUT, timeoutStr);
         configMap.putSingle(LDAPConstants.READ_TIMEOUT, timeoutStr);
@@ -95,7 +98,7 @@ public class LDAPServerCapabilitiesManager {
     }
 
     /**
-     * Ensure provided connection URI matches parsed LDAP connection URI.
+     * 校验测试请求中的连接 URI 是否与已保存 LDAP 组件配置一致。
      *
      * See: https://docs.oracle.com/javase/jndi/tutorial/ldap/misc/url.html
      * @param config
@@ -103,7 +106,7 @@ public class LDAPServerCapabilitiesManager {
      * @return
      */
     private static boolean checkLdapConnectionUrl(TestLdapConnectionRepresentation config, LDAPConfig ldapConfig) {
-        // There could be multiple connection URIs separated via spaces.
+        // 连接 URL 可能以空格分隔多个 URI
         String[] configConnectionUrls = config.getConnectionUrl().trim().split(" ");
         String[] ldapConfigConnectionUrls = ldapConfig.getConnectionUrl().trim().split(" ");
         if (configConnectionUrls.length != ldapConfigConnectionUrls.length) {
@@ -116,6 +119,7 @@ public class LDAPServerCapabilitiesManager {
         return urlsMatch;
     }
 
+    /** 查询 LDAP 服务端支持的扩展与能力。 */
     public static Set<LDAPCapabilityRepresentation> queryServerCapabilities(TestLdapConnectionRepresentation config, KeycloakSession session,
                                                                             RealmModel realm) {
 
@@ -128,12 +132,14 @@ public class LDAPServerCapabilitiesManager {
         return new LDAPIdentityStore(session, ldapConfig).queryServerCapabilities();
     }
 
+    /** bind DN 无效或缺失时抛出的命名异常。 */
     public static class InvalidBindDNException extends javax.naming.NamingException {
         public InvalidBindDNException(String s) {
             super(s);
         }
     }
 
+    /** 将 JNDI/网络异常映射为管理 API 使用的错误码字符串。 */
     public static String getErrorCode(Throwable throwable) {
         String errorMsg = "UnknownError";
         if (throwable instanceof javax.naming.NamingException)
@@ -174,6 +180,7 @@ public class LDAPServerCapabilitiesManager {
         return errorMsg;
     }
 
+    /** 执行 LDAP 连接或 bind 认证测试。 */
     public static void testLDAP(TestLdapConnectionRepresentation config, KeycloakSession session, RealmModel realm) throws javax.naming.NamingException {
 
         if (!TEST_CONNECTION.equals(config.getAction()) && !TEST_AUTHENTICATION.equals(config.getAction())) {
@@ -182,25 +189,22 @@ public class LDAPServerCapabilitiesManager {
         }
 
         if (TEST_AUTHENTICATION.equals(config.getAction())) {
-            // If AUTHENTICATION action is executed add also dn and credentials to configuration
-            // LDAPContextManager is responsible for correct order of addition of credentials to context in case
-            // tls is true
+            // AUTHENTICATION 动作需附带 bind DN 与凭证；启用 TLS 时由 LDAPContextManager 按序注入
             if ((config.getBindDn() == null || config.getBindDn().isEmpty()) && LDAPConstants.AUTH_TYPE_SIMPLE.equals(config.getAuthType())) {
                 throw new InvalidBindDNException("Unknown bind DN");
             }
         } else {
-            // only test the connection.
+            // 仅测试 TCP/LDAP 连接，不进行 bind
             config.setAuthType(LDAPConstants.AUTH_TYPE_NONE);
         }
 
         LDAPConfig ldapConfig = buildLDAPConfig(config, realm);
 
-        // Create ldapContextManager in try-with-resource so that ldapContext/tlsResponse/VaultSecret is closed/removed when it
-        // is not needed anymore
+        // try-with-resources 确保 LDAP 上下文、TLS 响应与 Vault 密钥及时释放
         try (LDAPContextManager ldapContextManager = LDAPContextManager.create(session, ldapConfig)) {
             LdapContext ldapContext = ldapContextManager.getLdapContext();
             if (TEST_AUTHENTICATION.equals(config.getAction())) {
-                // Reconnect to force bind operation.
+                // 重连以强制执行 bind 操作
                 ldapContext.reconnect(null);
             }
         } catch (Exception ne) {

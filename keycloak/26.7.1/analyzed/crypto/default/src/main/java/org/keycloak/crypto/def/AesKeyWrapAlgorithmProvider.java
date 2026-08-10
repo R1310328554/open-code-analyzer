@@ -30,10 +30,13 @@ import org.bouncycastle.crypto.engines.AESWrapEngine;
 import org.bouncycastle.crypto.params.KeyParameter;
 
 /**
+ * 基于 AES Key Wrap 的 JWE 算法提供器，使用 BouncyCastle {@link AESWrapEngine} 封装/解封 CEK。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class AesKeyWrapAlgorithmProvider implements JWEAlgorithmProvider {
 
+    /** {@inheritDoc} 使用 AES Key Wrap 解封已加密的 CEK。 */
     @Override
     public byte[] decodeCek(byte[] encodedCek, Key encryptionKey, JWEHeader header, JWEEncryptionProvider encryptionProvider) throws Exception {
         Wrapper encrypter = new AESWrapEngine();
@@ -41,6 +44,7 @@ public class AesKeyWrapAlgorithmProvider implements JWEAlgorithmProvider {
         return encrypter.unwrap(encodedCek, 0, encodedCek.length);
     }
 
+    /** {@inheritDoc} 使用 AES Key Wrap 封装 CEK 并写入 JWE 头部。 */
     @Override
     public byte[] encodeCek(JWEEncryptionProvider encryptionProvider, JWEKeyStorage keyStorage, Key encryptionKey, JWEHeaderBuilder headerBuilder) throws Exception {
         Wrapper encrypter = new AESWrapEngine();

@@ -25,6 +25,9 @@ import org.keycloak.services.resources.admin.ext.AdminRealmResourceProvider;
 import org.keycloak.services.resources.admin.ext.AdminRealmResourceProviderFactory;
 import org.keycloak.services.resources.admin.fgap.AdminPermissionEvaluator;
 
+/**
+ * LDAP 连接/认证测试的管理 REST 扩展工厂与提供器（ID：{@value #getId}）。
+ */
 public class TestLdapConnectionRealmAdminProvider implements AdminRealmResourceProviderFactory, AdminRealmResourceProvider {
 
     @Override
@@ -44,11 +47,13 @@ public class TestLdapConnectionRealmAdminProvider implements AdminRealmResourceP
     public void close() {
     }
 
+    /** {@inheritDoc} 返回扩展标识 {@code testLDAPConnection}。 */
     @Override
     public String getId() {
         return "testLDAPConnection";
     }
 
+    /** {@inheritDoc} 暴露 {@link TestLdapConnectionResource} 子资源。 */
     @Override
     public Object getResource(KeycloakSession session, RealmModel realm, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         return new TestLdapConnectionResource(session, auth);

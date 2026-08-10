@@ -37,6 +37,8 @@ import org.ietf.jgss.Oid;
 import org.jboss.logging.Logger;
 
 /**
+ * SPNEGO/GSS-API 认证器，接受 Base64 编码的 SPNEGO token 并完成 Kerberos 安全上下文握手。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class SPNEGOAuthenticator {
@@ -59,6 +61,7 @@ public class SPNEGOAuthenticator {
         this.spnegoToken = spnegoToken;
     }
 
+    /** 使用服务端 Subject 接受 SPNEGO 上下文并解析认证结果。 */
     public void authenticate() {
         if (log.isTraceEnabled()) {
             log.trace("SPNEGO Login with token: " + spnegoToken);
@@ -68,7 +71,7 @@ public class SPNEGOAuthenticator {
             Subject serverSubject = kerberosSubjectAuthenticator.authenticateServerSubject();
             authenticated = Subject.doAs(serverSubject, new AcceptSecContext());
 
-            // kerberosTicketis available in IBM JDK in case that GSSContext supports delegated credentials
+            // IBM JDK 在 GSSContext 支持委派凭证时可从 Subject 取得 KerberosTicket
             Set<KerberosTicket> kerberosTickets = serverSubject.getPrivateCredentials(KerberosTicket.class);
             Iterator<KerberosTicket> iterator = kerberosTickets.iterator();
             if (iterator.hasNext()) {
@@ -111,13 +114,14 @@ public class SPNEGOAuthenticator {
     }
 
     /**
-     * @return kerberos principal to be used in Keycloak
+     * @return 用于 Keycloak 用户映射的 Kerberos 主体
      */
     public KerberosPrincipal getAuthenticatedKerberosPrincipal() {
         return new KerberosPrincipal(authenticatedKerberosPrincipal);
     }
 
 
+    /** 在服务端 Subject 特权上下文中接受 GSS 安全上下文。 */
     private class AcceptSecContext implements PrivilegedExceptionAction<Boolean> {
 
         @Override
@@ -157,6 +161,7 @@ public class SPNEGOAuthenticator {
     }
 
 
+    /** 解码 SPNEGO token 并调用 {@link GSSContext#acceptSecContext}。 */
     protected GSSContext establishContext() throws GSSException {
         GSSManager manager = GSSManager.getInstance();
 

@@ -28,6 +28,9 @@ import org.keycloak.models.utils.UserModelDelegate;
 import org.apache.http.HttpStatus;
 import org.jboss.logging.Logger;
 
+/**
+ * Ipatuura 联邦用户模型委托：属性变更时同步写回 SCIM 后端。
+ */
 public class IpatuuraUserModelDelegate extends UserModelDelegate {
 
     private static final Logger logger = Logger.getLogger(IpatuuraUserModelDelegate.class);
@@ -36,12 +39,18 @@ public class IpatuuraUserModelDelegate extends UserModelDelegate {
 
     private final Ipatuura ipatuura;
 
+    /**
+     * @param ipatuura SCIM 客户端
+     * @param delegate 本地用户模型
+     * @param model 联邦组件配置
+     */
     public IpatuuraUserModelDelegate(Ipatuura ipatuura, UserModel delegate, ComponentModel model) {
         super(delegate);
         this.model = model;
         this.ipatuura = ipatuura;
     }
 
+    /** {@inheritDoc} 先 PUT 更新 SCIM，再更新本地属性。 */
     @Override
     public void setAttribute(String attr, List<String> values) {
         SimpleHttpResponse resp = this.ipatuura.updateUser(ipatuura, this.getUsername(), attr, values);

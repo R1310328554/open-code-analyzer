@@ -71,7 +71,7 @@ import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
 /**
- * The Class CertificateUtils provides utility functions for generation of V1 and V3 {@link X509Certificate}
+ * 基于 BouncyCastle 的 X.509 证书工具实现，支持 V1/V3 证书生成、策略解析与 CRL 分发点提取。
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @author <a href="mailto:giriraj.sharma27@gmail.com">Giriraj Sharma</a>
@@ -80,28 +80,28 @@ import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 public class BCCertificateUtilsProvider implements CertificateUtilsProvider {
 
     /**
-     * Generates version 3 {@link X509Certificate}.
+     * 由 CA 签发 V3 {@link X509Certificate}，含 SKI、AKI、密钥用途等标准扩展。
      *
-     * @param keyPair      the key pair
-     * @param caPrivateKey the CA private key
-     * @param caCert       the CA certificate
-     * @param subject      the subject name
-     * @return the x509 certificate
+     * @param keyPair      待签发实体的密钥对
+     * @param caPrivateKey CA 私钥
+     * @param caCert       CA 证书
+     * @param subject      主体 CN
+     * @return 签发的 X509 证书
      */
     public X509Certificate generateV3Certificate(KeyPair keyPair, PrivateKey caPrivateKey, X509Certificate caCert,
                                                  String subject) {
         try {
             X500Name subjectDN = new X500NameBuilder(BCStyle.INSTANCE).addRDN(BCStyle.CN, subject).build();
 
-            // Serial Number
+            // 序列号
             SecureRandom random = new SecureRandom();
             BigInteger serialNumber = BigInteger.valueOf(Math.abs(random.nextInt()));
 
-            // Validity
+            // 有效期（约 3 年）
             Date notBefore = new Date(System.currentTimeMillis());
             Date notAfter = new Date(System.currentTimeMillis() + (((1000L * 60 * 60 * 24 * 30)) * 12) * 3);
 
-            // SubjectPublicKeyInfo
+            // 主体公钥信息
             SubjectPublicKeyInfo subjPubKeyInfo = SubjectPublicKeyInfo.getInstance(keyPair.getPublic().getEncoded());
 
             X509v3CertificateBuilder certGen = new X509v3CertificateBuilder(new X500Name(caCert.getSubjectDN().getName()),
@@ -109,29 +109,29 @@ public class BCCertificateUtilsProvider implements CertificateUtilsProvider {
 
             JcaX509ExtensionUtils x509ExtensionUtils = new JcaX509ExtensionUtils();
 
-            // Subject Key Identifier
+            // 主体密钥标识符
             certGen.addExtension(Extension.subjectKeyIdentifier, false,
                     x509ExtensionUtils.createSubjectKeyIdentifier(subjPubKeyInfo));
 
-            // Authority Key Identifier
+            // 颁发者密钥标识符
             certGen.addExtension(Extension.authorityKeyIdentifier, false,
                     x509ExtensionUtils.createAuthorityKeyIdentifier(caCert));
 
-            // Key Usage
+            // 密钥用途
             certGen.addExtension(Extension.keyUsage, false, new KeyUsage(KeyUsage.digitalSignature | KeyUsage.keyCertSign
                     | KeyUsage.cRLSign));
 
-            // Extended Key Usage
+            // 扩展密钥用途
             KeyPurposeId[] EKU = new KeyPurposeId[2];
             EKU[0] = KeyPurposeId.id_kp_emailProtection;
             EKU[1] = KeyPurposeId.id_kp_serverAuth;
 
             certGen.addExtension(Extension.extendedKeyUsage, false, new ExtendedKeyUsage(EKU));
 
-            // Basic Constraints
+            // 基本约束（CA 证书）
             certGen.addExtension(Extension.basicConstraints, true, new BasicConstraints(0));
 
-            // Content Signer
+            // 内容签名器
             ContentSigner sigGen;
             switch (caCert.getPublicKey().getAlgorithm())
             {
@@ -144,7 +144,7 @@ public class BCCertificateUtilsProvider implements CertificateUtilsProvider {
                                                                                        .build(caPrivateKey);
             }
 
-            // Certificate
+            // 构建证书
             return new JcaX509CertificateConverter().setProvider(BouncyIntegration.PROVIDER).getCertificate(certGen.build(sigGen));
         } catch (Exception e) {
             throw new RuntimeException("Error creating X509v3Certificate.", e);
@@ -152,23 +152,32 @@ public class BCCertificateUtilsProvider implements CertificateUtilsProvider {
     }
 
     /**
-     * Generate version 1 self signed {@link X509Certificate}..
+     * 生成 V1 自签名 {@link X509Certificate}，序列号取当前时间戳。
      *
-     * @param caKeyPair the CA key pair
-     * @param subject   the subject name
-     * @return the x509 certificate
-     * @throws Exception the exception
+     * @param caKeyPair 自签名密钥对
+     * @param subject   主体 CN
+     * @return X509 证书
+     * @throws Exception 构建失败时抛出
      */
     public X509Certificate generateV1SelfSignedCertificate(KeyPair caKeyPair, String subject) {
         return generateV1SelfSignedCertificate(caKeyPair, subject, BigInteger.valueOf(System.currentTimeMillis()));
     }
 
+    /**
+     * 生成 V1 自签名证书，有效期默认 10 年。
+     *
+     * @param caKeyPair    密钥对
+     * @param subject      主体 CN
+     * @param serialNumber 序列号
+     * @return X509 证书
+     */
     public X509Certificate generateV1SelfSignedCertificate(KeyPair caKeyPair, String subject, BigInteger serialNumber) {
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.YEAR, 10);
         return generateV1SelfSignedCertificate(caKeyPair, subject, serialNumber, calendar.getTime());
     }
 
+    /** {@inheritDoc} 使用指定有效期结束时间生成 V1 自签名证书。 */
     @Override
     public X509Certificate generateV1SelfSignedCertificate(KeyPair caKeyPair, String subject, BigInteger serialNumber, Date validityEndDate) {
         try {
@@ -187,10 +196,10 @@ public class BCCertificateUtilsProvider implements CertificateUtilsProvider {
     }
 
     /**
-     * Creates the content signer for generation of Version 1 {@link X509Certificate}.
+     * 为 V1 证书创建内容签名器，按私钥算法选择 RSA/EC/EdDSA 签名算法。
      *
-     * @param privateKey the private key
-     * @return the content signer
+     * @param privateKey 私钥
+     * @return 内容签名器
      */
     private ContentSigner createSigner(PrivateKey privateKey) {
         try {
@@ -223,6 +232,7 @@ public class BCCertificateUtilsProvider implements CertificateUtilsProvider {
         }
     }
 
+    /** {@inheritDoc} 从证书策略扩展解析 OID 列表。 */
     @Override
     public List<String> getCertificatePolicyList(X509Certificate cert) throws GeneralSecurityException {
 
@@ -243,12 +253,12 @@ public class BCCertificateUtilsProvider implements CertificateUtilsProvider {
 
 
     /**
-     * Retrieves a list of CRL distribution points from CRLDP v3 certificate extension
-     * See <a href="www.nakov.com/blog/2009/12/01/x509-certificate-validation-in-java-build-and-verify-cchain-and-verify-clr-with-bouncy-castle/">CRL validation</a>
+     * 从 CRL 分发点（CRLDP）V3 扩展提取 CRL 下载 URL 列表。
+     * 参见 <a href="www.nakov.com/blog/2009/12/01/x509-certificate-validation-in-java-build-and-verify-cchain-and-verify-clr-with-bouncy-castle/">CRL 校验</a>
      *
-     * @param cert
-     * @return
-     * @throws IOException
+     * @param cert X509 证书
+     * @return CRL 分发点 URI 列表，无扩展时返回空列表
+     * @throws IOException ASN.1 解析失败时抛出
      */
     public List<String> getCRLDistributionPoints(X509Certificate cert) throws IOException {
         byte[] data = cert.getExtensionValue(CRL_DISTRIBUTION_POINTS_OID);
@@ -284,12 +294,22 @@ public class BCCertificateUtilsProvider implements CertificateUtilsProvider {
         return distributionPointUrls;
     }
 
+    /**
+     * 创建用于服务测试的自签名 V3 证书，可选附加证书策略 OID。
+     *
+     * @param dn                  主体/颁发者 DN
+     * @param startDate           生效时间
+     * @param expiryDate          过期时间
+     * @param keyPair             签名密钥对
+     * @param certificatePolicyOid 可选证书策略 OID
+     * @return 测试用 X509 证书
+     */
     public X509Certificate createServicesTestCertificate(String dn,
                                                          Date startDate,
                                                          Date expiryDate,
                                                          KeyPair keyPair,
                                                          String... certificatePolicyOid) {
-        // Cert data
+        // 证书主体与颁发者
         X500Name subjectDN = new X500Name(dn);
         X500Name issuerDN = new X500Name(dn);
 
@@ -298,7 +318,7 @@ public class BCCertificateUtilsProvider implements CertificateUtilsProvider {
 
         BigInteger serialNumber = new BigInteger(130, new SecureRandom());
 
-        // Build the certificate
+        // 构建 V3 证书
         X509v3CertificateBuilder certGen = new X509v3CertificateBuilder(issuerDN, serialNumber, startDate, expiryDate,
                 subjectDN, subjPubKeyInfo);
 
@@ -311,7 +331,7 @@ public class BCCertificateUtilsProvider implements CertificateUtilsProvider {
             }
         }
 
-        // Sign the cert with the private key
+        // 使用私钥签名
         try {
             ContentSigner contentSigner = new JcaContentSignerBuilder("SHA256withRSA")
                     .setProvider(BouncyIntegration.PROVIDER)
@@ -326,6 +346,7 @@ public class BCCertificateUtilsProvider implements CertificateUtilsProvider {
         }
     }
 
+    /** 根据 OID 列表构建 certificatePolicies 扩展。 */
     private List<Extension> certPolicyExtensions(String... certificatePolicyOid) {
         List<Extension> certificatePolicies = new LinkedList<>();
 

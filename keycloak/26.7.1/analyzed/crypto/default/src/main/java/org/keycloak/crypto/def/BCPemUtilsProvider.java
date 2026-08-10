@@ -30,7 +30,7 @@ import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 
 /**
- * Encodes Key or Certificates to PEM format string
+ * 基于 BouncyCastle 的 PEM 编解码实现，将密钥或证书编码为 PEM 格式字符串。
  *
  * @author <a href="mailto:david.anderson@redhat.com">David Anderson</a>
  * @version $Revision: 1 $
@@ -39,10 +39,10 @@ public class BCPemUtilsProvider extends PemUtilsProvider {
 
 
     /**
-     * Encode object to JCA PEM String using BC libraries
+     * 使用 BC 库将对象编码为 JCA PEM 字符串。
      * 
-     * @param obj
-     * @return The encoded PEM string
+     * @param obj 待编码对象（密钥或证书）
+     * @return 不含 BEGIN/END 行的 PEM 正文
      */
     @Override
     protected String encode(Object obj) {
@@ -63,22 +63,34 @@ public class BCPemUtilsProvider extends PemUtilsProvider {
         }
     }
 
+    /**
+     * 从 PEM 字符串解码公钥；优先通过 {@link SubjectPublicKeyInfo} 识别算法，失败时回退为 RSA。
+     *
+     * @param pem PEM 编码的公钥
+     * @return 解码后的公钥
+     */
     @Override
     public PublicKey decodePublicKey(String pem) {
         try {
-            // try to decode using SubjectPublicKeyInfo which allows to know the key type
+            // 尝试通过 SubjectPublicKeyInfo 解码以识别密钥类型
             SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfo.getInstance(pemToDer(pem));
             if (publicKeyInfo != null && publicKeyInfo.getAlgorithm() != null) {
                 return new JcaPEMKeyConverter().getPublicKey(publicKeyInfo);
             }
         } catch (Exception e) {
-            // error reading PEM object just go to previous RSA forced key
+            // PEM 解析失败，回退到强制 RSA 解码
         }
 
-        // assume RSA if it cannot be decoded from BC knowing the key
+        // 无法识别算法时默认按 RSA 处理
         return decodePublicKey(pem, "RSA");
     }
 
+    /**
+     * 从 PEM 字符串解码私钥。
+     *
+     * @param pem PEM 编码的私钥
+     * @return 解码后的私钥，输入为 null 时返回 null
+     */
     @Override
     public PrivateKey decodePrivateKey(String pem) {
         if (pem == null) {

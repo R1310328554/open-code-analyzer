@@ -60,6 +60,8 @@ import org.keycloak.userprofile.UserProfileUtil;
 import org.jboss.logging.Logger;
 
 /**
+ * 独立 Kerberos 用户联邦提供器，支持 SPNEGO 与可选密码认证，并负责用户导入与凭证校验。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class KerberosFederationProvider implements UserStorageProvider,
@@ -72,6 +74,7 @@ public class KerberosFederationProvider implements UserStorageProvider,
         UserRegistrationProvider {
 
     private static final Logger logger = Logger.getLogger(KerberosFederationProvider.class);
+    /** 用户属性中存储 Kerberos 主体名的键名。 */
     public static final String KERBEROS_PRINCIPAL = KerberosConstants.KERBEROS_PRINCIPAL;
 
     protected KeycloakSession session;
@@ -86,6 +89,7 @@ public class KerberosFederationProvider implements UserStorageProvider,
         this.factory = factory;
     }
 
+    /** {@inheritDoc} 只读模式下返回 {@link ReadOnlyKerberosUserModelDelegate} 包装用户。 */
     @Override
     public UserModel validate(RealmModel realm, UserModel user) {
         if (kerberosConfig.getEditMode() == EditMode.READ_ONLY) {
@@ -95,6 +99,7 @@ public class KerberosFederationProvider implements UserStorageProvider,
         }
     }
 
+    /** {@inheritDoc} 通过 Kerberos 查询用户名是否存在并导入/关联本地用户。 */
     @Override
     public UserModel getUserByUsername(RealmModel realm, String username) {
         KerberosUsernamePasswordAuthenticator authenticator = factory.createKerberosUsernamePasswordAuthenticator(kerberosConfig);
@@ -154,6 +159,7 @@ public class KerberosFederationProvider implements UserStorageProvider,
         return Stream.empty();
     }
 
+    /** {@inheritDoc} 支持 KERBEROS 凭证，配置允许时还支持密码凭证。 */
     @Override
     public boolean supportsCredentialType(String credentialType) {
         return credentialType.equals(UserCredentialModel.KERBEROS) || (kerberosConfig.isAllowPasswordAuthentication() && credentialType.equals(PasswordCredentialModel.TYPE));
@@ -188,6 +194,7 @@ public class KerberosFederationProvider implements UserStorageProvider,
         }
     }
 
+    /** {@inheritDoc} 执行 SPNEGO 握手与用户查找/创建，支持多步 CONTINUE 响应。 */
     @Override
     public CredentialValidationOutput authenticate(RealmModel realm, CredentialInput input) {
         if (!(input instanceof UserCredentialModel)) return null;
@@ -208,9 +215,8 @@ public class KerberosFederationProvider implements UserStorageProvider,
                 KerberosPrincipal kerberosPrincipal = spnegoAuthenticator.getAuthenticatedKerberosPrincipal();
                 UserModel user = findOrCreateAuthenticatedUser(realm, kerberosPrincipal);
                 if (user == null) {
-                    // Adding the authenticated SPNEGO, in case that other LDAP/Kerberos providers in the chain are able to lookup user from their LDAP
-                    // This can be the case with more complex setup (like MSAD Forest Trust environment)
-                    // Note that SPNEGO authentication cannot be done again by the other provider due the Kerberos replay protection
+                    // 将已认证的 SPNEGO 上下文附在凭证上，供链中其他 LDAP/Kerberos 提供器查找用户（如 MSAD 林信任）
+                    // 注意：Kerberos 重放保护使其他提供器无法再次执行 SPNEGO
                     credential.setNote(KerberosConstants.AUTHENTICATED_SPNEGO_CONTEXT, spnegoAuthenticator);
 
                     return CredentialValidationOutput.fallback();
@@ -223,7 +229,7 @@ public class KerberosFederationProvider implements UserStorageProvider,
                     return new CredentialValidationOutput(user, CredentialValidationOutput.Status.AUTHENTICATED, state);
                 }
             }  else if (spnegoAuthenticator.getResponseToken() != null) {
-                // Case when SPNEGO handshake requires multiple steps
+                // SPNEGO 握手需多步完成时返回 CONTINUE
                 logger.tracef("SPNEGO Handshake will continue");
                 state.put(KerberosConstants.RESPONSE_TOKEN, spnegoAuthenticator.getResponseToken());
                 return new CredentialValidationOutput(null, CredentialValidationOutput.Status.CONTINUE, state);
@@ -243,11 +249,11 @@ public class KerberosFederationProvider implements UserStorageProvider,
     }
 
     /**
-     * Called after successful authentication
+     * Kerberos 认证成功后查找或创建本地用户。
      *
      * @param realm realm
-     * @param kerberosPrincipal
-     * @return user if found or successfully created. Null if user with same username already exists, but is not linked to this provider
+     * @param kerberosPrincipal Kerberos 主体
+     * @return 找到或新建的用户；若同名用户已存在但未关联本提供器则返回 null
      */
     protected UserModel findOrCreateAuthenticatedUser(RealmModel realm, KerberosPrincipal kerberosPrincipal) {
         UserModel user = UserStoragePrivateUtil.userLocalStorage(session).searchForUserByUserAttributeStream(realm, KerberosConstants.KERBEROS_PRINCIPAL, kerberosPrincipal.toString())
@@ -278,9 +284,9 @@ public class KerberosFederationProvider implements UserStorageProvider,
     }
 
     protected UserModel importUserToKeycloak(RealmModel realm, KerberosPrincipal kerberosPrincipal) {
-        // Just guessing email from kerberos realm
+        // 根据 Kerberos realm 推测邮箱地址
         String email = kerberosPrincipal.getPrefix() + "@" + kerberosPrincipal.getRealm().toLowerCase();
-        // In case that kerberos realm is same like configured realm, create just username as prefix (EG. "john"). Otherwise for trusted realms, use the full kerberos principal (EG. "john@TRUSTED_REALM.ORG")
+        // realm 与配置一致时用户名取前缀；信任域场景使用完整主体作为用户名
         String username = (kerberosPrincipal.getRealm().equalsIgnoreCase(kerberosConfig.getKerberosRealm())) ? kerberosPrincipal.getPrefix() : email;
 
         logger.debugf("Creating kerberos user %s with username: %s, email: %s to local Keycloak storage", kerberosPrincipal, username, email);

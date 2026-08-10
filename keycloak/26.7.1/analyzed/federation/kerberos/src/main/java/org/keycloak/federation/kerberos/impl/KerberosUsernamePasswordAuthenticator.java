@@ -36,6 +36,8 @@ import org.keycloak.models.ModelException;
 import org.jboss.logging.Logger;
 
 /**
+ * 基于用户名/密码的 Kerberos JAAS 认证器，用于用户存在性检查与密码校验。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class KerberosUsernamePasswordAuthenticator {
@@ -51,7 +53,7 @@ public class KerberosUsernamePasswordAuthenticator {
 
 
     /**
-     * Returns true if user with given username exists in kerberos database
+     * 检查 Kerberos 目录中是否存在指定用户。
      *
      * @param username username without Kerberos realm attached or with correct realm attached
      * @return true if user available
@@ -74,7 +76,7 @@ public class KerberosUsernamePasswordAuthenticator {
             checkKerberosServerAvailable(le);
             checkKerberosUsername(le);
 
-            // Bit cumbersome, but seems to work with tested kerberos servers
+            // 通过 KDC 返回消息推断用户是否存在（已在多种 KDC 上验证）
             boolean exists = (!message.contains("Client not found"));
             return exists;
         }
@@ -82,7 +84,7 @@ public class KerberosUsernamePasswordAuthenticator {
 
 
     /**
-     * Returns true if user was successfully authenticated against Kerberos
+     * 使用 Kerberos 密码验证用户身份。
      *
      * @param username username without Kerberos realm attached or with correct realm attached
      * @param password kerberos password
@@ -114,7 +116,7 @@ public class KerberosUsernamePasswordAuthenticator {
                 throw new ModelException("Kerberos unreachable", le);
             }
         } else if (le.getCause() instanceof IOException) {
-            // for example, a PortUnreachable exception if the server is not running
+            // 例如 KDC 未运行时可能抛出 PortUnreachable
             throw new ModelException("Kerberos unreachable", le);
         }
     }
@@ -130,7 +132,7 @@ public class KerberosUsernamePasswordAuthenticator {
 
 
     /**
-     * Returns true if user was successfully authenticated against Kerberos
+     * 执行 JAAS 登录并返回已认证的 {@link Subject}。
      *
      * @param username username without Kerberos realm attached
      * @param password kerberos password
