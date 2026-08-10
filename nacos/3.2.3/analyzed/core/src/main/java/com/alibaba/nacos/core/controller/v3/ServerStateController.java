@@ -32,6 +32,7 @@ import java.util.Map;
 import static com.alibaba.nacos.core.utils.Commons.NACOS_ADMIN_CORE_CONTEXT_V3;
 
 /**
+ * 服务端状态 HTTP 接口：运行态信息、存活探针（liveness）与就绪探针（readiness）。
  * Server state controller for admin API.
  *
  * @author xiweng.yy
@@ -41,14 +42,20 @@ import static com.alibaba.nacos.core.utils.Commons.NACOS_ADMIN_CORE_CONTEXT_V3;
 @RequestMapping(NACOS_ADMIN_CORE_CONTEXT_V3 + "/state")
 public class ServerStateController {
     
+    /** 服务端状态查询服务。 */
     private final NacosServerStateService stateService;
     
+    /**
+     * 注入状态服务。
+     *
+     * @param stateService 服务端状态服务
+     */
     public ServerStateController(NacosServerStateService stateService) {
         this.stateService = stateService;
     }
     
     /**
-     * Get server state of current server.
+     * 获取当前节点运行状态键值对。
      *
      * @return state key-value map.
      */
@@ -59,7 +66,7 @@ public class ServerStateController {
     }
     
     /**
-     * Whether the Nacos is in broken states or not, and cannot recover except by being restarted.
+     * 存活探针：判断 Nacos 是否处于不可自愈的故障态（需重启恢复）。
      *
      * @return HTTP code equal to 200 indicates that Nacos is in right states. HTTP code equal to 500 indicates that
      * Nacos is in broken states.
@@ -71,7 +78,7 @@ public class ServerStateController {
     }
     
     /**
-     * Ready to receive the request or not.
+     * 就绪探针：聚合各模块 {@link ModuleHealthCheckerHolder} 检查是否可接收流量。
      *
      * @return HTTP code equal to 200 indicates that Nacos is ready. HTTP code equal to 500 indicates that Nacos is not
      * ready.

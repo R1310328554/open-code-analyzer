@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 一致性协议抽象基类：维护 {@link ProtocolMetaData} 与按 group 索引的 {@link RequestProcessor} 映射，供 CP/AP 具体协议复用。
  * Consistent protocol base class.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -35,19 +36,28 @@ import java.util.Map;
 public abstract class AbstractConsistencyProtocol<T extends Config, L extends RequestProcessor>
     implements ConsistencyProtocol<T, L> {
     
+    /** 协议元数据（Leader、成员等）。 */
     protected final ProtocolMetaData metaData = new ProtocolMetaData();
     
+    /** 日志处理器 group → 处理器实例的同步映射。 */
     protected Map<String, L> processorMap = Collections.synchronizedMap(new HashMap<>());
     
+    /**
+     * 批量注册日志处理器，以 {@link RequestProcessor#group()} 为键。
+     *
+     * @param logProcessors 处理器列表
+     */
     public void loadLogProcessor(List<L> logProcessors) {
         logProcessors
             .forEach(logDispatcher -> processorMap.put(logDispatcher.group(), logDispatcher));
     }
     
+    /** 返回全部已注册的处理器映射。 */
     protected Map<String, L> allProcessor() {
         return processorMap;
     }
     
+    /** {@inheritDoc} 返回协议元数据快照。 */
     @Override
     public ProtocolMetaData protocolMetaData() {
         return this.metaData;

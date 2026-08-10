@@ -24,18 +24,20 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * 远程 TPS 请求解析器注册表：按解析器名称索引 {@link RemoteTpsCheckRequestParser}，供 {@link TpsControlRequestFilter} 在 RPC 链路查找解析实现。
  * remote tps check request parser registry.
  *
  * @author shiyiyue
  */
 public class RemoteTpsCheckRequestParserRegistry {
     
+    /** 解析器名称到实例的并发映射。 */
     static final Map<String, RemoteTpsCheckRequestParser> PARSER_MAP = new ConcurrentHashMap<>();
     
     /**
-     * register remoteTpsCheckParser.
+     * 注册远程 TPS 解析器；同名解析器会被覆盖并记录日志。
      *
-     * @param remoteTpsCheckParser remoteTpsCheckParser.
+     * @param remoteTpsCheckParser 待注册的解析器实例
      */
     public static void register(RemoteTpsCheckRequestParser remoteTpsCheckParser) {
         RemoteTpsCheckRequestParser prevRemoteTpsCheckParser = PARSER_MAP
@@ -53,6 +55,12 @@ public class RemoteTpsCheckRequestParserRegistry {
         }
     }
     
+    /**
+     * 按名称获取已注册的解析器。
+     *
+     * @param name 解析器注册名
+     * @return 解析器实例，未注册时返回 null
+     */
     public static RemoteTpsCheckRequestParser getParser(String name) {
         return PARSER_MAP.get(name);
     }

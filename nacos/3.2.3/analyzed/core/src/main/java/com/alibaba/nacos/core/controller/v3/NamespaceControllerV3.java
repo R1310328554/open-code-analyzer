@@ -48,6 +48,7 @@ import java.util.regex.Pattern;
 import static com.alibaba.nacos.core.utils.Commons.NACOS_ADMIN_CORE_CONTEXT_V3;
 
 /**
+ * 命名空间管理 HTTP 接口 v3：列表、详情、创建、更新、删除及 ID 存在性校验。
  * NamespaceControllerV3.
  *
  * @author Nacos
@@ -57,24 +58,35 @@ import static com.alibaba.nacos.core.utils.Commons.NACOS_ADMIN_CORE_CONTEXT_V3;
 @RequestMapping(NACOS_ADMIN_CORE_CONTEXT_V3 + "/namespace")
 public class NamespaceControllerV3 {
     
+    /** 命名空间业务操作服务。 */
     private final NamespaceOperationService namespaceOperationService;
     
+    /** 命名空间持久化服务，用于存在性统计。 */
     private final NamespacePersistService namespacePersistService;
     
+    /**
+     * 注入命名空间操作与持久化服务。
+     *
+     * @param namespaceOperationService 命名空间业务服务
+     * @param namespacePersistService 持久化服务
+     */
     public NamespaceControllerV3(NamespaceOperationService namespaceOperationService,
         NamespacePersistService namespacePersistService) {
         this.namespaceOperationService = namespaceOperationService;
         this.namespacePersistService = namespacePersistService;
     }
     
+    /** 命名空间 ID 合法字符正则（字母数字下划线与连字符）。 */
     private final Pattern namespaceIdCheckPattern = Pattern.compile("^[\\w-]+");
     
+    /** 命名空间名称禁止特殊符号的正则。 */
     private final Pattern namespaceNameCheckPattern = Pattern.compile("^[^@#$%^&*]+$");
     
+    /** 命名空间 ID 最大长度。 */
     private static final int NAMESPACE_ID_MAX_LENGTH = 128;
     
     /**
-     * Get namespace list.
+     * 获取全部命名空间列表。
      *
      * @return namespace list
      */
@@ -88,7 +100,7 @@ public class NamespaceControllerV3 {
     }
     
     /**
-     * get namespace all info by namespace id.
+     * 按 ID 查询命名空间完整信息。
      *
      * @param namespaceId namespaceId
      * @return namespace all info
@@ -104,7 +116,7 @@ public class NamespaceControllerV3 {
     }
     
     /**
-     * create namespace.
+     * 创建命名空间，未指定 ID 时自动生成 UUID。
      *
      * @param namespaceForm namespaceForm.
      * @return whether create ok
@@ -124,7 +136,7 @@ public class NamespaceControllerV3 {
         if (StringUtils.isBlank(namespaceId)) {
             namespaceId = UUID.randomUUID().toString();
         } else {
-            // TODO check should be parameter check filter.
+            // TODO 校验逻辑应迁移至参数校验 Filter
             namespaceId = namespaceId.trim();
             if (!namespaceIdCheckPattern.matcher(namespaceId).matches()) {
                 throw new NacosApiException(HttpStatus.BAD_REQUEST.value(),
@@ -137,7 +149,7 @@ public class NamespaceControllerV3 {
                     "too long namespaceId, over " + NAMESPACE_ID_MAX_LENGTH);
             }
         }
-        // contains illegal chars
+        // 名称含非法字符
         if (!namespaceNameCheckPattern.matcher(namespaceName).matches()) {
             throw new NacosApiException(HttpStatus.BAD_REQUEST.value(), ErrorCode.ILLEGAL_NAMESPACE,
                 "namespaceName [" + namespaceName + "] contains illegal char");
@@ -147,7 +159,7 @@ public class NamespaceControllerV3 {
     }
     
     /**
-     * update namespace.
+     * 更新命名空间名称与描述。
      *
      * @param namespaceForm namespace params
      * @return whether edit ok
@@ -170,7 +182,7 @@ public class NamespaceControllerV3 {
     }
     
     /**
-     * delete namespace by id.
+     * 按 ID 删除命名空间。
      *
      * @param namespaceId namespace ID
      * @return whether delete ok
@@ -185,7 +197,7 @@ public class NamespaceControllerV3 {
     }
     
     /**
-     * check namespace id exist.
+     * 检查命名空间 ID 是否已存在（返回租户记录数）。
      *
      * @param namespaceId namespaceId
      * @return whether exist

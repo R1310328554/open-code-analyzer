@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.concurrent.Callable;
 
 /**
+ * 一致性协议 Spring 配置：通过 SPI 或默认 {@link JRaftProtocol} 注册 CP 强一致协议 Bean。
  * consistency configuration.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -35,6 +36,13 @@ import java.util.concurrent.Callable;
 @Configuration
 public class ConsistencyConfiguration {
     
+    /**
+     * 注册名为 strongAgreementProtocol 的 CP 协议 Bean。
+     *
+     * @param memberManager 集群成员管理器
+     * @return CP 一致性协议实例
+     * @throws Exception 协议初始化失败
+     */
     @Bean(value = "strongAgreementProtocol")
     public CPProtocol strongAgreementProtocol(ServerMemberManager memberManager) throws Exception {
         final CPProtocol protocol =
@@ -42,10 +50,18 @@ public class ConsistencyConfiguration {
         return protocol;
     }
     
+    /**
+     * 通过 {@link NacosServiceLoader} 加载协议实现，无 SPI 时回退 builder。
+     *
+     * @param cls 协议接口类型
+     * @param builder 默认实现工厂
+     * @return 协议实例
+     * @throws Exception 构造异常
+     */
     private <T> T getProtocol(Class<T> cls, Callable<T> builder) throws Exception {
         Collection<T> protocols = NacosServiceLoader.load(cls);
         
-        // Select only the first implementation
+        // 仅选用 SPI 列表中的第一个实现
         
         Iterator<T> iterator = protocols.iterator();
         if (iterator.hasNext()) {

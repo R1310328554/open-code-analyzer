@@ -45,6 +45,7 @@ import java.util.List;
 import static com.alibaba.nacos.core.utils.Commons.NACOS_ADMIN_CORE_CONTEXT_V3;
 
 /**
+ * 内核运维 HTTP 接口 v3：Raft 运维命令、分布式 ID 生成器状态与日志级别动态调整。
  * Kernel modules operate and maintain HTTP interfaces v3.
  *
  * @author yunye
@@ -55,10 +56,18 @@ import static com.alibaba.nacos.core.utils.Commons.NACOS_ADMIN_CORE_CONTEXT_V3;
 @RequestMapping(NACOS_ADMIN_CORE_CONTEXT_V3 + "/ops")
 public class CoreOpsControllerV3 {
     
+    /** 一致性协议管理器，执行 CP Raft 运维命令。 */
     private final ProtocolManager protocolManager;
     
+    /** 分布式 ID 生成器管理器。 */
     private final IdGeneratorManager idGeneratorManager;
     
+    /**
+     * 注入协议与 ID 生成器依赖。
+     *
+     * @param protocolManager CP 协议管理器
+     * @param idGeneratorManager ID 生成器管理器
+     */
     public CoreOpsControllerV3(ProtocolManager protocolManager,
         IdGeneratorManager idGeneratorManager) {
         this.protocolManager = protocolManager;
@@ -66,7 +75,7 @@ public class CoreOpsControllerV3 {
     }
     
     /**
-     * Temporarily overpassed the raft operations interface.
+     * 临时透传 Raft 运维命令（转移 Leader、快照、重置集群、移除 Peer 等）。
      * <p>
      * { "groupId": "xxx", "command": "transferLeader or doSnapshot or resetRaftCluster or removePeer" "value":
      * "ip:{raft_port}" }
@@ -86,7 +95,7 @@ public class CoreOpsControllerV3 {
     }
     
     /**
-     * Gets the current health of the ID generator.
+     * 查询各资源 ID 生成器的当前 ID 与 workerId 健康信息。
      *
      * @return {@link RestResult}
      */
@@ -113,7 +122,7 @@ public class CoreOpsControllerV3 {
     }
     
     /**
-     * Update log level.
+     * 动态调整指定 Logger 的日志级别。
      *
      * @param logUpdateRequest log update request
      * @return {@link Result}

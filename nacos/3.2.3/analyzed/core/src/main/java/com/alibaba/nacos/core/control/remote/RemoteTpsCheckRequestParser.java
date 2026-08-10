@@ -23,36 +23,38 @@ import com.alibaba.nacos.api.remote.request.RequestMeta;
 import com.alibaba.nacos.plugin.control.tps.request.TpsCheckRequest;
 
 /**
+ * 远程 RPC TPS 校验请求解析器抽象基类：构造时自动注册到 {@link RemoteTpsCheckRequestParserRegistry}，子类实现从 {@link Request} 提取限流维度。
  * remote tps check request parser.
  *
  * @author shiyiyue
  */
 public abstract class RemoteTpsCheckRequestParser {
     
+    /** 构造并自动向注册表登记本解析器。 */
     public RemoteTpsCheckRequestParser() {
         RemoteTpsCheckRequestParserRegistry.register(this);
     }
     
     /**
-     * parse tps check request.
+     * 将 RPC 请求解析为 TPS 校验请求。
      *
-     * @param request request.
-     * @param meta    meta.
-     * @return
+     * @param request RPC 请求体
+     * @param meta 请求元数据（连接、来源等）
+     * @return 限流校验请求，无法解析时可返回 null
      */
     public abstract TpsCheckRequest parse(Request request, RequestMeta meta);
     
     /**
-     * get point name.
+     * 返回 TPS 切点名称，对应 {@link TpsControl#pointName()}。
      *
-     * @return
+     * @return 切点名称
      */
     public abstract String getPointName();
     
     /**
-     * get name.
+     * 返回解析器注册名，对应 {@link TpsControl#name()} 或切点名。
      *
-     * @return
+     * @return 解析器唯一名称
      */
     public abstract String getName();
 }

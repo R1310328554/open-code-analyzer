@@ -41,6 +41,7 @@ import java.util.Map;
 import static com.alibaba.nacos.core.utils.Commons.NACOS_ADMIN_CORE_CONTEXT_V3;
 
 /**
+ * 服务端连接负载均衡 HTTP 接口 v3：查看 SDK 连接、手动/智能重平衡与单连接迁移。
  * controller to control server loader v3.
  *
  * @author yunye
@@ -51,16 +52,23 @@ import static com.alibaba.nacos.core.utils.Commons.NACOS_ADMIN_CORE_CONTEXT_V3;
 @RequestMapping(NACOS_ADMIN_CORE_CONTEXT_V3 + "/loader")
 public class ServerLoaderControllerV3 {
     
+    /** 本 Controller 日志记录器。 */
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerLoaderControllerV3.class);
     
+    /** 服务端连接负载服务。 */
     private final NacosServerLoaderService serverLoaderService;
     
+    /**
+     * 注入连接负载服务。
+     *
+     * @param serverLoaderService 负载均衡服务
+     */
     public ServerLoaderControllerV3(NacosServerLoaderService serverLoaderService) {
         this.serverLoaderService = serverLoaderService;
     }
     
     /**
-     * Get current clients.
+     * 获取本节点当前全部 SDK 客户端连接。
      *
      * @return state json.
      */
@@ -73,7 +81,7 @@ public class ServerLoaderControllerV3 {
     }
     
     /**
-     * Rebalance the number of sdk connections on the current server.
+     * 将本节点 SDK 连接数重平衡到指定数量，可选重定向地址。
      *
      * @return state json.
      */
@@ -88,8 +96,7 @@ public class ServerLoaderControllerV3 {
     }
     
     /**
-     * According to the total number of sdk connections of all nodes in the nacos cluster, intelligently balance the
-     * number of sdk connections of each node in the nacos cluster.
+     * 按集群各节点 SDK 连接总数智能重平衡各节点负载。
      *
      * @return state json.
      */
@@ -109,7 +116,7 @@ public class ServerLoaderControllerV3 {
     }
     
     /**
-     * Send a ConnectResetRequest to this connection according to the sdk connection ID.
+     * 按连接 ID 向指定 SDK 连接发送 ConnectReset 请求以迁移连接。
      *
      * @return state json.
      */
@@ -127,6 +134,12 @@ public class ServerLoaderControllerV3 {
      * Get current clients.
      *
      * @return state json.
+      * <p>连接负载 v3 接口；详见类级说明。</p>
+     */
+    /**
+     * 获取集群级连接负载指标。
+     *
+     * @return 负载指标
      */
     @Since("3.0.0")
     @GetMapping("/cluster")

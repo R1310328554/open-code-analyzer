@@ -47,6 +47,7 @@ import java.util.Map;
 import static com.alibaba.nacos.core.utils.Commons.NACOS_ADMIN_CORE_CONTEXT_V3;
 
 /**
+ * 插件管理 HTTP 接口 v3：列表、详情、启用/禁用与配置更新，支持按类型过滤与仅本节点生效。
  * Plugin Management V3 Controller.
  *
  * @author WangzJi
@@ -56,14 +57,20 @@ import static com.alibaba.nacos.core.utils.Commons.NACOS_ADMIN_CORE_CONTEXT_V3;
 @RequestMapping(NACOS_ADMIN_CORE_CONTEXT_V3 + "/plugin")
 public class PluginControllerV3 {
     
+    /** 统一插件管理器。 */
     private final PluginManager unifiedPluginManager;
     
+    /**
+     * 注入插件管理器。
+     *
+     * @param unifiedPluginManager 插件管理器实例
+     */
     public PluginControllerV3(PluginManager unifiedPluginManager) {
         this.unifiedPluginManager = unifiedPluginManager;
     }
     
     /**
-     * Get plugin list.
+     * 获取插件列表，可按 pluginType 过滤。
      *
      * @param pluginType plugin type filter (optional)
      * @return plugin list
@@ -88,7 +95,7 @@ public class PluginControllerV3 {
     }
     
     /**
-     * Get plugin detail.
+     * 获取指定插件详情（含配置定义）。
      *
      * @param pluginType plugin type
      * @param pluginName plugin name
@@ -112,7 +119,7 @@ public class PluginControllerV3 {
     }
     
     /**
-     * Enable or disable plugin.
+     * 启用或禁用插件，可选择仅作用于本节点。
      *
      * @param pluginType plugin type
      * @param pluginName plugin name
@@ -136,7 +143,7 @@ public class PluginControllerV3 {
     }
     
     /**
-     * Update plugin configuration.
+     * 更新插件 JSON 配置，可选择仅本节点生效。
      *
      * @param pluginType plugin type
      * @param pluginName plugin name
@@ -167,6 +174,7 @@ public class PluginControllerV3 {
         return Result.success("Plugin configuration updated successfully");
     }
     
+    /** 校验插件类型与名称非空。 */
     private void validatePluginIdentifier(String pluginType, String pluginName)
         throws NacosApiException {
         if (StringUtils.isBlank(pluginType) || StringUtils.isBlank(pluginName)) {
@@ -176,6 +184,7 @@ public class PluginControllerV3 {
         }
     }
     
+    /** 将 {@link PluginInfo} 转为列表展示 VO。 */
     private PluginInfoVO convertToVO(PluginInfo pluginInfo) {
         PluginInfoVO vo = new PluginInfoVO();
         vo.setPluginId(pluginInfo.getPluginId());
@@ -189,8 +198,7 @@ public class PluginControllerV3 {
     }
     
     /**
-     * Check if the plugin type is exclusive (only one can be active at a time). Exclusive types: AUTH,
-     * DATASOURCE_DIALECT.
+     * 判断插件类型是否互斥（同一时刻仅允许一个生效），如 AUTH、DATASOURCE_DIALECT。
      *
      * @param type plugin type
      * @return true if exclusive
@@ -199,6 +207,7 @@ public class PluginControllerV3 {
         return type == PluginType.AUTH || type == PluginType.DATASOURCE_DIALECT;
     }
     
+    /** 将 {@link PluginInfo} 转为详情 VO（含配置项）。 */
     private PluginDetailVO convertToDetailVO(PluginInfo pluginInfo) {
         PluginDetailVO vo = new PluginDetailVO();
         vo.setPluginId(pluginInfo.getPluginId());

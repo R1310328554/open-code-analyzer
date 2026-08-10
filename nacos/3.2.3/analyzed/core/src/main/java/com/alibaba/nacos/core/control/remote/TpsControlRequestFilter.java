@@ -35,6 +35,7 @@ import org.springframework.stereotype.Service;
 import java.lang.reflect.Method;
 
 /**
+ * RPC 请求 TPS 限流过滤器：在 {@link AbstractRequestFilter} 链路中识别 {@link TpsControl} 注解，解析并校验 TPS，超限时返回 {@link NacosException#OVER_THRESHOLD} 错误响应。
  * tps control point.
  *
  * @author liuzunfei
@@ -43,8 +44,17 @@ import java.lang.reflect.Method;
 @Service
 public class TpsControlRequestFilter extends AbstractRequestFilter {
     
+    /** TPS 控制管理器，懒加载自 {@link ControlManagerCenter}。 */
     private TpsControlManager tpsControlManager;
     
+    /**
+     * 对带 {@link TpsControl} 的 RPC 处理器执行 TPS 校验；通过则返回 null 继续后续 Filter，失败则构造错误响应。
+     *
+     * @param request RPC 请求
+     * @param meta 请求元数据
+     * @param handlerClazz 处理器类
+     * @return 限流失败时的错误响应，或 null 表示放行
+     */
     @Override
     protected Response filter(Request request, RequestMeta meta, Class handlerClazz) {
         
@@ -105,6 +115,7 @@ public class TpsControlRequestFilter extends AbstractRequestFilter {
         return null;
     }
     
+    /** 懒加载 TPS 控制管理器单例。 */
     private void initTpsControlManager() {
         if (tpsControlManager == null) {
             tpsControlManager = ControlManagerCenter.getInstance().getTpsControlManager();

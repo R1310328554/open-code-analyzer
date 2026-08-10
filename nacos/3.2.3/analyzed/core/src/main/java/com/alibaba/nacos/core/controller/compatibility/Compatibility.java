@@ -22,6 +22,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
+ * 旧版 API 兼容标记注解：标注即将废弃的接口，用户可通过 {@link com.alibaba.nacos.legacy.adapter.compatibility.ApiCompatibilityConfig} 配置临时继续启用。
  * Nacos old API compatibility annotation.
  * <p>
  *     Marked old API will be deprecated in future version, but for some users need time to refactor and move to new API.
@@ -35,14 +36,14 @@ import java.lang.annotation.RetentionPolicy;
 public @interface Compatibility {
     
     /**
-     * The type of API. Distinguishing {@link ApiType}.
+     * API 类型，用于区分 {@link ApiType} 下的开放/管理/控制台等接口。
      *
      * @return the type of the API
      */
     ApiType apiType() default ApiType.OPEN_API;
     
     /**
-     * APIs can replace this deprecated API.
+     * 可替代本废弃 API 的新接口说明或路径列表。
      *
      * @return API list.
      */

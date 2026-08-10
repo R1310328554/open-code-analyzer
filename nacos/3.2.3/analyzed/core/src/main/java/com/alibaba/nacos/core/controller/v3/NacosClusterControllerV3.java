@@ -48,6 +48,7 @@ import java.util.Locale;
 import static com.alibaba.nacos.core.utils.Commons.NACOS_ADMIN_CORE_CONTEXT_V3;
 
 /**
+ * 集群管理 HTTP 接口 v3：本节点信息、成员列表、成员元数据更新与寻址模式切换。
  * Cluster communication interface v3.
  *
  * @author yunye
@@ -58,12 +59,23 @@ import static com.alibaba.nacos.core.utils.Commons.NACOS_ADMIN_CORE_CONTEXT_V3;
 @RequestMapping(NACOS_ADMIN_CORE_CONTEXT_V3 + "/cluster")
 public class NacosClusterControllerV3 {
     
+    /** 集群运维服务，封装成员与寻址操作。 */
     private final NacosClusterOperationService nacosClusterOperationService;
     
+    /**
+     * 注入集群运维服务。
+     *
+     * @param nacosClusterOperationService 集群操作服务
+     */
     public NacosClusterControllerV3(NacosClusterOperationService nacosClusterOperationService) {
         this.nacosClusterOperationService = nacosClusterOperationService;
     }
     
+    /**
+     * 获取当前节点集群成员信息。
+     *
+     * @return 本节点 {@link Member}
+     */
     @Since("3.0.0")
     @GetMapping(value = "/node/self")
     @Secured(action = ActionTypes.READ, resource = Commons.NACOS_ADMIN_CORE_CONTEXT_V3
@@ -73,7 +85,7 @@ public class NacosClusterControllerV3 {
     }
     
     /**
-     * The console displays the list of cluster members.
+     * 控制台展示集群成员列表，可按地址与状态过滤。
      *
      * @param address match address
      * @param state   match state
@@ -100,7 +112,7 @@ public class NacosClusterControllerV3 {
     }
     
     /**
-     * Other nodes return their own metadata information.
+     * 批量更新集群成员元数据（其他节点回传自身信息）。
      *
      * @param nodes List of {@link Member}
      * @return {@link RestResult}
@@ -118,7 +130,7 @@ public class NacosClusterControllerV3 {
     }
     
     /**
-     * Addressing mode switch.
+     * 切换集群寻址模式（如文件、地址服务器等）。
      *
      * @param request {@link LookupUpdateRequest}
      * @return {@link RestResult}
