@@ -15,23 +15,8 @@
     "ai/src/main/java/com/alibaba/nacos/ai/form/prompt/PromptForm.java",
     "ai/src/main/java/com/alibaba/nacos/ai/form/prompt/PromptHistoryForm.java",
     "ai/src/main/java/com/alibaba/nacos/ai/form/prompt/PromptLabelBindForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/prompt/PromptLabelForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/prompt/PromptLabelsUpdateForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/prompt/PromptListForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/prompt/PromptMetadataForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/prompt/PromptOnlineForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/prompt/PromptPublishForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/prompt/PromptQueryForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/prompt/PromptSubmitForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/prompt/PromptVersionPublishForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/skills/admin/SkillBizTagsUpdateForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/skills/admin/SkillDetailForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/skills/admin/SkillDraftCreateForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/skills/admin/SkillForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/skills/admin/SkillLabelsUpdateForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/skills/admin/SkillListForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/skills/admin/SkillOnlineForm.java"
+    "ai/src/main/java/com/alibaba/nacos/ai/form/prompt/PromptLabelForm.java"
   ],
   "remaining_pending": 2447,
-  "done": 60
+  "done": 75
 }
