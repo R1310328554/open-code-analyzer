@@ -64,7 +64,8 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 /**
- * Utility for parsing SAML 1.1 payload
+ * SAML 1.1 报文 StAX 解析工具类。
+ * <p>提供断言语句、条件、主题确认、属性、查询及 XMLDSig KeyInfo 等元素的解析方法。</p>
  *
  * @author Anil.Saldhana@redhat.com
  * @since Jun 23, 2011
@@ -74,13 +75,13 @@ public class SAML11ParserUtil {
     private static final PicketLinkLogger logger = PicketLinkLoggerFactory.getLogger();
 
     /**
-     * Parse the AuthnStatement inside the assertion
+     * 解析断言内的 AuthenticationStatement 元素。
      *
-     * @param xmlEventReader
+     * @param xmlEventReader StAX 事件读取器
      *
-     * @return
+     * @return 认证语句对象
      *
-     * @throws ParsingException
+     * @throws ParsingException 解析失败时抛出
      */
     public static SAML11AuthenticationStatementType parseAuthenticationStatement(XMLEventReader xmlEventReader)
             throws ParsingException {
@@ -174,13 +175,13 @@ public class SAML11ParserUtil {
     }
 
     /**
-     * Parse the {@link org.keycloak.dom.saml.v1.assertion.SAML11SubjectConfirmationType}
+     * 解析 {@link org.keycloak.dom.saml.v1.assertion.SAML11SubjectConfirmationType} 元素。
      *
-     * @param xmlEventReader
+     * @param xmlEventReader StAX 事件读取器
      *
-     * @return
+     * @return 主题确认对象
      *
-     * @throws ParsingException
+     * @throws ParsingException 解析失败时抛出
      */
     public static SAML11SubjectConfirmationType parseSAML11SubjectConfirmation(XMLEventReader xmlEventReader)
             throws ParsingException {
@@ -188,7 +189,7 @@ public class SAML11ParserUtil {
 
         StartElement startElement = StaxParserUtil.getNextStartElement(xmlEventReader);
 
-        // There may be additional things under subject confirmation
+        // 主题确认下可能包含多个子元素
         while (xmlEventReader.hasNext()) {
             XMLEvent xmlEvent = StaxParserUtil.peek(xmlEventReader);
             if (xmlEvent instanceof EndElement) {
@@ -224,13 +225,13 @@ public class SAML11ParserUtil {
     }
 
     /**
-     * Parse the {@link SubjectConfirmationDataType}
+     * 解析 {@link SubjectConfirmationDataType} 元素（SAML 2.0 结构，SAML 1.1 中复用）。
      *
-     * @param xmlEventReader
+     * @param xmlEventReader StAX 事件读取器
      *
-     * @return
+     * @return 主题确认数据对象
      *
-     * @throws ParsingException
+     * @throws ParsingException 解析失败时抛出
      */
     public static SubjectConfirmationDataType parseSubjectConfirmationData(XMLEventReader xmlEventReader)
             throws ParsingException {
@@ -277,20 +278,20 @@ public class SAML11ParserUtil {
                 throw logger.parserUnknownTag(tag, startElement.getLocation());
         }
 
-        // Get the end tag
+        // 读取结束标签
         EndElement endElement = (EndElement) StaxParserUtil.getNextEvent(xmlEventReader);
         StaxParserUtil.matches(endElement, JBossSAMLConstants.SUBJECT_CONFIRMATION_DATA.get());
         return subjectConfirmationData;
     }
 
     /**
-     * Parse an {@code SAML11AttributeStatementType}
+     * 解析 {@code SAML11AttributeStatementType} 元素。
      *
-     * @param xmlEventReader
+     * @param xmlEventReader StAX 事件读取器
      *
-     * @return
+     * @return 属性语句对象
      *
-     * @throws ParsingException
+     * @throws ParsingException 解析失败时抛出
      */
     public static SAML11AttributeStatementType parseSAML11AttributeStatement(XMLEventReader xmlEventReader)
             throws ParsingException {
@@ -307,7 +308,7 @@ public class SAML11ParserUtil {
                 StaxParserUtil.validate(endElement, JBossSAMLConstants.ATTRIBUTE_STATEMENT.get());
                 break;
             }
-            // Get the next start element
+            // 获取下一个起始元素
             startElement = StaxParserUtil.peekNextStartElement(xmlEventReader);
             String tag = startElement.getName().getLocalPart();
             if (JBossSAMLConstants.ATTRIBUTE.get().equals(tag)) {
@@ -324,13 +325,13 @@ public class SAML11ParserUtil {
     }
 
     /**
-     * Parse a {@link SAML11AttributeType}
+     * 解析 {@link SAML11AttributeType} 元素。
      *
-     * @param xmlEventReader
+     * @param xmlEventReader StAX 事件读取器
      *
-     * @return
+     * @return 属性类型对象
      *
-     * @throws ParsingException
+     * @throws ParsingException 解析失败时抛出
      */
     public static SAML11AttributeType parseSAML11Attribute(XMLEventReader xmlEventReader) throws ParsingException {
         StartElement startElement = StaxParserUtil.getNextStartElement(xmlEventReader);
@@ -356,11 +357,14 @@ public class SAML11ParserUtil {
     }
 
     /**
-     * Parse an {@code SAML11AttributeType}
+     * 继续解析 {@code SAML11AttributeType} 的多个 AttributeValue 子元素。
      *
-     * @param xmlEventReader
+     * @param xmlEventReader StAX 事件读取器
+     * @param startElement 属性起始元素
+     * @param rootTag 根标签本地名
+     * @param attributeType 待填充的属性对象
      *
-     * @throws ParsingException
+     * @throws ParsingException 解析失败时抛出
      */
     public static void parseAttributeType(XMLEventReader xmlEventReader, StartElement startElement, String rootTag,
                                           SAML11AttributeType attributeType) throws ParsingException {
@@ -388,13 +392,13 @@ public class SAML11ParserUtil {
     }
 
     /**
-     * Parse Attribute value
+     * 解析单个 AttributeValue 元素。
      *
-     * @param xmlEventReader
+     * @param xmlEventReader StAX 事件读取器
      *
-     * @return
+     * @return 属性值（字符串或类型化对象）
      *
-     * @throws ParsingException
+     * @throws ParsingException 解析失败时抛出
      */
     public static Object parseAttributeValue(XMLEventReader xmlEventReader) throws ParsingException {
         StartElement startElement = StaxParserUtil.getNextStartElement(xmlEventReader);
@@ -413,6 +417,7 @@ public class SAML11ParserUtil {
         throw logger.parserUnknownXSI(typeValue);
     }
 
+    /** 解析 AuthorizationDecisionStatement 元素。 */
     public static SAML11AuthorizationDecisionStatementType parseSAML11AuthorizationDecisionStatement(
             XMLEventReader xmlEventReader) throws ParsingException {
         SAML11AuthorizationDecisionStatementType authzDecision = null;
@@ -465,13 +470,13 @@ public class SAML11ParserUtil {
     }
 
     /**
-     * Parse {@link org.keycloak.dom.saml.v1.assertion.SAML11ConditionsType}
+     * 解析 {@link org.keycloak.dom.saml.v1.assertion.SAML11ConditionsType} 元素。
      *
-     * @param xmlEventReader
+     * @param xmlEventReader StAX 事件读取器
      *
-     * @return
+     * @return 条件集合对象
      *
-     * @throws ParsingException
+     * @throws ParsingException 解析失败时抛出
      */
     public static SAML11ConditionsType parseSAML11Conditions(XMLEventReader xmlEventReader) throws ParsingException {
         StartElement startElement;
@@ -534,6 +539,7 @@ public class SAML11ParserUtil {
         return conditions;
     }
 
+    /** 解析 dsig:KeyInfo 元素并填充 {@link KeyInfoType}。 */
     public static KeyInfoType parseKeyInfo(XMLEventReader xmlEventReader) throws ParsingException {
         KeyInfoType keyInfo = new KeyInfoType();
         StartElement startElement = StaxParserUtil.getNextStartElement(xmlEventReader);
@@ -560,7 +566,7 @@ public class SAML11ParserUtil {
                 startElement = StaxParserUtil.getNextStartElement(xmlEventReader);
                 X509DataType x509 = new X509DataType();
 
-                // Let us go for the X509 certificate
+                // 解析 X509Certificate 子元素
                 startElement = StaxParserUtil.getNextStartElement(xmlEventReader);
                 StaxParserUtil.validate(startElement, WSTrustConstants.XMLDSig.X509CERT);
 
@@ -594,6 +600,7 @@ public class SAML11ParserUtil {
         return keyInfo;
     }
 
+    /** 解析 dsig:RSAKeyValue 元素。 */
     public static RSAKeyValueType parseRSAKeyValue(XMLEventReader xmlEventReader) throws ParsingException {
         StartElement startElement = StaxParserUtil.getNextStartElement(xmlEventReader);
         StaxParserUtil.validate(startElement, WSTrustConstants.XMLDSig.RSA_KEYVALUE);
@@ -630,6 +637,7 @@ public class SAML11ParserUtil {
         return rsaKeyValue;
     }
 
+    /** 通过 DOM 元素解析 DSAKeyValue。 */
     private static DSAKeyValueType parseDSAKeyValue(XMLEventReader xmlEventReader) throws ParsingException {
         StartElement startElement = StaxParserUtil.peekNextStartElement(xmlEventReader);
         StaxParserUtil.validate(startElement, WSTrustConstants.XMLDSig.DSA_KEYVALUE);
@@ -639,13 +647,13 @@ public class SAML11ParserUtil {
     }
 
     /**
-     * Given a dsig:DSAKeyValue element, return {@link DSAKeyValueType}
+     * 从 dsig:DSAKeyValue DOM 元素构建 {@link DSAKeyValueType}。
      *
-     * @param element
+     * @param element DSAKeyValue DOM 根元素
      *
-     * @return
+     * @return DSA 密钥值对象
      *
-     * @throws org.keycloak.saml.common.exceptions.ParsingException
+     * @throws org.keycloak.saml.common.exceptions.ParsingException 解析失败时抛出
      */
     private static DSAKeyValueType getDSAKeyValue(Element element) throws ParsingException {
         DSAKeyValueType dsa = new DSAKeyValueType();
@@ -680,18 +688,18 @@ public class SAML11ParserUtil {
     }
 
     /**
-     * Parse the {@link SAML11AttributeQueryType}
+     * 解析 {@link SAML11AttributeQueryType} 请求。
      *
-     * @param xmlEventReader
+     * @param xmlEventReader StAX 事件读取器
      *
-     * @return
+     * @return 属性查询对象
      *
-     * @throws ParsingException
+     * @throws ParsingException 解析失败时抛出
      */
     public static SAML11AttributeQueryType parseSAML11AttributeQuery(XMLEventReader xmlEventReader) throws ParsingException {
         SAML11AttributeQueryType query = new SAML11AttributeQueryType();
         StartElement startElement;
-        // There may be additional things under subject confirmation
+        // 主题确认下可能包含多个子元素
         while (xmlEventReader.hasNext()) {
             XMLEvent xmlEvent = StaxParserUtil.peek(xmlEventReader);
             if (xmlEvent instanceof EndElement) {
@@ -720,19 +728,18 @@ public class SAML11ParserUtil {
     }
 
     /**
-     * Parse the {@link SAML11AttributeQueryType}
+     * 解析 {@link SAML11AuthenticationQueryType} 请求。
      *
-     * @param xmlEventReader
+     * @param xmlEventReader StAX 事件读取器
      *
-     * @return
+     * @return 认证查询对象
      *
-     * @throws ParsingException
+     * @throws ParsingException 解析失败时抛出
      */
-    public static SAML11AuthenticationQueryType parseSAML11AuthenticationQuery(XMLEventReader xmlEventReader)
             throws ParsingException {
         SAML11AuthenticationQueryType query = new SAML11AuthenticationQueryType();
         StartElement startElement;
-        // There may be additional things under subject confirmation
+        // 主题确认下可能包含多个子元素
         while (xmlEventReader.hasNext()) {
             XMLEvent xmlEvent = StaxParserUtil.peek(xmlEventReader);
             if (xmlEvent instanceof EndElement) {
@@ -761,19 +768,19 @@ public class SAML11ParserUtil {
     }
 
     /**
-     * Parse the {@link SAML11AuthorizationDecisionQueryType}
+     * 解析 {@link SAML11AuthorizationDecisionQueryType} 请求。
      *
-     * @param xmlEventReader
+     * @param xmlEventReader StAX 事件读取器
      *
-     * @return
+     * @return 授权决策查询对象
      *
-     * @throws ParsingException
+     * @throws ParsingException 解析失败时抛出
      */
     public static SAML11AuthorizationDecisionQueryType parseSAML11AuthorizationDecisionQueryType(XMLEventReader xmlEventReader)
             throws ParsingException {
         SAML11AuthorizationDecisionQueryType query = new SAML11AuthorizationDecisionQueryType();
         StartElement startElement;
-        // There may be additional things under subject confirmation
+        // 主题确认下可能包含多个子元素
         while (xmlEventReader.hasNext()) {
             XMLEvent xmlEvent = StaxParserUtil.peek(xmlEventReader);
             if (xmlEvent instanceof EndElement) {

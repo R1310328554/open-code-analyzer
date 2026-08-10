@@ -27,7 +27,8 @@ import org.keycloak.saml.common.util.StaxParserUtil;
 import org.keycloak.saml.processing.core.parsers.saml.assertion.SAMLAssertionQNames;
 
 /**
- * Utility methods for SAML Parser
+ * SAML 解析器通用工具方法。
+ * <p>提供 NameID 解析与属性值校验等跨模块复用逻辑。</p>
  *
  * @author Anil.Saldhana@redhat.com
  * @since Nov 4, 2010
@@ -37,13 +38,13 @@ public class SAMLParserUtil {
     private static final PicketLinkLogger LOGGER = PicketLinkLoggerFactory.getLogger();
 
     /**
-     * Parse a {@code NameIDType}
+     * 解析 {@code NameIDType} 元素及其属性。
      *
-     * @param xmlEventReader
+     * @param xmlEventReader StAX 事件读取器
      *
-     * @return
+     * @return 填充完毕的 NameID 对象
      *
-     * @throws ParsingException
+     * @throws ParsingException 解析失败时抛出
      */
     public static NameIDType parseNameIDType(XMLEventReader xmlEventReader) throws ParsingException {
         StartElement nameIDElement = StaxParserUtil.getNextStartElement(xmlEventReader);
@@ -60,6 +61,14 @@ public class SAMLParserUtil {
         return nameID;
     }
 
+    /**
+     * 校验起始元素上指定属性的值是否与期望值一致。
+     *
+     * @param element 起始元素
+     * @param attributeName 属性对应的 {@link HasQName}
+     * @param expectedValue 期望的属性值
+     * @throws ParsingException 属性缺失或值不匹配时抛出
+     */
     public static void validateAttributeValue(StartElement element, HasQName attributeName, String expectedValue) throws ParsingException {
         String value = StaxParserUtil.getRequiredAttributeValue(element, attributeName);
         if (! Objects.equals(expectedValue, value)) {

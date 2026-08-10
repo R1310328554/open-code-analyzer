@@ -24,23 +24,39 @@ import org.keycloak.saml.common.constants.GeneralConstants;
 import org.keycloak.saml.common.exceptions.ParsingException;
 import org.keycloak.saml.common.util.StaxParserUtil;
 
+/**
+ * 解析 XMLDSig {@code DSAKeyValue} 元素的 StAX 解析器。
+ * <p>读取 DSA 公钥参数（P、Q、G、Y 等）并填充 {@link DSAKeyValueType}。</p>
+ */
 public class DsaKeyValueParser extends AbstractStaxXmlDSigParser<DSAKeyValueType> {
 
+    /** 单例实例。 */
     public static final DsaKeyValueParser INSTANCE = new DsaKeyValueParser();
 
+    /** 私有构造，使用 {@link #getInstance()} 获取实例。 */
     private DsaKeyValueParser() {
         super(XmlDSigQNames.DSA_KEY_VALUE);
     }
 
+    /** @return 解析器单例 */
     public static DsaKeyValueParser getInstance() {
         return INSTANCE;
     }
 
+    /** @return 新建的空 {@link DSAKeyValueType} 对象 */
     @Override
     protected DSAKeyValueType instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException {
         return new DSAKeyValueType();
     }
 
+    /**
+     * 处理 DSAKeyValue 子元素并写入目标对象。
+     *
+     * @param xmlEventReader StAX 事件读取器
+     * @param target 待填充的 DSA 密钥值对象
+     * @param element 子元素对应的 {@link XmlDSigQNames}
+     * @param elementDetail 子元素起始事件
+     */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, DSAKeyValueType target, XmlDSigQNames element, StartElement elementDetail) throws ParsingException {
         String text;

@@ -26,26 +26,38 @@ import org.keycloak.saml.common.exceptions.ParsingException;
 import org.keycloak.saml.common.util.StaxParserUtil;
 
 /**
- * Base Class for all Response Type parsing for SAML2
- *
+ * 解析 XMLDSig {@code X509Data} 元素的 StAX 解析器。
+ * <p>当前支持 {@code X509Certificate} 子元素，将 Base64 编码证书写入 {@link X509DataType}。</p>
  */
 public class X509DataParser extends AbstractStaxXmlDSigParser<X509DataType> {
 
+    /** 单例实例。 */
     private static final X509DataParser INSTANCE = new X509DataParser();
 
+    /** 构造以 X509Data 为根元素的解析器。 */
     public X509DataParser() {
         super(XmlDSigQNames.X509_DATA);
     }
 
+    /** @return 解析器单例 */
     public static X509DataParser getInstance() {
         return INSTANCE;
     }
 
+    /** @return 新建的空 {@link X509DataType} 对象 */
     @Override
     protected X509DataType instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException {
         return new X509DataType();
     }
 
+    /**
+     * 处理 X509Data 子元素（目前仅 X509Certificate）。
+     *
+     * @param xmlEventReader StAX 事件读取器
+     * @param target 待填充的 X509 数据对象
+     * @param element 子元素枚举
+     * @param elementDetail 子元素起始事件
+     */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, X509DataType target, XmlDSigQNames element, StartElement elementDetail) throws ParsingException {
         switch (element) {

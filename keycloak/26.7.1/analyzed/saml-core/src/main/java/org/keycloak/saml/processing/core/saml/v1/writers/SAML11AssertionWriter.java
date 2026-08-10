@@ -53,34 +53,39 @@ import org.keycloak.saml.processing.core.saml.v1.SAML11Constants;
 import org.w3c.dom.Element;
 
 /**
- * Write the SAML 11 Assertion to stream
+ * 将 SAML 1.1 断言对象序列化为 XML 流。
+ * <p>支持认证、属性、授权决策等语句及条件、主题、签名等子结构。</p>
  *
  * @author Anil.Saldhana@redhat.com
  * @since June 24, 2011
  */
 public class SAML11AssertionWriter extends BaseSAML11Writer {
 
+    /** 断言命名空间 URI。 */
     String ns = SAML11Constants.ASSERTION_11_NSURI;
 
+    /**
+     * 使用给定 StAX 写入器构造断言写入器。
+     *
+     * @param writer XML 流写入器
+     */
     public SAML11AssertionWriter(XMLStreamWriter writer) {
         super(writer);
     }
 
     /**
-     * Write an {@code SAML11AssertionType} to stream
+     * 将 {@code SAML11AssertionType} 写入输出流。
      *
-     * @param assertion
-     * @param out
+     * @param assertion 待序列化的断言对象
      *
-     * @throws ProcessingException
+     * @throws ProcessingException 写入失败时抛出
      */
     public void write(SAML11AssertionType assertion) throws ProcessingException {
         StaxUtil.writeStartElement(writer, ASSERTION_PREFIX, JBossSAMLConstants.ASSERTION.get(), ns);
         StaxUtil.writeNameSpace(writer, ASSERTION_PREFIX, ns);
         StaxUtil.writeDefaultNameSpace(writer, ns);
 
-        // Attributes
-        // StaxUtil.writeAttribute(writer, JBossSAMLConstants.ID.get(), assertion.getID());
+        // 写入根元素属性
         StaxUtil.writeAttribute(writer, SAML11Constants.ASSERTIONID, assertion.getID());
         StaxUtil.writeAttribute(writer, SAML11Constants.MAJOR_VERSION, assertion.getMajorVersion() + "");
         StaxUtil.writeAttribute(writer, SAML11Constants.MINOR_VERSION, assertion.getMinorVersion() + "");
@@ -150,21 +155,22 @@ public class SAML11AssertionWriter extends BaseSAML11Writer {
     }
 
     /**
-     * Write an {@code StatementAbstractType} to stream
+     * 写入 {@code StatementAbstractType}（当前未实现）。
      *
-     * @param statement
-     * @param out
+     * @param statement 语句对象
      *
-     * @throws ProcessingException
+     * @throws ProcessingException 未实现时抛出
      */
     public void write(StatementAbstractType statement) throws ProcessingException {
         throw logger.notImplementedYet("StatementAbstractType");
     }
 
+    /** 写入 {@code SAML11SubjectStatementType}（当前未实现）。 */
     public void write(SAML11SubjectStatementType statement) throws ProcessingException {
         throw logger.notImplementedYet("SAML11SubjectStatementType");
     }
 
+    /** 写入 {@code SAML11AttributeStatementType} 及其主题与属性列表。 */
     public void write(SAML11AttributeStatementType statement) throws ProcessingException {
         StaxUtil.writeStartElement(writer, ASSERTION_PREFIX, JBossSAMLConstants.ATTRIBUTE_STATEMENT.get(),
                 SAML11Constants.ASSERTION_11_NSURI);
@@ -185,12 +191,11 @@ public class SAML11AssertionWriter extends BaseSAML11Writer {
     }
 
     /**
-     * Write an {@code AuthnStatementType} to stream
+     * 将认证语句 {@code AuthnStatementType} 写入输出流。
      *
-     * @param authnStatement
-     * @param out
+     * @param authnStatement 认证语句对象
      *
-     * @throws ProcessingException
+     * @throws ProcessingException 写入失败时抛出
      */
     public void write(SAML11AuthenticationStatementType authnStatement) throws ProcessingException {
         StaxUtil.writeStartElement(writer, ASSERTION_PREFIX, SAML11Constants.AUTHENTICATION_STATEMENT,
@@ -223,6 +228,7 @@ public class SAML11AssertionWriter extends BaseSAML11Writer {
         StaxUtil.flush(writer);
     }
 
+    /** 写入 AuthorityBinding 元素。 */
     public void write(SAML11AuthorityBindingType authority) throws ProcessingException {
         StaxUtil.writeStartElement(writer, ASSERTION_PREFIX, SAML11Constants.AUTHORITY_BINDING,
                 SAML11Constants.ASSERTION_11_NSURI);
@@ -239,6 +245,7 @@ public class SAML11AssertionWriter extends BaseSAML11Writer {
         StaxUtil.writeEndElement(writer);
     }
 
+    /** 写入 SubjectLocality 元素（IP/DNS 地址）。 */
     public void write(SAML11SubjectLocalityType locality) throws ProcessingException {
         StaxUtil.writeStartElement(writer, ASSERTION_PREFIX, JBossSAMLConstants.SUBJECT_LOCALITY.get(),
                 SAML11Constants.ASSERTION_11_NSURI);
@@ -253,6 +260,7 @@ public class SAML11AssertionWriter extends BaseSAML11Writer {
         StaxUtil.writeEndElement(writer);
     }
 
+    /** 写入 AuthorizationDecisionStatement 及关联 Action。 */
     public void write(SAML11AuthorizationDecisionStatementType xacmlStat) throws ProcessingException {
         StaxUtil.writeStartElement(writer, ASSERTION_PREFIX, SAML11Constants.AUTHORIZATION_DECISION_STATEMENT, ns);
 
@@ -275,12 +283,11 @@ public class SAML11AssertionWriter extends BaseSAML11Writer {
     }
 
     /**
-     * write an {@code SubjectType} to stream
+     * 将 {@code SubjectType} 写入输出流。
      *
-     * @param subject
-     * @param out
+     * @param subject 主题对象
      *
-     * @throws ProcessingException
+     * @throws ProcessingException 写入失败时抛出
      */
     public void write(SAML11SubjectType subject) throws ProcessingException {
         StaxUtil.writeStartElement(writer, ASSERTION_PREFIX, JBossSAMLConstants.SUBJECT.get(),
@@ -307,6 +314,7 @@ public class SAML11AssertionWriter extends BaseSAML11Writer {
         StaxUtil.flush(writer);
     }
 
+    /** 写入 SubjectConfirmation 及其确认方法与 KeyInfo。 */
     public void write(SAML11SubjectConfirmationType confirmation) throws ProcessingException {
         StaxUtil.writeStartElement(writer, ASSERTION_PREFIX, JBossSAMLConstants.SUBJECT_CONFIRMATION.get(),
                 SAML11Constants.ASSERTION_11_NSURI);
@@ -334,10 +342,12 @@ public class SAML11AssertionWriter extends BaseSAML11Writer {
         StaxUtil.flush(writer);
     }
 
+    /** 写入 SubjectConfirmationData（当前未实现）。 */
     public void writeSubjectConfirmationData(Object scData) throws ProcessingException {
         throw logger.notImplementedYet("SubjectConfirmationData");
     }
 
+    /** 写入 NameIdentifier 元素。 */
     public void write(SAML11NameIdentifierType nameid) throws ProcessingException {
         StaxUtil.writeStartElement(writer, ASSERTION_PREFIX, SAML11Constants.NAME_IDENTIFIER,
                 SAML11Constants.ASSERTION_11_NSURI);
@@ -358,12 +368,11 @@ public class SAML11AssertionWriter extends BaseSAML11Writer {
     }
 
     /**
-     * Write an {@code AttributeType} to stream
+     * 将 {@code AttributeType} 写入输出流。
      *
-     * @param attributeType
-     * @param out
+     * @param attributeType 属性对象
      *
-     * @throws ProcessingException
+     * @throws ProcessingException 写入失败时抛出
      */
     public void write(SAML11AttributeType attributeType) throws ProcessingException {
         StaxUtil.writeStartElement(writer, ASSERTION_PREFIX, JBossSAMLConstants.ATTRIBUTE.get(), ns);
@@ -374,6 +383,7 @@ public class SAML11AssertionWriter extends BaseSAML11Writer {
         StaxUtil.flush(writer);
     }
 
+    /** 写入 Attribute 元素内容（不含根标签）。 */
     public void writeAttributeTypeWithoutRootTag(SAML11AttributeType attributeType) throws ProcessingException {
         String attributeName = attributeType.getAttributeName();
         if (StringUtil.isNullOrEmpty(attributeName))
@@ -396,6 +406,7 @@ public class SAML11AssertionWriter extends BaseSAML11Writer {
         }
     }
 
+    /** 写入 xs:string 类型的 AttributeValue。 */
     public void writeStringAttributeValue(String attributeValue) throws ProcessingException {
         StaxUtil.writeStartElement(writer, ASSERTION_PREFIX, JBossSAMLConstants.ATTRIBUTE_VALUE.get(), ns);
 
@@ -406,6 +417,7 @@ public class SAML11AssertionWriter extends BaseSAML11Writer {
         StaxUtil.writeEndElement(writer);
     }
 
+    /** 写入带 xml:lang 的本地化名称元素。 */
     public void writeLocalizedNameType(LocalizedNameType localizedNameType, QName startElement) throws ProcessingException {
         StaxUtil.writeStartElement(writer, startElement.getPrefix(), startElement.getLocalPart(),
                 startElement.getNamespaceURI());
@@ -414,6 +426,7 @@ public class SAML11AssertionWriter extends BaseSAML11Writer {
         StaxUtil.writeEndElement(writer);
     }
 
+    /** 写入 Action 元素。 */
     public void write(SAML11ActionType action) throws ProcessingException {
         StaxUtil.writeStartElement(writer, ASSERTION_PREFIX, SAML11Constants.ACTION, ns);
         String ns = action.getNamespace();
@@ -427,6 +440,7 @@ public class SAML11AssertionWriter extends BaseSAML11Writer {
         StaxUtil.writeEndElement(writer);
     }
 
+    /** 写入 Evidence 元素（含 AssertionIDReference 与嵌套断言）。 */
     public void write(SAML11EvidenceType evidence) throws ProcessingException {
         StaxUtil.writeStartElement(writer, ASSERTION_PREFIX, SAML11Constants.EVIDENCE, ns);
 

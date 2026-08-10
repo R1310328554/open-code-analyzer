@@ -19,11 +19,18 @@ package org.keycloak.saml.processing.core.parsers.util;
 import javax.xml.namespace.QName;
 
 /**
+ * 为 SAML/XML 解析枚举提供 {@link QName} 访问能力的标记接口。
+ * <p>实现类通常将 XML 元素本地名与命名空间 URI 封装为枚举常量。</p>
  *
  * @author hmlnarik
  */
 public interface HasQName {
 
+    /**
+     * 返回此常量对应的 XML 元素 QName。
+     *
+     * @return 元素 QName
+     */
     QName getQName();
 
 }

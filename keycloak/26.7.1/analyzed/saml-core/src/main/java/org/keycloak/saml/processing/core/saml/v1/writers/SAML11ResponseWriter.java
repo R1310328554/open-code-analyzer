@@ -35,28 +35,37 @@ import org.keycloak.saml.processing.core.saml.v1.SAML11Constants;
 import org.w3c.dom.Element;
 
 /**
- * Write the {@link SAML11ResponseType} to stream
+ * 将 {@link SAML11ResponseType} 序列化为 XML 流。
+ * <p>包含 Status、嵌套断言及可选 XML 数字签名。</p>
  *
  * @author Anil.Saldhana@redhat.com
  * @since Jun 29, 2011
  */
 public class SAML11ResponseWriter extends BaseSAML11Writer {
 
+    /** 协议命名空间 URI。 */
     protected String namespace = SAML11Constants.PROTOCOL_11_NSURI;
 
+    /** 嵌套断言写入器。 */
     protected SAML11AssertionWriter assertionWriter;
 
+    /**
+     * 构造响应写入器。
+     *
+     * @param writer XML 流写入器
+     */
     public SAML11ResponseWriter(XMLStreamWriter writer) {
         super(writer);
         assertionWriter = new SAML11AssertionWriter(writer);
     }
 
+    /** 写入完整 SAML 1.1 Response 根元素。 */
     public void write(SAML11ResponseType response) throws ProcessingException {
         StaxUtil.writeStartElement(writer, PROTOCOL_PREFIX, SAML11Constants.RESPONSE, namespace);
         StaxUtil.writeNameSpace(writer, PROTOCOL_PREFIX, namespace);
         StaxUtil.writeNameSpace(writer, ASSERTION_PREFIX, SAML11Constants.ASSERTION_11_NSURI);
 
-        // Attributes
+        // 写入 Response 根属性
         StaxUtil.writeAttribute(writer, SAML11Constants.RESPONSE_ID, response.getID());
         StaxUtil.writeAttribute(writer, SAML11Constants.MAJOR_VERSION, response.getMajorVersion() + "");
         StaxUtil.writeAttribute(writer, SAML11Constants.MINOR_VERSION, response.getMinorVersion() + "");
@@ -90,6 +99,7 @@ public class SAML11ResponseWriter extends BaseSAML11Writer {
         StaxUtil.flush(writer);
     }
 
+    /** 写入 Status 及其 StatusCode、StatusMessage、StatusDetail。 */
     public void write(SAML11StatusType status) throws ProcessingException {
         StaxUtil.writeStartElement(writer, PROTOCOL_PREFIX, SAML11Constants.STATUS, namespace);
 
@@ -118,6 +128,7 @@ public class SAML11ResponseWriter extends BaseSAML11Writer {
         StaxUtil.flush(writer);
     }
 
+    /** 写入 StatusCode 元素，支持嵌套二级状态码。 */
     public void write(SAML11StatusCodeType statusCode) throws ProcessingException {
         StaxUtil.writeStartElement(writer, PROTOCOL_PREFIX, SAML11Constants.STATUS_CODE, namespace);
 

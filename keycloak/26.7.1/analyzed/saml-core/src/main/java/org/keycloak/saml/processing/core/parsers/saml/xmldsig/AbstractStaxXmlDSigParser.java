@@ -22,17 +22,31 @@ import org.keycloak.saml.common.parsers.AbstractStaxParser;
 import org.keycloak.saml.processing.core.parsers.util.QNameEnumLookup;
 
 /**
+ * XML 数字签名（XMLDSig）StAX 解析器抽象基类。
+ * <p>将 {@link XmlDSigQNames} 枚举与 StAX 事件流解析框架衔接，子类负责具体元素类型的实例化与子元素处理。</p>
  *
  * @author hmlnarik
  */
 public abstract class AbstractStaxXmlDSigParser<T> extends AbstractStaxParser<T, XmlDSigQNames> {
 
+    /** XMLDSig 元素 QName 到枚举常量的查找表。 */
     protected static final QNameEnumLookup<XmlDSigQNames> LOOKUP = new QNameEnumLookup(XmlDSigQNames.values());
 
+    /**
+     * 构造解析器并指定期望的根元素类型。
+     *
+     * @param expectedStartElement 解析起始元素对应的 {@link XmlDSigQNames} 常量
+     */
     public AbstractStaxXmlDSigParser(XmlDSigQNames expectedStartElement) {
         super(expectedStartElement.getQName(), XmlDSigQNames.UNKNOWN_ELEMENT);
     }
 
+    /**
+     * 根据 XML 元素 QName 解析为 {@link XmlDSigQNames} 枚举值。
+     *
+     * @param name 元素 QName
+     * @return 匹配的枚举常量，未知元素时返回 {@code null}
+     */
     @Override
     protected XmlDSigQNames getElementFromName(QName name) {
         return LOOKUP.from(name);

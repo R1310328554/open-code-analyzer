@@ -36,29 +36,38 @@ import org.keycloak.saml.common.util.StaxUtil;
 import org.keycloak.saml.processing.core.saml.v1.SAML11Constants;
 
 /**
- * Write the {@link org.keycloak.dom.saml.v1.protocol.SAML11RequestType} to stream
+ * 将 {@link org.keycloak.dom.saml.v1.protocol.SAML11RequestType} 序列化为 XML 流。
+ * <p>支持认证、属性与授权决策三类查询及 Assertion 引用/Artifact。</p>
  *
  * @author Anil.Saldhana@redhat.com
  * @since Jun 27, 2011
  */
 public class SAML11RequestWriter extends BaseSAML11Writer {
 
+    /** 协议命名空间 URI。 */
     protected String namespace = SAML11Constants.PROTOCOL_11_NSURI;
 
+    /** 嵌套断言写入器，复用同一 XMLStreamWriter。 */
     protected SAML11AssertionWriter assertionWriter;
 
+    /**
+     * 构造请求写入器。
+     *
+     * @param writer XML 流写入器
+     */
     public SAML11RequestWriter(XMLStreamWriter writer) {
         super(writer);
         assertionWriter = new SAML11AssertionWriter(writer);
     }
 
+    /** 写入完整 SAML 1.1 Request 根元素。 */
     public void write(SAML11RequestType request) throws ProcessingException {
         StaxUtil.writeStartElement(writer, PROTOCOL_PREFIX, SAML11Constants.REQUEST, namespace);
         StaxUtil.writeNameSpace(writer, PROTOCOL_PREFIX, namespace);
         StaxUtil.writeNameSpace(writer, ASSERTION_PREFIX, SAML11Constants.ASSERTION_11_NSURI);
         StaxUtil.writeDefaultNameSpace(writer, namespace);
 
-        // Attributes
+        // 写入 Request 根属性
         StaxUtil.writeAttribute(writer, SAML11Constants.REQUEST_ID, request.getID());
         StaxUtil.writeAttribute(writer, SAML11Constants.MAJOR_VERSION, request.getMajorVersion() + "");
         StaxUtil.writeAttribute(writer, SAML11Constants.MINOR_VERSION, request.getMinorVersion() + "");
@@ -95,6 +104,7 @@ public class SAML11RequestWriter extends BaseSAML11Writer {
         StaxUtil.flush(writer);
     }
 
+    /** 写入 AuthenticationQuery 及其 Subject。 */
     public void write(SAML11AuthenticationQueryType auth) throws ProcessingException {
         StaxUtil.writeStartElement(writer, PROTOCOL_PREFIX, SAML11Constants.AUTHENTICATION_QUERY, namespace);
 
@@ -112,6 +122,7 @@ public class SAML11RequestWriter extends BaseSAML11Writer {
         StaxUtil.flush(writer);
     }
 
+    /** 写入 AttributeQuery、Subject 及请求的属性列表。 */
     public void write(SAML11AttributeQueryType attr) throws ProcessingException {
         StaxUtil.writeStartElement(writer, PROTOCOL_PREFIX, SAML11Constants.ATTRIBUTE_QUERY, namespace);
 
@@ -138,6 +149,7 @@ public class SAML11RequestWriter extends BaseSAML11Writer {
         StaxUtil.flush(writer);
     }
 
+    /** 写入 AuthorizationDecisionQuery、Subject、Action 与 Evidence。 */
     public void write(SAML11AuthorizationDecisionQueryType attr) throws ProcessingException {
         StaxUtil.writeStartElement(writer, PROTOCOL_PREFIX, SAML11Constants.AUTHORIZATION_DECISION_QUERY, namespace);
 
