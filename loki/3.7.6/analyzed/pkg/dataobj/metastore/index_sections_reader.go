@@ -1,5 +1,7 @@
 package metastore
 
+// index_sections_reader 组合流匹配、指针扫描与 Bloom 过滤，按标签与时间范围产出 Arrow 索引段批次。
+
 import (
 	"bytes"
 	"context"
@@ -33,9 +35,11 @@ type bloomStatsProvider interface {
 	totalReadRows() uint64
 }
 
+// 该 Reader 先解析匹配流 ID，再读段指针并按 Bloom 进一步裁剪。
 // indexSectionsReader combines pointer scanning and bloom filtering into a single reader.
 // It reads section pointers matching stream matchers and time range, then applies
 // bloom filter predicates to further filter the results.
+// indexSectionsReader 协调 streams/pointers/bloom 三类 Reader 的状态机。
 type indexSectionsReader struct {
 	logger log.Logger
 	obj    *dataobj.Object
@@ -75,6 +79,7 @@ var (
 	_ bloomStatsProvider     = (*indexSectionsReader)(nil)
 )
 
+// newIndexSectionsReader 仅保留 MatchEqual 谓词用于 Bloom，默认 batchSize 8192。
 func newIndexSectionsReader(
 	logger log.Logger,
 	obj *dataobj.Object,
@@ -110,6 +115,7 @@ func newIndexSectionsReader(
 
 var errIndexSectionsReaderNotOpen = errors.New("index sections reader not opened")
 
+// Open 懒初始化：首次调用 init 打开各 section 的 streams 与 pointers 读取器。
 func (r *indexSectionsReader) Open(ctx context.Context) error {
 	if r.initialized {
 		return nil
@@ -428,6 +434,7 @@ func (r *indexSectionsReader) openBloomPointersReader(ctx context.Context, sec *
 	return reader, nil
 }
 
+// Read 先 lazyReadStreams，无 Bloom 谓词时直接 readPointers，否则走 Bloom 路径。
 func (r *indexSectionsReader) Read(ctx context.Context) (arrow.RecordBatch, error) {
 	if !r.initialized {
 		return nil, errIndexSectionsReaderNotOpen
@@ -520,6 +527,7 @@ func (r *indexSectionsReader) lazyReadStreams(ctx context.Context) error {
 	return nil
 }
 
+// filterBloomPredicates 去掉已知流标签上的 Bloom 谓词，避免结构化元数据同名列误判。
 // filterLabelPredicates removes predicates that reference known stream labels.
 // This prevents false negatives on structured metadata columns with the same name.
 func (r *indexSectionsReader) filterBloomPredicates() {
@@ -568,6 +576,7 @@ func (r *indexSectionsReader) addLabelNamesForStream(streamID int64, names []str
 	r.labelNamesByStream[streamID] = existing
 }
 
+// readPointers 顺序扫描 pointersReaders，按 matchingStreamIDs 过滤行。
 // readPointers returns the next batch of pointers from the current pointers
 // section.
 func (r *indexSectionsReader) readPointers(ctx context.Context) (arrow.RecordBatch, error) {
@@ -659,6 +668,7 @@ func (r *indexSectionsReader) filterPointersByMatchingStreamID(
 	return rec, matchedRows, err
 }
 
+// readWithBloomFiltering 读全指针后用 Bloom 匹配的 SectionKey 构建保留掩码。
 func (r *indexSectionsReader) readWithBloomFiltering(ctx context.Context) (arrow.RecordBatch, error) {
 	recs, err := r.readAllPointers(ctx)
 	if err != nil {
@@ -861,6 +871,7 @@ func (r *indexSectionsReader) readMatchedSectionKeys(ctx context.Context) (map[S
 	return matchedSectionKeys, nil
 }
 
+// bloomFilterMayContain 解析 Bloom 字节并测试 value；解析失败时保守返回 true。
 func bloomFilterMayContain(bloomBytes []byte, value string) bool {
 	var bf bloom.BloomFilter
 	if _, err := bf.ReadFrom(bytes.NewReader(bloomBytes)); err != nil {
@@ -894,3 +905,4 @@ func (r *indexSectionsReader) buildKeepBitmask(rec arrow.RecordBatch, matchedSec
 func (r *indexSectionsReader) totalReadRows() uint64 {
 	return r.bloomRowsRead
 }
+// Close 关闭全部子 Reader 并结束 xcap 追踪 span，释放对象存储读取资源。

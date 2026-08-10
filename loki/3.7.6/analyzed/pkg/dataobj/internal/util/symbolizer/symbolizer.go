@@ -1,3 +1,4 @@
+// symbolizer 字符串驻留：相同内容返回同一实例，降低重复标签等场景的内存。
 // Package symbolizer provides a string interning mechanism to reduce memory usage
 // by reusing identical strings.
 //
@@ -14,6 +15,7 @@ import (
 	"strings"
 )
 
+// New 指定 map 初始容量与 maxSize 上限，非线程安全。
 // New creates a new Symbolizer with the given initial capacity and maximum size.
 func New(initialCapacity int, maxSize int) *Symbolizer {
 	return &Symbolizer{
@@ -22,11 +24,13 @@ func New(initialCapacity int, maxSize int) *Symbolizer {
 	}
 }
 
+// Symbolizer 用 map 缓存已克隆字符串，超限时随机丢弃约百分之一条目。
 type Symbolizer struct {
 	symbols map[string]string
 	maxSize int
 }
 
+// Get 命中缓存直接返回；未命中则 Clone 后插入，必要时随机驱逐。
 // Get returns a string from the symbolizer. If the string is not in the cache,
 // a clone is inserted into the cache and returned.
 //
@@ -53,8 +57,10 @@ func (s *Symbolizer) Get(name string) string {
 	return newString
 }
 
+// Reset 清空 symbols 映射，maxSize 配置保持不变。
 // Reset clears the cache and resets the Symbolizer to its initial state,
 // maintaining the existing maxSize.
 func (s *Symbolizer) Reset() {
 	clear(s.symbols)
 }
+// 依赖 map 迭代顺序未定义以实现近似随机驱逐，控制峰值内存。

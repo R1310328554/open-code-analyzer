@@ -1,5 +1,8 @@
 package rangeset
 
+// intersect 实现两个半开区间集合的交集，输出仍为规范化 Range 列表。
+
+// Intersect 双指针扫描有序区间，仅保留重叠段并推进先结束的一侧。
 // Intersect returns a new set, holding the intersection of a and b.
 func Intersect(a, b Set) Set {
 	var out Set
@@ -33,3 +36,4 @@ func Intersect(a, b Set) Set {
 
 	return out
 }
+// 空集与任一侧为空时直接返回空 Set，无需额外归并步骤。

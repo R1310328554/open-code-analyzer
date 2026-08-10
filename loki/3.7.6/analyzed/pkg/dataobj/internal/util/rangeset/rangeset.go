@@ -1,3 +1,4 @@
+// rangeset 维护半开区间集合，用于表示大量有效或无效行号范围。
 // Package rangeset implements a half-open interval set [start, end). It is
 // intended to be used for working with many large ranges of valid or invalid
 // rows.
@@ -14,6 +15,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/internal/util/sliceclear"
 )
 
+// Range 表示半开区间，不变式为 Start 严格小于 End。
 // Range is a half-open interval [Start, End).
 //
 // Invariant: Start < End
@@ -44,10 +46,12 @@ func (r Range) Overlaps(other Range) bool {
 	return r.Start < other.End && other.Start < r.End
 }
 
+// Set 持有有序且不重叠的 Range 切片，零值即可直接使用。
 // Set holds a sorted list of non-overlapping [Range]s. The zero value is ready
 // for use.
 type Set struct{ ranges []Range }
 
+// From 过滤无效区间、排序后 normalize，得到规范化的 Set。
 // From creates a new Set from a slice of ranges. Invalid ranges (those of
 // length zero or negative length) are ignored.
 func From(ranges ...Range) Set {
@@ -69,6 +73,7 @@ func From(ranges ...Range) Set {
 	return s
 }
 
+// Add 按起点二分插入并扩展重叠区间，最后 normalize 合并相邻段。
 // Add inserts r into s. If r overlaps with any existing ranges in s, the
 // ranges are merged.
 func (s *Set) Add(r Range) {
@@ -102,6 +107,7 @@ func (s *Set) Add(r Range) {
 	s.normalize()
 }
 
+// normalize 原地合并重叠或相邻区间，压缩 ranges 切片长度。
 // normalize merges overlapping and adjacent ranges in-place.
 func (s *Set) normalize() {
 	out := s.ranges[:0]
@@ -122,6 +128,7 @@ func (s *Set) normalize() {
 	s.ranges = out
 }
 
+// RangeFor 二分查找包含 value 的区间，不存在则返回零长 Range。
 // RangeFor returns the range containing the value, or an invalid range of length
 // zero if no such range exists.
 func (s *Set) RangeFor(value uint64) Range {
@@ -160,6 +167,7 @@ func (s *Set) Overlaps(r Range) bool {
 	return s.ranges[i].Start < r.End
 }
 
+// Next 返回严格大于 value 的下一个集合内行号，无后继则 false。
 // Next returns the next value in s after the given value. If there are no more
 // values in s after value, Next returns [math.MaxUint64] and false.
 func (s *Set) Next(value uint64) (uint64, bool) {
@@ -196,7 +204,9 @@ func (s *Set) Len() int {
 	return total
 }
 
+// Reset 清空区间但保留底层切片容量，便于对象池复用 Set。
 // Reset removes all ranges from the set but retains underlying memory.
 func (s *Set) Reset() {
 	s.ranges = sliceclear.Clear(s.ranges)
 }
+// IncludesValue、Overlaps 等均基于有序区间二分，适合稀疏大行号集合。

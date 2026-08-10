@@ -1,10 +1,13 @@
 package rangeset
 
+// union 合并两个区间集：拼接后排序再 normalize，得到并集的标准形式。
+
 import (
 	"cmp"
 	"slices"
 )
 
+// Union 若一侧为空则返回另一侧；否则拼接、排序并归并重叠区间。
 // Union returns a new set, holding the union of a and b.
 func Union(a, b Set) Set {
 	var out Set
@@ -31,3 +34,4 @@ func Union(a, b Set) Set {
 	out.normalize()
 	return out
 }
+// 与 Intersect 对称，均假设输入 Set 已规范化且区间有序。

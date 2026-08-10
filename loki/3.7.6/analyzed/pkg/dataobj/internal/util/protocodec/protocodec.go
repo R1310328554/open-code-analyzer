@@ -1,3 +1,4 @@
+// protocodec 以 uvarint 长度前缀流式编解码 protobuf，便于顺序读写消息流。
 // Package protocodec provides utilities for encoding and decoding protobuf
 // messages into files.
 //
@@ -17,6 +18,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/internal/util/bufpool"
 )
 
+// Size 返回 Encode 所需总字节数，含 uvarint 前缀与序列化正文。
 // Size returns the number of bytes that would be required to call [Encode] for
 // pb.
 func Size(pb proto.Message) int {
@@ -28,6 +30,7 @@ func Size(pb proto.Message) int {
 	return uvarintSize + protoSize
 }
 
+// Encode 先写消息长度 uvarint，再写入 proto 序列化字节。
 // Encode encodes a protobuf message into w. Encoded messages can be decoded
 // with [Decode].
 func Encode(w streamio.Writer, pb proto.Message) error {
@@ -55,6 +58,7 @@ func Encode(w streamio.Writer, pb proto.Message) error {
 	return nil
 }
 
+// Decode 读 uvarint 长度后从 bufpool 取缓冲，再 Unmarshal 到 pb。
 // Decode decodes a message encoded with protocodec from r and stores it in pb.
 func Decode(r streamio.Reader, pb proto.Message) error {
 	size, err := binary.ReadUvarint(r)
@@ -85,3 +89,4 @@ var protoBufferPool = sync.Pool{
 		return new(proto.Buffer)
 	},
 }
+// proto.Buffer 池化复用，减少高频序列化路径上的临时分配。

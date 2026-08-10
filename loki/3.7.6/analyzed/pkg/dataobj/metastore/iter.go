@@ -1,5 +1,7 @@
 package metastore
 
+// iter 提供索引指针遍历与 streams 谓词构建，供 metastore 查询路径复用。
+
 import (
 	"context"
 	"errors"
@@ -20,6 +22,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/sections/streams"
 )
 
+// forEachIndexPointer 按租户与时间范围扫描 indexpointers 段，逐行回调 f。
 func forEachIndexPointer(
 	ctx context.Context,
 	object *dataobj.Object,
@@ -140,6 +143,7 @@ func forEachIndexPointer(
 	return nil
 }
 
+// findPointersColumnsByTypes 按类型列表从 section 列元数据中筛选所需列。
 func findPointersColumnsByTypes(allColumns []*pointers.Column, columnTypes ...pointers.ColumnType) ([]*pointers.Column, error) {
 	result := make([]*pointers.Column, 0, len(columnTypes))
 
@@ -156,6 +160,7 @@ func findPointersColumnsByTypes(allColumns []*pointers.Column, columnTypes ...po
 	return result, nil
 }
 
+// buildStreamReaderPredicate 组合时间重叠与标签 matcher，生成 streams.Predicate 列表。
 // buildStreamReaderPredicate builds predicates for the stream reader
 // using the provided time range and label matchers.
 func buildStreamReaderPredicate(sec *streams.Section, sStart, sEnd *scalar.Timestamp, matchers []*labels.Matcher) ([]streams.Predicate, error) {
@@ -189,6 +194,7 @@ func buildStreamReaderPredicate(sec *streams.Section, sStart, sEnd *scalar.Times
 	return predicates, nil
 }
 
+// buildTimeRangePredicate 判定流 [minTs,maxTs] 与查询窗口是否相交。
 // buildTimeRangePredicate builds a predicate for time range overlap.
 // A stream's [minTs, maxTs] overlaps with query [start, end] if:
 // maxTs >= start AND minTs <= end
@@ -215,6 +221,7 @@ func buildTimeRangePredicate(minTsColumn, maxTsColumn *streams.Column, start, en
 	}
 }
 
+// buildLabelPredicate 将 Prometheus labels.Matcher 映射为 streams 谓词，含 NULL 列语义。
 // buildLabelPredicate builds a predicate for a label matcher.
 func buildLabelPredicate(matcher *labels.Matcher, columns map[string]*streams.Column) streams.Predicate {
 	col := columns[matcher.Name]
@@ -305,3 +312,4 @@ func getBytes(value scalar.Scalar) []byte {
 
 	return nil
 }
+// getBytes 从 Arrow 标量提取字节，供正则匹配 FuncPredicate 使用。

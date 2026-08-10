@@ -1,5 +1,7 @@
 package metastore
 
+// metastore 包定义元存储服务接口：按标签与时间查询段描述符、索引路径与标签值。
+
 import (
 	"context"
 	"time"
@@ -23,6 +25,7 @@ type Metastore interface {
 	Values(ctx context.Context, start, end time.Time, matchers ...*labels.Matcher) ([]string, error) // Used to get all values for a given set of label matchers
 }
 
+// SectionsRequest 携带查询时间窗、流 matcher 与结构化谓词。
 type SectionsRequest struct {
 	Start      time.Time
 	End        time.Time
@@ -63,8 +66,10 @@ type CollectSectionsResponse struct {
 	SectionsResponse SectionsResponse
 }
 
+// ArrowRecordBatchReader 流式读取 Arrow RecordBatch 的最小接口。
 type ArrowRecordBatchReader interface {
 	Open(ctx context.Context) error
 	Read(ctx context.Context) (arrow.RecordBatch, error)
 	Close()
 }
+// CollectSections 将 Reader 产出批次聚合为 SectionsResponse 供上层消费。

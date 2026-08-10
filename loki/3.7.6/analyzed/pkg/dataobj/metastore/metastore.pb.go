@@ -24,6 +24,8 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// 以下类型由 protoc-gen-gogo 生成，描述 metastore 侧对象写入事件消息。
+
 // ObjectWrittenEvent describes a new logs object being written to object storage.
 type ObjectWrittenEvent struct {
 	ObjectPath         string `protobuf:"bytes,2,opt,name=objectPath,proto3" json:"objectPath,omitempty"`
@@ -63,6 +65,7 @@ func (m *ObjectWrittenEvent) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ObjectWrittenEvent proto.InternalMessageInfo
 
+// GetObjectPath 返回对象在 bucket 中的路径字符串。
 func (m *ObjectWrittenEvent) GetObjectPath() string {
 	if m != nil {
 		return m.ObjectPath
@@ -77,6 +80,7 @@ func (m *ObjectWrittenEvent) GetWriteTime() string {
 	return ""
 }
 
+// GetEarliestRecordTime 返回该对象内最早日志记录时间。
 func (m *ObjectWrittenEvent) GetEarliestRecordTime() string {
 	if m != nil {
 		return m.EarliestRecordTime
@@ -523,3 +527,4 @@ var (
 	ErrInvalidLengthMetastore = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowMetastore   = fmt.Errorf("proto: integer overflow")
 )
+// 生成文件的 Marshal/Unmarshal 逻辑勿手改，变更请编辑 metastore.proto 后重新生成。
