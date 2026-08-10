@@ -35,37 +35,45 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.provider.ProviderConfigurationBuilder;
 
 /**
- * <p>Specific OIDC LinkedIn provider for <b>Sign In with LinkedIn using OpenID Connect</b>
- * product app. LinkedIn currently has two issues with default OIDC provider
- * implementation:</p>
+ * LinkedIn OpenID Connect 身份提供者工厂。
+ * <p>专用于 <b>Sign In with LinkedIn using OpenID Connect</b> 产品应用。
+ * LinkedIn 与默认 OIDC 实现存在两处兼容性问题：</p>
  *
  * <ol>
- * <li>The jwks endpoint does not contain <em>use</em> claim for the signature key.</li>
- * <li>The nonce in the authentication request is not returned back in the ID Token.</li>
+ * <li>JWKS 端点返回的签名密钥缺少 {@code use} 声明。</li>
+ * <li>授权请求中的 nonce 不会回显到 ID Token 中。</li>
  * </ol>
  *
- * <p>This factory workarounds the default provider to overcome the issues.</p>
+ * <p>本工厂通过自定义公钥加载与禁用 nonce 校验来规避上述问题。</p>
  *
  * @author rmartinc
  */
 public class LinkedInOIDCIdentityProviderFactory extends AbstractIdentityProviderFactory<LinkedInOIDCIdentityProvider> implements SocialIdentityProviderFactory<LinkedInOIDCIdentityProvider> {
 
+    /** LinkedIn OIDC IdP 的 provider id。 */
     public static final String PROVIDER_ID = "linkedin-openid-connect";
+    /** LinkedIn OIDC 发现文档 URL。 */
     public static final String WELL_KNOWN_URL = "https://www.linkedin.com/oauth/.well-known/openid-configuration";
 
-    // well known oidc metadata is cached as static property
+    /** 缓存的 OIDC 发现元数据（静态，进程内共享）。 */
     private static OIDCConfigurationRepresentation metadata;
 
+    /** 管理控制台显示名称。 */
     @Override
     public String getName() {
         return "LinkedIn";
     }
 
+    /** 返回 {@link #PROVIDER_ID}。 */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /**
+     * 创建 LinkedIn OIDC IdP 实例。
+     * <p>从 well-known 端点拉取 issuer、端点 URL 与 JWKS 地址，并禁用 nonce 校验。</p>
+     */
     @Override
     public LinkedInOIDCIdentityProvider create(KeycloakSession session, IdentityProviderModel model) {
         OIDCConfigurationRepresentation local = metadata;
@@ -86,15 +94,17 @@ public class LinkedInOIDCIdentityProviderFactory extends AbstractIdentityProvide
         config.setUseJwksUrl(true);
         config.setJwksUrl(local.getJwksUri());
         config.setValidateSignature(true);
-        config.setDisableNonce(true); // linkedin does not manage nonce correctly
+        config.setDisableNonce(true); // LinkedIn 未正确回显 nonce
         return new LinkedInOIDCIdentityProvider(session, config);
     }
 
+    /** 创建默认 OIDC 配置对象。 */
     @Override
     public OIDCIdentityProviderConfig createConfig() {
         return new OIDCIdentityProviderConfig();
     }
 
+    /** 从 LinkedIn well-known 端点获取 OIDC 发现元数据。 */
     private static OIDCConfigurationRepresentation getWellKnownMetadata(KeycloakSession session) {
         try (SimpleHttpResponse response = SimpleHttp.create(session).doGet(WELL_KNOWN_URL)
                 .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON)
@@ -108,9 +118,10 @@ public class LinkedInOIDCIdentityProviderFactory extends AbstractIdentityProvide
         }
     }
 
+    /** 返回 IdP 可配置属性列表（当前无额外参数）。 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
-        // we can add some common OIDC config parameters here if needed
+        // 可按需在此添加通用 OIDC 配置项
         return ProviderConfigurationBuilder.create()
                 .build();
     }

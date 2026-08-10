@@ -33,9 +33,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.jboss.logging.Logger;
 
 /**
- *
- * Identity provider for Microsoft account. Uses OAuth 2 protocol of Microsoft Graph as documented at
- * <a href="https://docs.microsoft.com/en-us/onedrive/developer/rest-api/getting-started/graph-oauth">https://docs.microsoft.com/en-us/onedrive/developer/rest-api/getting-started/graph-oauth</a>
+ * Microsoft 账户 OAuth2 社交身份提供者。
+ * <p>使用 Microsoft Graph OAuth 2 协议，文档参见
+ * <a href="https://docs.microsoft.com/en-us/onedrive/developer/rest-api/getting-started/graph-oauth">Microsoft Graph OAuth</a>。</p>
  *
  * @author Vlastimil Elias (velias at redhat dot com)
  */
@@ -43,15 +43,23 @@ public class MicrosoftIdentityProvider extends AbstractOAuth2IdentityProvider im
 
     private static final Logger log = Logger.getLogger(MicrosoftIdentityProvider.class);
 
-    private static final String AUTH_URL_TEMPLATE = "https://login.microsoftonline.com/%s/oauth2/v2.0/authorize"; // authorization code endpoint
-    private static final String TOKEN_URL_TEMPLATE = "https://login.microsoftonline.com/%s/oauth2/v2.0/token"; // token endpoint
-    private static final String PROFILE_URL = "https://graph.microsoft.com/v1.0/me/"; // user profile service endpoint
-    private static final String DEFAULT_SCOPE = "User.read"; // the User.read scope should be sufficient to obtain all necessary user info
+    /** 授权码端点 URL 模板（占位符为租户 ID）。 */
+    private static final String AUTH_URL_TEMPLATE = "https://login.microsoftonline.com/%s/oauth2/v2.0/authorize";
+    /** 令牌端点 URL 模板。 */
+    private static final String TOKEN_URL_TEMPLATE = "https://login.microsoftonline.com/%s/oauth2/v2.0/token";
+    /** Microsoft Graph 用户资料端点。 */
+    private static final String PROFILE_URL = "https://graph.microsoft.com/v1.0/me/";
+    /** 默认 scope，User.read 足以获取基本用户信息。 */
+    private static final String DEFAULT_SCOPE = "User.read";
 
+    /**
+     * 构造 Microsoft IdP 并按租户配置 OAuth 端点。
+     * <p>未指定 tenantId 时使用多租户 {@code common} 端点。</p>
+     */
     public MicrosoftIdentityProvider(KeycloakSession session, MicrosoftIdentityProviderConfig config) {
         super(session, config);
 
-        // Use multi-tenant 'common' endpoints if not specified.
+        // 未配置租户时使用多租户 common 端点
         String tenant = Optional.ofNullable(config.getTenantId()).map(String::trim).orElse("common");
 
         config.setAuthorizationUrl(String.format(AUTH_URL_TEMPLATE, tenant));
@@ -59,16 +67,19 @@ public class MicrosoftIdentityProvider extends AbstractOAuth2IdentityProvider im
         config.setUserInfoUrl(PROFILE_URL);
     }
 
+    /** 支持外部令牌交换。 */
     @Override
     protected boolean supportsExternalExchange() {
         return true;
     }
 
+    /** 返回用于令牌校验的 Graph 用户资料端点。 */
     @Override
     protected String getProfileEndpointForValidation(EventBuilder event) {
         return PROFILE_URL;
     }
 
+    /** 使用访问令牌从 Microsoft Graph 拉取用户资料。 */
     @Override
     protected BrokeredIdentityContext doGetFederatedIdentity(String accessToken) {
         try {
@@ -82,6 +93,10 @@ public class MicrosoftIdentityProvider extends AbstractOAuth2IdentityProvider im
         }
     }
 
+    /**
+     * 从 Graph API JSON 资料提取联邦身份上下文。
+     * <p>优先使用 mail 字段作为邮箱；若缺失且 userPrincipalName 为合法邮箱则回退使用。</p>
+     */
     @Override
     protected BrokeredIdentityContext extractIdentityFromProfile(EventBuilder event, JsonNode profile) {
         String id = getJsonProperty(profile, "id");
@@ -105,6 +120,7 @@ public class MicrosoftIdentityProvider extends AbstractOAuth2IdentityProvider im
         return user;
     }
 
+    /** 返回默认 OAuth scope。 */
     @Override
     protected String getDefaultScopes() {
         return DEFAULT_SCOPE;

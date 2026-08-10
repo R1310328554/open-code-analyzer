@@ -19,19 +19,23 @@ package org.keycloak.social.linkedin;
 import org.keycloak.broker.oidc.mappers.AbstractJsonUserAttributeMapper;
 
 /**
- * User attribute mapper.
- * 
+ * LinkedIn 用户属性映射器。
+ * <p>将 LinkedIn OIDC 用户资料 JSON 字段映射到 Keycloak 用户属性。</p>
+ *
  * @author Vlastimil Elias (velias at redhat dot com)
  */
 public class LinkedInUserAttributeMapper extends AbstractJsonUserAttributeMapper {
 
+	/** 兼容的 IdP provider id 列表。 */
 	private static final String[] cp = new String[] { LinkedInOIDCIdentityProviderFactory.PROVIDER_ID };
 
+	/** 返回仅支持 LinkedIn OIDC IdP 的 provider id 数组。 */
 	@Override
 	public String[] getCompatibleProviders() {
 		return cp;
 	}
 
+	/** 映射器唯一 id。 */
 	@Override
 	public String getId() {
 		return "linkedin-user-attribute-mapper";

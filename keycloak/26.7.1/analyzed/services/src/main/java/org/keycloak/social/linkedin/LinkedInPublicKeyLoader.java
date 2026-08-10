@@ -26,9 +26,10 @@ import org.keycloak.protocol.oidc.utils.JWKSHttpUtils;
 import org.keycloak.util.JWKSUtils;
 
 /**
- * <p>Specific public key loader that assumes that use for the keys is the requested one.
- * The LinkedIn OpenID Connect implementation does not add the compulsory
- * <em>use</em> claim in the <a href="https://www.linkedin.com/oauth/openid/jwks">jwks endpoint</a>.</p>
+ * LinkedIn 专用公钥加载器。
+ * <p>LinkedIn OpenID Connect 的
+ * <a href="https://www.linkedin.com/oauth/openid/jwks">JWKS 端点</a>
+ * 未在密钥中声明必需的 {@code use} 字段，本加载器假定请求用途即为签名密钥。</p>
  *
  * @author rmartinc
  */
@@ -37,11 +38,16 @@ public class LinkedInPublicKeyLoader implements PublicKeyLoader {
     private final KeycloakSession session;
     private final OIDCIdentityProviderConfig config;
 
+    /** 构造 LinkedIn 公钥加载器。 */
     public LinkedInPublicKeyLoader(KeycloakSession session, OIDCIdentityProviderConfig config) {
         this.session = session;
         this.config = config;
     }
 
+    /**
+     * 从 IdP 配置的 JWKS URL 拉取密钥并按签名用途解析。
+     * <p>第二个参数 {@code true} 表示在缺少 use 声明时仍按 SIG 用途匹配。</p>
+     */
     @Override
     public PublicKeysWrapper loadKeys() throws Exception {
         String jwksUrl = config.getJwksUrl();

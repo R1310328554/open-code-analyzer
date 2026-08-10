@@ -27,32 +27,41 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 
 /**
+ * Instagram 社交身份提供者工厂。
+ * <p>注册 provider id {@code instagram}，仅在启用 {@code INSTAGRAM_BROKER} 特性时可用。</p>
+ *
  * @author Pedro Igor
  */
 public class InstagramIdentityProviderFactory extends AbstractIdentityProviderFactory<InstagramIdentityProvider> implements SocialIdentityProviderFactory<InstagramIdentityProvider>, EnvironmentDependentProviderFactory {
 
+    /** Instagram IdP 的 provider id。 */
     public static final String PROVIDER_ID = "instagram";
 
+    /** 管理控制台显示名称。 */
     @Override
     public String getName() {
         return "Instagram";
     }
 
+    /** 根据领域模型创建 {@link InstagramIdentityProvider} 实例。 */
     @Override
     public InstagramIdentityProvider create(KeycloakSession session, IdentityProviderModel model) {
         return new InstagramIdentityProvider(session, new OAuth2IdentityProviderConfig(model));
     }
 
+    /** 创建默认 OAuth2 配置对象。 */
     @Override
     public OAuth2IdentityProviderConfig createConfig() {
         return new OAuth2IdentityProviderConfig();
     }
 
+    /** 返回 {@link #PROVIDER_ID}。 */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** 检查当前环境是否启用了 Instagram Broker 特性。 */
     @Override
     public boolean isSupported(Scope config) {
         return Profile.isFeatureEnabled(Feature.INSTAGRAM_BROKER);

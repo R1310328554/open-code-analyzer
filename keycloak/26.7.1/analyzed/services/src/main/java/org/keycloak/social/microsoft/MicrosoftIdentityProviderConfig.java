@@ -20,22 +20,33 @@ package org.keycloak.social.microsoft;
 import org.keycloak.broker.oidc.OIDCIdentityProviderConfig;
 import org.keycloak.models.IdentityProviderModel;
 
+/**
+ * Microsoft 身份提供者配置。
+ * <p>扩展 OIDC 配置，支持可选的 Azure AD 租户 ID。</p>
+ */
 public class MicrosoftIdentityProviderConfig extends OIDCIdentityProviderConfig {
 
+    /** 从领域 IdP 模型构造配置。 */
     public MicrosoftIdentityProviderConfig(IdentityProviderModel model) {
         super(model);
     }
 
+    /** 创建空配置实例。 */
     public MicrosoftIdentityProviderConfig() {
 
     }
 
+    /**
+     * 获取 Azure AD 租户 ID。
+     * <p>未配置或为空时返回 {@code null}，表示使用多租户端点。</p>
+     */
     public String getTenantId() {
         String tenantId = getConfig().get("tenantId");
 
         return tenantId == null || tenantId.isEmpty() ? null : tenantId;
     }
 
+    /** 设置 Azure AD 租户 ID。 */
     public void setTenantId(final String tenantId) {
         getConfig().put("tenantId", tenantId);
     }

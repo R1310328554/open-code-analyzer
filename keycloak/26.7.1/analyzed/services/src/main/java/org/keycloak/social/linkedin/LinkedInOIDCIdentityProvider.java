@@ -27,27 +27,34 @@ import org.keycloak.keys.PublicKeyStorageUtils;
 import org.keycloak.models.KeycloakSession;
 
 /**
- * <p>Specific OIDC LinkedIn provider for <b>Sign In with LinkedIn using OpenID Connect</b>
- * product app.</p>
+ * LinkedIn OpenID Connect 社交身份提供者。
+ * <p>专用于 <b>Sign In with LinkedIn using OpenID Connect</b> 产品应用。</p>
  *
  * @author rmartinc
  */
 public class LinkedInOIDCIdentityProvider extends OIDCIdentityProvider implements SocialIdentityProvider<OIDCIdentityProviderConfig> {
 
+    /** 默认 OIDC scope 集合。 */
     public static final String DEFAULT_SCOPE = "openid profile email";
 
+    /** 构造 LinkedIn OIDC IdP 实例。 */
     public LinkedInOIDCIdentityProvider(KeycloakSession session, OIDCIdentityProviderConfig config) {
         super(session, config);
     }
 
+    /** 返回默认 OIDC scope。 */
     @Override
     protected String getDefaultScopes() {
         return DEFAULT_SCOPE;
     }
 
+    /**
+     * 获取 IdP 签名验证公钥。
+     * <p>LinkedIn JWKS 未声明 {@code use} 字段，需使用 {@link LinkedInPublicKeyLoader} 加载。</p>
+     */
     @Override
     protected KeyWrapper getIdentityProviderKeyWrapper(JWSInput jws) {
-        // workaround to load keys published with no "use" as signature
+        // 兼容 JWKS 中缺少 use=sig 声明的 LinkedIn 公钥
         PublicKeyLoader loader = new LinkedInPublicKeyLoader(session, getConfig());
         PublicKeyStorageProvider keyStorage = session.getProvider(PublicKeyStorageProvider.class);
         String modelKey = PublicKeyStorageUtils.getIdpModelCacheKey(session.getContext().getRealm().getId(), getConfig().getInternalId());

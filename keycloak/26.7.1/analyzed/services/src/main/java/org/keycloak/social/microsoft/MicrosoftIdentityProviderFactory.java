@@ -26,35 +26,47 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.provider.ProviderConfigurationBuilder;
 
 /**
+ * Microsoft 社交身份提供者工厂。
+ * <p>注册 provider id {@code microsoft} 并暴露 prompt、tenantId 等配置项。</p>
+ *
  * @author Vlastimil Elias (velias at redhat dot com)
  */
 public class MicrosoftIdentityProviderFactory extends AbstractIdentityProviderFactory<MicrosoftIdentityProvider> implements SocialIdentityProviderFactory<MicrosoftIdentityProvider> {
 
+    /** Microsoft IdP 的 provider id。 */
     public static final String PROVIDER_ID = "microsoft";
 
+    /** 管理控制台显示名称。 */
     @Override
     public String getName() {
         return "Microsoft";
     }
 
+    /** 根据领域模型创建 {@link MicrosoftIdentityProvider} 实例。 */
     @Override
     public MicrosoftIdentityProvider create(KeycloakSession session, IdentityProviderModel model) {
         return new MicrosoftIdentityProvider(session, new MicrosoftIdentityProviderConfig(model));
     }
 
+    /** 创建默认 Microsoft 配置对象。 */
     @Override
     public MicrosoftIdentityProviderConfig createConfig() {
         return new MicrosoftIdentityProviderConfig();
     }
 
+    /** 返回 {@link #PROVIDER_ID}。 */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /**
+     * 返回 IdP 可配置属性列表。
+     * <p>支持的授权 URI 参数参见 Microsoft 身份平台文档。</p>
+     */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
-        // The supported authentication URI parameters can be found in the Microsoft identity documentation
+        // 授权 URI 参数说明见 Microsoft 身份平台 OIDC 文档
         // https://learn.microsoft.com/en-us/entra/identity-platform/v2-protocols-oidc#send-the-sign-in-request
         return ProviderConfigurationBuilder.create()
                 .property().name("prompt")
