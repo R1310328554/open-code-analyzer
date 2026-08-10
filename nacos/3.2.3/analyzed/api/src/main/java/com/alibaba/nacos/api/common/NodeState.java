@@ -17,38 +17,28 @@
 package com.alibaba.nacos.api.common;
 
 /**
- * The life cycle state of a node plays an important role.
+ * 集群节点生命周期状态。
  *
- * <p>1.3.0 The unified sinking operation should be done first, and the node state
- * should be radiated out later, mainly for whether the request can be processed and so on</p>
+ * <p>自 1.3.0 起先统一下沉状态判定逻辑，再向外辐射节点状态，
+ * 主要用于控制节点是否可处理请求等场景。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public enum NodeState {
     
-    /**
-     * Node is starting.
-     */
+    /** 节点正在启动。 */
     STARTING,
     
-    /**
-     * Node is up and ready for request.
-     */
+    /** 节点已就绪，可处理请求。 */
     UP,
     
-    /**
-     * Node may Crash.
-     */
+    /** 节点状态可疑，可能发生故障。 */
     SUSPICIOUS,
     
-    /**
-     * Node is out of service, something abnormal happened.
-     */
+    /** 节点不可用，发生异常。 */
     DOWN,
     
-    /**
-     * The Node is isolated.
-     */
+    /** 节点已被隔离。 */
     ISOLATION,
     
 }

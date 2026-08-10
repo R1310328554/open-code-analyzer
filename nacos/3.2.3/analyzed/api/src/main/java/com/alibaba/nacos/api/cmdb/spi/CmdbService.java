@@ -25,7 +25,9 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Service to visit CMDB store.
+ * 访问 CMDB 存储的 SPI 服务接口。
+ *
+ * <p>由 CMDB 插件实现，供 Nacos 命名模块查询标签、实体及变更事件。</p>
  *
  * @author nkorange
  * @since 0.7.0
@@ -33,67 +35,67 @@ import java.util.Set;
 public interface CmdbService {
     
     /**
-     * Get all label names stored in CMDB.
+     * 获取 CMDB 中全部标签名称。
      *
-     * @return label name set
+     * @return 标签名集合
      */
     Set<String> getLabelNames();
     
     /**
-     * Get all possible entity types in CMDB.
+     * 获取 CMDB 支持的全部实体类型。
      *
-     * @return all entity types
+     * @return 实体类型集合
      */
     Set<String> getEntityTypes();
     
     /**
-     * Get label info.
+     * 按名称查询标签元数据。
      *
-     * @param labelName label name
-     * @return label info
+     * @param labelName 标签名
+     * @return 标签定义
      */
     Label getLabel(String labelName);
     
     /**
-     * Get label value of label name of ip.
+     * 获取指定实体上某标签的取值。
      *
-     * @param entityName entity name
-     * @param entityType entity type
-     * @param labelName  target label name
-     * @return label value
+     * @param entityName 实体名称
+     * @param entityType 实体类型
+     * @param labelName  目标标签名
+     * @return 标签值
      */
     String getLabelValue(String entityName, String entityType, String labelName);
     
     /**
-     * Get all label value of ip.
+     * 获取指定实体的全部标签键值对。
      *
-     * @param entityName entity name
-     * @param entityType entity type
-     * @return all label values
+     * @param entityName 实体名称
+     * @param entityType 实体类型
+     * @return 标签名到取值的映射
      */
     Map<String, String> getLabelValues(String entityName, String entityType);
     
     /**
-     * Dump all entities in CMDB.
+     * 导出 CMDB 中全部实体。
      *
-     * @return all entities
+     * @return 外层键为实体类型、内层为实体映射
      */
     Map<String, Map<String, Entity>> getAllEntities();
     
     /**
-     * get label change events.
+     * 获取自指定时间戳以来的实体变更事件。
      *
-     * @param timestamp start time of generated events
-     * @return label events
+     * @param timestamp 起始时间戳（毫秒）
+     * @return 实体事件列表
      */
     List<EntityEvent> getEntityEvents(long timestamp);
     
     /**
-     * Get single entity.
+     * 按名称与类型查询单个实体。
      *
-     * @param entityName name of entity
-     * @param entityType type of entity
-     * @return entity.
+     * @param entityName 实体名称
+     * @param entityType 实体类型
+     * @return 实体对象
      */
     Entity getEntity(String entityName, String entityType);
 }

@@ -23,7 +23,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * An annotation for Nacos API v2 Controller.
+ * 标记 Nacos API v2 控制器类。
+ *
+ * <p>标注在 REST 控制器类型上，用于区分 Nacos 2.x 开放 API 入口，
+ * 便于框架扫描与路由分组。</p>
+ *
  * @author dongyafei
  * @date 2022/7/22
  */

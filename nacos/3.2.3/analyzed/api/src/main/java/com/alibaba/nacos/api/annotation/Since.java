@@ -23,7 +23,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Marks the first Nacos version that supports an API.
+ * 标记 API 自哪个 Nacos 版本起可用。
+ *
+ * <p>可用于类型或方法，便于文档生成与兼容性说明。</p>
  *
  * @author xiweng.yy
  */
@@ -33,9 +35,9 @@ import java.lang.annotation.Target;
 public @interface Since {
     
     /**
-     * First Nacos version that supports this API, normalized as x.y.z.
+     * 首次支持该 API 的 Nacos 版本，格式为 x.y.z。
      *
-     * @return supported since version
+     * @return 起始版本号
      */
     String value();
 }

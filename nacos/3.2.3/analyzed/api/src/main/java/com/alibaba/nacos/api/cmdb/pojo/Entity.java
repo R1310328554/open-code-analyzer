@@ -19,17 +19,23 @@ package com.alibaba.nacos.api.cmdb.pojo;
 import java.util.Map;
 
 /**
- * CMDB entity.
+ * CMDB 实体，表示配置管理数据库中的一条记录。
+ *
+ * <p>由类型 {@link #type}、名称 {@link #name} 及标签映射 {@link #labels} 组成，
+ * 用于服务发现与路由策略中的元数据关联。</p>
  *
  * @author nkorange
  * @since 0.7.0
  */
 public class Entity {
     
+    /** 实体类型（如 ip、service）。 */
     private String type;
     
+    /** 实体名称（唯一标识）。 */
     private String name;
     
+    /** 标签键值对集合。 */
     private Map<String, String> labels;
     
     public String getType() {

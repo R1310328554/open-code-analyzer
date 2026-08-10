@@ -17,18 +17,16 @@
 package com.alibaba.nacos.api.cmdb.pojo;
 
 /**
- * CMDB preserved entity type.
+ * CMDB 内置保留实体类型。
+ *
+ * <p>Nacos 命名模块预定义的实体种类，扩展 CMDB 时通常无需自定义这些类型。</p>
  *
  * @author nkorange
  * @since 0.7.0
  */
 public enum PreservedEntityTypes {
-    /**
-     * Ip.
-     */
+    /** IP 地址实体。 */
     ip,
-    /**
-     * Service.
-     */
+    /** 服务实体。 */
     service
 }

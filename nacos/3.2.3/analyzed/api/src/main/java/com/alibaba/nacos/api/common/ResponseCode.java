@@ -17,22 +17,21 @@
 package com.alibaba.nacos.api.common;
 
 /**
- * Response code definitions.
+ * API 响应码定义。
  *
- * <p>This class and inherited classes define codes separated from HTTP code to provide richer and preciser information of
- * the API results. A recommended rule for defining response code is:
- * <li> Global and common code starts with 10001.
- * <li> Naming module code starts with 20001.
- * <li> Config module code starts with 30001.
- * <li> Core module code starts with 40001.
+ * <p>与 HTTP 状态码分离，提供更细粒度的业务结果信息。推荐编码规则：</p>
+ * <ul>
+ * <li>全局/通用码以 10001 起</li>
+ * <li>命名模块以 20001 起</li>
+ * <li>配置模块以 30001 起</li>
+ * <li>核心模块以 40001 起</li>
+ * </ul>
  *
  * @author nkorange
  * @since 1.2.0
  */
 public class ResponseCode {
     
-    /**
-     * Everything normal.
-     */
+    /** 一切正常。 */
     public static final int OK = 10200;
 }

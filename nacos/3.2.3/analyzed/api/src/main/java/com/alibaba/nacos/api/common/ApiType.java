@@ -17,28 +17,23 @@
 package com.alibaba.nacos.api.common;
 
 /**
- * The type of Nacos API.
+ * Nacos API 类型分类。
+ *
+ * <p>区分管理员 API、控制台 API、开放 API 与集群内部 API，
+ * 用于鉴权、审计与路由策略。</p>
  *
  * @author zhangyukun
  * @author xiweng.yy
  */
 public enum ApiType {
     
-    /**
-     * Admin API which nacos maintainer or administrator used.
-     */
+    /** 管理员 API，供 Nacos 运维人员使用。 */
     ADMIN_API("ADMIN_API"),
-    /**
-     * Console API which nacos console used.
-     */
+    /** 控制台 API，供 Nacos 控制台调用。 */
     CONSOLE_API("CONSOLE_API"),
-    /**
-     * Open API which client used or basic data operation.
-     */
+    /** 开放 API，供客户端或基础数据操作使用。 */
     OPEN_API("OPEN_API"),
-    /**
-     * Inner API which used between nacos servers.
-     */
+    /** 内部 API，用于 Nacos 集群节点间通信。 */
     INNER_API("INNER_API");
     
     private final String description;

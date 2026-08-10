@@ -19,7 +19,10 @@ package com.alibaba.nacos.api.common;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Constants.
+ * Nacos 客户端与服务端通用常量定义。
+ *
+ * <p>涵盖配置、命名、远程通信、模糊监听等模块的 HTTP 头、超时、路径及模块标识；
+ * 嵌套静态类按子模块分组。</p>
  *
  * @author Nacos
  */
@@ -103,49 +106,31 @@ public class Constants {
     
     public static final Integer CLUSTER_GRPC_PORT_DEFAULT_OFFSET = 1001;
     
-    /**
-     * second.
-     */
+    /** 单位：秒。 */
     public static final int ASYNC_UPDATE_ADDRESS_INTERVAL = 300;
     
-    /**
-     * second.
-     */
+    /** 单位：秒。 */
     public static final int POLLING_INTERVAL_TIME = 15;
     
-    /**
-     * millisecond.
-     */
+    /** 单位：毫秒。 */
     public static final int ONCE_TIMEOUT = 2000;
     
-    /**
-     * millisecond.
-     */
+    /** 单位：毫秒。 */
     public static final int SO_TIMEOUT = 60000;
     
-    /**
-     * millisecond.
-     */
+    /** 单位：毫秒。 */
     public static final int CONFIG_LONG_POLL_TIMEOUT = 30000;
     
-    /**
-     * millisecond.
-     */
+    /** 单位：毫秒。 */
     public static final int MIN_CONFIG_LONG_POLL_TIMEOUT = 10000;
     
-    /**
-     * millisecond.
-     */
+    /** 单位：毫秒。 */
     public static final int CONFIG_RETRY_TIME = 2000;
     
-    /**
-     * Maximum number of retries.
-     */
+    /** 最大重试次数。 */
     public static final int MAX_RETRY = 3;
     
-    /**
-     * millisecond.
-     */
+    /** 单位：毫秒。 */
     public static final int RECV_WAIT_TIMEOUT = ONCE_TIMEOUT * 5;
     
     public static final String ENCODE = "UTF-8";
@@ -232,9 +217,7 @@ public class Constants {
     
     public static final String TAG_V2_PREFIX = "tagv2_";
     
-    /**
-     * millisecond.
-     */
+    /** 单位：毫秒。 */
     public static final long DEFAULT_REDO_DELAY_TIME = 3000L;
     
     public static final int DEFAULT_REDO_THREAD_COUNT = 1;
@@ -257,16 +240,12 @@ public class Constants {
     
     public static final String CONFIG_GRAY_LABEL = "nacos.config.gray.label";
     
-    /**
-     * Since 2.3.3, For some situation like java agent using nacos-client which can't use env ram info.
-     */
+    /** 自 2.3.3 起：部分场景（如 Java Agent 嵌入 nacos-client 无法读取环境 RAM 信息）的默认开关。 */
     public static final String DEFAULT_USE_RAM_INFO_PARSING = "true";
     
     public static final String CLIENT_MODULE_TYPE = "clientModuleType";
     
-    /**
-     * The constants in config directory.
-     */
+    /** 配置模块相关常量。 */
     public static class Config {
         
         public static final String CONFIG_MODULE = "config";
@@ -274,9 +253,7 @@ public class Constants {
         public static final String NOTIFY_HEADER = "notify";
     }
     
-    /**
-     * The constants in naming directory.
-     */
+    /** 命名模块相关常量。 */
     public static class Naming {
         
         public static final String NAMING_MODULE = "naming";
@@ -286,39 +263,25 @@ public class Constants {
     
     public static final String FUZZY_WATCH_PATTERN_SPLITTER = ">>";
     
-    /**
-     * fuzzy watch sync type of watch init notify.
-     */
+    /** 模糊监听：初始化通知同步类型。 */
     public static final String FUZZY_WATCH_INIT_NOTIFY = "FUZZY_WATCH_INIT_NOTIFY";
     
-    /**
-     * fuzzy watch sync type of watch init notify finish.
-     */
+    /** 模糊监听：初始化通知完成同步类型。 */
     public static final String FINISH_FUZZY_WATCH_INIT_NOTIFY = "FINISH_FUZZY_WATCH_INIT_NOTIFY";
     
-    /**
-     * fuzzy watch sync type of watch diff sync notify.
-     */
+    /** 模糊监听：差异同步通知类型。 */
     public static final String FUZZY_WATCH_DIFF_SYNC_NOTIFY = "FUZZY_WATCH_DIFF_SYNC_NOTIFY";
     
-    /**
-     * fuzzy watch sync type of watch resource changed.
-     */
+    /** 模糊监听：资源变更通知类型。 */
     public static final String FUZZY_WATCH_RESOURCE_CHANGED = "FUZZY_WATCH_RESOURCE_CHANGED";
     
-    /**
-     * watch type of watch.
-     */
+    /** 监听类型：建立监听。 */
     public static final String WATCH_TYPE_WATCH = "WATCH";
     
-    /**
-     * watch type of cancel watch.
-     */
+    /** 监听类型：取消监听。 */
     public static final String WATCH_TYPE_CANCEL_WATCH = "CANCEL_WATCH";
     
-    /**
-     * The constants in config fuzzy watch changed type directory.
-     */
+    /** 配置模糊监听变更类型常量。 */
     public static class ConfigChangedType {
         
         public static final String ADD_CONFIG = "ADD_CONFIG";
@@ -329,9 +292,7 @@ public class Constants {
         
     }
     
-    /**
-     * The constants in naming fuzzy watch changed type directory.
-     */
+    /** 命名模糊监听变更类型常量。 */
     public static class ServiceChangedType {
         
         public static final String ADD_SERVICE = "ADD_SERVICE";
@@ -344,26 +305,20 @@ public class Constants {
         
     }
     
-    /**
-     * The constants in lock directory.
-     */
+    /** 分布式锁模块常量。 */
     public static class Lock {
         
         public static final String LOCK_MODULE = "lock";
         
     }
     
-    /**
-     * The constants in remote directory.
-     */
+    /** 远程通信模块常量。 */
     public static class Remote {
         
         public static final String INTERNAL_MODULE = "internal";
     }
     
-    /**
-     * The constants in exception directory.
-     */
+    /** 异常相关错误码常量。 */
     public static class Exception {
         
         public static final int SERIALIZE_ERROR_CODE = 100;
@@ -375,9 +330,7 @@ public class Constants {
         public static final int FIND_TABLE_ERROR_CODE = 103;
     }
     
-    /**
-     * The constants in AI directory.
-     */
+    /** AI 模块常量。 */
     public static class AI {
         
         public static final String AI_MODULE = "ai";

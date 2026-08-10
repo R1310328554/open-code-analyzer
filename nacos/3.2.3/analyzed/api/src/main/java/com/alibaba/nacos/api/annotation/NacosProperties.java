@@ -25,7 +25,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * An annotation for Nacos Properties.
+ * Nacos 客户端连接与配置属性注解。
+ *
+ * <p>定义 {@code nacos.*} 前缀下的 endpoint、namespace、server-addr 等键名，
+ * 并提供 Spring 占位符默认值；可与 {@link NacosInjected} 配合注入 {@link PropertyKeyConst} 属性。</p>
  *
  * @author <a href="mailto:mercyblitz@gmail.com">Mercy</a>
  * @see PropertyKeyConst
@@ -36,262 +39,201 @@ import java.lang.annotation.Target;
 @Documented
 public @interface NacosProperties {
     
-    /**
-     * The prefix of property name of Nacos.
-     */
+    /** Nacos 配置项名称前缀。 */
     String PREFIX = "nacos.";
     
-    /**
-     * The property name of "endpoint".
-     */
+    /** 配置键名：{@code endpoint}。 */
     String ENDPOINT = "endpoint";
     
-    /**
-     * The property name of "namespace".
-     */
+    /** 配置键名：{@code namespace}。 */
     String NAMESPACE = "namespace";
     
-    /**
-     * The property name of "access-key".
-     */
+    /** 配置键名：{@code access-key}。 */
     String ACCESS_KEY = "access-key";
     
-    /**
-     * The property name of "secret-key".
-     */
+    /** 配置键名：{@code secret-key}。 */
     String SECRET_KEY = "secret-key";
     
-    /**
-     * The property name of "server-addr".
-     */
+    /** 配置键名：{@code server-addr}。 */
     String SERVER_ADDR = "server-addr";
     
-    /**
-     * The property name of "context-path".
-     */
+    /** 配置键名：{@code context-path}。 */
     String CONTEXT_PATH = "context-path";
     
-    /**
-     * The property name of "cluster-name".
-     */
+    /** 配置键名：{@code cluster-name}。 */
     String CLUSTER_NAME = "cluster-name";
     
-    /**
-     * The property name of "encode".
-     */
+    /** 配置键名：{@code encode}。 */
     String ENCODE = "encode";
     
-    /**
-     * The property name of "long-poll.timeout".
-     */
+    /** 配置键名：长轮询超时 {@code configLongPollTimeout}。 */
     String CONFIG_LONG_POLL_TIMEOUT = "configLongPollTimeout";
     
-    /**
-     * The property name of "config.retry.time".
-     */
+    /** 配置键名：配置重试间隔 {@code configRetryTime}。 */
     String CONFIG_RETRY_TIME = "configRetryTime";
     
-    /**
-     * The property name of "maxRetry".
-     */
+    /** 配置键名：最大重试次数 {@code maxRetry}。 */
     String MAX_RETRY = "maxRetry";
     
-    /**
-     * The property name of "enableRemoteSyncConfig".
-     */
+    /** 配置键名：是否启用远程配置同步 {@code enableRemoteSyncConfig}。 */
     String ENABLE_REMOTE_SYNC_CONFIG = "enableRemoteSyncConfig";
     
-    /**
-     * The property name of "username".
-     */
+    /** 配置键名：{@code username}。 */
     String USERNAME = "username";
     
-    /**
-     * The property name of "password".
-     */
+    /** 配置键名：{@code password}。 */
     String PASSWORD = "password";
     
-    /**
-     * The placeholder of endpoint, the value is <code>"${nacos.endpoint:}"</code>.
-     */
+    /** endpoint 占位符，值为 <code>"${nacos.endpoint:}"</code>。 */
     String ENDPOINT_PLACEHOLDER = "${" + PREFIX + ENDPOINT + ":}";
     
-    /**
-     * The placeholder of endpoint, the value is <code>"${nacos.namespace:}"</code>.
-     */
+    /** namespace 占位符，值为 <code>"${nacos.namespace:}"</code>。 */
     String NAMESPACE_PLACEHOLDER = "${" + PREFIX + NAMESPACE + ":}";
     
-    /**
-     * The placeholder of endpoint, the value is <code>"${nacos.access-key:}"</code>.
-     */
+    /** access-key 占位符，值为 <code>"${nacos.access-key:}"</code>。 */
     String ACCESS_KEY_PLACEHOLDER = "${" + PREFIX + ACCESS_KEY + ":}";
     
-    /**
-     * The placeholder of endpoint, the value is <code>"${nacos.secret-key:}"</code>.
-     */
+    /** secret-key 占位符，值为 <code>"${nacos.secret-key:}"</code>。 */
     String SECRET_KEY_PLACEHOLDER = "${" + PREFIX + SECRET_KEY + ":}";
     
-    /**
-     * The placeholder of endpoint, the value is <code>${nacos.server-addr:}"</code>.
-     */
+    /** server-addr 占位符，值为 <code>"${nacos.server-addr:}"</code>。 */
     String SERVER_ADDR_PLACEHOLDER = "${" + PREFIX + SERVER_ADDR + ":}";
     
-    /**
-     * The placeholder of endpoint, the value is ${nacos.context-path:}.
-     */
+    /** context-path 占位符，值为 <code>"${nacos.context-path:}"</code>。 */
     String CONTEXT_PATH_PLACEHOLDER = "${" + PREFIX + CONTEXT_PATH + ":}";
     
-    /**
-     * The placeholder of endpoint, the value is <code>"${nacos.cluster-name:}"</code>.
-     */
+    /** cluster-name 占位符，值为 <code>"${nacos.cluster-name:}"</code>。 */
     String CLUSTER_NAME_PLACEHOLDER = "${" + PREFIX + CLUSTER_NAME + ":}";
     
-    /**
-     * The placeholder of {@link NacosProperties#ENCODE encode}, the value is <code>"${nacos.encode:UTF-8}"</code>.
-     */
+    /** {@link NacosProperties#ENCODE encode} 占位符，默认 <code>"${nacos.encode:UTF-8}"</code>。 */
     String ENCODE_PLACEHOLDER = "${" + PREFIX + ENCODE + ":UTF-8}";
     
-    /**
-     * The placeholder of {@link NacosProperties#CONFIG_LONG_POLL_TIMEOUT configLongPollTimeout}, the value is
-     * <code>"${nacos.configLongPollTimeout:}"</code>.
-     */
+    /** {@link NacosProperties#CONFIG_LONG_POLL_TIMEOUT configLongPollTimeout} 占位符。 */
     String CONFIG_LONG_POLL_TIMEOUT_PLACEHOLDER = "${" + PREFIX + CONFIG_LONG_POLL_TIMEOUT + ":}";
     
-    /**
-     * The placeholder of {@link NacosProperties#CONFIG_RETRY_TIME configRetryTime}, the value is
-     * <code>"${nacos.configRetryTime:}"</code>.
-     */
+    /** {@link NacosProperties#CONFIG_RETRY_TIME configRetryTime} 占位符。 */
     String CONFIG_RETRY_TIME_PLACEHOLDER = "${" + PREFIX + CONFIG_RETRY_TIME + ":}";
     
-    /**
-     * The placeholder of {@link NacosProperties#MAX_RETRY maxRetry}, the value is <code>"${nacos.maxRetry:}"</code>.
-     */
+    /** {@link NacosProperties#MAX_RETRY maxRetry} 占位符。 */
     String MAX_RETRY_PLACEHOLDER = "${" + PREFIX + MAX_RETRY + ":}";
     
-    /**
-     * The placeholder of {@link NacosProperties#ENABLE_REMOTE_SYNC_CONFIG enableRemoteSyncConfig}, the value is
-     * <code>"${nacos.enableRemoteSyncConfig:}"</code>.
-     */
+    /** {@link NacosProperties#ENABLE_REMOTE_SYNC_CONFIG enableRemoteSyncConfig} 占位符。 */
     String ENABLE_REMOTE_SYNC_CONFIG_PLACEHOLDER = "${" + PREFIX + ENABLE_REMOTE_SYNC_CONFIG + ":}";
     
-    /**
-     * The placeholder of endpoint, the value is <code>"${nacos.username:}"</code>.
-     */
+    /** username 占位符，值为 <code>"${nacos.username:}"</code>。 */
     String USERNAME_PLACEHOLDER = "${" + PREFIX + USERNAME + ":}";
     
-    /**
-     * The placeholder of endpoint, the value is <code>"${nacos.password:}"</code>.
-     */
+    /** password 占位符，值为 <code>"${nacos.password:}"</code>。 */
     String PASSWORD_PLACEHOLDER = "${" + PREFIX + PASSWORD + ":}";
     
     /**
-     * The property of "endpoint".
+     * endpoint 属性值。
      *
-     * @return empty as default value
+     * @return 默认为空
      * @see #ENDPOINT_PLACEHOLDER
      */
     String endpoint() default ENDPOINT_PLACEHOLDER;
     
     /**
-     * The property of "namespace".
+     * namespace 属性值。
      *
-     * @return empty as default value
+     * @return 默认为空
      * @see #NAMESPACE_PLACEHOLDER
      */
     String namespace() default NAMESPACE_PLACEHOLDER;
     
     /**
-     * The property of "access-key".
+     * access-key 属性值。
      *
-     * @return empty as default value
+     * @return 默认为空
      * @see #ACCESS_KEY_PLACEHOLDER
      */
     String accessKey() default ACCESS_KEY_PLACEHOLDER;
     
     /**
-     * The property of "secret-key".
+     * secret-key 属性值。
      *
-     * @return empty as default value
+     * @return 默认为空
      * @see #SECRET_KEY_PLACEHOLDER
      */
     String secretKey() default SECRET_KEY_PLACEHOLDER;
     
     /**
-     * The property of "server-addr".
+     * server-addr 属性值。
      *
-     * @return empty as default value
+     * @return 默认为空
      * @see #SERVER_ADDR_PLACEHOLDER
      */
     String serverAddr() default SERVER_ADDR_PLACEHOLDER;
     
     /**
-     * The property of "context-path".
+     * context-path 属性值。
      *
-     * @return empty as default value
+     * @return 默认为空
      * @see #CONTEXT_PATH_PLACEHOLDER
      */
     String contextPath() default CONTEXT_PATH_PLACEHOLDER;
     
     /**
-     * The property of "cluster-name".
+     * cluster-name 属性值。
      *
-     * @return empty as default value
+     * @return 默认为空
      * @see #CLUSTER_NAME_PLACEHOLDER
      */
     String clusterName() default CLUSTER_NAME_PLACEHOLDER;
     
     /**
-     * The property of "encode".
+     * 字符编码属性值。
      *
-     * @return "UTF-8" as default value
+     * @return 默认 {@code UTF-8}
      * @see #ENCODE_PLACEHOLDER
      */
     String encode() default ENCODE_PLACEHOLDER;
     
     /**
-     * The property of "configLongPollTimeout".
+     * 配置长轮询超时（毫秒）。
      *
-     * @return empty as default value
+     * @return 默认为空
      * @see #CONFIG_LONG_POLL_TIMEOUT_PLACEHOLDER
      */
     String configLongPollTimeout() default CONFIG_LONG_POLL_TIMEOUT_PLACEHOLDER;
     
     /**
-     * The property of "configRetryTime".
+     * 配置拉取失败重试间隔（毫秒）。
      *
-     * @return empty as default value
+     * @return 默认为空
      * @see #CONFIG_RETRY_TIME_PLACEHOLDER
      */
     String configRetryTime() default CONFIG_RETRY_TIME_PLACEHOLDER;
     
     /**
-     * The property of "maxRetry".
+     * 最大重试次数。
      *
-     * @return empty as default value
+     * @return 默认为空
      * @see #MAX_RETRY
      */
     String maxRetry() default MAX_RETRY_PLACEHOLDER;
     
     /**
-     * The property of "enableRemoteSyncConfig".
+     * 是否启用远程配置同步。
      *
-     * @return empty as default value
+     * @return 默认为空
      * @see #ENABLE_REMOTE_SYNC_CONFIG
      */
     String enableRemoteSyncConfig() default ENABLE_REMOTE_SYNC_CONFIG_PLACEHOLDER;
     
     /**
-     * The property of "username".
+     * 认证用户名。
      *
-     * @return empty as default value
+     * @return 默认为空
      * @see #USERNAME_PLACEHOLDER
      */
     String username() default USERNAME_PLACEHOLDER;
     
     /**
-     * The property of "password".
+     * 认证密码。
      *
-     * @return empty as default value
+     * @return 默认为空
      * @see #PASSWORD_PLACEHOLDER
      */
     String password() default PASSWORD_PLACEHOLDER;

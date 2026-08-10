@@ -17,19 +17,18 @@
 package com.alibaba.nacos.api.cmdb.pojo;
 
 /**
- * CMDB entity event type.
+ * CMDB 实体事件类型枚举。
+ *
+ * <p>{@link #ENTITY_ADD_OR_UPDATE} 表示实体新增或标签更新；
+ * {@link #ENTITY_REMOVE} 表示实体从 CMDB 中移除。</p>
  *
  * @author nkorange
  * @since 0.7.0
  */
 public enum EntityEventType {
     
-    /**
-     * Add or update entity.
-     */
+    /** 新增或更新实体。 */
     ENTITY_ADD_OR_UPDATE,
-    /**
-     * Remove entity.
-     */
+    /** 删除实体。 */
     ENTITY_REMOVE
 }

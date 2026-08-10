@@ -19,17 +19,22 @@ package com.alibaba.nacos.api.cmdb.pojo;
 import java.util.Set;
 
 /**
- * CMDB label.
+ * CMDB 标签定义。
+ *
+ * <p>描述标签名称、可选取值集合及说明，供 CMDB 元数据 schema 使用。</p>
  *
  * @author nkorange
  * @since 0.7.0
  */
 public class Label {
     
+    /** 标签名称。 */
     private String name;
     
+    /** 允许的标签取值集合。 */
     private Set<String> values;
     
+    /** 标签描述信息。 */
     private String description;
     
     public String getName() {

@@ -17,17 +17,23 @@
 package com.alibaba.nacos.api.cmdb.pojo;
 
 /**
- * CMDB entity event.
+ * CMDB 实体变更事件。
+ *
+ * <p>描述某实体在指定时间点发生的增删改通知，
+ * 供 {@link com.alibaba.nacos.api.cmdb.spi.CmdbService#getEntityEvents(long)} 增量拉取。</p>
  *
  * @author nkorange
  * @since 0.7.0
  */
 public class EntityEvent {
     
+    /** 事件类型（新增/更新或删除）。 */
     private EntityEventType type;
     
+    /** 受影响实体名称。 */
     private String entityName;
     
+    /** 受影响实体类型。 */
     private String entityType;
     
     public EntityEventType getType() {
