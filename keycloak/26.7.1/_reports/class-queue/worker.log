@@ -1363,3 +1363,18 @@
 2026-08-10T07:45:19Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/ClientSessionManager.java wave47a org cache + stream predicates + session adapters
 2026-08-10T07:45:19Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/ImmutableClientSession.java wave47a org cache + stream predicates + session adapters
 2026-08-10T07:45:19Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/ImmutableSession.java wave47a org cache + stream predicates + session adapters
+2026-08-10T07:45:41Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/ImmutableUserSessionModel.java wave47b session auth/revoked/single-use providers
+2026-08-10T07:45:41Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/InfinispanAuthenticationSessionProvider.java wave47b session auth/revoked/single-use providers
+2026-08-10T07:45:41Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/InfinispanAuthenticationSessionProviderFactory.java wave47b session auth/revoked/single-use providers
+2026-08-10T07:45:41Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/InfinispanKeycloakTransaction.java wave47b session auth/revoked/single-use providers
+2026-08-10T07:45:41Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/InfinispanRevokedTokenProvider.java wave47b session auth/revoked/single-use providers
+2026-08-10T07:45:41Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/InfinispanRevokedTokenProviderFactory.java wave47b session auth/revoked/single-use providers
+2026-08-10T07:45:41Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/InfinispanSingleUseObjectProvider.java wave47b session auth/revoked/single-use providers
+2026-08-10T07:45:41Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/InfinispanSingleUseObjectProviderFactory.java wave47b session auth/revoked/single-use providers
+2026-08-10T07:45:41Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/InfinispanStickySessionEncoderProviderFactory.java wave47b session auth/revoked/single-use providers
+2026-08-10T07:45:41Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/InfinispanUserLoginFailureProvider.java wave47b session auth/revoked/single-use providers
+2026-08-10T07:45:41Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/InfinispanUserLoginFailureProviderFactory.java wave47b session auth/revoked/single-use providers
+2026-08-10T07:45:41Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/InfinispanUserSessionProvider.java wave47b session auth/revoked/single-use providers
+2026-08-10T07:45:41Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/InfinispanUserSessionProviderFactory.java wave47b session auth/revoked/single-use providers
+2026-08-10T07:45:41Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/PersistentUserSessionProvider.java wave47b session auth/revoked/single-use providers
+2026-08-10T07:45:41Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/RootAuthenticationSessionAdapter.java wave47b session auth/revoked/single-use providers
