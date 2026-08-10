@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T21:21:19Z",
   "files": [
-    "clients/pkg/promtail/targets/gcplog/metrics.go",
-    "clients/pkg/promtail/targets/gcplog/pull_target.go",
-    "clients/pkg/promtail/targets/gcplog/push_target.go",
-    "clients/pkg/promtail/targets/gcplog/push_translation.go",
-    "clients/pkg/promtail/targets/gcplog/target.go",
-    "clients/pkg/promtail/targets/gcplog/targetmanager.go",
-    "clients/pkg/promtail/targets/gelf/gelftarget.go",
-    "clients/pkg/promtail/targets/gelf/gelftargetmanager.go",
-    "clients/pkg/promtail/targets/gelf/metrics.go",
-    "clients/pkg/promtail/targets/heroku/metrics.go",
-    "clients/pkg/promtail/targets/heroku/target.go",
-    "clients/pkg/promtail/targets/heroku/targetmanager.go",
-    "clients/pkg/promtail/targets/journal/journaltarget.go",
-    "clients/pkg/promtail/targets/journal/journaltargetmanager.go",
-    "clients/pkg/promtail/targets/journal/journaltargetmanager_linux.go",
     "clients/pkg/promtail/targets/journal/metrics.go",
     "clients/pkg/promtail/targets/kafka/authentication.go",
     "clients/pkg/promtail/targets/kafka/consumer.go",
@@ -33,5 +18,5 @@
     "clients/pkg/promtail/targets/syslog/metrics.go"
   ],
   "remaining_pending": 1432,
-  "done": 90
+  "done": 105
 }
