@@ -47,11 +47,16 @@ import org.keycloak.provider.Provider;
 import org.keycloak.representations.idm.RealmRepresentation;
 
 /**
+ * {@link RealmModel} 的装饰器基类：将所有调用委托给内部 delegate。
+ * <p>子类可覆写部分方法以实现缓存、只读或审计等横切逻辑。</p>
+ *
  * @author Alexander Schwartz
  */
 public class RealmModelDelegate implements RealmModel {
+    /** 被委托的 realm 模型实例。 */
     private RealmModel delegate;
 
+    /** @param delegate 底层 realm 实现 */
     public RealmModelDelegate(RealmModel delegate) {
         this.delegate = delegate;
     }

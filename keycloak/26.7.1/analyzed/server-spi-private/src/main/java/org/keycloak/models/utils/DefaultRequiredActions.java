@@ -33,17 +33,20 @@ import static org.keycloak.common.Profile.isFeatureEnabled;
 import static org.keycloak.constants.OID4VCIConstants.VERIFIABLE_CREDENTIAL_OFFER_PROVIDER_ID;
 
 /**
+ * 默认必需操作（Required Action）注册与可用性工具。
+ * <p>为新 realm 批量添加 VERIFY_EMAIL、UPDATE_PASSWORD 等内置必需操作，并根据 {@link Profile.Feature} 特性开关过滤不可用项。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class DefaultRequiredActions {
 
     /**
-     * Check whether the action is the default one used in a realm and is available in the application
-     * Often, the default actions can be disabled due to the fact a particular feature is disabled
+     * 判断给定必需操作是否为内置默认项且当前环境可用。
+     * <p>特性未启用时，对应默认操作视为不可用。</p>
      *
      * @param action required action
-     * @return true if the required action is the default one and is available
+     * @return 是默认可用操作时返回 {@code true}
      */
     public static boolean isActionAvailable(RequiredActionProviderModel action) {
         if (action == null) return false;
@@ -52,25 +55,20 @@ public class DefaultRequiredActions {
         return foundAction.isPresent() && foundAction.get().isAvailable();
     }
 
-    /**
-     * Add default required actions to the realm
-     *
-     * @param realm realm
-     */
+    /** 向 realm 添加全部默认可用的必需操作。
+     * @param realm realm */
     public static void addActions(RealmModel realm) {
         Arrays.stream(Action.values()).forEach(f -> f.addAction(realm));
     }
 
-    /**
-     * Add default required action to the realm
-     *
-     * @param realm  realm
-     * @param action particular required action
-     */
+    /** 向 realm 添加单个默认必需操作。
+     * @param realm realm
+     * @param action 要添加的必需操作枚举 */
     public static void addAction(RealmModel realm, Action action) {
         Optional.ofNullable(action).ifPresent(f -> f.addAction(realm));
     }
 
+    /** 内置必需操作枚举：别名、添加逻辑与特性可用性。 */
     public enum Action {
         VERIFY_EMAIL(UserModel.RequiredAction.VERIFY_EMAIL.name(), DefaultRequiredActions::addVerifyEmailAction),
         UPDATE_PROFILE(UserModel.RequiredAction.UPDATE_PROFILE.name(), DefaultRequiredActions::addUpdateProfileAction),
@@ -363,15 +361,11 @@ public class DefaultRequiredActions {
     }
 
     /**
-     * Checks whether given {@code providerId} case insensitively matches any of {@link UserModel.RequiredAction} enum
-     * and if yes, it returns the value in correct form.
-     * <p/>
-     * This is necessary to stay backward compatible with older deployments where not all provider factories had ids
-     * in uppercase. This means that storage can contain some values in incorrect letter-case.
+     * 不区分大小写匹配 {@link UserModel.RequiredAction}，返回规范大写形式以保持向后兼容。
+     * <p>旧部署中存储的 providerId 可能大小写不一致。</p>
      *
      * @param providerId the required actions providerId
-     * @return providerId with correct letter-case, or the original value if it doesn't match any
-     *         of {@link UserModel.RequiredAction}
+     * @return 匹配时返回规范大写 providerId，否则返回原值
      */
     public static String getDefaultRequiredActionCaseInsensitively(String providerId) {
         if (providerId == null) {

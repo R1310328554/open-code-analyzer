@@ -20,7 +20,8 @@ package org.keycloak.models.utils;
 import org.keycloak.provider.ProviderEvent;
 
 /**
- * Useful when there is a need for callback when time offset is restarted. Time offset is typically used in testsuite only
+ * 时间偏移（{@link org.keycloak.common.util.Time}）重置时的提供者事件。
+ * <p>主要用于测试套件中模拟时间流逝后的回调。</p>
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */

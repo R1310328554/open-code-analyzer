@@ -25,20 +25,20 @@ import org.keycloak.protocol.oidc.OIDCConfigAttributes;
 import org.keycloak.utils.StringUtil;
 
 /**
- * <p>Shared methods to calculate the session expiration and idle.</p>
+ * 用户/客户端会话过期与空闲时间计算的共享工具。
+ * <p>综合 realm 与客户端 OIDC 属性及 {@link RealmExpiration} 计算失效时间戳。</p>
  *
  * @author rmartinc
  */
 public class SessionExpirationUtils {
 
     /**
-     * Calculates the time in which the session is expired via max lifetime
-     * configuration.
-     * @param offline is the session offline?
-     * @param isRememberMe is the session remember me?
-     * @param created timestamp when the session was created
-     * @param realm The realm model
-     * @return The time when the user session is expired or -1 if does not expire
+     * 按最大生命周期配置计算用户会话失效时间戳（毫秒）。
+     * @param offline 是否离线会话
+     * @param isRememberMe 是否 Remember Me
+     * @param created 创建时间戳
+     * @param realm realm
+     * @return 失效时间戳；{@code -1} 表示不过期
      */
     public static long calculateUserSessionMaxLifespanTimestamp(boolean offline, boolean isRememberMe, long created, RealmModel realm) {
         RealmExpiration expiration = RealmExpiration.fromRealm(realm);
@@ -48,13 +48,12 @@ public class SessionExpirationUtils {
     }
 
     /**
-     * Calculates the time in which the user session is expired via the idle
-     * configuration.
-     * @param offline is the session offline?
-     * @param isRememberMe is the session remember me?
-     * @param lastRefreshed The last time the session was refreshed
-     * @param realm The realm model
-     * @return The time in which the user session is expired by idle timeout
+     * 按空闲配置计算用户会话因空闲而失效的时间戳（毫秒）。
+     * @param offline 是否离线会话
+     * @param isRememberMe 是否 Remember Me
+     * @param lastRefreshed 上次刷新时间
+     * @param realm realm
+     * @return 空闲失效时间戳
      */
     public static long calculateUserSessionIdleTimestamp(boolean offline, boolean isRememberMe, long lastRefreshed, RealmModel realm) {
         RealmExpiration expiration = RealmExpiration.fromRealm(realm);
@@ -154,6 +153,7 @@ public class SessionExpirationUtils {
         return timestamp;
     }
 
+    /** 获取 SSO 会话最大生命周期（秒），未配置时用默认值。 */
     public static int getSsoSessionMaxLifespan(RealmModel realm) {
         int lifespan = realm.getSsoSessionMaxLifespan();
         if (lifespan <= 0) {
@@ -162,6 +162,7 @@ public class SessionExpirationUtils {
         return lifespan;
     }
 
+    /** 获取离线会话最大生命周期（秒），未配置时用默认值。 */
     public static int getOfflineSessionMaxLifespan(RealmModel realm) {
         int lifespan = realm.getOfflineSessionMaxLifespan();
         if (lifespan <= 0) {
@@ -170,6 +171,7 @@ public class SessionExpirationUtils {
         return lifespan;
     }
 
+    /** 获取 SSO 会话最大空闲（秒），未配置时用默认值。 */
     public static int getSsoSessionIdleTimeout(RealmModel realm) {
         int idle = realm.getSsoSessionIdleTimeout();
         if (idle <= 0) {
@@ -178,6 +180,7 @@ public class SessionExpirationUtils {
         return idle;
     }
 
+    /** 获取离线会话最大空闲（秒），未配置时用默认值。 */
     public static int getOfflineSessionIdleTimeout(RealmModel realm) {
         int idle = realm.getOfflineSessionIdleTimeout();
         if (idle <= 0) {

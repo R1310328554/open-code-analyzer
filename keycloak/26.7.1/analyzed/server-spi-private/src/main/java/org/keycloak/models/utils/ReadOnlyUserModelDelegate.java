@@ -25,6 +25,9 @@ import org.keycloak.models.UserModel;
 import org.keycloak.storage.ReadOnlyException;
 
 /**
+ * 只读 {@link UserModel} 委托：所有写操作抛出 {@link org.keycloak.storage.ReadOnlyException}。
+ * <p>用于 LDAP 只读用户、联邦导入等不可本地修改的场景。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -33,15 +36,18 @@ public class ReadOnlyUserModelDelegate extends UserModelDelegate {
     private final Function<String, RuntimeException> exceptionCreator;
     private Boolean enabled;
 
+    /** 使用默认 {@link org.keycloak.storage.ReadOnlyException} 构造只读委托。 */
     public ReadOnlyUserModelDelegate(UserModel delegate) {
         this(delegate, ReadOnlyException::new);
     }
 
+    /** 构造只读委托，可覆盖 {@link #isEnabled()} 返回值。 */
     public ReadOnlyUserModelDelegate(UserModel delegate, boolean enabled) {
         this(delegate, ReadOnlyException::new);
         this.enabled = enabled;
     }
 
+    /** 构造只读委托，自定义写操作拒绝时的异常工厂。 */
     public ReadOnlyUserModelDelegate(UserModel delegate, Function<String, RuntimeException> exceptionCreator) {
         super(delegate);
         this.exceptionCreator = exceptionCreator;
@@ -160,6 +166,7 @@ public class ReadOnlyUserModelDelegate extends UserModelDelegate {
         throw readOnlyException("role mapping for role " + role.getName());
     }
 
+    /** 生成带字段详情的只读异常。 */
     private RuntimeException readOnlyException(String detail) {
         String message = String.format("The user is read-only. Not possible to write '%s' when updating user '%s'.", detail, getUsername());
         return exceptionCreator.apply(message);

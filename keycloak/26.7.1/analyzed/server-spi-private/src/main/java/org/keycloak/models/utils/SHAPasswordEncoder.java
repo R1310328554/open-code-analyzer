@@ -25,23 +25,22 @@ import java.util.Base64;
 
 
 /**
- * <p>
- * Password that uses SHA to encode passwords. You can always change the SHA strength by specifying a valid
- * integer when creating a new instance.
- * </p>
- * <p>Passwords are returned with a Base64 encoding.</p>
+ * 基于 SHA 的密码编码器（强度可配置，输出 Base64）。
+ * <p>创建实例时指定 SHA 位数（如 256、512）。</p>
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Silva</a>
- *
  */
 public class SHAPasswordEncoder {
 
     private int strength;
 
+    /** @param strength SHA 算法强度（如 256、512） */
     public SHAPasswordEncoder(int strength) {
         this.strength = strength;
     }
 
+    /** 对明文密码做 SHA 摘要并 Base64 编码。
+     * @param rawPassword 明文密码 */
     public String encode(String rawPassword) {
         MessageDigest messageDigest = getMessageDigest();
 
@@ -49,6 +48,7 @@ public class SHAPasswordEncoder {
         return Base64.getEncoder().encodeToString(digest);
     }
 
+    /** 验证明文与已编码密码是否匹配。 */
     public boolean verify(String rawPassword, String encodedPassword) {
         return encode(rawPassword).equals(encodedPassword);
     }
@@ -63,6 +63,7 @@ public class SHAPasswordEncoder {
         }
     }
 
+    /** @return SHA 强度配置值 */
     public int getStrength() {
         return this.strength;
     }

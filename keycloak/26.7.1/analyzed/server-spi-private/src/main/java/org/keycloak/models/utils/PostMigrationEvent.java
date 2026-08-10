@@ -21,7 +21,7 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderEvent;
 
 /**
- * Executed at startup after model migration is finished
+ * 模型迁移完成后的启动事件，供 {@link org.keycloak.provider.ProviderEventListener} 订阅。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
@@ -29,10 +29,12 @@ public class PostMigrationEvent implements ProviderEvent {
 
     private final KeycloakSessionFactory factory;
 
+    /** @param factory 已完成迁移的会话工厂 */
     public PostMigrationEvent(KeycloakSessionFactory factory) {
         this.factory = factory;
     }
 
+    /** @return 会话工厂 */
     public KeycloakSessionFactory getFactory() {
         return this.factory;
     }

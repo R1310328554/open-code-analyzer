@@ -18,38 +18,33 @@
 package org.keycloak.models.utils;
 
 /**
+ * 多站点/跨数据中心会话空闲超时校验的容差常量。
+ * <p>补偿 lastSessionRefresh 同步延迟，避免误删仍有效的会话。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class SessionTimeoutHelper {
 
 
     /**
-     * Interval specifies maximum time, for which the "userSession.lastSessionRefresh" may contain stale value.
-     *
-     * For example, if there are 2 datacenters and sessionRefresh will happen on DC1, then the message about the updated lastSessionRefresh may
-     * be sent to the DC2 later (EG. Some periodic thread will send the updated lastSessionRefresh times in batches with 60 seconds delay).
+     * 周期性任务间隔（秒）：{@code lastSessionRefresh} 可能含陈旧值的最大时长。
+     * <p>例如 DC1 刷新后会批量同步至 DC2，存在约 60 秒延迟。</p>
      */
     public static final int PERIODIC_TASK_INTERVAL_SECONDS = 60;
 
 
     /**
-     * The maximum time difference, which will be still tolerated when checking userSession idle timeout.
-     *
-     * For example, if there are 2 datacenters and sessionRefresh happened on DC1, then we still want to tolerate some timeout on DC2 due the
-     * fact that lastSessionRefresh of current userSession may be updated later from DC1.
-     *
-     * See {@link #PERIODIC_TASK_INTERVAL_SECONDS}
+     * 校验用户会话空闲超时时仍允许的最大时间差（秒）。
+     * <p>多数据中心下 DC2 可能尚未收到 DC1 的 lastSessionRefresh 更新。</p>
+     * 参见 {@link #PERIODIC_TASK_INTERVAL_SECONDS}
      */
     public static final int IDLE_TIMEOUT_WINDOW_SECONDS = 120;
 
 
     /**
-     * The maximum time difference, which will be still tolerated when checking userSession idle timeout with periodic cleaner threads.
-     *
-     * Just the sessions, with the timeout bigger than this value are considered really time-outed and can be garbage-collected (Considering the multi-site
-     * environment and the fact that some session updates on different DC can be postponed and seen on current DC with some delay).
-     *
-     * See {@link #PERIODIC_TASK_INTERVAL_SECONDS} and {@link #IDLE_TIMEOUT_WINDOW_SECONDS}
+     * 周期性清理线程判定会话真正超时、可 GC 的最大容差（秒）。
+     * <p>仅超出此窗口的会话视为已超时（考虑多站点同步延迟）。</p>
+     * 参见 {@link #PERIODIC_TASK_INTERVAL_SECONDS} 与 {@link #IDLE_TIMEOUT_WINDOW_SECONDS}
      */
     public static final int PERIODIC_CLEANER_IDLE_TIMEOUT_WINDOW_SECONDS = 180;
 }

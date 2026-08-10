@@ -101,7 +101,8 @@ import org.jboss.logging.Logger;
 import static org.keycloak.utils.StreamsUtil.closing;
 
 /**
- * Set of helper methods, which are useful in various model implementations.
+ * 模型层通用辅助方法集合：ID 生成、角色/组解析、事务包装、认证流遍历等。
+ * <p>供 JPA、Infinispan 等存储实现及 SPI 扩展复用。</p>
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>,
  * <a href="mailto:daniel.fesenmeyer@bosch.io">Daniel Fesenmeyer</a>
@@ -110,11 +111,16 @@ public final class KeycloakModelUtils {
 
     private static final Logger logger = Logger.getLogger(KeycloakModelUtils.class);
 
+    /** 客户端认证类型：client-secret。 */
     public static final String AUTH_TYPE_CLIENT_SECRET = "client-secret";
+    /** 客户端认证类型：client-secret-jwt。 */
     public static final String AUTH_TYPE_CLIENT_SECRET_JWT = "client-secret-jwt";
 
+    /** 组路径分隔符。 */
     public static final String GROUP_PATH_SEPARATOR = "/";
+    /** 组路径中斜杠转义前缀。 */
     public static final String GROUP_PATH_ESCAPE = "~";
+    /** 客户端角色名与 realm 角色名的分隔符（{@code clientId.roleName}）。 */
     public static final char CLIENT_ROLE_SEPARATOR = '.';
 
     public static final int MAX_CLIENT_LOOKUPS_DURING_ROLE_RESOLVE = 25;
@@ -128,28 +134,25 @@ public final class KeycloakModelUtils {
     }
 
     /**
-     * Return an ID generated using the UUID java class.
-     * @return The ID using UUID.toString (36 chars)
+     * 使用 UUID 生成 36 字符标准 ID。
+     * @return UUID.toString 形式的 ID
      */
     public static String generateId() {
         return UUID.randomUUID().toString();
     }
 
     /**
-     * Return an ID generated using the UUID class but using base64 URL encoding
-     * with the two longs (msb+lsb).
-     * @return The ID getting msb and lsb from UUID and encoding them in
-     * base64 URL without padding (22 chars)
+     * 生成 22 字符短 ID：UUID 的 msb+lsb 经 Base64 URL 无填充编码。
+     * @return 22 字符短 ID
      */
     public static String generateShortId() {
         return generateShortId(UUID.randomUUID());
     }
 
     /**
-     * Generates a short ID representation for the UUID. The representation is the
-     * base64 url encoding of the msb+lsb of the UUID.
-     * @param uuid The UUID to represent
-     * @return The string representation in 22 characters
+     * 将给定 UUID 编码为 22 字符 Base64 URL 短 ID。
+     * @param uuid 待编码的 UUID
+     * @return 22 字符字符串
      */
     public static String generateShortId(final UUID uuid) {
         final byte[] bytes = new byte[2 * Long.BYTES];
@@ -170,9 +173,9 @@ public final class KeycloakModelUtils {
     }
 
     /**
-     * Check if a string is a valid UUID.
-     * @param uuid The UUID string to verify
-     * @return true if the string is a valid uuid
+     * 校验字符串是否为合法 UUID。
+     * @param uuid 待校验字符串
+     * @return 合法时返回 {@code true}
      */
     public static boolean isValidUUID(String uuid) {
         if (uuid == null) {
@@ -262,8 +265,8 @@ public final class KeycloakModelUtils {
     }
 
     /**
-     * Returns the required length for a client secret in alphanumeric characters.
-     * Always generated at HS512-level entropy to cover all HMAC signature use cases.
+     * 返回客户端密钥所需长度（字母数字字符数）。
+     * <p>按 HS512 级熵生成，覆盖所有 HMAC 签名场景。</p>
      */
     public static int getRequiredClientSecretLength() {
         return SecretGenerator.equivalentEntropySize(SecretGenerator.SECRET_LENGTH_512_BITS, SecretGenerator.ALPHANUM.length);
@@ -302,12 +305,12 @@ public final class KeycloakModelUtils {
     }
 
     /**
-     * Deep search if given role is descendant of composite role
+     * 深度搜索：判断 role 是否为 composite 的子孙角色。
      *
-     * @param role      role to check
-     * @param composite composite role
-     * @param visited   set of already visited roles (used for recursion)
-     * @return true if "role" is descendant of "composite"
+     * @param role 待检查角色
+     * @param composite 复合角色
+     * @param visited 已访问角色集合（递归防环）
+     * @return role 是 composite 后代时返回 {@code true}
      */
     public static boolean searchFor(RoleModel role, RoleModel composite, Set<String> visited) {
         if (visited.contains(composite.getId())) {
@@ -326,10 +329,8 @@ public final class KeycloakModelUtils {
     }
 
     /**
-     * If "Login with email" is enabled and the given username contains '@',
-     * attempts to find the user by email for authentication.
-     *
-     * Otherwise, or if not found, attempts to find the user by username.
+     * 启用「邮箱登录」且用户名含 {@code @} 时优先按邮箱查找用户；
+     * 否则或未找到时按用户名查找。
      *
      * @param realm the realm to search within
      * @param username the username or email of the user
@@ -347,19 +348,19 @@ public final class KeycloakModelUtils {
     }
 
     /**
-     * Wrap given runnable job into KeycloakTransaction.
-     * @param factory The session factory to use
-     * @param task The task to execute
+     * 在 Keycloak 事务中执行给定任务。
+     * @param factory 会话工厂
+     * @param task 待执行任务
      */
     public static void runJobInTransaction(KeycloakSessionFactory factory, KeycloakSessionTask task) {
         runJobInTransaction(factory, null, task);
     }
 
     /**
-     * Wrap given runnable job into KeycloakTransaction.
-     * @param factory The session factory to use
-     * @param context The context from the previous session
-     * @param task The task to execute
+     * 在 Keycloak 事务中执行任务，并传播上一会话的上下文。
+     * @param factory 会话工厂
+     * @param context 上一会话上下文
+     * @param task 待执行任务
      */
     public static void runJobInTransaction(KeycloakSessionFactory factory, KeycloakContext context, KeycloakSessionTask task) {
         runJobInTransactionWithResult(factory, context, session -> {
@@ -369,21 +370,20 @@ public final class KeycloakModelUtils {
     }
 
     /**
-     * Sets up the context for the specified session with the RealmModel.
+     * 将原上下文的 realm 信息克隆到新会话。
      *
-     * @param origContext The original context to propagate
-     * @param targetSession The new target session to propagate the context to
+     * @param origContext 原始上下文
+     * @param targetSession 目标会话
      */
     public static void cloneContextRealmClientToSession(final KeycloakContext origContext, final KeycloakSession targetSession) {
         cloneContextToSession(origContext, targetSession, false);
     }
 
     /**
-     * Sets up the context for the specified session with the RealmModel, clientModel and
-     * AuthenticatedSessionModel.
+     * 将原上下文的 realm、客户端与认证会话克隆到新会话。
      *
-     * @param origContext The original context to propagate
-     * @param targetSession The new target session to propagate the context to
+     * @param origContext 原始上下文
+     * @param targetSession 目标会话
      */
     public static void cloneContextRealmClientSessionToSession(final KeycloakContext origContext, final KeycloakSession targetSession) {
         cloneContextToSession(origContext, targetSession, true);
@@ -448,11 +448,11 @@ public final class KeycloakModelUtils {
     }
 
     /**
-     * Wrap a given callable job into a KeycloakTransaction.
-     * @param <V> The type for the result
-     * @param factory The session factory
-     * @param callable The callable to execute
-     * @return The return value from the callable
+     * 在 Keycloak 事务中执行 Callable 并返回结果。
+     * @param <V> 返回值类型
+     * @param factory 会话工厂
+     * @param callable 待执行 Callable
+     * @return Callable 返回值
      */
     public static <V> V runJobInTransactionWithResult(KeycloakSessionFactory factory, final KeycloakSessionTaskWithResult<V> callable) {
         return runJobInTransactionWithResult(factory, null, callable, "Non-HTTP task");
@@ -662,10 +662,10 @@ public final class KeycloakModelUtils {
     }
 
     /**
-     * Creates default role for particular realm with the given name.
+     * 为 realm 创建指定名称的默认角色并关联。
      *
-     * @param realm           Realm
-     * @param defaultRoleName Name of the newly created defaultRole
+     * @param realm Realm
+     * @param defaultRoleName 默认角色名称
      */
     public static void setupDefaultRole(RealmModel realm, String defaultRoleName) {
         RoleModel defaultRole = realm.addRole(defaultRoleName);
@@ -694,11 +694,11 @@ public final class KeycloakModelUtils {
     }
 
     /**
-     * Recursively find all AuthenticationExecutionModel from specified flow or all it's subflows
+     * 递归收集认证流及其子流中的全部 {@link AuthenticationExecutionModel}。
      *
-     * @param realm
-     * @param flow
-     * @param result input should be empty list. At the end will be all executions added to this list
+     * @param realm realm
+     * @param flow 认证流
+     * @param result 输入为空列表，执行后填入全部 execution
      */
     public static void deepFindAuthenticationExecutions(RealmModel realm, AuthenticationFlowModel flow, List<AuthenticationExecutionModel> result) {
         realm.getAuthenticationExecutionsStream(flow.getId()).forEachOrdered(execution -> {
@@ -744,9 +744,9 @@ public final class KeycloakModelUtils {
 
 
     /**
-     * Helper to get from the session if group path slashes should be escaped or not.
-     * @param session The session
-     * @return true or false
+     * 从会话读取组路径是否应对斜杠转义。
+     * @param session 会话
+     * @return 需要转义时返回 {@code true}
      */
     public static boolean escapeSlashesInGroupPath(KeycloakSession session) {
         GroupProviderFactory<?> fact = (GroupProviderFactory<?>) session.getKeycloakSessionFactory().getProviderFactory(GroupProvider.class);
@@ -754,11 +754,8 @@ public final class KeycloakModelUtils {
     }
 
     /**
-     * Finds group by path. Path is separated by '/' character. For example: /group/subgroup/subsubgroup
-     * <p />
-     * The method takes into consideration also groups with '/' in their name. For example: /group/sub/group/subgroup
-     * This method allows escaping of slashes for example: /parent\/group/child which
-     * is a two level path for ["parent/group", "child"].
+     * 按路径查找组，路径以 {@code /} 分隔，支持组名含斜杠及转义。
+     * <p>例如 {@code /parent\/group/child} 表示 ["parent/group", "child"] 两级路径。</p>
      *
      * @param session Keycloak session
      * @param realm The realm
@@ -776,12 +773,11 @@ public final class KeycloakModelUtils {
     }
 
     /**
-     * Finds group by path. Variant when you have the path already separated by
-     * group names.
+     * 按已拆分的组名路径数组查找组。
      *
      * @param session Keycloak session
      * @param realm The realm
-     * @param path Path The path hierarchy of groups
+     * @param path 组名路径层级
      *
      * @return {@code GroupModel} corresponding to the given {@code path} or {@code null} if no group was found
      */
@@ -1062,7 +1058,7 @@ public final class KeycloakModelUtils {
     }
 
     /**
-     * @deprecated for removal. Use {@link #getRoleFromString(KeycloakSession, RealmModel, String)} instead.
+     * @deprecated 将移除，请改用 {@link #getRoleFromString(KeycloakSession, RealmModel, String)}。
      */
     @Deprecated(forRemoval = true, since = "26.6")
     public static RoleModel getRoleFromString(RealmModel realm, String roleName) {
@@ -1160,11 +1156,11 @@ public final class KeycloakModelUtils {
     }
 
     /**
-     * Check to see if a flow is currently in use
+     * 检查认证流是否正被 realm 引用（浏览器流、注册流等）。
      *
-     * @param realm
-     * @param model
-     * @return
+     * @param realm realm
+     * @param model 认证流
+     * @return 使用中返回 {@code true}
      */
     public static boolean isFlowUsed(KeycloakSession session, RealmModel realm, AuthenticationFlowModel model) {
         AuthenticationFlowModel realmFlow = null;
@@ -1192,12 +1188,12 @@ public final class KeycloakModelUtils {
     }
 
     /**
-     * Recursively remove authentication flow (including all subflows and executions) from the model storage
+     * 递归删除认证流（含子流与 execution）。
      *
-     * @param session The keycloak session
-     * @param realm The realm
-     * @param authFlow flow to delete
-     * @param flowUnavailableHandler Will be executed when flow, sub-flow or executor is null
+     * @param session Keycloak 会话
+     * @param realm realm
+     * @param authFlow 待删除流
+     * @param flowUnavailableHandler 流/子流/执行器为 null 时的回调
      * @param builtinFlowHandler will be executed when flow is built-in flow
      */
     public static void deepDeleteAuthenticationFlow(KeycloakSession session, RealmModel realm, AuthenticationFlowModel authFlow, Runnable flowUnavailableHandler, Runnable builtinFlowHandler, boolean isParentBuiltInFlow) {
@@ -1260,8 +1256,7 @@ public final class KeycloakModelUtils {
     }
 
     /**
-     * Lookup clientScope OR client by id. Method is useful if you know just ID, but you don't know
-     * if underlying model is clientScope or client
+     * 按 ID 查找 ClientScope 或 Client（仅知 ID、不知类型时使用）。
      */
     public static ClientScopeModel findClientScopeById(RealmModel realm, ClientModel client, String clientScopeId) {
         if (client.getId().equals(clientScopeId)) {
@@ -1282,9 +1277,7 @@ public final class KeycloakModelUtils {
         }
     }
 
-    /**
-     * Replace spaces in the name with underscore, so that scope name can be used as value of scope parameter
-     **/
+    /** 将 scope 名称中的空格替换为下划线，便于作为 scope 参数值。 **/
     public static String convertClientScopeName(String previousName) {
         if (previousName.contains(" ")) {
             return previousName.replaceAll(" ", "_");
@@ -1355,11 +1348,11 @@ public final class KeycloakModelUtils {
     }
 
     /**
-     * Sets the default groups on the realm
-     * @param session
-     * @param realm
-     * @param groups
-     * @throws RuntimeException if a group does not exist
+     * 为 realm 设置默认组。
+     * @param session 会话
+     * @param realm realm
+     * @param groups 组路径列表
+     * @throws RuntimeException 组不存在时抛出
      */
     public static void setDefaultGroups(KeycloakSession session, RealmModel realm, Stream<String> groups) {
         realm.getDefaultGroupsStream().toList().forEach(realm::removeDefaultGroup);
@@ -1397,9 +1390,8 @@ public final class KeycloakModelUtils {
         }
     }
 
-    /**
-     * @return the list of protocols accepted for the given client.
-     */
+    /** @return 给定客户端可接受的协议列表。 */
+    
     public static List<String> getAcceptedClientScopeProtocols(ClientModel client) {
         List<String> acceptedClientProtocols;
         if (client.getProtocol() == null || "openid-connect".equals(client.getProtocol())) {

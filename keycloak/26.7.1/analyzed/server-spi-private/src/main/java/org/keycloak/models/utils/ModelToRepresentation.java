@@ -148,11 +148,15 @@ import static org.keycloak.models.light.LightweightUserAdapter.isLightweightUser
 import static org.keycloak.models.utils.StripSecretsUtils.stripSecrets;
 
 /**
+ * 领域模型到 REST 表示（Representation）的转换工具。
+ * <p>将 {@link RealmModel}、{@link UserModel}、{@link ClientModel} 等转为 Admin/Account API 的 DTO。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class ModelToRepresentation {
 
+    /** realm 转表示时排除的属性名集合（单独字段或嵌套对象处理）。 */
     public static Set<String> REALM_EXCLUDED_ATTRIBUTES = new HashSet<>();
     static {
         REALM_EXCLUDED_ATTRIBUTES.add("displayName");
@@ -274,8 +278,7 @@ public class ModelToRepresentation {
 
     @Deprecated
     /**
-     * @deprecated This function is left in place to serve mostly for a full export of all groups.
-     * There is a GroupUtil class in the keycloak-services module to handle normal search operations
+     * @deprecated 主要用于全量导出组层级；日常搜索请用 keycloak-services 中的 GroupUtil。
      */
     public static GroupRepresentation toGroupHierarchy(GroupModel group, boolean full, String search, Boolean exact) {
         GroupRepresentation rep = toRepresentation(group, full);
@@ -767,11 +770,7 @@ public class ModelToRepresentation {
     }
 
     /**
-     * Handles exceptions that occur when transforming the model to a representation and will remove
-     * all null objects from the stream.
-     *
-     * Entities that have been removed from the store or where a lazy loading exception occurs will not show up
-     * in the output stream.
+     * 模型转表示时捕获异常并过滤 null：已删除实体或懒加载失败项不会出现在输出流中。
      */
     public static <M, R> Stream<R> filterValidRepresentations(Stream<M> models, Function<M, R> transformer) {
         return models.map(m -> {

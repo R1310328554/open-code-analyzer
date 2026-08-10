@@ -19,15 +19,14 @@ package org.keycloak.models.utils;
 import java.util.Arrays;
 
 /**
- * Message (eg. error) to be shown in form.
+ * 表单消息（如错误提示），绑定字段名与国际化消息键。
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
 public class FormMessage {
 
-	/**
-	 * Value used for {@link #field} if message is global (not tied to any specific form field)
-	 */
+	/** 全局消息（不绑定具体表单字段）时 {@link #field} 使用的常量值。 */
+	
 	public static final String GLOBAL = "global";
 
 	private String field;
@@ -38,11 +37,11 @@ public class FormMessage {
 	}
 
 	/**
-	 * Create message.
+	 * 创建带格式化参数的表单消息。
 	 * 
-	 * @param field this message is for. {@link #GLOBAL} is used if null
-	 * @param message key for the message
-	 * @param parameters to be formatted into message
+	 * @param field 目标字段；为 {@code null} 时使用 {@link #GLOBAL}
+	 * @param message 国际化消息键
+	 * @param parameters 消息格式化参数
 	 */
 	public FormMessage(String field, String message, Object... parameters) {
 		this(field, message);
@@ -54,10 +53,10 @@ public class FormMessage {
     }
 	
 	/**
-     * Create message without parameters.
+     * 创建无格式化参数的表单消息。
      * 
-     * @param field this message is for. {@link #GLOBAL} is used if null
-     * @param message key for the message
+     * @param field 目标字段；为 {@code null} 时使用 {@link #GLOBAL}
+     * @param message 国际化消息键
      */
     public FormMessage(String field, String message) {
         super();
@@ -67,14 +66,17 @@ public class FormMessage {
         this.message = message;
     }
 
+	/** @return 消息绑定的表单字段名 */
 	public String getField() {
 		return field;
 	}
 
+	/** @return 国际化消息键 */
 	public String getMessage() {
 		return message;
 	}
 
+	/** @return 消息格式化参数数组 */
 	public Object[] getParameters() {
 		return parameters;
 	}

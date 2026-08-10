@@ -20,10 +20,13 @@ package org.keycloak.models.utils;
 import org.keycloak.models.RealmModel;
 
 /**
+ * 认证会话（Authentication Session）生命周期计算工具。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class SessionExpiration {
 
+    /** 取 realm 登录码、用户操作码、访问码三者中的最大生命周期（秒）。 */
     public static int getAuthSessionLifespan(RealmModel realm) {
         int lifespan = realm.getAccessCodeLifespanLogin();
         if (realm.getAccessCodeLifespanUserAction() > lifespan) {
@@ -35,6 +38,7 @@ public class SessionExpiration {
         return lifespan;
     }
 
+    /** 根据起始时间戳计算认证会话过期时间戳。 */
     public static long getAuthSessionExpiration(RealmModel realm, int timestamp) {
         return (long) timestamp + getAuthSessionLifespan(realm);
     }

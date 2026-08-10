@@ -147,16 +147,22 @@ import static java.util.Optional.ofNullable;
 import static org.keycloak.models.OrganizationDomainModel.ANY_DOMAIN;
 import static org.keycloak.protocol.saml.util.ArtifactBindingUtils.computeArtifactBindingIdentifierString;
 
+/**
+ * REST 表示（Representation）到领域模型的导入/更新工具。
+ * <p>用于 realm 导出导入、Admin API 创建客户端/用户等场景。</p>
+ */
 public class RepresentationToModel {
 
     private static Logger logger = Logger.getLogger(RepresentationToModel.class);
     public static final String OIDC = "openid-connect";
 
 
+    /** 导入 realm 表示（用户导入由 {@code userImport} 回调处理）。 */
     public static void importRealm(KeycloakSession session, RealmRepresentation rep, RealmModel newRealm, Runnable userImport) {
         session.getProvider(DatastoreProvider.class).getExportImportManager().importRealm(rep, newRealm, userImport);
     }
 
+    /** 导入 realm 与客户端角色定义。 */
     public static void importRoles(RolesRepresentation realmRoles, RealmModel realm) {
         if (realmRoles == null) return;
 
@@ -332,11 +338,11 @@ public class RepresentationToModel {
     // CLIENTS
 
     /**
-     * Does not create scope or role mappings!
+     * 从表示创建授权资源（不创建 scope 或角色映射）。
      *
-     * @param realm
-     * @param resourceRep
-     * @return
+     * @param realm realm
+     * @param resourceRep 资源表示
+     * @return 新建的 {@link Resource}
      */
     public static ClientModel createClient(KeycloakSession session, RealmModel realm, ClientRepresentation resourceRep) {
         return createClient(session, realm, resourceRep, null);
@@ -502,11 +508,11 @@ public class RepresentationToModel {
     }
 
     /**
-     * Update client properties and process any {@link ClientTypeException} validation errors combining into one to be thrown.
+     * 更新客户端属性；合并多个 {@link ClientTypeException} 为单一异常抛出。
      *
-     * @param client {@link ClientModel} to update
-     * @param rep {@link ClientRepresentation} to apply updates.
-     * @param isNew  Whether the client is new or not (needed because some getters cannot return null).
+     * @param client 待更新客户端
+     * @param rep 客户端表示
+     * @param isNew 是否新建客户端（影响 null 语义）
      */
     private static void updateClientProperties(ClientModel client, ClientRepresentation rep, boolean isNew) {
         List<Supplier<ClientTypeException>> clientPropertyUpdates = new LinkedList<Supplier<ClientTypeException>>() {{
