@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T04:19:55Z",
   "files": [
-    "lock/src/main/java/com/alibaba/nacos/lock/constant/PropertiesConstant.java",
-    "lock/src/main/java/com/alibaba/nacos/lock/core/reentrant/AbstractAtomicLock.java",
-    "lock/src/main/java/com/alibaba/nacos/lock/core/reentrant/AtomicLockService.java",
-    "lock/src/main/java/com/alibaba/nacos/lock/core/reentrant/mutex/MutexAtomicLock.java",
-    "lock/src/main/java/com/alibaba/nacos/lock/exception/NacosLockException.java",
-    "lock/src/main/java/com/alibaba/nacos/lock/factory/LockFactory.java",
-    "lock/src/main/java/com/alibaba/nacos/lock/factory/SimpleLockFactory.java",
-    "lock/src/main/java/com/alibaba/nacos/lock/model/LockInfo.java",
-    "lock/src/main/java/com/alibaba/nacos/lock/model/LockKey.java",
-    "lock/src/main/java/com/alibaba/nacos/lock/monitor/LockMemoryMonitor.java",
-    "lock/src/main/java/com/alibaba/nacos/lock/monitor/LockMetricsMonitor.java",
-    "lock/src/main/java/com/alibaba/nacos/lock/persistence/NacosLockSnapshotOperation.java",
-    "lock/src/main/java/com/alibaba/nacos/lock/raft/request/MutexLockRequest.java",
-    "lock/src/main/java/com/alibaba/nacos/lock/remote/rpc/handler/LockRequestHandler.java",
-    "lock/src/main/java/com/alibaba/nacos/lock/service/LockOperationService.java",
     "lock/src/main/java/com/alibaba/nacos/lock/service/impl/LockOperationServiceImpl.java",
     "maintainer-client/src/main/java/com/alibaba/nacos/maintainer/client/NacosMaintainerFactory.java",
     "maintainer-client/src/main/java/com/alibaba/nacos/maintainer/client/address/DefaultServerListManager.java",
@@ -33,5 +18,5 @@
     "maintainer-client/src/main/java/com/alibaba/nacos/maintainer/client/ai/PipelineAdminClient.java"
   ],
   "remaining_pending": 707,
-  "done": 1800
+  "done": 1815
 }
