@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T14:14:17Z",
-  "files": [
-    "test-framework/core/src/main/java/org/keycloak/testframework/injection/Extensions.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/injection/InstanceContext.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/injection/LifeCycle.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/injection/ManagedTestResource.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/injection/ReflectionUtils.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/injection/Registry.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/injection/RegistryLogger.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/injection/RequestedInstance.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/injection/RequiredDependencies.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/injection/StringUtil.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/injection/SuiteSupport.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/injection/Supplier.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/injection/SupplierHelpers.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/injection/SupplierOrder.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/injection/ValueTypeAlias.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 388,
-  "done": 5595
+  "done": 5610
 }
