@@ -33,21 +33,28 @@ import org.jboss.logging.Logger;
 
 import static org.keycloak.common.util.StringPropertyReplacer.replaceProperties;
 
+/**
+ * 通知用户工作流步骤：向用户或指定邮箱发送工作流通知邮件。
+ * <p>支持自定义主题/正文、属性占位符替换及下一步骤倒计时；优先发送至 {@code to} 配置地址，否则使用用户邮箱。</p>
+ */
 public class NotifyUserStepProvider implements WorkflowStepProvider {
 
     private final KeycloakSession session;
     private final ComponentModel stepModel;
     private final Logger log = Logger.getLogger(NotifyUserStepProvider.class);
 
+    /** @param session Keycloak 会话 @param model 步骤组件配置（含 to/subject/message 等） */
     public NotifyUserStepProvider(KeycloakSession session, ComponentModel model) {
         this.session = session;
         this.stepModel = model;
     }
 
+    /** 无资源需释放。 */
     @Override
     public void close() {
     }
 
+    /** 解析收件人、主题与模板属性后发送通知邮件。 */
     @Override
     public void run(WorkflowExecutionContext context) {
         RealmModel realm = session.getContext().getRealm();
@@ -83,6 +90,7 @@ public class NotifyUserStepProvider implements WorkflowStepProvider {
         }
     }
 
+    /** 获取邮件主题键：优先步骤配置，其次下一步骤通知主题，最后默认 accountNotificationSubject。 */
     private String getSubjectKey(WorkflowExecutionContext context) {
         String customSubjectKey = stepModel.getConfig().getFirst("subject");
         
@@ -99,16 +107,18 @@ public class NotifyUserStepProvider implements WorkflowStepProvider {
         return nextStep.getNotificationSubject();
     }
 
+    /** @return 邮件正文 FreeMarker 模板文件名 */
     private String getBodyTemplate() {
         return "workflow-notification.ftl";
     }
 
+    /** 构建模板变量：消息键、剩余天数、原因、领域名及下一步骤类型等。 */
     private Map<String, Object> getBodyAttributes(WorkflowExecutionContext context) {
         RealmModel realm = session.getContext().getRealm();
         Map<String, Object> attributes = new HashMap<>();
         WorkflowStep nextStep = context.getNextStep();
 
-        // Custom message override or default based on step type
+        // 自定义消息覆盖，或根据下一步骤类型使用默认消息键
         String customMessage = stepModel.getConfig().getFirst("message");
         if (customMessage != null && !customMessage.trim().isEmpty()) {
             attributes.put("messageKey", "customMessage");
@@ -119,10 +129,10 @@ public class NotifyUserStepProvider implements WorkflowStepProvider {
             attributes.put("messageKey", "accountNotificationBody");
         }
         
-        // Calculate days remaining until next step
+        // 计算距离下一步骤执行还剩多少天
         int daysRemaining = calculateDaysUntilNextStep(context);
         
-        // Message parameters for internationalization
+        // 国际化消息模板参数
         attributes.put("daysRemaining", daysRemaining);
         attributes.put("reason", stepModel.getConfig().getFirstOrDefault("reason", "inactivity"));
         attributes.put("realmName", realm.getDisplayName() != null ? realm.getDisplayName() : realm.getName());
@@ -136,6 +146,7 @@ public class NotifyUserStepProvider implements WorkflowStepProvider {
         return attributes;
     }
 
+    /** 解析下一步骤 {@code after} 延迟并转换为天数；无下一步时返回 0。 */
     private int calculateDaysUntilNextStep(WorkflowExecutionContext context) {
         WorkflowStep nextStep = context.getNextStep();
 
@@ -146,16 +157,19 @@ public class NotifyUserStepProvider implements WorkflowStepProvider {
         return Math.toIntExact(DurationConverter.parseDuration(nextStep.getAfter()).toDays());
     }
 
+    /** 通知模板占位符解析器，支持 {@code user.*}、{@code realm.*} 及 workflow.daysUntilNextStep。 */
     private class NotificationPropertyResolver implements PropertyResolver {
 
         private final KeycloakSession session;
         private final WorkflowExecutionContext context;
 
+        /** @param session Keycloak 会话 @param context 当前工作流执行上下文 */
         public NotificationPropertyResolver(KeycloakSession session, WorkflowExecutionContext context) {
             this.session = session;
             this.context = context;
         }
 
+        /** 按属性名解析用户属性、领域信息或剩余天数。 */
         @Override
         public String resolve(String property) {
             if (property.startsWith("user.")) {

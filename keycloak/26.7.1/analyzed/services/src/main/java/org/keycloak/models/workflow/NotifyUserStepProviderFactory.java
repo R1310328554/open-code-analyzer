@@ -22,25 +22,34 @@ import java.util.Set;
 import org.keycloak.component.ComponentModel;
 import org.keycloak.models.KeycloakSession;
 
+/**
+ * 通知用户步骤的 {@link WorkflowStepProviderFactory}，工厂 ID 为 {@code notify-user}。
+ * <p>创建 {@link NotifyUserStepProvider}，基于可配置模板向用户发送工作流邮件通知；支持自定义收件人、主题与消息内容。</p>
+ */
 public class NotifyUserStepProviderFactory implements WorkflowStepProviderFactory<NotifyUserStepProvider> {
 
+    /** 工厂标识 {@code notify-user}。 */
     public static final String ID = "notify-user";
 
+    /** 创建 {@link NotifyUserStepProvider} 实例。 */
     @Override
     public NotifyUserStepProvider create(KeycloakSession session, ComponentModel model) {
         return new NotifyUserStepProvider(session, model);
     }
 
+    /** @return 工厂 ID {@link #ID} */
     @Override
     public String getId() {
         return ID;
     }
 
+    /** @return 支持的用户资源类型集合 */
     @Override
     public Set<ResourceType> getSupportedResourceTypes() {
         return Set.of(ResourceType.USERS);
     }
 
+    /** @return 管理控制台显示的步骤说明文本 */
     @Override
     public String getHelpText() {
         return "Sends email notifications to users based on configurable templates";

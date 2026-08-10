@@ -30,21 +30,28 @@ import org.jboss.logging.Logger;
 import static org.keycloak.representations.workflows.WorkflowConstants.CONFIG_AFTER;
 import static org.keycloak.representations.workflows.WorkflowConstants.CONFIG_PRIORITY;
 
+/**
+ * 设置用户属性工作流步骤：将步骤配置中的键值对写入用户自定义属性。
+ * <p>遍历组件配置条目，跳过 {@link org.keycloak.representations.workflows.WorkflowConstants} 中的调度/优先级键，对其余项调用 {@link UserModel#setAttribute}。</p>
+ */
 public class SetUserAttributeStepProvider implements WorkflowStepProvider {
 
     private final KeycloakSession session;
     private final ComponentModel stepModel;
     private final Logger log = Logger.getLogger(SetUserAttributeStepProvider.class);
 
+    /** @param session Keycloak 会话 @param model 步骤组件配置（键为属性名，值为属性值列表） */
     public SetUserAttributeStepProvider(KeycloakSession session, ComponentModel model) {
         this.session = session;
         this.stepModel = model;
     }
 
+    /** 无资源需释放。 */
     @Override
     public void close() {
     }
 
+    /** 将非调度/优先级配置项作为用户属性批量写入。 */
     @Override
     public void run(WorkflowExecutionContext context) {
         RealmModel realm = session.getContext().getRealm();
