@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T21:12:36Z",
-  "files": [
-    "clients/pkg/logentry/metric/gauges.go",
-    "clients/pkg/logentry/metric/histograms.go",
-    "clients/pkg/logentry/metric/metricvec.go",
-    "clients/pkg/logentry/stages/decolorize.go",
-    "clients/pkg/logentry/stages/drop.go",
-    "clients/pkg/logentry/stages/eventlogmessage.go",
-    "clients/pkg/logentry/stages/extensions.go",
-    "clients/pkg/logentry/stages/geoip.go",
-    "clients/pkg/logentry/stages/inspector.go",
-    "clients/pkg/logentry/stages/json.go",
-    "clients/pkg/logentry/stages/labelallow.go",
-    "clients/pkg/logentry/stages/labeldrop.go",
-    "clients/pkg/logentry/stages/labels.go",
-    "clients/pkg/logentry/stages/limit.go",
-    "clients/pkg/logentry/stages/logfmt.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1522,
-  "done": 15
+  "done": 30
 }
