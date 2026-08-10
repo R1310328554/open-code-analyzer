@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T11:27:10Z",
-  "files": [
-    "services/src/main/java/org/keycloak/authentication/authenticators/browser/OTPFormAuthenticatorFactory.java",
-    "services/src/main/java/org/keycloak/authentication/authenticators/browser/PasskeysConditionalUIAuthenticator.java",
-    "services/src/main/java/org/keycloak/authentication/authenticators/browser/PasskeysConditionalUIAuthenticatorFactory.java",
-    "services/src/main/java/org/keycloak/authentication/authenticators/browser/PasswordForm.java",
-    "services/src/main/java/org/keycloak/authentication/authenticators/browser/PasswordFormFactory.java",
-    "services/src/main/java/org/keycloak/authentication/authenticators/browser/RecoveryAuthnCodesFormAuthenticator.java",
-    "services/src/main/java/org/keycloak/authentication/authenticators/browser/RecoveryAuthnCodesFormAuthenticatorFactory.java",
-    "services/src/main/java/org/keycloak/authentication/authenticators/browser/ScriptBasedAuthenticator.java",
-    "services/src/main/java/org/keycloak/authentication/authenticators/browser/ScriptBasedAuthenticatorFactory.java",
-    "services/src/main/java/org/keycloak/authentication/authenticators/browser/SpnegoAuthenticator.java",
-    "services/src/main/java/org/keycloak/authentication/authenticators/browser/SpnegoAuthenticatorFactory.java",
-    "services/src/main/java/org/keycloak/authentication/authenticators/browser/UsernameForm.java",
-    "services/src/main/java/org/keycloak/authentication/authenticators/browser/UsernameFormFactory.java",
-    "services/src/main/java/org/keycloak/authentication/authenticators/browser/UsernamePasswordForm.java",
-    "services/src/main/java/org/keycloak/authentication/authenticators/browser/UsernamePasswordFormFactory.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2158,
-  "done": 3825
+  "done": 3840
 }
