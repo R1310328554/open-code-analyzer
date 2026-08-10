@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T11:22:53Z",
-  "files": [
-    "server-spi/src/main/java/org/keycloak/validate/ValidatorFactory.java",
-    "server-spi/src/main/java/org/keycloak/validate/ValidatorSPI.java",
-    "server-spi/src/main/java/org/keycloak/validate/Validators.java",
-    "server-spi/src/main/java/org/keycloak/vault/VaultCharSecret.java",
-    "server-spi/src/main/java/org/keycloak/vault/VaultKeyResolver.java",
-    "server-spi/src/main/java/org/keycloak/vault/VaultProvider.java",
-    "server-spi/src/main/java/org/keycloak/vault/VaultProviderFactory.java",
-    "server-spi/src/main/java/org/keycloak/vault/VaultRawSecret.java",
-    "server-spi/src/main/java/org/keycloak/vault/VaultSpi.java",
-    "server-spi/src/main/java/org/keycloak/vault/VaultStringSecret.java",
-    "server-spi/src/main/java/org/keycloak/vault/VaultTranscriber.java",
-    "services/src/main/java/org/keycloak/WebAuthnConstants.java",
-    "services/src/main/java/org/keycloak/authentication/AbstractFormAuthenticator.java",
-    "services/src/main/java/org/keycloak/authentication/AuthenticationProcessor.java",
-    "services/src/main/java/org/keycloak/authentication/AuthenticationSelectionResolver.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2218,
-  "done": 3765
+  "done": 3780
 }
