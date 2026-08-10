@@ -18,11 +18,16 @@
 package org.keycloak.broker.provider;
 
 /**
+ * 身份联邦映射器配置项键名常量。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface ConfigConstants {
+    /** 角色映射配置键。 */
     String ROLE = "role";
+    /** 分组映射配置键。 */
     String GROUP = "group";
+    /** 分组类型映射配置键。 */
     String GROUP_TYPE = "groupType";
 }

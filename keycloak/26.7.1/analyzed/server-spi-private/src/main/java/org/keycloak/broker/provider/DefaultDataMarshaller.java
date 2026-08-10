@@ -24,10 +24,13 @@ import org.keycloak.common.util.Base64Url;
 import org.keycloak.util.JsonSerialization;
 
 /**
+ * {@link IdentityProviderDataMarshaller} 默认实现：字符串直传，其他类型 JSON 序列化后 Base64Url 编码。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class DefaultDataMarshaller implements IdentityProviderDataMarshaller {
 
+    /** 序列化对象为存储字符串（{@link String} 原样返回，其余 JSON+Base64Url）。 */
     @Override
     public String serialize(Object value) {
         if (value instanceof String) {
@@ -42,6 +45,7 @@ public class DefaultDataMarshaller implements IdentityProviderDataMarshaller {
         }
     }
 
+    /** 从存储字符串反序列化为指定类型。 */
     @Override
     public <T> T deserialize(String serialized, Class<T> clazz) {
         try {

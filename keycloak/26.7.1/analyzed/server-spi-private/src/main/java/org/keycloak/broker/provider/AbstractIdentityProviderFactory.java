@@ -24,6 +24,8 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
+ * {@link IdentityProviderFactory} 抽象基类，提供空实现的工厂生命周期与配置解析默认行为。
+ *
  * @author Pedro Igor
  */
 public abstract class AbstractIdentityProviderFactory<T extends IdentityProvider> implements IdentityProviderFactory<T> {
@@ -48,6 +50,7 @@ public abstract class AbstractIdentityProviderFactory<T extends IdentityProvider
         return null;
     }
 
+    /** 默认返回空配置映射；子类可解析导入的配置字符串。 */
     @Override
     public Map<String, String> parseConfig(KeycloakSession session, String config) {
         return new HashMap<>();

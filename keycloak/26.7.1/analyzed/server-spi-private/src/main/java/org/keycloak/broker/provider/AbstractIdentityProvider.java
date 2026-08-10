@@ -46,28 +46,34 @@ import org.keycloak.util.Booleans;
 import org.jboss.logging.Logger;
 
 /**
+ * 身份联邦提供者抽象基类，实现 {@link UserAuthenticationIdentityProvider} 的通用逻辑。
+ * <p>涵盖登录/登出、令牌交换错误响应、账户链接 URL 生成、联邦用户资料同步（邮箱等）及默认 {@link IdentityProviderDataMarshaller}。</p>
+ *
  * @author Pedro Igor
  */
 public abstract class AbstractIdentityProvider<C extends IdentityProviderModel> implements UserAuthenticationIdentityProvider<C> {
 
     protected static final Logger logger = Logger.getLogger(AbstractIdentityProvider.class);
 
-    // The clientSession note flag to indicate that email or username provided by identityProvider was changed on updateProfile page
+    // 客户端会话标记：用户在更新资料页修改了 IdP 提供的邮箱
     public static final String UPDATE_PROFILE_EMAIL_CHANGED = "UPDATE_PROFILE_EMAIL_CHANGED";
     public static final String UPDATE_PROFILE_USERNAME_CHANGED = "UPDATE_PROFILE_USERNAME_CHANGED";
 
-    // clientSession.note flag specifies if we imported new user to keycloak (true) or we just linked to an existing keycloak user (false)
+    // 客户端会话标记：true 表示新导入用户，false 表示仅关联已有 Keycloak 用户
     public static final String BROKER_REGISTERED_NEW_USER = "BROKER_REGISTERED_NEW_USER";
 
+    /** 令牌交换错误响应中账户链接 URL 的 JSON 字段名。 */
     public static final String ACCOUNT_LINK_URL = "account-link-url";
     protected final KeycloakSession session;
     private final C config;
 
+    /** 绑定 Keycloak 会话与身份提供者配置。 */
     public AbstractIdentityProvider(KeycloakSession session, C config) {
         this.session = session;
         this.config = config;
     }
 
+    /** 返回当前身份提供者配置模型。 */
     public C getConfig() {
         return this.config;
     }
@@ -97,6 +103,7 @@ public abstract class AbstractIdentityProvider<C extends IdentityProviderModel> 
 
     }
 
+    /** 返回 {@code invalid_target} / {@code target_exchange_unsupported} 错误响应。 */
     public Response exchangeNotSupported() {
         Map<String, String> error = new HashMap<>();
         error.put("error", "invalid_target");
@@ -104,14 +111,17 @@ public abstract class AbstractIdentityProvider<C extends IdentityProviderModel> 
         return  Response.status(400).entity(error).type(MediaType.APPLICATION_JSON_TYPE).build();
     }
 
+    /** 身份提供者未与当前用户关联时的交换错误响应。 */
     public Response exchangeNotLinked(UriInfo uriInfo, ClientModel authorizedClient, UserSessionModel tokenUserSession, UserModel tokenSubject) {
         return exchangeErrorResponse(uriInfo, authorizedClient, tokenUserSession, "not_linked", "identity provider is not linked");
     }
 
+    /** 未关联且仅允许链接到当前用户会话时的交换错误响应。 */
     public Response exchangeNotLinkedNoStore(UriInfo uriInfo, ClientModel authorizedClient, UserSessionModel tokenUserSession, UserModel tokenSubject) {
         return exchangeErrorResponse(uriInfo, authorizedClient, tokenUserSession, "not_linked", "identity provider is not linked, can only link to current user session");
     }
 
+    /** 构建带可选 {@link #ACCOUNT_LINK_URL} 的 JSON 格式交换错误响应。 */
     protected Response exchangeErrorResponse(UriInfo uriInfo, ClientModel authorizedClient, UserSessionModel tokenUserSession, String errorCode, String reason) {
         Map<String, String> error = new HashMap<>();
         error.put("error", errorCode);
@@ -125,6 +135,7 @@ public abstract class AbstractIdentityProvider<C extends IdentityProviderModel> 
         return Response.status(400).entity(error).type(MediaType.APPLICATION_JSON_TYPE).build();
     }
 
+    /** 生成带 nonce/hash 校验的账户链接 URL（{@code /realms/{realm}/broker/{provider}/link}）。 */
     protected String getLinkingUrl(UriInfo uriInfo, ClientModel authorizedClient, UserSessionModel tokenUserSession) {
         String provider = getConfig().getAlias();
         String clientId = authorizedClient.getClientId();
@@ -147,10 +158,12 @@ public abstract class AbstractIdentityProvider<C extends IdentityProviderModel> 
                 .toString();
     }
 
+    /** 关联令牌已过期时的交换错误响应。 */
     public Response exchangeTokenExpired(UriInfo uriInfo, ClientModel authorizedClient, UserSessionModel tokenUserSession, UserModel tokenSubject) {
         return exchangeErrorResponse(uriInfo, authorizedClient, tokenUserSession, "token_expired", "linked token is expired");
     }
 
+    /** 请求的响应令牌类型不受支持时的错误响应。 */
     public Response exchangeUnsupportedRequiredType() {
         Map<String, String> error = new HashMap<>();
         error.put("error", "invalid_target");
@@ -178,6 +191,7 @@ public abstract class AbstractIdentityProvider<C extends IdentityProviderModel> 
         updateEmail(user, context);
     }
 
+    /** 按同步模式与更新资料标记，将联邦邮箱写入本地用户。 */
     protected void updateEmail(UserModel user, BrokeredIdentityContext context) {
         AuthenticationSessionModel authSession = context.getAuthenticationSession();
 
@@ -207,6 +221,7 @@ public abstract class AbstractIdentityProvider<C extends IdentityProviderModel> 
         }
     }
 
+    /** 根据 IdP {@code trustEmail} 配置决定是否自动验证邮箱。 */
     protected void setEmailVerified(UserModel user, BrokeredIdentityContext context) {
         AuthenticationSessionModel authSession = context.getAuthenticationSession();
         boolean isNewUser = Boolean.parseBoolean(authSession.getAuthNote(BROKER_REGISTERED_NEW_USER));
@@ -225,11 +240,13 @@ public abstract class AbstractIdentityProvider<C extends IdentityProviderModel> 
         }
     }
 
+    /** 默认使用 {@link DefaultDataMarshaller} 序列化联邦上下文数据。 */
     @Override
     public IdentityProviderDataMarshaller getMarshaller() {
         return new DefaultDataMarshaller();
     }
 
+    /** 若当前会话由本 IdP 登录，返回 {@code FEDERATED_ACCESS_TOKEN} 会话备注。 */
     protected String getFederatedAccessToken(UserSessionModel userSession) {
         // return the FEDERATED_ACCESS_TOKEN but just if logged in using this identity provider
         if (getConfig().getAlias().equals(userSession.getNote(Details.IDENTITY_PROVIDER))) {
@@ -238,6 +255,7 @@ public abstract class AbstractIdentityProvider<C extends IdentityProviderModel> 
         return null;
     }
 
+    /** 构建令牌交换成功响应，附带 {@code issued_token_type} 与可选账户链接 URL。 */
     protected Response buildTokenResponse(UriInfo uriInfo, EventBuilder event, ClientModel authorizedClient,
             UserSessionModel tokenUserSession, AccessTokenResponse tokenResponse, String issuedTokenType) {
         tokenResponse.setIdToken(null);

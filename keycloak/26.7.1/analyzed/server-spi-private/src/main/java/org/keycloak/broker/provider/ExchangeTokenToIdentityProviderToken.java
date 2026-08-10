@@ -26,11 +26,14 @@ import org.keycloak.models.UserModel;
 import org.keycloak.models.UserSessionModel;
 
 /**
+ * 反向令牌交换 SPI：将本地领域令牌交换为身份提供者侧令牌。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface ExchangeTokenToIdentityProviderToken {
     /**
+     * 从本地令牌发起交换，获取 IdP 侧访问令牌或等价凭证。
      *
      * @param authorizedClient client requesting exchange
      * @param tokenUserSession UserSessionModel of token exchanging from

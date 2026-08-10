@@ -18,12 +18,15 @@
 package org.keycloak.broker.provider;
 
 /**
+ * 身份联邦上下文数据的序列化/反序列化 SPI，用于在 broker 流程间持久化复杂对象。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface IdentityProviderDataMarshaller {
 
+    /** 将对象序列化为可存储的字符串。 */
     String serialize(Object obj);
+    /** 从存储字符串反序列化为指定类型。 */
     <T> T deserialize(String serialized, Class<T> clazz);
 
 }

@@ -30,6 +30,9 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.provider.Provider;
 
 /**
+ * 身份联邦提供者核心 SPI 接口，扩展 {@link Provider} 并暴露 {@link IdentityProviderModel} 配置。
+ * <p>提供导出、映射器兼容、密钥重载与类型判定等默认能力。</p>
+ *
  * @author Pedro Igor
  */
 public interface IdentityProvider<C extends IdentityProviderModel> extends Provider {
@@ -37,6 +40,8 @@ public interface IdentityProvider<C extends IdentityProviderModel> extends Provi
     C getConfig();
 
     /**
+     * 以指定格式导出身份提供者表示（如 SAML EntityDescriptor）。
+     *
      * Export a representation of the IdentityProvider in a specific format.  For example, a SAML EntityDescriptor
      *
      * @return
@@ -46,6 +51,8 @@ public interface IdentityProvider<C extends IdentityProviderModel> extends Provi
     }
 
     /**
+     * 检查映射器是否与本身份提供者兼容（{@link IdentityProviderMapper#ANY_PROVIDER} 或 providerId 匹配）。
+     *
      * Checks whether a mapper is supported for this Identity Provider.
      */
     default boolean isMapperSupported(IdentityProviderMapper mapper) {
@@ -55,6 +62,8 @@ public interface IdentityProvider<C extends IdentityProviderModel> extends Provi
     }
 
     /**
+     * 若配置允许，从 JWKS 或元数据端点重新加载 IdP 公钥（OIDC/SAML 等）。
+     *
      * Reload keys for the identity provider if permitted in it.For example OIDC or
      * SAML providers will reload the keys from the jwks or metadata endpoint.
      * @return true if reloaded, false if not
@@ -64,6 +73,8 @@ public interface IdentityProvider<C extends IdentityProviderModel> extends Provi
     }
 
     /**
+     * 判断本提供者是否属于指定 {@link IdentityProviderType}（默认基于接口，子类可检查配置）。
+     *
      * Returns if this Identity Provider is of the passed type. By default it just returns
      * true when it implements the correct interface. Sub-classes like the OIDC
      * provider can check specific configuration options.

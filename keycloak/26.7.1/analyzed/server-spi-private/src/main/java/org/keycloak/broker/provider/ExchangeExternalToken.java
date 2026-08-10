@@ -23,14 +23,20 @@ import org.keycloak.protocol.oidc.TokenExchangeContext;
 import org.keycloak.protocol.oidc.TokenExchangeProvider;
 
 /**
+ * 外部令牌交换 SPI：将由本 IdP 签发的令牌交换为本地领域令牌。
+ * <p>实现者识别 issuer、执行 {@link TokenExchangeContext} 交换并在完成后更新用户会话。</p>
+ *
  * Exchange a token crafted by this provider for a local realm token.
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface ExchangeExternalToken {
+    /** 判断给定 issuer 与表单参数是否由本提供者处理。 */
     boolean isIssuer(String issuer, MultivaluedMap<String, String> params);
+    /** 执行外部令牌交换，返回 {@link BrokeredIdentityContext}。 */
     BrokeredIdentityContext exchangeExternal(TokenExchangeProvider tokenExchangeProvider, TokenExchangeContext tokenExchangeContext);
 
+    /** 交换完成后的收尾逻辑（如写入会话备注）。 */
     void exchangeExternalComplete(UserSessionModel userSession, BrokeredIdentityContext context, MultivaluedMap<String, String> params);
 }

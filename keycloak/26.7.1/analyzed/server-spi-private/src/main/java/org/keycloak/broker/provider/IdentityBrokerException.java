@@ -17,23 +17,29 @@
 package org.keycloak.broker.provider;
 
 /**
+ * 身份联邦流程运行时异常，可选携带 {@link #messageCode} 供 UI 或事件使用。
+ *
  * @author pedroigor
  */
 public class IdentityBrokerException extends RuntimeException {
     private String messageCode;
+    /** 以消息构造异常。 */
     public IdentityBrokerException(String message) {
         super(message);
     }
 
+    /** 以消息与原因构造异常。 */
     public IdentityBrokerException(String message, Throwable t) {
         super(message, t);
     }
 
+    /** 链式设置消息代码并返回自身。 */
     public IdentityBrokerException withMessageCode(String messageCode) {
         this.messageCode = messageCode;
         return this;
     }
 
+    /** 返回可选的业务消息代码。 */
     public String getMessageCode() {
         return messageCode;
     }

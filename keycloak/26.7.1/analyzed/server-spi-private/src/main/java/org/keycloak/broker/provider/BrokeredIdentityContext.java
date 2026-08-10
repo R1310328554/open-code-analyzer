@@ -31,8 +31,8 @@ import org.keycloak.models.UserSessionModel;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
 /**
- * <p>Represents all identity information obtained from an {@link org.keycloak.broker.provider.IdentityProvider} after a
- * successful authentication.</p>
+ * 联邦身份上下文：封装 {@link IdentityProvider} 认证成功后获得的用户标识与属性。
+ * <p>包含远程用户名、邮箱、令牌、IdP 配置、映射器授予的角色/组及可写入 {@link UserModel} 的扩展属性。</p>
  *
  * @author Pedro Igor
  */
@@ -53,6 +53,7 @@ public class BrokeredIdentityContext {
     private Map<String, Object> contextData = new HashMap<>();
     private AuthenticationSessionModel authenticationSession;
 
+    /** 以远程用户 ID 与 IdP 配置构造上下文；IdP 须已启用。 */
     public BrokeredIdentityContext(String id, IdentityProviderModel idpConfig) {
         Objects.requireNonNull(id, "id must not be null");
         Objects.requireNonNull(idpConfig, "Identity provider config must not be null");
@@ -65,6 +66,7 @@ public class BrokeredIdentityContext {
         this.idpConfig = idpConfig;
     }
 
+    /** 无远程 ID 的构造方式，后续通过 {@link #setId(String)} 设置。 */
     public BrokeredIdentityContext(IdentityProviderModel idpConfig) {
         Objects.requireNonNull(idpConfig, "Identity provider config must not be null");
 
@@ -84,6 +86,8 @@ public class BrokeredIdentityContext {
     }
 
     /**
+     * 旧版 API 的用户 ID，用于迁移兼容。
+     *
      * ID from older API version. For API migrations.
      *
      * @return legacy ID
@@ -97,6 +101,8 @@ public class BrokeredIdentityContext {
     }
 
     /**
+     * 远程 IdP 中的用户名；若配置非大小写敏感则转为小写。
+     *
      * Username in remote idp
      *
      * @return
@@ -114,6 +120,8 @@ public class BrokeredIdentityContext {
     }
 
     /**
+     * 写入 {@link UserModel} 的用户名（可与远程用户名不同）。
+     *
      * username to store in UserModel
      *
      * @return
@@ -200,14 +208,14 @@ public class BrokeredIdentityContext {
         getSessionNotes().forEach((k, v) -> userSession.setNote(k, v));
     }
 
-    // Set the attribute, which will be available on "Update profile" page and in authenticators
+    // 设置用户属性，供「更新资料」页与认证器使用
     public void setUserAttribute(String attributeName, String attributeValue) {
         List<String> list = new ArrayList<>();
         list.add(attributeValue);
         getContextData().put(Constants.USER_ATTRIBUTES_PREFIX + attributeName, list);
     }
 
-    // Remove an attribute attribute, which would otherwise be available on "Update profile" page and in authenticators
+    // 移除否则会在「更新资料」页与认证器中可见的用户属性
     public void removeUserAttribute(String attributeName) {
         getContextData().remove(Constants.USER_ATTRIBUTES_PREFIX + attributeName);
     }
@@ -269,6 +277,8 @@ public class BrokeredIdentityContext {
     }
 
     /**
+     * 获取映射器已授予的角色集合。
+     *
      * Obtains the set of roles that were granted by mappers.
      *
      * @return a {@link Set} containing the roles.
@@ -283,6 +293,8 @@ public class BrokeredIdentityContext {
     }
 
     /**
+     * 获取映射器已分配的分组集合。
+     *
      * Obtains the set of groups that were assigned by mappers.
      *
      * @return a {@link Set} containing the groups.
@@ -298,6 +310,8 @@ public class BrokeredIdentityContext {
     }
 
     /**
+     * 检查映射器是否已授予指定角色。
+     *
      * Verifies if a mapper has already granted the specified role.
      *
      * @param roleName the name of the role.
@@ -308,6 +322,8 @@ public class BrokeredIdentityContext {
     }
 
     /**
+     * 检查映射器是否已分配指定分组。
+     *
      * Verifies if a mapper has already assigned the specified group.
      *
      * @param groupId the id of the group.
@@ -318,6 +334,8 @@ public class BrokeredIdentityContext {
     }
 
     /**
+     * 将角色加入映射器授予集合。
+     *
      * Adds the specified role to the set of roles granted by mappers.
      *
      * @param roleName the name of the role.
@@ -327,6 +345,8 @@ public class BrokeredIdentityContext {
     }
 
     /**
+     * 将分组加入映射器分配集合。
+     *
      * Adds the specified group to the set of groups assigned by mappers.
      *
      * @param groupId the id of the group.
