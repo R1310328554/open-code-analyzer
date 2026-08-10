@@ -15,23 +15,8 @@
     "resolver/src/main/java/io/netty/resolver/AbstractAddressResolver.java",
     "resolver/src/main/java/io/netty/resolver/AddressResolver.java",
     "resolver/src/main/java/io/netty/resolver/AddressResolverGroup.java",
-    "resolver/src/main/java/io/netty/resolver/CompositeNameResolver.java",
-    "resolver/src/main/java/io/netty/resolver/DefaultAddressResolverGroup.java",
-    "resolver/src/main/java/io/netty/resolver/DefaultHostsFileEntriesResolver.java",
-    "resolver/src/main/java/io/netty/resolver/DefaultNameResolver.java",
-    "resolver/src/main/java/io/netty/resolver/HostsFileEntries.java",
-    "resolver/src/main/java/io/netty/resolver/HostsFileEntriesProvider.java",
-    "resolver/src/main/java/io/netty/resolver/HostsFileEntriesResolver.java",
-    "resolver/src/main/java/io/netty/resolver/HostsFileParser.java",
-    "resolver/src/main/java/io/netty/resolver/InetNameResolver.java",
-    "resolver/src/main/java/io/netty/resolver/InetSocketAddressResolver.java",
-    "resolver/src/main/java/io/netty/resolver/NameResolver.java",
-    "resolver/src/main/java/io/netty/resolver/NoopAddressResolver.java",
-    "resolver/src/main/java/io/netty/resolver/NoopAddressResolverGroup.java",
-    "resolver/src/main/java/io/netty/resolver/ResolvedAddressTypes.java",
-    "resolver/src/main/java/io/netty/resolver/RoundRobinInetAddressResolver.java",
-    "resolver/src/main/java/io/netty/resolver/SimpleNameResolver.java"
+    "resolver/src/main/java/io/netty/resolver/CompositeNameResolver.java"
   ],
   "remaining_pending": 458,
-  "done": 1440
+  "done": 1455
 }
