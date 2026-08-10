@@ -17,22 +17,30 @@
 package org.keycloak.client.cli.util;
 
 /**
+ * 对象属性操作相关的运行时异常。
+ * <p>
+ * 携带出错的属性名称，便于 CLI 命令定位 JSON/属性编辑失败的具体字段。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public class AttributeException extends RuntimeException {
 
+    /** 引发异常的属性名称。 */
     private final String attrName;
 
+    /** 构造带属性名与消息的异常。 */
     public AttributeException(String attrName, String message) {
         super(message);
         this.attrName = attrName;
     }
 
+    /** 构造带属性名、消息及原因的异常。 */
     public AttributeException(String attrName, String message, Throwable th) {
         super(message, th);
         this.attrName = attrName;
     }
 
+    /** 返回引发异常的属性名称。 */
     public String getAttributeName() {
         return attrName;
     }

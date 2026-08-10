@@ -20,8 +20,14 @@ package org.keycloak.client.cli.common;
 import picocli.CommandLine;
 import picocli.CommandLine.ParseResult;
 
+/**
+ * Picocli 命令执行阶段的异常处理器。
+ * <p>
+ * 委托 {@link ShortErrorMessageHandler} 输出简短错误信息；若 {@link Globals#dumpTrace} 为 true 则额外打印堆栈。
+ */
 public final class ExecutionExceptionHandler implements CommandLine.IExecutionExceptionHandler {
 
+    /** 处理运行时异常并返回 Picocli 规定的退出码。 */
     @Override
     public int handleExecutionException(Exception cause, CommandLine cmd, ParseResult parseResult) {
         int exitCode = ShortErrorMessageHandler.shortErrorMessage(cause, cmd);

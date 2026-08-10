@@ -25,26 +25,39 @@ import org.keycloak.util.JsonSerialization;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
+ * Keycloak 客户端 CLI 配置文件的数据模型。
+ * <p>
+ * 包含服务器 URL、当前 realm、truststore 及按 endpoint/realm 分层的 {@link RealmConfigData} 映射。
+ * 支持合并、深拷贝及 JSON 序列化。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public class ConfigData {
 
+    /** 外部注入的访问令牌（不持久化到配置文件）。 */
     @JsonIgnore
     private String externalToken;
 
+    /** Keycloak 服务器基础 URL。 */
     private String serverUrl;
 
+    /** 当前会话 realm 名称。 */
     private String realm;
 
+    /** truststore 文件路径。 */
     private String truststore;
 
+    /** truststore 密码。 */
     private String trustpass;
 
+    /** 外部编辑器命令（用于 config editor 子命令）。 */
     private String editor;
 
+    /** endpoint → (realm → 领域配置) 的嵌套映射。 */
     private Map<String, Map<String, RealmConfigData>> endpoints = new HashMap<>();
 
 
+    /** 获取服务器 URL。 */
     public String getServerUrl() {
         return serverUrl;
     }
@@ -111,6 +124,7 @@ public class ConfigData {
         this.endpoints = endpoints;
     }
 
+    /** 获取当前会话（{@code serverUrl} + {@code realm}）对应的领域配置。 */
     public RealmConfigData sessionRealmConfigData() {
         if (serverUrl == null)
             throw new RuntimeException("Illegal state - no current endpoint in config data");
@@ -127,6 +141,7 @@ public class ConfigData {
         return realmData.get(realm);
     }
 
+    /** 获取当前会话 realm 的配置；不存在时自动创建空条目。 */
     public RealmConfigData ensureRealmConfigData(String endpoint, String realm) {
         RealmConfigData result = getRealmConfigData(endpoint, realm);
         if (result == null) {
@@ -148,6 +163,7 @@ public class ConfigData {
         realm.put(data.realm(), data);
     }
 
+    /** 将源配置的全局字段及当前 realm 数据合并到本实例。 */
     public void merge(ConfigData source) {
         serverUrl = source.serverUrl;
         realm = source.realm;
@@ -165,6 +181,7 @@ public class ConfigData {
         }
     }
 
+    /** 深拷贝配置，包括所有 endpoint/realm 下的 {@link RealmConfigData}。 */
     public ConfigData deepcopy() {
         ConfigData data = new ConfigData();
         data.serverUrl = serverUrl;

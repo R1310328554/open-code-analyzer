@@ -25,14 +25,28 @@ import picocli.CommandLine;
 import picocli.CommandLine.Model.CommandSpec;
 
 /**
+ * Keycloak 客户端 CLI 的全局启动与 Picocli 装配工具。
+ * <p>
+ * 负责类加载器初始化、加密集成、默认配置路径注入及 {@link CommandLine} 构建。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public class Globals {
 
+    /** 是否在异常退出时打印完整堆栈（由 {@code -x} 选项设置）。 */
     public static boolean dumpTrace = false;
 
+    /** 是否请求打印帮助（由 {@code --help} 选项设置）。 */
     public static boolean help = false;
 
+    /**
+     * CLI 主入口：初始化类加载器与加密模块，构建命令行并执行。
+     *
+     * @param args 命令行参数
+     * @param rootCommand 根命令对象
+     * @param command 命令名称
+     * @param defaultConfigFile 默认配置文件路径
+     */
     public static void main(String [] args, BaseGlobalOptionsCmd rootCommand, String command, String defaultConfigFile) {
         String libDir = System.getProperty("kc.lib.dir");
         if (libDir == null) {
@@ -49,6 +63,11 @@ public class Globals {
         System.exit(exitCode);
     }
 
+    /**
+     * 创建并配置 Picocli {@link CommandLine} 实例。
+     * <p>
+     * 禁用 {@code @} 文件展开与 POSIX 短选项聚簇，并注册统一异常处理器。
+     */
     public static CommandLine createCommandLine(BaseGlobalOptionsCmd rootCommand, String command, PrintWriter errorWriter) {
         CommandSpec spec = CommandSpec.forAnnotatedObject(rootCommand).name(command);
 

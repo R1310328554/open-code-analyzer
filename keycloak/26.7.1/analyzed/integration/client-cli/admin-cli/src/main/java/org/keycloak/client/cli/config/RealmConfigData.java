@@ -25,35 +25,53 @@ import org.keycloak.util.JsonSerialization;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
+ * 单个 endpoint/realm 下的认证与会话配置。
+ * <p>
+ * 存储 clientId、access/refresh 令牌、过期时间、client secret 及多 client 令牌映射等字段，
+ * 支持合并与深拷贝。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public class RealmConfigData {
 
+    /** 所属服务器 URL（运行时填充，非 JSON 持久化字段）。 */
     private String serverUrl;
 
+    /** 所属 realm 名称（运行时填充）。 */
     private String realm;
 
+    /** OAuth 客户端 ID。 */
     private String clientId;
 
+    /** 当前 access token。 */
     private String token;
 
+    /** 当前 refresh token。 */
     private String refreshToken;
 
+    /** JWT client assertion 签名令牌。 */
     private String signingToken;
 
+    /** 客户端密钥。 */
     private String secret;
 
+    /** 认证时使用的 grant type。 */
     private String grantTypeForAuthentication;
 
+    /** access token 过期时间戳（毫秒）。 */
     private Long expiresAt;
 
+    /** refresh token 过期时间戳（毫秒）。 */
     private Long refreshExpiresAt;
 
+    /** 签名令牌过期时间戳（毫秒）。 */
     private Long sigExpiresAt;
 
+    /** 初始令牌（仅序列化非 null 值）。 */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String initialToken;
 
+    /** 多 client 令牌映射（clientId → token）。 */
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private Map<String, String> clients = new LinkedHashMap<String, String>();
 
@@ -157,6 +175,7 @@ public class RealmConfigData {
         return clients;
     }
 
+    /** 将源配置的非空字段合并到本实例（含 clients 映射）。 */
     public void merge(RealmConfigData source) {
         serverUrl = source.serverUrl;
         realm = source.realm;
@@ -174,6 +193,7 @@ public class RealmConfigData {
         mergeClients(source);
     }
 
+    /** 合并 clients 映射：空字符串值表示删除对应条目。 */
     private void mergeClients(RealmConfigData source) {
         if (source.clients != null) {
             if (clients == null) {
@@ -192,6 +212,7 @@ public class RealmConfigData {
         }
     }
 
+    /** 仅合并令牌相关字段（用于 refresh token 轮换）。 */
     public void mergeRefreshTokens(RealmConfigData source) {
         token = source.token;
         refreshToken = source.refreshToken;
@@ -208,6 +229,7 @@ public class RealmConfigData {
         }
     }
 
+    /** 深拷贝本实例的所有字段。 */
     public RealmConfigData deepcopy() {
         RealmConfigData data = new RealmConfigData();
         data.serverUrl = serverUrl;

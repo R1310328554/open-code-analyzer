@@ -25,14 +25,21 @@ import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.ParameterException;
 import picocli.CommandLine.UnmatchedArgumentException;
 
+/**
+ * Picocli 参数解析异常的简短错误消息处理器。
+ * <p>
+ * 输出着色错误文本、未匹配参数建议及 {@code --help} 提示，避免冗长堆栈干扰 CLI 用户体验。
+ */
 public class ShortErrorMessageHandler implements IParameterExceptionHandler {
 
+    /** 处理参数解析异常并返回相应退出码。 */
     @Override
     public int handleParseException(ParameterException ex, String[] args) {
         CommandLine cmd = ex.getCommandLine();
         return shortErrorMessage(ex, cmd);
     }
 
+    /** 输出简短错误信息；参数或非法参数异常时提示使用 {@code --help}。 */
     static int shortErrorMessage(Exception ex, CommandLine cmd) {
         PrintWriter writer = cmd.getErr();
         String errorMessage = ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName();

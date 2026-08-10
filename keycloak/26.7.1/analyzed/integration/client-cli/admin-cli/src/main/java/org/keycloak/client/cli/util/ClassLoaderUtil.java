@@ -26,17 +26,24 @@ import java.net.URLClassLoader;
 import java.util.stream.Stream;
 
 /**
+ * Keycloak 客户端 CLI 的类加载器解析工具。
+ * <p>
+ * 根据 {@code client/lib} 目录中是否存在 BC FIPS JAR，选择 FIPS 或默认加密实现所需的依赖 JAR 构建 {@link URLClassLoader}。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ClassLoaderUtil {
 
     /**
-     * Detect if BC FIPS jars are present in the given directory. Return classloader with appropriate JARS based on that
+     * 检测 lib 目录中的 BC FIPS JAR 并构建包含合适加密依赖的类加载器。
+     *
+     * @param libDir 客户端 lib 目录路径（由 {@code kc.lib.dir} 系统属性指定）
+     * @return 加载了 keycloak-crypto 与 BouncyCastle JAR 的 {@link URLClassLoader}
      */
     public static ClassLoader resolveClassLoader(String libDir) {
         File[] jarsInDir = new File(libDir).listFiles(file -> file.getName().endsWith(".jar"));
 
-        // Detect if BC FIPS jars are present in the "client/lib" directory
+        // 检测 client/lib 目录中是否存在 BC FIPS JAR
         boolean bcFipsJarPresent = Stream.of(jarsInDir).anyMatch(file -> file.getName().startsWith("bc-fips"));
         String[] validJarPrefixes = bcFipsJarPresent ?  new String[] {"keycloak-crypto-fips1402", "bc-fips", "bctls-fips","bcutil-fips"} : new String[] {"keycloak-crypto-default", "bcprov-jdk18on"};
         URL[] usedJars = Stream.of(jarsInDir)

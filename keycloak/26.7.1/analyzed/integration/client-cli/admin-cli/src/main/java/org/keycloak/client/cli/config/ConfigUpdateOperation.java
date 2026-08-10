@@ -17,10 +17,15 @@
 package org.keycloak.client.cli.config;
 
 /**
+ * 配置更新操作回调接口。
+ * <p>
+ * 在 {@link ConfigHandler#saveMergeConfig} 加载配置后调用，用于就地修改 {@link ConfigData}。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public interface  ConfigUpdateOperation {
 
+    /** 对给定配置数据执行更新逻辑。 */
     void update(ConfigData data);
 
 }

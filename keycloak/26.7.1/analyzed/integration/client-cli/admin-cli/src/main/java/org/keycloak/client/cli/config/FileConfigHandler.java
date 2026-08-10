@@ -33,23 +33,32 @@ import org.keycloak.util.JsonSerialization;
 import static org.keycloak.client.cli.util.IoUtil.printErr;
 
 /**
+ * 基于 JSON 文件的 {@link ConfigHandler} 实现。
+ * <p>
+ * 读写 {@code ~/.keycloak/kcadm.config} 等配置文件，写操作通过文件锁保证并发安全。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public class FileConfigHandler implements ConfigHandler {
 
+    /** 配置文件最大允许大小（10 MB），超出则覆盖重写。 */
     private static final long MAX_SIZE = 10 * 1024 * 1024;
+    /** 当前使用的配置文件路径。 */
     private static String configFile;
 
+    /** 设置全局配置文件路径。 */
     public static void setConfigFile(String filename) {
         configFile = filename;
     }
 
+    /** 获取当前配置文件路径。 */
     public static String getConfigFile() {
         return configFile;
     }
 
+    /** 从文件加载配置；文件不存在或为空时返回空 {@link ConfigData}。 */
     public ConfigData loadConfig() {
-        // for now just dumb impl ignoring file locks for read
+        // 当前为简单实现，读取时不加文件锁
         File file = new File(configFile);
         if (!file.isFile() || file.length() == 0) {
             return new ConfigData();
@@ -64,6 +73,7 @@ public class FileConfigHandler implements ConfigHandler {
         }
     }
 
+    /** 确保配置文件及其父目录存在。 */
     public static void ensureFile() {
         Path path = null;
         try {
@@ -74,6 +84,7 @@ public class FileConfigHandler implements ConfigHandler {
         }
     }
 
+    /** 加锁读-改-写配置文件：加载 JSON、应用更新、写回 prettified JSON。 */
     public void saveMergeConfig(ConfigUpdateOperation op) {
         try {
             ensureFile();
@@ -83,13 +94,13 @@ public class FileConfigHandler implements ConfigHandler {
 
                 FileLock fileLock = null;
 
-                // lock file for write
+                // 尝试获取写锁，最多重试 10 次
                 int tryCount = 0;
                 do try {
                     fileLock = fileChannel.tryLock();
                     break;
                 } catch (OverlappingFileLockException e) {
-                    // sleep a little, and try again
+                    // 短暂等待后重试
                     try {
                         Thread.sleep(100);
                         continue;
@@ -100,7 +111,7 @@ public class FileConfigHandler implements ConfigHandler {
 
                 if (fileLock != null) {
                     try {
-                        // load config from file
+                        // 从文件加载现有配置
                         ConfigData config = new ConfigData();
                         long size = file.length();
                         if (size > MAX_SIZE) {
@@ -112,10 +123,10 @@ public class FileConfigHandler implements ConfigHandler {
                             config = JsonSerialization.readValue(new ByteArrayInputStream(buf), ConfigData.class);
                         }
 
-                        // update loaded config
+                        // 应用更新操作
                         op.update(config);
 
-                        // save config to file
+                        // 将配置写回文件
                         byte [] content = JsonSerialization.writeValueAsPrettyString(config).getBytes("utf-8");
                         file.seek(0);
                         file.write(content);
