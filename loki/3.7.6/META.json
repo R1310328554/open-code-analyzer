@@ -1,0 +1,7 @@
+{
+  "project": "loki",
+  "version": "3.7.6",
+  "git_ref": "v3.7.6",
+  "repo_url": "https://github.com/grafana/loki",
+  "source": "release"
+}

@@ -26,6 +26,7 @@
 | ollama | 0.32.7 | 463 | 0 ✅ |
 | ragflow | 0.26.4 | 1764 | 0 ✅ |
 | prometheus | 3.13.2 | 534 | 0 ✅ |
+| loki | 3.7.6 | 0 | 1552 |
 
 已完成：springframework / springboot / fastapi / rxjava / sentinel / rocketmq / redisson / flask / gson / hikaricp / disruptor / gin / arthas / netty / nacos / keycloak / harness / ollama / ragflow / prometheus。  
-进行中：loki（待脚手架）。
+进行中：loki 3.7.6（Go，pending=1552）。

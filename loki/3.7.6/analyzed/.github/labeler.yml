@@ -1,0 +1,6 @@
+type/docs:
+- changed-files:
+  - any-glob-to-any-file: 'docs/**/*'
+area/helm:
+- changed-files:
+  - any-glob-to-any-file: 'production/helm/**/*'

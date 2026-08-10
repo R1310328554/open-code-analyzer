@@ -152,3 +152,4 @@ projects:
   languages:
   - go
   status: in_progress
+  version: "3.7.6"
