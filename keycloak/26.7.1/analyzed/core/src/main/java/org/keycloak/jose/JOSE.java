@@ -1,16 +1,16 @@
 package org.keycloak.jose;
 
 /**
- * An interface to represent signed (JWS) and encrypted (JWE) JWTs.
+ * 表示已签名（JWS）或已加密（JWE）JWT 的统一接口。
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface JOSE {
 
     /**
-     * Returns the JWT header.
+     * 返回 JWT 头部。
      *
-     * @return the JWT header
+     * @return JWT 头部
      */
     <H extends JOSEHeader> H getHeader();
 }

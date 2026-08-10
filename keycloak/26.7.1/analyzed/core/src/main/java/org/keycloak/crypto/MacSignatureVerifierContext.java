@@ -21,10 +21,17 @@ import javax.crypto.Mac;
 
 import org.keycloak.common.VerificationException;
 
+/**
+ * 基于 HMAC（HS256/HS384/HS512）的 JWS 签名验证上下文。
+ */
 public class MacSignatureVerifierContext implements SignatureVerifierContext {
 
+    /** 封装对称密钥及其元数据的包装对象。 */
     private final KeyWrapper key;
 
+    /**
+     * @param key 含对称密钥与算法信息的密钥包装
+     */
     public MacSignatureVerifierContext(KeyWrapper key) {
         this.key = key;
     }
@@ -39,6 +46,14 @@ public class MacSignatureVerifierContext implements SignatureVerifierContext {
         return key.getAlgorithmOrDefault();
     }
 
+    /**
+     * 重新计算 HMAC 并与给定签名做常量时间比较。
+     *
+     * @param data 原始待验签字节
+     * @param signature 待验证的 HMAC 签名
+     * @return 签名匹配返回 {@code true}
+     * @throws VerificationException 验签过程失败时抛出
+     */
     @Override
     public boolean verify(byte[] data, byte[] signature) throws VerificationException {
         try {

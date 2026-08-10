@@ -19,24 +19,41 @@ package org.keycloak.exceptions;
 import org.keycloak.representations.JsonWebToken;
 
 /**
- * Exception thrown for cases when token is invalid due to time constraints (expired, or not yet valid).
- * Cf. {@link JsonWebToken#isActive()}.
+ * 令牌因时间约束无效时抛出（已过期或尚未生效）。
+ * 参见 {@link JsonWebToken#isActive()}。
+ *
  * @author hmlnarik
  */
 public class TokenNotActiveException extends TokenVerificationException {
 
+    /**
+     * @param token 验证失败的令牌
+     */
     public TokenNotActiveException(JsonWebToken token) {
         super(token);
     }
 
+    /**
+     * @param token 验证失败的令牌
+     * @param message 错误描述
+     */
     public TokenNotActiveException(JsonWebToken token, String message) {
         super(token, message);
     }
 
+    /**
+     * @param token 验证失败的令牌
+     * @param message 错误描述
+     * @param cause 原始异常
+     */
     public TokenNotActiveException(JsonWebToken token, String message, Throwable cause) {
         super(token, message, cause);
     }
 
+    /**
+     * @param token 验证失败的令牌
+     * @param cause 原始异常
+     */
     public TokenNotActiveException(JsonWebToken token, Throwable cause) {
         super(token, cause);
     }

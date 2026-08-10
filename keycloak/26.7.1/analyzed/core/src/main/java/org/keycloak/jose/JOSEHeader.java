@@ -4,18 +4,19 @@ import java.io.Serializable;
 
 
 /**
- * This interface represents a JOSE header.
+ * JOSE 头部接口，描述 JWT 签名或加密所用的算法与密钥标识。
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface JOSEHeader extends Serializable {
 
     /**
-     * Returns the algorithm used to sign or encrypt the JWT from the JOSE header.
+     * 返回 JOSE 头部中用于签名或加密的原始算法标识。
      *
-     * @return the algorithm from the JOSE header
+     * @return JOSE 头部中的算法值
      */
     String getRawAlgorithm();
 
+    /** @return 密钥 ID（kid） */
     String getKeyId();
 }

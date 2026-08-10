@@ -16,12 +16,22 @@
  */
 package org.keycloak.crypto;
 
+/**
+ * 数字签名操作失败时抛出的运行时异常。
+ */
 public class SignatureException extends RuntimeException {
 
+    /**
+     * @param message 错误描述
+     */
     public SignatureException(String message) {
         super(message);
     }
 
+    /**
+     * @param message 错误描述
+     * @param cause 原始异常
+     */
     public SignatureException(String message, Throwable cause) {
         super(message, cause);
     }

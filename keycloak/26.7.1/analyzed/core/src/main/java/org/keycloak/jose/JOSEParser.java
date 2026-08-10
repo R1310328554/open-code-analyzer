@@ -11,16 +11,17 @@ import org.keycloak.util.JsonSerialization;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
+ * JOSE 令牌解析器：根据头部 {@code enc} 字段区分 JWS 与 JWE 并构造对应对象。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class JOSEParser {
 
     /**
-     * Parses the given encoded {@code jwt} and returns either a {@link JWSInput} or {@link JWE}
-     * depending on the JOSE header configuration.
+     * 解析编码后的 {@code jwt}，根据 JOSE 头部配置返回 {@link JWSInput} 或 {@link JWE}。
      *
-     * @param jwt the encoded JWT
-     * @return a {@link JOSE}
+     * @param jwt 编码后的 JWT 字符串
+     * @return 解析后的 {@link JOSE} 实例
      */
     public static JOSE parse(String jwt) {
         String[] parts = jwt.split("\\.");
@@ -37,6 +38,7 @@ public class JOSEParser {
             throw new RuntimeException("Failed to parse JWT header", cause);
         }
 
+        // 头部含 enc 字段则为 JWE，否则按 JWS 处理
         if (header.has("enc")) {
             return new JWE(jwt);
         }

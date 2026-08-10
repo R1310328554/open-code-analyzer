@@ -18,9 +18,13 @@
 package org.keycloak.enums;
 
 /**
+ * 令牌存储位置枚举：标识令牌保存在服务端会话还是客户端 Cookie 中。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public enum TokenStore {
+    /** 令牌保存在服务端会话中。 */
     SESSION,
+    /** 令牌保存在客户端 Cookie 中。 */
     COOKIE
 }

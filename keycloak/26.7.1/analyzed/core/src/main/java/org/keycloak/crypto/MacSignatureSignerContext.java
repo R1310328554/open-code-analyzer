@@ -18,10 +18,18 @@ package org.keycloak.crypto;
 
 import javax.crypto.Mac;
 
+/**
+ * 基于 HMAC（HS256/HS384/HS512）的 JWS 签名上下文。
+ */
 public class MacSignatureSignerContext implements SignatureSignerContext {
 
+    /** 封装对称密钥及其元数据的包装对象。 */
     private final KeyWrapper key;
 
+    /**
+     * @param key 含对称密钥与算法信息的密钥包装
+     * @throws SignatureException 密钥不可用或算法不支持时抛出
+     */
     public MacSignatureSignerContext(KeyWrapper key) throws SignatureException {
         this.key = key;
     }
@@ -41,6 +49,13 @@ public class MacSignatureSignerContext implements SignatureSignerContext {
         return JavaAlgorithm.getJavaAlgorithmForHash(key.getAlgorithmOrDefault());
     }
 
+    /**
+     * 使用 HMAC 对给定字节序列计算 MAC 作为 JWS 签名。
+     *
+     * @param data 待签名原始字节
+     * @return HMAC 签名结果
+     * @throws SignatureException 签名过程失败时抛出
+     */
     @Override
     public byte[] sign(byte[] data) throws SignatureException {
         try {

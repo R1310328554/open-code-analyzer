@@ -19,23 +19,40 @@ package org.keycloak.exceptions;
 import org.keycloak.representations.JsonWebToken;
 
 /**
- * Thrown when token signature is invalid.
+ * 令牌签名无效时抛出。
+ *
  * @author hmlnarik
  */
 public class TokenSignatureInvalidException extends TokenVerificationException {
 
+    /**
+     * @param token 验证失败的令牌
+     */
     public TokenSignatureInvalidException(JsonWebToken token) {
         super(token);
     }
 
+    /**
+     * @param token 验证失败的令牌
+     * @param message 错误描述
+     */
     public TokenSignatureInvalidException(JsonWebToken token, String message) {
         super(token, message);
     }
 
+    /**
+     * @param token 验证失败的令牌
+     * @param message 错误描述
+     * @param cause 原始异常
+     */
     public TokenSignatureInvalidException(JsonWebToken token, String message, Throwable cause) {
         super(token, message, cause);
     }
 
+    /**
+     * @param token 验证失败的令牌
+     * @param cause 原始异常
+     */
     public TokenSignatureInvalidException(JsonWebToken token, Throwable cause) {
         super(token, cause);
     }

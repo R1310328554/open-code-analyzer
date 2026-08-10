@@ -18,12 +18,25 @@ package org.keycloak.crypto;
 
 import org.keycloak.common.VerificationException;
 
+/**
+ * JWS 签名验证上下文接口：提供 kid、算法标识及验签能力。
+ */
 public interface SignatureVerifierContext {
 
+    /** @return 验签所用密钥的 kid */
     String getKid();
 
+    /** @return JWS 算法标识（如 RS256、HS256） */
     String getAlgorithm();
 
+    /**
+     * 验证给定数据与签名的匹配性。
+     *
+     * @param data 原始待验签字节
+     * @param signature 待验证的签名
+     * @return 签名有效返回 {@code true}
+     * @throws VerificationException 验签过程失败时抛出
+     */
     boolean verify(byte[] data, byte[] signature) throws VerificationException;
 
 }

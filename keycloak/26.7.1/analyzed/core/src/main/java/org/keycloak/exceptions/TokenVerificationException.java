@@ -20,33 +20,51 @@ import org.keycloak.common.VerificationException;
 import org.keycloak.representations.JsonWebToken;
 
 /**
- * Exception thrown on failed verification of a token.
+ * 令牌验证失败时抛出的基类异常，携带关联的 {@link JsonWebToken} 实例。
  *
  * @author hmlnarik
  */
 public class TokenVerificationException extends VerificationException {
 
+    /** 验证失败的令牌对象。 */
     private final JsonWebToken token;
 
+    /**
+     * @param token 验证失败的令牌
+     */
     public TokenVerificationException(JsonWebToken token) {
         this.token = token;
     }
 
+    /**
+     * @param token 验证失败的令牌
+     * @param message 错误描述
+     */
     public TokenVerificationException(JsonWebToken token, String message) {
         super(message);
         this.token = token;
     }
 
+    /**
+     * @param token 验证失败的令牌
+     * @param message 错误描述
+     * @param cause 原始异常
+     */
     public TokenVerificationException(JsonWebToken token, String message, Throwable cause) {
         super(message, cause);
         this.token = token;
     }
 
+    /**
+     * @param token 验证失败的令牌
+     * @param cause 原始异常
+     */
     public TokenVerificationException(JsonWebToken token, Throwable cause) {
         super(cause);
         this.token = token;
     }
 
+    /** @return 验证失败的令牌对象 */
     public JsonWebToken getToken() {
         return token;
     }
