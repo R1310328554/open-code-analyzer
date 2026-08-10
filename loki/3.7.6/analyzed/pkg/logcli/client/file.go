@@ -1,5 +1,8 @@
 package client
 
+// FileClient 实现 Client 接口，对本地日志文件直接执行 LogQL，
+// 无需连接 Loki 服务器，便于离线分析与调试。
+
 import (
 	"context"
 	"errors"
@@ -35,6 +38,7 @@ const (
 
 var ErrNotSupported = errors.New("not supported")
 
+// FileClient 内置 logql.Engine，通过 querier 从 io.ReadCloser 读取行。
 // FileClient is a type of LogCLI client that do LogQL on log lines from
 // the given file directly, instead get log lines from Loki servers.
 type FileClient struct {
@@ -45,6 +49,7 @@ type FileClient struct {
 	engine      logql.Engine
 }
 
+// NewFileClient 注入默认 source=logcli 标签与 metric series 上限。
 // NewFileClient returns the new instance of FileClient for the given `io.ReadCloser`
 func NewFileClient(r io.ReadCloser) *FileClient {
 	lbs := labels.New(
@@ -61,6 +66,7 @@ func NewFileClient(r io.ReadCloser) *FileClient {
 	}
 }
 
+// Query 解析 LogQL 后在内存文件内容上执行即时查询。
 func (f *FileClient) Query(q string, limit int, t time.Time, direction logproto.Direction, _ bool) (*loghttp.QueryResponse, error) {
 	ctx := context.Background()
 
@@ -180,6 +186,7 @@ func (f *FileClient) Series(_ []string, _, _ time.Time, _ bool) (*loghttp.Series
 	}, nil
 }
 
+// FileClient 不支持 tail，返回 ErrNotSupported。
 func (f *FileClient) LiveTailQueryConn(_ string, _ time.Duration, _ int, _ time.Time, _ bool) (*websocket.Conn, error) {
 	return nil, fmt.Errorf("LiveTailQuery: %w", ErrNotSupported)
 }
@@ -226,6 +233,7 @@ func (f *FileClient) CancelDeleteRequest(_ string, _ bool, _ bool) error {
 	return ErrNotSupported
 }
 
+// limiter 实现 logql 限额接口，为本地查询提供 series/timeout 等默认值。
 type limiter struct {
 	n int
 }
@@ -266,6 +274,7 @@ func (l *limiter) DebugEngineStreams(_ string) bool {
 	return false // This setting for the v2 execution engine is unused in LogCLI
 }
 
+// querier 实现 logql.Querier，SelectLogs 从文件构建 EntryIterator。
 type querier struct {
 	r      io.Reader
 	labels labels.Labels
@@ -293,6 +302,7 @@ func newFileIterator(
 	pipeline logqllog.StreamPipeline,
 ) (iter.EntryIterator, error) {
 
+// defaultMaxFileSize 限制单次读取 20MB，防止大文件耗尽内存。
 	lr := io.LimitReader(r, defaultMaxFileSize)
 	b, err := io.ReadAll(lr)
 	if err != nil {
@@ -310,6 +320,7 @@ func newFileIterator(
 
 	processLine := func(line string) {
 		ts := time.Now()
+// 每行经 LogQL pipeline 过滤与标签提取，不匹配的行直接跳过。
 		parsedLine, parsedLabels, matches := pipeline.ProcessString(ts.UnixNano(), line, labels.EmptyLabels())
 		if !matches {
 			return
@@ -356,3 +367,4 @@ func newFileIterator(
 		params.Direction,
 	), nil
 }
+// GetStats/GetVolume 等索引相关 API 在 FileClient 中暂未实现，返回 ErrNotSupported。

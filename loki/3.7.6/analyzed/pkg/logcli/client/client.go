@@ -1,5 +1,8 @@
 package client
 
+// client 包实现 logcli 访问 Loki HTTP API 的 Client 接口与 DefaultClient：
+// 覆盖 query、labels、series、stats、volume、detected-fields 与 delete 等端点。
+
 import (
 	"context"
 	"encoding/base64"
@@ -27,6 +30,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/build"
 )
 
+// 常量定义 Loki v1 API 路径前缀与 X-Scope-OrgID 等 HTTP 头键名。
 const (
 	queryPath               = "/loki/api/v1/query"
 	queryRangePath          = "/loki/api/v1/query_range"
@@ -51,6 +55,7 @@ const (
 
 var userAgent = fmt.Sprintf("loki-logcli/%s", build.Version)
 
+// Client 接口抽象远程 Loki 与本地 FileClient 两种查询后端。
 // Client contains all the methods to query a Loki instance, it's an interface to allow multiple implementations.
 type Client interface {
 	Query(queryStr string, limit int, time time.Time, direction logproto.Direction, quiet bool) (*loghttp.QueryResponse, error)
@@ -76,6 +81,7 @@ type BackoffConfig struct {
 	MinBackoff int
 }
 
+// DefaultClient 持有地址、认证、重试退避与 Tripperware 等 HTTP 配置。
 // Client contains fields necessary to query a Loki instance
 type DefaultClient struct {
 	TLSConfig        config.TLSConfig
@@ -97,6 +103,7 @@ type DefaultClient struct {
 	CustomHeaders    []string
 }
 
+// Query 调用即时 LogQL 查询端点，返回单时间点结果。
 // Query uses the /api/v1/query endpoint to execute an instant query
 // excluding interfacer b/c it suggests taking the interface promql.Node instead of logproto.Direction b/c it happens to have a String() method
 // nolint:interfacer
@@ -110,6 +117,7 @@ func (c *DefaultClient) Query(queryStr string, limit int, time time.Time, direct
 	return c.doQuery(queryPath, qsb.Encode(), quiet)
 }
 
+// QueryRange 在时间区间内按 step/interval 执行范围 LogQL 查询。
 // QueryRange uses the /api/v1/query_range endpoint to execute a range query
 // excluding interfacer b/c it suggests taking the interface promql.Node instead of logproto.Direction b/c it happens to have a String() method
 // nolint:interfacer
@@ -173,6 +181,7 @@ func (c *DefaultClient) Series(matchers []string, start, end time.Time, quiet bo
 	return &seriesResponse, nil
 }
 
+// LiveTailQueryConn 建立 WebSocket 连接用于实时 tail 日志流。
 // LiveTailQueryConn uses /api/prom/tail to set up a websocket connection and returns it
 func (c *DefaultClient) LiveTailQueryConn(queryStr string, delayFor time.Duration, limit int, start time.Time, quiet bool) (*websocket.Conn, error) {
 	params := util.NewQueryStringBuilder()
@@ -325,6 +334,7 @@ func (c *DefaultClient) doQuery(
 	return &r, nil
 }
 
+// doRequest 构建 GET 请求，带指数退避重试直至 2xx 或耗尽 Retries。
 func (c *DefaultClient) doRequest(path, query string, quiet bool, out interface{}) error {
 	us, err := buildURL(c.Address, path, query)
 	if err != nil {
@@ -370,6 +380,7 @@ func (c *DefaultClient) doRequest(path, query string, quiet bool, out interface{
 	if c.Tripperware != nil {
 		client.Transport = c.Tripperware(client.Transport)
 	}
+// Compression 为 true 时重新启用 transport 的 gzip 响应解压。
 	if c.Compression {
 		// NewClientFromConfig() above returns an http.Client that uses a transport which
 		// has compression explicitly disabled. Here we re-enable it. If the caller
@@ -756,6 +767,7 @@ func buildURL(u, p, q string) (string, error) {
 	return url.String(), nil
 }
 
+// DeleteRequest 描述服务端返回的删除请求状态与时间范围。
 // DeleteRequest represents a log deletion request
 type DeleteRequest struct {
 	StartTime int64  `json:"start_time"`
@@ -764,6 +776,7 @@ type DeleteRequest struct {
 	Status    string `json:"status"`
 }
 
+// DeleteRequestParams 为创建删除请求时的 query/start/end/max_interval 参数。
 // DeleteRequestParams represents the parameters for creating a delete request
 type DeleteRequestParams struct {
 	Query       string `json:"query"`
@@ -771,3 +784,4 @@ type DeleteRequestParams struct {
 	End         string `json:"end,omitempty"`
 	MaxInterval string `json:"max_interval,omitempty"`
 }
+// getHTTPRequestHeader 互斥校验 basic auth 与 bearer token，防止重复认证配置。

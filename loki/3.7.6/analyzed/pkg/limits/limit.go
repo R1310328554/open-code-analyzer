@@ -1,5 +1,8 @@
 package limits
 
+// limit 实现 ingest-limits 核心的 ExceedsLimits 检查逻辑：
+// 过滤未分配分区、更新 usageStore 并将新流 metadata 写入 Kafka。
+
 import (
 	"context"
 	"strconv"
@@ -13,6 +16,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/limits/proto"
 )
 
+// Limits 接口抽象租户级 ingest 速率、突发与全局流数量等限额查询。
 // Limits contains all limits enforced by the limits frontend.
 type Limits interface {
 	IngestionRateBytes(userID string) float64
@@ -21,6 +25,7 @@ type Limits interface {
 	PolicyMaxGlobalStreamsPerUser(userID, policy string) (int, bool)
 }
 
+// limitsChecker 组合 usageStore、producer 与 partitionManager 执行限额判定。
 type limitsChecker struct {
 	store            *usageStore
 	producer         *producer
@@ -55,10 +60,12 @@ func newLimitsChecker(store *usageStore, producer *producer, partitionManager *p
 	}
 }
 
+// ExceedsLimits 过滤本实例未持有的分区，条件更新流计数并异步复制 metadata。
 func (c *limitsChecker) ExceedsLimits(ctx context.Context, req *proto.ExceedsLimitsRequest) (*proto.ExceedsLimitsResponse, error) {
 	streams := req.Streams
 	valid := 0
 	for _, stream := range streams {
+// streamHash 对 numPartitions 取模得到 Kafka metadata 分区号。
 		partition := int32(stream.StreamHash % uint64(c.numPartitions))
 
 		// TODO(periklis): Do we need to report this as an error to the frontend?
@@ -72,6 +79,7 @@ func (c *limitsChecker) ExceedsLimits(ctx context.Context, req *proto.ExceedsLim
 	}
 	streams = streams[:valid]
 
+// UpdateCond 原子判定是否超限，返回需复制到 Kafka 的新流列表。
 	toProduce, accepted, rejected, err := c.store.UpdateCond(req.Tenant, streams, c.clock.Now())
 	if err != nil {
 		return nil, err
@@ -100,3 +108,4 @@ func (c *limitsChecker) ExceedsLimits(ctx context.Context, req *proto.ExceedsLim
 
 	return &proto.ExceedsLimitsResponse{Results: results}, nil
 }
+// rejected 流以 ReasonMaxStreams 返回给 frontend，供 distributor 拒绝写入。

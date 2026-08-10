@@ -1,5 +1,8 @@
 package limits
 
+// store 实现 usageStore：分 stripe 锁的租户流 metadata 内存表，
+// 支持条件更新、速率桶、policy 分桶与 Prometheus 指标导出。
+
 import (
 	"errors"
 	"fmt"
@@ -53,6 +56,7 @@ func (s *usageStore) getPolicyBucketAndStreamsLimit(tenant, policy string) (poli
 	return noPolicy, defaultMaxStreams // Use default bucket (noPolicy)
 }
 
+// usageStore 按 tenant→partition→policy→streamHash 四层 map 存储流状态。
 // usageStore stores per-tenant stream usage data.
 type usageStore struct {
 	activeWindow  time.Duration
@@ -70,11 +74,13 @@ type usageStore struct {
 
 const noPolicy = ""
 
+// tenantUsage 结构：partition → policy bucket → streamHash → streamUsage。
 // tenantUsage contains the per-partition stream usage for a tenant.
 // The structure is: partition -> policy -> streamHash -> streamUsage
 // Policy "" (noPolicy) represents streams that don't match any specific policy.
 type tenantUsage map[int32]map[string]map[uint64]streamUsage
 
+// streamUsage 保存 lastSeenAt、rateBuckets 与 policy 等限额判定所需字段。
 // streamUsage represents the metadata for a stream loaded from the kafka topic.
 // It contains the minimal information to count per tenant active streams and
 // rate limits.
@@ -97,6 +103,7 @@ type streamUsage struct {
 	policy string
 }
 
+// rateBucket 为环形缓冲区中的一个时间槽，累计该 interval 内 ingest 字节。
 // RateBucket represents the bytes received during a specific time interval
 // It is used to calculate the rate limit for a stream.
 type rateBucket struct {
@@ -132,6 +139,7 @@ func newUsageStore(activeWindow, rateWindow, bucketSize time.Duration, numPartit
 	return s, nil
 }
 
+// ActiveStreams 迭代全局活跃流；迭代器回调内不可阻塞以免长期持读锁。
 // ActiveStreams returns an iterator over all active streams. As this method
 // acquires a read lock, the iterator must not block.
 func (s *usageStore) ActiveStreams() iter.Seq2[string, streamUsage] {
@@ -208,6 +216,7 @@ func (s *usageStore) Update(tenant string, metadata *proto.StreamMetadata, seenA
 	return nil
 }
 
+// UpdateCond 在 stripe 锁内批量判定流限额并更新 lastProducedAt 节流 Kafka 写入。
 func (s *usageStore) UpdateCond(tenant string, metadata []*proto.StreamMetadata, seenAt time.Time) ([]*proto.StreamMetadata, []*proto.StreamMetadata, []*proto.StreamMetadata, error) {
 	if !s.withinActiveWindow(seenAt.UnixNano()) {
 		return nil, nil, nil, errOutsideActiveWindow
@@ -250,7 +259,8 @@ func (s *usageStore) UpdateCond(tenant string, metadata []*proto.StreamMetadata,
 					// limit until evicted.
 					numStreams := uint64(len(s.stripes[i][tenant][partition][policyBucket]))
 
-					if numStreams >= maxStreams {
+	// 采用 map 长度 O(1) 计数，过期流在 evict 前仍计入限额（已知权衡）。
+				if numStreams >= maxStreams {
 						rejected = append(rejected, m)
 						continue
 					}
@@ -258,6 +268,7 @@ func (s *usageStore) UpdateCond(tenant string, metadata []*proto.StreamMetadata,
 			}
 			s.update(i, tenant, partition, policyBucket, m, seenAt)
 			// Hard-coded produce cutoff of 1 minute.
+// lastProducedAt 早于 1 分钟才再次 Produce，降低 replay 期间 Kafka 写入量。
 			produceCutoff := now.Add(-time.Minute).UnixNano()
 			if stream.lastProducedAt < produceCutoff {
 				s.setLastProducedAt(i, tenant, partition, m.StreamHash, policyBucket, now)
@@ -303,6 +314,7 @@ func (s *usageStore) UpdateRates(tenant string, metadata []*proto.StreamMetadata
 	return updated, nil
 }
 
+// Evict 删除 lastSeenAt 超出 activeWindow 的流并返回各租户驱逐计数。
 // Evict evicts all streams that have not been seen within the window.
 func (s *usageStore) Evict() map[string]int {
 	cutoff := s.clock.Now().Add(-s.activeWindow).UnixNano()
@@ -324,6 +336,7 @@ func (s *usageStore) Evict() map[string]int {
 	return evicted
 }
 
+// EvictPartitions 在分区 rebalance 回收时清空对应 partition 下全部流。
 // EvictPartitions evicts all streams for the specified partitions.
 func (s *usageStore) EvictPartitions(partitionsToEvict []int32) {
 	s.forEachLock(func(i int) {
@@ -434,6 +447,7 @@ func (s *usageStore) updateWithBuckets(i int, tenant string, partition int32, po
 	// rate buckets are implemented as a circular list. To update a rate
 	// bucket we must first calculate the bucket index.
 	bucketNum := seenAtUnixNano / int64(s.bucketSize)
+// rate bucket 以环形数组实现，bucketNum 对 numBuckets 取模定位槽位。
 	bucketIdx := int(bucketNum % int64(s.numBuckets))
 	bucket := stream.rateBuckets[bucketIdx]
 	// Once we have found the bucket, we then need to check if it is an old
@@ -490,6 +504,7 @@ func (s *usageStore) withLock(tenant string, fn func(i int)) {
 }
 
 // getStripe returns the stripe index for the tenant.
+// getStripe 用 FNV-1a hash 将 tenant 映射到固定 stripe 索引。
 func (s *usageStore) getStripe(tenant string) int {
 	h := fnv.New32()
 	_, _ = h.Write([]byte(tenant))
@@ -580,3 +595,4 @@ func (s *usageStore) get(i int, tenant string, partition int32, streamHash uint6
 	stream, ok = streams[streamHash]
 	return
 }
+// stripeLock 含 40 字节 padding，避免相邻 stripe 锁共享 CPU cache line 产生 false sharing。

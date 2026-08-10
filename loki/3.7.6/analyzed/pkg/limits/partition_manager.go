@@ -1,5 +1,8 @@
 package limits
 
+// partitionManager 跟踪 Kafka 分区分配状态机：pending→replaying→ready，
+// 并暴露 Prometheus 指标供运维观察各分区 replay 进度。
+
 import (
 	"fmt"
 	"strconv"
@@ -21,6 +24,7 @@ var (
 	)
 )
 
+// partitionState 枚举分区生命周期：未知、待处理、回放中、就绪。
 type partitionState int
 
 const (
@@ -45,6 +49,7 @@ func (s partitionState) String() string {
 	}
 }
 
+// partitionManager 维护 partition→{assignedAt,targetOffset,state} 映射。
 // partitionManager keeps track of the partitions assigned and for
 // each partition a timestamp of when it was assigned.
 type partitionManager struct {
@@ -55,6 +60,7 @@ type partitionManager struct {
 	clock quartz.Clock
 }
 
+// partitionEntry 记录分区分配时间戳、replay 目标 offset 与当前状态。
 // partitionEntry contains metadata about an assigned partition.
 type partitionEntry struct {
 	assignedAt   int64
@@ -86,6 +92,7 @@ func (m *partitionManager) Assign(partitions []int32) {
 	}
 }
 
+// CheckReady 在 CheckReady 健康检查中判定服务是否完成分区 warmup。
 // CheckReady returns true if all partitions are ready.
 func (m *partitionManager) CheckReady() bool {
 	m.mtx.RLock()
@@ -114,6 +121,7 @@ func (m *partitionManager) GetState(partition int32) (partitionState, bool) {
 	return entry.state, ok
 }
 
+// TargetOffsetReached 供 consumer 判断 replay 是否已消费到目标 offset。
 // TargetOffsetReached returns true if the partition is replaying and the
 // target offset has been reached.
 func (m *partitionManager) TargetOffsetReached(partition int32, offset int64) bool {
@@ -160,6 +168,7 @@ func (m *partitionManager) ListByState(state partitionState) map[int32]int64 {
 	return result
 }
 
+// SetReplaying 设置 replay 目标；consumer 到达该 offset 后调用 SetReady。
 // SetReplaying sets the partition as replaying and the offset that must
 // be consumed for it to become ready. It returns false if the partition
 // does not exist.
@@ -216,3 +225,4 @@ func (m *partitionManager) Collect(metrics chan<- prometheus.Metric) {
 		)
 	}
 }
+// loki_ingest_limits_partitions 指标以 gauge 形式导出各分区 state 枚举值。

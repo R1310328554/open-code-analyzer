@@ -3,6 +3,9 @@
 
 package proto
 
+// ingest-limits 服务 protobuf 消息与 gRPC 桩代码（protoc-gen-gogo 生成）。
+// 定义 ExceedsLimits、UpdateRates、GetAssignedPartitions 等 RPC 载荷。
+
 import (
 	context "context"
 	fmt "fmt"
@@ -29,6 +32,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// ExceedsLimitsRequest 携带租户 ID 与待检查的 StreamMetadata 批次。
 type ExceedsLimitsRequest struct {
 	Tenant  string            `protobuf:"bytes,1,opt,name=tenant,proto3" json:"tenant,omitempty"`
 	Streams []*StreamMetadata `protobuf:"bytes,2,rep,name=streams,proto3" json:"streams,omitempty"`
@@ -80,6 +84,7 @@ func (m *ExceedsLimitsRequest) GetStreams() []*StreamMetadata {
 	return nil
 }
 
+// ExceedsLimitsResponse 返回被拒绝流的 hash 与超限原因码。
 type ExceedsLimitsResponse struct {
 	Results []*ExceedsLimitsResult `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
 }
@@ -123,6 +128,7 @@ func (m *ExceedsLimitsResponse) GetResults() []*ExceedsLimitsResult {
 	return nil
 }
 
+// ExceedsLimitsResult 单条被拒绝流的 StreamHash 与 Reason 枚举值。
 type ExceedsLimitsResult struct {
 	StreamHash uint64 `protobuf:"varint,1,opt,name=streamHash,proto3" json:"streamHash,omitempty"`
 	Reason     uint32 `protobuf:"varint,2,opt,name=reason,proto3" json:"reason,omitempty"`
@@ -174,6 +180,7 @@ func (m *ExceedsLimitsResult) GetReason() uint32 {
 	return 0
 }
 
+// GetAssignedPartitionsRequest 为空请求，查询本实例 ready 分区列表。
 type GetAssignedPartitionsRequest struct {
 }
 
@@ -209,6 +216,7 @@ func (m *GetAssignedPartitionsRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_GetAssignedPartitionsRequest proto.InternalMessageInfo
 
+// GetAssignedPartitionsResponse 映射 partition→assignedAt 纳秒时间戳。
 type GetAssignedPartitionsResponse struct {
 	AssignedPartitions map[int32]int64 `protobuf:"bytes,1,rep,name=assignedPartitions,proto3" json:"assignedPartitions,omitempty" protobuf_key:"varint,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3"`
 }
@@ -252,6 +260,7 @@ func (m *GetAssignedPartitionsResponse) GetAssignedPartitions() map[int32]int64 
 	return nil
 }
 
+// StreamMetadata 描述单条日志流的 hash、字节大小与 ingestion policy。
 type StreamMetadata struct {
 	StreamHash uint64 `protobuf:"varint,1,opt,name=streamHash,proto3" json:"streamHash,omitempty"`
 	TotalSize  uint64 `protobuf:"varint,2,opt,name=totalSize,proto3" json:"totalSize,omitempty"`
@@ -312,6 +321,7 @@ func (m *StreamMetadata) GetIngestionPolicy() string {
 	return ""
 }
 
+// StreamMetadataRecord 为 Kafka metadata topic 的 wire 记录，含 zone/tenant。
 type StreamMetadataRecord struct {
 	Zone     string          `protobuf:"bytes,1,opt,name=zone,proto3" json:"zone,omitempty"`
 	Tenant   string          `protobuf:"bytes,2,opt,name=tenant,proto3" json:"tenant,omitempty"`
@@ -371,6 +381,7 @@ func (m *StreamMetadataRecord) GetMetadata() *StreamMetadata {
 	return nil
 }
 
+// UpdateRatesRequest 批量上报流 ingest 字节以计算平均速率。
 type UpdateRatesRequest struct {
 	Tenant  string            `protobuf:"bytes,1,opt,name=tenant,proto3" json:"tenant,omitempty"`
 	Streams []*StreamMetadata `protobuf:"bytes,2,rep,name=streams,proto3" json:"streams,omitempty"`
@@ -465,6 +476,7 @@ func (m *UpdateRatesResponse) GetResults() []*UpdateRatesResult {
 	return nil
 }
 
+// UpdateRatesResult 返回各流的 StreamHash 与计算出的 bytes/sec 速率。
 type UpdateRatesResult struct {
 	StreamHash uint64 `protobuf:"varint,1,opt,name=streamHash,proto3" json:"streamHash,omitempty"`
 	Rate       uint64 `protobuf:"varint,2,opt,name=rate,proto3" json:"rate,omitempty"`
@@ -1004,6 +1016,7 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
+// IngestLimitsFrontendClient 为 frontend 侧 gRPC 客户端接口。
 // IngestLimitsFrontendClient is the client API for IngestLimitsFrontend service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
@@ -1038,6 +1051,7 @@ func (c *ingestLimitsFrontendClient) UpdateRates(ctx context.Context, in *Update
 	return out, nil
 }
 
+// IngestLimitsFrontendServer 由 limits frontend 实现并注册到 gRPC Server。
 // IngestLimitsFrontendServer is the server API for IngestLimitsFrontend service.
 type IngestLimitsFrontendServer interface {
 	ExceedsLimits(context.Context, *ExceedsLimitsRequest) (*ExceedsLimitsResponse, error)
@@ -1112,6 +1126,7 @@ var _IngestLimitsFrontend_serviceDesc = grpc.ServiceDesc{
 	Metadata: "pkg/limits/proto/limits.proto",
 }
 
+// IngestLimitsClient 为 distributor 等组件访问 limits 后端的客户端接口。
 // IngestLimitsClient is the client API for IngestLimits service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
@@ -1156,6 +1171,7 @@ func (c *ingestLimitsClient) UpdateRates(ctx context.Context, in *UpdateRatesReq
 	return out, nil
 }
 
+// IngestLimitsServer 由 ingest-limits pod 实现，含分区查询与限额 RPC。
 // IngestLimitsServer is the server API for IngestLimits service.
 type IngestLimitsServer interface {
 	ExceedsLimits(context.Context, *ExceedsLimitsRequest) (*ExceedsLimitsResponse, error)
@@ -3145,3 +3161,4 @@ var (
 	ErrInvalidLengthLimits = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowLimits   = fmt.Errorf("proto: integer overflow")
 )
+// RegisterIngestLimitsServer/FrontendServer 将服务注册到 gRPC Server 供 ring 路由。

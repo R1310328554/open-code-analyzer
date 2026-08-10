@@ -1,5 +1,8 @@
 package limits
 
+// service 实现 ingest-limits 主服务：Kafka 消费/生产、ring 生命周期、
+// 分区就绪检查与 ExceedsLimits/UpdateRates gRPC 接口。
+
 import (
 	"context"
 	"errors"
@@ -23,6 +26,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/constants"
 )
 
+// RingKey/RingName 标识 ingest-limits 在 hash ring 中的服务名。
 const (
 	// Ring
 	RingKey  = "ingest-limits"
@@ -34,6 +38,7 @@ const (
 	partitionReadinessWaitAssignPeriod = 30 * time.Second
 )
 
+// Service 组合 Kafka reader/writer、usageStore、consumer 与 limitsChecker。
 // Service is a service that manages stream metadata limits.
 type Service struct {
 	services.Service
@@ -63,6 +68,7 @@ type Service struct {
 	clock quartz.Clock
 }
 
+// New 创建 ring lifecycler、offset manager、分区 lifecycler 与 Kafka 读写客户端。
 // New creates a new IngestLimits service. It initializes the metadata map and sets up a Kafka client
 // The client is configured to consume stream metadata from a dedicated topic with the metadata suffix.
 func New(cfg Config, limits Limits, logger log.Logger, reg prometheus.Registerer) (*Service, error) {
@@ -169,6 +175,7 @@ func New(cfg Config, limits Limits, logger log.Logger, reg prometheus.Registerer
 	return s, nil
 }
 
+// GetAssignedPartitions 返回本实例处于 ready 状态的分区及分配时间戳。
 // GetAssignedPartitions implements the [proto.IngestLimitsServer] interface.
 func (s *Service) GetAssignedPartitions(
 	_ context.Context,
@@ -180,6 +187,7 @@ func (s *Service) GetAssignedPartitions(
 	return &resp, nil
 }
 
+// ExceedsLimits 委托 limitsChecker 执行流数量限额检查。
 // ExceedsLimits implements the [proto.IngestLimitsServer] interface.
 func (s *Service) ExceedsLimits(
 	ctx context.Context,
@@ -188,6 +196,7 @@ func (s *Service) ExceedsLimits(
 	return s.limitsChecker.ExceedsLimits(ctx, req)
 }
 
+// UpdateRates 更新 rate bucket 并返回各流平均 ingest 字节速率。
 // UpdateRates implements the [proto.IngestLimitsServer] interface.
 func (s *Service) UpdateRates(
 	_ context.Context,
@@ -211,6 +220,7 @@ func (s *Service) UpdateRates(
 		// The average rate is calculated over the total number of
 		// populated buckets. This allows us to calculate accurate rates
 		// without empty buckets pulling down the average.
+// 平均速率 = 各 bucket 字节总和 / (bucket 秒数 × 已填充 bucket 数)。
 		averageRate := totalSize / (uint64(s.cfg.BucketSize.Seconds()) * uint64(len(stream.rateBuckets)))
 		resp.Results[i] = &proto.UpdateRatesResult{
 			StreamHash: stream.hash,
@@ -220,6 +230,7 @@ func (s *Service) UpdateRates(
 	return &resp, nil
 }
 
+// CheckReady 依次检查 lifecycler 与分区 replay 是否全部完成。
 func (s *Service) CheckReady(ctx context.Context) error {
 	if s.State() != services.Running {
 		return fmt.Errorf("service is not running: %v", s.State())
@@ -233,6 +244,7 @@ func (s *Service) CheckReady(ctx context.Context) error {
 	// last active window records. This is referred to as partition readiness.
 	// Once we have passed partition readiness we never check it again as
 	// otherwise the service could become unready during a partition rebalance.
+// partitionReadinessPassed 一旦为 true 不再回退，避免 rebalance 导致 unready。
 	if !s.partitionReadinessPassed {
 		if s.partitionManager.Count() == 0 {
 			// If partition readiness, once passed, is never checked again,
@@ -316,6 +328,7 @@ func (s *Service) running(ctx context.Context) error {
 	}
 }
 
+// evictOldStreamsPeriodic 按 EvictionInterval 触发 usageStore 过期流清理。
 // evictOldStreamsPeriodic runs a periodic job that evicts old streams.
 // It runs two evictions per window size.
 func (s *Service) evictOldStreamsPeriodic(ctx context.Context) {
@@ -355,6 +368,7 @@ func (s *Service) stopping(failureCase error) error {
 	return allErrs.Err()
 }
 
+// Flush/TransferOut 为空实现，ingest-limits 状态由 Kafka 而非 ring 转移。
 // Flush implements ring.FlushTransferer. It transfers state to another ingest limits instance.
 func (s *Service) Flush() {}
 
@@ -362,3 +376,4 @@ func (s *Service) Flush() {}
 func (s *Service) TransferOut(_ context.Context) error {
 	return nil
 }
+// FetchMaxBytes/FetchMaxPartitionBytes 限制单 broker/分区缓冲以控制堆内存占用。
