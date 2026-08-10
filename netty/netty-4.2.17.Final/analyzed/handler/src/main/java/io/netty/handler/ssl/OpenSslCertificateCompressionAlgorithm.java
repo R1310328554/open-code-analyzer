@@ -20,11 +20,16 @@ import javax.net.ssl.SSLEngine;
 /**
  * Provides compression and decompression implementations for TLS Certificate Compression
  * (<a href="https://tools.ietf.org/html/rfc8879">RFC 8879</a>).
+ *
+ * <p>TLS 1.3 证书压缩扩展（RFC 8879）的压缩/解压 SPI。实现注册到
+ * {@link OpenSslCertificateCompressionConfig} 后由 BoringSSL 在握手阶段调用；
+ * {@link #decompress} 必须严格限制输出长度以防解压炸弹。</p>
  */
 public interface OpenSslCertificateCompressionAlgorithm {
 
     /**
      * Compress the given input with the specified algorithm and return the compressed bytes.
+     * <p>将未压缩证书 DER 编码压缩后返回；仅在本端作为发送方且对端支持时使用。</p>
      *
      * @param engine                    the {@link SSLEngine}
      * @param uncompressedCertificate   the uncompressed certificate
@@ -35,6 +40,7 @@ public interface OpenSslCertificateCompressionAlgorithm {
 
     /**
      * Decompress the given input with the specified algorithm and return the decompressed bytes.
+     * <p>解压对端发来的压缩证书；输出超过 {@code uncompressedLen} 时必须抛异常并中止连接（RFC 8879 安全要求）。</p>
      *
      * <h3>Implementation
      * <a href="https://tools.ietf.org/html/rfc8879#section-5">Security Considerations</a></h3>
@@ -56,6 +62,7 @@ public interface OpenSslCertificateCompressionAlgorithm {
 
     /**
      * Return the ID for the compression algorithm provided for by a given implementation.
+     * <p>返回 RFC 8879 定义的算法 ID，用于 TLS 扩展协商。</p>
      *
      * @return compression algorithm ID as specified by
      * <a href="https://datatracker.ietf.org/doc/html/rfc8879">RFC8879</a>.

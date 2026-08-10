@@ -27,8 +27,12 @@ import java.util.Set;
 
 /**
  * {@link OpenSslSessionCache} that is used by the client-side.
+ *
+ * <p>客户端会话缓存：除按 {@link OpenSslSessionId} 索引外，还按 {@code host:port} 分组，
+ * 供 {@link #setSession(long, OpenSslInternalSession, String, int)} 在重连时查找可复用会话。</p>
  */
 final class OpenSslClientSessionCache extends OpenSslSessionCache {
+    /** 远端 host/port → 该目标上的 native 会话集合。 */
     private final Map<HostPort, Set<NativeSslSession>> sessions = new HashMap<>();
 
     OpenSslClientSessionCache(OpenSslEngineMap engines) {
@@ -44,6 +48,7 @@ final class OpenSslClientSessionCache extends OpenSslSessionCache {
         }
         Set<NativeSslSession> sessionsForHost = sessions.get(hostPort);
         if (sessionsForHost == null) {
+            // 单 host:port 通常只有少量会话 ticket，初始容量取 4
             // Let's start with something small as usually the server does not provide too many of these per hostPort
             // mapping.
             sessionsForHost = new HashSet<>(4);
@@ -69,6 +74,11 @@ final class OpenSslClientSessionCache extends OpenSslSessionCache {
         }
     }
 
+    /**
+     * 尝试为给定 SSL* 绑定已缓存的客户端会话以实现 TLS 会话恢复。
+     *
+     * @return {@code true} 若 OpenSSL 成功 {@code SSL_set_session} 并复用缓存
+     */
     @Override
     boolean setSession(long ssl, OpenSslInternalSession session, String host, int port) {
         HostPort hostPort = keyFor(host, port);
@@ -85,11 +95,13 @@ final class OpenSslClientSessionCache extends OpenSslSessionCache {
             }
             if (sessionsForHost.isEmpty()) {
                 sessions.remove(hostPort);
+                // 无可用会话条目
                 // There is no session that we can use.
                 return false;
             }
 
             List<NativeSslSession> toBeRemoved = null;
+            // 遍历该 host:port 下所有候选，优先选用仍 valid 的会话
             // Loop through all the sessions that might be usable and check if we can use one of these.
             for (NativeSslSession sslSession : sessionsForHost) {
                 if (sslSession.isValid()) {
@@ -103,6 +115,7 @@ final class OpenSslClientSessionCache extends OpenSslSessionCache {
                 }
             }
 
+            // 批量移除已过期会话
             // Remove everything that is not valid anymore
             if (toBeRemoved != null) {
                 for (NativeSslSession sslSession : toBeRemoved) {
@@ -110,10 +123,12 @@ final class OpenSslClientSessionCache extends OpenSslSessionCache {
                 }
             }
             if (nativeSslSession == null) {
+                // 该 host:port 下无有效会话
                 // Couldn't find a valid session that could be used.
                 return false;
             }
 
+            // SSL_setSession 成功时 OpenSSL 会递增底层 SSL_SESSION* 引用计数
             // Try to set the session, if true is returned OpenSSL incremented the reference count
             // of the underlying SSL_SESSION*.
             reused = SSL.setSession(ssl, nativeSslSession.session());
@@ -124,6 +139,7 @@ final class OpenSslClientSessionCache extends OpenSslSessionCache {
 
         if (reused) {
             if (singleUsed) {
+                // 单次使用 ticket：复用后立即使缓存与会话失效
                 // Should only be used once
                 nativeSslSession.invalidate();
                 session.invalidate();
@@ -135,6 +151,7 @@ final class OpenSslClientSessionCache extends OpenSslSessionCache {
         return reused;
     }
 
+    /** host 与 port 均无效时无法作为缓存键。 */
     private static HostPort keyFor(String host, int port) {
         if (host == null && port < 1) {
             return null;
@@ -150,8 +167,10 @@ final class OpenSslClientSessionCache extends OpenSslSessionCache {
 
     /**
      * Host / Port tuple used to find a {@link OpenSslInternalSession} in the cache.
+     * <p>缓存键：host 比较忽略大小写，hash 基于 {@link AsciiString#hashCode(String)}。</p>
      */
     private static final class HostPort {
+        /** 预计算的 hashCode（host 不区分大小写）。 */
         private final int hash;
         private final String host;
         private final int port;
@@ -159,6 +178,7 @@ final class OpenSslClientSessionCache extends OpenSslSessionCache {
         HostPort(String host, int port) {
             this.host = host;
             this.port = port;
+            // 使用 AsciiString 哈希以忽略 host 大小写
             // Calculate a hashCode that does ignore case.
             this.hash = 31 * AsciiString.hashCode(host) + port;
         }

@@ -48,13 +48,19 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
  * </pre>
  *
  * <p>This is a BoringSSL-specific feature.
+ *
+ * <p>通过 {@link SSLCredential} JNI 构建 {@link OpenSslCredential} 的流式 API；
+ * 成功时返回 {@link DefaultOpenSslCredential}，失败时在 {@code finally} 中释放中间 native 指针。</p>
  */
 public final class OpenSslCredentialBuilder {
 
     private PrivateKey privateKey;
     private OpenSslPrivateKey openSslPrivateKey;
+    /** 证书链副本，leaf 在 index 0。 */
     private X509Certificate[] certificateChain;
+    /** 可选的信任锚标识（ASN.1 DER）。 */
     private byte[] trustAnchorId;
+    /** 是否要求 issuer 与信任锚匹配。 */
     private boolean mustMatchIssuer;
 
     private OpenSslCredentialBuilder(PrivateKey privateKey, X509Certificate[] certificateChain) {
@@ -129,17 +135,21 @@ public final class OpenSslCredentialBuilder {
         long privateKeyPtr = 0;
 
         try {
+            // 分配 native SSL_CREDENTIAL（X.509 类型）
             // Create the credential
             credentialPtr = createCredential();
 
+            // 绑定私钥 EVP_PKEY（Java PrivateKey 会先转 BIO 再 parse）
             // Set private key (guaranteed to be present via constructor)
             privateKeyPtr = getPrivateKeyPointer();
             SSLCredential.setPrivateKey(credentialPtr, privateKeyPtr);
 
+            // 绑定 X509 链
             // Set certificate chain (guaranteed to be present via constructor)
             certChainPtr = createCertChainPointer();
             SSLCredential.setCertChain(credentialPtr, certChainPtr);
 
+            // 可选：信任锚 ID 与 issuer 匹配策略
             // Set optional properties
             if (trustAnchorId != null) {
                 SSLCredential.setTrustAnchorId(credentialPtr, trustAnchorId);
@@ -149,6 +159,7 @@ public final class OpenSslCredentialBuilder {
                 SSLCredential.setMustMatchIssuer(credentialPtr, true);
             }
 
+            // 成功：将 credentialPtr 交给包装类，避免 finally 误释放
             // Success - create the wrapper object
             long finalPtr = credentialPtr;
             credentialPtr = 0; // Don't free on cleanup
@@ -156,6 +167,7 @@ public final class OpenSslCredentialBuilder {
         } catch (Exception e) {
             throw new IllegalStateException("Failed to build SSL credential", e);
         } finally {
+            // 构造失败时清理已分配的 native 资源
             // Cleanup on error
             if (credentialPtr != 0) {
                 try {
@@ -168,6 +180,7 @@ public final class OpenSslCredentialBuilder {
                 SSL.freeX509Chain(certChainPtr);
             }
             if (privateKeyPtr != 0 && privateKey != null) {
+                // 仅释放由 Java PrivateKey 临时 parse 出的 EVP_PKEY；OpenSslPrivateKey 由调用方管理生命周期
                 // Only free if we created it from a Java PrivateKey
                 SSL.freePrivateKey(privateKeyPtr);
             }
@@ -187,6 +200,7 @@ public final class OpenSslCredentialBuilder {
             throw new IllegalStateException("No private key specified");
         }
 
+        // Java PrivateKey → PEM BIO → SSL_parsePrivateKey
         // Convert Java PrivateKey to OpenSSL EVP_PKEY
         long bio = ReferenceCountedOpenSslContext.toBIO(
                 UnpooledByteBufAllocator.DEFAULT, privateKey);
@@ -198,6 +212,7 @@ public final class OpenSslCredentialBuilder {
     }
 
     private long createCertChainPointer() throws Exception {
+        // 证书链 PEM 编码后 parse 为 native X509 栈
         // Convert certificate chain to PEM format and parse
         try {
             long bio = ReferenceCountedOpenSslContext.toBIO(

@@ -19,6 +19,10 @@ package io.netty.handler.ssl;
  * {@link SslContextOption}s that are specific to the {@link SslProvider#OPENSSL} / {@link SslProvider#OPENSSL_REFCNT}.
  *
  * @param <T>   the type of the value.
+ *
+ * <p>OpenSSL/BoringSSL 后端专属的 {@link SslContextOption} 键。通过
+ * {@link SslContextBuilder#option(SslContextOption, Object)} 传入，
+ * 在 {@link ReferenceCountedOpenSslContext} 初始化 native {@code SSL_CTX} 时生效。</p>
  */
 public final class OpenSslContextOption<T> extends SslContextOption<T> {
 
@@ -28,6 +32,7 @@ public final class OpenSslContextOption<T> extends SslContextOption<T> {
 
     /**
      * If enabled heavy-operations may be offloaded from the {@link io.netty.channel.EventLoop} if possible.
+     * <p>为 {@code true} 时可将部分 OpenSSL 重操作投递到 {@link io.netty.util.concurrent.EventExecutor} 任务队列。</p>
      */
     public static final OpenSslContextOption<Boolean> USE_TASKS =
             new OpenSslContextOption<Boolean>("USE_TASKS");
@@ -37,6 +42,7 @@ public final class OpenSslContextOption<T> extends SslContextOption<T> {
      * not enabled.
      *
      * This is currently only supported when {@code BoringSSL} and ALPN is used.
+     * <p>启用 TLS False Start（RFC 7918）；仅 BoringSSL + ALPN 场景下有效，握手事件顺序可能与默认不同。</p>
      */
     public static final OpenSslContextOption<Boolean> TLS_FALSE_START =
             new OpenSslContextOption<Boolean>("TLS_FALSE_START");
@@ -46,6 +52,7 @@ public final class OpenSslContextOption<T> extends SslContextOption<T> {
      * if needed.
      *
      * This is currently only supported when {@code BoringSSL} is used.
+     * <p>注册同步 {@link OpenSslPrivateKeyMethod}，将私钥签名/解密卸载到 Java 层（如 HSM）。</p>
      */
     public static final OpenSslContextOption<OpenSslPrivateKeyMethod> PRIVATE_KEY_METHOD =
             new OpenSslContextOption<OpenSslPrivateKeyMethod>("PRIVATE_KEY_METHOD");
@@ -55,6 +62,7 @@ public final class OpenSslContextOption<T> extends SslContextOption<T> {
      * if needed.
      *
      * This is currently only supported when {@code BoringSSL} is used.
+     * <p>注册异步 {@link OpenSslAsyncPrivateKeyMethod}，通过 {@link io.netty.util.concurrent.Future} 完成私钥操作。</p>
      */
     public static final OpenSslContextOption<OpenSslAsyncPrivateKeyMethod> ASYNC_PRIVATE_KEY_METHOD =
             new OpenSslContextOption<OpenSslAsyncPrivateKeyMethod>("ASYNC_PRIVATE_KEY_METHOD");
@@ -65,12 +73,14 @@ public final class OpenSslContextOption<T> extends SslContextOption<T> {
      * they should be used.
      *
      * This is currently only supported when {@code BoringSSL} is used.
+     * <p>配置 TLS 1.3 证书压缩算法列表、优先级与方向（见 {@link OpenSslCertificateCompressionConfig}）。</p>
      */
     public static final OpenSslContextOption<OpenSslCertificateCompressionConfig> CERTIFICATE_COMPRESSION_ALGORITHMS =
             new OpenSslContextOption<OpenSslCertificateCompressionConfig>("CERTIFICATE_COMPRESSION_ALGORITHMS");
 
     /**
      * Set the maximum number of bytes that is allowed during the handshake for certificate chain.
+     * <p>握手中允许的最大证书链字节数，超出则中止握手。</p>
      */
     public static final OpenSslContextOption<Integer> MAX_CERTIFICATE_LIST_BYTES =
             new OpenSslContextOption<Integer>("MAX_CERTIFICATE_LIST_BYTES");
@@ -80,6 +90,7 @@ public final class OpenSslContextOption<T> extends SslContextOption<T> {
      * <p>
      * See <a href="https://docs.openssl.org/master/man3/SSL_CTX_set1_groups_list/#description">
      *     SSL_CTX_set1_groups_list</a>.
+     * <p>覆盖 {@code -Djdk.tls.namedGroups}，设置 TLS 1.3 命名组/曲线列表。</p>
      */
     public static final OpenSslContextOption<String[]> GROUPS = new OpenSslContextOption<String[]>("GROUPS");
 
@@ -90,6 +101,7 @@ public final class OpenSslContextOption<T> extends SslContextOption<T> {
      * The only supported values are {@code 512}, {@code 1024}, {@code 2048}, and {@code 4096}.
      * <p>
      * See <a href="https://docs.openssl.org/1.0.2/man3/SSL_CTX_set_tmp_dh_callback/">SSL_CTX_set_tmp_dh_callback</a>.
+     * <p>临时 DH 密钥长度（512/1024/2048/4096），覆盖 {@code -Djdk.tls.ephemeralDHKeySize}。</p>
      */
     public static final OpenSslContextOption<Integer> TMP_DH_KEYLENGTH =
             new OpenSslContextOption<Integer>("TMP_DH_KEYLENGTH");
@@ -99,6 +111,7 @@ public final class OpenSslContextOption<T> extends SslContextOption<T> {
      * smart cards, remote signing services, etc.) when using BoringSSL.
      * <p>
      * Note: this feature only works when {@code BoringSSL} or {@code AWS-LC} is used.
+     * <p>为 {@code true} 时在 BoringSSL/AWS-LC 上对无法 native 签名的密钥回退到 JDK Provider 签名。</p>
      */
     public static final OpenSslContextOption<Boolean> USE_JDK_PROVIDER_SIGNATURES =
             new OpenSslContextOption<>("USE_JDK_PROVIDER_SIGNATURES");

@@ -37,8 +37,12 @@ import static io.netty.util.internal.EmptyArrays.EMPTY_MAP_ENTRY;
  * A client-side {@link SslContext} which uses OpenSSL's SSL/TLS implementation.
  * <p>This class will use a finalizer to ensure native resources are automatically cleaned up. To avoid finalizers
  * and manually release the native memory see {@link ReferenceCountedOpenSslClientContext}.
+ *
+ * <p>基于 OpenSSL 的客户端 {@link SslContext}。构造完成后持有 {@link OpenSslSessionContext} 用于会话缓存与票据；
+ * 所有公开构造器已废弃，应使用 {@link SslContextBuilder}。失败时 {@code finally} 块会调用 {@link #release()} 释放已分配的 native 资源。</p>
  */
 public final class OpenSslClientContext extends OpenSslContext {
+    /** 客户端 SSL 会话缓存与超时配置的上下文。 */
     private final OpenSslSessionContext sessionContext;
 
     /**
@@ -209,13 +213,16 @@ public final class OpenSslClientContext extends OpenSslContext {
                          Map.Entry<SslContextOption<?>, Object>[] options,
                          List<OpenSslCredential> credentials)
             throws SSLException {
+        // SSL_MODE_CLIENT：客户端模式；ClientAuth.NONE 表示默认不要求客户端证书
         super(ciphers, cipherFilter, apn, SSL.SSL_MODE_CLIENT, keyCertChain, ClientAuth.NONE, protocols, startTls,
                 endpointIdentificationAlgorithm, enableOcsp, serverNames, resumptionController, options, credentials);
         boolean success = false;
         boolean supportJdkSignatureFallback = isJdkSignatureFallbackEnabled(options);
         try {
+            // 校验密钥算法是否被 OpenSSL 支持（含 JDK 签名回退选项）
             OpenSslKeyMaterialProvider.validateKeyMaterialSupported(keyCertChain, key, keyPassword,
                                                                     supportJdkSignatureFallback);
+            // 初始化信任库、密钥材料与会话缓存（含 ResumptionController）
             sessionContext = newSessionContext(this, ctx, engines, trustCertCollection, trustManagerFactory,
                                                keyCertChain, key, keyPassword, keyManagerFactory, keyStore,
                                                sessionCacheSize, sessionTimeout, resumptionController,
@@ -228,6 +235,7 @@ public final class OpenSslClientContext extends OpenSslContext {
         }
     }
 
+    /** 返回与此客户端上下文关联的 OpenSSL 会话上下文。 */
     @Override
     public OpenSslSessionContext sessionContext() {
         return sessionContext;

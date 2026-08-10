@@ -25,9 +25,13 @@ import java.util.List;
 
 /**
  * Configuration for TLS1.3 certificate compression extension.
+ *
+ * <p>不可变的 TLS 1.3 证书压缩算法列表及方向（压缩/解压/双向）配置；
+ * 服务端算法优先级由 {@link Builder#addAlgorithm} 注册顺序决定。</p>
  */
 public final class OpenSslCertificateCompressionConfig implements
         Iterable<OpenSslCertificateCompressionConfig.AlgorithmConfig> {
+    /** 已注册的算法配置列表（不可变）。 */
     private final List<AlgorithmConfig> pairList;
 
     private OpenSslCertificateCompressionConfig(AlgorithmConfig... pairs) {
@@ -41,6 +45,7 @@ public final class OpenSslCertificateCompressionConfig implements
 
     /**
      * Creates a new {@link Builder} for a config.
+     * <p>创建流式构建器，按优先级顺序 {@link Builder#addAlgorithm} 注册算法。</p>
      *
      * @return a bulder
      */
@@ -50,8 +55,10 @@ public final class OpenSslCertificateCompressionConfig implements
 
     /**
      * Builder for an {@link OpenSslCertificateCompressionAlgorithm}.
+     * <p>构建 {@link OpenSslCertificateCompressionConfig}；内部列表在 {@link #build()} 前可变。</p>
      */
     public static final class Builder {
+        /** 待固化为配置的算法条目。 */
         private final List<AlgorithmConfig> algorithmList = new ArrayList<AlgorithmConfig>();
 
         private Builder() { }
@@ -66,6 +73,7 @@ public final class OpenSslCertificateCompressionConfig implements
          * @param mode indicates whether decompression support should be advertized, compression should be applied
          *                  for peers which support it, or both. This allows the caller to support one way compression
          *                  only.
+         *                  <p>{@link AlgorithmMode} 控制本端是否对外宣告压缩能力、解压能力或两者兼有。</p>
          * @return self.
          */
         public Builder addAlgorithm(OpenSslCertificateCompressionAlgorithm algorithm, AlgorithmMode mode) {
@@ -86,6 +94,7 @@ public final class OpenSslCertificateCompressionConfig implements
 
     /**
      * The configuration for algorithm.
+     * <p>单个压缩算法及其使用方向的不可变配对。</p>
      */
     public static final class AlgorithmConfig {
         private final OpenSslCertificateCompressionAlgorithm algorithm;
@@ -117,20 +126,24 @@ public final class OpenSslCertificateCompressionConfig implements
 
     /**
      * The usage mode of the {@link OpenSslCertificateCompressionAlgorithm}.
+     * <p>声明算法在本连接上用于压缩 outgoing 证书、解压 incoming 证书，或双向支持。</p>
      */
     public enum AlgorithmMode {
         /**
          * Compression supported and should be advertized.
+         * <p>本端发送证书时可压缩。</p>
          */
         Compress,
 
         /**
          * Decompression supported and should be advertized.
+         * <p>本端可解压对端压缩证书。</p>
          */
         Decompress,
 
         /**
          * Compression and Decompression are supported and both should be advertized.
+         * <p>压缩与解压能力均对外宣告。</p>
          */
         Both
     }

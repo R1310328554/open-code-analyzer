@@ -35,6 +35,10 @@ import io.netty.util.ReferenceCounted;
  *
  * <p>Instances are reference counted and must be released when no longer needed.
  *
+ * <p>表示 BoringSSL {@code SSL_CREDENTIAL} 的引用计数句柄，可替代传统「单证书链 + 单私钥」配置，
+ * 支持同一上下文挂载多凭证（RSA + ECDSA）、委托凭证、按凭证 OCSP/SCT 等。使用前须
+ * {@link #isAvailable()}；用毕须 {@link #release()}。</p>
+ *
  * @see <a href="https://commondatastorage.googleapis.com/chromium-boringssl-docs/ssl.h.html#SSL_CREDENTIAL_free">
  *      BoringSSL SSL_CREDENTIAL Documentation</a>
  */
@@ -42,6 +46,7 @@ public interface OpenSslCredential extends ReferenceCounted {
     /**
      * Check if the credentials API is supported.
      * @return {@code true} if the credentials API is supported, otherwise {@code false}.
+     * <p>需 netty-tcnative 可用且底层为 BoringSSL。</p>
      */
     static boolean isAvailable() {
         return OpenSsl.isAvailable() && OpenSsl.isBoringSSL();
@@ -68,15 +73,18 @@ public interface OpenSslCredential extends ReferenceCounted {
 
     /**
      * The type of SSL credential.
+     * <p>BoringSSL 凭证类型：标准 X.509 或 RFC 9345 委托凭证。</p>
      */
     enum CredentialType {
         /**
          * Standard X.509 certificate credential created with {@code SSL_CREDENTIAL_new_x509()}.
+         * <p>常规 leaf + 链 + 私钥凭证。</p>
          */
         X509,
 
         /**
          * Delegated credential created with {@code SSL_CREDENTIAL_new_delegated()}.
+         * <p>短期委托签名凭证（RFC 9345）。</p>
          *
          * @see <a href="https://datatracker.ietf.org/doc/html/rfc9345">RFC 9345 - Delegated Credentials for TLS</a>
          */

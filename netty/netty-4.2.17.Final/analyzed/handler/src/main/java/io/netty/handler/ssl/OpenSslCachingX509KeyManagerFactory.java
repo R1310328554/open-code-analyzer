@@ -36,15 +36,24 @@ import java.security.cert.X509Certificate;
  *
  * Because of the caching its important that the wrapped {@link KeyManagerFactory}s {@link X509KeyManager}s always
  * return the same {@link X509Certificate} chain and {@link PrivateKey} for the same alias.
+ *
+ * <p>包装现有 {@link KeyManagerFactory}，按 alias 缓存证书链与私钥解析结果，供 OpenSSL 后端复用，
+ * 避免每次握手重复 PEM 解析。缓存命中依赖同一 alias 始终返回相同链与密钥；若底层
+ * {@link X509KeyManager} 别名不稳定则不应启用缓存（见 {@link #newProvider(String)}）。</p>
  */
 public final class OpenSslCachingX509KeyManagerFactory extends KeyManagerFactory {
 
+    /** 每个 alias 最多缓存的 {@link OpenSslKeyMaterial} 条目数。 */
     private final int maxCachedEntries;
 
+    /** 使用默认缓存容量 1024 包装给定工厂。 */
     public OpenSslCachingX509KeyManagerFactory(final KeyManagerFactory factory) {
         this(factory, 1024);
     }
 
+    /**
+     * @param maxCachedEntries 缓存上限，必须为正数
+     */
     public OpenSslCachingX509KeyManagerFactory(final KeyManagerFactory factory, int maxCachedEntries) {
         super(new KeyManagerFactorySpi() {
             @Override
@@ -67,9 +76,13 @@ public final class OpenSslCachingX509KeyManagerFactory extends KeyManagerFactory
         this.maxCachedEntries = ObjectUtil.checkPositive(maxCachedEntries, "maxCachedEntries");
     }
 
+    /**
+     * 为 OpenSSL 上下文创建密钥材料提供者；在 alias 稳定时使用带 LRU 语义的缓存实现。
+     */
     OpenSslKeyMaterialProvider newProvider(String password) {
         X509KeyManager keyManager = ReferenceCountedOpenSslContext.chooseX509KeyManager(getKeyManagers());
         if ("sun.security.ssl.X509KeyManagerImpl".equals(keyManager.getClass().getName())) {
+            // JDK 默认 X509KeyManagerImpl 每次返回的 alias 顺序不稳定，缓存会导致错误 alias 命中
             // Don't do caching if X509KeyManagerImpl is used as the returned aliases are not stable and will change
             // between invocations.
             return new OpenSslKeyMaterialProvider(keyManager, password);

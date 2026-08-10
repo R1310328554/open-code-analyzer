@@ -19,6 +19,9 @@ import io.netty.util.IllegalReferenceCountException;
 
 /**
  * Non-public interface that adds a method to get the raw pointer to the underlying credential object.
+ *
+ * <p>包内接口：供 {@link ReferenceCountedOpenSslContext} 将 {@code SSL_CREDENTIAL*} 注册到
+ * {@code SSL_CTX}；引用计数为 0 时 {@link #credentialAddress()} 抛 {@link IllegalReferenceCountException}。</p>
  */
 interface OpenSslCredentialPointer extends OpenSslCredential {
     /**

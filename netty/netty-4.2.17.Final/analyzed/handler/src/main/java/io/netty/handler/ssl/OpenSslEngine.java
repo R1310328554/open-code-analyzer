@@ -27,8 +27,13 @@ import javax.net.ssl.SSLEngine;
  * <p>
  * This class will use a finalizer to ensure native resources are automatically cleaned up. To avoid finalizers
  * and manually release the native memory see {@link ReferenceCountedOpenSslEngine}.
+ *
+ * <p>基于 OpenSSL BIO 的 {@link SSLEngine} 非引用计数实现，逻辑在
+ * {@link ReferenceCountedOpenSslEngine}；{@link #finalize()} 在 GC 时释放泄漏的 {@code SSL*}。
+ * 生产环境应使用 {@link ReferenceCountedOpenSslEngine} 并显式 {@code refCnt} 管理。</p>
  */
 public final class OpenSslEngine extends ReferenceCountedOpenSslEngine {
+    /** 委托父类完成 native SSL* 与 BIO 初始化。 */
     OpenSslEngine(OpenSslContext context, ByteBufAllocator alloc, String peerHost, int peerPort,
                   boolean jdkCompatibilityMode, String endpointIdentificationAlgorithm,
                   List<SNIServerName> serverNames) {
@@ -36,6 +41,7 @@ public final class OpenSslEngine extends ReferenceCountedOpenSslEngine {
                 serverNames);
     }
 
+    /** GC 时通过 {@link OpenSsl#releaseIfNeeded} 回收未显式 shutdown 的 native 引擎。 */
     @Override
     @SuppressWarnings("FinalizeDeclaration")
     protected void finalize() throws Throwable {

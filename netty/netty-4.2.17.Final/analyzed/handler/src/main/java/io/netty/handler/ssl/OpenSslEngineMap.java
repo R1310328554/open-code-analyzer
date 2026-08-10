@@ -36,13 +36,21 @@ import java.util.concurrent.ConcurrentHashMap;
  * freed, hence never reused); such a husk is tiny, dwarfed by the native memory it marks, and is deliberately left as
  * a heap-inspectable leak signal. Do not reap it (e.g. via a {@code ReferenceQueue}): {@link #get(long)} already
  * yields {@code null} for a cleared reference, so reaping would only erase that signal.
+ *
+ * <p>将 native {@code SSL*} 地址映射到 {@link ReferenceCountedOpenSslEngine}，供 OpenSSL 回调
+ *（证书校验、私钥签名、证书压缩等）从裸指针反查 Java 引擎。使用 {@link WeakReference} 避免泄漏引擎
+ * 长期占用映射表；正常 {@link ReferenceCountedOpenSslEngine#shutdown()} 会 {@link #remove} 条目。
+ * 故意不清理已失效的 WeakReference「空壳」，以便堆分析时仍能发现 OPENSSL_REFCNT 泄漏。</p>
  */
 final class OpenSslEngineMap {
 
+    /** SSL* 地址 → 引擎弱引用；ConcurrentHashMap 供多线程回调并发访问。 */
     private final Map<Long, WeakReference<ReferenceCountedOpenSslEngine>> engines =
             new ConcurrentHashMap<Long, WeakReference<ReferenceCountedOpenSslEngine>>();
 
+    /** 引擎创建并 {@code SSL_new} 成功后注册；同一 SSL* 在 shutdown 前不得重复映射。 */
     void add(long ssl, ReferenceCountedOpenSslEngine engine) {
+        // 新 SSL_new() 指针尚未映射；复用仅发生在 shutdown remove 之后，泄漏引擎的 husk 不会复用指针
         // A fresh SSL_new() pointer maps to nothing yet: an SSL* is reused only after shutdown() removed its entry
         // (remove-before-freeSSL), and a husk survives only for a never-freed, never-reused SSL*.
         WeakReference<ReferenceCountedOpenSslEngine> prev =
@@ -50,10 +58,12 @@ final class OpenSslEngineMap {
         assert prev == null : "OpenSslEngineMap already had an entry for SSL* 0x" + Long.toHexString(ssl);
     }
 
+    /** {@link ReferenceCountedOpenSslEngine#shutdown()} 在 free SSL* 之前移除映射。 */
     void remove(long ssl) {
         engines.remove(ssl);
     }
 
+    /** 回调入口：按 SSL* 查找引擎；弱引用已清除时返回 {@code null}。 */
     ReferenceCountedOpenSslEngine get(long ssl) {
         WeakReference<ReferenceCountedOpenSslEngine> ref = engines.get(ssl);
         return ref == null ? null : ref.get();
