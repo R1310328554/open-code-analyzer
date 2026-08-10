@@ -15,23 +15,8 @@
     "saml-core-api/src/main/java/org/keycloak/saml/common/constants/WSTrustConstants.java",
     "saml-core-api/src/main/java/org/keycloak/saml/common/exceptions/ConfigurationException.java",
     "saml-core-api/src/main/java/org/keycloak/saml/common/exceptions/NotImplementedException.java",
-    "saml-core-api/src/main/java/org/keycloak/saml/common/exceptions/ParsingException.java",
-    "saml-core-api/src/main/java/org/keycloak/saml/common/exceptions/PicketLinkException.java",
-    "saml-core-api/src/main/java/org/keycloak/saml/common/exceptions/ProcessingException.java",
-    "saml-core-api/src/main/java/org/keycloak/saml/common/exceptions/TrustKeyConfigurationException.java",
-    "saml-core-api/src/main/java/org/keycloak/saml/common/exceptions/TrustKeyProcessingException.java",
-    "saml-core-api/src/main/java/org/keycloak/saml/common/exceptions/fed/AssertionExpiredException.java",
-    "saml-core-api/src/main/java/org/keycloak/saml/common/exceptions/fed/IssueInstantMissingException.java",
-    "saml-core-api/src/main/java/org/keycloak/saml/common/exceptions/fed/IssuerNotTrustedException.java",
-    "saml-core-api/src/main/java/org/keycloak/saml/common/exceptions/fed/SignatureValidationException.java",
-    "saml-core-api/src/main/java/org/keycloak/saml/common/exceptions/fed/WSTrustException.java",
-    "saml-core/src/main/java/org/keycloak/rotation/CompositeKeyLocator.java",
-    "saml-core/src/main/java/org/keycloak/rotation/HardcodedKeyLocator.java",
-    "saml-core/src/main/java/org/keycloak/rotation/KeyLocator.java",
-    "saml-core/src/main/java/org/keycloak/saml/BaseSAML2BindingBuilder.java",
-    "saml-core/src/main/java/org/keycloak/saml/RandomSecret.java",
-    "saml-core/src/main/java/org/keycloak/saml/SAML2ArtifactResolveRequestBuilder.java"
+    "saml-core-api/src/main/java/org/keycloak/saml/common/exceptions/ParsingException.java"
   ],
   "remaining_pending": 3328,
-  "done": 2640
+  "done": 2655
 }
