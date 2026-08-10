@@ -1,3 +1,5 @@
+// agent_loop_agent.go — 单轮 Agent 执行：桥接检查点、抢占/停止监视与事件处理。
+
 package core
 
 import (
@@ -10,8 +12,9 @@ import (
 	"ragflow/internal/harness/core/schema"
 )
 
-// ---- AgentLoop agent execution and event handling ----
+// ---- AgentLoop Agent 执行与事件处理 ----
 
+// setupBridgeStore 为 Runner 配置内存桥接检查点 Store（恢复时需真实 Store）。
 func (l *AgentLoop[T]) setupBridgeStore(spec *turnRunSpec[T], runOpts []RunOption) ([]RunOption, *bridgeStore, error) {
 	store := l.config.Store
 	if store == nil && spec.isResume {
@@ -30,7 +33,7 @@ func (l *AgentLoop[T]) setupBridgeStore(spec *turnRunSpec[T], runOpts []RunOptio
 	return runOpts, newBridgeStore(), nil
 }
 
-// watchPreempt runs for the lifetime of a single active turn.
+// watchPreempt 在单轮 active 期间监听抢占请求并取消 Agent。
 func (l *AgentLoop[T]) watchPreempt(done <-chan struct{}, agentCancelFunc AgentCancelFunc, preemptDone chan struct{}) {
 	preemptDoneClosed := false
 	for {
@@ -52,7 +55,7 @@ func (l *AgentLoop[T]) watchPreempt(done <-chan struct{}, agentCancelFunc AgentC
 	}
 }
 
-// watchStop runs for the lifetime of a single active turn.
+// watchStop 在单轮 active 期间监听 Stop 取消请求。
 func (l *AgentLoop[T]) watchStop(done <-chan struct{}, agentCancelFunc AgentCancelFunc, stoppedDone chan struct{}) {
 	stoppedClosed := false
 
@@ -77,6 +80,7 @@ func (l *AgentLoop[T]) watchStop(done <-chan struct{}, agentCancelFunc AgentCanc
 	}
 }
 
+// runAgentAndHandleEvents 启动 Runner、并发处理事件并协调抢占/停止。
 func (l *AgentLoop[T]) runAgentAndHandleEvents(
 	ctx context.Context,
 	agent Agent,
@@ -138,7 +142,7 @@ func (l *AgentLoop[T]) runAgentAndHandleEvents(
 		iter = runner.Run(ctx, spec.input.Messages, runOpts...)
 	}
 
-	// Wrap iterator to capture framework-level signals (CancelError, InterruptContexts)
+	// 包装迭代器以捕获框架级信号（CancelError、InterruptContexts）
 	srcIter := iter
 	proxyIter, proxyGen := NewAsyncIteratorPair[*AgentEvent]()
 	srcIterDone := make(chan struct{})
@@ -234,6 +238,7 @@ func (l *AgentLoop[T]) runAgentAndHandleEvents(
 	}
 }
 
+// applyFrameworkCapturedError 优先返回 handleErr，否则返回捕获的 CancelError。
 func (l *AgentLoop[T]) applyFrameworkCapturedError(handleErr error) error {
 	if handleErr != nil {
 		return handleErr
@@ -243,3 +248,5 @@ func (l *AgentLoop[T]) applyFrameworkCapturedError(handleErr error) error {
 	}
 	return nil
 }
+
+// 抢占或停止路径会先 finalizeCheckpoint 再返回；proxy 迭代器在 srcIter 关闭后关闭。

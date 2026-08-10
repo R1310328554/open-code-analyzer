@@ -1,3 +1,5 @@
+// cancel.go — Agent 取消状态机：CancelMode、cancelContext 与流/图中断集成。
+
 package core
 
 import (
@@ -11,7 +13,7 @@ import (
 	"ragflow/internal/harness/core/schema"
 )
 
-// ---- CancelMode ----
+// ---- 取消模式 CancelMode ----
 
 type CancelMode int
 
@@ -21,7 +23,7 @@ const (
 	CancelAfterToolCalls
 )
 
-// ---- CancelHandle ----
+// ---- 取消句柄 CancelHandle ----
 
 type CancelHandle struct{ wait func() error }
 
@@ -75,7 +77,7 @@ var (
 	ErrStreamCanceled error = &StreamCanceledError{}
 )
 
-// ---- cancelContext state machine ----
+// ---- cancelContext 取消状态机 ----
 
 const (
 	stRunning          int32 = 0
@@ -112,6 +114,7 @@ type cancelContext struct {
 	interruptFuncs      []func(...any)
 }
 
+// newCancelContext 创建 root cancelContext 及各类 channel。
 func newCancelContext() *cancelContext {
 	return &cancelContext{
 		cancelChan: make(chan struct{}), immediateChan: make(chan struct{}),
@@ -197,6 +200,7 @@ func (cc *cancelContext) triggerCancel(m CancelMode) {
 		close(cc.cancelChan)
 	}
 }
+// triggerImmediate 升级为 Immediate 并 sendInterrupt。
 func (cc *cancelContext) triggerImmediate() {
 	atomic.StoreInt32(&cc.escalated, 1)
 	cc.setMode(CancelImmediate)
@@ -222,8 +226,8 @@ func (cc *cancelContext) sendInterrupt() bool {
 		fn()
 	}
 
-	// Grace period for recursive cancellation with agent-tool descendants.
-	// This is best-effort; cancel() itself returns immediately, the grace wait
+	// 递归取消且存在 agent-tool 子节点时的宽限期（best-effort）。
+	// cancel() 本身立即返回，宽限等待仅为子 Agent 观测信号
 	// is advisory for the sub-agent to observe the cancellation signal.
 	if cc.isRecursive() && atomic.LoadInt32(&cc.agentToolDescendant) == 1 {
 		select {
@@ -239,6 +243,7 @@ func (cc *cancelContext) markAgentToolDescendant() {
 	}
 }
 
+// deriveAgentToolCancelContext 为 agent-tool 子 Agent 派生子 cancelContext。
 func (cc *cancelContext) deriveAgentToolCancelContext(ctx context.Context) *cancelContext {
 	if cc == nil {
 		return nil
@@ -247,7 +252,7 @@ func (cc *cancelContext) deriveAgentToolCancelContext(ctx context.Context) *canc
 	child.root = false
 	child.parent = cc
 
-	// Propagate cancel signal to child (goroutine exits cleanly when any case fires)
+	// 向子 cancelContext 传播 cancel 信号
 	go func() {
 		select {
 		case <-cc.cancelChan:
@@ -268,7 +273,7 @@ func (cc *cancelContext) deriveAgentToolCancelContext(ctx context.Context) *canc
 		}
 	}()
 
-	// Propagate immediate cancel signal to child (goroutine exits cleanly when any case fires)
+	// 向子 cancelContext 传播 immediate 取消信号
 	go func() {
 		select {
 		case <-cc.immediateChan:
@@ -291,6 +296,7 @@ func (cc *cancelContext) deriveAgentToolCancelContext(ctx context.Context) *canc
 
 	return child
 }
+// buildCancelFunc 构造 AgentCancelFunc，处理合并模式与超时。
 func (cc *cancelContext) buildCancelFunc() AgentCancelFunc {
 	join := func(a, b CancelMode) CancelMode {
 		if a == CancelImmediate || b == CancelImmediate {
@@ -359,7 +365,7 @@ func (cc *cancelContext) buildCancelFunc() AgentCancelFunc {
 		if cc.getMode() == CancelImmediate {
 			needImmediate = true
 		} else if req.Timeout != nil && *req.Timeout > 0 {
-			// Use minimum (earliest) non-zero deadline so a later cancel cannot
+			// 取最早非零 deadline，后续 cancel 不能延长已有超时
 			// extend an earlier timeout.
 			nextDeadline := time.Now().Add(*req.Timeout).UnixNano()
 			cc.setDeadlineMinUnixNano(nextDeadline)
@@ -439,10 +445,11 @@ func (cc *cancelContext) agentToolSeen() bool {
 	return cc != nil && atomic.LoadInt32(&cc.agentToolDescendant) == 1
 }
 
-// ---- Context propagation ----
+// ---- 上下文传播 ----
 
 type cancelCtxKey struct{}
 
+// withCancelContext 将 cancelContext 注入 ctx。
 func withCancelContext(ctx context.Context, cc *cancelContext) context.Context {
 	if cc == nil {
 		return ctx
@@ -450,6 +457,7 @@ func withCancelContext(ctx context.Context, cc *cancelContext) context.Context {
 	return context.WithValue(ctx, cancelCtxKey{}, cc)
 }
 
+// getCancelContext 从 ctx 取出 cancelContext。
 func getCancelContext(ctx context.Context) *cancelContext {
 	if v := ctx.Value(cancelCtxKey{}); v != nil {
 		return v.(*cancelContext)
@@ -457,8 +465,9 @@ func getCancelContext(ctx context.Context) *cancelContext {
 	return nil
 }
 
-// ---- Iterator wrapper ----
+// ---- 迭代器包装 ----
 
+// wrapIterWithCancelCtx 包装事件迭代器以注入取消语义。
 func wrapIterWithCancelCtx[M MessageType](iter *AsyncIterator[*TypedAgentEvent[M]], cc *cancelContext) *AsyncIterator[*TypedAgentEvent[M]] {
 	if cc == nil {
 		return iter
@@ -470,8 +479,8 @@ func wrapIterWithCancelCtx[M MessageType](iter *AsyncIterator[*TypedAgentEvent[M
 		for {
 			event, ok := iter.Next()
 			if !ok {
-				// Inner iterator closed. If cancel was requested but no interrupt
-				// event was produced (e.g., the goroutine never started), emit
+				// 内层迭代器关闭：若已请求 cancel 但未产生 interrupt 事件
+				// 则 emit CancelError 供调用方感知取消
 				// a CancelError so the caller can detect the cancellation.
 				if cc.isRoot() && cc.shouldCancel() {
 					if err, ok := cc.createAndMarkHandled(); ok {
@@ -491,8 +500,8 @@ func wrapIterWithCancelCtx[M MessageType](iter *AsyncIterator[*TypedAgentEvent[M
 			}
 			gen.Send(event)
 		}
-		// Mark done on cancellation or when requested (not on normal completion,
-		// to avoid prematurely marking a shared cancelContext for a sub-agent
+		// 取消或应取消时 markDone（正常完成不 mark，避免误伤共享 cancelContext）
+		// 子 Agent 自然结束时共享 cancelContext 仍可复用
 		// that finishes naturally).
 		if endedByCancel || cc.shouldCancel() {
 			cc.markDone()
@@ -520,6 +529,7 @@ func (m *cancelMonitoredModel[M]) BindTools(tools []*schema.ToolInfo) error {
 	return m.inner.BindTools(tools)
 }
 
+// wrapStreamWithCancel 包装 LLM 流，immediate 时发送 ErrStreamCanceled。
 func wrapStreamWithCancel[T any](s *schema.StreamReader[T], cc *cancelContext) *schema.StreamReader[T] {
 	if cc == nil {
 		return s
@@ -583,22 +593,22 @@ func wrapStreamWithCancel[T any](s *schema.StreamReader[T], cc *cancelContext) *
 	return r
 }
 
-// ---- Graph interrupt integration ----
+// ---- 图级中断集成 ----
 
-// InterruptSignalInfo carries information from a graph interrupt.
+// InterruptSignalInfo 图中断信号与原始错误。
 type InterruptSignalInfo struct {
 	Signal    *InterruptSignal
 	OrigError error
 }
 
-// CancelFromGraphInfo carries the cancel config from graph-level interrupt.
+// CancelFromGraphInfo 图级中断携带的取消配置。
 type CancelFromGraphInfo struct {
 	Mode      CancelMode
 	Timeout   time.Duration
 	Recursive bool
 }
 
-// SetGraphInterruptFunc registers a callback invoked on graph interrupt signal.
+// SetGraphInterruptFunc 注册图中断时调用的回调。
 func (cc *cancelContext) SetGraphInterruptFunc(fn func(...any)) {
 	if cc == nil {
 		return
@@ -608,7 +618,7 @@ func (cc *cancelContext) SetGraphInterruptFunc(fn func(...any)) {
 	cc.interruptFuncs = append(cc.interruptFuncs, fn)
 }
 
-// InterruptFromGraph coordinates a graph interrupt with the cancel state machine.
+// InterruptFromGraph 协调图中断与 cancel 状态机。
 func (cc *cancelContext) InterruptFromGraph(ctx context.Context, info *CancelFromGraphInfo) bool {
 	if cc == nil || info == nil {
 		return false
@@ -633,3 +643,5 @@ func (cc *cancelContext) InterruptFromGraph(ctx context.Context, info *CancelFro
 	}
 	return true
 }
+
+// cancelMonitoredModel 包装 Model.Stream；stCancelHandled 表示取消已被消费。

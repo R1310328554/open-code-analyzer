@@ -1,3 +1,5 @@
+// agent_loop_push.go — AgentLoop Push 入队：普通/抢占/策略三种路径。
+
 package core
 
 import (
@@ -6,8 +8,9 @@ import (
 	"time"
 )
 
-// ---- AgentLoop push operations ----
+// ---- AgentLoop Push 操作 ----
 
+// appendLate 循环已停止时将项记入 lateItems（TakeLateItems 前可追加）。
 func (l *AgentLoop[T]) appendLate(item T) {
 	l.lateMu.Lock()
 	defer l.lateMu.Unlock()
@@ -17,8 +20,8 @@ func (l *AgentLoop[T]) appendLate(item T) {
 	l.lateItems = append(l.lateItems, item)
 }
 
-// Push adds an item to the loop's buffer for processing.
-// Returns false if the loop has stopped. When preemptive, returns an ack channel.
+// Push 将元素加入循环缓冲等待处理。
+// 循环已停止返回 false；抢占模式返回 ack 通道。
 func (l *AgentLoop[T]) Push(item T, opts ...PushOption[T]) (bool, <-chan struct{}) {
 	cfg := &pushConfig[T]{}
 	for _, opt := range opts {
@@ -32,13 +35,14 @@ func (l *AgentLoop[T]) Push(item T, opts ...PushOption[T]) (bool, <-chan struct{
 	return l.pushWithConfig(item, cfg)
 }
 
-// pushWithStrategy snapshots the current target turn while the strategy decides
-// how to enqueue the item.
+// pushWithStrategy 快照目标轮后由策略决定如何入队与是否抢占
+// （策略可返回新的 PushOption）。
 //
-// When the loop is idle (no active turn), snapshot.ctx is nil and the strategy
-// receives context.TODO() — it cannot observe caller cancellation or deadlines
-// at that point. If the strategy needs the caller's context, use the Push overload
+// 空闲时 snapshot.ctx 为 nil，策略收到 context.TODO()
+// 无法感知调用方取消或 deadline；需 ctx 时请用闭包传入
+// （尚未提供带 ctx 的 Push 重载）。
 // that accepts ctx (not yet available; pass via closure instead).
+// pushWithStrategy 执行自定义 pushStrategy 后再走抢占或普通入队。
 func (l *AgentLoop[T]) pushWithStrategy(item T, cfg *pushConfig[T]) (bool, <-chan struct{}) {
 	strategy := cfg.pushStrategy
 
@@ -99,6 +103,7 @@ func (l *AgentLoop[T]) pushWithStrategy(item T, cfg *pushConfig[T]) (bool, <-cha
 	return true, ack
 }
 
+// pushWithConfig 按 cfg.preempt 决定是否发起抢占。
 func (l *AgentLoop[T]) pushWithConfig(item T, cfg *pushConfig[T]) (bool, <-chan struct{}) {
 	if atomic.LoadInt32(&l.stopped) != 0 {
 		l.appendLate(item)
@@ -141,3 +146,5 @@ func (l *AgentLoop[T]) pushWithConfig(item T, cfg *pushConfig[T]) (bool, <-chan 
 	}
 	return true, nil
 }
+
+// 未启动时 ack 立即 close；preemptDelay 在 goroutine 中延迟 requestPreempt。

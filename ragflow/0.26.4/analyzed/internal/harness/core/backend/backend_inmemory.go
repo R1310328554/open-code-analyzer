@@ -1,3 +1,5 @@
+// backend_inmemory.go — InMemoryBackend：内存 map 实现 Backend，用于测试与沙箱。
+
 package backend
 
 import (
@@ -8,8 +10,8 @@ import (
 	"time"
 )
 
-// InMemoryBackend implements Backend using in-memory storage.
-// Useful for testing and sandboxed environments.
+// InMemoryBackend 用内存 map 实现 Backend。
+// 适用于单元测试与沙箱环境。
 type InMemoryBackend struct {
 	mu    sync.RWMutex
 	files map[string]*memFile
@@ -21,11 +23,13 @@ type memFile struct {
 	isDir   bool
 }
 
+// NewInMemoryBackend 初始化根目录 ""/"." 的空后端。
 func NewInMemoryBackend() *InMemoryBackend {
 	root := &memFile{content: "", modTime: time.Now(), isDir: true}
 	return &InMemoryBackend{files: map[string]*memFile{"": root, ".": root}}
 }
 
+// Read 读取文件内容；目录或不存在返回错误。
 func (b *InMemoryBackend) Read(path string) (string, error) {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
@@ -39,6 +43,7 @@ func (b *InMemoryBackend) Read(path string) (string, error) {
 	return f.content, nil
 }
 
+// Write 创建或覆盖文件。
 func (b *InMemoryBackend) Write(path, content string) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
@@ -46,6 +51,7 @@ func (b *InMemoryBackend) Write(path, content string) error {
 	return nil
 }
 
+// Edit 替换文件中首次出现的 old 文本。
 func (b *InMemoryBackend) Edit(path, old, new string) error {
 	content, err := b.Read(path)
 	if err != nil {
@@ -58,6 +64,7 @@ func (b *InMemoryBackend) Edit(path, old, new string) error {
 	return b.Write(path, updated)
 }
 
+// Glob 按 filepath.Match 模式匹配路径。
 func (b *InMemoryBackend) Glob(pattern string) ([]string, error) {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
@@ -70,6 +77,7 @@ func (b *InMemoryBackend) Glob(pattern string) ([]string, error) {
 	return matches, nil
 }
 
+// Grep 在文件中搜索子串并返回 路径:行号:内容 格式。
 func (b *InMemoryBackend) Grep(pattern, path string) (string, error) {
 	content, err := b.Read(path)
 	if err != nil {
@@ -84,6 +92,7 @@ func (b *InMemoryBackend) Grep(pattern, path string) (string, error) {
 	return strings.Join(results, "\n"), nil
 }
 
+// Stat 返回文件或目录元信息。
 func (b *InMemoryBackend) Stat(path string) (*FileInfo, error) {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
@@ -121,10 +130,12 @@ func (b *InMemoryBackend) List(dir string) ([]FileInfo, error) {
 	return results, nil
 }
 
+// Execute 模拟 Shell 执行（返回占位字符串）。
 func (b *InMemoryBackend) Execute(command string) (string, error) {
 	return fmt.Sprintf("executed (in-memory): %s", command), nil
 }
 
+// ReadBytes 按 rune 偏移与长度读取字节切片。
 func (b *InMemoryBackend) ReadBytes(path string, offset, limit int64) ([]byte, error) {
 	content, err := b.Read(path)
 	if err != nil {
@@ -150,6 +161,7 @@ func (b *InMemoryBackend) ReadBytes(path string, offset, limit int64) ([]byte, e
 	return []byte(string(runes[offset:end])), nil
 }
 
+// MimeType 按扩展名推断 MIME 类型。
 func (b *InMemoryBackend) MimeType(path string) string {
 	ext := strings.ToLower(filepath.Ext(path))
 	switch ext {

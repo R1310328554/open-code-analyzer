@@ -1,3 +1,6 @@
+// agent_loop.go — AgentLoop 核心：结构体、生命周期（Run/Stop/Wait）与退出清理。
+// 配置见 agent_loop_config.go；执行逻辑分散在 run/agent/push/checkpoint 等文件。
+
 package core
 
 import (
@@ -8,18 +11,18 @@ import (
 	"time"
 )
 
-// ---- AgentLoop core: struct, lifecycle, cleanup ----
+// ---- AgentLoop 核心：结构体、生命周期与清理 ----
 //
-// Configuration types (AgentLoopConfig, preemptController, stopController, etc.)
-// are defined in turn_loop_config.go, turn_loop_preempt.go, and turn_loop_stop.go.
-// Execution logic is split into:
-//   - turn_loop_run.go     (planTurn, run, defaultTurnLoopOnAgentEvents)
-//   - turn_loop_agent.go   (runAgentAndHandleEvents, watchPreempt, watchStop, setupBridgeStore)
-//   - turn_loop_push.go    (Push, pushWithStrategy, pushWithConfig, appendLate)
-//   - turn_loop_checkpoint.go (checkpoint serialization, tryLoadCheckpoint)
+// 配置类型（AgentLoopConfig、preemptController、stopController 等）
+// 定义于 agent_loop_config.go、agent_loop_preempt.go、agent_loop_stop.go。
+// 执行逻辑拆分于：
+//   - agent_loop_run.go     （planTurn、run、defaultTurnLoopOnAgentEvents）
+//   - agent_loop_agent.go   （runAgentAndHandleEvents、watchPreempt、watchStop、setupBridgeStore）
+//   - agent_loop_push.go    （Push、pushWithStrategy、pushWithConfig、appendLate）
+//   - agent_loop_checkpoint.go （检查点序列化、tryLoadCheckpoint）
 
-// AgentLoop executes agent turns in a push-based loop.
-// See AgentLoopConfig for configuration details and AgentLoopState for results.
+// AgentLoop 在 push 驱动的循环中执行 Agent 轮次。
+// 配置见 AgentLoopConfig；退出结果见 AgentLoopState。
 type AgentLoop[T any] struct {
 	config AgentLoopConfig[T]
 
@@ -57,7 +60,7 @@ type AgentLoop[T any] struct {
 	lateSealed bool
 }
 
-// NewAgentLoop creates a new AgentLoop without starting it.
+// NewAgentLoop 创建 AgentLoop 实例，不自动启动。
 func NewAgentLoop[T any](cfg AgentLoopConfig[T]) *AgentLoop[T] {
 	if cfg.GenInput == nil {
 		panic("agentcore: NewAgentLoop: GenInput is required")
@@ -81,6 +84,7 @@ func NewAgentLoop[T any](cfg AgentLoopConfig[T]) *AgentLoop[T] {
 	return l
 }
 
+// start 通过 sync.Once 保证只启动一次 run goroutine。
 func (l *AgentLoop[T]) start(ctx context.Context) {
 	l.runOnce.Do(func() {
 		atomic.StoreInt32(&l.started, 1)
@@ -88,12 +92,12 @@ func (l *AgentLoop[T]) start(ctx context.Context) {
 	})
 }
 
-// Run starts the loop's processing goroutine. It is non-blocking.
+// Run 启动后台处理 goroutine，非阻塞。
 func (l *AgentLoop[T]) Run(ctx context.Context) {
 	l.start(ctx)
 }
 
-// Stop signals the loop to stop and returns immediately (non-blocking).
+// Stop 发出停止信号并立即返回（非阻塞）。
 func (l *AgentLoop[T]) Stop(opts ...StopOption) {
 	cfg := &stopConfig{}
 	for _, opt := range opts {
@@ -112,7 +116,7 @@ func (l *AgentLoop[T]) Stop(opts ...StopOption) {
 		l.finishStopCommit()
 	}
 
-	// If a stop timeout is configured, force-stop after the timeout
+	// 若配置了停止超时，超时后强制 commitStop
 	if cfg.timeout != nil && *cfg.timeout > 0 {
 		go func() {
 			select {
@@ -124,6 +128,7 @@ func (l *AgentLoop[T]) Stop(opts ...StopOption) {
 	}
 }
 
+// commitStop 尝试 commit 停止并关闭 buffer。
 func (l *AgentLoop[T]) commitStop() {
 	if !l.stopCtrl.commit() {
 		return
@@ -131,24 +136,25 @@ func (l *AgentLoop[T]) commitStop() {
 	l.finishStopCommit()
 }
 
+// finishStopCommit 标记 stopped 并关闭 turnBuffer。
 func (l *AgentLoop[T]) finishStopCommit() {
 	atomic.StoreInt32(&l.stopped, 1)
 	l.buffer.Close()
 }
 
-// Wait blocks until the loop exits and returns the result.
+// Wait 阻塞至循环退出并返回 AgentLoopState。
 func (l *AgentLoop[T]) Wait() *AgentLoopState[T] {
 	<-l.done
 	return l.result
 }
 
-// shouldSaveCheckpoint determines whether a turn-loop checkpoint should be saved.
-// Checkpoints are saved when:
-//  1. A stop was committed AND exit was caused by stop (runErr==nil, CancelError, or capturedCancelErr).
-//  2. A business interrupt occurred (InterruptError or interruptContexts).
-//  3. Checkpoint is not skipped (skipCheckpoint not set), not idle, and store is available.
+// shouldSaveCheckpoint 判断是否应保存轮次循环检查点。
+// 满足以下任一条件时保存检查点：
+//  1. 已 commit 停止且退出由停止引起（runErr==nil、CancelError 或 capturedCancelErr）。
+//  2. 发生业务中断（InterruptError 或 interruptContexts）。
+//  3. 未跳过检查点、非空闲且 Store 可用。
 //
-// On normal completion (runErr==nil, no stop committed), no checkpoint is saved.
+// 正常完成（runErr==nil 且未 commit 停止）时不保存检查点。
 func (l *AgentLoop[T]) shouldSaveCheckpoint() bool {
 	if l.config.Store == nil || l.config.CheckpointID == "" {
 		return false
@@ -165,6 +171,7 @@ func (l *AgentLoop[T]) shouldSaveCheckpoint() bool {
 	return (l.stopCtrl.isCommitted() && exitCausedByStop) || businessInterrupt
 }
 
+// cleanup 在 run 退出时组装 AgentLoopState、保存/删除检查点并关闭 done。
 func (l *AgentLoop[T]) cleanup(ctx context.Context) {
 	atomic.StoreInt32(&l.stopped, 1)
 
@@ -214,3 +221,5 @@ func (l *AgentLoop[T]) cleanup(ctx context.Context) {
 	l.buffer.Close()
 	close(l.done)
 }
+
+// lateItems 在 TakeLateItems 调用后密封；Stop 超时 goroutine 与 done 竞争以避免泄漏。

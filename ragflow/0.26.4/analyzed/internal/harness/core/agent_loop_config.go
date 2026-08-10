@@ -1,3 +1,5 @@
+// agent_loop_config.go — AgentLoop 配置、停止/抢占/推送选项及检查点相关类型。
+
 package core
 
 import (
@@ -6,7 +8,7 @@ import (
 	"time"
 )
 
-// stopPhase tracks the stop commitment lifecycle.
+// stopPhase 停止承诺生命周期阶段。
 type stopPhase uint8
 
 const (
@@ -15,7 +17,7 @@ const (
 	stopCommitted
 )
 
-// preemptTurnPhase tracks the preempt turn lifecycle.
+// preemptTurnPhase 抢占轮次生命周期阶段。
 type preemptTurnPhase uint8
 
 const (
@@ -37,7 +39,7 @@ func (p preemptTurnPhase) String() string {
 	}
 }
 
-// preemptTurnSnapshot captures the turn state at Push time.
+// preemptTurnSnapshot Push 时刻的目标轮次快照。
 type preemptTurnSnapshot struct {
 	hasTargetTurn bool
 	turnID        uint64
@@ -45,12 +47,13 @@ type preemptTurnSnapshot struct {
 	tc            any
 }
 
-// cancelRequestState holds cancel configuration with optional deadline.
+// cancelRequestState 取消请求配置，含可选超时截止。
 type cancelRequestState struct {
 	cfg             cancelConfig
 	timeoutDeadline *time.Time
 }
 
+// parseCancelOptions 解析 CancelOption 列表为 cancelConfig。
 func parseCancelOptions(opts ...CancelOption) cancelConfig {
 	cfg := cancelConfig{Mode: CancelImmediate}
 	for _, opt := range opts {
@@ -59,6 +62,7 @@ func parseCancelOptions(opts ...CancelOption) cancelConfig {
 	return cfg
 }
 
+// newCancelRequestState 构造带截止时间的取消请求状态。
 func newCancelRequestState(opts []CancelOption, now time.Time) cancelRequestState {
 	cfg := parseCancelOptions(opts...)
 	var deadline *time.Time
@@ -74,6 +78,7 @@ func newCancelRequestState(opts []CancelOption, now time.Time) cancelRequestStat
 	}
 }
 
+// merge 合并后续取消选项（Immediate 优先，取最早 deadline）。
 func (s *cancelRequestState) merge(opts []CancelOption, now time.Time) {
 	if opts == nil {
 		return
@@ -97,6 +102,7 @@ func (s *cancelRequestState) merge(opts []CancelOption, now time.Time) {
 	}
 }
 
+// cancelOptions 将内部状态转为 CancelOption 切片供 Agent 取消。
 func (s cancelRequestState) cancelOptions(now time.Time) []CancelOption {
 	cfg := s.cfg
 	if cfg.Mode != CancelImmediate && s.timeoutDeadline != nil {
@@ -119,7 +125,7 @@ func (s cancelRequestState) cancelOptions(now time.Time) []CancelOption {
 	return opts
 }
 
-// AgentLoopConfig is the configuration for creating a AgentLoop.
+// AgentLoopConfig 创建 AgentLoop 的配置。
 type AgentLoopConfig[T any] struct {
 	GenInput func(ctx context.Context, loop *AgentLoop[T], items []T) (*GenInputResult[T], error)
 
@@ -134,7 +140,7 @@ type AgentLoopConfig[T any] struct {
 	CheckpointID string
 }
 
-// GenInputResult contains the result of GenInput processing.
+// GenInputResult GenInput 回调的返回结果。
 type GenInputResult[T any] struct {
 	RunCtx    context.Context
 	Input     *AgentInput
@@ -143,7 +149,7 @@ type GenInputResult[T any] struct {
 	Remaining []T
 }
 
-// GenResumeResult contains the result of GenResume processing.
+// GenResumeResult GenResume 回调的返回结果。
 type GenResumeResult[T any] struct {
 	RunCtx       context.Context
 	RunOpts      []RunOption
@@ -168,7 +174,7 @@ type turnPlan[T any] struct {
 	spec      *turnRunSpec[T]
 }
 
-// AgentLoopState is returned when AgentLoop exits.
+// AgentLoopState AgentLoop 退出时的最终状态。
 type AgentLoopState[T any] struct {
 	ExitReason          error
 	UnhandledItems      []T
@@ -179,7 +185,7 @@ type AgentLoopState[T any] struct {
 	TakeLateItems       func() []T
 }
 
-// TurnContext provides per-turn context to the OnAgentEvents callback.
+// TurnContext 为 OnAgentEvents 提供单轮上下文（Consumed、Preempted、Stopped 等）。
 type TurnContext[T any] struct {
 	Loop      *AgentLoop[T]
 	Consumed  []T
@@ -202,7 +208,7 @@ type agentLoopPendingResume[T any] struct {
 	resumeBytes []byte
 }
 
-// SafePoint describes at which boundary the agent may be cancelled.
+// SafePoint 描述 Agent 可被取消的安全边界。
 type SafePoint int
 
 const (
@@ -237,13 +243,13 @@ type pushConfig[T any] struct {
 	pushStrategy    func(context.Context, *TurnContext[T]) []PushOption[T]
 }
 
-// StopOption is an option for Stop().
+// StopOption Stop() 的可选参数。
 type StopOption func(*stopConfig)
 
-// PushOption is an option for Push().
+// PushOption Push() 的可选参数。
 type PushOption[T any] func(*pushConfig[T])
 
-// InterruptError signals a business interrupt during a turn.
+// InterruptError 表示轮次内业务中断。
 type InterruptError struct {
 	InterruptContexts []*InterruptCtx
 }
@@ -252,7 +258,7 @@ func (e *InterruptError) Error() string {
 	return fmt.Sprintf("agent interrupted: %d context(s)", len(e.InterruptContexts))
 }
 
-// stopDecision communicates the result of a stop request.
+// stopDecision Stop 请求的处理结果（是否 commit、是否唤醒 idle）。
 type stopDecision struct {
 	commit   bool
 	wakeIdle bool
@@ -262,6 +268,7 @@ type stopCancelRequest struct {
 	cancel cancelRequestState
 }
 
+// newStopCancelRequest 构造 Stop 路径的取消请求。
 func newStopCancelRequest(opts []CancelOption, now time.Time) *stopCancelRequest {
 	return &stopCancelRequest{cancel: newCancelRequestState(opts, now)}
 }
@@ -280,12 +287,13 @@ func (r *stopCancelRequest) cancelOptions(now time.Time) []CancelOption {
 	return r.cancel.cancelOptions(now)
 }
 
-// preemptRequest holds pending preempt state.
+// preemptRequest 待处理的抢占请求（含 ack 通道）。
 type preemptRequest struct {
 	cancel   cancelRequestState
 	ackChans []chan struct{}
 }
 
+// newPreemptRequest 构造抢占请求并注册 ack 通道。
 func newPreemptRequest(ack chan struct{}, opts []CancelOption, now time.Time) *preemptRequest {
 	req := &preemptRequest{cancel: newCancelRequestState(opts, now)}
 	if ack != nil {
@@ -294,6 +302,7 @@ func newPreemptRequest(ack chan struct{}, opts []CancelOption, now time.Time) *p
 	return req
 }
 
+// ack 关闭所有 ack 通道，通知 Push 调用方抢占已处理。
 func (r *preemptRequest) ack() {
 	if r == nil {
 		return
@@ -317,3 +326,5 @@ func (r *preemptRequest) cancelOptions(now time.Time) []CancelOption {
 	}
 	return r.cancel.cancelOptions(now)
 }
+
+// SafePoint.toCancelMode 映射为 CancelAfterChatModel/AfterToolCalls；agentLoopPendingResume 在恢复轮合并 interrupted/unhandled/newItems。

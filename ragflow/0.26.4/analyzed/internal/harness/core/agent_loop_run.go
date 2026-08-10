@@ -1,3 +1,5 @@
+// agent_loop_run.go — AgentLoop 主循环：planTurn、run 与默认事件消费。
+
 package core
 
 import (
@@ -7,8 +9,9 @@ import (
 	"time"
 )
 
-// ---- AgentLoop main run loop and turn planning ----
+// ---- AgentLoop 主循环与轮次规划 ----
 
+// planTurn 调用 GenInput/GenResume 组装 turnPlan 与 turnRunSpec。
 func (l *AgentLoop[T]) planTurn(
 	ctx context.Context,
 	isResume bool,
@@ -72,6 +75,7 @@ func (l *AgentLoop[T]) planTurn(
 	}, nil
 }
 
+// defaultTurnLoopOnAgentEvents 默认消费事件直至结束或首个 Err。
 func defaultTurnLoopOnAgentEvents[T any](_ context.Context, _ *TurnContext[T], events *AsyncIterator[*AgentEvent]) error {
 	for {
 		event, ok := events.Next()
@@ -85,6 +89,7 @@ func defaultTurnLoopOnAgentEvents[T any](_ context.Context, _ *TurnContext[T], e
 	return nil
 }
 
+// run 主循环：加载检查点→取项→规划→PrepareAgent→runAgentAndHandleEvents。
 func (l *AgentLoop[T]) run(ctx context.Context) {
 	defer l.cleanup(ctx)
 
@@ -93,7 +98,7 @@ func (l *AgentLoop[T]) run(ctx context.Context) {
 		return
 	}
 
-	// Monitor context cancellation: close the buffer so that a blocking
+	// 监听 ctx 取消：关闭 buffer 以唤醒阻塞的 Receive
 	// Receive() unblocks.
 	go func() {
 		select {
@@ -143,7 +148,7 @@ func (l *AgentLoop[T]) run(ctx context.Context) {
 
 				first, ok = l.buffer.Receive()
 
-				// Drain the timer channel to avoid race with commitStop
+				// 排空 timer 通道避免与 commitStop 竞态
 				if !idleTimer.Stop() {
 					select {
 					case <-idleTimer.C:
@@ -160,7 +165,7 @@ func (l *AgentLoop[T]) run(ctx context.Context) {
 					continue
 				}
 
-				// If commitStop fired via idle timer, exit
+				// idle 定时器触发 commitStop 则退出循环
 				if atomic.LoadInt32(&l.stopped) != 0 {
 					return
 				}
@@ -242,7 +247,7 @@ func (l *AgentLoop[T]) run(ctx context.Context) {
 
 		if runErr != nil {
 			if l.capturedCancelErr != nil || l.interruptContexts != nil {
-				// Assignment (not append) is intentional: only the interrupting
+				// 故意赋值而非 append：仅保留中断轮的 consumed 项
 				// turn's consumed items matter — the loop exits immediately after.
 				l.interruptedItems = append([]T{}, plan.spec.consumed...)
 			}
@@ -250,7 +255,7 @@ func (l *AgentLoop[T]) run(ctx context.Context) {
 			return
 		}
 
-		// Business interrupt: agent produced an Interrupted action
+		// 业务中断：Agent 产生 Interrupted action
 		if l.interruptContexts != nil {
 			l.interruptedItems = append([]T{}, plan.spec.consumed...)
 			l.runErr = &InterruptError{InterruptContexts: l.interruptContexts}
@@ -258,3 +263,5 @@ func (l *AgentLoop[T]) run(ctx context.Context) {
 		}
 	}
 }
+
+// pendingResume 路径合并 buffer 中晚到的 Push；plan 失败或 stop 时将 pushBack 还回队首。

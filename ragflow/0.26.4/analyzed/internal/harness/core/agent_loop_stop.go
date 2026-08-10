@@ -1,3 +1,5 @@
+// agent_loop_stop.go — stopController 与 Stop/Push 选项构造函数。
+
 package core
 
 import (
@@ -6,7 +8,7 @@ import (
 	"time"
 )
 
-// stopController owns global Stop state and optional active-turn cancel requests.
+// stopController 管理全局 Stop 状态与 active 轮取消请求。
 type stopController struct {
 	mu sync.Mutex
 
@@ -23,10 +25,12 @@ type stopController struct {
 	closed bool
 }
 
+// newStopController 创建 open 阶段的停止控制器。
 func newStopController() *stopController {
 	return &stopController{notify: make(chan struct{}, 1)}
 }
 
+// requestStop 处理 Stop 请求：idle 等待、commit 或合并 agent 取消。
 func (c *stopController) requestStop(cfg *stopConfig) stopDecision {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -63,6 +67,7 @@ func (c *stopController) requestStop(cfg *stopConfig) stopDecision {
 	return stopDecision{commit: committed}
 }
 
+// commit 将阶段设为 stopCommitted。
 func (c *stopController) commit() bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -78,12 +83,14 @@ func (c *stopController) commitLocked() bool {
 	return true
 }
 
+// isCommitted 是否已 commit 停止。
 func (c *stopController) isCommitted() bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.phase == stopCommitted
 }
 
+// idleDuration 返回 UntilIdleFor 配置的等待时长。
 func (c *stopController) idleDuration() time.Duration {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -156,8 +163,9 @@ func (c *stopController) notifyWatcherLocked() {
 	}
 }
 
-// ---- StopOption constructors ----
+// ---- StopOption 构造函数 ----
 
+// WithGraceful 在 ChatModel/ToolCalls 安全点后优雅取消。
 func WithGraceful() StopOption {
 	return func(cfg *stopConfig) {
 		cfg.agentCancelOpts = []CancelOption{
@@ -167,6 +175,7 @@ func WithGraceful() StopOption {
 	}
 }
 
+// WithImmediate 立即递归取消 Agent。
 func WithImmediate() StopOption {
 	return func(cfg *stopConfig) {
 		cfg.agentCancelOpts = []CancelOption{
@@ -175,6 +184,7 @@ func WithImmediate() StopOption {
 	}
 }
 
+// WithGracefulTimeout 优雅取消并设 grace 超时。
 func WithGracefulTimeout(gracePeriod time.Duration) StopOption {
 	if gracePeriod <= 0 {
 		panic("agentcore: WithGracefulTimeout: gracePeriod must be positive")
@@ -188,22 +198,26 @@ func WithGracefulTimeout(gracePeriod time.Duration) StopOption {
 	}
 }
 
+// WithStopTimeout 设置 Stop 整体超时。
 func WithStopTimeout(d time.Duration) StopOption {
 	return func(cfg *stopConfig) { cfg.timeout = &d }
 }
 
+// WithSkipCheckpoint 退出时不保存检查点。
 func WithSkipCheckpoint() StopOption {
 	return func(cfg *stopConfig) {
 		cfg.skipCheckpoint = true
 	}
 }
 
+// WithStopCause 记录停止原因字符串。
 func WithStopCause(cause string) StopOption {
 	return func(cfg *stopConfig) {
 		cfg.stopCause = cause
 	}
 }
 
+// UntilIdleFor 空闲 duration 后自动 commit 停止。
 func UntilIdleFor(duration time.Duration) StopOption {
 	if duration <= 0 {
 		panic("agentcore: UntilIdleFor: duration must be positive")
@@ -213,8 +227,9 @@ func UntilIdleFor(duration time.Duration) StopOption {
 	}
 }
 
-// ---- PushOption constructors ----
+// ---- PushOption 构造函数 ----
 
+// WithPreempt 入队后按 SafePoint 抢占当前轮。
 func WithPreempt[T any](safePoint SafePoint) PushOption[T] {
 	if safePoint == 0 {
 		panic("agentcore: SafePoint must not be zero; use AfterToolCalls, AfterChatModel, or AnySafePoint")
@@ -228,6 +243,7 @@ func WithPreempt[T any](safePoint SafePoint) PushOption[T] {
 	}
 }
 
+// WithPreemptTimeout 抢占并设 Agent 取消超时。
 func WithPreemptTimeout[T any](safePoint SafePoint, timeout time.Duration) PushOption[T] {
 	if safePoint == 0 {
 		panic("agentcore: SafePoint must not be zero; use AfterToolCalls, AfterChatModel, or AnySafePoint")
@@ -242,19 +258,21 @@ func WithPreemptTimeout[T any](safePoint SafePoint, timeout time.Duration) PushO
 	}
 }
 
+// WithPreemptDelay 延迟发起抢占。
 func WithPreemptDelay[T any](delay time.Duration) PushOption[T] {
 	return func(cfg *pushConfig[T]) {
 		cfg.preemptDelay = delay
 	}
 }
 
+// WithPushStrategy 自定义 Push 策略函数。
 func WithPushStrategy[T any](fn func(ctx context.Context, tc *TurnContext[T]) []PushOption[T]) PushOption[T] {
 	return func(cfg *pushConfig[T]) {
 		cfg.pushStrategy = fn
 	}
 }
 
-// ---- Deprecated aliases ----
+// ---- 已弃用别名 ----
 
 func WithImmediateStop() StopOption { return WithImmediate() }
 func WithGracefulStop() StopOption  { return WithGraceful() }

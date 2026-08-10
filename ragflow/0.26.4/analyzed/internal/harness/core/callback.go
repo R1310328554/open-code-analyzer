@@ -1,3 +1,5 @@
+// callback.go — Agent 回调注册、上下文传播与 RunLocal 会话值读写。
+
 package core
 
 import (
@@ -9,13 +11,13 @@ import (
 	"slices"
 )
 
-// AgentCallbackInput is the input to the agent callback OnStart.
+// AgentCallbackInput Agent 回调 OnStart 的输入。
 type AgentCallbackInput struct {
 	Input      *AgentInput
 	ResumeInfo *ResumeInfo
 }
 
-// AgentCallbackOutput is the output from the agent callback OnEnd.
+// AgentCallbackOutput Agent 回调 OnEnd 的输出。
 type AgentCallbackOutput struct {
 	Events *AsyncIterator[*AgentEvent]
 }
@@ -29,7 +31,7 @@ type TypedAgentCallbackOutput[M MessageType] struct {
 	Events *AsyncIterator[*TypedAgentEvent[M]]
 }
 
-// callbackHandler holds registered callback functions.
+// callbackHandler 注册的回调函数集合。
 type callbackHandler struct {
 	onStart     func(ctx context.Context, input *AgentCallbackInput)
 	onEnd       func(ctx context.Context, output *AgentCallbackOutput)
@@ -39,6 +41,7 @@ type callbackHandler struct {
 
 type callbackKey struct{}
 
+// getCallbacks 从 ctx 读取已注册的 callbackHandler 列表。
 func getCallbacks(ctx context.Context) []callbackHandler {
 	if v := ctx.Value(callbackKey{}); v != nil {
 		return v.([]callbackHandler)
@@ -46,7 +49,7 @@ func getCallbacks(ctx context.Context) []callbackHandler {
 	return nil
 }
 
-// propagateCallbacks copies callbacks from parent context to nested run options.
+// propagateCallbacks 将父 ctx 中的回调复制到嵌套 RunOption。
 func propagateCallbacks(ctx context.Context, opts []RunOption) []RunOption {
 	cbs := getCallbacks(ctx)
 	if len(cbs) == 0 {
@@ -63,6 +66,7 @@ func propagateCallbacks(ctx context.Context, opts []RunOption) []RunOption {
 	return append(cbOpts, opts...)
 }
 
+// withCallbacks 将回调列表写入 ctx。
 func withCallbacks(ctx context.Context, cbs []callbackHandler) context.Context {
 	if len(cbs) == 0 {
 		return ctx
@@ -70,6 +74,7 @@ func withCallbacks(ctx context.Context, cbs []callbackHandler) context.Context {
 	return context.WithValue(ctx, callbackKey{}, cbs)
 }
 
+// initAgentCallbacks 从 RunOption 提取 callbackHandler 并注入 ctx。
 func initAgentCallbacks(ctx context.Context, name, agentType string, opts ...RunOption) context.Context {
 	o := getCommonOptions(nil, opts...)
 	if len(o.callbacks) == 0 {
@@ -90,7 +95,7 @@ func initAgenticCallbacks(ctx context.Context, name, agentType string, opts ...R
 }
 
 func filterOptions(name string, opts []RunOption) []RunOption {
-	// Remove callbacks not matching the given agent name from agentNames list
+	// filterOptions 过滤 agentNames 不包含 name 的回调选项
 	o := getCommonOptions(nil, opts...)
 	if len(o.agentNames) == 0 {
 		return opts
@@ -114,7 +119,7 @@ func filterOptions(name string, opts []RunOption) []RunOption {
 }
 
 func filterCancelOption(opts []RunOption) []RunOption {
-	// Remove cancel context options from sub-agent options
+	// filterCancelOption 移除子 Agent 选项中的 cancel ctx，避免重复处理
 	// to avoid duplicate cancel handling
 	var filtered []RunOption
 	for _, opt := range opts {
@@ -134,7 +139,7 @@ func filterCancelOption(opts []RunOption) []RunOption {
 }
 
 func filterCallbackHandlersForNestedAgents(name string, opts []RunOption) []RunOption {
-	// Remove callback handlers that are scoped to specific agents
+	// filterCallbackHandlersForNestedAgents 过滤非目标 Agent 的回调处理器
 	o := getCommonOptions(nil, opts...)
 	if len(o.agentNames) == 0 {
 		return opts
@@ -156,6 +161,7 @@ func filterCallbackHandlersForNestedAgents(name string, opts []RunOption) []RunO
 	return filtered
 }
 
+// getAgentType 读取 Agent 类型，默认 ReActAgent。
 func getAgentType(a Agent) string {
 	if t, ok := a.(interface{ GetType() string }); ok {
 		return t.GetType()
@@ -163,10 +169,11 @@ func getAgentType(a Agent) string {
 	return "ReActAgent"
 }
 
-// ---- Run-local value helpers ----
+// ---- Run 局部会话值辅助函数 ----
 
+// SetRunLocalValue 写入 session.Values 并校验 gob 可序列化。
 func SetRunLocalValue(ctx context.Context, key string, val any) error {
-	// P2: Gob encodability check - catch unregistered types early at Set time
+	// P2：Set 时检查 gob 可编码性，提前发现未注册类型
 	if err := checkGobEncodability(key, val); err != nil {
 		return err
 	}
@@ -179,6 +186,7 @@ func SetRunLocalValue(ctx context.Context, key string, val any) error {
 	return nil
 }
 
+// GetRunLocalValue 读取 session 局部值。
 func GetRunLocalValue(ctx context.Context, key string) (any, bool, error) {
 	rc := getRunCtx(ctx)
 	if rc == nil || rc.Session == nil {
@@ -188,6 +196,7 @@ func GetRunLocalValue(ctx context.Context, key string) (any, bool, error) {
 	return v, ok, nil
 }
 
+// DeleteRunLocalValue 删除 session 局部值。
 func DeleteRunLocalValue(ctx context.Context, key string) error {
 	rc := getRunCtx(ctx)
 	if rc == nil || rc.Session == nil {
@@ -197,6 +206,7 @@ func DeleteRunLocalValue(ctx context.Context, key string) error {
 	return nil
 }
 
+// SendEvent 向当前 ChatModel 执行上下文发送 AgentEvent。
 func SendEvent(ctx context.Context, event *AgentEvent) error {
 	ec := getChatModelExecCtx(ctx)
 	if ec == nil || ec.generator == nil {
@@ -206,6 +216,7 @@ func SendEvent(ctx context.Context, event *AgentEvent) error {
 	return nil
 }
 
+// TypedSendEvent 泛型版 SendEvent。
 func TypedSendEvent[M MessageType](ctx context.Context, event *TypedAgentEvent[M]) error {
 	ec := getReActExecCtx[M](ctx)
 	if ec == nil || ec.generator == nil {
@@ -221,9 +232,9 @@ func (e *AgentExecError) Error() string { return e.Message }
 
 var errNotInAgentExec = &AgentExecError{Message: "must be called within ReActAgent Run/Resume"}
 
-// checkGobEncodability probes whether the value can be gob-encoded as part of
-// a map[string]any, which is exactly how session values are serialized during
-// checkpoint. This catches unregistered types early at Set time, rather than
+// checkGobEncodability 探测值能否作为 map[string]any 被 gob 编码
+// （与会话值检查点序列化方式一致）
+// 在 Set 时失败而非在 checkpoint/resume 时才报错
 // letting them fail at checkpoint/resume time with a confusing error.
 func checkGobEncodability(key string, value any) error {
 	probe := map[string]any{key: value}
@@ -245,3 +256,5 @@ func checkGobEncodability(key string, value any) error {
 	}
 	return nil
 }
+
+// errNotInAgentExec 表示在 Run/Resume 外调用；SendEvent 需 generator 已就绪。

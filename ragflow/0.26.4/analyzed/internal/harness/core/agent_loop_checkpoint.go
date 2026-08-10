@@ -1,3 +1,5 @@
+// agent_loop_checkpoint.go — AgentLoop 检查点 gob 序列化与加载/保存/删除。
+
 package core
 
 import (
@@ -8,12 +10,13 @@ import (
 	"fmt"
 )
 
-// ---- AgentLoop checkpoint serialization and lifecycle ----
+// ---- AgentLoop 检查点序列化与生命周期 ----
 
 type CheckPointDeleter interface {
 	Delete(ctx context.Context, key string) error
 }
 
+// marshalTurnLoopCheckpoint 将检查点结构 gob 编码为字节。
 func marshalTurnLoopCheckpoint[T any](c *agentLoopCheckpoint[T]) ([]byte, error) {
 	buf := new(bytes.Buffer)
 	if err := gob.NewEncoder(buf).Encode(c); err != nil {
@@ -22,6 +25,7 @@ func marshalTurnLoopCheckpoint[T any](c *agentLoopCheckpoint[T]) ([]byte, error)
 	return buf.Bytes(), nil
 }
 
+// unmarshalTurnLoopCheckpoint 从 gob 字节解码检查点。
 func unmarshalTurnLoopCheckpoint[T any](data []byte) (*agentLoopCheckpoint[T], error) {
 	var c agentLoopCheckpoint[T]
 	if err := gob.NewDecoder(bytes.NewReader(data)).Decode(&c); err != nil {
@@ -30,6 +34,7 @@ func unmarshalTurnLoopCheckpoint[T any](data []byte) (*agentLoopCheckpoint[T], e
 	return &c, nil
 }
 
+// saveTurnLoopCheckpoint 序列化并写入配置 Store。
 func (l *AgentLoop[T]) saveTurnLoopCheckpoint(ctx context.Context, checkPointID string, c *agentLoopCheckpoint[T]) error {
 	if l.config.Store == nil {
 		return errors.New("checkpoint store is nil")
@@ -41,6 +46,7 @@ func (l *AgentLoop[T]) saveTurnLoopCheckpoint(ctx context.Context, checkPointID 
 	return l.config.Store.Set(ctx, checkPointID, data)
 }
 
+// deleteTurnLoopCheckpoint 若 Store 实现 CheckPointDeleter 则删除。
 func (l *AgentLoop[T]) deleteTurnLoopCheckpoint(ctx context.Context, checkPointID string) error {
 	if l.config.Store == nil {
 		return nil
@@ -51,6 +57,7 @@ func (l *AgentLoop[T]) deleteTurnLoopCheckpoint(ctx context.Context, checkPointI
 	return nil
 }
 
+// tryLoadCheckpoint 启动时加载检查点：有 Runner 状态则 pendingResume，否则 PushFront 未处理项。
 func (l *AgentLoop[T]) tryLoadCheckpoint(ctx context.Context) error {
 	checkPointID := l.config.CheckpointID
 	if checkPointID == "" || l.config.Store == nil {
@@ -98,3 +105,5 @@ func (l *AgentLoop[T]) tryLoadCheckpoint(ctx context.Context) error {
 
 	return nil
 }
+
+// HasRunnerState 时空字节视为损坏检查点；loadCheckpointID 供成功退出后删除旧检查点。
