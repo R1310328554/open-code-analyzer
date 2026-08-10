@@ -1,5 +1,7 @@
 package base
 
+// ruler base compat 提供 recording rule 写入 ingester 的 Appendable 适配、Queryable 错误包装与默认租户 RulesManager 工厂。
+
 import (
 	"context"
 	"errors"
@@ -25,6 +27,7 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// Pusher 接口由 distributor/ingester 实现，接收 ruler 产生的 recording 样本。
 // Pusher is an ingester server that accepts pushes.
 type Pusher interface {
 	Push(context.Context, *logproto.WriteRequest) (*logproto.WriteResponse, error)
@@ -107,6 +110,7 @@ func (a *PusherAppender) Rollback() error {
 	return nil
 }
 
+// PusherAppendable 为 Prometheus rules.Manager 提供按租户隔离的 Appendable。
 // PusherAppendable fulfills the storage.Appendable interface for prometheus manager
 type PusherAppendable struct {
 	pusher Pusher
@@ -138,6 +142,7 @@ func (t *PusherAppendable) Appender(ctx context.Context) storage.Appender {
 }
 
 // RulesLimits defines limits used by Ruler.
+// RulesLimits 定义租户级 ruler 分片大小、规则组数量与 Alertmanager 配置上限。
 type RulesLimits interface {
 	RulerTenantShardSize(userID string) int
 	RulerMaxRuleGroupsPerTenant(userID string) int
@@ -223,6 +228,7 @@ type RulesManager interface {
 // ManagerFactory is a function that creates new RulesManager for given user and notifier.Manager.
 type ManagerFactory func(ctx context.Context, userID string, notifier *notifier.Manager, logger log.Logger, reg prometheus.Registerer) RulesManager
 
+// DefaultTenantManagerFactory 组装写入/查询指标、错误翻译与 SendAlerts 通知链。
 func DefaultTenantManagerFactory(cfg Config, p Pusher, q storage.Queryable, engine *promql.Engine, reg prometheus.Registerer, metricsNamespace string) ManagerFactory {
 	totalWrites := promauto.With(reg).NewCounter(prometheus.CounterOpts{
 		Namespace: metricsNamespace,
@@ -300,3 +306,4 @@ func WrapQueryableErrors(err error) error {
 
 	return QueryableError{err: err}
 }
+// MetricsQueryFunc 仅将 TranslateToPromqlAPIError 映射为 ErrStorage 的查询计为失败。

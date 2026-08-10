@@ -1,5 +1,7 @@
 package base
 
+// error_translate_queryable 将 Loki/Cortex Queryable 返回的错误映射为 PromQL API可识别的 promql.ErrStorage/422/503 类型。
+
 import (
 	"context"
 
@@ -14,6 +16,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/validation"
 )
 
+// TranslateToPromqlAPIError 按 gRPC status 码与 LimitError 决定 HTTP 422/500/503。
 // TranslateToPromqlAPIError converts error to one of promql.Errors for consumption in PromQL API.
 // PromQL API only recognizes few errors, and converts everything else to HTTP status code 422.
 //
@@ -73,6 +76,7 @@ func TranslateToPromqlAPIError(err error) error {
 // ErrTranslateFn is used to translate or wrap error before returning it by functions in
 // storage.SampleAndChunkQueryable interface.
 // Input error may be nil.
+// ErrTranslateFn 在 Queryable/Querier/SeriesSet 边界统一包装或翻译错误。
 type ErrTranslateFn func(err error) error
 
 func NewErrorTranslateQueryableWithFn(q storage.Queryable, fn ErrTranslateFn) storage.Queryable {
@@ -113,6 +117,7 @@ func (e errorTranslateQuerier) Select(ctx context.Context, sortSeries bool, hint
 	return errorTranslateSeriesSet{s: s, fn: e.fn}
 }
 
+// errorTranslateSeriesSet 在 Err() 返回前对 SeriesSet 错误调用翻译函数。
 type errorTranslateSeriesSet struct {
 	s  storage.SeriesSet
 	fn ErrTranslateFn
@@ -133,3 +138,4 @@ func (e errorTranslateSeriesSet) Err() error {
 func (e errorTranslateSeriesSet) Warnings() annotations.Annotations {
 	return e.s.Warnings()
 }
+// LimitError 与 4xx gRPC 码保持原样由 PromQL API 映射为 422 用户错误。

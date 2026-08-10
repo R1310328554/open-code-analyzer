@@ -1,5 +1,7 @@
 package config
 
+// ruler config alertmanager 定义租户 Alertmanager URL、DNS 发现、通知队列容量与 notifier TLS/认证客户端选项。
+
 import (
 	"flag"
 	"time"
@@ -29,14 +31,17 @@ type AlertManagerConfig struct {
 	Notifier NotifierConfig `yaml:"alertmanager_client,omitempty"`
 }
 
+// NotifierConfig 内联 TLS、BasicAuth 与 HeaderAuth 供 HTTP 通知客户端使用。
 type NotifierConfig struct {
 	TLS        tls.ClientConfig `yaml:",inline"`
 	BasicAuth  util.BasicAuth   `yaml:",inline"`
 	HeaderAuth util.HeaderAuth  `yaml:",inline"`
 }
 
+// RegisterFlags 注册 ruler.alertmanager-client.* 前缀的 TLS 与认证标志。
 func (cfg *NotifierConfig) RegisterFlags(f *flag.FlagSet) {
 	cfg.TLS.RegisterFlagsWithPrefix("ruler.alertmanager-client", f)
 	cfg.BasicAuth.RegisterFlagsWithPrefix("ruler.alertmanager-client.", f)
 	cfg.HeaderAuth.RegisterFlagsWithPrefix("ruler.alertmanager-client.", f)
 }
+// AlertmanagerDiscovery 启用时通过 SRV 记录周期性刷新 Alertmanager 目标列表。

@@ -1,11 +1,14 @@
 package base
 
+// ManagerMetrics 聚合各租户 Prometheus rules 包导出的指标，以 Cortex/Loki 命名空间统一暴露给 ruler。
+
 import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/grafana/loki/v3/pkg/util"
 )
 
+// ManagerMetrics 通过 UserRegistries 按 user（及 rule_group）标签汇总规则评估指标。
 // ManagerMetrics aggregates metrics exported by the Prometheus
 // rules package and returns them as Cortex metrics
 type ManagerMetrics struct {
@@ -26,6 +29,7 @@ type ManagerMetrics struct {
 	GroupLastEvalSamples *prometheus.Desc
 }
 
+// RuleGroupLabel 为 Prometheus 规则组标签名，by-rule 分片时可经 transformer 去 token。
 // RuleGroupLabel is the label added by Prometheus, the value of which comes from the GroupKey function
 const RuleGroupLabel = "rule_group"
 
@@ -134,6 +138,7 @@ func (m *ManagerMetrics) Describe(out chan<- *prometheus.Desc) {
 	out <- m.GroupLastEvalSamples
 }
 
+// Collect 调用 BuildMetricFamiliesPerUser 将各租户 registry 指标汇总输出。
 // Collect implements the Collector interface
 func (m *ManagerMetrics) Collect(out chan<- prometheus.Metric) {
 	data := m.regs.BuildMetricFamiliesPerUser(m.metricLabelTransformer)
@@ -158,3 +163,4 @@ func (m *ManagerMetrics) Collect(out chan<- prometheus.Metric) {
 	data.SendSumOfGaugesPerUserWithLabels(out, m.GroupRules, "prometheus_rule_group_rules", labels...)
 	data.SendSumOfGaugesPerUserWithLabels(out, m.GroupLastEvalSamples, "prometheus_rule_group_last_evaluation_samples", labels...)
 }
+// RemoveUserRegistry 后同一 user 重加指标从 0 开始，Collect 必须严格 per-user 生成。

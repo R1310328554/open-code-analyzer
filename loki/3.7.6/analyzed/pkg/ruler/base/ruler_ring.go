@@ -1,5 +1,7 @@
 package base
 
+// ruler_ring 配置 ruler hash ring：heartbeat、instance 地址与 token 数量，RingOp 限定仅 ACTIVE 实例参与规则分片。
+
 import (
 	"flag"
 	"fmt"
@@ -18,12 +20,14 @@ import (
 )
 
 const (
+// ringAutoForgetUnhealthyPeriods 控制不健康实例快速摘除以避免规则评估停滞。
 	// If a ruler is unable to heartbeat the ring, its better to quickly remove it and resume
 	// the evaluation of all rules since the worst case scenario is that some rulers will
 	// receive duplicate/out-of-order sample errors.
 	ringAutoForgetUnhealthyPeriods = 2
 )
 
+// RingOp 仅选择 ACTIVE 实例；非 ACTIVE 时重新查找其他 ruler 接管规则组。
 // RingOp is the operation used for distributing rule groups between rulers.
 var RingOp = ring.NewOp([]ring.InstanceState{ring.ACTIVE}, func(s ring.InstanceState) bool {
 	// Only ACTIVE rulers get any rule groups. If instance is not ACTIVE, we need to find another ruler.
@@ -34,6 +38,7 @@ var RingOp = ring.NewOp([]ring.InstanceState{ring.ACTIVE}, func(s ring.InstanceS
 // many options not really required by the rulers ring. This config
 // is used to strip down the config to the minimum, and avoid confusion
 // to the user.
+// RingConfig 精简 lifecycler 选项，暴露 ruler.ring.* CLI 与 YAML 配置块。
 type RingConfig struct {
 	KVStore          kv.Config     `yaml:"kvstore"`
 	HeartbeatPeriod  time.Duration `yaml:"heartbeat_period"`
@@ -76,6 +81,7 @@ func (cfg *RingConfig) RegisterFlags(f *flag.FlagSet) {
 	f.IntVar(&cfg.NumTokens, "ruler.ring.num-tokens", 128, "The number of tokens the lifecycler will generate and put into the ring if it joined without transferring tokens from another lifecycler.")
 }
 
+// ToLifecyclerConfig 将 RingConfig 转换为 dskit ring lifecycler 完整配置。
 // ToLifecyclerConfig returns a LifecyclerConfig based on the ruler
 // ring config.
 func (cfg *RingConfig) ToLifecyclerConfig(logger log.Logger) (ring.BasicLifecyclerConfig, error) {
@@ -111,3 +117,4 @@ func (cfg *RingConfig) ToRingConfig() ring.Config {
 
 	return rc
 }
+// RegisterFlags 默认 instance-id 为主机名，listen-port 可继承 gRPC 监听端口。

@@ -1,5 +1,7 @@
 package base
 
+// storage 配置 ruler 规则持久化后端：本地目录、S3/GCS/Azure 等 object store及 legacy 与 bucket 两种 RuleStore 构造路径。
+
 import (
 	"context"
 	"flag"
@@ -32,6 +34,7 @@ import (
 )
 
 // RuleStoreConfig configures a rule store.
+// RuleStoreConfig 按 type 选择云厂商 blob 配置或 local 文件系统目录。
 type RuleStoreConfig struct {
 	Type string `yaml:"type"`
 
@@ -80,6 +83,7 @@ func (cfg *RuleStoreConfig) IsDefaults() bool {
 	return cfg.Type == ""
 }
 
+// NewLegacyRuleStore 基于旧版 object client 创建 rulestore，供迁移场景使用。
 // NewLegacyRuleStore returns a rule store backend client based on the provided cfg.
 // The client used by the function is based a legacy object store clients that shouldn't
 // be used anymore.
@@ -124,6 +128,7 @@ func NewLegacyRuleStore(cfg RuleStoreConfig, hedgeCfg hedging.Config, clientMetr
 }
 
 // NewRuleStore returns a rule store backend client based on the provided cfg.
+// NewRuleStore 使用统一 bucket 客户端创建 BucketRuleStore 或 local client。
 func NewRuleStore(ctx context.Context, cfg rulestore.Config, cfgProvider bucket.SSEConfigProvider, loader promRules.GroupLoader, logger log.Logger) (rulestore.RuleStore, error) {
 	if cfg.Backend == local.Name {
 		if loader == nil {
@@ -143,6 +148,7 @@ func NewRuleStore(ctx context.Context, cfg rulestore.Config, cfgProvider bucket.
 // defaultFileLoader is a GroupLoader that delegates to rulefmt.ParseFile with a
 // default PromQL parser. This replaces direct use of newDefaultFileLoader(),
 // whose parser field is unexported and nil by default, causing panics.
+// defaultFileLoader 用显式 PromQL parser 解析规则文件，避免 nil parser panic。
 type defaultFileLoader struct {
 	p          parser.Parser
 	noopLogger *slog.Logger
@@ -162,3 +168,4 @@ func (fl defaultFileLoader) Load(identifier string, ignoreUnknownFields bool, na
 func (fl defaultFileLoader) Parse(query string) (parser.Expr, error) {
 	return fl.p.ParseExpr(query)
 }
+// Validate 校验 Swift/Azure/S3 等后端配置；IsDefaults 表示未指定 storage type。

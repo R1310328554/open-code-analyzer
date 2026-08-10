@@ -1,5 +1,7 @@
 package base
 
+// notifier 为每个 ruler 租户构建 Prometheus notifier.Manager 与 Alertmanager服务发现，负责告警通知生命周期。
+
 import (
 	"context"
 	"fmt"
@@ -40,6 +42,7 @@ func init() {
 	}
 }
 
+// rulerNotifier 组合 notifier 与 discovery.Manager，run/stop 管理双 goroutine。
 // rulerNotifier bundles a notifier.Manager together with an associated
 // Alertmanager service discovery manager and handles the lifecycle
 // of both actors.
@@ -51,6 +54,7 @@ type rulerNotifier struct {
 	logger    gklog.Logger
 }
 
+// newRulerNotifier 创建 SD manager 与 notifier，共享 SyncCh 传递 target 更新。
 func newRulerNotifier(o *notifier.Options, l gklog.Logger) *rulerNotifier {
 	sdCtx, sdCancel := context.WithCancel(context.Background())
 	return &rulerNotifier{
@@ -94,6 +98,7 @@ func (rn *rulerNotifier) stop() {
 	rn.wg.Wait()
 }
 
+// applyAlertmanagerDefaults 为零值字段填充 refresh interval、队列容量与超时默认值。
 func applyAlertmanagerDefaults(config ruler_config.AlertManagerConfig) ruler_config.AlertManagerConfig {
 	// Use default value if the override values are zero
 	if config.AlertmanagerRefreshInterval == 0 {
@@ -111,6 +116,7 @@ func applyAlertmanagerDefaults(config ruler_config.AlertManagerConfig) ruler_con
 	return config
 }
 
+// buildNotifierConfig 从 AlertManagerConfig 生成 Prometheus 通知配置含 relabel 与 SD。
 // Builds a Prometheus config.Config from a ruler.Config with just the required
 // options to configure notifications to Alertmanager.
 func buildNotifierConfig(amConfig *ruler_config.AlertManagerConfig, externalLabels labels.Labels) (*config.Config, error) {
@@ -242,3 +248,4 @@ func amConfigFromURL(cfg *ruler_config.AlertManagerConfig, url *url.URL, apiVers
 
 	return amConfig
 }
+// 启用 AlertmanagerDiscovery 时 host 须符合 _service._proto.name SRV 记录格式。

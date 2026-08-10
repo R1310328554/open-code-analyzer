@@ -1,5 +1,7 @@
 package base
 
+// Ruler 是 Loki recording/alerting 规则核心服务：轮询 rulestore、ring 分片、同步租户 manager 并暴露 gRPC/HTTP API。
+
 import (
 	"context"
 	"encoding/json"
@@ -51,6 +53,7 @@ var (
 )
 
 const (
+// ringKey 为 KV 中 ruler ring 键名；loadRulesConcurrency 控制并发拉取规则组。
 	// ringKey is the key under which we store the rulers ring in the KVStore.
 	ringKey = "rulers"
 
@@ -75,6 +78,7 @@ const (
 	alertmanagerNotificationTimeoutDefault       = 10 * time.Second
 )
 
+// Config 含 external URL、poll/evaluation 周期、ring 分片与 Alertmanager 全局配置。
 // Config is the configuration for the recording rules server.
 type Config struct {
 	// This is used for template expansion in alerts; must be a valid URL.
@@ -236,6 +240,7 @@ type MultiTenantManager interface {
 //	|                              +-----------------+              |
 //	|                                                               |
 //	+---------------------------------------------------------------+
+// Ruler 嵌入 services.Service，持有 ring lifecycler、MultiTenantManager 与 ruleStore。
 type Ruler struct {
 	services.Service
 
@@ -263,6 +268,7 @@ type Ruler struct {
 }
 
 // NewRuler creates a new ruler from a distributor and chunk store.
+// NewRuler 可选启用 sharding ring、client pool 与 periodic syncRules 循环。
 func NewRuler(cfg Config, manager MultiTenantManager, reg prometheus.Registerer, logger log.Logger, ruleStore rulestore.RuleStore, limits RulesLimits, metricsNamespace string) (*Ruler, error) {
 	return newRuler(cfg, manager, reg, logger, ruleStore, limits, newRulerClientPool(cfg.ClientTLSConfig, logger, reg, metricsNamespace), metricsNamespace)
 }
@@ -419,6 +425,7 @@ func grafanaLinkForExpression(expr, datasourceUID string) string {
 // It filters any non-firing alerts from the input.
 //
 // Copied from Prometheus's main.go.
+// SendAlerts 构造 NotifyFunc，附加 Grafana 外链与 external URL 到告警标签。
 func SendAlerts(n sender, externalURL, datasourceUID string) promRules.NotifyFunc {
 	return func(_ context.Context, expr string, alerts ...*promRules.Alert) {
 		var res []*notifier.Alert
@@ -1148,3 +1155,4 @@ func (r *Ruler) ListAllRules(w http.ResponseWriter, req *http.Request) {
 	close(iter)
 	<-done
 }
+// listRulesSharding 按 shuffle sharding 与 by-group/by-rule 算法过滤本实例应执行的规则。

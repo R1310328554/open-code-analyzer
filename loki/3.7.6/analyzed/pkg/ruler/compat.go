@@ -1,5 +1,7 @@
 package ruler
 
+// ruler compat 为 Loki 定制 Prometheus rules 集成：LogQL 求值、WAL 写入、规则校验与 MultiTenantRuleManager 工厂。
+
 import (
 	"context"
 	"fmt"
@@ -32,6 +34,7 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// RulesLimits 扩展 base.RulesLimits，增加 remote-write 与 remote evaluation 租户覆盖。
 // RulesLimits is the one function we need from limits.Overrides, and
 // is here to limit coupling.
 type RulesLimits interface {
@@ -126,6 +129,7 @@ func (m *MultiTenantManager) Stop() {
 	m.inner.Stop()
 }
 
+// ValidateGroups 校验 LogQL 表达式、recording/alerting 字段互斥与模板语法。
 // ValidateRuleGroup validates a rulegroup
 func (m *MultiTenantManager) ValidateRuleGroup(grp rulefmt.RuleGroup) []error {
 	return ValidateGroups(grp)
@@ -136,6 +140,7 @@ const MetricsPrefix = "loki_ruler_wal_"
 
 var registry storageRegistry
 
+// MultiTenantRuleManager 为每租户配置 WAL registry、MemStore 与 CachingRulesManager。
 func MultiTenantRuleManager(cfg Config, evaluator Evaluator, overrides RulesLimits, logger log.Logger, reg prometheus.Registerer) ruler.ManagerFactory {
 	reg = prometheus.WrapRegistererWithPrefix(MetricsPrefix, reg)
 
@@ -188,6 +193,7 @@ func MultiTenantRuleManager(cfg Config, evaluator Evaluator, overrides RulesLimi
 // CachingRulesManager holds a CachingGroupLoader to make sure the GroupLoader
 // has consistent state after update operations. Manager needs to hold the same
 // caching grouploader
+// CachingRulesManager 在 Update 后 Prune GroupLoader，保持 memstore 与磁盘规则一致。
 type CachingRulesManager struct {
 	manager     ruler.RulesManager
 	groupLoader *CachingGroupLoader
@@ -346,6 +352,7 @@ func testTemplateParsing(rl *rulefmt.Rule) (errs []error) {
 	return errs
 }
 
+// exprAdapter 使 LogQL 语法树满足 Prometheus rules 包的 PromQL 表达式接口。
 // Allows logql expressions to be treated as promql expressions by the prometheus rules pkg.
 type exprAdapter struct {
 	syntax.Expr
@@ -386,3 +393,4 @@ func GetRuleDetailsFromContext(ctx context.Context) (string, string) {
 	ruleType, _ := ctx.Value(ruleTypeKey).(string)
 	return ruleName, ruleType
 }
+// noopRuleDependencyController 禁用 Prometheus 规则并发依赖分析，Loki 规则无依赖图。

@@ -1,5 +1,7 @@
 package base
 
+// mapper 将 rulestore 中的规则组序列化为磁盘 YAML，供 Prometheus rules.Manager 通过文件路径加载与热更新。
+
 import (
 	"net/url"
 	"os"
@@ -16,6 +18,7 @@ import (
 
 // mapper is designed to enusre the provided rule sets are identical
 // to the on-disk rules tracked by the prometheus manager
+// mapper 保证内存规则集与磁盘 YAML 一致，SHA3 哈希比对避免无效 Prometheus reload。
 type mapper struct {
 	Path string // Path specifies the directory in which rule files will be mapped.
 
@@ -42,6 +45,7 @@ func (m *mapper) cleanupUser(userID string) {
 	}
 }
 
+// cleanup 启动时清空映射目录，避免残留过期租户规则文件。
 // cleanup removes all of the user directories in the path of the mapper
 func (m *mapper) cleanup() {
 	level.Info(m.logger).Log("msg", "cleaning up mapped rules directory", "path", m.Path)
@@ -75,6 +79,7 @@ func (m *mapper) users() ([]string, error) {
 	return result, err
 }
 
+// MapRules 写入新 YAML、删除多余文件并返回是否有更新及 manager 所需文件列表。
 func (m *mapper) MapRules(user string, ruleConfigs map[string][]rulefmt.RuleGroup) (bool, []string, error) {
 	anyUpdated := false
 	filenames := []string{}
@@ -168,3 +173,4 @@ func (m *mapper) writeRuleGroupsIfNewer(groups []rulefmt.RuleGroup, filename str
 
 	return true, nil
 }
+// writeRuleGroupsIfNewer 对组名排序后 marshal，仅哈希变化时写盘减少 IO。

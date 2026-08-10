@@ -1,5 +1,7 @@
 package base
 
+// DefaultMultiTenantManager 为每个租户维护独立 Prometheus rules.Manager、Alertmanager notifier 与磁盘规则映射。
+
 import (
 	"context"
 	"fmt"
@@ -28,6 +30,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/ruler/rulespb"
 )
 
+// DefaultMultiTenantManager 协调 mapper、userManagers 与 per-tenant notifier 生命周期。
 type DefaultMultiTenantManager struct {
 	cfg            Config
 	notifiersCfg   map[string]*config.Config
@@ -55,6 +58,7 @@ type DefaultMultiTenantManager struct {
 	metricsNamespace              string
 }
 
+// NewDefaultMultiTenantManager 注册 ManagerMetrics 与 config reload 成功/失败 Gauge。
 func NewDefaultMultiTenantManager(cfg Config, managerFactory ManagerFactory, reg prometheus.Registerer, logger log.Logger, limits RulesLimits, metricsNamespace string) (*DefaultMultiTenantManager, error) {
 	userManagerMetrics := NewManagerMetrics(cfg.DisableRuleGroupLabel, func(k, v string) string {
 		// When "by-rule" sharding is enabled, each rule group is assigned a unique name to work around some of Prometheus'
@@ -134,6 +138,7 @@ func (r *DefaultMultiTenantManager) SyncRuleGroups(ctx context.Context, ruleGrou
 	r.managersTotal.Set(float64(len(r.userManagers)))
 }
 
+// syncRulesToManager 将 rulestore 规则落盘并触发 manager.Update 或新建 manager.Run。
 // syncRulesToManager maps the rule files to disk, detects any changes and will create/update the
 // the users Prometheus Rules Manager.
 func (r *DefaultMultiTenantManager) syncRulesToManager(ctx context.Context, user string, groups rulespb.RuleGroupList) {
@@ -327,3 +332,4 @@ func (*DefaultMultiTenantManager) ValidateRuleGroup(g rulefmt.RuleGroup) []error
 
 	return errs
 }
+// SyncRuleGroups 删除租户时 stop manager、cleanupUser 并 RemoveUserRegistry 清理指标。

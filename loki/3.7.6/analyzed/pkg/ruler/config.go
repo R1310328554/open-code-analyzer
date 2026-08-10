@@ -1,5 +1,7 @@
 package ruler
 
+// ruler Config 在 base.Config 之上扩展 WAL、remote-write、WAL cleaner 与 local/remote 规则求值模式配置。
+
 import (
 	"flag"
 	"fmt"
@@ -15,6 +17,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/ruler/storage/instance"
 )
 
+// Config 内联 ruler base Config，并挂载 WAL、RemoteWrite 与 Evaluation 子块。
 type Config struct {
 	ruler.Config `yaml:",inline"`
 
@@ -35,6 +38,7 @@ func (c *Config) RegisterFlags(f *flag.FlagSet) {
 	c.Evaluation.RegisterFlags(f)
 }
 
+// Validate 校验 store、remote-write 与 wal cleaner 子配置合法性。
 // Validate overrides the embedded cortex variant which expects a cortex limits struct. Instead, copy the relevant bits over.
 func (c *Config) Validate() error {
 	if err := c.StoreConfig.Validate(); err != nil {
@@ -52,6 +56,7 @@ func (c *Config) Validate() error {
 	return nil
 }
 
+// RemoteWriteConfig 支持多 client 映射及向 remote endpoint 注入 X-Scope-OrgID 头。
 type RemoteWriteConfig struct {
 	Client              *config.RemoteWriteConfig           `yaml:"client,omitempty" doc:"deprecated|description=Use 'clients' instead. Configure remote write client."`
 	Clients             map[string]config.RemoteWriteConfig `yaml:"clients,omitempty" doc:"description=Configure remote write clients. A map with remote client id as key. For details, see https://prometheus.io/docs/prometheus/latest/configuration/configuration/#remote_write Specifying a header with key 'X-Scope-OrgID' under the 'headers' section of RemoteWriteConfig is not permitted. If specified, it will be dropped during config parsing."`
@@ -90,6 +95,7 @@ func (c *RemoteWriteConfig) Validate() error {
 	return nil
 }
 
+// Clone 通过 yaml 往返复制配置并恢复 BasicAuth 明文密码字段。
 func (c *RemoteWriteConfig) Clone() (*RemoteWriteConfig, error) {
 	out, err := yaml.Marshal(c)
 	if err != nil {
@@ -128,3 +134,4 @@ func (c *RemoteWriteConfig) RegisterFlags(f *flag.FlagSet) {
 		c.Clients = make(map[string]config.RemoteWriteConfig)
 	}
 }
+// RegisterFlags 委托 base、RemoteWrite、WAL 与 Evaluation 各子块注册 CLI 标志。

@@ -3,6 +3,8 @@
 
 package base
 
+// ruler.pb.go 由 ruler.proto 生成，定义 Ruler gRPC 服务 Rules RPC及 RulesRequest/RulesResponse 等消息类型。
+
 import (
 	context "context"
 	encoding_binary "encoding/binary"
@@ -63,6 +65,7 @@ func (RulesRequest_RuleType) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_ca810a0fd7057a73, []int{0, 0}
 }
 
+// RulesRequest 支持按 rule_type、rule_name、rule_group 与 file 过滤规则状态。
 type RulesRequest struct {
 	Filter    RulesRequest_RuleType `protobuf:"varint,1,opt,name=filter,proto3,enum=base.RulesRequest_RuleType" json:"filter,omitempty"`
 	RuleName  []string              `protobuf:"bytes,2,rep,name=rule_name,json=ruleName,proto3" json:"rule_name,omitempty"`
@@ -815,9 +818,11 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
+// NewRulerClient 通过 Invoke 调用 Rules 获取远程 ruler 实例上的规则快照。
 // RulerClient is the client API for Ruler service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+// RulerClient/RulerServer 为 /base.Ruler/Rules 一元 RPC 的 gRPC 客户端与服务端接口。
 type RulerClient interface {
 	Rules(ctx context.Context, in *RulesRequest, opts ...grpc.CallOption) (*RulesResponse, error)
 }
@@ -852,6 +857,7 @@ func (*UnimplementedRulerServer) Rules(ctx context.Context, req *RulesRequest) (
 	return nil, status.Errorf(codes.Unimplemented, "method Rules not implemented")
 }
 
+// RegisterRulerServer 将 RulerServer 实现注册到 gRPC 服务器。
 func RegisterRulerServer(s *grpc.Server, srv RulerServer) {
 	s.RegisterService(&_Ruler_serviceDesc, srv)
 }
@@ -2653,3 +2659,4 @@ var (
 	ErrInvalidLengthRuler = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowRuler   = fmt.Errorf("proto: integer overflow")
 )
+// RulesRequest_RuleType 枚举区分 AnyRule、AlertingRule 与 RecordingRule 过滤。
