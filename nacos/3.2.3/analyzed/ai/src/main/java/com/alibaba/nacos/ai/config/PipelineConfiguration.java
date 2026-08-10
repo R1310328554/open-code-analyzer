@@ -31,13 +31,17 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Spring configuration for the publish pipeline components.
+ * 发布流水线（Publish Pipeline）组件的 Spring 配置类。
+ *
+ * <p>注册配置提供者、流水线管理器、执行记录仓库及固定大小线程池，
+ * 供 Prompt/AgentSpec 等资源提交审核与发布时使用。</p>
  *
  * @author kiro
  */
 @Configuration
 public class PipelineConfiguration {
     
+    /** 流水线配置提供者 Bean，默认使用文件配置实现。 */
     @Bean
     public PipelineConfigProvider pipelineConfigProvider() {
         return FilePipelineConfigProvider.getInstance();
@@ -55,6 +59,7 @@ public class PipelineConfiguration {
         return new PipelineExecutionRepositoryImpl();
     }
     
+    /** 流水线异步执行线程池，守护线程，池大小为 4。 */
     @Bean("pipelineExecutor")
     public ExecutorService pipelineExecutor() {
         return Executors.newFixedThreadPool(4, new ThreadFactory() {

@@ -58,10 +58,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Migrates prompt data from legacy storage to the new DB + SPI typed storage architecture.
+ * 将 Prompt 数据从旧版存储迁移至 DB + SPI 类型化存储架构。
  *
- * <p>Uses {@link PromptLegacyDataReader} to read legacy data. The active reader is selected
- * by {@code nacos.ai.prompt.migration.provider} (default: {@code nacos}).</p>
+ * <p>通过 {@link PromptLegacyDataReader} 读取旧版数据，活动读取器由
+ * {@code nacos.ai.prompt.migration.provider} 配置项选择（默认 {@code nacos}）。</p>
+ *
+ * <p>应用就绪后异步执行；集群内通过 Config 迁移标记实现互斥，避免多节点重复迁移。</p>
  *
  * @author nacos
  */
@@ -328,11 +330,10 @@ public class PromptDataMigrationTask implements ApplicationListener<ApplicationR
     }
     
     /**
-     * Clean up legacy storage entries for a prompt. Should be called when a prompt is deleted
-     * in the new system to prevent the migration task from re-importing it on next restart.
+     * 清理 Prompt 在旧版存储中的条目。新系统中删除 Prompt 时应调用，
+     * 防止迁移任务在下次重启时重新导入。
      *
-     * <p>Delegates to the active {@link PromptLegacyDataReader} implementation, which knows
-     * the specific legacy storage format and location.</p>
+     * <p>委托给当前活动的 {@link PromptLegacyDataReader} 实现，由其了解具体的旧版存储格式与位置。</p>
      *
      * @param namespaceId namespace ID
      * @param promptKey   prompt key
@@ -357,17 +358,17 @@ public class PromptDataMigrationTask implements ApplicationListener<ApplicationR
         versionInfo.setPromptKey(promptKey);
         versionInfo.setVersion(version);
         
-        // Pre-compute md5 from content without md5 field
+        // 先清空 md5 再序列化，以便预计算不含 md5 字段的内容摘要
         versionInfo.setMd5(null);
         String contentJson = JacksonUtils.toJson(versionInfo);
         String md5 = com.alibaba.nacos.common.utils.MD5Utils.md5Hex(contentJson,
             java.nio.charset.StandardCharsets.UTF_8.name());
         versionInfo.setMd5(md5);
         
-        // Write to typed storage FIRST (idempotent overwrite)
+        // 先写入类型化存储（幂等覆盖）
         writeToTypedStorage(namespace, promptKey, version, versionInfo);
         
-        // Then create DB record (idempotent: skip if exists)
+        // 再创建 DB 记录（幂等：已存在则跳过）
         AiResourceVersion existing = aiResourceVersionPersistService.find(namespace, promptKey,
             RESOURCE_TYPE_PROMPT, version);
         if (existing != null) {

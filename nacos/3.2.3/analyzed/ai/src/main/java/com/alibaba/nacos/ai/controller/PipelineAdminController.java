@@ -37,7 +37,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Pipeline Admin Controller for querying pipeline execution records.
+ * 流水线管理端控制器，用于查询流水线执行记录。
+ *
+ * <p>支持分页列表与按 pipelineId 查询详情；保留旧版路径 API 并标记为废弃。</p>
  *
  * @author kiro
  * @since 3.2.0
@@ -54,7 +56,7 @@ public class PipelineAdminController {
     }
     
     /**
-     * List pipeline executions with pagination.
+     * 分页列出流水线执行记录。
      */
     @Since("3.2.0")
     @GetMapping(Constants.Pipeline.LIST_SUBPATH)
@@ -70,7 +72,7 @@ public class PipelineAdminController {
     }
     
     /**
-     * Get pipeline execution detail by ID (query parameter {@code pipelineId}).
+     * 按 pipelineId 查询参数获取流水线执行详情。
      */
     @Since("3.2.1")
     @GetMapping(Constants.Pipeline.DETAIL_SUBPATH)
@@ -82,7 +84,7 @@ public class PipelineAdminController {
     }
     
     /**
-     * Get pipeline execution detail by ID in path.
+     * 通过路径中的 pipelineId 获取流水线执行详情。
      *
      * @deprecated since 3.2.1, for removal in a future release. Use {@code GET .../detail?pipelineId=}.
      */
@@ -96,7 +98,7 @@ public class PipelineAdminController {
     }
     
     /**
-     * List pipeline executions with pagination at the controller base path.
+     * 在控制器根路径分页列出流水线执行记录。
      *
      * @deprecated since 3.2.1, for removal in a future release. Use {@code GET .../list}.
      */

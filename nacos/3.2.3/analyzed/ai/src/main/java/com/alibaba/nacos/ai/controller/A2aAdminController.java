@@ -50,7 +50,10 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * Nacos A2A Admin controller.
+ * Nacos A2A（Agent-to-Agent）管理端控制器。
+ *
+ * <p>提供 Agent 注册、查询、更新、删除及版本列表等 REST API，
+ * 路径前缀见 {@link Constants.A2A#ADMIN_PATH}。</p>
  *
  * @author nacos
  */
@@ -67,7 +70,7 @@ public class A2aAdminController {
     }
     
     /**
-     * Register agent.
+     * 注册 Agent。
      *
      * @param form the agent detail form to register
      * @return result of the registration operation
@@ -85,7 +88,7 @@ public class A2aAdminController {
     }
     
     /**
-     * Get agent card.
+     * 获取 Agent Card 详情。
      *
      * @param form the agent form to get
      * @return result of the get operation
@@ -103,7 +106,7 @@ public class A2aAdminController {
     }
     
     /**
-     * Update agent.
+     * 更新 Agent。
      *
      * @param form the agent update form to update
      * @return result of the update operation
@@ -122,7 +125,7 @@ public class A2aAdminController {
     }
     
     /**
-     * Delete agent.
+     * 删除 Agent。
      *
      * @param form the agent form to delete
      * @return result of the deletion operation
@@ -139,7 +142,7 @@ public class A2aAdminController {
     }
     
     /**
-     * List agents.
+     * 分页列出 Agent。
      *
      * @param agentListForm the agent list form to list
      * @param pageForm      the page form to list
@@ -161,7 +164,7 @@ public class A2aAdminController {
     }
     
     /**
-     * List all versions for target Agent.
+     * 列出目标 Agent 的全部版本。
      *
      * @param agentForm agent form
      * @return all version for target agent.

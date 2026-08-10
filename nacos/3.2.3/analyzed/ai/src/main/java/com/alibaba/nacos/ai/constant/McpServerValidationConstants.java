@@ -17,28 +17,30 @@
 package com.alibaba.nacos.ai.constant;
 
 /**
- * Constants for MCP server validation.
+ * MCP 服务端校验相关常量。
+ *
+ * <p>定义校验结果状态：有效、无效、重复。</p>
  *
  * @author nacos
  */
 public final class McpServerValidationConstants {
     
     /**
-     * Validation status: valid.
+     * 校验状态：有效。
      */
     public static final String STATUS_VALID = "valid";
     
     /**
-     * Validation status: invalid.
+     * 校验状态：无效。
      */
     public static final String STATUS_INVALID = "invalid";
     
     /**
-     * Validation status: duplicate.
+     * 校验状态：重复。
      */
     public static final String STATUS_DUPLICATE = "duplicate";
     
     private McpServerValidationConstants() {
-        // Private constructor to prevent instantiation
+        // 私有构造器，禁止实例化
     }
 }

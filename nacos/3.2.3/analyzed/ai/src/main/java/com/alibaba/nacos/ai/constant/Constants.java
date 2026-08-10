@@ -17,24 +17,33 @@
 package com.alibaba.nacos.ai.constant;
 
 /**
- * Nacos AI Server Constants.
+ * Nacos AI 服务端常量定义。
+ *
+ * <p>涵盖 MCP、A2A、Skill、AgentSpec、Pipeline、Prompt 等子模块的
+ * API 路径、Config 分组、DataId 后缀及搜索模式等配置键。</p>
  *
  * @author xiweng.yy
  */
 public class Constants {
     
+    /** MCP 模块基础路径。 */
     public static final String MCP_PATH = "/ai/mcp";
     
+    /** MCP 管理端 API 路径前缀。 */
     public static final String MCP_ADMIN_PATH = "/v3/admin" + MCP_PATH;
     
+    /** MCP 控制台 API 路径前缀。 */
     public static final String MCP_CONSOLE_PATH = "/v3/console" + MCP_PATH;
     
+    /** AI 资源导入管理端 API 路径。 */
     public static final String AI_RESOURCE_IMPORT_ADMIN_PATH = "/v3/admin/ai/import";
     
     public static final String AI_RESOURCE_IMPORT_CONSOLE_PATH = "/v3/console/ai/import";
     
+    /** MCP 列表精确搜索模式。 */
     public static final String MCP_LIST_SEARCH_ACCURATE = "accurate";
     
+    /** MCP 列表模糊搜索模式。 */
     public static final String MCP_LIST_SEARCH_BLUR = "blur";
     
     public static final String ALL_PATTERN = com.alibaba.nacos.api.common.Constants.ALL_PATTERN;
@@ -98,6 +107,7 @@ public class Constants {
     public static final String SERVER_RESOURCE_SPEC_CONFIG_DATA_ID_TEMPLATE =
         "%s-%s" + MCP_SERVER_RESOURCE_DATA_ID_SUFFIX;
     
+    /** A2A（Agent-to-Agent）相关常量。 */
     public static class A2A {
         
         public static final String CONSOLE_PATH = "/v3/console/ai/a2a";
@@ -135,6 +145,7 @@ public class Constants {
             "__nacos.agent.endpoint.tenant__";
     }
     
+    /** Skill 技能模块相关常量。 */
     public static class Skills {
         
         public static final String CONSOLE_PATH = "/v3/console/ai/skills";
@@ -155,21 +166,25 @@ public class Constants {
         
         /**
          * Resource type constant used in {@code ai_resource_version.type} for skill rows.
+          * <p>Nacos AI 模块 API；详见上方英文说明。</p>
          */
         public static final String RESOURCE_TYPE_SKILL = "skill";
         
         /**
          * Key inside {@code ai_resource_version.storage} JSON for the published content MD5.
+          * <p>Nacos AI 模块 API；详见上方英文说明。</p>
          */
         public static final String STORAGE_KEY_CONTENT_MD5 = "contentMd5";
         
         /**
          * Response header carrying the published skill content MD5 for client listener cache.
+          * <p>Nacos AI 模块 API；详见上方英文说明。</p>
          */
         public static final String HEADER_SKILL_MD5 = "X-Nacos-Skill-Md5";
         
         /**
          * Response header carrying the resolved version when the client queries by label.
+          * <p>Nacos AI 模块 API；详见上方英文说明。</p>
          */
         public static final String HEADER_SKILL_RESOLVED_VERSION = "X-Nacos-Skill-Resolved-Version";
         
@@ -181,10 +196,12 @@ public class Constants {
          * honors the {@code nacos.ai.skill.zip.max-upload-size-mb} property when an operator
          * needs to raise this cap. This constant is preserved as the historical default and for
          * backward compatibility with callers outside the skill upload path.
+          * <p>Nacos AI 模块 API；详见上方英文说明。</p>
          */
         public static final long MAX_UPLOAD_ZIP_BYTES = 10L * 1024 * 1024;
     }
     
+    /** AgentSpec 智能体规格模块相关常量。 */
     public static class AgentSpecs {
         
         public static final String ADMIN_PATH = "/v3/admin/ai/agentspecs";
@@ -207,6 +224,7 @@ public class Constants {
          * which honors the {@code nacos.ai.agentspec.zip.max-upload-size-mb} property when an
          * operator needs to raise this cap. This constant is preserved as the historical default
          * and for backward compatibility with callers outside the AgentSpec upload path.
+          * <p>Nacos AI 模块 API；详见上方英文说明。</p>
          */
         public static final long MAX_UPLOAD_ZIP_BYTES = 50L * 1024 * 1024;
         
@@ -225,6 +243,7 @@ public class Constants {
             "X-Nacos-AgentSpec-Resolved-Version";
     }
     
+    /** 发布流水线模块相关常量。 */
     public static class Pipeline {
         
         public static final String ADMIN_PATH = "/v3/admin/ai/pipelines";
@@ -232,16 +251,17 @@ public class Constants {
         public static final String CONSOLE_PATH = "/v3/console/ai/pipelines";
         
         /**
-         * List pipeline executions (aligned with Skill/Prompt {@code /list} style).
+         * 列出流水线执行记录（与 Skill/Prompt 的 {@code /list} 风格对齐）。
          */
         public static final String LIST_SUBPATH = "/list";
         
         /**
-         * Get single pipeline execution by id (query parameter {@code pipelineId}).
+         * 按 id 获取单条流水线执行记录（查询参数 {@code pipelineId}）。
          */
         public static final String DETAIL_SUBPATH = "/detail";
     }
     
+    /** Prompt 提示词模块相关常量。 */
     public static class Prompt {
         
         public static final String CONSOLE_PATH = "/v3/console/ai/prompt";
@@ -251,74 +271,85 @@ public class Constants {
         public static final String CLIENT_PATH = "/v3/client/ai/prompt";
         
         /**
-         * Fixed group for all prompt configurations.
+         * 所有 Prompt 配置的固定 Config 分组。
          */
         public static final String PROMPT_GROUP = "nacos-ai-prompt";
         
         /**
          * DataId suffix for prompt configurations.
+          * <p>Nacos AI 模块 API；详见上方英文说明。</p>
          */
         public static final String PROMPT_DATA_ID_SUFFIX = ".json";
         
         /**
          * DataId suffix for descriptor side prompt metadata.
+          * <p>Nacos AI 模块 API；详见上方英文说明。</p>
          */
         public static final String DESCRIPTOR_DATA_ID_SUFFIX =
             ".descriptor" + PROMPT_DATA_ID_SUFFIX;
         
         /**
          * DataId suffix for runtime label/version mapping.
+          * <p>Nacos AI 模块 API；详见上方英文说明。</p>
          */
         public static final String LABEL_VERSION_MAPPING_DATA_ID_SUFFIX =
             ".label-version-mapping" + PROMPT_DATA_ID_SUFFIX;
         
         /**
          * Key for prompt version in extInfo.
+          * <p>Nacos AI 模块 API；详见上方英文说明。</p>
          */
         public static final String EXT_PROMPT_VERSION = "prompt_version";
         
         /**
          * Key for prompt commit message in extInfo.
+          * <p>Nacos AI 模块 API；详见上方英文说明。</p>
          */
         public static final String EXT_PROMPT_COMMIT_MSG = "prompt_commit_msg";
         
         /**
-         * Search mode: blur search.
+         * 搜索模式：模糊搜索。
          */
         public static final String SEARCH_BLUR = "blur";
         
         /**
-         * Search mode: accurate search.
+         * 搜索模式：精确搜索。
          */
         public static final String SEARCH_ACCURATE = "accurate";
         
         /**
          * Default namespace for prompt.
+          * <p>Nacos AI 模块 API；详见上方英文说明。</p>
          */
         public static final String PROMPT_DEFAULT_NAMESPACE = "public";
         
         /**
          * Config type for prompt.
+          * <p>Nacos AI 模块 API；详见上方英文说明。</p>
          */
         public static final String PROMPT_CONFIG_TYPE = "json";
         
         /**
          * JSON field: promptKey.
+          * <p>Nacos AI 模块 API；详见上方英文说明。</p>
          */
         public static final String FIELD_PROMPT_KEY = "promptKey";
         
         /**
          * JSON field: version.
+          * <p>Nacos AI 模块 API；详见上方英文说明。</p>
          */
         public static final String FIELD_VERSION = "version";
         
         /**
          * JSON field: template.
+          * <p>Nacos AI 模块 API；详见上方英文说明。</p>
          */
         public static final String FIELD_TEMPLATE = "template";
         
         /**
          * JSON field: commitMsg.
+          * <p>Nacos AI 模块 API；详见上方英文说明。</p>
          */
         public static final String FIELD_COMMIT_MSG = "commitMsg";
     }

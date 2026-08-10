@@ -17,10 +17,10 @@
 package com.alibaba.nacos.ai.constant;
 
 /**
- * Shared constants for AI resource operations (Skill, AgentSpec, etc.).
+ * AI 资源操作（Skill、AgentSpec 等）的共享常量。
  *
- * <p>Extracts duplicated constants that were previously defined independently
- * in {@code SkillOperationServiceImpl} and {@code AgentSpecOperationServiceImpl}.</p>
+ * <p>抽取原先在 {@code SkillOperationServiceImpl} 与
+ * {@code AgentSpecOperationServiceImpl} 中重复定义的常量。</p>
  *
  * @author nacos
  */
@@ -30,47 +30,47 @@ public final class AiResourceConstants {
     }
     
     /**
-     * Meta status: resource is enabled.
+     * 元数据状态：资源已启用。
      */
     public static final String META_STATUS_ENABLE = "enable";
     
     /**
-     * Meta status: resource is disabled.
+     * 元数据状态：资源已禁用。
      */
     public static final String META_STATUS_DISABLE = "disable";
     
     /**
-     * Version status: version is online (published and active).
+     * 版本状态：已上线（已发布且生效）。
      */
     public static final String VERSION_STATUS_ONLINE = "online";
     
     /**
-     * Version status: version is in draft (not yet submitted).
+     * 版本状态：草稿（尚未提交）。
      */
     public static final String VERSION_STATUS_DRAFT = "draft";
     
     /**
-     * Version status: version is under review (pipeline running).
+     * 版本状态：审核中（流水线运行中）。
      */
     public static final String VERSION_STATUS_REVIEWING = "reviewing";
     
     /**
-     * Version status: version has been reviewed (pipeline approved, awaiting publish).
+     * 版本状态：已审核（流水线通过，待发布）。
      */
     public static final String VERSION_STATUS_REVIEWED = "reviewed";
     
     /**
-     * Version status: version has been taken offline.
+     * 版本状态：已下线。
      */
     public static final String VERSION_STATUS_OFFLINE = "offline";
     
     /**
-     * Maximum retry count for CAS-based meta update operations.
+     * 基于 CAS 的元数据更新操作最大重试次数。
      */
     public static final int MAX_WORKING_VERSION_RETRY = 3;
     
     /**
-     * Label key that points to the latest published version.
+     * 指向最新已发布版本的标签键。
      */
     public static final String LABEL_LATEST = "latest";
 }

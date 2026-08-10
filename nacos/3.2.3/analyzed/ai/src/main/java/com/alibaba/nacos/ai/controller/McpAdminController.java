@@ -49,7 +49,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Nacos AI MCP controller.
+ * Nacos AI MCP 管理端控制器。
+ *
+ * <p>提供 MCP Server 的分页列表、详情查询、创建、更新与删除 REST API。</p>
  *
  * @author xiweng.yy
  */
@@ -66,7 +68,7 @@ public class McpAdminController {
     }
     
     /**
-     * List mcp server.
+     * 分页列出 MCP Server。
      *
      * @param mcpListForm list mcp servers request form.
      * @param pageForm    page info about the request.
@@ -88,7 +90,7 @@ public class McpAdminController {
     }
     
     /**
-     * Get specified mcp server detail info.
+     * 获取指定 MCP Server 详情。
      *
      * @param mcpForm get mcp server request form
      * @return detail info with {@link McpServerDetailInfo}
@@ -105,7 +107,7 @@ public class McpAdminController {
     }
     
     /**
-     * Create new mcp server.
+     * 创建 MCP Server。
      *
      * @param mcpForm create mcp server request form
      * @throws NacosException any exception during handling
@@ -126,10 +128,10 @@ public class McpAdminController {
     }
     
     /**
-     * Update existed mcp server.
+     * 更新已有 MCP Server。
      *
      * <p>
-     * `namespaceId` and `mcpName` can't be changed.
+     * {@code namespaceId} 与 {@code mcpName} 不可变更。
      * </p>
      *
      * @param mcpForm update mcp servers request form
@@ -151,7 +153,7 @@ public class McpAdminController {
     }
     
     /**
-     * Delete existed mcp server.
+     * 删除已有 MCP Server。
      *
      * @param mcpForm delete mcp server request form
      * @throws NacosException any exception during handling

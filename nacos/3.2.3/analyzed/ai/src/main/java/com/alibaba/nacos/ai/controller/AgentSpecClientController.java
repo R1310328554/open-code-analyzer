@@ -43,7 +43,10 @@ import org.springframework.web.bind.annotation.RestController;
 import static com.alibaba.nacos.plugin.auth.constant.Constants.Tag.ALLOW_ANONYMOUS;
 
 /**
- * AgentSpec client controller for runtime read query.
+ * AgentSpec 客户端控制器，供运行时只读查询。
+ *
+ * <p>支持搜索已启用 AgentSpec 及按 label/version/latest 获取在线版本；
+ * 支持基于 MD5 的条件查询，客户端缓存未过期时返回 304。</p>
  *
  * @author nacos
  */
@@ -60,7 +63,7 @@ public class AgentSpecClientController {
     }
     
     /**
-     * Search enabled agentspecs for runtime usage.
+     * 搜索已启用的 AgentSpec，供运行时使用。
      */
     @Since("3.2.0")
     @GetMapping("/search")
@@ -75,8 +78,8 @@ public class AgentSpecClientController {
     }
     
     /**
-     * Get an online agentspec version by label/version/latest.
-     * Supports MD5-based conditional query: returns 304 when the client cache is fresh.
+     * 按 label/version/latest 获取在线 AgentSpec 版本。
+     * 支持基于 MD5 的条件查询：客户端缓存有效时返回 304。
      */
     @Since("3.2.0")
     @GetMapping

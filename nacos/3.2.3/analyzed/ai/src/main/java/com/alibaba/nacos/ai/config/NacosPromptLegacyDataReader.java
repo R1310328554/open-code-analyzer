@@ -41,8 +41,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Default {@link PromptLegacyDataReader} for open-source Nacos.
- * Reads legacy prompt data from Nacos Config ({@code nacos-ai-prompt} group).
+ * 开源 Nacos 默认的 {@link PromptLegacyDataReader} 实现。
+ * 从 Nacos Config（{@code nacos-ai-prompt} 分组）读取旧版 Prompt 数据。
+ *
+ * <p>扫描各命名空间下的描述符与标签-版本映射配置，按需加载版本内容，
+ * 供 {@link PromptDataMigrationTask} 迁移至 DB + 类型化存储架构。</p>
  *
  * @author nacos
  * @since 3.2.0
@@ -116,11 +119,11 @@ public class NacosPromptLegacyDataReader implements PromptLegacyDataReader {
         }
         info.setPromptKey(promptKey);
         info.setVersion(version);
-        // Use Config table md5 if not already in content JSON
+        // 若内容 JSON 中尚无 md5，则使用 Config 表中的 md5
         if (info.getMd5() == null && configAllInfo.getMd5() != null) {
             info.setMd5(configAllInfo.getMd5());
         }
-        // srcUser from createUser (Config advance info)
+        // srcUser 取自 createUser（Config 扩展信息）
         if (info.getSrcUser() == null && configAllInfo.getCreateUser() != null) {
             info.setSrcUser(configAllInfo.getCreateUser());
         }
@@ -247,10 +250,10 @@ public class NacosPromptLegacyDataReader implements PromptLegacyDataReader {
         }
     }
     
-    // ========== Legacy Config JSON structures (for deserialization only) ==========
+    // ========== 旧版 Config JSON 结构（仅用于反序列化） ==========
     
     /**
-     * Legacy prompt descriptor stored in Config as {promptKey}.descriptor.json.
+     * 旧版 Prompt 描述符，在 Config 中以 {promptKey}.descriptor.json 存储。
      */
     static class LegacyDescriptor {
         
@@ -266,7 +269,7 @@ public class NacosPromptLegacyDataReader implements PromptLegacyDataReader {
     }
     
     /**
-     * Legacy prompt label/version mapping stored in Config as {promptKey}.label-version-mapping.json.
+     * 旧版 Prompt 标签/版本映射，在 Config 中以 {promptKey}.label-version-mapping.json 存储。
      */
     static class LegacyLabelVersionMapping {
         

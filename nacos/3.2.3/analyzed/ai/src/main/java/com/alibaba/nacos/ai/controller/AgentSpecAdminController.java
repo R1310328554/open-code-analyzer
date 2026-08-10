@@ -62,7 +62,10 @@ import java.util.Map;
 import static com.alibaba.nacos.plugin.auth.constant.Constants.Tag.ALLOW_ANONYMOUS;
 
 /**
- * AgentSpec admin controller.
+ * AgentSpec 管理端控制器。
+ *
+ * <p>提供 AgentSpec 全生命周期治理：查询、上传、草稿、提交审核、
+ * 发布、强制发布、上下线、标签与可见性范围管理等 REST API。</p>
  *
  * @author nacos
  */
@@ -79,7 +82,7 @@ public class AgentSpecAdminController {
     }
     
     /**
-     * Get agentspec detail for admin (includes version governance info and all version summaries).
+     * 获取 AgentSpec 管理端详情（含版本治理信息与全部版本摘要）。
      *
      * @param form the agentspec form to get
      * @return result of the get operation
@@ -96,7 +99,7 @@ public class AgentSpecAdminController {
     }
     
     /**
-     * Get specific version detail of an agentspec for viewing or editing.
+     * 获取 AgentSpec 指定版本的完整详情，供查看或编辑。
      *
      * @param form the agentspec form containing agentSpecName and version
      * @return full agentspec content for the specified version
@@ -114,8 +117,8 @@ public class AgentSpecAdminController {
     }
     
     /**
-     * Get specific version metadata of an agentspec without resource content. Returns the agentspec main content and
-     * resource list (name + type only), skipping resource file IO.
+     * 获取 AgentSpec 指定版本元数据（不含资源文件内容）。
+     * 返回主内容与资源列表（仅名称与类型），跳过资源文件 IO。
      *
      * @param form the agentspec form containing agentSpecName and version
      * @return agentspec with resource list containing only name and type
@@ -133,7 +136,7 @@ public class AgentSpecAdminController {
     }
     
     /**
-     * Delete agentspec.
+     * 删除 AgentSpec。
      *
      * @param form the agentspec form to delete
      * @return result of the deletion operation
@@ -149,7 +152,7 @@ public class AgentSpecAdminController {
     }
     
     /**
-     * List agentspecs for admin (includes governance metadata: status, tags, labels, etc.).
+     * 管理端分页列出 AgentSpec（含状态、标签、labels 等治理元数据）。
      *
      * @param agentSpecListForm the agentspec list form to list
      * @param pageForm          the page form to list
@@ -174,7 +177,7 @@ public class AgentSpecAdminController {
     }
     
     /**
-     * Upload agentspec from zip file.
+     * 从 ZIP 文件上传 AgentSpec。
      *
      * @param request     HTTP servlet request
      * @param namespaceId namespace ID
@@ -199,7 +202,7 @@ public class AgentSpecAdminController {
     }
     
     /**
-     * Create draft version.
+     * 创建草稿版本。
      */
     @Since("3.2.0")
     @PostMapping("/draft")
@@ -213,7 +216,7 @@ public class AgentSpecAdminController {
     }
     
     /**
-     * Update current draft content.
+     * 更新当前草稿内容。
      */
     @Since("3.2.0")
     @PutMapping("/draft")
@@ -226,7 +229,7 @@ public class AgentSpecAdminController {
     }
     
     /**
-     * Delete current draft version.
+     * 删除当前草稿版本。
      */
     @Since("3.2.0")
     @DeleteMapping("/draft")
@@ -238,7 +241,7 @@ public class AgentSpecAdminController {
     }
     
     /**
-     * Submit a version for pipeline review.
+     * 提交版本进入流水线审核。
      */
     @Since("3.2.0")
     @PostMapping("/submit")
@@ -252,7 +255,7 @@ public class AgentSpecAdminController {
     }
     
     /**
-     * Publish an approved reviewing version.
+     * 发布已通过审核的版本。
      */
     @Since("3.2.0")
     @PostMapping("/publish")
@@ -267,8 +270,8 @@ public class AgentSpecAdminController {
     }
     
     /**
-     * Force-publish an agentspec version, bypassing pipeline validation. Accepts draft, reviewing, and reviewed
-     * versions. Only admin users can call this endpoint.
+     * 强制发布 AgentSpec 版本，跳过流水线校验。接受 draft、reviewing、reviewed 状态。
+     * 仅管理员可调用。
      */
     @Since("3.2.1")
     @PostMapping("/force-publish")
@@ -285,7 +288,7 @@ public class AgentSpecAdminController {
     }
     
     /**
-     * Re-edit a reviewed agentspec version, transitioning it back to draft for modification.
+     * 将已审核版本退回草稿以便重新编辑。
      */
     @Since("3.2.2")
     @PostMapping("/redraft")
@@ -298,7 +301,7 @@ public class AgentSpecAdminController {
     }
     
     /**
-     * Update runtime route labels without changing version status.
+     * 更新运行时路由标签，不改变版本状态。
      */
     @Since("3.2.0")
     @PutMapping("/labels")
@@ -312,7 +315,7 @@ public class AgentSpecAdminController {
     }
     
     /**
-     * Update agentspec biz tags without changing version status.
+     * 更新 AgentSpec 业务标签，不改变版本状态。
      */
     @Since("3.2.0")
     @PutMapping("/biz-tags")
@@ -325,7 +328,7 @@ public class AgentSpecAdminController {
     }
     
     /**
-     * Online operation (version-level or agentspec-level by scope).
+     * 上线操作（按 scope 支持版本级或 AgentSpec 级）。
      */
     @Since("3.2.0")
     @PostMapping("/online")
@@ -339,7 +342,7 @@ public class AgentSpecAdminController {
     }
     
     /**
-     * Update agentspec visibility scope (PUBLIC or PRIVATE).
+     * 更新 AgentSpec 可见性范围（PUBLIC 或 PRIVATE）。
      *
      * @param form the scope update form
      * @return result of the update operation
@@ -356,7 +359,7 @@ public class AgentSpecAdminController {
     }
     
     /**
-     * Offline operation (version-level or agentspec-level by scope).
+     * 下线操作（按 scope 支持版本级或 AgentSpec 级）。
      */
     @Since("3.2.0")
     @PostMapping("/offline")

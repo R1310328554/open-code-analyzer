@@ -21,15 +21,13 @@ import com.alibaba.nacos.api.ai.model.prompt.PromptVersionInfo;
 import java.util.List;
 
 /**
- * SPI interface for reading legacy prompt data during migration.
+ * 迁移期间读取旧版 Prompt 数据的 SPI 接口。
  *
- * <p>Different environments (open-source Nacos vs commercial) may store prompt data
- * in different legacy formats. Implementations provide the ability to scan and read
- * legacy prompt data for migration to the new DB + typed storage architecture.</p>
+ * <p>不同环境（开源 Nacos 与商业版）可能以不同旧版格式存储 Prompt。
+ * 实现类负责扫描并读取旧版数据，供迁移至 DB + 类型化存储架构。</p>
  *
- * <p>The default implementation ({@code nacos}) reads from Nacos Config
- * ({@code nacos-ai-prompt} group). Commercial implementations can provide their own
- * {@code @Component} bean to override.</p>
+ * <p>默认实现（{@code nacos}）从 Nacos Config（{@code nacos-ai-prompt} 分组）读取。
+ * 商业版可提供自定义 {@code @Component} Bean 覆盖。</p>
  *
  * @author nacos
  * @since 3.2.0
@@ -37,23 +35,22 @@ import java.util.List;
 public interface PromptLegacyDataReader {
     
     /**
-     * Provider type identifier. Used to select the active reader via configuration
-     * property {@code nacos.ai.prompt.migration.provider}.
+     * 提供者类型标识，通过配置项 {@code nacos.ai.prompt.migration.provider} 选择活动读取器。
      *
      * @return type string, e.g. "nacos"
      */
     String type();
     
     /**
-     * Scan legacy storage and return all prompts with their metadata and version lists.
-     * Version content is NOT included; use {@link #readVersionContent} to load on demand.
+     * 扫描旧版存储，返回全部 Prompt 及其元数据与版本列表。
+     * 不包含版本内容；按需通过 {@link #readVersionContent} 加载。
      *
      * @return list of legacy prompt data
      */
     List<LegacyPromptData> scanLegacyPrompts();
     
     /**
-     * Read the content of a specific prompt version from legacy storage.
+     * 从旧版存储读取指定 Prompt 版本的内容。
      *
      * @param namespaceId namespace ID
      * @param promptKey   prompt key
@@ -63,10 +60,9 @@ public interface PromptLegacyDataReader {
     PromptVersionInfo readVersionContent(String namespaceId, String promptKey, String version);
     
     /**
-     * Clean up legacy storage entries for a prompt after it has been deleted in the new system.
-     * This prevents the migration task from re-importing deleted prompts on next restart.
+     * 新系统中删除 Prompt 后清理旧版存储条目，防止迁移任务在下次重启时重新导入。
      *
-     * <p>Default implementation is no-op for backward compatibility with existing implementations.</p>
+     * <p>默认空实现，保持与既有实现类的向后兼容。</p>
      *
      * @param namespaceId namespace ID
      * @param promptKey   prompt key

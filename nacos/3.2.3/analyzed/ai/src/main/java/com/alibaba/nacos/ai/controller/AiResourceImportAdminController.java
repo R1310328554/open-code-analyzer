@@ -42,7 +42,10 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * Admin API controller for AI resource import.
+ * AI 资源导入管理端 API 控制器。
+ *
+ * <p>提供导入源列表、外部候选搜索、校验与执行导入四步流程，
+ * 支持从外部仓库批量导入 Skill/AgentSpec 等 AI 资源。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
@@ -59,7 +62,7 @@ public class AiResourceImportAdminController {
     }
     
     /**
-     * List configured import sources.
+     * 列出已配置的导入源。
      *
      * @param form source list form
      * @return source list
@@ -75,7 +78,7 @@ public class AiResourceImportAdminController {
     }
     
     /**
-     * Search external import candidates.
+     * 搜索外部导入候选资源。
      *
      * @param form search form
      * @return candidate page
@@ -91,7 +94,7 @@ public class AiResourceImportAdminController {
     }
     
     /**
-     * Validate selected import candidates.
+     * 校验选中的导入候选。
      *
      * @param form validate form
      * @return validation result
@@ -107,7 +110,7 @@ public class AiResourceImportAdminController {
     }
     
     /**
-     * Execute import for selected candidates.
+     * 对选中候选执行导入。
      *
      * @param form execute form
      * @return import result

@@ -52,7 +52,10 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Bootstrap built-in skills into an empty AI namespace after cluster startup.
+ * 集群启动后将内置 Skill 引导导入至 AI 命名空间。
+ *
+ * <p>从 {@code data/skills-data.zip} 读取种子包，在默认命名空间为空或
+ * 仅缺失部分内置 Skill 时并发导入；通过 Config 引导标记实现集群互斥。</p>
  *
  * @author nacos
  */

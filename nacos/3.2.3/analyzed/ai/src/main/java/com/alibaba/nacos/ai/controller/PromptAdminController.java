@@ -67,10 +67,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Prompt admin controller.
+ * Prompt 管理端控制器。
  *
- * <p>Provides REST APIs for prompt management operations including lifecycle governance
- * (draft/submit/publish/online/offline) and legacy one-shot publish.</p>
+ * <p>提供 Prompt 管理 REST API，含生命周期治理（草稿/提交/发布/上下线）
+ * 及旧版一次性发布兼容接口。</p>
  *
  * @author nacos
  */
@@ -86,10 +86,10 @@ public class PromptAdminController {
         this.promptOperationService = promptOperationService;
     }
     
-    // ========== Common endpoints ==========
+    // ========== 通用端点 ==========
     
     /**
-     * Delete prompt.
+     * 删除 Prompt。
      */
     @Since("3.2.0")
     @DeleteMapping
@@ -102,7 +102,7 @@ public class PromptAdminController {
     }
     
     /**
-     * List prompts with pagination.
+     * 分页列出 Prompt。
      */
     @Since("3.2.0")
     @GetMapping("/list")
@@ -116,7 +116,7 @@ public class PromptAdminController {
     }
     
     /**
-     * List prompt versions.
+     * 列出 Prompt 版本。
      */
     @Since("3.2.0")
     @GetMapping("/versions")
@@ -130,10 +130,10 @@ public class PromptAdminController {
         return Result.success(result);
     }
     
-    // ========== Lifecycle endpoints ==========
+    // ========== 生命周期端点 ==========
     
     /**
-     * Get prompt governance detail (includes version governance info and all version summaries).
+     * 获取 Prompt 治理详情（含版本治理信息与全部版本摘要）。
      */
     @Since("3.2.1")
     @GetMapping("/governance")
@@ -145,7 +145,7 @@ public class PromptAdminController {
     }
     
     /**
-     * Get specific version detail for viewing or editing.
+     * 获取指定版本详情，供查看或编辑。
      */
     @Since("3.2.1")
     @GetMapping("/version")
@@ -157,9 +157,9 @@ public class PromptAdminController {
     }
     
     /**
-     * Download a specific prompt version as a Markdown document.
+     * 将指定 Prompt 版本下载为 Markdown 文档。
      *
-     * <p>This endpoint publishes a download event so the download count is incremented.</p>
+     * <p>本端点会发布下载事件，从而递增下载计数。</p>
      *
      * @param form the prompt query form containing promptKey and version
      * @return Markdown file as ResponseEntity
@@ -177,7 +177,7 @@ public class PromptAdminController {
     }
     
     /**
-     * Create draft: {@code template} required unless {@code basedOnVersion} is set (fork from existing version).
+     * 创建草稿：未设置 {@code basedOnVersion} 时 {@code template} 必填（否则从已有版本 fork）。
      */
     @Since("3.2.1")
     @PostMapping("/draft")
@@ -193,7 +193,7 @@ public class PromptAdminController {
     }
     
     /**
-     * Update current draft content.
+     * 更新当前草稿内容。
      */
     @Since("3.2.1")
     @PutMapping("/draft")
@@ -207,7 +207,7 @@ public class PromptAdminController {
     }
     
     /**
-     * Delete current draft version.
+     * 删除当前草稿版本。
      */
     @Since("3.2.1")
     @DeleteMapping("/draft")
@@ -219,7 +219,7 @@ public class PromptAdminController {
     }
     
     /**
-     * Submit a version for pipeline review.
+     * 提交版本进入流水线审核。
      */
     @Since("3.2.1")
     @PostMapping("/submit")
@@ -232,7 +232,7 @@ public class PromptAdminController {
     }
     
     /**
-     * Publish an approved reviewing version.
+     * 发布已通过审核的版本。
      */
     @Since("3.2.1")
     @PostMapping("/publish")
@@ -246,7 +246,7 @@ public class PromptAdminController {
     }
     
     /**
-     * Force-publish a prompt version, bypassing pipeline validation.
+     * 强制发布 Prompt 版本，跳过流水线校验。
      */
     @Since("3.2.1")
     @PostMapping("/force-publish")
@@ -263,7 +263,7 @@ public class PromptAdminController {
     }
     
     /**
-     * Re-edit a reviewed prompt version, transitioning it back to draft for modification.
+     * 将已审核 Prompt 版本退回草稿以便重新编辑。
      */
     @Since("3.2.2")
     @PostMapping("/redraft")
@@ -276,7 +276,7 @@ public class PromptAdminController {
     }
     
     /**
-     * Online a prompt version.
+     * 上线 Prompt 版本。
      */
     @Since("3.2.1")
     @PostMapping("/online")
@@ -289,7 +289,7 @@ public class PromptAdminController {
     }
     
     /**
-     * Offline a prompt version.
+     * 下线 Prompt 版本。
      */
     @Since("3.2.1")
     @PostMapping("/offline")
@@ -302,7 +302,7 @@ public class PromptAdminController {
     }
     
     /**
-     * Update runtime route labels without changing version status.
+     * 更新运行时路由标签，不改变版本状态。
      */
     @Since("3.2.1")
     @PutMapping("/labels")
@@ -315,7 +315,7 @@ public class PromptAdminController {
     }
     
     /**
-     * Update prompt description without changing version status.
+     * 更新 Prompt 描述，不改变版本状态。
      */
     @Since("3.2.1")
     @PutMapping("/description")
@@ -329,7 +329,7 @@ public class PromptAdminController {
     }
     
     /**
-     * Update prompt biz tags without changing version status.
+     * 更新 Prompt 业务标签，不改变版本状态。
      */
     @Since("3.2.1")
     @PutMapping("/biz-tags")
@@ -341,7 +341,7 @@ public class PromptAdminController {
         return Result.success("ok");
     }
     
-    // ========== Private helpers ==========
+    // ========== 私有辅助方法 ==========
     
     private List<PromptVariable> parseVariables(String variables) {
         if (StringUtils.isBlank(variables)) {
@@ -351,10 +351,10 @@ public class PromptAdminController {
         });
     }
     
-    // ========== Legacy compatibility endpoints (deprecated) ==========
+    // ========== 旧版兼容端点（已废弃） ==========
     
     /**
-     * Legacy one-shot publish a new version of prompt.
+     * 旧版一次性发布 Prompt 新版本。
      *
      * @deprecated Use POST /draft + POST /submit instead.
      */
@@ -373,7 +373,7 @@ public class PromptAdminController {
     }
     
     /**
-     * Legacy get prompt metadata.
+     * 旧版获取 Prompt 元数据。
      *
      * @deprecated Use GET /governance instead.
      */
@@ -389,7 +389,7 @@ public class PromptAdminController {
     }
     
     /**
-     * Legacy get prompt detail by version/label/latest.
+     * 旧版按 version/label/latest 获取 Prompt 详情。
      *
      * @deprecated Use GET /version instead.
      */
@@ -405,7 +405,7 @@ public class PromptAdminController {
     }
     
     /**
-     * Legacy bind label to a specified prompt version.
+     * 旧版将 label 绑定到指定 Prompt 版本。
      *
      * @deprecated Use PUT /labels instead.
      */
@@ -423,7 +423,7 @@ public class PromptAdminController {
     }
     
     /**
-     * Legacy unbind label from prompt.
+     * 旧版从 Prompt 解绑 label。
      *
      * @deprecated Use PUT /labels instead.
      */
@@ -441,7 +441,7 @@ public class PromptAdminController {
     }
     
     /**
-     * Legacy update prompt metadata (description and bizTags).
+     * 旧版更新 Prompt 元数据（description 与 bizTags）。
      *
      * @deprecated Use PUT /description and PUT /biz-tags instead.
      */
