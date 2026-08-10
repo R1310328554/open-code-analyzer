@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T14:34:13Z",
   "files": [
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/authentication/CustomTestingSamlArtifactResolver.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/authentication/CustomTestingSamlArtifactResolverFactory.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/authentication/DelayedAuthenticator.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/authentication/DelayedAuthenticatorFactory.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/authentication/ExpectedParamAuthenticator.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/authentication/ExpectedParamAuthenticatorFactory.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/authentication/PushButtonAuthenticator.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/authentication/PushButtonAuthenticatorFactory.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/authentication/SetUserAttributeAuthenticator.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/authentication/SetUserAttributeAuthenticatorFactory.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/authentication/TestHttpAuthenticationChannelProviderFactory.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/authorization/DenyPolicyProvider.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/authorization/GrantPolicyProvider.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/authorization/GrantResourceOwnerPolicyProvider.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/authorization/ResourceVisibilityAttributePolicyProvider.java",
     "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/authorization/SpecificAddressPolicyProvider.java",
     "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/authorization/SpecificDomainOrAdminPolicyProvider.java",
     "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/authorization/TestPolicyProviderFactory.java",
@@ -33,5 +18,5 @@
     "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/broker/oidc/UnsupportedKeyJwksRestResource.java"
   ],
   "remaining_pending": 148,
-  "done": 5820
+  "done": 5835
 }
