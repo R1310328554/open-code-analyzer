@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// replicate.go — Replicate 预测 API ModelDriver：createPrediction 轮询/SSE 流式，Embed/Rerank 多形态输出归一化。
 //
 
 package models
@@ -32,10 +34,12 @@ import (
 
 const replicatePollInterval = time.Second
 
+// ReplicateModel Replicate 预测平台 ModelDriver
 type ReplicateModel struct {
 	baseModel BaseModel
 }
 
+// NewReplicateModel 创建 Replicate 驱动实例
 func NewReplicateModel(baseURL map[string]string, urlSuffix URLSuffix) *ReplicateModel {
 	return &ReplicateModel{
 		baseModel: BaseModel{
@@ -46,10 +50,12 @@ func NewReplicateModel(baseURL map[string]string, urlSuffix URLSuffix) *Replicat
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 Replicate 驱动实例
 func (r *ReplicateModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewReplicateModel(baseURL, r.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "replicate"，供工厂层路由
 func (r *ReplicateModel) Name() string {
 	return "replicate"
 }
@@ -82,6 +88,7 @@ type replicateModelSummary struct {
 	Name  string `json:"name"`
 }
 
+// endpoint 拼接 Replicate API URL
 func (r *ReplicateModel) endpoint(apiConfig *APIConfig, suffix string) (string, error) {
 
 	baseURL, err := r.baseModel.GetBaseURL(apiConfig)
@@ -97,6 +104,7 @@ func replicateUsesVersionEndpoint(modelName string) bool {
 	return !strings.Contains(name, "/") || strings.Contains(name, ":")
 }
 
+// predictionEndpoint 解析模型 predictions 端点与 version
 func (r *ReplicateModel) predictionEndpoint(apiConfig *APIConfig, modelName string) (string, string, error) {
 	if replicateUsesVersionEndpoint(modelName) {
 		endpoint, err := r.endpoint(apiConfig, r.baseModel.URLSuffix.Chat)
@@ -207,6 +215,7 @@ func replicateOutputToString(output interface{}) (string, error) {
 	}
 }
 
+// createPrediction 创建 Replicate 预测任务（可选 stream/wait）
 func (r *ReplicateModel) createPrediction(ctx context.Context, url string, version string, input map[string]interface{}, stream bool, apiKey string, preferWait bool) (*replicatePrediction, error) {
 	body := map[string]interface{}{
 		"input":  input,
@@ -263,6 +272,7 @@ func replicatePredictionSucceeded(status string) bool {
 	return status == "successful"
 }
 
+// getPrediction 按 URL 查询预测状态
 func (r *ReplicateModel) getPrediction(ctx context.Context, url string, apiKey string) (*replicatePrediction, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -295,6 +305,7 @@ func (r *ReplicateModel) getPrediction(ctx context.Context, url string, apiKey s
 	return &prediction, nil
 }
 
+// waitForPrediction 轮询直至预测完成（replicatePollInterval）
 func (r *ReplicateModel) waitForPrediction(ctx context.Context, prediction *replicatePrediction, apiKey string) (*replicatePrediction, error) {
 	if prediction == nil {
 		return nil, fmt.Errorf("replicate: empty prediction response")
@@ -324,6 +335,7 @@ func (r *ReplicateModel) waitForPrediction(ctx context.Context, prediction *repl
 	}
 }
 
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (r *ReplicateModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := r.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -363,6 +375,7 @@ func (r *ReplicateModel) ChatWithMessages(modelName string, messages []Message, 
 	return &ChatResponse{Answer: &answer, ReasonContent: &reasonContent}, nil
 }
 
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (r *ReplicateModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := r.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -413,6 +426,7 @@ func (r *ReplicateModel) ChatStreamlyWithSender(modelName string, messages []Mes
 	return r.readPredictionStream(prediction.URLs.Stream, *apiConfig.ApiKey, sender)
 }
 
+// readPredictionStream 读取 Replicate SSE 流并推送 delta
 func (r *ReplicateModel) readPredictionStream(url string, apiKey string, sender func(*string, *string) error) error {
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
 	if err != nil {
@@ -498,6 +512,7 @@ func dispatchReplicateSSEEvent(event replicateSSEEvent, sender func(*string, *st
 	}
 }
 
+// ListModels 列出当前 API Key 可见的模型目录
 func (r *ReplicateModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := r.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -566,12 +581,13 @@ func (r *ReplicateModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, 
 	return ParseListModel(modelList), nil
 }
 
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (r *ReplicateModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := r.ListModels(apiConfig)
 	return err
 }
 
-// replicateEmbedInput shapes the request body for Replicate's standard
+// replicateEmbedInput 构建 Replicate 标准 embedding 模型请求体
 // embedding models (e.g. replicate/all-mpnet-base-v2). Per the
 // canonical Replicate embedding schema published in the model's
 // openapi_schema, the two input fields are:
@@ -600,7 +616,7 @@ func replicateEmbedInput(texts []string) (map[string]interface{}, error) {
 	}
 }
 
-// replicateEmbedOutputToVectors normalizes Replicate's two observed
+// replicateEmbedOutputToVectors 归一化 Replicate embedding 两种输出形态
 // embedding-output shapes into []EmbeddingData aligned with the
 // caller's input order:
 //
@@ -672,7 +688,8 @@ func replicateKeys(m map[string]interface{}) []string {
 	return keys
 }
 
-// Embed turns a list of texts into embedding vectors via Replicate's
+// Embed 经 Replicate predictions API 批量向量化
+// Embed 将文本列表编码为向量嵌入
 func (r *ReplicateModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	if err := r.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -713,7 +730,7 @@ func (r *ReplicateModel) Embed(modelName *string, texts []string, apiConfig *API
 	return replicateEmbedOutputToVectors(prediction.Output, len(texts))
 }
 
-// replicateRerankInput shapes the request body
+// replicateRerankInput 构建 Replicate rerank 预测请求体
 func replicateRerankInput(query string, documents []string) (map[string]interface{}, error) {
 	if len(documents) == 0 {
 		return nil, fmt.Errorf("replicate: documents is empty")
@@ -729,7 +746,7 @@ func replicateRerankInput(query string, documents []string) (map[string]interfac
 	return map[string]interface{}{"input_list": string(encoded)}, nil
 }
 
-// replicateRerankOutputToScores normalizes Replicate's two observed
+// replicateRerankOutputToScores 归一化 Replicate rerank 输出为分数列表
 func replicateRerankOutputToScores(output interface{}, n int) ([]float64, error) {
 	if scores, ok := output.([]interface{}); ok {
 		return replicateScoresFromInterface(scores, n)
@@ -763,7 +780,8 @@ func replicateScoresFromInterface(arr []interface{}, n int) ([]float64, error) {
 	return out, nil
 }
 
-// Rerank scores a query against a list of documents
+// Rerank 经 Replicate predictions 对文档相关性打分
+// Rerank 对候选文档按 query 相关性重排序
 func (r *ReplicateModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	if err := r.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -828,38 +846,49 @@ func (r *ReplicateModel) Rerank(modelName *string, query string, documents []str
 	return &RerankResponse{Data: results}, nil
 }
 
+// Balance 查询账户余额（若上游支持）
 func (r *ReplicateModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("%s, no such method", r.Name())
 }
 
+// TranscribeAudio 语音转文字（ASR）
 func (r *ReplicateModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", r.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (r *ReplicateModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", r.Name())
 }
 
+// AudioSpeech 文字转语音（TTS）
 func (r *ReplicateModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", r.Name())
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (r *ReplicateModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", r.Name())
 }
 
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (r *ReplicateModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", r.Name())
 }
 
+// ParseFile 解析文档为结构化文本
 func (r *ReplicateModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", r.Name())
 }
 
+// ListTasks 列出异步任务状态
 func (r *ReplicateModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", r.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (r *ReplicateModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", r.Name())
 }
+
+// Replicate 驱动实现 Chat/Embed/Rerank/ListModels/CheckConnection；Chat 经 predictions API 创建/轮询/SSE；ASR/TTS/OCR/ParseFile/Balance 返回不支持。

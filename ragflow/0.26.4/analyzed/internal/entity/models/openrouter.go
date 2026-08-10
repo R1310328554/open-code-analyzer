@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// openrouter.go — OpenRouter 聚合网关 ModelDriver：OpenAI 兼容 Chat/Embed/Rerank/ASR/TTS，官方 rerank 请求/响应形态。
 //
 
 package models
@@ -30,12 +32,12 @@ import (
 	"strings"
 )
 
-// OpenRouterModel implements ModelDriver for OpenRouter AI
+// OpenRouterModel OpenRouter 聚合网关 ModelDriver
 type OpenRouterModel struct {
 	baseModel BaseModel
 }
 
-// NewOpenRouterModel creates a new OpenRouter AI model instance
+// NewOpenRouterModel 创建 OpenRouter 驱动实例
 func NewOpenRouterModel(baseURL map[string]string, urlSuffix URLSuffix) *OpenRouterModel {
 	return &OpenRouterModel{
 		baseModel: BaseModel{
@@ -46,14 +48,17 @@ func NewOpenRouterModel(baseURL map[string]string, urlSuffix URLSuffix) *OpenRou
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 OpenRouter 驱动实例
 func (o *OpenRouterModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewOpenRouterModel(baseURL, o.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "openrouter"，供工厂层路由
 func (o *OpenRouterModel) Name() string {
 	return "openrouter"
 }
 
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (o *OpenRouterModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := o.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -189,6 +194,7 @@ func (o *OpenRouterModel) ChatWithMessages(modelName string, messages []Message,
 	return chatResponse, nil
 }
 
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (o *OpenRouterModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, modelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := o.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -353,6 +359,7 @@ type openrouterUsage struct {
 	TotalTokens  int `json:"total_tokens"`
 }
 
+// Embed 将文本列表编码为向量嵌入
 func (o *OpenRouterModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	if err := o.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -427,7 +434,7 @@ func (o *OpenRouterModel) Embed(modelName *string, texts []string, apiConfig *AP
 	return embeddings, nil
 }
 
-// OpenRouterRerankRequest OpenRouter official rerank request format
+// OpenRouterRerankRequest OpenRouter 官方 rerank 请求体
 type OpenRouterRerankRequest struct {
 	Model     string   `json:"model"`
 	Query     string   `json:"query"`
@@ -435,7 +442,7 @@ type OpenRouterRerankRequest struct {
 	TopN      int      `json:"top_n,omitempty"`
 }
 
-// OpenRouterRerankResponse OpenRouter official rerank response format
+// OpenRouterRerankResponse OpenRouter 官方 rerank 响应体
 type OpenRouterRerankResponse struct {
 	Model   string `json:"model"`
 	ID      string `json:"id"`
@@ -448,6 +455,7 @@ type OpenRouterRerankResponse struct {
 	} `json:"results"`
 }
 
+// Rerank 对候选文档按 query 相关性重排序
 func (o *OpenRouterModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	if err := o.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -542,7 +550,8 @@ func openRouterAudioFormat(file string, asrConfig *ASRConfig) string {
 	return ext
 }
 
-// TranscribeAudio transcribe audio
+// TranscribeAudio 调用 OpenRouter ASR 端点
+// TranscribeAudio 语音转文字（ASR）
 func (o *OpenRouterModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	if err := o.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -625,11 +634,13 @@ func (o *OpenRouterModel) TranscribeAudio(modelName *string, file *string, apiCo
 	return &ASRResponse{Text: result.Text}, nil
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (o *OpenRouterModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", o.Name())
 }
 
-// AudioSpeech convert text to audio
+// AudioSpeech 调用 OpenRouter TTS 端点
+// AudioSpeech 文字转语音（TTS）
 func (o *OpenRouterModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	if err := o.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -693,20 +704,24 @@ func (o *OpenRouterModel) AudioSpeech(modelName *string, audioContent *string, a
 	return &TTSResponse{Audio: body}, nil
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (o *OpenRouterModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", o.Name())
 }
 
-// OCRFile OCR file
+// OCRFile OpenRouter 暂不支持 OCR
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (o *OpenRouterModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", o.Name())
 }
 
-// ParseFile parse file
+// ParseFile OpenRouter 暂不支持文档解析
+// ParseFile 解析文档为结构化文本
 func (o *OpenRouterModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", o.Name())
 }
 
+// ListModels 列出当前 API Key 可见的模型目录
 func (o *OpenRouterModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := o.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -765,6 +780,7 @@ func (o *OpenRouterModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse,
 	return ParseListModel(modelList), nil
 }
 
+// Balance 查询账户余额（若上游支持）
 func (o *OpenRouterModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	if err := o.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -823,15 +839,20 @@ func (o *OpenRouterModel) Balance(apiConfig *APIConfig) (map[string]interface{},
 	}, nil
 }
 
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (o *OpenRouterModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := o.Balance(apiConfig)
 	return err
 }
 
+// ListTasks 列出异步任务状态
 func (o *OpenRouterModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", o.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (o *OpenRouterModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", o.Name())
 }
+
+// OpenRouter 驱动实现 Chat/Embed/Rerank/ASR/TTS/Balance/ListModels/CheckConnection；Rerank 使用 OpenRouter 官方请求/响应结构；OCR/ParseFile 返回不支持。

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// nvidia.go — NVIDIA NIM ModelDriver：OpenAI 兼容 Chat/Embed，NIM /ranking 形态 Rerank 与 /v1/models 目录。
 //
 
 package models
@@ -26,12 +28,12 @@ import (
 	"strings"
 )
 
-// NvidiaModel implements ModelDriver for Nvidia
+// NvidiaModel NVIDIA NIM 平台 ModelDriver
 type NvidiaModel struct {
 	baseModel BaseModel
 }
 
-// NewNvidiaModel creates a new Nvidia model instance
+// NewNvidiaModel 创建 NVIDIA NIM 驱动实例
 func NewNvidiaModel(baseURL map[string]string, urlSuffix URLSuffix) *NvidiaModel {
 	return &NvidiaModel{
 		baseModel: BaseModel{
@@ -42,14 +44,17 @@ func NewNvidiaModel(baseURL map[string]string, urlSuffix URLSuffix) *NvidiaModel
 	}
 }
 
+// NewInstance 按 BaseURL 创建新的 NVIDIA NIM 驱动实例
 func (n NvidiaModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewNvidiaModel(baseURL, n.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "nvidia"
 func (n NvidiaModel) Name() string {
 	return "nvidia"
 }
 
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (n *NvidiaModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := n.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -183,6 +188,7 @@ func (n *NvidiaModel) ChatWithMessages(modelName string, messages []Message, api
 	return chatResponse, nil
 }
 
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (n *NvidiaModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, modelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := n.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -405,7 +411,7 @@ func (n NvidiaModel) Embed(modelName *string, texts []string, apiConfig *APIConf
 	return embeddings, nil
 }
 
-// nvidiaRerankRequest mirrors the NIM /ranking request shape:
+// nvidiaRerankRequest 映射 NIM /ranking 请求体（query/passages 均为 text 对象）
 // query is an object with a "text" field, passages is an array of
 // objects each with a "text" field. truncate=END matches the Python
 // NvidiaRerank reference at rag/llm/rerank_model.py.
@@ -421,7 +427,7 @@ type nvidiaRerankText struct {
 	Text string `json:"text"`
 }
 
-// nvidiaRerankResponse maps the NIM rankings array. Each entry pairs
+// nvidiaRerankResponse 映射 NIM rankings 数组，含原始索引与 logit 分数
 // the original passage index with a logit score; the caller uses the
 // index to restore original input order.
 type nvidiaRerankResponse struct {
@@ -431,7 +437,7 @@ type nvidiaRerankResponse struct {
 	} `json:"rankings"`
 }
 
-// Rerank scores documents against the query using an NVIDIA NIM
+// Rerank 调用 NVIDIA NIM reranking 模型，默认 top_n=len(documents)
 // reranking model. Mirrors the Python NvidiaRerank class in
 // rag/llm/rerank_model.py for payload shape (passages/query/logit).
 // Defaults top_n to len(documents) so the API returns a score per
@@ -531,35 +537,41 @@ func (n NvidiaModel) Rerank(modelName *string, query string, documents []string,
 	return &rerankResponse, nil
 }
 
-// TranscribeAudio transcribe audio
+// TranscribeAudio NVIDIA NIM 暂不支持 ASR
+// TranscribeAudio 语音转文字（ASR）
 func (n *NvidiaModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", n.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (n *NvidiaModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", n.Name())
 }
 
-// AudioSpeech convert text to audio
+// AudioSpeech NVIDIA NIM 暂不支持 TTS
+// AudioSpeech 文字转语音（TTS）
 func (n *NvidiaModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", n.Name())
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (n *NvidiaModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", n.Name())
 }
 
-// OCRFile OCR file
+// OCRFile NVIDIA NIM 暂不支持 OCR
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (n *NvidiaModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", n.Name())
 }
 
-// ParseFile parse file
+// ParseFile NVIDIA NIM 暂不支持文档解析
+// ParseFile 解析文档为结构化文本
 func (n *NvidiaModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", n.Name())
 }
 
-// ListModels calls /v1/models on the configured NVIDIA NIM base URL
+// ListModels 调用 NIM /v1/models 列出可用模型 ID
 // and returns the list of available model ids. The endpoint is
 // OpenAI-compatible, so the parsing follows the same shape used by
 // the moonshot, xai, and openai drivers.
@@ -620,7 +632,7 @@ func (n NvidiaModel) Balance(apiConfig *APIConfig) (map[string]interface{}, erro
 	return nil, fmt.Errorf("no such method")
 }
 
-// CheckConnection verifies that the configured NVIDIA NIM base URL
+// CheckConnection 轻量 ListModels 验证 NIM 端点与 API Key
 // is reachable and that the API key is accepted, by issuing a
 // lightweight ListModels call. Mirrors the pattern used by the xai,
 // moonshot, deepseek, aliyun, and gitee drivers.
@@ -629,10 +641,14 @@ func (n NvidiaModel) CheckConnection(apiConfig *APIConfig) error {
 	return err
 }
 
+// ListTasks 列出异步任务状态
 func (n *NvidiaModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", n.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (n *NvidiaModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", n.Name())
 }
+
+// NVIDIA NIM 驱动实现 Chat/Embed/Rerank/ListModels/CheckConnection；Rerank 请求体与 Python NvidiaRerank 对齐；ASR/TTS/OCR/ParseFile 返回不支持。

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// novita.go — Novita.ai ModelDriver：OpenAI 兼容 Chat/Embed/Rerank，<think> 推理链拆分与流式提取器。
 //
 
 package models
@@ -27,12 +29,12 @@ import (
 	"strings"
 )
 
-// NovitaModel implements ModelDriver for Novita.ai
+// NovitaModel Novita.ai 平台 ModelDriver
 type NovitaModel struct {
 	baseModel BaseModel
 }
 
-// NewNovitaModel creates a new Novita model instance.
+// NewNovitaModel 创建 Novita 驱动实例
 func NewNovitaModel(baseURL map[string]string, urlSuffix URLSuffix) *NovitaModel {
 	return &NovitaModel{
 		baseModel: BaseModel{
@@ -43,10 +45,12 @@ func NewNovitaModel(baseURL map[string]string, urlSuffix URLSuffix) *NovitaModel
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 Novita 驱动实例
 func (n *NovitaModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewNovitaModel(baseURL, n.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "novita"，供工厂层路由
 func (n *NovitaModel) Name() string {
 	return "novita"
 }
@@ -56,7 +60,7 @@ const (
 	novitaThinkClose = "</think>"
 )
 
-// splitNovitaThink walks a complete content string and returns the
+// splitNovitaThink 遍历完整回复，拆分可见正文与 <think> 推理链
 // visible portion + the concatenated chain-of-thought from inside
 // any <think>...</think> blocks. Multiple think blocks are
 // concatenated; tags themselves are stripped. Used by the
@@ -91,7 +95,7 @@ func splitNovitaThink(raw string) (visible, reasoning string) {
 	return v.String(), r.String()
 }
 
-// novitaThinkExtractor maintains state across streaming chunks so
+// novitaThinkExtractor 跨 SSE 分片维护状态，正确拆分推理标签
 // that a <think>...</think> block spanning multiple SSE events still
 // gets split correctly between content and reasoning. The buffer
 // preserves up to (len(closingMarker)-1) trailing bytes of each
@@ -101,7 +105,7 @@ type novitaThinkExtractor struct {
 	inside bool
 }
 
-// novitaThinkSegment is one routing decision: emit `content` via the
+// novitaThinkSegment 路由决策：content 走 sender 第一参数，reasoning 走第二参数
 // sender's first arg, or emit `reasoning` via the sender's second arg.
 // Exactly one of the two fields is non-empty.
 type novitaThinkSegment struct {
@@ -109,7 +113,7 @@ type novitaThinkSegment struct {
 	reasoning string
 }
 
-// Feed appends an incoming chunk and returns any segments that are
+// Feed 追加流式分片，返回可安全下发的 content/reasoning 片段
 // now safe to emit. Trailing bytes that could be the start of a tag
 // are held back in the buffer until the next call.
 func (e *novitaThinkExtractor) Feed(chunk string) []novitaThinkSegment {
@@ -170,7 +174,7 @@ func (e *novitaThinkExtractor) Feed(chunk string) []novitaThinkSegment {
 	return out
 }
 
-// Flush returns the buffered tail when the stream ends. A stream that
+// Flush 流结束时冲刷缓冲区尾部，避免推理片段丢失
 // ends mid-tag would not normally happen with a well-behaved upstream,
 // but if it does the partial bytes are emitted according to the
 // current mode so nothing is silently lost.
@@ -186,7 +190,8 @@ func (e *novitaThinkExtractor) Flush() *novitaThinkSegment {
 	return &novitaThinkSegment{content: s}
 }
 
-// ChatWithMessages sends multiple messages with roles and returns the response.
+// ChatWithMessages 非流式 chat/completions，拆分 thinking 标签
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (n *NovitaModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := n.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -323,7 +328,7 @@ func (n *NovitaModel) ChatWithMessages(modelName string, messages []Message, api
 	}, nil
 }
 
-// ChatStreamlyWithSender sends messages and streams the response via
+// ChatStreamlyWithSender 流式 chat/completions，经 novitaThinkExtractor 推送 delta
 // the sender. Handles both reasoning shapes Novita can emit:
 //   - delta.reasoning_content (deepseek-v3.1 / glm-4.5 / any model
 //     with separate reasoning): forwarded as-is to the second arg.
@@ -331,6 +336,7 @@ func (n *NovitaModel) ChatWithMessages(modelName string, messages []Message, api
 //     inline-style models): a stateful extractor splits tag bytes
 //     across SSE chunk boundaries, then routes content/reasoning to
 //     the first/second sender arg respectively.
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (n *NovitaModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := n.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -491,7 +497,8 @@ func (n *NovitaModel) ChatStreamlyWithSender(modelName string, messages []Messag
 	return nil
 }
 
-// ListModels returns the list of model ids visible to the API key.
+// ListModels 列出 API Key 可见的模型 ID
+// ListModels 列出当前 API Key 可见的模型目录
 func (n *NovitaModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := n.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -540,7 +547,8 @@ func (n *NovitaModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, err
 	return ParseListModel(modelList), nil
 }
 
-// CheckConnection runs a lightweight ListModels call to verify the API key.
+// CheckConnection 轻量 ListModels 探活验证密钥
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (n *NovitaModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := n.ListModels(apiConfig)
 	return err
@@ -558,9 +566,10 @@ type novitaEmbeddingResponse struct {
 	Object string                `json:"object"`
 }
 
-// Embed turns a list of texts into embedding vectors using the Novita
+// Embed 调用 Novita embeddings API 批量向量化
 // /v3/embeddings endpoint. The output has one vector per input, in the
 // same order the inputs were given.
+// Embed 将文本列表编码为向量嵌入
 func (n *NovitaModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	if err := n.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -661,10 +670,11 @@ type novitaRerankResponse struct {
 	Results []novitaRerankResult `json:"results"`
 }
 
-// Rerank scores documents against the query using the Novita
+// Rerank 调用 Novita rerank API 对文档相关性打分
 // /openai/v1/rerank endpoint and returns one RerankResult per scored
 // document in the API's ranking order. Caller may sort by Index to
 // recover original input order.
+// Rerank 对候选文档按 query 相关性重排序
 func (n *NovitaModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	if err := n.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -754,7 +764,8 @@ func (n *NovitaModel) Rerank(modelName *string, query string, documents []string
 	return &rerankResponse, nil
 }
 
-// Balance Get remaining credit
+// Balance 查询 Novita 账户剩余额度
+// Balance 查询账户余额（若上游支持）
 func (n *NovitaModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	if err := n.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -825,36 +836,46 @@ func (n *NovitaModel) Balance(apiConfig *APIConfig) (map[string]interface{}, err
 	return response, nil
 }
 
+// TranscribeAudio 语音转文字（ASR）
 func (n *NovitaModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", n.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (n *NovitaModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", n.Name())
 }
 
+// AudioSpeech 文字转语音（TTS）
 func (n *NovitaModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", n.Name())
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (n *NovitaModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", n.Name())
 }
 
-// OCRFile OCR file
+// OCRFile Novita 暂不支持 OCR
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (n *NovitaModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", n.Name())
 }
 
-// ParseFile parse file
+// ParseFile Novita 暂不支持文档解析
+// ParseFile 解析文档为结构化文本
 func (n *NovitaModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", n.Name())
 }
 
+// ListTasks 列出异步任务状态
 func (n *NovitaModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", n.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (n *NovitaModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", n.Name())
 }
+
+// Novita 驱动实现 Chat/Embed/Rerank/Balance/ListModels/CheckConnection；非流式与流式路径均解析 <think> 推理块；ASR/TTS/OCR/ParseFile 返回不支持。

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// togetherai.go — Together AI ModelDriver：OpenAI 兼容 Chat/Embed/Rerank/ASR/TTS，chatPayload/chatURL 辅助构建。
 //
 
 package models
@@ -31,10 +33,12 @@ import (
 	"strings"
 )
 
+// TogetherAIModel Together AI 推理平台 ModelDriver
 type TogetherAIModel struct {
 	baseModel BaseModel
 }
 
+// NewTogetherAIModel 创建 Together AI 驱动实例
 func NewTogetherAIModel(baseURL map[string]string, urlSuffix URLSuffix) *TogetherAIModel {
 	return &TogetherAIModel{
 		baseModel: BaseModel{
@@ -45,10 +49,12 @@ func NewTogetherAIModel(baseURL map[string]string, urlSuffix URLSuffix) *Togethe
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 Together AI 驱动实例
 func (t *TogetherAIModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewTogetherAIModel(baseURL, t.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "together ai"，供工厂层路由
 func (t *TogetherAIModel) Name() string {
 	return "togetherai"
 }
@@ -57,6 +63,7 @@ type togetherAIReasoningOptions struct {
 	Enabled bool `json:"enabled"`
 }
 
+// chatPayload 构建 Together chat 请求体
 func (t *TogetherAIModel) chatPayload(modelName string, messages []Message, stream bool, chatModelConfig *ChatConfig) map[string]interface{} {
 	apiMessages := make([]map[string]interface{}, len(messages))
 	for i, msg := range messages {
@@ -98,6 +105,7 @@ func (t *TogetherAIModel) chatPayload(modelName string, messages []Message, stre
 	return reqBody
 }
 
+// chatURL 解析 Together chat/completions URL
 func (t *TogetherAIModel) chatURL(apiConfig *APIConfig) (string, error) {
 
 	baseURL, err := t.baseModel.GetBaseURL(apiConfig)
@@ -126,6 +134,7 @@ type togetherAIChatResponse struct {
 	FinishReason string                 `json:"finish_reason"`
 }
 
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (t *TogetherAIModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := t.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -193,6 +202,7 @@ func (t *TogetherAIModel) ChatWithMessages(modelName string, messages []Message,
 	}, nil
 }
 
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (t *TogetherAIModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := t.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -288,6 +298,7 @@ type togetherAIModelInfo struct {
 	ID string `json:"id"`
 }
 
+// ListModels 列出当前 API Key 可见的模型目录
 func (t *TogetherAIModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := t.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -332,6 +343,7 @@ func (t *TogetherAIModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse,
 	return ParseListModel(ModelList{Models: result}), nil
 }
 
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (t *TogetherAIModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := t.ListModels(apiConfig)
 	return err
@@ -349,6 +361,7 @@ type togetherAIEmbeddingResponse struct {
 	Object string                    `json:"object"`
 }
 
+// Embed 将文本列表编码为向量嵌入
 func (t *TogetherAIModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	if err := t.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -437,6 +450,7 @@ func (t *TogetherAIModel) Embed(modelName *string, texts []string, apiConfig *AP
 	return embeddings, nil
 }
 
+// Rerank 对候选文档按 query 相关性重排序
 func (t *TogetherAIModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	if err := t.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -515,10 +529,12 @@ func (t *TogetherAIModel) Rerank(modelName *string, query string, documents []st
 	return &rerankResponse, nil
 }
 
+// Balance 查询账户余额（若上游支持）
 func (t *TogetherAIModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("%s, no such method", t.Name())
 }
 
+// TranscribeAudio 语音转文字（ASR）
 func (t *TogetherAIModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	if err := t.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -622,10 +638,12 @@ func (t *TogetherAIModel) TranscribeAudio(modelName *string, file *string, apiCo
 	}, nil
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (t *TogetherAIModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", t.Name())
 }
 
+// AudioSpeech 文字转语音（TTS）
 func (t *TogetherAIModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	if err := t.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -686,6 +704,7 @@ func (t *TogetherAIModel) AudioSpeech(modelName *string, audioContent *string, a
 	return &TTSResponse{Audio: body}, nil
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (t *TogetherAIModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	if err := t.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -772,18 +791,24 @@ func (t *TogetherAIModel) AudioSpeechWithSender(modelName *string, audioContent 
 	return nil
 }
 
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (t *TogetherAIModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", t.Name())
 }
 
+// ParseFile 解析文档为结构化文本
 func (t *TogetherAIModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", t.Name())
 }
 
+// ListTasks 列出异步任务状态
 func (t *TogetherAIModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", t.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (t *TogetherAIModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", t.Name())
 }
+
+// Together AI 驱动实现 Chat/Embed/Rerank/ASR/TTS/ListModels/CheckConnection；OCR/ParseFile/Balance 返回不支持。

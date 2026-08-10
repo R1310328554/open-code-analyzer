@@ -27,12 +27,12 @@ import (
 	"strings"
 )
 
-// StepFunModel implements ModelDriver for StepFun (阶跃星辰).
+// StepFunModel 阶跃星辰 StepFun ModelDriver
 type StepFunModel struct {
 	baseModel BaseModel
 }
 
-// NewStepFunModel creates a new StepFun model instance.
+// NewStepFunModel 创建 StepFun 驱动实例
 func NewStepFunModel(baseURL map[string]string, urlSuffix URLSuffix) *StepFunModel {
 	return &StepFunModel{
 		baseModel: BaseModel{
@@ -43,15 +43,18 @@ func NewStepFunModel(baseURL map[string]string, urlSuffix URLSuffix) *StepFunMod
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 StepFun 驱动实例
 func (s *StepFunModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewStepFunModel(baseURL, s.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "stepfun"，供工厂层路由
 func (s *StepFunModel) Name() string {
 	return "stepfun"
 }
 
-// ChatWithMessages sends multiple messages with roles and returns the response.
+// ChatWithMessages 非流式 chat/completions
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (s *StepFunModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := s.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -160,7 +163,8 @@ func (s *StepFunModel) ChatWithMessages(modelName string, messages []Message, ap
 	}, nil
 }
 
-// ChatStreamlyWithSender sends messages and streams the response
+// ChatStreamlyWithSender 流式 chat/completions，经 sender 推送 delta
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (s *StepFunModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := s.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -283,12 +287,14 @@ func (s *StepFunModel) ChatStreamlyWithSender(modelName string, messages []Messa
 	return nil
 }
 
-// Embed is left as a stub.
+// Embed StepFun 暂不支持向量化（stub）
+// Embed 将文本列表编码为向量嵌入
 func (s *StepFunModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-// ListModels returns the list of model ids visible to the API key.
+// ListModels 列出 API Key 可见的模型 ID
+// ListModels 列出当前 API Key 可见的模型目录
 func (s *StepFunModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := s.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -338,12 +344,14 @@ func (s *StepFunModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, er
 	return ParseListModel(modelList), nil
 }
 
-// Balance is not exposed by the StepFun API, so this returns "no such method".
+// Balance StepFun 未暴露余额 API
+// Balance 查询账户余额（若上游支持）
 func (s *StepFunModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("no such method")
 }
 
-// CheckConnection runs a lightweight ListModels call to verify the API key.
+// CheckConnection 轻量 ListModels 验证密钥
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (s *StepFunModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := s.ListModels(apiConfig)
 	if err != nil {
@@ -352,22 +360,26 @@ func (s *StepFunModel) CheckConnection(apiConfig *APIConfig) error {
 	return nil
 }
 
-// Rerank calculates similarity scores between query and documents. StepFun
+// Rerank StepFun 未暴露 rerank API
 // does not expose a public rerank API, so this returns "no such method".
+// Rerank 对候选文档按 query 相关性重排序
 func (s *StepFunModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	return nil, fmt.Errorf("no such method")
 }
 
-// TranscribeAudio transcribe audio
+// TranscribeAudio StepFun 暂不支持 ASR
+// TranscribeAudio 语音转文字（ASR）
 func (s *StepFunModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", s.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (s *StepFunModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", s.Name())
 }
 
-// AudioSpeech convert text to audio
+// AudioSpeech 调用 StepFun TTS 端点
+// AudioSpeech 文字转语音（TTS）
 func (s *StepFunModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	if err := s.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -429,7 +441,7 @@ func (s *StepFunModel) AudioSpeech(modelName *string, audioContent *string, apiC
 	return &TTSResponse{Audio: body}, nil
 }
 
-// AudioSpeechWithSender for Streaming TTS
+// AudioSpeechWithSender 流式 TTS 输出
 func (s *StepFunModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	if err := s.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -511,20 +523,26 @@ func (s *StepFunModel) AudioSpeechWithSender(modelName *string, audioContent *st
 	return nil
 }
 
-// OCRFile OCR file
+// OCRFile StepFun 暂不支持 OCR
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (s *StepFunModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", s.Name())
 }
 
-// ParseFile parse file
+// ParseFile StepFun 暂不支持文档解析
+// ParseFile 解析文档为结构化文本
 func (s *StepFunModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", s.Name())
 }
 
+// ListTasks 列出异步任务状态
 func (s *StepFunModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", s.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (s *StepFunModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", s.Name())
 }
+
+// StepFun 驱动实现 Chat/TTS/ListModels/CheckConnection；流式 TTS 经 AudioSpeechWithSender；Embed/Rerank/ASR/OCR/ParseFile/Balance 返回不支持。

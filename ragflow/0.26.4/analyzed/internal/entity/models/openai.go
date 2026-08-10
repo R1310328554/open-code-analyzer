@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// openai.go — OpenAI 官方 ModelDriver：GPT Chat/Embed/ASR/TTS，多模态消息、工具调用与 SSE 流式对话。
 //
 
 package models
@@ -32,12 +34,12 @@ import (
 	"strings"
 )
 
-// OpenAIModel implements ModelDriver for OpenAI (GPT models).
+// OpenAIModel OpenAI GPT 系列 ModelDriver
 type OpenAIModel struct {
 	baseModel BaseModel
 }
 
-// NewOpenAIModel creates a new OpenAI model instance.
+// NewOpenAIModel 创建 OpenAI 驱动实例
 func NewOpenAIModel(baseURL map[string]string, urlSuffix URLSuffix) *OpenAIModel {
 	return &OpenAIModel{
 		baseModel: BaseModel{
@@ -48,15 +50,18 @@ func NewOpenAIModel(baseURL map[string]string, urlSuffix URLSuffix) *OpenAIModel
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 OpenAI 驱动实例
 func (o *OpenAIModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewOpenAIModel(baseURL, o.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "openai"，供工厂层路由
 func (o *OpenAIModel) Name() string {
 	return "openai"
 }
 
-// ChatWithMessages sends multiple messages with roles and returns the response
+// ChatWithMessages 非流式 chat/completions，支持 tool_calls 与多模态
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (o *OpenAIModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := o.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -224,7 +229,8 @@ func (o *OpenAIModel) ChatWithMessages(modelName string, messages []Message, api
 	return chatResponse, nil
 }
 
-// ChatStreamlyWithSender sends messages and streams the response
+// ChatStreamlyWithSender 流式 chat/completions，经 sender 推送 delta
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (o *OpenAIModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := o.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -482,6 +488,7 @@ type openaiUsage struct {
 	TotalTokens  int `json:"total_tokens"`
 }
 
+// Embed 将文本列表编码为向量嵌入
 func (o *OpenAIModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	if err := o.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -557,7 +564,8 @@ func (o *OpenAIModel) Embed(modelName *string, texts []string, apiConfig *APICon
 	return embeddings, nil
 }
 
-// ListModels returns the list of model ids visible to the API key.
+// ListModels 列出 API Key 可见的模型 ID
+// ListModels 列出当前 API Key 可见的模型目录
 func (o *OpenAIModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := o.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -608,12 +616,14 @@ func (o *OpenAIModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, err
 	return ParseListModel(modelList), nil
 }
 
-// Balance is not exposed by the OpenAI API, so this returns "no such method".
+// Balance OpenAI 未暴露余额 API，返回 no such method
+// Balance 查询账户余额（若上游支持）
 func (o *OpenAIModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("no such method")
 }
 
-// CheckConnection runs a lightweight ListModels call to verify the API key.
+// CheckConnection 轻量 ListModels 验证密钥与端点
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (o *OpenAIModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := o.ListModels(apiConfig)
 	if err != nil {
@@ -622,13 +632,15 @@ func (o *OpenAIModel) CheckConnection(apiConfig *APIConfig) error {
 	return nil
 }
 
-// Rerank calculates similarity scores between query and documents. OpenAI does
+// Rerank OpenAI 未暴露 rerank API，返回 no such method
 // not expose a rerank API, so this is left unimplemented.
+// Rerank 对候选文档按 query 相关性重排序
 func (o *OpenAIModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	return nil, fmt.Errorf("%s, Rerank not implemented", o.Name())
 }
 
-// TranscribeAudio transcribe audio
+// TranscribeAudio 调用 /v1/audio/transcriptions 语音识别
+// TranscribeAudio 语音转文字（ASR）
 func (o *OpenAIModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), nonStreamCallTimeout)
 	defer cancel()
@@ -658,6 +670,7 @@ func (o *OpenAIModel) TranscribeAudio(modelName *string, file *string, apiConfig
 	return decodeOpenAIASRResponse(respBody, responseFormat)
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (o *OpenAIModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	if sender == nil {
 		return fmt.Errorf("sender is required")
@@ -749,7 +762,8 @@ func decodeOpenAIASRResponse(respBody []byte, responseFormat string) (*ASRRespon
 	return &ASRResponse{Text: result.Text}, nil
 }
 
-// AudioSpeech convert text to audio
+// AudioSpeech 调用 /v1/audio/speech 文字转语音
+// AudioSpeech 文字转语音（TTS）
 func (o *OpenAIModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), nonStreamCallTimeout)
 	defer cancel()
@@ -777,6 +791,7 @@ func (o *OpenAIModel) AudioSpeech(modelName *string, audioContent *string, apiCo
 	return &TTSResponse{Audio: body}, nil
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (o *OpenAIModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	if sender == nil {
 		return fmt.Errorf("sender is required")
@@ -1040,25 +1055,29 @@ func writeOpenAIMultipartField(writer *multipart.Writer, key string, value inter
 	return nil
 }
 
-// OCRFile OCR file
+// OCRFile OpenAI 暂不支持 OCR
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (o *OpenAIModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", o.Name())
 }
 
-// ParseFile parse file
+// ParseFile OpenAI 暂不支持文档解析
+// ParseFile 解析文档为结构化文本
 func (o *OpenAIModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", o.Name())
 }
 
+// ListTasks 列出异步任务状态
 func (o *OpenAIModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", o.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (o *OpenAIModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", o.Name())
 }
 
-// extractUsageFromMap reads the "usage" key from an OpenAI-style API
+// extractUsageFromMap 从 OpenAI 风格响应解析 usage（prompt/completion/total tokens）
 // response and returns (prompt_tokens, completion_tokens, total_tokens).
 // All return values are zero when the response carries no usage block.
 func extractUsageFromMap(raw map[string]interface{}) (int, int, int) {
@@ -1109,3 +1128,5 @@ func cloneMap(m map[string]interface{}) map[string]interface{} {
 	}
 	return cp
 }
+
+// OpenAI 驱动覆盖 Chat/Embed/ASR/TTS/ListModels/CheckConnection；流式路径解析 SSE data: 行与 usage；Rerank/Balance/OCR/ParseFile 返回不支持或未实现。

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// perplexity.go — Perplexity AI ModelDriver：OpenAI 兼容 Chat/Embed，chatPayload/chatURL 辅助构建请求。
 //
 
 package models
@@ -26,10 +28,12 @@ import (
 	"strings"
 )
 
+// PerplexityModel Perplexity AI 搜索增强 ModelDriver
 type PerplexityModel struct {
 	baseModel BaseModel
 }
 
+// NewPerplexityModel 创建 Perplexity 驱动实例
 func NewPerplexityModel(baseURL map[string]string, urlSuffix URLSuffix) *PerplexityModel {
 	return &PerplexityModel{
 		baseModel: BaseModel{
@@ -40,14 +44,17 @@ func NewPerplexityModel(baseURL map[string]string, urlSuffix URLSuffix) *Perplex
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 Perplexity 驱动实例
 func (p *PerplexityModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewPerplexityModel(baseURL, p.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "perplexity"，供工厂层路由
 func (p *PerplexityModel) Name() string {
 	return "perplexity"
 }
 
+// chatPayload 构建 Perplexity chat 请求体（含 stream 与采样参数）
 func (p *PerplexityModel) chatPayload(modelName string, messages []Message, stream bool, chatModelConfig *ChatConfig) map[string]interface{} {
 	apiMessages := make([]map[string]interface{}, len(messages))
 	for i, msg := range messages {
@@ -85,6 +92,7 @@ func (p *PerplexityModel) chatPayload(modelName string, messages []Message, stre
 	return reqBody
 }
 
+// chatURL 解析 Perplexity chat/completions 完整 URL
 func (p *PerplexityModel) chatURL(apiConfig *APIConfig) (string, error) {
 
 	baseURL, err := p.baseModel.GetBaseURL(apiConfig)
@@ -113,6 +121,7 @@ type perplexityChatResponse struct {
 	FinishReason string                 `json:"finish_reason"`
 }
 
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (p *PerplexityModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := p.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -180,6 +189,7 @@ func (p *PerplexityModel) ChatWithMessages(modelName string, messages []Message,
 	}, nil
 }
 
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (p *PerplexityModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := p.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -283,6 +293,7 @@ type perplexityModelListResponse struct {
 	Data []DSModel `json:"data"`
 }
 
+// ListModels 列出当前 API Key 可见的模型目录
 func (p *PerplexityModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := p.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -332,6 +343,7 @@ func (p *PerplexityModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse,
 	return ParseListModel(ModelList{Models: bare}), nil
 }
 
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (p *PerplexityModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := p.ListModels(apiConfig)
 	return err
@@ -349,6 +361,7 @@ type perplexityEmbeddingResponse struct {
 	Error interface{}                   `json:"error"`
 }
 
+// Embed 将文本列表编码为向量嵌入
 func (p *PerplexityModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	if err := p.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -423,42 +436,54 @@ func (p *PerplexityModel) Embed(modelName *string, texts []string, apiConfig *AP
 	return embeddings, nil
 }
 
+// Rerank 对候选文档按 query 相关性重排序
 func (p *PerplexityModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", p.Name())
 }
 
+// Balance 查询账户余额（若上游支持）
 func (p *PerplexityModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("%s, no such method", p.Name())
 }
 
+// TranscribeAudio 语音转文字（ASR）
 func (p *PerplexityModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", p.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (p *PerplexityModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", p.Name())
 }
 
+// AudioSpeech 文字转语音（TTS）
 func (p *PerplexityModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", p.Name())
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (p *PerplexityModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", p.Name())
 }
 
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (p *PerplexityModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", p.Name())
 }
 
+// ParseFile 解析文档为结构化文本
 func (p *PerplexityModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", p.Name())
 }
 
+// ListTasks 列出异步任务状态
 func (p *PerplexityModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", p.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (p *PerplexityModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", p.Name())
 }
+
+// Perplexity 驱动实现 Chat/Embed/ListModels/CheckConnection；Rerank/ASR/TTS/OCR/ParseFile/Balance 返回不支持。

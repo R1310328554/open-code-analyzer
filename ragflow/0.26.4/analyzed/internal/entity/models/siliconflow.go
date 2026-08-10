@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// siliconflow.go — 硅基流动 ModelDriver：OpenAI 兼容 Chat/Embed/Rerank/ASR/TTS，批量 Embed 上限与余额查询。
 //
 
 package models
@@ -31,12 +33,12 @@ import (
 	"strings"
 )
 
-// SiliconflowModel implements ModelDriver for Siliconflow
+// SiliconflowModel 硅基流动平台 ModelDriver
 type SiliconflowModel struct {
 	baseModel BaseModel
 }
 
-// NewSiliconflowModel creates a new Siliconflow model instance
+// NewSiliconflowModel 创建硅基流动驱动实例
 func NewSiliconflowModel(baseURL map[string]string, urlSuffix URLSuffix) *SiliconflowModel {
 	return &SiliconflowModel{
 		baseModel: BaseModel{
@@ -47,15 +49,17 @@ func NewSiliconflowModel(baseURL map[string]string, urlSuffix URLSuffix) *Silico
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 Siliconflow 驱动实例
 func (s *SiliconflowModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewSiliconflowModel(baseURL, s.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "siliconflow"，供工厂层路由
 func (s *SiliconflowModel) Name() string {
 	return "siliconflow"
 }
 
-// SiliconflowRerankRequest represents SILICONFLOW rerank request
+// SiliconflowRerankRequest 硅基流动 rerank 请求体
 type SiliconflowRerankRequest struct {
 	Model           string   `json:"model"`
 	Query           string   `json:"query"`
@@ -66,7 +70,8 @@ type SiliconflowRerankRequest struct {
 	OverlapTokens   int      `json:"overlap_tokens"`
 }
 
-// ChatWithMessages sends multiple messages with roles and returns response
+// ChatWithMessages 非流式 chat/completions
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (s *SiliconflowModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := s.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -217,7 +222,8 @@ func (s *SiliconflowModel) ChatWithMessages(modelName string, messages []Message
 	return chatResponse, nil
 }
 
-// ChatStreamlyWithSender sends messages and streams response via sender function (best performance, no channel)
+// ChatStreamlyWithSender 流式 chat/completions，经 sender 推送 delta
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (s *SiliconflowModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := s.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -384,10 +390,11 @@ type siliconflowUsage struct {
 	TotalTokens      int `json:"total_tokens"`
 }
 
-// siliconflowMaxBatchSize is the per-request input limit documented at
+// siliconflowMaxBatchSize 单次 Embed 请求输入条数上限（官方文档）
 const siliconflowMaxBatchSize = 32
 
-// Embed embeds a list of texts into embeddings
+// Embed 批量文本向量化（受 MaxBatchSize 限制）
+// Embed 将文本列表编码为向量嵌入
 func (s *SiliconflowModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	if err := s.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -470,6 +477,7 @@ func (s *SiliconflowModel) Embed(modelName *string, texts []string, apiConfig *A
 	return embeddings, nil
 }
 
+// ListModels 列出当前 API Key 可见的模型目录
 func (s *SiliconflowModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := s.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -534,6 +542,7 @@ type siliconflowBalanceResponse struct {
 	} `json:"data"`
 }
 
+// Balance 查询账户余额（若上游支持）
 func (s *SiliconflowModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	if err := s.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -603,6 +612,7 @@ func (s *SiliconflowModel) Balance(apiConfig *APIConfig) (map[string]interface{}
 	}, nil
 }
 
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (s *SiliconflowModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := s.ListModels(apiConfig)
 	if err != nil {
@@ -611,7 +621,7 @@ func (s *SiliconflowModel) CheckConnection(apiConfig *APIConfig) error {
 	return nil
 }
 
-// SiliconflowRerankResponse represents SILICONFLOW rerank response
+// SiliconflowRerankResponse 硅基流动 rerank 响应体
 type SiliconflowRerankResponse struct {
 	ID      string `json:"id"`
 	Results []struct {
@@ -637,7 +647,8 @@ type SiliconflowRerankResponse struct {
 	} `json:"meta"`
 }
 
-// Rerank calculates similarity scores between query and documents
+// Rerank 调用硅基流动 rerank API 对文档打分
+// Rerank 对候选文档按 query 相关性重排序
 func (s *SiliconflowModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	if err := s.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -716,7 +727,8 @@ func (s *SiliconflowModel) Rerank(modelName *string, query string, documents []s
 	return &rerankResponse, nil
 }
 
-// TranscribeAudio transcribe audio
+// TranscribeAudio 调用硅基流动 ASR 端点
+// TranscribeAudio 语音转文字（ASR）
 func (s *SiliconflowModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	if err := s.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -838,11 +850,13 @@ func (s *SiliconflowModel) TranscribeAudio(modelName *string, file *string, apiC
 	return &ASRResponse{Text: result.Text}, nil
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (s *SiliconflowModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", s.Name())
 }
 
-// AudioSpeech convert text to audio
+// AudioSpeech 调用硅基流动 TTS 端点
+// AudioSpeech 文字转语音（TTS）
 func (s *SiliconflowModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	if err := s.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -907,6 +921,7 @@ func (s *SiliconflowModel) AudioSpeech(modelName *string, audioContent *string, 
 	return &TTSResponse{Audio: body}, nil
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (s *SiliconflowModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	if err := s.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -986,20 +1001,26 @@ func (s *SiliconflowModel) AudioSpeechWithSender(modelName *string, audioContent
 	return nil
 }
 
-// OCRFile OCR file
+// OCRFile 硅基流动暂不支持 OCR
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (s *SiliconflowModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", s.Name())
 }
 
-// ParseFile parse file
+// ParseFile 硅基流动暂不支持文档解析
+// ParseFile 解析文档为结构化文本
 func (s *SiliconflowModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", s.Name())
 }
 
+// ListTasks 列出异步任务状态
 func (s *SiliconflowModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", s.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (s *SiliconflowModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", s.Name())
 }
+
+// 硅基流动驱动覆盖 Chat/Embed/Rerank/ASR/TTS/Balance/ListModels/CheckConnection；Embed 分批受 siliconflowMaxBatchSize 约束；OCR/ParseFile 返回不支持。
