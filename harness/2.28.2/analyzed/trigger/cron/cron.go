@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// cron 包实现定时任务调度器，周期扫描到期 Cron 并触发构建。
 package cron
 
 import (
@@ -18,7 +19,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// New returns a new Cron scheduler.
+// New 创建 Cron 调度器，注入提交查询、存储与触发依赖。
 func New(
 	commits core.CommitService,
 	cron core.CronStore,
@@ -35,7 +36,7 @@ func New(
 	}
 }
 
-// Scheduler defines a cron scheduler.
+// Scheduler 周期性执行到期 Cron 任务并触发流水线构建。
 type Scheduler struct {
 	commits core.CommitService
 	cron    core.CronStore
@@ -44,7 +45,7 @@ type Scheduler struct {
 	trigger core.Triggerer
 }
 
-// Start starts the cron scheduler.
+// Start 以给定间隔启动调度循环，直至 context 取消。
 func (s *Scheduler) Start(ctx context.Context, dur time.Duration) error {
 	ticker := time.NewTicker(dur)
 	defer ticker.Stop()
@@ -59,6 +60,7 @@ func (s *Scheduler) Start(ctx context.Context, dur time.Duration) error {
 	}
 }
 
+// run 处理所有到期 Cron：重算下次触发时间并发起构建。
 func (s *Scheduler) run(ctx context.Context) error {
 	var result error
 
@@ -82,8 +84,7 @@ func (s *Scheduler) run(ctx context.Context) error {
 	logrus.Debugf("cron: found %d pending jobs", len(jobs))
 
 	for _, job := range jobs {
-		// jobs can be manually disabled in the user interface,
-		// and should be skipped.
+		// 用户可在界面手动禁用任务，此处跳过。
 		if job.Disabled {
 			continue
 		}
@@ -91,12 +92,11 @@ func (s *Scheduler) run(ctx context.Context) error {
 		sched, err := cron.Parse(job.Expr)
 		if err != nil {
 			result = multierror.Append(result, err)
-			// this should never happen since we parse and verify
-			// the cron expression when the cron entry is created.
+			// 创建 Cron 时已校验表达式，理论上不应解析失败。
 			continue
 		}
 
-		// calculate the next execution date.
+		// 计算下次执行时间并写回存储。
 		job.Prev = job.Next
 		job.Next = sched.Next(now).Unix()
 
@@ -136,9 +136,7 @@ func (s *Scheduler) run(ctx context.Context) error {
 			continue
 		}
 
-		// TODO(bradrydzewski) we may actually need to query the branch
-		// first to get the sha, and then query the commit. This works fine
-		// with github and gitlab, but may not work with other providers.
+		// TODO：部分 SCM 需先查分支再查 commit；GitHub/GitLab 下当前实现可用。
 
 		commit, err := s.commits.FindRef(ctx, user, repo.Slug, job.Branch)
 		if err != nil {

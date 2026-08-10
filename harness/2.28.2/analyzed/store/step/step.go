@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// step 包实现 core.StepStore，管理流水线步骤（Step）的数据库持久化。
 package step
 
 import (
@@ -21,15 +22,17 @@ import (
 	"github.com/drone/drone/store/shared/db"
 )
 
-// New returns a new StepStore.
+// New 创建并返回 core.StepStore 实现。
 func New(db *db.DB) core.StepStore {
 	return &stepStore{db}
 }
 
+// stepStore 封装 steps 表的 CRUD 与乐观锁更新。
 type stepStore struct {
 	db *db.DB
 }
 
+// List 返回指定阶段下的全部步骤。
 func (s *stepStore) List(ctx context.Context, id int64) ([]*core.Step, error) {
 	var out []*core.Step
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -48,6 +51,7 @@ func (s *stepStore) List(ctx context.Context, id int64) ([]*core.Step, error) {
 	return out, err
 }
 
+// Find 按主键 ID 查询单条步骤。
 func (s *stepStore) Find(ctx context.Context, id int64) (*core.Step, error) {
 	out := &core.Step{ID: id}
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -62,6 +66,7 @@ func (s *stepStore) Find(ctx context.Context, id int64) (*core.Step, error) {
 	return out, err
 }
 
+// FindNumber 在指定阶段内按步骤序号查询。
 func (s *stepStore) FindNumber(ctx context.Context, id int64, number int) (*core.Step, error) {
 	out := &core.Step{StageID: id, Number: number}
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -76,6 +81,7 @@ func (s *stepStore) FindNumber(ctx context.Context, id int64, number int) (*core
 	return out, err
 }
 
+// Create 插入新步骤；Postgres 使用 RETURNING 获取 ID。
 func (s *stepStore) Create(ctx context.Context, step *core.Step) error {
 	if s.db.Driver() == db.Postgres {
 		return s.createPostgres(ctx, step)
@@ -83,8 +89,9 @@ func (s *stepStore) Create(ctx context.Context, step *core.Step) error {
 	return s.create(ctx, step)
 }
 
+// create SQLite/MySQL 插入路径，通过 LastInsertId 获取自增 ID。
 func (s *stepStore) create(ctx context.Context, step *core.Step) error {
-	step.Version = 1
+	step.Version = 1 // 设置初始乐观锁版本号
 	return s.db.Lock(func(execer db.Execer, binder db.Binder) error {
 		params := toParams(step)
 		stmt, args, err := binder.BindNamed(stmtInsert, params)
@@ -100,6 +107,7 @@ func (s *stepStore) create(ctx context.Context, step *core.Step) error {
 	})
 }
 
+// createPostgres 使用 RETURNING step_id 获取新记录 ID。
 func (s *stepStore) createPostgres(ctx context.Context, step *core.Step) error {
 	step.Version = 1
 	return s.db.Lock(func(execer db.Execer, binder db.Binder) error {
@@ -112,6 +120,7 @@ func (s *stepStore) createPostgres(ctx context.Context, step *core.Step) error {
 	})
 }
 
+// Update 更新步骤字段，通过版本号实现乐观锁。
 func (s *stepStore) Update(ctx context.Context, step *core.Step) error {
 	versionNew := step.Version + 1
 	versionOld := step.Version

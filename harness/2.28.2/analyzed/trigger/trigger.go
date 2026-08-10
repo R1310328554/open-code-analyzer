@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// trigger 包实现 core.Triggerer，将 SCM Webhook 转为构建与阶段调度。
 package trigger
 
 import (
@@ -31,6 +32,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// triggerer 协调配置加载、YAML 解析、阶段 DAG 与构建持久化。
 type triggerer struct {
 	canceler core.Canceler
 	config   core.ConfigService
@@ -45,7 +47,7 @@ type triggerer struct {
 	hooks    core.WebhookSender
 }
 
-// New returns a new build triggerer.
+// New 创建并返回 core.Triggerer 实现。
 func New(
 	canceler core.Canceler,
 	config core.ConfigService,
@@ -74,6 +76,7 @@ func New(
 	}
 }
 
+// Trigger 处理一次 Hook：解析配置、匹配流水线、创建构建并调度阶段。
 func (t *triggerer) Trigger(ctx context.Context, repo *core.Repository, base *core.Hook) (*core.Build, error) {
 	logger := logrus.WithFields(
 		logrus.Fields{
@@ -86,8 +89,7 @@ func (t *triggerer) Trigger(ctx context.Context, repo *core.Repository, base *co
 
 	logger.Debugln("trigger: received")
 	defer func() {
-		// taking the paranoid approach to recover from
-		// a panic that should absolutely never happen.
+		// 防御性 recover，避免意外 panic 导致进程崩溃。
 		if r := recover(); r != nil {
 			logger.Errorf("runner: unexpected panic: %s", r)
 			debug.PrintStack()
@@ -121,9 +123,7 @@ func (t *triggerer) Trigger(ctx context.Context, repo *core.Repository, base *co
 		return nil, nil
 	}
 
-	// if the commit message is not included we should
-	// make an optional API call to the version control
-	// system to augment the available information.
+	// Hook 未携带提交说明时，可选调用 SCM API 补全作者与消息信息。
 	if base.Message == "" && base.After != "" {
 		commit, err := t.commits.Find(ctx, user, repo.Slug, base.After)
 		if err == nil && commit != nil {
@@ -215,8 +215,7 @@ func (t *triggerer) Trigger(ctx context.Context, repo *core.Repository, base *co
 		return t.createBuildError(ctx, repo, base, err.Error())
 	}
 
-	// this code is temporarily in place to detect and convert
-	// the legacy yaml configuration file to the new format.
+	// 临时逻辑：检测并将旧版 YAML 配置转换为新格式。
 	raw.Data, err = converter.ConvertString(raw.Data, converter.Metadata{
 		Filename: repo.Config,
 		URL:      repo.Link,
@@ -268,9 +267,7 @@ func (t *triggerer) Trigger(ctx context.Context, repo *core.Repository, base *co
 		val := []byte(raw.Data)
 		verified, _ = signer.Verify(val, key)
 	}
-	// if pipeline validation failed with a block error, the
-	// pipeline verification should be set to false, which will
-	// force manual review and approval.
+	// 校验返回 block 错误时，签名验证视为失败，阶段进入 blocked 待人工审批。
 	if verr == core.ErrValidatorBlock {
 		verified = false
 	}
@@ -289,10 +286,7 @@ func (t *triggerer) Trigger(ctx context.Context, repo *core.Repository, base *co
 		if !ok {
 			continue
 		}
-		// TODO add repo
-		// TODO add instance
-		// TODO add target
-		// TODO add ref
+		// TODO：补充 repo/instance/target/ref 等触发维度过滤
 		name := pipeline.Name
 		if name == "" {
 			name = "default"
@@ -425,14 +419,10 @@ func (t *triggerer) Trigger(ctx context.Context, repo *core.Repository, base *co
 	}
 
 	for _, stage := range stages {
-		// here we re-work the dependencies for the stage to
-		// account for the fact that some steps may be skipped
-		// and may otherwise break the dependency chain.
+		// 根据 DAG 重算阶段依赖，跳过已被过滤的阶段以免依赖链断裂。
 		stage.DependsOn = dag.Dependencies(stage.Name)
 
-		// if the stage is pending dependencies, but those
-		// dependencies are skipped, the stage can be executed
-		// immediately.
+		// 若阶段原处于 waiting 但有效依赖为空，则可直接 pending 执行。
 		if stage.Status == core.StatusWaiting &&
 			len(stage.DependsOn) == 0 {
 			stage.Status = core.StatusPending
@@ -506,6 +496,7 @@ func (t *triggerer) Trigger(ctx context.Context, repo *core.Repository, base *co
 	return build, nil
 }
 
+// trunc 按 rune 截断字符串至最大长度 i。
 func trunc(s string, i int) string {
 	runes := []rune(s)
 	if len(runes) > i {
@@ -514,6 +505,7 @@ func trunc(s string, i int) string {
 	return s
 }
 
+// createBuildError 在 YAML/校验失败时创建 status=error 的构建记录。
 func (t *triggerer) createBuildError(ctx context.Context, repo *core.Repository, base *core.Hook, message string) (*core.Build, error) {
 	logger := logrus.WithFields(
 		logrus.Fields{

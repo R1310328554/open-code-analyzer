@@ -14,6 +14,7 @@
 
 // +build oss
 
+// cron 包（OSS 构建）提供调度器的空实现桩。
 package cron
 
 import (
@@ -23,7 +24,7 @@ import (
 	"github.com/drone/drone/core"
 )
 
-// New returns a noop Cron scheduler.
+// New 在 OSS 构建中返回 noop 调度器。
 func New(
 	core.CommitService,
 	core.CronStore,
@@ -34,10 +35,10 @@ func New(
 	return &Scheduler{}
 }
 
-// Schedule is a no-op cron scheduler.
+// Scheduler OSS 构建下的空调度器桩。
 type Scheduler struct{}
 
-// Start is a no-op.
+// Start 空实现，立即返回。
 func (Scheduler) Start(context.Context, time.Duration) error {
 	return nil
 }

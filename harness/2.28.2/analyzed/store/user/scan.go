@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// user 包扫描辅助函数，用于 users 表行与 core.User 映射（含 OAuth 令牌加解密）。
 package user
 
 import (
@@ -22,8 +23,7 @@ import (
 	"github.com/drone/drone/store/shared/encrypt"
 )
 
-// helper function converts the User structure to a set
-// of named query parameters.
+// toParams 将 core.User 转为命名查询参数字典，并加密 OAuth 令牌字段。
 func toParams(encrypt encrypt.Encrypter, u *core.User) (map[string]interface{}, error) {
 	token, err := encrypt.Encrypt(u.Token)
 	if err != nil {
@@ -53,8 +53,7 @@ func toParams(encrypt encrypt.Encrypter, u *core.User) (map[string]interface{}, 
 	}, nil
 }
 
-// helper function scans the sql.Row and copies the column
-// values to the destination object.
+// scanRow 从 sql.Row 扫描列值写入 core.User，并解密 OAuth 令牌。
 func scanRow(encrypt encrypt.Encrypter, scanner db.Scanner, dest *core.User) error {
 	var token, refresh []byte
 	err := scanner.Scan(
@@ -89,8 +88,7 @@ func scanRow(encrypt encrypt.Encrypter, scanner db.Scanner, dest *core.User) err
 	return nil
 }
 
-// helper function scans the sql.Row and copies the column
-// values to the destination object.
+// scanRows 遍历 sql.Rows 批量扫描为 []*core.User 切片。
 func scanRows(encrypt encrypt.Encrypter, rows *sql.Rows) ([]*core.User, error) {
 	defer rows.Close()
 

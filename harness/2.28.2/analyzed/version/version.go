@@ -13,28 +13,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// version 包定义 Drone 服务器编译版本号与 Git 构建元数据。
 package version
 
 import "github.com/coreos/go-semver/semver"
 
 var (
-	// GitRepository is the git repository that was compiled
+	// GitRepository 编译时对应的 Git 仓库地址。
 	GitRepository string
-	// GitCommit is the git commit that was compiled
+	// GitCommit 编译时对应的 Git 提交哈希。
 	GitCommit string
-	// VersionMajor is for an API incompatible changes.
+	// VersionMajor 主版本号，不兼容的 API 变更时递增。
 	VersionMajor int64 = 2
-	// VersionMinor is for functionality in a backwards-compatible manner.
+	// VersionMinor 次版本号，向后兼容的功能新增时递增。
 	VersionMinor int64 = 28
-	// VersionPatch is for backwards-compatible bug fixes.
+	// VersionPatch 修订号，向后兼容的问题修复时递增。
 	VersionPatch int64 = 1
-	// VersionPre indicates prerelease.
+	// VersionPre 预发布标识（如 alpha、beta）。
 	VersionPre = ""
-	// VersionDev indicates development branch. Releases will be empty string.
+	// VersionDev 开发分支元数据；正式发行版为空字符串。
 	VersionDev string
 )
 
-// Version is the specification version that the package types support.
+// Version 为上述各字段组装的 semver 版本对象。
 var Version = semver.Version{
 	Major:      VersionMajor,
 	Minor:      VersionMinor,

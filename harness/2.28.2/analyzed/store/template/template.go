@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// template 包为非 OSS 构建提供流水线模板（Template）的数据库存储实现。
 package template
 
 import (
@@ -13,17 +14,19 @@ import (
 	"github.com/drone/drone/store/shared/db"
 )
 
-// New returns a new Template database store.
+// New 创建 core.TemplateStore 数据库实现。
 func New(db *db.DB) core.TemplateStore {
 	return &templateStore{
 		db: db,
 	}
 }
 
+// templateStore 封装 templates 表的 CRUD。
 type templateStore struct {
 	db *db.DB
 }
 
+// List 返回指定命名空间下的全部模板，按名称排序。
 func (s *templateStore) List(ctx context.Context, namespace string) ([]*core.Template, error) {
 	var out []*core.Template
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -42,6 +45,7 @@ func (s *templateStore) List(ctx context.Context, namespace string) ([]*core.Tem
 	return out, err
 }
 
+// ListAll 返回系统中全部模板。
 func (s *templateStore) ListAll(ctx context.Context) ([]*core.Template, error) {
 	var out []*core.Template
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -60,6 +64,7 @@ func (s *templateStore) ListAll(ctx context.Context) ([]*core.Template, error) {
 	return out, err
 }
 
+// Find 按主键 ID 查询单条模板。
 func (s *templateStore) Find(ctx context.Context, id int64) (*core.Template, error) {
 	out := &core.Template{Id: id}
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -77,6 +82,7 @@ func (s *templateStore) Find(ctx context.Context, id int64) (*core.Template, err
 	return out, err
 }
 
+// FindName 在指定命名空间内按模板名称查询。
 func (s *templateStore) FindName(ctx context.Context, name string, namespace string) (*core.Template, error) {
 	out := &core.Template{Name: name, Namespace: namespace}
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -96,6 +102,7 @@ func (s *templateStore) FindName(ctx context.Context, name string, namespace str
 	return out, err
 }
 
+// Create 插入新模板；Postgres 使用 RETURNING 获取 ID。
 func (s *templateStore) Create(ctx context.Context, template *core.Template) error {
 	if s.db.Driver() == db.Postgres {
 		return s.createPostgres(ctx, template)
@@ -103,6 +110,7 @@ func (s *templateStore) Create(ctx context.Context, template *core.Template) err
 	return s.create(ctx, template)
 }
 
+// create SQLite/MySQL 插入路径，通过 LastInsertId 获取自增 ID。
 func (s *templateStore) create(ctx context.Context, template *core.Template) error {
 	return s.db.Lock(func(execer db.Execer, binder db.Binder) error {
 		params, err := toParams(template)
@@ -122,6 +130,7 @@ func (s *templateStore) create(ctx context.Context, template *core.Template) err
 	})
 }
 
+// createPostgres 使用 RETURNING template_id 获取新记录 ID。
 func (s *templateStore) createPostgres(ctx context.Context, template *core.Template) error {
 	return s.db.Lock(func(execer db.Execer, binder db.Binder) error {
 		params, err := toParams(template)
@@ -136,6 +145,7 @@ func (s *templateStore) createPostgres(ctx context.Context, template *core.Templ
 	})
 }
 
+// Update 更新已有模板的名称、命名空间与数据。
 func (s *templateStore) Update(ctx context.Context, template *core.Template) error {
 	return s.db.Lock(func(execer db.Execer, binder db.Binder) error {
 		params, err := toParams(template)
@@ -151,6 +161,7 @@ func (s *templateStore) Update(ctx context.Context, template *core.Template) err
 	})
 }
 
+// Delete 按主键删除模板。
 func (s *templateStore) Delete(ctx context.Context, template *core.Template) error {
 	return s.db.Lock(func(execer db.Execer, binder db.Binder) error {
 		params, err := toParams(template)

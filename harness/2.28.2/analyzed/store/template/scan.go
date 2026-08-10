@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// template 包扫描辅助函数，用于 templates 表行与 core.Template 映射。
 package template
 
 import (
@@ -13,8 +14,7 @@ import (
 	"github.com/drone/drone/store/shared/db"
 )
 
-// helper function converts the Template structure to a set
-// of named query parameters.
+// toParams 将 core.Template 转为命名查询参数字典。
 func toParams(template *core.Template) (map[string]interface{}, error) {
 	return map[string]interface{}{
 		"template_id":        template.Id,
@@ -26,8 +26,7 @@ func toParams(template *core.Template) (map[string]interface{}, error) {
 	}, nil
 }
 
-// helper function scans the sql.Row and copies the column
-// values to the destination object.
+// scanRow 从 sql.Row 扫描列值写入 core.Template。
 func scanRow(scanner db.Scanner, dst *core.Template) error {
 	err := scanner.Scan(
 		&dst.Id,
@@ -43,8 +42,7 @@ func scanRow(scanner db.Scanner, dst *core.Template) error {
 	return nil
 }
 
-// helper function scans the sql.Row and copies the column
-// values to the destination object.
+// scanRows 遍历 sql.Rows 批量扫描为 []*core.Template 切片。
 func scanRows(rows *sql.Rows) ([]*core.Template, error) {
 	defer rows.Close()
 

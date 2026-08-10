@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// user 包实现 core.UserStore，管理用户账户与 OAuth 凭据的数据库持久化。
 package user
 
 import (
@@ -23,17 +24,18 @@ import (
 	"github.com/drone/drone/store/shared/encrypt"
 )
 
-// New returns a new UserStore.
+// New 创建并返回 core.UserStore 实现。
 func New(db *db.DB, enc encrypt.Encrypter) core.UserStore {
 	return &userStore{db, enc}
 }
 
+// userStore 封装 users 表的 CRUD 与用户统计。
 type userStore struct {
 	db  *db.DB
 	enc encrypt.Encrypter
 }
 
-// Find returns a user from the datastore.
+// Find 按主键 ID 查询用户。
 func (s *userStore) Find(ctx context.Context, id int64) (*core.User, error) {
 	out := &core.User{ID: id}
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -48,7 +50,7 @@ func (s *userStore) Find(ctx context.Context, id int64) (*core.User, error) {
 	return out, err
 }
 
-// FindLogin returns a user from the datastore by username.
+// FindLogin 按登录名查询用户。
 func (s *userStore) FindLogin(ctx context.Context, login string) (*core.User, error) {
 	out := &core.User{Login: login}
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -63,7 +65,7 @@ func (s *userStore) FindLogin(ctx context.Context, login string) (*core.User, er
 	return out, err
 }
 
-// FindToken returns a user from the datastore by token.
+// FindToken 按 API 令牌哈希查询用户。
 func (s *userStore) FindToken(ctx context.Context, token string) (*core.User, error) {
 	out := &core.User{Hash: token}
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -78,7 +80,7 @@ func (s *userStore) FindToken(ctx context.Context, token string) (*core.User, er
 	return out, err
 }
 
-// List returns a list of users from the datastore.
+// List 返回全部用户，按登录名排序。
 func (s *userStore) List(ctx context.Context) ([]*core.User, error) {
 	var out []*core.User
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -92,14 +94,11 @@ func (s *userStore) List(ctx context.Context) ([]*core.User, error) {
 	return out, err
 }
 
-// ListRange returns a list of users from the datastore.
+// ListRange 分页返回用户列表，支持按 ID 或登录名排序。
 func (s *userStore) ListRange(ctx context.Context, params core.UserParams) ([]*core.User, error) {
 	var out []*core.User
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
-		// this query breaks a rule and uses sprintf to inject parameters
-		// into the query. Normally this should be avoided, however, in this
-		// case the parameters are set by the internal system and can
-		// be considered safe.
+		// 此处用 fmt.Sprintf 注入排序列与分页参数；参数由内部系统设置，视为安全。
 		query := queryRange
 		switch {
 		case params.Sort:
@@ -117,7 +116,7 @@ func (s *userStore) ListRange(ctx context.Context, params core.UserParams) ([]*c
 	return out, err
 }
 
-// Create persists a new user to the datastore.
+// Create 插入新用户；Postgres 使用 RETURNING 获取 ID。
 func (s *userStore) Create(ctx context.Context, user *core.User) error {
 	if s.db.Driver() == db.Postgres {
 		return s.createPostgres(ctx, user)
@@ -125,6 +124,7 @@ func (s *userStore) Create(ctx context.Context, user *core.User) error {
 	return s.create(ctx, user)
 }
 
+// create SQLite/MySQL 插入路径，通过 LastInsertId 获取自增 ID。
 func (s *userStore) create(ctx context.Context, user *core.User) error {
 	return s.db.Lock(func(execer db.Execer, binder db.Binder) error {
 		params, err := toParams(s.enc, user)
@@ -144,6 +144,7 @@ func (s *userStore) create(ctx context.Context, user *core.User) error {
 	})
 }
 
+// createPostgres 使用 RETURNING user_id 获取新记录 ID。
 func (s *userStore) createPostgres(ctx context.Context, user *core.User) error {
 	return s.db.Lock(func(execer db.Execer, binder db.Binder) error {
 		params, err := toParams(s.enc, user)
@@ -158,7 +159,7 @@ func (s *userStore) createPostgres(ctx context.Context, user *core.User) error {
 	})
 }
 
-// Update persists an updated user to the datastore.
+// Update 更新已有用户字段。
 func (s *userStore) Update(ctx context.Context, user *core.User) error {
 	return s.db.Lock(func(execer db.Execer, binder db.Binder) error {
 		params, err := toParams(s.enc, user)
@@ -174,7 +175,7 @@ func (s *userStore) Update(ctx context.Context, user *core.User) error {
 	})
 }
 
-// Delete deletes a user from the datastore.
+// Delete 按主键删除用户。
 func (s *userStore) Delete(ctx context.Context, user *core.User) error {
 	return s.db.Lock(func(execer db.Execer, binder db.Binder) error {
 		params := map[string]interface{}{"user_id": user.ID}
@@ -187,7 +188,7 @@ func (s *userStore) Delete(ctx context.Context, user *core.User) error {
 	})
 }
 
-// Count returns a count of active users.
+// Count 返回用户总数。
 func (s *userStore) Count(ctx context.Context) (int64, error) {
 	var out int64
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -196,7 +197,7 @@ func (s *userStore) Count(ctx context.Context) (int64, error) {
 	return out, err
 }
 
-// Count returns a count of active human users.
+// CountHuman 返回非机器账户的人类用户数量。
 func (s *userStore) CountHuman(ctx context.Context) (int64, error) {
 	var out int64
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {

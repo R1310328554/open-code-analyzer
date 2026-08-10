@@ -12,4 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// store 包为聚合入口，统一导出各子存储模块供依赖注入装配。
 package store
