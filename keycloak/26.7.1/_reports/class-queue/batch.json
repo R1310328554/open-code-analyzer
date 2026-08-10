@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T14:17:09Z",
   "files": [
-    "test-framework/core/src/main/java/org/keycloak/testframework/realm/RealmConfig.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/realm/RealmConfigInterceptor.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/realm/RealmSupplier.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/realm/RepresentationUtils.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/realm/Representations.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/realm/UserConfig.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/realm/UserSupplier.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/server/AbstractKeycloakServerSupplier.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/server/DefaultKeycloakServerConfig.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/server/DistributionKeycloakServer.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/server/DistributionKeycloakServerSupplier.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/server/EmbeddedKeycloakServer.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/server/EmbeddedKeycloakServerSupplier.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/server/KeycloakDependency.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/server/KeycloakServer.java",
     "test-framework/core/src/main/java/org/keycloak/testframework/server/KeycloakServerConfig.java",
     "test-framework/core/src/main/java/org/keycloak/testframework/server/KeycloakServerConfigBuilder.java",
     "test-framework/core/src/main/java/org/keycloak/testframework/server/KeycloakServerConfigInterceptor.java",
@@ -33,5 +18,5 @@
     "test-framework/core/src/main/java/org/keycloak/testframework/util/MavenProjectUtil.java"
   ],
   "remaining_pending": 358,
-  "done": 5610
+  "done": 5625
 }
