@@ -60,10 +60,12 @@ if is_torchaudio_available():
 if is_torchcodec_available():
     TORCHCODEC_VERSION = version.parse(importlib.metadata.version("torchcodec"))
 
+# AudioInput：单条或批量音频，可为 NumPy 数组或 PyTorch 张量
 AudioInput = Union[np.ndarray, "torch.Tensor", Sequence[np.ndarray], Sequence["torch.Tensor"]]
 
 
 @retry(exceptions=(httpx.HTTPError,))
+# _fetch_audio_bytes：HTTP 拉取音频字节，带指数退避重试
 def _fetch_audio_bytes(url: str, timeout: float | None = 10.0) -> bytes:
     """Fetch audio bytes from a URL with automatic retry and exponential backoff."""
     response = httpx.get(url, follow_redirects=True, timeout=timeout)
@@ -195,6 +197,7 @@ def _resolve_audio_source(audio: str, timeout: float | None = None) -> "str | by
         )
 
 
+# load_audio：统一入口，按 backend 选择 torchcodec/librosa 等后端重采样
 def load_audio(audio: str | np.ndarray, sampling_rate=16000, timeout=None, backend: str = "auto") -> np.ndarray:
     """
     Loads `audio` to an np.ndarray object.
@@ -445,6 +448,7 @@ def make_list_of_audio_chat_template(
     return make_list_of_audio(audio)
 
 
+# hertz_to_mel：赫兹转梅尔刻度，支持 HTK / Slaney 等标度
 def hertz_to_mel(freq: float | np.ndarray, mel_scale: str = "htk") -> float | np.ndarray:
     """
     Convert frequency from hertz to mels.
@@ -635,6 +639,7 @@ def chroma_filter_bank(
     return np.ascontiguousarray(chroma_filters[:, : int(1 + num_frequency_bins / 2)])
 
 
+# mel_filter_bank：构造梅尔滤波器组，供 spectrogram 与特征提取使用
 def mel_filter_bank(
     num_frequency_bins: int,
     num_mel_filters: int,
@@ -806,6 +811,7 @@ def window_function(
 
 
 # Note: This method processes a single waveform. For batch processing, use spectrogram_batch().
+# spectrogram：短时傅里叶变换并可选转功率谱或梅尔谱
 def spectrogram(
     waveform: np.ndarray,
     window: np.ndarray,
@@ -1228,6 +1234,7 @@ def spectrogram_batch(
     return spectrogram_list
 
 
+# power_to_db：功率谱转分贝，含参考值与动态范围裁剪
 def power_to_db(
     spectrogram: np.ndarray,
     reference: float = 1.0,
@@ -1328,6 +1335,7 @@ def power_to_db_batch(
     return spectrogram
 
 
+# amplitude_to_db：幅值谱转分贝
 def amplitude_to_db(
     spectrogram: np.ndarray,
     reference: float = 1.0,

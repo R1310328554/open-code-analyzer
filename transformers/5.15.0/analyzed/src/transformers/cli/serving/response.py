@@ -95,6 +95,7 @@ UNUSED_RESPONSE_FIELDS = {
 }
 
 
+# _ResponseStreamBuilder：将 token 流组装为 OpenAI Responses SSE 事件序列
 class _ResponseStreamBuilder:
     """Builds SSE events for one streaming Responses API generation."""
 
@@ -357,6 +358,7 @@ class _ResponseStreamBuilder:
         ]
 
 
+# ResponseHandler：/v1/responses 路由，归一化 input 后 apply_chat_template
 class ResponseHandler(BaseHandler):
     """Handler for the ``/v1/responses`` endpoint."""
 
@@ -462,6 +464,7 @@ class ResponseHandler(BaseHandler):
         ]
 
     @staticmethod
+    # _normalize_input：将 string/list/多轮 item 统一为 chat messages
     def _normalize_input(body: dict) -> list[dict]:
         """Normalize the Responses API ``input`` field into chat messages.
 
@@ -750,6 +753,7 @@ class ResponseHandler(BaseHandler):
         return generation_config
 
 
+# compute_usage：构造 ResponseUsage，供 completed 事件与非流式 JSON 使用
 def compute_usage(input_tokens: int, output_tokens: int) -> ResponseUsage:
     """Build a ``ResponseUsage`` object for a Responses API reply.
 

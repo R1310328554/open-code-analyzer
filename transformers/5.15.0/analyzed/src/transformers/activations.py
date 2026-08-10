@@ -27,6 +27,7 @@ from .utils.import_utils import is_torchdynamo_compiling
 logger = logging.get_logger(__name__)
 
 
+# GELUTanh：tanh 近似的 GELU，C 实现比纯 Python 更快
 @use_kernel_forward_from_hub("GeluTanh")
 class GELUTanh(nn.Module):
     """
@@ -55,6 +56,7 @@ class GELUTanh(nn.Module):
 PytorchGELUTanh = GELUTanh
 
 
+# NewGELUActivation：与 Google BERT / OpenAI GPT 一致的 GELU 实现
 @use_kernel_forward_from_hub("NewGELU")
 class NewGELUActivation(nn.Module):
     """
@@ -66,6 +68,7 @@ class NewGELUActivation(nn.Module):
         return 0.5 * input * (1.0 + torch.tanh(math.sqrt(2.0 / math.pi) * (input + 0.044715 * torch.pow(input, 3.0))))
 
 
+# GELUActivation：原始 GELU，可选 Python erf 或 nn.functional.gelu
 @use_kernel_forward_from_hub("GeLU")
 class GELUActivation(nn.Module):
     """
@@ -123,6 +126,7 @@ class QuickGELUActivation(nn.Module):
         return input * torch.sigmoid(1.702 * input)
 
 
+# ClippedGELUActivation：将 GELU 输出裁剪到 [min,max]，便于量化
 class ClippedGELUActivation(nn.Module):
     """
     Clip the range of possible GeLU outputs between [min, max]. This is especially useful for quantization purpose, as
@@ -228,6 +232,7 @@ class ClassInstantier(OrderedDict):
         return cls(**kwargs)
 
 
+# XIELUActivation：xIELU 激活，优先 CUDA 内核，不可用时回退 Python
 class XIELUActivation(nn.Module):
     """
     Applies the xIELU activation function introduced in https://arxiv.org/abs/2411.13010
@@ -321,6 +326,7 @@ class XIELUActivation(nn.Module):
         return self._xielu_python(input)
 
 
+# ACT2CLS：配置中 activation 字符串到类（或 (类, kwargs)）的映射
 ACT2CLS = {
     "gelu": GELUActivation,
     "gelu_10": (ClippedGELUActivation, {"min": -10, "max": 10}),
@@ -347,9 +353,11 @@ ACT2CLS = {
     "prelu": nn.PReLU,
     "xielu": XIELUActivation,
 }
+# ACT2FN：OrderedDict 子类，按键实例化激活模块
 ACT2FN = ClassInstantier(ACT2CLS)
 
 
+# get_activation：按名称查找并构造激活函数实例
 def get_activation(activation_string):
     if activation_string in ACT2FN:
         return ACT2FN[activation_string]

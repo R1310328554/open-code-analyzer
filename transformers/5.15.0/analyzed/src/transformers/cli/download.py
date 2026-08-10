@@ -16,6 +16,7 @@ from typing import Annotated
 import typer
 
 
+# download：Typer 命令，调用 AutoModel / AutoTokenizer.from_pretrained
 def download(
     model_id: Annotated[str, typer.Argument(help="The model ID to download")],
     cache_dir: Annotated[str | None, typer.Option(help="Directory where to save files.")] = None,
@@ -38,3 +39,5 @@ def download(
     AutoTokenizer.from_pretrained(
         model_id, cache_dir=cache_dir, force_download=force_download, trust_remote_code=trust_remote_code
     )
+# 模块 src/transformers/cli/download.py：Transformers 5.15.0 中文文档注释。
+

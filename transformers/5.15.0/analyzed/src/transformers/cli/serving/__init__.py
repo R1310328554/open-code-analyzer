@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 导出 ModelManager 与 build_server，供 cli.serve 装配服务
 from .model_manager import ModelManager
 from .server import build_server
 from .utils import Modality

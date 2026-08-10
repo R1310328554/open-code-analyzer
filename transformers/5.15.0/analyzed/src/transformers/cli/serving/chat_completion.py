@@ -96,6 +96,7 @@ UNUSED_CHAT_COMPLETION_FIELDS = {
 logger = logging.get_logger(__name__)
 
 
+# ChatCompletionHandler：处理聊天补全请求，支持流式 SSE 与非流式 JSON
 class ChatCompletionHandler(BaseHandler):
     """Handler for the `/v1/chat/completions` endpoint.
 
@@ -105,6 +106,7 @@ class ChatCompletionHandler(BaseHandler):
     _valid_params_class = TransformersCompletionCreateParamsStreaming
     _unused_fields = UNUSED_CHAT_COMPLETION_FIELDS
 
+    # handle_request：校验 body、加载模型、分发流式或非流式生成
     async def handle_request(self, body: dict, request_id: str) -> StreamingResponse | JSONResponse:
         """Validate the request, load the model, and dispatch to streaming or non-streaming.
 

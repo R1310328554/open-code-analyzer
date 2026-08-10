@@ -63,6 +63,7 @@ UNUSED_LEGACY_COMPLETION_FIELDS = {
 logger = logging.get_logger(__name__)
 
 
+# CompletionHandler：legacy 文本补全，prompt 字符串直接 tokenize
 class CompletionHandler(BaseHandler):
     """Handler for the `/v1/completions` endpoint.
 
@@ -74,6 +75,7 @@ class CompletionHandler(BaseHandler):
     _valid_params_class = TransformersTextCompletionCreateParams
     _unused_fields = UNUSED_LEGACY_COMPLETION_FIELDS
 
+    # handle_request：解析 prompt、构建 GenerationConfig 并返回生成结果
     async def handle_request(self, body: dict, request_id: str) -> "StreamingResponse | JSONResponse":
         """Validate the request, load the model, and dispatch to streaming or non-streaming.
 

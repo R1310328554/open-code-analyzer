@@ -40,6 +40,7 @@ if TYPE_CHECKING:
 logger = logging.get_logger(__name__)
 
 
+# TimedModel：包装已加载模型，超时无请求则自动 delete_model 释放显存
 class TimedModel:
     """Wraps a model + processor and auto-unloads them after a period of inactivity.
 
@@ -90,6 +91,7 @@ class TimedModel:
             logger.info(f"{self._name_or_path} was removed from memory after {self.timeout_seconds}s of inactivity")
 
 
+# ModelManager：按 model_id 缓存 TimedModel，支持量化与 continuous batching 配置
 class ModelManager:
     """Loads, caches, and manages the lifecycle of models.
 
@@ -276,6 +278,7 @@ class ModelManager:
         architecture = getattr(transformers, config.architectures[0])
         return architecture.from_pretrained(model_id, **model_kwargs)
 
+    # load_model_and_processor：主入口，命中缓存则 reset_timer，否则 from_pretrained
     def load_model_and_processor(
         self,
         model_id_and_revision: str,

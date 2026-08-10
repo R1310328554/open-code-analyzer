@@ -25,6 +25,7 @@ if TYPE_CHECKING:
     import torch
 
 
+# 常用类型别名，简化日志级别、异常信息与设备网格的类型标注
 # A few helpful type aliases
 Level: TypeAlias = int
 ExcInfo: TypeAlias = (
@@ -36,6 +37,7 @@ ExcInfo: TypeAlias = (
 DeviceMeshLike: TypeAlias = Any  # PyTorch stubs do not model torch.distributed.device_mesh consistently yet.
 
 
+# TransformersLogger：扩展标准 logging.Logger 的协议，含 warning_once 等库专用方法
 class TransformersLogger(Protocol):
     # ---- Core Logger identity / configuration ----
     name: str
@@ -131,6 +133,7 @@ class TransformersLogger(Protocol):
     def info_once(self, msg: object, *args: object, **kwargs: object) -> None: ...
 
 
+# GenerativePreTrainedModel：GenerationMixin 依赖的主机模型接口（仅用于静态类型检查）
 class GenerativePreTrainedModel(Protocol):
     """Protocol for the model interface that GenerationMixin expects.
 
@@ -166,10 +169,12 @@ class GenerativePreTrainedModel(Protocol):
     def _supports_logits_to_keep(self) -> bool: ...
 
 
+# StringValuedEnumLike：带 value 字符串的枚举类协议，供 PEFT 类型识别使用
 class StringValuedEnumLike(Protocol):
     value: str
 
 
+# PeftConfigLike：PEFT 配置对象的协议抽象，避免循环导入 PreTrainedConfig
 class PeftConfigLike(Protocol):
     peft_type: StringValuedEnumLike
     is_prompt_learning: bool
@@ -179,6 +184,7 @@ class PeftConfigLike(Protocol):
     def save_pretrained(self, save_directory: str | PathLike[str], **kwargs: Any) -> None: ...
 
 
+# WhisperGenerationConfigLike：Whisper 生成内部访问的专用配置字段协议
 class WhisperGenerationConfigLike(Protocol):
     """Protocol for Whisper-specific generation config fields accessed in generation internals."""
 

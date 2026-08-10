@@ -32,12 +32,14 @@ from .serving.utils import set_torch_seed
 logger = logging.get_logger(__name__)
 
 
+# ReasoningMode：推理链输出开关（on/off/auto）
 class ReasoningMode(str, enum.Enum):
     ON = "on"
     OFF = "off"
     AUTO = "auto"
 
 
+# Serve：Typer 应用类，解析 serve 参数并构建 FastAPI 服务
 class Serve:
     def __init__(
         self,

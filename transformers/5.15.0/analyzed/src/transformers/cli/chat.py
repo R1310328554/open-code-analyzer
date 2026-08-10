@@ -49,6 +49,7 @@ if is_rich_available():
     from rich.progress import BarColumn, Progress, ProgressColumn, TextColumn, TimeElapsedColumn
     from rich.text import Text
 
+# DEFAULT_HTTP_ENDPOINT：未指定 host 时连接的本地 serve 默认地址
 DEFAULT_HTTP_ENDPOINT = {"hostname": "localhost", "port": 8000}
 ALLOWED_KEY_CHARS = set(string.ascii_letters + string.whitespace)
 ALLOWED_VALUE_CHARS = set(
@@ -71,6 +72,7 @@ DEFAULT_EXAMPLES = {
 }
 
 # Printed at the start of a chat session
+# HELP_STRING_MINIMAL：会话开始时打印的简要帮助
 HELP_STRING_MINIMAL = """
 
 **TRANSFORMERS CHAT INTERFACE**

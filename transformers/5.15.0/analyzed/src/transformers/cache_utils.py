@@ -1,3 +1,4 @@
+# cache_utils：KV 缓存层与 Cache 容器，支持动态/静态/量化及线性注意力变体。
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 
@@ -24,6 +25,7 @@ _is_torch_greater_or_equal_than_2_7 = is_torch_greater_or_equal("2.7", accept_de
 logger = logging.get_logger(__name__)
 
 
+# CacheLayerMixin：单层 KV 缓存抽象基类，定义 update / lazy_initialization 等
 class CacheLayerMixin(ABC):
     """Base, abstract class for a single layer's cache."""
 
@@ -110,6 +112,7 @@ class CacheLayerMixin(ABC):
         return self.get_max_length()
 
 
+# DynamicLayer：动态增长的全注意力 KV 缓存
 class DynamicLayer(CacheLayerMixin):
     """
     A cache layer that grows dynamically as more tokens are generated. This is the default for generative models.
@@ -200,6 +203,7 @@ class DynamicLayer(CacheLayerMixin):
             self.values = self.values[indices, ...]
 
 
+# DynamicSlidingWindowLayer：带滑动窗口的动态缓存
 class DynamicSlidingWindowLayer(DynamicLayer):
     """
     A cache layer that grows dynamically as more tokens are generated, up until the sliding window size.
@@ -395,6 +399,7 @@ class DynamicIndexedLayer(DynamicLayer):
             self.indexer_keys = self.indexer_keys[indices, ...]
 
 
+# StaticLayer：预分配固定长度的静态 KV 缓存
 class StaticLayer(CacheLayerMixin):
     """
     A static cache layer that stores the key and value states as static tensors of shape `[batch_size, num_heads, max_cache_len), head_dim]`.
@@ -695,6 +700,7 @@ class StaticIndexedLayer(StaticLayer):
             self.indexer_cumulative_length.zero_()
 
 
+# QuantizedLayer：量化 KV 缓存基类
 class QuantizedLayer(DynamicLayer):
     """
     A quantized layer similar to what is described in the [KIVI: A Tuning-Free Asymmetric 2bit Quantization for KV Cache paper](https://huggingface.co/papers/2402.02750).
@@ -1259,6 +1265,7 @@ STATIC_LAYER_TYPE_MAPPING = {
 }
 
 
+# Cache：多层缓存容器，协调各 CacheLayer 的 update 与序列长度
 class Cache:
     """
     A `Cache` is mostly a list of `CacheLayerMixin` objects, one per model layer. It serves as a container for
@@ -1691,6 +1698,7 @@ class Cache:
         return self.batch_size
 
 
+# get_layer_types_and_kwargs：从 PreTrainedConfig 解析每层缓存类型与参数
 def get_layer_types_and_kwargs(config: PreTrainedConfig) -> tuple[list[str], dict]:
     """
     From a `config`, extract the layer types if not present already, as well as the kwargs needed to initialize
@@ -1727,6 +1735,7 @@ def get_layer_types_and_kwargs(config: PreTrainedConfig) -> tuple[list[str], dic
     return layer_types, layer_kwargs
 
 
+# DynamicCache：默认动态多层缓存，生成时最常用
 class DynamicCache(Cache):
     """
     A cache that grows dynamically as more tokens are generated. This is the default for generative models.
@@ -1819,6 +1828,7 @@ class DynamicCache(Cache):
             yield layer.keys, layer.values, getattr(layer, "_sliding_window_tensor", None)
 
 
+# StaticCache：静态预分配多层缓存，利于 torch.compile
 class StaticCache(Cache):
     """
     Static Cache class to be used with `torch.compile(model)` and `torch.export()`. It will check the `config`
@@ -1937,6 +1947,7 @@ class QuantizedCache(Cache):
         super().__init__(layers=layers)
 
 
+# EncoderDecoderCache：编码器-解码器模型的分离 KV 缓存
 class EncoderDecoderCache(Cache):
     """
     Base, abstract class for all encoder-decoder caches. Can be used to hold combinations of self-attention and

@@ -95,6 +95,7 @@ _AUTO_MAPPING_NAMES = {
 ### Entrypoint
 
 
+# add_new_model_like：Typer 命令入口，引导用户创建新模型目录与测试
 def add_new_model_like(
     repo_path: Annotated[
         str | None, typer.Argument(help="When not using an editable install, the path to the Transformers repo.")
@@ -122,6 +123,7 @@ def add_new_model_like(
 ### Core logic
 
 
+# ModelInfos：收集源模型与新模型的路径、类名等元数据
 class ModelInfos:
     """
     Retrieve the basic information about an existing model classes.
@@ -183,6 +185,7 @@ def add_content_to_file(file_name: str | os.PathLike, new_content: str, add_afte
         f.write(new_content)
 
 
+# add_model_to_auto_mappings：将新模型写入 CONFIG_MAPPING 等自动映射
 def add_model_to_auto_mappings(
     repo_path: Path,
     old_model_infos: ModelInfos,
@@ -422,6 +425,7 @@ def find_modular_structure(
     return imports, modular_classes, public_classes
 
 
+# create_modular_file：生成 modular 建模文件骨架
 def create_modular_file(
     repo_path: Path,
     old_model_infos: ModelInfos,
@@ -527,6 +531,7 @@ def create_test_files(
     return test_files
 
 
+# _add_new_model_like_internal：实际执行文件复制、文档与测试生成的核心逻辑
 def _add_new_model_like_internal(
     repo_path: Path,
     old_model_infos: ModelInfos,

@@ -25,11 +25,13 @@ from .utils.output_capturing import maybe_install_capturing_hooks
 logger = logging.get_logger(__name__)
 
 
+# BackboneType：骨干来源枚举，TIMM 或原生 Transformers 实现
 class BackboneType(enum.Enum):
     TIMM = "timm"
     TRANSFORMERS = "transformers"
 
 
+# BackboneConfigMixin：管理 out_features / out_indices 与 stage_names 对齐
 class BackboneConfigMixin:
     """
     A Mixin to support handling the `out_features` and `out_indices` attributes for the backbone configurations.
@@ -155,6 +157,7 @@ class BackboneConfigMixin:
         return output
 
 
+# filter_output_hidden_states：装饰器，按需从骨干 forward 结果中剥离 hidden_states
 def filter_output_hidden_states(forward_function):
     """
     Wrapper for backbone forwards. Backbones always compute `hidden_states` to build their feature maps, so
@@ -178,6 +181,7 @@ def filter_output_hidden_states(forward_function):
     return wrapper
 
 
+# BackboneMixin：TIMM 或 Transformers 骨干的初始化、钩子与 forward 封装
 class BackboneMixin:
     backbone_type: BackboneType | None = None
 
@@ -305,6 +309,7 @@ class BackboneMixin:
         raise NotImplementedError("This method should be implemented by the derived class.")
 
 
+# consolidate_backbone_kwargs_to_config：从 kwargs 合并骨干配置到 PreTrainedConfig
 def consolidate_backbone_kwargs_to_config(
     backbone_config,
     default_backbone: str | None = None,
@@ -355,6 +360,7 @@ def consolidate_backbone_kwargs_to_config(
     return backbone_config, kwargs
 
 
+# load_backbone：由配置经 AutoBackbone 加载骨干权重
 def load_backbone(config):
     """
     Loads the backbone model from a config object.
