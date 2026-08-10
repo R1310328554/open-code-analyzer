@@ -17,25 +17,43 @@ import org.keycloak.protocol.oidc.mappers.PairwiseSubMapperHelper;
 import org.keycloak.util.JsonSerialization;
 
 /**
+ * Pairwise Subject 映射器配置校验器：验证 sector identifier 与客户端 redirect URI 一致性。
  * @author <a href="mailto:martin.hardselius@gmail.com">Martin Hardselius</a>
  */
 public class PairwiseSubMapperValidator {
 
+    /** 错误键：客户端 redirect URI 格式非法 */
     public static final String PAIRWISE_MALFORMED_CLIENT_REDIRECT_URI = "pairwiseMalformedClientRedirectURI";
+    /** 错误键：redirect URI 缺少 host */
     public static final String PAIRWISE_CLIENT_REDIRECT_URIS_MISSING_HOST = "pairwiseClientRedirectURIsMissingHost";
+    /** 错误键：无 sector URI 时 redirect URI 含多个 host */
     public static final String PAIRWISE_CLIENT_REDIRECT_URIS_MULTIPLE_HOSTS = "pairwiseClientRedirectURIsMultipleHosts";
+    /** 错误键：sector identifier URI 格式非法 */
     public static final String PAIRWISE_MALFORMED_SECTOR_IDENTIFIER_URI = "pairwiseMalformedSectorIdentifierURI";
+    /** 错误键：无法从 sector URI 获取 redirect 列表 */
     public static final String PAIRWISE_FAILED_TO_GET_REDIRECT_URIS = "pairwiseFailedToGetRedirectURIs";
+    /** 错误键：客户端 redirect 与 sector URI 列表不匹配 */
     public static final String PAIRWISE_REDIRECT_URIS_MISMATCH = "pairwiseRedirectURIsMismatch";
 
-    public static void validate(KeycloakSession session, ClientModel client, ProtocolMapperModel mapperModel) throws ProtocolMapperConfigException {
+    /**
+     * 校验客户端上 Pairwise 映射器配置（从 mapper 读取 sector identifier URI）。
+     * @param session Keycloak 会话
+     * @param client 客户端模型
+     * @param mapperModel 协议映射器模型
+     */
         String sectorIdentifierUri = PairwiseSubMapperHelper.getSectorIdentifierUri(mapperModel);
         String rootUrl = client.getRootUrl();
         Set<String> redirectUris = client.getRedirectUris();
         validate(session, rootUrl, redirectUris, sectorIdentifierUri);
     }
 
-    public static void validate(KeycloakSession session, String rootUrl, Set<String> redirectUris, String sectorIdentifierUri) throws ProtocolMapperConfigException {
+    /**
+     * 校验 redirect URI 与 sector identifier URI 配置。
+     * @param session Keycloak 会话（拉取 sector URI 时需要）
+     * @param rootUrl 客户端 root URL
+     * @param redirectUris 注册的 redirect URI
+     * @param sectorIdentifierUri sector identifier URI（可为空）
+     */
         if (sectorIdentifierUri == null || sectorIdentifierUri.isEmpty()) {
             validateClientRedirectUris(rootUrl, redirectUris);
             return;
@@ -101,6 +119,7 @@ public class PairwiseSubMapperValidator {
         }
     }
 
+    /** 用于 JSON 反序列化 sector redirect URI 字符串列表 */
     public static class TypedList extends ArrayList<String> {}
 
 }

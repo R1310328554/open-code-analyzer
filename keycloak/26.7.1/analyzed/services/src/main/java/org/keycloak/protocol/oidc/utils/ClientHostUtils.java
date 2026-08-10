@@ -32,25 +32,20 @@ import org.keycloak.services.util.ResolveRelative;
 import org.jboss.logging.Logger;
 
 /**
- * Utility class for validating client host values against a client's registered URLs.
- * Used to prevent SSRF attacks by ensuring that dynamic host values (like client_session_host)
- * only reference hosts that are already configured and trusted for the client.
- * Resolves [CVE-2026-4874] Server-Side Request Forgery via OIDC token endpoint
+ * 客户端主机校验工具：将动态主机值（如 client_session_host）与客户端已注册 URL 比对，防止 SSRF 攻击。
+ * <p>修复 [CVE-2026-4874] OIDC token 端点 SSRF 漏洞。</p>
  */
 public class ClientHostUtils {
 
     private static final Logger logger = Logger.getLogger(ClientHostUtils.class);
 
     /**
-     * Validates that a hostname matches one of the client's registered nodes
-     * or the  management URL/Admin URL.
-     * This validation prevents SSRF attacks by ensuring that
-     * [1] only hostnames within the Management/Admin URL can be used.
-     * [2] hostnames matching registered clustered nodes can be used.
-     * @param hostname the hostname to validate
-     * @param client the client model containing registered URLs
-     * @param session the Keycloak session for URL resolution
-     * @return true if the hostname matches a registered client URL, false otherwise
+     * 校验 hostname 是否匹配客户端注册节点或 Management/Admin URL 中的主机。
+     * <p>仅允许 [1] Management/Admin URL 内主机；[2] 已注册集群节点主机。</p>
+     * @param hostname 待校验的主机名（可含端口）
+     * @param client 含注册 URL 的客户端模型
+     * @param session 用于相对 URL 解析的 Keycloak 会话
+     * @return 匹配任一允许主机则 true
      */
     public static boolean isHostAllowedForClient(String hostname, ClientModel client, KeycloakSession session) {
         if (hostname == null || hostname.trim().isEmpty()) {
@@ -61,16 +56,16 @@ public class ClientHostUtils {
             return false;
         }
 
-        // Extract just the hostname (strip port if present)
+        // 提取纯主机名（去除端口）
         String bareHostname = extractHostname(hostname);
 
-        // Extract hostname from the list of managed hosts (if any)
+        // 从客户端注册节点列表收集允许主机
         List<String> allowedHosts = extractHostsFromClientManagedHosts(client, hostname);
 
-        // Extract allowed hosts from managed/admin URL
+        // 从 Management URL 解析允许主机
         addHostFromUrl(client.getManagementUrl(), client, session, allowedHosts);
 
-        // Check if the hostname matches any allowed host (case-insensitive)
+        // 不区分大小写比对 hostname 与允许列表
         for (String allowedHost : allowedHosts) {
             if (allowedHost != null && allowedHost.equalsIgnoreCase(bareHostname)) {
                 logger.debugf("Host '%s' matches allowed host '%s' for client '%s'",
@@ -89,7 +84,7 @@ public class ClientHostUtils {
         }
 
         try {
-            // Prepend a scheme since input is hostname:port, not full URI
+            // 输入为 hostname:port，需补 scheme 才能解析
             return new URI("https://" + hostPort).getHost();
         } catch (URISyntaxException e) {
             logger.debugf("Could not parse hostname: %s", hostPort);

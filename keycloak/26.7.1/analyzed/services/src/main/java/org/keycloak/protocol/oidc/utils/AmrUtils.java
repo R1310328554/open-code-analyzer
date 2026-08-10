@@ -28,26 +28,25 @@ import org.keycloak.models.RealmModel;
 import org.jboss.logging.Logger;
 
 /**
+ * AMR（Authenticator Method Reference）工具类：解析认证器执行引用值并校验有效期。
  * @author Ben Cresitello-Dittmar
- * Utility for parsing authenticator method reference (AMR) values.
  */
 public class AmrUtils {
     private static final Logger logger = Logger.getLogger(AmrUtils.class);
 
     /**
-     * Get the configured authenticator reference values for the specified executions. If no
-     * value is configured for the execution, null is returned instead of throwing an error.
+     * 获取指定认证器执行 ID 对应的 AMR 引用值；未配置时返回 null 而非抛错。
      *
-     * @param executions List of authenticator execution ids
-     * @param realmModel The realm the executions are configured in
-     * @return The list of amr values.
+     * @param executions 认证器执行 ID 与认证时间的映射
+     * @param realmModel 执行所在的 realm
+     * @return 有效的 AMR 值列表
      */
     public static List<String> getAuthenticationExecutionReferences(Map<String, Integer> executions, RealmModel realmModel) {
         return executions.entrySet().stream()
             .map(
                 entry -> {
                     try {
-                        // extract the authenticator config and get the authenticator reference value
+                        // 读取认证器配置并提取 AMR 引用值
                         Map<String, String> config = realmModel.getAuthenticatorConfigById(realmModel.getAuthenticationExecutionById(entry.getKey()).getAuthenticatorConfig()).getConfig();
                         if (isAmrValid(config, entry.getValue())){
                             return config.get(Constants.AUTHENTICATION_EXECUTION_REFERENCE_VALUE);
@@ -64,10 +63,10 @@ public class AmrUtils {
     }
 
     /**
-     * Check if the AMR is still valid by determining if the execution time + the configured max age is less than the current time
-     * @param config The authenticator execution config
-     * @param authTime The time that the authentication occurred
-     * @return True if the amr value is still valid for this session
+     * 校验 AMR 是否仍在有效期内：认证时间 + 配置 max age ≥ 当前时间。
+     * @param config 认证器执行配置
+     * @param authTime 认证发生时间（Unix 秒）
+     * @return 若 AMR 对本会话仍有效则 true
      */
     public static boolean isAmrValid(Map<String, String> config, Integer authTime){
         try {

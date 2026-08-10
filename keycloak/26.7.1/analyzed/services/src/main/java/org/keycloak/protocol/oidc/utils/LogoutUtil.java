@@ -32,13 +32,17 @@ import org.keycloak.services.messages.Messages;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
 /**
- * Utilities for OIDC logout
- *
+ * OIDC 登出工具：构建登出完成后的重定向响应或信息页。
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class LogoutUtil {
 
-    public static Response sendResponseAfterLogoutFinished(KeycloakSession session, AuthenticationSessionModel logoutSession) {
+    /**
+     * 登出流程结束后发送响应：302 重定向至 post_logout_redirect_uri，或显示成功信息页（含可选确认页）。
+     * @param session Keycloak 会话
+     * @param logoutSession 登出认证会话
+     * @return JAX-RS 响应
+     */
         String redirectUri = logoutSession.getAuthNote(OIDCLoginProtocol.LOGOUT_REDIRECT_URI);
         URI finalRedirectUri = getRedirectUriWithAttachedState(redirectUri, logoutSession);
         OIDCAdvancedConfigWrapper config = OIDCAdvancedConfigWrapper.fromClientModel(logoutSession.getClient());
@@ -60,7 +64,12 @@ public class LogoutUtil {
     }
 
 
-    public static URI getRedirectUriWithAttachedState(String redirectUri, AuthenticationSessionModel logoutSession) {
+    /**
+     * 在 post_logout_redirect_uri 上附加 state 查询参数（若存在）。
+     * @param redirectUri 基础重定向 URI
+     * @param logoutSession 登出认证会话
+     * @return 含 state 的完整 URI，redirectUri 为 null 时返回 null
+     */
         if (redirectUri == null) return null;
         String state = logoutSession.getAuthNote(OIDCLoginProtocol.LOGOUT_STATE_PARAM);
 

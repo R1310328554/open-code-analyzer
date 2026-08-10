@@ -25,12 +25,18 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.util.JsonSerialization;
 
 /**
- *
+ * JWKS HTTP 工具：通过 HTTP 客户端拉取远程 JWKS 并反序列化。
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class JWKSHttpUtils {
 
-    public static JSONWebKeySet sendJwksRequest(KeycloakSession session, String jwksURI) throws IOException {
+    /**
+     * 向指定 JWKS URI 发送 GET 请求并解析为 {@link JSONWebKeySet}。
+     * @param session Keycloak 会话（提供 HTTP 客户端）
+     * @param jwksURI JWKS 端点 URI
+     * @return 解析后的 JSON Web Key Set
+     * @throws IOException HTTP 或 JSON 解析失败
+     */
         String keySetString = session.getProvider(HttpClientProvider.class).getString(jwksURI);
         return JsonSerialization.readValue(keySetString, JSONWebKeySet.class);
     }

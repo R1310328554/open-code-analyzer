@@ -32,6 +32,7 @@ import org.keycloak.models.UserSessionModel;
 import org.jboss.logging.Logger;
 
 /**
+ * OAuth2 授权码解析器：持久化、解析并校验一次性授权码。
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class OAuth2CodeParser {
@@ -39,12 +40,13 @@ public class OAuth2CodeParser {
     private static final Logger logger = Logger.getLogger(OAuth2CodeParser.class);
 
     private static final Pattern DOT = Pattern.compile("\\.");
+    /** SingleUseObject 缓存键前缀 */
     public static final String CACHE_KEY_PREFIX = "code:";
 
     /**
-     * Will persist the code to the cache and return the object with the codeData and code correctly set
+     * 将授权码数据写入缓存并返回 OAuth2 握手用的 code 参数字符串。
      *
-     * @return code parameter to be used in OAuth2 handshake
+     * @return 格式为 {@code id.userSessionId.clientId} 的 code 参数
      */
     public static String persistCode(KeycloakSession session, AuthenticatedClientSessionModel clientSession, OAuth2Code codeData) {
         SingleUseObjectProvider codeStore = session.singleUseObjects();
@@ -61,9 +63,8 @@ public class OAuth2CodeParser {
 
 
     /**
-     * Will parse the code and retrieve the corresponding OAuth2Code and AuthenticatedClientSessionModel. Will also check if code wasn't already
-     * used and if it wasn't expired. If it was already used (or other error happened during parsing), then returned parser will have "isIllegalCode"
-     * set to true. If it was expired, the parser will have "isExpired" set to true
+     * 解析 code 参数，取出 {@link OAuth2Code} 与 {@link AuthenticatedClientSessionModel}，并校验是否已使用或过期。
+     * <p>非法 code 时 {@link ParseResult#isIllegalCode()} 为 true；过期时 {@link ParseResult#isExpiredCode()} 为 true。</p>
      */
     public static ParseResult parseCode(KeycloakSession session, String code, RealmModel realm, EventBuilder event) {
         ParseResult result = new ParseResult(code);
@@ -81,11 +82,11 @@ public class OAuth2CodeParser {
         event.detail(Details.CODE_ID, userSessionId);
         event.session(userSessionId);
 
-        // Retrieve UserSession
+        // 加载用户会话
         var userSessionProvider = session.sessions();
         UserSessionModel userSession = userSessionProvider.getUserSessionIfClientExists(realm, userSessionId, false, clientUUID);
         if (userSession == null) {
-            // Needed to track if code is invalid or was already used.
+            // 用于区分 code 无效与已被使用
             userSession = userSessionProvider.getUserSession(realm, userSessionId);
             if (userSession == null) {
                 return result.illegalCode();
@@ -97,7 +98,7 @@ public class OAuth2CodeParser {
         SingleUseObjectProvider codeStore = session.singleUseObjects();
         Map<String, String> codeData = codeStore.remove(CACHE_KEY_PREFIX + codeUUID);
 
-        // Either code not available or was already used
+        // 缓存中无数据或 code 已被消费
         if (codeData == null) {
             logger.warnf("Code '%s' already used for userSession '%s' and client '%s'.", codeUUID, userSessionId, clientUUID);
             return result.illegalCode();
@@ -112,7 +113,7 @@ public class OAuth2CodeParser {
             return result.illegalCode();
         }
 
-        // Finally doublecheck if code is not expired
+        // 最终校验 code 是否过期
         int currentTime = Time.currentTime();
         if (currentTime > result.codeData.getExpiration()) {
             return result.expiredCode();
@@ -124,6 +125,7 @@ public class OAuth2CodeParser {
     }
 
 
+    /** 授权码解析结果：含 code 数据、客户端会话及非法/过期标志 */
     public static class ParseResult {
 
         private final String code;
@@ -139,22 +141,27 @@ public class OAuth2CodeParser {
         }
 
 
+        /** @return 原始 code 参数字符串 */
         public String getCode() {
             return code;
         }
 
+        /** @return 反序列化后的授权码数据 */
         public OAuth2Code getCodeData() {
             return codeData;
         }
 
+        /** @return 关联的已认证客户端会话 */
         public AuthenticatedClientSessionModel getClientSession() {
             return clientSession;
         }
 
+        /** @return code 格式非法或已被使用 */
         public boolean isIllegalCode() {
             return isIllegalCode;
         }
 
+        /** @return code 已过期 */
         public boolean isExpiredCode() {
             return isExpiredCode;
         }

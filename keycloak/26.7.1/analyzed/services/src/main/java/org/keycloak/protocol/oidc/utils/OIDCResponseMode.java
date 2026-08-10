@@ -18,16 +18,24 @@
 package org.keycloak.protocol.oidc.utils;
 
 /**
+ * OIDC 授权响应模式枚举：query、fragment、form_post 及对应 JARM JWT 变体。
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public enum OIDCResponseMode {
 
+    /** 参数置于 query string */
     QUERY("query"),
+    /** JARM 简写，按 response_type 选择默认 JWT 模式 */
     JWT("jwt"),
+    /** 参数置于 URI fragment */
     FRAGMENT("fragment"),
+    /** 通过 HTML 表单 POST 回传参数 */
     FORM_POST("form_post"),
+    /** JWT 响应置于 query 参数 response */
     QUERY_JWT("query.jwt"),
+    /** JWT 响应置于 fragment */
     FRAGMENT_JWT("fragment.jwt"),
+    /** JWT 响应通过 form_post 提交 */
     FORM_POST_JWT("form_post.jwt");
 
     private String value;
@@ -36,7 +44,11 @@ public enum OIDCResponseMode {
         value = v;
     }
 
-    public static OIDCResponseMode parse(String responseMode, OIDCResponseType responseType) {
+    /**
+     * 解析 response_mode 参数；null 时按 response_type 选择默认模式，值为 jwt 时选择默认 JARM 模式。
+     * @param responseMode 请求中的 response_mode
+     * @param responseType 已解析的 response_type
+     */
         if (responseMode == null) {
             return getDefaultResponseMode(responseType);
         } else if(responseMode.equals("jwt")) {
@@ -46,6 +58,7 @@ public enum OIDCResponseMode {
         }
     }
 
+    /** response_type 无效时的宽松解析，无法识别时回退 QUERY/QUERY_JWT */
     public static OIDCResponseMode parseWhenInvalidResponseType(String responseMode) {
         if (responseMode == null) {
             return OIDCResponseMode.QUERY;
@@ -61,6 +74,7 @@ public enum OIDCResponseMode {
         }
     }
 
+    /** @return response_mode 字符串值 */
     public String value() {
         return value;
     }

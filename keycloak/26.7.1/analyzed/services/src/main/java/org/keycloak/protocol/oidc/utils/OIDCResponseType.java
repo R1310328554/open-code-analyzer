@@ -24,13 +24,18 @@ import java.util.List;
 import org.keycloak.protocol.oidc.OIDCLoginProtocol;
 
 /**
+ * OIDC response_type 解析与校验：支持 code、token、id_token、none 及其组合。
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class OIDCResponseType {
 
+    /** 授权码响应类型 */
     public static final String CODE = OIDCLoginProtocol.CODE_PARAM;
+    /** 隐式 flow access token 响应类型 */
     public static final String TOKEN = "token";
+    /** ID Token 响应类型 */
     public static final String ID_TOKEN = "id_token";
+    /** 无令牌响应（须单独使用） */
     public static final String NONE = "none";
 
     private static final List<String> ALLOWED_RESPONSE_TYPES = Arrays.asList(CODE, TOKEN, ID_TOKEN, NONE);
@@ -43,7 +48,11 @@ public class OIDCResponseType {
     }
 
 
-    public static OIDCResponseType parse(String responseTypeParam) {
+    /**
+     * 解析空格分隔的 response_type 参数并校验合法组合。
+     * @param responseTypeParam 原始 response_type 字符串
+     * @throws IllegalArgumentException 含不支持类型或非法组合
+     */
         if (responseTypeParam == null) {
             throw new IllegalArgumentException("response_type is null");
         }
@@ -63,6 +72,7 @@ public class OIDCResponseType {
         return new OIDCResponseType(allowedTypes);
     }
 
+    /** 合并多个 response_type 字符串的解析结果 */
     public static OIDCResponseType parse(List<String> responseTypes) {
         OIDCResponseType result = new OIDCResponseType(new ArrayList<String>());
         for (String respType : responseTypes) {
@@ -81,22 +91,23 @@ public class OIDCResponseType {
             throw new IllegalArgumentException("'None' not allowed with some other response_type");
         }
 
-        // response_type value "token" alone is not mentioned in OIDC specification, however it is supported by OAuth2. We allow it just to be compatible with pure OAuth2 clients like swagger.ui
+        // 单独 response_type=token 非 OIDC 规范但 OAuth2 支持，保留以兼容 swagger.ui 等纯 OAuth2 客户端
 //        if (responseTypes.contains(TOKEN) && responseTypes.size() == 1) {
 //            throw new IllegalArgumentException("Not supported to use response_type=token alone");
 //        }
     }
 
 
+    /** @return 是否包含指定 response_type */
     public boolean hasResponseType(String responseType) {
         return responseTypes.contains(responseType);
     }
 
     /**
-     * Checks whether the given {@code responseType} is the only value within the requested response types.
+     * 判断给定 response_type 是否为唯一请求类型。
      *
-     * @param responseType the response type
-     * @return {@code true} if the given response type if within the list of response types. Otherwise, {@code false}
+     * @param responseType 响应类型
+     * @return 列表仅含该类型时 true
      */
     public boolean hasSingleResponseType(String responseType) {
         if (responseTypes.size() > 1) {
@@ -106,10 +117,12 @@ public class OIDCResponseType {
     }
 
 
+    /** @return 是否含 token 或 id_token（隐式/混合 flow） */
     public boolean isImplicitOrHybridFlow() {
         return hasResponseType(TOKEN) || hasResponseType(ID_TOKEN);
     }
 
+    /** @return 是否为纯隐式 flow（含 token/id_token 但不含 code） */
     public boolean isImplicitFlow() {
         return (hasResponseType(TOKEN) || hasResponseType(ID_TOKEN)) && !hasResponseType(CODE);
     }

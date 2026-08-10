@@ -39,6 +39,7 @@ import org.keycloak.representations.AuthorizationResponseToken;
 import org.keycloak.services.Urls;
 
 /**
+ * OIDC 授权响应重定向 URI 构建器：支持 query、fragment、form_post 及 JARM JWT 模式。
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public abstract class OIDCRedirectUriBuilder {
@@ -49,12 +50,20 @@ public abstract class OIDCRedirectUriBuilder {
         this.uriBuilder = uriBuilder;
     }
 
+    /** 添加响应参数（query/fragment/form 或 JWT claim） */
     public abstract OIDCRedirectUriBuilder addParam(String paramName, String paramValue);
 
+    /** 构建 302 重定向或 form_post HTML 响应 */
     public abstract Response build();
 
 
-    public static OIDCRedirectUriBuilder fromUri(String baseUri, OIDCResponseMode responseMode, KeycloakSession session, AuthenticatedClientSessionModel clientSession) {
+    /**
+     * 按 response_mode 创建对应构建器实现。
+     * @param baseUri 客户端 redirect_uri
+     * @param responseMode OIDC 响应模式
+     * @param session Keycloak 会话（JWT 模式需要）
+     * @param clientSession 客户端会话（JWT 模式需要）
+     */
         KeycloakUriBuilder uriBuilder = KeycloakUriBuilder.fromUri(baseUri);
 
         switch (responseMode) {
@@ -71,10 +80,10 @@ public abstract class OIDCRedirectUriBuilder {
     }
 
 
-    // Impl subclasses
+    // 各 response_mode 实现子类
 
 
-    // http://openid.net/specs/oauth-v2-multiple-response-types-1_0.html#ResponseModes
+    // OAuth 2.0 多响应类型规范：ResponseModes
     private static class QueryRedirectUriBuilder extends OIDCRedirectUriBuilder {
 
         protected QueryRedirectUriBuilder(KeycloakUriBuilder uriBuilder) {
@@ -135,7 +144,7 @@ public abstract class OIDCRedirectUriBuilder {
     }
 
 
-    // http://openid.net/specs/oauth-v2-form-post-response-mode-1_0.html
+    // OAuth 2.0 Form Post Response Mode 规范
     private static class FormPostRedirectUriBuilder extends OIDCRedirectUriBuilder {
 
         private Map<String, String> params = new HashMap<>();
@@ -188,7 +197,7 @@ public abstract class OIDCRedirectUriBuilder {
 
     }
 
-    // https://openid.net/specs/openid-financial-api-jarm-ID1.html
+    // OpenID FAPI JARM（JWT 授权响应模式）规范
     private static class JWTRedirectUriBuilder extends OIDCRedirectUriBuilder {
 
         private final OIDCResponseMode responseMode;

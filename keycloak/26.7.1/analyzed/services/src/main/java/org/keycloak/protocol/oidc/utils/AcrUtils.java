@@ -40,29 +40,47 @@ import org.keycloak.util.JsonSerialization;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.jboss.logging.Logger;
 
+/**
+ * ACR（Authentication Context Class Reference）工具类：解析 claims/acr_values 参数、执行最低 ACR 约束，并在 ACR 与 LoA（认证保证级别）之间映射。
+ */
 public class AcrUtils {
 
     private static final Logger LOGGER = Logger.getLogger(AcrUtils.class);
 
-    public static List<String> getRequiredAcrValues(String claimsParam) {
+    /**
+     * 从 claims 参数中提取 essential 的 ACR 值列表。
+     * @param claimsParam OIDC claims JSON 参数字符串
+     * @return 必需的 ACR 值列表
+     */
         return getAcrValues(claimsParam, null, true);
     }
 
 
-    public static List<String> getAcrValues(String claimsParam, String acrValuesParam, ClientModel client) {
+    /**
+     * 合并 claims 与 acr_values 参数中的 ACR，并在为空时回退到客户端默认值，最后执行最低 ACR 约束。
+     * @param claimsParam claims JSON 参数
+     * @param acrValuesParam acr_values 请求参数
+     * @param client 客户端模型
+     * @return 经最低 ACR 过滤后的 ACR 列表
+     */
         List<String> acrValues = getAcrValues(claimsParam, acrValuesParam, false);
 
         if (acrValues.isEmpty()) {
-            // Fallback to default ACR values of client (if configured)
+            // 回退到客户端配置的默认 ACR 值
             acrValues = getDefaultAcrValues(client);
         }
         return enforceMinimumAcr(acrValues, client);
     }
 
-    public static List<String> enforceMinimumAcr(List<String> acrValues, ClientModel client) {
+    /**
+     * 按客户端配置的最低 ACR 过滤列表：移除 LoA 低于最低值的 ACR；若过滤后为空则注入最低 ACR。
+     * @param acrValues 待过滤的 ACR 列表
+     * @param client 客户端模型
+     * @return 满足最低 ACR 要求的列表
+     */
         String minimumAcr = getMinimumAcrValue(client);
 
-        // If a minimum is set, we need to validate the client didn't request a lower ACR
+        // 若配置了最低 ACR，须确保客户端未请求更低级别
         if (minimumAcr != null) {
             List<String> acrCopy = new ArrayList<>(acrValues);
             Map<String, Integer> acrMap = getAcrLoaMap(client);
@@ -70,7 +88,7 @@ public class AcrUtils {
             if (minimumLoa == null) {
                 LOGGER.warnf("ACR '%s' can not be mapped to a LoA value.", minimumAcr);
             } else {
-                // Remove all ACRs lower than the minimum
+                // 移除所有低于最低 LoA 的 ACR
                 Iterator<String> iterator = acrCopy.iterator();
                 while (iterator.hasNext()) {
                     String acrValue = iterator.next();
@@ -82,7 +100,7 @@ public class AcrUtils {
                         iterator.remove();
                     }
                 }
-                // All ACRs lower than the minimum are gone, if we have none left, add our minimum
+                // 过滤后若列表为空，则添加最低 ACR
                 if (acrCopy.isEmpty()) {
                     acrCopy.add(minimumAcr);
                 }
@@ -135,27 +153,31 @@ public class AcrUtils {
     }
 
     /**
-     * @param client
-     * @return map corresponding to "acr-to-loa" client attribute. It will fallback to realm in case "acr-to-loa" mapping not configured on client
+     * @param client 客户端模型
+     * @return 对应客户端 "acr-to-loa" 属性的映射；未配置时回退到 realm
      */
     public static Map<String, Integer> getAcrLoaMap(ClientModel client) {
         Map<String, Integer> result = getAcrLoaMapForClientOnly(client);
         if (result.isEmpty()) {
-            // Fallback to realm
+            // 回退到 realm 级映射
             return getAcrLoaMap(client.getRealm());
         } else {
             return result;
         }
     }
 
-    public static Map<String, Integer> getUriLoaMap(ClientModel client) {
+    /**
+     * 获取 URI 到 LoA 的映射：优先使用客户端配置，否则通过 realm 的 acr/uri 映射组合。
+     * @param client 客户端模型
+     * @return URI → LoA 映射
+     */
         Map<String, Integer> result = getAcrLoaMapForClientOnly(client);
         if (!result.isEmpty()) {
-            // client has always the correct maps uri or acr
+            // 客户端已配置正确的 uri 或 acr 映射
             return result;
         }
 
-        // Fallback to realm but using the two maps acr => uri => loa
+        // 回退到 realm，经 acr → uri → loa 两级映射
         Map<String, Integer> acrLoaMap = getAcrLoaMap(client.getRealm());
         Map<String, String> acrUriMap = getAcrUriMap(client.getRealm());
         return acrLoaMap.entrySet().stream()
@@ -176,17 +198,19 @@ public class AcrUtils {
         }
     }
 
+    /** 解析 JSON 格式的 ACR→LoA 映射字符串 */
     public static Map<String, Integer> parseAcrLoaMap(String map) throws IOException {
         return JsonSerialization.readValue(map, new TypeReference<Map<String, Integer>>() {});
     }
 
+    /** 解析 JSON 格式的 ACR→URI 映射字符串 */
     public static Map<String, String> parseAcrUriMap(String map) throws IOException {
         return JsonSerialization.readValue(map, new TypeReference<Map<String, String>>() {});
     }
 
     /**
-     * @param realm
-     * @return map corresponding to "acr-to-loa" realm attribute.
+     * @param realm 领域模型
+     * @return 对应 realm "acr-to-loa" 属性的映射
      */
     public static Map<String, Integer> getAcrLoaMap(RealmModel realm) {
         String map = realm.getAttribute(Constants.ACR_LOA_MAP);
@@ -202,9 +226,9 @@ public class AcrUtils {
     }
 
     /**
-     * Return the acr to uri map in the realm.
-     * @param realm
-     * @return Map corresponding to acr to uri map
+     * 返回 realm 中的 ACR 到 URI 映射。
+     * @param realm 领域模型
+     * @return ACR → URI 映射
      */
     public static Map<String, String> getAcrUriMap(RealmModel realm) {
         String map = realm.getAttribute(Constants.ACR_URI_MAP);
@@ -219,18 +243,24 @@ public class AcrUtils {
         }
     }
 
-    public static String mapLoaToAcr(int loa, Map<String, Integer> acrLoaMap, Collection<String> acrValues) {
+    /**
+     * 将给定 LoA 映射到 acrValues 中 LoA 不超过 loa 的最大 ACR 值。
+     * @param loa 目标认证保证级别
+     * @param acrLoaMap ACR→LoA 映射
+     * @param acrValues 候选 ACR 值集合
+     * @return 匹配的 ACR，若无则 null
+     */
         String acr = null;
         if (!acrLoaMap.isEmpty() && !acrValues.isEmpty()) {
             int maxLoa = -1;
             for (String acrValue : acrValues) {
                 Integer mappedLoa = acrLoaMap.get(acrValue);
-                // if there is no mapping for the acrValue, it may be an integer itself
+                // 若无映射，acrValue 本身可能是整数 LoA
                 if (mappedLoa == null) {
                     try {
                         mappedLoa = Integer.parseInt(acrValue);
                     } catch (NumberFormatException e) {
-                        // the acrValue cannot be mapped
+                        // 无法将 acrValue 映射为整数
                         LOGGER.warnf("Acr value '%s' cannot be mapped to int", acrValue);
                     }
                 }
@@ -244,10 +274,12 @@ public class AcrUtils {
     }
 
 
+    /** 获取客户端配置的默认 ACR 值列表 */
     public static List<String> getDefaultAcrValues(ClientModel client) {
         return OIDCAdvancedConfigWrapper.fromClientModel(client).getAttributeMultivalued(Constants.DEFAULT_ACR_VALUES);
     }
 
+    /** 获取客户端配置的最低 ACR 值 */
     public static String getMinimumAcrValue(ClientModel client) {
         return OIDCAdvancedConfigWrapper.fromClientModel(client).getMinimumAcrValue();
     }

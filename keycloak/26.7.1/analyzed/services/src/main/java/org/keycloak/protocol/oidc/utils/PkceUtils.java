@@ -21,23 +21,33 @@ import org.keycloak.services.cors.Cors;
 
 import org.jboss.logging.Logger;
 
+/**
+ * PKCE（Proof Key for Code Exchange）工具：生成/编码 code_verifier 与 code_challenge，并在 token 端点校验。
+ * <p>遵循 RFC 7636。</p>
+ */
 public class PkceUtils {
 
     private static final Logger logger = Logger.getLogger(PkceUtils.class);
 
     private static final Pattern VALID_CODE_VERIFIER_PATTERN = Pattern.compile("^[0-9a-zA-Z\\-\\.~_]+$");
 
+    /** 生成符合 RFC 7636 的随机 code_verifier（Base64URL 编码 64 字节） */
     public static String generateCodeVerifier() {
         return Base64Url.encode(SecretGenerator.getInstance().randomBytes(64));
     }
 
-    public static String encodeCodeChallenge(String codeVerifier, String codeChallengeMethod) {
+    /**
+     * 按 method 将 code_verifier 编码为 code_challenge。
+     * @param codeVerifier 原始 verifier
+     * @param codeChallengeMethod plain 或 S256
+     * @return code_challenge，失败时 null
+     */
         try {
             switch (codeChallengeMethod) {
                 case OAuth2Constants.PKCE_METHOD_S256:
                     return generateS256CodeChallenge(codeVerifier);
                 case OAuth2Constants.PKCE_METHOD_PLAIN:
-                    // fall-trhough
+                    // plain 模式直接返回 verifier
                 default:
                     return codeVerifier;
             }
@@ -46,12 +56,19 @@ public class PkceUtils {
         }
     }
 
-    // https://tools.ietf.org/html/rfc7636#section-4.6
+    // RFC 7636 §4.6：S256 code_challenge 计算
+    /** 计算 S256 code_challenge：BASE64URL(SHA256(code_verifier)) */
     public static String generateS256CodeChallenge(String codeVerifier) throws HashException {
         return HashUtils.sha256UrlEncodedHash(codeVerifier, StandardCharsets.ISO_8859_1);
     }
 
-    public static boolean validateCodeChallenge(String verifier, String codeChallenge, String codeChallengeMethod) {
+    /**
+     * 校验 code_verifier 与 code_challenge 是否匹配。
+     * @param verifier code_verifier
+     * @param codeChallenge 授权请求中的 code_challenge
+     * @param codeChallengeMethod plain 或 S256
+     * @return 匹配则 true
+     */
 
         try {
             switch (codeChallengeMethod) {
@@ -67,8 +84,9 @@ public class PkceUtils {
         }
     }
 
+    /** 强制 PKCE 客户端：必须提供 code_verifier 并通过校验 */
     public static void checkParamsForPkceEnforcedClient(String codeVerifier, String codeChallenge, String codeChallengeMethod, String authUserId, String authUsername, EventBuilder event, Cors cors) {
-        // check whether code verifier is specified
+        // 强制 PKCE 时 code_verifier 不可缺失
         if (codeVerifier == null) {
             String errorMessage = "PKCE code verifier not specified";
             event.detail(Details.REASON, errorMessage);
@@ -78,6 +96,7 @@ public class PkceUtils {
         verifyCodeVerifier(codeVerifier, codeChallenge, codeChallengeMethod, authUserId, authUsername, event, cors);
     }
 
+    /** 非强制 PKCE 客户端：challenge 与 verifier 须成对出现 */
     public static void checkParamsForPkceNotEnforcedClient(String codeVerifier, String codeChallenge, String codeChallengeMethod, String authUserId, String authUsername, EventBuilder event, Cors cors) {
         if (codeChallenge != null && codeVerifier == null) {
             String errorMessage = "PKCE code verifier not specified";
@@ -98,8 +117,13 @@ public class PkceUtils {
         }
     }
 
-    public static void verifyCodeVerifier(String codeVerifier, String codeChallenge, String codeChallengeMethod, String authUserId, String authUsername, EventBuilder event, Cors cors) {
-        // check whether code verifier is formatted along with the PKCE specification
+    /**
+     * 校验 code_verifier 格式与 challenge 匹配；失败时抛出 {@link CorsErrorResponseException}。
+     * @param codeVerifier token 请求中的 verifier
+     * @param codeChallenge 授权阶段保存的 challenge
+     * @param codeChallengeMethod plain 或 S256
+     */
+        // 校验 code_verifier 长度与字符集（RFC 7636）
 
         if (!isValidPkceCodeVerifier(codeVerifier)) {
             String errorReason = "Invalid code verifier";
@@ -112,7 +136,7 @@ public class PkceUtils {
         logger.debugf("PKCE supporting Client, codeVerifier = %s", codeVerifier);
         String codeVerifierEncoded = codeVerifier;
         try {
-            // https://tools.ietf.org/html/rfc7636#section-4.2
+            // RFC 7636 §4.2：plain 或 S256 编码 verifier 后与 challenge 比对
             // plain or S256
             if (codeChallengeMethod != null && codeChallengeMethod.equals(OAuth2Constants.PKCE_METHOD_S256)) {
                 logger.debugf("PKCE codeChallengeMethod = %s", codeChallengeMethod);
@@ -139,6 +163,7 @@ public class PkceUtils {
         }
     }
 
+    /** 校验 code_verifier 长度与允许的字符集 */
     private static boolean isValidPkceCodeVerifier(String codeVerifier) {
         if (codeVerifier.length() < OIDCLoginProtocol.PKCE_CODE_VERIFIER_MIN_LENGTH) {
             logger.debugf(" Error: PKCE codeVerifier length under lower limit , codeVerifier = %s", codeVerifier);

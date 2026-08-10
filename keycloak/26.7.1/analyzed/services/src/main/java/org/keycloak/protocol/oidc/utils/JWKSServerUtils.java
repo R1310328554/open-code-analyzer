@@ -31,10 +31,15 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 
 /**
- *
+ * 服务端 JWKS 工具：从 realm 活跃密钥构建 JWKS，并将 {@link KeyWrapper} 转为 JWK。
  * @author <a href="mailto:francis.pouatcha@adorsys.com">Francis Pouatcha</a>
  */public class JWKSServerUtils {
-    public static JSONWebKeySet getRealmJwks(KeycloakSession session, RealmModel realm){
+    /**
+     * 收集 realm 中已启用且含公钥的密钥，构建 JWKS。
+     * @param session Keycloak 会话
+     * @param realm 领域模型
+     * @return realm 的 JSON Web Key Set
+     */
         JWK[] jwks = session.keys().getKeysStream(realm)
                 .filter(k -> k.getStatus().isEnabled() && k.getPublicKey() != null)
                 .map(JWKSServerUtils::toJwk)
@@ -47,7 +52,11 @@ import org.keycloak.models.RealmModel;
     }
 
 
-    public static JWK toJwk(KeyWrapper key) {
+    /**
+     * 将 {@link KeyWrapper} 转换为 JWK（支持 RSA、EC、OKP）。
+     * @param key 密钥包装对象
+     * @return 对应 JWK，不支持的类型返回 null
+     */
         JWKBuilder b = JWKBuilder.create()
                 .kid(key.getKid())
                 .algorithm(key.getAlgorithmOrDefault());

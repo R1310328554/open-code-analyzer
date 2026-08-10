@@ -39,13 +39,21 @@ import org.keycloak.services.cors.Cors;
 import org.jboss.logging.Logger;
 
 /**
+ * OIDC 客户端认证工具：执行客户端认证流程、校验协议与 CORS，并返回认证结果。
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class AuthorizeClientUtil {
 
     private static final Logger logger = Logger.getLogger(AuthorizeClientUtil.class);
 
-    public static ClientAuthResult authorizeClient(KeycloakSession session, EventBuilder event, Cors cors) {
+    /**
+     * 执行客户端认证：调用 realm 客户端认证流，校验客户端启用状态与 OIDC 协议。
+     * @param session Keycloak 会话
+     * @param event 事件构建器
+     * @param cors CORS 处理器（可为 null）
+     * @return 认证成功的客户端与认证属性
+     * @throws WebApplicationException 认证失败时
+     */
         AuthenticationProcessor processor = getAuthenticationProcessor(session, event);
 
         Response response = processor.authenticateClient();
@@ -87,7 +95,12 @@ public class AuthorizeClientUtil {
         return new ClientAuthResult(client, processor.getClientAuthAttributes());
     }
 
-    public static AuthenticationProcessor getAuthenticationProcessor(KeycloakSession session, EventBuilder event) {
+    /**
+     * 构建并配置 realm 客户端认证流处理器。
+     * @param session Keycloak 会话
+     * @param event 事件构建器
+     * @return 已配置的 {@link AuthenticationProcessor}
+     */
         RealmModel realm = session.getContext().getRealm();
 
         AuthenticationFlowModel clientAuthFlow = realm.getClientAuthenticationFlow();
@@ -105,7 +118,12 @@ public class AuthorizeClientUtil {
         return processor;
     }
 
-    public static ClientAuthenticatorFactory findClientAuthenticatorForOIDCAuthMethod(KeycloakSession session, String oidcAuthMethod) {
+    /**
+     * 按 OIDC token_endpoint_auth_method 查找匹配的客户端认证器工厂。
+     * @param session Keycloak 会话
+     * @param oidcAuthMethod OIDC 认证方法标识
+     * @return 匹配的工厂，若无则 null
+     */
         return session.getKeycloakSessionFactory().getProviderFactoriesStream(ClientAuthenticator.class)
                 .map(ClientAuthenticatorFactory.class::cast)
                 .filter(caf -> caf.getProtocolAuthenticatorMethods(OIDCLoginProtocol.LOGIN_PROTOCOL).contains(oidcAuthMethod))
@@ -122,6 +140,7 @@ public class AuthorizeClientUtil {
         }
     }
 
+    /** 客户端认证结果：包含已认证客户端及其认证属性 */
     public static class ClientAuthResult {
 
         private final ClientModel client;
@@ -132,10 +151,12 @@ public class AuthorizeClientUtil {
             this.clientAuthAttributes = clientAuthAttributes;
         }
 
+        /** @return 已认证的客户端 */
         public ClientModel getClient() {
             return client;
         }
 
+        /** @return 客户端认证过程中产生的属性映射 */
         public Map<String, String> getClientAuthAttributes() {
             return clientAuthAttributes;
         }

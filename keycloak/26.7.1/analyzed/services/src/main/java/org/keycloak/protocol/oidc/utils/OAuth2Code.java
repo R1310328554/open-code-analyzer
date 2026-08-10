@@ -21,17 +21,15 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Data associated with the oauth2 code.
- * <p>
- * Those data are typically valid just for the very short time - they're created at the point before we redirect to the application
- * and removed when application sends requests to the token endpoint (code-to-token endpoint) to exchange the
- * single-use OAuth2 code parameter for those data.
- *
+ * OAuth2 授权码关联数据：在重定向前写入缓存，token 端点换码时一次性消费。
+ * <p>生命周期极短，含 nonce、scope、PKCE、DPoP 等换 token 所需信息。</p>
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class OAuth2Code {
 
+    /** 授权码 ID 的序列化键 */
     public static final String ID_NOTE = "id";
+    /** 过期时间的序列化键 */
     public static final String EXPIRATION_NOTE = "exp";
     private static final String NONCE_NOTE = "nonce";
     private static final String SCOPE_NOTE = "scope";
@@ -40,6 +38,7 @@ public class OAuth2Code {
     private static final String CODE_CHALLENGE_NOTE = "code_challenge";
     private static final String CODE_CHALLENGE_METHOD_NOTE = "code_challenge_method";
     private static final String DPOP_JKT_NOTE = "dpop_jkt";
+    /** 用户会话 ID 的序列化键 */
     public static final String USER_SESSION_ID_NOTE = "user_session_id";
 
     private final String id;
@@ -61,6 +60,7 @@ public class OAuth2Code {
     private final String userSessionId;
 
 
+    /** 简化构造：不含 resource、redirect_uri、PKCE 与 DPoP 字段 */
     public OAuth2Code(String id, int expiration, String nonce, String scope, String userSessionId) {
         this.id = id;
         this.expiration = expiration;
@@ -102,11 +102,13 @@ public class OAuth2Code {
     }
 
 
+    /** 从缓存 Map 反序列化为 {@link OAuth2Code} */
     public static OAuth2Code deserializeCode(Map<String, String> data) {
         return new OAuth2Code(data);
     }
 
 
+    /** 序列化为可存入 SingleUseObject 缓存的 Map */
     public Map<String, String> serializeCode() {
         Map<String, String> result = new HashMap<>();
 
@@ -124,42 +126,52 @@ public class OAuth2Code {
         return result;
     }
 
+    /** @return 授权码 UUID */
     public String getId() {
         return id;
     }
 
+    /** @return 过期时间（Unix 秒） */
     public int getExpiration() {
         return expiration;
     }
 
+    /** @return OIDC nonce 值 */
     public String getNonce() {
         return nonce;
     }
 
+    /** @return 授权 scope 字符串 */
     public String getScope() {
         return scope;
     }
 
+    /** @return 资源指标（RFC 8707） */
     public String getResource() {
         return resource;
     }
 
+    /** @return 授权请求中的 redirect_uri */
     public String getRedirectUriParam() {
         return redirectUriParam;
     }
 
+    /** @return PKCE code_challenge */
     public String getCodeChallenge() {
         return codeChallenge;
     }
 
+    /** @return PKCE code_challenge_method */
     public String getCodeChallengeMethod() {
         return codeChallengeMethod;
     }
 
+    /** @return DPoP 公钥 JKT thumbprint */
     public String getDpopJkt() {
         return dpopJkt;
     }
 
+    /** @return 绑定的用户会话 ID */
     public String getUserSessionId() {
         return userSessionId;
     }
