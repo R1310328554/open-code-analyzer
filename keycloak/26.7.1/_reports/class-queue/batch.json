@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T06:43:54Z",
   "files": [
-    "integration/admin-client/src/main/java/org/keycloak/admin/client/resource/OrganizationInvitationsResource.java",
-    "integration/admin-client/src/main/java/org/keycloak/admin/client/resource/OrganizationMemberResource.java",
-    "integration/admin-client/src/main/java/org/keycloak/admin/client/resource/OrganizationMembersResource.java",
-    "integration/admin-client/src/main/java/org/keycloak/admin/client/resource/OrganizationResource.java",
-    "integration/admin-client/src/main/java/org/keycloak/admin/client/resource/OrganizationsMembersResource.java",
-    "integration/admin-client/src/main/java/org/keycloak/admin/client/resource/OrganizationsResource.java",
-    "integration/admin-client/src/main/java/org/keycloak/admin/client/resource/PermissionsResource.java",
-    "integration/admin-client/src/main/java/org/keycloak/admin/client/resource/PoliciesResource.java",
-    "integration/admin-client/src/main/java/org/keycloak/admin/client/resource/PolicyResource.java",
-    "integration/admin-client/src/main/java/org/keycloak/admin/client/resource/ProtocolMappersResource.java",
-    "integration/admin-client/src/main/java/org/keycloak/admin/client/resource/RealmLocalizationResource.java",
-    "integration/admin-client/src/main/java/org/keycloak/admin/client/resource/RealmResource.java",
-    "integration/admin-client/src/main/java/org/keycloak/admin/client/resource/RealmsResource.java",
-    "integration/admin-client/src/main/java/org/keycloak/admin/client/resource/RegexPoliciesResource.java",
-    "integration/admin-client/src/main/java/org/keycloak/admin/client/resource/ResourcePermissionResource.java",
     "integration/admin-client/src/main/java/org/keycloak/admin/client/resource/ResourcePermissionsResource.java",
     "integration/admin-client/src/main/java/org/keycloak/admin/client/resource/ResourceResource.java",
     "integration/admin-client/src/main/java/org/keycloak/admin/client/resource/ResourceScopeResource.java",
@@ -33,5 +18,5 @@
     "integration/admin-client/src/main/java/org/keycloak/admin/client/resource/ServerInfoResource.java"
   ],
   "remaining_pending": 5188,
-  "done": 780
+  "done": 795
 }
