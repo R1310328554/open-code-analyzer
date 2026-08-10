@@ -32,26 +32,38 @@ import org.keycloak.provider.ProviderConfigurationBuilder;
 import org.jboss.logging.Logger;
 
 /**
+ * JBoss Logging 事件监听器 SPI 工厂。
+ * <p>配置成功/错误日志级别、值清理与引号包裹等行为，创建 {@link JBossLoggingEventListenerProvider} 实例。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class JBossLoggingEventListenerProviderFactory implements EventListenerProviderFactory {
 
+    /** SPI 工厂标识：{@code jboss-logging}。 */
     public static final String ID = "jboss-logging";
 
+    /** 事件日志使用的 Logger 名称。 */
     private static final Logger logger = Logger.getLogger("org.keycloak.events");
 
+    /** 成功事件日志级别。 */
     private Logger.Level successLevel;
+    /** 错误事件日志级别。 */
     private Logger.Level errorLevel;
+    /** 是否清理日志值中的空格与引号。 */
     private boolean sanitize;
+    /** 日志值包裹引号字符。 */
     private Character quotes;
+    /** 管理事件日志是否包含 representation JSON。 */
     private boolean includeRepresentation;
 
     @Override
+    /** @param session 当前会话 @return JBoss Logging 事件监听器实例 */
     public EventListenerProvider create(KeycloakSession session) {
         return new JBossLoggingEventListenerProvider(session, logger, successLevel, errorLevel, quotes, sanitize, includeRepresentation);
     }
 
     @Override
+    /** 从配置加载日志级别、清理与引号等选项。 */
     public void init(Config.Scope config) {
         successLevel = Logger.Level.valueOf(config.get("success-level", "debug").toUpperCase());
         errorLevel = Logger.Level.valueOf(config.get("error-level", "warn").toUpperCase());
@@ -75,11 +87,13 @@ public class JBossLoggingEventListenerProviderFactory implements EventListenerPr
     }
 
     @Override
+    /** @return {@link #ID} */
     public String getId() {
         return ID;
     }
 
     @Override
+    /** @return 日志级别、清理与 representation 等配置元数据 */
     public List<ProviderConfigProperty> getConfigMetadata() {
         String[] logLevels = Arrays.stream(Logger.Level.values())
                 .map(Logger.Level::name)

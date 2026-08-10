@@ -21,13 +21,15 @@ import org.keycloak.provider.Provider;
 import org.keycloak.representations.idm.ClientRepresentation;
 
 /**
- * Provider plugin interface for importing clients from an arbitrary configuration format
+ * 客户端描述转换提供者 SPI：将任意格式的客户端配置文本转为内部 {@link ClientRepresentation}。
+ * <p>供 Admin REST 导入客户端时按格式选择对应转换器实现。</p>
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface ClientDescriptionConverter extends Provider {
 
+    /** @param description 外部格式的客户端配置文本 @return 内部客户端表示对象 */
     ClientRepresentation convertToInternal(String description);
 
 }

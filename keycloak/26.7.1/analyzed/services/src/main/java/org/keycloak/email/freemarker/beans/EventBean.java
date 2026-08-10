@@ -25,36 +25,45 @@ import java.util.Map;
 import org.keycloak.events.Event;
 
 /**
+ * 用户事件 FreeMarker Bean：将 {@link Event} 暴露为模板可读属性。
+ * <p>供事件通知邮件模板渲染事件类型、客户端、IP 与详情等信息。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class EventBean {
+    /** 底层用户事件对象。 */
     private Event event;
 
+    /** @param event 待包装的用户事件 */
     public EventBean(Event event) {
         this.event = event;
     }
 
+    /** @return 事件发生时间 */
     public Date getDate() {
         return new Date(event.getTime());
     }
 
+    /** @return 事件类型（小写、空格分隔） */
     public String getEvent() {
         return event.getType().toString().toLowerCase().replace("_", " ");
     }
 
+    /** @return 触发事件的客户端 ID */
     public String getClient() {
         return event.getClientId();
     }
 
     /**
-     * Note: will not be an address when a proxy does not provide a valid one
+     * 注意：反向代理未提供有效地址时返回值可能不是真实 IP。
      *
-     * @return the ip address
+     * @return 客户端 IP 地址
      */
     public String getIpAddress() {
         return event.getIpAddress();
     }
 
+    /** @return 事件详情键值对列表，供模板遍历 */
     public List<DetailBean> getDetails() {
         List<DetailBean> details = new LinkedList<DetailBean>();
         for (Map.Entry<String, String> e : event.getDetails().entrySet()) {
@@ -63,24 +72,30 @@ public class EventBean {
         return details;
     }
 
+    /** @param name 详情键名 @return 对应详情值，不存在时返回 {@code null} */
     public String getDetail(String name) {
         return event.getDetails() != null
                 ? event.getDetails().get(name)
                 : null;
     }
 
+    /** 单条事件详情的 FreeMarker Bean 包装。 */
     public static class DetailBean {
 
+        /** 详情键值对条目。 */
         private Map.Entry<String, String> entry;
 
+        /** @param entry 详情键值对条目 */
         public DetailBean(Map.Entry<String, String> entry) {
             this.entry = entry;
         }
 
+        /** @return 详情键名 */
         public String getKey() {
             return entry.getKey();
         }
 
+        /** @return 详情值（下划线替换为空格） */
         public String getValue() {
             return entry.getValue().replace("_", " ");
         }

@@ -20,13 +20,15 @@ package org.keycloak.exportimport;
 import org.keycloak.provider.ProviderFactory;
 
 /**
- * Provider plugin interface for importing clients from an arbitrary configuration format
+ * {@link ClientDescriptionConverter} 的 {@link ProviderFactory} 工厂接口。
+ * <p>工厂需声明是否支持给定格式的客户端描述文本，以便 Admin 导入流程选择转换器。</p>
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface ClientDescriptionConverterFactory extends ProviderFactory<ClientDescriptionConverter> {
 
+    /** @param description 待导入的客户端配置文本 @return 本工厂能否识别并转换该格式 */
     boolean isSupported(String description);
 
 }

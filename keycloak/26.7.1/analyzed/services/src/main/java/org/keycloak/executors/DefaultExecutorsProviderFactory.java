@@ -38,6 +38,9 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.jboss.logging.Logger;
 
 /**
+ * 默认执行器 SPI 工厂：按任务类型提供线程池。
+ * <p>托管环境（WildFly）优先通过 JNDI 查找 {@code java:jboss/ee/concurrency/executor/<taskType>}；嵌入式模式则按配置创建固定或弹性线程池。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class DefaultExecutorsProviderFactory implements ExecutorsProviderFactory {
@@ -47,19 +50,24 @@ public class DefaultExecutorsProviderFactory implements ExecutorsProviderFactory
     private static final int DEFAULT_MIN_THREADS = 4;
     private static final int DEFAULT_MAX_THREADS = 64;
 
+    /** WildFly 托管执行器 JNDI 名称前缀。 */
     private static final String MANAGED_EXECUTORS_SERVICE_JNDI_PREFIX = "java:jboss/ee/concurrency/executor/";
 
-    // Default executor is bound on Wildfly under this name
+    // WildFly 默认托管执行器 JNDI 名称
     private static final String DEFAULT_MANAGED_EXECUTORS_SERVICE_JNDI = MANAGED_EXECUTORS_SERVICE_JNDI_PREFIX + "default";
 
+    /** 工厂配置作用域。 */
     private Config.Scope config;
 
+    /** 是否运行在托管（WildFly）环境，首次检测后缓存。 */
     private Boolean managed = null;
 
+    /** 按任务类型缓存的线程池映射。 */
     private final Map<String, ExecutorService> executors = new ConcurrentHashMap<>();
 
 
     @Override
+    /** @param session 当前会话 @return 按任务类型委托本工厂线程池的执行器提供者 */
     public ExecutorsProvider create(KeycloakSession session) {
         return new ExecutorsProvider() {
 
@@ -69,13 +77,15 @@ public class DefaultExecutorsProviderFactory implements ExecutorsProviderFactory
             }
 
             @Override
-            public void close() {
+            /** 嵌入式模式下关闭所有已创建的线程池。 */
+    public void close() {
 
             }
         };
     }
 
     @Override
+    /** 保存工厂配置供嵌入式线程池创建使用。 */
     public void init(Config.Scope config) {
         this.config = config;
     }
@@ -96,13 +106,15 @@ public class DefaultExecutorsProviderFactory implements ExecutorsProviderFactory
     }
 
     @Override
+    /** @return SPI 工厂标识 {@code default} */
     public String getId() {
         return "default";
     }
 
 
-    // IMPL
+    // 内部实现
 
+    /** 按任务类型获取或懒创建线程池。 */
     protected ExecutorService getExecutor(String taskType) {
         ExecutorService existing = executors.get(taskType);
 
@@ -121,6 +133,7 @@ public class DefaultExecutorsProviderFactory implements ExecutorsProviderFactory
     }
 
 
+    /** 托管环境走 JNDI，否则创建嵌入式线程池。 */
     protected ExecutorService retrievePool(String taskType) {
         if (managed == null) {
             detectManaged();
@@ -133,6 +146,7 @@ public class DefaultExecutorsProviderFactory implements ExecutorsProviderFactory
         }
     }
 
+    /** 探测是否存在 WildFly 托管执行器 JNDI 绑定。 */
     protected void detectManaged() {
         String jndiName = MANAGED_EXECUTORS_SERVICE_JNDI_PREFIX + "default";
         try {
@@ -146,11 +160,12 @@ public class DefaultExecutorsProviderFactory implements ExecutorsProviderFactory
     }
 
 
+    /** 从 JNDI 查找任务专用或默认托管执行器。 */
     protected ExecutorService getPoolManaged(String taskType) {
         try {
             InitialContext ctx = new InitialContext();
 
-            // First check if specific pool for the task
+            // 优先查找任务专用 JNDI 执行器
             String jndiName = MANAGED_EXECUTORS_SERVICE_JNDI_PREFIX + taskType;
             try {
                 ExecutorService executor = (ExecutorService) ctx.lookup(jndiName);
@@ -169,6 +184,7 @@ public class DefaultExecutorsProviderFactory implements ExecutorsProviderFactory
     }
 
 
+    /** 按 {@code <taskType>.min/max} 配置创建嵌入式线程池。 */
     protected ExecutorService createPoolEmbedded(String taskType) {
         Config.Scope currentScope = config.scope(taskType);
         int min = DEFAULT_MIN_THREADS;
@@ -186,7 +202,7 @@ public class DefaultExecutorsProviderFactory implements ExecutorsProviderFactory
         if (min == max) {
             return Executors.newFixedThreadPool(min, threadFactory);
         } else {
-            // Same like Executors.newCachedThreadPool. Besides that "min" and "max" are configurable
+            // 类似 newCachedThreadPool，但 min/max 线程数可配置
             return new ThreadPoolExecutor(min, max,
                     60L, TimeUnit.SECONDS,
                     new LinkedBlockingQueue<>(),
@@ -195,6 +211,7 @@ public class DefaultExecutorsProviderFactory implements ExecutorsProviderFactory
     }
 
 
+    /** 创建带 {@code kc-<taskType>-<group>-<n>} 命名规则的线程工厂。 */
     protected ThreadFactory createThreadFactory(String taskType) {
         return new ThreadFactory() {
 

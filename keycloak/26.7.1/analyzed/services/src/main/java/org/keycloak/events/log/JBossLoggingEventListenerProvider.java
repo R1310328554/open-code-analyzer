@@ -37,19 +37,31 @@ import org.keycloak.utils.StringUtil;
 import org.jboss.logging.Logger;
 
 /**
+ * JBoss Logging 事件监听器：将用户事件与管理事件格式化为结构化日志。
+ * <p>支持可配置的日志级别、引号包裹与空格/引号清理；TRACE 级别额外输出请求 URI、Cookie 与短栈追踪。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class JBossLoggingEventListenerProvider implements EventListenerProvider {
 
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
+    /** 目标 JBoss Logger 实例。 */
     private final Logger logger;
+    /** 无错误事件使用的日志级别。 */
     private final Logger.Level successLevel;
+    /** 含 error 字段事件使用的日志级别。 */
     private final Logger.Level errorLevel;
+    /** 是否清理值中的空格与引号。 */
     private final boolean sanitize;
+    /** 日志值包裹引号字符，{@code null} 表示不使用引号。 */
     private final Character quotes;
+    /** 管理事件日志是否包含 representation JSON。 */
     private final boolean includeRepresentation;
+    /** 事务提交后写日志的延迟事务包装。 */
     private final EventListenerTransaction tx = new EventListenerTransaction(this::logAdminEvent, this::logEvent);
 
+    /** @param session 当前会话 @param logger 目标 Logger @param successLevel 成功事件级别 @param errorLevel 错误事件级别 @param quotes 值包裹引号 @param sanitize 是否清理空格/引号 @param includeRepresentation 是否输出 representation */
     public JBossLoggingEventListenerProvider(KeycloakSession session, Logger logger,
             Logger.Level successLevel, Logger.Level errorLevel, Character quotes,
             boolean sanitize, boolean includeRepresentation) {
@@ -64,15 +76,18 @@ public class JBossLoggingEventListenerProvider implements EventListenerProvider 
     }
 
     @Override
+    /** 收集用户事件，在事务提交后写日志。 */
     public void onEvent(Event event) {
         tx.addEvent(event);
     }
 
     @Override
+    /** 收集管理事件，在事务提交后写日志。 */
     public void onEvent(AdminEvent adminEvent, boolean includeRepresentation) {
         tx.addAdminEvent(adminEvent, includeRepresentation);
     }
 
+    /** 按配置为日志值添加引号并可选清理空格/引号。 */
     private void sanitize(StringBuilder sb, String str) {
         if (quotes != null) {
             sb.append(quotes);
@@ -86,6 +101,7 @@ public class JBossLoggingEventListenerProvider implements EventListenerProvider 
         }
     }
 
+    /** 格式化并输出用户事件日志。 */
     protected void logEvent(Event event) {
         Logger.Level level = event.getError() != null ? errorLevel : successLevel;
 
@@ -143,6 +159,7 @@ public class JBossLoggingEventListenerProvider implements EventListenerProvider 
         }
     }
 
+    /** 格式化并输出管理事件日志。 */
     protected void logAdminEvent(AdminEvent adminEvent, boolean realmIncludeRepresentation) {
         Logger.Level level = adminEvent.getError() != null ? errorLevel : successLevel;
 
@@ -194,9 +211,11 @@ public class JBossLoggingEventListenerProvider implements EventListenerProvider 
     }
 
     @Override
+    /** 关闭监听器（无资源需释放）。 */
     public void close() {
     }
 
+    /** TRACE 级别时追加请求 URI 与 Cookie 信息。 */
     private void setKeycloakContext(StringBuilder sb) {
         KeycloakContext context = session.getContext();
         try {
@@ -221,7 +240,7 @@ public class JBossLoggingEventListenerProvider implements EventListenerProvider 
                 sb.append("]");
             }
         } catch (ContextNotActiveException e) {
-            // no context information to add
+            // 无可用请求上下文，跳过 URI/Cookie 追加
         }
     }
 
