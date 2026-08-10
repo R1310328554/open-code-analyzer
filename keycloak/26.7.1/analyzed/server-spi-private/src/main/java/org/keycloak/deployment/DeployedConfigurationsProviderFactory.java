@@ -22,6 +22,8 @@ package org.keycloak.deployment;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link DeployedConfigurationsProvider} 的 {@link ProviderFactory} 工厂接口。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface DeployedConfigurationsProviderFactory extends ProviderFactory<DeployedConfigurationsProvider> {

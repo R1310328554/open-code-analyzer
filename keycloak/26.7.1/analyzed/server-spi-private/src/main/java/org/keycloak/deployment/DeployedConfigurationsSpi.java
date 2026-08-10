@@ -24,25 +24,31 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 部署配置 SPI，注册 {@link DeployedConfigurationsProvider} 提供者类型。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class DeployedConfigurationsSpi implements Spi {
 
+    /** 内部 SPI，不对扩展模块公开。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** SPI 名称：{@code deployed-configurations}。 */
     @Override
     public String getName() {
         return "deployed-configurations";
     }
 
+    /** 部署配置提供者接口类型。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return DeployedConfigurationsProvider.class;
     }
 
+    /** 部署配置工厂类型。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return DeployedConfigurationsProviderFactory.class;

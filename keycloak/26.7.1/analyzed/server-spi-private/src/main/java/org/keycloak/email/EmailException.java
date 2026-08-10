@@ -18,24 +18,27 @@
 package org.keycloak.email;
 
 /**
+ * 邮件生成或发送失败时抛出的受检异常。
+ * <p>消息文本会在管理控制台向管理员展示。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class EmailException extends Exception {
 
     /**
-     * Record an exception around email generation and sending
+     * 记录邮件相关错误。
      *
-     * @param message Shown to users in the admin console
+     * @param message 展示于管理控制台的消息
      */
     public EmailException(String message) {
     	super(message);
     }
 
     /**
-     * Record an exception around email generation and sending
+     * 记录邮件相关错误及根因。
      *
-     * @param message Shown to users in the admin console
-     * @param cause Additional information to be logged
+     * @param message 展示于管理控制台的消息
+     * @param cause 写入日志的附加异常信息
      */
     public EmailException(String message, Throwable cause) {
         super(message, cause);

@@ -26,8 +26,8 @@ import org.keycloak.models.RealmModel;
 import org.jboss.logging.Logger;
 
 /**
- * Allows to CRUD for configurations (like Authenticator configs). Those are typically saved in the store (realm), but can be also
- * deployed and hence not saved in the DB
+ * 部署配置管理器：统一访问 realm 存储与运行时部署的认证器配置。
+ * <p>典型配置保存在 realm 数据库中，也可由部署的扩展在运行时注册，无需持久化。</p>
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
@@ -37,21 +37,25 @@ public class DeployedConfigurationsManager {
 
     private final KeycloakSession session;
 
+    /** @param session 当前 Keycloak 会话，用于获取 {@link DeployedConfigurationsProvider} */
     public DeployedConfigurationsManager(KeycloakSession session) {
         this.session = session;
     }
 
+    /** 注册一条部署型认证器配置（不写入数据库）。 */
     public void registerDeployedAuthenticatorConfig(AuthenticatorConfigModel model) {
         log.debugf("Register deployed authenticator config: %s", model.getId());
         session.getProvider(DeployedConfigurationsProvider.class).registerDeployedAuthenticatorConfig(model);
     }
 
+    /** 按 ID 从已部署配置中查找，未找到时返回 {@code null}。 */
     public AuthenticatorConfigModel getDeployedAuthenticatorConfig(String configId) {
         return session.getProvider(DeployedConfigurationsProvider.class).getDeployedAuthenticatorConfigs()
                 .filter(config -> configId.equals(config.getId()))
                 .findFirst().orElse(null);
     }
 
+    /** 优先返回部署配置，否则回退到 realm 数据库存储。 */
     public AuthenticatorConfigModel getAuthenticatorConfig(RealmModel realm, String configId) {
         AuthenticatorConfigModel cfgModel = getDeployedAuthenticatorConfig(configId);
         if (cfgModel != null) {
@@ -63,6 +67,7 @@ public class DeployedConfigurationsManager {
     }
 
 
+    /** 按别名查找认证器配置，优先部署配置再查 realm。 */
     public AuthenticatorConfigModel getAuthenticatorConfigByAlias(RealmModel realm, String alias) {
         if (alias == null) return null;
         AuthenticatorConfigModel cfgModel = session.getProvider(DeployedConfigurationsProvider.class).getDeployedAuthenticatorConfigs()

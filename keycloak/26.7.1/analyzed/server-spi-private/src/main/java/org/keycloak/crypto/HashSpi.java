@@ -22,25 +22,31 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 哈希 SPI，注册 {@link HashProvider} 提供者类型（如 SHA-256、SHA-512 等）。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class HashSpi implements Spi {
 
+    /** 内部 SPI，不对扩展模块公开。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** SPI 名称：{@code hash}。 */
     @Override
     public String getName() {
         return "hash";
     }
 
+    /** 哈希提供者接口类型。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return HashProvider.class;
     }
 
+    /** 哈希工厂类型。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return HashProviderFactory.class;

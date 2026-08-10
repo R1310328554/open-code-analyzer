@@ -20,6 +20,8 @@ package org.keycloak.email;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link EmailSenderProvider} 的 {@link ProviderFactory} 工厂接口。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface EmailSenderProviderFactory extends ProviderFactory<EmailSenderProvider> {

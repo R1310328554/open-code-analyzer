@@ -20,23 +20,30 @@ import org.keycloak.provider.Provider;
 import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
+/**
+ * 数字签名 SPI，注册 {@link SignatureProvider} 提供者类型。
+ */
 public class SignatureSpi implements Spi {
 
+    /** 内部 SPI，不对扩展模块公开。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** SPI 名称：{@code signature}。 */
     @Override
     public String getName() {
         return "signature";
     }
 
+    /** 签名提供者接口类型。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return SignatureProvider.class;
     }
 
+    /** 签名工厂类型。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return SignatureProviderFactory.class;

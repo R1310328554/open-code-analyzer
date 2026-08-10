@@ -28,17 +28,20 @@ import org.keycloak.representations.account.DeviceRepresentation;
 import org.keycloak.util.JsonSerialization;
 
 /**
+ * 设备活动管理器：在用户会话上附加与读取客户端设备信息（User-Agent 解析结果）。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class DeviceActivityManager {
 
+    /** 用户会话 note 键，存储 Base64 编码的 {@link DeviceRepresentation} JSON。 */
     private static final String DEVICE_NOTE = "KC_DEVICE_NOTE";
 
-    /** Returns the device information associated with the given {@code userSession}.
-     * 
-     * 
-     * @param userSession the userSession
-     * @return the device information or null if no device is attached to the user session
+    /**
+     * 读取 {@code userSession} 上已附加的设备信息。
+     *
+     * @param userSession 用户会话
+     * @return 设备信息；未附加时返回 {@code null}
      */
     public static DeviceRepresentation getCurrentDevice(UserSessionModel userSession) {
         String deviceInfo = userSession.getNote(DEVICE_NOTE);
@@ -55,11 +58,11 @@ public class DeviceActivityManager {
     }
 
     /**
-     * Attaches a device to the given {@code userSession} where the device information is obtained from the {@link HttpHeaders#USER_AGENT} in the current
-     * request, if available.
-     * 
-     * @param userSession the user session
-     * @param session the keycloak session
+     * 将当前请求 User-Agent 解析出的设备信息附加到 {@code userSession}。
+     * <p>通过 {@link DeviceRepresentationProvider} 获取设备描述，序列化后以 note 形式存储。</p>
+     *
+     * @param userSession 用户会话
+     * @param session 当前 Keycloak 会话
      */
     public static void attachDevice(UserSessionModel userSession, KeycloakSession session) {
         DeviceRepresentation current = session.getProvider(DeviceRepresentationProvider.class).deviceRepresentation();

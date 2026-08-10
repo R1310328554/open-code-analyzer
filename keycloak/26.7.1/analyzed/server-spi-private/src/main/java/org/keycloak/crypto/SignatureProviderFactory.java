@@ -22,28 +22,38 @@ import org.keycloak.Config;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderFactory;
 
+/**
+ * {@link SignatureProvider} 的 {@link ProviderFactory} 工厂接口。
+ * <p>各实现声明其算法对应的 JWK 私钥字段名集合。</p>
+ */
 public interface SignatureProviderFactory extends ProviderFactory<SignatureProvider> {
 
+    /** RSA 私钥 JWK 中代表密钥材料的 claim 名称。 */
     Set<String> RSA_PRIVATE_JWK_CLAIMS = Set.of("d", "p", "q", "dp", "dq", "qi", "oth");
+    /** 椭圆曲线私钥 JWK 的私钥 claim（{@code d}）。 */
     Set<String> EC_PRIVATE_JWK_CLAIMS = Set.of("d");
+    /** OKP（如 Ed25519）私钥 JWK 的私钥 claim。 */
     Set<String> OKP_PRIVATE_JWK_CLAIMS = Set.of("d");
+    /** 对称密钥（oct）JWK 的密钥 material claim（{@code k}）。 */
     Set<String> OCT_PRIVATE_JWK_CLAIMS = Set.of("k");
 
+    /** 默认空实现，子类可读取配置。 */
     @Override
     default void init(Config.Scope config) {
     }
 
+    /** 默认空实现，会话工厂就绪后回调。 */
     @Override
     default void postInit(KeycloakSessionFactory factory) {
     }
 
+    /** 默认空实现，无资源需释放。 */
     @Override
     default void close() {
     }
 
     /**
-     * Returns the JWK claim names that represent private key material for the algorithm
-     * supported by this provider implementation.
+     * 返回本实现所支持算法的 JWK 私钥 material claim 名称集合。
      */
     Set<String> getJwkPrivateKeyClaims();
 

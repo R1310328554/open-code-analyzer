@@ -25,14 +25,17 @@ import org.keycloak.models.AuthenticatorConfigModel;
 import org.keycloak.provider.Provider;
 
 /**
- * Allows to register "deployed configurations", which are retrieved in runtime from deployed providers and hence are not saved in the DB
+ * 部署配置提供者 SPI：在运行时注册并查询由扩展部署的认证器配置。
+ * <p>此类配置不写入数据库，随部署包或启动逻辑注入。</p>
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface DeployedConfigurationsProvider extends Provider {
 
+    /** 注册一条部署型 {@link AuthenticatorConfigModel}。 */
     void registerDeployedAuthenticatorConfig(AuthenticatorConfigModel model);
 
+    /** @return 所有已注册部署配置的流 */
     Stream<AuthenticatorConfigModel> getDeployedAuthenticatorConfigs();
 
 }
