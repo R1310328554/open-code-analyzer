@@ -17,6 +17,7 @@
 package com.alibaba.nacos.core.plugin.storage;
 
 /**
+ * 插件状态/配置持久化失败时抛出的运行时异常。
  * Exception thrown when plugin persistence operations fail.
  *
  * @author WangzJi
@@ -26,10 +27,12 @@ public class PluginPersistenceException extends RuntimeException {
     
     private static final long serialVersionUID = 1L;
     
+    /** 以错误消息构造异常。 */
     public PluginPersistenceException(String message) {
         super(message);
     }
     
+    /** 以错误消息与根因构造异常。 */
     public PluginPersistenceException(String message, Throwable cause) {
         super(message, cause);
     }

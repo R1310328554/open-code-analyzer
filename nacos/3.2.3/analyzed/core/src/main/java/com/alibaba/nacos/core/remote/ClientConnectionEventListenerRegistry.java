@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * 客户端连接事件监听器注册表，统一广播连接建立与断开事件。
  * registry for client connection event listeners.
  *
  * @author liuzunfei
@@ -31,9 +32,11 @@ import java.util.List;
 @Service
 public class ClientConnectionEventListenerRegistry {
     
+    /** 已注册的连接事件监听器列表。 */
     final List<ClientConnectionEventListener> clientConnectionEventListeners = new ArrayList<>();
     
     /**
+     * 通知所有监听器：新客户端已连接。
      * notify where a new client connected.
      *
      * @param connection connection that new created.
@@ -55,6 +58,7 @@ public class ClientConnectionEventListenerRegistry {
     }
     
     /**
+     * 通知所有监听器：客户端已断开连接。
      * notify where a new client disconnected.
      *
      * @param connection connection that disconnected.
@@ -73,6 +77,7 @@ public class ClientConnectionEventListenerRegistry {
     }
     
     /**
+     * 注册连接事件监听器。
      * register ClientConnectionEventListener.
      *
      * @param listener listener.

@@ -28,6 +28,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 
 /**
+ * RPC 请求拦截器抽象基类，在 Handler 执行前过滤或短路请求。
  * interceptor fo request.
  *
  * @author liuzunfei
@@ -35,17 +36,20 @@ import java.lang.reflect.Type;
  */
 public abstract class AbstractRequestFilter {
     
+    /** 全局请求过滤器注册表。 */
     @Autowired
     private RequestFilters requestFilters;
     
     public AbstractRequestFilter() {
     }
     
+    /** 启动时将本过滤器注册到 {@link RequestFilters}。 */
     @PostConstruct
     public void init() {
         requestFilters.registerFilter(this);
     }
     
+    /** 反射获取 Handler 的 {@code handle(Request, RequestMeta)} 方法。 */
     protected Method getHandleMethod(Class handlerClazz) throws NacosException {
         try {
             Method method = handlerClazz.getMethod("handle", Request.class, RequestMeta.class);
@@ -55,6 +59,7 @@ public abstract class AbstractRequestFilter {
         }
     }
     
+    /** 从 Handler 泛型参数解析并实例化默认 Response 类型。 */
     protected <T> Response getDefaultResponseInstance(Class handlerClazz) throws NacosException {
         ParameterizedType parameterizedType =
             (ParameterizedType) handlerClazz.getGenericSuperclass();
@@ -68,6 +73,7 @@ public abstract class AbstractRequestFilter {
     }
     
     /**
+     * 过滤 RPC 请求；返回非 null 响应时将短路 Handler 执行。
      * filter request.
      *
      * @param request      request.

@@ -21,6 +21,7 @@ import com.alibaba.nacos.api.exception.api.NacosApiException;
 import java.util.Map;
 
 /**
+ * 插件状态同步器接口，支持 Raft 集群同步与单机本地持久化等策略。
  * Plugin state synchronizer interface.
  * Supports different synchronization strategies (Raft, standalone, etc.)
  *
@@ -30,6 +31,7 @@ import java.util.Map;
 public interface PluginStateSynchronizer {
     
     /**
+     * 将插件启用/禁用变更同步到集群或本地存储。
      * Synchronize plugin state change to cluster.
      *
      * @param pluginId plugin ID
@@ -39,6 +41,7 @@ public interface PluginStateSynchronizer {
     void syncStateChange(String pluginId, boolean enabled) throws NacosApiException;
     
     /**
+     * 将插件配置变更同步到集群或本地存储。
      * Synchronize plugin config change to cluster.
      *
      * @param pluginId plugin ID

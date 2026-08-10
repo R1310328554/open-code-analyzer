@@ -19,48 +19,61 @@ package com.alibaba.nacos.core.plugin.model.form;
 import java.util.Map;
 
 /**
+ * 插件配置更新表单，用于控制台/API 提交插件键值对配置变更。
  * Plugin Configuration Update Form.
  *
  * @author Nacos
  */
 public class PluginConfigForm {
     
+    /** 插件类型标识（如 AUTH、DATASOURCE_DIALECT）。 */
     private String pluginType;
     
+    /** 插件名称。 */
     private String pluginName;
     
+    /** 待更新的配置键值对。 */
     private Map<String, String> config;
     
+    /** 是否仅在本节点生效，跳过集群同步。 */
     private boolean localOnly = false;
     
+    /** 获取插件类型。 */
     public String getPluginType() {
         return pluginType;
     }
     
+    /** 设置插件类型。 */
     public void setPluginType(String pluginType) {
         this.pluginType = pluginType;
     }
     
+    /** 获取插件名称。 */
     public String getPluginName() {
         return pluginName;
     }
     
+    /** 设置插件名称。 */
     public void setPluginName(String pluginName) {
         this.pluginName = pluginName;
     }
     
+    /** 获取配置键值对。 */
     public Map<String, String> getConfig() {
         return config;
     }
     
+    /** 设置配置键值对。 */
     public void setConfig(Map<String, String> config) {
         this.config = config;
     }
     
+    /** 是否仅本地生效。 */
     public boolean isLocalOnly() {
         return localOnly;
     }
     
+    /** 设置是否仅本地生效。 */
     public void setLocalOnly(boolean localOnly) {
         this.localOnly = localOnly;
     }

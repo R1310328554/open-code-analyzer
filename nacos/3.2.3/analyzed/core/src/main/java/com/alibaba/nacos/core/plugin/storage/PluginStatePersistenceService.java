@@ -19,6 +19,7 @@ package com.alibaba.nacos.core.plugin.storage;
 import java.util.Map;
 
 /**
+ * 插件状态持久化服务接口，抽象插件启用状态与配置的读写与删除。
  * Plugin state persistence service interface.
  * Provides abstraction for persisting plugin states and configurations.
  *
@@ -28,6 +29,7 @@ import java.util.Map;
 public interface PluginStatePersistenceService {
     
     /**
+     * 加载全部插件启用状态。
      * Load all plugin states.
      *
      * @return map of plugin ID to enabled state
@@ -35,6 +37,7 @@ public interface PluginStatePersistenceService {
     Map<String, Boolean> loadAllStates();
     
     /**
+     * 保存单个插件启用状态。
      * Save plugin state.
      *
      * @param pluginId plugin ID
@@ -42,7 +45,7 @@ public interface PluginStatePersistenceService {
      */
     void saveState(String pluginId, boolean enabled);
     
-    /**
+    /** 删除指定插件的持久化状态。
      * Delete plugin state.
      *
      * @param pluginId plugin ID
@@ -50,6 +53,7 @@ public interface PluginStatePersistenceService {
     void deleteState(String pluginId);
     
     /**
+     * 加载全部插件配置。
      * Load all plugin configurations.
      *
      * @return map of plugin ID to configuration
@@ -57,6 +61,7 @@ public interface PluginStatePersistenceService {
     Map<String, Map<String, String>> loadAllConfigs();
     
     /**
+     * 保存单个插件配置。
      * Save plugin configuration.
      *
      * @param pluginId plugin ID
@@ -65,6 +70,7 @@ public interface PluginStatePersistenceService {
     void saveConfig(String pluginId, Map<String, String> config);
     
     /**
+     * 删除指定插件的持久化配置。
      * Delete plugin configuration.
      *
      * @param pluginId plugin ID

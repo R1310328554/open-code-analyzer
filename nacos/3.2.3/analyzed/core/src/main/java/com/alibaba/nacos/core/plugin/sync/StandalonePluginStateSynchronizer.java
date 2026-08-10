@@ -30,6 +30,8 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 /**
+ * 单机模式插件状态同步器：先应用变更再写入本地文件，不进行集群同步。
+ * 仅在 {@code nacos.standalone=true} 时由 {@link ConditionOnStandaloneMode} 激活。
  * Standalone plugin state synchronizer.
  * Only persists state locally without cluster synchronization.
  * Only activated in standalone mode (nacos.standalone=true).
@@ -44,10 +46,13 @@ public class StandalonePluginStateSynchronizer implements PluginStateSynchronize
     private static final Logger LOGGER =
         LoggerFactory.getLogger(StandalonePluginStateSynchronizer.class);
     
+    /** 本地插件状态持久化服务。 */
     private final PluginStatePersistenceService persistence;
     
+    /** 插件状态运行时应用器。 */
     private final PluginStateApplier applier;
     
+    /** 注入持久化服务与应用器。 */
     public StandalonePluginStateSynchronizer(PluginStatePersistenceService persistence,
         PluginStateApplier applier) {
         this.persistence = persistence;
@@ -55,6 +60,7 @@ public class StandalonePluginStateSynchronizer implements PluginStateSynchronize
         LOGGER.info("[StandalonePluginStateSynchronizer] Initialized in standalone mode");
     }
     
+    /** 应用状态变更并持久化到本地 JSON 文件。 */
     @Override
     public void syncStateChange(String pluginId, boolean enabled) throws NacosApiException {
         try {
@@ -66,6 +72,7 @@ public class StandalonePluginStateSynchronizer implements PluginStateSynchronize
         }
     }
     
+    /** 应用配置变更并持久化到本地 JSON 文件。 */
     @Override
     public void syncConfigChange(String pluginId, Map<String, String> config)
         throws NacosApiException {

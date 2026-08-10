@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import javax.annotation.PostConstruct;
 
 /**
+ * 客户端连接事件监听器抽象基类，在连接建立/断开时接收回调。
  * ClientConnectionEventListener.
  *
  * @author liuzunfei
@@ -29,19 +30,23 @@ import javax.annotation.PostConstruct;
 public abstract class ClientConnectionEventListener {
     
     /**
+     * 监听器名称，用于日志与排查。
      * listener name.
      */
     private String name;
     
+    /** 客户端连接事件监听器注册表。 */
     @Autowired
     protected ClientConnectionEventListenerRegistry clientConnectionEventListenerRegistry;
     
+    /** 启动时将本监听器注册到全局注册表。 */
     @PostConstruct
     public void init() {
         clientConnectionEventListenerRegistry.registerClientConnectionEventListener(this);
     }
     
     /**
+     * 获取监听器名称。
      * Getter method for property <tt>name</tt>.
      *
      * @return property value of name
@@ -51,6 +56,7 @@ public abstract class ClientConnectionEventListener {
     }
     
     /**
+     * 设置监听器名称。
      * Setter method for property <tt>name</tt>.
      *
      * @param name value to be assigned to property name
@@ -60,6 +66,7 @@ public abstract class ClientConnectionEventListener {
     }
     
     /**
+     * 客户端建立连接时的回调。
      * notified when a client connected.
      *
      * @param connect connect.
@@ -67,6 +74,7 @@ public abstract class ClientConnectionEventListener {
     public abstract void clientConnected(Connection connect);
     
     /**
+     * 客户端断开连接时的回调。
      * notified when a client disconnected.
      *
      * @param connect connect.

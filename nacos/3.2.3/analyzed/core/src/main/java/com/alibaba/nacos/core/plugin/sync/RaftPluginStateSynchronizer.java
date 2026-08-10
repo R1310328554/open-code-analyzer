@@ -37,6 +37,7 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 /**
+ * 基于 Raft（{@link CPProtocol}）的插件状态集群同步器，仅在集群模式（{@code nacos.standalone=false}）下激活。
  * Raft-based plugin state synchronizer.
  * Uses CPProtocol (Raft) to synchronize plugin states across cluster nodes.
  * Only activated in cluster mode (nacos.standalone=false).
@@ -50,18 +51,23 @@ public class RaftPluginStateSynchronizer implements PluginStateSynchronizer {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(RaftPluginStateSynchronizer.class);
     
+    /** Raft 一致性组名，用于插件状态写入。 */
     private static final String PLUGIN_STATE_GROUP = "plugin_state";
     
+    /** 集群 CP 一致性协议（Raft）实例。 */
     private final CPProtocol cpProtocol;
     
+    /** 插件状态操作序列化器。 */
     private final Serializer serializer;
     
+    /** 注入 {@link ProtocolManager} 并初始化 Raft 协议与序列化器。 */
     public RaftPluginStateSynchronizer(ProtocolManager protocolManager) {
         this.cpProtocol = protocolManager.getCpProtocol();
         this.serializer = SerializeFactory.getDefault();
         LOGGER.info("[RaftPluginStateSynchronizer] Initialized with Raft protocol");
     }
     
+    /** 构造状态变更操作并提交到 Raft 一致性组。 */
     @Override
     public void syncStateChange(String pluginId, boolean enabled) throws NacosApiException {
         PluginStateOperation operation = PluginStateOperation.builder()
@@ -72,6 +78,7 @@ public class RaftPluginStateSynchronizer implements PluginStateSynchronizer {
         submitToRaft(operation);
     }
     
+    /** 构造配置变更操作并提交到 Raft 一致性组。 */
     @Override
     public void syncConfigChange(String pluginId, Map<String, String> config)
         throws NacosApiException {
@@ -83,6 +90,7 @@ public class RaftPluginStateSynchronizer implements PluginStateSynchronizer {
         submitToRaft(operation);
     }
     
+    /** 序列化 {@link PluginStateOperation} 并通过 {@link CPProtocol#write} 提交 Raft 写请求。 */
     private void submitToRaft(PluginStateOperation operation) throws NacosApiException {
         try {
             byte[] data = serializer.serialize(operation);

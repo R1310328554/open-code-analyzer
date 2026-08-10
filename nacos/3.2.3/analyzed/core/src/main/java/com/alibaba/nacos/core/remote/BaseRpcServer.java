@@ -26,6 +26,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
 /**
+ * Nacos RPC 服务端抽象基类，统一管理启动、TLS 刷新、端口计算与优雅停机。
  * abstract rpc server .
  *
  * @author liuzunfei
@@ -33,11 +34,13 @@ import javax.annotation.PreDestroy;
  */
 public abstract class BaseRpcServer {
     
+    /** 类加载时初始化 RPC Payload 类型注册表。 */
     static {
         PayloadRegistry.init();
     }
     
     /**
+     * 启动 RPC 服务：绑定端口、刷新 TLS 并注册 JVM 关闭钩子。
      * Start sever.
      */
     @PostConstruct
@@ -70,6 +73,7 @@ public abstract class BaseRpcServer {
     }
     
     /**
+     * 返回本 RPC 服务支持的连接类型。
      * get connection type.
      *
      * @return connection type.
@@ -77,6 +81,7 @@ public abstract class BaseRpcServer {
     public abstract ConnectionType getConnectionType();
     
     /**
+     * 按需重新加载协议上下文（如 TLS 证书变更）。
      * Reload protocol context if necessary.
      *
      * <p>
@@ -87,6 +92,7 @@ public abstract class BaseRpcServer {
     public abstract void reloadProtocolContext();
     
     /**
+     * 子类实现：启动底层 RPC 监听。
      * Start sever.
      *
      * @throws Exception exception throw if start server fail.
@@ -94,6 +100,7 @@ public abstract class BaseRpcServer {
     public abstract void startServer() throws Exception;
     
     /**
+     * RPC 端口相对主 HTTP 端口的偏移量。
      * the increase offset of nacos server port for rpc server port.
      *
      * @return delta port offset of main port.
@@ -101,6 +108,7 @@ public abstract class BaseRpcServer {
     public abstract int rpcPortOffset();
     
     /**
+     * 计算 RPC 服务监听端口（主端口 + 偏移）。
      * get service port.
      *
      * @return service port.
@@ -110,6 +118,7 @@ public abstract class BaseRpcServer {
     }
     
     /**
+     * 停止 RPC 服务（委托 {@link #shutdownServer()}）。
      * Stop Server.
      *
      * @throws Exception throw if stop server fail.
@@ -119,6 +128,7 @@ public abstract class BaseRpcServer {
     }
     
     /**
+     * 子类实现：关闭底层 RPC 监听，由 {@link PreDestroy} 触发。
      * the increase offset of nacos server port for rpc server port.
      */
     @PreDestroy

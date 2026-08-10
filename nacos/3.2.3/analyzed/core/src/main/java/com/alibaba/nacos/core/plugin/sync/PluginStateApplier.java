@@ -19,6 +19,7 @@ package com.alibaba.nacos.core.plugin.sync;
 import java.util.Map;
 
 /**
+ * 插件状态应用器接口，同步成功后由 {@link PluginStateSynchronizer} 调用以生效变更。
  * Plugin state applier interface.
  * Used by synchronizers to apply state changes after successful synchronization.
  *
@@ -28,6 +29,7 @@ import java.util.Map;
 public interface PluginStateApplier {
     
     /**
+     * 应用插件启用/禁用变更到运行时。
      * Apply plugin state change.
      *
      * @param pluginId plugin ID
@@ -36,6 +38,7 @@ public interface PluginStateApplier {
     void applyStateChange(String pluginId, boolean enabled);
     
     /**
+     * 应用插件配置变更到运行时。
      * Apply plugin config change.
      *
      * @param pluginId plugin ID
