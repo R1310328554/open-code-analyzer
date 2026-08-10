@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+通用 DB 服务基类：Peewee CRUD 模板、批量插入与 MySQL 死锁/连接重试装饰器。
+"""
+
 #
 import logging
 import time
@@ -32,7 +36,7 @@ def _is_deadlock_error(exc: OperationalError) -> bool:
 
 
 def retry_deadlock_operation(max_retries=3, retry_delay=0.1):
-    """Retry a full DB operation when MySQL/OceanBase aborts it due to deadlock."""
+    """MySQL/OceanBase 1213 死锁时指数退避重试整个 DB 操作。"""
 
     def decorator(func):
         @wraps(func)
@@ -73,7 +77,10 @@ def retry_db_operation(func):
 
 
 class CommonService:
-    """Base service class that provides common database operations.
+    """
+    所有业务 Service 的 Peewee CRUD 基类；子类必须设置 model。
+
+    Base service class that provides common database operations.
 
     This class serves as a foundation for all service classes in the application,
     implementing standard CRUD operations and common database query patterns.
@@ -194,7 +201,7 @@ class CommonService:
     @classmethod
     @DB.connection_context()
     def insert(cls, **kwargs):
-        """Insert a new record with automatic ID and timestamps.
+        """插入新记录：自动生成 UUID 与 create/update 时间戳。
 
         This method creates a new record with automatically generated ID and timestamp fields.
         It handles the creation of create_time, create_date, update_time, and update_date fields.
@@ -266,7 +273,7 @@ class CommonService:
     @DB.connection_context()
     @retry_db_operation
     def update_by_id(cls, pid, data):
-        # Update a single record by ID
+        # 按 ID 更新单条记录并刷新 update_time/update_date
         # Args:
         #     pid: Record ID
         #     data: Updated field values
@@ -280,7 +287,7 @@ class CommonService:
     @classmethod
     @DB.connection_context()
     def get_by_id(cls, pid):
-        # Get a record by ID
+        # 按 ID 查询，返回 (成功标志, 记录或 None)
         # Args:
         #     pid: Record ID
         # Returns:

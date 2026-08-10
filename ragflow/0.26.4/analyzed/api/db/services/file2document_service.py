@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+File 与 Document 关联服务：维护 file_id↔document_id 映射及存储路径解析。
+"""
+
 #
 from datetime import datetime
 
@@ -24,6 +28,8 @@ from common.time_utils import current_timestamp, datetime_format
 
 
 class File2DocumentService(CommonService):
+    """File2Document 中间表：双向查询、批量删除与物理存储地址解析。"""
+
     model = File2Document
 
     @classmethod
@@ -59,6 +65,7 @@ class File2DocumentService(CommonService):
     @classmethod
     @DB.connection_context()
     def delete_by_document_ids_or_file_ids(cls, document_ids, file_ids):
+        # 按 document_id 和/或 file_id 批量删除关联行
         if not document_ids:
             return cls.model.delete().where(cls.model.file_id.in_(file_ids)).execute()
         elif not file_ids:
@@ -81,6 +88,7 @@ class File2DocumentService(CommonService):
     @classmethod
     @DB.connection_context()
     def get_storage_address(cls, doc_id=None, file_id=None):
+        """解析 doc/file 对应的 (parent_id|kb_id, location) 存储键。"""
         if doc_id:
             f2d = cls.get_by_document_id(doc_id)
         else:

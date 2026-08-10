@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+Agent/数据流画布服务：UserCanvas CRUD、标签管理与 Agent 流式 completion 入口。
+"""
+
 #
 import json
 import logging
@@ -32,18 +36,22 @@ from peewee import fn
 
 
 class CanvasTemplateService(CommonService):
+    """系统画布模板（CommonService 薄封装）。"""
+
     model = CanvasTemplate
 
 
 class DataFlowTemplateService(CommonService):
     """
-    Alias of CanvasTemplateService
+    CanvasTemplateService 别名，供数据流模板场景使用。
     """
 
     model = CanvasTemplate
 
 
 class UserCanvasService(CommonService):
+    """用户 Agent/画布：列表、权限、标签与 DSL 发布版本解析。"""
+
     model = UserCanvas
 
     @classmethod
@@ -224,7 +232,7 @@ class UserCanvasService(CommonService):
 
     # Tag storage is a single comma-separated CharField(max_length=512);
     # commas inside a tag would corrupt the encoding, so strip them on write.
-    TAGS_FIELD_MAX = 512
+    TAGS_FIELD_MAX = 512  # tags 字段最大字符数
     TAG_MAX_LEN = 64
 
     @classmethod
@@ -264,6 +272,7 @@ class UserCanvasService(CommonService):
     @classmethod
     @DB.connection_context()
     def accessible(cls, canvas_id, tenant_id):
+        # 所有者或同团队 TEAM 权限成员可访问
         from api.db.services.user_service import UserTenantService
 
         e, c = UserCanvasService.get_by_canvas_id(canvas_id)
@@ -300,6 +309,7 @@ class UserCanvasService(CommonService):
 
 
 async def completion(tenant_id, agent_id, session_id=None, **kwargs):
+    """Agent 画布 SSE 流式对话：新建或续接 API4Conversation 并 yield data 帧。"""
     query = kwargs.get("query", "") or kwargs.get("question", "")
     files = kwargs.get("files", [])
     inputs = kwargs.get("inputs", {})
@@ -372,6 +382,7 @@ async def completion(tenant_id, agent_id, session_id=None, **kwargs):
 
 
 async def completion_openai(tenant_id, agent_id, question, session_id=None, stream=True, **kwargs):
+    """将 Agent completion 包装为 OpenAI Chat Completions 兼容格式。"""
     tiktoken_encoder = tiktoken.get_encoding("cl100k_base")
     prompt_tokens = len(tiktoken_encoder.encode(str(question)))
     user_id = kwargs.get("user_id", "")

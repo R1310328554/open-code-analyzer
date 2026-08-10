@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+Open API 会话与 Token 服务：管理 APIToken 及 API4Conversation 的 CRUD 与统计。
+"""
+
 #
 from datetime import datetime
 
@@ -24,6 +28,8 @@ from common.time_utils import current_timestamp, datetime_format
 
 
 class APITokenService(CommonService):
+    """租户 API Token 的更新与按租户批量删除。"""
+
     model = APIToken
 
     @classmethod
@@ -43,10 +49,13 @@ class APITokenService(CommonService):
 
 
 class API4ConversationService(CommonService):
+    """Open API 对话会话：列表、消息追加、按日统计与 DSL 可选返回。"""
+
     model = API4Conversation
 
     @staticmethod
     def _normalize_query_date(value, is_end=False):
+        # ISO/纯日期字符串统一为 ``YYYY-MM-DD HH:MM:SS``
         if "T" in value:
             value = datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone().replace(tzinfo=None).strftime("%Y-%m-%d %H:%M:%S")
         elif len(value) == 10:
@@ -103,12 +112,14 @@ class API4ConversationService(CommonService):
     @classmethod
     @DB.connection_context()
     def append_message(cls, id, conversation):
+        # 更新会话内容并将 round 计数 +1
         cls.update_by_id(id, conversation)
         return cls.model.update(round=cls.model.round + 1).where(cls.model.id == id).execute()
 
     @classmethod
     @DB.connection_context()
     def stats(cls, tenant_id, from_date, to_date, source=None):
+        # 按日聚合 PV/UV/tokens/duration 等指标
         if len(to_date) == 10:
             to_date += " 23:59:59"
         return (

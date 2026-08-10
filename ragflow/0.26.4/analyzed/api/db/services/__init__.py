@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+DB 服务包入口：导出 UserService 及文件名去重辅助函数 duplicate_name。
+"""
+
 #
 import re
 from pathlib import PurePath
@@ -21,6 +25,8 @@ from .user_service import UserService as UserService
 
 def _split_name_counter(filename: str) -> tuple[str, int | None]:
     """
+    将文件名拆为主干与括号内序号，如 ``file(2).txt`` → (``file``, 2)。
+
     Splits a filename into main part and counter (if present in parentheses).
 
     Args:
@@ -44,6 +50,8 @@ def _split_name_counter(filename: str) -> tuple[str, int | None]:
 
 def duplicate_name(query_func, name_field: str = "name", **kwargs) -> str:
     """
+    在名称冲突时自动追加 ``(1)``、``(2)`` 等后缀直至 query_func 返回可用。
+
     Generates a unique filename by appending/incrementing a counter when duplicates exist.
 
     Continuously checks for name availability using the provided query function,
@@ -71,7 +79,7 @@ def duplicate_name(query_func, name_field: str = "name", **kwargs) -> str:
         >>> duplicate_name(name_exists, name="document.pdf")
         'document(1).pdf'  # If original exists
     """
-    MAX_RETRIES = 1000
+    MAX_RETRIES = 1000  # 防无限循环上限
 
     if name_field not in kwargs:
         raise KeyError(f"Arguments must contain '{name_field}' key")

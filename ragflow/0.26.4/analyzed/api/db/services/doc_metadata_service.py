@@ -12,6 +12,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+文档元数据服务：ES/Infinity 中 meta_fields 的唯一真相源（MySQL 已移除该列）。
+"""
 #
 """
 Document Metadata Service
@@ -64,10 +67,11 @@ def _es_response_total(response: Any) -> Optional[int]:
 
 
 class DocMetadataService:
-    """Service for managing document metadata in ES/Infinity"""
+    """文档级 meta_fields 的增删改查、聚合统计与 ES/Infinity 过滤下推。"""
 
     @staticmethod
     def _get_doc_meta_index_name(tenant_id: str) -> str:
+        # 每租户独立 metadata 索引名
         """
         Get the index name for document metadata.
 
@@ -820,7 +824,7 @@ class DocMetadataService:
         logic: str = "and",
         limit: int = 10000,
     ) -> Optional[List[str]]:
-        """Run a metadata filter directly against ES or Infinity, returning matching doc IDs.
+        """在 ES/Infinity 上执行元数据过滤下推，返回匹配的 doc_id 列表。
 
         Returns ``None`` to signal "push-down not viable, use the in-memory
         ``meta_filter`` fallback". Reasons for ``None``:
@@ -1133,6 +1137,7 @@ class DocMetadataService:
     @classmethod
     @DB.connection_context()
     def batch_update_metadata(cls, kb_id: str, doc_ids: List[str], updates=None, deletes=None) -> int:
+        # 批量 apply updates/deletes 操作到多文档 meta_fields
         """
         Batch update metadata for documents in a knowledge base.
 

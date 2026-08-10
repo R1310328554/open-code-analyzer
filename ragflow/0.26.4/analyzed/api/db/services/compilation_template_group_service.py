@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+编译模板组服务：多模板组合、scope 推导（file/dataset）与 orchestrator 解析。
+"""
+
 #
 
 from peewee import fn
@@ -22,11 +26,13 @@ from common.constants import StatusEnum
 from common.misc_utils import get_uuid
 
 
-SCOPE_FILE = "file"
-SCOPE_DATASET = "dataset"
+SCOPE_FILE = "file"  # 文件级编译 scope
+SCOPE_DATASET = "dataset"  # 数据集级（仅 artifacts 单模板）
 
 
 class GroupValidationError(ValueError):
+    """模板组校验失败（scope/artifacts/rechunk 约束）。"""
+
     pass
 
 
@@ -72,6 +78,8 @@ def _enforce_single_rechunk_tree(templates: list[dict]) -> None:
 
 
 class CompilationTemplateGroupService(CommonService):
+    """租户模板组的读写、软删除与 orchestrator 轻量 lookup。"""
+
     model = CompilationTemplateGroup
 
     @classmethod
@@ -219,6 +227,7 @@ class CompilationTemplateGroupService(CommonService):
     @classmethod
     @DB.connection_context()
     def resolve_template_ids(cls, group_id: str, tenant_id: str) -> list[str]:
+        # 从 parser_config.compilation_template_group_id 解析子模板 ID 列表
         """Resolve a group id to its child template ids. Used by the orchestrator
         when reading ``parser_config.compilation_template_group_id``.
         """
@@ -247,6 +256,7 @@ class CompilationTemplateGroupService(CommonService):
     @classmethod
     @DB.connection_context()
     def create_group(cls, tenant_id: str, name: str, description: str, templates: list[dict]) -> dict:
+        # 推导 scope → 原子创建组与子模板行
         cls.ensure_table()
         scope = _derive_scope(templates)
         group_id = get_uuid()

@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+知识库文档服务：上传列表、解析任务调度、进度更新与 ES chunk 索引联动。
+"""
+
 #
 import logging
 import random
@@ -40,10 +44,13 @@ from rag.utils.redis_conn import REDIS_CONN
 
 
 class DocumentService(CommonService):
+    """Document 表 CRUD、解析 run 状态、任务队列与元数据联查。"""
+
     model = Document
 
     @classmethod
     def get_cls_model_fields(cls):
+        # 列表 API 常用字段投影，避免 SELECT *
         return [
             cls.model.id,
             cls.model.thumbnail,
@@ -105,6 +112,7 @@ class DocumentService(CommonService):
 
         docs_list = list(docs.dicts())
         doc_ids_on_page = [doc["id"] for doc in docs_list]
+        # 分页结果批量附加 ES 中的 meta_fields
         metadata_map = DocMetadataService.get_metadata_for_documents(doc_ids_on_page, kb_id) if doc_ids_on_page else {}
         for doc in docs_list:
             doc["meta_fields"] = metadata_map.get(doc["id"], {})
@@ -113,6 +121,7 @@ class DocumentService(CommonService):
     @classmethod
     @DB.connection_context()
     def check_doc_health(cls, tenant_id: str, filename):
+        # 免费用户文件数与文件名长度上限校验
         import os
 
         MAX_FILE_NUM_PER_USER = int(os.environ.get("MAX_FILE_NUM_PER_USER", 0))

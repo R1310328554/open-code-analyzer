@@ -12,12 +12,17 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+运行时配置：进程级 DEBUG/端口/数据库等全局状态，支持热加载与版本信息注入。
+"""
+
 #
 from common.versions import get_ragflow_version
 from .reload_config_base import ReloadConfigBase
 
 
 class RuntimeConfig(ReloadConfigBase):
+    """应用运行时全局配置容器（类属性 + ENV 字典）。"""
     DEBUG = None
     WORK_MODE = None
     HTTP_PORT = None
@@ -29,12 +34,14 @@ class RuntimeConfig(ReloadConfigBase):
 
     @classmethod
     def init_config(cls, **kwargs):
+        # 仅更新已声明的类属性字段
         for k, v in kwargs.items():
             if hasattr(cls, k):
                 setattr(cls, k, v)
 
     @classmethod
     def init_env(cls):
+        # 写入 ragflow 版本号到 ENV
         cls.ENV.update({"version": get_ragflow_version()})
 
     @classmethod
@@ -51,4 +58,5 @@ class RuntimeConfig(ReloadConfigBase):
 
     @classmethod
     def set_service_db(cls, service_db):
+        # 绑定 Peewee 数据库服务实例
         cls.SERVICE_DB = service_db

@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+Dialog（聊天助手）服务：RAG 检索、LLM 流式对话、引用插入、SQL 问答与 TTS。
+"""
+
 #
 import asyncio
 import logging
@@ -61,6 +65,7 @@ def _chunk_kb_id_for_doc(row_dict, kb_ids, doc_id):
 
 
 async def _hydrate_chunk_vectors(retriever, chunks, tenant_ids, kb_ids):
+    """ES 后端 citation 前按需拉取 chunk 向量（主检索默认不返回 vector）。"""
     """
     Citation prep: on the ES backend the main retrieval call deliberately
     skips fetching the chunk embedding. insert_citations needs it, so we
@@ -137,6 +142,8 @@ def _enrich_chunks_with_document_metadata(chunks, metadata_fields=None):
 
 
 class DialogService(CommonService):
+    """聊天助手配置 CRUD 及租户/团队可见性列表查询。"""
+
     model = Dialog
 
     @classmethod
@@ -288,6 +295,7 @@ class DialogService(CommonService):
 
 
 async def async_chat_solo(dialog, messages, stream=True, session_id=None):
+    """无知识库/Tavily 时的纯 LLM 对话（含附件与多模态）。"""
     attachments = ""
     image_attachments = []
     image_files = []
@@ -543,6 +551,7 @@ def repair_bad_citation_formats(answer: str, kbinfos: dict, idx: set):
 
 
 async def async_chat(dialog, messages, stream=True, **kwargs):
+    """核心 RAG 聊天：检索 → prompt 组装 → 流式生成 → 引用修复与 Langfuse 追踪。"""
     logging.debug("Begin async_chat")
     assert messages[-1]["role"] == "user", "The last content of this conversation is not from user."
     session_id = kwargs.get("session_id")
@@ -936,6 +945,7 @@ async def async_chat(dialog, messages, stream=True, **kwargs):
 
 
 async def use_sql(question, field_map, tenant_id, chat_mdl, quota=True, kb_ids=None):
+    """NL→SQL：按文档引擎生成并执行 SQL，返回 Markdown 表格答案与引用。"""
     """Answer a natural-language question by generating and executing SQL against the document index.
 
     Detects the active document engine (Infinity, OceanBase, or Elasticsearch), asks the
@@ -1621,6 +1631,7 @@ async def _stream_with_think_delta(stream_iter, min_tokens: int = 16):
 
 
 async def async_ask(question, kb_ids, tenant_id, chat_llm_name=None, search_config={}, search_id=None):
+    """知识库问答（Ask）流式摘要，独立于 Dialog 配置。"""
     doc_ids = search_config.get("doc_ids", [])
     rerank_mdl = None
     kb_ids = search_config.get("kb_ids", kb_ids)
@@ -1745,6 +1756,7 @@ async def async_ask(question, kb_ids, tenant_id, chat_llm_name=None, search_conf
 
 
 async def gen_mindmap(question, kb_ids, tenant_id, search_config={}):
+    """检索相关 chunk 后调用 MindMapExtractor 生成思维导图结构。"""
     meta_data_filter = search_config.get("meta_data_filter", {})
     doc_ids = search_config.get("doc_ids", [])
     rerank_id = search_config.get("rerank_id", "")

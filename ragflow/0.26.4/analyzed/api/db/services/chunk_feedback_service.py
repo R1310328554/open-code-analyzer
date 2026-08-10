@@ -12,6 +12,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+分块反馈权重服务：根据用户点赞/点踩调整引用 chunk 的 pagerank_fea，提升后续召回质量。
+"""
 #
 """
 Service for adjusting chunk recall weights based on user feedback.
@@ -50,7 +53,7 @@ from common import settings
 from rag.nlp.search import index_name
 
 
-# Feature flag - disabled by default to prevent unintended side effects
+# 功能开关：默认关闭，需 CHUNK_FEEDBACK_ENABLED=true 启用
 CHUNK_FEEDBACK_ENABLED = os.getenv("CHUNK_FEEDBACK_ENABLED", "false").lower() == "true"
 
 # relevance: fixed budget split by retrieval signals; uniform: delta per chunk
@@ -142,7 +145,7 @@ def _allocate_deltas_relevance(
 
 
 class ChunkFeedbackService:
-    """Service to update chunk weights based on user feedback."""
+    """根据对话 reference 中的 chunk 列表批量调整 pagerank 权重。"""
 
     @staticmethod
     def _feedback_rows_from_reference(reference: dict) -> List[Tuple[str, str, dict]]:
@@ -247,6 +250,7 @@ class ChunkFeedbackService:
 
     @classmethod
     def apply_feedback(cls, tenant_id: str, reference: dict, is_positive: bool) -> dict:
+        # 入口：解析 reference → 按 uniform/relevance 分配 delta → 逐 chunk 更新
         """
         Apply user feedback to all chunks referenced in a response.
 

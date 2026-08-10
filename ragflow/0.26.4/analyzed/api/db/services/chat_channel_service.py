@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+聊天渠道 Bot 服务：租户渠道列表、全量启用 Bot 与跨租户访问校验。
+"""
+
 #
 import logging
 
@@ -24,12 +28,14 @@ LOGGER = logging.getLogger(__name__)
 
 
 class ChatChannelService(CommonService):
+    """第三方 IM 渠道与 Dialog 绑定关系的 CRUD 与权限。"""
+
     model = ChatChannel
 
     @classmethod
     @DB.connection_context()
     def list(cls, tenant_id):
-        """List a tenant's chat channel bots with their connected dialog (no credentials)."""
+        """列出租户渠道 Bot（不含凭据），LEFT JOIN Dialog 取对话名称。"""
         fields = [
             cls.model.id,
             cls.model.name,
@@ -53,13 +59,13 @@ class ChatChannelService(CommonService):
     @classmethod
     @DB.connection_context()
     def list_active(cls):
-        """Return all enabled chat channel bots across tenants (with credentials)."""
+        """返回全租户 status=1 的启用 Bot（含凭据，供 worker 消费）。"""
         return list(cls.model.select().where(cls.model.status == 1))
 
     @classmethod
     @DB.connection_context()
     def accessible(cls, channel_id: str, user_id: str) -> bool:
-        """Return whether the user can access the chat channel's tenant."""
+        """校验用户是否为渠道租户所有者或已加入该团队。"""
         e, channel = cls.get_by_id(channel_id)
         if not e:
             LOGGER.warning("chat channel access denied: not found channel_id=%s user_id=%s", channel_id, user_id)

@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+单条编译模板服务：租户保存模板、内置 YAML 种子与 wiki 预设加载。
+"""
+
 #
 
 import logging
@@ -27,10 +31,13 @@ from common.file_utils import get_project_base_directory
 
 
 class CompilationTemplateService(CommonService):
+    """编译模板 CRUD、llm_id 默认填充与 init_data YAML 引导。"""
+
     model = CompilationTemplate
 
     @classmethod
     def fill_config_default_llm(cls, config: dict, tenant_id: str | None) -> dict:
+        # 配置无 llm_id 时回填租户默认对话模型
         if not isinstance(config, dict) or config.get("llm_id") or not tenant_id:
             return config
         try:
@@ -188,6 +195,7 @@ class CompilationTemplateService(CommonService):
 
     @classmethod
     def seed_builtins_from_files(cls) -> None:
+        # 启动时将 init_data/compilation_templates/*.yaml upsert 为内置模板
         cls.ensure_table()
         for template in cls.load_builtins_from_files():
             cls.upsert_builtin(template)
@@ -229,7 +237,7 @@ class CompilationTemplateService(CommonService):
 
     @classmethod
     def load_wiki_presets_from_files(cls) -> list[dict]:
-        """Load wiki page-structure presets from
+        """从 init_data/compilation_templates/wiki/*.yaml 加载 wiki 页面结构预设。
         ``api/db/init_data/compilation_templates/wiki/*.yaml``.
 
         Each file contributes one preset dict with ``topic`` /

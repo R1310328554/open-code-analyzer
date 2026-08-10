@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+外部数据源连接器服务：同步任务调度、日志、KB 关联与过期文档清理。
+"""
+
 #
 import logging
 from datetime import datetime
@@ -36,10 +40,13 @@ LOGGER = logging.getLogger(__name__)
 
 
 class ConnectorService(CommonService):
+    """Poll 型连接器：取消/调度任务、权限校验与 KB 全量重建。"""
+
     model = Connector
 
     @classmethod
     def cancel_tasks(cls, connector_id):
+        # 将 SCHEDULE/RUNNING 同步日志标为 CANCEL 并更新连接器状态
         e, conn = cls.get_by_id(connector_id)
         if not e:
             return
@@ -92,6 +99,7 @@ class ConnectorService(CommonService):
 
     @classmethod
     def schedule_tasks(cls, connector_id):
+        # 为每个 Connector2Kb 创建 SYNC（及可选 PRUNE）任务
         e, conn = cls.get_by_id(connector_id)
         if not e:
             return
@@ -157,6 +165,7 @@ class ConnectorService(CommonService):
     ):
         from api.db.services.file_service import FileService
 
+        # 同步完成后删除索引中已不在远端 file_list 的过期文档
         if not Connector2KbService.query(connector_id=connector_id, kb_id=kb_id):
             return 0, []
 
@@ -203,6 +212,8 @@ class ConnectorService(CommonService):
 
 
 class SyncLogsService(CommonService):
+    """连接器同步/修剪任务日志与 worker 调度查询。"""
+
     model = SyncLogs
 
     @classmethod
@@ -253,6 +264,7 @@ class SyncLogsService(CommonService):
 
     @classmethod
     def list_due_sync_tasks(cls) -> List[dict]:
+        # 返回 refresh_freq 已到期的 SCHEDULE 同步任务
         return cls._list_due_tasks_for_freq(
             ConnectorTaskType.SYNC,
             "refresh_freq",
@@ -418,6 +430,7 @@ class SyncLogsService(CommonService):
 
     @classmethod
     def duplicate_and_parse(cls, kb, docs, tenant_id, src, auto_parse=True):
+        # 上传连接器拉取的文档 blob 并可选触发解析流水线
         from api.db.services.file_service import FileService
 
         if not docs:
@@ -476,10 +489,13 @@ class SyncLogsService(CommonService):
 
 
 class Connector2KbService(CommonService):
+    """连接器与知识库的多对多关联及 auto_parse 配置。"""
+
     model = Connector2Kb
 
     @classmethod
     def link_connectors(cls, kb_id: str, connectors: list[dict], tenant_id: str):
+        # 增量关联/解绑连接器，新建链接触发 reindex 同步
         arr = cls.query(kb_id=kb_id)
         old_conn_ids = [a.connector_id for a in arr]
         connector_ids = []

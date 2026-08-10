@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+Dialog 会话服务：Web 聊天会话 CRUD、渠道确定性 ID 与流式 completion 封装。
+"""
+
 #
 import hashlib
 import time
@@ -33,6 +37,8 @@ logger = logging.getLogger(__name__)
 
 
 class ConversationService(CommonService):
+    """租户 Dialog 下的 Conversation 记录与渠道会话 get_or_create。"""
+
     model = Conversation
 
     @classmethod
@@ -58,7 +64,7 @@ class ConversationService(CommonService):
     @classmethod
     @DB.connection_context()
     def get_or_create_for_channel(cls, dialog_id, channel_id, chat_id, name=None):
-        """Find or create the conversation backing one channel end-user chat.
+        """为渠道端用户聊天查找或创建会话（SHA-256 确定性 ID，兼容 MD5 迁移）。
 
         A chat_channel is bound to a dialog; each end-user chat on that channel
         keeps its own conversation history. The conversation is identified by a
@@ -186,6 +192,7 @@ class ConversationService(CommonService):
 
 
 def structure_answer(conv, ans, message_id, session_id):
+    """将 async_chat 增量答案写入 conv.message/reference 并格式化引用 chunks。"""
     reference = ans["reference"]
     if not isinstance(reference, dict):
         reference = {}
@@ -230,6 +237,7 @@ def structure_answer(conv, ans, message_id, session_id):
 
 
 async def async_completion(tenant_id, chat_id, question, name="New session", session_id=None, stream=True, **kwargs):
+    """Dialog Web 聊天 SSE/非流式 completion 入口。"""
     assert name, "`name` can not be empty."
     dia = DialogService.query(id=chat_id, tenant_id=tenant_id, status=StatusEnum.VALID.value)
     assert dia, "You do not own the chat."
@@ -308,6 +316,7 @@ async def async_completion(tenant_id, chat_id, question, name="New session", ses
 
 
 async def async_iframe_completion(dialog_id, question, session_id=None, stream=True, tenant_id=None, **kwargs):
+    """iframe 嵌入场景：使用 API4Conversation 存储的 Open API 风格 completion。"""
     if tenant_id:
         exists, dia = DialogService.get_by_id(dialog_id)
         if not exists or getattr(dia, "tenant_id", None) != tenant_id or str(getattr(dia, "status", "")) != StatusEnum.VALID.value:
