@@ -25,6 +25,9 @@ import org.keycloak.models.KeycloakSession;
 import org.jboss.logging.Logger;
 
 /**
+ * HAProxy 反向代理 X.509 客户端证书查找工厂。
+ * <p>根据配置创建 {@link HaProxySslClientCertificateLookup}，支持单头或索引头两种链传递模式。</p>
+ *
  * @author <a href="mailto:brat000012001@gmail.com">Peter Nalyvayko</a>
  * @version $Revision: 1 $
  * @since 4/4/2017
@@ -32,11 +35,15 @@ import org.jboss.logging.Logger;
 public class HaProxySslClientCertificateLookupFactory extends AbstractClientCertificateFromHttpHeadersLookupFactory {
 
     private static final Logger logger = Logger.getLogger(HaProxySslClientCertificateLookupFactory.class);
+    /** 提供者标识符：{@code haproxy}。 */
     private static final String PROVIDER = "haproxy";
+    /** 单头模式下证书链 HTTP 头配置键。 */
     private static final String HTTP_HEADER_CERT_CHAIN = "sslCertChain";
 
+    /** 初始化后复用的查找实例。 */
     private X509ClientCertificateLookup certLookup;
 
+    /** {@inheritDoc} 读取链头配置并构建 HAProxy 查找器；索引头前缀已弃用时会记录警告。 */
     @Override
     public void init(Config.Scope config) {
         super.init(config);
@@ -55,11 +62,13 @@ public class HaProxySslClientCertificateLookupFactory extends AbstractClientCert
                 sslChainHttpHeaderPrefix, sslCertChainHttpHeader, certificateChainLength);
     }
 
+    /** {@inheritDoc} 返回初始化时创建的查找实例。 */
     @Override
     public X509ClientCertificateLookup create(KeycloakSession session) {
         return certLookup;
     }
 
+    /** {@inheritDoc} 返回 {@link #PROVIDER}。 */
     @Override
     public String getId() {
         return PROVIDER;

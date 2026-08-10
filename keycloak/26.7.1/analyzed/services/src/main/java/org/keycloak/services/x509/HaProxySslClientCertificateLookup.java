@@ -34,37 +34,28 @@ import org.keycloak.http.HttpRequest;
 import org.jboss.logging.Logger;
 
 /**
- * Extracts X.509 client certificates forwarded by an HAProxy reverse proxy.
+ * HAProxy 反向代理转发的 X.509 客户端证书查找实现。
  *
- * <p>HAProxy is not RFC 9440 compliant as it is currently only possible to Base64 encode the entire chain, whereas
- * RFC 9440 expects each certificate to be Base64 encoded individually, surrounded by `:` and provided as a CSV when multiple values exist.
- * If HAProxy adds support generating headers in this format, then it will be possible to deprecate and remove this
- * provider in favor of {@link Rfc9440ClientCertificateLookup} <a href="https://github.com/haproxy/haproxy/issues/2235">haproxy/#2235</a>.
+ * <p>HAProxy 目前不符合 RFC 9440：仅支持将整个证书链 Base64 编码，而 RFC 9440 要求每张证书单独 Base64 编码并以 {@code :} 包裹、多值以 CSV 分隔。
+ * 若 HAProxy 后续支持该格式，可弃用本提供者而改用 {@link Rfc9440ClientCertificateLookup}
+ * （参见 <a href="https://github.com/haproxy/haproxy/issues/2235">haproxy/#2235</a>）。</p>
  *
- * <p>Header values must be base64-encoded DER certificates, matching the output of HAProxy's
- * {@code ssl_c_der,base64} and {@code ssl_c_chain_der,base64} sample fetches.
+ * <p>头字段值须为 Base64 编码的 DER 证书，与 HAProxy 的
+ * {@code ssl_c_der,base64} 和 {@code ssl_c_chain_der,base64} 采样获取一致。</p>
  *
- * <p>Two modes are provided for reading the certificate chain:
+ * <p>证书链读取支持两种模式：</p>
  *
  * <ul>
- *   <li><b>Single header</b> (via {@code sslCertChain}): the entire chain is in one header as
- *       concatenated DER certificates, base64-encoded. Only the first {@code certificateChainLength}
- *       certificates are loaded. Example HAProxy config:
+ *   <li><b>单头模式</b>（通过 {@code sslCertChain}）：整条链在一个头中，为拼接 DER 后 Base64 编码。
+ *       仅加载前 {@code certificateChainLength} 张证书。HAProxy 配置示例：
  *       <pre>
  * http-request set-header Client-Cert %[ssl_c_der,base64]
  * http-request set-header Client-Cert-Chain %[ssl_c_chain_der,base64]
  *       </pre>
  *   </li>
- *   <li><b>Indexed headers</b> (deprecated, based upon {@code sslCertChainPrefix}): each chain certificate is
- *       in a separate header named {@code {prefix}_{index}}, e.g. {@code Client-Cert-Chain_0},
- *       {@code Client-Cert-Chain_1}. This is problematic when more than one intermediate cert exists as HAProxy does not
- *       provide a built-in mechanism to define a header per intermediate cert in the chain, so this will only work as
- *       expected if a single intermediate certificate exists in the chain. Example HAProxy config:
- *       <pre>
- * http-request set-header Client-Cert %[ssl_c_der,base64]
- * http-request set-header Client-Cert-Chain_0 %[ssl_c_chain_der,base64]
- *       </pre>
- *   </li>
+ *   <li><b>索引头模式</b>（已弃用，基于 {@code sslCertChainPrefix}）：链中每张证书在独立头
+ *       {@code {prefix}_{index}} 中，如 {@code Client-Cert-Chain_0}。
+ *       当链中存在多张中间证书时 HAProxy 无法为每张单独设头，故仅适用于单中间证书场景。</li>
  * </ul>
  *
  * @author <a href="mailto:brat000012001@gmail.com">Peter Nalyvayko</a>
@@ -75,8 +66,17 @@ public class HaProxySslClientCertificateLookup extends AbstractClientCertificate
 
     private static final Logger logger = Logger.getLogger(HaProxySslClientCertificateLookup.class);
 
+    /** 单头模式下存放完整证书链的 HTTP 头名称。 */
     private final String sslCertChainHttpHeader;
 
+    /**
+     * 构造 HAProxy 证书查找器。
+     *
+     * @param sslClientCertHttpHeader 客户端叶子证书 HTTP 头名
+     * @param sslCertChainHttpHeaderPrefix 索引头模式下的链头前缀（可为 null）
+     * @param sslCertChainHttpHeader 单头模式下的链 HTTP 头名（可为 null）
+     * @param certificateChainLength 最多加载的链证书数量
+     */
     public HaProxySslClientCertificateLookup(String sslClientCertHttpHeader,
                                              String sslCertChainHttpHeaderPrefix,
                                              String sslCertChainHttpHeader,
@@ -85,6 +85,7 @@ public class HaProxySslClientCertificateLookup extends AbstractClientCertificate
         this.sslCertChainHttpHeader = sslCertChainHttpHeader;
     }
 
+    /** {@inheritDoc} 将 PEM 字符串解码为 X509 证书。 */
     @Override
     protected X509Certificate decodeCertificateFromPem(String pem) throws PemException {
         if (pem == null) {
@@ -93,6 +94,7 @@ public class HaProxySslClientCertificateLookup extends AbstractClientCertificate
         return PemUtils.decodeCertificate(pem);
     }
 
+    /** {@inheritDoc} 将叶子证书加入链，并按配置从单头或索引头加载其余链证书。 */
     @Override
     protected void buildChain(HttpRequest httpRequest, List<X509Certificate> chain, X509Certificate cert) {
         chain.add(cert);
@@ -107,6 +109,12 @@ public class HaProxySslClientCertificateLookup extends AbstractClientCertificate
         }
     }
 
+    /**
+     * 从单个 HTTP 头解析 Base64 编码的 DER 证书链并追加到链列表。
+     *
+     * @param httpRequest 当前请求
+     * @param chain 待追加的证书链列表
+     */
     private void addCertificateChainFromSingleHeader(HttpRequest httpRequest, List<X509Certificate> chain) throws GeneralSecurityException {
         if (certificateChainLength == 0) {
             return;

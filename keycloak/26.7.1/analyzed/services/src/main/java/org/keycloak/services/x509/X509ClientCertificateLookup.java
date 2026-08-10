@@ -25,6 +25,9 @@ import org.keycloak.http.HttpRequest;
 import org.keycloak.provider.Provider;
 
 /**
+ * X.509 客户端证书查找提供者接口。
+ * <p>定义从 HTTP 请求中提取客户端 TLS 客户端证书（及可选证书链）的 SPI 契约。</p>
+ *
  * @author <a href="mailto:brat000012001@gmail.com">Peter Nalyvayko</a>
  * @version $Revision: 1 $
  * @since 3/26/2017
@@ -33,13 +36,13 @@ import org.keycloak.provider.Provider;
 public interface X509ClientCertificateLookup extends Provider {
 
     /**
-     * Returns a client certificate, and optionally any certificates
-     * in the certificate chain.
+     * 返回客户端证书，以及证书链中的其他证书（如有）。
      * <p>
-     * IMPORTANT: implementations should ensure that the source of the certificate is trusted.
-     * See for example the {@link HttpRequest#isProxyTrusted()} method.
+     * 重要：实现必须确保证书来源可信。
+     * 例如可借助 {@link HttpRequest#isProxyTrusted()} 方法验证反向代理是否受信。
      *
-     * @return
+     * @param httpRequest 当前 HTTP 请求
+     * @return 客户端证书链；若无证书则返回 {@code null}
      */
     X509Certificate[] getCertificateChain(HttpRequest httpRequest) throws GeneralSecurityException;
 }

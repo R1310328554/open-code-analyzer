@@ -11,10 +11,12 @@ import org.keycloak.http.HttpRequest;
 import org.jboss.logging.Logger;
 
 /**
- * The NGINX Trusted Provider verify extract end user X.509 certificate sent during TLS mutual authentication,
- * verifies it against provided CA the and forwarded in an HTTP header along with a new header ssl-client-verify: SUCCESS.
+ * NGINX 受信代理 X.509 客户端证书查找实现。
  *
- * NGINX configuration must have :
+ * <p>从 NGINX 在 TLS 双向认证后转发的 HTTP 头中提取终端用户证书，并依赖 NGINX 的
+ * {@code ssl-client-verify: SUCCESS} 头确认证书已由 NGINX 验证通过，无需 Keycloak 信任库重建链。</p>
+ *
+ * <p>NGINX 配置须包含：</p>
  * <code>
  * server {
  *    ...
@@ -29,7 +31,7 @@ import org.jboss.logging.Logger;
  *  }
  * </code>
  *
- * Note that $ssl_client_cert is deprecated, use only $ssl_client_escaped_cert with this implementation
+ * <p>注意：{@code $ssl_client_cert} 已弃用，请仅使用 {@code $ssl_client_escaped_cert}。</p>
  *
  * @author <a href="mailto:youssef.elhouti@tailosoft.com">Youssef El Houti</a>
  * @version $Revision: 1 $
@@ -40,8 +42,17 @@ public class NginxProxyTrustedClientCertificateLookup extends AbstractClientCert
 
     private static final Logger log = Logger.getLogger(NginxProxyTrustedClientCertificateLookup.class);
 
+    /** 证书 PEM 是否经 URL 编码。 */
     private final boolean certIsUrlEncoded;
 
+    /**
+     * 构造受信 NGINX 证书查找器。
+     *
+     * @param sslCientCertHttpHeader 客户端证书 HTTP 头名
+     * @param sslCertChainHttpHeaderPrefix 链头前缀
+     * @param certificateChainLength 链最大深度
+     * @param certIsUrlEncoded 证书是否 URL 编码
+     */
     public NginxProxyTrustedClientCertificateLookup(String sslCientCertHttpHeader,
                                                 String sslCertChainHttpHeaderPrefix,
                                                 int certificateChainLength,
@@ -51,6 +62,9 @@ public class NginxProxyTrustedClientCertificateLookup extends AbstractClientCert
         this.certIsUrlEncoded = certIsUrlEncoded;
     }
 
+    /**
+     * 从头中提取证书，并校验 NGINX {@code ssl-client-verify} 是否为 {@code SUCCESS}。
+     */
     @Override
     protected X509Certificate getCertificateFromHttpHeader(HttpRequest request, String httpHeader) throws GeneralSecurityException {
         X509Certificate certificate = super.getCertificateFromHttpHeader(request, httpHeader);
@@ -66,6 +80,7 @@ public class NginxProxyTrustedClientCertificateLookup extends AbstractClientCert
         }
     }
 
+    /** {@inheritDoc} 解码 PEM，必要时先 URL 解码。 */
     @Override
     protected X509Certificate decodeCertificateFromPem(String pem) throws PemException {
 

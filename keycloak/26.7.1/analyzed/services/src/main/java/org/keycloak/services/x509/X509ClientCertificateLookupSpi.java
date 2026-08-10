@@ -23,6 +23,10 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * X.509 客户端证书查找 SPI 定义。
+ * <p>将 {@link X509ClientCertificateLookup} 注册为 Keycloak 可插拔提供者，
+ * 供各反向代理（Nginx、HAProxy、Envoy 等）实现证书转发解析。</p>
+ *
  * @author <a href="mailto:brat000012001@gmail.com">Peter Nalyvayko</a>
  * @version $Revision: 1 $
  * @since 3/26/2017
@@ -30,21 +34,25 @@ import org.keycloak.provider.Spi;
 
 public class X509ClientCertificateLookupSpi implements Spi {
 
+    /** {@inheritDoc} 非内部 SPI，可在配置中选择具体实现。 */
     @Override
     public boolean isInternal() {
         return false;
     }
 
+    /** {@inheritDoc} SPI 名称：{@code x509cert-lookup}。 */
     @Override
     public String getName() {
         return "x509cert-lookup";
     }
 
+    /** {@inheritDoc} 返回 {@link X509ClientCertificateLookup} 作为提供者类型。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return X509ClientCertificateLookup.class;
     }
 
+    /** {@inheritDoc} 返回 {@link X509ClientCertificateLookupFactory} 作为工厂类型。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return X509ClientCertificateLookupFactory.class;

@@ -28,15 +28,12 @@ import org.keycloak.http.HttpRequest;
 import org.jboss.logging.Logger;
 
 /**
- * The provider allows to extract X.509 client certificates forwarded
- * to the Keycloak middleware configured behind a Traefik reverse proxy
- * using the PassTLSClientCert middleware with {@code pem: true}.
+ * Traefik 反向代理 SSL 客户端证书查找实现。
  *
- * <p>Traefik's PassTLSClientCert middleware (with {@code pem: true}) forwards the client
- * certificate and any intermediate CA certificates as URL-encoded PEM blocks
- * in the {@code X-Forwarded-Tls-Client-Cert} HTTP header, separated by commas.
+ * <p>从 Traefik {@code PassTLSClientCert} 中间件（{@code pem: true}）转发的
+ * {@code X-Forwarded-Tls-Client-Cert} HTTP 头中提取 URL 编码 PEM 格式的客户端证书及中间 CA 证书。</p>
  *
- * <p>Example Traefik configuration:
+ * <p>Traefik 配置示例：</p>
  * <pre>
  * [http.middlewares.my-tls-client-cert.passTLSClientCert]
  *   [http.middlewares.my-tls-client-cert.passTLSClientCert.pem]
@@ -49,12 +46,19 @@ public class TraefikProxySslClientCertificateLookup implements X509ClientCertifi
 
     private static final Logger log = Logger.getLogger(TraefikProxySslClientCertificateLookup.class);
 
+    /** 最多加载的链证书数量（不含叶子证书时的额外限制）。 */
     protected int certificateChainLength;
 
+    /**
+     * 构造 Traefik 证书查找器。
+     *
+     * @param certificateChainLength 链长度上限
+     */
     public TraefikProxySslClientCertificateLookup(int certificateChainLength) {
         this.certificateChainLength = certificateChainLength;
     }
 
+    /** {@inheritDoc} 从 Traefik 转发的逗号分隔 PEM 头中解析证书链。 */
     @Override
     public X509Certificate[] getCertificateChain(HttpRequest httpRequest) throws GeneralSecurityException {
         if (!httpRequest.isProxyTrusted()) {
@@ -70,6 +74,7 @@ public class TraefikProxySslClientCertificateLookup implements X509ClientCertifi
         }
 
         try {
+            // 逗号分隔的多个 PEM 块，限制总数为 certificateChainLength + 1（含叶子证书）
             X509Certificate[] certs = Stream.of(headerValue.split(",")).map(PemUtils::decodeCertificate)
                     .limit(certificateChainLength + 1).toArray(X509Certificate[]::new);
             if (certs.length == 0) {
@@ -83,6 +88,7 @@ public class TraefikProxySslClientCertificateLookup implements X509ClientCertifi
         }
     }
 
+    /** {@inheritDoc} 无状态实现，无需释放资源。 */
     @Override
     public void close() {
         // intentionally left blank

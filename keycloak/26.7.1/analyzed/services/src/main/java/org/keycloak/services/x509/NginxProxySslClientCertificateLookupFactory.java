@@ -14,9 +14,11 @@ import org.keycloak.truststore.TruststoreProviderFactory;
 import org.jboss.logging.Logger;
 
 /**
- * The factory and the corresponding providers extract a client certificate
- * from a NGINX reverse proxy (TLS termination).
- *  
+ * NGINX 反向代理 X.509 客户端证书查找工厂。
+ *
+ * <p>工厂及其对应提供者从 NGINX（TLS 终结）转发的 HTTP 头中提取客户端证书。
+ * 根据 {@code trust-proxy-verification} 配置，可选择信任库重建链或依赖 NGINX 验证结果。</p>
+ *
  * @author <a href="mailto:arnault.michel@toad-consulting.com">Arnault MICHEL</a>
  * @version $Revision: 1 $
  * @since 10/09/2018
@@ -26,22 +28,31 @@ public class NginxProxySslClientCertificateLookupFactory extends AbstractClientC
 
     private static final Logger logger = Logger.getLogger(NginxProxySslClientCertificateLookupFactory.class);
 
+    /** 提供者标识符：{@code nginx}。 */
     private static final String PROVIDER = "nginx";
 
+    /** 是否信任 NGINX 的 {@code ssl-client-verify} 验证结果而非自行重建链。 */
     protected static final String TRUST_PROXY_VERIFICATION = "trust-proxy-verification";
 
+    /** 证书 PEM 是否经 URL 编码。 */
     protected static final String CERT_IS_URL_ENCODED = "cert-is-url-encoded";
 
+    /** 是否启用代理验证模式。 */
     protected boolean trustProxyVerification;
 
+    /** 证书是否 URL 编码。 */
     protected boolean certIsUrlEncoded;
 
+    /** 信任库是否已加载（volatile 保证可见性）。 */
     private volatile boolean isTruststoreLoaded;
 
+    /** 根 CA 证书集合。 */
     private Set<X509Certificate> trustedRootCerts;
 
+    /** 中间 CA 证书集合。 */
     private Set<X509Certificate> intermediateCerts;
 
+    /** {@inheritDoc} 读取代理验证与 URL 编码配置，初始化证书集合。 */
     @Override
     public void init(Config.Scope config) {
         super.init(config);
@@ -55,6 +66,7 @@ public class NginxProxySslClientCertificateLookupFactory extends AbstractClientC
 
     }
 
+    /** {@inheritDoc} 懒加载信任库后，按配置返回链重建或代理验证查找器。 */
     @Override
     public X509ClientCertificateLookup create(KeycloakSession session) {
         loadKeycloakTrustStore(session);
@@ -67,14 +79,16 @@ public class NginxProxySslClientCertificateLookupFactory extends AbstractClientC
         }
     }
 
+    /** {@inheritDoc} 返回 {@link #PROVIDER}。 */
     @Override
     public String getId() {
         return PROVIDER;
     }
 
-    /**  Loading truststore @ first login
+    /**
+     * 首次登录时懒加载 Keycloak 信任库（双重检查锁定）。
      *
-     * @param kcSession keycloak session
+     * @param kcSession Keycloak 会话
      */
     private void loadKeycloakTrustStore(KeycloakSession kcSession) {
 

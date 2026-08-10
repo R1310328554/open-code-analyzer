@@ -27,36 +27,45 @@ import org.keycloak.http.HttpRequest;
 
 import org.jboss.logging.Logger;
 
+/**
+ * Envoy 反向代理 SSL 客户端证书查找实现。
+ * <p>从 Envoy 转发的 {@code x-forwarded-client-cert} HTTP 头中解析 URL 编码的 PEM 格式客户端证书及证书链。</p>
+ *
+ * @see <a href="https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/headers#x-forwarded-client-cert">Envoy XFCC 文档</a>
+ */
 public class EnvoyProxySslClientCertificateLookup implements X509ClientCertificateLookup {
 
     private static final Logger logger = Logger.getLogger(EnvoyProxySslClientCertificateLookup.class);
 
+    /** Envoy 转发客户端证书的标准 HTTP 头名称。 */
     protected final static String XFCC_HEADER = "x-forwarded-client-cert";
+    /** XFCC 头中仅含叶子证书的键名。 */
     protected final static String XFCC_HEADER_CERT_KEY = "Cert";
+    /** XFCC 头中含完整证书链（含叶子证书）的键名。 */
     protected final static String XFCC_HEADER_CHAIN_KEY = "Chain";
 
+    /** {@inheritDoc} 无状态实现，无需释放资源。 */
     @Override
     public void close() {
     }
 
 
     /**
-     * Extracts the client certificate chain from the HTTP request forwarded by Envoy.
+     * 从 Envoy 转发的 HTTP 请求中提取客户端证书链。
      *
-     * Envoy encodes the client certificate and the certificate chain in the  header in following format:
-     *
+     * <p>Envoy 在 {@code x-forwarded-client-cert} 头中以如下格式编码证书：</p>
+     * <pre>
      *   x-forwarded-client-cert: key1="url encoded value 1";key2="url encoded value 2";...
+     * </pre>
      *
-     * Following keys are supported by this implementation:
+     * <p>本实现支持以下键：</p>
+     * <ul>
+     *   <li>{@code Cert} — URL 编码 PEM 格式的叶子客户端证书</li>
+     *   <li>{@code Chain} — URL 编码 PEM 格式的完整证书链（含叶子证书）</li>
+     * </ul>
      *
-     * 1. Cert - The entire client certificate in URL encoded PEM format.
-     * 2. Chain - The entire client certificate chain (including the leaf certificate) in URL encoded PEM format.
-     *
-     * For Envoy documentation, see
-     * https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/headers#x-forwarded-client-cert
-     *
-     * @param httpRequest The HTTP request forwarded by Envoy.
-     * @return The client certificate chain extracted from the HTTP request.
+     * @param httpRequest Envoy 转发的 HTTP 请求
+     * @return 解析出的客户端证书链；不可信或无头时返回 {@code null}
      */
     @Override
     public X509Certificate[] getCertificateChain(HttpRequest httpRequest) throws GeneralSecurityException {
@@ -82,11 +91,11 @@ public class EnvoyProxySslClientCertificateLookup implements X509ClientCertifica
                     String value = token.substring(index + 1).trim();
 
                     if (key.equals(XFCC_HEADER_CHAIN_KEY)) {
-                        // Chain contains the entire chain including the leaf certificate so we can stop processing the header.
+                        // Chain 含完整链（含叶子证书），找到即可停止解析
                         certs = PemUtils.decodeCertificates(decodeValue(value));
                         break;
                     } else if (key.equals(XFCC_HEADER_CERT_KEY)) {
-                        // Cert contains only the leaf certificate. We need to continue processing the header in case Chain is present.
+                        // Cert 仅含叶子证书，继续查找是否还有 Chain 键
                         certs = PemUtils.decodeCertificates(decodeValue(value));
                     }
                 }
@@ -100,8 +109,14 @@ public class EnvoyProxySslClientCertificateLookup implements X509ClientCertifica
         return certs;
     }
 
+    /**
+     * 解码 XFCC 头中的 URL 编码值：去除引号并 URL 解码。
+     *
+     * @param value 原始头字段值
+     * @return 解码后的 PEM 字符串
+     */
     private String decodeValue(String value) {
-        // Remove enclosing quotes if present.
+        // 去除首尾引号（如有）
         if (value.startsWith("\"") && value.endsWith("\"")) {
             value = value.substring(1, value.length() - 1);
         }

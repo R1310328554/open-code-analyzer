@@ -21,6 +21,9 @@ package org.keycloak.services.x509;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * X.509 客户端证书查找提供者工厂接口。
+ * <p>用于创建 {@link X509ClientCertificateLookup} 实例，支持按反向代理类型选择不同实现。</p>
+ *
  * @author <a href="mailto:brat000012001@gmail.com">Peter Nalyvayko</a>
  * @version $Revision: 1 $
  * @since 3/26/2017

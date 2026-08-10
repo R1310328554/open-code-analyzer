@@ -29,10 +29,12 @@ import org.jboss.logging.Logger;
 import org.jboss.logging.Logger.Level;
 
 /**
- * The NGINX Provider extract end user X.509 certificate send during TLS mutual authentication,
- * and forwarded in an http header.
+ * NGINX 反向代理 SSL 客户端证书查找实现。
  *
- * NGINX configuration must have :
+ * <p>从 NGINX 在 TLS 双向认证后通过 HTTP 头转发的终端用户 X.509 证书中提取客户端证书。
+ * NGINX 无法直接传递完整 CA 链，本实现借助 Keycloak 信任库重建证书链。</p>
+ *
+ * <p>NGINX 配置须包含：</p>
  * <code>
  * server {
  *    ...
@@ -47,7 +49,7 @@ import org.jboss.logging.Logger.Level;
  *  }
  * </code>
  *
- * Note that $ssl_client_cert is deprecated, use only $ssl_client_escaped_cert with this implementation
+ * <p>注意：{@code $ssl_client_cert} 已弃用，请仅使用 {@code $ssl_client_escaped_cert}。</p>
  *
  * @author <a href="mailto:arnault.michel@toad-consulting.com">Arnault MICHEL</a>
  * @version $Revision: 1 $
@@ -58,12 +60,27 @@ public class NginxProxySslClientCertificateLookup extends AbstractClientCertific
 
     private static final Logger log = Logger.getLogger(NginxProxySslClientCertificateLookup.class);
 
+    /** Keycloak 信任库是否已成功加载。 */
     private final boolean isTruststoreLoaded;
+    /** 证书 PEM 是否经 URL 编码（对应 {@code ssl_client_escaped_cert}）。 */
     private final boolean certIsUrlEncoded;
+    /** 信任库中的根 CA 证书集合。 */
     private final Set<X509Certificate> trustedRootCerts;
+    /** 信任库中的中间 CA 证书集合。 */
     private final Set<X509Certificate> intermediateCerts;
 
 
+    /**
+     * 构造 NGINX 证书查找器。
+     *
+     * @param sslClientCertHttpHeader 客户端证书 HTTP 头名
+     * @param sslCertChainHttpHeaderPrefix 链头前缀（NGINX 通常不使用）
+     * @param certificateChainLength 链最大深度
+     * @param intermediateCerts 中间 CA 证书集合
+     * @param trustedRootCerts 根 CA 证书集合
+     * @param isTruststoreLoaded 信任库是否已加载
+     * @param certIsUrlEncoded 证书是否 URL 编码
+     */
     public NginxProxySslClientCertificateLookup(String sslClientCertHttpHeader,
                                                 String sslCertChainHttpHeaderPrefix,
                                                 int certificateChainLength,
@@ -88,10 +105,10 @@ public class NginxProxySslClientCertificateLookup extends AbstractClientCertific
     }
 
     /**
-     * Removing PEM Headers and end of lines
+     * 去除 PEM 头尾标记及换行符。
      *
-     * @param pem
-     * @return
+     * @param pem 原始 PEM 字符串
+     * @return 仅含 Base64 主体内容的字符串
      */
     private static String removeBeginEnd(String pem) {
         pem = pem.replace(PemUtils.BEGIN_CERT, "");
@@ -102,7 +119,7 @@ public class NginxProxySslClientCertificateLookup extends AbstractClientCertific
     }
 
     /**
-     * Decoding end user certificate, including URL decodeding due to ssl_client_escaped_cert nginx variable.
+     * 解码终端用户证书，含 NGINX {@code ssl_client_escaped_cert} 变量的 URL 解码。
      */
     @Override
     protected X509Certificate decodeCertificateFromPem(String pem) throws PemException {
@@ -122,11 +139,12 @@ public class NginxProxySslClientCertificateLookup extends AbstractClientCertific
         return PemUtils.decodeCertificate(pem);
     }
 
+    /** {@inheritDoc} 借助 Keycloak 信任库重建 NGINX 无法转发的证书链。 */
     @Override
     protected void buildChain(HttpRequest httpRequest, List<X509Certificate> chain, X509Certificate clientCert) {
         log.debugf("End user certificate found : Subject DN=[%s]  SerialNumber=[%s]", clientCert.getSubjectX500Principal(), clientCert.getSerialNumber());
 
-        // Rebuilding the end user certificate chain using Keycloak Truststore
+        // 使用 Keycloak 信任库重建终端用户证书链（NGINX 无法在头中传递 CA 链）
         X509Certificate[] certChain = buildChain(clientCert);
         if (certChain == null || certChain.length == 0) {
             log.info("Impossible to rebuild end user cert chain : client certificate authentication will fail." );
@@ -140,12 +158,11 @@ public class NginxProxySslClientCertificateLookup extends AbstractClientCertific
     }
 
     /**
-     *  As NGINX cannot actually send the CA Chain in http header(s),
-     *  we are rebuilding here the end user certificate chain with Keycloak truststore.
-     *  <br>
-     *  Please note that Keycloak truststore must contain root and intermediate CA's certificates.
-     * @param endUserAuthCert
-     * @return
+     * NGINX 无法在 HTTP 头中传递 CA 链，此处用 Keycloak 信任库重建终端用户证书链。
+     * <p>信任库须同时包含根 CA 与中间 CA 证书。</p>
+     *
+     * @param endUserAuthCert 终端用户客户端证书
+     * @return 重建的证书链；失败时返回空数组
      */
     private X509Certificate[] buildChain(X509Certificate endUserAuthCert) {
 
@@ -153,39 +170,39 @@ public class NginxProxySslClientCertificateLookup extends AbstractClientCertific
 
         try {
 
-            // No truststore : no way!
+            // 无信任库则无法重建链
             if (!isTruststoreLoaded) {
                 log.warn("Keycloak Truststore is null, but it is required !");
                 log.warn("  see https://www.keycloak.org/docs/latest/server_installation/index.html#_truststore");
                 return userCertChain;
             }
 
-            // Create the selector that specifies the starting certificate
+            // 指定起始证书的选择器
             X509CertSelector selector = new X509CertSelector();
             selector.setCertificate(endUserAuthCert);
 
-            // Create the trust anchors (set of root CA certificates)
+            // 信任锚点（根 CA 证书集合）
             Set<TrustAnchor> trustAnchors = new HashSet<TrustAnchor>();
             for (X509Certificate trustedRootCert : trustedRootCerts) {
                 trustAnchors.add(new TrustAnchor(trustedRootCert, null));
             }
-            // Configure the PKIX certificate builder algorithm parameters
+            // 配置 PKIX 证书路径构建参数
             PKIXBuilderParameters pkixParams = new PKIXBuilderParameters( trustAnchors, selector);
 
-            // Disable CRL checks, as it's possibly done after depending on Keycloak settings
+            // 禁用 CRL 检查（吊销状态可能由 Keycloak 其他设置另行处理）
             pkixParams.setRevocationEnabled(false);
             pkixParams.setExplicitPolicyRequired(false);
             pkixParams.setAnyPolicyInhibited(false);
             pkixParams.setPolicyQualifiersRejected(false);
             pkixParams.setMaxPathLength(certificateChainLength);
 
-            // Adding the list of intermediate certificates + end user certificate
+            // 将中间证书与终端用户证书加入 CertStore
             intermediateCerts.add(endUserAuthCert);
             CollectionCertStoreParameters intermediateCAUserCert = new CollectionCertStoreParameters(intermediateCerts);
             CertStore intermediateCertStore = CryptoIntegration.getProvider().getCertStore(intermediateCAUserCert);
             pkixParams.addCertStore(intermediateCertStore);
 
-            // Build and verify the certification chain (revocation status excluded)
+            // 构建并验证认证路径（不含吊销状态）
             CertPathBuilder certPathBuilder = CryptoIntegration.getProvider().getCertPathBuilder();
             CertPath certPath = certPathBuilder.build(pkixParams).getCertPath();
             log.debug("Certification path building OK, and contains " + certPath.getCertificates().size() + " X509 Certificates");
@@ -202,7 +219,7 @@ public class NginxProxySslClientCertificateLookup extends AbstractClientCertific
             }
         } finally {
             if (isTruststoreLoaded) {
-                //Remove end user certificate
+                // 从中间证书集合中移除临时加入的终端用户证书
                 intermediateCerts.remove(endUserAuthCert);
             }
         }
@@ -211,6 +228,12 @@ public class NginxProxySslClientCertificateLookup extends AbstractClientCertific
     }
 
 
+    /**
+     * 将 {@link CertPath} 转换为 X509 证书数组。
+     *
+     * @param certPath PKIX 构建出的证书路径
+     * @return X509 证书数组
+     */
     private X509Certificate[] convertCertPathToX509CertArray(CertPath certPath ) {
 
         X509Certificate[] x509certChain = new X509Certificate[0];
