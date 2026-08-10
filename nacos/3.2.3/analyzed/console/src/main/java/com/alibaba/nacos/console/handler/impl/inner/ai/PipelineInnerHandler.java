@@ -26,6 +26,7 @@ import com.alibaba.nacos.console.handler.impl.inner.EnabledInnerHandler;
 import org.springframework.stereotype.Component;
 
 /**
+ * AI 流水线内嵌 Handler：直接委托 {@link PipelineQueryService} 查询流水线执行记录。
  * Pipeline inner handler — directly delegates to PipelineQueryService.
  *
  * @author kiro
@@ -36,17 +37,21 @@ import org.springframework.stereotype.Component;
 @EnabledAiHandler
 public class PipelineInnerHandler implements PipelineHandler {
     
+    /** 流水线查询服务，提供单条与分页列表能力 */
     private final PipelineQueryService pipelineQueryService;
     
+    /** 注入流水线查询服务 */
     public PipelineInnerHandler(PipelineQueryService pipelineQueryService) {
         this.pipelineQueryService = pipelineQueryService;
     }
     
+    /** 按流水线 ID 获取执行详情 */
     @Override
     public PipelineExecution getPipeline(String pipelineId) throws NacosException {
         return pipelineQueryService.getPipeline(pipelineId);
     }
     
+    /** 按资源类型、名称、命名空间与版本分页列出流水线执行记录 */
     @Override
     public Page<PipelineExecution> listPipelines(String resourceType, String resourceName,
         String namespaceId, String version, int pageNo, int pageSize) throws NacosException {

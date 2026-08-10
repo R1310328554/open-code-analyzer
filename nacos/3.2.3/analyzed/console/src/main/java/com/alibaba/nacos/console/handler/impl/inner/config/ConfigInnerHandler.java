@@ -85,6 +85,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
+ * 配置管理内嵌 Handler：分页查询、发布/删除、导入导出、Beta 灰度与监听器查询，直接调用 config-server 持久化与运维服务。
  * Implementation of ConfigHandler for handling internal configuration operations.
  *
  * @author zhangyukun
@@ -94,35 +95,48 @@ import java.util.stream.Collectors;
 @Conditional(ConditionFunctionEnabled.ConditionConfigEnabled.class)
 public class ConfigInnerHandler implements ConfigHandler {
     
+    /** 配置 Handler 日志记录器 */
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigInnerHandler.class);
     
+    /** 导出 ZIP 文件名前缀 */
     private static final String EXPORT_CONFIG_FILE_NAME = "nacos_config_export_";
     
+    /** 导出 ZIP 文件扩展名 */
     private static final String EXPORT_CONFIG_FILE_NAME_EXT = ".zip";
     
+    /** 导出文件名中的时间戳格式 */
     private static final String EXPORT_CONFIG_FILE_NAME_DATE_FORMAT = "yyyyMMddHHmmss";
     
+    /** 配置信息持久化服务 */
     private final ConfigInfoPersistService configInfoPersistService;
     
+    /** 配置发布/删除等运维操作服务 */
     private final ConfigOperationService configOperationService;
     
+    /** 按内容搜索配置详情的服务 */
     private final ConfigDetailService configDetailService;
     
+    /** 配置监听器状态查询委托 */
     private final ConfigListenerStateDelegate configListenerStateDelegate;
     
+    /** 配置灰度迁移服务（兼容旧 Beta 表） */
     private final ConfigMigrateService configMigrateService;
     
+    /** 命名空间持久化服务，用于导入/克隆前校验租户存在 */
     private NamespacePersistService namespacePersistService;
     
+    /** 旧版 Beta 配置持久化服务（灰度兼容模式） */
     private ConfigInfoBetaPersistService configInfoBetaPersistService;
     
+    /** 灰度配置持久化服务 */
     private ConfigInfoGrayPersistService configInfoGrayPersistService;
     
     /**
-     * Flag to indicate if the table `config_info_beta` exists, which means the old version of table schema is used.
+     * 标识是否存在旧版 `config_info_beta` 表，用于灰度兼容逻辑。
      */
     private boolean oldTableVersion;
     
+    /** 注入配置运维、持久化、命名空间与监听器相关依赖，并检测旧表版本 */
     public ConfigInnerHandler(ConfigOperationService configOperationService,
         ConfigInfoPersistService configInfoPersistService, ConfigDetailService configDetailService,
         NamespacePersistService namespacePersistService,
@@ -141,6 +155,7 @@ public class ConfigInnerHandler implements ConfigHandler {
         this.oldTableVersion = namespacePersistService.isExistTable("config_info_beta");
     }
     
+    /** 分页模糊查询配置列表，支持高级过滤条件 */
     @Override
     public Page<ConfigBasicInfo> getConfigList(int pageNo, int pageSize, String dataId,
         String group,
@@ -152,6 +167,7 @@ public class ConfigInnerHandler implements ConfigHandler {
         return transferToConfigBasicInfo(result);
     }
     
+    /** 获取单条配置的完整详情（含内容与元数据） */
     @Override
     public ConfigDetailInfo getConfigDetail(String dataId, String group, String namespaceId)
         throws NacosException {
@@ -163,12 +179,13 @@ public class ConfigInnerHandler implements ConfigHandler {
         return ResponseUtil.transferToConfigDetailInfo(configAllInfo);
     }
     
+    /** 发布或更新配置，必要时自动加密后委托运维服务持久化 */
     @Override
     public Boolean publishConfig(ConfigForm configForm, ConfigRequestInfo configRequestInfo)
         throws NacosException {
         String encryptedDataKeyFinal = configForm.getEncryptedDataKey();
         if (StringUtils.isBlank(encryptedDataKeyFinal)) {
-            // encrypted
+            // 未携带加密密钥时自动加密配置内容
             Pair<String, String> pair = EncryptionHandler.encryptHandler(configForm.getDataId(),
                 configForm.getContent());
             configForm.setContent(pair.getSecond());
@@ -178,6 +195,7 @@ public class ConfigInnerHandler implements ConfigHandler {
             encryptedDataKeyFinal);
     }
     
+    /** 删除指定配置（支持 tag 维度） */
     @Override
     public Boolean deleteConfig(String dataId, String group, String namespaceId, String tag,
         String clientIp,
@@ -186,6 +204,7 @@ public class ConfigInnerHandler implements ConfigHandler {
             srcUser, Constants.HTTP);
     }
     
+    /** 按 ID 批量删除配置，跳过不存在的记录 */
     @Override
     public Boolean batchDeleteConfigs(List<Long> ids, String clientIp, String srcUser) {
         for (Long id : ids) {
@@ -201,6 +220,7 @@ public class ConfigInnerHandler implements ConfigHandler {
         return true;
     }
     
+    /** 按配置内容关键字分页搜索配置 */
     @Override
     public Page<ConfigBasicInfo> getConfigListByContent(String search, int pageNo, int pageSize,
         String dataId,
@@ -218,6 +238,7 @@ public class ConfigInnerHandler implements ConfigHandler {
         }
     }
     
+    /** 查询指定配置的客户端监听器状态，可选聚合模式 */
     @Override
     public ConfigListenerInfo getListeners(String dataId, String group, String namespaceId,
         boolean aggregation)
@@ -226,6 +247,7 @@ public class ConfigInnerHandler implements ConfigHandler {
             aggregation);
     }
     
+    /** 按客户端 IP 查询其订阅的全部配置及 MD5 状态 */
     @Override
     public ConfigListenerInfo getAllSubClientConfigByIp(String ip, boolean all, String namespaceId,
         boolean aggregation) {
@@ -255,6 +277,7 @@ public class ConfigInnerHandler implements ConfigHandler {
         return result;
     }
     
+    /** 导出配置为 ZIP（含 .metadata.yml 与解密后的配置正文） */
     @Override
     public ResponseEntity<byte[]> exportConfig(String dataId, String group, String namespaceId,
         String appName,
@@ -294,6 +317,7 @@ public class ConfigInnerHandler implements ConfigHandler {
         return new ResponseEntity<>(ZipUtils.zip(zipItemList), headers, HttpStatus.OK);
     }
     
+    /** 从 ZIP 导入配置并批量发布，校验命名空间与元数据合法性 */
     @Override
     public Result<Map<String, Object>> importAndPublishConfig(String srcUser, String namespaceId,
         SameConfigPolicy policy, MultipartFile file, String srcIp, String requestIpApp)
@@ -342,7 +366,7 @@ public class ConfigInnerHandler implements ConfigHandler {
                 ConfigTraceService.PERSISTENCE_EVENT, ConfigTraceService.PERSISTENCE_TYPE_PUB,
                 configInfo.getContent());
         }
-        // unrecognizedCount
+        // 汇总无法识别的文件条目
         if (!unrecognizedList.isEmpty()) {
             saveResult.put("unrecognizedCount", unrecognizedList.size());
             saveResult.put("unrecognizedData", unrecognizedList);
@@ -351,12 +375,13 @@ public class ConfigInnerHandler implements ConfigHandler {
     }
     
     /**
+     * 解析新版导入 ZIP（含 .metadata.yml），匹配元数据与配置正文。
      * new version import config add .metadata.yml file.
      *
-     * @param unziped          export file.
-     * @param configInfoList   parse file result.
-     * @param unrecognizedList unrecognized file.
-     * @param namespace        import namespace.
+     * @param unziped          解压后的导出文件
+     * @param configInfoList   解析得到的配置列表
+     * @param unrecognizedList 无法识别的文件条目
+     * @param namespace        目标导入命名空间
      * @return error result.
      */
     private Result<Map<String, Object>> parseImportDataV2(String srcUser,
@@ -377,7 +402,7 @@ public class ConfigInnerHandler implements ConfigHandler {
             return Result.failure(ErrorCode.METADATA_ILLEGAL, failedData);
         }
         List<ConfigMetadata.ConfigExportItem> configExportItems = configMetadata.getMetadata();
-        // check config metadata
+        // 校验元数据中 dataId、group、type 非空
         for (ConfigMetadata.ConfigExportItem configExportItem : configExportItems) {
             if (StringUtils.isBlank(configExportItem.getDataId())
                 || StringUtils.isBlank(configExportItem.getGroup())
@@ -407,7 +432,7 @@ public class ConfigInnerHandler implements ConfigHandler {
             String group = groupAdnDataId[0];
             String dataId = groupAdnDataId[1];
             String key = GroupKey.getKey(dataId, group);
-            // metadata does not contain config file
+            // ZIP 中存在元数据未声明的配置文件
             if (!metaDataKeys.contains(key)) {
                 Map<String, String> unrecognizedItem = new HashMap<>(2);
                 unrecognizedItem.put("itemName", "未在元数据中找到: " + item.getItemName());
@@ -422,14 +447,14 @@ public class ConfigInnerHandler implements ConfigHandler {
             String dataId = configExportItem.getDataId();
             String group = configExportItem.getGroup();
             String content = configContentMap.get(GroupKey.getKey(dataId, group));
-            // config file not in metadata
+            // 元数据声明的配置在 ZIP 中缺失
             if (content == null) {
                 Map<String, String> unrecognizedItem = new HashMap<>(2);
                 unrecognizedItem.put("itemName", "未在文件中找到: " + group + "/" + dataId);
                 unrecognizedList.add(unrecognizedItem);
                 continue;
             }
-            // encrypted
+            // 导入时对配置正文执行加密处理
             Pair<String, String> pair = EncryptionHandler.encryptHandler(dataId, content);
             content = pair.getSecond();
             
@@ -448,6 +473,7 @@ public class ConfigInnerHandler implements ConfigHandler {
         return null;
     }
     
+    /** 将选中配置克隆到目标命名空间，支持重命名 group/dataId */
     @Override
     public Result<Map<String, Object>> cloneConfig(String srcUser, String namespaceId,
         List<SameNamespaceCloneConfigBean> configBeansList, SameConfigPolicy policy, String srcIp,
@@ -520,6 +546,7 @@ public class ConfigInnerHandler implements ConfigHandler {
         return Result.success(saveResult);
     }
     
+    /** 移除 Beta 灰度配置并通知变更，兼容旧表双写 */
     @Override
     public boolean removeBetaConfig(String dataId, String group, String namespaceId,
         String remoteIp,
@@ -549,6 +576,7 @@ public class ConfigInnerHandler implements ConfigHandler {
         
     }
     
+    /** 查询 Beta 灰度配置详情（解密内容并补全 type 字段） */
     @Override
     public ConfigGrayInfo queryBetaConfig(String dataId, String group, String namespaceId)
         throws NacosException {
@@ -561,7 +589,7 @@ public class ConfigInnerHandler implements ConfigHandler {
                 beta4Gray.getContent());
             beta4Gray.setContent(pair.getSecond());
             
-            //find the corresponding production config to get the `type` field, because the `type` field is not stored in the beta table
+            // Beta 表不存 type，需从正式配置补全
             ConfigInfoWrapper productionConfig =
                 configInfoPersistService.findConfigInfo(dataId, group, namespaceId);
             if (Objects.nonNull(productionConfig)) {
@@ -572,6 +600,7 @@ public class ConfigInnerHandler implements ConfigHandler {
         return null;
     }
     
+    /** 将持久化层 {@link ConfigInfo} 分页结果转换为控制台 {@link ConfigBasicInfo} */
     private Page<ConfigBasicInfo> transferToConfigBasicInfo(Page<ConfigInfo> configInfoPage) {
         Page<ConfigBasicInfo> result = new Page<>();
         result.setTotalCount(configInfoPage.getTotalCount());

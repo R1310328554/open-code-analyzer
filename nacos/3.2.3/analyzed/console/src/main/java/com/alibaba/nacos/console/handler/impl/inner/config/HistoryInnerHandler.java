@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
+ * 配置历史内嵌 Handler：查询变更记录、上一版本及按命名空间列举配置，委托 {@link HistoryService}。
  * .
  *
  * @author zhangyukun on:2024/8/16
@@ -49,13 +50,16 @@ import java.util.stream.Collectors;
 @Conditional(ConditionFunctionEnabled.ConditionConfigEnabled.class)
 public class HistoryInnerHandler implements HistoryHandler {
     
+    /** 配置历史查询服务 */
     private final HistoryService historyService;
     
+    /** 注入配置历史服务 */
     @Autowired
     public HistoryInnerHandler(HistoryService historyService) {
         this.historyService = historyService;
     }
     
+    /** 按 nid 获取单条配置历史详情 */
     @Override
     public ConfigHistoryDetailInfo getConfigHistoryInfo(String dataId, String group,
         String namespaceId, Long nid)
@@ -72,6 +76,7 @@ public class HistoryInnerHandler implements HistoryHandler {
         return result;
     }
     
+    /** 分页列出指定配置的历史变更记录 */
     @Override
     public Page<ConfigHistoryBasicInfo> listConfigHistory(String dataId, String group,
         String namespaceId,
@@ -90,6 +95,7 @@ public class HistoryInnerHandler implements HistoryHandler {
         return result;
     }
     
+    /** 获取指定历史记录的前一版本详情 */
     @Override
     public ConfigHistoryDetailInfo getPreviousConfigHistoryInfo(String dataId, String group,
         String namespaceId,
@@ -107,6 +113,7 @@ public class HistoryInnerHandler implements HistoryHandler {
         return result;
     }
     
+    /** 按命名空间（租户）列出全部配置基本信息 */
     @Override
     public List<ConfigBasicInfo> getConfigsByTenant(String namespaceId) {
         List<ConfigInfoWrapper> configListByNamespace =

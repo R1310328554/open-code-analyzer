@@ -37,6 +37,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
+ * A2A 空实现 Handler：当 AI 模块未启用或未同时启用 naming 与 config 时注册，所有接口返回 {@link ErrorCode#API_FUNCTION_DISABLED}。
  * A2a inner handler.
  *
  * @author KiteSoar
@@ -45,9 +46,11 @@ import java.util.List;
 @ConditionalOnMissingBean(value = A2aHandler.class, ignored = A2aNoopHandler.class)
 public class A2aNoopHandler implements A2aHandler {
     
+    /** A2A 功能未启用时的统一错误提示文案 */
     private static final String A2A_NOT_ENABLED_MESSAGE =
         "Nacos AI A2A module and API required both `naming` and `config` module.";
     
+    /** 注册 Agent — 功能未启用时抛出异常 */
     @Override
     public void registerAgent(AgentCard agentCard, AgentCardForm agentCardForm)
         throws NacosException {
@@ -56,6 +59,7 @@ public class A2aNoopHandler implements A2aHandler {
             A2A_NOT_ENABLED_MESSAGE);
     }
     
+    /** 查询 Agent Card — 功能未启用时抛出异常 */
     @Override
     public AgentCardDetailInfo getAgentCardWithVersions(AgentForm form) throws NacosException {
         throw new NacosApiException(NacosException.SERVER_NOT_IMPLEMENTED,
@@ -63,6 +67,7 @@ public class A2aNoopHandler implements A2aHandler {
             A2A_NOT_ENABLED_MESSAGE);
     }
     
+    /** 删除 Agent — 功能未启用时抛出异常 */
     @Override
     public void deleteAgent(AgentForm form) throws NacosException {
         throw new NacosApiException(NacosException.SERVER_NOT_IMPLEMENTED,
@@ -70,6 +75,7 @@ public class A2aNoopHandler implements A2aHandler {
             A2A_NOT_ENABLED_MESSAGE);
     }
     
+    /** 更新 Agent Card — 功能未启用时抛出异常 */
     @Override
     public void updateAgentCard(AgentCard agentCard, AgentCardUpdateForm form)
         throws NacosException {
@@ -78,6 +84,7 @@ public class A2aNoopHandler implements A2aHandler {
             A2A_NOT_ENABLED_MESSAGE);
     }
     
+    /** 分页列出 Agent — 功能未启用时抛出异常 */
     @Override
     public Page<AgentCardVersionInfo> listAgents(AgentListForm agentListForm, PageForm pageForm)
         throws NacosException {
@@ -86,6 +93,7 @@ public class A2aNoopHandler implements A2aHandler {
             A2A_NOT_ENABLED_MESSAGE);
     }
     
+    /** 列出 Agent 版本 — 功能未启用时抛出异常 */
     @Override
     public List<AgentVersionDetail> listAgentVersions(String namespaceId, String name)
         throws NacosException {

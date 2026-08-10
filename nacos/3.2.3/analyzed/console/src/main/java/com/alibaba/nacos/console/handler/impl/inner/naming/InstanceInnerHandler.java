@@ -37,6 +37,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 /**
+ * 服务实例内嵌 Handler：分页列表、更新与注销持久化实例，并发布 naming 追踪事件。
  * Implementation of InstanceHandler that handles instance-related operations.
  *
  * @author zhangyukun
@@ -46,14 +47,17 @@ import java.util.List;
 @Conditional(ConditionFunctionEnabled.ConditionNamingEnabled.class)
 public class InstanceInnerHandler implements InstanceHandler {
     
+    /** 服务目录查询服务，用于列举实例 */
     private final CatalogService catalogService;
     
+    /** V2 实例运维客户端，负责更新与注销 */
     private final InstanceOperatorClientImpl instanceServiceV2;
     
     /**
+     * 注入目录服务与 V2 实例运维客户端。
      * Constructs a new InstanceInnerHandler with the provided dependencies.
      *
-     * @param catalogServiceV2 the service for catalog-related operations
+     * @param catalogServiceV2 目录相关操作服务
      */
     public InstanceInnerHandler(CatalogServiceV2Impl catalogServiceV2,
         InstanceOperatorClientImpl instanceServiceV2) {
@@ -61,6 +65,7 @@ public class InstanceInnerHandler implements InstanceHandler {
         this.instanceServiceV2 = instanceServiceV2;
     }
     
+    /** 分页查询指定服务集群下的实例列表 */
     @Override
     public Page<? extends Instance> listInstances(String namespaceId,
         String serviceNameWithoutGroup, String groupName,
@@ -70,6 +75,7 @@ public class InstanceInnerHandler implements InstanceHandler {
         return PageUtil.subPage(instances, page, pageSize);
     }
     
+    /** 更新实例元数据并发布 {@link UpdateInstanceTraceEvent} */
     @Override
     public void updateInstance(InstanceForm instanceForm, Instance instance) throws NacosException {
         instanceServiceV2.updateInstance(instanceForm.getNamespaceId(), instanceForm.getGroupName(),
@@ -81,6 +87,7 @@ public class InstanceInnerHandler implements InstanceHandler {
                 instance.getPort(), instance.getMetadata()));
     }
     
+    /** 注销持久化实例并发布 {@link DeregisterInstanceTraceEvent} */
     @Override
     public void removeInstance(InstanceForm instanceForm, Instance instance) throws NacosException {
         instanceServiceV2.removeInstance(instanceForm.getNamespaceId(), instanceForm.getGroupName(),

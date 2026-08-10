@@ -33,6 +33,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 /**
+ * AI 资源导入空实现 Handler：AI 导入模块未启用时注册，全部接口返回 {@link ErrorCode#API_FUNCTION_DISABLED}。
  * Noop implementation of AI resource import handler.
  *
  * @author xiweng.yy
@@ -43,33 +44,39 @@ import java.util.List;
     ignored = AiResourceImportNoopHandler.class)
 public class AiResourceImportNoopHandler implements AiResourceImportHandler {
     
+    /** AI 资源导入未启用时的统一错误提示文案 */
     private static final String AI_IMPORT_NOT_ENABLED_MESSAGE =
         "Nacos AI resource import module is not enabled.";
     
+    /** 列举导入源 — 功能未启用时抛出异常 */
     @Override
     public List<AiResourceImportSourceInfo> listSources(String resourceType)
         throws NacosException {
         throw disabled();
     }
     
+    /** 搜索候选资源 — 功能未启用时抛出异常 */
     @Override
     public AiResourceImportSearchResponse search(AiResourceImportSearchRequest request)
         throws NacosException {
         throw disabled();
     }
     
+    /** 校验候选资源 — 功能未启用时抛出异常 */
     @Override
     public AiResourceImportValidateResponse validate(AiResourceImportValidateRequest request)
         throws NacosException {
         throw disabled();
     }
     
+    /** 执行导入 — 功能未启用时抛出异常 */
     @Override
     public AiResourceImportExecuteResponse execute(AiResourceImportExecuteRequest request)
         throws NacosException {
         throw disabled();
     }
     
+    /** 构造 API 功能未启用的统一异常 */
     private NacosException disabled() {
         return new NacosApiException(NacosException.SERVER_NOT_IMPLEMENTED,
             ErrorCode.API_FUNCTION_DISABLED, AI_IMPORT_NOT_ENABLED_MESSAGE);

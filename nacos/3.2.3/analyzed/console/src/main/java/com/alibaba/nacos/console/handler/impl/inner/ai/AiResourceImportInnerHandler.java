@@ -33,6 +33,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 /**
+ * 控制台 AI 资源导入内嵌 Handler：AI 模块启用且为内嵌部署时，将导入操作委托给 {@link AiResourceImportManager}。
  * Inner implementation of Console AI resource import handler.
  *
  * @author xiweng.yy
@@ -43,30 +44,36 @@ import java.util.List;
 @EnabledAiHandler
 public class AiResourceImportInnerHandler implements AiResourceImportHandler {
     
+    /** AI 资源导入管理器，封装源列举、搜索、校验与执行逻辑 */
     private final AiResourceImportManager importManager;
     
+    /** 注入 AI 资源导入管理器 */
     public AiResourceImportInnerHandler(AiResourceImportManager importManager) {
         this.importManager = importManager;
     }
     
+    /** 列出已配置的导入源，可按资源类型过滤 */
     @Override
     public List<AiResourceImportSourceInfo> listSources(String resourceType)
         throws NacosException {
         return importManager.listSources(resourceType);
     }
     
+    /** 在外部导入源中搜索候选 AI 资源 */
     @Override
     public AiResourceImportSearchResponse search(AiResourceImportSearchRequest request)
         throws NacosException {
         return importManager.search(request);
     }
     
+    /** 校验已选候选资源是否满足导入条件 */
     @Override
     public AiResourceImportValidateResponse validate(AiResourceImportValidateRequest request)
         throws NacosException {
         return importManager.validate(request);
     }
     
+    /** 对通过校验的候选资源执行导入 */
     @Override
     public AiResourceImportExecuteResponse execute(AiResourceImportExecuteRequest request)
         throws NacosException {

@@ -49,6 +49,7 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
 
 /**
+ * 插件管理内嵌 Handler：本地插件 CRUD、启停配置，并通过集群 RPC 聚合各节点可用性。
  * Inner implementation of PluginHandler for handling plugin-related operations.
  *
  * @author WangzJi
@@ -57,14 +58,19 @@ import java.util.stream.Collectors;
 @EnabledInnerHandler
 public class PluginInnerHandler implements PluginHandler {
     
+    /** 插件 Handler 日志记录器 */
     private static final Logger LOGGER = LoggerFactory.getLogger(PluginInnerHandler.class);
     
+    /** 本地插件管理器 */
     private final PluginManager pluginManager;
     
+    /** 集群成员管理器，用于跨节点查询插件状态 */
     private final ServerMemberManager memberManager;
     
+    /** 集群 RPC 客户端，向远端节点发送插件可用性请求 */
     private final ClusterRpcClientProxy rpcClientProxy;
     
+    /** 注入插件管理器、成员管理与 RPC 代理 */
     public PluginInnerHandler(PluginManager pluginManager, ServerMemberManager memberManager,
         ClusterRpcClientProxy rpcClientProxy) {
         this.pluginManager = pluginManager;
@@ -72,6 +78,7 @@ public class PluginInnerHandler implements PluginHandler {
         this.rpcClientProxy = rpcClientProxy;
     }
     
+    /** 列出本地插件并聚合各集群节点的可用节点数 */
     @Override
     public List<PluginInfoVO> listPlugins(String pluginType) throws NacosException {
         List<PluginInfoVO> localList = pluginManager.listAllPlugins().stream()
@@ -138,6 +145,7 @@ public class PluginInnerHandler implements PluginHandler {
         }
     }
     
+    /** 获取指定插件的详细配置与定义 */
     @Override
     public PluginDetailVO getPluginDetail(String pluginType, String pluginName)
         throws NacosException {
@@ -149,6 +157,7 @@ public class PluginInnerHandler implements PluginHandler {
                 "Plugin not found: " + pluginId));
     }
     
+    /** 启用或禁用插件，支持仅本地节点生效 */
     @Override
     public void updatePluginStatus(String pluginType, String pluginName, boolean enabled,
         boolean localOnly)
@@ -157,6 +166,7 @@ public class PluginInnerHandler implements PluginHandler {
         pluginManager.setPluginEnabled(pluginId, enabled, localOnly);
     }
     
+    /** 更新插件运行配置，支持仅本地节点生效 */
     @Override
     public void updatePluginConfig(String pluginType, String pluginName, Map<String, String> config,
         boolean localOnly) throws NacosException {
@@ -164,6 +174,7 @@ public class PluginInnerHandler implements PluginHandler {
         pluginManager.updatePluginConfig(pluginId, config, localOnly);
     }
     
+    /** 查询指定插件在各集群节点上的可用性映射（地址 → 是否可用） */
     @Override
     public Map<String, Boolean> getPluginAvailability(String pluginType, String pluginName)
         throws NacosException {
@@ -243,13 +254,14 @@ public class PluginInnerHandler implements PluginHandler {
     }
     
     /**
+     * 判断插件类型是否为互斥型（同一时刻仅允许一个实例生效，如 AUTH、DATASOURCE_DIALECT）。
      * Check if the plugin type is exclusive (only one can be active at a time).
      * Exclusive types: AUTH, DATASOURCE_DIALECT.
      *
-     * TODO: first return fixed {@code true}, will read from plugin define in future.
+     * TODO: 当前固定返回 {@code true}，后续将从插件定义读取。
      *
-     * @param type plugin type
-     * @return true if exclusive
+     * @param type 插件类型
+     * @return 互斥型返回 true
      */
     private boolean isExclusiveType(PluginType type) {
         return true;

@@ -44,6 +44,7 @@ import org.springframework.context.annotation.Conditional;
 import java.util.List;
 
 /**
+ * 服务管理内嵌 Handler：服务 CRUD、订阅者查询、集群元数据更新，并发布 naming 追踪事件。
  * Implementation of ServiceHandler that handles service-related operations.
  *
  * @author zhangyukun
@@ -53,14 +54,19 @@ import java.util.List;
 @Conditional(ConditionFunctionEnabled.ConditionNamingEnabled.class)
 public class ServiceInnerHandler implements ServiceHandler {
     
+    /** V2 服务运维实现，负责创建/更新/删除与订阅者查询 */
     private final ServiceOperatorV2Impl serviceOperatorV2;
     
+    /** 路由选择器管理器 */
     private final SelectorManager selectorManager;
     
+    /** V2 服务目录，提供列表与详情查询 */
     private final CatalogServiceV2Impl catalogServiceV2;
     
+    /** V2 集群运维，更新集群健康检查元数据 */
     private final ClusterOperatorV2Impl clusterOperatorV2;
     
+    /** 注入服务运维、选择器、目录与集群运维依赖 */
     @Autowired
     public ServiceInnerHandler(ServiceOperatorV2Impl serviceOperatorV2,
         SelectorManager selectorManager,
@@ -71,6 +77,7 @@ public class ServiceInnerHandler implements ServiceHandler {
         this.clusterOperatorV2 = clusterOperatorV2;
     }
     
+    /** 创建持久化服务并发布 {@link RegisterServiceTraceEvent} */
     @Override
     public void createService(ServiceForm serviceForm, ServiceMetadata serviceMetadata)
         throws Exception {
@@ -84,6 +91,7 @@ public class ServiceInnerHandler implements ServiceHandler {
                 serviceForm.getGroupName(), serviceForm.getServiceName()));
     }
     
+    /** 删除服务并发布 {@link DeregisterServiceTraceEvent} */
     @Override
     public void deleteService(String namespaceId, String serviceName, String groupName)
         throws Exception {
@@ -95,6 +103,7 @@ public class ServiceInnerHandler implements ServiceHandler {
                 serviceName));
     }
     
+    /** 更新服务元数据并发布 {@link UpdateServiceTraceEvent} */
     @Override
     public void updateService(ServiceForm serviceForm, ServiceMetadata serviceMetadata)
         throws Exception {
@@ -113,11 +122,13 @@ public class ServiceInnerHandler implements ServiceHandler {
                 serviceMetadata.getExtendData()));
     }
     
+    /** 返回控制台支持的全部 Selector 类型名称 */
     @Override
     public List<String> getSelectorTypeList() throws NacosException {
         return selectorManager.getAllSelectorTypes();
     }
     
+    /** 分页查询指定服务的订阅者列表 */
     @Override
     public Page<SubscriberInfo> getSubscribers(int pageNo, int pageSize, String namespaceId,
         String serviceName,
@@ -126,6 +137,7 @@ public class ServiceInnerHandler implements ServiceHandler {
             pageNo, pageSize);
     }
     
+    /** 分页列出服务；withInstances 为 true 时返回含实例的详情 */
     @Override
     public Object getServiceList(boolean withInstances, String namespaceId, int pageNo,
         int pageSize,
@@ -138,6 +150,7 @@ public class ServiceInnerHandler implements ServiceHandler {
             ignoreEmptyService);
     }
     
+    /** 获取单个服务的完整详情 */
     @Override
     public ServiceDetailInfo getServiceDetail(String namespaceId, String serviceName,
         String groupName)
@@ -145,6 +158,7 @@ public class ServiceInnerHandler implements ServiceHandler {
         return catalogServiceV2.getServiceDetail(namespaceId, groupName, serviceName);
     }
     
+    /** 更新服务下指定集群的健康检查与扩展元数据 */
     @Override
     public void updateClusterMetadata(String namespaceId, String groupName, String serviceName,
         String clusterName,

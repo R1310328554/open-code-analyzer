@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import java.util.Collection;
 
 /**
+ * 集群管理内嵌 Handler：查询 Nacos 集群成员节点列表，委托 {@link ServerMemberManager}。
  * Implementation of ClusterHandler that handles cluster-related operations.
  *
  * @author zhangyukun
@@ -34,18 +35,21 @@ import java.util.Collection;
 @EnabledInnerHandler
 public class ClusterInnerHandler implements ClusterHandler {
     
+    /** 集群成员管理器，维护本节点感知的全部成员 */
     private final ServerMemberManager memberManager;
     
     /**
+     * 注入集群成员管理器。
      * Constructs a new ClusterInnerHandler with the provided dependencies.
      *
-     * @param memberManager the manager for server members
+     * @param memberManager 服务器成员管理组件
      */
     @Autowired
     public ClusterInnerHandler(ServerMemberManager memberManager) {
         this.memberManager = memberManager;
     }
     
+    /** 返回集群全部成员（ipKeyWord 参数保留供接口兼容，当前未过滤） */
     @Override
     public Collection<? extends NacosMember> getNodeList(String ipKeyWord) {
         return memberManager.allMembers();

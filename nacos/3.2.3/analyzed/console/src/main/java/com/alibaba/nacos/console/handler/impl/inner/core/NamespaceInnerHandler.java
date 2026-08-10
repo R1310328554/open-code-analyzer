@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 /**
+ * 命名空间内嵌 Handler：CRUD 与存在性校验，委托 {@link NamespaceOperationService}。
  * Implementation of NamespaceHandler that handles namespace-related operations.
  *
  * @author zhangyukun
@@ -35,28 +36,34 @@ import java.util.List;
 @EnabledInnerHandler
 public class NamespaceInnerHandler implements NamespaceHandler {
     
+    /** 命名空间运维服务 */
     private final NamespaceOperationService namespaceOperationService;
     
+    /** 注入命名空间运维服务 */
     public NamespaceInnerHandler(NamespaceOperationService namespaceOperationService) {
         this.namespaceOperationService = namespaceOperationService;
     }
     
+    /** 获取全部命名空间列表 */
     @Override
     public List<Namespace> getNamespaceList() {
         return namespaceOperationService.getNamespaceList();
     }
     
+    /** 按 ID 获取命名空间详情 */
     @Override
     public Namespace getNamespaceDetail(String namespaceId) throws NacosException {
         return namespaceOperationService.getNamespace(namespaceId);
     }
     
+    /** 创建新命名空间 */
     @Override
     public Boolean createNamespace(String namespaceId, String namespaceName, String namespaceDesc)
         throws NacosException {
         return namespaceOperationService.createNamespace(namespaceId, namespaceName, namespaceDesc);
     }
     
+    /** 更新命名空间名称与描述 */
     @Override
     public Boolean updateNamespace(NamespaceForm namespaceForm) throws NacosException {
         return namespaceOperationService.editNamespace(namespaceForm.getNamespaceId(),
@@ -64,11 +71,13 @@ public class NamespaceInnerHandler implements NamespaceHandler {
             namespaceForm.getNamespaceDesc());
     }
     
+    /** 删除指定命名空间 */
     @Override
     public Boolean deleteNamespace(String namespaceId) {
         return namespaceOperationService.removeNamespace(namespaceId);
     }
     
+    /** 校验命名空间 ID 是否已存在 */
     @Override
     public Boolean checkNamespaceIdExist(String namespaceId) {
         return namespaceOperationService.namespaceExists(namespaceId);
