@@ -21,31 +21,41 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 角色集合的 REST 表示，按 realm 与客户端维度分组列出 {@link RoleRepresentation}。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class RolesRepresentation {
+    /** realm 级角色列表。 */
     protected List<RoleRepresentation> realm;
+    /** 客户端 ID 到客户端角色列表的映射。 */
     protected Map<String, List<RoleRepresentation>> client;
+    /** @deprecated 应用角色映射（已废弃，由 client 替代）。 */
     @Deprecated
     protected Map<String, List<RoleRepresentation>> application;
 
+    /** @return realm 角色列表 */
     public List<RoleRepresentation> getRealm() {
         return realm;
     }
 
+    /** @param realm realm 角色列表 */
     public void setRealm(List<RoleRepresentation> realm) {
         this.realm = realm;
     }
 
+    /** @return 客户端角色映射 */
     public Map<String, List<RoleRepresentation>> getClient() {
         return client;
     }
 
+    /** @param client 客户端角色映射 */
     public void setClient(Map<String, List<RoleRepresentation>> client) {
         this.client = client;
     }
 
+    /** @return 应用角色映射（已废弃） */
     @Deprecated
     public Map<String, List<RoleRepresentation>> getApplication() {
         return application;

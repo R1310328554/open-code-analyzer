@@ -18,37 +18,46 @@
 package org.keycloak.representations.idm;
 
 /**
- * Some endpoints (like register new required action) doesn't support all the fields (like setEnabled etc).
- * So this is just simplified version of full RequiredActionProviderRepresentation
+ * 必需操作提供者的简化 REST 表示。部分端点（如注册新必需操作）不支持全部字段（如 setEnabled 等），
+ * 因此使用此精简版本替代完整的 {@link RequiredActionProviderRepresentation}。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class RequiredActionProviderSimpleRepresentation {
 
+    /** 必需操作 ID。 */
     private String id;
+    /** 必需操作名称。 */
     private String name;
+    /** 提供者 SPI 标识。 */
     private String providerId;
 
+    /** @return 必需操作 ID */
     public String getId() {
         return id;
     }
 
+    /** @param id 必需操作 ID */
     public void setId(String id) {
         this.id = id;
     }
 
+    /** @return 必需操作名称 */
     public String getName() {
         return name;
     }
 
+    /** @param name 必需操作名称 */
     public void setName(String name) {
         this.name = name;
     }
 
+    /** @return 提供者 ID */
     public String getProviderId() {
         return providerId;
     }
 
+    /** @param providerId 提供者 ID */
     public void setProviderId(String providerId) {
         this.providerId = providerId;
     }
