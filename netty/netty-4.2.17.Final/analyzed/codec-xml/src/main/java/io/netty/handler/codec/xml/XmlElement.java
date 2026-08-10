@@ -21,13 +21,20 @@ import java.util.List;
 /**
  * Generic XML element in document, {@link XmlElementStart} represents open element and provides access to attributes,
  * {@link XmlElementEnd} represents closing element.
+ *
+ * <p>文档中元素的抽象基类，保存本地名、命名空间 URI 与前缀，以及该标签上声明的
+ * {@link XmlNamespace} 列表。开始标签见 {@link XmlElementStart}，结束标签见 {@link XmlElementEnd}。</p>
  */
 public abstract class XmlElement {
 
+    /** 元素本地名。 */
     private final String name;
+    /** 元素命名空间 URI。 */
     private final String namespace;
+    /** 元素命名空间前缀。 */
     private final String prefix;
 
+    /** 该开始/结束标签上绑定的 xmlns 声明（可写列表，解码器直接追加）。 */
     private final List<XmlNamespace> namespaces = new ArrayList<XmlNamespace>();
 
     protected XmlElement(String name, String namespace, String prefix) {

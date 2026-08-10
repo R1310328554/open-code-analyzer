@@ -17,9 +17,16 @@ package io.netty.handler.codec.xml;
 
 /**
  * XML CDATA ... <![CDATA[&lt;sender&gt;John Smith&lt;/sender&gt;]]>
+ *
+ * <p>CDATA 区段内容的消息类型，对应 {@code <![CDATA[...]]>} 内的原始文本。
+ * 内部可含 {@code <}、{@code &} 等无需转义的字符；由 {@link XmlDecoder} 在
+ * {@code CDATA} 事件时产出。</p>
  */
 public class XmlCdata extends XmlContent {
 
+    /**
+     * @param data CDATA 区段内的纯文本（不含 {@code <![CDATA[} 定界符）
+     */
     public XmlCdata(String data) {
         super(data);
     }

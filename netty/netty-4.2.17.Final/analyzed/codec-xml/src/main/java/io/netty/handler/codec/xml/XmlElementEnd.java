@@ -17,6 +17,9 @@ package io.netty.handler.codec.xml;
 
 /**
  * Specific {@link XmlElement} representing end of element.
+ *
+ * <p>元素结束标签（{@code </name>}）对应的消息对象，对应 StAX {@code END_ELEMENT} 事件。
+ * 同样携带该标签上的 xmlns 命名空间声明列表。</p>
  */
 public class XmlElementEnd extends XmlElement {
 

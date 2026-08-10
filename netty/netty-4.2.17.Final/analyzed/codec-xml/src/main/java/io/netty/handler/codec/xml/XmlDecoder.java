@@ -32,14 +32,20 @@ import java.util.List;
  * Async XML decoder based on <a href="https://github.com/FasterXML/aalto-xml">Aalto XML parser</a>.
  *
  * Parses the incoming data into one of XML messages defined in this package.
+ *
+ * <p>基于 Aalto 异步 StAX 的入站解码器：将 {@link ByteBuf} 字节流增量喂给解析器，
+ * 按事件类型产出本包定义的 {@link XmlDocumentStart}、{@link XmlElementStart}、
+ * {@link XmlCharacters} 等消息对象。默认禁用外部实体与 DTD，降低不可信输入风险。</p>
  */
 
 public class XmlDecoder extends ByteToMessageDecoder {
 
+    /** 共享的 Aalto 异步输入工厂（静态初始化时关闭危险特性）。 */
     private static final AsyncXMLInputFactory XML_INPUT_FACTORY;
 
     static {
         // Disable risky features by default as we read from the network and so things are considered untrusted.
+        // 来自网络的数据视为不可信：关闭外部实体、DTD 与自动实体替换
         InputFactoryImpl factory = new InputFactoryImpl();
         factory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, Boolean.FALSE);
         factory.setProperty(XMLInputFactory.SUPPORT_DTD, Boolean.FALSE);
@@ -49,7 +55,9 @@ public class XmlDecoder extends ByteToMessageDecoder {
 
     private static final XmlDocumentEnd XML_DOCUMENT_END = XmlDocumentEnd.INSTANCE;
 
+    /** 每 Channel 独立的异步流式读取器。 */
     private final AsyncXMLStreamReader<AsyncByteArrayFeeder> streamReader = XML_INPUT_FACTORY.createAsyncForByteArray();
+    /** 向解析器供给字节数组的 feeder。 */
     private final AsyncByteArrayFeeder streamFeeder = streamReader.getInputFeeder();
 
     @Override
@@ -59,10 +67,12 @@ public class XmlDecoder extends ByteToMessageDecoder {
         try {
             streamFeeder.feedInput(buffer, 0, buffer.length);
         } catch (XMLStreamException exception) {
+            // 解析失败时丢弃剩余可读字节并向上抛出
             in.skipBytes(in.readableBytes());
             throw exception;
         }
 
+        // 在输入充足时尽可能多地消费 StAX 事件
         while (!streamFeeder.needMoreInput()) {
             int type = streamReader.next();
             switch (type) {

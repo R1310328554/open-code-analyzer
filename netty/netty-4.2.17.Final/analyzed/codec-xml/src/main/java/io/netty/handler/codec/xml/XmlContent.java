@@ -17,15 +17,21 @@ package io.netty.handler.codec.xml;
 
 /**
  * XML Content is base class for XML CDATA, Comments, Characters and Space
+ *
+ * <p>带文本载荷的 XML 事件抽象基类。子类 {@link XmlCdata}、{@link XmlComment}、
+ * {@link XmlCharacters}、{@link XmlSpace} 分别对应解析器中的不同文本类事件，
+ * 均通过 {@link #data()} 暴露原始字符串。</p>
  */
 public abstract class XmlContent {
 
+    /** 该内容节点携带的文本数据。 */
     private final String data;
 
     protected XmlContent(String data) {
         this.data = data;
     }
 
+    /** 返回内容文本。 */
     public String data() {
         return data;
     }

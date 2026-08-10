@@ -17,9 +17,16 @@ package io.netty.handler.codec.xml;
 
 /**
  * XML characters, e.g. &lt;test&gt;characters&lt;/test&gt;, but not CDATA.
+ *
+ * <p>元素内的普通字符数据（PCDATA），区别于 {@link XmlCdata} 与 {@link XmlSpace}。
+ * 解析器已将实体引用展开为 Unicode 字符后，通过 {@link XmlDecoder} 的
+ * {@code CHARACTERS} 分支下发。</p>
  */
 public class XmlCharacters extends XmlContent {
 
+    /**
+     * @param data 元素文本内容
+     */
     public XmlCharacters(String data) {
         super(data);
     }

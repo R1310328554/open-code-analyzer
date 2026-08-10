@@ -17,9 +17,13 @@ package io.netty.handler.codec.xml;
 
 /**
  * DTD (Document Type Definition)
+ *
+ * <p>文档类型定义块（{@code <!DOCTYPE ...>} 内部或外部子集文本）的消息表示。
+ * 注意 {@link XmlDecoder} 默认关闭 DTD 支持；若启用解析器 DTD 特性才会产出此类型。</p>
  */
 public class XmlDTD {
 
+    /** DTD 声明的完整或部分文本内容。 */
     private final String text;
 
     public XmlDTD(String text) {

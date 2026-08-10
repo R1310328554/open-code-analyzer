@@ -17,9 +17,15 @@ package io.netty.handler.codec.xml;
 
 /**
  * XML Comment
+ *
+ * <p>XML 注释内容（{@code <!-- ... -->} 内部文本）的不可变消息对象，
+ * 继承 {@link XmlContent}，由 {@link XmlDecoder} 解析 {@code COMMENT} 事件时创建。</p>
  */
 public class XmlComment extends XmlContent {
 
+    /**
+     * @param data 注释正文，不含 {@code <!-- -->} 定界符
+     */
     public XmlComment(String data) {
         super(data);
     }

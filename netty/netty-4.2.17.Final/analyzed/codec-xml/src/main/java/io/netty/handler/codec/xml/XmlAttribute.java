@@ -18,13 +18,21 @@ package io.netty.handler.codec.xml;
 
 /**
  * XML attributes, it is part of {@link XmlElement}
+ *
+ * <p>不可变值对象，表示元素开始标签上的单个属性（类型、本地名、前缀、命名空间 URI、值）。
+ * 由 {@link XmlDecoder} 在解析 {@code START_ELEMENT} 事件时构造并加入 {@link XmlElementStart#attributes()}。</p>
  */
 public class XmlAttribute {
 
+    /** DTD 或模式声明中的属性类型（如 CDATA、ID 等）。 */
     private final String type;
+    /** 属性本地名（不含前缀）。 */
     private final String name;
+    /** 命名空间前缀，无前缀时为 null。 */
     private final String prefix;
+    /** 属性所属命名空间 URI。 */
     private final String namespace;
+    /** 属性字面值。 */
     private final String value;
 
     public XmlAttribute(String type, String name, String prefix, String namespace, String value) {

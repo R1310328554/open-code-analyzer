@@ -74,9 +74,14 @@ import java.util.List;
  * gets closed at the end of the session, although this class
  * could probably allow for such type of message flow with
  * minor modifications.
+ *
+ * <p>按「顶层 XML 元素」切分的帧解码器：通过统计 {@code <}/{@code >} 与 CDATA、注释、
+ * 处理指令等结构的嵌套深度，在根元素闭合且括号计数归零时输出完整 {@link ByteBuf} 帧。
+ * 适用于短消息、RPC 式 XML，不适用于 XMPP 等长连接流式 XML 协议。</p>
  */
 public class XmlFrameDecoder extends ByteToMessageDecoder {
 
+    /** 单帧允许的最大字节长度，超出则丢弃并抛 {@link TooLongFrameException}。 */
     private final int maxFrameLength;
 
     public XmlFrameDecoder(int maxFrameLength) {
@@ -98,6 +103,7 @@ public class XmlFrameDecoder extends ByteToMessageDecoder {
 
         if (bufferLength > maxFrameLength) {
             // bufferLength exceeded maxFrameLength; dropping frame
+            // 缓冲区已超限，丢弃全部可读数据
             in.skipBytes(in.readableBytes());
             fail(bufferLength);
             return;
@@ -107,13 +113,16 @@ public class XmlFrameDecoder extends ByteToMessageDecoder {
             final byte readByte = in.getByte(i);
             if (!openingBracketFound && Character.isWhitespace(readByte)) {
                 // xml has not started and whitespace char found
+                // XML 尚未开始，跳过前导空白
                 leadingWhiteSpaceCount++;
             } else if (!openingBracketFound && readByte != '<') {
                 // garbage found before xml start
+                // 在首个 '<' 之前出现非空白垃圾字节
                 fail(ctx);
                 in.skipBytes(in.readableBytes());
                 return;
             } else if (inClosingTag && readByte == '<') {
+                // 结束标签内部不应再出现 '<'
                 fail(ctx);
                 in.skipBytes(in.readableBytes());
                 return;
@@ -124,11 +133,13 @@ public class XmlFrameDecoder extends ByteToMessageDecoder {
                     final byte peekAheadByte = in.getByte(i + 1);
                     if (peekAheadByte == '/') {
                         // found </, we must check if it is enclosed
+                        // 闭合标签开始
                         inClosingTag = true;
                     } else if (isValidStartCharForXmlElement(peekAheadByte)) {
                         atLeastOneXmlElementFound = true;
                         // char after < is a valid xml element start char,
                         // incrementing openBracketsCount
+                        // 普通元素开始，嵌套深度 +1
                         openBracketsCount++;
                     } else if (peekAheadByte == '!') {
                         if (isCommentBlockStart(in, i)) {
@@ -149,6 +160,7 @@ public class XmlFrameDecoder extends ByteToMessageDecoder {
             } else if (!inCDATASection && !inCommentBlock && !inProcessingInstruction && readByte == '/') {
                 if (i < bufferLength - 1 && in.getByte(i + 1) == '>') {
                     // found />, decrementing openBracketsCount
+                    // 空元素 /> 自闭合，深度 -1
                     openBracketsCount--;
                 }
             } else if (readByte == '>') {
@@ -189,6 +201,7 @@ public class XmlFrameDecoder extends ByteToMessageDecoder {
 
                 if (atLeastOneXmlElementFound && openBracketsCount == 0) {
                     // xml is balanced, bailing out
+                    // 已找到至少一个元素且括号平衡，可输出一帧
                     break;
                 }
             }
@@ -208,6 +221,7 @@ public class XmlFrameDecoder extends ByteToMessageDecoder {
         }
     }
 
+    /** 帧超长时构造 {@link TooLongFrameException}。 */
     private void fail(long frameLength) {
         if (frameLength > 0) {
             throw new TooLongFrameException(
@@ -218,10 +232,12 @@ public class XmlFrameDecoder extends ByteToMessageDecoder {
         }
     }
 
+    /** XML 开始前出现非法内容时触发 {@link CorruptedFrameException}。 */
     private static void fail(ChannelHandlerContext ctx) {
         ctx.fireExceptionCaught(new CorruptedFrameException("frame contains content before the xml starts"));
     }
 
+    /** 从输入缓冲区复制一帧（不移动 readerIndex，由调用方 skip）。 */
     private static ByteBuf extractFrame(ByteBuf buffer, int index, int length) {
         return buffer.copy(index, length);
     }
@@ -236,17 +252,21 @@ public class XmlFrameDecoder extends ByteToMessageDecoder {
      *
      * @param b the input char
      * @return true if the char is a valid start char
+     *
+     * <p>判断字节是否为 XML 元素名的合法起始字符（ASCII 子集：字母、冒号、下划线）。</p>
      */
     private static boolean isValidStartCharForXmlElement(final byte b) {
         return b >= 'a' && b <= 'z' || b >= 'A' && b <= 'Z' || b == ':' || b == '_';
     }
 
+    /** 检测 {@code <!--} 注释块起始。 */
     private static boolean isCommentBlockStart(final ByteBuf in, final int i) {
         return i < in.writerIndex() - 3
                 && in.getByte(i + 2) == '-'
                 && in.getByte(i + 3) == '-';
     }
 
+    /** 检测 {@code <![CDATA[} 区段起始。 */
     private static boolean isCDATABlockStart(final ByteBuf in, final int i) {
         return i < in.writerIndex() - 8
                 && in.getByte(i + 2) == '['

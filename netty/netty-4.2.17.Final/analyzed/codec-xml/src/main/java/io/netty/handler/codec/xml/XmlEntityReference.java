@@ -17,10 +17,16 @@ package io.netty.handler.codec.xml;
 
 /**
  * XML entity reference ... {@code &#nnnn;}
+ *
+ * <p>实体引用事件（如 {@code &amp;lt;} 或 {@code &amp;name;}）的消息表示。
+ * {@link #name()} 为实体名或数字引用标识，{@link #text()} 为解析器给出的替换文本
+ * （{@link XmlDecoder} 默认不自动展开外部实体）。</p>
  */
 public class XmlEntityReference {
 
+    /** 实体本地名或数字引用键。 */
     private final String name;
+    /** 实体对应的文本（可能为空或未展开）。 */
     private final String text;
 
     public XmlEntityReference(String name, String text) {

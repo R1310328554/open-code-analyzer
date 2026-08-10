@@ -20,9 +20,13 @@ import java.util.List;
 
 /**
  * Specific {@link XmlElement} representing beginning  of element.
+ *
+ * <p>元素开始标签（{@code <name ...>}）的消息对象，除基类字段外还包含
+ * {@link XmlAttribute} 列表；由 {@link XmlDecoder} 在 {@code START_ELEMENT} 时填充属性与命名空间。</p>
  */
 public class XmlElementStart extends XmlElement {
 
+    /** 开始标签上的全部属性（顺序与解析器一致）。 */
     private final List<XmlAttribute> attributes = new ArrayList<XmlAttribute>();
 
     public XmlElementStart(String name, String namespace, String prefix) {

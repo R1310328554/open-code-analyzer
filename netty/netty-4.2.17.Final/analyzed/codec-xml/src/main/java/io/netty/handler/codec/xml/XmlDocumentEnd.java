@@ -17,9 +17,13 @@ package io.netty.handler.codec.xml;
 
 /**
  * End of XML document
+ *
+ * <p>XML 文档结束标记的单例哨兵对象，对应 StAX {@code END_DOCUMENT} 事件。
+ * 与 {@link XmlDocumentStart} 配对，标识一次完整解析会话的收尾。</p>
  */
 public final class XmlDocumentEnd {
 
+    /** 全局唯一实例，可用 {@code ==} 比较。 */
     public static final XmlDocumentEnd INSTANCE = new XmlDocumentEnd();
 
     private XmlDocumentEnd() {

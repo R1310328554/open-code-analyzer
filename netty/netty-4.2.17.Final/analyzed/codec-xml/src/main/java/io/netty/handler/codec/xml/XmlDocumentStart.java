@@ -17,12 +17,19 @@ package io.netty.handler.codec.xml;
 
 /**
  * Beginning of the XML document ... i.e. XML header
+ *
+ * <p>文档开始事件（{@code START_DOCUMENT}）的元数据：编码、版本、standalone 声明及
+ * 字符编码方案。通常对应 XML 声明 {@code <?xml version="1.0" encoding="UTF-8"?>} 中的信息。</p>
  */
 public class XmlDocumentStart {
 
+    /** 文档字符编码（解析器检测或声明值）。 */
     private final String encoding;
+    /** XML 版本号（如 "1.0"），未声明时为 null。 */
     private final String version;
+    /** 是否为 standalone 文档。 */
     private final boolean standalone;
+    /** 字符编码方案标识。 */
     private final String encodingScheme;
 
     public XmlDocumentStart(String encoding, String version, boolean standalone, String encodingScheme) {
@@ -33,21 +40,25 @@ public class XmlDocumentStart {
     }
 
     /** Return defined or guessed XML encoding **/
+    /** 返回声明或推断的 XML 字符编码。 */
     public String encoding() {
         return encoding;
     }
 
     /** Return defined XML version or null **/
+    /** 返回 XML 版本；未声明时返回 null。 */
     public String version() {
         return version;
     }
 
     /** Return standalonity of the document **/
+    /** 文档是否 standalone（不依赖外部 DTD/实体）。 */
     public boolean standalone() {
         return standalone;
     }
 
     /** Return defined encoding or null **/
+    /** 返回字符编码方案名称；未定义时为 null。 */
     public String encodingScheme() {
         return encodingScheme;
     }
