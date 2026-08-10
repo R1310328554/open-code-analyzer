@@ -20,6 +20,8 @@ package org.keycloak.dom.saml.v2.ac.classes;
 /**
  * <p>
  * Java class for AuthnMethodBaseType complex type.
+ * SAML 2.0 认证方法基类：继承 OriginalAuthnMethodBaseType，描述主体认证机制、认证器及传输协议。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.

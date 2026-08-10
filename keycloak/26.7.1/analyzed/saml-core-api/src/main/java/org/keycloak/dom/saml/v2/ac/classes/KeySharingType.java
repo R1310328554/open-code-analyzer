@@ -20,6 +20,8 @@ package org.keycloak.dom.saml.v2.ac.classes;
 /**
  * <p>
  * Java class for KeySharingType complex type.
+ * SAML 2.0 密钥共享类型：以布尔属性 sharing 表示密钥是否共享。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -39,6 +41,8 @@ public class KeySharingType {
     protected boolean sharing;
 
     /**
+     * 获取 sharing 属性值（是否共享密钥）。
+     *
      * Gets the value of the sharing property.
      */
     public boolean isSharing() {
@@ -46,6 +50,8 @@ public class KeySharingType {
     }
 
     /**
+     * 设置 sharing 属性值（是否共享密钥）。
+     *
      * Sets the value of the sharing property.
      */
     public void setSharing(boolean value) {

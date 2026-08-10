@@ -20,6 +20,8 @@ package org.keycloak.dom.saml.v2.ac.classes;
 /**
  * <p>
  * Java class for ExtensionType complex type.
+ * SAML 2.0 扩展类型：可嵌入任意 XML 元素的占位容器。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.

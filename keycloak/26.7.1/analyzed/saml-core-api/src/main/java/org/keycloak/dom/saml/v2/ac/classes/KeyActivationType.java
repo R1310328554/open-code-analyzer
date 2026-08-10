@@ -20,6 +20,8 @@ package org.keycloak.dom.saml.v2.ac.classes;
 /**
  * <p>
  * Java class for KeyActivationType complex type.
+ * SAML 2.0 密钥激活类型：描述激活 PIN 及可选扩展元素。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -44,6 +46,8 @@ public class KeyActivationType extends ExtensionListType {
     protected ActivationPinType activationPin;
 
     /**
+     * 获取 激活 PIN 属性的值。
+     *
      * Gets the value of the activationPin property.
      *
      * @return possible object is {@link ActivationPinType }
@@ -53,6 +57,8 @@ public class KeyActivationType extends ExtensionListType {
     }
 
     /**
+     * 设置 激活 PIN 属性的值。
+     *
      * Sets the value of the activationPin property.
      *
      * @param value allowed object is {@link ActivationPinType }

@@ -24,6 +24,8 @@ import java.util.List;
 /**
  * <p>
  * Java class for GoverningAgreementsType complex type.
+ * SAML 2.0 治理协议集合类型：包含一个或多个 {@link GoverningAgreementRefType} 引用。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -45,15 +47,19 @@ public class GoverningAgreementsType {
 
     protected List<GoverningAgreementRefType> governingAgreementRef = new ArrayList<>();
 
+    /** 添加治理协议引用。 */
     public void add(GoverningAgreementRefType gov) {
         this.governingAgreementRef.add(gov);
     }
 
+    /** 移除治理协议引用。 */
     public void remove(GoverningAgreementRefType gov) {
         this.governingAgreementRef.remove(gov);
     }
 
     /**
+     * 获取治理协议引用列表。
+     *
      * Gets the value of the governingAgreementRef property.
      *
      * <p>

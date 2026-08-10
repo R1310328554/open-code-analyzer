@@ -20,6 +20,8 @@ package org.keycloak.dom.saml.v2.ac.classes;
 /**
  * <p>
  * Java class for IdentificationType complex type.
+ * SAML 2.0 身份识别类型：描述物理验证、书面同意、治理协议及匿名属性等身份信息。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -52,6 +54,8 @@ public class IdentificationType extends ExtensionListType {
     protected NymType nym;
 
     /**
+     * 获取 物理验证 属性的值。
+     *
      * Gets the value of the physicalVerification property.
      *
      * @return possible object is {@link PhysicalVerification }
@@ -61,6 +65,8 @@ public class IdentificationType extends ExtensionListType {
     }
 
     /**
+     * 设置 物理验证 属性的值。
+     *
      * Sets the value of the physicalVerification property.
      *
      * @param value allowed object is {@link PhysicalVerification }
@@ -70,6 +76,8 @@ public class IdentificationType extends ExtensionListType {
     }
 
     /**
+     * 获取 书面同意 属性的值。
+     *
      * Gets the value of the writtenConsent property.
      *
      * @return possible object is {@link ExtensionOnlyType }
@@ -79,6 +87,8 @@ public class IdentificationType extends ExtensionListType {
     }
 
     /**
+     * 设置 书面同意 属性的值。
+     *
      * Sets the value of the writtenConsent property.
      *
      * @param value allowed object is {@link ExtensionOnlyType }
@@ -88,6 +98,8 @@ public class IdentificationType extends ExtensionListType {
     }
 
     /**
+     * 获取 治理协议 属性的值。
+     *
      * Gets the value of the governingAgreements property.
      *
      * @return possible object is {@link GoverningAgreementsType }
@@ -97,6 +109,8 @@ public class IdentificationType extends ExtensionListType {
     }
 
     /**
+     * 设置 治理协议 属性的值。
+     *
      * Sets the value of the governingAgreements property.
      *
      * @param value allowed object is {@link GoverningAgreementsType }
@@ -106,6 +120,8 @@ public class IdentificationType extends ExtensionListType {
     }
 
     /**
+     * 获取 匿名属性 属性的值。
+     *
      * Gets the value of the nym property.
      *
      * @return possible object is {@link NymType }
@@ -115,6 +131,8 @@ public class IdentificationType extends ExtensionListType {
     }
 
     /**
+     * 设置 匿名属性 属性的值。
+     *
      * Sets the value of the nym property.
      *
      * @param value allowed object is {@link NymType }

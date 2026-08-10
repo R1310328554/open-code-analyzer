@@ -20,6 +20,8 @@ package org.keycloak.dom.saml.v2.ac.classes;
 /**
  * <p>
  * Java class for DeviceTypeType.
+ * SAML 2.0 设备类型枚举（DeviceTypeType）：hardware（硬件）或 software（软件）。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -43,10 +45,12 @@ public enum DeviceTypeType {
         value = v;
     }
 
+    /** 返回枚举对应的 XML 字符串值。 */
     public String value() {
         return value;
     }
 
+    /** 从 XML 字符串解析为 {@link DeviceTypeType} 枚举常量。 */
     public static DeviceTypeType fromValue(String v) {
         for (DeviceTypeType c : DeviceTypeType.values()) {
             if (c.value.equals(v)) {

@@ -20,6 +20,8 @@ package org.keycloak.dom.saml.v2.ac.classes;
 /**
  * <p>
  * Java class for AuthnContextDeclarationBaseType complex type.
+ * SAML 2.0 认证上下文声明基类：继承 OriginalAuthnContextDeclarationBaseType，聚合身份识别、技术/操作保护、认证方法及治理协议。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.

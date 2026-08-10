@@ -20,6 +20,8 @@ package org.keycloak.dom.saml.v2.ac.classes;
 /**
  * <p>
  * Java class for anonymous complex type.
+ * SAML 2.0 PIN/口令生成方式：通过 mechanism 属性指定由主体选择（principalchosen）或自动生成（automatic）。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -46,6 +48,8 @@ public class Generation {
     protected String mechanism;
 
     /**
+     * 获取 生成机制 属性的值。
+     *
      * Gets the value of the mechanism property.
      *
      * @return possible object is {@link String }
@@ -55,6 +59,8 @@ public class Generation {
     }
 
     /**
+     * 设置 生成机制 属性的值。
+     *
      * Sets the value of the mechanism property.
      *
      * @param value allowed object is {@link String }

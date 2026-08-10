@@ -20,6 +20,8 @@ package org.keycloak.dom.saml.v2.ac.classes;
 /**
  * <p>
  * Java class for ComplexAuthenticatorType complex type.
+ * SAML 2.0 复合认证器类型：在认证器选择与序列组中组合多种认证器元素。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
