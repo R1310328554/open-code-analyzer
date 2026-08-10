@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T23:25:16Z",
   "files": [
-    "pkg/storage/stores/shipper/indexshipper/boltdb/compactor/util.go",
-    "pkg/storage/stores/shipper/indexshipper/boltdb/index.go",
-    "pkg/storage/stores/shipper/indexshipper/boltdb/index_client.go",
-    "pkg/storage/stores/shipper/indexshipper/boltdb/querier.go",
-    "pkg/storage/stores/shipper/indexshipper/boltdb/table.go",
-    "pkg/storage/stores/shipper/indexshipper/boltdb/table_manager.go",
-    "pkg/storage/stores/shipper/indexshipper/downloads/index_set.go",
-    "pkg/storage/stores/shipper/indexshipper/downloads/metrics.go",
-    "pkg/storage/stores/shipper/indexshipper/downloads/table.go",
-    "pkg/storage/stores/shipper/indexshipper/downloads/table_manager.go",
-    "pkg/storage/stores/shipper/indexshipper/downloads/testutil.go",
-    "pkg/storage/stores/shipper/indexshipper/downloads/util.go",
-    "pkg/storage/stores/shipper/indexshipper/index/index.go",
-    "pkg/storage/stores/shipper/indexshipper/shipper.go",
-    "pkg/storage/stores/shipper/indexshipper/storage/cached_client.go",
     "pkg/storage/stores/shipper/indexshipper/storage/client.go",
     "pkg/storage/stores/shipper/indexshipper/storage/index_set.go",
     "pkg/storage/stores/shipper/indexshipper/storage/util.go",
@@ -33,5 +18,5 @@
     "pkg/storage/stores/shipper/indexshipper/tsdb/index/chunk.go"
   ],
   "remaining_pending": 202,
-  "done": 1320
+  "done": 1335
 }
