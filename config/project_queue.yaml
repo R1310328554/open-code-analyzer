@@ -115,12 +115,14 @@ projects:
   url: https://github.com/harness/harness
   languages:
   - go
-  status: in_progress
+  status: complete
   version: "2.28.2"
 - id: ollama
   url: https://github.com/ollama/ollama
   languages:
   - go
+  status: in_progress
+  version: "0.32.7"
 - id: kubernetes
   url: https://github.com/kubernetes/kubernetes
   languages:
