@@ -43,10 +43,17 @@ import org.jboss.logging.Logger;
 import static org.keycloak.common.util.StackUtil.getShortStackTrace;
 
 
+/**
+ * 基于远程 Infinispan 的 {@link UserLoginFailureProvider} 实现。
+ * <p>
+ * 登录失败记录存储在远程缓存中，CRUD 经 {@link LoginFailureChangeLogTransaction} 提交；
+ * realm 暴力破解策略变更时批量调整现有条目的 TTL。
+ */
 public class RemoteUserLoginFailureProvider implements UserLoginFailureProvider {
 
     private static final Logger log = Logger.getLogger(MethodHandles.lookup().lookupClass());
 
+    /** 登录失败变更日志事务。 */
     private final LoginFailureChangeLogTransaction transaction;
 
     public RemoteUserLoginFailureProvider(LoginFailureChangeLogTransaction transaction) {
@@ -89,6 +96,11 @@ public class RemoteUserLoginFailureProvider implements UserLoginFailureProvider 
         transaction.removeByRealmId(realm.getId());
     }
 
+    /**
+     * 根据 realm 最新暴力破解设置更新或清除登录失败记录。
+     * <p>
+     * 若已关闭暴力破解保护则删除全部记录；否则按新策略重新计算每条缓存条目的 lifespan。
+     */
     @Override
     public void updateWithLatestRealmSettings(RealmModel realm) {
         if (!realm.isBruteForceProtected()) {
@@ -108,10 +120,11 @@ public class RemoteUserLoginFailureProvider implements UserLoginFailureProvider 
 
     }
 
+    /** 按当前 realm 策略重算单条登录失败记录的缓存 TTL（值不变，仅更新过期时间）。 */
     private static CompletionStage<?> updateLifetimeOfCacheEntry(LoginFailureEntity entry, RemoteCache<LoginFailureKey, LoginFailureEntity> cache, boolean isPermanentLockout, int maxTemporaryLockouts, long maxDeltaTimeMillis) {
         long lifespan = SessionTimeouts.getLoginFailuresLifespanMs(isPermanentLockout, maxTemporaryLockouts, maxDeltaTimeMillis, entry);
         return cache.computeIfPresentAsync(new LoginFailureKey(entry.getRealmId(), entry.getUserId()),
-                // Keep the original value - this should only update the lifespan and idle time
+                // 保持原值不变，仅更新 lifespan 与 idle 时间
                 ValueIdentityBiFunction.getInstance(),
                 lifespan, TimeUnit.MILLISECONDS);
     }

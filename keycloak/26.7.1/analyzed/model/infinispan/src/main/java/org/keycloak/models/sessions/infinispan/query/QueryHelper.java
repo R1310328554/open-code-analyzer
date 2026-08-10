@@ -34,28 +34,26 @@ import org.infinispan.client.hotrod.impl.query.RemoteQuery;
 import org.infinispan.commons.api.query.Query;
 import org.infinispan.commons.api.query.QueryResult;
 
+/**
+ * 远程 Infinispan Ickle 查询的通用辅助工具。
+ * <p>
+ * 提供投影类型转换、单条结果获取、全量流式分批拉取等能力，避免一次性加载大结果集。
+ */
 public final class QueryHelper {
 
-    /**
-     * Converts a single projection results into a long value.
-     */
+    /** 将单元素投影数组转换为 {@link Long}。 */
     public static final Function<Object[], Long> SINGLE_PROJECTION_TO_LONG = projection -> {
         assert projection.length == 1;
         return (long) projection[0];
     };
 
-    /**
-     * Converts a single projection value into a {@link String}.
-     */
+    /** 将单元素投影数组转换为 {@link String}。 */
     public static final Function<Object[], String> SINGLE_PROJECTION_TO_STRING = projection -> {
         assert projection.length == 1;
         return String.valueOf(projection[0]);
     };
 
-    /**
-     * Converts a projection with two values into a {@link Map.Entry} of {@link String} and {@link Long}, where the key
-     * is the first projection, and the second is the second project.
-     */
+    /** 将双元素投影数组转换为 {@link Map.Entry}{@code <String, Long>}（键为第一个投影，值为第二个）。 */
     public static final Function<Object[], Map.Entry<String, Long>> PROJECTION_TO_STRING_LONG_ENTRY = projection -> {
         assert projection.length == 2;
         return Map.entry((String) projection[0], (long) projection[1]);
@@ -65,15 +63,15 @@ public final class QueryHelper {
     }
 
     /**
-     * Fetches a single value from the query.
+     * 从查询中获取至多一条结果并映射为 {@link Optional}。
      * <p>
-     * This method changes the {@link Query} state to return just a single value.
+     * 会修改 {@link Query} 状态：命中计数精度设为 1，最大结果数为 1。
      *
-     * @param query   The {@link Query} instance.
-     * @param mapping The {@link Function} that maps the query results (projection) into the result.
-     * @param <T>     The {@link Query} response type.
-     * @param <R>     The {@link Optional} type.
-     * @return An {@link Optional} with the {@link Query} results mapped.
+     * @param query   {@link Query} 实例
+     * @param mapping 将查询结果（投影）映射为目标类型的函数
+     * @param <T>     查询响应类型
+     * @param <R>     映射后的结果类型
+     * @return 包含映射结果的 {@link Optional}，无结果时为空
      */
     public static <T, R> Optional<R> fetchSingle(Query<T> query, Function<T, R> mapping) {
         query.hitCountAccuracy(1).maxResults(1);
@@ -83,39 +81,34 @@ public final class QueryHelper {
     }
 
     /**
-     * Streams using batching over all results from the {@link Query}.
+     * 以分批方式流式遍历查询的全部结果。
      * <p>
-     * If a large result set is expected, this method is recommended to avoid loading downloading a lot of data in a
-     * single request.
+     * 预期结果集较大时推荐使用，避免单次请求下载过多数据；结果按需拉取。
      * <p>
-     * The results are fetched on demand.
-     * <p>
-     * Warning: This method changes ignores the start offset and the max results. It will return everything.
+     * 注意：忽略查询的起始偏移与最大结果限制，将返回全部匹配项。
      *
-     * @param query     The {@link Query} instance.
-     * @param batchSize The number of results to fetch for each remote request.
-     * @param mapping   The {@link Function} that maps the query results (projection) into the result.
-     * @param <T>       The {@link Query} response type.
-     * @param <R>       The {@link Stream} type.
-     * @return A {@link Stream} with the results.
+     * @param query     {@link Query} 实例
+     * @param batchSize 每批远程请求拉取的结果数
+     * @param mapping   将查询结果映射为流元素的函数
+     * @param <T>       查询响应类型
+     * @param <R>       流元素类型
+     * @return 包含全部结果的 {@link Stream}
      */
     public static <T, R> Stream<R> streamAll(Query<T> query, int batchSize, Function<T, R> mapping) {
         return StreamSupport.stream(Spliterators.spliteratorUnknownSize(new BatchingIterator<>(query, batchSize, mapping), 0), false);
     }
 
     /**
-     * Performs the {@link Query} and returns the results.
+     * 执行查询并将全部结果收集为 {@link Collection}。
      * <p>
-     * This method is preferred to {@link Query#list()} since it does not have to compute an accurate hit count (affects
-     * Indexed query performance).
-     * <p>
-     * If a large dataset is expected, use {@link #streamAll(Query, int, Function)}.
+     * 相比 {@link Query#list()} 无需计算精确命中总数，索引查询性能更好。
+     * 预期数据量很大时请改用 {@link #streamAll(Query, int, Function)}。
      *
-     * @param query   The {@link Query} instance.
-     * @param mapping The {@link Function} that maps the query results (projection) into the result.
-     * @param <T>     The {@link Query} response type.
-     * @param <R>     The {@link Collection} type.
-     * @return A {@link Collection} with the results.
+     * @param query   {@link Query} 实例
+     * @param mapping 将查询结果映射为集合元素的函数
+     * @param <T>     查询响应类型
+     * @param <R>     集合元素类型
+     * @return 包含全部映射结果的 {@link Collection}
      */
     public static <T, R> Collection<R> toCollection(Query<T> query, Function<T, R> mapping) {
         try (var iterator = query.iterator()) {
@@ -125,7 +118,8 @@ public final class QueryHelper {
         }
     }
 
-    // TODO to be removed. A publisher was added to the Infinispan API since version 15.1.
+    // TODO 待移除：Infinispan 15.1 起 API 已提供 publisher
+    /** 按固定批次大小异步分页拉取远程查询结果的迭代器。 */
     private static class BatchingIterator<T, R> implements Iterator<R> {
 
         private final RemoteQuery<T> query;
@@ -162,10 +156,12 @@ public final class QueryHelper {
             return result;
         }
 
+        /** 异步提交当前偏移处的查询。 */
         private void executeQueryAsync() {
             nextResults = query.executeAsync().toCompletableFuture();
         }
 
+        /** 从当前批次或下一批中预取下一个非 null 映射结果。 */
         private void fetchNext() {
             while (true) {
                 while (currentResults.hasNext()) {
@@ -182,6 +178,7 @@ public final class QueryHelper {
             }
         }
 
+        /** 消费已完成的异步结果，并在仍有数据时发起下一批请求。 */
         private void useNextResultsAndRequestMore() {
             var rsp = nextResults.join();
             var resultList = rsp.list();

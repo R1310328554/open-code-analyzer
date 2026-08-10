@@ -30,13 +30,16 @@ import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.commons.api.query.Query;
 
 /**
- * Util class with Infinispan Ickle Queries for {@link RemoteAuthenticatedClientSessionEntity}.
+ * 针对 {@link RemoteAuthenticatedClientSessionEntity} 的 Infinispan Ickle 查询工具类。
+ * <p>
+ * 封装远程客户端会话缓存的常用查询语句，供 Provider 与条件删除器复用。
  */
 public final class ClientSessionQueries {
 
     private ClientSessionQueries() {
     }
 
+    /** ProtoStream 实体名，用于 Ickle FROM 子句。 */
     public static final String CLIENT_SESSION = Marshalling.protoEntity(RemoteAuthenticatedClientSessionEntity.class);
 
     private static final String FETCH_USER_SESSION_ID = "SELECT e.userSessionId FROM %s as e WHERE e.realmId = :realmId && e.clientId = :clientId ORDER BY e.userSessionId".formatted(CLIENT_SESSION);
@@ -47,7 +50,11 @@ public final class ClientSessionQueries {
     private static final String IDS_FROM_USER_SESSION = "SELECT e.clientId FROM %s as e WHERE e.userSessionId = :userSessionId ORDER BY e.clientId".formatted(CLIENT_SESSION);
 
     /**
-     * Returns a projection with the user session ID for client sessions from the client {@code clientId}.
+     * 查询指定客户端下所有客户端会话关联的用户会话 ID 投影。
+     *
+     * @param cache    远程客户端会话缓存
+     * @param realmId  realm ID
+     * @param clientId 客户端 ID
      */
     public static Query<Object[]> fetchUserSessionIdForClientId(RemoteCache<ClientSessionKey, RemoteAuthenticatedClientSessionEntity> cache, String realmId, String clientId) {
         return cache.<Object[]>query(FETCH_USER_SESSION_ID)
@@ -56,7 +63,10 @@ public final class ClientSessionQueries {
     }
 
     /**
-     * Returns a projection with the client ID and its number of active client sessions.
+     * 按客户端统计 realm 内各客户端的活跃会话数量。
+     *
+     * @param cache   远程客户端会话缓存
+     * @param realmId realm ID
      */
     public static Query<Object[]> activeClientCount(RemoteCache<ClientSessionKey, RemoteAuthenticatedClientSessionEntity> cache, String realmId) {
         return cache.<Object[]>query(PER_CLIENT_COUNT)
@@ -64,7 +74,11 @@ public final class ClientSessionQueries {
     }
 
     /**
-     * Returns a projection with the sum of all client sessions belonging to the client ID.
+     * 统计指定客户端在 realm 内的客户端会话总数。
+     *
+     * @param cache    远程客户端会话缓存
+     * @param realmId  realm ID
+     * @param clientId 客户端 ID
      */
     public static Query<Object[]> countClientSessions(RemoteCache<ClientSessionKey, RemoteAuthenticatedClientSessionEntity> cache, String realmId, String clientId) {
         return cache.<Object[]>query(CLIENT_SESSION_COUNT)
@@ -73,7 +87,10 @@ public final class ClientSessionQueries {
     }
 
     /**
-     * Returns the client sessions belonging to the user session ID.
+     * 查询属于指定用户会话 ID 的全部客户端会话实体。
+     *
+     * @param cache         远程客户端会话缓存
+     * @param userSessionId 用户会话 ID
      */
     public static Query<RemoteAuthenticatedClientSessionEntity> fetchClientSessions(RemoteCache<ClientSessionKey, RemoteAuthenticatedClientSessionEntity> cache, String userSessionId) {
         return cache.<RemoteAuthenticatedClientSessionEntity>query(FROM_USER_SESSION)
@@ -81,9 +98,12 @@ public final class ClientSessionQueries {
     }
 
     /**
-     * Returns a projection with the client IDs belonging to the user session.
+     * 查询属于指定用户会话的客户端 ID 投影。
      * <p>
-     * The returned array contains a single {@link String} element with the client ID.
+     * 返回的 {@link Object}[]} 数组仅含一个 {@link String} 元素，即客户端 ID。
+     *
+     * @param cache         远程客户端会话缓存
+     * @param userSessionId 用户会话 ID
      */
     public static Query<Object[]> fetchClientSessionsIds(RemoteCache<ClientSessionKey, RemoteAuthenticatedClientSessionEntity> cache, String userSessionId) {
         return cache.<Object[]>query(IDS_FROM_USER_SESSION)
@@ -91,7 +111,12 @@ public final class ClientSessionQueries {
     }
 
     /**
-     * Returns all the client sessions belonging to all user session IDs.
+     * 批量查询多个用户会话 ID 下的全部客户端会话。
+     * <p>
+     * 单个 ID 时复用单会话查询；多个 ID 时动态生成 IN 子句与命名参数。
+     *
+     * @param cache          远程客户端会话缓存
+     * @param userSessionIds 用户会话 ID 集合（不可为空）
      */
     public static Query<RemoteAuthenticatedClientSessionEntity> fetchClientSessions(RemoteCache<ClientSessionKey, RemoteAuthenticatedClientSessionEntity> cache, Collection<String> userSessionIds) {
         var size = userSessionIds.size();

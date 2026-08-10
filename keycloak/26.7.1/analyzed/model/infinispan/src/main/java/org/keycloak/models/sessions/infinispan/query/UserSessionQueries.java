@@ -24,13 +24,16 @@ import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.commons.api.query.Query;
 
 /**
- * Util class with Infinispan Ickle Queries for {@link RemoteUserSessionEntity}.
+ * 针对 {@link RemoteUserSessionEntity} 的 Infinispan Ickle 查询工具类。
+ * <p>
+ * 封装远程用户会话缓存按 broker、用户及 realm 维度的检索语句。
  */
 public final class UserSessionQueries {
 
     private UserSessionQueries() {
     }
 
+    /** ProtoStream 实体名，用于 Ickle FROM 子句。 */
     public static final String USER_SESSION = Marshalling.protoEntity(RemoteUserSessionEntity.class);
 
     private static final String BASE_QUERY = "FROM %s as e ".formatted(USER_SESSION);
@@ -40,7 +43,11 @@ public final class UserSessionQueries {
     private static final String BY_REALM = BASE_QUERY + "WHERE e.realmId = :realmId ORDER BY e.userSessionId";
 
     /**
-     * Returns all user sessions belonging to the broker session ID.
+     * 按 broker 会话 ID 查询关联的用户会话。
+     *
+     * @param cache           远程用户会话缓存
+     * @param realmId         realm ID
+     * @param brokerSessionId 身份 broker 侧会话 ID
      */
     public static Query<RemoteUserSessionEntity> searchByBrokerSessionId(RemoteCache<String, RemoteUserSessionEntity> cache, String realmId, String brokerSessionId) {
         return cache.<RemoteUserSessionEntity>query(BY_BROKER_SESSION_ID)
@@ -49,7 +56,11 @@ public final class UserSessionQueries {
     }
 
     /**
-     * Returns all user sessions belonging to the user ID.
+     * 按用户 ID 查询该用户在 realm 内的全部用户会话。
+     *
+     * @param cache   远程用户会话缓存
+     * @param realmId realm ID
+     * @param userId  用户 ID
      */
     public static Query<RemoteUserSessionEntity> searchByUserId(RemoteCache<String, RemoteUserSessionEntity> cache, String realmId, String userId) {
         return cache.<RemoteUserSessionEntity>query(BY_USER_ID)
@@ -58,7 +69,11 @@ public final class UserSessionQueries {
     }
 
     /**
-     * Returns all user sessions belonging to the broker user ID.
+     * 按 broker 用户 ID 查询关联的用户会话。
+     *
+     * @param cache         远程用户会话缓存
+     * @param realmId       realm ID
+     * @param brokerUserId  身份 broker 侧用户 ID
      */
     public static Query<RemoteUserSessionEntity> searchByBrokerUserId(RemoteCache<String, RemoteUserSessionEntity> cache, String realmId, String brokerUserId) {
         return cache.<RemoteUserSessionEntity>query(BY_BROKER_USER_ID)
@@ -67,7 +82,10 @@ public final class UserSessionQueries {
     }
 
     /**
-     * Returns all the user sessions belonging to the Realm.
+     * 查询指定 realm 下的全部用户会话。
+     *
+     * @param cache   远程用户会话缓存
+     * @param realmId realm ID
      */
     public static Query<RemoteUserSessionEntity> searchByRealm(RemoteCache<String, RemoteUserSessionEntity> cache, String realmId) {
         return cache.<RemoteUserSessionEntity>query(BY_REALM)

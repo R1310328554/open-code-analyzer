@@ -34,10 +34,19 @@ import org.keycloak.sessions.AuthenticationSessionCompoundId;
 import org.keycloak.sessions.AuthenticationSessionProvider;
 import org.keycloak.sessions.RootAuthenticationSessionModel;
 
+/**
+ * 基于远程 Infinispan 的 {@link AuthenticationSessionProvider} 实现。
+ * <p>
+ * 根认证会话的读写通过 {@link AuthenticationSessionChangeLogTransaction} 延迟提交至远程缓存；
+ * 跨节点 auth note 更新则经 {@link ClusterProvider} 广播事件。
+ */
 public class RemoteInfinispanAuthenticationSessionProvider implements AuthenticationSessionProvider {
 
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
+    /** 认证会话变更日志事务，负责缓存 CRUD 与提交。 */
     private final AuthenticationSessionChangeLogTransaction transaction;
+    /** 每个根认证会话允许的最大子认证会话数。 */
     private final int authSessionsLimit;
 
     public RemoteInfinispanAuthenticationSessionProvider(KeycloakSession session, int authSessionsLimit, AuthenticationSessionChangeLogTransaction transaction) {
@@ -95,6 +104,7 @@ public class RemoteInfinispanAuthenticationSessionProvider implements Authentica
             return;
         }
 
+        // 向除本数据中心外的所有节点广播 auth note 片段更新
         session.getProvider(ClusterProvider.class).notify(
                 InfinispanAuthenticationSessionProviderFactory.AUTHENTICATION_SESSION_EVENTS,
                 AuthenticationSessionAuthNoteUpdateEvent.create(compoundId.getRootSessionId(), compoundId.getTabId(), authNotesFragment),

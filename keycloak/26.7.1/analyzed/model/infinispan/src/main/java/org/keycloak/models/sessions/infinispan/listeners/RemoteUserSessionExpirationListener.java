@@ -31,13 +31,15 @@ import org.infinispan.commons.marshall.Marshaller;
 import org.infinispan.util.concurrent.BlockingManager;
 
 /**
- * A listener for remote Infinispan caches.
+ * 远程 Infinispan 用户会话缓存的过期监听器。
  * <p>
- * It listens to the {@link ClientCacheEntryExpired} events for user sessions.
+ * 监听 {@link ClientCacheEntryExpired} 事件；因客户端以原始字节接收事件，需手动反序列化
+ * {@link RemoteUserSessionEntity}。
  */
 @ClientListener(converterFactoryName = "___eager-key-value-version-converter", useRawData = true)
 public class RemoteUserSessionExpirationListener extends BaseUserSessionExpirationListener {
 
+    /** 用于从原始事件字节中反序列化会话实体。 */
     private final Marshaller marshaller;
 
     public RemoteUserSessionExpirationListener(KeycloakSessionFactory factory, BlockingManager blockingManager, Marshaller marshaller) {
@@ -45,6 +47,7 @@ public class RemoteUserSessionExpirationListener extends BaseUserSessionExpirati
         this.marshaller = marshaller;
     }
 
+    /** 远程缓存条目过期时反序列化实体并发送过期事件。 */
     @ClientCacheEntryExpired
     public void onSessionExpired(ClientCacheEntryCustomEvent<byte[]> entryExpired) {
         try {
@@ -58,15 +61,16 @@ public class RemoteUserSessionExpirationListener extends BaseUserSessionExpirati
         }
     }
 
+    /** 从 Hot Rod 原始事件中跳过键并读取 {@link RemoteUserSessionEntity} 值。 */
     private RemoteUserSessionEntity extractRemoteUserSessionEntity(ClientCacheEntryCustomEvent<byte[]> event) throws IOException, ClassNotFoundException {
         byte[] data = event.getEventData();
         ByteBuffer buffer = ByteBuffer.wrap(data);
 
-        // skip the key, we don't need it
+        // 跳过键部分，过期处理只需值
         int length = UnsignedNumeric.readUnsignedInt(buffer);
         buffer.position(buffer.position() + length);
 
-        // read the value
+        // 读取并反序列化值
         length = UnsignedNumeric.readUnsignedInt(buffer);
         return (RemoteUserSessionEntity) marshaller.objectFromByteBuffer(data, buffer.position(), length);
     }

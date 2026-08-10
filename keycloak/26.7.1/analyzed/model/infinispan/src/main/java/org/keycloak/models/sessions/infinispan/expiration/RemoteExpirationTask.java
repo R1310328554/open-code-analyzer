@@ -29,16 +29,16 @@ import org.keycloak.models.RealmModel;
 import org.infinispan.client.hotrod.RemoteCache;
 
 /**
- * A {@link ExpirationTask} for non clustered environment, when an external Infinispan is available.
+ * 使用外部 Infinispan、但未启用嵌入式集群时的 {@link ExpirationTask} 实现。
  * <p>
- * During network partitions, it has a probability of two or more Keycloak instances to be assigned to the same realm.
- * In this scenario, we rely on the database lock to keep data consistent.
+ * 通过一致性哈希将 realm 分配到各 Keycloak 节点，避免重复清理。网络分区时可能出现多个实例
+ * 同时负责同一 realm 的情况，此时依赖数据库锁保证数据一致。
  * <p>
- * Keycloak instances starting and stopping information may not be available in real time, and it is possible some
- * realms not being checked during an iteration.
+ * 节点上下线信息无法实时同步，个别 realm 可能在某轮迭代中未被检查。
  */
 class RemoteExpirationTask extends BaseExpirationTask {
 
+    /** 基于远程工作缓存维护的一致性哈希环。 */
     private final ConsistentHash consistentHash;
 
     RemoteExpirationTask(KeycloakSessionFactory factory, ScheduledExecutorService scheduledExecutorService, int intervalSeconds, Consumer<Duration> onTaskExecuted, RemoteCache<String, String> workCache, String nodeName) {
@@ -58,11 +58,13 @@ class RemoteExpirationTask extends BaseExpirationTask {
         consistentHash.stop();
     }
 
+    /** 返回当前节点负责的 realm 过滤器快照。 */
     @Override
     final Predicate<RealmModel> realmFilter() {
         return consistentHash.consistentHashSnapshot();
     }
 
+    /** 返回参与一致性哈希的活跃成员数量。 */
     int membersSize() {
         return consistentHash.size();
     }

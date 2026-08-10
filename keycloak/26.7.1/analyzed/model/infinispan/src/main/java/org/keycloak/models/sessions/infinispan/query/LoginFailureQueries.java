@@ -25,20 +25,26 @@ import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.commons.api.query.Query;
 
 /**
- * Util class with Infinispan Ickle Queries for {@link LoginFailureEntity}.
+ * 针对 {@link LoginFailureEntity} 的 Infinispan Ickle 查询工具类。
+ * <p>
+ * 用于远程登录失败记录在 realm 维度的检索与批量更新。
  */
 public final class LoginFailureQueries {
 
     private LoginFailureQueries() {
     }
 
+    /** ProtoStream 实体名，用于 Ickle FROM 子句。 */
     public static final String LOGIN_FAILURE = Marshalling.protoEntity(LoginFailureEntity.class);
 
     private static final String BASE_QUERY = "FROM %s as e ".formatted(LOGIN_FAILURE);
     private static final String BY_REALM_ID = BASE_QUERY + "WHERE e.realmId = :realmId";
 
     /**
-     * Returns a projection with the login failure session.
+     * 按 realm ID 查询该 realm 下全部登录失败记录。
+     *
+     * @param cache   远程登录失败缓存
+     * @param realmId realm ID
      */
     public static Query<LoginFailureEntity> searchByRealmId(RemoteCache<LoginFailureKey, LoginFailureEntity> cache, String realmId) {
         return cache.<LoginFailureEntity>query(BY_REALM_ID)

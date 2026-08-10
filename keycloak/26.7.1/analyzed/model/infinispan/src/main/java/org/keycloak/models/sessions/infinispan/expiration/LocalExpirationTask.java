@@ -27,7 +27,9 @@ import org.keycloak.models.RealmModel;
 
 
 /**
- * A {@link ExpirationTask} for development or single instance without clustering.
+ * 开发环境或单实例（无集群）场景下的 {@link ExpirationTask} 实现。
+ * <p>
+ * 不划分 realm 归属，每次调度对所有 realm 执行过期会话清理。
  */
 class LocalExpirationTask extends BaseExpirationTask implements Predicate<RealmModel> {
 
@@ -40,6 +42,7 @@ class LocalExpirationTask extends BaseExpirationTask implements Predicate<RealmM
         return this;
     }
 
+    /** 单实例模式下所有 realm 均参与本轮过期检查。 */
     @Override
     public final boolean test(RealmModel realmModel) {
         return true;

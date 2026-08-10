@@ -52,12 +52,21 @@ import org.jboss.logging.Logger;
 import static org.keycloak.connections.infinispan.InfinispanConnectionProvider.AUTHENTICATION_SESSIONS_CACHE_NAME;
 import static org.keycloak.models.sessions.infinispan.InfinispanAuthenticationSessionProviderFactory.DEFAULT_AUTH_SESSIONS_LIMIT;
 
+/**
+ * 远程 Infinispan 认证会话 Provider 工厂。
+ * <p>
+ * 在启用远程缓存且未开启 STATELESS 特性时注册；负责初始化远程认证会话缓存、
+ * 创建 {@link RemoteInfinispanAuthenticationSessionProvider}，并作为 Updater 工厂参与变更日志事务。
+ */
 public class RemoteInfinispanAuthenticationSessionProviderFactory implements AuthenticationSessionProviderFactory<RemoteInfinispanAuthenticationSessionProvider>, UpdaterFactory<String, RootAuthenticationSessionEntity, RootAuthenticationSessionUpdater>, EnvironmentDependentProviderFactory, RemoteChangeLogTransaction.SharedState<String, RootAuthenticationSessionEntity>, ServerInfoAwareProviderFactory {
 
     private final static Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
+    /** Ickle 查询与条件删除使用的 ProtoStream 实体名。 */
     public static final String PROTO_ENTITY = Marshalling.protoEntity(RootAuthenticationSessionEntity.class);
 
+    /** 每个根认证会话允许的子会话上限。 */
     private int authSessionsLimit;
+    /** 远程认证会话缓存引用。 */
     private volatile RemoteCache<String, RootAuthenticationSessionEntity> cache;
 
     private volatile BlockingManager blockingManager;
@@ -153,6 +162,7 @@ public class RemoteInfinispanAuthenticationSessionProviderFactory implements Aut
         return Set.of(InfinispanTransactionProvider.class);
     }
 
+    /** 创建认证会话变更日志事务并注册到 Keycloak 事务管理器。 */
     private AuthenticationSessionChangeLogTransaction createAndEnlistTransaction(KeycloakSession session) {
         var provider = session.getProvider(InfinispanTransactionProvider.class);
         var tx = new AuthenticationSessionChangeLogTransaction(this, this, new ByRealmIdQueryConditionalRemover<>(PROTO_ENTITY));

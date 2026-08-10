@@ -59,15 +59,23 @@ import static org.keycloak.models.sessions.infinispan.InfinispanSingleUseObjectP
 import static org.keycloak.models.sessions.infinispan.remote.RemoteInfinispanSingleUseObjectProvider.REVOKED_TOKEN_VALUE;
 import static org.keycloak.models.sessions.infinispan.remote.RemoteInfinispanSingleUseObjectProvider.RevokeTokenConsumer;
 
+/**
+ * 远程 Infinispan 一次性对象 Provider 工厂。
+ * <p>
+ * 管理操作令牌与撤销令牌缓存；可选在迁移后从数据库预加载未过期的撤销令牌。
+ */
 public class RemoteInfinispanSingleUseObjectProviderFactory implements SingleUseObjectProviderFactory<RemoteInfinispanSingleUseObjectProvider>, EnvironmentDependentProviderFactory, ProviderEventListener, ServerInfoAwareProviderFactory {
 
     private final static Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
+    /** 不持久化撤销令牌时的空实现回调。 */
     private static final RevokeTokenConsumer VOLATILE_REVOKE_TOKEN = (token, lifespanSeconds) -> {
     };
-    // max of 16 remote cache puts concurrently.
+    // 预加载撤销令牌时最多 16 路并发远程 put
     private static final int REVOKED_TOKENS_IMPORT_CONCURRENCY = 16;
 
+    /** 操作令牌远程缓存。 */
     private volatile RemoteCache<String, SingleUseObjectValueEntity> cache;
+    /** 是否将撤销令牌持久化至数据库。 */
     private volatile boolean persistRevokedTokens;
 
     @Override
@@ -134,11 +142,11 @@ public class RemoteInfinispanSingleUseObjectProviderFactory implements SingleUse
             return;
         }
         if (!persistRevokedTokens) {
-            //nothing to do
+            // 未启用持久化，无需预加载
             return;
         }
 
-        // preload revoked tokens from the database and register cleanup expired tokens task
+        // 迁移完成后从数据库预加载撤销令牌，并注册过期清理任务
         KeycloakSessionFactory sessionFactory = pme.getFactory();
         try (var session = sessionFactory.create()) {
             preloadRevokedTokens(session);
@@ -150,6 +158,7 @@ public class RemoteInfinispanSingleUseObjectProviderFactory implements SingleUse
         return Set.of(InfinispanTransactionProvider.class);
     }
 
+    /** 创建一次性对象事务并注册到 Keycloak 事务管理器。 */
     private SingleUseObjectTransaction createAndEnlistTransaction(KeycloakSession session) {
         var provider = session.getProvider(InfinispanTransactionProvider.class);
         var tx = new SingleUseObjectTransaction(cache);
@@ -161,17 +170,19 @@ public class RemoteInfinispanSingleUseObjectProviderFactory implements SingleUse
         return session.getProvider(RevokedTokenPersisterProvider.class);
     }
 
+    /** 根据配置返回持久化或空实现的撤销回调。 */
     private RevokeTokenConsumer createRevokeTokenConsumer(KeycloakSession session) {
         return persistRevokedTokens ? getRevokedTokenPersisterProvider(session)::revokeToken : VOLATILE_REVOKE_TOKEN;
     }
 
+    /** 首次启动时从数据库批量导入未过期的撤销令牌至远程缓存。 */
     private void preloadRevokedTokens(KeycloakSession session) {
         var provider = getRevokedTokenPersisterProvider(session);
         if (cache.get(LOADED) == null) {
             logger.debug("Preloading revoked tokens from database.");
             var currentTime = Time.currentTime();
             Flowable.fromStream(provider.getAllRevokedTokens())
-                    .filter(revokedToken -> revokedToken.expiry() - currentTime > 0) // skip expired tokens
+                    .filter(revokedToken -> revokedToken.expiry() - currentTime > 0) // 跳过已过期令牌
                     .flatMapCompletable(token -> preloadToken(token, currentTime), false, REVOKED_TOKENS_IMPORT_CONCURRENCY)
                     .blockingAwait();
             cache.put(LOADED, REVOKED_TOKEN_VALUE);
@@ -179,6 +190,7 @@ public class RemoteInfinispanSingleUseObjectProviderFactory implements SingleUse
         }
     }
 
+    /** 将单条撤销令牌以剩余 TTL 写入远程缓存（putIfAbsent 避免重复）。 */
     private Completable preloadToken(RevokedToken token, long currentTime) {
         var lifespan = token.expiry() - currentTime;
         return Completable.fromCompletionStage(cache.putIfAbsentAsync(token.tokenId() + REVOKED_KEY, REVOKED_TOKEN_VALUE, lifespan, TimeUnit.SECONDS));

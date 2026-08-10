@@ -30,14 +30,16 @@ import org.infinispan.util.concurrent.BlockingManager;
 import org.jboss.logging.Logger;
 
 /**
- * Base class to handle expired user session.
+ * 用户会话过期事件处理的抽象基类。
  * <p>
- * It offloads the event creating and sending to a different thread to avoid blocking the caller.
+ * 将事件构建与发送卸载到独立线程，避免阻塞 Infinispan 缓存过期回调线程。
  */
 abstract class BaseUserSessionExpirationListener {
 
     protected static final Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
+    /** Keycloak 会话工厂，用于在事务中访问 realm 与事件 API。 */
     private final KeycloakSessionFactory factory;
+    /** 将阻塞任务提交到工作线程池的执行器。 */
     private final BlockingManager blockingManager;
 
     BaseUserSessionExpirationListener(KeycloakSessionFactory factory, BlockingManager blockingManager) {
@@ -45,10 +47,18 @@ abstract class BaseUserSessionExpirationListener {
         this.blockingManager = blockingManager;
     }
 
+    /**
+     * 异步发送用户会话过期事件。
+     *
+     * @param userSessionId 已过期的用户会话 ID
+     * @param userId        关联用户 ID
+     * @param realmId       所属 realm ID
+     */
     protected void sendExpirationEvent(String userSessionId, String userId, String realmId) {
         blockingManager.runBlocking(() -> doSend(userSessionId, userId, realmId), "expired-" + userSessionId);
     }
 
+    /** 在独立事务中构造并发送 {@link EventType#USER_SESSION_DELETED} 事件。 */
     private void doSend(String userSessionId, String userId, String realmId) {
         KeycloakModelUtils.runJobInTransaction(factory, session -> {
             logger.debugf("User session expired. sessionId=%s, userId=%s, realmId=%s", userSessionId, userId, realmId);

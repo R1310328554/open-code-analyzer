@@ -27,9 +27,9 @@ import org.infinispan.notifications.cachelistener.event.CacheEntryExpiredEvent;
 import org.infinispan.util.concurrent.BlockingManager;
 
 /**
- * A listener for embedded Infinispan caches.
+ * 嵌入式 Infinispan 用户会话缓存的过期监听器。
  * <p>
- * It listens to the {@link CacheEntryExpired} events for user sessions.
+ * 监听 {@link CacheEntryExpired} 事件，在用户会话条目自然过期时触发 Keycloak 事件。
  */
 @Listener(primaryOnly = true)
 public class EmbeddedUserSessionExpirationListener extends BaseUserSessionExpirationListener {
@@ -38,6 +38,7 @@ public class EmbeddedUserSessionExpirationListener extends BaseUserSessionExpira
         super(factory, blockingManager);
     }
 
+    /** 缓存条目过期时提取会话实体并发送过期事件。 */
     @CacheEntryExpired
     public void onSessionExpired(CacheEntryExpiredEvent<?, SessionEntityWrapper<UserSessionEntity>> event) {
         UserSessionEntity entity = event.getValue().getEntity();

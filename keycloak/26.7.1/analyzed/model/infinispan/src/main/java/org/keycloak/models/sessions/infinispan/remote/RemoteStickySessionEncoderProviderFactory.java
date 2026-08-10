@@ -36,11 +36,20 @@ import org.keycloak.sessions.StickySessionEncoderProviderFactory;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 远程 Infinispan 环境下的粘性会话编码 Provider 工厂。
+ * <p>
+ * 工厂自身即 {@link StickySessionEncoderProvider} 实现：在会话 ID 后附加本节点路由信息，
+ * 便于负载均衡器将会话亲和到持有该会话的 Keycloak 节点（远程缓存模式下会话无本地所有权概念，
+ * 路由主要用于兼容传统粘性 Cookie 行为）。
+ */
 public class RemoteStickySessionEncoderProviderFactory implements StickySessionEncoderProviderFactory, EnvironmentDependentProviderFactory, StickySessionEncoderProvider {
 
     private static final Logger log = Logger.getLogger(MethodHandles.lookup().lookupClass());
 
+    /** 是否在 Cookie 中附加节点路由后缀。 */
     private volatile boolean shouldAttachRoute;
+    /** 当前 Keycloak 节点名，用作路由标识。 */
     private volatile String route;
 
     @Override
@@ -103,6 +112,7 @@ public class RemoteStickySessionEncoderProviderFactory implements StickySessionE
         log.debugf("Should attach route to the sticky session cookie: %b", shouldAttachRoute);
     }
 
+    /** 在会话 ID 后附加 {@link #DEFAULT_SEPARATOR} 与节点路由（若已启用）。 */
     @Override
     public String encodeSessionId(String message, String ignored) {
         Objects.requireNonNull(message);
