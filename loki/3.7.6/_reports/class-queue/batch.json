@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T22:33:20Z",
-  "files": [
-    "pkg/logproto/compat.go",
-    "pkg/logproto/extensions.go",
-    "pkg/logproto/indexgateway.pb.go",
-    "pkg/logproto/ingester-rf1.pb.go",
-    "pkg/logproto/logproto.pb.go",
-    "pkg/logproto/metrics.pb.go",
-    "pkg/logproto/pattern.pb.go",
-    "pkg/logproto/sketch.pb.go",
-    "pkg/logproto/timeseries.go",
-    "pkg/logproto/types.go",
-    "pkg/logql/accumulator.go",
-    "pkg/logql/bench/cmd/bench/main.go",
-    "pkg/logql/bench/cmd/bench/views/list.go",
-    "pkg/logql/bench/cmd/bench/views/run.go",
-    "pkg/logql/bench/cmd/bench/views/types.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 742,
-  "done": 795
+  "done": 810
 }
