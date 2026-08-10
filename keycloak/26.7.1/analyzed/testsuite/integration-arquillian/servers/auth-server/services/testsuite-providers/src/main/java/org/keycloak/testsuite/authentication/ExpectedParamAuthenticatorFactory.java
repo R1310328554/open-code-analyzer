@@ -30,30 +30,38 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * 期望参数认证器工厂，用于注册校验 OIDC 查询参数的测试认证器。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class ExpectedParamAuthenticatorFactory implements AuthenticatorFactory, ConfigurableAuthenticatorFactory {
 
+    /** 提供者在 SPI 中的标识符。 */
     public static final String PROVIDER_ID = "expected-param-authenticator";
 
+    /** 单例认证器实例。 */
     private static final ExpectedParamAuthenticator SINGLETON = new ExpectedParamAuthenticator();
 
+    /** {@inheritDoc} 返回 {@link #PROVIDER_ID}。 */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** {@inheritDoc} 返回共享的 {@link ExpectedParamAuthenticator} 单例。 */
     @Override
     public Authenticator create(KeycloakSession session) {
         return SINGLETON;
     }
 
+    /** 支持的认证执行要求选项。 */
     private static AuthenticationExecutionModel.Requirement[] REQUIREMENT_CHOICES = {
             AuthenticationExecutionModel.Requirement.REQUIRED,
             AuthenticationExecutionModel.Requirement.ALTERNATIVE,
             AuthenticationExecutionModel.Requirement.DISABLED
     };
+    /** {@inheritDoc} 返回 {@link #REQUIREMENT_CHOICES}。 */
     @Override
     public AuthenticationExecutionModel.Requirement[] getRequirementChoices() {
         return REQUIREMENT_CHOICES;
@@ -64,16 +72,19 @@ public class ExpectedParamAuthenticatorFactory implements AuthenticatorFactory, 
         return false;
     }
 
+    /** {@inheritDoc} 支持配置期望参数值与自动登录用户。 */
     @Override
     public boolean isConfigurable() {
         return true;
     }
 
+    /** {@inheritDoc} 说明需发送匹配 {@code foo} 查询参数才能通过认证。 */
     @Override
     public String getHelpText() {
         return "You will be approved if you send query string parameter 'foo' with expected value.";
     }
 
+    /** {@inheritDoc} 管理控制台展示名称。 */
     @Override
     public String getDisplayType() {
         return "TEST: Expected Parameter";
@@ -99,6 +110,7 @@ public class ExpectedParamAuthenticatorFactory implements AuthenticatorFactory, 
 
     }
 
+    /** 静态配置属性列表，包含期望值与自动登录用户两项。 */
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<ProviderConfigProperty>();
 
     static {
@@ -119,6 +131,7 @@ public class ExpectedParamAuthenticatorFactory implements AuthenticatorFactory, 
     }
 
 
+    /** {@inheritDoc} 返回期望参数值与自动登录用户的配置项。 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return configProperties;

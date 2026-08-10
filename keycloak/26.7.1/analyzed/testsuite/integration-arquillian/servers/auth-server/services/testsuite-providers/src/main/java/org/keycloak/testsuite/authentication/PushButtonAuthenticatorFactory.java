@@ -30,29 +30,37 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * 按钮式认证器工厂，注册展示 HTML 提交按钮的测试认证器。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class PushButtonAuthenticatorFactory implements AuthenticatorFactory, ConfigurableAuthenticatorFactory {
 
+    /** 提供者在 SPI 中的标识符。 */
     public static final String PROVIDER_ID = "push-button-authenticator";
+    /** 单例认证器实例。 */
     private static final PushButtonAuthenticator SINGLETON = new PushButtonAuthenticator();
 
+    /** {@inheritDoc} 返回 {@link #PROVIDER_ID}。 */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** {@inheritDoc} 返回共享的 {@link PushButtonAuthenticator} 单例。 */
     @Override
     public Authenticator create(KeycloakSession session) {
         return SINGLETON;
     }
 
+    /** 支持的认证执行要求选项。 */
     private static AuthenticationExecutionModel.Requirement[] REQUIREMENT_CHOICES = {
             AuthenticationExecutionModel.Requirement.REQUIRED,
             AuthenticationExecutionModel.Requirement.ALTERNATIVE,
             AuthenticationExecutionModel.Requirement.DISABLED
     };
+    /** {@inheritDoc} 返回 {@link #REQUIREMENT_CHOICES}。 */
     @Override
     public AuthenticationExecutionModel.Requirement[] getRequirementChoices() {
         return REQUIREMENT_CHOICES;
@@ -63,16 +71,19 @@ public class PushButtonAuthenticatorFactory implements AuthenticatorFactory, Con
         return false;
     }
 
+    /** {@inheritDoc} 该认证器无需额外配置项。 */
     @Override
     public boolean isConfigurable() {
         return false;
     }
 
+    /** {@inheritDoc} 说明只需点击按钮即可登录。 */
     @Override
     public String getHelpText() {
         return "Just press the button to login.";
     }
 
+    /** {@inheritDoc} 管理控制台展示名称。 */
     @Override
     public String getDisplayType() {
         return "TEST: Button Login";
@@ -98,8 +109,10 @@ public class PushButtonAuthenticatorFactory implements AuthenticatorFactory, Con
 
     }
 
+    /** 空配置属性列表。 */
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<ProviderConfigProperty>();
 
+    /** {@inheritDoc} 返回空列表，无可配置属性。 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return configProperties;

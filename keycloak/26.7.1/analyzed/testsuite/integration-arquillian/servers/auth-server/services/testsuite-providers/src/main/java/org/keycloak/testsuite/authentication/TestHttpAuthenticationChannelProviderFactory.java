@@ -27,29 +27,36 @@ import org.keycloak.protocol.oidc.grants.ciba.channel.HttpAuthenticationChannelP
 import org.keycloak.testsuite.util.ServerURLs;
 
 /**
+ * 测试用 HTTP 认证通道提供者工厂，将 CIBA 认证通道指向集成测试应用的端点。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class TestHttpAuthenticationChannelProviderFactory extends HttpAuthenticationChannelProviderFactory {
 
+    /** 指向测试应用 OIDC 客户端端点的认证通道 URL。 */
     private static final String TEST_HTTP_AUTH_CHANNEL =
             String.format("%s://%s:%s/auth/realms/master/app/oidc-client-endpoints/request-authentication-channel",
                     ServerURLs.AUTH_SERVER_SCHEME, ServerURLs.AUTH_SERVER_HOST, ServerURLs.AUTH_SERVER_PORT);
 
+    /** {@inheritDoc} 创建指向 {@link #TEST_HTTP_AUTH_CHANNEL} 的 HTTP 认证通道提供者。 */
     @Override
     public AuthenticationChannelProvider create(KeycloakSession session) {
         return new HttpAuthenticationChannelProvider(session, TEST_HTTP_AUTH_CHANNEL);
     }
 
+    /** {@inheritDoc} 较高优先级，确保测试工厂优先于默认实现。 */
     @Override
     public int order() {
         return 100;
     }
 
+    /** {@inheritDoc} 返回 {@code test-http-auth-channel} 标识符。 */
     @Override
     public String getId() {
         return "test-http-auth-channel";
     }
 
+    /** {@inheritDoc} 测试环境始终启用该提供者。 */
     @Override
     public boolean isSupported(Config.Scope config) {
         return true;

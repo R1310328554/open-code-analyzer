@@ -29,24 +29,28 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.provider.ProviderConfigurationBuilder;
 
 /**
- * <p>Just an authenticator that delays the authenticator some millis.</p>
+ * <p>延迟认证器工厂：创建在认证步骤中休眠若干毫秒后再成功的测试认证器。</p>
  *
  * @author rmartinc
  */
 public class DelayedAuthenticatorFactory implements AuthenticatorFactory, ConfigurableAuthenticatorFactory {
 
+    /** 提供者在 SPI 中的标识符。 */
     public static final String PROVIDER_ID = "delayed-authenticator";
 
+    /** {@inheritDoc} 返回 {@link #PROVIDER_ID}。 */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** {@inheritDoc} 创建新的 {@link DelayedAuthenticator} 实例。 */
     @Override
     public Authenticator create(KeycloakSession session) {
         return new DelayedAuthenticator();
     }
 
+    /** {@inheritDoc} 支持 REQUIRED、ALTERNATIVE 与 DISABLED 三种执行要求。 */
     @Override
     public AuthenticationExecutionModel.Requirement[] getRequirementChoices() {
         return new AuthenticationExecutionModel.Requirement[]{
@@ -61,16 +65,19 @@ public class DelayedAuthenticatorFactory implements AuthenticatorFactory, Config
         return false;
     }
 
+    /** {@inheritDoc} 支持通过管理控制台配置延迟时间。 */
     @Override
     public boolean isConfigurable() {
         return true;
     }
 
+    /** {@inheritDoc} 帮助文本说明该认证器会延迟认证若干毫秒。 */
     @Override
     public String getHelpText() {
         return "Just delay the autentication some millis.";
     }
 
+    /** {@inheritDoc} 管理控制台展示名称。 */
     @Override
     public String getDisplayType() {
         return "TEST: Delayed authenticator";
@@ -83,19 +90,20 @@ public class DelayedAuthenticatorFactory implements AuthenticatorFactory, Config
 
     @Override
     public void init(Config.Scope config) {
-        // no-op
+        // 无操作
     }
 
     @Override
     public void postInit(KeycloakSessionFactory factory) {
-        // no-op
+        // 无操作
     }
 
     @Override
     public void close() {
-        // no-op
+        // 无操作
     }
 
+    /** {@inheritDoc} 提供可配置的延迟毫秒数属性。 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return ProviderConfigurationBuilder.create()

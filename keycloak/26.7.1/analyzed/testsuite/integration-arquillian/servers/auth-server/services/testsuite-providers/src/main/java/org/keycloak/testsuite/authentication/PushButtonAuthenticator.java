@@ -26,10 +26,17 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 
 /**
+ * 按钮式认证器：向用户展示 HTML 表单，点击提交按钮后继续认证流程。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class PushButtonAuthenticator implements Authenticator {
 
+    /**
+     * 生成包含提交按钮的 HTML 挑战页面，等待用户点击后继续。
+     *
+     * @param context 认证流程上下文
+     */
     @Override
     public void authenticate(AuthenticationFlowContext context) {
         String accessCode = context.generateAccessCode();
@@ -62,16 +69,19 @@ public class PushButtonAuthenticator implements Authenticator {
 //        context.challenge(challenge);
     }
 
+    /** {@inheritDoc} 用户提交表单后直接标记认证成功。 */
     @Override
     public void action(AuthenticationFlowContext context) {
         context.success();
     }
 
+    /** {@inheritDoc} 不依赖已登录用户。 */
     @Override
     public boolean requiresUser() {
         return false;
     }
 
+    /** {@inheritDoc} 始终返回 {@code false}，表示无需额外配置。 */
     @Override
     public boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user) {
         return false;
