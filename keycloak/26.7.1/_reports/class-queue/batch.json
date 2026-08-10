@@ -15,23 +15,8 @@
     "services/src/main/java/org/keycloak/truststore/TruststoreProviderSingleton.java",
     "services/src/main/java/org/keycloak/url/HostnameV2Provider.java",
     "services/src/main/java/org/keycloak/url/HostnameV2ProviderFactory.java",
-    "services/src/main/java/org/keycloak/userprofile/DeclarativeUserProfileProvider.java",
-    "services/src/main/java/org/keycloak/userprofile/DeclarativeUserProfileProviderFactory.java",
-    "services/src/main/java/org/keycloak/userprofile/EventAuditingAttributeChangeListener.java",
-    "services/src/main/java/org/keycloak/userprofile/ServiceAccountAttributes.java",
-    "services/src/main/java/org/keycloak/userprofile/config/DeclarativeUserProfileModel.java",
-    "services/src/main/java/org/keycloak/userprofile/config/UPConfigUtils.java",
-    "services/src/main/java/org/keycloak/userprofile/validator/AttributeRequiredByMetadataValidator.java",
-    "services/src/main/java/org/keycloak/userprofile/validator/BlankAttributeValidator.java",
-    "services/src/main/java/org/keycloak/userprofile/validator/BrokeringFederatedUsernameHasValueValidator.java",
-    "services/src/main/java/org/keycloak/userprofile/validator/DuplicateEmailValidator.java",
-    "services/src/main/java/org/keycloak/userprofile/validator/DuplicateUsernameValidator.java",
-    "services/src/main/java/org/keycloak/userprofile/validator/EmailExistsAsUsernameValidator.java",
-    "services/src/main/java/org/keycloak/userprofile/validator/ImmutableAttributeValidator.java",
-    "services/src/main/java/org/keycloak/userprofile/validator/MultiValueValidator.java",
-    "services/src/main/java/org/keycloak/userprofile/validator/PersonNameProhibitedCharactersValidator.java",
-    "services/src/main/java/org/keycloak/userprofile/validator/ReadOnlyAttributeUnchangedValidator.java"
+    "services/src/main/java/org/keycloak/userprofile/DeclarativeUserProfileProvider.java"
   ],
   "remaining_pending": 718,
-  "done": 5250
+  "done": 5265
 }
