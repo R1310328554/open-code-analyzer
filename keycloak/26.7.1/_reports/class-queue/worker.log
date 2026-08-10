@@ -1933,3 +1933,18 @@
 2026-08-10T08:42:49Z DONE model/storage-private/src/main/java/org/keycloak/storage/client/ClientStorageProviderFactory.java wave66a storage managers + client storage adapters
 2026-08-10T08:42:49Z DONE model/storage-private/src/main/java/org/keycloak/storage/client/ClientStorageProviderSpi.java wave66a storage managers + client storage adapters
 2026-08-10T08:42:49Z DONE model/storage-private/src/main/java/org/keycloak/storage/client/UnsupportedOperationsClientStorageAdapter.java wave66a storage managers + client storage adapters
+2026-08-10T08:43:27Z DONE model/storage-private/src/main/java/org/keycloak/storage/clientscope/ClientScopeStorageProvider.java wave66b clientscope/datastore + dir exportimport
+2026-08-10T08:43:27Z DONE model/storage-private/src/main/java/org/keycloak/storage/clientscope/ClientScopeStorageProviderFactory.java wave66b clientscope/datastore + dir exportimport
+2026-08-10T08:43:27Z DONE model/storage-private/src/main/java/org/keycloak/storage/clientscope/ClientScopeStorageProviderModel.java wave66b clientscope/datastore + dir exportimport
+2026-08-10T08:43:27Z DONE model/storage-private/src/main/java/org/keycloak/storage/clientscope/ClientScopeStorageProviderSpi.java wave66b clientscope/datastore + dir exportimport
+2026-08-10T08:43:27Z DONE model/storage-private/src/main/java/org/keycloak/storage/datastore/DefaultDatastoreProvider.java wave66b clientscope/datastore + dir exportimport
+2026-08-10T08:43:27Z DONE model/storage-private/src/main/java/org/keycloak/storage/datastore/DefaultDatastoreProviderFactory.java wave66b clientscope/datastore + dir exportimport
+2026-08-10T08:43:27Z DONE model/storage-private/src/main/java/org/keycloak/storage/datastore/DefaultExportImportManager.java wave66b clientscope/datastore + dir exportimport
+2026-08-10T08:43:27Z DONE model/storage-private/src/main/java/org/keycloak/storage/datastore/DefaultMigrationManager.java wave66b clientscope/datastore + dir exportimport
+2026-08-10T08:43:27Z DONE model/storage-private/src/main/java/org/keycloak/storage/datastore/PeriodicEventInvalidation.java wave66b clientscope/datastore + dir exportimport
+2026-08-10T08:43:27Z DONE model/storage-private/src/main/java/org/keycloak/storage/group/GroupStorageProviderFactory.java wave66b clientscope/datastore + dir exportimport
+2026-08-10T08:43:27Z DONE model/storage-private/src/main/java/org/keycloak/storage/group/GroupStorageProviderSpi.java wave66b clientscope/datastore + dir exportimport
+2026-08-10T08:43:27Z DONE model/storage-services/src/main/java/org/keycloak/exportimport/AbstractFileBasedImportProvider.java wave66b clientscope/datastore + dir exportimport
+2026-08-10T08:43:27Z DONE model/storage-services/src/main/java/org/keycloak/exportimport/dir/DirExportProvider.java wave66b clientscope/datastore + dir exportimport
+2026-08-10T08:43:27Z DONE model/storage-services/src/main/java/org/keycloak/exportimport/dir/DirExportProviderFactory.java wave66b clientscope/datastore + dir exportimport
+2026-08-10T08:43:27Z DONE model/storage-services/src/main/java/org/keycloak/exportimport/dir/DirImportProvider.java wave66b clientscope/datastore + dir exportimport

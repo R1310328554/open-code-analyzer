@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T08:40:39Z",
-  "files": [
-    "model/storage-private/src/main/java/org/keycloak/storage/clientscope/ClientScopeStorageProvider.java",
-    "model/storage-private/src/main/java/org/keycloak/storage/clientscope/ClientScopeStorageProviderFactory.java",
-    "model/storage-private/src/main/java/org/keycloak/storage/clientscope/ClientScopeStorageProviderModel.java",
-    "model/storage-private/src/main/java/org/keycloak/storage/clientscope/ClientScopeStorageProviderSpi.java",
-    "model/storage-private/src/main/java/org/keycloak/storage/datastore/DefaultDatastoreProvider.java",
-    "model/storage-private/src/main/java/org/keycloak/storage/datastore/DefaultDatastoreProviderFactory.java",
-    "model/storage-private/src/main/java/org/keycloak/storage/datastore/DefaultExportImportManager.java",
-    "model/storage-private/src/main/java/org/keycloak/storage/datastore/DefaultMigrationManager.java",
-    "model/storage-private/src/main/java/org/keycloak/storage/datastore/PeriodicEventInvalidation.java",
-    "model/storage-private/src/main/java/org/keycloak/storage/group/GroupStorageProviderFactory.java",
-    "model/storage-private/src/main/java/org/keycloak/storage/group/GroupStorageProviderSpi.java",
-    "model/storage-services/src/main/java/org/keycloak/exportimport/AbstractFileBasedImportProvider.java",
-    "model/storage-services/src/main/java/org/keycloak/exportimport/dir/DirExportProvider.java",
-    "model/storage-services/src/main/java/org/keycloak/exportimport/dir/DirExportProviderFactory.java",
-    "model/storage-services/src/main/java/org/keycloak/exportimport/dir/DirImportProvider.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 4018,
-  "done": 1965
+  "done": 1980
 }
