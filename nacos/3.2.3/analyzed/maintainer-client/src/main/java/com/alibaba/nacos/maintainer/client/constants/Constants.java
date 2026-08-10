@@ -17,18 +17,22 @@
 package com.alibaba.nacos.maintainer.client.constants;
 
 /**
- * All the constants.
+ * 维护客户端常量定义，主要为各模块 Admin API 路径。
  *
  * @author Nacos
  */
 public class Constants {
     
+    /** Admin REST API 路径常量（配置、命名、核心、AI 等模块）。 */
     public static class AdminApiPath {
         
+        /** 配置 CRUD Admin 路径。 */
         public static final String CONFIG_ADMIN_PATH = "/v3/admin/cs/config";
         
+        /** 配置历史 Admin 路径。 */
         public static final String CONFIG_HISTORY_ADMIN_PATH = "/v3/admin/cs/history";
         
+        /** 配置运维 Admin 路径。 */
         public static final String CONFIG_OPS_ADMIN_PATH = "/v3/admin/cs/ops";
         
         public static final String CONFIG_LISTENER_ADMIN_PATH = "/v3/admin/cs/listener";
@@ -53,6 +57,7 @@ public class Constants {
         
         public static final String CORE_NAMESPACE_ADMIN_PATH = "/v3/admin/core/namespace";
         
+        /** 核心模块状态 Admin 路径。 */
         public static final String CORE_STATE_ADMIN_PATH = "/v3/admin/core/state";
         
         public static final String AI_MCP_ADMIN_PATH = "/v3/admin/ai/mcp";
@@ -84,7 +89,7 @@ public class Constants {
             AI_PROMPT_ADMIN_PATH + "/description";
         
         /**
-         * Deprecated admin path for prompt metadata.
+         * 已废弃：Prompt 元数据 Admin 路径。
          *
          * @deprecated Use {@link #AI_PROMPT_GOVERNANCE_ADMIN_PATH} instead.
          */
@@ -96,6 +101,7 @@ public class Constants {
          * Deprecated admin path for prompt detail.
          *
          * @deprecated Use {@link #AI_PROMPT_VERSION_DETAIL_ADMIN_PATH} instead.
+          * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
          */
         @Deprecated
         public static final String AI_PROMPT_DETAIL_ADMIN_PATH = AI_PROMPT_ADMIN_PATH + "/detail";
@@ -104,6 +110,7 @@ public class Constants {
          * Deprecated admin path for prompt label operations.
          *
          * @deprecated Use updateLabels API instead.
+          * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
          */
         @Deprecated
         public static final String AI_PROMPT_LABEL_ADMIN_PATH = AI_PROMPT_ADMIN_PATH + "/label";
@@ -144,6 +151,7 @@ public class Constants {
         public static final String AI_AGENTSPEC_UPLOAD_ADMIN_PATH =
             AI_AGENTSPEC_ADMIN_PATH + "/upload";
         
+        /** AI 流水线 Admin 根路径。 */
         public static final String AI_PIPELINE_ADMIN_PATH = "/v3/admin/ai/pipelines";
         
         public static final String AI_PIPELINE_LIST_ADMIN_PATH = AI_PIPELINE_ADMIN_PATH + "/list";

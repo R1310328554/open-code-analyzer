@@ -20,14 +20,14 @@ import com.alibaba.nacos.api.annotation.Since;
 import com.alibaba.nacos.api.exception.NacosException;
 
 /**
- * Nacos Config module config ops maintainer service.
+ * 配置运维维护服务：触发本地缓存刷新与动态调整模块日志级别。
  *
  * @author xiweng.yy
  */
 public interface ConfigOpsMaintainerService {
     
     /**
-     * Manually trigger dump of local configuration files from the store.
+     * 手动触发从存储层刷新本地配置缓存。
      *
      * @return A success message or error details.
      * @throws NacosException if the operation fails.
@@ -36,7 +36,7 @@ public interface ConfigOpsMaintainerService {
     String updateLocalCacheFromStore() throws NacosException;
     
     /**
-     * Set the log level for a specific module.
+     * 设置指定模块的日志级别。
      *
      * @param logName  Name of the log module (required).
      * @param logLevel Desired log level (required).

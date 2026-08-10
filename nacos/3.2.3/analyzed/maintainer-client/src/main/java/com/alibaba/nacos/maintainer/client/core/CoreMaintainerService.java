@@ -31,14 +31,16 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Nacos Core module maintainer service.
+ * 核心模块维护服务接口：集群状态、命名空间、连接负载、插件与 Raft 运维等。
+ *
+ * <p>继承 {@link Closeable}，使用完毕应调用 {@link #shutdown()} 释放资源。</p>
  *
  * @author Nacos
  */
 public interface CoreMaintainerService extends Closeable {
     
     /**
-     * Get Nacos server states.
+     * 获取 Nacos 服务端状态键值对。
      *
      * @return the states key-value map
      * @throws NacosException if the operation fails.
@@ -47,7 +49,7 @@ public interface CoreMaintainerService extends Closeable {
     Map<String, String> getServerState() throws NacosException;
     
     /**
-     * Detect server liveness.
+     * 探测服务端存活（liveness）。
      *
      * @return {@code true} detect successfully, {@code false} otherwise.
      * @throws NacosException if the operation fails.
@@ -56,7 +58,7 @@ public interface CoreMaintainerService extends Closeable {
     Boolean liveness() throws NacosException;
     
     /**
-     * Detect server readiness.
+     * 探测服务端就绪（readiness）。
      *
      * @return {@code true} detect successfully, {@code false} otherwise.
      * @throws NacosException if the operation fails.
@@ -65,7 +67,7 @@ public interface CoreMaintainerService extends Closeable {
     Boolean readiness() throws NacosException;
     
     /**
-     * Execute a Raft operation with the specified command, value, and group ID.
+     * 执行 Raft 运维命令。
      *
      * @param command the command to execute.
      * @param value   the value associated with the command.
@@ -77,7 +79,7 @@ public interface CoreMaintainerService extends Closeable {
     String raftOps(String command, String value, String groupId) throws NacosException;
     
     /**
-     * Retrieve the current health status of the ID generator.
+     * 获取 ID 生成器健康状态列表。
      *
      * @return a list of ID generator status objects.
      * @throws NacosException if the operation fails.
@@ -86,7 +88,7 @@ public interface CoreMaintainerService extends Closeable {
     List<IdGeneratorInfo> getIdGenerators() throws NacosException;
     
     /**
-     * Update the log level for a specific logger.
+     * 更新指定 Logger 的日志级别。
      *
      * @param logName  the name of the logger to update.
      * @param logLevel the new log level to set.
@@ -96,7 +98,7 @@ public interface CoreMaintainerService extends Closeable {
     void updateLogLevel(String logName, String logLevel) throws NacosException;
     
     /**
-     * List cluster nodes based on the specified address and state.
+     * 按地址与状态筛选列出集群节点。
      *
      * @param address the address to filter nodes by.
      * @param state   the state to filter nodes by.
@@ -112,12 +114,13 @@ public interface CoreMaintainerService extends Closeable {
      * @param type the type of lookup mode to set.
      * @return true if the operation was successful, false otherwise.
      * @throws NacosException if an error occurs during the operation.
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     Boolean updateLookupMode(String type) throws NacosException;
     
     /**
-     * Retrieve the current client connections.
+     * 获取当前客户端连接映射。
      *
      * @return a map of current client connections.
      * @throws NacosException if the operation fails.
@@ -132,6 +135,7 @@ public interface CoreMaintainerService extends Closeable {
      * @param redirectAddress the address to redirect connections to.
      * @return the result of the operation.
      * @throws NacosException if the operation fails.
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     String reloadConnectionCount(Integer count, String redirectAddress) throws NacosException;
@@ -142,6 +146,7 @@ public interface CoreMaintainerService extends Closeable {
      * @param loaderFactorStr the loader factor string.
      * @return the result of the operation.
      * @throws NacosException if the operation fails.
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     String smartReloadCluster(String loaderFactorStr) throws NacosException;
@@ -153,6 +158,7 @@ public interface CoreMaintainerService extends Closeable {
      * @param redirectAddress the address to redirect the connection to.
      * @return the result of the operation.
      * @throws NacosException if the operation fails.
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     String reloadSingleClient(String connectionId, String redirectAddress) throws NacosException;
@@ -162,12 +168,13 @@ public interface CoreMaintainerService extends Closeable {
      *
      * @return the loader metrics for the cluster.
      * @throws NacosException if the operation fails.
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     ServerLoaderMetrics getClusterLoaderMetrics() throws NacosException;
     
     /**
-     * Retrieve a list of all namespaces.
+     * 获取全部命名空间列表。
      *
      * @return A list of {@link Namespace} objects representing all available namespaces.
      * @throws NacosException Thrown if any error occurs during the retrieval.
@@ -181,6 +188,7 @@ public interface CoreMaintainerService extends Closeable {
      * @param namespaceId The unique identifier of the namespace.
      * @return A {@link Namespace} object containing all details of the specified namespace.
      * @throws NacosException Thrown if any error occurs during the retrieval.
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     Namespace getNamespace(String namespaceId) throws NacosException;
@@ -192,6 +200,7 @@ public interface CoreMaintainerService extends Closeable {
      * @param namespaceDesc The description of the new namespace.
      * @return {@code true} if the namespace is created successfully, {@code false} otherwise.
      * @throws NacosException Thrown if any error occurs during the creation.
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     default Boolean createNamespace(String namespaceName, String namespaceDesc)
@@ -200,7 +209,7 @@ public interface CoreMaintainerService extends Closeable {
     }
     
     /**
-     * Create a new namespace with the provided details.
+     * 创建新命名空间（可指定 ID，空则自动生成 UUID）。
      *
      * @param namespaceId   The unique identifier for the new namespace, if null or empty will use auto-generate UUID.
      * @param namespaceName The name of the new namespace.
@@ -220,13 +229,14 @@ public interface CoreMaintainerService extends Closeable {
      * @param namespaceDesc The new description for the namespace.
      * @return {@code true} if the namespace is updated successfully, {@code false} otherwise.
      * @throws NacosException Thrown if any error occurs during the update.
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     Boolean updateNamespace(String namespaceId, String namespaceName, String namespaceDesc)
         throws NacosException;
     
     /**
-     * Delete a namespace by its unique identifier.
+     * 按 ID 删除命名空间。
      *
      * @param namespaceId The unique identifier of the namespace to be deleted.
      * @return {@code true} if the namespace is deleted successfully, {@code false} otherwise.
@@ -241,12 +251,13 @@ public interface CoreMaintainerService extends Closeable {
      * @param namespaceId The unique identifier of the namespace to check.
      * @return {@code true} if the namespace exists, {@code false} otherwise.
      * @throws NacosException Thrown if any error occurs during the check.
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     Boolean checkNamespaceIdExist(String namespaceId) throws NacosException;
     
     /**
-     * List all plugins with optional type filter.
+     * 列出插件（可选按类型过滤）。
      *
      * @param pluginType optional plugin type filter, null or empty to list all
      * @return list of plugin information
@@ -262,6 +273,7 @@ public interface CoreMaintainerService extends Closeable {
      * @param pluginName plugin name
      * @return plugin detail information
      * @throws NacosException if the operation fails
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.2.0")
     Map<String, Object> getPluginDetail(String pluginType, String pluginName) throws NacosException;
@@ -273,6 +285,7 @@ public interface CoreMaintainerService extends Closeable {
      * @param pluginName plugin name
      * @param enabled    whether to enable
      * @throws NacosException if the operation fails
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.2.0")
     default void updatePluginStatus(String pluginType, String pluginName, boolean enabled)
@@ -288,6 +301,7 @@ public interface CoreMaintainerService extends Closeable {
      * @param enabled    whether to enable
      * @param localOnly  whether only apply to local node
      * @throws NacosException if the operation fails
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.2.0")
     void updatePluginStatus(String pluginType, String pluginName, boolean enabled,
@@ -301,6 +315,7 @@ public interface CoreMaintainerService extends Closeable {
      * @param pluginName plugin name
      * @param config     configuration map
      * @throws NacosException if the operation fails
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.2.0")
     default void updatePluginConfig(String pluginType, String pluginName,
@@ -317,6 +332,7 @@ public interface CoreMaintainerService extends Closeable {
      * @param config     configuration map
      * @param localOnly  whether only apply to local node
      * @throws NacosException if the operation fails
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.2.0")
     void updatePluginConfig(String pluginType, String pluginName, Map<String, String> config,
@@ -324,7 +340,7 @@ public interface CoreMaintainerService extends Closeable {
         throws NacosException;
     
     /**
-     * Get plugin availability across cluster nodes.
+     * 查询插件在各集群节点上的可用性。
      *
      * @param pluginType plugin type
      * @param pluginName plugin name

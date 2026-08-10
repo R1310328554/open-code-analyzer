@@ -39,19 +39,25 @@ import java.util.Map;
 import java.util.Properties;
 
 /**
- * Abstract core module maintainer service.
+ * 核心模块维护服务抽象基类：封装 {@link ClientHttpProxy} 与各 Core Admin API 的 HTTP 调用。
+ *
+ * <p>子类（如 {@link com.alibaba.nacos.maintainer.client.config.NacosConfigMaintainerServiceImpl}）
+ * 可复用 {@link #getClientHttpProxy()} 访问服务端。</p>
  *
  * @author Nacos
  */
 public abstract class AbstractCoreMaintainerService implements CoreMaintainerService {
     
+    /** 维护客户端 HTTP 代理（服务端轮询、鉴权等）。 */
     private final ClientHttpProxy clientHttpProxy;
     
+    /** 初始化 HTTP 代理并注册序列化工具。 */
     protected AbstractCoreMaintainerService(Properties properties) throws NacosException {
         this.clientHttpProxy = new ClientHttpProxy(properties);
         ParamUtil.initSerialization();
     }
     
+    /** GET 查询 Nacos 服务端状态键值对。 */
     @Override
     public Map<String, String> getServerState() throws NacosException {
         HttpRequest httpRequest = new HttpRequest.Builder().setHttpMethod(HttpMethod.GET)
@@ -79,6 +85,7 @@ public abstract class AbstractCoreMaintainerService implements CoreMaintainerSer
         return httpRestResult.ok();
     }
     
+    /** POST 执行 Raft 运维命令。 */
     @Override
     public String raftOps(String command, String value, String groupId) throws NacosException {
         Map<String, String> params = new HashMap<>(8);
@@ -224,6 +231,7 @@ public abstract class AbstractCoreMaintainerService implements CoreMaintainerSer
         return result.getData();
     }
     
+    /** GET 列出全部命名空间。 */
     @Override
     public List<Namespace> getNamespaceList() throws NacosException {
         HttpRequest httpRequest = new HttpRequest.Builder().setHttpMethod(HttpMethod.GET)
@@ -316,6 +324,7 @@ public abstract class AbstractCoreMaintainerService implements CoreMaintainerSer
         return result.getData() > 0;
     }
     
+    /** GET 列出插件（可按类型过滤）。 */
     @Override
     public List<Map<String, Object>> listPlugins(String pluginType) throws NacosException {
         Map<String, String> params = new HashMap<>(8);
@@ -406,10 +415,12 @@ public abstract class AbstractCoreMaintainerService implements CoreMaintainerSer
         return result.getData();
     }
     
+    /** 供子类执行 HTTP 请求。 */
     protected ClientHttpProxy getClientHttpProxy() {
         return this.clientHttpProxy;
     }
     
+    /** 关闭 HTTP 代理释放连接。 */
     @Override
     public void shutdown() throws NacosException {
         clientHttpProxy.shutdown();

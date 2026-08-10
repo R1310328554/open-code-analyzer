@@ -44,17 +44,21 @@ import java.util.Map;
 import java.util.Properties;
 
 /**
- * Configuration management.
+ * {@link ConfigMaintainerService} HTTP 实现：调用 Config Admin API 完成配置 CRUD 与运维。
+ *
+ * <p>继承 {@link AbstractCoreMaintainerService} 共享 HTTP 代理，各方法组装 {@link HttpRequest} 并解析 {@link Result}。</p>
  *
  * @author Nacos
  */
 public class NacosConfigMaintainerServiceImpl extends AbstractCoreMaintainerService
     implements ConfigMaintainerService {
     
+    /** 根据客户端属性初始化配置维护服务与 HTTP 代理。 */
     public NacosConfigMaintainerServiceImpl(Properties properties) throws NacosException {
         super(properties);
     }
     
+    /** GET 查询单条配置详情。 */
     @Override
     public ConfigDetailInfo getConfig(String dataId, String groupName, String namespaceId)
         throws NacosException {
@@ -73,6 +77,7 @@ public class NacosConfigMaintainerServiceImpl extends AbstractCoreMaintainerServ
         return result.getData();
     }
     
+    /** POST 发布配置（含完整元数据）。 */
     @Override
     public boolean publishConfig(String dataId, String groupName, String namespaceId,
         String content, String appName,
@@ -190,6 +195,7 @@ public class NacosConfigMaintainerServiceImpl extends AbstractCoreMaintainerServ
         return result.getData();
     }
     
+    /** GET 多条件分页搜索配置列表。 */
     @Override
     public Page<ConfigBasicInfo> searchConfigByDetails(String dataId, String groupName,
         String namespaceId,

@@ -33,13 +33,18 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * {@link PromptMaintainerService} HTTP 实现：调用 Prompt Admin API 完成 CRUD 与生命周期操作。
+ */
 final class PromptMaintainerServiceImpl extends AbstractAiDelegateMaintainerService
     implements PromptMaintainerService {
     
+    /** 使用共享 AI HTTP 上下文构造 Prompt 维护服务。 */
     PromptMaintainerServiceImpl(AiMaintainerHttpContext context) {
         super(context);
     }
     
+    /** GET 分页列出提示词摘要列表。 */
     @Override
     public Page<PromptMetaSummary> listPrompts(String namespaceId, String promptKey, String search,
         String bizTags,
@@ -106,6 +111,7 @@ final class PromptMaintainerServiceImpl extends AbstractAiDelegateMaintainerServ
     
     // ========== Lifecycle APIs ==========
     
+    /** GET 治理详情（版本列表、标签等）。 */
     @Override
     public PromptMetaInfo getPromptGovernanceDetail(String namespaceId, String promptKey)
         throws NacosException {
@@ -145,6 +151,7 @@ final class PromptMaintainerServiceImpl extends AbstractAiDelegateMaintainerServ
         return result.getData();
     }
     
+    /** POST 创建或 Fork 草稿版本。 */
     @Override
     public String createDraft(String namespaceId, String promptKey, String basedOnVersion,
         String targetVersion,
@@ -206,6 +213,7 @@ final class PromptMaintainerServiceImpl extends AbstractAiDelegateMaintainerServ
         executeSyncHttpRequest(httpRequest);
     }
     
+    /** POST 提交版本进入流水线审核。 */
     @Override
     public String submit(String namespaceId, String promptKey, String version)
         throws NacosException {
@@ -226,6 +234,7 @@ final class PromptMaintainerServiceImpl extends AbstractAiDelegateMaintainerServ
         return result.getData();
     }
     
+    /** POST 发布已审核版本。 */
     @Override
     public void publish(String namespaceId, String promptKey, String version,
         Boolean updateLatestLabel)
@@ -354,6 +363,7 @@ final class PromptMaintainerServiceImpl extends AbstractAiDelegateMaintainerServ
     
     // ========== Legacy compatibility implementations (deprecated) ==========
     
+    /** 旧版元数据接口，委托 {@link #getPromptGovernanceDetail}。 */
     @Deprecated
     @Override
     public PromptMetaInfo getPromptMeta(String namespaceId, String promptKey)

@@ -26,14 +26,16 @@ import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.model.Page;
 
 /**
- * Nacos AI module Skill relative maintainer service.
+ * Skill 维护服务接口：管理 AI 技能的上传、草稿、发布与运行时治理。
+ *
+ * <p>支持 zip 单/批量上传、版本流水线、上下线、标签、可见性 scope 及分页检索。</p>
  *
  * @author nacos
  */
 public interface SkillMaintainerService {
     
     /**
-     * Get skill metadata with default namespace.
+     * 在默认命名空间获取技能元数据。
      *
      * @param skillName skill name
      * @return skill metadata
@@ -45,7 +47,7 @@ public interface SkillMaintainerService {
     }
     
     /**
-     * Get skill metadata.
+     * 获取技能元数据。
      *
      * @param namespaceId namespace ID
      * @param skillName   skill name
@@ -56,7 +58,7 @@ public interface SkillMaintainerService {
     SkillMeta getSkillMeta(String namespaceId, String skillName) throws NacosException;
     
     /**
-     * Get specific skill version detail with default namespace.
+     * 在默认命名空间获取指定版本技能详情。
      *
      * @param skillName skill name
      * @param version   skill version
@@ -69,7 +71,7 @@ public interface SkillMaintainerService {
     }
     
     /**
-     * Get specific skill version detail.
+     * 获取指定版本技能详情。
      *
      * @param namespaceId namespace ID
      * @param skillName   skill name
@@ -82,7 +84,7 @@ public interface SkillMaintainerService {
         throws NacosException;
     
     /**
-     * Delete skill with default namespace.
+     * 在默认命名空间删除技能。
      *
      * @param skillName skill name
      * @return true if delete success
@@ -94,7 +96,7 @@ public interface SkillMaintainerService {
     }
     
     /**
-     * Delete skill.
+     * 删除技能。
      *
      * @param namespaceId namespace ID
      * @param skillName   skill name
@@ -105,7 +107,7 @@ public interface SkillMaintainerService {
     boolean deleteSkill(String namespaceId, String skillName) throws NacosException;
     
     /**
-     * List skills with default namespace.
+     * 在默认命名空间分页列出技能。
      *
      * @param skillName skill name pattern for filtering
      * @param pageNo    page number
@@ -120,7 +122,7 @@ public interface SkillMaintainerService {
     }
     
     /**
-     * List skills with pagination.
+     * 分页列出技能。
      *
      * @param namespaceId namespace ID
      * @param skillName   skill name pattern for filtering
@@ -151,6 +153,7 @@ public interface SkillMaintainerService {
      * @param pageSize    page size
      * @return paged skill list
      * @throws NacosException if fail to list skills
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.2.1")
     default Page<SkillSummary> listSkills(String namespaceId, String skillName, String search,
@@ -178,6 +181,7 @@ public interface SkillMaintainerService {
      * @param pageSize    page size
      * @return paged skill list
      * @throws NacosException if fail to list skills
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.2.1")
     default Page<SkillSummary> listSkills(String namespaceId, String skillName, String search,
@@ -187,7 +191,7 @@ public interface SkillMaintainerService {
     }
     
     /**
-     * Upload skill from zip file with default namespace.
+     * 在默认命名空间从 zip 上传技能。
      *
      * @param zipBytes zip file bytes
      * @return skill name
@@ -205,6 +209,7 @@ public interface SkillMaintainerService {
      * @param zipBytes    zip file bytes
      * @return skill name
      * @throws NacosException if fail to upload skill
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.2.0")
     default String uploadSkillFromZip(String namespaceId, byte[] zipBytes) throws NacosException {
@@ -212,7 +217,7 @@ public interface SkillMaintainerService {
     }
     
     /**
-     * Upload skill from zip file.
+     * 从 zip 字节流上传技能。
      *
      * @param namespaceId namespace ID
      * @param zipBytes zip file bytes
@@ -233,6 +238,7 @@ public interface SkillMaintainerService {
      * @param targetVersion user-specified version (optional, used as fallback when ZIP content has no version)
      * @return skill name
      * @throws NacosException if fail to upload skill
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.2.2")
     default String uploadSkillFromZip(String namespaceId, byte[] zipBytes, boolean overwrite,
@@ -251,6 +257,7 @@ public interface SkillMaintainerService {
      * @param commitMsg     version-level commit message (optional)
      * @return skill name
      * @throws NacosException if fail to upload skill
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.2.2")
     default String uploadSkillFromZip(String namespaceId, byte[] zipBytes, boolean overwrite,
@@ -260,7 +267,7 @@ public interface SkillMaintainerService {
     }
     
     /**
-     * Batch upload skills from a multi-skill zip archive with default namespace.
+     * 在默认命名空间批量上传多技能 zip。
      *
      * @param zipBytes zip file bytes containing multiple skill directories
      * @return batch upload result with succeeded and failed lists
@@ -272,7 +279,7 @@ public interface SkillMaintainerService {
     }
     
     /**
-     * Batch upload skills from a multi-skill zip archive.
+     * 从多技能 zip 批量上传。
      *
      * @param namespaceId namespace ID
      * @param zipBytes    zip file bytes containing multiple skill directories
@@ -286,7 +293,7 @@ public interface SkillMaintainerService {
         throws NacosException;
     
     /**
-     * Create a brand-new skill draft.
+     * 创建全新技能草稿。
      *
      * @param namespaceId namespace ID
      * @param skillCard   skill card JSON string
@@ -299,7 +306,7 @@ public interface SkillMaintainerService {
     }
     
     /**
-     * Create draft from an existed version (Forking).
+     * 基于已有版本 Fork 创建草稿。
      *
      * @param namespaceId    namespace ID
      * @param skillName      skill name
@@ -314,7 +321,7 @@ public interface SkillMaintainerService {
     }
     
     /**
-     * Create draft version for a skill with optional target version.
+     * 创建技能草稿版本（可指定目标版本）。
      *
      * @param namespaceId    namespace ID
      * @param skillName      skill name (required when forking)
@@ -331,7 +338,7 @@ public interface SkillMaintainerService {
     }
     
     /**
-     * Create draft version for a skill.
+     * 创建技能草稿版本。
      * {@code skillCard} is required unless forking ({@code basedOnVersion} set); same JSON as update draft.
      *
      * @param namespaceId    namespace ID
@@ -360,6 +367,7 @@ public interface SkillMaintainerService {
      * @param commitMsg      version-level commit message (optional)
      * @return created draft version
      * @throws NacosException if fail to create draft
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.2.1")
     String createDraft(String namespaceId, String skillName, String basedOnVersion,
@@ -368,7 +376,7 @@ public interface SkillMaintainerService {
         throws NacosException;
     
     /**
-     * Update current draft content.
+     * 更新当前草稿内容。
      *
      * @param namespaceId namespace ID
      * @param skillCard   skill card JSON string
@@ -391,13 +399,14 @@ public interface SkillMaintainerService {
      * @param commitMsg   version-level commit message (optional)
      * @return true if update success
      * @throws NacosException if fail to update draft
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.2.1")
     boolean updateDraft(String namespaceId, String skillCard, Boolean setAsLatest, String commitMsg)
         throws NacosException;
     
     /**
-     * Delete current draft version.
+     * 删除当前草稿版本。
      *
      * @param namespaceId namespace ID
      * @param skillName   skill name
@@ -408,7 +417,7 @@ public interface SkillMaintainerService {
     boolean deleteDraft(String namespaceId, String skillName) throws NacosException;
     
     /**
-     * Submit a version for pipeline review.
+     * 提交版本进入流水线审核。
      *
      * @param namespaceId namespace ID
      * @param skillName   skill name
@@ -420,7 +429,7 @@ public interface SkillMaintainerService {
     String submit(String namespaceId, String skillName, String version) throws NacosException;
     
     /**
-     * Publish an approved reviewing version.
+     * 发布已通过审核的版本。
      *
      * @param namespaceId       namespace ID
      * @param skillName         skill name
@@ -434,7 +443,7 @@ public interface SkillMaintainerService {
         throws NacosException;
     
     /**
-     * Force-publish a skill version, bypassing pipeline validation.
+     * 强制发布技能版本（跳过流水线校验）。
      *
      * @param namespaceId       namespace ID
      * @param skillName         skill name
@@ -449,7 +458,7 @@ public interface SkillMaintainerService {
         throws NacosException;
     
     /**
-     * Re-edit a reviewed skill version, transitioning it back to draft status.
+     * 将已审核版本退回草稿重新编辑。
      *
      * @param namespaceId namespace ID
      * @param skillName   skill name
@@ -461,7 +470,7 @@ public interface SkillMaintainerService {
     boolean redraft(String namespaceId, String skillName, String version) throws NacosException;
     
     /**
-     * Update runtime labels mapping JSON.
+     * 更新运行时标签映射 JSON。
      *
      * @param namespaceId namespace ID
      * @param skillName   skill name
@@ -473,7 +482,7 @@ public interface SkillMaintainerService {
     boolean updateLabels(String namespaceId, String skillName, String labels) throws NacosException;
     
     /**
-     * Update skill biz tags JSON.
+     * 更新技能业务标签 JSON。
      *
      * @param namespaceId namespace ID
      * @param skillName skill name
@@ -486,7 +495,7 @@ public interface SkillMaintainerService {
         throws NacosException;
     
     /**
-     * Online/offline operation.
+     * 技能或指定版本上下线操作。
      *
      * @param namespaceId namespace ID
      * @param skillName   skill name
@@ -502,7 +511,7 @@ public interface SkillMaintainerService {
         throws NacosException;
     
     /**
-     * Update skill visibility scope.
+     * 更新技能可见性 scope（PUBLIC/PRIVATE）。
      *
      * @param namespaceId namespace ID
      * @param skillName   skill name

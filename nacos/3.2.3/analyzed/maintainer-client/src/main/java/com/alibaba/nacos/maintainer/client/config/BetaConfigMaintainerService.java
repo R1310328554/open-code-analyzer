@@ -22,14 +22,16 @@ import com.alibaba.nacos.api.config.model.ConfigGrayInfo;
 import com.alibaba.nacos.api.exception.NacosException;
 
 /**
- *  Nacos Config module beta config maintainer service.
+ * Beta（灰度）配置维护服务：发布、停止与查询灰度配置。
+ *
+ * <p>灰度发布仅对 {@code betaIps} 指定的客户端 IP 生效，用于上线前验证。</p>
  *
  * @author xiweng.yy
  */
 public interface BetaConfigMaintainerService {
     
     /**
-     * Beta Publish a configuration with additional metadata.
+     * 发布带元数据的 Beta 灰度配置。
      *
      * @param dataId      Configuration data ID (required).
      * @param groupName   Configuration group name (required).
@@ -53,7 +55,7 @@ public interface BetaConfigMaintainerService {
         throws NacosException;
     
     /**
-     * Stop a beta configuration by dataId and groupName.
+     * 按 dataId、groupName 停止 Beta 灰度（默认命名空间）。
      *
      * @param dataId    Configuration data ID (required).
      * @param groupName Configuration group name (required).
@@ -66,7 +68,7 @@ public interface BetaConfigMaintainerService {
     }
     
     /**
-     * Stop a beta configuration by dataId, groupName, and namespaceId.
+     * 按 dataId、groupName、namespaceId 停止 Beta 灰度。
      *
      * @param dataId      Configuration data ID (required).
      * @param groupName   Configuration group name (required).
@@ -78,7 +80,7 @@ public interface BetaConfigMaintainerService {
     boolean stopBeta(String dataId, String groupName, String namespaceId) throws NacosException;
     
     /**
-     * Query beta configuration by dataId and groupName.
+     * 查询 Beta 灰度配置（默认命名空间）。
      *
      * @param dataId    Configuration data ID (required).
      * @param groupName Configuration group name (required).
@@ -91,7 +93,7 @@ public interface BetaConfigMaintainerService {
     }
     
     /**
-     * Query beta configuration by dataId, groupName, and namespaceId.
+     * 查询指定命名空间下的 Beta 灰度配置。
      *
      * @param dataId      Configuration data ID (required).
      * @param groupName   Configuration group name (required).

@@ -23,14 +23,14 @@ import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.model.Page;
 
 /**
- * Nacos Config module config history maintainer service.
+ * 配置历史维护服务：分页查询历史列表、详情及上一版本。
  *
  * @author xiweng.yy
  */
 public interface ConfigHistoryMaintainerService {
     
     /**
-     * Query the list of configuration history by dataId, groupName, namespaceId, pageNo, and pageSize.
+     * 分页查询配置变更历史列表。
      *
      * @param dataId      Configuration data ID (required).
      * @param groupName   Configuration group name (required).
@@ -46,7 +46,7 @@ public interface ConfigHistoryMaintainerService {
         int pageSize) throws NacosException;
     
     /**
-     * Query detailed configuration history information by dataId, groupName, namespaceId, and nid.
+     * 按历史记录 ID（nid）查询配置历史详情。
      *
      * @param dataId      Configuration data ID (required).
      * @param groupName   Configuration group name (required).
@@ -61,7 +61,7 @@ public interface ConfigHistoryMaintainerService {
         throws NacosException;
     
     /**
-     * Query previous configuration history information by dataId, groupName, namespaceId, and id.
+     * 查询当前历史记录的前一版本详情。
      *
      * @param dataId      Configuration data ID (required).
      * @param groupName   Configuration group name (required).

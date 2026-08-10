@@ -31,9 +31,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * {@link PipelineMaintainerService} HTTP 实现：查询 AI 流水线执行详情与列表。
+ *
+ * <p>优先调用 3.2.1+ {@code /detail}、{@code /list} 路径；遇 404 时降级为旧版路径。</p>
+ */
 final class PipelineMaintainerServiceImpl extends AbstractAiDelegateMaintainerService
     implements PipelineMaintainerService {
     
+    /** 使用共享 AI HTTP 上下文构造流水线维护服务。 */
     PipelineMaintainerServiceImpl(AiMaintainerHttpContext context) {
         super(context);
     }
@@ -58,7 +64,7 @@ final class PipelineMaintainerServiceImpl extends AbstractAiDelegateMaintainerSe
     }
     
     /**
-     * Pre-3.2.1 style: GET {@code /v3/admin/ai/pipelines/{pipelineId}} when {@code /detail} is not mapped.
+     * 3.2.1 之前风格：当 {@code /detail} 未映射时 GET {@code /v3/admin/ai/pipelines/{pipelineId}}。
      */
     private Result<JsonNode> getPipelineDetailLegacy(String pipelineId) throws NacosException {
         HttpRequest httpRequest =
@@ -94,7 +100,7 @@ final class PipelineMaintainerServiceImpl extends AbstractAiDelegateMaintainerSe
     }
     
     /**
-     * Pre-3.2.1 style: GET {@code /v3/admin/ai/pipelines} when {@code /list} is not mapped.
+     * 3.2.1 之前风格：当 {@code /list} 未映射时 GET {@code /v3/admin/ai/pipelines}。
      */
     private Result<JsonNode> listPipelineExecutionsLegacy(String resolvedNamespace,
         String resourceName,
@@ -123,6 +129,7 @@ final class PipelineMaintainerServiceImpl extends AbstractAiDelegateMaintainerSe
                 pageSize));
     }
     
+    /** 构建流水线列表查询参数（资源类型、分页等）。 */
     private Map<String, String> buildListQueryParams(String resourceType, String resourceName,
         String namespaceId,
         String version, int pageNo, int pageSize) {
@@ -136,6 +143,7 @@ final class PipelineMaintainerServiceImpl extends AbstractAiDelegateMaintainerSe
         return params;
     }
     
+    /** 将 HTTP 响应体解析为 {@link Result}{@code <JsonNode>}。 */
     private static Result<JsonNode> parseResultFromHttp(HttpRestResult<String> restResult)
         throws NacosException {
         String body = restResult.getData();
@@ -157,6 +165,7 @@ final class PipelineMaintainerServiceImpl extends AbstractAiDelegateMaintainerSe
         }
     }
     
+    /** 校验 Result 成功码并返回 data 字段，失败则抛 {@link NacosException}。 */
     private static JsonNode unwrapSuccessData(Result<JsonNode> result) throws NacosException {
         if (result == null) {
             throw new NacosException(NacosException.SERVER_ERROR, "empty Result");

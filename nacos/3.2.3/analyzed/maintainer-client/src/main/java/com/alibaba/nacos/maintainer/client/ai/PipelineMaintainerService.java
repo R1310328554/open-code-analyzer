@@ -21,14 +21,13 @@ import com.alibaba.nacos.api.exception.NacosException;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * Nacos AI module Pipeline relative maintainer service.
+ * Nacos AI 模块流水线（Pipeline）维护服务接口。
  *
- * <p>Extends {@link PipelineAdminClient} for {@link com.alibaba.nacos.api.model.v2.Result} responses.
- * Legacy {@link JsonNode}-only accessors are retained for existing callers.</p>
+ * <p>继承 {@link PipelineAdminClient}，新版 API 返回 {@link com.alibaba.nacos.api.model.v2.Result}；
+ * 为兼容旧调用方仍保留仅返回 {@link JsonNode} 的废弃方法。</p>
  *
- * <p>Returns {@link JsonNode} on deprecated methods because {@code PipelineExecution} resides in the ai module,
- * which is not a compile-time dependency of maintainer-client. Callers should deserialize the JsonNode
- * to the concrete type.</p>
+ * <p>废弃方法返回 {@link JsonNode} 是因为 {@code PipelineExecution} 位于 ai 模块，
+ * maintainer-client 无编译期依赖；调用方需自行反序列化为具体类型。</p>
  *
  * @author kiro
  * @since 3.2.0
@@ -36,7 +35,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 public interface PipelineMaintainerService extends PipelineAdminClient {
     
     /**
-     * Get pipeline execution detail by ID.
+     * 按流水线执行 ID 获取详情。
      *
      * @param pipelineId the pipeline execution ID
      * @return JSON representation of the pipeline execution data field on success
@@ -48,7 +47,7 @@ public interface PipelineMaintainerService extends PipelineAdminClient {
     JsonNode getPipeline(String pipelineId) throws NacosException;
     
     /**
-     * List pipeline executions with pagination.
+     * 分页列出流水线执行记录。
      *
      * @param resourceType the resource type (required)
      * @param resourceName the resource name (optional)

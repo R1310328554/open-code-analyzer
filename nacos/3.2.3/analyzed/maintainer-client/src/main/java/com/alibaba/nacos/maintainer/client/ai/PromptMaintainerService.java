@@ -26,14 +26,17 @@ import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.model.Page;
 
 /**
- * Nacos AI module Prompt relative maintainer service.
+ * Prompt 维护服务接口：管理提示词模板的列表、版本生命周期与治理元数据。
+ *
+ * <p>支持草稿创建/更新、流水线 submit/publish/forcePublish、上下线、标签与业务标签等运维能力；
+ * 底部保留 3.2.0 兼容的废弃 API。</p>
  *
  * @author nacos
  */
 public interface PromptMaintainerService {
     
     /**
-     * List prompts with pagination.
+     * 分页列出提示词。
      *
      * @param namespaceId namespace ID
      * @param promptKey   prompt key pattern for filtering
@@ -51,7 +54,7 @@ public interface PromptMaintainerService {
         throws NacosException;
     
     /**
-     * List prompts with default namespace.
+     * 在默认命名空间分页列出提示词。
      *
      * @param promptKey prompt key pattern for filtering
      * @param pageNo    page number
@@ -67,7 +70,7 @@ public interface PromptMaintainerService {
     }
     
     /**
-     * Delete prompt.
+     * 删除指定命名空间下的提示词。
      *
      * @param namespaceId namespace ID
      * @param promptKey   prompt key
@@ -78,7 +81,7 @@ public interface PromptMaintainerService {
     boolean deletePrompt(String namespaceId, String promptKey) throws NacosException;
     
     /**
-     * Delete prompt with default namespace.
+     * 在默认命名空间删除提示词。
      *
      * @param promptKey prompt key
      * @return true if delete success
@@ -90,7 +93,7 @@ public interface PromptMaintainerService {
     }
     
     /**
-     * List prompt versions page.
+     * 分页列出提示词版本。
      *
      * @param namespaceId the namespace id
      * @param promptKey   the prompt key
@@ -112,6 +115,7 @@ public interface PromptMaintainerService {
      * @param pageSize  the page size
      * @return the page
      * @throws NacosException the nacos exception
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.2.0")
     default Page<PromptVersionSummary> listPromptVersions(String promptKey, int pageNo,
@@ -120,10 +124,10 @@ public interface PromptMaintainerService {
         return listPromptVersions(Constants.DEFAULT_NAMESPACE_ID, promptKey, pageNo, pageSize);
     }
     
-    // ========== Lifecycle APIs ==========
+    // ========== 生命周期 API ==========
     
     /**
-     * Get prompt governance detail (includes version governance info and all version summaries).
+     * 获取提示词治理详情（含版本治理信息与全部版本摘要）。
      *
      * @param namespaceId namespace ID
      * @param promptKey   prompt key
@@ -135,7 +139,7 @@ public interface PromptMaintainerService {
         throws NacosException;
     
     /**
-     * Get specific version detail.
+     * 获取指定版本详情。
      *
      * @param namespaceId namespace ID
      * @param promptKey   prompt key
@@ -148,7 +152,7 @@ public interface PromptMaintainerService {
         throws NacosException;
     
     /**
-     * Create a draft version.
+     * 创建草稿版本。
      *
      * @param namespaceId    namespace ID
      * @param promptKey      prompt key
@@ -169,7 +173,7 @@ public interface PromptMaintainerService {
         throws NacosException;
     
     /**
-     * Update current draft content.
+     * 更新当前草稿内容。
      *
      * @param namespaceId namespace ID
      * @param promptKey   prompt key
@@ -184,7 +188,7 @@ public interface PromptMaintainerService {
         throws NacosException;
     
     /**
-     * Delete current draft.
+     * 删除当前草稿。
      *
      * @param namespaceId namespace ID
      * @param promptKey   prompt key
@@ -194,7 +198,7 @@ public interface PromptMaintainerService {
     void deleteDraft(String namespaceId, String promptKey) throws NacosException;
     
     /**
-     * Submit a version for pipeline review.
+     * 提交版本进入流水线审核。
      *
      * @param namespaceId namespace ID
      * @param promptKey   prompt key
@@ -206,7 +210,7 @@ public interface PromptMaintainerService {
     String submit(String namespaceId, String promptKey, String version) throws NacosException;
     
     /**
-     * Publish a reviewed version.
+     * 发布已审核通过的版本。
      *
      * @param namespaceId       namespace ID
      * @param promptKey         prompt key
@@ -219,7 +223,7 @@ public interface PromptMaintainerService {
         throws NacosException;
     
     /**
-     * Force-publish a version, bypassing pipeline validation.
+     * 强制发布版本（跳过流水线校验）。
      *
      * @param namespaceId       namespace ID
      * @param promptKey         prompt key
@@ -233,7 +237,7 @@ public interface PromptMaintainerService {
         throws NacosException;
     
     /**
-     * Re-edit a reviewed prompt version, transitioning it back to draft status.
+     * 将已审核版本退回草稿重新编辑。
      *
      * @param namespaceId namespace ID
      * @param promptKey   prompt key
@@ -245,7 +249,7 @@ public interface PromptMaintainerService {
     boolean redraft(String namespaceId, String promptKey, String version) throws NacosException;
     
     /**
-     * Online or offline a version.
+     * 指定版本上下线。
      *
      * @param namespaceId namespace ID
      * @param promptKey   prompt key
@@ -258,7 +262,7 @@ public interface PromptMaintainerService {
         throws NacosException;
     
     /**
-     * Update labels mapping.
+     * 更新标签映射 JSON。
      *
      * @param namespaceId namespace ID
      * @param promptKey   prompt key
@@ -269,7 +273,7 @@ public interface PromptMaintainerService {
     void updateLabels(String namespaceId, String promptKey, String labels) throws NacosException;
     
     /**
-     * Update prompt description.
+     * 更新提示词描述。
      *
      * @param namespaceId namespace ID
      * @param promptKey   prompt key
@@ -281,7 +285,7 @@ public interface PromptMaintainerService {
         throws NacosException;
     
     /**
-     * Update biz tags.
+     * 更新业务标签 JSON。
      *
      * @param namespaceId namespace ID
      * @param promptKey   prompt key
@@ -291,10 +295,10 @@ public interface PromptMaintainerService {
     @Since("3.2.1")
     void updateBizTags(String namespaceId, String promptKey, String bizTags) throws NacosException;
     
-    // ========== Legacy compatibility APIs (deprecated) ==========
+    // ========== 旧版兼容 API（已废弃） ==========
     
     /**
-     * Legacy get prompt metadata.
+     * 旧版：获取提示词元数据。
      *
      * @deprecated Use {@link #getPromptGovernanceDetail} instead.
      */
@@ -306,6 +310,7 @@ public interface PromptMaintainerService {
      * Legacy get prompt metadata with default namespace.
      *
      * @deprecated Use {@link #getPromptGovernanceDetail} instead.
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.2.0")
     @Deprecated
@@ -314,7 +319,7 @@ public interface PromptMaintainerService {
     }
     
     /**
-     * Legacy query prompt detail by version/label/latest.
+     * 旧版：按版本/标签/latest 查询提示词详情。
      *
      * @deprecated Use {@link #getVersionDetail} instead.
      */
@@ -325,7 +330,7 @@ public interface PromptMaintainerService {
         throws NacosException;
     
     /**
-     * Legacy bind label to a prompt version.
+     * 旧版：为提示词版本绑定标签。
      *
      * @deprecated Use {@link #updateLabels} instead.
      */
@@ -335,7 +340,7 @@ public interface PromptMaintainerService {
         throws NacosException;
     
     /**
-     * Legacy unbind label from a prompt.
+     * 旧版：从提示词解绑标签。
      *
      * @deprecated Use {@link #updateLabels} instead.
      */
@@ -344,7 +349,7 @@ public interface PromptMaintainerService {
     boolean unbindLabel(String namespaceId, String promptKey, String label) throws NacosException;
     
     /**
-     * Legacy one-shot publish a new version of prompt.
+     * 旧版：一次性发布提示词新版本。
      *
      * @deprecated Use {@link #createDraft} + {@link #submit} instead.
      */
@@ -357,6 +362,7 @@ public interface PromptMaintainerService {
      * Legacy publish with variable definitions.
      *
      * @deprecated Use {@link #createDraft} + {@link #submit} instead.
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.2.0")
     @Deprecated
@@ -372,6 +378,7 @@ public interface PromptMaintainerService {
      * Legacy publish without tags.
      *
      * @deprecated Use {@link #createDraft} + {@link #submit} instead.
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.2.0")
     @Deprecated
@@ -386,6 +393,7 @@ public interface PromptMaintainerService {
      * Legacy publish with default namespace.
      *
      * @deprecated Use {@link #createDraft} + {@link #submit} instead.
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.2.0")
     @Deprecated
@@ -398,7 +406,7 @@ public interface PromptMaintainerService {
     }
     
     /**
-     * Legacy update prompt metadata (description and tags).
+     * 旧版：更新提示词元数据（描述与标签）。
      *
      * @deprecated Use {@link #updateDescription} and {@link #updateBizTags} instead.
      */
@@ -412,6 +420,7 @@ public interface PromptMaintainerService {
      * Legacy update prompt metadata (description only).
      *
      * @deprecated Use {@link #updateDescription} instead.
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.2.0")
     @Deprecated

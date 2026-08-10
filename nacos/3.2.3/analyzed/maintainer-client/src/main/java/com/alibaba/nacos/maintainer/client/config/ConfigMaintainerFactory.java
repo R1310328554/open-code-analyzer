@@ -21,14 +21,14 @@ import com.alibaba.nacos.api.exception.NacosException;
 import java.util.Properties;
 
 /**
- * Nacos config maintainer service.
+ * 配置维护服务工厂：根据服务端地址或 {@link Properties} 创建 {@link ConfigMaintainerService}。
  *
  * @author Nacos
  */
 public class ConfigMaintainerFactory {
     
     /**
-     * create config maintainer service.
+     * 创建配置维护服务实例。
      *
      * @param serverList server list
      * @return config maintainer service
@@ -47,6 +47,7 @@ public class ConfigMaintainerFactory {
      * @param properties properties
      * @return config maintainer service
      * @throws NacosException nacos exception
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     public static ConfigMaintainerService createConfigMaintainerService(Properties properties)
         throws NacosException {

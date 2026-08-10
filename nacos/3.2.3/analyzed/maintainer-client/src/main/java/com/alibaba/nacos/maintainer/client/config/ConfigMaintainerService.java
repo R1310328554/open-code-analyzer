@@ -32,7 +32,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Nacos Config module maintainer service.
+ * 配置维护服务聚合接口：继承核心、Beta 灰度、历史与运维子能力。
+ *
+ * <p>提供配置的增删改查、分页/模糊搜索、克隆、监听器查询及通配符 {@link #fillAllPattern} 辅助方法。</p>
  *
  * @author Nacos
  */
@@ -41,7 +43,7 @@ public interface ConfigMaintainerService
     ConfigOpsMaintainerService {
     
     /**
-     * Get configuration information by dataId and default groupName with default namespace id.
+     * 使用默认 group 与命名空间获取配置详情。
      *
      * @param dataId    Configuration data ID (required).
      * @return Configuration information.
@@ -59,6 +61,7 @@ public interface ConfigMaintainerService
      * @param groupName Configuration group name (required).
      * @return Configuration information.
      * @throws NacosException If the query fails.
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     default ConfigDetailInfo getConfig(String dataId, String groupName) throws NacosException {
@@ -66,7 +69,7 @@ public interface ConfigMaintainerService
     }
     
     /**
-     * Get configuration information by dataId, groupName, and namespaceId.
+     * 按 dataId、groupName、namespaceId 获取配置详情。
      *
      * @param dataId      Configuration data ID (required).
      * @param groupName   Configuration group name (required).
@@ -85,6 +88,7 @@ public interface ConfigMaintainerService
      * @param content   Configuration content (required).
      * @return Whether the configuration was published successfully.
      * @throws NacosException If the publish operation fails.
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     default boolean publishConfig(String dataId, String content) throws NacosException {
@@ -99,6 +103,7 @@ public interface ConfigMaintainerService
      * @param content   Configuration content (required).
      * @return Whether the configuration was published successfully.
      * @throws NacosException If the publish operation fails.
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     default boolean publishConfig(String dataId, String groupName, String content)
@@ -115,6 +120,7 @@ public interface ConfigMaintainerService
      * @param content     Configuration content (required).
      * @return Whether the configuration was published successfully.
      * @throws NacosException If the publish operation fails.
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     default boolean publishConfig(String dataId, String groupName, String namespaceId,
@@ -133,6 +139,7 @@ public interface ConfigMaintainerService
      * @param desc        Configuration description (optional).
      * @return Whether the configuration was published successfully.
      * @throws NacosException If the publish operation fails.
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     default boolean publishConfig(String dataId, String groupName, String namespaceId,
@@ -154,6 +161,7 @@ public interface ConfigMaintainerService
      *                    If not specified, will be updated to default type `TEXT`.
      * @return Whether the configuration was published successfully.
      * @throws NacosException If the publish operation fails.
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     default boolean publishConfig(String dataId, String groupName, String namespaceId,
@@ -163,7 +171,7 @@ public interface ConfigMaintainerService
     }
     
     /**
-     * Publish a configuration with additional metadata.
+     * 发布配置（含应用名、标签、描述、类型等元数据）。
      *
      * @param dataId      Configuration data ID (required).
      * @param groupName   Configuration group name (required).
@@ -194,6 +202,7 @@ public interface ConfigMaintainerService
      * @param configTags  the config tags
      * @return the boolean
      * @throws NacosException the nacos exception
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.1.0")
     boolean updateConfigMetadata(String dataId, String groupName, String namespaceId,
@@ -206,6 +215,7 @@ public interface ConfigMaintainerService
      * @param dataId    Configuration data ID (required).
      * @return Whether the configuration was deleted successfully.
      * @throws NacosException If deletion fails.
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     default boolean deleteConfig(String dataId) throws NacosException {
@@ -219,6 +229,7 @@ public interface ConfigMaintainerService
      * @param groupName Configuration group name (required).
      * @return Whether the configuration was deleted successfully.
      * @throws NacosException If deletion fails.
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     default boolean deleteConfig(String dataId, String groupName) throws NacosException {
@@ -226,7 +237,7 @@ public interface ConfigMaintainerService
     }
     
     /**
-     * Delete a configuration by dataId, groupName, and namespaceId.
+     * 删除指定命名空间下的配置。
      *
      * @param dataId      Configuration data ID (required).
      * @param groupName   Configuration group name (required).
@@ -238,7 +249,7 @@ public interface ConfigMaintainerService
     boolean deleteConfig(String dataId, String groupName, String namespaceId) throws NacosException;
     
     /**
-     * Delete multiple configurations by their IDs.
+     * 按内部 ID 批量删除配置。
      *
      * @param ids List of configuration IDs to delete.
      * @return Whether the configurations were deleted successfully.
@@ -253,6 +264,7 @@ public interface ConfigMaintainerService
      * @param namespaceId  Namespace ID (optional, defaults to "public").
      * @return A paginated list of configurations matching the search criteria.
      * @throws NacosException If the search fails.
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     default Page<ConfigBasicInfo> listConfigs(String namespaceId) throws NacosException {
@@ -267,6 +279,7 @@ public interface ConfigMaintainerService
      * @param namespaceId  Namespace ID (optional, defaults to "public").
      * @return A paginated list of configurations matching the search criteria.
      * @throws NacosException If the search fails.
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     default Page<ConfigBasicInfo> listConfigs(String dataId, String groupName, String namespaceId)
@@ -285,6 +298,7 @@ public interface ConfigMaintainerService
      *                    If not specified, will return all type.
      * @return A paginated list of configurations matching the search criteria.
      * @throws NacosException If the search fails.
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     default Page<ConfigBasicInfo> listConfigs(String dataId, String groupName, String namespaceId,
@@ -306,6 +320,7 @@ public interface ConfigMaintainerService
      * @param appName      Application name of Configuration (optional).
      * @return A paginated list of configurations matching the search criteria.
      * @throws NacosException If the search fails.
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     default Page<ConfigBasicInfo> listConfigs(String dataId, String groupName, String namespaceId,
@@ -329,6 +344,7 @@ public interface ConfigMaintainerService
      * @param pageSize     Page size (required, defaults to 100).
      * @return A paginated list of configurations matching the search criteria.
      * @throws NacosException If the search fails.
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     default Page<ConfigBasicInfo> listConfigs(String dataId, String groupName, String namespaceId,
@@ -347,6 +363,7 @@ public interface ConfigMaintainerService
      * @param namespaceId  Namespace ID (optional, defaults to "public").
      * @return A paginated list of configurations matching the search criteria.
      * @throws NacosException If the search fails.
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     default Page<ConfigBasicInfo> searchConfigs(String dataId, String groupName, String namespaceId)
@@ -367,6 +384,7 @@ public interface ConfigMaintainerService
      *                     If not specified, will return all type.
      * @return A paginated list of configurations matching the search criteria.
      * @throws NacosException If the search fails.
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     default Page<ConfigBasicInfo> searchConfigs(String dataId, String groupName, String namespaceId,
@@ -389,6 +407,7 @@ public interface ConfigMaintainerService
      *                     If not specified, will return all type.
      * @return A paginated list of configurations matching the search criteria.
      * @throws NacosException If the search fails.
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     default Page<ConfigBasicInfo> searchConfigs(String dataId, String groupName, String namespaceId,
@@ -412,6 +431,7 @@ public interface ConfigMaintainerService
      * @param appName      Application name of Configuration (optional).
      * @return A paginated list of configurations matching the search criteria.
      * @throws NacosException If the search fails.
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     default Page<ConfigBasicInfo> searchConfigs(String dataId, String groupName, String namespaceId,
@@ -438,6 +458,7 @@ public interface ConfigMaintainerService
      * @param pageSize     Page size (required, defaults to 100).
      * @return A paginated list of configurations matching the search criteria.
      * @throws NacosException If the search fails.
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     default Page<ConfigBasicInfo> searchConfigs(String dataId, String groupName, String namespaceId,
@@ -453,7 +474,7 @@ public interface ConfigMaintainerService
     }
     
     /**
-     * Search configurations by details.
+     * 按多条件（精确/模糊、内容片段、标签等）搜索配置。
      *
      * @param dataId       Configuration data ID (optional, defaults to "").
      * @param groupName    Configuration group name (optional, defaults to "").
@@ -476,7 +497,7 @@ public interface ConfigMaintainerService
         throws NacosException;
     
     /**
-     * Clone configurations within the same namespace.
+     * 在同一命名空间内克隆配置。
      *
      * @param namespaceId     Namespace ID (optional, defaults to "public").
      * @param cloneInfos      List of configurations to clone (required).
@@ -496,6 +517,7 @@ public interface ConfigMaintainerService
      * @param namespaceId Namespace ID (required).
      * @return A list of configurations in the specified namespace.
      * @throws NacosException If the namespace is invalid or the query fails.
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     List<ConfigBasicInfo> getConfigListByNamespace(String namespaceId) throws NacosException;
@@ -507,6 +529,7 @@ public interface ConfigMaintainerService
      * @param groupName Configuration group name (required).
      * @return List of listeners for the configuration.
      * @throws NacosException If retrieval fails.
+      * <p>Nacos 维护客户端模块；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     default ConfigListenerInfo getListeners(String dataId, String groupName) throws NacosException {
@@ -514,7 +537,7 @@ public interface ConfigMaintainerService
     }
     
     /**
-     * Get the listeners of a configuration by dataId, groupName, namespaceId, and sampleTime.
+     * 查询配置的订阅监听器列表。
      *
      * @param dataId      Configuration data ID (required).
      * @param groupName   Configuration group name (required).
@@ -529,7 +552,7 @@ public interface ConfigMaintainerService
         throws NacosException;
     
     /**
-     * Get all subscribed client configurations by IP.
+     * 按客户端 IP 查询其订阅的配置列表。
      *
      * @param ip          Client IP address (required).
      * @param all         Whether to include all subscriptions (optional, defaults to false).
@@ -544,7 +567,7 @@ public interface ConfigMaintainerService
         throws NacosException;
     
     /**
-     * Fill all pattern to basic String.
+     * 为搜索串补全通配符 {@code *}（空串、已有 * 等规则见文档）。
      *
      * <li>If basic string is empty or null, return directly</li>
      * <li>If basic string has wrapper `*`, return basic String</li>

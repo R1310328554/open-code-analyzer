@@ -37,19 +37,24 @@ import java.util.Map;
 import java.util.Properties;
 
 /**
- * Skill maintainer service implementation via HTTP.
+ * {@link SkillMaintainerService} HTTP 实现：调用 Skill Admin API。
+ *
+ * <p>上传类接口使用 multipart/form-data，其余 CRUD 与生命周期接口使用 JSON {@link Result} 解析。</p>
  */
 public class SkillMaintainerServiceImpl extends AbstractAiDelegateMaintainerService
     implements SkillMaintainerService {
     
+    /** 根据客户端属性构造 Skill 维护服务。 */
     public SkillMaintainerServiceImpl(Properties properties) throws NacosException {
         this(new AiMaintainerHttpContext(properties));
     }
     
+    /** 使用共享 HTTP 上下文构造（供 {@link NacosAiMaintainerServiceImpl} 组合）。 */
     SkillMaintainerServiceImpl(AiMaintainerHttpContext context) {
         super(context);
     }
     
+    /** GET 查询技能元数据。 */
     @Override
     public SkillMeta getSkillMeta(String namespaceId, String skillName) throws NacosException {
         namespaceId = resolveNamespace(namespaceId);
@@ -153,6 +158,7 @@ public class SkillMaintainerServiceImpl extends AbstractAiDelegateMaintainerServ
         return uploadSkillFromZip(namespaceId, zipBytes, overwrite, null, null);
     }
     
+    /** POST multipart 上传 zip 技能包。 */
     @Override
     public String uploadSkillFromZip(String namespaceId, byte[] zipBytes, boolean overwrite,
         String targetVersion, String commitMsg)
@@ -174,6 +180,7 @@ public class SkillMaintainerServiceImpl extends AbstractAiDelegateMaintainerServ
         return result.getData();
     }
     
+    /** POST 批量上传多技能 zip 并返回成功/失败列表。 */
     @Override
     public BatchUploadResult batchUploadSkillsFromZip(String namespaceId, byte[] zipBytes,
         boolean overwrite)
@@ -259,6 +266,7 @@ public class SkillMaintainerServiceImpl extends AbstractAiDelegateMaintainerServ
         return ErrorCode.SUCCESS.getCode().equals(result.getCode());
     }
     
+    /** POST 提交技能版本进入流水线审核。 */
     @Override
     public String submit(String namespaceId, String skillName, String version)
         throws NacosException {
