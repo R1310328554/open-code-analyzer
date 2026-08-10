@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T19:32:52Z",
-  "files": [
-    "tools/es-to-oceanbase-migration/src/es_ob_migration/cli.py",
-    "tools/es-to-oceanbase-migration/src/es_ob_migration/es_client.py",
-    "tools/es-to-oceanbase-migration/src/es_ob_migration/migrator.py",
-    "tools/es-to-oceanbase-migration/src/es_ob_migration/ob_client.py",
-    "tools/es-to-oceanbase-migration/src/es_ob_migration/progress.py",
-    "tools/es-to-oceanbase-migration/src/es_ob_migration/schema.py",
-    "tools/es-to-oceanbase-migration/src/es_ob_migration/verify.py",
-    "tools/firecrawl/__init__.py",
-    "tools/firecrawl/example_usage.py",
-    "tools/firecrawl/firecrawl_config.py",
-    "tools/firecrawl/firecrawl_connector.py",
-    "tools/firecrawl/firecrawl_processor.py",
-    "tools/firecrawl/firecrawl_ui.py",
-    "tools/firecrawl/integration.py",
-    "tools/firecrawl/ragflow_integration.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 414,
-  "done": 1335
+  "done": 1350
 }
