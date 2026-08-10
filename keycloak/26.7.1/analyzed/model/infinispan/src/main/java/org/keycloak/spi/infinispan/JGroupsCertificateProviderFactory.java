@@ -20,7 +20,7 @@ package org.keycloak.spi.infinispan;
 import org.keycloak.provider.ProviderFactory;
 
 /**
- * A {@link ProviderFactory} for {@link JGroupsCertificateProvider}.
+ * {@link JGroupsCertificateProvider} 的 {@link ProviderFactory}。
  */
 public interface JGroupsCertificateProviderFactory extends ProviderFactory<JGroupsCertificateProvider> {
 }

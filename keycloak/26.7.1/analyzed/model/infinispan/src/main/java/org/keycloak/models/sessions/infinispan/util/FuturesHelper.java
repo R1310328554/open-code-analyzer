@@ -25,7 +25,9 @@ import java.util.concurrent.Future;
 import org.jboss.logging.Logger;
 
 /**
- * Not thread-safe. Assumes tasks are added from single thread.
+ * 批量收集 {@link Future} 并顺序等待完成的辅助类。
+ * <p>
+ * 非线程安全，假定任务由单线程添加。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
@@ -33,14 +35,17 @@ public class FuturesHelper {
 
     private static final Logger log = Logger.getLogger(FuturesHelper.class);
 
+    /** 待等待的 Future 队列。 */
     private final Queue<Future> futures = new LinkedList<>();
 
 
+    /** 将异步任务加入等待队列。 */
     public void addTask(Future future) {
         this.futures.add(future);
     }
 
 
+    /** 阻塞等待队列中全部 Future 完成；异常仅记录日志不向外抛出。 */
     public void waitForAllToFinish() {
         for (Future future : futures) {
             try {
@@ -52,6 +57,7 @@ public class FuturesHelper {
     }
 
 
+    /** 返回当前队列中的任务数量。 */
     public int size() {
         return futures.size();
     }

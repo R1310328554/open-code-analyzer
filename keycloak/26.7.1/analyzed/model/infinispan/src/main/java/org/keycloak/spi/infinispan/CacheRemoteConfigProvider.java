@@ -24,17 +24,17 @@ import org.keycloak.provider.Provider;
 import org.infinispan.client.hotrod.configuration.Configuration;
 
 /**
- * A provider to create a configuration to the Hot Rod client.
+ * 为 Hot Rod 远程客户端提供 Infinispan 配置的 Provider。
  */
 public interface CacheRemoteConfigProvider extends Provider {
 
     /**
-     * Creates the {@link Configuration} for the Hot Rod client.
+     * 创建 Hot Rod 客户端的 {@link Configuration}。
      * <p>
-     * The optional signal if a Hot Rod client should be instantiated and started. If present, it assumes an external
-     * Infinispan cluster is ready and online, otherwise Keycloak fails to start.
+     * 若返回非空 Optional，表示应实例化并启动 Hot Rod 客户端，且假定外部 Infinispan 集群已就绪；
+     * 否则 Keycloak 启动失败。
      *
-     * @return The {@link Configuration} for the Hot Rod client.
+     * @return Hot Rod 客户端配置；空 Optional 表示不使用远程客户端
      */
     Optional<Configuration> configuration();
 

@@ -20,10 +20,14 @@ package org.keycloak.spi.infinispan;
 import org.keycloak.provider.Spi;
 
 /**
- * The {@link Spi} implementation for {@link JGroupsCertificateProvider}.
+ * JGroups mTLS 证书 SPI。
+ * <p>
+ * 注册 {@link JGroupsCertificateProviderFactory} 与 {@link JGroupsCertificateProvider}，
+ * 为 Infinispan 集群 JGroups 通信提供 TLS 证书管理。
  */
 public class JGroupsCertificateProviderSpi implements Spi {
 
+    /** SPI 名称，服务加载标识为 {@code jgroupsMtls}。 */
     public static final String SPI_NAME = "jgroupsMtls";
 
     @Override

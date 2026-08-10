@@ -20,7 +20,7 @@ package org.keycloak.spi.infinispan;
 import org.keycloak.provider.ProviderFactory;
 
 /**
- * The {@link ProviderFactory} to build {@link CacheEmbeddedConfigProvider}.
+ * 构建 {@link CacheEmbeddedConfigProvider} 的 {@link ProviderFactory}。
  */
 public interface CacheEmbeddedConfigProviderFactory extends ProviderFactory<CacheEmbeddedConfigProvider> {
 }

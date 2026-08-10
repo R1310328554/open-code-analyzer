@@ -20,10 +20,14 @@ package org.keycloak.spi.infinispan;
 import org.keycloak.provider.Spi;
 
 /**
- * An SPI to generate the configuration for the Hot Rod client.
+ * Hot Rod 远程 Infinispan 客户端配置 SPI。
+ * <p>
+ * 注册 {@link CacheRemoteConfigProviderFactory} 与 {@link CacheRemoteConfigProvider}，
+ * 用于生成连接外部 Infinispan 集群的 Hot Rod 客户端配置。
  */
 public class CacheRemoteConfigProviderSpi implements Spi {
 
+    /** SPI 名称，服务加载标识为 {@code cacheRemote}。 */
     public static final String SPI_NAME = "cacheRemote";
 
     @Override

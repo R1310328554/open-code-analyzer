@@ -23,15 +23,16 @@ import org.infinispan.configuration.parsing.ConfigurationBuilderHolder;
 import org.infinispan.manager.EmbeddedCacheManager;
 
 /**
- * A provider to create the {@link ConfigurationBuilderHolder} to configure the {@link EmbeddedCacheManager}.
+ * 为 {@link EmbeddedCacheManager} 提供嵌入式 Infinispan 配置的 Provider。
+ * <p>
+ * 返回的 {@link ConfigurationBuilderHolder} 用于构建本地/嵌入式缓存管理器的完整配置。
  */
 public interface CacheEmbeddedConfigProvider extends Provider {
 
     /**
-     * The {@link ConfigurationBuilderHolder} whit the {@link EmbeddedCacheManager} configuration. It must not be
-     * {@code null}.
+     * 返回包含 {@link EmbeddedCacheManager} 配置的 {@link ConfigurationBuilderHolder}，不得为 {@code null}。
      *
-     * @return The {@link ConfigurationBuilderHolder} whit the {@link EmbeddedCacheManager} configuration.
+     * @return 嵌入式缓存管理器配置
      */
     ConfigurationBuilderHolder configuration();
 

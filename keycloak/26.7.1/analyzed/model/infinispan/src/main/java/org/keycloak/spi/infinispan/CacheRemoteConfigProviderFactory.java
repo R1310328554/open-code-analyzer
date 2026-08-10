@@ -20,7 +20,7 @@ package org.keycloak.spi.infinispan;
 import org.keycloak.provider.ProviderFactory;
 
 /**
- * A factory for {@link CacheRemoteConfigProvider}
+ * {@link CacheRemoteConfigProvider} 的工厂接口。
  *
  * @see CacheRemoteConfigProvider
  */

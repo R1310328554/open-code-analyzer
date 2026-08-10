@@ -23,13 +23,14 @@ import org.infinispan.configuration.parsing.ConfigurationBuilderHolder;
 import org.infinispan.manager.EmbeddedCacheManager;
 
 /**
- * The {@link Spi} implementation for the {@link CacheEmbeddedConfigProviderFactory} and
- * {@link CacheEmbeddedConfigProvider}.
+ * 嵌入式 Infinispan 缓存配置 SPI。
  * <p>
- * It provides the {@link ConfigurationBuilderHolder} to configure the {@link EmbeddedCacheManager}.
+ * 注册 {@link CacheEmbeddedConfigProviderFactory} 与 {@link CacheEmbeddedConfigProvider}，
+ * 用于向 Keycloak 提供 {@link ConfigurationBuilderHolder} 以配置 {@link EmbeddedCacheManager}。
  */
 public class CacheEmbeddedConfigProviderSpi implements Spi {
 
+    /** SPI 名称，服务加载标识为 {@code cacheEmbedded}。 */
     public static final String SPI_NAME = "cacheEmbedded";
 
     @Override

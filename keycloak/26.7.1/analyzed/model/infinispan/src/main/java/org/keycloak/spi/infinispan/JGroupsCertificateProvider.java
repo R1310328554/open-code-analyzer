@@ -24,92 +24,89 @@ import javax.net.ssl.TrustManager;
 import org.keycloak.provider.Provider;
 
 /**
- * A {@link Provider} for the TLS certificate for JGroups communication.
+ * JGroups 集群通信 TLS 证书的 {@link Provider}。
  * <p>
- * <b>Implementation notes</b>
+ * <b>实现说明</b>
  * <p>
- * If the method {@link #isEnabled()} returns {@code true}, then the implementation must also implement
- * {@link #keyManager()} and {@link #trustManager()}.
+ * 若 {@link #isEnabled()} 返回 {@code true}，则必须实现 {@link #keyManager()} 与 {@link #trustManager()}。
  * <p>
- * If the method {@link #supportRotateAndReload()} returns {@code true}, then the implementation must also implement
- * {@link #rotateCertificate()}, {@link #reloadCertificate()} and {@link #nextRotation()}.
+ * 若 {@link #supportRotateAndReload()} 返回 {@code true}，则必须实现
+ * {@link #rotateCertificate()}、{@link #reloadCertificate()} 与 {@link #nextRotation()}。
  */
 public interface JGroupsCertificateProvider extends Provider {
 
+    /** 禁用 TLS 时的空实现占位符。 */
     JGroupsCertificateProvider DISABLED = new JGroupsCertificateProvider() {
     };
 
     /**
-     * A new certificate must be generated.
+     * 生成新证书。
      * <p>
-     * The generated certificate should not be used immediately, but only after {@link #reloadCertificate()} is
-     * invoked.
+     * 新证书不应立即生效，须待调用 {@link #reloadCertificate()} 后才会应用。
      * <p>
-     * This method must be implemented when {@link #supportRotateAndReload()} returns {@code true}.
+     * 当 {@link #supportRotateAndReload()} 为 {@code true} 时必须实现。
      */
     default void rotateCertificate() {
         throw new UnsupportedOperationException();
     }
 
     /**
-     * Reloads the most recent certificate and apply it to the {@link KeyManager} and {@link TrustManager}.
+     * 重新加载最新证书并应用到 {@link KeyManager} 与 {@link TrustManager}。
      * <p>
-     * This method must be implemented when {@link #supportRotateAndReload()} returns {@code true}.
+     * 当 {@link #supportRotateAndReload()} 为 {@code true} 时必须实现。
      */
     default void reloadCertificate() {
         throw new UnsupportedOperationException();
     }
 
     /**
-     * Returns when the next certificate rotation is required.
+     * 返回距离下次证书轮换的剩余时间，用于周期性自动轮换。
      * <p>
-     * It is used to automatically rotate certificates periodically.
-     * <p>
-     * This method must be implemented when {@link #supportRotateAndReload()} returns {@code true}.
+     * 当 {@link #supportRotateAndReload()} 为 {@code true} 时必须实现。
      *
-     * @return The time until the next rotation.
+     * @return 距下次轮换的时间间隔
      */
     default Duration nextRotation() {
         throw new UnsupportedOperationException();
     }
 
     /**
-     * Returns a managed {@link KeyManager}.
+     * 返回受管理的 {@link KeyManager}。
      * <p>
-     * If {@link #supportRotateAndReload()} returns {@code true}, the instance returned must be updated with the new
-     * certificate when {@link #reloadCertificate()}. This method is invoked only once at boot time.
+     * 若支持轮换，{@link #reloadCertificate()} 后返回的实例须反映新证书；
+     * 启动时仅调用一次。
      * <p>
-     * This method must be implemented when {@link #isEnabled()} returns {@code true}.
+     * 当 {@link #isEnabled()} 为 {@code true} 时必须实现。
      *
-     * @return The {@link KeyManager} to use by the {@link javax.net.ssl.SSLContext}.
+     * @return 供 {@link javax.net.ssl.SSLContext} 使用的 {@link KeyManager}
      */
     default KeyManager keyManager() {
         throw new UnsupportedOperationException();
     }
 
     /**
-     * Returns a managed {@link TrustManager}.
+     * 返回受管理的 {@link TrustManager}。
      * <p>
-     * If {@link #supportRotateAndReload()} returns {@code true}, the instance returned must be updated with the new
-     * certificate when {@link #reloadCertificate()}. This method is invoked only once at boot time.
+     * 若支持轮换，{@link #reloadCertificate()} 后返回的实例须反映新证书；
+     * 启动时仅调用一次。
      * <p>
-     * This method must be implemented when {@link #isEnabled()} returns {@code true}.
+     * 当 {@link #isEnabled()} 为 {@code true} 时必须实现。
      *
-     * @return The {@link TrustManager} to use by the {@link javax.net.ssl.SSLContext}.
+     * @return 供 {@link javax.net.ssl.SSLContext} 使用的 {@link TrustManager}
      */
     default TrustManager trustManager() {
         throw new UnsupportedOperationException();
     }
 
     /**
-     * @return {@code true} if rotation and reload requests is possible.
+     * @return 是否支持证书轮换与热重载
      */
     default boolean supportRotateAndReload() {
         return false;
     }
 
     /**
-     * @return {@code true} if TLS is enabled for JGroups communication.
+     * @return JGroups 通信是否启用 TLS
      */
     default boolean isEnabled() {
         return false;

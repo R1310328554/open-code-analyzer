@@ -34,34 +34,40 @@ import org.infinispan.affinity.KeyGenerator;
 import org.jboss.logging.Logger;
 
 /**
+ * 为 Infinispan 缓存生成会话键，集群模式下可优先生成本节点拥有的键以支持粘性会话。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
- * @deprecated not supported and to be removed. Check {@link CacheHolder#keyGenerator()}
+ * @deprecated 不再支持，即将移除。请改用 {@link CacheHolder#keyGenerator()}
  */
 @Deprecated(since = "26.4", forRemoval = true)
 public class InfinispanKeyGenerator {
 
     private static final Logger log = Logger.getLogger(InfinispanKeyGenerator.class);
 
-
+    /** 按缓存名缓存的 KeyAffinityService 实例。 */
     private final Map<String, KeyAffinityService> keyAffinityServices = new ConcurrentHashMap<>();
 
 
+    /** 生成 String 类型的缓存键。 */
     public String generateKeyString(KeycloakSession session, Cache<String, ?> cache) {
         return generateKey(session, cache, new StringKeyGenerator());
     }
 
 
+    /** 生成 UUID 类型的缓存键。 */
     public UUID generateKeyUUID(KeycloakSession session, Cache<UUID, ?> cache) {
         return generateKey(session, cache, new UUIDKeyGenerator());
     }
 
 
+    /**
+     * 根据粘性会话策略生成键：若需本地键且为集群缓存，则返回本节点地址对应的亲和键。
+     */
     protected <K> K generateKey(KeycloakSession session, Cache<K, ?> cache, KeyGenerator<K> keyGenerator) {
         String cacheName = cache.getName();
 
-        // "wantsLocalKey" is true if route is not attached to the sticky session cookie. Without attached route, We want the key, which will be "owned" by this node.
-        // This is needed due the fact that external loadbalancer will attach route corresponding to our node, which will be the owner of the particular key, hence we
-        // will be able to lookup key locally.
+        // wantsLocalKey 为 true 表示粘性会话 cookie 未附带路由；此时希望键由本节点持有，
+        // 以便外部负载均衡器绑定到本节点路由后可在本地查找该键。
         boolean wantsLocalKey = !session.getProvider(StickySessionEncoderProvider.class).shouldAttachRoute();
 
         if (wantsLocalKey && cache.getCacheConfiguration().clustering().cacheMode().isClustered()) {
@@ -78,6 +84,7 @@ public class InfinispanKeyGenerator {
     }
 
 
+    /** 创建 KeyAffinityService；推荐使用单线程执行器以保持线程处于 WAITING 状态。 */
     private <K> KeyAffinityService<K> createKeyAffinityService(Cache<K, ?> cache, KeyGenerator<K> keyGenerator) {
         // SingleThreadExecutor is recommended due it needs the single thread and leave it in the WAITING state
         return KeyAffinityServiceFactory.newLocalKeyAffinityService(
@@ -88,6 +95,7 @@ public class InfinispanKeyGenerator {
     }
 
 
+    /** 基于 {@link SecretGenerator} 的 UUID 键生成器。 */
     private static class UUIDKeyGenerator implements KeyGenerator<UUID> {
 
         @Override
@@ -97,6 +105,7 @@ public class InfinispanKeyGenerator {
     }
 
 
+    /** 基于 {@link SecretGenerator} 的 String 键生成器。 */
     private static class StringKeyGenerator implements KeyGenerator<String> {
 
         @Override

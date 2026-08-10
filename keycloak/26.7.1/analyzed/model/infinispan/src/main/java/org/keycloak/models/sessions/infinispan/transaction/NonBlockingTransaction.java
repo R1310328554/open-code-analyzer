@@ -23,51 +23,46 @@ import java.util.function.Consumer;
 import org.infinispan.commons.util.concurrent.AggregateCompletionStage;
 
 /**
- * Represents a non-blocking transaction.
+ * 非阻塞事务接口。
  * <p>
- * The commit and rollback operations should not block the invoker thread and register any {@link CompletionStage} into
- * the {@link AggregateCompletionStage}. The invoker is responsible to provide the {@link AggregateCompletionStage} and
- * to wait for its completion.
+ * commit 与 rollback 不得阻塞调用线程，须将 {@link CompletionStage} 注册到
+ * {@link AggregateCompletionStage}；调用方负责提供聚合阶段并等待其完成。
  */
 public interface NonBlockingTransaction {
 
     /**
-     * Asynchronously commits the transaction.
+     * 异步提交事务。
      * <p>
-     * The implementation should not block the thread and add any (or none) {@link CompletionStage} into the
-     * {@code stage}.
-     * <p>
-     * Any blocking operation should be consumed by the {@code databaseUpdates}. It will be executed at a later
-     * instant.
+     * 实现不得阻塞当前线程，可将零个或多个 {@link CompletionStage} 加入 {@code stage}。
+     * 阻塞式/数据库操作应通过 {@code databaseUpdates} 入队，稍后统一执行。
      *
-     * @param stage           The {@link AggregateCompletionStage} to collect the {@link CompletionStage}.
-     * @param databaseUpdates The {@link Consumer} to use for blocking/database updates.
+     * @param stage           用于收集 {@link CompletionStage} 的 {@link AggregateCompletionStage}
+     * @param databaseUpdates 用于登记阻塞式数据库更新的 {@link Consumer}
      */
     void asyncCommit(AggregateCompletionStage<Void> stage, Consumer<DatabaseUpdate> databaseUpdates);
 
     /**
-     * Asynchronously rollbacks the transaction.
+     * 异步回滚事务。
      * <p>
-     * The implementation should not block the thread and add any (or none) {@link CompletionStage} into the
-     * {@code stage}.
+     * 实现不得阻塞当前线程，可将零个或多个 {@link CompletionStage} 加入 {@code stage}。
      *
-     * @param stage The {@link AggregateCompletionStage} to collect the {@link CompletionStage}.
+     * @param stage 用于收集 {@link CompletionStage} 的 {@link AggregateCompletionStage}
      */
     void asyncRollback(AggregateCompletionStage<Void> stage);
 
     /**
-     * This transaction connects to entities in the database.
+     * 该事务是否涉及数据库实体。
      *
-     * @return When this returns true, this has entities in the database
+     * @return 为 {@code true} 时表示存在需持久化到数据库的实体
      */
     default boolean supportsLockingDatabaseEntities() {
         return false;
     }
 
     /**
-     * Locking any entities that are about to be updated.
+     * 锁定即将更新的数据库实体。
      *
-     * @return When this returns true, there is either no entity to be locked, or all entities are now locked and it is unlikely that the transaction will roll back.
+     * @return 为 {@code true} 表示无需锁定或已全部锁定，事务回滚概率极低
      */
     default boolean lockDatabaseEntities() {
         return false;

@@ -19,12 +19,20 @@ package org.keycloak.models.sessions.infinispan.transaction;
 
 import org.keycloak.provider.Spi;
 
+/**
+ * Infinispan 会话事务 SPI 的 {@link Spi} 实现。
+ * <p>
+ * 注册 {@link InfinispanTransactionProvider} 及其工厂，供 Keycloak 在 JTA 事务边界内
+ * 协调非阻塞 Infinispan 缓存操作与数据库写入。
+ */
 public class InfinispanTransactionSpi implements Spi {
 
+    /** SPI 标识符，对应服务加载时的名称。 */
     private static final String ID = "infinispanTransactions";
 
     @Override
     public boolean isInternal() {
+        // 内部 SPI，不对外暴露给第三方扩展
         return true;
     }
 
