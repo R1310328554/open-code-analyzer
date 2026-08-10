@@ -45,11 +45,16 @@ import org.keycloak.representations.idm.authorization.ResourceType;
 import org.jboss.logging.Logger;
 
 /**
+ * <p>聚合策略提供方：按关联子策略的决策结果与 {@link DecisionStrategy} 综合判定授权。
+ *
+ * <p>支持运行时评估（{@link Evaluation}）与部分评估（FGAP）两种路径。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class AggregatePolicyProvider implements PolicyProvider, PartialEvaluationPolicyProvider {
     private static final Logger logger = Logger.getLogger(AggregatePolicyProvider.class);
 
+    /** 依次评估关联策略，按决策策略汇总 grant/deny。 */
     @Override
     public void evaluate(Evaluation evaluation) {
         logger.debugf("Aggregate policy %s evaluating using parent class", evaluation.getPolicy().getName());
@@ -89,16 +94,19 @@ public class AggregatePolicyProvider implements PolicyProvider, PartialEvaluatio
         decision.onComplete(permission);
     }
 
+    /** 聚合策略无额外资源需释放。 */
     @Override
     public void close() {
 
     }
 
+    /** 仅处理类型为 aggregate 的策略。 */
     @Override
     public boolean supports(Policy policy) {
         return AggregatePolicyProviderFactory.ID.equals(policy.getType());
     }
 
+    /** 查询依赖本聚合策略的管理权限策略（FGAP 部分评估）。 */
     @Override
     public Stream<Policy> getPermissions(KeycloakSession session, ResourceType resourceType, ResourceType groupResourceType, UserModel subject) {
         AuthorizationProvider provider = session.getProvider(AuthorizationProvider.class);
@@ -110,6 +118,7 @@ public class AggregatePolicyProvider implements PolicyProvider, PartialEvaluatio
         return storeFactory.getPolicyStore().findDependentPolicies(resourceServer, resourceType.getType(), groupResourceType == null ? null : groupResourceType.getType(), AggregatePolicyProviderFactory.ID, null, List.of());
     }
 
+    /** 对部分评估路径：按 AFFIRMATIVE/UNANIMOUS/CONSENSUS 统计子策略 grant 数。 */
     @Override
     public boolean evaluate(KeycloakSession session, Policy policy, UserModel subject) {
         DecisionStrategy decisionStrategy = policy.getDecisionStrategy();

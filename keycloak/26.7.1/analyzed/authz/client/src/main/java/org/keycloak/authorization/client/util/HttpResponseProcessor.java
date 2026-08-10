@@ -18,9 +18,14 @@
 package org.keycloak.authorization.client.util;
 
 /**
+ * <p>HTTP 响应体字节到目标类型的转换函数式接口。
+ *
+ * <p>由 {@link HttpMethod#execute(HttpResponseProcessor)} 在状态码校验通过后调用。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface HttpResponseProcessor<R> {
 
+    /** 将响应体字节解析为类型 {@code R}。 */
     R process(byte[] entity);
 }

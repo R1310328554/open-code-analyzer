@@ -35,6 +35,10 @@ import org.keycloak.representations.idm.authorization.PermissionTicketToken;
 import org.apache.http.Header;
 
 /**
+ * <p>为 {@link HttpMethod} 配置 OAuth2/UMA 等授权模式的认证参数。
+ *
+ * <p>支持客户端凭证、资源所有者密码、UMA 授权请求等常见 grant type。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class HttpMethodAuthenticator<R> {
@@ -42,21 +46,25 @@ public class HttpMethodAuthenticator<R> {
     private final HttpMethod<R> method;
     private ClientCredentialsProvider clientCredentialProvider;
 
+    /** 绑定待认证的 HTTP 方法与客户端凭证提供方。 */
     public HttpMethodAuthenticator(HttpMethod<R> method, ClientCredentialsProvider clientCredentialsProvider) {
         this.method = method;
         this.clientCredentialProvider = clientCredentialsProvider;
     }
 
+    /** 使用客户端凭证（client_credentials）grant 配置请求。 */
     public HttpMethod<R> client() {
         this.method.params.put(OAuth2Constants.GRANT_TYPE, Arrays.asList(OAuth2Constants.CLIENT_CREDENTIALS));
         configureClientCredentials(this.method.params, this.method.headers);
         return this.method;
     }
 
+    /** 使用资源所有者密码（password）grant，不指定 scope。 */
     public HttpMethod<R> oauth2ResourceOwnerPassword(String userName, String password) {
         return oauth2ResourceOwnerPassword(userName, password, null);
     }
 
+    /** 使用资源所有者密码 grant，并可附加 scope。 */
     public HttpMethod<R> oauth2ResourceOwnerPassword(String userName, String password, String scope) {
         client();
         this.method.params.put(OAuth2Constants.GRANT_TYPE, Arrays.asList(OAuth2Constants.PASSWORD));
@@ -67,8 +75,9 @@ public class HttpMethodAuthenticator<R> {
         return this.method;
     }
 
+    /** 配置 UMA grant；若请求头无 Bearer token 则回退为客户端凭证认证。 */
     public HttpMethod<R> uma() {
-        // if there is an authorization bearer header authenticate using bearer token
+        // 若已有 Authorization Bearer 头，则沿用 Bearer 认证；否则使用客户端凭证
         Header authorizationHeader = method.builder.getFirstHeader("Authorization");
 
         if (!(authorizationHeader != null && authorizationHeader.getValue().toLowerCase().startsWith("bearer"))) {
@@ -79,6 +88,7 @@ public class HttpMethodAuthenticator<R> {
         return method;
     }
 
+    /** 根据 {@link AuthorizationRequest} 填充 UMA 授权请求参数（ticket、权限、元数据等）。 */
     public HttpMethod<R> uma(AuthorizationRequest request) {
         String ticket = request.getTicket();
         PermissionTicketToken permissions = request.getPermissions();
@@ -148,6 +158,7 @@ public class HttpMethodAuthenticator<R> {
         return method;
     }
 
+    /** 将客户端凭证写入表单参数与请求头。 */
     private void configureClientCredentials(Map<String, List<String>> requestParams, Map<String, String> requestHeaders) {
         Map<String, String> formparams = new HashMap<>();
         ClientCredentialsProviderUtils.setClientCredentials(method.configuration, clientCredentialProvider, requestHeaders, formparams);

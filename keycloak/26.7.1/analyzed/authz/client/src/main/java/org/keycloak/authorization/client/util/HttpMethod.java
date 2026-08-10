@@ -40,6 +40,10 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 
 /**
+ * <p>可链式配置的 HTTP 方法执行器，负责发送请求、校验状态码并解析响应体。
+ *
+ * <p>支持 Bearer 认证、表单/JSON 请求体、查询参数，以及通过 {@link HttpMethodResponse} 反序列化 JSON。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class HttpMethod<R> {
@@ -54,10 +58,12 @@ public class HttpMethod<R> {
     private final ClientCredentialsProvider authenticator;
     private HttpMethodResponse<R> response;
 
+    /** 创建不含预设参数与请求头的 HTTP 方法。 */
     public HttpMethod(Configuration configuration, ClientCredentialsProvider authenticator, RequestBuilder builder) {
         this(configuration, authenticator, builder, new HashMap<String, List<String>>(), new HashMap<String, String>());
     }
 
+    /** 创建带初始查询参数与请求头的 HTTP 方法。 */
     public HttpMethod(Configuration configuration, ClientCredentialsProvider authenticator, RequestBuilder builder, Map<String, List<String>> params, Map<String, String> headers) {
         this.configuration = configuration;
         this.httpClient = configuration.getHttpClient();
@@ -67,6 +73,7 @@ public class HttpMethod<R> {
         this.headers = headers;
     }
 
+    /** 执行请求并忽略响应体。 */
     public void execute() {
         execute(new HttpResponseProcessor<R>() {
             @Override
@@ -76,6 +83,7 @@ public class HttpMethod<R> {
         });
     }
 
+    /** 执行请求并由 {@code responseProcessor} 解析响应字节。 */
     public R execute(HttpResponseProcessor<R> responseProcessor) {
         byte[] bytes = null;
 
@@ -116,6 +124,7 @@ public class HttpMethod<R> {
         }
     }
 
+    /** 执行前将查询参数写入 {@link RequestBuilder}（子类可覆盖以改用表单编码）。 */
     protected void preExecute(RequestBuilder builder) {
         for (Map.Entry<String, List<String>> param : params.entrySet()) {
             for (String value : param.getValue()) {
@@ -124,20 +133,24 @@ public class HttpMethod<R> {
         }
     }
 
+    /** 设置 Authorization Bearer 请求头。 */
     public HttpMethod<R> authorizationBearer(String bearer) {
         this.builder.addHeader("Authorization", "Bearer " + bearer);
         return this;
     }
 
+    /** 获取响应解析器，用于指定 JSON 目标类型后执行。 */
     public HttpMethodResponse<R> response() {
         this.response = new HttpMethodResponse(this);
         return this.response;
     }
 
+    /** 进入 OAuth2/UMA 认证配置链。 */
     public HttpMethodAuthenticator<R> authentication() {
         return new HttpMethodAuthenticator<R>(this, authenticator);
     }
 
+    /** 添加单个查询参数（同名参数会覆盖已有列表）。 */
     public HttpMethod<R> param(String name, String value) {
         if (value != null) {
             List<String> values = params.get(name);
@@ -152,6 +165,7 @@ public class HttpMethod<R> {
         return this;
     }
 
+    /** 追加同名查询参数（保留已有值）。 */
     public HttpMethod<R> params(String name, String value) {
         if (value != null) {
             List<String> values = params.get(name);
@@ -166,12 +180,14 @@ public class HttpMethod<R> {
         return this;
     }
 
+    /** 以 application/json 发送原始 JSON 字节作为请求体。 */
     public HttpMethod<R> json(byte[] entity) {
         this.builder.addHeader("Content-Type", "application/json");
         this.builder.setEntity(new ByteArrayEntity(entity));
         return this;
     }
 
+    /** 返回以 application/x-www-form-urlencoded 编码表单字段的副本。 */
     public HttpMethod<R> form() {
         return new HttpMethod<R>(this.configuration, authenticator, this.builder, this.params, this.headers) {
             @Override

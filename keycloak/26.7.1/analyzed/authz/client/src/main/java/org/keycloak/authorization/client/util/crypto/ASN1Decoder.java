@@ -27,6 +27,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * <p>轻量级 DER/ASN.1 解码器，用于解析 ECDSA 签名等二进制结构。
+ *
+ * <p>仅支持授权客户端所需的 SEQUENCE 与 INTEGER 标签，不支持不定长编码。
  *
  * @author rmartinc
  */
@@ -36,16 +39,19 @@ class ASN1Decoder {
     private final int limit;
     private int count;
 
+    /** 从字节数组构造解码器。 */
     ASN1Decoder(byte[] bytes) {
         is = new ByteArrayInputStream(bytes);
         count = 0;
         limit = bytes.length;
     }
 
+    /** 工厂方法：创建 ASN.1 解码器。 */
     public static ASN1Decoder create(byte[] bytes) {
         return new ASN1Decoder(bytes);
     }
 
+    /** 读取 DER SEQUENCE，返回各子元素原始字节列表。 */
     public List<byte[]> readSequence() throws IOException {
         int tag = readTag();
         int tagNo = readTagNumber(tag);
@@ -62,6 +68,7 @@ class ASN1Decoder {
         return result;
     }
 
+    /** 读取 DER INTEGER 并转为 {@link BigInteger}。 */
     public BigInteger readInteger() throws IOException {
         int tag = readTag();
         int tagNo = readTagNumber(tag);
@@ -73,6 +80,7 @@ class ASN1Decoder {
         return new BigInteger(bytes);
     }
 
+    /** 读取下一个 ASN.1 元素（含标签与长度）的完整编码字节。 */
     byte[] readNext() throws IOException {
         mark();
         int tag = readTag();
@@ -82,6 +90,7 @@ class ASN1Decoder {
         return read(length);
     }
 
+    /** 读取单字节 ASN.1 标签。 */
     int readTag() throws IOException {
         int tag = read();
         if (tag < 0) {
@@ -90,11 +99,12 @@ class ASN1Decoder {
         return tag;
     }
 
+    /** 从标签字节解析标签号（含多字节高标签号形式）。 */
     int readTagNumber(int tag) throws IOException {
         int tagNo = tag & 0x1f;
 
         //
-        // with tagged object tag number is bottom 5 bits, or stored at the start of the content
+        // 带标签对象：标签号在低 5 位，或位于内容起始处
         //
         if (tagNo == 0x1f) {
             tagNo = 0;
@@ -124,6 +134,7 @@ class ASN1Decoder {
         return tagNo;
     }
 
+    /** 读取 DER 长度字段（不支持不定长 0x80 编码）。 */
     int readLength() throws IOException {
         int length = read();
         if (length < 0) {
@@ -166,6 +177,7 @@ class ASN1Decoder {
         return length;
     }
 
+    /** 从输入流读取指定长度的原始字节。 */
     byte[] read(int length) throws IOException {
         byte[] bytes = new byte[length];
         int totalBytesRead = 0;
@@ -181,17 +193,20 @@ class ASN1Decoder {
         return bytes;
     }
 
+    /** 标记当前读取位置，供 {@link #reset()} 回退。 */
     void mark() {
         count = 0;
         is.mark(is.available());
     }
 
+    /** 回退到 mark 位置并返回已读字节数。 */
     int reset() {
         int tmp = count;
         is.reset();
         return tmp;
     }
 
+    /** 读取单字节并累计已读计数。 */
     int read() {
         int tmp = is.read();
         if (tmp >= 0) {

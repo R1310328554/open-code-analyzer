@@ -23,20 +23,22 @@ import org.keycloak.authorization.client.ResourceNotFoundException;
 import org.keycloak.authorization.client.representation.TokenIntrospectionResponse;
 
 /**
+ * <p>授权客户端异常处理与重试工具类。
+ *
+ * <p>将 {@link HttpResponseException} 映射为 {@link AuthorizationDeniedException} 等业务异常，
+ * 并在 token 失效（403）时尝试刷新后重试。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public final class Throwables {
 
     /**
-     * Handles an {@code cause} and wraps it into a {@link RuntimeException}. The resulting cause contains
-     * more details in case the given {@code cause} is of a {@link HttpResponseException}.
+     * 处理 {@code cause} 并包装为 {@link RuntimeException}。
+     * 若根因为 {@link HttpResponseException}，则提取更详细的 HTTP 错误信息。
      *
-     *
-     * @param callable
-     * @param pat
-     * @param message the message
-     * @param cause the root cause
-     * @return a {@link RuntimeException} wrapping the given {@code cause}
+     * @param message 异常消息
+     * @param cause 根因
+     * @return 包装后的 {@link RuntimeException}
      */
     public static RuntimeException handleWrapException(String message, Throwable cause) {
         if (cause instanceof HttpResponseException) {
@@ -47,19 +49,19 @@ public final class Throwables {
     }
 
     /**
-     * <p>Retries the given {@code callable} after obtaining a fresh {@code token} from the server. If the attempt to retry fails
-     * the exception is handled as defined by {@link #handleWrapException(String, Throwable)}.
+     * <p>在从服务器获取新 {@code token} 后重试 {@code callable}。
+     * 重试失败时按 {@link #handleWrapException(String, Throwable)} 处理。
      *
-     * <p>A retry is only attempted in case the {@code cause} is a {@link HttpResponseException} with a 403 status code. In some cases the
-     * session associated with the token is no longer valid and a new token must be issues.
+     * <p>仅当 {@code cause} 为状态码 403 的 {@link HttpResponseException} 时尝试重试——
+     * 部分场景下 token 关联会话已失效，需重新签发。
      *
-     * @param callable the callable to retry
-     * @param token the token
-     * @param message the message
-     * @param cause the cause
-     * @param <V> the result of the callable
-     * @return the result of the callable
-     * @throws RuntimeException in case the attempt to retry fails
+     * @param callable 待重试的可调用对象
+     * @param token token 供应器
+     * @param message 异常消息
+     * @param cause 原始异常
+     * @param <V> callable 返回值类型
+     * @return callable 执行结果
+     * @throws RuntimeException 重试仍失败时抛出
      */
     public static <V> V retryAndWrapExceptionIfNecessary(Callable<V> callable, TokenCallable token, String message, Throwable cause) throws RuntimeException {
         if (token == null || !token.isRetry()) {
@@ -94,6 +96,7 @@ public final class Throwables {
         throw new RuntimeException(message, cause);
     }
 
+    /** 将 403 映射为 {@link AuthorizationDeniedException}，其余 HTTP 错误包装为 {@link RuntimeException}。 */
     private static RuntimeException handleAndWrapHttpResponseException(HttpResponseException exception) {
         if (403 == exception.getStatusCode()) {
             throw new AuthorizationDeniedException(exception);

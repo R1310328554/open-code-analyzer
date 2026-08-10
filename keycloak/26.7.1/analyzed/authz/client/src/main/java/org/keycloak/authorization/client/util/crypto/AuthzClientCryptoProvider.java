@@ -52,13 +52,17 @@ import org.keycloak.common.crypto.UserIdentityExtractorProvider;
 import org.keycloak.common.util.KeystoreUtil;
 
 /**
- * <p>Simple crypto provider to be used with the authz-client.</p>
+ * <p>授权客户端（authz-client）使用的精简 {@link CryptoProvider} 实现。</p>
+ *
+ * <p>主要提供 ECDSA 签名在 concatenated R||S 与 ASN.1 DER 格式间的互转，
+ * 其余算法能力均抛出 {@link UnsupportedOperationException}。</p>
  *
  * @author rmartinc
  */
 public class AuthzClientCryptoProvider implements CryptoProvider {
 
     @Override
+    /** 返回 JRE 默认 KeyStore 的 Provider（非 BouncyCastle）。 */
     public Provider getBouncyCastleProvider() {
         try {
             return KeyStore.getInstance(KeyStore.getDefaultType()).getProvider();
@@ -68,39 +72,47 @@ public class AuthzClientCryptoProvider implements CryptoProvider {
     }
 
     @Override
+    /** SPI 排序值，数值越大优先级越低。 */
     public int order() {
         return 100;
     }
 
     @Override
+    /** 通用算法提供方查找（authz-client 未实现）。 */
     public <T> T getAlgorithmProvider(Class<T> clazz, String algorithm) {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
+    /** 证书工具（authz-client 未实现）。 */
     public CertificateUtilsProvider getCertificateUtils() {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
+    /** PEM 编解码工具（authz-client 未实现）。 */
     public PemUtilsProvider getPemUtils() {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
+    /** OCSP 证明方（authz-client 未实现）。 */
     public <T> T getOCSPProver(Class<T> clazz) {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
+    /** 用户身份提取器（authz-client 未实现）。 */
     public UserIdentityExtractorProvider getIdentityExtractorProvider() {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
+    /** 返回仅实现 ECDSA 签名格式转换的 {@link ECDSACryptoProvider}。 */
     public ECDSACryptoProvider getEcdsaCryptoProvider() {
         return new ECDSACryptoProvider() {
             @Override
+            /** 将 concatenated R||S 签名转为 ASN.1 DER SEQUENCE。 */
             public byte[] concatenatedRSToASN1DER(byte[] signature, int signLength) throws IOException {
                 int len = signLength / 2;
                 int arraySize = len + 1;
@@ -123,6 +135,7 @@ public class AuthzClientCryptoProvider implements CryptoProvider {
             }
 
             @Override
+            /** 将 ASN.1 DER 签名解码为 concatenated R||S 格式。 */
             public byte[] asn1derToConcatenatedRS(byte[] derEncodedSignatureValue, int signLength) throws IOException {
                 int len = signLength / 2;
 
@@ -149,6 +162,7 @@ public class AuthzClientCryptoProvider implements CryptoProvider {
                 throw new UnsupportedOperationException("Not supported yet.");
             }
 
+            /** 将 BigInteger 截断或零填充至指定长度字节。 */
             private byte[] integerToBytes(BigInteger s, int qLength) {
                 byte[] bytes = s.toByteArray();
                 if (qLength < bytes.length) {

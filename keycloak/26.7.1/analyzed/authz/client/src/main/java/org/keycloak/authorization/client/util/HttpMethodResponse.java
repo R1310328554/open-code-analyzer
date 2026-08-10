@@ -25,16 +25,20 @@ import org.keycloak.util.JsonSerialization;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 /**
+ * <p>{@link HttpMethod} 的响应解析包装器，支持将响应体反序列化为指定 Java 类型。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class HttpMethodResponse<R> {
 
     private final HttpMethod<R> method;
 
+    /** 绑定待解析响应的 HTTP 方法。 */
     public HttpMethodResponse(HttpMethod method) {
         this.method = method;
     }
 
+    /** 执行请求并丢弃响应体。 */
     public R execute() {
         return this.method.execute(new HttpResponseProcessor<R>() {
             @Override
@@ -44,6 +48,7 @@ public class HttpMethodResponse<R> {
         });
     }
 
+    /** 指定响应 JSON 反序列化的目标类后执行。 */
     public HttpMethodResponse<R> json(final Class<R> responseType) {
         return new HttpMethodResponse<R>(this.method) {
             @Override
@@ -62,6 +67,7 @@ public class HttpMethodResponse<R> {
         };
     }
 
+    /** 指定 Jackson {@link TypeReference} 后执行，适用于泛型响应类型。 */
     public HttpMethodResponse<R> json(final TypeReference responseType) {
         return new HttpMethodResponse<R>(this.method) {
             @Override
