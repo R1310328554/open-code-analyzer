@@ -15,23 +15,8 @@
     "test-framework/builders/src/main/java/org/keycloak/testframework/realm/AuthenticationExecutionExportBuilder.java",
     "test-framework/builders/src/main/java/org/keycloak/testframework/realm/AuthenticationFlowBuilder.java",
     "test-framework/builders/src/main/java/org/keycloak/testframework/realm/Builder.java",
-    "test-framework/builders/src/main/java/org/keycloak/testframework/realm/ClientBuilder.java",
-    "test-framework/builders/src/main/java/org/keycloak/testframework/realm/ClientPolicyBuilder.java",
-    "test-framework/builders/src/main/java/org/keycloak/testframework/realm/ClientProfileBuilder.java",
-    "test-framework/builders/src/main/java/org/keycloak/testframework/realm/ClientScopeBuilder.java",
-    "test-framework/builders/src/main/java/org/keycloak/testframework/realm/CredentialBuilder.java",
-    "test-framework/builders/src/main/java/org/keycloak/testframework/realm/FederatedIdentityBuilder.java",
-    "test-framework/builders/src/main/java/org/keycloak/testframework/realm/GroupBuilder.java",
-    "test-framework/builders/src/main/java/org/keycloak/testframework/realm/IdentityProviderBuilder.java",
-    "test-framework/builders/src/main/java/org/keycloak/testframework/realm/RealmAttributesBuilder.java",
-    "test-framework/builders/src/main/java/org/keycloak/testframework/realm/RealmBuilder.java",
-    "test-framework/builders/src/main/java/org/keycloak/testframework/realm/RoleBuilder.java",
-    "test-framework/builders/src/main/java/org/keycloak/testframework/realm/UserBuilder.java",
-    "test-framework/clustering/src/main/java/org/keycloak/testframework/ClusteringTestFrameworkExtension.java",
-    "test-framework/clustering/src/main/java/org/keycloak/testframework/annotations/InjectLoadBalancer.java",
-    "test-framework/clustering/src/main/java/org/keycloak/testframework/clustering/LoadBalancer.java",
-    "test-framework/clustering/src/main/java/org/keycloak/testframework/clustering/LoadBalancerSupplier.java"
+    "test-framework/builders/src/main/java/org/keycloak/testframework/realm/ClientBuilder.java"
   ],
   "remaining_pending": 508,
-  "done": 5460
+  "done": 5475
 }
