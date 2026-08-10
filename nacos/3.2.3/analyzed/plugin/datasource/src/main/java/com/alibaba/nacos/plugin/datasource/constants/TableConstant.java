@@ -17,34 +17,48 @@
 package com.alibaba.nacos.plugin.datasource.constants;
 
 /**
- * The table name constant.
+ * Nacos 持久化表名常量。
+ *
+ * <p>Mapper 实现通过 {@link com.alibaba.nacos.plugin.datasource.mapper.Mapper#getTableName()} 引用，保证 SQL 表名一致。</p>
  *
  * @author hyx
  **/
 
 public class TableConstant {
     
+    /** 核心配置表。 */
     public static final String CONFIG_INFO = "config_info";
     
+    /** Beta 发布配置表。 */
     public static final String CONFIG_INFO_BETA = "config_info_beta";
     
+    /** 配置标签表。 */
     public static final String CONFIG_INFO_TAG = "config_info_tag";
     
+    /** 灰度配置表。 */
     public static final String CONFIG_INFO_GRAY = "config_info_gray";
     
+    /** 配置与标签关联表。 */
     public static final String CONFIG_TAGS_RELATION = "config_tags_relation";
     
+    /** Group 容量配额表。 */
     public static final String GROUP_CAPACITY = "group_capacity";
     
+    /** 配置变更历史表。 */
     public static final String HIS_CONFIG_INFO = "his_config_info";
     
+    /** 租户容量配额表。 */
     public static final String TENANT_CAPACITY = "tenant_capacity";
     
+    /** 租户信息表。 */
     public static final String TENANT_INFO = "tenant_info";
     
+    /** 配置命名空间迁移任务表。 */
     public static final String MIGRATE_CONFIG = "migrate_config";
     
+    /** AI 资源元数据表。 */
     public static final String AI_RESOURCE = "ai_resource";
     
+    /** AI 资源版本表。 */
     public static final String AI_RESOURCE_VERSION = "ai_resource_version";
 }

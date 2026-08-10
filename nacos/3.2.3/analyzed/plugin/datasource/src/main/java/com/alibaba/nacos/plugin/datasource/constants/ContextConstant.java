@@ -17,12 +17,15 @@
 package com.alibaba.nacos.plugin.datasource.constants;
 
 /**
- * Datasource plugin common constant.
+ * 数据源插件 Mapper 上下文键名常量。
+ *
+ * <p>定义 {@link com.alibaba.nacos.plugin.datasource.model.MapperContext} 查询/更新参数在上下文中的键名。</p>
  *
  * @author zunfei.lzf
  */
 public class ContextConstant {
     
+    /** 分页导出时是否携带配置内容（{@code content}）字段。 */
     public static final String NEED_CONTENT = "needContent";
     
 }

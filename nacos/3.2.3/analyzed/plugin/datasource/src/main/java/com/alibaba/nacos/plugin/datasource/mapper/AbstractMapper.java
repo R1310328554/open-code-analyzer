@@ -23,15 +23,19 @@ import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 /**
- * The abstract mapper contains CRUD methods.
+ * Mapper 抽象基类，提供通用 CRUD SQL 拼接。
+ *
+ * <p>子类仅需实现 {@link #getTableName()} 与 {@link #getFunction(String)}，即可复用 SELECT/INSERT/UPDATE/DELETE/COUNT 模板逻辑。</p>
  *
  * @author hyx
  **/
 
 public abstract class AbstractMapper implements Mapper {
     
+    /** 列名与 SQL 函数的分隔符（格式 {@code column@FUNCTION}）。 */
     private static final String COLUMN_SEPARATOR = "@";
     
+    /** 拼接 SELECT 语句；{@code where} 为空时省略 WHERE 子句。 */
     @Override
     public String select(List<String> columns, List<String> where) {
         StringBuilder sql = new StringBuilder();
@@ -49,6 +53,7 @@ public abstract class AbstractMapper implements Mapper {
         return sql.toString();
     }
     
+    /** 拼接 INSERT 语句，列值支持 {@code column@FUNCTION} 形式调用方言函数。 */
     @Override
     public String insert(List<String> columns) {
         StringJoiner columnJoiner = new StringJoiner(", ", "(", ")");
@@ -63,6 +68,7 @@ public abstract class AbstractMapper implements Mapper {
         return "INSERT INTO " + getTableName() + columnJoiner + " VALUES" + valueJoiner;
     }
     
+    /** 拼接 UPDATE 语句，SET 与 WHERE 均使用占位符 {@code ?}。 */
     @Override
     public String update(List<String> columns, List<String> where) {
         StringJoiner setJoiner = new StringJoiner(",");
@@ -84,6 +90,7 @@ public abstract class AbstractMapper implements Mapper {
         return sql.toString();
     }
     
+    /** 拼接 DELETE 语句，WHERE 条件以 AND 连接。 */
     @Override
     public String delete(List<String> params) {
         StringBuilder sql = new StringBuilder();
@@ -94,6 +101,7 @@ public abstract class AbstractMapper implements Mapper {
         return sql.toString();
     }
     
+    /** 拼接 {@code SELECT COUNT(*)} 计数语句。 */
     @Override
     public String count(List<String> where) {
         StringBuilder sql = new StringBuilder();
@@ -111,11 +119,13 @@ public abstract class AbstractMapper implements Mapper {
         return sql.toString();
     }
     
+    /** 默认主键回填列名为 {@code id}。 */
     @Override
     public String[] getPrimaryKeyGeneratedKeys() {
         return new String[] {"id"};
     }
     
+    /** 将等值条件列表追加为 {@code WHERE col = ? AND ...}。 */
     private void appendWhereClause(List<String> where, StringBuilder sql) {
         sql.append(" WHERE ");
         sql.append(where.stream().map(str -> (str + " = ?")).collect(Collectors.joining(" AND ")));

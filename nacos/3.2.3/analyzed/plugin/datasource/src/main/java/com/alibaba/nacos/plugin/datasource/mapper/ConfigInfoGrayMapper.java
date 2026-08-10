@@ -23,7 +23,9 @@ import com.alibaba.nacos.plugin.datasource.model.MapperContext;
 import com.alibaba.nacos.plugin.datasource.model.MapperResult;
 
 /**
- * The config gray info mapper.
+ * 灰度配置表（{@code config_info_gray}）Mapper 接口。
+ *
+ * <p>提供灰度规则 CAS 更新、变更增量拉取及 Dump 导出。</p>
  *
  * @author rong
  **/
@@ -31,7 +33,7 @@ import com.alibaba.nacos.plugin.datasource.model.MapperResult;
 public interface ConfigInfoGrayMapper extends Mapper {
     
     /**
-     * Update gray configuration information. The default sql: UPDATE config_info_gray SET content=?, md5 = ?,
+     * CAS 更新灰度配置（含 gray_rule，md5 校验防并发）。默认 SQL：UPDATE config_info_gray SET content=?, md5 = ?,
      * src_ip=?,src_user=?,gmt_modified=?,app_name=?,gray_rule=? WHERE data_id=? AND group_id=? AND tenant_id=? AND
      * gray_name=? AND (md5=? or md5 is null or md5='')
      *
@@ -62,7 +64,7 @@ public interface ConfigInfoGrayMapper extends Mapper {
     }
     
     /**
-     * Query change config. <br/>The default sql: SELECT data_id, group_id, tenant_id, app_name, content,
+     * 按时间窗口增量查询灰度配置变更。默认 SQL：SELECT data_id, group_id, tenant_id, app_name, content,
      * gmt_modified,encrypted_data_key FROM config_info WHERE gmt_modified >=? AND gmt_modified <= ?
      *
      * @param context sql paramMap
@@ -80,7 +82,7 @@ public interface ConfigInfoGrayMapper extends Mapper {
     }
     
     /**
-     * Query all gray config info for dump task. The default sql: SELECT
+     * 分页导出全部灰度配置（Dump 任务）。默认 SQL：SELECT
      * t.id,data_id,group_id,tenant_id,gray_name,app_name,content,md5,gmt_modified FROM (  SELECT id FROM
      * config_info_gray  ORDER BY id LIMIT startRow,pageSize ) g, config_info_gray t  WHERE g.id = t.id
      *

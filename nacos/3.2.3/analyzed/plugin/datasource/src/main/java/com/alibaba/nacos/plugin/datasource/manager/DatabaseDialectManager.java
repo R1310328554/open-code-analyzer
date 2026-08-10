@@ -29,15 +29,20 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * DatabaseDialect SPI Manager.
+ * 数据库方言 SPI 管理器（单例）。
+ *
+ * <p>启动时通过 {@link com.alibaba.nacos.common.spi.NacosServiceLoader} 加载全部 {@link com.alibaba.nacos.plugin.datasource.dialect.DatabaseDialect} 实现，并支持插件启用/禁用校验与降级回退。</p>
+ *
  * @author Long Yu
  */
 public class DatabaseDialectManager {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseDialectManager.class);
     
+    /** 全局单例实例。 */
     private static final DatabaseDialectManager INSTANCE = new DatabaseDialectManager();
     
+    /** 数据库类型 → 方言实现的注册表。 */
     private static final Map<String, DatabaseDialect> SUPPORT_DIALECT_MAP =
         new ConcurrentHashMap<String, DatabaseDialect>();
     
@@ -57,8 +62,16 @@ public class DatabaseDialectManager {
         }
     }
     
+    /**
+     * 按数据库类型获取已启用的方言实现。
+     *
+     * <p>若目标方言被禁用，则尝试回退到首个仍启用的方言；均无则抛出异常。</p>
+     *
+     * @param databaseType 数据库类型标识
+     * @return 对应方言实例
+     */
     public DatabaseDialect getDialect(String databaseType) {
-        // Check if plugin is enabled
+        // 校验目标方言插件是否已启用
         if (!PluginStateCheckerHolder.isPluginEnabled(PluginType.DATASOURCE_DIALECT.getType(),
             databaseType)) {
             LOGGER.debug("[DatabaseDialectManager] Plugin DATASOURCE_DIALECT:{} is disabled",
@@ -73,7 +86,7 @@ public class DatabaseDialectManager {
             LOGGER.warn(
                 "[DatabaseDialectManager] No dialect found for type: {}, checking for enabled fallback dialects",
                 databaseType);
-            // Find first enabled dialect as fallback
+            // 遍历注册表，选取首个仍启用的方言作为降级
             for (Map.Entry<String, DatabaseDialect> entry : SUPPORT_DIALECT_MAP.entrySet()) {
                 String dialectType = entry.getKey();
                 if (PluginStateCheckerHolder
@@ -92,7 +105,7 @@ public class DatabaseDialectManager {
     }
     
     /**
-     * Get DatasourceDialectManager instance.
+     * 获取方言管理器单例。
      *
      * @return DataSourceDialectProvider
      */
@@ -101,7 +114,7 @@ public class DatabaseDialectManager {
     }
     
     /**
-     * Get all registered database dialects.
+     * 返回全部已注册方言的只读映射。
      *
      * @return unmodifiable map of database type to DatabaseDialect
      */

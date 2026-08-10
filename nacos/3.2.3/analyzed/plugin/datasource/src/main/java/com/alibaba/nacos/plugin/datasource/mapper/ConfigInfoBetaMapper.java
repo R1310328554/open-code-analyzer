@@ -25,7 +25,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The beta config info mapper.
+ * Beta 发布配置表（{@code config_info_beta}）Mapper 接口。
+ *
+ * <p>支持 CAS 乐观锁更新及全量 Dump 分页导出。</p>
  *
  * @author hyx
  **/
@@ -33,7 +35,7 @@ import java.util.List;
 public interface ConfigInfoBetaMapper extends Mapper {
     
     /**
-     * Update beta configuration information.
+     * CAS 更新 Beta 配置（md5 校验防并发覆盖）。
      * UPDATE config_info_beta SET content=?, md5=?, beta_ips=?, src_ip=?,src_user=?,gmt_modified=?,app_name=?
      * WHERE data_id=? AND group_id=? AND tenant_id=? AND (md5=? or md5 is null or md5='')
      *
@@ -66,7 +68,7 @@ public interface ConfigInfoBetaMapper extends Mapper {
     }
     
     /**
-     * Query all beta config info for dump task.
+     * 分页导出全部 Beta 配置（Dump 任务专用）。
      * The default sql:
      * SELECT t.id,data_id,group_id,tenant_id,app_name,content,md5,gmt_modified,beta_ips,encrypted_data_key
      * FROM ( SELECT id FROM config_info_beta  ORDER BY id LIMIT startRow,pageSize  ) g, config_info_beta t WHERE g.id = t.id

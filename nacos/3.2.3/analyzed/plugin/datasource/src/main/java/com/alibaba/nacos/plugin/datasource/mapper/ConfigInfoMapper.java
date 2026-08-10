@@ -32,7 +32,9 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * The mapper of config info.
+ * 核心配置表（{@code config_info}）Mapper 接口。
+ *
+ * <p>涵盖配置 CRUD、分页检索、变更追踪、导出及 CAS 原子更新等全部 SQL 操作；具体分页语法由方言实现类覆盖。</p>
  *
  * @author hyx
  **/
@@ -44,6 +46,7 @@ public interface ConfigInfoMapper extends Mapper {
      *
      * @param context sql paramMap
      * @return the sql of getting the maxId.
+      * <p>核心配置表 SQL 操作；详见方法说明。</p>
      */
     default MapperResult findConfigMaxId(MapperContext context) {
         return new MapperResult("SELECT MAX(id) FROM config_info", Collections.emptyList());
@@ -54,6 +57,7 @@ public interface ConfigInfoMapper extends Mapper {
      *
      * @param context sql paramMap
      * @return The sql of finding all dataId and group.
+      * <p>核心配置表 SQL 操作；详见方法说明。</p>
      */
     default MapperResult findAllDataIdAndGroup(MapperContext context) {
         return new MapperResult("SELECT DISTINCT data_id, group_id FROM config_info",
@@ -66,6 +70,7 @@ public interface ConfigInfoMapper extends Mapper {
      *
      * @param context sql paramMap
      * @return The sql of querying the count of config_info.
+      * <p>核心配置表 SQL 操作；详见方法说明。</p>
      */
     default MapperResult findConfigInfoByAppCountRows(MapperContext context) {
         Object tenantId = context.getWhereParameter(FieldConstant.TENANT_ID);
@@ -80,6 +85,7 @@ public interface ConfigInfoMapper extends Mapper {
      *
      * @param context The context of startRow, pageSize
      * @return The sql of querying configuration information based on group.
+      * <p>核心配置表 SQL 操作；详见方法说明。</p>
      */
     MapperResult findConfigInfoByAppFetchRows(MapperContext context);
     
@@ -89,6 +95,7 @@ public interface ConfigInfoMapper extends Mapper {
      *
      * @param context sql paramMap
      * @return The sql of querying the number of configuration items.
+      * <p>核心配置表 SQL 操作；详见方法说明。</p>
      */
     default MapperResult configInfoLikeTenantCount(MapperContext context) {
         Object tenantId = context.getWhereParameter(FieldConstant.TENANT_ID);
@@ -102,6 +109,7 @@ public interface ConfigInfoMapper extends Mapper {
      *
      * @param context The context of startRow, pageSize
      * @return The sql of getting tenant id list  by page.
+      * <p>核心配置表 SQL 操作；详见方法说明。</p>
      */
     MapperResult getTenantIdList(MapperContext context);
     
@@ -111,6 +119,7 @@ public interface ConfigInfoMapper extends Mapper {
      *
      * @param context The context of startRow, pageSize
      * @return The sql of getting group id list  by page.
+      * <p>核心配置表 SQL 操作；详见方法说明。</p>
      */
     MapperResult getGroupIdList(MapperContext context);
     
@@ -121,6 +130,7 @@ public interface ConfigInfoMapper extends Mapper {
      *
      * @param context The context of startRow, pageSize
      * @return The sql of querying all configuration information.
+      * <p>核心配置表 SQL 操作；详见方法说明。</p>
      */
     MapperResult findAllConfigKey(MapperContext context);
     
@@ -130,6 +140,7 @@ public interface ConfigInfoMapper extends Mapper {
      *
      * @param context The context of startRow, pageSize
      * @return The sql of querying all configuration information by page.
+      * <p>核心配置表 SQL 操作；详见方法说明。</p>
      */
     MapperResult findAllConfigInfoBaseFetchRows(MapperContext context);
     
@@ -140,6 +151,7 @@ public interface ConfigInfoMapper extends Mapper {
      *
      * @param context     The context of startRow, pageSize
      * @return The sql of querying all config info.
+      * <p>核心配置表 SQL 操作；详见方法说明。</p>
      */
     MapperResult findAllConfigInfoFragment(MapperContext context);
     
@@ -149,6 +161,7 @@ public interface ConfigInfoMapper extends Mapper {
      *
      * @param context sql paramMap
      * @return The sql of querying change config.
+      * <p>核心配置表 SQL 操作；详见方法说明。</p>
      */
     default MapperResult findChangeConfig(MapperContext context) {
         String sql =
@@ -166,6 +179,7 @@ public interface ConfigInfoMapper extends Mapper {
      * @param context The map of params, the key is the parameter name(dataId, groupId, tenantId, appName, startTime,
      *                endTime, content), the value is the key's value.
      * @return The sql of getting the count of config information.
+      * <p>核心配置表 SQL 操作；详见方法说明。</p>
      */
     default MapperResult findChangeConfigCountRows(MapperContext context) {
         final String tenant = (String) context.getWhereParameter(FieldConstant.TENANT);
@@ -216,6 +230,7 @@ public interface ConfigInfoMapper extends Mapper {
      * @param context The map of params, the key is the parameter name(dataId, groupId, tenantId, appName, startTime,
      *                endTime, content, startTime, endTime), the value is the key's value.
      * @return The sql of getting config information according to the time period.
+      * <p>核心配置表 SQL 操作；详见方法说明。</p>
      */
     MapperResult findChangeConfigFetchRows(MapperContext context);
     
@@ -226,6 +241,7 @@ public interface ConfigInfoMapper extends Mapper {
      *
      * @param context The context of startRow, pageSize
      * @return The sql of listing group key md5 by page.
+      * <p>核心配置表 SQL 操作；详见方法说明。</p>
      */
     MapperResult listGroupKeyMd5ByPageFetchRows(MapperContext context);
     
@@ -237,6 +253,7 @@ public interface ConfigInfoMapper extends Mapper {
      * @param context The map of params, the key is the parameter name(dataId, group, appName), the value is the key's
      *                value.
      * @return Collection of ConfigInfo objects
+      * <p>核心配置表 SQL 操作；详见方法说明。</p>
      */
     default MapperResult findAllConfigInfo4Export(MapperContext context) {
         List<Long> ids = (List<Long>) context.getWhereParameter(FieldConstant.IDS);
@@ -287,6 +304,7 @@ public interface ConfigInfoMapper extends Mapper {
      * @param context The map of params, the key is the parameter name(dataId, groupId, tenant_id, content), the value
      *                is the arbitrary object.
      * @return The sql of getting the count of config information.
+      * <p>核心配置表 SQL 操作；详见方法说明。</p>
      */
     default MapperResult findConfigInfoBaseLikeCountRows(MapperContext context) {
         final String dataId = (String) context.getWhereParameter(FieldConstant.DATA_ID);
@@ -319,6 +337,7 @@ public interface ConfigInfoMapper extends Mapper {
      * @param context The map of params, the key is the parameter name(dataId, groupId, tenant_id, content), the value
      *                is the key's value.
      * @return The sql of getting the config information.
+      * <p>核心配置表 SQL 操作；详见方法说明。</p>
      */
     MapperResult findConfigInfoBaseLikeFetchRows(MapperContext context);
     
@@ -327,6 +346,7 @@ public interface ConfigInfoMapper extends Mapper {
      *
      * @param context The mpa of dataId, groupId and appName.
      * @return The count of config info.
+      * <p>核心配置表 SQL 操作；详见方法说明。</p>
      */
     default MapperResult findConfigInfo4PageCountRows(MapperContext context) {
         final String dataId = (String) context.getWhereParameter(FieldConstant.DATA_ID);
@@ -365,6 +385,7 @@ public interface ConfigInfoMapper extends Mapper {
      *
      * @param context The mpa of dataId, groupId and appName.
      * @return The sql of finding config info.
+      * <p>核心配置表 SQL 操作；详见方法说明。</p>
      */
     MapperResult findConfigInfo4PageFetchRows(MapperContext context);
     
@@ -374,6 +395,7 @@ public interface ConfigInfoMapper extends Mapper {
      *
      * @param context The context of startRow, pageSize
      * @return Query configuration information based on group.
+      * <p>核心配置表 SQL 操作；详见方法说明。</p>
      */
     MapperResult findConfigInfoBaseByGroupFetchRows(MapperContext context);
     
@@ -382,6 +404,7 @@ public interface ConfigInfoMapper extends Mapper {
      *
      * @param context The map of dataId, group, appName, content
      * @return The sql of querying config info count
+      * <p>核心配置表 SQL 操作；详见方法说明。</p>
      */
     default MapperResult findConfigInfoLike4PageCountRows(MapperContext context) {
         final String dataId = (String) context.getWhereParameter(FieldConstant.DATA_ID);
@@ -418,6 +441,7 @@ public interface ConfigInfoMapper extends Mapper {
      *
      * @param context The context of startRow, pageSize
      * @return The sql of querying config info
+      * <p>核心配置表 SQL 操作；详见方法说明。</p>
      */
     MapperResult findConfigInfoLike4PageFetchRows(MapperContext context);
     
@@ -428,6 +452,7 @@ public interface ConfigInfoMapper extends Mapper {
      *
      * @param context The context of startRow, pageSize
      * @return Query all configuration information by page.
+      * <p>核心配置表 SQL 操作；详见方法说明。</p>
      */
     MapperResult findAllConfigInfoFetchRows(MapperContext context);
     
@@ -437,6 +462,7 @@ public interface ConfigInfoMapper extends Mapper {
      *
      * @param context the size of ids.
      * @return find ConfigInfo by ids.
+      * <p>核心配置表 SQL 操作；详见方法说明。</p>
      */
     default MapperResult findConfigInfosByIds(MapperContext context) {
         List<Long> ids = (List<Long>) context.getWhereParameter(FieldConstant.IDS);
@@ -461,6 +487,7 @@ public interface ConfigInfoMapper extends Mapper {
      *
      * @param context The size of ids.
      * @return The sql of removing configuration.
+      * <p>核心配置表 SQL 操作；详见方法说明。</p>
      */
     default MapperResult removeConfigInfoByIdsAtomic(MapperContext context) {
         List<Long> ids = (List<Long>) context.getWhereParameter(FieldConstant.IDS);
@@ -486,6 +513,7 @@ public interface ConfigInfoMapper extends Mapper {
      *
      * @param context sql paramMap
      * @return The sql of updating configuration cas.
+      * <p>核心配置表 SQL 操作；详见方法说明。</p>
      */
     default MapperResult updateConfigInfoAtomicCas(MapperContext context) {
         List<Object> paramList = new ArrayList<>();
@@ -501,7 +529,7 @@ public interface ConfigInfoMapper extends Mapper {
         paramList.add(context.getUpdateParameter(FieldConstant.SRC_USER));
         paramList.add(context.getUpdateParameter(FieldConstant.APP_NAME));
         
-        // Only update c_desc when parameter exists (not null)
+        // 仅当 c_desc 参数非空时才更新该列
         if (context.getUpdateParameter(FieldConstant.C_DESC) != null) {
             sql.append(", c_desc=?");
             paramList.add(context.getUpdateParameter(FieldConstant.C_DESC));

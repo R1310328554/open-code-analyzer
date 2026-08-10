@@ -24,7 +24,9 @@ import com.alibaba.nacos.plugin.datasource.model.MapperContext;
 import com.alibaba.nacos.plugin.datasource.model.MapperResult;
 
 /**
- * The mapper of ai_resource_version.
+ * AI 资源版本表（{@code ai_resource_version}）Mapper 接口。
+ *
+ * <p>按命名空间、资源名及可选 type/status/version 过滤版本记录。</p>
  *
  * @author nacos
  * @since 3.2.0
@@ -32,9 +34,9 @@ import com.alibaba.nacos.plugin.datasource.model.MapperResult;
 public interface AiResourceVersionMapper extends Mapper {
     
     /**
-     * Query count rows for ai_resource_version list.
+     * 统计 AI 资源版本列表行数。
      *
-     * <p>Filters: namespace_id (required), name (required), type(optional), status(optional), version(optional).</p>
+     * <p>过滤：namespace_id（必填）、name（必填）、type/status/version（可选）。</p>
      */
     default MapperResult findAiResourceVersionCountRows(MapperContext context) {
         WhereBuilder where = new WhereBuilder("SELECT count(*) FROM ai_resource_version");
@@ -60,7 +62,7 @@ public interface AiResourceVersionMapper extends Mapper {
     }
     
     /**
-     * Query fetch rows for ai_resource_version list.
+     * 分页查询 AI 资源版本列表（由方言实现类提供 SQL）。
      */
     MapperResult findAiResourceVersionFetchRows(MapperContext context);
     

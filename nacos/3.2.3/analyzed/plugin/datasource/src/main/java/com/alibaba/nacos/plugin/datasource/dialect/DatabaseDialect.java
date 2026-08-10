@@ -17,19 +17,22 @@
 package com.alibaba.nacos.plugin.datasource.dialect;
 
 /**
- * DatabaseDialect interface.
+ * 数据库方言 SPI 接口。
+ *
+ * <p>封装分页 SQL 拼接、主键回填列名及可信 SQL 函数解析，由 {@link com.alibaba.nacos.plugin.datasource.manager.DatabaseDialectManager} 按类型加载。</p>
+ *
  * @author Long Yu
  */
 public interface DatabaseDialect {
     
     /**
-     * get database type.
+     * 返回方言对应的数据库类型标识。
      * @return return database type name
      */
     public String getType();
     
     /**
-     * get frist index page param.
+     * 计算分页第一个参数（通常为偏移量 offset）。
      * @param page current pageNo
      * @param pageSize current pageSize
      * @return offset val or maxRange
@@ -37,7 +40,7 @@ public interface DatabaseDialect {
     public int getPagePrevNum(int page, int pageSize);
     
     /**
-     * get second index page param.
+     * 计算分页第二个参数（通常为 LIMIT 条数）。
      * @param page current pageNo
      * @param pageSize current pageSize
      * @return limit val or minRange
@@ -45,21 +48,21 @@ public interface DatabaseDialect {
     public int getPageLastNum(int page, int pageSize);
     
     /**
-     * get page limit top data sql,contain  placeholder.
+     * 为 SQL 追加取前 N 条的 LIMIT 占位符子句。
      * @param sql orign sql
      * @return append limit sql
      */
     public String getLimitTopSqlWithMark(String sql);
     
     /**
-     * get page limit page data sql,contain  placeholder.
+     * 为 SQL 追加标准分页 LIMIT 占位符（offset + size）。
      * @param sql orign sql
      * @return append limit sql
      */
     public String getLimitPageSqlWithMark(String sql);
     
     /**
-     * get page limit page data sql,using number.
+     * 将页码与页大小直接拼入 LIMIT 子句。
      * @param sql orign sql
      * @param pageNo current pageNo
      * @param pageSize current pageSize
@@ -68,7 +71,7 @@ public interface DatabaseDialect {
     public String getLimitPageSql(String sql, int pageNo, int pageSize);
     
     /**
-     * get page limit page data sql,using offset.
+     * 按绝对偏移量拼接 LIMIT 分页 SQL。
      * @param sql orign sql
      * @param startOffset current offset row
      * @param pageSize current pageSize
@@ -77,13 +80,13 @@ public interface DatabaseDialect {
     public String getLimitPageSqlWithOffset(String sql, int startOffset, int pageSize);
     
     /**
-     * get database return primary keys.
+     * 返回 INSERT 后需回填的主键列名数组。
      * @return
      */
     public String[] getReturnPrimaryKeys();
     
     /**
-     * Get the function corresponding to the dialect according to the function name
+     * 按函数名解析当前方言的可信 SQL 函数片段
      * @author Mr.Muzhi
      * @since 2025/1/7 16:30
      * @param functionName functionName

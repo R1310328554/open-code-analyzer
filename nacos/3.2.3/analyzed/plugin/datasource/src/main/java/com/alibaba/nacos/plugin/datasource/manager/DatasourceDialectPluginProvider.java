@@ -23,18 +23,22 @@ import com.alibaba.nacos.plugin.datasource.dialect.DatabaseDialect;
 import java.util.Map;
 
 /**
- * Datasource dialect plugin provider implementation.
+ * 数据源方言插件提供者，对接 Nacos 插件管理框架。
+ *
+ * <p>将 {@link DatabaseDialectManager} 中已注册的方言暴露为 {@link com.alibaba.nacos.api.plugin.PluginType#DATASOURCE_DIALECT} 类型插件。</p>
  *
  * @author WangzJi
  * @since 3.2.0
  */
 public class DatasourceDialectPluginProvider implements PluginProvider<DatabaseDialect> {
     
+    /** 返回插件类型 {@code DATASOURCE_DIALECT}。 */
     @Override
     public PluginType getPluginType() {
         return PluginType.DATASOURCE_DIALECT;
     }
     
+    /** 返回全部已注册的数据库方言实例。 */
     @Override
     public Map<String, DatabaseDialect> getAllPlugins() {
         return DatabaseDialectManager.getInstance().getAllDialects();
