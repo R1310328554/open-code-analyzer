@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T19:01:46Z",
   "files": [
-    "internal/parser/parser/text_parser.go",
-    "internal/parser/parser/xls_parser.go",
-    "internal/parser/parser/xlsx_parser.go",
-    "internal/router/admin_routes.go",
-    "internal/router/agent_routes.go",
-    "internal/router/bot_routes.go",
-    "internal/router/router.go",
-    "internal/server/config.go",
-    "internal/server/local/admin_status.go",
-    "internal/server/local_variables.go",
-    "internal/server/variable.go",
-    "internal/service/admin_client.go",
-    "internal/service/agent.go",
-    "internal/service/agent_dbcheck.go",
-    "internal/service/agent_sessions.go",
     "internal/service/api_token.go",
     "internal/service/ask_service.go",
     "internal/service/bot.go",
@@ -33,5 +18,5 @@
     "internal/service/connector.go"
   ],
   "remaining_pending": 684,
-  "done": 1050
+  "done": 1065
 }
