@@ -19,24 +19,33 @@ package org.keycloak.representations.info;
 
 import java.util.Map;
 
+/**
+ * 单个 SPI Provider 实现的 REST 表示，包含 UI 排序优先级与运行时运维信息。
+ */
 public class ProviderRepresentation {
 
+    /** Provider 在管理控制台中的显示顺序（数值越小越靠前）。 */
     private int order;
 
+    /** 键值对形式的运维/版本信息，供 Admin UI 展示。 */
     private Map<String, String> operationalInfo;
 
+    /** @return 显示顺序 */
     public int getOrder() {
         return order;
     }
 
+    /** @param priorityUI 显示顺序 */
     public void setOrder(int priorityUI) {
         this.order = priorityUI;
     }
 
+    /** @return 运维信息映射 */
     public Map<String, String> getOperationalInfo() {
         return operationalInfo;
     }
 
+    /** @param operationalInfo 运维信息映射 */
     public void setOperationalInfo(Map<String, String> operationalInfo) {
         this.operationalInfo = operationalInfo;
     }

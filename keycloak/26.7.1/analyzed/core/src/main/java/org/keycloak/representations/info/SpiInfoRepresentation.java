@@ -20,26 +20,34 @@ package org.keycloak.representations.info;
 import java.util.Map;
 
 /**
+ * 单个 SPI（Service Provider Interface）的 REST 表示，列出该 SPI 下全部 Provider 实现及其元数据。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class SpiInfoRepresentation {
 
+    /** 是否为 Keycloak 内部 SPI（不对外暴露给扩展开发者）。 */
     private boolean internal;
 
+    /** Provider 实现 ID 到 {@link ProviderRepresentation} 的映射。 */
     private Map<String, ProviderRepresentation> providers;
 
+    /** @return 是否内部 SPI */
     public boolean isInternal() {
         return internal;
     }
 
+    /** @param internal 是否内部 SPI */
     public void setInternal(boolean internal) {
         this.internal = internal;
     }
 
+    /** @return Provider 实现映射 */
     public Map<String, ProviderRepresentation> getProviders() {
         return providers;
     }
 
+    /** @param providers Provider 实现映射 */
     public void setProviders(Map<String, ProviderRepresentation> providers) {
         this.providers = providers;
     }

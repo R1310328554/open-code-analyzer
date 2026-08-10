@@ -24,40 +24,66 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Configuration of the Attribute.
- * 
+ * 声明式用户 Profile 中单个属性的配置表示，定义属性名称、校验规则、权限、必填条件及 UI 分组等。
+ *
  * @author Vlastimil Elias <velias@redhat.com>
  *
  */
 public class UPAttribute implements Cloneable {
 
+    /** 属性内部名称（存储键）。 */
     private String name;
+    /** 面向 UI 的显示名称。 */
     private String displayName;
-    /** key in the Map is name of the validator, value is its configuration */
+    /** 校验器映射：键为校验器名称，值为该校验器的配置参数。 */
     private Map<String, Map<String, Object>> validations;
+    /** 自定义注解键值对，供 UI 或扩展逻辑使用。 */
     private Map<String, Object> annotations;
-    /** null means it is not required */
+    /** 必填规则；{@code null} 表示非必填。 */
     private UPAttributeRequired required;
-    /** null means everyone can view and edit the attribute */
+    /** 读写权限；{@code null} 表示所有人可查看与编辑。 */
     private UPAttributePermissions permissions;
-    /** null means it is always selected */
+    /** 可见性选择器；{@code null} 表示始终展示。 */
     private UPAttributeSelector selector;
+    /** 所属 UI 分组名称。 */
     private String group;
+    /** 是否允许多值。 */
     private boolean multivalued;
+    /** 属性默认值。 */
     private String defaultValue;
 
+    /** 默认构造函数，供 JSON 反序列化使用。 */
     public UPAttribute() {
     }
 
+    /**
+     * 以属性名构造配置；名称会自动 trim。
+     *
+     * @param name 属性名称
+     */
     public UPAttribute(String name) {
         this.name = name != null ? name.trim() : null;
     }
 
+    /**
+     * 构造带分组的属性配置。
+     *
+     * @param name  属性名称
+     * @param group 分组对象
+     */
     public UPAttribute(String name, UPGroup group) {
         this(name);
         this.group = group.getName();
     }
 
+    /**
+     * 构造带权限、必填与可见性规则的属性配置。
+     *
+     * @param name        属性名称
+     * @param permissions 读写权限
+     * @param required    必填规则
+     * @param selector    可见性选择器
+     */
     public UPAttribute(String name, UPAttributePermissions permissions, UPAttributeRequired required, UPAttributeSelector selector) {
         this(name);
         this.permissions = permissions;
@@ -65,64 +91,106 @@ public class UPAttribute implements Cloneable {
         this.selector = selector;
     }
 
+    /**
+     * 构造带权限与必填规则的属性配置。
+     *
+     * @param name        属性名称
+     * @param permissions 读写权限
+     * @param required    必填规则
+     */
     public UPAttribute(String name, UPAttributePermissions permissions, UPAttributeRequired required) {
         this(name, permissions, required, null);
     }
 
+    /**
+     * 构造仅带权限的属性配置。
+     *
+     * @param name        属性名称
+     * @param permissions 读写权限
+     */
     public UPAttribute(String name, UPAttributePermissions permissions) {
         this(name, permissions, null);
     }
 
+    /**
+     * 构造带多值标志与权限的属性配置。
+     *
+     * @param name         属性名称
+     * @param multivalued  是否多值
+     * @param permissions  读写权限
+     */
     public UPAttribute(String name, boolean multivalued, UPAttributePermissions permissions) {
         this(name, permissions, null);
         setMultivalued(multivalued);
     }
 
+    /**
+     * 构造带自定义注解的属性配置。
+     *
+     * @param name        属性名称
+     * @param annotations 注解映射
+     */
     public UPAttribute(String name, Map<String, Object> annotations) {
         this(name);
         this.annotations = annotations;
     }
 
+    /** @return 属性名称 */
     public String getName() {
         return name;
     }
 
+    /** @param name 属性名称（自动 trim） */
     public void setName(String name) {
         this.name = name != null ? name.trim() : null;
     }
 
+    /** @return 校验器配置映射 */
     public Map<String, Map<String, Object>> getValidations() {
         return validations;
     }
 
+    /** @param validations 校验器配置映射 */
     public void setValidations(Map<String, Map<String, Object>> validations) {
         this.validations = validations;
     }
 
+    /** @return 自定义注解 */
     public Map<String, Object> getAnnotations() {
         return annotations;
     }
 
+    /** @param annotations 自定义注解 */
     public void setAnnotations(Map<String, Object> annotations) {
         this.annotations = annotations;
     }
 
+    /** @return 必填规则 */
     public UPAttributeRequired getRequired() {
         return required;
     }
 
+    /** @param required 必填规则 */
     public void setRequired(UPAttributeRequired required) {
         this.required = required;
     }
 
+    /** @return 读写权限 */
     public UPAttributePermissions getPermissions() {
         return permissions;
     }
 
+    /** @param permissions 读写权限 */
     public void setPermissions(UPAttributePermissions permissions) {
         this.permissions = permissions;
     }
 
+    /**
+     * 追加或覆盖一条校验器配置。
+     *
+     * @param validator 校验器名称
+     * @param config    校验器参数
+     */
     public void addValidation(String validator, Map<String, Object> config) {
         if (validations == null) {
             validations = new HashMap<>();
@@ -130,42 +198,52 @@ public class UPAttribute implements Cloneable {
         validations.put(validator, config);
     }
 
+    /** @return 可见性选择器 */
     public UPAttributeSelector getSelector() {
         return selector;
     }
 
+    /** @param selector 可见性选择器 */
     public void setSelector(UPAttributeSelector selector) {
         this.selector = selector;
     }
 
+    /** @return 显示名称 */
     public String getDisplayName() {
         return displayName;
     }
 
+    /** @param displayName 显示名称 */
     public void setDisplayName(String displayName) {
         this.displayName = displayName;
     }
 
+    /** @return 分组名称 */
     public String getGroup() {
         return group;
     }
 
+    /** @param group 分组名称（自动 trim） */
     public void setGroup(String group) {
         this.group = group != null ? group.trim() : null;
     }
 
+    /** @param multivalued 是否多值 */
     public void setMultivalued(boolean multivalued) {
         this.multivalued = multivalued;
     }
 
+    /** @return 默认值 */
     public String getDefaultValue() {
         return defaultValue;
     }
 
+    /** @param defaultValue 默认值 */
     public void setDefaultValue(String defaultValue) {
         this.defaultValue = defaultValue;
     }
 
+    /** @return 是否多值 */
     public boolean isMultivalued() {
         return multivalued;
     }
@@ -175,6 +253,11 @@ public class UPAttribute implements Cloneable {
         return "UPAttribute [name=" + name + ", displayName=" + displayName + ", permissions=" + permissions + ", selector=" + selector + ", required=" + required + ", validations=" + validations + ", annotations=" + annotations + ", group=" + group + ", multivalued=" + multivalued + ", defaultValue=" + defaultValue + "]";
     }
 
+    /**
+     * 深拷贝当前属性配置（嵌套 Map 与关联对象均复制）。
+     *
+     * @return 独立的属性配置副本
+     */
     @Override
     protected UPAttribute clone() {
         UPAttribute attr = new UPAttribute(this.name);
