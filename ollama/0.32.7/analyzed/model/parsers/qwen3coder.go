@@ -1,3 +1,4 @@
+// Qwen3-Coder 解析器：<tool_call> 内 XML 风格 function/parameter 块。
 package parsers
 
 import (
@@ -28,6 +29,7 @@ const (
 	qwenParserState_CollectingToolContent
 )
 
+// Qwen3CoderParser 解析 Qwen3-Coder XML 工具调用格式。
 type Qwen3CoderParser struct {
 	state     qwenParserState
 	acc       strings.Builder
@@ -35,14 +37,17 @@ type Qwen3CoderParser struct {
 	callIndex int
 }
 
+// HasToolSupport 返回 true。
 func (p *Qwen3CoderParser) HasToolSupport() bool {
 	return true
 }
 
+// HasThinkingSupport 返回 false。
 func (p *Qwen3CoderParser) HasThinkingSupport() bool {
 	return false
 }
 
+// PreservedTokens 返回 tool_call 开闭标签。
 func (p *Qwen3CoderParser) PreservedTokens() []string {
 	return []string{
 		toolOpenTag,
@@ -50,12 +55,14 @@ func (p *Qwen3CoderParser) PreservedTokens() []string {
 	}
 }
 
+// Init 保存工具列表并重置 callIndex。
 func (p *Qwen3CoderParser) Init(tools []api.Tool, lastMessage *api.Message, thinkValue *api.ThinkValue) []api.Tool {
 	p.tools = tools
 	p.callIndex = 0
 	return tools // Qwen doesn't modify tools
 }
 
+// Add 流式解析正文与 XML tool_call 块。
 func (p *Qwen3CoderParser) Add(s string, done bool) (content string, thinking string, calls []api.ToolCall, err error) {
 	p.acc.WriteString(s)
 
@@ -85,6 +92,7 @@ func (p *Qwen3CoderParser) Add(s string, done bool) (content string, thinking st
 	return sb.String(), "", toolCalls, nil
 }
 
+// parseEvents 循环 eat 收集 qwen 事件。
 func (p *Qwen3CoderParser) parseEvents() []qwenEvent {
 	var all []qwenEvent
 
@@ -104,6 +112,7 @@ func (p *Qwen3CoderParser) parseEvents() []qwenEvent {
 	return all
 }
 
+// qwenEvent 在 Add 与 eat 间传递正文/原始 tool_call 事件。
 // we use some internal event types in order to communicate between `Add` and
 // `eat`. We do this to support interleaving content and parallel tool calls in
 // the parser, even though qwen3-coder isn't supposed to do this. Our API
@@ -126,10 +135,12 @@ type qwenEventContent struct {
 func (qwenEventContent) isQwenEvent()     {}
 func (qwenEventRawToolCall) isQwenEvent() {}
 
+// eat 消费缓冲并返回可确定事件；第二返回值表示是否需继续循环。
 // eat consumes the parser's buffer, and returns a list of any unambiguous
 // events from the current parser state. If the parser transitions to another
 // state, it may have additional events to emit on the next call, which is what
 // the second return value indicates
+// eat 在 LookingForToolStart/CollectingToolContent 状态间解析流。
 func eat(p *Qwen3CoderParser) ([]qwenEvent, bool) {
 	var events []qwenEvent
 
@@ -204,17 +215,20 @@ func eat(p *Qwen3CoderParser) ([]qwenEvent, bool) {
 	}
 }
 
+// XMLFunctionCall 表示转换后的标准 XML function 元素。
 type XMLFunctionCall struct {
 	XMLName    xml.Name       `xml:"function"`
 	Name       string         `xml:"name,attr"`
 	Parameters []XMLParameter `xml:"parameter"`
 }
 
+// XMLParameter 表示 function 内的 parameter 元素。
 type XMLParameter struct {
 	Name  string `xml:"name,attr"`
 	Value string `xml:",chardata"`
 }
 
+// parseToolCall 将原始 XML-like 工具串解析为 api.ToolCall。
 // parseToolCall parses a raw tool call string into an api.ToolCall.
 // The raw string follows an xml-like format, here's an example:
 //
@@ -273,6 +287,7 @@ func parseToolCall(raw qwenEventRawToolCall, tools []api.Tool) (api.ToolCall, er
 	return toolCall, nil
 }
 
+// parseValue 按工具 schema 类型将原始字符串转为 Go 值。
 // parseValue converts a raw string value to the appropriate type based on the parameter type specification.
 //
 // For union types (multiple types in PropertyType, which we support but doesn't
@@ -297,6 +312,7 @@ func parseValue(raw string, paramType api.PropertyType) any {
 	return parseTypedToolValue(raw, paramType)
 }
 
+// parseTypedToolValue 按类型优先级（bool/int/number/array/object/string）解析。
 func parseTypedToolValue(raw string, paramType api.PropertyType) any {
 	// Check for null first (case-insensitive) - this takes precedence over any type
 	if strings.ToLower(raw) == "null" {
@@ -406,6 +422,7 @@ var (
 	qwenXMLTagRegex = regexp.MustCompile(`</?(?:function|parameter)(?:\s+name="[^"]*")?>`)
 )
 
+// transformToXML 将 <tag=val> 形式转为标准 XML 供解析器读取。
 // transformToXML transforms a raw qwen tool call with xml-like tags into valid
 // xml so that it can be parsed by any xml parser
 func transformToXML(raw string) string {
@@ -437,6 +454,7 @@ func transformToXML(raw string) string {
 	return out.String()
 }
 
+// escapeTextNode 转义 XML 文本节点中的 &/< /> 字符。
 // escapeTextNode escapes XML character data without altering other characters
 // like newlines or tabs (which is why we don't use xml.EscapeText for this)
 func escapeTextNode(sb *strings.Builder, s string) {

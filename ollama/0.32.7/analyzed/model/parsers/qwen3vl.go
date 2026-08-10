@@ -11,6 +11,7 @@ import (
 	"github.com/ollama/ollama/logutil"
 )
 
+// Qwen3-VL 解析器：视觉模型 thinking/content 与 JSON tool_call。
 // TODO: call the init function
 const (
 	CollectingThinkingContent qwenParserState = iota
@@ -24,6 +25,7 @@ const (
 	thinkingCloseTag = "</think>"
 )
 
+// Qwen3VLParser 解析 Qwen3-VL 流式输出。
 type Qwen3VLParser struct {
 	state              qwenParserState
 	buffer             strings.Builder
@@ -32,14 +34,17 @@ type Qwen3VLParser struct {
 	hasThinkingSupport bool
 }
 
+// HasToolSupport 返回 true。
 func (p *Qwen3VLParser) HasToolSupport() bool {
 	return true
 }
 
+// HasThinkingSupport 返回是否启用思考模式。
 func (p *Qwen3VLParser) HasThinkingSupport() bool {
 	return p.hasThinkingSupport
 }
 
+// PreservedTokens 返回 thinking/tool token。
 func (p *Qwen3VLParser) PreservedTokens() []string {
 	return []string{
 		thinkingCloseTag,
@@ -48,6 +53,7 @@ func (p *Qwen3VLParser) PreservedTokens() []string {
 	}
 }
 
+// setInitialState 根据预填充与思考能力选择初始状态。
 func (p *Qwen3VLParser) setInitialState(lastMessage *api.Message) {
 	prefill := lastMessage != nil && lastMessage.Role == "assistant"
 	if !p.HasThinkingSupport() {
@@ -63,6 +69,7 @@ func (p *Qwen3VLParser) setInitialState(lastMessage *api.Message) {
 	p.state = CollectingThinkingContent
 }
 
+// Init 初始化工具列表与 callIndex。
 func (p *Qwen3VLParser) Init(tools []api.Tool, lastMessage *api.Message, thinkValue *api.ThinkValue) []api.Tool {
 	p.tools = tools
 	p.callIndex = 0
@@ -76,6 +83,7 @@ type qwenEventThinkingContent struct {
 
 func (qwenEventThinkingContent) isQwenEvent() {}
 
+// Add 流式解析 thinking/content/JSON tool_call。
 func (p *Qwen3VLParser) Add(s string, done bool) (content string, thinking string, calls []api.ToolCall, err error) {
 	p.buffer.WriteString(s)
 	events := p.parseEvents()
@@ -108,6 +116,7 @@ func (p *Qwen3VLParser) Add(s string, done bool) (content string, thinking strin
 	return contentSb.String(), thinkingSb.String(), calls, nil
 }
 
+// parseEvents 循环 eat 收集事件。
 func (p *Qwen3VLParser) parseEvents() []qwenEvent {
 	var all []qwenEvent
 
@@ -127,6 +136,7 @@ func (p *Qwen3VLParser) parseEvents() []qwenEvent {
 	return all
 }
 
+// eatLeadingWhitespaceAndTransitionTo 跳过前导空白并转移状态。
 func (p *Qwen3VLParser) eatLeadingWhitespaceAndTransitionTo(nextState qwenParserState) ([]qwenEvent, bool) {
 	trimmed := strings.TrimLeftFunc(p.buffer.String(), unicode.IsSpace)
 	p.buffer.Reset()
@@ -138,6 +148,7 @@ func (p *Qwen3VLParser) eatLeadingWhitespaceAndTransitionTo(nextState qwenParser
 	return nil, true
 }
 
+// eat 状态机解析 thinking/content/tool JSON 块。
 func (p *Qwen3VLParser) eat() ([]qwenEvent, bool) {
 	var events []qwenEvent
 
@@ -256,6 +267,7 @@ func (p *Qwen3VLParser) eat() ([]qwenEvent, bool) {
 	}
 }
 
+// parseJSONToolCall 将 tool_call 块 JSON 反序列化为 ToolCall。
 func parseJSONToolCall(raw qwenEventRawToolCall, tools []api.Tool) (api.ToolCall, error) {
 	var toolCallFunction api.ToolCallFunction
 	if err := json.Unmarshal([]byte(raw.raw), &toolCallFunction); err != nil {

@@ -1,3 +1,4 @@
+// Cogito 渲染器：Deep Cogito 聊天模板、思考与 JSON 工具块。
 package renderers
 
 import (
@@ -7,19 +8,23 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+// CogitoRenderer 渲染 Cogito 模型 prompt（含可选深度思考）。
 type CogitoRenderer struct {
 	isThinking bool
 }
 
+// LeadingBOS 返回句首 BOS token。
 func (r *CogitoRenderer) LeadingBOS() string {
 	return "<｜begin▁of▁sentence｜>"
 }
 
+// Render 将消息、工具与 think 偏好渲染为 Cogito 模板字符串。
 func (r *CogitoRenderer) Render(messages []api.Message, tools []api.Tool, thinkValue *api.ThinkValue) (string, error) {
 	var sb strings.Builder
 
 	defaultPrompt := "You are Cogito, an AI assistant created by Deep Cogito, which is an AI research lab based in San Francisco."
 
+	// 思考启用需模型支持且用户显式请求 think=true。
 	// thinking is enabled: model must support it AND user must request it (true)
 	enableThinking := r.isThinking && (thinkValue != nil && thinkValue.Bool())
 

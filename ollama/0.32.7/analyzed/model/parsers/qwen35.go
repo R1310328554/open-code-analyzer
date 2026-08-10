@@ -24,8 +24,12 @@ const (
 	qwen35ToolCallOpenTag  = "<tool_call>"
 )
 
+// Qwen3.5 解析器：思考提取后委托 Qwen3Coder 解析 XML 工具调用。
+// Qwen35Parser 提取 qwen3.5 推理内容，思考结束后由 Qwen3CoderParser 处理正文与工具。
 // Qwen35Parser handles qwen3.5 reasoning extraction and delegates post-thinking
 // content (including XML tool calls) to Qwen3CoderParser.
+// content (including XML tool calls) to Qwen3CoderParser.
+// Qwen35Parser 嵌入 Qwen3CoderParser 处理工具。
 type Qwen35Parser struct {
 	toolParser Qwen3CoderParser
 
@@ -36,14 +40,17 @@ type Qwen35Parser struct {
 	allowLeadingThinkOpenTag bool
 }
 
+// HasToolSupport 返回 true。
 func (p *Qwen35Parser) HasToolSupport() bool {
 	return true
 }
 
+// HasThinkingSupport 返回 true。
 func (p *Qwen35Parser) HasThinkingSupport() bool {
 	return true
 }
 
+// PreservedTokens 返回思考与 tool_call token。
 func (p *Qwen35Parser) PreservedTokens() []string {
 	return []string{
 		qwen35ThinkingOpenTag,
@@ -53,6 +60,7 @@ func (p *Qwen35Parser) PreservedTokens() []string {
 	}
 }
 
+// Init 初始化 Qwen3Coder 子解析器并设置思考/正文模式。
 func (p *Qwen35Parser) Init(tools []api.Tool, lastMessage *api.Message, thinkValue *api.ThinkValue) []api.Tool {
 	p.buffer.Reset()
 	p.toolParser = Qwen3CoderParser{}
@@ -91,6 +99,7 @@ type qwen35EventThinkingContent struct {
 
 func (qwen35EventThinkingContent) isQwen35Event() {}
 
+// Add 解析思考事件后委托 toolParser.Add 处理正文。
 func (p *Qwen35Parser) Add(s string, done bool) (content string, thinking string, calls []api.ToolCall, err error) {
 	p.buffer.WriteString(s)
 	events := p.parseEvents()
@@ -115,6 +124,7 @@ func (p *Qwen35Parser) Add(s string, done bool) (content string, thinking string
 	return contentSb.String(), thinkingSb.String(), calls, nil
 }
 
+// parseEvents 循环 eat 收集 qwen35 事件。
 func (p *Qwen35Parser) parseEvents() []qwen35Event {
 	var all []qwen35Event
 
@@ -149,6 +159,7 @@ func (p *Qwen35Parser) eatLeadingWhitespaceAndTransitionTo(nextState qwen35Parse
 	return nil, true
 }
 
+// maybeConsumeLeadingThinkOpenTag 处理可选的行首 <think> 开标签。
 // maybeConsumeLeadingThinkOpenTag handles a single optional leading <think> tag.
 // Returns (handled, shouldContinueParsingNow).
 func (p *Qwen35Parser) maybeConsumeLeadingThinkOpenTag(acc string) (bool, bool) {
@@ -177,6 +188,7 @@ func (p *Qwen35Parser) maybeConsumeLeadingThinkOpenTag(acc string) (bool, bool) 
 	return false, false
 }
 
+// eat 解析思考边界；遇 <tool_call> 无闭合 thinking 时容错结束思考块。
 func (p *Qwen35Parser) eat() ([]qwen35Event, bool) {
 	var events []qwen35Event
 

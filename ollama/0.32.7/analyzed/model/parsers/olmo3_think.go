@@ -1,3 +1,4 @@
+// Olmo3-Think 解析器：</think> 思考块与正文分离。
 package parsers
 
 import (
@@ -10,6 +11,7 @@ import (
 	"github.com/ollama/ollama/logutil"
 )
 
+// olmo3ThinkParserState 表示 Olmo3Think 解析阶段。
 type olmo3ThinkParserState int
 
 const (
@@ -21,25 +23,30 @@ const (
 	olmo3ThinkCloseTag = "</think>"
 )
 
+// Olmo3ThinkParser 解析 Olmo3 思考模型输出。
 type Olmo3ThinkParser struct {
 	state  olmo3ThinkParserState
 	buffer strings.Builder
 }
 
+// HasToolSupport 返回 false。
 func (p *Olmo3ThinkParser) HasToolSupport() bool {
 	return false
 }
 
+// HasThinkingSupport 返回 true。
 func (p *Olmo3ThinkParser) HasThinkingSupport() bool {
 	return true
 }
 
+// PreservedTokens 返回 </think> 标签。
 func (p *Olmo3ThinkParser) PreservedTokens() []string {
 	return []string{
 		olmo3ThinkCloseTag,
 	}
 }
 
+// setInitialState 预填充正文时跳过思考收集。
 func (p *Olmo3ThinkParser) setInitialState(lastMessage *api.Message) {
 	prefill := lastMessage != nil && lastMessage.Role == "assistant"
 
@@ -53,12 +60,15 @@ func (p *Olmo3ThinkParser) setInitialState(lastMessage *api.Message) {
 	p.state = olmo3CollectingThink
 }
 
+// Init 设置初始状态并返回工具列表。
 func (p *Olmo3ThinkParser) Init(tools []api.Tool, lastMessage *api.Message, thinkValue *api.ThinkValue) []api.Tool {
 	p.setInitialState(lastMessage)
 	return tools
 }
 
+// olmo3Event 为内部解析事件接口。
 // Event types for internal parser communication
+// olmo3Event 标记 Olmo3Think 事件类型。
 type olmo3Event interface {
 	isOlmo3Event()
 }
@@ -74,6 +84,7 @@ type olmo3EventContent struct {
 func (olmo3EventThinkContent) isOlmo3Event() {}
 func (olmo3EventContent) isOlmo3Event()      {}
 
+// Add 流式解析思考与正文片段。
 func (p *Olmo3ThinkParser) Add(s string, done bool) (content string, thinking string, calls []api.ToolCall, err error) {
 	p.buffer.WriteString(s)
 	events := p.parseEvents()
@@ -92,6 +103,7 @@ func (p *Olmo3ThinkParser) Add(s string, done bool) (content string, thinking st
 	return contentSb.String(), thinkingSb.String(), nil, nil
 }
 
+// parseEvents 循环 eat 直至无状态转移。
 func (p *Olmo3ThinkParser) parseEvents() []olmo3Event {
 	var all []olmo3Event
 
@@ -111,6 +123,7 @@ func (p *Olmo3ThinkParser) parseEvents() []olmo3Event {
 	return all
 }
 
+// eat 解析 </think> 边界并处理部分标签重叠。
 func (p *Olmo3ThinkParser) eat() ([]olmo3Event, bool) {
 	var events []olmo3Event
 	bufStr := p.buffer.String()

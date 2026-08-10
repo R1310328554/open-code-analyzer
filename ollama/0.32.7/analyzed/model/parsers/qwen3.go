@@ -31,9 +31,14 @@ const (
 	qwen3ToolCloseTag     = "</tool_call>"
 )
 
+// Qwen3 解析器：redacted_thinking 与 <tool_call> JSON 工具块。
+// Qwen3Parser 解析 Qwen3 流式输出，提取思考与工具调用。
+// Qwen3 prompts end with <think> when thinking is enabled, so output begins
+// with thinking content directly (without an opening tag).
 // Qwen3Parser parses Qwen3 output to extract thinking and tool calls.
 // Qwen3 prompts end with <think> when thinking is enabled, so output begins
 // with thinking content directly (without an opening tag).
+// Qwen3Parser 状态机解析 Qwen3 thinking/content/tool 标签。
 type Qwen3Parser struct {
 	state                  qwen3ParserState
 	buffer                 strings.Builder
@@ -44,14 +49,17 @@ type Qwen3Parser struct {
 	maybeThinkingOpenAtBOL bool
 }
 
+// HasToolSupport 返回 true。
 func (p *Qwen3Parser) HasToolSupport() bool {
 	return true
 }
 
+// HasThinkingSupport 返回是否编译时启用思考。
 func (p *Qwen3Parser) HasThinkingSupport() bool {
 	return p.hasThinkingSupport
 }
 
+// PreservedTokens 返回 thinking/tool 边界 token。
 func (p *Qwen3Parser) PreservedTokens() []string {
 	return []string{
 		qwen3ThinkingOpenTag,
@@ -61,6 +69,7 @@ func (p *Qwen3Parser) PreservedTokens() []string {
 	}
 }
 
+// Init 根据 think 偏好与 defaultThinking 设置初始状态。
 func (p *Qwen3Parser) Init(tools []api.Tool, lastMessage *api.Message, thinkValue *api.ThinkValue) []api.Tool {
 	p.tools = tools
 	p.buffer.Reset()
@@ -81,6 +90,7 @@ func (p *Qwen3Parser) Init(tools []api.Tool, lastMessage *api.Message, thinkValu
 	return tools
 }
 
+// qwen3Event 标记 Qwen3 内部解析事件。
 type qwen3Event interface {
 	isQwen3Event()
 }
@@ -103,6 +113,7 @@ type qwen3EventThinkingContent struct {
 
 func (qwen3EventThinkingContent) isQwen3Event() {}
 
+// Add 流式解析并分配 tool call 序号。
 func (p *Qwen3Parser) Add(s string, done bool) (content string, thinking string, calls []api.ToolCall, err error) {
 	p.buffer.WriteString(s)
 	events := p.parseEvents()
@@ -130,6 +141,7 @@ func (p *Qwen3Parser) Add(s string, done bool) (content string, thinking string,
 	return contentSb.String(), thinkingSb.String(), calls, nil
 }
 
+// parseEvents 循环 eat 收集事件。
 func (p *Qwen3Parser) parseEvents() []qwen3Event {
 	var all []qwen3Event
 
@@ -149,6 +161,7 @@ func (p *Qwen3Parser) parseEvents() []qwen3Event {
 	return all
 }
 
+// eatLeadingWhitespaceAndTransitionTo 跳过前导空白并转移状态。
 func (p *Qwen3Parser) eatLeadingWhitespaceAndTransitionTo(nextState qwen3ParserState) ([]qwen3Event, bool) {
 	trimmed := strings.TrimLeftFunc(p.buffer.String(), unicode.IsSpace)
 	p.buffer.Reset()
@@ -160,10 +173,12 @@ func (p *Qwen3Parser) eatLeadingWhitespaceAndTransitionTo(nextState qwen3ParserS
 	return nil, true
 }
 
+// splitAtTag 在标签处分割内部缓冲。
 func (p *Qwen3Parser) splitAtTag(tag string, trimAfter bool) (string, string) {
 	return splitAtTag(&p.buffer, tag, trimAfter)
 }
 
+// eat 状态机解析 thinking/content/tool JSON 块。
 func (p *Qwen3Parser) eat() ([]qwen3Event, bool) {
 	var events []qwen3Event
 
@@ -335,6 +350,7 @@ func (p *Qwen3Parser) eat() ([]qwen3Event, bool) {
 	}
 }
 
+// parseQwen3ToolCall 将 tool_call 块内 JSON 解析为 ToolCall。
 func parseQwen3ToolCall(raw qwen3EventRawToolCall, tools []api.Tool) (api.ToolCall, error) {
 	var parsed struct {
 		Name      string                        `json:"name"`

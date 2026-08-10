@@ -8,9 +8,12 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+// Gemma4 渲染器：<|turn|> 轮次、channel 思考与 <|tool|> 函数调用。
+// Gemma4Renderer 使用 Gemma 4 <|turn|>/<|"|> 格式渲染 prompt。
 // Gemma4Renderer renders prompts using Gemma 4's chat format with
 // <|turn>/<turn|> markers, <|"|> string delimiters, and <|tool>/
 // <|tool_call>/<|tool_response> tags for function calling.
+// Gemma4Renderer 控制图像 tag 与无思考空 channel 行为。
 type Gemma4Renderer struct {
 	useImgTags          bool
 	emptyBlockOnNothink bool
@@ -20,10 +23,12 @@ const (
 	g4Q = `<|"|>` // Gemma 4 string delimiter
 )
 
+// LeadingBOS 返回 <bos>（Gemma4 tokenizer 不自动 prepend）。
 func (r *Gemma4Renderer) LeadingBOS() string {
 	return "<bos>"
 }
 
+// Render 渲染 system/user/model/tool 轮次与生成 prompt。
 func (r *Gemma4Renderer) Render(messages []api.Message, tools []api.Tool, thinkValue *api.ThinkValue) (string, error) {
 	var sb strings.Builder
 	imageOffset := 0
@@ -148,6 +153,7 @@ func (r *Gemma4Renderer) Render(messages []api.Message, tools []api.Tool, thinkV
 	return sb.String(), nil
 }
 
+// stripThinking 从正文中移除 channel 思考块（对齐 HF strip_thinking）。
 // stripThinking removes <|channel>...<channel|> thinking blocks from content,
 // matching the HF chat template's strip_thinking macro.
 func stripThinking(text string) string {
@@ -168,6 +174,7 @@ func stripThinking(text string) string {
 	return strings.TrimSpace(result.String())
 }
 
+// renderContent 写入消息正文并可插入 [img-N] 占位符。
 // renderContent writes a message's content, interleaving [img-N] tags for images.
 // When trim is true, leading/trailing whitespace is stripped (matching the Jinja2
 // template's | trim filter applied to non-model content).
@@ -218,6 +225,7 @@ func (r *Gemma4Renderer) toolResponseName(message api.Message, toolCalls []api.T
 	return name
 }
 
+// renderToolDeclaration 渲染 <|tool>declaration:... 块。
 func (r *Gemma4Renderer) renderToolDeclaration(tool api.Tool) string {
 	var sb strings.Builder
 	fn := tool.Function
@@ -676,6 +684,7 @@ func normalizeSlice(value any) []any {
 	}
 }
 
+// formatToolCall 渲染 <|tool_call>call:name{args} 块。
 func (r *Gemma4Renderer) formatToolCall(tc api.ToolCall) string {
 	var sb strings.Builder
 	sb.WriteString("<|tool_call>call:" + tc.Function.Name + "{")
@@ -700,10 +709,12 @@ func (r *Gemma4Renderer) formatToolCall(tc api.ToolCall) string {
 	return sb.String()
 }
 
+// formatToolResponseBlock 渲染 <|tool_response>response:... 块。
 func (r *Gemma4Renderer) formatToolResponseBlock(toolName, response string) string {
 	return "<|tool_response>response:" + toolName + "{value:" + r.formatArgValue(response) + "}<tool_response|>"
 }
 
+// formatArgValue 将 Go 值格式化为 Gemma4 参数字面量。
 func (r *Gemma4Renderer) formatArgValue(value any) string {
 	switch v := value.(type) {
 	case nil:

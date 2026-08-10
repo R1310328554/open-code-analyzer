@@ -8,6 +8,8 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+// Cohere 渲染器：North/Command A 2026 平台系统轮、思考与 action 工具格式。
+// CohereRenderer 渲染 Cohere North/Command A 2026 聊天模板。
 // CohereRenderer renders the Cohere North / Command A 2026 chat template
 // (Cohere2 MoE models such as CohereLabs/North-Mini-Code-1.0): a platform
 // system turn with an Available Tools section, <|START_TEXT|>-wrapped message
@@ -17,12 +19,15 @@ import (
 // The chat template's model-specific platform instructions (identity, default
 // policies) belong in the model's Modelfile SYSTEM prompt, which arrives here
 // as the first system message.
+// CohereRenderer 无状态 Cohere 模板渲染器。
 type CohereRenderer struct{}
 
+// LeadingBOS 返回 <BOS_TOKEN>。
 func (r *CohereRenderer) LeadingBOS() string {
 	return "<BOS_TOKEN>"
 }
 
+// cohereToolJSON 按模板 tojson 过滤器渲染单条工具 JSON。
 // cohereToolJSON renders one tool entry exactly as the template's tojson
 // filter does: {"name": ..., "description": ..., "parameters": {...},
 // "responses": null} with ", " / ": " separators.
@@ -50,6 +55,7 @@ func cohereToolJSON(tool api.Tool) (string, error) {
 	return sb.String(), nil
 }
 
+// writeToolsSection 写入「# Available Tools」JSON 块。
 // writeToolsSection writes the "# Available Tools" block, reproducing the
 // template's whitespace for the empty and populated cases.
 func writeToolsSection(sb *strings.Builder, tools []api.Tool) error {
@@ -74,6 +80,7 @@ func writeToolsSection(sb *strings.Builder, tools []api.Tool) error {
 	return nil
 }
 
+// writeToolResult 写入 <|START_TOOL_RESULT|> 数组中的一条结果。
 // cohereToolResult is one entry of a <|START_TOOL_RESULT|> array.
 func writeToolResult(sb *strings.Builder, callID string, content string) error {
 	wrapped, err := marshalWithSpaces(map[string]string{"content": content})
@@ -88,6 +95,7 @@ func writeToolResult(sb *strings.Builder, callID string, content string) error {
 	return nil
 }
 
+// Render 渲染完整 Cohere 对话 prompt（含 reasoning 与工具 ID 重编号）。
 func (r *CohereRenderer) Render(messages []api.Message, tools []api.Tool, think *api.ThinkValue) (string, error) {
 	var sb strings.Builder
 
@@ -226,6 +234,7 @@ func (r *CohereRenderer) Render(messages []api.Message, tools []api.Tool, think 
 	return sb.String(), nil
 }
 
+// toolCallID 返回客户端提供的 tool call ID（Ollama 合成时可能为空）。
 // toolCallID returns the tool call's id when the client supplied one. The
 // api.ToolCall ID field may be empty for calls synthesized by ollama.
 func toolCallID(tc api.ToolCall) string {

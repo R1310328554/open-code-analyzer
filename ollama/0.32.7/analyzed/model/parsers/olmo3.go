@@ -1,3 +1,4 @@
+// Olmo3 解析器：<function_calls> 内 Python 风格函数调用。
 package parsers
 
 import (
@@ -12,6 +13,7 @@ import (
 	"github.com/ollama/ollama/logutil"
 )
 
+// olmo3ParserState 表示 Olmo3 流式解析阶段。
 type olmo3ParserState int
 
 const (
@@ -25,20 +27,24 @@ const (
 	olmo3FuncCallsCloseTag = "</function_calls>"
 )
 
+// Olmo3Parser 解析 Olmo3 正文与 function_calls 块。
 type Olmo3Parser struct {
 	state     olmo3ParserState
 	buffer    strings.Builder
 	callIndex int
 }
 
+// HasToolSupport 返回 true。
 func (p *Olmo3Parser) HasToolSupport() bool {
 	return true
 }
 
+// HasThinkingSupport 返回 false（Olmo3 无内置思考）。
 func (p *Olmo3Parser) HasThinkingSupport() bool {
 	return false
 }
 
+// PreservedTokens 返回 function_calls 开闭标签。
 func (p *Olmo3Parser) PreservedTokens() []string {
 	return []string{
 		olmo3FuncCallsOpenTag,
@@ -46,12 +52,14 @@ func (p *Olmo3Parser) PreservedTokens() []string {
 	}
 }
 
+// Init 重置状态与 callIndex。
 func (p *Olmo3Parser) Init(tools []api.Tool, lastMessage *api.Message, thinkValue *api.ThinkValue) []api.Tool {
 	p.state = olmo3StateContent
 	p.callIndex = 0
 	return tools
 }
 
+// olmo3ParserEvent 标记 Olmo3 内部解析事件。
 type olmo3ParserEvent interface {
 	isOlmo3ParserEvent()
 }
@@ -67,6 +75,7 @@ type olmo3ParserEventToolCalls struct {
 func (olmo3ParserEventContent) isOlmo3ParserEvent()   {}
 func (olmo3ParserEventToolCalls) isOlmo3ParserEvent() {}
 
+// Add 流式解析；done 时排空剩余正文缓冲。
 func (p *Olmo3Parser) Add(s string, done bool) (content string, thinking string, calls []api.ToolCall, err error) {
 	p.buffer.WriteString(s)
 
@@ -101,6 +110,7 @@ func (p *Olmo3Parser) Add(s string, done bool) (content string, thinking string,
 	return contentSb.String(), "", allCalls, nil
 }
 
+// parseEvents 循环 eat 收集全部事件。
 func (p *Olmo3Parser) parseEvents() []olmo3ParserEvent {
 	var all []olmo3ParserEvent
 
@@ -120,6 +130,7 @@ func (p *Olmo3Parser) parseEvents() []olmo3ParserEvent {
 	return all
 }
 
+// eat 按状态解析正文或 function_calls 块。
 func (p *Olmo3Parser) eat() ([]olmo3ParserEvent, bool) {
 	var events []olmo3ParserEvent
 	bufStr := p.buffer.String()
@@ -201,6 +212,7 @@ func (p *Olmo3Parser) eat() ([]olmo3ParserEvent, bool) {
 	return events, false
 }
 
+// parseOlmo3FunctionCalls 解析 Python 风格 func(arg=val) 多行函数调用。
 // parseOlmo3FunctionCalls parses function calls in Python-esque format:
 // func_name(arg1="value1", arg2=123)
 // Multiple calls are separated by newlines
@@ -229,9 +241,11 @@ func parseOlmo3FunctionCalls(s string) ([]api.ToolCall, error) {
 	return calls, nil
 }
 
+// funcCallRegex 匹配 func_name(args) 单行调用。
 // Regex to match function call: func_name(args)
 var funcCallRegex = regexp.MustCompile(`^(\w+)\((.*)\)$`)
 
+// parseOlmo3SingleFunctionCall 解析单行函数调用为 ToolCall。
 func parseOlmo3SingleFunctionCall(s string) (api.ToolCall, error) {
 	matches := funcCallRegex.FindStringSubmatch(s)
 	if matches == nil {
@@ -254,6 +268,7 @@ func parseOlmo3SingleFunctionCall(s string) (api.ToolCall, error) {
 	}, nil
 }
 
+// parseOlmo3Arguments 解析逗号分隔的 key=value 参数列表。
 // parseOlmo3Arguments parses comma-separated key=value pairs
 // Handles nested parentheses, brackets, braces, and quoted strings
 func parseOlmo3Arguments(s string) (api.ToolCallFunctionArguments, error) {
@@ -292,6 +307,7 @@ func parseOlmo3Arguments(s string) (api.ToolCallFunctionArguments, error) {
 	return args, nil
 }
 
+// splitArguments 按逗号分割参数，尊重引号与嵌套结构。
 // splitArguments splits arguments by commas, respecting quotes and nested structures
 func splitArguments(s string) []string {
 	var parts []string
@@ -360,6 +376,7 @@ func splitArguments(s string) []string {
 	return parts
 }
 
+// parseOlmo3Value 解析字符串/数字/布尔/null/数组/对象等参数值。
 // parseOlmo3Value parses a value which can be a string, number, boolean, null, array, or object
 func parseOlmo3Value(s string) (any, error) {
 	s = strings.TrimSpace(s)
@@ -407,6 +424,7 @@ func parseOlmo3Value(s string) (any, error) {
 	return s, nil
 }
 
+// parseOlmo3Array 解析 [...] 数组字面量。
 func parseOlmo3Array(s string) ([]any, error) {
 	s = strings.TrimSpace(s)
 	if s == "" {
@@ -425,6 +443,7 @@ func parseOlmo3Array(s string) ([]any, error) {
 	return arr, nil
 }
 
+// parseOlmo3Object 解析 {...} 对象字面量。
 func parseOlmo3Object(s string) (map[string]any, error) {
 	s = strings.TrimSpace(s)
 	if s == "" {
@@ -466,6 +485,7 @@ func parseOlmo3Object(s string) (map[string]any, error) {
 	return obj, nil
 }
 
+// unescapeString 处理常见 C 风格转义序列。
 func unescapeString(s string) string {
 	// Handle common escape sequences
 	s = strings.ReplaceAll(s, `\\`, "\x00") // Placeholder for backslash

@@ -1,3 +1,4 @@
+// Nemotron-3-Nano 解析器：redacted_thinking 与 Qwen3Coder 工具委托。
 package parsers
 
 import (
@@ -7,6 +8,7 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+// Nemotron3NanoParserState 表示 Nemotron3Nano 解析阶段。
 type Nemotron3NanoParserState int
 
 const (
@@ -21,6 +23,7 @@ const (
 	nemotronToolCallOpen = "<tool_call>"
 )
 
+// Nemotron3NanoParser 解析思考块后委托 Qwen3CoderParser 处理工具。
 type Nemotron3NanoParser struct {
 	state                  Nemotron3NanoParserState
 	buffer                 strings.Builder
@@ -29,9 +32,12 @@ type Nemotron3NanoParser struct {
 	skipThinkingLeadingWS  bool
 }
 
+// HasToolSupport 返回 true。
 func (p *Nemotron3NanoParser) HasToolSupport() bool     { return true }
+// HasThinkingSupport 返回 true。
 func (p *Nemotron3NanoParser) HasThinkingSupport() bool { return true }
 
+// PreservedTokens 返回思考与 tool_call 边界 token。
 func (p *Nemotron3NanoParser) PreservedTokens() []string {
 	return []string{
 		nemotronThinkOpen,
@@ -41,6 +47,7 @@ func (p *Nemotron3NanoParser) PreservedTokens() []string {
 	}
 }
 
+// Init 初始化内部 Qwen3Coder 解析器并设置思考/正文初始状态。
 func (p *Nemotron3NanoParser) Init(tools []api.Tool, lastMessage *api.Message, thinkValue *api.ThinkValue) []api.Tool {
 	p.toolParser = &Qwen3CoderParser{}
 	p.toolParser.Init(tools, nil, nil)
@@ -61,6 +68,7 @@ func (p *Nemotron3NanoParser) Init(tools []api.Tool, lastMessage *api.Message, t
 	return tools
 }
 
+// Add 流式解析思考；结束后将 remainder 交给 Qwen3Coder。
 func (p *Nemotron3NanoParser) Add(s string, done bool) (content string, thinking string, calls []api.ToolCall, err error) {
 	if p.state == Nemotron3NanoCollectingContent {
 		return p.toolParser.Add(s, done)
@@ -135,6 +143,7 @@ func (p *Nemotron3NanoParser) Add(s string, done bool) (content string, thinking
 	return "", thinking, nil, nil
 }
 
+// emitThinking 输出可确定的思考内容，保留缓冲中可能的部分标签。
 // emitThinking returns unambiguous thinking content, keeping potential partial tags in buffer
 func (p *Nemotron3NanoParser) emitThinking(bufStr string) string {
 	// Check for partial </think> or <tool_call> at end
@@ -164,6 +173,7 @@ func (p *Nemotron3NanoParser) emitThinking(bufStr string) string {
 	return bufStr
 }
 
+// stripOpeningThinkTag 剥离行首可选的 <think> 开标签。
 func (p *Nemotron3NanoParser) stripOpeningThinkTag() bool {
 	if !p.maybeThinkingOpenAtBOL {
 		return false

@@ -1,3 +1,4 @@
+// FunctionGemma 渲染器：Gemma turn 格式与 function declaration/call 块。
 package renderers
 
 import (
@@ -8,14 +9,17 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+// FunctionGemmaRenderer 渲染 FunctionGemma 函数调用模板。
 type FunctionGemmaRenderer struct{}
 
 const defaultSystemMessage = "You can do function calling with the following functions:"
 
+// LeadingBOS 返回 <bos>。
 func (r *FunctionGemmaRenderer) LeadingBOS() string {
 	return "<bos>"
 }
 
+// Render 将 developer/user/model/tool 轮次渲染为 FunctionGemma 格式。
 func (r *FunctionGemmaRenderer) Render(messages []api.Message, tools []api.Tool, thinkValue *api.ThinkValue) (string, error) {
 	var sb strings.Builder
 
@@ -50,6 +54,7 @@ func (r *FunctionGemmaRenderer) Render(messages []api.Message, tools []api.Tool,
 		sb.WriteString("<end_of_turn>\n")
 	}
 
+	// 跟踪前一条消息类型以正确衔接 function_response 块。
 	// Track previous message type for tool response handling
 	prevMessageType := ""
 
@@ -127,6 +132,7 @@ func (r *FunctionGemmaRenderer) Render(messages []api.Message, tools []api.Tool,
 	return sb.String(), nil
 }
 
+// renderToolDeclaration 渲染 <start_function_declaration> 工具 schema。
 func (r *FunctionGemmaRenderer) renderToolDeclaration(tool api.Tool) string {
 	var sb strings.Builder
 
@@ -176,6 +182,7 @@ func (r *FunctionGemmaRenderer) renderToolDeclaration(tool api.Tool) string {
 	return sb.String()
 }
 
+// writeProperties 写入 parameters.properties 字段定义。
 func (r *FunctionGemmaRenderer) writeProperties(sb *strings.Builder, props *api.ToolPropertiesMap) {
 	keys := make([]string, 0, props.Len())
 	for k := range props.All() {
@@ -203,6 +210,7 @@ func (r *FunctionGemmaRenderer) writeProperties(sb *strings.Builder, props *api.
 	}
 }
 
+// formatToolCall 渲染 <start_function_call>call:name{args} 块。
 func (r *FunctionGemmaRenderer) formatToolCall(tc api.ToolCall) string {
 	var sb strings.Builder
 	sb.WriteString("<start_function_call>call:" + tc.Function.Name + "{")
@@ -227,6 +235,7 @@ func (r *FunctionGemmaRenderer) formatToolCall(tc api.ToolCall) string {
 	return sb.String()
 }
 
+// formatArgValue 将参数值格式化为 FunctionGemma 字面量。
 func (r *FunctionGemmaRenderer) formatArgValue(value any) string {
 	switch v := value.(type) {
 	case string:
@@ -252,6 +261,7 @@ func (r *FunctionGemmaRenderer) formatArgValue(value any) string {
 	}
 }
 
+// formatMapValue 格式化 map 参数（键排序）。
 func (r *FunctionGemmaRenderer) formatMapValue(m map[string]any) string {
 	var sb strings.Builder
 	sb.WriteString("{")
@@ -275,6 +285,7 @@ func (r *FunctionGemmaRenderer) formatMapValue(m map[string]any) string {
 	return sb.String()
 }
 
+// formatArrayValue 格式化数组参数。
 func (r *FunctionGemmaRenderer) formatArrayValue(arr []any) string {
 	var sb strings.Builder
 	sb.WriteString("[")

@@ -1,3 +1,4 @@
+// DeepSeek3 渲染器：系统/工具说明与 redacted 工具标签格式。
 package renderers
 
 import (
@@ -7,24 +8,29 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+// DeepSeek3Variant 区分 DeepSeek3 模型变体。
 type DeepSeek3Variant int
 
 const (
 	Deepseek31 DeepSeek3Variant = iota
 )
 
+// DeepSeek3Renderer 渲染 DeepSeek3 系列 prompt。
 type DeepSeek3Renderer struct {
 	IsThinking bool
 	Variant    DeepSeek3Variant
 }
 
+// LeadingBOS 返回句首 BOS token。
 func (r *DeepSeek3Renderer) LeadingBOS() string {
 	return "<｜begin▁of▁sentence｜>"
 }
 
+// Render 合并 system、工具定义与多轮 user/assistant/tool 消息。
 func (r *DeepSeek3Renderer) Render(messages []api.Message, tools []api.Tool, thinkValue *api.ThinkValue) (string, error) {
 	var sb strings.Builder
 
+	// 思考需模型能力与用户 think 请求同时满足。
 	// thinking is enabled: model must support it AND user must request it
 	thinking := r.IsThinking && (thinkValue != nil && thinkValue.Bool())
 
@@ -74,6 +80,7 @@ func (r *DeepSeek3Renderer) Render(messages []api.Message, tools []api.Tool, thi
 	isTool := false
 	isLastUser := false
 
+	// 定位最后一条 user 消息以判断当前轮 assistant 是否使用 <think>。
 	// Find the index of the last user message to determine which assistant message is "current"
 	lastUserIndex := -1
 	for i := len(messages) - 1; i >= 0; i-- {

@@ -1,3 +1,4 @@
+// Glimmer 渲染器：Harmony 风格 <|start|> 消息与 ATEM 工具 XML。
 package renderers
 
 import (
@@ -53,15 +54,18 @@ that can span
 </atem:invoke>
 </atem:function_calls>`
 
+// GlimmerRenderer 渲染 Glimmer 多模态聊天模板。
 type GlimmerRenderer struct {
 	useImgTags  bool
 	currentDate string
 }
 
+// LeadingBOS 返回 <|begin_of_text|>。
 func (r *GlimmerRenderer) LeadingBOS() string {
 	return glimmerBOS
 }
 
+// glimmerReasoningStrength 将 think 偏好映射为 none/low/high 等强度。
 func glimmerReasoningStrength(think *api.ThinkValue) string {
 	if think == nil {
 		return "high"
@@ -75,6 +79,7 @@ func glimmerReasoningStrength(think *api.ThinkValue) string {
 	return "high"
 }
 
+// glimmerNamespace 从 tool.function.name 提取命名空间前缀。
 func glimmerNamespace(name string) string {
 	if namespace, _, ok := strings.Cut(name, "."); ok {
 		return namespace
@@ -82,6 +87,7 @@ func glimmerNamespace(name string) string {
 	return name
 }
 
+// glimmerNamespaces 收集工具列表中的唯一命名空间。
 func glimmerNamespaces(tools []api.Tool) []string {
 	seen := make(map[string]bool)
 	var namespaces []string
@@ -95,6 +101,7 @@ func glimmerNamespaces(tools []api.Tool) []string {
 	return namespaces
 }
 
+// glimmerJSON 复现 Transformers 5.x tojson 过滤器输出。
 // glimmerJSON reproduces the Transformers 5.x tojson filter.
 func glimmerJSON(v any) (string, error) {
 	var buf bytes.Buffer
@@ -106,6 +113,7 @@ func glimmerJSON(v any) (string, error) {
 	return string(addJSONSpaces(bytes.TrimSuffix(buf.Bytes(), []byte("\n")))), nil
 }
 
+// writeGlimmerToolDefinitions 写入 JSONSchema 工具定义与 ATEM 示例。
 func writeGlimmerToolDefinitions(sb *strings.Builder, tools []api.Tool) error {
 	sb.WriteString(glimmerToolDefinitionsPrefix)
 	for _, namespace := range glimmerNamespaces(tools) {
@@ -150,6 +158,7 @@ func writeGlimmerToolDefinitions(sb *strings.Builder, tools []api.Tool) error {
 	return nil
 }
 
+// writeGlimmerSystemMeta 写入有效 recipient 列表元信息。
 func writeGlimmerSystemMeta(sb *strings.Builder, tools []api.Tool) {
 	sb.WriteString(`# Valid recipients: "self"`)
 	for _, namespace := range glimmerNamespaces(tools) {
@@ -160,6 +169,7 @@ func writeGlimmerSystemMeta(sb *strings.Builder, tools []api.Tool) {
 	sb.WriteString(`, "user".`)
 }
 
+// writeGlimmerSystem 渲染 system 轮（知识截止、日期、推理强度与工具）。
 func writeGlimmerSystem(sb *strings.Builder, content string, tools []api.Tool, strength, currentDate string, defaultSystem bool) error {
 	writeGlimmerMessageStart(sb, "system")
 	sb.WriteString(content)
@@ -186,18 +196,21 @@ func writeGlimmerSystem(sb *strings.Builder, content string, tools []api.Tool, s
 	return nil
 }
 
+// writeGlimmerMessageStart 写入 <|start|>{header}<|message|> 前缀。
 func writeGlimmerMessageStart(sb *strings.Builder, header string) {
 	sb.WriteString(glimmerStart)
 	sb.WriteString(header)
 	sb.WriteString(glimmerMessage)
 }
 
+// writeGlimmerMessage 写入完整单条消息块。
 func writeGlimmerMessage(sb *strings.Builder, header, content, end string) {
 	writeGlimmerMessageStart(sb, header)
 	sb.WriteString(content)
 	sb.WriteString(end)
 }
 
+// glimmerToolResultName 解析 tool 消息的函数名。
 func glimmerToolResultName(message api.Message, messages []api.Message) string {
 	if message.ToolName != "" {
 		return message.ToolName
@@ -217,6 +230,7 @@ func glimmerToolResultName(message api.Message, messages []api.Message) string {
 	return name
 }
 
+// glimmerCompositeValue 判断值是否为数组/映射等复合类型。
 func glimmerCompositeValue(v any) bool {
 	if v == nil {
 		return false
@@ -229,6 +243,7 @@ func glimmerCompositeValue(v any) bool {
 	}
 }
 
+// writeGlimmerATEM 将 ToolCall 渲染为 ATEM function_calls XML。
 func writeGlimmerATEM(sb *strings.Builder, call api.ToolCall) error {
 	sb.WriteString("<atem:function_calls>\n<atem:invoke name=\"")
 	sb.WriteString(call.Function.Name)
@@ -255,6 +270,7 @@ func writeGlimmerATEM(sb *strings.Builder, call api.ToolCall) error {
 	return nil
 }
 
+// renderContent 渲染正文并在 useImgTags 时插入 [img-N] 或 <|patch|>。
 func (r *GlimmerRenderer) renderContent(message api.Message, imageOffset int) (string, int) {
 	if r.useImgTags {
 		return renderContentWithImageTags(message.Content, len(message.Images), imageOffset)
@@ -268,6 +284,7 @@ func (r *GlimmerRenderer) renderContent(message api.Message, imageOffset int) (s
 	return sb.String(), imageOffset + len(message.Images)
 }
 
+// Render 渲染完整 Glimmer 对话并追加 assistant 生成前缀。
 func (r *GlimmerRenderer) Render(messages []api.Message, tools []api.Tool, think *api.ThinkValue) (string, error) {
 	var sb strings.Builder
 	sb.WriteString(glimmerBOS)
