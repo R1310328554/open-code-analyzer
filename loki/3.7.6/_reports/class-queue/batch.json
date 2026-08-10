@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T22:56:15Z",
-  "files": [
-    "pkg/querier/stats/stats.go",
-    "pkg/querier/stats/stats.pb.go",
-    "pkg/querier/stats/time_middleware.go",
-    "pkg/querier/store_combiner.go",
-    "pkg/querier/tail/http.go",
-    "pkg/querier/tail/metrics.go",
-    "pkg/querier/tail/querier.go",
-    "pkg/querier/tail/tail.go",
-    "pkg/querier/testutil/iterator.go",
-    "pkg/querier/testutil/limits.go",
-    "pkg/querier/testutils.go",
-    "pkg/querier/worker/frontend_processor.go",
-    "pkg/querier/worker/metrics.go",
-    "pkg/querier/worker/processor_manager.go",
-    "pkg/querier/worker/scheduler_processor.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 502,
-  "done": 1035
+  "done": 1050
 }
