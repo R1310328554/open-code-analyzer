@@ -20,6 +20,7 @@ import org.w3c.dom.Element;
 
 /**
  * Assertion that is encrypted
+ * 加密的 SAML 断言：封装加密后的断言元素。
  *
  * @author Anil.Saldhana@redhat.com
  * @since Nov 24, 2010

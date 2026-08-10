@@ -21,6 +21,8 @@ import java.io.Serializable;
 /**
  * <p>
  * Java class for ConditionAbstractType complex type.
+ * SAML 2.0 条件抽象基类：断言有效性约束的公共父类型。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.

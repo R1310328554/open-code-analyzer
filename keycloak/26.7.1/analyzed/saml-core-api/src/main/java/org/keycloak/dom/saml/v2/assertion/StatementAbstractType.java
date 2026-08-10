@@ -22,6 +22,8 @@ import java.io.Serializable;
 /**
  * <p>
  * Java class for StatementAbstractType complex type.
+ * SAML 2.0 声明抽象基类：认证、属性、授权决策等声明的公共父类型。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.

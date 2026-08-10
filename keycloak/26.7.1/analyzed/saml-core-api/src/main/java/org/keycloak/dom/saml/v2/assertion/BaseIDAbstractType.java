@@ -20,6 +20,7 @@ import java.io.Serializable;
 
 /**
  * Abstract Type that represents an ID
+ * 表示 SAML 标识符的抽象基类，含 NameQualifier 与 SPNameQualifier 限定属性。
  *
  * <pre>
  *  &lt;attributeGroup name="IDNameQualifiers">

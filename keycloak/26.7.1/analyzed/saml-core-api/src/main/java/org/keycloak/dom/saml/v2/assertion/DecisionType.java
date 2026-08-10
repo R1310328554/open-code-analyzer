@@ -19,6 +19,8 @@ package org.keycloak.dom.saml.v2.assertion;
 /**
  * <p>
  * Java class for DecisionType.
+ * SAML 2.0 授权决策枚举：Permit（允许）、Deny（拒绝）、Indeterminate（不确定）。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -42,10 +44,12 @@ public enum DecisionType {
         value = v;
     }
 
+    /** 返回枚举对应的 XML 字符串值。 */
     public String value() {
         return value;
     }
 
+    /** 从 XML 字符串解析为 {@link DecisionType} 枚举常量。 */
     public static DecisionType fromValue(String v) {
         for (DecisionType c : DecisionType.values()) {
             if (c.value.equals(v)) {

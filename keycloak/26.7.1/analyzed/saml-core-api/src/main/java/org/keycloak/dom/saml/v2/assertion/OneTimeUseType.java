@@ -19,6 +19,8 @@ package org.keycloak.dom.saml.v2.assertion;
 /**
  * <p>
  * Java class for OneTimeUseType complex type.
+ * SAML 2.0 一次性使用条件：断言仅可被消费一次。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.

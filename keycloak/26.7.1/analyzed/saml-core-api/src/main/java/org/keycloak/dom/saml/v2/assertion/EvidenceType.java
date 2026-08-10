@@ -26,6 +26,8 @@ import java.util.List;
 /**
  * <p>
  * Java class for EvidenceType complex type.
+ * SAML 2.0 证据类型：引用断言 ID/URI、嵌套断言或加密断言以支撑授权决策。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -49,7 +51,8 @@ public class EvidenceType implements Serializable {
 
     protected List<ChoiceType> evidences = new ArrayList<>();
 
-    /**
+    /** 添加证据条目。
+     *
      * Add an evidence
      *
      * @param evidence
@@ -58,7 +61,8 @@ public class EvidenceType implements Serializable {
         evidences.add(evidence);
     }
 
-    /**
+    /** 移除证据条目。
+     *
      * Remove an evidence
      *
      * @param evidence
@@ -67,7 +71,8 @@ public class EvidenceType implements Serializable {
         evidences.remove(evidence);
     }
 
-    /**
+    /** 获取只读证据列表。
+     *
      * Get the list of evidences as a read only list
      *
      * @return
@@ -76,6 +81,7 @@ public class EvidenceType implements Serializable {
         return Collections.unmodifiableList(evidences);
     }
 
+    /** 证据 choice 分支：断言 ID 引用、URI 引用、嵌套断言或加密断言。 */
     public static class ChoiceType implements Serializable {
 
         private String AssertionIDRef;

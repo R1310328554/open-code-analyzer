@@ -26,6 +26,8 @@ import org.keycloak.dom.saml.common.CommonConditionsType;
 /**
  * <p>
  * Java class for ConditionsType complex type.
+ * SAML 2.0 条件容器：聚合各类条件并限定断言有效时间窗口。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -51,7 +53,8 @@ public class ConditionsType extends CommonConditionsType implements Serializable
 
     protected List<ConditionAbstractType> conditions = new ArrayList<>();
 
-    /**
+    /** 添加条件元素。
+     *
      * Add a condition
      *
      * @param condition
@@ -60,7 +63,8 @@ public class ConditionsType extends CommonConditionsType implements Serializable
         this.conditions.add(condition);
     }
 
-    /**
+    /** 移除条件元素。
+     *
      * Remove a condition
      *
      * @param condition
@@ -69,7 +73,8 @@ public class ConditionsType extends CommonConditionsType implements Serializable
         this.conditions.remove(condition);
     }
 
-    /**
+    /** 获取只读条件列表。
+     *
      * Gets an read only conditions list.
      */
     public List<ConditionAbstractType> getConditions() {

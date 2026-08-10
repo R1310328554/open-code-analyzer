@@ -23,6 +23,7 @@ import org.keycloak.common.util.StringSerialization.Deserializer;
 
 /**
  * Represents a NameIDType
+ * SAML 2.0 名称标识符：含格式 URI、SP 提供 ID 及 ID 名称限定属性。
  *
  * @author Anil.Saldhana@redhat.com
  * @since Nov 24, 2010
@@ -41,10 +42,12 @@ public class NameIDType extends BaseIDAbstractType {
     private URI format;
     private String sPProvidedID;
 
+    /** 获取名称标识符字符串值。 */
     public String getValue() {
         return value;
     }
 
+    /** 设置名称标识符字符串值。 */
     public void setValue(String value) {
         this.value = value;
     }
@@ -57,10 +60,12 @@ public class NameIDType extends BaseIDAbstractType {
         this.sPProvidedID = sPProvidedID;
     }
 
+    /** 获取名称标识符格式 URI。 */
     public URI getFormat() {
         return format;
     }
 
+    /** 设置名称标识符格式 URI。 */
     public void setFormat(URI format) {
         this.format = format;
     }
@@ -73,6 +78,7 @@ public class NameIDType extends BaseIDAbstractType {
         this.sPProvidedID = sPProvidedID;
     }
 
+    /** 序列化为字符串以便存储或传输。 */
     public String serializeAsString() {
         return StringSerialization.serialize(
           getNameQualifier(),
@@ -83,6 +89,7 @@ public class NameIDType extends BaseIDAbstractType {
         );
     }
 
+    /** 从字符串反序列化为 {@link NameIDType}。 */
     public static NameIDType deserializeFromString(String s) {
         NameIDType res = new NameIDType();
         Deserializer d = StringSerialization.deserialize(s);

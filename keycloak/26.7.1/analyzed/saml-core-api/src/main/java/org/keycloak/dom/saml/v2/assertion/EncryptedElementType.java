@@ -22,6 +22,7 @@ import org.w3c.dom.Element;
 
 /**
  * Represents an element that is encrypted
+ * 加密元素类型：持有 EncryptedData 及可选 EncryptedKey 的 DOM 表示。
  *
  * @author Anil.Saldhana@redhat.com
  * @since Nov 24, 2010
@@ -36,17 +37,21 @@ public class EncryptedElementType implements Serializable {
 
     protected Element encryptedElement;
 
+    /** 默认构造加密元素。 */
     public EncryptedElementType() {
     }
 
+    /** 以 DOM 元素构造加密元素。 */
     public EncryptedElementType(Element el) {
         this.encryptedElement = el;
     }
 
+    /** 获取加密 DOM 元素。 */
     public Element getEncryptedElement() {
         return encryptedElement;
     }
 
+    /** 设置加密 DOM 元素。 */
     public void setEncryptedElement(Element encryptedElement) {
         this.encryptedElement = encryptedElement;
     }

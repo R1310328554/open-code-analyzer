@@ -21,6 +21,8 @@ import javax.xml.datatype.XMLGregorianCalendar;
 /**
  * <p>
  * Java class for AuthnStatementType complex type.
+ * SAML 2.0 认证声明：记录主体本地性、认证上下文及会话属性。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -50,11 +52,14 @@ public class AuthnStatementType extends StatementAbstractType {
 
     protected String sessionIndex;
 
+    /** 以认证时刻构造认证声明。 */
     public AuthnStatementType(XMLGregorianCalendar instant) {
         this.authnInstant = instant;
     }
 
     /**
+     * 获取 主体本地性 属性的值。
+     *
      * Gets the value of the subjectLocality property.
      *
      * @return possible object is {@link SubjectLocalityType }
@@ -64,6 +69,8 @@ public class AuthnStatementType extends StatementAbstractType {
     }
 
     /**
+     * 设置 主体本地性 属性的值。
+     *
      * Sets the value of the subjectLocality property.
      *
      * @param value allowed object is {@link SubjectLocalityType }
@@ -73,6 +80,8 @@ public class AuthnStatementType extends StatementAbstractType {
     }
 
     /**
+     * 获取 认证上下文 属性的值。
+     *
      * Gets the value of the authnContext property.
      *
      * @return possible object is {@link AuthnContextType }
@@ -82,6 +91,8 @@ public class AuthnStatementType extends StatementAbstractType {
     }
 
     /**
+     * 设置 认证上下文 属性的值。
+     *
      * Sets the value of the authnContext property.
      *
      * @param value allowed object is {@link AuthnContextType }
@@ -91,6 +102,8 @@ public class AuthnStatementType extends StatementAbstractType {
     }
 
     /**
+     * 获取 认证时刻 属性的值。
+     *
      * Gets the value of the authnInstant property.
      *
      * @return possible object is {@link XMLGregorianCalendar }
@@ -100,6 +113,8 @@ public class AuthnStatementType extends StatementAbstractType {
     }
 
     /**
+     * 获取 会话索引 属性的值。
+     *
      * Gets the value of the sessionIndex property.
      *
      * @return possible object is {@link String }
@@ -109,6 +124,8 @@ public class AuthnStatementType extends StatementAbstractType {
     }
 
     /**
+     * 设置 会话索引 属性的值。
+     *
      * Sets the value of the sessionIndex property.
      *
      * @param value allowed object is {@link String }
@@ -118,6 +135,8 @@ public class AuthnStatementType extends StatementAbstractType {
     }
 
     /**
+     * 获取 会话失效时间 属性的值。
+     *
      * Gets the value of the sessionNotOnOrAfter property.
      *
      * @return possible object is {@link XMLGregorianCalendar }
@@ -127,6 +146,8 @@ public class AuthnStatementType extends StatementAbstractType {
     }
 
     /**
+     * 设置 会话失效时间 属性的值。
+     *
      * Sets the value of the sessionNotOnOrAfter property.
      *
      * @param value allowed object is {@link XMLGregorianCalendar }

@@ -21,6 +21,8 @@ import org.w3c.dom.Element;
 /**
  * <p>
  * Java class for KeyInfoConfirmationDataType complex type.
+ * SAML 2.0 密钥信息确认数据：扩展 SubjectConfirmationData，携带 XML Signature KeyInfo。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -41,10 +43,12 @@ public class KeyInfoConfirmationDataType extends SubjectConfirmationDataType {
 
     protected Element keyInfo;
 
+    /** 获取 XML Signature KeyInfo 元素。 */
     public Element getKeyInfo() {
         return keyInfo;
     }
 
+    /** 设置 XML Signature KeyInfo 元素。 */
     public void setKeyInfo(Element keyInfo) {
         this.keyInfo = keyInfo;
     }

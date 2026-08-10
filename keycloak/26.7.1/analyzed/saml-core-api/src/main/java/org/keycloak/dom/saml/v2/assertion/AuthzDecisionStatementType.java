@@ -23,6 +23,8 @@ import java.util.List;
 /**
  * <p>
  * Java class for AuthzDecisionStatementType complex type.
+ * SAML 2.0 授权决策声明：对资源给出 Permit/Deny/Indeterminate 决策及证据。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -49,7 +51,8 @@ public class AuthzDecisionStatementType extends StatementAbstractType {
     protected String resource;
     protected DecisionType decision;
 
-    /**
+    /** 获取只读操作列表。
+     *
      * Get the list of actions (read-only list)
      *
      * @return {@link List} read only
@@ -58,7 +61,8 @@ public class AuthzDecisionStatementType extends StatementAbstractType {
         return Collections.unmodifiableList(this.action);
     }
 
-    /**
+    /** 添加授权操作。
+     *
      * Add an action
      *
      * @param actionType
@@ -67,7 +71,8 @@ public class AuthzDecisionStatementType extends StatementAbstractType {
         action.add(actionType);
     }
 
-    /**
+    /** 移除授权操作。
+     *
      * Remove an action
      *
      * @param actionType
@@ -77,6 +82,8 @@ public class AuthzDecisionStatementType extends StatementAbstractType {
     }
 
     /**
+     * 获取 决策证据 属性的值。
+     *
      * Gets the value of the evidence property.
      *
      * @return possible object is {@link EvidenceType }
@@ -86,6 +93,8 @@ public class AuthzDecisionStatementType extends StatementAbstractType {
     }
 
     /**
+     * 设置 决策证据 属性的值。
+     *
      * Sets the value of the evidence property.
      *
      * @param value allowed object is {@link EvidenceType }
@@ -95,6 +104,8 @@ public class AuthzDecisionStatementType extends StatementAbstractType {
     }
 
     /**
+     * 获取 目标资源 属性的值。
+     *
      * Gets the value of the resource property.
      *
      * @return possible object is {@link String }
@@ -104,6 +115,8 @@ public class AuthzDecisionStatementType extends StatementAbstractType {
     }
 
     /**
+     * 设置 目标资源 属性的值。
+     *
      * Sets the value of the resource property.
      *
      * @param value allowed object is {@link String }
@@ -113,6 +126,8 @@ public class AuthzDecisionStatementType extends StatementAbstractType {
     }
 
     /**
+     * 获取 授权决策 属性的值。
+     *
      * Gets the value of the decision property.
      *
      * @return possible object is {@link DecisionType }
@@ -122,6 +137,8 @@ public class AuthzDecisionStatementType extends StatementAbstractType {
     }
 
     /**
+     * 设置 授权决策 属性的值。
+     *
      * Sets the value of the decision property.
      *
      * @param value allowed object is {@link DecisionType }

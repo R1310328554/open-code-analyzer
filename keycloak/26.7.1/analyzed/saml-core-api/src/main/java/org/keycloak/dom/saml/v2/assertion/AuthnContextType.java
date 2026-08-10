@@ -27,6 +27,8 @@ import java.util.Set;
 /**
  * <p>
  * Java class for AuthnContextType complex type.
+ * SAML 2.0 认证上下文类型：描述认证方式、声明及认证机构。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -66,6 +68,8 @@ public class AuthnContextType implements Serializable {
     private final Set<URIType> URITypes = new HashSet<>();
 
     /**
+     * 添加认证机构 URI。
+     *
      * Add an authenticating authority
      *
      * @param aa {@link URI}
@@ -75,6 +79,8 @@ public class AuthnContextType implements Serializable {
     }
 
     /**
+     * 批量添加认证机构 URI。
+     *
      * Add Authenticating Authority
      *
      * @param aas an array of {@link URI}
@@ -84,6 +90,8 @@ public class AuthnContextType implements Serializable {
     }
 
     /**
+     * 移除认证机构 URI。
+     *
      * Remove an authenticating authority
      *
      * @param aa
@@ -93,6 +101,8 @@ public class AuthnContextType implements Serializable {
     }
 
     /**
+     * 获取只读认证机构 URI 集合。
+     *
      * Get a read only set of authenticating authority
      *
      * @return
@@ -102,6 +112,8 @@ public class AuthnContextType implements Serializable {
     }
 
     /**
+     * 获取认证上下文序列组。
+     *
      * Get the sequence
      *
      * @return
@@ -111,6 +123,8 @@ public class AuthnContextType implements Serializable {
     }
 
     /**
+     * 设置认证上下文序列组。
+     *
      * Set the authn context sequence
      *
      * @param sequence
@@ -120,6 +134,8 @@ public class AuthnContextType implements Serializable {
     }
 
     /**
+     * 添加 URI 类型元素。
+     *
      * Add an URI type
      *
      * @param aa
@@ -129,6 +145,8 @@ public class AuthnContextType implements Serializable {
     }
 
     /**
+     * 批量添加 URI 类型元素。
+     *
      * Add an array of URI Type
      *
      * @param aas
@@ -138,6 +156,8 @@ public class AuthnContextType implements Serializable {
     }
 
     /**
+     * 获取只读 URI 类型集合。
+     *
      * Get a read only set of URI type
      *
      * @return
@@ -147,6 +167,8 @@ public class AuthnContextType implements Serializable {
     }
 
     /**
+     * 移除 URI 类型元素。
+     *
      * Add an URI type
      *
      * @param aa
@@ -160,6 +182,7 @@ public class AuthnContextType implements Serializable {
      * ref="saml:AuthnContextDecl"/>
      * <element ref="saml:AuthnContextDeclRef"/> </choice> </sequence>
      */
+    /** 认证上下文序列：类引用与可选声明/声明引用。 */
     public static class AuthnContextTypeSequence implements Serializable {
 
         private AuthnContextClassRefType classRef;

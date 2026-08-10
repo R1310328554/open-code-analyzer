@@ -25,6 +25,8 @@ import java.util.List;
 /**
  * <p>
  * Java class for ProxyRestrictionType complex type.
+ * SAML 2.0 代理限制条件：限定断言可经代理转发的次数与受众。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -48,7 +50,8 @@ public class ProxyRestrictionType extends ConditionAbstractType {
 
     protected BigInteger count;
 
-    /**
+    /** 添加允许的代理受众 URI。
+     *
      * Add an audience
      *
      * @param a
@@ -57,14 +60,16 @@ public class ProxyRestrictionType extends ConditionAbstractType {
         this.audience.add(a);
     }
 
-    /**
+    /** 获取只读代理受众 URI 列表。
+     *
      * Gets the value of the audience property.
      */
     public List<URI> getAudience() {
         return Collections.unmodifiableList(audience);
     }
 
-    /**
+    /** 移除代理受众 URI。
+     *
      * Remove an audience
      *
      * @param a
@@ -74,6 +79,8 @@ public class ProxyRestrictionType extends ConditionAbstractType {
     }
 
     /**
+     * 获取 允许代理次数 属性的值。
+     *
      * Gets the value of the count property.
      *
      * @return possible object is {@link BigInteger }
@@ -83,6 +90,8 @@ public class ProxyRestrictionType extends ConditionAbstractType {
     }
 
     /**
+     * 设置 允许代理次数 属性的值。
+     *
      * Sets the value of the count property.
      *
      * @param value allowed object is {@link BigInteger }
