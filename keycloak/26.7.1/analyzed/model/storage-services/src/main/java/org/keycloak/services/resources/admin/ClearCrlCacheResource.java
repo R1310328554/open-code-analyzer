@@ -25,14 +25,24 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.cache.CacheCrlProvider;
 import org.keycloak.services.resources.admin.fgap.AdminPermissionEvaluator;
 
+/**
+ * 清除 CRL 缓存的管理 REST 资源。
+ * <p>
+ * 清空 X509 客户端证书认证时加载的证书吊销列表（CRL）缓存。
+ */
 public class ClearCrlCacheResource {
 
+    /** 管理端权限评估器。 */
     protected final AdminPermissionEvaluator auth;
+    /** 当前操作的 realm。 */
     protected final RealmModel realm;
+    /** 管理事件构建器，用于记录操作审计。 */
     private final AdminEventBuilder adminEvent;
 
+    /** 当前 Keycloak 会话。 */
     protected final KeycloakSession session;
 
+    /** 构造 CRL 缓存清除资源。 */
     public ClearCrlCacheResource(KeycloakSession session, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         this.session = session;
         this.auth = auth;
@@ -41,8 +51,9 @@ public class ClearCrlCacheResource {
     }
 
     /**
-     * Clear the crl cache (CRLs loaded for X509 authentication)
-     *
+     * 清除 CRL 缓存（X509 认证加载的证书吊销列表）。
+     * <p>
+     * 需要 {@code manage-realm} 权限；若 {@link CacheCrlProvider} 已注册则调用 {@link CacheCrlProvider#clearCache()}。
      */
     @POST
     public void clearCrlCache() {

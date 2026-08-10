@@ -25,31 +25,42 @@ import org.keycloak.services.resources.admin.ext.AdminRealmResourceProvider;
 import org.keycloak.services.resources.admin.ext.AdminRealmResourceProviderFactory;
 import org.keycloak.services.resources.admin.fgap.AdminPermissionEvaluator;
 
+/**
+ * Realm 模型缓存清除的 Realm 级管理扩展工厂与 Provider 实现。
+ * <p>
+ * 在管理控制台注册 {@code clear-realm-cache} 子资源，挂载 {@link ClearRealmCacheResource}。
+ */
 public class ClearRealmCacheRealmAdminProvider implements AdminRealmResourceProviderFactory, AdminRealmResourceProvider {
 
     @Override
+    /** 创建 Provider 实例（本实现返回自身）。 */
     public AdminRealmResourceProvider create(KeycloakSession session) {
         return this;
     }
 
     @Override
+    /** 初始化配置（无额外配置项）。 */
     public void init(Scope config) {
     }
 
     @Override
+    /** 会话工厂后置初始化。 */
     public void postInit(KeycloakSessionFactory factory) {
     }
 
     @Override
+    /** 关闭资源。 */
     public void close() {
     }
 
     @Override
+    /** 返回管理扩展标识 {@code clear-realm-cache}。 */
     public String getId() {
         return "clear-realm-cache";
     }
 
     @Override
+    /** 返回 Realm 缓存清除 REST 资源实例。 */
     public Object getResource(KeycloakSession session, RealmModel realm, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         return new ClearRealmCacheResource(session, auth, adminEvent);
     }

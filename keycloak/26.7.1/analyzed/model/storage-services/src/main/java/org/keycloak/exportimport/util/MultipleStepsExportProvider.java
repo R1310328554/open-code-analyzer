@@ -41,6 +41,10 @@ import org.keycloak.storage.UserStorageUtil;
 import org.jboss.logging.Logger;
 
 /**
+ * 多步骤导出 Provider 抽象基类：将 realm 与用户分文件导出，支持多种用户导出策略。
+ * <p>
+ * 子类实现 {@link #writeRealm}、{@link #writeUsers} 与 {@link #writeFederatedUsers} 以决定输出目标（目录或流）。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public abstract class MultipleStepsExportProvider<T extends MultipleStepsExportProvider<?>> implements ExportProvider {
@@ -49,14 +53,19 @@ public abstract class MultipleStepsExportProvider<T extends MultipleStepsExportP
 
     protected final KeycloakSessionFactory factory;
 
+    /** 指定导出单个 realm 时使用的名称；为 null 表示导出全部 realm。 */
     private String realmId;
+    /** 每个用户分片文件包含的用户数。 */
     private int usersPerFile = 50;
+    /** 用户导出策略（跳过、同文件、分文件等）。 */
     private UsersExportStrategy usersExportStrategy;
 
+    /** 构造多步骤导出 Provider。 */
     public MultipleStepsExportProvider(KeycloakSessionFactory factory) {
         this.factory = factory;
     }
 
+    /** 执行模型导出：单 realm 或遍历全部 realm 分步导出。 */
     @Override
     public void exportModel() {
         if (realmId != null) {
@@ -78,11 +87,13 @@ public abstract class MultipleStepsExportProvider<T extends MultipleStepsExportP
         ServicesLogger.LOGGER.exportSuccess();
     }
 
+    /** 设置仅导出指定 realm 的名称。 */
     public T withRealmName(String realmName) {
         this.realmId = realmName;
         return (T) this;
     }
 
+    /** 设置每个用户分片文件的用户数量（必须大于 0）。 */
     public T withUsersPerFile(int usersPerFile) {
         if (usersPerFile < 1) {
             throw new IllegalArgumentException("usersPerFile must be greater than 0");
@@ -91,11 +102,13 @@ public abstract class MultipleStepsExportProvider<T extends MultipleStepsExportP
         return (T) this;
     }
 
+    /** 设置用户导出策略。 */
     public T withUsersExportStrategy(UsersExportStrategy usersExportStrategy) {
         this.usersExportStrategy = usersExportStrategy;
         return (T) this;
     }
 
+    /** 导出单个 realm 的 realm 定义与用户分片（批处理模式）。 */
     protected void exportRealmImpl(final String realmName) {
         final boolean exportUsersIntoRealmFile = usersExportStrategy == UsersExportStrategy.REALM_FILE;
 
@@ -110,7 +123,7 @@ public abstract class MultipleStepsExportProvider<T extends MultipleStepsExportP
                 writeRealm(realmName + "-realm.json", rep);
                 logger.info("Realm '" + realmName + "' - data exported");
 
-                // Count total number of users
+                // 统计并导出用户总数
                 if (usersExportStrategy != UsersExportStrategy.SKIP && !exportUsersIntoRealmFile) {
                     Stream<UserModel> users = UserStoragePrivateUtil.userLocalStorage(session).searchForUserStream(realm, Map.of());
                     exportUsers(realmName, session, realm, users, false);
@@ -165,11 +178,15 @@ public abstract class MultipleStepsExportProvider<T extends MultipleStepsExportP
         }.runTask(factory, Mode.BATCHED);
     }
 
+    /** 写入 realm JSON 文件；由子类实现具体输出方式。 */
     protected abstract void writeRealm(String fileName, RealmRepresentation rep) throws IOException;
 
+    /** 写入本地用户 JSON 分片文件。 */
     protected abstract void writeUsers(String fileName, KeycloakSession session, RealmModel realm, List<UserModel> users) throws IOException;
+    /** 写入联邦用户 JSON 分片文件。 */
     protected abstract void writeFederatedUsers(String fileName, KeycloakSession session, RealmModel realm, List<String> users) throws IOException;
 
+    /** 用户分片文件序号计数器。 */
     public static class UsersHolder {
         int file;
     }

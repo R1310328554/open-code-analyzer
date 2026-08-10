@@ -27,21 +27,26 @@ import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.utils.KeycloakSessionUtil;
 
 /**
- * Just to wrap {@link IOException}
+ * 导出/导入会话任务抽象基类：在事务上下文中执行 {@link #runExportImportTask}，并将 {@link IOException} 包装为运行时异常。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public abstract class ExportImportSessionTask {
 
+    /** 任务执行模式：批处理优化或普通模式。 */
     public enum Mode {
-        BATCHED, // turn on batched optimizations - good for read-only and bulk inserts, and flush / clear when done
+        /** 启用批处理优化（只读/批量插入），完成后 flush/clear。 */
+        BATCHED,
+        /** 普通事务模式。 */
         NORMAL
     }
 
+    /** 以 {@link Mode#NORMAL} 模式在事务中运行任务。 */
     public void runTask(KeycloakSessionFactory factory) {
         runTask(factory, Mode.NORMAL);
     }
 
+    /** 以指定 {@link Mode} 在事务中运行任务。 */
     public void runTask(KeycloakSessionFactory factory, Mode mode) {
         boolean useExistingSession = ExportImportConfig.isSingleTransaction();
         KeycloakSession existing = KeycloakSessionUtil.getKeycloakSession();
@@ -52,6 +57,7 @@ public abstract class ExportImportSessionTask {
         }
     }
 
+    /** 在指定模式下执行导出/导入任务（批处理或普通）。 */
     private void run(Mode mode, KeycloakSession session) {
         Runnable task = () -> {
             try {
@@ -67,5 +73,6 @@ public abstract class ExportImportSessionTask {
         }
     }
 
+    /** 子类实现的导出/导入核心逻辑。 */
     protected abstract void runExportImportTask(KeycloakSession session) throws IOException;
 }

@@ -25,14 +25,24 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.cache.CachePublicKeyProvider;
 import org.keycloak.services.resources.admin.fgap.AdminPermissionEvaluator;
 
+/**
+ * 清除外部公钥缓存的管理 REST 资源。
+ * <p>
+ * 清空客户端或身份提供者（IdP）外部公钥的缓存。
+ */
 public class ClearKeysCacheResource {
 
+    /** 管理端权限评估器。 */
     protected final AdminPermissionEvaluator auth;
+    /** 当前操作的 realm。 */
     protected final RealmModel realm;
+    /** 管理事件构建器，用于记录操作审计。 */
     private final AdminEventBuilder adminEvent;
 
+    /** 当前 Keycloak 会话。 */
     protected final KeycloakSession session;
 
+    /** 构造外部公钥缓存清除资源。 */
     public ClearKeysCacheResource(KeycloakSession session, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         this.session = session;
         this.auth = auth;
@@ -41,8 +51,9 @@ public class ClearKeysCacheResource {
     }
 
     /**
-     * Clear cache of external public keys (Public keys of clients or Identity providers)
-     *
+     * 清除外部公钥缓存（客户端或身份提供者的公钥）。
+     * <p>
+     * 需要 {@code manage-realm} 权限；若 {@link CachePublicKeyProvider} 已注册则调用 {@link CachePublicKeyProvider#clearCache()}。
      */
     @POST
     public void clearKeysCache() {

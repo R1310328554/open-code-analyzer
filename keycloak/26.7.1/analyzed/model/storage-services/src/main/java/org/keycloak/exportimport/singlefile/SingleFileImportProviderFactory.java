@@ -34,19 +34,28 @@ import org.keycloak.provider.ProviderConfigurationBuilder;
 import static org.keycloak.exportimport.ExportImportConfig.DEFAULT_STRATEGY;
 
 /**
+ * 单文件导入 Provider 工厂（ID {@code singleFile}）：从配置或系统属性创建 {@link SingleFileImportProvider}。
+ * <p>
+ * 为兼容旧测试框架，可通过系统属性覆盖 SPI 配置项。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class SingleFileImportProviderFactory implements ImportProviderFactory {
 
+    /** Provider 标识符（与 {@link SingleFileExportProviderFactory} 相同）。 */
     public static final String PROVIDER_ID = SingleFileExportProviderFactory.PROVIDER_ID;
 
+    /** 指定导入单个 realm 的名称配置键。 */
     public static final String REALM_NAME = "realmName";
+    /** 导入冲突处理策略配置键。 */
     public static final String STRATEGY = "strategy";
 
+    /** 导入源 JSON 文件路径配置键。 */
     public static final String FILE = "file";
 
     private Config.Scope config;
 
+    /** 创建配置好文件路径与导入策略的 {@link SingleFileImportProvider}。 */
     @Override
     public ImportProvider create(KeycloakSession session, Map<String, String> overrides) {
         Strategy strategy = Enum.valueOf(Strategy.class, System.getProperty(ExportImportConfig.STRATEGY, config.get(STRATEGY, DEFAULT_STRATEGY.toString())));

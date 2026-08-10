@@ -33,18 +33,27 @@ import org.keycloak.provider.ProviderConfigurationBuilder;
 import static org.keycloak.exportimport.ExportImportConfig.DEFAULT_STRATEGY;
 
 /**
+ * 目录导入 Provider 工厂（ID {@code dir}）：从配置或系统属性创建 {@link DirImportProvider}。
+ * <p>
+ * 为兼容旧测试框架，可通过系统属性覆盖 SPI 配置项。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class DirImportProviderFactory implements ImportProviderFactory {
 
+    /** 指定导入单个 realm 的名称配置键。 */
     public static final String REALM_NAME = "realmName";
+    /** 导入源目录配置键。 */
     public static final String DIR = "dir";
+    /** 导入冲突处理策略配置键。 */
     private static final String STRATEGY = "strategy";
 
+    /** Provider 标识符（与 {@link DirExportProviderFactory} 相同）。 */
     public static final String PROVIDER_ID = DirExportProviderFactory.PROVIDER_ID;
 
     private Config.Scope config;
 
+    /** 创建配置好目录、realm 与导入策略的 {@link DirImportProvider}。 */
     @Override
     public ImportProvider create(KeycloakSession session, Map<String, String> overrides) {
         Strategy strategy = Enum.valueOf(Strategy.class, System.getProperty(ExportImportConfig.STRATEGY, config.get(STRATEGY, DEFAULT_STRATEGY.toString())));

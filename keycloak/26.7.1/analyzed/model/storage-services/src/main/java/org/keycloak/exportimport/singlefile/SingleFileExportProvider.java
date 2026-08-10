@@ -38,26 +38,35 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import org.jboss.logging.Logger;
 
 /**
+ * 单文件导出 Provider：将全部 realm 或指定 realm 序列化为一个 JSON 文件。
+ * <p>
+ * 在 {@link ExportImportSessionTask} 事务上下文中执行导出，并使用 Jackson 流式序列化写入目标文件。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class SingleFileExportProvider implements ExportProvider {
 
     private static final Logger logger = Logger.getLogger(SingleFileExportProvider.class);
 
+    /** 导出目标文件。 */
     private File file;
 
     private final KeycloakSessionFactory factory;
+    /** 指定导出单个 realm 时使用的名称；为 null 表示导出全部 realm。 */
     private String realmName;
 
+    /** 构造单文件导出 Provider。 */
     public SingleFileExportProvider(KeycloakSessionFactory factory) {
         this.factory = factory;
     }
 
+    /** 设置导出目标文件。 */
     public SingleFileExportProvider withFile(File file) {
         this.file = file;
         return this;
     }
 
+    /** 执行模型导出：单 realm 或全模型写入 {@link #file}。 */
     @Override
     public void exportModel() {
 
@@ -82,6 +91,7 @@ public class SingleFileExportProvider implements ExportProvider {
         ServicesLogger.LOGGER.exportSuccess();
     }
 
+    /** 导出指定名称的单个 realm 到 {@link #file}。 */
     private void exportRealm(KeycloakSession session, final String realmName) throws IOException {
         logger.infof("Exporting realm '%s' into file %s", realmName, this.file.getAbsolutePath());
         RealmModel realm = session.realms().getRealmByName(realmName);
@@ -95,6 +105,7 @@ public class SingleFileExportProvider implements ExportProvider {
     public void close() {
     }
 
+    /** 获取用于导出的 Jackson 序列化器（缩进输出、忽略空 Bean）。 */
     private ObjectMapper getObjectMapper() {
         ObjectMapper streamSerializer = ObjectMapperResolver.createStreamSerializer();
         streamSerializer.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
@@ -102,11 +113,13 @@ public class SingleFileExportProvider implements ExportProvider {
         return streamSerializer;
     }
 
+    /** 将 realm 表示对象或流写入 {@link #file}。 */
     private void writeToFile(Object reps) throws IOException {
         FileOutputStream stream = new FileOutputStream(this.file);
         getObjectMapper().writeValue(stream, reps);
     }
 
+    /** 设置仅导出指定 realm 的名称。 */
     public ExportProvider withRealmName(String realmName) {
         this.realmName = realmName;
         return this;

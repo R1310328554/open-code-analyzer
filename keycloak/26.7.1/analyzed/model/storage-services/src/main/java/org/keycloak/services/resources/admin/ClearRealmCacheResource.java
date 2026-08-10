@@ -25,17 +25,24 @@ import org.keycloak.models.cache.CacheRealmProvider;
 import org.keycloak.services.resources.admin.fgap.AdminPermissionEvaluator;
 
 /**
- * Clear user cache.
+ * 清除 Realm 模型缓存的管理 REST 资源。
+ * <p>
+ * 通过 {@link CacheRealmProvider#clear()} 清空集群内 realm 相关模型缓存。
  */
 public class ClearRealmCacheResource {
+    /** 当前操作的 realm。 */
     protected final RealmModel realm;
 
+    /** 管理端权限评估器。 */
     protected final AdminPermissionEvaluator auth;
 
+    /** 管理事件构建器，用于记录操作审计。 */
     protected final AdminEventBuilder adminEvent;
 
+    /** 当前 Keycloak 会话。 */
     protected final KeycloakSession session;
 
+    /** 构造 Realm 缓存清除资源。 */
     public ClearRealmCacheResource(KeycloakSession session, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         this.session = session;
         this.auth = auth;
@@ -44,7 +51,9 @@ public class ClearRealmCacheResource {
     }
 
     /**
-     * Clear user cache
+     * 清除 Realm 模型缓存。
+     * <p>
+     * 需要 {@code manage-realm} 权限；若 {@link CacheRealmProvider} 已注册则调用 {@link CacheRealmProvider#clear()}。
      */
     @POST
     public void clearRealmCache() {

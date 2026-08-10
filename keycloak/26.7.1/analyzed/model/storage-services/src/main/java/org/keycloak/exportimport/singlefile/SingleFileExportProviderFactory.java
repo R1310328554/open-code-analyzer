@@ -31,18 +31,23 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.provider.ProviderConfigurationBuilder;
 
 /**
- * Construct a {@link SingleFileExportProvider} to be used to export one or more realms.
- * For the sake of testing in the legacy testing setup, configurations can be overwritten via system properties.
+ * 单文件导出 Provider 工厂（ID {@code singleFile}）：创建 {@link SingleFileExportProvider} 以导出单个或多个 realm。
+ * <p>
+ * 为兼容旧测试框架，可通过系统属性覆盖 SPI 配置项。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class SingleFileExportProviderFactory implements ExportProviderFactory {
 
+    /** Provider 标识符。 */
     public static final String PROVIDER_ID = "singleFile";
+    /** 导出目标文件路径配置键。 */
     public static final String FILE = "file";
+    /** 指定导出单个 realm 的名称配置键。 */
     public static final String REALM_NAME = "realmName";
     private Config.Scope config;
 
+    /** 创建配置好目标文件与 realm 名称的 {@link SingleFileExportProvider}。 */
     @Override
     public ExportProvider create(KeycloakSession session) {
         String fileName = System.getProperty(ExportImportConfig.FILE, config.get(FILE));

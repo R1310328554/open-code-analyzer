@@ -43,16 +43,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jboss.logging.Logger;
 
 /**
+ * 导入工具类：从 JSON 流解析 realm 表示并写入模型，支持批量 realm 与用户导入。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ImportUtils {
 
     private static final Logger logger = Logger.getLogger(ImportUtils.class);
 
+    /** 批量导入多个 realm：先导入 admin realm，再导入其余 realm，并在需要时重建管理客户端。 */
     public static void importRealms(KeycloakSession session, Collection<RealmRepresentation> realms, Strategy strategy) {
         boolean masterImported = false;
 
-        // Import admin realm first
+        // 优先导入 admin（master）realm
         for (RealmRepresentation realm : realms) {
             if (Config.getAdminRealm().equals(realm.getRealm())) {
                 if (importRealm(session, realm, strategy, () -> {})) {
@@ -67,7 +70,7 @@ public class ImportUtils {
             }
         }
 
-        // If master was imported, we may need to re-create realm management clients
+        // 若 master 已导入，可能需要为各 realm 重新创建管理客户端
         if (masterImported) {
             session.realms().getRealmsStream()
                     .filter(realm -> realm.getMasterAdminClient() == null)
@@ -79,7 +82,7 @@ public class ImportUtils {
     }
 
     /**
-     * Fully import realm from representation, save it to model and return model of newly created realm
+     * 从表示全量导入 realm 并持久化到模型。
      *
      * @param session
      * @param rep
@@ -94,7 +97,7 @@ public class ImportUtils {
     }
 
     /**
-     * Fully import realm from representation, save it to model and return model of newly created realm
+     * 从表示全量导入 realm 并持久化到模型。
      *
      * @param session
      * @param rep
@@ -115,10 +118,10 @@ public class ImportUtils {
             } else {
                 logger.infof("Realm '%s' already exists. Removing it before import", realmName);
                 if (Config.getAdminRealm().equals(realm.getId())) {
-                    // Delete all masterAdmin apps due to foreign key constraints
+                    // 因外键约束，先清除各 realm 的 masterAdmin 客户端引用
                    model.getRealmsStream().forEach(r -> r.setMasterAdminClient(null));
                 }
-                // TODO: For migration between versions, it should be possible to delete just realm but keep it's users
+                // TODO: 版本迁移场景下，应支持仅删除 realm 而保留其用户
                 model.removeRealm(realm.getId());
             }
             session.getContext().setRealm(null);
@@ -134,6 +137,7 @@ public class ImportUtils {
         return true;
     }
 
+    /** 从 JSON 输入流解析 realm 表示，支持单 realm 对象或 realm 数组。 */
     public static Map<String, RealmRepresentation> getRealmsFromStream(ObjectMapper mapper, InputStream is) throws IOException {
         Map<String, RealmRepresentation> result = new HashMap<String, RealmRepresentation>();
 
@@ -143,7 +147,7 @@ public class ImportUtils {
             parser.nextToken();
 
             if (parser.getCurrentToken() == JsonToken.START_ARRAY) {
-                // Case with more realms in stream
+                // 流中包含多个 realm
                 parser.nextToken();
 
                 while (parser.getCurrentToken() == JsonToken.START_OBJECT) {
@@ -152,7 +156,7 @@ public class ImportUtils {
                     result.put(realmRep.getRealm(), realmRep);
                 }
             } else if (parser.getCurrentToken() == JsonToken.START_OBJECT) {
-                // Case with single realm in stream
+                // 流中仅包含单个 realm
                 RealmRepresentation realmRep = parser.readValueAs(RealmRepresentation.class);
                 result.put(realmRep.getRealm(), realmRep);
             }
@@ -163,7 +167,8 @@ public class ImportUtils {
         return result;
     }
 
-    // Assuming that it's invoked inside transaction
+    // 假定在事务内调用
+    /** 从 JSON 流按批导入本地或联邦用户到指定 realm。 */
     public static void importUsersFromStream(KeycloakSession session, String realmName, ObjectMapper mapper, InputStream is, boolean federated, Consumer<KeycloakSession> onUserCreated) throws IOException {
         RealmProvider model = session.realms();
         JsonFactory factory = mapper.getJsonFactory();
