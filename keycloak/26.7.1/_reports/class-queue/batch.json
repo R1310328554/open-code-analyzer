@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T09:21:56Z",
   "files": [
-    "rest/admin-v2/api/src/main/java/org/keycloak/representations/admin/v2/BaseRepresentation.java",
-    "rest/admin-v2/api/src/main/java/org/keycloak/representations/admin/v2/OIDCClientRepresentation.java",
-    "rest/admin-v2/api/src/main/java/org/keycloak/representations/admin/v2/RepresentationWithUuid.java",
-    "rest/admin-v2/api/src/main/java/org/keycloak/representations/admin/v2/SAMLClientRepresentation.java",
-    "rest/admin-v2/api/src/main/java/org/keycloak/representations/admin/v2/validation/ClientSecretNotBlank.java",
-    "rest/admin-v2/api/src/main/java/org/keycloak/representations/admin/v2/validation/ConfidentialFlowsRequireAuth.java",
-    "rest/admin-v2/api/src/main/java/org/keycloak/representations/admin/v2/validation/CreateClient.java",
-    "rest/admin-v2/api/src/main/java/org/keycloak/representations/admin/v2/validation/PatchClient.java",
-    "rest/admin-v2/api/src/main/java/org/keycloak/representations/admin/v2/validation/ProtocolUnmodified.java",
-    "rest/admin-v2/api/src/main/java/org/keycloak/representations/admin/v2/validation/PutClient.java",
-    "rest/admin-v2/api/src/main/java/org/keycloak/representations/admin/v2/validation/RedirectFlowsRequireUris.java",
-    "rest/admin-v2/api/src/main/java/org/keycloak/representations/admin/v2/validation/ServiceAccountRolesRequireFlow.java",
-    "rest/admin-v2/api/src/main/java/org/keycloak/representations/admin/v2/validation/UuidUnmodified.java",
-    "rest/admin-v2/api/src/main/java/org/keycloak/representations/admin/v2/validation/ValidAuthMethod.java",
-    "rest/admin-v2/api/src/main/java/org/keycloak/representations/admin/v2/validation/ValidCanonicalizationMethod.java",
     "rest/admin-v2/api/src/main/java/org/keycloak/representations/admin/v2/validation/ValidRedirectUris.java",
     "rest/admin-v2/api/src/main/java/org/keycloak/representations/admin/v2/validation/ValidWebOrigin.java",
     "rest/admin-v2/services/src/main/java/org/keycloak/admin/internal/openapi/JavaDocExampleGenerator.java",
@@ -33,5 +18,5 @@
     "rest/admin-v2/services/src/main/java/org/keycloak/representations/admin/v2/validators/ClientUuidProvider.java"
   ],
   "remaining_pending": 3628,
-  "done": 2340
+  "done": 2355
 }
