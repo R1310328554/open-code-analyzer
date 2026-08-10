@@ -12,9 +12,11 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// fixture_stubs.go — e2e 测试夹具用的七种组件桩实现（Retrieval/Tavily 等）。
+
 //
 
-// Package component — e2e fixture stubs and compat shims.
+// Package component — e2e 夹具桩与兼容垫片。
 //
 // The test fixtures under internal/agent/dsl/testdata reference
 // seven component names that are registered here: Retrieval,
@@ -47,6 +49,7 @@ import (
 
 const componentNameRetrieval = "Retrieval"
 
+// RetrievalStub Retrieval 夹具桩，返回空 formalized_content。
 // RetrievalStub is a fixture stub for the Retrieval component. It
 // returns an empty `formalized_content` so downstream templates
 // that reference `{retrieval:0@formalized_content}` resolve to an

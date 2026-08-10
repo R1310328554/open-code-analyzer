@@ -12,9 +12,11 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// pdf_writer.go — 基于 signintech/gopdf 的 PDF 写入器。
+
 //
 
-// Package io — PDF writer (signintech/gopdf).
+// Package io — PDF 写入器（signintech/gopdf）。
 //
 // WritePDF renders the supplied content to a PDF using the
 // MIT-licensed signintech/gopdf library. The writer probes via
@@ -39,6 +41,7 @@ import (
 	"github.com/signintech/gopdf"
 )
 
+// PDFOptions PDF 写入器公开选项。
 // PDFOptions is the public contract for the PDF writer.
 type PDFOptions struct {
 	FontSize       int
@@ -50,11 +53,13 @@ type PDFOptions struct {
 	FontFamily     string
 }
 
+// ErrPDFFontNotConfigured 未注册 TTF 字体时返回。
 // ErrPDFFontNotConfigured is returned when no TTF is registered.
 // Callers should register a TTF via gopdf.SetFont before invoking
 // WritePDF.
 var ErrPDFFontNotConfigured = errors.New("PDF font not configured: register a TTF (e.g. Noto Sans CJK SC) via gopdf.SetFont before calling WritePDF")
 
+// WritePDF 将内容渲染为 PDF 字节流（A4 纵向布局）。
 // WritePDF renders the content to a PDF byte stream.
 //
 // Layout:
@@ -136,6 +141,7 @@ func WritePDF(content string, opts PDFOptions) ([]byte, error) {
 	return writePDFToBytes(pdf)
 }
 
+// drawHeader 在当前页顶部绘制页眉。
 // drawHeader emits the header text at the top of the current page.
 // gopdf's API in v0.36.x doesn't expose a Header() callback; we draw
 // at the top of every page after AddPage.
@@ -151,6 +157,7 @@ func drawHeader(pdf *gopdf.GoPdf, opts PDFOptions) {
 	_ = pdf.SetFont(opts.FontFamily, "", opts.FontSize)
 }
 
+// drawFooter 在页底绘制页脚、时间戳与页码占位。
 // drawFooter emits the footer text plus optional timestamp / page
 // number at the bottom of the current page.
 func drawFooter(pdf *gopdf.GoPdf, opts PDFOptions) {
@@ -194,6 +201,7 @@ func drawWatermark(pdf *gopdf.GoPdf, opts PDFOptions) {
 	_ = pdf.SetFont(opts.FontFamily, "", opts.FontSize)
 }
 
+// writePDFToBytes 通过临时文件将 gopdf 输出序列化为字节。
 // writePDFToBytes serializes the gopdf output to a byte slice.
 //
 // gopdf's Write method requires an *os.File (it needs random access

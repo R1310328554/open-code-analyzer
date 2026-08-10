@@ -12,14 +12,17 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// helpers.go — docs_generator 与各格式 writer 共享的类型 coercion 辅助函数。
+
 //
 
-// Package io — small type-coercion helpers shared by docs_generator.go
+// Package io — 配置 map 类型 coercion 小工具，与 canvas 引擎解耦。
 // and the per-format writers. Kept here (rather than in the parent
 // component package) so the io/ subpackage has zero coupling to the
 // canvas engine and can be tested in isolation.
 package io
 
+// stringFrom 从 conf map 提取 string，失败返回 ("", false)。
 // stringFrom extracts a string from a conf map, returning the value
 // and ok=true. nil / wrong-type yields ("", false).
 func stringFrom(conf map[string]any, key string) (string, bool) {
@@ -34,6 +37,7 @@ func stringFrom(conf map[string]any, key string) (string, bool) {
 	return s, ok
 }
 
+// intFrom 从 conf map 提取 int，兼容 JSON float64。
 // intFrom extracts an int from a conf map. JSON-decoded numbers
 // commonly come in as float64; we accept both shapes for friendliness.
 func intFrom(conf map[string]any, key string) (int, bool) {
@@ -59,6 +63,7 @@ func intFrom(conf map[string]any, key string) (int, bool) {
 	return 0, false
 }
 
+// boolFrom 从 conf map 提取 bool。
 // boolFrom extracts a bool from a conf map.
 func boolFrom(conf map[string]any, key string) (bool, bool) {
 	if conf == nil {

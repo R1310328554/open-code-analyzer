@@ -12,9 +12,11 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// invoke.go — Canvas HTTP 客户端节点，含 SSRF 防护与 OpenTelemetry 传播。
+
 //
 
-// Package component — Invoke component (T3).
+// Package component — Invoke 组件（T3）：出站 HTTP 请求。
 //
 // Invoke is the canvas HTTP client node. It supports GET/POST/
 // PUT/DELETE with custom headers, optional proxy, and per-request
@@ -61,6 +63,7 @@ const (
 	maxInvokeResponseBody  = 16 << 20 // 16 MiB; hard cap to avoid OOM
 )
 
+// InvokeComponent HTTP 客户端节点，每次调用无状态。
 // InvokeComponent is the HTTP client node. Stateless across invocations.
 type InvokeComponent struct {
 	name string
@@ -74,6 +77,7 @@ func NewInvokeComponent(_ map[string]any) (Component, error) {
 // Name returns the registered component name.
 func (i *InvokeComponent) Name() string { return i.name }
 
+// Invoke 执行单次 HTTP 请求，含 SSRF 校验与 DNS 钉扎。
 // Invoke executes a single HTTP request and returns the status code,
 // body, and response headers. See Inputs() for the param contract.
 //

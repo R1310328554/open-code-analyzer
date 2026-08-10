@@ -12,9 +12,11 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// markdown_writer.go — Markdown 写入器，页眉页脚以 HTML 注释嵌入。
+
 //
 
-// Package io — Markdown writer.
+// Package io — Markdown 写入器。
 //
 // Round-trips markdown content: header / footer become HTML
 // comments (so they don't affect rendering), and an optional
@@ -27,6 +29,7 @@ import (
 	"time"
 )
 
+// MarkdownOptions Markdown 写入器公开选项。
 // MarkdownOptions is the public contract for the Markdown writer.
 type MarkdownOptions struct {
 	HeaderText   string
@@ -36,6 +39,7 @@ type MarkdownOptions struct {
 	Now time.Time
 }
 
+// WriteMarkdown 渲染 Markdown，元数据以 HTML 注释形式往返。
 // WriteMarkdown renders content as Markdown with header/footer as
 // HTML comments. Round-tripping Markdown → Markdown is a no-op
 // apart from the comment-based metadata.

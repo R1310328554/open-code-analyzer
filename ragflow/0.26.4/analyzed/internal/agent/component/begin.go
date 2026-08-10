@@ -12,9 +12,12 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// begin.go — Canvas DSL 入口节点 Begin：将请求 inputs 注入共享 CanvasState.Sys，
+// 并原样透传输入 map 给下游。
+
 //
 
-// Package component — Begin component (T3).
+// Package component — Begin 组件（T3）：DSL 入口节点。
 //
 // Begin is the DSL entry node. It injects the request's `inputs` into
 // the shared *CanvasState.Sys namespace and passes the input map
@@ -31,6 +34,7 @@ import (
 	"ragflow/internal/agent/runtime"
 )
 
+// mapsCopy 是 stdlib maps.Copy 的薄封装，保持调用点命名一致。
 // mapsCopy is a thin alias for the stdlib maps.Copy to keep the call
 // sites uniform with the rest of the package (which uses the same name
 // in switch.go and message.go).
@@ -40,6 +44,7 @@ func mapsCopy(dst, src map[string]any) {
 
 const componentNameBegin = "Begin"
 
+// BeginComponent Canvas 入口节点，工厂从 DSL params 填充字段。
 // BeginComponent is the canvas entry node. The exported fields are
 // populated by the factory (registered via init) from the DSL params map.
 // ParamBase surface is intentionally omitted for P0 — Begin is trivial
@@ -48,16 +53,19 @@ type BeginComponent struct {
 	name string
 }
 
+// NewBeginComponent 构造 Begin 组件（无 per-instance 配置）。
 // NewBeginComponent constructs a Begin component. It accepts the DSL params
 // map but does not retain it (Begin has no per-instance configuration).
 func NewBeginComponent(_ map[string]any) (Component, error) {
 	return &BeginComponent{name: componentNameBegin}, nil
 }
 
+// Name 返回注册组件名，供 registry 与 BuildWorkflow 注入 eino 节点名。
 // Name returns the registered component name. Used by the registry and
 // the eino node-name injection in BuildWorkflow.
 func (b *BeginComponent) Name() string { return b.name }
 
+// Invoke 将 query/user_id/webhook_payload 写入 state.Sys，并浅拷贝透传 inputs。
 // Invoke writes inputs["query"] and (when present) inputs["user_id"] into
 // the shared *CanvasState.Sys namespace, then returns the input map as
 // outputs unchanged. The input map is shallow-copied to avoid aliasing
@@ -98,6 +106,7 @@ func (b *BeginComponent) Invoke(ctx context.Context, inputs map[string]any) (map
 	return out, nil
 }
 
+// Stream 是 Invoke 的同步门面：单条 payload 后关闭 channel。
 // Stream is a synchronous facade over Invoke for P0. SSE streaming of
 // Begin output is not meaningful (Begin has no I/O), so the channel
 // receives a single payload and closes — same shape as Invoke's return.
@@ -112,6 +121,7 @@ func (b *BeginComponent) Stream(ctx context.Context, inputs map[string]any) (<-c
 	return ch, nil
 }
 
+// Inputs 返回参数元数据（简短描述）。
 // Inputs returns parameter metadata. Descriptions are short; the doc
 // strings live on the struct / method above.
 func (b *BeginComponent) Inputs() map[string]string {
@@ -123,6 +133,7 @@ func (b *BeginComponent) Inputs() map[string]string {
 	}
 }
 
+// Outputs 与 Inputs 键一致（Begin 为透传节点）。
 // Outputs returns the same keys as Inputs (Begin is a passthrough).
 func (b *BeginComponent) Outputs() map[string]string {
 	return map[string]string{

@@ -12,9 +12,11 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// txt_writer.go — 纯文本写入器，UTF-8 页眉页脚与时间戳。
+
 //
 
-// Package io — TXT writer.
+// Package io — 纯文本 TXT 写入器。
 //
 // The TXT writer is the trivial plain-text path: header / footer /
 // timestamp are wrapped as plain text lines around the body. No
@@ -31,6 +33,7 @@ import (
 	"time"
 )
 
+// TXTOptions TXT 写入器公开选项。
 // TXTOptions is the public contract for the TXT writer.
 type TXTOptions struct {
 	HeaderText   string
@@ -41,6 +44,7 @@ type TXTOptions struct {
 	Now time.Time
 }
 
+// WriteTXT 按 Python _generate_txt 契约渲染纯文本。
 // WriteTXT renders plain text per the Python `_generate_txt`
 // contract: optional header line, optional "Generated: ..." line,
 // body, optional footer line. The shape is byte-exact stable so

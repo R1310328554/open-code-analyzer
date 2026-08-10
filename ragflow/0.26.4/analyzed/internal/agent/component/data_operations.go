@@ -12,9 +12,11 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// data_operations.go — 对 Canvas 状态中的 dict 列表执行七种纯函数变换。
+
 //
 
-// Package component — DataOperations (T3, plan §2.11.3 row 16).
+// Package component — DataOperations 组件（T3）：dict/list 数据变换。
 //
 // DataOperations applies one of seven dict/list transforms to a list
 // of dicts pulled from the canvas state. It is pure: no state writes;
@@ -48,6 +50,7 @@ import (
 
 const componentNameDataOperations = "DataOperations"
 
+// dataOperationsParam DataOperations 静态配置参数。
 // dataOperationsParam is the static configuration.
 type dataOperationsParam struct {
 	Query        []string         `json:"query"`
@@ -105,6 +108,7 @@ func (p *dataOperationsParam) AsDict() map[string]any {
 	}
 }
 
+// toStringSlice 将值规范化为 []string，支持 CSV 与 []any。
 // toStringSlice normalizes a value to []string. Strings (CSV) and
 // []any are accepted; nil returns nil.
 func toStringSlice(v any) []string {
@@ -136,6 +140,7 @@ func toStringSlice(v any) []string {
 	return nil
 }
 
+// toMapSlice 将值规范化为 []map[string]any。
 // toMapSlice normalizes a value to []map[string]any.
 func toMapSlice(v any) []map[string]any {
 	switch x := v.(type) {

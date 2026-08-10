@@ -12,9 +12,11 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// excel_processor.go — 基于 excelize 的 Excel 读/写/合并 Canvas 节点。
+
 //
 
-// Package component — ExcelProcessor (T5, plan §2.11.3 row 22).
+// Package component — ExcelProcessor 组件（T5）：Excel 读写合并。
 //
 // ExcelProcessor supports three operations:
 //
@@ -55,6 +57,7 @@ const (
 	defaultSheetName = "Sheet1"
 )
 
+// excelProcessorParam ExcelProcessor 静态配置（operation/file_ref 等）。
 // excelProcessorParam is the static configuration for an ExcelProcessor
 // node. file_ref, output_data, and sheet_name are duplicated in
 // inputs for per-call overrides; the param holds the defaults.
@@ -122,6 +125,7 @@ func (p *excelProcessorParam) AsDict() map[string]any {
 	}
 }
 
+// ExcelProcessorComponent 实现 read/write/merge 三种 Excel 操作。
 // ExcelProcessorComponent implements the read/write/merge Excel node.
 type ExcelProcessorComponent struct {
 	name  string
@@ -147,6 +151,7 @@ func NewExcelProcessorComponent(params map[string]any) (Component, error) {
 // Name returns the registered component name.
 func (e *ExcelProcessorComponent) Name() string { return e.name }
 
+// Invoke 执行配置的 operation，write 路径输出 bytes。
 // Invoke runs the configured operation and returns the result map.
 // Output shape:
 //

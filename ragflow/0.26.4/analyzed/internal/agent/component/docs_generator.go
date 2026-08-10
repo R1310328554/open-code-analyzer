@@ -12,9 +12,11 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// docs_generator.go — 按 output_format 路由到 PDF/DOCX/TXT/Markdown/HTML 五种写入器。
+
 //
 
-// Package component — DocsGenerator (T5).
+// Package component — DocsGenerator 组件（T5）：多格式文档生成。
 //
 // DocsGenerator is a lambda that routes by output_format to one of
 // the 5 in-package writers (PDF / DOCX / TXT / Markdown / HTML). The
@@ -45,6 +47,7 @@ import (
 
 const componentNameDocsGenerator = "DocsGenerator"
 
+// defaultDocsFontSize 渲染文档默认字号（无障碍要求 ≥12pt）。
 // Default font size for the rendered documents. Plan §2.11.3 row 21
 // mandates a minimum of 12pt for accessibility; we default to 12.
 const defaultDocsFontSize = 12
@@ -69,6 +72,7 @@ var validOutputFormats = map[string]bool{
 	"md":       true, // alias for markdown
 }
 
+// docsGeneratorParam DocsGenerator 静态 DSL 参数。
 // docsGeneratorParam is the static DSL param surface.
 type docsGeneratorParam struct {
 	OutputFormat   string `json:"output_format"`

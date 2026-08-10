@@ -12,9 +12,11 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// html_writer.go — 最小 HTML5 文档包装写入器（无外部 CSS/JS）。
+
 //
 
-// Package io — HTML writer.
+// Package io — HTML5 文档写入器。
 //
 // Minimal HTML5 wrapper around the body. Header and footer are
 // placed in <header> and <footer> elements; an optional watermark
@@ -29,6 +31,7 @@ import (
 	"time"
 )
 
+// HTMLOptions HTML 写入器公开选项。
 // HTMLOptions is the public contract for the HTML writer.
 type HTMLOptions struct {
 	HeaderText    string
@@ -41,6 +44,7 @@ type HTMLOptions struct {
 	Now time.Time
 }
 
+// WriteHTML 渲染 HTML5 文档，header/footer/watermark 可选。
 // WriteHTML renders content as an HTML5 document. The fontSize is
 // in points; the fontFamily string is emitted as the CSS
 // font-family value (a CSS-escape contract lives with the caller —

@@ -12,9 +12,11 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// browser.go — LLM 驱动的单次网页提取 Canvas 节点，基于 stagehand-go RunExtract。
+
 //
 
-// Package component — Browser (T3).
+// Package component — Browser 组件（T3）：LLM 网页结构化提取。
 //
 // Browser is an LLM-driven single-shot web extraction canvas node
 // built on `github.com/browserbase/stagehand-go/v3` in local mode.
@@ -54,6 +56,7 @@ import (
 
 const componentNameBrowser = "Browser"
 
+// browserParam Browser 静态 DSL 参数，对齐 Python browser.py 字段。
 // browserParam is the static DSL param surface for the Browser
 // component. Mirrors Python `browser.py:LLMParam + browser knobs`:
 //
@@ -85,12 +88,14 @@ type browserParam struct {
 	Timeout int    `json:"timeout"`
 }
 
+// llmIDPattern 匹配 ModelName@Factory 形式的 llm_id。
 // llmIDPattern matches `ModelName@Factory`. The factory part is
 // optional; when absent, the caller's tenant lookup will be
 // `GetByTenantAndModelName` instead of
 // `GetByTenantFactoryAndModelName`.
 var llmIDPattern = regexp.MustCompile(`^(.+)@(.+)$`)
 
+// resolveLLMID 将 llm_id 拆分为 (modelName, factory)。
 // resolveLLMID splits `llm_id` (e.g. "deepseek-v4-pro@DeepSeek") into
 // `(modelName, factory)`. When no `@` is present, factory is empty
 // and the caller must use a single-key lookup.
@@ -106,6 +111,7 @@ func resolveLLMID(llmID string) (modelName, factory string) {
 	return strings.TrimSpace(m[1]), strings.TrimSpace(m[2])
 }
 
+// Update 从 conf 刷新参数，llm_id/model_id 与 prompts/prompt 别名合并。
 // Update copies a fresh param map into the receiver. The
 // `llm_id`/`model_id` and `prompts`/`prompt` alias pairs collapse
 // onto the same field; the first non-empty value wins.
@@ -153,6 +159,7 @@ func (p *browserParam) Update(conf map[string]any) error {
 	return nil
 }
 
+// Check 校验 llm_id 与 prompts 等实际使用的字段。
 // Check validates the param. The accepted-but-ignored Python
 // fields are NOT validated here — the v1 fixture is allowed to set
 // them; we only reject structurally invalid values for fields we
@@ -199,6 +206,7 @@ func (p *browserParam) AsDict() map[string]any {
 	return out
 }
 
+// BrowserComponent Canvas Browser 节点，委托 StagehandInvoker 执行提取。
 // BrowserComponent is the canvas Browser node. Owns its static
 // param; delegates the multi-step agent run to StagehandInvoker.
 type BrowserComponent struct {
@@ -224,6 +232,7 @@ func NewBrowserComponent(params map[string]any) (Component, error) {
 // Name returns the registered component name.
 func (b *BrowserComponent) Name() string { return b.name }
 
+// Invoke 通过 RunExtract 执行单次提取，输出 Python 兼容字段。
 // Invoke dispatches a single-shot extraction task via
 // StagehandInvoker.RunExtract with a `{"type": "string"}` schema.
 // The flow:
@@ -360,6 +369,7 @@ func (b *BrowserComponent) Outputs() map[string]string {
 	}
 }
 
+// resolveTenantLLM 查租户 LLM 配置，返回 apiKey 与 baseURL。
 // resolveTenantLLM looks up the tenant LLM config and returns
 // (apiKey, baseURL, modelName). baseURL may be empty when the
 // tenant's provider doesn't configure a custom endpoint (the

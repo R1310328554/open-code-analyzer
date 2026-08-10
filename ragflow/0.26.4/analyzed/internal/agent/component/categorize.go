@@ -1,4 +1,4 @@
-// Package component — Categorize (T3).
+// Package component — Categorize 组件（T3）：LLM 文本分类。
 //
 // LLM-based classifier. The component asks the model to pick exactly
 // one of the configured categories, returns the chosen category name
@@ -6,6 +6,8 @@
 // rest). The MultiBranch wiring in canvas/multibranch.go consumes
 // outputs["_next"] for runtime routing; the field is reserved for
 // that consumer.
+// categorize.go — 基于 LLM 的分类器组件，从配置类别中精确选一。
+
 package component
 
 import (
@@ -17,11 +19,13 @@ import (
 	"github.com/cloudwego/eino/schema"
 )
 
+// CategorizeComponent LLM 分类器组件。
 // CategorizeComponent is an LLM classifier.
 type CategorizeComponent struct {
 	param CategorizeParam
 }
 
+// CategorizeParam Categorize 节点已解析的 DSL 参数。
 // CategorizeParam captures the (resolved) DSL parameters for a Categorize node.
 type CategorizeParam struct {
 	ModelID         string
@@ -35,6 +39,7 @@ type CategorizeParam struct {
 	BaseURL         string
 }
 
+// CategorizeOutput 对应 outputs 映射结构（category/scores/_next）。
 // CategorizeOutput mirrors the outputs map (per plan §2.11.3 row 6):
 //
 //	"category" string             — chosen category name (or default if
@@ -55,6 +60,7 @@ func NewCategorizeComponent(p CategorizeParam) *CategorizeComponent {
 // Name returns the registered component name.
 func (c *CategorizeComponent) Name() string { return "Categorize" }
 
+// Invoke 调用聊天模型解析类别，不在列表内则回退 default。
 // Invoke calls the chat model, parses the response for a category, and
 // returns the chosen category (or the default if the model returned
 // something outside the configured set).
@@ -152,6 +158,7 @@ func (c *CategorizeComponent) Outputs() map[string]string {
 	}
 }
 
+// buildCategorizePrompt 组装分类提示词，类别列表排序保证稳定。
 // buildCategorizePrompt assembles a prompt that asks the model to pick a
 // category. The categories are listed deterministically (sorted) so the
 // prompt is stable across runs.
@@ -177,6 +184,7 @@ func buildCategorizePrompt(p CategorizeParam) string {
 	return b.String()
 }
 
+// pickCategory 从模型回复提取类别：精确匹配→大小写不敏感→默认。
 // pickCategory extracts a category from the model's response. Strategy:
 //  1. exact match (case-sensitive)
 //  2. case-insensitive match
@@ -215,6 +223,7 @@ func pickCategory(response string, categories []string, def string) (string, map
 	return def, scores
 }
 
+// mergeCategorizeParam 将运行时 inputs 覆盖默认参数，兼容 v1 别名。
 // mergeCategorizeParam layers raw inputs over the receiver's default param set.
 //
 // v1 aliases accepted alongside the v2 names: "llm_id" → "model_id",
@@ -267,6 +276,7 @@ func mergeCategorizeParam(base CategorizeParam, inputs map[string]any) Categoriz
 	return p
 }
 
+// stringMapFrom 从 inputs 提取 map[string]string（v1 category_description）。
 // stringMapFrom extracts map[string]string from inputs[name]. The v1
 // "category_description" field is shaped this way (name → human
 // description); we only consume the keys.

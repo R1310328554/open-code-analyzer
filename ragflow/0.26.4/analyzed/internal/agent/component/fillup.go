@@ -12,9 +12,11 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// fillup.go — 无 tips 模板的表单填充节点，UserFillUp 的轻量变体。
+
 //
 
-// Package component — Fillup component (T3).
+// Package component — Fillup 组件（T3）：无 tips 的表单填充。
 //
 // Fillup is the lighter sibling of UserFillUp: it does NOT render a
 // `tips` template. It only passes the form's input map through to
@@ -33,6 +35,7 @@ import (
 
 const componentNameFillup = "Fillup"
 
+// fillupParam Fillup 实例配置，不含 enable_tips/tips 字段。
 // fillupParam is the per-instance configuration for Fillup. It is
 // strictly a subset of userFillUpParam — `enable_tips` and `tips` are
 // intentionally absent because Fillup never renders tips.
@@ -63,6 +66,7 @@ func (p *fillupParam) AsDict() map[string]any {
 	}
 }
 
+// FillupComponent Canvas 无 tips 表单填充节点。
 // FillupComponent is the canvas tips-less form-filling node.
 type FillupComponent struct {
 	name  string
@@ -77,6 +81,7 @@ func NewFillupComponent(p fillupParam) *FillupComponent {
 // Name returns the registered component name.
 func (f *FillupComponent) Name() string { return f.name }
 
+// Invoke 为每个表单字段输出一个键，文件类型 stub 为 <file:key>。
 // Invoke emits one output per form field, with file-typed fields
 // stubbed as "<file:key>". No "tips" key is added — that is the
 // defining difference from UserFillUp.
@@ -126,6 +131,7 @@ func (f *FillupComponent) Outputs() map[string]string {
 	}
 }
 
+// init 向 orchestrator registry 注册 Fillup 工厂。
 // init registers Fillup with the orchestrator-owned registry.
 func init() {
 	Register(componentNameFillup, func(params map[string]any) (Component, error) {

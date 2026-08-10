@@ -12,9 +12,11 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// docx_writer.go — 纯 stdlib 自实现 OOXML DOCX 写入器（规避 AGPL 依赖）。
+
 //
 
-// Package io — DOCX writer (self-implemented OOXML).
+// Package io — DOCX 写入器（自实现 OOXML，仅 stdlib）。
 //
 // All candidate Go DOCX libraries are either AGPL-3 (unipdf,
 // unioffice, fumiama-go-docx, baliance-gooxml) or unmaintained
@@ -55,6 +57,7 @@ var relsXML []byte
 //go:embed templates/footer.xml.tmpl
 var tmplFS embed.FS
 
+// DOCXOptions DOCX 写入器公开选项。
 // DOCXOptions is the public contract for the DOCX writer.
 type DOCXOptions struct {
 	HeaderText     string
@@ -66,6 +69,7 @@ type DOCXOptions struct {
 	FontSize       int
 }
 
+// docModel 模板渲染内部模型，由 DOCXOptions 扁平化而来。
 // docModel is the internal render input. It's a small struct so the
 // templates can refer to a stable set of fields. The exported
 // DOCXOptions and Document flatten into this when the writer is
