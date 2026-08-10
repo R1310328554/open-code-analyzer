@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T09:50:01Z",
-  "files": [
-    "saml-core/src/main/java/org/keycloak/saml/SAML2AuthnRequestBuilder.java",
-    "saml-core/src/main/java/org/keycloak/saml/SAML2ErrorResponseBuilder.java",
-    "saml-core/src/main/java/org/keycloak/saml/SAML2LoginResponseBuilder.java",
-    "saml-core/src/main/java/org/keycloak/saml/SAML2LogoutRequestBuilder.java",
-    "saml-core/src/main/java/org/keycloak/saml/SAML2LogoutResponseBuilder.java",
-    "saml-core/src/main/java/org/keycloak/saml/SAML2NameIDBuilder.java",
-    "saml-core/src/main/java/org/keycloak/saml/SAML2NameIDPolicyBuilder.java",
-    "saml-core/src/main/java/org/keycloak/saml/SAML2RequestedAuthnContextBuilder.java",
-    "saml-core/src/main/java/org/keycloak/saml/SAMLRequestParser.java",
-    "saml-core/src/main/java/org/keycloak/saml/SPMetadataDescriptor.java",
-    "saml-core/src/main/java/org/keycloak/saml/SamlProtocolExtensionsAwareBuilder.java",
-    "saml-core/src/main/java/org/keycloak/saml/SignatureAlgorithm.java",
-    "saml-core/src/main/java/org/keycloak/saml/common/DefaultPicketLinkLogger.java",
-    "saml-core/src/main/java/org/keycloak/saml/common/ErrorCodes.java",
-    "saml-core/src/main/java/org/keycloak/saml/common/PicketLinkLogger.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 3298,
-  "done": 2685
+  "done": 2700
 }
