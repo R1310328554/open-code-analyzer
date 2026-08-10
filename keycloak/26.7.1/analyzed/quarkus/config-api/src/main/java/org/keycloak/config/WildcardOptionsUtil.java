@@ -1,28 +1,28 @@
 package org.keycloak.config;
 
 /**
- * Utility class for working with configuration options that use wildcards.
+ * 处理含通配符占位符的配置键的工具类。
  * <p>
- * Wildcard options are configuration keys that contain a variable segment enclosed between {@link #WILDCARD_START} and {@link #WILDCARD_END} characters.
+ * 通配符选项的配置键在 {@link #WILDCARD_START} 与 {@link #WILDCARD_END} 之间包含可变片段。
  * <p>
- * Wildcard options in Keycloak always <strong>end</strong> with the variable segment.
+ * Keycloak 中的通配符选项<strong>总是</strong>以可变片段结尾。
  */
 public class WildcardOptionsUtil {
 
     /**
-     * Marker indicating the start of a wildcard segment in a configuration key.
+     * 标记配置键中通配符片段的起始字符。
      */
     public static final String WILDCARD_START = "<";
 
     /**
-     * Marker indicating the end of a wildcard segment in a configuration key.
+     * 标记配置键中通配符片段的结束字符。
      */
     public static final String WILDCARD_END = ">";
 
     /**
-     * Determines whether the given configuration key represents a wildcard option (contains variable segment)
+     * 判断给定配置键是否为通配符选项（含可变片段）。
      * <p>
-     * Examples:
+     * 示例：
      * <pre>{@code
      * isWildcardOption("tracing-header-<header>")      → "true"
      * isWildcardOption("tracing-header-<headxxx")      → "false"
@@ -32,43 +32,43 @@ public class WildcardOptionsUtil {
      * isWildcardOption("quarkus.<sth>.end")            → "true"
      * }</pre>
      *
-     * @param key the configuration key to check
-     * @return {@code true} if the key represents a wildcard option
+     * @param key 待检查的配置键
+     * @return 若键表示通配符选项则为 {@code true}
      */
     public static boolean isWildcardOption(String key) {
         return key != null && key.contains(WILDCARD_START) && key.contains(WILDCARD_END);
     }
 
     /**
-     * Extracts the prefix part of a wildcard key.
-     * You should always check the presence of the wildcard via the {@link #isWildcardOption(String)}.
+     * 提取通配符键的前缀部分。
+     * 应始终先通过 {@link #isWildcardOption(String)} 确认存在通配符。
      * <p>
-     * Examples:
+     * 示例：
      * <pre>{@code
      * getWildcardPrefix("tracing-header-<header>")       → "tracing-header-"
      * getWildcardPrefix("db-kind-<datasource>")         → "db-kind-"
      * }</pre>
      *
-     * @param wildcardKey a configuration key that includes a wildcard segment
-     * @return the prefix before the wildcard marker, otherwise {@code null}
+     * @param wildcardKey 含通配符片段的配置键
+     * @return 通配符标记之前的键前缀，否则为 {@code null}
      */
     public static String getWildcardPrefix(String wildcardKey) {
         return wildcardKey != null && wildcardKey.contains(WILDCARD_START) ? wildcardKey.substring(0, wildcardKey.indexOf(WILDCARD_START)) : null;
     }
 
     /**
-     * Generates a concrete configuration key by replacing the wildcard placeholder with a specific value.
-     * You should always check the presence of the wildcard via the {@link #isWildcardOption(String)}.
+     * 将通配符占位符替换为具体值，生成实际配置键。
+     * 应始终先通过 {@link #isWildcardOption(String)} 确认存在通配符。
      * <p>
-     * Examples:
+     * 示例：
      * <pre>{@code
      * getWildcardNamedKey("tracing-header-<header>", "Authorization")  → "tracing-header-Authorization"
      * getWildcardNamedKey("db-kind-<datasource>", "user-store") → "db-kind-user-store"
      * }</pre>
      *
-     * @param wildcardKey a configuration key that includes a wildcard segment
-     * @param value       the value to replace the wildcard with
-     * @return the resolved key, otherwise {@code null}
+     * @param wildcardKey 含通配符片段的配置键
+     * @param value       替换通配符的具体值
+     * @return 解析后的完整键名，否则为 {@code null}
      */
     public static String getWildcardNamedKey(String wildcardKey, String value) {
         var prefix = getWildcardPrefix(wildcardKey);

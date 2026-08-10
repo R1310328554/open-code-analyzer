@@ -17,6 +17,10 @@
 
 package org.keycloak.config;
 
+/**
+ * 配置选项通用工具常量。
+ */
 public interface OptionsUtil {
+    /** 持续时间类型选项的通用说明文本。 */
     String DURATION_DESCRIPTION = "May be an ISO 8601 duration value, an integer number of seconds, or an integer followed by one of [ms, h, m, s, d].";
 }

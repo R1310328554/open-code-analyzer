@@ -19,10 +19,14 @@ package org.keycloak.config;
 
 import java.util.Optional;
 
+/**
+ * 服务器启动与引导行为相关配置选项。
+ */
 public final class ServerOptions {
 
     private ServerOptions() {}
 
+    /** 配置选项：server-async-bootstrap，是否在引导完成前异步开放端点。 */
     public static final Option<Boolean> SERVER_ASYNC_BOOTSTRAP = new OptionBuilder<>("server-async-bootstrap", Boolean.class)
             .category(OptionCategory.SERVER)
             .defaultValue(Optional.empty())

@@ -6,8 +6,12 @@ import java.util.List;
 import org.keycloak.common.Profile;
 import org.keycloak.common.crypto.FipsMode;
 
+/**
+ * 安全与 FIPS 合规模式相关配置选项。
+ */
 public class SecurityOptions {
 
+    /** 配置选项：fips-mode，FIPS 运行模式。 */
     public static final Option<FipsMode> FIPS_MODE = new OptionBuilder<>("fips-mode", FipsMode.class)
             .category(OptionCategory.SECURITY)
             .expectedValues(getFipsModeValues())
@@ -18,6 +22,7 @@ public class SecurityOptions {
             .defaultValue(FipsMode.DISABLED)
             .build();
 
+    /** 返回 FIPS 模式下可用的枚举取值列表。 */
     private static List<String> getFipsModeValues() {
         return Arrays.asList(FipsMode.NON_STRICT.toString(), FipsMode.STRICT.toString());
     }
