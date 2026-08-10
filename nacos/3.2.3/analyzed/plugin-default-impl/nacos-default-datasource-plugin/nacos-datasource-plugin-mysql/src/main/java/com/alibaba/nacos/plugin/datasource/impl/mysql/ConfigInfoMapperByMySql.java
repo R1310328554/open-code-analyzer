@@ -33,7 +33,9 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * The mysql implementation of ConfigInfoMapper.
+ * {@link ConfigInfoMapper} 的 MySQL 实现。
+ *
+ * <p>配置中心核心表的 MySQL SQL 方言适配：{@code LIMIT offset,count} 分页、标签关联与模糊查询。</p>
  *
  * @author hyx
  **/
@@ -50,6 +52,7 @@ public class ConfigInfoMapperByMySql extends AbstractMapperByMysql implements Co
     
     private static final String TENANT = "tenant";
     
+    /** 按租户与应用名分页查询配置。 */
     @Override
     public MapperResult findConfigInfoByAppFetchRows(MapperContext context) {
         final String appName = (String) context.getWhereParameter(FieldConstant.APP_NAME);
@@ -61,6 +64,7 @@ public class ConfigInfoMapperByMySql extends AbstractMapperByMysql implements Co
         return new MapperResult(sql, CollectionUtils.list(tenantId, appName));
     }
     
+    /** 分页获取非默认命名空间的租户 id 列表。 */
     @Override
     public MapperResult getTenantIdList(MapperContext context) {
         String sql = "SELECT tenant_id FROM config_info WHERE tenant_id != '"
@@ -70,6 +74,7 @@ public class ConfigInfoMapperByMySql extends AbstractMapperByMysql implements Co
         return new MapperResult(sql, Collections.emptyList());
     }
     
+    /** 分页获取默认命名空间下的 group_id 列表。 */
     @Override
     public MapperResult getGroupIdList(MapperContext context) {
         String sql = "SELECT group_id FROM config_info WHERE tenant_id ='"
@@ -79,6 +84,7 @@ public class ConfigInfoMapperByMySql extends AbstractMapperByMysql implements Co
         return new MapperResult(sql, Collections.emptyList());
     }
     
+    /** 分页查询指定租户下的配置键（data_id、group_id、app_name）。 */
     @Override
     public MapperResult findAllConfigKey(MapperContext context) {
         String sql = " SELECT data_id,group_id,app_name  FROM ( "
@@ -89,6 +95,7 @@ public class ConfigInfoMapperByMySql extends AbstractMapperByMysql implements Co
             CollectionUtils.list(context.getWhereParameter(FieldConstant.TENANT_ID)));
     }
     
+    /** 分页拉取基础配置信息（不含租户维度）。 */
     @Override
     public MapperResult findAllConfigInfoBaseFetchRows(MapperContext context) {
         String sql =
@@ -99,6 +106,7 @@ public class ConfigInfoMapperByMySql extends AbstractMapperByMysql implements Co
         return new MapperResult(sql, Collections.emptyList());
     }
     
+    /** 按 id 增量分页拉取配置片段，可选是否包含 content 字段。 */
     @Override
     public MapperResult findAllConfigInfoFragment(MapperContext context) {
         String contextParameter = context.getContextParameter(ContextConstant.NEED_CONTENT);
@@ -111,6 +119,7 @@ public class ConfigInfoMapperByMySql extends AbstractMapperByMysql implements Co
             CollectionUtils.list(context.getWhereParameter(FieldConstant.ID)));
     }
     
+    /** 按多条件与时间范围查询变更配置，支持增量 id 游标分页。 */
     @Override
     public MapperResult findChangeConfigFetchRows(MapperContext context) {
         final String tenant = (String) context.getWhereParameter(FieldConstant.TENANT_ID);
@@ -159,6 +168,7 @@ public class ConfigInfoMapperByMySql extends AbstractMapperByMysql implements Co
             paramList);
     }
     
+    /** 分页查询 group 维度配置的 md5 摘要列表。 */
     @Override
     public MapperResult listGroupKeyMd5ByPageFetchRows(MapperContext context) {
         String sql =
@@ -168,6 +178,7 @@ public class ConfigInfoMapperByMySql extends AbstractMapperByMysql implements Co
         return new MapperResult(sql, Collections.emptyList());
     }
     
+    /** 在默认命名空间下按 dataId、group、content 模糊分页查询。 */
     @Override
     public MapperResult findConfigInfoBaseLikeFetchRows(MapperContext context) {
         final String dataId = (String) context.getWhereParameter(FieldConstant.DATA_ID);
@@ -198,6 +209,7 @@ public class ConfigInfoMapperByMySql extends AbstractMapperByMysql implements Co
             paramList);
     }
     
+    /** 精确条件分页查询配置并聚合标签（先 LIMIT 再 JOIN 优化性能）。 */
     @Override
     public MapperResult findConfigInfo4PageFetchRows(MapperContext context) {
         final String tenant = (String) context.getWhereParameter(FieldConstant.TENANT_ID);
@@ -244,6 +256,7 @@ public class ConfigInfoMapperByMySql extends AbstractMapperByMysql implements Co
         return new MapperResult(sql, paramList);
     }
     
+    /** 按 group 与 tenant 分页查询基础配置内容。 */
     @Override
     public MapperResult findConfigInfoBaseByGroupFetchRows(MapperContext context) {
         String sql =
@@ -255,6 +268,7 @@ public class ConfigInfoMapperByMySql extends AbstractMapperByMysql implements Co
                 context.getWhereParameter(FieldConstant.TENANT_ID)));
     }
     
+    /** 模糊条件分页查询配置并聚合标签，支持 type 多值过滤。 */
     @Override
     public MapperResult findConfigInfoLike4PageFetchRows(MapperContext context) {
         final String tenant = (String) context.getWhereParameter(FieldConstant.TENANT_ID);
@@ -316,6 +330,7 @@ public class ConfigInfoMapperByMySql extends AbstractMapperByMysql implements Co
         return new MapperResult(sql, paramList);
     }
     
+    /** 按租户分页拉取全量配置信息。 */
     @Override
     public MapperResult findAllConfigInfoFetchRows(MapperContext context) {
         String sql = "SELECT t.id,data_id,group_id,tenant_id,app_name,content,md5 "
@@ -327,6 +342,7 @@ public class ConfigInfoMapperByMySql extends AbstractMapperByMysql implements Co
                 context.getPageSize()));
     }
     
+    /** 返回 MySQL 数据源类型标识。 */
     @Override
     public String getDataSource() {
         return DataSourceConstant.MYSQL;

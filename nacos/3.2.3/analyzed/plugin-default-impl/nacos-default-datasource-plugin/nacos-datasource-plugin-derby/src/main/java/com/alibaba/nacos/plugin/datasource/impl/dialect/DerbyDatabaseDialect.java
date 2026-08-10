@@ -20,17 +20,26 @@ import com.alibaba.nacos.plugin.datasource.constants.DatabaseTypeConstant;
 import com.alibaba.nacos.plugin.datasource.impl.enums.derby.TrustedDerbyFunctionEnum;
 
 /**
- * derby database dialect.
+ * Derby 嵌入式数据库方言实现。
+ *
+ * <p>声明数据源类型为 Derby，并通过 {@link TrustedDerbyFunctionEnum} 将通用函数名映射为 Derby 内置 SQL 片段。</p>
  *
  * @author xiweng.yy
  */
 public class DerbyDatabaseDialect extends AbstractDatabaseDialect {
     
+    /** 返回 Derby 数据源类型标识。 */
     @Override
     public String getType() {
         return DatabaseTypeConstant.DERBY;
     }
     
+    /**
+     * 按函数名解析 Derby 可信 SQL 函数。
+     *
+     * @param functionName 逻辑函数名
+     * @return Derby 侧实际 SQL 函数表达式
+     */
     @Override
     public String getFunction(String functionName) {
         return TrustedDerbyFunctionEnum.getFunctionByName(functionName);

@@ -20,29 +20,31 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * The TrustedSqlFunctionEnum enum class is used to enumerate and manage a list of trusted built-in SQL functions.
- * By using this enum, you can verify whether a given SQL function is part of the trusted functions list
- * to avoid potential SQL injection risks.
+ * Derby 可信内置 SQL 函数枚举（旧版命名，供 {@link com.alibaba.nacos.plugin.datasource.impl.derby.AbstractMapperByDerby} 使用）。
+ *
+ * <p>白名单校验函数名，防止 Mapper 动态 SQL 拼接时引入注入风险。</p>
  *
  * @author blake.qiu
  */
 public enum TrustedDerbylFunctionEnum {
     
-    /**
-     * NOW().
-     */
+    /** 当前时间函数 {@code NOW()}，映射为 {@code CURRENT_TIMESTAMP}。 */
     NOW("NOW()", "CURRENT_TIMESTAMP");
     
+    /** 函数名 → 枚举项的快速查找表。 */
     private static final Map<String, TrustedDerbylFunctionEnum> LOOKUP_MAP = new HashMap<>();
     
+    // 启动时填充函数名索引
     static {
         for (TrustedDerbylFunctionEnum entry : TrustedDerbylFunctionEnum.values()) {
             LOOKUP_MAP.put(entry.functionName, entry);
         }
     }
     
+    /** 逻辑函数名（Mapper 侧传入）。 */
     private final String functionName;
     
+    /** Derby 侧实际 SQL 函数表达式。 */
     private final String function;
     
     TrustedDerbylFunctionEnum(String functionName, String function) {
@@ -51,7 +53,7 @@ public enum TrustedDerbylFunctionEnum {
     }
     
     /**
-     * Get the function name.
+     * 按函数名返回对应 Derby SQL 函数片段。
      *
      * @param functionName function name
      * @return function

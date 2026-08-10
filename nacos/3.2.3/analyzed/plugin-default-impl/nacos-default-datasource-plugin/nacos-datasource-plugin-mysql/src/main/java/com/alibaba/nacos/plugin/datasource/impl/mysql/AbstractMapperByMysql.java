@@ -20,12 +20,15 @@ import com.alibaba.nacos.plugin.datasource.impl.enums.mysql.TrustedMysqlFunction
 import com.alibaba.nacos.plugin.datasource.mapper.AbstractMapper;
 
 /**
- * The abstract mysql mapper contains CRUD methods.
+ * MySQL 数据源 Mapper 抽象基类。
+ *
+ * <p>继承 {@link AbstractMapper}，通过 {@link TrustedMysqlFunctionEnum} 解析 MySQL 可信 SQL 函数。</p>
  *
  * @author blake.qiu
  **/
 public abstract class AbstractMapperByMysql extends AbstractMapper {
     
+    /** 从 MySQL 可信函数白名单解析 SQL 函数片段。 */
     @Override
     public String getFunction(String functionName) {
         return TrustedMysqlFunctionEnum.getFunctionByName(functionName);

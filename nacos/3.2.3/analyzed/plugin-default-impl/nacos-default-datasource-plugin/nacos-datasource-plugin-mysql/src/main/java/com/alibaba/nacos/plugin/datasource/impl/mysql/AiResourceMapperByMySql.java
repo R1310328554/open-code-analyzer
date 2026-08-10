@@ -27,12 +27,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The mysql implementation of {@link AiResourceMapper}.
+ * {@link AiResourceMapper} 的 MySQL 实现。
+ *
+ * <p>提供 AI 资源分页查询 SQL，使用 {@code LIMIT ?,?} 分页并支持扩展查询条件。</p>
  *
  * @author nacos
  */
 public class AiResourceMapperByMySql extends AbstractMapperByMysql implements AiResourceMapper {
     
+    /** 分页查询 AI 资源列表，支持命名空间过滤与排序。 */
     @Override
     public MapperResult findAiResourceFetchRows(MapperContext context) {
         WhereBuilder where = new WhereBuilder(
@@ -51,6 +54,7 @@ public class AiResourceMapperByMySql extends AbstractMapperByMysql implements Ai
         return new MapperResult(sql, params);
     }
     
+    /** 返回 MySQL 数据源类型标识。 */
     @Override
     public String getDataSource() {
         return DataSourceConstant.MYSQL;

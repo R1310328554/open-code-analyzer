@@ -29,7 +29,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The mysql implementation of ConfigTagsRelationMapper.
+ * {@link ConfigTagsRelationMapper} 的 MySQL 实现。
+ *
+ * <p>按标签条件分页查询配置并聚合标签名，使用 {@code GROUP_CONCAT} 拼接多标签。</p>
  *
  * @author hyx
  **/
@@ -37,6 +39,7 @@ import java.util.List;
 public class ConfigTagsRelationMapperByMySql extends AbstractMapperByMysql
     implements ConfigTagsRelationMapper {
     
+    /** 精确标签条件分页查询配置并聚合标签。 */
     @Override
     public MapperResult findConfigInfo4PageFetchRows(MapperContext context) {
         final String tenant = (String) context.getWhereParameter(FieldConstant.TENANT_ID);
@@ -94,6 +97,7 @@ public class ConfigTagsRelationMapperByMySql extends AbstractMapperByMysql
         return new MapperResult(sql, paramList);
     }
     
+    /** 模糊标签条件分页查询配置并聚合标签，支持 type 多值过滤。 */
     @Override
     public MapperResult findConfigInfoLike4PageFetchRows(MapperContext context) {
         final String tenant = (String) context.getWhereParameter(FieldConstant.TENANT_ID);
@@ -151,6 +155,7 @@ public class ConfigTagsRelationMapperByMySql extends AbstractMapperByMysql
         return new MapperResult(sql, innerResult.getParamList());
     }
     
+    /** 返回 MySQL 数据源类型标识。 */
     @Override
     public String getDataSource() {
         return DataSourceConstant.MYSQL;

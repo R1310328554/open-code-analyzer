@@ -28,13 +28,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The mysql implementation of {@link AiResourceVersionMapper}.
+ * {@link AiResourceVersionMapper} 的 MySQL 实现。
+ *
+ * <p>按命名空间、名称、类型、状态与版本等条件分页查询 AI 资源版本，按修改时间倒序返回。</p>
  *
  * @author nacos
  */
 public class AiResourceVersionMapperByMySql extends AbstractMapperByMysql
     implements AiResourceVersionMapper {
     
+    /** 分页查询 AI 资源版本，支持多维度可选过滤。 */
     @Override
     public MapperResult findAiResourceVersionFetchRows(MapperContext context) {
         WhereBuilder where = new WhereBuilder(
@@ -64,6 +67,7 @@ public class AiResourceVersionMapperByMySql extends AbstractMapperByMysql
         return new MapperResult(sql, params);
     }
     
+    /** 返回 MySQL 数据源类型标识。 */
     @Override
     public String getDataSource() {
         return DataSourceConstant.MYSQL;

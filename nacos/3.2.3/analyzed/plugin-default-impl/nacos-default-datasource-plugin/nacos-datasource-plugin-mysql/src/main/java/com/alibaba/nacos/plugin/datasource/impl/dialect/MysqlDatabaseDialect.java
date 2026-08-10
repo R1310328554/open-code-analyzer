@@ -20,17 +20,26 @@ import com.alibaba.nacos.plugin.datasource.constants.DatabaseTypeConstant;
 import com.alibaba.nacos.plugin.datasource.impl.enums.mysql.TrustedMysqlFunctionEnum;
 
 /**
- * MySQL database dialect.
+ * MySQL 数据库方言实现。
+ *
+ * <p>声明数据源类型为 MySQL，并通过 {@link TrustedMysqlFunctionEnum} 将通用函数名映射为 MySQL 内置 SQL 片段。</p>
  *
  * @author xiweng.yy
  */
 public class MysqlDatabaseDialect extends AbstractDatabaseDialect {
     
+    /** 返回 MySQL 数据源类型标识。 */
     @Override
     public String getType() {
         return DatabaseTypeConstant.MYSQL;
     }
     
+    /**
+     * 按函数名解析 MySQL 可信 SQL 函数。
+     *
+     * @param functionName 逻辑函数名
+     * @return MySQL 侧实际 SQL 函数表达式
+     */
     @Override
     public String getFunction(String functionName) {
         return TrustedMysqlFunctionEnum.getFunctionByName(functionName);

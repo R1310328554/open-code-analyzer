@@ -20,13 +20,16 @@ import com.alibaba.nacos.plugin.datasource.constants.DataSourceConstant;
 import com.alibaba.nacos.plugin.datasource.mapper.ConfigMigrateMapper;
 
 /**
- * The type Config migrate mapper by mysql.
+ * {@link ConfigMigrateMapper} 的 MySQL 实现。
+ *
+ * <p>配置迁移相关 Mapper 的 MySQL 数据源绑定，SQL 语句继承自接口默认定义。</p>
  *
  * @author Sunrisea
  */
 public class ConfigMigrateMapperByMysql extends AbstractMapperByMysql
     implements ConfigMigrateMapper {
     
+    /** 返回 MySQL 数据源类型标识。 */
     @Override
     public String getDataSource() {
         return DataSourceConstant.MYSQL;

@@ -25,7 +25,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The mysql implementation of ConfigInfoBetaMapper.
+ * {@link ConfigInfoBetaMapper} 的 MySQL 实现。
+ *
+ * <p>Beta 配置全量导出分页查询，通过子查询先分页 id 再关联主表。</p>
  *
  * @author hyx
  **/
@@ -33,6 +35,7 @@ import java.util.List;
 public class ConfigInfoBetaMapperByMySql extends AbstractMapperByMysql
     implements ConfigInfoBetaMapper {
     
+    /** 分页拉取 Beta 配置用于全量 dump。 */
     @Override
     public MapperResult findAllConfigInfoBetaForDumpAllFetchRows(MapperContext context) {
         int startRow = context.getStartRow();
@@ -49,6 +52,7 @@ public class ConfigInfoBetaMapperByMySql extends AbstractMapperByMysql
         return new MapperResult(sql, paramList);
     }
     
+    /** 返回 MySQL 数据源类型标识。 */
     @Override
     public String getDataSource() {
         return DataSourceConstant.MYSQL;

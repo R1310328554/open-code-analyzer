@@ -20,29 +20,31 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * The TrustedSqlFunctionEnum enum class is used to enumerate and manage a list of trusted built-in SQL functions.
- * By using this enum, you can verify whether a given SQL function is part of the trusted functions list
- * to avoid potential SQL injection risks.
+ * MySQL 可信内置 SQL 函数枚举。
+ *
+ * <p>维护 Mapper 动态 SQL 允许使用的函数白名单，将逻辑函数名映射为 MySQL 实际表达式，降低 SQL 注入风险。</p>
  *
  * @author blake.qiu
  */
 public enum TrustedMysqlFunctionEnum {
     
-    /**
-     * NOW().
-     */
+    /** 当前时间函数 {@code NOW()}，映射为毫秒精度 {@code NOW(3)}。 */
     NOW("NOW()", "NOW(3)");
     
+    /** 函数名 → 枚举项的快速查找表。 */
     private static final Map<String, TrustedMysqlFunctionEnum> LOOKUP_MAP = new HashMap<>();
     
+    // 启动时填充函数名索引
     static {
         for (TrustedMysqlFunctionEnum entry : TrustedMysqlFunctionEnum.values()) {
             LOOKUP_MAP.put(entry.functionName, entry);
         }
     }
     
+    /** 逻辑函数名（Mapper 侧传入）。 */
     private final String functionName;
     
+    /** MySQL 侧实际 SQL 函数表达式。 */
     private final String function;
     
     TrustedMysqlFunctionEnum(String functionName, String function) {
@@ -51,7 +53,7 @@ public enum TrustedMysqlFunctionEnum {
     }
     
     /**
-     * Get the function name.
+     * 按函数名返回对应 MySQL SQL 函数片段。
      *
      * @param functionName function name
      * @return function

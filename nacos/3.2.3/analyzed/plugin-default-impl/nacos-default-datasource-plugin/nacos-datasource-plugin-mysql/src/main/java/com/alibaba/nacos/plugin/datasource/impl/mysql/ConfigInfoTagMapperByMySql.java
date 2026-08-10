@@ -24,7 +24,9 @@ import com.alibaba.nacos.plugin.datasource.model.MapperResult;
 import java.util.Collections;
 
 /**
- * The mysql implementation of ConfigInfoTagMapper.
+ * {@link ConfigInfoTagMapper} 的 MySQL 实现。
+ *
+ * <p>带标签配置全量导出分页查询，通过子查询先分页 id 再关联主表。</p>
  *
  * @author hyx
  **/
@@ -32,6 +34,7 @@ import java.util.Collections;
 public class ConfigInfoTagMapperByMySql extends AbstractMapperByMysql
     implements ConfigInfoTagMapper {
     
+    /** 分页拉取带标签配置用于全量 dump。 */
     @Override
     public MapperResult findAllConfigInfoTagForDumpAllFetchRows(MapperContext context) {
         String sql =
@@ -42,6 +45,7 @@ public class ConfigInfoTagMapperByMySql extends AbstractMapperByMysql
         return new MapperResult(sql, Collections.emptyList());
     }
     
+    /** 返回 MySQL 数据源类型标识。 */
     @Override
     public String getDataSource() {
         return DataSourceConstant.MYSQL;

@@ -23,7 +23,9 @@ import com.alibaba.nacos.plugin.datasource.model.MapperContext;
 import com.alibaba.nacos.plugin.datasource.model.MapperResult;
 
 /**
- * The mysql implementation of ConfigInfoGrayMapper.
+ * {@link ConfigInfoGrayMapper} 的 MySQL 实现。
+ *
+ * <p>灰度配置全量导出分页查询，按 id 排序并使用 {@code LIMIT ?,?} 分页。</p>
  *
  * @author rong
  **/
@@ -31,6 +33,7 @@ import com.alibaba.nacos.plugin.datasource.model.MapperResult;
 public class ConfigInfoGrayMapperByMySql extends AbstractMapperByMysql
     implements ConfigInfoGrayMapper {
     
+    /** 分页拉取灰度配置用于全量 dump。 */
     @Override
     public MapperResult findAllConfigInfoGrayForDumpAllFetchRows(MapperContext context) {
         String sql =
@@ -40,6 +43,7 @@ public class ConfigInfoGrayMapperByMySql extends AbstractMapperByMysql
             CollectionUtils.list(context.getStartRow(), context.getPageSize()));
     }
     
+    /** 返回 MySQL 数据源类型标识。 */
     @Override
     public String getDataSource() {
         return DataSourceConstant.MYSQL;
