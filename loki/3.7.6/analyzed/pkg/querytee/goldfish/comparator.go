@@ -1,5 +1,7 @@
 package goldfish
 
+// goldfish comparator 比较双 cell 查询样本：状态码、响应哈希、容差内样本匹配及执行时间等性能指标。
+
 import (
 	"net/http"
 	"time"
@@ -14,6 +16,7 @@ import (
 
 const mismatchCauseMissingResponse = "missing_response"
 
+// CompareResponses 根据 QuerySample 生成 ComparisonResult 含性能比率与差异详情。
 // CompareResponses compares performance statistics and hashes from QuerySample
 func CompareResponses(sample *goldfish.QuerySample, cellAResp, cellBResp *ResponseData, performanceTolerance float64, respComparator comparator.ResponsesComparator, logger logger.Logger) goldfish.ComparisonResult {
 	result := goldfish.ComparisonResult{
@@ -110,6 +113,7 @@ func CompareResponses(sample *goldfish.QuerySample, cellAResp, cellBResp *Respon
 }
 
 // compareQueryStats compares performance statistics between two queries
+// compareQueryStats 记录 exec_time、bytes/lines processed 等超出容差的性能差异。
 func compareQueryStats(statsA, statsB goldfish.QueryStats, result *goldfish.ComparisonResult, tolerance float64) {
 
 	// Compare execution times (record variance for analysis)
@@ -148,3 +152,4 @@ func compareQueryStats(statsA, statsB goldfish.QueryStats, result *goldfish.Comp
 		}
 	}
 }
+// 哈希不一致且配置 comparator 时尝试逐样本比较，stream 类型同序归一化后可判为匹配。

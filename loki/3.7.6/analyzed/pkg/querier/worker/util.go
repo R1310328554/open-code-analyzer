@@ -2,6 +2,8 @@
 
 package worker
 
+// worker 包 util 提供 querier worker 执行上下文与 HTTP/Query 请求处理辅助函数，用于优雅关闭时等待在途查询完成。
+
 import (
 	"context"
 	"net/http"
@@ -19,6 +21,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/server"
 )
 
+// newExecutionContext 包装 workerCtx，在 inflight 查询结束后才取消 execCtx 实现优雅退出。
 // newExecutionContext returns a new execution context (execCtx) that wraps the input workerCtx and
 // it used to run the querier's worker loop and execute queries.
 // The purpose of the execution context is to gracefully shutdown queriers, waiting
@@ -86,6 +89,7 @@ func newExecutionContext(workerCtx context.Context, logger log.Logger) (execCtx 
 	return
 }
 
+// handleHTTPRequest 经 codec 解码 httpgrpc 请求后调用 handler.Do 并编码响应。
 // handleHTTPRequest converts the request and applies it to the handler.
 func handleHTTPRequest(ctx context.Context, request *httpgrpc.HTTPRequest, handler RequestHandler, codec RequestCodec) *httpgrpc.HTTPResponse {
 	req, ctx, err := codec.DecodeHTTPGrpcRequest(ctx, request)
@@ -121,6 +125,7 @@ func handleHTTPRequest(ctx context.Context, request *httpgrpc.HTTPRequest, handl
 	return response
 }
 
+// handleQueryRequest 解包 QueryRequest，非 gRPC 错误映射为不可重试状态码。
 // handleQueryRequest applies unwraps a request and applies it to the handler.
 func handleQueryRequest(ctx context.Context, request *queryrange.QueryRequest, handler RequestHandler, codec RequestCodec) *queryrange.QueryResponse {
 	r, ctx, err := codec.QueryRequestUnwrap(ctx, request)
@@ -152,3 +157,4 @@ func handleQueryRequest(ctx context.Context, request *queryrange.QueryRequest, h
 
 	return response
 }
+// inflightQuery 标志位与 workerCtx 取消配合，避免 shutdown 时截断正在执行的查询。

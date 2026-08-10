@@ -1,5 +1,7 @@
 package querytee
 
+// querytee FanOutHandler 将查询扇出到多个后端，优先返回首选后端响应，并在后台比较其余后端结果及 goldfish 采样。
+
 import (
 	"bytes"
 	"context"
@@ -21,6 +23,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/httpreq"
 )
 
+// FanOutHandler 实现 queryrangebase.Handler，支持 race 与 v1/v2 preferred 路由模式。
 // FanOutHandler implements queryrangebase.Handler and fans out requests to multiple backends.
 // It returns the preferred backend's response as soon as ready, while capturing remaining
 // responses for goldfish comparison in the background.
@@ -95,6 +98,7 @@ func (h *FanOutHandler) shouldCompare(r *backendResult, preferV1 bool) bool {
 	return false
 }
 
+// Do 编码请求后并行请求各 backend，按 routingMode 选择返回策略。
 // Do implements queryrangebase.Handler. It fans out the request to all backends, returns the preferred backend's
 // response, and captures remaining responses for goldfish comparison in the background.
 func (h *FanOutHandler) Do(ctx context.Context, req queryrangebase.Request) (queryrangebase.Response, error) {
@@ -274,6 +278,7 @@ func (h *FanOutHandler) finishRace(winner *backendResult, remaining int, httpReq
 
 // collectRemainingAndCompare collects remaining backend results, performs comparisons,
 // and processes goldfish sampling. Should be called asynchronously to not block preferred response from returning.
+// collectRemainingAndCompare 异步收集剩余响应、执行 comparator 比较并触发 goldfish。
 func (h *FanOutHandler) collectRemainingAndCompare(remaining int, httpReq *http.Request, results <-chan *backendResult, collected []*backendResult, correlationID string, preferV1 bool) {
 	issuer := detectIssuer(httpReq)
 	tenantID, _, err := tenant.ExtractTenantIDFromHTTPRequest(httpReq)
@@ -516,6 +521,7 @@ func (h *FanOutHandler) WithComparator(comparator comparator.ResponsesComparator
 
 // shouldSample determines if a query should be sampled for goldfish comparison.
 // Returns (true, correlationID) for the first sampled tenant, or (false, "") if none.
+// shouldSample 遍历 tenant 调用 goldfishManager.ShouldSample 决定是否采样。
 func (h *FanOutHandler) shouldSample(tenants []string, httpReq *http.Request) (bool, string) {
 	if h.goldfishManager == nil {
 		return false, ""
@@ -577,3 +583,4 @@ func statusCodeFromError(err error) int {
 
 	return http.StatusInternalServerError
 }
+// makeBackendRequests 为每个 backend 启动 goroutine，经 executeBackendRequest 转发 HTTP 请求。

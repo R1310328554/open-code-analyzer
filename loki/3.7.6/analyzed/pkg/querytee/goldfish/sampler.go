@@ -1,5 +1,7 @@
 package goldfish
 
+// goldfish Sampler 按 tenant 规则与默认采样率随机决定是否采样查询，供 Manager.ShouldSample 调用。
+
 import (
 	"math/rand"
 	"sync"
@@ -21,6 +23,7 @@ func NewSampler(config SamplingConfig) *Sampler {
 	}
 }
 
+// ShouldSample 先查 TenantRules 再按 default_rate 做伯努利抽样。
 // ShouldSample determines if a query from a tenant should be sampled
 func (s *Sampler) ShouldSample(tenantID string) bool {
 	s.mu.Lock()
@@ -46,9 +49,11 @@ func (s *Sampler) getSamplingRate(tenantID string) float64 {
 	return s.config.DefaultRate
 }
 
+// UpdateConfig 热更新采样配置，需持有 mu 避免与 ShouldSample 竞态。
 // UpdateConfig updates the sampling configuration
 func (s *Sampler) UpdateConfig(config SamplingConfig) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.config = config
 }
+// rate>=1 全采样，rate<=0 不采样，中间值用 rng.Float64 比较。

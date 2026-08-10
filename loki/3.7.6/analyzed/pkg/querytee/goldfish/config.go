@@ -1,5 +1,7 @@
 package goldfish
 
+// goldfish Config 定义 querytee A/B 测试采样率、SQL 元数据存储、对象存储原始结果及性能/数值比较容差。
+
 import (
 	"errors"
 	"flag"
@@ -33,6 +35,7 @@ const (
 type ResultsPersistenceMode string
 
 // Config holds the Goldfish configuration
+// Config 含 Enabled、SamplingConfig、StorageConfig、ResultsStorage 与容差字段。
 type Config struct {
 	Enabled bool `yaml:"enabled"`
 
@@ -87,6 +90,7 @@ type StorageConfig struct {
 }
 
 // ResultsStorageConfig defines configuration for storing raw query results in object storage.
+// ResultsStorageConfig 控制 mismatch-only/all 模式及 GCS/S3 bucket 与压缩方式。
 type ResultsStorageConfig struct {
 	Enabled bool `yaml:"enabled"`
 
@@ -106,6 +110,7 @@ type ResultsStorageConfig struct {
 	Bucket bucket.Config `yaml:"bucket"`
 }
 
+// RegisterFlags 注册 goldfish.* CLI 标志，含 tenant 采样规则与结果存储参数。
 // RegisterFlags registers Goldfish flags
 func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 	f.BoolVar(&cfg.Enabled, "goldfish.enabled", false, "Enable Goldfish query sampling and comparison")
@@ -145,6 +150,7 @@ func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 	f.Float64Var(&cfg.CompareValuesTolerance, "goldfish.compare-values-tolerance", 0.0, "Tolerance for comparing sample values in metric query responses. When set to 0, we expect an exact response hash match.")
 }
 
+// Validate 校验采样率区间、存储类型与 results 后端推断逻辑。
 // Validate validates the configuration
 func (cfg *Config) Validate() error {
 	if !cfg.Enabled {
@@ -329,3 +335,4 @@ func parseRate(s string) (float64, error) {
 
 	return strconv.ParseFloat(s, 64)
 }
+// tenantRulesFlag 解析 tenant1:0.1 格式，支持百分比写法如 10%。

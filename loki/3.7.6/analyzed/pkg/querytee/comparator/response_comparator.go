@@ -1,5 +1,7 @@
 package comparator
 
+// comparator 包比较 querytee 双后端 Prometheus/Loki 查询响应：支持 matrix/vector/scalar/stream 类型及容差与采样窗口过滤。
+
 import (
 	"encoding/json"
 	"errors"
@@ -19,6 +21,7 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// ErrComparisonMismatch 表示解析成功但数据不一致，区别于解析或后端故障错误。
 // ErrComparisonMismatch is returned when responses are successfully compared but don't match.
 // This distinguishes data mismatches from operational failures (parsing errors, backend failures).
 var ErrComparisonMismatch = errors.New("comparison mismatch")
@@ -45,6 +48,7 @@ const (
 	CauseUnknown                         = "unknown"
 )
 
+// ResponsesComparator 接口对 expected/actual JSON 字节流执行语义比较。
 type ResponsesComparator interface {
 	Compare(expected, actual []byte, queryEvaluationTime time.Time) (*ComparisonSummary, error)
 }
@@ -87,6 +91,7 @@ func (opts *SampleComparisonOptions) SkipSample(sampleTime, evaluationTime time.
 	return false
 }
 
+// NewSamplesComparator 注册 matrix/vector/scalar/stream 四类 resultType 比较器。
 func NewSamplesComparator(opts SampleComparisonOptions) *SamplesComparator {
 	return &SamplesComparator{
 		opts: opts,
@@ -379,6 +384,7 @@ func compareSampleValue(first, second model.SampleValue, opts SampleComparisonOp
 	return math.Abs(f-s) <= opts.Tolerance
 }
 
+// compareStreams 按 stream 标签匹配并逐条比较日志行与 structured metadata。
 func compareStreams(expectedRaw, actualRaw json.RawMessage, evaluationTime time.Time, opts SampleComparisonOptions) (*ComparisonSummary, error) {
 	var expected, actual loghttp.Streams
 
@@ -432,6 +438,7 @@ func compareStreams(expectedRaw, actualRaw json.RawMessage, evaluationTime time.
 	return nil, nil
 }
 
+// normalizeStreamEntriesInPlace 对同时间戳日志按 Line/Metadata/Parsed 排序消除顺序差异。
 // normalizeStreamEntriesInPlace sorts entries that share the same timestamp in place.
 // Ordering key within a same-timestamp run: Line, then StructuredMetadata, then Parsed.
 // Logs are assumed to be ordered by timestamp; only order within same-timestamp runs is changed.
@@ -531,3 +538,4 @@ func filterStreamsOutsideWindow(streams loghttp.Streams, skipEntry func(time.Tim
 
 	return result
 }
+// MismatchCause 常量用于 goldfish 与 querytee 指标中分类比较失败原因。

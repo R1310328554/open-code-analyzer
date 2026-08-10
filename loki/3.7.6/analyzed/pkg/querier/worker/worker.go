@@ -1,5 +1,7 @@
 package worker
 
+// worker 包实现 querier worker：连接 query-frontend 或 query-scheduler，拉取查询任务并通过 processor 并发执行。
+
 import (
 	"context"
 	"flag"
@@ -26,6 +28,7 @@ import (
 
 var tracer = otel.Tracer("pkg/querier/worker")
 
+// Config 配置 frontend/scheduler 地址、DNS 刷新周期与各 gRPC 客户端参数。
 type Config struct {
 	FrontendAddress  string        `yaml:"frontend_address"`
 	SchedulerAddress string        `yaml:"scheduler_address"`
@@ -67,6 +70,7 @@ func (cfg *Config) Validate() error {
 	return cfg.QuerySchedulerGRPCClientConfig.Validate()
 }
 
+// RequestHandler 接口由 querier 实现，处理 queryrangebase 请求并返回响应。
 // Handler for HTTP requests wrapped in protobuf messages.
 type RequestHandler interface {
 	Do(context.Context, queryrangebase.Request) (queryrangebase.Response, error)
@@ -79,6 +83,7 @@ type RequestCodec interface {
 	QueryRequestUnwrap(context.Context, *queryrange.QueryRequest) (queryrangebase.Request, context.Context, error)
 }
 
+// processor 接口抽象与 frontend/scheduler 的单条 gRPC 流上拉取并执行查询。
 // Single processor handles all streaming operations to query-frontend or query-scheduler to fetch queries
 // and process them.
 type processor interface {
@@ -114,6 +119,7 @@ type querierWorker struct {
 	maxConcurrentRequests int
 }
 
+// NewQuerierWorker 按 scheduler ring、scheduler 地址或 frontend 地址选择 processor 实现。
 func NewQuerierWorker(cfg Config, rng ring.ReadRing, handler RequestHandler, logger log.Logger, reg prometheus.Registerer, codec RequestCodec) (services.Service, error) {
 	if cfg.QuerierID == "" {
 		hostname, err := os.Hostname()
@@ -260,6 +266,7 @@ func (w *querierWorker) AddressRemoved(address string) {
 }
 
 // Must be called with lock.
+// resetConcurrency 将 maxConcurrent 均分到各 manager，余数随机分配给部分连接。
 func (w *querierWorker) resetConcurrency() {
 	var (
 		index, totalConcurrency int
@@ -308,3 +315,4 @@ func (w *querierWorker) connect(ctx context.Context, address string) (*grpc.Clie
 	}
 	return conn, nil
 }
+// AddressAdded/Removed 由 DNSWatcher 或 RingWatcher 回调，动态增减 processorManager。

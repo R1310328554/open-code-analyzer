@@ -1,5 +1,7 @@
 package goldfish
 
+// goldfish ResultStore 将原始查询 JSON 写入 GCS/S3，可选 gzip 压缩并附带 .meta.json 元数据 sidecar。
+
 import (
 	"bytes"
 	"compress/gzip"
@@ -18,6 +20,7 @@ import (
 )
 
 // ResultStore handles persistence of raw query results to object storage.
+// ResultStore 接口 Store 持久化 payload 并返回 URI 与压缩后大小。
 type ResultStore interface {
 	Store(ctx context.Context, payload []byte, opts StoreOptions) (*StoredResult, error)
 	Close(ctx context.Context) error
@@ -54,6 +57,7 @@ type bucketResultStore struct {
 }
 
 // NewResultStore creates a ResultStore based on configuration.
+// NewResultStore 基于 bucket 配置创建 instrumented 对象存储客户端。
 func NewResultStore(ctx context.Context, cfg ResultsStorageConfig, logger log.Logger) (ResultStore, error) {
 	bucketClient, err := bucketclient.NewClient(ctx, cfg.Backend, cfg.Bucket, "goldfish-results", logger)
 	if err != nil {
@@ -131,6 +135,7 @@ func (s *bucketResultStore) Close(context.Context) error {
 	return s.bucket.Close()
 }
 
+// buildObjectKey 按 prefix/日期/correlationID/cell 生成对象键路径。
 func buildObjectKey(prefix, correlationID, cell string, ts time.Time, compression string) string {
 	if ts.IsZero() {
 		ts = time.Now().UTC()
@@ -199,3 +204,4 @@ func buildMetadata(payload []byte, opts StoreOptions, compression string) []byte
 	}
 	return b
 }
+// encodePayload 支持 none/gzip，buildMetadata 记录 hash、tenant 与 original_bytes。

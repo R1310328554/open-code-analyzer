@@ -1,5 +1,7 @@
 package goldfish
 
+// goldfish StatsExtractor 从 Loki 查询 JSON 提取性能统计、FNV32 内容哈希及是否使用新引擎等元数据，不存储敏感原始日志。
+
 import (
 	"encoding/json"
 	"fmt"
@@ -15,6 +17,7 @@ import (
 // StatsExtractor extracts performance statistics and metadata from Loki responses.
 // It provides privacy-compliant response analysis by computing content hashes
 // and extracting performance metrics without storing sensitive data.
+// StatsExtractor 无状态，可在多 goroutine 间安全复用。
 type StatsExtractor struct{}
 
 // NewStatsExtractor creates a new statistics extractor.
@@ -23,6 +26,7 @@ func NewStatsExtractor() *StatsExtractor {
 	return &StatsExtractor{}
 }
 
+// ExtractResponseData 解析 QueryResponse 并返回 QueryStats、哈希与 ResultType。
 // ExtractResponseData extracts performance statistics and metadata from a Loki response.
 // Returns QueryStats, content hash (FNV32), response size, whether new engine was used, and any parsing errors.
 // The content hash excludes performance statistics to ensure identical content produces identical hashes.
@@ -71,6 +75,7 @@ type hashableResponse struct {
 	} `json:"data"`
 }
 
+// generateResponseHash 对 stream 结果先 normalizeStreamsOrder 再 FNV32 避免顺序误判。
 // generateResponseHash creates a content-sensitive hash by removing only performance statistics.
 // For streams results, entries within each stream are sorted by (timestamp, line)
 // before hashing so that different tie-breaking orders for same-timestamp entries
@@ -122,6 +127,7 @@ func normalizeStreamsOrder(streams loghttp.Streams) loghttp.Streams {
 	return normalized
 }
 
+// CompareStats 逐项比较 exec/queue time、吞吐与 splits/shards 并计算 ratio。
 // CompareStats compares two QueryStats and returns performance differences.
 // Returns a map of metric names to comparison details including ratios where applicable.
 // Division by zero is handled by omitting ratio calculations when the denominator is zero.
@@ -236,3 +242,4 @@ func (e *StatsExtractor) checkForNewEngineWarning(warnings []string) bool {
 	}
 	return false
 }
+// checkForNewEngineWarning 检测 experimental query engine 警告标志 UsedNewEngine。

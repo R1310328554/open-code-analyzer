@@ -1,5 +1,7 @@
 package querier
 
+// querier 包 InitWorkerService 根据部署模式初始化 querier worker：standalone 时注册 HTTP 路由，与 frontend 共存时使用内部 handler。
+
 import (
 	"net"
 	"strconv"
@@ -15,6 +17,7 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// WorkerServiceConfig 汇总 querier 目标开关、gRPC 监听与 worker 配置。
 type WorkerServiceConfig struct {
 	AllEnabled            bool
 	ReadEnabled           bool
@@ -27,6 +30,7 @@ type WorkerServiceConfig struct {
 	SchedulerRing         ring.ReadRing
 }
 
+// QuerierRunningStandalone 判断 querier 是否未启用 frontend/scheduler/read/all 目标。
 func (cfg WorkerServiceConfig) QuerierRunningStandalone() bool {
 	runningStandalone := !cfg.QueryFrontendEnabled && !cfg.QuerySchedulerEnabled && !cfg.ReadEnabled && !cfg.AllEnabled
 	level.Debug(util_log.Logger).Log(
@@ -41,6 +45,7 @@ func (cfg WorkerServiceConfig) QuerierRunningStandalone() bool {
 	return runningStandalone
 }
 
+// InitWorkerService 创建内部 HTTP 路由或 querier worker，避免与 query-frontend 路由冲突。
 // InitWorkerService takes a config object, a map of routes to handlers, an external http router and external
 // http handler, and an auth middleware wrapper. This function creates an internal HTTP router that responds to all
 // the provided query routes/handlers. This router can either be registered with the external Loki HTTP server, or
@@ -110,3 +115,4 @@ func InitWorkerService(
 		codec,
 	)
 }
+// 未配置 worker 地址且无 scheduler ring 时跳过 worker 启动；否则默认连本机 frontend gRPC。

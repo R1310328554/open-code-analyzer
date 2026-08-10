@@ -1,5 +1,7 @@
 package querytee
 
+// querytee HandlerFactory 组装 FanOutHandler、SplittingHandler 与 HTTP 中间件，为各 API 路由创建带 goldfish 与比较器的 http.Handler。
+
 import (
 	"net/http"
 	"time"
@@ -16,6 +18,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/server"
 )
 
+// HandlerFactory 持有 backends、codec、goldfishManager 与路由/拆分相关配置。
 // HandlerFactory creates the appropriate handler based on configuration.
 type HandlerFactory struct {
 	backends                      []*ProxyBackend
@@ -69,6 +72,7 @@ func NewHandlerFactory(cfg HandlerFactoryConfig) *HandlerFactory {
 	}
 }
 
+// CreateHandler 构建 fanout→splitting 链并注入 header 传播与 query tags 中间件。
 func (f *HandlerFactory) CreateHandler(routeName string, comp comparator.ResponsesComparator) (http.Handler, error) {
 	// Create the fan-out handler that sends requests to all backends
 	fanOutHandler := NewFanOutHandler(FanOutHandlerConfig{
@@ -124,3 +128,4 @@ func (f *HandlerFactory) CreateHandler(routeName string, comp comparator.Respons
 
 	return middleware.Merge(httpMiddlewares...).Wrap(splittingHandler), nil
 }
+// SplittingHandler 按 dataobj 时间范围与查询类型将子请求路由到 v1 或 v2 backend。

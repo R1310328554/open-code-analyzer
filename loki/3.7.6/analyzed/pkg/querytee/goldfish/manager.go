@@ -1,5 +1,7 @@
 package goldfish
 
+// goldfish Manager 协调采样决策、双 cell 响应捕获、比较、SQL 元数据与对象存储原始 payload 的持久化。
+
 import (
 	"bytes"
 	"context"
@@ -29,6 +31,7 @@ import (
 
 const unknown = "unknown"
 
+// Manager 接口供 FanOutHandler 调用 ShouldSample 与 SendToGoldfish。
 // Manager defines the interface for Goldfish manager operations.
 type Manager interface {
 	// ShouldSample determines if a query should be sampled based on tenant configuration.
@@ -63,6 +66,7 @@ type metrics struct {
 
 // NewManager creates a new Goldfish manager with the provided configuration.
 // Returns an error if the configuration is invalid.
+// NewManager 在 CompareValuesTolerance>0 时创建 SamplesComparator 用于容差比较。
 func NewManager(config Config, storage goldfish.Storage, resultStore ResultStore, logger log.Logger, registerer prometheus.Registerer) (Manager, error) {
 	if err := config.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid config: %w", err)
@@ -178,6 +182,7 @@ func (m *manager) SendToGoldfish(httpReq *http.Request, cellAResp, cellBResp *Ba
 	m.processQueryPair(httpReq, cellAData, cellBData, correlationID)
 }
 
+// processQueryPair 异步构建 QuerySample、调用 CompareResponses 并写入 storage。
 // processQueryPair processes a sampled query pair from both cells.
 // It extracts performance statistics, compares responses, persists raw payloads when configured, and stores metadata/results.
 func (m *manager) processQueryPair(req *http.Request, cellAResp, cellBResp *ResponseData, correlationID string) {
@@ -476,6 +481,7 @@ type ResponseData struct {
 }
 
 // CaptureResponse captures response data for comparison including trace ID and span ID
+// CaptureResponse 读取响应体并用 StatsExtractor 提取统计与内容哈希。
 func CaptureResponse(resp *http.Response, duration time.Duration, traceID, spanID string, logger log.Logger) (*ResponseData, error) {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -645,3 +651,4 @@ func isLogsDrilldownRequest(req *http.Request) bool {
 	}
 	return false
 }
+// ExtractUserFromQueryTags 从 X-Query-Tags 或 X-Grafana-User 解析用户标识。
