@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T11:18:35Z",
-  "files": [
-    "server-spi/src/main/java/org/keycloak/storage/StorageId.java",
-    "server-spi/src/main/java/org/keycloak/storage/StorageUnavailableException.java",
-    "server-spi/src/main/java/org/keycloak/storage/client/ClientLookupProvider.java",
-    "server-spi/src/main/java/org/keycloak/storage/clientscope/ClientScopeLookupProvider.java",
-    "server-spi/src/main/java/org/keycloak/storage/group/GroupLookupProvider.java",
-    "server-spi/src/main/java/org/keycloak/storage/role/RoleLookupProvider.java",
-    "server-spi/src/main/java/org/keycloak/storage/role/RoleStorageProvider.java",
-    "server-spi/src/main/java/org/keycloak/storage/user/SynchronizationResult.java",
-    "server-spi/src/main/java/org/keycloak/storage/user/UserBulkUpdateProvider.java",
-    "server-spi/src/main/java/org/keycloak/storage/user/UserCountMethodsProvider.java",
-    "server-spi/src/main/java/org/keycloak/storage/user/UserLookupProvider.java",
-    "server-spi/src/main/java/org/keycloak/storage/user/UserQueryMethodsProvider.java",
-    "server-spi/src/main/java/org/keycloak/storage/user/UserQueryProvider.java",
-    "server-spi/src/main/java/org/keycloak/storage/user/UserRegistrationProvider.java",
-    "server-spi/src/main/java/org/keycloak/theme/Theme.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2278,
-  "done": 3705
+  "done": 3720
 }
