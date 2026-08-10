@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// PromQL 查询 JSON 文件日志：实现 slog.Handler 与 promql.QueryLogger，以 JSON 行追加写入指定路径。
+
 package logging
 
 import (
@@ -27,6 +29,7 @@ var _ slog.Handler = (*JSONFileLogger)(nil)
 
 var _ io.Closer = (*JSONFileLogger)(nil)
 
+// JSONFileLogger 将 slog 记录以 JSON 格式写入文件，实现 QueryLogger。
 // JSONFileLogger represents a logger that writes JSON to a file.
 // It implements the promql.QueryLogger interface.
 type JSONFileLogger struct {
@@ -34,6 +37,7 @@ type JSONFileLogger struct {
 	file    *os.File
 }
 
+// NewJSONFileLogger 打开或创建追加写入的 JSON 日志文件；空路径返回 nil。
 // NewJSONFileLogger returns a new JSONFileLogger.
 func NewJSONFileLogger(s string) (*JSONFileLogger, error) {
 	if s == "" {
@@ -53,17 +57,20 @@ func NewJSONFileLogger(s string) (*JSONFileLogger, error) {
 	}, nil
 }
 
+// Close 关闭底层文件句柄。
 // Close closes the underlying file. It implements the io.Closer interface.
 func (l *JSONFileLogger) Close() error {
 	return l.file.Close()
 }
 
+// Enabled 委托内层 handler 判断日志级别是否启用。
 // Enabled returns true if and only if the internal slog.Handler is enabled. It
 // implements the slog.Handler interface.
 func (l *JSONFileLogger) Enabled(ctx context.Context, level slog.Level) bool {
 	return l.handler.Enabled(ctx, level)
 }
 
+// Handle 克隆 Record 后转发给内层 handler 写入文件。
 // Handle takes record created by an slog.Logger and forwards it to the
 // internal slog.Handler for dispatching the log call to the backing file. It
 // implements the slog.Handler interface.
@@ -71,6 +78,7 @@ func (l *JSONFileLogger) Handle(ctx context.Context, r slog.Record) error {
 	return l.handler.Handle(ctx, r.Clone())
 }
 
+// WithAttrs 返回附加固定属性的新 logger，共享同一文件。
 // WithAttrs returns a new *JSONFileLogger with a new internal handler that has
 // the provided attrs attached as attributes on all further log calls. It
 // implements the slog.Handler interface.
@@ -82,6 +90,7 @@ func (l *JSONFileLogger) WithAttrs(attrs []slog.Attr) slog.Handler {
 	return &JSONFileLogger{file: l.file, handler: l.handler.WithAttrs(attrs)}
 }
 
+// WithGroup 返回带日志分组的新 logger。
 // WithGroup returns a new *JSONFileLogger with a new internal handler that has
 // the provided group name attached, to group all other attributes added to the
 // logger. It implements the slog.Handler interface.

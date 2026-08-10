@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 将 Prometheus 文本 exposition 或 MetricFamily 结构转换为 remote-write 使用的 prompb.WriteRequest，含 histogram/summary 的桶与分位数展开。
+
 package fmtutil
 
 import (
@@ -29,6 +31,7 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 )
 
+// histogram/summary 展开时追加的 _sum/_count/_bucket 后缀常量。
 const (
 	sumStr    = "_sum"
 	countStr  = "_count"
@@ -46,6 +49,7 @@ var MetricMetadataTypeValue = map[string]int32{
 	"STATESET":       7,
 }
 
+// MetricTextToWriteRequest 解析文本格式 metrics 并转为 WriteRequest。
 // MetricTextToWriteRequest consumes an io.Reader and return the data in write request format.
 func MetricTextToWriteRequest(input io.Reader, labels map[string]string) (*prompb.WriteRequest, error) {
 	// Lacking information about what the intended validation scheme is, use the
@@ -59,6 +63,7 @@ func MetricTextToWriteRequest(input io.Reader, labels map[string]string) (*promp
 	return MetricFamiliesToWriteRequest(mf, labels)
 }
 
+// MetricFamiliesToWriteRequest 将已解析的 MetricFamily map 转为 WriteRequest。
 // MetricFamiliesToWriteRequest convert metric family to a writerequest.
 func MetricFamiliesToWriteRequest(mf map[string]*dto.MetricFamily, extraLabels map[string]string) (*prompb.WriteRequest, error) {
 	wr := &prompb.WriteRequest{}
@@ -91,6 +96,7 @@ func MetricFamiliesToWriteRequest(mf map[string]*dto.MetricFamily, extraLabels m
 	return wr, nil
 }
 
+// toTimeseries 向 WriteRequest 追加单条带标签的 TimeSeries 样本。
 func toTimeseries(wr *prompb.WriteRequest, labels map[string]string, timestamp int64, value float64) {
 	var ts prompb.TimeSeries
 	ts.Labels = makeLabels(labels)
@@ -103,6 +109,7 @@ func toTimeseries(wr *prompb.WriteRequest, labels map[string]string, timestamp i
 	wr.Timeseries = append(wr.Timeseries, ts)
 }
 
+// makeTimeseries 按 gauge/counter/summary/histogram/untyped 类型展开为多条 TimeSeries。
 func makeTimeseries(wr *prompb.WriteRequest, labels map[string]string, m *dto.Metric) error {
 	var err error
 
@@ -174,6 +181,7 @@ func makeTimeseries(wr *prompb.WriteRequest, labels map[string]string, m *dto.Me
 	return err
 }
 
+// makeLabels 将标签 map 按字典序转为 prompb.Label 切片。
 func makeLabels(labelsMap map[string]string) []prompb.Label {
 	// build labels name list
 	sortedLabelNames := make([]string, 0, len(labelsMap))
@@ -193,6 +201,7 @@ func makeLabels(labelsMap map[string]string) []prompb.Label {
 	return labels
 }
 
+// makeLabelsMap 合并指标名、额外标签与样本标签（job 会加 exported_ 前缀）。
 func makeLabelsMap(m *dto.Metric, metricName string, extraLabels map[string]string) map[string]string {
 	// build labels map
 	labels := make(map[string]string, len(m.Label)+len(extraLabels))

@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// CORS 响应头设置：按 Origin 正则匹配决定 Access-Control-Allow-Origin。
+
 package httputil
 
 import (
@@ -25,6 +27,7 @@ var corsHeaders = map[string]string{
 	"Access-Control-Expose-Headers": "Date",
 }
 
+// SetCORS 根据 Origin 头与允许来源正则设置 CORS 响应头；空 Origin 则跳过。
 // SetCORS enables cross-origin script calls.
 func SetCORS(w http.ResponseWriter, o *regexp.Regexp, r *http.Request) {
 	w.Header().Add("Vary", "Origin")

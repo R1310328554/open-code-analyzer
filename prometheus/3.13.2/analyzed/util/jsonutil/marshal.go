@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// jsoniter 流式 JSON 序列化：时间戳（秒.毫秒）、浮点（含 Inf/NaN 字符串化）与原生直方图。
+
 package jsonutil
 
 import (
@@ -22,6 +24,7 @@ import (
 	"github.com/prometheus/prometheus/model/histogram"
 )
 
+// MarshalTimestamp 将毫秒时间戳写为 JSON 浮点秒（避免 float 转换开销）。
 // MarshalTimestamp marshals a point timestamp using the passed jsoniter stream.
 func MarshalTimestamp(t int64, stream *jsoniter.Stream) {
 	// Write out the timestamp as a float divided by 1000.
@@ -44,6 +47,7 @@ func MarshalTimestamp(t int64, stream *jsoniter.Stream) {
 	}
 }
 
+// MarshalFloat 将 float64 写为带引号的 JSON 字符串以兼容 Inf/NaN。
 // MarshalFloat marshals a float value using the passed jsoniter stream.
 func MarshalFloat(f float64, stream *jsoniter.Stream) {
 	stream.WriteRaw(`"`)
@@ -63,6 +67,7 @@ func MarshalFloat(f float64, stream *jsoniter.Stream) {
 	stream.WriteRaw(`"`)
 }
 
+// MarshalHistogram 将 FloatHistogram 序列化为 count/sum/buckets 数组的 JSON 对象。
 // MarshalHistogram marshals a histogram value using the passed jsoniter stream.
 // It writes something like:
 //

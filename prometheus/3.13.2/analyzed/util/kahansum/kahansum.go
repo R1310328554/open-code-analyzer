@@ -11,16 +11,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Kahan/Neumaier 补偿求和：在 PromQL 等浮点累加场景减少舍入误差；显式 float64 转换防止跨 Inc 边界的 FMA 融合。
+
 package kahansum
 
 import "math"
 
+// isInf 判断正负无穷，避免 math.IsInf 抬高 Inc 内联成本。
 // isInf reports whether f is positive or negative infinity.
 // It avoids math.IsInf to prevent inflating Inc's inlining cost.
 func isInf(f float64) bool {
 	return f > math.MaxFloat64 || f < -math.MaxFloat64
 }
 
+// Inc 用 Kahan/Neumaier 算法将 inc 累加到 sum，补偿项存入 c。
 // Inc performs addition of two floating-point numbers using the Kahan summation algorithm.
 func Inc(inc, sum, c float64) (newSum, newC float64) {
 	// We've seen Kahan summation return less accurate results when Inc function is
@@ -54,6 +58,7 @@ func Inc(inc, sum, c float64) (newSum, newC float64) {
 	return t, c
 }
 
+// Dec 通过 Inc(-dec, ...) 实现减法累加。
 func Dec(dec, sum, c float64) (newSum, newC float64) {
 	return Inc(-dec, sum, c)
 }

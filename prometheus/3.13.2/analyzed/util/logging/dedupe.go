@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// slog 日志去重 Handler 与 Kubernetes API 弃用警告抑制：相同消息在 repeat 间隔内只输出一次，并定期 GC seen map。
+
 package logging
 
 import (
@@ -31,6 +33,7 @@ const (
 
 var _ slog.Handler = (*Deduper)(nil)
 
+// Deduper 包装 slog.Logger，按消息文本在 repeat 窗口内去重。
 // Deduper implements *slog.Handler, dedupes log lines based on a time duration.
 type Deduper struct {
 	next   *slog.Logger
@@ -40,6 +43,7 @@ type Deduper struct {
 	seen   map[string]time.Time
 }
 
+// Dedupe 创建 Deduper 并启动后台 GC goroutine。
 // Dedupe log lines to next, only repeating every repeat duration.
 func Dedupe(next *slog.Logger, repeat time.Duration) *Deduper {
 	d := &Deduper{
@@ -53,6 +57,7 @@ func Dedupe(next *slog.Logger, repeat time.Duration) *Deduper {
 	return d
 }
 
+// Enabled 委托内层 logger 判断是否应记录该级别。
 // Enabled returns true if the Deduper's internal slog.Logger is enabled at the
 // provided context and log level, and returns false otherwise. It implements
 // slog.Handler.
@@ -60,6 +65,7 @@ func (d *Deduper) Enabled(ctx context.Context, level slog.Level) bool {
 	return d.next.Enabled(ctx, level)
 }
 
+// Handle 在 repeat 间隔内丢弃重复消息，否则转发给内层 Handler。
 // Handle uses the provided context and slog.Record to deduplicate messages
 // every 1m. Log records received within the interval are not acted on, and
 // thus dropped. Log records that pass deduplication and need action invoke the
@@ -84,6 +90,7 @@ func (d *Deduper) Handle(ctx context.Context, r slog.Record) error {
 	return d.next.Handler().Handle(ctx, r.Clone())
 }
 
+// WithAttrs 返回带附加属性的新 Deduper，共享 seen map 与 quit 通道。
 // WithAttrs adds the provided attributes to the Deduper's internal
 // slog.Logger. It implements slog.Handler.
 func (d *Deduper) WithAttrs(attrs []slog.Attr) slog.Handler {
@@ -96,6 +103,7 @@ func (d *Deduper) WithAttrs(attrs []slog.Attr) slog.Handler {
 	}
 }
 
+// WithGroup 返回带日志分组的新 Deduper。
 // WithGroup adds the provided group name to the Deduper's internal
 // slog.Logger. It implements slog.Handler.
 func (d *Deduper) WithGroup(name string) slog.Handler {
@@ -112,6 +120,7 @@ func (d *Deduper) WithGroup(name string) slog.Handler {
 	}
 }
 
+// Stop 关闭 quit 通道以终止后台 GC goroutine。
 // Stop the Deduper.
 func (d *Deduper) Stop() {
 	close(d.quit)
@@ -140,11 +149,13 @@ func (d *Deduper) run() {
 
 // deprecationRegex matches the format of Kubernetes API deprecation warnings:
 // See https://github.com/kubernetes/kubernetes/blob/da663405beb487d66c27a0220ea4073305ae9077/staging/src/k8s.io/apiserver/pkg/endpoints/deprecation/deprecation.go#L117.
+// deprecationRegex 匹配 Kubernetes API 弃用警告的标准格式。
 var deprecationRegex = regexp.MustCompile(`\S+ \S+ is deprecated in v\d+\.\d+\+`)
 
 // Even though deprecation warnings should be bounded in number, this safeguard should help prevent leaks.
 const maxDeprecationWarnings = 32
 
+// DedupDeprecationWarningLogger 对 K8s Warning 299 弃用消息按文本去重后记录。
 // DedupDeprecationWarningLogger deduplicates Kube API deprecation warnings by message before logging them.
 // Inspired by https://github.com/kubernetes/kubernetes/blob/3edae6c1c49958fd10a708d9cc8c4c9e7f5fb6e8/staging/src/k8s.io/client-go/rest/warnings.go#L113
 type DedupDeprecationWarningLogger struct {
@@ -153,6 +164,7 @@ type DedupDeprecationWarningLogger struct {
 	logged map[string]struct{}
 }
 
+// NewDedupDeprecationWarningLogger 创建带空 logged map 的弃用警告处理器。
 func NewDedupDeprecationWarningLogger() *DedupDeprecationWarningLogger {
 	return &DedupDeprecationWarningLogger{
 		logger: rest.WarningLogger{},

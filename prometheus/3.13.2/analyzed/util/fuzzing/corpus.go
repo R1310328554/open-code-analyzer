@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 各 Go fuzz 目标的种子语料与 libFuzzer 字典：覆盖 PromQL 解析、metric 文本、XOR chunk 编码等 fuzz 函数的起始输入。
+
 package fuzzing
 
 import (
@@ -18,6 +20,7 @@ import (
 	"github.com/prometheus/prometheus/promql/promqltest"
 )
 
+// ChunkFuzzSeed 是 FuzzXORChunk 的单条种子参数（RNG 种子、样本数、StaleNaN 位掩码）。
 // ChunkFuzzSeed is a seed corpus entry for FuzzXORChunk.
 type ChunkFuzzSeed struct {
 	// Seed is the RNG seed used to generate sample timestamps and values.
@@ -29,6 +32,7 @@ type ChunkFuzzSeed struct {
 	NaNMask uint64
 }
 
+// XOR2ChunkFuzzSeed 在 ChunkFuzzSeed 基础上增加 STMode 以覆盖 XOR2 起始时间模式。
 // XOR2ChunkFuzzSeed is a seed corpus entry for FuzzXOR2Chunk.
 type XOR2ChunkFuzzSeed struct {
 	// Seed is the RNG seed used to generate sample timestamps and values.
@@ -42,6 +46,7 @@ type XOR2ChunkFuzzSeed struct {
 	STMode uint8
 }
 
+// GetCorpusForFuzzParseMetricText 返回文本 metrics 解析 fuzz 的种子字节切片。
 // GetCorpusForFuzzParseMetricText returns the seed corpus for FuzzParseMetricText.
 func GetCorpusForFuzzParseMetricText() [][]byte {
 	return [][]byte{
@@ -60,6 +65,7 @@ func GetCorpusForFuzzParseMetricText() [][]byte {
 	}
 }
 
+// GetCorpusForFuzzParseOpenMetric 返回 OpenMetrics 格式解析 fuzz 的种子。
 // GetCorpusForFuzzParseOpenMetric returns the seed corpus for FuzzParseOpenMetric.
 func GetCorpusForFuzzParseOpenMetric() [][]byte {
 	return [][]byte{
@@ -69,6 +75,7 @@ func GetCorpusForFuzzParseOpenMetric() [][]byte {
 	}
 }
 
+// GetCorpusForFuzzParseMetricSelector 返回指标选择器解析 fuzz 的种子字符串。
 // GetCorpusForFuzzParseMetricSelector returns the seed corpus for FuzzParseMetricSelector.
 func GetCorpusForFuzzParseMetricSelector() []string {
 	return []string{
@@ -80,6 +87,7 @@ func GetCorpusForFuzzParseMetricSelector() []string {
 	}
 }
 
+// GetCorpusForFuzzParseExpr 合并 promqltest 内置表达式与额外 PromQL 字面量/运算符种子。
 // GetCorpusForFuzzParseExpr returns the seed corpus for FuzzParseExpr.
 func GetCorpusForFuzzParseExpr() ([]string, error) {
 	// Get built-in test expressions.
@@ -135,6 +143,7 @@ func GetCorpusForFuzzParseExpr() ([]string, error) {
 	return append(builtInExprs, additionalExprs...), nil
 }
 
+// GetCorpusForFuzzXORChunk 覆盖无/单/交替/全 StaleNaN 等 XOR chunk 编码场景。
 // GetCorpusForFuzzXORChunk returns the seed corpus for FuzzXORChunk.
 func GetCorpusForFuzzXORChunk() []ChunkFuzzSeed {
 	return []ChunkFuzzSeed{
@@ -153,6 +162,7 @@ func GetCorpusForFuzzXORChunk() []ChunkFuzzSeed {
 	}
 }
 
+// GetDictForFuzzParseExpr 从 PromQL 关键字、函数名与运算符自动生成 libFuzzer 字典。
 // GetDictForFuzzParseExpr returns the libFuzzer dictionary tokens for
 // FuzzParseExpr. Tokens are derived from the exported PromQL keyword list,
 // function names, and operator symbols so that the dictionary stays in sync
@@ -189,6 +199,7 @@ func GetDictForFuzzParseExpr() []string {
 	return result
 }
 
+// GetCorpusForFuzzXOR2Chunk 覆盖 XOR2 chunk 多种起始时间与 StaleNaN 组合。
 // GetCorpusForFuzzXOR2Chunk returns the seed corpus for FuzzXOR2Chunk.
 func GetCorpusForFuzzXOR2Chunk() []XOR2ChunkFuzzSeed {
 	return []XOR2ChunkFuzzSeed{

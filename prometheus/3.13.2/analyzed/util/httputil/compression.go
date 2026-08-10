@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// HTTP 响应压缩中间件：解析 Accept-Encoding，优先 gzip，其次 deflate，否则透传原始 ResponseWriter。
+
 package httputil
 
 import (
@@ -29,6 +31,7 @@ const (
 	deflateEncoding       = "deflate"
 )
 
+// compressedResponseWriter 包装 ResponseWriter，将 Write 委托给 gzip/zlib 或原始 writer。
 // Wrapper around http.Handler which adds suitable response compression based
 // on the client's Accept-Encoding headers.
 type compressedResponseWriter struct {
@@ -36,11 +39,13 @@ type compressedResponseWriter struct {
 	writer io.Writer
 }
 
+// Write 将响应体写入底层压缩或原始 writer。
 // Writes HTTP response content data.
 func (c *compressedResponseWriter) Write(p []byte) (int, error) {
 	return c.writer.Write(p)
 }
 
+// Close 刷新压缩流并关闭底层 Closer。
 // Closes the compressedResponseWriter and ensures to flush all data before.
 func (c *compressedResponseWriter) Close() {
 	if zlibWriter, ok := c.writer.(*zlib.Writer); ok {
@@ -54,6 +59,7 @@ func (c *compressedResponseWriter) Close() {
 	}
 }
 
+// newCompressedResponseWriter 按 Accept-Encoding 选择 gzip、deflate 或无压缩。
 // Constructs a new compressedResponseWriter based on client request headers.
 func newCompressedResponseWriter(writer http.ResponseWriter, req *http.Request) *compressedResponseWriter {
 	writer.Header().Add("Vary", acceptEncodingHeader)
@@ -92,12 +98,14 @@ func newCompressedResponseWriter(writer http.ResponseWriter, req *http.Request) 
 	}
 }
 
+// CompressionHandler 在 ServeHTTP 中包装响应 writer 并在结束时 Close。
 // CompressionHandler is a wrapper around http.Handler which adds suitable
 // response compression based on the client's Accept-Encoding headers.
 type CompressionHandler struct {
 	Handler http.Handler
 }
 
+// ServeHTTP 创建压缩 writer、调用内层 Handler 并确保刷新压缩缓冲。
 // ServeHTTP adds compression to the original http.Handler's ServeHTTP() method.
 func (c CompressionHandler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	compWriter := newCompressedResponseWriter(writer, req)

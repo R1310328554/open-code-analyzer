@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 启动时校验 metric 名称验证方案（UTF8Validation/LegacyValidation）是否已显式配置。
+
 package namevalidationutil
 
 import (
@@ -20,6 +22,7 @@ import (
 	"github.com/prometheus/common/model"
 )
 
+// CheckNameValidationScheme 在 UnsetValidation 时返回错误，已知方案则通过。
 // CheckNameValidationScheme returns an error iff nameValidationScheme is unset.
 func CheckNameValidationScheme(nameValidationScheme model.ValidationScheme) error {
 	switch nameValidationScheme {

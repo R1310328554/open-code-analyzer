@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// FuzzParseProtobuf 的二进制 protobuf 种子语料：长度前缀 MetricFamily 载荷，覆盖各 metric 类型、多 family 载荷、NHCB 转换路径与解析选项组合。
+
 package fuzzing
 
 import (
@@ -24,6 +26,7 @@ import (
 	dto "github.com/prometheus/prometheus/prompb/io/prometheus/client"
 )
 
+// serializeProtobufSeed 将多个 MetricFamily 序列化为 uvarint 长度前缀的二进制流。
 func serializeProtobufSeed(families ...dto.MetricFamily) ([]byte, error) {
 	varintBuf := make([]byte, binary.MaxVarintLen64)
 	var out []byte
@@ -39,6 +42,7 @@ func serializeProtobufSeed(families ...dto.MetricFamily) ([]byte, error) {
 	return out, nil
 }
 
+// appendSerializedProtobufSeed 序列化后追加到语料切片。
 func appendSerializedProtobufSeed(dst [][]byte, families ...dto.MetricFamily) ([][]byte, error) {
 	b, err := serializeProtobufSeed(families...)
 	if err != nil {
@@ -47,6 +51,7 @@ func appendSerializedProtobufSeed(dst [][]byte, families ...dto.MetricFamily) ([
 	return append(dst, b), nil
 }
 
+// appendTextProtobufSeeds 解析文本格式 proto 并追加二进制载荷，复用单元测试 fixture。
 // appendTextProtobufSeeds parses text-format proto strings (one MetricFamily
 // per string) and appends the serialized binary payloads to dst. This lets the
 // corpus reuse the same text-format fixtures that the parser unit tests use.
@@ -65,6 +70,7 @@ func appendTextProtobufSeeds(dst [][]byte, textFamilies ...string) ([][]byte, er
 	return dst, nil
 }
 
+// protobufCorruptSeeds 构造截断、垃圾后缀等结构性损坏输入。
 func protobufCorruptSeeds() ([][]byte, error) {
 	result := [][]byte{
 		{},
@@ -105,6 +111,7 @@ func protobufCorruptSeeds() ([][]byte, error) {
 	return result, nil
 }
 
+// ProtobufCorpusSeed 将二进制 payload 与 ignoreNative/parseClassic 等解析选项绑定。
 // ProtobufCorpusSeed is a single seed entry for FuzzParseProtobuf, pairing a
 // binary payload with a specific set of parser options.
 type ProtobufCorpusSeed struct {
@@ -115,6 +122,7 @@ type ProtobufCorpusSeed struct {
 	TypeAndUnit  bool
 }
 
+// GetCorpusForFuzzParseProtobuf 对 raw 语料与解析选项做笛卡尔积生成完整种子集。
 // GetCorpusForFuzzParseProtobuf returns the seed corpus for FuzzParseProtobuf.
 // Each entry pairs a length-prefixed binary protobuf payload in the Prometheus
 // protobuf exposition format (uvarint-length followed by a marshaled
@@ -167,6 +175,7 @@ func GetCorpusForFuzzParseProtobuf() ([]ProtobufCorpusSeed, error) {
 	return seeds, nil
 }
 
+// getRawProtobufCorpus 构建 gauge/counter/summary/histogram/native/NHCB 等原始二进制语料。
 func getRawProtobufCorpus() ([][]byte, error) {
 	var result [][]byte
 

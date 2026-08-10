@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 为 PromQL 查询日志注入 HTTP 上下文：路径参数与 clientIP/method 等请求元数据。
+
 package httputil
 
 import (
@@ -23,12 +25,14 @@ import (
 
 type pathParam struct{}
 
+// ContextWithPath 将请求路径存入 context，供后续查询日志使用。
 // ContextWithPath returns a new context with the given path to be used later
 // when logging the query.
 func ContextWithPath(ctx context.Context, path string) context.Context {
 	return context.WithValue(ctx, pathParam{}, path)
 }
 
+// ContextFromRequest 从 Request 提取 clientIP、method 与路径，写入 promql origin context。
 // ContextFromRequest returns a new context with identifiers of
 // the request to be used later when logging the query.
 func ContextFromRequest(ctx context.Context, r *http.Request) context.Context {

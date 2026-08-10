@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Prometheus 功能开关注册表：按类别（api/promql/tsdb 等）记录各特性的启用状态，供 /api/v1/status/features 等接口查询。
+
 package features
 
 import (
@@ -34,22 +36,27 @@ const (
 	UI                        = "ui"
 )
 
+// Collector 定义功能开关的收集与管理接口。
 // Collector defines the interface for collecting and managing feature flags.
 // It provides methods to enable, disable, and retrieve feature states.
 type Collector interface {
-	// Enable marks a feature as enabled in the registry.
+	// Enable 将指定类别下的特性标记为启用。
+// Enable marks a feature as enabled in the registry.
 	// The category and name should use snake_case naming convention.
 	Enable(category, name string)
 
-	// Disable marks a feature as disabled in the registry.
+	// Disable 将指定类别下的特性标记为禁用。
+// Disable marks a feature as disabled in the registry.
 	// The category and name should use snake_case naming convention.
 	Disable(category, name string)
 
-	// Set sets a feature to the specified enabled state.
+	// Set 设置特性的启用状态；若类别不存在则自动创建子 map。
+// Set sets a feature to the specified enabled state.
 	// The category and name should use snake_case naming convention.
 	Set(category, name string, enabled bool)
 
-	// Get returns a copy of all registered features organized by category.
+	// Get 返回按类别组织的特性状态副本，避免外部修改内部 map。
+// Get returns a copy of all registered features organized by category.
 	// Returns a map where the keys are category names and values are maps
 	// of feature names to their enabled status.
 	Get() map[string]map[string]bool
@@ -57,14 +64,17 @@ type Collector interface {
 
 // registry is the private implementation of the Collector interface.
 // It stores feature information organized by category.
+// registry 是 Collector 的私有实现，按类别存储特性名到布尔状态的映射。
 type registry struct {
 	mu       sync.RWMutex
 	features map[string]map[string]bool
 }
 
+// DefaultRegistry 是 Prometheus 进程级默认注册表。
 // DefaultRegistry is the package-level registry used by Prometheus.
 var DefaultRegistry = NewRegistry()
 
+// NewRegistry 创建空的特性注册表。
 // NewRegistry creates a new feature registry.
 func NewRegistry() Collector {
 	return &registry{
@@ -106,21 +116,25 @@ func (r *registry) Get() map[string]map[string]bool {
 	return result
 }
 
+// Enable 在默认注册表上启用特性。
 // Enable marks a feature as enabled in the default registry.
 func Enable(category, name string) {
 	DefaultRegistry.Enable(category, name)
 }
 
+// Disable 在默认注册表上禁用特性。
 // Disable marks a feature as disabled in the default registry.
 func Disable(category, name string) {
 	DefaultRegistry.Disable(category, name)
 }
 
+// Set 在默认注册表上设置特性状态。
 // Set sets a feature to the specified enabled state in the default registry.
 func Set(category, name string, enabled bool) {
 	DefaultRegistry.Set(category, name, enabled)
 }
 
+// Get 返回默认注册表中的全部特性。
 // Get returns all features from the default registry.
 func Get() map[string]map[string]bool {
 	return DefaultRegistry.Get()

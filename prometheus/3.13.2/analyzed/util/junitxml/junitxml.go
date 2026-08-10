@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// JUnit XML 测试报告构建器：testsuites/testsuite/testcase 层次结构与失败/错误计数。
+
 package junitxml
 
 import (
@@ -32,6 +34,7 @@ type TestSuite struct {
 	Timestamp    string      `xml:"timestamp,attr"`
 	Cases        []*TestCase `xml:"testcase"`
 }
+// TestCase 表示单个测试用例及其 failure/error 文本。
 type TestCase struct {
 	Name     string   `xml:"name,attr"`
 	Failures []string `xml:"failure,omitempty"`
@@ -42,6 +45,7 @@ func (j *JUnitXML) WriteXML(h io.Writer) error {
 	return xml.NewEncoder(h).Encode(j)
 }
 
+// Suite 追加并返回新的 TestSuite。
 func (j *JUnitXML) Suite(name string) *TestSuite {
 	ts := &TestSuite{Name: name}
 	j.Suites = append(j.Suites, ts)
@@ -54,6 +58,7 @@ func (ts *TestSuite) Fail(f string) {
 	curt.Failures = append(curt.Failures, f)
 }
 
+// lastCase 返回最后一个 testcase，若无则创建名为 unknown 的占位。
 func (ts *TestSuite) lastCase() *TestCase {
 	if len(ts.Cases) == 0 {
 		ts.Case("unknown")
@@ -70,6 +75,7 @@ func (ts *TestSuite) Case(name string) *TestSuite {
 	return ts
 }
 
+// Settime 设置 testsuite 的 timestamp 属性。
 func (ts *TestSuite) Settime(name string) {
 	ts.Timestamp = name
 }

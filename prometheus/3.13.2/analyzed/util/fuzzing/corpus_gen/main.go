@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// go:generate 工具（需 fuzzing build tag）：将 fuzzing 包内语料导出为 libFuzzer 可用的 *_seed_corpus.zip 与 *.dict 文件。
+
 //go:build fuzzing
 
 //go:generate go run -tags fuzzing .
@@ -28,6 +30,7 @@ import (
 	"github.com/prometheus/prometheus/util/fuzzing"
 )
 
+// main 依次生成各 fuzz 目标的 ZIP 种子包与 PromQL 表达式字典。
 func main() {
 	if err := run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -102,6 +105,7 @@ func run() error {
 	return nil
 }
 
+// generateZipFromBytes 将字节切片语料排序后写入 seed_corpus.zip。
 // generateZipFromBytes creates a seed corpus ZIP file from a slice of byte slices.
 func generateZipFromBytes(fuzzName string, corpus [][]byte) error {
 	// Sort corpus deterministically.
@@ -137,6 +141,7 @@ func generateZipFromBytes(fuzzName string, corpus [][]byte) error {
 	return nil
 }
 
+// generateZipFromStrings 将字符串语料转为字节后委托 generateZipFromBytes。
 // generateZipFromStrings creates a seed corpus ZIP file from a slice of strings.
 func generateZipFromStrings(fuzzName string, corpus []string) error {
 	// Convert []string to [][]byte and delegate to generateZipFromBytes.
@@ -147,6 +152,7 @@ func generateZipFromStrings(fuzzName string, corpus []string) error {
 	return generateZipFromBytes(fuzzName, byteCorpus)
 }
 
+// generateZipFromSeedEntries 写入 Go fuzz v1 格式的预序列化种子条目。
 // generateZipFromSeedEntries creates a seed corpus ZIP file from pre-serialised
 // Go fuzz corpus entries. Entries are sorted deterministically before writing.
 func generateZipFromSeedEntries(fuzzName string, entries [][]byte) error {
@@ -178,6 +184,7 @@ func generateZipFromSeedEntries(fuzzName string, entries [][]byte) error {
 	return nil
 }
 
+// generateZipFromXORChunkSeeds 为 (int64,uint8,uint64) 签名的 XOR chunk fuzz 生成 ZIP。
 // generateZipFromXORChunkSeeds creates a seed corpus ZIP file for fuzz functions
 // with signature (int64, uint8, uint64), using the Go fuzz corpus file format.
 func generateZipFromXORChunkSeeds(fuzzName string, seeds []fuzzing.ChunkFuzzSeed) error {
@@ -188,6 +195,7 @@ func generateZipFromXORChunkSeeds(fuzzName string, seeds []fuzzing.ChunkFuzzSeed
 	return generateZipFromSeedEntries(fuzzName, entries)
 }
 
+// generateZipFromXOR2ChunkSeeds 为 FuzzXOR2Chunk 四元组参数生成 ZIP 种子。
 // generateZipFromXOR2ChunkSeeds creates a seed corpus ZIP file for FuzzXOR2Chunk.
 func generateZipFromXOR2ChunkSeeds(fuzzName string, seeds []fuzzing.XOR2ChunkFuzzSeed) error {
 	entries := make([][]byte, len(seeds))
@@ -197,6 +205,7 @@ func generateZipFromXOR2ChunkSeeds(fuzzName string, seeds []fuzzing.XOR2ChunkFuz
 	return generateZipFromSeedEntries(fuzzName, entries)
 }
 
+// generateZipFromProtobufSeeds 为 FuzzParseProtobuf 的 payload+选项组合生成 ZIP。
 // generateZipFromProtobufSeeds creates a seed corpus ZIP file for FuzzParseProtobuf.
 func generateZipFromProtobufSeeds(fuzzName string, seeds []fuzzing.ProtobufCorpusSeed) error {
 	entries := make([][]byte, len(seeds))
@@ -213,6 +222,7 @@ func generateZipFromProtobufSeeds(fuzzName string, seeds []fuzzing.ProtobufCorpu
 	return generateZipFromSeedEntries(fuzzName, entries)
 }
 
+// generateDictFile 将 token 列表排序后写入 libFuzzer .dict 文件。
 // generateDictFile writes a libFuzzer dictionary file to the parent directory.
 // Each token is written as a quoted string on its own line, sorted
 // deterministically so the output is stable across runs.
