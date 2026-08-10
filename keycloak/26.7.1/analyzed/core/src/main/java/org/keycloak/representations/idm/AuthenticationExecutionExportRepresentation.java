@@ -18,32 +18,39 @@
 package org.keycloak.representations.idm;
 
 /**
-* @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
-* @version $Revision: 1 $
-*/
+ * 认证流执行步骤的导出/导入表示，继承 {@link AbstractAuthenticationExecutionRepresentation} 的公共字段。
+ *
+ * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
+ * @version $Revision: 1 $
+ */
 public class AuthenticationExecutionExportRepresentation extends AbstractAuthenticationExecutionRepresentation {
 
+    /** 嵌套子流的别名（指向 AuthenticationFlowModel）。 */
     private String flowAlias;
+    /** 是否允许用户在 Required Actions 中自行配置此执行器。 */
     private boolean userSetupAllowed;
 
 
+    /** @return 是否允许用户自行配置 */
     public boolean isUserSetupAllowed() {
         return userSetupAllowed;
     }
 
+    /** @param userSetupAllowed 是否允许用户自行配置 */
     public void setUserSetupAllowed(boolean userSetupAllowed) {
         this.userSetupAllowed = userSetupAllowed;
     }
 
     /**
-     * If this execution is a flow, this is the flowId pointing to an AuthenticationFlowModel
+     * 若此执行步骤本身是一个子流，返回指向 {@code AuthenticationFlowModel} 的流别名。
      *
-     * @return
+     * @return 子流别名
      */
     public String getFlowAlias() {
         return flowAlias;
     }
 
+    /** @param flowId 子流别名 */
     public void setFlowAlias(String flowId) {
         this.flowAlias = flowId;
     }

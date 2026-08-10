@@ -22,35 +22,46 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
-* @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
-* @version $Revision: 1 $
-*/
+ * 认证器实例的配置 REST 表示，存储键值对形式的 SPI 配置参数。
+ *
+ * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
+ * @version $Revision: 1 $
+ */
 public class AuthenticatorConfigRepresentation implements Serializable {
 
+    /** 配置持久化 ID。 */
     private String id;
+    /** 配置别名，供认证流执行步骤引用。 */
     private String alias;
+    /** 认证器 SPI 配置键值对。 */
     private Map<String, String> config = new HashMap<>();
 
+    /** @return 配置 ID */
     public String getId() {
         return id;
     }
 
+    /** @param id 配置 ID */
     public void setId(String id) {
         this.id = id;
     }
 
+    /** @return 配置别名 */
     public String getAlias() {
         return alias;
     }
 
+    /** @param alias 配置别名 */
     public void setAlias(String alias) {
         this.alias = alias;
     }
 
+    /** @return 配置键值对 */
     public Map<String, String> getConfig() {
         return config;
     }
 
+    /** @param config 配置键值对 */
     public void setConfig(Map<String, String> config) {
         this.config = config;
     }

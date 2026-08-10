@@ -18,27 +18,35 @@
 package org.keycloak.representations.idm;
 
 /**
+ * 已弃用的 Application 资源表示，功能由 {@link ClientRepresentation} 取代。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 @Deprecated
 public class ApplicationRepresentation extends ClientRepresentation {
+    /** 应用显示名称。 */
     protected String name;
+    /** 已弃用的声明（claim）配置。 */
     @Deprecated
     protected ClaimRepresentation claims;
 
+    /** @return 应用名称 */
     public String getName() {
         return name;
     }
 
+    /** @param name 应用名称 */
     public void setName(String name) {
         this.name = name;
     }
 
+    /** @return 声明配置 */
     public ClaimRepresentation getClaims() {
         return claims;
     }
 
+    /** @param claims 声明配置 */
     public void setClaims(ClaimRepresentation claims) {
         this.claims = claims;
     }

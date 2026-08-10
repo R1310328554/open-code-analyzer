@@ -20,44 +20,58 @@ package org.keycloak.representations.idm;
 import java.util.List;
 
 /**
+ * 认证器工厂的配置元信息表示，描述 Admin Console 中可编辑的配置属性 schema。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public class AuthenticatorConfigInfoRepresentation {
 
+    /** 认证器显示名称。 */
     protected String name;
+    /** 认证器 SPI 提供方 ID。 */
     protected String providerId;
+    /** 配置说明/help 文本。 */
     protected String helpText;
 
+    /** 可配置属性列表及其类型约束。 */
     protected List<ConfigPropertyRepresentation> properties;
 
+    /** @return 认证器名称 */
     public String getName() {
         return name;
     }
 
+    /** @param name 认证器名称 */
     public void setName(String name) {
         this.name = name;
     }
 
+    /** @return 帮助文本 */
     public String getHelpText() {
         return helpText;
     }
 
+    /** @return 提供方 ID */
     public String getProviderId() {
         return providerId;
     }
 
+    /** @param providerId 提供方 ID */
     public void setProviderId(String providerId) {
         this.providerId = providerId;
     }
 
+    /** @param helpText 帮助文本 */
     public void setHelpText(String helpText) {
         this.helpText = helpText;
     }
 
+    /** @return 配置属性 schema 列表 */
     public List<ConfigPropertyRepresentation> getProperties() {
         return properties;
     }
 
+    /** @param properties 配置属性 schema 列表 */
     public void setProperties(List<ConfigPropertyRepresentation> properties) {
         this.properties = properties;
     }

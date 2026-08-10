@@ -18,34 +18,45 @@
 package org.keycloak.representations.idm;
 
 /**
+ * 认证流中单个执行步骤的 REST 表示，用于 Admin API 读写流配置。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public class AuthenticationExecutionRepresentation extends AbstractAuthenticationExecutionRepresentation {
 
+    /** 执行步骤持久化 ID。 */
     private String id;
+    /** 嵌套子流 ID（当步骤为子流时）。 */
     private String flowId;
+    /** 父认证流 ID。 */
     private String parentFlow;
 
+    /** @return 执行步骤 ID */
     public String getId() {
         return id;
     }
 
+    /** @param id 执行步骤 ID */
     public void setId(String id) {
         this.id = id;
     }
 
+    /** @return 嵌套子流 ID */
     public String getFlowId() {
         return flowId;
     }
 
+    /** @param flowId 嵌套子流 ID */
     public void setFlowId(String flowId) {
         this.flowId = flowId;
     }
 
+    /** @return 父认证流 ID */
     public String getParentFlow() {
         return parentFlow;
     }
 
+    /** @param parentFlow 父认证流 ID */
     public void setParentFlow(String parentFlow) {
         this.parentFlow = parentFlow;
     }

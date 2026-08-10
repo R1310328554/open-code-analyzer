@@ -25,35 +25,43 @@ import org.keycloak.util.JsonSerialization;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * Client Policies' (the set of all Client Policy) external representation class
+ * Client Policy 集合的外部 REST 表示，包含 realm 级策略与全局内置策略。
  *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class ClientPoliciesRepresentation {
+    /** realm 级 Client Policy 列表。 */
     protected List<ClientPolicyRepresentation> policies = new ArrayList<>();
+    /** Keycloak 内置的全局 Client Policy 列表。 */
     private List<ClientPolicyRepresentation> globalPolicies;
 
+    /** @return realm 级策略列表 */
     public List<ClientPolicyRepresentation> getPolicies() {
         return policies;
     }
 
+    /** @param policies realm 级策略列表 */
     public void setPolicies(List<ClientPolicyRepresentation> policies) {
         this.policies = policies;
     }
 
+    /** @return 全局内置策略列表 */
     public List<ClientPolicyRepresentation> getGlobalPolicies() {
         return globalPolicies;
     }
 
+    /** @param globalPolicies 全局内置策略列表 */
     public void setGlobalPolicies(List<ClientPolicyRepresentation> globalPolicies) {
         this.globalPolicies = globalPolicies;
     }
 
+    /** 基于 JSON 树结构计算哈希值，忽略字段顺序差异。 */
     @Override
     public int hashCode() {
         return JsonSerialization.mapper.convertValue(this, JsonNode.class).hashCode();
     }
 
+    /** 基于 JSON 树结构比较相等性。 */
     @Override
     public boolean equals(Object obj) {
         if (!(obj instanceof ClientPoliciesRepresentation)) return false;
