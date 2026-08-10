@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T10:22:27Z",
-  "files": [
-    "server-spi-private/src/main/java/org/keycloak/broker/provider/AbstractIdentityProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/broker/provider/AbstractIdentityProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/broker/provider/AbstractIdentityProviderMapper.java",
-    "server-spi-private/src/main/java/org/keycloak/broker/provider/AuthenticationRequest.java",
-    "server-spi-private/src/main/java/org/keycloak/broker/provider/BrokeredIdentityContext.java",
-    "server-spi-private/src/main/java/org/keycloak/broker/provider/ClientAssertionIdentityProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/broker/provider/ClientAssertionIdentityProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/broker/provider/ConfigConstants.java",
-    "server-spi-private/src/main/java/org/keycloak/broker/provider/DefaultDataMarshaller.java",
-    "server-spi-private/src/main/java/org/keycloak/broker/provider/ExchangeExternalToken.java",
-    "server-spi-private/src/main/java/org/keycloak/broker/provider/ExchangeTokenToIdentityProviderToken.java",
-    "server-spi-private/src/main/java/org/keycloak/broker/provider/IdentityBrokerException.java",
-    "server-spi-private/src/main/java/org/keycloak/broker/provider/IdentityProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/broker/provider/IdentityProviderDataMarshaller.java",
-    "server-spi-private/src/main/java/org/keycloak/broker/provider/IdentityProviderFactory.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2968,
-  "done": 3015
+  "done": 3030
 }
