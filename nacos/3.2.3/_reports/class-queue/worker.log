@@ -1783,3 +1783,18 @@
 2026-08-10T04:17:18Z DONE istio/src/main/java/com/alibaba/nacos/istio/mcp/NacosMcpService.java wave59b [15:30] istio common/mcp/config
 2026-08-10T04:17:18Z DONE istio/src/main/java/com/alibaba/nacos/istio/mcp/ServiceEntryMcpGenerator.java wave59b [15:30] istio common/mcp/config
 2026-08-10T04:17:18Z DONE istio/src/main/java/com/alibaba/nacos/istio/misc/IstioConfig.java wave59b [15:30] istio common/mcp/config
+2026-08-10T04:17:39Z DONE core/src/main/java/com/alibaba/nacos/core/utils/PageUtil.java wave59a [0:15] core utils/web + istio api start
+2026-08-10T04:17:39Z DONE core/src/main/java/com/alibaba/nacos/core/utils/RemoteUtils.java wave59a [0:15] core utils/web + istio api start
+2026-08-10T04:17:39Z DONE core/src/main/java/com/alibaba/nacos/core/utils/ReuseHttpRequest.java wave59a [0:15] core utils/web + istio api start
+2026-08-10T04:17:39Z DONE core/src/main/java/com/alibaba/nacos/core/utils/ReuseHttpServletRequest.java wave59a [0:15] core utils/web + istio api start
+2026-08-10T04:17:39Z DONE core/src/main/java/com/alibaba/nacos/core/utils/ReuseUploadFileHttpServletRequest.java wave59a [0:15] core utils/web + istio api start
+2026-08-10T04:17:39Z DONE core/src/main/java/com/alibaba/nacos/core/utils/StringPool.java wave59a [0:15] core utils/web + istio api start
+2026-08-10T04:17:39Z DONE core/src/main/java/com/alibaba/nacos/core/utils/WebUtils.java wave59a [0:15] core utils/web + istio api start
+2026-08-10T04:17:39Z DONE core/src/main/java/com/alibaba/nacos/core/web/FormSizeFilter.java wave59a [0:15] core utils/web + istio api start
+2026-08-10T04:17:39Z DONE core/src/main/java/com/alibaba/nacos/core/web/NacosCoreWebConfiguration.java wave59a [0:15] core utils/web + istio api start
+2026-08-10T04:17:39Z DONE core/src/main/java/com/alibaba/nacos/core/web/NacosWebBean.java wave59a [0:15] core utils/web + istio api start
+2026-08-10T04:17:39Z DONE core/src/main/java/com/alibaba/nacos/core/web/NacosWebServerListener.java wave59a [0:15] core utils/web + istio api start
+2026-08-10T04:17:39Z DONE core/src/main/java/io/grpc/netty/shaded/io/grpc/netty/NettyChannelHelper.java wave59a [0:15] core utils/web + istio api start
+2026-08-10T04:17:39Z DONE istio/src/main/java/com/alibaba/nacos/istio/IstioApp.java wave59a [0:15] core utils/web + istio api start
+2026-08-10T04:17:39Z DONE istio/src/main/java/com/alibaba/nacos/istio/api/ApiConstants.java wave59a [0:15] core utils/web + istio api start
+2026-08-10T04:17:39Z DONE istio/src/main/java/com/alibaba/nacos/istio/api/ApiGenerator.java wave59a [0:15] core utils/web + istio api start
