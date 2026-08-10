@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T12:04:19Z",
   "files": [
-    "services/src/main/java/org/keycloak/organization/protocol/mappers/saml/OrganizationMembershipMapper.java",
-    "services/src/main/java/org/keycloak/organization/utils/Organizations.java",
-    "services/src/main/java/org/keycloak/organization/validator/OrganizationMemberValidator.java",
-    "services/src/main/java/org/keycloak/partialimport/AbstractPartialImport.java",
-    "services/src/main/java/org/keycloak/partialimport/ClientRolesPartialImport.java",
-    "services/src/main/java/org/keycloak/partialimport/ClientsPartialImport.java",
-    "services/src/main/java/org/keycloak/partialimport/GroupsPartialImport.java",
-    "services/src/main/java/org/keycloak/partialimport/IdentityProviderMappersPartialImport.java",
-    "services/src/main/java/org/keycloak/partialimport/IdentityProvidersPartialImport.java",
-    "services/src/main/java/org/keycloak/partialimport/PartialImport.java",
-    "services/src/main/java/org/keycloak/partialimport/PartialImportManager.java",
-    "services/src/main/java/org/keycloak/partialimport/RealmRolesPartialImport.java",
-    "services/src/main/java/org/keycloak/partialimport/RolesPartialImport.java",
-    "services/src/main/java/org/keycloak/partialimport/UsersPartialImport.java",
-    "services/src/main/java/org/keycloak/protocol/AuthorizationEndpointBase.java",
     "services/src/main/java/org/keycloak/protocol/ProtocolMapperUtils.java",
     "services/src/main/java/org/keycloak/protocol/RestartLoginCookie.java",
     "services/src/main/java/org/keycloak/protocol/docker/DockerAuthV2Protocol.java",
@@ -33,5 +18,5 @@
     "services/src/main/java/org/keycloak/protocol/docker/installation/compose/DockerComposeYamlFile.java"
   ],
   "remaining_pending": 1678,
-  "done": 4290
+  "done": 4305
 }
