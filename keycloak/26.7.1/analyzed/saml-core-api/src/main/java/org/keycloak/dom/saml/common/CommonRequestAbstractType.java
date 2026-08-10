@@ -22,7 +22,7 @@ import javax.xml.datatype.XMLGregorianCalendar;
 import org.w3c.dom.Element;
 
 /**
- * SAML Request Abstract Type
+ * SAML 请求抽象基类，包含请求 ID、签发时间与 XML 数字签名。
  *
  * @author Anil.Saldhana@redhat.com
  * @since Jun 22, 2011
@@ -35,42 +35,48 @@ public abstract class CommonRequestAbstractType implements Serializable {
 
     protected Element signature;
 
+    /**
+     * 构造 SAML 请求基类。
+     *
+     * @param id 请求 ID
+     * @param issueInstant 签发时间
+     */
     public CommonRequestAbstractType(String id, XMLGregorianCalendar issueInstant) {
         this.id = id;
         this.issueInstant = issueInstant;
     }
 
     /**
-     * Gets the value of the id property.
+     * 获取请求 ID。
      *
-     * @return possible object is {@link String }
+     * @return 可能的值为 {@link String }
      */
     public String getID() {
         return id;
     }
 
     /**
-     * Gets the value of the issueInstant property.
+     * 获取请求签发时间。
      *
-     * @return possible object is {@link XMLGregorianCalendar }
+     * @return 可能的值为 {@link XMLGregorianCalendar }
      */
     public XMLGregorianCalendar getIssueInstant() {
         return issueInstant;
     }
 
     /**
-     * Gets the value of the signature property.
+     * 获取 XML 数字签名元素。
      *
-     * @return possible object is {@link org.keycloak.dom.xmlsec.w3.xmldsig.SignatureType }
+     * @return 可能的值为 {@link org.keycloak.dom.xmlsec.w3.xmldsig.SignatureType }
      */
     public Element getSignature() {
         return signature;
     }
 
     /**
-     * Sets the value of the signature property.
+     * 设置 XML 数字签名元素。
      *
-     * @param value allowed object is {@link org.keycloak.dom.xmlsec.w3.xmldsig.SignatureType }
+     * @param value 允许的值为 {@link org.keycloak.dom.xmlsec.w3.xmldsig.SignatureType }
      */
     public void setSignature(Element value) {
         this.signature = value;

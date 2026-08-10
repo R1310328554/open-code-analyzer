@@ -19,6 +19,8 @@ package org.keycloak.dom.saml.v1.assertion;
 import org.keycloak.dom.saml.common.CommonAdviceType;
 
 /**
+ * SAML 1.1 Advice 类型，继承 {@link org.keycloak.dom.saml.common.CommonAdviceType}，可引用断言 ID、嵌套断言或携带扩展元素。
+ *
  * <complexType name="AdviceType"> <choice minOccurs="0" maxOccurs="unbounded"> <element
  * ref="saml:AssertionIDReference"/>
  * <element ref="saml:Assertion"/> <any namespace="##other" processContents="lax"/> </choice> </complexType>

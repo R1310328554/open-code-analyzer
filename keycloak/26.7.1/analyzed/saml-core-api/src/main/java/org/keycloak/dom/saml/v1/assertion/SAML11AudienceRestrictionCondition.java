@@ -22,6 +22,8 @@ import java.util.Collections;
 import java.util.List;
 
 /**
+ * SAML 1.1 受众限制条件，限定断言可被哪些受众 URI 接受。
+ *
  * <complexType name="AudienceRestrictionConditionType"> <complexContent> <extension base="saml:ConditionAbstractType">
  * <sequence> <element ref="saml:Audience" maxOccurs="unbounded"/> </sequence>
  *
@@ -34,18 +36,22 @@ public class SAML11AudienceRestrictionCondition extends SAML11ConditionAbstractT
 
     protected List<URI> audience = new ArrayList<>();
 
+    /** 添加一个受众 URI。 */
     public void add(URI advice) {
         this.audience.add(advice);
     }
 
+    /** 批量添加受众 URI。 */
     public void addAll(List<URI> advice) {
         this.audience.addAll(advice);
     }
 
+    /** 移除一个受众 URI。 */
     public boolean remove(URI advice) {
         return this.audience.remove(advice);
     }
 
+    /** 获取受众 URI 列表（只读）。 */
     public List<URI> get() {
         return Collections.unmodifiableList(audience);
     }

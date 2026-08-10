@@ -19,7 +19,7 @@ package org.keycloak.dom.saml.common;
 import java.io.Serializable;
 
 /**
- * SAML Action Type
+ * SAML 操作（Action）类型，表示授权决策所针对的操作及其命名空间。
  *
  * @author Anil.Saldhana@redhat.com
  * @since Jun 22, 2011
@@ -31,27 +31,29 @@ public class CommonActionType implements Serializable {
     protected String value;
 
     /**
-     * Gets the value of the namespace property.
+     * 获取命名空间 URI。
      *
-     * @return possible object is {@link String }
+     * @return 可能的值为 {@link String }
      */
     public String getNamespace() {
         return namespace;
     }
 
     /**
-     * Sets the value of the namespace property.
+     * 设置命名空间 URI。
      *
-     * @param value allowed object is {@link String }
+     * @param value 允许的值为 {@link String }
      */
     public void setNamespace(String value) {
         this.namespace = value;
     }
 
+    /** 获取操作名称或标识字符串。 */
     public String getValue() {
         return value;
     }
 
+    /** 设置操作名称或标识字符串。 */
     public void setValue(String value) {
         this.value = value;
     }

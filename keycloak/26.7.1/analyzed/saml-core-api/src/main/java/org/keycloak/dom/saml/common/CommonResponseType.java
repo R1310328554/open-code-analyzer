@@ -22,6 +22,8 @@ import javax.xml.datatype.XMLGregorianCalendar;
 import org.w3c.dom.Element;
 
 /**
+ * SAML 响应类型，包含响应 ID、签发时间、关联请求 ID 与 XML 数字签名。
+ *
  * @author Anil.Saldhana@redhat.com
  * @since Jun 22, 2011
  */
@@ -35,60 +37,66 @@ public class CommonResponseType implements Serializable {
 
     protected Element signature;
 
+    /**
+     * 构造 SAML 响应。
+     *
+     * @param id 响应 ID
+     * @param issueInstant 签发时间
+     */
     public CommonResponseType(String id, XMLGregorianCalendar issueInstant) {
         this.id = id;
         this.issueInstant = issueInstant;
     }
 
     /**
-     * Gets the value of the id property.
+     * 获取响应 ID。
      *
-     * @return possible object is {@link String }
+     * @return 可能的值为 {@link String }
      */
     public String getID() {
         return id;
     }
 
     /**
-     * Gets the value of the issueInstant property.
+     * 获取响应签发时间。
      *
-     * @return possible object is {@link XMLGregorianCalendar }
+     * @return 可能的值为 {@link XMLGregorianCalendar }
      */
     public XMLGregorianCalendar getIssueInstant() {
         return issueInstant;
     }
 
     /**
-     * Gets the value of the inResponseTo property.
+     * 获取所响应的请求 ID（InResponseTo）。
      *
-     * @return possible object is {@link String }
+     * @return 可能的值为 {@link String }
      */
     public String getInResponseTo() {
         return inResponseTo;
     }
 
     /**
-     * Sets the value of the inResponseTo property.
+     * 设置所响应的请求 ID（InResponseTo）。
      *
-     * @param value allowed object is {@link String }
+     * @param value 允许的值为 {@link String }
      */
     public void setInResponseTo(String value) {
         this.inResponseTo = value;
     }
 
     /**
-     * Gets the value of the signature property.
+     * 获取 XML 数字签名元素。
      *
-     * @return possible object is {@link org.keycloak.dom.xmlsec.w3.xmldsig.SignatureType }
+     * @return 可能的值为 {@link org.keycloak.dom.xmlsec.w3.xmldsig.SignatureType }
      */
     public Element getSignature() {
         return signature;
     }
 
     /**
-     * Sets the value of the signature property.
+     * 设置 XML 数字签名元素。
      *
-     * @param value allowed object is {@link org.keycloak.dom.xmlsec.w3.xmldsig.SignatureType }
+     * @param value 允许的值为 {@link org.keycloak.dom.xmlsec.w3.xmldsig.SignatureType }
      */
     public void setSignature(Element value) {
         this.signature = value;

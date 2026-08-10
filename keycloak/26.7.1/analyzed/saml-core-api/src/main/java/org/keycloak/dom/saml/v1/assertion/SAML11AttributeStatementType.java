@@ -21,6 +21,8 @@ import java.util.Collections;
 import java.util.List;
 
 /**
+ * SAML 1.1 属性声明（AttributeStatement），关联主体并携带一组属性。
+ *
  * <complexType name="AttributeStatementType"> <complexContent> <extension base="saml:SubjectStatementAbstractType">
  * <sequence>
  * <element ref="saml:Attribute" maxOccurs="unbounded"/>
@@ -34,18 +36,22 @@ public class SAML11AttributeStatementType extends SAML11SubjectStatementType {
 
     protected List<SAML11AttributeType> attribute = new ArrayList<>();
 
+    /** 添加一条属性。 */
     public void add(SAML11AttributeType aAttribute) {
         this.attribute.add(aAttribute);
     }
 
+    /** 批量添加属性。 */
     public void addAllAttributes(List<SAML11AttributeType> attribList) {
         this.attribute.addAll(attribList);
     }
 
+    /** 移除一条属性。 */
     public boolean remove(SAML11AttributeType anAttrib) {
         return this.attribute.remove(anAttrib);
     }
 
+    /** 获取属性列表（只读）。 */
     public List<SAML11AttributeType> get() {
         return Collections.unmodifiableList(attribute);
     }

@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * SAML Advice Type
+ * SAML Advice 类型，可携带断言引用、嵌套断言或其他扩展元素。
  *
  * @author Anil.Saldhana@redhat.com
  * @since Jun 22, 2011
@@ -32,29 +32,29 @@ public class CommonAdviceType implements Serializable {
     protected List<Object> advices = new ArrayList<>();
 
     /**
-     * Add an advice
+     * 添加一条 Advice 元素。
      *
-     * @param obj
+     * @param obj Advice 对象
      */
     public void addAdvice(Object obj) {
         advices.add(obj);
     }
 
     /**
-     * Remove an advice
+     * 移除一条 Advice 元素。
      *
-     * @param advice
+     * @param advice 待移除对象
      *
-     * @return
+     * @return 是否成功移除
      */
     public boolean remove(Object advice) {
         return this.advices.remove(advice);
     }
 
     /**
-     * Gets the advices. (Read only list)
+     * 获取 Advice 列表（只读）。
      *
-     * @return {@link List} read only
+     * @return 只读 {@link List}
      */
     public List<Object> getAdvices() {
         return Collections.unmodifiableList(advices);

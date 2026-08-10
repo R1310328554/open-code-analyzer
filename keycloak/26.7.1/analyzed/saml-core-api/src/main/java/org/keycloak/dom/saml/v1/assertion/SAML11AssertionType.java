@@ -26,6 +26,8 @@ import org.keycloak.dom.saml.common.CommonAssertionType;
 import org.w3c.dom.Element;
 
 /**
+ * SAML 1.1 断言类型，包含版本号、条件、Advice、各类 Statement、签名与签发者。
+ *
  * <complexType name="AssertionType"> <sequence> <element ref="saml:Conditions" minOccurs="0"/> <element
  * ref="saml:Advice"
  * minOccurs="0"/> <choice maxOccurs="unbounded"> <element ref="saml:Statement"/> <element
@@ -60,62 +62,82 @@ public class SAML11AssertionType extends CommonAssertionType {
 
     protected String issuer;
 
+    /**
+     * 构造 SAML 1.1 断言。
+     *
+     * @param iD 断言 ID
+     * @param issueInstant 签发时间
+     */
     public SAML11AssertionType(String iD, XMLGregorianCalendar issueInstant) {
         super(iD, issueInstant);
     }
 
+    /** 获取主版本号（SAML 1.1 默认为 1）。 */
     public int getMajorVersion() {
         return majorVersion;
     }
 
+    /** 获取次版本号（SAML 1.1 默认为 1）。 */
     public int getMinorVersion() {
         return minorVersion;
     }
 
+    /** 添加一条 Statement。 */
     public void add(SAML11StatementAbstractType statement) {
         this.statements.add(statement);
     }
 
+    /** 批量添加 Statement。 */
     public void addAllStatements(List<SAML11StatementAbstractType> statement) {
         this.statements.addAll(statement);
     }
 
+    /** 移除一条 Statement。 */
     public boolean remove(SAML11StatementAbstractType statement) {
         return this.statements.remove(statement);
     }
 
+    /** 获取 Statement 列表（只读）。 */
     public List<SAML11StatementAbstractType> getStatements() {
         return Collections.unmodifiableList(statements);
     }
 
+    /** 获取断言条件。 */
     public SAML11ConditionsType getConditions() {
         return conditions;
     }
 
+    /** 设置断言条件。 */
     public void setConditions(SAML11ConditionsType conditions) {
         this.conditions = conditions;
     }
 
+    /** 获取 Advice 元素。 */
     public SAML11AdviceType getAdvice() {
         return advice;
     }
 
+    /** 设置 Advice 元素。 */
     public void setAdvice(SAML11AdviceType advice) {
         this.advice = advice;
     }
 
+    /** 获取 XML 数字签名元素。 */
     public Element getSignature() {
         return signature;
     }
 
+    /** 设置 XML 数字签名元素。 */
     public void setSignature(Element signature) {
         this.signature = signature;
     }
 
+    /** 获取断言签发者标识。 */
     public String getIssuer() {
         return issuer;
     }
 
+    /** 设置断言签发者标识。 */
     public void setIssuer(String issuer) {
         this.issuer = issuer;
     }

@@ -22,6 +22,8 @@ import java.util.Collections;
 import java.util.List;
 
 /**
+ * SAML 1.1 属性类型，在属性指示符基础上附加一个或多个属性值。
+ *
  * <complexType name="AttributeType"> <complexContent> <extension base="saml:AttributeDesignatorType"> <sequence>
  * <element
  * ref="saml:AttributeValue" maxOccurs="unbounded"/> </sequence> </extension> </complexContent>
@@ -35,22 +37,32 @@ public class SAML11AttributeType extends SAML11AttributeDesignatorType {
 
     protected List<Object> attributeValues = new ArrayList<>();
 
+    /**
+     * 构造 SAML 1.1 属性。
+     *
+     * @param attributeName 属性名称
+     * @param attributeNamespace 属性命名空间 URI
+     */
     public SAML11AttributeType(String attributeName, URI attributeNamespace) {
         super(attributeName, attributeNamespace);
     }
 
+    /** 添加一个属性值。 */
     public void add(Object attribValue) {
         this.attributeValues.add(attribValue);
     }
 
+    /** 批量添加属性值。 */
     public void addAll(List<Object> attribValueList) {
         this.attributeValues.addAll(attribValueList);
     }
 
+    /** 移除一个属性值。 */
     public boolean remove(Object attribVal) {
         return this.attributeValues.remove(attribVal);
     }
 
+    /** 获取属性值列表（只读）。 */
     public List<Object> get() {
         return Collections.unmodifiableList(attributeValues);
     }

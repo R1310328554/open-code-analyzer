@@ -20,7 +20,7 @@ import java.io.Serializable;
 import javax.xml.datatype.XMLGregorianCalendar;
 
 /**
- * SAML AssertionType
+ * SAML 断言基类，包含断言唯一标识与签发时间。
  *
  * @author Anil.Saldhana@redhat.com
  * @since Jun 21, 2011
@@ -31,6 +31,12 @@ public class CommonAssertionType implements Serializable {
 
     protected String ID;
 
+    /**
+     * 构造断言基类实例。
+     *
+     * @param iD 断言 ID，不可为 null
+     * @param issueInstant 签发时间，不可为 null
+     */
     public CommonAssertionType(String iD, XMLGregorianCalendar issueInstant) {
         if (iD == null)
             throw new IllegalArgumentException("iD is null");
@@ -41,10 +47,12 @@ public class CommonAssertionType implements Serializable {
         ID = iD;
     }
 
+    /** 获取断言签发时间。 */
     public XMLGregorianCalendar getIssueInstant() {
         return issueInstant;
     }
 
+    /** 获取断言 ID。 */
     public String getID() {
         return ID;
     }

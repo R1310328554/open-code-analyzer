@@ -39,31 +39,33 @@ import java.util.List;
  *   &lt;/complexContent>
  * &lt;/complexType>
  * </pre>
+ *
+ * SAML 状态详情类型，可包含任意扩展元素以补充状态信息。
  */
 public class CommonStatusDetailType implements Serializable {
 
     protected List<Object> any = new ArrayList<>();
 
     /**
-     * Add status detail
+     * 添加状态详情元素。
      *
-     * @param obj
+     * @param obj 详情对象
      */
     public void addStatusDetail(Object obj) {
         this.any.add(obj);
     }
 
     /**
-     * Remove status detail
+     * 移除状态详情元素。
      *
-     * @param obj
+     * @param obj 待移除对象
      */
     public void removeStatusDetail(Object obj) {
         this.any.remove(obj);
     }
 
     /**
-     * Gets the value of the any property. Read-Only list
+     * 获取状态详情元素列表（只读）。
      */
     public List<Object> getAny() {
         return Collections.unmodifiableList(this.any);

@@ -19,6 +19,8 @@ package org.keycloak.dom.saml.v1.assertion;
 import java.net.URI;
 
 /**
+ * SAML 1.1 属性指示符，指定属性名称与命名空间 URI。
+ *
  * <complexType name="AttributeDesignatorType"> <attribute name="AttributeName" type="string" use="required"/>
  * <attribute
  * name="AttributeNamespace" type="anyURI" use="required"/> </complexType>
@@ -32,15 +34,23 @@ public class SAML11AttributeDesignatorType {
 
     protected URI attributeNamespace;
 
+    /**
+     * 构造属性指示符。
+     *
+     * @param attributeName 属性名称
+     * @param attributeNamespace 属性命名空间 URI
+     */
     public SAML11AttributeDesignatorType(String attributeName, URI attributeNamespace) {
         this.attributeName = attributeName;
         this.attributeNamespace = attributeNamespace;
     }
 
+    /** 获取属性名称。 */
     public String getAttributeName() {
         return attributeName;
     }
 
+    /** 获取属性命名空间 URI。 */
     public URI getAttributeNamespace() {
         return attributeNamespace;
     }

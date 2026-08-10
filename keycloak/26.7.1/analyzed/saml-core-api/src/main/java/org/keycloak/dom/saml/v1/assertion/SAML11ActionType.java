@@ -19,7 +19,7 @@ package org.keycloak.dom.saml.v1.assertion;
 import org.keycloak.dom.saml.common.CommonActionType;
 
 /**
- * SAML11 Action Type
+ * SAML 1.1 操作（Action）类型，继承 {@link org.keycloak.dom.saml.common.CommonActionType}，对应 XML Schema ActionType。
  *
  * <complexType name="ActionType"> <simpleContent> <extension base="string"> <attribute name="Namespace"
  * type="anyURI"/>

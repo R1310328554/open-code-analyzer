@@ -20,6 +20,8 @@ import java.io.Serializable;
 import javax.xml.datatype.XMLGregorianCalendar;
 
 /**
+ * SAML 条件基类，定义断言有效的时间窗口（NotBefore / NotOnOrAfter）。
+ *
  * @author Anil.Saldhana@redhat.com
  * @since Jun 22, 2011
  */
@@ -30,36 +32,36 @@ public class CommonConditionsType implements Serializable {
     protected XMLGregorianCalendar notOnOrAfter;
 
     /**
-     * Gets the value of the notBefore property.
+     * 获取条件生效起始时间（NotBefore）。
      *
-     * @return possible object is {@link XMLGregorianCalendar }
+     * @return 可能的值为 {@link XMLGregorianCalendar }
      */
     public XMLGregorianCalendar getNotBefore() {
         return notBefore;
     }
 
     /**
-     * Sets the value of the notBefore property.
+     * 设置条件生效起始时间（NotBefore）。
      *
-     * @param value allowed object is {@link XMLGregorianCalendar }
+     * @param value 允许的值为 {@link XMLGregorianCalendar }
      */
     public void setNotBefore(XMLGregorianCalendar value) {
         this.notBefore = value;
     }
 
     /**
-     * Gets the value of the notOnOrAfter property.
+     * 获取条件失效时间（NotOnOrAfter，含该时刻即失效）。
      *
-     * @return possible object is {@link XMLGregorianCalendar }
+     * @return 可能的值为 {@link XMLGregorianCalendar }
      */
     public XMLGregorianCalendar getNotOnOrAfter() {
         return notOnOrAfter;
     }
 
     /**
-     * Sets the value of the notOnOrAfter property.
+     * 设置条件失效时间（NotOnOrAfter）。
      *
-     * @param value allowed object is {@link XMLGregorianCalendar }
+     * @param value 允许的值为 {@link XMLGregorianCalendar }
      */
     public void setNotOnOrAfter(XMLGregorianCalendar value) {
         this.notOnOrAfter = value;
