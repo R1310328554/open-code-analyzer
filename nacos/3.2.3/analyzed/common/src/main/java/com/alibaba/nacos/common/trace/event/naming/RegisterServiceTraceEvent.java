@@ -17,6 +17,8 @@
 package com.alibaba.nacos.common.trace.event.naming;
 
 /**
+ * 注册服务追踪事件：当 Naming 模块创建新服务元数据时发布，
+ * 事件类型为 {@code REGISTER_SERVICE_TRACE_EVENT}。
  * Naming deregister service trace event.
  *
  * @author yanda
@@ -25,6 +27,14 @@ public class RegisterServiceTraceEvent extends NamingTraceEvent {
     
     private static final long serialVersionUID = -8568231862586636388L;
     
+    /**
+     * 构造服务注册追踪事件。
+     *
+     * @param eventTime 事件时间戳
+     * @param serviceNamespace 命名空间
+     * @param serviceGroup 分组
+     * @param serviceName 服务名
+     */
     public RegisterServiceTraceEvent(long eventTime, String serviceNamespace, String serviceGroup,
         String serviceName) {
         super("REGISTER_SERVICE_TRACE_EVENT", eventTime, serviceNamespace, serviceGroup,

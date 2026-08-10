@@ -17,12 +17,26 @@
 package com.alibaba.nacos.common.trace.event.naming;
 
 /**
+ * 批量注册实例追踪事件：继承 {@link RegisterInstanceTraceEvent}，事件类型为
+ * {@code BATCH_REGISTER_INSTANCE_TRACE_EVENT}，用于记录一次 RPC/HTTP 批量注册中的单条实例。
  * Naming register instance trace event.
  *
  * @author xiweng.yy
  */
 public class BatchRegisterInstanceTraceEvent extends RegisterInstanceTraceEvent {
     
+    /**
+     * 构造批量注册实例追踪事件。
+     *
+     * @param eventTime 事件时间戳
+     * @param clientIp 客户端 IP
+     * @param rpc 是否经 RPC 通道注册
+     * @param serviceNamespace 服务命名空间
+     * @param serviceGroup 服务分组
+     * @param serviceName 服务名
+     * @param instanceIp 实例 IP
+     * @param instancePort 实例端口
+     */
     public BatchRegisterInstanceTraceEvent(long eventTime, String clientIp, boolean rpc,
         String serviceNamespace,
         String serviceGroup, String serviceName, String instanceIp, int instancePort) {

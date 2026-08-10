@@ -19,6 +19,8 @@ package com.alibaba.nacos.common.trace.event.naming;
 import com.alibaba.nacos.common.trace.event.TraceEvent;
 
 /**
+ * Naming 模块追踪事件基类：继承 {@link com.alibaba.nacos.common.trace.event.TraceEvent}，
+ * 统一将 namespace/group/name 映射为服务的命名空间、分组与服务名；标记为插件事件。
  * Naming trace event.
  *
  * @author yanda
@@ -27,12 +29,22 @@ public class NamingTraceEvent extends TraceEvent {
     
     private static final long serialVersionUID = 2923077640400851816L;
     
+    /**
+     * 构造 Naming 追踪事件。
+     *
+     * @param eventType 事件类型常量
+     * @param eventTime 发生时间戳
+     * @param serviceNamespace 服务命名空间
+     * @param serviceGroup 服务分组
+     * @param name 服务名
+     */
     public NamingTraceEvent(String eventType, long eventTime, String serviceNamespace,
         String serviceGroup,
         String name) {
         super(eventType, eventTime, serviceNamespace, serviceGroup, name);
     }
     
+    /** 标记为插件事件，经 NotifyCenter 插件通道异步分发 */
     @Override
     public boolean isPluginEvent() {
         return true;

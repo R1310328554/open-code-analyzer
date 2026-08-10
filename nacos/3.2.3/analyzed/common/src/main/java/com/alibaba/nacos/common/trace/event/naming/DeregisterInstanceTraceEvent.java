@@ -19,6 +19,8 @@ package com.alibaba.nacos.common.trace.event.naming;
 import com.alibaba.nacos.common.trace.DeregisterInstanceReason;
 
 /**
+ * 注销实例追踪事件：记录实例从 Naming 注册表移除的完整上下文，
+ * 包含客户端 IP、是否 RPC、实例地址及 {@link com.alibaba.nacos.common.trace.DeregisterInstanceReason} 原因。
  * Naming deregister instance trace event.
  *
  * @author yanda
@@ -27,36 +29,47 @@ public class DeregisterInstanceTraceEvent extends NamingTraceEvent {
     
     private static final long serialVersionUID = 3850573686472190256L;
     
+    /** 发起注销的客户端 IP */
     private final String clientIp;
     
+    /** 是否通过 RPC 通道注销 */
     private final boolean rpc;
     
+    /** 被注销实例 IP */
     private final String instanceIp;
     
+    /** 被注销实例端口 */
     private final int instancePort;
     
+    /** 实例注销原因枚举 */
     public final DeregisterInstanceReason reason;
     
+    /** 获取客户端 IP */
     public String getClientIp() {
         return clientIp;
     }
     
+    /** 是否为 RPC 注销 */
     public boolean isRpc() {
         return rpc;
     }
     
+    /** 获取实例 IP */
     public String getInstanceIp() {
         return instanceIp;
     }
     
+    /** 获取实例端口 */
     public int getInstancePort() {
         return instancePort;
     }
     
+    /** 返回 {@code ip:port} 格式的实例网络地址 */
     public String toInetAddr() {
         return instanceIp + ":" + instancePort;
     }
     
+    /** 获取注销原因 */
     public DeregisterInstanceReason getReason() {
         return reason;
     }
