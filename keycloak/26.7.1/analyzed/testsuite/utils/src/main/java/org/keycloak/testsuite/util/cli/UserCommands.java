@@ -30,10 +30,13 @@ import org.keycloak.models.UserCredentialModel;
 import org.keycloak.models.UserModel;
 
 /**
+ * 测试套件 CLI 中的用户管理命令集合（创建、删除、计数、查询）。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class UserCommands {
 
+    /** 批量创建用户并可选分配领域/客户端角色的命令。 */
     public static class Create extends AbstractCommand {
 
         private String usernamePrefix;
@@ -46,6 +49,10 @@ public class UserCommands {
             return "createUsers";
         }
 
+        /**
+         * 按批次创建带前缀的用户，设置密码、邮箱并授予指定角色。
+         * 参数：用户名前缀、密码、领域、起始偏移、总数、批次大小、逗号分隔角色列表。
+         */
         @Override
         protected void doRunCommand(KeycloakSession session) {
             usernamePrefix = getArg(0);
@@ -61,6 +68,7 @@ public class UserCommands {
             log.infof("Command finished. All users from %s to %s created", usernamePrefix + first, usernamePrefix + (first + count - 1));
         }
 
+        /** 在单个批次事务中创建连续编号的用户。 */
         private void createUsersInBatch(KeycloakSession session, int first, int count) {
             RealmModel realm = session.realms().getRealmByName(realmName);
             if (realm == null) {
@@ -95,6 +103,7 @@ public class UserCommands {
                     "Example usage: " + super.printUsage() + " test test demo 0 500 100 user,admin";
         }
 
+        /** 解析逗号分隔的角色列表，支持 {@code clientId/roleName} 格式的客户端角色。 */
         private Set<RoleModel> findRoles(RealmModel realm, String rolesList) {
             Set<RoleModel> result = new HashSet<>();
 
@@ -128,6 +137,7 @@ public class UserCommands {
     }
 
 
+    /** 按前缀与偏移批量删除用户的命令。 */
     public static class Remove extends AbstractCommand {
 
         @Override
@@ -135,6 +145,7 @@ public class UserCommands {
             return "removeUsers";
         }
 
+        /** 删除指定范围内带前缀的用户，不存在时记录错误。 */
         @Override
         protected void doRunCommand(KeycloakSession session) {
             String usernamePrefix = getArg(0);
@@ -169,6 +180,7 @@ public class UserCommands {
     }
 
 
+    /** 统计领域中用户总数的命令。 */
     public static class Count extends AbstractCommand {
 
         @Override
@@ -176,6 +188,7 @@ public class UserCommands {
             return "getUsersCount";
         }
 
+        /** 输出指定领域的 {@code getUsersCount} 结果。 */
         @Override
         protected void doRunCommand(KeycloakSession session) {
             String realmName = getArg(0);
@@ -196,6 +209,7 @@ public class UserCommands {
     }
 
 
+    /** 按用户名查询用户详情及角色映射的命令。 */
     public static class GetUser extends AbstractCommand {
 
         @Override
@@ -203,6 +217,7 @@ public class UserCommands {
             return "getUser";
         }
 
+        /** 查询指定用户并输出 ID、邮箱及角色映射列表。 */
         @Override
         protected void doRunCommand(KeycloakSession session) {
             String realmName = getArg(0);
@@ -222,6 +237,7 @@ public class UserCommands {
             }
         }
 
+        /** 收集用户的领域角色与 {@code clientId/role} 格式的客户端角色名称。 */
         private List<String> getRoleMappings(UserModel user) {
             return user.getRoleMappingsStream()
                     .map(role -> {

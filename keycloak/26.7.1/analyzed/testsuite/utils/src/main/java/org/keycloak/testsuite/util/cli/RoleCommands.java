@@ -25,10 +25,13 @@ import org.keycloak.models.RoleContainerModel;
 import org.keycloak.models.RoleModel;
 
 /**
+ * 测试套件 CLI 中的角色管理命令集合。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class RoleCommands {
 
+    /** 在领域或客户端容器中批量创建角色的命令。 */
     public static class CreateRoles extends AbstractCommand {
 
         private String rolePrefix;
@@ -39,6 +42,10 @@ public class RoleCommands {
             return "createRoles";
         }
 
+        /**
+         * 按批次创建带前缀的角色。
+         * 参数：角色前缀、容器（领域名或 领域/客户端Id）、起始偏移、总数、批次大小。
+         */
         @Override
         protected void doRunCommand(KeycloakSession session) {
             rolePrefix = getArg(0);
@@ -54,6 +61,7 @@ public class RoleCommands {
             log.infof("Command finished. All roles from %s to %s created", rolePrefix + first, rolePrefix + (first + count - 1));
         }
 
+        /** 在指定角色容器中创建连续编号的角色。 */
         private void createRolesInBatch(KeycloakSession session, String roleContainer, String rolePrefix, int first, int count) {
             RoleContainerModel container = getRoleContainer(session, roleContainer);
 
@@ -65,6 +73,7 @@ public class RoleCommands {
             log.infof("Roles from %s to %s created", rolePrefix + first, rolePrefix + (last - 1));
         }
 
+        /** 解析角色容器：仅领域名时返回 {@link RealmModel}，含 {@code /} 时返回客户端。 */
         private RoleContainerModel getRoleContainer(KeycloakSession session, String roleContainer) {
             String[] parts = roleContainer.split("/");
             String realmName = parts[0];

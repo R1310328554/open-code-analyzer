@@ -34,17 +34,25 @@ import org.keycloak.services.managers.UserSessionManager;
 
 
 /**
+ * 批量创建并持久化用户会话的测试命令，用于填充会话持久化存储。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class PersistSessionsCommand extends AbstractCommand {
 
+    /** 全局用户序号计数器，保证用户名唯一。 */
     private AtomicInteger userCounter = new AtomicInteger();
 
+    /** {@inheritDoc} */
     @Override
     public String getName() {
         return "persistSessions";
     }
 
+    /**
+     * 按批次创建内存会话并写入持久化层。
+     * 参数：总会话数、每事务批次大小。
+     */
     @Override
     public void doRunCommand(KeycloakSession sess) {
         final int count = getIntArg(0);
@@ -58,7 +66,7 @@ public class PersistSessionsCommand extends AbstractCommand {
             remaining = remaining - createInThisBatch;
         }
 
-        // Write some summary
+        // 事务结束后输出持久化存储中的会话总数
         KeycloakModelUtils.runJobInTransaction(sessionFactory, new KeycloakSessionTask() {
 
             @Override
@@ -71,6 +79,7 @@ public class PersistSessionsCommand extends AbstractCommand {
     }
 
 
+    /** 在一个批次中创建内存会话，随后将其持久化到数据库。 */
     private void createSessionsBatch(final int countInThisBatch) {
         final List<String> userSessionIds = new LinkedList<>();
 
@@ -103,7 +112,7 @@ public class PersistSessionsCommand extends AbstractCommand {
 
         log.infof("%d sessions created in infinispan storage", countInThisBatch);
 
-        // Persist them now
+        // 将本批次创建的会话与用户/客户端会话写入持久化提供者
 
         KeycloakModelUtils.runJobInTransaction(sessionFactory, new KeycloakSessionTask() {
 
@@ -129,6 +138,7 @@ public class PersistSessionsCommand extends AbstractCommand {
         });
     }
 
+    /** {@inheritDoc} */
     @Override
     public String printUsage() {
         return super.printUsage() + " <sessions-count> <sessions-count-per-each-transaction>";

@@ -30,15 +30,22 @@ import org.keycloak.models.session.UserSessionPersisterProvider;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
 /**
+ * 并发加载持久化用户会话的测试命令，用于验证 {@link UserSessionPersisterProvider} 分页读取。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class LoadPersistentSessionsCommand extends AbstractCommand {
 
+    /** {@inheritDoc} */
     @Override
     public String getName() {
         return "loadPersistentSessions";
     }
 
+    /**
+     * 使用多 worker 线程并行分页加载全部持久化会话，直至返回数量小于 limit。
+     * 参数：worker 数量、每 worker 每轮加载上限。
+     */
     @Override
     protected void doRunCommand(KeycloakSession session) {
         final int workersCount = getIntArg(0);
@@ -51,7 +58,7 @@ public class LoadPersistentSessionsCommand extends AbstractCommand {
         AtomicBoolean finished = new AtomicBoolean(false);
         int i=0;
 
-        while (!finished.get()) {
+        // 每轮启动 workersCount 个线程并行加载，以 lastSessionId 作为游标推进
             if (i % 16 == 0) {
                 log.infof("Starting iteration: %s . lastCreatedOn: %d, lastSessionId: %s", i, lastSessionId.get());
             }
@@ -92,12 +99,14 @@ public class LoadPersistentSessionsCommand extends AbstractCommand {
         log.info("All persistent sessions loaded successfully");
     }
 
+    /** {@inheritDoc} */
     @Override
     public String printUsage() {
         return super.printUsage() + " <workers-count (for example 8)> <limit (for example 64)>";
     }
 
 
+    /** 在独立事务中按 offset 与 lastSessionId 加载一批用户会话的工作线程。 */
     private static class MyWorker implements Runnable {
 
         private final int workerId;
@@ -114,6 +123,7 @@ public class LoadPersistentSessionsCommand extends AbstractCommand {
             this.sessionFactory = sessionFactory;
         }
 
+        /** 在事务中调用持久化提供者加载会话流并收集结果。 */
         @Override
         public void run() {
             KeycloakModelUtils.runJobInTransaction(sessionFactory, (keycloakSession) -> {

@@ -33,7 +33,9 @@ import org.keycloak.testsuite.KeycloakServer;
 import org.jboss.logging.Logger;
 
 /**
- * See Testsuite.md (section how to create many users and offline sessions)
+ * Keycloak 测试套件交互式 CLI 入口，注册并调度各类 {@link AbstractCommand}。
+ * <p>
+ * 用法详见 Testsuite.md（批量创建用户与会话等章节）。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
@@ -41,6 +43,7 @@ public class TestsuiteCLI {
 
     private static final Logger log = Logger.getLogger(TestsuiteCLI.class);
 
+    /** 内置命令类列表，构造时自动注册。 */
     private static final Class<?>[] BUILTIN_COMMANDS = {
             ExitCommand.class,
             HelpCommand.class,
@@ -75,10 +78,15 @@ public class TestsuiteCLI {
     private final KeycloakSessionFactory sessionFactory;
     private final Map<String, Class<? extends AbstractCommand>> commands = new LinkedHashMap<>();
 
+    /**
+     * 从 {@link KeycloakServer} 获取会话工厂并注册所有内置命令。
+     *
+     * @param server 测试用 Keycloak 服务器实例
+     */
     public TestsuiteCLI(KeycloakServer server) {
         this.sessionFactory = server.getSessionFactory();
 
-        // register builtin commands
+        // 实例化每个内置命令并将其名称映射到命令类
         for (Class<?> clazz : BUILTIN_COMMANDS) {
             Class<? extends AbstractCommand> commandClazz = (Class<? extends AbstractCommand>) clazz;
             try {
@@ -90,11 +98,16 @@ public class TestsuiteCLI {
         }
     }
 
+    /** 注册自定义 CLI 命令。 */
     public void registerCommand(String name, Class<? extends AbstractCommand> command) {
         commands.put(name, command);
     }
 
-    // WARNING: Stdin blocking operation
+    /**
+     * 启动 REPL 循环，从标准输入读取并执行命令（阻塞 stdin）。
+     *
+     * @throws IOException 读取输入流失败时抛出
+     */
     public void start() throws IOException {
         log.info("Starting testsuite CLI. Exit with 'exit' . Available commands with 'help' ");
 
@@ -116,7 +129,7 @@ public class TestsuiteCLI {
                         command.injectProperties(args, this, sessionFactory);
                         command.runCommand();
 
-                        // Just special handling of ExitCommand
+                        // 退出命令触发后直接结束 REPL 循环
                         if (command instanceof ExitCommand) {
                             return;
                         }
@@ -136,6 +149,7 @@ public class TestsuiteCLI {
         }
     }
 
+    /** 退出 CLI 的内置命令。 */
     public static class ExitCommand extends AbstractCommand {
 
         @Override
@@ -159,10 +173,12 @@ public class TestsuiteCLI {
         }
     }
 
+    /** 列出所有已注册命令名称的帮助命令。 */
     public static class HelpCommand extends AbstractCommand {
 
         private List<String> commandNames = new ArrayList<>();
 
+        /** 从 CLI 实例收集全部命令名以供 help 输出。 */
         @Override
         public void injectProperties(List<String> args, TestsuiteCLI cli, KeycloakSessionFactory sessionFactory) {
             for (String commandName : cli.commands.keySet()) {

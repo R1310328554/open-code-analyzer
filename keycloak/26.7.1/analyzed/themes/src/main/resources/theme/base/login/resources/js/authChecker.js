@@ -1,47 +1,46 @@
+// 会话轮询间隔（毫秒）
 const SESSION_POLLING_INTERVAL = 2000;
+// 认证会话哈希校验延迟（毫秒）
 const AUTH_SESSION_TIMEOUT_MILLISECS = 1000;
+// 页面加载时的 KEYCLOAK_SESSION Cookie 快照
 const initialSession = getSession();
 const forms = Array.from(document.forms);
 let timeout;
 
-// Stop polling for a session when a form is submitted to prevent unexpected redirects.
-// This is required as Safari does not support the 'beforeunload' event properly.
-// See: https://bugs.webkit.org/show_bug.cgi?id=219102
+// 表单提交时停止会话轮询，避免意外重定向（Safari 对 beforeunload 支持不完整）
 forms.forEach((form) =>
   form.addEventListener("submit", () => stopSessionPolling()),
 );
 
-// Stop polling for a session when the page is unloaded to prevent unexpected redirects.
+// 页面卸载时停止轮询，防止离开页面后仍触发重定向
 globalThis.addEventListener("beforeunload", () => stopSessionPolling());
 
 /**
- * Starts polling to check if a new session was started in another context (e.g. a tab or window), and redirects to the specified URL if a session is detected.
- * @param {string} redirectUrl - The URL to redirect to if a new session is detected.
+ * 轮询检测是否在其他标签页/窗口建立了新会话，若检测到则跳转到指定 URL。
+ * @param {string} redirectUrl - 检测到新会话时的重定向地址
  */
 export function startSessionPolling(redirectUrl) {
   if (initialSession) {
-    // We started with a session, so there is nothing to do, exit.
+    // 页面初始已有会话，无需轮询
     return;
   }
 
   const session = getSession();
 
   if (!session) {
-    // No new session detected, check again later.
+    // 尚未检测到新会话，延迟后继续轮询
     timeout = setTimeout(
       () => startSessionPolling(redirectUrl),
       SESSION_POLLING_INTERVAL,
     );
   } else {
-    // A new session was detected, redirect to the specified URL and stop polling.
+    // 检测到新会话，跳转并停止轮询
     location.href = redirectUrl;
     stopSessionPolling();
   }
 }
 
-/**
- * Stops polling the session.
- */
+/** 清除会话轮询定时器。 */
 function stopSessionPolling() {
   if (timeout) {
     clearTimeout(timeout);
@@ -49,6 +48,7 @@ function stopSessionPolling() {
   }
 }
 
+// 延迟比对页面与 Cookie 中的 KC_AUTH_SESSION_HASH，不一致则刷新页面
 export function checkAuthSession(pageAuthSessionHash) {
   setTimeout(() => {
     const cookieAuthSessionHash = getKcAuthSessionHash();
@@ -61,14 +61,17 @@ export function checkAuthSession(pageAuthSessionHash) {
   }, AUTH_SESSION_TIMEOUT_MILLISECS);
 }
 
+// 读取 KC_AUTH_SESSION_HASH Cookie 值
 function getKcAuthSessionHash() {
   return getCookieByName("KC_AUTH_SESSION_HASH");
 }
 
+// 读取 KEYCLOAK_SESSION Cookie 值
 function getSession() {
   return getCookieByName("KEYCLOAK_SESSION");
 }
 
+// 按名称解析 document.cookie，去除引号包裹的值
 function getCookieByName(name) {
   for (const cookie of document.cookie.split(";")) {
     const [key, value] = cookie.split("=").map((value) => value.trim());

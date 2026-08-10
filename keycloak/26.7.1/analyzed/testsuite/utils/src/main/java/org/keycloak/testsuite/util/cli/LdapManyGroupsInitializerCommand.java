@@ -37,28 +37,35 @@ import org.keycloak.storage.ldap.mappers.LDAPStorageMapper;
 import org.keycloak.storage.ldap.mappers.membership.group.GroupLDAPStorageMapper;
 
 /**
- * The command requires that:
- * - Realm has 1 LDAP storage provider defined
- * - The LDAP provider has group-mapper named "groupsMapper", with:
- * -- "LDAP Groups DN" pointing to same DN, like this command <groups-dn> .
- * -- It's supposed to PreserveGroupsInheritance on
- *
- * It will create top-groups-count "root" groups and "subgroups-in-every-top-group" groups in every child.
+ * 在 LDAP 中批量创建层级组结构的初始化命令。
+ * <p>
+ * 前置条件：
+ * <ul>
+ *   <li>领域仅配置一个 LDAP 用户存储提供者；</li>
+   <li>存在名为 {@code groupsMapper} 的组映射器，且 LDAP Groups DN 与本命令参数一致，并启用 PreserveGroupsInheritance。</li>
+ * </ul>
+ * 将为每个顶层组创建若干子组，并通过 {@code member} 属性建立父子关系。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class LdapManyGroupsInitializerCommand extends AbstractCommand  {
 
+    /** {@inheritDoc} */
     @Override
     public String getName() {
         return "createLdapGroups";
     }
 
+    /** {@inheritDoc} */
     @Override
     public String printUsage() {
         return super.printUsage() + " <realm-name> <groups-dn> <start-offset-top-groups> <top-groups-count> <subgroups-in-every-top-group>.\nSee javadoc of class LdapManyGroupsInitializerCommand for additional details.";
     }
 
+    /**
+     * 在 LDAP 中创建顶层组及每个顶层组下的子组。
+     * 参数：领域名、组 DN、顶层组起始偏移、顶层组数量、每组子组数。
+     */
     @Override
     protected void doRunCommand(KeycloakSession session) {
         String realmName = getArg(0);
@@ -76,11 +83,11 @@ public class LdapManyGroupsInitializerCommand extends AbstractCommand  {
         }
         ComponentModel ldapModel = components.get(0);
 
-        // Check that street mapper exists. It's required for now, so that "street" attribute is written to the LDAP
+        // 校验 groupsMapper 映射器存在（组 DN 须与命令参数一致）
         ComponentModel groupMapperModel = getMapperModel(realm, ldapModel, "groupsMapper");
 
 
-        // Create groups
+        // 逐顶层组在独立事务中创建子组并组装 member 引用
         for (int i=startOffsetTopGroups ; i<startOffsetTopGroups+topGroupsCount ; i++) {
             final int iFinal = i;
             KeycloakModelUtils.runJobInTransaction(session.getKeycloakSessionFactory(), (KeycloakSession kcSession) -> {
@@ -109,6 +116,7 @@ public class LdapManyGroupsInitializerCommand extends AbstractCommand  {
     }
 
 
+    /** 按名称查找 LDAP 存储映射器组件，缺失时记录错误并抛出异常。 */
     private ComponentModel getMapperModel(RealmModel realm, ComponentModel ldapModel, String mapperName) {
         Optional<ComponentModel> first = realm.getComponentsStream(ldapModel.getId(), LDAPStorageMapper.class.getName())
                 .filter(component -> Objects.equals(component.getName(), mapperName))

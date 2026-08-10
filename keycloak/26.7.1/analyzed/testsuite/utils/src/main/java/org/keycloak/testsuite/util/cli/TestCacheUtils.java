@@ -27,10 +27,18 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleContainerModel;
 
 /**
+ * 测试用缓存预热工具，通过重复查询将领域对象加载到 Keycloak 缓存中。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class TestCacheUtils {
 
+    /**
+     * 预热指定领域的客户端、角色、组、客户端作用域及用户相关缓存条目。
+     *
+     * @param session Keycloak 会话
+     * @param realmName 领域名称
+     */
     public static void cacheRealmWithEverything(KeycloakSession session, String realmName) {
         RealmModel realm  = session.realms().getRealmByName(realmName);
 
@@ -61,6 +69,7 @@ public class TestCacheUtils {
         });
     }
 
+    /** 遍历角色容器并触发按 ID 与名称的缓存加载。 */
     private static void cacheRoles(KeycloakSession session, RealmModel realm, RoleContainerModel roleContainer) {
         roleContainer.getRolesStream().forEach(role -> {
             realm.getRoleById(role.getId());
@@ -73,6 +82,7 @@ public class TestCacheUtils {
         });
     }
 
+    /** 递归预热组及其子组的缓存条目。 */
     private static void cacheGroupRecursive(RealmModel realm, GroupModel group) {
         realm.getGroupById(group.getId());
         group.getSubGroupsStream().forEach(sub -> cacheGroupRecursive(realm, sub));

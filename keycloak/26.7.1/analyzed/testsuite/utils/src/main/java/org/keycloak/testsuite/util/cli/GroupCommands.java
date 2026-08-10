@@ -4,18 +4,29 @@ import org.keycloak.models.GroupModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 
+/**
+ * 测试套件 CLI 中的组管理命令集合。
+ */
 public class GroupCommands {
 
+    /** 批量创建领域组的命令实现。 */
     public static class Create extends AbstractCommand {
 
+        /** 组名前缀。 */
         private String groupPrefix;
+        /** 目标领域名称。 */
         private String realmName;
 
+        /** {@inheritDoc} */
         @Override
         public String getName() {
             return "createGroups";
         }
 
+        /**
+         * 按批次在指定领域中创建带前缀的组。
+         * 参数：组前缀、领域名、起始偏移、总数、每批大小。
+         */
         @Override
         protected void doRunCommand(KeycloakSession session) {
             groupPrefix = getArg(0);
@@ -30,6 +41,7 @@ public class GroupCommands {
                     + (first + count - 1));
         }
 
+        /** 在单个事务批次中创建 {@code count} 个连续编号的组。 */
         private void createGroupsInBatch(KeycloakSession session, int first, int count) {
             RealmModel realm = session.realms().getRealmByName(realmName);
             if (realm == null) {
@@ -46,6 +58,7 @@ public class GroupCommands {
             log.infof("groups from %s to %s created", groupPrefix + first, groupPrefix + (last - 1));
         }
 
+        /** {@inheritDoc} */
         @Override
         public String printUsage() {
             return super.printUsage() + " <group-prefix> <realm-name> <starting-group-offset> <total-count> <batch-size>. " +

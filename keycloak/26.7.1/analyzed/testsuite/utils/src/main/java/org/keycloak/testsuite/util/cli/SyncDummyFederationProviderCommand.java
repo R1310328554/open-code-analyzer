@@ -27,10 +27,16 @@ import org.keycloak.storage.StoreSyncEvent;
 import org.keycloak.storage.UserStorageProviderModel;
 
 /**
+ * 创建或更新虚拟用户联邦提供者并触发同步的测试命令，用于集群同步场景。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class SyncDummyFederationProviderCommand extends AbstractCommand {
 
+    /**
+     * 在 master 领域中配置 {@code cluster-dummy} 联邦组件并触发 {@link StoreSyncEvent}。
+     * 参数：同步提交前等待秒数、变更同步周期（秒）。
+     */
     @Override
     protected void doRunCommand(KeycloakSession session) {
         int waitTime = getIntArg(0);
@@ -62,10 +68,19 @@ public class SyncDummyFederationProviderCommand extends AbstractCommand {
         log.infof("User federation provider created and sync was started", waitTime);
     }
 
+    /** 将 wait-time 配置项写入联邦提供者配置。 */
     private void updateConfig(MultivaluedHashMap<String, String> cfg, int waitTime) {
         cfg.putSingle("wait-time", String.valueOf(waitTime));
     }
 
+    /**
+     * 按显示名称在领域中查找用户存储提供者模型。
+     *
+     * @param session Keycloak 会话
+     * @param displayName 提供者显示名
+     * @param realm 目标领域
+     * @return 匹配的提供者模型，未找到时返回 {@code null}
+     */
     public static UserStorageProviderModel findUserStorageProviderByName(KeycloakSession session, String displayName, RealmModel realm) {
         if (displayName == null) {
             return null;
@@ -77,11 +92,13 @@ public class SyncDummyFederationProviderCommand extends AbstractCommand {
                 .orElse(null);
     }
 
+    /** {@inheritDoc} */
     @Override
     public String getName() {
         return "startSyncDummy";
     }
 
+    /** {@inheritDoc} */
     @Override
     public String printUsage() {
         return super.printUsage() + " <wait-time-before-sync-commit-in-seconds> <changed-sync-period-in-seconds>";

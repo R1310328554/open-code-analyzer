@@ -41,28 +41,31 @@ import org.keycloak.storage.ldap.mappers.LDAPStorageMapper;
 import org.keycloak.storage.ldap.mappers.membership.group.GroupLDAPStorageMapper;
 
 /**
- * The command requires that:
- * - Realm has 1 LDAP storage provider defined
- * - The LDAP provider has user-attribute-mapper named "streetMapper", which has both "User Model Attribute" and "LDAP Attribute" configured to "street"
- * - The LDAP provider has group-mapper named "groupsMapper", with:
- * -- "LDAP Groups DN" pointing to same DN, like this command <groups-dn> .
- * -- It's supposed to use "User Roles Retrieve Strategy" - "GET_GROUPS_FROM_USER_MEMBEROF_ATTRIBUTE"
- * -- It's supposed to use "Member-Of LDAP Attribute" - "street"
+ * 在 LDAP 中批量创建用户与组的初始化命令，用于性能与联邦同步测试。
+ * <p>
+ * 要求领域配置单个 LDAP 提供者，并存在 {@code streetMapper}（street 属性映射）
+ * 与 {@code groupsMapper}（通过 memberOf/street 策略关联组）。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class LdapManyObjectsInitializerCommand extends AbstractCommand {
 
+    /** {@inheritDoc} */
     @Override
     public String getName() {
         return "createLdapObjects";
     }
 
+    /** {@inheritDoc} */
     @Override
     public String printUsage() {
         return super.printUsage() + " <realm-name> <groups-dn> <start-offset-users> <count-users> <start-offset-groups> <count-groups> .\nSee javadoc of class LdapManyObjectsInitializerCommand for additional details.";
     }
 
+    /**
+     * 分批创建 LDAP 用户，再创建引用这些用户的 LDAP 组。
+     * 用户 {@code street} 属性写入其所属组的 DN 列表。
+     */
     @Override
     protected void doRunCommand(KeycloakSession session) {
         String realmName = getArg(0);
@@ -82,11 +85,11 @@ public class LdapManyObjectsInitializerCommand extends AbstractCommand {
         }
         ComponentModel ldapModel = components.get(0);
 
-        // Check that street mapper exists. It's required for now, so that "street" attribute is written to the LDAP
+        // 校验 streetMapper 与 groupsMapper 均已配置
         getMapperModel(realm, ldapModel, "streetMapper");
         ComponentModel groupMapperModel = getMapperModel(realm, ldapModel, "groupsMapper");
 
-        // Create users
+        // 分批创建 LDAP 用户并收集 DN
         Set<String> createdUserDNs = new HashSet<>();
         BatchTaskRunner.runInBatches(startOffsetUsers, countUsers, batchCount, session.getKeycloakSessionFactory(),
                 (KeycloakSession kcSession, int firstIt, int countInIt) -> {
@@ -108,7 +111,7 @@ public class LdapManyObjectsInitializerCommand extends AbstractCommand {
                 });
 
 
-        // Create groups
+        // 分批创建 LDAP 组，member 指向已创建的全部用户 DN
         BatchTaskRunner.runInBatches(startOffsetGroups, countGroups, batchCount, session.getKeycloakSessionFactory(),
                 (KeycloakSession kcSession, int firstIt, int countInIt) -> {
 
@@ -131,6 +134,7 @@ public class LdapManyObjectsInitializerCommand extends AbstractCommand {
     }
 
 
+    /** 按名称查找 LDAP 映射器组件。 */
     private ComponentModel getMapperModel(RealmModel realm, ComponentModel ldapModel, String mapperName) {
         Optional<ComponentModel> first = realm.getComponentsStream(ldapModel.getId(), LDAPStorageMapper.class.getName())
                 .filter(component -> Objects.equals(component.getName(), mapperName))
@@ -146,6 +150,9 @@ public class LdapManyObjectsInitializerCommand extends AbstractCommand {
 
 
 
+    /**
+     * 通过委托 {@link UserModel} 构造 LDAP 用户，并将组 DN 写入 street 属性。
+     */
     private static LDAPObject addLDAPUser(LDAPStorageProvider ldapProvider, RealmModel realm, final String username,
                                          final String firstName, final String lastName, final String email,
                                          String groupsDN, int startOffsetGroups, int countGroups) {
