@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T02:08:40Z",
   "files": [
-    "ai/src/main/java/com/alibaba/nacos/ai/param/McpHttpParamExtractor.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/param/PromptHttpParamExtractor.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/param/SkillHttpParamExtractor.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/pipeline/PublishPipelineExecutor.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/pipeline/PublishPipelineManager.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/pipeline/config/FilePipelineConfigProvider.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/pipeline/config/PipelineConfigProvider.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/pipeline/model/PipelineCallback.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/pipeline/model/PipelineConfig.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/pipeline/model/PipelineExecution.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/pipeline/model/PipelineExecutionResult.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/pipeline/model/PipelineExecutionStatus.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/pipeline/model/PipelineNodeConfig.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/pipeline/model/PipelineNodeResult.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/pipeline/repository/PipelineExecutionRepository.java",
     "ai/src/main/java/com/alibaba/nacos/ai/pipeline/repository/PipelineExecutionRepositoryImpl.java",
     "ai/src/main/java/com/alibaba/nacos/ai/plugin/AiPipelinePluginProvider.java",
     "ai/src/main/java/com/alibaba/nacos/ai/plugin/AiStoragePluginProvider.java",
@@ -33,5 +18,5 @@
     "ai/src/main/java/com/alibaba/nacos/ai/service/McpLegacyImportAdapter.java"
   ],
   "remaining_pending": 2387,
-  "done": 120
+  "done": 135
 }
