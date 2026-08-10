@@ -1,5 +1,7 @@
 package loghttp
 
+// series 解析 /series 端点 HTTP 请求，提取时间范围与标签 matcher 列表。
+
 import (
 	"net/http"
 	"sort"
@@ -14,6 +16,7 @@ type SeriesResponse struct {
 	Data   []LabelSet `json:"data"`
 }
 
+// ParseSeriesQuery 合并 match 与 match[] 参数，将空 {} matcher 视为未指定。
 func ParseSeriesQuery(r *http.Request) (*logproto.SeriesRequest, error) {
 	start, end, err := bounds(r)
 	if err != nil {
@@ -46,6 +49,7 @@ func ParseSeriesQuery(r *http.Request) (*logproto.SeriesRequest, error) {
 	}, nil
 }
 
+// union 对多个 matcher 切片去重，保证 fan-out 前 matcher 列表唯一且有序。
 func union(cols ...[]string) []string {
 	m := map[string]struct{}{}
 
@@ -63,6 +67,7 @@ func union(cols ...[]string) []string {
 	return res
 }
 
+// ParseAndValidateSeriesQuery 在分发到 ingester 前用 logql 校验 matcher 语法。
 func ParseAndValidateSeriesQuery(r *http.Request) (*logproto.SeriesRequest, error) {
 	req, err := ParseSeriesQuery(r)
 	if err != nil {
@@ -76,3 +81,4 @@ func ParseAndValidateSeriesQuery(r *http.Request) (*logproto.SeriesRequest, erro
 	}
 	return req, nil
 }
+// Prometheus 客户端常用 match[] 编码；Loki 同时接受 match 以保持兼容。

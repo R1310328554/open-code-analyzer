@@ -1,5 +1,7 @@
 package loghttp
 
+// query 解析 Loki HTTP 查询 API 参数并定义 JSON 响应结构（streams/scalar/vector/matrix）。
+
 import (
 	"errors"
 	"fmt"
@@ -31,6 +33,7 @@ var (
 	errNegativeInterval   = errors.New("interval must be >= 0")
 )
 
+// QueryStatus 表示查询执行结果状态：success 或 fail。
 // QueryStatus holds the status of a query
 type QueryStatus string
 
@@ -43,6 +46,7 @@ const (
 	unescapeStackBufSize = 64
 )
 
+// QueryResponse 为 range/instant 查询标准 JSON 封装，含 warnings 与 stats。
 // QueryResponse represents the http json response to a Loki range and instant query
 type QueryResponse struct {
 	Status   string            `json:"status"`
@@ -87,11 +91,13 @@ func unescapeJSONString(b []byte) string {
 	return string(bU)
 }
 
+// PushRequest 为 HTTP JSON push 反序列化中间结构，最终映射为 logproto.PushRequest。
 // PushRequest models a log stream push but is unmarshalled to proto push format.
 type PushRequest struct {
 	Streams []LogProtoStream `json:"streams"`
 }
 
+// LogProtoStream 独立类型避免 json 反序列化时产生额外 CPU 开销（约 25% 优化）。
 // LogProtoStream helps with unmarshalling of each log stream for push request.
 // This might look un-necessary but without it the CPU usage in benchmarks was increasing by ~25% :shrug:
 type LogProtoStream logproto.Stream
@@ -221,6 +227,7 @@ const (
 	ResultTypeMatrix = "matrix"
 )
 
+// ResultValue 抽象 PromQL 风格结果类型，由 Streams/Scalar/Vector/Matrix 实现。
 // ResultValue interface mimics the promql.Value interface
 type ResultValue interface {
 	Type() ResultType
@@ -405,6 +412,7 @@ type Vector []model.Sample
 // Matrix is a slice of SampleStreams
 type Matrix []model.SampleStream
 
+// InstantQuery 描述单时间点 LogQL 查询参数。
 // InstantQuery defines a log instant query.
 type InstantQuery struct {
 	Query     string
@@ -415,6 +423,7 @@ type InstantQuery struct {
 }
 
 // ParseInstantQuery parses an InstantQuery request from an http request.
+// ParseInstantQuery 从 HTTP 表单解析 query/limit/time/direction/shards 参数。
 func ParseInstantQuery(r *http.Request) (*InstantQuery, error) {
 	var err error
 	request := &InstantQuery{
@@ -439,6 +448,7 @@ func ParseInstantQuery(r *http.Request) (*InstantQuery, error) {
 	return request, nil
 }
 
+// RangeQuery 描述时间范围 LogQL 查询，含 step/interval 与分片列表。
 // RangeQuery defines a log range query.
 type RangeQuery struct {
 	Start     time.Time
@@ -470,6 +480,7 @@ func (q *RangeQuery) UpdateStep() {
 }
 
 // ParseRangeQuery parses a RangeQuery request from an http request.
+// ParseRangeQuery 校验时间顺序与 step 分辨率上限，legacy 路径拒绝 metric 查询。
 func ParseRangeQuery(r *http.Request) (*RangeQuery, error) {
 	var result RangeQuery
 	var err error
@@ -662,6 +673,7 @@ func ParseVolumeRangeQuery(r *http.Request) (*VolumeRangeQuery, error) {
 	}, nil
 }
 
+// ParseDetectedFieldsQuery 构造字段检测请求，支持按路由 name 过滤特定字段。
 func ParseDetectedFieldsQuery(r *http.Request) (*logproto.DetectedFieldsRequest, error) {
 	var err error
 	result := &logproto.DetectedFieldsRequest{}
@@ -750,3 +762,4 @@ func volumeAggregateBy(r *http.Request) (string, error) {
 
 	return "", errors.New("invalid aggregation option")
 }
+// Volume 与 IndexStats 查询复用 RangeQuery 参数解析，减少重复校验逻辑。

@@ -1,5 +1,7 @@
 package loghttp
 
+// params 从 HTTP 请求表单解析 Loki 查询/推送共用的查询参数（时间范围、limit、direction 等）。
+
 import (
 	"fmt"
 	"math"
@@ -24,6 +26,7 @@ const (
 	defaultDirection  = logproto.BACKWARD
 )
 
+// limit 解析 query 参数 limit，默认 defaultQueryLimit，必须为正整数。
 func limit(r *http.Request) (uint32, error) {
 	l, err := parseInt(r.Form.Get("limit"), defaultQueryLimit)
 	if err != nil {
@@ -88,6 +91,7 @@ func bounds(r *http.Request) (time.Time, time.Time, error) {
 	return determineBounds(now, start, end, since)
 }
 
+// determineBounds 根据 start/end/since 计算查询时间窗口；end 在未来时回退到 now。
 func determineBounds(now time.Time, startString, endString, sinceString string) (time.Time, time.Time, error) {
 	since := defaultSince
 	if sinceString != "" {
@@ -135,6 +139,7 @@ func interval(r *http.Request) (time.Duration, error) {
 	return parseSecondsOrDuration(value)
 }
 
+// defaultQueryRangeStep 按时间跨度动态计算 range 查询默认 step（约 250 点分辨率）。
 // defaultQueryRangeStep returns the default step used in the query range API,
 // which is dynamically calculated based on the time range
 func defaultQueryRangeStep(start time.Time, end time.Time) int {
@@ -158,6 +163,7 @@ func parseInt(value string, def int) (int, error) {
 	return strconv.Atoi(value)
 }
 
+// parseTimestamp 支持纳秒整数、RFC3339Nano 及带小数秒的 Unix 时间戳字符串。
 // parseTimestamp parses a ns unix timestamp from a string
 // if the value is empty it returns a default value passed as second parameter
 func parseTimestamp(value string, def time.Time) (time.Time, error) {
@@ -185,6 +191,7 @@ func parseTimestamp(value string, def time.Time) (time.Time, error) {
 	return time.Unix(0, nanos), nil
 }
 
+// parseDirection 将 FORWARD/BACKWARD 字符串映射为 logproto.Direction 枚举。
 // parseDirection parses a logproto.Direction from a string
 // if the value is empty it returns a default value passed as second parameter
 func parseDirection(value string, def logproto.Direction) (logproto.Direction, error) {
@@ -213,6 +220,7 @@ func parseSecondsOrDuration(value string) (time.Duration, error) {
 	return 0, errors.Errorf("cannot parse %q to a valid duration", value)
 }
 
+// parseRegexQuery 将已弃用的 regexp 参数合并进 LogQL 选择器，保持旧 API 兼容。
 // parseRegexQuery parses regex and query querystring from httpRequest and returns the combined LogQL query.
 // This is used only to keep regexp query string support until it gets fully deprecated.
 func parseRegexQuery(httpRequest *http.Request) (string, error) {
@@ -249,3 +257,4 @@ func parseBytes(r *http.Request, field string, optional bool) (val datasize.Byte
 	return val, nil
 
 }
+// shards 参数允许查询器限定在指定分片子集上执行，用于调试或分片路由。

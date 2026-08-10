@@ -1,5 +1,7 @@
 package push
 
+// otlp_config 定义 OTLP 属性到 Loki 索引标签/结构化元数据的映射规则及 YAML 解析。
+
 import (
 	"encoding/json"
 	"flag"
@@ -9,13 +11,16 @@ import (
 	"github.com/prometheus/prometheus/model/relabel"
 )
 
+// Action 枚举属性处理方式：index_label、structured_metadata 或 drop。
 // Action is the action to be performed on OTLP Resource Attribute.
 type Action string
 
 const (
-	// IndexLabel stores a Resource Attribute as a label in index to identify streams.
+	// IndexLabel 将资源属性写入索引标签，用于划分日志流（仅 resource_attributes 支持）。
+// IndexLabel stores a Resource Attribute as a label in index to identify streams.
 	IndexLabel Action = "index_label"
-	// StructuredMetadata stores an Attribute as Structured Metadata with each log entry.
+	// StructuredMetadata 将属性附在每条日志的结构化元数据中，不参与流标识。
+// StructuredMetadata stores an Attribute as Structured Metadata with each log entry.
 	StructuredMetadata Action = "structured_metadata"
 	// Drop drops Attributes for which the Attribute name does match the regex.
 	Drop Action = "drop"
@@ -27,6 +32,7 @@ var (
 	errAttributesAndRegexBothSet = fmt.Errorf("only one of attributes or regex must be set")
 )
 
+// DefaultOTLPConfig 注入全局默认资源属性列表作为 index_label 规则。
 func DefaultOTLPConfig(cfg GlobalOTLPConfig) OTLPConfig {
 	return OTLPConfig{
 		ResourceAttributes: ResourceAttributesConfig{
@@ -51,6 +57,7 @@ type GlobalOTLPConfig struct {
 	DefaultOTLPResourceAttributesAsIndexLabels []string `yaml:"default_resource_attributes_as_index_labels"`
 }
 
+// RegisterFlags 注册 distributor.otlp.default_resource_attributes_as_index_labels 命令行标志。
 // RegisterFlags registers distributor-related flags.
 func (cfg *GlobalOTLPConfig) RegisterFlags(fs *flag.FlagSet) {
 	cfg.DefaultOTLPResourceAttributesAsIndexLabels = []string{
@@ -76,6 +83,7 @@ func (cfg *GlobalOTLPConfig) RegisterFlags(fs *flag.FlagSet) {
 	fs.Var((*flagext.StringSlice)(&cfg.DefaultOTLPResourceAttributesAsIndexLabels), "distributor.otlp.default_resource_attributes_as_index_labels", "List of default otlp resource attributes to be picked as index labels")
 }
 
+// ApplyGlobalOTLPConfig 在未 IgnoreDefaults 时将全局默认 index 标签规则前置合并。
 // ApplyGlobalOTLPConfig applies global otlp config, specifically DefaultOTLPResourceAttributesAsIndexLabels for the start.
 func (c *OTLPConfig) ApplyGlobalOTLPConfig(config GlobalOTLPConfig) {
 	if !c.ResourceAttributes.IgnoreDefaults && len(config.DefaultOTLPResourceAttributesAsIndexLabels) != 0 {
@@ -88,6 +96,7 @@ func (c *OTLPConfig) ApplyGlobalOTLPConfig(config GlobalOTLPConfig) {
 	}
 }
 
+// actionForAttribute 按配置顺序匹配属性名或 regex，未命中则默认为 structured_metadata。
 func (c *OTLPConfig) actionForAttribute(attribute string, cfgs []AttributesConfig) Action {
 	for i := 0; i < len(cfgs); i++ {
 		if cfgs[i].Regex.Regexp != nil && cfgs[i].Regex.MatchString(attribute) {
@@ -165,6 +174,7 @@ func (c AttributesConfig) MarshalYAML() (any, error) {
 	return getMarshableAttributesConfig(c), nil
 }
 
+// getMarshableAttributesConfig 避免 relabel.Regexp 空值被序列化为空字符串。
 // getMarshableAttributesConfig overrides AttributesConfig to avoid
 // marshaling the Regex as nil or empty string when it is not set.
 // Note: we need this since relabel.Regexp is a struct and `omitempty`
@@ -192,3 +202,4 @@ type ResourceAttributesConfig struct {
 	IgnoreDefaults   bool               `yaml:"ignore_defaults,omitempty" json:"ignore_defaults,omitempty" doc:"default=false|description=Configure whether to ignore the default list of resource attributes set in 'distributor.otlp.default_resource_attributes_as_index_labels' to be stored as index labels and only use the given resource attributes config"`
 	AttributesConfig []AttributesConfig `yaml:"attributes_config,omitempty" json:"attributes_config,omitempty"`
 }
+// AttributesConfig 校验禁止 attributes 与 regex 同时设置，且 scope/log 不可用 index_label。

@@ -3,6 +3,9 @@
 
 package logproto
 
+// Bloom Gateway gRPC 服务 protobuf 消息与桩代码（protoc-gen-gogo 生成）。
+// 定义 FilterChunkRefs 与 PrefetchBloomBlocks RPC 载荷。
+
 import (
 	context "context"
 	fmt "fmt"
@@ -31,6 +34,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// FilterChunkRefRequest 携带时间范围、分组 chunk 引用、QueryPlan 与 bloom block 列表。
 type FilterChunkRefRequest struct {
 	From    github_com_prometheus_common_model.Time `protobuf:"varint,1,opt,name=from,proto3,customtype=github.com/prometheus/common/model.Time" json:"from"`
 	Through github_com_prometheus_common_model.Time `protobuf:"varint,2,opt,name=through,proto3,customtype=github.com/prometheus/common/model.Time" json:"through"`
@@ -86,6 +90,7 @@ func (m *FilterChunkRefRequest) GetBlocks() []string {
 	return nil
 }
 
+// FilterChunkRefResponse 返回经 bloom 过滤后仍可能包含目标日志的 chunk 引用。
 type FilterChunkRefResponse struct {
 	ChunkRefs []*GroupedChunkRefs `protobuf:"bytes,1,rep,name=chunkRefs,proto3" json:"chunkRefs,omitempty"`
 }
@@ -129,6 +134,7 @@ func (m *FilterChunkRefResponse) GetChunkRefs() []*GroupedChunkRefs {
 	return nil
 }
 
+// ShortRef 为 chunk 的紧凑引用：时间边界与 checksum，不含完整块 ID。
 type ShortRef struct {
 	From     github_com_prometheus_common_model.Time `protobuf:"varint,1,opt,name=from,proto3,customtype=github.com/prometheus/common/model.Time" json:"from"`
 	Through  github_com_prometheus_common_model.Time `protobuf:"varint,2,opt,name=through,proto3,customtype=github.com/prometheus/common/model.Time" json:"through"`
@@ -174,6 +180,7 @@ func (m *ShortRef) GetChecksum() uint32 {
 	return 0
 }
 
+// GroupedChunkRefs 按 fingerprint/tenant 分组 chunk 引用；请求侧可附带 Labels。
 type GroupedChunkRefs struct {
 	Fingerprint uint64      `protobuf:"varint,1,opt,name=fingerprint,proto3" json:"fingerprint,omitempty"`
 	Tenant      string      `protobuf:"bytes,2,opt,name=tenant,proto3" json:"tenant,omitempty"`
@@ -243,6 +250,7 @@ func (m *GroupedChunkRefs) GetLabels() *IndexSeries {
 	return nil
 }
 
+// PrefetchBloomBlocksRequest 请求预取指定 bloom block 对象以加速后续过滤。
 type PrefetchBloomBlocksRequest struct {
 	Blocks []string `protobuf:"bytes,1,rep,name=blocks,proto3" json:"blocks,omitempty"`
 }
@@ -659,6 +667,7 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
+// BloomGatewayClient 为 querier 访问 Bloom Gateway 的 gRPC 客户端接口。
 // BloomGatewayClient is the client API for BloomGateway service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
@@ -693,6 +702,7 @@ func (c *bloomGatewayClient) PrefetchBloomBlocks(ctx context.Context, in *Prefet
 	return out, nil
 }
 
+// BloomGatewayServer 由 Bloom Gateway 组件实现，提供 chunk 过滤与 block 预取。
 // BloomGatewayServer is the server API for BloomGateway service.
 type BloomGatewayServer interface {
 	FilterChunkRefs(context.Context, *FilterChunkRefRequest) (*FilterChunkRefResponse, error)
@@ -2053,3 +2063,4 @@ var (
 	ErrInvalidLengthBloomgateway = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowBloomgateway   = fmt.Errorf("proto: integer overflow")
 )
+// RegisterBloomGatewayServer 将服务注册到 gRPC Server，供 ring 路由查询。

@@ -1,5 +1,8 @@
 package push
 
+// otlp 将 OpenTelemetry Logs（OTLP/HTTP）请求解析并转换为 Loki PushRequest。
+// 支持 gzip/zstd/lz4 压缩及 protobuf/JSON 内容类型。
+
 import (
 	"compress/gzip"
 	"context"
@@ -45,6 +48,7 @@ const (
 	messageSizeLargerErrFmt = "%w than max (%d vs %d)"
 )
 
+// ParseOTLPRequest 入口：解压 OTLP 载荷、映射标签/结构化元数据并汇总 Stats。
 func ParseOTLPRequest(userID string, r *http.Request, limits Limits, tenantConfigs *runtime.TenantConfigs, maxRecvMsgSize int, maxDecompressedSize int64, tracker UsageTracker, streamResolver StreamResolver, logger log.Logger) (*logproto.PushRequest, *Stats, error) {
 	stats := NewPushStats()
 	otlpLogs, err := extractLogs(r, maxRecvMsgSize, maxDecompressedSize, stats)
@@ -56,6 +60,7 @@ func ParseOTLPRequest(userID string, r *http.Request, limits Limits, tenantConfi
 	return req, stats, err
 }
 
+// extractLogs 按 Content-Encoding 解压请求体并反序列化为 plog.Logs。
 func extractLogs(r *http.Request, maxRecvMsgSize int, maxDecompressedSize int64, pushStats *Stats) (plog.Logs, error) {
 	pushStats.ContentEncoding = r.Header.Get(contentEnc)
 	// bodySize should always reflect the compressed size of the request body
@@ -140,6 +145,7 @@ func extractLogs(r *http.Request, maxRecvMsgSize int, maxDecompressedSize int64,
 	return req.Logs(), nil
 }
 
+// otlpToLokiPushRequest 遍历 Resource/Scope/Log 层级，按 OTLPConfig 决定标签与结构化元数据去向。
 func otlpToLokiPushRequest(ctx context.Context, ld plog.Logs, userID string, otlpConfig OTLPConfig, tenantConfigs *runtime.TenantConfigs, discoverServiceName []string, tracker UsageTracker, stats *Stats, logger log.Logger, streamResolver StreamResolver, format string) (*logproto.PushRequest, error) {
 	if ld.LogRecordCount() == 0 {
 		return &logproto.PushRequest{}, nil
@@ -478,6 +484,7 @@ func otlpToLokiPushRequest(ctx context.Context, ld plog.Logs, userID string, otl
 	return pr, nil
 }
 
+// otlpLogToPushEntry 将单条 OTLP LogRecord 转为 push.Entry，含 severity/trace 等元数据。
 // otlpLogToPushEntry converts an OTLP log record to a Loki push.Entry.
 func otlpLogToPushEntry(log plog.LogRecord, otlpConfig OTLPConfig, logServiceNameDiscovery bool, pushedLabels model.LabelSet) (model.LabelSet, push.Entry, error) {
 	// copy log attributes and all the fields from log(except log.Body) to structured metadata
@@ -599,6 +606,7 @@ func attributesToLabels(attrs pcommon.Map, prefix string) (push.LabelsAdapter, e
 	return labelsAdapter, rangeErr
 }
 
+// attributeToLabels 递归展开 map 型属性，经 otlptranslator 规范化标签名。
 func attributeToLabels(k string, v pcommon.Value, prefix string) (push.LabelsAdapter, error) {
 	var labelsAdapter push.LabelsAdapter
 
@@ -639,6 +647,7 @@ func attributeToLabels(k string, v pcommon.Value, prefix string) (push.LabelsAda
 	return labelsAdapter, nil
 }
 
+// timestampFromLogRecord 优先使用 Record 时间戳，否则回退 ObservedTimestamp 或当前时间。
 func timestampFromLogRecord(lr plog.LogRecord) time.Time {
 	if lr.Timestamp() != 0 {
 		return time.Unix(0, int64(lr.Timestamp()))
@@ -668,3 +677,4 @@ func modelLabelsSetToLabelsList(m model.LabelSet) labels.Labels {
 	builder.Sort()
 	return builder.Labels()
 }
+// 资源属性可提升为索引标签或结构化元数据；日志属性索引时会拆分为独立流。

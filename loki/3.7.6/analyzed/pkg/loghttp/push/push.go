@@ -1,5 +1,7 @@
 package push
 
+// push 解析 Loki/OTLP HTTP 推送请求体，统计 ingest 字节/行数并更新 Prometheus 与 analytics 指标。
+
 import (
 	"compress/flate"
 	"compress/gzip"
@@ -115,6 +117,7 @@ func (EmptyLimits) PolicyFor(_ string, _ labels.Labels) string {
 	return ""
 }
 
+// StreamResolver 在单次请求内为流解析 retention 与 ingestion policy，结果不可变。
 // StreamResolver is a request-scoped interface that provides retention period and policy for a given stream.
 // The values returned by the resolver will not chance thought the handling of the request
 type StreamResolver interface {
@@ -177,6 +180,7 @@ type Stats struct {
 	HasInternalStreams bool // True if any of the streams has aggregated metrics or is a pattern stream
 }
 
+// ParseRequest 调用具体解析器后汇总 billing 相关字节统计并记录 distributor 延迟指标。
 func ParseRequest(logger log.Logger, userID string, maxRecvMsgSize int, maxDecompressedSize int64, r *http.Request, limits Limits, tenantConfigs *runtime.TenantConfigs, pushRequestParser RequestParser, tracker UsageTracker, streamResolver StreamResolver, presumedAgentIP, format string) (*logproto.PushRequest, *Stats, error) {
 	req, pushStats, err := pushRequestParser(userID, r, limits, tenantConfigs, maxRecvMsgSize, maxDecompressedSize, tracker, streamResolver, logger)
 	if err != nil && !errors.Is(err, ErrAllLogsFiltered) {
@@ -311,6 +315,7 @@ func ParseRequest(logger log.Logger, userID string, maxRecvMsgSize int, maxDecom
 	return req, pushStats, err
 }
 
+// parsePushRequestBody 支持 JSON（v1/legacy）与 snappy 压缩 protobuf 两种推送格式。
 // parsePushRequestBody returns logproto.PushRequest from http.Request body, deserialized according to specified content type.
 // It also modifies pushStats.
 func parsePushRequestBody(r *http.Request, maxRecvMsgSize int, maxDecompressedSize int64, pushStats *Stats) (*logproto.PushRequest, error) {
@@ -400,6 +405,7 @@ func parsePushRequestBody(r *http.Request, maxRecvMsgSize int, maxDecompressedSi
 	return &req, nil
 }
 
+// ParseLokiRequest 解析原生 Loki push 格式，补充 service_name 并识别内部聚合/模式流。
 func ParseLokiRequest(userID string, r *http.Request, limits Limits, tenantConfigs *runtime.TenantConfigs, maxRecvMsgSize int, maxDecompressedSize int64, tracker UsageTracker, streamResolver StreamResolver, logger log.Logger) (*logproto.PushRequest, *Stats, error) {
 	pushStats := NewPushStats()
 
@@ -483,6 +489,7 @@ func ParseLokiRequest(userID string, r *http.Request, limits Limits, tenantConfi
 	return req, pushStats, nil
 }
 
+// CalculateStreamsStats 按 policy/retention 累加行字节与结构化元数据大小供计费使用。
 // CalculateStreamsStats modifies pushStats with statistics about all the streams from req.
 func CalculateStreamsStats(ctx context.Context, userID string, req *logproto.PushRequest, streamResolver StreamResolver, tenantConfigs *runtime.TenantConfigs, pushStats *Stats) error {
 	logPushRequestStreams := false
@@ -550,6 +557,7 @@ func RetentionPeriodToString(retentionPeriod time.Duration) string {
 	return strconv.FormatInt(int64(retentionPeriod/time.Hour), 10)
 }
 
+// OTLPError 按 OTLP 规范返回 protobuf Status 消息，500 映射为 503 以允许客户端重试。
 // OTLPError writes an OTLP-compliant error response to the given http.ResponseWriter.
 //
 // According to the OTLP spec: https://opentelemetry.io/docs/specs/otlp/#failures-1
@@ -608,3 +616,4 @@ func HTTPError(w http.ResponseWriter, errorStr string, code int, _ log.Logger) {
 }
 
 var _ ErrorWriter = HTTPError
+// maxStreamLabelsSize 限制单流标签串长度，避免 Prometheus 标签解析器在超大标签时 panic。
