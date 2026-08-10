@@ -26,12 +26,17 @@ import io.netty.util.internal.ObjectUtil;
  * username/password authentication method in RFC 1929.
  * </p>
  *
+ * <p>SOCKS5 私有认证应答状态。RFC 1928 未规定私有方法子协商格式，本类沿用 RFC 1929
+ * 模式：{@link #SUCCESS}(0x00) 成功、{@link #FAILURE}(0xFF) 失败。</p>
+ *
  * @see <a href="https://www.ietf.org/rfc/rfc1928.txt">RFC 1928 Section 3</a>
  * @see <a href="https://www.ietf.org/rfc/rfc1929.txt">RFC 1929</a>
  */
 public final class Socks5PrivateAuthStatus implements Comparable<Socks5PrivateAuthStatus> {
 
+    /** 私有认证成功。 */
     public static final Socks5PrivateAuthStatus SUCCESS = new Socks5PrivateAuthStatus(0x00, "SUCCESS");
+    /** 私有认证失败。 */
     public static final Socks5PrivateAuthStatus FAILURE = new Socks5PrivateAuthStatus(0xFF, "FAILURE");
 
     /**
@@ -83,6 +88,7 @@ public final class Socks5PrivateAuthStatus implements Comparable<Socks5PrivateAu
         return byteValue;
     }
 
+    /** 是否为认证成功状态 (0x00)。 */
     public boolean isSuccess() {
         return byteValue == 0;
     }

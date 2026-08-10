@@ -31,9 +31,13 @@ import java.util.List;
  * On successful decode, this decoder will forward the received data to the next handler, so that
  * other handler can remove or replace this decoder later.  On failed decode, this decoder will
  * discard the received data, so that other handler closes the connection later.
+ *
+ * <p>SOCKS5 用户名/密码子协商应答解码器（RFC 1929 第 2 节）。
+ * 固定 2 字节：VER(1) + STATUS(0x00 成功 / 0xFF 失败)。解码成功后透传后续字节。</p>
  */
 public class Socks5PasswordAuthResponseDecoder extends ReplayingDecoder<State> {
 
+    /** 解码状态机：INIT 解析子协商应答，SUCCESS 透传隧道数据，FAILURE 丢弃无效输入。 */
     @UnstableApi
     public enum State {
         INIT,
@@ -75,6 +79,7 @@ public class Socks5PasswordAuthResponseDecoder extends ReplayingDecoder<State> {
         }
     }
 
+    /** 构造失败占位应答并切换到 FAILURE，供上层根据 {@link DecoderResult} 关闭连接。 */
     private void fail(List<Object> out, Exception cause) {
         if (!(cause instanceof DecoderException)) {
             cause = new DecoderException(cause);

@@ -32,9 +32,14 @@ import java.util.List;
  * On successful decode, this decoder will forward the received data to the next handler, so that
  * other handler can remove or replace this decoder later.  On failed decode, this decoder will
  * discard the received data, so that other handler closes the connection later.
+ *
+ * <p>SOCKS5 客户端侧解码器：解析服务端方法协商应答（RFC 1928 第 3 节）。
+ * 报文固定 2 字节：VER(5) + METHOD。解码成功后透传后续字节；失败时产出
+ * {@link Socks5AuthMethod#UNACCEPTED} 占位响应。</p>
  */
 public class Socks5InitialResponseDecoder extends ReplayingDecoder<State> {
 
+    /** 解码状态机：INIT 解析协商应答，SUCCESS 透传隧道数据，FAILURE 丢弃无效输入。 */
     @UnstableApi
     public enum State {
         INIT,
@@ -57,6 +62,7 @@ public class Socks5InitialResponseDecoder extends ReplayingDecoder<State> {
                             "unsupported version: " + version + " (expected: " + SocksVersion.SOCKS5.byteValue() + ')');
                 }
 
+                // 服务端选定的认证方法（0xFF 表示无可接受的方法）
                 final Socks5AuthMethod authMethod = Socks5AuthMethod.valueOf(in.readByte());
                 out.add(new DefaultSocks5InitialResponse(authMethod));
                 checkpoint(State.SUCCESS);
@@ -78,6 +84,7 @@ public class Socks5InitialResponseDecoder extends ReplayingDecoder<State> {
         }
     }
 
+    /** 构造失败占位应答并切换到 FAILURE，供上层根据 {@link DecoderResult} 关闭连接。 */
     private void fail(List<Object> out, Exception cause) {
         if (!(cause instanceof DecoderException)) {
             cause = new DecoderException(cause);

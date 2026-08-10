@@ -18,11 +18,17 @@ package io.netty.handler.codec.socksx.v5;
 /**
  * An initial SOCKS5 authentication method selection request, as defined in
  * <a href="https://tools.ietf.org/html/rfc1928#section-3">the section 3, RFC1928</a>.
+ *
+ * <p>SOCKS5 方法协商应答：服务端从客户端提供的认证方法中选定一种 {@link Socks5AuthMethod}。
+ * 若为 {@link Socks5AuthMethod#NO_AUTH} 则直接进入命令阶段；若为 {@link Socks5AuthMethod#PASSWORD}
+ * 等则需后续子协商。</p>
  */
 public interface Socks5InitialResponse extends Socks5Message {
 
     /**
      * Returns the {@code METHOD} field of this response.
+     *
+     * @return 服务端选定的认证方法字节值
      */
     Socks5AuthMethod authMethod();
 }

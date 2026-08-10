@@ -23,6 +23,9 @@ package io.netty.handler.codec.socksx.v5;
  * protocols, this interface can be extended with additional methods.
  * </p>
  *
+ * <p>SOCKS5 私有认证子协商应答：对应 0x80–0xFE 私有方法码的应答帧。
+ * 默认格式为 VER(1) + STATUS，状态语义参照 RFC 1929 用户名/密码模式。</p>
+ *
  * @see <a href="https://www.ietf.org/rfc/rfc1928.txt">RFC 1928 Section 3</a>
  */
 public interface Socks5PrivateAuthResponse extends Socks5Message {
@@ -30,7 +33,7 @@ public interface Socks5PrivateAuthResponse extends Socks5Message {
     /**
      * Returns the status of this response.
      *
-     * @return the authentication status
+     * @return 私有认证结果状态
      */
     Socks5PrivateAuthStatus status();
 }

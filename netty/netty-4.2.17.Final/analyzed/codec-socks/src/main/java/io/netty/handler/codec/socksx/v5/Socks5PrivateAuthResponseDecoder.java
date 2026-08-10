@@ -45,24 +45,20 @@ import java.util.List;
  *   <li>Create a custom handler chain to process the authentication responses</li>
  * </ul>
  * </p>
+ *
+ * <p>SOCKS5 私有认证子协商应答解码器。默认帧格式 VER(1) + STATUS，与 RFC 1929 用户名/密码
+ * 应答结构一致。INIT 阶段等待 2 字节完整帧；SUCCESS 后透传隧道数据；FAILURE 丢弃剩余输入。
+ * 自定义私有协议可替换此解码器并扩展 {@link Socks5PrivateAuthResponse}。</p>
  */
 public final class Socks5PrivateAuthResponseDecoder extends ByteToMessageDecoder {
 
-    /**
-     * Decoder states for SOCKS5 private authentication responses.
-     */
+    /** 私有认证应答解码状态机。 */
     private enum State {
-        /**
-         * Initial state.
-         */
+        /** 等待并解析 VER + STATUS。 */
         INIT,
-        /**
-         * Authentication successful.
-         */
+        /** 首帧已解码，透传后续字节。 */
         SUCCESS,
-        /**
-         * Authentication failed.
-         */
+        /** 解码失败，丢弃缓冲区。 */
         FAILURE
     }
 

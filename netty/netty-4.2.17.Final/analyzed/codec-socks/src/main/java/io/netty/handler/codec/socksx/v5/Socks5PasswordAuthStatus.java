@@ -20,12 +20,19 @@ import io.netty.util.internal.ObjectUtil;
 
 /**
  * The status of {@link Socks5PasswordAuthResponse}.
+ *
+ * <p>SOCKS5 用户名/密码子协商应答状态（RFC 1929）。
+ * 标准值：{@link #SUCCESS}(0x00) 认证成功，{@link #FAILURE}(0xFF) 认证失败；
+ * 非标准字节值会动态创建 {@code UNKNOWN} 实例。</p>
  */
 public class Socks5PasswordAuthStatus implements Comparable<Socks5PasswordAuthStatus> {
 
+    /** 认证成功，可进入 SOCKS 命令阶段。 */
     public static final Socks5PasswordAuthStatus SUCCESS = new Socks5PasswordAuthStatus(0x00, "SUCCESS");
+    /** 认证失败，连接应终止。 */
     public static final Socks5PasswordAuthStatus FAILURE = new Socks5PasswordAuthStatus(0xFF, "FAILURE");
 
+    /** 按字节值查找状态；0x00/0xFF 返回单例，其余创建 UNKNOWN 实例。 */
     public static Socks5PasswordAuthStatus valueOf(byte b) {
         switch (b) {
         case 0x00:
@@ -54,6 +61,7 @@ public class Socks5PasswordAuthStatus implements Comparable<Socks5PasswordAuthSt
         return byteValue;
     }
 
+    /** 是否为 RFC 1929 定义的认证成功状态 (0x00)。 */
     public boolean isSuccess() {
         return byteValue == 0;
     }

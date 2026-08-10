@@ -18,10 +18,15 @@ package io.netty.handler.codec.socksx.v5;
 /**
  * A SOCKS5 subnegotiation response for username-password authentication, as defined in
  * <a href="https://tools.ietf.org/html/rfc1929#section-2">the section 2, RFC1929</a>.
+ *
+ * <p>SOCKS5 用户名/密码子协商应答：服务端校验凭据后返回 VER(1) + STATUS。
+ * {@link Socks5PasswordAuthStatus#SUCCESS} 表示认证通过，可进入命令阶段。</p>
  */
 public interface Socks5PasswordAuthResponse extends Socks5Message {
     /**
      * Returns the status of this response.
+     *
+     * @return 认证结果状态码
      */
     Socks5PasswordAuthStatus status();
 }

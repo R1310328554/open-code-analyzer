@@ -20,7 +20,11 @@ import io.netty.handler.codec.socksx.SocksMessage;
 
 /**
  * A tag interface that all SOCKS5 protocol messages implement.
+ *
+ * <p>SOCKS5 协议消息的标记接口，继承自 {@link SocksMessage}。
+ * 所有 SOCKS5 请求/应答类型（方法协商、子协商、命令等）均实现此接口，
+ * 便于 {@link Socks5ClientEncoder} / {@link Socks5ServerEncoder} 统一分发编解码。</p>
  */
 public interface Socks5Message extends SocksMessage {
-    // Tag interface
+    // Tag interface — 无额外方法，仅作类型标识
 }

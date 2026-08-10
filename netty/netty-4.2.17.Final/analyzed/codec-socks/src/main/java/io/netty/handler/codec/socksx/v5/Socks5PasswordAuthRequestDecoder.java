@@ -32,9 +32,14 @@ import java.util.List;
  * On successful decode, this decoder will forward the received data to the next handler, so that
  * other handler can remove or replace this decoder later.  On failed decode, this decoder will
  * discard the received data, so that other handler closes the connection later.
+ *
+ * <p>SOCKS5 用户名/密码子协商请求解码器（RFC 1929 第 2 节）。
+ * 通过 {@code startOffset} 预读长度字段确定整帧大小后再一次性 skip，避免 ReplayingDecoder
+ * 在可变长字段间反复 checkpoint。解码成功后透传后续字节。</p>
  */
 public class Socks5PasswordAuthRequestDecoder extends ReplayingDecoder<State> {
 
+    /** 解码状态机：INIT 解析子协商帧，SUCCESS 透传隧道数据，FAILURE 丢弃无效输入。 */
     @UnstableApi
     public enum State {
         INIT,
@@ -52,11 +57,13 @@ public class Socks5PasswordAuthRequestDecoder extends ReplayingDecoder<State> {
             switch (state()) {
             case INIT: {
                 final int startOffset = in.readerIndex();
+                // 子协商版本号恒为 0x01
                 final byte version = in.getByte(startOffset);
                 if (version != 1) {
                     throw new DecoderException("unsupported subnegotiation version: " + version + " (expected: 1)");
                 }
 
+                // 根据 ULEN/PLEN 计算整帧长度：VER + ULEN + UNAME + PLEN + PASSWD
                 final int usernameLength = in.getUnsignedByte(startOffset + 1);
                 final int passwordLength = in.getUnsignedByte(startOffset + 2 + usernameLength);
                 final int totalLength = usernameLength + passwordLength + 3;
@@ -85,6 +92,7 @@ public class Socks5PasswordAuthRequestDecoder extends ReplayingDecoder<State> {
         }
     }
 
+    /** 构造失败占位请求并切换到 FAILURE，供上层根据 {@link DecoderResult} 关闭连接。 */
     private void fail(List<Object> out, Exception cause) {
         if (!(cause instanceof DecoderException)) {
             cause = new DecoderException(cause);

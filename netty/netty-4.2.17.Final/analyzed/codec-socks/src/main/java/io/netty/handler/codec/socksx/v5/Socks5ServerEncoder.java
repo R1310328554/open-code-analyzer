@@ -27,10 +27,15 @@ import io.netty.util.internal.StringUtil;
 
 /**
  * Encodes a server-side {@link Socks5Message} into a {@link ByteBuf}.
+ *
+ * <p>SOCKS5 服务端编码器：将 {@link Socks5InitialResponse}、{@link Socks5PasswordAuthResponse}、
+ * {@link Socks5CommandResponse}、{@link Socks5PrivateAuthResponse} 等应答消息序列化为字节流。
+ * {@link Sharable} 可安全共享；命令应答中的绑定地址通过可插拔 {@link Socks5AddressEncoder} 编码。</p>
  */
 @Sharable
 public class Socks5ServerEncoder extends MessageToByteEncoder<Socks5Message> {
 
+    /** 使用默认地址编码器的单例实例。 */
     public static final Socks5ServerEncoder DEFAULT = new Socks5ServerEncoder(Socks5AddressEncoder.DEFAULT);
 
     private final Socks5AddressEncoder addressEncoder;
@@ -72,21 +77,25 @@ public class Socks5ServerEncoder extends MessageToByteEncoder<Socks5Message> {
         }
     }
 
+    /** 编码方法协商应答：VER + METHOD。 */
     private static void encodeAuthMethodResponse(Socks5InitialResponse msg, ByteBuf out) {
         out.writeByte(msg.version().byteValue());
         out.writeByte(msg.authMethod().byteValue());
     }
 
+    /** 编码用户名/密码子协商应答：VER(1) + STATUS。 */
     private static void encodePasswordAuthResponse(Socks5PasswordAuthResponse msg, ByteBuf out) {
         out.writeByte(0x01);
         out.writeByte(msg.status().byteValue());
     }
 
+    /** 编码私有认证子协商应答：VER(1) + STATUS。 */
     private static void encodePrivateAuthResponse(Socks5PrivateAuthResponse msg, ByteBuf out) {
         out.writeByte(0x01);
         out.writeByte(msg.status().byteValue());
     }
 
+    /** 编码命令应答：VER + STATUS + RSV(0) + ATYP + BND.ADDR + BND.PORT。 */
     private void encodeCommandResponse(Socks5CommandResponse msg, ByteBuf out) throws Exception {
         out.writeByte(msg.version().byteValue());
         out.writeByte(msg.status().byteValue());
@@ -103,6 +112,7 @@ public class Socks5ServerEncoder extends MessageToByteEncoder<Socks5Message> {
         ByteBufUtil.writeShortBE(out, msg.bndPort());
     }
 
+    /** 校验单字节长度前缀字段（域名长度等）是否在 0–255 范围内。 */
     private static void checkFieldLength(int length) {
         if (length > 255 || length < 0) {
             throw new EncoderException("Invalid field length value: " + length);

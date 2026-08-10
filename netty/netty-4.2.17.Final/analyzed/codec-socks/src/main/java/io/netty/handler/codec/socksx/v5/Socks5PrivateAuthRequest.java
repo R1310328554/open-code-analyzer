@@ -23,6 +23,9 @@ package io.netty.handler.codec.socksx.v5;
  * for other private authentication methods by implementing custom encoders/decoders.
  * </p>
  *
+ * <p>SOCKS5 私有认证子协商请求：RFC 1928 将 0x80–0xFE 方法码保留给厂商自定义认证。
+ * 默认实现携带 opaque 令牌字节数组；自定义协议可扩展此接口并配套专用编解码器。</p>
+ *
  * @see <a href="https://www.ietf.org/rfc/rfc1928.txt">RFC 1928 Section 3</a>
  */
 public interface Socks5PrivateAuthRequest extends Socks5Message {
@@ -34,7 +37,7 @@ public interface Socks5PrivateAuthRequest extends Socks5Message {
      * additional methods in a subinterface.
      * </p>
      *
-     * @return the private authentication token
+     * @return 私有认证令牌字节数组（长度由子协商帧中的单字节长度前缀限定）
      */
     byte[] privateToken();
 }

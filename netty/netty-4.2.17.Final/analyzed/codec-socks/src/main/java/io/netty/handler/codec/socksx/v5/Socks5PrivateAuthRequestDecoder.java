@@ -28,9 +28,14 @@ import java.util.List;
  * Decodes a single {@link Socks5PrivateAuthRequest} from the inbound {@link ByteBuf}s.
  * On successful decode, this decoder will forward the received data to the next handler, so that
  * other handler can remove or replace this decoder later.
+ *
+ * <p>SOCKS5 私有认证子协商请求解码器。报文格式：VER(1) + TOKEN_LEN + TOKEN[]。
+ * 使用 {@link ByteToMessageDecoder} 而非 ReplayingDecoder，在数据不足时等待更多字节；
+ * 解码完成后通过 {@code decoded} 标志透传后续隧道数据。</p>
  */
 public final class Socks5PrivateAuthRequestDecoder extends ByteToMessageDecoder {
 
+    /** 是否已完成首帧解码；之后调用仅透传剩余字节。 */
     private boolean decoded;
 
     @Override
@@ -44,7 +49,7 @@ public final class Socks5PrivateAuthRequestDecoder extends ByteToMessageDecoder 
                 return;
             }
 
-            // Check if we have enough data to decode the message
+            // 至少需要 VER + TOKEN_LEN 两字节
             if (in.readableBytes() < 2) {
                 return;
             }
@@ -57,28 +62,27 @@ public final class Socks5PrivateAuthRequestDecoder extends ByteToMessageDecoder 
 
             final int tokenLength = in.getUnsignedByte(startOffset + 1);
 
-            // Check if the full message is available
+            // 等待完整令牌数据到达
             if (in.readableBytes() < 2 + tokenLength) {
                 return;
             }
 
-            // Read the version and token length
+            // 跳过版本与长度前缀
             in.skipBytes(2);
 
-            // Read the token
+            // 读取令牌字节
             byte[] token = new byte[tokenLength];
             in.readBytes(token);
 
-            // Add the decoded token to the output list
             out.add(new DefaultSocks5PrivateAuthRequest(token));
 
-            // Mark as decoded to handle remaining bytes in future calls
             decoded = true;
         } catch (Exception e) {
             fail(out, e);
         }
     }
 
+    /** 构造失败占位请求并标记已解码，避免重复解析脏数据。 */
     private void fail(List<Object> out, Exception cause) {
         if (!(cause instanceof DecoderException)) {
             cause = new DecoderException(cause);

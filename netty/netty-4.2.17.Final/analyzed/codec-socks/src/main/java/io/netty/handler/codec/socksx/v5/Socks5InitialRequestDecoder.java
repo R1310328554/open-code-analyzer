@@ -32,9 +32,14 @@ import java.util.List;
  * On successful decode, this decoder will forward the received data to the next handler, so that
  * other handler can remove or replace this decoder later.  On failed decode, this decoder will
  * discard the received data, so that other handler closes the connection later.
+ *
+ * <p>SOCKS5 服务端侧解码器：解析客户端方法协商请求（RFC 1928 第 3 节）。
+ * 报文格式为 VER(5) + NMETHODS + METHODS[]。解码成功后进入 SUCCESS 状态透传后续字节；
+ * 失败时产出带 {@link DecoderResult#failure} 的占位请求并丢弃剩余输入。</p>
  */
 public class Socks5InitialRequestDecoder extends ReplayingDecoder<State> {
 
+    /** 解码状态机：INIT 解析协商头，SUCCESS 透传隧道数据，FAILURE 丢弃无效输入。 */
     @UnstableApi
     public enum State {
         INIT,
@@ -51,12 +56,14 @@ public class Socks5InitialRequestDecoder extends ReplayingDecoder<State> {
         try {
             switch (state()) {
             case INIT: {
+                // 版本号必须为 SOCKS5 (0x05)
                 final byte version = in.readByte();
                 if (version != SocksVersion.SOCKS5.byteValue()) {
                     throw new DecoderException(
                             "unsupported version: " + version + " (expected: " + SocksVersion.SOCKS5.byteValue() + ')');
                 }
 
+                // 客户端支持的认证方法个数及列表
                 final int authMethodCnt = in.readUnsignedByte();
 
                 final Socks5AuthMethod[] authMethods = new Socks5AuthMethod[authMethodCnt];
@@ -68,6 +75,7 @@ public class Socks5InitialRequestDecoder extends ReplayingDecoder<State> {
                 checkpoint(State.SUCCESS);
             }
             case SUCCESS: {
+                // 协商报文之后的字节保留引用计数后上抛，便于后续 handler 处理
                 int readableBytes = actualReadableBytes();
                 if (readableBytes > 0) {
                     out.add(in.readRetainedSlice(readableBytes));
@@ -84,6 +92,7 @@ public class Socks5InitialRequestDecoder extends ReplayingDecoder<State> {
         }
     }
 
+    /** 构造失败占位请求并切换到 FAILURE，供上层根据 {@link DecoderResult} 关闭连接。 */
     private void fail(List<Object> out, Exception cause) {
         if (!(cause instanceof DecoderException)) {
             cause = new DecoderException(cause);
