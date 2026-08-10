@@ -1,5 +1,7 @@
 package engine
 
+// compat 将 Arrow RecordBatch 列式结果转换为 LogQL 流、向量或矩阵，兼容经典引擎语义。
+
 import (
 	"sort"
 	"time"
@@ -19,6 +21,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/logqlmodel/stats"
 )
 
+// ResultBuilder 从 executor 收集 RecordBatch 并最终 Build 为 logqlmodel.Result。
 type ResultBuilder interface {
 	CollectRecord(arrow.RecordBatch)
 	Build(stats.Result, *metadata.Context) logqlmodel.Result
@@ -41,6 +44,7 @@ func newStreamsResultBuilder(dir logproto.Direction, categorizeLabels bool) *str
 	}
 }
 
+// streamsResultBuilder 按标签串聚合 logproto.Entry，支持方向排序与去重。
 type streamsResultBuilder struct {
 	direction        logproto.Direction
 	categorizeLabels bool
@@ -62,6 +66,7 @@ type rowBuilder struct {
 	parsedEmptyKeys []string
 }
 
+// CollectRecord 按列向量化读取 timestamp/line/label/metadata/parsed 再逐行组装流。
 func (b *streamsResultBuilder) CollectRecord(rec arrow.RecordBatch) {
 	numRows := int(rec.NumRows())
 	if numRows == 0 {
@@ -299,6 +304,7 @@ func (b *streamsResultBuilder) Build(s stats.Result, md *metadata.Context) logql
 	}
 }
 
+// dedupeEntries 在已按时间排序的条目上去除相邻完全重复项（多 section 合并场景）。
 // dedupeEntries removes consecutive duplicate entries. Two entries are
 // considered duplicates when all fields (timestamp, line, structured metadata,
 // and parsed labels) are equal. The input slice must already be sorted by
@@ -330,6 +336,7 @@ func (b *streamsResultBuilder) Len() int {
 	return b.count
 }
 
+// vectorResultBuilder 累积 instant 指标查询的 promql.Vector 样本。
 type vectorResultBuilder struct {
 	data        promql.Vector
 	lblsBuilder *labels.Builder
@@ -373,6 +380,7 @@ func (b *vectorResultBuilder) Len() int {
 	return len(b.data)
 }
 
+// matrixResultBuilder 按标签 StableHash 分组 FPoint 构建 range 查询矩阵。
 type matrixResultBuilder struct {
 	seriesIndex map[uint64]promql.Series
 	lblsBuilder *labels.Builder
@@ -446,6 +454,7 @@ func (b *matrixResultBuilder) Len() int {
 	return total
 }
 
+// collectSamplesFromRow 从单行提取 timestamp(ms)、value 与字符串标签列。
 func collectSamplesFromRow(builder *labels.Builder, rec arrow.RecordBatch, i int) (promql.Sample, bool) {
 	var sample promql.Sample
 	builder.Reset(labels.EmptyLabels())
@@ -497,3 +506,4 @@ func collectSamplesFromRow(builder *labels.Builder, rec arrow.RecordBatch, i int
 	sample.Metric = builder.Labels()
 	return sample, true
 }
+// 空 parsed 标签需单独处理以匹配 Prometheus Builder 不允许空值的限制。

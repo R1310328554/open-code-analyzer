@@ -1,5 +1,7 @@
 package writefailures
 
+// writefailures 指标：按 org_id 统计成功输出与因限流丢弃的写入失败日志条数。
+
 import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -12,6 +14,7 @@ type metrics struct {
 	discardedCount *prometheus.CounterVec
 }
 
+// newMetrics 注册 loki_write_failures_logged_total 与 discarded_total 计数器。
 func newMetrics(reg prometheus.Registerer, subsystem string) *metrics {
 	return &metrics{
 		loggedCount: promauto.With(reg).NewCounterVec(prometheus.CounterOpts{
@@ -28,3 +31,4 @@ func newMetrics(reg prometheus.Registerer, subsystem string) *metrics {
 		}, []string{"org_id"}),
 	}
 }
+// ConstLabels 携带 subsystem 以区分 distributor 等不同组件实例。

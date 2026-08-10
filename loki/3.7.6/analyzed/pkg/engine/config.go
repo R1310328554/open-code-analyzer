@@ -1,5 +1,7 @@
 package engine
 
+// engine Config 定义下一代 LogQL 引擎的实验性开关、分布式 worker、存储窗口与结果缓存。
+
 import (
 	"flag"
 	"fmt"
@@ -14,6 +16,7 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// Config 聚合 Enable/Distributed、Executor/Worker、存储滞后与 query-engine 路由等选项。
 // Config holds the configuration options to use with the next generation Loki
 // Query Engine.
 type Config struct {
@@ -52,6 +55,7 @@ func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 	cfg.RegisterFlagsWithPrefix("query-engine.", f)
 }
 
+// RegisterFlagsWithPrefix 注册 query-engine.* 前缀下的全部实验性 CLI 标志。
 func (cfg *Config) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSet) {
 	f.BoolVar(&cfg.Enable, prefix+"enable", false, "Experimental: Enable next generation query engine for supported queries.")
 	f.BoolVar(&cfg.Distributed, prefix+"distributed", false, "Experimental: Enable distributed query execution.")
@@ -75,6 +79,7 @@ func (cfg *Config) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSet) {
 	cfg.ResultsCache.RegisterFlagsWithPrefix(f, prefix+"results-cache.")
 }
 
+// ValidQueryRange 结合 StorageStartDate、RetentionDays 与 StorageLag 计算可查询时间窗。
 func (cfg *Config) ValidQueryRange() (time.Time, time.Time) {
 	startDate := time.Time(cfg.StorageStartDate).UTC()
 	now := time.Now().UTC()
@@ -93,6 +98,7 @@ func (cfg *Config) ValidQueryRange() (time.Time, time.Time) {
 	return startDate, now.Add(-cfg.StorageLag)
 }
 
+// AdvertiseAddr 在分布式模式下从 InterfaceNames 解析 worker 回连的 TCP 通告地址。
 // AdvertiseAddress determines the TCP address to advertise for accepting
 // incoming traffic from workers. Returns nil, nil if distributed execution is
 // not enabled.
@@ -115,3 +121,4 @@ func (cfg *Config) AdvertiseAddr(listenPort uint16) (*net.TCPAddr, error) {
 	}
 	return net.TCPAddrFromAddrPort(netip.AddrPortFrom(parsedAddr, listenPort)), nil
 }
+// EnableDeleteReqFiltering 控制查询结果是否排除与 delete request 重叠的日志行。

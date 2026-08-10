@@ -1,5 +1,7 @@
 package distributor
 
+// Validator 封装租户 ingestion 限制校验：条目时间戳、行大小、标签与结构化元数据等。
+
 import (
 	"context"
 	"errors"
@@ -20,6 +22,7 @@ const (
 	timeFormat = time.RFC3339
 )
 
+// Validator 绑定 Limits 接口与 UsageTracker，校验失败时上报丢弃指标。
 type Validator struct {
 	Limits
 	usageTracker push.UsageTracker
@@ -32,6 +35,7 @@ func NewValidator(l Limits, t push.UsageTracker) (*Validator, error) {
 	return &Validator{l, t}, nil
 }
 
+// validationContext 缓存某租户在特定时刻下的全部校验阈值，避免重复查 limits。
 type validationContext struct {
 	rejectOldSample       bool
 	rejectOldSampleMaxAge int64
@@ -63,6 +67,7 @@ type validationContext struct {
 	userID string
 }
 
+// getValidationContextForTime 根据当前时间与 userID 组装一次性校验上下文快照。
 func (v Validator) getValidationContextForTime(now time.Time, userID string) validationContext {
 	return validationContext{
 		userID:                        userID,
@@ -90,6 +95,7 @@ func (v Validator) getValidationContextForTime(now time.Time, userID string) val
 	}
 }
 
+// ValidateEntry 校验单条 logproto.Entry，违规时记录 DiscardedSamples/Bytes 并返回错误。
 // ValidateEntry returns an error if the entry is invalid and report metrics for invalid entries accordingly.
 func (v Validator) ValidateEntry(ctx context.Context, vCtx validationContext, labels labels.Labels, entry logproto.Entry, retentionHours string, policy, format string) error {
 	ts := entry.Timestamp.UnixNano()
@@ -149,10 +155,12 @@ func (v Validator) IsPatternStream(ls labels.Labels) bool {
 	return ls.Has(constants.PatternLabel)
 }
 
+// IsInternalStream 判断是否为 Loki 内部创建的聚合指标或 pattern 流。
 func (v Validator) IsInternalStream(ls labels.Labels) bool {
 	return v.IsAggregatedMetricStream(ls) || v.IsPatternStream(ls)
 }
 
+// ValidateLabels 校验流标签数量与长度，内部聚合/模式流跳过常规标签限制。
 // Validate labels returns an error if the labels are invalid and if the stream is an aggregated metric stream
 func (v Validator) ValidateLabels(vCtx validationContext, ls labels.Labels, stream logproto.Stream, retentionHours, policy, format string) error {
 	if ls.IsEmpty() {
@@ -210,6 +218,7 @@ func (v Validator) reportDiscardedDataWithTracker(ctx context.Context, reason st
 	}
 }
 
+// ShouldBlockIngestion 按租户块、命名策略块、全局策略块优先级决定是否阻断写入。
 // ShouldBlockIngestion returns whether ingestion should be blocked, until when and the status code.
 // priority is: Per-tenant block > named policy block > Global policy block
 func (v Validator) ShouldBlockIngestion(ctx validationContext, now time.Time, policy string) (bool, int, string, error) {
@@ -226,6 +235,7 @@ func (v Validator) ShouldBlockIngestion(ctx validationContext, now time.Time, po
 	return false, 0, "", nil
 }
 
+// shouldBlockTenant 检查租户级 blockIngestionUntil 是否在有效期内。
 func (v Validator) shouldBlockTenant(ctx validationContext, now time.Time) (bool, time.Time, int) {
 	if ctx.blockIngestionUntil.IsZero() {
 		return false, time.Time{}, 0
@@ -238,6 +248,7 @@ func (v Validator) shouldBlockTenant(ctx validationContext, now time.Time) (bool
 	return false, time.Time{}, 0
 }
 
+// shouldBlockPolicy 检查指定 retention policy 是否处于租户配置的阻断窗口内。
 // ShouldBlockPolicy checks if ingestion should be blocked for the given policy.
 // It returns true if ingestion should be blocked, along with the block until time and status code.
 func (v Validator) shouldBlockPolicy(ctx validationContext, policy string, now time.Time) (bool, time.Time, int) {
@@ -253,3 +264,4 @@ func (v Validator) shouldBlockPolicy(ctx validationContext, policy string, now t
 
 	return false, time.Time{}, 0
 }
+// reportDiscardedDataWithTracker 在计数丢弃样本时可选同步 UsageTracker 字节统计。

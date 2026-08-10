@@ -1,5 +1,7 @@
 package shardstreams
 
+// shardstreams 配置包：定义 distributor 自动分片流的开关、速率阈值与时间分片策略。
+
 import (
 	"flag"
 	"time"
@@ -16,11 +18,13 @@ type Config struct {
 
 	LoggingEnabled bool `yaml:"logging_enabled" json:"logging_enabled" doc:"description=Whether to log sharding streams behavior or not. Not recommended for production environments."`
 
+// DesiredRate 为字节/秒阈值，超过则切分为新 shard 以遵守单流速率限制。
 	// DesiredRate is the threshold used to shard the stream into smaller pieces.
 	// Expected to be in bytes.
 	DesiredRate flagext.ByteSize `yaml:"desired_rate" json:"desired_rate" doc:"description=Threshold used to cut a new shard. Default (1536KB) means if a rate is above 1536KB/s, it will be sharded into two streams."`
 }
 
+// RegisterFlagsWithPrefix 注册 shard-streams 相关 CLI/YAML 配置项及默认值。
 func (cfg *Config) RegisterFlagsWithPrefix(prefix string, fs *flag.FlagSet) {
 	fs.BoolVar(&cfg.Enabled, prefix+".enabled", true, "Automatically shard streams to keep them under the per-stream rate limit")
 	fs.BoolVar(&cfg.TimeShardingEnabled, prefix+".time-sharding-enabled", false, "Automatically shard streams by time (in MaxChunkAge/2 buckets), to allow out-of-order ingestion of very old logs.")
@@ -29,3 +33,4 @@ func (cfg *Config) RegisterFlagsWithPrefix(prefix string, fs *flag.FlagSet) {
 	cfg.DesiredRate.Set("1536KB") //nolint:errcheck
 	fs.Var(&cfg.DesiredRate, prefix+".desired-rate", "threshold used to cut a new shard. Default (1536KB) means if a rate is above 1536KB/s, it will be sharded.")
 }
+// 时间分片与速率分片可同时启用，时间分片优先于速率分片执行。

@@ -1,5 +1,7 @@
 package engine
 
+// Basic 为顺序执行的 LogQL V2 引擎，实现 logql.Engine：逻辑规划、物理规划、本地 executor 三阶段。
+
 import (
 	"context"
 	"fmt"
@@ -32,6 +34,7 @@ import (
 
 var ErrNotSupported = errors.New("feature not supported in new query engine")
 
+// NewBasic 校验 BatchSize 与 RangeConfig，绑定 metastore、bucket 与 limits 构造 Basic 实例。
 // NewBasic creates a new instance of the basic query engine that implements the
 // [logql.Engine] interface. The basic engine executes plans sequentially with
 // no local or distributed parallelism.
@@ -53,6 +56,7 @@ func NewBasic(cfg ExecutorConfig, ms metastore.Metastore, bucket objstore.Bucket
 	}
 }
 
+// Basic 无本地或分布式并行，适合单节点或测试场景下的 dataobj 查询。
 // Basic is a basic LogQL evaluation engine. Evaluation is performed
 // sequentially, with no local or distributed parallelism.
 type Basic struct {
@@ -72,6 +76,7 @@ func (e *Basic) Query(params logql.Params) logql.Query {
 	}
 }
 
+// Execute 依次构建 logical/physical plan、WrapWithBatching 后由 executor 流水线求值。
 // Execute executes a LogQL query and returns its results or alternatively an error.
 // The execution is done in three steps:
 //  1. Create a logical plan from the provided query parameters.
@@ -267,6 +272,7 @@ func (e *Basic) Execute(ctx context.Context, params logql.Params) (logqlmodel.Re
 	return builder.Build(stats, metadataCtx), nil
 }
 
+// IsQuerySupported 尝试 BuildPlan，无错误则表示新引擎可处理该查询。
 func IsQuerySupported(params logql.Params) bool {
 	_, err := logical.BuildPlan(context.Background(), params)
 	return err == nil
@@ -293,6 +299,7 @@ func collectResult(ctx context.Context, pipeline executor.Pipeline, builder Resu
 
 var _ logql.Engine = (*Basic)(nil)
 
+// queryAdapter 实现 logql.Query，将 Exec 委托给 Basic.Execute。
 // queryAdapter dispatches query execution to the wrapped engine.
 type queryAdapter struct {
 	params logql.Params
@@ -305,3 +312,4 @@ func (q *queryAdapter) Exec(ctx context.Context) (logqlmodel.Result, error) {
 }
 
 var _ logql.Query = (*queryAdapter)(nil)
+// Execute 成功时在 metadata 中附加 experimental engine 警告并记录各阶段耗时。

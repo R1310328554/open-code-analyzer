@@ -1,5 +1,7 @@
 package engine
 
+// Engine 为分布式 V2 查询引擎：逻辑/物理/工作流规划后通过 Scheduler 调度 executor 任务。
+
 import (
 	"context"
 	"errors"
@@ -62,6 +64,7 @@ type (
 )
 
 // ExecutorConfig configures engine execution.
+// ExecutorConfig 配置批大小、预取字节、Merge 并行预取、范围读优化与可选流过滤。
 type ExecutorConfig struct {
 	// Batch size of the v2 execution engine.
 	BatchSize int `yaml:"batch_size" category:"experimental"`
@@ -91,6 +94,7 @@ func (cfg *ExecutorConfig) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSe
 }
 
 // Params holds parameters for constructing a new [Engine].
+// Params 聚合构造 Engine 所需的 Logger、Config、Scheduler、Metastore 与 Limits。
 type Params struct {
 	Logger     log.Logger            // Logger for optional log messages.
 	Registerer prometheus.Registerer // Registerer for optional metrics.
@@ -157,6 +161,7 @@ func New(params Params) (*Engine, error) {
 	return e, nil
 }
 
+// Execute 完整查询路径：规划三阶段、wf.Run、collectResult 并导出 xcap 统计。
 // Execute executes the given query. Execute returns [ErrNotSupported] if params
 // denotes a query that is not yet implemented in the new engine.
 func (e *Engine) Execute(ctx context.Context, params logql.Params) (logqlmodel.Result, error) {
@@ -318,6 +323,7 @@ func isMetricQuery(expr syntax.Expr) bool {
 }
 
 // buildLogicalPlan builds a logical plan from the given params.
+// buildLogicalPlan 拉取 delete requests 后 BuildPlanWithDeletes 并 Optimize 逻辑计划。
 func (e *Engine) buildLogicalPlan(ctx context.Context, logger log.Logger, params logql.Params) (*logical.Plan, time.Duration, error) {
 	span := trace.SpanFromContext(ctx)
 	timer := prometheus.NewTimer(e.metrics.logicalPlanning)
@@ -361,6 +367,7 @@ func (e *Engine) buildLogicalPlan(ctx context.Context, logger log.Logger, params
 }
 
 // buildPhysicalPlan builds a physical plan from the given logical plan.
+// buildPhysicalPlan 经 metastore catalog 生成、优化物理计划并 WrapWithBatching。
 func (e *Engine) buildPhysicalPlan(ctx context.Context, tenantID string, logger log.Logger, params logql.Params, logicalPlan *logical.Plan) (*physical.Plan, time.Duration, error) {
 	span := trace.SpanFromContext(ctx)
 	timer := prometheus.NewTimer(e.metrics.physicalPlanning)
@@ -410,6 +417,7 @@ func (e *Engine) buildPhysicalPlan(ctx context.Context, tenantID string, logger 
 	return physicalPlan, duration, nil
 }
 
+// metastoreSectionsResolver 为 catalog 提供 section 枚举，内部复用 workflow 执行 metastore 计划。
 func (e *Engine) metastoreSectionsResolver(ctx context.Context, tenantID string) physical.MetastoreSectionsResolver {
 	planner := physical.NewMetastorePlanner(e.metastore, e.cfg.Executor.BatchSize)
 	return func(selector physical.Expression, predicates []physical.Expression, start time.Time, end time.Time) ([]*metastore.DataobjSectionDescriptor, error) {
@@ -457,6 +465,7 @@ func (e *Engine) metastoreSectionsResolver(ctx context.Context, tenantID string)
 }
 
 // buildWorkflow builds a workflow from the given physical plan.
+// buildWorkflow 按租户 scan 并行度与 debug 标志实例化 workflow 执行图。
 func (e *Engine) buildWorkflow(ctx context.Context, tenantID string, logger log.Logger, physicalPlan *physical.Plan, useAdmissionLanes bool) (*workflow.Workflow, time.Duration, error) {
 	span := trace.SpanFromContext(ctx)
 	timer := prometheus.NewTimer(e.metrics.workflowPlanning)
@@ -503,6 +512,7 @@ func (e *Engine) buildWorkflow(ctx context.Context, tenantID string, logger log.
 }
 
 // collectResult processes the results of the execution plan.
+// collectResult 按表达式类型选择 streams/vector/matrix builder 并消费 pipeline 输出。
 func (e *Engine) collectResult(ctx context.Context, logger log.Logger, params logql.Params, pipeline executor.Pipeline) (ResultBuilder, time.Duration, error) {
 	span := trace.SpanFromContext(ctx)
 	timer := prometheus.NewTimer(e.metrics.execution)
@@ -555,3 +565,4 @@ func (e *Engine) collectResult(ctx context.Context, logger log.Logger, params lo
 	)
 	return builder, duration, nil
 }
+// 日志查询启用 admission lanes 限制 MaxScanTaskParallelism，指标查询不设 scan 上限。

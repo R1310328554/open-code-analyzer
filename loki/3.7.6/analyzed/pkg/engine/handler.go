@@ -1,5 +1,7 @@
 package engine
 
+// handler 将 Engine 暴露为 HTTP queryrange Handler，叠加 retention、步长对齐与结果缓存中间件。
+
 import (
 	"context"
 	"errors"
@@ -32,6 +34,7 @@ import (
 	util_validation "github.com/grafana/loki/v3/pkg/util/validation"
 )
 
+// Limits 扩展 querier limits，增加缓存新鲜度、并行度与引擎结果缓存分桶间隔。
 type Limits interface {
 	querier_limits.Limits
 	RetentionLimits
@@ -41,6 +44,7 @@ type Limits interface {
 	EngineResultsCacheTimeBucketInterval(string) time.Duration
 }
 
+// Handler 组装 executorHandler 并按 Config 可选挂载 retention、对齐与 cache 中间件。
 // Handler returns an [http.Handler] for serving queries. Unsupported queries
 // will result in an error.
 func Handler(
@@ -66,6 +70,7 @@ func HandlerFromExecutor(cfg Config, logger log.Logger, exec QueryExecutor, limi
 	return executorHandler(cfg, logger, exec, limits, reg)
 }
 
+// executorHandler 构建 queryHandler 链，配置 ResultsCache 时分别创建 metric/log 缓存。
 func executorHandler(
 	cfg Config,
 	logger log.Logger,
@@ -125,6 +130,7 @@ func executorHandler(
 	return queryrange.NewSerializeHTTPHandler(h, queryrange.DefaultCodec), nil
 }
 
+// newMetricStepAlignMiddleware 仅对 SampleExpr 做 step 对齐，日志查询保留亚秒精度。
 // newMetricStepAlignMiddleware returns a middleware that applies step alignment
 // only to metric queries (SampleExpr). Log queries are passed through without
 // modification, preserving sub-second timestamp precision.
@@ -159,6 +165,7 @@ type queryHandler struct {
 
 var _ queryrangebase.Handler = (*queryHandler)(nil)
 
+// Do 分发 LokiRequest/LokiInstantRequest，其他类型返回 501 Not Implemented。
 func (h *queryHandler) Do(ctx context.Context, req queryrangebase.Request) (queryrangebase.Response, error) {
 	// TODO(rfratto): Can this be removed by making [querier.Handler] and
 	// [querier.QuerierAPI] more generic?
@@ -209,6 +216,7 @@ func (h *queryHandler) doRequest(ctx context.Context, req *queryrange.LokiReques
 
 // validateRequest validates all limits for a range query request.
 // Returns the potentially modified request (with adjusted start time) or an error.
+// validateRequest 校验条目上限、必需标签、lookback/length/range 并可能调整 start。
 func (h *queryHandler) validateRequest(ctx context.Context, req *queryrange.LokiRequest) (*queryrange.LokiRequest, error) {
 	if err := h.validateMaxEntriesLimits(ctx, req.Plan.AST, req.Limit); err != nil {
 		return nil, err
@@ -432,6 +440,7 @@ func (h *queryHandler) validateMatcherGroup(matchers []*labels.Matcher, required
 	return nil
 }
 
+// execute 校验引擎时间窗与 retention 后调用 Engine.Execute，ErrNotSupported 映射 501。
 func (h *queryHandler) execute(ctx context.Context, logger log.Logger, params logql.Params) (logqlmodel.Result, error) {
 	if err := h.validateTimeRange(params); err != nil {
 		return logqlmodel.Result{}, httpgrpc.Error(http.StatusNotImplemented, err.Error())
@@ -537,3 +546,4 @@ func emptyResult(ctx context.Context, params logql.Params) (logqlmodel.Result, e
 		Warnings: md.Warnings(),
 	}, nil
 }
+// validateTimeRange 拒绝超出 ValidQueryRange 的查询，与 dataobj 可用窗口一致。
