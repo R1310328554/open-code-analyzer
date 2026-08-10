@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T01:04:23Z",
-  "files": [
-    "handler-proxy/src/main/java/io/netty/handler/proxy/ProxyHandler.java",
-    "handler-proxy/src/main/java/io/netty/handler/proxy/Socks4ProxyHandler.java",
-    "handler-proxy/src/main/java/io/netty/handler/proxy/Socks5ProxyHandler.java",
-    "handler-ssl-ocsp/src/main/java/io/netty/handler/ssl/ocsp/IoTransport.java",
-    "handler-ssl-ocsp/src/main/java/io/netty/handler/ssl/ocsp/NoOcspResponderException.java",
-    "handler-ssl-ocsp/src/main/java/io/netty/handler/ssl/ocsp/OcspClient.java",
-    "handler-ssl-ocsp/src/main/java/io/netty/handler/ssl/ocsp/OcspClientHandler.java",
-    "handler-ssl-ocsp/src/main/java/io/netty/handler/ssl/ocsp/OcspHttpHandler.java",
-    "handler-ssl-ocsp/src/main/java/io/netty/handler/ssl/ocsp/OcspResponse.java",
-    "handler-ssl-ocsp/src/main/java/io/netty/handler/ssl/ocsp/OcspServerCertificateValidator.java",
-    "handler-ssl-ocsp/src/main/java/io/netty/handler/ssl/ocsp/OcspValidationEvent.java",
-    "resolver/src/main/java/io/netty/resolver/AbstractAddressResolver.java",
-    "resolver/src/main/java/io/netty/resolver/AddressResolver.java",
-    "resolver/src/main/java/io/netty/resolver/AddressResolverGroup.java",
-    "resolver/src/main/java/io/netty/resolver/CompositeNameResolver.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 458,
-  "done": 1455
+  "done": 1470
 }
