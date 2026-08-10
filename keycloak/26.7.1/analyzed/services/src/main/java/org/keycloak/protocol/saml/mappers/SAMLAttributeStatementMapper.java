@@ -24,11 +24,22 @@ import org.keycloak.models.ProtocolMapperModel;
 import org.keycloak.models.UserSessionModel;
 
 /**
+ * SAML AttributeStatement 映射器接口。
+ * <p>实现此接口的协议映射器可在 SAML 断言构建阶段向 {@link AttributeStatementType} 写入属性。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface SAMLAttributeStatementMapper {
 
+    /**
+     * 转换 SAML AttributeStatement。
+     * @param attributeStatement 目标属性语句
+     * @param mappingModel 映射器配置
+     * @param session Keycloak 会话
+     * @param userSession 用户会话
+     * @param clientSession 已认证客户端会话
+     */
     void transformAttributeStatement(AttributeStatementType attributeStatement, ProtocolMapperModel mappingModel, KeycloakSession session,
                                         UserSessionModel userSession, AuthenticatedClientSessionModel clientSession);
 }

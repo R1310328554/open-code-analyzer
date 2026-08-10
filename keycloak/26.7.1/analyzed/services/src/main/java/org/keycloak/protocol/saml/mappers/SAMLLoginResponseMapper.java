@@ -24,12 +24,24 @@ import org.keycloak.models.ProtocolMapperModel;
 import org.keycloak.models.UserSessionModel;
 
 /**
+ * SAML 登录响应映射器接口。
+ * <p>实现此接口的协议映射器可在 SAML 登录响应签发阶段对 {@link ResponseType} 进行转换。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface SAMLLoginResponseMapper {
 
 
+    /**
+     * 转换 SAML 登录响应。
+     * @param response SAML 响应
+     * @param mappingModel 映射器配置
+     * @param session Keycloak 会话
+     * @param userSession 用户会话
+     * @param clientSessionCtx 客户端会话上下文
+     * @return 转换后的 SAML 响应
+     */
     ResponseType transformLoginResponse(ResponseType response, ProtocolMapperModel mappingModel, KeycloakSession session,
                                         UserSessionModel userSession, ClientSessionContext clientSessionCtx);
 }

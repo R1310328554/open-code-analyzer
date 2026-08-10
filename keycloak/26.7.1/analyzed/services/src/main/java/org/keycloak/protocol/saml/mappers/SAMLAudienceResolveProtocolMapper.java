@@ -34,60 +34,68 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.jboss.logging.Logger;
 
 /**
- * SAML audience resolve mapper. The mapper adds all client_ids of \"allowed\"
- * clients to the audience conditions in the assertion. Allowed client means
- * any SAML client for which user has at least one client role.
+ * SAML 受众解析协议映射器。
+ * <p>将用户拥有至少一个客户端角色的所有 SAML 客户端 {@code client_id} 添加到断言 AudienceRestriction（行为与 OIDC 受众解析映射器一致）。</p>
  *
  * @author rmartinc
  */
 public class SAMLAudienceResolveProtocolMapper extends AbstractSAMLProtocolMapper implements SAMLLoginResponseMapper {
 
+    /** 日志记录器 */
     protected static final Logger logger = Logger.getLogger(SAMLAudienceResolveProtocolMapper.class);
 
+    /** 提供方标识 */
     public static final String PROVIDER_ID = "saml-audience-resolve-mapper";
 
+    /** 映射器配置属性列表（空） */
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<ProviderConfigProperty>();
 
+    /** @return 配置属性列表 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return configProperties;
     }
 
+    /** @return 映射器标识 {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** @return 管理控制台显示名称 */
     @Override
     public String getDisplayType() {
         return "Audience Resolve";
     }
 
+    /** @return 映射器分类 */
     @Override
     public String getDisplayCategory() {
         return SAMLAudienceProtocolMapper.AUDIENCE_CATEGORY;
     }
 
+    /** @return 映射器说明文本 */
     @Override
     public String getHelpText() {
         return "Adds all client_ids of \"allowed\" clients to the audience conditions in the assertion. " +
                 "Allowed client means any SAML client for which user has at least one client role";
     }
 
+    /** 解析用户客户端角色并将对应 SAML clientId 加入受众 @return 转换后的 SAML 响应 */
     @Override
     public ResponseType transformLoginResponse(ResponseType response,
             ProtocolMapperModel mappingModel, KeycloakSession session,
             UserSessionModel userSession, ClientSessionContext clientSessionCtx) {
-        // get the audience restriction
+        // 获取断言中的 AudienceRestriction
         AudienceRestrictionType aud = SAMLAudienceProtocolMapper.locateAudienceRestriction(response);
         if (aud != null) {
-            // get all the roles the user has and calculate the clientIds to add
-            // add as audience any SAML clientId with role included (same as OIDC)
+            // 遍历用户角色，计算需添加的 clientId
+            // 将拥有角色的 SAML 客户端 clientId 加入受众（与 OIDC 一致）
             clientSessionCtx.getRolesStream()
                     .peek(r -> logger.tracef("Managing role: %s", r.getName()))
                     .filter(RoleModel::isClientRole)
                     .map(r -> (ClientModel) r.getContainer())
-                    // only adding SAML clients that are not this clientId (which is added by default)
+                    // 排除当前客户端（默认已作为受众）
                     .filter(app -> SamlProtocol.LOGIN_PROTOCOL.equals(app.getProtocol()) &&
                             !app.getClientId().equals(clientSessionCtx.getClientSession().getClient().getClientId()))
                     .map(ClientModel::getClientId)

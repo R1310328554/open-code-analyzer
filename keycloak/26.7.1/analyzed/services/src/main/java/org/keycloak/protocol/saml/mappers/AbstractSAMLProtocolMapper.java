@@ -24,31 +24,39 @@ import org.keycloak.protocol.ProtocolMapper;
 import org.keycloak.protocol.saml.SamlProtocol;
 
 /**
+ * SAML 协议映射器抽象基类。
+ * <p>绑定 {@link SamlProtocol#LOGIN_PROTOCOL}，提供 {@link ProtocolMapper} 默认实现；子类实现具体 SAML 断言/响应转换逻辑。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public abstract class AbstractSAMLProtocolMapper implements ProtocolMapper {
 
 
+    /** @return SAML 登录协议标识 */
     @Override
     public String getProtocol() {
         return SamlProtocol.LOGIN_PROTOCOL;
     }
 
+    /** 关闭资源（无操作） */
     @Override
     public void close() {
 
     }
 
+    /** 不支持工厂创建，子类应通过 SPI 注册 @throws RuntimeException 始终抛出 */
     @Override
     public final ProtocolMapper create(KeycloakSession session) {
         throw new RuntimeException("UNSUPPORTED METHOD");
     }
 
+    /** 初始化（无操作） @param config 配置作用域 */
     @Override
     public void init(Config.Scope config) {
     }
 
+    /** 工厂初始化后回调（无操作） @param factory 会话工厂 */
     @Override
     public void postInit(KeycloakSessionFactory factory) {
 

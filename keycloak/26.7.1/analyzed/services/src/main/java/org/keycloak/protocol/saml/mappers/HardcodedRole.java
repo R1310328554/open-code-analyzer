@@ -27,15 +27,20 @@ import org.keycloak.protocol.saml.SamlProtocol;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
- * Mappings UserModel property (the property name of a getter method) to an AttributeStatement.
+ * SAML 硬编码角色映射器。
+ * <p>向 SAML 断言预置配置的角色名，由 {@link RoleListMapper} 在角色列表映射阶段写入 AttributeStatement。</p>
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class HardcodedRole extends AbstractSAMLProtocolMapper {
+    /** 提供方标识 */
     public static final String PROVIDER_ID = "saml-hardcode-role-mapper";
+    /** 配置键：属性值（未使用，保留兼容） */
     public static final String ATTRIBUTE_VALUE = "attribute.value";
+    /** 映射器配置属性列表 */
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<>();
+    /** 配置键：硬编码角色名 */
     public static final String ROLE_ATTRIBUTE = "role";
 
     static {
@@ -50,29 +55,35 @@ public class HardcodedRole extends AbstractSAMLProtocolMapper {
 
 
 
+    /** @return 配置属性列表 */
     public List<ProviderConfigProperty> getConfigProperties() {
         return configProperties;
     }
+    /** @return 映射器标识 {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** @return 管理控制台显示名称 */
     @Override
     public String getDisplayType() {
         return "Hardcoded role";
     }
 
+    /** @return 映射器分类 */
     @Override
     public String getDisplayCategory() {
         return AttributeStatementHelper.ATTRIBUTE_STATEMENT_CATEGORY;
     }
 
+    /** @return 映射器说明文本 */
     @Override
     public String getHelpText() {
         return "Hardcode role into SAML Assertion.";
     }
 
+    /** 创建硬编码角色映射器 @param name 名称 @param role 角色名 @return 协议映射器模型 */
     public static ProtocolMapperModel create(String name,
                                              String role) {
         String mapperId = PROVIDER_ID;

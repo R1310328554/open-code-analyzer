@@ -32,20 +32,32 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.saml.common.constants.JBossSAMLURIConstants;
 
 /**
+ * SAML AttributeStatement 构建辅助类。
+ * <p>封装属性名、NameFormat、FriendlyName 配置，以及向断言添加单值/多值属性的通用逻辑。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class AttributeStatementHelper {
+    /** 配置键：SAML 属性名 */
     public static final String SAML_ATTRIBUTE_NAME = "attribute.name";
+    /** 管理控制台映射器分类标签 */
     public static final String ATTRIBUTE_STATEMENT_CATEGORY = "AttributeStatement Mapper";
+    /** 配置键：SAML FriendlyName */
     public static final String FRIENDLY_NAME = "friendly.name";
+    /** FriendlyName 配置项标签 */
     public static final String FRIENDLY_NAME_LABEL = "Friendly Name";
     public static final String FRIENDLY_NAME_HELP_TEXT = "Standard SAML attribute setting.  An optional, more human-readable form of the attribute's name that can be provided if the actual attribute name is cryptic.";
+    /** 配置键：SAML Attribute NameFormat */
     public static final String SAML_ATTRIBUTE_NAMEFORMAT = "attribute.nameformat";
+    /** NameFormat 选项：Basic */
     public static final String BASIC = "Basic";
+    /** NameFormat 选项：URI Reference */
     public static final String URI_REFERENCE = "URI Reference";
+    /** NameFormat 选项：Unspecified */
     public static final String UNSPECIFIED = "Unspecified";
 
+    /** 向 AttributeStatement 添加单值属性 @param attributeStatement 目标语句 @param mappingModel 映射配置 @param attributeValue 属性值 */
     public static void addAttribute(AttributeStatementType attributeStatement, ProtocolMapperModel mappingModel,
                                     String attributeValue) {
         AttributeType attribute = createAttributeType(mappingModel);
@@ -53,6 +65,7 @@ public class AttributeStatementHelper {
         attributeStatement.addAttribute(new AttributeStatementType.ASTChoiceType(attribute));
     }
 
+    /** 向 AttributeStatement 添加多值属性 @param attributeValues 属性值集合 */
     public static void addAttributes(AttributeStatementType attributeStatement, ProtocolMapperModel mappingModel,
                                     Collection<String> attributeValues) {
 
@@ -62,6 +75,7 @@ public class AttributeStatementHelper {
         attributeStatement.addAttribute(new AttributeStatementType.ASTChoiceType(attribute));
     }
 
+    /** 根据映射配置创建 {@link AttributeType}（含 NameFormat 与 FriendlyName） @return 属性类型对象 */
     public static AttributeType createAttributeType(ProtocolMapperModel mappingModel) {
         String attributeName = mappingModel.getConfig().get(SAML_ATTRIBUTE_NAME);
         AttributeType attribute = new AttributeType(attributeName);
@@ -75,6 +89,7 @@ public class AttributeStatementHelper {
         return attribute;
     }
 
+    /** 向配置列表追加 FriendlyName、属性名与 NameFormat 选项 @param configProperties 目标配置列表 */
     public static void setConfigProperties(List<ProviderConfigProperty> configProperties) {
         ProviderConfigProperty property = new ProviderConfigProperty();
         property.setName(AttributeStatementHelper.FRIENDLY_NAME);
@@ -99,6 +114,16 @@ public class AttributeStatementHelper {
         configProperties.add(property);
 
     }
+    /**
+     * 创建属性映射器模型。
+     * @param name 映射器名称
+     * @param userAttribute 用户属性名（可为 null）
+     * @param samlAttributeName SAML 属性名
+     * @param nameFormat NameFormat 选项
+     * @param friendlyName FriendlyName
+     * @param mapperId 映射器提供方 ID
+     * @return 协议映射器模型
+     */
     public static ProtocolMapperModel createAttributeMapper(String name, String userAttribute, String samlAttributeName, String nameFormat,  String friendlyName, String mapperId) {
         ProtocolMapperModel mapper = new ProtocolMapperModel();
         mapper.setName(name);

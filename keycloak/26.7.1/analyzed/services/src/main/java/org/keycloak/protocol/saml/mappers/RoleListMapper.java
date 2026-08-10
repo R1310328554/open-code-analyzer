@@ -38,13 +38,19 @@ import org.keycloak.protocol.saml.SamlProtocol;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * SAML 角色列表映射器。
+ * <p>将会话中已解析的角色名写入 SAML AttributeStatement，支持 {@link SAMLRoleNameMapper} 重命名及 {@link HardcodedRole} 预置角色；可配置单属性多值或每角色一属性。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class RoleListMapper extends AbstractSAMLProtocolMapper implements SAMLRoleListMapper {
+    /** 提供方标识 */
     public static final String PROVIDER_ID = "saml-role-list-mapper";
+    /** 配置键：是否使用单属性多值模式 */
     public static final String SINGLE_ROLE_ATTRIBUTE = "single";
 
+    /** 映射器配置属性列表 */
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<>();
 
     static {
@@ -82,31 +88,42 @@ public class RoleListMapper extends AbstractSAMLProtocolMapper implements SAMLRo
     }
 
 
+    /** @return 映射器分类 */
     @Override
     public String getDisplayCategory() {
         return "Role Mapper";
     }
 
+    /** @return 管理控制台显示名称 */
     @Override
     public String getDisplayType() {
         return "Role list";
     }
 
+    /** @return 映射器说明文本 */
     @Override
     public String getHelpText() {
         return "Role names are stored in an attribute value.  There is either one attribute with multiple attribute values, or an attribute per role name depending on how you configure it.  You can also specify the attribute name i.e. 'Role' or 'memberOf' being examples.";
     }
 
+    /** @return 配置属性列表 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return configProperties;
     }
 
+    /** @return 映射器标识 {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /**
+     * 收集角色名（含硬编码与重命名）并写入 AttributeStatement。
+     * @param roleAttributeStatement 目标属性语句
+     * @param mappingModel 映射配置
+     * @param clientSessionCtx 客户端会话上下文
+     */
     @Override
     public void mapRoles(AttributeStatementType roleAttributeStatement, ProtocolMapperModel mappingModel, KeycloakSession session, UserSessionModel userSession, ClientSessionContext clientSessionCtx) {
         String single = mappingModel.getConfig().get(SINGLE_ROLE_ATTRIBUTE);
@@ -143,7 +160,7 @@ public class RoleListMapper extends AbstractSAMLProtocolMapper implements SAMLRo
 
 
         List<String> allRoleNames = clientSessionCtx.getRolesStream()
-          // todo need a role mapping
+          // TODO：角色映射待完善
           .map(roleModel -> roleNameMappers.stream()
             .map(entry -> entry.mapper.mapName(entry.model, roleModel))
             .filter(Objects::nonNull)
@@ -169,6 +186,15 @@ public class RoleListMapper extends AbstractSAMLProtocolMapper implements SAMLRo
 
     }
 
+    /**
+     * 创建角色列表映射器。
+     * @param name 映射器名称
+     * @param samlAttributeName SAML 属性名
+     * @param nameFormat NameFormat
+     * @param friendlyName FriendlyName
+     * @param singleAttribute 是否单属性多值
+     * @return 协议映射器模型
+     */
     public static ProtocolMapperModel create(String name, String samlAttributeName, String nameFormat, String friendlyName, boolean singleAttribute) {
         ProtocolMapperModel mapper = new ProtocolMapperModel();
         mapper.setName(name);

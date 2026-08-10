@@ -45,41 +45,56 @@ import org.keycloak.sessions.AuthenticationSessionModel;
 import org.jboss.logging.Logger;
 
 /**
- * <p>Mapper to assign the used AuthnContextClassRef in the AunthContext response.</p>
+ * SAML AuthnContextClassRef 映射器。
+ * <p>根据认证 LoA（保证级别）或 SAML 请求中的 ACR 值，向 AuthnStatement 写入 {@link AuthnContextClassRefType}；需启用 STEP_UP_AUTHENTICATION_SAML 特性。</p>
  *
  * @author rmartinc
  */
 public class AuthnContextClassRefMapper extends AbstractSAMLProtocolMapper implements SAMLLoginResponseMapper, EnvironmentDependentProviderFactory {
 
+    /** 提供方标识 */
     public static final String PROVIDER_ID = "saml-authn-context-class-ref-mapper";
+    /** 映射器分类标签 */
     public static final String AUTHN_CONTEXT_CLASS_REF_CATEGORY = "AuthnContextClassRef mapper";
+    /** 日志记录器 */
     protected static final Logger logger = Logger.getLogger(AuthnContextClassRefMapper.class);
 
+    /** @return 配置属性列表（空） */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return Collections.emptyList();
     }
 
+    /** @return 映射器标识 {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** @return 管理控制台显示名称 */
     @Override
     public String getDisplayType() {
         return AUTHN_CONTEXT_CLASS_REF_CATEGORY;
     }
 
+    /** @return 映射器分类 */
     @Override
     public String getDisplayCategory() {
         return AUTHN_CONTEXT_CLASS_REF_CATEGORY;
     }
 
+    /** @return 映射器说明文本 */
     @Override
     public String getHelpText() {
         return "Add the AuthnContextClassRef to the AuthContext with the Level of Assurance if present.";
     }
 
+    /**
+     * 向 SAML 登录响应的 AuthnStatement 设置 AuthnContextClassRef。
+     * @param response SAML 响应
+     * @param clientSessionCtx 客户端会话上下文
+     * @return 转换后的响应
+     */
     @Override
     public ResponseType transformLoginResponse(ResponseType response, ProtocolMapperModel mappingModel,
             KeycloakSession session, UserSessionModel userSession, ClientSessionContext clientSessionCtx) {
@@ -88,16 +103,16 @@ public class AuthnContextClassRefMapper extends AbstractSAMLProtocolMapper imple
         String acrValue = authSession != null? authSession.getClientNote(SamlProtocol.SAML_AUTHN_CONTEXT_CLASS_REF) : null;
         logger.tracef("Current level of authentication %d, requested level %s", loa, acrValue);
         if (loa < Constants.MINIMUM_LOA) {
-            // if the authentication was not using a step-up flow, just return as before
+            // 未使用阶梯认证时保持原响应不变
             return response;
         }
 
         Map<String, Integer> acrLoaMap = AcrUtils.getUriLoaMap(clientSessionCtx.getClientSession().getClient());
         if (acrValue == null) {
-            // no acr explicitly request in SAML, check if we have a specific name for this loa level
+            // SAML 未显式请求 ACR 时，查找该 LoA 对应的 URI
             acrValue = acrLoaMap.entrySet().stream().filter(e -> loa == e.getValue()).map(Map.Entry::getKey).sorted().findFirst().orElse(null);
         } else {
-            // check the requested level was indeed achieved by the authentication flow, if not unspecified
+            // 校验请求的 LoA 是否已由认证流达成，否则置空
             Integer requestedLevel = acrLoaMap.get(acrValue);
             if (requestedLevel == null || requestedLevel > loa) {
                 logger.warnf("Requested level '%s' (%s) was not reached after authentication flow, current level %d",
@@ -133,6 +148,7 @@ public class AuthnContextClassRefMapper extends AbstractSAMLProtocolMapper imple
         return response;
     }
 
+    /** 将 ACR 字符串解析为 URI @param acrValue ACR/AuthnContextClassRef 值 @return URI 或 null */
     private URI createUri(String acrValue) {
         if (acrValue == null) {
             return null;
@@ -146,11 +162,13 @@ public class AuthnContextClassRefMapper extends AbstractSAMLProtocolMapper imple
         }
     }
 
+    /** 是否支持：需启用 STEP_UP_AUTHENTICATION_SAML 特性 @return 特性开启时 true */
     @Override
     public boolean isSupported(Config.Scope config) {
         return Profile.isFeatureEnabled(Profile.Feature.STEP_UP_AUTHENTICATION_SAML);
     }
 
+    /** 创建 AuthnContextClassRef 映射器 @param name 映射器名称 @return 协议映射器模型 */
     public static ProtocolMapperModel create(String name) {
         ProtocolMapperModel mapper = new ProtocolMapperModel();
         mapper.setName(name);

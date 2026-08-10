@@ -32,26 +32,31 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.jboss.logging.Logger;
 
 /**
- * SAML mapper to add a audience restriction into the assertion, to another
- * client (clientId) or to a custom URI. Only one URI is added, clientId
- * has preference over the custom value (the class maps OIDC behavior).
+ * SAML 受众（Audience）协议映射器。
+ * <p>向断言 Conditions 中的 AudienceRestriction 添加指定受众 URI；优先使用配置的客户端 ID，否则使用自定义 URI（行为与 OIDC 受众映射器一致）。</p>
  *
  * @author rmartinc
  */
 public class SAMLAudienceProtocolMapper extends AbstractSAMLProtocolMapper implements SAMLLoginResponseMapper {
 
+    /** 日志记录器 */
     protected static final Logger logger = Logger.getLogger(SAMLAudienceProtocolMapper.class);
 
+    /** 提供方标识 */
     public static final String PROVIDER_ID = "saml-audience-mapper";
 
+    /** 映射器分类标签 */
     public static final String AUDIENCE_CATEGORY = "Audience mapper";
 
+    /** 映射器配置属性列表 */
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<ProviderConfigProperty>();
 
+    /** 配置键：包含的客户端受众（clientId） */
     public static final String INCLUDED_CLIENT_AUDIENCE = "included.client.audience";
     private static final String INCLUDED_CLIENT_AUDIENCE_LABEL = "included.client.audience.label";
     private static final String INCLUDED_CLIENT_AUDIENCE_HELP_TEXT = "included.client.audience.tooltip";
 
+    /** 配置键：自定义受众 URI */
     public static final String INCLUDED_CUSTOM_AUDIENCE = "included.custom.audience";
     private static final String INCLUDED_CUSTOM_AUDIENCE_LABEL = "included.custom.audience.label";
     private static final String INCLUDED_CUSTOM_AUDIENCE_HELP_TEXT = "included.custom.audience.tooltip";
@@ -73,31 +78,37 @@ public class SAMLAudienceProtocolMapper extends AbstractSAMLProtocolMapper imple
         configProperties.add(property);
     }
 
+    /** @return 配置属性列表 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return configProperties;
     }
 
+    /** @return 映射器标识 {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** @return 管理控制台显示名称 */
     @Override
     public String getDisplayType() {
         return "Audience";
     }
 
+    /** @return 映射器分类 */
     @Override
     public String getDisplayCategory() {
         return AUDIENCE_CATEGORY;
     }
 
+    /** @return 映射器说明文本 */
     @Override
     public String getHelpText() {
         return "Add specified audience to the audience conditions in the assertion.";
     }
 
+    /** 从 SAML 响应断言 Conditions 中定位首个 AudienceRestriction @param response SAML 响应 @return 受众限制或 null */
     protected static AudienceRestrictionType locateAudienceRestriction(ResponseType response) {
         try {
             return response.getAssertions().get(0).getAssertion().getConditions().getConditions()
@@ -111,16 +122,17 @@ public class SAMLAudienceProtocolMapper extends AbstractSAMLProtocolMapper imple
         }
     }
 
+    /** 向断言添加配置的受众 URI @return 转换后的 SAML 响应 */
     @Override
     public ResponseType transformLoginResponse(ResponseType response,
             ProtocolMapperModel mappingModel, KeycloakSession session,
             UserSessionModel userSession, ClientSessionContext clientSessionCtx) {
-        // read configuration as in OIDC (first clientId, then custom)
+        // 读取配置：优先 clientId，其次自定义 URI（与 OIDC 一致）
         String audience = mappingModel.getConfig().get(INCLUDED_CLIENT_AUDIENCE);
         if (audience == null || audience.isEmpty()) {
             audience = mappingModel.getConfig().get(INCLUDED_CUSTOM_AUDIENCE);
         }
-        // locate the first condition that has an audience restriction
+        // 定位首个含 AudienceRestriction 的 Conditions
         if (audience != null && !audience.isEmpty()) {
             AudienceRestrictionType aud = locateAudienceRestriction(response);
             if (aud != null) {

@@ -21,9 +21,18 @@ import org.keycloak.models.GroupModel;
 import org.keycloak.models.ProtocolMapperModel;
 
 /**
+ * SAML 组名称映射器接口。
+ * <p>实现此接口的映射器可将 {@link GroupModel} 映射为 SAML 断言中的自定义组名。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface SAMLGroupNameMapper {
+    /**
+     * 将组映射为新名称。
+     * @param model 映射器配置
+     * @param group 用户组
+     * @return 映射后的组名，不匹配时 null
+     */
     String mapName(ProtocolMapperModel model, GroupModel group);
 }
