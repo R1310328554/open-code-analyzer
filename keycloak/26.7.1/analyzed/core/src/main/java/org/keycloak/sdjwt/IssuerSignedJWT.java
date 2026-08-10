@@ -49,17 +49,20 @@ import static org.keycloak.OID4VCConstants.CLAIM_NAME_SD;
 import static org.keycloak.OID4VCConstants.CLAIM_NAME_SD_HASH_ALGORITHM;
 
 /**
- * Handle verifiable credentials (SD-JWT VC), enabling the parsing of existing VCs as well as the creation and signing
- * of new ones. It integrates with Keycloak's SignatureSignerContext to facilitate the generation of issuer signature.
+ * 可验证凭证（SD-JWT VC）处理器，支持解析已有 VC 以及创建与签发新 VC。
+ * 集成 Keycloak 的 {@link SignatureSignerContext} 以生成签发者签名。
  *
  * @author <a href="mailto:francis.pouatcha@adorsys.com">Francis Pouatcha</a>
  */
 public class IssuerSignedJWT extends JwsToken {
 
+    /** 选择性披露规格。 */
     private DisclosureSpec disclosureSpec;
 
+    /** 披露声明列表。 */
     private List<SdJwtClaim> disclosureClaims;
 
+    /** 诱饵声明列表。 */
     private List<DecoyClaim> decoyClaims;
 
 
@@ -106,7 +109,7 @@ public class IssuerSignedJWT extends JwsToken {
     }
 
     /*
-     * Generates the payload of the issuer signed jwt from the list of claims.
+     * 根据声明列表生成签发者签名 JWT 的载荷。
      */
     private static ObjectNode generatePayloadString(List<SdJwtClaim> claims,
                                                     List<DecoyClaim> decoyClaims,
@@ -120,19 +123,17 @@ public class IssuerSignedJWT extends JwsToken {
             : Collections.unmodifiableList(decoyClaims);
 
         try {
-            // Check no duplicate claim names
+            // 检查声明名称无重复
             claimsInternal.stream()
                           .filter(Objects::nonNull)
-                          // is any duplicate, toMap will throw IllegalStateException
+                          // 若有重复，toMap 将抛出 IllegalStateException
                           .collect(Collectors.toMap(SdJwtClaim::getClaimName, claim -> claim));
         } catch (IllegalStateException e) {
             throw new IllegalArgumentException("claims must not contain duplicate claim names", e);
         }
 
         ArrayNode sdArray = SdJwtUtils.mapper.createArrayNode();
-        // first filter all UndisclosedClaim
-        // then sort by salt
-        // then push digest into the sdArray
+        // 先筛选所有 UndisclosedClaim，按盐值排序后推入 sdArray
         Map<SdJwtSalt, UndisclosedClaim> undisclosedClaimMap = new HashMap<>();
         claimsInternal.stream()
                       .filter(claim -> claim instanceof UndisclosedClaim)
@@ -157,7 +158,7 @@ public class IssuerSignedJWT extends JwsToken {
                                                   .map(od -> od.getDisclosureDigest(hashAlg))
                                                   .collect(Collectors.toList());
 
-        // add decoy claims
+        // 添加诱饵声明摘要
         decoyClaimsInternal.stream().map(claim -> claim.getDisclosureDigest(hashAlg)).forEach(digests::add);
 
         digests.stream().sorted().forEach(sdArray::add);
@@ -165,18 +166,16 @@ public class IssuerSignedJWT extends JwsToken {
         ObjectNode payload = SdJwtUtils.mapper.createObjectNode();
 
         if (sdArray.size() > 0) {
-            // drop _sd claim if empty
+            // 非空时才写入 _sd 声明
             payload.set(CLAIM_NAME_SD, sdArray);
         }
         if (sdArray.size() > 0 || nestedDisclosures) {
-            // add sd alg only if ay disclosure.
-            // Normalize to lowercase to comply with IANA registered hash algorithm names
+            // 存在披露或嵌套披露时写入哈希算法
+            // 规范化为小写以符合 IANA 注册的哈希算法名称
             payload.put(CLAIM_NAME_SD_HASH_ALGORITHM, hashAlg.toLowerCase());
         }
 
-        // then put all other claims in the paypload
-        // Disclosure of array of elements is handled
-        // by the corresponding claim object.
+        // 将其余声明写入载荷（数组元素披露由对应声明对象处理）
         claimsInternal.stream()
                       .filter(Objects::nonNull)
                       .filter(claim -> !(claim instanceof UndisclosedClaim))
@@ -190,7 +189,7 @@ public class IssuerSignedJWT extends JwsToken {
     }
 
     /**
-     * Returns `cnf` claim (establishing key binding)
+     * 返回 {@code cnf} 声明（用于建立密钥绑定）。
      */
     public Optional<JsonNode> getCnfClaim() {
         JsonNode cnf = getPayload().get(CLAIM_NAME_CNF);
@@ -198,7 +197,7 @@ public class IssuerSignedJWT extends JwsToken {
     }
 
     /**
-     * Returns declared hash algorithm from SD hash claim.
+     * 返回 SD 哈希声明中声明的哈希算法。
      */
     public String getSdHashAlg() {
         ObjectNode payload = getPayload();
@@ -208,21 +207,21 @@ public class IssuerSignedJWT extends JwsToken {
     }
 
     /**
-     * Verifies that the SD hash algorithm is understood and deemed secure.
+     * 验证 SD 哈希算法是否为已知且安全的算法。
      *
-     * @throws VerificationException if not
+     * @throws VerificationException 若算法未知或不安全
      */
     public void verifySdHashAlgorithm() throws VerificationException {
-        // Known secure algorithms
+        // 已知安全算法集合
         final Set<String> secureAlgorithms = new HashSet<>(Arrays.asList(
             OID4VCConstants.SD_HASH_DEFAULT_ALGORITHM, "sha-384", "sha-512",
             "sha3-256", "sha3-384", "sha3-512"
         ));
 
-        // Read SD hash claim
+        // 读取 SD 哈希算法声明
         String hashAlg = getSdHashAlg();
 
-        // Safeguard algorithm
+        // 安全算法校验
         if (!secureAlgorithms.contains(hashAlg)) {
             throw new VerificationException("Unexpected or insecure hash algorithm: " + hashAlg);
         }
@@ -262,11 +261,12 @@ public class IssuerSignedJWT extends JwsToken {
         Optional.ofNullable(signatureSignerContext).ifPresent(super::sign);
     }
 
-    // Builder
+    // 建造者
     public static Builder builder() {
         return new Builder();
     }
 
+    /** 构建 {@link IssuerSignedJWT} 的流式建造者。 */
     public static class Builder {
         private DisclosureSpec disclosureSpec;
         private List<SdJwtClaim> claims;
@@ -394,11 +394,11 @@ public class IssuerSignedJWT extends JwsToken {
         }
 
         public IssuerSignedJWT build() {
-            // Preinitialize hashAlg to sha-256 if not provided
+            // 未提供 hashAlg 时默认 sha-256
             hashAlg = hashAlg == null ? OID4VCConstants.SD_HASH_DEFAULT_ALGORITHM : hashAlg;
             jwsHeader.setType(jwsHeader.getType() == null ? VCFormat.SD_JWT_VC : jwsHeader.getType());
             disclosureSpec = Optional.ofNullable(disclosureSpec).orElseGet(() -> DisclosureSpec.builder().build());
-            // send an empty lise if claims not set.
+            // 未设置声明时使用空列表
             decoyClaims = decoyClaims == null ? disclosureSpec.createDecoyClaims() : decoyClaims;
 
             if (signer != null) {

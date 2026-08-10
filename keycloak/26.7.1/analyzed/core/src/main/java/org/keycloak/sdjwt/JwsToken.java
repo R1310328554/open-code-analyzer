@@ -34,19 +34,23 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
- * Handle jws, either the issuer jwt or the holder key binding jwt.
+ * JWS 令牌的抽象基类，适用于签发者 JWT 与持有者密钥绑定 JWT。
  *
  * @author <a href="mailto:francis.pouatcha@adorsys.com">Francis Pouatcha</a>
  *
  */
 public abstract class JwsToken {
 
+    /** JWS 头部。 */
     protected JWSHeader jwsHeader;
 
+    /** JWT 载荷（JSON 对象节点）。 */
     protected ObjectNode payload;
 
+    /** 序列化后的 JWS 紧凑字符串。 */
     protected String jws;
 
+    /** 解析后的 JWS 输入对象。 */
     protected JWSInput jwsInput;
 
     protected JwsToken(String jws) {
@@ -64,6 +68,12 @@ public abstract class JwsToken {
         this.jws = sign(signerContext);
     }
 
+    /**
+     * 使用给定签名上下文对当前载荷进行签名。
+     *
+     * @param signerContext Keycloak 签名上下文
+     * @return 签名后的 JWS 紧凑字符串
+     */
     public String sign(SignatureSignerContext signerContext) {
         jws = new JWSBuilder().header(jwsHeader).jsonContent(payload).sign(signerContext);
         try {
@@ -76,6 +86,12 @@ public abstract class JwsToken {
         return jws;
     }
 
+    /**
+     * 验证 JWS 签名。
+     *
+     * @param verifier 签名验证上下文
+     * @throws VerificationException 签名无效或验证过程出错
+     */
     public void verifySignature(SignatureVerifierContext verifier) throws VerificationException {
         Objects.requireNonNull(verifier, "verifier must not be null");
         try {
@@ -88,11 +104,13 @@ public abstract class JwsToken {
         }
     }
 
+    /** @return 载荷中声明的 SD 哈希算法，若未设置则为空 */
     public Optional<String> getSdHashAlgorithm() {
         return Optional.ofNullable(payload.get(OID4VCConstants.CLAIM_NAME_SD_HASH_ALGORITHM))
                        .map(JsonNode::textValue);
     }
 
+    /** @return JWS 紧凑字符串 */
     public String getJws() {
         return jws;
     }
@@ -101,6 +119,7 @@ public abstract class JwsToken {
         this.jws = jws;
     }
 
+    /** @return 解析后的 JWS 输入 */
     public JWSInput getJwsInput() {
         return jwsInput;
     }
@@ -117,10 +136,12 @@ public abstract class JwsToken {
         }
     }
 
+    /** @return JWS 头部对象 */
     public JWSHeader getJwsHeader() {
         return jwsHeader;
     }
 
+    /** @return JWS 头部的 JSON 对象节点表示 */
     public ObjectNode getJwsHeaderAsNode() {
         return JsonSerialization.mapper.convertValue(jwsHeader, ObjectNode.class);
     }
@@ -129,6 +150,7 @@ public abstract class JwsToken {
         this.jwsHeader = jwsHeader;
     }
 
+    /** @return JWT 载荷 */
     public ObjectNode getPayload() {
         return payload;
     }
@@ -137,6 +159,7 @@ public abstract class JwsToken {
         this.payload = payload;
     }
 
+    /** 从 JWS 紧凑字符串解析头部与载荷。 */
     private void parse(String jwsString) {
         try {
             this.jws = jwsString;

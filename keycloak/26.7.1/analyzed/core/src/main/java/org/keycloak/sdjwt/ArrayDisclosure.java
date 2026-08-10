@@ -25,15 +25,17 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
 /**
- * Handles selective disclosure of elements within a top-level array claim,
- * supporting both visible and undisclosed elements.
+ * 顶层数组声明的选择性披露处理器，支持可见元素、未披露元素与诱饵元素的混合编排。
  *
  * @author <a href="mailto:francis.pouatcha@adorsys.com">Francis Pouatcha</a>
  *
  */
 public class ArrayDisclosure extends AbstractSdJwtClaim {
+    /** 数组元素列表（可见与未披露）。 */
     private final List<SdJwtArrayElement> elements;
+    /** 缓存的可见声明值 JSON 数组。 */
     private JsonNode visibleClaimValue = null;
+    /** 诱饵数组元素列表。 */
     private final List<DecoyArrayElement> decoyElements;
 
     private ArrayDisclosure(SdJwtClaimName claimName, List<SdJwtArrayElement> elements,
@@ -44,7 +46,9 @@ public class ArrayDisclosure extends AbstractSdJwtClaim {
     }
 
     /**
-     * Print the array with visible and invisible elements.
+     * 组装包含可见与不可见元素的数组 JSON 表示。
+     *
+     * @param hashAlgo 哈希算法名称
      */
     @Override
     public JsonNode getVisibleClaimValue(String hashAlgo) {
@@ -104,21 +108,25 @@ public class ArrayDisclosure extends AbstractSdJwtClaim {
         return result;
     }
 
+    /** 构建 {@link ArrayDisclosure} 的流式建造者。 */
     public static class Builder {
         private SdJwtClaimName claimName;
         private final List<SdJwtArrayElement> elements = new ArrayList<>();
         private final List<DecoyArrayElement> decoyElements = new ArrayList<>();
 
+        /** @param claimName 数组声明名称 */
         public Builder withClaimName(String claimName) {
             this.claimName = new SdJwtClaimName(claimName);
             return this;
         }
 
+        /** @param elementValue 直接可见的数组元素值 */
         public Builder withVisibleElement(JsonNode elementValue) {
             this.elements.add(new VisibleArrayElement(elementValue));
             return this;
         }
 
+        /** @param salt 盐值，为 {@code null} 时自动生成 */
         public Builder withUndisclosedElement(SdJwtSalt salt, JsonNode elementValue) {
             SdJwtSalt sdJwtSalt = salt == null ? new SdJwtSalt(SdJwtUtils.randomSalt()) : salt;
             this.elements.add(UndisclosedArrayElement.builder()
@@ -128,18 +136,21 @@ public class ArrayDisclosure extends AbstractSdJwtClaim {
             return this;
         }
 
+        /** @param position 诱饵元素插入位置 */
         public void withDecoyElt(Integer position, SdJwtSalt salt) {
             SdJwtSalt sdJwtSalt = salt == null ? new SdJwtSalt(SdJwtUtils.randomSalt()) : salt;
             DecoyArrayElement decoyElement = DecoyArrayElement.builder().withSalt(sdJwtSalt).atIndex(position).build();
             this.decoyElements.add(decoyElement);
         }
 
+        /** @return 构建完成的数组披露对象 */
         public ArrayDisclosure build() {
             return new ArrayDisclosure(claimName, Collections.unmodifiableList(elements),
                     Collections.unmodifiableList(decoyElements));
         }
     }
 
+    /** @return 新的建造者实例 */
     public static Builder builder() {
         return new Builder();
     }

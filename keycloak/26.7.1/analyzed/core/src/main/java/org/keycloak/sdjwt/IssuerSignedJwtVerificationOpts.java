@@ -24,7 +24,7 @@ import org.keycloak.common.VerificationException;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
- * Options for Issuer-signed JWT verification.
+ * 签发者签名 JWT 的验证选项，扩展 {@link ClaimVerifier} 以支持对 {@link JwsToken} 的便捷验证。
  *
  * @author <a href="mailto:Ingrid.Kamga@adorsys.com">Ingrid Kamga</a>
  */
@@ -36,14 +36,22 @@ public class IssuerSignedJwtVerificationOpts extends ClaimVerifier {
         super(headerVerifiers, contentVerifiers);
     }
 
+    /**
+     * 验证给定 JWS 令牌的头部与载荷声明。
+     *
+     * @param tokenToVerify 待验证的 JWS 令牌
+     * @throws VerificationException 验证失败时抛出
+     */
     public void verify(JwsToken tokenToVerify) throws VerificationException {
         super.verifyClaims(tokenToVerify.getJwsHeaderAsNode(), tokenToVerify.getPayload());
     }
 
+    /** @return 新的建造者实例 */
     public static IssuerSignedJwtVerificationOpts.Builder builder() {
         return new IssuerSignedJwtVerificationOpts.Builder();
     }
 
+    /** 构建 {@link IssuerSignedJwtVerificationOpts} 的流式建造者。 */
     public static class Builder extends ClaimVerifier.Builder {
 
         public Builder() {
@@ -120,6 +128,7 @@ public class IssuerSignedJwtVerificationOpts extends ClaimVerifier {
             return (Builder) super.withClaimCheck(claimName, expectedValue, isOptionalCheck);
         }
 
+        /** @return 构建完成的验证选项 */
         public IssuerSignedJwtVerificationOpts build() {
 
             return new IssuerSignedJwtVerificationOpts(headerVerifiers, contentVerifiers);

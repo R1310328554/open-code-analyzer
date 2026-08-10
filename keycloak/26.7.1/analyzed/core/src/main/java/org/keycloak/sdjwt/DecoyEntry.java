@@ -21,17 +21,24 @@ import java.util.Objects;
 import org.keycloak.jose.jws.crypto.HashUtils;
 
 /**
- * Handles hash production for a decoy entry from the given salt.
+ * 诱饵条目的抽象基类，根据给定盐值生成披露摘要哈希。
  *
  * @author <a href="mailto:francis.pouatcha@adorsys.com">Francis Pouatcha</a>
  *
  */
 public abstract class DecoyEntry extends DisclosureSpec.DisclosureData {
 
+    /** @param salt 非空盐值，用于计算诱饵摘要 */
     protected DecoyEntry(SdJwtSalt salt) {
         super(Objects.requireNonNull(salt, "DecoyEntry always requires a non null salt"));
     }
 
+    /**
+     * 根据指定哈希算法计算盐值的披露摘要。
+     *
+     * @param hashAlg 哈希算法名称
+     * @return Base64Url 编码的摘要字符串
+     */
     public String getDisclosureDigest(String hashAlg) {
         return SdJwtUtils.encodeNoPad(HashUtils.hash(hashAlg, salt.toString().getBytes()));
     }

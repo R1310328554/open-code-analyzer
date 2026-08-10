@@ -23,13 +23,20 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * SD-JWT 披露红名单，列出禁止选择性披露的声明名称（如 {@code iss}、{@code exp} 等元数据声明）。
+ */
 public class DisclosureRedList {
+    /** 默认禁止披露的声明名称字符串列表。 */
     public static final List<String> redList = Collections
             .unmodifiableList(Arrays.asList("iss", "iat", "nbf", "exp", "cnf", "vct", "status"));
 
+    /** 红名单声明名称集合。 */
     private final Set<SdJwtClaimName> redListClaimNames;
+    /** 使用默认红名单的静态实例。 */
     public static final DisclosureRedList defaultList = defaultList();
 
+    /** @param redListClaimNames 自定义红名单声明名称集合 */
     public static DisclosureRedList of(Set<SdJwtClaimName> redListClaimNames) {
         return new DisclosureRedList(redListClaimNames);
     }
@@ -42,10 +49,12 @@ public class DisclosureRedList {
         this.redListClaimNames = Collections.unmodifiableSet(redListClaimNames);
     }
 
+    /** @param claimName 待检查的声明名称 */
     public boolean isRedListedClaimName(SdJwtClaimName claimName) {
         return redListClaimNames.contains(claimName);
     }
 
+    /** @param claimNames 待检查的声明名称集合 */
     public boolean containsRedListedClaimNames(Collection<SdJwtClaimName> claimNames) {
         return !redListClaimNames.isEmpty() && !claimNames.isEmpty()
                 && !Collections.disjoint(redListClaimNames, claimNames);

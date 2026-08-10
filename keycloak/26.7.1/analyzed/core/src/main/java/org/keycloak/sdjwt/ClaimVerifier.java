@@ -35,14 +35,16 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
- * Module for validating JWT based claims. <br/>
- * Time-checks include a small tolerance to account for clock skew.
+ * JWT 声明验证模块，支持对头部与载荷的自定义校验规则。<br/>
+ * 时间类校验包含时钟偏差容差以应对客户端与服务端时钟不同步。
  *
  * @author <a href="mailto:Ingrid.Kamga@adorsys.com">Ingrid Kamga</a>
  */
 public class ClaimVerifier {
 
+    /** 头部声明验证器列表。 */
     private final List<Predicate<ObjectNode>> headerVerifiers;
+    /** 载荷声明验证器列表。 */
     private final List<Predicate<ObjectNode>> contentVerifiers;
 
     public ClaimVerifier(List<ClaimVerifier.Predicate<ObjectNode>> headerVerifiers,
@@ -51,6 +53,7 @@ public class ClaimVerifier {
         this.contentVerifiers = contentVerifiers;
     }
 
+    /** 依次验证 JWT 头部与载荷声明。 */
     public void verifyClaims(ObjectNode header, ObjectNode body) throws VerificationException {
         verifyHeaderClaims(header);
         verifyBodyClaims(body);
@@ -77,17 +80,17 @@ public class ClaimVerifier {
     }
 
     /**
-     * Functional interface of checks that verify some part of a JWT.
+     * JWT 部分校验的函数式接口。
      *
-     * @param <T> Type of the token handled by this predicate.
+     * @param <T> 此谓词处理的令牌类型
      */
     public interface Predicate<T> {
         /**
-         * Performs a single check on the given token verifier.
+         * 对给定令牌执行单次校验。
          *
-         * @param t Token, guaranteed to be non-null.
-         * @return
-         * @throws VerificationException
+         * @param t 令牌，保证非 null
+         * @return 校验通过返回 {@code true}
+         * @throws VerificationException 校验失败时抛出
          */
         boolean test(T t) throws VerificationException;
 
@@ -96,8 +99,10 @@ public class ClaimVerifier {
         }
     }
 
+    /** 时间类校验的抽象基类，封装时钟偏差秒数。 */
     public static abstract class TimeCheck {
 
+        /** 允许的时钟偏差（秒）。 */
         protected int clockSkewSeconds;
 
         public TimeCheck(int clockSkewSeconds) {
@@ -113,8 +118,10 @@ public class ClaimVerifier {
         }
     }
 
+    /** 声明值精确匹配校验器。 */
     public static class ClaimCheck implements Predicate<ObjectNode> {
 
+        /** 待校验的声明名称。 */
         private final String claimName;
 
         private final String expectedClaimValue;
@@ -149,9 +156,7 @@ public class ClaimVerifier {
             this.isOptional = isOptional;
         }
 
-        /**
-         * @return a simple equals-check for two strings
-         */
+        /** @return 两个字符串的简单相等比较器 */
         protected static BiFunction<String, String, Boolean> getDefaultComparator() {
             return Objects::equals;
         }
@@ -195,6 +200,7 @@ public class ClaimVerifier {
         }
     }
 
+    /** 取反的声明值校验器，期望令牌中声明值与期望值不匹配。 */
     public static class NegatedClaimCheck extends ClaimCheck {
 
         public NegatedClaimCheck(String claimName, String expectedClaimValue) {
@@ -226,14 +232,14 @@ public class ClaimVerifier {
                 throw new VerificationException(String.format("Missing claim '%s' in token", getClaimName()));
             }
             if (claimValue == null && isOptional()) {
-                // if optional and not present we do not want to execute the check of the parent.
+                // 可选且缺失时不执行父类校验
                 return true;
             }
             boolean isParentCheckSuccessful;
             try {
                 isParentCheckSuccessful = super.test(t);
             } catch(VerificationException ve) {
-                return true; // parent-check failed so the negation is successful
+                return true; // 父类校验失败，取反校验成功
             }
             if (isParentCheckSuccessful)
             {
@@ -244,8 +250,10 @@ public class ClaimVerifier {
         }
     }
 
+    /** 基于 {@code iat}（签发时间）的最大存活期校验器。 */
     public static class IatLifetimeCheck extends TimeCheck implements Predicate<ObjectNode> {
 
+        /** 自签发时刻起的最大有效秒数。 */
         private final long maxLifetime;
 
         private boolean isOptional;
@@ -297,6 +305,7 @@ public class ClaimVerifier {
         }
     }
 
+    /** {@code nbf}（生效时间）校验器。 */
     public static class NbfCheck extends TimeCheck implements Predicate<ObjectNode> {
 
         private boolean isOptional;
@@ -335,6 +344,7 @@ public class ClaimVerifier {
         }
     }
 
+    /** {@code exp}（过期时间）校验器。 */
     public static class ExpCheck extends TimeCheck implements Predicate<ObjectNode> {
 
         private boolean isOptional;
@@ -373,8 +383,10 @@ public class ClaimVerifier {
         }
     }
 
+    /** {@code aud}（受众）校验器。 */
     public static class AudienceCheck implements Predicate<ObjectNode> {
 
+        /** 期望的受众值。 */
         private final String expectedAudience;
 
         public AudienceCheck(String expectedAudience) {
@@ -412,8 +424,10 @@ public class ClaimVerifier {
         }
     }
 
+    /** 构建 {@link ClaimVerifier} 的流式建造者。 */
     public static class Builder {
 
+        /** 时钟偏差秒数，默认取自 OID4VC 常量。 */
         protected Integer clockSkew = OID4VCConstants.SD_JWT_DEFAULT_CLOCK_SKEW_SECONDS;
         protected Integer allowedMaxAge = OID4VCConstants.SD_JWT_KEY_BINDING_DEFAULT_ALLOWED_MAX_AGE;
         protected List<ClaimVerifier.Predicate<ObjectNode>> headerVerifiers = new ArrayList<>();
@@ -429,11 +443,11 @@ public class ClaimVerifier {
             this.withExpCheck(false);
             this.withNbfCheck(false);
 
-            // add algorithm not "none"-check
+            // 添加算法不得为 "none" 的校验
             {
                 boolean isOptional = false;
                 headerVerifiers.add(new NegatedClaimCheck("alg", "none", (s1, s2) -> {
-                    // ignore upper and lowercase for comparison
+                    // 比较时忽略大小写
                     return s1 != null && s1.equalsIgnoreCase(s2);
                 }, isOptional));
             }

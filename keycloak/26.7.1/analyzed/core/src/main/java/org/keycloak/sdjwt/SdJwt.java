@@ -37,16 +37,20 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import static org.keycloak.OID4VCConstants.CLAIM_NAME_SD_HASH_ALGORITHM;
 
 /**
- * Main entry class for selective disclosure jwt (SD-JWT).
+ * 选择性披露 JWT（SD-JWT）的主入口类，封装签发者 JWT、披露字符串与密钥绑定 JWT。
  *
  * @author <a href="mailto:francis.pouatcha@adorsys.com">Francis Pouatcha</a>
  */
 public class SdJwt {
 
+    /** 未显式配置诱饵声明时的默认诱饵数量。 */
     public static final int DEFAULT_NUMBER_OF_DECOYS = 5;
 
+    /** 签发者签名的 JWT。 */
     private final IssuerSignedJWT issuerSignedJWT;
+    /** 声明列表。 */
     private final List<SdJwtClaim> claims;
+    /** Base64Url 编码的披露字符串列表。 */
     private final List<String> disclosures;
 
     private SdJwtVerificationContext sdJwtVerificationContext;
@@ -102,11 +106,9 @@ public class SdJwt {
     }
 
     /**
-     * Prepare to a nested payload to this SD-JWT.
-     * <p>
-     * dropping the algo claim.
+     * 将此 SD-JWT 准备为嵌套载荷（移除算法声明）。
      *
-     * @return
+     * @return 嵌套载荷 JSON 节点
      */
     public JsonNode asNestedPayload() {
         JsonNode nestedPayload = JsonSerialization.mapper.convertValue(issuerSignedJWT.getPayload(), JsonNode.class);
@@ -178,12 +180,11 @@ public class SdJwt {
     }
 
     /**
-     * Verifies SD-JWT as to whether the Issuer-signed JWT's signature and disclosures are valid.
+     * 验证 SD-JWT 的签发者签名与披露字符串是否有效。
      *
-     * @param issuerVerifyingKeys Verifying keys for validating the Issuer-signed JWT. The caller is responsible for
-     *                            establishing trust in that the keys belong to the intended issuer.
-     * @param verificationOpts    Options to parameterize the Issuer-Signed JWT verification.
-     * @throws VerificationException if verification failed
+     * @param issuerVerifyingKeys 用于验证签发者 JWT 的验证密钥；调用方需自行确保证书/密钥属于预期签发者
+     * @param verificationOpts 签发者签名 JWT 的验证选项
+     * @throws VerificationException 验证失败时抛出
      */
     public void verify(List<SignatureVerifierContext> issuerVerifyingKeys,
                        IssuerSignedJwtVerificationOpts verificationOpts)
@@ -199,9 +200,10 @@ public class SdJwt {
         return new Builder();
     }
 
-    // builder for SdJwt
+    // SdJwt 建造者
     public static class Builder {
 
+        /** 嵌套的 SD-JWT 列表。 */
         private final List<SdJwt> nestedSdJwts = new ArrayList<>();
 
         private IssuerSignedJWT issuerSignedJwt;
@@ -265,18 +267,18 @@ public class SdJwt {
 
             SdJwt sdJwt = new SdJwt(issuerSignedJwt, keyBindingJWT, nestedSdJwts);
             AtomicInteger signCounter = new AtomicInteger(0);
-            // add sd-hash to keybindingJwt
+            // 向密钥绑定 JWT 添加 sd-hash
             Optional.ofNullable(keyBindingJWT).ifPresent(keyBindJwt -> {
-                // get the hash-algorithm to use for keyBinding and set it if not present
+                // 获取密钥绑定使用的哈希算法，若未设置则写入载荷
                 String hashAlgorithm = getEffectiveHashAlgorithm(sdHashAlgorithm);
-                // Normalize to lowercase to comply with IANA registered hash algorithm names
+                // 规范化为小写以符合 IANA 注册的哈希算法名称
                 issuerSignedJwt.getPayload().put(OID4VCConstants.CLAIM_NAME_SD_HASH_ALGORITHM,
                                                  hashAlgorithm.toLowerCase());
                 if (issuerSigningContext != null) {
                     issuerSignedJwt.sign(issuerSigningContext);
                 }
                 signCounter.incrementAndGet();
-                // keybinding jwt is not set yet, so the toSdJwtString method returns exactly what we want
+                // 密钥绑定 JWT 尚未设置，toSdJwtString 返回的正是所需字符串
                 String sdHashString;
                 {
                     List<String> parts = new ArrayList<>();
@@ -289,7 +291,7 @@ public class SdJwt {
                 keyBindJwt.getPayload().put(OID4VCConstants.SD_HASH, sdHash);
                 Optional.ofNullable(keyBindingSigningContext).ifPresent(keyBindJwt::sign);
             });
-            // if issuerSignedJwt was not signed yet
+            // 若签发者 JWT 尚未签名则在此签名
             if (issuerSigningContext != null && signCounter.get() == 0) {
                 issuerSignedJwt.sign(issuerSigningContext);
             }
@@ -297,9 +299,10 @@ public class SdJwt {
             return sdJwt;
         }
 
+        /** 解析有效哈希算法：优先使用参数，其次从签发者 JWT 载荷读取，最后使用默认值。 */
         private String getEffectiveHashAlgorithm(String sdHashAlgorithm) {
             return Optional.ofNullable(sdHashAlgorithm).orElseGet(() -> {
-                // if not given as parameter, try to find the algorithm in the issuerSignedJwt payload
+                // 未作为参数传入时，尝试从 issuerSignedJwt 载荷中读取
                 return issuerSignedJwt.getSdHashAlgorithm().orElse(OID4VCConstants.SD_HASH_DEFAULT_ALGORITHM);
             });
         }
