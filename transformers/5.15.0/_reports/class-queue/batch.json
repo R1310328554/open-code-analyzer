@@ -15,23 +15,8 @@
     "src/transformers/models/minimax_m3_vl/image_processing_minimax_m3_vl.py",
     "src/transformers/models/minimax_m3_vl/modeling_minimax_m3_vl.py",
     "src/transformers/models/minimax_m3_vl/modular_minimax_m3_vl.py",
-    "src/transformers/models/minimax_m3_vl/processing_minimax_m3_vl.py",
-    "src/transformers/models/minimax_m3_vl/video_processing_minimax_m3_vl.py",
-    "src/transformers/models/ministral/__init__.py",
-    "src/transformers/models/ministral/configuration_ministral.py",
-    "src/transformers/models/ministral/modeling_ministral.py",
-    "src/transformers/models/ministral/modular_ministral.py",
-    "src/transformers/models/ministral3/__init__.py",
-    "src/transformers/models/ministral3/configuration_ministral3.py",
-    "src/transformers/models/ministral3/modeling_ministral3.py",
-    "src/transformers/models/ministral3/modular_ministral3.py",
-    "src/transformers/models/mistral/__init__.py",
-    "src/transformers/models/mistral/configuration_mistral.py",
-    "src/transformers/models/mistral/modeling_mistral.py",
-    "src/transformers/models/mistral/modular_mistral.py",
-    "src/transformers/models/mistral3/__init__.py",
-    "src/transformers/models/mistral3/configuration_mistral3.py"
+    "src/transformers/models/minimax_m3_vl/processing_minimax_m3_vl.py"
   ],
   "remaining_pending": 1269,
-  "done": 1380
+  "done": 1395
 }
