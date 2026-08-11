@@ -26,6 +26,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="")
 @strict
+# EncoderDecoderConfig：嵌套 encoder/decoder AutoConfig，统一 pad/decoder_start token
 class EncoderDecoderConfig(PreTrainedConfig):
     r"""
     Examples:
@@ -65,6 +66,7 @@ class EncoderDecoderConfig(PreTrainedConfig):
     decoder_start_token_id: int | None = None
     is_encoder_decoder: bool | None = True
 
+# __post_init__：解析 encoder/decoder 子配置并实例化 AutoConfig
     def __post_init__(self, **kwargs):
         if "encoder" not in kwargs or "decoder" not in kwargs:
             raise ValueError(
@@ -82,6 +84,7 @@ class EncoderDecoderConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
     @classmethod
+# from_encoder_decoder_configs：从两个 PreTrainedConfig 构建组合配置
     def from_encoder_decoder_configs(
         cls, encoder_config: PreTrainedConfig, decoder_config: PreTrainedConfig, **kwargs
     ) -> PreTrainedConfig:

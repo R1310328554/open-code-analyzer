@@ -24,8 +24,10 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# EomtDinov3Config：tue-mps/coco_panoptic_eomt_large_640_dinov3 默认配置
 @auto_docstring(checkpoint="tue-mps/coco_panoptic_eomt_large_640_dinov3")
 @strict
+# EomtDinov3Config：RoPE/gated MLP/位置增强与 EoMT 损失权重参数
 class EomtDinov3Config(PreTrainedConfig):
     r"""
     layerscale_value (`float`, *optional*, defaults to 1.0):

@@ -23,6 +23,7 @@ from ...utils import PaddingStrategy, TensorType, logging
 logger = logging.get_logger(__name__)
 
 
+# EncodecFeatureExtractor：单声道/立体声预处理，对齐 EnCodec 24kHz 输入格式
 class EncodecFeatureExtractor(SequenceFeatureExtractor):
     r"""
     Constructs an EnCodec feature extractor.
@@ -49,6 +50,7 @@ class EncodecFeatureExtractor(SequenceFeatureExtractor):
 
     model_input_names = ["input_values", "padding_mask"]
 
+# __init__：feature_size、sampling_rate、chunk_length_s/overlap 等
     def __init__(
         self,
         feature_size: int = 1,
@@ -64,6 +66,7 @@ class EncodecFeatureExtractor(SequenceFeatureExtractor):
 
     # This is a property because you might want to change the chunk_length_s on the fly
     @property
+# chunk_length：分块采样点长度属性
     def chunk_length(self) -> int | None:
         if self.chunk_length_s is None:
             return None
@@ -72,12 +75,14 @@ class EncodecFeatureExtractor(SequenceFeatureExtractor):
 
     # This is a property because you might want to change the chunk_length_s on the fly
     @property
+# chunk_stride：分块滑动步长属性
     def chunk_stride(self) -> int | None:
         if self.chunk_length_s is None or self.overlap is None:
             return None
         else:
             return max(1, int((1.0 - self.overlap) * self.chunk_length))
 
+# __call__：批量转置为 (channels,length)，填充并返回 BatchFeature
     def __call__(
         self,
         raw_audio: np.ndarray | list[float] | list[np.ndarray] | list[list[float]],

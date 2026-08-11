@@ -41,6 +41,7 @@ if is_torch_available():
 
 
 # Adapted from transformers.models.maskformer.image_processing_maskformer.convert_segmentation_map_to_binary_masks
+# convert_segmentation_map_to_binary_masks：PIL/numpy 语义图转二值 mask
 def convert_segmentation_map_to_binary_masks(
     segmentation_map: np.ndarray,
     instance_id_to_semantic_id: dict[int, int] | None = None,
@@ -79,6 +80,7 @@ def convert_segmentation_map_to_binary_masks(
 
 
 # Adapted from transformers.models.eomt.image_processing_eomt.check_segment_validity
+# check_segment_validity：mask 有效性与重叠校验
 def check_segment_validity(mask_labels, mask_probs, k, mask_threshold=0.5, overlap_mask_area_threshold=0.8):
     # Get the mask associated with the k class
     mask_k = mask_labels == k
@@ -102,6 +104,7 @@ def check_segment_validity(mask_labels, mask_probs, k, mask_threshold=0.5, overl
 
 
 # Adapted from transformers.models.eomt.image_processing_eomt.EomtImageProcessorKwargs
+# EomtImageProcessorKwargs：PIL 后端图像处理 kwargs
 class EomtImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     do_split_image (`bool`, *optional*, defaults to `self.do_split_image`):
@@ -118,6 +121,7 @@ class EomtImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 # Adapted from transformers.models.eomt.image_processing_eomt.compute_segments
+# compute_segments：组装 panoptic segment 元数据
 def compute_segments(
     mask_probs,
     pred_scores,
@@ -173,6 +177,7 @@ def compute_segments(
 
 
 # Adapted from transformers.models.eomt.image_processing_eomt.get_target_size
+# get_target_size：解析目标 (height, width)
 def get_target_size(size_dict: dict[str, int]) -> tuple[int, int]:
     """Returns the height and width from a size dict."""
     target_height = size_dict["shortest_edge"]
@@ -182,6 +187,7 @@ def get_target_size(size_dict: dict[str, int]) -> tuple[int, int]:
 
 
 # Adapted from transformers.models.eomt.image_processing_eomt.remove_low_and_no_objects
+# remove_low_and_no_objects：过滤低置信度与背景类
 def remove_low_and_no_objects(masks, scores, labels, object_mask_threshold, num_labels):
     """
     Binarize the given masks using `object_mask_threshold`, it returns the associated values of `masks`, `scores` and
@@ -212,6 +218,7 @@ def remove_low_and_no_objects(masks, scores, labels, object_mask_threshold, num_
 
 @auto_docstring
 @requires(backends=("torch",))
+# EomtImageProcessorPil：PIL 路径的分块 preprocess 与三类分割后处理
 class EomtImageProcessorPil(PilBackend):
     valid_kwargs = EomtImageProcessorKwargs
     resample = PILImageResampling.BILINEAR
@@ -229,6 +236,7 @@ class EomtImageProcessorPil(PilBackend):
     def __init__(self, **kwargs: Unpack[EomtImageProcessorKwargs]):
         super().__init__(**kwargs)
 
+# _split_image：numpy 图像切分为 patch 列表
     def _split_image(self, image: np.ndarray, size: SizeDict, image_index: int) -> tuple[list, list]:
         """Slices an image into overlapping patches for semantic segmentation."""
 
@@ -256,6 +264,7 @@ class EomtImageProcessorPil(PilBackend):
 
         return patches, patch_offsets
 
+# _pad：numpy 图像边缘填充
     def _pad(self, image: np.ndarray, size: SizeDict) -> np.ndarray:
         """Pads the image to the target size using zero padding."""
 
@@ -279,6 +288,7 @@ class EomtImageProcessorPil(PilBackend):
         return padded_image
 
     @auto_docstring
+# preprocess：PIL→tensor 标准化预处理
     def preprocess(
         self,
         images: ImageInput,
@@ -420,6 +430,7 @@ class EomtImageProcessorPil(PilBackend):
 
         return processed_images, patch_offsets
 
+# merge_image_patches：合并分块预测为整图
     def merge_image_patches(
         self,
         segmentation_logits: "torch.Tensor",
@@ -474,6 +485,7 @@ class EomtImageProcessorPil(PilBackend):
 
         return reconstructed_logits
 
+# unpad_image：去除 padding 恢复尺寸
     def unpad_image(
         self, segmentation_logits: "torch.Tensor", target_sizes: list[tuple[int, int]], size: dict[str, int]
     ) -> "list[torch.Tensor]":
@@ -492,6 +504,7 @@ class EomtImageProcessorPil(PilBackend):
             resized_logits.append(upsampled_logits)
         return resized_logits
 
+# post_process_semantic_segmentation：语义分割后处理
     def post_process_semantic_segmentation(
         self,
         outputs,
@@ -564,6 +577,7 @@ class EomtImageProcessorPil(PilBackend):
 
         return semantic_segmentation
 
+# post_process_panoptic_segmentation：全景分割后处理
     def post_process_panoptic_segmentation(
         self,
         outputs,
@@ -617,6 +631,7 @@ class EomtImageProcessorPil(PilBackend):
             results.append({"segmentation": segmentation, "segments_info": segments})
         return results
 
+# post_process_instance_segmentation：实例分割后处理
     def post_process_instance_segmentation(
         self, outputs, target_sizes: list[tuple[int, int]], threshold: float = 0.8, size: dict[str, int] | None = None
     ):

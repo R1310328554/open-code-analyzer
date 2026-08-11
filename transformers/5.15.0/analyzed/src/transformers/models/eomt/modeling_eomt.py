@@ -59,6 +59,7 @@ if is_accelerate_available():
     """
 )
 @dataclass
+# EomtForUniversalSegmentationOutput：loss、class/mask logits 与辅助输出
 class EomtForUniversalSegmentationOutput(ModelOutput):
     r"""
     loss (`torch.Tensor`, *optional*):
@@ -91,6 +92,7 @@ class EomtForUniversalSegmentationOutput(ModelOutput):
 
 
 # Adapted from https://github.com/facebookresearch/detectron2/blob/main/projects/PointRend/point_rend/point_features.py
+# sample_point：训练时随机/重要性采样 mask 监督点
 def sample_point(
     input_features: torch.Tensor, point_coordinates: torch.Tensor, add_dim=False, **kwargs
 ) -> torch.Tensor:
@@ -123,6 +125,7 @@ def sample_point(
     return point_features
 
 
+# pair_wise_dice_loss：匈牙利匹配用的 pairwise dice
 def pair_wise_dice_loss(inputs: Tensor, labels: Tensor) -> Tensor:
     """
     A pair wise version of the dice loss, see `dice_loss` for usage.
@@ -145,6 +148,7 @@ def pair_wise_dice_loss(inputs: Tensor, labels: Tensor) -> Tensor:
     return loss
 
 
+# pair_wise_sigmoid_cross_entropy_loss：pairwise sigmoid CE 用于匹配代价
 def pair_wise_sigmoid_cross_entropy_loss(inputs: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
     r"""
     A pair wise version of the cross entropy loss, see `sigmoid_cross_entropy_loss` for usage.
@@ -173,6 +177,7 @@ def pair_wise_sigmoid_cross_entropy_loss(inputs: torch.Tensor, labels: torch.Ten
 
 
 # Adapted from https://github.com/facebookresearch/Eomt/blob/main/eomt/modeling/matcher.py
+# EomtHungarianMatcher：query 与 GT 的匈牙利二分匹配
 class EomtHungarianMatcher(nn.Module):
     """This class computes an assignment between the labels and the predictions of the network.
 
@@ -279,6 +284,7 @@ class EomtHungarianMatcher(nn.Module):
         return matched_indices
 
 
+# dice_loss：点采样 dice 分割损失
 def dice_loss(inputs: Tensor, labels: Tensor, num_masks: int) -> Tensor:
     r"""
     Compute the DICE loss, similar to generalized IOU for masks as follows:
@@ -309,6 +315,7 @@ def dice_loss(inputs: Tensor, labels: Tensor, num_masks: int) -> Tensor:
     return loss
 
 
+# sigmoid_cross_entropy_loss：点采样 sigmoid CE 损失
 def sigmoid_cross_entropy_loss(inputs: torch.Tensor, labels: torch.Tensor, num_masks: int) -> torch.Tensor:
     r"""
     Args:
@@ -329,6 +336,7 @@ def sigmoid_cross_entropy_loss(inputs: torch.Tensor, labels: torch.Tensor, num_m
 
 
 # Adapted from https://github.com/facebookresearch/Eomt/blob/main/eomt/modeling/criterion.py
+# EomtLoss：分类+mask+dice 加权损失与辅助层监督
 class EomtLoss(nn.Module):
     def __init__(self, config: EomtConfig, weight_dict: dict[str, float]):
         """
@@ -641,6 +649,7 @@ class EomtLoss(nn.Module):
         return num_masks
 
 
+# EomtPatchEmbeddings：ViT patch 线性投影
 class EomtPatchEmbeddings(nn.Module):
     """
     This class turns `pixel_values` of shape `(batch_size, num_channels, height, width)` into the initial
@@ -674,6 +683,7 @@ class EomtPatchEmbeddings(nn.Module):
         return embeddings
 
 
+# EomtEmbeddings：patch + 位置 + register token 嵌入
 class EomtEmbeddings(nn.Module):
     """
     Construct the CLS token, mask token, position and patch embeddings.
@@ -711,6 +721,7 @@ class EomtEmbeddings(nn.Module):
         return embeddings
 
 
+# eager_attention_forward：缩放点积注意力 eager 实现
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -734,6 +745,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# EomtAttention：多头自注意力，支持 SDPA/Flash
 class EomtAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -793,6 +805,7 @@ class EomtAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# EomtLayerScale：LayerScale 可学习缩放
 class EomtLayerScale(nn.Module):
     def __init__(self, config) -> None:
         super().__init__()
@@ -802,6 +815,7 @@ class EomtLayerScale(nn.Module):
         return hidden_state * self.lambda1
 
 
+# EomtMLP：GELU 前馈 MLP
 class EomtMLP(nn.Module):
     def __init__(self, config) -> None:
         super().__init__()
@@ -821,6 +835,7 @@ class EomtMLP(nn.Module):
         return hidden_state
 
 
+# EomtSwiGLUFFN：可选 SwiGLU 前馈
 class EomtSwiGLUFFN(nn.Module):
     def __init__(self, config) -> None:
         super().__init__()
@@ -838,6 +853,7 @@ class EomtSwiGLUFFN(nn.Module):
         return self.weights_out(hidden)
 
 
+# EomtDropPath：Stochastic Depth 随机丢弃路径
 class EomtDropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -862,6 +878,7 @@ class EomtDropPath(nn.Module):
         return f"p={self.drop_prob}"
 
 
+# EomtLayer：Pre-LN 自注意力 + MLP 编码层
 class EomtLayer(GradientCheckpointingLayer):
     """This corresponds to the Block class in the original implementation."""
 
@@ -904,6 +921,7 @@ class EomtLayer(GradientCheckpointingLayer):
         return layer_output
 
 
+# EomtLayerNorm2d：2D 特征 LayerNorm
 class EomtLayerNorm2d(nn.LayerNorm):
     def __init__(self, num_channels, eps=1e-6, affine=True):
         super().__init__(num_channels, eps=eps, elementwise_affine=affine)
@@ -915,6 +933,7 @@ class EomtLayerNorm2d(nn.LayerNorm):
         return hidden_state
 
 
+# EomtScaleLayer：上采样 + 卷积尺度层
 class EomtScaleLayer(nn.Module):
     def __init__(self, config: EomtConfig):
         super().__init__()
@@ -940,6 +959,7 @@ class EomtScaleLayer(nn.Module):
         return hidden_states
 
 
+# EomtScaleBlock：堆叠 num_upscale_blocks 个 ScaleLayer
 class EomtScaleBlock(nn.Module):
     def __init__(self, config: EomtConfig):
         super().__init__()
@@ -952,6 +972,7 @@ class EomtScaleBlock(nn.Module):
         return hidden_states
 
 
+# EomtMaskHead：query 与 patch 特征做点积得 mask logits
 class EomtMaskHead(nn.Module):
     def __init__(self, config: EomtConfig):
         super().__init__()
@@ -970,6 +991,7 @@ class EomtMaskHead(nn.Module):
 
 
 @auto_docstring
+# EomtPreTrainedModel：权重初始化与 attention 后端支持
 class EomtPreTrainedModel(PreTrainedModel):
     """
     An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
@@ -1023,6 +1045,7 @@ class EomtPreTrainedModel(PreTrainedModel):
     The EoMT Model with head on top for instance/semantic/panoptic segmentation.
     """
 )
+# EomtForUniversalSegmentation：统一分割头，predict 输出 class/mask
 class EomtForUniversalSegmentation(EomtPreTrainedModel):
     main_input_name = "pixel_values"
 

@@ -51,6 +51,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="tue-mps/coco_panoptic_eomt_large_640")
 @strict
+# EomtConfig：扩展 ViTConfig，增加 query/register 与损失权重字段
 class EomtConfig(ViTConfig):
     r"""
     layerscale_value (`float`, *optional*, defaults to 1.0):
@@ -144,6 +145,7 @@ class EomtConfig(ViTConfig):
     """
 )
 @dataclass
+# EomtForUniversalSegmentationOutput：分割输出 dataclass modular 源
 class EomtForUniversalSegmentationOutput(ModelOutput):
     r"""
     loss (`torch.Tensor`, *optional*):
@@ -175,14 +177,17 @@ class EomtForUniversalSegmentationOutput(ModelOutput):
     patch_offsets: list[torch.Tensor] | None = None
 
 
+# EomtLoss：继承 Mask2FormerLoss 的损失计算
 class EomtLoss(Mask2FormerLoss):
     pass
 
 
+# EomtPatchEmbeddings：继承 DINOv2 patch 嵌入
 class EomtPatchEmbeddings(Dinov2PatchEmbeddings):
     pass
 
 
+# EomtEmbeddings：继承 DINOv2 嵌入并扩展 register token
 class EomtEmbeddings(Dinov2Embeddings):
     def __init__(self, config: EomtConfig) -> None:
         nn.Module.__init__(self)
@@ -203,6 +208,7 @@ class EomtEmbeddings(Dinov2Embeddings):
     def interpolate_pos_encoding(self):
         raise AttributeError("Not needed for Eomt Model")
 
+# forward：骨干 + mask head 前向，训练时计算 EomtLoss
     def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
         batch_size, _, _, _ = pixel_values.shape
         target_dtype = self.patch_embeddings.projection.weight.dtype
@@ -219,14 +225,17 @@ class EomtEmbeddings(Dinov2Embeddings):
         return embeddings
 
 
+# EomtAttention：继承 SigLIP 注意力实现
 class EomtAttention(SiglipAttention):
     pass
 
 
+# EomtLayerScale：继承 DINOv2 LayerScale
 class EomtLayerScale(Dinov2LayerScale):
     pass
 
 
+# EomtLayer：继承 DINOv2 编码层
 class EomtLayer(Dinov2Layer):
     def forward(
         self,
@@ -251,6 +260,7 @@ class EomtLayer(Dinov2Layer):
         return layer_output
 
 
+# EomtLayerNorm2d：2D LayerNorm modular 源
 class EomtLayerNorm2d(nn.LayerNorm):
     def __init__(self, num_channels, eps=1e-6, affine=True):
         super().__init__(num_channels, eps=eps, elementwise_affine=affine)
@@ -262,6 +272,7 @@ class EomtLayerNorm2d(nn.LayerNorm):
         return hidden_state
 
 
+# EomtScaleLayer：上采样尺度层 modular 源
 class EomtScaleLayer(nn.Module):
     def __init__(self, config: EomtConfig):
         super().__init__()
@@ -287,6 +298,7 @@ class EomtScaleLayer(nn.Module):
         return hidden_states
 
 
+# EomtScaleBlock：多尺度上采样块
 class EomtScaleBlock(nn.Module):
     def __init__(self, config: EomtConfig):
         super().__init__()
@@ -299,6 +311,7 @@ class EomtScaleBlock(nn.Module):
         return hidden_states
 
 
+# EomtMaskHead：mask 预测头 modular 源
 class EomtMaskHead(nn.Module):
     def __init__(self, config: EomtConfig):
         super().__init__()
@@ -317,6 +330,7 @@ class EomtMaskHead(nn.Module):
 
 
 @auto_docstring
+# EomtPreTrainedModel：预训练基类 modular 源
 class EomtPreTrainedModel(PreTrainedModel):
     """
     An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
@@ -370,6 +384,7 @@ class EomtPreTrainedModel(PreTrainedModel):
     The EoMT Model with head on top for instance/semantic/panoptic segmentation.
     """
 )
+# EomtForUniversalSegmentation：继承 Mask2Former 统一分割任务头
 class EomtForUniversalSegmentation(Mask2FormerForUniversalSegmentation):
     def __init__(self, config: EomtConfig):
         PreTrainedModel.__init__(self, config)
@@ -402,9 +417,11 @@ class EomtForUniversalSegmentation(Mask2FormerForUniversalSegmentation):
     def get_input_embeddings(self):
         return self.embeddings.patch_embeddings
 
+# get_auxiliary_logits：返回中间层辅助 logits 用于 deep supervision
     def get_auxiliary_logits(self):
         raise AttributeError("Note needed for Eomt Model.")
 
+# predict：sigmoid/softmax 后处理 class 与 mask 预测
     def predict(self, logits: torch.Tensor):
         query_tokens = logits[:, : self.config.num_queries, :]
         class_logits = self.class_predictor(query_tokens)

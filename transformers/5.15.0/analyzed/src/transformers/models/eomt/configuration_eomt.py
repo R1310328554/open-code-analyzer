@@ -23,8 +23,10 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# EomtConfig：tue-mps/coco_panoptic_eomt_large_640 checkpoint 默认配置
 @auto_docstring(checkpoint="tue-mps/coco_panoptic_eomt_large_640")
 @strict
+# EomtConfig：num_queries/register_tokens、mask/class/dice 损失权重与 upscale 块数
 class EomtConfig(PreTrainedConfig):
     r"""
     layerscale_value (`float`, *optional*, defaults to 1.0):

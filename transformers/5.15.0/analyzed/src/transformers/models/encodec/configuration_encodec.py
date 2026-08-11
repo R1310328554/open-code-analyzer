@@ -22,8 +22,10 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# EncodecConfig：facebook/encodec_24khz checkpoint 默认配置
 @auto_docstring(checkpoint="facebook/encodec_24khz")
 @strict
+# EncodecConfig：目标带宽、卷积/LSTM 架构与码本维度等音频编解码参数
 class EncodecConfig(PreTrainedConfig):
     r"""
     target_bandwidths (`list[float]`, *optional*, defaults to `[1.5, 3.0, 6.0, 12.0, 24.0]`):
@@ -108,10 +110,12 @@ class EncodecConfig(PreTrainedConfig):
     codebook_dim: int | None = None
     use_conv_shortcut: bool = True
 
+# __post_init__：默认 codebook_dim=hidden_size 并触发 @strict 校验
     def __post_init__(self, **kwargs):
         self.codebook_dim = self.codebook_dim if self.codebook_dim is not None else self.hidden_size
         super().__post_init__(**kwargs)
 
+# validate_architecture：校验 norm_type 为 weight_norm 或 time_group_norm
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if self.norm_type not in ["weight_norm", "time_group_norm"]:
@@ -121,6 +125,7 @@ class EncodecConfig(PreTrainedConfig):
 
     # This is a property because you might want to change the chunk_length_s on the fly
     @property
+# chunk_length：由 chunk_length_s × sampling_rate 得到采样点长度
     def chunk_length(self) -> int | None:
         if self.chunk_length_s is None:
             return None
@@ -129,6 +134,7 @@ class EncodecConfig(PreTrainedConfig):
 
     # This is a property because you might want to change the chunk_length_s on the fly
     @property
+# chunk_stride：分块步长，(1-overlap)×chunk_length
     def chunk_stride(self) -> int | None:
         if self.chunk_length_s is None or self.overlap is None:
             return None
@@ -136,18 +142,22 @@ class EncodecConfig(PreTrainedConfig):
             return max(1, int((1.0 - self.overlap) * self.chunk_length))
 
     @property
+# hop_length：上采样比率连乘，决定帧移
     def hop_length(self) -> int:
         return int(np.prod(self.upsampling_ratios))
 
     @property
+# codebook_nbits：码本大小对应的比特数
     def codebook_nbits(self) -> int:
         return math.ceil(math.log2(self.codebook_size))
 
     @property
+# frame_rate：每秒离散帧数 sampling_rate/hop_length
     def frame_rate(self) -> int:
         return math.ceil(self.sampling_rate / self.hop_length)
 
     @property
+# num_quantizers：最高带宽下 RVQ 量化器数量
     def num_quantizers(self) -> int:
         return int(1000 * self.target_bandwidths[-1] // (self.frame_rate * self.codebook_nbits))
 

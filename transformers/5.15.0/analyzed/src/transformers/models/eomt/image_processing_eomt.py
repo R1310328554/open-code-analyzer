@@ -39,6 +39,7 @@ from ...utils import (
 )
 
 
+# EomtImageProcessorKwargs：size/crop_size/do_reduce_labels 等图像 kwargs
 class EomtImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     do_split_image (`bool`, *optional*, defaults to `self.do_split_image`):
@@ -55,6 +56,7 @@ class EomtImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 # Adapted from transformers.models.maskformer.image_processing_maskformer_fast.convert_segmentation_map_to_binary_masks_fast
+# convert_segmentation_map_to_binary_masks_fast：语义图快速转二值 mask 张量
 def convert_segmentation_map_to_binary_masks_fast(
     segmentation_map: "torch.Tensor",
     instance_id_to_semantic_id: dict[int, int] | None = None,
@@ -86,6 +88,7 @@ def convert_segmentation_map_to_binary_masks_fast(
     return binary_masks.float(), labels.long()
 
 
+# get_target_size：从 size 字典解析 (height, width)
 def get_target_size(size_dict: dict[str, int]) -> tuple[int, int]:
     """Returns the height and width from a size dict."""
     target_height = size_dict["shortest_edge"]
@@ -94,6 +97,7 @@ def get_target_size(size_dict: dict[str, int]) -> tuple[int, int]:
     return target_height, target_width
 
 
+# reorder_patches_and_offsets：按 offset 重排分块 patch 顺序
 def reorder_patches_and_offsets(
     patches: list[torch.Tensor], offsets: list[list[int]]
 ) -> tuple[list[torch.Tensor], list[list[int]]]:
@@ -106,6 +110,7 @@ def reorder_patches_and_offsets(
     return list(sorted_patches), list(sorted_offsets)
 
 
+# remove_low_and_no_objects：过滤低分与 no-object 预测
 def remove_low_and_no_objects(masks, scores, labels, object_mask_threshold, num_labels):
     """
     Binarize the given masks using `object_mask_threshold`, it returns the associated values of `masks`, `scores` and
@@ -134,6 +139,7 @@ def remove_low_and_no_objects(masks, scores, labels, object_mask_threshold, num_
     return masks[to_keep], scores[to_keep], labels[to_keep]
 
 
+# check_segment_validity：校验 mask 阈值与重叠面积
 def check_segment_validity(mask_labels, mask_probs, k, mask_threshold=0.5, overlap_mask_area_threshold=0.8):
     # Get the mask associated with the k class
     mask_k = mask_labels == k
@@ -156,6 +162,7 @@ def check_segment_validity(mask_labels, mask_probs, k, mask_threshold=0.5, overl
     return mask_exists, final_mask
 
 
+# compute_segments：由 mask/score/label 组装 panoptic segment 字典
 def compute_segments(
     mask_probs,
     pred_scores,
@@ -211,6 +218,7 @@ def compute_segments(
 
 
 @auto_docstring
+# EomtImageProcessor：大图分块 preprocess、merge_image_patches 与三类后处理
 class EomtImageProcessor(TorchvisionBackend):
     valid_kwargs = EomtImageProcessorKwargs
     resample = PILImageResampling.BILINEAR
@@ -228,6 +236,7 @@ class EomtImageProcessor(TorchvisionBackend):
     def __init__(self, **kwargs: Unpack[EomtImageProcessorKwargs]):
         super().__init__(**kwargs)
 
+# _split_image：按 crop_size 将图像切为重叠 patch
     def _split_image(self, images: torch.Tensor, size: SizeDict, image_indices: list[int]) -> tuple[list, list]:
         """Slices an image into overlapping patches for semantic segmentation."""
 
@@ -256,6 +265,7 @@ class EomtImageProcessor(TorchvisionBackend):
 
         return patches, patch_offsets
 
+# _pad：填充至目标尺寸
     def _pad(self, images: torch.Tensor, size: SizeDict) -> torch.Tensor:
         """Pads the image to the target size using zero padding."""
         _, _, height, width = images.shape
@@ -271,6 +281,7 @@ class EomtImageProcessor(TorchvisionBackend):
         return padded_images
 
     @auto_docstring
+# preprocess：resize/normalize/rescale 并输出 pixel_values
     def preprocess(
         self,
         images: ImageInput,
@@ -421,6 +432,7 @@ class EomtImageProcessor(TorchvisionBackend):
 
         return processed_images, patch_offsets
 
+# merge_image_patches：合并分块 logits/mask 为整图输出
     def merge_image_patches(
         self,
         segmentation_logits: torch.Tensor,
@@ -478,6 +490,7 @@ class EomtImageProcessor(TorchvisionBackend):
 
         return reconstructed_logits
 
+# unpad_image：去除预处理 padding 恢复原始宽高
     def unpad_image(
         self,
         segmentation_logits: torch.Tensor,
@@ -499,6 +512,7 @@ class EomtImageProcessor(TorchvisionBackend):
             resized_logits.append(upsampled_logits)
         return resized_logits
 
+# post_process_semantic_segmentation：语义分割 argmax 后处理
     def post_process_semantic_segmentation(
         self,
         outputs,
@@ -575,6 +589,7 @@ class EomtImageProcessor(TorchvisionBackend):
 
         return semantic_segmentation
 
+# post_process_panoptic_segmentation：全景分割 segment 组装
     def post_process_panoptic_segmentation(
         self,
         outputs,
@@ -633,6 +648,7 @@ class EomtImageProcessor(TorchvisionBackend):
         return results
 
     @filter_out_non_signature_kwargs()
+# post_process_instance_segmentation：实例分割 mask 筛选与 NMS
     def post_process_instance_segmentation(
         self,
         outputs,

@@ -37,6 +37,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring
 @dataclass
+# EncodecOutput：编解码联合输出 audio_codes 与 audio_values
 class EncodecOutput(ModelOutput):
     r"""
     audio_codes (`torch.LongTensor`  of shape `(nb_frames, batch_size, nb_quantizers, frame_len)`, *optional*):
@@ -51,6 +52,7 @@ class EncodecOutput(ModelOutput):
 
 @auto_docstring
 @dataclass
+# EncodecEncoderOutput：编码输出含缩放因子与末帧 padding 长度
 class EncodecEncoderOutput(ModelOutput):
     r"""
     audio_codes (`torch.LongTensor`  of shape `(nb_frames, batch_size, nb_quantizers, frame_len)`, *optional*):
@@ -70,6 +72,7 @@ class EncodecEncoderOutput(ModelOutput):
 
 @auto_docstring
 @dataclass
+# EncodecDecoderOutput：解码波形 audio_values
 class EncodecDecoderOutput(ModelOutput):
     r"""
     audio_values (`torch.FloatTensor`  of shape `(batch_size, segment_length)`, *optional*):
@@ -79,6 +82,7 @@ class EncodecDecoderOutput(ModelOutput):
     audio_values: torch.FloatTensor | None = None
 
 
+# EncodecConv1d：非对称/因果 padding 的 Conv1d，支持 weight_norm 或 time_group_norm
 class EncodecConv1d(nn.Module):
     """Conv1d with asymmetric or causal padding and normalization."""
 
@@ -154,6 +158,7 @@ class EncodecConv1d(nn.Module):
         end = padded.shape[-1] - extra_pad
         return padded[..., :end]
 
+# forward：encode+decode 联合前向，返回 EncodecOutput
     def forward(self, hidden_states):
         extra_padding = self._get_extra_padding_for_conv1d(hidden_states)
 
@@ -176,6 +181,7 @@ class EncodecConv1d(nn.Module):
         return hidden_states
 
 
+# EncodecConvTranspose1d：因果转置卷积上采样层
 class EncodecConvTranspose1d(nn.Module):
     """ConvTranspose1d with asymmetric or causal padding and normalization."""
 
@@ -233,6 +239,7 @@ class EncodecConvTranspose1d(nn.Module):
         return hidden_states
 
 
+# EncodecLSTM：编码器末尾双向 LSTM 时序建模
 class EncodecLSTM(nn.Module):
     """
     LSTM without worrying about the hidden state, nor the layout of the data. Expects input as convolutional layout.
@@ -249,6 +256,7 @@ class EncodecLSTM(nn.Module):
         return hidden_states
 
 
+# EncodecResnetBlock：膨胀卷积残差块，可选卷积 shortcut
 class EncodecResnetBlock(nn.Module):
     """
     Residual block from SEANet model as used by EnCodec.
@@ -282,6 +290,7 @@ class EncodecResnetBlock(nn.Module):
         return self.shortcut(residual) + hidden_states
 
 
+# EncodecEncoder：多级下采样 + LSTM，输出连续嵌入
 class EncodecEncoder(nn.Module):
     """SEANet encoder as used by EnCodec."""
 
@@ -313,6 +322,7 @@ class EncodecEncoder(nn.Module):
         return hidden_states
 
 
+# EncodecDecoder：转置卷积上采样重建波形
 class EncodecDecoder(nn.Module):
     """SEANet decoder as used by EnCodec."""
 
@@ -347,6 +357,7 @@ class EncodecDecoder(nn.Module):
         return hidden_states
 
 
+# EncodecEuclideanCodebook：欧氏距离向量量化码本
 class EncodecEuclideanCodebook(nn.Module):
     """Codebook with Euclidean distance."""
 
@@ -368,6 +379,7 @@ class EncodecEuclideanCodebook(nn.Module):
         embed_ind = dist.max(dim=-1).indices
         return embed_ind
 
+# encode：整段或分块编码，输出离散码本索引
     def encode(self, hidden_states):
         shape = hidden_states.shape
         # pre-process
@@ -378,11 +390,13 @@ class EncodecEuclideanCodebook(nn.Module):
         embed_ind = embed_ind.view(*shape[:-1])
         return embed_ind
 
+# decode：码本索引→波形，支持多帧与 scale 反归一化
     def decode(self, embed_ind):
         quantize = nn.functional.embedding(embed_ind, self.embed)
         return quantize
 
 
+# EncodecVectorQuantization：单层 VQ 封装 encode/decode
 class EncodecVectorQuantization(nn.Module):
     """
     Vector quantization implementation. Currently supports only euclidean distance.
@@ -403,6 +417,7 @@ class EncodecVectorQuantization(nn.Module):
         return quantize
 
 
+# EncodecResidualVectorQuantizer：多级 RVQ，按带宽选择量化器数
 class EncodecResidualVectorQuantizer(nn.Module):
     """Residual Vector Quantizer."""
 
@@ -413,6 +428,7 @@ class EncodecResidualVectorQuantizer(nn.Module):
         self.num_quantizers = config.num_quantizers
         self.layers = nn.ModuleList([EncodecVectorQuantization(config) for _ in range(config.num_quantizers)])
 
+# get_num_quantizers_for_bandwidth：给定带宽 kbps 计算 RVQ 层数
     def get_num_quantizers_for_bandwidth(self, bandwidth: float | None = None) -> int:
         """Return num_quantizers based on specified target bandwidth."""
         bw_per_q = math.log2(self.codebook_size) * self.frame_rate
@@ -448,6 +464,7 @@ class EncodecResidualVectorQuantizer(nn.Module):
 
 
 @auto_docstring
+# EncodecPreTrainedModel：音频 tokenizer 基类，Conv1d 权重初始化
 class EncodecPreTrainedModel(PreTrainedAudioTokenizerBase):
     config: EncodecConfig
     base_model_prefix = "encodec"
@@ -482,6 +499,7 @@ class EncodecPreTrainedModel(PreTrainedAudioTokenizerBase):
     The EnCodec neural audio codec model.
     """
 )
+# EncodecModel：完整编解码器，encode/decode 支持分块 overlap-add
 class EncodecModel(EncodecPreTrainedModel):
     def __init__(self, config: EncodecConfig):
         super().__init__(config)
@@ -499,6 +517,7 @@ class EncodecModel(EncodecPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+# _encode_frame：单帧编码，返回 codes 与可选 scale
     def _encode_frame(self, input_values: torch.Tensor, bandwidth: float) -> tuple[torch.Tensor, torch.Tensor | None]:
         """
         Encodes the given input using the underlying VQVAE. If `config.normalize` is set to `True` the input is first
@@ -604,6 +623,7 @@ class EncodecModel(EncodecPreTrainedModel):
         return EncodecEncoderOutput(encoded_frames, scales, last_frame_pad_length)
 
     @staticmethod
+# _linear_overlap_add：分块解码结果的线性 overlap-add 融合
     def _linear_overlap_add(frames: list[torch.Tensor], stride: int):
         # Generic overlap add, with linear fade-in/fade-out, supporting complex scenario
         # e.g., more than 2 frames per position.
@@ -650,6 +670,7 @@ class EncodecModel(EncodecPreTrainedModel):
 
         return out / sum_weight
 
+# _decode_frame：单帧 RVQ 解码 + 波形重建
     def _decode_frame(self, codes: torch.Tensor, scale: torch.Tensor | None = None) -> torch.Tensor:
         codes = codes.transpose(0, 1)
         embeddings = self.quantizer.decode(codes)

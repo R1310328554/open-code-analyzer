@@ -43,6 +43,7 @@ DEPRECATION_WARNING = (
 )
 
 
+# shift_tokens_right：标签右移一位构造 decoder 输入
 def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start_token_id: int):
     """
     Shift input ids one token to the right.
@@ -62,6 +63,7 @@ def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start
 
 
 @auto_docstring
+# EncoderDecoderModel：支持 from_encoder_decoder_pretrained 与 generate
 class EncoderDecoderModel(PreTrainedModel, GenerationMixin):
     r"""
     [`EncoderDecoderModel`] is a generic model class that will be instantiated as a transformer architecture with one
@@ -77,6 +79,7 @@ class EncoderDecoderModel(PreTrainedModel, GenerationMixin):
     _supports_flash_attn = True
     _supports_sdpa = True
 
+# __init__：加载 encoder/decoder 子模块并绑定 cross-attention
     def __init__(
         self,
         config: PreTrainedConfig | None = None,
@@ -163,6 +166,7 @@ class EncoderDecoderModel(PreTrainedModel, GenerationMixin):
         self.post_init()
 
     @torch.no_grad()
+# _init_weights：委托 encoder/decoder 各自初始化
     def _init_weights(self, module):
         super()._init_weights(module)
         if module in self.encoder.modules():
@@ -170,16 +174,20 @@ class EncoderDecoderModel(PreTrainedModel, GenerationMixin):
         elif module in self.decoder.modules():
             self.decoder._init_weights(module)
 
+# get_input_embeddings：返回 encoder 词嵌入
     def get_input_embeddings(self):
         return self.encoder.get_input_embeddings()
 
+# get_output_embeddings：返回 decoder LM 头
     def get_output_embeddings(self):
         return self.decoder.get_output_embeddings()
 
+# set_output_embeddings：替换 decoder 输出嵌入
     def set_output_embeddings(self, new_embeddings):
         return self.decoder.set_output_embeddings(new_embeddings)
 
     @classmethod
+# from_encoder_decoder_pretrained：分别加载预训练 encoder 与 decoder 权重
     def from_encoder_decoder_pretrained(
         cls,
         encoder_pretrained_model_name_or_path: str | None = None,
@@ -316,6 +324,7 @@ class EncoderDecoderModel(PreTrainedModel, GenerationMixin):
 
     @can_return_tuple
     @auto_docstring
+# forward：encoder→decoder 联合前向，内部计算 labels loss
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -458,9 +467,11 @@ class EncoderDecoderModel(PreTrainedModel, GenerationMixin):
             encoder_attentions=encoder_outputs.attentions,
         )
 
+# prepare_decoder_input_ids_from_labels：由 labels 生成 decoder_input_ids
     def prepare_decoder_input_ids_from_labels(self, labels: torch.Tensor):
         return shift_tokens_right(labels, self.config.pad_token_id, self.config.decoder_start_token_id)
 
+# resize_token_embeddings：同步调整 encoder/decoder 词表大小
     def resize_token_embeddings(self, *args, **kwargs):
         raise NotImplementedError(
             "Resizing the embedding layers via the EncoderDecoderModel directly is not supported. Please use the"

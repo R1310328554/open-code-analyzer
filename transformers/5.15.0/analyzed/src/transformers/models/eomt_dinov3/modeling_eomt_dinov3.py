@@ -49,6 +49,7 @@ if is_accelerate_available():
     from accelerate.utils import reduce
 
 
+# rotate_half：RoPE 向量旋转辅助
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -56,6 +57,7 @@ def rotate_half(x):
     return torch.cat((-x2, x1), dim=-1)
 
 
+# eager_attention_forward：缩放点积注意力 eager 实现
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -84,6 +86,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# apply_rotary_pos_emb：对 Q/K 施加 RoPE 旋转位置编码
 def apply_rotary_pos_emb(
     q: torch.Tensor, k: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor, **kwargs
 ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -117,6 +120,7 @@ def apply_rotary_pos_emb(
     return q, k
 
 
+# EomtDinov3Attention：带 RoPE 的多头自注意力
 class EomtDinov3Attention(nn.Module):
     """
     Multi-headed attention compatible with ALL_ATTENTION_FUNCTIONS.
@@ -183,6 +187,7 @@ class EomtDinov3Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# EomtDinov3Embeddings：patch + register + 位置嵌入
 class EomtDinov3Embeddings(nn.Module):
     """
     Construct the CLS token, mask token, position and patch embeddings.
@@ -219,6 +224,7 @@ class EomtDinov3Embeddings(nn.Module):
         return embeddings
 
 
+# EomtDinov3MLP：标准 GELU 前馈
 class EomtDinov3MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -233,6 +239,7 @@ class EomtDinov3MLP(nn.Module):
         return self.down_proj(self.act_fn(self.up_proj(x)))
 
 
+# EomtDinov3GatedMLP：可选 gated SwiGLU 前馈
 class EomtDinov3GatedMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -249,6 +256,7 @@ class EomtDinov3GatedMLP(nn.Module):
         return down_proj
 
 
+# EomtDinov3DropPath：随机深度 DropPath
 class EomtDinov3DropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -273,6 +281,7 @@ class EomtDinov3DropPath(nn.Module):
         return f"p={self.drop_prob}"
 
 
+# EomtDinov3Layer：Pre-LN RoPE 注意力 + MLP 层
 class EomtDinov3Layer(GradientCheckpointingLayer):
     """This corresponds to the Block class in the original implementation."""
 
@@ -321,6 +330,7 @@ class EomtDinov3Layer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# EomtDinov3LayerScale：LayerScale 残差缩放
 class EomtDinov3LayerScale(nn.Module):
     def __init__(self, config) -> None:
         super().__init__()
@@ -331,6 +341,7 @@ class EomtDinov3LayerScale(nn.Module):
 
 
 @compile_compatible_method_lru_cache(maxsize=32)
+# get_patches_center_coordinates：计算 patch 中心坐标供 RoPE 使用
 def get_patches_center_coordinates(
     num_patches_h: int, num_patches_w: int, dtype: torch.dtype, device: torch.device
 ) -> torch.Tensor:
@@ -359,6 +370,7 @@ def get_patches_center_coordinates(
     return coords
 
 
+# augment_patches_center_coordinates：训练时 jitter/shift/rescale 位置增强
 def augment_patches_center_coordinates(
     coords: torch.Tensor,
     shift: float | None = None,
@@ -388,6 +400,7 @@ def augment_patches_center_coordinates(
     return coords
 
 
+# EomtDinov3RotaryEmbedding：2D patch 坐标的 RoPE 嵌入
 class EomtDinov3RotaryEmbedding(nn.Module):
     inv_freq: Tensor
 
@@ -543,6 +556,7 @@ def pair_wise_sigmoid_cross_entropy_loss(inputs: torch.Tensor, labels: torch.Ten
 
 
 # Adapted from https://github.com/facebookresearch/EomtDinov3/blob/main/eomt_dinov3/modeling/matcher.py
+# EomtDinov3HungarianMatcher：query-GT 匈牙利匹配
 class EomtDinov3HungarianMatcher(nn.Module):
     """This class computes an assignment between the labels and the predictions of the network.
 
@@ -699,6 +713,7 @@ def sigmoid_cross_entropy_loss(inputs: torch.Tensor, labels: torch.Tensor, num_m
 
 
 # Adapted from https://github.com/facebookresearch/EomtDinov3/blob/main/eomt_dinov3/modeling/criterion.py
+# EomtDinov3Loss：分类+mask+dice 加权损失
 class EomtDinov3Loss(nn.Module):
     def __init__(self, config: EomtDinov3Config, weight_dict: dict[str, float]):
         """
@@ -1022,6 +1037,7 @@ class EomtDinov3Loss(nn.Module):
     """
 )
 @dataclass
+# EomtDinov3ForUniversalSegmentationOutput：分割模型输出 dataclass
 class EomtDinov3ForUniversalSegmentationOutput(ModelOutput):
     r"""
     loss (`torch.Tensor`, *optional*):
@@ -1054,6 +1070,7 @@ class EomtDinov3ForUniversalSegmentationOutput(ModelOutput):
 
 
 @auto_docstring
+# EomtDinov3PreTrainedModel：DINOv3 EoMT 预训练基类
 class EomtDinov3PreTrainedModel(PreTrainedModel):
     """
     An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
@@ -1091,6 +1108,7 @@ class EomtDinov3PreTrainedModel(PreTrainedModel):
             init.ones_(module.attn_mask_probs)
 
 
+# EomtDinov3LayerNorm2d：2D 特征 LayerNorm
 class EomtDinov3LayerNorm2d(nn.LayerNorm):
     def __init__(self, num_channels, eps=1e-6, affine=True):
         super().__init__(num_channels, eps=eps, elementwise_affine=affine)
@@ -1102,6 +1120,7 @@ class EomtDinov3LayerNorm2d(nn.LayerNorm):
         return hidden_state
 
 
+# EomtDinov3ScaleLayer：上采样尺度层
 class EomtDinov3ScaleLayer(nn.Module):
     def __init__(self, config: EomtDinov3Config):
         super().__init__()
@@ -1127,6 +1146,7 @@ class EomtDinov3ScaleLayer(nn.Module):
         return hidden_states
 
 
+# EomtDinov3ScaleBlock：堆叠 upscale 块
 class EomtDinov3ScaleBlock(nn.Module):
     def __init__(self, config: EomtDinov3Config):
         super().__init__()
@@ -1139,6 +1159,7 @@ class EomtDinov3ScaleBlock(nn.Module):
         return hidden_states
 
 
+# EomtDinov3MaskHead：query-patch 点积 mask 头
 class EomtDinov3MaskHead(nn.Module):
     def __init__(self, config: EomtDinov3Config):
         super().__init__()
@@ -1161,6 +1182,7 @@ class EomtDinov3MaskHead(nn.Module):
     The EoMT-DINOv3 model with head on top for instance/semantic/panoptic segmentation.
     """,
 )
+# EomtDinov3ForUniversalSegmentation：DINOv3 骨干统一分割任务头
 class EomtDinov3ForUniversalSegmentation(EomtDinov3PreTrainedModel):
     main_input_name = "pixel_values"
 
