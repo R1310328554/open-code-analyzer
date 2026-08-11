@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T02:05:55Z",
-  "files": [
-    "src/transformers/models/minicpmv4_6/video_processing_minicpmv4_6.py",
-    "src/transformers/models/minimax/__init__.py",
-    "src/transformers/models/minimax/configuration_minimax.py",
-    "src/transformers/models/minimax/modeling_minimax.py",
-    "src/transformers/models/minimax/modular_minimax.py",
-    "src/transformers/models/minimax_m2/__init__.py",
-    "src/transformers/models/minimax_m2/configuration_minimax_m2.py",
-    "src/transformers/models/minimax_m2/modeling_minimax_m2.py",
-    "src/transformers/models/minimax_m2/modular_minimax_m2.py",
-    "src/transformers/models/minimax_m3_vl/__init__.py",
-    "src/transformers/models/minimax_m3_vl/configuration_minimax_m3_vl.py",
-    "src/transformers/models/minimax_m3_vl/image_processing_minimax_m3_vl.py",
-    "src/transformers/models/minimax_m3_vl/modeling_minimax_m3_vl.py",
-    "src/transformers/models/minimax_m3_vl/modular_minimax_m3_vl.py",
-    "src/transformers/models/minimax_m3_vl/processing_minimax_m3_vl.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1269,
-  "done": 1395
+  "done": 1410
 }
