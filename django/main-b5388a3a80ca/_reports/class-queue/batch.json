@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T04:26:24Z",
   "files": [
-    "Gruntfile.js",
-    "django/__init__.py",
-    "django/__main__.py",
-    "django/apps/__init__.py",
-    "django/apps/config.py",
-    "django/apps/registry.py",
-    "django/conf/__init__.py",
-    "django/conf/global_settings.py",
-    "django/conf/locale/__init__.py",
-    "django/conf/locale/ar/__init__.py",
-    "django/conf/locale/ar/formats.py",
-    "django/conf/locale/ar_DZ/__init__.py",
-    "django/conf/locale/ar_DZ/formats.py",
-    "django/conf/locale/az/__init__.py",
-    "django/conf/locale/az/formats.py",
     "django/conf/locale/bg/__init__.py",
     "django/conf/locale/bg/formats.py",
     "django/conf/locale/bn/__init__.py",
@@ -33,5 +18,5 @@
     "django/conf/locale/da/__init__.py"
   ],
   "remaining_pending": 912,
-  "done": 0
+  "done": 15
 }
