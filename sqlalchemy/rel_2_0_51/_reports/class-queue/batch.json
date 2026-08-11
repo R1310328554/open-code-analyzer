@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T06:27:43Z",
-  "files": [
-    "lib/sqlalchemy/orm/unitofwork.py",
-    "lib/sqlalchemy/orm/util.py",
-    "lib/sqlalchemy/orm/writeonly.py",
-    "lib/sqlalchemy/pool/__init__.py",
-    "lib/sqlalchemy/pool/base.py",
-    "lib/sqlalchemy/pool/events.py",
-    "lib/sqlalchemy/pool/impl.py",
-    "lib/sqlalchemy/schema.py",
-    "lib/sqlalchemy/sql/__init__.py",
-    "lib/sqlalchemy/sql/_dml_constructors.py",
-    "lib/sqlalchemy/sql/_elements_constructors.py",
-    "lib/sqlalchemy/sql/_orm_types.py",
-    "lib/sqlalchemy/sql/_py_util.py",
-    "lib/sqlalchemy/sql/_selectable_constructors.py",
-    "lib/sqlalchemy/sql/_typing.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 52,
-  "done": 165
+  "done": 180
 }
