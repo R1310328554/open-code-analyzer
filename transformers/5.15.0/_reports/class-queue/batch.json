@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T03:43:08Z",
-  "files": [
-    "src/transformers/models/vision_text_dual_encoder/processing_vision_text_dual_encoder.py",
-    "src/transformers/models/visual_bert/__init__.py",
-    "src/transformers/models/visual_bert/configuration_visual_bert.py",
-    "src/transformers/models/visual_bert/modeling_visual_bert.py",
-    "src/transformers/models/vit/__init__.py",
-    "src/transformers/models/vit/configuration_vit.py",
-    "src/transformers/models/vit/image_processing_pil_vit.py",
-    "src/transformers/models/vit/image_processing_vit.py",
-    "src/transformers/models/vit/modeling_vit.py",
-    "src/transformers/models/vit_mae/__init__.py",
-    "src/transformers/models/vit_mae/configuration_vit_mae.py",
-    "src/transformers/models/vit_mae/modeling_vit_mae.py",
-    "src/transformers/models/vit_mae/modular_vit_mae.py",
-    "src/transformers/models/vit_msn/__init__.py",
-    "src/transformers/models/vit_msn/configuration_vit_msn.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 339,
-  "done": 2325
+  "done": 2340
 }
