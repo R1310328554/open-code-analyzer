@@ -15,10 +15,12 @@ __all__ = (
 )
 
 
+# 无法添加消息时抛出的异常（如未安装中间件）
 class MessageFailure(Exception):
     pass
 
 
+# 向请求的消息存储添加一条指定级别的消息
 def add_message(request, level, message, extra_tags="", fail_silently=False):
     """
     Attempt to add a message to the request using the 'messages' app.
@@ -40,6 +42,7 @@ def add_message(request, level, message, extra_tags="", fail_silently=False):
         return messages.add(level, message, extra_tags)
 
 
+# 返回请求上的消息存储，不存在则返回空列表
 def get_messages(request):
     """
     Return the message storage on the request if it exists, otherwise return
@@ -48,6 +51,7 @@ def get_messages(request):
     return getattr(request, "_messages", [])
 
 
+# 返回当前记录消息的最低级别（默认 MESSAGE_LEVEL 或 INFO）
 def get_level(request):
     """
     Return the minimum level of messages to be recorded.
@@ -59,6 +63,7 @@ def get_level(request):
     return storage.level
 
 
+# 设置记录消息的最低级别，成功返回 True
 def set_level(request, level):
     """
     Set the minimum level of messages to be recorded, and return ``True`` if
@@ -72,6 +77,7 @@ def set_level(request, level):
     return True
 
 
+# 添加 DEBUG 级别消息
 def debug(request, message, extra_tags="", fail_silently=False):
     """Add a message with the ``DEBUG`` level."""
     add_message(
@@ -83,6 +89,7 @@ def debug(request, message, extra_tags="", fail_silently=False):
     )
 
 
+# 添加 INFO 级别消息
 def info(request, message, extra_tags="", fail_silently=False):
     """Add a message with the ``INFO`` level."""
     add_message(
@@ -94,6 +101,7 @@ def info(request, message, extra_tags="", fail_silently=False):
     )
 
 
+# 添加 SUCCESS 级别消息
 def success(request, message, extra_tags="", fail_silently=False):
     """Add a message with the ``SUCCESS`` level."""
     add_message(
@@ -105,6 +113,7 @@ def success(request, message, extra_tags="", fail_silently=False):
     )
 
 
+# 添加 WARNING 级别消息
 def warning(request, message, extra_tags="", fail_silently=False):
     """Add a message with the ``WARNING`` level."""
     add_message(
@@ -116,6 +125,7 @@ def warning(request, message, extra_tags="", fail_silently=False):
     )
 
 
+# 添加 ERROR 级别消息
 def error(request, message, extra_tags="", fail_silently=False):
     """Add a message with the ``ERROR`` level."""
     add_message(

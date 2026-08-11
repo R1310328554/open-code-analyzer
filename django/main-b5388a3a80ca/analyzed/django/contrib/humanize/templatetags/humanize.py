@@ -17,10 +17,12 @@ from django.utils.translation import (
     round_away_from_one,
 )
 
-register = template.Library()
+# humanize 模板过滤器库 — 数字、日期与时间的友好显示
+register = template.Library()register = template.Library()
 
 
 @register.filter(is_safe=True)
+# 将整数转为英文序数词字符串（1st、2nd、3rd 等）
 def ordinal(value):
     """
     Convert an integer to its ordinal as a string. 1 is '1st', 2 is '2nd',
@@ -70,6 +72,7 @@ def ordinal(value):
 
 
 @register.filter(is_safe=True)
+# 为整数或浮点数添加千位分隔符，支持本地化格式
 def intcomma(value, use_l10n=True):
     """
     Convert an integer or float (or a string representation of either) to a
@@ -95,6 +98,7 @@ def intcomma(value, use_l10n=True):
     return result
 
 
+# 大数单位（百万、十亿等）与对应转换函数的映射表
 # A tuple of standard large number to their converters
 intword_converters = (
     (6, lambda number: ngettext("%(value)s million", "%(value)s million", number)),
@@ -128,6 +132,7 @@ intword_converters = (
 
 
 @register.filter(is_safe=False)
+# 将大整数转为可读文字（如 1.2 million）
 def intword(value):
     """
     Convert a large integer to a friendly text representation. Works best
@@ -155,6 +160,7 @@ def intword(value):
 
 
 @register.filter(is_safe=True)
+# 1–9 返回英文单词，其余返回数字（美联社风格）
 def apnumber(value):
     """
     For numbers 1-9, return the number spelled out. Otherwise, return the
@@ -182,6 +188,7 @@ def apnumber(value):
 # Perform the comparison in the default time zone when USE_TZ = True
 # (unless a specific time zone has been applied with the |timezone filter).
 @register.filter(expects_localtime=True)
+# 相对今天显示 yesterday/today/tomorrow，否则按 DATE_FORMAT 格式化
 def naturalday(value, arg=None):
     """
     For date values that are tomorrow, today or yesterday compared to
@@ -208,6 +215,7 @@ def naturalday(value, arg=None):
 # This filter doesn't require expects_localtime=True because it deals properly
 # with both naive and aware datetimes. Therefore avoid the cost of conversion.
 @register.filter
+# 相对当前时间显示“几秒前”“3 分钟前”等自然语言
 def naturaltime(value):
     """
     For date and time values show how many seconds, minutes, or hours ago
@@ -216,6 +224,7 @@ def naturaltime(value):
     return NaturalTimeFormatter.string_for(value)
 
 
+# 自然时间格式化器 — 根据过去/未来选择合适的时间描述模板
 class NaturalTimeFormatter:
     time_strings = {
         # Translators: delta will contain a string like '2 months' or
@@ -303,6 +312,7 @@ class NaturalTimeFormatter:
     }
 
     @classmethod
+    # 根据日期/时间与当前时刻的差值生成自然语言描述
     def string_for(cls, value):
         if not isinstance(value, date):  # datetime is a subclass of date
             return value

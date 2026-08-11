@@ -3,6 +3,7 @@ from django.contrib.messages.storage.cookie import CookieStorage
 from django.contrib.messages.storage.session import SessionStorage
 
 
+# 级联存储 — 优先 Cookie，溢出部分写入 Session
 class FallbackStorage(BaseStorage):
     """
     Try to store all messages in the first backend. Store any unstored
@@ -18,6 +19,7 @@ class FallbackStorage(BaseStorage):
         ]
         self._used_storages = set()
 
+    # 按顺序从各后端合并读取消息
     def _get(self, *args, **kwargs):
         """
         Get a single list of messages from all storage backends.
@@ -37,6 +39,7 @@ class FallbackStorage(BaseStorage):
                 break
         return all_messages, all_retrieved
 
+    # 依次尝试各后端，未存储的消息传递给下一个
     def _store(self, messages, response, *args, **kwargs):
         """
         Store the messages and return any unstored messages after trying all

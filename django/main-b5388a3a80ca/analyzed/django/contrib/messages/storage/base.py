@@ -5,6 +5,7 @@ from django.utils.functional import SimpleLazyObject
 LEVEL_TAGS = SimpleLazyObject(utils.get_level_tags)
 
 
+# 单条临时消息 — 含级别、正文与额外标签，可序列化到 session/cookie
 class Message:
     """
     Represent an actual message that can be stored in any of the supported
@@ -12,11 +13,13 @@ class Message:
     or template.
     """
 
+    # 构造消息对象
     def __init__(self, level, message, extra_tags=None):
         self.level = int(level)
         self.message = message
         self.extra_tags = extra_tags
 
+    # 序列化前将 message/extra_tags 强制转为 str
     def _prepare(self):
         """
         Prepare the message for serialization by forcing the ``message``
@@ -38,14 +41,17 @@ class Message:
         return f"Message(level={self.level}, message={self.message!r}{extra_tags})"
 
     @property
+    # 合并 extra_tags 与 level_tag 作为 CSS 类名
     def tags(self):
         return " ".join(tag for tag in [self.extra_tags, self.level_tag] if tag)
 
     @property
+    # 返回该级别对应的 CSS 标签
     def level_tag(self):
         return LEVEL_TAGS.get(self.level, "")
 
 
+# 临时消息存储抽象基类 — 子类须实现 _get 与 _store
 class BaseStorage:
     """
     This is the base backend for temporary message storage.
@@ -54,6 +60,7 @@ class BaseStorage:
     subclassed and the two methods ``_get`` and ``_store`` overridden.
     """
 
+    # 绑定请求并初始化队列与使用状态
     def __init__(self, request, *args, **kwargs):
         self.request = request
         self._queued_messages = []
@@ -78,6 +85,7 @@ class BaseStorage:
         return f"<{self.__class__.__qualname__}: request={self.request!r}>"
 
     @property
+    # 懒加载已持久化的消息列表
     def _loaded_messages(self):
         """
         Return a list of loaded messages, retrieving them first if they have
@@ -88,6 +96,7 @@ class BaseStorage:
             self._loaded_data = messages or []
         return self._loaded_data
 
+    # 从后端读取消息，返回 (messages, all_retrieved) — 子类必须实现
     def _get(self, *args, **kwargs):
         """
         Retrieve a list of stored messages. Return a tuple of the messages
@@ -105,6 +114,7 @@ class BaseStorage:
             "subclasses of BaseStorage must provide a _get() method"
         )
 
+    # 持久化消息并返回未能存储的消息 — 子类必须实现
     def _store(self, messages, response, *args, **kwargs):
         """
         Store a list of messages and return a list of any messages which could
@@ -118,6 +128,7 @@ class BaseStorage:
             "subclasses of BaseStorage must provide a _store() method"
         )
 
+    # 存储前预处理消息列表
     def _prepare_messages(self, messages):
         """
         Prepare a list of messages for storage.
@@ -125,6 +136,7 @@ class BaseStorage:
         for message in messages:
             message._prepare()
 
+    # 将未读消息写入响应关联的后端
     def update(self, response):
         """
         Store all unread messages.
@@ -139,6 +151,7 @@ class BaseStorage:
             messages = self._loaded_messages + self._queued_messages
             return self._store(messages, response)
 
+    # 若级别不低于 recording level 则将消息加入队列
     def add(self, level, message, extra_tags=""):
         """
         Queue a message to be stored.
@@ -157,6 +170,7 @@ class BaseStorage:
         message = Message(level, message, extra_tags=extra_tags)
         self._queued_messages.append(message)
 
+    # 返回最低记录级别（MESSAGE_LEVEL 或 INFO）
     def _get_level(self):
         """
         Return the minimum recorded level.
@@ -168,6 +182,7 @@ class BaseStorage:
             self._level = getattr(settings, "MESSAGE_LEVEL", constants.INFO)
         return self._level
 
+    # 设置自定义最低记录级别，None 则恢复默认
     def _set_level(self, value=None):
         """
         Set a custom minimum recorded level.
