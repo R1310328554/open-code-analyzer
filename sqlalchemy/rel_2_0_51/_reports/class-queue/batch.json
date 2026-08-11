@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T06:24:21Z",
   "files": [
-    "lib/sqlalchemy/ext/mypy/infer.py",
-    "lib/sqlalchemy/ext/mypy/names.py",
-    "lib/sqlalchemy/ext/mypy/plugin.py",
-    "lib/sqlalchemy/ext/mypy/util.py",
-    "lib/sqlalchemy/ext/orderinglist.py",
-    "lib/sqlalchemy/ext/serializer.py",
-    "lib/sqlalchemy/future/__init__.py",
-    "lib/sqlalchemy/future/engine.py",
-    "lib/sqlalchemy/inspection.py",
-    "lib/sqlalchemy/log.py",
-    "lib/sqlalchemy/orm/__init__.py",
-    "lib/sqlalchemy/orm/_orm_constructors.py",
-    "lib/sqlalchemy/orm/_typing.py",
-    "lib/sqlalchemy/orm/attributes.py",
-    "lib/sqlalchemy/orm/base.py",
     "lib/sqlalchemy/orm/bulk_persistence.py",
     "lib/sqlalchemy/orm/clsregistry.py",
     "lib/sqlalchemy/orm/collections.py",
@@ -33,5 +18,5 @@
     "lib/sqlalchemy/orm/interfaces.py"
   ],
   "remaining_pending": 82,
-  "done": 120
+  "done": 135
 }
