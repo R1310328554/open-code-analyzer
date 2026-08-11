@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T00:36:21Z",
   "files": [
-    "src/transformers/models/convbert/modeling_convbert.py",
-    "src/transformers/models/convbert/tokenization_convbert.py",
-    "src/transformers/models/convnext/__init__.py",
-    "src/transformers/models/convnext/configuration_convnext.py",
-    "src/transformers/models/convnext/image_processing_convnext.py",
-    "src/transformers/models/convnext/image_processing_pil_convnext.py",
-    "src/transformers/models/convnext/modeling_convnext.py",
-    "src/transformers/models/convnextv2/__init__.py",
-    "src/transformers/models/convnextv2/configuration_convnextv2.py",
-    "src/transformers/models/convnextv2/modeling_convnextv2.py",
-    "src/transformers/models/cosmos3_edge/__init__.py",
-    "src/transformers/models/cosmos3_edge/configuration_cosmos3_edge.py",
-    "src/transformers/models/cosmos3_edge/image_processing_cosmos3_edge.py",
-    "src/transformers/models/cosmos3_edge/image_processing_pil_cosmos3_edge.py",
-    "src/transformers/models/cosmos3_edge/modeling_cosmos3_edge.py",
     "src/transformers/models/cosmos3_edge/modular_cosmos3_edge.py",
     "src/transformers/models/cosmos3_edge/processing_cosmos3_edge.py",
     "src/transformers/models/cosmos3_edge/video_processing_cosmos3_edge.py",
@@ -33,5 +18,5 @@
     "src/transformers/models/csm/__init__.py"
   ],
   "remaining_pending": 2199,
-  "done": 450
+  "done": 465
 }
