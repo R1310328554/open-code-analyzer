@@ -4,6 +4,8 @@ Script which deprecates a list of given models
 Example usage:
 python utils/deprecate_models.py --models bert distilbert
 """
+# 模型弃用脚本：将指定模型移入 deprecated 并更新文档与 import
+
 
 import argparse
 import os
@@ -299,6 +301,7 @@ def add_models_to_deprecated_models_in_config_auto(models):
         f.write("\n".join(new_file_lines))
 
 
+# deprecate_models：执行完整弃用流程：移动文件/更新 init/删除测试
 def deprecate_models(models):
     # Get model info
     skipped_models = []

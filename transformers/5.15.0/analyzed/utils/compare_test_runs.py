@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 测试运行对比：解析 summary 文件并 diff 两次 CI 运行的测试集合
 
 import re
 

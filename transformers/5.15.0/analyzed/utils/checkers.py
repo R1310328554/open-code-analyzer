@@ -44,6 +44,7 @@ can be skipped. **Not all globs are exact reflections of the checker's runtime b
 Each ``CHECKER_CONFIG`` that is an approximation has an inline comment explaining the
 gap. For contributors: ``check_args`` control what a checker runs on, while
 ``cache_globs`` only control when the cache is invalidated. When in doubt, use
+# 检查器统一运行器：插件式 check/fix 脚本调度、缓存与 TTY 进度展示
 ``--no-cache`` to force a full run.
 """
 
@@ -73,6 +74,7 @@ except ImportError:  # transformers-ci[otel] not installed → tracing disabled
     _otel = None
 
 
+# _NullTrace：OpenTelemetry 未安装时的空追踪占位
 class _NullTrace:
     """No-op with the same shape as transformersci.otel.instrument's Run/Step."""
 
@@ -232,6 +234,7 @@ def get_checker_cache_globs(checker_name: str) -> list[str] | None:
     return cache_globs
 
 
+# CheckerCache：磁盘缓存：按文件哈希跳过未变更的检查器
 class CheckerCache:
     """Disk-backed cache that tracks file content hashes per checker.
 
@@ -308,6 +311,7 @@ def format_elapsed(seconds: float) -> str:
     return f"{seconds:.2f}s"
 
 
+# SlidingWindow：TTY 滑动窗口：旋转标题与最近 N 行输出
 class SlidingWindow:
     """Displays a spinning title + sliding window of the last N output lines in a TTY."""
 

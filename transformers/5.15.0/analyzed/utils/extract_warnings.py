@@ -1,3 +1,4 @@
+# CI 警告提取：从 GitHub Actions artifact 中筛选指定类型的 pytest 警告
 import argparse
 import json
 import os
@@ -12,6 +13,7 @@ from transformers import logging
 logger = logging.get_logger(__name__)
 
 
+# extract_warnings_from_single_artifact：从单个 zip artifact 解析 warnings.txt
 def extract_warnings_from_single_artifact(artifact_path, targets):
     """Extract warnings from a downloaded artifact (in .zip format)"""
     selected_warnings = set()
@@ -64,6 +66,7 @@ def extract_warnings_from_single_artifact(artifact_path, targets):
     return selected_warnings
 
 
+# extract_warnings：遍历 artifact 目录并汇总所有匹配警告
 def extract_warnings(artifact_dir, targets):
     """Extract warnings from all artifact files"""
 

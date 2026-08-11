@@ -1,3 +1,4 @@
+# CI 错误统计：GitHub Actions 作业/artifact 下载与失败测试聚合
 import argparse
 import json
 import logging
@@ -19,6 +20,7 @@ from github_utils import build_github_headers, get_github_json  # noqa: F401
 logger = logging.getLogger(__name__)
 
 
+# _NoRedirect：禁止 HTTP 重定向以便读取 Location 头
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
     """Redirect handler that refuses to follow redirects, so the caller can read ``Location`` itself."""
 
@@ -48,6 +50,7 @@ def _get_paginated_items(url, key, token=None):
     return items
 
 
+# get_jobs：分页获取 workflow run 的全部 job 列表
 def get_jobs(workflow_run_id, token=None):
     """Extract jobs in a GitHub Actions workflow run"""
 
@@ -73,6 +76,7 @@ def get_job_links(workflow_run_id, token=None):
     return {}
 
 
+# get_artifacts_links：获取 workflow run 全部 artifact 下载链接
 def get_artifacts_links(workflow_run_id, token=None):
     """Get all artifact links from a workflow run"""
 

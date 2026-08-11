@@ -1,9 +1,11 @@
+# modular 模型依赖映射：拓扑排序 modular 文件转换优先级
 import ast
 import re
 from collections import defaultdict
 
 
 # Function to perform topological sorting
+# topological_sort：对 modular 依赖图做拓扑分层排序
 def topological_sort(dependencies: dict) -> list[list[str]]:
     """Given the dependencies graph, construct a sorted list of list of modular files.
 
@@ -55,6 +57,7 @@ ALL_FILE_TYPES = (
 )
 
 
+# is_model_import：判断 import 是否为 modeling/configuration 等模型模块
 def is_model_import(module: str | None) -> bool:
     """Check whether `module` is a model import or not."""
     # Happens for fully relative import, i.e. `from ... import initialization as init`
@@ -70,6 +73,7 @@ def is_model_import(module: str | None) -> bool:
     return False
 
 
+# extract_model_imports_from_file：从 Python 文件 AST 提取模型相关 import
 def extract_model_imports_from_file(file_path):
     """From a python file `file_path`, extract the model-specific imports (the imports related to any model file in
     Transformers)"""
@@ -84,6 +88,7 @@ def extract_model_imports_from_file(file_path):
     return imports
 
 
+# find_priority_list：按依赖顺序排列 modular 文件并返回依赖字典
 def find_priority_list(modular_files: list[str]) -> tuple[list[list[str]], dict[str, set]]:
     """
     Given a list of modular files, sorts them by topological order. Modular models that DON'T depend on other modular

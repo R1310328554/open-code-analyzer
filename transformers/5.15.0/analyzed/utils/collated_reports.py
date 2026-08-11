@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# CI 报告汇总：解析 pytest summary 并上传 HuggingFace Hub 汇总报告
 
 import argparse
 import json
@@ -90,6 +91,7 @@ def get_commit_hash(commit_hash: str | None) -> str:
     return commit_hash[:7]
 
 
+# Args：命令行参数 dataclass：路径/GPU/提交哈希/任务名
 @dataclass
 class Args:
     path: Path

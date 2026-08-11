@@ -17,6 +17,8 @@ rm MSRParaphraseCorpus.msi
 1/30/19: It looks like SentEval is no longer hosting their extracted and tokenized MRPC data, so you'll need to download the data from the original source for now.
 2/11/19: It looks like SentEval actually *is* hosting the extracted data. Hooray!
 """
+# GLUE 数据下载：下载并解压 CoLA/SST/MRPC 等 GLUE 基准数据集
+
 
 import argparse
 import os

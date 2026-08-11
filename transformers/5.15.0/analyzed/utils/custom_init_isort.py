@@ -26,6 +26,7 @@ python utils/custom_init_isort.py
 ```
 
 which will auto-sort the imports (used in `make style`).
+# 延迟 import __init__ 排序：对 _import_structure 字典键与对象名排序
 
 For a check only (as used in `make check-repo`) run:
 
@@ -313,6 +314,7 @@ def sort_imports(file: str, check_only: bool = True):
                 f.write("\n".join(main_blocks))
 
 
+# sort_imports_in_all_inits：遍历所有 __init__.py 并排序 _import_structure
 def sort_imports_in_all_inits(check_only=True):
     """
     Sort the imports defined in the `_import_structure` of all inits in the repo.

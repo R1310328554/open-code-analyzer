@@ -13,6 +13,7 @@
 # limitations under the License.
 """
 This script downloads files from the HuggingFace Hub to be used for CI tests.
+# CI Hub 资源预下载：从 HuggingFace Hub 拉取测试用模型/数据集/媒体文件
 """
 
 import os
@@ -144,6 +145,7 @@ def validate_downloaded_content(filepath):
     return True
 
 
+# download_test_file：下载单个测试 URL 并校验内容完整性
 def download_test_file(url):
     """
     Download a URL to a local file, using hf_hub_download for HF URLs.

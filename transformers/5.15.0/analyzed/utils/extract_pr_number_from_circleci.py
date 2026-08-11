@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Used by `.github/workflows/trigger_circleci.yml` to get the pull request number in CircleCI job runs."""
+# CircleCI PR 号提取：从 CIRCLE_PULL_REQUEST/CIRCLE_BRANCH 解析 PR 编号
 
 import os
 

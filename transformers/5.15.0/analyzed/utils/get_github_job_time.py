@@ -1,3 +1,4 @@
+# GitHub Actions 作业耗时：提取 workflow run 各 job 的开始/结束/时长
 import argparse
 import math
 import time
@@ -7,6 +8,7 @@ import dateutil.parser as date_parser
 from github_utils import get_github_json
 
 
+# extract_time_from_single_job：从单个 job 解析 started_at/completed_at/时长
 def extract_time_from_single_job(job):
     """Extract time info from a single job in a GitHub Actions workflow run"""
 
@@ -27,6 +29,7 @@ def extract_time_from_single_job(job):
     return job_info
 
 
+# get_job_time：分页获取 workflow run 全部 job 的耗时信息
 def get_job_time(workflow_run_id, token=None):
     """Extract time info for all jobs in a GitHub Actions workflow run"""
 

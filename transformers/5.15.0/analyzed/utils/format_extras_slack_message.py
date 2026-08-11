@@ -18,6 +18,7 @@ Format extras smoke test results for Slack notification.
 
 This script reads failure reports from a JSON file and outputs environment
 variables for GitHub Actions to use in Slack notifications.
+# extras 冒烟测试 Slack 格式化：将失败报告转为 GITHUB_ENV 通知变量
 """
 
 import argparse
@@ -26,6 +27,7 @@ import os
 import sys
 
 
+# format_slack_message：按 Python 版本分组 extras 失败并生成 Slack 消息
 def format_slack_message(failures_file, workflow_url, output_file=None):
     """
     Format extras smoke test results into Slack message components.

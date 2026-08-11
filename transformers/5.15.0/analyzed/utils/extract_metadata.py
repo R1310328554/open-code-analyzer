@@ -19,6 +19,8 @@ Usage:
     python utils/extract_metadata.py extras          # List all extras (one per line)
     python utils/extract_metadata.py python-versions # Output JSON array of Python versions
 """
+# setup.py 元数据提取：输出 extras 列表或支持的 Python 版本 JSON
+
 
 import json
 import sys
@@ -26,6 +28,7 @@ from pathlib import Path
 from types import ModuleType
 
 
+# get_setup_module：导入仓库根目录 setup 模块
 def get_setup_module() -> ModuleType:
     """Import and return the setup module."""
     repo_root: Path = Path(__file__).parent.parent

@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 微型模型生成：为各架构创建 tiny checkpoint 并上传 Hub 供 CI 测试
 
 import argparse
 import collections.abc
@@ -216,6 +217,7 @@ CHECKPOINT_SUBFOLDERS = {
 }
 
 
+# get_processor_types_from_config_class：从配置类推断 processor/tokenizer 类型
 def get_processor_types_from_config_class(config_class, allowed_mappings=None):
     """Return a tuple of processors for `config_class`.
 
@@ -1019,6 +1021,7 @@ def get_checkpoint_dir(output_dir, model_arch):
     return os.path.join(output_dir, arch_name)
 
 
+# build_model：构建指定架构的 tiny 模型并写入 checkpoint 目录
 def build_model(model_arch, tiny_config, output_dir, keep_model=False):
     """Create and save a model for `model_arch`.
 
@@ -1680,6 +1683,7 @@ def update_tiny_model_summary_file(report_path):
         json.dump(updated_data, fp, indent=4, ensure_ascii=False)
 
 
+# create_tiny_models：批量创建微型模型 checkpoint 的主入口
 def create_tiny_models(
     output_path,
     all,
