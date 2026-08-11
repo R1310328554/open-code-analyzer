@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// operation.go — 进行中异步任务的 Operation 封装，支持 Wait 阻塞与 Poll 非阻塞查询。
+
+// operation.go — 进行中异步任务的 Operation 封装，支持 Wait 阻塞与 Poll 非阻塞查询。
+
 package paddleocr
 
 import (
@@ -21,6 +25,8 @@ import (
 
 // Operation represents an in-progress job. Use Wait() to block until done,
 // or Poll() to check status without blocking.
+// Operation 表示已提交但未完成的作业；持有 Client 引用与 JobID。
+// Operation 表示已提交但未完成的作业；持有 Client 引用与 JobID。
 type Operation struct {
 	client *Client
 	JobID  string
@@ -28,6 +34,8 @@ type Operation struct {
 }
 
 // Wait blocks until the job completes and returns the parsed result.
+// Wait 阻塞直至任务完成，按模型类型返回 OCRResult 或 DocParsingResult。
+// Wait 阻塞直至任务完成，按模型类型返回 OCRResult 或 DocParsingResult。
 func (op *Operation) Wait(ctx context.Context) (interface{}, error) {
 	jsonlData, err := op.client.pollUntilDone(ctx, op.JobID)
 	if err != nil {
@@ -41,6 +49,8 @@ func (op *Operation) Wait(ctx context.Context) (interface{}, error) {
 
 // Poll checks the current job status without waiting.
 // Returns the status, whether the job is done, and any error.
+// Poll 非阻塞查询当前状态；第二返回值表示是否已完成。
+// Poll 非阻塞查询当前状态；第二返回值表示是否已完成。
 func (op *Operation) Poll(ctx context.Context) (*JobStatus, bool, error) {
 	status, err := op.client.getJobStatus(ctx, op.JobID)
 	if err != nil {

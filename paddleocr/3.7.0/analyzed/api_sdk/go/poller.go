@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// poller.go — 指数退避轮询逻辑，直至任务 done/failed 或超时。
+
+// poller.go — 指数退避轮询逻辑，直至任务 done/failed 或超时。
+
 package paddleocr
 
 import (
@@ -26,6 +30,8 @@ const (
 	maxInterval     = 15 * time.Second
 )
 
+// pollUntilDone 按初始 3s、最大 15s 间隔轮询；完成时拉取 JSONL 结果 URL。
+// pollUntilDone 按初始 3s、最大 15s 间隔轮询；完成时拉取 JSONL 结果 URL。
 func (c *Client) pollUntilDone(ctx context.Context, jobID string) ([]map[string]interface{}, error) {
 	interval := initialInterval
 	deadline := time.Now().Add(c.pollTimeout)

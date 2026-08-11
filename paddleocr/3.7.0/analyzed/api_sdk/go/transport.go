@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// transport.go — HTTP 层：提交任务、查询状态、拉取 JSONL 及错误分类。
+
+// transport.go — HTTP 层：提交任务、查询状态、拉取 JSONL 及错误分类。
+
 package paddleocr
 
 import (
@@ -27,16 +31,22 @@ import (
 	"strings"
 )
 
+// apiResponse 官方 API 统一响应信封（code/msg/data）。
+// apiResponse 官方 API 统一响应信封（code/msg/data）。
 type apiResponse struct {
 	Code int             `json:"code"`
 	Msg  string          `json:"msg"`
 	Data json.RawMessage `json:"data"`
 }
 
+// submitResponse 提交任务成功时返回的 jobId。
+// submitResponse 提交任务成功时返回的 jobId。
 type submitResponse struct {
 	JobID string `json:"jobId"`
 }
 
+// jobStatusResponse 任务状态查询的原始响应结构。
+// jobStatusResponse 任务状态查询的原始响应结构。
 type jobStatusResponse struct {
 	JobID           string            `json:"jobId"`
 	State           string            `json:"state"`
@@ -52,6 +62,8 @@ type extractProgress struct {
 	EndTime        string `json:"endTime"`
 }
 
+// submitURL 以 JSON 体提交远程 fileUrl 任务。
+// submitURL 以 JSON 体提交远程 fileUrl 任务。
 func (c *Client) submitURL(ctx context.Context, model, fileURL string, payload interface{}, pageRanges, batchID string) (string, error) {
 	body := map[string]interface{}{
 		"fileUrl":         fileURL,
@@ -101,6 +113,8 @@ func (c *Client) submitURL(ctx context.Context, model, fileURL string, payload i
 	return sr.JobID, nil
 }
 
+// submitFile 以 multipart 表单上传本地文件提交任务。
+// submitFile 以 multipart 表单上传本地文件提交任务。
 func (c *Client) submitFile(ctx context.Context, model, filePath string, payload interface{}, pageRanges, batchID string) (string, error) {
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		return "", &FileNotFoundError{Path: filePath, PaddleOCRAPIError: PaddleOCRAPIError{Message: "File not found: " + filePath}}
@@ -173,6 +187,8 @@ func (c *Client) submitFile(ctx context.Context, model, filePath string, payload
 	return sr.JobID, nil
 }
 
+// getJobStatus GET 单个任务状态。
+// getJobStatus GET 单个任务状态。
 func (c *Client) getJobStatus(ctx context.Context, jobID string) (*jobStatusResponse, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", c.jobsURL+"/"+jobID, nil)
 	if err != nil {
@@ -205,6 +221,8 @@ func (c *Client) getJobStatus(ctx context.Context, jobID string) (*jobStatusResp
 	return &status, nil
 }
 
+// getBatchStatus GET 批次下所有任务状态。
+// getBatchStatus GET 批次下所有任务状态。
 func (c *Client) getBatchStatus(ctx context.Context, batchID string) (*BatchStatus, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", c.jobsURL+"/batch/"+batchID, nil)
 	if err != nil {
@@ -247,6 +265,8 @@ func (c *Client) getBatchStatus(ctx context.Context, batchID string) (*BatchStat
 	return result, nil
 }
 
+// fetchJSONL 下载并逐行解析 JSONL 结果文件。
+// fetchJSONL 下载并逐行解析 JSONL 结果文件。
 func (c *Client) fetchJSONL(ctx context.Context, url string) ([]map[string]interface{}, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
@@ -282,6 +302,8 @@ func (c *Client) fetchJSONL(ctx context.Context, url string) ([]map[string]inter
 	return results, nil
 }
 
+// raiseForResponse 按 HTTP 状态码映射为对应 SDK 错误类型。
+// raiseForResponse 按 HTTP 状态码映射为对应 SDK 错误类型。
 func raiseForResponse(resp *http.Response) error {
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 		return nil
@@ -321,6 +343,8 @@ func decodeAPIResponse(resp *http.Response) (*apiResponse, error) {
 	return &apiResp, nil
 }
 
+// classifyHTTPError 区分网络超时与普通网络错误。
+// classifyHTTPError 区分网络超时与普通网络错误。
 func classifyHTTPError(err error) error {
 	if ne, ok := err.(net.Error); ok && ne.Timeout() {
 		return &RequestTimeoutError{PaddleOCRAPIError: PaddleOCRAPIError{Message: err.Error(), Cause: err}}

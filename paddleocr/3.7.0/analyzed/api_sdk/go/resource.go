@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// resource.go — 将 OCR/文档解析结果中的远程资源 URL 下载到本地路径。
+
+// resource.go — 将 OCR/文档解析结果中的远程资源 URL 下载到本地路径。
+
 package paddleocr
 
 import (
@@ -28,6 +32,8 @@ import (
 	"strings"
 )
 
+// SaveResourceOption 控制资源保存行为（如是否覆盖已存在文件）。
+// SaveResourceOption 控制资源保存行为（如是否覆盖已存在文件）。
 type SaveResourceOption func(*saveResourceOptions)
 
 type saveResourceOptions struct {
@@ -41,6 +47,8 @@ func WithOverwrite(overwrite bool) SaveResourceOption {
 }
 
 // SaveResource downloads one result resource URL.
+// SaveResource 下载单个结果资源 URL 到目标路径或目录。
+// SaveResource 下载单个结果资源 URL 到目标路径或目录。
 func (c *Client) SaveResource(ctx context.Context, resourceURL, dest string, opts ...SaveResourceOption) (string, error) {
 	if resourceURL == "" {
 		return "", &InvalidRequestError{PaddleOCRAPIError{Message: "resource URL is required"}}
@@ -123,6 +131,8 @@ func (c *Client) SaveResource(ctx context.Context, resourceURL, dest string, opt
 	return savedPath, nil
 }
 
+// SaveOCRResultResources 批量保存 OCR 结果中各页 OCR 图像。
+// SaveOCRResultResources 批量保存 OCR 结果中各页 OCR 图像。
 func (c *Client) SaveOCRResultResources(ctx context.Context, result *OCRResult, destDir string, opts ...SaveResourceOption) ([]string, error) {
 	if result == nil {
 		return nil, &InvalidRequestError{PaddleOCRAPIError{Message: "OCR result is required"}}
@@ -148,6 +158,8 @@ func (c *Client) SaveOCRResultResources(ctx context.Context, result *OCRResult, 
 	return saved, nil
 }
 
+// SaveDocumentParsingResultResources 批量保存文档解析的 Markdown 图片与输出图。
+// SaveDocumentParsingResultResources 批量保存文档解析的 Markdown 图片与输出图。
 func (c *Client) SaveDocumentParsingResultResources(ctx context.Context, result *DocParsingResult, destDir string, opts ...SaveResourceOption) ([]string, error) {
 	if result == nil {
 		return nil, &InvalidRequestError{PaddleOCRAPIError{Message: "document parsing result is required"}}

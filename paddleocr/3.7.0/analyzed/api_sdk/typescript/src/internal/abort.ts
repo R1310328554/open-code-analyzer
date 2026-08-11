@@ -12,6 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// abort.ts — AbortSignal 辅助：与 fetch/DOMException 语义一致的中止处理。
+
+// abort.ts — AbortSignal 辅助：与 fetch/DOMException 语义一致的中止处理。
+
+/** Value to reject/throw when an operation was aborted via `AbortSignal` (aligns with `fetch` + `DOMException`). */
+// userAbortReason 返回 signal.reason 或标准 AbortError DOMException。
+/** Value to reject/throw when an operation was aborted via `AbortSignal` (aligns with `fetch` + `DOMException`). */
+// userAbortReason 返回 signal.reason 或标准 AbortError DOMException。
 /** Value to reject/throw when an operation was aborted via `AbortSignal` (aligns with `fetch` + `DOMException`). */
 export function userAbortReason(signal: AbortSignal): unknown {
   return signal.reason !== undefined
@@ -19,6 +27,8 @@ export function userAbortReason(signal: AbortSignal): unknown {
     : new DOMException("The user aborted a request.", "AbortError");
 }
 
+// throwIfAborted 若 signal 已 aborted 则抛出 userAbortReason。
+// throwIfAborted 若 signal 已 aborted 则抛出 userAbortReason。
 export function throwIfAborted(signal?: AbortSignal): void {
   if (!signal?.aborted) return;
   throw userAbortReason(signal);

@@ -21,17 +21,27 @@ import type { ClientOptions, DocParsingRequest, OCRRequest, SaveResourceOptions 
 import { isDocumentParsingModel, isOCRModel, Model } from "./models.js";
 import type { BatchStatus, DocParsingResult, Job, JobStatus, OCRResult } from "./results.js";
 
+// client.ts — TypeScript PaddleOCR 官方 API 客户端主类。
+
+// client.ts — TypeScript PaddleOCR 官方 API 客户端主类。
+
 const DEFAULT_BASE_URL = "https://paddleocr.aistudio-app.com";
 
+// ResourceSavePlan 描述待下载资源 URL 与本地文件名。
+// ResourceSavePlan 描述待下载资源 URL 与本地文件名。
 interface ResourceSavePlan {
   resourceUrl: string;
   filename: string;
 }
 
+// PaddleOCRClient 封装 HttpClient 与 Poller，提供 OCR/文档解析同步与异步 API。
+// PaddleOCRClient 封装 HttpClient 与 Poller，提供 OCR/文档解析同步与异步 API。
 export class PaddleOCRClient {
   private http: HttpClient;
   private poller: Poller;
 
+  // 从 options 或环境变量读取 token/baseUrl，初始化 HTTP 与轮询组件。
+  // 从 options 或环境变量读取 token/baseUrl，初始化 HTTP 与轮询组件。
   constructor(options: ClientOptions = {}) {
     const token = options.token || process.env.PADDLEOCR_ACCESS_TOKEN || "";
     if (!token) {
@@ -51,22 +61,30 @@ export class PaddleOCRClient {
     this.poller = new Poller(this.http, pollTimeout);
   }
 
+  // ocr 同步 OCR：提交并等待 OCRResult。
+  // ocr 同步 OCR：提交并等待 OCRResult。
   async ocr(req: OCRRequest, options?: { signal?: AbortSignal }): Promise<OCRResult> {
     const job = await this.submitOcr(req, options);
     return this.waitOcrResult(job, options);
   }
 
+  // parseDocument 同步文档解析：提交并等待 DocParsingResult。
+  // parseDocument 同步文档解析：提交并等待 DocParsingResult。
   async parseDocument(req: DocParsingRequest, options?: { signal?: AbortSignal }): Promise<DocParsingResult> {
     const job = await this.submitDocumentParsing(req, options);
     return this.waitDocumentParsingResult(job, options);
   }
 
+  // submitOcr 异步提交 OCR 任务，默认模型 PPOCRv6。
+  // submitOcr 异步提交 OCR 任务，默认模型 PPOCRv6。
   async submitOcr(req: OCRRequest, options?: { signal?: AbortSignal }): Promise<Job> {
     const model = req.model ?? Model.PPOCRv6;
     const jobId = await this.submit(model, "ocr", req, options?.signal);
     return { jobId, model, task: "ocr", pageRanges: req.pageRanges, batchId: req.batchId };
   }
 
+  // submitDocumentParsing 异步提交文档解析，默认 PaddleOCRVL16。
+  // submitDocumentParsing 异步提交文档解析，默认 PaddleOCRVL16。
   async submitDocumentParsing(req: DocParsingRequest, options?: { signal?: AbortSignal }): Promise<Job> {
     const model = req.model ?? Model.PaddleOCRVL16;
     if (!isDocumentParsingModel(model)) {
@@ -76,6 +94,8 @@ export class PaddleOCRClient {
     return { jobId, model, task: "document_parsing", pageRanges: req.pageRanges, batchId: req.batchId };
   }
 
+  // waitOcrResult 轮询直至 OCR 完成并解析结果。
+  // waitOcrResult 轮询直至 OCR 完成并解析结果。
   async waitOcrResult(job: Job | string, options?: { signal?: AbortSignal }): Promise<OCRResult> {
     const resolved = this.resolveJob(job, "ocr");
     const jsonlData = await this.poller.pollUntilDone(resolved.jobId, options?.signal);
@@ -96,6 +116,8 @@ export class PaddleOCRClient {
     return this.poller.getBatchStatus(batchId, options?.signal);
   }
 
+  // saveResource 下载单个远程资源到本地路径。
+  // saveResource 下载单个远程资源到本地路径。
   async saveResource(
     resourceUrl: string,
     destination: string,
@@ -243,6 +265,8 @@ export class PaddleOCRClient {
     return target;
   }
 
+  // submit 内部统一校验 fileUrl/filePath 并路由至 HTTP 提交。
+  // submit 内部统一校验 fileUrl/filePath 并路由至 HTTP 提交。
   private async submit(
     model: string,
     task: Job["task"],
@@ -273,6 +297,8 @@ export class PaddleOCRClient {
     });
   }
 
+  // parseOCRResult 将 JSONL 数组解析为 OCRResult。
+  // parseOCRResult 将 JSONL 数组解析为 OCRResult。
   private parseOCRResult(jobId: string, jsonlData: unknown[]): OCRResult {
     const dataInfo: Record<string, unknown> = {};
     const pages = jsonlData.flatMap((lineObj) => {
@@ -298,6 +324,8 @@ export class PaddleOCRClient {
     return { jobId, pages, dataInfo };
   }
 
+  // parseDocParsingResult 将 JSONL 数组解析为 DocParsingResult。
+  // parseDocParsingResult 将 JSONL 数组解析为 DocParsingResult。
   private parseDocParsingResult(jobId: string, jsonlData: unknown[]): DocParsingResult {
     const dataInfo: Record<string, unknown> = {};
     const pages = jsonlData.flatMap((lineObj) => {

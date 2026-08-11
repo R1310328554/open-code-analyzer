@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// index.ts — PaddleOCR TypeScript SDK 公共导出入口。
+
+// index.ts — PaddleOCR TypeScript SDK 公共导出入口。
+
 export { PaddleOCRClient } from "./client.js";
 export { Model, isDocumentParsingModel, isOCRModel, isVLModel } from "./models.js";
 export type {

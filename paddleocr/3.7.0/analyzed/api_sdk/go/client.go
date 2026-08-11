@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// client.go — PaddleOCR 官方 API 的 Go 客户端核心：认证、超时与 HTTP 传输配置。
+
+// client.go — PaddleOCR 官方 API 的 Go 客户端核心：认证、超时与 HTTP 传输配置。
+
 package paddleocr
 
 import (
@@ -21,6 +25,8 @@ import (
 	"time"
 )
 
+// Client 封装访问令牌、基础 URL、任务端点及 HTTP 客户端实例。
+// Client 封装访问令牌、基础 URL、任务端点及 HTTP 客户端实例。
 type Client struct {
 	token          string
 	baseURL        string
@@ -31,6 +37,8 @@ type Client struct {
 	httpClient     *http.Client
 }
 
+// NewClient 通过可选 ClientOption 构造客户端；令牌可从环境变量 PADDLEOCR_ACCESS_TOKEN 读取。
+// NewClient 通过可选 ClientOption 构造客户端；令牌可从环境变量 PADDLEOCR_ACCESS_TOKEN 读取。
 func NewClient(opts ...ClientOption) (*Client, error) {
 	c := &Client{
 		requestTimeout: 5 * time.Minute,
@@ -59,6 +67,8 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 	return c, nil
 }
 
+// setClientPlatformHeader 在请求头写入 Client-Platform 标识（若已配置）。
+// setClientPlatformHeader 在请求头写入 Client-Platform 标识（若已配置）。
 func (c *Client) setClientPlatformHeader(req *http.Request) {
 	if c.clientPlatform != "" {
 		req.Header.Set("Client-Platform", c.clientPlatform)

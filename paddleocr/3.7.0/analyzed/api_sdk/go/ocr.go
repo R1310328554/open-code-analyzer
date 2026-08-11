@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// ocr.go — Client 的 OCR 与文档解析高层 API：提交、等待、状态查询与结果解析。
+
+// ocr.go — Client 的 OCR 与文档解析高层 API：提交、等待、状态查询与结果解析。
+
 package paddleocr
 
 import (
@@ -19,6 +23,8 @@ import (
 	"encoding/json"
 )
 
+// OCR 同步执行 OCR：提交任务并阻塞直至返回 OCRResult。
+// OCR 同步执行 OCR：提交任务并阻塞直至返回 OCRResult。
 func (c *Client) OCR(ctx context.Context, req *OCRRequest) (*OCRResult, error) {
 	job, err := c.SubmitOCR(ctx, req)
 	if err != nil {
@@ -37,6 +43,8 @@ func (c *Client) ParseDocument(ctx context.Context, req *DocParsingRequest) (*Do
 }
 
 // SubmitOCR submits an OCR job and returns job metadata for tracking.
+// SubmitOCR 异步提交 OCR 任务，返回 Job 元数据供后续轮询。
+// SubmitOCR 异步提交 OCR 任务，返回 Job 元数据供后续轮询。
 func (c *Client) SubmitOCR(ctx context.Context, req *OCRRequest) (*Job, error) {
 	if req == nil {
 		return nil, &InvalidRequestError{PaddleOCRAPIError{Message: "OCR request is nil"}}
@@ -56,6 +64,8 @@ func (c *Client) SubmitOCR(ctx context.Context, req *OCRRequest) (*Job, error) {
 }
 
 // SubmitDocumentParsing submits a document parsing job and returns job metadata for tracking.
+// SubmitDocumentParsing 异步提交文档解析任务。
+// SubmitDocumentParsing 异步提交文档解析任务。
 func (c *Client) SubmitDocumentParsing(ctx context.Context, req *DocParsingRequest) (*Job, error) {
 	if req == nil {
 		return nil, &InvalidRequestError{PaddleOCRAPIError{Message: "document parsing request is nil"}}
@@ -74,6 +84,8 @@ func (c *Client) SubmitDocumentParsing(ctx context.Context, req *DocParsingReque
 	return &Job{JobID: jobID, Model: model, Task: "document_parsing", PageRanges: req.PageRanges, BatchID: req.BatchID}, nil
 }
 
+// WaitOCRResult 轮询直至 OCR 任务完成并解析 JSONL 结果。
+// WaitOCRResult 轮询直至 OCR 任务完成并解析 JSONL 结果。
 func (c *Client) WaitOCRResult(ctx context.Context, jobID string) (*OCRResult, error) {
 	jsonlData, err := c.pollUntilDone(ctx, jobID)
 	if err != nil {
@@ -82,6 +94,8 @@ func (c *Client) WaitOCRResult(ctx context.Context, jobID string) (*OCRResult, e
 	return parseOCRResult(jobID, jsonlData)
 }
 
+// WaitDocumentParsingResult 轮询直至文档解析完成。
+// WaitDocumentParsingResult 轮询直至文档解析完成。
 func (c *Client) WaitDocumentParsingResult(ctx context.Context, jobID string) (*DocParsingResult, error) {
 	jsonlData, err := c.pollUntilDone(ctx, jobID)
 	if err != nil {
@@ -90,6 +104,8 @@ func (c *Client) WaitDocumentParsingResult(ctx context.Context, jobID string) (*
 	return parseDocParsingResult(jobID, jsonlData)
 }
 
+// GetStatus 查询单个任务的当前状态与进度。
+// GetStatus 查询单个任务的当前状态与进度。
 func (c *Client) GetStatus(ctx context.Context, jobID string) (*JobStatus, error) {
 	status, err := c.getJobStatus(ctx, jobID)
 	if err != nil {
@@ -98,6 +114,8 @@ func (c *Client) GetStatus(ctx context.Context, jobID string) (*JobStatus, error
 	return normalizeStatus(jobID, status)
 }
 
+// GetBatchStatus 按 batchID 批量查询关联任务状态。
+// GetBatchStatus 按 batchID 批量查询关联任务状态。
 func (c *Client) GetBatchStatus(ctx context.Context, batchID string) (*BatchStatus, error) {
 	if batchID == "" {
 		return nil, &InvalidRequestError{PaddleOCRAPIError{Message: "batchID is required"}}
@@ -105,6 +123,8 @@ func (c *Client) GetBatchStatus(ctx context.Context, batchID string) (*BatchStat
 	return c.getBatchStatus(ctx, batchID)
 }
 
+// submit 内部统一入口：校验文件来源并路由至 URL 或文件上传。
+// submit 内部统一入口：校验文件来源并路由至 URL 或文件上传。
 func (c *Client) submit(ctx context.Context, model, fileURL, filePath string, options interface{}, pageRanges, batchID string) (string, error) {
 	if fileURL == "" && filePath == "" {
 		return "", &InvalidRequestError{PaddleOCRAPIError{Message: "Either FileURL or FilePath is required."}}
@@ -169,6 +189,8 @@ func payloadWithExtraOptions(options interface{}) interface{} {
 	return payload
 }
 
+// parseOCRResult 将 JSONL 行解析为结构化 OCRResult。
+// parseOCRResult 将 JSONL 行解析为结构化 OCRResult。
 func parseOCRResult(jobID string, jsonlData []map[string]interface{}) (*OCRResult, error) {
 	result := &OCRResult{JobID: jobID, DataInfo: map[string]interface{}{}}
 	for _, lineObj := range jsonlData {
@@ -206,6 +228,8 @@ func parseOCRResult(jobID string, jsonlData []map[string]interface{}) (*OCRResul
 	return result, nil
 }
 
+// parseDocParsingResult 将 JSONL 行解析为 DocParsingResult。
+// parseDocParsingResult 将 JSONL 行解析为 DocParsingResult。
 func parseDocParsingResult(jobID string, jsonlData []map[string]interface{}) (*DocParsingResult, error) {
 	result := &DocParsingResult{JobID: jobID, DataInfo: map[string]interface{}{}}
 	for _, lineObj := range jsonlData {
@@ -288,6 +312,8 @@ func getStringMap(m map[string]interface{}, key string) map[string]string {
 	}
 }
 
+// normalizeStatus 将原始 jobStatusResponse 规范化为 JobStatus。
+// normalizeStatus 将原始 jobStatusResponse 规范化为 JobStatus。
 func normalizeStatus(jobID string, status *jobStatusResponse) (*JobStatus, error) {
 	if status == nil || status.State == "" {
 		return nil, &ResponseFormatError{PaddleOCRAPIError{Message: "status response is missing state"}}

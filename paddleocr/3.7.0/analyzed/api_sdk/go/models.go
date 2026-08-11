@@ -12,8 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// models.go — 模型常量、请求/选项结构体及模型类型判定辅助函数。
+
+// models.go — 模型常量、请求/选项结构体及模型类型判定辅助函数。
+
 package paddleocr
 
+// 支持的 OCR 与文档解析模型名称常量。
+// 支持的 OCR 与文档解析模型名称常量。
 const (
 	PPOCRv5       = "PP-OCRv5"
 	PPOCRv5Latin  = "PP-OCRv5-latin"
@@ -49,6 +55,8 @@ func IsVLModel(model string) bool {
 	}
 }
 
+// OCROptions OCR 任务可选参数（检测/识别阈值、可视化等）。
+// OCROptions OCR 任务可选参数（检测/识别阈值、可视化等）。
 type OCROptions struct {
 	UseDocOrientationClassify *bool                  `json:"useDocOrientationClassify,omitempty"`
 	UseDocUnwarping           *bool                  `json:"useDocUnwarping,omitempty"`
@@ -63,6 +71,8 @@ type OCROptions struct {
 	ExtraOptions              map[string]interface{} `json:"-"`
 }
 
+// PPStructureV3Options PP-StructureV3 文档结构解析选项。
+// PPStructureV3Options PP-StructureV3 文档结构解析选项。
 type PPStructureV3Options struct {
 	UseDocOrientationClassify        *bool                  `json:"useDocOrientationClassify,omitempty"`
 	UseDocUnwarping                  *bool                  `json:"useDocUnwarping,omitempty"`
@@ -98,6 +108,8 @@ type PPStructureV3Options struct {
 	ExtraOptions                     map[string]interface{} `json:"-"`
 }
 
+// PaddleOCRVLOptions PaddleOCR-VL 视觉语言模型解析选项。
+// PaddleOCRVLOptions PaddleOCR-VL 视觉语言模型解析选项。
 type PaddleOCRVLOptions struct {
 	UseDocOrientationClassify *bool                  `json:"useDocOrientationClassify,omitempty"`
 	UseDocUnwarping           *bool                  `json:"useDocUnwarping,omitempty"`
@@ -133,6 +145,8 @@ type PaddleOCRVLOptions struct {
 }
 
 // DocParsingOptionsProvider marks document parsing option structs.
+// DocParsingOptionsProvider 标记文档解析选项结构体类型。
+// DocParsingOptionsProvider 标记文档解析选项结构体类型。
 type DocParsingOptionsProvider interface {
 	isDocParsingOptions()
 }
@@ -140,6 +154,8 @@ type DocParsingOptionsProvider interface {
 func (*PPStructureV3Options) isDocParsingOptions() {}
 func (*PaddleOCRVLOptions) isDocParsingOptions()   {}
 
+// OCRRequest 提交 OCR 任务的请求体（模型、文件、页范围、选项）。
+// OCRRequest 提交 OCR 任务的请求体（模型、文件、页范围、选项）。
 type OCRRequest struct {
 	Model      string
 	FileURL    string
@@ -149,6 +165,8 @@ type OCRRequest struct {
 	Options    *OCROptions
 }
 
+// DocParsingRequest 提交文档解析任务的请求体。
+// DocParsingRequest 提交文档解析任务的请求体。
 type DocParsingRequest struct {
 	Model      string
 	FileURL    string

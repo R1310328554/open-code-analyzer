@@ -12,6 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// errors.ts — TypeScript SDK 错误类层次，与 Go 端语义对齐。
+
+// PaddleOCRAPIError 所有 SDK 错误的基类。
+// errors.ts — TypeScript SDK 错误类层次，与 Go 端语义对齐。
+
+// PaddleOCRAPIError 所有 SDK 错误的基类。
 export class PaddleOCRAPIError extends Error {
   constructor(message: string, options?: ErrorOptions) {
     super(message);
@@ -20,6 +26,8 @@ export class PaddleOCRAPIError extends Error {
   }
 }
 
+// AuthError 认证失败。
+// AuthError 认证失败。
 export class AuthError extends PaddleOCRAPIError {
   constructor(message: string, options?: ErrorOptions) {
     super(message, options);
@@ -27,6 +35,8 @@ export class AuthError extends PaddleOCRAPIError {
   }
 }
 
+// InvalidRequestError 请求参数无效。
+// InvalidRequestError 请求参数无效。
 export class InvalidRequestError extends PaddleOCRAPIError {
   constructor(message: string, options?: ErrorOptions) {
     super(message, options);
@@ -34,6 +44,8 @@ export class InvalidRequestError extends PaddleOCRAPIError {
   }
 }
 
+// APIError 带 statusCode 的 HTTP 错误。
+// APIError 带 statusCode 的 HTTP 错误。
 export class APIError extends PaddleOCRAPIError {
   statusCode: number;
   constructor(statusCode: number, message: string, options?: ErrorOptions) {
@@ -43,6 +55,8 @@ export class APIError extends PaddleOCRAPIError {
   }
 }
 
+// RateLimitError 速率限制（429）。
+// RateLimitError 速率限制（429）。
 export class RateLimitError extends APIError {
   constructor(message: string, options?: ErrorOptions) {
     super(429, message, options);
@@ -57,6 +71,8 @@ export class ServiceUnavailableError extends APIError {
   }
 }
 
+// JobFailedError 异步任务执行失败。
+// JobFailedError 异步任务执行失败。
 export class JobFailedError extends PaddleOCRAPIError {
   jobId: string;
   errorMsg: string;
@@ -77,6 +93,8 @@ export class RequestTimeoutError extends PaddleOCRAPIError {
   }
 }
 
+// PollTimeoutError 轮询等待超时。
+// PollTimeoutError 轮询等待超时。
 export class PollTimeoutError extends PaddleOCRAPIError {
   jobId: string;
   timeoutMs: number;
@@ -88,6 +106,8 @@ export class PollTimeoutError extends PaddleOCRAPIError {
   }
 }
 
+// NetworkError 网络层错误。
+// NetworkError 网络层错误。
 export class NetworkError extends PaddleOCRAPIError {
   constructor(message: string, options?: ErrorOptions) {
     super(message, options);
@@ -95,6 +115,8 @@ export class NetworkError extends PaddleOCRAPIError {
   }
 }
 
+// FileNotFoundError 本地路径不存在。
+// FileNotFoundError 本地路径不存在。
 export class FileNotFoundError extends PaddleOCRAPIError {
   path: string;
   constructor(path: string, options?: ErrorOptions) {
@@ -111,6 +133,8 @@ export class ResponseFormatError extends PaddleOCRAPIError {
   }
 }
 
+// ResultParseError 解析 API 结果 JSONL 失败。
+// ResultParseError 解析 API 结果 JSONL 失败。
 export class ResultParseError extends PaddleOCRAPIError {
   constructor(message: string, options?: ErrorOptions) {
     super(message, options);
