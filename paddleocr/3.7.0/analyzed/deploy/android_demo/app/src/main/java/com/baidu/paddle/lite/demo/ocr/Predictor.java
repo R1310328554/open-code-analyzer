@@ -18,6 +18,7 @@ import java.util.Vector;
 
 import static android.graphics.Color.*;
 
+// Java 层 OCR 预测器：模型/标签加载、预热、后处理与可视化
 public class Predictor {
     private static final String TAG = Predictor.class.getSimpleName();
     public boolean isLoaded = false;
@@ -27,6 +28,7 @@ public class Predictor {
     public String cpuPowerMode = "LITE_POWER_HIGH";
     public String modelPath = "";
     public String modelName = "";
+// Native OCR 引擎实例
     protected OCRPredictorNative paddlePredictor = null;
     protected float inferenceTime = 0;
     // Only for object detection
@@ -42,6 +44,7 @@ public class Predictor {
     public Predictor() {
     }
 
+    // 加载模型与词典标签
     public boolean init(Context appCtx, String modelPath, String labelPath, int useOpencl, int cpuThreadNum, String cpuPowerMode) {
         isLoaded = loadModel(appCtx, modelPath, useOpencl, cpuThreadNum, cpuPowerMode);
         if (!isLoaded) {
@@ -63,6 +66,7 @@ public class Predictor {
         return true;
     }
 
+    // 从 assets 或绝对路径复制 det/rec/cls .nb 并构造 Config
     protected boolean loadModel(Context appCtx, String modelPath, int useOpencl, int cpuThreadNum, String cpuPowerMode) {
         // Release model if exists
         releaseModel();
@@ -99,6 +103,7 @@ public class Predictor {
         return true;
     }
 
+    // 销毁 native 预测器并重置状态
     public void releaseModel() {
         if (paddlePredictor != null) {
             paddlePredictor.destroy();
@@ -111,6 +116,7 @@ public class Predictor {
         modelName = "";
     }
 
+    // 从 assets 读取 rec 字典到 wordLabels
     protected boolean loadLabel(Context appCtx, String labelPath) {
         wordLabels.clear();
         wordLabels.add("black");
@@ -136,6 +142,7 @@ public class Predictor {
     }
 
 
+    // 预热后推理，后处理并绘制检测框
     public boolean runModel(int run_det, int run_cls, int run_rec) {
         if (inputImage == null || !isLoaded()) {
             return false;
@@ -200,6 +207,7 @@ public class Predictor {
     }
 
 
+    // 设置待推理输入图（ARGB 副本）
     public void setInputImage(Bitmap image) {
         if (image == null) {
             return;
@@ -207,6 +215,7 @@ public class Predictor {
         this.inputImage = image.copy(Bitmap.Config.ARGB_8888, true);
     }
 
+    // 字索引转文本并填充方向分类标签
     private ArrayList<OcrResultModel> postprocess(ArrayList<OcrResultModel> results) {
         for (OcrResultModel r : results) {
             StringBuffer word = new StringBuffer();
@@ -224,6 +233,7 @@ public class Predictor {
         return results;
     }
 
+    // 在输入图上绘制检测框并拼接日志/文本输出
     private void drawResults(ArrayList<OcrResultModel> results) {
         StringBuffer outputResultSb = new StringBuffer("");
         for (int i = 0; i < results.size(); i++) {

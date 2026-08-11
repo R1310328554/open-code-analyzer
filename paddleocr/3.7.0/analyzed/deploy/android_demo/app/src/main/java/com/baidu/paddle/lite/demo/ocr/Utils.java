@@ -8,9 +8,11 @@ import android.os.Environment;
 
 import java.io.*;
 
+// Demo 工具类：assets 拷贝、数值解析、Bitmap 缩放与旋转
 public class Utils {
     private static final String TAG = Utils.class.getSimpleName();
 
+    // 将单个 assets 文件复制到本地路径
     public static void copyFileFromAssets(Context appCtx, String srcPath, String dstPath) {
         if (srcPath.isEmpty() || dstPath.isEmpty()) {
             return;
@@ -39,6 +41,7 @@ public class Utils {
         }
     }
 
+    // 递归复制 assets 目录到缓存目录
     public static void copyDirectoryFromAssets(Context appCtx, String srcDir, String dstDir) {
         if (srcDir.isEmpty() || dstDir.isEmpty()) {
             return;
@@ -61,6 +64,7 @@ public class Utils {
         }
     }
 
+    // 按分隔符解析浮点数组
     public static float[] parseFloatsFromString(String string, String delimiter) {
         String[] pieces = string.trim().toLowerCase().split(delimiter);
         float[] floats = new float[pieces.length];
@@ -70,6 +74,7 @@ public class Utils {
         return floats;
     }
 
+    // 按分隔符解析长整型数组
     public static long[] parseLongsFromString(String string, String delimiter) {
         String[] pieces = string.trim().toLowerCase().split(delimiter);
         long[] longs = new long[pieces.length];
@@ -79,16 +84,19 @@ public class Utils {
         return longs;
     }
 
+    // 获取外部存储根路径
     public static String getSDCardDirectory() {
         return Environment.getExternalStorageDirectory().getAbsolutePath();
     }
 
+    // 是否支持 NPU 加速（当前 Demo 固定 false）
     public static boolean isSupportedNPU() {
         return false;
         // String hardware = android.os.Build.HARDWARE;
         // return hardware.equalsIgnoreCase("kirin810") || hardware.equalsIgnoreCase("kirin990");
     }
 
+    // 等比缩放到 maxLength 并对齐 step 倍数
     public static Bitmap resizeWithStep(Bitmap bitmap, int maxLength, int step) {
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
@@ -113,6 +121,7 @@ public class Utils {
         return Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true);
     }
 
+    // 按 EXIF orientation 旋转/翻转 Bitmap
     public static Bitmap rotateBitmap(Bitmap bitmap, int orientation) {
 
         Matrix matrix = new Matrix();

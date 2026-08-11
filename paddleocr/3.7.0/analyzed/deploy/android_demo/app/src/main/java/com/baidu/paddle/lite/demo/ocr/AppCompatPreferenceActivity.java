@@ -30,16 +30,21 @@ import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.widget.Toolbar;
 
 /**
+ * 兼容 AppCompat 的 PreferenceActivity 基类，代理主题与 ActionBar。
+ * A {@link PreferenceActivity}/**
  * A {@link PreferenceActivity} which implements and proxies the necessary calls
  * to be used with AppCompat.
  * <p>
  * This technique can be used with an {@link android.app.Activity} class, not just
  * {@link PreferenceActivity}.
  */
+// 抽象基类：让旧版 Preference UI 在 AppCompat 主题下工作
 public abstract class AppCompatPreferenceActivity extends PreferenceActivity {
+// AppCompat 委托实例，懒加载创建
     private AppCompatDelegate mDelegate;
 
     @Override
+    // 安装 ViewFactory 并转发生命周期到 Delegate
     protected void onCreate(Bundle savedInstanceState) {
         getDelegate().installViewFactory();
         getDelegate().onCreate(savedInstanceState);
@@ -52,6 +57,7 @@ public abstract class AppCompatPreferenceActivity extends PreferenceActivity {
         getDelegate().onPostCreate(savedInstanceState);
     }
 
+    // 获取 AppCompat ActionBar
     public ActionBar getSupportActionBar() {
         return getDelegate().getSupportActionBar();
     }
@@ -119,6 +125,7 @@ public abstract class AppCompatPreferenceActivity extends PreferenceActivity {
         getDelegate().invalidateOptionsMenu();
     }
 
+    // 懒创建 AppCompatDelegate
     private AppCompatDelegate getDelegate() {
         if (mDelegate == null) {
             mDelegate = AppCompatDelegate.create(this, null);

@@ -25,25 +25,31 @@ import {
 } from "../errors.js";
 import { userAbortReason } from "./abort.js";
 
+// PaddleOCR 官方 API HTTP 客户端模块：提交任务、查询状态与拉取结果
+
 const DEFAULT_BASE_URL = "https://paddleocr.aistudio-app.com";
 const API_PATH = "/api/v2/ocr/jobs";
 
+// 提交 OCR 任务时的可选参数
 interface SubmitOptions {
   pageRanges?: string;
   batchId?: string;
   signal?: AbortSignal;
 }
 
+// 官方 API 统一响应包装：code/msg/data
 interface APIResponse<T> {
   code?: number;
   msg?: string;
   data: T;
 }
 
+// 任务提交成功后的 jobId 响应体
 interface SubmitResponse {
   jobId: string;
 }
 
+// HTTP 客户端：封装 Bearer 鉴权、超时、错误映射与 JSON/文件提交
 export class HttpClient {
   private baseUrl: string;
   private jobsUrl: string;
@@ -52,6 +58,7 @@ export class HttpClient {
   private fetchImpl: typeof fetch;
   private clientPlatform?: string;
 
+  // 初始化 baseUrl、jobs 端点、超时与 fetch 实现
   constructor(
     token: string,
     baseUrl: string = DEFAULT_BASE_URL,
@@ -67,6 +74,7 @@ export class HttpClient {
     this.clientPlatform = clientPlatform;
   }
 
+  // 通过远程 fileUrl 提交 OCR 任务，返回 jobId
   async submitUrl(model: string, fileUrl: string, optionalPayload: object, options: SubmitOptions = {}): Promise<string> {
     const body: Record<string, unknown> = { fileUrl, model, optionalPayload };
     if (options.pageRanges !== undefined) {
@@ -83,6 +91,7 @@ export class HttpClient {
     return requireJobId(data);
   }
 
+  // 通过本地文件 multipart 上传提交 OCR 任务
   async submitFile(model: string, filePath: string, optionalPayload: object, options: SubmitOptions = {}): Promise<string> {
     const fs = await import("fs");
     const path = await import("path");
@@ -113,6 +122,7 @@ export class HttpClient {
     return requireJobId(data);
   }
 
+  // 查询单个异步任务的当前状态
   async getJobStatus(jobId: string, signal?: AbortSignal, timeoutMs?: number): Promise<unknown> {
     return this.fetchJson<unknown>(
       `${this.jobsUrl}/${encodeURIComponent(jobId)}`,
@@ -123,6 +133,7 @@ export class HttpClient {
     );
   }
 
+  // 查询批量任务下各子 job 的状态列表
   async getBatchStatus(batchId: string, signal?: AbortSignal, timeoutMs?: number): Promise<unknown> {
     return this.fetchJson<unknown>(
       `${this.jobsUrl}/batch/${encodeURIComponent(batchId)}`,
@@ -133,6 +144,7 @@ export class HttpClient {
     );
   }
 
+  // 下载 JSONL 格式结果并按行解析为对象数组
   async fetchJsonl(url: string, signal?: AbortSignal, timeoutMs?: number): Promise<unknown[]> {
     const resp = await this.fetch(url, { method: "GET" }, signal, false, timeoutMs);
     const text = await resp.text();
@@ -147,11 +159,13 @@ export class HttpClient {
     }
   }
 
+  // 下载二进制资源（图片、导出文件等）
   async fetchResource(url: string, signal?: AbortSignal, timeoutMs?: number): Promise<ArrayBuffer> {
     const resp = await this.fetch(url, { method: "GET" }, signal, false, timeoutMs);
     return resp.arrayBuffer();
   }
 
+  // 内部 JSON 请求：校验 code/data 并反序列化
   private async fetchJson<T>(
     url: string,
     init: RequestInit,
@@ -175,6 +189,7 @@ export class HttpClient {
     return payload.data;
   }
 
+  // 底层 fetch：合并鉴权头、AbortSignal 与 HTTP 状态码到异常
   private async fetch(
     url: string,
     init: RequestInit,
@@ -247,6 +262,7 @@ export class HttpClient {
   }
 }
 
+// 校验提交响应必须包含非空 jobId
 function requireJobId(data: SubmitResponse): string {
   if (!data || typeof data.jobId !== "string" || data.jobId.length === 0) {
     throw new ResponseFormatError("Submit response is missing jobId.");

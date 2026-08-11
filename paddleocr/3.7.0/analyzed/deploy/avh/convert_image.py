@@ -15,6 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
+# Arm Virtual Hardware 部署辅助：将测试图转为 C 头文件供 TVM 推理
 import os
 import pathlib
 import re
@@ -25,6 +26,7 @@ from PIL import Image
 import numpy as np
 
 
+    # 识别模型输入预处理：缩放、归一化与右侧 padding
 def resize_norm_img(img, image_shape, padding=True):
     imgC, imgH, imgW = image_shape
     h = img.shape[0]
@@ -52,6 +54,7 @@ def resize_norm_img(img, image_shape, padding=True):
     return padding_im
 
 
+    # 将 numpy 张量写入 .h 静态 float 数组
 def create_header_file(name, tensor_name, tensor_data, output_path):
     """
     This function generates a header file containing the data from the numpy array provided.
@@ -72,6 +75,7 @@ def create_header_file(name, tensor_name, tensor_data, output_path):
         header_file.write("};\n\n")
 
 
+    # 读取图片、生成 input/output 头文件到 include/
 def create_headers(image_name):
     """
     This function generates C header files for the input and output arrays required to run inferences
@@ -98,5 +102,6 @@ def create_headers(image_name):
     )
 
 
+# CLI：python convert_image.py <image_name>
 if __name__ == "__main__":
     create_headers(sys.argv[1])

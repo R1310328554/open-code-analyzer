@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 多语言识别训练配置生成器：基于模板 YAML 按语种输出 rec_*_lite_train.yml
 import yaml
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import os.path
@@ -19,6 +20,7 @@ import logging
 
 logger = logging.getLogger("ppocr")
 
+# 命令行 -l 支持的语种缩写与全称映射
 support_list = {
     "it": "italian",
     "xi": "spanish",
@@ -43,6 +45,7 @@ support_list = {
     "ne": "nepali",
 }
 
+# 拉丁字母系语种列表（共用 latin 字典）
 latin_lang = [
     "af",
     "az",
@@ -86,7 +89,9 @@ latin_lang = [
     "vi",
     "latin",
 ]
+# 阿拉伯字母系语种
 arabic_lang = ["ar", "fa", "ug", "ur"]
+# 西里尔字母系语种
 cyrillic_lang = [
     "ru",
     "rs_cyrillic",
@@ -106,6 +111,7 @@ cyrillic_lang = [
     "tab",
     "cyrillic",
 ]
+# 天城文（Devanagari）系语种
 devanagari_lang = [
     "hi",
     "mr",
@@ -122,6 +128,7 @@ devanagari_lang = [
     "bgc",
     "devanagari",
 ]
+# 所有可批量生成的语种并集
 multi_lang = latin_lang + arabic_lang + cyrillic_lang + devanagari_lang
 
 assert os.path.isfile(
@@ -136,7 +143,9 @@ global_config = yaml.load(
 project_path = os.path.abspath(os.path.join(os.getcwd(), "../../../"))
 
 
+# 命令行参数解析：语种、数据集路径与 -o 键值覆盖
 class ArgsParser(ArgumentParser):
+    # 注册 --language、--train、--val、--dict、--data_dir 等参数
     def __init__(self):
         super(ArgsParser, self).__init__(formatter_class=RawDescriptionHelpFormatter)
         self.add_argument("-o", "--opt", nargs="+", help="set configuration options")
@@ -167,12 +176,14 @@ class ArgsParser(ArgumentParser):
             help="you can use this command to change the dataset default root path",
         )
 
+    # 解析并展开 opt 与 language 映射
     def parse_args(self, argv=None):
         args = super(ArgsParser, self).parse_args(argv)
         args.opt = self._parse_opt(args.opt)
         args.language = self._set_language(args.language)
         return args
 
+    # 将 key=value 列表解析为嵌套 YAML 配置字典
     def _parse_opt(self, opts):
         config = {}
         if not opts:
@@ -183,6 +194,7 @@ class ArgsParser(ArgumentParser):
             config[k] = yaml.load(v, Loader=yaml.SafeLoader)
         return config
 
+    # 根据语种设置字典路径、save_model_dir 与 label 列表
     def _set_language(self, type):
         lang = type[0]
         assert type, "please use -l or --language to choose language type"
@@ -218,6 +230,7 @@ https://github.com/PaddlePaddle/PaddleOCR/tree/dygraph/ppocr/utils/dict/".format
         return lang
 
 
+    # 将点分键或顶层键合并进 global_config
 def merge_config(config):
     """
     Merge config into global config.
@@ -246,6 +259,7 @@ def merge_config(config):
                     cur = cur[sub_key]
 
 
+    # 断言指定路径存在，否则提示用户放置文件
 def loss_file(path):
     assert os.path.exists(
         path
@@ -254,6 +268,7 @@ def loss_file(path):
     )
 
 
+# 主流程：合并 CLI 覆盖、校验路径并写出 rec_{lang}_lite_train.yml
 if __name__ == "__main__":
     FLAGS = ArgsParser().parse_args()
     merge_config(FLAGS.opt)

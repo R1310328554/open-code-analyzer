@@ -46,6 +46,7 @@ import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+// OCR Demo 主界面：模型加载、推理、相册/相机选图与结果展示
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = MainActivity.class.getSimpleName();
     public static final int OPEN_GALLERY_REQUEST_CODE = 0;
@@ -85,11 +86,13 @@ public class MainActivity extends AppCompatActivity {
     private String currentPhotoPath;
     private AssetManager assetManager = null;
 
+// Paddle Lite OCR 预测器封装
     protected Predictor predictor = new Predictor();
 
     private Bitmap cur_predict_image = null;
 
     @Override
+    // 初始化 UI、清空偏好并启动后台 HandlerThread
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
@@ -177,6 +180,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    // 从 SharedPreferences 同步模型/图像设置并必要时重载
     protected void onResume() {
         super.onResume();
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
@@ -225,16 +229,19 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // 显示进度对话框并在工作线程加载模型
     public void loadModel() {
         pbLoadModel = ProgressDialog.show(this, "", "loading model...", false, false);
         sender.sendEmptyMessage(REQUEST_LOAD_MODEL);
     }
 
+    // 在工作线程执行检测/分类/识别流水线
     public void runModel() {
         pbRunModel = ProgressDialog.show(this, "", "running model...", false, false);
         sender.sendEmptyMessage(REQUEST_RUN_MODEL);
     }
 
+    // 释放旧模型并按当前设置 init Predictor
     public boolean onLoadModel() {
         if (predictor.isLoaded()) {
             predictor.releaseModel();
@@ -244,6 +251,7 @@ public class MainActivity extends AppCompatActivity {
                 detLongSize, scoreThreshold);
     }
 
+    // 根据 Spinner 选择解析 det/cls/rec 开关
     public boolean onRunModel() {
         String run_mode = spRunMode.getSelectedItem().toString();
         int run_det = run_mode.contains("检测") ? 1 : 0;
@@ -264,6 +272,7 @@ public class MainActivity extends AppCompatActivity {
         tvStatus.setText("STATUS: load model failed");
     }
 
+    // 更新推理耗时、可视化图与文本结果
     public void onRunModelSuccessed() {
         tvStatus.setText("STATUS: run model succeeded");
         // Obtain results and update UI
@@ -280,6 +289,7 @@ public class MainActivity extends AppCompatActivity {
         tvStatus.setText("STATUS: run model failed");
     }
 
+    // 从 assets 加载默认测试图片
     public void set_img() {
         // Load test image from path and run model
         try {
@@ -335,6 +345,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // 申请存储与相机权限
     private boolean requestAllPermissions() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(this,
@@ -348,12 +359,14 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
+    // 打开系统相册选择图片
     private void openGallery() {
         Intent intent = new Intent(Intent.ACTION_PICK, null);
         intent.setDataAndType(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "image/*");
         startActivityForResult(intent, OPEN_GALLERY_REQUEST_CODE);
     }
 
+    // 调起相机拍照并写入临时文件
     private void takePhoto() {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         // Ensure that there's a camera activity to handle the intent
@@ -397,6 +410,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    // 处理相册/相机返回的 Bitmap 并校正 EXIF 方向
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == RESULT_OK) {
@@ -456,6 +470,7 @@ public class MainActivity extends AppCompatActivity {
         loadModel();
     }
 
+    // 按钮：设置输入图并触发 runModel
     public void btn_run_model_click(View view) {
         Bitmap image = ((BitmapDrawable) ivInputImage.getDrawable()).getBitmap();
         if (image == null) {
@@ -482,6 +497,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    // 释放 native 模型并退出工作线程
     protected void onDestroy() {
         if (predictor != null) {
             predictor.releaseModel();
@@ -490,6 +506,7 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
     }
 
+    // 将 Spinner 中文选项映射为运行模式整数
     public int get_run_mode() {
         String run_mode = spRunMode.getSelectedItem().toString();
         int mode;

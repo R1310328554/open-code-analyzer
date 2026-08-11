@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
+// 模型与推理参数设置页：预置模型与自定义路径
 public class SettingsActivity extends AppCompatPreferenceActivity implements SharedPreferences.OnSharedPreferenceChangeListener {
     ListPreference lpChoosePreInstalledModel = null;
     CheckBoxPreference cbEnableCustomSettings = null;
@@ -23,6 +24,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity implements Sha
     EditTextPreference etDetLongSize = null;
     EditTextPreference etScoreThreshold = null;
 
+// 内置模型路径列表
     List<String> preInstalledModelPaths = null;
     List<String> preInstalledLabelPaths = null;
     List<String> preInstalledImagePaths = null;
@@ -35,6 +37,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity implements Sha
     List<String> preInstalledScoreThresholds = null;
 
     @Override
+    // 加载 settings.xml 并绑定各 Preference 控件
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         addPreferencesFromResource(R.xml.settings);
@@ -87,6 +90,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity implements Sha
         etScoreThreshold = (EditTextPreference) findPreference(getString(R.string.SCORE_THRESHOLD_KEY));
     }
 
+    // 根据是否启用自定义设置同步各字段摘要
     private void reloadPreferenceAndUpdateUI() {
         SharedPreferences sharedPreferences = getPreferenceScreen().getSharedPreferences();
         boolean enableCustomSettings =
@@ -148,6 +152,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity implements Sha
     }
 
     @Override
+    // 注册偏好变更监听并刷新 UI
     protected void onResume() {
         super.onResume();
         getPreferenceScreen().getSharedPreferences().registerOnSharedPreferenceChangeListener(this);
@@ -161,6 +166,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity implements Sha
     }
 
     @Override
+    // 切换预置模型时关闭自定义设置开关
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         if (key.equals(getString(R.string.CHOOSE_PRE_INSTALLED_MODEL_KEY))) {
             SharedPreferences.Editor editor = sharedPreferences.edit();

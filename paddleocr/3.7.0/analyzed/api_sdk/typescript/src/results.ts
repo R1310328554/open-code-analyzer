@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// OCR 单页结果：裁剪图 URL 与 prunedResult
 export interface OCRPage {
   prunedResult: unknown;
   ocrImageUrl?: string;
@@ -20,6 +21,7 @@ export interface OCRPage {
   raw?: unknown;
 }
 
+// 文档解析单页：Markdown 文本、图片与导出物
 export interface DocParsingPage {
   markdownText: string;
   markdownImages: Record<string, string>;
@@ -31,18 +33,21 @@ export interface DocParsingPage {
   raw?: unknown;
 }
 
+// 完整 OCR 任务结果：jobId + 多页 pages
 export interface OCRResult {
   jobId: string;
   pages: OCRPage[];
   dataInfo?: Record<string, unknown>;
 }
 
+// 完整文档解析任务结果
 export interface DocParsingResult {
   jobId: string;
   pages: DocParsingPage[];
   dataInfo?: Record<string, unknown>;
 }
 
+// 异步任务进度：总页数/已提取页数与时间
 export interface Progress {
   totalPages: number;
   extractedPages: number;
@@ -50,6 +55,7 @@ export interface Progress {
   endTime?: string;
 }
 
+// 任务元信息：模型、任务类型与 batch 关联
 export interface Job {
   jobId: string;
   model: string;
@@ -58,6 +64,7 @@ export interface Job {
   batchId?: string;
 }
 
+// 单 job 状态：pending/running/done/failed
 export interface JobStatus {
   jobId: string;
   state: "pending" | "running" | "done" | "failed";
@@ -66,6 +73,7 @@ export interface JobStatus {
   errorMsg?: string;
 }
 
+// 批量任务状态：batchId 与子 job 列表
 export interface BatchStatus {
   batchId: string;
   jobs: JobStatus[];
