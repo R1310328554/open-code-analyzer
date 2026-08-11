@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T01:17:23Z",
-  "files": [
-    "src/transformers/models/git/processing_git.py",
-    "src/transformers/models/glm/__init__.py",
-    "src/transformers/models/glm/configuration_glm.py",
-    "src/transformers/models/glm/modeling_glm.py",
-    "src/transformers/models/glm/modular_glm.py",
-    "src/transformers/models/glm4/__init__.py",
-    "src/transformers/models/glm4/configuration_glm4.py",
-    "src/transformers/models/glm4/modeling_glm4.py",
-    "src/transformers/models/glm4/modular_glm4.py",
-    "src/transformers/models/glm46v/__init__.py",
-    "src/transformers/models/glm46v/configuration_glm46v.py",
-    "src/transformers/models/glm46v/image_processing_glm46v.py",
-    "src/transformers/models/glm46v/image_processing_pil_glm46v.py",
-    "src/transformers/models/glm46v/modeling_glm46v.py",
-    "src/transformers/models/glm46v/modular_glm46v.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1779,
-  "done": 885
+  "done": 900
 }
