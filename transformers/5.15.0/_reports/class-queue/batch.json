@@ -15,23 +15,8 @@
     "src/transformers/models/superglue/image_processing_pil_superglue.py",
     "src/transformers/models/superglue/image_processing_superglue.py",
     "src/transformers/models/superglue/modeling_superglue.py",
-    "src/transformers/models/superpoint/__init__.py",
-    "src/transformers/models/superpoint/configuration_superpoint.py",
-    "src/transformers/models/superpoint/image_processing_pil_superpoint.py",
-    "src/transformers/models/superpoint/image_processing_superpoint.py",
-    "src/transformers/models/superpoint/modeling_superpoint.py",
-    "src/transformers/models/swiftformer/__init__.py",
-    "src/transformers/models/swiftformer/configuration_swiftformer.py",
-    "src/transformers/models/swiftformer/modeling_swiftformer.py",
-    "src/transformers/models/swin/__init__.py",
-    "src/transformers/models/swin/configuration_swin.py",
-    "src/transformers/models/swin/modeling_swin.py",
-    "src/transformers/models/swin/modular_swin.py",
-    "src/transformers/models/swin2sr/__init__.py",
-    "src/transformers/models/swin2sr/configuration_swin2sr.py",
-    "src/transformers/models/swin2sr/image_processing_pil_swin2sr.py",
-    "src/transformers/models/swin2sr/image_processing_swin2sr.py"
+    "src/transformers/models/superpoint/__init__.py"
   ],
   "remaining_pending": 519,
-  "done": 2130
+  "done": 2145
 }
