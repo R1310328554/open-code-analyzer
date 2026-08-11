@@ -27,6 +27,7 @@ from ...utils.generic import merge_with_config_defaults
 from ...utils.output_capturing import OutputRecorder, capture_outputs
 from ..mixtral.modeling_mixtral import MixtralModel, MixtralPreTrainedModel
 from ..olmo2.modeling_olmo2 import Olmo2Attention, Olmo2RMSNorm, Olmo2RotaryEmbedding
+# FlexOlmo modular 源：组合 Olmo2 注意力与 Olmoe/Mixtral MoE 解码层
 from ..olmoe.modeling_olmoe import (
     OlmoeDecoderLayer,
     OlmoeForCausalLM,
@@ -38,6 +39,7 @@ from ..olmoe.modeling_olmoe import (
 
 @auto_docstring(checkpoint="allenai/FlexOlmo-7x7B-1T")
 @strict
+# FlexOlmoConfig：AllenAI FlexOlmo MoE 因果 LM 超参
 class FlexOlmoConfig(PreTrainedConfig):
     r"""
     Example:
@@ -111,36 +113,43 @@ class FlexOlmoConfig(PreTrainedConfig):
 
 
 # FlexOlmo RMS norm reuses Olmo2 RMS norm, which handles low precision slightly differently than the original OlmoE.
+# FlexOlmoRMSNorm：RMS 层归一化
 class FlexOlmoRMSNorm(Olmo2RMSNorm):
     pass
 
 
 # FlexOlmo RMS norm reuses Olmo2 RMS norm, so that the output cos and sin are returned
 # as float32 rather than the input type.
+# FlexOlmoRotaryEmbedding：RoPE 旋转位置编码
 class FlexOlmoRotaryEmbedding(Olmo2RotaryEmbedding):
     pass
 
 
+# FlexOlmoMLP：SwiGLU 前馈网络
 class FlexOlmoMLP(OlmoeMLP):
     pass
 
 
 # FlexOlmo uses Olmo2 attention instead of OlmoE Attention since its `apply_rotary_pos_emb`
 # implementation handles lower precision more faithfully to the Olmo codebase.
+# FlexOlmoAttention：带 QK-Norm 的多头自注意力
 class FlexOlmoAttention(Olmo2Attention):
     pass
 
 
+# FlexOlmoTopKRouter：MoE Top-K 路由门控
 class FlexOlmoTopKRouter(OlmoeTopKRouter):
     pass
 
 
+# FlexOlmoSparseMoeBlock：稀疏 MoE 块（路由 + 专家）
 class FlexOlmoSparseMoeBlock(OlmoeSparseMoeBlock):
     pass
 
 
 # FlexOlmo decoder layer is identical to OlmoE decoder layer except:
 # - Norm is applied after attention/feedforward rather than before.
+# FlexOlmoDecoderLayer：解码层（Attn + MoE FFN + 残差）
 class FlexOlmoDecoderLayer(OlmoeDecoderLayer):
     def __init__(self, config: FlexOlmoConfig, layer_idx: int):
         super().__init__(config, layer_idx=layer_idx)
@@ -182,6 +191,7 @@ class FlexOlmoDecoderLayer(OlmoeDecoderLayer):
 
 # FlexOlmo uses Mixtral model as its base instead of OlmoE model since Mixtral is more up-to-date with the rest
 # of the transformers library. For example, it uses the newer mechanisms of recording submodule outputs.
+# FlexOlmoPreTrainedModel：FlexOlmo 预训练基类
 class FlexOlmoPreTrainedModel(MixtralPreTrainedModel):
     _can_record_outputs = {
         "router_logits": OutputRecorder(FlexOlmoTopKRouter, index=0),
@@ -194,6 +204,7 @@ class FlexOlmoPreTrainedModel(MixtralPreTrainedModel):
 # of the transformers library. For example, it uses the newer mechanisms of recording submodule outputs.
 # FlexOlmo model is identical to Mixtral model except:
 # - FlexOlmo does not use sliding window attention.
+# FlexOlmoModel：FlexOlmo 主干（嵌入 + 解码层堆叠）
 class FlexOlmoModel(MixtralModel):
     @merge_with_config_defaults
     @capture_outputs
@@ -254,6 +265,7 @@ class FlexOlmoModel(MixtralModel):
         )
 
 
+# FlexOlmoForCausalLM：因果语言建模头（lm_head + generate）
 class FlexOlmoForCausalLM(OlmoeForCausalLM):
     pass
 

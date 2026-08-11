@@ -44,6 +44,7 @@ from .configuration_flex_olmo import FlexOlmoConfig
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# FlexOlmoRMSNorm：RMS 层归一化
 class FlexOlmoRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -64,6 +65,7 @@ class FlexOlmoRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# FlexOlmoRotaryEmbedding：RoPE 旋转位置编码
 class FlexOlmoRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: FlexOlmoConfig, device=None):
@@ -117,6 +119,7 @@ class FlexOlmoRotaryEmbedding(nn.Module):
         return cos, sin
 
 
+# FlexOlmoMLP：SwiGLU 前馈网络
 class FlexOlmoMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -133,6 +136,7 @@ class FlexOlmoMLP(nn.Module):
         return down_proj
 
 
+# repeat_kv：GQA 场景重复 KV 头以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -145,6 +149,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -171,6 +176,7 @@ def eager_attention_forward(
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：对 Q/K 施加 RoPE 旋转位置编码
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -197,6 +203,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed.to(q_type), k_embed.to(k_type)
 
 
+# rotate_half：RoPE 半维旋转辅助函数
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -205,6 +212,7 @@ def rotate_half(x):
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# FlexOlmoAttention：带 QK-Norm 的多头自注意力
 class FlexOlmoAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -278,6 +286,7 @@ class FlexOlmoAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# FlexOlmoTopKRouter：MoE Top-K 路由门控
 class FlexOlmoTopKRouter(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -300,6 +309,7 @@ class FlexOlmoTopKRouter(nn.Module):
 
 
 @use_experts_implementation
+# FlexOlmoExperts：MoE 专家 FFN 参数组
 class FlexOlmoExperts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
@@ -339,6 +349,7 @@ class FlexOlmoExperts(nn.Module):
         return final_hidden_states
 
 
+# FlexOlmoSparseMoeBlock：稀疏 MoE 块（路由 + 专家）
 class FlexOlmoSparseMoeBlock(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -355,6 +366,7 @@ class FlexOlmoSparseMoeBlock(nn.Module):
         return final_hidden_states
 
 
+# FlexOlmoDecoderLayer：解码层（Attn + MoE FFN + 残差）
 class FlexOlmoDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: FlexOlmoConfig, layer_idx: int):
         super().__init__()
@@ -396,6 +408,7 @@ class FlexOlmoDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# FlexOlmoPreTrainedModel：FlexOlmo 预训练基类
 class FlexOlmoPreTrainedModel(PreTrainedModel):
     config: FlexOlmoConfig
     base_model_prefix = "model"
@@ -426,6 +439,7 @@ class FlexOlmoPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# FlexOlmoModel：FlexOlmo 主干（嵌入 + 解码层堆叠）
 class FlexOlmoModel(FlexOlmoPreTrainedModel):
     def __init__(self, config: FlexOlmoConfig):
         super().__init__(config)
@@ -502,6 +516,7 @@ class FlexOlmoModel(FlexOlmoPreTrainedModel):
         )
 
 
+# load_balancing_loss_func：MoE 负载均衡辅助损失
 def load_balancing_loss_func(
     gate_logits: torch.Tensor | tuple[torch.Tensor] | None,
     num_experts: int | None = None,
@@ -585,6 +600,7 @@ def load_balancing_loss_func(
 
 
 @auto_docstring
+# FlexOlmoForCausalLM：因果语言建模头（lm_head + generate）
 class FlexOlmoForCausalLM(FlexOlmoPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}

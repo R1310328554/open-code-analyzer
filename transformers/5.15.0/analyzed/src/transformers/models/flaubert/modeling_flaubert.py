@@ -13,6 +13,8 @@
 # limitations under the License.
 """PyTorch Flaubert model, based on XLM."""
 
+# Flaubert 建模：基于 XLM 的多语言 Transformer，支持 MLM/分类/问答等下游头
+
 import math
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -44,6 +46,7 @@ logger = logging.get_logger(__name__)
 
 
 # Copied from transformers.models.xlm.modeling_xlm.create_sinusoidal_embeddings
+# create_sinusoidal_embeddings：生成正弦位置编码矩阵
 def create_sinusoidal_embeddings(n_pos, dim, out):
     position_enc = np.array([[pos / np.power(10000, 2 * (j // 2) / dim) for j in range(dim)] for pos in range(n_pos)])
     out.requires_grad = False
@@ -54,6 +57,7 @@ def create_sinusoidal_embeddings(n_pos, dim, out):
 
 
 # Copied from transformers.models.xlm.modeling_xlm.get_masks
+# get_masks：构造因果/双向注意力掩码与 padding 掩码
 def get_masks(slen, lengths, causal, padding_mask=None):
     """
     Generate hidden states mask, and optionally an attention mask.
@@ -80,6 +84,7 @@ def get_masks(slen, lengths, causal, padding_mask=None):
 
 
 # Copied from transformers.models.xlm.modeling_xlm.MultiHeadAttention
+# MultiHeadAttention：Flaubert 多头自注意力（含相对位置偏置）
 class MultiHeadAttention(nn.Module):
     def __init__(self, n_heads, dim, config, layer_idx: int = 0):
         super().__init__()
@@ -161,6 +166,7 @@ class MultiHeadAttention(nn.Module):
 
 
 # Copied from transformers.models.xlm.modeling_xlm.TransformerFFN
+# TransformerFFN：Transformer 前馈子层（两层线性 + 激活）
 class TransformerFFN(nn.Module):
     def __init__(self, in_dim, dim_hidden, out_dim, config):
         super().__init__()
@@ -188,6 +194,7 @@ class TransformerFFN(nn.Module):
     """
 )
 # Copied from transformers.models.xlm.modeling_xlm.XLMPredLayer with XLM->Flaubert
+# FlaubertPredLayer：自适应 log-softmax 或线性预测头
 class FlaubertPredLayer(nn.Module):
     """
     Prediction layer (cross_entropy or adaptive_softmax).
@@ -237,6 +244,7 @@ class FlaubertPredLayer(nn.Module):
 )
 @dataclass
 # Copied from transformers.models.xlm.modeling_xlm.XLMSquadHeadOutput with XLM->Flaubert
+# FlaubertSquadHeadOutput：SQuAD 问答头输出 dataclass
 class FlaubertSquadHeadOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned if both `start_positions` and `end_positions` are provided):
@@ -264,6 +272,7 @@ class FlaubertSquadHeadOutput(ModelOutput):
 
 
 # Copied from transformers.models.xlm.modeling_xlm.XLMPoolerStartLogits with XLM->Flaubert
+# FlaubertPoolerStartLogits：答案起始位置 logits 池化头
 class FlaubertPoolerStartLogits(nn.Module):
     """
     Compute SQuAD start logits from sequence hidden states.
@@ -301,6 +310,7 @@ class FlaubertPoolerStartLogits(nn.Module):
 
 
 # Copied from transformers.models.xlm.modeling_xlm.XLMPoolerEndLogits with XLM->Flaubert
+# FlaubertPoolerEndLogits：答案结束位置 logits 池化头
 class FlaubertPoolerEndLogits(nn.Module):
     """
     Compute SQuAD end logits from sequence hidden states.
@@ -371,6 +381,7 @@ class FlaubertPoolerEndLogits(nn.Module):
 
 
 # Copied from transformers.models.xlm.modeling_xlm.XLMPoolerAnswerClass with XLM->Flaubert
+# FlaubertPoolerAnswerClass：答案是否存在的二分类头
 class FlaubertPoolerAnswerClass(nn.Module):
     """
     Compute SQuAD 2.0 answer class from classification and start tokens hidden states.
@@ -437,6 +448,7 @@ class FlaubertPoolerAnswerClass(nn.Module):
 
 
 # Copied from transformers.models.xlm.modeling_xlm.XLMSQuADHead with XLM->Flaubert
+# FlaubertSQuADHead：SQuAD 抽取式问答联合头（start/end/cls）
 class FlaubertSQuADHead(nn.Module):
     r"""
     A SQuAD head inspired by XLNet.
@@ -550,6 +562,7 @@ class FlaubertSQuADHead(nn.Module):
 
 
 # Copied from transformers.models.xlm.modeling_xlm.XLMSequenceSummary with XLM->Flaubert
+# FlaubertSequenceSummary：序列级池化摘要（分类/多选）
 class FlaubertSequenceSummary(nn.Module):
     r"""
     Compute a single vector summary of a sequence hidden states.
@@ -651,6 +664,7 @@ class FlaubertSequenceSummary(nn.Module):
 
 @auto_docstring
 # Copied from transformers.models.xlm.modeling_xlm.XLMPreTrainedModel with XLM->Flaubert
+# FlaubertPreTrainedModel：Flaubert 预训练基类与权重初始化
 class FlaubertPreTrainedModel(PreTrainedModel):
     config: FlaubertConfig
     base_model_prefix = "transformer"
@@ -689,6 +703,7 @@ class FlaubertPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# FlaubertModel：Flaubert 编码器主干（嵌入 + Transformer 层堆叠）
 class FlaubertModel(FlaubertPreTrainedModel):
     def __init__(self, config):  # , dico, is_encoder, with_output):
         super().__init__(config)
@@ -939,6 +954,7 @@ class FlaubertModel(FlaubertPreTrainedModel):
     embeddings).
     """
 )
+# FlaubertWithLMHeadModel：带语言建模头的 Flaubert（MLM/生成）
 class FlaubertWithLMHeadModel(FlaubertPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"pred_layer.proj.weight": "transformer.embeddings.weight"}
 
@@ -1048,6 +1064,7 @@ class FlaubertWithLMHeadModel(FlaubertPreTrainedModel, GenerationMixin):
     """
 )
 # Copied from transformers.models.xlm.modeling_xlm.XLMForSequenceClassification with XLM_INPUTS->FLAUBERT_INPUTS,XLM->Flaubert
+# FlaubertForSequenceClassification：序列分类下游任务头
 class FlaubertForSequenceClassification(FlaubertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1154,6 +1171,7 @@ class FlaubertForSequenceClassification(FlaubertPreTrainedModel):
 
 @auto_docstring
 # Copied from transformers.models.xlm.modeling_xlm.XLMForTokenClassification with XLM_INPUTS->FLAUBERT_INPUTS,XLM->Flaubert
+# FlaubertForTokenClassification：Token 级序列标注头
 class FlaubertForTokenClassification(FlaubertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1247,6 +1265,7 @@ class FlaubertForTokenClassification(FlaubertPreTrainedModel):
     """
 )
 # Copied from transformers.models.xlm.modeling_xlm.XLMForQuestionAnsweringSimple with XLM_INPUTS->FLAUBERT_INPUTS,XLM->Flaubert
+# FlaubertForQuestionAnsweringSimple：简化版抽取式问答头
 class FlaubertForQuestionAnsweringSimple(FlaubertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1352,6 +1371,7 @@ class FlaubertForQuestionAnsweringSimple(FlaubertPreTrainedModel):
 )
 @dataclass
 # Copied from transformer.models.xlm.modeling_xlm.XLMForQuestionAnsweringOutput with XLM->Flaubert
+# FlaubertForQuestionAnsweringOutput：问答任务输出 dataclass
 class FlaubertForQuestionAnsweringOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned if both `start_positions` and `end_positions` are provided):
@@ -1382,6 +1402,7 @@ class FlaubertForQuestionAnsweringOutput(ModelOutput):
 
 @auto_docstring
 # Copied from transformers.models.xlm.modeling_xlm.XLMForQuestionAnswering with XLM_INPUTS->FLAUBERT_INPUTS,XLM->Flaubert
+# FlaubertForQuestionAnswering：完整 SQuAD 风格问答模型
 class FlaubertForQuestionAnswering(FlaubertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1501,6 +1522,7 @@ class FlaubertForQuestionAnswering(FlaubertPreTrainedModel):
 
 @auto_docstring
 # Copied from transformers.models.xlm.modeling_xlm.XLMForMultipleChoice with XLM_INPUTS->FLAUBERT_INPUTS,XLM->Flaubert
+# FlaubertForMultipleChoice：多选阅读理解任务头
 class FlaubertForMultipleChoice(FlaubertPreTrainedModel):
     def __init__(self, config, *inputs, **kwargs):
         super().__init__(config, *inputs, **kwargs)

@@ -26,8 +26,10 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# FlexOlmoConfig：AllenAI FlexOlmo-7x7B MoE 因果 LM 默认超参
 @auto_docstring(checkpoint="allenai/FlexOlmo-7x7B-1T")
 @strict
+# FlexOlmoConfig：AllenAI FlexOlmo MoE 因果 LM 超参
 class FlexOlmoConfig(PreTrainedConfig):
     r"""
     Example:

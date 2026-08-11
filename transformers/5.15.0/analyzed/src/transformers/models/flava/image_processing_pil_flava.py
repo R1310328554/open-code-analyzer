@@ -13,6 +13,8 @@
 # limitations under the License.
 """Image processor class for Flava."""
 
+# FLAVA PIL 图像预处理：与 Torchvision 版等价的 PIL 后端实现
+
 import math
 import random
 from collections.abc import Iterable
@@ -61,6 +63,7 @@ LOGIT_LAPLACE_EPS: float = 0.1
 
 
 # Adapted from transformers.models.flava.image_processing_flava.FlavaImageProcessorKwargs
+# FlavaImageProcessorKwargs：图像预处理可选参数字典类型
 class FlavaImageProcessorKwargs(ImagesKwargs, total=False):
     """
     return_image_mask (`bool`, *optional*, defaults to `False`):
@@ -147,6 +150,7 @@ class FlavaImageProcessorKwargs(ImagesKwargs, total=False):
 
 # Adapted from transformers.models.flava.image_processing_flava.FlavaMaskingGenerator
 # Inspired from https://github.com/microsoft/unilm/blob/master/beit/masking_generator.py
+# FlavaMaskingGenerator：MIM 块状随机掩码生成器
 class FlavaMaskingGenerator:
     def __init__(
         self,
@@ -224,6 +228,7 @@ class FlavaMaskingGenerator:
 
 
 @auto_docstring
+# FlavaImageProcessorPil：PIL 后端的 FLAVA 图像预处理器
 class FlavaImageProcessorPil(PilBackend):
     valid_kwargs = FlavaImageProcessorKwargs
     resample = PILImageResampling.BICUBIC

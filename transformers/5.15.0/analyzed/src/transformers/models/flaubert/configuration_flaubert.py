@@ -19,8 +19,10 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# FlaubertConfig：Facebook Flaubert 多语言预训练默认 checkpoint 超参
 @auto_docstring(checkpoint="flaubert/flaubert_base_uncased")
 @strict
+# FlaubertConfig：Facebook/XLM 系 Flaubert 多语言 Transformer 超参
 class FlaubertConfig(PreTrainedConfig):
     r"""
     pre_norm (`bool`, *optional*, defaults to `False`):

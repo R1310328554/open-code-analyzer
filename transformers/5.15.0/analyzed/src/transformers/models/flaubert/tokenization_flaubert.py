@@ -13,6 +13,8 @@
 # limitations under the License.
 """Tokenization classes for Flaubert."""
 
+# Flaubert 分词：Moses 风格预处理 + BPE 合并 + 多语言标点归一化
+
 import json
 import os
 import re
@@ -30,6 +32,7 @@ VOCAB_FILES_NAMES = {
 }
 
 
+# convert_to_unicode：将字节串规范化为 UTF-8 文本
 def convert_to_unicode(text):
     """
     Converts `text` to Unicode (if it's not already), assuming UTF-8 input.
@@ -47,6 +50,7 @@ def convert_to_unicode(text):
 
 
 # Copied from transformers.models.xlm.tokenization_xlm.get_pairs
+# get_pairs：BPE 合并算法中统计相邻符号对
 def get_pairs(word):
     """
     Return set of symbol pairs in a word. word is represented as tuple of symbols (symbols being variable-length
@@ -61,6 +65,7 @@ def get_pairs(word):
 
 
 # Copied from transformers.models.xlm.tokenization_xlm.replace_unicode_punct
+# replace_unicode_punct：全角/Unicode 标点归一化为 ASCII
 def replace_unicode_punct(text):
     """
     Port of https://github.com/moses-smt/mosesdecoder/blob/master/scripts/tokenizer/replace-unicode-punctuation.perl
@@ -105,6 +110,7 @@ def replace_unicode_punct(text):
 
 
 # Copied from transformers.models.xlm.tokenization_xlm.remove_non_printing_char
+# remove_non_printing_char：移除不可见控制字符
 def remove_non_printing_char(text):
     """
     Port of https://github.com/moses-smt/mosesdecoder/blob/master/scripts/tokenizer/remove-non-printing-char.perl
@@ -118,6 +124,7 @@ def remove_non_printing_char(text):
     return "".join(output)
 
 
+# FlaubertTokenizer：Flaubert BPE 分词器（Moses 预处理 + 归一化）
 class FlaubertTokenizer(PreTrainedTokenizer):
     """
     Construct a Flaubert tokenizer. Based on Byte-Pair Encoding. The tokenization process is the following:

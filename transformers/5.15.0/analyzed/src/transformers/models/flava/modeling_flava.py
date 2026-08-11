@@ -13,6 +13,8 @@
 # limitations under the License.
 """PyTorch FLAVA model."""
 
+# FLAVA 建模：Meta 视觉-语言对比与掩码预训练三塔架构
+
 import collections
 import math
 from collections import OrderedDict
@@ -59,6 +61,7 @@ FlavaPossibleConfigs = FlavaTextConfig | FlavaImageConfig | FlavaMultimodalConfi
     """
 )
 @dataclass
+# FlavaModelOutput：FLAVA 多塔前向输出 dataclass
 class FlavaModelOutput(ModelOutput):
     r"""
     image_embeddings (`torch.FloatTensor` of shape `(batch_size, output_dim)`, *optional*, returned when `pixel_values` are present):
@@ -95,6 +98,7 @@ class FlavaModelOutput(ModelOutput):
     """
 )
 @dataclass
+# FlavaLosses：预训练各损失项（MIM/MLM/ITM/GC 等）
 class FlavaLosses(ModelOutput):
     r"""
     mim (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `mim_labels` and `pixel_values` are present, `input_ids_masked` is absent and `mim_weight` > 0.):
@@ -139,6 +143,7 @@ class FlavaLosses(ModelOutput):
     """
 )
 @dataclass
+# FlavaForPreTrainingOutput：预训练阶段完整输出
 class FlavaForPreTrainingOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor`, *optional*, returned when `return_loss` is True):
@@ -231,6 +236,7 @@ class FlavaForPreTrainingOutput(ModelOutput):
 
 # Based on timm implementation, which can be found here:
 # https://github.com/rwightman/pytorch-image-models/blob/master/timm/models/image_transformer.py
+# FlavaImageEmbeddings：图像 patch 嵌入 + 位置/type 嵌入
 class FlavaImageEmbeddings(nn.Module):
     """
     Construct the CLS token, position and patch embeddings. Optionally, also the mask token.
@@ -331,6 +337,7 @@ class FlavaImageEmbeddings(nn.Module):
 
 # Based on timm implementation, which can be found here:
 # https://github.com/rwightman/pytorch-image-models/blob/master/timm/models/image_transformer.py
+# PatchEmbeddings：将图像切分为 patch 并线性投影
 class PatchEmbeddings(nn.Module):
     """
     Image to Patch Embedding.
@@ -367,6 +374,7 @@ class PatchEmbeddings(nn.Module):
         return x
 
 
+# FlavaTextEmbeddings：文本 token/type/position 嵌入
 class FlavaTextEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
@@ -417,6 +425,7 @@ class FlavaTextEmbeddings(nn.Module):
         return embeddings
 
 
+# FlavaSelfAttention：FLAVA 自注意力（QKV 投影 + 缩放点积）
 class FlavaSelfAttention(nn.Module):
     def __init__(self, config: FlavaPossibleConfigs) -> None:
         super().__init__()
@@ -474,6 +483,7 @@ class FlavaSelfAttention(nn.Module):
         return outputs
 
 
+# FlavaSelfOutput：注意力输出投影与 dropout
 class FlavaSelfOutput(nn.Module):
     """
     The residual connection is defined in FlavaLayer (same as ViTLayer) instead of here (as is the case with other
@@ -492,6 +502,7 @@ class FlavaSelfOutput(nn.Module):
         return hidden_states
 
 
+# FlavaAttention：自注意力 + 输出子层封装
 class FlavaAttention(nn.Module):
     def __init__(self, config: FlavaPossibleConfigs) -> None:
         super().__init__()
@@ -514,6 +525,7 @@ class FlavaAttention(nn.Module):
         return outputs
 
 
+# FlavaIntermediate：Transformer 中间 FFN 升维层
 class FlavaIntermediate(nn.Module):
     def __init__(self, config: FlavaPossibleConfigs) -> None:
         super().__init__()
@@ -531,6 +543,7 @@ class FlavaIntermediate(nn.Module):
         return hidden_states
 
 
+# FlavaOutput：Transformer 输出 FFN 降维与残差
 class FlavaOutput(nn.Module):
     def __init__(self, config: FlavaPossibleConfigs) -> None:
         super().__init__()
@@ -547,6 +560,7 @@ class FlavaOutput(nn.Module):
         return hidden_states
 
 
+# FlavaLayer：单层 Transformer（Attn + FFN + 残差/LayerNorm）
 class FlavaLayer(GradientCheckpointingLayer):
     """This corresponds to the Block class in the timm implementation."""
 
@@ -591,6 +605,7 @@ class FlavaLayer(GradientCheckpointingLayer):
         return outputs
 
 
+# FlavaEncoder：堆叠多层 FlavaLayer 编码器
 class FlavaEncoder(nn.Module):
     def __init__(self, config: FlavaConfig) -> None:
         super().__init__()
@@ -630,6 +645,7 @@ class FlavaEncoder(nn.Module):
         )
 
 
+# FlavaPooler：CLS token 池化得到句向量
 class FlavaPooler(nn.Module):
     def __init__(self, config: FlavaPossibleConfigs):
         super().__init__()
@@ -646,6 +662,7 @@ class FlavaPooler(nn.Module):
 
 
 @auto_docstring
+# FlavaPreTrainedModel：FLAVA 预训练基类
 class FlavaPreTrainedModel(PreTrainedModel):
     config: FlavaConfig
     base_model_prefix = "flava"
@@ -674,6 +691,7 @@ class FlavaPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# FlavaImageModel：视觉单塔编码器
 class FlavaImageModel(FlavaPreTrainedModel):
     config: FlavaImageConfig
     # This override allows us to load FlavaImageModel from FlavaModel/FlavaForPreTraining checkpoints.
@@ -756,6 +774,7 @@ class FlavaImageModel(FlavaPreTrainedModel):
 
 
 @auto_docstring
+# FlavaTextModel：文本单塔编码器
 class FlavaTextModel(FlavaPreTrainedModel):
     config: FlavaTextConfig
     # This override allows us to load FlavaTextModel from FlavaModel/FlavaForPreTraining checkpoints.
@@ -852,6 +871,7 @@ class FlavaTextModel(FlavaPreTrainedModel):
 
 
 @auto_docstring
+# FlavaMultimodalModel：跨模态融合编码器
 class FlavaMultimodalModel(FlavaPreTrainedModel):
     config: FlavaMultimodalConfig
     # This override allows us to load FlavaMultimodalModel from FlavaModel/FlavaForPreTraining checkpoints.
@@ -932,6 +952,7 @@ class FlavaMultimodalModel(FlavaPreTrainedModel):
 
 
 @auto_docstring
+# FlavaModel：三塔联合 FLAVA 主干（图像/文本/多模态）
 class FlavaModel(FlavaPreTrainedModel):
     config: FlavaConfig
 
@@ -1221,6 +1242,7 @@ class FlavaModel(FlavaPreTrainedModel):
         )
 
 
+# FlavaImageCodebookResPath：codebook 残差路径卷积块
 class FlavaImageCodebookResPath(nn.Module):
     def __init__(self, in_size: int, out_size: int, **kwargs):
         super().__init__()
@@ -1242,6 +1264,7 @@ class FlavaImageCodebookResPath(nn.Module):
         return self.path(x)
 
 
+# FlavaImageCodebookBlock：codebook 单层卷积块
 class FlavaImageCodebookBlock(nn.Module):
     def __init__(self, in_size: int, out_size: int, num_layers: int, **kwargs):
         super().__init__()
@@ -1259,6 +1282,7 @@ class FlavaImageCodebookBlock(nn.Module):
         return self.id_path(x) + self.post_gain * self.res_path(x)
 
 
+# FlavaImageCodebookLayerGroup：codebook 分组卷积层
 class FlavaImageCodebookLayerGroup(nn.Module):
     def __init__(self, num_blocks: int, num_layers: int, in_size: int, out_size: int, use_pool: bool = True):
         super().__init__()
@@ -1286,6 +1310,7 @@ class FlavaImageCodebookLayerGroup(nn.Module):
     `get_codebook_indices` to get image tokens for an image.
     """
 )
+# FlavaImageCodebook：离散视觉 codebook 量化模型
 class FlavaImageCodebook(FlavaPreTrainedModel):
     base_model_prefix = "model"
     config: FlavaImageCodebookConfig
@@ -1408,6 +1433,7 @@ class FlavaImageCodebook(FlavaPreTrainedModel):
         return self.blocks(pixel_values)
 
 
+# FlavaPredictionHeadTransform：预训练预测头前的变换 MLP
 class FlavaPredictionHeadTransform(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1425,6 +1451,7 @@ class FlavaPredictionHeadTransform(nn.Module):
         return hidden_states
 
 
+# FlavaMaskedPredictionHead：MIM/MLM 掩码预测头
 class FlavaMaskedPredictionHead(nn.Module):
     def __init__(self, config, weight=None):
         super().__init__()
@@ -1441,6 +1468,7 @@ class FlavaMaskedPredictionHead(nn.Module):
         return x
 
 
+# FlavaITMHead：Image-Text Matching 二分类头
 class FlavaITMHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1454,6 +1482,7 @@ class FlavaITMHead(nn.Module):
         return x
 
 
+# FlavaGlobalContrastiveHead：全局对比学习投影头（CLIP 风格）
 class FlavaGlobalContrastiveHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1499,6 +1528,7 @@ class FlavaGlobalContrastiveHead(nn.Module):
     The FLAVA model for pretraining which outputs losses, embeddings, logits and transformer outputs.
     """
 )
+# FlavaForPreTraining：联合 MIM/MLM/ITM/GC 预训练包装
 class FlavaForPreTraining(FlavaPreTrainedModel):
     # Those are linked to xxx.bias
     _tied_weights_keys = {

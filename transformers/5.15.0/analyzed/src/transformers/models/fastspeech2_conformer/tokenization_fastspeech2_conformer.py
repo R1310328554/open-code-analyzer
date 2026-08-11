@@ -13,6 +13,8 @@
 # limitations under the License.
 """Tokenization classes for FastSpeech2Conformer."""
 
+# FastSpeech2Conformer 分词：文本经 g2p-en 转音素序列，再映射 JSON 词表 ID
+
 import json
 import os
 
@@ -27,6 +29,7 @@ logger = logging.get_logger(__name__)
 VOCAB_FILES_NAMES = {"vocab_file": "vocab.json"}
 
 
+# FastSpeech2ConformerTokenizer：FastSpeech2-Conformer 音素分词器（g2p-en + JSON 词表）
 class FastSpeech2ConformerTokenizer(PreTrainedTokenizer):
     """
     Construct a FastSpeech2Conformer tokenizer.
@@ -91,6 +94,7 @@ class FastSpeech2ConformerTokenizer(PreTrainedTokenizer):
         "Returns vocab as a dict"
         return dict(self.encoder, **self.added_tokens_encoder)
 
+    # prepare_for_tokenization：归一化标点/大小写，为 g2p 音素化做准备
     def prepare_for_tokenization(self, text, is_split_into_words=False, **kwargs):
         # expand symbols
         text = regex.sub(";", ",", text)
@@ -108,6 +112,7 @@ class FastSpeech2ConformerTokenizer(PreTrainedTokenizer):
 
         return text, kwargs
 
+    # _tokenize：调用 g2p-en 将文本转为音素 token 并追加 eos
     def _tokenize(self, text):
         """Returns a tokenized string."""
         # phonemize
@@ -165,6 +170,7 @@ class FastSpeech2ConformerTokenizer(PreTrainedTokenizer):
 
         return (vocab_file,)
 
+    # __getstate__：序列化时剔除不可 pickle 的 g2p 对象
     def __getstate__(self):
         state = self.__dict__.copy()
         state["g2p"] = None

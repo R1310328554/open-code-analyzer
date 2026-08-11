@@ -15,11 +15,14 @@
 Image/Text processor class for FLAVA
 """
 
+# FlavaProcessor：封装 image_processor 与 tokenizer 的多模态输入管线
+
 from ...processing_utils import ProcessorMixin
 from ...utils import auto_docstring
 
 
 @auto_docstring
+# FlavaProcessor：图像处理器与分词器的联合 Processor
 class FlavaProcessor(ProcessorMixin):
     def __init__(self, image_processor=None, tokenizer=None, **kwargs):
         super().__init__(image_processor, tokenizer)

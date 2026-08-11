@@ -24,8 +24,10 @@ from ...utils import auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# FlavaImageConfig：视觉塔 ViT patch 编码默认超参
 @auto_docstring(checkpoint="facebook/flava-full")
 @strict
+# FlavaImageConfig：FLAVA 视觉塔 ViT 风格子配置
 class FlavaImageConfig(PreTrainedConfig):
     r"""
     mask_token (`bool`, *optional*, defaults to `True`):
@@ -66,8 +68,10 @@ class FlavaImageConfig(PreTrainedConfig):
     vocab_size: int = 8192
 
 
+# FlavaTextConfig：文本塔 BERT 风格默认超参
 @auto_docstring(checkpoint="facebook/flava-full")
 @strict
+# FlavaTextConfig：FLAVA 文本塔 BERT 风格子配置
 class FlavaTextConfig(PreTrainedConfig):
     r"""
     Example:
@@ -104,8 +108,10 @@ class FlavaTextConfig(PreTrainedConfig):
     qkv_bias: bool = True
 
 
+# FlavaMultimodalConfig：跨模态融合层默认超参
 @auto_docstring(checkpoint="facebook/flava-full")
 @strict
+# FlavaMultimodalConfig：FLAVA 跨模态融合 Transformer 子配置
 class FlavaMultimodalConfig(PreTrainedConfig):
     r"""
     use_cls_token (`bool`, *optional*, defaults to `True`):
@@ -142,8 +148,10 @@ class FlavaMultimodalConfig(PreTrainedConfig):
     use_cls_token: bool = True
 
 
+# FlavaImageCodebookConfig：离散视觉 codebook 量化超参
 @auto_docstring(checkpoint="facebook/flava-full")
 @strict
+# FlavaImageCodebookConfig：离散视觉 codebook VQ 子配置
 class FlavaImageCodebookConfig(PreTrainedConfig):
     r"""
     num_groups (`int`, *optional*, defaults to 4):
@@ -178,8 +186,10 @@ class FlavaImageCodebookConfig(PreTrainedConfig):
     initializer_range: float = 0.02
 
 
+# FlavaConfig：FLAVA 全量多模态预训练联合配置
 @auto_docstring(checkpoint="facebook/flava-full")
 @strict
+# FlavaConfig：FLAVA 多模态预训练联合配置（图像/文本/融合/损失权重）
 class FlavaConfig(PreTrainedConfig):
     r"""
     image_config (`dict`, *optional*):
