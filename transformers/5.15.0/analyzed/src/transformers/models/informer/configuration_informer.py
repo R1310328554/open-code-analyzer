@@ -13,14 +13,18 @@
 # limitations under the License.
 """Informer model configuration"""
 
+# Informer 配置：ProbSparse 注意力时序预测（encoder-decoder）超参
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# InformerConfig：huggingface/informer-tourism-monthly 时序预测默认超参
 @auto_docstring(checkpoint="huggingface/informer-tourism-monthly")
 @strict
+# InformerConfig：Informer 概率稀疏注意力时序预测模型超参
 class InformerConfig(PreTrainedConfig):
     r"""
     prediction_length (`int`):

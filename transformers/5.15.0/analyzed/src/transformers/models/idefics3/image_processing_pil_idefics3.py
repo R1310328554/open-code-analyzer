@@ -37,6 +37,9 @@ if TYPE_CHECKING:
     pass
 
 
+# Idefics3 图像预处理：PIL 后端（分块拼接、resize、归一化）
+
+# _make_pixel_mask：生成 NumPy 像素有效掩码（1=有效，0=padding）
 def _make_pixel_mask(image: np.ndarray, output_size: tuple[int, int]) -> np.ndarray:
     """Make pixel mask: 1=valid, 0=padding. Images are CHW."""
     h, w = image.shape[-2:]
@@ -50,6 +53,7 @@ MAX_IMAGE_SIZE = 4096  # 4k resolution as absolute maximum
 
 
 # Adapted from transformers.models.idefics3.image_processing_idefics3.Idefics3ImageProcessorKwargs
+# Idefics3ImageProcessorKwargs：Idefics3 图像处理器可选参数字典类型
 class Idefics3ImageProcessorKwargs(ImagesKwargs, total=False):
     """
     do_image_splitting (`bool`, *optional*, defaults to `True`):
@@ -67,6 +71,7 @@ class Idefics3ImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 # Adapted from transformers.models.idefics3.image_processing_idefics3._resize_output_size_rescale_to_max_len
+# _resize_output_size_rescale_to_max_len：按最长边缩放并限制最大分辨率
 def _resize_output_size_rescale_to_max_len(
     height: int, width: int, min_len: int | None = 1, max_len: int | None = None
 ) -> tuple[int, int]:
@@ -105,6 +110,7 @@ def _resize_output_size_rescale_to_max_len(
 
 
 # Adapted from transformers.models.idefics3.image_processing_idefics3._resize_output_size_scale_below_upper_bound
+# _resize_output_size_scale_below_upper_bound：缩放图像使其不超过上界尺寸
 def _resize_output_size_scale_below_upper_bound(
     height: int, width: int, max_len: dict[str, int] | None = None
 ) -> tuple[int, int]:
@@ -136,6 +142,7 @@ def _resize_output_size_scale_below_upper_bound(
     return height, width
 
 
+# get_max_height_width：从嵌套图像列表取最大高宽
 def get_max_height_width(images_list: list[list[np.ndarray]]) -> tuple[int, int]:
     """
     Get the maximum height and width across all images in a batch.
@@ -150,6 +157,7 @@ def get_max_height_width(images_list: list[list[np.ndarray]]) -> tuple[int, int]
     return (max_height, max_width)
 
 
+# get_num_channels：从嵌套图像列表取通道数
 def get_num_channels(images_list: list[list[np.ndarray]]) -> int:
     """
     Get the number of channels across all images in a batch. Handle empty sublists like in [[], [image]].
@@ -161,6 +169,7 @@ def get_num_channels(images_list: list[list[np.ndarray]]) -> int:
     raise ValueError("No images found in the batch.")
 
 
+# get_resize_output_image_size：计算 resize 后的输出图像尺寸
 def get_resize_output_image_size(
     image: np.ndarray,
     resolution_max_side: int,
@@ -186,6 +195,7 @@ def get_resize_output_image_size(
 
 
 @auto_docstring
+# Idefics3ImageProcessorPil：Idefics3 PIL 后端图像预处理（分块+归一化）
 class Idefics3ImageProcessorPil(PilBackend):
     resample = PILImageResampling.LANCZOS
     image_mean = IMAGENET_STANDARD_MEAN

@@ -13,14 +13,18 @@
 # limitations under the License.
 """I-JEPA model configuration"""
 
+# I-JEPA 配置：Meta 自监督 ViT（无 CLS token，均值池化）超参
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# IJepaConfig：facebook/ijepa_vith14_1k 自监督 ViT 默认超参
 @auto_docstring(checkpoint="facebook/ijepa_vith14_1k")
 @strict
+# IJepaConfig：Meta I-JEPA 自监督 ViT 超参（无 CLS token）
 class IJepaConfig(PreTrainedConfig):
     r"""
     pooler_output_size (`int`, *optional*):

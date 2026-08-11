@@ -36,9 +36,12 @@ from ...utils import TensorType, auto_docstring, logging
 
 logger = logging.get_logger(__name__)
 
+
+# Idefics3 图像预处理：Torchvision 后端（分块拼接、resize、归一化）
 MAX_IMAGE_SIZE = 4096  # 4k resolution as absolute maximum
 
 
+# Idefics3ImageProcessorKwargs：Idefics3 图像处理器可选参数字典类型
 class Idefics3ImageProcessorKwargs(ImagesKwargs, total=False):
     """
     do_image_splitting (`bool`, *optional*, defaults to `True`):
@@ -55,6 +58,7 @@ class Idefics3ImageProcessorKwargs(ImagesKwargs, total=False):
     return_row_col_info: bool
 
 
+# _resize_output_size_rescale_to_max_len：按最长边缩放并限制最大分辨率
 def _resize_output_size_rescale_to_max_len(
     height: int, width: int, min_len: int | None = 1, max_len: int | None = None
 ) -> tuple[int, int]:
@@ -92,6 +96,7 @@ def _resize_output_size_rescale_to_max_len(
     return height, width
 
 
+# _resize_output_size_scale_below_upper_bound：缩放图像使其不超过上界尺寸
 def _resize_output_size_scale_below_upper_bound(
     height: int, width: int, max_len: dict[str, int] | None = None
 ) -> tuple[int, int]:
@@ -123,6 +128,7 @@ def _resize_output_size_scale_below_upper_bound(
     return height, width
 
 
+# get_resize_output_image_size：计算 resize 后的输出图像尺寸
 def get_resize_output_image_size(
     image: "torch.Tensor",
     resolution_max_side: int,
@@ -147,6 +153,7 @@ def get_resize_output_image_size(
     return height, width
 
 
+# get_max_height_width：从嵌套图像列表取最大高宽
 def get_max_height_width(images_list: list[list["torch.Tensor|np.ndarray"]]) -> tuple[int, int]:
     """
     Get the maximum height and width across all images in a batch.
@@ -161,6 +168,7 @@ def get_max_height_width(images_list: list[list["torch.Tensor|np.ndarray"]]) -> 
     return (max_height, max_width)
 
 
+# get_num_channels：从嵌套图像列表取通道数
 def get_num_channels(images_list: list[list["torch.Tensor|np.ndarray"]]) -> int:
     """
     Get the number of channels across all images in a batch. Handle empty sublists like in [[], [image]].
@@ -172,6 +180,7 @@ def get_num_channels(images_list: list[list["torch.Tensor|np.ndarray"]]) -> int:
     raise ValueError("No images found in the batch.")
 
 
+# get_device_from_images：从嵌套 Torch 图像列表推断设备
 def get_device_from_images(images_list: list[list["torch.Tensor"]]) -> "torch.device":
     """
     Get the device from the first non-empty element in a nested list of images.
@@ -182,6 +191,7 @@ def get_device_from_images(images_list: list[list["torch.Tensor"]]) -> "torch.de
             return images[0].device
 
 
+# make_pixel_mask：生成像素有效掩码（1=有效，0=padding）
 def make_pixel_mask(image: "torch.Tensor", output_size: tuple[int, int]) -> "torch.Tensor":
     """
     Make a pixel mask for the image, where 1 indicates a valid pixel and 0 indicates padding.
@@ -199,6 +209,7 @@ def make_pixel_mask(image: "torch.Tensor", output_size: tuple[int, int]) -> "tor
 
 
 @auto_docstring
+# Idefics3ImageProcessor：Idefics3 Torchvision 后端图像预处理（分块+归一化）
 class Idefics3ImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.LANCZOS
     image_mean = IMAGENET_STANDARD_MEAN

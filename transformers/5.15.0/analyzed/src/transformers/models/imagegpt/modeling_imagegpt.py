@@ -42,9 +42,12 @@ from ...utils.generic import maybe_autocast
 from .configuration_imagegpt import ImageGPTConfig
 
 
+# ImageGPT 建模：离散像素 GPT 解码器与因果图像建模
+
 logger = logging.get_logger(__name__)
 
 
+# ImageGPTLayerNorm：ImageGPT 自定义 LayerNorm
 class ImageGPTLayerNorm(nn.Module):
     def __init__(self, hidden_size: tuple[int], eps: float = 1e-5):
         super().__init__()
@@ -58,6 +61,7 @@ class ImageGPTLayerNorm(nn.Module):
         return tensor
 
 
+# ImageGPTAttention：ImageGPT 多头自注意力（Conv1D 投影）
 class ImageGPTAttention(nn.Module):
     def __init__(self, config, is_cross_attention: bool | None = False, layer_idx: int | None = None):
         super().__init__()
@@ -265,6 +269,7 @@ class ImageGPTAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# ImageGPTMLP：ImageGPT 前馈 MLP
 class ImageGPTMLP(nn.Module):
     def __init__(self, intermediate_size, config):
         super().__init__()
@@ -282,6 +287,7 @@ class ImageGPTMLP(nn.Module):
         return hidden_states
 
 
+# ImageGPTBlock：ImageGPT Transformer 解码器单层
 class ImageGPTBlock(GradientCheckpointingLayer):
     def __init__(self, config, layer_idx=None):
         super().__init__()
@@ -355,6 +361,7 @@ class ImageGPTBlock(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# ImageGPTPreTrainedModel：ImageGPT 预训练基类与权重初始化
 class ImageGPTPreTrainedModel(PreTrainedModel):
     config: ImageGPTConfig
     base_model_prefix = "transformer"
@@ -390,6 +397,7 @@ class ImageGPTPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# ImageGPTModel：ImageGPT 离散像素 GPT 主干
 class ImageGPTModel(ImageGPTPreTrainedModel):
     def __init__(self, config: ImageGPTConfig):
         super().__init__(config)
@@ -590,6 +598,7 @@ class ImageGPTModel(ImageGPTPreTrainedModel):
     embeddings).
     """
 )
+# ImageGPTForCausalImageModeling：ImageGPT 因果图像建模与生成
 class ImageGPTForCausalImageModeling(ImageGPTPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "transformer.wte.weight"}
 
@@ -719,6 +728,7 @@ class ImageGPTForCausalImageModeling(ImageGPTPreTrainedModel, GenerationMixin):
     [`ImageGPTForImageClassification`] average-pools the hidden states in order to do the classification.
     """
 )
+# ImageGPTForImageClassification：ImageGPT 图像分类头
 class ImageGPTForImageClassification(ImageGPTPreTrainedModel):
     def __init__(self, config: ImageGPTConfig):
         super().__init__(config)

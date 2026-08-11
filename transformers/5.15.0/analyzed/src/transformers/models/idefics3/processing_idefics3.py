@@ -34,6 +34,9 @@ if TYPE_CHECKING:
 logger = logging.get_logger(__name__)
 
 
+# Idefics3 Processor：图像预处理与分词器联合输入组装
+
+# Idefics3ProcessorKwargs：Idefics3 Processor 可选参数字典类型
 class Idefics3ProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -49,6 +52,7 @@ class Idefics3ProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# Idefics3Processor：封装图像预处理与分词器的图文理解输入管线
 class Idefics3Processor(ProcessorMixin):
     valid_processor_kwargs = Idefics3ProcessorKwargs
 

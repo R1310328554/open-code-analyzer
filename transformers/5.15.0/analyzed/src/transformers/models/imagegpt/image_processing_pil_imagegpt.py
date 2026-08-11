@@ -35,6 +35,9 @@ if is_torch_available():
     import torch
 
 
+# ImageGPT 图像预处理：PIL 后端（resize + 颜色量化）
+
+# squared_euclidean_distance：NumPy 版像素到聚类中心的平方欧氏距离
 def squared_euclidean_distance(a, b):
     b = b.T
     a2 = np.sum(np.square(a), axis=1)
@@ -44,6 +47,7 @@ def squared_euclidean_distance(a, b):
     return d
 
 
+# color_quantize：NumPy 版颜色量化（像素映射到最近聚类）
 def color_quantize(x, clusters):
     x = x.reshape(-1, 3)
     d = squared_euclidean_distance(x, clusters)
@@ -51,6 +55,7 @@ def color_quantize(x, clusters):
 
 
 # Adapted from transformers.models.imagegpt.image_processing_imagegpt.ImageGPTImageProcessorKwargs
+# ImageGPTImageProcessorKwargs：ImageGPT 图像处理器可选参数字典类型
 class ImageGPTImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     clusters (`np.ndarray` or `list[list[int]]` or `torch.Tensor`, *optional*, defaults to `self.clusters`):
@@ -66,6 +71,7 @@ class ImageGPTImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# ImageGPTImageProcessorPil：ImageGPT PIL 后端图像预处理（颜色量化）
 class ImageGPTImageProcessorPil(PilBackend):
     model_input_names = ["input_ids"]
     valid_kwargs = ImageGPTImageProcessorKwargs

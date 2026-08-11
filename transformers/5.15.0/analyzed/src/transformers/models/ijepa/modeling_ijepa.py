@@ -19,9 +19,13 @@ from ...processing_utils import Unpack
 from ...utils import TransformersKwargs, auto_docstring, torch_int
 from ...utils.generic import can_return_tuple, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
+# modeling_ijepa 由 modular_ijepa.py 自动生成
 from .configuration_ijepa import IJepaConfig
 
 
+# I-JEPA 建模：自监督 ViT 编码器（由 modular_ijepa.py 自动生成）
+
+# IJepaPatchEmbeddings：I-JEPA 图像 patch 卷积嵌入
 class IJepaPatchEmbeddings(nn.Module):
     """
     This class turns `pixel_values` of shape `(batch_size, num_channels, height, width)` into the initial
@@ -52,6 +56,7 @@ class IJepaPatchEmbeddings(nn.Module):
         return self.projection(pixel_values).flatten(2).transpose(1, 2)
 
 
+# IJepaEmbeddings：I-JEPA 嵌入层（patch + 位置，无 CLS）
 class IJepaEmbeddings(nn.Module):
     """
     Construct the CLS token, position and patch embeddings. Optionally, also the mask token.
@@ -138,6 +143,7 @@ class IJepaEmbeddings(nn.Module):
         return embeddings
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -166,6 +172,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# IJepaAttention：I-JEPA 多头自注意力
 class IJepaAttention(nn.Module):
     def __init__(self, config: IJepaConfig):
         super().__init__()
@@ -215,6 +222,7 @@ class IJepaAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# IJepaMLP：I-JEPA 前馈 MLP
 class IJepaMLP(nn.Module):
     def __init__(self, config: IJepaConfig):
         super().__init__()
@@ -231,6 +239,7 @@ class IJepaMLP(nn.Module):
         return hidden_states
 
 
+# IJepaLayer：I-JEPA Transformer 编码器单层
 class IJepaLayer(GradientCheckpointingLayer):
     def __init__(self, config: IJepaConfig):
         super().__init__()
@@ -264,6 +273,7 @@ class IJepaLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# IJepaPreTrainedModel：I-JEPA 预训练基类与权重初始化
 class IJepaPreTrainedModel(PreTrainedModel):
     config: IJepaConfig
     base_model_prefix = "ijepa"
@@ -296,6 +306,7 @@ class IJepaPreTrainedModel(PreTrainedModel):
                 init.zeros_(module.mask_token)
 
 
+# IJepaPooler：I-JEPA 序列池化头（均值池化 + tanh）
 class IJepaPooler(nn.Module):
     def __init__(self, config: IJepaConfig):
         super().__init__()
@@ -312,6 +323,7 @@ class IJepaPooler(nn.Module):
 
 
 @auto_docstring
+# IJepaModel：I-JEPA 自监督 ViT 编码主干
 class IJepaModel(IJepaPreTrainedModel):
     def __init__(self, config: IJepaConfig, add_pooling_layer: bool = False, use_mask_token: bool = False):
         r"""
@@ -381,6 +393,7 @@ class IJepaModel(IJepaPreTrainedModel):
     </Tip>
     """
 )
+# IJepaForImageClassification：I-JEPA 图像分类头
 class IJepaForImageClassification(IJepaPreTrainedModel):
     def __init__(self, config: IJepaConfig):
         super().__init__(config)

@@ -13,14 +13,18 @@
 # limitations under the License.
 """OpenAI ImageGPT configuration"""
 
+# ImageGPT 配置：OpenAI 离散像素 GPT（颜色量化 token）超参
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# ImageGPTConfig：openai/imagegpt-small 离散像素 GPT 默认超参
 @auto_docstring(checkpoint="openai/imagegpt-small")
 @strict
+# ImageGPTConfig：OpenAI ImageGPT 离散像素 GPT 超参
 class ImageGPTConfig(PreTrainedConfig):
     r"""
     scale_attn_by_inverse_layer_idx (`bool`, *optional*, defaults to `False`):

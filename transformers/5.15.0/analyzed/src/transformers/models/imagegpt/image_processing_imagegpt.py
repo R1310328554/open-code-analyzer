@@ -30,6 +30,9 @@ from ...utils import (
 )
 
 
+# ImageGPT 图像预处理：Torchvision 后端（resize + 颜色量化）
+
+# ImageGPTImageProcessorKwargs：ImageGPT 图像处理器可选参数字典类型
 class ImageGPTImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     clusters (`np.ndarray` or `list[list[int]]` or `torch.Tensor`, *optional*, defaults to `self.clusters`):
@@ -44,6 +47,7 @@ class ImageGPTImageProcessorKwargs(ImagesKwargs, total=False):
     do_color_quantize: bool
 
 
+# squared_euclidean_distance_torch：Torch 版像素到聚类中心的平方欧氏距离
 def squared_euclidean_distance_torch(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     """
     Compute squared Euclidean distances between all pixels and clusters.
@@ -63,6 +67,7 @@ def squared_euclidean_distance_torch(a: torch.Tensor, b: torch.Tensor) -> torch.
     return d  # (N, M) tensor of squared distances
 
 
+# color_quantize_torch：Torch 版颜色量化（像素映射到最近聚类）
 def color_quantize_torch(x: torch.Tensor, clusters: torch.Tensor) -> torch.Tensor:
     """
     Assign each pixel to its nearest color cluster.
@@ -79,6 +84,7 @@ def color_quantize_torch(x: torch.Tensor, clusters: torch.Tensor) -> torch.Tenso
 
 
 @auto_docstring
+# ImageGPTImageProcessor：ImageGPT Torchvision 后端图像预处理（颜色量化）
 class ImageGPTImageProcessor(TorchvisionBackend):
     model_input_names = ["input_ids"]
     valid_kwargs = ImageGPTImageProcessorKwargs

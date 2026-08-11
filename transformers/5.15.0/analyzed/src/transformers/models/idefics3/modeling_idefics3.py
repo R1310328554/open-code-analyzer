@@ -35,6 +35,8 @@ from ..auto import AutoModel
 from .configuration_idefics3 import Idefics3Config, Idefics3VisionConfig
 
 
+# Idefics3 建模：SigLIP 风格视觉塔 + LLM 多模态条件生成
+
 logger = logging.get_logger(__name__)
 
 
@@ -44,6 +46,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# Idefics3BaseModelOutputWithPast：Idefics3 多模态输出 dataclass（含 past_key_values）
 class Idefics3BaseModelOutputWithPast(ModelOutput):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`):
@@ -69,6 +72,7 @@ class Idefics3BaseModelOutputWithPast(ModelOutput):
     """
 )
 @dataclass
+# Idefics3CausalLMOutputWithPast：Idefics3 条件生成输出 dataclass（含 logits 与 past）
 class Idefics3CausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -95,6 +99,7 @@ class Idefics3CausalLMOutputWithPast(ModelOutput):
 
 
 # Copied from transformers.models.idefics2.modeling_idefics2.Idefics2VisionEmbeddings with Idefics2->Idefics3
+# Idefics3VisionEmbeddings：Idefics3 视觉 patch 卷积嵌入
 class Idefics3VisionEmbeddings(nn.Module):
     """
     This is a modified version of `siglip.modelign_siglip.SiglipVisionEmbeddings` to enable images of variable
@@ -172,6 +177,7 @@ class Idefics3VisionEmbeddings(nn.Module):
 
 
 # Copied from transformers.models.siglip.modeling_siglip.eager_attention_forward
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -196,6 +202,7 @@ def eager_attention_forward(
 
 
 # Copied from transformers.models.siglip.modeling_siglip.SiglipAttention with Siglip->Idefics3Vision
+# Idefics3VisionAttention：Idefics3 视觉塔多头自注意力
 class Idefics3VisionAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -257,6 +264,7 @@ class Idefics3VisionAttention(nn.Module):
 
 
 # Copied from transformers.models.siglip.modeling_siglip.SiglipMLP with Siglip->Idefics3Vision
+# Idefics3VisionMLP：Idefics3 视觉塔前馈 MLP
 class Idefics3VisionMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -272,6 +280,7 @@ class Idefics3VisionMLP(nn.Module):
         return hidden_states
 
 
+# Idefics3SimpleMLP：Idefics3 连接器简化 MLP
 class Idefics3SimpleMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -284,6 +293,7 @@ class Idefics3SimpleMLP(nn.Module):
 
 
 # Copied from transformers.models.idefics2.modeling_idefics2.Idefics2EncoderLayer with Idefics2->Idefics3
+# Idefics3EncoderLayer：Idefics3 视觉 Transformer 编码器单层
 class Idefics3EncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Idefics3VisionConfig):
         super().__init__()
@@ -320,6 +330,7 @@ class Idefics3EncoderLayer(GradientCheckpointingLayer):
 
 
 # Copied from transformers.models.siglip.modeling_siglip.SiglipEncoder with Siglip->Idefics3
+# Idefics3Encoder：Idefics3 视觉 Transformer 编码器堆叠
 class Idefics3Encoder(nn.Module):
     """
     Transformer encoder consisting of `config.num_hidden_layers` self attention layers. Each layer is a
@@ -355,6 +366,7 @@ class Idefics3Encoder(nn.Module):
 
 
 # Copied from transformers.models.llama.modeling_llama.repeat_kv
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -368,6 +380,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
 
 
 # Copied from transformers.models.llama.modeling_llama.LlamaRMSNorm with Llama->Idefics3
+# Idefics3RMSNorm：Idefics3 RMS LayerNorm
 class Idefics3RMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -388,6 +401,7 @@ class Idefics3RMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# Idefics3Connector：Idefics3 视觉特征到 LLM 维度的连接器
 class Idefics3Connector(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -412,6 +426,7 @@ class Idefics3Connector(nn.Module):
 
 
 @auto_docstring
+# Idefics3PreTrainedModel：Idefics3 预训练基类与权重初始化
 class Idefics3PreTrainedModel(PreTrainedModel):
     config: Idefics3Config
     base_model_prefix = "model"
@@ -430,6 +445,7 @@ class Idefics3PreTrainedModel(PreTrainedModel):
     The Idefics3 Vision Transformer Model outputting raw image embedding.
     """
 )
+# Idefics3VisionTransformer：Idefics3 视觉 Transformer 编码塔
 class Idefics3VisionTransformer(Idefics3PreTrainedModel):
     config: Idefics3VisionConfig
     input_modalities = ("image",)
@@ -505,6 +521,7 @@ class Idefics3VisionTransformer(Idefics3PreTrainedModel):
     Idefics3 model consisting of a SIGLIP vision encoder and Llama3 language decoder
     """
 )
+# Idefics3Model：Idefics3 视觉+文本多模态联合模型
 class Idefics3Model(Idefics3PreTrainedModel):
     def __init__(self, config: Idefics3Config):
         super().__init__(config)
@@ -705,6 +722,7 @@ class Idefics3Model(Idefics3PreTrainedModel):
     The Idefics3 Model with a language modeling head. It is made up a SigLIP vision encoder, with a language modeling head on top.
     """
 )
+# Idefics3ForConditionalGeneration：Idefics3 条件生成（图文理解）
 class Idefics3ForConditionalGeneration(Idefics3PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.text_model.embed_tokens.weight"}
 

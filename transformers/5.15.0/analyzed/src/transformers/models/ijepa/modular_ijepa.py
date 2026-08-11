@@ -8,9 +8,13 @@ from ...modeling_outputs import BaseModelOutputWithPooling, ImageClassifierOutpu
 from ...modeling_utils import PreTrainedModel
 from ...processing_utils import Unpack
 from ...utils import TransformersKwargs, auto_docstring, torch_int
+# modular 复用 ViT 嵌入/层并定制 I-JEPA 无 CLS 设计
 from ..vit.modeling_vit import ViTEmbeddings, ViTForImageClassification, ViTModel, ViTPreTrainedModel
 
 
+# I-JEPA modular 源：复用 ViT 组件并移除 CLS token
+
+# IJepaEmbeddings：I-JEPA 嵌入层（patch + 位置，无 CLS）
 class IJepaEmbeddings(ViTEmbeddings):
     def __init__(self, config: IJepaConfig, use_mask_token: bool = False) -> None:
         super().__init__(config, use_mask_token)
@@ -91,6 +95,7 @@ class IJepaEmbeddings(ViTEmbeddings):
 
 
 @auto_docstring
+# IJepaPreTrainedModel：I-JEPA 预训练基类与权重初始化
 class IJepaPreTrainedModel(ViTPreTrainedModel):
     @torch.no_grad()
     def _init_weights(self, module):
@@ -106,6 +111,7 @@ class IJepaPreTrainedModel(ViTPreTrainedModel):
                 init.zeros_(module.mask_token)
 
 
+# IJepaModel：I-JEPA 自监督 ViT 编码主干
 class IJepaModel(IJepaPreTrainedModel, ViTModel):
     def __init__(self, config: IJepaConfig, add_pooling_layer: bool = False, use_mask_token: bool = False):
         r"""
@@ -133,6 +139,7 @@ class IJepaModel(IJepaPreTrainedModel, ViTModel):
     </Tip>
     """
 )
+# IJepaForImageClassification：I-JEPA 图像分类头
 class IJepaForImageClassification(IJepaPreTrainedModel, ViTForImageClassification):
     def __init__(self, config: IJepaConfig):
         super().__init__(config)
