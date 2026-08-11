@@ -17,6 +17,8 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring, logging
+# SigLIP 配置：文本/视觉子配置与对比学习联合超参数
+
 
 
 logger = logging.get_logger(__name__)
@@ -24,6 +26,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="google/siglip-base-patch16-224")
 @strict
+# SiglipTextConfig：SigLIP 文本配置：Transformer 文本编码器超参数
 class SiglipTextConfig(PreTrainedConfig):
     r"""
     Example:
@@ -60,6 +63,7 @@ class SiglipTextConfig(PreTrainedConfig):
     eos_token_id: int | list[int] | None = 49407
     projection_size: int | None = None
 
+    # __post_init__：后初始化：解析子配置并设置派生字段
     def __post_init__(self, **kwargs):
         self.projection_size = self.projection_size if self.projection_size is not None else self.hidden_size
         super().__post_init__(**kwargs)
@@ -67,6 +71,7 @@ class SiglipTextConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="google/siglip-base-patch16-224")
 @strict
+# SiglipVisionConfig：SigLIP 视觉配置：ViT patch 编码器超参数
 class SiglipVisionConfig(PreTrainedConfig):
     r"""
     Example:
@@ -101,6 +106,7 @@ class SiglipVisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="google/siglip-base-patch16-224")
 @strict
+# SiglipConfig：SigLIP 联合配置：文本与视觉子配置及初始化因子
 class SiglipConfig(PreTrainedConfig):
     r"""
     Example:
@@ -134,6 +140,7 @@ class SiglipConfig(PreTrainedConfig):
     vision_config: dict | PreTrainedConfig | None = None
     initializer_factor: float = 1.0
 
+    # __post_init__：后初始化：解析子配置并设置派生字段
     def __post_init__(self, **kwargs):
         if self.text_config is None:
             self.text_config = SiglipTextConfig()

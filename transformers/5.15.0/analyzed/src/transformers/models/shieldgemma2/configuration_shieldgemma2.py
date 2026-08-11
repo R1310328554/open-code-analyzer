@@ -19,10 +19,13 @@ from huggingface_hub.dataclasses import strict
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
+# ShieldGemma2 配置：Gemma3 文本 + SigLIP 视觉多模态联合超参数
+
 
 
 @auto_docstring(checkpoint="google/shieldgemma-2-4b-it")
 @strict
+# ShieldGemma2Config：ShieldGemma2 联合配置：Gemma3 文本与 SigLIP 视觉子配置
 class ShieldGemma2Config(PreTrainedConfig):
     r"""
     tie_word_embeddings (`bool`, *optional*):
@@ -71,6 +74,7 @@ class ShieldGemma2Config(PreTrainedConfig):
     image_token_index: int = 262_144
     initializer_range: float = 0.02
 
+    # __post_init__：后初始化：解析子配置并设置派生字段
     def __post_init__(self, **kwargs):
         if isinstance(self.vision_config, dict):
             self.vision_config["model_type"] = self.vision_config.get("model_type", "siglip_vision_model")

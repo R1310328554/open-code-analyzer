@@ -26,6 +26,8 @@ from ...modeling_layers import GradientCheckpointingLayer
 from ...modeling_utils import PreTrainedModel
 from ...utils import ModelOutput, auto_docstring, logging, torch_int
 from .configuration_seggpt import SegGptConfig
+# SegGPT 建模：上下文分割 ViT 编码器、解码器与 one-shot 图像分割头
+
 
 
 logger = logging.get_logger(__name__)
@@ -37,6 +39,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# SegGptEncoderOutput：SegGPT 编码器输出：patch 级隐藏状态与中间层特征
 class SegGptEncoderOutput(ModelOutput):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, patch_height, patch_width, hidden_size)`):
@@ -65,6 +68,7 @@ class SegGptEncoderOutput(ModelOutput):
     """
 )
 @dataclass
+# SegGptImageSegmentationOutput：SegGPT 分割输出：预测掩码、损失与注意力
 class SegGptImageSegmentationOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor`, *optional*, returned when `labels` is provided):
@@ -86,6 +90,7 @@ class SegGptImageSegmentationOutput(ModelOutput):
 
 
 # Copied from transformers.models.sam.modeling_sam.SamPatchEmbeddings with Sam->SegGpt
+# SegGptPatchEmbeddings：SegGPT patch 嵌入：Conv2d 将图像块投影为 token
 class SegGptPatchEmbeddings(nn.Module):
     """
     This class turns `pixel_values` of shape `(batch_size, num_channels, height, width)` into the initial
@@ -93,6 +98,7 @@ class SegGptPatchEmbeddings(nn.Module):
     Transformer.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         image_size, patch_size = config.image_size, config.patch_size
@@ -107,6 +113,7 @@ class SegGptPatchEmbeddings(nn.Module):
 
         self.projection = nn.Conv2d(num_channels, hidden_size, kernel_size=patch_size, stride=patch_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values):
         batch_size, num_channels, height, width = pixel_values.shape
         if num_channels != self.num_channels:
@@ -121,11 +128,13 @@ class SegGptPatchEmbeddings(nn.Module):
         return embeddings
 
 
+# SegGptEmbeddings：SegGPT 嵌入：输入/prompt patch + 位置/类型/segment token
 class SegGptEmbeddings(nn.Module):
     """
     Construct the embeddings from patch, position embeddings for input and prompt.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SegGptConfig) -> None:
         super().__init__()
 
@@ -142,6 +151,7 @@ class SegGptEmbeddings(nn.Module):
         self.position_embeddings = nn.Parameter(torch.randn(1, num_positions, config.hidden_size))
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
+    # interpolate_pos_encoding：插值位置编码：适配与预训练不同的 patch 网格尺寸
     def interpolate_pos_encoding(self, height: int, width: int) -> torch.Tensor:
         patch_pos_embed = self.position_embeddings[:, 1:]
         num_patches = patch_pos_embed.shape[1]
@@ -160,6 +170,7 @@ class SegGptEmbeddings(nn.Module):
         else:
             return patch_pos_embed.reshape(1, height, width, -1)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.Tensor,
@@ -206,9 +217,11 @@ class SegGptEmbeddings(nn.Module):
         return embeddings
 
 
+# SegGptAttention：SegGPT 注意力：带分解相对位置编码的多头自注意力
 class SegGptAttention(nn.Module):
     """Multi-head Attention block with relative position embeddings."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         image_size, patch_size = config.image_size, config.patch_size
@@ -233,6 +246,7 @@ class SegGptAttention(nn.Module):
             self.rel_pos_h = nn.Parameter(torch.zeros(2 * input_size[0] - 1, head_dim))
             self.rel_pos_w = nn.Parameter(torch.zeros(2 * input_size[1] - 1, head_dim))
 
+    # get_rel_pos：获取相对位置嵌入：按 query/key 尺寸插值相对编码
     def get_rel_pos(self, q_size: int, k_size: int, rel_pos: torch.Tensor) -> torch.Tensor:
         """
         Get relative positional embeddings according to the relative positions of
@@ -265,6 +279,7 @@ class SegGptAttention(nn.Module):
 
         return rel_pos_resized[relative_coords.long()]
 
+    # add_decomposed_rel_pos：添加分解相对位置：高度/宽度轴分别注入相对偏置
     def add_decomposed_rel_pos(
         self,
         attn: torch.Tensor,
@@ -310,6 +325,7 @@ class SegGptAttention(nn.Module):
         attn = attn.reshape(batch_size, query_height * query_width, key_height * key_width)
         return attn
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, output_attentions=False) -> torch.Tensor:
         batch_size, height, width, _ = hidden_states.shape
         # qkv with shape (3, batch_size, nHead, height * width, channel)
@@ -349,13 +365,16 @@ class SegGptAttention(nn.Module):
 
 
 # Copied from transformers.models.sam.modeling_sam.SamMLPBlock with SamMLPBlock->SegGptMlp
+# SegGptMlp：SegGPT MLP：两层线性 + 激活的前馈网络
 class SegGptMlp(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.lin1 = nn.Linear(config.hidden_size, config.mlp_dim)
         self.lin2 = nn.Linear(config.mlp_dim, config.hidden_size)
         self.act = ACT2FN[config.hidden_act]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.lin1(hidden_states)
         hidden_states = self.act(hidden_states)
@@ -364,6 +383,7 @@ class SegGptMlp(nn.Module):
 
 
 # Copied from transformers.models.swin.modular_swin.SwinDropPath with SwinDropPath->SegGptDropPath
+# SegGptDropPath：SegGPT DropPath：Transformer 残差块的随机深度正则
 class SegGptDropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -371,10 +391,12 @@ class SegGptDropPath(nn.Module):
     <https://arxiv.org/abs/1603.09382>`_.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, drop_prob: float = 0.0) -> None:
         super().__init__()
         self.drop_prob = drop_prob
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         if self.drop_prob == 0.0 or not self.training:
             return hidden_states
@@ -388,7 +410,9 @@ class SegGptDropPath(nn.Module):
         return f"p={self.drop_prob}"
 
 
+# SegGptLayer：SegGPT Transformer 层：Pre-LN 自注意力 + MLP 与特征集成
 class SegGptLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SegGptConfig, drop_path_rate: float) -> None:
         super().__init__()
         self.attention = SegGptAttention(config)
@@ -397,6 +421,7 @@ class SegGptLayer(GradientCheckpointingLayer):
         self.layernorm_before = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.layernorm_after = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -435,7 +460,9 @@ class SegGptLayer(GradientCheckpointingLayer):
         return outputs
 
 
+# SegGptEncoder：SegGPT 编码器：堆叠层并在 merge_index 融合 prompt/输入
 class SegGptEncoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SegGptConfig) -> None:
         super().__init__()
         self.config = config
@@ -444,6 +471,7 @@ class SegGptEncoder(nn.Module):
         self.layernorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.gradient_checkpointing = False
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -496,18 +524,21 @@ class SegGptEncoder(nn.Module):
 
 
 # Copied from transformers.models.convnext.modeling_convnext.ConvNextLayerNorm with ConvNext->SegGpt
+# SegGptLayerNorm：SegGPT LayerNorm：支持 channels_first/last 两种格式
 class SegGptLayerNorm(nn.LayerNorm):
     r"""LayerNorm that supports two data formats: channels_last (default) or channels_first.
     The ordering of the dimensions in the inputs. channels_last corresponds to inputs with shape (batch_size, height,
     width, channels) while channels_first corresponds to inputs with shape (batch_size, channels, height, width).
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, normalized_shape, *, eps=1e-6, data_format="channels_last", **kwargs):
         super().__init__(normalized_shape, eps=eps, **kwargs)
         if data_format not in ["channels_last", "channels_first"]:
             raise NotImplementedError(f"Unsupported data format: {data_format}")
         self.data_format = data_format
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, features: torch.Tensor) -> torch.Tensor:
         """
         Args:
@@ -522,7 +553,9 @@ class SegGptLayerNorm(nn.LayerNorm):
         return features
 
 
+# SegGptDecoderHead：SegGPT 解码头：Conv + LayerNorm + 3 通道像素预测
 class SegGptDecoderHead(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.conv = nn.Conv2d(
@@ -537,6 +570,7 @@ class SegGptDecoderHead(nn.Module):
         self.act_fct = ACT2FN[config.hidden_act]
         self.head = nn.Conv2d(config.decoder_hidden_size, 3, kernel_size=1, bias=True)  # decoder to patch
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.FloatTensor):
         hidden_states = self.conv(hidden_states)
         hidden_states = self.layernorm(hidden_states)
@@ -546,7 +580,9 @@ class SegGptDecoderHead(nn.Module):
         return hidden_states
 
 
+# SegGptDecoder：SegGPT 解码器：中间层特征拼接并上采样至像素分辨率
 class SegGptDecoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.decoder_embed = nn.Linear(
@@ -559,6 +595,7 @@ class SegGptDecoder(nn.Module):
         self.decoder_hidden_size = config.decoder_hidden_size
         self.config = config
 
+    # _reshape_hidden_states：重塑隐藏状态：patch 特征展开为 2D 特征图
     def _reshape_hidden_states(self, hidden_states: torch.FloatTensor) -> torch.FloatTensor:
         batch_size, patch_height, patch_width, _ = hidden_states.shape
         hidden_states = hidden_states.reshape(
@@ -571,6 +608,7 @@ class SegGptDecoder(nn.Module):
 
         return hidden_states
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.FloatTensor):
         hidden_states = self.decoder_embed(hidden_states)
         hidden_states = self._reshape_hidden_states(hidden_states)
@@ -580,6 +618,7 @@ class SegGptDecoder(nn.Module):
 
 
 @auto_docstring
+# SegGptPreTrainedModel：SegGPT 预训练基类：权重初始化与输出录制
 class SegGptPreTrainedModel(PreTrainedModel):
     config: SegGptConfig
     base_model_prefix = "model"
@@ -589,6 +628,7 @@ class SegGptPreTrainedModel(PreTrainedModel):
     _no_split_modules = ["SegGptEmbeddings", "SegGptLayer"]
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module: nn.Module) -> None:
         """Initialize the weights"""
         super()._init_weights(module)
@@ -610,7 +650,9 @@ class SegGptPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# SegGptModel：SegGPT 基础模型：上下文分割 ViT 编码前向
 class SegGptModel(SegGptPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SegGptConfig):
         super().__init__(config)
         self.config = config
@@ -625,6 +667,7 @@ class SegGptModel(SegGptPreTrainedModel):
         return self.embeddings.patch_embeddings
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.Tensor,
@@ -742,6 +785,7 @@ class SegGptModel(SegGptPreTrainedModel):
         return encoder_outputs
 
 
+# patchify：patch 化：将图像张量拆分为 patch 序列用于损失计算
 def patchify(tensor: torch.Tensor, patch_size: int) -> torch.Tensor:
     batch_size, num_channels, height, width = tensor.shape
     patch_height = height // patch_size
@@ -754,6 +798,7 @@ def patchify(tensor: torch.Tensor, patch_size: int) -> torch.Tensor:
     return tensor
 
 
+# unpatchify：反 patch 化：将 patch 序列还原为图像形状
 def unpatchify(tensor: torch.Tensor, patch_height: int, patch_width: int) -> torch.Tensor:
     batch_size = tensor.shape[0]
     patch_size = int((tensor.shape[-1] / 3) ** 0.5)
@@ -769,12 +814,15 @@ def unpatchify(tensor: torch.Tensor, patch_height: int, patch_width: int) -> tor
     return tensor
 
 
+# SegGptLoss：SegGPT 损失：被掩码 patch 上的 Smooth L1 重建损失
 class SegGptLoss(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.beta = config.beta
         self.patch_size = config.patch_size
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         prompt_masks: torch.FloatTensor,
@@ -816,7 +864,9 @@ class SegGptLoss(nn.Module):
     SegGpt model with a decoder on top for one-shot image segmentation.
     """
 )
+# SegGptForImageSegmentation：SegGPT 图像分割：编码器 + 解码器 one-shot 分割
 class SegGptForImageSegmentation(SegGptPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SegGptConfig):
         super().__init__(config)
         self.config = config
@@ -828,6 +878,7 @@ class SegGptForImageSegmentation(SegGptPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.Tensor,

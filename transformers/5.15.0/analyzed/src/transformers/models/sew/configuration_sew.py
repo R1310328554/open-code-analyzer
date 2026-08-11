@@ -20,10 +20,13 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# SEW 配置：卷积特征编码器、Transformer 编码与 SpecAugment 超参数
+
 
 
 @auto_docstring(checkpoint="BAAI/seggpt-vit-large")
 @strict
+# SEWConfig：SEW 联合配置：卷积特征提取、squeeze 编码与 CTC 超参数
 class SEWConfig(PreTrainedConfig):
     r"""
     squeeze_factor (`int`, *optional*, defaults to 2):
@@ -150,10 +153,12 @@ class SEWConfig(PreTrainedConfig):
     bos_token_id: int | None = 1
     eos_token_id: int | list[int] | None = 2
 
+    # __post_init__：后初始化：解析子配置并设置派生字段
     def __post_init__(self, **kwargs):
         self.num_feat_extract_layers = len(self.conv_dim)
         super().__post_init__(**kwargs)
 
+    # validate_architecture：校验架构：卷积 dim/stride/kernel 长度一致性检查
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if (

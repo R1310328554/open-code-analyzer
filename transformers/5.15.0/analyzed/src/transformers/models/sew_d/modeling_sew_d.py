@@ -29,6 +29,8 @@ from ...modeling_outputs import BaseModelOutput, CausalLMOutput, SequenceClassif
 from ...modeling_utils import PreTrainedModel, get_torch_context_manager_or_global_device
 from ...utils import auto_docstring, logging
 from .configuration_sew_d import SEWDConfig
+# SEW-D 建模：DeBERTa 风格解耦自注意力与 squeeze 时序编码器
+
 
 
 logger = logging.get_logger(__name__)
@@ -37,6 +39,7 @@ _HIDDEN_STATES_START_POSITION = 1
 
 
 # Copied from transformers.models.wav2vec2.modeling_wav2vec2._compute_mask_indices
+# _compute_mask_indices：计算 SpecAugment 掩码索引：沿时间/特征轴随机遮挡
 def _compute_mask_indices(
     shape: tuple[int, int],
     mask_prob: float,
@@ -156,6 +159,7 @@ def _compute_mask_indices(
     return spec_aug_mask
 
 
+# make_log_bucket_position：对数分桶相对位置：将相对距离映射到 bucket 索引
 def make_log_bucket_position(relative_pos, bucket_size, max_position):
     sign = torch.sign(relative_pos)
     mid = bucket_size // 2
@@ -171,6 +175,7 @@ def make_log_bucket_position(relative_pos, bucket_size, max_position):
     return bucket_pos
 
 
+# build_relative_position：构建相对位置矩阵：query/key 间的相对距离表
 def build_relative_position(query_size, key_size, bucket_size=-1, max_position=-1, device=None):
     """
     Build relative position according to the query and key
@@ -202,20 +207,24 @@ def build_relative_position(query_size, key_size, bucket_size=-1, max_position=-
 
 
 @torch.jit.script
+# c2p_dynamic_expand：content-to-position 动态扩展：广播相对位置到注意力分数
 def c2p_dynamic_expand(c2p_pos, query_layer, relative_pos):
     return c2p_pos.expand([query_layer.size(0), query_layer.size(1), query_layer.size(2), relative_pos.size(-1)])
 
 
 @torch.jit.script
+# p2c_dynamic_expand：position-to-content 动态扩展：广播相对位置到 key 维度
 def p2c_dynamic_expand(c2p_pos, query_layer, key_layer):
     return c2p_pos.expand([query_layer.size(0), query_layer.size(1), key_layer.size(-2), key_layer.size(-2)])
 
 
 @torch.jit.script
+# pos_dynamic_expand：位置索引动态扩展：匹配注意力张量形状
 def pos_dynamic_expand(pos_index, p2c_att, key_layer):
     return pos_index.expand(p2c_att.size()[:2] + (pos_index.size(-2), key_layer.size(-2)))
 
 
+# get_mask：局部上下文掩码：限制注意力在局部窗口内
 def get_mask(input, local_context):
     if not isinstance(local_context, DropoutContext):
         dropout = local_context
@@ -236,7 +245,9 @@ def get_mask(input, local_context):
 
 
 # Copied from transformers.models.wav2vec2.modeling_wav2vec2.Wav2Vec2NoLayerNormConvLayer with Wav2Vec2->SEWD
+# SEWDNoLayerNormConvLayer：SEW-D 无 LayerNorm 1D 卷积层
 class SEWDNoLayerNormConvLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_id=0):
         super().__init__()
         self.in_conv_dim = config.conv_dim[layer_id - 1] if layer_id > 0 else 1
@@ -251,6 +262,7 @@ class SEWDNoLayerNormConvLayer(GradientCheckpointingLayer):
         )
         self.activation = ACT2FN[config.feat_extract_activation]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.conv(hidden_states)
         hidden_states = self.activation(hidden_states)
@@ -258,7 +270,9 @@ class SEWDNoLayerNormConvLayer(GradientCheckpointingLayer):
 
 
 # Copied from transformers.models.wav2vec2.modeling_wav2vec2.Wav2Vec2LayerNormConvLayer with Wav2Vec2->SEWD
+# SEWDLayerNormConvLayer：SEW-D 带 LayerNorm 1D 卷积层
 class SEWDLayerNormConvLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_id=0):
         super().__init__()
         self.in_conv_dim = config.conv_dim[layer_id - 1] if layer_id > 0 else 1
@@ -274,6 +288,7 @@ class SEWDLayerNormConvLayer(GradientCheckpointingLayer):
         self.layer_norm = nn.LayerNorm(self.out_conv_dim, elementwise_affine=True)
         self.activation = ACT2FN[config.feat_extract_activation]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.conv(hidden_states)
 
@@ -286,7 +301,9 @@ class SEWDLayerNormConvLayer(GradientCheckpointingLayer):
 
 
 # Copied from transformers.models.wav2vec2.modeling_wav2vec2.Wav2Vec2GroupNormConvLayer with Wav2Vec2->SEWD
+# SEWDGroupNormConvLayer：SEW-D 组归一化 1D 卷积层
 class SEWDGroupNormConvLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_id=0):
         super().__init__()
         self.in_conv_dim = config.conv_dim[layer_id - 1] if layer_id > 0 else 1
@@ -303,6 +320,7 @@ class SEWDGroupNormConvLayer(GradientCheckpointingLayer):
 
         self.layer_norm = nn.GroupNorm(num_groups=self.out_conv_dim, num_channels=self.out_conv_dim, affine=True)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.conv(hidden_states)
         hidden_states = self.layer_norm(hidden_states)
@@ -311,7 +329,9 @@ class SEWDGroupNormConvLayer(GradientCheckpointingLayer):
 
 
 # Copied from transformers.models.sew.modeling_sew.SEWPositionalConvEmbedding with SEW->SEWD
+# SEWDPositionalConvEmbedding：SEW-D 位置卷积嵌入：相对位置 + stride 下采样
 class SEWDPositionalConvEmbedding(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.conv = nn.Conv1d(
@@ -346,6 +366,7 @@ class SEWDPositionalConvEmbedding(nn.Module):
         self.padding = SEWDSamePadLayer(config.num_conv_pos_embeddings)
         self.activation = ACT2FN[config.feat_extract_activation]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.conv(hidden_states)
         hidden_states = self.padding(hidden_states)
@@ -355,11 +376,14 @@ class SEWDPositionalConvEmbedding(nn.Module):
 
 
 # Copied from transformers.models.wav2vec2.modeling_wav2vec2.Wav2Vec2SamePadLayer with Wav2Vec2->SEW
+# SEWDSamePadLayer：SEW-D SamePad：对齐卷积输出序列长度
 class SEWDSamePadLayer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, num_conv_pos_embeddings):
         super().__init__()
         self.num_pad_remove = 1 if num_conv_pos_embeddings % 2 == 0 else 0
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         if self.num_pad_remove > 0:
             hidden_states = hidden_states[:, :, : -self.num_pad_remove]
@@ -367,13 +391,16 @@ class SEWDSamePadLayer(nn.Module):
 
 
 # Copied from transformers.models.sew.modeling_sew.SEWUpsampling with SEW->SEWD
+# SEWDUpsampling：SEW-D 上采样：squeeze 因子对应的序列长度还原
 class SEWDUpsampling(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.projection = nn.Linear(config.hidden_size, config.hidden_size * config.squeeze_factor)
         self.activation = ACT2FN[config.feat_extract_activation]
         self.squeeze_factor = config.squeeze_factor
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.projection(hidden_states)
         hidden_states = self.activation(hidden_states)
@@ -390,9 +417,11 @@ class SEWDUpsampling(nn.Module):
 
 
 # Copied from transformers.models.wav2vec2.modeling_wav2vec2.Wav2Vec2FeatureEncoder with Wav2Vec2->SEWD
+# SEWDFeatureEncoder：SEW-D 特征编码器：多层 1D 卷积声学特征提取
 class SEWDFeatureEncoder(nn.Module):
     """Construct the features from raw audio waveform"""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
 
@@ -415,6 +444,7 @@ class SEWDFeatureEncoder(nn.Module):
             param.requires_grad = False
         self._requires_grad = False
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input_values):
         hidden_states = input_values[:, None]
 
@@ -428,13 +458,16 @@ class SEWDFeatureEncoder(nn.Module):
         return hidden_states
 
 
+# ContextPooler：上下文池化：序列均值池化 + 线性投影
 class ContextPooler(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.pooler_hidden_size, config.pooler_hidden_size)
         self.dropout = StableDropout(config.pooler_dropout)
         self.config = config
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         # We "pool" the model by simply taking the hidden state corresponding
         # to the first token.
@@ -450,6 +483,7 @@ class ContextPooler(nn.Module):
         return self.config.hidden_size
 
 
+# XSoftmax：XSoftmax 自定义 autograd：稳定 softmax 实现
 class XSoftmax(torch.autograd.Function):
     """
     Masked Softmax which is optimized for saving memory
@@ -479,6 +513,7 @@ class XSoftmax(torch.autograd.Function):
     ```"""
 
     @staticmethod
+    # forward：前向传播：组装特征并返回模型输出
     def forward(ctx, input, mask, dim):
         ctx.dim = dim
         rmask = ~(mask.to(torch.bool))
@@ -513,7 +548,9 @@ class XSoftmax(torch.autograd.Function):
         return masked_fill(g, output, r_mask, g.op("Constant", value_t=torch.tensor(0, dtype=torch.bool)))
 
 
+# DropoutContext：Dropout 上下文：控制 XDropout 训练/推理行为
 class DropoutContext:
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self):
         self.dropout = 0
         self.mask = None
@@ -521,10 +558,12 @@ class DropoutContext:
         self.reuse_mask = True
 
 
+# XDropout：XDropout 自定义 autograd：与 StableDropout 配合
 class XDropout(torch.autograd.Function):
     """Optimized dropout function to save computation and memory by using mask operation instead of multiplication."""
 
     @staticmethod
+    # forward：前向传播：组装特征并返回模型输出
     def forward(ctx, input, local_ctx):
         mask, dropout = get_mask(input, local_ctx)
         ctx.scale = 1.0 / (1 - dropout)
@@ -560,6 +599,7 @@ class XDropout(torch.autograd.Function):
         return symbolic_opset12.dropout(g, input, dropout_p, train)
 
 
+# StableDropout：StableDropout：训练时保持期望不变的特殊 Dropout
 class StableDropout(nn.Module):
     """
     Optimized dropout module for stabilizing the training
@@ -568,12 +608,14 @@ class StableDropout(nn.Module):
         drop_prob (float): the dropout probabilities
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, drop_prob):
         super().__init__()
         self.drop_prob = drop_prob
         self.count = 0
         self.context_stack = None
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         """
         Call the module
@@ -609,13 +651,16 @@ class StableDropout(nn.Module):
             return self.drop_prob
 
 
+# SEWDSelfOutput：SEW-D 自注意力输出投影：Dense + Dropout + 残差
 class SEWDSelfOutput(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
         self.LayerNorm = LayerNorm(config.hidden_size, config.layer_norm_eps)
         self.dropout = nn.Dropout(config.activation_dropout)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states, input_tensor):
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
@@ -623,6 +668,7 @@ class SEWDSelfOutput(nn.Module):
         return hidden_states
 
 
+# DisentangledSelfAttention：解耦自注意力：content-to-position 与 position-to-content
 class DisentangledSelfAttention(nn.Module):
     """
     Disentangled self-attention module
@@ -634,6 +680,7 @@ class DisentangledSelfAttention(nn.Module):
 
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         if config.hidden_size % config.num_attention_heads != 0:
@@ -677,6 +724,7 @@ class DisentangledSelfAttention(nn.Module):
         x = x.view(new_x_shape)
         return x.permute(0, 2, 1, 3).contiguous().view(-1, x.size(1), x.size(-1))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -839,13 +887,16 @@ class DisentangledSelfAttention(nn.Module):
         return score
 
 
+# SEWDAttention：SEW-D 注意力包装：LayerNorm + 解耦自注意力 + 输出
 class SEWDAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.self = DisentangledSelfAttention(config)
         self.output = SEWDSelfOutput(config)
         self.config = config
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -876,7 +927,9 @@ class SEWDAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertIntermediate with Bert->SEWD
+# SEWDIntermediate：SEW-D 中间层：FFN 第一层线性 + 激活
 class SEWDIntermediate(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.intermediate_size)
@@ -885,13 +938,16 @@ class SEWDIntermediate(nn.Module):
         else:
             self.intermediate_act_fn = config.hidden_act
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.intermediate_act_fn(hidden_states)
         return hidden_states
 
 
+# SEWDOutput：SEW-D 输出层：FFN 第二层线性 + Dropout + 残差
 class SEWDOutput(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.intermediate_size, config.hidden_size)
@@ -899,6 +955,7 @@ class SEWDOutput(nn.Module):
         self.dropout = nn.Dropout(config.activation_dropout)
         self.config = config
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states, input_tensor):
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
@@ -906,13 +963,16 @@ class SEWDOutput(nn.Module):
         return hidden_states
 
 
+# SEWDLayer：SEW-D Transformer 层：注意力 + FFN 残差块
 class SEWDLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.attention = SEWDAttention(config)
         self.intermediate = SEWDIntermediate(config)
         self.output = SEWDOutput(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -940,7 +1000,9 @@ class SEWDLayer(GradientCheckpointingLayer):
             return layer_output
 
 
+# ConvLayer：SEW-D 卷积层：Transformer 内的局部卷积增强
 class ConvLayer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         kernel_size = getattr(config, "conv_kernel_size", 3)
@@ -953,6 +1015,7 @@ class ConvLayer(nn.Module):
         self.dropout = StableDropout(config.hidden_dropout_prob)
         self.config = config
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states, residual_states, input_mask):
         out = self.conv(hidden_states.permute(0, 2, 1).contiguous()).permute(0, 2, 1).contiguous()
         rmask = (1 - input_mask).bool()
@@ -976,9 +1039,11 @@ class ConvLayer(nn.Module):
         return output_states
 
 
+# SEWDTransformerEncoder：SEW-D Transformer 编码器：堆叠解耦注意力层
 class SEWDTransformerEncoder(nn.Module):
     """Modified BertEncoder with relative position bias support"""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
 
@@ -1023,6 +1088,7 @@ class SEWDTransformerEncoder(nn.Module):
 
         return attention_mask
 
+    # get_rel_pos：获取相对位置嵌入：按 query/key 尺寸插值相对编码
     def get_rel_pos(self, hidden_states, query_states=None, relative_pos=None):
         if self.relative_attention and relative_pos is None:
             q = query_states.size(-2) if query_states is not None else hidden_states.size(-2)
@@ -1035,6 +1101,7 @@ class SEWDTransformerEncoder(nn.Module):
             )
         return relative_pos
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -1100,7 +1167,9 @@ class SEWDTransformerEncoder(nn.Module):
         )
 
 
+# SEWDEncoder：SEW-D 编码器：池化 + Transformer + 上采样完整流程
 class SEWDEncoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -1110,6 +1179,7 @@ class SEWDEncoder(nn.Module):
         self.upsample = SEWDUpsampling(config)
         self.gradient_checkpointing = False
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.tensor,
@@ -1169,6 +1239,7 @@ class SEWDEncoder(nn.Module):
 
 
 @auto_docstring
+# SEWDPreTrainedModel：SEW-D 预训练基类：特征长度与权重初始化
 class SEWDPreTrainedModel(PreTrainedModel):
     config: SEWDConfig
     base_model_prefix = "sew-d"
@@ -1177,6 +1248,7 @@ class SEWDPreTrainedModel(PreTrainedModel):
     supports_gradient_checkpointing = True
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module):
         """Initialize the weights"""
         super()._init_weights(module)
@@ -1200,6 +1272,7 @@ class SEWDPreTrainedModel(PreTrainedModel):
             else:
                 init.kaiming_normal_(module.weight)
 
+    # _get_feat_extract_output_lengths：计算卷积输出长度：逐层 1D 卷积下采样后序列长
     def _get_feat_extract_output_lengths(self, input_lengths: torch.LongTensor | int):
         """
         Computes the output length of the convolutional layers
@@ -1215,6 +1288,7 @@ class SEWDPreTrainedModel(PreTrainedModel):
 
         return input_lengths
 
+    # _get_feature_vector_attention_mask：特征向量注意力掩码：对齐 padding 与特征长度
     def _get_feature_vector_attention_mask(self, feature_vector_length: int, attention_mask: torch.LongTensor):
         output_lengths = self._get_feat_extract_output_lengths(attention_mask.sum(-1)).to(torch.long)
         # Build the feature mask via arange broadcast comparison.  This keeps feature_vector_length
@@ -1226,7 +1300,9 @@ class SEWDPreTrainedModel(PreTrainedModel):
 
 @auto_docstring
 # Copied from transformers.models.sew.modeling_sew.SEWModel with SEW->SEWD, layer_norm_eps->feature_layer_norm_eps
+# SEWDModel：SEW-D 基础模型：特征提取 + SpecAugment + 解耦编码
 class SEWDModel(SEWDPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SEWDConfig):
         super().__init__(config)
         self.config = config
@@ -1247,6 +1323,7 @@ class SEWDModel(SEWDPreTrainedModel):
         self.post_init()
 
     # Copied from transformers.models.wav2vec2.modeling_wav2vec2.Wav2Vec2Model._mask_hidden_states
+    # _mask_hidden_states：掩码隐藏状态：训练时沿时间/特征轴 SpecAugment
     def _mask_hidden_states(
         self,
         hidden_states: torch.FloatTensor,
@@ -1294,6 +1371,7 @@ class SEWDModel(SEWDPreTrainedModel):
         return hidden_states
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_values: torch.Tensor | None,
@@ -1355,7 +1433,9 @@ class SEWDModel(SEWDPreTrainedModel):
     """
 )
 # Copied from transformers.models.wav2vec2.modeling_wav2vec2.Wav2Vec2ForCTC with Wav2Vec2->SEWD, wav2vec2->sew_d, WAV2VEC2->SEWD
+# SEWDForCTC：SEW-D CTC：连接时序分类语音识别头
 class SEWDForCTC(SEWDPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, target_lang: str | None = None):
         r"""
         target_lang (`str`, *optional*):
@@ -1425,6 +1505,7 @@ class SEWDForCTC(SEWDPreTrainedModel):
             param.requires_grad = False
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_values: torch.Tensor | None,
@@ -1504,7 +1585,9 @@ class SEWDForCTC(SEWDPreTrainedModel):
     """
 )
 # Copied from transformers.models.wav2vec2.modeling_wav2vec2.Wav2Vec2ForSequenceClassification with Wav2Vec2->SEWD, wav2vec2->sew_d, WAV2VEC2->SEWD
+# SEWDForSequenceClassification：SEW-D 序列分类：音频级分类预测头
 class SEWDForSequenceClassification(SEWDPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -1538,6 +1621,7 @@ class SEWDForSequenceClassification(SEWDPreTrainedModel):
             param.requires_grad = False
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_values: torch.Tensor | None,

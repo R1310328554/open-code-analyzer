@@ -19,6 +19,8 @@ from ...image_utils import ImageInput
 from ...processing_utils import Unpack
 from ...utils import logging
 from ..gemma3.processing_gemma3 import Gemma3Processor, Gemma3ProcessorKwargs
+# ShieldGemma2 处理器：按策略生成对话式提示并打包图像-文本输入
+
 
 
 logger = logging.get_logger(__name__)
@@ -44,6 +46,7 @@ DEFAULT_SHIELDGEMMA2_POLICIES: Mapping[str, str] = {
 }
 
 
+# ShieldGemma2ProcessorKwargs：ShieldGemma2 处理器参数：策略列表与自定义策略
 class ShieldGemma2ProcessorKwargs(Gemma3ProcessorKwargs, total=False):
     policies: Sequence[str] | None
     custom_policies: Mapping[str, str] | None
@@ -57,7 +60,9 @@ class ShieldGemma2ProcessorKwargs(Gemma3ProcessorKwargs, total=False):
     }
 
 
+# ShieldGemma2Processor：ShieldGemma2 处理器：图像×策略对话提示生成与编码
 class ShieldGemma2Processor(Gemma3Processor):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self, image_processor, tokenizer, chat_template=None, image_seq_length=256, policy_definitions=None, **kwargs
     ):
@@ -81,6 +86,7 @@ class ShieldGemma2Processor(Gemma3Processor):
         else:
             self.policy_definitions = policy_definitions
 
+    # __call__：处理器调用：预处理输入并返回 BatchFeature
     def __call__(
         self,
         images: ImageInput | None = None,

@@ -27,6 +27,8 @@ from ...modeling_utils import PreTrainedModel
 from ...utils import auto_docstring
 from ...utils.generic import is_flash_attention_requested
 from ..wav2vec2.modeling_wav2vec2 import (
+# SEW modular 源：复用 Wav2Vec2 组件并实现 squeeze 编码器逻辑
+
     Wav2Vec2Attention,
     Wav2Vec2EncoderLayer,
     Wav2Vec2FeatureEncoder,
@@ -45,19 +47,24 @@ from .configuration_sew import SEWConfig
 _HIDDEN_STATES_START_POSITION = 1
 
 
+# SEWNoLayerNormConvLayer：SEW 无 LayerNorm 1D 卷积层：特征编码器基础块
 class SEWNoLayerNormConvLayer(Wav2Vec2NoLayerNormConvLayer):
     pass
 
 
+# SEWLayerNormConvLayer：SEW 带 LayerNorm 1D 卷积层：特征编码器块
 class SEWLayerNormConvLayer(Wav2Vec2LayerNormConvLayer):
     pass
 
 
+# SEWGroupNormConvLayer：SEW 组归一化 1D 卷积层：首层特征提取
 class SEWGroupNormConvLayer(Wav2Vec2GroupNormConvLayer):
     pass
 
 
+# SEWPositionalConvEmbedding：SEW 位置卷积嵌入：带 stride 的相对位置编码
 class SEWPositionalConvEmbedding(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.conv = nn.Conv1d(
@@ -92,6 +99,7 @@ class SEWPositionalConvEmbedding(nn.Module):
         self.padding = SEWSamePadLayer(config.num_conv_pos_embeddings)
         self.activation = ACT2FN[config.feat_extract_activation]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.conv(hidden_states)
         hidden_states = self.padding(hidden_states)
@@ -100,17 +108,21 @@ class SEWPositionalConvEmbedding(nn.Module):
         return hidden_states
 
 
+# SEWSamePadLayer：SEW SamePad：保持卷积后序列长度的裁剪/填充
 class SEWSamePadLayer(Wav2Vec2SamePadLayer):
     pass
 
 
+# SEWUpsampling：SEW 上采样：线性投影将通道维还原为更长序列
 class SEWUpsampling(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.projection = nn.Linear(config.hidden_size, config.hidden_size * config.squeeze_factor)
         self.activation = ACT2FN[config.feat_extract_activation]
         self.squeeze_factor = config.squeeze_factor
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.projection(hidden_states)
         hidden_states = self.activation(hidden_states)
@@ -126,23 +138,29 @@ class SEWUpsampling(nn.Module):
         return hidden_states
 
 
+# SEWFeatureEncoder：SEW 特征编码器：堆叠 1D 卷积提取声学特征
 class SEWFeatureEncoder(Wav2Vec2FeatureEncoder):
     pass
 
 
+# SEWAttention：SEW 注意力：Wav2Vec2 风格多头缩放点积自注意力
 class SEWAttention(Wav2Vec2Attention):
     pass
 
 
+# SEWFeedForward：SEW FFN：两层线性 + 激活的前馈网络
 class SEWFeedForward(Wav2Vec2FeedForward):
     pass
 
 
+# SEWEncoderLayer：SEW 编码层：自注意力 + FFN 的 Transformer 块
 class SEWEncoderLayer(Wav2Vec2EncoderLayer):
     pass
 
 
+# SEWEncoder：SEW 编码器：池化下采样、Transformer 堆叠与上采样还原
 class SEWEncoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -154,6 +172,7 @@ class SEWEncoder(nn.Module):
         self.upsample = SEWUpsampling(config)
         self.gradient_checkpointing = False
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -245,6 +264,7 @@ class SEWEncoder(nn.Module):
 
 
 @auto_docstring
+# SEWPreTrainedModel：SEW 预训练基类：卷积长度计算与权重初始化
 class SEWPreTrainedModel(PreTrainedModel):
     config: SEWConfig
     base_model_prefix = "sew"
@@ -256,6 +276,7 @@ class SEWPreTrainedModel(PreTrainedModel):
     _supports_flex_attn = False  # needs a proper look into the mask creation
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module):
         """Initialize the weights"""
         super()._init_weights(module)
@@ -279,6 +300,7 @@ class SEWPreTrainedModel(PreTrainedModel):
             else:
                 init.kaiming_normal_(module.weight)
 
+    # _get_feat_extract_output_lengths：计算卷积输出长度：逐层 1D 卷积下采样后序列长
     def _get_feat_extract_output_lengths(self, input_lengths: torch.LongTensor | int):
         """
         Computes the output length of the convolutional layers
@@ -294,6 +316,7 @@ class SEWPreTrainedModel(PreTrainedModel):
 
         return input_lengths
 
+    # _get_feature_vector_attention_mask：特征向量注意力掩码：对齐 padding 与特征长度
     def _get_feature_vector_attention_mask(self, feature_vector_length: int, attention_mask: torch.LongTensor):
         output_lengths = self._get_feat_extract_output_lengths(attention_mask.sum(-1)).to(torch.long)
         # Build the feature mask via arange broadcast comparison.  This keeps feature_vector_length
@@ -304,7 +327,9 @@ class SEWPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# SEWModel：SEW 基础模型：特征提取 + SpecAugment + squeeze 编码
 class SEWModel(SEWPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SEWConfig):
         super().__init__(config)
         self.config = config
@@ -325,6 +350,7 @@ class SEWModel(SEWPreTrainedModel):
         self.post_init()
 
     # Copied from transformers.models.wav2vec2.modeling_wav2vec2.Wav2Vec2Model._mask_hidden_states
+    # _mask_hidden_states：掩码隐藏状态：训练时沿时间/特征轴 SpecAugment
     def _mask_hidden_states(
         self,
         hidden_states: torch.FloatTensor,
@@ -372,6 +398,7 @@ class SEWModel(SEWPreTrainedModel):
         return hidden_states
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_values: torch.Tensor | None,
@@ -427,10 +454,12 @@ class SEWModel(SEWPreTrainedModel):
         )
 
 
+# SEWForCTC：SEW CTC：连接时序分类语音识别/音素预测头
 class SEWForCTC(Wav2Vec2ForCTC):
     pass
 
 
+# SEWForSequenceClassification：SEW 序列分类：池化隐藏状态做音频分类
 class SEWForSequenceClassification(Wav2Vec2ForSequenceClassification):
     pass
 

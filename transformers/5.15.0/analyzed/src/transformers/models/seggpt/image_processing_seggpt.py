@@ -24,6 +24,8 @@ from ...image_processing_outputs import SemanticSegmentationPostProcessorOutput
 from ...image_processing_utils import BatchFeature
 from ...image_transforms import group_images_by_shape, reorder_images
 from ...image_utils import (
+# SegGPT 图像预处理：调色板构建、掩码 RGB 转换与语义分割后处理
+
     IMAGENET_DEFAULT_MEAN,
     IMAGENET_DEFAULT_STD,
     ChannelDimension,
@@ -37,6 +39,7 @@ from ...utils import TensorType, auto_docstring, requires_backends
 
 # See https://huggingface.co/papers/2212.02499 at 3.1 Redefining Output Spaces as "Images" - Semantic Segmentation
 # Taken from https://github.com/Abdullah-Meda/Painter/blob/main/Painter/data/coco_semseg/gen_color_coco_panoptic_segm.py#L31
+# build_palette：构建调色板：将类别索引映射为 RGB 颜色（背景为黑）
 def build_palette(num_labels: int) -> list[tuple[int, int, int]]:
     base = int(num_labels ** (1 / 3)) + 1
     margin = 256 // base
@@ -57,6 +60,7 @@ def build_palette(num_labels: int) -> list[tuple[int, int, int]]:
     return color_list
 
 
+# SegGptImageProcessorKwargs：SegGPT 图像处理器参数：类别数与 RGB 掩码转换选项
 class SegGptImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     num_labels (`int`, *optional*):
@@ -70,6 +74,7 @@ class SegGptImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# SegGptImageProcessor：SegGPT 图像处理器：resize/归一化与 prompt 掩码预处理
 class SegGptImageProcessor(TorchvisionBackend):
     valid_kwargs = SegGptImageProcessorKwargs
 
@@ -83,9 +88,11 @@ class SegGptImageProcessor(TorchvisionBackend):
     do_convert_rgb = True
     num_labels = None
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[SegGptImageProcessorKwargs]):
         super().__init__(**kwargs)
 
+    # get_palette：获取调色板：按类别数生成 RGB 映射表
     def get_palette(self, num_labels: int) -> list[tuple[int, int, int]]:
         """Build a palette to map the prompt mask from a single channel to a 3-channel RGB.
 
@@ -98,6 +105,7 @@ class SegGptImageProcessor(TorchvisionBackend):
         """
         return build_palette(num_labels)
 
+    # mask_to_rgb：掩码转 RGB：单通道分割图映射为三通道彩色图
     def mask_to_rgb(self, mask: np.ndarray, palette: list[tuple[int, int, int]] | None = None) -> np.ndarray:
         """Converts a segmentation map to RGB format.
 
@@ -132,6 +140,7 @@ class SegGptImageProcessor(TorchvisionBackend):
         return rgb_mask
 
     @auto_docstring
+    # preprocess：预处理：缩放归一化并打包为模型输入
     def preprocess(
         self,
         images: ImageInput | None = None,
@@ -156,6 +165,7 @@ class SegGptImageProcessor(TorchvisionBackend):
         _images_input = images if images is not None else []
         return super().preprocess(_images_input, prompt_images, prompt_masks, **kwargs)
 
+    # _preprocess_image_like_inputs：预处理类图像输入：分别处理图像、prompt 与掩码
     def _preprocess_image_like_inputs(
         self,
         images: ImageInput,
@@ -220,6 +230,7 @@ class SegGptImageProcessor(TorchvisionBackend):
 
         return BatchFeature(data=data, tensor_type=return_tensors)
 
+    # _preprocess：内部预处理：分组 resize 与归一化
     def _preprocess(
         self,
         images: list["torch.Tensor"],
@@ -252,6 +263,7 @@ class SegGptImageProcessor(TorchvisionBackend):
 
         return reorder_images(processed_images_grouped, grouped_images_index)
 
+    # post_process_semantic_segmentation：语义分割后处理：RGB 预测还原为类别 ID
     def post_process_semantic_segmentation(
         self,
         outputs,

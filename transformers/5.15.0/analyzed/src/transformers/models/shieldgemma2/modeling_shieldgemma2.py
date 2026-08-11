@@ -20,6 +20,8 @@ from ...cache_utils import Cache
 from ...modeling_outputs import ImageClassifierOutputWithNoAttention
 from ...modeling_utils import PreTrainedModel
 from ...utils import (
+# ShieldGemma2 建模：基于 Gemma3 的 Yes/No 策略违规图像分类
+
     auto_docstring,
     can_return_tuple,
     logging,
@@ -32,6 +34,7 @@ logger = logging.get_logger(__name__)
 
 
 @dataclass
+# ShieldGemma2ImageClassifierOutputWithNoAttention：ShieldGemma2 分类输出：Yes/No logits 与违规概率
 class ShieldGemma2ImageClassifierOutputWithNoAttention(ImageClassifierOutputWithNoAttention):
     """ShieldGemma2 classifies images as violative or not relative to a specific policy
     Args:
@@ -41,6 +44,7 @@ class ShieldGemma2ImageClassifierOutputWithNoAttention(ImageClassifierOutputWith
 
 
 @auto_docstring
+# ShieldGemma2ForImageClassification：ShieldGemma2 图像分类：策略违规 Yes/No 二分类
 class ShieldGemma2ForImageClassification(PreTrainedModel):
     config: ShieldGemma2Config
     input_modalities = ("image", "text")
@@ -50,6 +54,7 @@ class ShieldGemma2ForImageClassification(PreTrainedModel):
     _supports_flex_attn = True
     _supports_attention_backend = True
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: ShieldGemma2Config):
         super().__init__(config=config)
         self.yes_token_index = getattr(config, "yes_token_index", 10_784)
@@ -71,6 +76,7 @@ class ShieldGemma2ForImageClassification(PreTrainedModel):
 
     @auto_docstring
     @can_return_tuple
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
