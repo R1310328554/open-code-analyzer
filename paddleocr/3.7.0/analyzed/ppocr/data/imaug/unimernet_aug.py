@@ -19,6 +19,7 @@ from __future__ import unicode_literals
 
 import os
 
+# UniMERNet 数学公式 OCR 增强：形态学、天气效果与图像解码/格式化
 os.environ["NO_ALBUMENTATIONS_UPDATE"] = "1"
 
 import cv2
@@ -30,6 +31,7 @@ from PIL import Image, ImageOps, ImageDraw
 from scipy.ndimage import zoom as scizoom
 
 
+    # 形态学腐蚀：随机椭圆核对灰度图做腐蚀，模拟笔画变细
 class Erosion(A.ImageOnlyTransform):
     def __init__(self, scale, always_apply=False, p=0.5):
         super().__init__(always_apply=always_apply, p=p)
@@ -47,6 +49,7 @@ class Erosion(A.ImageOnlyTransform):
         return img
 
 
+    # 形态学膨胀：随机椭圆核对灰度图做膨胀，模拟笔画加粗
 class Dilation(A.ImageOnlyTransform):
     def __init__(self, scale, always_apply=False, p=0.5):
         super().__init__(always_apply=always_apply, p=p)
@@ -64,6 +67,7 @@ class Dilation(A.ImageOnlyTransform):
         return img
 
 
+    # 二值化增强：低于阈值的像素置为固定值，模拟扫描噪声
 class Bitmap(A.ImageOnlyTransform):
     def __init__(self, value=0, lower=200, always_apply=False, p=0.5):
         super().__init__(always_apply=always_apply, p=p)
@@ -159,6 +163,7 @@ def plasma_fractal(mapsize=256, wibbledecay=3, rng=None):
     return maparray / maparray.max()
 
 
+    # 雾化增强：等离子分形噪声叠加，模拟低对比度雾天成像
 class Fog(A.ImageOnlyTransform):
     def __init__(self, mag=-1, always_apply=False, p=1.0):
         super().__init__(always_apply=always_apply, p=p)
@@ -197,6 +202,7 @@ class Fog(A.ImageOnlyTransform):
         return img.astype(np.uint8)
 
 
+    # 结霜增强：叠加 frost 纹理图混合，模拟玻璃/屏幕霜冻
 class Frost(A.ImageOnlyTransform):
     def __init__(self, mag=-1, always_apply=False, p=1.0):
         super().__init__(always_apply=always_apply, p=p)
@@ -257,6 +263,7 @@ class Frost(A.ImageOnlyTransform):
         return img
 
 
+    # 飘雪增强：高斯噪声层加运动模糊，模拟雪花遮挡
 class Snow(A.ImageOnlyTransform):
     def __init__(self, mag=-1, always_apply=False, p=1.0):
         super().__init__(always_apply=always_apply, p=p)
@@ -323,6 +330,7 @@ class Snow(A.ImageOnlyTransform):
         return img
 
 
+    # 雨线增强：随机斜线绘制，模拟雨天拍摄干扰
 class Rain(A.ImageOnlyTransform):
     def __init__(self, mag=-1, always_apply=False, p=1.0):
         super().__init__(always_apply=always_apply, p=p)
@@ -363,6 +371,7 @@ class Rain(A.ImageOnlyTransform):
         return img
 
 
+    # 阴影增强：半透明多边形叠加，模拟局部光照不均
 class Shadow(A.ImageOnlyTransform):
     def __init__(self, mag=-1, always_apply=False, p=1.0):
         super().__init__(always_apply=always_apply, p=p)
@@ -410,6 +419,7 @@ class Shadow(A.ImageOnlyTransform):
         return img
 
 
+    # UniMERNet 训练增强流水线：几何/天气/噪声/归一化组合
 class UniMERNetTrainTransform:
     def __init__(self, bitmap_prob=0.04, **kwargs):
         self.bitmap_prob = bitmap_prob
@@ -464,6 +474,7 @@ class UniMERNetTrainTransform:
         return data
 
 
+    # UniMERNet 测试预处理：转灰度并归一化到训练分布
 class UniMERNetTestTransform:
     def __init__(self, **kwargs):
         self.test_transform = A.Compose(
@@ -480,6 +491,7 @@ class UniMERNetTestTransform:
         return data
 
 
+    # GoT 分支图像解码：裁边距、缩放缩略与随机/居中填充
 class GoTImgDecode:
     def __init__(self, input_size, random_padding=False, **kwargs):
         self.input_size = input_size
@@ -578,6 +590,7 @@ class GoTImgDecode:
         return data
 
 
+    # UniMERNet 图像解码：可选随机缩放/裁剪，按公式长度调节裁剪比
 class UniMERNetImgDecode:
     def __init__(
         self,
@@ -718,6 +731,7 @@ class UniMERNetImgDecode:
         return data
 
 
+    # UniMERNet 内存图像 resize：裁边距后缩放到 input_size 并填充
 class UniMERNetResize:
     def __init__(self, input_size, random_padding=False, **kwargs):
         self.input_size = input_size
@@ -816,6 +830,7 @@ class UniMERNetResize:
         return data
 
 
+    # UniMERNet 张量格式化：32 对齐填充并转为 CHW 单通道
 class UniMERNetImageFormat:
     def __init__(self, **kwargs):
         pass

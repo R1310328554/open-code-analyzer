@@ -16,9 +16,11 @@ This code is refer from:
 https://github.com/RubanSeven/Text-Image-Augmentation-python/blob/master/warp_mls.py
 """
 
+# 移动最小二乘（MLS）图像变形：由源/目标控制点对生成稠密位移场
 import numpy as np
 
 
+    # MLS 网格变形器：calc_delta 求位移场，gen_img 双线性重采样输出图像
 class WarpMLS:
     def __init__(self, src, src_pts, dst_pts, dst_w, dst_h, trans_ratio=1.0):
         self.src = src

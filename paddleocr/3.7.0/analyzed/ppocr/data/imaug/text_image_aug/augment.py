@@ -16,10 +16,12 @@ This code is refer from:
 https://github.com/RubanSeven/Text-Image-Augmentation-python/blob/master/augment.py
 """
 
+# 文本图像增强（TIA）：扭曲、拉伸与透视三种几何变换，基于 MLS 网格变形
 import numpy as np
 from .warp_mls import WarpMLS
 
 
+    # 分段随机扰动控制点，模拟文本行波浪形扭曲畸变
 def tia_distort(src, segment=4):
     img_h, img_w = src.shape[:2]
 
@@ -65,6 +67,7 @@ def tia_distort(src, segment=4):
     return dst
 
 
+    # 沿竖直切分线随机平移，模拟文本列宽不均的拉伸效果
 def tia_stretch(src, segment=4):
     img_h, img_w = src.shape[:2]
 
@@ -99,6 +102,7 @@ def tia_stretch(src, segment=4):
     return dst
 
 
+    # 四角控制点随机偏移，模拟透视拍摄造成的梯形变形
 def tia_perspective(src):
     img_h, img_w = src.shape[:2]
 

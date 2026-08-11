@@ -11,10 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# VQA token 填充：将 input_ids/labels/bbox 等序列补齐或截断至 max_seq_len
 import paddle
 import numpy as np
 
 
+    # 序列填充算子：支持左右 padding，labels 用 ignore_index 填充
 class VQATokenPad(object):
     def __init__(
         self,

@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# VQA 关系抽取：将实体 span 与 head/tail 关系列表转为固定形状 int64 数组
 import numpy as np
 
 
+    # 实体与关系张量化：首行存数量，后续行填充 start/end/label 或 head/tail
 class TensorizeEntitiesRelations(object):
     def __init__(self, max_seq_len=512, infer_mode=False, **kwargs):
         self.max_seq_len = max_seq_len

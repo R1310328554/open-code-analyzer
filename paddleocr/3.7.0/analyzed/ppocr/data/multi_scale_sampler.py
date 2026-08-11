@@ -1,3 +1,4 @@
+# 多尺度训练采样器：按分辨率档位动态组 batch，分布式训练按 rank 分片
 from paddle.io import Sampler
 import paddle.distributed as dist
 
@@ -6,6 +7,7 @@ import random
 import math
 
 
+    # 多尺度 Sampler：训练时轮换 (宽,高,batch) 三元组，eval 固定基础尺度
 class MultiScaleSampler(Sampler):
     def __init__(
         self,

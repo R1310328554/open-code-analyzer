@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# LaTeX-OCR 数据集：pickle 索引加载、尺寸过滤、公式-图像对批采样与 transform
 """
 This code is refer from:
 https://github.com/lukas-blecher/LaTeX-OCR/blob/main/pix2tex/dataset/dataset.py
@@ -45,6 +46,7 @@ _ALLOWED_PICKLE_GLOBALS = {
 }
 
 
+    # 受限反序列化：仅允许基础容器类型，防止 pickle 任意代码执行
 class _RestrictedDatasetUnpickler(pickle.Unpickler):
     def find_class(self, module, name):
         allowed = _ALLOWED_PICKLE_GLOBALS.get((module, name))
@@ -59,6 +61,7 @@ def _restricted_pickle_load(file_obj):
     return _RestrictedDatasetUnpickler(file_obj).load()
 
 
+    # LaTeX 公式 OCR 数据集：按尺寸过滤 pickle 索引，批内拼接图像与 token 标签
 class LaTeXOCRDataSet(Dataset):
     def __init__(self, config, mode, logger, seed=None):
         super(LaTeXOCRDataSet, self).__init__()

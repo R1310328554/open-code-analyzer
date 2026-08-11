@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 文档 VQA 数据增强子包：导出 token 分块、填充、关系与实体张量化算子
 from .token import (
     VQATokenPad,
     VQASerTokenChunk,

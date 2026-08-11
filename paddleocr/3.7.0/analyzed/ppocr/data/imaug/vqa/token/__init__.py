@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# VQA token 预处理子包：分块、填充、关系抽取与实体关系张量化
 from .vqa_token_chunk import VQASerTokenChunk, VQAReTokenChunk
 from .vqa_token_pad import VQATokenPad
 from .vqa_token_relation import VQAReTokenRelation

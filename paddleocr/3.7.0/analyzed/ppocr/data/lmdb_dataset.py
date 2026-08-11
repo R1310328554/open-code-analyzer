@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# LMDB 存储 OCR 数据集：支持通用识别、超分辨率与 TableMaster 表格三种格式
 import numpy as np
 import io
 import os
@@ -38,6 +39,7 @@ _ALLOWED_PICKLE_GLOBALS = {
 }
 
 
+    # 受限反序列化：白名单 builtins 类型，安全加载 LMDB 内 pickle 元数据
 class _RestrictedDatasetUnpickler(pickle.Unpickler):
     def find_class(self, module, name):
         if (module, name) in _ALLOWED_PICKLE_GLOBALS:
@@ -53,6 +55,7 @@ def _restricted_pickle_loads(data):
     return _RestrictedDatasetUnpickler(io.BytesIO(data)).load()
 
 
+    # 通用 LMDB 识别数据集：层级目录遍历、索引打乱与 ext_data 辅助采样
 class LMDBDataSet(Dataset):
     def __init__(self, config, mode, logger, seed=None):
         super(LMDBDataSet, self).__init__()
@@ -184,6 +187,7 @@ class LMDBDataSet(Dataset):
         return self.data_idx_order_list.shape[0]
 
 
+    # 超分辨率 LMDB 数据集：同时读取 HR/LR 图像对并按词表过滤标签
 class LMDBDataSetSR(LMDBDataSet):
     def buf2PIL(self, txn, key, type="RGB"):
         imgbuf = txn.get(key)
@@ -240,6 +244,7 @@ class LMDBDataSetSR(LMDBDataSet):
         return outs
 
 
+    # TableMaster LMDB 数据集：pickle 样本含结构 token 与单元格 bbox
 class LMDBDataSetTableMaster(LMDBDataSet):
     def load_hierarchical_lmdb_dataset(self, data_dir):
         lmdb_sets = {}

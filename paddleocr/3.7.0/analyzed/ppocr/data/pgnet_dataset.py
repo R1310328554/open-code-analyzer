@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# PGNet 端到端检测识别数据集：标签文件加载、比例采样与 transform 流水线
 import numpy as np
 import os
 from paddle.io import Dataset
@@ -18,6 +19,7 @@ from .imaug import transform, create_operators
 import random
 
 
+    # PGNet 数据集：tab 分隔图像路径与转录文本，eval 模式解析 img_id
 class PGDataSet(Dataset):
     def __init__(self, config, mode, logger, seed=None):
         super(PGDataSet, self).__init__()

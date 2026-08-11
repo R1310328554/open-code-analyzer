@@ -13,6 +13,8 @@
 # limitations under the License.
 
 
+# VQA 关系构建：从 question-answer 实体对提取 KV 关系并计算 span 边界
+    # 关系抽取预处理：过滤空实体，保留 QA 对并排序输出 head/tail span
 class VQAReTokenRelation(object):
     def __init__(self, **kwargs):
         pass

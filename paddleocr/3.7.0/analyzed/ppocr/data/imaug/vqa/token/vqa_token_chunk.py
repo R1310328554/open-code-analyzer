@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# VQA token 分块：超长序列按 max_seq_len 切分，关系抽取需同步实体索引
 from collections import defaultdict
 
 
+    # SER 序列标注分块：input_ids/labels/bbox 等字段按窗口切片
 class VQASerTokenChunk(object):
     def __init__(self, max_seq_len=512, infer_mode=False, **kwargs):
         self.max_seq_len = max_seq_len
@@ -49,6 +51,7 @@ class VQASerTokenChunk(object):
         return encoded_inputs_all[0]
 
 
+    # RE 关系抽取分块：同步裁剪实体 span 并重映射 head/tail 局部索引
 class VQAReTokenChunk(object):
     def __init__(
         self, max_seq_len=512, entities_labels=None, infer_mode=False, **kwargs

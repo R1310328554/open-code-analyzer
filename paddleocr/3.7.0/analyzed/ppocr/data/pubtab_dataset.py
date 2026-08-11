@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# PubTabNet 表格数据集：JSON 标注含 HTML 结构与单元格，用于表格结构识别
 import numpy as np
 import os
 import random
@@ -21,6 +22,7 @@ from copy import deepcopy
 from .imaug import transform, create_operators
 
 
+    # 公开表格数据集：解析 cells/structure token，失败时随机/顺序重采样
 class PubTabDataSet(Dataset):
     def __init__(self, config, mode, logger, seed=None):
         super(PubTabDataSet, self).__init__()
