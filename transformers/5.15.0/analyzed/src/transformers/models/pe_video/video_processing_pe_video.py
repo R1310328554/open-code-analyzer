@@ -21,9 +21,13 @@ from ...video_processing_utils import BaseVideoProcessor, VideoMetadata
 from ...video_utils import VideoInput
 
 
+# PeVideo 视频处理：均匀帧采样与变长视频 batch padding
+
+# PeVideoVideoProcessor：PeVideo 视频帧采样与变长 padding 预处理
 class PeVideoVideoProcessor(BaseVideoProcessor):
     resample = PILImageResampling.BILINEAR
 
+    # sample_frames：按 num_frames 或 fps 均匀采样视频帧索引
     def sample_frames(
         self,
         metadata: VideoMetadata,
@@ -40,6 +44,7 @@ class PeVideoVideoProcessor(BaseVideoProcessor):
         else:
             return super().sample_frames(metadata, num_frames, fps, **kwargs)
 
+    # _preprocess：视频预处理流水线（采样→resize→归一化→变长 padding）
     def _preprocess(
         self,
         videos: VideoInput,

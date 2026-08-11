@@ -13,6 +13,8 @@
 # limitations under the License.
 """PyTorch PEGASUS model."""
 
+# PEGASUS 建模：Transformer 编码器-解码器 seq2seq 文本摘要
+
 import copy
 import math
 from collections.abc import Callable
@@ -54,6 +56,7 @@ logger = logging.get_logger(__name__)
 
 
 # Copied from transformers.models.bart.modeling_bart.shift_tokens_right
+# shift_tokens_right：decoder 输入右移一位（BART 风格 teacher forcing）
 def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start_token_id: int):
     """
     Shift input ids one token to the right.
@@ -71,12 +74,15 @@ def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start
 
 
 # Copied from transformers.models.marian.modeling_marian.MarianSinusoidalPositionalEmbedding with Marian->Pegasus
+# PegasusSinusoidalPositionalEmbedding：PEGASUS 正弦位置编码（非学习）
 class PegasusSinusoidalPositionalEmbedding(nn.Embedding):
     """This module produces sinusoidal positional embeddings of any length."""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, num_positions: int, embedding_dim: int, padding_idx: int | None = None) -> None:
         super().__init__(num_positions, embedding_dim, _freeze=True)
 
+    # create_weight：按需创建正弦位置编码权重矩阵
     def create_weight(self):
         """
         Identical to the XLM create_sinusoidal_embeddings except features are not interleaved. The cos features are in
@@ -93,6 +99,7 @@ class PegasusSinusoidalPositionalEmbedding(nn.Embedding):
         return out
 
     @torch.no_grad()
+    # forward：模块前向计算
     def forward(
         self, input_ids_shape: torch.Size, past_key_values_length: int = 0, position_ids: torch.Tensor | None = None
     ) -> torch.Tensor:
@@ -106,6 +113,7 @@ class PegasusSinusoidalPositionalEmbedding(nn.Embedding):
 
 
 # Copied from transformers.models.bert.modeling_bert.eager_attention_forward
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -135,9 +143,11 @@ def eager_attention_forward(
 
 
 # Copied from transformers.models.bart.modeling_bart.BartAttention with Bart->Pegasus
+# PegasusAttention：PEGASUS 多头自/交叉注意力
 class PegasusAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         embed_dim: int,
@@ -177,6 +187,7 @@ class PegasusAttention(nn.Module):
         self.q_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
         self.out_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -253,7 +264,9 @@ class PegasusAttention(nn.Module):
 
 
 # Copied from transformers.models.mbart.modeling_mbart.MBartEncoderLayer with MBart->Pegasus, MBART->PEGASUS
+# PegasusEncoderLayer：PEGASUS 编码器单层（自注意力 + FFN）
 class PegasusEncoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PegasusConfig):
         super().__init__()
         self.embed_dim = config.d_model
@@ -272,6 +285,7 @@ class PegasusEncoderLayer(GradientCheckpointingLayer):
         self.fc2 = nn.Linear(config.encoder_ffn_dim, self.embed_dim)
         self.final_layer_norm = nn.LayerNorm(self.embed_dim)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -310,7 +324,9 @@ class PegasusEncoderLayer(GradientCheckpointingLayer):
 
 
 # Copied from transformers.models.mbart.modeling_mbart.MBartDecoderLayer with MBart->Pegasus, MBART->PEGASUS
+# PegasusDecoderLayer：PEGASUS 解码器单层（自注意力 + 交叉注意力 + FFN）
 class PegasusDecoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PegasusConfig, layer_idx: int | None = None):
         super().__init__()
         self.embed_dim = config.d_model
@@ -342,6 +358,7 @@ class PegasusDecoderLayer(GradientCheckpointingLayer):
         self.fc2 = nn.Linear(config.decoder_ffn_dim, self.embed_dim)
         self.final_layer_norm = nn.LayerNorm(self.embed_dim)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -404,6 +421,7 @@ class PegasusDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# PegasusPreTrainedModel：PEGASUS 预训练基类与权重初始化
 class PegasusPreTrainedModel(PreTrainedModel):
     config: PegasusConfig
     base_model_prefix = "model"
@@ -414,6 +432,7 @@ class PegasusPreTrainedModel(PreTrainedModel):
     _can_compile_fullgraph = True
 
     @torch.no_grad()
+    # _init_weights：按模块类型初始化权重
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, PegasusSinusoidalPositionalEmbedding):
@@ -422,6 +441,7 @@ class PegasusPreTrainedModel(PreTrainedModel):
             init.zeros_(module.final_logits_bias)
 
 
+# PegasusEncoder：PEGASUS Transformer 编码器堆叠
 class PegasusEncoder(PegasusPreTrainedModel):
     """
     Transformer encoder consisting of *config.encoder_layers* self attention layers. Each layer is a
@@ -437,6 +457,7 @@ class PegasusEncoder(PegasusPreTrainedModel):
         "attentions": PegasusAttention,
     }
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PegasusConfig):
         super().__init__(config)
 
@@ -462,6 +483,7 @@ class PegasusEncoder(PegasusPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # resize_position_embeddings：扩展或截断位置编码以适配新序列长度
     def resize_position_embeddings(self, new_num_position_embeddings: int):
         """
         Resizes position embeddings matrix of the model if `new_num_position_embeddings !=
@@ -486,6 +508,7 @@ class PegasusEncoder(PegasusPreTrainedModel):
         init.copy_(self.embed_positions.weight, self.embed_positions.create_weight())
         self.embed_positions.to(self.device)
 
+    # get_position_embeddings：返回编码器/解码器位置嵌入层
     def get_position_embeddings(self) -> nn.Embedding:
         """
         Returns the position embeddings matrix
@@ -495,6 +518,7 @@ class PegasusEncoder(PegasusPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids=None,
@@ -543,6 +567,7 @@ class PegasusEncoder(PegasusPreTrainedModel):
         )
 
 
+# PegasusDecoder：PEGASUS Transformer 解码器堆叠
 class PegasusDecoder(PegasusPreTrainedModel):
     """
     Transformer decoder consisting of *config.decoder_layers* layers. Each layer is a [`PegasusDecoderLayer`]
@@ -558,6 +583,7 @@ class PegasusDecoder(PegasusPreTrainedModel):
         "cross_attentions": OutputRecorder(PegasusAttention, index=1, layer_name="encoder_attn"),
     }
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PegasusConfig):
         super().__init__(config)
         self.dropout = config.dropout
@@ -580,6 +606,7 @@ class PegasusDecoder(PegasusPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # resize_position_embeddings：扩展或截断位置编码以适配新序列长度
     def resize_position_embeddings(self, new_num_position_embeddings: int):
         """
         Resizes position embeddings matrix of the model if `new_num_position_embeddings !=
@@ -604,6 +631,7 @@ class PegasusDecoder(PegasusPreTrainedModel):
         init.copy_(self.embed_positions.weight, self.embed_positions.create_weight())
         self.embed_positions.to(self.device)
 
+    # get_position_embeddings：返回编码器/解码器位置嵌入层
     def get_position_embeddings(self) -> nn.Embedding:
         """
         Returns the position embeddings matrix
@@ -613,6 +641,7 @@ class PegasusDecoder(PegasusPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids=None,
@@ -700,12 +729,14 @@ class PegasusDecoder(PegasusPreTrainedModel):
 
 
 @auto_docstring
+# PegasusModel：PEGASUS 编码器-解码器 seq2seq 主干
 class PegasusModel(PegasusPreTrainedModel):
     _tied_weights_keys = {
         "decoder.embed_tokens.weight": "shared.weight",
         "encoder.embed_tokens.weight": "shared.weight",
     }
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PegasusConfig):
         super().__init__(config)
 
@@ -718,14 +749,17 @@ class PegasusModel(PegasusPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # get_input_embeddings：返回 token 嵌入层
     def get_input_embeddings(self):
         return self.shared
 
+    # set_input_embeddings：替换 token 嵌入层
     def set_input_embeddings(self, value):
         self.shared = value
         self.encoder.embed_tokens = self.shared
         self.decoder.embed_tokens = self.shared
 
+    # resize_position_embeddings：扩展或截断位置编码以适配新序列长度
     def resize_position_embeddings(self, new_num_position_embeddings: int):
         """
         Resizes position embeddings matrix of the model if `new_num_position_embeddings !=
@@ -743,6 +777,7 @@ class PegasusModel(PegasusPreTrainedModel):
         self.encoder.resize_position_embeddings(new_num_position_embeddings)
         self.decoder.resize_position_embeddings(new_num_position_embeddings)
 
+    # get_position_embeddings：返回编码器/解码器位置嵌入层
     def get_position_embeddings(self) -> tuple[nn.Embedding]:
         """
         Returns the position embeddings matrix
@@ -751,6 +786,7 @@ class PegasusModel(PegasusPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.Tensor | None = None,
@@ -841,6 +877,7 @@ class PegasusModel(PegasusPreTrainedModel):
     The PEGASUS Model with a language modeling head. Can be used for summarization.
     """
 )
+# PegasusForConditionalGeneration：PEGASUS 条件文本生成（摘要等）
 class PegasusForConditionalGeneration(PegasusPreTrainedModel, GenerationMixin):
     base_model_prefix = "model"
     _keys_to_ignore_on_load_missing = ["final_logits_bias"]
@@ -848,6 +885,7 @@ class PegasusForConditionalGeneration(PegasusPreTrainedModel, GenerationMixin):
         "lm_head.weight": "model.shared.weight",
     }
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PegasusConfig):
         super().__init__(config)
         self.model = PegasusModel(config)
@@ -857,6 +895,7 @@ class PegasusForConditionalGeneration(PegasusPreTrainedModel, GenerationMixin):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # resize_token_embeddings：扩展词表嵌入与 lm_head 尺寸
     def resize_token_embeddings(
         self, new_num_tokens: int, pad_to_multiple_of: int | None = None, mean_resizing: bool = True
     ) -> nn.Embedding:
@@ -864,6 +903,7 @@ class PegasusForConditionalGeneration(PegasusPreTrainedModel, GenerationMixin):
         self._resize_final_logits_bias(new_embeddings.weight.shape[0])
         return new_embeddings
 
+    # _resize_final_logits_bias：词表扩展时同步调整 logits bias
     def _resize_final_logits_bias(self, new_num_tokens: int) -> None:
         old_num_tokens = self.final_logits_bias.shape[-1]
         if new_num_tokens <= old_num_tokens:
@@ -873,6 +913,7 @@ class PegasusForConditionalGeneration(PegasusPreTrainedModel, GenerationMixin):
             new_bias = torch.cat([self.final_logits_bias, extra_bias], dim=1)
         self.final_logits_bias = nn.Buffer(new_bias)
 
+    # resize_position_embeddings：扩展或截断位置编码以适配新序列长度
     def resize_position_embeddings(self, new_num_position_embeddings: int):
         """
         Resizes position embeddings matrix of the model if `new_num_position_embeddings !=
@@ -890,6 +931,7 @@ class PegasusForConditionalGeneration(PegasusPreTrainedModel, GenerationMixin):
         self.model.encoder.resize_position_embeddings(new_num_position_embeddings)
         self.model.decoder.resize_position_embeddings(new_num_position_embeddings)
 
+    # get_position_embeddings：返回编码器/解码器位置嵌入层
     def get_position_embeddings(self) -> tuple[nn.Embedding]:
         """
         Returns the position embeddings matrix
@@ -898,6 +940,7 @@ class PegasusForConditionalGeneration(PegasusPreTrainedModel, GenerationMixin):
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.Tensor | None = None,
@@ -993,31 +1036,37 @@ class PegasusForConditionalGeneration(PegasusPreTrainedModel, GenerationMixin):
             encoder_attentions=outputs.encoder_attentions,
         )
 
+    # prepare_decoder_input_ids_from_labels：从 labels 构造 decoder 输入
     def prepare_decoder_input_ids_from_labels(self, labels: torch.Tensor):
         return shift_tokens_right(labels, self.config.pad_token_id, self.config.decoder_start_token_id)
 
 
 # Copied from transformers.models.bart.modeling_bart.BartDecoderWrapper with Bart->Pegasus
+# PegasusDecoderWrapper：PEGASUS 解码器封装（供生成管线调用）
 class PegasusDecoderWrapper(PegasusPreTrainedModel):
     """
     This wrapper class is a helper class to correctly load pretrained checkpoints when the causal language model is
     used in combination with the [`EncoderDecoderModel`] framework.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__(config)
         self.decoder = PegasusDecoder(config)
         self.post_init()
 
+    # forward：模块前向计算
     def forward(self, *args, **kwargs):
         return self.decoder(*args, **kwargs)
 
 
+# PegasusForCausalLM：PEGASUS 解码器因果语言建模
 class PegasusForCausalLM(PegasusPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {
         "lm_head.weight": "model.decoder.embed_tokens.weight",
     }
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         config = copy.deepcopy(config)
         config.is_decoder = True
@@ -1030,18 +1079,22 @@ class PegasusForCausalLM(PegasusPreTrainedModel, GenerationMixin):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # get_input_embeddings：返回 token 嵌入层
     def get_input_embeddings(self):
         return self.model.decoder.embed_tokens
 
+    # set_input_embeddings：替换 token 嵌入层
     def set_input_embeddings(self, value):
         self.model.decoder.embed_tokens = value
 
+    # get_position_embeddings：返回编码器/解码器位置嵌入层
     def get_position_embeddings(self) -> nn.Embedding:
         """
         Returns the position embeddings matrix
         """
         return self.model.decoder.get_position_embeddings()
 
+    # resize_position_embeddings：扩展或截断位置编码以适配新序列长度
     def resize_position_embeddings(self, new_num_position_embeddings: int):
         """
         Resizes position embeddings matrix of the model if `new_num_position_embeddings !=
@@ -1061,6 +1114,7 @@ class PegasusForCausalLM(PegasusPreTrainedModel, GenerationMixin):
     @can_return_tuple
     @auto_docstring
     # Copied from transformers.models.bart.modeling_bart.BartForCausalLM.forward with Bart->Pegasus, facebook/bart-base->google/pegasus-large
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,

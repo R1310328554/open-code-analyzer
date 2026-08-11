@@ -43,6 +43,8 @@ from ..auto import AutoModel, AutoModelForImageClassification
 from .configuration_pe_video import PeVideoConfig, PeVideoEncoderConfig
 
 
+# PeVideo 建模：视频 Transformer 编码器 + 视频-文本对比学习（自动生成）
+
 # TODO: not sure about the typing for text_model_output
 @auto_docstring(
     custom_intro="""
@@ -50,6 +52,7 @@ from .configuration_pe_video import PeVideoConfig, PeVideoEncoderConfig
     """
 )
 @dataclass
+# PeVideoOutput：PeVideo 对比学习前向输出（loss + 图文嵌入）
 class PeVideoOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*):
@@ -73,13 +76,16 @@ class PeVideoOutput(ModelOutput):
     text_outputs: BaseModelOutputWithPooling = None
     video_outputs: BaseModelOutputWithPooling = None
 
+    # to_tuple：将 ModelOutput 字段转为元组形式
     def to_tuple(self) -> tuple[Any]:
         return tuple(
             self[k] if k not in ["text_outputs", "video_outputs"] else getattr(self, k).to_tuple() for k in self.keys()
         )
 
 
+# PeVideoContrastiveHead：视频-文本对比投影头（L2 归一化 + 线性层）
 class PeVideoContrastiveHead(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         in_dim: int,
@@ -89,11 +95,14 @@ class PeVideoContrastiveHead(nn.Module):
         self.layer_norm = nn.LayerNorm(normalized_shape=in_dim, eps=1e-6)
         self.proj = nn.Linear(in_dim, out_dim, bias=False)
 
+    # forward：模块前向计算
     def forward(self, x: torch.Tensor) -> torch.FloatTensor:
         return self.proj(self.layer_norm(x))
 
 
+# PeVideoMaskedGroupNorm：支持 padding mask 的 GroupNorm
 class PeVideoMaskedGroupNorm(nn.GroupNorm):
+    # forward：模块前向计算
     def forward(self, x, padding_mask=None):
         if padding_mask is None:
             return super().forward(x)
@@ -117,7 +126,9 @@ class PeVideoMaskedGroupNorm(nn.GroupNorm):
         return x_norm * padding_mask
 
 
+# PeVideoConvBlock1d：1D 卷积块（Conv1d + GroupNorm + GELU）
 class PeVideoConvBlock1d(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.groupnorm = PeVideoMaskedGroupNorm(num_groups=1, num_channels=config.hidden_size)
@@ -129,18 +140,22 @@ class PeVideoConvBlock1d(nn.Module):
             padding="same",
         )
 
+    # forward：模块前向计算
     def forward(self, x, padding_mask=None):
         x = self.groupnorm(x, padding_mask=padding_mask)
         x = self.activation(x)
         return self.project(x)
 
 
+# PeVideoResnetBlock1d：1D ResNet 残差块（两层 ConvBlock + 跳跃连接）
 class PeVideoResnetBlock1d(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.block1 = PeVideoConvBlock1d(config)
         self.block2 = PeVideoConvBlock1d(config)
 
+    # forward：模块前向计算
     def forward(self, hidden_states, padding_mask=None):
         """
         Args:
@@ -164,12 +179,15 @@ class PeVideoResnetBlock1d(nn.Module):
         return hidden_states.transpose(1, 2)
 
 
+# PeVideoEncoderPatchEmbedder：视频 patch 1D 卷积嵌入层
 class PeVideoEncoderPatchEmbedder(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.resnet_block = PeVideoResnetBlock1d(config)
         self.class_embedding = nn.Parameter(torch.randn(1, 1, config.hidden_size))
 
+    # forward：模块前向计算
     def forward(self, inputs_embeds, padding_mask=None):
         # Embedding step: prepend class token and run the ResNet block.
         hidden_states = torch.cat(
@@ -185,13 +203,16 @@ class PeVideoEncoderPatchEmbedder(nn.Module):
         return hidden_states, padding_mask
 
 
+# PeVideoEncoderEmbedder：视频编码器前端（PatchEmbed + 位置编码）
 class PeVideoEncoderEmbedder(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PeVideoEncoderConfig):
         super().__init__()
         self.vision_model = AutoModelForImageClassification.from_config(config.vision_config)
         self.proj = nn.Linear(config.vision_config.num_labels, config.hidden_size, bias=False)
         self.data_proj = nn.Linear(config.hidden_size, config.hidden_size)
 
+    # forward：模块前向计算
     def forward(
         self,
         pixel_values_videos: torch.Tensor,
@@ -211,6 +232,7 @@ class PeVideoEncoderEmbedder(nn.Module):
         return inputs_embeds, padding_mask
 
 
+# repeat_kv：GQA 中将 KV 头重复扩展以匹配 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -223,6 +245,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -248,6 +271,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# stack_freqs：RoPE 中将 cos/sin 频率张量堆叠为复数形式
 def stack_freqs(cos: torch.Tensor, sin: torch.Tensor):
     dim = cos.size(-1)
     cos = cos.narrow(-1, 0, dim // 2)
@@ -256,6 +280,7 @@ def stack_freqs(cos: torch.Tensor, sin: torch.Tensor):
     return freqs_cis
 
 
+# apply_rotary_pos_emb：对 Q/K 张量应用 RoPE 旋转位置编码
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     freqs_cis = stack_freqs(cos, sin)
     freqs_cis = freqs_cis.unsqueeze(unsqueeze_dim)
@@ -265,7 +290,9 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# PeVideoEncoderRMSNorm：PeVideo 编码器 RMS 层归一化
 class PeVideoEncoderRMSNorm(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
         PeVideoEncoderRMSNorm is equivalent to T5LayerNorm
@@ -274,6 +301,7 @@ class PeVideoEncoderRMSNorm(nn.Module):
         self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
 
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         input_dtype = hidden_states.dtype
         hidden_states = hidden_states.to(torch.float32)
@@ -281,13 +309,16 @@ class PeVideoEncoderRMSNorm(nn.Module):
         hidden_states = hidden_states * torch.rsqrt(variance + self.variance_epsilon)
         return self.weight * hidden_states.to(input_dtype)
 
+    # extra_repr：模块 extra_repr 调试信息
     def extra_repr(self):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# PeVideoEncoderAttention：PeVideo 编码器 GQA 自注意力（RoPE）
 class PeVideoEncoderAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config, layer_idx):
         super().__init__()
         self.layer_type = config.layer_types[layer_idx] if hasattr(config, "layer_types") else None
@@ -318,6 +349,7 @@ class PeVideoEncoderAttention(nn.Module):
             self.head_dim, eps=config.rms_norm_eps
         )  # thus post q_norm does not need reshape
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -355,7 +387,9 @@ class PeVideoEncoderAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# PeVideoEncoderMLP：PeVideo 编码器 SwiGLU 前馈 MLP
 class PeVideoEncoderMLP(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -366,12 +400,15 @@ class PeVideoEncoderMLP(nn.Module):
         self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=False)
         self.act_fn = ACT2FN[config.hidden_act]
 
+    # forward：模块前向计算
     def forward(self, x):
         down_proj = self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
         return down_proj
 
 
+# PeVideoEncoderLayer：PeVideo 编码器单层（Attn + MLP + 残差）
 class PeVideoEncoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config, layer_idx):
         super().__init__()
         self.hidden_size = config.hidden_size
@@ -382,6 +419,7 @@ class PeVideoEncoderLayer(GradientCheckpointingLayer):
         self.input_layernorm = PeVideoEncoderRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.post_attention_layernorm = PeVideoEncoderRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -415,6 +453,7 @@ class PeVideoEncoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# PeVideoPreTrainedModel：PeVideo 预训练基类与权重初始化
 class PeVideoPreTrainedModel(PreTrainedModel):
     config: PeVideoConfig
     base_model_prefix = "video_model"
@@ -433,6 +472,7 @@ class PeVideoPreTrainedModel(PreTrainedModel):
     }
     main_input_name = "pixel_values_videos"
 
+    # _init_weights：按模块类型初始化权重
     def _init_weights(self, module):
         super()._init_weights(module)
 
@@ -447,8 +487,10 @@ class PeVideoPreTrainedModel(PreTrainedModel):
             init.normal_(module.class_embedding, mean=0.0, std=embed_dim**-0.5 * std)
 
 
+# PeVideoEncoderRotaryEmbedding：PeVideo 编码器动态 RoPE 频率表
 class PeVideoEncoderRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PeVideoEncoderConfig, device=None):
         super().__init__()
         self.max_seq_len_cached = config.max_position_embeddings
@@ -467,6 +509,7 @@ class PeVideoEncoderRotaryEmbedding(nn.Module):
 
     @staticmethod
     @deprecate_kwarg("device", version="5.18")
+    # compute_default_rope_parameters：按 config 计算默认 RoPE 频率参数
     def compute_default_rope_parameters(
         config: PeVideoEncoderConfig, device=None, **kwargs
     ) -> tuple[torch.Tensor, float]:
@@ -489,6 +532,7 @@ class PeVideoEncoderRotaryEmbedding(nn.Module):
 
     @torch.no_grad()
     @dynamic_rope_update  # power user: used with advanced RoPE types (e.g. dynamic rope)
+    # forward：模块前向计算
     def forward(self, x, position_ids):
         inv_freq_expanded = self.inv_freq[None, :, None].float().expand(position_ids.shape[0], -1, 1).to(x.device)
         position_ids_expanded = position_ids[:, None, :].float()
@@ -508,11 +552,13 @@ class PeVideoEncoderRotaryEmbedding(nn.Module):
     The PeVideo Encoder model.
     """
 )
+# PeVideoEncoder：PeVideo 视频 Transformer 编码器堆叠
 class PeVideoEncoder(PeVideoPreTrainedModel):
     config: PeVideoEncoderConfig
     main_input_name = "pixel_values_videos"
     base_model_prefix = "video_model.video_encoder"
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PeVideoEncoderConfig):
         super().__init__(config)
         self.embedder = PeVideoEncoderEmbedder(config)
@@ -530,6 +576,7 @@ class PeVideoEncoder(PeVideoPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         pixel_values_videos: torch.Tensor,
@@ -574,9 +621,11 @@ class PeVideoEncoder(PeVideoPreTrainedModel):
         )
 
 
+# PeVideoModel：PeVideo 视频-文本对比学习完整模型
 class PeVideoModel(PeVideoPreTrainedModel):
     main_input_name = "input_ids"
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PeVideoConfig):
         super().__init__(config)
         self.text_model = AutoModel.from_config(config.text_config)
@@ -592,6 +641,7 @@ class PeVideoModel(PeVideoPreTrainedModel):
 
         @can_return_tuple
         @auto_docstring
+        # get_text_features：提取文本侧对比学习嵌入特征
         def get_text_features(
             self,
             input_ids: torch.Tensor,
@@ -609,6 +659,7 @@ class PeVideoModel(PeVideoPreTrainedModel):
 
         @can_return_tuple
         @auto_docstring
+        # get_video_features：提取视频侧对比学习嵌入特征
         def get_video_features(
             self,
             pixel_values_videos: torch.Tensor,
@@ -626,6 +677,7 @@ class PeVideoModel(PeVideoPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.Tensor,

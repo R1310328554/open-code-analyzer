@@ -13,14 +13,18 @@
 # limitations under the License.
 """PEGASUS-X model configuration"""
 
+# PEGASUS-X 配置：长文档全局-局部注意力 seq2seq 超参
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# PegasusXConfig：google/pegasus-x 长文档全局-局部注意力 seq2seq 超参
 @auto_docstring(checkpoint="google/pegasus-x-large")
 @strict
+# PegasusXConfig：google/pegasus-x 长文档全局-局部注意力 seq2seq 超参
 class PegasusXConfig(PreTrainedConfig):
     r"""
     num_global_tokens (`int`, *optional*, defaults to 128):

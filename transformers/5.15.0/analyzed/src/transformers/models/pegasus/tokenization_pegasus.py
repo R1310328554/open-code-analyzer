@@ -22,9 +22,12 @@ from ...utils import logging
 
 logger = logging.get_logger(__name__)
 
+
+# PEGASUS 分词：Unigram SentencePiece 后端
 VOCAB_FILES_NAMES = {"vocab_file": "spiece.model", "tokenizer_file": "tokenizer.json"}
 
 
+# PegasusTokenizer：PEGASUS Unigram 分词器（SentencePiece 后端）
 class PegasusTokenizer(TokenizersBackend):
     r"""
     Construct a PEGASUS tokenizer (backed by HuggingFace's *tokenizers* library). Based on
@@ -77,6 +80,7 @@ class PegasusTokenizer(TokenizersBackend):
     model_input_names = ["input_ids", "attention_mask"]
     model = Unigram
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         vocab: str | list[tuple[str, float]] | None = None,

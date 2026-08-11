@@ -13,14 +13,18 @@
 # limitations under the License.
 """PEGASUS model configuration"""
 
+# PEGASUS 配置：google/pegasus 预训练摘要 seq2seq 超参
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# PegasusConfig：google/pegasus 预训练摘要 seq2seq 超参
 @auto_docstring(checkpoint="google/pegasus-large")
 @strict
+# PegasusConfig：google/pegasus 预训练摘要 seq2seq 超参
 class PegasusConfig(PreTrainedConfig):
     r"""
     Example:

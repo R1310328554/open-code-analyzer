@@ -22,8 +22,12 @@ from ..auto import CONFIG_MAPPING, AutoConfig
 from ..timm_wrapper import TimmWrapperConfig
 
 
+# PeVideo 配置：facebook/pe-av 视频编码器 + 视频-文本对比学习超参
+
+# PeVideoEncoderConfig：facebook/pe-av 视频编码器 Transformer 超参
 @auto_docstring(checkpoint="facebook/pe-av-large")
 @strict
+# PeVideoEncoderConfig：facebook/pe-av 视频编码器 Transformer 超参
 class PeVideoEncoderConfig(PreTrainedConfig):
     r"""
     Example:
@@ -68,6 +72,7 @@ class PeVideoEncoderConfig(PreTrainedConfig):
     attention_bias: bool = False
     attention_dropout: float | int = 0.0
 
+    # __post_init__：初始化后解析 vision 子配置与 KV 头数
     def __post_init__(self, **kwargs):
         if self.num_key_value_heads is None:
             self.num_key_value_heads = self.num_attention_heads
@@ -86,8 +91,10 @@ class PeVideoEncoderConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# PeVideoConfig：PeVideo 视频-文本对比学习联合超参
 @auto_docstring(checkpoint="facebook/pe-av-large")
 @strict
+# PeVideoConfig：PeVideo 视频-文本对比学习联合超参
 class PeVideoConfig(PreTrainedConfig):
     r"""
     video_config (`dict` or `PreTrainedConfig`, *optional*):
@@ -121,6 +128,7 @@ class PeVideoConfig(PreTrainedConfig):
     text_config: dict | PreTrainedConfig | None = None
     video_config: dict | PreTrainedConfig | None = None
 
+    # __post_init__：初始化后解析 vision 子配置与 KV 头数
     def __post_init__(self, **kwargs):
         if isinstance(self.text_config, dict):
             self.text_config["model_type"] = self.text_config.get("model_type", "modernbert")

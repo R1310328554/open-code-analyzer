@@ -13,6 +13,8 @@
 # limitations under the License.
 """Image processor class for Perceiver."""
 
+# Perceiver 图像处理：256 resize + 224 center crop（Torchvision 后端）
+
 import torch
 from torchvision.transforms.v2 import functional as tvF
 
@@ -30,6 +32,7 @@ from ...utils import TensorType, auto_docstring
 
 
 @auto_docstring
+# PerceiverImageProcessor：Perceiver 图像预处理（256→224 center crop，Torchvision）
 class PerceiverImageProcessor(TorchvisionBackend):
     """Torchvision backend for Perceiver with custom center crop."""
 
@@ -43,9 +46,11 @@ class PerceiverImageProcessor(TorchvisionBackend):
     do_rescale = True
     do_normalize = True
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, **kwargs: Unpack[ImagesKwargs]):
         super().__init__(**kwargs)
 
+    # center_crop：Perceiver 自定义 center crop（先 resize 再裁剪）
     def center_crop(
         self,
         image: "torch.Tensor",
@@ -73,6 +78,7 @@ class PerceiverImageProcessor(TorchvisionBackend):
             **kwargs,
         )
 
+    # _preprocess：视频预处理流水线（采样→resize→归一化→变长 padding）
     def _preprocess(
         self,
         images: list["torch.Tensor"],

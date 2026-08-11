@@ -34,6 +34,8 @@ from ..pe_audio_video.modeling_pe_audio_video import (
 from .configuration_pe_video import PeVideoConfig, PeVideoEncoderConfig
 
 
+# PeVideo modular 源：继承 PeAudioVideo 组件实现视频-文本对比学习
+
 # TODO: not sure about the typing for text_model_output
 @auto_docstring(
     custom_intro="""
@@ -41,6 +43,7 @@ from .configuration_pe_video import PeVideoConfig, PeVideoEncoderConfig
     """
 )
 @dataclass
+# PeVideoOutput：PeVideo 对比学习前向输出（loss + 图文嵌入）
 class PeVideoOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*):
@@ -64,25 +67,31 @@ class PeVideoOutput(ModelOutput):
     text_outputs: BaseModelOutputWithPooling = None
     video_outputs: BaseModelOutputWithPooling = None
 
+    # to_tuple：将 ModelOutput 字段转为元组形式
     def to_tuple(self) -> tuple[Any]:
         return tuple(
             self[k] if k not in ["text_outputs", "video_outputs"] else getattr(self, k).to_tuple() for k in self.keys()
         )
 
 
+# PeVideoContrastiveHead：视频-文本对比投影头（L2 归一化 + 线性层）
 class PeVideoContrastiveHead(PeAudioVideoContrastiveHead): ...
 
 
+# PeVideoEncoderPatchEmbedder：视频 patch 1D 卷积嵌入层
 class PeVideoEncoderPatchEmbedder(PeAudioVideoEncoderPatchEmbedder): ...
 
 
+# PeVideoEncoderEmbedder：视频编码器前端（PatchEmbed + 位置编码）
 class PeVideoEncoderEmbedder(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PeVideoEncoderConfig):
         super().__init__()
         self.vision_model = AutoModelForImageClassification.from_config(config.vision_config)
         self.proj = nn.Linear(config.vision_config.num_labels, config.hidden_size, bias=False)
         self.data_proj = nn.Linear(config.hidden_size, config.hidden_size)
 
+    # forward：模块前向计算
     def forward(
         self,
         pixel_values_videos: torch.Tensor,
@@ -102,6 +111,7 @@ class PeVideoEncoderEmbedder(nn.Module):
         return inputs_embeds, padding_mask
 
 
+# PeVideoPreTrainedModel：PeVideo 预训练基类与权重初始化
 class PeVideoPreTrainedModel(PeAudioVideoPreTrainedModel):
     base_model_prefix = "video_model"
     main_input_name = "pixel_values_videos"
@@ -113,10 +123,12 @@ class PeVideoPreTrainedModel(PeAudioVideoPreTrainedModel):
     The PeVideo Encoder model.
     """
 )
+# PeVideoEncoder：PeVideo 视频 Transformer 编码器堆叠
 class PeVideoEncoder(PeAudioVideoEncoder):
     base_model_prefix = "video_model.video_encoder"
     main_input_name = "pixel_values_videos"
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PeVideoEncoderConfig):
         super().__init__(config)
         self.embedder = PeVideoEncoderEmbedder(config)
@@ -124,6 +136,7 @@ class PeVideoEncoder(PeAudioVideoEncoder):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         pixel_values_videos: torch.Tensor,
@@ -168,9 +181,11 @@ class PeVideoEncoder(PeAudioVideoEncoder):
         )
 
 
+# PeVideoModel：PeVideo 视频-文本对比学习完整模型
 class PeVideoModel(PeVideoPreTrainedModel):
     main_input_name = "input_ids"
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PeVideoConfig):
         super().__init__(config)
         self.text_model = AutoModel.from_config(config.text_config)
@@ -186,6 +201,7 @@ class PeVideoModel(PeVideoPreTrainedModel):
 
         @can_return_tuple
         @auto_docstring
+        # get_text_features：提取文本侧对比学习嵌入特征
         def get_text_features(
             self,
             input_ids: torch.Tensor,
@@ -203,6 +219,7 @@ class PeVideoModel(PeVideoPreTrainedModel):
 
         @can_return_tuple
         @auto_docstring
+        # get_video_features：提取视频侧对比学习嵌入特征
         def get_video_features(
             self,
             pixel_values_videos: torch.Tensor,
@@ -220,6 +237,7 @@ class PeVideoModel(PeVideoPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.Tensor,

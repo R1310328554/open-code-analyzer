@@ -13,14 +13,18 @@
 # limitations under the License.
 """Perceiver model configuration"""
 
+# Perceiver 配置：DeepMind Perceiver IO 通用感知器超参
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# PerceiverConfig：DeepMind Perceiver IO 通用感知器超参
 @auto_docstring(checkpoint="deepmind/language-perceiver")
 @strict
+# PerceiverConfig：DeepMind Perceiver IO 通用感知器超参
 class PerceiverConfig(PreTrainedConfig):
     r"""
     num_latents (`int`, *optional*, defaults to 256):
