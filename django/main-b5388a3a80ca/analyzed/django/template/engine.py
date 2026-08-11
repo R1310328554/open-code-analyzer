@@ -1,4 +1,10 @@
-import functools
+"""
+django.template.engine — DTL 引擎：加载器、库与模板编译。
+
+Engine 协调 loaders、builtins、context_processors 与 Template 生命周期。
+"""
+
+import functoolsimport functools
 
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.functional import cached_property
@@ -10,6 +16,7 @@ from .exceptions import TemplateDoesNotExist
 from .library import import_library
 
 
+# DTL 引擎：dirs/loaders/libraries/builtins 与 find_template
 class Engine:
     default_builtins = [
         "django.template.defaulttags",
@@ -86,6 +93,7 @@ class Engine:
 
     @staticmethod
     @functools.lru_cache
+    # 返回首个 DjangoTemplates 后端的 engine（历史 API 兼容）
     def get_default():
         """
         Return the first DjangoTemplates backend that's configured, or raise
@@ -112,6 +120,7 @@ class Engine:
         raise ImproperlyConfigured("No DjangoTemplates backend is configured.")
 
     @cached_property
+    # 内置 + 配置的 context_processor 可调用对象元组
     def template_context_processors(self):
         context_processors = _builtin_context_processors
         context_processors += tuple(self.context_processors)
@@ -127,6 +136,7 @@ class Engine:
         return loaded
 
     @cached_property
+    # 实例化并缓存 loader 链（含 cached.Loader 包装）
     def template_loaders(self):
         return self.get_template_loaders(self.loaders)
 
@@ -152,6 +162,7 @@ class Engine:
                 "Invalid value in template loaders configuration: %r" % loader
             )
 
+    # 依次尝试 loader，聚合 tried 后抛出 TemplateDoesNotExist
     def find_template(self, name, dirs=None, skip=None):
         tried = []
         for loader in self.template_loaders:
@@ -162,6 +173,7 @@ class Engine:
                 tried.extend(e.tried)
         raise TemplateDoesNotExist(name, tried=tried)
 
+    # 由字符串编译 Template
     def from_string(self, template_code):
         """
         Return a compiled Template object for the given template code,
@@ -169,6 +181,7 @@ class Engine:
         """
         return Template(template_code, engine=self)
 
+    # 按名称加载；支持 name#partial 片段语法
     def get_template(self, template_name):
         """
         Return a compiled Template object for the given template name,
@@ -200,6 +213,7 @@ class Engine:
 
         return partial
 
+    # 加载并渲染，主要用于测试套件
     def render_to_string(self, template_name, context=None):
         """
         Render the template specified by template_name with the given context.
@@ -216,6 +230,7 @@ class Engine:
         else:
             return t.render(Context(context, autoescape=self.autoescape))
 
+    # 按列表顺序返回首个可加载的模板
     def select_template(self, template_name_list):
         """
         Given a list of template names, return the first that can be loaded.

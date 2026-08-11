@@ -1,4 +1,7 @@
-"""Default variable filters."""
+"""
+django.template.defaultfilters — DTL 内置变量过滤器。
+
+Default variable filters."""Default variable filters."""
 
 import random as random_module
 import re
@@ -27,14 +30,18 @@ from django.utils.translation import gettext, ngettext
 from .base import VARIABLE_ATTRIBUTE_SEPARATOR
 from .library import Library
 
+# 内置过滤器注册到 defaultfilters 库
 register = Library()
 
 
+# 字符串装饰器与通用字符串转换
 #######################
+# STRING DECORATOR    ########################
 # STRING DECORATOR    #
 #######################
 
 
+# 装饰器：强制首参为 str，SafeData 输入时保留 mark_safe
 def stringfilter(func):
     """
     Decorator for filters which should only receive strings. The object
@@ -52,7 +59,9 @@ def stringfilter(func):
     return _dec
 
 
+# 字符串过滤器：转义、截断、slugify、urlize 等
 ###################
+# STRINGS         ####################
 # STRINGS         #
 ###################
 
@@ -449,7 +458,9 @@ def cut(value, arg):
     return value
 
 
+# HTML 相关：escape、linebreaks、safe、striptags
 ###################
+# HTML STRINGS    ####################
 # HTML STRINGS    #
 ###################
 
@@ -532,7 +543,9 @@ def striptags(value):
     return strip_tags(value)
 
 
+# 列表/序列：dictsort、join、slice、unordered_list
 ###################
+# LISTS           ####################
 # LISTS           #
 ###################
 
@@ -738,7 +751,9 @@ def unordered_list(value, autoescape=True):
     return mark_safe(list_formatter(value))
 
 
+# 整数/算术：add、get_digit、divisibleby
 ###################
+# INTEGERS        ####################
 # INTEGERS        #
 ###################
 
@@ -776,7 +791,9 @@ def get_digit(value, arg):
         return 0
 
 
+# 日期时间：date、time、timesince、timeuntil
 ###################
+# DATES           ####################
 # DATES           #
 ###################
 
@@ -833,7 +850,9 @@ def timeuntil_filter(value, arg=None):
         return ""
 
 
+# 逻辑与默认值：default、yesno、pluralize
 ###################
+# LOGIC           ####################
 # LOGIC           #
 ###################
 
@@ -892,7 +911,9 @@ def yesno(value, arg=None):
     return no
 
 
+# 杂项：filesizeformat、pprint、phone2numeric
 ###################
+# MISC            ####################
 # MISC            #
 ###################
 

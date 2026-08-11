@@ -1,4 +1,10 @@
-from collections import defaultdict
+"""
+django.template.backends.django — Django 模板语言（DTL）后端包装。
+
+DjangoTemplates 封装 Engine；Template 适配 render 与异常链。
+"""
+
+from collections import defaultdictfrom collections import defaultdict
 from importlib import import_module
 from pkgutil import walk_packages
 
@@ -13,6 +19,7 @@ from django.template.library import InvalidTemplateLibrary
 from .base import BaseEngine
 
 
+# DTL 后端：构建 Engine 并注册 templatetag 库
 class DjangoTemplates(BaseEngine):
     app_dirname = "templates"
 
@@ -90,6 +97,7 @@ class DjangoTemplates(BaseEngine):
         return libraries
 
 
+# 后端 Template 包装：make_context + engine 委托 render
 class Template:
     def __init__(self, template, backend):
         self.template = template
@@ -109,6 +117,7 @@ class Template:
             reraise(exc, self.backend)
 
 
+# 复制 TemplateDoesNotExist 并丢弃 traceback 以便缓存
 def copy_exception(exc, backend=None):
     """
     Create a new TemplateDoesNotExist. Preserve its declared attributes and
@@ -122,6 +131,7 @@ def copy_exception(exc, backend=None):
     return new
 
 
+# 重新抛出并保留 template_debug 调试信息
 def reraise(exc, backend):
     """
     Reraise TemplateDoesNotExist while maintaining template debug information.
@@ -130,6 +140,7 @@ def reraise(exc, backend):
     raise new from exc
 
 
+# 遍历 django 与各 app 的 templatetags 子包
 def get_template_tag_modules():
     """
     Yield (module_name, module_path) pairs for all installed template tag
@@ -152,6 +163,7 @@ def get_template_tag_modules():
                 yield name.removeprefix(candidate).lstrip("."), name
 
 
+# 返回 module_name -> 完整路径 的内置与已安装库映射
 def get_installed_libraries():
     """
     Return the built-in template tag libraries and those from installed
@@ -164,6 +176,7 @@ def get_installed_libraries():
     }
 
 
+# 递归 yield 含 register 的 templatetags 子模块
 def get_package_libraries(pkg):
     """
     Recursively yield template tag libraries defined in submodules of a

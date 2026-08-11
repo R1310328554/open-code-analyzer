@@ -1,9 +1,16 @@
-from django.core.exceptions import ImproperlyConfigured, SuspiciousFileOperation
+"""
+django.template.backends.base — 模板引擎后端抽象基类。
+
+定义 get_template/from_string 及安全的 template_dirs 迭代。
+"""
+
+from django.core.exceptions import ImproperlyConfiguredfrom django.core.exceptions import ImproperlyConfigured, SuspiciousFileOperation
 from django.template.utils import get_app_template_dirs
 from django.utils._os import safe_join
 from django.utils.functional import cached_property
 
 
+# 模板引擎基类：NAME/DIRS/APP_DIRS 配置与模板加载 API
 class BaseEngine:
     # Core methods: engines have to provide their own implementation
     #               (except for from_string which is optional).
@@ -23,6 +30,7 @@ class BaseEngine:
                 "Unknown parameters: {}".format(", ".join(params))
             )
 
+    # 系统检查钩子，子类可返回 Error/Warning 列表
     def check(self, **kwargs):
         return []
 
@@ -33,6 +41,7 @@ class BaseEngine:
             "applications.".format(self.__class__.__name__)
         )
 
+    # 可选：由源码字符串编译模板
     def from_string(self, template_code):
         """
         Create and return a template for the given source code.
@@ -43,6 +52,7 @@ class BaseEngine:
             "subclasses of BaseEngine should provide a from_string() method"
         )
 
+    # 按名称加载模板，不存在时抛出 TemplateDoesNotExist
     def get_template(self, template_name):
         """
         Load and return a template for the given name.
@@ -57,6 +67,7 @@ class BaseEngine:
     #                  security issues in third-party backends.
 
     @cached_property
+    # 合并 DIRS 与应用 templates 目录的只读元组
     def template_dirs(self):
         """
         Return a list of directories to search for templates.
@@ -67,6 +78,7 @@ class BaseEngine:
             template_dirs += get_app_template_dirs(self.app_dirname)
         return template_dirs
 
+    # 安全拼接候选路径，跳过目录遍历攻击
     def iter_template_filenames(self, template_name):
         """
         Iterate over candidate files for template_name.

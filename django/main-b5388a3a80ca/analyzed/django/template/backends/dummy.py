@@ -1,4 +1,10 @@
-import string
+"""
+django.template.backends.dummy — 基于 string.Template 的简易后端。
+
+TemplateStrings 用于测试；支持 CSRF 占位符与 conditional_escape。
+"""
+
+import stringimport string
 
 from django.core.exceptions import ImproperlyConfigured
 from django.template import Origin, TemplateDoesNotExist
@@ -8,6 +14,7 @@ from .base import BaseEngine
 from .utils import csrf_input_lazy, csrf_token_lazy
 
 
+# 字符串模板后端：从文件或源码加载 string.Template
 class TemplateStrings(BaseEngine):
     app_dirname = "template_strings"
 
@@ -39,6 +46,7 @@ class TemplateStrings(BaseEngine):
         raise TemplateDoesNotExist(template_name, tried=tried, backend=self)
 
 
+# 渲染时对 context 转义并注入 csrf_input/csrf_token
 class Template(string.Template):
     def render(self, context=None, request=None):
         if context is None:

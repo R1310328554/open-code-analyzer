@@ -1,4 +1,10 @@
-from pathlib import Path
+"""
+django.template.autoreload — 开发模式下模板目录监视与加载器重置。
+
+runserver 重载时监听模板目录变更并清空 cached loader 缓存。
+"""
+
+from pathlib import Pathfrom pathlib import Path
 
 from django.dispatch import receiver
 from django.template import engines
@@ -7,6 +13,7 @@ from django.utils._os import to_path
 from django.utils.autoreload import autoreload_started, file_changed, is_django_path
 
 
+# 收集所有 DjangoTemplates 后端的模板搜索目录
 def get_template_directories():
     # Iterate through each template backend and find
     # any template_loader that has a 'get_dirs' method.
@@ -30,6 +37,7 @@ def get_template_directories():
     return items
 
 
+# 重置各后端及默认表单渲染器的 template_loaders
 def reset_loaders():
     from django.forms.renderers import get_default_renderer
 
@@ -46,12 +54,14 @@ def reset_loaders():
 
 
 @receiver(autoreload_started, dispatch_uid="template_loaders_watch_changes")
+# autoreload_started：向监视器注册模板目录
 def watch_for_template_changes(sender, **kwargs):
     for directory in get_template_directories():
         sender.watch_dir(directory, "**/*")
 
 
 @receiver(file_changed, dispatch_uid="template_loaders_file_changed")
+# file_changed：非 .py 模板变更时 reset_loaders 并返回 True
 def template_changed(sender, file_path, **kwargs):
     if file_path.suffix == ".py":
         return

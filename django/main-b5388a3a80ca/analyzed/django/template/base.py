@@ -1,4 +1,7 @@
 """
+django.template.base — Django 模板语言（DTL）核心实现。
+
+This is the Django template system."""
 This is the Django template system.
 
 How it works:
@@ -95,6 +98,7 @@ tag_re = re.compile(r"({%.*?%}|{{.*?}}|{#.*?#})")
 logger = logging.getLogger("django.template")
 
 
+# 词法单元类型：TEXT/VAR/BLOCK/COMMENT
 class TokenType(Enum):
     TEXT = 0
     VAR = 1
@@ -102,6 +106,7 @@ class TokenType(Enum):
     COMMENT = 3
 
 
+# 变量解析失败异常，可标记 silent_variable_failure
 class VariableDoesNotExist(Exception):
     def __init__(self, msg, params=()):
         self.msg = msg
@@ -111,6 +116,7 @@ class VariableDoesNotExist(Exception):
         return self.msg % self.params
 
 
+# 模板来源：物理路径、逻辑名与 loader 引用
 class Origin:
     def __init__(self, name, template_name=None, loader=None):
         self.name = name
@@ -139,6 +145,7 @@ class Origin:
             )
 
 
+# 编译并渲染模板：Lexer→Parser→NodeList→render
 class Template:
     def __init__(self, template_string, origin=None, name=None, engine=None):
         # If Template is instantiated directly rather than from an Engine and
@@ -292,6 +299,7 @@ class Template:
         }
 
 
+# 轻量模板片段：用于 partialdef/partial 局部渲染
 class PartialTemplate:
     """
     A lightweight Template lookalike used for template partials.
@@ -356,6 +364,7 @@ def linebreak_iter(template_source):
     yield len(template_source) + 1
 
 
+# 词法标记：类型、内容与源码位置/行号
 class Token:
     def __init__(self, token_type, contents, position=None, lineno=None):
         """
@@ -404,6 +413,7 @@ class Token:
         return split
 
 
+# 词法分析器：将模板字符串切分为 Token 列表
 class Lexer:
     def __init__(self, template_string):
         self.template_string = template_string
@@ -465,6 +475,7 @@ class Lexer:
         return Token(TokenType.TEXT, token_string, position, lineno)
 
 
+# 调试词法器：为每个 Token 记录 position 偏移
 class DebugLexer(Lexer):
     def _tag_re_split_positions(self):
         last = 0
@@ -499,6 +510,7 @@ class DebugLexer(Lexer):
         return result
 
 
+# 语法分析器：Token→NodeList，解析标签/变量/过滤器
 class Parser:
     def __init__(self, tokens, libraries=None, builtins=None, origin=None):
         # Reverse the tokens so delete_first_token(), prepend_token(), and
@@ -737,6 +749,7 @@ filter_raw_string = r"""
 filter_re = _lazy_re_compile(filter_raw_string, re.VERBOSE)
 
 
+# 变量与过滤器链表达式：var|filter:arg 解析与 resolve
 class FilterExpression:
     """
     Parse a variable token and its optional filters (all as a single string),
@@ -864,6 +877,7 @@ class FilterExpression:
         return "<%s %r>" % (self.__class__.__qualname__, self.token)
 
 
+# 模板变量路径解析：点号/索引/filter 与 resolve
 class Variable:
     """
     A template variable, resolvable against a given context. The variable may
@@ -1045,6 +1059,7 @@ class Variable:
         return current
 
 
+# AST 节点基类：render 与 debug 异常标注
 class Node:
     # Set this to True for nodes that must be first in the template (although
     # they can be preceded by text nodes.
@@ -1099,6 +1114,7 @@ class Node:
         return nodes
 
 
+# 节点列表：顺序 render_annotated 并拼接 SafeString
 class NodeList(list):
     # Set to True the first time a non-TextNode is inserted by
     # extend_nodelist().
@@ -1115,6 +1131,7 @@ class NodeList(list):
         return nodes
 
 
+# 纯文本节点：原样输出 self.s
 class TextNode(Node):
     child_nodelists = ()
 
@@ -1153,6 +1170,7 @@ def render_value_in_context(value, context):
         return str(value)
 
 
+# 变量输出节点：FilterExpression.resolve 后转义
 class VariableNode(Node):
     child_nodelists = ()
 

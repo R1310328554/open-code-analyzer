@@ -1,4 +1,10 @@
-from pathlib import Path
+"""
+django.template.backends.jinja2 — Jinja2 模板引擎集成。
+
+Jinja2 后端封装 Environment；Template 注入 request 与 context_processors。
+"""
+
+from pathlib import Pathfrom pathlib import Path
 
 import jinja2
 
@@ -11,6 +17,7 @@ from .base import BaseEngine
 from .utils import csrf_input_lazy, csrf_token_lazy
 
 
+# Jinja2 后端：FileSystemLoader、autoescape 与 context_processors
 class Jinja2(BaseEngine):
     app_dirname = "jinja2"
 
@@ -52,6 +59,7 @@ class Jinja2(BaseEngine):
         return [import_string(path) for path in self.context_processors]
 
 
+# Jinja2 Template 包装：request/CSRF 与处理器合并 context
 class Template:
     def __init__(self, template, backend):
         self.template = template
@@ -78,6 +86,7 @@ class Template:
             raise new from exc
 
 
+# 调试信息容器：模板文件名与逻辑名称
 class Origin:
     """
     A container to hold debug information as described in the template API
@@ -89,6 +98,7 @@ class Origin:
         self.template_name = template_name
 
 
+# 将 Jinja2 语法错误格式化为 Django debug 页面结构
 def get_exception_info(exception):
     """
     Format exception information for display on the debug page using the

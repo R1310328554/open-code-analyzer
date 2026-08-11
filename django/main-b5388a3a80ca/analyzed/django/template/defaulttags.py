@@ -1,4 +1,7 @@
-"""Default tags used by the template system, available to all templates."""
+"""
+django.template.defaulttags — DTL 内置块标签与简单标签。
+
+Default tags used by the template system, available to all templates."""Default tags used by the template system, available to all templates."""
 
 import re
 import sys
@@ -42,9 +45,11 @@ from .defaultfilters import date
 from .library import Library
 from .smartif import IfParser, Literal
 
+# 内置标签注册到 defaulttags 库
 register = Library()
 
 
+# {% autoescape %} 切换 context.autoescape
 class AutoEscapeControlNode(Node):
     """Implement the actions of the autoescape tag."""
 
@@ -63,6 +68,7 @@ class AutoEscapeControlNode(Node):
             return output
 
 
+# {% comment %} 注释块，不输出
 class CommentNode(Node):
     child_nodelists = ()
 
@@ -70,6 +76,7 @@ class CommentNode(Node):
         return ""
 
 
+# {% csrf_token %} 输出 CSRF 隐藏域
 class CsrfTokenNode(Node):
     child_nodelists = ()
 
@@ -95,6 +102,7 @@ class CsrfTokenNode(Node):
             return ""
 
 
+# {% cycle %} 循环输出列表中的值
 class CycleNode(Node):
     def __init__(self, cyclevars, variable_name=None, silent=False):
         self.cyclevars = cyclevars
@@ -163,6 +171,7 @@ class FirstOfNode(Node):
         return first
 
 
+# {% for %} 循环节点：forloop 变量与 empty 分支
 class ForNode(Node):
     child_nodelists = ("nodelist_loop", "nodelist_empty")
 
@@ -304,6 +313,7 @@ class IfChangedNode(Node):
             return context.render_context
 
 
+# {% if %} 条件分支节点
 class IfNode(Node):
     def __init__(self, conditions_nodelists):
         self.conditions_nodelists = conditions_nodelists
@@ -387,6 +397,7 @@ class RegroupNode(Node):
         return ""
 
 
+# {% load %} 加载自定义标签库
 class LoadNode(Node):
     child_nodelists = ()
 
@@ -410,6 +421,7 @@ class NowNode(Node):
             return formatted
 
 
+# {% partialdef %} 定义可复用模板片段
 class PartialDefNode(Node):
     def __init__(self, partial_name, inline, nodelist):
         self.partial_name = partial_name
@@ -420,6 +432,7 @@ class PartialDefNode(Node):
         return self.nodelist.render(context) if self.inline else ""
 
 
+# {% partial %} 渲染已定义的 partial
 class PartialNode(Node):
     def __init__(self, partial_name, partial_mapping):
         # Defer lookup in `partial_mapping` and nodelist to runtime.
@@ -473,6 +486,7 @@ class TemplateTagNode(Node):
         return self.mapping.get(self.tagtype, "")
 
 
+# {% url %} 反向解析 URL 并可选 as 变量
 class URLNode(Node):
     child_nodelists = ()
 
@@ -563,6 +577,7 @@ class WidthRatioNode(Node):
             return result
 
 
+# {% with %} 局部变量绑定
 class WithNode(Node):
     def __init__(self, var, name, nodelist, extra_context=None):
         self.nodelist = nodelist
@@ -805,6 +820,7 @@ def firstof(parser, token):
 
 
 @register.tag("for")
+# 解析 {% for x in y %} 并构建 ForNode
 def do_for(parser, token):
     """
     Loop over each item in an array.
@@ -930,6 +946,7 @@ class TemplateIfParser(IfParser):
 
 
 @register.tag("if")
+# 解析 {% if %} / {% elif %} / {% else %} 链
 def do_if(parser, token):
     """
     Evaluate a variable, and if that variable is "true" (i.e., exists, is not
@@ -1100,6 +1117,7 @@ def load_from_library(library, label, names):
 
 
 @register.tag
+# 解析 {% load lib tag1 tag2 %} 并注册标签
 def load(parser, token):
     """
     Load a custom template tag library into the parser.
@@ -1284,6 +1302,7 @@ def partial_func(parser, token):
 
 
 @register.simple_tag(name="querystring", takes_context=True)
+# 简单标签：基于当前 GET 参数构建查询字符串
 def querystring(context, *args, **kwargs):
     """
     Build a query string using `args` and `kwargs` arguments.
@@ -1512,6 +1531,7 @@ def templatetag(parser, token):
 
 
 @register.tag
+# 解析 {% url viewname arg %} 构建 URLNode
 def url(parser, token):
     r"""
     Return an absolute URL matching the given view with its parameters.

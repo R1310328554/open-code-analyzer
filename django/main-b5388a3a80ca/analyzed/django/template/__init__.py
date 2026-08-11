@@ -1,4 +1,7 @@
 """
+django.template — 模板子系统公共入口。
+
+Django's support for templates."""
 Django's support for templates.
 
 The django.template namespace contains two independent subsystems:
@@ -39,7 +42,9 @@ Shared:
 
 """
 
-# Multiple Template Engines
+# 多模板引擎：Engine 与 engines 全局处理器
+
+from .engine import Engine# Multiple Template Engines
 
 from .engine import Engine
 from .utils import EngineHandler
@@ -49,7 +54,9 @@ engines = EngineHandler()
 __all__ = ("Engine", "engines")
 
 
-# Django Template Language
+# Django 模板语言（DTL）：Context、Template、异常与 Node 等
+
+# Public exceptions# Django Template Language
 
 # Public exceptions
 from .base import VariableDoesNotExist  # NOQA isort:skip
@@ -69,6 +76,7 @@ from .base import (  # NOQA isort:skip
 # Library management
 from .library import Library  # NOQA isort:skip
 
+# 导入 autoreload 以注册开发服务器模板热重载信号
 # Import the .autoreload module to trigger the registrations of signals.
 from . import autoreload  # NOQA isort:skip
 

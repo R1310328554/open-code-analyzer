@@ -1,16 +1,24 @@
-from contextlib import contextmanager
+"""
+django.template.context — 模板渲染上下文栈与处理器绑定。
+
+Context/RequestContext 管理变量 dict 栈；RenderContext 存节点状态。
+"""
+
+from contextlib import contextmanagerfrom contextlib import contextmanager
 from copy import copy
 
 # Hard-coded processor for easier use of CSRF protection.
 _builtin_context_processors = ("django.template.context_processors.csrf",)
 
 
+# pop() 次数超过 push() 时抛出
 class ContextPopException(Exception):
     "pop() has been called more times than push()"
 
     pass
 
 
+# 上下文管理器 dict：进入时压栈、退出时 pop
 class ContextDict(dict):
     def __init__(self, context, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -25,6 +33,7 @@ class ContextDict(dict):
         self.context.pop()
 
 
+# 上下文基类：dicts 栈、push/pop 与向上查找变量
 class BaseContext:
     def __init__(self, dict_=None):
         self._reset_dicts(dict_)
@@ -138,6 +147,7 @@ class BaseContext:
         return self.flatten() == other.flatten()
 
 
+# 标准渲染上下文：autoescape、render_context 与 bind_template
 class Context(BaseContext):
     "A stack container for variable context"
 
@@ -176,6 +186,7 @@ class Context(BaseContext):
         return ContextDict(self, other_dict)
 
 
+# 模板局部状态栈：for/cycle 等节点跨 render 存储
 class RenderContext(BaseContext):
     """
     A stack container for storing Template state.
@@ -221,6 +232,7 @@ class RenderContext(BaseContext):
                 self.pop()
 
 
+# 请求上下文：bind_template 时合并 context_processors 输出
 class RequestContext(Context):
     """
     This subclass of template.Context automatically populates itself using
@@ -287,6 +299,7 @@ class RequestContext(Context):
         return new_context
 
 
+# 由 plain dict 与可选 HttpRequest 构造 Context/RequestContext
 def make_context(context, request=None, **kwargs):
     """
     Create a suitable Context from a plain dict and optionally an HttpRequest.
