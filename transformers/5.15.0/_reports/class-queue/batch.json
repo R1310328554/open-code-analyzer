@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T04:05:54Z",
-  "files": [
-    "src/transformers/quantizers/quantizer_awq.py",
-    "src/transformers/quantizers/quantizer_bitnet.py",
-    "src/transformers/quantizers/quantizer_bnb_4bit.py",
-    "src/transformers/quantizers/quantizer_bnb_8bit.py",
-    "src/transformers/quantizers/quantizer_compressed_tensors.py",
-    "src/transformers/quantizers/quantizer_eetq.py",
-    "src/transformers/quantizers/quantizer_fbgemm_fp8.py",
-    "src/transformers/quantizers/quantizer_finegrained_fp8.py",
-    "src/transformers/quantizers/quantizer_fouroversix.py",
-    "src/transformers/quantizers/quantizer_fp_quant.py",
-    "src/transformers/quantizers/quantizer_gemma.py",
-    "src/transformers/quantizers/quantizer_gptq.py",
-    "src/transformers/quantizers/quantizer_higgs.py",
-    "src/transformers/quantizers/quantizer_hqq.py",
-    "src/transformers/quantizers/quantizer_metal.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 129,
-  "done": 2535
+  "done": 2550
 }
