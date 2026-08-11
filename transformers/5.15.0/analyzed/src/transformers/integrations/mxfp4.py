@@ -26,6 +26,7 @@ from ..quantizers.quantizers_utils import get_module_from_name, on_device, shoul
 
 logger = logging.get_logger(__name__)
 
+# FP4_VALUES：MXFP4 4-bit 浮点量化码本（16 个离散值）
 FP4_VALUES = [
     +0.0,
     +0.5,
@@ -46,6 +47,7 @@ FP4_VALUES = [
 ]
 
 
+# Mxfp4Quantize：加载时将 dense 权重量化为 MXFP4 Triton 张量
 class Mxfp4Quantize(ConversionOps):
     def __init__(self, hf_quantizer):
         self.hf_quantizer = hf_quantizer
@@ -94,6 +96,7 @@ class Mxfp4Quantize(ConversionOps):
                 return {}
 
 
+# Mxfp4Dequantize：将 blocks/scales 反量化为 dense Parameter
 class Mxfp4Dequantize(ConversionOps):
     def __init__(self, hf_quantizer):
         self.hf_quantizer = hf_quantizer
@@ -128,6 +131,7 @@ class Mxfp4Dequantize(ConversionOps):
         return _IdentityOp()
 
 
+# Mxfp4Deserialize：从 checkpoint 加载 MXFP4 并 swizzle 到模块
 class Mxfp4Deserialize(ConversionOps):
     def __init__(self, hf_quantizer):
         self.hf_quantizer = hf_quantizer
@@ -176,6 +180,7 @@ class Mxfp4Deserialize(ConversionOps):
         return Mxfp4ReverseDeserialize(self.hf_quantizer)
 
 
+# Mxfp4ReverseDeserialize：保存时将 Triton 布局 unswizzle 回 checkpoint 格式
 class Mxfp4ReverseDeserialize(ConversionOps):
     def __init__(self, hf_quantizer):
         self.hf_quantizer = hf_quantizer
@@ -228,12 +233,14 @@ class Mxfp4ReverseDeserialize(ConversionOps):
 
 
 # Copied from GPT_OSS repo and vllm
+# quantize_to_mxfp4：将权重 downcast 为 MXFP4 块与 scale
 def quantize_to_mxfp4(w, triton_kernels_hub):
     downcast_to_mxfp_torch = triton_kernels_hub.numerics_details.mxfp.downcast_to_mxfp_torch
     w, w_scale = downcast_to_mxfp_torch(w.to(torch.bfloat16), torch.uint8, axis=1)
     return w, w_scale
 
 
+# swizzle_mxfp4：按硬件要求转换 MXFP4 权重与 scale 内存布局
 def swizzle_mxfp4(w, w_scale, triton_kernels_hub):
     """
     Changes the layout of the tensors depending on the hardware
@@ -254,6 +261,7 @@ def swizzle_mxfp4(w, w_scale, triton_kernels_hub):
 
 # Mostly copied from GPT_OSS repo
 # TODO: Add absolute link when the repo is public
+# _convert_moe_packed_tensors：分块解包 MXFP4 blocks/scales 为 BF16 dense 权重
 def _convert_moe_packed_tensors(
     blocks,
     scales,
@@ -313,6 +321,7 @@ def _convert_moe_packed_tensors(
     return out.transpose(1, 2).contiguous()
 
 
+# convert_moe_packed_tensors：OOM 时回退 CPU 的 MXFP4 解包包装
 def convert_moe_packed_tensors(
     blocks,
     scales,
@@ -338,6 +347,7 @@ def convert_moe_packed_tensors(
         return _convert_moe_packed_tensors(blocks, scales, dtype=dtype, rows_per_chunk=rows_per_chunk)
 
 
+# Mxfp4GptOssExperts：GPT-OSS MXFP4 量化 MoE 专家（matmul_ogs 前向）
 class Mxfp4GptOssExperts(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -405,6 +415,7 @@ class Mxfp4GptOssExperts(nn.Module):
 
 # Adapted from GPT_OSS repo
 # TODO: Add absolute link when the repo is public
+# routing_torch_dist：分布式 expert parallel 路由（top-k + gather/scatter 索引）
 def routing_torch_dist(
     logits,
     n_expts_act,
@@ -473,6 +484,7 @@ def routing_torch_dist(
     return RoutingData(gate_scal, hist, n_local_experts, hit_experts, expt_data), gather_indx, scatter_indx
 
 
+# mlp_forward：替换 GptOssMLP.forward，集成 router + MXFP4 experts
 def mlp_forward(self, hidden_states):
     if _is_torch_distributed_initialized() and hasattr(self, "_is_hooked"):
         routing = routing_torch_dist
@@ -491,6 +503,7 @@ def mlp_forward(self, hidden_states):
     return routed_out, router_logits
 
 
+# dequantize：将 blocks/scales 反量化并替换 meta Parameter
 def dequantize(module, param_name, param_value, target_device, dq_param_name, **kwargs):
     from ..integrations.tensor_parallel import shard_and_distribute_module
 
@@ -524,11 +537,13 @@ def dequantize(module, param_name, param_value, target_device, dq_param_name, **
                 delattr(module, scales_attr)
 
 
+# dequantize_convertops：ConversionOps 路径的 MXFP4 反量化
 def dequantize_convertops(blocks, scales):
     dequantized = convert_moe_packed_tensors(blocks, scales)
     return torch.nn.Parameter(dequantized)
 
 
+# load_and_swizzle_mxfp4：加载 checkpoint 后 swizzle 为 Triton 内核布局
 def load_and_swizzle_mxfp4(module, param_name, param_value, target_device, triton_kernels_hub, **kwargs):
     """
     This transforms the weights obtained using `convert_gpt_oss.py` to load them into `Mxfp4GptOssExperts`.
@@ -600,6 +615,7 @@ def load_and_swizzle_mxfp4(module, param_name, param_value, target_device, trito
         del blocks
 
 
+# swizzle_mxfp4_convertops：ConversionOps 路径的就地 swizzle
 def swizzle_mxfp4_convertops(blocks, scales, module, proj, target_device, triton_kernels_hub):
     """
     This transforms the weights obtained using `convert_gpt_oss.py` to load them into `Mxfp4GptOssExperts`.
@@ -649,6 +665,7 @@ def swizzle_mxfp4_convertops(blocks, scales, module, proj, target_device, triton
     )
 
 
+# replace_with_mxfp4_linear：将 GptOssExperts 替换为 Mxfp4GptOssExperts
 def replace_with_mxfp4_linear(model, quantization_config=None, modules_to_not_convert: list[str] | None = None):
     """
     Public method that replaces the expert layers of the given model with mxfp4 quantized layers.

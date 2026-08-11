@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# PEFT 适配器集成：LoRA 等 adapter 加载、hotswap、多 adapter 切换与 accelerate 重分发。
 import inspect
 import json
 import os
@@ -44,6 +45,7 @@ if is_accelerate_available():
     from accelerate.utils import get_balanced_memory, infer_auto_device_map
 
 # Minimum PEFT version supported for the integration
+# MIN_PEFT_VERSION：Transformers 集成所需的最低 PEFT 版本
 MIN_PEFT_VERSION = "0.19.1"
 
 
@@ -54,6 +56,7 @@ if TYPE_CHECKING:
     from ..modeling_utils import LoadStateDictConfig, LoadStateDictInfo
 
 
+# PeftAdapterMixin：为 PreTrainedModel 提供 PEFT adapter 加载与管理 Mixin
 class PeftAdapterMixin:
     """
     A class containing all functions for loading and using adapters weights that are supported in PEFT library. For
@@ -77,6 +80,7 @@ class PeftAdapterMixin:
     _prepare_peft_hotswap_kwargs: dict | None = None
     peft_config: dict[str, PeftConfigLike]
 
+# load_adapter：从 Hub/本地加载 adapter 权重并注入模型
     def load_adapter(
         self,
         peft_model_id: str | None = None,
@@ -350,6 +354,7 @@ class PeftAdapterMixin:
         )
         return loading_info
 
+# enable_peft_hotswap：启用 LoRA adapter 原地热替换（避免 torch.compile 重编译）
     def enable_peft_hotswap(
         self, target_rank: int = 128, check_compiled: Literal["error", "warn", "ignore"] = "error"
     ) -> None:
@@ -387,6 +392,7 @@ class PeftAdapterMixin:
         self._hotswap_enabled = True
         self._prepare_peft_hotswap_kwargs = {"target_rank": target_rank, "check_compiled": check_compiled}
 
+# add_adapter：注入全新 adapter 结构用于训练
     def add_adapter(self, adapter_config, adapter_name: str | None = None) -> None:
         r"""
         If you are not familiar with adapters and PEFT methods, we invite you to read more about them on the PEFT
@@ -427,6 +433,7 @@ class PeftAdapterMixin:
 
         self.set_adapter(adapter_name)
 
+# set_adapter：激活指定 adapter 并禁用其余
     def set_adapter(self, adapter_name: list[str] | str) -> None:
         """
         If you are not familiar with adapters and PEFT methods, we invite you to read more about them on the PEFT
@@ -468,6 +475,7 @@ class PeftAdapterMixin:
                 "Did not succeeded in setting the adapter. Please make sure you are using a model that supports adapters."
             )
 
+# disable_adapters：禁用所有 adapter，仅使用基座模型推理
     def disable_adapters(self) -> None:
         r"""
         If you are not familiar with adapters and PEFT methods, we invite you to read more about them on the PEFT
@@ -487,6 +495,7 @@ class PeftAdapterMixin:
             if isinstance(module, (BaseTunerLayer, ModulesToSaveWrapper)):
                 module.enable_adapters(enabled=False)
 
+# enable_adapters：重新启用已加载的 adapter
     def enable_adapters(self) -> None:
         """
         If you are not familiar with adapters and PEFT methods, we invite you to read more about them on the PEFT
@@ -505,6 +514,7 @@ class PeftAdapterMixin:
             if isinstance(module, BaseTunerLayer):
                 module.enable_adapters(enabled=True)
 
+# active_adapters：返回当前激活的 adapter 名称列表
     def active_adapters(self) -> list[str]:
         """
         If you are not familiar with adapters and PEFT methods, we invite you to read more about them on the PEFT
@@ -534,6 +544,7 @@ class PeftAdapterMixin:
 
         return active_adapters
 
+# get_adapter_state_dict：提取指定 adapter 的 state_dict
     def get_adapter_state_dict(self, adapter_name: str | None = None, state_dict: dict | None = None) -> dict:
         """
         If you are not familiar with adapters and PEFT methods, we invite you to read more about them on the PEFT
@@ -563,6 +574,7 @@ class PeftAdapterMixin:
         adapter_state_dict = get_peft_model_state_dict(self, state_dict=state_dict, adapter_name=adapter_name)
         return adapter_state_dict
 
+# _dispatch_accelerate_model：adapter 加载后按 device_map 重分发模型
     def _dispatch_accelerate_model(
         self,
         device_map: str,
@@ -619,6 +631,7 @@ class PeftAdapterMixin:
             **dispatch_model_kwargs,
         )
 
+# delete_adapter：从模型中删除指定 PEFT adapter
     def delete_adapter(self, adapter_names: list[str] | str) -> None:
         """
         Delete a PEFT adapter from the underlying model.
@@ -659,6 +672,7 @@ class PeftAdapterMixin:
             self._hf_peft_config_loaded = False
 
 
+# maybe_load_adapters：from_pretrained 前探测 checkpoint 是否含嵌入式 adapter
 def maybe_load_adapters(
     pretrained_model_name_or_path,
     download_kwargs: DownloadKwargs,

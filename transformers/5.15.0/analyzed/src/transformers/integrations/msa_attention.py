@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# MSA 块稀疏注意力：SM100 Blackwell CuTe-DSL CSR 稀疏 kernel 与 SDPA 回退。
 import torch
 
 from ..utils import logging
@@ -20,15 +21,19 @@ from .sdpa_attention import sdpa_attention_forward
 logger = logging.get_logger(__name__)
 
 # `sparse_atten_func` only compiles for these per-query block counts.
+# MSA_SUPPORTED_TOPK：sparse_atten_func 支持的 per-query block 数
 MSA_SUPPORTED_TOPK = (4, 8, 16, 32)
 # `SparseK2qCsrBuilderSm100` only supports a 128-key block.
+# MSA_SUPPORTED_BLOCK_SIZE：SparseK2qCsrBuilderSm100 固定 key block 大小
 MSA_SUPPORTED_BLOCK_SIZE = 128
 # SM100 / Blackwell head_dim 128 kernel.
+# MSA_SUPPORTED_HEAD_DIM：SM100 kernel 支持的 head 维度
 MSA_SUPPORTED_HEAD_DIM = 128
 
 _MSA_KERNEL = None
 
 
+# load_and_register_msa_kernel：加载并缓存 MSA hub kernel
 def load_and_register_msa_kernel(attn_implementation: str):
     """Load the MSA hub kernel once and verify the expected callables are present.
 
@@ -58,6 +63,7 @@ def load_and_register_msa_kernel(attn_implementation: str):
 
 
 @torch.library.custom_op("transformers_msa::sparse_atten", mutates_args=())
+# _msa_sparse_atten_op：CSR 构建 + 块稀疏注意力的 opaque custom op
 def _msa_sparse_atten_op(
     q: torch.Tensor,
     k: torch.Tensor,
@@ -115,6 +121,7 @@ def _msa_sparse_atten_op(
 
 
 @_msa_sparse_atten_op.register_fake
+# _msa_sparse_atten_fake：MSA 稀疏注意力 fake/meta 输出形状推断
 def _msa_sparse_atten_fake(
     q,
     k,
@@ -135,6 +142,7 @@ def _msa_sparse_atten_fake(
     return torch.empty_like(q)
 
 
+# _validate_msa_init：模块初始化时校验 SM100/dropout/topk 等配置
 def _validate_msa_init(module, query: torch.Tensor, dropout: float) -> None:
     """Validate kernel capability, dropout and configured topk once per attention module.
 
@@ -164,6 +172,7 @@ def _validate_msa_init(module, query: torch.Tensor, dropout: float) -> None:
         )
 
 
+# _sparse_attention：将 block_indices 转为 varlen CSR 并调用 MSA kernel
 def _sparse_attention(module, query, key, value, scaling, block_indices, block_size, cache_position):
     bsz, num_q_heads, q_len, head_dim = query.shape
     num_kv_heads, k_len = key.shape[1], key.shape[2]
@@ -227,6 +236,7 @@ def _sparse_attention(module, query, key, value, scaling, block_indices, block_s
     return attn_output.reshape(bsz, q_len, num_q_heads, head_dim)
 
 
+# msa_attention_forward：MSA 注意力入口（无 block_indices 时回退 SDPA）
 def msa_attention_forward(
     module: torch.nn.Module,
     query: torch.Tensor,

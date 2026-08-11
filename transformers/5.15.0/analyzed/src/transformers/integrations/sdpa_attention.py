@@ -1,3 +1,4 @@
+# SDPA 注意力集成：scaled_dot_product_attention 封装，含 GQA/NPU/position_bias 处理。
 import torch
 
 from ..utils import is_torch_npu_available, is_torch_xpu_available, logging
@@ -12,6 +13,7 @@ _is_torch_xpu_available = is_torch_xpu_available()
 _is_torch_npu_available = is_torch_npu_available()
 
 
+# repeat_kv：GQA 场景下将 KV 头重复以匹配 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -24,6 +26,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# use_gqa_in_sdpa：判断是否可用 SDPA 原生 GQA（enable_gqa）
 def use_gqa_in_sdpa(attention_mask: torch.Tensor | None, key: torch.Tensor, value: torch.Tensor) -> bool:
     # GQA can only be used under the following conditions
     # 1.cuda or Ascend NPU
@@ -36,6 +39,7 @@ def use_gqa_in_sdpa(attention_mask: torch.Tensor | None, key: torch.Tensor, valu
     return attention_mask is None and key.shape[-1] == value.shape[-1] <= 256
 
 
+# create_position_bias_mask：将 position_bias 与 causal/attention mask 合并为 SDPA 加性 mask
 def create_position_bias_mask(
     position_bias: torch.Tensor,
     attention_mask: torch.Tensor | None,
@@ -76,6 +80,7 @@ def create_position_bias_mask(
     return position_bias_mask
 
 
+# sdpa_attention_forward：模型 attention 层的 SDPA 前向入口
 def sdpa_attention_forward(
     module: torch.nn.Module,
     query: torch.Tensor,

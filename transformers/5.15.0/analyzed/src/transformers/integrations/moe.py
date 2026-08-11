@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# MoE 专家前向集成：batched_mm / grouped_mm / DeepGEMM / SonicMoE 等多实现分发。
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -75,6 +76,7 @@ logger = logging.get_logger(__name__)
 #         return final_hidden_states
 
 
+# _batched_linear：支持 bias 与转置权重的批量线性层
 def _batched_linear(
     input: torch.Tensor,
     weight: torch.Tensor,
@@ -109,6 +111,7 @@ def _batched_linear(
     return out
 
 
+# batched_mm_experts_forward：按 expert id 索引权重的 batched matmul MoE 前向
 def batched_mm_experts_forward(
     self: torch.nn.Module,
     hidden_states: torch.Tensor,
@@ -176,6 +179,7 @@ def batched_mm_experts_forward(
 # torch.compiler.disable does not work with fullgraph=True, so we implement a custom operator to opaque this function.
 # This is not "free compilation compatibility" because now inductor won't be able to optimize matmuls inside the loop,
 # but since the matmuls here have dynamic shapes, inductor wouldn't have been able to optimize them anyway.
+# _grouped_mm_fallback：grouped_mm 不可用时的逐 expert torch.mm 回退
 def _grouped_mm_fallback(input: torch.Tensor, weight: torch.Tensor, offs: torch.Tensor) -> torch.Tensor:
     """
     Fallback grouped matrix multiplication used when `torch.nn.functional.grouped_mm` and `torch._grouped_mm`
@@ -202,6 +206,7 @@ def _grouped_mm_fallback(input: torch.Tensor, weight: torch.Tensor, offs: torch.
     return output
 
 
+# _grouped_mm_fallback_fake：grouped_mm 回退的 torch.compile fake 形状推断
 def _grouped_mm_fallback_fake(input: torch.Tensor, weight: torch.Tensor, offs: torch.Tensor) -> torch.Tensor:
     """Shape/dtype inference stub for `_grouped_mm_fallback` required by `torch.compile`."""
     assert input.dim() == 2, f"input must be 2D (S, input_dim), got shape {tuple(input.shape)}"
@@ -217,12 +222,14 @@ def _grouped_mm_fallback_fake(input: torch.Tensor, weight: torch.Tensor, offs: t
     return torch.empty(input.size(0), weight.size(2), device=input.device, dtype=input.dtype)
 
 
+# _grouped_mm_fallback_setup_context：保存 grouped_mm 回退反向所需上下文
 def _grouped_mm_fallback_setup_context(ctx, inputs, output):
     """Saves input and weight for backward; offs is stored directly as it is a non-differentiable integer tensor."""
     ctx.save_for_backward(inputs[0], inputs[1])
     ctx.offs = inputs[2]
 
 
+# _grouped_mm_fallback_backward：grouped_mm 回退的逐 expert 反向传播
 def _grouped_mm_fallback_backward(ctx, grad_output):
     """Backward pass for `_grouped_mm_fallback`. Computes grad_input and grad_weight per expert group; offs has no gradient."""
     input, weight = ctx.saved_tensors
@@ -257,6 +264,7 @@ if is_torch_available():
     )
 
 
+# _can_use_grouped_mm：检查当前环境是否可用 grouped_mm（dtype/设备/SM）
 def _can_use_grouped_mm(input: torch.Tensor, weight: torch.Tensor, offs: torch.Tensor) -> bool:
     """
     Check if torch.nn.functional.grouped_mm or torch._grouped_mm can be used based on availability and compatibility with torch.compile.
@@ -305,6 +313,7 @@ def _can_use_grouped_mm(input: torch.Tensor, weight: torch.Tensor, offs: torch.T
     return hasattr(torch.nn.functional, "grouped_mm") or hasattr(torch, "_grouped_mm")
 
 
+# _grouped_mm：grouped_mm 分发器（functional → _grouped_mm → custom op 回退）
 def _grouped_mm(
     input: torch.Tensor,
     weight: torch.Tensor,
@@ -336,6 +345,7 @@ def _grouped_mm(
     return torch.ops.transformers.grouped_mm_fallback(input, weight, offs=offs)
 
 
+# _grouped_linear：基于 grouped_mm 的分组线性层
 def _grouped_linear(
     input: torch.Tensor,
     weight: torch.Tensor,
@@ -374,6 +384,7 @@ def _grouped_linear(
     return out
 
 
+# grouped_mm_experts_forward：按 expert 排序 token 的 grouped_mm MoE 前向
 def grouped_mm_experts_forward(
     self: torch.nn.Module,
     hidden_states: torch.Tensor,
@@ -478,6 +489,7 @@ def grouped_mm_experts_forward(
     return final_hidden_states.to(hidden_states.dtype)
 
 
+# ExpertsInterface：注册与查询自定义 MoE 专家前向实现
 class ExpertsInterface(GeneralInterface):
     """Interface for registering custom experts forward functions."""
 
@@ -488,6 +500,7 @@ class ExpertsInterface(GeneralInterface):
         "sonicmoe": sonicmoe_experts_forward,
     }
 
+# get_interface：按名称返回专家前向函数并校验合法性
     def get_interface(self, experts_implementation: str, default: Callable) -> Callable:
         """Return the requested `experts_implementation`. Also strictly check its validity, and raise if invalid."""
         if experts_implementation is None:
@@ -503,9 +516,11 @@ class ExpertsInterface(GeneralInterface):
         return super().get(experts_implementation, default)
 
 
+# ALL_EXPERTS_FUNCTIONS：全局 MoE 专家实现注册表
 ALL_EXPERTS_FUNCTIONS = ExpertsInterface()
 
 
+# _default_apply_gate：默认门控（chunk gate/up → act_fn(gate)*up）
 def _default_apply_gate(self, gate_up_out: torch.Tensor) -> torch.Tensor:
     """
     Default gating mechanism: splits the gate_up_out into gate and up parts,
@@ -520,6 +535,7 @@ def _default_apply_gate(self, gate_up_out: torch.Tensor) -> torch.Tensor:
     return self.act_fn(gate) * up  # (S, intermediate_dim)
 
 
+# use_experts_implementation：装饰器，为 Experts 类注入可切换的前向实现
 def use_experts_implementation(
     experts_class: type[torch.nn.Module] | None = None,
     *,

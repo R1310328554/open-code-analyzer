@@ -36,14 +36,17 @@ from .tensor_parallel import to_local
 logger = logging.get_logger(__name__)
 
 # Map activation function names from HF config to SonicMoE epilogue names
+# ACT_MAP：HF hidden_act 名称到 SonicMoE epilogue 激活类型的映射
 ACT_MAP = {"silu": "swiglu", "gelu": "geglu", "relu": "reglu"}
 
 # Min sonic-moe build-dependency versions: older CuteDSL / TVM-FFI releases lack APIs the kernel
 # needs and fail at import or JIT time, so we refuse to load below them.
+# SONICMOE_DEPENDENCIES：sonic-moe 所需的最低 cutlass-dsl / tvm-ffi 版本
 SONICMOE_DEPENDENCIES = {"nvidia-cutlass-dsl": "4.6.0", "apache-tvm-ffi": "0.1.10"}
 
 
 @torch._dynamo.assume_constant_result
+# is_sonicmoe_loadable：检查 CUDA/SM90+/依赖版本是否满足加载条件
 def is_sonicmoe_loadable(raise_error: bool = False) -> bool:
     """Whether the sonic-moe kernel can be loaded in this environment: `kernels` installed, a CUDA GPU on
     Hopper (SM90) or newer, and `nvidia-cutlass-dsl` / `apache-tvm-ffi` no newer than the versions the
@@ -92,6 +95,7 @@ def is_sonicmoe_loadable(raise_error: bool = False) -> bool:
 
 
 @dataclass(frozen=True)
+# SonicMoE：kernels-community/sonic-moe 暴露的 kernel 入口点 dataclass
 class SonicMoE:
     """Entry points exposed by the `kernels-community/sonic-moe` kernel."""
 
@@ -106,6 +110,7 @@ _SONICMOE: SonicMoE | None = None
 
 
 @torch._dynamo.allow_in_graph
+# _load_sonicmoe_kernel：一次性加载 sonic-moe 到模块全局（allow_in_graph）
 def _load_sonicmoe_kernel() -> None:
     """
     Load sonic-moe once into the `_SONICMOE` module global.
@@ -155,11 +160,13 @@ def _load_sonicmoe_kernel() -> None:
     )
 
 
+# load_sonicmoe_kernel：返回已加载的 SonicMoE kernel bundle
 def load_sonicmoe_kernel() -> SonicMoE:
     _load_sonicmoe_kernel()
     return _SONICMOE
 
 
+# sonicmoe_experts_forward：SonicMoE 融合 grouped GEMM MoE 专家前向
 def sonicmoe_experts_forward(
     self: torch.nn.Module,
     hidden_states: torch.Tensor,

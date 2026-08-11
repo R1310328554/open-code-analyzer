@@ -24,6 +24,7 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# QuantoQuantize：加载权重后设置 scale 并 freeze 量化模块
 class QuantoQuantize(ConversionOps):
     def __init__(self, hf_quantizer):
         self.hf_quantizer = hf_quantizer
@@ -59,6 +60,7 @@ class QuantoQuantize(ConversionOps):
         return {}
 
 
+# replace_with_quanto_layers：递归将 Linear/LayerNorm 替换为 Quanto 量化层
 def replace_with_quanto_layers(
     model,
     quantization_config=None,

@@ -24,9 +24,12 @@ if is_torch_npu_available():
 
 # FlashAttention2 is supported on Ascend NPU with down-right aligned causal mask by default.
 # Set environment variable `NPU_FA2_SPARSE_MODE` to 2 when using top-left aligned causal mask.
+# TOP_LEFT_ALIGNED_CAUSAL_MASK_MODE：左上对齐 causal mask（NPU_FA2_SPARSE_MODE=2）
 TOP_LEFT_ALIGNED_CAUSAL_MASK_MODE = 2
+# DOWN_RIGHT_ALIGNED_CAUSAL_MASK_MODE：右下对齐 causal mask（默认）
 DOWN_RIGHT_ALIGNED_CAUSAL_MASK_MODE = 3
 
+# SPARSE_MODE：从环境变量读取 NPU FA2 稀疏 mask 模式
 SPARSE_MODE = int(os.getenv("NPU_FA2_SPARSE_MODE", default=DOWN_RIGHT_ALIGNED_CAUSAL_MASK_MODE))
 if SPARSE_MODE not in [TOP_LEFT_ALIGNED_CAUSAL_MASK_MODE, DOWN_RIGHT_ALIGNED_CAUSAL_MASK_MODE]:
     raise ValueError(
@@ -34,9 +37,11 @@ if SPARSE_MODE not in [TOP_LEFT_ALIGNED_CAUSAL_MASK_MODE, DOWN_RIGHT_ALIGNED_CAU
         "or 3 (down-right aligned causal mask)."
     )
 
+# ATTN_MASK_NPU_CACHE：按设备缓存的上三角 causal attention mask
 ATTN_MASK_NPU_CACHE = {}
 
 
+# get_attn_mask_npu：获取或创建指定设备的 2048×2048 causal mask
 def get_attn_mask_npu(device):
     """Get or create attention mask for the specified device."""
     if device not in ATTN_MASK_NPU_CACHE:
@@ -44,10 +49,12 @@ def get_attn_mask_npu(device):
     return ATTN_MASK_NPU_CACHE[device]
 
 
+# is_npu_fa2_top_left_aligned_causal_mask：当前是否使用左上对齐 causal mask
 def is_npu_fa2_top_left_aligned_causal_mask():
     return SPARSE_MODE == TOP_LEFT_ALIGNED_CAUSAL_MASK_MODE if is_torch_npu_available() else False
 
 
+# npu_flash_attn_func：NPU 固定长度 Flash Attention（BSND 布局）
 def npu_flash_attn_func(
     q,
     k,
@@ -83,6 +90,7 @@ def npu_flash_attn_func(
     return output
 
 
+# npu_flash_attn_varlen_func：NPU 变长 Flash Attention（TND 布局 + cu_seqlens）
 def npu_flash_attn_varlen_func(
     q,
     k,
@@ -139,5 +147,6 @@ def npu_flash_attn_varlen_func(
 
 
 # This function is not implemented but should never be called because block table is not used on NPU
+# npu_flash_attn_with_kvcache：NPU 未实现 paged KV cache 注意力
 def npu_flash_attn_with_kvcache():
     raise NotImplementedError("npu_flash_attn_with_kvcache is not implemented")

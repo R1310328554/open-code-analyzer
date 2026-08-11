@@ -39,6 +39,7 @@ if is_mistral_common_available():
 logger = logging.get_logger(__name__)
 
 
+# _resolve_chat_template：按优先级解析 chat 模板（参数→jinja→json→自动生成）
 def _resolve_chat_template(tekken_file: str | os.PathLike, chat_template: str | None) -> str | None:
     """Resolve the chat template to attach during tekken to HF conversion.
 
@@ -97,6 +98,7 @@ def _resolve_chat_template(tekken_file: str | os.PathLike, chat_template: str | 
     return None
 
 
+# _probe_file：在 checkpoint 中探测文件路径，缺失时返回 None
 def _probe_file(
     pretrained_model_name_or_path: str | os.PathLike,
     filename: str,
@@ -124,6 +126,7 @@ def _probe_file(
     )
 
 
+# resolve_mistral_format：解析是否使用 MistralCommonBackend 及 tekken 路径
 def resolve_mistral_format(
     pretrained_model_name_or_path: str | os.PathLike,
     mistral_format: bool | None = None,
@@ -202,6 +205,7 @@ _MAP_SPECIALS = {
 }
 
 
+# _derive_tekken_specials：从 tekken.json 推导 special token 列表与数量
 def _derive_tekken_specials(raw: dict) -> tuple[list[str], int]:
     """Derive the expected special-token strings and special-token count from a parsed tekken.json.
 
@@ -254,9 +258,11 @@ def _derive_tekken_specials(raw: dict) -> tuple[list[str], int]:
     return special_strings + filler_strings, num_special_tokens
 
 
+# MistralConverter：将 Mistral tekken BPE 词表转为 tokenizers.Tokenizer
 class MistralConverter:
     """Converter from Mistral tekken BPE vocab to a HuggingFace `tokenizers.Tokenizer`."""
 
+# 初始化：解析 tekken.json 并构建 BPE vocab/merges
     def __init__(self, vocab_file: str, add_prefix_space: bool = False, **kwargs):
         """Parse a raw `tekken.json` file into a ready-to-use converter.
 
@@ -268,6 +274,7 @@ class MistralConverter:
         """
         self._parse_tekken_file(vocab_file, add_prefix_space)
 
+# _parse_tekken_file：读取 tekken 配置、special token 与 BPE ranks
     def _parse_tekken_file(self, vocab_file: str, add_prefix_space: bool) -> None:
         """Parse a tekken.json file and set all instance attributes.
 
@@ -308,6 +315,7 @@ class MistralConverter:
         self._precomputed_merges = merges
 
     @staticmethod
+# _extract_merges：从字节级 BPE ranks 提取 unicode vocab 与 merge 列表
     def _extract_merges(bpe_ranks: dict[bytes, int]) -> tuple[dict[str, int], list[tuple[str, str]]]:
         """Extract a unicode vocab and ordered BPE merge list from byte-level BPE ranks."""
         byte_encoder = bytes_to_unicode()
@@ -335,6 +343,7 @@ class MistralConverter:
         merges = [(token_bytes_to_string(val[0]), token_bytes_to_string(val[1])) for val in all_merges]
         return vocab, merges
 
+# tokenizer：构建仅含 BPE 模型的原始 Tokenizer
     def tokenizer(self) -> Tokenizer:
         """Build a raw `tokenizers.Tokenizer` with BPE model (no pre/post-processing)."""
         tokenizer = Tokenizer(BPE(self._precomputed_vocab, self._precomputed_merges, fuse_unk=False))
@@ -342,6 +351,7 @@ class MistralConverter:
             tokenizer.model.ignore_merges = True
         return tokenizer
 
+# converted：构建含 pre/post-processor 的完整 Tokenizer
     def converted(self) -> Tokenizer:
         """Build a fully configured `tokenizers.Tokenizer` with pre-tokenizer and decoder."""
         tokenizer = self.tokenizer()
@@ -359,6 +369,7 @@ class MistralConverter:
         return tokenizer
 
 
+# _resolve_tekken_source：定位 tokenizer 对应的源 tekken.json 路径
 def _resolve_tekken_source(tokenizer: TokenizersBackend) -> str:
     """Locate the on-disk `tekken.json` a tokenizer was built from.
 
@@ -388,6 +399,7 @@ def _resolve_tekken_source(tokenizer: TokenizersBackend) -> str:
     return vocab_file
 
 
+# _check_tekken_vocab_unchanged：保存前校验 vocab 是否与源 tekken 一致
 def _check_tekken_vocab_unchanged(tokenizer: TokenizersBackend, vocab_file: str) -> None:
     """Compare *tokenizer*'s vocab against the `tekken.json` it was converted from.
 
@@ -453,6 +465,7 @@ def _check_tekken_vocab_unchanged(tokenizer: TokenizersBackend, vocab_file: str)
         )
 
 
+# save_tekken_format：将 tokenizer 以原生 Mistral 格式写回 tekken.json
 def save_tekken_format(tokenizer: TokenizersBackend, save_directory: str | os.PathLike) -> tuple[str, ...]:
     """Write a tokenizer back out in native Mistral format by copying its source tekken file.
 
@@ -498,6 +511,7 @@ def save_tekken_format(tokenizer: TokenizersBackend, save_directory: str | os.Pa
     return (dest,)
 
 
+# convert_tekken_tokenizer：从 tekken.json 构建 TokenizersBackend 实例
 def convert_tekken_tokenizer(
     tokenizer_file: str,
     chat_template: str | None = None,

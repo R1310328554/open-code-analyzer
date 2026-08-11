@@ -24,6 +24,7 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# replace_with_spqr_linear：按 shapes 配置将 Linear 替换为 SPQR QuantizedLinear
 def replace_with_spqr_linear(model, modules_to_not_convert: list[str] | None = None, quantization_config=None):
     """
     Public method that replaces the Linear layers of the given model with SPQR quantized layers.

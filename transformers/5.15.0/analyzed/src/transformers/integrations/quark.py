@@ -21,6 +21,7 @@ if is_torch_available():
     import torch
 
 
+# QuarkDeserialize：从 checkpoint 加载已量化权重张量到目标层
 class QuarkDeserialize(ConversionOps):
     def __init__(self, hf_quantizer):
         self.hf_quantizer = hf_quantizer

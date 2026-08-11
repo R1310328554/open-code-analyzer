@@ -19,9 +19,11 @@ import os
 
 # File name of the native Mistral tekken tokenizer vocabulary. This remains the canonical
 # name used for hub/directory discovery.
+# TEKKEN_VOCAB_FILE：Mistral tekken 原生词表的标准文件名
 TEKKEN_VOCAB_FILE = "tekken.json"
 
 
+# is_tekken_vocab_filename：判断路径 basename 是否为 tekken 词表 JSON
 def is_tekken_vocab_filename(path: str | os.PathLike) -> bool:
     """Return whether *path*'s filename identifies it as a Mistral tekken vocabulary file.
 

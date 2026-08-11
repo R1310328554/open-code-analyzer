@@ -23,6 +23,7 @@ import torch
 from ..trainer_utils import _is_peft_model
 
 
+# neftune_post_forward_hook：Embedding forward hook，训练时加均匀噪声
 def neftune_post_forward_hook(module, input, output):
     """
     Implements the NEFTune forward pass for the model using forward hooks. Note this works only for torch.nn.Embedding
@@ -51,6 +52,7 @@ def neftune_post_forward_hook(module, input, output):
     return output
 
 
+# activate_neftune：在模型 input embeddings 上注册 NEFTune hook
 def activate_neftune(model, neftune_noise_alpha, accelerator=None):
     """
     Activates NEFTune (Noisy Embeddings for Fine-Tuning) on the model.
@@ -86,6 +88,7 @@ def activate_neftune(model, neftune_noise_alpha, accelerator=None):
     return hook_handle
 
 
+# deactivate_neftune：移除 NEFTune hook 并清理 noise_alpha 属性
 def deactivate_neftune(model, hook_handle, accelerator=None):
     """
     Deactivates NEFTune on the model.

@@ -29,6 +29,7 @@ if is_torch_available():
     import torch.nn as nn
 
 
+# replace_with_sinq_linear：将 nn.Linear 递归替换为 SINQLinear
 def replace_with_sinq_linear(
     model: torch.nn.Module,
     modules_to_not_convert: list[str] | None = None,
@@ -80,6 +81,7 @@ def replace_with_sinq_linear(
     return model
 
 
+# SinqQuantize：加载 FP 权重时对 SINQLinear 调用 quantize()
 class SinqQuantize(ConversionOps):
     """
     Param-level ConversionOp for SINQ (from FP weights).
@@ -115,6 +117,7 @@ class SinqQuantize(ConversionOps):
         return {}
 
 
+# SinqDeserialize：加载预量化 checkpoint（W_q/meta/bias）到 SINQLinear
 class SinqDeserialize(ConversionOps):
     """
     ConversionOp for loading *pre-quantized* SINQ checkpoints.
