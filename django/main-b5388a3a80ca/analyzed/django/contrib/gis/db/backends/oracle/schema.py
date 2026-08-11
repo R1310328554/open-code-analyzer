@@ -1,8 +1,14 @@
+"""
+django.contrib.gis.db.backends.oracle.schema — Oracle 空间 schema 编辑器。
+
+管理 USER_SDO_GEOM_METADATA 元数据与 MDSYS.SPATIAL_INDEX 空间索引。
+"""
 from django.contrib.gis.db.models import GeometryField
 from django.db.backends.oracle.schema import DatabaseSchemaEditor
 from django.db.backends.utils import strip_quotes, truncate_name
 
 
+# Oracle GIS schema 编辑器：几何元数据 SQL 与空间索引生命周期
 class OracleGISSchemaEditor(DatabaseSchemaEditor):
     sql_add_geometry_metadata = """
         INSERT INTO USER_SDO_GEOM_METADATA
@@ -45,6 +51,7 @@ class OracleGISSchemaEditor(DatabaseSchemaEditor):
             return [self._create_spatial_index_sql(model, field)]
         return super()._field_indexes_sql(model, field)
 
+    # 生成列 SQL 时同步收集几何元数据插入语句
     def column_sql(self, model, field, include_default=False):
         column_sql = super().column_sql(model, field, include_default)
         if isinstance(field, GeometryField):
@@ -63,10 +70,12 @@ class OracleGISSchemaEditor(DatabaseSchemaEditor):
             )
         return column_sql
 
+    # 建表后执行待处理的几何元数据 SQL
     def create_model(self, model):
         super().create_model(model)
         self.run_geometry_sql()
 
+    # 删表时清除 USER_SDO_GEOM_METADATA 中该表记录
     def delete_model(self, model):
         super().delete_model(model)
         self.execute(
@@ -76,10 +85,12 @@ class OracleGISSchemaEditor(DatabaseSchemaEditor):
             }
         )
 
+    # 添加字段后执行几何元数据 SQL
     def add_field(self, model, field):
         super().add_field(model, field)
         self.run_geometry_sql()
 
+    # 移除几何字段前清理元数据与空间索引
     def remove_field(self, model, field):
         if isinstance(field, GeometryField):
             self.execute(
@@ -93,6 +104,7 @@ class OracleGISSchemaEditor(DatabaseSchemaEditor):
                 self.execute(self._delete_spatial_index_sql(model, field))
         super().remove_field(model, field)
 
+    # 批量执行缓存的几何元数据插入语句
     def run_geometry_sql(self):
         for sql in self.geometry_sql:
             self.execute(sql)
@@ -131,6 +143,7 @@ class OracleGISSchemaEditor(DatabaseSchemaEditor):
         elif old_field_spatial_index and not new_field_spatial_index:
             self.execute(self._delete_spatial_index_sql(model, old_field))
 
+    # Oracle 对象名限 30 字符，使用 truncate_name 生成索引名
     def _create_spatial_index_name(self, model, field):
         # Oracle doesn't allow object names > 30 characters. Use this scheme
         # instead of self._create_index_name() for backwards compatibility.

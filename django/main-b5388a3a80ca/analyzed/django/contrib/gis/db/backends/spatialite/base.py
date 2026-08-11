@@ -1,3 +1,8 @@
+"""
+django.contrib.gis.db.backends.spatialite.base — SpatiaLite 数据库包装器。
+
+扩展 SQLite DatabaseWrapper，加载 libspatialite 扩展并初始化空间元数据。
+"""
 from ctypes.util import find_library
 
 from django.conf import settings
@@ -11,6 +16,7 @@ from .operations import SpatiaLiteOperations
 from .schema import SpatialiteSchemaEditor
 
 
+# SpatiaLite 数据库连接包装器：加载空间扩展并初始化元数据
 class DatabaseWrapper(SQLiteDatabaseWrapper):
     SchemaEditorClass = SpatialiteSchemaEditor
     # Classes instantiated in __init__().
@@ -19,6 +25,7 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
     introspection_class = SpatiaLiteIntrospection
     ops_class = SpatiaLiteOperations
 
+    # 查找 libspatialite 库路径（设置项或系统路径）
     def __init__(self, *args, **kwargs):
         # Trying to find the location of the SpatiaLite library.
         # Here we are figuring out the path to the SpatiaLite library
@@ -37,6 +44,7 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
         ]
         super().__init__(*args, **kwargs)
 
+    # 启用扩展加载并尝试 load_extension 加载 SpatiaLite
     def get_new_connection(self, conn_params):
         conn = super().get_new_connection(conn_params)
         # Enabling extension loading on the SQLite connection.
@@ -67,6 +75,7 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
             )
         return conn
 
+    # 若 geometry_columns 表为空则调用 InitSpatialMetaData 初始化
     def prepare_database(self):
         super().prepare_database()
         # Check if spatial metadata have been initialized in the database

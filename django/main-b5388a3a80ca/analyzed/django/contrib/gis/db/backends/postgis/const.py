@@ -1,7 +1,11 @@
 """
+PostGIS 与 GDAL 栅格像素类型转换常量及 struct 打包格式定义。
+
+PostGIS to GDAL conversion constant definitions"""
 PostGIS to GDAL conversion constant definitions
 """
 
+# GDAL 像素类型到 PostGIS 像素类型的查找表
 # Lookup to convert pixel type values from GDAL to PostGIS
 GDAL_TO_POSTGIS = [None, 4, 6, 5, 8, 7, 10, 11, None, None, None, None]
 
@@ -16,7 +20,8 @@ POSTGIS_TO_GDAL = [1, 1, 1, 3, 1, 3, 2, 5, 4, None, 6, 7, None, None]
 #
 # Scale, origin, and skew have x and y values. PostGIS currently uses
 # a fixed endianness (1) and there is only one version (0).
-POSTGIS_HEADER_STRUCTURE = "B H H d d d d d d i H H"
+# PostGIS 栅格头部 struct 格式：字节序、版本、波段数、比例、原点、倾斜、SRID、宽高
+POSTGIS_HEADER_STRUCTURE = POSTGIS_HEADER_STRUCTURE = "B H H d d d d d d i H H"
 
 # Lookup values to convert GDAL pixel types to struct characters. This is
 # used to pack and unpack the pixel values of PostGIS raster bands.
@@ -59,5 +64,6 @@ STRUCT_SIZE = {
 # bits are enough to account for all. Reserve the upper 4 bits for generic
 # flags. See
 # https://trac.osgeo.org/postgis/wiki/WKTRaster/RFC/RFC1_V0SerialFormat#Pixeltypeandstorageflag
-BANDTYPE_PIXTYPE_MASK = 0x0F
+# 波段类型掩码：低 4 位为像素类型，高位为 nodata 等标志
+BANDTYPE_PIXTYPE_MASK = 0x0FBANDTYPE_PIXTYPE_MASK = 0x0F
 BANDTYPE_FLAG_HASNODATA = 1 << 6

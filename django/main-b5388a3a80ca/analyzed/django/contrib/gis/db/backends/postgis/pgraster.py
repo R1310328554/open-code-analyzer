@@ -1,3 +1,8 @@
+"""
+django.contrib.gis.db.backends.postgis.pgraster — PostGIS 栅格格式转换。
+
+在 PostGIS HEX 字符串与 GDALRaster 字典之间双向转换。
+"""
 import struct
 
 from django.core.exceptions import ValidationError
@@ -34,6 +39,7 @@ def chunk(data, index):
     return data[:index], data[index:]
 
 
+# 将 PostGIS HEX 字符串解析为 GDALRaster 可读字典
 def from_pgraster(data):
     """
     Convert a PostGIS HEX String into a dictionary.
@@ -97,6 +103,7 @@ def from_pgraster(data):
     }
 
 
+# 将 GDALRaster 打包为 PostGIS 栅格二进制格式
 def to_pgraster(rast):
     """
     Convert a GDALRaster into PostGIS Raster format.

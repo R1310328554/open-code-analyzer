@@ -1,7 +1,13 @@
+"""
+django.contrib.gis.db.backends.postgis.introspection — PostGIS 几何内省。
+
+通过 pg_type OID 与 geometry_columns/geography_columns 元数据表解析几何类型。
+"""
 from django.contrib.gis.gdal import OGRGeomType
 from django.db.backends.postgresql.introspection import DatabaseIntrospection
 
 
+# PostGIS 内省：OID 反向映射与 OGC 元数据表查询
 class PostGISIntrospection(DatabaseIntrospection):
     postgis_oid_lookup = {}  # Populated when introspection is performed.
 
@@ -14,6 +20,7 @@ class PostGISIntrospection(DatabaseIntrospection):
         "raster_overviews",
     ]
 
+    # 首次内省时查询 pg_type 获取 geometry/geography OID
     def get_field_type(self, data_type, description):
         if not self.postgis_oid_lookup:
             # Query PostgreSQL's pg_type table to determine the OID integers
@@ -33,6 +40,7 @@ class PostGISIntrospection(DatabaseIntrospection):
             )
         return super().get_field_type(data_type, description)
 
+    # 从 geometry_columns/geography_columns 读取维度、SRID 与 OGC 类型
     def get_geometry_type(self, table_name, description):
         """
         The geometry type OID used by PostGIS does not indicate the particular

@@ -1,4 +1,9 @@
 """
+PostGIS 后端 GeometryColumns 与 SpatialRefSys 模型。
+
+映射 PostGIS 标准 geometry_columns 视图与 spatial_ref_sys 表。
+
+The GeometryColumns and SpatialRefSys models"""
 The GeometryColumns and SpatialRefSys models for the PostGIS backend.
 """
 
@@ -6,6 +11,7 @@ from django.contrib.gis.db.backends.base.models import SpatialRefSysMixin
 from django.db import models
 
 
+# 映射 PostGIS geometry_columns 视图的几何列元数据
 class PostGISGeometryColumns(models.Model):
     """
     The 'geometry_columns' view from PostGIS. See the PostGIS
@@ -35,6 +41,7 @@ class PostGISGeometryColumns(models.Model):
         )
 
     @classmethod
+    # 返回存储要素表名的元数据列名 f_table_name
     def table_name_col(cls):
         """
         Return the name of the metadata column used to store the feature table
@@ -43,6 +50,7 @@ class PostGISGeometryColumns(models.Model):
         return "f_table_name"
 
     @classmethod
+    # 返回存储几何列名的元数据列名 f_geometry_column
     def geom_col_name(cls):
         """
         Return the name of the metadata column used to store the feature
@@ -51,6 +59,7 @@ class PostGISGeometryColumns(models.Model):
         return "f_geometry_column"
 
 
+# 映射 PostGIS spatial_ref_sys 表的空间参考系统
 class PostGISSpatialRefSys(models.Model, SpatialRefSysMixin):
     """
     The 'spatial_ref_sys' table from PostGIS. See the PostGIS
@@ -69,5 +78,6 @@ class PostGISSpatialRefSys(models.Model, SpatialRefSysMixin):
         managed = False
 
     @property
+    # srtext 字段的 WKT 别名属性
     def wkt(self):
         return self.srtext

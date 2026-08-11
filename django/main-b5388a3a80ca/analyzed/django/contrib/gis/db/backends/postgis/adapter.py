@@ -1,4 +1,7 @@
 """
+PostGIS 几何/栅格适配器：将 GEOS 对象与 GDAL 栅格转为 PostgreSQL 可引用 SQL。
+
+This object provides quoting for GEOS geometries"""
 This object provides quoting for GEOS geometries into PostgreSQL/PostGIS.
 """
 
@@ -7,7 +10,9 @@ from django.contrib.gis.geos import GEOSGeometry
 from django.db.backends.postgresql.psycopg_any import sql
 
 
+# PostGIS 适配器：封装 EWKB 与 SRID，供 psycopg2/psycopg3 引用
 class PostGISAdapter:
+    # 从 GEOS 几何或 GDAL 栅格提取 EWKB 与 SRID
     def __init__(self, obj, geography=False):
         """
         Initialize on the spatial object.
@@ -24,6 +29,7 @@ class PostGISAdapter:
         self.srid = obj.srid
         self.geography = geography
 
+    # 实现 psycopg2 ISQLQuote 协议
     def __conform__(self, proto):
         """Does the given protocol conform to what Psycopg2 expects?"""
         from psycopg2.extensions import ISQLQuote
@@ -48,6 +54,7 @@ class PostGISAdapter:
     def _fix_polygon(cls, poly):
         return poly
 
+    # 返回 ST_GeomFromEWKB/ST_GeogFromWKB 或 raster 类型转换 SQL
     def getquoted(self):
         """
         Return a properly quoted string for use in PostgreSQL/PostGIS.

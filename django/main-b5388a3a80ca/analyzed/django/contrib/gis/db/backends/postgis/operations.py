@@ -1,3 +1,8 @@
+"""
+django.contrib.gis.db.backends.postgis.operations — PostGIS 空间操作。
+
+定义 ST_ 前缀空间运算符、距离参数、SRID 转换与栅格查找处理。
+"""
 import re
 
 from django.conf import settings
@@ -24,6 +29,7 @@ from .pgraster import from_pgraster
 BILATERAL = "bilateral"
 
 
+# PostGIS 空间运算符：处理 geography/raster 类型转换与波段索引
 class PostGISOperator(SpatialOperator):
     def __init__(self, geography=False, raster=False, **kwargs):
         # Only a subset of the operators and functions are available for the
@@ -42,6 +48,7 @@ class PostGISOperator(SpatialOperator):
         template_params = self.check_geography(lookup, template_params)
         return super().as_sql(connection, lookup, template_params, *args)
 
+    # 栅格查找时将 ST_Polygon 转换或注入波段索引
     def check_raster(self, lookup, template_params):
         spheroid = lookup.rhs_params and lookup.rhs_params[-1] == "spheroid"
 
@@ -95,6 +102,7 @@ class PostGISOperator(SpatialOperator):
 
         return template_params
 
+    # 不支持 geography 的运算符回退为 ::geometry 强制转换
     def check_geography(self, lookup, template_params):
         """Convert geography fields to geometry types, if necessary."""
         if lookup.lhs.output_field.geography and not self.geography:
@@ -102,6 +110,7 @@ class PostGISOperator(SpatialOperator):
         return template_params
 
 
+# 将栅格表达式包装为 ST_Polygon 函数调用
 class ST_Polygon(Func):
     function = "ST_Polygon"
 
@@ -118,6 +127,7 @@ class ST_Polygon(Func):
         return GeometryField(srid=self.source_expressions[0].field.srid)
 
 
+# PostGIS 空间操作：ST_ 函数映射、版本检测与 OGC 模型访问
 class PostGISOperations(BaseSpatialOperations, DatabaseOperations):
     name = "postgis"
     postgis = True
@@ -189,6 +199,7 @@ class PostGISOperations(BaseSpatialOperations, DatabaseOperations):
         return function_names
 
     @cached_property
+    # 查询 postgis_lib_version() 或读取 POSTGIS_VERSION 设置
     def spatial_version(self):
         """Determine the version of the PostGIS library."""
         # Trying to get the PostGIS version because the function
@@ -244,6 +255,7 @@ class PostGISOperations(BaseSpatialOperations, DatabaseOperations):
         xmax, ymax, zmax = map(float, ur.split())
         return (xmin, ymin, zmin, xmax, ymax, zmax)
 
+    # 返回 geometry/geography/raster 列类型字符串
     def geo_db_type(self, f):
         """
         Return the database field type for the given spatial field.
@@ -267,6 +279,7 @@ class PostGISOperations(BaseSpatialOperations, DatabaseOperations):
         else:
             return "geometry(%s,%d)" % (geom_type, f.srid)
 
+    # 根据 geodetic/geography 坐标系计算距离查找参数
     def get_distance(self, f, dist_val, lookup_type):
         """
         Retrieve the distance parameters for the given geometry field,
@@ -304,6 +317,7 @@ class PostGISOperations(BaseSpatialOperations, DatabaseOperations):
 
         return [dist_param]
 
+    # SRID 不一致时注入 ST_Transform() 转换
     def get_geom_placeholder_sql(self, f, value, compiler):
         """
         Provide a proper substitution value for Geometries or rasters that are
@@ -391,12 +405,15 @@ class PostGISOperations(BaseSpatialOperations, DatabaseOperations):
             return self.geom_func_prefix + agg_name
 
     # Routines for getting the OGC-compliant models.
+    # 返回 PostGISGeometryColumns 模型类
     def geometry_columns(self):
         return PostGISGeometryColumns
 
+    # 返回 PostGISSpatialRefSys 模型类
     def spatial_ref_sys(self):
         return PostGISSpatialRefSys
 
+    # 将 PostGIS HEX 字符串转为 GDALRaster 可读字典
     def parse_raster(self, value):
         """Convert a PostGIS HEX String into a dict readable by GDALRaster."""
         return from_pgraster(value)
@@ -417,6 +434,7 @@ class PostGISOperations(BaseSpatialOperations, DatabaseOperations):
         )
         return ST_Polygon(arg) if is_raster else arg
 
+    # WKB 读取器将数据库值转为 GEOSGeometryBase
     def get_geometry_converter(self, expression):
         read = wkb_r().read
         geom_class = expression.output_field.geom_class

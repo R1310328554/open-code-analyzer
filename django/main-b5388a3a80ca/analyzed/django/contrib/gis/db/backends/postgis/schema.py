@@ -1,8 +1,14 @@
+"""
+django.contrib.gis.db.backends.postgis.schema — PostGIS 空间 schema 编辑器。
+
+管理 GIST 空间索引、2D/3D 维度转换与栅格凸包索引。
+"""
 from django.contrib.gis.db.models.fields import BaseSpatialField
 from django.db.backends.postgresql.schema import DatabaseSchemaEditor
 from django.db.models.expressions import Col, Func
 
 
+# PostGIS schema 编辑器：GIST 空间索引与维度变更 SQL
 class PostGISSchemaEditor(DatabaseSchemaEditor):
     geom_index_type = "GIST"
     geom_index_ops_nd = "GIST_GEOMETRY_OPS_ND"
@@ -29,6 +35,7 @@ class PostGISSchemaEditor(DatabaseSchemaEditor):
 
         return self._create_spatial_index_sql(model, fields[0], **kwargs)
 
+    # 2D/3D 维度变更时使用 ST_Force2D/ST_Force3D
     def _alter_column_type_sql(
         self, table, old_field, new_field, new_type, old_collation, new_collation
     ):
@@ -95,6 +102,7 @@ class PostGISSchemaEditor(DatabaseSchemaEditor):
     def _create_spatial_index_name(self, model, field):
         return self._create_index_name(model._meta.db_table, [field.column], "_id")
 
+    # 栅格字段用 ST_ConvexHull 包装，多维几何用 GIST_GEOMETRY_OPS_ND
     def _create_spatial_index_sql(self, model, field, **kwargs):
         expressions = kwargs.pop("expressions", None)
         opclasses = kwargs.pop("opclasses", None)

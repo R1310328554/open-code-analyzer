@@ -1,3 +1,8 @@
+"""
+django.contrib.gis.db.backends.postgis.base — PostGIS 数据库包装器。
+
+扩展 PostgreSQL DatabaseWrapper，注册 PostGIS 扩展与 psycopg3 几何适配器。
+"""
 from functools import lru_cache
 
 from django.db.backends.base.base import NO_DB_ALIAS
@@ -88,6 +93,7 @@ if is_psycopg3:
         return PostGISTextDumper, PostGISBinaryDumper
 
 
+# PostGIS 数据库连接包装器：注入 GIS schema/features/ops/introspection
 class DatabaseWrapper(PsycopgDatabaseWrapper):
     SchemaEditorClass = PostGISSchemaEditor
     features_class = DatabaseFeatures
@@ -109,6 +115,7 @@ class DatabaseWrapper(PsycopgDatabaseWrapper):
 
         super().__init__(*args, **kwargs)
 
+    # 检查并创建 postgis 扩展，注册 psycopg3 几何适配器
     def prepare_database(self):
         super().prepare_database()
         # Check that postgis extension is installed.
@@ -122,6 +129,7 @@ class DatabaseWrapper(PsycopgDatabaseWrapper):
                 # connection.
                 self.register_geometry_adapters(self.connection, True)
 
+    # 新建连接时注册 psycopg3 几何类型适配器
     def get_new_connection(self, conn_params):
         connection = super().get_new_connection(conn_params)
         if is_psycopg3:
@@ -145,6 +153,7 @@ class DatabaseWrapper(PsycopgDatabaseWrapper):
 
             return info.oid if info else None
 
+        # 注册 geometry/geography/raster 类型 OID 与 PostGISAdapter 转储器
         def register_geometry_adapters(self, pg_connection, clear_caches=False):
             if clear_caches:
                 for typename in self._type_infos:
