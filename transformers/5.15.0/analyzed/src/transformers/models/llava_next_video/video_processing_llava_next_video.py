@@ -17,6 +17,9 @@ from ...image_utils import OPENAI_CLIP_MEAN, OPENAI_CLIP_STD, PILImageResampling
 from ...video_processing_utils import BaseVideoProcessor
 
 
+# LLaVA-NeXT-Video 视频预处理：帧级 resize/中心裁剪与 CLIP 归一化
+
+# LlavaNextVideoVideoProcessor：LLaVA-NeXT-Video 视频帧 resize/裁剪/CLIP 归一化预处理
 class LlavaNextVideoVideoProcessor(BaseVideoProcessor):
     resample = PILImageResampling.BICUBIC
     image_mean = OPENAI_CLIP_MEAN

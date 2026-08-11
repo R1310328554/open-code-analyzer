@@ -21,8 +21,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# LongCat-Flash 配置：meituan-longcat/LongCat-Flash-Chat 稀疏 MoE + MLA 超参
+
+# LongcatFlashConfig：meituan-longcat/LongCat-Flash-Chat 稀疏 MoE + MLA 因果 LM 默认超参
 @auto_docstring(checkpoint="meituan-longcat/LongCat-Flash-Chat")
 @strict
+# LongcatFlashConfig：meituan-longcat/LongCat-Flash-Chat 稀疏 MoE + MLA 因果 LM 超参
 class LongcatFlashConfig(PreTrainedConfig):
     r"""
     ffn_hidden_size (`int`, *optional*, defaults to 12288):

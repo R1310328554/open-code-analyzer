@@ -19,6 +19,7 @@
 # limitations under the License.
 
 
+# image_processing_pil_llava_onevision 由 modular_llava_onevision.py 自动生成
 import numpy as np
 
 from ...image_processing_backends import PilBackend
@@ -36,6 +37,9 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# LLaVA-OneVision 图像预处理：PIL 后端任意分辨率 patch 切分（由 modular 自动生成）
+
+# LlavaOnevisionImageProcessorKwargs：LLaVA-OneVision 图像处理器可选参数字典类型
 class LlavaOnevisionImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     image_grid_pinpoints (`list[list[int]]`, *optional*):
@@ -48,6 +52,7 @@ class LlavaOnevisionImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# LlavaOnevisionImageProcessorPil：LLaVA-OneVision PIL 后端任意分辨率 patch 预处理
 class LlavaOnevisionImageProcessorPil(PilBackend):
     model_input_names = ["pixel_values", "image_sizes", "batch_num_images"]
     valid_kwargs = LlavaOnevisionImageProcessorKwargs

@@ -17,6 +17,9 @@ from ...image_utils import OPENAI_CLIP_MEAN, OPENAI_CLIP_STD, PILImageResampling
 from ...video_processing_utils import BaseVideoProcessor
 
 
+# LLaVA-OneVision 视频预处理：384 基准分辨率帧级 resize 与 CLIP 归一化
+
+# LlavaOnevisionVideoProcessor：LLaVA-OneVision 视频帧 resize/归一化预处理（384 基准分辨率）
 class LlavaOnevisionVideoProcessor(BaseVideoProcessor):
     resample = PILImageResampling.BICUBIC
     image_mean = OPENAI_CLIP_MEAN

@@ -55,10 +55,14 @@ from ..llava_next_video.modeling_llava_next_video import (
 logger = logging.get_logger(__name__)
 
 
+# LLaVA-OneVision modular 源：复用 LLaVA-NeXT-Video 扩展单图/多图/视频统一理解
+
+# LlavaOnevisionImageProcessorKwargs：LLaVA-OneVision 图像处理器可选参数字典类型
 class LlavaOnevisionImageProcessorKwargs(LlavaNextImageProcessorKwargs):
     pass
 
 
+# LlavaOnevisionImageProcessor：LLaVA-OneVision Torchvision 后端任意分辨率 patch 预处理
 class LlavaOnevisionImageProcessor(LlavaNextImageProcessor):
     resample = PILImageResampling.BICUBIC
     image_mean = OPENAI_CLIP_MEAN
@@ -217,6 +221,7 @@ class LlavaOnevisionImageProcessor(LlavaNextImageProcessor):
         )
 
 
+# LlavaOnevisionImageProcessorPil：LLaVA-OneVision PIL 后端任意分辨率 patch 预处理
 class LlavaOnevisionImageProcessorPil(LlavaNextImageProcessorPil):
     resample = PILImageResampling.BICUBIC
     image_mean = OPENAI_CLIP_MEAN
@@ -384,18 +389,22 @@ class LlavaOnevisionImageProcessorPil(LlavaNextImageProcessorPil):
         )
 
 
+# LlavaOnevisionModelOutputWithPast：LLaVA-OneVision 多模态主干输出 dataclass（含 past_key_values）
 class LlavaOnevisionModelOutputWithPast(LlavaNextVideoModelOutputWithPast):
     pass
 
 
+# LlavaOnevisionCausalLMOutputWithPast：LLaVA-OneVision 条件生成输出 dataclass（含 logits 与 KV 缓存）
 class LlavaOnevisionCausalLMOutputWithPast(LlavaNextVideoCausalLMOutputWithPast):
     pass
 
 
+# LlavaOnevisionPreTrainedModel：LLaVA-OneVision 多模态预训练基类与权重初始化
 class LlavaOnevisionPreTrainedModel(LlavaNextVideoPreTrainedModel):
     pass
 
 
+# LlavaOnevisionModel：LLaVA-OneVision 单图/多图/视频帧编码 + 文本解码多模态主干
 class LlavaOnevisionModel(LlavaNextVideoModel):
     def __init__(self, config):
         super().__init__(config)
@@ -697,6 +706,7 @@ class LlavaOnevisionModel(LlavaNextVideoModel):
         )
 
 
+# LlavaOnevisionForConditionalGeneration：LLaVA-OneVision 统一视觉-文本条件生成模型
 class LlavaOnevisionForConditionalGeneration(LlavaNextVideoForConditionalGeneration):
     @merge_with_config_defaults
     @can_return_tuple

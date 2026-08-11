@@ -37,8 +37,11 @@ from ...processing_utils import Unpack
 from ...utils import TransformersKwargs, auto_docstring, torch_compilable_check
 from ...utils.generic import can_return_tuple, merge_with_config_defaults
 from ..auto import AutoModel
+# modeling_llava_onevision 由 modular_llava_onevision.py 自动生成
 from .configuration_llava_onevision import LlavaOnevisionConfig
 
+
+# LLaVA-OneVision 建模：单图/多图/视频帧编码 + 文本解码多模态（由 modular 自动生成）
 
 @auto_docstring(
     custom_intro="""
@@ -46,6 +49,7 @@ from .configuration_llava_onevision import LlavaOnevisionConfig
     """
 )
 @dataclass
+# LlavaOnevisionModelOutputWithPast：LLaVA-OneVision 多模态主干输出 dataclass（含 past_key_values）
 class LlavaOnevisionModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     past_key_values (`Cache`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
@@ -72,6 +76,7 @@ class LlavaOnevisionModelOutputWithPast(BaseModelOutputWithPast):
     """
 )
 @dataclass
+# LlavaOnevisionCausalLMOutputWithPast：LLaVA-OneVision 条件生成输出 dataclass（含 logits 与 KV 缓存）
 class LlavaOnevisionCausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -102,6 +107,7 @@ class LlavaOnevisionCausalLMOutputWithPast(ModelOutput):
 
 
 @auto_docstring
+# LlavaOnevisionPreTrainedModel：LLaVA-OneVision 多模态预训练基类与权重初始化
 class LlavaOnevisionPreTrainedModel(PreTrainedModel):
     config: LlavaOnevisionConfig
     base_model_prefix = "model"
@@ -128,6 +134,7 @@ class LlavaOnevisionPreTrainedModel(PreTrainedModel):
             init.normal_(module.image_newline, mean=0.0, std=embed_std)
 
 
+# LlavaOnevisionMultiModalProjector：LLaVA-OneVision 视觉 patch 投影到文本隐空间
 class LlavaOnevisionMultiModalProjector(nn.Module):
     def __init__(self, config: LlavaOnevisionConfig):
         super().__init__()
@@ -150,6 +157,7 @@ class LlavaOnevisionMultiModalProjector(nn.Module):
         return hidden_states
 
 
+# get_anyres_image_grid_shape：计算任意分辨率图像经 patch 预处理后的网格形状
 def get_anyres_image_grid_shape(image_size, grid_pinpoints, patch_size):
     """
     Calculate the shape of the image patch grid after the preprocessing for images of any resolution.
@@ -181,6 +189,7 @@ def get_anyres_image_grid_shape(image_size, grid_pinpoints, patch_size):
     return height // patch_size, width // patch_size
 
 
+# image_size_to_num_patches：按 grid pinpoints 估算图像 patch 数量
 def image_size_to_num_patches(image_size, grid_pinpoints, patch_size: int):
     """
     Calculate the number of patches after the preprocessing for images of any resolution.
@@ -218,6 +227,7 @@ def image_size_to_num_patches(image_size, grid_pinpoints, patch_size: int):
     return num_patches
 
 
+# unpad_image：去除 padding 恢复原始宽高比（用于 anyres 特征对齐）
 def unpad_image(tensor, original_size):
     """
     Unpads a PyTorch tensor of a padded and resized image.
@@ -262,6 +272,7 @@ def unpad_image(tensor, original_size):
     The Llava-Next model which consists of a vision backbone and a language model without language modeling head.
     """
 )
+# LlavaOnevisionModel：LLaVA-OneVision 单图/多图/视频帧编码 + 文本解码多模态主干
 class LlavaOnevisionModel(LlavaOnevisionPreTrainedModel):
     base_model_prefix = "model"
 
@@ -619,6 +630,7 @@ class LlavaOnevisionModel(LlavaOnevisionPreTrainedModel):
     The LLAVA-NeXT model which consists of a vision backbone and a language model.
     """
 )
+# LlavaOnevisionForConditionalGeneration：LLaVA-OneVision 统一视觉-文本条件生成模型
 class LlavaOnevisionForConditionalGeneration(LlavaOnevisionPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
 

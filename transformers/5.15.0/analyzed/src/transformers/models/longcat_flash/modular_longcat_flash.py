@@ -45,18 +45,24 @@ from .configuration_longcat_flash import LongcatFlashConfig
 logger = logging.get_logger(__name__)
 
 
+# LongCat-Flash modular 源：复用 DeepSeek-V3 MLA 与 Mixtral MoE 路由构建稀疏解码器
+
+# LongcatFlashRMSNorm：LongCat-Flash RMS 层归一化（等价 T5LayerNorm）
 class LongcatFlashRMSNorm(DeepseekV3RMSNorm):
     pass
 
 
+# LongcatFlashRotaryEmbedding：LongCat-Flash 旋转位置编码（RoPE，含 YaRN 缩放）
 class LongcatFlashRotaryEmbedding(DeepseekV3RotaryEmbedding):
     pass
 
 
+# LongcatFlashMLP：LongCat-Flash 稠密 SwiGLU 前馈 MLP
 class LongcatFlashMLP(DeepseekV3MLP):
     pass
 
 
+# LongcatFlashTopkRouter：LongCat-Flash MoE Top-K 路由门控（含 zero expert）
 class LongcatFlashTopkRouter(MixtralTopKRouter):
     def __init__(self, config):
         super().__init__(config)
@@ -83,6 +89,7 @@ class LongcatFlashTopkRouter(MixtralTopKRouter):
         return topk_weights.to(router_logits.dtype), topk_indices
 
 
+# LongcatFlashExperts：LongCat-Flash 稀疏 MoE 多专家 FFN 参数组
 class LongcatFlashExperts(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -133,6 +140,7 @@ class LongcatFlashExperts(nn.Module):
 
 
 # remap config key expert_ffn_hidden_size -> moe_intermediate_size
+# LongcatFlashMoE：LongCat-Flash 稀疏 MoE 块（路由 + 专家 FFN + 共享 MLP）
 class LongcatFlashMoE(nn.Module):
     """
     A mixed expert module containing zero compute (identity) experts.
@@ -154,6 +162,7 @@ class LongcatFlashMoE(nn.Module):
         return hidden_states
 
 
+# LongcatFlashMLA：LongCat-Flash 多头潜在注意力（MLA，DeepSeek-V3 风格）
 class LongcatFlashMLA(DeepseekV3Attention):
     def __init__(self, config: LongcatFlashConfig, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -221,6 +230,7 @@ class LongcatFlashMLA(DeepseekV3Attention):
         return attn_output, attn_weights
 
 
+# LongcatFlashDecoderLayer：LongCat-Flash 解码器单层（MLA + MoE/MLP）
 class LongcatFlashDecoderLayer(GradientCheckpointingLayer):
     """
     LongCat decoder layer with dual-sublayer + shortcut MoE architecture.
@@ -303,6 +313,7 @@ class LongcatFlashDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# LongcatFlashPreTrainedModel：LongCat-Flash 预训练基类与权重初始化
 class LongcatFlashPreTrainedModel(PreTrainedModel):
     config: LongcatFlashConfig
     base_model_prefix = "model"
@@ -335,6 +346,7 @@ class LongcatFlashPreTrainedModel(PreTrainedModel):
                 init.normal_(module.down_proj, mean=0.0, std=self.config.initializer_range)
 
 
+# LongcatFlashModel：LongCat-Flash 多层稀疏 MoE 因果解码器主干
 class LongcatFlashModel(DeepseekV3Model):
     def __init__(self, config: LongcatFlashConfig):
         super().__init__(config)
@@ -406,6 +418,7 @@ class LongcatFlashModel(DeepseekV3Model):
         )
 
 
+# LongcatFlashForCausalLM：LongCat-Flash 因果语言建模
 class LongcatFlashForCausalLM(DeepseekV3ForCausalLM):
     _keys_to_ignore_on_load_unexpected = [r"model\.mtp.*"]
 

@@ -26,6 +26,9 @@ from ...utils import auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# LLaVA-NeXT-Video Processor：视频/图像预处理与分词器联合多模态输入组装
+
+# LlavaNextVideoProcessorKwargs：LLaVA-NeXT-Video Processor 可选参数字典类型
 class LlavaNextVideoProcessorKwargs(ProcessingKwargs, total=False):
     # see processing_utils.ProcessingKwargs documentation for usage.
     _defaults = {
@@ -39,6 +42,7 @@ class LlavaNextVideoProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# LlavaNextVideoProcessor：封装视频/图像预处理与分词器的多模态输入管线
 class LlavaNextVideoProcessor(ProcessorMixin):
     valid_processor_kwargs = LlavaNextVideoProcessorKwargs
 

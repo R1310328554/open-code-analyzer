@@ -25,6 +25,9 @@ from ...utils import auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# LLaVA-OneVision Processor：图像/视频预处理与分词器联合多模态输入组装
+
+# LlavaOnevisionProcessorKwargs：LLaVA-OneVision Processor 可选参数字典类型
 class LlavaOnevisionProcessorKwargs(ProcessingKwargs, total=False):
     # see processing_utils.ProcessingKwargs documentation for usage.
     _defaults = {
@@ -36,6 +39,7 @@ class LlavaOnevisionProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# LlavaOnevisionProcessor：封装图像/视频预处理与分词器的统一多模态输入管线
 class LlavaOnevisionProcessor(ProcessorMixin):
     valid_processor_kwargs = LlavaOnevisionProcessorKwargs
 

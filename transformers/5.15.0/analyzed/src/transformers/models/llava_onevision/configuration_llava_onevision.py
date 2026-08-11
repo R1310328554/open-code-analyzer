@@ -21,8 +21,12 @@ from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# LLaVA-OneVision 配置：单图/多图/视频统一 anyres 视觉-语言多模态超参
+
+# LlavaOnevisionConfig：llava-hf/llava-onevision-qwen2-7b-ov-hf 单图/多图/视频统一视觉-语言默认超参
 @auto_docstring(checkpoint="llava-hf/llava-onevision-qwen2-7b-ov-hf")
 @strict
+# LlavaOnevisionConfig：llava-hf/llava-onevision-qwen2-7b-ov-hf 单图/多图/视频统一视觉-语言超参
 class LlavaOnevisionConfig(PreTrainedConfig):
     r"""
     image_grid_pinpoints (`List`, *optional*):

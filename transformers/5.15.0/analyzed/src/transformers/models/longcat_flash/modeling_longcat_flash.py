@@ -41,10 +41,14 @@ from ...utils import TransformersKwargs, auto_docstring, can_return_tuple
 from ...utils.deprecation import deprecate_kwarg
 from ...utils.generic import maybe_autocast, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
+# modeling_longcat_flash 由 modular_longcat_flash.py 自动生成
 from .configuration_longcat_flash import LongcatFlashConfig
 
 
+# LongCat-Flash 建模：稀疏 MoE + MLA 因果解码器（由 modular 自动生成）
+
 @use_kernel_forward_from_hub("RMSNorm")
+# LongcatFlashRMSNorm：LongCat-Flash RMS 层归一化（等价 T5LayerNorm）
 class LongcatFlashRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -65,6 +69,7 @@ class LongcatFlashRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# LongcatFlashRotaryEmbedding：LongCat-Flash 旋转位置编码（RoPE，含 YaRN 缩放）
 class LongcatFlashRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: LongcatFlashConfig, device=None):
@@ -124,6 +129,7 @@ class LongcatFlashRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# LongcatFlashMLP：LongCat-Flash 稠密 SwiGLU 前馈 MLP
 class LongcatFlashMLP(nn.Module):
     def __init__(self, config, intermediate_size=None):
         super().__init__()
@@ -140,6 +146,7 @@ class LongcatFlashMLP(nn.Module):
         return down_proj
 
 
+# LongcatFlashTopkRouter：LongCat-Flash MoE Top-K 路由门控（含 zero expert）
 class LongcatFlashTopkRouter(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -168,6 +175,7 @@ class LongcatFlashTopkRouter(nn.Module):
         return topk_indices
 
 
+# LongcatFlashExperts：LongCat-Flash 稀疏 MoE 多专家 FFN 参数组
 class LongcatFlashExperts(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -218,6 +226,7 @@ class LongcatFlashExperts(nn.Module):
 
 
 # remap config key expert_ffn_hidden_size -> moe_intermediate_size
+# LongcatFlashMoE：LongCat-Flash 稀疏 MoE 块（路由 + 专家 FFN + 共享 MLP）
 class LongcatFlashMoE(nn.Module):
     """
     A mixed expert module containing zero compute (identity) experts.
@@ -239,6 +248,7 @@ class LongcatFlashMoE(nn.Module):
         return hidden_states
 
 
+# repeat_kv：GQA/MLA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -251,6 +261,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -276,12 +287,14 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# yarn_get_mscale：YaRN RoPE 缩放因子 mscale 计算
 def yarn_get_mscale(scale=1, mscale=1):
     if scale <= 1:
         return 1.0
     return 0.1 * mscale * math.log(scale) + 1.0
 
 
+# yarn_apply_mscale：对 RoPE cos/sin 应用 YaRN mscale 缩放
 def yarn_apply_mscale(rope_parameters, scaling):
     if rope_parameters.get("rope_type", "default") != "default":
         mscale_all_dim = rope_parameters.get("mscale_all_dim", 0)
@@ -292,6 +305,7 @@ def yarn_apply_mscale(rope_parameters, scaling):
     return scaling
 
 
+# apply_rotary_pos_emb_interleave：对 Q/K 应用交错布局 RoPE 旋转嵌入
 def apply_rotary_pos_emb_interleave(q, k, cos, sin, position_ids=None, unsqueeze_dim=1):
     r"""
     Applies interleaved Rotary Position Embedding to the query and key tensors.
@@ -331,6 +345,7 @@ def apply_rotary_pos_emb_interleave(q, k, cos, sin, position_ids=None, unsqueeze
     return q_embed, k_embed
 
 
+# LongcatFlashMLA：LongCat-Flash 多头潜在注意力（MLA，DeepSeek-V3 风格）
 class LongcatFlashMLA(nn.Module):
     """Multi-headed Latent Attention (MLA) from Deepseek V2"""
 
@@ -460,6 +475,7 @@ class LongcatFlashMLA(nn.Module):
         return attn_output, attn_weights
 
 
+# LongcatFlashDecoderLayer：LongCat-Flash 解码器单层（MLA + MoE/MLP）
 class LongcatFlashDecoderLayer(GradientCheckpointingLayer):
     """
     LongCat decoder layer with dual-sublayer + shortcut MoE architecture.
@@ -542,6 +558,7 @@ class LongcatFlashDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# LongcatFlashPreTrainedModel：LongCat-Flash 预训练基类与权重初始化
 class LongcatFlashPreTrainedModel(PreTrainedModel):
     config: LongcatFlashConfig
     base_model_prefix = "model"
@@ -575,6 +592,7 @@ class LongcatFlashPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# LongcatFlashModel：LongCat-Flash 多层稀疏 MoE 因果解码器主干
 class LongcatFlashModel(LongcatFlashPreTrainedModel):
     def __init__(self, config: LongcatFlashConfig):
         super().__init__(config)
@@ -654,6 +672,7 @@ class LongcatFlashModel(LongcatFlashPreTrainedModel):
 
 
 @auto_docstring
+# LongcatFlashForCausalLM：LongCat-Flash 因果语言建模
 class LongcatFlashForCausalLM(LongcatFlashPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
