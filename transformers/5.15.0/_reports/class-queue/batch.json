@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T02:36:50Z",
-  "files": [
-    "src/transformers/models/phi/modeling_phi.py",
-    "src/transformers/models/phi/modular_phi.py",
-    "src/transformers/models/phi3/__init__.py",
-    "src/transformers/models/phi3/configuration_phi3.py",
-    "src/transformers/models/phi3/modeling_phi3.py",
-    "src/transformers/models/phi3/modular_phi3.py",
-    "src/transformers/models/phi4_multimodal/__init__.py",
-    "src/transformers/models/phi4_multimodal/configuration_phi4_multimodal.py",
-    "src/transformers/models/phi4_multimodal/feature_extraction_phi4_multimodal.py",
-    "src/transformers/models/phi4_multimodal/image_processing_phi4_multimodal.py",
-    "src/transformers/models/phi4_multimodal/modeling_phi4_multimodal.py",
-    "src/transformers/models/phi4_multimodal/modular_phi4_multimodal.py",
-    "src/transformers/models/phi4_multimodal/processing_phi4_multimodal.py",
-    "src/transformers/models/phimoe/__init__.py",
-    "src/transformers/models/phimoe/configuration_phimoe.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 969,
-  "done": 1695
+  "done": 1710
 }
