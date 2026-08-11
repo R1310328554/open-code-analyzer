@@ -13,6 +13,8 @@
 # limitations under the License.
 """Whisper model configuration"""
 
+# Whisper 配置：Encoder-Decoder ASR，含 mel 长度、抑制 token 与 SpecAugment
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
@@ -47,6 +49,7 @@ NON_SPEECH_TOKENS_MULTI = [
 
 @auto_docstring(checkpoint="openai/whisper-tiny")
 @strict
+# WhisperConfig：主配置，编码器/解码器维度、最大序列长与非语音 token 抑制
 class WhisperConfig(PreTrainedConfig):
     r"""
     max_source_positions (`int`, *optional*, defaults to 1500):

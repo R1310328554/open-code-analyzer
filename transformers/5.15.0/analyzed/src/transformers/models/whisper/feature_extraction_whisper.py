@@ -30,6 +30,10 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# Whisper 特征提取：NumPy STFT 计算 log-mel，对齐 PyTorch torch.stft
+
+
+# WhisperFeatureExtractor：30 秒分块 mel 特征提取与 padding
 class WhisperFeatureExtractor(SequenceFeatureExtractor):
     r"""
     Constructs a Whisper feature extractor.

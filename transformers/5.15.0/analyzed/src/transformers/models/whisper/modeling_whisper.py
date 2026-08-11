@@ -49,9 +49,14 @@ from .generation_whisper import WhisperGenerationMixin
 
 logger = logging.get_logger(__name__)
 
+# Whisper 建模：Encoder-Decoder Transformer，mel 编码 + 文本自回归解码
+
 _HIDDEN_STATES_START_POSITION = 1
 
 
+# sinusoids：正弦位置编码，用于编码器绝对位置
+# sinusoids：正弦位置编码，用于编码器绝对位置
+# sinusoids：正弦位置编码，用于编码器绝对位置
 def sinusoids(length: int, channels: int, max_timescale: float = 10000) -> torch.Tensor:
     """Returns sinusoids for positional embedding"""
     if channels % 2 != 0:
@@ -65,6 +70,9 @@ def sinusoids(length: int, channels: int, max_timescale: float = 10000) -> torch
 
 
 # Copied from transformers.models.bart.modeling_bart.shift_tokens_right
+# shift_tokens_right：解码器 teacher forcing 右移 input_ids
+# shift_tokens_right：解码器 teacher forcing 右移 input_ids
+# shift_tokens_right：解码器 teacher forcing 右移 input_ids
 def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start_token_id: int):
     """
     Shift input ids one token to the right.
@@ -201,6 +209,9 @@ def _compute_mask_indices(
     return spec_aug_mask
 
 
+# WhisperPositionalEmbedding：解码器可学习位置嵌入，支持 past 长度偏移
+# WhisperPositionalEmbedding：解码器可学习位置嵌入，支持 past 长度偏移
+# WhisperPositionalEmbedding：解码器可学习位置嵌入，支持 past 长度偏移
 class WhisperPositionalEmbedding(nn.Embedding):
     def __init__(self, num_positions: int, embedding_dim: int, padding_idx: int | None = None):
         super().__init__(num_positions, embedding_dim)
@@ -212,6 +223,9 @@ class WhisperPositionalEmbedding(nn.Embedding):
             return self.weight[position_ids]
 
 
+# eager_attention_forward：标准 eager 缩放点积注意力
+# eager_attention_forward：标准 eager 缩放点积注意力
+# eager_attention_forward：标准 eager 缩放点积注意力
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -238,6 +252,9 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# WhisperAttention：多头自/交叉注意力，支持 encoder 与 decoder 模式
+# WhisperAttention：多头自/交叉注意力，支持 encoder 与 decoder 模式
+# WhisperAttention：多头自/交叉注意力，支持 encoder 与 decoder 模式
 class WhisperAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -357,6 +374,7 @@ class WhisperAttention(nn.Module):
 
 
 # Copied from transformers.models.mbart.modeling_mbart.MBartEncoderLayer with MBart->Whisper, MBART->WHISPER
+# WhisperEncoderLayer：Pre-LN 编码器层，自注意力 + FFN
 class WhisperEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: WhisperConfig):
         super().__init__()
@@ -413,6 +431,9 @@ class WhisperEncoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# WhisperDecoderLayer：Pre-LN 解码器层，自注意力 + 交叉注意力 + FFN
+# WhisperDecoderLayer：Pre-LN 解码器层，自注意力 + 交叉注意力 + FFN
+# WhisperDecoderLayer：Pre-LN 解码器层，自注意力 + 交叉注意力 + FFN
 class WhisperDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: WhisperConfig, layer_idx: int | None = None):
         super().__init__()
@@ -506,6 +527,7 @@ class WhisperDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# WhisperPreTrainedModel：Whisper 预训练基类，支持 flash/sdpa 注意力
 class WhisperPreTrainedModel(PreTrainedModel):
     config: WhisperConfig
     base_model_prefix = "model"
@@ -537,6 +559,9 @@ class WhisperPreTrainedModel(PreTrainedModel):
         return input_lengths
 
 
+# WhisperEncoder：mel 正弦位置 + Transformer 编码器，可选 SpecAugment
+# WhisperEncoder：mel 正弦位置 + Transformer 编码器，可选 SpecAugment
+# WhisperEncoder：mel 正弦位置 + Transformer 编码器，可选 SpecAugment
 class WhisperEncoder(WhisperPreTrainedModel):
     """
     Transformer encoder consisting of *config.encoder_layers* self attention layers. Each layer is a
@@ -646,6 +671,9 @@ class WhisperEncoder(WhisperPreTrainedModel):
         )
 
 
+# WhisperDecoder：因果自注意力 + 编码器交叉注意力的文本解码器
+# WhisperDecoder：因果自注意力 + 编码器交叉注意力的文本解码器
+# WhisperDecoder：因果自注意力 + 编码器交叉注意力的文本解码器
 class WhisperDecoder(WhisperPreTrainedModel):
     """
     Transformer decoder consisting of *config.decoder_layers* layers. Each layer is a [`WhisperDecoderLayer`]
@@ -796,6 +824,7 @@ class WhisperDecoder(WhisperPreTrainedModel):
 
 
 @auto_docstring
+# WhisperModel：编码器-解码器联合骨干，无语言建模头
 class WhisperModel(WhisperPreTrainedModel):
     def __init__(self, config: WhisperConfig):
         super().__init__(config)
@@ -960,6 +989,9 @@ class WhisperModel(WhisperPreTrainedModel):
     The Whisper Model with a language modeling head. Can be used for automatic speech recognition.
     """
 )
+# WhisperForConditionalGeneration：ASR/翻译条件生成，含 proj_out 语言建模头
+# WhisperForConditionalGeneration：ASR/翻译条件生成，含 proj_out 语言建模头
+# WhisperForConditionalGeneration：ASR/翻译条件生成，含 proj_out 语言建模头
 class WhisperForConditionalGeneration(WhisperGenerationMixin, WhisperPreTrainedModel):
     base_model_prefix = "model"
     _tied_weights_keys = {"proj_out.weight": "model.decoder.embed_tokens.weight"}
@@ -1099,6 +1131,9 @@ class WhisperForConditionalGeneration(WhisperGenerationMixin, WhisperPreTrainedM
         )
 
 
+# WhisperDecoderWrapper：EncoderDecoderModel 框架下的解码器包装类
+# WhisperDecoderWrapper：EncoderDecoderModel 框架下的解码器包装类
+# WhisperDecoderWrapper：EncoderDecoderModel 框架下的解码器包装类
 class WhisperDecoderWrapper(WhisperPreTrainedModel):
     """
     This wrapper class is a helper class to correctly load pretrained checkpoints when the causal language model is
@@ -1126,6 +1161,9 @@ class WhisperDecoderWrapper(WhisperPreTrainedModel):
     Whisper decoder with a language modeling head on top (linear layer with weights tied to the input embeddings).
     """
 )
+# WhisperForCausalLM：纯解码器因果语言建模，权重与 embed_tokens 绑定
+# WhisperForCausalLM：纯解码器因果语言建模，权重与 embed_tokens 绑定
+# WhisperForCausalLM：纯解码器因果语言建模，权重与 embed_tokens 绑定
 class WhisperForCausalLM(WhisperPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"proj_out.weight": "model.decoder.embed_tokens.weight"}
     main_input_name = "input_ids"
@@ -1238,6 +1276,9 @@ class WhisperForCausalLM(WhisperPreTrainedModel, GenerationMixin):
     like SUPERB Keyword Spotting.
     """
 )
+# WhisperForAudioClassification：编码器 + 池化分类头，如关键词 spotting
+# WhisperForAudioClassification：编码器 + 池化分类头，如关键词 spotting
+# WhisperForAudioClassification：编码器 + 池化分类头，如关键词 spotting
 class WhisperForAudioClassification(WhisperPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

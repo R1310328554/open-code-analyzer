@@ -34,6 +34,10 @@ from .configuration_wavlm import WavLMConfig
 logger = logging.get_logger(__name__)
 
 
+# WavLM 建模：相对位置偏置 Transformer 编码器，支持 CTC/分类/XVector 等下游头
+
+
+# WavLMSamePadLayer：位置卷积后按核大小裁剪多余 padding
 class WavLMSamePadLayer(nn.Module):
     def __init__(self, num_conv_pos_embeddings):
         super().__init__()
@@ -45,6 +49,11 @@ class WavLMSamePadLayer(nn.Module):
         return hidden_states
 
 
+# WavLMPositionalConvEmbedding：分组 1D 卷积位置嵌入，含 weight_norm
+# WavLMPositionalConvEmbedding：分组 1D 卷积位置嵌入，含 weight_norm
+# WavLMPositionalConvEmbedding：分组 1D 卷积位置嵌入，含 weight_norm
+# WavLMPositionalConvEmbedding：分组 1D 卷积位置嵌入，含 weight_norm
+# WavLMPositionalConvEmbedding：分组 1D 卷积位置嵌入，含 weight_norm
 class WavLMPositionalConvEmbedding(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -90,6 +99,11 @@ class WavLMPositionalConvEmbedding(nn.Module):
         return hidden_states
 
 
+# WavLMFeatureProjection：LayerNorm + 线性将卷积特征投影到 hidden_size
+# WavLMFeatureProjection：LayerNorm + 线性将卷积特征投影到 hidden_size
+# WavLMFeatureProjection：LayerNorm + 线性将卷积特征投影到 hidden_size
+# WavLMFeatureProjection：LayerNorm + 线性将卷积特征投影到 hidden_size
+# WavLMFeatureProjection：LayerNorm + 线性将卷积特征投影到 hidden_size
 class WavLMFeatureProjection(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -105,6 +119,11 @@ class WavLMFeatureProjection(nn.Module):
         return hidden_states, norm_hidden_states
 
 
+# WavLMAttention：带桶式相对位置偏置与 GRU 门控的多头自注意力
+# WavLMAttention：带桶式相对位置偏置与 GRU 门控的多头自注意力
+# WavLMAttention：带桶式相对位置偏置与 GRU 门控的多头自注意力
+# WavLMAttention：带桶式相对位置偏置与 GRU 门控的多头自注意力
+# WavLMAttention：带桶式相对位置偏置与 GRU 门控的多头自注意力
 class WavLMAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -271,6 +290,11 @@ class WavLMAttention(nn.Module):
         return relative_buckets
 
 
+# WavLMFeedForward：两层线性 FFN，含激活与 dropout
+# WavLMFeedForward：两层线性 FFN，含激活与 dropout
+# WavLMFeedForward：两层线性 FFN，含激活与 dropout
+# WavLMFeedForward：两层线性 FFN，含激活与 dropout
+# WavLMFeedForward：两层线性 FFN，含激活与 dropout
 class WavLMFeedForward(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -295,6 +319,11 @@ class WavLMFeedForward(nn.Module):
         return hidden_states
 
 
+# WavLMEncoderLayer：Post-LN Transformer 层，自注意力 + FFN 双残差
+# WavLMEncoderLayer：Post-LN Transformer 层，自注意力 + FFN 双残差
+# WavLMEncoderLayer：Post-LN Transformer 层，自注意力 + FFN 双残差
+# WavLMEncoderLayer：Post-LN Transformer 层，自注意力 + FFN 双残差
+# WavLMEncoderLayer：Post-LN Transformer 层，自注意力 + FFN 双残差
 class WavLMEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: WavLMConfig, has_relative_position_bias: bool = True):
         super().__init__()
@@ -336,6 +365,11 @@ class WavLMEncoderLayer(GradientCheckpointingLayer):
         return outputs
 
 
+# WavLMEncoderLayerStableLayerNorm：Pre-LN 变体编码层，稳定训练架构
+# WavLMEncoderLayerStableLayerNorm：Pre-LN 变体编码层，稳定训练架构
+# WavLMEncoderLayerStableLayerNorm：Pre-LN 变体编码层，稳定训练架构
+# WavLMEncoderLayerStableLayerNorm：Pre-LN 变体编码层，稳定训练架构
+# WavLMEncoderLayerStableLayerNorm：Pre-LN 变体编码层，稳定训练架构
 class WavLMEncoderLayerStableLayerNorm(GradientCheckpointingLayer):
     def __init__(self, config: WavLMConfig, has_relative_position_bias: bool = True):
         super().__init__()
@@ -373,6 +407,11 @@ class WavLMEncoderLayerStableLayerNorm(GradientCheckpointingLayer):
         return outputs
 
 
+# WavLMEncoder：堆叠 Post-LN 编码层，首层带相对位置偏置
+# WavLMEncoder：堆叠 Post-LN 编码层，首层带相对位置偏置
+# WavLMEncoder：堆叠 Post-LN 编码层，首层带相对位置偏置
+# WavLMEncoder：堆叠 Post-LN 编码层，首层带相对位置偏置
+# WavLMEncoder：堆叠 Post-LN 编码层，首层带相对位置偏置
 class WavLMEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -447,6 +486,11 @@ class WavLMEncoder(nn.Module):
         )
 
 
+# WavLMEncoderStableLayerNorm：Pre-LN 编码器堆栈
+# WavLMEncoderStableLayerNorm：Pre-LN 编码器堆栈
+# WavLMEncoderStableLayerNorm：Pre-LN 编码器堆栈
+# WavLMEncoderStableLayerNorm：Pre-LN 编码器堆栈
+# WavLMEncoderStableLayerNorm：Pre-LN 编码器堆栈
 class WavLMEncoderStableLayerNorm(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -522,6 +566,11 @@ class WavLMEncoderStableLayerNorm(nn.Module):
         )
 
 
+# WavLMGumbelVectorQuantizer：Gumbel-Softmax 向量量化，用于对比学习码本
+# WavLMGumbelVectorQuantizer：Gumbel-Softmax 向量量化，用于对比学习码本
+# WavLMGumbelVectorQuantizer：Gumbel-Softmax 向量量化，用于对比学习码本
+# WavLMGumbelVectorQuantizer：Gumbel-Softmax 向量量化，用于对比学习码本
+# WavLMGumbelVectorQuantizer：Gumbel-Softmax 向量量化，用于对比学习码本
 class WavLMGumbelVectorQuantizer(nn.Module):
     """
     Vector quantization using gumbel softmax. See [CATEGORICAL REPARAMETERIZATION WITH
@@ -593,6 +642,7 @@ class WavLMGumbelVectorQuantizer(nn.Module):
 
 
 @auto_docstring
+# WavLMPreTrainedModel：WavLM 预训练基类，含量化器与位置卷积初始化
 class WavLMPreTrainedModel(PreTrainedModel):
     config: WavLMConfig
     base_model_prefix = "wavlm"
@@ -672,6 +722,11 @@ class WavLMPreTrainedModel(PreTrainedModel):
         return attention_mask
 
 
+# WavLMNoLayerNormConvLayer：无归一化的 1D 卷积前端层
+# WavLMNoLayerNormConvLayer：无归一化的 1D 卷积前端层
+# WavLMNoLayerNormConvLayer：无归一化的 1D 卷积前端层
+# WavLMNoLayerNormConvLayer：无归一化的 1D 卷积前端层
+# WavLMNoLayerNormConvLayer：无归一化的 1D 卷积前端层
 class WavLMNoLayerNormConvLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_id=0):
         super().__init__()
@@ -693,6 +748,11 @@ class WavLMNoLayerNormConvLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# WavLMLayerNormConvLayer：LayerNorm + 1D 卷积前端层
+# WavLMLayerNormConvLayer：LayerNorm + 1D 卷积前端层
+# WavLMLayerNormConvLayer：LayerNorm + 1D 卷积前端层
+# WavLMLayerNormConvLayer：LayerNorm + 1D 卷积前端层
+# WavLMLayerNormConvLayer：LayerNorm + 1D 卷积前端层
 class WavLMLayerNormConvLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_id=0):
         super().__init__()
@@ -720,6 +780,11 @@ class WavLMLayerNormConvLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# WavLMGroupNormConvLayer：GroupNorm + 1D 卷积前端层
+# WavLMGroupNormConvLayer：GroupNorm + 1D 卷积前端层
+# WavLMGroupNormConvLayer：GroupNorm + 1D 卷积前端层
+# WavLMGroupNormConvLayer：GroupNorm + 1D 卷积前端层
+# WavLMGroupNormConvLayer：GroupNorm + 1D 卷积前端层
 class WavLMGroupNormConvLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_id=0):
         super().__init__()
@@ -744,6 +809,11 @@ class WavLMGroupNormConvLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# WavLMFeatureEncoder：多层 1D 卷积将原始波形下采样为帧特征
+# WavLMFeatureEncoder：多层 1D 卷积将原始波形下采样为帧特征
+# WavLMFeatureEncoder：多层 1D 卷积将原始波形下采样为帧特征
+# WavLMFeatureEncoder：多层 1D 卷积将原始波形下采样为帧特征
+# WavLMFeatureEncoder：多层 1D 卷积将原始波形下采样为帧特征
 class WavLMFeatureEncoder(nn.Module):
     """Construct the features from raw audio waveform"""
 
@@ -782,6 +852,11 @@ class WavLMFeatureEncoder(nn.Module):
         return hidden_states
 
 
+# WavLMAdapterLayer：Conv1d 适配器层，用于多语言 CTC 微调
+# WavLMAdapterLayer：Conv1d 适配器层，用于多语言 CTC 微调
+# WavLMAdapterLayer：Conv1d 适配器层，用于多语言 CTC 微调
+# WavLMAdapterLayer：Conv1d 适配器层，用于多语言 CTC 微调
+# WavLMAdapterLayer：Conv1d 适配器层，用于多语言 CTC 微调
 class WavLMAdapterLayer(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -800,6 +875,11 @@ class WavLMAdapterLayer(nn.Module):
         return hidden_states
 
 
+# WavLMAdapter：堆叠适配器层，在编码器输出上插入轻量卷积
+# WavLMAdapter：堆叠适配器层，在编码器输出上插入轻量卷积
+# WavLMAdapter：堆叠适配器层，在编码器输出上插入轻量卷积
+# WavLMAdapter：堆叠适配器层，在编码器输出上插入轻量卷积
+# WavLMAdapter：堆叠适配器层，在编码器输出上插入轻量卷积
 class WavLMAdapter(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -831,6 +911,11 @@ class WavLMAdapter(nn.Module):
         return hidden_states
 
 
+# _compute_mask_indices：SpecAugment 随机时序/特征掩码索引生成
+# _compute_mask_indices：SpecAugment 随机时序/特征掩码索引生成
+# _compute_mask_indices：SpecAugment 随机时序/特征掩码索引生成
+# _compute_mask_indices：SpecAugment 随机时序/特征掩码索引生成
+# _compute_mask_indices：SpecAugment 随机时序/特征掩码索引生成
 def _compute_mask_indices(
     shape: tuple[int, int],
     mask_prob: float,
@@ -954,6 +1039,7 @@ WavLMBaseModelOutput = Wav2Vec2BaseModelOutput
 
 
 @auto_docstring
+# WavLMModel：卷积前端 + 相对位置 Transformer 编码器骨干
 class WavLMModel(WavLMPreTrainedModel):
     def __init__(self, config: WavLMConfig):
         super().__init__(config)
@@ -1096,6 +1182,11 @@ _HIDDEN_STATES_START_POSITION = 2
     WavLM Model with a `language modeling` head on top for Connectionist Temporal Classification (CTC).
     """
 )
+# WavLMForCTC：CTC 语言建模头，支持适配器多语言微调
+# WavLMForCTC：CTC 语言建模头，支持适配器多语言微调
+# WavLMForCTC：CTC 语言建模头，支持适配器多语言微调
+# WavLMForCTC：CTC 语言建模头，支持适配器多语言微调
+# WavLMForCTC：CTC 语言建模头，支持适配器多语言微调
 class WavLMForCTC(WavLMPreTrainedModel):
     def __init__(self, config, target_lang: str | None = None):
         r"""
@@ -1244,6 +1335,11 @@ class WavLMForCTC(WavLMPreTrainedModel):
     SUPERB Keyword Spotting.
     """
 )
+# WavLMForSequenceClassification：序列级分类头，如关键词 spotting
+# WavLMForSequenceClassification：序列级分类头，如关键词 spotting
+# WavLMForSequenceClassification：序列级分类头，如关键词 spotting
+# WavLMForSequenceClassification：序列级分类头，如关键词 spotting
+# WavLMForSequenceClassification：序列级分类头，如关键词 spotting
 class WavLMForSequenceClassification(WavLMPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1349,6 +1445,7 @@ class WavLMForSequenceClassification(WavLMPreTrainedModel):
 
 
 @auto_docstring
+# WavLMForAudioFrameClassification：帧级音频分类头
 class WavLMForAudioFrameClassification(WavLMPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1443,6 +1540,11 @@ class WavLMForAudioFrameClassification(WavLMPreTrainedModel):
         )
 
 
+# AMSoftmaxLoss：加性间隔 softmax 损失，用于说话人验证
+# AMSoftmaxLoss：加性间隔 softmax 损失，用于说话人验证
+# AMSoftmaxLoss：加性间隔 softmax 损失，用于说话人验证
+# AMSoftmaxLoss：加性间隔 softmax 损失，用于说话人验证
+# AMSoftmaxLoss：加性间隔 softmax 损失，用于说话人验证
 class AMSoftmaxLoss(nn.Module):
     def __init__(self, input_dim, num_labels, scale=30.0, margin=0.4):
         super().__init__()
@@ -1466,6 +1568,11 @@ class AMSoftmaxLoss(nn.Module):
         return loss
 
 
+# TDNNLayer：时延神经网络层，用 conv1d 实现可变感受野
+# TDNNLayer：时延神经网络层，用 conv1d 实现可变感受野
+# TDNNLayer：时延神经网络层，用 conv1d 实现可变感受野
+# TDNNLayer：时延神经网络层，用 conv1d 实现可变感受野
+# TDNNLayer：时延神经网络层，用 conv1d 实现可变感受野
 class TDNNLayer(nn.Module):
     def __init__(self, config, layer_id=0):
         super().__init__()
@@ -1503,6 +1610,11 @@ class TDNNLayer(nn.Module):
     WavLM Model with an XVector feature extraction head on top for tasks like Speaker Verification.
     """
 )
+# WavLMForXVector：XVector 说话人嵌入提取头，TDNN + 统计池化
+# WavLMForXVector：XVector 说话人嵌入提取头，TDNN + 统计池化
+# WavLMForXVector：XVector 说话人嵌入提取头，TDNN + 统计池化
+# WavLMForXVector：XVector 说话人嵌入提取头，TDNN + 统计池化
+# WavLMForXVector：XVector 说话人嵌入提取头，TDNN + 统计池化
 class WavLMForXVector(WavLMPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

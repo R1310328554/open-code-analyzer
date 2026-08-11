@@ -43,6 +43,10 @@ ADDITIONAL_DIACRITICS = {
 }
 
 
+# Whisper 英文文本规范化：符号/数字/拼写归一化，用于 WER 评估
+
+
+# remove_symbols_and_diacritics：NFKD 去变音符号并将标点替换为空格
 def remove_symbols_and_diacritics(s: str, keep=""):
     """
     Replace any other markers, symbols, and punctuations with a space, and drop any diacritics (category 'Mn' and some
@@ -66,6 +70,10 @@ def remove_symbols_and_diacritics(s: str, keep=""):
     return "".join(replace_character(c) for c in unicodedata.normalize("NFKD", s))
 
 
+# remove_symbols：保留变音符号，仅将标点/mark 替换为空格
+# remove_symbols：保留变音符号，仅将标点/mark 替换为空格
+# remove_symbols：保留变音符号，仅将标点/mark 替换为空格
+# remove_symbols：保留变音符号，仅将标点/mark 替换为空格
 def remove_symbols(s: str):
     """
     Replace any other markers, symbols, punctuations with a space, keeping diacritics
@@ -73,6 +81,10 @@ def remove_symbols(s: str):
     return "".join(" " if unicodedata.category(c)[0] in "MSP" else c for c in unicodedata.normalize("NFKC", s))
 
 
+# BasicTextNormalizer：基础文本规范化，可选去变音与字母拆分
+# BasicTextNormalizer：基础文本规范化，可选去变音与字母拆分
+# BasicTextNormalizer：基础文本规范化，可选去变音与字母拆分
+# BasicTextNormalizer：基础文本规范化，可选去变音与字母拆分
 class BasicTextNormalizer:
     def __init__(self, remove_diacritics: bool = False, split_letters: bool = False):
         self.clean = remove_symbols_and_diacritics if remove_diacritics else remove_symbols
@@ -92,6 +104,10 @@ class BasicTextNormalizer:
         return s
 
 
+# EnglishNumberNormalizer：英文数字词转阿拉伯数字，含货币与序数词
+# EnglishNumberNormalizer：英文数字词转阿拉伯数字，含货币与序数词
+# EnglishNumberNormalizer：英文数字词转阿拉伯数字，含货币与序数词
+# EnglishNumberNormalizer：英文数字词转阿拉伯数字，含货币与序数词
 class EnglishNumberNormalizer:
     """
     Convert any spelled-out numbers into arabic numbers, while handling:
@@ -494,6 +510,10 @@ class EnglishNumberNormalizer:
         return s
 
 
+# EnglishSpellingNormalizer：英美拼写映射表归一化
+# EnglishSpellingNormalizer：英美拼写映射表归一化
+# EnglishSpellingNormalizer：英美拼写映射表归一化
+# EnglishSpellingNormalizer：英美拼写映射表归一化
 class EnglishSpellingNormalizer:
     """
     Applies British-American spelling mappings as listed in [1].
@@ -508,6 +528,10 @@ class EnglishSpellingNormalizer:
         return " ".join(self.mapping.get(word, word) for word in s.split())
 
 
+# EnglishTextNormalizer：完整英文 ASR 评估规范化流水线
+# EnglishTextNormalizer：完整英文 ASR 评估规范化流水线
+# EnglishTextNormalizer：完整英文 ASR 评估规范化流水线
+# EnglishTextNormalizer：完整英文 ASR 评估规范化流水线
 class EnglishTextNormalizer:
     def __init__(self, english_spelling_mapping):
         self.ignore_patterns = r"\b(hmm|mm|mhm|mmm|uh|um)\b"

@@ -26,5 +26,6 @@ if TYPE_CHECKING:
 else:
     import sys
 
+    # whisper 包：延迟加载配置、特征提取、建模、处理与分词子模块
     _file = globals()["__file__"]
     sys.modules[__name__] = _LazyModule(__name__, _file, define_import_structure(_file), module_spec=__spec__)

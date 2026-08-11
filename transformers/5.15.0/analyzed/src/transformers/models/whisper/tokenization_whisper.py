@@ -29,6 +29,8 @@ from .english_normalizer import BasicTextNormalizer, EnglishTextNormalizer
 
 logger = logging.get_logger(__name__)
 
+# Whisper 分词：多语言 BPE、任务/语言特殊 token 与 ASR 后处理工具
+
 VOCAB_FILES_NAMES = {
     "vocab_file": "vocab.json",
     "tokenizer_file": "tokenizer.json",
@@ -160,6 +162,8 @@ TO_LANGUAGE_CODE = {
 TASK_IDS = ["translate", "transcribe"]
 
 
+# WhisperTokenizer：Fast BPE 分词器，支持转录/翻译 prompt 与时间戳 token
+# WhisperTokenizer：Fast BPE 分词器，支持转录/翻译 prompt 与时间戳 token
 class WhisperTokenizer(TokenizersBackend):
     """
     Construct a "fast" Whisper tokenizer (backed by HuggingFace's *tokenizers* library).

@@ -13,6 +13,8 @@
 # limitations under the License.
 """WavLM model configuration"""
 
+# WavLM 配置：自监督语音表示，含相对位置偏置、Gumbel 量化与 SpecAugment
+
 import functools
 import operator
 
@@ -24,6 +26,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="microsoft/wavlm-base")
 @strict
+# WavLMConfig：主配置，卷积前端、稳定 LayerNorm、掩码增强与适配器参数
 class WavLMConfig(PreTrainedConfig):
     r"""
     feat_proj_dropout (`float`, *optional*, defaults to 0.0):

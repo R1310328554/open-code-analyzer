@@ -22,5 +22,6 @@ if TYPE_CHECKING:
 else:
     import sys
 
+    # wav2vec2_with_lm 包：延迟加载带语言模型的 Wav2Vec2 处理器
     _file = globals()["__file__"]
     sys.modules[__name__] = _LazyModule(__name__, _file, define_import_structure(_file), module_spec=__spec__)

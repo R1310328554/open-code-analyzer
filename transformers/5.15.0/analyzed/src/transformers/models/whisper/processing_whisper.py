@@ -15,11 +15,14 @@
 Speech processor class for Whisper
 """
 
+# Whisper 处理器：mel 特征提取 + BPE 分词联合封装
+
 from ...processing_utils import ProcessorMixin
 from ...utils import auto_docstring
 
 
 @auto_docstring
+# WhisperProcessor：音频/文本双模态处理，含 decoder prompt 生成
 class WhisperProcessor(ProcessorMixin):
     def __init__(self, feature_extractor, tokenizer):
         super().__init__(feature_extractor, tokenizer)

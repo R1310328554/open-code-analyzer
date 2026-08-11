@@ -32,6 +32,9 @@ from ...utils import ModelOutput, auto_docstring, logging, requires_backends
 logger = logging.get_logger(__name__)
 
 
+# Wav2Vec2+LM 处理器：特征提取 + 分词 + pyctcdecode 束搜索解码
+
+
 if TYPE_CHECKING:
     from pyctcdecode import BeamSearchDecoderCTC
 
@@ -43,6 +46,7 @@ ListOfDict = list[dict[str, int | str]]
 
 
 @dataclass
+# Wav2Vec2DecoderWithLMOutput：LM 束搜索解码输出，含转录文本与词级偏移
 class Wav2Vec2DecoderWithLMOutput(ModelOutput):
     """
     Output type of [`Wav2Vec2DecoderWithLM`], with transcription.
@@ -66,6 +70,7 @@ class Wav2Vec2DecoderWithLMOutput(ModelOutput):
 
 
 @auto_docstring
+# Wav2Vec2ProcessorWithLM：CTC 解码处理器，融合声学 logits 与 n-gram 语言模型
 class Wav2Vec2ProcessorWithLM(ProcessorMixin):
     def __init__(
         self,

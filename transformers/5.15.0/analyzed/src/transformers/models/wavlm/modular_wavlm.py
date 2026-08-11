@@ -28,14 +28,28 @@ from .configuration_wavlm import WavLMConfig
 logger = logging.get_logger(__name__)
 
 
+# WavLM 模块化实现：复用 Wav2Vec2 组件并扩展相对位置偏置注意力
+
+
+# WavLMPositionalConvEmbedding：复用 Wav2Vec2 位置卷积嵌入
 class WavLMPositionalConvEmbedding(Wav2Vec2PositionalConvEmbedding):
     pass
 
 
+# WavLMFeatureProjection：复用 Wav2Vec2 特征投影
+# WavLMFeatureProjection：复用 Wav2Vec2 特征投影
+# WavLMFeatureProjection：复用 Wav2Vec2 特征投影
+# WavLMFeatureProjection：复用 Wav2Vec2 特征投影
+# WavLMFeatureProjection：复用 Wav2Vec2 特征投影
 class WavLMFeatureProjection(Wav2Vec2FeatureProjection):
     pass
 
 
+# WavLMAttention：桶式相对位置偏置 + GRU 门控多头自注意力
+# WavLMAttention：桶式相对位置偏置 + GRU 门控多头自注意力
+# WavLMAttention：桶式相对位置偏置 + GRU 门控多头自注意力
+# WavLMAttention：桶式相对位置偏置 + GRU 门控多头自注意力
+# WavLMAttention：桶式相对位置偏置 + GRU 门控多头自注意力
 class WavLMAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -202,10 +216,20 @@ class WavLMAttention(nn.Module):
         return relative_buckets
 
 
+# WavLMFeedForward：复用 Wav2Vec2 FFN
+# WavLMFeedForward：复用 Wav2Vec2 FFN
+# WavLMFeedForward：复用 Wav2Vec2 FFN
+# WavLMFeedForward：复用 Wav2Vec2 FFN
+# WavLMFeedForward：复用 Wav2Vec2 FFN
 class WavLMFeedForward(Wav2Vec2FeedForward):
     pass
 
 
+# WavLMEncoderLayer：Post-LN 编码层，首层启用相对位置偏置
+# WavLMEncoderLayer：Post-LN 编码层，首层启用相对位置偏置
+# WavLMEncoderLayer：Post-LN 编码层，首层启用相对位置偏置
+# WavLMEncoderLayer：Post-LN 编码层，首层启用相对位置偏置
+# WavLMEncoderLayer：Post-LN 编码层，首层启用相对位置偏置
 class WavLMEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: WavLMConfig, has_relative_position_bias: bool = True):
         super().__init__()
@@ -247,6 +271,11 @@ class WavLMEncoderLayer(GradientCheckpointingLayer):
         return outputs
 
 
+# WavLMEncoderLayerStableLayerNorm：Pre-LN 稳定编码层
+# WavLMEncoderLayerStableLayerNorm：Pre-LN 稳定编码层
+# WavLMEncoderLayerStableLayerNorm：Pre-LN 稳定编码层
+# WavLMEncoderLayerStableLayerNorm：Pre-LN 稳定编码层
+# WavLMEncoderLayerStableLayerNorm：Pre-LN 稳定编码层
 class WavLMEncoderLayerStableLayerNorm(GradientCheckpointingLayer):
     def __init__(self, config: WavLMConfig, has_relative_position_bias: bool = True):
         super().__init__()
@@ -284,6 +313,11 @@ class WavLMEncoderLayerStableLayerNorm(GradientCheckpointingLayer):
         return outputs
 
 
+# WavLMEncoder：Post-LN Transformer 编码器堆栈
+# WavLMEncoder：Post-LN Transformer 编码器堆栈
+# WavLMEncoder：Post-LN Transformer 编码器堆栈
+# WavLMEncoder：Post-LN Transformer 编码器堆栈
+# WavLMEncoder：Post-LN Transformer 编码器堆栈
 class WavLMEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -358,6 +392,11 @@ class WavLMEncoder(nn.Module):
         )
 
 
+# WavLMEncoderStableLayerNorm：Pre-LN 编码器堆栈
+# WavLMEncoderStableLayerNorm：Pre-LN 编码器堆栈
+# WavLMEncoderStableLayerNorm：Pre-LN 编码器堆栈
+# WavLMEncoderStableLayerNorm：Pre-LN 编码器堆栈
+# WavLMEncoderStableLayerNorm：Pre-LN 编码器堆栈
 class WavLMEncoderStableLayerNorm(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -433,6 +472,11 @@ class WavLMEncoderStableLayerNorm(nn.Module):
         )
 
 
+# WavLMGumbelVectorQuantizer：Gumbel-Softmax 向量量化码本
+# WavLMGumbelVectorQuantizer：Gumbel-Softmax 向量量化码本
+# WavLMGumbelVectorQuantizer：Gumbel-Softmax 向量量化码本
+# WavLMGumbelVectorQuantizer：Gumbel-Softmax 向量量化码本
+# WavLMGumbelVectorQuantizer：Gumbel-Softmax 向量量化码本
 class WavLMGumbelVectorQuantizer(nn.Module):
     """
     Vector quantization using gumbel softmax. See [CATEGORICAL REPARAMETERIZATION WITH
@@ -503,6 +547,11 @@ class WavLMGumbelVectorQuantizer(nn.Module):
         return codevectors, perplexity
 
 
+# WavLMPreTrainedModel：WavLM 预训练基类，继承 Wav2Vec2 初始化逻辑
+# WavLMPreTrainedModel：WavLM 预训练基类，继承 Wav2Vec2 初始化逻辑
+# WavLMPreTrainedModel：WavLM 预训练基类，继承 Wav2Vec2 初始化逻辑
+# WavLMPreTrainedModel：WavLM 预训练基类，继承 Wav2Vec2 初始化逻辑
+# WavLMPreTrainedModel：WavLM 预训练基类，继承 Wav2Vec2 初始化逻辑
 class WavLMPreTrainedModel(PreTrainedModel, Wav2Vec2PreTrainedModel):
     config: WavLMConfig
     base_model_prefix = "wavlm"
@@ -553,22 +602,47 @@ class WavLMPreTrainedModel(PreTrainedModel, Wav2Vec2PreTrainedModel):
 WavLMBaseModelOutput = Wav2Vec2BaseModelOutput
 
 
+# WavLMModel：复用 Wav2Vec2 骨干模型
+# WavLMModel：复用 Wav2Vec2 骨干模型
+# WavLMModel：复用 Wav2Vec2 骨干模型
+# WavLMModel：复用 Wav2Vec2 骨干模型
+# WavLMModel：复用 Wav2Vec2 骨干模型
 class WavLMModel(Wav2Vec2Model):
     pass
 
 
+# WavLMForCTC：复用 Wav2Vec2 CTC 头
+# WavLMForCTC：复用 Wav2Vec2 CTC 头
+# WavLMForCTC：复用 Wav2Vec2 CTC 头
+# WavLMForCTC：复用 Wav2Vec2 CTC 头
+# WavLMForCTC：复用 Wav2Vec2 CTC 头
 class WavLMForCTC(Wav2Vec2ForCTC):
     pass
 
 
+# WavLMForSequenceClassification：复用 Wav2Vec2 序列分类头
+# WavLMForSequenceClassification：复用 Wav2Vec2 序列分类头
+# WavLMForSequenceClassification：复用 Wav2Vec2 序列分类头
+# WavLMForSequenceClassification：复用 Wav2Vec2 序列分类头
+# WavLMForSequenceClassification：复用 Wav2Vec2 序列分类头
 class WavLMForSequenceClassification(Wav2Vec2ForSequenceClassification):
     pass
 
 
+# WavLMForAudioFrameClassification：复用 Wav2Vec2 帧级分类头
+# WavLMForAudioFrameClassification：复用 Wav2Vec2 帧级分类头
+# WavLMForAudioFrameClassification：复用 Wav2Vec2 帧级分类头
+# WavLMForAudioFrameClassification：复用 Wav2Vec2 帧级分类头
+# WavLMForAudioFrameClassification：复用 Wav2Vec2 帧级分类头
 class WavLMForAudioFrameClassification(Wav2Vec2ForAudioFrameClassification):
     pass
 
 
+# WavLMForXVector：复用 Wav2Vec2 XVector 说话人嵌入头
+# WavLMForXVector：复用 Wav2Vec2 XVector 说话人嵌入头
+# WavLMForXVector：复用 Wav2Vec2 XVector 说话人嵌入头
+# WavLMForXVector：复用 Wav2Vec2 XVector 说话人嵌入头
+# WavLMForXVector：复用 Wav2Vec2 XVector 说话人嵌入头
 class WavLMForXVector(Wav2Vec2ForXVector):
     pass
 

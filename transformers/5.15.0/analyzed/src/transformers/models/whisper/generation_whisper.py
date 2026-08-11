@@ -40,6 +40,10 @@ from .tokenization_whisper import TASK_IDS, TO_LANGUAGE_CODE
 logger = logging.get_logger(__name__)
 
 
+# Whisper 生成扩展：长音频分块、时间戳 DTW、无语音检测与 logit 处理
+
+
+# _median_filter：沿末维中值滤波，用于时间戳平滑
 def _median_filter(inputs: torch.Tensor, filter_width: int) -> torch.Tensor:
     """
     Applies a median filter of width `filter_width` along the last dimension of the input.
@@ -61,6 +65,10 @@ def _median_filter(inputs: torch.Tensor, filter_width: int) -> torch.Tensor:
     return result
 
 
+# _dynamic_time_warping：DTW 对齐音频帧与输出 token 以生成时间戳
+# _dynamic_time_warping：DTW 对齐音频帧与输出 token 以生成时间戳
+# _dynamic_time_warping：DTW 对齐音频帧与输出 token 以生成时间戳
+# _dynamic_time_warping：DTW 对齐音频帧与输出 token 以生成时间戳
 def _dynamic_time_warping(matrix: np.ndarray):
     """
     Measures similarity between two temporal sequences: the input audio and the output tokens. Used to generate
@@ -115,6 +123,10 @@ def _dynamic_time_warping(matrix: np.ndarray):
     return text_indices, time_indices
 
 
+# _get_attr_from_logit_processors：从 LogitsProcessor 列表提取指定处理器属性
+# _get_attr_from_logit_processors：从 LogitsProcessor 列表提取指定处理器属性
+# _get_attr_from_logit_processors：从 LogitsProcessor 列表提取指定处理器属性
+# _get_attr_from_logit_processors：从 LogitsProcessor 列表提取指定处理器属性
 def _get_attr_from_logit_processors(logits_processor, logit_processor_class, attribute_name):
     if logits_processor is not None:
         logit_processor = next((cls for cls in logits_processor if isinstance(cls, logit_processor_class)), None)
@@ -123,6 +135,10 @@ def _get_attr_from_logit_processors(logits_processor, logit_processor_class, att
     return None
 
 
+# _pad_to_max_length：将分段生成结果 padding 到统一最大长度
+# _pad_to_max_length：将分段生成结果 padding 到统一最大长度
+# _pad_to_max_length：将分段生成结果 padding 到统一最大长度
+# _pad_to_max_length：将分段生成结果 padding 到统一最大长度
 def _pad_to_max_length(
     current_segments,
     pad_token_id,
@@ -237,6 +253,10 @@ def _pad_to_max_length(
         return sequences
 
 
+# WhisperGenerationMixin：Whisper 专用 generate，支持分块转录与时间戳
+# WhisperGenerationMixin：Whisper 专用 generate，支持分块转录与时间戳
+# WhisperGenerationMixin：Whisper 专用 generate，支持分块转录与时间戳
+# WhisperGenerationMixin：Whisper 专用 generate，支持分块转录与时间戳
 class WhisperGenerationMixin(GenerationMixin):
     def _extract_token_timestamps(
         self, generate_outputs, alignment_heads, time_precision=0.02, num_frames=None, num_input_ids=None
