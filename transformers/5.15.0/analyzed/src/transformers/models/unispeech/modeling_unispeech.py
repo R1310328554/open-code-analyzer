@@ -47,6 +47,8 @@ from ...utils import TransformersKwargs, auto_docstring, logging
 from .configuration_unispeech import UniSpeechConfig
 
 
+# UniSpeech 建模：自监督语音预训练、CTC 与序列分类下游头
+
 logger = logging.get_logger(__name__)
 
 
@@ -56,6 +58,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# UniSpeechForPreTrainingOutput：UniSpeech 预训练输出：对比损失、量化码与投影特征
 class UniSpeechForPreTrainingOutput(ModelOutput):
     r"""
     loss (*optional*, returned when model is in train mode, `torch.FloatTensor` of shape `(1,)`):
@@ -79,18 +82,23 @@ class UniSpeechForPreTrainingOutput(ModelOutput):
     attentions: tuple[torch.FloatTensor] | None = None
 
 
+# UniSpeechSamePadLayer：UniSpeech 同长填充：Conv1d 后裁剪/填充至输入长度
 class UniSpeechSamePadLayer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, num_conv_pos_embeddings):
         super().__init__()
         self.num_pad_remove = 1 if num_conv_pos_embeddings % 2 == 0 else 0
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         if self.num_pad_remove > 0:
             hidden_states = hidden_states[:, :, : -self.num_pad_remove]
         return hidden_states
 
 
+# UniSpeechPositionalConvEmbedding：UniSpeech 卷积位置编码：Grouped Conv1d 生成相对位置嵌入
 class UniSpeechPositionalConvEmbedding(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.conv = nn.Conv1d(
@@ -124,6 +132,7 @@ class UniSpeechPositionalConvEmbedding(nn.Module):
         self.padding = UniSpeechSamePadLayer(config.num_conv_pos_embeddings)
         self.activation = ACT2FN[config.feat_extract_activation]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = hidden_states.transpose(1, 2)
 
@@ -135,7 +144,9 @@ class UniSpeechPositionalConvEmbedding(nn.Module):
         return hidden_states
 
 
+# UniSpeechNoLayerNormConvLayer：UniSpeech 无 LN 卷积层：Conv1d + 激活 + SamePad
 class UniSpeechNoLayerNormConvLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_id=0):
         super().__init__()
         self.in_conv_dim = config.conv_dim[layer_id - 1] if layer_id > 0 else 1
@@ -150,13 +161,16 @@ class UniSpeechNoLayerNormConvLayer(GradientCheckpointingLayer):
         )
         self.activation = ACT2FN[config.feat_extract_activation]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.conv(hidden_states)
         hidden_states = self.activation(hidden_states)
         return hidden_states
 
 
+# UniSpeechLayerNormConvLayer：UniSpeech LayerNorm 卷积层：Conv1d + LayerNorm + 激活
 class UniSpeechLayerNormConvLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_id=0):
         super().__init__()
         self.in_conv_dim = config.conv_dim[layer_id - 1] if layer_id > 0 else 1
@@ -172,6 +186,7 @@ class UniSpeechLayerNormConvLayer(GradientCheckpointingLayer):
         self.layer_norm = nn.LayerNorm(self.out_conv_dim, elementwise_affine=True)
         self.activation = ACT2FN[config.feat_extract_activation]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.conv(hidden_states)
 
@@ -183,7 +198,9 @@ class UniSpeechLayerNormConvLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# UniSpeechGroupNormConvLayer：UniSpeech GroupNorm 卷积层：Conv1d + GroupNorm + 激活
 class UniSpeechGroupNormConvLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_id=0):
         super().__init__()
         self.in_conv_dim = config.conv_dim[layer_id - 1] if layer_id > 0 else 1
@@ -200,6 +217,7 @@ class UniSpeechGroupNormConvLayer(GradientCheckpointingLayer):
 
         self.layer_norm = nn.GroupNorm(num_groups=self.out_conv_dim, num_channels=self.out_conv_dim, affine=True)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.conv(hidden_states)
         hidden_states = self.layer_norm(hidden_states)
@@ -207,9 +225,11 @@ class UniSpeechGroupNormConvLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# UniSpeechFeatureEncoder：UniSpeech 特征编码器：多层 1D 卷积下采样原始波形
 class UniSpeechFeatureEncoder(nn.Module):
     """Construct the features from raw audio waveform"""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
 
@@ -235,6 +255,7 @@ class UniSpeechFeatureEncoder(nn.Module):
             param.requires_grad = False
         self._requires_grad = False
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input_values):
         hidden_states = input_values[:, None]
 
@@ -248,13 +269,16 @@ class UniSpeechFeatureEncoder(nn.Module):
         return hidden_states
 
 
+# UniSpeechFeatureProjection：UniSpeech 特征投影：LayerNorm + Linear 映射至 hidden_size
 class UniSpeechFeatureProjection(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.layer_norm = nn.LayerNorm(config.conv_dim[-1], eps=config.layer_norm_eps)
         self.projection = nn.Linear(config.conv_dim[-1], config.hidden_size)
         self.dropout = nn.Dropout(config.feat_proj_dropout)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         # non-projected hidden states are needed for quantization
         norm_hidden_states = self.layer_norm(hidden_states)
@@ -263,6 +287,7 @@ class UniSpeechFeatureProjection(nn.Module):
         return hidden_states, norm_hidden_states
 
 
+# eager_attention_forward：标准 eager 注意力：QK^T 缩放 softmax 加权 V，支持 attention_mask
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -291,9 +316,11 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# UniSpeechAttention：UniSpeech 注意力：Wav2Vec2 风格多头缩放点积自注意力
 class UniSpeechAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         embed_dim: int,
@@ -325,6 +352,7 @@ class UniSpeechAttention(nn.Module):
         self.q_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
         self.out_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -376,7 +404,9 @@ class UniSpeechAttention(nn.Module):
         return attn_output, attn_weights, None
 
 
+# UniSpeechFeedForward：UniSpeech FFN：两层 Linear + 激活前馈网络
 class UniSpeechFeedForward(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.intermediate_dropout = nn.Dropout(config.activation_dropout)
@@ -390,6 +420,7 @@ class UniSpeechFeedForward(nn.Module):
         self.output_dense = nn.Linear(config.intermediate_size, config.hidden_size)
         self.output_dropout = nn.Dropout(config.hidden_dropout)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.intermediate_dense(hidden_states)
         hidden_states = self.intermediate_act_fn(hidden_states)
@@ -400,7 +431,9 @@ class UniSpeechFeedForward(nn.Module):
         return hidden_states
 
 
+# UniSpeechEncoderLayer：UniSpeech 编码层：自注意力 + FFN 双残差 + LayerNorm
 class UniSpeechEncoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.attention = UniSpeechAttention(
@@ -416,6 +449,7 @@ class UniSpeechEncoderLayer(GradientCheckpointingLayer):
         self.feed_forward = UniSpeechFeedForward(config)
         self.final_layer_norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states, attention_mask=None, output_attentions=False):
         attn_residual = hidden_states
         hidden_states, attn_weights, _ = self.attention(
@@ -436,7 +470,9 @@ class UniSpeechEncoderLayer(GradientCheckpointingLayer):
         return outputs
 
 
+# UniSpeechEncoder：UniSpeech 编码器：堆叠 EncoderLayer + 可选 SpecAugment 掩码
 class UniSpeechEncoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -446,6 +482,7 @@ class UniSpeechEncoder(nn.Module):
         self.layers = nn.ModuleList([UniSpeechEncoderLayer(config) for _ in range(config.num_hidden_layers)])
         self.gradient_checkpointing = False
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.tensor,
@@ -508,7 +545,9 @@ class UniSpeechEncoder(nn.Module):
         )
 
 
+# UniSpeechAttnAdapterLayer：UniSpeech 注意力适配器：轻量 bottleneck 适配层
 class UniSpeechAttnAdapterLayer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         """
         Implements adapter modules directly with 3D tensor weight as parameters and without using ModuleList to speed
@@ -523,6 +562,7 @@ class UniSpeechAttnAdapterLayer(nn.Module):
         self.act_fn = nn.ReLU()
         self.linear_2 = nn.Linear(self.input_dim, self.hidden_dim)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.FloatTensor):
         hidden_states = self.norm(hidden_states)
 
@@ -533,7 +573,9 @@ class UniSpeechAttnAdapterLayer(nn.Module):
         return hidden_states
 
 
+# UniSpeechEncoderLayerStableLayerNorm：UniSpeech 稳定 LN 编码层：LayerNorm 置于注意力之前
 class UniSpeechEncoderLayerStableLayerNorm(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.attention = UniSpeechAttention(
@@ -553,6 +595,7 @@ class UniSpeechEncoderLayerStableLayerNorm(GradientCheckpointingLayer):
         else:
             self.adapter_layer = None
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -579,7 +622,9 @@ class UniSpeechEncoderLayerStableLayerNorm(GradientCheckpointingLayer):
         return outputs
 
 
+# UniSpeechEncoderStableLayerNorm：UniSpeech 稳定 LN 编码器：Pre-LN Transformer 堆叠
 class UniSpeechEncoderStableLayerNorm(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -591,6 +636,7 @@ class UniSpeechEncoderStableLayerNorm(nn.Module):
         )
         self.gradient_checkpointing = False
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -655,12 +701,14 @@ class UniSpeechEncoderStableLayerNorm(nn.Module):
         )
 
 
+# UniSpeechGumbelVectorQuantizer：UniSpeech Gumbel 量化：离散码本向量量化与 Gumbel-Softmax
 class UniSpeechGumbelVectorQuantizer(nn.Module):
     """
     Vector quantization using gumbel softmax. See `[CATEGORICAL REPARAMETERIZATION WITH
     GUMBEL-SOFTMAX](https://huggingface.co/papers/1611.01144) for more information.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.num_groups = config.num_codevector_groups
@@ -687,6 +735,7 @@ class UniSpeechGumbelVectorQuantizer(nn.Module):
         perplexity = torch.exp(-torch.sum(torch.xlogy(marginal_probs, marginal_probs), dim=-1)).sum()
         return perplexity
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         batch_size, sequence_length, hidden_size = hidden_states.shape
 
@@ -726,6 +775,7 @@ class UniSpeechGumbelVectorQuantizer(nn.Module):
 
 
 @auto_docstring
+# UniSpeechPreTrainedModel：UniSpeech 预训练基类：Conv/Linear 权重初始化与梯度检查点
 class UniSpeechPreTrainedModel(PreTrainedModel):
     config: UniSpeechConfig
     base_model_prefix = "unispeech"
@@ -737,6 +787,7 @@ class UniSpeechPreTrainedModel(PreTrainedModel):
     _supports_flex_attn = True
 
     @torch.no_grad()
+    # _init_weights：权重初始化：Linear/Conv 截断正态、LayerNorm 偏置置零
     def _init_weights(self, module):
         """Initialize the weights"""
         super()._init_weights(module)
@@ -763,6 +814,7 @@ class UniSpeechPreTrainedModel(PreTrainedModel):
                 k = math.sqrt(module.groups / (module.in_channels * module.kernel_size[0]))
                 init.uniform_(module.bias, a=-k, b=k)
 
+    # _get_feat_extract_output_lengths：计算卷积输出长度：根据 stride/kernel 推算下采样后帧数
     def _get_feat_extract_output_lengths(self, input_lengths: torch.LongTensor | int):
         """
         Computes the output length of the convolutional layers
@@ -794,6 +846,7 @@ class UniSpeechPreTrainedModel(PreTrainedModel):
         return attention_mask
 
 
+# _compute_mask_indices：计算 SpecAugment 掩码索引：时间/特征轴随机 span 掩码
 def _compute_mask_indices(
     shape: tuple[int, int],
     mask_prob: float,
@@ -917,7 +970,9 @@ UniSpeechBaseModelOutput = Wav2Vec2BaseModelOutput
 
 
 @auto_docstring
+# UniSpeechModel：UniSpeech 基模型：特征提取 + 编码器 + 可选量化投影
 class UniSpeechModel(UniSpeechPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: UniSpeechConfig):
         super().__init__(config)
         self.config = config
@@ -935,6 +990,7 @@ class UniSpeechModel(UniSpeechPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # _mask_hidden_states：掩码隐状态：SpecAugment 时间/特征轴随机替换为 mask embedding
     def _mask_hidden_states(
         self,
         hidden_states: torch.FloatTensor,
@@ -982,6 +1038,7 @@ class UniSpeechModel(UniSpeechPreTrainedModel):
         return hidden_states
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_values: torch.Tensor | None,
@@ -1041,7 +1098,9 @@ class UniSpeechModel(UniSpeechPreTrainedModel):
     UniSpeech Model with a vector-quantization module and ctc loss for pre-training.
     """
 )
+# UniSpeechForPreTraining：UniSpeech 自监督预训练：对比学习 + Gumbel 量化损失
 class UniSpeechForPreTraining(UniSpeechPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: UniSpeechConfig):
         super().__init__(config)
         self.unispeech = UniSpeechModel(config)
@@ -1063,6 +1122,7 @@ class UniSpeechForPreTraining(UniSpeechPreTrainedModel):
         """
         self.quantizer.temperature = temperature
 
+    # freeze_feature_encoder：冻结特征编码器：禁用 Conv1d 层梯度更新
     def freeze_feature_encoder(self):
         """
         Calling this function will disable the gradient computation for the feature encoder so that its parameter will
@@ -1091,6 +1151,7 @@ class UniSpeechForPreTraining(UniSpeechPreTrainedModel):
         return logits
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_values: torch.Tensor | None,
@@ -1171,7 +1232,9 @@ _HIDDEN_STATES_START_POSITION = 2
     UniSpeech Model with a `language modeling` head on top for Connectionist Temporal Classification (CTC).
     """
 )
+# UniSpeechForCTC：UniSpeech CTC（modular）：继承 Wav2Vec2ForCTC 的 CTC 下游头
 class UniSpeechForCTC(UniSpeechPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, target_lang: str | None = None):
         r"""
         target_lang (`str`, *optional*):
@@ -1225,6 +1288,7 @@ class UniSpeechForCTC(UniSpeechPreTrainedModel):
         elif target_lang is not None:
             self.load_adapter(target_lang, force_load=True)
 
+    # freeze_feature_encoder：冻结特征编码器：禁用 Conv1d 层梯度更新
     def freeze_feature_encoder(self):
         """
         Calling this function will disable the gradient computation for the feature encoder so that its parameter will
@@ -1241,6 +1305,7 @@ class UniSpeechForCTC(UniSpeechPreTrainedModel):
             param.requires_grad = False
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_values: torch.Tensor | None,
@@ -1319,7 +1384,9 @@ class UniSpeechForCTC(UniSpeechPreTrainedModel):
     SUPERB Keyword Spotting.
     """
 )
+# UniSpeechForSequenceClassification：UniSpeech 序列分类（modular）：继承 Wav2Vec2 分类头
 class UniSpeechForSequenceClassification(UniSpeechPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -1337,6 +1404,7 @@ class UniSpeechForSequenceClassification(UniSpeechPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # freeze_feature_encoder：冻结特征编码器：禁用 Conv1d 层梯度更新
     def freeze_feature_encoder(self):
         """
         Calling this function will disable the gradient computation for the feature encoder so that its parameter will
@@ -1353,6 +1421,7 @@ class UniSpeechForSequenceClassification(UniSpeechPreTrainedModel):
             param.requires_grad = False
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_values: torch.Tensor | None,

@@ -51,11 +51,15 @@ from ...utils.output_capturing import OutputRecorder, capture_outputs
 from .configuration_umt5 import UMT5Config
 
 
+# UMT5 建模：Encoder-Decoder Transformer，支持生成/分类/QA/Token 分类
+
 logger = logging.get_logger(__name__)
 
 
 # Copied from transformers.models.t5.modeling_t5.T5LayerNorm with T5->UMT5
+# UMT5LayerNorm：UMT5 LayerNorm：hidden 维 RMS 归一化（T5 风格无 bias）
 class UMT5LayerNorm(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, hidden_size, eps=1e-6):
         """
         Construct a layernorm module in the UMT5 style. No bias and no subtraction of mean.
@@ -64,6 +68,7 @@ class UMT5LayerNorm(nn.Module):
         self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         # UMT5 uses a layer_norm which only scales and doesn't shift, which is also known as Root Mean
         # Square Layer Normalization https://huggingface.co/papers/1910.07467 thus variance is calculated
@@ -81,7 +86,9 @@ class UMT5LayerNorm(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5DenseActDense with T5->UMT5
+# UMT5DenseActDense：UMT5 标准 FFN：wi + wo 两层线性 + 激活
 class UMT5DenseActDense(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: UMT5Config):
         super().__init__()
         self.wi = nn.Linear(config.d_model, config.d_ff, bias=False)
@@ -89,6 +96,7 @@ class UMT5DenseActDense(nn.Module):
         self.dropout = nn.Dropout(config.dropout_rate)
         self.act = ACT2FN[config.dense_act_fn]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.wi(hidden_states)
         hidden_states = self.act(hidden_states)
@@ -104,7 +112,9 @@ class UMT5DenseActDense(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5DenseGatedActDense with T5->UMT5
+# UMT5DenseGatedActDense：UMT5 门控 FFN：wi_0/wi_1 门控 + wo 输出投影
 class UMT5DenseGatedActDense(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: UMT5Config):
         super().__init__()
         self.wi_0 = nn.Linear(config.d_model, config.d_ff, bias=False)
@@ -113,6 +123,7 @@ class UMT5DenseGatedActDense(nn.Module):
         self.dropout = nn.Dropout(config.dropout_rate)
         self.act = ACT2FN[config.dense_act_fn]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_gelu = self.act(self.wi_0(hidden_states))
         hidden_linear = self.wi_1(hidden_states)
@@ -134,7 +145,9 @@ class UMT5DenseGatedActDense(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5LayerFF with T5->UMT5
+# UMT5LayerFF：UMT5 前馈层：按 is_gated_act 选择标准或门控 FFN
 class UMT5LayerFF(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: UMT5Config):
         super().__init__()
         if config.is_gated_act:
@@ -145,6 +158,7 @@ class UMT5LayerFF(nn.Module):
         self.layer_norm = UMT5LayerNorm(config.d_model, eps=config.layer_norm_epsilon)
         self.dropout = nn.Dropout(config.dropout_rate)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         forwarded_states = self.layer_norm(hidden_states)
         forwarded_states = self.DenseReluDense(forwarded_states)
@@ -153,6 +167,7 @@ class UMT5LayerFF(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.eager_attention_forward
+# eager_attention_forward：标准 eager 注意力：QK^T 缩放 softmax 加权 V，支持 attention_mask
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -185,11 +200,13 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# UMT5Attention：UMT5 注意力：相对位置偏置多头自/交叉注意力
 class UMT5Attention(nn.Module):
     """
     T5's attention using relative_attention_bias.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self, config, has_relative_attention_bias=False, layer_idx: int | None = None, is_causal: bool = False
     ):
@@ -276,6 +293,7 @@ class UMT5Attention(nn.Module):
         relative_buckets += torch.where(is_small, relative_position, relative_position_if_large)
         return relative_buckets
 
+    # compute_bias：计算相对位置偏置：bucket 化距离映射为注意力偏置矩阵
     def compute_bias(self, query_length, key_length, device=None, past_seen_tokens=0):
         """Compute binned relative position bias"""
         if device is None:
@@ -288,6 +306,7 @@ class UMT5Attention(nn.Module):
         values = values.permute([2, 0, 1]).unsqueeze(0)  # shape (1, num_heads, query_length, key_length)
         return values
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -369,13 +388,16 @@ class UMT5Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# UMT5LayerSelfAttention：UMT5 自注意力层：Attention + LayerNorm 残差
 class UMT5LayerSelfAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_idx: int | None = None):
         super().__init__()
         self.SelfAttention = UMT5Attention(config, has_relative_attention_bias=True, layer_idx=layer_idx)
         self.layer_norm = UMT5LayerNorm(config.d_model, eps=config.layer_norm_epsilon)
         self.dropout = nn.Dropout(config.dropout_rate)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -395,13 +417,16 @@ class UMT5LayerSelfAttention(nn.Module):
         return outputs
 
 
+# UMT5LayerCrossAttention：UMT5 交叉注意力层：encoder-decoder 交叉注意力 + 残差
 class UMT5LayerCrossAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_idx: int | None = None):
         super().__init__()
         self.EncDecAttention = UMT5Attention(config, has_relative_attention_bias=False, layer_idx=layer_idx)
         self.layer_norm = UMT5LayerNorm(config.d_model, eps=config.layer_norm_epsilon)
         self.dropout = nn.Dropout(config.dropout_rate)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -423,7 +448,9 @@ class UMT5LayerCrossAttention(nn.Module):
         return outputs
 
 
+# UMT5Block：UMT5 Transformer 块：自注意力 + 可选交叉注意力 + FFN
 class UMT5Block(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_idx: int | None = None):
         super().__init__()
         self.is_decoder = config.is_decoder
@@ -434,6 +461,7 @@ class UMT5Block(GradientCheckpointingLayer):
 
         self.layer.append(UMT5LayerFF(config))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -485,15 +513,18 @@ class UMT5Block(GradientCheckpointingLayer):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5ClassificationHead with T5->UMT5
+# UMT5ClassificationHead：UMT5 分类头：末 token 池化 + Dense + Dropout
 class UMT5ClassificationHead(nn.Module):
     """Head for sentence-level classification tasks."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: UMT5Config):
         super().__init__()
         self.dense = nn.Linear(config.d_model, config.d_model)
         self.dropout = nn.Dropout(p=config.classifier_dropout)
         self.out_proj = nn.Linear(config.d_model, config.num_labels)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dropout(hidden_states)
         hidden_states = self.dense(hidden_states)
@@ -504,6 +535,7 @@ class UMT5ClassificationHead(nn.Module):
 
 
 @auto_docstring
+# UMT5PreTrainedModel：UMT5 预训练基类：T5 权重初始化与 KV cache 支持
 class UMT5PreTrainedModel(PreTrainedModel):
     config: UMT5Config
     base_model_prefix = "transformer"
@@ -535,6 +567,7 @@ class UMT5PreTrainedModel(PreTrainedModel):
         return dummy_inputs
 
     @torch.no_grad()
+    # _init_weights：权重初始化：Linear/Conv 截断正态、LayerNorm 偏置置零
     def _init_weights(self, module):
         """Initialize the weights"""
         super()._init_weights(module)
@@ -624,7 +657,9 @@ class UMT5PreTrainedModel(PreTrainedModel):
         return shifted_input_ids
 
 
+# UMT5Stack：UMT5 编码/解码栈：堆叠 UMT5Block 输出隐状态
 class UMT5Stack(UMT5PreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.embed_tokens = nn.Embedding(config.vocab_size, config.d_model)
@@ -637,12 +672,14 @@ class UMT5Stack(UMT5PreTrainedModel):
         self.gradient_checkpointing = False
         self.post_init()
 
+    # set_input_embeddings：设置输入嵌入：替换 shared embedding 权重
     def set_input_embeddings(self, new_embeddings):
         self.embed_tokens = new_embeddings
 
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids=None,
@@ -726,6 +763,7 @@ class UMT5Stack(UMT5PreTrainedModel):
 
 
 @auto_docstring
+# UMT5Model：UMT5 基模型：Encoder-Decoder 双栈 + 共享嵌入
 class UMT5Model(UMT5PreTrainedModel):
     r"""
     Examples:
@@ -751,6 +789,7 @@ class UMT5Model(UMT5PreTrainedModel):
         "decoder.embed_tokens.weight": "shared.weight",
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.shared = nn.Embedding(config.vocab_size, config.d_model)
@@ -769,10 +808,12 @@ class UMT5Model(UMT5PreTrainedModel):
         self.post_init()
 
     # Copied from transformers.models.t5.modeling_t5.T5Model.get_input_embeddings
+    # get_input_embeddings：获取输入嵌入：返回 shared token embedding 层
     def get_input_embeddings(self):
         return self.shared
 
     # Copied from transformers.models.t5.modeling_t5.T5Model.set_input_embeddings
+    # set_input_embeddings：设置输入嵌入：替换 shared embedding 权重
     def set_input_embeddings(self, new_embeddings):
         self.shared = new_embeddings
         self.encoder.set_input_embeddings(new_embeddings)
@@ -780,6 +821,7 @@ class UMT5Model(UMT5PreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -889,6 +931,7 @@ class UMT5Model(UMT5PreTrainedModel):
     UMT5 Model with a `language modeling` head on top.
     """
 )
+# UMT5ForConditionalGeneration：UMT5 条件生成：Seq2Seq LM 头，支持多语言翻译/摘要
 class UMT5ForConditionalGeneration(UMT5PreTrainedModel, GenerationMixin):
     r"""
     Examples:
@@ -913,6 +956,7 @@ class UMT5ForConditionalGeneration(UMT5PreTrainedModel, GenerationMixin):
         "lm_head.weight": "shared.weight",
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.model_dim = config.d_model
@@ -935,10 +979,12 @@ class UMT5ForConditionalGeneration(UMT5PreTrainedModel, GenerationMixin):
         self.post_init()
 
     # Copied from transformers.models.t5.modeling_t5.T5ForConditionalGeneration.get_input_embeddings
+    # get_input_embeddings：获取输入嵌入：返回 shared token embedding 层
     def get_input_embeddings(self):
         return self.shared
 
     # Copied from transformers.models.t5.modeling_t5.T5ForConditionalGeneration.set_input_embeddings
+    # set_input_embeddings：设置输入嵌入：替换 shared embedding 权重
     def set_input_embeddings(self, new_embeddings):
         self.shared = new_embeddings
         self.encoder.set_input_embeddings(new_embeddings)
@@ -946,6 +992,7 @@ class UMT5ForConditionalGeneration(UMT5PreTrainedModel, GenerationMixin):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -1081,6 +1128,7 @@ class UMT5ForConditionalGeneration(UMT5PreTrainedModel, GenerationMixin):
 
 
 @auto_docstring
+# UMT5EncoderModel：UMT5 纯编码器：仅 encoder 栈输出上下文表征
 class UMT5EncoderModel(UMT5PreTrainedModel):
     r"""
     Examples:
@@ -1102,6 +1150,7 @@ class UMT5EncoderModel(UMT5PreTrainedModel):
         "encoder.embed_tokens.weight": "shared.weight",
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.shared = nn.Embedding(config.vocab_size, config.d_model)
@@ -1115,10 +1164,12 @@ class UMT5EncoderModel(UMT5PreTrainedModel):
         self.post_init()
 
     # Copied from transformers.models.t5.modeling_t5.T5EncoderModel.get_input_embeddings
+    # get_input_embeddings：获取输入嵌入：返回 shared token embedding 层
     def get_input_embeddings(self):
         return self.shared
 
     # Copied from transformers.models.t5.modeling_t5.T5EncoderModel.set_input_embeddings
+    # set_input_embeddings：设置输入嵌入：替换 shared embedding 权重
     def set_input_embeddings(self, new_embeddings):
         self.shared = new_embeddings
         self.encoder.set_input_embeddings(new_embeddings)
@@ -1126,6 +1177,7 @@ class UMT5EncoderModel(UMT5PreTrainedModel):
     @can_return_tuple
     @auto_docstring
     # Copied from transformers.models.t5.modeling_t5.T5EncoderModel.forward with T5->UMT5, google-t5/t5-small->google/umt5-small, t5#training->umt5#training
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -1172,10 +1224,12 @@ class UMT5EncoderModel(UMT5PreTrainedModel):
     tasks.
     """
 )
+# UMT5ForSequenceClassification：UMT5 序列分类：encoder 末 token + ClassificationHead
 class UMT5ForSequenceClassification(UMT5PreTrainedModel):
     _keys_to_ignore_on_load_unexpected = ["decoder.block.0.layer.1.EncDecAttention.relative_attention_bias.weight"]
 
     # Copied from transformers.models.t5.modeling_t5.T5ForSequenceClassification.__init__ with T5->UMT5
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: UMT5Config):
         super().__init__(config)
         self.transformer = UMT5Model(config)
@@ -1186,6 +1240,7 @@ class UMT5ForSequenceClassification(UMT5PreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -1315,10 +1370,12 @@ class UMT5ForSequenceClassification(UMT5PreTrainedModel):
 
 
 @auto_docstring
+# UMT5ForTokenClassification：UMT5 Token 分类：逐 token Dense 分类头（NER 等）
 class UMT5ForTokenClassification(UMT5PreTrainedModel):
     _keys_to_ignore_on_load_unexpected = ["decoder.block.0.layer.1.EncDecAttention.relative_attention_bias.weight"]
 
     # Copied from transformers.models.t5.modeling_t5.T5ForTokenClassification.__init__ with T5->UMT5
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: UMT5Config):
         super().__init__(config)
         self.num_labels = config.num_labels
@@ -1333,6 +1390,7 @@ class UMT5ForTokenClassification(UMT5PreTrainedModel):
     @can_return_tuple
     @auto_docstring
     # Copied from transformers.models.t5.modeling_t5.T5ForTokenClassification.forward with T5->UMT5, t5->umt5
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.Tensor | None = None,
@@ -1380,12 +1438,14 @@ class UMT5ForTokenClassification(UMT5PreTrainedModel):
 
 
 @auto_docstring
+# UMT5ForQuestionAnswering：UMT5 问答：encoder 输出 start/end 位置 logits
 class UMT5ForQuestionAnswering(UMT5PreTrainedModel):
     _tied_weights_keys = {
         "encoder.embed_tokens.weight": "shared.weight",
         "decoder.embed_tokens.weight": "shared.weight",
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.model_dim = config.d_model
@@ -1409,10 +1469,12 @@ class UMT5ForQuestionAnswering(UMT5PreTrainedModel):
         self.post_init()
 
     # Copied from transformers.models.t5.modeling_t5.T5ForQuestionAnswering.get_input_embeddings
+    # get_input_embeddings：获取输入嵌入：返回 shared token embedding 层
     def get_input_embeddings(self):
         return self.shared
 
     # Copied from transformers.models.t5.modeling_t5.T5ForQuestionAnswering.set_input_embeddings
+    # set_input_embeddings：设置输入嵌入：替换 shared embedding 权重
     def set_input_embeddings(self, new_embeddings):
         self.shared = new_embeddings
         self.encoder.set_input_embeddings(new_embeddings)
@@ -1420,6 +1482,7 @@ class UMT5ForQuestionAnswering(UMT5PreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,

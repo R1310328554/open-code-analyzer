@@ -51,10 +51,13 @@ from ...utils.generic import can_return_tuple, merge_with_config_defaults
 from ...utils.output_capturing import OutputRecorder, capture_outputs
 
 
+# UDOP 建模：文档图文联合编码，1D/水平/垂直相对偏置与条件生成头
+
 logger = logging.getLogger(__name__)
 
 
 # Copied from transformers.models.t5.modeling_t5.eager_attention_forward
+# eager_attention_forward：标准 eager 注意力：QK^T 缩放 softmax 加权 V，支持 attention_mask
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -94,6 +97,7 @@ def eager_attention_forward(
     """
 )
 @dataclass
+# BaseModelOutputWithAttentionMask：UDOP 输出：last_hidden_state 与 attention_mask 联合封装
 class BaseModelOutputWithAttentionMask(ModelOutput):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`):
@@ -132,6 +136,7 @@ class BaseModelOutputWithAttentionMask(ModelOutput):
     cross_attentions: tuple[torch.FloatTensor] | None = None
 
 
+# get_visual_bbox：生成视觉 bbox：按 patch 网格计算归一化边界框坐标
 def get_visual_bbox(image_size=224, patch_size=16):
     image_feature_pool_shape = [image_size // patch_size, image_size // patch_size]
     visual_bbox_x = torch.arange(0, 1.0 * (image_feature_pool_shape[1] + 1), 1.0)
@@ -155,6 +160,7 @@ def get_visual_bbox(image_size=224, patch_size=16):
     return visual_bbox_input
 
 
+# pad_sequence：序列填充：将变长序列 pad 至目标长度
 def pad_sequence(seq, target_len, pad_value=0):
     if isinstance(seq, torch.Tensor):
         n = seq.shape[0]
@@ -168,6 +174,7 @@ def pad_sequence(seq, target_len, pad_value=0):
     return seq[:target_len]
 
 
+# combine_image_text_embeddings：融合图文嵌入：patch 特征与文本 token 嵌入拼接
 def combine_image_text_embeddings(
     image_embeddings,
     inputs_embeds,
@@ -251,9 +258,11 @@ def combine_image_text_embeddings(
     return inputs_embeds, bbox, attention_mask
 
 
+# UdopPatchEmbeddings：UDOP 块嵌入：Conv2d 将文档图像切为 patch 序列
 class UdopPatchEmbeddings(nn.Module):
     """2D Image to Patch Embeddings"""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         image_size, patch_size = config.image_size, config.patch_size
@@ -269,6 +278,7 @@ class UdopPatchEmbeddings(nn.Module):
 
         self.proj = nn.Conv2d(num_channels, hidden_size, kernel_size=patch_size, stride=patch_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values):
         batch_size, num_channels, height, width = pixel_values.shape
         if height != self.image_size[0] or width != self.image_size[1]:
@@ -281,7 +291,9 @@ class UdopPatchEmbeddings(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5LayerNorm with T5->Udop
+# UdopLayerNorm：UDOP LayerNorm：在 hidden 维做 RMS 归一化（无 bias）
 class UdopLayerNorm(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, hidden_size, eps=1e-6):
         """
         Construct a layernorm module in the Udop style. No bias and no subtraction of mean.
@@ -290,6 +302,7 @@ class UdopLayerNorm(nn.Module):
         self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         # Udop uses a layer_norm which only scales and doesn't shift, which is also known as Root Mean
         # Square Layer Normalization https://huggingface.co/papers/1910.07467 thus variance is calculated
@@ -307,7 +320,9 @@ class UdopLayerNorm(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5DenseActDense with T5->Udop
+# UdopDenseActDense：UDOP 标准 FFN：Dense + 激活 + Dropout 前馈层
 class UdopDenseActDense(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: UdopConfig):
         super().__init__()
         self.wi = nn.Linear(config.d_model, config.d_ff, bias=False)
@@ -315,6 +330,7 @@ class UdopDenseActDense(nn.Module):
         self.dropout = nn.Dropout(config.dropout_rate)
         self.act = ACT2FN[config.dense_act_fn]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.wi(hidden_states)
         hidden_states = self.act(hidden_states)
@@ -330,7 +346,9 @@ class UdopDenseActDense(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5DenseGatedActDense with T5->Udop
+# UdopDenseGatedActDense：UDOP 门控 FFN：wi_0/wi_1 双线性门控 + 激活（gated-gelu）
 class UdopDenseGatedActDense(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: UdopConfig):
         super().__init__()
         self.wi_0 = nn.Linear(config.d_model, config.d_ff, bias=False)
@@ -339,6 +357,7 @@ class UdopDenseGatedActDense(nn.Module):
         self.dropout = nn.Dropout(config.dropout_rate)
         self.act = ACT2FN[config.dense_act_fn]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_gelu = self.act(self.wi_0(hidden_states))
         hidden_linear = self.wi_1(hidden_states)
@@ -360,7 +379,9 @@ class UdopDenseGatedActDense(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5LayerFF with T5->Udop
+# UdopLayerFF：UDOP 前馈层：按配置选择 DenseActDense 或 DenseGatedActDense
 class UdopLayerFF(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: UdopConfig):
         super().__init__()
         if config.is_gated_act:
@@ -371,6 +392,7 @@ class UdopLayerFF(nn.Module):
         self.layer_norm = UdopLayerNorm(config.d_model, eps=config.layer_norm_epsilon)
         self.dropout = nn.Dropout(config.dropout_rate)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         forwarded_states = self.layer_norm(hidden_states)
         forwarded_states = self.DenseReluDense(forwarded_states)
@@ -379,7 +401,9 @@ class UdopLayerFF(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5Attention with T5->Udop
+# UdopAttention：UDOP 注意力：相对位置偏置的多头自/交叉注意力
 class UdopAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: UdopConfig,
@@ -467,6 +491,7 @@ class UdopAttention(nn.Module):
         relative_buckets += torch.where(is_small, relative_position, relative_position_if_large)
         return relative_buckets
 
+    # compute_bias：计算相对位置偏置：bucket 化距离映射为注意力偏置矩阵
     def compute_bias(self, query_length, key_length, device=None, past_seen_tokens=0):
         """Compute binned relative position bias"""
         if device is None:
@@ -484,6 +509,7 @@ class UdopAttention(nn.Module):
         values = values.permute([2, 0, 1]).unsqueeze(0)  # shape (1, num_heads, query_length, key_length)
         return values
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -576,7 +602,9 @@ class UdopAttention(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5LayerSelfAttention with T5->Udop
+# UdopLayerSelfAttention：UDOP 自注意力层：Attention + LayerNorm 残差
 class UdopLayerSelfAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, has_relative_attention_bias=False, layer_idx: int | None = None):
         super().__init__()
         self.SelfAttention = UdopAttention(
@@ -588,6 +616,7 @@ class UdopLayerSelfAttention(nn.Module):
         self.layer_norm = UdopLayerNorm(config.d_model, eps=config.layer_norm_epsilon)
         self.dropout = nn.Dropout(config.dropout_rate)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -609,7 +638,9 @@ class UdopLayerSelfAttention(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5LayerCrossAttention with T5->Udop
+# UdopLayerCrossAttention：UDOP 交叉注意力层：encoder-decoder 交叉注意力 + 残差
 class UdopLayerCrossAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_idx: int | None = None):
         super().__init__()
         self.EncDecAttention = UdopAttention(
@@ -618,6 +649,7 @@ class UdopLayerCrossAttention(nn.Module):
         self.layer_norm = UdopLayerNorm(config.d_model, eps=config.layer_norm_epsilon)
         self.dropout = nn.Dropout(config.dropout_rate)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -641,7 +673,9 @@ class UdopLayerCrossAttention(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5Block with T5->Udop
+# UdopBlock：UDOP Transformer 块：自注意力 + 可选交叉注意力 + FFN 残差堆叠
 class UdopBlock(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, has_relative_attention_bias=False, layer_idx: int | None = None):
         super().__init__()
         self.is_decoder = config.is_decoder
@@ -656,6 +690,7 @@ class UdopBlock(GradientCheckpointingLayer):
 
         self.layer.append(UdopLayerFF(config))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -721,6 +756,7 @@ class UdopBlock(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# UdopPreTrainedModel：UDOP 预训练基类：权重初始化、梯度检查点与相对偏置支持
 class UdopPreTrainedModel(PreTrainedModel):
     config: UdopConfig
     base_model_prefix = "transformer"
@@ -740,6 +776,7 @@ class UdopPreTrainedModel(PreTrainedModel):
     }
 
     @torch.no_grad()
+    # _init_weights：权重初始化：Linear/Conv 截断正态、LayerNorm 偏置置零
     def _init_weights(self, module):
         """Initialize the weights"""
         super()._init_weights(module)
@@ -811,7 +848,9 @@ class UdopPreTrainedModel(PreTrainedModel):
         return shifted_input_ids
 
 
+# UdopCellEmbeddings：UDOP 单元嵌入：token 嵌入 + 2D bbox 位置编码融合
 class UdopCellEmbeddings(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, max_2d_position_embeddings=501, hidden_size=1024):
         super().__init__()
         self.max_2d_position_embeddings = max_2d_position_embeddings
@@ -819,6 +858,7 @@ class UdopCellEmbeddings(nn.Module):
         self.x_position_embeddings = nn.Embedding(max_2d_position_embeddings, hidden_size)
         self.y_position_embeddings = nn.Embedding(max_2d_position_embeddings, hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, bbox):
         bbox = torch.clip(bbox, 0.0, 1.0)
         bbox = (bbox * (self.max_2d_position_embeddings - 1)).long()
@@ -846,6 +886,7 @@ get_relative_position_bucket = UdopAttention._relative_position_bucket
 AUGMENTATION_RANGE = (0.80, 1.25)
 
 
+# RelativePositionBiasBase：相对位置偏置基类：抽象 compute_bias 接口
 class RelativePositionBiasBase(nn.Module, ABC):
     """
     Base class of relative biases.
@@ -868,6 +909,7 @@ class RelativePositionBiasBase(nn.Module, ABC):
             Whether to expand an existing pretrained model with subsequent additions of prefix_bucket.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         num_heads=None,
@@ -922,6 +964,7 @@ class RelativePositionBiasBase(nn.Module, ABC):
 
         return relative_position.to(torch.long)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, attention_mask: Tensor | None = None, bbox: dict[str, Any] | None = None) -> Tensor:
         # re-using pretrained model with subsequent addition of prefix_bucket
         if self.expand and self.prefix_bucket:
@@ -953,7 +996,9 @@ class RelativePositionBiasBase(nn.Module, ABC):
         return values
 
 
+# RelativePositionBias1D：1D 相对位置偏置：序列 token 间相对距离桶化偏置
 class RelativePositionBias1D(RelativePositionBiasBase):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, scaling_factor=1, max_distance=128, **kwargs):
         """
         Reimplementation of T5 relative position bias. Distance between given tokens is their distance in the sequence.
@@ -971,7 +1016,9 @@ class RelativePositionBias1D(RelativePositionBiasBase):
         return relative_position
 
 
+# RelativePositionBiasHorizontal：水平相对偏置：文档 bbox 水平坐标差分桶化
 class RelativePositionBiasHorizontal(RelativePositionBiasBase):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, scaling_factor=100, max_distance=100, **kwargs):
         """
         Represents in the bucket embeddings horizontal distance between two tokens. Parameters are the same as in base
@@ -990,7 +1037,9 @@ class RelativePositionBiasHorizontal(RelativePositionBiasBase):
         return self.get_relative_position(horizontal_position)
 
 
+# RelativePositionBiasVertical：垂直相对偏置：文档 bbox 垂直坐标差分桶化
 class RelativePositionBiasVertical(RelativePositionBiasBase):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, scaling_factor=100, max_distance=100, **kwargs):
         """
         Represents in the bucket embeddings vertical distance between two tokens. Parameters are the same as in base
@@ -1009,7 +1058,9 @@ class RelativePositionBiasVertical(RelativePositionBiasBase):
         return self.get_relative_position(vertical_position)
 
 
+# RelativePositionBiasAggregated：聚合相对偏置：多类型偏置求和融合
 class RelativePositionBiasAggregated(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, modules: Sequence[RelativePositionBiasBase]):
         """
         Class which sums up various computed biases.
@@ -1021,6 +1072,7 @@ class RelativePositionBiasAggregated(nn.Module):
         super().__init__()
         self.biases = nn.ModuleList(modules)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, attention_mask: Tensor | None = None, bbox: dict[str, Any] | None = None) -> float | Tensor:
         output = 0.0
         for bias in self.biases:  # type: ignore
@@ -1036,6 +1088,7 @@ BIAS_CLASSES = {
 }
 
 
+# create_relative_bias：创建相对偏置：按 config.relative_bias_args 实例化偏置模块列表
 def create_relative_bias(config: UdopConfig) -> Sequence[RelativePositionBiasBase]:
     """
     Creates empty list or one/multiple relative biases.
@@ -1058,12 +1111,14 @@ def create_relative_bias(config: UdopConfig) -> Sequence[RelativePositionBiasBas
     return bias_list
 
 
+# UdopStack：UDOP 编码/解码栈：堆叠 UdopBlock 输出序列隐状态
 class UdopStack(UdopPreTrainedModel):
     """
     This class is based on `T5Stack`, but modified to take into account the image modality as well as 2D position
     embeddings.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         # text and image embeddings
@@ -1094,11 +1149,13 @@ class UdopStack(UdopPreTrainedModel):
     def get_output_embeddings(self):
         return self.embed_tokens
 
+    # set_input_embeddings：设置输入嵌入：替换 shared embedding 权重
     def set_input_embeddings(self, new_embeddings):
         self.embed_tokens = new_embeddings
 
     @merge_with_config_defaults
     @capture_outputs
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids=None,
@@ -1247,6 +1304,7 @@ class UdopStack(UdopPreTrainedModel):
 
 
 @auto_docstring
+# UdopModel：UDOP 基模型：图文嵌入融合 + 编解码器栈
 class UdopModel(UdopPreTrainedModel):
     _tied_weights_keys = {
         "encoder.embed_tokens.weight": "shared.weight",
@@ -1255,6 +1313,7 @@ class UdopModel(UdopPreTrainedModel):
         "encoder.embed_patches.proj.bias": "patch_embed.proj.bias",
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -1275,9 +1334,11 @@ class UdopModel(UdopPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # get_input_embeddings：获取输入嵌入：返回 shared token embedding 层
     def get_input_embeddings(self):
         return self.shared
 
+    # set_input_embeddings：设置输入嵌入：替换 shared embedding 权重
     def set_input_embeddings(self, new_embeddings):
         self.shared = new_embeddings
         self.encoder.set_input_embeddings(new_embeddings)
@@ -1285,6 +1346,7 @@ class UdopModel(UdopPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: Tensor | None = None,
@@ -1401,6 +1463,7 @@ class UdopModel(UdopPreTrainedModel):
     This class is based on [`T5ForConditionalGeneration`], extended to deal with images and layout (2D) data.
     """
 )
+# UdopForConditionalGeneration：UDOP 条件生成：Encoder-Decoder + LM 头，支持文档 VQA/OCR
 class UdopForConditionalGeneration(UdopPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {
         "encoder.embed_tokens.weight": "shared.weight",
@@ -1412,6 +1475,7 @@ class UdopForConditionalGeneration(UdopPreTrainedModel, GenerationMixin):
         "lm_head.weight": "shared.weight",
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -1435,9 +1499,11 @@ class UdopForConditionalGeneration(UdopPreTrainedModel, GenerationMixin):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # get_input_embeddings：获取输入嵌入：返回 shared token embedding 层
     def get_input_embeddings(self):
         return self.shared
 
+    # set_input_embeddings：设置输入嵌入：替换 shared embedding 权重
     def set_input_embeddings(self, new_embeddings):
         self.shared = new_embeddings
         self.encoder.set_input_embeddings(new_embeddings)
@@ -1445,6 +1511,7 @@ class UdopForConditionalGeneration(UdopPreTrainedModel, GenerationMixin):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: Tensor | None = None,
@@ -1575,6 +1642,7 @@ class UdopForConditionalGeneration(UdopPreTrainedModel, GenerationMixin):
 
 
 @auto_docstring
+# UdopEncoderModel：UDOP 纯编码器：仅 encoder 栈，输出文档表征
 class UdopEncoderModel(UdopPreTrainedModel):
     _tied_weights_keys = {
         "encoder.embed_tokens.weight": "shared.weight",
@@ -1583,6 +1651,7 @@ class UdopEncoderModel(UdopPreTrainedModel):
         "encoder.relative_bias.biases.0.relative_attention_bias.weight": "encoder.block.0.layer.0.SelfAttention.relative_attention_bias.weight",
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: UdopConfig):
         super().__init__(config)
 
@@ -1599,15 +1668,18 @@ class UdopEncoderModel(UdopPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # get_input_embeddings：获取输入嵌入：返回 shared token embedding 层
     def get_input_embeddings(self):
         return self.shared
 
+    # set_input_embeddings：设置输入嵌入：替换 shared embedding 权重
     def set_input_embeddings(self, new_embeddings):
         self.shared = new_embeddings
         self.encoder.set_input_embeddings(new_embeddings)
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: Tensor | None = None,

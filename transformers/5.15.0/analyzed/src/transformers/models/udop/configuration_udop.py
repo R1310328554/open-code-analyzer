@@ -19,8 +19,11 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# UDOP 配置：T5 风格编解码器 + 2D 相对位置偏置与文档图像 patch 参数
+
 @auto_docstring(checkpoint="microsoft/udop-large")
 @strict
+# UdopConfig：UDOP 主配置：d_model/层数、2D 相对偏置参数与文档 patch 尺寸
 class UdopConfig(PreTrainedConfig):
     r"""
     relative_attention_num_buckets (`int`, *optional*, defaults to 32):
@@ -66,6 +69,7 @@ class UdopConfig(PreTrainedConfig):
     add_cross_attention: bool = False
     tie_word_embeddings: bool = True
 
+    # __post_init__：后初始化：派生 decoder 层数、激活函数与 tie_word_embeddings
     def __post_init__(self, **kwargs):
         if self.relative_bias_args is None:
             self.relative_bias_args = [{"type": "1d"}, {"type": "horizontal"}, {"type": "vertical"}]
@@ -82,6 +86,7 @@ class UdopConfig(PreTrainedConfig):
         self.tie_word_embeddings = True
         super().__post_init__(**kwargs)
 
+    # validate_architecture：架构校验：feed_forward_proj 格式与 gated 激活合法性
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         act_info = self.feed_forward_proj.split("-")

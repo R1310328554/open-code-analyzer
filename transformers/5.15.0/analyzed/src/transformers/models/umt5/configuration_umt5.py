@@ -19,8 +19,11 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# UMT5 配置：多语言 T5 超参，gated-gelu FFN 与相对位置注意力桶
+
 @auto_docstring(checkpoint="google/umt5-small")
 @strict
+# UMT5Config：UMT5 主配置：多语言词表、相对注意力桶与 gated-gelu FFN
 class UMT5Config(PreTrainedConfig):
     r"""
     relative_attention_num_buckets (`int`, *optional*, defaults to 32):
@@ -61,6 +64,7 @@ class UMT5Config(PreTrainedConfig):
     classifier_dropout: float | int = 0.0
     is_decoder: bool = False
 
+    # __post_init__：后初始化：派生 decoder 层数、激活函数与 tie_word_embeddings
     def __post_init__(self, **kwargs):
         self.num_decoder_layers = (
             self.num_decoder_layers if self.num_decoder_layers is not None else self.num_layers
@@ -77,6 +81,7 @@ class UMT5Config(PreTrainedConfig):
 
         super().__post_init__(**kwargs)
 
+    # validate_architecture：架构校验：feed_forward_proj 格式与 gated 激活合法性
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         act_info = self.feed_forward_proj.split("-")

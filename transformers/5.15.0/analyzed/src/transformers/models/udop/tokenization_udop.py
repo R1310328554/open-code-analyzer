@@ -28,6 +28,8 @@ from ...tokenization_utils_tokenizers import TokenizersBackend
 from ...utils import PaddingStrategy, TensorType, add_end_docstrings, logging
 
 
+# UDOP 分词器：SentencePiece 后端，支持词级 bbox 与 OCR 文本对齐
+
 VOCAB_FILES_NAMES = {"vocab_file": "spiece.model", "tokenizer_file": "tokenizer.json"}
 
 
@@ -136,6 +138,7 @@ UDOP_ENCODE_KWARGS_DOCSTRING = r"""
 """
 
 
+# UdopTokenizer：UDOP 分词器：TokenizersBackend，词级 bbox 映射与特殊 token
 class UdopTokenizer(TokenizersBackend):
     """
     Construct a "fast" UDOP tokenizer (backed by HuggingFace's *tokenizers* library). Adapted from
@@ -182,6 +185,7 @@ class UdopTokenizer(TokenizersBackend):
     model_input_names = ["input_ids", "attention_mask"]
     model = Unigram
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         vocab: str | list[tuple[str, float]] | None = None,
@@ -258,6 +262,7 @@ class UdopTokenizer(TokenizersBackend):
         self._tokenizer.encode_special_tokens = self.split_special_tokens
 
     @add_end_docstrings(UDOP_ENCODE_KWARGS_DOCSTRING)
+    # __call__：联合调用：图像 OCR 预处理 + 文本分词，返回 BatchFeature
     def __call__(
         self,
         text: TextInput | PreTokenizedInput | list[TextInput] | list[PreTokenizedInput] = None,

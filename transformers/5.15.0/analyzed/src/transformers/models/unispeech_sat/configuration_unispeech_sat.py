@@ -22,8 +22,11 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# UniSpeech-SAT 配置：UniSpeech 扩展，含说话人嵌入与 x-vector/TDNN 参数
+
 @auto_docstring(checkpoint="microsoft/unispeech-sat-base-100h-libri-ft")
 @strict
+# UniSpeechSatConfig：UniSpeech-SAT 主配置：UniSpeech 扩展 + 说话人嵌入维度与 TDNN 参数
 class UniSpeechSatConfig(PreTrainedConfig):
     r"""
     feat_proj_dropout (`float`, *optional*, defaults to 0.0):
@@ -195,10 +198,12 @@ class UniSpeechSatConfig(PreTrainedConfig):
     eos_token_id: int = 2
     num_clusters: int = 504
 
+    # __post_init__：后初始化：派生 decoder 层数、激活函数与 tie_word_embeddings
     def __post_init__(self, **kwargs):
         self.num_feat_extract_layers = len(self.conv_dim)
         return super().__post_init__(**kwargs)
 
+    # validate_architecture：架构校验：feed_forward_proj 格式与 gated 激活合法性
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if (

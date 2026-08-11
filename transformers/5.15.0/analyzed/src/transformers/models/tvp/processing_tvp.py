@@ -19,6 +19,9 @@ from ...processing_utils import ProcessingKwargs, ProcessorMixin
 from ...utils import auto_docstring
 
 
+# TVP 多模态处理器：组合图像/视频处理器与分词器，支持视频时序定位后处理
+
+# TvpProcessorKwargs：TVP 处理器参数：文本默认 max_length 截断与 padding
 class TvpProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -31,11 +34,14 @@ class TvpProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# TvpProcessor：TVP 多模态处理器：封装图像/视频处理器与分词器，含时序定位后处理
 class TvpProcessor(ProcessorMixin):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, image_processor=None, tokenizer=None, **kwargs):
         super().__init__(image_processor, tokenizer)
         self.video_processor = image_processor
 
+    # post_process_video_grounding：视频定位后处理：logits 乘以时长得到起止时间戳
     def post_process_video_grounding(self, logits, video_durations):
         """
         Compute the time of the video.

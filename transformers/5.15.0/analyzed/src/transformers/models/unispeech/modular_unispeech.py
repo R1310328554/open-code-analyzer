@@ -37,6 +37,8 @@ from ..wav2vec2.modeling_wav2vec2 import (
 from .configuration_unispeech import UniSpeechConfig
 
 
+# UniSpeech 模块化实现：复用 Wav2Vec2 组件，供 modeling 代码生成
+
 logger = logging.get_logger(__name__)
 
 
@@ -46,6 +48,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# UniSpeechForPreTrainingOutput：UniSpeech 预训练输出：对比损失、量化码与投影特征
 class UniSpeechForPreTrainingOutput(ModelOutput):
     r"""
     loss (*optional*, returned when model is in train mode, `torch.FloatTensor` of shape `(1,)`):
@@ -69,26 +72,32 @@ class UniSpeechForPreTrainingOutput(ModelOutput):
     attentions: tuple[torch.FloatTensor] | None = None
 
 
+# UniSpeechPositionalConvEmbedding：UniSpeech 卷积位置编码：Grouped Conv1d 生成相对位置嵌入
 class UniSpeechPositionalConvEmbedding(Wav2Vec2PositionalConvEmbedding):
     pass
 
 
+# UniSpeechFeatureEncoder：UniSpeech 特征编码器：多层 1D 卷积下采样原始波形
 class UniSpeechFeatureEncoder(Wav2Vec2FeatureEncoder):
     pass
 
 
+# UniSpeechFeatureProjection：UniSpeech 特征投影：LayerNorm + Linear 映射至 hidden_size
 class UniSpeechFeatureProjection(Wav2Vec2FeatureProjection):
     pass
 
 
+# UniSpeechEncoder：UniSpeech 编码器：堆叠 EncoderLayer + 可选 SpecAugment 掩码
 class UniSpeechEncoder(Wav2Vec2Encoder):
     pass
 
 
+# UniSpeechEncoderStableLayerNorm：UniSpeech 稳定 LN 编码器：Pre-LN Transformer 堆叠
 class UniSpeechEncoderStableLayerNorm(Wav2Vec2EncoderStableLayerNorm):
     pass
 
 
+# UniSpeechGumbelVectorQuantizer：UniSpeech Gumbel 量化：离散码本向量量化与 Gumbel-Softmax
 class UniSpeechGumbelVectorQuantizer(Wav2Vec2GumbelVectorQuantizer):
     @staticmethod
     def _compute_perplexity(probs):
@@ -96,6 +105,7 @@ class UniSpeechGumbelVectorQuantizer(Wav2Vec2GumbelVectorQuantizer):
         perplexity = torch.exp(-torch.sum(torch.xlogy(marginal_probs, marginal_probs), dim=-1)).sum()
         return perplexity
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         batch_size, sequence_length, hidden_size = hidden_states.shape
 
@@ -135,6 +145,7 @@ class UniSpeechGumbelVectorQuantizer(Wav2Vec2GumbelVectorQuantizer):
 
 
 @auto_docstring
+# UniSpeechPreTrainedModel：UniSpeech 预训练基类：Conv/Linear 权重初始化与梯度检查点
 class UniSpeechPreTrainedModel(PreTrainedModel):
     config: UniSpeechConfig
     base_model_prefix = "unispeech"
@@ -146,6 +157,7 @@ class UniSpeechPreTrainedModel(PreTrainedModel):
     _supports_flex_attn = True
 
     @torch.no_grad()
+    # _init_weights：权重初始化：Linear/Conv 截断正态、LayerNorm 偏置置零
     def _init_weights(self, module):
         """Initialize the weights"""
         super()._init_weights(module)
@@ -172,6 +184,7 @@ class UniSpeechPreTrainedModel(PreTrainedModel):
                 k = math.sqrt(module.groups / (module.in_channels * module.kernel_size[0]))
                 init.uniform_(module.bias, a=-k, b=k)
 
+    # _get_feat_extract_output_lengths：计算卷积输出长度：根据 stride/kernel 推算下采样后帧数
     def _get_feat_extract_output_lengths(self, input_lengths: torch.LongTensor | int):
         """
         Computes the output length of the convolutional layers
@@ -206,7 +219,9 @@ class UniSpeechPreTrainedModel(PreTrainedModel):
 UniSpeechBaseModelOutput = Wav2Vec2BaseModelOutput
 
 
+# UniSpeechModel：UniSpeech 基模型：特征提取 + 编码器 + 可选量化投影
 class UniSpeechModel(UniSpeechPreTrainedModel, Wav2Vec2Model):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: UniSpeechConfig):
         UniSpeechPreTrainedModel.__init__(self, config)
         self.config = config
@@ -224,9 +239,11 @@ class UniSpeechModel(UniSpeechPreTrainedModel, Wav2Vec2Model):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # freeze_feature_encoder：冻结特征编码器：禁用 Conv1d 层梯度更新
     def freeze_feature_encoder(self):
         raise AttributeError("Not needed for UniSpeech")
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_values: torch.Tensor | None,
@@ -286,7 +303,9 @@ class UniSpeechModel(UniSpeechPreTrainedModel, Wav2Vec2Model):
     UniSpeech Model with a vector-quantization module and ctc loss for pre-training.
     """
 )
+# UniSpeechForPreTraining：UniSpeech 自监督预训练：对比学习 + Gumbel 量化损失
 class UniSpeechForPreTraining(UniSpeechPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: UniSpeechConfig):
         super().__init__(config)
         self.unispeech = UniSpeechModel(config)
@@ -308,6 +327,7 @@ class UniSpeechForPreTraining(UniSpeechPreTrainedModel):
         """
         self.quantizer.temperature = temperature
 
+    # freeze_feature_encoder：冻结特征编码器：禁用 Conv1d 层梯度更新
     def freeze_feature_encoder(self):
         """
         Calling this function will disable the gradient computation for the feature encoder so that its parameter will
@@ -336,6 +356,7 @@ class UniSpeechForPreTraining(UniSpeechPreTrainedModel):
         return logits
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_values: torch.Tensor | None,
@@ -408,10 +429,12 @@ class UniSpeechForPreTraining(UniSpeechPreTrainedModel):
         )
 
 
+# UniSpeechForCTC：UniSpeech CTC（modular）：继承 Wav2Vec2ForCTC 的 CTC 下游头
 class UniSpeechForCTC(Wav2Vec2ForCTC):
     pass
 
 
+# UniSpeechForSequenceClassification：UniSpeech 序列分类（modular）：继承 Wav2Vec2 分类头
 class UniSpeechForSequenceClassification(Wav2Vec2ForSequenceClassification):
     pass
 

@@ -22,8 +22,11 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# UniSpeech 配置：Wav2Vec2 风格卷积特征提取 + Gumbel 向量量化与 SpecAugment
+
 @auto_docstring(checkpoint="microsoft/unispeech-large-1500h-cv")
 @strict
+# UniSpeechConfig：UniSpeech 主配置：卷积特征提取、Gumbel 量化与 SpecAugment 掩码
 class UniSpeechConfig(PreTrainedConfig):
     r"""
     feat_proj_dropout (`float`, *optional*, defaults to 0.0):
@@ -183,10 +186,12 @@ class UniSpeechConfig(PreTrainedConfig):
     eos_token_id: int | list[int] | None = 2
     replace_prob: float | int = 0.5
 
+    # __post_init__：后初始化：派生 decoder 层数、激活函数与 tie_word_embeddings
     def __post_init__(self, **kwargs):
         self.num_feat_extract_layers = len(self.conv_dim)
         return super().__post_init__(**kwargs)
 
+    # validate_architecture：架构校验：feed_forward_proj 格式与 gated 激活合法性
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if (

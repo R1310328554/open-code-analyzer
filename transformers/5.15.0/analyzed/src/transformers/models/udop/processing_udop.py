@@ -24,14 +24,18 @@ from ...tokenization_utils_base import PreTokenizedInput, TextInput
 from ...utils import auto_docstring
 
 
+# UDOP 处理器：LayoutLMv3 图像预处理 + UDOP 分词，输出 bbox 与 token 标签
+
 logger = logging.get_logger(__name__)
 
 
+# UdopTextKwargs：UDOP 文本参数：word_labels 与归一化 bbox 框坐标
 class UdopTextKwargs(TextKwargs, total=False):
     word_labels: list[int] | list[list[int]] | None
     boxes: list[list[int]] | list[list[list[int]]] | None
 
 
+# UdopProcessorKwargs：UDOP 处理器参数：文本默认不 padding/truncation
 class UdopProcessorKwargs(ProcessingKwargs, total=False):
     text_kwargs: UdopTextKwargs
     _defaults = {
@@ -50,6 +54,7 @@ class UdopProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# UdopProcessor：UDOP 多模态处理器：图像 OCR + 分词，输出 input_ids/bbox/labels
 class UdopProcessor(ProcessorMixin):
     r"""
     Constructs a UDOP processor which combines a LayoutLMv3 image processor and a UDOP tokenizer into a single processor.
@@ -66,10 +71,12 @@ class UdopProcessor(ProcessorMixin):
     prepare labels for language modeling tasks.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, image_processor, tokenizer):
         super().__init__(image_processor, tokenizer)
 
     @auto_docstring
+    # __call__：联合调用：图像 OCR 预处理 + 文本分词，返回 BatchFeature
     def __call__(
         self,
         images: ImageInput | None = None,
