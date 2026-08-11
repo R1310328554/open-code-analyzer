@@ -2,6 +2,7 @@ from django.core.management.base import AppCommand
 from django.db import DEFAULT_DB_ALIAS, connections
 
 
+# sqlsequencereset 命令：输出重置应用序列的 SQL
 class Command(AppCommand):
     help = (
         "Prints the SQL statements for resetting sequences for the given app name(s)."
@@ -21,6 +22,7 @@ class Command(AppCommand):
             ),
         )
 
+    # 为应用模型生成 sequence_reset_sql 语句
     def handle_app_config(self, app_config, **options):
         if app_config.models_module is None:
             return

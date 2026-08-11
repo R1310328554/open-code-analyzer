@@ -15,6 +15,7 @@ from django.utils.module_loading import module_has_submodule
 from django.utils.text import Truncator
 
 
+# migrate 命令：应用或回滚数据库迁移，同步无迁移应用
 class Command(BaseCommand):
     autodetector = MigrationAutodetector
     help = (
@@ -95,6 +96,7 @@ class Command(BaseCommand):
         return {**kwargs, "databases": [options["database"]]}
 
     @no_translations
+    # 解析目标迁移、执行 plan/syncdb/migrate 并发送信号
     def handle(self, *args, **options):
         database = options["database"]
         self.verbosity = options["verbosity"]
@@ -388,6 +390,7 @@ class Command(BaseCommand):
             plan=plan,
         )
 
+    # 迁移进度回调：输出 Applying/Unapplying 状态
     def migration_progress_callback(self, action, migration=None, fake=False):
         if self.verbosity >= 1:
             compute_time = self.verbosity > 1
@@ -428,6 +431,7 @@ class Command(BaseCommand):
                 )
                 self.stdout.write(self.style.SUCCESS(" DONE" + elapsed))
 
+    # 对无迁移应用执行旧式 syncdb 建表
     def sync_apps(self, connection, app_labels):
         """Run the old syncdb-style operation on a list of app_labels."""
         with connection.cursor() as cursor:
@@ -487,6 +491,7 @@ class Command(BaseCommand):
                 self.stdout.write("    Running deferred SQL...")
 
     @staticmethod
+    # 为 --plan 输出单条迁移操作的可读描述
     def describe_operation(operation, backwards):
         """Return a string that describes a migration operation for --plan."""
         prefix = ""

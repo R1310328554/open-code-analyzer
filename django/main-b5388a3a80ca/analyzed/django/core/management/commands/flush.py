@@ -7,6 +7,7 @@ from django.core.management.sql import emit_post_migrate_signal, sql_flush
 from django.db import DEFAULT_DB_ALIAS, connections
 
 
+# flush 命令：清空数据库全部数据（含迁移插入的数据）
 class Command(BaseCommand):
     help = (
         "Removes ALL DATA from the database, including data added during "
@@ -29,6 +30,7 @@ class Command(BaseCommand):
             help='Nominates a database to flush. Defaults to the "default" database.',
         )
 
+    # 生成 flush SQL、确认后执行并可选触发 post_migrate 信号
     def handle(self, **options):
         database = options["database"]
         connection = connections[database]

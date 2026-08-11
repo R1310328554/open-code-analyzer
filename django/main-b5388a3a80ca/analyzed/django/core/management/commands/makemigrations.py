@@ -23,6 +23,7 @@ from django.db.migrations.utils import get_migration_name_timestamp
 from django.db.migrations.writer import MigrationWriter
 
 
+# makemigrations 命令：检测模型变更并生成迁移文件
 class Command(BaseCommand):
     autodetector = MigrationAutodetector
     help = "Creates new migration(s) for apps."
@@ -103,6 +104,7 @@ class Command(BaseCommand):
         self.log_output.write(msg)
 
     @no_translations
+    # 自动检测变更、处理合并/空迁移并写入磁盘
     def handle(self, *app_labels, **options):
         self.written_files = []
         self.verbosity = options["verbosity"]
@@ -263,6 +265,7 @@ class Command(BaseCommand):
             if check_changes:
                 sys.exit(1)
 
+    # --update：将变更合并进最新迁移并优化操作
     def write_to_last_migration_files(self, changes):
         loader = MigrationLoader(connections[DEFAULT_DB_ALIAS])
         new_changes = {}
@@ -334,6 +337,7 @@ class Command(BaseCommand):
 
         self.write_migration_files(new_changes, update_previous_migration_paths)
 
+    # 将变更字典写入各应用的迁移 Python 文件
     def write_migration_files(self, changes, update_previous_migration_paths=None):
         """
         Take a changes dict and write them out as migration files.
@@ -406,6 +410,7 @@ class Command(BaseCommand):
             migration_string = path
         return migration_string
 
+    # 交互式合并冲突迁移分支
     def handle_merge(self, loader, conflicts):
         """
         Handles merging together conflicted migrations interactively,

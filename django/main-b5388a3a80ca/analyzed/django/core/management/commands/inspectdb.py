@@ -7,6 +7,7 @@ from django.db.models.constants import LOOKUP_SEP
 from django.db.models.deletion import DatabaseOnDelete
 
 
+# inspectdb 命令：内省数据库表结构并输出 Django 模型代码
 class Command(BaseCommand):
     help = (
         "Introspects the database tables in the given database and outputs a Django "
@@ -43,6 +44,7 @@ class Command(BaseCommand):
             help="Also output models for database views.",
         )
 
+    # 若后端支持内省则逐行输出模型定义
     def handle(self, **options):
         if connections[options["database"]].features.supports_inspectdb:
             for line in self.handle_inspection(options):
@@ -53,6 +55,7 @@ class Command(BaseCommand):
                 "database backend."
             )
 
+    # 遍历表/视图，生成模型类、字段与 Meta 内联代码
     def handle_inspection(self, options):
         connection = connections[options["database"]]
         # 'table_name_filter' is a stealth option
@@ -277,6 +280,7 @@ class Command(BaseCommand):
                     comment,
                 )
 
+    # 将列名规范为合法 Python 字段名并收集重命名说明
     def normalize_col_name(self, col_name, used_column_names, is_relation):
         """
         Modify the column name to make it Python-compatible as a field name
@@ -338,10 +342,12 @@ class Command(BaseCommand):
 
         return new_name, field_params, field_notes
 
+    # 将表名转为 PascalCase 模型类名
     def normalize_table_name(self, table_name):
         """Translate the table name to a Python-compatible model name."""
         return re.sub(r"[^a-zA-Z0-9]", "", table_name.title())
 
+    # 根据列元数据推断 Django 字段类型及额外参数
     def get_field_type(self, connection, table_name, row):
         """
         Given the database connection, the table name, and the cursor row
@@ -377,6 +383,7 @@ class Command(BaseCommand):
 
         return field_type, field_params, field_notes
 
+    # 生成模型 Meta 类：managed、db_table、unique_together 等
     def get_meta(
         self,
         table_name,

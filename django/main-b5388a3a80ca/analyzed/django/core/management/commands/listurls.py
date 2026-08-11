@@ -21,9 +21,11 @@ FORMATS = (
 
 COLORLESS_FORMATS = ("json",)
 
+# 单条 URL 模式：路由、视图、命名
 URLPattern = namedtuple("URLPattern", ["route", "view", "name"])
 
 
+# listurls 命令：列出项目 URL 模式，支持前缀过滤与多种输出格式
 class Command(BaseCommand):
     help = "List URL patterns in the project with optional filtering by prefixes."
 
@@ -58,6 +60,7 @@ class Command(BaseCommand):
             help="Formatting style of the output",
         )
 
+    # 收集 URL、排序/着色并按 tabular/stacked/json 格式化输出
     def handle(self, *args, **options):
         prefixes = options["prefixes"]
         url_patterns = self.get_url_patterns(prefixes=prefixes)
@@ -82,6 +85,7 @@ class Command(BaseCommand):
         return url_patterns
 
     @classmethod
+    # 从 ROOT_URLCONF 提取 (route, view, name) 元组列表
     def get_url_patterns(cls, prefixes=None):
         """
         Returns a list of URL patterns in the project with given prefixes.
@@ -115,6 +119,7 @@ class Command(BaseCommand):
 
         return url_patterns
 
+    # 为 route/view/name 列应用终端着色
     def apply_color(self, url_patterns):
         colored_url_patterns = []
 
@@ -134,11 +139,13 @@ class Command(BaseCommand):
 
         return colored_url_patterns
 
+    # 按 format 名称调用对应 format_* 方法
     def apply_format(self, url_patterns, format):
         format_method_name = f"format_{format.replace('-', '_')}"
         format_method = getattr(self, format_method_name)
         return format_method(url_patterns)
 
+    # 表格对齐输出三列 URL 信息
     def format_tabular(self, url_patterns):
         widths = []
         margin = 2
@@ -154,6 +161,7 @@ class Command(BaseCommand):
 
         return "\n".join(lines)
 
+    # 逐条堆叠显示 Route/View/Name
     def format_stacked(self, url_patterns):
         separator = "-" * 20
         apply_style = (
@@ -170,6 +178,7 @@ class Command(BaseCommand):
 
         return "\n".join(lines)
 
+    # 以 JSON 数组输出 URL 模式
     def format_json(self, url_patterns):
         url_pattern_dicts = [url_pattern._asdict() for url_pattern in url_patterns]
         return json.dumps(url_pattern_dicts, indent=2)

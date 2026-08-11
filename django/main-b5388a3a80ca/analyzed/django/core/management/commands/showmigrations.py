@@ -7,6 +7,7 @@ from django.db.migrations.loader import MigrationLoader
 from django.db.migrations.recorder import MigrationRecorder
 
 
+# showmigrations 命令：显示迁移列表或执行计划
 class Command(BaseCommand):
     help = "Shows all available migrations for the current project"
 
@@ -54,6 +55,7 @@ class Command(BaseCommand):
 
         parser.set_defaults(format="list")
 
+    # 按 --list 或 --plan 格式输出迁移状态
     def handle(self, *args, **options):
         self.verbosity = options["verbosity"]
 
@@ -77,6 +79,7 @@ class Command(BaseCommand):
         if has_bad_names:
             sys.exit(2)
 
+    # 列出各应用迁移及已应用/未应用标记
     def show_list(self, connection, app_names=None):
         """
         Show a list of all migrations on the system, or only those of
@@ -132,6 +135,7 @@ class Command(BaseCommand):
             if not shown:
                 self.stdout.write(" (no migrations)", self.style.ERROR)
 
+    # 按应用顺序显示待执行迁移计划
     def show_plan(self, connection, app_names=None):
         """
         Show all known migrations (or only those of the specified app_names)

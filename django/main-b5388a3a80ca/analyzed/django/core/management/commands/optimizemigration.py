@@ -12,6 +12,7 @@ from django.db.migrations.writer import MigrationWriter
 from django.utils.version import get_docs_version
 
 
+# optimizemigration 命令：压缩指定迁移中的冗余操作
 class Command(BaseCommand):
     help = "Optimizes the operations for the named migration."
 
@@ -29,6 +30,7 @@ class Command(BaseCommand):
             help="Exit with a non-zero status if the migration can be optimized.",
         )
 
+    # 加载迁移、运行 MigrationOptimizer 并写回优化结果
     def handle(self, *args, **options):
         verbosity = options["verbosity"]
         app_label = options["app_label"]

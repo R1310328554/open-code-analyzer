@@ -30,6 +30,7 @@ STATUS_OK = 0
 NO_LOCALE_DIR = object()
 
 
+# 检查 GNU gettext 工具是否在 PATH 中
 def check_programs(*programs):
     for program in programs:
         if find_command(program) is None:
@@ -39,11 +40,13 @@ def check_programs(*programs):
             )
 
 
+# 校验 locale 字符串格式是否合法
 def is_valid_locale(locale):
     return re.match(r"^[a-z]+$", locale) or re.match(r"^[a-z]+_[A-Z0-9].*$", locale)
 
 
 @total_ordering
+# 可翻译源文件：路径、目录与所属 locale 目录
 class TranslatableFile:
     def __init__(self, dirpath, file_name, locale_dir):
         self.file = file_name
@@ -67,6 +70,7 @@ class TranslatableFile:
         return os.path.join(self.dirpath, self.file)
 
 
+# 翻译构建流程中单个文件的状态（预处理、xgettext、清理）
 class BuildFile:
     """
     Represent the state of a translatable file during the build process.
@@ -154,6 +158,7 @@ class BuildFile:
                 os.unlink(self.work_path)
 
 
+# 统一换行为 \n 以便写入 POT/PO 文件
 def normalize_eols(raw_contents):
     """
     Take a block of raw text that will be passed through str.splitlines() to
@@ -169,6 +174,7 @@ def normalize_eols(raw_contents):
     return "\n".join(lines_list)
 
 
+# 将 xgettext 消息写入 POT 并修正 charset 头
 def write_pot_file(potfile, msgs):
     """
     Write the `potfile` with the `msgs` contents, making sure its format is
@@ -196,6 +202,7 @@ def write_pot_file(potfile, msgs):
         fp.write(msgs)
 
 
+# makemessages 命令：扫描源码提取翻译字符串并更新 .po 文件
 class Command(BaseCommand):
     help = (
         "Runs over the entire source tree of the current directory and pulls out all "
@@ -315,6 +322,7 @@ class Command(BaseCommand):
             help="Keep .pot file after making messages. Useful when debugging.",
         )
 
+    # 构建 POT、按 locale 合并/更新 PO 并调用 gettext 工具链
     def handle(self, *args, **options):
         locale = options["locale"]
         exclude = options["exclude"]
@@ -495,6 +503,7 @@ class Command(BaseCommand):
             return False
         return True
 
+    # 扫描源文件生成 POT 并运行 msguniq
     def build_potfiles(self):
         """
         Build pot files and apply msguniq to them.
@@ -528,6 +537,7 @@ class Command(BaseCommand):
             if os.path.exists(pot_path):
                 os.unlink(pot_path)
 
+    # 递归收集待翻译文件并按 locale 目录分组
     def find_files(self, root):
         """
         Get all files in the given root. Also check that there is a matching
@@ -595,6 +605,7 @@ class Command(BaseCommand):
         for locale_dir, files in file_groups.items():
             self.process_locale_dir(locale_dir, files)
 
+    # 对一组文件运行 xgettext 并写入 locale POT
     def process_locale_dir(self, locale_dir, files):
         """
         Extract translatable literals from the specified files, creating or
@@ -700,6 +711,7 @@ class Command(BaseCommand):
         for build_file in build_files:
             build_file.cleanup()
 
+    # 用 msgmerge/msgattrib 创建或更新指定 locale 的 PO
     def write_po_file(self, potfile, locale):
         """
         Create or update the PO file for self.domain and `locale`.
@@ -745,6 +757,7 @@ class Command(BaseCommand):
                 elif self.verbosity > 0:
                     self.stdout.write(errors)
 
+# 从 Django 内置 catalog 复制 Plural-Forms 头到新 PO
     def copy_plural_forms(self, msgs, locale):
         """
         Copy plural forms header contents from a Django catalog of locale to

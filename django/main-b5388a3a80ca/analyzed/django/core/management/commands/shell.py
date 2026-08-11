@@ -12,6 +12,7 @@ from django.utils.datastructures import OrderedSet
 from django.utils.module_loading import import_string as import_dotted_path
 
 
+# shell 命令：启动 Django 上下文下的 Python 交互解释器
 class Command(BaseCommand):
     help = (
         "Runs a Python interactive interpreter. Tries to use IPython or "
@@ -55,16 +56,19 @@ class Command(BaseCommand):
             ),
         )
 
+    # 使用 IPython 启动 shell
     def ipython(self, options):
         from IPython import start_ipython
 
         start_ipython(argv=[], user_ns=self.get_namespace(**options))
 
+    # 使用 bpython 启动 shell
     def bpython(self, options):
         import bpython
 
         bpython.embed(self.get_namespace(**options))
 
+    # 使用标准 CPython code.interact 启动 shell
     def python(self, options):
         import code
 
@@ -122,6 +126,7 @@ class Command(BaseCommand):
         # Start the interactive interpreter.
         code.interact(local=imported_objects)
 
+    # 返回 shell 自动导入的 settings/models 等路径列表
     def get_auto_imports(self):
         """Return a sequence of import paths for objects to be auto-imported.
 
@@ -162,6 +167,7 @@ class Command(BaseCommand):
         ]
         return app_models_imports
 
+    # 构建 shell 局部命名空间（自动导入模型与常用模块）
     def get_namespace(self, **options):
         if options and options.get("no_imports"):
             return {}
@@ -256,6 +262,7 @@ class Command(BaseCommand):
 
         return namespace
 
+    # 执行 -c 命令、stdin 或依次尝试 ipython/bpython/python
     def handle(self, **options):
         # Execute the command and exit.
         if options["command"]:

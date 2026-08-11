@@ -5,6 +5,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 
+# sendtestemail 命令：向指定地址发送测试邮件
 class Command(BaseCommand):
     help = "Sends a test email to the email addresses specified as arguments."
     missing_args_message = (
@@ -37,6 +38,7 @@ class Command(BaseCommand):
             ),
         )
 
+    # 发送测试邮件，可选 --managers/--admins 收件人
     def handle(self, *args, using=None, **kwargs):
         subject = "Test email from %s on %s" % (socket.gethostname(), timezone.now())
 

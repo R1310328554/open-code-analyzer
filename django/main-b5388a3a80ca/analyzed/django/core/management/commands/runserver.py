@@ -24,6 +24,7 @@ naiveip_re = _lazy_re_compile(
 )
 
 
+# runserver 命令：启动开发用 WSGI HTTP 服务器
 class Command(BaseCommand):
     help = "Starts a lightweight web server for development."
 
@@ -68,6 +69,7 @@ class Command(BaseCommand):
             os.environ["DJANGO_COLORS"] = "nocolor"
         super().execute(*args, **options)
 
+    # 返回默认 WSGI 应用处理器
     def get_handler(self, *args, **options):
         """Return the default WSGI handler for the runner."""
         return get_internal_wsgi_application()
@@ -76,6 +78,7 @@ class Command(BaseCommand):
         """Validation is called explicitly each time the server reloads."""
         return {"tags": set()}
 
+    # 解析 addr:port、校验 DEBUG/ALLOWED_HOSTS 并启动服务
     def handle(self, *args, **options):
         if not settings.DEBUG and not settings.ALLOWED_HOSTS:
             raise CommandError("You must set settings.ALLOWED_HOSTS if DEBUG is False.")
@@ -109,6 +112,7 @@ class Command(BaseCommand):
             self._raw_ipv6 = self.use_ipv6
         self.run(**options)
 
+    # 按需启用 autoreload 调用 inner_run
     def run(self, **options):
         """Run the server, using the autoreloader if needed."""
         use_reloader = options["use_reloader"]
@@ -118,6 +122,7 @@ class Command(BaseCommand):
         else:
             self.inner_run(None, **options)
 
+    # 执行系统检查、迁移检查并绑定 WSGIServer
     def inner_run(self, *args, **options):
         # If an exception was silenced in ManagementUtility.execute in order
         # to be raised in the child process, raise it now.
@@ -169,6 +174,7 @@ class Command(BaseCommand):
                 self.stdout.write(shutdown_message)
             sys.exit(0)
 
+    # 服务绑定后打印启动信息与生产环境警告
     def on_bind(self, server_port):
         quit_command = "CTRL-BREAK" if sys.platform == "win32" else "CONTROL-C"
 

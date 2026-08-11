@@ -3,6 +3,7 @@ from django.core.management.sql import sql_flush
 from django.db import DEFAULT_DB_ALIAS, connections
 
 
+# sqlflush 命令：输出清空数据库所需的 SQL 语句
 class Command(BaseCommand):
     help = (
         "Returns a list of the SQL statements required to return all tables in "
@@ -23,6 +24,7 @@ class Command(BaseCommand):
             ),
         )
 
+    # 调用 sql_flush 生成并返回 SQL 文本
     def handle(self, **options):
         sql_statements = sql_flush(self.style, connections[options["database"]])
         if not sql_statements and options["verbosity"] >= 1:

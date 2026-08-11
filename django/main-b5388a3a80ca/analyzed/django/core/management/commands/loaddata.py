@@ -41,6 +41,7 @@ except ImportError:
 READ_STDIN = "-"
 
 
+# loaddata 命令：将 fixture 序列化数据加载进数据库
 class Command(BaseCommand):
     help = "Installs the named fixture(s) in the database."
     missing_args_message = (
@@ -89,6 +90,7 @@ class Command(BaseCommand):
             help="Format of serialized data when reading from stdin.",
         )
 
+    # 在原子事务中加载指定 fixture 标签
     def handle(self, *fixture_labels, **options):
         self.ignore = options["ignore"]
         self.using = options["database"]
@@ -110,6 +112,7 @@ class Command(BaseCommand):
             connections[self.using].close()
 
     @cached_property
+    # 映射压缩扩展名到 (open 函数, 模式) 元组
     def compression_formats(self):
         """A dict mapping format names to (open function, mode arg) tuples."""
         # Forcing binary mode may be revisited after dropping Python 2 support
@@ -127,6 +130,7 @@ class Command(BaseCommand):
             compression_formats["xz"] = (lzma.LZMAFile, "r")
         return compression_formats
 
+    # 为已加载模型重置数据库序列
     def reset_sequences(self, connection, models):
         """Reset database sequences for the given connection and models."""
         sequence_sql = connection.ops.sequence_reset_sql(no_style(), models)
@@ -137,6 +141,7 @@ class Command(BaseCommand):
                 for line in sequence_sql:
                     cursor.execute(line)
 
+    # 查找 fixture、反序列化对象并校验外键约束
     def loaddata(self, fixture_labels):
         connection = connections[self.using]
 
@@ -195,6 +200,7 @@ class Command(BaseCommand):
                     )
                 )
 
+    # 按路由与排除规则保存单个反序列化对象
     def save_obj(self, obj):
         """Save an object if permitted."""
         if (
@@ -223,6 +229,7 @@ class Command(BaseCommand):
             self.objs_with_deferred_fields.append(obj)
         return saved
 
+    # 解析并加载单个 fixture 标签对应的文件
     def load_label(self, fixture_label):
         """Load fixtures files for a given label."""
         show_progress = self.verbosity >= 3
@@ -313,6 +320,7 @@ class Command(BaseCommand):
         return fixture_files_in_dir
 
     @functools.cache
+    # 在 fixture 目录中定位匹配的 fixture 文件
     def find_fixtures(self, fixture_label):
         """Find fixture files for a given label."""
         if fixture_label == READ_STDIN:
@@ -353,6 +361,7 @@ class Command(BaseCommand):
         return fixture_files
 
     @cached_property
+    # 返回应用 fixtures 目录、FIXTURE_DIRS 与当前目录
     def fixture_dirs(self):
         """
         Return a list of fixture directories.
@@ -383,6 +392,7 @@ class Command(BaseCommand):
         dirs.append("")
         return [os.path.realpath(d) for d in dirs]
 
+    # 拆分 fixture 名称为名称、序列化格式与压缩格式
     def parse_name(self, fixture_name):
         """
         Split fixture name in name, serialization format, compression format.
@@ -419,6 +429,7 @@ class Command(BaseCommand):
         return name, ser_fmt, cmp_fmt
 
 
+# 仅含单个文件的 zip fixture 读取器
 class SingleZipReader(zipfile.ZipFile):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -429,5 +440,6 @@ class SingleZipReader(zipfile.ZipFile):
         return zipfile.ZipFile.read(self, self.namelist()[0])
 
 
+# 将 fixture 目录路径格式化为可读字符串
 def humanize(dirname):
     return "'%s'" % dirname if dirname else "absolute path"

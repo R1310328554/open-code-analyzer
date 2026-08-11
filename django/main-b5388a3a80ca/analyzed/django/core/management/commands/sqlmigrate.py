@@ -4,6 +4,7 @@ from django.db import DEFAULT_DB_ALIAS, connections
 from django.db.migrations.loader import AmbiguityError, MigrationLoader
 
 
+# sqlmigrate 命令：输出指定迁移的 SQL 语句
 class Command(BaseCommand):
     help = "Prints the SQL statements for the named migration."
 
@@ -31,12 +32,14 @@ class Command(BaseCommand):
             help="Creates SQL to unapply the migration, rather than to apply it",
         )
 
+    # 禁用 SQL 关键字着色以便纯文本输出
     def execute(self, *args, **options):
         # sqlmigrate doesn't support coloring its output, so make the
         # BEGIN/COMMIT statements added by output_transaction colorless also.
         self.style.SQL_KEYWORD = lambda noop: noop
         return super().execute(*args, **options)
 
+    # 解析迁移目标并 collect_sql 生成 DDL/DML
     def handle(self, *args, **options):
         # Get the database we're operating from
         connection = connections[options["database"]]
