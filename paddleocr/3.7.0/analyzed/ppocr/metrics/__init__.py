@@ -17,6 +17,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+# 评估指标工厂：按配置 name 实例化检测/识别/分类/VQA 等 Metric
 import copy
 
 __all__ = ["build_metric"]
@@ -34,6 +35,7 @@ from .sr_metric import SRMetric
 from .ct_metric import CTMetric
 
 
+# 深拷贝配置后 pop name，校验 support_dict 并用 eval 构造对应 Metric 类
 def build_metric(config):
     support_dict = [
         "DetMetric",

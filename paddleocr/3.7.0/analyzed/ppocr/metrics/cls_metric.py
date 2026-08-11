@@ -13,12 +13,14 @@
 # limitations under the License.
 
 
+# 文本方向/角度分类评估：逐样本比对 pred 与 target 累计准确率
 class ClsMetric(object):
     def __init__(self, main_indicator="acc", **kwargs):
         self.main_indicator = main_indicator
         self.eps = 1e-5
         self.reset()
 
+    # 单 batch 统计正确数，返回即时 acc
     def __call__(self, pred_label, *args, **kwargs):
         preds, labels = pred_label
         correct_num = 0
@@ -33,6 +35,7 @@ class ClsMetric(object):
             "acc": correct_num / (all_num + self.eps),
         }
 
+    # 汇总全局 acc 后 reset 计数器
     def get_metric(self):
         """
         return metrics {
@@ -43,6 +46,7 @@ class ClsMetric(object):
         self.reset()
         return {"acc": acc}
 
+    # 清零 correct_num / all_num
     def reset(self):
         self.correct_num = 0
         self.all_num = 0

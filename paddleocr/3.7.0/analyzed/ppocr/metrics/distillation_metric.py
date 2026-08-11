@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 蒸馏评估：为 student/teacher 等多分支各建一份 base_metric
 import importlib
 import copy
 
@@ -23,6 +24,7 @@ from .vqa_token_ser_metric import VQASerTokenMetric
 from .vqa_token_re_metric import VQAReTokenMetric
 
 
+    # 知识蒸馏多模型评估：共享 batch 分别调用子 Metric
 class DistillationMetric(object):
     def __init__(self, key=None, base_metric_name=None, main_indicator=None, **kwargs):
         self.main_indicator = main_indicator
@@ -32,6 +34,7 @@ class DistillationMetric(object):
         self.kwargs = kwargs
         self.metrics = None
 
+    # 按 preds dict 的 key 动态 import 并实例化 base_metric_name
     def _init_metrcis(self, preds):
         self.metrics = dict()
         mod = importlib.import_module(__name__)
@@ -49,6 +52,7 @@ class DistillationMetric(object):
         for key in preds:
             self.metrics[key].__call__(preds[key], batch, **kwargs)
 
+    # key 分支指标平铺，其余分支加 key_ 前缀
     def get_metric(self):
         """
         return metrics {

@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from collections import namedtuple
 import numpy as np
+# ICDAR 风格检测 IoU 评估：多边形匹配与全局 P/R/Hmean
 from shapely.geometry import Polygon
 
 """
@@ -10,15 +11,18 @@ https://github.com/MhLiao/DB/blob/3c32b808d4412680310d3d28eeb6a2d5bf1566c5/conce
 """
 
 
+    # 检测 IoU 评估器：默认 IoU≥0.5，面积精度约束过滤假阳性
 class DetectionIoUEvaluator(object):
     def __init__(self, iou_constraint=0.5, area_precision_constraint=0.5):
         self.iou_constraint = iou_constraint
         self.area_precision_constraint = area_precision_constraint
 
+    # 单图：过滤无效/ignore 框，IoU 贪心匹配，返回 gtCare/detCare/detMatched
     def evaluate_image(self, gt, pred):
         def get_union(pD, pG):
             return Polygon(pD).union(Polygon(pG)).area
 
+            # 两四边形 Shapely IoU
         def get_intersection_over_union(pD, pG):
             return get_intersection(pD, pG) / get_union(pD, pG)
 
@@ -71,6 +75,7 @@ class DetectionIoUEvaluator(object):
         gtPolPoints = []
         detPolPoints = []
 
+        # 标记 ignore GT 及与其重叠过大的检测（don't care）
         # Array of Ground Truth Polygons' keys marked as don't Care
         gtDontCarePolsNum = []
         # Array of Detected Polygons' matched with a don't Care GT
@@ -137,6 +142,7 @@ class DetectionIoUEvaluator(object):
         )
 
         if len(gtPols) > 0 and len(detPols) > 0:
+            # 构建 IoU 矩阵并贪心一对一匹配
             # Calculate IoU and precision matrixs
             outputShape = [len(gtPols), len(detPols)]
             iouMat = np.empty(outputShape)
@@ -196,6 +202,7 @@ class DetectionIoUEvaluator(object):
         }
         return perSampleMetrics
 
+    # 跨样本累加匹配数，计算数据集级 precision/recall/hmean
     def combine_results(self, results):
         numGlobalCareGt = 0
         numGlobalCareDet = 0

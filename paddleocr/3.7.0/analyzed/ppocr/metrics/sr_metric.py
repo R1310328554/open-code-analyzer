@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 超分辨率图像质量评估：SSIM 结构与 PSNR 峰值信噪比
 """
 https://github.com/FudanVI/FudanOCR/blob/main/text-gestalt/utils/ssim_psnr.py
 """
@@ -23,6 +24,7 @@ import paddle.nn as nn
 import string
 
 
+    # Paddle SSIM 层：可学习窗口，forward 返回结构相似度
 class SSIM(nn.Layer):
     def __init__(self, window_size=11, size_average=True):
         super(SSIM, self).__init__()
@@ -31,6 +33,7 @@ class SSIM(nn.Layer):
         self.channel = 1
         self.window = self.create_window(window_size, self.channel)
 
+    # 一维高斯核用于 SSIM 滑动窗口
     def gaussian(self, window_size, sigma):
         gauss = paddle.to_tensor(
             [
@@ -46,6 +49,7 @@ class SSIM(nn.Layer):
         window = _2D_window.expand([channel, 1, window_size, window_size])
         return window
 
+    # 卷积估计局部均值/方差/协方差，按 Wang SSIM 公式
     def _ssim(self, img1, img2, window, window_size, channel, size_average=True):
         mu1 = F.conv2d(img1, window, padding=window_size // 2, groups=channel)
         mu2 = F.conv2d(img2, window, padding=window_size // 2, groups=channel)
@@ -101,6 +105,7 @@ class SSIM(nn.Layer):
         )
 
 
+    # 超分评估：batch 平均 PSNR、SSIM 及二者之和 all
 class SRMetric(object):
     def __init__(self, main_indicator="all", **kwargs):
         self.main_indicator = main_indicator
@@ -117,6 +122,7 @@ class SRMetric(object):
         self.psnr_result = []
         self.ssim_result = []
 
+    # [0,1] 图像转 255 尺度 MSE 后算 PSNR
     def calculate_psnr(self, img1, img2):
         # img1 and img2 have range [0, 1]
         mse = ((img1 * 255 - img2 * 255) ** 2).mean()
@@ -130,6 +136,7 @@ class SRMetric(object):
         )
         return text.lower()
 
+    # 对比 sr_img 与 hr_img，累积 PSNR/SSIM
     def __call__(self, pred_label, *args, **kwargs):
         metric = {}
         images_sr = pred_label["sr_img"]

@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import numpy as np
+# 表格识别评估：HTML 结构串准确率 + 可选单元格框检测 IoU
 from ppocr.metrics.det_metric import DetMetric
 
 
+    # 表格结构 token 序列完全匹配准确率
 class TableStructureMetric(object):
     def __init__(self, main_indicator="acc", eps=1e-6, del_thead_tbody=False, **kwargs):
         self.main_indicator = main_indicator
@@ -33,6 +35,7 @@ class TableStructureMetric(object):
         ):
             pred_str = "".join(pred)
             target_str = "".join(target)
+            # 可选剥离 thead/tbody 标签再比结构串
             if self.del_thead_tbody:
                 pred_str = (
                     pred_str.replace("<thead>", "")
@@ -52,6 +55,7 @@ class TableStructureMetric(object):
         self.correct_num += correct_num
         self.all_num += all_num
 
+    # 合并 structure 与 bbox 子指标，主指标决定顶层键
     def get_metric(self):
         """
         return metrics {
@@ -70,6 +74,7 @@ class TableStructureMetric(object):
         self.anys_dict = dict()
 
 
+    # 表格综合指标：结构 Metric + 可选 DetMetric 框评估
 class TableMetric(object):
     def __init__(
         self,
@@ -96,6 +101,7 @@ class TableMetric(object):
         if self.bbox_metric is not None:
             self.bbox_metric(*self.prepare_bbox_metric_input(pred_label))
 
+    # 将 xyxy/xywh/xyxyxyxy 框转为四点格式供 DetMetric
     def prepare_bbox_metric_input(self, pred_label):
         pred_bbox_batch_list = []
         gt_ignore_tags_batch_list = []

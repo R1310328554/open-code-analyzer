@@ -18,9 +18,11 @@ from __future__ import print_function
 
 __all__ = ["DetMetric", "DetFCEMetric"]
 
+# 文本检测 IoU 评估：DetMetric 与多阈值 DetFCEMetric
 from .eval_det_iou import DetectionIoUEvaluator
 
 
+    # 标准检测评估：逐图 IoU 匹配，汇总 precision/recall/hmean
 class DetMetric(object):
     def __init__(self, main_indicator="hmean", **kwargs):
         self.evaluator = DetectionIoUEvaluator()
@@ -42,11 +44,13 @@ class DetMetric(object):
         for pred, gt_polyons, ignore_tags in zip(
             preds, gt_polyons_batch, ignore_tags_batch
         ):
+            # 构造 GT 多边形列表（含 ignore 标记）
             # prepare gt
             gt_info_list = [
                 {"points": gt_polyon, "text": "", "ignore": ignore_tag}
                 for gt_polyon, ignore_tag in zip(gt_polyons, ignore_tags)
             ]
+            # 构造检测多边形列表供 IoU 匹配
             # prepare det
             det_info_list = [
                 {"points": det_polyon, "text": ""} for det_polyon in pred["points"]
@@ -71,6 +75,7 @@ class DetMetric(object):
         self.results = []  # clear results
 
 
+    # 多阈值 FCE 评估：0.3~0.9 各档 hmean，取最大为总 hmean
 class DetFCEMetric(object):
     def __init__(self, main_indicator="hmean", **kwargs):
         self.evaluator = DetectionIoUEvaluator()
@@ -104,6 +109,7 @@ class DetFCEMetric(object):
                 for det_polyon, score in zip(pred["points"], pred["scores"])
             ]
 
+            # FCE：按置信度阈值过滤检测框后分别评估
             for score_thr in self.results.keys():
                 det_info_list_thr = [
                     det_info

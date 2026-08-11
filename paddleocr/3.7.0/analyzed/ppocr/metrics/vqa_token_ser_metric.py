@@ -22,6 +22,7 @@ import paddle
 __all__ = ["VQASerTokenMetric"]
 
 
+# VQA 序列实体标注（SER）：seqeval token 级 P/R/F1
 class VQASerTokenMetric(object):
     def __init__(self, main_indicator="hmean", **kwargs):
         self.main_indicator = main_indicator
@@ -32,6 +33,7 @@ class VQASerTokenMetric(object):
         self.pred_list.extend(preds)
         self.gt_list.extend(labels)
 
+    # 累积 pred/gt BIO 序列后调用 seqeval 计算 hmean
     def get_metric(self):
         from seqeval.metrics import f1_score, precision_score, recall_score
 

@@ -19,11 +19,13 @@ from paddle.jit import to_static
 from paddle.static import InputSpec
 
 from .base_model import BaseModel
+# 模型架构工厂：build_model 与训练静态图 apply_to_static
 from .distillation_model import DistillationModel
 
 __all__ = ["build_model", "apply_to_static"]
 
 
+# 无 name 时用 BaseModel；否则从本模块 getattr 自定义 Architecture
 def build_model(config):
     config = copy.deepcopy(config)
     if not "name" in config:
@@ -35,12 +37,14 @@ def build_model(config):
     return arch
 
 
+# Global.to_static 时按算法构造 InputSpec，@to_static 包装模型
 def apply_to_static(model, config, logger):
     if config["Global"].get("to_static", False) is not True:
         return model
     assert (
         "d2s_train_image_shape" in config["Global"]
     ), "d2s_train_image_shape must be assigned for static training mode..."
+    # 支持静态训练的算法白名单（含 Distillation 子模型 algorithm）
     supported_list = [
         "DB",
         "SVTR_LCNet",
@@ -66,6 +70,7 @@ def apply_to_static(model, config, logger):
         InputSpec([None] + config["Global"]["d2s_train_image_shape"], dtype="float32")
     ]
 
+    # 各算法追加额外输入 spec（文本长度、表格 bbox 等）
     if algo == "SVTR_LCNet":
         specs.append(
             [

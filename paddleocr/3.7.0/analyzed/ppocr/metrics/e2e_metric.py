@@ -18,10 +18,12 @@ from __future__ import print_function
 
 __all__ = ["E2EMetric"]
 
+# 端到端检测+识别评估：模式 A 在线 GT，模式 B 读 mat 标注
 from ppocr.utils.e2e_metric.Deteval import get_socre_A, get_socre_B, combine_results
 from ppocr.utils.e2e_utils.extract_textpoint_slow import get_dict
 
 
+    # PGNet 等 E2E 指标：A/B 两种 Deteval 评分路径
 class E2EMetric(object):
     def __init__(
         self,
@@ -39,6 +41,7 @@ class E2EMetric(object):
         self.reset()
 
     def __call__(self, preds, batch, **kwargs):
+        # 模式 A：索引转字符后 get_socre_A 匹配框与文本
         if self.mode == "A":
             gt_polyons_batch = batch[2]
             temp_gt_strs_batch = batch[3][0]
@@ -70,6 +73,7 @@ class E2EMetric(object):
 
                 result = get_socre_A(gt_info_list, e2e_info_list)
                 self.results.append(result)
+        # 模式 B：按 img_id 从 gt_mat_dir 加载 GT 后 get_socre_B
         else:
             img_id = batch[5][0]
             e2e_info_list = [

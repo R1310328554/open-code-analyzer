@@ -22,6 +22,7 @@ import paddle
 __all__ = ["VQAReTokenMetric"]
 
 
+# VQA 关系抽取评估：实体 span 对匹配，boundaries/strict 两种模式
 class VQAReTokenMetric(object):
     def __init__(self, main_indicator="hmean", **kwargs):
         self.main_indicator = main_indicator
@@ -33,6 +34,7 @@ class VQAReTokenMetric(object):
         self.relations_list.extend(relations)
         self.entities_list.extend(entities)
 
+    # 从 batch 实体/关系张量还原 GT 关系 dict，re_score 算 P/R/F1
     def get_metric(self):
         gt_relations = []
         for b in range(len(self.relations_list)):
@@ -76,6 +78,7 @@ class VQAReTokenMetric(object):
         self.relations_list = []
         self.entities_list = []
 
+    # 逐句按关系类型统计 TP/FP/FN，输出 micro 与 macro F1
     def re_score(self, pred_relations, gt_relations, mode="strict"):
         """Evaluate RE predictions
 
@@ -105,6 +108,7 @@ class VQAReTokenMetric(object):
         # Count TP, FP and FN per type
         for pred_sent, gt_sent in zip(pred_relations, gt_relations):
             for rel_type in relation_types:
+                # strict：头尾 span 与实体类型均须一致
                 # strict mode takes argument types into account
                 if mode == "strict":
                     pred_rels = {
@@ -118,6 +122,7 @@ class VQAReTokenMetric(object):
                         if rel["type"] == rel_type
                     }
 
+                # boundaries：仅头尾 token 边界匹配
                 # boundaries mode only takes argument spans into account
                 elif mode == "boundaries":
                     pred_rels = {

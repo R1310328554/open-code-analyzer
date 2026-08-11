@@ -17,9 +17,11 @@ from difflib import SequenceMatcher
 
 import numpy as np
 import string
+# 识别评估：通用 RecMetric、CNT、CAN 公式、LaTeXOCR 多指标
 from .bleu import compute_bleu_score, compute_edit_distance
 
 
+    # 通用识别指标：acc + 归一化编辑距离（可选过滤/去空格）
 class RecMetric(object):
     def __init__(
         self, main_indicator="acc", is_filter=False, ignore_space=True, **kwargs
@@ -30,6 +32,7 @@ class RecMetric(object):
         self.eps = 1e-5
         self.reset()
 
+    # RecMetric：仅保留字母数字并转小写（is_filter 时启用）
     def _normalize_text(self, text):
         text = "".join(
             filter(lambda x: x in (string.digits + string.ascii_letters), text)
@@ -42,7 +45,8 @@ class RecMetric(object):
         all_num = 0
         norm_edit_dis = 0.0
         for (pred, pred_conf), (target, _) in zip(preds, labels):
-            if self.ignore_space:
+            # 可选忽略空格再比对错与编辑距离
+        if self.ignore_space:
                 pred = pred.replace(" ", "")
                 target = target.replace(" ", "")
             if self.is_filter:
@@ -78,6 +82,7 @@ class RecMetric(object):
         self.norm_edit_dis = 0
 
 
+    # 计数类识别：整串完全匹配准确率
 class CNTMetric(object):
     def __init__(self, main_indicator="acc", **kwargs):
         self.main_indicator = main_indicator
@@ -113,6 +118,7 @@ class CNTMetric(object):
         self.all_num = 0
 
 
+    # CAN 公式识别：word_rate 与 exp_rate（整行全对比例）
 class CANMetric(object):
     def __init__(self, main_indicator="exp_rate", **kwargs):
         self.main_indicator = main_indicator
@@ -136,6 +142,7 @@ class CANMetric(object):
         if word_probs is not None:
             word_pred = word_probs.argmax(2)
         word_pred = word_pred.cpu().detach().numpy()
+        # CAN：SequenceMatcher 相似度加权得词级/公式级正确率
         word_scores = [
             SequenceMatcher(
                 None, s1[: int(np.sum(s3))], s2[: int(np.sum(s3))], autojunk=False
@@ -180,6 +187,7 @@ class CANMetric(object):
         self.exp_total_num = 0
 
 
+    # LaTeX OCR：编辑距离、BLEU、分档 exp_rate 及 epoch 累积
 class LaTeXOCRMetric(object):
     def __init__(self, main_indicator="exp_rate", cal_bleu_score=False, **kwargs):
         self.main_indicator = main_indicator
@@ -213,6 +221,7 @@ class LaTeXOCRMetric(object):
         for labels, prediction in zip(word_label, word_pred):
             if prediction == labels:
                 line_right += 1
+            # LaTeXOCR：编辑距离分档统计 exp_rate<=1/2/3
             distance = compute_edit_distance(prediction, labels)
             bleu_list.append(compute_bleu_score([prediction], [labels]))
             lev_dist.append(Levenshtein.normalized_distance(prediction, labels))

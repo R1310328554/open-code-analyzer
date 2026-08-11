@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# BLEU 与编辑距离工具：源自 TensorFlow NMT，供 LaTeXOCR 等识别评估
 """
 This code is refer from:
 https://github.com/tensorflow/nmt/blob/master/nmt/scripts/bleu.py
@@ -23,6 +24,7 @@ import collections
 from functools import lru_cache
 
 
+    # 统计 segment 中 1..max_order 阶 n-gram 频次
 def _get_ngrams(segment, max_order):
     """Extracts all n-grams upto a given maximum order from an input segment.
 
@@ -43,6 +45,7 @@ def _get_ngrams(segment, max_order):
     return ngram_counts
 
 
+    # 计算 BLEU：n-gram 精确率几何均值 × 简短惩罚 brevity penalty
 def compute_bleu(reference_corpus, translation_corpus, max_order=4, smooth=False):
     """Computes BLEU score of translated segments against one or more references.
 
@@ -113,6 +116,7 @@ def compute_bleu(reference_corpus, translation_corpus, max_order=4, smooth=False
     return (bleu, precisions, bp, ratio, translation_length, reference_length)
 
 
+    # 分词器基类：默认原样返回，signature 标识分词策略
 class BaseTokenizer:
     """A base dummy tokenizer to derive from."""
 
@@ -132,6 +136,7 @@ class BaseTokenizer:
         return line
 
 
+    # 正则后处理分词：标点/数字边界切分，lru_cache 缓存
 class TokenizerRegexp(BaseTokenizer):
     def signature(self):
         return "re"
@@ -166,6 +171,7 @@ class TokenizerRegexp(BaseTokenizer):
         return line.split()
 
 
+    # WMT mteval-v13a 兼容分词：HTML 实体与换行预处理
 class Tokenizer13a(BaseTokenizer):
     def signature(self):
         return "13a"
@@ -196,6 +202,7 @@ class Tokenizer13a(BaseTokenizer):
         return self._post_tokenizer(f" {line} ")
 
 
+    # 封装 compute_bleu：先分词再返回单一 bleu 标量
 def compute_bleu_score(
     predictions, references, tokenizer=Tokenizer13a(), max_order=4, smooth=False
 ):
@@ -215,6 +222,7 @@ def compute_bleu_score(
     return bleu
 
 
+    # 词级 Levenshtein 编辑距离（动态规划）
 def cal_distance(word1, word2):
     m = len(word1)
     n = len(word2)
@@ -236,6 +244,7 @@ def cal_distance(word1, word2):
     return dp[m][n]
 
 
+    # 空格分词后计算两串词序列的编辑距离
 def compute_edit_distance(prediction, label):
     prediction = prediction.strip().split(" ")
     label = label.strip().split(" ")

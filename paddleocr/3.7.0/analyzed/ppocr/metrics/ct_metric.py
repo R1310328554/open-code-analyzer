@@ -20,9 +20,11 @@ import os
 from scipy import io
 import numpy as np
 
+# CentripetalText 端到端检测评估：Deteval C 模式得分
 from ppocr.utils.e2e_metric.Deteval import combine_results, get_score_C
 
 
+    # CentripetalText 检测指标：收集 get_score_C 结果后合并
 class CTMetric(object):
     def __init__(self, main_indicator, delimiter="\t", **kwargs):
         self.delimiter = delimiter
@@ -32,6 +34,7 @@ class CTMetric(object):
     def reset(self):
         self.results = []  # clear results
 
+    # 仅支持 bs=1：取 pred 多边形与 label/text 计算单图 C 分数
     def __call__(self, preds, batch, **kwargs):
         # NOTE: only support bs=1 now, as the label length of different sample is Unequal
         assert len(preds) == 1, "CentripetalText test now only support batch_size=1."
@@ -42,6 +45,7 @@ class CTMetric(object):
 
         self.results.append(result)
 
+    # combine_results 聚合各图指标（rec_flag=False）
     def get_metric(self):
         """
         Input format: y0,x0, ..... yn,xn. Each detection is separated by the end of line token ('\n')'
