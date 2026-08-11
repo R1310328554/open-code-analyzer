@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# PaddleOCR 顶层日志模块：统一 logger 名称与默认 stderr 输出格式
 import logging
 
 from .._env import DISABLE_AUTO_LOGGING_CONFIG
@@ -21,6 +22,7 @@ LOGGER_NAME = "paddleocr"
 logger = logging.getLogger(LOGGER_NAME)
 
 
+# 初始化 paddleocr 命名空间 logger，默认 ERROR 级别，可通过环境变量禁用
 def _set_up_logger():
     if DISABLE_AUTO_LOGGING_CONFIG:
         return

@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# Copy-Paste 文本检测增强：从 ext_data 裁剪文本贴到主图，扩充小样本
 import copy
 import cv2
 import random
@@ -23,6 +24,7 @@ from ppocr.data.imaug.random_crop_data import is_poly_outside_rect
 from tools.infer.utility import get_rotate_crop_image
 
 
+    # 检测训练算子：粘贴外部多边形文本，更新 polys/texts/ignore_tags
 class CopyPaste(object):
     def __init__(self, objects_paste_ratio=0.2, limit_paste=True, **kwargs):
         self.ext_data_num = 1
@@ -76,6 +78,7 @@ class CopyPaste(object):
         data["ignore_tags"] = np.array(src_ignores)
         return data
 
+        # 随机旋转裁剪块并 alpha 混合粘贴，返回新四边形坐标
     def paste_img(self, src_img, box_img, src_polys):
         box_img_pil = Image.fromarray(box_img).convert("RGBA")
         src_w, src_h = src_img.size
@@ -101,6 +104,7 @@ class CopyPaste(object):
 
         return src_img, box
 
+        # 选取与现有文本框无重叠的粘贴位置
     def select_coord(self, src_polys, box, endx, endy):
         if self.limit_paste:
             xmin, ymin, xmax, ymax = (
@@ -145,6 +149,7 @@ def get_intersection(pD, pG):
     return Polygon(pD).intersection(Polygon(pG)).area
 
 
+# 同步旋转图像与多边形标注，供粘贴前对齐
 def rotate_bbox(img, text_polys, angle, scale=1):
     """
     from https://github.com/WenmuZhou/DBNet.pytorch/blob/master/data_loader/modules/augment.py

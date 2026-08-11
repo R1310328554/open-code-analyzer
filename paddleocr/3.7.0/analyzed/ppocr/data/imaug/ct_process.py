@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# CentripetalText (CT) 检测训练预处理：缩放、收缩图、向心偏移 GT
 import os
 import cv2
 import paddle
@@ -25,6 +26,7 @@ import paddle.vision.transforms as transforms
 from ppocr.utils.utility import check_install
 
 
+    # 随机短边缩放并对齐 32 倍数，记录 scale_factor 供标注映射
 class RandomScale:
     def __init__(self, short_size=640, **kwargs):
         self.short_size = short_size
@@ -55,6 +57,7 @@ class RandomScale:
         return data
 
 
+    # 生成实例图/核图/训练 mask 及向心偏移所需的中间 GT
 class MakeShrink:
     def __init__(self, kernel_scale=0.7, **kwargs):
         self.kernel_scale = kernel_scale
@@ -170,6 +173,7 @@ class MakeShrink:
         return data
 
 
+    # 对 image 与全部 GT 通道同步水平翻转
 class GroupRandomHorizontalFlip:
     def __init__(self, p=0.5, **kwargs):
         self.p = p
@@ -184,6 +188,7 @@ class GroupRandomHorizontalFlip:
         return data
 
 
+    # 对 image 与 GT 通道组同步小角度旋转
 class GroupRandomRotate:
     def __init__(self, **kwargs):
         pass
@@ -206,6 +211,7 @@ class GroupRandomRotate:
         return data
 
 
+    # 随机裁剪含文本区域并 padding 至 target_size
 class GroupRandomCropPadding:
     def __init__(self, target_size=(640, 640), **kwargs):
         self.target_size = target_size
@@ -268,6 +274,7 @@ class GroupRandomCropPadding:
         return data
 
 
+    # 计算像素到核参考点的向心偏移向量 gt_distance
 class MakeCentripetalShift:
     def __init__(self, **kwargs):
         pass
@@ -348,6 +355,7 @@ class MakeCentripetalShift:
         return data
 
 
+    # 推理/验证短边对齐缩放，写入 shape 供后处理还原
 class ScaleAlignedShort:
     def __init__(self, short_size=640, **kwargs):
         self.short_size = short_size

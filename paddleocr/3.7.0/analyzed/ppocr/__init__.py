@@ -11,3 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# PPOCR 训练/推理核心包命名空间，承载检测、识别与数据流水线实现
+# limitations under the License.

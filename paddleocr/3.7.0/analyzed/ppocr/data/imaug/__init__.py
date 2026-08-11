@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 图像增强算子注册表：聚合检测/识别/表格/VQA 等任务的 imaug 实现
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -65,6 +66,7 @@ from .latex_ocr_aug import *
 from .unimernet_aug import *
 
 
+    # 顺序执行算子链；任一算子返回 None 则整条样本丢弃
 def transform(data, ops=None):
     """transform"""
     if ops is None:
@@ -76,6 +78,7 @@ def transform(data, ops=None):
     return data
 
 
+    # 按 YAML 列表 [{OpName: params}, ...] 动态 eval 实例化算子
 def create_operators(op_param_list, global_config=None):
     """
     create operators based on the config

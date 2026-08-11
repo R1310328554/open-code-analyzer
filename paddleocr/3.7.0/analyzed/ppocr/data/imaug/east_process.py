@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# EAST 四边形检测训练预处理：随机裁剪、score/geo map 生成
 """
+This code is referred from:"""
 This code is referred from:
 https://github.com/songdejia/EAST/blob/master/data_utils.py
 """
@@ -25,6 +27,7 @@ import os
 __all__ = ["EASTProcessTrain"]
 
 
+    # EAST 训练算子：缩放/旋转/裁剪并生成 score_map 与 geo_map
 class EASTProcessTrain(object):
     def __init__(
         self,
@@ -40,6 +43,7 @@ class EASTProcessTrain(object):
         self.min_crop_side_ratio = min_crop_side_ratio
         self.min_text_size = min_text_size
 
+        # ImageNet 归一化并 padding 至固定 input_size
     def preprocess(self, im):
         input_size = self.input_size
         im_shape = im.shape
@@ -232,6 +236,7 @@ class EASTProcessTrain(object):
             poly[2][1] -= R * r[2] * np.sin(theta)
         return poly
 
+        # 收缩多边形得 score map，像素级回归四顶点 geo 通道
     def generate_quad(self, im_size, polys, tags):
         """
         Generate quadrangle.
@@ -288,6 +293,7 @@ class EASTProcessTrain(object):
             geo_map[y_in_poly, x_in_poly, 8] = 1.0 / max(min(poly_h, poly_w), 1.0)
         return score_map, geo_map, training_mask
 
+        # 沿文本间隙随机裁剪，可选纯背景负样本
     def crop_area(self, im, polys, tags, crop_background=False, max_tries=50):
         """
         make random crop from the input image
@@ -401,6 +407,7 @@ class EASTProcessTrain(object):
         )
         return im, score_map, geo_map, training_mask
 
+        # 流水线入口：输出 image/score_map/geo_map/training_mask
     def __call__(self, data):
         im = data["image"]
         text_polys = data["polys"]

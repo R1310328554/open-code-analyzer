@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 数据加载入口：按 YAML 配置构建 Dataset/DataLoader，串联 imaug 与 collate
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -41,6 +42,7 @@ from ppocr.data.multi_scale_sampler import MultiScaleSampler
 from ppocr.data.latexocr_dataset import LaTeXOCRDataSet
 
 # for PaddleX dataset_type
+# PaddleX 兼容别名：检测/识别/KIE/表格/LaTeX 等任务复用同一数据集类
 TextDetDataset = SimpleDataSet
 TextRecDataset = SimpleDataSet
 MSTextRecDataset = MultiScaleDataSet
@@ -51,6 +53,7 @@ LaTeXOCRDataSet = LaTeXOCRDataSet
 __all__ = ["build_dataloader", "transform", "create_operators", "set_signal_handlers"]
 
 
+# 进程组信号处理：Ctrl+C 时终止全部 DataLoader 子进程
 def term_mp(sig_num, frame):
     """kill all child processes"""
     pid = os.getpid()
@@ -59,6 +62,7 @@ def term_mp(sig_num, frame):
     os.killpg(pgid, signal.SIGKILL)
 
 
+# 仅在当前进程为进程组 leader 时注册 SIGINT/SIGTERM 清理
 def set_signal_handlers():
     pid = os.getpid()
     try:
@@ -80,6 +84,7 @@ def set_signal_handlers():
             signal.signal(signal.SIGTERM, term_mp)
 
 
+# 根据 Train/Eval/Test 配置实例化数据集、采样器与 collate_fn
 def build_dataloader(config, mode, device, logger, seed=None):
     config = copy.deepcopy(config)
 

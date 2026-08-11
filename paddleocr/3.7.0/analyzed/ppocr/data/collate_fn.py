@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# DataLoader 批聚合器：将样本列表堆叠为 Paddle Tensor 或定长 numpy 批次
 import paddle
 import numbers
 import numpy as np
 from collections import defaultdict
 
 
+    # 字典样本批处理：数值/数组字段自动 stack 为 paddle.Tensor
 class DictCollator(object):
     """
     data batch
@@ -38,6 +40,7 @@ class DictCollator(object):
         return data_dict
 
 
+    # 列表/元组样本批处理：按索引位置合并同类字段
 class ListCollator(object):
     """
     data batch
@@ -58,6 +61,7 @@ class ListCollator(object):
         return list(data_dict.values())
 
 
+    # 自监督旋转任务专用 collate：拼接多视图旋转增强批次
 class SSLRotateCollate(object):
     """
     bach: [
@@ -72,6 +76,7 @@ class SSLRotateCollate(object):
         return output
 
 
+    # 动态宽高识别 collate：padding 至 batch 内最大尺寸并生成 mask
 class DyMaskCollator(object):
     """
     batch: [
@@ -118,6 +123,7 @@ class DyMaskCollator(object):
         return images, image_masks, labels, label_masks
 
 
+    # LaTeX OCR 批处理：直接透传已 padding 的 image/label/attention
 class LaTeXOCRCollator(object):
     """
     batch: [
@@ -133,6 +139,7 @@ class LaTeXOCRCollator(object):
         return images, labels, attention_mask
 
 
+    # UniMERNet 公式识别 collate：定长 padding 图像与标签序列
 class UniMERNetCollator(object):
     """
     batch: [

@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 命名风格转换工具：将 snake_case 键名映射为 camelCase，供 API/CLI 参数透传
 from typing import Any, Dict
 
 
+# 单字段 snake_case → camelCase，如 batch_size → batchSize
 def snake_to_camel(name: str) -> str:
     if not name:
         return name
@@ -26,5 +28,6 @@ def snake_to_camel(name: str) -> str:
     )
 
 
+# 批量转换字典键名为 camelCase，保持值不变
 def snake_keys_to_camel(params: Dict[str, Any]) -> Dict[str, Any]:
     return {snake_to_camel(key): value for key, value in params.items()}

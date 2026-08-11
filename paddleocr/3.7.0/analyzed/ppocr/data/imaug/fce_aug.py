@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# FCENet 检测数据增强：缩放、裁剪翻转、旋转与方形 resize
 """
+This code is refer from:"""
 This code is refer from:
 https://github.com/open-mmlab/mmocr/blob/main/mmocr/datasets/pipelines/transforms.py
 """
@@ -23,6 +25,7 @@ import math
 from ppocr.utils.poly_nms import poly_intersection
 
 
+    # 保持宽高比的随机缩放，同步缩放 polys 坐标
 class RandomScaling:
     def __init__(self, size=800, scale=(3.0 / 4, 5.0 / 2), **kwargs):
         """Random scale the image while keeping aspect.
@@ -55,6 +58,7 @@ class RandomScaling:
         return data
 
 
+    # 沿文本间隙裁剪子图并对裁剪块随机翻转
 class RandomCropFlip:
     def __init__(
         self, pad_ratio=0.1, crop_ratio=0.5, iter_num=1, min_area_ratio=0.2, **kwargs
@@ -224,6 +228,7 @@ class RandomCropFlip:
         return h_axis, w_axis
 
 
+    # 保证至少保留一个完整实例的随机多边形裁剪
 class RandomCropPolyInstances:
     """Randomly crop images and make sure to contain at least one intact
     instance."""
@@ -352,6 +357,7 @@ class RandomCropPolyInstances:
         return repr_str
 
 
+    # 小角度旋转图像与全部 polys，可选固定色填充
 class RandomRotatePolyInstances:
     def __init__(
         self,
@@ -480,6 +486,7 @@ class RandomRotatePolyInstances:
         return repr_str
 
 
+    # 缩放到 target_size 并 pad 为正方形，更新多边形坐标
 class SquareResizePad:
     def __init__(
         self,

@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# ABINet 识别增强：几何/退化/颜色扰动，参考 ABINet transforms 实现
 """
+This code is refer from:"""
 This code is refer from:
 https://github.com/FangShancheng/ABINet/blob/main/transforms.py
 """
@@ -24,6 +26,7 @@ import numpy as np
 from paddle.vision.transforms import Compose, ColorJitter
 
 
+# Beta(1,4) 非对称采样，用于透视/噪声等单向偏移
 def sample_asym(magnitude, size=None):
     return np.random.beta(1, 4, size) * magnitude
 
@@ -55,6 +58,7 @@ def get_interpolation(type="random"):
     return interpolation
 
 
+    # OpenCV 随机旋转：扩展画布避免裁切，训练时模拟倾斜文本
 class CVRandomRotation(object):
     def __init__(self, degrees=15):
         assert isinstance(degrees, numbers.Number), "degree should be a single number."
@@ -83,6 +87,7 @@ class CVRandomRotation(object):
         )
 
 
+    # 仿射变换：旋转+平移+缩放+剪切，增强识别几何鲁棒性
 class CVRandomAffine(object):
     def __init__(self, degrees, translate=None, scale=None, shear=None):
         assert isinstance(degrees, numbers.Number), "degree should be a single number."
@@ -227,6 +232,7 @@ class CVRandomAffine(object):
         )
 
 
+    # 透视扭曲：四角随机偏移模拟拍摄角度变化
 class CVRandomPerspective(object):
     def __init__(self, distortion=0.5):
         self.distortion = distortion
@@ -265,6 +271,7 @@ class CVRandomPerspective(object):
         return img
 
 
+    # 高斯金字塔缩放：模拟低分辨率或模糊文本
 class CVRescale(object):
     def __init__(self, factor=4, base_size=(128, 512)):
         """Define image scales using gaussian pyramid and rescale image to target scale.
@@ -296,6 +303,7 @@ class CVRescale(object):
         return scale_img
 
 
+    # 高斯噪声退化，模拟传感器/压缩噪声
 class CVGaussianNoise(object):
     def __init__(self, mean=0, var=20):
         self.mean = mean
@@ -312,6 +320,7 @@ class CVGaussianNoise(object):
         return img
 
 
+    # 泊松噪声退化，模拟光子计数噪声
 class CVPossionNoise(object):
     def __init__(self, lam=20):
         self.lam = lam
@@ -328,6 +337,7 @@ class CVPossionNoise(object):
         return img
 
 
+    # 高斯模糊，模拟失焦或运动模糊前处理
 class CVGaussionBlur(object):
     def __init__(self, radius):
         self.radius = radius
@@ -344,6 +354,7 @@ class CVGaussionBlur(object):
         return img
 
 
+    # 运动模糊核，沿随机角度拖影
 class CVMotionBlur(object):
     def __init__(self, degrees=12, angle=90):
         if isinstance(degrees, numbers.Number):
@@ -367,6 +378,7 @@ class CVMotionBlur(object):
         return img
 
 
+    # 几何增强门面：按概率随机选用旋转/仿射/透视之一
 class CVGeometry(object):
     def __init__(
         self,
@@ -395,6 +407,7 @@ class CVGeometry(object):
             return img
 
 
+    # 图像质量退化组合：噪声+运动模糊+金字塔缩放
 class CVDeterioration(object):
     def __init__(self, var, degrees, factor, p=0.5):
         self.p = p
@@ -417,6 +430,7 @@ class CVDeterioration(object):
             return img
 
 
+    # 颜色抖动包装：按概率应用 Paddle ColorJitter
 class CVColorJitter(object):
     def __init__(self, brightness=0.5, contrast=0.5, saturation=0.5, hue=0.1, p=0.5):
         self.p = p
@@ -431,6 +445,7 @@ class CVColorJitter(object):
             return img
 
 
+    # SVTR 专用退化：随机打乱子算子顺序
 class SVTRDeterioration(object):
     def __init__(self, var, degrees, factor, p=0.5):
         self.p = p
@@ -452,6 +467,7 @@ class SVTRDeterioration(object):
             return img
 
 
+    # ParseQ 专用退化：额外含泊松噪声与高斯模糊
 class ParseQDeterioration(object):
     def __init__(self, var, degrees, lam, radius, factor, p=0.5):
         self.p = p
@@ -477,6 +493,7 @@ class ParseQDeterioration(object):
             return img
 
 
+    # SVTR 几何增强：可串联 1~3 种变换或单选一种
 class SVTRGeometry(object):
     def __init__(
         self,

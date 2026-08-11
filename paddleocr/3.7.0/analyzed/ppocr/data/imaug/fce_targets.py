@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# FCENet 傅里叶轮廓嵌入检测 GT：多尺度 text/center/fourier map
 """
+This code is refer from:"""
 This code is refer from:
 https://github.com/open-mmlab/mmocr/blob/main/mmocr/datasets/pipelines/textdet_targets/fcenet_targets.py
 """
@@ -28,6 +30,7 @@ def vector_slope(vec):
     return abs(vec[1] / (vec[0] + 1e-8))
 
 
+    # FCENet 训练目标：按文本尺度分配 p3/p4/p5 各级 GT
 class FCENetTargets:
     """Generate the ground truth targets of FCENet: Fourier Contour Embedding
     for Arbitrary-Shaped Text Detection.
@@ -448,6 +451,7 @@ class FCENetTargets:
         new_polygon = np.concatenate([polygon[index:], polygon[:index]])
         return new_polygon
 
+        # 多边形边界 FFT 得傅里叶系数，用于轮廓回归
     def poly2fourier(self, polygon, fourier_degree):
         """Perform Fourier transformation to generate Fourier coefficients ck
         from polygon.
@@ -504,6 +508,7 @@ class FCENetTargets:
 
         return fourier_signature
 
+        # 为每个文本实例填充实部/虚部傅里叶系数图
     def generate_fourier_maps(self, img_size, text_polys):
         """Generate Fourier coefficient maps.
 
@@ -591,6 +596,7 @@ class FCENetTargets:
 
         return mask
 
+        # 按 level_proportion_range 将实例分配到各 FPN 层
     def generate_level_targets(self, img_size, text_polys, ignore_polys):
         """Generate ground truth target on each level.
 
@@ -654,6 +660,7 @@ class FCENetTargets:
 
         return level_maps
 
+        # 写入 p3_maps/p4_maps/p5_maps 供 FCENet 损失计算
     def generate_targets(self, results):
         """Generate the ground truth targets for FCENet.
 

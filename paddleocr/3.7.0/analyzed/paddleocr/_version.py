@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 包版本号读取：从已安装 wheel 元数据解析 PaddleOCR 发行版本
 import importlib.metadata
 
+# 未安装时回退 0.0.0，供 __init__ 与 CLI --version 展示
 try:
     version = importlib.metadata.version(__package__)
 except importlib.metadata.PackageNotFoundError:

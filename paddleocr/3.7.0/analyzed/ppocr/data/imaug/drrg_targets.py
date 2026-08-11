@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# DRRG 文本检测 GT 生成：中心线、组件属性与区域 mask
 """
+This code is refer from:"""
 This code is refer from:
 https://github.com/open-mmlab/mmocr/blob/main/mmocr/datasets/pipelines/textdet_targets/drrg_targets.py
 """
@@ -22,6 +24,7 @@ from ppocr.utils.utility import check_install
 from numpy.linalg import norm
 
 
+    # DRRG 训练目标算子：从 polys 生成组件图、中心区域与几何属性
 class DRRGTargets(object):
     def __init__(
         self,
@@ -79,6 +82,7 @@ class DRRGTargets(object):
         assert len(vec) == 2
         return vec[0] / (norm(vec) + self.eps)
 
+        # 判定多边形头尾边，用于曲线文本中心线提取
     def find_head_tail(self, points, orientation_thr):
         assert points.ndim == 2
         assert points.shape[0] >= 4
@@ -325,6 +329,7 @@ class DRRGTargets(object):
                 inds_xy, (bot_line[i], bot_line[i + 1])
             )
 
+        # 绘制中心区域 mask 及 sin/cos/高度图
     def generate_center_mask_attrib_maps(self, img_size, text_polys):
         assert isinstance(img_size, tuple)
 
@@ -531,6 +536,7 @@ class DRRGTargets(object):
 
         return jittered_comp_attribs
 
+        # 采样文本组件中心、宽高、方向，NMS 后 padding 至固定数量
     def generate_comp_attribs(
         self,
         center_lines,
@@ -705,6 +711,7 @@ class DRRGTargets(object):
 
         return mask
 
+        # 主入口：输出 gt_text_mask、gt_comp_attribs 等训练张量
     def generate_targets(self, data):
         """Generate the gt targets for DRRG.
 
