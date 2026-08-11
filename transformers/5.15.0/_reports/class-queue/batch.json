@@ -15,23 +15,8 @@
     "src/transformers/models/idefics2/modeling_idefics2.py",
     "src/transformers/models/idefics2/processing_idefics2.py",
     "src/transformers/models/idefics3/__init__.py",
-    "src/transformers/models/idefics3/configuration_idefics3.py",
-    "src/transformers/models/idefics3/image_processing_idefics3.py",
-    "src/transformers/models/idefics3/image_processing_pil_idefics3.py",
-    "src/transformers/models/idefics3/modeling_idefics3.py",
-    "src/transformers/models/idefics3/processing_idefics3.py",
-    "src/transformers/models/ijepa/__init__.py",
-    "src/transformers/models/ijepa/configuration_ijepa.py",
-    "src/transformers/models/ijepa/modeling_ijepa.py",
-    "src/transformers/models/ijepa/modular_ijepa.py",
-    "src/transformers/models/imagegpt/__init__.py",
-    "src/transformers/models/imagegpt/configuration_imagegpt.py",
-    "src/transformers/models/imagegpt/image_processing_imagegpt.py",
-    "src/transformers/models/imagegpt/image_processing_pil_imagegpt.py",
-    "src/transformers/models/imagegpt/modeling_imagegpt.py",
-    "src/transformers/models/informer/__init__.py",
-    "src/transformers/models/informer/configuration_informer.py"
+    "src/transformers/models/idefics3/configuration_idefics3.py"
   ],
   "remaining_pending": 1569,
-  "done": 1080
+  "done": 1095
 }
