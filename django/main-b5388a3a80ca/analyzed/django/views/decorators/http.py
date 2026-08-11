@@ -1,4 +1,7 @@
 """
+django.views.decorators.http — 基于 HTTP 头的视图装饰器。
+
+Decorators for views based on HTTP headers."""
 Decorators for views based on HTTP headers.
 """
 
@@ -14,9 +17,11 @@ from django.utils.decorators import decorator_from_middleware
 from django.utils.http import http_date, quote_etag
 from django.utils.log import log_response
 
+# 条件 GET 中间件装饰器（ETag/Last-Modified）
 conditional_page = decorator_from_middleware(ConditionalGetMiddleware)
 
 
+# 限制视图仅接受指定 HTTP 方法
 def require_http_methods(request_method_list):
     """
     Decorator to make a view only accept particular request methods. Usage::
@@ -67,18 +72,22 @@ def require_http_methods(request_method_list):
     return decorator
 
 
+# 仅允许 GET
 require_GET = require_http_methods(["GET"])
 require_GET.__doc__ = "Decorator to require that a view only accepts the GET method."
 
+# 仅允许 POST
 require_POST = require_http_methods(["POST"])
 require_POST.__doc__ = "Decorator to require that a view only accepts the POST method."
 
+# 仅允许安全方法 GET/HEAD
 require_safe = require_http_methods(["GET", "HEAD"])
 require_safe.__doc__ = (
     "Decorator to require that a view only accepts safe methods: GET and HEAD."
 )
 
 
+# 条件检索装饰器，支持 304/412 响应
 def condition(etag_func=None, last_modified_func=None):
     """
     Decorator to support conditional retrieval (or change) for a view
@@ -160,9 +169,11 @@ def condition(etag_func=None, last_modified_func=None):
 
 
 # Shortcut decorators for common cases based on ETag or Last-Modified only
+# 仅基于 ETag 的条件装饰器快捷方式
 def etag(etag_func):
     return condition(etag_func=etag_func)
 
 
+# 仅基于 Last-Modified 的条件装饰器快捷方式
 def last_modified(last_modified_func):
     return condition(last_modified_func=last_modified_func)

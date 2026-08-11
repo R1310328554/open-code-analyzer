@@ -1,4 +1,10 @@
-from pathlib import Path
+"""
+django.views.csrf — CSRF 校验失败时的默认视图。
+
+当 CsrfViewMiddleware 拒绝请求时渲染 403 页面，解释 Referer/CSRF cookie 缺失等原因。
+"""
+
+from pathlib import Pathfrom pathlib import Path
 
 from django.conf import settings
 from django.http import HttpResponseForbidden
@@ -9,6 +15,7 @@ from django.utils.version import get_docs_version
 CSRF_FAILURE_TEMPLATE_NAME = "403_csrf.html"
 
 
+# 返回内置模板路径（避免在模块级调用 __file__）
 def builtin_template_path(name):
     """
     Return a path to a builtin template.
@@ -19,6 +26,7 @@ def builtin_template_path(name):
     return Path(__file__).parent / "templates" / name
 
 
+# CSRF 保护失败时的默认视图，渲染 403_csrf.html 或内置回退模板
 def csrf_failure(request, reason="", template_name=CSRF_FAILURE_TEMPLATE_NAME):
     """
     Default view used when request fails CSRF protection

@@ -1,7 +1,14 @@
-from functools import wraps
+"""
+django.views.decorators.clickjacking — X-Frame-Options 装饰器。
+
+控制页面是否可被 iframe 嵌入，防止点击劫持。
+"""
+
+from functools import wrapsfrom functools import wraps
 from inspect import iscoroutinefunction
 
 
+# 设置 X-Frame-Options: DENY
 def xframe_options_deny(view_func):
     """
     Modify a view function so its response has the X-Frame-Options HTTP
@@ -32,6 +39,7 @@ def xframe_options_deny(view_func):
     return wraps(view_func)(_view_wrapper)
 
 
+# 设置 X-Frame-Options: SAMEORIGIN
 def xframe_options_sameorigin(view_func):
     """
     Modify a view function so its response has the X-Frame-Options HTTP
@@ -62,6 +70,7 @@ def xframe_options_sameorigin(view_func):
     return wraps(view_func)(_view_wrapper)
 
 
+# 标记视图豁免 XFrameOptionsMiddleware 处理
 def xframe_options_exempt(view_func):
     """
     Modify a view function by setting a response variable that instructs

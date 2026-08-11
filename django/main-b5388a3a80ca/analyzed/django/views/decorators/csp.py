@@ -1,7 +1,14 @@
-from functools import wraps
+"""
+django.views.decorators.csp — Content-Security-Policy 装饰器。
+
+为单个视图覆盖 CSP 或 CSP-Report-Only 响应头。
+"""
+
+from functools import wrapsfrom functools import wraps
 from inspect import iscoroutinefunction
 
 
+# CSP 覆盖装饰器工厂，将配置写入响应属性
 def _make_csp_decorator(config_attr_name, config_attr_value):
     """General CSP override decorator factory."""
 
@@ -30,11 +37,13 @@ def _make_csp_decorator(config_attr_name, config_attr_value):
     return decorator
 
 
+# 覆盖 Content-Security-Policy 头
 def csp_override(config):
     """Override the Content-Security-Policy header for a view."""
     return _make_csp_decorator("_csp_config", config)
 
 
+# 覆盖 Content-Security-Policy-Report-Only 头
 def csp_report_only_override(config):
     """Override the Content-Security-Policy-Report-Only header for a view."""
     return _make_csp_decorator("_csp_ro_config", config)

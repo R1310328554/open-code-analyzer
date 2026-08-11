@@ -1,4 +1,10 @@
-from urllib.parse import quote
+"""
+django.views.defaults — 默认 HTTP 错误处理视图。
+
+提供 400/403/404/500 等标准错误页，支持自定义模板。
+"""
+
+from urllib.parse import quotefrom urllib.parse import quote
 
 from django.http import (
     HttpResponseBadRequest,
@@ -32,6 +38,7 @@ ERROR_PAGE_TEMPLATE = """
 
 
 @requires_csrf_token
+# 默认 404 处理器，渲染 404.html 或内置回退页
 def page_not_found(request, exception, template_name=ERROR_404_TEMPLATE_NAME):
     """
     Default 404 handler.
@@ -80,6 +87,7 @@ def page_not_found(request, exception, template_name=ERROR_404_TEMPLATE_NAME):
 
 
 @requires_csrf_token
+# 默认 500 错误处理器
 def server_error(request, template_name=ERROR_500_TEMPLATE_NAME):
     """
     500 error handler.
@@ -100,6 +108,7 @@ def server_error(request, template_name=ERROR_500_TEMPLATE_NAME):
 
 
 @requires_csrf_token
+# 默认 400 错误处理器
 def bad_request(request, exception, template_name=ERROR_400_TEMPLATE_NAME):
     """
     400 error handler.
@@ -123,6 +132,7 @@ def bad_request(request, exception, template_name=ERROR_400_TEMPLATE_NAME):
 
 
 @requires_csrf_token
+# 默认 403 权限拒绝处理器
 def permission_denied(request, exception, template_name=ERROR_403_TEMPLATE_NAME):
     """
     Permission denied (403) handler.

@@ -1,7 +1,14 @@
-from functools import wraps
+"""
+django.views.decorators.common — 通用中间件相关装饰器。
+
+提供 no_append_slash 等 CommonMiddleware 行为控制。
+"""
+
+from functools import wrapsfrom functools import wraps
 from inspect import iscoroutinefunction
 
 
+# 标记视图不受 APPEND_SLASH 重定向影响
 def no_append_slash(view_func):
     """
     Mark a view function as excluded from CommonMiddleware's APPEND_SLASH

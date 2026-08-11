@@ -1,4 +1,10 @@
-import functools
+"""
+django.views.debug — DEBUG 模式下的技术错误页面。
+
+提供 500/404 调试响应、异常报告器及敏感信息过滤。
+"""
+
+import functoolsimport functools
 import inspect
 import itertools
 import re
@@ -25,12 +31,14 @@ from django.views.decorators.debug import coroutine_functions_to_sensitive_varia
 # regardless of the project's TEMPLATES setting. Templates are
 # read directly from the filesystem so that the error handler
 # works even if the template loader is broken.
+# 独立于项目 TEMPLATES 设置的最小模板引擎
 DEBUG_ENGINE = Engine(
     debug=True,
     libraries={"i18n": "django.templatetags.i18n"},
 )
 
 
+# 返回内置调试模板路径
 def builtin_template_path(name):
     """
     Return a path to a builtin template.
@@ -41,10 +49,12 @@ def builtin_template_path(name):
     return Path(__file__).parent / "templates" / name
 
 
+# 异常链出现循环引用时的警告
 class ExceptionCycleWarning(UserWarning):
     pass
 
 
+# 包装 settings 中的可调用对象，避免调试页执行或 setattr 失败
 class CallableSettingWrapper:
     """
     Object to wrap callable appearing in settings.
@@ -53,15 +63,18 @@ class CallableSettingWrapper:
       (#23070).
     """
 
+    # 保存被包装的可调用 setting
     def __init__(self, callable_setting):
         self._wrapped = callable_setting
 
+    # 委托 repr 到原始可调用对象
     def __repr__(self):
         return repr(self._wrapped)
 
 
 @csp_override({})
 @csp_report_only_override({})
+# 生成技术 500 错误响应（HTML 或纯文本）
 def technical_500_response(request, exc_type, exc_value, tb, status_code=500):
     """
     Create a technical server error response. The last three arguments are
@@ -80,16 +93,19 @@ def technical_500_response(request, exc_type, exc_value, tb, status_code=500):
 
 
 @functools.lru_cache
+# 实例化并缓存默认异常报告过滤器
 def get_default_exception_reporter_filter():
     # Instantiate the default filter for the first time and cache it.
     return import_string(settings.DEFAULT_EXCEPTION_REPORTER_FILTER)()
 
 
+# 获取请求级或默认的异常报告过滤器
 def get_exception_reporter_filter(request):
     default_filter = get_default_exception_reporter_filter()
     return getattr(request, "exception_reporter_filter", default_filter)
 
 
+# 获取请求级或默认的 ExceptionReporter 类
 def get_exception_reporter_class(request):
     default_exception_reporter_class = import_string(
         settings.DEFAULT_EXCEPTION_REPORTER
@@ -99,6 +115,7 @@ def get_exception_reporter_class(request):
     )
 
 
+# 解析触发异常的视图函数路径
 def get_caller(request):
     resolver_match = request.resolver_match
     if resolver_match is None:
@@ -109,6 +126,7 @@ def get_caller(request):
     return "" if resolver_match is None else resolver_match._func_path
 
 
+# 根据 sensitive_* 装饰器过滤调试页中的敏感信息
 class SafeExceptionReporterFilter:
     """
     Use annotations made by the sensitive_post_parameters and
@@ -120,6 +138,7 @@ class SafeExceptionReporterFilter:
         "API|AUTH|TOKEN|KEY|SECRET|PASS|SIGNATURE|HTTP_COOKIE", flags=re.I
     )
 
+    # 清洗单个 setting 键值，递归处理 dict/list/tuple
     def cleanse_setting(self, key, value):
         """
         Cleanse an individual setting key/value of sensitive content. If the
@@ -149,6 +168,7 @@ class SafeExceptionReporterFilter:
 
         return cleansed
 
+    # 返回敏感值已替换为星号的 settings 字典
     def get_safe_settings(self):
         """
         Return a dictionary of the settings module with values of sensitive
@@ -160,6 +180,7 @@ class SafeExceptionReporterFilter:
                 settings_dict[k] = self.cleanse_setting(k, getattr(settings, k))
         return settings_dict
 
+    # 返回脱敏后的 request.META
     def get_safe_request_meta(self, request):
         """
         Return a dictionary of request.META with sensitive values redacted.
@@ -168,6 +189,7 @@ class SafeExceptionReporterFilter:
             return {}
         return {k: self.cleanse_setting(k, v) for k, v in request.META.items()}
 
+    # 返回脱敏后的 request.COOKIES
     def get_safe_cookies(self, request):
         """
         Return a dictionary of request.COOKIES with sensitive values redacted.
@@ -176,6 +198,7 @@ class SafeExceptionReporterFilter:
             return {}
         return {k: self.cleanse_setting(k, v) for k, v in request.COOKIES.items()}
 
+    # 非 DEBUG 环境下启用过滤（生产环境更安全）
     def is_active(self, request):
         """
         This filter is to add safety in production environments (i.e. DEBUG
@@ -185,6 +208,7 @@ class SafeExceptionReporterFilter:
         """
         return settings.DEBUG is False
 
+    # 将 MultiValueDict 中标记为敏感的键替换为星号
     def _cleanse_multivaluedict(self, multivaluedict, sensitive_post_parameters):
         # The no-argument form of sensitive_post_parameters() marks every
         # parameter as sensitive.
@@ -196,6 +220,7 @@ class SafeExceptionReporterFilter:
                 cleansed[param] = self.cleansed_substitute
         return cleansed
 
+    # 按 request.sensitive_post_parameters 清洗 MultiValueDict
     def get_cleansed_multivaluedict(self, request, multivaluedict):
         """
         Replace the keys in a MultiValueDict marked as sensitive with stars.
@@ -209,6 +234,7 @@ class SafeExceptionReporterFilter:
             )
         return multivaluedict
 
+    # 返回脱敏后的 POST 参数字典
     def get_post_parameters(self, request):
         """
         Replace the values of POST parameters marked as sensitive with
@@ -221,6 +247,7 @@ class SafeExceptionReporterFilter:
             return self._cleanse_multivaluedict(request.POST, sensitive_post_parameters)
         return request.POST
 
+    # 清洗 MultiValueDict 等特殊类型的局部变量值
     def cleanse_special_types(self, request, value):
         try:
             # If value is lazy or a complex object of another kind, this check
@@ -236,6 +263,7 @@ class SafeExceptionReporterFilter:
             value = self.get_cleansed_multivaluedict(request, value)
         return value
 
+    # 返回栈帧局部变量，敏感变量替换为星号
     def get_traceback_frame_variables(self, request, tb_frame):
         """
         Replace the values of variables marked as sensitive with
@@ -307,17 +335,21 @@ class SafeExceptionReporterFilter:
         return cleansed.items()
 
 
+# 组织并协调异常调试信息的报告
 class ExceptionReporter:
     """Organize and coordinate reporting on exceptions."""
 
     @property
+    # technical_500.html 模板路径
     def html_template_path(self):
         return builtin_template_path("technical_500.html")
 
     @property
+    # technical_500.txt 纯文本模板路径
     def text_template_path(self):
         return builtin_template_path("technical_500.txt")
 
+    # 初始化报告器，捕获异常类型、值与 traceback
     def __init__(self, request, exc_type, exc_value, tb, is_email=False):
         self.request = request
         self.filter = get_exception_reporter_filter(self.request)
@@ -330,6 +362,7 @@ class ExceptionReporter:
         self.template_does_not_exist = False
         self.postmortem = None
 
+    # 构造绝对 URI（跳过 ALLOWED_HOSTS 校验）
     def _get_raw_insecure_uri(self):
         """
         Return an absolute URI from variables available in this request. Skip
@@ -341,6 +374,7 @@ class ExceptionReporter:
             path=self.request.get_full_path(),
         )
 
+    # 收集模板渲染所需的完整 traceback 上下文
     def get_traceback_data(self):
         """Return a dictionary containing traceback information."""
         if self.exc_type and issubclass(self.exc_type, TemplateDoesNotExist):
@@ -423,6 +457,7 @@ class ExceptionReporter:
             c["lastframe"] = frames[-1]
         return c
 
+    # 渲染 HTML 版 500 调试页
     def get_traceback_html(self):
         """Return HTML version of debug 500 HTTP error page."""
         with self.html_template_path.open(encoding="utf-8") as fh:
@@ -430,6 +465,7 @@ class ExceptionReporter:
         c = Context(self.get_traceback_data(), use_l10n=False)
         return t.render(c)
 
+    # 渲染纯文本版 500 调试页
     def get_traceback_text(self):
         """Return plain text version of debug 500 HTTP error page."""
         with self.text_template_path.open(encoding="utf-8") as fh:
@@ -437,6 +473,7 @@ class ExceptionReporter:
         c = Context(self.get_traceback_data(), autoescape=False, use_l10n=False)
         return t.render(c)
 
+    # 从 loader 或文件系统读取源码行
     def _get_source(self, filename, loader, module_name):
         source = None
         if hasattr(loader, "get_source"):
@@ -454,6 +491,7 @@ class ExceptionReporter:
                 pass
         return source
 
+    # 读取指定行号前后 context_lines 行源码
     def _get_lines_from_file(
         self, filename, lineno, context_lines, loader=None, module_name=None
     ):
@@ -490,12 +528,14 @@ class ExceptionReporter:
             return None, [], None, []
         return lower_bound, pre_context, context_line, post_context
 
+    # 获取显式 __cause__ 或隐式 __context__ 链
     def _get_explicit_or_implicit_cause(self, exc_value):
         explicit = getattr(exc_value, "__cause__", None)
         suppress_context = getattr(exc_value, "__suppress_context__", None)
         implicit = getattr(exc_value, "__context__", None)
         return explicit or (None if suppress_context else implicit)
 
+    # 遍历异常链，收集所有 traceback 帧
     def get_traceback_frames(self):
         # Get the exception and all its causes
         exceptions = []
@@ -529,6 +569,7 @@ class ExceptionReporter:
             tb = exc_value.__traceback__
         return frames
 
+    # 将单个异常的 traceback 转为帧字典序列
     def get_exception_traceback_frames(self, exc_value, tb):
         exc_cause = self._get_explicit_or_implicit_cause(exc_value)
         exc_cause_explicit = getattr(exc_value, "__cause__", True)
@@ -606,6 +647,7 @@ class ExceptionReporter:
 
 @csp_override({})
 @csp_report_only_override({})
+# 生成技术 404 错误页，展示 URLconf 匹配尝试
 def technical_404_response(request, exception):
     """Create a technical 404 error response. `exception` is the Http404."""
     try:
@@ -670,6 +712,7 @@ def technical_404_response(request, exception):
 
 @csp_override({})
 @csp_report_only_override({})
+# 空 URLconf 时的默认 404 欢迎页
 def default_urlconf(request):
     """Create an empty URLconf 404 error response."""
     with builtin_template_path("default_urlconf.html").open(encoding="utf-8") as fh:

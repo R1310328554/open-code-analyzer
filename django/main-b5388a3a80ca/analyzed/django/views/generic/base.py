@@ -1,4 +1,10 @@
-import logging
+"""
+django.views.generic.base — CBV 基类与核心 mixin。
+
+提供 View、ContextMixin、TemplateView、RedirectView 等基础组件。
+"""
+
+import loggingimport logging
 from inspect import iscoroutinefunction, markcoroutinefunction
 from urllib.parse import urlparse
 
@@ -19,6 +25,7 @@ from django.utils.log import log_response
 logger = logging.getLogger("django.request")
 
 
+# 默认将 get_context_data 关键字参数作为模板上下文
 class ContextMixin:
     """
     A default context mixin that passes the keyword arguments received by
@@ -27,6 +34,7 @@ class ContextMixin:
 
     extra_context = None
 
+    # 合并 extra_context 并注入 view 引用
     def get_context_data(self, **kwargs):
         kwargs.setdefault("view", self)
         if self.extra_context is not None:
@@ -34,6 +42,7 @@ class ContextMixin:
         return kwargs
 
 
+# 所有视图的极简父类，实现按 HTTP 方法分发
 class View:
     """
     Intentionally simple parent class for all views. Only implements
@@ -51,6 +60,7 @@ class View:
         "trace",
     ]
 
+    # URLconf 构造时接收额外关键字参数
     def __init__(self, **kwargs):
         """
         Constructor. Called in the URLconf; can contain helpful extra
@@ -62,6 +72,7 @@ class View:
             setattr(self, key, value)
 
     @classproperty
+    # 类属性：HTTP 处理器是否全部为协程
     def view_is_async(cls):
         handlers = [
             getattr(cls, method)
@@ -79,6 +90,7 @@ class View:
         return is_async
 
     @classonlymethod
+    # 类方法：返回 URLconf 可用的视图可调用对象
     def as_view(cls, **initkwargs):
         """Main entry point for a request-response process."""
         for key in initkwargs:
@@ -123,6 +135,7 @@ class View:
 
         return view
 
+    # 初始化 request/args/kwargs 等共享属性
     def setup(self, request, *args, **kwargs):
         """Initialize attributes shared by all view methods."""
         if hasattr(self, "get") and not hasattr(self, "head"):
@@ -131,6 +144,7 @@ class View:
         self.args = args
         self.kwargs = kwargs
 
+    # 按 request.method 分发到对应处理器
     def dispatch(self, request, *args, **kwargs):
         # Try to dispatch to the right method; if a method doesn't exist,
         # defer to the error handler. Also defer to the error handler if the
@@ -142,6 +156,7 @@ class View:
             handler = self.http_method_not_allowed
         return handler(request, *args, **kwargs)
 
+    # 不允许的 HTTP 方法返回 405
     def http_method_not_allowed(self, request, *args, **kwargs):
         response = HttpResponseNotAllowed(self._allowed_methods())
         log_response(
@@ -161,6 +176,8 @@ class View:
         else:
             return response
 
+    # 响应 OPTIONS 预检，返回 Allow 头
+    # OPTIONS 委托给 get
     def options(self, request, *args, **kwargs):
         """Handle responding to requests for the OPTIONS HTTP verb."""
         response = HttpResponse()
@@ -176,10 +193,12 @@ class View:
         else:
             return response
 
+    # 返回类上已实现的 HTTP 方法名列表
     def _allowed_methods(self):
         return [m.upper() for m in self.http_method_names if hasattr(self, m)]
 
 
+# 使用 TemplateResponse 渲染模板的 mixin
 class TemplateResponseMixin:
     """A mixin that can be used to render a template."""
 
@@ -188,6 +207,7 @@ class TemplateResponseMixin:
     response_class = TemplateResponse
     content_type = None
 
+    # 用 response_class 渲染模板并返回响应
     def render_to_response(self, context, **response_kwargs):
         """
         Return a response, using the `response_class` for this view, with a
@@ -204,6 +224,7 @@ class TemplateResponseMixin:
             **response_kwargs,
         )
 
+    # 返回模板名列表（需定义 template_name 或重写此方法）
     def get_template_names(self):
         """
         Return a list of template names to be used for the request. Must return
@@ -218,16 +239,20 @@ class TemplateResponseMixin:
             return [self.template_name]
 
 
+# 渲染模板，将 URL 捕获参数传入上下文
 class TemplateView(TemplateResponseMixin, ContextMixin, View):
     """
     Render a template. Pass keyword arguments from the URLconf to the context.
     """
 
+    # GET 请求：收集上下文并渲染模板
+    # 执行重定向或返回 410 Gone
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
         return self.render_to_response(context)
 
 
+# 对 GET 等请求执行重定向
 class RedirectView(View):
     """Provide a redirect on any GET request."""
 
@@ -237,6 +262,7 @@ class RedirectView(View):
     query_string = False
     preserve_request = False
 
+    # 根据 url/pattern_name 计算重定向目标 URL
     def get_redirect_url(self, *args, **kwargs):
         """
         Return the URL redirect to. Keyword arguments from the URL pattern
@@ -272,20 +298,25 @@ class RedirectView(View):
             log_response("Gone: %s", request.path, response=response, request=request)
             return response
 
+    # HEAD 委托给 get
     def head(self, request, *args, **kwargs):
         return self.get(request, *args, **kwargs)
 
+    # POST 委托给 get（重定向视图常见模式）
     def post(self, request, *args, **kwargs):
         return self.get(request, *args, **kwargs)
 
     def options(self, request, *args, **kwargs):
         return self.get(request, *args, **kwargs)
 
+    # DELETE 委托给 get
     def delete(self, request, *args, **kwargs):
         return self.get(request, *args, **kwargs)
 
+    # PUT 委托给 get
     def put(self, request, *args, **kwargs):
         return self.get(request, *args, **kwargs)
 
+    # PATCH 委托给 get
     def patch(self, request, *args, **kwargs):
         return self.get(request, *args, **kwargs)

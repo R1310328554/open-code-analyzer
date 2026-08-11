@@ -1,4 +1,10 @@
-from functools import wraps
+"""
+django.views.decorators.cache — 页面与响应缓存装饰器。
+
+提供 cache_page、cache_control、never_cache 等视图级缓存控制。
+"""
+
+from functools import wrapsfrom functools import wraps
 from inspect import iscoroutinefunction
 
 from django.middleware.cache import CacheMiddleware
@@ -6,6 +12,7 @@ from django.utils.cache import add_never_cache_headers, patch_cache_control
 from django.utils.decorators import decorator_from_middleware_with_args
 
 
+# 整页缓存装饰器，未命中时填充缓存
 def cache_page(timeout, *, cache=None, key_prefix=None):
     """
     Decorator for views that tries getting the page from the cache and
@@ -27,6 +34,7 @@ def cache_page(timeout, *, cache=None, key_prefix=None):
     )
 
 
+# 校验第一个参数是否为 HttpRequest
 def _check_request(request, decorator_name):
     # Ensure argument looks like a request.
     if not hasattr(request, "META"):
@@ -36,6 +44,7 @@ def _check_request(request, decorator_name):
         )
 
 
+# 为响应添加 Cache-Control 等缓存头
 def cache_control(**kwargs):
     def _cache_controller(viewfunc):
         if iscoroutinefunction(viewfunc):
@@ -59,6 +68,7 @@ def cache_control(**kwargs):
     return _cache_controller
 
 
+# 添加禁止缓存的响应头
 def never_cache(view_func):
     """
     Decorator that adds headers to a response so that it will never be cached.

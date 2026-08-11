@@ -1,12 +1,20 @@
-import inspect
+"""
+django.views.decorators.debug — 调试页敏感信息标记装饰器。
+
+标记局部变量或 POST 参数为敏感，异常报告时自动脱敏。
+"""
+
+import inspectimport inspect
 from functools import wraps
 from inspect import iscoroutinefunction
 
 from django.http import HttpRequest
 
+# 协程函数敏感变量注册表（key 为 file:line 哈希）
 coroutine_functions_to_sensitive_variables = {}
 
 
+# 标记函数内哪些局部变量为敏感
 def sensitive_variables(*variables):
     """
     Indicate which variables used in the decorated function are sensitive so
@@ -78,6 +86,7 @@ def sensitive_variables(*variables):
     return decorator
 
 
+# 标记视图中哪些 POST 参数为敏感
 def sensitive_post_parameters(*parameters):
     """
     Indicate which POST parameters used in the decorated view are sensitive,
