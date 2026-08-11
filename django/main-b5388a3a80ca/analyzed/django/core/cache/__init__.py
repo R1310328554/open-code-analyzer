@@ -1,4 +1,6 @@
 """
+# 缓存框架：统一 API 的后端集合，客户端通过 cache/caches 访问
+Caching framework."""
 Caching framework.
 
 This package defines set of cache backends that all conform to a simple API.
@@ -36,10 +38,12 @@ __all__ = [
 DEFAULT_CACHE_ALIAS = "default"
 
 
+# 缓存连接处理器：按 CACHES 配置懒加载并管理各别名后端
 class CacheHandler(BaseConnectionHandler):
     settings_name = "CACHES"
     exception_class = InvalidCacheBackendError
 
+    # 导入 BACKEND 类并以 LOCATION 与 OPTIONS 实例化
     def create_connection(self, alias):
         params = self.settings[alias].copy()
         backend = params.pop("BACKEND")
@@ -58,6 +62,7 @@ caches = CacheHandler()
 cache = ConnectionProxy(caches, DEFAULT_CACHE_ALIAS)
 
 
+# 请求结束时关闭所有缓存连接（request_finished 信号回调）
 def close_caches(**kwargs):
     # Some caches need to do a cleanup at the end of a request cycle. If not
     # implemented in a particular backend cache.close() is a no-op.

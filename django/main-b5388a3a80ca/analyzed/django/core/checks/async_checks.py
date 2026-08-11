@@ -9,6 +9,7 @@ E001 = Error(
 )
 
 
+# 部署检查：禁止在生产环境设置 DJANGO_ALLOW_ASYNC_UNSAFE
 @register(Tags.async_support, deploy=True)
 def check_async_unsafe(app_configs, **kwargs):
     if os.environ.get("DJANGO_ALLOW_ASYNC_UNSAFE"):

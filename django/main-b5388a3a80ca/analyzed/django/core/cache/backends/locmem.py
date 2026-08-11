@@ -14,9 +14,11 @@ _expire_info = {}
 _locks = {}
 
 
+# 线程安全进程内内存缓存：按名称隔离多个 OrderedDict 实例
 class LocMemCache(BaseCache):
     pickle_protocol = pickle.HIGHEST_PROTOCOL
 
+    # 绑定全局 _caches/_expire_info/_locks 中对应名称的存储
     def __init__(self, name, params):
         super().__init__(params)
         self._cache = _caches.setdefault(name, OrderedDict())
@@ -32,6 +34,7 @@ class LocMemCache(BaseCache):
                 return True
             return False
 
+    # 加锁读取，命中时将键移到 LRU 队首
     def get(self, key, default=None, version=None):
         key = self.make_and_validate_key(key, version=version)
         with self._lock:
@@ -89,6 +92,7 @@ class LocMemCache(BaseCache):
         exp = self._expire_info.get(key, -1)
         return exp is not None and exp <= time.time()
 
+    # 超限时按 cull_frequency 弹出最旧条目
     def _cull(self):
         if self._cull_frequency == 0:
             self._cache.clear()

@@ -12,6 +12,7 @@ from django.core.cache.backends.base import (
 from django.utils.functional import cached_property
 
 
+# Memcached 缓存基类：封装 pylibmc/pymemcache 客户端
 class BaseMemcachedCache(BaseCache):
     def __init__(self, server, params, library, value_not_found_exception):
         super().__init__(params)
@@ -32,6 +33,7 @@ class BaseMemcachedCache(BaseCache):
     def client_servers(self):
         return self._servers
 
+    # 懒创建线程安全的 memcached 客户端实例
     @cached_property
     def _cache(self):
         """
@@ -39,6 +41,7 @@ class BaseMemcachedCache(BaseCache):
         """
         return self._class(self.client_servers, **self._options)
 
+    # 转换超时：>30 天用 Unix 时间戳，0 表示立即过期
     def get_backend_timeout(self, timeout=DEFAULT_TIMEOUT):
         """
         Memcached deals with long (> 30 days) timeouts in a special
@@ -137,11 +140,13 @@ class BaseMemcachedCache(BaseCache):
     def clear(self):
         self._cache.flush_all()
 
+    # 不兼容 memcached 的键直接抛出 InvalidCacheKey
     def validate_key(self, key):
         for warning in memcache_key_warnings(key):
             raise InvalidCacheKey(warning)
 
 
+# 基于 pylibmc 库的 memcached 后端实现
 class PyLibMCCache(BaseMemcachedCache):
     "An implementation of a cache binding using pylibmc"
 
@@ -171,6 +176,7 @@ class PyLibMCCache(BaseMemcachedCache):
         pass
 
 
+# 基于 pymemcache 库的 memcached 后端实现
 class PyMemcacheCache(BaseMemcachedCache):
     """An implementation of a cache binding using pymemcache."""
 

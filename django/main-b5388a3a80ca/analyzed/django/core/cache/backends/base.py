@@ -10,14 +10,17 @@ from django.utils.module_loading import import_string
 from django.utils.regex_helper import _lazy_re_compile
 
 
+# 配置无效时抛出的缓存后端错误
 class InvalidCacheBackendError(ImproperlyConfigured):
     pass
 
 
+# 缓存键不符合 memcached 规范时的运行时警告
 class CacheKeyWarning(RuntimeWarning):
     pass
 
 
+# 缓存键非法时抛出的值错误
 class InvalidCacheKey(ValueError):
     pass
 
@@ -30,6 +33,7 @@ DEFAULT_TIMEOUT = object()
 MEMCACHE_MAX_KEY_LENGTH = 250
 
 
+# 默认键生成函数：拼接 key_prefix、version 与原始键
 def default_key_func(key, key_prefix, version):
     """
     Default function to generate keys.
@@ -41,6 +45,7 @@ def default_key_func(key, key_prefix, version):
     return "%s:%s:%s" % (key_prefix, version, key)
 
 
+# 解析 KEY_FUNCTION 设置，返回可调用键生成函数
 def get_key_func(key_func):
     """
     Function to decide which key function to use.
@@ -55,9 +60,11 @@ def get_key_func(key_func):
     return default_key_func
 
 
+# 缓存后端抽象基类：定义 get/set/add 等 API 及异步包装
 class BaseCache:
     _missing_key = object()
 
+    # 从配置读取 timeout、max_entries、cull_frequency 与键前缀
     def __init__(self, params):
         timeout = params.get("timeout", params.get("TIMEOUT", 300))
         if timeout is not None:
@@ -84,6 +91,7 @@ class BaseCache:
         self.version = params.get("VERSION", 1)
         self.key_func = get_key_func(params.get("KEY_FUNCTION"))
 
+    # 将相对超时秒数转换为后端可用的绝对时间戳
     def get_backend_timeout(self, timeout=DEFAULT_TIMEOUT):
         """
         Return the timeout value usable by this backend based upon the provided
@@ -96,6 +104,7 @@ class BaseCache:
             timeout = -1
         return None if timeout is None else time.time() + timeout
 
+    # 调用 key_func 生成带前缀与版本的完整缓存键
     def make_key(self, key, version=None):
         """
         Construct the key used by all other methods. By default, use the
@@ -109,6 +118,7 @@ class BaseCache:
 
         return self.key_func(key, self.key_prefix, version)
 
+    # 检查键长度与字符集，对 memcached 不兼容键发出警告
     def validate_key(self, key):
         """
         Warn about keys that would not be portable to the memcached
@@ -124,6 +134,7 @@ class BaseCache:
         self.validate_key(key)
         return key
 
+    # 仅当键不存在时写入，子类必须实现
     def add(self, key, value, timeout=DEFAULT_TIMEOUT, version=None):
         """
         Set a value in the cache if the key does not already exist. If
@@ -141,6 +152,7 @@ class BaseCache:
             key, value, timeout, version
         )
 
+    # 按键读取缓存值，缺失时返回 default
     def get(self, key, default=None, version=None):
         """
         Fetch a given key from the cache. If the key does not exist, return
@@ -153,6 +165,7 @@ class BaseCache:
             key, default, version
         )
 
+    # 写入或覆盖缓存项
     def set(self, key, value, timeout=DEFAULT_TIMEOUT, version=None):
         """
         Set a value in the cache. If timeout is given, use that timeout for the
@@ -179,6 +192,7 @@ class BaseCache:
             key, timeout, version
         )
 
+    # 删除指定键
     def delete(self, key, version=None):
         """
         Delete a key from the cache and return whether it succeeded, failing
@@ -191,6 +205,7 @@ class BaseCache:
     async def adelete(self, key, version=None):
         return await sync_to_async(self.delete, thread_sensitive=True)(key, version)
 
+    # 批量读取多个键，返回存在的键值映射
     def get_many(self, keys, version=None):
         """
         Fetch a bunch of keys from the cache. For certain backends (memcached,
@@ -219,6 +234,7 @@ class BaseCache:
                 d[k] = val
         return d
 
+    # 读取键，不存在则写入 default（可调用）并返回
     def get_or_set(self, key, default, timeout=DEFAULT_TIMEOUT, version=None):
         """
         Fetch a given key from the cache. If the key does not exist,
@@ -254,6 +270,7 @@ class BaseCache:
             return await self.aget(key, default, version=version)
         return val
 
+    # 判断键是否存在且未过期
     def has_key(self, key, version=None):
         """
         Return True if the key is in the cache and has not expired.
@@ -272,6 +289,7 @@ class BaseCache:
             is not self._missing_key
         )
 
+    # 原子递增数值，键不存在时抛出 ValueError
     def incr(self, key, delta=1, version=None):
         """
         Add delta to value in the cache. If the key does not exist, raise a
@@ -358,6 +376,7 @@ class BaseCache:
         for key in keys:
             await self.adelete(key, version=version)
 
+    # 清空全部缓存项，子类必须实现
     def clear(self):
         """Remove *all* values from the cache at once."""
         raise NotImplementedError(
@@ -421,6 +440,7 @@ class BaseCache:
 memcached_error_chars_re = _lazy_re_compile(r"[\x00-\x20\x7f]")
 
 
+# 生成 memcached 键长度与非法字符相关的警告消息
 def memcache_key_warnings(key):
     if len(key) > MEMCACHE_MAX_KEY_LENGTH:
         yield (

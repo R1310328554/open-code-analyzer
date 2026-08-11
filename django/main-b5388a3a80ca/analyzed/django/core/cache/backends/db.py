@@ -11,6 +11,7 @@ from django.db import DatabaseError, connections, models, router, transaction
 from django.utils.timezone import now as tz_now
 
 
+# 伪模型 _meta：使数据库路由器能控制缓存表读写路由
 class Options:
     """A class that will quack like a Django model _meta class.
 
@@ -30,6 +31,7 @@ class Options:
         self.swapped = False
 
 
+# 数据库缓存基类：封装表名与 CULL_PROBABILITY 配置
 class BaseDatabaseCache(BaseCache):
     def __init__(self, table, params):
         super().__init__(params)
@@ -46,6 +48,7 @@ class BaseDatabaseCache(BaseCache):
         self.cache_model_class = CacheEntry
 
 
+# 数据库缓存后端：将 pickle 值存入指定 SQL 表
 class DatabaseCache(BaseDatabaseCache):
     # This class uses cursors provided by the database connection. This means
     # it reads expiration values as aware or naive datetimes, depending on the
@@ -58,6 +61,7 @@ class DatabaseCache(BaseDatabaseCache):
     def get(self, key, default=None, version=None):
         return self.get_many([key], version).get(key, default)
 
+    # 批量 SELECT 未过期项，并清理已过期键
     def get_many(self, keys, version=None):
         if not keys:
             return {}
@@ -116,6 +120,7 @@ class DatabaseCache(BaseDatabaseCache):
         key = self.make_and_validate_key(key, version=version)
         return self._base_set("touch", key, None, timeout)
 
+    # 统一 set/add/touch 的 INSERT/UPDATE 逻辑
     def _base_set(self, mode, key, value, timeout=DEFAULT_TIMEOUT):
         timeout = self.get_backend_timeout(timeout)
         db = router.db_for_write(self.cache_model_class)
@@ -262,6 +267,7 @@ class DatabaseCache(BaseDatabaseCache):
             )
             return cursor.fetchone() is not None
 
+    # 按概率删除过期项或按 cull_frequency 裁剪最旧键
     def _cull(self, db, cursor, now, num):
         if self._cull_frequency == 0:
             self.clear()

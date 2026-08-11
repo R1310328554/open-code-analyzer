@@ -1,3 +1,4 @@
+# Django 系统检查框架：注册并运行 deploy/startup 诊断
 from .messages import (
     CRITICAL,
     DEBUG,

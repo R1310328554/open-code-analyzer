@@ -12,6 +12,7 @@ E001 = Error(
 )
 
 
+# 检查 CACHES 中是否配置了 default 别名
 @register(Tags.caches)
 def check_default_cache_is_configured(app_configs, **kwargs):
     if DEFAULT_CACHE_ALIAS not in settings.CACHES:
@@ -19,6 +20,7 @@ def check_default_cache_is_configured(app_configs, **kwargs):
     return []
 
 
+# 部署检查：文件缓存路径不应与 MEDIA/STATIC 目录重叠
 @register(Tags.caches, deploy=True)
 def check_cache_location_not_exposed(app_configs, **kwargs):
     errors = []
@@ -58,6 +60,7 @@ def check_cache_location_not_exposed(app_configs, **kwargs):
     return errors
 
 
+# 检查 FileBasedCache 的 LOCATION 是否为绝对路径
 @register(Tags.caches)
 def check_file_based_cache_is_absolute(app_configs, **kwargs):
     errors = []

@@ -10,10 +10,12 @@ from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
 
 
+# Redis 值序列化器：整数原样存储，其余对象 pickle
 class RedisSerializer:
     def __init__(self, protocol=None):
         self.protocol = pickle.HIGHEST_PROTOCOL if protocol is None else protocol
 
+    # 序列化：int 不 pickle 以支持原子 incr/decr
     def dumps(self, obj):
         # For better incr() and decr() atomicity, don't pickle integers.
         # Using type() rather than isinstance() matches only integers and not
@@ -29,6 +31,7 @@ class RedisSerializer:
             return pickle.loads(data)
 
 
+# Redis 底层客户端：管理连接池与读写路由
 class RedisCacheClient:
     def __init__(
         self,
@@ -90,6 +93,7 @@ class RedisCacheClient:
             )
         return self._pools[index]
 
+    # 写操作走首台服务器，读可随机选从节点
     def get_client(self, key=None, *, write=False):
         # key is used so that the method signature remains the same and custom
         # cache client can be implemented which might require the key to select
@@ -97,6 +101,7 @@ class RedisCacheClient:
         pool = self._get_connection_pool(write)
         return self._client(connection_pool=pool)
 
+    # SET NX 实现仅当不存在时写入
     def add(self, key, value, timeout):
         client = self.get_client(key, write=True)
         value = self._serializer.dumps(value)
@@ -170,6 +175,7 @@ class RedisCacheClient:
         return bool(client.flushdb())
 
 
+# Redis 缓存后端：通过 RedisCacheClient 操作键值
 class RedisCache(BaseCache):
     def __init__(self, server, params):
         super().__init__(params)
@@ -181,6 +187,7 @@ class RedisCache(BaseCache):
         self._class = RedisCacheClient
         self._options = params.get("OPTIONS", {})
 
+    # 懒创建 RedisCacheClient 实例
     @cached_property
     def _cache(self):
         return self._class(self._servers, **self._options)

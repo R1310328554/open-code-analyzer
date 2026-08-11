@@ -15,10 +15,12 @@ from django.core.files.move import file_move_safe
 from django.utils._os import safe_makedirs
 
 
+# 文件系统缓存后端：每个键对应目录下 MD5 命名的 .djcache 文件
 class FileBasedCache(BaseCache):
     cache_suffix = ".djcache"
     pickle_protocol = pickle.HIGHEST_PROTOCOL
 
+    # 设置缓存目录并确保目录存在
     def __init__(self, dir, params):
         super().__init__(params)
         self._dir = os.path.abspath(dir)
@@ -45,6 +47,7 @@ class FileBasedCache(BaseCache):
         file.write(pickle.dumps(expiry, self.pickle_protocol))
         file.write(zlib.compress(pickle.dumps(value, self.pickle_protocol)))
 
+    # 写入临时文件后原子移动到目标路径
     def set(self, key, value, timeout=DEFAULT_TIMEOUT, version=None):
         self._createdir()  # Cache dir can be deleted at any time.
         fname = self._key_to_file(key, version)
@@ -100,6 +103,7 @@ class FileBasedCache(BaseCache):
         except FileNotFoundError:
             return False
 
+    # 条目数超限时随机删除部分缓存文件
     def _cull(self):
         """
         Remove random cache entries if max_entries is reached at a ratio
@@ -123,6 +127,7 @@ class FileBasedCache(BaseCache):
         # https://github.com/python/cpython/issues/86533
         safe_makedirs(self._dir, mode=0o700, exist_ok=True)
 
+    # 将缓存键映射为目录内 MD5 文件名
     def _key_to_file(self, key, version=None):
         """
         Convert a key into a cache file path. Basically this is the
@@ -146,6 +151,7 @@ class FileBasedCache(BaseCache):
         for fname in self._list_cache_files():
             self._delete(fname)
 
+    # 读取文件头过期时间，过期则删除并返回 True
     def _is_expired(self, f):
         """
         Take an open cache file `f` and delete it if it's expired.
