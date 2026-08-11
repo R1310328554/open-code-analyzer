@@ -22,11 +22,14 @@ Processor class for Qwen2-VL.
 
 from ...processing_utils import MultiModalData, ProcessingKwargs, ProcessorMixin
 from ...utils import auto_docstring, logging
+# Qwen2-VL 处理器：图像/视频占位 token 替换与多模态输入组装
+
 
 
 logger = logging.get_logger(__name__)
 
 
+# Qwen2VLProcessorKwargs：处理器关键字参数：文本 padding 与多模态 token 类型
 class Qwen2VLProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -37,9 +40,11 @@ class Qwen2VLProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# Qwen2VLProcessor：VL 处理器：图像/视频占位 token 替换与联合预处理
 class Qwen2VLProcessor(ProcessorMixin):
     valid_processor_kwargs = Qwen2VLProcessorKwargs
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, image_processor=None, tokenizer=None, video_processor=None, chat_template=None, **kwargs):
         self.image_token = "<|image_pad|>" if not hasattr(tokenizer, "image_token") else tokenizer.image_token
         self.video_token = "<|video_pad|>" if not hasattr(tokenizer, "video_token") else tokenizer.video_token
@@ -55,16 +60,19 @@ class Qwen2VLProcessor(ProcessorMixin):
         )
         super().__init__(image_processor, tokenizer, video_processor, chat_template=chat_template)
 
+    # replace_image_token：图像占位替换：按 patch 数量展开 image_pad token
     def replace_image_token(self, image_inputs: dict, image_idx: int, **kwargs) -> str:
         merge_length = self.image_processor.merge_size**2
         num_image_tokens = image_inputs["image_grid_thw"][image_idx].prod() // merge_length
         return self.image_token * num_image_tokens
 
+    # replace_video_token：视频占位替换：按时空 patch 数量展开 video_pad token
     def replace_video_token(self, video_inputs: dict, video_idx: int, **kwargs) -> str:
         merge_length = self.video_processor.merge_size**2
         num_video_tokens = video_inputs["video_grid_thw"][video_idx].prod() // merge_length
         return self.video_token * num_video_tokens
 
+    # _get_num_multimodal_tokens：计算多模态占位 token 数量：按图像/视频尺寸估算
     def _get_num_multimodal_tokens(self, image_sizes=None, video_sizes=None, **kwargs):
         """
         Computes the number of placeholder tokens needed for multimodal inputs with the given sizes.
@@ -103,6 +111,7 @@ class Qwen2VLProcessor(ProcessorMixin):
 
         return MultiModalData(**vision_data)
 
+    # post_process_image_text_to_text：生成后处理：token id 解码为可读文本
     def post_process_image_text_to_text(
         self, generated_outputs, skip_special_tokens=True, clean_up_tokenization_spaces=False, **kwargs
     ):
@@ -131,6 +140,7 @@ class Qwen2VLProcessor(ProcessorMixin):
         )
 
     @property
+    # model_input_names：模型输入字段名：合并各子处理器所需键名
     def model_input_names(self):
         return super().model_input_names + ["mm_token_type_ids"]
 

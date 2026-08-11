@@ -21,8 +21,11 @@ from ...feature_extraction_utils import BatchFeature
 from ...processing_utils import ProcessingKwargs, ProcessorMixin, Unpack
 from ...tokenization_utils_base import PreTokenizedInput, TextInput
 from ...utils import auto_docstring
+# Qwen2-Audio 处理器：音频特征提取、文本分词与对话模板组装
 
 
+
+# Qwen2AudioProcessorKwargs：处理器关键字参数：文本与音频特征提取默认选项
 class Qwen2AudioProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -33,7 +36,9 @@ class Qwen2AudioProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# Qwen2AudioProcessor：音频处理器：特征提取 + 分词器联合调用与 token 展开
 class Qwen2AudioProcessor(ProcessorMixin):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         feature_extractor=None,
@@ -60,6 +65,7 @@ class Qwen2AudioProcessor(ProcessorMixin):
         super().__init__(feature_extractor, tokenizer, chat_template=chat_template)
 
     @auto_docstring
+    # __call__：处理器调用：联合处理多模态输入并返回 BatchFeature
     def __call__(
         self,
         text: TextInput | PreTokenizedInput | list[TextInput] | list[PreTokenizedInput] = None,
@@ -142,6 +148,7 @@ class Qwen2AudioProcessor(ProcessorMixin):
         return BatchFeature(data={**inputs}, tensor_type=return_tensors)
 
     @property
+    # model_input_names：模型输入字段名：合并各子处理器所需键名
     def model_input_names(self):
         tokenizer_input_names = self.tokenizer.model_input_names
         feature_extractor_input_names = self.feature_extractor.model_input_names
@@ -149,6 +156,7 @@ class Qwen2AudioProcessor(ProcessorMixin):
 
     @property
     # NOTE: we don't have default templates anymore, and the below is kept only because the hub config is not yet updated!
+    # default_chat_template：默认对话模板：Jinja 格式组装多轮音频/文本消息
     def default_chat_template(self):
         """
         This default vicuna template formats inputs in the form of a chat history. For each message in the chat history:

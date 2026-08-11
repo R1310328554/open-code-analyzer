@@ -37,6 +37,8 @@ from ...masking_utils import create_causal_mask, create_sliding_window_causal_ma
 from ...modeling_flash_attention_utils import FlashAttentionKwargs
 from ...modeling_layers import GradientCheckpointingLayer
 from ...modeling_outputs import (
+# Qwen2-VL 建模：ViT 视觉编码、M-RoPE 文本解码与条件生成
+
     BaseModelOutputWithPast,
     BaseModelOutputWithPooling,
     CausalLMOutputWithPast,
@@ -69,6 +71,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring
 @dataclass
+# Qwen2VLModelOutputWithPast：多模态骨干输出：隐状态、KV 缓存与 RoPE 增量
 class Qwen2VLModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     rope_deltas (`torch.LongTensor` of shape `(batch_size, )`, *optional*):
@@ -81,6 +84,7 @@ class Qwen2VLModelOutputWithPast(BaseModelOutputWithPast):
 
 @auto_docstring
 @dataclass
+# Qwen2VLCausalLMOutputWithPast：因果 LM 输出：logits、损失与多模态 RoPE 增量
 class Qwen2VLCausalLMOutputWithPast(CausalLMOutputWithPast):
     r"""
     rope_deltas (`torch.LongTensor` of shape `(batch_size, )`, *optional*):
@@ -93,7 +97,9 @@ class Qwen2VLCausalLMOutputWithPast(CausalLMOutputWithPast):
 
 @use_kernel_forward_from_hub("RMSNorm")
 # Copied from transformers.models.llama.modeling_llama.LlamaRMSNorm with Llama->Qwen2VL
+# Qwen2VLRMSNorm：文本 RMSNorm：Root Mean Square 层归一化
 class Qwen2VLRMSNorm(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
         Qwen2VLRMSNorm is equivalent to T5LayerNorm
@@ -102,6 +108,7 @@ class Qwen2VLRMSNorm(nn.Module):
         self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         input_dtype = hidden_states.dtype
         hidden_states = hidden_states.to(torch.float32)
@@ -109,13 +116,16 @@ class Qwen2VLRMSNorm(nn.Module):
         hidden_states = hidden_states * torch.rsqrt(variance + self.variance_epsilon)
         return self.weight * hidden_states.to(input_dtype)
 
+    # extra_repr：模块_repr_ 补充：输出权重形状与 epsilon 等调试信息
     def extra_repr(self):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
 # Copied from transformers.models.llama.modeling_llama.LlamaRotaryEmbedding with Llama->Qwen2VL
+# Qwen2VLRotaryEmbedding：文本 RoPE：标准旋转位置编码频率缓存
 class Qwen2VLRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen2VLConfig, device=None):
         super().__init__()
         self.max_seq_len_cached = config.max_position_embeddings
@@ -134,6 +144,7 @@ class Qwen2VLRotaryEmbedding(nn.Module):
 
     @staticmethod
     @deprecate_kwarg("device", version="5.18")
+    # compute_default_rope_parameters：计算默认 RoPE 逆频率与注意力缩放因子
     def compute_default_rope_parameters(config: Qwen2VLConfig, device=None, **kwargs) -> tuple[torch.Tensor, float]:
         """
         Computes the inverse frequencies according to the original RoPE implementation
@@ -153,6 +164,7 @@ class Qwen2VLRotaryEmbedding(nn.Module):
         return inv_freq.to(device), attention_factor
 
     # Ignore copy
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x, position_ids):
         # In contrast to other models, Qwen2_VL has different position ids for the grids
         # So we expand the inv_freq to shape (3, ...)
@@ -170,6 +182,7 @@ class Qwen2VLRotaryEmbedding(nn.Module):
 
 
 # Copied from transformers.models.llama.modeling_llama.rotate_half
+# rotate_half：RoPE 辅助：将向量后半部分取负并与前半交换
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -177,6 +190,7 @@ def rotate_half(x):
     return torch.cat((-x2, x1), dim=-1)
 
 
+# apply_multimodal_rotary_pos_emb：应用 M-RoPE：分段旋转文本/视觉/时间维度
 def apply_multimodal_rotary_pos_emb(q, k, cos, sin, mrope_section, unsqueeze_dim=1):
     """Applies Rotary Position Embedding with Multimodal Sections to the query and key tensors (https://qwenlm.github.io/blog/qwen2-vl/).
 
@@ -222,6 +236,7 @@ def apply_multimodal_rotary_pos_emb(q, k, cos, sin, mrope_section, unsqueeze_dim
     return q_embed, k_embed
 
 
+# apply_rotary_pos_emb_vision：应用视觉 RoPE：2D 空间位置旋转编码
 def apply_rotary_pos_emb_vision(
     q: torch.Tensor, k: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor
 ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -236,7 +251,9 @@ def apply_rotary_pos_emb_vision(
     return q_embed, k_embed
 
 
+# VisionRotaryEmbedding：视觉 RoPE：2D 空间位置旋转编码
 class VisionRotaryEmbedding(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, dim: int, theta: float = 10000.0) -> None:
         super().__init__()
         self.dim = dim
@@ -244,11 +261,14 @@ class VisionRotaryEmbedding(nn.Module):
         inv_freq = 1.0 / (theta ** (torch.arange(0, dim, 2, dtype=torch.float) / dim))
         self.inv_freq = nn.Buffer(inv_freq, persistent=False)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, position_ids: torch.Tensor) -> torch.Tensor:
         return (position_ids.unsqueeze(-1) * self.inv_freq).flatten(1)
 
 
+# PatchEmbed：Patch 嵌入：Conv3d 将图像/视频帧投影为 token 序列
 class PatchEmbed(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         patch_size: int | list[int] | tuple[int, int] = 14,
@@ -265,6 +285,7 @@ class PatchEmbed(nn.Module):
         kernel_size = [temporal_patch_size, patch_size, patch_size]
         self.proj = nn.Conv3d(in_channels, embed_dim, kernel_size=kernel_size, stride=kernel_size, bias=False)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         target_dtype = self.proj.weight.dtype
         hidden_states = hidden_states.view(
@@ -274,7 +295,9 @@ class PatchEmbed(nn.Module):
         return hidden_states
 
 
+# PatchMerger：Patch 合并：空间下采样合并相邻 patch 特征
 class PatchMerger(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, dim: int, context_dim: int, spatial_merge_size: int = 2) -> None:
         super().__init__()
         self.hidden_size = context_dim * (spatial_merge_size**2)
@@ -285,23 +308,28 @@ class PatchMerger(nn.Module):
             nn.Linear(self.hidden_size, dim),
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.mlp(self.ln_q(x).view(-1, self.hidden_size))
         return x
 
 
+# VisionMlp：视觉 MLP：ViT 前馈网络与激活函数
 class VisionMlp(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, dim: int, hidden_dim: int, hidden_act: str) -> None:
         super().__init__()
         self.fc1 = nn.Linear(dim, hidden_dim)
         self.act = ACT2FN[hidden_act]
         self.fc2 = nn.Linear(hidden_dim, dim)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x) -> torch.Tensor:
         return self.fc2(self.act(self.fc1(x)))
 
 
 # Copied from transformers.models.llama.modeling_llama.repeat_kv
+# repeat_kv：GQA 键值扩展：将 KV 头重复以匹配查询头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -314,6 +342,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：标准注意力前向：QK^T 缩放 softmax 加权 V
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -339,7 +368,9 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# VisionAttention：视觉自注意力：多头缩放点积与 2D RoPE 位置编码
 class VisionAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen2VLVisionConfig) -> None:
         super().__init__()
         self.dim = config.embed_dim
@@ -353,6 +384,7 @@ class VisionAttention(nn.Module):
         self.attention_dropout = 0.0
         self.is_causal = False
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -422,7 +454,9 @@ class VisionAttention(nn.Module):
         return attn_output
 
 
+# Qwen2VLVisionBlock：视觉 Transformer 块：注意力 + MLP 残差，支持梯度检查点
 class Qwen2VLVisionBlock(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, attn_implementation: str = "sdpa") -> None:
         super().__init__()
         self.norm1 = LayerNorm(config.embed_dim, eps=1e-6)
@@ -432,6 +466,7 @@ class Qwen2VLVisionBlock(GradientCheckpointingLayer):
         self.attn = VisionAttention(config=config)
         self.mlp = VisionMlp(dim=config.embed_dim, hidden_dim=mlp_hidden_dim, hidden_act=config.hidden_act)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -450,7 +485,9 @@ class Qwen2VLVisionBlock(GradientCheckpointingLayer):
 
 
 # Copied from transformers.models.qwen2.modeling_qwen2.Qwen2MLP
+# Qwen2MLP：文本 MLP：SwiGLU 风格 gate/up/down 前馈网络
 class Qwen2MLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -461,17 +498,20 @@ class Qwen2MLP(nn.Module):
         self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=False)
         self.act_fn = ACT2FN[config.hidden_act]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         down_proj = self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
         return down_proj
 
 
+# Qwen2VLAttention：文本自注意力：GQA 分组查询与 M-RoPE 位置编码
 class Qwen2VLAttention(nn.Module):
     """
     Multi-headed attention from 'Attention Is All You Need' paper. Modified to use sliding window attention: Longformer
     and "Generating Long Sequences with Sparse Transformers".
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen2VLTextConfig, layer_idx: int | None = None):
         super().__init__()
         self.config = config
@@ -505,6 +545,7 @@ class Qwen2VLAttention(nn.Module):
         self.layer_type = config.layer_types[layer_idx] if hasattr(config, "layer_types") else None
         self.sliding_window = config.sliding_window if self.layer_type == "sliding_attention" else None
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -556,7 +597,9 @@ class Qwen2VLAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# Qwen2VLDecoderLayer：文本解码层：自注意力 + MLP 残差堆叠
 class Qwen2VLDecoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen2VLTextConfig, layer_idx: int):
         super().__init__()
         self.hidden_size = config.hidden_size
@@ -572,6 +615,7 @@ class Qwen2VLDecoderLayer(GradientCheckpointingLayer):
         self.input_layernorm = Qwen2VLRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.post_attention_layernorm = Qwen2VLRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -625,6 +669,7 @@ class Qwen2VLDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Qwen2VLPreTrainedModel：Qwen2-VL 预训练基类：权重初始化与模块划分
 class Qwen2VLPreTrainedModel(PreTrainedModel):
     config: Qwen2VLConfig
     base_model_prefix = "model"
@@ -638,6 +683,7 @@ class Qwen2VLPreTrainedModel(PreTrainedModel):
     _can_compile_fullgraph = True
     _supports_attention_backend = True
 
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, VisionRotaryEmbedding):
@@ -646,6 +692,7 @@ class Qwen2VLPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# Qwen2VisionTransformerPretrainedModel：视觉 Transformer：多层 ViT 提取图像/视频表征
 class Qwen2VisionTransformerPretrainedModel(Qwen2VLPreTrainedModel):
     config: Qwen2VLVisionConfig
     input_modalities = ("image", "video")
@@ -656,6 +703,7 @@ class Qwen2VisionTransformerPretrainedModel(Qwen2VLPreTrainedModel):
         "attentions": VisionAttention,
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config) -> None:
         super().__init__(config)
         self.spatial_merge_size = config.spatial_merge_size
@@ -697,6 +745,7 @@ class Qwen2VisionTransformerPretrainedModel(Qwen2VLPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self, hidden_states: torch.Tensor, grid_thw: torch.Tensor, **kwargs: Unpack[TransformersKwargs]
     ) -> torch.Tensor:
@@ -730,6 +779,7 @@ class Qwen2VisionTransformerPretrainedModel(Qwen2VLPreTrainedModel):
 
 
 @auto_docstring
+# Qwen2VLTextModel：文本解码器：多层 Transformer 与 M-RoPE 因果注意力
 class Qwen2VLTextModel(Qwen2VLPreTrainedModel):
     config: Qwen2VLTextConfig
     input_modalities = ("text",)
@@ -738,6 +788,7 @@ class Qwen2VLTextModel(Qwen2VLPreTrainedModel):
         "attentions": Qwen2VLAttention,
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen2VLTextConfig):
         super().__init__(config)
         self.padding_idx = config.pad_token_id
@@ -759,6 +810,7 @@ class Qwen2VLTextModel(Qwen2VLPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -845,11 +897,13 @@ class Qwen2VLTextModel(Qwen2VLPreTrainedModel):
 
 
 @auto_docstring
+# Qwen2VLModel：多模态骨干：视觉塔 + 文本解码器联合前向
 class Qwen2VLModel(Qwen2VLPreTrainedModel):
     base_model_prefix = "model"
     # Reference: fix gemma3 grad acc #37208
     accepts_loss_kwargs = False
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen2VLConfig):
         super().__init__(config)
         self.visual = Qwen2VisionTransformerPretrainedModel._from_config(config.vision_config)
@@ -1141,6 +1195,7 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -1204,9 +1259,11 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
         )
 
 
+# Qwen2VLForConditionalGeneration：条件生成：视觉-语言理解与自回归文本解码
 class Qwen2VLForConditionalGeneration(Qwen2VLPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.model = Qwen2VLModel(config)
@@ -1242,6 +1299,7 @@ class Qwen2VLForConditionalGeneration(Qwen2VLPreTrainedModel, GenerationMixin):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,

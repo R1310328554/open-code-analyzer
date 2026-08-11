@@ -33,6 +33,8 @@ from ...utils.generic import can_return_tuple, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
 from ..auto import AutoModel
 from .configuration_qwen2_audio import Qwen2AudioConfig, Qwen2AudioEncoderConfig
+# Qwen2-Audio 建模：log-mel 音频编码、多模态投影与条件文本生成
+
 
 
 logger = logging.get_logger(__name__)
@@ -44,6 +46,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# Qwen2AudioModelOutputWithPast：多模态骨干输出：隐状态、KV 缓存与音频合并后的 attention_mask
 class Qwen2AudioModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     past_key_values (`Cache`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
@@ -68,6 +71,7 @@ class Qwen2AudioModelOutputWithPast(BaseModelOutputWithPast):
     """
 )
 @dataclass
+# Qwen2AudioCausalLMOutputWithPast：因果 LM 输出：logits、损失与 past KV 缓存
 class Qwen2AudioCausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -96,6 +100,7 @@ class Qwen2AudioCausalLMOutputWithPast(ModelOutput):
 
 
 # Copied from transformers.models.whisper.modeling_whisper.eager_attention_forward
+# eager_attention_forward：标准注意力前向：QK^T 缩放 softmax 加权 V
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -122,10 +127,12 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# Qwen2AudioAttention：音频自注意力：多头缩放点积与双向掩码支持
 class Qwen2AudioAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
     # Copied from transformers.models.whisper.modeling_whisper.WhisperAttention.__init__ with Whisper->Qwen2Audio
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         embed_dim: int,
@@ -169,6 +176,7 @@ class Qwen2AudioAttention(nn.Module):
     def _shape(self, tensor: torch.Tensor, seq_len: int, bsz: int):
         return tensor.view(bsz, seq_len, self.num_heads, self.head_dim).transpose(1, 2).contiguous()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -212,7 +220,9 @@ class Qwen2AudioAttention(nn.Module):
 
 
 # Copied from transformers.models.whisper.modeling_whisper.WhisperEncoderLayer with Whisper->Qwen2Audio, WHISPER->QWEN2AUDIO
+# Qwen2AudioEncoderLayer：音频编码层：自注意力 + FFN 残差堆叠，支持梯度检查点
 class Qwen2AudioEncoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen2AudioConfig):
         super().__init__()
         self.embed_dim = config.d_model
@@ -231,6 +241,7 @@ class Qwen2AudioEncoderLayer(GradientCheckpointingLayer):
         self.fc2 = nn.Linear(config.encoder_ffn_dim, self.embed_dim)
         self.final_layer_norm = nn.LayerNorm(self.embed_dim)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -269,6 +280,7 @@ class Qwen2AudioEncoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Qwen2AudioPreTrainedModel：Qwen2-Audio 预训练基类：权重初始化与模块切分
 class Qwen2AudioPreTrainedModel(PreTrainedModel):
     config: Qwen2AudioConfig
     base_model_prefix = "model"
@@ -286,6 +298,7 @@ class Qwen2AudioPreTrainedModel(PreTrainedModel):
     """
 )
 # Copied from transformers.models.whisper.modeling_whisper.WhisperEncoder with Whisper->Qwen2Audio
+# Qwen2AudioEncoder：Whisper 风格音频编码器：log-mel 特征到隐状态序列
 class Qwen2AudioEncoder(Qwen2AudioPreTrainedModel):
     """
     Transformer encoder consisting of *config.encoder_layers* self attention layers. Each layer is a
@@ -302,6 +315,7 @@ class Qwen2AudioEncoder(Qwen2AudioPreTrainedModel):
     _no_split_modules = ["Qwen2AudioEncoderLayer"]
     _can_record_outputs = {"hidden_states": Qwen2AudioEncoderLayer, "attentions": Qwen2AudioAttention}
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen2AudioEncoderConfig):
         super().__init__(config)
         self.dropout = config.dropout
@@ -340,6 +354,7 @@ class Qwen2AudioEncoder(Qwen2AudioPreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_features,
@@ -406,11 +421,14 @@ class Qwen2AudioEncoder(Qwen2AudioPreTrainedModel):
         return input_lengths, output_lengths
 
 
+# Qwen2AudioMultiModalProjector：多模态投影：音频隐状态映射到 LLM 嵌入维度
 class Qwen2AudioMultiModalProjector(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen2AudioConfig):
         super().__init__()
         self.linear = nn.Linear(config.audio_config.d_model, config.text_config.hidden_size, bias=True)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, audio_features):
         hidden_states = self.linear(audio_features)
         return hidden_states
@@ -421,7 +439,9 @@ class Qwen2AudioMultiModalProjector(nn.Module):
     The Qwen2Audio model which consists of an audio backbone and a language model, without a language modeling head.
     """
 )
+# Qwen2AudioModel：多模态骨干：音频编码 + 文本嵌入融合前向
 class Qwen2AudioModel(Qwen2AudioPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen2AudioConfig):
         super().__init__(config)
         self.audio_tower = AutoModel.from_config(config.audio_config)  # Usually a `Qwen2AudioEncoder` instance
@@ -645,6 +665,7 @@ class Qwen2AudioModel(Qwen2AudioPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -765,7 +786,9 @@ class Qwen2AudioModel(Qwen2AudioPreTrainedModel):
     The QWEN2AUDIO model which consists of an audio backbone and a language model.
     """
 )
+# Qwen2AudioForConditionalGeneration：条件生成：音频理解与自然语言回复的自回归解码
 class Qwen2AudioForConditionalGeneration(Qwen2AudioPreTrainedModel, GenerationMixin):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen2AudioConfig):
         super().__init__(config)
         self.model = Qwen2AudioModel(config)
@@ -782,6 +805,7 @@ class Qwen2AudioForConditionalGeneration(Qwen2AudioPreTrainedModel, GenerationMi
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,

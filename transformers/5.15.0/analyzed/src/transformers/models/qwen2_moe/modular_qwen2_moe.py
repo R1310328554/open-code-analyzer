@@ -27,6 +27,8 @@ from ...cache_utils import Cache, DynamicCache
 from ...generation import GenerationMixin
 from ...masking_utils import create_causal_mask, create_sliding_window_causal_mask
 from ...modeling_layers import (
+# Qwen2 MoE modular 源：复用 Llama/Gemma/Mixtral 组件并定制路由与共享专家
+
     GenericForQuestionAnswering,
     GenericForSequenceClassification,
     GenericForTokenClassification,
@@ -48,15 +50,19 @@ from ..mixtral.modeling_mixtral import (
 from .configuration_qwen2_moe import Qwen2MoeConfig
 
 
+# Qwen2MoeRMSNorm：RMS 层归一化：Root Mean Square 归一化替代 LayerNorm
 class Qwen2MoeRMSNorm(LlamaRMSNorm):
     pass
 
 
+# Qwen2MoeRotaryEmbedding：旋转位置编码：RoPE 频率计算与动态序列长度扩展
 class Qwen2MoeRotaryEmbedding(Gemma2RotaryEmbedding):
     pass
 
 
+# Qwen2MoeMLP：稠密前馈网络：SwiGLU 风格 gate/up/down 投影
 class Qwen2MoeMLP(GemmaMLP):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, intermediate_size=None):
         super().__init__()
         self.config = config
@@ -68,7 +74,9 @@ class Qwen2MoeMLP(GemmaMLP):
         self.act_fn = ACT2FN[config.hidden_act]
 
 
+# Qwen2MoeAttention：自注意力：GQA 分组查询与滑动窗口注意力支持
 class Qwen2MoeAttention(LlamaAttention):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen2MoeConfig, layer_idx: int):
         super().__init__(config, layer_idx)
         if self.config.layer_types[layer_idx] == "sliding_attention":
@@ -80,14 +88,18 @@ class Qwen2MoeAttention(LlamaAttention):
         self.o_proj = nn.Linear(config.num_attention_heads * self.head_dim, config.hidden_size, bias=False)
 
 
+# Qwen2MoeExperts：MoE 专家组：并行专家 FFN 与路由权重加权求和
 class Qwen2MoeExperts(MixtralExperts):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.num_experts = config.num_experts
         self.intermediate_dim = config.moe_intermediate_size
 
 
+# Qwen2MoeTopKRouter：Top-K 路由器：线性门控 softmax 选取活跃专家
 class Qwen2MoeTopKRouter(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.top_k = config.num_experts_per_tok
@@ -96,6 +108,7 @@ class Qwen2MoeTopKRouter(nn.Module):
         self.hidden_dim = config.hidden_size
         self.weight = nn.Parameter(torch.zeros(self.num_experts, self.hidden_dim))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = hidden_states.reshape(-1, self.hidden_dim)
         router_logits = F.linear(hidden_states, self.weight)  # (seq_len, num_experts)
@@ -108,7 +121,9 @@ class Qwen2MoeTopKRouter(nn.Module):
         return router_logits, router_scores, router_indices
 
 
+# Qwen2MoeSparseMoeBlock：稀疏 MoE 块：路由 + 专家 + 共享专家门控融合
 class Qwen2MoeSparseMoeBlock(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.gate = Qwen2MoeTopKRouter(config)
@@ -116,6 +131,7 @@ class Qwen2MoeSparseMoeBlock(nn.Module):
         self.shared_expert = Qwen2MoeMLP(config, intermediate_size=config.shared_expert_intermediate_size)
         self.shared_expert_gate = torch.nn.Linear(config.hidden_size, 1, bias=False)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         batch_size, sequence_length, hidden_dim = hidden_states.shape
         hidden_states_reshaped = hidden_states.view(-1, hidden_dim)
@@ -130,7 +146,9 @@ class Qwen2MoeSparseMoeBlock(nn.Module):
         return expert_output
 
 
+# Qwen2MoeDecoderLayer：解码器层：自注意力 + 稀疏/稠密 FFN 残差结构
 class Qwen2MoeDecoderLayer(LlamaDecoderLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen2MoeConfig, layer_idx: int):
         nn.Module.__init__(self)
         self.self_attn = Qwen2MoeAttention(config, layer_idx)
@@ -146,6 +164,7 @@ class Qwen2MoeDecoderLayer(LlamaDecoderLayer):
 
 
 @auto_docstring
+# Qwen2MoePreTrainedModel：Qwen2 MoE 预训练基类：通用初始化与输出录制
 class Qwen2MoePreTrainedModel(MixtralPreTrainedModel):
     _can_record_outputs = {
         "router_logits": OutputRecorder(Qwen2MoeTopKRouter, index=0),
@@ -155,7 +174,9 @@ class Qwen2MoePreTrainedModel(MixtralPreTrainedModel):
 
 
 @auto_docstring
+# Qwen2MoeModel：MoE 骨干：多层解码器堆栈与 RoPE 位置编码
 class Qwen2MoeModel(MixtralModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen2MoeConfig):
         super().__init__(config)
         self.layers = nn.ModuleList(
@@ -167,6 +188,7 @@ class Qwen2MoeModel(MixtralModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -228,6 +250,7 @@ class Qwen2MoeModel(MixtralModel):
         )
 
 
+# Qwen2MoeForCausalLM：因果语言模型：MoE 自回归文本生成与 lm_head
 class Qwen2MoeForCausalLM(MixtralForCausalLM, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
@@ -235,18 +258,22 @@ class Qwen2MoeForCausalLM(MixtralForCausalLM, GenerationMixin):
 
     _fsdp_plan = {"lm_head": "keep_full_weight"}
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.num_experts = config.num_experts
         self.model = Qwen2MoeModel(config)
 
 
+# Qwen2MoeForSequenceClassification：序列分类头：池化隐状态 + 线性分类器
 class Qwen2MoeForSequenceClassification(GenericForSequenceClassification, Qwen2MoePreTrainedModel): ...
 
 
+# Qwen2MoeForTokenClassification：Token 分类头：逐 token 线性分类（NER 等）
 class Qwen2MoeForTokenClassification(GenericForTokenClassification, Qwen2MoePreTrainedModel): ...
 
 
+# Qwen2MoeForQuestionAnswering：问答头：span 起始/结束位置预测
 class Qwen2MoeForQuestionAnswering(GenericForQuestionAnswering, Qwen2MoePreTrainedModel): ...
 
 

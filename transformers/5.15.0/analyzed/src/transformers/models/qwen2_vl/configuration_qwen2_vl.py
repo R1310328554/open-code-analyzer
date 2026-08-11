@@ -20,10 +20,13 @@ from huggingface_hub.dataclasses import strict
 from ...configuration_utils import PreTrainedConfig
 from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
+# Qwen2-VL 配置：视觉塔、文本解码器与多模态 RoPE 联合超参数
+
 
 
 @auto_docstring(checkpoint="Qwen/Qwen2-VL-7B-Instruct")
 @strict
+# Qwen2VLVisionConfig：视觉塔配置：patch 尺寸、空间/时间合并与 ViT 深度
 class Qwen2VLVisionConfig(PreTrainedConfig):
     model_type = "qwen2_vl_vision"
     base_config_key = "vision_config"
@@ -43,6 +46,7 @@ class Qwen2VLVisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="Qwen/Qwen2-VL-7B-Instruct")
 @strict
+# Qwen2VLTextConfig：文本解码器配置：隐藏维、注意力头数与 M-RoPE 参数
 class Qwen2VLTextConfig(PreTrainedConfig):
     r"""
     ```python
@@ -133,6 +137,7 @@ class Qwen2VLTextConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="Qwen/Qwen2-VL-7B-Instruct")
 @strict
+# Qwen2VLConfig：联合配置：vision_config + text_config 多模态超参数
 class Qwen2VLConfig(PreTrainedConfig):
     r"""
     Example:

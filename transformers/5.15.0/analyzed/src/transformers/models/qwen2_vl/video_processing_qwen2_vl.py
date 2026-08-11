@@ -25,6 +25,8 @@ import torchvision.transforms.v2.functional as tvF
 
 from ...image_processing_utils import BatchFeature
 from ...image_utils import (
+# Qwen2-VL 视频处理器：帧采样、时空 patch 网格与像素归一化
+
     OPENAI_CLIP_MEAN,
     OPENAI_CLIP_STD,
     PILImageResampling,
@@ -37,6 +39,7 @@ from ...video_utils import VideoMetadata, group_videos_by_shape, reorder_videos
 
 
 # Copied from transformers.models.qwen2_vl.image_processing_qwen2_vl.smart_resize
+# smart_resize：智能缩放：保持宽高比并约束像素在 min/max 范围内
 def smart_resize(
     height: int, width: int, factor: int = 28, min_pixels: int = 56 * 56, max_pixels: int = 14 * 14 * 4 * 1280
 ):
@@ -66,6 +69,7 @@ def smart_resize(
     return h_bar, w_bar
 
 
+# Qwen2VLVideoProcessorInitKwargs：视频处理器参数：帧数范围、时空 patch 与压缩选项
 class Qwen2VLVideoProcessorInitKwargs(VideosKwargs, total=False):
     r"""
     min_pixels (`int`, *optional*, defaults to `56 * 56`):
@@ -96,6 +100,7 @@ class Qwen2VLVideoProcessorInitKwargs(VideosKwargs, total=False):
 
 
 @auto_docstring
+# Qwen2VLVideoProcessor：视频处理器：帧采样、缩放归一化与 video_grid_thw 输出
 class Qwen2VLVideoProcessor(BaseVideoProcessor):
     resample = PILImageResampling.BICUBIC
     size = {"shortest_edge": 128 * 28 * 28, "longest_edge": 28 * 28 * 768}
@@ -114,6 +119,7 @@ class Qwen2VLVideoProcessor(BaseVideoProcessor):
     valid_kwargs = Qwen2VLVideoProcessorInitKwargs
     model_input_names = ["pixel_values_videos", "video_grid_thw"]
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[Qwen2VLVideoProcessorInitKwargs]):
         # backward compatibility: override size with min_pixels and max_pixels if they are provided
         size = kwargs.pop("size", None)

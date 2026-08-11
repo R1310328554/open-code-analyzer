@@ -28,6 +28,8 @@ from ...image_processing_backends import TorchvisionBackend
 from ...image_processing_utils import BatchFeature
 from ...image_transforms import group_images_by_shape, reorder_images
 from ...image_utils import (
+# Qwen2-VL Torchvision 图像处理器：张量批处理与动态分辨率 patch 化
+
     OPENAI_CLIP_MEAN,
     OPENAI_CLIP_STD,
     ImageInput,
@@ -38,6 +40,7 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# Qwen2VLImageProcessorKwargs：图像处理器参数：最小/最大像素、patch 与 merge 尺寸
 class Qwen2VLImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     min_pixels (`int`, *optional*, defaults to `56 * 56`):
@@ -59,6 +62,7 @@ class Qwen2VLImageProcessorKwargs(ImagesKwargs, total=False):
     merge_size: int
 
 
+# smart_resize：智能缩放：保持宽高比并约束像素在 min/max 范围内
 def smart_resize(
     height: int, width: int, factor: int = 28, min_pixels: int = 56 * 56, max_pixels: int = 14 * 14 * 4 * 1280
 ):
@@ -89,6 +93,7 @@ def smart_resize(
 
 
 @auto_docstring
+# Qwen2VLImageProcessor：Torchvision 图像处理器：智能缩放、归一化与 grid_thw 输出
 class Qwen2VLImageProcessor(TorchvisionBackend):
     do_resize = True
     resample = PILImageResampling.BICUBIC
@@ -105,6 +110,7 @@ class Qwen2VLImageProcessor(TorchvisionBackend):
     valid_kwargs = Qwen2VLImageProcessorKwargs
     model_input_names = ["pixel_values", "image_grid_thw"]
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[Qwen2VLImageProcessorKwargs]):
         # backward compatibility: override size with min_pixels and max_pixels if they are provided
         size = kwargs.pop("size", None)
@@ -129,6 +135,7 @@ class Qwen2VLImageProcessor(TorchvisionBackend):
         return super()._standardize_kwargs(size=size, **kwargs)
 
     @auto_docstring
+    # preprocess：图像/视频预处理：缩放、归一化并打包为模型输入
     def preprocess(
         self,
         images: ImageInput,

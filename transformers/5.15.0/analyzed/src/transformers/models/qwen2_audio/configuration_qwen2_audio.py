@@ -17,10 +17,13 @@ from huggingface_hub.dataclasses import strict
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
+# Qwen2-Audio 配置：Whisper 风格音频编码器与 Qwen2 文本 LLM 联合超参数
+
 
 
 @auto_docstring(checkpoint="Qwen/Qwen2-Audio-7B")
 @strict
+# Qwen2AudioEncoderConfig：音频编码器配置：mel 频带数、Transformer 层数与最大序列长度
 class Qwen2AudioEncoderConfig(PreTrainedConfig):
     r"""
     max_source_positions (`int`, *optional*, defaults to 1500):
@@ -66,6 +69,7 @@ class Qwen2AudioEncoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="Qwen/Qwen2-Audio-7B")
 @strict
+# Qwen2AudioConfig：联合配置：音频编码器子配置 + Qwen2 文本 LLM 子配置
 class Qwen2AudioConfig(PreTrainedConfig):
     r"""
     Example:

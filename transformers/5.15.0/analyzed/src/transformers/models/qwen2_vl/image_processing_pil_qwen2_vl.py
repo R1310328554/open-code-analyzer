@@ -21,6 +21,8 @@ import numpy as np
 from ...image_processing_backends import PilBackend
 from ...image_processing_utils import BatchFeature
 from ...image_utils import (
+# Qwen2-VL PIL 图像处理器：智能缩放、patch 网格与 CLIP 归一化
+
     OPENAI_CLIP_MEAN,
     OPENAI_CLIP_STD,
     ImageInput,
@@ -32,6 +34,7 @@ from ...utils import TensorType, auto_docstring
 
 
 # Adapted from transformers.models.qwen2_vl.image_processing_qwen2_vl.Qwen2VLImageProcessorKwargs
+# Qwen2VLImageProcessorKwargs：图像处理器参数：最小/最大像素、patch 与 merge 尺寸
 class Qwen2VLImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     min_pixels (`int`, *optional*, defaults to `56 * 56`):
@@ -54,6 +57,7 @@ class Qwen2VLImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 # Copied from transformers.models.qwen2_vl.image_processing_qwen2_vl.smart_resize
+# smart_resize：智能缩放：保持宽高比并约束像素在 min/max 范围内
 def smart_resize(
     height: int, width: int, factor: int = 28, min_pixels: int = 56 * 56, max_pixels: int = 14 * 14 * 4 * 1280
 ):
@@ -84,6 +88,7 @@ def smart_resize(
 
 
 @auto_docstring
+# Qwen2VLImageProcessorPil：PIL 图像处理器：Pillow 后端 resize 与 patch 网格计算
 class Qwen2VLImageProcessorPil(PilBackend):
     do_resize = True
     resample = PILImageResampling.BICUBIC
@@ -100,6 +105,7 @@ class Qwen2VLImageProcessorPil(PilBackend):
     valid_kwargs = Qwen2VLImageProcessorKwargs
     model_input_names = ["pixel_values", "image_grid_thw"]
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[Qwen2VLImageProcessorKwargs]):
         # backward compatibility: override size with min_pixels and max_pixels if they are provided
         size = kwargs.pop("size", None)
@@ -187,6 +193,7 @@ class Qwen2VLImageProcessorPil(PilBackend):
         return flatten_patches, grid_h, grid_w
 
     @auto_docstring
+    # preprocess：图像/视频预处理：缩放、归一化并打包为模型输入
     def preprocess(
         self,
         images: ImageInput,
