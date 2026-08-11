@@ -24,6 +24,8 @@ import sentencepiece as spm
 
 from ...tokenization_utils_base import AddedToken
 from ...tokenization_utils_sentencepiece import SentencePieceBackend
+# SigLIP 分词器：SentencePiece BPE、文本规范化与 EOS 拼接策略
+
 
 
 if TYPE_CHECKING:
@@ -41,6 +43,7 @@ SPIECE_UNDERLINE = "▁"
 
 
 @requires(backends=("sentencepiece",))
+# SiglipTokenizer：SigLIP 分词器：SentencePiece 后端，小写规范化与 EOS 后缀
 class SiglipTokenizer(SentencePieceBackend):
     """
     Construct a Siglip tokenizer. Based on [SentencePiece](https://github.com/google/sentencepiece).
@@ -85,6 +88,7 @@ class SiglipTokenizer(SentencePieceBackend):
     vocab_files_names = VOCAB_FILES_NAMES
     model_input_names = ["input_ids", "attention_mask"]
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         vocab_file,
@@ -134,11 +138,13 @@ class SiglipTokenizer(SentencePieceBackend):
     def vocab_size(self):
         return self.sp_model.get_piece_size()
 
+    # get_vocab：获取词表：ID 到 token 的完整映射（含 added tokens）
     def get_vocab(self):
         vocab = {self.convert_ids_to_tokens(i): i for i in range(self.vocab_size)}
         vocab.update(self.added_tokens_encoder)
         return vocab
 
+    # get_special_tokens_mask：特殊 token 掩码：标记 EOS 等特殊 token 位置
     def get_special_tokens_mask(
         self, token_ids_0: list[int], token_ids_1: list[int] | None = None, already_has_special_tokens: bool = False
     ) -> list[int]:
@@ -167,6 +173,7 @@ class SiglipTokenizer(SentencePieceBackend):
             return ([0] * len(token_ids_0)) + [1]
         return ([0] * len(token_ids_0)) + [1] + ([0] * len(token_ids_1)) + [1]
 
+    # _add_eos_if_not_present：追加 EOS：序列末尾添加结束符（避免重复）
     def _add_eos_if_not_present(self, token_ids: list[int]) -> list[int]:
         """Do not add eos again if user already added it."""
         if len(token_ids) > 0 and token_ids[-1] == self.eos_token_id:
@@ -178,6 +185,7 @@ class SiglipTokenizer(SentencePieceBackend):
         else:
             return token_ids + [self.eos_token_id]
 
+    # create_token_type_ids_from_sequences：生成 token 类型 ID：SigLIP 不使用 segment，返回全零
     def create_token_type_ids_from_sequences(
         self, token_ids_0: list[int], token_ids_1: list[int] | None = None
     ) -> list[int]:
@@ -200,6 +208,7 @@ class SiglipTokenizer(SentencePieceBackend):
             return len(token_ids_0 + eos) * [0]
         return len(token_ids_0 + eos + token_ids_1 + eos) * [0]
 
+    # build_inputs_with_special_tokens：拼接特殊 token：单序列 X</s>，句对 A</s>B</s>
     def build_inputs_with_special_tokens(
         self, token_ids_0: list[int], token_ids_1: list[int] | None = None
     ) -> list[int]:
@@ -241,10 +250,12 @@ class SiglipTokenizer(SentencePieceBackend):
         self.sp_model = spm.SentencePieceProcessor(**self.sp_model_kwargs)
         self.sp_model.Load(self.vocab_file)
 
+    # remove_punctuation：去除标点：删除 ASCII 标点符号
     def remove_punctuation(self, text: str) -> str:
         return text.translate(str.maketrans("", "", string.punctuation))
 
     # source: https://github.com/google-research/big_vision/blob/3b8e5ab6ad4f96e32b32826f9e1b8fd277914f9c/big_vision/evaluators/proj/image_text/prompt_engineering.py#L94
+    # canonicalize_text：文本规范化：小写、去标点并压缩空白（SigLIP 训练对齐）
     def canonicalize_text(self, text, *, keep_punctuation_exact_string=None):
         """Returns canonicalized `text` (puncuation removed).
 
@@ -269,6 +280,7 @@ class SiglipTokenizer(SentencePieceBackend):
 
         return text
 
+    # tokenize：分词入口：SentencePiece 前缀处理与特殊 token 修正
     def tokenize(self, text: "TextInput", add_special_tokens=False, **kwargs) -> list[str]:
         """
         Converts a string to a list of tokens.
@@ -283,6 +295,7 @@ class SiglipTokenizer(SentencePieceBackend):
     def unk_token_length(self):
         return len(self.sp_model.encode(str(self.unk_token)))
 
+    # _tokenize：内部分词：规范化后通过 unk 前缀 trick 绕过 SP 前缀剥离
     def _tokenize(self, text, **kwargs):
         """
         Returns a tokenized string.
@@ -303,15 +316,18 @@ class SiglipTokenizer(SentencePieceBackend):
         # 2. Remove self.unk_token from ['<','unk','>', '▁Hey']
         return tokens[self.unk_token_length :] if len(tokens) >= self.unk_token_length else tokens
 
+    # _convert_token_to_id：token 转 ID：SentencePiece piece_to_id 查表
     def _convert_token_to_id(self, token):
         """Converts a token (str) in an id using the vocab."""
         return self.sp_model.piece_to_id(token)
 
+    # _convert_id_to_token：ID 转 token：SentencePiece IdToPiece 查表
     def _convert_id_to_token(self, index):
         """Converts an index (integer) in a token (str) using the vocab."""
         token = self.sp_model.IdToPiece(index)
         return token
 
+    # convert_tokens_to_string：token 序列转字符串：特殊 token 单独解码其余用 SP 合并
     def convert_tokens_to_string(self, tokens):
         """Converts a sequence of tokens (string) in a single string."""
         all_special_tokens = set(self.all_special_tokens)
@@ -332,6 +348,7 @@ class SiglipTokenizer(SentencePieceBackend):
         out_string += self.sp_model.decode(current_sub_tokens)
         return out_string.strip()
 
+    # save_vocabulary：保存词表：复制或序列化 SentencePiece 模型文件
     def save_vocabulary(self, save_directory: str, filename_prefix: str | None = None) -> tuple[str]:
         if not os.path.isdir(save_directory):
             logger.error(f"Vocabulary path ({save_directory}) should be a directory")

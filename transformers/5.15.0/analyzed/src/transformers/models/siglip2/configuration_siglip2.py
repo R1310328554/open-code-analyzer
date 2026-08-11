@@ -23,6 +23,8 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring, logging
+# SigLIP2 配置：文本/视觉子配置与可变 patch 数量（num_patches）超参数
+
 
 
 logger = logging.get_logger(__name__)
@@ -30,6 +32,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="google/siglip2-base-patch16-naflex")
 @strict
+# Siglip2TextConfig：SigLIP2 文本配置：继承 SigLIP 文本 Transformer 超参数
 class Siglip2TextConfig(PreTrainedConfig):
     r"""
     Example:
@@ -66,6 +69,7 @@ class Siglip2TextConfig(PreTrainedConfig):
     eos_token_id: int | list[int] | None = 49407
     projection_size: int | None = None
 
+    # __post_init__：后初始化：解析子配置并设置派生字段
     def __post_init__(self, **kwargs):
         self.projection_size = self.projection_size if self.projection_size is not None else self.hidden_size
         super().__post_init__(**kwargs)
@@ -73,6 +77,7 @@ class Siglip2TextConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="google/siglip2-base-patch16-naflex")
 @strict
+# Siglip2VisionConfig：SigLIP2 视觉配置：可变 patch 数量与 NaFlex 分辨率策略
 class Siglip2VisionConfig(PreTrainedConfig):
     r"""
     num_patches (`int`, *optional*, defaults to 256):
@@ -114,6 +119,7 @@ class Siglip2VisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="google/siglip2-base-patch16-naflex")
 @strict
+# Siglip2Config：SigLIP2 联合配置：文本与视觉子配置及初始化因子
 class Siglip2Config(PreTrainedConfig):
     r"""
     Example:
@@ -147,6 +153,7 @@ class Siglip2Config(PreTrainedConfig):
     vision_config: dict | PreTrainedConfig | None = None
     initializer_factor: float = 1.0
 
+    # __post_init__：后初始化：解析子配置并设置派生字段
     def __post_init__(self, **kwargs):
         if self.text_config is None:
             self.text_config = Siglip2TextConfig()

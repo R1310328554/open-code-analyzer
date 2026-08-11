@@ -23,11 +23,14 @@ from tokenizers import Tokenizer, decoders, normalizers, pre_tokenizers
 from tokenizers.models import BPE
 
 from ...tokenization_utils_tokenizers import TokenizersBackend
+# SigLIP2 分词器：Gemma BPE + 小写规范化，左 padding 策略
+
 
 
 VOCAB_FILES_NAMES = {"tokenizer_file": "tokenizer.json"}
 
 
+# Siglip2Tokenizer：SigLIP2 分词器：Gemma BPE 后端，训练默认小写规范化
 class Siglip2Tokenizer(TokenizersBackend):
     """
     Gemma tokenizer + SigLIP2 training default: lowercase normalization.
@@ -38,6 +41,7 @@ class Siglip2Tokenizer(TokenizersBackend):
     model_input_names = ["input_ids", "attention_mask"]
     model = BPE
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         vocab: str | dict[str, int] | None = None,

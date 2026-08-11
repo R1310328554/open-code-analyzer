@@ -22,6 +22,8 @@ from tokenizers import normalizers
 from transformers.models.gemma.tokenization_gemma import GemmaTokenizer
 from transformers.models.siglip.configuration_siglip import SiglipConfig, SiglipTextConfig, SiglipVisionConfig
 from transformers.models.siglip.modeling_siglip import (
+# SigLIP2 modular 源：复用 SigLIP 组件并实现 NaFlex patch 与 Gemma 分词
+
     BaseModelOutput,
     BaseModelOutputWithPooling,
     ImageClassifierOutput,
@@ -47,11 +49,13 @@ from ...utils.generic import can_return_tuple, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
 
 
+# Siglip2Tokenizer：SigLIP2 分词器：Gemma BPE 后端，训练默认小写规范化
 class Siglip2Tokenizer(GemmaTokenizer):
     """
     Gemma tokenizer + SigLIP2 training default: lowercase normalization.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         vocab: str | dict[str, int] | None = None,
@@ -85,12 +89,14 @@ class Siglip2Tokenizer(GemmaTokenizer):
 
 @auto_docstring(checkpoint="google/siglip2-base-patch16-naflex")
 @strict
+# Siglip2TextConfig：SigLIP2 文本配置：继承 SigLIP 文本 Transformer 超参数
 class Siglip2TextConfig(SiglipTextConfig):
     pass
 
 
 @auto_docstring(checkpoint="google/siglip2-base-patch16-naflex")
 @strict
+# Siglip2VisionConfig：SigLIP2 视觉配置：可变 patch 数量与 NaFlex 分辨率策略
 class Siglip2VisionConfig(SiglipVisionConfig):
     r"""
     num_patches (`int`, *optional*, defaults to 256):
@@ -120,23 +126,29 @@ class Siglip2VisionConfig(SiglipVisionConfig):
 
 @auto_docstring(checkpoint="google/siglip2-base-patch16-naflex")
 @strict
+# Siglip2Config：SigLIP2 联合配置：文本与视觉子配置及初始化因子
 class Siglip2Config(SiglipConfig):
     pass
 
 
+# Siglip2VisionOutput：SigLIP2 视觉输出：图像嵌入、最后隐状态与可选注意力
 class Siglip2VisionOutput(SiglipVisionModelOutput):
     pass
 
 
+# Siglip2TextOutput：SigLIP2 文本输出：文本嵌入、最后隐状态与可选注意力
 class Siglip2TextOutput(SiglipTextModelOutput):
     pass
 
 
+# Siglip2Output：SigLIP2 联合输出：对比损失、相似度 logits 与双塔隐状态
 class Siglip2Output(SiglipOutput):
     pass
 
 
+# Siglip2VisionEmbeddings：SigLIP2 视觉嵌入：Linear patch 投影 + 2D 位置编码（NaFlex）
 class Siglip2VisionEmbeddings(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Siglip2VisionConfig):
         super().__init__()
         self.config = config
@@ -214,6 +226,7 @@ class Siglip2VisionEmbeddings(nn.Module):
 
         return resulted_positional_embeddings
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values: torch.FloatTensor, spatial_shapes: torch.LongTensor) -> torch.Tensor:
         """
         Args:
@@ -240,19 +253,23 @@ class Siglip2VisionEmbeddings(nn.Module):
         return embeddings
 
 
+# Siglip2PreTrainedModel：SigLIP2 预训练基类：权重初始化与输出录制
 class Siglip2PreTrainedModel(SiglipPreTrainedModel):
     # nn.MultiHeadAttention mask doesn't allow for non 4d mask
     _supports_flex_attn = False
     _supports_flash_attn = False
 
 
+# Siglip2VisionModel：SigLIP2 视觉塔：NaFlex 可变 patch ViT 编码器
 class Siglip2VisionModel(SiglipVisionModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Siglip2VisionConfig):
         super().__init__(config)
 
     @merge_with_config_defaults
     @capture_outputs(tie_last_hidden_states=False)
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -313,17 +330,21 @@ class Siglip2VisionModel(SiglipVisionModel):
         )
 
 
+# Siglip2TextModel：SigLIP2 文本塔：Transformer 编码器提取文本表示
 class Siglip2TextModel(SiglipTextModel):
     pass
 
 
+# Siglip2MultiheadAttentionPoolingHead：SigLIP2 注意力池化头：可学习 query 对 patch 做注意力池化
 class Siglip2MultiheadAttentionPoolingHead(SiglipMultiheadAttentionPoolingHead):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Siglip2VisionConfig):
         super().__init__(config)
 
         self.config = config
         self.num_heads = config.num_attention_heads
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state: torch.Tensor, attention_mask: torch.Tensor | None = None) -> torch.Tensor:
         batch_size = hidden_state.shape[0]
         probe = self.probe.repeat(batch_size, 1, 1)
@@ -357,6 +378,7 @@ class Siglip2MultiheadAttentionPoolingHead(SiglipMultiheadAttentionPoolingHead):
         return hidden_state[:, 0]
 
 
+# Siglip2Model：SigLIP2 双塔模型：sigmoid 对比损失联合训练文本与视觉编码器
 class Siglip2Model(SiglipModel):
     # Update: add `spatial_shapes` and `pixel_attention_mask`
     @can_return_tuple
@@ -403,6 +425,7 @@ class Siglip2Model(SiglipModel):
     # Update: add `spatial_shapes` and `pixel_attention_mask`
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -500,10 +523,12 @@ class Siglip2Model(SiglipModel):
         )
 
 
+# Siglip2ForImageClassification：SigLIP2 图像分类：视觉塔 + 线性头做零样本/微调分类
 class Siglip2ForImageClassification(SiglipForImageClassification):
     # Update: add `spatial_shapes` and `pixel_attention_mask`
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.Tensor | None = None,

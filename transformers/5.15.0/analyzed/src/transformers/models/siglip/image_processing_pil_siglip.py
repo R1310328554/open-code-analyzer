@@ -15,6 +15,8 @@
 
 from ...image_processing_backends import PilBackend
 from ...image_utils import (
+# SigLIP PIL 图像处理：224×224 resize、ImageNet 标准归一化与 RGB 转换
+
     IMAGENET_STANDARD_MEAN,
     IMAGENET_STANDARD_STD,
     PILImageResampling,
@@ -23,6 +25,7 @@ from ...utils import auto_docstring
 
 
 @auto_docstring(custom_intro="Constructs a SigLIP image processor.")
+# SiglipImageProcessorPil：SigLIP PIL 后端：224×224 bicubic resize 与 ImageNet 标准归一化
 class SiglipImageProcessorPil(PilBackend):
     resample = PILImageResampling.BICUBIC
     image_mean = IMAGENET_STANDARD_MEAN

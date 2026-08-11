@@ -21,11 +21,14 @@ from ...image_processing_utils import BatchFeature
 from ...image_utils import ImageInput, PILImageResampling, SizeDict
 from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import (
+# SigLIP2 Torchvision 图像处理：可变 patch 张量预处理与空间形状记录
+
     TensorType,
     auto_docstring,
 )
 
 
+# Siglip2ImageProcessorKwargs：SigLIP2 图像处理参数：patch_size 与 max_num_patches 选项
 class Siglip2ImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     patch_size (`int`, *optional*, defaults to `self.patch_size`):
@@ -39,6 +42,7 @@ class Siglip2ImageProcessorKwargs(ImagesKwargs, total=False):
     max_num_patches: int
 
 
+# get_image_size_for_max_num_patches：计算目标尺寸：二分搜索缩放比使 patch 数不超过上限
 def get_image_size_for_max_num_patches(
     image_height: int, image_width: int, patch_size: int, max_num_patches: int, eps: float = 1e-5
 ) -> tuple[int, int]:
@@ -87,6 +91,7 @@ def get_image_size_for_max_num_patches(
     return target_height, target_width
 
 
+# convert_image_to_patches：图像转 patch：将 CHW 张量/数组展平为 (num_patches, patch_dim) 序列
 def convert_image_to_patches(image: "torch.Tensor", patch_size: int) -> "torch.Tensor":
     """
     Convert 3D tensor image of shape (num_channels, image_height, image_width) into 2D tensor of patches of shape
@@ -101,6 +106,7 @@ def convert_image_to_patches(image: "torch.Tensor", patch_size: int) -> "torch.T
     return patched_image
 
 
+# pad_along_first_dim：首维 padding：将 patch 序列填充至 max_num_patches 并生成 attention mask
 def pad_along_first_dim(
     tensor: "torch.Tensor", target_length: int, pad_value: int = 0
 ) -> tuple["torch.Tensor", "torch.Tensor"]:
@@ -118,6 +124,7 @@ def pad_along_first_dim(
 
 
 @auto_docstring
+# Siglip2ImageProcessor：SigLIP2 Torchvision 后端：与 PIL 版等价的可变 patch 预处理
 class Siglip2ImageProcessor(TorchvisionBackend):
     valid_kwargs = Siglip2ImageProcessorKwargs
     resample = PILImageResampling.BILINEAR
@@ -130,18 +137,22 @@ class Siglip2ImageProcessor(TorchvisionBackend):
     max_num_patches = 256
     model_input_names = ["pixel_values", "pixel_attention_mask", "spatial_shapes"]
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[Siglip2ImageProcessorKwargs]):
         super().__init__(**kwargs)
 
     @auto_docstring
+    # preprocess：预处理：缩放归一化并打包为模型输入
     def preprocess(self, images: ImageInput, **kwargs: Unpack[Siglip2ImageProcessorKwargs]) -> BatchFeature:
         return super().preprocess(images, **kwargs)
 
+    # _validate_preprocess_kwargs：校验预处理参数：移除动态 resize 相关冲突项
     def _validate_preprocess_kwargs(self, **kwargs) -> tuple:
         # Remove do_resize from kwargs to not raise an error as size is None (computed dynamically)
         kwargs.pop("do_resize", None)
         return super()._validate_preprocess_kwargs(**kwargs)
 
+    # _preprocess：内部预处理：动态缩放、patch 切分、padding 与 spatial_shapes 记录
     def _preprocess(
         self,
         images: list["torch.Tensor"],

@@ -15,6 +15,8 @@
 
 from ...image_processing_backends import TorchvisionBackend
 from ...image_utils import (
+# SigLIP Torchvision 图像处理：张量后端 resize/归一化与模型输入打包
+
     IMAGENET_STANDARD_MEAN,
     IMAGENET_STANDARD_STD,
     PILImageResampling,
@@ -23,6 +25,7 @@ from ...utils import auto_docstring
 
 
 @auto_docstring(custom_intro="Constructs a SigLIP image processor.")
+# SiglipImageProcessor：SigLIP Torchvision 后端：与 PIL 版等价的张量图像预处理
 class SiglipImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.BICUBIC
     image_mean = IMAGENET_STANDARD_MEAN

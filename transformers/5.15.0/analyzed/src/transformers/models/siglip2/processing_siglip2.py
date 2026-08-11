@@ -17,8 +17,11 @@ Image/Text processor class for SigLIP2.
 
 from ...processing_utils import ProcessingKwargs, ProcessorMixin
 from ...utils import auto_docstring
+# SigLIP2 处理器：图像 patch 预处理与 BPE 分词默认参数组合
 
 
+
+# Siglip2ProcessorKwargs：SigLIP2 处理器参数：文本 max_length 与图像 patch 默认选项
 class Siglip2ProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -34,9 +37,11 @@ class Siglip2ProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# Siglip2Processor：SigLIP2 处理器：封装可变 patch 图像处理与 BPE 分词器
 class Siglip2Processor(ProcessorMixin):
     valid_processor_kwargs = Siglip2ProcessorKwargs
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, image_processor, tokenizer):
         super().__init__(image_processor, tokenizer)
 

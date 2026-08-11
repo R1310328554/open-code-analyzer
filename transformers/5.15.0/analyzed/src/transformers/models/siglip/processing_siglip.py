@@ -17,10 +17,14 @@ Image/Text processor class for SigLIP.
 
 from ...processing_utils import ProcessorMixin
 from ...utils import auto_docstring
+# SigLIP 处理器：组合图像处理器与 SentencePiece 分词器
+
 
 
 @auto_docstring
+# SiglipProcessor：SigLIP 处理器：封装图像处理器与分词器的联合调用
 class SiglipProcessor(ProcessorMixin):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, image_processor, tokenizer):
         super().__init__(image_processor, tokenizer)
 

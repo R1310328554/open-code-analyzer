@@ -25,10 +25,13 @@ from ...backbone_utils import consolidate_backbone_kwargs_to_config
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 from ..auto import AutoConfig
+# SLANet 配置：CSP 层、注意力 GRU 与表格结构/位置解码超参数
+
 
 
 @auto_docstring(checkpoint="PaddlePaddle/SLANet_plus_safetensors")
 @strict
+# SLANetConfig：SLANet 配置：PP-LCNet 骨干、CSP 层与表格结构解码超参数
 class SLANetConfig(PreTrainedConfig):
     r"""
     post_conv_out_channels (`int`, *optional*, defaults to 96):
@@ -59,6 +62,7 @@ class SLANetConfig(PreTrainedConfig):
     csp_kernel_size: int = 5
     csp_num_blocks: int = 1
 
+    # __post_init__：后初始化：解析子配置并设置派生字段
     def __post_init__(self, **kwargs):
         self.backbone_config, kwargs = consolidate_backbone_kwargs_to_config(
             backbone_config=self.backbone_config,

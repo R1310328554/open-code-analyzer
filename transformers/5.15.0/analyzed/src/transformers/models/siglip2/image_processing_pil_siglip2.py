@@ -20,11 +20,14 @@ from ...image_processing_utils import BatchFeature
 from ...image_utils import ImageInput, PILImageResampling, SizeDict
 from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import (
+# SigLIP2 PIL 图像处理：按 max_num_patches 动态缩放、patch 切分与 padding
+
     TensorType,
     auto_docstring,
 )
 
 
+# convert_image_to_patches：图像转 patch：将 CHW 张量/数组展平为 (num_patches, patch_dim) 序列
 def convert_image_to_patches(image: np.ndarray, patch_size: int) -> np.ndarray:
     """
     Convert 3D array image of shape (num_channels, image_height, image_width) into 2D array of patches of shape
@@ -39,6 +42,7 @@ def convert_image_to_patches(image: np.ndarray, patch_size: int) -> np.ndarray:
     return patched_image
 
 
+# pad_along_first_dim：首维 padding：将 patch 序列填充至 max_num_patches 并生成 attention mask
 def pad_along_first_dim(array: np.ndarray, target_length: int, pad_value: int = 0) -> tuple[np.ndarray, np.ndarray]:
     """
     Pad the array along the first dimension.
@@ -54,6 +58,7 @@ def pad_along_first_dim(array: np.ndarray, target_length: int, pad_value: int = 
 
 
 # Adapted from transformers.models.siglip2.image_processing_siglip2.Siglip2ImageProcessorKwargs
+# Siglip2ImageProcessorKwargs：SigLIP2 图像处理参数：patch_size 与 max_num_patches 选项
 class Siglip2ImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     patch_size (`int`, *optional*, defaults to `self.patch_size`):
@@ -68,6 +73,7 @@ class Siglip2ImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 # Adapted from transformers.models.siglip2.image_processing_siglip2.get_image_size_for_max_num_patches
+# get_image_size_for_max_num_patches：计算目标尺寸：二分搜索缩放比使 patch 数不超过上限
 def get_image_size_for_max_num_patches(
     image_height: int, image_width: int, patch_size: int, max_num_patches: int, eps: float = 1e-5
 ) -> tuple[int, int]:
@@ -117,6 +123,7 @@ def get_image_size_for_max_num_patches(
 
 
 @auto_docstring
+# Siglip2ImageProcessorPil：SigLIP2 PIL 后端：动态缩放、patch 切分与 patch 维 padding
 class Siglip2ImageProcessorPil(PilBackend):
     valid_kwargs = Siglip2ImageProcessorKwargs
     resample = PILImageResampling.BILINEAR
@@ -129,18 +136,22 @@ class Siglip2ImageProcessorPil(PilBackend):
     max_num_patches = 256
     model_input_names = ["pixel_values", "pixel_attention_mask", "spatial_shapes"]
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[Siglip2ImageProcessorKwargs]):
         super().__init__(**kwargs)
 
     @auto_docstring
+    # preprocess：预处理：缩放归一化并打包为模型输入
     def preprocess(self, images: ImageInput, **kwargs: Unpack[Siglip2ImageProcessorKwargs]) -> BatchFeature:
         return super().preprocess(images, **kwargs)
 
+    # _validate_preprocess_kwargs：校验预处理参数：移除动态 resize 相关冲突项
     def _validate_preprocess_kwargs(self, **kwargs) -> tuple:
         # Remove do_resize from kwargs to not raise an error as size is None (computed dynamically)
         kwargs.pop("do_resize", None)
         return super()._validate_preprocess_kwargs(**kwargs)
 
+    # _preprocess：内部预处理：动态缩放、patch 切分、padding 与 spatial_shapes 记录
     def _preprocess(
         self,
         images: list[np.ndarray],

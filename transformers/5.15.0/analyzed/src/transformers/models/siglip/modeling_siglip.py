@@ -29,6 +29,8 @@ from ...modeling_outputs import BaseModelOutput, BaseModelOutputWithPooling, Ima
 from ...modeling_utils import ALL_ATTENTION_FUNCTIONS, PreTrainedModel
 from ...processing_utils import Unpack
 from ...utils import (
+# SigLIP 建模：sigmoid 对比损失的视觉-语言双塔 ViT + 文本 Transformer
+
     ModelOutput,
     TransformersKwargs,
     auto_docstring,
@@ -47,6 +49,7 @@ from .configuration_siglip import SiglipConfig, SiglipTextConfig, SiglipVisionCo
 )
 @dataclass
 # Copied from transformers.models.clip.modeling_clip.CLIPVisionModelOutput with CLIP->Siglip
+# SiglipVisionModelOutput：SigLIP 视觉输出：图像嵌入、最后隐状态与可选注意力
 class SiglipVisionModelOutput(ModelOutput):
     r"""
     image_embeds (`torch.FloatTensor` of shape `(batch_size, output_dim)` *optional* returned when model is initialized with `with_projection=True`):
@@ -66,6 +69,7 @@ class SiglipVisionModelOutput(ModelOutput):
 )
 @dataclass
 # Copied from transformers.models.clip.modeling_clip.CLIPTextModelOutput with CLIP->Siglip
+# SiglipTextModelOutput：SigLIP 文本输出：文本嵌入、最后隐状态与可选注意力
 class SiglipTextModelOutput(ModelOutput):
     r"""
     text_embeds (`torch.FloatTensor` of shape `(batch_size, output_dim)` *optional* returned when model is initialized with `with_projection=True`):
@@ -81,6 +85,7 @@ class SiglipTextModelOutput(ModelOutput):
 @auto_docstring
 @dataclass
 # Copied from transformers.models.clip.modeling_clip.CLIPOutput with CLIP->Siglip
+# SiglipOutput：SigLIP 联合输出：对比损失、相似度 logits 与双塔隐状态
 class SiglipOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `return_loss` is `True`):
@@ -109,11 +114,14 @@ class SiglipOutput(ModelOutput):
     text_model_output: BaseModelOutputWithPooling = None
     vision_model_output: BaseModelOutputWithPooling = None
 
+    # to_tuple：转为元组：递归将 ModelOutput 字段打包为元组
     def to_tuple(self) -> tuple[Any]:
         return tuple(v.to_tuple() if isinstance(v, ModelOutput) else v for v in self.values())
 
 
+# SiglipVisionEmbeddings：SigLIP 视觉嵌入：Conv2d patch 投影 + 可插值位置编码
 class SiglipVisionEmbeddings(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SiglipVisionConfig):
         super().__init__()
         self.config = config
@@ -134,6 +142,7 @@ class SiglipVisionEmbeddings(nn.Module):
         self.position_embedding = nn.Embedding(self.num_positions, self.embed_dim)
         self.position_ids = nn.Buffer(torch.arange(self.num_positions).expand((1, -1)), persistent=False)
 
+    # interpolate_pos_encoding：插值位置编码：适配与预训练不同的 patch 网格尺寸
     def interpolate_pos_encoding(self, embeddings: torch.Tensor, height: int, width: int) -> torch.Tensor:
         """
         This method allows to interpolate the pre-trained position encodings, to be able to use the model on higher resolution
@@ -172,6 +181,7 @@ class SiglipVisionEmbeddings(nn.Module):
         patch_pos_embed = patch_pos_embed.permute(0, 2, 3, 1).view(1, -1, dim)
         return patch_pos_embed
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values: torch.FloatTensor, interpolate_pos_encoding=False) -> torch.Tensor:
         _, _, height, width = pixel_values.shape
         target_dtype = self.patch_embedding.weight.dtype
@@ -186,7 +196,9 @@ class SiglipVisionEmbeddings(nn.Module):
 
 
 # Copied from transformers.models.clip.modeling_clip.CLIPTextEmbeddings with CLIP->Siglip
+# SiglipTextEmbeddings：SigLIP 文本嵌入：词嵌入 + 绝对位置编码
 class SiglipTextEmbeddings(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SiglipTextConfig):
         super().__init__()
         embed_dim = config.hidden_size
@@ -197,6 +209,7 @@ class SiglipTextEmbeddings(nn.Module):
         # position_ids (1, len position emb) is contiguous in memory and exported when serialized
         self.position_ids = nn.Buffer(torch.arange(config.max_position_embeddings).expand((1, -1)), persistent=False)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -224,6 +237,7 @@ class SiglipTextEmbeddings(nn.Module):
         return embeddings
 
 
+# eager_attention_forward：标准注意力前向：QK^T 缩放 softmax 加权 V
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -247,9 +261,11 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# SiglipAttention：SigLIP 注意力：多头缩放点积自注意力（无因果掩码）
 class SiglipAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -270,6 +286,7 @@ class SiglipAttention(nn.Module):
         self.q_proj = nn.Linear(self.embed_dim, self.embed_dim)
         self.out_proj = nn.Linear(self.embed_dim, self.embed_dim)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -307,7 +324,9 @@ class SiglipAttention(nn.Module):
 
 
 # Copied from transformers.models.clip.modeling_clip.CLIPMLP with CLIP->Siglip
+# SiglipMLP：SigLIP MLP：两层线性 + 激活的前馈子层
 class SiglipMLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -315,6 +334,7 @@ class SiglipMLP(nn.Module):
         self.fc1 = nn.Linear(config.hidden_size, config.intermediate_size)
         self.fc2 = nn.Linear(config.intermediate_size, config.hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.fc1(hidden_states)
         hidden_states = self.activation_fn(hidden_states)
@@ -322,7 +342,9 @@ class SiglipMLP(nn.Module):
         return hidden_states
 
 
+# SiglipEncoderLayer：SigLIP 编码层：Pre-LN 自注意力 + MLP 残差堆叠
 class SiglipEncoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SiglipVisionConfig | SiglipTextConfig):
         super().__init__()
         self.embed_dim = config.hidden_size
@@ -332,6 +354,7 @@ class SiglipEncoderLayer(GradientCheckpointingLayer):
         self.mlp = SiglipMLP(config)
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -357,6 +380,7 @@ class SiglipEncoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# SiglipPreTrainedModel：SigLIP 预训练基类：权重初始化与输出录制
 class SiglipPreTrainedModel(PreTrainedModel):
     config: SiglipConfig
     base_model_prefix = "siglip"
@@ -380,6 +404,7 @@ class SiglipPreTrainedModel(PreTrainedModel):
     }
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module):
         """Initialize the weights"""
         super()._init_weights(module)
@@ -429,6 +454,7 @@ class SiglipPreTrainedModel(PreTrainedModel):
 
 
 # Copied from transformers.models.altclip.modeling_altclip.AltCLIPEncoder with AltCLIP->Siglip
+# SiglipEncoder：SigLIP 编码器：堆叠多层 Transformer 编码块
 class SiglipEncoder(nn.Module):
     """
     Transformer encoder consisting of `config.num_hidden_layers` self attention layers. Each layer is a
@@ -438,6 +464,7 @@ class SiglipEncoder(nn.Module):
         config: SiglipConfig
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SiglipConfig):
         super().__init__()
         self.config = config
@@ -446,6 +473,7 @@ class SiglipEncoder(nn.Module):
 
     # Ignore copy
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         inputs_embeds,
@@ -468,12 +496,14 @@ class SiglipEncoder(nn.Module):
     The text model from SigLIP without any head or projection on top.
     """
 )
+# SiglipTextModel：SigLIP 文本塔：Transformer 编码器提取文本表示
 class SiglipTextModel(SiglipPreTrainedModel):
     config: SiglipTextConfig
     input_modalities = ("text",)
     base_model_prefix = "text_model"
     _input_embed_layer = "token_embedding"
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SiglipTextConfig):
         super().__init__(config)
         self.config = config
@@ -488,6 +518,7 @@ class SiglipTextModel(SiglipPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs(tie_last_hidden_states=False)
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.Tensor | None = None,
@@ -550,6 +581,7 @@ class SiglipTextModel(SiglipPreTrainedModel):
     The vision model from SigLIP without any head or projection on top.
     """
 )
+# SiglipVisionModel：SigLIP 视觉塔：ViT 编码器提取图像 patch 表示
 class SiglipVisionModel(SiglipPreTrainedModel):
     config: SiglipVisionConfig
     main_input_name = "pixel_values"
@@ -557,6 +589,7 @@ class SiglipVisionModel(SiglipPreTrainedModel):
     base_model_prefix = "vision_model"
     _input_embed_layer = "patch_embedding"
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SiglipVisionConfig):
         super().__init__(config)
         self.config = config
@@ -573,6 +606,7 @@ class SiglipVisionModel(SiglipPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs(tie_last_hidden_states=False)
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values,
@@ -619,9 +653,11 @@ class SiglipVisionModel(SiglipPreTrainedModel):
         )
 
 
+# SiglipMultiheadAttentionPoolingHead：SigLIP 注意力池化头：可学习 query 对 patch 做注意力池化
 class SiglipMultiheadAttentionPoolingHead(nn.Module):
     """Multihead Attention Pooling."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SiglipVisionConfig):
         super().__init__()
 
@@ -630,6 +666,7 @@ class SiglipMultiheadAttentionPoolingHead(nn.Module):
         self.layernorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.mlp = SiglipMLP(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state):
         batch_size = hidden_state.shape[0]
         probe = self.probe.repeat(batch_size, 1, 1)
@@ -644,9 +681,11 @@ class SiglipMultiheadAttentionPoolingHead(nn.Module):
 
 
 @auto_docstring
+# SiglipModel：SigLIP 双塔模型：sigmoid 对比损失联合训练文本与视觉编码器
 class SiglipModel(SiglipPreTrainedModel):
     config: SiglipConfig
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SiglipConfig):
         super().__init__(config)
 
@@ -736,6 +775,7 @@ class SiglipModel(SiglipPreTrainedModel):
     # NOTE: SiglipModel uses Pretrained backbones, so we don't need to add `capture_outputs` here
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -832,10 +872,12 @@ class SiglipModel(SiglipPreTrainedModel):
     the patch tokens) e.g. for ImageNet.
     """
 )
+# SiglipForImageClassification：SigLIP 图像分类：视觉塔 + 线性头做零样本/微调分类
 class SiglipForImageClassification(SiglipPreTrainedModel):
     main_input_name = "pixel_values"
     input_modalities = ("image",)
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SiglipConfig) -> None:
         super().__init__(config)
 
@@ -858,6 +900,7 @@ class SiglipForImageClassification(SiglipPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.Tensor | None = None,
