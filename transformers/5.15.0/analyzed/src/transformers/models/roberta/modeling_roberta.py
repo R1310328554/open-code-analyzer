@@ -32,6 +32,8 @@ from ...generation import GenerationMixin
 from ...masking_utils import create_bidirectional_mask, create_causal_mask
 from ...modeling_layers import GradientCheckpointingLayer
 from ...modeling_outputs import (
+# RoBERTa 建模：动态位置嵌入、双向 Transformer 编码与多任务下游头
+
     BaseModelOutputWithPastAndCrossAttentions,
     BaseModelOutputWithPoolingAndCrossAttentions,
     CausalLMOutputWithCrossAttentions,
@@ -53,9 +55,11 @@ from .configuration_roberta import RobertaConfig
 logger = logging.get_logger(__name__)
 
 
+# RobertaEmbeddings：RoBERTa 嵌入：词/类型嵌入 + 动态位置索引（无绝对位置表）
 class RobertaEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.word_embeddings = nn.Embedding(config.vocab_size, config.hidden_size, padding_idx=config.pad_token_id)
@@ -72,6 +76,7 @@ class RobertaEmbeddings(nn.Module):
             config.max_position_embeddings, config.hidden_size, padding_idx=self.padding_idx
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -139,6 +144,7 @@ class RobertaEmbeddings(nn.Module):
         return position_ids.unsqueeze(0).expand(input_shape)
 
     @staticmethod
+    # create_position_ids_from_input_ids：由 input_ids 生成位置索引：padding 处置零
     def create_position_ids_from_input_ids(input_ids, padding_idx, past_key_values_length=0):
         """
         Replace non-padding symbols with their position numbers. Position numbers begin at padding_idx+1. Padding symbols
@@ -155,6 +161,7 @@ class RobertaEmbeddings(nn.Module):
         return incremental_indices.long() + padding_idx
 
 
+# eager_attention_forward：标准注意力前向：QK^T 缩放 softmax 加权 V
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -183,7 +190,9 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# RobertaSelfAttention：RoBERTa 自注意力：缩放点积多头注意力与 QKV 投影
 class RobertaSelfAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, is_causal=False, layer_idx=None):
         super().__init__()
         if config.hidden_size % config.num_attention_heads != 0 and not hasattr(config, "embedding_size"):
@@ -208,6 +217,7 @@ class RobertaSelfAttention(nn.Module):
         self.is_causal = is_causal
         self.layer_idx = layer_idx
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -250,7 +260,9 @@ class RobertaSelfAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# RobertaCrossAttention：RoBERTa 交叉注意力：解码器查询与编码器键值交互
 class RobertaCrossAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, is_causal=False, layer_idx=None):
         super().__init__()
         if config.hidden_size % config.num_attention_heads != 0 and not hasattr(config, "embedding_size"):
@@ -274,6 +286,7 @@ class RobertaCrossAttention(nn.Module):
         self.is_causal = is_causal
         self.layer_idx = layer_idx
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -326,13 +339,16 @@ class RobertaCrossAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# RobertaSelfOutput：自注意力输出投影：线性映射 + Dropout + 残差 LayerNorm
 class RobertaSelfOutput(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
@@ -340,7 +356,9 @@ class RobertaSelfOutput(nn.Module):
         return hidden_states
 
 
+# RobertaAttention：完整注意力模块：自/交叉注意力 + 输出投影与残差归一化
 class RobertaAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, is_causal=False, layer_idx=None, is_cross_attention=False):
         super().__init__()
         self.is_cross_attention = is_cross_attention
@@ -348,6 +366,7 @@ class RobertaAttention(nn.Module):
         self.self = attention_class(config, is_causal=is_causal, layer_idx=layer_idx)
         self.output = RobertaSelfOutput(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -369,7 +388,9 @@ class RobertaAttention(nn.Module):
         return attention_output, attn_weights
 
 
+# RobertaIntermediate：FFN 中间层：线性升维 + 激活函数
 class RobertaIntermediate(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.intermediate_size)
@@ -378,19 +399,23 @@ class RobertaIntermediate(nn.Module):
         else:
             self.intermediate_act_fn = config.hidden_act
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.intermediate_act_fn(hidden_states)
         return hidden_states
 
 
+# RobertaOutput：FFN 输出层：线性降维 + Dropout + 残差 LayerNorm
 class RobertaOutput(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.intermediate_size, config.hidden_size)
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
@@ -398,7 +423,9 @@ class RobertaOutput(nn.Module):
         return hidden_states
 
 
+# RobertaLayer：RoBERTa Transformer 层：自注意力 + FFN 残差堆叠
 class RobertaLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_idx=None):
         super().__init__()
         self.chunk_size_feed_forward = config.chunk_size_feed_forward
@@ -418,6 +445,7 @@ class RobertaLayer(GradientCheckpointingLayer):
         self.intermediate = RobertaIntermediate(config)
         self.output = RobertaOutput(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -464,6 +492,7 @@ class RobertaLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# RobertaPreTrainedModel：RoBERTa 预训练基类：权重初始化与输出录制
 class RobertaPreTrainedModel(PreTrainedModel):
     config_class = RobertaConfig
     base_model_prefix = "roberta"
@@ -479,6 +508,7 @@ class RobertaPreTrainedModel(PreTrainedModel):
     }
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module):
         """Initialize the weights"""
         super()._init_weights(module)
@@ -489,12 +519,15 @@ class RobertaPreTrainedModel(PreTrainedModel):
             init.zeros_(module.token_type_ids)
 
 
+# RobertaEncoder：RoBERTa 编码器：多层 Transformer 提取双向上下文表征
 class RobertaEncoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
         self.layer = nn.ModuleList([RobertaLayer(config, layer_idx=i) for i in range(config.num_hidden_layers)])
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -521,12 +554,15 @@ class RobertaEncoder(nn.Module):
         )
 
 
+# RobertaPooler：RoBERTa 池化：取 [CLS] 隐状态经 tanh 投影为句向量
 class RobertaPooler(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
         self.activation = nn.Tanh()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         # We "pool" the model by simply taking the hidden state corresponding
         # to the first token.
@@ -548,9 +584,11 @@ class RobertaPooler(nn.Module):
     `add_cross_attention` set to `True`; an `encoder_hidden_states` is then expected as an input to the forward pass.
     """
 )
+# RobertaModel：RoBERTa 编码器骨干：输出序列隐状态与可选池化向量
 class RobertaModel(RobertaPreTrainedModel):
     _no_split_modules = ["RobertaEmbeddings", "RobertaLayer"]
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, add_pooling_layer=True):
         r"""
         add_pooling_layer (bool, *optional*, defaults to `True`):
@@ -577,6 +615,7 @@ class RobertaModel(RobertaPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.Tensor | None = None,
@@ -680,12 +719,14 @@ class RobertaModel(RobertaPreTrainedModel):
     RoBERTa Model with a `language modeling` head on top for CLM fine-tuning.
     """
 )
+# RobertaForCausalLM：RoBERTa 因果语言建模：自回归 next-token 预测与生成
 class RobertaForCausalLM(RobertaPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {
         "lm_head.decoder.weight": "roberta.embeddings.word_embeddings.weight",
         "lm_head.decoder.bias": "lm_head.bias",
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -706,6 +747,7 @@ class RobertaForCausalLM(RobertaPreTrainedModel, GenerationMixin):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -789,12 +831,14 @@ class RobertaForCausalLM(RobertaPreTrainedModel, GenerationMixin):
 
 
 @auto_docstring
+# RobertaForMaskedLM：RoBERTa 掩码语言建模：预测被 [MASK] 替换的 token
 class RobertaForMaskedLM(RobertaPreTrainedModel):
     _tied_weights_keys = {
         "lm_head.decoder.weight": "roberta.embeddings.word_embeddings.weight",
         "lm_head.decoder.bias": "lm_head.bias",
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -818,6 +862,7 @@ class RobertaForMaskedLM(RobertaPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -874,9 +919,11 @@ class RobertaForMaskedLM(RobertaPreTrainedModel):
         )
 
 
+# RobertaLMHead：RoBERTa 语言模型头：隐状态到词表 logits 投影
 class RobertaLMHead(nn.Module):
     """Roberta Head for masked language modeling."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
@@ -885,6 +932,7 @@ class RobertaLMHead(nn.Module):
         self.decoder = nn.Linear(config.hidden_size, config.vocab_size)
         self.bias = nn.Parameter(torch.zeros(config.vocab_size))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, features, **kwargs):
         x = self.dense(features)
         x = gelu(x)
@@ -902,7 +950,9 @@ class RobertaLMHead(nn.Module):
     pooled output) e.g. for GLUE tasks.
     """
 )
+# RobertaForSequenceClassification：RoBERTa 序列分类：池化句向量 + 线性分类头
 class RobertaForSequenceClassification(RobertaPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
@@ -916,6 +966,7 @@ class RobertaForSequenceClassification(RobertaPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -987,7 +1038,9 @@ class RobertaForSequenceClassification(RobertaPreTrainedModel):
 
 
 @auto_docstring
+# RobertaForMultipleChoice：RoBERTa 多项选择：拼接选项后 softmax 选取最佳答案
 class RobertaForMultipleChoice(RobertaPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -1000,6 +1053,7 @@ class RobertaForMultipleChoice(RobertaPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -1084,7 +1138,9 @@ class RobertaForMultipleChoice(RobertaPreTrainedModel):
 
 
 @auto_docstring
+# RobertaForTokenClassification：RoBERTa Token 分类：逐 token 线性头用于 NER 等
 class RobertaForTokenClassification(RobertaPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
@@ -1101,6 +1157,7 @@ class RobertaForTokenClassification(RobertaPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -1154,9 +1211,11 @@ class RobertaForTokenClassification(RobertaPreTrainedModel):
         )
 
 
+# RobertaClassificationHead：RoBERTa 分类头：Dense + tanh + 输出投影
 class RobertaClassificationHead(nn.Module):
     """Head for sentence-level classification tasks."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
@@ -1166,6 +1225,7 @@ class RobertaClassificationHead(nn.Module):
         self.dropout = nn.Dropout(classifier_dropout)
         self.out_proj = nn.Linear(config.hidden_size, config.num_labels)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, features, **kwargs):
         x = features[:, 0, :]  # take <s> token (equiv. to [CLS])
         x = self.dropout(x)
@@ -1177,7 +1237,9 @@ class RobertaClassificationHead(nn.Module):
 
 
 @auto_docstring
+# RobertaForQuestionAnswering：RoBERTa 抽取式问答：预测答案 span 起止位置
 class RobertaForQuestionAnswering(RobertaPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
@@ -1190,6 +1252,7 @@ class RobertaForQuestionAnswering(RobertaPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,

@@ -21,6 +21,8 @@ import unicodedata
 
 from ...tokenization_python import PreTrainedTokenizer, _is_control, _is_punctuation, _is_whitespace
 from ...tokenization_utils_base import (
+# RoCBert 分词器：字/词/拼音三通道切分与 WordPiece 子词编码
+
     ENCODE_KWARGS_DOCSTRING,
     ENCODE_PLUS_ADDITIONAL_KWARGS_DOCSTRING,
     BatchEncoding,
@@ -46,6 +48,7 @@ VOCAB_FILES_NAMES = {
 }
 
 
+# load_vocab：加载词表文件：解析 JSON 词表为 token→id 映射
 def load_vocab(vocab_file):
     """Loads a vocabulary file into a dictionary."""
     vocab = collections.OrderedDict()
@@ -57,6 +60,7 @@ def load_vocab(vocab_file):
     return vocab
 
 
+# whitespace_tokenize：空白分词：按空格切分并过滤空字符串
 def whitespace_tokenize(text):
     """Runs basic whitespace cleaning and splitting on a piece of text."""
     text = text.strip()
@@ -66,6 +70,7 @@ def whitespace_tokenize(text):
     return tokens
 
 
+# RoCBertTokenizer：RoCBert 分词器：字/词/拼音三通道编码与特殊 token
 class RoCBertTokenizer(PreTrainedTokenizer):
     r"""
     Args:
@@ -110,6 +115,7 @@ class RoCBertTokenizer(PreTrainedTokenizer):
 
     vocab_files_names = VOCAB_FILES_NAMES
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         vocab_file,
@@ -996,6 +1002,7 @@ class RoCBertTokenizer(PreTrainedTokenizer):
         out_string = " ".join(tokens).replace(" ##", "").strip()
         return out_string
 
+    # build_inputs_with_special_tokens：拼接特殊 token：句首/句间/句尾标记与 input_ids
     def build_inputs_with_special_tokens(
         self,
         token_ids_0: list[int],
@@ -1025,6 +1032,7 @@ class RoCBertTokenizer(PreTrainedTokenizer):
             return cls + token_ids_0 + sep
         return cls + token_ids_0 + sep + token_ids_1 + sep
 
+    # get_special_tokens_mask：生成特殊 token 掩码：标记不参与 loss 计算的位置
     def get_special_tokens_mask(
         self, token_ids_0: list[int], token_ids_1: list[int] | None = None, already_has_special_tokens: bool = False
     ) -> list[int]:
@@ -1053,6 +1061,7 @@ class RoCBertTokenizer(PreTrainedTokenizer):
             return [1] + ([0] * len(token_ids_0)) + [1] + ([0] * len(token_ids_1)) + [1]
         return [1] + ([0] * len(token_ids_0)) + [1]
 
+    # save_vocabulary：保存词表到指定目录并返回写入的文件路径
     def save_vocabulary(self, save_directory: str, filename_prefix: str | None = None) -> tuple[str, str, str]:
         index = 0
         if os.path.isdir(save_directory):
@@ -1098,6 +1107,7 @@ class RoCBertTokenizer(PreTrainedTokenizer):
         )
 
 
+# RoCBertBasicTokenizer：RoCBert 基础分词：空白切分与中文标点规范化
 class RoCBertBasicTokenizer:
     """
     Constructs a RoCBertBasicTokenizer that will run basic tokenization (punctuation splitting, lower casing, etc.).
@@ -1121,6 +1131,7 @@ class RoCBertBasicTokenizer:
             the full context of the words, such as contractions.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         do_lower_case=True,
@@ -1259,9 +1270,11 @@ class RoCBertBasicTokenizer:
         return "".join(output)
 
 
+# RoCBertWordpieceTokenizer：RoCBert WordPiece：子词贪心最长匹配切分
 class RoCBertWordpieceTokenizer:
     """Runs WordPiece tokenization."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, vocab, unk_token, max_input_chars_per_word=100):
         self.vocab = vocab
         self.unk_token = unk_token

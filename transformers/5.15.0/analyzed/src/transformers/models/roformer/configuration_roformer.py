@@ -17,10 +17,13 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# RoFormer 配置：RoPE 旋转位置编码、隐藏维度与注意力头数
+
 
 
 @auto_docstring(checkpoint="junnyu/roformer_chinese_base")
 @strict
+# RoFormerConfig：RoFormer 超参数：RoPE 维度、隐藏大小与注意力头数
 class RoFormerConfig(PreTrainedConfig):
     r"""
     rotary_value (`bool`, *optional*, defaults to `False`):

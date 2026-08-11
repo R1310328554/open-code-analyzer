@@ -21,6 +21,8 @@ from ...tokenization_utils_base import AddedToken, BatchEncoding
 from ...tokenization_utils_tokenizers import PreTrainedTokenizerFast
 from ...utils import logging
 from .tokenization_roberta import RobertaTokenizer
+# RoBERTa 旧版 Fast 分词器：基于 tokenizers 库的向后兼容封装
+
 
 
 logger = logging.get_logger(__name__)
@@ -28,6 +30,7 @@ logger = logging.get_logger(__name__)
 VOCAB_FILES_NAMES = {"vocab_file": "vocab.json", "merges_file": "merges.txt", "tokenizer_file": "tokenizer.json"}
 
 
+# RobertaTokenizerFast：RoBERTa Fast 分词：tokenizers 后端加速版 BPE 编码
 class RobertaTokenizerFast(PreTrainedTokenizerFast):
     """
     Construct a "fast" RoBERTa tokenizer (backed by HuggingFace's *tokenizers* library), derived from the GPT-2
@@ -113,6 +116,7 @@ class RobertaTokenizerFast(PreTrainedTokenizerFast):
     model_input_names = ["input_ids", "attention_mask"]
     slow_tokenizer_class = RobertaTokenizer
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         vocab_file=None,
@@ -224,10 +228,12 @@ class RobertaTokenizerFast(PreTrainedTokenizerFast):
 
         return super()._encode_plus(*args, **kwargs)
 
+    # save_vocabulary：保存词表到指定目录并返回写入的文件路径
     def save_vocabulary(self, save_directory: str, filename_prefix: str | None = None) -> tuple[str]:
         files = self._tokenizer.model.save(save_directory, name=filename_prefix)
         return tuple(files)
 
+    # build_inputs_with_special_tokens：拼接特殊 token：句首/句间/句尾标记与 input_ids
     def build_inputs_with_special_tokens(self, token_ids_0, token_ids_1=None):
         output = [self.bos_token_id] + token_ids_0 + [self.eos_token_id]
         if token_ids_1 is None:
@@ -235,6 +241,7 @@ class RobertaTokenizerFast(PreTrainedTokenizerFast):
 
         return output + [self.eos_token_id] + token_ids_1 + [self.eos_token_id]
 
+    # create_token_type_ids_from_sequences：由句对生成 token_type_ids：区分第一句与第二句
     def create_token_type_ids_from_sequences(
         self, token_ids_0: list[int], token_ids_1: list[int] | None = None
     ) -> list[int]:

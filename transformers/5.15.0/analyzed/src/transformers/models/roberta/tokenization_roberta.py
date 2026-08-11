@@ -18,6 +18,8 @@ from tokenizers.models import BPE
 
 from ...tokenization_utils_tokenizers import TokenizersBackend
 from ...utils import logging
+# RoBERTa BPE 分词器：Byte-Pair-Encoding 与 GPT-2 风格空格处理
+
 
 
 logger = logging.get_logger(__name__)
@@ -25,6 +27,7 @@ logger = logging.get_logger(__name__)
 VOCAB_FILES_NAMES = {"vocab_file": "vocab.json", "merges_file": "merges.txt", "tokenizer_file": "tokenizer.json"}
 
 
+# RobertaTokenizer：RoBERTa BPE 分词：GPT-2 风格字节级 BPE 与特殊 token
 class RobertaTokenizer(TokenizersBackend):
     r"""
     Construct a RoBERTa tokenizer (backed by HuggingFace's tokenizers library). Based on Byte-Pair-Encoding.
@@ -109,6 +112,7 @@ class RobertaTokenizer(TokenizersBackend):
     model_input_names = ["input_ids", "attention_mask"]
     model = BPE
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         vocab: str | dict[str, int] | None = None,

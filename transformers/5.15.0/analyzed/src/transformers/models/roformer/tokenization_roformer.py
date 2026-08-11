@@ -19,6 +19,8 @@ from tokenizers.pre_tokenizers import BertPreTokenizer, PreTokenizer
 from ...tokenization_utils_tokenizers import PreTrainedTokenizerFast
 from ...utils import logging
 from .tokenization_utils import JiebaPreTokenizer
+# RoFormer 分词器：Jieba 预分词 + WordPiece 与 Fast 后端封装
+
 
 
 logger = logging.get_logger(__name__)
@@ -26,6 +28,7 @@ logger = logging.get_logger(__name__)
 VOCAB_FILES_NAMES = {"vocab_file": "vocab.txt", "tokenizer_file": "tokenizer.json"}
 
 
+# RoFormerTokenizer：RoFormer 分词器：Jieba 预分词 + WordPiece 与 Fast 后端
 class RoFormerTokenizer(PreTrainedTokenizerFast):
     r"""
     Construct a RoFormer tokenizer. Based on [Rust Jieba](https://pypi.org/project/rjieba/).
@@ -46,6 +49,7 @@ class RoFormerTokenizer(PreTrainedTokenizerFast):
 
     vocab_files_names = VOCAB_FILES_NAMES
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         vocab: dict[str, int] | None = None,
@@ -104,6 +108,7 @@ class RoFormerTokenizer(PreTrainedTokenizerFast):
         vocab = self.__dict__["_tokenizer"].get_vocab()
         self.__dict__["_tokenizer"].pre_tokenizer = PreTokenizer.custom(JiebaPreTokenizer(vocab))
 
+    # build_inputs_with_special_tokens：拼接特殊 token：句首/句间/句尾标记与 input_ids
     def build_inputs_with_special_tokens(self, token_ids_0, token_ids_1=None):
         """
         Build model inputs from a sequence or a pair of sequence for sequence classification tasks by concatenating and
@@ -128,6 +133,7 @@ class RoFormerTokenizer(PreTrainedTokenizerFast):
 
         return output
 
+    # create_token_type_ids_from_sequences：由句对生成 token_type_ids：区分第一句与第二句
     def create_token_type_ids_from_sequences(
         self, token_ids_0: list[int], token_ids_1: list[int] | None = None
     ) -> list[int]:
@@ -145,6 +151,7 @@ class RoFormerTokenizer(PreTrainedTokenizerFast):
 
         return len(cls + token_ids_0 + sep) * [0] + len(token_ids_1 + sep) * [1]
 
+    # save_vocabulary：保存词表到指定目录并返回写入的文件路径
     def save_vocabulary(self, save_directory: str, filename_prefix: str | None = None) -> tuple[str]:
         files = self._tokenizer.model.save(save_directory, name=filename_prefix)
         return tuple(files)

@@ -18,11 +18,14 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# RoBERTa-PreLayerNorm 配置：LayerNorm 置于子层前的 BERT 架构超参数
+
 
 
 @strict
 @auto_docstring(checkpoint="andreasmadsen/efficient_mlm_m0.40")
 # Copied from transformers.models.roberta.configuration_roberta.RobertaConfig with FacebookAI/roberta-base->andreasmadsen/efficient_mlm_m0.40,RoBERTa->RoBERTa-PreLayerNorm,Roberta->RobertaPreLayerNorm,roberta->roberta-prelayernorm
+# RobertaPreLayerNormConfig：Pre-LN RoBERTa 超参数：LayerNorm 前置的 BERT 架构配置
 class RobertaPreLayerNormConfig(PreTrainedConfig):
     r"""
     Examples:

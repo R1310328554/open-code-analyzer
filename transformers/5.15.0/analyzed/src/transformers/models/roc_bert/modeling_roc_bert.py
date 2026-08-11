@@ -26,6 +26,8 @@ from ...generation import GenerationMixin
 from ...masking_utils import create_bidirectional_mask, create_causal_mask
 from ...modeling_layers import GradientCheckpointingLayer
 from ...modeling_outputs import (
+# RoCBert 建模：多模态嵌入融合、双向编码与中文 NLP 下游任务头
+
     BaseModelOutputWithPastAndCrossAttentions,
     BaseModelOutputWithPoolingAndCrossAttentions,
     CausalLMOutputWithCrossAttentions,
@@ -47,9 +49,11 @@ from .configuration_roc_bert import RoCBertConfig
 logger = logging.get_logger(__name__)
 
 
+# RoCBertEmbeddings：RoCBert 多模态嵌入：字形 + 词形 + 拼音三路融合
 class RoCBertEmbeddings(nn.Module):
     """Construct the embeddings from word, position, shape, pronunciation and token_type embeddings."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.word_embeddings = nn.Embedding(config.vocab_size, config.hidden_size, padding_idx=config.pad_token_id)
@@ -86,6 +90,7 @@ class RoCBertEmbeddings(nn.Module):
             torch.zeros(self.position_ids.size(), dtype=torch.long, device=self.position_ids.device), persistent=False
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids=None,
@@ -171,6 +176,7 @@ class RoCBertEmbeddings(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.eager_attention_forward
+# eager_attention_forward：标准注意力前向：QK^T 缩放 softmax 加权 V
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -200,7 +206,9 @@ def eager_attention_forward(
 
 
 # Copied from transformers.models.bert.modeling_bert.BertSelfAttention with Bert->RoCBert
+# RoCBertSelfAttention：RoCBert 自注意力：缩放点积多头注意力
 class RoCBertSelfAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, is_causal=False, layer_idx=None):
         super().__init__()
         if config.hidden_size % config.num_attention_heads != 0 and not hasattr(config, "embedding_size"):
@@ -225,6 +233,7 @@ class RoCBertSelfAttention(nn.Module):
         self.is_causal = is_causal
         self.layer_idx = layer_idx
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -268,7 +277,9 @@ class RoCBertSelfAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertCrossAttention with Bert->RoCBert
+# RoCBertCrossAttention：RoCBert 交叉注意力：解码器查询与编码器键值
 class RoCBertCrossAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, is_causal=False, layer_idx=None):
         super().__init__()
         if config.hidden_size % config.num_attention_heads != 0 and not hasattr(config, "embedding_size"):
@@ -292,6 +303,7 @@ class RoCBertCrossAttention(nn.Module):
         self.is_causal = is_causal
         self.layer_idx = layer_idx
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -345,13 +357,16 @@ class RoCBertCrossAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertSelfOutput with Bert->RoCBert
+# RoCBertSelfOutput：RoCBert 注意力输出：线性投影 + Dropout + 残差
 class RoCBertSelfOutput(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
@@ -360,7 +375,9 @@ class RoCBertSelfOutput(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertAttention with Bert->RoCBert,BERT->ROC_BERT
+# RoCBertAttention：RoCBert 完整注意力：自/交叉注意力 + 输出投影
 class RoCBertAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, is_causal=False, layer_idx=None, is_cross_attention=False):
         super().__init__()
         self.is_cross_attention = is_cross_attention
@@ -368,6 +385,7 @@ class RoCBertAttention(nn.Module):
         self.self = attention_class(config, is_causal=is_causal, layer_idx=layer_idx)
         self.output = RoCBertSelfOutput(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -390,7 +408,9 @@ class RoCBertAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertIntermediate with Bert->RoCBert
+# RoCBertIntermediate：RoCBert FFN 中间层：升维线性 + 激活
 class RoCBertIntermediate(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.intermediate_size)
@@ -399,6 +419,7 @@ class RoCBertIntermediate(nn.Module):
         else:
             self.intermediate_act_fn = config.hidden_act
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.intermediate_act_fn(hidden_states)
@@ -406,13 +427,16 @@ class RoCBertIntermediate(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOutput with Bert->RoCBert
+# RoCBertOutput：RoCBert FFN 输出层：降维线性 + Dropout + 残差
 class RoCBertOutput(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.intermediate_size, config.hidden_size)
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
@@ -421,7 +445,9 @@ class RoCBertOutput(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertLayer with Bert->RoCBert
+# RoCBertLayer：RoCBert Transformer 层：自注意力 + FFN 残差堆叠
 class RoCBertLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_idx=None):
         super().__init__()
         self.chunk_size_feed_forward = config.chunk_size_feed_forward
@@ -441,6 +467,7 @@ class RoCBertLayer(GradientCheckpointingLayer):
         self.intermediate = RoCBertIntermediate(config)
         self.output = RoCBertOutput(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -487,12 +514,15 @@ class RoCBertLayer(GradientCheckpointingLayer):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertEncoder with Bert->RoCBert
+# RoCBertEncoder：RoCBert 编码器：多层双向 Transformer 提取中文表征
 class RoCBertEncoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
         self.layer = nn.ModuleList([RoCBertLayer(config, layer_idx=i) for i in range(config.num_hidden_layers)])
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -520,12 +550,15 @@ class RoCBertEncoder(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPooler with Bert->RoCBert
+# RoCBertPooler：RoCBert 池化：[CLS] 隐状态 tanh 投影为句向量
 class RoCBertPooler(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
         self.activation = nn.Tanh()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         # We "pool" the model by simply taking the hidden state corresponding
         # to the first token.
@@ -536,7 +569,9 @@ class RoCBertPooler(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPredictionHeadTransform with Bert->RoCBert
+# RoCBertPredictionHeadTransform：RoCBert MLM 头变换：Dense + 激活 + LayerNorm
 class RoCBertPredictionHeadTransform(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
@@ -546,6 +581,7 @@ class RoCBertPredictionHeadTransform(nn.Module):
             self.transform_act_fn = config.hidden_act
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.transform_act_fn(hidden_states)
@@ -554,7 +590,9 @@ class RoCBertPredictionHeadTransform(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertLMPredictionHead with Bert->RoCBert
+# RoCBertLMPredictionHead：RoCBert 语言模型预测头：变换 + 词表 logits
 class RoCBertLMPredictionHead(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.transform = RoCBertPredictionHeadTransform(config)
@@ -564,6 +602,7 @@ class RoCBertLMPredictionHead(nn.Module):
         self.decoder = nn.Linear(config.hidden_size, config.vocab_size, bias=True)
         self.bias = nn.Parameter(torch.zeros(config.vocab_size))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.transform(hidden_states)
         hidden_states = self.decoder(hidden_states)
@@ -571,17 +610,21 @@ class RoCBertLMPredictionHead(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOnlyMLMHead with Bert->RoCBert
+# RoCBertOnlyMLMHead：RoCBert 仅 MLM 头：预测头 + 词嵌入权重绑定
 class RoCBertOnlyMLMHead(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.predictions = RoCBertLMPredictionHead(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, sequence_output: torch.Tensor) -> torch.Tensor:
         prediction_scores = self.predictions(sequence_output)
         return prediction_scores
 
 
 @auto_docstring
+# RoCBertPreTrainedModel：RoCBert 预训练基类：多模态嵌入权重初始化
 class RoCBertPreTrainedModel(PreTrainedModel):
     config_class = RoCBertConfig
     base_model_prefix = "roc_bert"
@@ -597,6 +640,7 @@ class RoCBertPreTrainedModel(PreTrainedModel):
     }
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module):
         """Initialize the weights"""
         super()._init_weights(module)
@@ -620,7 +664,9 @@ class RoCBertPreTrainedModel(PreTrainedModel):
     `add_cross_attention` set to `True`; an `encoder_hidden_states` is then expected as an input to the forward pass.
     """
 )
+# RoCBertModel：RoCBert 编码器骨干：字/词/拼音融合后的双向表征
 class RoCBertModel(RoCBertPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, add_pooling_layer=True):
         r"""
         add_pooling_layer (bool, *optional*, defaults to `True`):
@@ -661,6 +707,7 @@ class RoCBertModel(RoCBertPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.Tensor | None = None,
@@ -781,12 +828,14 @@ class RoCBertModel(RoCBertPreTrainedModel):
     RoCBert Model with contrastive loss and masked_lm_loss during the pretraining.
     """
 )
+# RoCBertForPreTraining：RoCBert 预训练：MLM + 下一句预测联合损失
 class RoCBertForPreTraining(RoCBertPreTrainedModel):
     _tied_weights_keys = {
         "cls.predictions.decoder.bias": "cls.predictions.bias",
         "cls.predictions.decoder.weight": "roc_bert.embeddings.word_embeddings.weight",
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -807,6 +856,7 @@ class RoCBertForPreTraining(RoCBertPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.Tensor | None = None,
@@ -977,6 +1027,7 @@ class RoCBertForPreTraining(RoCBertPreTrainedModel):
 
 
 @auto_docstring
+# RoCBertForMaskedLM：RoCBert 掩码语言建模：预测被遮盖的中文字/词
 class RoCBertForMaskedLM(RoCBertPreTrainedModel):
     _tied_weights_keys = {
         "cls.predictions.decoder.bias": "cls.predictions.bias",
@@ -984,6 +1035,7 @@ class RoCBertForMaskedLM(RoCBertPreTrainedModel):
     }
 
     # Copied from transformers.models.bert.modeling_bert.BertForMaskedLM.__init__ with Bert->RoCBert,bert->roc_bert
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -1010,6 +1062,7 @@ class RoCBertForMaskedLM(RoCBertPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.Tensor | None = None,
@@ -1100,6 +1153,7 @@ class RoCBertForMaskedLM(RoCBertPreTrainedModel):
     RoCBert Model with a `language modeling` head on top for CLM fine-tuning.
     """
 )
+# RoCBertForCausalLM：RoCBert 因果语言建模：自回归 next-token 生成
 class RoCBertForCausalLM(RoCBertPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {
         "cls.predictions.decoder.bias": "cls.predictions.bias",
@@ -1107,6 +1161,7 @@ class RoCBertForCausalLM(RoCBertPreTrainedModel, GenerationMixin):
     }
 
     # Copied from transformers.models.bert.modeling_bert.BertLMHeadModel.__init__ with BertLMHeadModel->RoCBertForCausalLM,Bert->RoCBert,bert->roc_bert
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -1130,6 +1185,7 @@ class RoCBertForCausalLM(RoCBertPreTrainedModel, GenerationMixin):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.Tensor | None = None,
@@ -1252,8 +1308,10 @@ class RoCBertForCausalLM(RoCBertPreTrainedModel, GenerationMixin):
     the pooled output) e.g. for GLUE tasks.
     """
 )
+# RoCBertForSequenceClassification：RoCBert 序列分类：池化句向量 + 线性头
 class RoCBertForSequenceClassification(RoCBertPreTrainedModel):
     # Copied from transformers.models.bert.modeling_bert.BertForSequenceClassification.__init__ with Bert->RoCBert,bert->roc_bert
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
@@ -1271,6 +1329,7 @@ class RoCBertForSequenceClassification(RoCBertPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.Tensor | None = None,
@@ -1352,8 +1411,10 @@ class RoCBertForSequenceClassification(RoCBertPreTrainedModel):
 
 
 @auto_docstring
+# RoCBertForMultipleChoice：RoCBert 多项选择：选项拼接后 softmax 选取
 class RoCBertForMultipleChoice(RoCBertPreTrainedModel):
     # Copied from transformers.models.bert.modeling_bert.BertForMultipleChoice.__init__ with Bert->RoCBert,bert->roc_bert
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -1369,6 +1430,7 @@ class RoCBertForMultipleChoice(RoCBertPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.Tensor | None = None,
@@ -1475,8 +1537,10 @@ class RoCBertForMultipleChoice(RoCBertPreTrainedModel):
 
 
 @auto_docstring
+# RoCBertForTokenClassification：RoCBert Token 分类：逐 token 线性头用于 NER
 class RoCBertForTokenClassification(RoCBertPreTrainedModel):
     # Copied from transformers.models.bert.modeling_bert.BertForTokenClassification.__init__ with Bert->RoCBert,bert->roc_bert
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
@@ -1493,6 +1557,7 @@ class RoCBertForTokenClassification(RoCBertPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.Tensor | None = None,
@@ -1554,8 +1619,10 @@ class RoCBertForTokenClassification(RoCBertPreTrainedModel):
 
 
 @auto_docstring
+# RoCBertForQuestionAnswering：RoCBert 抽取式问答：span 起止位置预测
 class RoCBertForQuestionAnswering(RoCBertPreTrainedModel):
     # Copied from transformers.models.bert.modeling_bert.BertForQuestionAnswering.__init__ with Bert->RoCBert,bert->roc_bert
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
@@ -1568,6 +1635,7 @@ class RoCBertForQuestionAnswering(RoCBertPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.Tensor | None = None,

@@ -17,10 +17,13 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# RoCBert 配置：字形、词形与拼音嵌入维度及 BERT 骨干超参数
+
 
 
 @auto_docstring(checkpoint="weiweishi/roc-bert-base-zh")
 @strict
+# RoCBertConfig：RoCBert 超参数：字/词/拼音嵌入维度与 BERT 骨干配置
 class RoCBertConfig(PreTrainedConfig):
     r"""
     enable_pronunciation (`bool`, *optional*, defaults to `True`):

@@ -28,6 +28,8 @@ from ...generation import GenerationMixin
 from ...masking_utils import create_bidirectional_mask
 from ...modeling_layers import GradientCheckpointingLayer
 from ...modeling_outputs import (
+# RoFormer 建模：正弦 RoPE 自注意力、编码器堆栈与多任务头
+
     BaseModelOutputWithPastAndCrossAttentions,
     CausalLMOutputWithCrossAttentions,
     MaskedLMOutput,
@@ -46,9 +48,11 @@ logger = logging.get_logger(__name__)
 
 
 # Copied from transformers.models.marian.modeling_marian.MarianSinusoidalPositionalEmbedding with Marian->RoFormer
+# RoFormerSinusoidalPositionalEmbedding：RoFormer 正弦位置表：预计算 RoPE 频率嵌入
 class RoFormerSinusoidalPositionalEmbedding(nn.Embedding):
     """This module produces sinusoidal positional embeddings of any length."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, num_positions: int, embedding_dim: int, padding_idx: int | None = None) -> None:
         super().__init__(num_positions, embedding_dim, _freeze=True)
 
@@ -68,6 +72,7 @@ class RoFormerSinusoidalPositionalEmbedding(nn.Embedding):
         return out
 
     @torch.no_grad()
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self, input_ids_shape: torch.Size, past_key_values_length: int = 0, position_ids: torch.Tensor | None = None
     ) -> torch.Tensor:
@@ -80,9 +85,11 @@ class RoFormerSinusoidalPositionalEmbedding(nn.Embedding):
         return super().forward(position_ids)
 
 
+# RoFormerEmbeddings：RoFormer 嵌入：词嵌入 + 层归一化（位置由 RoPE 注入）
 class RoFormerEmbeddings(nn.Module):
     """Construct the embeddings from word and token_type embeddings."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.word_embeddings = nn.Embedding(config.vocab_size, config.embedding_size, padding_idx=config.pad_token_id)
@@ -91,6 +98,7 @@ class RoFormerEmbeddings(nn.Module):
         self.LayerNorm = nn.LayerNorm(config.embedding_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input_ids=None, token_type_ids=None, inputs_embeds=None):
         if input_ids is not None:
             input_shape = input_ids.size()
@@ -112,7 +120,9 @@ class RoFormerEmbeddings(nn.Module):
         return embeddings
 
 
+# RoFormerSelfAttention：RoFormer 自注意力：旋转位置编码（RoPE）缩放点积注意力
 class RoFormerSelfAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_idx=None):
         super().__init__()
         if config.hidden_size % config.num_attention_heads != 0 and not hasattr(config, "embedding_size"):
@@ -135,6 +145,7 @@ class RoFormerSelfAttention(nn.Module):
         self.rotary_value = config.rotary_value
         self.layer_idx = layer_idx
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -245,13 +256,16 @@ class RoFormerSelfAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertSelfOutput with Bert->RoFormer
+# RoFormerSelfOutput：RoFormer 注意力输出：线性投影 + Dropout + 残差 LayerNorm
 class RoFormerSelfOutput(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
@@ -259,12 +273,15 @@ class RoFormerSelfOutput(nn.Module):
         return hidden_states
 
 
+# RoFormerAttention：RoFormer 完整注意力：RoPE 自注意力 + 输出投影
 class RoFormerAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_idx=None):
         super().__init__()
         self.self = RoFormerSelfAttention(config, layer_idx=layer_idx)
         self.output = RoFormerSelfOutput(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -290,7 +307,9 @@ class RoFormerAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertIntermediate with Bert->RoFormer
+# RoFormerIntermediate：RoFormer FFN 中间层：升维线性 + 激活
 class RoFormerIntermediate(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.intermediate_size)
@@ -299,6 +318,7 @@ class RoFormerIntermediate(nn.Module):
         else:
             self.intermediate_act_fn = config.hidden_act
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.intermediate_act_fn(hidden_states)
@@ -306,13 +326,16 @@ class RoFormerIntermediate(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOutput with Bert->RoFormer
+# RoFormerOutput：RoFormer FFN 输出层：降维线性 + Dropout + 残差
 class RoFormerOutput(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.intermediate_size, config.hidden_size)
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
@@ -320,7 +343,9 @@ class RoFormerOutput(nn.Module):
         return hidden_states
 
 
+# RoFormerLayer：RoFormer Transformer 层：RoPE 自注意力 + FFN 残差堆叠
 class RoFormerLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_idx=None):
         super().__init__()
         self.chunk_size_feed_forward = config.chunk_size_feed_forward
@@ -335,6 +360,7 @@ class RoFormerLayer(GradientCheckpointingLayer):
         self.intermediate = RoFormerIntermediate(config)
         self.output = RoFormerOutput(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -387,7 +413,9 @@ class RoFormerLayer(GradientCheckpointingLayer):
         return layer_output
 
 
+# RoFormerEncoder：RoFormer 编码器：多层 RoPE Transformer 提取上下文
 class RoFormerEncoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -397,6 +425,7 @@ class RoFormerEncoder(nn.Module):
         self.layer = nn.ModuleList([RoFormerLayer(config, layer_idx=i) for i in range(config.num_hidden_layers)])
         self.gradient_checkpointing = False
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -472,6 +501,7 @@ class RoFormerEncoder(nn.Module):
 
 
 # Copied from transformers.models.xlm.modeling_xlm.XLMSequenceSummary with XLM->RoFormer
+# RoFormerSequenceSummary：RoFormer 序列摘要：多种池化策略聚合句向量
 class RoFormerSequenceSummary(nn.Module):
     r"""
     Compute a single vector summary of a sequence hidden states.
@@ -498,6 +528,7 @@ class RoFormerSequenceSummary(nn.Module):
             - **summary_last_dropout** (`float`)-- Optional dropout probability after the projection and activation.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RoFormerConfig):
         super().__init__()
 
@@ -527,6 +558,7 @@ class RoFormerSequenceSummary(nn.Module):
         if hasattr(config, "summary_last_dropout") and config.summary_last_dropout > 0:
             self.last_dropout = nn.Dropout(config.summary_last_dropout)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self, hidden_states: torch.FloatTensor, cls_index: torch.LongTensor | None = None
     ) -> torch.FloatTensor:
@@ -571,7 +603,9 @@ class RoFormerSequenceSummary(nn.Module):
         return output
 
 
+# RoFormerPredictionHeadTransform：RoFormer MLM 头变换：Dense + 激活 + LayerNorm
 class RoFormerPredictionHeadTransform(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.embedding_size)
@@ -581,6 +615,7 @@ class RoFormerPredictionHeadTransform(nn.Module):
             self.transform_act_fn = config.hidden_act
         self.LayerNorm = nn.LayerNorm(config.embedding_size, eps=config.layer_norm_eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.dense(hidden_states)
         hidden_states = self.transform_act_fn(hidden_states)
@@ -588,7 +623,9 @@ class RoFormerPredictionHeadTransform(nn.Module):
         return hidden_states
 
 
+# RoFormerLMPredictionHead：RoFormer 语言模型预测头：变换 + 词表 logits
 class RoFormerLMPredictionHead(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.transform = RoFormerPredictionHeadTransform(config)
@@ -599,6 +636,7 @@ class RoFormerLMPredictionHead(nn.Module):
 
         self.bias = nn.Parameter(torch.zeros(config.vocab_size))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.transform(hidden_states)
         hidden_states = self.decoder(hidden_states)
@@ -606,23 +644,28 @@ class RoFormerLMPredictionHead(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOnlyMLMHead with Bert->RoFormer
+# RoFormerOnlyMLMHead：RoFormer 仅 MLM 头：预测头 + 词嵌入权重绑定
 class RoFormerOnlyMLMHead(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.predictions = RoFormerLMPredictionHead(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, sequence_output: torch.Tensor) -> torch.Tensor:
         prediction_scores = self.predictions(sequence_output)
         return prediction_scores
 
 
 @auto_docstring
+# RoFormerPreTrainedModel：RoFormer 预训练基类：RoPE 权重初始化策略
 class RoFormerPreTrainedModel(PreTrainedModel):
     config: RoFormerConfig
     base_model_prefix = "roformer"
     supports_gradient_checkpointing = True
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, RoFormerSinusoidalPositionalEmbedding):
@@ -644,7 +687,9 @@ class RoFormerPreTrainedModel(PreTrainedModel):
     `add_cross_attention` set to `True`; an `encoder_hidden_states` is then expected as an input to the forward pass.
     """
 )
+# RoFormerModel：RoFormer 编码器骨干：RoPE 双向表征与可选序列摘要
 class RoFormerModel(RoFormerPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.config = config
@@ -665,6 +710,7 @@ class RoFormerModel(RoFormerPreTrainedModel):
         self.embeddings.word_embeddings = value
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -765,12 +811,14 @@ class RoFormerModel(RoFormerPreTrainedModel):
 
 
 @auto_docstring
+# RoFormerForMaskedLM：RoFormer 掩码语言建模：预测被 [MASK] 替换的 token
 class RoFormerForMaskedLM(RoFormerPreTrainedModel):
     _tied_weights_keys = {
         "cls.predictions.decoder.bias": "cls.predictions.bias",
         "cls.predictions.decoder.weight": "roformer.embeddings.word_embeddings.weight",
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -794,6 +842,7 @@ class RoFormerForMaskedLM(RoFormerPreTrainedModel):
         self.cls.predictions.bias = new_embeddings.bias
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -854,12 +903,14 @@ class RoFormerForMaskedLM(RoFormerPreTrainedModel):
     RoFormer Model with a `language modeling` head on top for CLM fine-tuning.
     """
 )
+# RoFormerForCausalLM：RoFormer 因果语言建模：自回归 next-token 预测
 class RoFormerForCausalLM(RoFormerPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {
         "cls.predictions.decoder.bias": "cls.predictions.bias",
         "cls.predictions.decoder.weight": "roformer.embeddings.word_embeddings.weight",
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -880,6 +931,7 @@ class RoFormerForCausalLM(RoFormerPreTrainedModel, GenerationMixin):
         self.cls.predictions.bias = new_embeddings.bias
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -959,9 +1011,11 @@ class RoFormerForCausalLM(RoFormerPreTrainedModel, GenerationMixin):
         )
 
 
+# RoFormerClassificationHead：RoFormer 分类头：Dense + tanh + 输出投影
 class RoFormerClassificationHead(nn.Module):
     """Head for sentence-level classification tasks."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
@@ -970,6 +1024,7 @@ class RoFormerClassificationHead(nn.Module):
 
         self.config = config
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, features, **kwargs):
         x = features[:, 0, :]  # take <s> token (equiv. to [CLS])
         x = self.dropout(x)
@@ -986,7 +1041,9 @@ class RoFormerClassificationHead(nn.Module):
     pooled output) e.g. for GLUE tasks.
     """
 )
+# RoFormerForSequenceClassification：RoFormer 序列分类：序列摘要 + 线性分类头
 class RoFormerForSequenceClassification(RoFormerPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
@@ -997,6 +1054,7 @@ class RoFormerForSequenceClassification(RoFormerPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -1066,7 +1124,9 @@ class RoFormerForSequenceClassification(RoFormerPreTrainedModel):
 
 
 @auto_docstring
+# RoFormerForMultipleChoice：RoFormer 多项选择：选项拼接后 softmax 选取
 class RoFormerForMultipleChoice(RoFormerPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -1078,6 +1138,7 @@ class RoFormerForMultipleChoice(RoFormerPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -1163,7 +1224,9 @@ class RoFormerForMultipleChoice(RoFormerPreTrainedModel):
 
 
 @auto_docstring
+# RoFormerForTokenClassification：RoFormer Token 分类：逐 token 线性预测
 class RoFormerForTokenClassification(RoFormerPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
@@ -1176,6 +1239,7 @@ class RoFormerForTokenClassification(RoFormerPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -1228,7 +1292,9 @@ class RoFormerForTokenClassification(RoFormerPreTrainedModel):
 
 
 @auto_docstring
+# RoFormerForQuestionAnswering：RoFormer 抽取式问答：span 起止位置预测
 class RoFormerForQuestionAnswering(RoFormerPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -1242,6 +1308,7 @@ class RoFormerForQuestionAnswering(RoFormerPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
