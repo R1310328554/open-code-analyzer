@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# MCP Task 抽象基类：封装 inference.predict 调用链与 FastMCP tool 注册
 import abc
 from typing import Any, List, Optional, Union
 
@@ -26,21 +27,25 @@ from ..providers import is_http_provider
 ToolReturn = Union[str, List[Union[TextContent, ImageContent]]]
 
 
+    # 任务模板：子类定义 tool_name 与 _format_result，基类提供 _invoke_tool 与 register_tools
 class Task(abc.ABC):
     def __init__(self, inference: Inference):
         self._inference = inference
 
     @property
     @abc.abstractmethod
+        # 子类实现：返回 MCP 工具名（如 ocr、pp_structurev3）
     def tool_name(self) -> str:
         pass
 
     @abc.abstractmethod
+        # 子类实现：将 InferenceResult 格式化为 plain text 或 MCP TextContent/ImageContent 列表
     def _format_result(
         self, result: InferenceResult, detailed: bool, **kwargs
     ) -> ToolReturn:
         pass
 
+        # 动态生成工具描述：provider 输入说明、HTTP file_type 提示与 valid_params 列表
     def _tool_description(self) -> str:
         adapter = self._inference.input_adapter
         valid_params = sorted(self._inference.get_valid_params())
@@ -57,6 +62,7 @@ class Task(abc.ABC):
             f"Optional runtime_params keys: {params_hint}."
         )
 
+        # MCP 工具处理器：normalize → validate → predict → _format_result
     async def _invoke_tool(
         self,
         input_data: str,
@@ -100,6 +106,7 @@ class Task(abc.ABC):
             return_images=return_images,
         )
 
+        # 向 FastMCP 实例注册 self.tool_name 对应的异步工具函数
     def register_tools(self, mcp: FastMCP) -> None:
         mcp.tool(self.tool_name, description=self._tool_description())(
             self._invoke_tool

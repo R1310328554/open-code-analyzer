@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""各推理 provider 的输入适配器：将统一 MCP input_data 转为 local/API/HTTP 原生形式。"""
 """Provider-specific input adapters for the unified MCP input contract."""
 
 from __future__ import annotations
@@ -42,6 +43,7 @@ from ...providers import (
 )
 
 
+    # 输入适配器 ABC：normalize/validate 校验契约，prepare 上下文管理器产出 provider 形态
 class InputAdapter(abc.ABC):
     @property
     @abc.abstractmethod
@@ -49,6 +51,7 @@ class InputAdapter(abc.ABC):
         pass
 
     @property
+        # 生成工具描述：provider 显示名 + 通用 input_data 格式说明
     def description(self) -> str:
         spec = get_provider_spec(self.provider)
         return (
@@ -64,11 +67,13 @@ class InputAdapter(abc.ABC):
 
     @abc.abstractmethod
     @contextmanager
+        # 子类实现：将 URL/路径/Base64 转为推理后端可消费的值
     def prepare(self, input_data: str) -> Generator[Any, None, None]:
         """Convert user input into the inference provider's native form."""
         raise NotImplementedError
 
 
+    # 本地推理适配器：URL 直传、绝对路径、Base64 图片转 BGR numpy 或 PDF 临时文件
 class LocalInputAdapter(InputAdapter):
     @property
     def provider(self) -> InferenceProvider:
@@ -112,6 +117,7 @@ class LocalInputAdapter(InputAdapter):
         )
 
 
+    # AI Studio 适配器：产出 {file_url} 或 {file_path} 字典供 SDK 调用
 class AIStudioInputAdapter(InputAdapter):
     @property
     def provider(self) -> InferenceProvider:
@@ -142,6 +148,7 @@ class AIStudioInputAdapter(InputAdapter):
             yield {"file_path": str(temp_path)}
 
 
+    # HTTP 适配器：URL 直传、本地文件读字节后 Base64、或透传 Base64 payload
 class HTTPInputAdapter(InputAdapter):
     def __init__(self, provider: InferenceProvider | str) -> None:
         normalized_provider = normalize_provider(provider)
@@ -160,6 +167,7 @@ class HTTPInputAdapter(InputAdapter):
     def prepare(self, input_data: str) -> Generator[str, None, None]:
         yield self.prepare_http_file_field(input_data)
 
+        # 专供 HTTP payload 的 file 字段：返回 URL 字符串或 Base64 编码内容
     def prepare_http_file_field(self, input_data: str) -> str:
         value = normalize(input_data)
         kind = classify_input(value)
@@ -176,6 +184,7 @@ class HTTPInputAdapter(InputAdapter):
         return payload
 
 
+# 各 provider 单例适配器，供工厂与 HTTP 基类直接引用
 LOCAL_INPUT_ADAPTER = LocalInputAdapter()
 AISTUDIO_INPUT_ADAPTER = AIStudioInputAdapter()
 SELF_HOSTED_INPUT_ADAPTER = HTTPInputAdapter(InferenceProvider.SELF_HOSTED)

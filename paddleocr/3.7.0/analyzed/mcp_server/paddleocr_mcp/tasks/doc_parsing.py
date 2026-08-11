@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 文档解析 MCP Task：将 DocParsingResult 格式化为 Markdown 文本与内嵌 MCP 图片块
 import json
 import re
 from typing import Dict, List, Union
@@ -24,7 +25,9 @@ from .base import Task
 from .mcp_image import normalize_mcp_image_payload
 
 
+    # 文档解析任务基类：解析 markdown 中 <img> 标签并替换为 ImageContent
 class DocParsingTask(Task):
+        # 空内容返回提示；detailed 模式追加页数；return_images 控制是否拆分图片
     def _format_result(
         self,
         result: InferenceResult,
@@ -66,6 +69,7 @@ class DocParsingTask(Task):
             return content_list[0]
         return content_list
 
+        # 正则扫描 <img src="...">，按 images_mapping 插入 Base64 ImageContent
     def _parse_markdown_with_images(
         self, markdown_text: str, images_mapping: Dict[str, str]
     ) -> List[Union[TextContent, ImageContent]]:
@@ -105,6 +109,7 @@ class DocParsingTask(Task):
         return content_list or [TextContent(type="text", text=markdown_text)]
 
 
+    # PP-StructureV3 版面解析工具：tool_name 为 pp_structurev3
 class PPStructureV3Task(DocParsingTask):
     @property
     @override
@@ -112,6 +117,7 @@ class PPStructureV3Task(DocParsingTask):
         return "pp_structurev3"
 
 
+    # PaddleOCR-VL 多模态文档理解工具：tool_name 为 paddleocr_vl
 class PaddleOCRVLTask(DocParsingTask):
     @property
     @override

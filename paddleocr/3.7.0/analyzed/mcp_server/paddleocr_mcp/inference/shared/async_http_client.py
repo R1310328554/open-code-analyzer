@@ -12,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 异步 HTTP 客户端：封装 httpx.AsyncClient，供 MCP 推理层向远端 OCR 服务 POST JSON
 from typing import Any, Optional
 
 import httpx
 
 
+    # 轻量异步 HTTP 封装：管理连接生命周期、超时与 Bearer 鉴权头
 class AsyncHTTPClient:
+        # 初始化 base_url、读写超时上限与默认请求头
     def __init__(
         self,
         base_url: str,
@@ -29,6 +32,7 @@ class AsyncHTTPClient:
         self._headers = headers or {}
         self._client: Optional[httpx.AsyncClient] = None
 
+        # 创建 httpx.AsyncClient，connect/read/write/pool 分别配置超时
     async def start(self) -> None:
         write_timeout = min(float(self._http_timeout), 120.0)
         timeout = httpx.Timeout(
@@ -39,11 +43,13 @@ class AsyncHTTPClient:
         )
         self._client = httpx.AsyncClient(timeout=timeout)
 
+        # 关闭底层客户端并释放连接池资源
     async def stop(self) -> None:
         if self._client:
             await self._client.aclose()
             self._client = None
 
+        # 向 endpoint 发送 JSON POST，raise_for_status 后返回解析后的 dict
     async def post(
         self,
         endpoint: str,

@@ -12,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# HTTP 响应 JSON 解析器：将千帆/自建服务返回的 ocrResults、layoutParsingResults 转为 typed 结果
 from typing import Any
 
 from ..types import DocParsingResult, OCRResult, TextLine
 
 
+    # 遍历 ocrResults[].prunedResult，过滤空行并计算平均置信度
 def parse_ocr_result(result_data: dict[str, Any]) -> OCRResult:
+    """解析 OCR HTTP 响应：提取 rec_texts/rec_scores/rec_boxes 并组装 TextLine 列表。"""
     """Parse OCR response payload."""
     ocr_results = result_data.get("ocrResults", [])
     all_texts, all_confidences, text_lines = [], [], []
@@ -48,7 +51,9 @@ def parse_ocr_result(result_data: dict[str, Any]) -> OCRResult:
     )
 
 
+    # 遍历 layoutParsingResults，拼接 markdown 并统计页数
 def parse_doc_parsing_result(result_data: dict[str, Any]) -> DocParsingResult:
+    """解析文档版面 HTTP 响应：合并各页 markdown 文本与内嵌图片 Base64 映射。"""
     """Parse document parsing response payload."""
     doc_parsing_results = result_data.get("layoutParsingResults", [])
     markdown_parts = []

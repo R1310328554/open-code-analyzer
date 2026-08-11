@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# PaddleOCR 官方 API SDK 懒加载封装：兼容顶层导出与 _api_client 私有模块两种安装布局
 import importlib
 import importlib.machinery
 import importlib.util
@@ -28,6 +29,7 @@ ImportModule: TypeAlias = Callable[[str], ModuleType]
 
 
 @dataclass(frozen=True)
+    # 不可变 dataclass：聚合 AsyncPaddleOCRClient、Model、Options 与 typed 异常类
 class PaddleOCRAPISDK:
     AsyncPaddleOCRClient: SDKObject
     Model: SDKObject
@@ -70,6 +72,7 @@ def _sdk_exception(module: ModuleType, name: str) -> SDKException:
     return value
 
 
+    # 优先从 paddleocr 包顶层 __init__ 直接 getattr 各 SDK 符号
 def _build_sdk_from_top_level(paddleocr: ModuleType) -> PaddleOCRAPISDK:
     missing = [name for name in _NAMES if not hasattr(paddleocr, name)]
     if missing:
@@ -90,6 +93,7 @@ def _build_sdk_from_top_level(paddleocr: ModuleType) -> PaddleOCRAPISDK:
     )
 
 
+    # 回退：分别 import _api_client 下的 async_client/models/errors 子模块
 def _build_sdk_from_private_modules(import_module: ImportModule) -> PaddleOCRAPISDK:
     async_client = import_module("paddleocr._api_client.async_client")
     models = import_module("paddleocr._api_client.models")
@@ -117,6 +121,7 @@ def _find_paddleocr_package_dir() -> Path:
     return Path(next(iter(spec.submodule_search_locations)))
 
 
+    # 极端回退：从磁盘 _api_client/__init__.py 手动注册 sys.modules 包结构
 def _register_api_client_package_from_files() -> None:
     package_dir = _find_paddleocr_package_dir()
     api_client_dir = package_dir / "_api_client"
@@ -154,6 +159,7 @@ def _build_sdk_from_private_module_files() -> PaddleOCRAPISDK:
     return _build_sdk_from_private_modules(importlib.import_module)
 
 
+    # 三级降级加载：顶层 → 私有子模块 → 文件系统注册后 import
 def load_paddleocr_api_sdk(
     import_module: ImportModule = importlib.import_module,
 ) -> PaddleOCRAPISDK:
@@ -166,6 +172,7 @@ def load_paddleocr_api_sdk(
             return _build_sdk_from_private_module_files()
 
 
+# 模块导入时 eagerly 加载 SDK，并 re-export 常用符号供 inference 层直接使用
 _SDK = load_paddleocr_api_sdk()
 
 AsyncPaddleOCRClient = _SDK.AsyncPaddleOCRClient

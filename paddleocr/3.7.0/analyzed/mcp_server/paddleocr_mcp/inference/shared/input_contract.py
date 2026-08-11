@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""MCP 统一输入契约：分类 URL/绝对路径/Base64/data URL 并校验可访问性与文件类型。"""
 """Shared user-facing input contract for all MCP inference providers."""
 
 from __future__ import annotations
@@ -30,6 +31,7 @@ from ...utils import (
     is_url,
 )
 
+    # 面向 MCP 工具描述的用户可见 input_data 格式说明（英文，供 LLM 阅读）
 COMMON_INPUT_DESCRIPTION = (
     "Supported input_data: absolute file path accessible to the MCP server process "
     "(~ is expanded), HTTP(S) URL, raw Base64, or data URL. Relative paths are "
@@ -56,6 +58,7 @@ _SUFFIX_BY_FILE_TYPE = {
 }
 
 
+    # 输入种类枚举：url、absolute_path、base64、data_url
 class InputKind(str, Enum):
     URL = "url"
     ABSOLUTE_PATH = "absolute_path"
@@ -63,6 +66,7 @@ class InputKind(str, Enum):
     DATA_URL = "data_url"
 
 
+    # 去除首尾空白，作为所有校验与分类的前置步骤
 def normalize(input_data: str) -> str:
     return input_data.strip()
 
@@ -75,6 +79,7 @@ def looks_like_file_path(value: str) -> bool:
     return Path(value).suffix.lower() in _INPUT_EXTENSIONS
 
 
+    # 按 URL → data URL → Base64 → 文件路径 优先级判定输入类型
 def classify_input(value: str) -> InputKind:
     if is_url(value):
         return InputKind.URL
@@ -90,6 +95,7 @@ def classify_input(value: str) -> InputKind:
     raise ValueError(f"Invalid input_data. {COMMON_INPUT_DESCRIPTION}")
 
 
+    # 展开 ~ 并拒绝相对路径，校验文件存在后返回 resolve 后的 Path
 def resolve_absolute_path(value: str) -> Path:
     path = Path(value).expanduser()
     if not path.is_absolute():
@@ -105,6 +111,7 @@ def resolve_absolute_path(value: str) -> Path:
     return path.resolve()
 
 
+    # 完整外部契约校验：非空、路径可达、Base64 内容仅限 image/pdf
 def validate_external_contract(input_data: str) -> InputKind:
     value = normalize(input_data)
     if not value:
@@ -129,6 +136,7 @@ def validate_external_contract(input_data: str) -> InputKind:
     return kind
 
 
+    # 按 InputKind 读取文件字节或解码 Base64/data URL payload
 def decode_input_bytes(value: str, kind: InputKind) -> bytes:
     if kind is InputKind.ABSOLUTE_PATH:
         return resolve_absolute_path(value).read_bytes()
@@ -137,6 +145,7 @@ def decode_input_bytes(value: str, kind: InputKind) -> bytes:
 
 
 @contextmanager
+    # 将内存字节写入带后缀的 NamedTemporaryFile，yield 路径并在 finally 删除
 def materialize_bytes_as_temp_file(
     data: bytes,
     *,

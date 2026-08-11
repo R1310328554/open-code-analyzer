@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# HTTP 请求参数字段命名转换：MCP runtime_params 使用 snake_case，远端 API 期望 camelCase
 from typing import Any
 
 
+    # 将 use_doc_orientation_classify 转为 useDocOrientationClassify
 def snake_to_camel(name: str) -> str:
     components = name.split("_")
     return components[0] + "".join(
@@ -22,5 +24,6 @@ def snake_to_camel(name: str) -> str:
     )
 
 
+    # 批量转换 dict 键名，供 HTTPInferenceBase._prepare_payload 合并进 JSON body
 def convert_params_to_camel(params: dict[str, Any]) -> dict[str, Any]:
     return {snake_to_camel(key): value for key, value in params.items()}
