@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# TextFocus/Telescope 损失：超分 MSE + 注意力 L1 + 混淆矩阵加权 CE
 """
 This code is refer from:
 https://github.com/FudanVI/FudanOCR/blob/main/scene-text-telescope/loss/text_focus_loss.py
@@ -27,6 +28,7 @@ for index in range(len(standard_alphebet)):
     standard_dict[standard_alphebet[index]] = index
 
 
+    # 加载字符混淆矩阵，重排为小写字母合并后的 37×37 权重表
 def load_confuse_matrix(confuse_dict_path):
     f = open(confuse_dict_path, "rb")
     data = pkl.load(f)
@@ -55,6 +57,7 @@ def load_confuse_matrix(confuse_dict_path):
     return rearrange_data
 
 
+    # 按 GT 字符索引查表加权 softmax，缓解形似字符误分类
 def weight_cross_entropy(pred, gt, weight_table):
     batch = gt.shape[0]
     weight = weight_table[gt]
@@ -68,6 +71,7 @@ def weight_cross_entropy(pred, gt, weight_table):
     return loss / batch
 
 
+    # Telescope 文本聚焦：MSE+10×attention+0.0005×加权识别 CE
 class TelescopeLoss(nn.Layer):
     def __init__(self, confuse_dict_path):
         super(TelescopeLoss, self).__init__()

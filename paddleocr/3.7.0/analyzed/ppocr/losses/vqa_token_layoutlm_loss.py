@@ -17,9 +17,11 @@ from __future__ import division
 from __future__ import print_function
 
 from paddle import nn
+# VQA LayoutLM token 序列标注损失：仅 attention_mask=1 位置计算 CE
 from ppocr.losses.basic_loss import DMLLoss
 
 
+    # 文档 VQA SER：predicts 可经 key 提取，对 batch[5] 标签分类
 class VQASerTokenLayoutLMLoss(nn.Layer):
     def __init__(self, num_classes, key=None):
         super().__init__()
@@ -33,6 +35,7 @@ class VQASerTokenLayoutLMLoss(nn.Layer):
             predicts = predicts[self.key]
         labels = batch[5]
         attention_mask = batch[2]
+        # 有 mask 时只监督有效 token，忽略 padding 与特殊占位
         if attention_mask is not None:
             active_loss = (
                 attention_mask.reshape(

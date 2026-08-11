@@ -11,10 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# PP-FormulaNet 公式识别损失：S/L 变体对 masked 标签序列做 mean CE
 import paddle
 import paddle.nn as nn
 
 
+    # FormulaNet-S：并行步长 parallel_step 偏移后展平 logits 与标签
 class PPFormulaNet_S_Loss(nn.Layer):
     """
     PP=FormulaNet-S adopt CrossEntropyLoss for network training.
@@ -26,6 +28,7 @@ class PPFormulaNet_S_Loss(nn.Layer):
         self.vocab_size = vocab_size
         self.parallel_step = int(parallel_step)
         self.pad_token_id = 1
+        # 训练时忽略 padding 与 -100 占位符
         # ignore padding characters during training
         self.cross = nn.CrossEntropyLoss(
             reduction="mean", ignore_index=self.ignore_index
@@ -45,6 +48,7 @@ class PPFormulaNet_S_Loss(nn.Layer):
         }
 
 
+    # FormulaNet-L：标准自回归，标签从第 2 列起与 logits 对齐
 class PPFormulaNet_L_Loss(nn.Layer):
     """
     PPFormulaNet_L adopt CrossEntropyLoss for network training.

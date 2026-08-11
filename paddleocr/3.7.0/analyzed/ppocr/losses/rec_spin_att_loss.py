@@ -20,11 +20,13 @@ from __future__ import print_function
 import paddle
 from paddle import nn
 
+# SPIN 注意力识别损失：全序列 logits 与去 EOS 标签展平 CE
 """This code is refer from:
 https://github.com/hikopensource/DAVAR-Lab-OCR
 """
 
 
+    # SPIN 注意力解码损失：predicts 展平后与 batch 标签计算 CE
 class SPINAttentionLoss(nn.Layer):
     def __init__(self, reduction="mean", ignore_index=-100, **kwargs):
         super(SPINAttentionLoss, self).__init__()
@@ -34,6 +36,7 @@ class SPINAttentionLoss(nn.Layer):
 
     def forward(self, predicts, batch):
         targets = batch[1].astype("int64")
+        targets = targets[:, 1:]  # 标签去掉首列 EOS，与逐步预测对齐
         targets = targets[:, 1:]  # remove [eos] in label
 
         label_lengths = batch[2].astype("int64")

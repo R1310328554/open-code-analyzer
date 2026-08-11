@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# VisionLAN 多模式识别损失：LF_1 单路 CE，LF_2/LA 叠加残差与掩码分支
 """
 This code is refer from:
 https://github.com/wangyuxin87/VisionLAN
@@ -24,6 +25,7 @@ import paddle
 from paddle import nn
 
 
+    # VisionLAN 损失：mode 控制单路或 res/mas 加权多路 CE
 class VLLoss(nn.Layer):
     def __init__(self, mode="LF_1", weight_res=0.5, weight_mas=0.5, **kwargs):
         super(VLLoss, self).__init__()
@@ -33,6 +35,7 @@ class VLLoss(nn.Layer):
         self.weight_res = weight_res
         self.weight_mas = weight_mas
 
+    # 按样本截断至首个 0（padding）并拼接为变长扁平标签
     def flatten_label(self, target):
         label_flatten = []
         label_length = []
@@ -44,6 +47,7 @@ class VLLoss(nn.Layer):
         label_length = paddle.to_tensor(label_length, dtype="int32")
         return (label_flatten, label_length)
 
+    # 按各样本有效长度截取预测后 concat，与 flatten_label 对齐
     def _flatten(self, sources, lengths):
         return paddle.concat([t[:l] for t, l in zip(sources, lengths)])
 

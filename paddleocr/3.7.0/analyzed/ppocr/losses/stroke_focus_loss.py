@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# StrokeFocus 笔画分解超分损失：MSE 重建 + 词级注意力 L1 加权
 """
 This code is refer from:
 https://github.com/FudanVI/FudanOCR/blob/main/text-gestalt/loss/stroke_focus_loss.py
@@ -25,6 +26,7 @@ import paddle.nn as nn
 import paddle
 
 
+    # 笔画聚焦损失：sr/hr 图像 MSE + 词注意力图 L1，加载笔画分解字典
 class StrokeFocusLoss(nn.Layer):
     def __init__(self, character_dict_path=None, **kwargs):
         super(StrokeFocusLoss, self).__init__(character_dict_path)
@@ -58,6 +60,7 @@ class StrokeFocusLoss(nn.Layer):
             word_attention_map_gt, word_attention_map_pred
         )
 
+        # 注意力 L1×50 与 MSE 相加后再整体×100 放大梯度
         loss = (mse_loss + attention_loss * 50) * 100
 
         return {"mse_loss": mse_loss, "attention_loss": attention_loss, "loss": loss}

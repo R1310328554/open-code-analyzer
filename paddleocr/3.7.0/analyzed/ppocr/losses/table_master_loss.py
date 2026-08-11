@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# TableMASTER 表格识别损失：结构 token CE + 水平/垂直 bbox L1
 """
 This code is refer from:
 https://github.com/JiaquanYe/TableMASTER-mmocr/tree/master/mmocr/models/textrecog/losses
@@ -20,6 +21,7 @@ import paddle
 from paddle import nn
 
 
+    # TableMASTER：structure_loss + horizon_bbox + vertical_bbox
 class TableMasterLoss(nn.Layer):
     def __init__(self, ignore_index=-1):
         super(TableMasterLoss, self).__init__()
@@ -30,6 +32,7 @@ class TableMasterLoss(nn.Layer):
         self.eps = 1e-12
 
     def forward(self, predicts, batch):
+        # 表格 HTML/结构 token 序列交叉熵
         # structure_loss
         structure_probs = predicts["structure_probs"]
         structure_targets = batch[1]
@@ -41,6 +44,7 @@ class TableMasterLoss(nn.Layer):
         structure_loss = structure_loss.mean()
         losses = dict(structure_loss=structure_loss)
 
+        # 单元格 bbox：x/width 与 y/height 分组 L1，掩码归一
         # box loss
         bboxes_preds = predicts["loc_preds"]
         bboxes_targets = batch[2][:, 1:, :]

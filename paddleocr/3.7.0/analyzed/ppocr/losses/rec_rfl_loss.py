@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# RFL 读长预测损失：字符计数 MSE + 自回归序列 CE 双分支
 """
 This code is refer from:
 https://github.com/hikopensource/DAVAR-Lab-OCR/blob/main/davarocr/davar_common/models/loss/cross_entropy_loss.py
@@ -25,6 +26,7 @@ from paddle import nn
 from .basic_loss import CELoss, DistanceLoss
 
 
+    # Reading From Length：cnt_loss 回归计数，seq_loss 左移对齐序列
 class RFLLoss(nn.Layer):
     def __init__(self, ignore_index=-100, **kwargs):
         super().__init__()
@@ -39,6 +41,7 @@ class RFLLoss(nn.Layer):
             cnt_outputs, seq_outputs = predicts
         else:
             cnt_outputs, seq_outputs = predicts, None
+        # batch 元组：图像、序列标签、长度、字符计数 cnt_label
         # batch [image, label, length, cnt_label]
         if cnt_outputs is not None:
             cnt_loss = self.cnt_loss(cnt_outputs, paddle.cast(batch[3], paddle.float32))

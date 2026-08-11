@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# SATRN Transformer 识别损失：逐步 CE（reduction=none）再全局 mean
 """
 This code is refer from:
 https://github.com/open-mmlab/mmocr/blob/1.x/mmocr/models/textrecog/module_losses/ce_module_loss.py
@@ -23,6 +24,7 @@ import paddle
 from paddle import nn
 
 
+    # SATRN 序列损失：与 SAR 对齐策略相同，逐步 CE 后取均值
 class SATRNLoss(nn.Layer):
     def __init__(self, **kwargs):
         super(SATRNLoss, self).__init__()
@@ -34,6 +36,7 @@ class SATRNLoss(nn.Layer):
     def forward(self, predicts, batch):
         predict = predicts[
             :, :-1, :
+        ]  # 预测截去末步，与右移后的标签序列对齐
         ]  # ignore last index of outputs to be in same seq_len with targets
         label = batch[1].astype("int64")[
             :, 1:

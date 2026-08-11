@@ -16,10 +16,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+# SRN 语义推理网络损失：word/GSRM/VSFD 三分支 CE 加权求和
 import paddle
 from paddle import nn
 
 
+    # SRN 多分支损失：word_out、gsrm_out、predict 分别对同一标签 CE
 class SRNLoss(nn.Layer):
     def __init__(self, **kwargs):
         super(SRNLoss, self).__init__()
@@ -42,6 +44,7 @@ class SRNLoss(nn.Layer):
         cost_gsrm = paddle.reshape(x=paddle.sum(cost_gsrm), shape=[1])
         cost_vsfd = paddle.reshape(x=paddle.sum(cost_vsfd), shape=[1])
 
+        # word×3 + 视觉语义 VSFD + GSRM×0.15 组合总损失
         sum_cost = cost_word * 3.0 + cost_vsfd + cost_gsrm * 0.15
 
         return {"loss": sum_cost, "word_loss": cost_word, "img_loss": cost_vsfd}

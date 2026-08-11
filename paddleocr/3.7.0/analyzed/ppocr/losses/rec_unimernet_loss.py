@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# UniMERNet 公式识别损失：token CE + 可选字符计数 SmoothL1 长度感知
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 import numpy as np
 
 
+    # UniMERNet：word_loss 为主，length_aware 时叠加 0.5×count_loss
 class UniMERNetLoss(nn.Layer):
     def __init__(self, length_aware=True, vocab_size=50000):
         super(UniMERNetLoss, self).__init__()
@@ -30,6 +32,7 @@ class UniMERNetLoss(nn.Layer):
         )
         self.counting_loss_fct = nn.SmoothL1Loss()
 
+    # 由非 pad 标签 one-hot 求和得到各字符出现次数作为计数监督
     def _get_count_gt(self, labels):
         mask = (labels != self.pad_token_id).cast("float32")
         one_hot_labels = F.one_hot(

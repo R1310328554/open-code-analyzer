@@ -18,9 +18,11 @@ from __future__ import print_function
 
 import paddle
 from paddle import nn
+# 表格注意力结构识别损失：HTML 结构 token CE + 单元格坐标回归
 from paddle.nn import functional as F
 
 
+    # 表格 Attention：structure CE（去首 token）+ 可选 loc MSE
 class TableAttentionLoss(nn.Layer):
     def __init__(self, structure_weight=1.0, loc_weight=0.0, **kwargs):
         super(TableAttentionLoss, self).__init__()
@@ -57,6 +59,7 @@ class TableAttentionLoss(nn.Layer):
         }
 
 
+    # 结构化位置注意力：按 max_len 裁剪序列，loc 用 SmoothL1 掩码归一
 class SLALoss(nn.Layer):
     def __init__(self, structure_weight=1.0, loc_weight=0.0, loc_loss="mse", **kwargs):
         super(SLALoss, self).__init__()

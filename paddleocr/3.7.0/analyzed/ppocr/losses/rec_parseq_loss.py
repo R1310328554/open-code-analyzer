@@ -16,14 +16,17 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+# PARSeq 序列识别损失：双阶段 teacher forcing 交叉熵，含 EOS 掩码切换
 import paddle
 from paddle import nn
 
 
+    # PARSeq 自回归解码损失：多步 logits 与右移标签逐步计算加权 CE
 class ParseQLoss(nn.Layer):
     def __init__(self, **kwargs):
         super(ParseQLoss, self).__init__()
 
+    # 按 logits_list 逐步对齐 tgt_out，首阶段标准 CE、次阶段将 EOS 置 pad
     def forward(self, predicts, targets):
         label = targets[1]  # label
         label_len = targets[2]

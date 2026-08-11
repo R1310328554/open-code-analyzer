@@ -16,12 +16,15 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+# PREN 渐进式编码识别损失：整序列 logits 与 batch 标签 mean CE
 from paddle import nn
 
 
+    # PREN 识别损失：predicts 与 batch[1] 整型标签直接计算 CE
 class PRENLoss(nn.Layer):
     def __init__(self, **kwargs):
         super(PRENLoss, self).__init__()
+        # 索引 0 为 padding，CrossEntropy 中 ignore_index=0
         # note: 0 is padding idx
         self.loss_func = nn.CrossEntropyLoss(reduction="mean", ignore_index=0)
 
