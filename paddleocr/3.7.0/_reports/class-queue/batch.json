@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T07:19:27Z",
-  "files": [
-    "ppocr/modeling/heads/det_drrg_head.py",
-    "ppocr/modeling/heads/det_east_head.py",
-    "ppocr/modeling/heads/det_fce_head.py",
-    "ppocr/modeling/heads/det_pse_head.py",
-    "ppocr/modeling/heads/det_sast_head.py",
-    "ppocr/modeling/heads/e2e_pg_head.py",
-    "ppocr/modeling/heads/gcn.py",
-    "ppocr/modeling/heads/kie_sdmgr_head.py",
-    "ppocr/modeling/heads/local_graph.py",
-    "ppocr/modeling/heads/proposal_local_graph.py",
-    "ppocr/modeling/heads/rec_abinet_head.py",
-    "ppocr/modeling/heads/rec_aster_head.py",
-    "ppocr/modeling/heads/rec_att_head.py",
-    "ppocr/modeling/heads/rec_can_head.py",
-    "ppocr/modeling/heads/rec_cppd_head.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 152,
-  "done": 435
+  "done": 450
 }
