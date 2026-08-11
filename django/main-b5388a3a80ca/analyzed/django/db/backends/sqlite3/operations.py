@@ -15,6 +15,11 @@ from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_datetime, parse_time
 from django.utils.functional import cached_property
 
+"""
+django.db.backends.sqlite3.operations — SQLite SQL 编译与类型转换。
+
+日期/时间函数、JSON 路径、flush 与 UPSERT 等 SQLite 特有行为。
+"""
 from .base import Database
 
 UNSUPPORTED_DATETIME_AGGREGATES = (
@@ -26,6 +31,7 @@ UNSUPPORTED_DATETIME_AGGREGATES = (
 DATETIME_FIELDS = (models.DateField, models.DateTimeField, models.TimeField)
 
 
+# SQLite 操作层：自定义 UDF 日期函数与 TEXT 存储日期时间
 class DatabaseOperations(BaseDatabaseOperations):
     cast_char_field_without_max_length = "text"
     cast_data_types = {
@@ -37,6 +43,7 @@ class DatabaseOperations(BaseDatabaseOperations):
     # SQLite. Use JSON_TYPE() instead.
     jsonfield_datatype_values = frozenset(["null", "false", "true"])
 
+    # 禁止日期字段上的 Sum/Avg 及多参数 DISTINCT 聚合
     def check_expression_support(self, expression):
         if isinstance(expression, UNSUPPORTED_DATETIME_AGGREGATES):
             for expr in expression.get_source_expressions():
@@ -152,6 +159,7 @@ class DatabaseOperations(BaseDatabaseOperations):
         finally:
             cursor.close()
 
+    # 手动 QUOTE 参数以模拟 sqlite3 绑定后的 SQL 字符串
     def last_executed_query(self, cursor, sql, params):
         # Python substitutes parameters in Modules/_sqlite/cursor.c with:
         # bind_parameters(state, self->statement, parameters);
@@ -203,6 +211,7 @@ class DatabaseOperations(BaseDatabaseOperations):
         # Django's test suite.
         return lru_cache(maxsize=512)(self.__references_graph)
 
+    # DELETE FROM 或递归 REFERENCES 图模拟 TRUNCATE CASCADE
     def sql_flush(self, style, tables, *, reset_sequences=False, allow_cascade=False):
         if tables and allow_cascade:
             # Simulate TRUNCATE CASCADE by recursively collecting the tables
@@ -243,6 +252,7 @@ class DatabaseOperations(BaseDatabaseOperations):
             ),
         ]
 
+    # USE_TZ 时将 aware datetime 转为连接时区 naive 字符串
     def adapt_datetimefield_value(self, value):
         if value is None:
             return None
@@ -269,6 +279,7 @@ class DatabaseOperations(BaseDatabaseOperations):
 
         return str(value)
 
+    # 为 DateTime/Date/Time/Decimal/UUID/Boolean 注册转换器
     def get_db_converters(self, expression):
         converters = super().get_db_converters(expression)
         internal_type = expression.output_field.get_internal_type()
@@ -342,6 +353,7 @@ class DatabaseOperations(BaseDatabaseOperations):
     def convert_booleanfield_value(self, value, expression, connection):
         return bool(value) if value in (1, 0) else value
 
+    # ^ 映射 POWER，# 映射 BITXOR 用户定义函数
     def combine_expression(self, connector, sub_expressions):
         # SQLite doesn't have a ^ operator, so use the user-defined POWER
         # function that's registered in connect().
@@ -383,6 +395,7 @@ class DatabaseOperations(BaseDatabaseOperations):
             return "INSERT OR IGNORE INTO"
         return super().insert_statement(on_conflict=on_conflict)
 
+    # ON CONFLICT DO UPDATE SET（SQLite 3.24+ UPSERT）
     def on_conflict_suffix_sql(self, fields, on_conflict, update_fields, unique_fields):
         if (
             on_conflict == OnConflict.UPDATE

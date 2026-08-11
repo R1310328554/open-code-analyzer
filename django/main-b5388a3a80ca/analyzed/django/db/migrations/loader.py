@@ -15,9 +15,15 @@ from .exceptions import (
     NodeNotFoundError,
 )
 
+"""
+django.db.migrations.loader — 从磁盘与数据库加载迁移。
+
+扫描各 app 的 migrations 包，构建 MigrationGraph 并读取 applied 状态。
+"""
 MIGRATIONS_MODULE_NAME = "migrations"
 
 
+# 迁移加载器：disk_migrations + applied_migrations → graph
 class MigrationLoader:
     """
     Load migration files from disk and their status from the database.
@@ -71,6 +77,7 @@ class MigrationLoader:
             app_package_name = apps.get_app_config(app_label).name
             return "%s.%s" % (app_package_name, MIGRATIONS_MODULE_NAME), False
 
+    # 遍历 INSTALLED_APPS 导入 Migration 子类
     def load_disk(self):
         """Load the migrations from all INSTALLED_APPS from disk."""
         self.disk_migrations = {}
@@ -271,6 +278,7 @@ class MigrationLoader:
 
         self.replacements_progress[migration_key] = True
 
+    # 组装节点、内外部依赖、squash 替换与一致性校验
     def build_graph(self):
         """
         Build a migration dependency graph using both the disk and database.
@@ -341,6 +349,7 @@ class MigrationLoader:
             raise
         self.graph.ensure_not_cyclic()
 
+    # 校验已应用迁移的依赖链完整
     def check_consistent_history(self, connection):
         """
         Raise InconsistentMigrationHistory if any applied migrations have
@@ -383,6 +392,7 @@ class MigrationLoader:
 
         return False
 
+    # 检测同一 app 多个 leaf 节点（并行迁移冲突）
     def detect_conflicts(self):
         """
         Look through the loaded graph and detect any conflicts - apps
@@ -399,6 +409,7 @@ class MigrationLoader:
             app_label: sorted(seen_apps[app_label]) for app_label in conflicting_apps
         }
 
+    # 返回指定节点集合对应的 ProjectState
     def project_state(self, nodes=None, at_end=True):
         """
         Return a ProjectState object representing the most recent state

@@ -3,9 +3,15 @@ import re
 from django.db.migrations.utils import get_migration_name_timestamp
 from django.db.transaction import atomic
 
+"""
+django.db.migrations.migration — 迁移基类。
+
+迁移文件 subclass Migration，定义 operations/dependencies 等属性。
+"""
 from .exceptions import IrreversibleError
 
 
+# 迁移基类：mutate_state / apply / unapply / suggest_name
 class Migration:
     """
     The base class for all migrations.
@@ -77,6 +83,7 @@ class Migration:
     def __hash__(self):
         return hash("%s.%s" % (self.app_label, self.name))
 
+    # 在内存 ProjectState 上顺序执行 state_forwards
     def mutate_state(self, project_state, preserve=True):
         """
         Take a ProjectState and return a new one with the migration's
@@ -91,6 +98,7 @@ class Migration:
             operation.state_forwards(self.app_label, new_state)
         return new_state
 
+    # 正向：state_forwards + database_forwards（可选原子包装）
     def apply(self, project_state, schema_editor, collect_sql=False):
         """
         Take a project_state representing all migrations prior to this one
@@ -136,6 +144,7 @@ class Migration:
                 schema_editor.collected_sql.append("-- (no-op)")
         return project_state
 
+    # 反向：先记录中间态再逆序 database_backwards
     def unapply(self, project_state, schema_editor, collect_sql=False):
         """
         Take a project_state representing all migrations prior to this one
@@ -197,6 +206,7 @@ class Migration:
                 schema_editor.collected_sql.append("-- (no-op)")
         return project_state
 
+    # 根据 operations 的 migration_name_fragment 建议文件名
     def suggest_name(self):
         """
         Suggest a name for the operations this migration might represent. Names
@@ -222,6 +232,7 @@ class Migration:
         return name
 
 
+# 标记 swappable 依赖的元组，保留 setting 属性
 class SwappableTuple(tuple):
     """
     Subclass of tuple so Django can tell this was originally a swappable
@@ -234,6 +245,7 @@ class SwappableTuple(tuple):
         return self
 
 
+# 将 AUTH_USER_MODEL 等设置值转为 (__first__, setting) 依赖
 def swappable_dependency(value):
     """Turn a setting value into a dependency."""
     return SwappableTuple((value.split(".", 1)[0], "__first__"), value)

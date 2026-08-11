@@ -1,9 +1,15 @@
 from enum import StrEnum
 
 from django.db import router
+"""
+django.db.migrations.operations.base — Operation 抽象基类。
+
+定义 state_forwards / database_forwards / database_backwards 契约。
+"""
 from django.utils.inspect import get_func_args
 
 
+# 操作类别符号：+ 增 - 删 ~ 改 p Python s SQL
 class OperationCategory(StrEnum):
     ADDITION = "+"
     REMOVAL = "-"
@@ -13,6 +19,7 @@ class OperationCategory(StrEnum):
     MIXED = "?"
 
 
+# 迁移操作基类：可逆性、SQL 化、引用检测与 reduce 优化
 class Operation:
     """
     Base class for migration operations.
@@ -75,6 +82,7 @@ class Operation:
             self._constructor_args[1],
         )
 
+    # 在 ProjectState 上模拟 schema 变更（内存）
     def state_forwards(self, app_label, state):
         """
         Take the state from the previous migration, and mutate it
@@ -84,6 +92,7 @@ class Operation:
             "subclasses of Operation must provide a state_forwards() method"
         )
 
+    # 对真实数据库执行正向 DDL/DML
     def database_forwards(self, app_label, schema_editor, from_state, to_state):
         """
         Perform the mutation on the database schema in the normal
@@ -93,6 +102,7 @@ class Operation:
             "subclasses of Operation must provide a database_forwards() method"
         )
 
+    # 对真实数据库执行反向操作
     def database_backwards(self, app_label, schema_editor, from_state, to_state):
         """
         Perform the mutation on the database schema in the reverse
@@ -157,6 +167,7 @@ class Operation:
 
         return router.allow_migrate_model(connection_alias, model)
 
+    # 迁移优化器：尝试合并或消除相邻操作
     def reduce(self, operation, app_label):
         """
         Return either a list of operations the actual operation should be

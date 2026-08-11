@@ -1,3 +1,8 @@
+"""
+django.db.backends.sqlite3.introspection — SQLite 表结构内省。
+
+通过 PRAGMA 与 sqlite_master 解析列、索引、外键与 CHECK 约束。
+"""
 from collections import namedtuple
 
 import sqlparse
@@ -16,6 +21,7 @@ FieldInfo = namedtuple(
 field_size_re = _lazy_re_compile(r"^\s*(?:var)?char\s*\(\s*(\d+)\s*\)\s*$")
 
 
+# 从 varchar(11) 等类型名提取长度数字
 def get_field_size(name):
     """Extract the size number from a "varchar(11)" type name"""
     m = field_size_re.search(name)
@@ -25,6 +31,7 @@ def get_field_size(name):
 # This light wrapper "fakes" a dictionary interface, because some SQLite data
 # types include variables in them -- e.g. "varchar(30)" -- and can't be matched
 # as a simple dictionary lookup.
+# 模拟字典接口：SQLite 类型名含参数（如 varchar(30)）需前缀匹配
 class FlexibleFieldLookupDict:
     # Maps SQL types to Django Field types. Some of the SQL types have multiple
     # entries here because SQLite allows for anything and doesn't normalize the
@@ -56,9 +63,11 @@ class FlexibleFieldLookupDict:
         return self.base_data_types_reverse[key]
 
 
+# SQLite 内省：PRAGMA table_xinfo/index_list/foreign_key_list
 class DatabaseIntrospection(BaseDatabaseIntrospection):
     data_types_reverse = FlexibleFieldLookupDict()
 
+    # 整型主键映射 AutoField；json_valid 约束映射 JSONField
     def get_field_type(self, data_type, description):
         field_type = super().get_field_type(data_type, description)
         if description.pk and field_type in {
@@ -73,6 +82,7 @@ class DatabaseIntrospection(BaseDatabaseIntrospection):
             return "JSONField"
         return field_type
 
+    # 列出表与视图，跳过 sqlite_sequence
     def get_table_list(self, cursor):
         """Return a list of table and view names in the current database."""
         # Skip the sqlite_sequence system table used for autoincrement key
@@ -83,6 +93,7 @@ class DatabaseIntrospection(BaseDatabaseIntrospection):
             ORDER BY name""")
         return [TableInfo(row[0], row[1][0]) for row in cursor.fetchall()]
 
+    # PRAGMA table_xinfo 返回 FieldInfo 列描述
     def get_table_description(self, cursor, table_name):
         """
         Return a description of the table with the DB-API cursor.description
@@ -149,6 +160,7 @@ class DatabaseIntrospection(BaseDatabaseIntrospection):
         pk_col = self.get_primary_key_column(cursor, table_name)
         return [{"table": table_name, "column": pk_col}]
 
+    # PRAGMA foreign_key_list 解析外键关系
     def get_relations(self, cursor, table_name):
         """
         Return a dictionary of
@@ -282,6 +294,7 @@ class DatabaseIntrospection(BaseDatabaseIntrospection):
         )
         return constraint_name, unique_constraint, check_constraint, token
 
+    # sqlparse 解析 CREATE TABLE 内联 UNIQUE/CHECK 约束
     def _parse_table_constraints(self, sql, columns):
         # Check constraint parsing is based of SQLite syntax diagram.
         # https://www.sqlite.org/syntaxdiagrams.html#table-constraint
@@ -321,6 +334,7 @@ class DatabaseIntrospection(BaseDatabaseIntrospection):
                 break
         return constraints
 
+    # 汇总内联约束、索引、主键与外键
     def get_constraints(self, cursor, table_name):
         """
         Retrieve any constraints or keys (unique, pk, fk, check, index) across

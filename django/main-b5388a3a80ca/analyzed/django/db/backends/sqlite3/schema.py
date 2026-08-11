@@ -9,9 +9,15 @@ from django.db.backends.base.schema import (
 )
 from django.db.backends.ddl_references import Statement
 from django.db.backends.utils import strip_quotes
+"""
+django.db.backends.sqlite3.schema — SQLite DDL 迁移编辑器。
+
+多数 schema 变更通过 _remake_table 重建表实现（ALTER TABLE 能力有限）。
+"""
 from django.db.models import CompositePrimaryKey, UniqueConstraint
 
 
+# SQLite Schema：进入时禁用 FK 检查，退出时校验约束
 class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
     sql_delete_table = "DROP TABLE %(table)s"
     sql_create_fk = None
@@ -25,6 +31,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
     sql_alter_table_comment = None
     sql_alter_column_comment = None
 
+    # 禁用外键约束检查（schema 变更必需）
     def __enter__(self):
         # Some SQLite schema alterations need foreign key constraints to be
         # disabled. Enforce it here for the duration of the schema edition.
@@ -43,6 +50,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
         super().__exit__(exc_type, exc_value, traceback)
         self.connection.enable_constraint_checking()
 
+    # sqlite3.adapt 或手动转义字面量（含 BLOB 十六进制）
     def quote_value(self, value):
         # The backend "mostly works" without this function and there are use
         # cases for compiling Python without the sqlite3 libraries (e.g.
@@ -77,6 +85,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
     def prepare_default(self, value):
         return self.quote_value(value)
 
+    # 建新表→复制数据→删旧表→重命名（SQLite 标准 schema 变更流程）
     def _remake_table(
         self, model, create_field=None, delete_field=None, alter_fields=None
     ):
@@ -299,6 +308,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
                 ):
                     self.deferred_sql.remove(sql)
 
+    # 主键/唯一/非空/默认值字段需 remake；否则 ALTER ADD COLUMN
     def add_field(self, model, field):
         """Create a field on a model."""
         from django.db.models.expressions import Value
@@ -330,6 +340,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
         else:
             super().add_field(model, field)
 
+    # 简单列 DROP COLUMN；复杂字段 remake 表
     def remove_field(self, model, field):
         """
         Remove a field from a model. Usually involves deleting a column,
@@ -357,6 +368,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
                 return
             self._remake_table(model, delete_field=field)
 
+    # 仅列名变更时用 RENAME COLUMN；否则 remake
     def _alter_field(
         self,
         model,
@@ -476,6 +488,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
         # Delete the old through table
         self.delete_model(old_field.remote_field.through)
 
+    # 条件/表达式 UniqueConstraint 走基类；否则 remake
     def add_constraint(self, model, constraint):
         if isinstance(constraint, UniqueConstraint) and (
             constraint.condition

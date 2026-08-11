@@ -16,9 +16,15 @@ from django.db.migrations.utils import (
     RegexObject,
     resolve_relation,
 )
+"""
+django.db.migrations.autodetector — 模型变更自动检测与迁移生成。
+
+对比两个 ProjectState，生成 CreateModel/AlterField 等 Operation 列表。
+"""
 from django.utils.functional import cached_property
 
 
+# 操作依赖描述：(app, model, field, type) 用于排序与冲突检测
 class OperationDependency(
     namedtuple("OperationDependency", "app_label model_name field_name type")
 ):
@@ -39,6 +45,7 @@ class OperationDependency(
         return self.field_name.lower()
 
 
+# 自动检测器：扫描模型/字段/索引/约束差异并组装迁移计划
 class MigrationAutodetector:
     """
     Take a pair of ProjectStates and compare them to see what the first would
@@ -58,6 +65,7 @@ class MigrationAutodetector:
         self.questioner = questioner or MigrationQuestioner()
         self.existing_apps = {app for app, model in from_state.models}
 
+    # 入口：检测变更、按图排列依赖并可选裁剪到指定 app
     def changes(self, graph, trim_to_apps=None, convert_apps=None, migration_name=None):
         """
         Main entry point to produce a list of applicable changes.
@@ -70,6 +78,7 @@ class MigrationAutodetector:
             changes = self._trim_to_apps(changes, trim_to_apps)
         return changes
 
+    # 递归 deconstruct 字段与嵌套参数，用于精确比较
     def deep_deconstruct(self, obj):
         """
         Recursive deconstruction for a field and its arguments.
@@ -123,6 +132,7 @@ class MigrationAutodetector:
             fields_def.append(deconstruction)
         return fields_def
 
+    # 分阶段生成：重命名→增删模型→字段→索引→约束
     def _detect_changes(self, convert_apps=None, graph=None):
         """
         Return a dict of migration plans which will achieve the
@@ -638,6 +648,7 @@ class MigrationAutodetector:
                             self.old_model_keys.add((app_label, model_name))
                             break
 
+    # 为新模型生成 CreateModel 及字段/索引/约束操作
     def generate_created_models(self):
         """
         Find all new models and make create operations for them as well as
@@ -1238,6 +1249,7 @@ class MigrationAutodetector:
             ],
         )
 
+    # 检测字段属性变更并生成 AlterField
     def generate_altered_fields(self):
         """
         Make AlterField operations, or possibly RemovedField/AddField if alter
@@ -1956,6 +1968,7 @@ class MigrationAutodetector:
                     ),
                 )
 
+    # 将 per-app 操作列表拆分为具名 Migration 并解析依赖
     def arrange_for_graph(self, changes, graph, migration_name=None):
         """
         Take a result from changes() and a MigrationGraph, and fix the names

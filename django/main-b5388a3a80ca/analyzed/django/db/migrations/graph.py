@@ -3,10 +3,16 @@ from functools import total_ordering
 from django.db.migrations.state import ProjectState
 from django.utils.datastructures import OrderedSet
 
+"""
+django.db.migrations.graph — 迁移依赖有向图。
+
+节点为 (app_label, migration_name)；边表示 depends_on 关系。
+"""
 from .exceptions import CircularDependencyError, NodeNotFoundError
 
 
 @total_ordering
+# 图节点：维护 parents/children 邻接集合
 class Node:
     """
     A single node in the migration graph. Contains direct links to adjacent
@@ -43,6 +49,7 @@ class Node:
         self.parents.add(parent)
 
 
+# 占位节点：依赖指向磁盘上不存在的迁移时创建
 class DummyNode(Node):
     """
     A node that doesn't correspond to a migration file on disk.
@@ -61,6 +68,7 @@ class DummyNode(Node):
         raise NodeNotFoundError(self.error_message, self.key, origin=self.origin)
 
 
+# 迁移有向图：增删节点/边、拓扑排序与 squash 替换处理
 class MigrationGraph:
     """
     Represent the digraph of all migrations in a project.
@@ -99,6 +107,7 @@ class MigrationGraph:
         self.node_map[key] = node
         self.nodes[key] = None
 
+    # 添加 child 依赖 parent；缺失节点创建 DummyNode
     def add_dependency(self, migration, child, parent, skip_validation=False):
         """
         This may create dummy nodes if they don't yet exist. If
@@ -199,6 +208,7 @@ class MigrationGraph:
         """Ensure there are no dummy nodes remaining in the graph."""
         [n.raise_error() for n in self.node_map.values() if isinstance(n, DummyNode)]
 
+    # 从根到 target 的正向拓扑序
     def forwards_plan(self, target):
         """
         Given a node, return a list of which previous nodes (dependencies) must
@@ -209,6 +219,7 @@ class MigrationGraph:
             raise NodeNotFoundError("Node %r not a valid node" % (target,), target)
         return self.iterative_dfs(self.node_map[target])
 
+    # 从 target 到根的反向拓扑序
     def backwards_plan(self, target):
         """
         Given a node, return a list of which dependent nodes (dependencies)
@@ -268,6 +279,7 @@ class MigrationGraph:
                 leaves.add(node)
         return sorted(leaves)
 
+    # 检测环并抛出 CircularDependencyError
     def ensure_not_cyclic(self):
         # Algo from GvR:
         # https://neopythonic.blogspot.com/2009/01/detecting-cycles-in-directed-graph.html
@@ -313,6 +325,7 @@ class MigrationGraph:
                     plan.add(migration)
         return list(plan)
 
+    # 沿正向/反向计划构建 ProjectState
     def make_state(self, nodes=None, at_end=True, real_apps=None):
         """
         Given a migration node or nodes, return a complete ProjectState for it.

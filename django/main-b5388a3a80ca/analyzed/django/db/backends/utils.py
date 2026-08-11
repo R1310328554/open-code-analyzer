@@ -11,9 +11,15 @@ from django.apps import apps
 from django.db import NotSupportedError
 from django.utils.dateparse import parse_time
 
+"""
+django.db.backends.utils — 数据库游标包装与类型转换工具。
+
+CursorWrapper 统一错误处理；typecast_* 解析数据库字符串为 Python 类型。
+"""
 logger = logging.getLogger("django.db.backends")
 
 
+# DB-API 游标包装：事务校验、错误包装与 execute_wrappers 链
 class CursorWrapper:
     def __init__(self, cursor, db):
         self.cursor = cursor
@@ -75,6 +81,7 @@ class CursorWrapper:
                 params = params or ()
                 return self.cursor.callproc(procname, params, kparams)
 
+    # 经 execute_wrappers 链调用底层 cursor.execute
     def execute(self, sql, params=None):
         return self._execute_with_wrappers(
             sql, params, many=False, executor=self._execute
@@ -114,6 +121,7 @@ class CursorWrapper:
             return self.cursor.executemany(sql, param_list)
 
 
+# DEBUG 游标：记录 SQL 耗时到 queries_log 与 logger
 class CursorDebugWrapper(CursorWrapper):
     # XXX callproc isn't instrumented at this time.
 
@@ -164,6 +172,7 @@ class CursorDebugWrapper(CursorWrapper):
 
 
 @contextmanager
+# 上下文管理器：记录事务级 SQL 调试信息
 def debug_transaction(connection, sql):
     start = time.monotonic()
     try:
@@ -192,6 +201,7 @@ def debug_transaction(connection, sql):
             )
 
 
+# 将时区名拆为 (name, sign, offset) 三元组
 def split_tzname_delta(tzname):
     """
     Split a time zone name into a 3-tuple of (name, sign, offset).
@@ -211,6 +221,7 @@ def split_tzname_delta(tzname):
 ###############################################
 
 
+# 数据库日期字符串 → datetime.date
 def typecast_date(s):
     return (
         datetime.date(*map(int, s.split("-"))) if s else None
@@ -230,6 +241,7 @@ def typecast_time(s):  # does NOT store time zone information
     )
 
 
+# 数据库时间戳字符串 → datetime.datetime（不含时区）
 def typecast_timestamp(s):  # does NOT store time zone information
     # "2005-07-29 15:48:00.590358-05"
     # "2005-07-29 09:56:00-05"
@@ -280,6 +292,7 @@ def split_identifier(identifier):
     return namespace.strip('"'), name.strip('"')
 
 
+# 超长标识符截断并附加 MD5 摘要后缀
 def truncate_name(identifier, length=None, hash_len=4):
     """
     Shorten an SQL identifier to a repeatable mangled version with the given
@@ -332,6 +345,7 @@ def format_number(value, max_digits, decimal_places):
     return "{:f}".format(value)
 
 
+# 剥离首尾双引号，保留 Oracle 式 USER"."TABLE 中间引号
 def strip_quotes(table_name):
     """
     Strip quotes off of quoted table names to make them safe for use in index

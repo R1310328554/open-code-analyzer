@@ -4,9 +4,15 @@ from django.db import migrations, router
 from .exceptions import InvalidMigrationPlan
 from .loader import MigrationLoader
 from .recorder import MigrationRecorder
+"""
+django.db.migrations.executor — 迁移执行器。
+
+加载迁移图、生成执行计划并对数据库应用/回滚迁移。
+"""
 from .state import ProjectState
 
 
+# 端到端迁移执行：plan → apply/unapply → 记录 django_migrations
 class MigrationExecutor:
     """
     End-to-end migration execution - load migrations and run them up or down
@@ -19,6 +25,7 @@ class MigrationExecutor:
         self.recorder = MigrationRecorder(self.connection)
         self.progress_callback = progress_callback
 
+    # 根据目标节点生成 (Migration, backwards?) 执行序列
     def migration_plan(self, targets, clean_start=False):
         """
         Given a set of targets, return a list of (Migration instance,
@@ -93,6 +100,7 @@ class MigrationExecutor:
                     migration.mutate_state(state, preserve=False)
         return state
 
+    # 主入口：确保 recorder 表存在，执行全正向或全反向计划
     def migrate(self, targets, plan=None, state=None, fake=False, fake_initial=False):
         """
         Migrate the database up to the given targets.
@@ -238,6 +246,7 @@ class MigrationExecutor:
 
         return state
 
+    # 正向应用单个迁移：mutate_state + database_forwards
     def apply_migration(self, state, migration, fake=False, fake_initial=False):
         """Run a migration forwards."""
         migration_recorded = False
@@ -276,6 +285,7 @@ class MigrationExecutor:
         else:
             self.recorder.record_unapplied(app_label, name)
 
+    # 反向回滚单个迁移
     def unapply_migration(self, state, migration, fake=False):
         """Run a migration backwards."""
         if self.progress_callback:
@@ -307,6 +317,7 @@ class MigrationExecutor:
             if key not in applied and self.loader.all_replaced_applied(key, applied):
                 self.recorder.record_applied(*key)
 
+    # --fake-initial：检测表/列是否已存在以跳过初始迁移
     def detect_soft_applied(self, project_state, migration):
         """
         Test whether a migration has been implicitly applied - that the

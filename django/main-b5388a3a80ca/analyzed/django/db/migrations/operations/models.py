@@ -8,6 +8,11 @@ from django.db.models.options import normalize_together
 from django.utils.copy import replace
 from django.utils.functional import cached_property
 
+"""
+django.db.migrations.operations.models — 模型级迁移操作。
+
+CreateModel/DeleteModel/RenameModel 及索引、约束、Meta 选项变更。
+"""
 from .fields import AddField, AlterField, FieldOperation, RemoveField, RenameField
 
 
@@ -21,6 +26,7 @@ def _check_for_duplicates(arg_name, objs):
         used_vals.add(val)
 
 
+# 模型操作基类：按 model name 匹配引用
 class ModelOperation(Operation):
     def __init__(self, name):
         self.name = name
@@ -41,6 +47,7 @@ class ModelOperation(Operation):
         return not operation.references_model(self.name, app_label)
 
 
+# 创建模型：state.add_model + schema_editor.create_model
 class CreateModel(ModelOperation):
     """Create a model's table."""
 
@@ -379,6 +386,7 @@ class CreateModel(ModelOperation):
         return super().reduce(operation, app_label)
 
 
+# 删除模型：state.remove_model + schema_editor.delete_model
 class DeleteModel(ModelOperation):
     """Drop a model's table."""
 
@@ -416,6 +424,7 @@ class DeleteModel(ModelOperation):
         return "delete_%s" % self.name_lower
 
 
+# 重命名模型：更新 state 并 alter_db_table
 class RenameModel(ModelOperation):
     """Rename a model."""
 
@@ -544,6 +553,7 @@ class ModelOptionOperation(ModelOperation):
         return super().reduce(operation, app_label)
 
 
+# 修改 db_table 选项
 class AlterModelTable(ModelOptionOperation):
     """Rename a model's table."""
 
@@ -699,6 +709,7 @@ class AlterTogetherOptionOperation(ModelOptionOperation):
         )
 
 
+# 修改 unique_together 元组
 class AlterUniqueTogether(AlterTogetherOptionOperation):
     """
     Change the value of unique_together to the target one.
@@ -883,6 +894,7 @@ class IndexOperation(Operation):
         return self.model_name.lower()
 
 
+# 添加索引：state.add_index + schema_editor.add_index
 class AddIndex(IndexOperation):
     """Add an index on a model."""
 
@@ -1140,6 +1152,7 @@ class RenameIndex(IndexOperation):
         return super().reduce(operation, app_label)
 
 
+# 添加 Check/Unique 等约束
 class AddConstraint(IndexOperation):
     category = OperationCategory.ADDITION
     option_name = "constraints"
@@ -1240,6 +1253,7 @@ class RemoveConstraint(IndexOperation):
         return "remove_%s_%s" % (self.model_name_lower, self.name.lower())
 
 
+# 替换约束定义（先删后加）
 class AlterConstraint(IndexOperation):
     category = OperationCategory.ALTERATION
     option_name = "constraints"

@@ -3,9 +3,13 @@ from django.db.models import NOT_PROVIDED, Model
 from django.utils.copy import replace
 from django.utils.functional import cached_property
 
+"""
+django.db.migrations.operations.fields — 字段级迁移操作。
+"""
 from .base import Operation, OperationCategory
 
 
+# 字段操作基类：model_name/name 引用检测
 class FieldOperation(Operation):
     def __init__(self, model_name, name, field=None):
         self.model_name = model_name
@@ -80,6 +84,7 @@ class FieldOperation(Operation):
         )
 
 
+# 添加字段：state.add_field + schema_editor.add_field
 class AddField(FieldOperation):
     """Add a field to a model."""
 
@@ -155,6 +160,7 @@ class AddField(FieldOperation):
         return super().reduce(operation, app_label)
 
 
+# 删除字段：可与 DeleteModel 合并优化
 class RemoveField(FieldOperation):
     """Remove a field from a model."""
 
@@ -201,6 +207,7 @@ class RemoveField(FieldOperation):
         return super().reduce(operation, app_label)
 
 
+# 修改字段属性：schema_editor.alter_field
 class AlterField(FieldOperation):
     """
     Alter a field's database column (e.g. null, max_length) to the provided
@@ -271,6 +278,7 @@ class AlterField(FieldOperation):
         return super().reduce(operation, app_label)
 
 
+# 重命名字段：通过 alter_field 实现列/属性更名
 class RenameField(FieldOperation):
     """Rename a field on the model. Might affect db_column too."""
 

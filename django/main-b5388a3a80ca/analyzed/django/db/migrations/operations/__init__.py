@@ -1,3 +1,4 @@
+# django.db.migrations.operations — 迁移 Operation 类统一导出
 from .fields import AddField, AlterField, RemoveField, RenameField
 from .models import (
     AddConstraint,
