@@ -35,6 +35,7 @@ logger = logging.get_logger(__name__)
 
 
 @requires(backends=("torch",))
+# ASTFeatureExtractor：Mel 频谱图提取与固定长度填充/归一化
 class ASTFeatureExtractor(SequenceFeatureExtractor):
     r"""
     Constructs a Audio Spectrogram Transformer (AST) feature extractor.

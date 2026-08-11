@@ -31,6 +31,7 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# AudioFlamingo3ProcessorKwargs：文本/音频预处理默认参数
 class AudioFlamingo3ProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -50,6 +51,7 @@ class AudioFlamingo3ProcessorKwargs(ProcessingKwargs, total=False):
 
 @requires(backends=("torch",))
 @auto_docstring
+# AudioFlamingo3Processor：音频-文本联合预处理与 chat template 入口
 class AudioFlamingo3Processor(ProcessorMixin):
     valid_processor_kwargs = AudioFlamingo3ProcessorKwargs
 

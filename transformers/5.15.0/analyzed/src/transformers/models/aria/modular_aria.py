@@ -64,6 +64,7 @@ from ..llava.modeling_llava import (
 logger = logging.get_logger(__name__)
 
 
+# sequential_experts_gemm：逐专家顺序 GEMM 辅助函数
 def sequential_experts_gemm(token_states, expert_weights, tokens_per_expert):
     """
     Compute the matrix multiplication (GEMM) for each expert sequentially. This approach is computationally inefficient, especially when dealing with a large number of experts.
@@ -97,6 +98,7 @@ def sequential_experts_gemm(token_states, expert_weights, tokens_per_expert):
 
 @auto_docstring(checkpoint="rhymes-ai/Aria")
 @strict
+# AriaTextConfig：继承 LlamaConfig 并扩展 MoE 相关字段
 class AriaTextConfig(LlamaConfig):
     r"""
     moe_num_experts (`int`, *optional*, defaults to 8):
@@ -128,6 +130,7 @@ class AriaTextConfig(LlamaConfig):
 
 @auto_docstring(checkpoint="rhymes-ai/Aria")
 @strict
+# AriaConfig：组合 text_config 与 vision 相关字段的多模态总配置
 class AriaConfig(PreTrainedConfig):
     r"""
     projector_patch_to_query_dict (`dict`, *optional*):
@@ -173,10 +176,12 @@ class AriaConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# AriaTextRMSNorm：直接继承 Llama RMSNorm
 class AriaTextRMSNorm(LlamaRMSNorm):
     pass
 
 
+# AriaProjectorMLP：视觉-文本投影器 FFN（modular 完整实现）
 class AriaProjectorMLP(nn.Module):
     """
     Feed-Forward Network module for the Aria Projector.
@@ -202,6 +207,7 @@ class AriaProjectorMLP(nn.Module):
         return hidden_states
 
 
+# AriaCrossAttention：视觉-文本交叉注意力 modular 定义
 class AriaCrossAttention(nn.Module):
     """
     Aria Cross-Attention module.
@@ -257,6 +263,7 @@ class AriaCrossAttention(nn.Module):
         return attn_output
 
 
+# AriaProjector：视觉 patch 到 LLM 维度的投影器
 class AriaProjector(nn.Module):
     """
     Aria Projector module.
@@ -322,6 +329,7 @@ class AriaProjector(nn.Module):
         return out
 
 
+# AriaImageProcessorKwargs：Torchvision 后端图像预处理参数
 class AriaImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     max_image_size (`int`, *optional*, defaults to `self.max_image_size`):
@@ -341,6 +349,7 @@ class AriaImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# AriaImageProcessor：基于 Torchvision 的 Aria 图像处理器
 class AriaImageProcessor(TorchvisionBackend):
     model_input_names = ["pixel_values", "pixel_mask", "num_crops"]
     valid_kwargs = AriaImageProcessorKwargs
@@ -523,6 +532,7 @@ class AriaImageProcessor(TorchvisionBackend):
         return num_patches
 
 
+# AriaImagesKwargs：Processor 侧图像参数（split_image 等）
 class AriaImagesKwargs(ImagesKwargs, total=False):
     """
     split_image (`bool`, *optional*, defaults to `False`):
@@ -544,6 +554,7 @@ class AriaImagesKwargs(ImagesKwargs, total=False):
     min_image_size: int
 
 
+# AriaProcessorKwargs：图文联合预处理默认参数
 class AriaProcessorKwargs(ProcessingKwargs, total=False):
     images_kwargs: AriaImagesKwargs
 
@@ -561,6 +572,7 @@ class AriaProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# AriaProcessor：图文联合预处理入口
 class AriaProcessor(ProcessorMixin):
     valid_processor_kwargs = AriaProcessorKwargs
 
@@ -622,6 +634,7 @@ class AriaProcessor(ProcessorMixin):
         return ["num_crops"]
 
 
+# AriaSharedExpertsMLP：复用 LlamaMLP 作为共享专家
 class AriaSharedExpertsMLP(LlamaMLP):
     """
     Shared Expert MLP for shared experts.
@@ -638,6 +651,7 @@ class AriaSharedExpertsMLP(LlamaMLP):
         self.intermediate_size = config.intermediate_size * config.moe_num_shared_experts
 
 
+# AriaGroupedExpertsGemm：分组 batched GEMM MoE 加速
 class AriaGroupedExpertsGemm(nn.Module):
     """
     Grouped GEMM (General Matrix Multiplication) module for efficient expert computation.
@@ -682,6 +696,7 @@ class AriaGroupedExpertsGemm(nn.Module):
         )
 
 
+# AriaExperts：多专家权重 modular 定义
 class AriaExperts(nn.Module):
     def __init__(self, config: AriaTextConfig) -> None:
         super().__init__()
@@ -726,6 +741,7 @@ class AriaExperts(nn.Module):
         return output
 
 
+# AriaTextMoELayer：MoE 层 modular 组装
 class AriaTextMoELayer(nn.Module):
     def __init__(self, config: AriaTextConfig):
         super().__init__()
@@ -743,10 +759,12 @@ class AriaTextMoELayer(nn.Module):
         return expert_output + shared_expert_output
 
 
+# AriaTextAttention：直接继承 LlamaAttention
 class AriaTextAttention(LlamaAttention):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
 
+# AriaTextDecoderLayer：继承 LlamaDecoderLayer 并替换 MoE
 class AriaTextDecoderLayer(LlamaDecoderLayer):
     """
     Aria Text Decoder Layer.
@@ -766,6 +784,7 @@ class AriaTextDecoderLayer(LlamaDecoderLayer):
 
 
 @auto_docstring
+# AriaTextPreTrainedModel：文本塔 modular 预训练基类
 class AriaTextPreTrainedModel(PreTrainedModel):
     config: AriaTextConfig
     base_model_prefix = "model"
@@ -789,6 +808,7 @@ class AriaTextPreTrainedModel(PreTrainedModel):
             init.normal_(module.weight, mean=0.0, std=self.config.initializer_range)
 
 
+# AriaPreTrainedModel：多模态预训练基类，继承 LlamaPreTrainedModel
 class AriaPreTrainedModel(LlamaPreTrainedModel):
     config: AriaConfig
     base_model_prefix = "model"
@@ -802,6 +822,7 @@ class AriaPreTrainedModel(LlamaPreTrainedModel):
             init.trunc_normal_(module.query, std=self.config.initializer_range)
 
 
+# AriaTextModel：MoE 文本塔，继承 LlamaModel
 class AriaTextModel(LlamaModel):
     def __init__(self, config: AriaTextConfig):
         super().__init__(config)
@@ -812,6 +833,7 @@ class AriaTextModel(LlamaModel):
         self.post_init()
 
 
+# AriaTextForCausalLM：多继承文本 CausalLM 与 Aria 基类
 class AriaTextForCausalLM(AriaTextPreTrainedModel, LlamaForCausalLM):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
 
@@ -829,14 +851,17 @@ class AriaTextForCausalLM(AriaTextPreTrainedModel, LlamaForCausalLM):
         super().forward(self, **super_kwargs)
 
 
+# AriaCausalLMOutputWithPast：复用 Llava 条件生成输出
 class AriaCausalLMOutputWithPast(LlavaCausalLMOutputWithPast):
     pass
 
 
+# AriaModelOutputWithPast：复用 Llava 多模态输出
 class AriaModelOutputWithPast(LlavaModelOutputWithPast):
     pass
 
 
+# AriaModel：继承 LlavaModel 的多模态主干
 class AriaModel(LlavaModel):
     def __init__(self, config: AriaConfig):
         super().__init__(config)
@@ -939,6 +964,7 @@ class AriaModel(LlavaModel):
     to perform tasks that involve both image and text inputs.
     """
 )
+# AriaForConditionalGeneration：继承 Llava 条件生成头
 class AriaForConditionalGeneration(LlavaForConditionalGeneration):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
 

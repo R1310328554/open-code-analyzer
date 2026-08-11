@@ -33,6 +33,7 @@ from ..vit.modeling_vit import (
 from .configuration_audio_spectrogram_transformer import ASTConfig
 
 
+# ASTPatchEmbeddings：mel 频谱图 patch 嵌入（modular 完整实现）
 class ASTPatchEmbeddings(nn.Module):
     """
     This class turns `input_values` (mel spectrograms) of shape `(batch_size, max_length, num_mel_bins)` into the
@@ -58,6 +59,7 @@ class ASTPatchEmbeddings(nn.Module):
         return embeddings
 
 
+# ASTEmbeddings：patch + 位置编码 modular 定义
 class ASTEmbeddings(nn.Module):
     """
     Construct the CLS token, distillation token, position and patch embeddings for audio spectrograms.
@@ -96,18 +98,22 @@ class ASTEmbeddings(nn.Module):
         return embeddings
 
 
+# ASTAttention：直接继承 ViT 多头自注意力
 class ASTAttention(ViTAttention):
     pass
 
 
+# ASTMLP：复用 ViT FFN 结构
 class ASTMLP(ViTMLP):
     pass
 
 
+# ASTLayer：复用 ViT Encoder 层
 class ASTLayer(ViTLayer):
     pass
 
 
+# ASTPreTrainedModel：继承 ViT 预训练基类
 class ASTPreTrainedModel(ViTPreTrainedModel):
     config: ASTConfig
     base_model_prefix = "audio_spectrogram_transformer"
@@ -130,6 +136,7 @@ class ASTPreTrainedModel(ViTPreTrainedModel):
 
 
 @auto_docstring
+# ASTModel：AST 编码器 modular forward
 class ASTModel(ASTPreTrainedModel):
     def __init__(self, config: ASTConfig) -> None:
         super().__init__(config)
@@ -182,6 +189,7 @@ class ASTModel(ASTPreTrainedModel):
         return BaseModelOutputWithPooling(last_hidden_state=sequence_output, pooler_output=pooled_output)
 
 
+# ASTMLPHead：分类 MLP 头 modular 定义
 class ASTMLPHead(nn.Module):
     def __init__(self, config: ASTConfig):
         super().__init__()
@@ -200,6 +208,7 @@ class ASTMLPHead(nn.Module):
     output) e.g. for datasets like AudioSet, Speech Commands v2.
     """
 )
+# ASTForAudioClassification：音频分类头 modular
 class ASTForAudioClassification(ASTPreTrainedModel):
     def __init__(self, config: ASTConfig) -> None:
         super().__init__(config)

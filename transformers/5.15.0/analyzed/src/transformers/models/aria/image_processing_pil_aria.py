@@ -31,6 +31,7 @@ from ...utils import TensorType, auto_docstring
 
 
 # Adapted from transformers.models.aria.image_processing_aria.AriaImageProcessorKwargs
+# AriaImageProcessorKwargs：max/min 尺寸、split_resolutions 等预处理参数
 class AriaImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     max_image_size (`int`, *optional*, defaults to `self.max_image_size`):
@@ -50,6 +51,7 @@ class AriaImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# AriaImageProcessorPil：基于 PIL 后端的 Aria 图像处理器
 class AriaImageProcessorPil(PilBackend):
     model_input_names = ["pixel_values", "pixel_mask", "num_crops"]
     valid_kwargs = AriaImageProcessorKwargs
@@ -65,12 +67,14 @@ class AriaImageProcessorPil(PilBackend):
     do_rescale = True
     do_normalize = True
 
+# __init__：默认 split_resolutions 由 490 倍数网格生成
     def __init__(self, **kwargs: Unpack[AriaImageProcessorKwargs]):
         if kwargs.get("split_resolutions") is None:
             default_resolutions = [(1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8), (2, 4), (2, 3), (2, 2), (2, 1), (3, 1), (3, 2), (4, 1), (4, 2), (5, 1), (6, 1), (7, 1), (8, 1)]  # fmt: skip
             kwargs["split_resolutions"] = [[el[0] * 490, el[1] * 490] for el in default_resolutions]
         super().__init__(**kwargs)
 
+# _get_padding_size：计算居中 padding 供 np.pad 使用
     def _get_padding_size(self, original_resolution: tuple, target_resolution: tuple):
         """Get padding size for patching, returns ((before_h, after_h), (before_w, after_w)) for np.pad."""
         original_height, original_width = original_resolution
@@ -79,6 +83,7 @@ class AriaImageProcessorPil(PilBackend):
         paste_y, r_y = divmod(target_height - original_height, 2)
         return (paste_y, paste_y + r_y), (paste_x, paste_x + r_x)
 
+# _resize_for_patching：等比缩放至目标分辨率
     def _resize_for_patching(
         self,
         image: np.ndarray,
@@ -91,6 +96,7 @@ class AriaImageProcessorPil(PilBackend):
         )
         return self.resize(image, SizeDict(height=new_height, width=new_width), resample)
 
+# _pad_for_patching：填充至 patch 网格对齐尺寸
     def _pad_for_patching(
         self,
         image: np.ndarray,
@@ -103,6 +109,7 @@ class AriaImageProcessorPil(PilBackend):
         padding = ((0, 0), padding_hw[0], padding_hw[1])
         return np.pad(image, padding, mode="constant", constant_values=0)
 
+# get_image_patches：按 grid_pinpoints 选最优分辨率并切分为 patch 列表
     def get_image_patches(
         self,
         image: np.ndarray,
@@ -136,6 +143,7 @@ class AriaImageProcessorPil(PilBackend):
         patches = divide_to_patches(padded_image, patch_size=patch_size)
         return patches
 
+# _preprocess：批量图像缩放/归一化/分块，输出 pixel_values 与 num_crops
     def _preprocess(
         self,
         images: list[np.ndarray],

@@ -50,6 +50,7 @@ from .configuration_aria import AriaConfig, AriaTextConfig
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# AriaTextRMSNorm：RMS 归一化层，等价于 T5LayerNorm
 class AriaTextRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -70,6 +71,7 @@ class AriaTextRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# AriaProjectorMLP：视觉-文本投影器中的前馈子层
 class AriaProjectorMLP(nn.Module):
     """
     Feed-Forward Network module for the Aria Projector.
@@ -95,6 +97,7 @@ class AriaProjectorMLP(nn.Module):
         return hidden_states
 
 
+# AriaCrossAttention：视觉特征与文本 query 的交叉注意力
 class AriaCrossAttention(nn.Module):
     """
     Aria Cross-Attention module.
@@ -150,6 +153,7 @@ class AriaCrossAttention(nn.Module):
         return attn_output
 
 
+# AriaProjector：将视觉 patch 嵌入映射到 LLM 隐藏维度
 class AriaProjector(nn.Module):
     """
     Aria Projector module.
@@ -215,6 +219,7 @@ class AriaProjector(nn.Module):
         return out
 
 
+# AriaSharedExpertsMLP：MoE 层中所有 token 共享的专家 MLP
 class AriaSharedExpertsMLP(nn.Module):
     """
     Shared Expert MLP for shared experts.
@@ -241,6 +246,7 @@ class AriaSharedExpertsMLP(nn.Module):
         return down_proj
 
 
+# sequential_experts_gemm：逐专家顺序 GEMM（效率较低但实现简单）
 def sequential_experts_gemm(token_states, expert_weights, tokens_per_expert):
     """
     Compute the matrix multiplication (GEMM) for each expert sequentially. This approach is computationally inefficient, especially when dealing with a large number of experts.
@@ -272,6 +278,7 @@ def sequential_experts_gemm(token_states, expert_weights, tokens_per_expert):
     return output
 
 
+# AriaGroupedExpertsGemm：分组 batched GEMM 加速 MoE 专家计算
 class AriaGroupedExpertsGemm(nn.Module):
     """
     Grouped GEMM (General Matrix Multiplication) module for efficient expert computation.
@@ -316,6 +323,7 @@ class AriaGroupedExpertsGemm(nn.Module):
         )
 
 
+# AriaExperts：多专家权重堆叠，按路由索引 gather 计算
 class AriaExperts(nn.Module):
     def __init__(self, config: AriaTextConfig) -> None:
         super().__init__()
@@ -360,6 +368,7 @@ class AriaExperts(nn.Module):
         return output
 
 
+# AriaTextMoELayer：稀疏 MoE 层，组合 router 与 experts
 class AriaTextMoELayer(nn.Module):
     def __init__(self, config: AriaTextConfig):
         super().__init__()
@@ -377,6 +386,7 @@ class AriaTextMoELayer(nn.Module):
         return expert_output + shared_expert_output
 
 
+# rotate_half：RoPE 旋转操作中拆分并交换张量半维
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -385,6 +395,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：将 cos/sin 施加到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -410,6 +421,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 下将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -422,6 +434,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：标准点积注意力前向（非 flash/sdpa）
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -448,6 +461,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# AriaTextAttention：多头自注意力，支持 RoPE 与 GQA
 class AriaTextAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -515,6 +529,7 @@ class AriaTextAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# AriaTextDecoderLayer：Decoder 层（Attn + MoE + 残差）
 class AriaTextDecoderLayer(GradientCheckpointingLayer):
     """
     Aria Text Decoder Layer.
@@ -570,6 +585,7 @@ class AriaTextDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# AriaTextPreTrainedModel：文本塔权重初始化与 _no_split_modules 基类
 class AriaTextPreTrainedModel(PreTrainedModel):
     config: AriaTextConfig
     base_model_prefix = "model"
@@ -594,6 +610,7 @@ class AriaTextPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# AriaPreTrainedModel：多模态 Aria 预训练基类
 class AriaPreTrainedModel(PreTrainedModel):
     config: AriaConfig
     base_model_prefix = "model"
@@ -617,6 +634,7 @@ class AriaPreTrainedModel(PreTrainedModel):
             init.trunc_normal_(module.query, std=self.config.initializer_range)
 
 
+# AriaTextRotaryEmbedding：RoPE 位置编码，支持 dynamic rope
 class AriaTextRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: AriaTextConfig, device=None):
@@ -675,6 +693,7 @@ class AriaTextRotaryEmbedding(nn.Module):
 
 
 @auto_docstring
+# AriaTextModel：MoE 文本塔主干，输出 hidden states 与 KV cache
 class AriaTextModel(AriaTextPreTrainedModel):
     def __init__(self, config: AriaTextConfig):
         super().__init__(config)
@@ -749,6 +768,7 @@ class AriaTextModel(AriaTextPreTrainedModel):
 
 
 @auto_docstring
+# AriaTextForCausalLM：纯文本因果 LM 头，支持 generate
 class AriaTextForCausalLM(AriaTextPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
@@ -828,6 +848,7 @@ class AriaTextForCausalLM(AriaTextPreTrainedModel, GenerationMixin):
     """
 )
 @dataclass
+# AriaCausalLMOutputWithPast：多模态条件生成输出 dataclass
 class AriaCausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -858,6 +879,7 @@ class AriaCausalLMOutputWithPast(ModelOutput):
     """
 )
 @dataclass
+# AriaModelOutputWithPast：AriaModel forward 输出（含 past_key_values）
 class AriaModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     past_key_values (`Cache`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
@@ -878,6 +900,7 @@ class AriaModelOutputWithPast(BaseModelOutputWithPast):
     The Aria model which consists of a vision backbone and a language model, without a language modeling head.
     """
 )
+# AriaModel：多模态主干，融合视觉投影与文本 MoE
 class AriaModel(AriaPreTrainedModel):
     def __init__(self, config: AriaConfig):
         super().__init__(config)
@@ -1014,6 +1037,7 @@ class AriaModel(AriaPreTrainedModel):
     to perform tasks that involve both image and text inputs.
     """
 )
+# AriaForConditionalGeneration：图文条件生成，支持 generate 与 loss
 class AriaForConditionalGeneration(AriaPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
 

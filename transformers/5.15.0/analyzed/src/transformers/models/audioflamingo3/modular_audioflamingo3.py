@@ -43,19 +43,23 @@ from .configuration_audioflamingo3 import AudioFlamingo3Config
 logger = logging.get_logger(__name__)
 
 
+# AudioFlamingo3Attention：直接继承 Whisper 自注意力
 class AudioFlamingo3Attention(WhisperAttention):
     pass
 
 
+# AudioFlamingo3EncoderLayer：复用 Whisper 编码器层
 class AudioFlamingo3EncoderLayer(WhisperEncoderLayer):
     pass
 
 
+# AudioFlamingo3PreTrainedModel：继承 Qwen2Audio 预训练基类
 class AudioFlamingo3PreTrainedModel(Qwen2AudioPreTrainedModel):
     _supports_attention_backend = True
 
 
 @dataclass
+# AudioFlamingo3ModelOutputWithPast：复用 Voxtral 多模态输出
 class AudioFlamingo3ModelOutputWithPast(VoxtralModelOutputWithPast):
     pass
 
@@ -66,6 +70,7 @@ class AudioFlamingo3ModelOutputWithPast(VoxtralModelOutputWithPast):
     """
 )
 @dataclass
+# AudioFlamingo3CausalLMOutputWithPast：条件生成输出 dataclass
 class AudioFlamingo3CausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -91,6 +96,7 @@ class AudioFlamingo3CausalLMOutputWithPast(ModelOutput):
     The audio model from AudioFlamingo3 without any head or projection on top.
     """
 )
+# AudioFlamingo3Encoder：继承 Qwen2Audio 音频编码器
 class AudioFlamingo3Encoder(Qwen2AudioEncoder):
     """
     AudioFlamingo3 encoder: Whisper encoder, average pool (time/2), then LayerNorm.
@@ -157,6 +163,7 @@ class AudioFlamingo3Encoder(Qwen2AudioEncoder):
         )
 
 
+# AudioFlamingo3MultiModalProjector：复用 Voxtral 多模态投影器
 class AudioFlamingo3MultiModalProjector(VoxtralMultiModalProjector):
     """
     Audio adaptor (small MLP) that projects AudioFlamingo3Encoder features
@@ -180,6 +187,7 @@ class AudioFlamingo3MultiModalProjector(VoxtralMultiModalProjector):
     without a language modeling head.
     """
 )
+# AudioFlamingo3Model：继承 Voxtral 多模态主干
 class AudioFlamingo3Model(VoxtralModel):
     _tp_plan = None
     _pp_plan = None
@@ -274,6 +282,7 @@ class AudioFlamingo3Model(VoxtralModel):
     The AudioFlamingo3 model which consists of a fine-tuned Whisper encoder, a multi-modal projector and a Qwen2 language model.
     """
 )
+# AudioFlamingo3ForConditionalGeneration：继承 Voxtral 条件生成头
 class AudioFlamingo3ForConditionalGeneration(VoxtralForConditionalGeneration):
     _keep_in_fp32_modules_strict = AttributeError()
     _tied_weights_keys = None

@@ -45,6 +45,7 @@ from .configuration_audioflamingo3 import AudioFlamingo3Config, AudioFlamingo3En
 logger = logging.get_logger(__name__)
 
 
+# eager_attention_forward：音频编码器标准自注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -71,6 +72,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# AudioFlamingo3Attention：Whisper 风格多头自注意力
 class AudioFlamingo3Attention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -189,6 +191,7 @@ class AudioFlamingo3Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# AudioFlamingo3EncoderLayer：音频编码器单层（Attn + FFN）
 class AudioFlamingo3EncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: AudioFlamingo3Config):
         super().__init__()
@@ -246,6 +249,7 @@ class AudioFlamingo3EncoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# AudioFlamingo3PreTrainedModel：预训练基类与权重初始化
 class AudioFlamingo3PreTrainedModel(PreTrainedModel):
     config: AudioFlamingo3Config
     base_model_prefix = "model"
@@ -259,6 +263,7 @@ class AudioFlamingo3PreTrainedModel(PreTrainedModel):
 
 
 @dataclass
+# AudioFlamingo3ModelOutputWithPast：多模态模型 forward 输出
 class AudioFlamingo3ModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     audio_hidden_states (`torch.FloatTensor`, *optional*):
@@ -274,6 +279,7 @@ class AudioFlamingo3ModelOutputWithPast(BaseModelOutputWithPast):
     """
 )
 @dataclass
+# AudioFlamingo3CausalLMOutputWithPast：条件生成输出（logits + loss）
 class AudioFlamingo3CausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -299,6 +305,7 @@ class AudioFlamingo3CausalLMOutputWithPast(ModelOutput):
     The audio model from AudioFlamingo3 without any head or projection on top.
     """
 )
+# AudioFlamingo3Encoder：Mel 频谱图 → 音频 hidden states 编码器
 class AudioFlamingo3Encoder(AudioFlamingo3PreTrainedModel):
     """
     AudioFlamingo3 encoder: Whisper encoder, average pool (time/2), then LayerNorm.
@@ -416,6 +423,7 @@ class AudioFlamingo3Encoder(AudioFlamingo3PreTrainedModel):
         return input_lengths, output_lengths
 
 
+# AudioFlamingo3MultiModalProjector：音频嵌入投影到 LLM 隐藏维度
 class AudioFlamingo3MultiModalProjector(nn.Module):
     """
     Audio adaptor (small MLP) that projects AudioFlamingo3Encoder features
@@ -445,6 +453,7 @@ class AudioFlamingo3MultiModalProjector(nn.Module):
     without a language modeling head.
     """
 )
+# AudioFlamingo3Model：融合音频编码器、投影器与文本 LLM
 class AudioFlamingo3Model(AudioFlamingo3PreTrainedModel):
     _tp_plan = None
     _pp_plan = None
@@ -567,6 +576,7 @@ class AudioFlamingo3Model(AudioFlamingo3PreTrainedModel):
     The AudioFlamingo3 model which consists of a fine-tuned Whisper encoder, a multi-modal projector and a Qwen2 language model.
     """
 )
+# AudioFlamingo3ForConditionalGeneration：音频-文本条件生成，支持 generate
 class AudioFlamingo3ForConditionalGeneration(AudioFlamingo3PreTrainedModel, GenerationMixin):
     _tied_weights_keys = None
 

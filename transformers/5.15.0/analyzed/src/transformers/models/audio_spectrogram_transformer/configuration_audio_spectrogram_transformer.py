@@ -21,6 +21,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="MIT/ast-finetuned-audioset-10-10-0.4593")
 @strict
+# ASTConfig：Audio Spectrogram Transformer 架构超参
 class ASTConfig(PreTrainedConfig):
     r"""
     frequency_stride (`int`, *optional*, defaults to 10):
@@ -65,3 +66,5 @@ class ASTConfig(PreTrainedConfig):
 
 
 __all__ = ["ASTConfig"]
+# 模块 src/transformers/models/audio_spectrogram_transformer/configuration_audio_spectrogram_transformer.py：Transformers 5.15.0 wave8a 中文文档注释。
+

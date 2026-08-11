@@ -22,6 +22,7 @@ from ...utils import TensorType, auto_docstring
 from ..auto import AutoTokenizer
 
 
+# AriaImagesKwargs：split_image、max/min_image_size 等图像参数
 class AriaImagesKwargs(ImagesKwargs, total=False):
     """
     split_image (`bool`, *optional*, defaults to `False`):
@@ -43,6 +44,7 @@ class AriaImagesKwargs(ImagesKwargs, total=False):
     min_image_size: int
 
 
+# AriaProcessorKwargs：文本/图像预处理默认值
 class AriaProcessorKwargs(ProcessingKwargs, total=False):
     images_kwargs: AriaImagesKwargs
 
@@ -60,6 +62,7 @@ class AriaProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# AriaProcessor：图文联合预处理与 chat template 入口
 class AriaProcessor(ProcessorMixin):
     valid_processor_kwargs = AriaProcessorKwargs
 

@@ -36,6 +36,7 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_audio_spectrogram_transformer import ASTConfig
 
 
+# ASTPatchEmbeddings：Conv2d 将 mel 频谱图切分为 patch 嵌入
 class ASTPatchEmbeddings(nn.Module):
     """
     This class turns `input_values` (mel spectrograms) of shape `(batch_size, max_length, num_mel_bins)` into the
@@ -61,6 +62,7 @@ class ASTPatchEmbeddings(nn.Module):
         return embeddings
 
 
+# ASTEmbeddings：patch 嵌入 + 可学习/正弦位置编码
 class ASTEmbeddings(nn.Module):
     """
     Construct the CLS token, distillation token, position and patch embeddings for audio spectrograms.
@@ -99,6 +101,7 @@ class ASTEmbeddings(nn.Module):
         return embeddings
 
 
+# eager_attention_forward：标准双向自注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -127,6 +130,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# ASTAttention：多头自注意力（AST 编码器层）
 class ASTAttention(nn.Module):
     def __init__(self, config: ASTConfig):
         super().__init__()
@@ -176,6 +180,7 @@ class ASTAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# ASTMLP：Transformer FFN 子层
 class ASTMLP(nn.Module):
     def __init__(self, config: ASTConfig):
         super().__init__()
@@ -192,6 +197,7 @@ class ASTMLP(nn.Module):
         return hidden_states
 
 
+# ASTLayer：单层 Attn + MLP + 残差
 class ASTLayer(GradientCheckpointingLayer):
     def __init__(self, config: ASTConfig):
         super().__init__()
@@ -225,6 +231,7 @@ class ASTLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# ASTPreTrainedModel：预训练基类与权重初始化
 class ASTPreTrainedModel(PreTrainedModel):
     config: ASTConfig
     base_model_prefix = "audio_spectrogram_transformer"
@@ -254,6 +261,7 @@ class ASTPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# ASTModel：AST 编码器主干，输出 pooled 表示
 class ASTModel(ASTPreTrainedModel):
     def __init__(self, config: ASTConfig) -> None:
         super().__init__(config)
@@ -306,6 +314,7 @@ class ASTModel(ASTPreTrainedModel):
         return BaseModelOutputWithPooling(last_hidden_state=sequence_output, pooler_output=pooled_output)
 
 
+# ASTMLPHead：分类任务前的 MLP 投影头
 class ASTMLPHead(nn.Module):
     def __init__(self, config: ASTConfig):
         super().__init__()
@@ -324,6 +333,7 @@ class ASTMLPHead(nn.Module):
     output) e.g. for datasets like AudioSet, Speech Commands v2.
     """
 )
+# ASTForAudioClassification：音频分类微调头
 class ASTForAudioClassification(ASTPreTrainedModel):
     def __init__(self, config: ASTConfig) -> None:
         super().__init__(config)

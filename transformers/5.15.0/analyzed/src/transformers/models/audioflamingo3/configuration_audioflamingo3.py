@@ -23,6 +23,7 @@ from ..auto import CONFIG_MAPPING, AutoConfig
 
 @auto_docstring(checkpoint="nvidia/audio-flamingo-3-hf")
 @strict
+# AudioFlamingo3EncoderConfig：音频编码器超参（mel bins、层数、max_source_positions）
 class AudioFlamingo3EncoderConfig(PreTrainedConfig):
     r"""
     max_source_positions (`int`, *optional*, defaults to 1500):
@@ -70,6 +71,7 @@ class AudioFlamingo3EncoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="nvidia/audio-flamingo-3-hf")
 @strict
+# AudioFlamingo3Config：组合 encoder_config 与 text_config 的顶层配置
 class AudioFlamingo3Config(PreTrainedConfig):
     r"""
     Example:
