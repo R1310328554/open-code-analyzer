@@ -23,8 +23,12 @@ from ..auto.configuration_auto import AutoConfig
 logger = logging.get_logger(__name__)
 
 
+# Nougat 配置：Swin 编码器 + mBART 解码器的文档 OCR 超参
+
+# NougatConfig：facebook/nougat-base 文档 OCR VisionEncoderDecoder 联合超参
 @auto_docstring(checkpoint="facebook/nougat-base")
 @strict
+# NougatConfig：facebook/nougat-base 文档 OCR VisionEncoderDecoder 联合超参
 class NougatConfig(PreTrainedConfig):
     r"""
     encoder (`dict | PreTrainedConfig`):
@@ -51,6 +55,7 @@ class NougatConfig(PreTrainedConfig):
     decoder: dict | PreTrainedConfig | None = None
     is_encoder_decoder: bool = True
 
+    # __post_init__：初始化后迁移 legacy 字段并解析 layers_block_type 层类型列表
     def __post_init__(self, **kwargs):
         if self.encoder is None or self.decoder is None:
             raise ValueError(

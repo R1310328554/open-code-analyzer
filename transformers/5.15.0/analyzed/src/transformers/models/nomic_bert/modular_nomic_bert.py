@@ -49,8 +49,12 @@ from ..jina_embeddings_v3.modeling_jina_embeddings_v3 import (
 from ..llama.modeling_llama import LlamaRotaryEmbedding
 
 
+# Nomic BERT modular 源：Bert/Jina/Gemma/Llama 组件组合的嵌入 BERT
+
+# NomicBertConfig：nomic-ai/nomic-embed-text-v1.5 嵌入向量化 BERT 超参
 @auto_docstring(checkpoint="nomic-ai/nomic-embed-text-v1.5")
 @strict
+# NomicBertConfig：nomic-ai/nomic-embed-text-v1.5 嵌入向量化 BERT 超参
 class NomicBertConfig(BertConfig):
     r"""
     Examples:
@@ -94,20 +98,24 @@ class NomicBertConfig(BertConfig):
     add_cross_attention = AttributeError()
     use_cache = AttributeError()
 
+    # __post_init__：初始化后迁移 legacy 字段并解析 layers_block_type 层类型列表
     def __post_init__(self, **kwargs):
         PreTrainedConfig.__post_init__(self, **kwargs)
         if self.head_dim is None:
             self.head_dim = self.hidden_size // self.num_attention_heads
 
 
+# NomicBertEmbeddings：词/类型/位置嵌入与 LayerNorm（无绝对位置表）
 class NomicBertEmbeddings(JinaEmbeddingsV3Embeddings):
     pass
 
 
+# NomicBertRotaryEmbedding：Nomic BERT RoPE 旋转位置编码
 class NomicBertRotaryEmbedding(LlamaRotaryEmbedding):
     pass
 
 
+# NomicBertAttention：Nomic BERT 双向自注意力（RoPE + GQA 可选）
 class NomicBertAttention(JinaEmbeddingsV3Attention):
     def __init__(self, config):
         super().__init__(config)
@@ -117,14 +125,17 @@ class NomicBertAttention(JinaEmbeddingsV3Attention):
         self.o_proj = nn.Linear(config.num_attention_heads * self.head_dim, config.hidden_size, bias=False)
 
 
+# NomicBertMLP：Nomic BERT SwiGLU 风格前馈 MLP
 class NomicBertMLP(GemmaMLP):
     pass
 
 
+# NomicBertLayer：Nomic BERT Transformer 单层（注意力 + MLP + 残差）
 class NomicBertLayer(JinaEmbeddingsV3Layer):
     pass
 
 
+# NomicBertPreTrainedModel：Nomic BERT 预训练基类与权重初始化
 class NomicBertPreTrainedModel(BertPreTrainedModel):
     config_class = NomicBertConfig
     base_model_prefix = "nomic_bert"
@@ -139,6 +150,7 @@ class NomicBertPreTrainedModel(BertPreTrainedModel):
 
 
 @auto_docstring
+# NomicBertModel：Nomic BERT 编码器主干（嵌入 + 堆叠层 + 池化）
 class NomicBertModel(JinaEmbeddingsV3Model):
     def __init__(self, config, add_pooling_layer=False):
         r"""
@@ -206,6 +218,7 @@ class NomicBertModel(JinaEmbeddingsV3Model):
         )
 
 
+# NomicBertPredictionHeadTransform：MLM 头前的 Dense + 激活 + LayerNorm
 class NomicBertPredictionHeadTransform(BertPredictionHeadTransform):
     def __init__(self, config):
         super().__init__(config)
@@ -220,11 +233,13 @@ class NomicBertPredictionHeadTransform(BertPredictionHeadTransform):
         return hidden_states
 
 
+# NomicBertOnlyMLMHead：仅 MLM 预测头（变换 + 词表投影）
 class NomicBertOnlyMLMHead(BertOnlyMLMHead):
     pass
 
 
 @auto_docstring
+# NomicBertForMaskedLM：Nomic BERT 掩码语言建模
 class NomicBertForMaskedLM(BertForMaskedLM):
     def __init__(self, config):
         PreTrainedModel.__init__(self, config)
@@ -279,12 +294,14 @@ class NomicBertForMaskedLM(BertForMaskedLM):
         )
 
 
+# NomicBertForSequenceClassification：Nomic BERT 序列分类
 class NomicBertForSequenceClassification(BertForSequenceClassification):
     def __init__(self, config):
         super().__init__(config)
         self.nomic_bert = NomicBertModel(config, add_pooling_layer=True)
 
 
+# NomicBertForTokenClassification：Nomic BERT  token 级分类
 class NomicBertForTokenClassification(BertForTokenClassification):
     pass
 

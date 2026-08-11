@@ -46,6 +46,9 @@ from .configuration_nllb_moe import NllbMoeConfig
 logger = logging.get_logger(__name__)
 
 
+# NLLB-MoE 建模：稀疏 MoE 编码器-解码器与多语言条件翻译
+
+# NllbMoeScaledWordEmbedding：带 embed_scale 缩放的词嵌入层
 class NllbMoeScaledWordEmbedding(nn.Embedding):
     """
     This module overrides nn.Embeddings' forward by multiplying with embeddings scale.
@@ -60,6 +63,7 @@ class NllbMoeScaledWordEmbedding(nn.Embedding):
 
 
 # Copied from transformers.models.m2m_100.modeling_m2m_100.M2M100SinusoidalPositionalEmbedding with M2M100->NllbMoe
+# NllbMoeSinusoidalPositionalEmbedding：NLLB-MoE 正弦绝对位置嵌入
 class NllbMoeSinusoidalPositionalEmbedding(nn.Module):
     """This module produces sinusoidal positional embeddings of any length."""
 
@@ -162,6 +166,7 @@ class NllbMoeSinusoidalPositionalEmbedding(nn.Module):
         return incremental_indices.long() + padding_idx
 
 
+# NllbMoeTop2Router：Top-2 专家路由（容量丢弃与负载均衡）
 class NllbMoeTop2Router(nn.Module):
     """
     Router using tokens choose top-2 experts assignment.
@@ -315,6 +320,7 @@ class NllbMoeTop2Router(nn.Module):
         return top_1_mask, router_probs, router_logits
 
 
+# NllbMoeDenseActDense：NLLB-MoE 稠密 FFN（激活 + 两层线性）
 class NllbMoeDenseActDense(nn.Module):
     def __init__(self, config: NllbMoeConfig, ffn_dim: int):
         super().__init__()
@@ -337,6 +343,7 @@ class NllbMoeDenseActDense(nn.Module):
         return hidden_states
 
 
+# NllbMoeExperts：MoE 专家 ModuleDict（每专家独立 FFN）
 class NllbMoeExperts(nn.ModuleDict):
     def __init__(self, config: NllbMoeConfig, ffn_dim: int):
         super().__init__()
@@ -364,6 +371,7 @@ class NllbMoeExperts(nn.ModuleDict):
         return final_hidden_states
 
 
+# NllbMoeSparseMLP：稀疏 MoE MLP（路由 + 专家聚合）
 class NllbMoeSparseMLP(nn.Module):
     r"""
     Implementation of the NLLB-MoE sparse MLP module.
@@ -384,6 +392,7 @@ class NllbMoeSparseMLP(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.eager_attention_forward
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -412,6 +421,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# NllbMoeAttention：NLLB-MoE 多头自/交叉注意力
 class NllbMoeAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -510,6 +520,7 @@ class NllbMoeAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# NllbMoeEncoderLayer：NLLB-MoE 编码器单层（自注意力 + FFN/MoE）
 class NllbMoeEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: NllbMoeConfig, is_sparse: bool = False, layer_idx: int = 0):
         super().__init__()
@@ -554,6 +565,7 @@ class NllbMoeEncoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# NllbMoeDecoderLayer：NLLB-MoE 解码器单层（因果自注意力 + 交叉注意力 + FFN/MoE）
 class NllbMoeDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: NllbMoeConfig, is_sparse: bool = False, layer_idx: int | None = None):
         super().__init__()
@@ -643,6 +655,7 @@ class NllbMoeDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# NllbMoePreTrainedModel：NLLB-MoE 预训练基类与权重初始化
 class NllbMoePreTrainedModel(PreTrainedModel):
     config: NllbMoeConfig
     base_model_prefix = "model"
@@ -664,6 +677,7 @@ class NllbMoePreTrainedModel(PreTrainedModel):
             init.copy_(module.weights, emb_weights)
 
 
+# NllbMoeEncoder：NLLB-MoE Transformer 编码器堆叠
 class NllbMoeEncoder(NllbMoePreTrainedModel):
     _can_record_outputs = {
         "hidden_states": NllbMoeEncoderLayer,
@@ -738,6 +752,7 @@ class NllbMoeEncoder(NllbMoePreTrainedModel):
         return MoEModelOutput(last_hidden_state=last_hidden_state)
 
 
+# NllbMoeDecoder：NLLB-MoE Transformer 解码器堆叠
 class NllbMoeDecoder(NllbMoePreTrainedModel):
     """
     Transformer decoder consisting of *config.decoder_layers* layers. Each layer is a [`NllbMoeDecoderLayer`]
@@ -857,6 +872,7 @@ class NllbMoeDecoder(NllbMoePreTrainedModel):
 
 
 @auto_docstring
+# NllbMoeModel：NLLB-MoE 编码器-解码器 seq2seq 主体
 class NllbMoeModel(NllbMoePreTrainedModel):
     _tied_weights_keys = {
         "encoder.embed_tokens.weight": "shared.weight",
@@ -933,6 +949,7 @@ class NllbMoeModel(NllbMoePreTrainedModel):
         )
 
 
+# load_balancing_loss_func：MoE 专家负载均衡辅助损失
 def load_balancing_loss_func(
     gate_logits: torch.Tensor | tuple[torch.Tensor] | None,
     num_experts: int | None = None,
@@ -1015,6 +1032,7 @@ def load_balancing_loss_func(
     return overall_loss * num_experts
 
 
+# shift_tokens_right：右移 labels 构造 decoder 输入（首 token 填 start）
 def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start_token_id: int):
     """
     Shift input ids one token to the right.
@@ -1036,6 +1054,7 @@ def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start
     The NllbMoe Model with a language modeling head. Can be used for summarization.
     """
 )
+# NllbMoeForConditionalGeneration：NLLB-MoE 多语言条件翻译生成
 class NllbMoeForConditionalGeneration(NllbMoePreTrainedModel, GenerationMixin):
     base_model_prefix = "model"
     _tied_weights_keys = {

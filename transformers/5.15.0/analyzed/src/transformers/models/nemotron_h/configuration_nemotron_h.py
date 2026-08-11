@@ -22,8 +22,12 @@ from ...utils import auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# Nemotron-H 配置：Mamba2/全注意力/MoE/MLP 混合层因果 LLM 超参
+
+# NemotronHConfig：NVIDIA Nemotron-3-Nano 混合 Mamba2/注意力/MoE 因果 LLM 超参
 @auto_docstring(checkpoint="nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16")
 @strict
+# NemotronHConfig：NVIDIA Nemotron-3-Nano 混合 Mamba2/注意力/MoE 因果 LLM 超参
 class NemotronHConfig(PreTrainedConfig):
     r"""
     layers_block_type (`list`, *optional*):
@@ -139,6 +143,7 @@ class NemotronHConfig(PreTrainedConfig):
     hidden_dropout: float | int = 0.0
     rescale_prenorm_residual: bool = True
 
+    # __post_init__：初始化后迁移 legacy 字段并解析 layers_block_type 层类型列表
     def __post_init__(self, **kwargs):
         # Backward compatibility; configs expect different names for these fields when init
         # but they have to be renamed when creating/saving the config.
@@ -196,6 +201,7 @@ class NemotronHConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
     @staticmethod
+    # validate_layer_type：校验 layers_block_type 与 mtp_layers_block_type 合法取值
     def validate_layer_type(self):
         """
         Validate layers_block_type list.
@@ -228,6 +234,7 @@ class NemotronHConfig(PreTrainedConfig):
                 )
 
     @property
+    # num_hidden_layers：由 layers_block_type 长度推导的隐藏层数（兼容属性）
     def num_hidden_layers(self) -> int:
         """
         Number of hidden layers derived from the length of layers_block_type.
@@ -236,6 +243,7 @@ class NemotronHConfig(PreTrainedConfig):
         return len(self.layers_block_type)
 
     @num_hidden_layers.setter
+    # num_hidden_layers：由 layers_block_type 长度推导的隐藏层数（兼容属性）
     def num_hidden_layers(self, value):
         """
         Setter for backward compatibility when loading configs.
@@ -245,6 +253,7 @@ class NemotronHConfig(PreTrainedConfig):
         pass
 
     @property
+    # hybrid_override_pattern：layers_block_type 的 M/E/*/- 模式字符串（向后兼容）
     def hybrid_override_pattern(self) -> str:
         """
         Backward compatibility property.
@@ -253,6 +262,7 @@ class NemotronHConfig(PreTrainedConfig):
         return self._list_to_pattern(self.layers_block_type)
 
     @property
+    # mtp_hybrid_override_pattern：mtp_layers_block_type 的模式字符串（向后兼容）
     def mtp_hybrid_override_pattern(self) -> str:
         """
         Backward compatibility property.
@@ -261,12 +271,14 @@ class NemotronHConfig(PreTrainedConfig):
         return self._list_to_pattern(self.mtp_layers_block_type)
 
     @staticmethod
+    # _list_to_pattern：层类型列表转 hybrid 模式字符串
     def _list_to_pattern(layers_list: list) -> str:
         """Convert list of layer types back to pattern string (for backward compatibility)."""
         reverse_mapping = {"linear_attention": "M", "moe": "E", "full_attention": "*", "mlp": "-"}
         return "".join(reverse_mapping[layer_type] for layer_type in layers_list)
 
     @staticmethod
+    # _pattern_to_list：hybrid 模式字符串转层类型列表
     def _pattern_to_list(pattern: str) -> list:
         """Convert pattern string to list of layer types (for backward compatibility)."""
         pattern_mapping = {"M": "linear_attention", "E": "moe", "*": "full_attention", "-": "mlp"}

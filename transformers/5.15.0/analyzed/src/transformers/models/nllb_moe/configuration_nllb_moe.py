@@ -13,6 +13,8 @@
 # limitations under the License.
 """NLLB-MoE model configuration"""
 
+# NLLB-MoE 配置：稀疏 Top-2 MoE 多语言 seq2seq 翻译超参
+
 from typing import Literal
 
 from huggingface_hub.dataclasses import strict
@@ -21,8 +23,10 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# NllbMoeConfig：facebook/nllb-moe-54b 稀疏 MoE 多语言 seq2seq 超参
 @auto_docstring(checkpoint="facebook/nllb-moe-54b")
 @strict
+# NllbMoeConfig：facebook/nllb-moe-54b 稀疏 MoE 多语言 seq2seq 超参
 class NllbMoeConfig(PreTrainedConfig):
     r"""
     router_bias (`bool`, *optional*, defaults to `False`):

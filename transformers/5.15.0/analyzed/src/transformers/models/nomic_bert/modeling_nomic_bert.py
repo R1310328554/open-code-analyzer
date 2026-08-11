@@ -46,6 +46,9 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_nomic_bert import NomicBertConfig
 
 
+# Nomic BERT 建模：RoPE 双向编码器与 MLM/分类/嵌入任务头
+
+# NomicBertEmbeddings：词/类型/位置嵌入与 LayerNorm（无绝对位置表）
 class NomicBertEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
@@ -92,6 +95,7 @@ class NomicBertEmbeddings(nn.Module):
         return embeddings
 
 
+# NomicBertRotaryEmbedding：Nomic BERT RoPE 旋转位置编码
 class NomicBertRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: NomicBertConfig, device=None):
@@ -149,6 +153,7 @@ class NomicBertRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# rotate_half：RoPE 中将向量后半维旋转 180°
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -157,6 +162,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：对 Q/K 张量应用 RoPE 旋转位置编码
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -182,6 +188,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -211,6 +218,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# NomicBertAttention：Nomic BERT 双向自注意力（RoPE + GQA 可选）
 class NomicBertAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -262,6 +270,7 @@ class NomicBertAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# NomicBertMLP：Nomic BERT SwiGLU 风格前馈 MLP
 class NomicBertMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -278,6 +287,7 @@ class NomicBertMLP(nn.Module):
         return down_proj
 
 
+# NomicBertLayer：Nomic BERT Transformer 单层（注意力 + MLP + 残差）
 class NomicBertLayer(GradientCheckpointingLayer):
     def __init__(self, config: NomicBertConfig):
         super().__init__()
@@ -313,6 +323,7 @@ class NomicBertLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# NomicBertLMPredictionHead：语言建模预测头（变换 + 解码器）
 class NomicBertLMPredictionHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -330,6 +341,7 @@ class NomicBertLMPredictionHead(nn.Module):
 
 
 @auto_docstring
+# NomicBertPreTrainedModel：Nomic BERT 预训练基类与权重初始化
 class NomicBertPreTrainedModel(PreTrainedModel):
     config_class = NomicBertConfig
     base_model_prefix = "nomic_bert"
@@ -358,6 +370,7 @@ class NomicBertPreTrainedModel(PreTrainedModel):
             init.zeros_(module.token_type_ids)
 
 
+# NomicBertPooler：CLS token 池化层（tanh 激活线性投影）
 class NomicBertPooler(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -374,6 +387,7 @@ class NomicBertPooler(nn.Module):
 
 
 @auto_docstring
+# NomicBertModel：Nomic BERT 编码器主干（嵌入 + 堆叠层 + 池化）
 class NomicBertModel(NomicBertPreTrainedModel):
     _no_split_modules = ["NomicBertEmbeddings", "NomicBertLayer"]
 
@@ -460,6 +474,7 @@ class NomicBertModel(NomicBertPreTrainedModel):
         )
 
 
+# NomicBertPredictionHeadTransform：MLM 头前的 Dense + 激活 + LayerNorm
 class NomicBertPredictionHeadTransform(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -478,6 +493,7 @@ class NomicBertPredictionHeadTransform(nn.Module):
         return hidden_states
 
 
+# NomicBertOnlyMLMHead：仅 MLM 预测头（变换 + 词表投影）
 class NomicBertOnlyMLMHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -489,6 +505,7 @@ class NomicBertOnlyMLMHead(nn.Module):
 
 
 @auto_docstring
+# NomicBertForMaskedLM：Nomic BERT 掩码语言建模
 class NomicBertForMaskedLM(NomicBertPreTrainedModel):
     _tied_weights_keys = {
         "cls.predictions.decoder.weight": "nomic_bert.embeddings.word_embeddings.weight",
@@ -561,6 +578,7 @@ class NomicBertForMaskedLM(NomicBertPreTrainedModel):
     output) e.g. for GLUE tasks.
     """
 )
+# NomicBertForSequenceClassification：Nomic BERT 序列分类
 class NomicBertForSequenceClassification(NomicBertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -641,6 +659,7 @@ class NomicBertForSequenceClassification(NomicBertPreTrainedModel):
 
 
 @auto_docstring
+# NomicBertForTokenClassification：Nomic BERT  token 级分类
 class NomicBertForTokenClassification(NomicBertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

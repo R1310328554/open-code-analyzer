@@ -50,9 +50,12 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_nemotron_h import NemotronHConfig
 
 
+# Nemotron-H 建模：Mamba2 线性注意力 + MoE + 全注意力混合因果 Transformer
+
 # Helper methods for segment sum computation
 
 
+# pad_tensor_by_size：按 pad_size 在序列维右侧零填充张量
 def pad_tensor_by_size(input_tensor: torch.Tensor, pad_size: int):
     """
     Padding x tensor with `pad_size` on the seq_len dim (dim=1)
@@ -64,6 +67,7 @@ def pad_tensor_by_size(input_tensor: torch.Tensor, pad_size: int):
     return torch.nn.functional.pad(input_tensor, pad_shape, mode="constant", value=0)
 
 
+# reshape_into_chunks：将序列重塑为分块布局供 Mamba2 chunk scan
 def reshape_into_chunks(input_tensor, pad_size, chunk_size):
     """
     Padding input_tensor with `pad_size` on the seq_len dim (dim=1) and
@@ -84,6 +88,7 @@ def reshape_into_chunks(input_tensor, pad_size, chunk_size):
         )
 
 
+# segment_sum：计算分段前缀和（Mamba2 状态空间辅助）
 def segment_sum(input_tensor):
     """
     More stable segment sum calculation. Uses cumulative sums and masking instead of direct subtractions.
@@ -104,6 +109,7 @@ def segment_sum(input_tensor):
     return tensor_segsum
 
 
+# apply_mask_to_padding_states：用 attention_mask 清零 padding 位置隐状态
 def apply_mask_to_padding_states(hidden_states, attention_mask):
     """
     Tunes out the hidden states for padding tokens, see https://github.com/state-spaces/mamba/issues/66
@@ -117,6 +123,7 @@ def apply_mask_to_padding_states(hidden_states, attention_mask):
 
 
 @use_kernel_func_from_hub_with_fallback("causal_conv1d_update", "causal_conv1d")
+# causal_conv1d_update：因果 1D 卷积单步增量更新（Mamba mixer）
 def causal_conv1d_update(
     hidden_states: torch.Tensor,
     conv_state: torch.Tensor,
@@ -137,6 +144,7 @@ def causal_conv1d_update(
 
 
 @use_kernel_func_from_hub_with_fallback("causal_conv1d_fn", "causal_conv1d")
+# causal_conv1d_fn：因果 1D 卷积全序列前向（可选 fused kernel）
 def causal_conv1d_fn(
     hidden_states: torch.Tensor,
     weight: nn.Parameter,
@@ -160,6 +168,7 @@ def causal_conv1d_fn(
 
 
 @use_kernel_func_from_hub_with_fallback("mamba_split_conv1d_scan_combined", "mamba_ssm")
+# mamba2_split_conv1d_scan_combined：Mamba2 卷积分支与 SSM scan 融合前向
 def mamba2_split_conv1d_scan_combined(
     zxbcdt: torch.Tensor,
     conv1d_weight: torch.Tensor,
@@ -185,6 +194,7 @@ def mamba2_split_conv1d_scan_combined(
 
 
 @use_kernel_func_from_hub_with_fallback("selective_state_update", "mamba_ssm")
+# mamba2_selective_state_update：Mamba2 选择性状态空间单步更新
 def mamba2_selective_state_update(
     state: torch.Tensor,
     hidden_states: torch.Tensor,
@@ -247,6 +257,7 @@ def mamba2_selective_state_update(
 
 
 @use_kernel_func_from_hub_with_fallback("mamba_chunk_scan_combined", "mamba_ssm")
+# mamba2_chunk_scan：Mamba2 分块并行 scan（长序列高效计算）
 def mamba2_chunk_scan(
     hidden_states: torch.Tensor,
     dt: torch.Tensor,
@@ -353,6 +364,7 @@ def mamba2_chunk_scan(
         mamba2_chunk_scan,
     ]
 )
+# NemotronHMamba2Mixer：Nemotron-H Mamba2 线性注意力混合层（继承 Zamba2）
 class NemotronHMamba2Mixer(nn.Module):
     """
     Compute ∆, A, B, C, and D the state space parameters and compute the `contextualized_states`.
@@ -572,6 +584,7 @@ class NemotronHMamba2Mixer(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# NemotronHRMSNorm：Nemotron-H RMS 层归一化
 class NemotronHRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -592,6 +605,7 @@ class NemotronHRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# NemotronHMLP：Nemotron-H 稠密前馈 MLP（ReLU² 激活）
 class NemotronHMLP(nn.Module):
     def __init__(self, config, intermediate_size=None, **kwargs):
         super().__init__()
@@ -607,6 +621,7 @@ class NemotronHMLP(nn.Module):
 
 
 @use_experts_implementation(has_gate=False)
+# NemotronHExperts：MoE 路由专家并行 MLP 组（batched expert 计算）
 class NemotronHExperts(nn.Module):
     """
     Collection of expert weights stored as 3D tensors.
@@ -668,6 +683,7 @@ class NemotronHExperts(nn.Module):
         return final_hidden_states.to(hidden_states.dtype)
 
 
+# NemotronHMoE：Nemotron-H Top-K 稀疏 MoE 层（含共享专家）
 class NemotronHMoE(nn.Module):
     """
     Mixture-of-Experts (MoE) module for NemotronH.
@@ -712,6 +728,7 @@ class NemotronHMoE(nn.Module):
         return hidden_states
 
 
+# NemotronHTopkRouter：MoE token 到专家的 Top-K 路由与负载均衡
 class NemotronHTopkRouter(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -753,6 +770,7 @@ class NemotronHTopkRouter(nn.Module):
         return router_logits, topk_weights, topk_indices
 
 
+# rotate_half：RoPE 中将向量后半维旋转 180°
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -761,6 +779,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：对 Q/K 张量应用 RoPE 旋转位置编码
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -786,6 +805,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -798,6 +818,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -824,6 +845,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# NemotronHAttention：Nemotron-H 多头自注意力（GQA + RoPE）
 class NemotronHAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -886,6 +908,7 @@ MIXER_TYPES = {
 }
 
 
+# NemotronHBlock：Nemotron-H 单层（Mamba/注意力/MoE/MLP 按配置切换）
 class NemotronHBlock(GradientCheckpointingLayer):
     """
     A single transformer block in the NemotronH model.
@@ -942,6 +965,7 @@ class NemotronHBlock(GradientCheckpointingLayer):
         return hidden_states
 
 
+# NemotronHPreTrainedModel：Nemotron-H 预训练基类与权重初始化
 class NemotronHPreTrainedModel(PreTrainedModel):
     config: NemotronHConfig
     base_model_prefix = "model"
@@ -1025,6 +1049,7 @@ class NemotronHPreTrainedModel(PreTrainedModel):
                         init.copy_(p, p_new)
 
 
+# NemotronHModel：Nemotron-H 混合架构因果 Transformer 主干
 class NemotronHModel(NemotronHPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1106,6 +1131,7 @@ class NemotronHModel(NemotronHPreTrainedModel):
 
 
 # Adapted from transformers.models.jamba.modeling_jamba.JambaForCausalLM with Jamba->NemotronH, JAMBA->NEMOTRON_H
+# NemotronHForCausalLM：Nemotron-H 因果语言建模与生成头
 class NemotronHForCausalLM(NemotronHPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {}
 

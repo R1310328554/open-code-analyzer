@@ -44,6 +44,9 @@ from .configuration_nemotron_h import NemotronHConfig
 logger = logging.get_logger(__name__)
 
 
+# Nemotron-H modular 源：Zamba2/Jamba/DeepSeek/Nemotron 组件组合的混合 LLM
+
+# NemotronHMamba2Mixer：Nemotron-H Mamba2 线性注意力混合层（继承 Zamba2）
 class NemotronHMamba2Mixer(Zamba2MambaMixer):
     def __init__(self, config: NemotronHConfig, layer_idx: int | None = None, initialize_mixer_weights: bool = True):
         super().__init__(config, layer_idx, initialize_mixer_weights)
@@ -80,10 +83,12 @@ class NemotronHMamba2Mixer(Zamba2MambaMixer):
         self.out_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=config.use_bias)
 
 
+# NemotronHRMSNorm：Nemotron-H RMS 层归一化
 class NemotronHRMSNorm(LlamaRMSNorm):
     pass
 
 
+# NemotronHMLP：Nemotron-H 稠密前馈 MLP（ReLU² 激活）
 class NemotronHMLP(NemotronMLP, nn.Module):
     def __init__(self, config, intermediate_size=None, **kwargs):
         nn.Module.__init__()
@@ -96,6 +101,7 @@ class NemotronHMLP(NemotronMLP, nn.Module):
 
 
 @use_experts_implementation(has_gate=False)
+# NemotronHExperts：MoE 路由专家并行 MLP 组（batched expert 计算）
 class NemotronHExperts(nn.Module):
     """
     Collection of expert weights stored as 3D tensors.
@@ -157,6 +163,7 @@ class NemotronHExperts(nn.Module):
         return final_hidden_states.to(hidden_states.dtype)
 
 
+# NemotronHMoE：Nemotron-H Top-K 稀疏 MoE 层（含共享专家）
 class NemotronHMoE(DeepseekV3MoE):
     """
     Mixture-of-Experts (MoE) module for NemotronH.
@@ -200,10 +207,12 @@ class NemotronHMoE(DeepseekV3MoE):
         return hidden_states
 
 
+# NemotronHTopkRouter：MoE token 到专家的 Top-K 路由与负载均衡
 class NemotronHTopkRouter(DeepseekV3TopkRouter):
     pass
 
 
+# NemotronHAttention：Nemotron-H 多头自注意力（GQA + RoPE）
 class NemotronHAttention(JambaAttention):
     def forward(
         self,
@@ -223,6 +232,7 @@ MIXER_TYPES = {
 }
 
 
+# NemotronHBlock：Nemotron-H 单层（Mamba/注意力/MoE/MLP 按配置切换）
 class NemotronHBlock(GradientCheckpointingLayer):
     """
     A single transformer block in the NemotronH model.
@@ -279,6 +289,7 @@ class NemotronHBlock(GradientCheckpointingLayer):
         return hidden_states
 
 
+# NemotronHPreTrainedModel：Nemotron-H 预训练基类与权重初始化
 class NemotronHPreTrainedModel(PreTrainedModel):
     config: NemotronHConfig
     base_model_prefix = "model"
@@ -362,6 +373,7 @@ class NemotronHPreTrainedModel(PreTrainedModel):
                         init.copy_(p, p_new)
 
 
+# NemotronHModel：Nemotron-H 混合架构因果 Transformer 主干
 class NemotronHModel(NemotronHPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -442,6 +454,7 @@ class NemotronHModel(NemotronHPreTrainedModel):
         )
 
 
+# NemotronHForCausalLM：Nemotron-H 因果语言建模与生成头
 class NemotronHForCausalLM(ZambaForCausalLM):
     _tied_weights_keys = {}
 

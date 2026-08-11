@@ -26,8 +26,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# Nomic BERT 配置：RoPE + SwiGLU 嵌入模型超参
+
+# NomicBertConfig：nomic-ai/nomic-embed-text-v1.5 嵌入向量化 BERT 超参
 @auto_docstring(checkpoint="nomic-ai/nomic-embed-text-v1.5")
 @strict
+# NomicBertConfig：nomic-ai/nomic-embed-text-v1.5 嵌入向量化 BERT 超参
 class NomicBertConfig(PreTrainedConfig):
     r"""
     Examples:
@@ -68,6 +72,7 @@ class NomicBertConfig(PreTrainedConfig):
     rope_parameters: RopeParameters | dict | None = None
     head_dim: int | None = None
 
+    # __post_init__：初始化后迁移 legacy 字段并解析 layers_block_type 层类型列表
     def __post_init__(self, **kwargs):
         super().__post_init__(**kwargs)
         if self.head_dim is None:
