@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T06:47:07Z",
-  "files": [
-    "deploy/slim/auto_compression/run.py",
-    "deploy/slim/prune/export_prune_model.py",
-    "deploy/slim/prune/sensitivity_anal.py",
-    "deploy/slim/quantization/export_model.py",
-    "deploy/slim/quantization/quant.py",
-    "deploy/slim/quantization/quant_kl.py",
-    "langchain-paddleocr/langchain_paddleocr/__init__.py",
-    "langchain-paddleocr/langchain_paddleocr/document_loaders/__init__.py",
-    "langchain-paddleocr/langchain_paddleocr/document_loaders/paddleocr_vl.py",
-    "langchain-paddleocr/scripts/check_imports.py",
-    "mcp_server/paddleocr_mcp/__init__.py",
-    "mcp_server/paddleocr_mcp/__main__.py",
-    "mcp_server/paddleocr_mcp/inference/__init__.py",
-    "mcp_server/paddleocr_mcp/inference/base.py",
-    "mcp_server/paddleocr_mcp/inference/errors.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 482,
-  "done": 105
+  "done": 120
 }
