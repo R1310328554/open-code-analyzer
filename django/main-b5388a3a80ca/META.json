@@ -1,0 +1,7 @@
+{
+  "project": "django",
+  "version": "main-b5388a3a80ca",
+  "git_ref": "main",
+  "repo_url": "https://github.com/django/django",
+  "source": "tip"
+}

@@ -53,12 +53,14 @@ projects:
   url: https://github.com/huggingface/transformers
   languages:
   - python
-  status: in_progress
+  status: complete
   version: "5.15.0"
 - id: django
   url: https://github.com/django/django
   languages:
   - python
+  status: in_progress
+  version: main-b5388a3a80ca
 - id: flask
   url: https://github.com/pallets/flask
   languages:
