@@ -22,9 +22,13 @@ from ...utils import logging
 
 logger = logging.get_logger(__name__)
 
+# XGLM 分词：Unigram + Metaspace，多语言因果语言模型 SentencePiece 风格
+
 VOCAB_FILES_NAMES = {"tokenizer_file": "tokenizer.json"}
 
 
+# XGLMTokenizer：Fast Unigram 分词器，Metaspace 预分词与 EOS 模板后处理
+# XGLMTokenizer：Fast Unigram 分词器，Metaspace 预分词与 EOS 模板后处理
 class XGLMTokenizer(TokenizersBackend):
     """
     Construct a XGLM tokenizer (backed by HuggingFace's tokenizers library). Based on BPE.

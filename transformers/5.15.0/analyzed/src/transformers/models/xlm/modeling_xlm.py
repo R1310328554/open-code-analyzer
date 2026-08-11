@@ -45,6 +45,9 @@ from .configuration_xlm import XLMConfig
 logger = logging.get_logger(__name__)
 
 
+# XLM 建模：Facebook 跨语言 Transformer 编码器，支持 MLM/分类/QA 等下游头
+
+
 def create_sinusoidal_embeddings(n_pos, dim, out):
     position_enc = np.array([[pos / np.power(10000, 2 * (j // 2) / dim) for j in range(dim)] for pos in range(n_pos)])
     out.requires_grad = False
@@ -85,6 +88,7 @@ def get_masks(slen, lengths, causal, padding_mask=None):
     """
 )
 @dataclass
+# XLMSquadHeadOutput：SQuAD 头输出，含起止 beam 搜索与不可答分类 logits
 class XLMSquadHeadOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned if both `start_positions` and `end_positions` are provided):
@@ -111,6 +115,8 @@ class XLMSquadHeadOutput(ModelOutput):
     cls_logits: torch.FloatTensor | None = None
 
 
+# XLMPoolerStartLogits：SQuAD 答案起始位置 logits 线性投影
+# XLMPoolerStartLogits：SQuAD 答案起始位置 logits 线性投影
 class XLMPoolerStartLogits(nn.Module):
     """
     Compute SQuAD start logits from sequence hidden states.
@@ -147,6 +153,8 @@ class XLMPoolerStartLogits(nn.Module):
         return x
 
 
+# XLMPoolerEndLogits：结合起始状态预测答案结束位置 logits
+# XLMPoolerEndLogits：结合起始状态预测答案结束位置 logits
 class XLMPoolerEndLogits(nn.Module):
     """
     Compute SQuAD end logits from sequence hidden states.
@@ -216,6 +224,8 @@ class XLMPoolerEndLogits(nn.Module):
         return x
 
 
+# XLMPoolerAnswerClass：SQuAD 2.0 不可答（is_impossible）二分类头
+# XLMPoolerAnswerClass：SQuAD 2.0 不可答（is_impossible）二分类头
 class XLMPoolerAnswerClass(nn.Module):
     """
     Compute SQuAD 2.0 answer class from classification and start tokens hidden states.
@@ -281,6 +291,8 @@ class XLMPoolerAnswerClass(nn.Module):
         return x
 
 
+# XLMSQuADHead：XLNet 风格 SQuAD 头，beam 搜索起止位置与答案类别
+# XLMSQuADHead：XLNet 风格 SQuAD 头，beam 搜索起止位置与答案类别
 class XLMSQuADHead(nn.Module):
     r"""
     A SQuAD head inspired by XLNet.
@@ -393,6 +405,8 @@ class XLMSQuADHead(nn.Module):
                 )
 
 
+# XLMSequenceSummary：序列级向量摘要（first/last/mean/cls_index 等策略）
+# XLMSequenceSummary：序列级向量摘要（first/last/mean/cls_index 等策略）
 class XLMSequenceSummary(nn.Module):
     r"""
     Compute a single vector summary of a sequence hidden states.
@@ -492,6 +506,8 @@ class XLMSequenceSummary(nn.Module):
         return output
 
 
+# MultiHeadAttention：XLM 多头自/交叉注意力，支持 KV cache 与因果掩码
+# MultiHeadAttention：XLM 多头自/交叉注意力，支持 KV cache 与因果掩码
 class MultiHeadAttention(nn.Module):
     def __init__(self, n_heads, dim, config, layer_idx: int = 0):
         super().__init__()
@@ -572,6 +588,8 @@ class MultiHeadAttention(nn.Module):
         return outputs
 
 
+# TransformerFFN：两层线性 FFN，GELU/ReLU 激活与分块前馈
+# TransformerFFN：两层线性 FFN，GELU/ReLU 激活与分块前馈
 class TransformerFFN(nn.Module):
     def __init__(self, in_dim, dim_hidden, out_dim, config):
         super().__init__()
@@ -594,6 +612,7 @@ class TransformerFFN(nn.Module):
 
 
 @auto_docstring
+# XLMPreTrainedModel：XLM 预训练基类，正弦/绝对位置与 ASM 权重初始化
 class XLMPreTrainedModel(PreTrainedModel):
     config: XLMConfig
     base_model_prefix = "transformer"
@@ -637,6 +656,7 @@ class XLMPreTrainedModel(PreTrainedModel):
     """
 )
 @dataclass
+# XLMForQuestionAnsweringOutput：完整 QA 头输出，含 hidden_states 与 attentions
 class XLMForQuestionAnsweringOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned if both `start_positions` and `end_positions` are provided):
@@ -666,6 +686,7 @@ class XLMForQuestionAnsweringOutput(ModelOutput):
 
 
 @auto_docstring
+# XLMModel：Transformer 编码器骨干，词/位置/语言嵌入 + 多层注意力
 class XLMModel(XLMPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -864,6 +885,8 @@ class XLMModel(XLMPreTrainedModel):
         return BaseModelOutput(last_hidden_state=tensor, hidden_states=hidden_states, attentions=attentions)
 
 
+# XLMPredLayer：词表预测层，支持全词表线性或 Adaptive Log Softmax
+# XLMPredLayer：词表预测层，支持全词表线性或 Adaptive Log Softmax
 class XLMPredLayer(nn.Module):
     """
     Prediction layer (cross_entropy or adaptive_softmax).
@@ -912,6 +935,8 @@ class XLMPredLayer(nn.Module):
     embeddings).
     """
 )
+# XLMWithLMHeadModel：带 MLM/CLM 语言建模头，嵌入与输出权重绑定
+# XLMWithLMHeadModel：带 MLM/CLM 语言建模头，嵌入与输出权重绑定
 class XLMWithLMHeadModel(XLMPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"pred_layer.proj.weight": "transformer.embeddings.weight"}
 
@@ -1037,6 +1062,8 @@ class XLMWithLMHeadModel(XLMPreTrainedModel, GenerationMixin):
     for GLUE tasks.
     """
 )
+# XLMForSequenceClassification：序列分类/回归头，基于 XLMSequenceSummary
+# XLMForSequenceClassification：序列分类/回归头，基于 XLMSequenceSummary
 class XLMForSequenceClassification(XLMPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1147,6 +1174,8 @@ class XLMForSequenceClassification(XLMPreTrainedModel):
     layers on top of the hidden-states output to compute `span start logits` and `span end logits`).
     """
 )
+# XLMForQuestionAnsweringSimple：抽取式 QA，单层线性 span 起止 logits
+# XLMForQuestionAnsweringSimple：抽取式 QA，单层线性 span 起止 logits
 class XLMForQuestionAnsweringSimple(XLMPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1246,6 +1275,7 @@ class XLMForQuestionAnsweringSimple(XLMPreTrainedModel):
 
 
 @auto_docstring
+# XLMForQuestionAnswering：SQuAD 2.0 QA，XLMSQuADHead beam 搜索头
 class XLMForQuestionAnswering(XLMPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1364,6 +1394,7 @@ class XLMForQuestionAnswering(XLMPreTrainedModel):
 
 
 @auto_docstring
+# XLMForTokenClassification：逐 token 序列标注头（如 NER）
 class XLMForTokenClassification(XLMPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1451,6 +1482,7 @@ class XLMForTokenClassification(XLMPreTrainedModel):
 
 
 @auto_docstring
+# XLMForMultipleChoice：多选任务头，对每个选项独立编码后分类
 class XLMForMultipleChoice(XLMPreTrainedModel):
     def __init__(self, config, *inputs, **kwargs):
         super().__init__(config, *inputs, **kwargs)

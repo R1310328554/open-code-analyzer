@@ -19,6 +19,8 @@
 # limitations under the License.
 """PyTorch XLM RoBERTa xl,xxl model."""
 
+# XLM-RoBERTa-XL 模块化实现：复用 BERT/RoBERTa 组件并定制 XL 嵌入
+
 import torch
 import torch.nn as nn
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
@@ -56,6 +58,8 @@ from ..roberta.modeling_roberta import (
 logger = logging.get_logger(__name__)
 
 
+# XLMRobertaXLEmbeddings：继承 RoBERTa 嵌入但移除 LayerNorm
+# XLMRobertaXLEmbeddings：继承 RoBERTa 嵌入但移除 LayerNorm
 class XLMRobertaXLEmbeddings(RobertaEmbeddings):
     def __init__(self, config):
         super().__init__(config)
@@ -109,14 +113,20 @@ class XLMRobertaXLEmbeddings(RobertaEmbeddings):
         return embeddings
 
 
+# XLMRobertaXLSelfAttention：复用 BERT 自注意力
+# XLMRobertaXLSelfAttention：复用 BERT 自注意力
 class XLMRobertaXLSelfAttention(BertSelfAttention):
     pass
 
 
+# XLMRobertaXLCrossAttention：复用 BERT 交叉注意力
+# XLMRobertaXLCrossAttention：复用 BERT 交叉注意力
 class XLMRobertaXLCrossAttention(BertCrossAttention):
     pass
 
 
+# XLMRobertaXLSelfOutput：注意力输出投影 + 残差 LayerNorm
+# XLMRobertaXLSelfOutput：注意力输出投影 + 残差 LayerNorm
 class XLMRobertaXLSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -130,6 +140,8 @@ class XLMRobertaXLSelfOutput(nn.Module):
         return hidden_states
 
 
+# XLMRobertaXLAttention：复用 BERT 注意力封装
+# XLMRobertaXLAttention：复用 BERT 注意力封装
 class XLMRobertaXLAttention(BertAttention):
     def __init__(self, config, is_causal=False, layer_idx=None, is_cross_attention=False):
         super().__init__(config, is_causal, layer_idx, is_cross_attention)
@@ -159,6 +171,8 @@ class XLMRobertaXLAttention(BertAttention):
         return attention_output, attn_weights
 
 
+# XLMRobertaXLOutput：FFN 输出 + 残差 LayerNorm
+# XLMRobertaXLOutput：FFN 输出 + 残差 LayerNorm
 class XLMRobertaXLOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -170,6 +184,8 @@ class XLMRobertaXLOutput(nn.Module):
         return hidden_states
 
 
+# XLMRobertaXLLayer：复用 BERT 层并替换为 XL 注意力/输出
+# XLMRobertaXLLayer：复用 BERT 层并替换为 XL 注意力/输出
 class XLMRobertaXLLayer(BertLayer):
     def __init__(self, config, layer_idx=None):
         super().__init__(config, layer_idx)
@@ -182,6 +198,8 @@ class XLMRobertaXLLayer(BertLayer):
         return layer_output
 
 
+# XLMRobertaXLEncoder：堆叠 XLMRobertaXLLayer 编码器
+# XLMRobertaXLEncoder：堆叠 XLMRobertaXLLayer 编码器
 class XLMRobertaXLEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -219,14 +237,19 @@ class XLMRobertaXLEncoder(nn.Module):
 
 
 @auto_docstring
+# XLMRobertaXLPreTrainedModel：继承 RoBERTa 预训练基类
 class XLMRobertaXLPreTrainedModel(RobertaPreTrainedModel):
     base_model_prefix = "roberta"
 
 
+# XLMRobertaXLModel：基于 BERT 骨干，嵌入/编码器替换为 XL 变体
+# XLMRobertaXLModel：基于 BERT 骨干，嵌入/编码器替换为 XL 变体
 class XLMRobertaXLModel(BertModel):
     pass
 
 
+# XLMRobertaXLLMHead：MLM 语言建模头
+# XLMRobertaXLLMHead：MLM 语言建模头
 class XLMRobertaXLLMHead(nn.Module):
     """XLM-RoBERTa-XL Head for masked language modeling."""
 
@@ -249,6 +272,8 @@ class XLMRobertaXLLMHead(nn.Module):
         return x
 
 
+# XLMRobertaXLClassificationHead：复用 RoBERTa 分类头
+# XLMRobertaXLClassificationHead：复用 RoBERTa 分类头
 class XLMRobertaXLClassificationHead(RobertaClassificationHead):
     pass
 
@@ -258,6 +283,8 @@ class XLMRobertaXLClassificationHead(RobertaClassificationHead):
     XLM-RoBERTa-XL Model with a `language modeling` head on top for CLM fine-tuning.
     """
 )
+# XLMRobertaXLForCausalLM：因果语言建模头
+# XLMRobertaXLForCausalLM：因果语言建模头
 class XLMRobertaXLForCausalLM(XLMRobertaXLPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {
         "lm_head.decoder.weight": "roberta.embeddings.word_embeddings.weight",
@@ -356,6 +383,8 @@ class XLMRobertaXLForCausalLM(XLMRobertaXLPreTrainedModel, GenerationMixin):
 
 
 @auto_docstring
+# XLMRobertaXLForMaskedLM：掩码语言建模头
+# XLMRobertaXLForMaskedLM：掩码语言建模头
 class XLMRobertaXLForMaskedLM(XLMRobertaXLPreTrainedModel):
     _tied_weights_keys = {
         "lm_head.decoder.weight": "roberta.embeddings.word_embeddings.weight",
@@ -436,6 +465,8 @@ class XLMRobertaXLForMaskedLM(XLMRobertaXLPreTrainedModel):
     of the pooled output) e.g. for GLUE tasks.
     """
 )
+# XLMRobertaXLForSequenceClassification：序列级分类/回归
+# XLMRobertaXLForSequenceClassification：序列级分类/回归
 class XLMRobertaXLForSequenceClassification(XLMRobertaXLPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -509,6 +540,8 @@ class XLMRobertaXLForSequenceClassification(XLMRobertaXLPreTrainedModel):
 
 
 @auto_docstring
+# XLMRobertaXLForMultipleChoice：多选阅读理解
+# XLMRobertaXLForMultipleChoice：多选阅读理解
 class XLMRobertaXLForMultipleChoice(XLMRobertaXLPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -596,6 +629,8 @@ class XLMRobertaXLForMultipleChoice(XLMRobertaXLPreTrainedModel):
 
 
 @auto_docstring
+# XLMRobertaXLForTokenClassification：逐 token 标注
+# XLMRobertaXLForTokenClassification：逐 token 标注
 class XLMRobertaXLForTokenClassification(XLMRobertaXLPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -664,6 +699,8 @@ class XLMRobertaXLForTokenClassification(XLMRobertaXLPreTrainedModel):
 
 
 @auto_docstring
+# XLMRobertaXLForQuestionAnswering：抽取式 span QA
+# XLMRobertaXLForQuestionAnswering：抽取式 span QA
 class XLMRobertaXLForQuestionAnswering(XLMRobertaXLPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

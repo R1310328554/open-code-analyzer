@@ -53,6 +53,10 @@ from .configuration_xlm_roberta import XLMRobertaConfig
 logger = logging.get_logger(__name__)
 
 
+# XLM-RoBERTa 建模：多语言 RoBERTa Transformer，支持 MLM/分类/QA 等任务头
+
+
+# XLMRobertaEmbeddings：词/位置/类型嵌入求和并 LayerNorm
 class XLMRobertaEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
@@ -183,6 +187,8 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# XLMRobertaSelfAttention：缩放点积自注意力，支持 SDPA/Flash 后端
+# XLMRobertaSelfAttention：缩放点积自注意力，支持 SDPA/Flash 后端
 class XLMRobertaSelfAttention(nn.Module):
     def __init__(self, config, is_causal=False, layer_idx=None):
         super().__init__()
@@ -250,6 +256,8 @@ class XLMRobertaSelfAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# XLMRobertaCrossAttention：解码器交叉注意力，查询来自解码器 hidden states
+# XLMRobertaCrossAttention：解码器交叉注意力，查询来自解码器 hidden states
 class XLMRobertaCrossAttention(nn.Module):
     def __init__(self, config, is_causal=False, layer_idx=None):
         super().__init__()
@@ -326,6 +334,8 @@ class XLMRobertaCrossAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# XLMRobertaSelfOutput：注意力输出线性投影 + dropout + 残差 LayerNorm
+# XLMRobertaSelfOutput：注意力输出线性投影 + dropout + 残差 LayerNorm
 class XLMRobertaSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -340,6 +350,8 @@ class XLMRobertaSelfOutput(nn.Module):
         return hidden_states
 
 
+# XLMRobertaAttention：自注意力或交叉注意力模块封装
+# XLMRobertaAttention：自注意力或交叉注意力模块封装
 class XLMRobertaAttention(nn.Module):
     def __init__(self, config, is_causal=False, layer_idx=None, is_cross_attention=False):
         super().__init__()
@@ -369,6 +381,8 @@ class XLMRobertaAttention(nn.Module):
         return attention_output, attn_weights
 
 
+# XLMRobertaIntermediate：FFN 第一层线性 + 激活
+# XLMRobertaIntermediate：FFN 第一层线性 + 激活
 class XLMRobertaIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -384,6 +398,8 @@ class XLMRobertaIntermediate(nn.Module):
         return hidden_states
 
 
+# XLMRobertaOutput：FFN 第二层线性 + dropout + 残差 LayerNorm
+# XLMRobertaOutput：FFN 第二层线性 + dropout + 残差 LayerNorm
 class XLMRobertaOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -398,6 +414,8 @@ class XLMRobertaOutput(nn.Module):
         return hidden_states
 
 
+# XLMRobertaLayer：Pre-LN Transformer 层，自/交叉注意力 + FFN
+# XLMRobertaLayer：Pre-LN Transformer 层，自/交叉注意力 + FFN
 class XLMRobertaLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_idx=None):
         super().__init__()
@@ -463,6 +481,8 @@ class XLMRobertaLayer(GradientCheckpointingLayer):
         return layer_output
 
 
+# XLMRobertaLMHead：MLM 语言建模头，Dense + 词表解码器
+# XLMRobertaLMHead：MLM 语言建模头，Dense + 词表解码器
 class XLMRobertaLMHead(nn.Module):
     """XLMRoberta Head for masked language modeling."""
 
@@ -486,6 +506,7 @@ class XLMRobertaLMHead(nn.Module):
 
 
 @auto_docstring
+# XLMRobertaPreTrainedModel：XLM-RoBERTa 预训练基类与权重初始化
 class XLMRobertaPreTrainedModel(PreTrainedModel):
     config_class = XLMRobertaConfig
     base_model_prefix = "roberta"
@@ -511,6 +532,8 @@ class XLMRobertaPreTrainedModel(PreTrainedModel):
             init.zeros_(module.token_type_ids)
 
 
+# XLMRobertaEncoder：堆叠 XLMRobertaLayer 编码器
+# XLMRobertaEncoder：堆叠 XLMRobertaLayer 编码器
 class XLMRobertaEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -543,6 +566,8 @@ class XLMRobertaEncoder(nn.Module):
         )
 
 
+# XLMRobertaPooler：首 token 线性投影 + tanh 池化
+# XLMRobertaPooler：首 token 线性投影 + tanh 池化
 class XLMRobertaPooler(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -559,6 +584,7 @@ class XLMRobertaPooler(nn.Module):
 
 
 @auto_docstring
+# XLMRobertaModel：嵌入 + 编码器 + 可选池化，多语言表示骨干
 class XLMRobertaModel(XLMRobertaPreTrainedModel):
     _no_split_modules = ["XLMRobertaEmbeddings", "XLMRobertaLayer"]
 
@@ -691,6 +717,8 @@ class XLMRobertaModel(XLMRobertaPreTrainedModel):
     XLM-RoBERTa Model with a `language modeling` head on top for CLM fine-tuning.
     """
 )
+# XLMRobertaForCausalLM：因果语言建模头，支持 past KV cache 生成
+# XLMRobertaForCausalLM：因果语言建模头，支持 past KV cache 生成
 class XLMRobertaForCausalLM(XLMRobertaPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {
         "lm_head.decoder.weight": "roberta.embeddings.word_embeddings.weight",
@@ -799,6 +827,7 @@ class XLMRobertaForCausalLM(XLMRobertaPreTrainedModel, GenerationMixin):
 
 
 @auto_docstring
+# XLMRobertaForMaskedLM：掩码语言建模预训练/微调头
 class XLMRobertaForMaskedLM(XLMRobertaPreTrainedModel):
     _tied_weights_keys = {
         "lm_head.decoder.weight": "roberta.embeddings.word_embeddings.weight",
@@ -884,6 +913,8 @@ class XLMRobertaForMaskedLM(XLMRobertaPreTrainedModel):
         )
 
 
+# XLMRobertaClassificationHead：序列分类 Dense + tanh + 线性输出
+# XLMRobertaClassificationHead：序列分类 Dense + tanh + 线性输出
 class XLMRobertaClassificationHead(nn.Module):
     """Head for sentence-level classification tasks."""
 
@@ -912,6 +943,8 @@ class XLMRobertaClassificationHead(nn.Module):
     pooled output) e.g. for GLUE tasks.
     """
 )
+# XLMRobertaForSequenceClassification：序列级分类/回归（如 GLUE）
+# XLMRobertaForSequenceClassification：序列级分类/回归（如 GLUE）
 class XLMRobertaForSequenceClassification(XLMRobertaPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -997,6 +1030,7 @@ class XLMRobertaForSequenceClassification(XLMRobertaPreTrainedModel):
 
 
 @auto_docstring
+# XLMRobertaForMultipleChoice：多选阅读理解，展平选项 batch 后分类
 class XLMRobertaForMultipleChoice(XLMRobertaPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1094,6 +1128,7 @@ class XLMRobertaForMultipleChoice(XLMRobertaPreTrainedModel):
 
 
 @auto_docstring
+# XLMRobertaForTokenClassification：逐 token 标注（如 NER）
 class XLMRobertaForTokenClassification(XLMRobertaPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1165,6 +1200,7 @@ class XLMRobertaForTokenClassification(XLMRobertaPreTrainedModel):
 
 
 @auto_docstring
+# XLMRobertaForQuestionAnswering：抽取式 QA，span 起止 logits
 class XLMRobertaForQuestionAnswering(XLMRobertaPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

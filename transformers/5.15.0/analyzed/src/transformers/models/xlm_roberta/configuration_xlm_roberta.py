@@ -14,6 +14,8 @@
 # limitations under the License.
 """XLM-RoBERTa configuration"""
 
+# XLM-RoBERTa 配置：100 语言 RoBERTa，SentencePiece BPE 与 BERT 架构参数
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
@@ -22,6 +24,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="FacebookAI/xlm-mlm-en-2048")
 @strict
+# XLMRobertaConfig：主配置，hidden_size/层数/头数与 RoBERTa 特殊 token
 class XLMRobertaConfig(PreTrainedConfig):
     r"""
     Examples:

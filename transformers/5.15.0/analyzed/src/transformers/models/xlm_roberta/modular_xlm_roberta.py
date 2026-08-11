@@ -14,6 +14,8 @@
 # limitations under the License.
 """PyTorch XLM-RoBERTa model."""
 
+# XLM-RoBERTa 模块化实现：复用 RoBERTa 组件并覆盖下游任务 forward
+
 import torch
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 
@@ -42,11 +44,13 @@ from ..roberta.modeling_roberta import (
 
 
 @auto_docstring
+# XLMRobertaPreTrainedModel：继承 RoBERTa 预训练基类
 class XLMRobertaPreTrainedModel(RobertaPreTrainedModel):
     base_model_prefix = "roberta"
 
 
 @auto_docstring
+# XLMRobertaModel：复用 RoBERTa 骨干模型
 class XLMRobertaModel(RobertaModel):
     pass
 
@@ -56,6 +60,8 @@ class XLMRobertaModel(RobertaModel):
     XLM-RoBERTa Model with a `language modeling` head on top for CLM fine-tuning.
     """
 )
+# XLMRobertaForCausalLM：复用 RoBERTa CLM 头并定制 forward
+# XLMRobertaForCausalLM：复用 RoBERTa CLM 头并定制 forward
 class XLMRobertaForCausalLM(RobertaForCausalLM):
     _tied_weights_keys = {
         "lm_head.decoder.weight": "roberta.embeddings.word_embeddings.weight",
@@ -152,6 +158,7 @@ class XLMRobertaForCausalLM(RobertaForCausalLM):
 
 
 @auto_docstring
+# XLMRobertaForMaskedLM：复用 RoBERTa MLM 头
 class XLMRobertaForMaskedLM(RobertaForMaskedLM):
     _tied_weights_keys = {
         "lm_head.decoder.weight": "roberta.embeddings.word_embeddings.weight",
@@ -228,6 +235,8 @@ class XLMRobertaForMaskedLM(RobertaForMaskedLM):
     pooled output) e.g. for GLUE tasks.
     """
 )
+# XLMRobertaForSequenceClassification：复用 RoBERTa 序列分类头
+# XLMRobertaForSequenceClassification：复用 RoBERTa 序列分类头
 class XLMRobertaForSequenceClassification(RobertaForSequenceClassification):
     def __init__(self, config):
         super().__init__(config)
@@ -308,6 +317,7 @@ class XLMRobertaForSequenceClassification(RobertaForSequenceClassification):
 
 
 @auto_docstring
+# XLMRobertaForMultipleChoice：复用 RoBERTa 多选头
 class XLMRobertaForMultipleChoice(RobertaForMultipleChoice):
     def __init__(self, config):
         super().__init__(config)
@@ -401,6 +411,7 @@ class XLMRobertaForMultipleChoice(RobertaForMultipleChoice):
 
 
 @auto_docstring
+# XLMRobertaForTokenClassification：复用 RoBERTa token 分类头
 class XLMRobertaForTokenClassification(RobertaForTokenClassification):
     def __init__(self, config):
         super().__init__(config)
@@ -464,6 +475,7 @@ class XLMRobertaForTokenClassification(RobertaForTokenClassification):
 
 
 @auto_docstring
+# XLMRobertaForQuestionAnswering：复用 RoBERTa 抽取式 QA 头
 class XLMRobertaForQuestionAnswering(RobertaForQuestionAnswering):
     def __init__(self, config):
         super().__init__(config)

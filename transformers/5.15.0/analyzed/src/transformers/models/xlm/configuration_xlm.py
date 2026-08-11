@@ -13,6 +13,8 @@
 # limitations under the License.
 """XLM configuration"""
 
+# XLM 配置：Facebook 跨语言 Transformer，含语言嵌入、ASM 与 SQuAD 摘要参数
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
@@ -21,6 +23,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="FacebookAI/xlm-mlm-en-2048")
 @strict
+# XLMConfig：主配置，emb_dim/n_heads、因果掩码、多语言与序列摘要选项
 class XLMConfig(PreTrainedConfig):
     r"""
     gelu_activation (`bool`, *optional*, defaults to `True`):

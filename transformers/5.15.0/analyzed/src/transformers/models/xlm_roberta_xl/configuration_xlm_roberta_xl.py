@@ -13,6 +13,8 @@
 # limitations under the License.
 """XLM_ROBERTa_XL configuration"""
 
+# XLM-RoBERTa-XL 配置：36 层 2560 维大规模多语言 RoBERTa 变体
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
@@ -21,6 +23,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="FacebookAI/xlm-roberta-xl")
 @strict
+# XLMRobertaXLConfig：主配置，更大 hidden_size/层数与 RoBERTa token 设置
 class XLMRobertaXLConfig(PreTrainedConfig):
     r"""
     Examples:

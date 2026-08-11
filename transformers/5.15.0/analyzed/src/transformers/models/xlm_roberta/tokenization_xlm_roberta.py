@@ -22,9 +22,13 @@ from ...utils import logging
 
 logger = logging.get_logger(__name__)
 
+# XLM-RoBERTa 分词：SentencePiece Unigram BPE，Metaspace 预/后处理
+
 VOCAB_FILES_NAMES = {"vocab_file": "sentencepiece.bpe.model", "tokenizer_file": "tokenizer.json"}
 
 
+# XLMRobertaTokenizer：Fast SentencePiece 分词器，100 语言共享词表
+# XLMRobertaTokenizer：Fast SentencePiece 分词器，100 语言共享词表
 class XLMRobertaTokenizer(TokenizersBackend):
     r"""
     Construct an XLM-RoBERTa tokenizer (backed by HuggingFace's tokenizers library). Based on SentencePiece.

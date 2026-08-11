@@ -25,6 +25,8 @@ from ...utils import logging
 
 logger = logging.get_logger(__name__)
 
+# XLM 分词：BPE + Moses 预处理，多语言（含中日泰）与特殊 token 映射
+
 VOCAB_FILES_NAMES = {
     "vocab_file": "vocab.json",
     "merges_file": "merges.txt",
@@ -131,6 +133,8 @@ def romanian_preprocessing(text):
     return text
 
 
+# XLMTokenizer：多语言 BPE 分词器，支持 lang2id 语言 ID 与 Moses 规范化
+# XLMTokenizer：多语言 BPE 分词器，支持 lang2id 语言 ID 与 Moses 规范化
 class XLMTokenizer(PreTrainedTokenizer):
     """
     Construct an XLM tokenizer. Based on Byte-Pair Encoding. The tokenization process is the following:
