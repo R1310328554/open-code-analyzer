@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T03:11:32Z",
-  "files": [
-    "src/transformers/models/sam_hq/modeling_sam_hq.py",
-    "src/transformers/models/sam_hq/modular_sam_hq.py",
-    "src/transformers/models/sam_hq/processing_sam_hq.py",
-    "src/transformers/models/sapiens2/__init__.py",
-    "src/transformers/models/sapiens2/configuration_sapiens2.py",
-    "src/transformers/models/sapiens2/image_processing_sapiens2.py",
-    "src/transformers/models/sapiens2/modeling_sapiens2.py",
-    "src/transformers/models/sapiens2/modular_sapiens2.py",
-    "src/transformers/models/seamless_m4t/__init__.py",
-    "src/transformers/models/seamless_m4t/configuration_seamless_m4t.py",
-    "src/transformers/models/seamless_m4t/feature_extraction_seamless_m4t.py",
-    "src/transformers/models/seamless_m4t/modeling_seamless_m4t.py",
-    "src/transformers/models/seamless_m4t/processing_seamless_m4t.py",
-    "src/transformers/models/seamless_m4t/tokenization_seamless_m4t.py",
-    "src/transformers/models/seamless_m4t_v2/__init__.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 639,
-  "done": 2025
+  "done": 2040
 }
