@@ -17,10 +17,13 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# Time Series Transformer 配置：滞后协变量、分布输出头与编解码器超参数
+
 
 
 @auto_docstring(checkpoint="huggingface/time-series-transformer-tourism-monthly")
 @strict
+# TimeSeriesTransformerConfig：Time Series Transformer 配置：预测/上下文长度、滞后序列与分布输出类型
 class TimeSeriesTransformerConfig(PreTrainedConfig):
     r"""
     prediction_length (`int`):
@@ -111,6 +114,7 @@ class TimeSeriesTransformerConfig(PreTrainedConfig):
     init_std: float = 0.02
     use_cache: bool = True
 
+    # __post_init__：后初始化：派生 feature_size/context_length 并校验架构一致性
     def __post_init__(self, **kwargs):
         if not (self.cardinality and self.num_static_categorical_features > 0):
             self.cardinality = [0]
@@ -122,6 +126,7 @@ class TimeSeriesTransformerConfig(PreTrainedConfig):
         self.feature_size = self.input_size * len(self.lags_sequence) + self._number_of_features
         super().__post_init__(**kwargs)
 
+    # validate_architecture：架构校验：cardinality 与 embedding_dimension 长度一致性检查
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if self.cardinality and self.num_static_categorical_features > 0:

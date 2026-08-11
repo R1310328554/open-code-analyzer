@@ -27,6 +27,8 @@ from ...masking_utils import create_bidirectional_mask, create_causal_mask
 from ...modeling_flash_attention_utils import FlashAttentionKwargs
 from ...modeling_layers import GradientCheckpointingLayer
 from ...modeling_outputs import (
+# Time Series Transformer 建模：encoder-decoder 概率预测，支持 Student-t/Normal/NB 分布头
+
     BaseModelOutput,
     BaseModelOutputWithPastAndCrossAttentions,
     SampleTSPredictionOutput,
@@ -45,6 +47,7 @@ from .configuration_time_series_transformer import TimeSeriesTransformerConfig
 logger = logging.get_logger(__name__)
 
 
+# TimeSeriesFeatureEmbedder：时序类别特征嵌入：多静态类别字段 Embedding 后拼接
 class TimeSeriesFeatureEmbedder(nn.Module):
     """
     Embed a sequence of categorical features.
@@ -56,12 +59,14 @@ class TimeSeriesFeatureEmbedder(nn.Module):
             List of embedding dimensions of the categorical features.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, cardinalities: list[int], embedding_dims: list[int]) -> None:
         super().__init__()
 
         self.num_features = len(cardinalities)
         self.embedders = nn.ModuleList([nn.Embedding(c, d) for c, d in zip(cardinalities, embedding_dims)])
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, features: torch.Tensor) -> torch.Tensor:
         if self.num_features > 1:
             # we slice the last dimension, giving an array of length
@@ -79,18 +84,21 @@ class TimeSeriesFeatureEmbedder(nn.Module):
         )
 
 
+# TimeSeriesStdScaler：时序标准缩放：沿时间维计算均值/标准差并归一化
 class TimeSeriesStdScaler(nn.Module):
     """
     Standardize features by calculating the mean and scaling along the first dimension, and then normalizes it by
     subtracting from the mean and dividing by the standard deviation.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TimeSeriesTransformerConfig):
         super().__init__()
         self.dim = config.scaling_dim if hasattr(config, "scaling_dim") else 1
         self.keepdim = config.keepdim if hasattr(config, "keepdim") else True
         self.minimum_scale = config.minimum_scale if hasattr(config, "minimum_scale") else 1e-5
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self, data: torch.Tensor, observed_indicator: torch.Tensor
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -114,12 +122,14 @@ class TimeSeriesStdScaler(nn.Module):
         return (data - loc) / scale, loc, scale
 
 
+# TimeSeriesMeanScaler：时序均值缩放：加权绝对值均值作为 scale 因子
 class TimeSeriesMeanScaler(nn.Module):
     """
     Computes a scaling factor as the weighted average absolute value along the first dimension, and scales the data
     accordingly.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TimeSeriesTransformerConfig):
         super().__init__()
         self.dim = config.scaling_dim if hasattr(config, "scaling_dim") else 1
@@ -127,6 +137,7 @@ class TimeSeriesMeanScaler(nn.Module):
         self.minimum_scale = config.minimum_scale if hasattr(config, "minimum_scale") else 1e-10
         self.default_scale = config.default_scale if hasattr(config, "default_scale") else None
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self, data: torch.Tensor, observed_indicator: torch.Tensor
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -168,16 +179,19 @@ class TimeSeriesMeanScaler(nn.Module):
         return scaled_data, torch.zeros_like(scale), scale
 
 
+# TimeSeriesNOPScaler：无缩放器：scale=1、loc=0，跳过时序归一化
 class TimeSeriesNOPScaler(nn.Module):
     """
     Assigns a scaling factor equal to 1 along the first dimension, and therefore applies no scaling to the input data.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TimeSeriesTransformerConfig):
         super().__init__()
         self.dim = config.scaling_dim if hasattr(config, "scaling_dim") else 1
         self.keepdim = config.keepdim if hasattr(config, "keepdim") else True
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self, data: torch.Tensor, observed_indicator: torch.Tensor | None = None
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -195,6 +209,7 @@ class TimeSeriesNOPScaler(nn.Module):
         return data, loc, scale
 
 
+# nll：负对数似然：从参数化分布计算 target 的 NLL 损失
 def nll(input: torch.distributions.Distribution, target: torch.Tensor) -> torch.Tensor:
     """
     Computes the negative log likelihood loss from input distribution with respect to target.
@@ -202,6 +217,7 @@ def nll(input: torch.distributions.Distribution, target: torch.Tensor) -> torch.
     return -input.log_prob(target)
 
 
+# weighted_average：加权平均：沿指定维度对张量做权重归一化求均值
 def weighted_average(input_tensor: torch.Tensor, weights: torch.Tensor | None = None, dim=None) -> torch.Tensor:
     """
     Computes the weighted average of a given tensor across a given `dim`, masking values associated with weight zero,
@@ -227,9 +243,11 @@ def weighted_average(input_tensor: torch.Tensor, weights: torch.Tensor | None = 
 
 
 # Copied from transformers.models.marian.modeling_marian.MarianSinusoidalPositionalEmbedding with Marian->TimeSeries
+# TimeSeriesSinusoidalPositionalEmbedding：时序正弦位置编码：时间特征的正弦/余弦嵌入
 class TimeSeriesSinusoidalPositionalEmbedding(nn.Embedding):
     """This module produces sinusoidal positional embeddings of any length."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, num_positions: int, embedding_dim: int, padding_idx: int | None = None) -> None:
         super().__init__(num_positions, embedding_dim, _freeze=True)
 
@@ -249,6 +267,7 @@ class TimeSeriesSinusoidalPositionalEmbedding(nn.Embedding):
         return out
 
     @torch.no_grad()
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self, input_ids_shape: torch.Size, past_key_values_length: int = 0, position_ids: torch.Tensor | None = None
     ) -> torch.Tensor:
@@ -261,16 +280,20 @@ class TimeSeriesSinusoidalPositionalEmbedding(nn.Embedding):
         return super().forward(position_ids)
 
 
+# TimeSeriesValueEmbedding：时序值嵌入：目标序列 + 滞后协变量 + 时间/静态特征投影
 class TimeSeriesValueEmbedding(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, feature_size, d_model):
         super().__init__()
         self.value_projection = nn.Linear(in_features=feature_size, out_features=d_model, bias=False)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         return self.value_projection(x)
 
 
 # Copied from transformers.models.bert.modeling_bert.eager_attention_forward
+# eager_attention_forward：标准注意力前向：QK^T 缩放 softmax 加权 V
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -300,9 +323,11 @@ def eager_attention_forward(
 
 
 # Copied from transformers.models.bart.modeling_bart.BartAttention with Bart->TimeSeriesTransformer
+# TimeSeriesTransformerAttention：时序 Transformer 注意力：多头自/交叉注意力 + 相对位置偏置
 class TimeSeriesTransformerAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         embed_dim: int,
@@ -342,6 +367,7 @@ class TimeSeriesTransformerAttention(nn.Module):
         self.q_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
         self.out_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -418,7 +444,9 @@ class TimeSeriesTransformerAttention(nn.Module):
 
 
 # Copied from transformers.models.bart.modeling_bart.BartEncoderLayer with Bart->TimeSeriesTransformer, BART->TIME_SERIES_TRANSFORMER
+# TimeSeriesTransformerEncoderLayer：时序编码层：自注意力 + FFN 双残差，支持梯度检查点
 class TimeSeriesTransformerEncoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TimeSeriesTransformerConfig, layer_idx: int | None = None):
         super().__init__()
         self.embed_dim = config.d_model
@@ -438,6 +466,7 @@ class TimeSeriesTransformerEncoderLayer(GradientCheckpointingLayer):
         self.fc2 = nn.Linear(config.encoder_ffn_dim, self.embed_dim)
         self.final_layer_norm = nn.LayerNorm(self.embed_dim)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.FloatTensor,
@@ -470,7 +499,9 @@ class TimeSeriesTransformerEncoderLayer(GradientCheckpointingLayer):
 
 
 # Copied from transformers.models.bart.modeling_bart.BartDecoderLayer with Bart->TimeSeriesTransformer, with BART->TIME_SERIES_TRANSFORMER
+# TimeSeriesTransformerDecoderLayer：时序解码层：因果自注意力 + 交叉注意力 + FFN
 class TimeSeriesTransformerDecoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TimeSeriesTransformerConfig, layer_idx: int | None = None):
         super().__init__()
         self.embed_dim = config.d_model
@@ -502,6 +533,7 @@ class TimeSeriesTransformerDecoderLayer(GradientCheckpointingLayer):
         self.fc2 = nn.Linear(config.decoder_ffn_dim, self.embed_dim)
         self.final_layer_norm = nn.LayerNorm(self.embed_dim)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -553,6 +585,7 @@ class TimeSeriesTransformerDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# TimeSeriesTransformerPreTrainedModel：时序 Transformer 预训练基类：分布输出头与权重初始化
 class TimeSeriesTransformerPreTrainedModel(PreTrainedModel):
     config: TimeSeriesTransformerConfig
     base_model_prefix = "model"
@@ -566,12 +599,14 @@ class TimeSeriesTransformerPreTrainedModel(PreTrainedModel):
     _supports_flex_attn = False
 
     @torch.no_grad()
+    # _init_weights：权重初始化：Linear/Conv 截断正态、Norm 层偏置置零
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, TimeSeriesSinusoidalPositionalEmbedding):
             init.copy_(module.weight, module.create_weight())
 
 
+# TimeSeriesTransformerEncoder：时序编码器：堆叠 EncoderLayer 编码历史上下文
 class TimeSeriesTransformerEncoder(TimeSeriesTransformerPreTrainedModel):
     """
     Transformer encoder consisting of *config.encoder_layers* self attention layers. Each layer is a
@@ -586,6 +621,7 @@ class TimeSeriesTransformerEncoder(TimeSeriesTransformerPreTrainedModel):
         "attentions": TimeSeriesTransformerAttention,
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TimeSeriesTransformerConfig):
         super().__init__(config)
 
@@ -608,6 +644,7 @@ class TimeSeriesTransformerEncoder(TimeSeriesTransformerPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         attention_mask: torch.Tensor | None = None,
@@ -646,6 +683,7 @@ class TimeSeriesTransformerEncoder(TimeSeriesTransformerPreTrainedModel):
         )
 
 
+# TimeSeriesTransformerDecoder：时序解码器：堆叠 DecoderLayer 自回归预测未来窗口
 class TimeSeriesTransformerDecoder(TimeSeriesTransformerPreTrainedModel):
     """
     Transformer decoder consisting of *config.decoder_layers* layers. Each layer is a
@@ -661,6 +699,7 @@ class TimeSeriesTransformerDecoder(TimeSeriesTransformerPreTrainedModel):
         "cross_attentions": OutputRecorder(TimeSeriesTransformerAttention, index=1, layer_name="encoder_attn"),
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TimeSeriesTransformerConfig):
         super().__init__(config)
         self.dropout = config.dropout
@@ -683,6 +722,7 @@ class TimeSeriesTransformerDecoder(TimeSeriesTransformerPreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         attention_mask: torch.Tensor | None = None,
@@ -779,7 +819,9 @@ class TimeSeriesTransformerDecoder(TimeSeriesTransformerPreTrainedModel):
 
 
 @auto_docstring
+# TimeSeriesTransformerModel：时序 Transformer 基模型：encoder-decoder 联合前向
 class TimeSeriesTransformerModel(TimeSeriesTransformerPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TimeSeriesTransformerConfig):
         super().__init__(config)
 
@@ -920,6 +962,7 @@ class TimeSeriesTransformerModel(TimeSeriesTransformerPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         past_values: torch.Tensor,
@@ -1111,7 +1154,9 @@ class TimeSeriesTransformerModel(TimeSeriesTransformerPreTrainedModel):
 
 
 @auto_docstring
+# TimeSeriesTransformerForPrediction：时序概率预测头：采样/参数化分布输出与 NLL 损失
 class TimeSeriesTransformerForPrediction(TimeSeriesTransformerPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TimeSeriesTransformerConfig):
         super().__init__(config)
         self.model = TimeSeriesTransformerModel(config)
@@ -1148,6 +1193,7 @@ class TimeSeriesTransformerForPrediction(TimeSeriesTransformerPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         past_values: torch.Tensor,

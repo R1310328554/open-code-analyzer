@@ -17,10 +17,13 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# TimeSformer 配置：帧数、patch 尺寸与 divided/joint 时空注意力类型
+
 
 
 @auto_docstring(checkpoint="facebook/timesformer-base-finetuned-k600")
 @strict
+# TimesformerConfig：TimeSformer 配置：视频帧数、ViT patch 与 divided/joint 时空注意力
 class TimesformerConfig(PreTrainedConfig):
     r"""
     num_frames (`int`, *optional*, defaults to 8):

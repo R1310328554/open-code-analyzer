@@ -20,6 +20,8 @@ from ...image_processing_backends import TorchvisionBackend
 from ...image_processing_utils import BatchFeature
 from ...image_transforms import get_resize_output_image_size, group_images_by_shape, reorder_images
 from ...image_utils import (
+# TextNet Torchvision 图像处理器：最短边缩放并对齐 size_divisor 整除约束
+
     IMAGENET_DEFAULT_MEAN,
     IMAGENET_DEFAULT_STD,
     ChannelDimension,
@@ -31,6 +33,7 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# TextNetImageProcessorKwargs：TextNet 图像处理器 kwargs：size_divisor 缩放对齐参数
 class TextNetImageProcessorKwargs(ImagesKwargs, total=False):
     """
     size_divisor (`int`, *optional*, defaults to `self.size_divisor`):
@@ -41,6 +44,7 @@ class TextNetImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# TextNetImageProcessor：TextNet 图像处理器：Torchvision 后端，最短边缩放后向上取整至 divisor 倍数
 class TextNetImageProcessor(TorchvisionBackend):
     """Torchvision backend for TextNet with size_divisor resize."""
 
@@ -59,13 +63,16 @@ class TextNetImageProcessor(TorchvisionBackend):
     do_convert_rgb = True
     size_divisor = 32
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[TextNetImageProcessorKwargs]):
         super().__init__(**kwargs)
 
     @auto_docstring
+    # preprocess：预处理入口：解析 kwargs 并调用后端 _preprocess
     def preprocess(self, images: ImageInput, **kwargs: Unpack[TextNetImageProcessorKwargs]) -> BatchFeature:
         return super().preprocess(images, **kwargs)
 
+    # resize：缩放图像：最短边缩放后向上取整至 size_divisor 整除
     def resize(
         self,
         image: "torch.Tensor",
@@ -84,6 +91,7 @@ class TextNetImageProcessor(TorchvisionBackend):
             input_data_format=ChannelDimension.FIRST,
         )
         height, width = new_size
+        # 将高宽向上取整至 size_divisor 的倍数，满足骨干下采样对齐
         # Round up to be divisible by size_divisor
         if height % size_divisor != 0:
             height += size_divisor - (height % size_divisor)
@@ -96,6 +104,7 @@ class TextNetImageProcessor(TorchvisionBackend):
             **kwargs,
         )
 
+    # _preprocess：内部预处理：按形状分组 resize/归一化后重组 batch
     def _preprocess(
         self,
         images: list["torch.Tensor"],
@@ -117,6 +126,7 @@ class TextNetImageProcessor(TorchvisionBackend):
         **kwargs,
     ) -> BatchFeature:
         """Custom preprocessing for TextNet."""
+        # 按输入形状分组 batch，同形状样本堆叠后批量 resize 提升效率
         grouped_images, grouped_images_index = group_images_by_shape(images, disable_grouping=disable_grouping)
         resized_images_grouped = {}
         for shape, stacked_images in grouped_images.items():
@@ -125,6 +135,7 @@ class TextNetImageProcessor(TorchvisionBackend):
             resized_images_grouped[shape] = stacked_images
         resized_images = reorder_images(resized_images_grouped, grouped_images_index)
 
+        # 按输入形状分组 batch，同形状样本堆叠后批量 resize 提升效率
         grouped_images, grouped_images_index = group_images_by_shape(resized_images, disable_grouping=disable_grouping)
         processed_images_grouped = {}
         for shape, stacked_images in grouped_images.items():

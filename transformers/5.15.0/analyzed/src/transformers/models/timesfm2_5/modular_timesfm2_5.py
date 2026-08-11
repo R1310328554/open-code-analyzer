@@ -32,6 +32,8 @@ from ...utils.output_capturing import capture_outputs
 from ..apertus.modeling_apertus import ApertusAttention
 from ..clip.modeling_clip import CLIPMLP
 from ..llama.modeling_llama import (
+# TimesFM 2.5 模块化实现：继承 TimesFM 并复用 Llama/Apertus/CLIP 组件
+
     LlamaDecoderLayer,
     LlamaRMSNorm,
     LlamaRotaryEmbedding,
@@ -53,6 +55,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="google/timesfm-2.5-200m-transformers")
 @strict
+# TimesFm2_5Config：TimesFM 2.5 配置：16K 上下文、RoPE、连续分位数头与推理后处理开关
 class TimesFm2_5Config(TimesFmConfig):
     r"""
     patch_length (`int`, *optional*, defaults to 32):
@@ -111,6 +114,7 @@ class TimesFm2_5Config(TimesFmConfig):
 
 @auto_docstring
 @dataclass
+# TimesFm2_5Output：TimesFM 2.5 基模型输出：继承 TimesFM 的 loc/scale 字段
 class TimesFm2_5Output(TimesFmOutput):
     r"""
     context_mu (`torch.Tensor` of shape `(batch_size, num_patches)`):
@@ -125,6 +129,7 @@ class TimesFm2_5Output(TimesFmOutput):
 
 @auto_docstring
 @dataclass
+# TimesFm2_5OutputForPrediction：TimesFM 2.5 预测输出：中位数点预测 + 连续分位数曲面
 class TimesFm2_5OutputForPrediction(TimesFmOutputForPrediction):
     r"""
     mean_predictions (`torch.Tensor` of shape `(batch_size, horizon_length)`):
@@ -138,7 +143,9 @@ class TimesFm2_5OutputForPrediction(TimesFmOutputForPrediction):
     pass
 
 
+# TimesFm2_5MLP：TimesFM 2.5 MLP：CLIP 风格 Swish 门控前馈（可选 bias）
 class TimesFm2_5MLP(CLIPMLP):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TimesFm2_5Config):
         super().__init__()
         self.activation_fn = ACT2FN[config.activation]
@@ -146,9 +153,11 @@ class TimesFm2_5MLP(CLIPMLP):
         self.fc2 = nn.Linear(config.intermediate_size, config.hidden_size, bias=config.use_bias)
 
 
+# TimesFm2_5ResidualBlock：TimesFM 2.5 残差块：继承 TimesFM ResidualBlock 结构
 class TimesFm2_5ResidualBlock(TimesFmResidualBlock):
     """[`TimesFmResidualBlock`] variant with configurable `use_bias` and `activation`."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, input_dims: int, hidden_dims: int, output_dims: int, use_bias: bool | None = None):
         super().__init__(input_dims, hidden_dims, output_dims)
         use_bias = use_bias if use_bias is not None else config.use_bias
@@ -157,27 +166,33 @@ class TimesFm2_5ResidualBlock(TimesFmResidualBlock):
         self.residual_layer = nn.Linear(input_dims, output_dims, bias=use_bias)
         self.activation = ACT2FN[config.activation]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         # Align activations to block parameter dtype for mixed precision stability
         x = x.to(self.input_layer.weight.dtype)
         return super().forward(x)
 
 
+# TimesFm2_5RMSNorm：TimesFM 2.5 RMSNorm：LlamaRMSNorm 别名
 class TimesFm2_5RMSNorm(LlamaRMSNorm):
     pass
 
 
+# TimesFm2_5RotaryEmbedding：TimesFM 2.5 RoPE：Llama 旋转位置编码 cos/sin 缓存
 class TimesFm2_5RotaryEmbedding(LlamaRotaryEmbedding):
     pass
 
 
+# TimesFm2_5Attention：TimesFM 2.5 注意力：Apertus 风格 GQA + RoPE 自注意力
 class TimesFm2_5Attention(ApertusAttention):
     """TimesFM 2.5 attention with learnable per-dimension query scaling."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TimesFm2_5Config, layer_idx: int):
         super().__init__(config, layer_idx)
         self.scaling = nn.Parameter(torch.empty((self.head_dim,)))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -226,14 +241,17 @@ class TimesFm2_5Attention(ApertusAttention):
         return attn_output, attn_weights
 
 
+# TimesFm2_5DecoderLayer：TimesFM 2.5 解码层：LlamaDecoderLayer + 梯度检查点
 class TimesFm2_5DecoderLayer(LlamaDecoderLayer):
     """TimesFM 2.5 Transformer decoder layer with pre/post RMS normalization and no KV cache."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TimesFm2_5Config, layer_idx: int):
         super().__init__(config, layer_idx)
         self.pre_feedforward_layernorm = TimesFm2_5RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.post_feedforward_layernorm = TimesFm2_5RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -262,6 +280,7 @@ class TimesFm2_5DecoderLayer(LlamaDecoderLayer):
 
 
 @auto_docstring
+# TimesFm2_5PreTrainedModel：TimesFM 2.5 预训练基类：RoPE 解码器权重初始化
 class TimesFm2_5PreTrainedModel(TimesFmPreTrainedModel):
     config_class = TimesFm2_5Config
     base_model_prefix = "model"
@@ -274,7 +293,9 @@ class TimesFm2_5PreTrainedModel(TimesFmPreTrainedModel):
     }
 
 
+# TimesFm2_5Model：TimesFM 2.5 基模型：长上下文 patch 解码器栈
 class TimesFm2_5Model(TimesFm2_5PreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TimesFm2_5Config):
         super().__init__(config)
         self.config = config
@@ -373,6 +394,7 @@ class TimesFm2_5Model(TimesFm2_5PreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         past_values: torch.Tensor,
@@ -456,7 +478,9 @@ class TimesFm2_5Model(TimesFm2_5PreTrainedModel):
         )
 
 
+# TimesFm2_5ModelForPrediction：TimesFM 2.5 预测模型：flip-invariance 与连续分位数推理
 class TimesFm2_5ModelForPrediction(TimesFmModelForPrediction):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TimesFm2_5Config):
         super().__init__(config)
         self.config = config
@@ -530,6 +554,7 @@ class TimesFm2_5ModelForPrediction(TimesFmModelForPrediction):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         past_values: Sequence[torch.Tensor],

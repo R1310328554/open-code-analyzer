@@ -36,6 +36,8 @@ from ...utils import TransformersKwargs, auto_docstring, can_return_tuple, loggi
 from ...utils.generic import merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
 from .configuration_timesfm import TimesFmConfig
+# TimesFM 建模（自动生成）：patch 化时序解码器 + 分位数预测头
+
 
 
 logger = logging.get_logger(__name__)
@@ -43,6 +45,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring
 @dataclass
+# TimesFmOutput：TimesFM 基模型输出：附加 loc/scale 归一化统计量
 class TimesFmOutput(BaseModelOutput):
     r"""
     loc (`torch.Tensor` of shape `(batch_size, )`):
@@ -57,6 +60,7 @@ class TimesFmOutput(BaseModelOutput):
 
 @auto_docstring
 @dataclass
+# TimesFmOutputForPrediction：TimesFM 预测输出：均值/全分位数预测与可选 quantile 损失
 class TimesFmOutputForPrediction(BaseModelOutput):
     r"""
     mean_predictions (`torch.Tensor` of shape `(batch_size, sequence_length)`):
@@ -72,9 +76,11 @@ class TimesFmOutputForPrediction(BaseModelOutput):
     loss: torch.Tensor | float | None = None
 
 
+# TimesFmMLP：TimesFM MLP：Pre-LN + ReLU 门控前馈，支持 padding 掩码
 class TimesFmMLP(nn.Module):
     """Pax MLP in pytorch."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TimesFmConfig):
         super().__init__()
         hidden_size = config.hidden_size
@@ -84,6 +90,7 @@ class TimesFmMLP(nn.Module):
         self.down_proj = nn.Linear(intermediate_size, hidden_size)
         self.layer_norm = nn.LayerNorm(normalized_shape=hidden_size, eps=1e-6)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x, paddings=None):
         gate_inp = self.layer_norm(x)
         gate = self.gate_proj(gate_inp)
@@ -94,9 +101,11 @@ class TimesFmMLP(nn.Module):
         return outputs + x
 
 
+# TimesFmResidualBlock：TimesFM 残差 MLP 块：SiLU 激活 + 线性残差捷径
 class TimesFmResidualBlock(nn.Module):
     """TimesFM residual block."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, input_dims, hidden_dims, output_dims):
         super().__init__()
         self.input_dims = input_dims
@@ -108,6 +117,7 @@ class TimesFmResidualBlock(nn.Module):
         self.output_layer = nn.Linear(hidden_dims, output_dims)
         self.residual_layer = nn.Linear(input_dims, output_dims)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         hidden = self.input_layer(x)
         hidden = self.activation(hidden)
@@ -117,7 +127,9 @@ class TimesFmResidualBlock(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# TimesFmRMSNorm：TimesFM RMSNorm：Llama 风格均方根层归一化
 class TimesFmRMSNorm(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
         TimesFmRMSNorm is equivalent to T5LayerNorm
@@ -126,6 +138,7 @@ class TimesFmRMSNorm(nn.Module):
         self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         input_dtype = hidden_states.dtype
         hidden_states = hidden_states.to(torch.float32)
@@ -133,13 +146,16 @@ class TimesFmRMSNorm(nn.Module):
         hidden_states = hidden_states * torch.rsqrt(variance + self.variance_epsilon)
         return self.weight * hidden_states.to(input_dtype)
 
+    # extra_repr：模块_repr_：返回调试用的关键超参摘要
     def extra_repr(self):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# TimesFmPositionalEmbedding：TimesFM 几何位置编码：多频率 sin/cos 正弦嵌入
 class TimesFmPositionalEmbedding(nn.Module):
     """Generates position embedding for a given 1-d sequence."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TimesFmConfig):
         super().__init__()
         min_timescale = config.min_timescale
@@ -153,6 +169,7 @@ class TimesFmPositionalEmbedding(nn.Module):
             min_timescale * torch.exp(torch.arange(num_timescales, dtype=torch.float32) * -log_timescale_increment)
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, seq_length=None, position=None):
         """Generates a Tensor of sinusoids with different frequencies.
 
@@ -182,6 +199,7 @@ class TimesFmPositionalEmbedding(nn.Module):
         return signal
 
 
+# simple_eager_attention_forward：简易 eager 注意力：缩放点积 + 可选 attention mask
 def simple_eager_attention_forward(
     module: nn.Module,
     query_states: torch.Tensor,
@@ -204,9 +222,11 @@ def simple_eager_attention_forward(
     return attn_output, attn_weights
 
 
+# TimesFmAttention：TimesFM 注意力：多头缩放点积自注意力
 class TimesFmAttention(nn.Module):
     """Implements the attention used in TimesFM. One key difference is that there is _per_dim_scaling of the query."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TimesFmConfig, layer_idx: int):
         super().__init__()
         self.config = config
@@ -231,6 +251,7 @@ class TimesFmAttention(nn.Module):
         scale = F.softplus(self.scaling).mul(1.442695041 / math.sqrt(self.head_dim))
         return query * scale[None, None, None, :]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -264,9 +285,11 @@ class TimesFmAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# TimesFmDecoderLayer：TimesFM 解码层：自注意力 + MLP 双残差
 class TimesFmDecoderLayer(nn.Module):
     """Transformer layer."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TimesFmConfig, layer_idx: int):
         super().__init__()
 
@@ -274,6 +297,7 @@ class TimesFmDecoderLayer(nn.Module):
         self.mlp = TimesFmMLP(config)
         self.input_layernorm = TimesFmRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -297,6 +321,7 @@ class TimesFmDecoderLayer(nn.Module):
 
 
 @auto_docstring
+# TimesFmPreTrainedModel：TimesFM 预训练基类：patch 嵌入与分位数头权重初始化
 class TimesFmPreTrainedModel(PreTrainedModel):
     config: TimesFmConfig
     base_model_prefix = "timesfm"
@@ -310,6 +335,7 @@ class TimesFmPreTrainedModel(PreTrainedModel):
     }
 
     @torch.no_grad()
+    # _init_weights：权重初始化：Linear/Conv 截断正态、Norm 层偏置置零
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, TimesFmAttention):
@@ -329,7 +355,9 @@ class TimesFmPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# TimesFmModel：TimesFM 基模型：patch 化输入 + 解码器栈输出隐状态
 class TimesFmModel(TimesFmPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TimesFmConfig):
         super().__init__(config)
 
@@ -368,6 +396,7 @@ class TimesFmModel(TimesFmPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         past_values: torch.Tensor,
@@ -566,9 +595,11 @@ class TimesFmModel(TimesFmPreTrainedModel):
         return shifted_seq
 
 
+# TimesFmModelForPrediction：TimesFM 预测模型：分位数回归头 + 点预测与损失计算
 class TimesFmModelForPrediction(TimesFmPreTrainedModel):
     """TimesFM model for quantile and mean prediction."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TimesFmConfig):
         super().__init__(config)
 
@@ -588,6 +619,7 @@ class TimesFmModelForPrediction(TimesFmPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # _preprocess：内部预处理：按形状分组 resize/归一化后重组 batch
     def _preprocess(
         self, inputs: Sequence[torch.Tensor], freq: Sequence[int] | None = None, context_len: int | None = None
     ) -> tuple[torch.Tensor, ...]:
@@ -650,6 +682,7 @@ class TimesFmModelForPrediction(TimesFmPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         past_values: Sequence[torch.Tensor],

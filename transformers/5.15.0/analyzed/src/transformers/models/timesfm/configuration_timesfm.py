@@ -17,10 +17,13 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# TimesFM 配置：patch 长度、上下文/预测窗口、分位数输出与几何位置编码参数
+
 
 
 @auto_docstring(checkpoint="google/timesfm-2.0-500m-pytorch")
 @strict
+# TimesFmConfig：TimesFM 配置：patch/context/horizon 长度、分位数列表与位置编码尺度
 class TimesFmConfig(PreTrainedConfig):
     r"""
     patch_length (`int`, *optional*, defaults to 32):

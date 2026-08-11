@@ -22,6 +22,8 @@ from torch import Tensor
 from ...activations import ACT2CLS
 from ...backbone_utils import BackboneMixin, filter_output_hidden_states
 from ...modeling_outputs import (
+# TextNet 建模：RepConv 多阶段 CNN 骨干，支持分类头与 DETR/MaskFormer 骨干接口
+
     BackboneOutput,
     BaseModelOutputWithNoAttention,
     BaseModelOutputWithPoolingAndNoAttention,
@@ -36,7 +38,9 @@ from .configuration_textnet import TextNetConfig
 logger = logging.get_logger(__name__)
 
 
+# TextNetConvLayer：TextNet stem 卷积层：Conv2d + BatchNorm + 可选激活
 class TextNetConvLayer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TextNetConfig):
         super().__init__()
 
@@ -64,12 +68,14 @@ class TextNetConvLayer(nn.Module):
         if self.activation_function is not None:
             self.activation = ACT2CLS[self.activation_function]()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.conv(hidden_states)
         hidden_states = self.batch_norm(hidden_states)
         return self.activation(hidden_states)
 
 
+# TextNetRepConvLayer：TextNet RepConv 层：训练多分支（主/垂直/水平/恒等），推理可融合为单卷积
 class TextNetRepConvLayer(nn.Module):
     r"""
     This layer supports re-parameterization by combining multiple convolutional branches
@@ -80,6 +86,7 @@ class TextNetRepConvLayer(nn.Module):
     The "Rep" in the name stands for "re-parameterization" (introduced by RepVGG).
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TextNetConfig, in_channels: int, out_channels: int, kernel_size: int, stride: int):
         super().__init__()
 
@@ -137,6 +144,7 @@ class TextNetRepConvLayer(nn.Module):
             else None
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         main_outputs = self.main_conv(hidden_states)
         main_outputs = self.main_batch_norm(main_outputs)
@@ -160,7 +168,9 @@ class TextNetRepConvLayer(nn.Module):
         return self.activation_function(main_outputs)
 
 
+# TextNetStage：TextNet stage：堆叠多个 RepConv 层构成一个下采样阶段
 class TextNetStage(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TextNetConfig, depth: int):
         super().__init__()
         kernel_size = config.conv_layer_kernel_sizes[depth]
@@ -178,13 +188,16 @@ class TextNetStage(nn.Module):
             stage.append(TextNetRepConvLayer(config, *stage_config))
         self.stage = nn.ModuleList(stage)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state):
         for block in self.stage:
             hidden_state = block(hidden_state)
         return hidden_state
 
 
+# TextNetEncoder：TextNet 编码器：多 stage 级联提取层次化特征图
 class TextNetEncoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TextNetConfig):
         super().__init__()
 
@@ -195,6 +208,7 @@ class TextNetEncoder(nn.Module):
 
         self.stages = nn.ModuleList(stages)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_state: torch.Tensor,
@@ -214,6 +228,7 @@ class TextNetEncoder(nn.Module):
 
 
 @auto_docstring
+# TextNetPreTrainedModel：TextNet 预训练基类：权重初始化与 pixel_values 主输入名
 class TextNetPreTrainedModel(PreTrainedModel):
     config: TextNetConfig
     base_model_prefix = "textnet"
@@ -221,7 +236,9 @@ class TextNetPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# TextNetModel：TextNet 基模型：stem + encoder + 2×2 自适应池化
 class TextNetModel(TextNetPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.stem = TextNetConvLayer(config)
@@ -230,6 +247,7 @@ class TextNetModel(TextNetPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: Tensor,
@@ -268,7 +286,9 @@ class TextNetModel(TextNetPreTrainedModel):
     ImageNet.
     """
 )
+# TextNetForImageClassification：TextNet 图像分类：全局池化 + Linear 分类头
 class TextNetForImageClassification(TextNetPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
@@ -284,6 +304,7 @@ class TextNetForImageClassification(TextNetPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor | None = None,
@@ -343,9 +364,11 @@ class TextNetForImageClassification(TextNetPreTrainedModel):
     TextNet backbone, to be used with frameworks like DETR and MaskFormer.
     """
 )
+# TextNetBackbone：TextNet 骨干：BackboneMixin 输出多 stage 特征图供检测/分割框架
 class TextNetBackbone(BackboneMixin, TextNetPreTrainedModel):
     has_attentions = False
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -358,6 +381,7 @@ class TextNetBackbone(BackboneMixin, TextNetPreTrainedModel):
     @can_return_tuple
     @filter_output_hidden_states
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: Tensor,

@@ -23,10 +23,13 @@ from huggingface_hub.dataclasses import strict
 from ...configuration_utils import PreTrainedConfig
 from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
+# TimesFM 2.5 配置：更长上下文、RoPE、连续分位数头与翻转不变性推理选项
+
 
 
 @auto_docstring(checkpoint="google/timesfm-2.5-200m-transformers")
 @strict
+# TimesFm2_5Config：TimesFM 2.5 配置：16K 上下文、RoPE、连续分位数头与推理后处理开关
 class TimesFm2_5Config(PreTrainedConfig):
     r"""
     patch_length (`int`, *optional*, defaults to 32):
