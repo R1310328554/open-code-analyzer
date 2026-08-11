@@ -15,23 +15,8 @@
     "src/transformers/models/pp_ocrv6_small_det/modeling_pp_ocrv6_small_det.py",
     "src/transformers/models/pp_ocrv6_small_det/modular_pp_ocrv6_small_det.py",
     "src/transformers/models/pp_ocrv6_small_rec/__init__.py",
-    "src/transformers/models/pp_ocrv6_small_rec/configuration_pp_ocrv6_small_rec.py",
-    "src/transformers/models/pp_ocrv6_small_rec/image_processing_pp_ocrv6_small_rec.py",
-    "src/transformers/models/pp_ocrv6_small_rec/modeling_pp_ocrv6_small_rec.py",
-    "src/transformers/models/pp_ocrv6_small_rec/modular_pp_ocrv6_small_rec.py",
-    "src/transformers/models/pp_ocrv6_tiny_rec/__init__.py",
-    "src/transformers/models/pp_ocrv6_tiny_rec/configuration_pp_ocrv6_tiny_rec.py",
-    "src/transformers/models/pp_ocrv6_tiny_rec/modeling_pp_ocrv6_tiny_rec.py",
-    "src/transformers/models/pp_ocrv6_tiny_rec/modular_pp_ocrv6_tiny_rec.py",
-    "src/transformers/models/prompt_depth_anything/__init__.py",
-    "src/transformers/models/prompt_depth_anything/configuration_prompt_depth_anything.py",
-    "src/transformers/models/prompt_depth_anything/image_processing_pil_prompt_depth_anything.py",
-    "src/transformers/models/prompt_depth_anything/image_processing_prompt_depth_anything.py",
-    "src/transformers/models/prompt_depth_anything/modeling_prompt_depth_anything.py",
-    "src/transformers/models/prompt_depth_anything/modular_prompt_depth_anything.py",
-    "src/transformers/models/prophetnet/__init__.py",
-    "src/transformers/models/prophetnet/configuration_prophetnet.py"
+    "src/transformers/models/pp_ocrv6_small_rec/configuration_pp_ocrv6_small_rec.py"
   ],
   "remaining_pending": 849,
-  "done": 1800
+  "done": 1815
 }
