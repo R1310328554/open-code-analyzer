@@ -27,9 +27,11 @@ from paddle import ParamAttr
 import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle.nn import MaxPool2D
+# 浅层 CNN 识别骨干（MMOCR）：两层卷积 + 池化，轻量快速
 from paddle.nn.initializer import KaimingNormal, Uniform, Constant
 
 
+    # Conv+BN+ReLU 基础块，Kaiming 初始化
 class ConvBNLayer(nn.Layer):
     def __init__(
         self, num_channels, filter_size, num_filters, stride, padding, num_groups=1
@@ -61,6 +63,7 @@ class ConvBNLayer(nn.Layer):
         return y
 
 
+    # 浅层 CNN：conv→pool→conv→pool，输出 hidden_dim 通道特征
 class ShallowCNN(nn.Layer):
     def __init__(self, in_channels=1, hidden_dim=512):
         super().__init__()

@@ -19,6 +19,7 @@ import paddle
 import paddle.nn as nn
 from paddle.nn.initializer import TruncatedNormal, Constant, Normal
 
+# 标准 ViT 识别骨干：patch 卷积嵌入 + 全局自注意力
 trunc_normal_ = TruncatedNormal(std=0.02)
 normal_ = Normal
 zeros_ = Constant(value=0.0)
@@ -40,6 +41,7 @@ def drop_path(x, drop_prob=0.0, training=False):
     return output
 
 
+    # 随机深度
 class DropPath(nn.Layer):
     """Drop paths (Stochastic Depth) per sample  (when applied in main path of residual blocks)."""
 
@@ -51,6 +53,7 @@ class DropPath(nn.Layer):
         return drop_path(x, self.drop_prob, self.training)
 
 
+    # 恒等映射
 class Identity(nn.Layer):
     def __init__(self):
         super(Identity, self).__init__()
@@ -59,6 +62,7 @@ class Identity(nn.Layer):
         return input
 
 
+    # 前馈 MLP
 class Mlp(nn.Layer):
     def __init__(
         self,
@@ -85,6 +89,7 @@ class Mlp(nn.Layer):
         return x
 
 
+    # 标准多头自注意力
 class Attention(nn.Layer):
     def __init__(
         self,
@@ -122,6 +127,7 @@ class Attention(nn.Layer):
         return x
 
 
+    # ViT Transformer 块：Attention + MLP + 残差
 class Block(nn.Layer):
     def __init__(
         self,
@@ -177,6 +183,7 @@ class Block(nn.Layer):
         return x
 
 
+    # 文本识别 ViT：patch embed + 多层 Block + 自适应池化输出
 class ViT(nn.Layer):
     def __init__(
         self,
@@ -259,6 +266,7 @@ class ViT(nn.Layer):
 
     def forward(self, x):
         x = self.patch_embed(x).flatten(2).transpose((0, 2, 1))
+        # 跳过 cls token 位置，仅对 patch token 加位置编码
         x = x + self.pos_embed[:, 1:, :]  # [:, :x.shape[1], :]
         x = self.pos_drop(x)
         for blk in self.blocks1:

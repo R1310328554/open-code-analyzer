@@ -27,9 +27,11 @@ from ppocr.modeling.backbones.rec_svtrnet import (
     ones_,
 )
 
+# ViTSTR 识别骨干：带 cls token 的 ViT，输出固定长度序列特征
 scale_dim_heads = {"tiny": [192, 3], "small": [384, 6], "base": [768, 12]}
 
 
+    # ViTSTR：tiny/small/base 三档 + cls token + 序列输出
 class ViTSTR(nn.Layer):
     def __init__(
         self,
@@ -129,5 +131,6 @@ class ViTSTR(nn.Layer):
 
     def forward(self, x):
         x = self.forward_features(x)
+        # 截取前 seqlen 个 token（含 cls）作为识别序列
         x = x[:, : self.seqlen]
         return x.transpose([0, 2, 1]).unsqueeze(2)

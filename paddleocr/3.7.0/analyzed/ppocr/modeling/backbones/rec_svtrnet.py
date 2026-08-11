@@ -19,6 +19,7 @@ import paddle
 import paddle.nn as nn
 from paddle.nn.initializer import TruncatedNormal, Constant, Normal
 
+# SVTR 识别骨干：局部/全局混合注意力 + 卷积混合器
 trunc_normal_ = TruncatedNormal(std=0.02)
 normal_ = Normal
 zeros_ = Constant(value=0.0)
@@ -40,6 +41,7 @@ def drop_path(x, drop_prob=0.0, training=False):
     return output
 
 
+    # SVTR 用 Conv+BN+GELU 基础块
 class ConvBNLayer(nn.Layer):
     def __init__(
         self,
@@ -73,6 +75,7 @@ class ConvBNLayer(nn.Layer):
         return out
 
 
+    # 随机深度正则化
 class DropPath(nn.Layer):
     """Drop paths (Stochastic Depth) per sample  (when applied in main path of residual blocks)."""
 
@@ -84,6 +87,7 @@ class DropPath(nn.Layer):
         return drop_path(x, self.drop_prob, self.training)
 
 
+    # 恒等映射占位层
 class Identity(nn.Layer):
     def __init__(self):
         super(Identity, self).__init__()
@@ -92,6 +96,7 @@ class Identity(nn.Layer):
         return input
 
 
+    # Transformer 前馈 MLP：fc→act→fc
 class Mlp(nn.Layer):
     def __init__(
         self,
@@ -118,6 +123,7 @@ class Mlp(nn.Layer):
         return x
 
 
+    # 深度可分离卷积混合器，替代局部注意力
 class ConvMixer(nn.Layer):
     def __init__(
         self,
@@ -148,6 +154,7 @@ class ConvMixer(nn.Layer):
         return x
 
 
+    # 全局自注意力：QKV 线性投影 + 缩放点积
 class Attention(nn.Layer):
     def __init__(
         self,
@@ -212,6 +219,7 @@ class Attention(nn.Layer):
         return x
 
 
+    # SVTR 混合块：Local/Global/Conv 三种 mixer + MLP
 class Block(nn.Layer):
     def __init__(
         self,
@@ -278,6 +286,7 @@ class Block(nn.Layer):
         return x
 
 
+    # 图像分块嵌入：sub_num 次 stride-2 卷积降采样
 class PatchEmbed(nn.Layer):
     """Image to Patch Embedding"""
 
@@ -365,6 +374,7 @@ class PatchEmbed(nn.Layer):
         return x
 
 
+    # 阶段间下采样：Conv 或 Pool 模式投影到新维度
 class SubSample(nn.Layer):
     def __init__(
         self,
@@ -401,6 +411,7 @@ class SubSample(nn.Layer):
             self.act = None
 
     def forward(self, x):
+        # Pool 模式：avg+max 双池化融合后投影到 token 序列
         if self.types == "Pool":
             x1 = self.avgpool(x)
             x2 = self.maxpool(x)
@@ -416,6 +427,7 @@ class SubSample(nn.Layer):
         return out
 
 
+    # SVTR 文本识别主干：三阶段混合注意力 + 可选长度头
 class SVTRNet(nn.Layer):
     def __init__(
         self,
@@ -626,6 +638,7 @@ class SVTRNet(nn.Layer):
         if self.use_lenhead:
             len_x = self.len_conv(x.mean(1))
             len_x = self.dropout_len(self.hardswish_len(len_x))
+        # 末阶段：自适应池化到固定字符宽度 + 1×1 投影
         if self.last_stage:
             if self.patch_merging is not None:
                 h = self.HW[0] // 4

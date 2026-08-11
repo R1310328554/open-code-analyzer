@@ -27,6 +27,7 @@ from paddle.nn.initializer import (
     TruncatedNormal,
     XavierUniform,
 )
+# Vary ViT 骨干（SAM/ViTDet 风格）：窗口+全局混合注意力
 from ppocr.modeling.backbones.rec_donut_swin import DonutSwinModelOutput
 
 zeros_ = Constant(value=0.0)
@@ -36,6 +37,7 @@ trunc_normal_ = TruncatedNormal(std=0.02)
 xavier_uniform_ = XavierUniform()
 
 
+    # ViT MLP 块：Linear→GELU→Linear
 class MLPBlock(nn.Layer):
     def __init__(
         self,
@@ -54,6 +56,7 @@ class MLPBlock(nn.Layer):
 
 # From https://github.com/facebookresearch/detectron2/blob/main/detectron2/layers/batch_norm.py # noqa
 # Itself from https://github.com/facebookresearch/ConvNeXt/blob/d1fa8f6fef0a165b27399986cc2bdacc92777e40/models/convnext.py#L119  # noqa
+    # 通道维 LayerNorm（ConvNeXt 风格）
 class LayerNorm2d(nn.Layer):
     def __init__(self, num_channels: int, epsilon: float = 1e-6) -> None:
         super().__init__()
@@ -72,6 +75,7 @@ class LayerNorm2d(nn.Layer):
 
 
 # This class and its supporting functions below lightly adapted from the ViTDet backbone available at: https://github.com/facebookresearch/detectron2/blob/main/detectron2/modeling/backbone/vit.py # noqa
+    # ViTDet 图像编码器：patch embed + 窗口/全局注意力 + neck
 class ImageEncoderViT(nn.Layer):
     def __init__(
         self,
@@ -185,6 +189,7 @@ class ImageEncoderViT(nn.Layer):
         return x
 
 
+    # 支持窗口注意力和相对位置编码的 Transformer 块
 class Block(nn.Layer):
     """Transformer blocks with support of window attention and residual propagation blocks"""
 
@@ -252,6 +257,7 @@ class Block(nn.Layer):
         return x
 
 
+    # 多头注意力，可选相对位置偏置
 class Attention(nn.Layer):
     """Multi-head Attention block with relative position embeddings."""
 
@@ -451,6 +457,7 @@ def add_decomposed_rel_pos(
     return attn
 
 
+    # 卷积式 patch 嵌入
 class PatchEmbed(nn.Layer):
     """
     Image to Patch Embedding.
@@ -520,6 +527,7 @@ def _build_vary(
     return image_encoder
 
 
+    # Vary 文本识别 ViT-B：768 输入 + 序列化输出特征
 class Vary_VIT_B(nn.Layer):
     def __init__(
         self,
@@ -545,6 +553,7 @@ class Vary_VIT_B(nn.Layer):
     def forward(self, input_data):
         pixel_values = input_data
         num_channels = pixel_values.shape[1]
+        # 灰度图复制三通道以适配 RGB 预训练权重
         if num_channels == 1:
             pixel_values = paddle.repeat_interleave(pixel_values, repeats=3, axis=1)
         cnn_feature = self.vision_tower_high(pixel_values)
@@ -552,6 +561,7 @@ class Vary_VIT_B(nn.Layer):
         return cnn_feature
 
 
+    # 公式识别变体：额外 net_3 下采样 + mm_projector
 class Vary_VIT_B_Formula(nn.Layer):
     def __init__(
         self,

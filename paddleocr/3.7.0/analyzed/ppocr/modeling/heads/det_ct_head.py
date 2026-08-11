@@ -25,10 +25,12 @@ from paddle import ParamAttr
 import math
 from paddle.nn.initializer import TruncatedNormal, Constant, Normal
 
+# CT（Centripetal Text）检测头：中心点+偏移量预测
 ones_ = Constant(value=1.0)
 zeros_ = Constant(value=0.0)
 
 
+    # Centripetal Text 检测头：conv→bn→relu→1×1 分类
 class CT_Head(nn.Layer):
     def __init__(
         self, in_channels, hidden_dim, num_classes, loss_kernel=None, loss_loc=None
@@ -61,6 +63,7 @@ class CT_Head(nn.Layer):
         out = self.relu1(self.bn1(out))
         out = self.conv2(out)
 
+        # 训练时上采样 4 倍对齐 GT 图尺寸
         if self.training:
             out = self._upsample(out, scale=4)
             return {"maps": out}

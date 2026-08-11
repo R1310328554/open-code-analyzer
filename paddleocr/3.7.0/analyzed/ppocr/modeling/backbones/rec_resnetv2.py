@@ -33,6 +33,7 @@ from paddle.nn.initializer import TruncatedNormal, Constant, Normal, KaimingUnif
 from functools import partial
 from typing import Union, Callable, Type, List, Tuple
 
+# ResNet-V2（timm 移植）：权重标准化 + Pre-activation 瓶颈结构
 IMAGENET_INCEPTION_MEAN = (0.5, 0.5, 0.5)
 IMAGENET_INCEPTION_STD = (0.5, 0.5, 0.5)
 normal_ = Normal(mean=0.0, std=0.01)
@@ -57,6 +58,8 @@ to_4tuple = _ntuple(4)
 to_ntuple = _ntuple
 
 
+    # 带权重标准化的 SAME 填充卷积，兼容 TF 导出
+    # 权重标准化 Conv2D，BiT/ResNet-V2 核心算子
 class StdConv2dSame(nn.Conv2D):
     def __init__(
         self,
@@ -97,8 +100,10 @@ class StdConv2dSame(nn.Conv2D):
     def forward(self, x):
         if not self.training:
             self.export = True
+        # 动态 SAME 填充：按输入尺寸运行时计算 pad
         if self.same_pad:
-            if self.export:
+            # 导出模式：对卷积权重做 batch-norm 标准化
+        if self.export:
                 x = pad_same_export(x, self._kernel_size, self._stride, self._dilation)
             else:
                 x = pad_same(x, self._kernel_size, self._stride, self._dilation)
@@ -183,6 +188,7 @@ class StdConv2d(nn.Conv2D):
         return x
 
 
+    # TensorFlow 风格 SAME 最大池化
 class MaxPool2dSame(nn.MaxPool2D):
     """Tensorflow like 'SAME' wrapper for 2D max pooling"""
 
@@ -314,6 +320,7 @@ def pad_same(x, k, s, d=(1, 1), value=0, pad_h=None, pad_w=None):
     return x
 
 
+    # TensorFlow 风格 SAME 平均池化
 class AvgPool2dSame(nn.AvgPool2D):
     """Tensorflow like 'SAME' wrapper for 2D average pooling"""
 
@@ -358,6 +365,7 @@ def drop_path(
     return x * random_tensor
 
 
+    # 随机深度：训练时按概率丢弃整条残差路径
 class DropPath(nn.Layer):
     """Drop paths (Stochastic Depth) per sample  (when applied in main path of residual blocks)."""
 
@@ -377,6 +385,7 @@ def adaptive_pool_feat_mult(pool_type="avg"):
         return 1
 
 
+    # 可选全局池化层（avg/max/catavgmax）
 class SelectAdaptivePool2d(nn.Layer):
     """Selectable global pooling layer with dynamic input kernel size"""
 
@@ -436,6 +445,7 @@ def _create_fc(num_features, num_classes, use_conv=False):
     return fc
 
 
+    # 分类头：全局池化 + Dropout + 全连接
 class ClassifierHead(nn.Layer):
     """Classifier head w/ configurable global pooling and dropout."""
 
@@ -459,6 +469,7 @@ class ClassifierHead(nn.Layer):
         return x
 
 
+    # EvoNorm 批归一化变体
 class EvoNormBatch2d(nn.Layer):
     def __init__(
         self, num_features, apply_act=True, momentum=0.1, eps=1e-5, drop_block=None
@@ -507,6 +518,7 @@ class EvoNormBatch2d(nn.Layer):
         return x * self.weight.view(1, -1, 1, 1) + self.bias.view(1, -1, 1, 1)
 
 
+    # EvoNorm 样本归一化变体
 class EvoNormSample2d(nn.Layer):
     def __init__(
         self, num_features, apply_act=True, groups=32, eps=1e-5, drop_block=None
@@ -545,6 +557,7 @@ class EvoNormSample2d(nn.Layer):
         return x * self.weight.reshape([1, -1, 1, 1]) + self.bias.reshape([1, -1, 1, 1])
 
 
+    # GroupNorm + 激活函数组合层
 class GroupNormAct(nn.GroupNorm):
     # NOTE num_channel and num_groups order flipped for easier layer swaps / binding of fixed args
     def __init__(
@@ -581,6 +594,7 @@ class GroupNormAct(nn.GroupNorm):
         return x
 
 
+    # BatchNorm2D + 激活函数组合层
 class BatchNormAct2d(nn.BatchNorm2D):
     def __init__(
         self,
@@ -684,6 +698,7 @@ def make_div(v, divisor=8):
     return new_v
 
 
+    # Pre-activation 瓶颈块（ResNet-V2 标准块）
 class PreActBottleneck(nn.Layer):
     """Pre-activation (v2) bottleneck block.
 
@@ -754,11 +769,13 @@ class PreActBottleneck(nn.Layer):
     def forward(self, x):
         x_preact = self.norm1(x)
 
+        # 残差捷径分支
         # shortcut branch
         shortcut = x
         if self.downsample is not None:
             shortcut = self.downsample(x_preact)
 
+        # 主路径：Pre-activation 三段卷积
         # residual branch
         x = self.conv1(x_preact)
         x = self.conv2(self.norm2(x))
@@ -767,6 +784,7 @@ class PreActBottleneck(nn.Layer):
         return x + shortcut
 
 
+    # 非 Pre-act 瓶颈块，ViT 混合骨干使用
 class Bottleneck(nn.Layer):
     """Non Pre-activation bottleneck block, equiv to V1.5/V1b Bottleneck. Used for ViT."""
 
@@ -848,6 +866,7 @@ class Bottleneck(nn.Layer):
         return x
 
 
+    # 1×1 卷积下采样投影
 class DownsampleConv(nn.Layer):
     def __init__(
         self,
@@ -869,6 +888,7 @@ class DownsampleConv(nn.Layer):
         return self.norm(self.conv(x))
 
 
+    # 平均池化 + 1×1 卷积下采样（ResNet-D 变体）
 class DownsampleAvg(nn.Layer):
     def __init__(
         self,
@@ -899,6 +919,7 @@ class DownsampleAvg(nn.Layer):
         return self.norm(self.conv(self.pool(x)))
 
 
+    # ResNet 单个 stage：堆叠多个瓶颈块
 class ResNetStage(nn.Layer):
     """ResNet Stage."""
 
@@ -1030,6 +1051,7 @@ def create_resnetv2_stem(
     return stem_seq
 
 
+    # Pre-activation ResNet-V2 识别骨干，输出 H//16 特征图
 class ResNetV2(nn.Layer):
     """Implementation of Pre-activation (v2) ResNet mode.
 
@@ -1096,7 +1118,8 @@ class ResNetV2(nn.Layer):
         for stage_idx, (d, c, bdpr) in enumerate(zip(layers, channels, block_dprs)):
             out_chs = make_div(c * wf)
             stride = 1 if stage_idx == 0 else 2
-            if curr_stride >= output_stride:
+            # 达到目标 output_stride 后改用空洞卷积代替下采样
+        if curr_stride >= output_stride:
                 dilation *= stride
                 stride = 1
             stage = ResNetStage(

@@ -18,9 +18,11 @@ https://github.com/JiaquanYe/TableMASTER-mmocr/blob/master/mmocr/models/textreco
 
 import paddle
 import paddle.nn as nn
+# TableMASTER 表格识别 ResNet 骨干：多尺度输出 + GCB 全局上下文
 import paddle.nn.functional as F
 
 
+    # 表格 ResNet 基础残差块，可选 GCB 注意力
 class BasicBlock(nn.Layer):
     expansion = 1
 
@@ -39,6 +41,7 @@ class BasicBlock(nn.Layer):
         self.stride = stride
         self.gcb_config = gcb_config
 
+        # 可选 GCB 全局上下文注意力增强特征
         if self.gcb_config is not None:
             gcb_ratio = gcb_config["ratio"]
             gcb_headers = gcb_config["headers"]
@@ -81,6 +84,7 @@ def get_gcb_config(gcb_config, layer):
         return gcb_config
 
 
+    # TableMASTER 多尺度 ResNet：三阶段输出 [256,256,512]
 class TableResNetExtra(nn.Layer):
     def __init__(self, layers, in_channels=3, gcb_config=None):
         assert len(layers) >= 4
@@ -204,6 +208,7 @@ class TableResNetExtra(nn.Layer):
         x = self.conv3(x)
         x = self.bn3(x)
         x = self.relu3(x)
+        # 收集三个尺度特征供 TableMASTER 解码器使用
         f.append(x)
 
         x = self.maxpool2(x)
@@ -229,6 +234,7 @@ class TableResNetExtra(nn.Layer):
         return f
 
 
+    # 多视角全局上下文注意力（GCB）
 class MultiAspectGCAttention(nn.Layer):
     def __init__(
         self,

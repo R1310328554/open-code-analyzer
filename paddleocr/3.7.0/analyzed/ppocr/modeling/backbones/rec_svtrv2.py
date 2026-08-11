@@ -19,6 +19,7 @@ import paddle
 import paddle.nn as nn
 from paddle.nn.initializer import TruncatedNormal, Constant, Normal
 
+# SVTRv2 识别骨干：PO 分块嵌入 + 多 stage 混合 mixer
 trunc_normal_ = TruncatedNormal(std=0.02)
 normal_ = Normal
 zeros_ = Constant(value=0.0)
@@ -51,6 +52,7 @@ class DropPath(nn.Layer):
         return drop_path(x, self.drop_prob, self.training)
 
 
+    # 恒等映射
 class Identity(nn.Layer):
     def __init__(self):
         super(Identity, self).__init__()
@@ -59,6 +61,7 @@ class Identity(nn.Layer):
         return input
 
 
+    # 前馈 MLP
 class Mlp(nn.Layer):
     def __init__(
         self,
@@ -85,6 +88,7 @@ class Mlp(nn.Layer):
         return x
 
 
+    # Conv+BN+GELU
 class ConvBNLayer(nn.Layer):
     def __init__(
         self,
@@ -118,6 +122,7 @@ class ConvBNLayer(nn.Layer):
         return out
 
 
+    # 全局自注意力
 class Attention(nn.Layer):
     def __init__(
         self,
@@ -156,6 +161,7 @@ class Attention(nn.Layer):
         return x
 
 
+    # 混合注意力/卷积块
 class Block(nn.Layer):
     def __init__(
         self,
@@ -198,6 +204,7 @@ class Block(nn.Layer):
         return x
 
 
+    # 纯卷积块：深度可分离卷积 + MLP
 class ConvBlock(nn.Layer):
     def __init__(
         self,
@@ -240,11 +247,13 @@ class ConvBlock(nn.Layer):
         return x
 
 
+    # 特征图展平并转置为 token 序列
 class FlattenTranspose(nn.Layer):
     def forward(self, x):
         return x.flatten(2).transpose([0, 2, 1])
 
 
+    # 2D 空间下采样：stride 卷积 + 维度投影
 class SubSample2D(nn.Layer):
     def __init__(
         self,
@@ -272,6 +281,7 @@ class SubSample2D(nn.Layer):
         return x, [H, W]
 
 
+    # 1D 序列下采样
 class SubSample1D(nn.Layer):
     def __init__(
         self,
@@ -299,11 +309,13 @@ class SubSample1D(nn.Layer):
         return x, [H, W]
 
 
+    # 保持尺寸不变的占位
 class IdentitySize(nn.Layer):
     def forward(self, x, sz):
         return x, sz
 
 
+    # SVTRv2 单阶段：多个 Block + 可选下采样
 class SVTRStage(nn.Layer):
     def __init__(
         self,
@@ -377,6 +389,7 @@ class SVTRStage(nn.Layer):
         return x, sz
 
 
+    # 可学习位置编码加法
 class ADDPosEmbed(nn.Layer):
     def __init__(self, feat_max_size=[8, 32], embed_dim=768):
         super().__init__()
@@ -399,6 +412,7 @@ class ADDPosEmbed(nn.Layer):
         return x
 
 
+    # PO（Patch Organization）分块嵌入
 class POPatchEmbed(nn.Layer):
     """Image to Patch Embedding"""
 
@@ -443,6 +457,7 @@ class POPatchEmbed(nn.Layer):
         return x, [sz[0] // 4, sz[1] // 4]
 
 
+    # 末阶段：池化 + 1×1 投影到 out_channels
 class LastStage(nn.Layer):
     def __init__(self, in_channels, out_channels, last_drop, out_char_num):
         super().__init__()
@@ -459,6 +474,7 @@ class LastStage(nn.Layer):
         return x, [1, sz[1]]
 
 
+    # 输出池化：avg_pool2d 压缩高度
 class OutPool(nn.Layer):
     def __init__(self):
         super().__init__()
@@ -470,6 +486,7 @@ class OutPool(nn.Layer):
         return x, [1, sz[1] // 2]
 
 
+    # 将 token 序列还原为 2D 特征图
 class Feat2D(nn.Layer):
     def __init__(self):
         super().__init__()
@@ -480,6 +497,7 @@ class Feat2D(nn.Layer):
         return x, sz
 
 
+    # SVTRv2 识别主干：PO 嵌入 + 多 stage + 可选末阶段
 class SVTRv2(nn.Layer):
     def __init__(
         self,
@@ -521,6 +539,7 @@ class SVTRv2(nn.Layer):
             flatten=mixer[0][0] != "Conv",
         )
 
+        # 随机深度衰减：浅层 drop 小、深层 drop 大
         dpr = np.linspace(0, drop_path_rate, sum(depths))  # stochastic depth decay rule
 
         self.stages = nn.LayerList()

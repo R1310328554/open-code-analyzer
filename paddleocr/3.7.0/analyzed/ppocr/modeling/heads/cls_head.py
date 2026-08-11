@@ -19,9 +19,11 @@ from __future__ import print_function
 import math
 import paddle
 from paddle import nn, ParamAttr
+# 文本方向分类头：全局平均池化 + 全连接
 import paddle.nn.functional as F
 
 
+    # 方向分类头：AdaptiveAvgPool2D→Linear，推理时 softmax
 class ClsHead(nn.Layer):
     """
     Class orientation
@@ -48,6 +50,7 @@ class ClsHead(nn.Layer):
         x = self.pool(x)
         x = paddle.reshape(x, shape=[x.shape[0], x.shape[1]])
         x = self.fc(x)
+        # 推理阶段对 logits 做 softmax 输出类别概率
         if not self.training:
             x = F.softmax(x, axis=1)
         return x

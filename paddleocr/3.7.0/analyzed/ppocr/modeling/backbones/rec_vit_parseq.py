@@ -25,6 +25,7 @@ import paddle.nn as nn
 from paddle.nn.initializer import TruncatedNormal, Constant, Normal
 
 
+# ParseQ 用 ViT 骨干（PaddleClas 移植）：带 cls token 的标准 ViT
 trunc_normal_ = TruncatedNormal(std=0.02)
 normal_ = Normal
 zeros_ = Constant(value=0.0)
@@ -50,6 +51,7 @@ def drop_path(x, drop_prob=0.0, training=False):
     return output
 
 
+    # 随机深度
 class DropPath(nn.Layer):
     """Drop paths (Stochastic Depth) per sample  (when applied in main path of residual blocks)."""
 
@@ -61,6 +63,7 @@ class DropPath(nn.Layer):
         return drop_path(x, self.drop_prob, self.training)
 
 
+    # 恒等映射
 class Identity(nn.Layer):
     def __init__(self):
         super(Identity, self).__init__()
@@ -69,6 +72,7 @@ class Identity(nn.Layer):
         return input
 
 
+    # 前馈 MLP
 class Mlp(nn.Layer):
     def __init__(
         self,
@@ -95,6 +99,7 @@ class Mlp(nn.Layer):
         return x
 
 
+    # 多头自注意力
 class Attention(nn.Layer):
     def __init__(
         self,
@@ -135,6 +140,7 @@ class Attention(nn.Layer):
         return x
 
 
+    # Post-norm Transformer 块
 class Block(nn.Layer):
     def __init__(
         self,
@@ -187,6 +193,7 @@ class Block(nn.Layer):
         return x
 
 
+    # 图像到 patch 序列的卷积投影
 class PatchEmbed(nn.Layer):
     """Image to Patch Embedding"""
 
@@ -215,6 +222,7 @@ class PatchEmbed(nn.Layer):
         return x
 
 
+    # 标准 ViT：patch embed + cls token + 分类头
 class VisionTransformer(nn.Layer):
     """Vision Transformer with support for patch input"""
 
@@ -314,6 +322,7 @@ class VisionTransformer(nn.Layer):
         return x
 
 
+    # ParseQ 识别专用 ViT：去掉分类头，输出 patch 特征序列
 class ViTParseQ(VisionTransformer):
     def __init__(
         self,

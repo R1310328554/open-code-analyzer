@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 任务头工厂：按 name 懒加载检测/识别/分类/KIE/表格头
 __all__ = ["build_head"]
 
 
 def build_head(config):
+    # 检测头：DB/EAST/SAST/PSE/FCE/CT 等
     # det head
     from .det_db_head import DBHead, PFHeadLocal
     from .det_east_head import EASTHead
@@ -25,6 +27,7 @@ def build_head(config):
     from .e2e_pg_head import PGHead
     from .det_ct_head import CT_Head
 
+    # 识别头：CTC/Attention/Transformer/SAR 等
     # rec head
     from .rec_ctc_head import CTCHead
     from .rec_att_head import AttentionHead
@@ -47,9 +50,11 @@ def build_head(config):
     from .rec_unimernet_head import UniMERNetHead
     from .rec_ppformulanet_head import PPFormulaNet_Head
 
+    # 方向分类头
     # cls head
     from .cls_head import ClsHead
 
+    # 关键信息抽取头
     # kie head
     from .kie_sdmgr_head import SDMGRHead
 
@@ -100,6 +105,7 @@ def build_head(config):
 
     # table head
 
+    # 弹出 name 后 eval 实例化对应 Head 类
     module_name = config.pop("name")
     assert module_name in support_dict, Exception(
         "head only support {}".format(support_dict)

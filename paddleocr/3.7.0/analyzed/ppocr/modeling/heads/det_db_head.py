@@ -21,6 +21,7 @@ import paddle
 from paddle import nn
 import paddle.nn.functional as F
 from paddle import ParamAttr
+# DB（Differentiable Binarization）可微二值化文本检测头
 from ppocr.modeling.backbones.det_mobilenet_v3 import ConvBNLayer
 
 
@@ -31,6 +32,7 @@ def get_bias_attr(k):
     return bias_attr
 
 
+    # DB 子头：conv→反卷积上采样→sigmoid 概率图
 class Head(nn.Layer):
     def __init__(self, in_channels, kernel_list=[3, 2, 2], fix_nan=False, **kwargs):
         super(Head, self).__init__()
@@ -79,6 +81,7 @@ class Head(nn.Layer):
     def forward(self, x, return_f=False):
         x = self.conv1(x)
         x = self.conv_bn1(x)
+        # 训练时将 NaN 替换为零，防止梯度爆炸
         if self.fix_nan and self.training:
             x = paddle.where(paddle.isnan(x), paddle.zeros_like(x), x)
         x = self.conv2(x)
@@ -165,6 +168,7 @@ class Head(nn.Layer):
         return fused
 
 
+    # DB 检测头：binarize + thresh 双分支 + 可微 step 二值化
 class DBHead(nn.Layer):
     """
     Differentiable Binarization (DB) for text detection:
@@ -200,6 +204,7 @@ class DBHead(nn.Layer):
 
     def forward(self, x, targets=None):
         # Compatible with neck returning dict (training) or tensor (inference)
+        # neck 可返回 dict（含 fuse 与 aux 多尺度特征）
         if isinstance(x, dict):
             fuse = x["fuse"]
             aux_feats = {k: x[k] for k in ("aux_p4", "aux_p3", "aux_p2") if k in x}
@@ -245,6 +250,7 @@ class DBHead(nn.Layer):
         self.is_repped = True
 
 
+    # PFHeadLocal 局部细化模块
 class LocalModule(nn.Layer):
     def __init__(self, in_c, mid_c, use_distance=True):
         super(self.__class__, self).__init__()
@@ -258,6 +264,7 @@ class LocalModule(nn.Layer):
         return out
 
 
+    # DB 局部增强头：base map + CBN 融合
 class PFHeadLocal(DBHead):
     def __init__(self, in_channels, k=50, mode="small", **kwargs):
         super(PFHeadLocal, self).__init__(in_channels, k, **kwargs)

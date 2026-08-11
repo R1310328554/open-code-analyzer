@@ -32,6 +32,7 @@ from paddlenlp.transformers import (
 )
 from paddlenlp.transformers import AutoModel
 
+# KIE 文档理解骨干：LayoutLM/LayoutXLM 系列 SER/RE 封装
 __all__ = ["LayoutXLMForSer", "LayoutLMForSer"]
 
 pretrained_model_dict = {
@@ -49,6 +50,7 @@ pretrained_model_dict = {
 }
 
 
+    # NLP 基类：按 type(ser/re) 加载预训练 Layout 模型
 class NLPBaseModel(nn.Layer):
     def __init__(
         self,
@@ -61,6 +63,7 @@ class NLPBaseModel(nn.Layer):
         **kwargs,
     ):
         super(NLPBaseModel, self).__init__()
+        # 优先加载微调 checkpoint；否则加载 HuggingFace 预训练
         if checkpoints is not None:  # load the trained model
             self.model = model_class.from_pretrained(checkpoints)
         else:  # load the pretrained-model
@@ -77,6 +80,7 @@ class NLPBaseModel(nn.Layer):
         self.use_visual_backbone = True
 
 
+    # LayoutLM v1 语义实体识别（SER），纯文本+布局
 class LayoutLMForSer(NLPBaseModel):
     def __init__(
         self, num_classes, pretrained=True, checkpoints=None, mode="base", **kwargs
@@ -104,6 +108,7 @@ class LayoutLMForSer(NLPBaseModel):
         return x
 
 
+    # LayoutLMv2 SER：可选视觉 backbone 融合
 class LayoutLMv2ForSer(NLPBaseModel):
     def __init__(
         self, num_classes, pretrained=True, checkpoints=None, mode="base", **kwargs
@@ -146,6 +151,7 @@ class LayoutLMv2ForSer(NLPBaseModel):
             return x
 
 
+    # 多语言 LayoutXLM SER
 class LayoutXLMForSer(NLPBaseModel):
     def __init__(
         self, num_classes, pretrained=True, checkpoints=None, mode="base", **kwargs
@@ -188,6 +194,7 @@ class LayoutXLMForSer(NLPBaseModel):
             return x
 
 
+    # LayoutLMv2 关系抽取（RE）
 class LayoutLMv2ForRe(NLPBaseModel):
     def __init__(self, pretrained=True, checkpoints=None, mode="base", **kwargs):
         super(LayoutLMv2ForRe, self).__init__(
@@ -220,6 +227,7 @@ class LayoutLMv2ForRe(NLPBaseModel):
         return x
 
 
+    # 多语言 LayoutXLM 关系抽取
 class LayoutXLMForRe(NLPBaseModel):
     def __init__(self, pretrained=True, checkpoints=None, mode="base", **kwargs):
         super(LayoutXLMForRe, self).__init__(

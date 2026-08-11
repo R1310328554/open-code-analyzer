@@ -21,9 +21,11 @@ from paddle import ParamAttr
 import paddle.nn as nn
 import paddle.nn.functional as F
 
+# 识别 ResNet-VD 骨干：变体深度下采样（VD）+ 非对称 stride 适配文本行
 __all__ = ["ResNet"]
 
 
+    # 卷积+批归一化基础块，可选 VD 模式先池化再卷积
 class ConvBNLayer(nn.Layer):
     def __init__(
         self,
@@ -66,6 +68,7 @@ class ConvBNLayer(nn.Layer):
         )
 
     def forward(self, inputs):
+        # VD 模式：先 AvgPool 降采样再 stride=1 卷积，减少信息损失
         if self.is_vd_mode:
             inputs = self._pool2d_avg(inputs)
         y = self._conv(inputs)
@@ -73,6 +76,7 @@ class ConvBNLayer(nn.Layer):
         return y
 
 
+    # ResNet 瓶颈残差块：1×1→3×3→1×1 卷积堆叠
 class BottleneckBlock(nn.Layer):
     def __init__(
         self,
@@ -108,6 +112,7 @@ class BottleneckBlock(nn.Layer):
             name=name + "_branch2c",
         )
 
+        # 通道/尺寸不匹配时用 1×1 投影分支对齐残差
         if not shortcut:
             self.short = ConvBNLayer(
                 in_channels=in_channels,
@@ -135,6 +140,7 @@ class BottleneckBlock(nn.Layer):
         return y
 
 
+    # ResNet 基础残差块：两层 3×3 卷积
 class BasicBlock(nn.Layer):
     def __init__(
         self,
@@ -188,6 +194,7 @@ class BasicBlock(nn.Layer):
         return y
 
 
+    # 文本识别 ResNet-VD：三阶段 stem + 多 stage 残差 + 输出池化
 class ResNet(nn.Layer):
     def __init__(self, in_channels=3, layers=50, **kwargs):
         super(ResNet, self).__init__()
@@ -240,6 +247,7 @@ class ResNet(nn.Layer):
         self.pool2d_max = nn.MaxPool2D(kernel_size=3, stride=2, padding=1)
 
         self.block_list = []
+        # 50 层及以上使用 Bottleneck；浅层网络用 BasicBlock
         if layers >= 50:
             for block in range(len(depth)):
                 shortcut = False
@@ -252,6 +260,7 @@ class ResNet(nn.Layer):
                     else:
                         conv_name = "res" + str(block + 2) + chr(97 + i)
 
+                    # 阶段首块用 (2,1) 非对称 stride：高度减半、宽度保持
                     if i == 0 and block != 0:
                         stride = (2, 1)
                     else:
