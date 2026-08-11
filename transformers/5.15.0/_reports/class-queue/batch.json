@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T02:13:27Z",
   "files": [
-    "src/transformers/models/mobilenet_v1/__init__.py",
-    "src/transformers/models/mobilenet_v1/configuration_mobilenet_v1.py",
-    "src/transformers/models/mobilenet_v1/image_processing_mobilenet_v1.py",
-    "src/transformers/models/mobilenet_v1/image_processing_pil_mobilenet_v1.py",
-    "src/transformers/models/mobilenet_v1/modeling_mobilenet_v1.py",
-    "src/transformers/models/mobilenet_v2/__init__.py",
-    "src/transformers/models/mobilenet_v2/configuration_mobilenet_v2.py",
-    "src/transformers/models/mobilenet_v2/image_processing_mobilenet_v2.py",
-    "src/transformers/models/mobilenet_v2/image_processing_pil_mobilenet_v2.py",
-    "src/transformers/models/mobilenet_v2/modeling_mobilenet_v2.py",
-    "src/transformers/models/mobilevit/__init__.py",
-    "src/transformers/models/mobilevit/configuration_mobilevit.py",
-    "src/transformers/models/mobilevit/image_processing_mobilevit.py",
-    "src/transformers/models/mobilevit/image_processing_pil_mobilevit.py",
-    "src/transformers/models/mobilevit/modeling_mobilevit.py",
     "src/transformers/models/mobilevitv2/__init__.py",
     "src/transformers/models/mobilevitv2/configuration_mobilevitv2.py",
     "src/transformers/models/mobilevitv2/modeling_mobilevitv2.py",
@@ -33,5 +18,5 @@
     "src/transformers/models/modernvbert/modular_modernvbert.py"
   ],
   "remaining_pending": 1209,
-  "done": 1440
+  "done": 1455
 }
