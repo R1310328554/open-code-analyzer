@@ -5,7 +5,6 @@ django.middleware.csrf — 跨站请求伪造（CSRF）防护中间件。
 """
 
 """
-Cross Site Request Forgery Middleware."""
 Cross Site Request Forgery Middleware.
 
 This module provides a middleware that implements protection

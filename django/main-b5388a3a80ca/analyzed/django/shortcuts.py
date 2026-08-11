@@ -5,7 +5,6 @@ render/redirect 与 get_object_or_404 等常用快捷入口。
 """
 
 """
-This module collects helper functions and classes that "span" multiple levels"""
 This module collects helper functions and classes that "span" multiple levels
 of MVC. In other words, these functions/classes introduce controlled coupling
 for convenience's sake.
