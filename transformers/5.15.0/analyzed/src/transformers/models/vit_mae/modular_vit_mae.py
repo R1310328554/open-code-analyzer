@@ -38,9 +38,12 @@ from ..vit.modeling_vit import (
 from .configuration_vit_mae import ViTMAEConfig
 
 
+# ViT-MAE 模块化实现：复用 ViT 组件并扩展 MAE 掩码嵌入与解码器
+
 logger = logging.get_logger(__name__)
 
 
+# build_2d_sinusoidal_position_embedding：生成 2D sin-cos 位置编码：按 grid 尺寸与 embed_dim 计算固定编码
 def build_2d_sinusoidal_position_embedding(
     height: int,
     width: int,
@@ -95,6 +98,7 @@ def build_2d_sinusoidal_position_embedding(
     """
 )
 @dataclass
+# ViTMAEModelOutput：ViT-MAE 编码器输出：last_hidden_state 与可选 hidden_states/attentions
 class ViTMAEModelOutput(ModelOutput):
     r"""
     mask (`torch.FloatTensor` of shape `(batch_size, sequence_length)`):
@@ -116,6 +120,7 @@ class ViTMAEModelOutput(ModelOutput):
     """
 )
 @dataclass
+# ViTMAEDecoderOutput：ViT-MAE 解码器输出：像素重建 logits 与中间层状态
 class ViTMAEDecoderOutput(ModelOutput):
     r"""
     logits (`torch.FloatTensor` of shape `(batch_size, sequence_length, patch_size ** 2 * num_channels)`):
@@ -133,6 +138,7 @@ class ViTMAEDecoderOutput(ModelOutput):
     """
 )
 @dataclass
+# ViTMAEForPreTrainingOutput：ViT-MAE 预训练输出：重建 loss、logits 与 hidden_states
 class ViTMAEForPreTrainingOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`):
@@ -153,15 +159,18 @@ class ViTMAEForPreTrainingOutput(ModelOutput):
     attentions: tuple[torch.FloatTensor] | None = None
 
 
+# ViTMAEPatchEmbeddings：ViT-MAE patch 嵌入：Conv2d 切 patch，与 ViT 结构一致
 class ViTMAEPatchEmbeddings(ViTPatchEmbeddings):
     pass
 
 
+# ViTMAEEmbeddings：ViT-MAE 嵌入层：patch 嵌入 + 固定 sin-cos 位置编码，保留可见 patch
 class ViTMAEEmbeddings(ViTEmbeddings):
     """
     Construct the CLS token, position and patch embeddings for MAE.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: ViTMAEConfig):
         super().__init__()
         self.cls_token = nn.Parameter(torch.zeros(1, 1, config.hidden_size))
@@ -200,6 +209,7 @@ class ViTMAEEmbeddings(ViTEmbeddings):
         # timm's trunc_normal_(std=.02) is effectively normal_(std=0.02) as cutoff is too big (2.)
         init.normal_(self.cls_token, std=self.config.initializer_range)
 
+    # random_masking：随机 patch 掩码：按 mask_ratio 采样可见/掩码 patch 索引
     def random_masking(self, sequence, noise=None):
         """
         Perform per-sample random masking by per-sample shuffling. Per-sample shuffling is done by argsort random
@@ -232,6 +242,7 @@ class ViTMAEEmbeddings(ViTEmbeddings):
 
         return sequence_unmasked, mask, ids_restore
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.Tensor,
@@ -265,19 +276,24 @@ class ViTMAEEmbeddings(ViTEmbeddings):
 
 
 # Pass-through: ViT MAE encoder uses same architecture as ViT
+# ViTMAEAttention：ViT-MAE 自注意力：多头缩放点积，支持 eager/SDPA 后端
 class ViTMAEAttention(ViTAttention):
     pass
 
 
+# ViTMAEMLP：ViT-MAE FFN：两层 Linear + GELU 激活
 class ViTMAEMLP(ViTMLP):
     pass
 
 
+# ViTMAELayer：ViT-MAE Transformer 层：自注意力 + FFN 双残差
 class ViTMAELayer(ViTLayer):
     pass
 
 
+# ViTMAEDecoder：ViT-MAE 解码器：掩码 token 嵌入 + 轻量 Transformer 重建像素
 class ViTMAEDecoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: ViTMAEConfig, num_patches: int):
         super().__init__()
         self.decoder_embed = nn.Linear(config.hidden_size, config.decoder_hidden_size, bias=True)
@@ -358,6 +374,7 @@ class ViTMAEDecoder(nn.Module):
 
         init.normal_(self.mask_token, std=self.config.initializer_range)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -404,11 +421,13 @@ class ViTMAEDecoder(nn.Module):
 
 
 @auto_docstring
+# ViTMAEPreTrainedModel：ViT-MAE 预训练基类：权重初始化与注意力实现选择
 class ViTMAEPreTrainedModel(ViTPreTrainedModel):
     base_model_prefix = "vit"
     _no_split_modules = ["ViTMAEEmbeddings", "ViTMAELayer", "ViTMAEDecoder"]
 
     @torch.no_grad()
+    # _init_weights：权重初始化：Linear/Conv 截断正态、LayerNorm 偏置置零
     def _init_weights(self, module):
         """Initialize the weights"""
         PreTrainedModel._init_weights(self, module)
@@ -420,7 +439,9 @@ class ViTMAEPreTrainedModel(ViTPreTrainedModel):
 
 
 @auto_docstring
+# ViTMAEModel：ViT-MAE 基模型：随机掩码 patch + 编码器输出可见 token 隐状态
 class ViTMAEModel(ViTModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: ViTMAEConfig):
         r"""
         config (`ViTMAEConfig`):
@@ -433,6 +454,7 @@ class ViTMAEModel(ViTModel):
     @merge_with_config_defaults
     @capture_outputs(tie_last_hidden_states=False)
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.Tensor | None = None,
@@ -500,7 +522,9 @@ class ViTMAEModel(ViTModel):
     </Tip>
     """
 )
+# ViTMAEForPreTraining：ViT-MAE 掩码预训练：MSE 像素重建损失
 class ViTMAEForPreTraining(ViTMAEPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: ViTMAEConfig):
         super().__init__(config)
         self.config = config
@@ -551,6 +575,7 @@ class ViTMAEForPreTraining(ViTMAEPreTrainedModel):
         )
         return patchified_pixel_values
 
+    # unpatchify：patch 反展平：将 patch 预测 logits 重组为完整图像像素网格
     def unpatchify(
         self,
         patchified_pixel_values: torch.Tensor,
@@ -601,6 +626,7 @@ class ViTMAEForPreTraining(ViTMAEPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.Tensor | None = None,

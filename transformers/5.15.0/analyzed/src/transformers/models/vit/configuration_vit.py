@@ -19,8 +19,11 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# ViT 配置：patch 尺寸、Transformer 层数/头数与 ImageNet 预训练默认超参
+
 @auto_docstring(checkpoint="google/vit-base-patch16-224")
 @strict
+# ViTConfig：ViT 主配置：patch_size、hidden_size、层数/头数与 ImageNet 预训练默认
 class ViTConfig(PreTrainedConfig):
     r"""
     encoder_stride (`int`, *optional*, defaults to 16):
@@ -64,6 +67,7 @@ class ViTConfig(PreTrainedConfig):
     pooler_output_size: int | None = None
     pooler_act: str = "tanh"
 
+    # __post_init__：后初始化：解析子配置 dict 并校验超参一致性
     def __post_init__(self, **kwargs):
         self.pooler_output_size = self.pooler_output_size if self.pooler_output_size else self.hidden_size
         super().__post_init__(**kwargs)

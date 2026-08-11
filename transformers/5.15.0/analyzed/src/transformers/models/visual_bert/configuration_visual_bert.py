@@ -19,8 +19,11 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# VisualBERT 配置：BERT 风格文本超参、视觉嵌入维与 bypass_transformer 选项
+
 @auto_docstring(checkpoint="uclanlp/visualbert-vqa-coco-pre")
 @strict
+# VisualBertConfig：VisualBERT 主配置：文本 BERT 超参、visual_embedding_dim 与 bypass_transformer 开关
 class VisualBertConfig(PreTrainedConfig):
     r"""
     visual_embedding_dim (`int`, *optional*, defaults to 512):

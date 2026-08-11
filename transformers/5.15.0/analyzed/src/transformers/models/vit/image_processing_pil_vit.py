@@ -17,6 +17,9 @@ from ...image_processing_backends import PilBackend
 from ...image_utils import IMAGENET_STANDARD_MEAN, IMAGENET_STANDARD_STD, PILImageResampling
 
 
+# ViT PIL 图像处理器：224 缩放/中心裁剪、ImageNet 归一化
+
+# ViTImageProcessorPil：ViT PIL 后端处理器：224 缩放/中心裁剪与 ImageNet 标准化
 class ViTImageProcessorPil(PilBackend):
     resample = PILImageResampling.BILINEAR
     image_mean = IMAGENET_STANDARD_MEAN

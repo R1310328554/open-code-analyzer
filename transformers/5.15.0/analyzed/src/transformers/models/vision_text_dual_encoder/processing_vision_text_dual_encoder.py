@@ -19,12 +19,17 @@ from ...processing_utils import ProcessingKwargs, ProcessorMixin
 from ...utils import auto_docstring
 
 
+# VisionTextDualEncoder 处理器：image_processor + tokenizer 联合封装，服务 CLIP 风格双塔
+
+# VisionTextDualEncoderProcessorKwargs：双塔处理器参数：继承 ProcessingKwargs，预留默认 kwargs 扩展点
 class VisionTextDualEncoderProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {}
 
 
 @auto_docstring
+# VisionTextDualEncoderProcessor：双塔多模态处理器：image_processor 与 tokenizer 联合调用
 class VisionTextDualEncoderProcessor(ProcessorMixin):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, image_processor=None, tokenizer=None, **kwargs):
         super().__init__(image_processor, tokenizer)
 

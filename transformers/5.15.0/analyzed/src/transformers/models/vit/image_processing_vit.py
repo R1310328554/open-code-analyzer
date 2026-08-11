@@ -17,6 +17,9 @@ from ...image_processing_backends import TorchvisionBackend
 from ...image_utils import IMAGENET_STANDARD_MEAN, IMAGENET_STANDARD_STD, PILImageResampling
 
 
+# ViT Torchvision 图像处理器：按形状分组批处理、缩放/裁剪/归一化
+
+# ViTImageProcessor：ViT Torchvision 后端：按形状分组缩放/裁剪/归一化批处理
 class ViTImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.BILINEAR
     image_mean = IMAGENET_STANDARD_MEAN

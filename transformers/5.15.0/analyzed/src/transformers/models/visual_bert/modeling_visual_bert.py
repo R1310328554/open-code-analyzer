@@ -36,12 +36,16 @@ from ...utils import ModelOutput, auto_docstring, logging
 from .configuration_visual_bert import VisualBertConfig
 
 
+# VisualBERT 建模：区域视觉特征与文本 token 联合 Transformer，支持 VQA/推理/对齐下游头
+
 logger = logging.get_logger(__name__)
 
 
+# VisualBertEmbeddings：VisualBERT 联合嵌入：文本 token + 视觉区域特征拼接并加 type/position 编码
 class VisualBertEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings and visual embeddings."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.word_embeddings = nn.Embedding(config.vocab_size, config.hidden_size, padding_idx=config.pad_token_id)
@@ -69,6 +73,7 @@ class VisualBertEmbeddings(nn.Module):
 
         self.visual_projection = nn.Linear(config.visual_embedding_dim, config.hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids=None,
@@ -168,7 +173,9 @@ class VisualBertEmbeddings(nn.Module):
         return embeddings
 
 
+# VisualBertSelfAttention：VisualBERT 自注意力：多头缩放点积，支持 attention_mask
 class VisualBertSelfAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         if config.hidden_size % config.num_attention_heads != 0 and not hasattr(config, "embedding_size"):
@@ -187,6 +194,7 @@ class VisualBertSelfAttention(nn.Module):
 
         self.dropout = nn.Dropout(config.attention_probs_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -226,13 +234,16 @@ class VisualBertSelfAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertSelfOutput with Bert->VisualBert
+# VisualBertSelfOutput：VisualBERT 注意力输出投影：Linear + Dropout 残差前处理
 class VisualBertSelfOutput(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
@@ -240,12 +251,15 @@ class VisualBertSelfOutput(nn.Module):
         return hidden_states
 
 
+# VisualBertAttention：VisualBERT 注意力模块：SelfAttention + SelfOutput 组合
 class VisualBertAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.self = VisualBertSelfAttention(config)
         self.output = VisualBertSelfOutput(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -263,7 +277,9 @@ class VisualBertAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertIntermediate with Bert->VisualBert
+# VisualBertIntermediate：VisualBERT FFN 中间层：Linear 扩展 hidden 维并 GELU 激活
 class VisualBertIntermediate(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.intermediate_size)
@@ -272,6 +288,7 @@ class VisualBertIntermediate(nn.Module):
         else:
             self.intermediate_act_fn = config.hidden_act
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.intermediate_act_fn(hidden_states)
@@ -279,13 +296,16 @@ class VisualBertIntermediate(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOutput with Bert->VisualBert
+# VisualBertOutput：VisualBERT FFN 输出层：Linear 投影回 hidden_size + Dropout
 class VisualBertOutput(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.intermediate_size, config.hidden_size)
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
@@ -293,7 +313,9 @@ class VisualBertOutput(nn.Module):
         return hidden_states
 
 
+# VisualBertLayer：VisualBERT Transformer 层：自注意力 + FFN 双残差，支持梯度检查点
 class VisualBertLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.chunk_size_feed_forward = config.chunk_size_feed_forward
@@ -302,6 +324,7 @@ class VisualBertLayer(GradientCheckpointingLayer):
         self.intermediate = VisualBertIntermediate(config)
         self.output = VisualBertOutput(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -330,13 +353,16 @@ class VisualBertLayer(GradientCheckpointingLayer):
         return layer_output
 
 
+# VisualBertEncoder：VisualBERT 编码器：堆叠 VisualBertLayer，处理图文联合 token 序列
 class VisualBertEncoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
         self.layer = nn.ModuleList([VisualBertLayer(config) for _ in range(config.num_hidden_layers)])
         self.gradient_checkpointing = False
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -377,12 +403,15 @@ class VisualBertEncoder(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPooler with Bert->VisualBert
+# VisualBertPooler：VisualBERT 池化层：取 [CLS] 隐状态经 Linear+Tanh 得句子表示
 class VisualBertPooler(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
         self.activation = nn.Tanh()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         # We "pool" the model by simply taking the hidden state corresponding
         # to the first token.
@@ -393,7 +422,9 @@ class VisualBertPooler(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPredictionHeadTransform with Bert->VisualBert
+# VisualBertPredictionHeadTransform：VisualBERT MLM 头变换：Dense + LayerNorm + 激活
 class VisualBertPredictionHeadTransform(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
@@ -403,6 +434,7 @@ class VisualBertPredictionHeadTransform(nn.Module):
             self.transform_act_fn = config.hidden_act
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.transform_act_fn(hidden_states)
@@ -411,7 +443,9 @@ class VisualBertPredictionHeadTransform(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertLMPredictionHead with Bert->VisualBert
+# VisualBertLMPredictionHead：VisualBERT MLM 预测头：变换层 + 解码器权重绑定 Linear
 class VisualBertLMPredictionHead(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.transform = VisualBertPredictionHeadTransform(config)
@@ -421,6 +455,7 @@ class VisualBertLMPredictionHead(nn.Module):
         self.decoder = nn.Linear(config.hidden_size, config.vocab_size, bias=True)
         self.bias = nn.Parameter(torch.zeros(config.vocab_size))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.transform(hidden_states)
         hidden_states = self.decoder(hidden_states)
@@ -428,12 +463,15 @@ class VisualBertLMPredictionHead(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPreTrainingHeads with Bert->VisualBert
+# VisualBertPreTrainingHeads：VisualBERT 预训练头：MLM + NSP 双任务预测头组合
 class VisualBertPreTrainingHeads(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.predictions = VisualBertLMPredictionHead(config)
         self.seq_relationship = nn.Linear(config.hidden_size, 2)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, sequence_output, pooled_output):
         prediction_scores = self.predictions(sequence_output)
         seq_relationship_score = self.seq_relationship(pooled_output)
@@ -441,6 +479,7 @@ class VisualBertPreTrainingHeads(nn.Module):
 
 
 @auto_docstring
+# VisualBertPreTrainedModel：VisualBERT 预训练基类：权重初始化、注意力实现与模块绑定
 class VisualBertPreTrainedModel(PreTrainedModel):
     config: VisualBertConfig
     base_model_prefix = "visual_bert"
@@ -448,6 +487,7 @@ class VisualBertPreTrainedModel(PreTrainedModel):
     supports_gradient_checkpointing = True
 
     @torch.no_grad()
+    # _init_weights：权重初始化：Linear/Conv 截断正态、LayerNorm 偏置置零
     def _init_weights(self, module):
         """Initialize the weights"""
         super()._init_weights(module)
@@ -463,6 +503,7 @@ class VisualBertPreTrainedModel(PreTrainedModel):
     """
 )
 @dataclass
+# VisualBertForPreTrainingOutput：VisualBERT 预训练输出：MLM/NSP loss、logits 与 hidden_states
 class VisualBertForPreTrainingOutput(ModelOutput):
     r"""
     loss (*optional*, returned when `labels` is provided, `torch.FloatTensor` of shape `(1,)`):
@@ -489,7 +530,9 @@ class VisualBertForPreTrainingOutput(ModelOutput):
     Llion Jones, Aidan N. Gomez, Lukasz Kaiser and Illia Polosukhin.
     """
 )
+# VisualBertModel：VisualBERT 基模型：视觉区域嵌入 + 文本嵌入 + 编码器
 class VisualBertModel(VisualBertPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, add_pooling_layer=True):
         r"""
         add_pooling_layer (bool, *optional*, defaults to `True`):
@@ -511,13 +554,16 @@ class VisualBertModel(VisualBertPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # get_input_embeddings：获取输入嵌入：返回 token embedding 层
     def get_input_embeddings(self):
         return self.embeddings.word_embeddings
 
+    # set_input_embeddings：设置输入嵌入：替换 embedding 权重
     def set_input_embeddings(self, value):
         self.embeddings.word_embeddings = value
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -678,12 +724,14 @@ class VisualBertModel(VisualBertPreTrainedModel):
     `sentence-image prediction (classification)` head.
     """
 )
+# VisualBertForPreTraining：VisualBERT 预训练：MLM + NSP 联合损失
 class VisualBertForPreTraining(VisualBertPreTrainedModel):
     _tied_weights_keys = {
         "cls.predictions.decoder.bias": "cls.predictions.bias",
         "cls.predictions.decoder.weight": "visual_bert.embeddings.word_embeddings.weight",
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -693,14 +741,17 @@ class VisualBertForPreTraining(VisualBertPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # get_output_embeddings：获取输出嵌入：返回 LM 头权重层
     def get_output_embeddings(self):
         return self.cls.predictions.decoder
 
+    # set_output_embeddings：设置输出嵌入：替换 LM 头权重
     def set_output_embeddings(self, new_embeddings):
         self.cls.predictions.decoder = new_embeddings
         self.cls.predictions.bias = new_embeddings.bias
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -833,7 +884,9 @@ class VisualBertForPreTraining(VisualBertPreTrainedModel):
 
 
 @auto_docstring
+# VisualBertForMultipleChoice：VisualBERT 多选分类：候选答案拼接 + 分类 logits
 class VisualBertForMultipleChoice(VisualBertPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -845,6 +898,7 @@ class VisualBertForMultipleChoice(VisualBertPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -1019,7 +1073,9 @@ class VisualBertForMultipleChoice(VisualBertPreTrainedModel):
     output) for VQA.
     """
 )
+# VisualBertForQuestionAnswering：VisualBERT 视觉问答：span 预测 start/end logits
 class VisualBertForQuestionAnswering(VisualBertPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
@@ -1032,6 +1088,7 @@ class VisualBertForQuestionAnswering(VisualBertPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -1156,7 +1213,9 @@ class VisualBertForQuestionAnswering(VisualBertPreTrainedModel):
     output) for Visual Reasoning e.g. for NLVR task.
     """
 )
+# VisualBertForVisualReasoning：VisualBERT 视觉推理：二分类或匹配分数预测
 class VisualBertForVisualReasoning(VisualBertPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
@@ -1169,6 +1228,7 @@ class VisualBertForVisualReasoning(VisualBertPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -1277,7 +1337,9 @@ class VisualBertForVisualReasoning(VisualBertPreTrainedModel):
         )
 
 
+# VisualBertRegionToPhraseAttention：VisualBERT 区域-短语注意力：区域特征与文本短语 cross-attention
 class VisualBertRegionToPhraseAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         if config.hidden_size % config.num_attention_heads != 0:
@@ -1295,6 +1357,7 @@ class VisualBertRegionToPhraseAttention(nn.Module):
 
         self.dropout = nn.Dropout(config.attention_probs_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, query, key, attention_mask):
         batch_size, seq_length, _ = query.shape
         attention_mask = attention_mask.to(query.dtype)
@@ -1324,12 +1387,14 @@ class VisualBertRegionToPhraseAttention(nn.Module):
     e.g. for Flickr30 Entities task.
     """
 )
+# VisualBertForRegionToPhraseAlignment：VisualBERT 区域-短语对齐：弱监督区域与文本短语匹配
 class VisualBertForRegionToPhraseAlignment(VisualBertPreTrainedModel):
     _tied_weights_keys = {
         "cls.predictions.decoder.bias": "cls.predictions.bias",
         "cls.predictions.decoder.weight": "visual_bert.embeddings.word_embeddings.weight",
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -1342,6 +1407,7 @@ class VisualBertForRegionToPhraseAlignment(VisualBertPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,

@@ -36,9 +36,12 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_vit import ViTConfig
 
 
+# ViT 建模：patch 嵌入 + Transformer 编码器，支持 MLM 预训练与图像分类
+
 logger = logging.get_logger(__name__)
 
 
+# ViTPatchEmbeddings：ViT patch 嵌入：Conv2d 切 patch 并展平为 token 序列
 class ViTPatchEmbeddings(nn.Module):
     """
     This class turns `pixel_values` of shape `(batch_size, num_channels, height, width)` into the initial
@@ -46,6 +49,7 @@ class ViTPatchEmbeddings(nn.Module):
     Transformer.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: ViTConfig):
         super().__init__()
         image_size = config.image_size
@@ -59,6 +63,7 @@ class ViTPatchEmbeddings(nn.Module):
         self.num_channels = config.num_channels
         self.projection = nn.Conv2d(config.num_channels, config.hidden_size, kernel_size=patch_size, stride=patch_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
         num_channels = pixel_values.shape[1]
         if num_channels != self.num_channels:
@@ -69,11 +74,13 @@ class ViTPatchEmbeddings(nn.Module):
         return self.projection(pixel_values).flatten(2).transpose(1, 2)
 
 
+# ViTEmbeddings：ViT 嵌入层：patch 嵌入 + 可学习位置编码与 [CLS] token
 class ViTEmbeddings(nn.Module):
     """
     Construct the CLS token, position and patch embeddings. Optionally, also the mask token.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: ViTConfig, use_mask_token: bool = False):
         super().__init__()
 
@@ -126,6 +133,7 @@ class ViTEmbeddings(nn.Module):
 
         return torch.cat((class_pos_embed, patch_pos_embed), dim=1)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.Tensor,
@@ -161,6 +169,7 @@ class ViTEmbeddings(nn.Module):
         return embeddings
 
 
+# eager_attention_forward：标准 eager 注意力：QK^T 缩放 softmax 加权 V，支持 attention_mask
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -189,7 +198,9 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# ViTAttention：ViT 自注意力：多头缩放点积，支持 eager/SDPA 后端
 class ViTAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: ViTConfig):
         super().__init__()
         self.config = config
@@ -204,6 +215,7 @@ class ViTAttention(nn.Module):
         self.v_proj = nn.Linear(config.hidden_size, config.num_attention_heads * self.head_dim, bias=config.qkv_bias)
         self.o_proj = nn.Linear(config.num_attention_heads * self.head_dim, config.hidden_size, bias=True)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -238,7 +250,9 @@ class ViTAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# ViTMLP：ViT FFN：两层 Linear + GELU 激活前馈网络
 class ViTMLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: ViTConfig):
         super().__init__()
         self.config = config
@@ -246,6 +260,7 @@ class ViTMLP(nn.Module):
         self.fc1 = nn.Linear(config.hidden_size, config.intermediate_size)
         self.fc2 = nn.Linear(config.intermediate_size, config.hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.fc1(hidden_states)
         hidden_states = self.activation_fn(hidden_states)
@@ -254,7 +269,9 @@ class ViTMLP(nn.Module):
         return hidden_states
 
 
+# ViTLayer：ViT Transformer 层：自注意力 + FFN 双残差，支持梯度检查点
 class ViTLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: ViTConfig):
         super().__init__()
         self.attention = ViTAttention(config)
@@ -263,6 +280,7 @@ class ViTLayer(GradientCheckpointingLayer):
         self.mlp = ViTMLP(config)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -286,12 +304,15 @@ class ViTLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# ViTPooler：ViT 池化层：取 [CLS] 隐状态经 Linear+Tanh 得全局表示
 class ViTPooler(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: ViTConfig):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.pooler_output_size)
         self.activation = ACT2FN[config.pooler_act]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         # We "pool" the model by simply taking the hidden state corresponding
         # to the first token.
@@ -302,6 +323,7 @@ class ViTPooler(nn.Module):
 
 
 @auto_docstring
+# ViTPreTrainedModel：ViT 预训练基类：权重初始化、注意力实现选择与模块绑定
 class ViTPreTrainedModel(PreTrainedModel):
     config: ViTConfig
     base_model_prefix = "vit"
@@ -321,6 +343,7 @@ class ViTPreTrainedModel(PreTrainedModel):
     _input_embed_layer = "patch_embeddings"
 
     @torch.no_grad()
+    # _init_weights：权重初始化：Linear/Conv 截断正态、LayerNorm 偏置置零
     def _init_weights(self, module):
         """Initialize the weights"""
         super()._init_weights(module)
@@ -333,7 +356,9 @@ class ViTPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# ViTModel：ViT 基模型：patch 嵌入 + Transformer 编码器，输出序列隐状态
 class ViTModel(ViTPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: ViTConfig, add_pooling_layer: bool = True, use_mask_token: bool = False):
         r"""
         add_pooling_layer (bool, *optional*, defaults to `True`):
@@ -353,6 +378,7 @@ class ViTModel(ViTPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs(tie_last_hidden_states=False)
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.Tensor | None = None,
@@ -400,7 +426,9 @@ class ViTModel(ViTPreTrainedModel):
     </Tip>
     """
 )
+# ViTForMaskedImageModeling：ViT 掩码图像建模：随机 patch 掩码 + 像素/特征重建头
 class ViTForMaskedImageModeling(ViTPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: ViTConfig):
         super().__init__(config)
 
@@ -420,6 +448,7 @@ class ViTForMaskedImageModeling(ViTPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.Tensor | None = None,
@@ -519,7 +548,9 @@ class ViTForMaskedImageModeling(ViTPreTrainedModel):
     </Tip>
     """
 )
+# ViTForImageClassification：ViT 图像分类：[CLS] pooler + Linear 分类头
 class ViTForImageClassification(ViTPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: ViTConfig):
         super().__init__(config)
 
@@ -534,6 +565,7 @@ class ViTForImageClassification(ViTPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.Tensor | None = None,

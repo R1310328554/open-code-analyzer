@@ -19,8 +19,11 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# ViT-MAE 配置：掩码比例、解码器层数与 sin-cos 位置编码选项
+
 @auto_docstring(checkpoint="facebook/vit-mae-base")
 @strict
+# ViTMAEConfig：ViT-MAE 主配置：mask_ratio、decoder 层数与 norm_pix_loss 选项
 class ViTMAEConfig(PreTrainedConfig):
     r"""
     decoder_num_hidden_layers (`int`, *optional*, defaults to 8):

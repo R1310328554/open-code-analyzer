@@ -19,8 +19,11 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# ViT-MSN 配置：MSN 自监督预训练超参与 ViT 骨干默认参数
+
 @auto_docstring(checkpoint="facebook/vit_msn_base")
 @strict
+# ViTMSNConfig：ViT-MSN 主配置：MSN 自监督预训练超参与 ViT 骨干参数
 class ViTMSNConfig(PreTrainedConfig):
     r"""
     Example:
