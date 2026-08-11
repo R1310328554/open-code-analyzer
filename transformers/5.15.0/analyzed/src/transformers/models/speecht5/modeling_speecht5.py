@@ -29,6 +29,8 @@ from ...integrations.fsdp import is_fsdp_managed_module
 from ...masking_utils import create_bidirectional_mask, create_causal_mask
 from ...modeling_layers import GradientCheckpointingLayer
 from ...modeling_outputs import (
+# SpeechT5 建模：共享编码器-解码器 Transformer + ASR/TTS/S2S 任务头与 HiFi-GAN
+
     BaseModelOutput,
     BaseModelOutputWithPastAndCrossAttentions,
     Seq2SeqLMOutput,
@@ -49,6 +51,7 @@ _HIDDEN_STATES_START_POSITION = 1
 
 
 # Copied from transformers.models.bart.modeling_bart.shift_tokens_right
+# shift_tokens_right：标签右移：构造 decoder 输入（首 token 为 decoder_start_token_id）
 def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start_token_id: int):
     """
     Shift input ids one token to the right.
@@ -65,6 +68,7 @@ def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start
     return shifted_input_ids
 
 
+# shift_spectrograms_right：频谱右移：构造 mel 解码器输入（首帧为 decoder_start_token_id）
 def shift_spectrograms_right(
     input_values: torch.Tensor, reduction_factor: int = 1, attention_mask: torch.Tensor | None = None
 ):
@@ -87,6 +91,7 @@ def shift_spectrograms_right(
 
 
 # Copied from transformers.models.wav2vec2.modeling_wav2vec2._compute_mask_indices
+# _compute_mask_indices：SpecAugment 掩码索引：随机生成时间/频率轴 mask 位置
 def _compute_mask_indices(
     shape: tuple[int, int],
     mask_prob: float,
@@ -207,7 +212,9 @@ def _compute_mask_indices(
 
 
 # Copied from transformers.models.wav2vec2.modeling_wav2vec2.Wav2Vec2NoLayerNormConvLayer with Wav2Vec2->SpeechT5
+# SpeechT5NoLayerNormConvLayer：SpeechT5 无 LayerNorm 1D 卷积层：Conv1d + 激活
 class SpeechT5NoLayerNormConvLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_id=0):
         super().__init__()
         self.in_conv_dim = config.conv_dim[layer_id - 1] if layer_id > 0 else 1
@@ -222,6 +229,7 @@ class SpeechT5NoLayerNormConvLayer(GradientCheckpointingLayer):
         )
         self.activation = ACT2FN[config.feat_extract_activation]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.conv(hidden_states)
         hidden_states = self.activation(hidden_states)
@@ -229,7 +237,9 @@ class SpeechT5NoLayerNormConvLayer(GradientCheckpointingLayer):
 
 
 # Copied from transformers.models.wav2vec2.modeling_wav2vec2.Wav2Vec2LayerNormConvLayer with Wav2Vec2->SpeechT5
+# SpeechT5LayerNormConvLayer：SpeechT5 LayerNorm 1D 卷积层：Conv1d + LayerNorm + 激活
 class SpeechT5LayerNormConvLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_id=0):
         super().__init__()
         self.in_conv_dim = config.conv_dim[layer_id - 1] if layer_id > 0 else 1
@@ -245,6 +255,7 @@ class SpeechT5LayerNormConvLayer(GradientCheckpointingLayer):
         self.layer_norm = nn.LayerNorm(self.out_conv_dim, elementwise_affine=True)
         self.activation = ACT2FN[config.feat_extract_activation]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.conv(hidden_states)
 
@@ -257,7 +268,9 @@ class SpeechT5LayerNormConvLayer(GradientCheckpointingLayer):
 
 
 # Copied from transformers.models.wav2vec2.modeling_wav2vec2.Wav2Vec2GroupNormConvLayer with Wav2Vec2->SpeechT5
+# SpeechT5GroupNormConvLayer：SpeechT5 GroupNorm 1D 卷积层：Conv1d + GroupNorm + 激活
 class SpeechT5GroupNormConvLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_id=0):
         super().__init__()
         self.in_conv_dim = config.conv_dim[layer_id - 1] if layer_id > 0 else 1
@@ -274,6 +287,7 @@ class SpeechT5GroupNormConvLayer(GradientCheckpointingLayer):
 
         self.layer_norm = nn.GroupNorm(num_groups=self.out_conv_dim, num_channels=self.out_conv_dim, affine=True)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.conv(hidden_states)
         hidden_states = self.layer_norm(hidden_states)
@@ -282,9 +296,11 @@ class SpeechT5GroupNormConvLayer(GradientCheckpointingLayer):
 
 
 # Copied from transformers.models.speech_to_text.modeling_speech_to_text.Speech2TextSinusoidalPositionalEmbedding with Speech2Text->SpeechT5
+# SpeechT5SinusoidalPositionalEmbedding：SpeechT5 正弦位置编码：Fairseq 风格绝对位置嵌入
 class SpeechT5SinusoidalPositionalEmbedding(nn.Module):
     """This module produces sinusoidal positional embeddings of any length."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, num_positions: int, embedding_dim: int, padding_idx: int | None = None):
         super().__init__()
         self.offset = 2
@@ -320,6 +336,7 @@ class SpeechT5SinusoidalPositionalEmbedding(nn.Module):
         return emb.to(torch.get_default_dtype())
 
     @torch.no_grad()
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input_ids: torch.Tensor, past_key_values_length: int = 0):
         bsz, seq_len = input_ids.size()
         # Create the position ids from the input token ids. Any padded tokens remain padded.
@@ -352,7 +369,9 @@ class SpeechT5SinusoidalPositionalEmbedding(nn.Module):
 
 
 # Copied from transformers.models.wav2vec2.modeling_wav2vec2.Wav2Vec2PositionalConvEmbedding with Wav2Vec2->SpeechT5
+# SpeechT5PositionalConvEmbedding：SpeechT5 卷积位置编码：1D Conv 提取相对位置特征
 class SpeechT5PositionalConvEmbedding(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.conv = nn.Conv1d(
@@ -386,6 +405,7 @@ class SpeechT5PositionalConvEmbedding(nn.Module):
         self.padding = SpeechT5SamePadLayer(config.num_conv_pos_embeddings)
         self.activation = ACT2FN[config.feat_extract_activation]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = hidden_states.transpose(1, 2)
 
@@ -397,11 +417,13 @@ class SpeechT5PositionalConvEmbedding(nn.Module):
         return hidden_states
 
 
+# SpeechT5ScaledPositionalEncoding：SpeechT5 缩放位置编码：可学习缩放因子的正弦嵌入
 class SpeechT5ScaledPositionalEncoding(nn.Module):
     """
     Scaled positional encoding, see §3.2 in https://huggingface.co/papers/1809.08895
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, dropout, dim, max_len=5000):
         pe = torch.zeros(max_len, dim)
         position = torch.arange(0, max_len).unsqueeze(1)
@@ -416,19 +438,23 @@ class SpeechT5ScaledPositionalEncoding(nn.Module):
         self.max_len = max_len
         self.alpha = nn.Parameter(torch.tensor(1.0))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, emb):
         emb = emb + self.alpha * self.pe[:, : emb.size(1)]
         emb = self.dropout(emb)
         return emb
 
 
+# SpeechT5RelativePositionalEncoding：SpeechT5 相对位置编码：Shaw 风格相对位置偏置
 class SpeechT5RelativePositionalEncoding(torch.nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, dim, max_length=1000):
         super().__init__()
         self.dim = dim
         self.max_length = max_length
         self.pe_k = torch.nn.Embedding(2 * max_length, dim)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         seq_len = hidden_states.shape[1]
         pos_seq = torch.arange(0, seq_len).to(device=hidden_states.device, dtype=torch.long)
@@ -442,11 +468,14 @@ class SpeechT5RelativePositionalEncoding(torch.nn.Module):
 
 
 # Copied from transformers.models.wav2vec2.modeling_wav2vec2.Wav2Vec2SamePadLayer with Wav2Vec2->SpeechT5
+# SpeechT5SamePadLayer：SpeechT5 SamePad：保持序列长度不变的 padding 层
 class SpeechT5SamePadLayer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, num_conv_pos_embeddings):
         super().__init__()
         self.num_pad_remove = 1 if num_conv_pos_embeddings % 2 == 0 else 0
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         if self.num_pad_remove > 0:
             hidden_states = hidden_states[:, :, : -self.num_pad_remove]
@@ -454,9 +483,11 @@ class SpeechT5SamePadLayer(nn.Module):
 
 
 # Copied from transformers.models.wav2vec2.modeling_wav2vec2.Wav2Vec2FeatureEncoder with Wav2Vec2->SpeechT5
+# SpeechT5FeatureEncoder：SpeechT5 特征编码器：多层 1D Conv 下采样原始波形
 class SpeechT5FeatureEncoder(nn.Module):
     """Construct the features from raw audio waveform"""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
 
@@ -481,6 +512,7 @@ class SpeechT5FeatureEncoder(nn.Module):
             param.requires_grad = False
         self._requires_grad = False
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input_values):
         hidden_states = input_values[:, None]
 
@@ -495,13 +527,16 @@ class SpeechT5FeatureEncoder(nn.Module):
 
 
 # Copied from transformers.models.wav2vec2.modeling_wav2vec2.Wav2Vec2FeatureProjection with Wav2Vec2->SpeechT5
+# SpeechT5FeatureProjection：SpeechT5 特征投影：Conv 输出线性映射至 hidden_size
 class SpeechT5FeatureProjection(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.layer_norm = nn.LayerNorm(config.conv_dim[-1], eps=config.layer_norm_eps)
         self.projection = nn.Linear(config.conv_dim[-1], config.hidden_size)
         self.dropout = nn.Dropout(config.feat_proj_dropout)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         # non-projected hidden states are needed for quantization
         norm_hidden_states = self.layer_norm(hidden_states)
@@ -510,7 +545,9 @@ class SpeechT5FeatureProjection(nn.Module):
         return hidden_states, norm_hidden_states
 
 
+# SpeechT5SpeechEncoderPrenet：SpeechT5 语音编码 prenet：Conv 下采样 + SpecAugment + 位置编码
 class SpeechT5SpeechEncoderPrenet(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -531,6 +568,7 @@ class SpeechT5SpeechEncoderPrenet(nn.Module):
     def freeze_feature_encoder(self):
         self.feature_encoder._freeze_parameters()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_values: torch.Tensor,
@@ -645,7 +683,9 @@ class SpeechT5SpeechEncoderPrenet(nn.Module):
         return hidden_states
 
 
+# SpeechT5SpeechDecoderPrenet：SpeechT5 语音解码 prenet：mel 频谱线性投影 + 位置编码
 class SpeechT5SpeechDecoderPrenet(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -673,6 +713,7 @@ class SpeechT5SpeechDecoderPrenet(nn.Module):
         all_masks = mask.unsqueeze(0).repeat(inputs_embeds.size(0), 1, 1)
         return torch.where(all_masks == 1, inputs_embeds, 0) * 1 / (1 - p)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_values: torch.Tensor,
@@ -697,7 +738,9 @@ class SpeechT5SpeechDecoderPrenet(nn.Module):
         return inputs_embeds
 
 
+# SpeechT5BatchNormConvLayer：SpeechT5 BatchNorm 1D 卷积层：Conv1d + BatchNorm + 激活
 class SpeechT5BatchNormConvLayer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_id=0):
         super().__init__()
 
@@ -728,6 +771,7 @@ class SpeechT5BatchNormConvLayer(nn.Module):
 
         self.dropout = nn.Dropout(config.speech_decoder_postnet_dropout)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.conv(hidden_states)
         hidden_states = self.batch_norm(hidden_states)
@@ -737,7 +781,9 @@ class SpeechT5BatchNormConvLayer(nn.Module):
         return hidden_states
 
 
+# SpeechT5SpeechDecoderPostnet：SpeechT5 语音解码 postnet：5 层 Conv 残差细化 mel 频谱
 class SpeechT5SpeechDecoderPostnet(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -749,6 +795,7 @@ class SpeechT5SpeechDecoderPostnet(nn.Module):
             [SpeechT5BatchNormConvLayer(config, i) for i in range(config.speech_decoder_postnet_layers)]
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor):
         outputs_before_postnet = self.feat_out(hidden_states).view(hidden_states.size(0), -1, self.config.num_mel_bins)
         outputs_after_postnet = self.postnet(outputs_before_postnet)
@@ -762,7 +809,9 @@ class SpeechT5SpeechDecoderPostnet(nn.Module):
         return hidden_states + layer_output.transpose(1, 2)
 
 
+# SpeechT5TextEncoderPrenet：SpeechT5 文本编码 prenet：词嵌入 + 缩放位置编码
 class SpeechT5TextEncoderPrenet(nn.Module, EmbeddingAccessMixin):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -773,13 +822,16 @@ class SpeechT5TextEncoderPrenet(nn.Module, EmbeddingAccessMixin):
             config.max_text_positions,
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input_ids: torch.Tensor):
         inputs_embeds = self.embed_tokens(input_ids)
         inputs_embeds = self.encode_positions(inputs_embeds)
         return inputs_embeds
 
 
+# SpeechT5TextDecoderPrenet：SpeechT5 文本解码 prenet：词嵌入 + 缩放位置编码
 class SpeechT5TextDecoderPrenet(nn.Module, EmbeddingAccessMixin):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -794,6 +846,7 @@ class SpeechT5TextDecoderPrenet(nn.Module, EmbeddingAccessMixin):
             config.pad_token_id,
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.Tensor,
@@ -816,12 +869,15 @@ class SpeechT5TextDecoderPrenet(nn.Module, EmbeddingAccessMixin):
         return inputs_embeds, attention_mask
 
 
+# SpeechT5TextDecoderPostnet：SpeechT5 文本解码 postnet：线性层输出词表 logits
 class SpeechT5TextDecoderPostnet(nn.Module, EmbeddingAccessMixin):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor):
         return self.lm_head(hidden_states)
 
@@ -834,12 +890,14 @@ class SpeechT5TextDecoderPostnet(nn.Module, EmbeddingAccessMixin):
         self.lm_head = new_embeddings
 
 
+# SpeechT5Attention：SpeechT5 注意力：支持自注意力、交叉注意力与相对位置偏置
 class SpeechT5Attention(nn.Module):
     """
     Multi-headed attention from 'Attention Is All You Need' paper with relative position bias (see
     https://aclanthology.org/N18-2074.pdf)
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         embed_dim: int,
@@ -869,6 +927,7 @@ class SpeechT5Attention(nn.Module):
         self.q_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
         self.out_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -986,7 +1045,9 @@ class SpeechT5Attention(nn.Module):
         return attn_output, attn_weights_reshaped
 
 
+# SpeechT5FeedForward：SpeechT5 前馈网络：两层线性 + 激活 + dropout
 class SpeechT5FeedForward(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, intermediate_size):
         super().__init__()
         self.intermediate_dropout = nn.Dropout(config.activation_dropout)
@@ -1000,6 +1061,7 @@ class SpeechT5FeedForward(nn.Module):
         self.output_dense = nn.Linear(intermediate_size, config.hidden_size)
         self.output_dropout = nn.Dropout(config.hidden_dropout)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.intermediate_dense(hidden_states)
         hidden_states = self.intermediate_act_fn(hidden_states)
@@ -1010,7 +1072,9 @@ class SpeechT5FeedForward(nn.Module):
         return hidden_states
 
 
+# SpeechT5EncoderLayer：SpeechT5 编码层：自注意力 + FFN 残差堆叠
 class SpeechT5EncoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SpeechT5Config):
         super().__init__()
         self.attention = SpeechT5Attention(
@@ -1024,6 +1088,7 @@ class SpeechT5EncoderLayer(GradientCheckpointingLayer):
         self.feed_forward = SpeechT5FeedForward(config, config.encoder_ffn_dim)
         self.final_layer_norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -1067,7 +1132,9 @@ class SpeechT5EncoderLayer(GradientCheckpointingLayer):
         return outputs
 
 
+# SpeechT5DecoderLayer：SpeechT5 解码层：因果自注意力 + 交叉注意力 + FFN
 class SpeechT5DecoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SpeechT5Config, layer_idx=None):
         super().__init__()
         self.self_attn = SpeechT5Attention(
@@ -1092,6 +1159,7 @@ class SpeechT5DecoderLayer(GradientCheckpointingLayer):
         self.feed_forward = SpeechT5FeedForward(config, config.decoder_ffn_dim)
         self.final_layer_norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -1159,6 +1227,7 @@ class SpeechT5DecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# SpeechT5PreTrainedModel：SpeechT5 预训练基类：权重初始化与梯度检查点支持
 class SpeechT5PreTrainedModel(PreTrainedModel):
     config: SpeechT5Config
     base_model_prefix = "speecht5"
@@ -1209,11 +1278,13 @@ class SpeechT5PreTrainedModel(PreTrainedModel):
             init.uniform_(module.masked_spec_embed)
 
 
+# SpeechT5Encoder：SpeechT5 编码器：多层 Transformer 编码块堆叠
 class SpeechT5Encoder(SpeechT5PreTrainedModel):
     """
     Transformer encoder consisting of *config.encoder_layers* layers. Each layer is a [`SpeechT5EncoderLayer`].
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SpeechT5Config):
         super().__init__(config)
         self.layer_norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
@@ -1231,6 +1302,7 @@ class SpeechT5Encoder(SpeechT5PreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.FloatTensor,
@@ -1322,12 +1394,14 @@ class SpeechT5Encoder(SpeechT5PreTrainedModel):
         )
 
 
+# SpeechT5EncoderWithSpeechPrenet：SpeechT5 语音编码器：SpeechEncoderPrenet + Encoder 堆叠
 class SpeechT5EncoderWithSpeechPrenet(SpeechT5PreTrainedModel):
     """
     Wrapper around SpeechT5Encoder that applies SpeechT5SpeechEncoderPrenet to convert the audio waveform data to
     hidden features.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SpeechT5Config):
         super().__init__(config)
         self.prenet = SpeechT5SpeechEncoderPrenet(config)
@@ -1336,6 +1410,7 @@ class SpeechT5EncoderWithSpeechPrenet(SpeechT5PreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_values: torch.FloatTensor,
@@ -1358,11 +1433,13 @@ class SpeechT5EncoderWithSpeechPrenet(SpeechT5PreTrainedModel):
         return outputs
 
 
+# SpeechT5EncoderWithTextPrenet：SpeechT5 文本编码器：TextEncoderPrenet + Encoder 堆叠
 class SpeechT5EncoderWithTextPrenet(SpeechT5PreTrainedModel):
     """
     Wrapper around SpeechT5Encoder that applies SpeechT5TextEncoderPrenet to convert the input_ids to hidden features.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SpeechT5Config):
         super().__init__(config)
         self.prenet = SpeechT5TextEncoderPrenet(config)
@@ -1377,6 +1454,7 @@ class SpeechT5EncoderWithTextPrenet(SpeechT5PreTrainedModel):
     def set_input_embeddings(self, value):
         self.prenet.set_input_embeddings(value)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_values: torch.FloatTensor,
@@ -1399,12 +1477,14 @@ class SpeechT5EncoderWithTextPrenet(SpeechT5PreTrainedModel):
         return outputs
 
 
+# SpeechT5EncoderWithoutPrenet：SpeechT5 无 prenet 编码器：直接堆叠 Encoder 层
 class SpeechT5EncoderWithoutPrenet(SpeechT5PreTrainedModel):
     """
     This wrapper class is a helper class to correctly load pretrained checkpoints when used in combination with
     [`SpeechT5Model`].
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SpeechT5Config):
         super().__init__(config)
         self.wrapped_encoder = SpeechT5Encoder(config)
@@ -1412,6 +1492,7 @@ class SpeechT5EncoderWithoutPrenet(SpeechT5PreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_values: torch.FloatTensor,
@@ -1430,11 +1511,13 @@ class SpeechT5EncoderWithoutPrenet(SpeechT5PreTrainedModel):
         )
 
 
+# SpeechT5Decoder：SpeechT5 解码器：多层 Transformer 解码块堆叠
 class SpeechT5Decoder(SpeechT5PreTrainedModel):
     """
     Transformer decoder consisting of *config.decoder_layers* layers. Each layer is a [`SpeechT5DecoderLayer`]
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SpeechT5Config):
         super().__init__(config)
         self.layerdrop = config.decoder_layerdrop
@@ -1446,6 +1529,7 @@ class SpeechT5Decoder(SpeechT5PreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.FloatTensor | None = None,
@@ -1590,12 +1674,14 @@ class SpeechT5Decoder(SpeechT5PreTrainedModel):
         )
 
 
+# SpeechT5DecoderWithSpeechPrenet：SpeechT5 语音解码器：SpeechDecoderPrenet + Decoder 堆叠
 class SpeechT5DecoderWithSpeechPrenet(SpeechT5PreTrainedModel):
     """
     Wrapper around SpeechT5Decoder that applies SpeechT5SpeechDecoderPrenet to convert log-mel filterbanks to hidden
     features.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SpeechT5Config):
         super().__init__(config)
         self.prenet = SpeechT5SpeechDecoderPrenet(config)
@@ -1604,6 +1690,7 @@ class SpeechT5DecoderWithSpeechPrenet(SpeechT5PreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_values: torch.FloatTensor | None = None,
@@ -1635,11 +1722,13 @@ class SpeechT5DecoderWithSpeechPrenet(SpeechT5PreTrainedModel):
         return outputs
 
 
+# SpeechT5DecoderWithTextPrenet：SpeechT5 文本解码器：TextDecoderPrenet + Decoder 堆叠
 class SpeechT5DecoderWithTextPrenet(SpeechT5PreTrainedModel):
     """
     Wrapper around SpeechT5Decoder that applies SpeechT5TextDecoderPrenet to convert input tokens to hidden features.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SpeechT5Config):
         super().__init__(config)
         self.prenet = SpeechT5TextDecoderPrenet(config)
@@ -1654,6 +1743,7 @@ class SpeechT5DecoderWithTextPrenet(SpeechT5PreTrainedModel):
     def set_input_embeddings(self, value):
         self.prenet.set_input_embeddings(value)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_values: torch.FloatTensor | None = None,
@@ -1684,12 +1774,14 @@ class SpeechT5DecoderWithTextPrenet(SpeechT5PreTrainedModel):
         return outputs
 
 
+# SpeechT5DecoderWithoutPrenet：SpeechT5 无 prenet 解码器：直接堆叠 Decoder 层
 class SpeechT5DecoderWithoutPrenet(SpeechT5PreTrainedModel):
     """
     This wrapper class is a helper class to correctly load pretrained checkpoints when used in combination with
     [`SpeechT5Model`].
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SpeechT5Config):
         super().__init__(config)
         self.wrapped_decoder = SpeechT5Decoder(config)
@@ -1697,6 +1789,7 @@ class SpeechT5DecoderWithoutPrenet(SpeechT5PreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_values: torch.FloatTensor | None = None,
@@ -1724,17 +1817,20 @@ class SpeechT5DecoderWithoutPrenet(SpeechT5PreTrainedModel):
         return outputs
 
 
+# SpeechT5GuidedMultiheadAttentionLoss：SpeechT5 引导注意力损失：TTS 训练时约束对齐对角线
 class SpeechT5GuidedMultiheadAttentionLoss(nn.Module):
     """
     Guided attention loss from the paper [Efficiently Trainable Text-to-Speech System Based on Deep Convolutional
     Networks with Guided Attention](https://huggingface.co/papers/1710.08969), adapted for multi-head attention.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SpeechT5Config):
         super().__init__()
         self.sigma = config.guided_attention_loss_sigma
         self.scale = config.guided_attention_loss_scale
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self, attentions: torch.FloatTensor, input_masks: torch.BoolTensor, output_masks: torch.BoolTensor
     ) -> torch.Tensor:
@@ -1783,11 +1879,13 @@ class SpeechT5GuidedMultiheadAttentionLoss(nn.Module):
         return 1.0 - torch.exp(-((grid_y - grid_x) ** 2) / (2 * (sigma**2)))
 
 
+# SpeechT5SpectrogramLoss：SpeechT5 频谱损失：L1 + BCE 组合 mel 频谱重建损失
 class SpeechT5SpectrogramLoss(nn.Module):
     """
     Loss computation used by SpeechT5ForTextToSpeech.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SpeechT5Config):
         super().__init__()
         self.use_guided_attention_loss = config.use_guided_attention_loss
@@ -1800,6 +1898,7 @@ class SpeechT5SpectrogramLoss(nn.Module):
         if self.use_guided_attention_loss:
             self.attn_criterion = SpeechT5GuidedMultiheadAttentionLoss(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         attention_mask: torch.LongTensor,
@@ -1849,7 +1948,9 @@ class SpeechT5SpectrogramLoss(nn.Module):
     The bare SpeechT5 Encoder-Decoder Model outputting raw hidden-states without any specific pre- or post-nets.
     """
 )
+# SpeechT5Model：SpeechT5 基模型：共享编码器-解码器联合前向
 class SpeechT5Model(SpeechT5PreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: SpeechT5Config,
@@ -1892,6 +1993,7 @@ class SpeechT5Model(SpeechT5PreTrainedModel):
             self.encoder.prenet.freeze_feature_encoder()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_values: torch.Tensor | None = None,
@@ -1995,9 +2097,11 @@ class SpeechT5Model(SpeechT5PreTrainedModel):
     SpeechT5 Model with a speech encoder and a text decoder.
     """
 )
+# SpeechT5ForSpeechToText：SpeechT5 ASR：语音编码 + 文本解码条件生成
 class SpeechT5ForSpeechToText(SpeechT5PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"text_decoder_postnet.lm_head.weight": "speecht5.decoder.prenet.embed_tokens.weight"}
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SpeechT5Config):
         super().__init__(config)
 
@@ -2032,6 +2136,7 @@ class SpeechT5ForSpeechToText(SpeechT5PreTrainedModel, GenerationMixin):
         self.text_decoder_postnet.set_output_embeddings(new_embeddings)
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_values: torch.FloatTensor | None = None,
@@ -2159,6 +2264,7 @@ class SpeechT5ForSpeechToText(SpeechT5PreTrainedModel, GenerationMixin):
         )
 
 
+# _generate_speech：TTS 推理生成：自回归 mel 频谱解码 + reduction_factor 步进
 def _generate_speech(
     model: SpeechT5PreTrainedModel,
     input_values: torch.FloatTensor,
@@ -2307,10 +2413,12 @@ def _generate_speech(
     SpeechT5 Model with a text encoder and a speech decoder.
     """
 )
+# SpeechT5ForTextToSpeech：SpeechT5 TTS：文本编码 + mel 频谱解码 + 引导注意力损失
 class SpeechT5ForTextToSpeech(SpeechT5PreTrainedModel):
     input_modalities = ("text",)
     main_input_name = "input_ids"
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SpeechT5Config):
         super().__init__(config)
 
@@ -2339,6 +2447,7 @@ class SpeechT5ForTextToSpeech(SpeechT5PreTrainedModel):
         return True
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -2655,7 +2764,9 @@ class SpeechT5ForTextToSpeech(SpeechT5PreTrainedModel):
     SpeechT5 Model with a speech encoder and a speech decoder.
     """
 )
+# SpeechT5ForSpeechToSpeech：SpeechT5 S2S：语音到语音转换（编码-解码联合）
 class SpeechT5ForSpeechToSpeech(SpeechT5PreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SpeechT5Config):
         super().__init__(config)
 
@@ -2676,6 +2787,7 @@ class SpeechT5ForSpeechToSpeech(SpeechT5PreTrainedModel):
         self.get_encoder().prenet.freeze_feature_encoder()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_values: torch.FloatTensor | None = None,
@@ -2884,7 +2996,9 @@ class SpeechT5ForSpeechToSpeech(SpeechT5PreTrainedModel):
         )
 
 
+# HifiGanResidualBlock：HiFi-GAN 残差块：多膨胀率 1D Conv 残差堆叠
 class HifiGanResidualBlock(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, channels, kernel_size=3, dilation=(1, 3, 5), leaky_relu_slope=0.1):
         super().__init__()
         self.leaky_relu_slope = leaky_relu_slope
@@ -2935,6 +3049,7 @@ class HifiGanResidualBlock(nn.Module):
         for layer in self.convs2:
             nn.utils.remove_weight_norm(layer)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         for conv1, conv2 in zip(self.convs1, self.convs2):
             residual = hidden_states
@@ -2951,10 +3066,12 @@ class HifiGanResidualBlock(nn.Module):
     HiFi-GAN vocoder.
     """
 )
+# SpeechT5HifiGan：SpeechT5 HiFi-GAN 声码器：mel 频谱转波形
 class SpeechT5HifiGan(PreTrainedModel):
     config: SpeechT5HifiGanConfig
     main_input_name = "spectrogram"
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SpeechT5HifiGanConfig):
         super().__init__(config)
         self.num_kernels = len(config.resblock_kernel_sizes)
@@ -3026,6 +3143,7 @@ class SpeechT5HifiGan(PreTrainedModel):
         waveform.
         """
     )
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, spectrogram: torch.FloatTensor, **kwargs) -> torch.FloatTensor:
         r"""
         spectrogram (`torch.FloatTensor`):

@@ -32,14 +32,18 @@ from ...utils import TransformersKwargs, auto_docstring, can_return_tuple, loggi
 from ...utils.generic import merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
 from .configuration_splinter import SplinterConfig
+# Splinter 建模：Question-aware Span Selection 少样本抽取式问答
+
 
 
 logger = logging.get_logger(__name__)
 
 
+# SplinterEmbeddings：Splinter 嵌入：词嵌入 + 位置嵌入 + LayerNorm + Dropout
 class SplinterEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.word_embeddings = nn.Embedding(config.vocab_size, config.hidden_size, padding_idx=config.pad_token_id)
@@ -52,6 +56,7 @@ class SplinterEmbeddings(nn.Module):
         # position_ids (1, len position emb) is contiguous in memory and exported when serialized
         self.position_ids = nn.Buffer(torch.arange(config.max_position_embeddings).expand((1, -1)), persistent=False)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -86,6 +91,7 @@ class SplinterEmbeddings(nn.Module):
 
 
 # Copied from transformers.models.align.modeling_align.eager_attention_forward
+# eager_attention_forward：标准注意力前向：QK^T 缩放 softmax 加权 V
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -109,7 +115,9 @@ def eager_attention_forward(
 
 
 # Copied from transformers.models.align.modeling_align.AlignTextSelfAttention with AlignText->Splinter
+# SplinterSelfAttention：Splinter 自注意力：缩放点积多头自注意力
 class SplinterSelfAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         if config.hidden_size % config.num_attention_heads != 0 and not hasattr(config, "embedding_size"):
@@ -131,6 +139,7 @@ class SplinterSelfAttention(nn.Module):
         self.attention_dropout = config.attention_probs_dropout_prob
         self.scaling = self.attention_head_size**-0.5
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -164,13 +173,16 @@ class SplinterSelfAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertSelfOutput with Bert->Splinter
+# SplinterSelfOutput：Splinter 注意力输出：Dense + Dropout + 残差 LayerNorm
 class SplinterSelfOutput(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
@@ -179,12 +191,15 @@ class SplinterSelfOutput(nn.Module):
 
 
 # Copied from transformers.models.align.modeling_align.AlignTextAttention with AlignText->Splinter
+# SplinterAttention：Splinter 注意力模块：SelfAttention + SelfOutput 封装
 class SplinterAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.self = SplinterSelfAttention(config)
         self.output = SplinterSelfOutput(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -202,7 +217,9 @@ class SplinterAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertIntermediate with Bert->Splinter
+# SplinterIntermediate：Splinter 中间层：Dense + 激活的前馈前半段
 class SplinterIntermediate(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.intermediate_size)
@@ -211,6 +228,7 @@ class SplinterIntermediate(nn.Module):
         else:
             self.intermediate_act_fn = config.hidden_act
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.intermediate_act_fn(hidden_states)
@@ -218,13 +236,16 @@ class SplinterIntermediate(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOutput with Bert->Splinter
+# SplinterOutput：Splinter 输出层：Dense + Dropout + 残差 LayerNorm
 class SplinterOutput(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.intermediate_size, config.hidden_size)
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
@@ -233,7 +254,9 @@ class SplinterOutput(nn.Module):
 
 
 # Copied from transformers.models.align.modeling_align.AlignTextLayer with AlignText->Splinter
+# SplinterLayer：Splinter Transformer 层：Attention + FFN 残差堆叠
 class SplinterLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.chunk_size_feed_forward = config.chunk_size_feed_forward
@@ -242,6 +265,7 @@ class SplinterLayer(GradientCheckpointingLayer):
         self.intermediate = SplinterIntermediate(config)
         self.output = SplinterOutput(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -267,13 +291,16 @@ class SplinterLayer(GradientCheckpointingLayer):
 
 
 # Copied from transformers.models.align.modeling_align.AlignTextEncoder with AlignText->Splinter
+# SplinterEncoder：Splinter 编码器：多层 SplinterLayer 堆叠
 class SplinterEncoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
         self.layer = nn.ModuleList([SplinterLayer(config) for i in range(config.num_hidden_layers)])
         self.gradient_checkpointing = False
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -293,6 +320,7 @@ class SplinterEncoder(nn.Module):
 
 
 @auto_docstring
+# SplinterPreTrainedModel：Splinter 预训练基类：权重初始化与输出录制
 class SplinterPreTrainedModel(PreTrainedModel):
     config: SplinterConfig
     base_model_prefix = "splinter"
@@ -309,6 +337,7 @@ class SplinterPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# SplinterModel：Splinter 基模型：编码器输出序列隐状态
 class SplinterModel(SplinterPreTrainedModel):
     """
     The model is an encoder (with only self-attention) following the architecture described in [Attention is all you
@@ -316,6 +345,7 @@ class SplinterModel(SplinterPreTrainedModel):
     Aidan N. Gomez, Lukasz Kaiser and Illia Polosukhin.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.config = config
@@ -335,6 +365,7 @@ class SplinterModel(SplinterPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.Tensor | None = None,
@@ -402,7 +433,9 @@ class SplinterModel(SplinterPreTrainedModel):
         )
 
 
+# SplinterFullyConnectedLayer：Splinter 全连接层：Dense + Tanh 激活
 class SplinterFullyConnectedLayer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, input_dim, output_dim, hidden_act="gelu"):
         super().__init__()
 
@@ -413,6 +446,7 @@ class SplinterFullyConnectedLayer(nn.Module):
         self.act_fn = ACT2FN[hidden_act]
         self.LayerNorm = nn.LayerNorm(self.output_dim)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(inputs)
         hidden_states = self.act_fn(hidden_states)
@@ -420,12 +454,14 @@ class SplinterFullyConnectedLayer(nn.Module):
         return hidden_states
 
 
+# QuestionAwareSpanSelectionHead：Question-aware Span 选择头：问题 token 条件化 start/end  logits
 class QuestionAwareSpanSelectionHead(nn.Module):
     """
     Implementation of Question-Aware Span Selection (QASS) head, described in Splinter's paper:
 
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
 
@@ -437,6 +473,7 @@ class QuestionAwareSpanSelectionHead(nn.Module):
         self.start_classifier = nn.Linear(config.hidden_size, config.hidden_size, bias=False)
         self.end_classifier = nn.Linear(config.hidden_size, config.hidden_size, bias=False)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, inputs, positions):
         _, _, dim = inputs.size()
         index = positions.unsqueeze(-1).repeat(1, 1, dim)  # [batch_size, num_positions, dim]
@@ -459,7 +496,9 @@ class QuestionAwareSpanSelectionHead(nn.Module):
 
 
 @auto_docstring
+# SplinterForQuestionAnswering：Splinter 抽取式 QA：Span 选择头预测答案起止位置
 class SplinterForQuestionAnswering(SplinterPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -472,6 +511,7 @@ class SplinterForQuestionAnswering(SplinterPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.Tensor | None = None,
@@ -568,6 +608,7 @@ class SplinterForQuestionAnswering(SplinterPreTrainedModel):
     """
 )
 @dataclass
+# SplinterForPreTrainingOutput：Splinter 预训练输出：含 loss 与 question_logits 的 ModelOutput
 class SplinterForPreTrainingOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when start and end positions are provided):
@@ -592,7 +633,9 @@ class SplinterForPreTrainingOutput(ModelOutput):
     instead.
     """
 )
+# SplinterForPreTraining：Splinter 预训练：Question token 对比学习 + MLM 联合目标
 class SplinterForPreTraining(SplinterPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -605,6 +648,7 @@ class SplinterForPreTraining(SplinterPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.Tensor | None = None,

@@ -21,11 +21,14 @@ from ...audio_utils import mel_filter_bank, optimal_fft_length, spectrogram, win
 from ...feature_extraction_sequence_utils import SequenceFeatureExtractor
 from ...feature_extraction_utils import BatchFeature
 from ...utils import PaddingStrategy, TensorType, logging
+# SpeechT5 特征提取：波形零均值归一化与 log-mel 频谱双路径预处理
+
 
 
 logger = logging.get_logger(__name__)
 
 
+# SpeechT5FeatureExtractor：SpeechT5 特征提取器：波形 input_values 或 log-mel 频谱双路径提取
 class SpeechT5FeatureExtractor(SequenceFeatureExtractor):
     r"""
     Constructs a SpeechT5 feature extractor.
@@ -69,6 +72,7 @@ class SpeechT5FeatureExtractor(SequenceFeatureExtractor):
 
     model_input_names = ["input_values", "attention_mask"]
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         feature_size: int = 1,
@@ -116,6 +120,7 @@ class SpeechT5FeatureExtractor(SequenceFeatureExtractor):
 
     @staticmethod
     # Copied from transformers.models.wav2vec2.feature_extraction_wav2vec2.Wav2Vec2FeatureExtractor.zero_mean_unit_var_norm
+    # zero_mean_unit_var_norm：零均值单位方差归一化：按 attention_mask 有效长度归一化波形
     def zero_mean_unit_var_norm(
         input_values: list[np.ndarray], attention_mask: list[np.ndarray], padding_value: float = 0.0
     ) -> list[np.ndarray]:
@@ -137,6 +142,7 @@ class SpeechT5FeatureExtractor(SequenceFeatureExtractor):
 
         return normed_input_values
 
+    # _extract_mel_features：提取 log-mel 特征：单条波形 STFT + mel 滤波器组
     def _extract_mel_features(
         self,
         one_waveform: np.ndarray,
@@ -156,6 +162,7 @@ class SpeechT5FeatureExtractor(SequenceFeatureExtractor):
         )
         return log_mel_spec.T
 
+    # __call__：调用入口：路由 audio/text 源与目标并组装 BatchFeature
     def __call__(
         self,
         audio: np.ndarray | list[float] | list[np.ndarray] | list[list[float]] | None = None,
@@ -272,6 +279,7 @@ class SpeechT5FeatureExtractor(SequenceFeatureExtractor):
 
         return inputs
 
+    # _process_audio：音频批处理：mel/波形双路径提取、padding 与归一化
     def _process_audio(
         self,
         speech: np.ndarray | list[float] | list[np.ndarray] | list[list[float]],
@@ -359,6 +367,7 @@ class SpeechT5FeatureExtractor(SequenceFeatureExtractor):
 
         return padded_inputs
 
+    # to_dict：序列化配置：排除 window/mel_filters 等派生属性
     def to_dict(self) -> dict[str, Any]:
         output = super().to_dict()
 

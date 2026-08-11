@@ -15,14 +15,19 @@
 
 from ...processing_utils import ProcessorMixin
 from ...utils import auto_docstring
+# SpeechT5 处理器：音频/文本源与目标的多模态输入批处理与 padding 封装
+
 
 
 @auto_docstring
+# SpeechT5Processor：SpeechT5 处理器：audio/text 源与 audio_target/text_target 目标联合封装
 class SpeechT5Processor(ProcessorMixin):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, feature_extractor, tokenizer):
         super().__init__(feature_extractor, tokenizer)
 
     @auto_docstring
+    # __call__：调用入口：路由 audio/text 源与目标并组装 BatchFeature
     def __call__(self, *args, **kwargs):
         audio = kwargs.pop("audio", None)
         text = kwargs.pop("text", None)
@@ -71,6 +76,7 @@ class SpeechT5Processor(ProcessorMixin):
 
         return inputs
 
+    # pad：批内 padding：按模态分别调用特征提取器或分词器 pad
     def pad(self, *args, **kwargs):
         """
         Collates the audio and text inputs, as well as their targets, into a padded batch.

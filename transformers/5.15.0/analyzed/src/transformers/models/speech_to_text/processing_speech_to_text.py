@@ -17,14 +17,19 @@ Speech processor class for Speech2Text
 
 from ...processing_utils import ProcessorMixin
 from ...utils import auto_docstring
+# Speech2Text 处理器：特征提取器与分词器联合封装 ASR 音频/文本输入
+
 
 
 @auto_docstring
+# Speech2TextProcessor：Speech2Text 处理器：联合特征提取与分词，支持 audio/text 单模态或 ASR 训练标签
 class Speech2TextProcessor(ProcessorMixin):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, feature_extractor, tokenizer):
         super().__init__(feature_extractor, tokenizer)
 
     @auto_docstring
+    # __call__：调用入口：路由 audio/text 源与目标并组装 BatchFeature
     def __call__(self, *args, **kwargs):
         audio = kwargs.pop("audio", None)
         sampling_rate = kwargs.pop("sampling_rate", None)

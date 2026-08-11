@@ -20,10 +20,13 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# SpeechT5 配置：卷积 prenet、SpecAugment、引导注意力损失与 HiFi-GAN 超参数
+
 
 
 @auto_docstring(checkpoint="microsoft/speecht5_asr")
 @strict
+# SpeechT5Config：SpeechT5 主配置：卷积 prenet、编码器-解码器层、SpecAugment 与 TTS 引导注意力
 class SpeechT5Config(PreTrainedConfig):
     r"""
     positional_dropout (`float`, *optional*, defaults to 0.1):
@@ -198,10 +201,12 @@ class SpeechT5Config(PreTrainedConfig):
     is_encoder_decoder: bool = True
     tie_word_embeddings: bool = True
 
+    # __post_init__：后初始化：解析派生字段并校验架构一致性
     def __post_init__(self, **kwargs):
         self.num_feat_extract_layers = len(self.conv_dim)
         super().__post_init__(**kwargs)
 
+    # validate_architecture：架构校验：conv/upsample 维度列表长度须一致
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if (
@@ -216,12 +221,14 @@ class SpeechT5Config(PreTrainedConfig):
                 f" `len(config.conv_kernel) = {len(self.conv_kernel)}`."
             )
 
+    # inputs_to_logits_ratio：输入-输出长度比：卷积 stride 连乘得到下采样倍率
     def inputs_to_logits_ratio(self):
         return functools.reduce(operator.mul, self.conv_stride, 1)
 
 
 @auto_docstring(checkpoint="microsoft/speecht5_asr")
 @strict
+# SpeechT5HifiGanConfig：SpeechT5 HiFi-GAN 配置：上采样率、MRF 残差块与 mel 归一化超参数
 class SpeechT5HifiGanConfig(PreTrainedConfig):
     r"""
     model_in_dim (`int`, *optional*, defaults to 80):

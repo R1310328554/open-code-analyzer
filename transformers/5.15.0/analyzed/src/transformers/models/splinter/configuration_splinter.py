@@ -17,10 +17,13 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# Splinter 配置：BERT 风格少样本问答模型层数、隐藏维与特殊 token 超参数
+
 
 
 @auto_docstring(checkpoint="tau/splinter-base")
 @strict
+# SplinterConfig：Splinter 配置：BERT 风格层数、隐藏维、[QUESTION] token 与 QA 头超参数
 class SplinterConfig(PreTrainedConfig):
     r"""
     question_token_id (`int`, *optional*, defaults to 104):

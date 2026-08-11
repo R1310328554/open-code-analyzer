@@ -14,9 +14,13 @@
 """Number Normalizer class for SpeechT5."""
 
 import re
+# SpeechT5 数字归一化：英文数字/货币符号/百分比转拼读文本供 TTS 使用
 
 
+
+# EnglishNumberNormalizer：英文数字归一化器：数字/货币/百分比转英文拼读供 TTS 朗读
 class EnglishNumberNormalizer:
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self):
         self.ones = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
         self.teens = [
@@ -72,6 +76,7 @@ class EnglishNumberNormalizer:
             "₫": " vietnamese Đồng",
         }
 
+    # spell_number：数字拼读：将 0-999 整数转为英文单词
     def spell_number(self, num):
         if num == 0:
             return "zero"
@@ -106,6 +111,7 @@ class EnglishNumberNormalizer:
 
         return " ".join(reversed(parts))
 
+    # convert：单数字转换：解析货币/负号/小数/百分比并拼读
     def convert(self, number):
         """
         Converts an individual number passed in string form to spelt-out form
@@ -174,6 +180,7 @@ class EnglishNumberNormalizer:
                 else f"{minus_prefix}{spelled_integer} point {spelled_decimal}{percent_suffix}"
             )
 
+    # __call__：调用入口：路由 audio/text 源与目标并组装 BatchFeature
     def __call__(self, text):
         """
         Convert numbers / number-like quantities in a string to their spelt-out counterparts

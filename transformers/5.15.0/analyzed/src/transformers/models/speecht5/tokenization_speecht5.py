@@ -19,6 +19,8 @@ from ...tokenization_utils_sentencepiece import SentencePieceBackend
 from ...utils import logging
 from ...utils.import_utils import requires
 from .number_normalizer import EnglishNumberNormalizer
+# SpeechT5 分词器：SentencePiece 字符级 + 可选英文数字归一化
+
 
 
 logger = logging.get_logger(__name__)
@@ -27,6 +29,7 @@ VOCAB_FILES_NAMES = {"vocab_file": "spm_char.model"}
 
 
 @requires(backends=("sentencepiece",))
+# SpeechT5Tokenizer：SpeechT5 分词器：SentencePiece 字符级 + 可选 EnglishNumberNormalizer
 class SpeechT5Tokenizer(SentencePieceBackend):
     """
     Construct a SpeechT5 tokenizer. Based on [SentencePiece](https://github.com/google/sentencepiece).
@@ -74,6 +77,7 @@ class SpeechT5Tokenizer(SentencePieceBackend):
     model_input_names = ["input_ids", "attention_mask"]
     is_fast = False
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         vocab_file,
@@ -103,6 +107,7 @@ class SpeechT5Tokenizer(SentencePieceBackend):
             **kwargs,
         )
 
+    # prepare_for_tokenization：分词前预处理：可选数字归一化与词间空格
     def prepare_for_tokenization(self, text, is_split_into_words=False, **kwargs):
         normalize = kwargs.pop("normalize", self.normalize)
         if is_split_into_words:
@@ -112,15 +117,18 @@ class SpeechT5Tokenizer(SentencePieceBackend):
         return (text, kwargs)
 
     @property
+    # normalizer：数字归一化器属性：懒加载 EnglishNumberNormalizer 实例
     def normalizer(self):
         if self._normalizer is None:
             self._normalizer = EnglishNumberNormalizer()
         return self._normalizer
 
     @normalizer.setter
+    # normalizer：数字归一化器属性：懒加载 EnglishNumberNormalizer 实例
     def normalizer(self, value):
         self._normalizer = value
 
+    # build_inputs_with_special_tokens：拼接特殊 token：prefix + 序列 + eos
     def build_inputs_with_special_tokens(self, token_ids_0, token_ids_1=None) -> list[int]:
         """Build model inputs from a sequence by appending eos_token_id."""
         if token_ids_1 is None:
@@ -128,6 +136,7 @@ class SpeechT5Tokenizer(SentencePieceBackend):
         # We don't expect to process pairs, but leave the pair logic for API consistency
         return token_ids_0 + token_ids_1 + [self.eos_token_id]
 
+    # get_special_tokens_mask：特殊 token 掩码：标记 prefix/suffix 特殊 token 位置
     def get_special_tokens_mask(
         self, token_ids_0: list[int], token_ids_1: list[int] | None = None, already_has_special_tokens: bool = False
     ) -> list[int]:

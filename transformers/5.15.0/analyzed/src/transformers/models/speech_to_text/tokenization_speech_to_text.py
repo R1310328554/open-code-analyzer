@@ -24,6 +24,8 @@ import sentencepiece
 from ...tokenization_python import PreTrainedTokenizer
 from ...utils import logging
 from ...utils.import_utils import requires
+# Speech2Text 分词器：SentencePiece BPE + 多语言 tgt_lang 前缀 token
+
 
 
 logger = logging.get_logger(__name__)
@@ -46,6 +48,7 @@ LANGUAGES = {"mustc": MUSTC_LANGS}
 
 
 @requires(backends=("sentencepiece",))
+# Speech2TextTokenizer：Speech2Text 分词器：SentencePiece BPE + vocab.json 映射与多语言前缀
 class Speech2TextTokenizer(PreTrainedTokenizer):
     """
     Construct an Speech2Text tokenizer.
@@ -98,6 +101,7 @@ class Speech2TextTokenizer(PreTrainedTokenizer):
 
     prefix_tokens: list[int] = []
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         vocab_file,
@@ -157,35 +161,43 @@ class Speech2TextTokenizer(PreTrainedTokenizer):
     def vocab_size(self) -> int:
         return len(self.encoder)
 
+    # get_vocab：获取完整词表：合并 encoder 与 added_tokens
     def get_vocab(self) -> dict:
         vocab = self.encoder.copy()
         vocab.update(self.added_tokens_encoder)
         return vocab
 
     @property
+    # tgt_lang：目标语言属性：getter/setter 切换 prefix 语言 token
     def tgt_lang(self) -> str | None:
         return getattr(self, "_tgt_lang", None)
 
     @tgt_lang.setter
+    # tgt_lang：目标语言属性：getter/setter 切换 prefix 语言 token
     def tgt_lang(self, new_tgt_lang) -> None:
         self._tgt_lang = new_tgt_lang
         self.set_tgt_lang_special_tokens(new_tgt_lang)
 
+    # set_tgt_lang_special_tokens：设置目标语言前缀：prefix_tokens 插入 lang code token
     def set_tgt_lang_special_tokens(self, tgt_lang: str) -> None:
         """Reset the special tokens to the target language setting. prefix=[eos, tgt_lang_code] and suffix=[eos]."""
         lang_code_id = self.lang_code_to_id[tgt_lang]
         self.prefix_tokens = [lang_code_id]
 
+    # _tokenize：子词切分：调用 SentencePiece encode 输出 token 列表
     def _tokenize(self, text: str) -> list[str]:
         return self.sp_model.encode(text, out_type=str)
 
+    # _convert_token_to_id：token→id：查 encoder 映射，未知 token 回退 unk
     def _convert_token_to_id(self, token):
         return self.encoder.get(token, self.encoder[self.unk_token])
 
+    # _convert_id_to_token：id→token：查 decoder 映射，未知 id 回退 unk
     def _convert_id_to_token(self, index: int) -> str:
         """Converts an index (integer) in a token (str) using the decoder."""
         return self.decoder.get(index, self.unk_token)
 
+    # convert_tokens_to_string：token 序列→字符串：SentencePiece decode 并处理特殊 token
     def convert_tokens_to_string(self, tokens: list[str]) -> str:
         """Converts a sequence of tokens (strings for sub-words) in a single string."""
         all_special_tokens = set(self.all_special_tokens)
@@ -203,6 +215,7 @@ class Speech2TextTokenizer(PreTrainedTokenizer):
         out_string += decoded.upper() if self.do_upper_case else decoded
         return out_string.strip()
 
+    # build_inputs_with_special_tokens：拼接特殊 token：prefix + 序列 + eos
     def build_inputs_with_special_tokens(self, token_ids_0, token_ids_1=None) -> list[int]:
         """Build model inputs from a sequence by appending eos_token_id."""
         if token_ids_1 is None:
@@ -210,6 +223,7 @@ class Speech2TextTokenizer(PreTrainedTokenizer):
         # We don't expect to process pairs, but leave the pair logic for API consistency
         return self.prefix_tokens + token_ids_0 + token_ids_1 + [self.eos_token_id]
 
+    # get_special_tokens_mask：特殊 token 掩码：标记 prefix/suffix 特殊 token 位置
     def get_special_tokens_mask(
         self, token_ids_0: list[int], token_ids_1: list[int] | None = None, already_has_special_tokens: bool = False
     ) -> list[int]:
@@ -254,6 +268,7 @@ class Speech2TextTokenizer(PreTrainedTokenizer):
 
         self.sp_model = load_spm(self.spm_file, self.sp_model_kwargs)
 
+    # save_vocabulary：保存词表：写入 vocab.json 与 SentencePiece 模型文件
     def save_vocabulary(self, save_directory: str, filename_prefix: str | None = None) -> tuple[str]:
         save_dir = Path(save_directory)
         assert save_dir.is_dir(), f"{save_directory} should be a directory"
@@ -276,17 +291,20 @@ class Speech2TextTokenizer(PreTrainedTokenizer):
         return (str(vocab_save_path), str(spm_save_path))
 
 
+# load_spm：加载 SentencePiece 模型：实例化 Processor 并 Load 词表文件
 def load_spm(path: str, sp_model_kwargs: dict[str, Any]) -> sentencepiece.SentencePieceProcessor:
     spm = sentencepiece.SentencePieceProcessor(**sp_model_kwargs)
     spm.Load(str(path))
     return spm
 
 
+# load_json：加载 JSON 词表：读取 vocab.json 映射文件
 def load_json(path: str) -> dict | list:
     with open(path, "r") as f:
         return json.load(f)
 
 
+# save_json：保存 JSON 词表：将 encoder 映射写入 vocab.json
 def save_json(data, path: str) -> None:
     with open(path, "w") as f:
         json.dump(data, f, indent=2)

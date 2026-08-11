@@ -21,6 +21,8 @@ from tokenizers.models import WordPiece
 
 from ...tokenization_utils_tokenizers import TokenizersBackend
 from ...utils import logging
+# Splinter 分词器：WordPiece 后端 + [QUESTION] 特殊 token 标记问题位置
+
 
 
 logger = logging.get_logger(__name__)
@@ -28,6 +30,7 @@ logger = logging.get_logger(__name__)
 VOCAB_FILES_NAMES = {"vocab_file": "vocab.txt"}
 
 
+# load_vocab：加载 WordPiece 词表：读取 vocab.txt 为 token→id 字典
 def load_vocab(vocab_file):
     vocab = collections.OrderedDict()
     with open(vocab_file, "r", encoding="utf-8") as reader:
@@ -38,6 +41,7 @@ def load_vocab(vocab_file):
     return vocab
 
 
+# SplinterTokenizer：Splinter 分词器：WordPiece 后端 + [QUESTION] 特殊 token 插入
 class SplinterTokenizer(TokenizersBackend):
     r"""
     Construct a Splinter tokenizer (backed by HuggingFace's tokenizers library). Based on WordPiece.
@@ -78,6 +82,7 @@ class SplinterTokenizer(TokenizersBackend):
     model_input_names = ["input_ids", "attention_mask"]
     model = WordPiece
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         vocab: str | dict[str, int] | None = None,

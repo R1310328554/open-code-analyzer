@@ -17,10 +17,13 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# SqueezeBert 配置：分组卷积 FFN、cnn_activations 与 BERT 兼容超参数
+
 
 
 @auto_docstring(checkpoint="squeezebert/squeezebert-uncased")
 @strict
+# SqueezeBertConfig：SqueezeBert 配置：分组卷积 FFN 维度、cnn_activations 与 BERT 兼容字段
 class SqueezeBertConfig(PreTrainedConfig):
     r"""
     q_groups (`int`, *optional*, defaults to 4):
