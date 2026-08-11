@@ -15,23 +15,8 @@
     "django/utils/lorem_ipsum.py",
     "django/utils/module_loading.py",
     "django/utils/numberformat.py",
-    "django/utils/regex_helper.py",
-    "django/utils/safestring.py",
-    "django/utils/termcolors.py",
-    "django/utils/text.py",
-    "django/utils/timesince.py",
-    "django/utils/timezone.py",
-    "django/utils/translation/__init__.py",
-    "django/utils/translation/reloader.py",
-    "django/utils/translation/template.py",
-    "django/utils/translation/trans_null.py",
-    "django/utils/translation/trans_real.py",
-    "django/utils/tree.py",
-    "django/utils/version.py",
-    "django/utils/warnings.py",
-    "django/utils/xmlutils.py",
-    "django/views/__init__.py"
+    "django/utils/regex_helper.py"
   ],
   "remaining_pending": 42,
-  "done": 870
+  "done": 885
 }
