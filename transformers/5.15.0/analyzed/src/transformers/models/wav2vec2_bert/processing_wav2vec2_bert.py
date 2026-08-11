@@ -15,16 +15,19 @@
 Speech processor class for Wav2Vec2-BERT
 """
 
+# Wav2Vec2-BERT 处理器：组合 SeamlessM4T 特征提取与 CTC 分词器
 from ...processing_utils import ProcessingKwargs, ProcessorMixin, Unpack
 from ...tokenization_utils_base import AudioInput, PreTokenizedInput, TextInput
 from ...utils import auto_docstring
 
 
+# Wav2Vec2BertProcessorKwargs：处理器关键字参数默认值容器
 class Wav2Vec2BertProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {}
 
 
 @auto_docstring
+# Wav2Vec2BertProcessor：组合特征提取器与 CTC 分词器的处理器
 class Wav2Vec2BertProcessor(ProcessorMixin):
     def __init__(self, feature_extractor, tokenizer):
         super().__init__(feature_extractor, tokenizer)

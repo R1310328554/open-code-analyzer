@@ -15,6 +15,7 @@
 Feature extractor class for Wav2Vec2
 """
 
+# Wav2Vec2 特征提取：原始波形归一化、padding 并输出 input_values
 import numpy as np
 
 from ...feature_extraction_sequence_utils import SequenceFeatureExtractor
@@ -25,6 +26,7 @@ from ...utils import PaddingStrategy, TensorType, logging
 logger = logging.get_logger(__name__)
 
 
+# Wav2Vec2FeatureExtractor：波形特征提取：归一化、padding 并打包 input_values
 class Wav2Vec2FeatureExtractor(SequenceFeatureExtractor):
     r"""
     Constructs a Wav2Vec2 feature extractor.

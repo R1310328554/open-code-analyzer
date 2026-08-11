@@ -13,6 +13,7 @@
 # limitations under the License.
 """PyTorch Wav2Vec2 model."""
 
+# Wav2Vec2 建模：卷积前端 + Transformer 编码，支持预训练/CTC/分类/XVector
 import math
 import warnings
 from collections.abc import Callable
@@ -69,6 +70,7 @@ _HIDDEN_STATES_START_POSITION = 2
     """
 )
 @dataclass
+# Wav2Vec2ForPreTrainingOutput：预训练输出：对比/多样性损失与投影量化状态
 class Wav2Vec2ForPreTrainingOutput(ModelOutput):
     r"""
     loss (*optional*, returned when `sample_negative_indices` are passed, `torch.FloatTensor` of shape `(1,)`):
@@ -251,6 +253,7 @@ def _sample_negative_indices(features_shape: tuple, num_negatives: int, mask_tim
     return sampled_negative_indices
 
 
+# Wav2Vec2NoLayerNormConvLayer：无 LayerNorm 的 1D 卷积层：Conv1d + GELU
 class Wav2Vec2NoLayerNormConvLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_id=0):
         super().__init__()
@@ -272,6 +275,7 @@ class Wav2Vec2NoLayerNormConvLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Wav2Vec2LayerNormConvLayer：带 LayerNorm 的 1D 卷积层
 class Wav2Vec2LayerNormConvLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_id=0):
         super().__init__()
@@ -299,6 +303,7 @@ class Wav2Vec2LayerNormConvLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Wav2Vec2GroupNormConvLayer：带 GroupNorm 的 1D 卷积层
 class Wav2Vec2GroupNormConvLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_id=0):
         super().__init__()
@@ -323,6 +328,7 @@ class Wav2Vec2GroupNormConvLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Wav2Vec2PositionalConvEmbedding：相对位置卷积嵌入：深度可分离 Conv1d
 class Wav2Vec2PositionalConvEmbedding(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -368,6 +374,7 @@ class Wav2Vec2PositionalConvEmbedding(nn.Module):
         return hidden_states
 
 
+# Wav2Vec2SamePadLayer：裁剪卷积输出以匹配因果 padding 长度
 class Wav2Vec2SamePadLayer(nn.Module):
     def __init__(self, num_conv_pos_embeddings):
         super().__init__()
@@ -379,6 +386,7 @@ class Wav2Vec2SamePadLayer(nn.Module):
         return hidden_states
 
 
+# Wav2Vec2FeatureEncoder：堆叠卷积层将原始波形下采样为帧级特征
 class Wav2Vec2FeatureEncoder(nn.Module):
     """Construct the features from raw audio waveform"""
 
@@ -419,6 +427,7 @@ class Wav2Vec2FeatureEncoder(nn.Module):
         return hidden_states
 
 
+# Wav2Vec2FeatureProjection：线性投影 + LayerNorm 映射至隐藏维
 class Wav2Vec2FeatureProjection(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -463,6 +472,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# Wav2Vec2Attention：多头自注意力：支持相对位置 key 偏置
 class Wav2Vec2Attention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -548,6 +558,7 @@ class Wav2Vec2Attention(nn.Module):
         return attn_output, attn_weights, None
 
 
+# Wav2Vec2FeedForward：两层 MLP 前馈网络
 class Wav2Vec2FeedForward(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -572,6 +583,7 @@ class Wav2Vec2FeedForward(nn.Module):
         return hidden_states
 
 
+# Wav2Vec2EncoderLayer：Pre-LN Transformer 层：自注意力 + FFN
 class Wav2Vec2EncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config):
         super().__init__()
@@ -608,6 +620,7 @@ class Wav2Vec2EncoderLayer(GradientCheckpointingLayer):
         return outputs
 
 
+# Wav2Vec2EncoderLayerStableLayerNorm：StableLayerNorm 版编码层（Post-LN）
 class Wav2Vec2EncoderLayerStableLayerNorm(GradientCheckpointingLayer):
     def __init__(self, config):
         super().__init__()
@@ -654,6 +667,7 @@ class Wav2Vec2EncoderLayerStableLayerNorm(GradientCheckpointingLayer):
         return outputs
 
 
+# Wav2Vec2Encoder：堆叠编码层 + 相对位置卷积嵌入
 class Wav2Vec2Encoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -726,6 +740,7 @@ class Wav2Vec2Encoder(nn.Module):
         )
 
 
+# Wav2Vec2EncoderStableLayerNorm：StableLayerNorm 版 Transformer 编码器
 class Wav2Vec2EncoderStableLayerNorm(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -802,6 +817,7 @@ class Wav2Vec2EncoderStableLayerNorm(nn.Module):
         )
 
 
+# Wav2Vec2GumbelVectorQuantizer：Gumbel-Softmax 向量量化器：离散表示学习
 class Wav2Vec2GumbelVectorQuantizer(nn.Module):
     """
     Vector quantization using gumbel softmax. See `[CATEGORICAL REPARAMETERIZATION WITH
@@ -878,6 +894,7 @@ class Wav2Vec2GumbelVectorQuantizer(nn.Module):
         return codevectors, perplexity
 
 
+# Wav2Vec2Adapter：适配器模块：在指定层插入轻量瓶颈
 class Wav2Vec2Adapter(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -909,6 +926,7 @@ class Wav2Vec2Adapter(nn.Module):
         return hidden_states
 
 
+# Wav2Vec2AdapterLayer：单层适配器：下投影 + 激活 + 上投影
 class Wav2Vec2AdapterLayer(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -927,6 +945,7 @@ class Wav2Vec2AdapterLayer(nn.Module):
         return hidden_states
 
 
+# Wav2Vec2AttnAdapterLayer：注意力适配器：在注意力输出后插入瓶颈
 class Wav2Vec2AttnAdapterLayer(nn.Module):
     def __init__(self, config):
         """
@@ -953,6 +972,7 @@ class Wav2Vec2AttnAdapterLayer(nn.Module):
 
 
 @auto_docstring
+# Wav2Vec2PreTrainedModel：预训练基类：卷积/注意力权重初始化与模块绑定
 class Wav2Vec2PreTrainedModel(PreTrainedModel):
     config: Wav2Vec2Config
     base_model_prefix = "wav2vec2"
@@ -1241,6 +1261,7 @@ class Wav2Vec2PreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# Wav2Vec2Model：基模型：特征编码 → 投影 → Transformer 编码
 class Wav2Vec2Model(Wav2Vec2PreTrainedModel):
     def __init__(self, config: Wav2Vec2Config):
         super().__init__(config)
@@ -1380,6 +1401,7 @@ class Wav2Vec2Model(Wav2Vec2PreTrainedModel):
     Wav2Vec2 Model with a quantizer and `VQ` head on top.
     """
 )
+# Wav2Vec2ForPreTraining：自监督预训练：掩码对比学习 + 量化目标
 class Wav2Vec2ForPreTraining(Wav2Vec2PreTrainedModel):
     def __init__(self, config: Wav2Vec2Config):
         super().__init__(config)
@@ -1594,6 +1616,7 @@ class Wav2Vec2ForPreTraining(Wav2Vec2PreTrainedModel):
     Wav2Vec2 Model with a `language modeling` head on top for Connectionist Temporal Classification (CTC).
     """
 )
+# Wav2Vec2ForCTC：CTC 语音识别头：线性分类 + CTC 损失
 class Wav2Vec2ForCTC(Wav2Vec2PreTrainedModel):
     def __init__(self, config, target_lang: str | None = None):
         r"""
@@ -1742,6 +1765,7 @@ class Wav2Vec2ForCTC(Wav2Vec2PreTrainedModel):
     SUPERB Keyword Spotting.
     """
 )
+# Wav2Vec2ForSequenceClassification：序列分类头：池化 + 线性分类器
 class Wav2Vec2ForSequenceClassification(Wav2Vec2PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1847,6 +1871,7 @@ class Wav2Vec2ForSequenceClassification(Wav2Vec2PreTrainedModel):
 
 
 @auto_docstring
+# Wav2Vec2ForAudioFrameClassification：帧级音频分类头：逐帧线性分类
 class Wav2Vec2ForAudioFrameClassification(Wav2Vec2PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1941,6 +1966,7 @@ class Wav2Vec2ForAudioFrameClassification(Wav2Vec2PreTrainedModel):
         )
 
 
+# AMSoftmaxLoss：Additive Margin Softmax 损失：说话人识别
 class AMSoftmaxLoss(nn.Module):
     def __init__(self, input_dim, num_labels, scale=30.0, margin=0.4):
         super().__init__()
@@ -1964,6 +1990,7 @@ class AMSoftmaxLoss(nn.Module):
         return loss
 
 
+# TDNNLayer：时延神经网络层：膨胀 Conv1d + ReLU
 class TDNNLayer(nn.Module):
     def __init__(self, config, layer_id=0):
         super().__init__()
@@ -2001,6 +2028,7 @@ class TDNNLayer(nn.Module):
     Wav2Vec2 Model with an XVector feature extraction head on top for tasks like Speaker Verification.
     """
 )
+# Wav2Vec2ForXVector：X-Vector 说话人嵌入：TDNN + 统计池化 + AMSoftmax
 class Wav2Vec2ForXVector(Wav2Vec2PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

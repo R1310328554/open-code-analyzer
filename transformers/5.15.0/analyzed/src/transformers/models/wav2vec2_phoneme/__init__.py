@@ -22,5 +22,6 @@ if TYPE_CHECKING:
 else:
     import sys
 
+    # wav2vec2_phoneme 包：延迟加载音素 CTC 分词子模块
     _file = globals()["__file__"]
     sys.modules[__name__] = _LazyModule(__name__, _file, define_import_structure(_file), module_spec=__spec__)

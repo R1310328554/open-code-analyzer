@@ -13,6 +13,7 @@
 # limitations under the License.
 """Wav2Vec2Conformer model configuration"""
 
+# Wav2Vec2-Conformer 配置：Macaron FFN、卷积模块与相对/旋转位置参数
 import functools
 import operator
 
@@ -24,6 +25,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="facebook/wav2vec2-conformer-rel-pos-large")
 @strict
+# Wav2Vec2ConformerConfig：Conformer 主配置：卷积前端、Macaron FFN 与位置编码
 class Wav2Vec2ConformerConfig(PreTrainedConfig):
     r"""
     feat_proj_dropout (`float`, *optional*, defaults to 0.0):

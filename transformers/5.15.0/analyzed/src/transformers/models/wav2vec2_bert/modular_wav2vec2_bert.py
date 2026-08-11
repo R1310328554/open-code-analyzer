@@ -1,3 +1,4 @@
+# Wav2Vec2-BERT 模块化建模：复用 Conformer/Wav2Vec2 组件的 BERT 变体
 import math
 
 import torch
@@ -65,6 +66,7 @@ def _compute_new_attention_mask(hidden_states: torch.Tensor, seq_lens: torch.Ten
     return mask
 
 
+# Wav2Vec2BertRotaryPositionalEmbedding：继承 Conformer RoPE 的旋转位置嵌入
 class Wav2Vec2BertRotaryPositionalEmbedding(Wav2Vec2ConformerRotaryPositionalEmbedding):
     def __init__(self, config):
         nn.Module.__init__(self)
@@ -78,10 +80,12 @@ class Wav2Vec2BertRotaryPositionalEmbedding(Wav2Vec2ConformerRotaryPositionalEmb
         self.cached_rotary_positional_embedding = None
 
 
+# Wav2Vec2BertRelPositionalEmbedding：继承 Conformer 相对位置嵌入
 class Wav2Vec2BertRelPositionalEmbedding(Wav2Vec2ConformerRelPositionalEmbedding):
     pass
 
 
+# Wav2Vec2BertFeatureProjection：特征投影：LayerNorm + 线性映射
 class Wav2Vec2BertFeatureProjection(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -97,6 +101,7 @@ class Wav2Vec2BertFeatureProjection(nn.Module):
         return hidden_states, norm_hidden_states
 
 
+# Wav2Vec2BertFeedForward：继承 Wav2Vec2 FFN 的 Macaron 前馈
 class Wav2Vec2BertFeedForward(Wav2Vec2FeedForward):
     def __init__(self, config, act_fn=None, hidden_size=None):
         nn.Module.__init__(self)
@@ -111,6 +116,7 @@ class Wav2Vec2BertFeedForward(Wav2Vec2FeedForward):
         self.output_dropout = nn.Dropout(config.hidden_dropout)
 
 
+# Wav2Vec2BertConvolutionModule：Conformer 卷积模块：GLU + 深度可分离 Conv1d
 class Wav2Vec2BertConvolutionModule(nn.Module):
     """Convolution block used in the conformer block"""
 
@@ -183,6 +189,7 @@ class Wav2Vec2BertConvolutionModule(nn.Module):
         return hidden_states
 
 
+# Wav2Vec2BertSelfAttention：继承 Conformer 自注意力并扩展 RoPE 支持
 class Wav2Vec2BertSelfAttention(Wav2Vec2ConformerSelfAttention, nn.Module):
     """Construct an Wav2Vec2BertSelfAttention object.
     Can be enhanced with rotary or relative position embeddings.
@@ -294,6 +301,7 @@ class Wav2Vec2BertSelfAttention(Wav2Vec2ConformerSelfAttention, nn.Module):
         return hidden_states, probs
 
 
+# Wav2Vec2BertEncoderLayer：Conformer 编码层：FFN + 注意力 + 卷积 + FFN
 class Wav2Vec2BertEncoderLayer(GradientCheckpointingLayer):
     """Conformer block based on https://huggingface.co/papers/2005.08100."""
 
@@ -360,6 +368,7 @@ class Wav2Vec2BertEncoderLayer(GradientCheckpointingLayer):
         return hidden_states, attn_weigts
 
 
+# Wav2Vec2BertEncoder：堆叠 Conformer 编码层
 class Wav2Vec2BertEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -447,6 +456,7 @@ class Wav2Vec2BertEncoder(nn.Module):
         )
 
 
+# Wav2Vec2BertAdapter：适配器模块：在指定层插入轻量瓶颈
 class Wav2Vec2BertAdapter(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -490,6 +500,7 @@ class Wav2Vec2BertAdapter(nn.Module):
         return hidden_states
 
 
+# Wav2Vec2BertAdapterLayer：单层适配器：下投影 + 激活 + 上投影
 class Wav2Vec2BertAdapterLayer(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -582,6 +593,7 @@ class Wav2Vec2BertAdapterLayer(nn.Module):
 
 
 @auto_docstring
+# Wav2Vec2BertPreTrainedModel：预训练基类：Conformer 组件初始化逻辑
 class Wav2Vec2BertPreTrainedModel(PreTrainedModel):
     config: Wav2Vec2BertConfig
     base_model_prefix = "wav2vec2_bert"
@@ -673,6 +685,7 @@ class Wav2Vec2BertPreTrainedModel(PreTrainedModel):
 Wav2Vec2BertBaseModelOutput = Wav2Vec2BaseModelOutput
 
 
+# Wav2Vec2BertModel：多继承 Wav2Vec2Model 与 BERT 预训练基类的基模型
 class Wav2Vec2BertModel(Wav2Vec2Model, Wav2Vec2BertPreTrainedModel):
     def __init__(self, config: Wav2Vec2BertConfig):
         Wav2Vec2BertPreTrainedModel.__init__(self, config)
@@ -751,6 +764,7 @@ class Wav2Vec2BertModel(Wav2Vec2Model, Wav2Vec2BertPreTrainedModel):
         )
 
 
+# Wav2Vec2BertForCTC：继承 Conformer CTC 头的语音识别模型
 class Wav2Vec2BertForCTC(Wav2Vec2ConformerForCTC):
     def __init__(self, config, target_lang: str | None = None):
         r"""
@@ -838,6 +852,7 @@ class Wav2Vec2BertForCTC(Wav2Vec2ConformerForCTC):
         )
 
 
+# Wav2Vec2BertForSequenceClassification：继承 Wav2Vec2 序列分类头
 class Wav2Vec2BertForSequenceClassification(Wav2Vec2ForSequenceClassification):
     def __init__(self, config):
         super().__init__(config)
@@ -917,6 +932,7 @@ class Wav2Vec2BertForSequenceClassification(Wav2Vec2ForSequenceClassification):
         )
 
 
+# Wav2Vec2BertForAudioFrameClassification：继承 Conformer 帧级分类头
 class Wav2Vec2BertForAudioFrameClassification(Wav2Vec2ConformerForAudioFrameClassification):
     def __init__(self, config):
         super().__init__(config)
@@ -979,6 +995,7 @@ class Wav2Vec2BertForAudioFrameClassification(Wav2Vec2ConformerForAudioFrameClas
         )
 
 
+# Wav2Vec2BertForXVector：继承 Conformer X-Vector 说话人嵌入头
 class Wav2Vec2BertForXVector(Wav2Vec2ConformerForXVector):
     def __init__(self, config):
         super().__init__(config)

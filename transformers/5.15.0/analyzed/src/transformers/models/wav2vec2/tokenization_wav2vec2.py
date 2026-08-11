@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tokenization class for Wav2Vec2."""
 
+# Wav2Vec2 CTC 分词：字符级 vocab、CTC 贪心/beam 解码与偏移
 import json
 import os
 from dataclasses import dataclass
@@ -77,6 +78,7 @@ ListOfDict = list[dict[str, int | str]]
 
 
 @dataclass
+# Wav2Vec2CTCTokenizerOutput：CTC 分词输出：解码文本与字符偏移
 class Wav2Vec2CTCTokenizerOutput(ModelOutput):
     """
     Output type of [` Wav2Vec2CTCTokenizer`], with transcription.
@@ -98,6 +100,7 @@ class Wav2Vec2CTCTokenizerOutput(ModelOutput):
     word_offsets: list[ListOfDict] | ListOfDict = None
 
 
+# Wav2Vec2CTCTokenizer：CTC 分词器：字符 vocab、CTC 解码与 beam search
 class Wav2Vec2CTCTokenizer(PreTrainedTokenizer):
     """
     Constructs a Wav2Vec2CTC tokenizer.

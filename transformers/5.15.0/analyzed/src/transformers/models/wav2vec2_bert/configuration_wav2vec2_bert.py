@@ -13,6 +13,7 @@
 # limitations under the License.
 """Wav2Vec2Bert model configuration"""
 
+# Wav2Vec2-BERT 配置：相对/旋转位置、卷积模块与 SpecAugment 超参数
 from typing import Literal
 
 from huggingface_hub.dataclasses import strict
@@ -23,6 +24,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="facebook/wav2vec2-bert-rel-pos-large")
 @strict
+# Wav2Vec2BertConfig：Wav2Vec2-BERT 主配置：位置编码、卷积模块与 SpecAugment
 class Wav2Vec2BertConfig(PreTrainedConfig):
     r"""
     feature_projection_input_dim (`int`, *optional*, defaults to 160):

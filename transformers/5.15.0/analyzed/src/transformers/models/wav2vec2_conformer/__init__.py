@@ -23,5 +23,6 @@ if TYPE_CHECKING:
 else:
     import sys
 
+    # wav2vec2_conformer 包：延迟加载配置与建模子模块
     _file = globals()["__file__"]
     sys.modules[__name__] = _LazyModule(__name__, _file, define_import_structure(_file), module_spec=__spec__)

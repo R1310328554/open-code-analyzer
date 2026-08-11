@@ -1,3 +1,4 @@
+# Wav2Vec2-Conformer 模块化建模：复用 Wav2Vec2 核心的 Conformer 变体
 import math
 from dataclasses import dataclass
 
@@ -41,6 +42,7 @@ _HIDDEN_STATES_START_POSITION = 2
     """
 )
 @dataclass
+# Wav2Vec2ConformerForPreTrainingOutput：预训练输出：对比/多样性损失与投影量化状态
 class Wav2Vec2ConformerForPreTrainingOutput(ModelOutput):
     r"""
     loss (*optional*, returned when `sample_negative_indices` are passed, `torch.FloatTensor` of shape `(1,)`):
@@ -70,10 +72,12 @@ class Wav2Vec2ConformerForPreTrainingOutput(ModelOutput):
     diversity_loss: torch.FloatTensor | None = None
 
 
+# Wav2Vec2ConformerPositionalConvEmbedding：继承 Wav2Vec2 相对位置卷积嵌入
 class Wav2Vec2ConformerPositionalConvEmbedding(Wav2Vec2PositionalConvEmbedding):
     pass
 
 
+# Wav2Vec2ConformerRotaryPositionalEmbedding：旋转位置嵌入（RoPE）
 class Wav2Vec2ConformerRotaryPositionalEmbedding(nn.Module):
     """Rotary positional embedding
     Reference : https://blog.eleuther.ai/rotary-embeddings/ Paper: https://huggingface.co/papers/2104.09864
@@ -108,6 +112,7 @@ class Wav2Vec2ConformerRotaryPositionalEmbedding(nn.Module):
         return self.cached_rotary_positional_embedding
 
 
+# Wav2Vec2ConformerRelPositionalEmbedding：相对位置嵌入：正弦偏置 + 可学习缩放
 class Wav2Vec2ConformerRelPositionalEmbedding(nn.Module):
     """Relative positional encoding module."""
 
@@ -157,18 +162,22 @@ class Wav2Vec2ConformerRelPositionalEmbedding(nn.Module):
         return relative_position_embeddings
 
 
+# Wav2Vec2ConformerFeatureEncoder：继承 Wav2Vec2 卷积特征编码器
 class Wav2Vec2ConformerFeatureEncoder(Wav2Vec2FeatureEncoder):
     pass
 
 
+# Wav2Vec2ConformerFeatureProjection：继承 Wav2Vec2 特征投影层
 class Wav2Vec2ConformerFeatureProjection(Wav2Vec2FeatureProjection):
     pass
 
 
+# Wav2Vec2ConformerFeedForward：继承 Wav2Vec2 FFN 的 Macaron 前馈
 class Wav2Vec2ConformerFeedForward(Wav2Vec2FeedForward):
     pass
 
 
+# Wav2Vec2ConformerConvolutionModule：Conformer 卷积模块：GLU + 深度可分离 Conv1d
 class Wav2Vec2ConformerConvolutionModule(nn.Module):
     """Convolution block used in the conformer block"""
 
@@ -229,6 +238,7 @@ class Wav2Vec2ConformerConvolutionModule(nn.Module):
         return hidden_states
 
 
+# Wav2Vec2ConformerSelfAttention：自注意力：支持 RoPE 或相对位置偏置
 class Wav2Vec2ConformerSelfAttention(nn.Module):
     """Construct an Wav2Vec2ConformerSelfAttention object.
     Can be enhanced with rotary or relative position embeddings.
@@ -377,6 +387,7 @@ class Wav2Vec2ConformerSelfAttention(nn.Module):
         return scores
 
 
+# Wav2Vec2ConformerEncoderLayer：Conformer 编码层：FFN + 注意力 + 卷积 + FFN
 class Wav2Vec2ConformerEncoderLayer(GradientCheckpointingLayer):
     """Conformer block based on https://huggingface.co/papers/2005.08100."""
 
@@ -442,6 +453,7 @@ class Wav2Vec2ConformerEncoderLayer(GradientCheckpointingLayer):
         return hidden_states, attn_weigts
 
 
+# Wav2Vec2ConformerEncoder：堆叠 Conformer 编码层
 class Wav2Vec2ConformerEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -529,19 +541,23 @@ class Wav2Vec2ConformerEncoder(nn.Module):
         )
 
 
+# Wav2Vec2ConformerGumbelVectorQuantizer：继承 Wav2Vec2 Gumbel 向量量化器
 class Wav2Vec2ConformerGumbelVectorQuantizer(Wav2Vec2GumbelVectorQuantizer):
     pass
 
 
+# Wav2Vec2ConformerAdapter：继承 Wav2Vec2 适配器模块
 class Wav2Vec2ConformerAdapter(Wav2Vec2Adapter):
     pass
 
 
+# Wav2Vec2ConformerAdapterLayer：继承 Wav2Vec2 单层适配器
 class Wav2Vec2ConformerAdapterLayer(Wav2Vec2AdapterLayer):
     pass
 
 
 @auto_docstring
+# Wav2Vec2ConformerPreTrainedModel：预训练基类：Conformer 组件初始化逻辑
 class Wav2Vec2ConformerPreTrainedModel(PreTrainedModel):
     config: Wav2Vec2ConformerConfig
     base_model_prefix = "wav2vec2_conformer"
@@ -640,6 +656,7 @@ WAV2VEC2_CONFORMER_START_DOCSTRING = None  # will be automatically redefined
 Wav2Vec2ConformerBaseModelOutput = Wav2Vec2BaseModelOutput
 
 
+# Wav2Vec2ConformerModel：多继承 Conformer 与 Wav2Vec2 基模型
 class Wav2Vec2ConformerModel(Wav2Vec2ConformerPreTrainedModel, Wav2Vec2Model):
     def __init__(self, config: Wav2Vec2ConformerConfig):
         Wav2Vec2ConformerPreTrainedModel.__init__(self, config)
@@ -659,11 +676,13 @@ class Wav2Vec2ConformerModel(Wav2Vec2ConformerPreTrainedModel, Wav2Vec2Model):
         self.post_init()
 
 
+# Wav2Vec2ConformerForPreTraining：继承 Wav2Vec2 自监督预训练头
 class Wav2Vec2ConformerForPreTraining(Wav2Vec2ForPreTraining):
     def __init__(self, config: Wav2Vec2ConformerConfig):
         super().__init__(config)
 
 
+# Wav2Vec2ConformerForCTC：继承 Wav2Vec2 CTC 语音识别头
 class Wav2Vec2ConformerForCTC(Wav2Vec2ForCTC):
     def __init__(self, config, target_lang: str | None = None):
         r"""
@@ -681,16 +700,19 @@ class Wav2Vec2ConformerForCTC(Wav2Vec2ForCTC):
         raise AttributeError("Not needed for Wav2Vec2Conformer")
 
 
+# Wav2Vec2ConformerForSequenceClassification：继承 Wav2Vec2 序列分类头
 class Wav2Vec2ConformerForSequenceClassification(Wav2Vec2ForSequenceClassification):
     def __init__(self, config):
         super().__init__(config)
 
 
+# Wav2Vec2ConformerForAudioFrameClassification：继承 Wav2Vec2 帧级分类头
 class Wav2Vec2ConformerForAudioFrameClassification(Wav2Vec2ForAudioFrameClassification):
     def __init__(self, config):
         super().__init__(config)
 
 
+# Wav2Vec2ConformerForXVector：继承 Wav2Vec2 X-Vector 说话人嵌入头
 class Wav2Vec2ConformerForXVector(Wav2Vec2ForXVector):
     def __init__(self, config):
         super().__init__(config)

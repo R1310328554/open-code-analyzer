@@ -15,16 +15,19 @@
 Speech processor class for Wav2Vec2
 """
 
+# Wav2Vec2 处理器：组合特征提取器与 CTC 分词器
 from ...processing_utils import ProcessingKwargs, ProcessorMixin, Unpack
 from ...tokenization_utils_base import AudioInput, PreTokenizedInput, TextInput
 from ...utils import auto_docstring
 
 
+# Wav2Vec2ProcessorKwargs：处理器关键字参数默认值容器
 class Wav2Vec2ProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {}
 
 
 @auto_docstring
+# Wav2Vec2Processor：组合特征提取器与 CTC 分词器的处理器
 class Wav2Vec2Processor(ProcessorMixin):
     def __init__(self, feature_extractor, tokenizer):
         super().__init__(feature_extractor, tokenizer)

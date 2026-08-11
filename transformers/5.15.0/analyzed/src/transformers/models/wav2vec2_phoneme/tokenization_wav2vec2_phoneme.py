@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tokenization class for Wav2Vec2Phoneme."""
 
+# Wav2Vec2 音素 CTC 分词：G2P 音素化、CTC 解码与字符时间偏移
 import json
 import os
 from dataclasses import dataclass
@@ -51,6 +52,7 @@ ListOfDict = list[dict[str, int | str]]
 
 
 @dataclass
+# Wav2Vec2PhonemeCTCTokenizerOutput：音素 CTC 分词输出：音素转写与字符偏移
 class Wav2Vec2PhonemeCTCTokenizerOutput(ModelOutput):
     """
     Output type of [` Wav2Vec2PhonemeCTCTokenizer`], with transcription.
@@ -68,6 +70,7 @@ class Wav2Vec2PhonemeCTCTokenizerOutput(ModelOutput):
     char_offsets: list[ListOfDict] | ListOfDict = None
 
 
+# Wav2Vec2PhonemeCTCTokenizer：音素 CTC 分词器：G2P 音素化与 CTC 解码
 class Wav2Vec2PhonemeCTCTokenizer(PreTrainedTokenizer):
     """
     Constructs a Wav2Vec2PhonemeCTC tokenizer.
