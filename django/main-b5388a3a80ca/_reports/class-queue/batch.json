@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T05:36:59Z",
   "files": [
-    "django/db/migrations/operations/special.py",
-    "django/db/migrations/optimizer.py",
-    "django/db/migrations/questioner.py",
-    "django/db/migrations/recorder.py",
-    "django/db/migrations/serializer.py",
-    "django/db/migrations/state.py",
-    "django/db/migrations/utils.py",
-    "django/db/migrations/writer.py",
-    "django/db/models/__init__.py",
-    "django/db/models/aggregates.py",
-    "django/db/models/base.py",
-    "django/db/models/constants.py",
-    "django/db/models/constraints.py",
-    "django/db/models/deletion.py",
-    "django/db/models/enums.py",
     "django/db/models/expressions.py",
     "django/db/models/fetch_modes.py",
     "django/db/models/fields/__init__.py",
@@ -33,5 +18,5 @@
     "django/db/models/functions/__init__.py"
   ],
   "remaining_pending": 192,
-  "done": 720
+  "done": 735
 }
