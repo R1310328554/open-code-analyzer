@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T05:00:37Z",
   "files": [
-    "django/contrib/gis/db/backends/oracle/schema.py",
-    "django/contrib/gis/db/backends/postgis/__init__.py",
-    "django/contrib/gis/db/backends/postgis/adapter.py",
-    "django/contrib/gis/db/backends/postgis/base.py",
-    "django/contrib/gis/db/backends/postgis/const.py",
-    "django/contrib/gis/db/backends/postgis/features.py",
-    "django/contrib/gis/db/backends/postgis/introspection.py",
-    "django/contrib/gis/db/backends/postgis/models.py",
-    "django/contrib/gis/db/backends/postgis/operations.py",
-    "django/contrib/gis/db/backends/postgis/pgraster.py",
-    "django/contrib/gis/db/backends/postgis/schema.py",
-    "django/contrib/gis/db/backends/spatialite/__init__.py",
-    "django/contrib/gis/db/backends/spatialite/adapter.py",
-    "django/contrib/gis/db/backends/spatialite/base.py",
-    "django/contrib/gis/db/backends/spatialite/client.py",
     "django/contrib/gis/db/backends/spatialite/features.py",
     "django/contrib/gis/db/backends/spatialite/introspection.py",
     "django/contrib/gis/db/backends/spatialite/models.py",
@@ -33,5 +18,5 @@
     "django/contrib/gis/feeds.py"
   ],
   "remaining_pending": 582,
-  "done": 330
+  "done": 345
 }
