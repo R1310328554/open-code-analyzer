@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T05:19:15Z",
-  "files": [
-    "django/core/checks/commands.py",
-    "django/core/checks/compatibility/__init__.py",
-    "django/core/checks/compatibility/django_4_0.py",
-    "django/core/checks/database.py",
-    "django/core/checks/files.py",
-    "django/core/checks/mail.py",
-    "django/core/checks/messages.py",
-    "django/core/checks/model_checks.py",
-    "django/core/checks/registry.py",
-    "django/core/checks/security/__init__.py",
-    "django/core/checks/security/base.py",
-    "django/core/checks/security/csrf.py",
-    "django/core/checks/security/sessions.py",
-    "django/core/checks/templates.py",
-    "django/core/checks/translation.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 372,
-  "done": 555
+  "done": 570
 }
