@@ -1,3 +1,4 @@
+# YOLOS 模块化图像处理：继承 DETR 处理器并强制 patch 对齐尺寸
 from typing import Optional
 
 import numpy as np
@@ -57,6 +58,7 @@ def get_size_with_aspect_ratio_yolos(
     return (oh, ow)
 
 
+# YolosImageProcessor：继承 DETR 处理器：YOLOS 专用 patch 对齐 resize
 class YolosImageProcessor(DetrImageProcessor):
     def resize(
         self,
@@ -166,6 +168,7 @@ class YolosImageProcessor(DetrImageProcessor):
         raise NotImplementedError("Panoptic segmentation post-processing is not implemented for Deformable DETR yet.")
 
 
+# YolosImageProcessorPil：继承 DETR PIL 处理器：YOLOS 专用尺寸取整
 class YolosImageProcessorPil(DetrImageProcessorPil):
     def resize(
         self,

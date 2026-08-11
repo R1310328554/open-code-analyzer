@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tokenization classes for XLNet model."""
 
+# XLNet 分词：Unigram SentencePiece 后端，左填充与段落/CLS/SEP 特殊 token
 from tokenizers import AddedToken, Tokenizer, decoders, normalizers, pre_tokenizers, processors
 from tokenizers.models import Unigram
 
@@ -35,6 +36,7 @@ SEG_ID_SEP = 3
 SEG_ID_PAD = 4
 
 
+# XLNetTokenizer：Unigram 分词器：Metaspace 预分词 + CLS/SEP 模板后处理
 class XLNetTokenizer(TokenizersBackend):
     """
     Construct a XLNet tokenizer (backed by HuggingFace's *tokenizers* library). Based on

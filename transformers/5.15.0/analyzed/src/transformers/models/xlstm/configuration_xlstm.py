@@ -14,6 +14,7 @@
 
 """xLSTM configuration."""
 
+# xLSTM 配置：mLSTM 块、分块/逐步内核与门控 FFN 超参数
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
@@ -55,6 +56,7 @@ else:
 
 @auto_docstring(checkpoint="NX-AI/xLSTM-7b")
 @strict
+# xLSTMConfig：xLSTM 主配置：块数、头数、分块内核与 FFN 缩放因子
 class xLSTMConfig(PreTrainedConfig):
     r"""
     num_blocks (int, optional, *optional*, defaults to 32):

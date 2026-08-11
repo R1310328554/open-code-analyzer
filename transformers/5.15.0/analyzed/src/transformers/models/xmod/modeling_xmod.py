@@ -13,6 +13,7 @@
 # limitations under the License.
 """PyTorch X-MOD model."""
 
+# X-MOD 建模：共享 Transformer 骨干 + 按语言切换的轻量适配器模块
 from collections.abc import Callable
 
 import torch
@@ -48,6 +49,7 @@ logger = logging.get_logger(__name__)
 
 
 # Copied from transformers.models.roberta.modeling_roberta.RobertaEmbeddings with Roberta->Xmod
+# XmodEmbeddings：词/位置/类型嵌入 + LayerNorm + Dropout
 class XmodEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
@@ -180,6 +182,7 @@ def eager_attention_forward(
 
 
 # Copied from transformers.models.roberta.modeling_roberta.RobertaSelfAttention with Roberta->Xmod
+# XmodSelfAttention：多头自注意力：scaled dot-product + 可选相对 bias
 class XmodSelfAttention(nn.Module):
     def __init__(self, config, is_causal=False, layer_idx=None):
         super().__init__()
@@ -248,6 +251,7 @@ class XmodSelfAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertCrossAttention with Bert->Xmod
+# XmodCrossAttention：多头交叉注意力：decoder 查询 encoder KV
 class XmodCrossAttention(nn.Module):
     def __init__(self, config, is_causal=False, layer_idx=None):
         super().__init__()
@@ -324,6 +328,7 @@ class XmodCrossAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# XmodSelfOutput：自注意力输出投影 + Dropout + 残差 LayerNorm
 class XmodSelfOutput(nn.Module):
     # Copied from transformers.models.roberta.modeling_roberta.RobertaSelfOutput.__init__
     def __init__(self, config):
@@ -339,6 +344,7 @@ class XmodSelfOutput(nn.Module):
         return hidden_states
 
 
+# XmodAttention：注意力封装：自注意力或交叉注意力 + 输出层
 class XmodAttention(nn.Module):
     def __init__(self, config, is_causal=False, layer_idx=None, is_cross_attention=False):
         super().__init__()
@@ -379,6 +385,7 @@ class XmodAttention(nn.Module):
 
 
 # Copied from transformers.models.roberta.modeling_roberta.RobertaIntermediate
+# XmodIntermediate：FFN 中间层：线性扩展 + 激活
 class XmodIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -394,6 +401,7 @@ class XmodIntermediate(nn.Module):
         return hidden_states
 
 
+# XmodAdapter：语言适配器：降维-激活-升维瓶颈模块
 class XmodAdapter(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -412,6 +420,7 @@ class XmodAdapter(nn.Module):
         return hidden_states
 
 
+# XmodOutput：FFN 输出层：线性投影 + Dropout + 残差 LayerNorm
 class XmodOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -459,6 +468,7 @@ class XmodOutput(nn.Module):
         return hidden_states
 
 
+# XmodLayer：Transformer 层：注意力 + FFN + 可选语言适配器
 class XmodLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_idx=None):
         super().__init__()
@@ -534,6 +544,7 @@ class XmodLayer(GradientCheckpointingLayer):
         return self.intermediate(attention_output)
 
 
+# XmodEncoder：堆叠 XmodLayer 的编码器
 class XmodEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -575,6 +586,7 @@ class XmodEncoder(nn.Module):
 
 
 # Copied from transformers.models.roberta.modeling_roberta.RobertaPooler
+# XmodPooler：序列池化：取 [CLS] 向量 + tanh
 class XmodPooler(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -591,6 +603,7 @@ class XmodPooler(nn.Module):
 
 
 @auto_docstring
+# XmodPreTrainedModel：预训练基类：BERT 式组件权重初始化
 class XmodPreTrainedModel(PreTrainedModel):
     config_class = XmodConfig
     base_model_prefix = "roberta"
@@ -660,6 +673,7 @@ class XmodPreTrainedModel(PreTrainedModel):
     .. _*Attention is all you need*: https://huggingface.co/papers/1706.03762
     """
 )
+# XmodModel：基模型：嵌入 + 编码器 + 可选 pooler
 class XmodModel(XmodPreTrainedModel):
     def __init__(self, config, add_pooling_layer=True):
         r"""
@@ -809,6 +823,7 @@ class XmodModel(XmodPreTrainedModel):
     X-MOD Model with a `language modeling` head on top for CLM fine-tuning.
     """
 )
+# XmodForCausalLM：因果 LM 头：共享词嵌入的线性投影
 class XmodForCausalLM(XmodPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {
         "lm_head.decoder.weight": "roberta.embeddings.word_embeddings.weight",
@@ -918,6 +933,7 @@ class XmodForCausalLM(XmodPreTrainedModel, GenerationMixin):
 
 
 @auto_docstring
+# XmodForMaskedLM：掩码 LM 头：MLM 预测 + 可选语言切换
 class XmodForMaskedLM(XmodPreTrainedModel):
     _tied_weights_keys = {
         "lm_head.decoder.weight": "roberta.embeddings.word_embeddings.weight",
@@ -1001,6 +1017,7 @@ class XmodForMaskedLM(XmodPreTrainedModel):
 
 
 # Copied from transformers.models.roberta.modeling_roberta.RobertaLMHead
+# XmodLMHead：语言建模头：dense + 激活 + LayerNorm + 解码器
 class XmodLMHead(nn.Module):
     """Roberta Head for masked language modeling."""
 
@@ -1029,6 +1046,7 @@ class XmodLMHead(nn.Module):
     output) e.g. for GLUE tasks.
     """
 )
+# XmodForSequenceClassification：序列分类：pooler + 线性分类头
 class XmodForSequenceClassification(XmodPreTrainedModel):
     # Copied from transformers.models.roberta.modeling_roberta.RobertaForSequenceClassification.__init__ with Roberta->Xmod
     def __init__(self, config):
@@ -1109,6 +1127,7 @@ class XmodForSequenceClassification(XmodPreTrainedModel):
 
 
 @auto_docstring
+# XmodForMultipleChoice：多选：展平选项后分类
 class XmodForMultipleChoice(XmodPreTrainedModel):
     # Copied from transformers.models.roberta.modeling_roberta.RobertaForMultipleChoice.__init__ with Roberta->Xmod
     def __init__(self, config):
@@ -1210,6 +1229,7 @@ class XmodForMultipleChoice(XmodPreTrainedModel):
 
 
 @auto_docstring
+# XmodForTokenClassification：token 分类：逐 token 线性投影
 class XmodForTokenClassification(XmodPreTrainedModel):
     # Copied from transformers.models.roberta.modeling_roberta.RobertaForTokenClassification.__init__ with Roberta->Xmod
     def __init__(self, config):
@@ -1276,6 +1296,7 @@ class XmodForTokenClassification(XmodPreTrainedModel):
 
 
 # Copied from transformers.models.roberta.modeling_roberta.RobertaClassificationHead
+# XmodClassificationHead：分类头：dense + tanh + 线性输出
 class XmodClassificationHead(nn.Module):
     """Head for sentence-level classification tasks."""
 
@@ -1299,6 +1320,7 @@ class XmodClassificationHead(nn.Module):
 
 
 @auto_docstring
+# XmodForQuestionAnswering：抽取式 QA：起始/结束 span 预测
 class XmodForQuestionAnswering(XmodPreTrainedModel):
     # Copied from transformers.models.roberta.modeling_roberta.RobertaForQuestionAnswering.__init__ with Roberta->Xmod
     def __init__(self, config):

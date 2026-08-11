@@ -14,6 +14,7 @@
 # limitations under the License.
 """XLNet configuration"""
 
+# XLNet 配置：Permutation LM 超参数，含双向/单向注意力、记忆缓存与序列摘要
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
@@ -25,6 +26,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="xlnet/xlnet-large-cased")
 @strict
+# XLNetConfig：XLNet 主配置：vocab、层数、双向注意力与记忆缓存参数
 class XLNetConfig(PreTrainedConfig):
     r"""
     ff_activation (`str` or `Callable`, *optional*, defaults to `"gelu"`):

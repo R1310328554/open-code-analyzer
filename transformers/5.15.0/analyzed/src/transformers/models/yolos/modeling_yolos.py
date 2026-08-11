@@ -13,6 +13,7 @@
 # limitations under the License.
 """PyTorch YOLOS model."""
 
+# YOLOS 建模：ViT 编码 + 检测 token MLP 头，端到端目标检测
 import collections.abc
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -40,6 +41,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# YolosObjectDetectionOutput：检测输出：logits、pred_boxes 与 auxiliary_outputs
 class YolosObjectDetectionOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` are provided)):
@@ -73,6 +75,7 @@ class YolosObjectDetectionOutput(ModelOutput):
     attentions: tuple[torch.FloatTensor] | None = None
 
 
+# YolosEmbeddings：组合 patch 嵌入与检测 token 嵌入
 class YolosEmbeddings(nn.Module):
     """
     Construct the CLS token, detection tokens, position and patch embeddings.
@@ -115,6 +118,7 @@ class YolosEmbeddings(nn.Module):
         return embeddings
 
 
+# InterpolateInitialPositionEmbeddings：初始层位置编码双线性插值
 class InterpolateInitialPositionEmbeddings(nn.Module):
     def __init__(self, config) -> None:
         super().__init__()
@@ -144,6 +148,7 @@ class InterpolateInitialPositionEmbeddings(nn.Module):
         return scale_pos_embed
 
 
+# InterpolateMidPositionEmbeddings：中间层位置编码双线性插值
 class InterpolateMidPositionEmbeddings(nn.Module):
     def __init__(self, config) -> None:
         super().__init__()
@@ -177,6 +182,7 @@ class InterpolateMidPositionEmbeddings(nn.Module):
         return scale_pos_embed
 
 
+# YolosPatchEmbeddings：Conv2d patch 投影 + 可学习位置编码
 class YolosPatchEmbeddings(nn.Module):
     """
     This class turns `pixel_values` of shape `(batch_size, num_channels, height, width)` into the initial
@@ -240,6 +246,7 @@ def eager_attention_forward(
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTAttention with ViT->Yolos
+# YolosSelfAttention：ViT 多头自注意力
 class YolosSelfAttention(nn.Module):
     def __init__(self, config: YolosConfig):
         super().__init__()
@@ -296,6 +303,7 @@ class YolosSelfAttention(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTAttention with ViT->Yolos
+# YolosSelfOutput：自注意力输出投影 + Dropout + 残差 LayerNorm
 class YolosSelfOutput(nn.Module):
     """
     The residual connection is defined in YolosLayer instead of here (as is the case with other models), due to the
@@ -314,6 +322,7 @@ class YolosSelfOutput(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTAttention with ViT->Yolos
+# YolosAttention：注意力封装：自注意力 + 输出层
 class YolosAttention(nn.Module):
     def __init__(self, config: YolosConfig):
         super().__init__()
@@ -331,6 +340,7 @@ class YolosAttention(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTMLP with ViT->Yolos
+# YolosIntermediate：FFN 中间层：线性扩展 + GELU
 class YolosIntermediate(nn.Module):
     def __init__(self, config: YolosConfig):
         super().__init__()
@@ -347,6 +357,7 @@ class YolosIntermediate(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTMLP with ViT->Yolos
+# YolosOutput：FFN 输出层：线性投影 + Dropout + 残差 LayerNorm
 class YolosOutput(nn.Module):
     def __init__(self, config: YolosConfig):
         super().__init__()
@@ -361,6 +372,7 @@ class YolosOutput(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTLayer with ViT->Yolos,VIT->YOLOS
+# YolosLayer：ViT 编码层：自注意力 + FFN
 class YolosLayer(GradientCheckpointingLayer):
     """This corresponds to the Block class in the timm implementation."""
 
@@ -395,6 +407,7 @@ class YolosLayer(GradientCheckpointingLayer):
         return layer_output
 
 
+# YolosEncoder：堆叠 YolosLayer 的 ViT 编码器
 class YolosEncoder(nn.Module):
     def __init__(self, config: YolosConfig) -> None:
         super().__init__()
@@ -440,6 +453,7 @@ class YolosEncoder(nn.Module):
 
 
 @auto_docstring
+# YolosPreTrainedModel：预训练基类：ViT 与检测头权重初始化
 class YolosPreTrainedModel(PreTrainedModel):
     config: YolosConfig
     base_model_prefix = "vit"
@@ -458,6 +472,7 @@ class YolosPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# YolosModel：基模型：patch 嵌入 + 编码器 + 检测 token
 class YolosModel(YolosPreTrainedModel):
     def __init__(self, config: YolosConfig, add_pooling_layer: bool = True):
         r"""
@@ -501,6 +516,7 @@ class YolosModel(YolosPreTrainedModel):
         return BaseModelOutputWithPooling(last_hidden_state=sequence_output, pooler_output=pooled_output)
 
 
+# YolosPooler：检测 token 池化：取前 num_detection_tokens 向量
 class YolosPooler(nn.Module):
     def __init__(self, config: YolosConfig):
         super().__init__()
@@ -517,6 +533,7 @@ class YolosPooler(nn.Module):
 
 
 # Copied from transformers.models.detr.modeling_detr.DetrMLPPredictionHead with Detr->Yolos
+# YolosMLPPredictionHead：检测 MLP 头：类别 logits + 边界框回归
 class YolosMLPPredictionHead(nn.Module):
     """
     Very simple multi-layer perceptron (MLP, also called FFN), used to predict the normalized center coordinates,
@@ -541,6 +558,7 @@ class YolosMLPPredictionHead(nn.Module):
     YOLOS Model (consisting of a ViT encoder) with object detection heads on top, for tasks such as COCO detection.
     """
 )
+# YolosForObjectDetection：端到端目标检测：Hungarian 匹配 + 辅助损失
 class YolosForObjectDetection(YolosPreTrainedModel):
     def __init__(self, config: YolosConfig):
         super().__init__(config)

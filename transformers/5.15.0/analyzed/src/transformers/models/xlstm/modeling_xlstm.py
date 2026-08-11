@@ -13,6 +13,7 @@
 # limitations under the License.
 """PyTorch xLSTM Model."""
 
+# xLSTM 建模：扩展 LSTM 的 mLSTM 块堆叠，支持因果 LM 与 KV 缓存
 from dataclasses import dataclass
 
 import torch
@@ -1230,6 +1231,7 @@ def wang_init_method(n_layers, dim):
     return init_
 
 
+# xLSTMPreTrainedModel：预训练基类：mLSTM 块与 LM 头权重初始化
 class xLSTMPreTrainedModel(PreTrainedModel):
     """
     An abstract class for an interface to loading a pre-trained xLSTM model.
@@ -1305,6 +1307,7 @@ class xLSTMPreTrainedModel(PreTrainedModel):
                 small_init_method(self.config.hidden_size)(module.weight)
 
 
+# xLSTMCache：推理 KV/状态缓存：按层存储 mLSTM 隐状态
 class xLSTMCache:
     """
     Cache for xLSTM model which does not have attention mechanism and key value states.
@@ -1381,6 +1384,7 @@ class xLSTMCache:
 
 @auto_docstring
 @dataclass
+# xLSTMOutput：基模型输出：last_hidden_state 与 past_key_values
 class xLSTMOutput(ModelOutput):
     r"""
     cache_params (`xLSTMCache`):
@@ -1394,6 +1398,7 @@ class xLSTMOutput(ModelOutput):
 
 
 @auto_docstring
+# xLSTMModel：基模型：词嵌入 + 堆叠 mLSTM 块 + 输出归一化
 class xLSTMModel(xLSTMPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1499,6 +1504,7 @@ class xLSTMModel(xLSTMPreTrainedModel):
 
 @auto_docstring
 @dataclass
+# xLSTMCausalLMOutput：因果 LM 输出：logits、loss 与 past_key_values
 class xLSTMCausalLMOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -1517,6 +1523,7 @@ class xLSTMCausalLMOutput(ModelOutput):
 
 
 @auto_docstring
+# xLSTMForCausalLM：因果语言建模头：线性投影 + 自回归生成
 class xLSTMForCausalLM(xLSTMPreTrainedModel, GenerationMixin):
     def __init__(self, config):
         super().__init__(config)

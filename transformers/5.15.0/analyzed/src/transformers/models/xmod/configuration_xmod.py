@@ -14,6 +14,7 @@
 # limitations under the License.
 """X-MOD configuration"""
 
+# X-MOD 配置：多语言 RoBERTa 变体，含语言适配器与默认语言码
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
@@ -22,6 +23,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="facebook/xmod-base")
 @strict
+# XmodConfig：X-MOD 主配置：RoBERTa 骨干 + 语言适配器与默认语言
 class XmodConfig(PreTrainedConfig):
     r"""
     pre_norm (`bool`, *optional*, defaults to `False`):

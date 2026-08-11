@@ -13,6 +13,7 @@
 # limitations under the License.
 """YOLOS model configuration"""
 
+# YOLOS 配置：ViT 骨干 + DETR 式检测 token 与匈牙利匹配损失权重
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
@@ -21,6 +22,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="hustvl/yolos-base")
 @strict
+# YolosConfig：YOLOS 主配置：ViT 骨干、检测 token 数与匹配损失系数
 class YolosConfig(PreTrainedConfig):
     r"""
     num_detection_tokens (`int`, *optional*, defaults to 100):

@@ -16,6 +16,7 @@
 PyTorch XLNet model.
 """
 
+# XLNet 建模：相对位置自注意力 + 循环记忆，支持 LM/分类/QA 等下游头
 from collections.abc import Callable
 from dataclasses import dataclass
 
@@ -35,6 +36,7 @@ from .configuration_xlnet import XLNetConfig
 logger = logging.get_logger(__name__)
 
 
+# XLNetRelativeAttention：相对位置自注意力：内容/位置 QKV 与 segment 掩码
 class XLNetRelativeAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -282,6 +284,7 @@ class XLNetRelativeAttention(nn.Module):
         return outputs
 
 
+# XLNetFeedForward：两层 FFN 前馈：GELU 激活 + 残差投影
 class XLNetFeedForward(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -305,6 +308,7 @@ class XLNetFeedForward(nn.Module):
         return output
 
 
+# XLNetLayer：XLNet 编码层：相对注意力 + FFN + LayerNorm
 class XLNetLayer(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -354,6 +358,7 @@ class XLNetLayer(nn.Module):
 
 
 # Copied from transformers.models.xlm.modeling_xlm.XLMPoolerStartLogits with XLM->XLNet
+# XLNetPoolerStartLogits：SQuAD 起始位置 logits：双线性池化 + top-k
 class XLNetPoolerStartLogits(nn.Module):
     """
     Compute SQuAD start logits from sequence hidden states.
@@ -391,6 +396,7 @@ class XLNetPoolerStartLogits(nn.Module):
 
 
 # Copied from transformers.models.xlm.modeling_xlm.XLMPoolerEndLogits with XLM->XLNet
+# XLNetPoolerEndLogits：SQuAD 结束位置 logits：条件于起始位置的 top-k
 class XLNetPoolerEndLogits(nn.Module):
     """
     Compute SQuAD end logits from sequence hidden states.
@@ -461,6 +467,7 @@ class XLNetPoolerEndLogits(nn.Module):
 
 
 # Copied from transformers.models.xlm.modeling_xlm.XLMPoolerAnswerClass with XLM->XLNet
+# XLNetPoolerAnswerClass：SQuAD 答案类别头：判断 span 是否有效
 class XLNetPoolerAnswerClass(nn.Module):
     """
     Compute SQuAD 2.0 answer class from classification and start tokens hidden states.
@@ -527,6 +534,7 @@ class XLNetPoolerAnswerClass(nn.Module):
 
 
 # Copied from transformers.models.xlm.modeling_xlm.XLMSequenceSummary with XLM->XLNet
+# XLNetSequenceSummary：序列摘要池化：last/first/mean/attn 多种策略
 class XLNetSequenceSummary(nn.Module):
     r"""
     Compute a single vector summary of a sequence hidden states.
@@ -627,6 +635,7 @@ class XLNetSequenceSummary(nn.Module):
 
 
 @auto_docstring
+# XLNetPreTrainedModel：预训练基类：相对注意力与 FFN 权重初始化
 class XLNetPreTrainedModel(PreTrainedModel):
     config: XLNetConfig
     base_model_prefix = "transformer"
@@ -658,6 +667,7 @@ class XLNetPreTrainedModel(PreTrainedModel):
     """
 )
 @dataclass
+# XLNetModelOutput：基模型输出：last_hidden_state、mems 与 hidden_states
 class XLNetModelOutput(ModelOutput):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, num_predict, hidden_size)`):
@@ -683,6 +693,7 @@ class XLNetModelOutput(ModelOutput):
     """
 )
 @dataclass
+# XLNetLMHeadModelOutput：LM 头输出：logits、mems 与 hidden_states
 class XLNetLMHeadModelOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape *(1,)*, *optional*, returned when `labels` is provided):
@@ -711,6 +722,7 @@ class XLNetLMHeadModelOutput(ModelOutput):
     """
 )
 @dataclass
+# XLNetForSequenceClassificationOutput：序列分类输出：logits 与 hidden_states
 class XLNetForSequenceClassificationOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `label` is provided):
@@ -736,6 +748,7 @@ class XLNetForSequenceClassificationOutput(ModelOutput):
     """
 )
 @dataclass
+# XLNetForTokenClassificationOutput：token 分类输出：logits 与 hidden_states
 class XLNetForTokenClassificationOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -761,6 +774,7 @@ class XLNetForTokenClassificationOutput(ModelOutput):
     """
 )
 @dataclass
+# XLNetForMultipleChoiceOutput：多选输出：logits 与 hidden_states
 class XLNetForMultipleChoiceOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape *(1,)*, *optional*, returned when `labels` is provided):
@@ -788,6 +802,7 @@ class XLNetForMultipleChoiceOutput(ModelOutput):
     """
 )
 @dataclass
+# XLNetForQuestionAnsweringSimpleOutput：抽取式 QA 输出：start/end logits
 class XLNetForQuestionAnsweringSimpleOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -816,6 +831,7 @@ class XLNetForQuestionAnsweringSimpleOutput(ModelOutput):
     """
 )
 @dataclass
+# XLNetForQuestionAnsweringOutput：复杂 QA 输出：含 mems 与 hidden_states
 class XLNetForQuestionAnsweringOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned if both `start_positions` and `end_positions` are provided):
@@ -850,6 +866,7 @@ class XLNetForQuestionAnsweringOutput(ModelOutput):
 
 
 @auto_docstring
+# XLNetModel：基模型：Permutation LM 编码器 + 可选记忆缓存
 class XLNetModel(XLNetPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1210,6 +1227,7 @@ class XLNetModel(XLNetPreTrainedModel):
     XLNet Model with a language modeling head on top (linear layer with weights tied to the input embeddings).
     """
 )
+# XLNetLMHeadModel：置换语言建模头：tie 词嵌入 + 自回归生成
 class XLNetLMHeadModel(XLNetPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_loss.weight": "transformer.word_embedding.weight"}
 
@@ -1459,6 +1477,7 @@ class XLNetLMHeadModel(XLNetPreTrainedModel, GenerationMixin):
     for GLUE tasks.
     """
 )
+# XLNetForSequenceClassification：序列分类：摘要池化 + 线性分类头
 class XLNetForSequenceClassification(XLNetPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1587,6 +1606,7 @@ class XLNetForSequenceClassification(XLNetPreTrainedModel):
 
 
 @auto_docstring
+# XLNetForTokenClassification：token 分类：逐 token 线性投影
 class XLNetForTokenClassification(XLNetPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1695,6 +1715,7 @@ class XLNetForTokenClassification(XLNetPreTrainedModel):
 
 
 @auto_docstring
+# XLNetForMultipleChoice：多选：展平选项维度后分类
 class XLNetForMultipleChoice(XLNetPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1839,6 +1860,7 @@ class XLNetForMultipleChoice(XLNetPreTrainedModel):
     layers on top of the hidden-states output to compute `span start logits` and `span end logits`).
     """
 )
+# XLNetForQuestionAnsweringSimple：抽取式 QA：起始/结束 span 预测
 class XLNetForQuestionAnsweringSimple(XLNetPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1960,6 +1982,7 @@ class XLNetForQuestionAnsweringSimple(XLNetPreTrainedModel):
 
 
 @auto_docstring
+# XLNetForQuestionAnswering：复杂 QA：含答案类别与 beam 搜索头
 class XLNetForQuestionAnswering(XLNetPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
