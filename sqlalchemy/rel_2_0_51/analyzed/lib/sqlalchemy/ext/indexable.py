@@ -224,6 +224,8 @@ The above query will render:
 
 """  # noqa
 
+# indexable 扩展：为 JSON/ARRAY/HSTORE 等 Indexable 列的子元素提供 Column 式属性
+
 from __future__ import annotations
 
 from typing import Any
@@ -248,6 +250,7 @@ __all__ = ["index_property"]
 _T = TypeVar("_T")
 
 
+# hybrid_property 子类：读写 Indexable 列的指定 index/key
 class index_property(hybrid_property[_T]):
     """A property generator. The generated property describes an object
     attribute that corresponds to an :class:`_types.Indexable`
@@ -261,6 +264,7 @@ class index_property(hybrid_property[_T]):
 
     _NO_DEFAULT_ARGUMENT = cast(_T, object())
 
+    # 指定宿主属性名、index、default、datatype、mutable、onebased
     def __init__(
         self,
         attr_name: str,
@@ -318,6 +322,7 @@ class index_property(hybrid_property[_T]):
         else:
             return self.default
 
+    # 实例 getter：从 Indexable 结构读取 index 处值
     def fget(self, __instance: Any) -> _T:
         attr_name = self.attr_name
         column_value = getattr(__instance, attr_name)
@@ -330,6 +335,7 @@ class index_property(hybrid_property[_T]):
         else:
             return value  # type: ignore[no-any-return]
 
+    # 实例 setter：写入并 flag_modified
     def fset(self, instance: Any, value: _T) -> None:
         attr_name = self.attr_name
         column_value = getattr(instance, attr_name, None)
@@ -341,6 +347,7 @@ class index_property(hybrid_property[_T]):
         if attr_name in inspect(instance).mapper.attrs:
             flag_modified(instance, attr_name)
 
+    # 删除 index 处键/元素
     def fdel(self, instance: Any) -> None:
         attr_name = self.attr_name
         column_value = getattr(instance, attr_name)
@@ -354,6 +361,7 @@ class index_property(hybrid_property[_T]):
             setattr(instance, attr_name, column_value)
             flag_modified(instance, attr_name)
 
+    # 类级 SQL 表达式（JSON 路径/数组下标等）
     def expr(
         self, model: Any
     ) -> Union[_HasClauseElement[_T], SQLColumnExpression[_T]]:

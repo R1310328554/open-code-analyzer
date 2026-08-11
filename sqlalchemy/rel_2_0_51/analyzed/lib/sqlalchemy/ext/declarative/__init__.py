@@ -7,7 +7,9 @@
 # mypy: ignore-errors
 
 
-from .extensions import AbstractConcreteBase
+# ext.declarative 兼容层：重导出 ORM declarative API 与扩展 mixin
+
+from .extensions import AbstractConcreteBasefrom .extensions import AbstractConcreteBase
 from .extensions import ConcreteBase
 from .extensions import DeferredReflection
 from ... import util
@@ -23,6 +25,7 @@ from ...orm.decl_api import synonym_for as _synonym_for
     "The ``declarative_base()`` function is now available as "
     ":func:`sqlalchemy.orm.declarative_base`."
 )
+# 已迁移至 sqlalchemy.orm.declarative_base（此处转发并 deprecation 提示）
 def declarative_base(*arg, **kw):
     return _declarative_base(*arg, **kw)
 
@@ -31,6 +34,7 @@ def declarative_base(*arg, **kw):
     "The ``as_declarative()`` function is now available as "
     ":func:`sqlalchemy.orm.as_declarative`"
 )
+# 已迁移至 sqlalchemy.orm.as_declarative
 def as_declarative(*arg, **kw):
     return _as_declarative(*arg, **kw)
 
@@ -39,6 +43,7 @@ def as_declarative(*arg, **kw):
     "The ``has_inherited_table()`` function is now available as "
     ":func:`sqlalchemy.orm.has_inherited_table`."
 )
+# 已迁移至 sqlalchemy.orm.has_inherited_table
 def has_inherited_table(*arg, **kw):
     return _has_inherited_table(*arg, **kw)
 
@@ -47,6 +52,7 @@ def has_inherited_table(*arg, **kw):
     "The ``synonym_for()`` function is now available as "
     ":func:`sqlalchemy.orm.synonym_for`"
 )
+# 已迁移至 sqlalchemy.orm.synonym_for
 def synonym_for(*arg, **kw):
     return _synonym_for(*arg, **kw)
 

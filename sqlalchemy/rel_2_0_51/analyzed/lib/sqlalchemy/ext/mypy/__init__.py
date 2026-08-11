@@ -4,3 +4,5 @@
 #
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
+# SQLAlchemy mypy 插件包：为 Declarative/Mapped 提供静态类型推断
+# the MIT License: https://www.opensource.org/licenses/mit-license.php

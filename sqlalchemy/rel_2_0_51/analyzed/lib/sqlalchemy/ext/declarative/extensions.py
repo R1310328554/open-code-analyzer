@@ -9,6 +9,8 @@
 
 """Public API functions and helpers for declarative."""
 
+# Declarative 扩展 mixin：concrete 继承、抽象 concrete 与延迟反射
+
 from __future__ import annotations
 
 import collections
@@ -34,6 +36,7 @@ if TYPE_CHECKING:
     from ...sql.schema import MetaData
 
 
+# concrete 多表继承 helper：__declare_last__ 中 polymorphic_union
 class ConcreteBase:
     """A helper class for 'concrete' declarative mappings.
 
@@ -112,6 +115,7 @@ class ConcreteBase:
         )
 
     @classmethod
+    # ConcreteBase：before_configured 时 polymorphic_union 并设置 with_polymorphic
     def __declare_first__(cls):
         m = cls.__mapper__
         if m.with_polymorphic:
@@ -127,6 +131,7 @@ class ConcreteBase:
         m._set_polymorphic_on(pjoin.c[discriminator_name])
 
 
+# 抽象 concrete 基类：无自身表，子类各自映射
 class AbstractConcreteBase(ConcreteBase):
     """A helper class for 'concrete' declarative mappings.
 
@@ -356,6 +361,7 @@ class AbstractConcreteBase(ConcreteBase):
         )
 
 
+# 延迟反射：prepare(engine) 前不反射，支持动态 schema
 class DeferredReflection:
     """A helper class for construction of mappings based on
     a deferred reflection step.
@@ -436,6 +442,7 @@ class DeferredReflection:
     """
 
     @classmethod
+    # DeferredReflection：反射全部子类 Table 并完成 deferred mapper 配置
     def prepare(
         cls, bind: Union[Engine, Connection], **reflect_kw: Any
     ) -> None:

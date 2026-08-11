@@ -66,6 +66,7 @@ attribute.
 """
 
 
+# 读取类上 __sa_instrumentation_manager__ 自定义 instrumentation 钩子
 def find_native_user_instrumentation_hook(cls):
     """Find user-specified instrumentation management for a class."""
     return getattr(cls, INSTRUMENTATION_MANAGER, None)
@@ -88,6 +89,7 @@ ClassManager instrumentation is used.
 """
 
 
+# 扩展 InstrumentationFactory：多 manager/state/dict finder
 class ExtendedInstrumentationRegistry(InstrumentationFactory):
     """Extends :class:`.InstrumentationFactory` with additional
     bookkeeping, to accommodate multiple types of
@@ -100,6 +102,7 @@ class ExtendedInstrumentationRegistry(InstrumentationFactory):
     _dict_finders = weakref.WeakKeyDictionary()
     _extended = False
 
+    # 遍历 instrumentation_finders 解析 factory
     def _locate_extended_factory(self, class_):
         for finder in instrumentation_finders:
             factory = finder(class_)
@@ -109,6 +112,7 @@ class ExtendedInstrumentationRegistry(InstrumentationFactory):
         else:
             return None, None
 
+    # 检测继承层次中多种 instrumentation 冲突
     def _check_conflicts(self, class_, factory):
         existing_factories = self._collect_management_factories_for(
             class_
@@ -164,6 +168,7 @@ class ExtendedInstrumentationRegistry(InstrumentationFactory):
         factories.discard(None)
         return factories
 
+    # 移除类 instrumentation 并清理 finder 缓存
     def unregister(self, class_):
         super().unregister(class_)
         if class_ in self._manager_finders:
@@ -171,6 +176,7 @@ class ExtendedInstrumentationRegistry(InstrumentationFactory):
             del self._state_finders[class_]
             del self._dict_finders[class_]
 
+    # 可选返回 ClassManager（未映射时为 None）
     def opt_manager_of_class(self, cls):
         try:
             finder = self._manager_finders.get(
@@ -182,6 +188,7 @@ class ExtendedInstrumentationRegistry(InstrumentationFactory):
         else:
             return finder(cls)
 
+    # 返回类的 ClassManager（未映射则 UnmappedClassError）
     def manager_of_class(self, cls):
         try:
             finder = self._manager_finders.get(cls, _default_manager_getter)
@@ -199,6 +206,7 @@ class ExtendedInstrumentationRegistry(InstrumentationFactory):
                 )
             return manager
 
+    # 返回实例 InstanceState
     def state_of(self, instance):
         if instance is None:
             raise AttributeError("None has no persistent state.")
@@ -206,6 +214,7 @@ class ExtendedInstrumentationRegistry(InstrumentationFactory):
             instance.__class__, _default_state_getter
         )(instance)
 
+    # 返回实例状态字典
     def dict_of(self, instance):
         if instance is None:
             raise AttributeError("None has no persistent state.")
@@ -220,6 +229,7 @@ orm_instrumentation._instrumentation_factory = _instrumentation_factory = (
 orm_instrumentation.instrumentation_finders = instrumentation_finders
 
 
+# 替代 ClassManager 的 instrumentation 协议实现基类
 class InstrumentationManager:
     """User-defined class instrumentation extension.
 
@@ -296,6 +306,7 @@ class InstrumentationManager:
         return lambda inst: self.get_instance_dict(class_, inst)
 
 
+# 将 InstrumentationManager 适配为 ClassManager 接口
 class _ClassInstrumentationAdapter(ClassManager):
     """Adapts a user-defined InstrumentationManager to a ClassManager."""
 
@@ -393,6 +404,7 @@ class _ClassInstrumentationAdapter(ClassManager):
         return self._get_dict
 
 
+# 安装扩展 finder：优先用户 instrumentation，否则默认 ClassManager
 def _install_instrumented_lookups():
     """Replace global class/object management functions
     with ExtendedInstrumentationRegistry implementations, which
@@ -416,6 +428,7 @@ def _install_instrumented_lookups():
     )
 
 
+# 恢复 ORM 默认 instrumentation 查找链
 def _reinstall_default_lookups():
     """Restore simplified lookups."""
     _install_lookups(
@@ -429,6 +442,7 @@ def _reinstall_default_lookups():
     _instrumentation_factory._extended = False
 
 
+# 将自定义 lookup 函数注册到 ExtendedInstrumentationRegistry
 def _install_lookups(lookups):
     global instance_state, instance_dict
     global manager_of_class, opt_manager_of_class

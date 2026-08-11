@@ -5,6 +5,8 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
+# mypy 插件：将推断类型应用到 Declarative 类属性与 Mapped 语句
+
 from __future__ import annotations
 
 from typing import List
@@ -42,6 +44,7 @@ from .names import expr_to_mapped_constructor
 from .names import NAMED_TYPE_SQLA_MAPPED
 
 
+# 对单个 mapped 属性应用 Mypy 类型（含 __init__ 参数）
 def apply_mypy_mapped_attr(
     cls: ClassDef,
     api: SemanticAnalyzerPluginInterface,
@@ -95,6 +98,7 @@ def apply_mypy_mapped_attr(
     )
 
 
+# 重新扫描类赋值并批量应用 SQLAlchemy 类型
 def re_apply_declarative_assignments(
     cls: ClassDef,
     api: SemanticAnalyzerPluginInterface,
@@ -180,6 +184,7 @@ def re_apply_declarative_assignments(
         util.set_mapped_attributes(cls.info, attributes)
 
 
+# 解析 Mapped[]/mapped_column 赋值并设置 Var 类型
 def apply_type_to_mapped_statement(
     api: SemanticAnalyzerPluginInterface,
     stmt: AssignmentStmt,
@@ -252,6 +257,7 @@ def apply_type_to_mapped_statement(
         stmt.type = python_type_for_type
 
 
+# 为 Declarative 类补充 relationship/backref 等 ORM 属性类型
 def add_additional_orm_attributes(
     cls: ClassDef,
     api: SemanticAnalyzerPluginInterface,
@@ -305,6 +311,7 @@ def add_additional_orm_attributes(
         )
 
 
+# 在类上放置占位 Var 以待后续类型填充
 def _apply_placeholder_attr_to_class(
     api: SemanticAnalyzerPluginInterface,
     cls: ClassDef,

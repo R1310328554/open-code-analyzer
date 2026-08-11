@@ -482,6 +482,8 @@ Example usage::
 
 """
 
+# SQL 编译扩展：@compiles 注册自定义 ClauseElement/TypeEngine 编译规则
+
 from __future__ import annotations
 
 from typing import Any
@@ -500,6 +502,7 @@ if TYPE_CHECKING:
 _F = TypeVar("_F", bound=Callable[..., Any])
 
 
+# 装饰器：为 ClauseElement 类型注册编译函数（可选方言名 specs）
 def compiles(class_: Type[Any], *specs: str) -> Callable[[_F], _F]:
     """Register a function as a compiler for a
     given :class:`_expression.ClauseElement` type."""
@@ -551,6 +554,7 @@ def compiles(class_: Type[Any], *specs: str) -> Callable[[_F], _F]:
     return decorate
 
 
+# 移除类型上全部自定义编译器，恢复默认 dispatch
 def deregister(class_: Type[Any]) -> None:
     """Remove all custom compilers associated with a given
     :class:`_expression.ClauseElement` type.
@@ -562,10 +566,12 @@ def deregister(class_: Type[Any]) -> None:
         del class_._compiler_dispatcher
 
 
+# 内部编译调度器：按 dialect 名分发 visit 函数
 class _dispatcher:
     def __init__(self) -> None:
         self.specs: Dict[str, Callable[..., Any]] = {}
 
+    # 按 compiler.dialect.name 查找 visit 函数并调用
     def __call__(self, element: Any, compiler: SQLCompiler, **kw: Any) -> Any:
         # TODO: yes, this could also switch off of DBAPI in use.
         fn = self.specs.get(compiler.dialect.name, None)

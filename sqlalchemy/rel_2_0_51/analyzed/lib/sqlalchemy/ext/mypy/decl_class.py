@@ -5,6 +5,8 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
+# mypy 插件：扫描 Declarative 类体赋值、装饰器与 Mapped 基类
+
 from __future__ import annotations
 
 from typing import List
@@ -45,6 +47,7 @@ from . import names
 from . import util
 
 
+# 入口：遍历 ClassDef 符号表并推断/应用 ORM 属性类型
 def scan_declarative_assignments_and_apply_types(
     cls: ClassDef,
     api: SemanticAnalyzerPluginInterface,
@@ -111,6 +114,7 @@ def scan_declarative_assignments_and_apply_types(
     return mapped_attributes
 
 
+# 处理单个符号表项：Assignment/Decorator/Placeholder
 def _scan_symbol_table_entry(
     cls: ClassDef,
     api: SemanticAnalyzerPluginInterface,
@@ -200,6 +204,7 @@ def _scan_symbol_table_entry(
         )
 
 
+# 解析 @declared_attr/@synonym_for 等装饰器语句
 def _scan_declarative_decorator_stmt(
     cls: ClassDef,
     api: SemanticAnalyzerPluginInterface,
@@ -356,6 +361,7 @@ def _scan_declarative_decorator_stmt(
     cls.defs.body[dec_index] = new_stmt
 
 
+# 解析 mapped_column/relationship/Mapped 赋值语句
 def _scan_declarative_assignment_stmt(
     cls: ClassDef,
     api: SemanticAnalyzerPluginInterface,
@@ -486,6 +492,7 @@ def _scan_declarative_assignment_stmt(
     )
 
 
+# 检测类是否继承 DeclarativeBase/Mapped 等 SQLAlchemy 基类
 def _scan_for_mapped_bases(
     cls: ClassDef,
     api: SemanticAnalyzerPluginInterface,

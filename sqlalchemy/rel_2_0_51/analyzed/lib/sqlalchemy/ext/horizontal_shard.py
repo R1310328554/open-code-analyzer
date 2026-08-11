@@ -24,6 +24,8 @@ the source distribution.
 
 """
 
+# 水平分片：ShardedSession 按 shard_id 路由查询与持久化到多 Engine
+
 from __future__ import annotations
 
 from typing import Any
@@ -78,6 +80,7 @@ _T = TypeVar("_T", bound=Any)
 ShardIdentifier = str
 
 
+# Protocol：按 mapper/instance/clause 选择 shard_id
 class ShardChooser(Protocol):
     def __call__(
         self,
@@ -87,6 +90,7 @@ class ShardChooser(Protocol):
     ) -> Any: ...
 
 
+# Protocol：按主键返回可能所在的 shard_id 列表
 class IdentityChooser(Protocol):
     def __call__(
         self,
@@ -100,6 +104,7 @@ class IdentityChooser(Protocol):
     ) -> Any: ...
 
 
+# 分片 Query：set_shard/execution_options 指定目标分片
 class ShardedQuery(Query[_T]):
     """Query class used with :class:`.ShardedSession`.
 
@@ -117,6 +122,7 @@ class ShardedQuery(Query[_T]):
         self.execute_chooser = self.session.execute_chooser
         self._shard_id = None
 
+    # 限定 Query 仅在给定 shard 执行
     def set_shard(self, shard_id: ShardIdentifier) -> Self:
         """Return a new query, limited to a single shard ID.
 
@@ -132,11 +138,13 @@ class ShardedQuery(Query[_T]):
         return self.execution_options(_sa_shard_id=shard_id)
 
 
+# 分片 Session：execute/get 合并多分片结果
 class ShardedSession(Session):
     shard_chooser: ShardChooser
     identity_chooser: IdentityChooser
     execute_chooser: Callable[[ORMExecuteState], Iterable[Any]]
 
+    # 构造分片会话：注册 do_orm_execute 拦截
     def __init__(
         self,
         shard_chooser: ShardChooser,
@@ -319,6 +327,7 @@ class ShardedSession(Session):
             state.identity_token = shard_id
         return shard_id
 
+    # 返回按 shard 选择 Connection 的 callable
     def connection_callable(
         self,
         mapper: Optional[Mapper[_T]] = None,
@@ -349,6 +358,7 @@ class ShardedSession(Session):
                 assert isinstance(bind, Connection)
                 return bind
 
+    # 解析 mapper/clause 对应 shard 的 Engine
     def get_bind(
         self,
         mapper: Optional[_EntityBindKey[_O]] = None,
@@ -371,6 +381,7 @@ class ShardedSession(Session):
         self.__shards[shard_id] = bind
 
 
+# ORM 执行选项：强制后续加载/查询使用指定 shard
 class set_shard_id(ORMOption):
     """a loader option for statements to apply a specific shard id to the
     primary query as well as for additional relationship and column
@@ -421,6 +432,7 @@ class set_shard_id(ORMOption):
         self.propagate_to_loaders = propagate_to_loaders
 
 
+# do_orm_execute 钩子：按 shard 分发 ORM 执行并合并实例/结果
 def execute_and_instances(
     orm_context: ORMExecuteState,
 ) -> Union[Result[_T], IteratorResult[_TP]]:

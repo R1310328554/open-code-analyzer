@@ -5,6 +5,8 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
+# asyncio 作用域会话：async_scoped_session 按 scopefunc 管理 AsyncSession 生命周期
+
 from __future__ import annotations
 
 from typing import Any
@@ -111,6 +113,7 @@ _T = TypeVar("_T", bound=Any)
     ],
     use_intermediate_variable=["get"],
 )
+# 作用域 AsyncSession 包装：委托 ScopedRegistry，代理 Session 全部 API
 class async_scoped_session(Generic[_AS]):
     """Provides scoped management of :class:`.AsyncSession` objects.
 
@@ -130,6 +133,7 @@ class async_scoped_session(Generic[_AS]):
 
     registry: ScopedRegistry[_AS]
 
+    # 构造作用域会话：绑定 session_factory 与 scopefunc（如 asyncio.current_task）
     def __init__(
         self,
         session_factory: async_sessionmaker[_AS],
@@ -151,9 +155,11 @@ class async_scoped_session(Generic[_AS]):
         self.registry = ScopedRegistry(session_factory, scopefunc)
 
     @property
+    # 返回当前 scope 下的 AsyncSession 实例
     def _proxied(self) -> _AS:
         return self.registry()
 
+    # 调用 session_factory 创建新会话并注册到当前 scope
     def __call__(self, **kw: Any) -> _AS:
         r"""Return the current :class:`.AsyncSession`, creating it
         using the :attr:`.scoped_session.session_factory` if not present.
@@ -186,6 +192,7 @@ class async_scoped_session(Generic[_AS]):
             )
         return sess
 
+    # 重新配置底层 async_sessionmaker 参数
     def configure(self, **kwargs: Any) -> None:
         """reconfigure the :class:`.sessionmaker` used by this
         :class:`.scoped_session`.
@@ -203,6 +210,7 @@ class async_scoped_session(Generic[_AS]):
 
         self.session_factory.configure(**kwargs)
 
+    # 关闭并移除当前 scope 的会话（任务结束时调用）
     async def remove(self) -> None:
         """Dispose of the current :class:`.AsyncSession`, if present.
 
@@ -262,6 +270,7 @@ class async_scoped_session(Generic[_AS]):
 
         return self._proxied.__iter__()
 
+    # 异步关闭当前 scope 会话
     async def aclose(self) -> None:
         r"""A synonym for :meth:`_asyncio.AsyncSession.close`.
 
@@ -281,6 +290,7 @@ class async_scoped_session(Generic[_AS]):
 
         return await self._proxied.aclose()
 
+    # 将实例加入会话（pending insert/update）
     def add(self, instance: object, _warn: bool = True) -> None:
         r"""Place an object into this :class:`_orm.Session`.
 
@@ -321,6 +331,7 @@ class async_scoped_session(Generic[_AS]):
 
         return self._proxied.add(instance, _warn=_warn)
 
+    # 批量 add 实例
     def add_all(self, instances: Iterable[object]) -> None:
         r"""Add the given collection of instances to this :class:`_orm.Session`.
 
@@ -349,6 +360,7 @@ class async_scoped_session(Generic[_AS]):
 
         return self._proxied.add_all(instances)
 
+    # 开启事务，返回 AsyncSessionTransaction 上下文
     def begin(self) -> AsyncSessionTransaction:
         r"""Return an :class:`_asyncio.AsyncSessionTransaction` object.
 
@@ -378,6 +390,7 @@ class async_scoped_session(Generic[_AS]):
 
         return self._proxied.begin()
 
+    # 开启 SAVEPOINT 嵌套事务
     def begin_nested(self) -> AsyncSessionTransaction:
         r"""Return an :class:`_asyncio.AsyncSessionTransaction` object
         which will begin a "nested" transaction, e.g. SAVEPOINT.
@@ -403,6 +416,7 @@ class async_scoped_session(Generic[_AS]):
 
         return self._proxied.begin_nested()
 
+    # 关闭当前 scope 会话
     async def close(self) -> None:
         r"""Close out the transactional resources and ORM objects used by this
         :class:`_asyncio.AsyncSession`.
@@ -426,6 +440,7 @@ class async_scoped_session(Generic[_AS]):
 
         return await self._proxied.close()
 
+    # 重置会话状态（expunge 全部并 rollback）
     async def reset(self) -> None:
         r"""Close out the transactional resources and ORM objects used by this
         :class:`_orm.Session`, resetting the session to its initial state.
@@ -451,6 +466,7 @@ class async_scoped_session(Generic[_AS]):
 
         return await self._proxied.reset()
 
+    # 提交当前事务
     async def commit(self) -> None:
         r"""Commit the current transaction in progress.
 
@@ -468,6 +484,7 @@ class async_scoped_session(Generic[_AS]):
 
         return await self._proxied.commit()
 
+    # 获取当前 bind 的 AsyncConnection
     async def connection(
         self,
         bind_arguments: Optional[_BindArguments] = None,
@@ -502,6 +519,7 @@ class async_scoped_session(Generic[_AS]):
             **kw,
         )
 
+    # 标记实例待删除
     async def delete(self, instance: object) -> None:
         r"""Mark an instance as deleted.
 
@@ -525,6 +543,7 @@ class async_scoped_session(Generic[_AS]):
         return await self._proxied.delete(instance)
 
     @overload
+    # 异步执行 SQL/Executable 并返回 AsyncResult
     async def execute(
         self,
         statement: TypedReturnsRows[_T],
@@ -580,6 +599,7 @@ class async_scoped_session(Generic[_AS]):
             **kw,
         )
 
+    # 使实例属性过期，下次访问触发 lazy load
     def expire(
         self, instance: object, attribute_names: Optional[Iterable[str]] = None
     ) -> None:
@@ -634,6 +654,7 @@ class async_scoped_session(Generic[_AS]):
 
         return self._proxied.expire(instance, attribute_names=attribute_names)
 
+    # 使会话中全部实例属性过期
     def expire_all(self) -> None:
         r"""Expires all persistent instances within this Session.
 
@@ -681,6 +702,7 @@ class async_scoped_session(Generic[_AS]):
 
         return self._proxied.expire_all()
 
+    # 从会话分离实例（变为 transient）
     def expunge(self, instance: object) -> None:
         r"""Remove the `instance` from this ``Session``.
 
@@ -703,6 +725,7 @@ class async_scoped_session(Generic[_AS]):
 
         return self._proxied.expunge(instance)
 
+    # 分离会话中全部实例
     def expunge_all(self) -> None:
         r"""Remove all object instances from this ``Session``.
 
@@ -725,6 +748,7 @@ class async_scoped_session(Generic[_AS]):
 
         return self._proxied.expunge_all()
 
+    # 将 pending 变更 flush 到数据库
     async def flush(self, objects: Optional[Sequence[Any]] = None) -> None:
         r"""Flush all the object changes to the database.
 
@@ -742,6 +766,7 @@ class async_scoped_session(Generic[_AS]):
 
         return await self._proxied.flush(objects=objects)
 
+    # 解析 mapper/clause 对应 Engine/Connection
     def get_bind(
         self,
         mapper: Optional[_EntityBindKey[_O]] = None,
@@ -832,6 +857,7 @@ class async_scoped_session(Generic[_AS]):
             mapper=mapper, clause=clause, bind=bind, **kw
         )
 
+    # 判断实例是否有未 flush 的修改
     def is_modified(
         self, instance: object, include_collections: bool = True
     ) -> bool:
@@ -902,6 +928,7 @@ class async_scoped_session(Generic[_AS]):
             instance, include_collections=include_collections
         )
 
+    # 使当前 bind 连接无效
     async def invalidate(self) -> None:
         r"""Close this Session, using connection invalidation.
 
@@ -916,6 +943,7 @@ class async_scoped_session(Generic[_AS]):
 
         return await self._proxied.invalidate()
 
+    # 合并游离实例到当前会话
     async def merge(
         self,
         instance: _O,
@@ -940,6 +968,7 @@ class async_scoped_session(Generic[_AS]):
 
         return await self._proxied.merge(instance, load=load, options=options)
 
+    # 从数据库重新加载实例属性
     async def refresh(
         self,
         instance: object,
@@ -972,6 +1001,7 @@ class async_scoped_session(Generic[_AS]):
             with_for_update=with_for_update,
         )
 
+    # 回滚当前事务
     async def rollback(self) -> None:
         r"""Rollback the current transaction in progress.
 
@@ -990,6 +1020,7 @@ class async_scoped_session(Generic[_AS]):
         return await self._proxied.rollback()
 
     @overload
+    # 执行并返回首行首列标量
     async def scalar(
         self,
         statement: TypedReturnsRows[Tuple[_T]],
@@ -1043,6 +1074,7 @@ class async_scoped_session(Generic[_AS]):
         )
 
     @overload
+    # 执行并返回 AsyncScalarResult
     async def scalars(
         self,
         statement: TypedReturnsRows[Tuple[_T]],
@@ -1104,6 +1136,7 @@ class async_scoped_session(Generic[_AS]):
             **kw,
         )
 
+    # 按主键异步加载实体
     async def get(
         self,
         entity: _EntityBindKey[_O],
@@ -1142,6 +1175,7 @@ class async_scoped_session(Generic[_AS]):
         )
         return result
 
+    # 按主键加载，不存在则抛 NoResultFound
     async def get_one(
         self,
         entity: _EntityBindKey[_O],
@@ -1183,6 +1217,7 @@ class async_scoped_session(Generic[_AS]):
         )
 
     @overload
+    # 流式返回 AsyncResult（服务端游标）
     async def stream(
         self,
         statement: TypedReturnsRows[_T],
@@ -1233,6 +1268,7 @@ class async_scoped_session(Generic[_AS]):
         )
 
     @overload
+    # 流式返回 AsyncScalarResult
     async def stream_scalars(
         self,
         statement: TypedReturnsRows[Tuple[_T]],
@@ -1292,6 +1328,7 @@ class async_scoped_session(Generic[_AS]):
         )
 
     @property
+    # 当前会话绑定的 Engine/Connection
     def bind(self) -> Any:
         r"""Proxy for the :attr:`_asyncio.AsyncSession.bind` attribute
         on behalf of the :class:`_asyncio.scoping.async_scoped_session` class.
@@ -1305,6 +1342,7 @@ class async_scoped_session(Generic[_AS]):
         self._proxied.bind = attr
 
     @property
+    # 待 flush 的已修改 persistent 实例集合
     def dirty(self) -> Any:
         r"""The set of all persistent instances considered dirty.
 
@@ -1344,6 +1382,7 @@ class async_scoped_session(Generic[_AS]):
         return self._proxied.dirty
 
     @property
+    # 待 flush 删除的实例集合
     def deleted(self) -> Any:
         r"""The set of all instances marked as 'deleted' within this ``Session``
 
@@ -1363,6 +1402,7 @@ class async_scoped_session(Generic[_AS]):
         return self._proxied.deleted
 
     @property
+    # 待 insert 的新实例集合
     def new(self) -> Any:
         r"""The set of all instances marked as 'new' within this ``Session``.
 
@@ -1382,6 +1422,7 @@ class async_scoped_session(Generic[_AS]):
         return self._proxied.new
 
     @property
+    # ORM 身份映射（主键→实例）
     def identity_map(self) -> Any:
         r"""Proxy for the :attr:`_orm.Session.identity_map` attribute
         on behalf of the :class:`_asyncio.AsyncSession` class.
@@ -1401,6 +1442,7 @@ class async_scoped_session(Generic[_AS]):
         self._proxied.identity_map = attr
 
     @property
+    # 会话是否在活跃事务中
     def is_active(self) -> Any:
         r"""True if this :class:`.Session` not in "partial rollback" state.
 
@@ -1444,6 +1486,7 @@ class async_scoped_session(Generic[_AS]):
         return self._proxied.is_active
 
     @property
+    # autoflush 开关
     def autoflush(self) -> Any:
         r"""Proxy for the :attr:`_orm.Session.autoflush` attribute
         on behalf of the :class:`_asyncio.AsyncSession` class.
@@ -1463,6 +1506,7 @@ class async_scoped_session(Generic[_AS]):
         self._proxied.autoflush = attr
 
     @property
+    # 上下文：临时禁用 autoflush
     def no_autoflush(self) -> Any:
         r"""Return a context manager that disables autoflush.
 
@@ -1498,6 +1542,7 @@ class async_scoped_session(Generic[_AS]):
         return self._proxied.no_autoflush
 
     @property
+    # 会话级 info 字典
     def info(self) -> Any:
         r"""A user-modifiable dictionary.
 
@@ -1524,6 +1569,7 @@ class async_scoped_session(Generic[_AS]):
         return self._proxied.info
 
     @classmethod
+    # 类方法：关闭全部活跃 AsyncSession
     async def close_all(cls) -> None:
         r"""Close all :class:`_asyncio.AsyncSession` sessions.
 
@@ -1539,6 +1585,7 @@ class async_scoped_session(Generic[_AS]):
         return await AsyncSession.close_all()
 
     @classmethod
+    # 类方法：返回实例所属同步 Session
     def object_session(cls, instance: object) -> Optional[Session]:
         r"""Return the :class:`.Session` to which an object belongs.
 
@@ -1561,6 +1608,7 @@ class async_scoped_session(Generic[_AS]):
         return AsyncSession.object_session(instance)
 
     @classmethod
+    # 类方法：构造给定实体/主键的 identity key
     def identity_key(
         cls,
         class_: Optional[Type[Any]] = None,

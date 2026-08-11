@@ -31,6 +31,8 @@ from ..sql import util as sql_util
 log = logging.getLogger(__name__)
 
 
+# 烘焙查询工厂：维护 LRU 缓存，按 callable+args 键缓存 BakedQuery
+# 可调用对象：返回 BakedQuery 并暴露 cache 供检查
 class Bakery:
     """Callable which returns a :class:`.BakedQuery`.
 
@@ -49,10 +51,12 @@ class Bakery:
         self.cls = cls_
         self.cache = cache
 
+    # 创建新 BakedQuery 并写入 cache 键
     def __call__(self, initial_fn, *args):
         return self.cls(self.cache, initial_fn, args)
 
 
+# 可链式追加 criteria 的 Query 构建器；首次执行时 bake 并缓存
 class BakedQuery:
     """A builder object for :class:`.query.Query` objects."""
 
@@ -66,6 +70,7 @@ class BakedQuery:
         self._bakery = bakery
 
     @classmethod
+    # 类方法：创建带 LRU 的 Bakery 实例
     def bakery(cls, size=200, _size_alert=None):
         """Construct a new bakery.
 
@@ -99,6 +104,7 @@ class BakedQuery:
         else:
             return self.with_criteria(other)
 
+    # 就地追加 criteria 函数（+= 语义）
     def add_criteria(self, fn, *args):
         """Add a criteria function to this :class:`.BakedQuery`.
 
@@ -110,6 +116,7 @@ class BakedQuery:
         self.steps.append(fn)
         return self
 
+    # 返回克隆并追加 criteria
     def with_criteria(self, fn, *args):
         """Add a criteria function to a :class:`.BakedQuery` cloned from this
         one.
@@ -120,6 +127,7 @@ class BakedQuery:
         """
         return self._clone().add_criteria(fn, *args)
 
+    # 绑定 Session 并返回 Result
     def for_session(self, session):
         """Return a :class:`_baked.Result` object for this
         :class:`.BakedQuery`.
@@ -133,6 +141,7 @@ class BakedQuery:
     def __call__(self, session):
         return self.for_session(session)
 
+    # 使缓存条目失效（部分或全部 criteria）
     def spoil(self, full=False):
         """Cancel any query caching that will occur on this BakedQuery object.
 
@@ -223,6 +232,7 @@ class BakedQuery:
             )
         return query.with_session(session)
 
+    # 编译 Query/Core SELECT 与 SQL 字符串并缓存
     def _bake(self, session):
         query = self._as_query(session)
         query.session = None
@@ -248,6 +258,7 @@ class BakedQuery:
 
         return query, statement
 
+    # materialize 为真实 Query 对象
     def to_query(self, query_or_session):
         """Return the :class:`_query.Query` object for use as a subquery.
 
@@ -306,6 +317,7 @@ class BakedQuery:
         return query
 
 
+# 已 bake 的查询结果包装：params/迭代/count/scalar 等
 class Result:
     """Invokes a :class:`.BakedQuery` against a :class:`.Session`.
 
@@ -323,6 +335,7 @@ class Result:
         self._params = {}
         self._post_criteria = []
 
+    # 设置 bind 参数后返回 self
     def params(self, *args, **kw):
         """Specify parameters to be replaced into the string SQL statement."""
 
@@ -341,6 +354,7 @@ class Result:
             self._post_criteria.extend(fns)
         return self
 
+    # 追加仅在执行时应用的 post criteria
     def with_post_criteria(self, fn):
         """Add a criteria function that will be applied post-cache.
 
@@ -417,6 +431,7 @@ class Result:
 
         return result
 
+    # 执行 COUNT 查询
     def count(self):
         """return the 'count'.
 
@@ -431,6 +446,7 @@ class Result:
         bq = self.bq.with_criteria(lambda q: q._legacy_from_self(col))
         return bq.for_session(self.session).params(self._params).scalar()
 
+    # 返回标量结果
     def scalar(self):
         """Return the first element of the first result or None
         if no rows present.  If multiple rows are returned,
@@ -447,6 +463,7 @@ class Result:
         except orm_exc.NoResultFound:
             return None
 
+    # 首行或 None
     def first(self):
         """Return the first row.
 
@@ -463,6 +480,7 @@ class Result:
             .first()
         )
 
+    # 恰好一行
     def one(self):
         """Return exactly one result or raise an exception.
 
@@ -471,6 +489,7 @@ class Result:
         """
         return self._iter().one()
 
+    # 零或一行
     def one_or_none(self):
         """Return one or zero results, or raise an exception for multiple
         rows.
@@ -480,6 +499,7 @@ class Result:
         """
         return self._iter().one_or_none()
 
+    # 全部行
     def all(self):
         """Return all rows.
 
@@ -488,6 +508,7 @@ class Result:
         """
         return self._iter().all()
 
+    # 按主键 get
     def get(self, ident):
         """Retrieve an object based on identity.
 

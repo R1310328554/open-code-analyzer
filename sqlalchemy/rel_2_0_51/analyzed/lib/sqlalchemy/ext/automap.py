@@ -593,7 +593,8 @@ and will emit an error on mapping.
 
 We can resolve this conflict by using an underscore as follows::
 
-    def name_for_scalar_relationship(
+    # 默认多对一 relationship 属性名（many-to-one side）
+def name_for_scalar_relationship(
         base, local_cls, referred_cls, constraint
     ):
         name = referred_cls.__name__.lower()
@@ -711,6 +712,8 @@ be applied as::
 
 """  # noqa
 
+# 反射自动映射：从 MetaData/Table 反射生成 Declarative 类与 relationship
+
 from __future__ import annotations
 
 import dataclasses
@@ -758,12 +761,14 @@ _KT = TypeVar("_KT", bound=Any)
 _VT = TypeVar("_VT", bound=Any)
 
 
+# Protocol：表名→Python 类名的可调用签名
 class PythonNameForTableType(Protocol):
     def __call__(
         self, base: Type[Any], tablename: str, table: Table
     ) -> str: ...
 
 
+# 默认表名→类名（可被 prepare.classname_for_table 覆盖）
 def classname_for_table(
     base: Type[Any],
     tablename: str,
@@ -801,6 +806,7 @@ def classname_for_table(
     return str(tablename)
 
 
+# Protocol：多对一/一对一 relationship 命名
 class NameForScalarRelationshipType(Protocol):
     def __call__(
         self,
@@ -841,6 +847,7 @@ def name_for_scalar_relationship(
     return referred_cls.__name__.lower()
 
 
+# Protocol：一对多/多对多 collection 命名
 class NameForCollectionRelationshipType(Protocol):
     def __call__(
         self,
@@ -851,6 +858,7 @@ class NameForCollectionRelationshipType(Protocol):
     ) -> str: ...
 
 
+# 默认一对多 collection 属性名
 def name_for_collection_relationship(
     base: Type[Any],
     local_cls: Type[Any],
@@ -882,6 +890,7 @@ def name_for_collection_relationship(
     return referred_cls.__name__.lower() + "_collection"
 
 
+# Protocol：自定义 relationship() 构造逻辑
 class GenerateRelationshipType(Protocol):
     @overload
     def __call__(
@@ -922,6 +931,7 @@ class GenerateRelationshipType(Protocol):
 
 
 @overload
+# 默认 relationship 工厂：处理 backref/back_populates
 def generate_relationship(
     base: Type[Any],
     direction: RelationshipDirection,
@@ -1016,6 +1026,7 @@ def generate_relationship(
 ByModuleProperties = Properties[Union["ByModuleProperties", Type[Any]]]
 
 
+# 自动映射基类：prepare() 反射表并生成 Mapper/relationship
 class AutomapBase:
     """Base class for an "automap" schema.
 
@@ -1113,6 +1124,7 @@ class AutomapBase:
             "is passed.",
         ),
     )
+    # 反射 MetaData 并为各 Table 生成 declarative 子类与 FK relationship
     def prepare(
         cls: Type[AutomapBase],
         autoload_with: Optional[Engine] = None,
@@ -1413,12 +1425,14 @@ class AutomapBase:
 
 
 @dataclasses.dataclass
+# 内部 bookkeeping：跟踪已映射表与 deferred 配置
 class _Bookkeeping:
     __slots__ = ("table_keys",)
 
     table_keys: Set[str]
 
 
+# 创建 AutomapBase 子类（类似 declarative_base）
 def automap_base(
     declarative_base: Optional[Type[Any]] = None, **kw: Any
 ) -> Any:
@@ -1458,6 +1472,7 @@ def automap_base(
     )
 
 
+# 判断 FK 约束是否表示多对多关联表
 def _is_many_to_many(
     automap_base: Type[Any], table: Table
 ) -> Tuple[
@@ -1489,6 +1504,7 @@ def _is_many_to_many(
     )
 
 
+# 根据外键为 Automap 类生成 scalar/collection relationship
 def _relationships_for_fks(
     automap_base: Type[Any],
     map_config: _DeferredMapperConfig,
@@ -1599,6 +1615,7 @@ def _relationships_for_fks(
                     ].back_populates = backref_name  # type: ignore[union-attr]
 
 
+# 为多对多中间表建立双向 relationship
 def _m2m_relationship(
     automap_base: Type[Any],
     lcl_m2m: Table,

@@ -4,6 +4,8 @@
 #
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
+# asyncio ORM 会话：AsyncSession/async_sessionmaker 与 greenlet 桥接同步 ORM
+
 from __future__ import annotations
 
 import asyncio
@@ -79,6 +81,7 @@ _EXECUTE_OPTIONS = util.immutabledict({"prebuffer_rows": True})
 _STREAM_OPTIONS = util.immutabledict({"stream_results": True})
 
 
+# Mixin：为 relationship 等延迟属性提供 awaitable_attrs 异步访问器
 class AsyncAttrs:
     """Mixin class which provides an awaitable accessor for all attributes.
 
@@ -155,6 +158,7 @@ class AsyncAttrs:
             return greenlet_spawn(getattr, self._instance, name)
 
     @property
+    # 返回按属性名 await 的代理（lazy load 关系/列）
     def awaitable_attrs(self) -> AsyncAttrs._AsyncAttrGetitem:
         """provide a namespace of all attributes on this object wrapped
         as awaitables.
@@ -201,6 +205,7 @@ class AsyncAttrs:
         "info",
     ],
 )
+# 异步 ORM 会话：包装同步 Session，I/O 经 greenlet_spawn 调度
 class AsyncSession(ReversibleProxy[Session]):
     """Asyncio version of :class:`_orm.Session`.
 
@@ -223,6 +228,7 @@ class AsyncSession(ReversibleProxy[Session]):
 
     dispatch: dispatcher[Session]
 
+    # 构造 AsyncSession：绑定 AsyncEngine/AsyncConnection 与 ORM 选项
     def __init__(
         self,
         bind: Optional[_AsyncSessionBind] = None,
@@ -305,6 +311,7 @@ class AsyncSession(ReversibleProxy[Session]):
             "synchronous listeners to the AsyncSession.sync_session."
         )
 
+    # 异步 refresh 实例（可能触发 IO）
     async def refresh(
         self,
         instance: object,
@@ -332,6 +339,7 @@ class AsyncSession(ReversibleProxy[Session]):
             with_for_update=with_for_update,
         )
 
+    # 在 greenlet 中运行同步 callable(session, ...)
     async def run_sync(
         self,
         fn: Callable[Concatenate[Session, _P], _T],
@@ -397,6 +405,7 @@ class AsyncSession(ReversibleProxy[Session]):
         )
 
     @overload
+    # 异步执行语句，返回 AsyncResult
     async def execute(
         self,
         statement: TypedReturnsRows[_T],
@@ -456,6 +465,7 @@ class AsyncSession(ReversibleProxy[Session]):
         return await _ensure_sync_result(result, self.execute)
 
     @overload
+    # 执行并返回标量值
     async def scalar(
         self,
         statement: TypedReturnsRows[Tuple[_T]],
@@ -511,6 +521,7 @@ class AsyncSession(ReversibleProxy[Session]):
         )
 
     @overload
+    # 执行并返回 AsyncScalarResult
     async def scalars(
         self,
         statement: TypedReturnsRows[Tuple[_T]],
@@ -567,6 +578,7 @@ class AsyncSession(ReversibleProxy[Session]):
         )
         return result.scalars()
 
+    # 按主键异步 get
     async def get(
         self,
         entity: _EntityBindKey[_O],
@@ -599,6 +611,7 @@ class AsyncSession(ReversibleProxy[Session]):
             execution_options=execution_options,
         )
 
+    # 按主键 get_one（必须存在）
     async def get_one(
         self,
         entity: _EntityBindKey[_O],
@@ -635,6 +648,7 @@ class AsyncSession(ReversibleProxy[Session]):
         )
 
     @overload
+    # 流式 AsyncResult
     async def stream(
         self,
         statement: TypedReturnsRows[_T],
@@ -688,6 +702,7 @@ class AsyncSession(ReversibleProxy[Session]):
         return AsyncResult(result)
 
     @overload
+    # 流式 AsyncScalarResult
     async def stream_scalars(
         self,
         statement: TypedReturnsRows[Tuple[_T]],
@@ -741,6 +756,7 @@ class AsyncSession(ReversibleProxy[Session]):
         )
         return result.scalars()
 
+    # 异步 delete 标记
     async def delete(self, instance: object) -> None:
         """Mark an instance as deleted.
 
@@ -756,6 +772,7 @@ class AsyncSession(ReversibleProxy[Session]):
         """
         await greenlet_spawn(self.sync_session.delete, instance)
 
+    # 异步 merge 游离对象
     async def merge(
         self,
         instance: _O,
@@ -775,6 +792,7 @@ class AsyncSession(ReversibleProxy[Session]):
             self.sync_session.merge, instance, load=load, options=options
         )
 
+    # 异步 flush
     async def flush(self, objects: Optional[Sequence[Any]] = None) -> None:
         """Flush all the object changes to the database.
 
@@ -785,6 +803,7 @@ class AsyncSession(ReversibleProxy[Session]):
         """
         await greenlet_spawn(self.sync_session.flush, objects=objects)
 
+    # 返回当前根 AsyncSessionTransaction
     def get_transaction(self) -> Optional[AsyncSessionTransaction]:
         """Return the current root transaction in progress, if any.
 
@@ -802,6 +821,7 @@ class AsyncSession(ReversibleProxy[Session]):
         else:
             return None
 
+    # 返回当前嵌套 SAVEPOINT 事务
     def get_nested_transaction(self) -> Optional[AsyncSessionTransaction]:
         """Return the current nested transaction in progress, if any.
 
@@ -820,6 +840,7 @@ class AsyncSession(ReversibleProxy[Session]):
         else:
             return None
 
+    # 解析执行 bind（AsyncEngine/AsyncConnection）
     def get_bind(
         self,
         mapper: Optional[_EntityBindKey[_O]] = None,
@@ -904,6 +925,7 @@ class AsyncSession(ReversibleProxy[Session]):
             mapper=mapper, clause=clause, bind=bind, **kw
         )
 
+    # 获取 AsyncConnection（同 bind 或新连接）
     async def connection(
         self,
         bind_arguments: Optional[_BindArguments] = None,
@@ -936,6 +958,7 @@ class AsyncSession(ReversibleProxy[Session]):
             sync_connection
         )
 
+    # 开启根事务
     def begin(self) -> AsyncSessionTransaction:
         """Return an :class:`_asyncio.AsyncSessionTransaction` object.
 
@@ -959,6 +982,7 @@ class AsyncSession(ReversibleProxy[Session]):
 
         return AsyncSessionTransaction(self)
 
+    # 开启嵌套 SAVEPOINT
     def begin_nested(self) -> AsyncSessionTransaction:
         """Return an :class:`_asyncio.AsyncSessionTransaction` object
         which will begin a "nested" transaction, e.g. SAVEPOINT.
@@ -978,6 +1002,7 @@ class AsyncSession(ReversibleProxy[Session]):
 
         return AsyncSessionTransaction(self, nested=True)
 
+    # 回滚
     async def rollback(self) -> None:
         """Rollback the current transaction in progress.
 
@@ -988,6 +1013,7 @@ class AsyncSession(ReversibleProxy[Session]):
         """
         await greenlet_spawn(self.sync_session.rollback)
 
+    # 提交
     async def commit(self) -> None:
         """Commit the current transaction in progress.
 
@@ -998,6 +1024,7 @@ class AsyncSession(ReversibleProxy[Session]):
         """
         await greenlet_spawn(self.sync_session.commit)
 
+    # 关闭会话
     async def close(self) -> None:
         """Close out the transactional resources and ORM objects used by this
         :class:`_asyncio.AsyncSession`.
@@ -1014,6 +1041,7 @@ class AsyncSession(ReversibleProxy[Session]):
         """
         await greenlet_spawn(self.sync_session.close)
 
+    # 重置会话
     async def reset(self) -> None:
         """Close out the transactional resources and ORM objects used by this
         :class:`_orm.Session`, resetting the session to its initial state.
@@ -1032,6 +1060,7 @@ class AsyncSession(ReversibleProxy[Session]):
         """
         await greenlet_spawn(self.sync_session.reset)
 
+    # aclose 别名
     async def aclose(self) -> None:
         """A synonym for :meth:`_asyncio.AsyncSession.close`.
 
@@ -1044,6 +1073,7 @@ class AsyncSession(ReversibleProxy[Session]):
         """
         await self.close()
 
+    # 使 bind 无效
     async def invalidate(self) -> None:
         """Close this Session, using connection invalidation.
 
@@ -1058,13 +1088,16 @@ class AsyncSession(ReversibleProxy[Session]):
         "removed in a future release.  Please refer to "
         ":func:`_asyncio.close_all_sessions`.",
     )
+    # 关闭全部 AsyncSession
     async def close_all(cls) -> None:
         """Close all :class:`_asyncio.AsyncSession` sessions."""
         await close_all_sessions()
 
+    # async with session 入口
     async def __aenter__(self: _AS) -> _AS:
         return self
 
+    # async with 退出时 close
     async def __aexit__(self, type_: Any, value: Any, traceback: Any) -> None:
         task = asyncio.create_task(self.close())
         await asyncio.shield(task)
@@ -1107,6 +1140,7 @@ class AsyncSession(ReversibleProxy[Session]):
 
         return self._proxied.__iter__()
 
+    # 加入 pending 实例
     def add(self, instance: object, _warn: bool = True) -> None:
         r"""Place an object into this :class:`_orm.Session`.
 
@@ -1141,6 +1175,7 @@ class AsyncSession(ReversibleProxy[Session]):
 
         return self._proxied.add(instance, _warn=_warn)
 
+    # 批量 add
     def add_all(self, instances: Iterable[object]) -> None:
         r"""Add the given collection of instances to this :class:`_orm.Session`.
 
@@ -1163,6 +1198,7 @@ class AsyncSession(ReversibleProxy[Session]):
 
         return self._proxied.add_all(instances)
 
+    # 过期属性
     def expire(
         self, instance: object, attribute_names: Optional[Iterable[str]] = None
     ) -> None:
@@ -1211,6 +1247,7 @@ class AsyncSession(ReversibleProxy[Session]):
 
         return self._proxied.expire(instance, attribute_names=attribute_names)
 
+    # 全部过期
     def expire_all(self) -> None:
         r"""Expires all persistent instances within this Session.
 
@@ -1252,6 +1289,7 @@ class AsyncSession(ReversibleProxy[Session]):
 
         return self._proxied.expire_all()
 
+    # 分离实例
     def expunge(self, instance: object) -> None:
         r"""Remove the `instance` from this ``Session``.
 
@@ -1268,6 +1306,7 @@ class AsyncSession(ReversibleProxy[Session]):
 
         return self._proxied.expunge(instance)
 
+    # 全部分离
     def expunge_all(self) -> None:
         r"""Remove all object instances from this ``Session``.
 
@@ -1284,6 +1323,7 @@ class AsyncSession(ReversibleProxy[Session]):
 
         return self._proxied.expunge_all()
 
+    # 是否已修改
     def is_modified(
         self, instance: object, include_collections: bool = True
     ) -> bool:
@@ -1348,6 +1388,7 @@ class AsyncSession(ReversibleProxy[Session]):
             instance, include_collections=include_collections
         )
 
+    # 是否在根事务中
     def in_transaction(self) -> bool:
         r"""Return True if this :class:`_orm.Session` has begun a transaction.
 
@@ -1368,6 +1409,7 @@ class AsyncSession(ReversibleProxy[Session]):
 
         return self._proxied.in_transaction()
 
+    # 是否在嵌套事务中
     def in_nested_transaction(self) -> bool:
         r"""Return True if this :class:`_orm.Session` has begun a nested
         transaction, e.g. SAVEPOINT.
@@ -1385,6 +1427,7 @@ class AsyncSession(ReversibleProxy[Session]):
         return self._proxied.in_nested_transaction()
 
     @property
+    # dirty 集合
     def dirty(self) -> Any:
         r"""The set of all persistent instances considered dirty.
 
@@ -1418,6 +1461,7 @@ class AsyncSession(ReversibleProxy[Session]):
         return self._proxied.dirty
 
     @property
+    # deleted 集合
     def deleted(self) -> Any:
         r"""The set of all instances marked as 'deleted' within this ``Session``
 
@@ -1431,6 +1475,7 @@ class AsyncSession(ReversibleProxy[Session]):
         return self._proxied.deleted
 
     @property
+    # new 集合
     def new(self) -> Any:
         r"""The set of all instances marked as 'new' within this ``Session``.
 
@@ -1444,6 +1489,7 @@ class AsyncSession(ReversibleProxy[Session]):
         return self._proxied.new
 
     @property
+    # 身份映射
     def identity_map(self) -> IdentityMap:
         r"""Proxy for the :attr:`_orm.Session.identity_map` attribute
         on behalf of the :class:`_asyncio.AsyncSession` class.
@@ -1457,6 +1503,7 @@ class AsyncSession(ReversibleProxy[Session]):
         self._proxied.identity_map = attr
 
     @property
+    # 事务是否活跃
     def is_active(self) -> Any:
         r"""True if this :class:`.Session` not in "partial rollback" state.
 
@@ -1494,6 +1541,7 @@ class AsyncSession(ReversibleProxy[Session]):
         return self._proxied.is_active
 
     @property
+    # autoflush 属性
     def autoflush(self) -> bool:
         r"""Proxy for the :attr:`_orm.Session.autoflush` attribute
         on behalf of the :class:`_asyncio.AsyncSession` class.
@@ -1507,6 +1555,7 @@ class AsyncSession(ReversibleProxy[Session]):
         self._proxied.autoflush = attr
 
     @property
+    # 禁用 autoflush 上下文
     def no_autoflush(self) -> Any:
         r"""Return a context manager that disables autoflush.
 
@@ -1536,6 +1585,7 @@ class AsyncSession(ReversibleProxy[Session]):
         return self._proxied.no_autoflush
 
     @property
+    # info 字典
     def info(self) -> Any:
         r"""A user-modifiable dictionary.
 
@@ -1556,6 +1606,7 @@ class AsyncSession(ReversibleProxy[Session]):
         return self._proxied.info
 
     @classmethod
+    # 同步 Session 查找
     def object_session(cls, instance: object) -> Optional[Session]:
         r"""Return the :class:`.Session` to which an object belongs.
 
@@ -1572,6 +1623,7 @@ class AsyncSession(ReversibleProxy[Session]):
         return Session.object_session(instance)
 
     @classmethod
+    # 构造 identity key
     def identity_key(
         cls,
         class_: Optional[Type[Any]] = None,
@@ -1607,6 +1659,7 @@ class AsyncSession(ReversibleProxy[Session]):
 _AS = TypeVar("_AS", bound="AsyncSession")
 
 
+# AsyncSession 工厂：可配置 bind/class_ 并支持 begin() 上下文
 class async_sessionmaker(Generic[_AS]):
     """A configurable :class:`.AsyncSession` factory.
 
@@ -1693,6 +1746,7 @@ class async_sessionmaker(Generic[_AS]):
         **kw: Any,
     ): ...
 
+    # async_sessionmaker 构造：class_/bind/expire_on_commit 等
     def __init__(
         self,
         bind: Optional[_AsyncSessionBind] = None,
@@ -1720,6 +1774,7 @@ class async_sessionmaker(Generic[_AS]):
         self.kw = kw
         self.class_ = class_
 
+    # 返回 begin 上下文管理器
     def begin(self) -> _AsyncSessionContextManager[_AS]:
         """Produce a context manager that both provides a new
         :class:`_orm.AsyncSession` as well as a transaction that commits.
@@ -1740,6 +1795,7 @@ class async_sessionmaker(Generic[_AS]):
         session = self()
         return session._maker_context_manager()
 
+    # 创建 AsyncSession 实例
     def __call__(self, **local_kw: Any) -> _AS:
         """Produce a new :class:`.AsyncSession` object using the configuration
         established in this :class:`.async_sessionmaker`.
@@ -1780,6 +1836,7 @@ class async_sessionmaker(Generic[_AS]):
         )
 
 
+# async_sessionmaker.begin() 的 async with 上下文管理器
 class _AsyncSessionContextManager(Generic[_AS]):
     __slots__ = ("async_session", "trans")
 
@@ -1789,11 +1846,13 @@ class _AsyncSessionContextManager(Generic[_AS]):
     def __init__(self, async_session: _AS):
         self.async_session = async_session
 
+    # begin 上下文入口：开启事务
     async def __aenter__(self) -> _AS:
         self.trans = self.async_session.begin()
         await self.trans.__aenter__()
         return self.async_session
 
+    # begin 上下文退出：结束事务并 close
     async def __aexit__(self, type_: Any, value: Any, traceback: Any) -> None:
         async def go() -> None:
             await self.trans.__aexit__(type_, value, traceback)
@@ -1803,6 +1862,7 @@ class _AsyncSessionContextManager(Generic[_AS]):
         await asyncio.shield(task)
 
 
+# 同步 SessionTransaction 的异步包装：commit/rollback/上下文
 class AsyncSessionTransaction(
     ReversibleProxy[SessionTransaction],
     StartableContext["AsyncSessionTransaction"],
@@ -1827,6 +1887,7 @@ class AsyncSessionTransaction(
     session: AsyncSession
     sync_transaction: Optional[SessionTransaction]
 
+    # AsyncSessionTransaction 构造
     def __init__(self, session: AsyncSession, nested: bool = False):
         self.session = session
         self.nested = nested
@@ -1844,10 +1905,12 @@ class AsyncSessionTransaction(
             self._raise_for_not_started()
         return self.sync_transaction
 
+    # 异步 rollback
     async def rollback(self) -> None:
         """Roll back this :class:`_asyncio.AsyncTransaction`."""
         await greenlet_spawn(self._sync_transaction().rollback)
 
+    # 异步 commit
     async def commit(self) -> None:
         """Commit this :class:`_asyncio.AsyncTransaction`."""
 
@@ -1882,12 +1945,14 @@ class AsyncSessionTransaction(
             self.sync_transaction.__enter__()
         return self
 
+    # 事务 async with 退出
     async def __aexit__(self, type_: Any, value: Any, traceback: Any) -> None:
         await greenlet_spawn(
             self._sync_transaction().__exit__, type_, value, traceback
         )
 
 
+# 返回实例关联的 AsyncSession（经 ReversibleProxy 查找）
 def async_object_session(instance: object) -> Optional[AsyncSession]:
     """Return the :class:`_asyncio.AsyncSession` to which the given instance
     belongs.
@@ -1917,6 +1982,7 @@ def async_object_session(instance: object) -> Optional[AsyncSession]:
         return None
 
 
+# 从同步 Session 获取对应 AsyncSession 代理
 def async_session(session: Session) -> Optional[AsyncSession]:
     """Return the :class:`_asyncio.AsyncSession` which is proxying the given
     :class:`_orm.Session` object, if any.

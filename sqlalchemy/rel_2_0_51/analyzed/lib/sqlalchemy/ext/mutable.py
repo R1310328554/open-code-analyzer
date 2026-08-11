@@ -50,7 +50,9 @@ the :class:`.Mutable` mixin to a plain Python dictionary::
     from sqlalchemy.ext.mutable import Mutable
 
 
-    class MutableDict(Mutable, dict):
+    # 可变标量/集合基类：changed() 通知父 InstanceState
+# 可变 dict 子类：__setitem__/__delitem__ 等触发 changed
+class MutableDict(Mutable, dict):
         @classmethod
         def coerce(cls, key, value):
             "Convert plain dictionaries to MutableDict."
@@ -376,6 +378,8 @@ pickling process of the parent's object-relational state so that the
 
 """  # noqa: E501
 
+# Mutable 扩展：可追踪原地变更的 Python 类型，配合 ORM unit of work flush
+
 from __future__ import annotations
 
 from collections import defaultdict
@@ -420,6 +424,7 @@ _KT = TypeVar("_KT")  # Key type.
 _VT = TypeVar("_VT")  # Value type.
 
 
+# Mutable/MutableComposite 公共基：_parents 弱引用与 coerce
 class MutableBase:
     """Common base class to :class:`.Mutable`
     and :class:`.MutableComposite`.
@@ -427,6 +432,7 @@ class MutableBase:
     """
 
     @memoized_property
+    # 父 InstanceState→属性名 弱字典（首次访问时创建）
     def _parents(self) -> WeakKeyDictionary[Any, Any]:
         """Dictionary of parent object's :class:`.InstanceState`->attribute
         name on the parent.
@@ -444,6 +450,7 @@ class MutableBase:
         return weakref.WeakKeyDictionary()
 
     @classmethod
+    # 将赋值 coerce 为 Mutable 子类型（None 透传）
     def coerce(cls, key: str, value: Any) -> Optional[Any]:
         """Given a value, coerce it into the target type.
 
@@ -613,6 +620,7 @@ class Mutable(MutableBase):
 
     """
 
+    # 标记所有父对象对应属性已修改（flag_modified）
     def changed(self) -> None:
         """Subclasses should call this method whenever change events occur."""
 
@@ -620,6 +628,7 @@ class Mutable(MutableBase):
             flag_modified(parent.obj(), key)
 
     @classmethod
+    # 为 InstrumentedAttribute 注册 mutable listener
     def associate_with_attribute(
         cls, attribute: InstrumentedAttribute[_O]
     ) -> None:
@@ -630,6 +639,7 @@ class Mutable(MutableBase):
         cls._listen_on_attribute(attribute, True, attribute.class_)
 
     @classmethod
+    # 为给定 TypeEngine 类注册 coerce listener
     def associate_with(cls, sqltype: type) -> None:
         """Associate this wrapper with all future mapped columns
         of the given type.
@@ -657,6 +667,7 @@ class Mutable(MutableBase):
         event.listen(Mapper, "mapper_configured", listen_for_type)
 
     @classmethod
+    # 包装 SQL 类型使其映射时使用 Mutable 子类
     def as_mutable(cls, sqltype: _TypeEngineArgument[_T]) -> TypeEngine[_T]:
         """Associate a SQL type with this mutable Python type.
 
@@ -743,6 +754,7 @@ class Mutable(MutableBase):
         return sqltype
 
 
+# 复合值 mutable：多字段组合对象的变更追踪
 class MutableComposite(MutableBase):
     """Mixin that defines transparent propagation of change
     events on a SQLAlchemy "composite" object to its
@@ -768,6 +780,7 @@ class MutableComposite(MutableBase):
                 setattr(parent.obj(), attr_name, value)
 
 
+# 注册 Mapper 级 listener：Composite 属性变更时调用 MutableComposite.changed
 def _setup_composite_listener() -> None:
     def _listen_for_type(mapper: Mapper[_T], class_: type) -> None:
         for prop in mapper.iterate_properties:
@@ -810,6 +823,7 @@ class MutableDict(Mutable, Dict[_KT, _VT]):
 
     """
 
+    # MutableDict 写入并 changed
     def __setitem__(self, key: _KT, value: _VT) -> None:
         """Detect dictionary set events and emit change events."""
         dict.__setitem__(self, key, value)
@@ -835,6 +849,7 @@ class MutableDict(Mutable, Dict[_KT, _VT]):
             self.changed()
             return result
 
+    # MutableDict 删除并 changed
     def __delitem__(self, key: _KT) -> None:
         """Detect dictionary del events and emit change events."""
         dict.__delitem__(self, key)
@@ -891,6 +906,7 @@ class MutableDict(Mutable, Dict[_KT, _VT]):
         self.update(state)
 
 
+# 可变 list 子类：索引/append 等触发 changed
 class MutableList(Mutable, List[_T]):
     """A list type that implements :class:`.Mutable`.
 
@@ -924,6 +940,7 @@ class MutableList(Mutable, List[_T]):
     def __setstate__(self, state: Iterable[_T]) -> None:
         self[:] = state
 
+    # MutableList 索引赋值并 changed
     def __setitem__(
         self, index: SupportsIndex | slice, value: _T | Iterable[_T]
     ) -> None:
@@ -941,6 +958,7 @@ class MutableList(Mutable, List[_T]):
         self.changed()
         return result
 
+    # MutableList append 并 changed
     def append(self, x: _T) -> None:
         list.append(self, x)
         self.changed()
@@ -986,6 +1004,7 @@ class MutableList(Mutable, List[_T]):
             return value
 
 
+# 可变 set 子类：add/discard 等触发 changed
 class MutableSet(Mutable, Set[_T]):
     """A set type that implements :class:`.Mutable`.
 
@@ -1042,6 +1061,7 @@ class MutableSet(Mutable, Set[_T]):
         self.difference_update(other)
         return self
 
+    # MutableSet add 并 changed
     def add(self, elem: _T) -> None:
         set.add(self, elem)
         self.changed()
@@ -1050,6 +1070,7 @@ class MutableSet(Mutable, Set[_T]):
         set.remove(self, elem)
         self.changed()
 
+    # MutableSet discard 并 changed
     def discard(self, elem: _T) -> None:  # type: ignore[override,unused-ignore] # noqa: E501
         set.discard(self, elem)
         self.changed()

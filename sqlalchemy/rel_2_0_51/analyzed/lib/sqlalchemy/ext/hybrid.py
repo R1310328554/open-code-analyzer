@@ -22,7 +22,9 @@ instance level.  Below, each function decorated with :class:`.hybrid_method` or
 :class:`.hybrid_property` may receive ``self`` as an instance of the class, or
 may receive the class directly, depending on context::
 
-    from __future__ import annotations
+    # hybrid 扩展：类级 SQL 表达式与实例级 Python 属性共存的 descriptor
+
+from __future__ import annotations
 
     from sqlalchemy.ext.hybrid import hybrid_method
     from sqlalchemy.ext.hybrid import hybrid_property
@@ -894,6 +896,7 @@ _T_co = TypeVar("_T_co", bound=Any, covariant=True)
 _T_con = TypeVar("_T_con", bound=Any, contravariant=True)
 
 
+# InspectionAttr 扩展类型枚举：HYBRID_METHOD/HYBRID_PROPERTY
 class HybridExtensionType(InspectionAttrExtensionType):
     HYBRID_METHOD = "HYBRID_METHOD"
     """Symbol indicating an :class:`InspectionAttr` that's
@@ -922,14 +925,17 @@ class HybridExtensionType(InspectionAttrExtensionType):
     """
 
 
+# Protocol：hybrid 实例 getter 签名
 class _HybridGetterType(Protocol[_T_co]):
     def __call__(s, __self: Any) -> _T_co: ...
 
 
+# Protocol：hybrid 实例 setter 签名
 class _HybridSetterType(Protocol[_T_con]):
     def __call__(s, __self: Any, value: _T_con) -> None: ...
 
 
+# Protocol：bulk UPDATE 表达式签名
 class _HybridUpdaterType(Protocol[_T_con]):
     def __call__(
         s,
@@ -938,20 +944,24 @@ class _HybridUpdaterType(Protocol[_T_con]):
     ) -> List[Tuple[_DMLColumnArgument, Any]]: ...
 
 
+# Protocol：hybrid deleter 签名
 class _HybridDeleterType(Protocol[_T_co]):
     def __call__(s, __self: Any) -> None: ...
 
 
+# Protocol：类级 SQL 表达式 callable
 class _HybridExprCallableType(Protocol[_T_co]):
     def __call__(
         s, __cls: Any
     ) -> Union[_HasClauseElement[_T_co], SQLColumnExpression[_T_co]]: ...
 
 
+# Protocol：自定义 Comparator 工厂
 class _HybridComparatorCallableType(Protocol[_T]):
     def __call__(self, cls: Any) -> Comparator[_T]: ...
 
 
+# 类级访问 hybrid_property 时返回的 QueryableAttribute
 class _HybridClassLevelAccessor(QueryableAttribute[_T]):
     """Describe the object returned by a hybrid_property() when
     called as a class-level descriptor.
@@ -973,13 +983,15 @@ class _HybridClassLevelAccessor(QueryableAttribute[_T]):
         ) -> hybrid_property[_T]: ...
 
         @property
-        def overrides(self) -> hybrid_property[_T]: ...
+        # 子类 hybrid 覆盖父类时的链接对象
+    def overrides(self) -> hybrid_property[_T]: ...
 
         def update_expression(
             self, meth: _HybridUpdaterType[_T]
         ) -> hybrid_property[_T]: ...
 
 
+# 类/实例双模式方法：类调用生成 SQL，实例调用 Python
 class hybrid_method(interfaces.InspectionAttrInfo, Generic[_P, _R]):
     """A decorator which allows definition of a Python object method with both
     instance-level and class-level behavior.
@@ -989,6 +1001,7 @@ class hybrid_method(interfaces.InspectionAttrInfo, Generic[_P, _R]):
     is_attribute = True
     extension_type = HybridExtensionType.HYBRID_METHOD
 
+    # hybrid_method 构造：绑定 func 并标记 extension_type
     def __init__(
         self,
         func: Callable[Concatenate[Any, _P], _R],
@@ -1067,6 +1080,7 @@ class hybrid_method(interfaces.InspectionAttrInfo, Generic[_P, _R]):
         return self
 
 
+# 解包 classmethod 为底层函数（hybrid_method 注册用）
 def _unwrap_classmethod(meth: _T) -> _T:
     if isinstance(meth, classmethod):
         return meth.__func__  # type: ignore
@@ -1074,6 +1088,7 @@ def _unwrap_classmethod(meth: _T) -> _T:
         return meth
 
 
+# hybrid 属性：getter/setter/expr/comparator/update_expression
 class hybrid_property(interfaces.InspectionAttrInfo, ORMDescriptor[_T]):
     """A decorator which allows definition of a Python descriptor with both
     instance-level and class-level behavior.
@@ -1085,6 +1100,7 @@ class hybrid_property(interfaces.InspectionAttrInfo, ORMDescriptor[_T]):
 
     __name__: str
 
+    # hybrid_property 构造：fget/fset/fdel/expr/comparator
     def __init__(
         self,
         fget: _HybridGetterType[_T],
@@ -1215,10 +1231,12 @@ class hybrid_property(interfaces.InspectionAttrInfo, ORMDescriptor[_T]):
                 setattr(self.attr, k, _unwrap_classmethod(v))
             return self.attr
 
-        def getter(self, fget: _HybridGetterType[_TE]) -> hybrid_property[_TE]:
+        # 链式指定 getter
+    def getter(self, fget: _HybridGetterType[_TE]) -> hybrid_property[_TE]:
             return self._set(fget=fget)
 
-        def setter(self, fset: _HybridSetterType[_TE]) -> hybrid_property[_TE]:
+        # 链式指定 setter
+    def setter(self, fset: _HybridSetterType[_TE]) -> hybrid_property[_TE]:
             return self._set(fset=fset)
 
         def deleter(
@@ -1287,11 +1305,13 @@ class hybrid_property(interfaces.InspectionAttrInfo, ORMDescriptor[_T]):
 
         return self._copy(fset=fset)
 
+    # 链式指定 deleter
     def deleter(self, fdel: _HybridDeleterType[_T]) -> hybrid_property[_T]:
         """Provide a modifying decorator that defines a deletion method."""
 
         return self._copy(fdel=fdel)
 
+    # 指定类级 SQL 表达式
     def expression(
         self, expr: _HybridExprCallableType[_T]
     ) -> hybrid_property[_T]:
@@ -1326,6 +1346,7 @@ class hybrid_property(interfaces.InspectionAttrInfo, ORMDescriptor[_T]):
 
         return self._copy(expr=expr)
 
+    # 指定自定义 Comparator
     def comparator(
         self, comparator: _HybridComparatorCallableType[_T]
     ) -> hybrid_property[_T]:
@@ -1363,6 +1384,7 @@ class hybrid_property(interfaces.InspectionAttrInfo, ORMDescriptor[_T]):
         """
         return self._copy(custom_comparator=comparator)
 
+    # 指定 bulk UPDATE SET 表达式
     def update_expression(
         self, meth: _HybridUpdaterType[_T]
     ) -> hybrid_property[_T]:
@@ -1452,16 +1474,19 @@ class hybrid_property(interfaces.InspectionAttrInfo, ORMDescriptor[_T]):
         return expr_comparator
 
 
+# hybrid SQL 比较器基类：继承 PropComparator
 class Comparator(interfaces.PropComparator[_T]):
     """A helper class that allows easy construction of custom
     :class:`~.orm.interfaces.PropComparator`
     classes for usage with hybrids."""
 
+    # Comparator 构造：包装 hybrid 表达式
     def __init__(
         self, expression: Union[_HasClauseElement[_T], SQLColumnExpression[_T]]
     ):
         self.expression = expression
 
+    # 返回底层 SQL 列元素
     def __clause_element__(self) -> roles.ColumnsClauseRole:
         expr = self.expression
         if is_has_clause_element(expr):
@@ -1482,6 +1507,7 @@ class Comparator(interfaces.PropComparator[_T]):
     def property(self) -> interfaces.MapperProperty[_T]:
         raise NotImplementedError()
 
+    # alias/继承场景下适配 hybrid 到实体
     def adapt_to_entity(
         self, adapt_to_entity: AliasedInsp[Any]
     ) -> Comparator[_T]:
@@ -1489,6 +1515,7 @@ class Comparator(interfaces.PropComparator[_T]):
         return self
 
 
+# 仅表达式 hybrid 的比较器（无实例 getter）
 class ExprComparator(Comparator[_T]):
     def __init__(
         self,
