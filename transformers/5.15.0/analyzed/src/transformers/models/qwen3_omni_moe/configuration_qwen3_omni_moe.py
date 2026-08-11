@@ -23,6 +23,8 @@ from huggingface_hub.dataclasses import strict
 from ...configuration_utils import PreTrainedConfig
 from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring, logging
+# Qwen3-Omni MoE 配置：Thinker/Talker/Code2Wav 子配置与多模态 token 映射
+
 
 
 logger = logging.get_logger(__name__)
@@ -30,6 +32,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="Qwen/Qwen3-Omni-30B-A3B-Instruct")
 @strict
+# Qwen3OmniMoeAudioEncoderConfig：音频编码器配置：mel 维度、层数与窗口长度
 class Qwen3OmniMoeAudioEncoderConfig(PreTrainedConfig):
     r"""
     max_source_positions (`int`, *optional*, defaults to 1500):
@@ -76,6 +79,7 @@ class Qwen3OmniMoeAudioEncoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="Qwen/Qwen3-Omni-30B-A3B-Instruct")
 @strict
+# Qwen3OmniMoeVisionEncoderConfig：视觉编码器配置：patch 尺寸、深度与 Deepstack 索引
 class Qwen3OmniMoeVisionEncoderConfig(PreTrainedConfig):
     r"""
     out_hidden_size (`int`, *optional*, defaults to 3584):
@@ -106,6 +110,7 @@ class Qwen3OmniMoeVisionEncoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="Qwen/Qwen3-Omni-30B-A3B-Instruct")
 @strict
+# Qwen3OmniMoeTextConfig：文本 Thinker 配置：MoE 稀疏参数与 RoPE 设置
 class Qwen3OmniMoeTextConfig(PreTrainedConfig):
     r"""
     decoder_sparse_step (`int`, *optional*, defaults to 1):
@@ -186,6 +191,7 @@ class Qwen3OmniMoeTextConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="Qwen/Qwen3-Omni-30B-A3B-Instruct")
 @strict
+# Qwen3OmniMoeThinkerConfig：Thinker 联合配置：音频/视觉/文本子配置聚合
 class Qwen3OmniMoeThinkerConfig(PreTrainedConfig):
     r"""
     position_id_per_seconds (`int`, *optional*, defaults to 25):
@@ -253,6 +259,7 @@ class Qwen3OmniMoeThinkerConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="Qwen/Qwen3-Omni-30B-A3B-Instruct")
 @strict
+# Qwen3OmniMoeTalkerCodePredictorConfig：Talker 码预测器配置：离散语音 token 预测层
 class Qwen3OmniMoeTalkerCodePredictorConfig(PreTrainedConfig):
     r"""
     num_code_groups (`int`, *optional*, defaults to 32):
@@ -321,6 +328,7 @@ class Qwen3OmniMoeTalkerCodePredictorConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="Qwen/Qwen3-Omni-30B-A3B-Instruct")
 @strict
+# Qwen3OmniMoeTalkerTextConfig：Talker 文本配置：MoE 解码器与语音生成超参数
 class Qwen3OmniMoeTalkerTextConfig(PreTrainedConfig):
     r"""
     decoder_sparse_step (`int`, *optional*, defaults to 1):
@@ -414,6 +422,7 @@ class Qwen3OmniMoeTalkerTextConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="Qwen/Qwen3-Omni-30B-A3B-Instruct")
 @strict
+# Qwen3OmniMoeTalkerConfig：Talker 联合配置：码预测器 + 文本 MoE 子配置
 class Qwen3OmniMoeTalkerConfig(PreTrainedConfig):
     r"""
     code_predictor_config (`dict`, *optional*):
@@ -509,6 +518,7 @@ class Qwen3OmniMoeTalkerConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="Qwen/Qwen3-Omni-30B-A3B-Instruct")
 @strict
+# Qwen3OmniMoeCode2WavConfig：Code2Wav 配置：神经 Codec 波形合成超参数
 class Qwen3OmniMoeCode2WavConfig(PreTrainedConfig):
     r"""
     num_quantizers (`int`, *optional*, defaults to 16):
@@ -565,6 +575,7 @@ class Qwen3OmniMoeCode2WavConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="Qwen/Qwen3-Omni-30B-A3B-Instruct")
 @strict
+# Qwen3OmniMoeConfig：Omni 顶层配置：Thinker/Talker/Code2Wav 与多模态 token id
 class Qwen3OmniMoeConfig(PreTrainedConfig):
     r"""
     thinker_config (`dict`, *optional*):

@@ -22,6 +22,8 @@ from ...processing_utils import ProcessingKwargs, ProcessorMixin, Unpack, prepar
 from ...tokenization_utils_base import TextInput
 from ...utils import auto_docstring
 from ...utils.import_utils import is_nagisa_available, is_soynlp_available
+# Qwen3-ASR 处理器：音频特征、语言提示与 ASR 输出解析/去重后处理
+
 
 
 # fmt: off
@@ -70,6 +72,7 @@ FORCED_ALIGNER_LANGUAGES = {
 SUPPORTED_LANGUAGE_NAMES = set(LANGUAGE_CODE_TO_NAME.values())
 
 
+# resolve_language：解析语言代码：标准化 ASR 语言提示字符串
 def resolve_language(language: str | None) -> str | None:
     """Map a language code or name to the canonical full name, with validation.
 
@@ -96,6 +99,7 @@ def resolve_language(language: str | None) -> str | None:
     )
 
 
+# _prepare_language_inputs：组装语言提示 token：注入 ASR 目标语言前缀
 def _prepare_language_inputs(
     language: str | list[str] | None, batch_size: int, allow_broadcast: bool = False
 ) -> list[str | None]:
@@ -118,6 +122,7 @@ def _prepare_language_inputs(
     raise TypeError("`language` must be a string, a list of strings, or `None`.")
 
 
+# _audio_content_item：规范化音频内容项：统一对话模板中的音频字段
 def _audio_content_item(audio_item) -> dict:
     """Build a chat-template content dict for a single audio item."""
     if isinstance(audio_item, str):
@@ -125,6 +130,7 @@ def _audio_content_item(audio_item) -> dict:
     return {"type": "audio", "audio": audio_item}
 
 
+# _is_cjk_char：判断字符是否为 CJK 汉字
 def _is_cjk_char(char: str) -> bool:
     """
     Return True for Chinese-Japanese-Korean (CJK) ideograph characters.
@@ -143,6 +149,7 @@ def _is_cjk_char(char: str) -> bool:
     )
 
 
+# _is_kept_char：判断 token 字符是否保留（过滤标点与空白）
 def _is_kept_char(char: str) -> bool:
     """Return True for characters kept during forced-alignment tokenisation (letters, numbers, apostrophes, CJK)."""
     if char == "'":
@@ -151,11 +158,13 @@ def _is_kept_char(char: str) -> bool:
     return category.startswith("L") or category.startswith("N") or _is_cjk_char(char)
 
 
+# _clean_tokens：清洗原始 token 列表：去除特殊符号与空白
 def _clean_tokens(raw_tokens) -> list[str]:
     """Filter each raw token to kept characters, dropping empty results."""
     return [cleaned for token in raw_tokens if (cleaned := "".join(char for char in token if _is_kept_char(char)))]
 
 
+# _parse_single_output：解析单条 ASR 输出：提取文本与时间戳字段
 def _parse_single_output(text: str) -> dict:
     """Parse a single decoded ASR string into language + transcription like the original implementation."""
     if text is None or not str(text).strip():
@@ -196,6 +205,7 @@ def _parse_single_output(text: str) -> dict:
     return {"language": language or None, "transcription": transcription.strip()}
 
 
+# _fix_timestamps：修正时间戳数组：对齐帧级边界与单调性
 def _fix_timestamps(raw: np.ndarray) -> list[int]:
     """
     Ensure predicted timestamps are monotonically increasing.
@@ -307,6 +317,7 @@ def _fix_timestamps(raw: np.ndarray) -> list[int]:
     return [int(val) for val in result]
 
 
+# _detect_and_fix_repetitions：检测并修复 ASR 重复片段：截断过长循环
 def _detect_and_fix_repetitions(text, threshold=20):
     """
     Original implementation uses this post-processing to remove repeated characters and patterns in the ASR output
@@ -380,6 +391,7 @@ def _detect_and_fix_repetitions(text, threshold=20):
     return text
 
 
+# Qwen3ASRProcessorKwargs：处理器关键字参数：文本与音频特征提取默认选项
 class Qwen3ASRProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -398,9 +410,11 @@ class Qwen3ASRProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# Qwen3ASRProcessor：ASR 处理器：特征提取 + 分词器联合调用与语言提示注入
 class Qwen3ASRProcessor(ProcessorMixin):
     valid_processor_kwargs = Qwen3ASRProcessorKwargs
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         feature_extractor=None,
@@ -422,6 +436,7 @@ class Qwen3ASRProcessor(ProcessorMixin):
         self.audio_eos_token_id = self.tokenizer.convert_tokens_to_ids(self.audio_eos_token)
 
     @auto_docstring
+    # __call__：处理器调用：联合处理多模态输入并返回 BatchFeature
     def __call__(
         self,
         text: TextInput | list[TextInput],
@@ -816,6 +831,7 @@ class Qwen3ASRProcessor(ProcessorMixin):
         return ["num_audio_tokens"]
 
     @property
+    # model_input_names：模型输入字段名：合并各子处理器所需键名
     def model_input_names(self):
         tokenizer_input_names = self.tokenizer.model_input_names
         feature_extractor_input_names = self.feature_extractor.model_input_names

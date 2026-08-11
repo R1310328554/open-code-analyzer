@@ -39,6 +39,8 @@ from ...masking_utils import create_causal_mask, create_sliding_window_causal_ma
 from ...modeling_flash_attention_utils import FlashAttentionKwargs
 from ...modeling_layers import GradientCheckpointingLayer
 from ...modeling_outputs import (
+# Qwen3-Omni MoE 建模：多模态 Thinker、语音 Talker 与神经 Codec 波形合成
+
     BaseModelOutputWithPast,
     BaseModelOutputWithPooling,
     CausalLMOutputWithPast,
@@ -82,6 +84,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring
 @dataclass
+# BaseModelOutputWithDeepstackFeatures：Deepstack 输出：多层视觉特征与池化隐状态
 class BaseModelOutputWithDeepstackFeatures(BaseModelOutputWithPooling):
     r"""
     deepstack_features (`List[torch.FloatTensor]`, *optional*):
@@ -91,7 +94,9 @@ class BaseModelOutputWithDeepstackFeatures(BaseModelOutputWithPooling):
     deepstack_features: list[torch.FloatTensor] | None = None
 
 
+# SinusoidsPositionEmbedding：正弦位置嵌入：固定频率编码音频帧序列位置
 class SinusoidsPositionEmbedding(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, length, channels, max_timescale=10000):
         super().__init__()
         self.length = length
@@ -108,11 +113,13 @@ class SinusoidsPositionEmbedding(nn.Module):
         scaled_time = torch.arange(self.length)[:, np.newaxis] * inv_timescales[np.newaxis, :]
         return torch.cat([torch.sin(scaled_time), torch.cos(scaled_time)], dim=1)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, seqlen: int):
         return self.positional_embedding[:seqlen, :]
 
 
 @auto_docstring
+# Qwen3OmniMoePreTrainedModel：Omni MoE 预训练基类：多模态权重初始化
 class Qwen3OmniMoePreTrainedModel(PreTrainedModel):
     config: Qwen3OmniMoeConfig
     base_model_prefix = "model"
@@ -132,6 +139,7 @@ class Qwen3OmniMoePreTrainedModel(PreTrainedModel):
     _supports_attention_backend = True
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module):
         super()._init_weights(module)
         std = getattr(self.config, "initializer_range", 0.02)
@@ -152,6 +160,7 @@ class Qwen3OmniMoePreTrainedModel(PreTrainedModel):
             init.copy_(module.inv_freq, inv_freq)
 
 
+# _get_feat_extract_output_lengths：计算 mel 特征下采样后的有效序列长度
 def _get_feat_extract_output_lengths(input_lengths, n_window=50):
     """
     Computes the output length of the convolutional layers and the output length of the audio encoder
@@ -162,6 +171,7 @@ def _get_feat_extract_output_lengths(input_lengths, n_window=50):
     return ((feat_lengths - 1) // 2 + 1 - 1) // 2 + 1 + (input_lengths // chunk_len) * 13
 
 
+# Qwen3OmniMoePreTrainedModelForConditionalGeneration：条件生成基类：Thinker/Talker 共享初始化逻辑
 class Qwen3OmniMoePreTrainedModelForConditionalGeneration(Qwen3OmniMoePreTrainedModel):
     input_modalities = ("image", "video", "audio", "text")
 
@@ -469,6 +479,7 @@ class Qwen3OmniMoePreTrainedModelForConditionalGeneration(Qwen3OmniMoePreTrained
             return position_ids, mrope_position_deltas
 
 
+# repeat_kv：GQA 键值扩展：将 KV 头重复以匹配查询头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -481,6 +492,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：标准注意力前向：QK^T 缩放 softmax 加权 V
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -506,9 +518,11 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# Qwen3OmniMoeAudioAttention：音频自注意力：多头缩放点积与变长序列支持
 class Qwen3OmniMoeAudioAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.embed_dim = config.d_model
@@ -532,6 +546,7 @@ class Qwen3OmniMoeAudioAttention(nn.Module):
         self.q_proj = nn.Linear(self.embed_dim, self.embed_dim, bias=True)
         self.out_proj = nn.Linear(self.embed_dim, self.embed_dim, bias=True)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -601,7 +616,9 @@ class Qwen3OmniMoeAudioAttention(nn.Module):
         return attn_output
 
 
+# Qwen3OmniMoeAudioEncoderLayer：音频编码层：自注意力 + FFN 残差堆叠
 class Qwen3OmniMoeAudioEncoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeAudioEncoderConfig):
         super().__init__()
         self.embed_dim = config.d_model
@@ -614,6 +631,7 @@ class Qwen3OmniMoeAudioEncoderLayer(GradientCheckpointingLayer):
         self.fc2 = nn.Linear(config.encoder_ffn_dim, self.embed_dim)
         self.final_layer_norm = nn.LayerNorm(self.embed_dim)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -650,6 +668,7 @@ class Qwen3OmniMoeAudioEncoderLayer(GradientCheckpointingLayer):
         return outputs
 
 
+# chunk_and_pad_features：分块并填充音频特征：对齐窗口长度
 def chunk_and_pad_features(
     input_features: torch.Tensor, feature_lens: torch.Tensor, n_window: int, kwargs: dict | None = None
 ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -685,6 +704,7 @@ def chunk_and_pad_features(
     return padded_feature, chunk_lengths
 
 
+# get_valid_indices：获取有效帧索引：过滤短于窗口的音频块
 def get_valid_indices(chunk_lengths: torch.Tensor, n_window: int, kwargs: dict | None = None) -> torch.Tensor:
     """Compute flat indices of valid (non-padding) positions after CNN extraction, or pop `"valid_indices"` from `kwargs` if precomputed.
 
@@ -704,6 +724,7 @@ def get_valid_indices(chunk_lengths: torch.Tensor, n_window: int, kwargs: dict |
     return mask.flatten().nonzero().squeeze(-1)
 
 
+# get_audio_cu_seqlens：计算变长音频 batch 的 cumulative sequence lengths
 def get_audio_cu_seqlens(
     chunk_lengths: torch.Tensor,
     feature_lens: torch.Tensor,
@@ -752,6 +773,7 @@ def get_audio_cu_seqlens(
     [`Qwen3OmniMoeAudioEncoderLayer`].
     """
 )
+# Qwen3OmniMoeAudioEncoder：音频编码器：log-mel 特征到隐状态序列
 class Qwen3OmniMoeAudioEncoder(Qwen3OmniMoePreTrainedModel):
     config: Qwen3OmniMoeAudioEncoderConfig
     main_input_name = "input_features"
@@ -763,6 +785,7 @@ class Qwen3OmniMoeAudioEncoder(Qwen3OmniMoePreTrainedModel):
         "attentions": Qwen3OmniMoeAudioAttention,
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeAudioEncoderConfig):
         super().__init__(config)
         self.dropout = config.dropout
@@ -806,6 +829,7 @@ class Qwen3OmniMoeAudioEncoder(Qwen3OmniMoePreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs(tie_last_hidden_states=False)
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input_features=None, feature_lens=None, **kwargs: Unpack[TransformersKwargs]):
         r"""
         feature_lens (`torch.LongTensor` of shape `(batch_size,)`):
@@ -857,6 +881,7 @@ class Qwen3OmniMoeAudioEncoder(Qwen3OmniMoePreTrainedModel):
         return BaseModelOutputWithPooling(last_hidden_state=hidden_states)
 
 
+# rotate_half：RoPE 辅助：将向量后半部分取负并与前半交换
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -864,6 +889,7 @@ def rotate_half(x):
     return torch.cat((-x2, x1), dim=-1)
 
 
+# apply_rotary_pos_emb_vision：应用视觉 RoPE：2D 空间位置旋转编码
 def apply_rotary_pos_emb_vision(
     q: torch.Tensor, k: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor
 ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -878,7 +904,9 @@ def apply_rotary_pos_emb_vision(
     return q_embed, k_embed
 
 
+# Qwen3OmniMoeVisionAttention：视觉自注意力：2D RoPE 与 Flash Attention
 class Qwen3OmniMoeVisionAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeVisionEncoderConfig) -> None:
         super().__init__()
         self.dim = config.hidden_size
@@ -892,6 +920,7 @@ class Qwen3OmniMoeVisionAttention(nn.Module):
         self.attention_dropout = 0.0
         self.is_causal = False
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -961,7 +990,9 @@ class Qwen3OmniMoeVisionAttention(nn.Module):
         return attn_output
 
 
+# Qwen3OmniMoeVisionPatchMerger：Patch 合并：空间下采样合并相邻 patch 特征
 class Qwen3OmniMoeVisionPatchMerger(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeVisionEncoderConfig, use_postshuffle_norm=False) -> None:
         super().__init__()
         self.hidden_size = config.hidden_size * (config.spatial_merge_size**2)
@@ -975,6 +1006,7 @@ class Qwen3OmniMoeVisionPatchMerger(nn.Module):
             ]
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden: torch.Tensor) -> torch.Tensor:
         hidden = self.ln_q(hidden.view(-1, self.hidden_size) if self.use_postshuffle_norm else hidden).view(
             -1, self.hidden_size
@@ -984,7 +1016,9 @@ class Qwen3OmniMoeVisionPatchMerger(nn.Module):
         return hidden
 
 
+# Qwen3OmniMoeVisionRotaryEmbedding：视觉 RoPE：2D 空间位置旋转编码
 class Qwen3OmniMoeVisionRotaryEmbedding(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, dim: int, theta: float = 10000.0) -> None:
         super().__init__()
         self.dim = dim
@@ -992,11 +1026,14 @@ class Qwen3OmniMoeVisionRotaryEmbedding(nn.Module):
         inv_freq = 1.0 / (theta ** (torch.arange(0, dim, 2, dtype=torch.float) / dim))
         self.inv_freq = nn.Buffer(inv_freq, persistent=False)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, position_ids: torch.Tensor) -> torch.Tensor:
         return (position_ids.unsqueeze(-1) * self.inv_freq).flatten(1)
 
 
+# Qwen3OmniMoeTextTopKRouter：文本 Top-K 路由：Thinker 稀疏专家选择
 class Qwen3OmniMoeTextTopKRouter(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.top_k = config.num_experts_per_tok
@@ -1004,6 +1041,7 @@ class Qwen3OmniMoeTextTopKRouter(nn.Module):
         self.hidden_dim = config.hidden_size
         self.weight = nn.Parameter(torch.zeros(self.num_experts, self.hidden_dim))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = hidden_states.reshape(-1, self.hidden_dim)
         router_logits = F.linear(hidden_states, self.weight)  # (seq_len, num_experts)
@@ -1015,7 +1053,9 @@ class Qwen3OmniMoeTextTopKRouter(nn.Module):
         return router_logits, router_scores, router_indices
 
 
+# Qwen3OmniMoeVisionMLP：视觉 MLP：ViT 前馈网络与激活函数
 class Qwen3OmniMoeVisionMLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.hidden_size = config.hidden_size
@@ -1024,11 +1064,14 @@ class Qwen3OmniMoeVisionMLP(nn.Module):
         self.linear_fc2 = nn.Linear(self.intermediate_size, self.hidden_size, bias=True)
         self.act_fn = ACT2FN[config.hidden_act]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state):
         return self.linear_fc2(self.act_fn(self.linear_fc1(hidden_state)))
 
 
+# Qwen3OmniMoeVisionBlock：视觉 Transformer 块：注意力 + MLP 残差
 class Qwen3OmniMoeVisionBlock(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, attn_implementation: str = "sdpa") -> None:
         super().__init__()
         self.norm1 = nn.LayerNorm(config.hidden_size, eps=1e-6)
@@ -1037,6 +1080,7 @@ class Qwen3OmniMoeVisionBlock(GradientCheckpointingLayer):
         self.mlp = Qwen3OmniMoeVisionMLP(config=config)
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -1058,7 +1102,9 @@ class Qwen3OmniMoeVisionBlock(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Qwen3OmniMoeVisionPatchEmbed：Patch 嵌入：Conv3d 将图像/视频帧投影为 token
 class Qwen3OmniMoeVisionPatchEmbed(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config) -> None:
         super().__init__()
         self.patch_size = config.patch_size
@@ -1069,6 +1115,7 @@ class Qwen3OmniMoeVisionPatchEmbed(nn.Module):
         kernel_size = [self.temporal_patch_size, self.patch_size, self.patch_size]
         self.proj = nn.Conv3d(self.in_channels, self.embed_dim, kernel_size=kernel_size, stride=kernel_size, bias=True)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         target_dtype = self.proj.weight.dtype
         hidden_states = hidden_states.view(
@@ -1078,6 +1125,7 @@ class Qwen3OmniMoeVisionPatchEmbed(nn.Module):
         return hidden_states
 
 
+# Qwen3OmniMoeVisionEncoder：视觉编码器：多层 ViT 提取图像/视频表征
 class Qwen3OmniMoeVisionEncoder(Qwen3OmniMoePreTrainedModel):
     config: Qwen3OmniMoeVisionEncoderConfig
     input_modalities = ("image", "video")
@@ -1087,6 +1135,7 @@ class Qwen3OmniMoeVisionEncoder(Qwen3OmniMoePreTrainedModel):
         "attentions": Qwen3OmniMoeVisionAttention,
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, *inputs, **kwargs) -> None:
         super().__init__(config, *inputs, **kwargs)
         self.merger_list = nn.ModuleList(
@@ -1154,6 +1203,7 @@ class Qwen3OmniMoeVisionEncoder(Qwen3OmniMoePreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self, hidden_states: torch.Tensor, grid_thw: torch.Tensor, **kwargs: Unpack[TransformersKwargs]
     ) -> tuple | BaseModelOutputWithDeepstackFeatures:
@@ -1217,8 +1267,10 @@ class Qwen3OmniMoeVisionEncoder(Qwen3OmniMoePreTrainedModel):
         return self.merger_list
 
 
+# Qwen3OmniMoeThinkerTextRotaryEmbedding：Thinker 文本 RoPE：标准旋转位置编码
 class Qwen3OmniMoeThinkerTextRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeTextConfig, device=None):
         super().__init__()
         self.max_seq_len_cached = config.max_position_embeddings
@@ -1238,6 +1290,7 @@ class Qwen3OmniMoeThinkerTextRotaryEmbedding(nn.Module):
 
     @staticmethod
     @deprecate_kwarg("device", version="5.18")
+    # compute_default_rope_parameters：计算默认 RoPE 逆频率与注意力缩放因子
     def compute_default_rope_parameters(
         config: Qwen3OmniMoeTextConfig, device=None, **kwargs
     ) -> tuple[torch.Tensor, float]:
@@ -1260,6 +1313,7 @@ class Qwen3OmniMoeThinkerTextRotaryEmbedding(nn.Module):
 
     @torch.no_grad()
     @dynamic_rope_update  # power user: used with advanced RoPE types (e.g. dynamic rope)
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x, position_ids):
         # In contrast to other models, Qwen3OmniMoeThinker has different position ids for the grids
         # So we expand the inv_freq to shape (3, ...)
@@ -1299,11 +1353,13 @@ class Qwen3OmniMoeThinkerTextRotaryEmbedding(nn.Module):
 
 
 @use_experts_implementation
+# Qwen3OmniMoeThinkerTextExperts：Thinker MoE 专家集合：并行 FFN 专家
 class Qwen3OmniMoeThinkerTextExperts(nn.Module):
     """
     ModuleList of experts.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeThinkerConfig):
         super().__init__()
         self.num_experts = config.num_experts
@@ -1313,6 +1369,7 @@ class Qwen3OmniMoeThinkerTextExperts(nn.Module):
         self.down_proj = nn.Parameter(torch.empty(self.num_experts, self.hidden_dim, self.intermediate_dim))
         self.act_fn = ACT2FN[config.hidden_act]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -1340,7 +1397,9 @@ class Qwen3OmniMoeThinkerTextExperts(nn.Module):
         return final_hidden_states
 
 
+# Qwen3OmniMoeThinkerTextTopKRouter：Thinker Top-K 路由：稀疏专家门控
 class Qwen3OmniMoeThinkerTextTopKRouter(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.top_k = config.num_experts_per_tok
@@ -1349,6 +1408,7 @@ class Qwen3OmniMoeThinkerTextTopKRouter(nn.Module):
         self.hidden_dim = config.hidden_size
         self.weight = nn.Parameter(torch.zeros(self.num_experts, self.hidden_dim))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = hidden_states.reshape(-1, self.hidden_dim)
         router_logits = F.linear(hidden_states, self.weight)  # (seq_len, num_experts)
@@ -1361,12 +1421,15 @@ class Qwen3OmniMoeThinkerTextTopKRouter(nn.Module):
         return router_logits, router_scores, router_indices
 
 
+# Qwen3OmniMoeThinkerTextSparseMoeBlock：Thinker 稀疏 MoE 块：路由 + 专家聚合
 class Qwen3OmniMoeThinkerTextSparseMoeBlock(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeThinkerConfig):
         super().__init__()
         self.experts = Qwen3OmniMoeThinkerTextExperts(config)
         self.gate = Qwen3OmniMoeThinkerTextTopKRouter(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         batch_size, sequence_length, hidden_dim = hidden_states.shape
         hidden_states_reshaped = hidden_states.view(-1, hidden_dim)
@@ -1376,7 +1439,9 @@ class Qwen3OmniMoeThinkerTextSparseMoeBlock(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# Qwen3OmniMoeThinkerTextRMSNorm：Thinker RMS 层归一化
 class Qwen3OmniMoeThinkerTextRMSNorm(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
         Qwen3OmniMoeThinkerTextRMSNorm is equivalent to T5LayerNorm
@@ -1385,6 +1450,7 @@ class Qwen3OmniMoeThinkerTextRMSNorm(nn.Module):
         self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         input_dtype = hidden_states.dtype
         hidden_states = hidden_states.to(torch.float32)
@@ -1392,11 +1458,13 @@ class Qwen3OmniMoeThinkerTextRMSNorm(nn.Module):
         hidden_states = hidden_states * torch.rsqrt(variance + self.variance_epsilon)
         return self.weight * hidden_states.to(input_dtype)
 
+    # extra_repr：模块_repr_ 补充：输出权重形状与 epsilon 等调试信息
     def extra_repr(self):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：应用 1D RoPE：对 Q/K 按位置旋转编码
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -1423,9 +1491,11 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# Qwen3OmniMoeThinkerTextAttention：Thinker 自注意力：GQA + RoPE
 class Qwen3OmniMoeThinkerTextAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_idx):
         super().__init__()
         self.config = config
@@ -1456,6 +1526,7 @@ class Qwen3OmniMoeThinkerTextAttention(nn.Module):
         )  # thus post q_norm does not need reshape
         self.sliding_window = None
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -1498,7 +1569,9 @@ class Qwen3OmniMoeThinkerTextAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# Qwen3OmniMoeThinkerTextMLP：Thinker 稠密 MLP：共享专家路径
 class Qwen3OmniMoeThinkerTextMLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, intermediate_size=None):
         super().__init__()
         self.config = config
@@ -1509,12 +1582,15 @@ class Qwen3OmniMoeThinkerTextMLP(nn.Module):
         self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=False)
         self.act_fn = ACT2FN[config.hidden_act]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         down_proj = self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
         return down_proj
 
 
+# Qwen3OmniMoeThinkerTextDecoderLayer：Thinker 解码层：自注意力 + MoE FFN
 class Qwen3OmniMoeThinkerTextDecoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_idx):
         super().__init__()
         self.self_attn = Qwen3OmniMoeThinkerTextAttention(config, layer_idx)
@@ -1528,6 +1604,7 @@ class Qwen3OmniMoeThinkerTextDecoderLayer(GradientCheckpointingLayer):
         self.post_attention_layernorm = Qwen3OmniMoeThinkerTextRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.hidden_size = config.hidden_size
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -1561,6 +1638,7 @@ class Qwen3OmniMoeThinkerTextDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Qwen3OmniMoeThinkerTextPreTrainedModel：Thinker 文本预训练基类
 class Qwen3OmniMoeThinkerTextPreTrainedModel(PreTrainedModel):
     config = Qwen3OmniMoeTextConfig
     base_model_prefix = "model"
@@ -1581,6 +1659,7 @@ class Qwen3OmniMoeThinkerTextPreTrainedModel(PreTrainedModel):
     config_class = Qwen3OmniMoeTextConfig
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module):
         super()._init_weights(module)
         std = self.config.initializer_range
@@ -1592,7 +1671,9 @@ class Qwen3OmniMoeThinkerTextPreTrainedModel(PreTrainedModel):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# Qwen3OmniMoeTextRMSNorm：Talker 文本 RMS 层归一化
 class Qwen3OmniMoeTextRMSNorm(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
         Qwen3OmniMoeTextRMSNorm is equivalent to T5LayerNorm
@@ -1601,6 +1682,7 @@ class Qwen3OmniMoeTextRMSNorm(nn.Module):
         self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         input_dtype = hidden_states.dtype
         hidden_states = hidden_states.to(torch.float32)
@@ -1608,6 +1690,7 @@ class Qwen3OmniMoeTextRMSNorm(nn.Module):
         hidden_states = hidden_states * torch.rsqrt(variance + self.variance_epsilon)
         return self.weight * hidden_states.to(input_dtype)
 
+    # extra_repr：模块_repr_ 补充：输出权重形状与 epsilon 等调试信息
     def extra_repr(self):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
@@ -1618,6 +1701,7 @@ class Qwen3OmniMoeTextRMSNorm(nn.Module):
         "not a pure text-only model, as DeepStack integrates visual features into the early hidden states."
     )
 )
+# Qwen3OmniMoeThinkerTextModel：Thinker 文本解码器：MoE 多层 Transformer
 class Qwen3OmniMoeThinkerTextModel(Qwen3OmniMoePreTrainedModel):
     config: Qwen3OmniMoeTextConfig
     input_modalities = ("text",)
@@ -1628,6 +1712,7 @@ class Qwen3OmniMoeThinkerTextModel(Qwen3OmniMoePreTrainedModel):
         "router_logits": OutputRecorder(Qwen3OmniMoeThinkerTextTopKRouter, index=0),
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeTextConfig):
         super().__init__(config)
         self.padding_idx = config.pad_token_id
@@ -1647,6 +1732,7 @@ class Qwen3OmniMoeThinkerTextModel(Qwen3OmniMoePreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -1745,6 +1831,7 @@ class Qwen3OmniMoeThinkerTextModel(Qwen3OmniMoePreTrainedModel):
 
 @auto_docstring
 @dataclass
+# Qwen3OmniMoeThinkerCausalLMOutputWithPast：Thinker 因果 LM 输出：含 router_logits
 class Qwen3OmniMoeThinkerCausalLMOutputWithPast(MoeCausalLMOutputWithPast):
     r"""
     rope_deltas (`torch.LongTensor` of shape `(batch_size, )`, *optional*):
@@ -1755,6 +1842,7 @@ class Qwen3OmniMoeThinkerCausalLMOutputWithPast(MoeCausalLMOutputWithPast):
     rope_deltas: torch.LongTensor | None = None
 
 
+# load_balancing_loss_func：MoE 负载均衡损失：鼓励专家均匀分配 token
 def load_balancing_loss_func(
     gate_logits: torch.Tensor | tuple[torch.Tensor] | None,
     num_experts: int | None = None,
@@ -1842,6 +1930,7 @@ def load_balancing_loss_func(
     The Qwen2.5OmniThinker model which consists of an audio backbone and a language model.
     """
 )
+# Qwen3OmniMoeThinkerForConditionalGeneration：Thinker 条件生成：多模态理解与文本回复
 class Qwen3OmniMoeThinkerForConditionalGeneration(
     Qwen3OmniMoePreTrainedModelForConditionalGeneration, GenerationMixin
 ):
@@ -1859,6 +1948,7 @@ class Qwen3OmniMoeThinkerForConditionalGeneration(
         "router_logits": OutputRecorder(Qwen3OmniMoeThinkerTextTopKRouter, index=0),
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.audio_tower = Qwen3OmniMoeAudioEncoder._from_config(config.audio_config)
@@ -1996,6 +2086,7 @@ class Qwen3OmniMoeThinkerForConditionalGeneration(
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids=None,
@@ -2204,18 +2295,22 @@ class Qwen3OmniMoeThinkerForConditionalGeneration(
         return model_inputs
 
 
+# Qwen3OmniMoeTalkerResizeMLP：Talker 维度投影：Thinker 隐状态映射到 Talker 空间
 class Qwen3OmniMoeTalkerResizeMLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeTalkerConfig):
         super().__init__()
         self.linear_fc1 = nn.Linear(config.thinker_hidden_size, config.text_config.intermediate_size, bias=True)
         self.linear_fc2 = nn.Linear(config.text_config.intermediate_size, config.text_config.hidden_size, bias=True)
         self.act_fn = ACT2FN[config.text_config.hidden_act]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state):
         return self.linear_fc2(self.act_fn(self.linear_fc1(hidden_state)))
 
 
 @dataclass
+# Qwen3OmniMoeTalkerCodePredictorOutputWithPast：码预测器输出：离散语音 token logits
 class Qwen3OmniMoeTalkerCodePredictorOutputWithPast(CausalLMOutputWithPast):
     r"""
     generation_steps (`int`, *optional*)
@@ -2226,7 +2321,9 @@ class Qwen3OmniMoeTalkerCodePredictorOutputWithPast(CausalLMOutputWithPast):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# Qwen3OmniMoeRMSNorm：Omni 通用 RMS 层归一化
 class Qwen3OmniMoeRMSNorm(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
         Qwen3OmniMoeRMSNorm is equivalent to T5LayerNorm
@@ -2235,6 +2332,7 @@ class Qwen3OmniMoeRMSNorm(nn.Module):
         self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         input_dtype = hidden_states.dtype
         hidden_states = hidden_states.to(torch.float32)
@@ -2242,14 +2340,17 @@ class Qwen3OmniMoeRMSNorm(nn.Module):
         hidden_states = hidden_states * torch.rsqrt(variance + self.variance_epsilon)
         return self.weight * hidden_states.to(input_dtype)
 
+    # extra_repr：模块_repr_ 补充：输出权重形状与 epsilon 等调试信息
     def extra_repr(self):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# Qwen3OmniMoeTalkerCodePredictorAttention：码预测器自注意力层
 class Qwen3OmniMoeTalkerCodePredictorAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeConfig, layer_idx: int):
         super().__init__()
         self.layer_type = config.layer_types[layer_idx] if hasattr(config, "layer_types") else None
@@ -2279,6 +2380,7 @@ class Qwen3OmniMoeTalkerCodePredictorAttention(nn.Module):
         )  # thus post q_norm does not need reshape
         self.sliding_window = config.sliding_window if self.layer_type == "sliding_attention" else None
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -2321,7 +2423,9 @@ class Qwen3OmniMoeTalkerCodePredictorAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# Qwen3OmniMoeMLP：Omni 通用 SwiGLU 前馈网络
 class Qwen3OmniMoeMLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -2332,12 +2436,15 @@ class Qwen3OmniMoeMLP(nn.Module):
         self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=False)
         self.act_fn = ACT2FN[config.hidden_act]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         down_proj = self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
         return down_proj
 
 
+# Qwen3OmniMoeTalkerCodePredictorDecoderLayer：码预测器解码层：自注意力 + MLP
 class Qwen3OmniMoeTalkerCodePredictorDecoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_idx):
         super().__init__()
         self.hidden_size = config.hidden_size
@@ -2347,6 +2454,7 @@ class Qwen3OmniMoeTalkerCodePredictorDecoderLayer(GradientCheckpointingLayer):
         self.input_layernorm = Qwen3OmniMoeRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.post_attention_layernorm = Qwen3OmniMoeRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -2379,8 +2487,10 @@ class Qwen3OmniMoeTalkerCodePredictorDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Qwen3OmniMoeRotaryEmbedding：Omni 通用 RoPE 旋转位置编码
 class Qwen3OmniMoeRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeConfig, device=None):
         super().__init__()
         self.max_seq_len_cached = config.max_position_embeddings
@@ -2399,6 +2509,7 @@ class Qwen3OmniMoeRotaryEmbedding(nn.Module):
 
     @staticmethod
     @deprecate_kwarg("device", version="5.18")
+    # compute_default_rope_parameters：计算默认 RoPE 逆频率与注意力缩放因子
     def compute_default_rope_parameters(
         config: Qwen3OmniMoeConfig, device=None, **kwargs
     ) -> tuple[torch.Tensor, float]:
@@ -2421,6 +2532,7 @@ class Qwen3OmniMoeRotaryEmbedding(nn.Module):
 
     @torch.no_grad()
     @dynamic_rope_update  # power user: used with advanced RoPE types (e.g. dynamic rope)
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x, position_ids):
         inv_freq_expanded = self.inv_freq[None, :, None].float().expand(position_ids.shape[0], -1, 1).to(x.device)
         position_ids_expanded = position_ids[:, None, :].float()
@@ -2436,6 +2548,7 @@ class Qwen3OmniMoeRotaryEmbedding(nn.Module):
 
 
 @auto_docstring
+# Qwen3OmniMoeTalkerCodePredictorModel：码预测器骨干：离散语音 token 序列建模
 class Qwen3OmniMoeTalkerCodePredictorModel(Qwen3OmniMoePreTrainedModel):
     config_class = Qwen3OmniMoeTalkerCodePredictorConfig
     base_model_prefix = "talker.code_predictor.model"
@@ -2444,6 +2557,7 @@ class Qwen3OmniMoeTalkerCodePredictorModel(Qwen3OmniMoePreTrainedModel):
         "hidden_states": Qwen3OmniMoeTalkerCodePredictorDecoderLayer,
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeTalkerCodePredictorConfig):
         super().__init__(config)
         self.padding_idx = config.pad_token_id
@@ -2468,6 +2582,7 @@ class Qwen3OmniMoeTalkerCodePredictorModel(Qwen3OmniMoePreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -2531,6 +2646,7 @@ class Qwen3OmniMoeTalkerCodePredictorModel(Qwen3OmniMoePreTrainedModel):
 
 
 @auto_docstring
+# Qwen3OmniMoeTalkerCodePredictorModelForConditionalGeneration：码预测条件生成：自回归预测语音码本
 class Qwen3OmniMoeTalkerCodePredictorModelForConditionalGeneration(Qwen3OmniMoePreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
@@ -2543,6 +2659,7 @@ class Qwen3OmniMoeTalkerCodePredictorModelForConditionalGeneration(Qwen3OmniMoeP
         "hidden_states": Qwen3OmniMoeTalkerCodePredictorDecoderLayer,
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeTalkerCodePredictorConfig):
         super().__init__(config)
         self.model = Qwen3OmniMoeTalkerCodePredictorModel._from_config(config)
@@ -2556,6 +2673,7 @@ class Qwen3OmniMoeTalkerCodePredictorModelForConditionalGeneration(Qwen3OmniMoeP
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids=None,
@@ -2619,6 +2737,7 @@ class Qwen3OmniMoeTalkerCodePredictorModelForConditionalGeneration(Qwen3OmniMoeP
 
 
 @dataclass
+# Qwen3OmniMoeTalkerOutputWithPast：Talker 输出：含 MoE router_logits 与 past KV
 class Qwen3OmniMoeTalkerOutputWithPast(MoeCausalLMOutputWithPast):
     r"""
     generation_step (`int`, *optional*):
@@ -2628,11 +2747,14 @@ class Qwen3OmniMoeTalkerOutputWithPast(MoeCausalLMOutputWithPast):
     generation_step: int | None = None
 
 
+# Qwen3OmniMoeTalkerRotaryEmbedding：Talker RoPE：继承 Thinker 文本旋转编码
 class Qwen3OmniMoeTalkerRotaryEmbedding(Qwen3OmniMoeThinkerTextRotaryEmbedding):
     pass
 
 
+# Qwen3OmniMoeTalkerTextMLP：Talker 文本 MLP：共享专家前馈
 class Qwen3OmniMoeTalkerTextMLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, intermediate_size=None):
         super().__init__()
         self.config = config
@@ -2643,12 +2765,15 @@ class Qwen3OmniMoeTalkerTextMLP(nn.Module):
         self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=False)
         self.act_fn = ACT2FN[config.hidden_act]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         down_proj = self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
         return down_proj
 
 
+# Qwen3OmniMoeTalkerTextTopKRouter：Talker Top-K 路由：稀疏专家选择
 class Qwen3OmniMoeTalkerTextTopKRouter(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.top_k = config.num_experts_per_tok
@@ -2657,6 +2782,7 @@ class Qwen3OmniMoeTalkerTextTopKRouter(nn.Module):
         self.hidden_dim = config.hidden_size
         self.weight = nn.Parameter(torch.zeros(self.num_experts, self.hidden_dim))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = hidden_states.reshape(-1, self.hidden_dim)
         router_logits = F.linear(hidden_states, self.weight)  # (seq_len, num_experts)
@@ -2670,9 +2796,11 @@ class Qwen3OmniMoeTalkerTextTopKRouter(nn.Module):
 
 
 @use_experts_implementation
+# Qwen3OmniMoeTalkerTextExperts：Talker MoE 专家集合
 class Qwen3OmniMoeTalkerTextExperts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.num_experts = config.num_experts
@@ -2682,6 +2810,7 @@ class Qwen3OmniMoeTalkerTextExperts(nn.Module):
         self.down_proj = nn.Parameter(torch.empty(self.num_experts, self.hidden_dim, self.intermediate_dim))
         self.act_fn = ACT2FN[config.hidden_act]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -2709,7 +2838,9 @@ class Qwen3OmniMoeTalkerTextExperts(nn.Module):
         return final_hidden_states
 
 
+# Qwen3OmniMoeTalkerTextSparseMoeBlock：Talker 稀疏 MoE 块
 class Qwen3OmniMoeTalkerTextSparseMoeBlock(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.gate = Qwen3OmniMoeTalkerTextTopKRouter(config)
@@ -2719,6 +2850,7 @@ class Qwen3OmniMoeTalkerTextSparseMoeBlock(nn.Module):
         )
         self.shared_expert_gate = torch.nn.Linear(config.hidden_size, 1, bias=False)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         batch_size, sequence_length, hidden_dim = hidden_states.shape
         hidden_states_reshaped = hidden_states.view(-1, hidden_dim)
@@ -2733,7 +2865,9 @@ class Qwen3OmniMoeTalkerTextSparseMoeBlock(nn.Module):
         return expert_output
 
 
+# Qwen3OmniMoeTalkerDecoderLayer：Talker 解码层：自注意力 + MoE FFN
 class Qwen3OmniMoeTalkerDecoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_idx):
         super().__init__()
         self.self_attn = Qwen3OmniMoeThinkerTextAttention(config, layer_idx)
@@ -2748,6 +2882,7 @@ class Qwen3OmniMoeTalkerDecoderLayer(GradientCheckpointingLayer):
         self.hidden_size = config.hidden_size
         self.mlp = Qwen3OmniMoeTalkerTextSparseMoeBlock(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -2786,6 +2921,7 @@ class Qwen3OmniMoeTalkerDecoderLayer(GradientCheckpointingLayer):
         "not a pure text-only model, as DeepStack integrates visual features into the early hidden states."
     )
 )
+# Qwen3OmniMoeTalkerModel：Talker 文本解码器：MoE 语音 token 生成
 class Qwen3OmniMoeTalkerModel(Qwen3OmniMoePreTrainedModel):
     config: Qwen3OmniMoeTextConfig
     input_modalities = ("audio",)
@@ -2797,6 +2933,7 @@ class Qwen3OmniMoeTalkerModel(Qwen3OmniMoePreTrainedModel):
         "router_logits": OutputRecorder(Qwen3OmniMoeTalkerTextTopKRouter, index=0),
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeTalkerTextConfig):
         super().__init__(config)
         self.padding_idx = config.pad_token_id
@@ -2815,6 +2952,7 @@ class Qwen3OmniMoeTalkerModel(Qwen3OmniMoePreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -2915,6 +3053,7 @@ class Qwen3OmniMoeTalkerModel(Qwen3OmniMoePreTrainedModel):
 
 
 @auto_docstring
+# Qwen3OmniMoeTalkerForConditionalGeneration：Talker 条件生成：文本到离散语音 token
 class Qwen3OmniMoeTalkerForConditionalGeneration(Qwen3OmniMoeThinkerTextPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"codec_head": "model.codec_embedding.weight"}
     _tp_plan = {"codec_head": "colwise_gather_output"}
@@ -2928,6 +3067,7 @@ class Qwen3OmniMoeTalkerForConditionalGeneration(Qwen3OmniMoeThinkerTextPreTrain
         "router_logits": OutputRecorder(Qwen3OmniMoeTalkerTextTopKRouter, index=0),
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeTalkerConfig):
         super().__init__(config)
         self.model = Qwen3OmniMoeTalkerModel._from_config(config.text_config)
@@ -2949,6 +3089,7 @@ class Qwen3OmniMoeTalkerForConditionalGeneration(Qwen3OmniMoeThinkerTextPreTrain
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids=None,
@@ -3177,7 +3318,9 @@ class Qwen3OmniMoeTalkerForConditionalGeneration(Qwen3OmniMoeThinkerTextPreTrain
         return inputs
 
 
+# Qwen3OmniMoeCausalConvNet：因果 1D 卷积：Codec 波形合成基础块
 class Qwen3OmniMoeCausalConvNet(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         in_channels,
@@ -3207,13 +3350,16 @@ class Qwen3OmniMoeCausalConvNet(nn.Module):
         ideal_length = (math.ceil(n_frames) - 1) * self.stride + (self.kernel_size - self.padding)
         return ideal_length - length
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state):
         extra_padding = self._get_extra_padding_for_conv1d(hidden_state)
         hidden_state = F.pad(hidden_state, (self.padding, extra_padding), mode="constant", value=0)
         return self.conv(hidden_state).contiguous()
 
 
+# Qwen3OmniMoeCausalTransConvNet：因果转置卷积：上采样波形特征
 class Qwen3OmniMoeCausalTransConvNet(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, in_channels, out_channels, kernel_size, stride=1):
         super().__init__()
         self.conv = nn.ConvTranspose1d(in_channels, out_channels, kernel_size, stride=stride)
@@ -3222,13 +3368,16 @@ class Qwen3OmniMoeCausalTransConvNet(nn.Module):
         self.left_pad = math.ceil(pad)
         self.right_pad = pad = self.left_pad
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state):
         hidden_state = self.conv(hidden_state)
         hidden_state = hidden_state[..., self.left_pad : hidden_state.shape[-1] - self.right_pad]
         return hidden_state.contiguous()
 
 
+# Qwen3OmniMoeConvNeXtBlock：ConvNeXt 块：深度可分离卷积 + 通道 MLP
 class Qwen3OmniMoeConvNeXtBlock(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, dim: int):
         super().__init__()
         self.dwconv = Qwen3OmniMoeCausalConvNet(
@@ -3244,6 +3393,7 @@ class Qwen3OmniMoeConvNeXtBlock(nn.Module):
         self.pwconv2 = nn.Linear(4 * dim, dim)
         self.gamma = nn.Parameter(1e-6 * torch.ones(dim))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         input = hidden_states
 
@@ -3264,9 +3414,11 @@ class Qwen3OmniMoeConvNeXtBlock(nn.Module):
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# Qwen3OmniMoeCode2WavAttention：Code2Wav 自注意力：波形 token 序列建模
 class Qwen3OmniMoeCode2WavAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeCode2WavConfig, layer_idx):
         super().__init__()
         self.layer_type = config.layer_types[layer_idx] if hasattr(config, "layer_types") else None
@@ -3294,6 +3446,7 @@ class Qwen3OmniMoeCode2WavAttention(nn.Module):
         self.k_norm = nn.Identity()
         self.sliding_window = config.sliding_window
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -3336,7 +3489,9 @@ class Qwen3OmniMoeCode2WavAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# Qwen3OmniMoeCode2WavMlp：Code2Wav MLP：波形特征前馈网络
 class Qwen3OmniMoeCode2WavMlp(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -3347,13 +3502,16 @@ class Qwen3OmniMoeCode2WavMlp(nn.Module):
         self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=False)
         self.act_fn = ACT2FN[config.hidden_act]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         down_proj = self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
         return down_proj
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# Qwen3OmniMoeCode2WavRMSNorm：Code2Wav RMS 层归一化
 class Qwen3OmniMoeCode2WavRMSNorm(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
         Qwen3OmniMoeCode2WavRMSNorm is equivalent to T5LayerNorm
@@ -3362,6 +3520,7 @@ class Qwen3OmniMoeCode2WavRMSNorm(nn.Module):
         self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         input_dtype = hidden_states.dtype
         hidden_states = hidden_states.to(torch.float32)
@@ -3369,26 +3528,32 @@ class Qwen3OmniMoeCode2WavRMSNorm(nn.Module):
         hidden_states = hidden_states * torch.rsqrt(variance + self.variance_epsilon)
         return self.weight * hidden_states.to(input_dtype)
 
+    # extra_repr：模块_repr_ 补充：输出权重形状与 epsilon 等调试信息
     def extra_repr(self):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# Qwen3OmniMoeCode2WavLayerScale：LayerScale：可学习逐通道缩放残差分支
 class Qwen3OmniMoeCode2WavLayerScale(nn.Module):
     """Layer scale from [Touvron et al 2021] (https://huggingface.co/papers/2103.17239).
     This rescales diagonally the residual outputs close to 0, with a learnt scale.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         channels = config.hidden_size
         initial_scale = config.layer_scale_initial_scale
         self.scale = nn.Parameter(torch.full((channels,), initial_scale, requires_grad=True))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x: torch.Tensor):
         return self.scale * x
 
 
+# Qwen3OmniMoeCode2WavTransformerLayer：Code2Wav Transformer 层：注意力 + MLP
 class Qwen3OmniMoeCode2WavTransformerLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeCode2WavConfig, layer_idx):
         super().__init__()
         self.hidden_size = config.hidden_size
@@ -3400,6 +3565,7 @@ class Qwen3OmniMoeCode2WavTransformerLayer(GradientCheckpointingLayer):
         self.mlp_layer_scale = Qwen3OmniMoeCode2WavLayerScale(config)
         self.attention_type = "sliding_attention"
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -3451,12 +3617,14 @@ class Qwen3OmniMoeCode2WavTransformerLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Qwen3OmniMoeCode2WavTransformerModel：Code2Wav Transformer：离散码到中间表征
 class Qwen3OmniMoeCode2WavTransformerModel(Qwen3OmniMoePreTrainedModel):
     _can_record_outputs = {
         "hidden_states": Qwen3OmniMoeCode2WavTransformerLayer,
         "attentions": Qwen3OmniMoeCode2WavAttention,
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeCode2WavConfig):
         super().__init__(config)
         self.layers = nn.ModuleList(
@@ -3474,6 +3642,7 @@ class Qwen3OmniMoeCode2WavTransformerModel(Qwen3OmniMoePreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids=None,
@@ -3539,6 +3708,7 @@ class Qwen3OmniMoeCode2WavTransformerModel(Qwen3OmniMoePreTrainedModel):
         )
 
 
+# Qwen3OmniMoeSnakeBeta：SnakeBeta 激活：可学习频率正弦非线性
 class Qwen3OmniMoeSnakeBeta(nn.Module):
     """
     A modified Snake function which uses separate parameters for the magnitude of the periodic components
@@ -3553,6 +3723,7 @@ class Qwen3OmniMoeSnakeBeta(nn.Module):
         https://huggingface.co/papers/2006.08195
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, in_features, alpha=1.0):
         super().__init__()
         self.in_features = in_features
@@ -3563,6 +3734,7 @@ class Qwen3OmniMoeSnakeBeta(nn.Module):
 
         self.no_div_by_zero = 0.000000001
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         """
         Forward pass of the function.
@@ -3581,15 +3753,19 @@ class Qwen3OmniMoeSnakeBeta(nn.Module):
 
 
 # Alias for BC
+# SnakeBeta：SnakeBeta 别名：Codec 解码器激活函数
 class SnakeBeta(Qwen3OmniMoeSnakeBeta):
     """Deprecated alias for `Qwen3OmniMoeSnakeBeta`; will be removed in a future release."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, *args, **kwargs):
         logger.warning_once("`SnakeBeta` is deprecated; please use `Qwen3OmniMoeSnakeBeta` instead.")
         super().__init__(*args, **kwargs)
 
 
+# Qwen3OmniMoeCode2WavDecoderResidualUnit：Codec 解码残差单元：因果卷积堆叠
 class Qwen3OmniMoeCode2WavDecoderResidualUnit(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, dim: int = 16, dilation: int = 1):
         super().__init__()
 
@@ -3598,6 +3774,7 @@ class Qwen3OmniMoeCode2WavDecoderResidualUnit(nn.Module):
         self.act2 = Qwen3OmniMoeSnakeBeta(dim)
         self.conv2 = Qwen3OmniMoeCausalConvNet(dim, dim, kernel_size=1)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state):
         residual = hidden_state
 
@@ -3608,7 +3785,9 @@ class Qwen3OmniMoeCode2WavDecoderResidualUnit(nn.Module):
         return hidden_state + residual
 
 
+# Qwen3OmniMoeCode2WavDecoderBlock：Codec 解码块：上采样 + 残差单元
 class Qwen3OmniMoeCode2WavDecoderBlock(Qwen3OmniMoePreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeCode2WavConfig, layer_idx):
         super().__init__(config)
         in_dim = config.decoder_dim // 2**layer_idx
@@ -3627,15 +3806,18 @@ class Qwen3OmniMoeCode2WavDecoderBlock(Qwen3OmniMoePreTrainedModel):
 
         self.post_init()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden, **kwargs):
         for block in self.block:
             hidden = block(hidden)
         return hidden
 
 
+# Qwen3OmniMoeCode2Wav：Code2Wav 完整管线：离散码到波形音频合成
 class Qwen3OmniMoeCode2Wav(Qwen3OmniMoePreTrainedModel):
     input_modalities = "audio"
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeCode2WavConfig):
         super().__init__(config)
         self.total_upsample = np.prod(config.upsample_rates + config.upsampling_ratios)
@@ -3669,6 +3851,7 @@ class Qwen3OmniMoeCode2Wav(Qwen3OmniMoePreTrainedModel):
 
         self.post_init()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, codes, **kwargs):
         if codes.shape[1] != self.config.num_quantizers:
             raise ValueError(f"Expected {self.config.num_quantizers} layer of codes, got {codes.shape[1]}")
@@ -3696,10 +3879,12 @@ class Qwen3OmniMoeCode2Wav(Qwen3OmniMoePreTrainedModel):
         return torch.cat(wavs, dim=-1)
 
 
+# Qwen3OmniMoeForConditionalGeneration：Omni 端到端：Thinker 理解 + Talker 语音 + Code2Wav 波形
 class Qwen3OmniMoeForConditionalGeneration(Qwen3OmniMoePreTrainedModel, GenerationMixin):
     config_class = Qwen3OmniMoeConfig
     output_modalities = ("text", "audio")
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeConfig):
         super().__init__(config)
 

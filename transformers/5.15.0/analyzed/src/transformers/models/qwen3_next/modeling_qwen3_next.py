@@ -29,6 +29,8 @@ from ...activations import ACT2FN
 from ...cache_utils import Cache, DynamicCache
 from ...generation import GenerationMixin
 from ...integrations import (
+# Qwen3-Next 建模：Gated DeltaNet 线性注意力 + MoE 全注意力混合堆叠
+
     use_experts_implementation,
     use_kernel_forward_from_hub,
     use_kernel_func_from_hub_with_fallback,
@@ -55,13 +57,16 @@ from .configuration_qwen3_next import Qwen3NextConfig
 
 
 @use_kernel_forward_from_hub("RMSNormGated")
+# Qwen3NextRMSNormGated：门控 RMSNorm：线性注意力输出归一化与门控缩放
 class Qwen3NextRMSNormGated(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, hidden_size, eps=1e-6, **kwargs):
         super().__init__()
         self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
         self.activation = "silu"
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states, gate=None):
         input_dtype = hidden_states.dtype
         hidden_states = hidden_states.to(torch.float32)
@@ -74,8 +79,10 @@ class Qwen3NextRMSNormGated(nn.Module):
         return hidden_states.to(input_dtype)
 
 
+# Qwen3NextRotaryEmbedding：旋转位置编码：RoPE 频率缓存与动态长度扩展
 class Qwen3NextRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3NextConfig, device=None):
         super().__init__()
         self.max_seq_len_cached = config.max_position_embeddings
@@ -94,6 +101,7 @@ class Qwen3NextRotaryEmbedding(nn.Module):
 
     @staticmethod
     @deprecate_kwarg("device", version="5.18")
+    # compute_default_rope_parameters：计算默认 RoPE 逆频率与注意力缩放因子
     def compute_default_rope_parameters(config: Qwen3NextConfig, device=None, **kwargs) -> tuple[torch.Tensor, float]:
         """
         Computes the inverse frequencies according to the original RoPE implementation
@@ -116,6 +124,7 @@ class Qwen3NextRotaryEmbedding(nn.Module):
 
     @torch.no_grad()
     @dynamic_rope_update  # power user: used with advanced RoPE types (e.g. dynamic rope)
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x, position_ids):
         inv_freq_expanded = self.inv_freq[None, :, None].float().expand(position_ids.shape[0], -1, 1).to(x.device)
         position_ids_expanded = position_ids[:, None, :].float()
@@ -130,7 +139,9 @@ class Qwen3NextRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# Qwen3NextRMSNorm：RMS 层归一化：Root Mean Square 归一化
 class Qwen3NextRMSNorm(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, dim: int, eps: float = 1e-6):
         super().__init__()
         self.eps = eps
@@ -139,6 +150,7 @@ class Qwen3NextRMSNorm(nn.Module):
     def _norm(self, x):
         return x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + self.eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         output = self._norm(x.float())
         # Llama does x.to(float16) * w whilst Qwen3Next is (x * w).to(float16)
@@ -146,10 +158,12 @@ class Qwen3NextRMSNorm(nn.Module):
         output = output * (1.0 + self.weight.float())
         return output.type_as(x)
 
+    # extra_repr：模块_repr_ 补充：输出权重形状与 epsilon 等调试信息
     def extra_repr(self):
         return f"{tuple(self.weight.shape)}, eps={self.eps}"
 
 
+# rotate_half：RoPE 辅助：将向量后半部分取负并与前半交换
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -158,6 +172,7 @@ def rotate_half(x):
 
 
 # Adapted from transformers.models.glm.modular_glm.apply_rotary_pos_emb
+# apply_rotary_pos_emb：应用 1D RoPE：对 Q/K 按位置旋转编码
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -196,6 +211,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 键值扩展：将 KV 头重复以匹配查询头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -208,6 +224,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：标准注意力前向：QK^T 缩放 softmax 加权 V
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -233,9 +250,11 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# Qwen3NextAttention：全注意力层：GQA + RoPE 与可选滑动窗口
 class Qwen3NextAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3NextConfig, layer_idx: int):
         super().__init__()
         self.config = config
@@ -262,6 +281,7 @@ class Qwen3NextAttention(nn.Module):
             self.head_dim, eps=config.rms_norm_eps
         )  # thus post q_norm does not need reshape
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -310,6 +330,7 @@ class Qwen3NextAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# apply_mask_to_padding_states：对 padding 位置隐藏状态置零
 def apply_mask_to_padding_states(hidden_states, attention_mask):
     """
     Tunes out the hidden states for padding tokens, see https://github.com/state-spaces/mamba/issues/66
@@ -323,6 +344,7 @@ def apply_mask_to_padding_states(hidden_states, attention_mask):
 
 
 @use_kernel_func_from_hub_with_fallback("causal_conv1d_update", "causal_conv1d")
+# causal_conv1d_update：因果卷积增量更新：流式推理单步状态推进
 def causal_conv1d_update(
     hidden_states: torch.Tensor,
     conv_state: torch.Tensor,
@@ -343,6 +365,7 @@ def causal_conv1d_update(
 
 
 @use_kernel_func_from_hub_with_fallback("causal_conv1d_fn", "causal_conv1d")
+# causal_conv1d_fn：因果 1D 卷积前向：DeltaNet 局部特征提取
 def causal_conv1d_fn(
     hidden_states: torch.Tensor,
     weight: nn.Parameter,
@@ -365,6 +388,7 @@ def causal_conv1d_fn(
     return out.to(hidden_states.dtype)
 
 
+# l2norm：L2 归一化：按指定维度缩放向量范数
 def l2norm(x: torch.FloatTensor, dim: int = -1, eps: float = 1e-6):
     """This function is intended to align with the l2norm implementation in the FLA library."""
     inv_norm = torch.rsqrt((x * x).sum(dim=dim, keepdim=True) + eps)
@@ -372,6 +396,7 @@ def l2norm(x: torch.FloatTensor, dim: int = -1, eps: float = 1e-6):
 
 
 @use_kernel_func_from_hub_with_fallback("chunk_gated_delta_rule", "fla")
+# torch_chunk_gated_delta_rule：分块门控 Delta 规则：并行线性注意力递推
 def torch_chunk_gated_delta_rule(
     query,
     key,
@@ -454,6 +479,7 @@ def torch_chunk_gated_delta_rule(
 
 
 @use_kernel_func_from_hub_with_fallback("recurrent_gated_delta_rule", "fla")
+# torch_recurrent_gated_delta_rule：递推门控 Delta 规则：序列线性注意力状态更新
 def torch_recurrent_gated_delta_rule(
     query,
     key,
@@ -509,7 +535,9 @@ def torch_recurrent_gated_delta_rule(
 @use_kernelized_func(
     [torch_recurrent_gated_delta_rule, torch_chunk_gated_delta_rule, causal_conv1d_fn, causal_conv1d_update]
 )
+# Qwen3NextGatedDeltaNet：门控 DeltaNet：因果卷积 + 递推状态线性注意力
 class Qwen3NextGatedDeltaNet(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3NextConfig, layer_idx: int):
         super().__init__()
         self.hidden_size = config.hidden_size
@@ -584,6 +612,7 @@ class Qwen3NextGatedDeltaNet(nn.Module):
         return query, key, value, z, b, a
 
     @force_accelerate_hooks("conv1d")
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -698,7 +727,9 @@ class Qwen3NextGatedDeltaNet(nn.Module):
         return output
 
 
+# Qwen3NextMLP：SwiGLU 前馈子层：gate/up/down 投影
 class Qwen3NextMLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, intermediate_size=None):
         super().__init__()
         self.config = config
@@ -709,15 +740,18 @@ class Qwen3NextMLP(nn.Module):
         self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=False)
         self.act_fn = ACT2FN[config.hidden_act]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         down_proj = self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
         return down_proj
 
 
 @use_experts_implementation
+# Qwen3NextExperts：MoE 专家集合：gate_up + down 投影
 class Qwen3NextExperts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.num_experts = config.num_experts
@@ -727,6 +761,7 @@ class Qwen3NextExperts(nn.Module):
         self.down_proj = nn.Parameter(torch.empty(self.num_experts, self.hidden_dim, self.intermediate_dim))
         self.act_fn = ACT2FN[config.hidden_act]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -754,7 +789,9 @@ class Qwen3NextExperts(nn.Module):
         return final_hidden_states
 
 
+# Qwen3NextTopKRouter：Top-K 路由：按 token 选择稀疏专家
 class Qwen3NextTopKRouter(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.top_k = config.num_experts_per_tok
@@ -763,6 +800,7 @@ class Qwen3NextTopKRouter(nn.Module):
         self.hidden_dim = config.hidden_size
         self.weight = nn.Parameter(torch.zeros(self.num_experts, self.hidden_dim))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = hidden_states.reshape(-1, self.hidden_dim)
         router_logits = F.linear(hidden_states, self.weight)  # (seq_len, num_experts)
@@ -775,7 +813,9 @@ class Qwen3NextTopKRouter(nn.Module):
         return router_logits, router_scores, router_indices
 
 
+# Qwen3NextSparseMoeBlock：稀疏 MoE 块：路由 + 专家 FFN 聚合
 class Qwen3NextSparseMoeBlock(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.gate = Qwen3NextTopKRouter(config)
@@ -783,6 +823,7 @@ class Qwen3NextSparseMoeBlock(nn.Module):
         self.shared_expert = Qwen3NextMLP(config, intermediate_size=config.shared_expert_intermediate_size)
         self.shared_expert_gate = torch.nn.Linear(config.hidden_size, 1, bias=False)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         batch_size, sequence_length, hidden_dim = hidden_states.shape
         hidden_states_reshaped = hidden_states.view(-1, hidden_dim)
@@ -797,7 +838,9 @@ class Qwen3NextSparseMoeBlock(nn.Module):
         return expert_output
 
 
+# Qwen3NextDecoderLayer：解码层：按 layer_types 切换线性/全注意力 + MoE FFN
 class Qwen3NextDecoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3NextConfig, layer_idx: int):
         super().__init__()
         self.hidden_size = config.hidden_size
@@ -819,6 +862,7 @@ class Qwen3NextDecoderLayer(GradientCheckpointingLayer):
         self.input_layernorm = Qwen3NextRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.post_attention_layernorm = Qwen3NextRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -865,6 +909,7 @@ class Qwen3NextDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Qwen3NextPreTrainedModel：Qwen3-Next 预训练基类：DeltaNet 与 MoE 权重初始化
 class Qwen3NextPreTrainedModel(PreTrainedModel):
     config: Qwen3NextConfig
     base_model_prefix = "model"
@@ -883,6 +928,7 @@ class Qwen3NextPreTrainedModel(PreTrainedModel):
     _can_compile_fullgraph = True
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, Qwen3NextGatedDeltaNet):
@@ -898,7 +944,9 @@ class Qwen3NextPreTrainedModel(PreTrainedModel):
             init.normal_(module.gate.weight, mean=0.0, std=self.config.initializer_range)
 
 
+# Qwen3NextModel：Next 主干：线性/全注意力混合堆叠 + MoE 稀疏 FFN
 class Qwen3NextModel(Qwen3NextPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3NextConfig):
         super().__init__(config)
         self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size, config.pad_token_id)
@@ -914,6 +962,7 @@ class Qwen3NextModel(Qwen3NextPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -975,6 +1024,7 @@ class Qwen3NextModel(Qwen3NextPreTrainedModel):
         )
 
 
+# load_balancing_loss_func：MoE 负载均衡损失：鼓励专家均匀分配 token
 def load_balancing_loss_func(
     gate_logits: torch.Tensor | tuple[torch.Tensor] | None,
     num_experts: int | None = None,
@@ -1058,12 +1108,14 @@ def load_balancing_loss_func(
 
 
 @auto_docstring
+# Qwen3NextForCausalLM：因果 LM：混合注意力 MoE 自回归文本生成
 class Qwen3NextForCausalLM(Qwen3NextPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
     _pp_plan = {"lm_head": (["hidden_states"], ["logits"])}
     _fsdp_plan = {"lm_head": "keep_full_weight"}
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.model = Qwen3NextModel(config)
@@ -1078,6 +1130,7 @@ class Qwen3NextForCausalLM(Qwen3NextPreTrainedModel, GenerationMixin):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -1161,14 +1214,17 @@ class Qwen3NextForCausalLM(Qwen3NextPreTrainedModel, GenerationMixin):
         )
 
 
+# Qwen3NextForSequenceClassification：序列分类任务头
 class Qwen3NextForSequenceClassification(GenericForSequenceClassification, Qwen3NextPreTrainedModel):
     pass
 
 
+# Qwen3NextForTokenClassification：Token 分类任务头
 class Qwen3NextForTokenClassification(GenericForTokenClassification, Qwen3NextPreTrainedModel):
     pass
 
 
+# Qwen3NextForQuestionAnswering：抽取式问答任务头
 class Qwen3NextForQuestionAnswering(GenericForQuestionAnswering, Qwen3NextPreTrainedModel):
     base_model_prefix = "transformer"  # For BC, where `transformer` was used instead of `model`
 

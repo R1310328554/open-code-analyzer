@@ -32,6 +32,8 @@ from ..auto import CONFIG_MAPPING, AutoConfig
 from ..qwen2_audio.modeling_qwen2_audio import Qwen2AudioPreTrainedModel
 from ..qwen3_omni_moe.configuration_qwen3_omni_moe import Qwen3OmniMoeAudioEncoderConfig
 from ..qwen3_omni_moe.modeling_qwen3_omni_moe import (
+# Qwen3-ASR modular 源：复用 Omni MoE 音频组件与 AudioFlamingo3 多模态骨架
+
     Qwen3OmniMoeAudioEncoder,
     Qwen3OmniMoeAudioEncoderLayer,
     SinusoidsPositionEmbedding,
@@ -42,6 +44,7 @@ from ..voxtral.modeling_voxtral import VoxtralMultiModalProjector
 
 @auto_docstring(checkpoint="Qwen/Qwen3-ASR-1.7B-hf")
 @strict
+# Qwen3ASREncoderConfig：音频编码器配置：mel 频带数、Transformer 层数与最大序列长度
 class Qwen3ASREncoderConfig(Qwen3OmniMoeAudioEncoderConfig):
     r"""
     n_window (`int`, *optional*, defaults to 50):
@@ -68,6 +71,7 @@ class Qwen3ASREncoderConfig(Qwen3OmniMoeAudioEncoderConfig):
 
 @auto_docstring(checkpoint="Qwen/Qwen3-ASR-1.7B-hf")
 @strict
+# Qwen3ASRConfig：联合配置：音频编码器子配置 + Qwen3 文本 LLM 子配置
 class Qwen3ASRConfig(PreTrainedConfig):
     r"""
     audio_token_id (`int`, *optional*, defaults to 151676):
@@ -132,11 +136,13 @@ class Qwen3ASRConfig(PreTrainedConfig):
 
 
 @auto_docstring
+# Qwen3ASRPreTrainedModel：Qwen3-ASR 预训练基类：权重初始化与模块切分
 class Qwen3ASRPreTrainedModel(Qwen2AudioPreTrainedModel):
     _no_split_modules = AttributeError()
     _can_compile_fullgraph = True
     _supports_attention_backend = True
 
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module):
         PreTrainedModel._init_weights(self, module)
         if isinstance(module, SinusoidsPositionEmbedding):
@@ -144,7 +150,9 @@ class Qwen3ASRPreTrainedModel(Qwen2AudioPreTrainedModel):
             init.copy_(module.positional_embedding, position_embeddings)
 
 
+# Qwen3ASRAudioEncoderLayer：音频编码层：自注意力 + FFN 残差堆叠，支持梯度检查点
 class Qwen3ASRAudioEncoderLayer(Qwen3OmniMoeAudioEncoderLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3ASREncoderConfig):
         super().__init__(config)
 
@@ -154,10 +162,12 @@ class Qwen3ASRAudioEncoderLayer(Qwen3OmniMoeAudioEncoderLayer):
     The audio model for Qwen3 ASR without any head or projection on top.
     """
 )
+# Qwen3ASREncoder：Whisper 风格音频编码器：log-mel 特征到隐状态序列
 class Qwen3ASREncoder(Qwen3OmniMoeAudioEncoder):
     config: Qwen3ASREncoderConfig
     _no_split_modules = ["Qwen3ASRAudioEncoderLayer"]
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3ASREncoderConfig):
         super().__init__(config)
         embed_dim = config.d_model
@@ -178,6 +188,7 @@ class Qwen3ASREncoder(Qwen3OmniMoeAudioEncoder):
 
     @capture_outputs(tie_last_hidden_states=False)
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_features: torch.Tensor,
@@ -241,7 +252,9 @@ class Qwen3ASREncoder(Qwen3OmniMoeAudioEncoder):
         return BaseModelOutputWithPooling(last_hidden_state=hidden_states)
 
 
+# Qwen3ASRMultiModalProjector：多模态投影：音频隐状态映射到 LLM 嵌入维度
 class Qwen3ASRMultiModalProjector(VoxtralMultiModalProjector):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3ASRConfig):
         super().__init__(config)
         self.linear_1 = nn.Linear(config.audio_config.d_model, config.audio_config.d_model)
@@ -249,6 +262,7 @@ class Qwen3ASRMultiModalProjector(VoxtralMultiModalProjector):
         self.linear_2 = nn.Linear(config.audio_config.d_model, config.audio_config.output_dim)
 
 
+# Qwen3ASRModel：多模态骨干：音频编码 + 文本嵌入融合前向
 class Qwen3ASRModel(AudioFlamingo3Model):
     @can_return_tuple
     @auto_docstring(
@@ -278,9 +292,11 @@ class Qwen3ASRModel(AudioFlamingo3Model):
     The Qwen3ASR model which consists of an audio encoder and a language model.
     """
 )
+# Qwen3ASRForConditionalGeneration：条件生成：语音识别与自然语言转写的自回归解码
 class Qwen3ASRForConditionalGeneration(AudioFlamingo3ForConditionalGeneration):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, **super_kwargs):
         r"""
         input_features_mask (`torch.Tensor` of shape `(batch_size, feature_sequence_length)`):
@@ -305,6 +321,7 @@ class Qwen3ASRForConditionalGeneration(AudioFlamingo3ForConditionalGeneration):
     The Qwen3 ASR model with a token classification head for timestamp prediction (forced alignment).
     """
 )
+# Qwen3ASRForTokenClassification：Token 分类头：逐 token 线性分类（ASR 辅助任务）
 class Qwen3ASRForTokenClassification(GenericForTokenClassification, Qwen3ASRPreTrainedModel):
     pass
 

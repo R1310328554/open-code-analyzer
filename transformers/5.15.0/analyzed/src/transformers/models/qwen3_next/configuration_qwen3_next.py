@@ -18,10 +18,13 @@ from huggingface_hub.dataclasses import strict
 from ...configuration_utils import PreTrainedConfig, remap_legacy_layer_types
 from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
+# Qwen3-Next 配置：layer_types 线性/全注意力切换与 MoE 稀疏超参数
+
 
 
 @auto_docstring(checkpoint="Qwen/Qwen3-Next-80B-A3B-Instruct")
 @strict
+# Qwen3NextConfig：Next 配置：layer_types 线性/全注意力交替与 MoE 稀疏参数
 class Qwen3NextConfig(PreTrainedConfig):
     r"""
     linear_conv_kernel_dim (`int`, *optional*, defaults to 4):

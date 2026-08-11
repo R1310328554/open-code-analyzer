@@ -40,9 +40,12 @@ from ...utils.generic import get_max_seqlen, is_flash_attention_requested
 from ...utils.output_capturing import capture_outputs
 from ..auto import AutoModel
 from .configuration_qwen3_asr import Qwen3ASRConfig, Qwen3ASREncoderConfig
+# Qwen3-ASR 建模：音频编码器、多模态投影与条件文本/Token 分类生成
+
 
 
 @auto_docstring
+# Qwen3ASRPreTrainedModel：Qwen3-ASR 预训练基类：权重初始化与模块切分
 class Qwen3ASRPreTrainedModel(PreTrainedModel):
     config: Qwen3ASRConfig
     base_model_prefix = "model"
@@ -54,6 +57,7 @@ class Qwen3ASRPreTrainedModel(PreTrainedModel):
     _can_compile_fullgraph = True
     _supports_attention_backend = True
 
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, SinusoidsPositionEmbedding):
@@ -61,6 +65,7 @@ class Qwen3ASRPreTrainedModel(PreTrainedModel):
             init.copy_(module.positional_embedding, position_embeddings)
 
 
+# repeat_kv：GQA 键值扩展：将 KV 头重复以匹配查询头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -73,6 +78,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：标准注意力前向：QK^T 缩放 softmax 加权 V
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -98,9 +104,11 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# Qwen3ASRAudioAttention：音频自注意力：多头缩放点积与双向掩码支持
 class Qwen3ASRAudioAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.embed_dim = config.d_model
@@ -124,6 +132,7 @@ class Qwen3ASRAudioAttention(nn.Module):
         self.q_proj = nn.Linear(self.embed_dim, self.embed_dim, bias=True)
         self.out_proj = nn.Linear(self.embed_dim, self.embed_dim, bias=True)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -193,7 +202,9 @@ class Qwen3ASRAudioAttention(nn.Module):
         return attn_output
 
 
+# Qwen3ASRAudioEncoderLayer：音频编码层：自注意力 + FFN 残差堆叠，支持梯度检查点
 class Qwen3ASRAudioEncoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3ASREncoderConfig):
         super().__init__()
         self.embed_dim = config.d_model
@@ -206,6 +217,7 @@ class Qwen3ASRAudioEncoderLayer(GradientCheckpointingLayer):
         self.fc2 = nn.Linear(config.encoder_ffn_dim, self.embed_dim)
         self.final_layer_norm = nn.LayerNorm(self.embed_dim)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -242,7 +254,9 @@ class Qwen3ASRAudioEncoderLayer(GradientCheckpointingLayer):
         return outputs
 
 
+# SinusoidsPositionEmbedding：正弦位置嵌入：固定频率编码音频帧序列位置
 class SinusoidsPositionEmbedding(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, length, channels, max_timescale=10000):
         super().__init__()
         self.length = length
@@ -259,10 +273,12 @@ class SinusoidsPositionEmbedding(nn.Module):
         scaled_time = torch.arange(self.length)[:, np.newaxis] * inv_timescales[np.newaxis, :]
         return torch.cat([torch.sin(scaled_time), torch.cos(scaled_time)], dim=1)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, seqlen: int):
         return self.positional_embedding[:seqlen, :]
 
 
+# _get_feat_extract_output_lengths：计算 mel 特征下采样后的有效序列长度
 def _get_feat_extract_output_lengths(input_lengths, n_window=50):
     """
     Computes the output length of the convolutional layers and the output length of the audio encoder
@@ -273,6 +289,7 @@ def _get_feat_extract_output_lengths(input_lengths, n_window=50):
     return ((feat_lengths - 1) // 2 + 1 - 1) // 2 + 1 + (input_lengths // chunk_len) * 13
 
 
+# get_audio_cu_seqlens：计算变长音频 batch 的 cumulative sequence lengths
 def get_audio_cu_seqlens(
     chunk_lengths: torch.Tensor,
     feature_lens: torch.Tensor,
@@ -320,6 +337,7 @@ def get_audio_cu_seqlens(
     The audio model for Qwen3 ASR without any head or projection on top.
     """
 )
+# Qwen3ASREncoder：Whisper 风格音频编码器：log-mel 特征到隐状态序列
 class Qwen3ASREncoder(Qwen3ASRPreTrainedModel):
     config: Qwen3ASREncoderConfig
     main_input_name = "input_features"
@@ -331,6 +349,7 @@ class Qwen3ASREncoder(Qwen3ASRPreTrainedModel):
         "attentions": Qwen3ASRAudioAttention,
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3ASREncoderConfig):
         super().__init__(config)
         self.dropout = config.dropout
@@ -366,6 +385,7 @@ class Qwen3ASREncoder(Qwen3ASRPreTrainedModel):
 
     @capture_outputs(tie_last_hidden_states=False)
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_features: torch.Tensor,
@@ -436,13 +456,16 @@ class Qwen3ASREncoder(Qwen3ASRPreTrainedModel):
         return lengths
 
 
+# Qwen3ASRMultiModalProjector：多模态投影：音频隐状态映射到 LLM 嵌入维度
 class Qwen3ASRMultiModalProjector(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3ASRConfig):
         super().__init__()
         self.linear_1 = nn.Linear(config.audio_config.d_model, config.audio_config.d_model)
         self.act = ACT2FN[config.audio_config.activation_function]
         self.linear_2 = nn.Linear(config.audio_config.d_model, config.audio_config.output_dim)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, audio_features):
         hidden_states = self.linear_1(audio_features)
         hidden_states = self.act(hidden_states)
@@ -451,6 +474,7 @@ class Qwen3ASRMultiModalProjector(nn.Module):
 
 
 @dataclass
+# Qwen3ASRModelOutputWithPast：多模态骨干输出：隐状态、KV 缓存与音频合并后的 attention_mask
 class Qwen3ASRModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     audio_hidden_states (`torch.FloatTensor`, *optional*):
@@ -466,11 +490,13 @@ class Qwen3ASRModelOutputWithPast(BaseModelOutputWithPast):
     without a language modeling head.
     """
 )
+# Qwen3ASRModel：多模态骨干：音频编码 + 文本嵌入融合前向
 class Qwen3ASRModel(Qwen3ASRPreTrainedModel):
     _tp_plan = None
     _pp_plan = None
     _keep_in_fp32_modules_strict = None
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.audio_tower = AutoModel.from_config(config.audio_config)
@@ -526,6 +552,7 @@ class Qwen3ASRModel(Qwen3ASRPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -581,6 +608,7 @@ class Qwen3ASRModel(Qwen3ASRPreTrainedModel):
     """
 )
 @dataclass
+# Qwen3ASRCausalLMOutputWithPast：因果 LM 输出：logits、损失与 past KV 缓存
 class Qwen3ASRCausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -606,9 +634,11 @@ class Qwen3ASRCausalLMOutputWithPast(ModelOutput):
     The Qwen3ASR model which consists of an audio encoder and a language model.
     """
 )
+# Qwen3ASRForConditionalGeneration：条件生成：语音识别与自然语言转写的自回归解码
 class Qwen3ASRForConditionalGeneration(Qwen3ASRPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.model = Qwen3ASRModel(config)
@@ -620,6 +650,7 @@ class Qwen3ASRForConditionalGeneration(Qwen3ASRPreTrainedModel, GenerationMixin)
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -686,6 +717,7 @@ class Qwen3ASRForConditionalGeneration(Qwen3ASRPreTrainedModel, GenerationMixin)
     The Qwen3 ASR model with a token classification head for timestamp prediction (forced alignment).
     """
 )
+# Qwen3ASRForTokenClassification：Token 分类头：逐 token 线性分类（ASR 辅助任务）
 class Qwen3ASRForTokenClassification(GenericForTokenClassification, Qwen3ASRPreTrainedModel):
     pass
 

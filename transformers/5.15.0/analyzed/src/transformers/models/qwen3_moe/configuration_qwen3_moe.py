@@ -18,10 +18,13 @@ from huggingface_hub.dataclasses import strict
 from ...configuration_utils import PreTrainedConfig
 from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
+# Qwen3 MoE 配置：Top-K 路由、共享专家与稀疏层间隔超参数
+
 
 
 @auto_docstring(checkpoint="Qwen/Qwen3-30B-A3B-Base")
 @strict
+# Qwen3MoeConfig：MoE 配置：专家数量、Top-K 路由、共享专家与稀疏步长
 class Qwen3MoeConfig(PreTrainedConfig):
     r"""
     decoder_sparse_step (`int`, *optional*, defaults to 1):

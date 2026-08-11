@@ -19,6 +19,8 @@ from ...feature_extraction_sequence_utils import SequenceFeatureExtractor
 from ...feature_extraction_utils import BatchFeature
 from ...utils import logging
 from ...utils.import_utils import is_torch_available, requires
+# Qwen3-ASR 特征提取：Whisper 风格 log-mel 频谱与 30 秒分块预处理
+
 
 
 if is_torch_available():
@@ -28,6 +30,7 @@ logger = logging.get_logger(__name__)
 
 
 @requires(backends=("torch",))
+# Qwen3ASRFeatureExtractor：Whisper 风格特征提取：16 kHz 重采样、STFT mel 与 30 秒分块
 class Qwen3ASRFeatureExtractor(SequenceFeatureExtractor):
     r"""
     Constructs a Qwen3 ASR feature extractor.
@@ -61,6 +64,7 @@ class Qwen3ASRFeatureExtractor(SequenceFeatureExtractor):
 
     model_input_names = ["input_features"]
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         feature_size=128,
@@ -126,6 +130,7 @@ class Qwen3ASRFeatureExtractor(SequenceFeatureExtractor):
             log_spec = log_spec.detach().cpu()
         return log_spec.numpy()
 
+    # __call__：处理器调用：联合处理多模态输入并返回 BatchFeature
     def __call__(
         self,
         raw_speech: np.ndarray | list[float] | list[np.ndarray] | list[list[float]],

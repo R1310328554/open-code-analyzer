@@ -22,6 +22,8 @@ from ...processing_utils import Unpack
 from ...utils import TransformersKwargs, logging
 from ...utils.output_capturing import OutputRecorder
 from ..llama.modeling_llama import (
+# Qwen3 MoE modular 源：复用 Qwen3 注意力与 Qwen2 MoE 路由/专家组件
+
     LlamaForQuestionAnswering,
     LlamaForSequenceClassification,
     LlamaForTokenClassification,
@@ -41,31 +43,39 @@ from .configuration_qwen3_moe import Qwen3MoeConfig
 logger = logging.get_logger(__name__)
 
 
+# Qwen3MoeAttention：自注意力：GQA 分组查询，继承 Qwen3 头维归一化
 class Qwen3MoeAttention(Qwen3Attention):  # This is the main diff with qwen2Moe!
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3MoeConfig, layer_idx: int):
         super().__init__(config, layer_idx)
         del self.layer_type
         self.sliding_window = getattr(config, "sliding_window", None)
 
 
+# Qwen3MoeMLP：稠密前馈网络：SwiGLU 风格 gate/up/down 投影
 class Qwen3MoeMLP(Qwen2MoeMLP):
     pass
 
 
+# Qwen3MoeExperts：MoE 专家组：并行专家 FFN 与路由权重加权求和
 class Qwen3MoeExperts(Qwen2MoeExperts):
     pass
 
 
+# Qwen3MoeTopKRouter：Top-K 路由器：线性门控 softmax 选取活跃专家
 class Qwen3MoeTopKRouter(Qwen2MoeTopKRouter):
     pass
 
 
+# Qwen3MoeSparseMoeBlock：稀疏 MoE 块：路由 + 专家 + 共享专家门控融合
 class Qwen3MoeSparseMoeBlock(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3MoeConfig):
         super().__init__()
         self.experts = Qwen3MoeExperts(config)
         self.gate = Qwen3MoeTopKRouter(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         batch_size, sequence_length, hidden_dim = hidden_states.shape
         hidden_states_reshaped = hidden_states.view(-1, hidden_dim)
@@ -74,14 +84,17 @@ class Qwen3MoeSparseMoeBlock(nn.Module):
         return final_hidden_states.reshape(batch_size, sequence_length, hidden_dim)
 
 
+# Qwen3MoeRMSNorm：RMS 层归一化：Root Mean Square 归一化替代 LayerNorm
 class Qwen3MoeRMSNorm(LlamaRMSNorm):
     pass
 
 
+# Qwen3MoeDecoderLayer：解码器层：自注意力 + 稀疏/稠密 FFN 残差结构
 class Qwen3MoeDecoderLayer(Qwen2MoeDecoderLayer):
     pass
 
 
+# Qwen3MoePreTrainedModel：Qwen3 MoE 预训练基类：通用初始化与输出录制
 class Qwen3MoePreTrainedModel(MixtralPreTrainedModel):
     _can_record_outputs = {
         "router_logits": OutputRecorder(Qwen3MoeTopKRouter, index=0),
@@ -90,16 +103,20 @@ class Qwen3MoePreTrainedModel(MixtralPreTrainedModel):
     }
 
 
+# Qwen3MoeModel：MoE 骨干：多层解码器堆栈与 RoPE 位置编码
 class Qwen3MoeModel(MixtralModel):
     pass
 
 
+# Qwen3MoeForCausalLM：因果语言模型：MoE 自回归文本生成与 lm_head
 class Qwen3MoeForCausalLM(MixtralForCausalLM):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.model = Qwen3MoeModel(config)
         self.num_experts = config.num_experts
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -183,14 +200,17 @@ class Qwen3MoeForCausalLM(MixtralForCausalLM):
         )
 
 
+# Qwen3MoeForSequenceClassification：序列分类头：池化隐状态 + 线性分类器
 class Qwen3MoeForSequenceClassification(LlamaForSequenceClassification):
     pass
 
 
+# Qwen3MoeForTokenClassification：Token 分类头：逐 token 线性分类（NER 等）
 class Qwen3MoeForTokenClassification(LlamaForTokenClassification):
     pass
 
 
+# Qwen3MoeForQuestionAnswering：问答头：span 起始/结束位置预测
 class Qwen3MoeForQuestionAnswering(LlamaForQuestionAnswering):
     pass
 
