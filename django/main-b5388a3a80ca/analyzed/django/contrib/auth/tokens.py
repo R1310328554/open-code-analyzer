@@ -1,3 +1,8 @@
+"""
+django.contrib.auth.tokens — 密码重置一次性令牌。
+
+基于 HMAC 与时间戳生成 URL 安全 token，重置后或超时即失效。
+"""
 from datetime import datetime
 
 from django.conf import settings
@@ -5,6 +10,7 @@ from django.utils.crypto import constant_time_compare, salted_hmac
 from django.utils.http import base36_to_int, int_to_base36
 
 
+# 策略对象：make_token / check_token，支持 SECRET_KEY 轮换回退
 class PasswordResetTokenGenerator:
     """
     Strategy object used to generate and check tokens for the password
@@ -37,6 +43,7 @@ class PasswordResetTokenGenerator:
 
     secret_fallbacks = property(_get_fallbacks, _set_fallbacks)
 
+    # 生成可用于一次密码重置的 token
     def make_token(self, user):
         """
         Return a token that can be used once to do a password reset
@@ -48,6 +55,7 @@ class PasswordResetTokenGenerator:
             self.secret,
         )
 
+    # 校验 token 签名与时间戳是否在 PASSWORD_RESET_TIMEOUT 内
     def check_token(self, user, token):
         """
         Check that a password reset token is correct for a given user.
@@ -95,6 +103,7 @@ class PasswordResetTokenGenerator:
         ]  # Limit to shorten the URL.
         return "%s-%s" % (ts_b36, hash_string)
 
+    # 哈希 pk、password、last_login、timestamp、email，重置后自动失效
     def _make_hash_value(self, user, timestamp):
         """
         Hash the user's primary key, email (if available), and some user state
@@ -129,4 +138,5 @@ class PasswordResetTokenGenerator:
         return datetime.now()
 
 
+# 默认全局令牌生成器实例
 default_token_generator = PasswordResetTokenGenerator()

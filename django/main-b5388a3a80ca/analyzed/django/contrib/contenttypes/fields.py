@@ -1,3 +1,8 @@
+"""
+django.contrib.contenttypes.fields — 通用外键与反向关系字段。
+
+GenericForeignKey/GenericRelation 实现跨模型多态关联及 prefetch。
+"""
 import functools
 import itertools
 from collections import defaultdict
@@ -25,6 +30,7 @@ from django.db.models.utils import AltersData
 from django.utils.functional import cached_property
 
 
+# 通过 content_type + object_id 实现多态 many-to-one，private_only 挂载描述符
 class GenericForeignKey(FieldCacheMixin, Field):
     """
     Provide a generic many-to-one relation through the ``content_type`` and
@@ -173,6 +179,7 @@ class GenericForeignKey(FieldCacheMixin, Field):
             raise Exception("Impossible arguments to GFK.get_content_type!")
 
 
+# 访问器：按 ContentType 解析关联对象，支持 prefetch 与缓存
 class GenericForeignKeyDescriptor:
     def __init__(self, field):
         self.field = field
@@ -305,6 +312,7 @@ class GenericForeignKeyDescriptor:
         self.field.set_cached_value(instance, value)
 
 
+# GenericRelation 使用的反向关系元数据
 class GenericRel(ForeignObjectRel):
     """
     Used by GenericRelation to store information about the relation.
@@ -328,6 +336,7 @@ class GenericRel(ForeignObjectRel):
         )
 
 
+# 指向含 GenericForeignKey 的模型的反向 one-to-many
 class GenericRelation(ForeignObject):
     """
     Provide a reverse to a relation created by a GenericForeignKey.
@@ -586,6 +595,7 @@ class GenericRelation(ForeignObject):
         )
 
 
+# 反向管理器入口，如 post.comments
 class ReverseGenericManyToOneDescriptor(ReverseManyToOneDescriptor):
     """
     Accessor to the related objects manager on the one-to-many relation created
@@ -607,6 +617,7 @@ class ReverseGenericManyToOneDescriptor(ReverseManyToOneDescriptor):
         )
 
 
+# 工厂：生成带 content_type/object_id 过滤的 GenericRelatedObjectManager
 def create_generic_related_manager(superclass, rel):
     """
     Factory function to create a manager that subclasses another manager

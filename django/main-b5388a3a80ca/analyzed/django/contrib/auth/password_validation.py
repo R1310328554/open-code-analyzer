@@ -1,3 +1,8 @@
+"""
+django.contrib.auth.password_validation — 密码强度校验框架。
+
+通过 AUTH_PASSWORD_VALIDATORS 配置可插拔校验器，供表单与 set_password 调用。
+"""
 import functools
 import gzip
 import re
@@ -18,10 +23,12 @@ from django.utils.translation import ngettext
 
 
 @functools.cache
+# 从 settings.AUTH_PASSWORD_VALIDATORS 加载默认校验器列表（带缓存）
 def get_default_password_validators():
     return get_password_validators(settings.AUTH_PASSWORD_VALIDATORS)
 
 
+# 按配置导入校验器类并实例化，NAME 不可导入或非可调用时抛 ImproperlyConfigured
 def get_password_validators(validator_config):
     validators = []
     for validator in validator_config:
@@ -45,6 +52,7 @@ def get_password_validators(validator_config):
     return validators
 
 
+# 依次调用各校验器 validate；失败时聚合 ValidationError 后抛出
 def validate_password(password, user=None, password_validators=None):
     """
     Validate that the password meets all validator requirements.
@@ -64,6 +72,7 @@ def validate_password(password, user=None, password_validators=None):
         raise ValidationError(errors)
 
 
+# 密码变更后通知实现了 password_changed 的校验器
 def password_changed(password, user=None, password_validators=None):
     """
     Inform all validators that have implemented a password_changed() method
@@ -103,6 +112,7 @@ def _password_validators_help_text_html(password_validators=None):
 password_validators_help_text_html = lazy(_password_validators_help_text_html, str)
 
 
+# 最小长度校验器，默认 8 字符
 class MinimumLengthValidator:
     """
     Validate that the password is of a minimum length.
@@ -137,6 +147,7 @@ class MinimumLengthValidator:
         ) % {"min_length": self.min_length}
 
 
+# 长度比启发式：避免对极短片段做昂贵的 SequenceMatcher 比较
 def exceeds_maximum_length_ratio(password, max_similarity, value):
     """
     Test that value is within a reasonable range of password.
@@ -167,6 +178,7 @@ def exceeds_maximum_length_ratio(password, max_similarity, value):
     return pwd_len >= 10 * value_len and value_len < length_bound_similarity
 
 
+# 校验密码与用户属性（username、email 等）的相似度上限
 class UserAttributeSimilarityValidator:
     """
     Validate that the password is sufficiently different from the user's
@@ -228,6 +240,7 @@ class UserAttributeSimilarityValidator:
         )
 
 
+# 拒绝常见密码（内置 gz 列表约 20000 条）
 class CommonPasswordValidator:
     """
     Validate that the password is not a common password.
@@ -268,6 +281,7 @@ class CommonPasswordValidator:
         return _("Your password can’t be a commonly used password.")
 
 
+# 拒绝纯数字密码
 class NumericPasswordValidator:
     """
     Validate that the password is not entirely numeric.

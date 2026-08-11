@@ -1,9 +1,15 @@
+"""
+django.contrib.contenttypes.management — ContentType 迁移与同步。
+
+RenameModel 时自动更新 ContentType 行，post_migrate 为新模型 bulk_create。
+"""
 import warnings
 
 from django.apps import apps as global_apps
 from django.db import DEFAULT_DB_ALIAS, IntegrityError, migrations, router, transaction
 
 
+# RunPython：模型重命名时同步 contenttypes_contenttype.model
 class RenameContentType(migrations.RunPython):
     def __init__(self, app_label, old_model, new_model):
         self.app_label = app_label
@@ -51,6 +57,7 @@ class RenameContentType(migrations.RunPython):
         self._rename(apps, schema_editor, self.new_model, self.old_model)
 
 
+# pre_migrate 钩子：在 RenameModel 后插入 RenameContentType
 def inject_rename_contenttypes_operations(
     plan=None, apps=global_apps, using=DEFAULT_DB_ALIAS, **kwargs
 ):
@@ -97,6 +104,7 @@ def inject_rename_contenttypes_operations(
             migration.operations.insert(inserted + index, operation)
 
 
+# post_migrate：为应用内缺失的 model 批量创建 ContentType
 def create_contenttypes(
     app_config,
     verbosity=2,

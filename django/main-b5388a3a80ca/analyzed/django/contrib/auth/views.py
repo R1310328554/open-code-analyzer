@@ -1,3 +1,8 @@
+"""
+django.contrib.auth.views — 内置认证类视图与辅助函数。
+
+涵盖登录/登出、密码修改与邮件重置流程，可挂载于 urls 或 AdminSite。
+"""
 from urllib.parse import urlsplit, urlunsplit
 
 from django.conf import settings
@@ -32,6 +37,7 @@ from django.views.generic.edit import FormView
 UserModel = get_user_model()
 
 
+# 混入：从 next 参数或 next_page 解析安全的 post-success 重定向 URL
 class RedirectURLMixin:
     next_page = None
     redirect_field_name = REDIRECT_FIELD_NAME
@@ -74,6 +80,7 @@ class RedirectURLMixin:
     [login_not_required, sensitive_post_parameters(), csrf_protect, never_cache],
     name="dispatch",
 )
+# 展示登录表单并在验证通过后 auth_login
 class LoginView(RedirectURLMixin, FormView):
     """
     Display the login form and handle the login action.
@@ -131,6 +138,7 @@ class LoginView(RedirectURLMixin, FormView):
 
 
 @method_decorator([csrf_protect, never_cache], name="dispatch")
+# POST 登出并渲染 logged_out 模板
 class LogoutView(RedirectURLMixin, TemplateView):
     """
     Log out the user and display the 'You are logged out' message.
@@ -173,6 +181,7 @@ class LogoutView(RedirectURLMixin, TemplateView):
         return context
 
 
+# 先登出再重定向到登录页
 def logout_then_login(request, login_url=None):
     """
     Log out the user if they are logged in. Then redirect to the login page.
@@ -181,6 +190,7 @@ def logout_then_login(request, login_url=None):
     return LogoutView.as_view(next_page=login_url)(request)
 
 
+# 将 next 写入查询串并重定向到 LOGIN_URL
 def redirect_to_login(next, login_url=None, redirect_field_name=REDIRECT_FIELD_NAME):
     """
     Redirect the user to the login page, passing the given 'next' page.
@@ -216,6 +226,7 @@ class PasswordContextMixin:
 
 
 @method_decorator([login_not_required, csrf_protect], name="dispatch")
+# 收集邮箱并发送含 uid/token 的重置邮件
 class PasswordResetView(PasswordContextMixin, FormView):
     email_template_name = "registration/password_reset_email.html"
     extra_email_context = None
@@ -255,6 +266,7 @@ class PasswordResetDoneView(PasswordContextMixin, TemplateView):
 @method_decorator(
     [login_not_required, sensitive_post_parameters(), never_cache], name="dispatch"
 )
+# 校验邮件链接 token，将会话 token 与 URL 分离以防 Referer 泄露
 class PasswordResetConfirmView(PasswordContextMixin, FormView):
     form_class = SetPasswordForm
     post_reset_login = False
@@ -354,6 +366,7 @@ class PasswordResetCompleteView(PasswordContextMixin, TemplateView):
 @method_decorator(
     [sensitive_post_parameters(), csrf_protect, login_required], name="dispatch"
 )
+# 已登录用户修改密码，成功后 update_session_auth_hash 保留当前会话
 class PasswordChangeView(PasswordContextMixin, FormView):
     form_class = PasswordChangeForm
     success_url = reverse_lazy("password_change_done")

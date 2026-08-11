@@ -1,9 +1,15 @@
+"""
+django.contrib.contenttypes.forms — 通用内联表单集。
+
+BaseGenericInlineFormSet 按父实例 ContentType 与 pk 过滤并保存子行。
+"""
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.forms import ModelForm, modelformset_factory
 from django.forms.models import BaseModelFormSet
 
 
+# 通用内联 formset：初始化 queryset、save_new 写入 ct 与 fk
 class BaseGenericInlineFormSet(BaseModelFormSet):
     """
     A formset for generic inline objects to a parent.
@@ -74,6 +80,7 @@ class BaseGenericInlineFormSet(BaseModelFormSet):
         return form.save(commit=commit)
 
 
+# 工厂：校验 ct_field 为 ContentType FK，返回配置好的 FormSet 类
 def generic_inlineformset_factory(
     model,
     form=ModelForm,

@@ -1,3 +1,8 @@
+"""
+django.contrib.contenttypes.admin — 通用内联 Admin。
+
+基于 GenericForeignKey 的 Stacked/Tabular 内联，校验 ct_field 与 object_id。
+"""
 from functools import partial
 
 from django.contrib.admin.checks import InlineModelAdminChecks
@@ -13,6 +18,7 @@ from django.forms import ALL_FIELDS
 from django.forms.models import modelform_defines_fields
 
 
+# 内联检查：模型须含匹配 ct_field/fk_field 的 GenericForeignKey
 class GenericInlineModelAdminChecks(InlineModelAdminChecks):
     def _check_exclude_of_parent_model(self, obj, parent_model):
         # There's no FK to exclude, so no exclusion checks are required.
@@ -88,6 +94,7 @@ class GenericInlineModelAdminChecks(InlineModelAdminChecks):
             ]
 
 
+# 通用内联基类：get_formset 委托 generic_inlineformset_factory
 class GenericInlineModelAdmin(InlineModelAdmin):
     ct_field = "content_type"
     ct_fk_field = "object_id"
@@ -150,9 +157,11 @@ class GenericInlineModelAdmin(InlineModelAdmin):
         return generic_inlineformset_factory(self.model, **defaults)
 
 
+# 堆叠式通用内联模板
 class GenericStackedInline(GenericInlineModelAdmin):
     template = "admin/edit_inline/stacked.html"
 
 
+# 表格式通用内联模板
 class GenericTabularInline(GenericInlineModelAdmin):
     template = "admin/edit_inline/tabular.html"

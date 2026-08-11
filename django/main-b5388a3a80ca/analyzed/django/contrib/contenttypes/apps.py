@@ -1,3 +1,8 @@
+"""
+django.contrib.contenttypes.apps — ContentTypes 应用配置。
+
+注册迁移钩子、post_migrate 创建 ContentType 及模型检查。
+"""
 from django.apps import AppConfig
 from django.contrib.contenttypes.checks import (
     check_generic_foreign_keys,
@@ -10,6 +15,7 @@ from django.utils.translation import gettext_lazy as _
 from .management import create_contenttypes, inject_rename_contenttypes_operations
 
 
+# ready：注入 RenameModel 同步、create_contenttypes 与 GFK 检查
 class ContentTypesConfig(AppConfig):
     default_auto_field = "django.db.models.AutoField"
     name = "django.contrib.contenttypes"

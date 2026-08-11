@@ -1,4 +1,6 @@
-# The views used below are normally mapped in the AdminSite instance.
+# django.contrib.auth.urls — 内置认证 URL 配置
+# 供测试与独立部署 login/logout/密码重置等视图
+# The views used below are normally mapped in the AdminSite instance.# The views used below are normally mapped in the AdminSite instance.
 # This URLs file is used to provide a reliable view deployment for test
 # purposes. It is also provided as a convenience to those who want to deploy
 # these URLs elsewhere.
@@ -6,6 +8,7 @@
 from django.contrib.auth import views
 from django.urls import path
 
+# 登录、登出、修改密码与重置密码路由
 urlpatterns = [
     path("login/", views.LoginView.as_view(), name="login"),
     path("logout/", views.LogoutView.as_view(), name="logout"),
