@@ -26,8 +26,11 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# VaultGemma 配置：Gemma2 风格因果 LM，含注意力/输出 logit softcapping 与 RoPE 参数
+
 @auto_docstring(checkpoint="google/vaultgemma-1b")
 @strict
+# VaultGemmaConfig：VaultGemma 主配置：词表/层数、注意力 logit softcapping 与 RoPE 滑动窗口
 class VaultGemmaConfig(PreTrainedConfig):
     r"""
     query_pre_attn_scalar (`float`, *optional*, defaults to 256):
@@ -89,6 +92,7 @@ class VaultGemmaConfig(PreTrainedConfig):
     final_logit_softcapping: float | None = 30.0
     attn_logit_softcapping: float | None = 50.0
 
+    # __post_init__：后初始化：解析子配置 dict 并实例化 vision/text 配置对象
     def __post_init__(self, **kwargs):
         if self.layer_types is None:
             self.layer_types = [

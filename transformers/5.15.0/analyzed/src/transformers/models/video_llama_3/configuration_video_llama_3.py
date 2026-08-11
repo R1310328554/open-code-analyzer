@@ -24,8 +24,11 @@ from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# VideoLLaMA3 配置：ViT 风格 vision_config 与 LLM text_config 的多模态联合配置
+
 @auto_docstring(checkpoint="lkhl/VideoLLaMA3-2B-Image-HF")
 @strict
+# VideoLlama3VisionConfig：VideoLLaMA3 视觉配置：ViT patch 尺寸、层数与注意力头数
 class VideoLlama3VisionConfig(PreTrainedConfig):
     r"""
     Example:
@@ -60,6 +63,7 @@ class VideoLlama3VisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="lkhl/VideoLLaMA3-2B-Image-HF")
 @strict
+# VideoLlama3Config：VideoLLaMA3 多模态配置：vision_config + text_config 与 image/video token id
 class VideoLlama3Config(PreTrainedConfig):
     model_type = "video_llama_3"
     sub_configs = {"vision_config": VideoLlama3VisionConfig, "text_config": AutoConfig}
@@ -71,6 +75,7 @@ class VideoLlama3Config(PreTrainedConfig):
     video_token_id: int = 151656
     tie_word_embeddings: bool = False
 
+    # __post_init__：后初始化：解析子配置 dict 并实例化 vision/text 配置对象
     def __post_init__(self, **kwargs):
         if isinstance(self.vision_config, dict):
             self.vision_config = self.sub_configs["vision_config"](**self.vision_config)

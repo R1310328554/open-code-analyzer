@@ -22,8 +22,11 @@ from ..gemma2.configuration_gemma2 import Gemma2Config
 from ..gemma2.modeling_gemma2 import Gemma2Attention, Gemma2DecoderLayer, Gemma2ForCausalLM, Gemma2MLP, Gemma2RMSNorm
 
 
+# VaultGemma 模块化实现：复用 Gemma2 组件并裁剪 post-attention/FFN LayerNorm
+
 @auto_docstring(checkpoint="google/vaultgemma-1b")
 @strict
+# VaultGemmaConfig：VaultGemma 主配置：词表/层数、注意力 logit softcapping 与 RoPE 滑动窗口
 class VaultGemmaConfig(Gemma2Config):
     r"""
     query_pre_attn_scalar (`float`, *optional*, defaults to 256):
@@ -46,28 +49,35 @@ class VaultGemmaConfig(Gemma2Config):
     use_bidirectional_attention = AttributeError()
 
 
+# VaultGemmaRMSNorm：VaultGemma RMSNorm：hidden 维 RMS 归一化，权重以 (1+w) 缩放
 class VaultGemmaRMSNorm(Gemma2RMSNorm):
     pass
 
 
+# VaultGemmaMLP：VaultGemma 门控 FFN：gate/up/down 线性层 + gelu_pytorch_tanh 激活
 class VaultGemmaMLP(Gemma2MLP):
     pass
 
 
+# VaultGemmaAttention：VaultGemma 注意力：GQA 多头因果注意力，支持 softcapped 注意力分数
 class VaultGemmaAttention(Gemma2Attention):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VaultGemmaConfig, layer_idx: int):
         super().__init__()
         self.is_causal = True
 
 
+# VaultGemmaDecoderLayer：VaultGemma 解码层：自注意力 + FFN 双残差，可选梯度检查点
 class VaultGemmaDecoderLayer(Gemma2DecoderLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **super_kwargs):
         super().__init__(**super_kwargs)
         del self.post_attention_layernorm
         del self.post_feedforward_layernorm
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -98,6 +108,7 @@ class VaultGemmaDecoderLayer(Gemma2DecoderLayer):
         return hidden_states
 
 
+# VaultGemmaForCausalLM：VaultGemma 因果 LM：Model + LM 头，支持 logit softcapping 生成
 class VaultGemmaForCausalLM(Gemma2ForCausalLM):
     pass
 

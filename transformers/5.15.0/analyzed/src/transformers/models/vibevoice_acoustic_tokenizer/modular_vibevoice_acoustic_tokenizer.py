@@ -32,8 +32,11 @@ from .configuration_vibevoice_acoustic_tokenizer import (
 )
 
 
+# VibeVoice 声学 tokenizer 模块化实现：复用 LlamaRMSNorm 与 Voxtral 卷积 padding cache
+
 @auto_docstring
 @dataclass
+# VibeVoiceAcousticTokenizerOutput：完整 tokenizer 输出：重建 audio、encoder latents 与 padding cache
 class VibeVoiceAcousticTokenizerOutput(ModelOutput):
     r"""
     audio (`torch.FloatTensor` of shape `(batch_size, channels, sequence_length)`):
@@ -52,6 +55,7 @@ class VibeVoiceAcousticTokenizerOutput(ModelOutput):
 
 @auto_docstring
 @dataclass
+# VibeVoiceAcousticTokenizerEncoderOutput：编码器输出：连续声学 latent 序列与卷积 padding cache
 class VibeVoiceAcousticTokenizerEncoderOutput(ModelOutput):
     r"""
     latents (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`):
@@ -67,6 +71,7 @@ class VibeVoiceAcousticTokenizerEncoderOutput(ModelOutput):
 
 @auto_docstring
 @dataclass
+# VibeVoiceAcousticTokenizerDecoderOutput：解码器输出：重建波形与卷积 padding cache
 class VibeVoiceAcousticTokenizerDecoderOutput(ModelOutput):
     r"""
     audio (`torch.FloatTensor` of shape `(batch_size, channels, sequence_length)`):
@@ -80,29 +85,36 @@ class VibeVoiceAcousticTokenizerDecoderOutput(ModelOutput):
     padding_cache: Optional["VibeVoiceAcousticTokenizerConv1dPaddingCache"] = None
 
 
+# VibeVoiceAcousticTokenizerRMSNorm：声学 tokenizer RMSNorm：T5 风格无 bias 的 RMS 归一化
 class VibeVoiceAcousticTokenizerRMSNorm(LlamaRMSNorm):
     pass
 
 
+# VibeVoiceAcousticTokenizerFeedForward：ConvNeXt FFN：Linear-激活-Linear 前馈子模块
 class VibeVoiceAcousticTokenizerFeedForward(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, hidden_size):
         super().__init__()
         self.linear1 = nn.Linear(hidden_size, config.ffn_expansion * hidden_size)
         self.activation = ACT2FN[config.hidden_act]
         self.linear2 = nn.Linear(config.ffn_expansion * hidden_size, hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         return self.linear2(self.activation(self.linear1(hidden_states)))
 
 
+# VibeVoiceAcousticTokenizerConv1dPaddingCache：Conv1d padding 缓存容器：按层管理因果卷积历史
 class VibeVoiceAcousticTokenizerConv1dPaddingCache(VoxtralRealtimeConv1dPaddingCache):
     pass
 
 
 # TODO: @eustlb, @ebezzam this should be latter factorized with other causalconv1d (e.g. VoxtralRealtimeCausalConv1d)
+# VibeVoiceAcousticTokenizerCausalConv1d：因果 Conv1d：左填充卷积，支持 padding cache 增量推理
 class VibeVoiceAcousticTokenizerCausalConv1d(nn.Module):
     """Conv1d with built-in causal padding and optional streaming support through a cache."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         in_channels: int,
@@ -125,6 +137,7 @@ class VibeVoiceAcousticTokenizerCausalConv1d(nn.Module):
         self.in_channels = in_channels
         self.left_pad = self.causal_padding
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -138,9 +151,11 @@ class VibeVoiceAcousticTokenizerCausalConv1d(nn.Module):
         return self.conv(hidden_states)
 
 
+# VibeVoiceAcousticTokenizerCausalConvTranspose1d：因果转置 Conv1d：上采样解码 stem 的核心算子
 class VibeVoiceAcousticTokenizerCausalConvTranspose1d(nn.Module):
     """ConvTranspose1d with built-in causal padding and optional streaming support through a cache."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         in_channels: int,
@@ -159,6 +174,7 @@ class VibeVoiceAcousticTokenizerCausalConvTranspose1d(nn.Module):
         self.causal_padding = kernel_size - 1
         self.left_pad = self.causal_padding
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -182,9 +198,11 @@ class VibeVoiceAcousticTokenizerCausalConvTranspose1d(nn.Module):
         return hidden_states
 
 
+# VibeVoiceAcousticTokenizerConvNext1dLayer：ConvNeXt 1D 块：深度可分离卷积 + LayerScale + FFN
 class VibeVoiceAcousticTokenizerConvNext1dLayer(nn.Module):
     """ConvNeXt-like block adapted for 1D convolutions."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, hidden_size, dilation=1, stride=1, layer_idx=None):
         super().__init__()
 
@@ -203,6 +221,7 @@ class VibeVoiceAcousticTokenizerConvNext1dLayer(nn.Module):
             stride=stride,
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states, padding_cache=None):
         # mixer
         residual = hidden_states
@@ -219,7 +238,9 @@ class VibeVoiceAcousticTokenizerConvNext1dLayer(nn.Module):
         return residual + hidden_states
 
 
+# VibeVoiceAcousticTokenizerEncoderStem：编码器 stem：初始 Conv1d 下采样与通道扩展
 class VibeVoiceAcousticTokenizerEncoderStem(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
 
@@ -240,6 +261,7 @@ class VibeVoiceAcousticTokenizerEncoderStem(nn.Module):
             ]
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states, padding_cache=None):
         hidden_states = self.conv(hidden_states, padding_cache=padding_cache)
         for block in self.stage:
@@ -247,7 +269,9 @@ class VibeVoiceAcousticTokenizerEncoderStem(nn.Module):
         return hidden_states
 
 
+# VibeVoiceAcousticTokenizerEncoderLayer：编码器层：下采样 + 堆叠 ConvNeXt 1D 块
 class VibeVoiceAcousticTokenizerEncoderLayer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, stage_idx):
         super().__init__()
 
@@ -271,6 +295,7 @@ class VibeVoiceAcousticTokenizerEncoderLayer(nn.Module):
             ]
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states, padding_cache=None):
         hidden_states = self.conv(hidden_states, padding_cache=padding_cache)
         for block in self.stage:
@@ -279,12 +304,14 @@ class VibeVoiceAcousticTokenizerEncoderLayer(nn.Module):
 
 
 @auto_docstring
+# VibeVoiceAcousticTokenizerPreTrainedModel：声学 tokenizer 预训练基类：Conv/Linear 权重初始化
 class VibeVoiceAcousticTokenizerPreTrainedModel(PreTrainedModel):
     config: VibeVoiceAcousticTokenizerConfig
     base_model_prefix = "vibevoice_acoustic_tokenizer"
     main_input_name = "input_values"
     _no_split_modules = ["VibeVoiceAcousticTokenizerEncoderModel", "VibeVoiceAcousticTokenizerDecoderModel"]
 
+    # _init_weights：权重初始化：Linear/Conv 截断正态、LayerNorm 偏置置零
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, VibeVoiceAcousticTokenizerConvNext1dLayer):
@@ -292,9 +319,11 @@ class VibeVoiceAcousticTokenizerPreTrainedModel(PreTrainedModel):
             init.constant_(module.ffn_gamma, self.config.layer_scale_init_value)
 
 
+# VibeVoiceAcousticTokenizerEncoderModel：编码器模型：波形 → 连续声学 latent（VAE 采样可选）
 class VibeVoiceAcousticTokenizerEncoderModel(VibeVoiceAcousticTokenizerPreTrainedModel):
     config: VibeVoiceAcousticTokenizerEncoderConfig
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -313,6 +342,7 @@ class VibeVoiceAcousticTokenizerEncoderModel(VibeVoiceAcousticTokenizerPreTraine
         )
         self.post_init()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states, padding_cache=None, use_cache=False, **kwargs):
         if use_cache and padding_cache is None:
             padding_cache = VibeVoiceAcousticTokenizerConv1dPaddingCache()
@@ -325,7 +355,9 @@ class VibeVoiceAcousticTokenizerEncoderModel(VibeVoiceAcousticTokenizerPreTraine
         return VibeVoiceAcousticTokenizerEncoderOutput(latents=latents, padding_cache=padding_cache)
 
 
+# VibeVoiceAcousticTokenizerDecoderStem：解码器 stem：转置卷积上采样至目标采样率帧
 class VibeVoiceAcousticTokenizerDecoderStem(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
 
@@ -347,6 +379,7 @@ class VibeVoiceAcousticTokenizerDecoderStem(nn.Module):
             ]
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states, padding_cache=None):
         hidden_states = self.conv(hidden_states, padding_cache=padding_cache)
         for block in self.stage:
@@ -354,7 +387,9 @@ class VibeVoiceAcousticTokenizerDecoderStem(nn.Module):
         return hidden_states
 
 
+# VibeVoiceAcousticTokenizerDecoderLayer：解码器层：上采样 + ConvNeXt 1D 块重建细节
 class VibeVoiceAcousticTokenizerDecoderLayer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, stage_idx):
         super().__init__()
 
@@ -378,6 +413,7 @@ class VibeVoiceAcousticTokenizerDecoderLayer(nn.Module):
             ]
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states, padding_cache=None):
         hidden_states = self.convtr(hidden_states, padding_cache=padding_cache)
         for block in self.stage:
@@ -385,9 +421,11 @@ class VibeVoiceAcousticTokenizerDecoderLayer(nn.Module):
         return hidden_states
 
 
+# VibeVoiceAcousticTokenizerDecoderModel：解码器模型：latent 序列 → 重建单声道波形
 class VibeVoiceAcousticTokenizerDecoderModel(VibeVoiceAcousticTokenizerPreTrainedModel):
     config: VibeVoiceAcousticTokenizerDecoderConfig
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -406,6 +444,7 @@ class VibeVoiceAcousticTokenizerDecoderModel(VibeVoiceAcousticTokenizerPreTraine
         )
         self.post_init()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states, padding_cache=None, use_cache=False, **kwargs):
         if use_cache and padding_cache is None:
             padding_cache = VibeVoiceAcousticTokenizerConv1dPaddingCache()
@@ -422,7 +461,9 @@ class VibeVoiceAcousticTokenizerDecoderModel(VibeVoiceAcousticTokenizerPreTraine
     VibeVoice acoustic tokenizer with an encoder and decoder for continuous acoustic tokens.
     """
 )
+# VibeVoiceAcousticTokenizerModel：完整声学 tokenizer：Encoder-Decoder 端到端编解码
 class VibeVoiceAcousticTokenizerModel(VibeVoiceAcousticTokenizerPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.encoder = AutoModel.from_config(config.encoder_config)
@@ -471,6 +512,7 @@ class VibeVoiceAcousticTokenizerModel(VibeVoiceAcousticTokenizerPreTrainedModel)
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input_values, padding_cache=None, use_cache=False, sample=True, **kwargs):
         r"""
         input_values (`torch.FloatTensor` of shape `(batch_size, channels, sequence_length)`):

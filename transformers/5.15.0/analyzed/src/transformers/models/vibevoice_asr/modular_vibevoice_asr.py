@@ -36,11 +36,14 @@ from ..vibevoice_acoustic_tokenizer.modeling_vibevoice_acoustic_tokenizer import
 )
 
 
+# VibeVoice ASR 模块化实现：继承声学 tokenizer 预训练基类并组合 Qwen2 解码器
+
 logger = logging.get_logger(__name__)
 
 
 @auto_docstring(checkpoint="microsoft/VibeVoice-ASR-HF")
 @strict
+# VibeVoiceAsrConfig：VibeVoice ASR 主配置：双 tokenizer 编码器、Qwen2 文本栈与音频特殊 token
 class VibeVoiceAsrConfig(PreTrainedConfig):
     r"""
     acoustic_tokenizer_encoder_config (`Union[VibeVoiceAcousticTokenizerConfig, dict]`, *optional*):
@@ -91,6 +94,7 @@ class VibeVoiceAsrConfig(PreTrainedConfig):
     audio_eos_token_id: int = 151647
     acoustic_tokenizer_chunk_size: int = 1440000
 
+    # __post_init__：后初始化：解析子配置 dict 并实例化 vision/text 配置对象
     def __post_init__(self, **kwargs):
         if isinstance(self.acoustic_tokenizer_encoder_config, dict):
             self.acoustic_tokenizer_encoder_config["model_type"] = self.acoustic_tokenizer_encoder_config.get(
@@ -144,11 +148,14 @@ class VibeVoiceAsrConfig(PreTrainedConfig):
         self.acoustic_tokenizer_chunk_size = int(value) * hop_length
 
 
+# VibeVoiceAsrRMSNorm：ASR RMSNorm：T5 风格 RMS 归一化，用于多模态投影路径
 class VibeVoiceAsrRMSNorm(Qwen2RMSNorm):
     pass
 
 
+# VibeVoiceAsrMultiModalProjector：多模态投影器：声学/语义 latent 双路径 Linear+Norm 融合至文本维
 class VibeVoiceAsrMultiModalProjector(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VibeVoiceAsrConfig):
         super().__init__()
         # Acoustic path
@@ -165,6 +172,7 @@ class VibeVoiceAsrMultiModalProjector(nn.Module):
         self.semantic_norm = VibeVoiceAsrRMSNorm(config.text_config.hidden_size, eps=1e-6)
         self.semantic_linear_2 = nn.Linear(config.text_config.hidden_size, config.text_config.hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, acoustic_latents, semantic_latents):
         acoustic_features = self.acoustic_linear_1(acoustic_latents)
         acoustic_features = self.acoustic_norm(acoustic_features)
@@ -178,6 +186,7 @@ class VibeVoiceAsrMultiModalProjector(nn.Module):
 
 
 @auto_docstring
+# VibeVoiceAsrPreTrainedModel：VibeVoice ASR 预训练基类：多模态权重初始化与模块绑定
 class VibeVoiceAsrPreTrainedModel(VibeVoiceAcousticTokenizerPreTrainedModel):
     config: VibeVoiceAsrConfig
     base_model_prefix = "model"
@@ -197,6 +206,7 @@ class VibeVoiceAsrPreTrainedModel(VibeVoiceAcousticTokenizerPreTrainedModel):
     """
 )
 @dataclass
+# VibeVoiceAsrModelOutputWithPast：ASR 基模型输出：last_hidden_state 与 past_key_values
 class VibeVoiceAsrModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     past_key_values (`Cache`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
@@ -214,6 +224,7 @@ class VibeVoiceAsrModelOutputWithPast(BaseModelOutputWithPast):
     """
 )
 @dataclass
+# VibeVoiceAsrCausalLMOutputWithPast：ASR 条件生成输出：logits、loss 与 KV cache
 class VibeVoiceAsrCausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -240,7 +251,9 @@ class VibeVoiceAsrCausalLMOutputWithPast(ModelOutput):
     without a language modeling head.
     """
 )
+# VibeVoiceAsrModel：VibeVoice ASR 基模型：双 tokenizer 编码 + 投影 + Qwen2 文本栈
 class VibeVoiceAsrModel(VibeVoiceAsrPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VibeVoiceAsrConfig):
         super().__init__(config)
         self.acoustic_tokenizer_encoder = AutoModel.from_config(config.acoustic_tokenizer_encoder_config)
@@ -249,9 +262,11 @@ class VibeVoiceAsrModel(VibeVoiceAsrPreTrainedModel):
         self.language_model = AutoModel.from_config(config.text_config)
         self.post_init()
 
+    # get_input_embeddings：获取输入嵌入：返回 token embedding 层
     def get_input_embeddings(self):
         return self.language_model.get_input_embeddings()
 
+    # set_input_embeddings：设置输入嵌入：替换 embedding 权重
     def set_input_embeddings(self, value):
         self.language_model.set_input_embeddings(value)
 
@@ -330,6 +345,7 @@ class VibeVoiceAsrModel(VibeVoiceAsrPreTrainedModel):
     @deprecate_kwarg("acoustic_tokenizer_chunk_size", version="v5.20")
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -384,7 +400,9 @@ class VibeVoiceAsrModel(VibeVoiceAsrPreTrainedModel):
     The VibeVoice ASR model with pre-trained acoustic tokenizers and a language model.
     """
 )
+# VibeVoiceAsrForConditionalGeneration：VibeVoice ASR 条件生成：音频输入 → 文本转写 autoregressive 解码
 class VibeVoiceAsrForConditionalGeneration(VibeVoiceAsrPreTrainedModel, GenerationMixin):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VibeVoiceAsrConfig):
         super().__init__(config)
         self.model = VibeVoiceAsrModel(config)
@@ -397,6 +415,7 @@ class VibeVoiceAsrForConditionalGeneration(VibeVoiceAsrPreTrainedModel, Generati
     @deprecate_kwarg("acoustic_tokenizer_chunk_size", version="v5.20")
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,

@@ -36,8 +36,12 @@ from ..auto import AutoModel
 from .configuration_vibevoice_asr import VibeVoiceAsrConfig
 
 
+# VibeVoice ASR 建模：声学+语义 latent 投影融合，Qwen2 文本栈条件生成转写
+
 @use_kernel_forward_from_hub("RMSNorm")
+# VibeVoiceAsrRMSNorm：ASR RMSNorm：T5 风格 RMS 归一化，用于多模态投影路径
 class VibeVoiceAsrRMSNorm(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
         VibeVoiceAsrRMSNorm is equivalent to T5LayerNorm
@@ -46,6 +50,7 @@ class VibeVoiceAsrRMSNorm(nn.Module):
         self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         input_dtype = hidden_states.dtype
         hidden_states = hidden_states.to(torch.float32)
@@ -53,11 +58,14 @@ class VibeVoiceAsrRMSNorm(nn.Module):
         hidden_states = hidden_states * torch.rsqrt(variance + self.variance_epsilon)
         return self.weight * hidden_states.to(input_dtype)
 
+    # extra_repr：模块_repr_：输出 weight 形状与 eps 等调试信息
     def extra_repr(self):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# VibeVoiceAsrMultiModalProjector：多模态投影器：声学/语义 latent 双路径 Linear+Norm 融合至文本维
 class VibeVoiceAsrMultiModalProjector(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VibeVoiceAsrConfig):
         super().__init__()
         # Acoustic path
@@ -74,6 +82,7 @@ class VibeVoiceAsrMultiModalProjector(nn.Module):
         self.semantic_norm = VibeVoiceAsrRMSNorm(config.text_config.hidden_size, eps=1e-6)
         self.semantic_linear_2 = nn.Linear(config.text_config.hidden_size, config.text_config.hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, acoustic_latents, semantic_latents):
         acoustic_features = self.acoustic_linear_1(acoustic_latents)
         acoustic_features = self.acoustic_norm(acoustic_features)
@@ -86,22 +95,28 @@ class VibeVoiceAsrMultiModalProjector(nn.Module):
         return acoustic_features + semantic_features
 
 
+# VibeVoiceAsrFeedForward：ASR FFN：Linear-激活-Linear 前馈（语义 tokenizer 内部复用）
 class VibeVoiceAsrFeedForward(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, hidden_size):
         super().__init__()
         self.linear1 = nn.Linear(hidden_size, config.ffn_expansion * hidden_size)
         self.activation = ACT2FN[config.hidden_act]
         self.linear2 = nn.Linear(config.ffn_expansion * hidden_size, hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         return self.linear2(self.activation(self.linear1(hidden_states)))
 
 
+# VibeVoiceAsrConv1dCacheLayer：ASR Conv1d 缓存层：流式语义编码的卷积状态缓存
 class VibeVoiceAsrConv1dCacheLayer:
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self):
         self.cache: torch.Tensor | None = None
         self.is_initialized: bool = False
 
+    # lazy_initialization：延迟初始化卷积 cache：按输入形状分配左填充缓冲区
     def lazy_initialization(self, hidden_states, conv_module):
         self.left_pad = conv_module.left_pad
         self.in_channels = conv_module.in_channels
@@ -118,6 +133,7 @@ class VibeVoiceAsrConv1dCacheLayer:
 
         self.is_initialized = True
 
+    # update：更新 padding cache：拼接历史与当前帧供因果卷积使用
     def update(self, hidden_states, conv_module=None):
         if not self.is_initialized and conv_module is not None:
             self.lazy_initialization(hidden_states, conv_module)
@@ -144,10 +160,13 @@ class VibeVoiceAsrConv1dCacheLayer:
         return current_cache
 
 
+# VibeVoiceAsrConv1dPaddingCache：ASR padding 缓存：语义编码器各层因果卷积历史
 class VibeVoiceAsrConv1dPaddingCache:
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self):
         self.layers = {}
 
+    # update：更新 padding cache：拼接历史与当前帧供因果卷积使用
     def update(self, hidden_states, cache_key, conv_module):
         if cache_key not in self.layers:
             self.layers[cache_key] = VibeVoiceAsrConv1dCacheLayer()
@@ -158,9 +177,11 @@ class VibeVoiceAsrConv1dPaddingCache:
 
 
 # TODO: @eustlb, @ebezzam this should be latter factorized with other causalconv1d (e.g. VoxtralRealtimeCausalConv1d)
+# VibeVoiceAsrCausalConv1d：ASR 因果 Conv1d：语义特征提取的左填充卷积
 class VibeVoiceAsrCausalConv1d(nn.Module):
     """Conv1d with built-in causal padding and optional streaming support through a cache."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         in_channels: int,
@@ -183,6 +204,7 @@ class VibeVoiceAsrCausalConv1d(nn.Module):
         self.in_channels = in_channels
         self.left_pad = self.causal_padding
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -196,9 +218,11 @@ class VibeVoiceAsrCausalConv1d(nn.Module):
         return self.conv(hidden_states)
 
 
+# VibeVoiceAsrConvNext1dLayer：ASR ConvNeXt 1D 块：语义 tokenizer 编码层核心
 class VibeVoiceAsrConvNext1dLayer(nn.Module):
     """ConvNeXt-like block adapted for 1D convolutions."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, hidden_size, dilation=1, stride=1, layer_idx=None):
         super().__init__()
 
@@ -217,6 +241,7 @@ class VibeVoiceAsrConvNext1dLayer(nn.Module):
             stride=stride,
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states, padding_cache=None):
         # mixer
         residual = hidden_states
@@ -234,6 +259,7 @@ class VibeVoiceAsrConvNext1dLayer(nn.Module):
 
 
 @auto_docstring
+# VibeVoiceAsrPreTrainedModel：VibeVoice ASR 预训练基类：多模态权重初始化与模块绑定
 class VibeVoiceAsrPreTrainedModel(PreTrainedModel):
     config: VibeVoiceAsrConfig
     base_model_prefix = "model"
@@ -246,6 +272,7 @@ class VibeVoiceAsrPreTrainedModel(PreTrainedModel):
     _supports_sdpa = True
     _supports_attention_backend = True
 
+    # _init_weights：权重初始化：Linear/Conv 截断正态、LayerNorm 偏置置零
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, VibeVoiceAsrConvNext1dLayer):
@@ -259,6 +286,7 @@ class VibeVoiceAsrPreTrainedModel(PreTrainedModel):
     """
 )
 @dataclass
+# VibeVoiceAsrModelOutputWithPast：ASR 基模型输出：last_hidden_state 与 past_key_values
 class VibeVoiceAsrModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     past_key_values (`Cache`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
@@ -276,6 +304,7 @@ class VibeVoiceAsrModelOutputWithPast(BaseModelOutputWithPast):
     """
 )
 @dataclass
+# VibeVoiceAsrCausalLMOutputWithPast：ASR 条件生成输出：logits、loss 与 KV cache
 class VibeVoiceAsrCausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -302,7 +331,9 @@ class VibeVoiceAsrCausalLMOutputWithPast(ModelOutput):
     without a language modeling head.
     """
 )
+# VibeVoiceAsrModel：VibeVoice ASR 基模型：双 tokenizer 编码 + 投影 + Qwen2 文本栈
 class VibeVoiceAsrModel(VibeVoiceAsrPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VibeVoiceAsrConfig):
         super().__init__(config)
         self.acoustic_tokenizer_encoder = AutoModel.from_config(config.acoustic_tokenizer_encoder_config)
@@ -311,9 +342,11 @@ class VibeVoiceAsrModel(VibeVoiceAsrPreTrainedModel):
         self.language_model = AutoModel.from_config(config.text_config)
         self.post_init()
 
+    # get_input_embeddings：获取输入嵌入：返回 token embedding 层
     def get_input_embeddings(self):
         return self.language_model.get_input_embeddings()
 
+    # set_input_embeddings：设置输入嵌入：替换 embedding 权重
     def set_input_embeddings(self, value):
         self.language_model.set_input_embeddings(value)
 
@@ -392,6 +425,7 @@ class VibeVoiceAsrModel(VibeVoiceAsrPreTrainedModel):
     @deprecate_kwarg("acoustic_tokenizer_chunk_size", version="v5.20")
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -446,7 +480,9 @@ class VibeVoiceAsrModel(VibeVoiceAsrPreTrainedModel):
     The VibeVoice ASR model with pre-trained acoustic tokenizers and a language model.
     """
 )
+# VibeVoiceAsrForConditionalGeneration：VibeVoice ASR 条件生成：音频输入 → 文本转写 autoregressive 解码
 class VibeVoiceAsrForConditionalGeneration(VibeVoiceAsrPreTrainedModel, GenerationMixin):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VibeVoiceAsrConfig):
         super().__init__(config)
         self.model = VibeVoiceAsrModel(config)
@@ -459,6 +495,7 @@ class VibeVoiceAsrForConditionalGeneration(VibeVoiceAsrPreTrainedModel, Generati
     @deprecate_kwarg("acoustic_tokenizer_chunk_size", version="v5.20")
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,

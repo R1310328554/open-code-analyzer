@@ -43,15 +43,21 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_vaultgemma import VaultGemmaConfig
 
 
+# VaultGemma 建模：RMSNorm + 滑动窗口因果注意力 + softcapped 因果语言模型头
+
+# VaultGemmaRMSNorm：VaultGemma RMSNorm：hidden 维 RMS 归一化，权重以 (1+w) 缩放
 class VaultGemmaRMSNorm(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, dim: int, eps: float = 1e-6):
         super().__init__()
         self.eps = eps
         self.weight = nn.Parameter(torch.zeros(dim))
 
+    # _norm：RMS 归一化核心：沿 hidden 维计算均方根倒数缩放
     def _norm(self, x):
         return x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + self.eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         output = self._norm(x.float())
         # Llama does x.to(float16) * w whilst VaultGemma is (x * w).to(float16)
@@ -59,11 +65,14 @@ class VaultGemmaRMSNorm(nn.Module):
         output = output * (1.0 + self.weight.float())
         return output.type_as(x)
 
+    # extra_repr：模块_repr_：输出 weight 形状与 eps 等调试信息
     def extra_repr(self):
         return f"{tuple(self.weight.shape)}, eps={self.eps}"
 
 
+# VaultGemmaMLP：VaultGemma 门控 FFN：gate/up/down 线性层 + gelu_pytorch_tanh 激活
 class VaultGemmaMLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -74,11 +83,13 @@ class VaultGemmaMLP(nn.Module):
         self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=False)
         self.act_fn = ACT2FN[config.hidden_activation]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         down_proj = self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
         return down_proj
 
 
+# rotate_half：RoPE 辅助：将 hidden 维后半段取负并与前半段拼接旋转
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -87,6 +98,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：应用 RoPE：对 Q/K 施加 cos/sin 旋转位置编码
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -112,6 +124,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA KV 扩展：将 key/value 头重复至与 query 头数对齐
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -124,6 +137,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：标准 eager 注意力：QK^T 缩放 softmax 加权 V，支持 attention_mask
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -159,9 +173,11 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# VaultGemmaAttention：VaultGemma 注意力：GQA 多头因果注意力，支持 softcapped 注意力分数
 class VaultGemmaAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VaultGemmaConfig, layer_idx: int):
         super().__init__()
         self.layer_type = config.layer_types[layer_idx] if hasattr(config, "layer_types") else None
@@ -188,6 +204,7 @@ class VaultGemmaAttention(nn.Module):
         self.attn_logit_softcapping = self.config.attn_logit_softcapping
         self.sliding_window = config.sliding_window if self.layer_type == "sliding_attention" else None
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -231,7 +248,9 @@ class VaultGemmaAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# VaultGemmaDecoderLayer：VaultGemma 解码层：自注意力 + FFN 双残差，可选梯度检查点
 class VaultGemmaDecoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VaultGemmaConfig, layer_idx: int):
         super().__init__()
         self.hidden_size = config.hidden_size
@@ -242,6 +261,7 @@ class VaultGemmaDecoderLayer(GradientCheckpointingLayer):
 
         self.pre_feedforward_layernorm = VaultGemmaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -272,8 +292,10 @@ class VaultGemmaDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# VaultGemmaRotaryEmbedding：VaultGemma RoPE：动态/静态旋转位置编码，支持 sliding window
 class VaultGemmaRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VaultGemmaConfig, device=None):
         super().__init__()
         self.max_seq_len_cached = config.max_position_embeddings
@@ -312,6 +334,7 @@ class VaultGemmaRotaryEmbedding(nn.Module):
 
     @torch.no_grad()
     @dynamic_rope_update  # power user: used with advanced RoPE types (e.g. dynamic rope)
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x, position_ids):
         inv_freq_expanded = self.inv_freq[None, :, None].float().expand(position_ids.shape[0], -1, 1).to(x.device)
         position_ids_expanded = position_ids[:, None, :].float()
@@ -326,21 +349,25 @@ class VaultGemmaRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# VaultGemmaTextScaledWordEmbedding：VaultGemma 词嵌入：Embedding 输出按 sqrt(hidden_size) 缩放
 class VaultGemmaTextScaledWordEmbedding(nn.Embedding):
     """
     This module overrides nn.Embeddings' forward by multiplying with embeddings scale.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, num_embeddings: int, embedding_dim: int, padding_idx: int, embed_scale: float = 1.0):
         super().__init__(num_embeddings, embedding_dim, padding_idx)
         self.scalar_embed_scale = embed_scale
         self.embed_scale = nn.Buffer(torch.tensor(embed_scale), persistent=False)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input_ids: torch.Tensor):
         return super().forward(input_ids) * self.embed_scale.to(self.weight.dtype)
 
 
 @auto_docstring
+# VaultGemmaPreTrainedModel：VaultGemma 预训练基类：权重初始化、KV cache 与 TP/PP 计划
 class VaultGemmaPreTrainedModel(PreTrainedModel):
     config: VaultGemmaConfig
     base_model_prefix = "model"
@@ -359,6 +386,7 @@ class VaultGemmaPreTrainedModel(PreTrainedModel):
     }
 
     @torch.no_grad()
+    # _init_weights：权重初始化：Linear/Conv 截断正态、LayerNorm 偏置置零
     def _init_weights(self, module):
         super()._init_weights(module)
         # We initialize with 0s to be 1 centered as the RMSNorm here does (1 + weight)
@@ -369,7 +397,9 @@ class VaultGemmaPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# VaultGemmaModel：VaultGemma 基模型：token 嵌入 + 解码层栈 + 最终 RMSNorm
 class VaultGemmaModel(VaultGemmaPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VaultGemmaConfig):
         super().__init__(config)
         self.padding_idx = config.pad_token_id
@@ -391,6 +421,7 @@ class VaultGemmaModel(VaultGemmaPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -454,12 +485,14 @@ class VaultGemmaModel(VaultGemmaPreTrainedModel):
 
 
 @auto_docstring
+# VaultGemmaForCausalLM：VaultGemma 因果 LM：Model + LM 头，支持 logit softcapping 生成
 class VaultGemmaForCausalLM(VaultGemmaPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
     _pp_plan = {"lm_head": (["hidden_states"], ["logits"])}
     _fsdp_plan = {"lm_head": "keep_full_weight"}
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.model = VaultGemmaModel(config)
@@ -471,6 +504,7 @@ class VaultGemmaForCausalLM(VaultGemmaPreTrainedModel, GenerationMixin):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,

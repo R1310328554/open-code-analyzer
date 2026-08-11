@@ -19,6 +19,8 @@ from ...utils import PaddingStrategy, logging
 from ...utils.import_utils import is_torch_available, requires
 
 
+# VibeVoice 声学特征提取：24kHz 波形归一化、padding 与 input_values 批处理
+
 if is_torch_available():
     import torch
 
@@ -26,6 +28,7 @@ logger = logging.get_logger(__name__)
 
 
 @requires(backends=("torch",))
+# VibeVoiceAcousticTokenizerFeatureExtractor：声学特征提取器：dB FS 归一化、padding 与 attention_mask
 class VibeVoiceAcousticTokenizerFeatureExtractor(SequenceFeatureExtractor):
     r"""
     Constructs a VibeVoiceAcousticTokenizer feature extractor.
@@ -48,6 +51,7 @@ class VibeVoiceAcousticTokenizerFeatureExtractor(SequenceFeatureExtractor):
 
     model_input_names = ["input_values", "padding_mask"]
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         feature_size=1,
@@ -64,6 +68,7 @@ class VibeVoiceAcousticTokenizerFeatureExtractor(SequenceFeatureExtractor):
         self.target_dB_FS = target_dB_FS
         self.eps = eps
 
+    # __call__：联合调用：音频预处理 + 文本分词，返回 BatchFeature
     def __call__(
         self,
         audio: AudioInput,

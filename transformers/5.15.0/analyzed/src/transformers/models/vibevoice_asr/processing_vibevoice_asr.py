@@ -24,9 +24,12 @@ from ...tokenization_utils_base import TextInput
 from ...utils import auto_docstring, logging
 
 
+# VibeVoice ASR 处理器：声学特征提取 + Qwen2 分词，支持聊天模板与音频占位符
+
 logger = logging.get_logger(__name__)
 
 
+# VibeVoiceAsrProcessorKwargs：ASR 处理器参数：文本左 padding、24kHz 音频与 hop 对齐
 class VibeVoiceAsrProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -45,6 +48,7 @@ class VibeVoiceAsrProcessorKwargs(ProcessingKwargs, total=False):
     }
 
 
+# VibeVoiceAsrProcessor：VibeVoice ASR 处理器：特征提取 + 分词，聊天模板注入音频占位符
 class VibeVoiceAsrProcessor(ProcessorMixin):
     r"""
     Constructs a VibeVoice ASR processor which wraps [`VibeVoiceAcousticTokenizerFeatureExtractor`] and
@@ -74,6 +78,7 @@ class VibeVoiceAsrProcessor(ProcessorMixin):
     feature_extractor_class = "VibeVoiceAcousticTokenizerFeatureExtractor"
     tokenizer_class = "Qwen2TokenizerFast"
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         feature_extractor,
@@ -94,6 +99,7 @@ class VibeVoiceAsrProcessor(ProcessorMixin):
         super().__init__(feature_extractor, tokenizer, chat_template=chat_template)
 
     @auto_docstring
+    # __call__：联合调用：音频预处理 + 文本分词，返回 BatchFeature
     def __call__(
         self,
         text: TextInput | list[TextInput],

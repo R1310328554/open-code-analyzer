@@ -26,8 +26,11 @@ from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# VibeVoice ASR 配置：声学/语义双 tokenizer 编码器 + Qwen2 文本解码器子配置
+
 @auto_docstring(checkpoint="microsoft/VibeVoice-ASR-HF")
 @strict
+# VibeVoiceAsrConfig：VibeVoice ASR 主配置：双 tokenizer 编码器、Qwen2 文本栈与音频特殊 token
 class VibeVoiceAsrConfig(PreTrainedConfig):
     r"""
     acoustic_tokenizer_encoder_config (`Union[VibeVoiceAcousticTokenizerConfig, dict]`, *optional*):
@@ -78,6 +81,7 @@ class VibeVoiceAsrConfig(PreTrainedConfig):
     audio_eos_token_id: int = 151647
     acoustic_tokenizer_chunk_size: int = 1440000
 
+    # __post_init__：后初始化：解析子配置 dict 并实例化 vision/text 配置对象
     def __post_init__(self, **kwargs):
         if isinstance(self.acoustic_tokenizer_encoder_config, dict):
             self.acoustic_tokenizer_encoder_config["model_type"] = self.acoustic_tokenizer_encoder_config.get(

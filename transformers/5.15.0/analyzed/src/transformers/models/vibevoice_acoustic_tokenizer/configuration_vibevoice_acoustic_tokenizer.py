@@ -21,8 +21,11 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# VibeVoice 声学 tokenizer 配置：ConvNeXt 1D 编解码器、VAE 采样与下采样比率
+
 @auto_docstring(checkpoint="microsoft/VibeVoice-1.5B")
 @strict
+# VibeVoiceAcousticTokenizerConfig：声学 tokenizer 主配置：通道数、ConvNeXt 深度与 VAE 采样标准差
 class VibeVoiceAcousticTokenizerConfig(PreTrainedConfig):
     r"""
     channels (`int`, *optional*, defaults to 1):
@@ -89,6 +92,7 @@ class VibeVoiceAcousticTokenizerConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="microsoft/VibeVoice-1.5B")
 @strict
+# VibeVoiceAcousticTokenizerEncoderConfig：编码器子配置：下采样比率、卷积核与 hop_length 派生
 class VibeVoiceAcousticTokenizerEncoderConfig(VibeVoiceAcousticTokenizerConfig):
     r"""
     channels (`int`, *optional*, defaults to 1):
@@ -119,6 +123,7 @@ class VibeVoiceAcousticTokenizerEncoderConfig(VibeVoiceAcousticTokenizerConfig):
 
 @auto_docstring(checkpoint="microsoft/VibeVoice-1.5B")
 @strict
+# VibeVoiceAcousticTokenizerDecoderConfig：解码器子配置：上采样 stem 与 ConvNeXt 解码层参数
 class VibeVoiceAcousticTokenizerDecoderConfig(VibeVoiceAcousticTokenizerConfig):
     r"""
     channels (`int`, *optional*, defaults to 1):
