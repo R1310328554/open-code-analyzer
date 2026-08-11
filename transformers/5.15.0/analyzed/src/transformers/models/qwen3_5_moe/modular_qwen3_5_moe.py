@@ -13,6 +13,9 @@
 # limitations under the License.
 """PyTorch Qwen3.5Moe model."""
 
+# Qwen3.5-MoE 模块化定义：在 Qwen3.5 上替换 FFN 为稀疏 MoE
+
+
 import torch
 from huggingface_hub.dataclasses import strict
 
@@ -55,6 +58,7 @@ logger = logging.get_logger(__name__)
 
 
 @auto_docstring(checkpoint="Qwen/Qwen3.5-35B-A3B")
+# Qwen3_5MoeTextConfig：MoE 文本配置：稀疏专家路由 + 线性/全注意力混合
 @strict
 class Qwen3_5MoeTextConfig(Qwen3NextConfig):
     r"""
@@ -117,18 +121,21 @@ class Qwen3_5MoeTextConfig(Qwen3NextConfig):
     norm_topk_prob = AttributeError()
     mlp_only_layers = AttributeError()
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         super().__post_init__(**kwargs)
         del self.mlp_only_layers
 
 
 @auto_docstring(checkpoint="Qwen/Qwen3.5-35B-A3B")
+# Qwen3_5MoeVisionConfig：MoE 视觉配置：继承 Qwen3.5 视觉参数
 @strict
 class Qwen3_5MoeVisionConfig(Qwen3_5VisionConfig):
     pass
 
 
 @auto_docstring(checkpoint="Qwen/Qwen3.5-35B-A3B")
+# Qwen3_5MoeConfig：MoE 顶层配置：视觉 + 稀疏文本子配置聚合
 @strict
 class Qwen3_5MoeConfig(Qwen3VLConfig):
     r"""
@@ -153,46 +160,57 @@ class Qwen3_5MoeConfig(Qwen3VLConfig):
     vision_end_token_id: int = 248054
 
 
+# Qwen3_5MoeVisionRotaryEmbedding：继承 Qwen3.5 视觉 RoPE
 class Qwen3_5MoeVisionRotaryEmbedding(Qwen3_5VisionRotaryEmbedding):
     pass
 
 
+# Qwen3_5MoeTextRotaryEmbedding：继承 Qwen3.5 文本 MRoPE
 class Qwen3_5MoeTextRotaryEmbedding(Qwen3_5TextRotaryEmbedding):
     pass
 
 
 # Same GDN core as the dense variant, so it reuses the dense Hub kernel name.
+# Qwen3_5MoeGatedDeltaNet：继承稠密 GatedDeltaNet 并复用 Hub 内核名
 @use_kernel_forward_from_hub("Qwen3_5GatedDeltaNet")
 class Qwen3_5MoeGatedDeltaNet(Qwen3_5GatedDeltaNet):
     pass
 
 
+# Qwen3_5MoeAttention：继承 Qwen3Next 全注意力
 @no_inherit_decorator
 class Qwen3_5MoeAttention(Qwen3NextAttention):
     pass
 
 
+# Qwen3_5MoeMLP：继承 Qwen3.5 MLP
 class Qwen3_5MoeMLP(Qwen3_5MLP):
     pass
 
 
+# Qwen3_5MoeExperts：继承 Qwen3Next 专家 FFN 实现
 class Qwen3_5MoeExperts(Qwen3NextExperts):
     pass
 
 
+# Qwen3_5MoeTopKRouter：继承 Qwen3-VL-MoE Top-K 路由器
 class Qwen3_5MoeTopKRouter(Qwen3VLMoeTextTopKRouter):
     pass
 
 
+# Qwen3_5MoeSparseMoeBlock：继承 Qwen3Next 稀疏 MoE 块
 class Qwen3_5MoeSparseMoeBlock(Qwen3NextSparseMoeBlock):
     pass
 
 
+# Qwen3_5MoeRMSNorm：继承 Qwen3Next RMSNorm
 class Qwen3_5MoeRMSNorm(Qwen3NextRMSNorm):
     pass
 
 
+# Qwen3_5MoeDecoderLayer：MoE 解码层：线性/全注意力 + 稀疏 FFN
 class Qwen3_5MoeDecoderLayer(Qwen3NextDecoderLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen3_5MoeTextConfig, layer_idx: int):
         GradientCheckpointingLayer.__init__(self)
         self.hidden_size = config.hidden_size
@@ -206,6 +224,7 @@ class Qwen3_5MoeDecoderLayer(Qwen3NextDecoderLayer):
         self.post_attention_layernorm = Qwen3_5MoeRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
 
+# Qwen3_5MoePreTrainedModel：MoE 预训练基类：专家/路由/DeltaNet 初始化
 class Qwen3_5MoePreTrainedModel(Qwen3NextPreTrainedModel):
     _no_split_modules = ["Qwen3_5MoeDecoderLayer", "Qwen3_5MoeVisionBlock"]
 
@@ -227,18 +246,23 @@ class Qwen3_5MoePreTrainedModel(Qwen3NextPreTrainedModel):
             init.copy_(module.inv_freq, inv_freq)
 
 
+# Qwen3_5MoeVisionModel：继承 Qwen3.5 视觉模型
 class Qwen3_5MoeVisionModel(Qwen3_5VisionModel):
     pass
 
 
+# Qwen3_5MoeModelOutputWithPast：MoE 输出容器：附加 router_logits 字段
+# Qwen3_5MoeModel：继承 Qwen3.5 多模态模型
 class Qwen3_5MoeModelOutputWithPast(Qwen3VLMoeModelOutputWithPast):
     router_logits: tuple[torch.FloatTensor] | None = None
 
 
+# Qwen3_5MoeCausalLMOutputWithPast：继承 VL-MoE 因果 LM 输出
 class Qwen3_5MoeCausalLMOutputWithPast(Qwen3VLMoeCausalLMOutputWithPast):
     pass
 
 
+# Qwen3_5MoeTextModel：继承 Qwen3.5 文本模型
 class Qwen3_5MoeTextModel(Qwen3_5TextModel):
     pass
 
@@ -247,20 +271,24 @@ class Qwen3_5MoeModel(Qwen3_5Model):
     pass
 
 
+# Qwen3_5MoeForCausalLM：MoE 纯文本因果 LM 入口
 class Qwen3_5MoeForCausalLM(Qwen3NextForCausalLM):
     config: Qwen3_5MoeTextConfig
     _keys_to_ignore_on_load_unexpected = [r"^mtp.*", r"^model.visual.*"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__(config)
         self.model = Qwen3_5MoeTextModel(config)
 
 
+# Qwen3_5MoeForConditionalGeneration：MoE 多模态条件生成入口
 class Qwen3_5MoeForConditionalGeneration(Qwen3VLMoeForConditionalGeneration):
     _tp_plan = {"lm_head": "colwise_gather_output"}
 
     _fsdp_plan = {"lm_head": "keep_full_weight"}
 
+    # forward：前向计算主逻辑
     def forward(self, **super_kwargs):
         r"""
         Example:

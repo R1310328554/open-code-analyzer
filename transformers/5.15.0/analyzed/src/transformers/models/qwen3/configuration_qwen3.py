@@ -13,6 +13,9 @@
 # limitations under the License.
 """Qwen3 model configuration"""
 
+# Qwen3 配置：解码器超参、滑动窗口层类型与 RoPE 参数
+
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
@@ -21,6 +24,7 @@ from ...utils import auto_docstring
 
 
 @auto_docstring(checkpoint="Qwen/Qwen3-8B")
+# Qwen3Config：Qwen3 解码器超参与 TP/PP 并行计划
 @strict
 class Qwen3Config(PreTrainedConfig):
     r"""
@@ -83,6 +87,7 @@ class Qwen3Config(PreTrainedConfig):
     bos_token_id: int | None = None
     eos_token_id: int | list[int] | None = None
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         self.sliding_window = self.sliding_window if self.use_sliding_window else None
         if self.num_key_value_heads is None:

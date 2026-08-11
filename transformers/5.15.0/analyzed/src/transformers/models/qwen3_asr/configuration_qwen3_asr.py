@@ -22,10 +22,12 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# Qwen3-ASR 配置：Mel 音频编码器 + Qwen3 文本解码联合 ASR
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
 @auto_docstring(checkpoint="Qwen/Qwen3-ASR-1.7B-hf")
+# Qwen3ASREncoderConfig：ASR 音频编码器配置：Mel 频谱、分块窗口与下采样维度
 @strict
 class Qwen3ASREncoderConfig(PreTrainedConfig):
     r"""
@@ -69,6 +71,7 @@ class Qwen3ASREncoderConfig(PreTrainedConfig):
 
 
 @auto_docstring(checkpoint="Qwen/Qwen3-ASR-1.7B-hf")
+# Qwen3ASRConfig：Qwen3-ASR 顶层配置：音频编码器 + Qwen3 文本解码器
 @strict
 class Qwen3ASRConfig(PreTrainedConfig):
     r"""
@@ -108,6 +111,7 @@ class Qwen3ASRConfig(PreTrainedConfig):
     tie_word_embeddings: bool = True
     token_classification_bias: bool = False
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         if isinstance(self.audio_config, dict):
             self.audio_config["model_type"] = self.audio_config.get("model_type", "qwen3_asr_encoder")

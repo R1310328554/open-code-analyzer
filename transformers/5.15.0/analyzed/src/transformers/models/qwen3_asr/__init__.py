@@ -25,5 +25,6 @@ if TYPE_CHECKING:
 else:
     import sys
 
+    # 运行时以 _LazyModule 延迟加载 Qwen3-ASR 配置、建模与处理器
     _file = globals()["__file__"]
     sys.modules[__name__] = _LazyModule(__name__, _file, define_import_structure(_file), module_spec=__spec__)

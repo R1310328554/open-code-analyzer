@@ -13,6 +13,9 @@
 # limitations under the License.
 """PyTorch Qwen3 model."""
 
+# Qwen3 模块化定义：在 Qwen2/Llama 基类上定制 Q/K 头维归一化
+
+
 from collections.abc import Callable
 
 import torch
@@ -45,19 +48,24 @@ logger = logging.get_logger(__name__)
 _CHECKPOINT_FOR_DOC = "Qwen/Qwen3-8B"
 
 
+# Qwen3RMSNorm：继承 Qwen2 RMSNorm
 class Qwen3RMSNorm(Qwen2RMSNorm):
     pass
 
 
+# Qwen3MLP：继承 GemmaMLP 的 SwiGLU 前馈
 class Qwen3MLP(GemmaMLP):
     pass
 
 
+# Qwen3RotaryEmbedding：继承 Qwen2 RoPE 实现
 class Qwen3RotaryEmbedding(Qwen2RotaryEmbedding):
     pass
 
 
+# Qwen3Attention：继承 Llama 注意力并添加 Q/K 头维归一化与滑动窗口
 class Qwen3Attention(LlamaAttention):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen3Config, layer_idx: int):
         self.layer_type = config.layer_types[layer_idx] if hasattr(config, "layer_types") else None
         super().__init__(config, layer_idx)
@@ -65,6 +73,7 @@ class Qwen3Attention(LlamaAttention):
         self.k_norm = Qwen3RMSNorm(self.head_dim, eps=config.rms_norm_eps)  # thus post q_norm does not need reshape
         self.sliding_window = config.sliding_window if self.layer_type == "sliding_attention" else None
 
+    # forward：前向计算主逻辑
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -107,9 +116,11 @@ class Qwen3Attention(LlamaAttention):
         return attn_output, attn_weights
 
 
+# Qwen3ForCausalLM：因果 LM 任务入口，FSDP 保留 lm_head 全权重
 class Qwen3ForCausalLM(Qwen2ForCausalLM):
     _fsdp_plan = {"lm_head": "keep_full_weight"}
 
+    # forward：前向计算主逻辑
     def forward(
         self,
         **super_kwargs: Unpack[TransformersKwargs],
@@ -139,14 +150,17 @@ class Qwen3ForCausalLM(Qwen2ForCausalLM):
         return super().forward(**super_kwargs)
 
 
+# Qwen3ForSequenceClassification：序列分类任务入口
 class Qwen3ForSequenceClassification(Qwen2ForSequenceClassification):
     pass
 
 
+# Qwen3ForTokenClassification：Token 分类任务入口
 class Qwen3ForTokenClassification(Qwen2ForTokenClassification):
     pass
 
 
+# Qwen3ForQuestionAnswering：问答任务入口
 class Qwen3ForQuestionAnswering(Qwen2ForQuestionAnswering):
     pass
 

@@ -21,10 +21,14 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig, remap_legacy_layer_types
 from ...modeling_rope_utils import RopeParameters
-from ...utils import auto_docstring
+from ...utils import
+
+# Qwen3.5-MoE 配置：稀疏专家路由 + 线性/全注意力混合
+ auto_docstring
 
 
 @auto_docstring(checkpoint="Qwen/Qwen3.5-35B-A3B")
+# Qwen3_5MoeTextConfig：MoE 文本配置：稀疏专家路由 + 线性/全注意力混合
 @strict
 class Qwen3_5MoeTextConfig(PreTrainedConfig):
     r"""
@@ -120,6 +124,7 @@ class Qwen3_5MoeTextConfig(PreTrainedConfig):
     base_config_key = "text_config"
     ignore_keys_at_rope_validation = {"mrope_section", "mrope_interleaved"}
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         kwargs.setdefault("partial_rotary_factor", 0.25)  # assign default for BC
         if self.layer_types is None:
@@ -135,6 +140,7 @@ class Qwen3_5MoeTextConfig(PreTrainedConfig):
 
 
 @auto_docstring(checkpoint="Qwen/Qwen3.5-35B-A3B")
+# Qwen3_5MoeVisionConfig：MoE 视觉配置：继承 Qwen3.5 视觉参数
 @strict
 class Qwen3_5MoeVisionConfig(PreTrainedConfig):
     r"""
@@ -162,6 +168,7 @@ class Qwen3_5MoeVisionConfig(PreTrainedConfig):
 
 
 @auto_docstring(checkpoint="Qwen/Qwen3.5-35B-A3B")
+# Qwen3_5MoeConfig：MoE 顶层配置：视觉 + 稀疏文本子配置聚合
 @strict
 class Qwen3_5MoeConfig(PreTrainedConfig):
     r"""
@@ -193,6 +200,7 @@ class Qwen3_5MoeConfig(PreTrainedConfig):
     vision_end_token_id: int = 248054
     tie_word_embeddings: bool = False
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         if isinstance(self.vision_config, dict):
             # old ckpt with incorrect model type -> override manually

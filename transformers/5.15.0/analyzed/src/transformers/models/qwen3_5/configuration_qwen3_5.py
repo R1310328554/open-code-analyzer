@@ -21,10 +21,14 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig, remap_legacy_layer_types
 from ...modeling_rope_utils import RopeParameters
-from ...utils import auto_docstring
+from ...utils import
+
+# Qwen3.5 配置：线性注意力 + 全注意力混合与多模态子配置
+ auto_docstring
 
 
 @auto_docstring(checkpoint="Qwen/Qwen3.5-27B")
+# Qwen3_5TextConfig：Qwen3.5 文本配置：线性注意力 + 全注意力交替层与 MRoPE
 @strict
 class Qwen3_5TextConfig(PreTrainedConfig):
     r"""
@@ -107,6 +111,7 @@ class Qwen3_5TextConfig(PreTrainedConfig):
     base_config_key = "text_config"
     ignore_keys_at_rope_validation = {"mrope_section", "mrope_interleaved"}
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         kwargs.setdefault("partial_rotary_factor", 0.25)  # assign default for BC
         if self.layer_types is None:
@@ -122,6 +127,7 @@ class Qwen3_5TextConfig(PreTrainedConfig):
 
 
 @auto_docstring(checkpoint="Qwen/Qwen3.5-27B")
+# Qwen3_5VisionConfig：Qwen3.5 视觉配置：ViT patch 合并与输出投影维度
 @strict
 class Qwen3_5VisionConfig(PreTrainedConfig):
     r"""
@@ -149,6 +155,7 @@ class Qwen3_5VisionConfig(PreTrainedConfig):
 
 
 @auto_docstring(checkpoint="Qwen/Qwen3.5-27B")
+# Qwen3_5Config：Qwen3.5 顶层配置：聚合视觉/文本子配置与多模态 token id
 @strict
 class Qwen3_5Config(PreTrainedConfig):
     r"""
@@ -180,6 +187,7 @@ class Qwen3_5Config(PreTrainedConfig):
     vision_end_token_id: int = 248054
     tie_word_embeddings: bool = False
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         if isinstance(self.vision_config, dict):
             # old ckpt with incorrect model type -> override manually

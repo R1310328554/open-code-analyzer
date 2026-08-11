@@ -67,10 +67,15 @@ from ...vision_utils import (
     get_vision_position_ids,
 )
 from ..auto.modeling_auto import AutoModel
-from .configuration_qwen3_5_moe import Qwen3_5MoeConfig, Qwen3_5MoeTextConfig, Qwen3_5MoeVisionConfig
+from .configuration_qwen3_5_moe import
+
+# Qwen3.5-MoE 建模：稀疏专家 FFN + DeltaNet 线性注意力
+ Qwen3_5MoeConfig, Qwen3_5MoeTextConfig, Qwen3_5MoeVisionConfig
 
 
+# Qwen3_5MoeVisionRotaryEmbedding：MoE 视觉 RoPE
 class Qwen3_5MoeVisionRotaryEmbedding(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, dim: int, theta: float = 10000.0) -> None:
         super().__init__()
         self.dim = dim
@@ -78,12 +83,15 @@ class Qwen3_5MoeVisionRotaryEmbedding(nn.Module):
         inv_freq = 1.0 / (theta ** (torch.arange(0, dim, 2, dtype=torch.float) / dim))
         self.inv_freq = nn.Buffer(inv_freq, persistent=False)
 
+    # forward：前向计算主逻辑
     def forward(self, position_ids: torch.Tensor) -> torch.Tensor:
         return (position_ids.unsqueeze(-1) * self.inv_freq).flatten(1)
 
 
+# Qwen3_5MoeTextRotaryEmbedding：MoE 文本 MRoPE
 class Qwen3_5MoeTextRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen3_5MoeTextConfig, device=None):
         super().__init__()
         self.max_seq_len_cached = config.max_position_embeddings
@@ -127,6 +135,7 @@ class Qwen3_5MoeTextRotaryEmbedding(nn.Module):
 
     @torch.no_grad()
     @dynamic_rope_update  # power user: used with advanced RoPE types (e.g. dynamic rope)
+    # forward：前向计算主逻辑
     def forward(self, x, position_ids):
         # In contrast to other models, Qwen3_5Moe has different position ids for the grids
         # So we expand the inv_freq to shape (3, ...)
@@ -165,14 +174,18 @@ class Qwen3_5MoeTextRotaryEmbedding(nn.Module):
         return freqs_t
 
 
+# Qwen3_5MoeRMSNormGated：MoE 门控 RMSNorm
 @use_kernel_forward_from_hub("RMSNormGated")
+# Qwen3_5MoeRMSNorm：MoE RMS 层归一化
 class Qwen3_5MoeRMSNormGated(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, hidden_size, eps=1e-6, **kwargs):
         super().__init__()
         self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
         self.activation = "silu"
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states, gate=None):
         input_dtype = hidden_states.dtype
         hidden_states = hidden_states.to(torch.float32)
@@ -381,8 +394,10 @@ def torch_recurrent_gated_delta_rule(
     return core_attn_out, last_recurrent_state
 
 
+# Qwen3_5MoeGatedDeltaNet：MoE 线性注意力：复用稠密 DeltaNet Hub 内核
 @use_kernel_forward_from_hub("Qwen3_5GatedDeltaNet")
 class Qwen3_5MoeGatedDeltaNet(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen3_5MoeConfig, layer_idx: int):
         super().__init__()
         self.hidden_size = config.hidden_size
@@ -427,6 +442,7 @@ class Qwen3_5MoeGatedDeltaNet(nn.Module):
         self.in_proj_a = nn.Linear(self.hidden_size, self.num_v_heads, bias=False)
 
     @force_accelerate_hooks("conv1d")
+    # forward：前向计算主逻辑
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -624,9 +640,11 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# Qwen3_5MoeAttention：MoE 全注意力层
 class Qwen3_5MoeAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen3_5MoeConfig, layer_idx: int):
         super().__init__()
         self.config = config
@@ -653,6 +671,7 @@ class Qwen3_5MoeAttention(nn.Module):
             self.head_dim, eps=config.rms_norm_eps
         )  # thus post q_norm does not need reshape
 
+    # forward：前向计算主逻辑
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -701,7 +720,9 @@ class Qwen3_5MoeAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# Qwen3_5MoeMLP：MoE 稠密 MLP（共享专家路径）
 class Qwen3_5MoeMLP(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen3_5MoeConfig, intermediate_size: int):
         super().__init__()
         self.config = config
@@ -712,15 +733,18 @@ class Qwen3_5MoeMLP(nn.Module):
         self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=False)
         self.act_fn = ACT2FN[config.hidden_act]
 
+    # forward：前向计算主逻辑
     def forward(self, x):
         down_proj = self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
         return down_proj
 
 
 @use_experts_implementation
+# Qwen3_5MoeExperts：MoE 专家集合：gate_up + down 投影
 class Qwen3_5MoeExperts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.num_experts = config.num_experts
@@ -730,6 +754,7 @@ class Qwen3_5MoeExperts(nn.Module):
         self.down_proj = nn.Parameter(torch.empty(self.num_experts, self.hidden_dim, self.intermediate_dim))
         self.act_fn = ACT2FN[config.hidden_act]
 
+    # forward：前向计算主逻辑
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -757,7 +782,9 @@ class Qwen3_5MoeExperts(nn.Module):
         return final_hidden_states
 
 
+# Qwen3_5MoeTopKRouter：Top-K 路由：按 token 选择稀疏专家
 class Qwen3_5MoeTopKRouter(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.top_k = config.num_experts_per_tok
@@ -765,6 +792,7 @@ class Qwen3_5MoeTopKRouter(nn.Module):
         self.hidden_dim = config.hidden_size
         self.weight = nn.Parameter(torch.zeros(self.num_experts, self.hidden_dim))
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states):
         hidden_states = hidden_states.reshape(-1, self.hidden_dim)
         router_logits = F.linear(hidden_states, self.weight)  # (seq_len, num_experts)
@@ -776,7 +804,9 @@ class Qwen3_5MoeTopKRouter(nn.Module):
         return router_logits, router_scores, router_indices
 
 
+# Qwen3_5MoeSparseMoeBlock：稀疏 MoE 块：路由 + 专家 FFN 聚合
 class Qwen3_5MoeSparseMoeBlock(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.gate = Qwen3_5MoeTopKRouter(config)
@@ -784,6 +814,7 @@ class Qwen3_5MoeSparseMoeBlock(nn.Module):
         self.shared_expert = Qwen3_5MoeMLP(config, intermediate_size=config.shared_expert_intermediate_size)
         self.shared_expert_gate = torch.nn.Linear(config.hidden_size, 1, bias=False)
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         batch_size, sequence_length, hidden_dim = hidden_states.shape
         hidden_states_reshaped = hidden_states.view(-1, hidden_dim)
@@ -799,6 +830,7 @@ class Qwen3_5MoeSparseMoeBlock(nn.Module):
 
 
 class Qwen3_5MoeRMSNorm(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, dim: int, eps: float = 1e-6):
         super().__init__()
         self.eps = eps
@@ -807,6 +839,7 @@ class Qwen3_5MoeRMSNorm(nn.Module):
     def _norm(self, x):
         return x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + self.eps)
 
+    # forward：前向计算主逻辑
     def forward(self, x):
         output = self._norm(x.float())
         # Llama does x.to(float16) * w whilst Qwen3_5Moe is (x * w).to(float16)
@@ -818,7 +851,9 @@ class Qwen3_5MoeRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.eps}"
 
 
+# Qwen3_5MoeDecoderLayer：MoE 解码层：注意力 + 稀疏 MoE FFN
 class Qwen3_5MoeDecoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen3_5MoeTextConfig, layer_idx: int):
         super().__init__()
         self.hidden_size = config.hidden_size
@@ -831,6 +866,7 @@ class Qwen3_5MoeDecoderLayer(GradientCheckpointingLayer):
         self.input_layernorm = Qwen3_5MoeRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.post_attention_layernorm = Qwen3_5MoeRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
+    # forward：前向计算主逻辑
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -877,6 +913,7 @@ class Qwen3_5MoeDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Qwen3_5MoePreTrainedModel：MoE 预训练基类：专家与路由权重初始化
 class Qwen3_5MoePreTrainedModel(PreTrainedModel):
     config: Qwen3_5MoeConfig
     base_model_prefix = "model"
@@ -913,7 +950,9 @@ class Qwen3_5MoePreTrainedModel(PreTrainedModel):
             init.copy_(module.inv_freq, inv_freq)
 
 
+# Qwen3_5MoeVisionMLP：MoE 视觉 MLP
 class Qwen3_5MoeVisionMLP(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.hidden_size = config.hidden_size
@@ -922,11 +961,14 @@ class Qwen3_5MoeVisionMLP(nn.Module):
         self.linear_fc2 = nn.Linear(self.intermediate_size, self.hidden_size, bias=True)
         self.act_fn = ACT2FN[config.hidden_act]
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_state):
         return self.linear_fc2(self.act_fn(self.linear_fc1(hidden_state)))
 
 
+# Qwen3_5MoeVisionPatchEmbed：MoE 视觉 Patch 嵌入
 class Qwen3_5MoeVisionPatchEmbed(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config) -> None:
         super().__init__()
         self.patch_size = config.patch_size
@@ -937,6 +979,7 @@ class Qwen3_5MoeVisionPatchEmbed(nn.Module):
         kernel_size = [self.temporal_patch_size, self.patch_size, self.patch_size]
         self.proj = nn.Conv3d(self.in_channels, self.embed_dim, kernel_size=kernel_size, stride=kernel_size, bias=True)
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         target_dtype = self.proj.weight.dtype
         hidden_states = hidden_states.view(
@@ -946,7 +989,9 @@ class Qwen3_5MoeVisionPatchEmbed(nn.Module):
         return hidden_states
 
 
+# Qwen3_5MoeVisionPatchMerger：MoE 视觉 Patch 合并
 class Qwen3_5MoeVisionPatchMerger(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen3_5MoeVisionConfig, use_postshuffle_norm=False) -> None:
         super().__init__()
         self.hidden_size = config.hidden_size * (config.spatial_merge_size**2)
@@ -956,6 +1001,7 @@ class Qwen3_5MoeVisionPatchMerger(nn.Module):
         self.act_fn = nn.GELU()
         self.linear_fc2 = nn.Linear(self.hidden_size, config.out_hidden_size)
 
+    # forward：前向计算主逻辑
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.norm(x.view(-1, self.hidden_size) if self.use_postshuffle_norm else x).view(-1, self.hidden_size)
         x = self.linear_fc2(self.act_fn(self.linear_fc1(x)))
@@ -976,7 +1022,9 @@ def apply_rotary_pos_emb_vision(
     return q_embed, k_embed
 
 
+# Qwen3_5MoeVisionAttention：MoE 视觉自注意力
 class Qwen3_5MoeVisionAttention(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen3_5MoeVisionConfig) -> None:
         super().__init__()
         self.dim = config.hidden_size
@@ -990,6 +1038,7 @@ class Qwen3_5MoeVisionAttention(nn.Module):
         self.attention_dropout = 0.0
         self.is_causal = False
 
+    # forward：前向计算主逻辑
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -1059,7 +1108,9 @@ class Qwen3_5MoeVisionAttention(nn.Module):
         return attn_output
 
 
+# Qwen3_5MoeVisionBlock：MoE 视觉 Transformer 块
 class Qwen3_5MoeVisionBlock(GradientCheckpointingLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config, attn_implementation: str = "sdpa") -> None:
         super().__init__()
         self.norm1 = nn.LayerNorm(config.hidden_size, eps=1e-6)
@@ -1068,6 +1119,7 @@ class Qwen3_5MoeVisionBlock(GradientCheckpointingLayer):
         self.mlp = Qwen3_5MoeVisionMLP(config=config)
 
     @auto_docstring
+    # forward：前向计算主逻辑
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -1089,6 +1141,7 @@ class Qwen3_5MoeVisionBlock(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Qwen3_5MoeVisionModel：MoE 视觉编码器
 class Qwen3_5MoeVisionModel(Qwen3_5MoePreTrainedModel):
     config: Qwen3_5MoeVisionConfig
     input_modalities = ("image", "video")
@@ -1098,6 +1151,7 @@ class Qwen3_5MoeVisionModel(Qwen3_5MoePreTrainedModel):
     }
     _no_split_modules = ["Qwen3_5MoeVisionBlock"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config, *inputs, **kwargs) -> None:
         super().__init__(config, *inputs, **kwargs)
         self.spatial_merge_size = config.spatial_merge_size
@@ -1154,6 +1208,7 @@ class Qwen3_5MoeVisionModel(Qwen3_5MoePreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs
+    # forward：前向计算主逻辑
     def forward(self, hidden_states: torch.Tensor, grid_thw: torch.Tensor, **kwargs) -> torch.Tensor:
         """
         Args:
@@ -1206,6 +1261,7 @@ class Qwen3_5MoeVisionModel(Qwen3_5MoePreTrainedModel):
 
 @auto_docstring
 @dataclass
+# Qwen3_5MoeModelOutputWithPast：MoE 多模态输出：含 router_logits
 class Qwen3_5MoeModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     rope_deltas (`torch.LongTensor` of shape `(batch_size, )`, *optional*):
@@ -1219,6 +1275,7 @@ class Qwen3_5MoeModelOutputWithPast(BaseModelOutputWithPast):
 
 @auto_docstring
 @dataclass
+# Qwen3_5MoeCausalLMOutputWithPast：MoE 因果 LM 输出
 class Qwen3_5MoeCausalLMOutputWithPast(CausalLMOutputWithPast):
     r"""
     rope_deltas (`torch.LongTensor` of shape `(batch_size, )`, *optional*):
@@ -1231,9 +1288,11 @@ class Qwen3_5MoeCausalLMOutputWithPast(CausalLMOutputWithPast):
     aux_loss: torch.FloatTensor | None = None
 
 
+# Qwen3_5MoeTextModel：MoE 文本解码主干
 class Qwen3_5MoeTextModel(Qwen3_5MoePreTrainedModel):
     config: Qwen3_5MoeTextConfig
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen3_5MoeTextConfig):
         super().__init__(config)
         self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size, config.pad_token_id)
@@ -1249,6 +1308,7 @@ class Qwen3_5MoeTextModel(Qwen3_5MoePreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向计算主逻辑
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -1319,6 +1379,7 @@ class Qwen3_5MoeTextModel(Qwen3_5MoePreTrainedModel):
         )
 
 
+# Qwen3_5MoeModel：MoE 多模态模型：视觉 + 稀疏文本
 @auto_docstring
 class Qwen3_5MoeModel(Qwen3_5MoePreTrainedModel):
     base_model_prefix = "model"
@@ -1326,6 +1387,7 @@ class Qwen3_5MoeModel(Qwen3_5MoePreTrainedModel):
     accepts_loss_kwargs = False
     _no_split_modules = ["Qwen3_5MoeDecoderLayer", "Qwen3_5MoeVisionBlock"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__(config)
         self.visual = AutoModel.from_config(config.vision_config)
@@ -1604,6 +1666,7 @@ class Qwen3_5MoeModel(Qwen3_5MoePreTrainedModel):
 
     @auto_docstring
     @can_return_tuple
+    # forward：前向计算主逻辑
     def forward(
         self,
         input_ids: torch.LongTensor = None,
@@ -1754,6 +1817,7 @@ def load_balancing_loss_func(
     return overall_loss * num_experts
 
 
+# Qwen3_5MoeForCausalLM：MoE 纯文本因果 LM
 @auto_docstring
 class Qwen3_5MoeForCausalLM(Qwen3_5MoePreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
@@ -1763,6 +1827,7 @@ class Qwen3_5MoeForCausalLM(Qwen3_5MoePreTrainedModel, GenerationMixin):
     config: Qwen3_5MoeTextConfig
     _keys_to_ignore_on_load_unexpected = [r"^mtp.*", r"^model.visual.*"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__(config)
         self.model = Qwen3_5MoeTextModel(config)
@@ -1777,6 +1842,7 @@ class Qwen3_5MoeForCausalLM(Qwen3_5MoePreTrainedModel, GenerationMixin):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向计算主逻辑
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -1860,6 +1926,7 @@ class Qwen3_5MoeForCausalLM(Qwen3_5MoePreTrainedModel, GenerationMixin):
         )
 
 
+# Qwen3_5MoeForConditionalGeneration：MoE 多模态条件生成
 class Qwen3_5MoeForConditionalGeneration(Qwen3_5MoePreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
     # Reference: fix gemma3 grad acc #37208
@@ -1868,6 +1935,7 @@ class Qwen3_5MoeForConditionalGeneration(Qwen3_5MoePreTrainedModel, GenerationMi
 
     _fsdp_plan = {"lm_head": "keep_full_weight"}
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__(config)
         self.model = Qwen3_5MoeModel(config)
@@ -1903,6 +1971,7 @@ class Qwen3_5MoeForConditionalGeneration(Qwen3_5MoePreTrainedModel, GenerationMi
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向计算主逻辑
     def forward(
         self,
         input_ids: torch.LongTensor = None,

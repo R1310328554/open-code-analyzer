@@ -20,15 +20,18 @@ from ...tokenization_utils_tokenizers import TokenizersBackend
 from ...utils import logging
 
 
+# Qwen3.5 BPE 分词器：ByteLevel 解码与 Qwen 正则预分词
 logger = logging.get_logger(__name__)
 
 PRETOKENIZE_REGEX = r"""(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?[\p{L}\p{M}]+|\p{N}| ?[^\s\p{L}\p{M}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+"""
 
 
+# Qwen3_5Tokenizer：Qwen3.5 分词器：BPE 词表、NFC 归一化与特殊 token
 class Qwen3_5Tokenizer(TokenizersBackend):
     model_input_names = ["input_ids", "attention_mask"]
     model = BPE
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         vocab: str | dict[str, int] | None = None,

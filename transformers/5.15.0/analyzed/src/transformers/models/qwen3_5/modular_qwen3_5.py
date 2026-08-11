@@ -13,6 +13,9 @@
 # limitations under the License.
 """PyTorch Qwen3.5 model."""
 
+# Qwen3.5 模块化定义：复用 Qwen3Next/Qwen3-VL 并定制 DeltaNet 投影
+
+
 import torch
 import torch.nn.functional as F
 from huggingface_hub.dataclasses import strict
@@ -68,6 +71,7 @@ logger = logging.get_logger(__name__)
 
 
 @auto_docstring(checkpoint="Qwen/Qwen3.5-27B")
+# Qwen3_5TextConfig：Qwen3.5 文本配置：线性注意力 + 全注意力交替层与 MRoPE
 @strict
 class Qwen3_5TextConfig(Qwen3NextConfig):
     r"""
@@ -134,12 +138,14 @@ class Qwen3_5TextConfig(Qwen3NextConfig):
     output_router_logits = AttributeError()
     router_aux_loss_coef = AttributeError()
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         super().__post_init__(**kwargs)
         del self.mlp_only_layers
 
 
 @auto_docstring(checkpoint="Qwen/Qwen3.5-27B")
+# Qwen3_5VisionConfig：Qwen3.5 视觉配置：ViT patch 合并与输出投影维度
 @strict
 class Qwen3_5VisionConfig(Qwen3VLVisionConfig):
     r"""
@@ -153,6 +159,7 @@ class Qwen3_5VisionConfig(Qwen3VLVisionConfig):
 
 
 @auto_docstring(checkpoint="Qwen/Qwen3.5-27B")
+# Qwen3_5Config：Qwen3.5 顶层配置：聚合视觉/文本子配置与多模态 token id
 @strict
 class Qwen3_5Config(Qwen3VLConfig):
     r"""
@@ -177,11 +184,14 @@ class Qwen3_5Config(Qwen3VLConfig):
     vision_end_token_id: int = 248054
 
 
+# Qwen3_5VisionRotaryEmbedding：继承 Qwen3-VL 视觉 RoPE
 class Qwen3_5VisionRotaryEmbedding(Qwen3VLVisionRotaryEmbedding):
     pass
 
 
+# Qwen3_5TextRotaryEmbedding：继承 Qwen3-VL MRoPE 并定制 partial_rotary_factor
 class Qwen3_5TextRotaryEmbedding(Qwen3VLTextRotaryEmbedding):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen3_5TextConfig, device=None):
         super().__init__(config)
         self.mrope_section = config.rope_parameters.get("mrope_section", [11, 11, 10])
@@ -204,7 +214,9 @@ class Qwen3_5TextRotaryEmbedding(Qwen3VLTextRotaryEmbedding):
 @use_kernelized_func(
     [torch_recurrent_gated_delta_rule, torch_chunk_gated_delta_rule, causal_conv1d_fn, causal_conv1d_update]
 )
+# Qwen3_5GatedDeltaNet：门控 DeltaNet：拆分 QKV 投影并复用 Hub 内核
 class Qwen3_5GatedDeltaNet(Qwen3NextGatedDeltaNet):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen3_5Config, layer_idx: int):
         super().__init__(config, layer_idx)
 
@@ -221,6 +233,7 @@ class Qwen3_5GatedDeltaNet(Qwen3NextGatedDeltaNet):
     def fix_query_key_value_ordering(self):
         raise AttributeError("Not needed for Qwen3.5 Series")
 
+    # forward：前向计算主逻辑
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -335,21 +348,27 @@ class Qwen3_5GatedDeltaNet(Qwen3NextGatedDeltaNet):
         return output
 
 
+# Qwen3_5Attention：继承 Qwen3Next 全注意力
 class Qwen3_5Attention(Qwen3NextAttention):
     pass
 
 
+# Qwen3_5MLP：继承 Qwen3Next MLP 并显式 intermediate_size
 class Qwen3_5MLP(Qwen3NextMLP):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen3_5Config, intermediate_size: int):
         super().__init__(config, intermediate_size)
         self.intermediate_size = intermediate_size
 
 
+# Qwen3_5RMSNorm：继承 Qwen3Next RMSNorm
 class Qwen3_5RMSNorm(Qwen3NextRMSNorm):
     pass
 
 
+# Qwen3_5DecoderLayer：解码层：按 layer_types 切换线性/全注意力
 class Qwen3_5DecoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen3_5TextConfig, layer_idx: int):
         super().__init__()
         self.hidden_size = config.hidden_size
@@ -362,6 +381,7 @@ class Qwen3_5DecoderLayer(GradientCheckpointingLayer):
         self.input_layernorm = Qwen3_5RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.post_attention_layernorm = Qwen3_5RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
+    # forward：前向计算主逻辑
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -405,6 +425,7 @@ class Qwen3_5DecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Qwen3_5PreTrainedModel：预训练基类：DeltaNet 与视觉 RoPE 初始化
 class Qwen3_5PreTrainedModel(Qwen3NextPreTrainedModel):
     config: Qwen3_5Config
     _no_split_modules = ["Qwen3_5DecoderLayer", "Qwen3_5VisionBlock"]
@@ -427,10 +448,12 @@ class Qwen3_5PreTrainedModel(Qwen3NextPreTrainedModel):
             init.copy_(module.inv_freq, inv_freq)
 
 
+# Qwen3_5VisionModel：视觉模型：去除 deepstack 索引与合并列表
 class Qwen3_5VisionModel(Qwen3VLVisionModel):
     config: Qwen3_5VisionConfig
     _no_split_modules = ["Qwen3_5VisionBlock"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config, *inputs, **kwargs) -> None:
         super().__init__(config, *inputs, **kwargs)
         del self.deepstack_visual_indexes
@@ -438,6 +461,7 @@ class Qwen3_5VisionModel(Qwen3VLVisionModel):
 
     @merge_with_config_defaults
     @capture_outputs
+    # forward：前向计算主逻辑
     def forward(self, hidden_states: torch.Tensor, grid_thw: torch.Tensor, **kwargs) -> torch.Tensor:
         """
         Args:
@@ -488,17 +512,22 @@ class Qwen3_5VisionModel(Qwen3VLVisionModel):
         )
 
 
+# Qwen3_5ModelOutputWithPast：继承 Qwen3VL 多模态输出
+# Qwen3_5Model：多模态模型：图像/视频特征 scatter 到文本嵌入
 class Qwen3_5ModelOutputWithPast(Qwen3VLModelOutputWithPast):
     pass
 
 
+# Qwen3_5TextModel：文本模型：注入 Qwen3_5 MRoPE 嵌入
 class Qwen3_5TextModel(Qwen3NextModel):
     config: Qwen3_5TextConfig
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen3_5TextConfig):
         super().__init__(config)
         self.rotary_emb = Qwen3_5TextRotaryEmbedding(config=config)
 
+    # forward：前向计算主逻辑
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -598,6 +627,7 @@ class Qwen3_5Model(Qwen3VLModel):
 
     @auto_docstring
     @can_return_tuple
+    # forward：前向计算主逻辑
     def forward(
         self,
         input_ids: torch.LongTensor = None,
@@ -666,19 +696,23 @@ class Qwen3_5Model(Qwen3VLModel):
         )
 
 
+# Qwen3_5ForCausalLM：纯文本因果 LM 入口
 class Qwen3_5ForCausalLM(Qwen3ForCausalLM):
     config: Qwen3_5TextConfig
     _keys_to_ignore_on_load_unexpected = [r"^mtp.*", r"^model.visual.*"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__(config)
         self.model = Qwen3_5TextModel(config)
 
 
+# Qwen3_5ForTokenClassification：Token 分类入口
 class Qwen3_5ForTokenClassification(GenericForTokenClassification, Qwen3_5PreTrainedModel):
     config: Qwen3_5Config
 
 
+# Qwen3_5ForConditionalGeneration：多模态条件生成入口
 class Qwen3_5ForConditionalGeneration(Qwen3VLForConditionalGeneration):
     def get_video_features(self, **super_kwargs) -> tuple | BaseModelOutputWithPooling:
         return super().get_video_features(**super_kwargs)
@@ -687,12 +721,15 @@ class Qwen3_5ForConditionalGeneration(Qwen3VLForConditionalGeneration):
         return super().get_image_features(**super_kwargs)
 
 
+# Qwen3_5TextForSequenceClassification：纯文本序列分类
 class Qwen3_5TextForSequenceClassification(GenericForSequenceClassification, Qwen3_5PreTrainedModel):
     config: Qwen3_5TextConfig
     input_modalities = ("text",)
 
 
+# Qwen3_5ForSequenceClassification：多模态序列分类入口
 class Qwen3_5ForSequenceClassification(GenericForSequenceClassification, Qwen3_5PreTrainedModel):
+    # forward：前向计算主逻辑
     def forward(
         self,
         input_ids: torch.LongTensor = None,
