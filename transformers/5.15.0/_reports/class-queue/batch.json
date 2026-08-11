@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T03:20:43Z",
   "files": [
-    "src/transformers/models/smolvlm/modeling_smolvlm.py",
-    "src/transformers/models/smolvlm/modular_smolvlm.py",
-    "src/transformers/models/smolvlm/processing_smolvlm.py",
-    "src/transformers/models/smolvlm/video_processing_smolvlm.py",
-    "src/transformers/models/solar_open/__init__.py",
-    "src/transformers/models/solar_open/configuration_solar_open.py",
-    "src/transformers/models/solar_open/modeling_solar_open.py",
-    "src/transformers/models/solar_open/modular_solar_open.py",
-    "src/transformers/models/speech_encoder_decoder/__init__.py",
-    "src/transformers/models/speech_encoder_decoder/configuration_speech_encoder_decoder.py",
-    "src/transformers/models/speech_encoder_decoder/modeling_speech_encoder_decoder.py",
-    "src/transformers/models/speech_to_text/__init__.py",
-    "src/transformers/models/speech_to_text/configuration_speech_to_text.py",
-    "src/transformers/models/speech_to_text/feature_extraction_speech_to_text.py",
-    "src/transformers/models/speech_to_text/modeling_speech_to_text.py",
     "src/transformers/models/speech_to_text/processing_speech_to_text.py",
     "src/transformers/models/speech_to_text/tokenization_speech_to_text.py",
     "src/transformers/models/speecht5/__init__.py",
@@ -33,5 +18,5 @@
     "src/transformers/models/squeezebert/configuration_squeezebert.py"
   ],
   "remaining_pending": 549,
-  "done": 2100
+  "done": 2115
 }
