@@ -51,10 +51,14 @@ from ...utils.generic import (
 )
 from ...utils.output_capturing import capture_outputs
 from ...vision_utils import get_vision_attention_seqlens, get_vision_position_ids
+# modeling_glm4v 由 modular_glm4v.py 自动生成
 from .configuration_glm4v import Glm4vConfig, Glm4vTextConfig, Glm4vVisionConfig
 
 
+# GLM-4.1V 建模：视觉 ViT + 文本解码器联合视觉-语言多模态 VLM
+
 @use_kernel_forward_from_hub("RMSNorm")
+# Glm4vRMSNorm：GLM-4.1V RMS LayerNorm
 class Glm4vRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -75,6 +79,7 @@ class Glm4vRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# Glm4VisionMlp：GLM-4.1V 视觉编码器前馈 MLP
 class Glm4VisionMlp(nn.Module):
     def __init__(self, config, bias: bool = False):
         super().__init__()
@@ -89,6 +94,7 @@ class Glm4VisionMlp(nn.Module):
         return self.down_proj(self.act_fn(self.gate_proj(hidden_state)) * self.up_proj(hidden_state))
 
 
+# Glm4vVisionPatchEmbed：视觉 patch 嵌入与 3D 位置编码
 class Glm4vVisionPatchEmbed(nn.Module):
     def __init__(self, config: Glm4vVisionConfig) -> None:
         super().__init__()
@@ -109,6 +115,7 @@ class Glm4vVisionPatchEmbed(nn.Module):
         return hidden_states
 
 
+# Glm4vVisionRotaryEmbedding：视觉多维 RoPE 旋转位置编码
 class Glm4vVisionRotaryEmbedding(nn.Module):
     def __init__(self, dim: int, theta: float = 10000.0) -> None:
         super().__init__()
@@ -121,6 +128,7 @@ class Glm4vVisionRotaryEmbedding(nn.Module):
         return (position_ids.unsqueeze(-1) * self.inv_freq).flatten(1)
 
 
+# Glm4vVisionPatchMerger：视觉 patch 空间合并投影到 LLM 维度
 class Glm4vVisionPatchMerger(nn.Module):
     def __init__(self, dim: int, context_dim: int, hidden_act: str, bias: bool = False) -> None:
         super().__init__()
@@ -138,6 +146,7 @@ class Glm4vVisionPatchMerger(nn.Module):
         return self.down_proj(self.act_fn(self.gate_proj(hidden_state)) * self.up_proj(hidden_state))
 
 
+# Glm4vVisionEmbeddings：视觉 patch 嵌入 + 合并 + 位置编码组合层
 class Glm4vVisionEmbeddings(nn.Module):
     def __init__(self, config: Glm4vVisionConfig):
         super().__init__()
@@ -212,6 +221,7 @@ class Glm4vVisionEmbeddings(nn.Module):
         return embeddings
 
 
+# rotate_half：RoPE 中将向量后半部分旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -219,6 +229,7 @@ def rotate_half(x):
     return torch.cat((-x2, x1), dim=-1)
 
 
+# apply_rotary_pos_emb_vision：将多维 RoPE 应用到视觉 Q/K
 def apply_rotary_pos_emb_vision(
     q: torch.Tensor, k: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor
 ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -233,6 +244,7 @@ def apply_rotary_pos_emb_vision(
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -245,6 +257,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -270,6 +283,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# Glm4vVisionAttention：GLM-4.1V 视觉多头自注意力
 class Glm4vVisionAttention(nn.Module):
     def __init__(self, config: Glm4vVisionConfig) -> None:
         super().__init__()
@@ -353,6 +367,7 @@ class Glm4vVisionAttention(nn.Module):
         return attn_output
 
 
+# Glm4vVisionBlock：GLM-4.1V 视觉 Transformer 单层
 class Glm4vVisionBlock(GradientCheckpointingLayer):
     def __init__(self, config) -> None:
         super().__init__()
@@ -383,6 +398,7 @@ class Glm4vVisionBlock(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Glm4vTextRotaryEmbedding：GLM-4.1V 文本 mRoPE 旋转位置编码
 class Glm4vTextRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: Glm4vTextConfig, device=None):
@@ -449,6 +465,7 @@ class Glm4vTextRotaryEmbedding(nn.Module):
         return result
 
 
+# rotate_half_llm：文本 RoPE 中将向量后半部分旋转取负
 def rotate_half_llm(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., 0::2]
@@ -456,6 +473,7 @@ def rotate_half_llm(x):
     return torch.stack((-x2, x1), dim=-1).flatten(-2)
 
 
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -496,6 +514,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# Glm4vTextAttention：GLM-4.1V 文本多头自注意力（GQA + mRoPE）
 class Glm4vTextAttention(nn.Module):
     """
     Multi-headed attention from 'Attention Is All You Need' paper.
@@ -566,6 +585,7 @@ class Glm4vTextAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# Glm4vTextMLP：GLM-4.1V 文本前馈 MLP
 class Glm4vTextMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -584,6 +604,7 @@ class Glm4vTextMLP(nn.Module):
         return self.down_proj(up_states)
 
 
+# Glm4vTextDecoderLayer：GLM-4.1V 文本解码器单层
 class Glm4vTextDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Glm4vTextConfig, layer_idx: int):
         super().__init__()
@@ -636,6 +657,7 @@ class Glm4vTextDecoderLayer(GradientCheckpointingLayer):
 
 @auto_docstring
 @dataclass
+# Glm4vModelOutputWithPast：GLM-4.1V 多模态主干输出 dataclass
 class Glm4vModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     rope_deltas (`torch.LongTensor` of shape `(batch_size, )`, *optional*):
@@ -647,6 +669,7 @@ class Glm4vModelOutputWithPast(BaseModelOutputWithPast):
 
 
 @auto_docstring
+# Glm4vPreTrainedModel：GLM-4.1V 预训练基类与权重初始化
 class Glm4vPreTrainedModel(PreTrainedModel):
     config: Glm4vConfig
     base_model_prefix = "model"
@@ -667,6 +690,7 @@ class Glm4vPreTrainedModel(PreTrainedModel):
             init.copy_(module.inv_freq, inv_freq)
 
 
+# Glm4vVisionModel：GLM-4.1V 视觉 ViT 编码器主干
 class Glm4vVisionModel(Glm4vPreTrainedModel):
     config: Glm4vVisionConfig
     input_modalities = ("image", "video")
@@ -773,6 +797,7 @@ class Glm4vVisionModel(Glm4vPreTrainedModel):
 
 
 @auto_docstring
+# Glm4vTextModel：GLM-4.1V 纯文本解码器主干
 class Glm4vTextModel(Glm4vPreTrainedModel):
     config: Glm4vTextConfig
     input_modalities = ("text",)
@@ -878,6 +903,7 @@ class Glm4vTextModel(Glm4vPreTrainedModel):
 
 
 @auto_docstring
+# Glm4vModel：GLM-4.1V 视觉+文本联合多模态主干
 class Glm4vModel(Glm4vPreTrainedModel):
     base_model_prefix = "model"
     # Reference: fix gemma3 grad acc #37208
@@ -1238,6 +1264,7 @@ class Glm4vModel(Glm4vPreTrainedModel):
 
 @auto_docstring
 @dataclass
+# Glm4vCausalLMOutputWithPast：GLM-4.1V 多模态因果 LM 输出 dataclass
 class Glm4vCausalLMOutputWithPast(CausalLMOutputWithPast):
     r"""
     rope_deltas (`torch.LongTensor` of shape `(batch_size, )`, *optional*):
@@ -1248,6 +1275,7 @@ class Glm4vCausalLMOutputWithPast(CausalLMOutputWithPast):
     rope_deltas: torch.LongTensor | None = None
 
 
+# Glm4vForConditionalGeneration：GLM-4.1V 视觉-语言条件生成
 class Glm4vForConditionalGeneration(Glm4vPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
     # Reference: fix gemma3 grad acc #37208

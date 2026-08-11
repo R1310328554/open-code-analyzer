@@ -33,7 +33,10 @@ from ...utils import TensorType, auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# GLM-4.1V PIL 图像处理：NumPy/PIL 后端 patch 化预处理
+
 # Copied from transformers.models.glm4v.image_processing_glm4v.smart_resize
+# smart_resize：按时空 patch 因子与像素预算自适应 resize 高宽
 def smart_resize(
     num_frames: int,
     height: int,
@@ -70,6 +73,7 @@ def smart_resize(
     return h_bar, w_bar
 
 
+# Glm4vImageProcessorKwargs：GLM-4.1V 图像处理器可选参数字典
 class Glm4vImageProcessorKwargs(ImagesKwargs, total=False):
     """
     patch_size (`int`, *optional*, defaults to 14):
@@ -86,6 +90,7 @@ class Glm4vImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# Glm4vImageProcessorPil：PIL 后端 GLM-4.1V 图像 patch 预处理
 class Glm4vImageProcessorPil(PilBackend):
     do_resize = True
     resample = PILImageResampling.BICUBIC
@@ -136,6 +141,7 @@ class Glm4vImageProcessorPil(PilBackend):
             resample=resample,
         )
 
+    # patchify：将视频张量切分为时空 patch 并展平为序列
     def patchify(
         self,
         image: np.ndarray,
@@ -173,6 +179,7 @@ class Glm4vImageProcessorPil(PilBackend):
         )
         return flatten_patches, grid_h, grid_w
 
+    # _preprocess：视频 resize/归一化/patch 化完整预处理流水线
     def _preprocess(
         self,
         images: list[np.ndarray],

@@ -34,8 +34,11 @@ from ..glm4_moe.modeling_glm4_moe import (
 )
 
 
+# GLM-4 MoE Lite modular 源：复用 Glm4Moe 专家层并扩展 Lite 配置
+
 @auto_docstring(checkpoint="zai-org/GLM-4.5")
 @strict
+# Glm4MoeLiteConfig：GLM-4 MoE Lite 轻量稀疏专家与交错 RoPE 超参
 class Glm4MoeLiteConfig(PreTrainedConfig):
     r"""
     n_group (`int`, *optional*, defaults to 1):
@@ -131,34 +134,42 @@ class Glm4MoeLiteConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# Glm4MoeLiteRotaryEmbedding：GLM-4 MoE Lite RoPE（支持 YaRN 缩放）
 class Glm4MoeLiteRotaryEmbedding(Glm4MoeRotaryEmbedding):
     pass
 
 
+# Glm4MoeLiteAttention：GLM-4 MoE Lite 多头自注意力（交错 RoPE + GQA）
 class Glm4MoeLiteAttention(DeepseekV3Attention):
     pass
 
 
+# Glm4MoeLiteMLP：GLM-4 MoE Lite 稠密前馈 MLP
 class Glm4MoeLiteMLP(Glm4MoeMLP):
     pass
 
 
+# Glm4MoeLiteTopkRouter：MoE Lite 路由门控 top-k 专家选择
 class Glm4MoeLiteTopkRouter(Glm4MoeTopkRouter):
     pass
 
 
+# Glm4MoeLiteRMSNorm：GLM-4 MoE Lite RMS LayerNorm
 class Glm4MoeLiteRMSNorm(Glm4MoeRMSNorm):
     pass
 
 
+# Glm4MoeLiteExperts：MoE Lite 专家 FFN 参数组
 class Glm4MoeLiteExperts(Glm4MoeExperts):
     pass
 
 
+# Glm4MoeLiteMoE：MoE Lite 稀疏专家层
 class Glm4MoeLiteMoE(Glm4MoeMoE):
     pass
 
 
+# Glm4MoeLiteDecoderLayer：GLM-4 MoE Lite 解码器单层
 class Glm4MoeLiteDecoderLayer(Glm4MoeDecoderLayer, nn.Module):
     def __init__(self, config: Glm4MoeLiteConfig, layer_idx: int):
         nn.Module.__init__(self)
@@ -174,14 +185,17 @@ class Glm4MoeLiteDecoderLayer(Glm4MoeDecoderLayer, nn.Module):
         self.post_attention_layernorm = Glm4MoeLiteRMSNorm(config.hidden_size, config.rms_norm_eps)
 
 
+# Glm4MoeLitePreTrainedModel：GLM-4 MoE Lite 预训练基类
 class Glm4MoeLitePreTrainedModel(Glm4MoePreTrainedModel):
     _keys_to_ignore_on_load_unexpected = [r"model\.layers\.47.*"]
 
 
+# Glm4MoeLiteModel：GLM-4 MoE Lite 纯文本解码器主干
 class Glm4MoeLiteModel(Glm4MoeModel):
     pass
 
 
+# Glm4MoeLiteForCausalLM：GLM-4 MoE Lite 因果语言建模
 class Glm4MoeLiteForCausalLM(Glm4MoeForCausalLM):
     pass
 

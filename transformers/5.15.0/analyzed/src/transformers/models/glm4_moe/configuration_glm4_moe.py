@@ -24,8 +24,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# GLM-4 MoE 配置：128 路由专家 + 共享专家 + MTP 多 token 预测超参
+
+# Glm4MoeConfig：zai-org/GLM-4.5 MoE 稀疏专家与 MTP 默认超参
 @auto_docstring(checkpoint="zai-org/GLM-4.5")
 @strict
+# Glm4MoeConfig：GLM-4 MoE 稀疏专家与 MTP 多 token 预测超参
 class Glm4MoeConfig(PreTrainedConfig):
     r"""
     n_group (`int`, *optional*, defaults to 1):

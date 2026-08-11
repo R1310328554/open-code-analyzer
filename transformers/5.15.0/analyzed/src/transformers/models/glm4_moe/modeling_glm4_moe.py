@@ -40,9 +40,13 @@ from ...utils import TransformersKwargs, auto_docstring, can_return_tuple
 from ...utils.deprecation import deprecate_kwarg
 from ...utils.generic import maybe_autocast, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
+# modeling_glm4_moe 由 modular_glm4_moe.py 自动生成
 from .configuration_glm4_moe import Glm4MoeConfig
 
 
+# GLM-4 MoE 建模：稀疏 MoE 解码器 + MTP 投机解码
+
+# Glm4MoeRotaryEmbedding：GLM-4 MoE RoPE 旋转位置编码
 class Glm4MoeRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: Glm4MoeConfig, device=None):
@@ -102,6 +106,7 @@ class Glm4MoeRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -114,6 +119,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -139,6 +145,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# rotate_half：RoPE 中将向量后半部分旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -146,6 +153,7 @@ def rotate_half(x):
     return torch.cat((-x2, x1), dim=-1)
 
 
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -182,6 +190,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# Glm4MoeAttention：GLM-4 MoE 多头自注意力（GQA + RoPE）
 class Glm4MoeAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -260,6 +269,7 @@ class Glm4MoeAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# Glm4MoeMLP：GLM-4 MoE 稠密前馈 MLP（SwiGLU 结构）
 class Glm4MoeMLP(nn.Module):
     def __init__(self, config, intermediate_size=None):
         super().__init__()
@@ -276,6 +286,7 @@ class Glm4MoeMLP(nn.Module):
         return down_proj
 
 
+# Glm4MoeTopkRouter：MoE 路由门控，按 top-k 选择专家
 class Glm4MoeTopkRouter(nn.Module):
     def __init__(self, config: Glm4MoeConfig):
         super().__init__()
@@ -318,6 +329,7 @@ class Glm4MoeTopkRouter(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# Glm4MoeRMSNorm：GLM-4 MoE RMS LayerNorm
 class Glm4MoeRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -339,6 +351,7 @@ class Glm4MoeRMSNorm(nn.Module):
 
 
 @use_experts_implementation
+# Glm4MoeExperts：MoE 专家 FFN 参数组（grouped GEMM 布局）
 class Glm4MoeExperts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
@@ -378,6 +391,7 @@ class Glm4MoeExperts(nn.Module):
         return final_hidden_states
 
 
+# Glm4MoeMoE：稀疏 MoE 层（路由 + 共享专家 + 路由专家）
 class Glm4MoeMoE(nn.Module):
     """
     A mixed expert module containing shared experts.
@@ -402,6 +416,7 @@ class Glm4MoeMoE(nn.Module):
         return hidden_states
 
 
+# Glm4MoeDecoderLayer：GLM-4 MoE 解码器单层（自注意力 + MoE/MLP）
 class Glm4MoeDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Glm4MoeConfig, layer_idx: int):
         super().__init__()
@@ -450,6 +465,7 @@ class Glm4MoeDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Glm4MoePreTrainedModel：GLM-4 MoE 预训练基类与权重初始化
 class Glm4MoePreTrainedModel(PreTrainedModel):
     config: Glm4MoeConfig
     base_model_prefix = "model"
@@ -481,6 +497,7 @@ class Glm4MoePreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# Glm4MoeModel：GLM-4 MoE 纯文本解码器主干
 class Glm4MoeModel(Glm4MoePreTrainedModel):
     def __init__(self, config: Glm4MoeConfig):
         super().__init__(config)
@@ -555,6 +572,7 @@ class Glm4MoeModel(Glm4MoePreTrainedModel):
 
 
 @auto_docstring
+# Glm4MoeForCausalLM：GLM-4 MoE 因果语言建模与文本生成
 class Glm4MoeForCausalLM(Glm4MoePreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}

@@ -37,8 +37,11 @@ from ..gpt_neox.modeling_gpt_neox import apply_rotary_pos_emb  # noqa
 logger = logging.get_logger(__name__)
 
 
+# GLM-4 MoE modular 源：基于 DeepseekV3/Cohere/GLM 复用 MoE 核心实现
+
 @auto_docstring(checkpoint="zai-org/GLM-4.5")
 @strict
+# Glm4MoeConfig：GLM-4 MoE 稀疏专家与 MTP 多 token 预测超参
 class Glm4MoeConfig(PreTrainedConfig):
     r"""
     n_group (`int`, *optional*, defaults to 1):
@@ -137,10 +140,12 @@ class Glm4MoeConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# Glm4MoeRotaryEmbedding：GLM-4 MoE RoPE 旋转位置编码
 class Glm4MoeRotaryEmbedding(GlmRotaryEmbedding):
     pass
 
 
+# Glm4MoeAttention：GLM-4 MoE 多头自注意力（GQA + RoPE）
 class Glm4MoeAttention(CohereAttention):
     def __init__(self, config: Glm4MoeConfig, layer_idx: int | None = None):
         nn.Module.__init__(self)
@@ -169,10 +174,12 @@ class Glm4MoeAttention(CohereAttention):
             self.k_norm = Glm4MoeRMSNorm(self.head_dim, eps=config.rms_norm_eps)
 
 
+# Glm4MoeMLP：GLM-4 MoE 稠密前馈 MLP（SwiGLU 结构）
 class Glm4MoeMLP(DeepseekV3MLP):
     pass
 
 
+# Glm4MoeTopkRouter：MoE 路由门控，按 top-k 选择专家
 class Glm4MoeTopkRouter(DeepseekV3TopkRouter):
     def __init__(self, config: Glm4MoeConfig):
         nn.Module.__init__(self)
@@ -187,22 +194,27 @@ class Glm4MoeTopkRouter(DeepseekV3TopkRouter):
         self.e_score_correction_bias = nn.Buffer(torch.zeros((self.num_experts), dtype=torch.float32))
 
 
+# Glm4MoeRMSNorm：GLM-4 MoE RMS LayerNorm
 class Glm4MoeRMSNorm(DeepseekV3RMSNorm):
     pass
 
 
+# Glm4MoeDecoderLayer：GLM-4 MoE 解码器单层（自注意力 + MoE/MLP）
 class Glm4MoeDecoderLayer(DeepseekV3DecoderLayer):
     pass
 
 
+# Glm4MoePreTrainedModel：GLM-4 MoE 预训练基类与权重初始化
 class Glm4MoePreTrainedModel(DeepseekV3PreTrainedModel):
     _keys_to_ignore_on_load_unexpected = [r"model\.layers\.92.*", r"model\.layers\.46.*"]
 
 
+# Glm4MoeModel：GLM-4 MoE 纯文本解码器主干
 class Glm4MoeModel(DeepseekV3Model):
     pass
 
 
+# Glm4MoeForCausalLM：GLM-4 MoE 因果语言建模与文本生成
 class Glm4MoeForCausalLM(DeepseekV3ForCausalLM):
     pass
 

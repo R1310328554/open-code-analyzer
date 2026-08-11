@@ -26,8 +26,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# GLM-4 MoE Lite 配置：轻量 MoE + 交错 RoPE + 逐层 MLP/MoE 模式
+
+# Glm4MoeLiteConfig：zai-org/GLM-4.5 MoE Lite 轻量稀疏专家默认超参
 @auto_docstring(checkpoint="zai-org/GLM-4.5")
 @strict
+# Glm4MoeLiteConfig：GLM-4 MoE Lite 轻量稀疏专家与交错 RoPE 超参
 class Glm4MoeLiteConfig(PreTrainedConfig):
     r"""
     n_group (`int`, *optional*, defaults to 1):

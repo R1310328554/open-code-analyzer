@@ -42,9 +42,13 @@ from ...utils import TransformersKwargs, auto_docstring, can_return_tuple
 from ...utils.deprecation import deprecate_kwarg
 from ...utils.generic import maybe_autocast, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
+# modeling_glm4_moe_lite 由 modular_glm4_moe_lite.py 自动生成
 from .configuration_glm4_moe_lite import Glm4MoeLiteConfig
 
 
+# GLM-4 MoE Lite 建模：轻量稀疏专家 + YaRN 长上下文 RoPE
+
+# Glm4MoeLiteRotaryEmbedding：GLM-4 MoE Lite RoPE（支持 YaRN 缩放）
 class Glm4MoeLiteRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: Glm4MoeLiteConfig, device=None):
@@ -106,6 +110,7 @@ class Glm4MoeLiteRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -118,6 +123,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -143,12 +149,14 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# yarn_get_mscale：YaRN 长上下文 RoPE 幅度缩放因子计算
 def yarn_get_mscale(scale=1, mscale=1):
     if scale <= 1:
         return 1.0
     return 0.1 * mscale * math.log(scale) + 1.0
 
 
+# yarn_apply_mscale：按 scaling 因子对 RoPE cos/sin 应用 YaRN mscale
 def yarn_apply_mscale(rope_parameters, scaling):
     if rope_parameters.get("rope_type", "default") != "default":
         mscale_all_dim = rope_parameters.get("mscale_all_dim", 0)
@@ -159,6 +167,7 @@ def yarn_apply_mscale(rope_parameters, scaling):
     return scaling
 
 
+# rotate_half：RoPE 中将向量后半部分旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -167,6 +176,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -192,6 +202,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# apply_rotary_pos_emb_interleave：交错模式 RoPE 位置编码应用到 Q/K
 def apply_rotary_pos_emb_interleave(q, k, cos, sin, position_ids=None, unsqueeze_dim=1):
     r"""
     Applies interleaved Rotary Position Embedding to the query and key tensors.
@@ -231,6 +242,7 @@ def apply_rotary_pos_emb_interleave(q, k, cos, sin, position_ids=None, unsqueeze
     return q_embed, k_embed
 
 
+# Glm4MoeLiteAttention：GLM-4 MoE Lite 多头自注意力（交错 RoPE + GQA）
 class Glm4MoeLiteAttention(nn.Module):
     """Multi-headed Latent Attention (MLA) from Deepseek V2"""
 
@@ -357,6 +369,7 @@ class Glm4MoeLiteAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# Glm4MoeLiteMLP：GLM-4 MoE Lite 稠密前馈 MLP
 class Glm4MoeLiteMLP(nn.Module):
     def __init__(self, config, intermediate_size=None):
         super().__init__()
@@ -373,6 +386,7 @@ class Glm4MoeLiteMLP(nn.Module):
         return down_proj
 
 
+# Glm4MoeLiteTopkRouter：MoE Lite 路由门控 top-k 专家选择
 class Glm4MoeLiteTopkRouter(nn.Module):
     def __init__(self, config: Glm4MoeLiteConfig):
         super().__init__()
@@ -415,6 +429,7 @@ class Glm4MoeLiteTopkRouter(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# Glm4MoeLiteRMSNorm：GLM-4 MoE Lite RMS LayerNorm
 class Glm4MoeLiteRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -436,6 +451,7 @@ class Glm4MoeLiteRMSNorm(nn.Module):
 
 
 @use_experts_implementation
+# Glm4MoeLiteExperts：MoE Lite 专家 FFN 参数组
 class Glm4MoeLiteExperts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
@@ -475,6 +491,7 @@ class Glm4MoeLiteExperts(nn.Module):
         return final_hidden_states
 
 
+# Glm4MoeLiteMoE：MoE Lite 稀疏专家层
 class Glm4MoeLiteMoE(nn.Module):
     """
     A mixed expert module containing shared experts.
@@ -499,6 +516,7 @@ class Glm4MoeLiteMoE(nn.Module):
         return hidden_states
 
 
+# Glm4MoeLiteDecoderLayer：GLM-4 MoE Lite 解码器单层
 class Glm4MoeLiteDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Glm4MoeLiteConfig, layer_idx: int):
         super().__init__()
@@ -546,6 +564,7 @@ class Glm4MoeLiteDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Glm4MoeLitePreTrainedModel：GLM-4 MoE Lite 预训练基类
 class Glm4MoeLitePreTrainedModel(PreTrainedModel):
     config: Glm4MoeLiteConfig
     base_model_prefix = "model"
@@ -577,6 +596,7 @@ class Glm4MoeLitePreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# Glm4MoeLiteModel：GLM-4 MoE Lite 纯文本解码器主干
 class Glm4MoeLiteModel(Glm4MoeLitePreTrainedModel):
     def __init__(self, config: Glm4MoeLiteConfig):
         super().__init__(config)
@@ -651,6 +671,7 @@ class Glm4MoeLiteModel(Glm4MoeLitePreTrainedModel):
 
 
 @auto_docstring
+# Glm4MoeLiteForCausalLM：GLM-4 MoE Lite 因果语言建模
 class Glm4MoeLiteForCausalLM(Glm4MoeLitePreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}

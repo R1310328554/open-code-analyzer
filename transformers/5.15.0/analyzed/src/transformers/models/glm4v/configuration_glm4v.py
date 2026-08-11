@@ -24,8 +24,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# GLM-4.1V 配置：视觉 ViT + 文本解码器多模态联合超参
+
+# Glm4vVisionConfig：GLM-4.1V-9B 视觉 ViT patch 编码器默认超参
 @auto_docstring(checkpoint="zai-org/GLM-4.1V-9B-Thinking")
 @strict
+# Glm4vVisionConfig：GLM-4.1V 视觉 ViT patch 编码器超参
 class Glm4vVisionConfig(PreTrainedConfig):
     r"""
     out_hidden_size (`int`, *optional*, defaults to 4096):
@@ -66,8 +70,10 @@ class Glm4vVisionConfig(PreTrainedConfig):
     initializer_range: float = 0.02
 
 
+# Glm4vTextConfig：GLM-4.1V-9B 文本解码器默认超参
 @auto_docstring(checkpoint="zai-org/GLM-4.1V-9B-Thinking")
 @strict
+# Glm4vTextConfig：GLM-4.1V 文本解码器超参（GQA + mRoPE）
 class Glm4vTextConfig(PreTrainedConfig):
     r"""
     Example:
@@ -126,8 +132,10 @@ class Glm4vTextConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# Glm4vConfig：GLM-4.1V-9B 视觉+文本多模态联合默认超参
 @auto_docstring(checkpoint="zai-org/GLM-4.1V-9B-Thinking")
 @strict
+# Glm4vConfig：GLM-4.1V 视觉+文本多模态联合配置
 class Glm4vConfig(PreTrainedConfig):
     r"""
     image_start_token_id (`int`, *optional*, defaults to 151339):

@@ -28,4 +28,5 @@ else:
     import sys
 
     _file = globals()["__file__"]
+# 运行时以 _LazyModule 延迟加载 Glm4vConfig / Glm4vModel / Glm4vProcessor / 图像与视频处理器等
     sys.modules[__name__] = _LazyModule(__name__, _file, define_import_structure(_file), module_spec=__spec__)
