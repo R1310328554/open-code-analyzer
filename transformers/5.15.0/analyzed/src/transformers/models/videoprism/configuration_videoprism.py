@@ -25,11 +25,14 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring, logging
 
 
+# VideoPrism 配置：时空 tubelet、视觉/文本子配置与 CLIP 联合超参
+
 logger = logging.get_logger(__name__)
 
 
 @auto_docstring(checkpoint="google/videoprism-base-f16r288")
 @strict
+# VideoPrismVisionConfig：VideoPrism 视觉配置：tubelet 尺寸、时空层数与 attention logit softcapping
 class VideoPrismVisionConfig(PreTrainedConfig):
     r"""
     num_frames (`int`, *optional*, defaults to 16):
@@ -72,6 +75,7 @@ class VideoPrismVisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="google/videoprism-lvt-base-f16r288")
 @strict
+# VideoPrismTextConfig：VideoPrism 文本配置：T5 风格 hidden/层数与 attention 头数
 class VideoPrismTextConfig(PreTrainedConfig):
     r"""
     apply_l2norm (`bool`, *optional*, defaults to `True`):
@@ -105,6 +109,7 @@ class VideoPrismTextConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="google/videoprism-lvt-base-f16r288")
 @strict
+# VideoPrismConfig：VideoPrism 多模态配置：vision_config + text_config 与投影维度
 class VideoPrismConfig(PreTrainedConfig):
     r"""
     Example:
@@ -129,6 +134,7 @@ class VideoPrismConfig(PreTrainedConfig):
     text_config: dict | PreTrainedConfig | None = None
     vision_config: dict | PreTrainedConfig | None = None
 
+    # __post_init__：后初始化：解析子配置 dict 并实例化 vision/text 配置对象
     def __post_init__(self, **kwargs):
         if self.text_config is None:
             self.text_config = VideoPrismTextConfig()

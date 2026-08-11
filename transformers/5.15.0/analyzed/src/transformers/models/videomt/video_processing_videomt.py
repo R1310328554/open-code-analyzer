@@ -19,11 +19,14 @@ from ...utils import is_torch_available, requires_backends
 from ...video_processing_utils import BaseVideoProcessor
 
 
+# Videomt 视频处理器：帧预处理、全景分割后处理与 segment 有效性校验
+
 if is_torch_available():
     import torch
     import torch.nn.functional as F
 
 
+# check_segment_validity：校验全景 segment：query 掩码与像素归属重叠率是否达阈值
 def check_segment_validity(
     mask_labels: "torch.Tensor",
     mask_probs: "torch.Tensor",
@@ -69,6 +72,7 @@ def check_segment_validity(
     return mask_exists, final_mask
 
 
+# compute_segments：计算全景分割图：按 query 优先级合并 mask 并分配 segment id
 def compute_segments(
     mask_probs: "torch.Tensor",
     pred_scores: "torch.Tensor",
@@ -143,6 +147,7 @@ def compute_segments(
     return segmentation, segments
 
 
+# VideomtVideoProcessor：Videomt 视频处理器：帧预处理 + 全景分割 logits 后处理与 segment 合并
 class VideomtVideoProcessor(BaseVideoProcessor):
     resample = PILImageResampling.BILINEAR
     image_mean = IMAGENET_DEFAULT_MEAN
@@ -230,6 +235,7 @@ class VideomtVideoProcessor(BaseVideoProcessor):
 
         return semantic_segmentation
 
+    # post_process_instance_segmentation：实例分割后处理：过滤低分 query 并输出 mask 列表
     def post_process_instance_segmentation(
         self,
         outputs,
@@ -301,6 +307,7 @@ class VideomtVideoProcessor(BaseVideoProcessor):
             results.append({"segmentation": segmentation, "segments_info": segments})
         return results
 
+    # post_process_panoptic_segmentation：全景分割后处理：logits 转 segment 图与类别标签
     def post_process_panoptic_segmentation(
         self,
         outputs,

@@ -31,7 +31,10 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# VideoMAE 图像处理器：224 中心裁剪、ImageNet 归一化，将视频帧批处理为 pixel_values
+
 @auto_docstring
+# VideoMAEImageProcessor：VideoMAE 图像处理器：Torchvision 后端缩放/中心裁剪与 ImageNet 标准化
 class VideoMAEImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.BILINEAR
     image_mean = IMAGENET_STANDARD_MEAN
@@ -44,13 +47,16 @@ class VideoMAEImageProcessor(TorchvisionBackend):
     do_rescale = True
     do_normalize = True
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[ImagesKwargs]):
         super().__init__(**kwargs)
 
+    # _prepare_images_structure：整理输入结构：嵌套列表规范化，校验帧维度
     def _prepare_images_structure(self, images: ImageInput, expected_ndims: int = 3) -> ImageInput:
         return make_nested_list_of_images(images, expected_ndims=expected_ndims)
 
     @auto_docstring
+    # preprocess：预处理入口：缩放/裁剪/归一化并返回 pixel_values 或 BatchFeature
     def preprocess(self, videos: ImageInput, **kwargs: Unpack[ImagesKwargs]) -> BatchFeature:
         r"""
         videos (`ImageInput`):
@@ -60,6 +66,7 @@ class VideoMAEImageProcessor(TorchvisionBackend):
         """
         return super().preprocess(videos, **kwargs)
 
+    # _preprocess：内部预处理：按 shape 分组批处理图像/视频帧
     def _preprocess(
         self,
         images: list[list["torch.Tensor"]],

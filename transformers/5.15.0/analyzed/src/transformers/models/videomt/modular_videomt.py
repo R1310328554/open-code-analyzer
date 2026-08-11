@@ -37,13 +37,18 @@ from ..eomt.modeling_eomt import (
 )
 
 
+# Videomt 模块化实现：复用 EoMT 组件并扩展视频 patch 嵌入与分割输出
+
 @auto_docstring(checkpoint="tue-mps/videomt-dinov2-small-ytvis2019")
 @strict
+# VideomtConfig：Videomt 主配置：LayerScale、SwiGLU FFN、分割损失权重与 Hungarian 匹配参数
 class VideomtConfig(EomtConfig):
     model_type = "videomt"
 
 
+# VideomtPatchEmbeddings：Videomt patch 嵌入：Conv2d 将每帧切为 patch 并展平为 token
 class VideomtPatchEmbeddings(EomtPatchEmbeddings):
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
         num_channels = pixel_values.shape[1]
         if num_channels != self.num_channels:
@@ -57,12 +62,15 @@ class VideomtPatchEmbeddings(EomtPatchEmbeddings):
         return embeddings
 
 
+# VideomtEmbeddings：Videomt 嵌入层：patch 嵌入 + 可学习位置编码与 class token
 class VideomtEmbeddings(EomtEmbeddings):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideomtConfig):
         super().__init__(config)
         self.patch_embeddings = VideomtPatchEmbeddings(config)
         self.mask_token = nn.Parameter(torch.zeros(1, 1, config.hidden_size))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values: torch.Tensor, bool_masked_pos: torch.Tensor | None = None) -> torch.Tensor:
         if pixel_values.ndim == 5:
             batch_size, num_frames, num_channels, height, width = pixel_values.shape
@@ -89,18 +97,22 @@ class VideomtEmbeddings(EomtEmbeddings):
         return embeddings
 
 
+# VideomtMLP：Videomt 标准 FFN：两层 Linear + GELU 激活
 class VideomtMLP(EomtMLP):
     pass
 
 
+# VideomtGatedMLP：Videomt 门控 FFN：gate/up 双线性 + 激活乘积（SwiGLU 前置）
 class VideomtGatedMLP(EomtSwiGLUFFN):
     pass
 
 
+# VideomtLayer：Videomt Transformer 层：LayerScale 自注意力 + SwiGLU/MLP 残差堆叠
 class VideomtLayer(EomtLayer):
     pass
 
 
+# VideomtLayerScale：Videomt LayerScale：可学习标量缩放残差分支输出
 class VideomtLayerScale(EomtLayerScale):
     pass
 
@@ -116,6 +128,7 @@ class VideomtLayerScale(EomtLayerScale):
     """
 )
 @dataclass
+# VideomtForUniversalSegmentationOutput：Videomt 通用分割输出：class/mask logits、辅助损失与中间特征
 class VideomtForUniversalSegmentationOutput(ModelOutput):
     r"""
     loss (`torch.Tensor`, *optional*):
@@ -144,32 +157,39 @@ class VideomtForUniversalSegmentationOutput(ModelOutput):
     attentions: tuple[torch.FloatTensor] | None = None
 
 
+# VideomtPreTrainedModel：Videomt 预训练基类：Conv/Linear 初始化与分割头权重绑定
 class VideomtPreTrainedModel(EomtPreTrainedModel):
     main_input_name = "pixel_values_videos"
     input_modalities = ("video",)
 
     @torch.no_grad()
+    # _init_weights：权重初始化：Linear/Conv 截断正态、LayerNorm 偏置置零
     def _init_weights(self, module: nn.Module) -> None:
         super()._init_weights(module)
         if isinstance(module, VideomtEmbeddings):
             nn.init.zeros_(module.mask_token)
 
 
+# VideomtLayerNorm2d：Videomt 2D LayerNorm：在通道维做 LayerNorm（ConvNeXt 风格）
 class VideomtLayerNorm2d(EomtLayerNorm2d):
     pass
 
 
+# VideomtScaleLayer：Videomt 尺度层：上采样 + Conv 调整特征图分辨率
 class VideomtScaleLayer(EomtScaleLayer):
     pass
 
 
+# VideomtScaleBlock：Videomt 尺度块：堆叠多个 ScaleLayer 构建多尺度特征
 class VideomtScaleBlock(EomtScaleBlock):
     pass
 
 
+# VideomtForUniversalSegmentation：Videomt 通用分割：视频 Transformer + 多尺度 mask 头，支持全景/实例
 class VideomtForUniversalSegmentation(EomtForUniversalSegmentation):
     main_input_name = "pixel_values_videos"
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideomtConfig):
         super().__init__(config)
         self.query_updater = nn.Linear(config.hidden_size, config.hidden_size)
@@ -177,6 +197,7 @@ class VideomtForUniversalSegmentation(EomtForUniversalSegmentation):
     def _disable_attention_mask(attn_mask, prob, num_query_tokens, encoder_start_tokens, device):
         raise AttributeError("Not needed for Videomt")
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values_videos: torch.Tensor | None = None,

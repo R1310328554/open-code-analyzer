@@ -27,9 +27,12 @@ from tokenizers.models import Unigram
 from ...tokenization_utils_tokenizers import TokenizersBackend
 
 
+# VideoPrism 分词器：Unigram 后端，T5 风格词表与 extra_id 特殊 token
+
 VOCAB_FILES_NAMES = {"vocab_file": "spiece.model", "tokenizer_file": "tokenizer.json"}
 
 
+# VideoPrismTokenizer：VideoPrism 分词器：Unigram 模型，T5 词表结构含 extra_id 占位符
 class VideoPrismTokenizer(TokenizersBackend):
     r"""
     Constructs a VideoPrism tokenizer, which is essentially a T5 tokenizer without its postprocessor
@@ -43,6 +46,7 @@ class VideoPrismTokenizer(TokenizersBackend):
     model_input_names = ["input_ids", "attention_mask"]
     model = Unigram
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         vocab: str | list[tuple[str, float]] | None = None,

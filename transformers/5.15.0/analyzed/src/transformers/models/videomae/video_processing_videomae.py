@@ -17,6 +17,9 @@ from ...image_utils import IMAGENET_STANDARD_MEAN, IMAGENET_STANDARD_STD, PILIma
 from ...video_processing_utils import BaseVideoProcessor
 
 
+# VideoMAE 视频处理器：帧采样/缩放/裁剪，输出 pixel_values 供 MAE 编码器
+
+# VideoMAEVideoProcessor：VideoMAE 视频处理器：BaseVideoProcessor 封装，pixel_values_videos 重命名为 pixel_values
 class VideoMAEVideoProcessor(BaseVideoProcessor):
     resample = PILImageResampling.BILINEAR
     image_mean = IMAGENET_STANDARD_MEAN
@@ -33,6 +36,7 @@ class VideoMAEVideoProcessor(BaseVideoProcessor):
     do_sample_frames = False  # Set to False for backward compatibility with image processor workflows.
     model_input_names = ["pixel_values"]
 
+    # preprocess：预处理入口：缩放/裁剪/归一化并返回 pixel_values 或 BatchFeature
     def preprocess(self, videos, **kwargs):
         batch = super().preprocess(videos, **kwargs)
         batch["pixel_values"] = batch.pop("pixel_values_videos")

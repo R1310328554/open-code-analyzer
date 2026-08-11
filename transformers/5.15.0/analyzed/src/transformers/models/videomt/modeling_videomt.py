@@ -40,6 +40,8 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_videomt import VideomtConfig
 
 
+# Videomt 建模：视频 patch 编码 + 匈牙利匹配 + 全景/实例通用分割头
+
 if is_scipy_available():
     from scipy.optimize import linear_sum_assignment
 
@@ -48,6 +50,7 @@ if is_accelerate_available():
     from accelerate.utils import reduce
 
 
+# VideomtPatchEmbeddings：Videomt patch 嵌入：Conv2d 将每帧切为 patch 并展平为 token
 class VideomtPatchEmbeddings(nn.Module):
     """
     This class turns `pixel_values` of shape `(batch_size, num_channels, height, width)` into the initial
@@ -55,6 +58,7 @@ class VideomtPatchEmbeddings(nn.Module):
     Transformer.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         image_size, patch_size = config.image_size, config.patch_size
@@ -70,6 +74,7 @@ class VideomtPatchEmbeddings(nn.Module):
 
         self.projection = nn.Conv2d(num_channels, hidden_size, kernel_size=patch_size, stride=patch_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
         num_channels = pixel_values.shape[1]
         if num_channels != self.num_channels:
@@ -83,11 +88,13 @@ class VideomtPatchEmbeddings(nn.Module):
         return embeddings
 
 
+# VideomtEmbeddings：Videomt 嵌入层：patch 嵌入 + 可学习位置编码与 class token
 class VideomtEmbeddings(nn.Module):
     """
     Construct the CLS token, mask token, position and patch embeddings.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideomtConfig) -> None:
         super().__init__()
 
@@ -104,6 +111,7 @@ class VideomtEmbeddings(nn.Module):
         self.position_ids = nn.Buffer(torch.arange(num_patches).expand((1, -1)), persistent=False)
         self.mask_token = nn.Parameter(torch.zeros(1, 1, config.hidden_size))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values: torch.Tensor, bool_masked_pos: torch.Tensor | None = None) -> torch.Tensor:
         if pixel_values.ndim == 5:
             batch_size, num_frames, num_channels, height, width = pixel_values.shape
@@ -130,7 +138,9 @@ class VideomtEmbeddings(nn.Module):
         return embeddings
 
 
+# VideomtMLP：Videomt 标准 FFN：两层 Linear + GELU 激活
 class VideomtMLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config) -> None:
         super().__init__()
         in_features = out_features = config.hidden_size
@@ -142,6 +152,7 @@ class VideomtMLP(nn.Module):
             self.activation = config.hidden_act
         self.fc2 = nn.Linear(hidden_features, out_features, bias=True)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state: torch.Tensor) -> torch.Tensor:
         hidden_state = self.fc1(hidden_state)
         hidden_state = self.activation(hidden_state)
@@ -149,7 +160,9 @@ class VideomtMLP(nn.Module):
         return hidden_state
 
 
+# VideomtGatedMLP：Videomt 门控 FFN：gate/up 双线性 + 激活乘积（SwiGLU 前置）
 class VideomtGatedMLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config) -> None:
         super().__init__()
         in_features = out_features = config.hidden_size
@@ -159,6 +172,7 @@ class VideomtGatedMLP(nn.Module):
         self.weights_in = nn.Linear(in_features, 2 * hidden_features, bias=True)
         self.weights_out = nn.Linear(hidden_features, out_features, bias=True)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state: torch.Tensor) -> torch.Tensor:
         hidden_state = self.weights_in(hidden_state)
         x1, x2 = hidden_state.chunk(2, dim=-1)
@@ -166,6 +180,7 @@ class VideomtGatedMLP(nn.Module):
         return self.weights_out(hidden)
 
 
+# eager_attention_forward：标准 eager 注意力：QK^T 缩放 softmax 加权 V，支持 attention_mask
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -189,9 +204,11 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# VideomtAttention：Videomt 注意力：多头自注意力，支持 eager/flash 后端
 class VideomtAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -212,6 +229,7 @@ class VideomtAttention(nn.Module):
         self.q_proj = nn.Linear(self.embed_dim, self.embed_dim)
         self.out_proj = nn.Linear(self.embed_dim, self.embed_dim)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -248,7 +266,9 @@ class VideomtAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# VideomtSwiGLUFFN：Videomt SwiGLU FFN：SiLU 门控 + up/down 线性投影
 class VideomtSwiGLUFFN(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config) -> None:
         super().__init__()
         in_features = out_features = config.hidden_size
@@ -258,6 +278,7 @@ class VideomtSwiGLUFFN(nn.Module):
         self.weights_in = nn.Linear(in_features, 2 * hidden_features, bias=True)
         self.weights_out = nn.Linear(hidden_features, out_features, bias=True)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state: torch.Tensor) -> torch.Tensor:
         hidden_state = self.weights_in(hidden_state)
         x1, x2 = hidden_state.chunk(2, dim=-1)
@@ -265,6 +286,7 @@ class VideomtSwiGLUFFN(nn.Module):
         return self.weights_out(hidden)
 
 
+# VideomtDropPath：Videomt DropPath：随机深度正则，训练时按概率丢弃残差路径
 class VideomtDropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -272,10 +294,12 @@ class VideomtDropPath(nn.Module):
     <https://arxiv.org/abs/1603.09382>`_.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, drop_prob: float = 0.0) -> None:
         super().__init__()
         self.drop_prob = drop_prob
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         if self.drop_prob == 0.0 or not self.training:
             return hidden_states
@@ -285,13 +309,16 @@ class VideomtDropPath(nn.Module):
         random_tensor = torch.floor(random_tensor + keep_prob)
         return hidden_states.div(keep_prob) * random_tensor
 
+    # extra_repr：模块_repr_：输出 weight 形状与 eps 等调试信息
     def extra_repr(self) -> str:
         return f"p={self.drop_prob}"
 
 
+# VideomtLayer：Videomt Transformer 层：LayerScale 自注意力 + SwiGLU/MLP 残差堆叠
 class VideomtLayer(GradientCheckpointingLayer):
     """This corresponds to the Block class in the original implementation."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideomtConfig) -> None:
         super().__init__()
 
@@ -308,6 +335,7 @@ class VideomtLayer(GradientCheckpointingLayer):
             self.mlp = VideomtMLP(config)
         self.layer_scale2 = VideomtLayerScale(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -331,11 +359,14 @@ class VideomtLayer(GradientCheckpointingLayer):
         return layer_output
 
 
+# VideomtLayerScale：Videomt LayerScale：可学习标量缩放残差分支输出
 class VideomtLayerScale(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config) -> None:
         super().__init__()
         self.lambda1 = nn.Parameter(config.layerscale_value * torch.ones(config.hidden_size))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state: torch.Tensor) -> torch.Tensor:
         return hidden_state * self.lambda1
 
@@ -351,6 +382,7 @@ class VideomtLayerScale(nn.Module):
     """
 )
 @dataclass
+# VideomtForUniversalSegmentationOutput：Videomt 通用分割输出：class/mask logits、辅助损失与中间特征
 class VideomtForUniversalSegmentationOutput(ModelOutput):
     r"""
     loss (`torch.Tensor`, *optional*):
@@ -380,6 +412,7 @@ class VideomtForUniversalSegmentationOutput(ModelOutput):
 
 
 # Adapted from https://github.com/facebookresearch/detectron2/blob/main/projects/PointRend/point_rend/point_features.py
+# sample_point：随机点采样：训练时在 mask 上采样固定数量坐标用于损失计算
 def sample_point(
     input_features: torch.Tensor, point_coordinates: torch.Tensor, add_dim=False, **kwargs
 ) -> torch.Tensor:
@@ -412,6 +445,7 @@ def sample_point(
     return point_features
 
 
+# pair_wise_dice_loss：成对 Dice 损失：预测 mask 与 GT mask 的逐对 Dice 系数
 def pair_wise_dice_loss(inputs: Tensor, labels: Tensor) -> Tensor:
     """
     A pair wise version of the dice loss, see `dice_loss` for usage.
@@ -434,6 +468,7 @@ def pair_wise_dice_loss(inputs: Tensor, labels: Tensor) -> Tensor:
     return loss
 
 
+# pair_wise_sigmoid_cross_entropy_loss：成对 sigmoid CE 损失：预测 mask 与 GT 的逐对 BCE
 def pair_wise_sigmoid_cross_entropy_loss(inputs: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
     r"""
     A pair wise version of the cross entropy loss, see `sigmoid_cross_entropy_loss` for usage.
@@ -462,6 +497,7 @@ def pair_wise_sigmoid_cross_entropy_loss(inputs: torch.Tensor, labels: torch.Ten
 
 
 # Adapted from https://github.com/facebookresearch/Videomt/blob/main/videomt/modeling/matcher.py
+# VideomtHungarianMatcher：Videomt 匈牙利匹配器：预测 query 与 GT 实例二分图最优匹配
 class VideomtHungarianMatcher(nn.Module):
     """This class computes an assignment between the labels and the predictions of the network.
 
@@ -470,6 +506,7 @@ class VideomtHungarianMatcher(nn.Module):
     un-matched (and thus treated as non-objects).
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self, cost_class: float = 1.0, cost_mask: float = 1.0, cost_dice: float = 1.0, num_points: int = 12544
     ):
@@ -497,6 +534,7 @@ class VideomtHungarianMatcher(nn.Module):
         self.cost_dice = cost_dice
 
     @torch.no_grad()
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         masks_queries_logits: torch.Tensor,
@@ -568,6 +606,7 @@ class VideomtHungarianMatcher(nn.Module):
         return matched_indices
 
 
+# dice_loss：Dice 损失：匈牙利匹配后的 mask Dice，按 num_masks 归一化
 def dice_loss(inputs: Tensor, labels: Tensor, num_masks: int) -> Tensor:
     r"""
     Compute the DICE loss, similar to generalized IOU for masks as follows:
@@ -598,6 +637,7 @@ def dice_loss(inputs: Tensor, labels: Tensor, num_masks: int) -> Tensor:
     return loss
 
 
+# sigmoid_cross_entropy_loss：Sigmoid CE 损失：匹配后 mask 的 BCE，按 num_masks 归一化
 def sigmoid_cross_entropy_loss(inputs: torch.Tensor, labels: torch.Tensor, num_masks: int) -> torch.Tensor:
     r"""
     Args:
@@ -618,7 +658,9 @@ def sigmoid_cross_entropy_loss(inputs: torch.Tensor, labels: torch.Tensor, num_m
 
 
 # Adapted from https://github.com/facebookresearch/Videomt/blob/main/videomt/modeling/criterion.py
+# VideomtLoss：Videomt 分割损失：分类 CE + Dice + sigmoid CE，含 no-object 权重
 class VideomtLoss(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideomtConfig, weight_dict: dict[str, float]):
         """
         The Videomt Loss. The loss is computed very similar to DETR. The process happens in two steps: 1) we
@@ -859,6 +901,7 @@ class VideomtLoss(nn.Module):
             )
         return point_coordinates
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         masks_queries_logits: torch.Tensor,
@@ -931,6 +974,7 @@ class VideomtLoss(nn.Module):
 
 
 @auto_docstring
+# VideomtPreTrainedModel：Videomt 预训练基类：Conv/Linear 初始化与分割头权重绑定
 class VideomtPreTrainedModel(PreTrainedModel):
     """
     An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
@@ -950,6 +994,7 @@ class VideomtPreTrainedModel(PreTrainedModel):
     }
 
     @torch.no_grad()
+    # _init_weights：权重初始化：Linear/Conv 截断正态、LayerNorm 偏置置零
     def _init_weights(self, module: nn.Module) -> None:
         super()._init_weights(module)
         std = self.config.initializer_range
@@ -981,10 +1026,13 @@ class VideomtPreTrainedModel(PreTrainedModel):
             nn.init.zeros_(module.mask_token)
 
 
+# VideomtLayerNorm2d：Videomt 2D LayerNorm：在通道维做 LayerNorm（ConvNeXt 风格）
 class VideomtLayerNorm2d(nn.LayerNorm):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, num_channels, eps=1e-6, affine=True):
         super().__init__(num_channels, eps=eps, elementwise_affine=affine)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state: torch.Tensor) -> torch.Tensor:
         hidden_state = hidden_state.permute(0, 2, 3, 1)
         hidden_state = F.layer_norm(hidden_state, self.normalized_shape, self.weight, self.bias, self.eps)
@@ -992,7 +1040,9 @@ class VideomtLayerNorm2d(nn.LayerNorm):
         return hidden_state
 
 
+# VideomtScaleLayer：Videomt 尺度层：上采样 + Conv 调整特征图分辨率
 class VideomtScaleLayer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideomtConfig):
         super().__init__()
         hidden_size = config.hidden_size
@@ -1009,6 +1059,7 @@ class VideomtScaleLayer(nn.Module):
 
         self.layernorm2d = VideomtLayerNorm2d(hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.conv1(hidden_states)
         hidden_states = self.activation(hidden_states)
@@ -1017,19 +1068,24 @@ class VideomtScaleLayer(nn.Module):
         return hidden_states
 
 
+# VideomtScaleBlock：Videomt 尺度块：堆叠多个 ScaleLayer 构建多尺度特征
 class VideomtScaleBlock(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideomtConfig):
         super().__init__()
         self.num_blocks = config.num_upscale_blocks
         self.block = nn.ModuleList([VideomtScaleLayer(config) for _ in range(self.num_blocks)])
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         for block in self.block:
             hidden_states = block(hidden_states)
         return hidden_states
 
 
+# VideomtMaskHead：Videomt 掩码头：query 特征与上采样特征做点积生成 mask logits
 class VideomtMaskHead(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideomtConfig):
         super().__init__()
 
@@ -1039,6 +1095,7 @@ class VideomtMaskHead(nn.Module):
         self.fc3 = nn.Linear(hidden_size, hidden_size)
         self.activation = ACT2FN[config.hidden_act]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.activation(self.fc1(hidden_states))
         hidden_states = self.activation(self.fc2(hidden_states))
@@ -1051,9 +1108,11 @@ class VideomtMaskHead(nn.Module):
     The Videomt Model with head on top for instance/semantic/panoptic segmentation.
     """
 )
+# VideomtForUniversalSegmentation：Videomt 通用分割：视频 Transformer + 多尺度 mask 头，支持全景/实例
 class VideomtForUniversalSegmentation(VideomtPreTrainedModel):
     main_input_name = "pixel_values_videos"
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideomtConfig):
         super().__init__(config)
         self.config = config
@@ -1113,6 +1172,7 @@ class VideomtForUniversalSegmentation(VideomtPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values_videos: torch.Tensor | None = None,
@@ -1194,6 +1254,7 @@ class VideomtForUniversalSegmentation(VideomtPreTrainedModel):
             last_hidden_state=torch.cat(all_last_hidden_states, dim=0),
         )
 
+    # get_input_embeddings：获取输入嵌入：返回 token embedding 层
     def get_input_embeddings(self):
         return self.embeddings.patch_embeddings
 

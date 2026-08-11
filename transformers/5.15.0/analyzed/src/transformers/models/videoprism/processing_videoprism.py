@@ -23,6 +23,9 @@ from ...processing_utils import ProcessingKwargs, ProcessorMixin
 from ...utils import auto_docstring
 
 
+# VideoPrism 处理器：视频预处理 + T5 分词，默认 64 token 与 288 帧尺寸
+
+# VideoPrismProcessorKwargs：VideoPrism 处理器参数：文本 max_length=64、视频 288 尺寸与帧采样
 class VideoPrismProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -39,9 +42,11 @@ class VideoPrismProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# VideoPrismProcessor：VideoPrism 多模态处理器：video_processor + tokenizer 联合调用
 class VideoPrismProcessor(ProcessorMixin):
     valid_processor_kwargs = VideoPrismProcessorKwargs
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, video_processor=None, tokenizer=None):
         super().__init__(video_processor, tokenizer)
 

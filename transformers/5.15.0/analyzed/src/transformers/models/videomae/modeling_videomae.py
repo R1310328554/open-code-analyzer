@@ -35,6 +35,8 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_videomae import VideoMAEConfig
 
 
+# VideoMAE 建模：掩码自编码预训练、像素重建解码器与视频分类下游头
+
 logger = logging.get_logger(__name__)
 
 
@@ -44,6 +46,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# VideoMAEDecoderOutput：VideoMAE 解码器输出：像素重建 logits 与可选 hidden_states/attentions
 class VideoMAEDecoderOutput(ModelOutput):
     r"""
     logits (`torch.FloatTensor` of shape `(batch_size, patch_size ** 2 * num_channels)`):
@@ -61,6 +64,7 @@ class VideoMAEDecoderOutput(ModelOutput):
     """
 )
 @dataclass
+# VideoMAEForPreTrainingOutput：VideoMAE 预训练输出：重建 loss、logits 与中间层状态
 class VideoMAEForPreTrainingOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`):
@@ -77,6 +81,7 @@ class VideoMAEForPreTrainingOutput(ModelOutput):
 
 # sin-cos position encoding
 # https://github.com/jadore801120/attention-is-all-you-need-pytorch/blob/master/transformer/Models.py#L31
+# get_sinusoid_encoding_table：生成 sin-cos 固定位置编码表：numpy 计算后转为 torch Tensor
 def get_sinusoid_encoding_table(n_position, d_hid):
     """Sinusoid position encoding table"""
 
@@ -91,12 +96,14 @@ def get_sinusoid_encoding_table(n_position, d_hid):
     return torch.FloatTensor(sinusoid_table).unsqueeze(0)
 
 
+# VideoMAEEmbeddings：VideoMAE 嵌入层：patch 嵌入 + 固定 sin-cos 位置编码，保留可见 patch
 class VideoMAEEmbeddings(nn.Module):
     """
     Construct the patch and position embeddings.
 
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
 
@@ -106,6 +113,7 @@ class VideoMAEEmbeddings(nn.Module):
         self.position_embeddings = get_sinusoid_encoding_table(self.num_patches, config.hidden_size)
         self.config = config
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values, bool_masked_pos):
         # create patch embeddings
         embeddings = self.patch_embeddings(pixel_values)
@@ -124,6 +132,7 @@ class VideoMAEEmbeddings(nn.Module):
         return embeddings
 
 
+# VideoMAEPatchEmbeddings：VideoMAE patch 嵌入：Conv3d 将时空体素切为 patch token 序列
 class VideoMAEPatchEmbeddings(nn.Module):
     """
     Video to Patch Embedding. This module turns a batch of videos of shape (batch_size, num_frames, num_channels,
@@ -134,6 +143,7 @@ class VideoMAEPatchEmbeddings(nn.Module):
 
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
 
@@ -161,6 +171,7 @@ class VideoMAEPatchEmbeddings(nn.Module):
             stride=(self.tubelet_size, patch_size[0], patch_size[1]),
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values):
         batch_size, num_frames, num_channels, height, width = pixel_values.shape
         if num_channels != self.num_channels:
@@ -178,6 +189,7 @@ class VideoMAEPatchEmbeddings(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.eager_attention_forward
+# eager_attention_forward：标准 eager 注意力：QK^T 缩放 softmax 加权 V，支持 attention_mask
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -206,7 +218,9 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# VideoMAESelfAttention：VideoMAE 自注意力：多头缩放点积注意力，支持 eager/SDPA 后端
 class VideoMAESelfAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoMAEConfig) -> None:
         super().__init__()
         if config.hidden_size % config.num_attention_heads != 0 and not hasattr(config, "embedding_size"):
@@ -226,6 +240,7 @@ class VideoMAESelfAttention(nn.Module):
         self.key = nn.Linear(config.hidden_size, self.all_head_size, bias=config.qkv_bias)
         self.value = nn.Linear(config.hidden_size, self.all_head_size, bias=config.qkv_bias)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self, hidden_states: torch.Tensor | None = None
     ) -> tuple[torch.Tensor, torch.Tensor]:  # TODO: siglip attention 1-1
@@ -258,17 +273,20 @@ class VideoMAESelfAttention(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTAttention with ViT->VideoMAE
+# VideoMAESelfOutput：VideoMAE 注意力输出投影：Linear + Dropout 残差前处理
 class VideoMAESelfOutput(nn.Module):
     """
     The residual connection is defined in VideoMAELayer instead of here (as is the case with other models), due to the
     layernorm applied before each block.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoMAEConfig):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
@@ -276,12 +294,15 @@ class VideoMAESelfOutput(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTAttention with ViT->VideoMAE
+# VideoMAEAttention：VideoMAE 注意力模块：SelfAttention + SelfOutput 组合
 class VideoMAEAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoMAEConfig):
         super().__init__()
         self.attention = VideoMAESelfAttention(config)
         self.output = VideoMAESelfOutput(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -293,7 +314,9 @@ class VideoMAEAttention(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTMLP ViT->VideoMAE
+# VideoMAEIntermediate：VideoMAE FFN 中间层：Linear 扩展 hidden 维并激活
 class VideoMAEIntermediate(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoMAEConfig):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.intermediate_size)
@@ -302,6 +325,7 @@ class VideoMAEIntermediate(nn.Module):
         else:
             self.intermediate_act_fn = config.hidden_act
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.intermediate_act_fn(hidden_states)
@@ -309,12 +333,15 @@ class VideoMAEIntermediate(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTMLP ViT->VideoMAE
+# VideoMAEOutput：VideoMAE FFN 输出层：Linear 投影回 hidden_size + Dropout
 class VideoMAEOutput(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoMAEConfig):
         super().__init__()
         self.dense = nn.Linear(config.intermediate_size, config.hidden_size)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
@@ -323,9 +350,11 @@ class VideoMAEOutput(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTLayer with ViT->VideoMAE,VIT->VIDEOMAE
+# VideoMAELayer：VideoMAE Transformer 层：自注意力 + FFN 双残差，支持梯度检查点
 class VideoMAELayer(GradientCheckpointingLayer):
     """This corresponds to the Block class in the timm implementation."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoMAEConfig):
         super().__init__()
         self.chunk_size_feed_forward = config.chunk_size_feed_forward
@@ -336,6 +365,7 @@ class VideoMAELayer(GradientCheckpointingLayer):
         self.layernorm_before = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.layernorm_after = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -358,13 +388,16 @@ class VideoMAELayer(GradientCheckpointingLayer):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTEncoder with ViT->VideoMAE
+# VideoMAEEncoder：VideoMAE 编码器：堆叠 VideoMAELayer，处理可见 patch token
 class VideoMAEEncoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoMAEConfig):
         super().__init__()
         self.config = config
         self.layer = nn.ModuleList([VideoMAELayer(config) for _ in range(config.num_hidden_layers)])
         self.gradient_checkpointing = False
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -377,6 +410,7 @@ class VideoMAEEncoder(nn.Module):
 
 
 @auto_docstring
+# VideoMAEPreTrainedModel：VideoMAE 预训练基类：权重初始化、注意力实现选择与模块绑定
 class VideoMAEPreTrainedModel(PreTrainedModel):
     config: VideoMAEConfig
     base_model_prefix = "videomae"
@@ -395,7 +429,9 @@ class VideoMAEPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# VideoMAEModel：VideoMAE 基模型：patch 嵌入 + 编码器，输出序列隐状态
 class VideoMAEModel(VideoMAEPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.config = config
@@ -411,12 +447,14 @@ class VideoMAEModel(VideoMAEPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # get_input_embeddings：获取输入嵌入：返回 token embedding 层
     def get_input_embeddings(self):
         return self.embeddings.patch_embeddings
 
     @merge_with_config_defaults
     @capture_outputs(tie_last_hidden_states=False)
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -466,7 +504,9 @@ class VideoMAEModel(VideoMAEPreTrainedModel):
         return BaseModelOutput(last_hidden_state=sequence_output)
 
 
+# VideoMAEDecoder：VideoMAE 解码器：掩码 token 嵌入 + 轻量 Transformer 重建像素
 class VideoMAEDecoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoMAEConfig):
         super().__init__()
 
@@ -489,6 +529,7 @@ class VideoMAEDecoder(nn.Module):
         self.gradient_checkpointing = False
         self.config = decoder_config
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, return_token_num: int):
         # Apply transformer layers
         for layer_module in self.decoder_layers:
@@ -508,7 +549,9 @@ class VideoMAEDecoder(nn.Module):
     The VideoMAE Model transformer with the decoder on top for self-supervised pre-training.
     """
 )
+# VideoMAEForPreTraining：VideoMAE 掩码预训练：随机掩码 patch + MSE 像素重建损失
 class VideoMAEForPreTraining(VideoMAEPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.config = config
@@ -528,6 +571,7 @@ class VideoMAEForPreTraining(VideoMAEPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -677,7 +721,9 @@ class VideoMAEForPreTraining(VideoMAEPreTrainedModel):
     states of all tokens) e.g. for ImageNet.
     """
 )
+# VideoMAEForVideoClassification：VideoMAE 视频分类：mean pool + Linear 分类头
 class VideoMAEForVideoClassification(VideoMAEPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -693,6 +739,7 @@ class VideoMAEForVideoClassification(VideoMAEPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.Tensor | None = None,

@@ -45,6 +45,8 @@ from ..vivit.modeling_vivit import (
 )
 
 
+# VideoPrism 模块化实现：复用 Vivit/Siglip/T5 组件供 modeling 代码生成
+
 logger = logging.get_logger(__name__)
 
 _R_SOFTPLUS_0 = 1.442695041
@@ -52,6 +54,7 @@ _R_SOFTPLUS_0 = 1.442695041
 
 @auto_docstring(checkpoint="google/videoprism-base-f16r288")
 @strict
+# VideoPrismVisionConfig：VideoPrism 视觉配置：tubelet 尺寸、时空层数与 attention logit softcapping
 class VideoPrismVisionConfig(VivitConfig):
     r"""
     num_frames (`int`, *optional*, defaults to 16):
@@ -85,12 +88,14 @@ class VideoPrismVisionConfig(VivitConfig):
     pooler_act = AttributeError()
     pooler_output_size = AttributeError()
 
+    # __post_init__：后初始化：解析子配置 dict 并实例化 vision/text 配置对象
     def __post_init__(self, **kwargs):
         raise AttributeError("Not used here")
 
 
 @auto_docstring(checkpoint="google/videoprism-lvt-base-f16r288")
 @strict
+# VideoPrismTextConfig：VideoPrism 文本配置：T5 风格 hidden/层数与 attention 头数
 class VideoPrismTextConfig(SiglipTextConfig):
     r"""
     apply_l2norm (`bool`, *optional*, defaults to `True`):
@@ -112,12 +117,14 @@ class VideoPrismTextConfig(SiglipTextConfig):
     attention_dropout = AttributeError()
     projection_size = AttributeError()
 
+    # __post_init__：后初始化：解析子配置 dict 并实例化 vision/text 配置对象
     def __post_init__(self, **kwargs):
         raise AttributeError("Not used here")
 
 
 @auto_docstring(checkpoint="google/videoprism-lvt-base-f16r288")
 @strict
+# VideoPrismConfig：VideoPrism 多模态配置：vision_config + text_config 与投影维度
 class VideoPrismConfig(SiglipConfig):
     r"""
     Example:
@@ -139,6 +146,7 @@ class VideoPrismConfig(SiglipConfig):
     initializer_factor = AttributeError()
 
 
+# VideoPrismTokenizer：VideoPrism 分词器：Unigram 模型，T5 词表结构含 extra_id 占位符
 class VideoPrismTokenizer(T5Tokenizer):
     r"""
     Constructs a VideoPrism tokenizer, which is essentially a T5 tokenizer without its postprocessor
@@ -148,6 +156,7 @@ class VideoPrismTokenizer(T5Tokenizer):
     superclass for more information regarding those methods.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         vocab: str | list[tuple[str, float]] | None = None,
@@ -173,6 +182,7 @@ class VideoPrismTokenizer(T5Tokenizer):
         del self._tokenizer.post_processor
 
 
+# VideoPrismProcessorKwargs：VideoPrism 处理器参数：文本 max_length=64、视频 288 尺寸与帧采样
 class VideoPrismProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -189,15 +199,18 @@ class VideoPrismProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# VideoPrismProcessor：VideoPrism 多模态处理器：video_processor + tokenizer 联合调用
 class VideoPrismProcessor(ProcessorMixin):
     valid_processor_kwargs = VideoPrismProcessorKwargs
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, video_processor=None, tokenizer=None):
         super().__init__(video_processor, tokenizer)
 
 
 @auto_docstring(custom_intro="""Base class for model outputs that include spatial and temporal states.""")
 @dataclass
+# BaseModelOutputWithSpatialAndTemporalStates：VideoPrism 输出：last_hidden_state 与空间/时间中间状态
 class BaseModelOutputWithSpatialAndTemporalStates(BaseModelOutput):
     r"""
     last_temporal_hidden_state (`torch.FloatTensor`, *optional*):
@@ -216,6 +229,7 @@ class BaseModelOutputWithSpatialAndTemporalStates(BaseModelOutput):
     custom_intro="""Base class for VideoPrismClipModel outputs.""",
 )
 @dataclass
+# VideoPrismClipOutput：VideoPrism CLIP 输出：对比 loss、logits 与图文嵌入
 class VideoPrismClipOutput(ModelOutput):
     r"""
     logits_per_video (`torch.FloatTensor` of shape `(video_batch_size, text_batch_size)`):
@@ -251,6 +265,7 @@ class VideoPrismClipOutput(ModelOutput):
         )
 
 
+# VideoPrismTubeletEmbeddings：VideoPrism tubelet 嵌入：3D Conv 将时空 patch 映射为 token
 class VideoPrismTubeletEmbeddings(VivitTubeletEmbeddings):
     """
     VideoPrism Tubelet Embeddings.
@@ -260,12 +275,14 @@ class VideoPrismTubeletEmbeddings(VivitTubeletEmbeddings):
     The temporal dimension is also merged with the `batch_size` in order to make sure the image embeddings have no temporal component, unlike Vivit.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoPrismVisionConfig):
         super().__init__(config)
         del self.num_patches
         self.pos_emb_shape = [self.image_size[0] // tubelet_size[1], self.image_size[1] // tubelet_size[2]]  # noqa: F821
         self.num_patches = self.pos_emb_shape[0] * self.pos_emb_shape[1]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values_videos: torch.Tensor, interpolate_pos_encoding: bool = False) -> torch.Tensor:
         batch_size, num_frames, num_channels, height, width = pixel_values_videos.shape
         if not interpolate_pos_encoding and (height != self.image_size[0] or width != self.image_size[1]):
@@ -284,7 +301,9 @@ class VideoPrismTubeletEmbeddings(VivitTubeletEmbeddings):
         return hidden_states
 
 
+# VideoPrismSpatialEmbeddings：VideoPrism 空间嵌入：空间 Transformer 编码每帧 patch 序列
 class VideoPrismSpatialEmbeddings(VivitEmbeddings):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoPrismVisionConfig):
         super().__init__(config)
         del self.cls_token
@@ -329,6 +348,7 @@ class VideoPrismSpatialEmbeddings(VivitEmbeddings):
         patch_pos_embed = patch_pos_embed.permute(0, 2, 3, 1).view(1, -1, dim)
         return patch_pos_embed
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values_videos: torch.Tensor,
@@ -348,6 +368,7 @@ class VideoPrismSpatialEmbeddings(VivitEmbeddings):
         return embeddings
 
 
+# VideoPrismTemporalEmbeddings：VideoPrism 时间嵌入：时间 Transformer 跨帧聚合 tubelet 特征
 class VideoPrismTemporalEmbeddings(VivitEmbeddings):
     """
     VideoPrism Temporal Embeddings.
@@ -356,6 +377,7 @@ class VideoPrismTemporalEmbeddings(VivitEmbeddings):
     (batch_size * num_patches, num_frames, hidden_size) and adds positional embeddings.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoPrismVisionConfig):
         super().__init__(config)
         del self.cls_token
@@ -385,6 +407,7 @@ class VideoPrismTemporalEmbeddings(VivitEmbeddings):
 
         return source_emb.squeeze(1)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values_videos: torch.Tensor,
@@ -407,7 +430,9 @@ class VideoPrismTemporalEmbeddings(VivitEmbeddings):
         return embeddings
 
 
+# VideoPrismTextEmbeddings：VideoPrism 文本嵌入：token Embedding + 位置编码
 class VideoPrismTextEmbeddings(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoPrismTextConfig):
         super().__init__()
         self.config = config
@@ -420,6 +445,7 @@ class VideoPrismTextEmbeddings(nn.Module):
         self.cls_emb = nn.Parameter(torch.zeros(1, 1, config.hidden_size))
         self.scaling = config.hidden_size**0.5
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -442,13 +468,16 @@ class VideoPrismTextEmbeddings(nn.Module):
         return embeddings
 
 
+# VideoPrismAttention：VideoPrism 注意力：多头自注意力，支持 logit softcapping
 class VideoPrismAttention(VivitAttention):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoPrismVisionConfig | VideoPrismTextConfig):
         super().__init__(config)
         del self.num_attention_heads
         self.num_key_value_groups = 1.0
         self.attn_logit_softcapping = config.attn_logit_softcapping
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -483,7 +512,9 @@ class VideoPrismAttention(VivitAttention):
         return attn_output, attn_weights
 
 
+# VideoPrismLayerNorm：VideoPrism LayerNorm：标准 LayerNorm（含 bias）
 class VideoPrismLayerNorm(nn.LayerNorm):
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         # a custom layernorm formula with gamma -> gamma + 1 is used in this model. ``+ 1.0`` (not
         # ``+ 1``) keeps the constant as a float scalar — Python-int addition routes through a
@@ -491,7 +522,9 @@ class VideoPrismLayerNorm(nn.LayerNorm):
         return F.layer_norm(hidden_states, self.normalized_shape, self.weight + 1.0, self.bias, self.eps)
 
 
+# VideoPrismLayer：VideoPrism Transformer 层：自注意力 + FFN 双残差
 class VideoPrismLayer(VivitLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoPrismVisionConfig | VideoPrismTextConfig):
         super().__init__(config)
         self.attention = VideoPrismAttention(config)
@@ -500,6 +533,7 @@ class VideoPrismLayer(VivitLayer):
 
 
 @auto_docstring
+# VideoPrismPreTrainedModel：VideoPrism 预训练基类：权重初始化、对比学习温度与模块绑定
 class VideoPrismPreTrainedModel(VivitPreTrainedModel):
     config: VideoPrismConfig
     base_model_prefix = "model"
@@ -518,6 +552,7 @@ class VideoPrismPreTrainedModel(VivitPreTrainedModel):
     _input_embed_layer = AttributeError()
 
     @torch.no_grad()
+    # _init_weights：权重初始化：Linear/Conv 截断正态、LayerNorm 偏置置零
     def _init_weights(self, module):
         PreTrainedModel._init_weights(self, module)
         if isinstance(module, (nn.Linear, nn.Conv3d)):
@@ -553,11 +588,13 @@ class VideoPrismPreTrainedModel(VivitPreTrainedModel):
     The bare VideoPrism vision encoder outputting raw hidden-states without any specific head on top. This model is the backbone encoder used in VideoPrismVideoModel.
     """
 )
+# VideoPrismVisionModel：VideoPrism 视觉塔：tubelet → 空间 → 时间编码栈
 class VideoPrismVisionModel(VideoPrismPreTrainedModel):
     config: VideoPrismVisionConfig
     input_modalities = ("video",)
     base_model_prefix = "model"
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoPrismVisionConfig):
         super().__init__(config)
         self.layernorm1 = VideoPrismLayerNorm(config.hidden_size, eps=config.layer_norm_eps)
@@ -568,15 +605,18 @@ class VideoPrismVisionModel(VideoPrismPreTrainedModel):
         self.temporal_layers = nn.ModuleList([VideoPrismLayer(config) for _ in range(config.num_temporal_layers)])
         self.post_init()
 
+    # get_input_embeddings：获取输入嵌入：返回 token embedding 层
     def get_input_embeddings(self) -> nn.Module:
         return self.spatial_embeddings.patch_embeddings
 
+    # set_input_embeddings：设置输入嵌入：替换 embedding 权重
     def set_input_embeddings(self, value: nn.Module):
         self.spatial_embeddings.patch_embeddings = value
 
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values_videos: torch.FloatTensor | None = None,
@@ -615,7 +655,9 @@ class VideoPrismVisionModel(VideoPrismPreTrainedModel):
         )
 
 
+# VideoPrismMultiheadAttentionPoolingHead：VideoPrism 池化头：多头注意力聚合 token 为全局向量
 class VideoPrismMultiheadAttentionPoolingHead(VivitAttention):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoPrismVisionConfig):
         super().__init__(config)
         del self.num_attention_heads
@@ -625,6 +667,7 @@ class VideoPrismMultiheadAttentionPoolingHead(VivitAttention):
         self.scaling = _R_SOFTPLUS_0 / (self.head_dim**0.5)
         self.pooling_attention_query = nn.Parameter(torch.zeros(1, 1, config.hidden_size))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.FloatTensor,
@@ -667,6 +710,7 @@ class VideoPrismMultiheadAttentionPoolingHead(VivitAttention):
     The bare VideoPrism text encoder outputting last hidden states without any specific head on top. This model is used in VideoPrismClipModel.
     """
 )
+# VideoPrismTextModel：VideoPrism 文本塔：T5 风格 Transformer 编码文本序列
 class VideoPrismTextModel(VideoPrismPreTrainedModel):
     config: VideoPrismTextConfig
     input_modalities = ("text",)
@@ -675,6 +719,7 @@ class VideoPrismTextModel(VideoPrismPreTrainedModel):
     _no_split_modules = ["VideoPrismTextEmbeddings", "VideoPrismLayer"]
     _input_embed_layer = "token_embedding"
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoPrismTextConfig):
         super().__init__(config)
         self.embeddings = VideoPrismTextEmbeddings(config)
@@ -685,6 +730,7 @@ class VideoPrismTextModel(VideoPrismPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -726,9 +772,11 @@ class VideoPrismTextModel(VideoPrismPreTrainedModel):
     VideoPrism video model consisting of the vision encoder backbone with auxiliary encoder layers and an attention pooling head on top. This model is used in VideoPrismClipModel.
     """
 )
+# VideoPrismVideoModel：VideoPrism 视频塔：VisionModel + 辅助层 + 可选 L2 归一化
 class VideoPrismVideoModel(VideoPrismPreTrainedModel):
     config: VideoPrismVisionConfig
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoPrismVisionConfig):
         super().__init__(config)
         self.vision_model = VideoPrismVisionModel._from_config(config)
@@ -737,14 +785,17 @@ class VideoPrismVideoModel(VideoPrismPreTrainedModel):
         self.head_layernorm = VideoPrismLayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.post_init()
 
+    # get_input_embeddings：获取输入嵌入：返回 token embedding 层
     def get_input_embeddings(self) -> nn.Module:
         return self.vision_model.get_input_embeddings()
 
+    # set_input_embeddings：设置输入嵌入：替换 embedding 权重
     def set_input_embeddings(self, value: nn.Module):
         self.vision_model.set_input_embeddings(value)
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values_videos: torch.FloatTensor,
@@ -776,16 +827,20 @@ class VideoPrismVideoModel(VideoPrismPreTrainedModel):
     VideoPrism model for video-text contrastive learning. This model consists of a VideoPrismVideoModel and a VideoPrismTextModel, and computes similarity scores between video and text inputs.
     """
 )
+# VideoPrismClipModel：VideoPrism CLIP：双塔对比学习，图文嵌入点积相似度
 class VideoPrismClipModel(VideoPrismPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoPrismConfig):
         super().__init__(config)
         self.video_model = VideoPrismVideoModel._from_config(config.vision_config)
         self.text_model = VideoPrismTextModel._from_config(config.text_config)
         self.post_init()
 
+    # get_input_embeddings：获取输入嵌入：返回 token embedding 层
     def get_input_embeddings(self) -> nn.Module:
         return self.text_model.get_input_embeddings()
 
+    # set_input_embeddings：设置输入嵌入：替换 embedding 权重
     def set_input_embeddings(self, value: nn.Module):
         self.text_model.set_input_embeddings(value)
 
@@ -841,6 +896,7 @@ class VideoPrismClipModel(VideoPrismPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values_videos: torch.FloatTensor,
@@ -906,11 +962,13 @@ class VideoPrismClipModel(VideoPrismPreTrainedModel):
     VideoPrism Model transformer with a video classification head on top (a linear layer on top of the attention pooler).
     """
 )
+# VideoPrismForVideoClassification：VideoPrism 视频分类：VideoModel + Linear 分类头
 class VideoPrismForVideoClassification(VideoPrismPreTrainedModel):
     config: VideoPrismVisionConfig
     input_modalities = ("video",)
     base_model_prefix = "model"
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoPrismVisionConfig):
         super().__init__(config)
         self.vision_model = VideoPrismVisionModel._from_config(config)
@@ -919,14 +977,17 @@ class VideoPrismForVideoClassification(VideoPrismPreTrainedModel):
         self.classifier = nn.Linear(config.hidden_size, config.num_labels)
         self.post_init()
 
+    # get_input_embeddings：获取输入嵌入：返回 token embedding 层
     def get_input_embeddings(self) -> nn.Module:
         return self.vision_model.get_input_embeddings()
 
+    # set_input_embeddings：设置输入嵌入：替换 embedding 权重
     def set_input_embeddings(self, value: nn.Module):
         self.vision_model.set_input_embeddings(value)
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values_videos: torch.FloatTensor,

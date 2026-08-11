@@ -24,8 +24,11 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# Videomt 配置：EoMT 风格 Transformer、LayerScale/SwiGLU 与分割损失权重
+
 @auto_docstring(checkpoint="tue-mps/videomt-dinov2-small-ytvis2019")
 @strict
+# VideomtConfig：Videomt 主配置：LayerScale、SwiGLU FFN、分割损失权重与 Hungarian 匹配参数
 class VideomtConfig(PreTrainedConfig):
     r"""
     layerscale_value (`float`, *optional*, defaults to 1.0):
