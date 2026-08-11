@@ -39,8 +39,11 @@ from ...utils.generic import can_return_tuple, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
 from ..auto import AutoModel
 from .configuration_qianfan_ocr import QianfanOCRConfig, QianfanOCRVisionConfig
+# 千帆 OCR 建模：ViT 视觉编码、多模态投影与条件文本生成
 
 
+
+# QianfanOCRDropPath：视觉塔随机深度：Stochastic Depth 正则化
 class QianfanOCRDropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -48,10 +51,12 @@ class QianfanOCRDropPath(nn.Module):
     <https://arxiv.org/abs/1603.09382>`_.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, drop_prob: float = 0.0) -> None:
         super().__init__()
         self.drop_prob = drop_prob
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         if self.drop_prob == 0.0 or not self.training:
             return hidden_states
@@ -66,7 +71,9 @@ class QianfanOCRDropPath(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# QianfanOCRVisionRMSNorm：视觉 RMSNorm：Root Mean Square 层归一化
 class QianfanOCRVisionRMSNorm(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
         QianfanOCRVisionRMSNorm is equivalent to T5LayerNorm
@@ -75,6 +82,7 @@ class QianfanOCRVisionRMSNorm(nn.Module):
         self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         input_dtype = hidden_states.dtype
         hidden_states = hidden_states.to(torch.float32)
@@ -86,6 +94,7 @@ class QianfanOCRVisionRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# eager_attention_forward：标准注意力前向：QK^T 缩放 softmax 加权 V
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -112,9 +121,11 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# QianfanOCRVisionAttention：视觉自注意力：多头缩放点积与 QK 归一化
 class QianfanOCRVisionAttention(nn.Module):
     """Attention Class for QianfanOCR Vision Encoder"""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: QianfanOCRVisionConfig):
         super().__init__()
         self.config = config
@@ -143,6 +154,7 @@ class QianfanOCRVisionAttention(nn.Module):
         self.q_norm = QianfanOCRVisionRMSNorm(self.embed_dim) if qk_norm else nn.Identity()
         self.k_norm = QianfanOCRVisionRMSNorm(self.embed_dim) if qk_norm else nn.Identity()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -185,7 +197,9 @@ class QianfanOCRVisionAttention(nn.Module):
         return output, attn_weights
 
 
+# QianfanOCRVisionMLP：视觉 MLP：SwiGLU 风格前馈网络
 class QianfanOCRVisionMLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -193,6 +207,7 @@ class QianfanOCRVisionMLP(nn.Module):
         self.fc1 = nn.Linear(config.hidden_size, config.intermediate_size)
         self.fc2 = nn.Linear(config.intermediate_size, config.hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.fc1(hidden_states)
         hidden_states = self.activation_fn(hidden_states)
@@ -203,9 +218,11 @@ class QianfanOCRVisionMLP(nn.Module):
 NORM2FN = {"layer_norm": nn.LayerNorm, "rms_norm": QianfanOCRVisionRMSNorm}
 
 
+# QianfanOCRVisionLayer：视觉 Transformer 层：注意力 + MLP 残差
 class QianfanOCRVisionLayer(GradientCheckpointingLayer):
     """Vision transformer layer with stochastic depth (DropPath) support."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: QianfanOCRVisionConfig, drop_path_rate: float = 0.0) -> None:
         super().__init__()
         self.attention = QianfanOCRVisionAttention(config)
@@ -221,6 +238,7 @@ class QianfanOCRVisionLayer(GradientCheckpointingLayer):
         self.drop_path1 = nn.Identity() if drop_path_rate <= 0.0 else QianfanOCRDropPath(drop_path_rate)
         self.drop_path2 = nn.Identity() if drop_path_rate <= 0.0 else QianfanOCRDropPath(drop_path_rate)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -245,6 +263,7 @@ class QianfanOCRVisionLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# QianfanOCRVisionPatchEmbeddings：视觉 patch 嵌入：Conv2d 投影为 token 序列
 class QianfanOCRVisionPatchEmbeddings(nn.Module):
     """
     This class turns `pixel_values` of shape `(batch_size, num_channels, height, width)` into the initial
@@ -252,6 +271,7 @@ class QianfanOCRVisionPatchEmbeddings(nn.Module):
     Transformer.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         image_size, patch_size = config.image_size, config.patch_size
@@ -267,6 +287,7 @@ class QianfanOCRVisionPatchEmbeddings(nn.Module):
 
         self.projection = nn.Conv2d(num_channels, hidden_size, kernel_size=patch_size, stride=patch_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
         batch_size, num_channels, height, width = pixel_values.shape
         if num_channels != self.num_channels:
@@ -282,12 +303,14 @@ class QianfanOCRVisionPatchEmbeddings(nn.Module):
 
 # Based on timm implementation, which can be found here:
 # https://github.com/rwightman/pytorch-image-models/blob/master/timm/models/vision_transformer.py
+# QianfanOCRVisionEmbeddings：视觉嵌入：patch + 位置编码 + 可选 CLS
 class QianfanOCRVisionEmbeddings(nn.Module):
     """
     Construct the CLS token, position and patch embeddings. Optionally, also the mask token.
 
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: QianfanOCRVisionConfig) -> None:
         super().__init__()
 
@@ -350,6 +373,7 @@ class QianfanOCRVisionEmbeddings(nn.Module):
 
         return torch.cat((class_pos_embed, patch_pos_embed), dim=1)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.Tensor,
@@ -376,6 +400,7 @@ class QianfanOCRVisionEmbeddings(nn.Module):
         return embeddings
 
 
+# QianfanOCRVisionModelOutputWithPooling：视觉输出：序列隐状态与池化向量
 class QianfanOCRVisionModelOutputWithPooling(BaseModelOutputWithPooling):
     r"""
     pooler_output (`torch.FloatTensor` of shape `(batch_size, hidden_size)`):
@@ -388,6 +413,7 @@ class QianfanOCRVisionModelOutputWithPooling(BaseModelOutputWithPooling):
 
 
 @auto_docstring
+# QianfanOCRVisionPreTrainedModel：视觉塔预训练基类：权重初始化策略
 class QianfanOCRVisionPreTrainedModel(PreTrainedModel):
     config: QianfanOCRVisionConfig
     base_model_prefix = "vision_model"
@@ -406,6 +432,7 @@ class QianfanOCRVisionPreTrainedModel(PreTrainedModel):
     config_class = QianfanOCRVisionConfig
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module):
         """Initialize the weights"""
         super()._init_weights(module)
@@ -421,7 +448,9 @@ class QianfanOCRVisionPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# QianfanOCRVisionModel：视觉编码器：多层 ViT 提取图像表征
 class QianfanOCRVisionModel(QianfanOCRVisionPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: QianfanOCRVisionConfig) -> None:
         super().__init__(config)
         self.config = config
@@ -445,6 +474,7 @@ class QianfanOCRVisionModel(QianfanOCRVisionPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.Tensor,
@@ -465,7 +495,9 @@ class QianfanOCRVisionModel(QianfanOCRVisionPreTrainedModel):
         )
 
 
+# QianfanOCRMultiModalProjector：多模态投影：视觉特征映射到 LLM 嵌入空间
 class QianfanOCRMultiModalProjector(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: QianfanOCRConfig):
         super().__init__()
         self.layer_norm = nn.LayerNorm(config.vision_config.hidden_size * int(1 / config.downsample_ratio) ** 2)
@@ -475,6 +507,7 @@ class QianfanOCRMultiModalProjector(nn.Module):
         self.act = ACT2FN[config.projector_hidden_act]
         self.linear_2 = nn.Linear(config.text_config.hidden_size, config.text_config.hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, image_features):
         hidden_states = self.layer_norm(image_features)
         hidden_states = self.linear_1(hidden_states)
@@ -484,6 +517,7 @@ class QianfanOCRMultiModalProjector(nn.Module):
 
 
 @auto_docstring
+# QianfanOCRPreTrainedModel：千帆 OCR 预训练基类：视觉-语言联合加载
 class QianfanOCRPreTrainedModel(PreTrainedModel):
     config: QianfanOCRConfig
     base_model_prefix = "model"
@@ -506,6 +540,7 @@ class QianfanOCRPreTrainedModel(PreTrainedModel):
     """
 )
 @dataclass
+# QianfanOCRModelOutputWithPast：多模态输出：logits、past KV 与视觉隐状态
 class QianfanOCRModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     image_hidden_states (`torch.FloatTensor`, *optional*):
@@ -521,7 +556,9 @@ class QianfanOCRModelOutputWithPast(BaseModelOutputWithPast):
     The QianfanOCR model which consists of a vision backbone and a language model, without a language modeling head.
     """
 )
+# QianfanOCRModel：千帆 OCR 骨干：视觉塔 + 文本 LLM 融合前向
 class QianfanOCRModel(QianfanOCRPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: QianfanOCRConfig):
         super().__init__(config)
         self.vision_tower = AutoModel.from_config(config.vision_config)
@@ -607,6 +644,7 @@ class QianfanOCRModel(QianfanOCRPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -696,6 +734,7 @@ class QianfanOCRModel(QianfanOCRPreTrainedModel):
     """
 )
 @dataclass
+# QianfanOCRCausalLMOutputWithPast：因果 LM 输出：交叉熵损失与生成缓存
 class QianfanOCRCausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -725,9 +764,11 @@ class QianfanOCRCausalLMOutputWithPast(ModelOutput):
     The QIANFAN_OCR model which consists of a vision backbone and a language model.
     """
 )
+# QianfanOCRForConditionalGeneration：条件生成：OCR 图像理解与自然语言回复
 class QianfanOCRForConditionalGeneration(QianfanOCRPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: QianfanOCRConfig):
         super().__init__(config)
         self.model = QianfanOCRModel(config)
@@ -754,6 +795,7 @@ class QianfanOCRForConditionalGeneration(QianfanOCRPreTrainedModel, GenerationMi
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,

@@ -20,10 +20,13 @@ from huggingface_hub.dataclasses import strict
 from ...backbone_utils import BackboneConfigMixin
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# PVT v2 配置：Backbone 混合配置、各阶段通道与重叠 patch 尺寸
+
 
 
 @auto_docstring(checkpoint="OpenGVLab/pvt_v2_b0")
 @strict
+# PvtV2Config：PVT v2 配置：重叠 patch、卷积 FFN 与 Backbone 输出索引
 class PvtV2Config(BackboneConfigMixin, PreTrainedConfig):
     r"""
     num_encoder_blocks (`[int]`, *optional*, defaults to 4):
@@ -81,6 +84,7 @@ class PvtV2Config(BackboneConfigMixin, PreTrainedConfig):
     _out_features: list[str] | None = None
     _out_indices: list[int] | None = None
 
+    # __post_init__：校验并补全配置默认值与骨干合并
     def __post_init__(self, **kwargs):
         self.image_size = (self.image_size, self.image_size) if isinstance(self.image_size, int) else self.image_size
         self.stage_names = [f"stage{idx}" for idx in range(1, len(self.depths) + 1)]

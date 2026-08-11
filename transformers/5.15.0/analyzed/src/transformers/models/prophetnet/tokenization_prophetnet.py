@@ -19,6 +19,8 @@ from collections.abc import Iterable
 
 from ...tokenization_python import PreTrainedTokenizer, _is_control, _is_punctuation, _is_whitespace
 from ...utils import logging
+# ProphetNet 分词器：Basic/WordPiece 预处理与 ProphetNet 词表编解码
+
 
 
 logger = logging.get_logger(__name__)
@@ -26,6 +28,7 @@ logger = logging.get_logger(__name__)
 VOCAB_FILES_NAMES = {"vocab_file": "prophetnet.tokenizer"}
 
 
+# whitespace_tokenize：空白分词：strip 后按空格切分 token
 def whitespace_tokenize(text):
     """Runs basic whitespace cleaning and splitting on a piece of text."""
     text = text.strip()
@@ -35,6 +38,7 @@ def whitespace_tokenize(text):
     return tokens
 
 
+# BasicTokenizer：基础分词器：空白切分、标点分离与中文字符处理
 class BasicTokenizer:
     """
     Constructs a BasicTokenizer that will run basic tokenization (punctuation splitting, lower casing, etc.).
@@ -58,6 +62,7 @@ class BasicTokenizer:
             the full context of the words, such as contractions.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         do_lower_case=True,
@@ -74,6 +79,7 @@ class BasicTokenizer:
         self.strip_accents = strip_accents
         self.do_split_on_punc = do_split_on_punc
 
+    # tokenize：分词入口：基础清洗、子词切分与特殊 token 处理
     def tokenize(self, text, never_split=None):
         """
         Basic Tokenization of a piece of text. For sub-word tokenization, see WordPieceTokenizer.
@@ -145,6 +151,7 @@ class BasicTokenizer:
 
         return ["".join(x) for x in output]
 
+    # _tokenize_chinese_chars：中文字符处理：CJK 字符前后插入空格
     def _tokenize_chinese_chars(self, text):
         """Adds whitespace around any CJK character."""
         output = []
@@ -182,6 +189,7 @@ class BasicTokenizer:
 
         return False
 
+    # _clean_text：文本清洗：去除控制字符与无效 Unicode
     def _clean_text(self, text):
         """Performs invalid character removal and whitespace cleanup on text."""
         output = []
@@ -196,14 +204,17 @@ class BasicTokenizer:
         return "".join(output)
 
 
+# WordpieceTokenizer：WordPiece 子词分词：贪心最长匹配与 ## 前缀
 class WordpieceTokenizer:
     """Runs WordPiece tokenization."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, vocab, unk_token, max_input_chars_per_word=100):
         self.vocab = vocab
         self.unk_token = unk_token
         self.max_input_chars_per_word = max_input_chars_per_word
 
+    # tokenize：分词入口：基础清洗、子词切分与特殊 token 处理
     def tokenize(self, text):
         """
         Tokenizes a piece of text into its word pieces. This uses a greedy longest-match-first algorithm to perform
@@ -253,6 +264,7 @@ class WordpieceTokenizer:
         return output_tokens
 
 
+# load_vocab：加载词表：从文件读取 token 到 id 映射
 def load_vocab(vocab_file):
     """Loads a vocabulary file into a dictionary."""
     vocab = collections.OrderedDict()
@@ -264,6 +276,7 @@ def load_vocab(vocab_file):
     return vocab
 
 
+# ProphetNetTokenizer：ProphetNet 分词器：Basic+WordPiece 与特殊 token 管理
 class ProphetNetTokenizer(PreTrainedTokenizer):
     r"""
     Construct a ProphetNetTokenizer. Based on WordPiece.
@@ -316,6 +329,7 @@ class ProphetNetTokenizer(PreTrainedTokenizer):
     # `ProphetNet` doesn't have `token_type_ids` as argument.
     model_input_names: list[str] = ["input_ids", "attention_mask"]
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         vocab_file: str,

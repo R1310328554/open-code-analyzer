@@ -31,6 +31,8 @@ from ..auto import CONFIG_MAPPING, AutoConfig
 from ..beit.modeling_beit import BeitDropPath
 from ..internvl.configuration_internvl import InternVLConfig, InternVLVisionConfig
 from ..internvl.modeling_internvl import (
+# 千帆 OCR modular 源：复用 InternVL 组件并定制 OCR 视觉与处理器
+
     InternVLCausalLMOutputWithPast,
     InternVLForConditionalGeneration,
     InternVLModel,
@@ -49,6 +51,7 @@ from ..internvl.processing_internvl import InternVLProcessor, InternVLProcessorK
 
 @auto_docstring(checkpoint="baidu/Qianfan-OCR")
 @strict
+# QianfanOCRVisionConfig：千帆 OCR 视觉塔配置：ViT 层数、隐藏维与 patch 尺寸
 class QianfanOCRVisionConfig(InternVLVisionConfig):
     r"""
     projection_dropout (`float`, *optional*, defaults to 0.0):
@@ -85,6 +88,7 @@ class QianfanOCRVisionConfig(InternVLVisionConfig):
 
 @auto_docstring(checkpoint="baidu/Qianfan-OCR")
 @strict
+# QianfanOCRConfig：千帆 OCR 联合配置：视觉塔 + 文本 LLM 与投影维度
 class QianfanOCRConfig(InternVLConfig):
     r"""
     downsample_ratio (`float`, *optional*, defaults to 0.5):
@@ -108,6 +112,7 @@ class QianfanOCRConfig(InternVLConfig):
 
     tie_word_embeddings: bool = False
 
+    # __post_init__：校验并补全配置默认值与骨干合并
     def __post_init__(self, **kwargs):
         if isinstance(self.vision_config, dict):
             self.vision_config = QianfanOCRVisionConfig(**self.vision_config)
@@ -123,21 +128,26 @@ class QianfanOCRConfig(InternVLConfig):
         PreTrainedConfig.__post_init__(self, **kwargs)
 
 
+# QianfanOCRDropPath：视觉塔随机深度：Stochastic Depth 正则化
 class QianfanOCRDropPath(BeitDropPath):
     pass
 
 
+# QianfanOCRVisionAttention：视觉自注意力：多头缩放点积与 QK 归一化
 class QianfanOCRVisionAttention(InternVLVisionAttention):
     pass
 
 
+# QianfanOCRVisionMLP：视觉 MLP：SwiGLU 风格前馈网络
 class QianfanOCRVisionMLP(InternVLVisionMLP):
     pass
 
 
+# QianfanOCRVisionLayer：视觉 Transformer 层：注意力 + MLP 残差
 class QianfanOCRVisionLayer(InternVLVisionLayer):
     """Vision transformer layer with stochastic depth (DropPath) support."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: QianfanOCRVisionConfig, drop_path_rate: float = 0.0) -> None:
         super().__init__(config)
         del self.seq_len_dim
@@ -145,6 +155,7 @@ class QianfanOCRVisionLayer(InternVLVisionLayer):
         self.drop_path1 = nn.Identity() if drop_path_rate <= 0.0 else QianfanOCRDropPath(drop_path_rate)
         self.drop_path2 = nn.Identity() if drop_path_rate <= 0.0 else QianfanOCRDropPath(drop_path_rate)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -169,10 +180,12 @@ class QianfanOCRVisionLayer(InternVLVisionLayer):
         return hidden_states
 
 
+# QianfanOCRVisionEmbeddings：视觉嵌入：patch + 位置编码 + 可选 CLS
 class QianfanOCRVisionEmbeddings(InternVLVisionEmbeddings):
     pass
 
 
+# QianfanOCRVisionModelOutputWithPooling：视觉输出：序列隐状态与池化向量
 class QianfanOCRVisionModelOutputWithPooling(BaseModelOutputWithPooling):
     r"""
     pooler_output (`torch.FloatTensor` of shape `(batch_size, hidden_size)`):
@@ -185,6 +198,7 @@ class QianfanOCRVisionModelOutputWithPooling(BaseModelOutputWithPooling):
 
 
 @auto_docstring
+# QianfanOCRVisionPreTrainedModel：视觉塔预训练基类：权重初始化策略
 class QianfanOCRVisionPreTrainedModel(InternVLVisionPreTrainedModel):
     config_class = QianfanOCRVisionConfig
     base_model_prefix = "vision_model"
@@ -196,7 +210,9 @@ class QianfanOCRVisionPreTrainedModel(InternVLVisionPreTrainedModel):
 
 
 @auto_docstring
+# QianfanOCRVisionModel：视觉编码器：多层 ViT 提取图像表征
 class QianfanOCRVisionModel(InternVLVisionModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: QianfanOCRVisionConfig) -> None:
         super().__init__(config)
         del self.encoder
@@ -208,6 +224,7 @@ class QianfanOCRVisionModel(InternVLVisionModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.Tensor,
@@ -228,10 +245,12 @@ class QianfanOCRVisionModel(InternVLVisionModel):
         )
 
 
+# QianfanOCRMultiModalProjector：多模态投影：视觉特征映射到 LLM 嵌入空间
 class QianfanOCRMultiModalProjector(InternVLMultiModalProjector):
     pass
 
 
+# QianfanOCRPreTrainedModel：千帆 OCR 预训练基类：视觉-语言联合加载
 class QianfanOCRPreTrainedModel(InternVLPreTrainedModel):
     config_class = QianfanOCRConfig
     input_modalities = ("image", "text")
@@ -243,6 +262,7 @@ class QianfanOCRPreTrainedModel(InternVLPreTrainedModel):
     """
 )
 @dataclass
+# QianfanOCRModelOutputWithPast：多模态输出：logits、past KV 与视觉隐状态
 class QianfanOCRModelOutputWithPast(InternVLModelOutputWithPast):
     r"""
     image_hidden_states (`torch.FloatTensor`, *optional*):
@@ -251,17 +271,21 @@ class QianfanOCRModelOutputWithPast(InternVLModelOutputWithPast):
     """
 
 
+# QianfanOCRModel：千帆 OCR 骨干：视觉塔 + 文本 LLM 融合前向
 class QianfanOCRModel(InternVLModel):
     pass
 
 
+# QianfanOCRCausalLMOutputWithPast：因果 LM 输出：交叉熵损失与生成缓存
 class QianfanOCRCausalLMOutputWithPast(InternVLCausalLMOutputWithPast):
     pass
 
 
+# QianfanOCRForConditionalGeneration：条件生成：OCR 图像理解与自然语言回复
 class QianfanOCRForConditionalGeneration(InternVLForConditionalGeneration):
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, **super_kwargs) -> tuple | QianfanOCRCausalLMOutputWithPast:
         r"""
         Example:
@@ -289,11 +313,14 @@ class QianfanOCRForConditionalGeneration(InternVLForConditionalGeneration):
         return super().forward(**super_kwargs)
 
 
+# QianfanOCRProcessorKwargs：处理器关键字参数：图像尺寸与对话模板选项
 class QianfanOCRProcessorKwargs(InternVLProcessorKwargs):
     pass
 
 
+# QianfanOCRProcessor：OCR 处理器：图像预处理 + 分词器联合调用
 class QianfanOCRProcessor(InternVLProcessor):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         image_processor=None,
@@ -323,6 +350,7 @@ class QianfanOCRProcessor(InternVLProcessor):
         self.video_processor = None
 
     @auto_docstring
+    # __call__：处理器调用：联合处理图像与文本输入
     def __call__(
         self,
         images: ImageInput | None = None,

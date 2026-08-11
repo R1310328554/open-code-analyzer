@@ -29,11 +29,14 @@ from ...modeling_outputs import BaseModelOutput, ImageClassifierOutput
 from ...modeling_utils import PreTrainedModel
 from ...utils import auto_docstring, logging
 from .configuration_pvt import PvtConfig
+# PVT 视觉建模：空间缩减注意力、金字塔编码器与图像分类头
+
 
 
 logger = logging.get_logger(__name__)
 
 
+# PvtPatchEmbeddings：PVT patch 嵌入：卷积投影将图像划分为 token 序列
 class PvtPatchEmbeddings(nn.Module):
     """
     This class turns `pixel_values` of shape `(batch_size, num_channels, height, width)` into the initial
@@ -41,6 +44,7 @@ class PvtPatchEmbeddings(nn.Module):
     Transformer.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: PvtConfig,
@@ -80,6 +84,7 @@ class PvtPatchEmbeddings(nn.Module):
         interpolated_embeddings = interpolated_embeddings.reshape(1, -1, height * width).permute(0, 2, 1)
         return interpolated_embeddings
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values: torch.Tensor) -> tuple[torch.Tensor, int, int]:
         batch_size, num_channels, height, width = pixel_values.shape
         if num_channels != self.num_channels:
@@ -102,21 +107,26 @@ class PvtPatchEmbeddings(nn.Module):
         return embeddings, height, width
 
 
+# PvtSelfOutput：注意力输出投影：线性层 + Dropout 残差前处理
 class PvtSelfOutput(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: PvtConfig, hidden_size: int):
         super().__init__()
         self.dense = nn.Linear(hidden_size, hidden_size)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
         return hidden_states
 
 
+# PvtEfficientSelfAttention：空间缩减自注意力：SR 降采样降低计算复杂度
 class PvtEfficientSelfAttention(nn.Module):
     """Efficient self-attention mechanism with reduction of the sequence [PvT paper](https://huggingface.co/papers/2102.12122)."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self, config: PvtConfig, hidden_size: int, num_attention_heads: int, sequences_reduction_ratio: float
     ):
@@ -151,6 +161,7 @@ class PvtEfficientSelfAttention(nn.Module):
         hidden_states = hidden_states.view(new_shape)
         return hidden_states.permute(0, 2, 1, 3)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -196,7 +207,9 @@ class PvtEfficientSelfAttention(nn.Module):
         return outputs
 
 
+# PvtAttention：PVT 注意力模块：SR 注意力 + 输出投影
 class PvtAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self, config: PvtConfig, hidden_size: int, num_attention_heads: int, sequences_reduction_ratio: float
     ):
@@ -209,6 +222,7 @@ class PvtAttention(nn.Module):
         )
         self.output = PvtSelfOutput(config, hidden_size=hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self, hidden_states: torch.Tensor, height: int, width: int, output_attentions: bool = False
     ) -> tuple[torch.Tensor]:
@@ -219,7 +233,9 @@ class PvtAttention(nn.Module):
         return outputs
 
 
+# PvtFFN：PVT 前馈网络：两层 MLP 与 GELU 激活
 class PvtFFN(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: PvtConfig,
@@ -237,6 +253,7 @@ class PvtFFN(nn.Module):
         self.dense2 = nn.Linear(hidden_features, out_features)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense1(hidden_states)
         hidden_states = self.intermediate_act_fn(hidden_states)
@@ -247,6 +264,7 @@ class PvtFFN(nn.Module):
 
 
 # Copied from transformers.models.swin.modular_swin.SwinDropPath with SwinDropPath->PvtDropPath
+# PvtDropPath：随机深度：训练时按概率丢弃残差路径
 class PvtDropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -254,10 +272,12 @@ class PvtDropPath(nn.Module):
     <https://arxiv.org/abs/1603.09382>`_.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, drop_prob: float = 0.0) -> None:
         super().__init__()
         self.drop_prob = drop_prob
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         if self.drop_prob == 0.0 or not self.training:
             return hidden_states
@@ -271,7 +291,9 @@ class PvtDropPath(nn.Module):
         return f"p={self.drop_prob}"
 
 
+# PvtLayer：PVT 层：注意力 + FFN 与 LayerScale/DropPath
 class PvtLayer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: PvtConfig,
@@ -294,6 +316,7 @@ class PvtLayer(nn.Module):
         mlp_hidden_size = int(hidden_size * mlp_ratio)
         self.mlp = PvtFFN(config=config, in_features=hidden_size, hidden_features=mlp_hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, height: int, width: int, output_attentions: bool = False):
         self_attention_outputs = self.attention(
             hidden_states=self.layer_norm_1(hidden_states),
@@ -317,7 +340,9 @@ class PvtLayer(nn.Module):
         return outputs
 
 
+# PvtEncoder：PVT 编码器：多阶段金字塔特征提取
 class PvtEncoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: PvtConfig):
         super().__init__()
         self.config = config
@@ -368,6 +393,7 @@ class PvtEncoder(nn.Module):
         # Layer norms
         self.layer_norm = nn.LayerNorm(config.hidden_sizes[-1], eps=config.layer_norm_eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -407,6 +433,7 @@ class PvtEncoder(nn.Module):
 
 
 @auto_docstring
+# PvtPreTrainedModel：PVT 预训练基类：权重初始化与输入名定义
 class PvtPreTrainedModel(PreTrainedModel):
     config: PvtConfig
     base_model_prefix = "pvt"
@@ -415,6 +442,7 @@ class PvtPreTrainedModel(PreTrainedModel):
     _no_split_modules = []
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module: nn.Module) -> None:
         """Initialize the weights"""
         super()._init_weights(module)
@@ -430,7 +458,9 @@ class PvtPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# PvtModel：PVT 骨干：金字塔编码器 + 池化输出
 class PvtModel(PvtPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: PvtConfig):
         super().__init__(config)
         self.config = config
@@ -442,6 +472,7 @@ class PvtModel(PvtPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -480,7 +511,9 @@ class PvtModel(PvtPreTrainedModel):
     the [CLS] token) e.g. for ImageNet.
     """
 )
+# PvtForImageClassification：PVT 图像分类：全局池化 + 线性分类头
 class PvtForImageClassification(PvtPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: PvtConfig) -> None:
         super().__init__(config)
 
@@ -496,6 +529,7 @@ class PvtForImageClassification(PvtPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.Tensor | None,

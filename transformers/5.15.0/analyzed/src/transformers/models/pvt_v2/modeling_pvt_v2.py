@@ -29,14 +29,18 @@ from ...modeling_utils import PreTrainedModel
 from ...utils import auto_docstring, logging
 from ...utils.generic import can_return_tuple
 from .configuration_pvt_v2 import PvtV2Config
+# PVT v2 建模：重叠 patch 嵌入、卷积 FFN 与 Backbone 多尺度输出
+
 
 
 logger = logging.get_logger(__name__)
 
 
+# PvtV2OverlapPatchEmbeddings：重叠 patch 嵌入：步长小于核尺寸的卷积投影
 class PvtV2OverlapPatchEmbeddings(nn.Module):
     """Image to Patch Embedding"""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: PvtV2Config, layer_idx: int):
         super().__init__()
         patch_size = config.patch_sizes[layer_idx]
@@ -54,6 +58,7 @@ class PvtV2OverlapPatchEmbeddings(nn.Module):
         )
         self.layer_norm = nn.LayerNorm(hidden_size, eps=config.layer_norm_eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values):
         embeddings = self.proj(pixel_values)
         _, _, height, width = embeddings.shape
@@ -62,6 +67,7 @@ class PvtV2OverlapPatchEmbeddings(nn.Module):
         return embeddings, height, width
 
 
+# PvtV2DepthWiseConv：深度可分离卷积：DW+PW 局部特征提取
 class PvtV2DepthWiseConv(nn.Module):
     """
     Depth-wise (DW) convolution to infuse positional information using zero-padding. Depth-wise convolutions
@@ -69,10 +75,12 @@ class PvtV2DepthWiseConv(nn.Module):
     reduces the overall parameters and compute costs since the key purpose of this layer is position encoding.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: PvtV2Config, dim: int = 768):
         super().__init__()
         self.dwconv = nn.Conv2d(dim, dim, 3, 1, 1, bias=True, groups=dim)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states, height, width):
         batch_size, seq_len, num_channels = hidden_states.shape
         hidden_states = hidden_states.transpose(1, 2).view(batch_size, num_channels, height, width)
@@ -82,9 +90,11 @@ class PvtV2DepthWiseConv(nn.Module):
         return hidden_states
 
 
+# PvtV2SelfAttention：PVT v2 自注意力：线性复杂度空间缩减注意力
 class PvtV2SelfAttention(nn.Module):
     """Efficient self-attention mechanism."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: PvtV2Config, hidden_size: int, num_attention_heads: int, spatial_reduction_ratio: int):
         super().__init__()
         self.linear_attention = config.linear_attention
@@ -125,6 +135,7 @@ class PvtV2SelfAttention(nn.Module):
         hidden_states = hidden_states.view(new_shape)
         return hidden_states.permute(0, 2, 1, 3)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -171,7 +182,9 @@ class PvtV2SelfAttention(nn.Module):
         return outputs
 
 
+# PvtV2ConvFeedForwardNetwork：卷积 FFN：1×1 卷积替代全连接 MLP
 class PvtV2ConvFeedForwardNetwork(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: PvtV2Config,
@@ -191,6 +204,7 @@ class PvtV2ConvFeedForwardNetwork(nn.Module):
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.relu = nn.ReLU() if config.linear_attention else nn.Identity()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, height, width) -> torch.Tensor:
         hidden_states = self.dense1(hidden_states)
         hidden_states = self.relu(hidden_states)
@@ -203,6 +217,7 @@ class PvtV2ConvFeedForwardNetwork(nn.Module):
 
 
 # Copied from transformers.models.swin.modular_swin.SwinDropPath with SwinDropPath->PvtV2DropPath
+# PvtV2DropPath：PVT v2 随机深度：按样本丢弃残差分支
 class PvtV2DropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -210,10 +225,12 @@ class PvtV2DropPath(nn.Module):
     <https://arxiv.org/abs/1603.09382>`_.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, drop_prob: float = 0.0) -> None:
         super().__init__()
         self.drop_prob = drop_prob
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         if self.drop_prob == 0.0 or not self.training:
             return hidden_states
@@ -227,7 +244,9 @@ class PvtV2DropPath(nn.Module):
         return f"p={self.drop_prob}"
 
 
+# PvtV2BlockLayer：PVT v2 块：注意力 + 卷积 FFN 残差结构
 class PvtV2BlockLayer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: PvtV2Config, layer_idx: int, drop_path: float = 0.0):
         super().__init__()
         hidden_size: int = config.hidden_sizes[layer_idx]
@@ -246,6 +265,7 @@ class PvtV2BlockLayer(nn.Module):
         mlp_hidden_size = int(hidden_size * mlp_ratio)
         self.mlp = PvtV2ConvFeedForwardNetwork(config=config, in_features=hidden_size, hidden_features=mlp_hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, height: int, width: int, output_attentions: bool = False):
         self_attention_outputs = self.attention(
             hidden_states=self.layer_norm_1(hidden_states),
@@ -269,7 +289,9 @@ class PvtV2BlockLayer(nn.Module):
         return outputs
 
 
+# PvtV2EncoderLayer：PVT v2 编码层：带梯度检查点的块堆叠
 class PvtV2EncoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: PvtV2Config, layer_idx: int):
         super().__init__()
         self.patch_embedding = PvtV2OverlapPatchEmbeddings(
@@ -293,6 +315,7 @@ class PvtV2EncoderLayer(GradientCheckpointingLayer):
         # Layer norm
         self.layer_norm = nn.LayerNorm(config.hidden_sizes[layer_idx], eps=config.layer_norm_eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states, output_attentions):
         all_self_attentions = () if output_attentions else None
         # first, obtain patch embeddings
@@ -314,7 +337,9 @@ class PvtV2EncoderLayer(GradientCheckpointingLayer):
         return outputs, height, width
 
 
+# PvtV2Encoder：PVT v2 编码器：多阶段金字塔与 stage 输出
 class PvtV2Encoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: PvtV2Config):
         super().__init__()
         self.config = config
@@ -323,6 +348,7 @@ class PvtV2Encoder(nn.Module):
         # encoder layers
         self.layers = nn.ModuleList([PvtV2EncoderLayer(config, i) for i in range(config.num_encoder_blocks)])
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -355,6 +381,7 @@ class PvtV2Encoder(nn.Module):
 
 
 @auto_docstring
+# PvtV2PreTrainedModel：PVT v2 预训练基类：通用初始化与模块划分
 class PvtV2PreTrainedModel(PreTrainedModel):
     config: PvtV2Config
     base_model_prefix = "pvt_v2"
@@ -363,6 +390,7 @@ class PvtV2PreTrainedModel(PreTrainedModel):
     supports_gradient_checkpointing = True
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module: nn.Linear | nn.Conv2d | nn.LayerNorm) -> None:
         """Initialize the weights"""
         super()._init_weights(module)
@@ -379,7 +407,9 @@ class PvtV2PreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# PvtV2Model：PVT v2 骨干：重叠 patch 金字塔编码
 class PvtV2Model(PvtV2PreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: PvtV2Config):
         super().__init__(config)
         self.config = config
@@ -391,6 +421,7 @@ class PvtV2Model(PvtV2PreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -429,7 +460,9 @@ class PvtV2Model(PvtV2PreTrainedModel):
     of the [CLS] token) e.g. for ImageNet.
     """
 )
+# PvtV2ForImageClassification：PVT v2 分类：stage4 特征池化与线性头
 class PvtV2ForImageClassification(PvtV2PreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: PvtV2Config) -> None:
         super().__init__(config)
 
@@ -445,6 +478,7 @@ class PvtV2ForImageClassification(PvtV2PreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.Tensor | None,
@@ -503,7 +537,9 @@ class PvtV2ForImageClassification(PvtV2PreTrainedModel):
     PVTv2 backbone, to be used with frameworks like DETR and MaskFormer.
     """
 )
+# PvtV2Backbone：PVT v2 Backbone：多尺度特征图输出供下游检测/分割
 class PvtV2Backbone(BackboneMixin, PvtV2Model):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: PvtV2Config):
         super().__init__(config)
         self.num_features = config.hidden_sizes
@@ -511,6 +547,7 @@ class PvtV2Backbone(BackboneMixin, PvtV2Model):
     @can_return_tuple
     @filter_output_hidden_states
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,

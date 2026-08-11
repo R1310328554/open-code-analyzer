@@ -23,10 +23,13 @@ from huggingface_hub.dataclasses import strict
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
+# 千帆 OCR 配置：InternVL 风格视觉塔与文本解码器联合超参数
+
 
 
 @auto_docstring(checkpoint="baidu/Qianfan-OCR")
 @strict
+# QianfanOCRVisionConfig：千帆 OCR 视觉塔配置：ViT 层数、隐藏维与 patch 尺寸
 class QianfanOCRVisionConfig(PreTrainedConfig):
     r"""
     projection_dropout (`float`, *optional*, defaults to 0.0):
@@ -80,6 +83,7 @@ class QianfanOCRVisionConfig(PreTrainedConfig):
     use_mean_pooling: bool = True
     drop_path_rate: float = 0.1
 
+    # __post_init__：校验并补全配置默认值与骨干合并
     def __post_init__(self, **kwargs):
         self.image_size = (
             self.image_size if isinstance(self.image_size, (list, tuple)) else (self.image_size, self.image_size)
@@ -92,6 +96,7 @@ class QianfanOCRVisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="baidu/Qianfan-OCR")
 @strict
+# QianfanOCRConfig：千帆 OCR 联合配置：视觉塔 + 文本 LLM 与投影维度
 class QianfanOCRConfig(PreTrainedConfig):
     r"""
     downsample_ratio (`float`, *optional*, defaults to 0.5):
@@ -124,6 +129,7 @@ class QianfanOCRConfig(PreTrainedConfig):
 
     tie_word_embeddings: bool = False
 
+    # __post_init__：校验并补全配置默认值与骨干合并
     def __post_init__(self, **kwargs):
         if isinstance(self.vision_config, dict):
             self.vision_config = QianfanOCRVisionConfig(**self.vision_config)

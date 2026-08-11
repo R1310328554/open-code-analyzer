@@ -29,11 +29,14 @@ from ...modeling_outputs import BaseModelOutput
 from ...modeling_utils import PreTrainedModel
 from ...utils import ModelOutput, auto_docstring, logging, torch_compilable_check
 from .configuration_prophetnet import ProphetNetConfig
+# ProphetNet 序列到序列建模：n-gram 自注意力、双流解码器与条件生成
+
 
 
 logger = logging.get_logger(__name__)
 
 
+# softmax：数值稳定 softmax：ONNX 追踪时使用 float32 计算
 def softmax(hidden_state, dim, onnx_trace=False):
     if onnx_trace:
         return nn.functional.softmax(hidden_state.float(), dim=dim)
@@ -41,6 +44,7 @@ def softmax(hidden_state, dim, onnx_trace=False):
         return nn.functional.softmax(hidden_state, dim=dim, dtype=torch.float32)
 
 
+# ngram_attention_bias：n-gram 注意力偏置：主流与预测流联合因果掩码
 def ngram_attention_bias(sequence_length, ngram, device, dtype):
     """
     This function computes the bias for the predict stream
@@ -63,6 +67,7 @@ def ngram_attention_bias(sequence_length, ngram, device, dtype):
     return torch.cat([left_block, right_block], dim=2)
 
 
+# compute_relative_buckets：相对位置分桶：对数距离 bucketing 编码相对位置
 def compute_relative_buckets(num_buckets, max_distance, relative_positions, is_bidirectional=False):
     """
     This function computes individual parts of the relative position buckets. For more detail, see paper.
@@ -90,6 +95,7 @@ def compute_relative_buckets(num_buckets, max_distance, relative_positions, is_b
     return rel_positions_bucket
 
 
+# compute_all_stream_relative_buckets：双流相对位置：主流与预测流分别计算分桶
 def compute_all_stream_relative_buckets(num_buckets, max_distance, position_ids):
     """
     This function computes both main and predict relative position buckets. For more detail, see paper.
@@ -119,6 +125,7 @@ def compute_all_stream_relative_buckets(num_buckets, max_distance, position_ids)
     """
 )
 @dataclass
+# ProphetNetSeq2SeqLMOutput：Seq2Seq 语言模型输出：主/预测流 logits 与 KV 缓存
 class ProphetNetSeq2SeqLMOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -171,6 +178,7 @@ class ProphetNetSeq2SeqLMOutput(ModelOutput):
     """
 )
 @dataclass
+# ProphetNetSeq2SeqModelOutput：Seq2Seq 编码-解码输出：编码器与双流解码器隐状态
 class ProphetNetSeq2SeqModelOutput(ModelOutput):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, decoder_sequence_length, hidden_size)`):
@@ -220,6 +228,7 @@ class ProphetNetSeq2SeqModelOutput(ModelOutput):
     """
 )
 @dataclass
+# ProphetNetDecoderModelOutput：解码器输出：主/预测流隐状态与注意力权重
 class ProphetNetDecoderModelOutput(ModelOutput):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, decoder_sequence_length, hidden_size)`):
@@ -264,6 +273,7 @@ class ProphetNetDecoderModelOutput(ModelOutput):
     """
 )
 @dataclass
+# ProphetNetDecoderLMOutput：解码器语言模型输出：主/预测流 logits 与 past KV
 class ProphetNetDecoderLMOutput(ModelOutput):
     r"""
     ngram_hidden_states (`tuple(torch.FloatTensor)`, *optional*, returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
@@ -311,6 +321,7 @@ class ProphetNetDecoderLMOutput(ModelOutput):
 
 
 @auto_docstring
+# ProphetNetPreTrainedModel：ProphetNet 预训练基类：权重初始化与模块切分
 class ProphetNetPreTrainedModel(PreTrainedModel):
     config: ProphetNetConfig
     base_model_prefix = "prophetnet"
@@ -339,6 +350,7 @@ class ProphetNetPreTrainedModel(PreTrainedModel):
         return shifted_input_ids
 
 
+# ProphetNetPositionalEmbeddings：ProphetNet 位置嵌入：可学习绝对位置编码
 class ProphetNetPositionalEmbeddings(nn.Embedding):
     """
     This module learns positional embeddings up to a fixed maximum size. Padding ids are ignored by either offsetting
@@ -346,10 +358,12 @@ class ProphetNetPositionalEmbeddings(nn.Embedding):
     the forward function.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: ProphetNetConfig) -> None:
         self.max_length = config.max_position_embeddings
         super().__init__(config.max_position_embeddings, config.hidden_size, config.pad_token_id)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, inputs_shape, device, attention_mask=None, past_key_values=None, position_ids=None):
         assert (position_ids is None) or (self.padding_idx is None), (
             "If position_ids is pre-computed then padding_idx should not be set."
@@ -382,9 +396,11 @@ class ProphetNetPositionalEmbeddings(nn.Embedding):
         return super().forward(position_ids)
 
 
+# ProphetNetAttention：标准自注意力：缩放点积与相对位置偏置
 class ProphetNetAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: ProphetNetConfig, num_attn_heads: int, layer_idx: int | None = None):
         super().__init__()
         hidden_size = config.hidden_size
@@ -406,6 +422,7 @@ class ProphetNetAttention(nn.Module):
 
         self.out_proj = nn.Linear(hidden_size, hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -500,11 +517,13 @@ class ProphetNetAttention(nn.Module):
         return attn_output, attn_weights_reshaped
 
 
+# ProphetNetFeedForward：前馈网络：两层线性变换与激活函数
 class ProphetNetFeedForward(nn.Module):
     """
     This is the residual two feed-forward layer block based on the original Transformer implementation.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: ProphetNetConfig, ffn_dim: int):
         super().__init__()
         self.activation_fn = ACT2FN[config.activation_function]
@@ -513,6 +532,7 @@ class ProphetNetFeedForward(nn.Module):
         self.activation_dropout = config.activation_dropout
         self.dropout = config.dropout
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.intermediate(hidden_states)
         hidden_states = self.activation_fn(hidden_states)
@@ -523,7 +543,9 @@ class ProphetNetFeedForward(nn.Module):
         return hidden_states
 
 
+# ProphetNetNgramSelfAttention：n-gram 自注意力：主流与预测流联合掩码注意力
 class ProphetNetNgramSelfAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: ProphetNetConfig, layer_idx=None):
         super().__init__()
         self.hidden_size = config.hidden_size
@@ -560,6 +582,7 @@ class ProphetNetNgramSelfAttention(nn.Module):
     def prepare_for_onnx_export_(self):
         self.onnx_trace = True
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -829,11 +852,13 @@ class ProphetNetNgramSelfAttention(nn.Module):
         return predict_relative_pos_embeddings
 
 
+# ProphetNetEncoderLayer：编码器层：自注意力 + FFN 残差堆叠
 class ProphetNetEncoderLayer(GradientCheckpointingLayer):
     """
     Encoder block for Prophetnet
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: ProphetNetConfig):
         super().__init__()
         # 1st residual block
@@ -844,6 +869,7 @@ class ProphetNetEncoderLayer(GradientCheckpointingLayer):
         self.feed_forward = ProphetNetFeedForward(config, config.encoder_ffn_dim)
         self.feed_forward_layer_norm = LayerNorm(config.hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -870,11 +896,13 @@ class ProphetNetEncoderLayer(GradientCheckpointingLayer):
         return outputs
 
 
+# ProphetNetDecoderLayer：解码器层：n-gram 自注意力 + 交叉注意力 + FFN
 class ProphetNetDecoderLayer(GradientCheckpointingLayer):
     """
     Decoder block for Prophetnet
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: ProphetNetConfig, layer_idx=None):
         super().__init__()
         # 1st residual block
@@ -890,6 +918,7 @@ class ProphetNetDecoderLayer(GradientCheckpointingLayer):
         self.feed_forward = ProphetNetFeedForward(config, config.decoder_ffn_dim)
         self.feed_forward_layer_norm = LayerNorm(config.hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -946,7 +975,9 @@ class ProphetNetDecoderLayer(GradientCheckpointingLayer):
     The standalone encoder part of the ProphetNetModel.
     """
 )
+# ProphetNetEncoder：ProphetNet 编码器：多层 Transformer 编码堆栈
 class ProphetNetEncoder(ProphetNetPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: ProphetNetConfig):
         super().__init__(config)
 
@@ -967,6 +998,7 @@ class ProphetNetEncoder(ProphetNetPreTrainedModel):
         self.word_embeddings = value
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.Tensor | None = None,
@@ -1053,7 +1085,9 @@ class ProphetNetEncoder(ProphetNetPreTrainedModel):
     The standalone decoder part of the ProphetNetModel.
     """
 )
+# ProphetNetDecoder：ProphetNet 解码器：双流 n-gram 预测与交叉注意力
 class ProphetNetDecoder(ProphetNetPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: ProphetNetConfig):
         super().__init__(config)
 
@@ -1083,6 +1117,7 @@ class ProphetNetDecoder(ProphetNetPreTrainedModel):
         self.word_embeddings = value
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.Tensor | None = None,
@@ -1353,12 +1388,14 @@ class ProphetNetDecoder(ProphetNetPreTrainedModel):
 
 
 @auto_docstring
+# ProphetNetModel：ProphetNet 骨干：编码器-解码器联合前向
 class ProphetNetModel(ProphetNetPreTrainedModel):
     _tied_weights_keys = {
         "encoder.word_embeddings.weight": "word_embeddings.weight",
         "decoder.word_embeddings.weight": "word_embeddings.weight",
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: ProphetNetConfig):
         super().__init__(config)
         self.word_embeddings = nn.Embedding(config.vocab_size, config.hidden_size, padding_idx=config.pad_token_id)
@@ -1383,6 +1420,7 @@ class ProphetNetModel(ProphetNetPreTrainedModel):
         self.decoder.word_embeddings = self.word_embeddings
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.Tensor | None = None,
@@ -1485,11 +1523,13 @@ class ProphetNetModel(ProphetNetPreTrainedModel):
     The ProphetNet Model with a language modeling head. Can be used for sequence generation tasks.
     """
 )
+# ProphetNetForConditionalGeneration：条件生成：Seq2Seq 训练与 beam 解码推理
 class ProphetNetForConditionalGeneration(ProphetNetPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {
         "lm_head.weight": "prophetnet.word_embeddings.weight",
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: ProphetNetConfig):
         super().__init__(config)
         self.prophetnet = ProphetNetModel(config)
@@ -1505,6 +1545,7 @@ class ProphetNetForConditionalGeneration(ProphetNetPreTrainedModel, GenerationMi
         return self.prophetnet.word_embeddings
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.Tensor | None = None,
@@ -1659,12 +1700,14 @@ class ProphetNetForConditionalGeneration(ProphetNetPreTrainedModel, GenerationMi
     The standalone decoder part of the ProphetNetModel with a lm head on top. The model can be used for causal
     """
 )
+# ProphetNetForCausalLM：因果语言模型：仅解码器自回归文本生成
 class ProphetNetForCausalLM(ProphetNetPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {
         "lm_head.weight": "prophetnet.word_embeddings.weight",
         "prophetnet.decoder.word_embeddings.weight": "prophetnet.word_embeddings.weight",
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: ProphetNetConfig):
         # set config for CLM
         config = copy.deepcopy(config)
@@ -1688,6 +1731,7 @@ class ProphetNetForCausalLM(ProphetNetPreTrainedModel, GenerationMixin):
         self.prophetnet.decoder.word_embeddings = value
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.Tensor | None = None,
@@ -1819,6 +1863,7 @@ class ProphetNetForCausalLM(ProphetNetPreTrainedModel, GenerationMixin):
         return loss
 
 
+# ProphetNetDecoderWrapper：解码器包装：单独暴露解码器用于生成接口
 class ProphetNetDecoderWrapper(ProphetNetPreTrainedModel):
     """
     This is a wrapper class, so that [`ProphetNetForCausalLM`] can correctly be loaded from pretrained prophetnet
@@ -1829,6 +1874,7 @@ class ProphetNetDecoderWrapper(ProphetNetPreTrainedModel):
         "decoder.word_embeddings.weight": "word_embeddings.weight",
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: ProphetNetConfig):
         super().__init__(config)
 
@@ -1838,6 +1884,7 @@ class ProphetNetDecoderWrapper(ProphetNetPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, *args, **kwargs):
         return self.decoder(*args, **kwargs)
 

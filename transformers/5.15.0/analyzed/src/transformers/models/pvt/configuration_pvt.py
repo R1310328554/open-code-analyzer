@@ -19,10 +19,13 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# PVT 视觉骨干配置：金字塔阶段深度、注意力头数与图像尺寸超参数
+
 
 
 @auto_docstring(checkpoint="Xrenya/pvt-tiny-224")
 @strict
+# PvtConfig：PVT 配置：各阶段 embed 维度、深度与 SR 比率
 class PvtConfig(PreTrainedConfig):
     r"""
     num_encoder_blocks (`int`, *optional*, defaults to 4):

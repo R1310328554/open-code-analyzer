@@ -16,9 +16,12 @@
 from ...image_processing_backends import TorchvisionBackend
 from ...image_utils import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD, PILImageResampling
 from ...utils import auto_docstring
+# PVT Torchvision 图像处理器：张量化预处理与 ImageNet 风格归一化
+
 
 
 @auto_docstring
+# PvtImageProcessor：PVT Torchvision 处理器：张量批处理与标准 ImageNet 归一化
 class PvtImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.BICUBIC
     image_mean = IMAGENET_DEFAULT_MEAN

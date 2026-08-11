@@ -16,9 +16,12 @@
 from ...image_processing_backends import PilBackend
 from ...image_utils import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD, PILImageResampling
 from ...utils import auto_docstring
+# PVT PIL 图像处理器：基于 Pillow 的缩放、归一化与通道布局转换
+
 
 
 @auto_docstring
+# PvtImageProcessorPil：PVT PIL 处理器：Pillow 后端 resize 与 normalize
 class PvtImageProcessorPil(PilBackend):
     resample = PILImageResampling.BICUBIC
     image_mean = IMAGENET_DEFAULT_MEAN

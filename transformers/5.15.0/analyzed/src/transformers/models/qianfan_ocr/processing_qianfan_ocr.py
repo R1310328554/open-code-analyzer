@@ -25,8 +25,11 @@ from ...image_utils import ImageInput
 from ...processing_utils import MultiModalData, ProcessingKwargs, ProcessorMixin, Unpack
 from ...tokenization_utils_base import PreTokenizedInput, TextInput
 from ...utils import auto_docstring
+# 千帆 OCR 处理器：图像与文本联合预处理及对话模板组装
 
 
+
+# QianfanOCRProcessorKwargs：处理器关键字参数：图像尺寸与对话模板选项
 class QianfanOCRProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -43,9 +46,11 @@ class QianfanOCRProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# QianfanOCRProcessor：OCR 处理器：图像预处理 + 分词器联合调用
 class QianfanOCRProcessor(ProcessorMixin):
     valid_processor_kwargs = QianfanOCRProcessorKwargs
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         image_processor=None,
@@ -79,6 +84,7 @@ class QianfanOCRProcessor(ProcessorMixin):
         return [self.image_token_id, self.start_image_token_id, self.end_image_token_id]
 
     @auto_docstring
+    # __call__：处理器调用：联合处理图像与文本输入
     def __call__(
         self,
         images: ImageInput | None = None,
