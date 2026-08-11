@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T02:30:50Z",
   "files": [
-    "src/transformers/models/owlv2/modular_owlv2.py",
-    "src/transformers/models/owlv2/processing_owlv2.py",
-    "src/transformers/models/owlvit/__init__.py",
-    "src/transformers/models/owlvit/configuration_owlvit.py",
-    "src/transformers/models/owlvit/image_processing_owlvit.py",
-    "src/transformers/models/owlvit/image_processing_pil_owlvit.py",
-    "src/transformers/models/owlvit/modeling_owlvit.py",
-    "src/transformers/models/owlvit/processing_owlvit.py",
-    "src/transformers/models/paddleocr_vl/__init__.py",
-    "src/transformers/models/paddleocr_vl/configuration_paddleocr_vl.py",
-    "src/transformers/models/paddleocr_vl/image_processing_paddleocr_vl.py",
-    "src/transformers/models/paddleocr_vl/image_processing_pil_paddleocr_vl.py",
-    "src/transformers/models/paddleocr_vl/modeling_paddleocr_vl.py",
-    "src/transformers/models/paddleocr_vl/modular_paddleocr_vl.py",
-    "src/transformers/models/paddleocr_vl/processing_paddleocr_vl.py",
     "src/transformers/models/paligemma/__init__.py",
     "src/transformers/models/paligemma/configuration_paligemma.py",
     "src/transformers/models/paligemma/modeling_paligemma.py",
@@ -33,5 +18,5 @@
     "src/transformers/models/patchtsmixer/modeling_patchtsmixer.py"
   ],
   "remaining_pending": 1029,
-  "done": 1620
+  "done": 1635
 }
