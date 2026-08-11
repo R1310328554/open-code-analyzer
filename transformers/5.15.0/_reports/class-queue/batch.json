@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T03:02:26Z",
   "files": [
-    "src/transformers/models/qwen3_asr/feature_extraction_qwen3_asr.py",
-    "src/transformers/models/qwen3_asr/modeling_qwen3_asr.py",
-    "src/transformers/models/qwen3_asr/modular_qwen3_asr.py",
-    "src/transformers/models/qwen3_asr/processing_qwen3_asr.py",
-    "src/transformers/models/qwen3_moe/__init__.py",
-    "src/transformers/models/qwen3_moe/configuration_qwen3_moe.py",
-    "src/transformers/models/qwen3_moe/modeling_qwen3_moe.py",
-    "src/transformers/models/qwen3_moe/modular_qwen3_moe.py",
-    "src/transformers/models/qwen3_next/__init__.py",
-    "src/transformers/models/qwen3_next/configuration_qwen3_next.py",
-    "src/transformers/models/qwen3_next/modeling_qwen3_next.py",
-    "src/transformers/models/qwen3_next/modular_qwen3_next.py",
-    "src/transformers/models/qwen3_omni_moe/__init__.py",
-    "src/transformers/models/qwen3_omni_moe/configuration_qwen3_omni_moe.py",
-    "src/transformers/models/qwen3_omni_moe/modeling_qwen3_omni_moe.py",
     "src/transformers/models/qwen3_omni_moe/modular_qwen3_omni_moe.py",
     "src/transformers/models/qwen3_omni_moe/processing_qwen3_omni_moe.py",
     "src/transformers/models/qwen3_vl/__init__.py",
@@ -33,5 +18,5 @@
     "src/transformers/models/radio/modeling_radio.py"
   ],
   "remaining_pending": 759,
-  "done": 1890
+  "done": 1905
 }
