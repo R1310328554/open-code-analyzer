@@ -53,6 +53,7 @@ from .configuration_camembert import CamembertConfig
 logger = logging.get_logger(__name__)
 
 
+# CamembertEmbeddings：词/位置/segment 嵌入与 LayerNorm
 class CamembertEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
@@ -155,6 +156,7 @@ class CamembertEmbeddings(nn.Module):
         return incremental_indices.long() + padding_idx
 
 
+# eager_attention_forward：标准 eager 多头注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -183,6 +185,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# CamembertSelfAttention：自注意力 QKV 投影与缩放点积
 class CamembertSelfAttention(nn.Module):
     def __init__(self, config, is_causal=False, layer_idx=None):
         super().__init__()
@@ -250,6 +253,7 @@ class CamembertSelfAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# CamembertCrossAttention：交叉注意力（decoder 读 encoder）
 class CamembertCrossAttention(nn.Module):
     def __init__(self, config, is_causal=False, layer_idx=None):
         super().__init__()
@@ -326,6 +330,7 @@ class CamembertCrossAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# CamembertSelfOutput：注意力输出 Dense 与残差 LayerNorm
 class CamembertSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -340,6 +345,7 @@ class CamembertSelfOutput(nn.Module):
         return hidden_states
 
 
+# CamembertAttention：自/交叉注意力封装与 dropout
 class CamembertAttention(nn.Module):
     def __init__(self, config, is_causal=False, layer_idx=None, is_cross_attention=False):
         super().__init__()
@@ -369,6 +375,7 @@ class CamembertAttention(nn.Module):
         return attention_output, attn_weights
 
 
+# CamembertIntermediate：FFN 中间 Dense+GELU
 class CamembertIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -384,6 +391,7 @@ class CamembertIntermediate(nn.Module):
         return hidden_states
 
 
+# CamembertOutput：FFN 输出投影与残差 LayerNorm
 class CamembertOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -398,6 +406,7 @@ class CamembertOutput(nn.Module):
         return hidden_states
 
 
+# CamembertLayer：单层 Transformer（注意力 + FFN）
 class CamembertLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_idx=None):
         super().__init__()
@@ -463,6 +472,7 @@ class CamembertLayer(GradientCheckpointingLayer):
         return layer_output
 
 
+# CamembertLMHead：带 bias 的 MLM 预测头
 class CamembertLMHead(nn.Module):
     """Camembert Head for masked language modeling."""
 
@@ -486,6 +496,7 @@ class CamembertLMHead(nn.Module):
 
 
 @auto_docstring
+# CamembertPreTrainedModel：权重初始化与 checkpoint 映射基类
 class CamembertPreTrainedModel(PreTrainedModel):
     config_class = CamembertConfig
     base_model_prefix = "roberta"
@@ -511,6 +522,7 @@ class CamembertPreTrainedModel(PreTrainedModel):
             init.zeros_(module.token_type_ids)
 
 
+# CamembertEncoder：堆叠 CamembertLayer 的双向编码器
 class CamembertEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -543,6 +555,7 @@ class CamembertEncoder(nn.Module):
         )
 
 
+# CamembertPooler：取 [CLS] 的 Dense+Tanh 句向量池化
 class CamembertPooler(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -570,6 +583,7 @@ class CamembertPooler(nn.Module):
     `add_cross_attention` set to `True`; an `encoder_hidden_states` is then expected as an input to the forward pass.
     """
 )
+# CamembertModel：CamemBERT 双向编码骨干
 class CamembertModel(CamembertPreTrainedModel):
     _no_split_modules = ["CamembertEmbeddings", "CamembertLayer"]
 
@@ -698,6 +712,7 @@ class CamembertModel(CamembertPreTrainedModel):
 
 
 @auto_docstring
+# CamembertForMaskedLM：掩码语言建模预训练/微调
 class CamembertForMaskedLM(CamembertPreTrainedModel):
     _tied_weights_keys = {
         "lm_head.decoder.weight": "roberta.embeddings.word_embeddings.weight",
@@ -783,6 +798,7 @@ class CamembertForMaskedLM(CamembertPreTrainedModel):
         )
 
 
+# CamembertClassificationHead：序列分类 Dense+Tanh 头
 class CamembertClassificationHead(nn.Module):
     """Head for sentence-level classification tasks."""
 
@@ -811,6 +827,7 @@ class CamembertClassificationHead(nn.Module):
     pooled output) e.g. for GLUE tasks.
     """
 )
+# CamembertForSequenceClassification：单/多标签序列分类
 class CamembertForSequenceClassification(CamembertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -896,6 +913,7 @@ class CamembertForSequenceClassification(CamembertPreTrainedModel):
 
 
 @auto_docstring
+# CamembertForMultipleChoice：多选阅读理解/NLI
 class CamembertForMultipleChoice(CamembertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -993,6 +1011,7 @@ class CamembertForMultipleChoice(CamembertPreTrainedModel):
 
 
 @auto_docstring
+# CamembertForTokenClassification：逐 token NER/词性标注
 class CamembertForTokenClassification(CamembertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1064,6 +1083,7 @@ class CamembertForTokenClassification(CamembertPreTrainedModel):
 
 
 @auto_docstring
+# CamembertForQuestionAnswering：抽取式 QA span 起止预测
 class CamembertForQuestionAnswering(CamembertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1147,6 +1167,7 @@ class CamembertForQuestionAnswering(CamembertPreTrainedModel):
     Camembert Model with a `language modeling` head on top for CLM fine-tuning.
     """
 )
+# CamembertForCausalLM：左到右因果语言建模与生成
 class CamembertForCausalLM(CamembertPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {
         "lm_head.decoder.weight": "roberta.embeddings.word_embeddings.weight",

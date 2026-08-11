@@ -28,6 +28,7 @@ from ...tokenization_utils_base import PreTokenizedInput, TextInput
 from ...utils import auto_docstring
 
 
+# ChameleonTextKwargs：控制是否追加 sep_token（聊天 vs 补全模式）
 class ChameleonTextKwargs(TextKwargs, total=False):
     """
     return_for_text_completion (`bool`, *optional*, defaults to `False`):
@@ -39,6 +40,7 @@ class ChameleonTextKwargs(TextKwargs, total=False):
     return_for_text_completion: bool
 
 
+# ChameleonProcessorKwargs：文本/公共 kwargs 默认值
 class ChameleonProcessorKwargs(ProcessingKwargs, total=False):
     text_kwargs: ChameleonTextKwargs
     _defaults = {
@@ -54,9 +56,11 @@ class ChameleonProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# ChameleonProcessor：组合 image_processor 与 tokenizer
 class ChameleonProcessor(ProcessorMixin):
     valid_processor_kwargs = ChameleonProcessorKwargs
 
+# __init__：记录 image_seq_length 与 BOI/EOI 特殊 token ID
     def __init__(self, image_processor, tokenizer, image_seq_length: int = 1024, image_token: str = "<image>"):
         r"""
         image_seq_length (`int`, *optional*, defaults to 1024):
@@ -82,6 +86,7 @@ class ChameleonProcessor(ProcessorMixin):
         return [self.image_token_id, self.image_start_token_id, self.image_end_token_id]
 
     @auto_docstring
+# __call__：聊天模式自动追加 sep_token 后调用父类处理
     def __call__(
         self,
         images: ImageInput | None = None,
@@ -106,10 +111,12 @@ class ChameleonProcessor(ProcessorMixin):
         model_inputs = super().__call__(images=images, text=text, **kwargs)
         return model_inputs
 
+# replace_image_token：生成 BOI + N×<image> + EOI 占位串
     def replace_image_token(self, image_inputs: dict, image_idx: int, **kwargs) -> str:
         one_img_tokens = self.image_start_token + (self.image_token * self.image_seq_length) + self.image_end_token
         return one_img_tokens
 
+# _get_num_multimodal_tokens：估算每张图的 placeholder token 数量
     def _get_num_multimodal_tokens(self, image_sizes=None, **kwargs):
         """
         Computes the number of placeholder tokens needed for multimodal inputs with the given sizes.

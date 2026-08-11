@@ -41,14 +41,17 @@ from ..roberta.modeling_roberta import (
 )
 
 
+# CamembertPreTrainedModel：复用 RoBERTa 预训练基类，prefix 为 roberta
 class CamembertPreTrainedModel(RobertaPreTrainedModel):
     base_model_prefix = "roberta"
 
 
+# CamembertModel：CamemBERT 编码器（直接继承 RobertaModel）
 class CamembertModel(RobertaModel):
     pass
 
 
+# CamembertForMaskedLM：MLM 头，重建 roberta 子模块
 class CamembertForMaskedLM(RobertaForMaskedLM):
     _tied_weights_keys = {
         "lm_head.decoder.weight": "roberta.embeddings.word_embeddings.weight",
@@ -119,6 +122,7 @@ class CamembertForMaskedLM(RobertaForMaskedLM):
         )
 
 
+# CamembertForSequenceClassification：序列分类下游头
 class CamembertForSequenceClassification(RobertaForSequenceClassification):
     def __init__(self, config):
         super().__init__(config)
@@ -198,6 +202,7 @@ class CamembertForSequenceClassification(RobertaForSequenceClassification):
         )
 
 
+# CamembertForMultipleChoice：多选任务（展平 num_choices 维）
 class CamembertForMultipleChoice(RobertaForMultipleChoice):
     def __init__(self, config):
         super().__init__(config)
@@ -290,6 +295,7 @@ class CamembertForMultipleChoice(RobertaForMultipleChoice):
         )
 
 
+# CamembertForTokenClassification：token 级分类头
 class CamembertForTokenClassification(RobertaForTokenClassification):
     def __init__(self, config):
         super().__init__(config)
@@ -352,6 +358,7 @@ class CamembertForTokenClassification(RobertaForTokenClassification):
         )
 
 
+# CamembertForQuestionAnswering：抽取式阅读理解
 class CamembertForQuestionAnswering(RobertaForQuestionAnswering):
     def __init__(self, config):
         super().__init__(config)
@@ -426,6 +433,7 @@ class CamembertForQuestionAnswering(RobertaForQuestionAnswering):
         )
 
 
+# CamembertForCausalLM：因果 LM，支持 past_key_values 与生成
 class CamembertForCausalLM(RobertaForCausalLM):
     _tied_weights_keys = {
         "lm_head.decoder.weight": "roberta.embeddings.word_embeddings.weight",

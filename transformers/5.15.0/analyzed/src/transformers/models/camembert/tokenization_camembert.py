@@ -29,6 +29,7 @@ VOCAB_FILES_NAMES = {"vocab_file": "sentencepiece.bpe.model", "tokenizer_file": 
 SPIECE_UNDERLINE = "▁"
 
 
+# CamembertTokenizer：Unigram 词表、BOS/EOS/MASK 等特殊 token
 class CamembertTokenizer(TokenizersBackend):
     """
     Construct a "fast" CamemBERT tokenizer (backed by HuggingFace's *tokenizers* library). Adapted from
@@ -90,6 +91,7 @@ class CamembertTokenizer(TokenizersBackend):
     model_input_names = ["input_ids", "attention_mask"]
     slow_tokenizer_class = None
 
+# __init__：构建 normalizer/pre_tokenizer/post_processor 流水线
     def __init__(
         self,
         bos_token="<s>",

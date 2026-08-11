@@ -52,6 +52,7 @@ SPECIAL_CODEPOINTS: dict[int, str] = {
 SPECIAL_CODEPOINTS_BY_NAME: dict[str, int] = {name: codepoint for codepoint, name in SPECIAL_CODEPOINTS.items()}
 
 
+# CanineTokenizer：码点 ID 映射，特殊符号用私有区 Unicode
 class CanineTokenizer(PreTrainedTokenizer):
     r"""
     Construct a CANINE tokenizer (i.e. a character splitter). It turns text into a sequence of characters, and then
@@ -68,6 +69,7 @@ class CanineTokenizer(PreTrainedTokenizer):
 
     model_input_names = ["input_ids", "attention_mask", "token_type_ids"]
 
+# __init__：设置 CLS/SEP/PAD/MASK 等特殊码点 token
     def __init__(
         self,
         bos_token=chr(CLS),
@@ -126,10 +128,12 @@ class CanineTokenizer(PreTrainedTokenizer):
         vocab.update(self.added_tokens_encoder)
         return vocab
 
+# _tokenize：逐字符拆分并映射为码点字符串
     def _tokenize(self, text: str) -> list[str]:
         """Tokenize a string (i.e. perform character splitting)."""
         return list(text)
 
+# _convert_token_to_id：字符/特殊名 → 整数 ID
     def _convert_token_to_id(self, token: str) -> int:
         """Converts a token (i.e. a Unicode character) in an id (i.e. its integer Unicode code point value)."""
         try:
@@ -137,6 +141,7 @@ class CanineTokenizer(PreTrainedTokenizer):
         except TypeError:
             raise ValueError(f"invalid token: '{token}'")
 
+# _convert_id_to_token：整数 ID → 可读 token 名
     def _convert_id_to_token(self, index: int) -> str:
         """
         Converts a Unicode code point (integer) in a token (str). In case it's a special code point, convert to

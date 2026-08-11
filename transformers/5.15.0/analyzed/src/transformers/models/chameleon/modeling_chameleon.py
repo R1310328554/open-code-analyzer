@@ -49,6 +49,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring
 @dataclass
+# ChameleonVQVAEModelOutput：VQ-VAE 量化隐状态与 pooler 输出
 class ChameleonVQVAEModelOutput(BaseModelOutputWithPooling):
     r"""
     quantized_last_hidden_state (`torch.FloatTensor` of shape `(batch_size, num_channels, image_size, image_size)`):
@@ -65,6 +66,7 @@ class ChameleonVQVAEModelOutput(BaseModelOutputWithPooling):
 
 
 # Copied from transformers.models.llama.modeling_llama.LlamaRMSNorm with Llama->Chameleon
+# ChameleonRMSNorm：Root Mean Square LayerNorm（LLaMA 风格）
 class ChameleonRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -86,6 +88,7 @@ class ChameleonRMSNorm(nn.Module):
 
 
 # Copied from transformers.models.llama.modeling_llama.LlamaRotaryEmbedding with Llama->Chameleon
+# ChameleonRotaryEmbedding：RoPE 旋转位置编码
 class ChameleonRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: ChameleonConfig, device=None):
@@ -144,6 +147,7 @@ class ChameleonRotaryEmbedding(nn.Module):
 
 
 # Copied from transformers.models.llama.modeling_llama.rotate_half
+# rotate_half：RoPE 旋转变换的半维交换
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -152,6 +156,7 @@ def rotate_half(x):
 
 
 # Copied from transformers.models.llama.modeling_llama.apply_rotary_pos_emb
+# apply_rotary_pos_emb：将 RoPE 应用到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -178,6 +183,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
 
 
 # Copied from transformers.models.llama.modeling_llama.LlamaMLP with Llama->Chameleon
+# ChameleonMLP：SwiGLU/SiLU 门控 FFN
 class ChameleonMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -195,6 +201,7 @@ class ChameleonMLP(nn.Module):
         return down_proj
 
 
+# ChameleonLayerNorm：可选 Swin 风格的 LayerNorm 变体
 class ChameleonLayerNorm(nn.LayerNorm):
     """
     LayerNorm but computes stats only over the last dim because Chameleon applies gamma and beta
@@ -214,6 +221,7 @@ class ChameleonLayerNorm(nn.LayerNorm):
 
 
 # Copied from transformers.models.llama.modeling_llama.repeat_kv
+# repeat_kv：GQA 中重复 KV head 以匹配 Q head 数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -227,6 +235,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
 
 
 # Copied from transformers.models.llama.modeling_llama.eager_attention_forward
+# eager_attention_forward：标准 eager 因果自注意力
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -252,6 +261,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# ChameleonAttention：Grouped Query 因果自注意力 + RoPE
 class ChameleonAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -346,6 +356,7 @@ class ChameleonAttention(nn.Module):
 
 
 # copied from transformers.models.llama.modeling_llama.LlamaDecoderLayer with Llama->Chameleon, LLAMA->CHAMELEON
+# ChameleonDecoderLayer：标准 decoder 层（自注意力 + MLP）
 class ChameleonDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: ChameleonConfig, layer_idx: int):
         super().__init__()
@@ -416,6 +427,7 @@ class ChameleonDecoderLayer(GradientCheckpointingLayer):
         return outputs
 
 
+# ChameleonSwinDecoderLayer：Swin norm 变体 decoder 层
 class ChameleonSwinDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: ChameleonConfig, layer_idx: int):
         super().__init__()
@@ -484,6 +496,7 @@ class ChameleonSwinDecoderLayer(GradientCheckpointingLayer):
         return outputs
 
 
+# ChameleonVQVAEVectorQuantizer：VQ 码本向量量化
 class ChameleonVQVAEVectorQuantizer(nn.Module):
     """
     A module for vector quantization using learned embedding vectors.
@@ -531,6 +544,7 @@ class ChameleonVQVAEVectorQuantizer(nn.Module):
         return hidden_state_quant, loss, min_encoding_indices
 
 
+# ChameleonVQVAEEncoderConvDownsample：VQ-VAE 空间下采样卷积
 class ChameleonVQVAEEncoderConvDownsample(nn.Module):
     def __init__(self, in_channels):
         super().__init__()
@@ -543,6 +557,7 @@ class ChameleonVQVAEEncoderConvDownsample(nn.Module):
         return hidden_states
 
 
+# ChameleonVQVAEEncoderResnetBlock：VQ-VAE 残差块
 class ChameleonVQVAEEncoderResnetBlock(nn.Module):
     def __init__(
         self,
@@ -587,6 +602,7 @@ class ChameleonVQVAEEncoderResnetBlock(nn.Module):
         return residual + hidden_states
 
 
+# ChameleonVQVAEEncoderAttnBlock：VQ-VAE 自注意力块
 class ChameleonVQVAEEncoderAttnBlock(nn.Module):
     def __init__(self, in_channels):
         super().__init__()
@@ -622,6 +638,7 @@ class ChameleonVQVAEEncoderAttnBlock(nn.Module):
         return residual + attn_output
 
 
+# ChameleonVQVAEEncoder：VQ-GAN 图像编码器堆叠
 class ChameleonVQVAEEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -719,6 +736,7 @@ class ChameleonVQVAEEncoder(nn.Module):
         return last_hidden_state
 
 
+# ChameleonImageVocabularyMapping：图像离散 token 与 LLM 词表 ID 映射
 class ChameleonImageVocabularyMapping:
     """
     A class for mapping discrete image tokens from VQGAN to BPE tokens.
@@ -767,6 +785,7 @@ class ChameleonImageVocabularyMapping:
 
 
 @auto_docstring
+# ChameleonPreTrainedModel：权重初始化与 checkpoint 映射基类
 class ChameleonPreTrainedModel(PreTrainedModel):
     config: ChameleonConfig
     base_model_prefix = "model"
@@ -794,6 +813,7 @@ class ChameleonPreTrainedModel(PreTrainedModel):
     Taigman](https://huggingface.co/papers/2203.13131).
     """
 )
+# ChameleonVQVAE：独立 VQ-VAE 图像 tokenizer 模块
 class ChameleonVQVAE(ChameleonPreTrainedModel):
     config: ChameleonVQVAEConfig
     _no_split_modules = [
@@ -833,6 +853,7 @@ class ChameleonVQVAE(ChameleonPreTrainedModel):
 
 
 @auto_docstring
+# ChameleonModel：多模态 decoder-only 骨干（文本+图像 token）
 class ChameleonModel(ChameleonPreTrainedModel):
     def __init__(self, config: ChameleonConfig):
         super().__init__(config)
@@ -985,6 +1006,7 @@ class ChameleonModel(ChameleonPreTrainedModel):
     Chameleon Model with a head on top used for outputting logits for next token prediction.
     """
 )
+# ChameleonForConditionalGeneration：图文条件自回归生成
 class ChameleonForConditionalGeneration(ChameleonPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
 

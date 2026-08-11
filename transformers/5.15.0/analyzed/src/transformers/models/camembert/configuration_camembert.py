@@ -22,6 +22,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="almanach/camembert-base")
 @strict
+# CamembertConfig：vocab/hidden/层数/注意力头/MLM 等默认配置
 class CamembertConfig(PreTrainedConfig):
     r"""
     Example:

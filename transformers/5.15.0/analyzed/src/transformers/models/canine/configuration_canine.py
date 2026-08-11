@@ -21,6 +21,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="google/canine-s")
 @strict
+# CanineConfig：hidden/层数/哈希桶/stride 等 CANINE 特有参数
 class CanineConfig(PreTrainedConfig):
     r"""
     downsampling_rate (`int`, *optional*, defaults to 4):

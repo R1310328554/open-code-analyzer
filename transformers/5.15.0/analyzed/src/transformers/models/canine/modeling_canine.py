@@ -54,6 +54,7 @@ _PRIMES = [31, 43, 59, 61, 73, 97, 103, 113, 137, 149, 157, 173, 181, 193, 211, 
     """
 )
 @dataclass
+# CanineModelOutputWithPooling：含浅层/深层 hidden states 的输出结构
 class CanineModelOutputWithPooling(ModelOutput):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`):
@@ -83,6 +84,7 @@ class CanineModelOutputWithPooling(ModelOutput):
     attentions: tuple[torch.FloatTensor] | None = None
 
 
+# CanineEmbeddings：Unicode 码点哈希嵌入（多哈希函数）
 class CanineEmbeddings(nn.Module):
     """Construct the character, position and token_type embeddings."""
 
@@ -178,6 +180,7 @@ class CanineEmbeddings(nn.Module):
         return embeddings
 
 
+# CharactersToMolecules：字符序列下采样为分子 token 序列
 class CharactersToMolecules(nn.Module):
     """Convert character sequence to initial molecule sequence (i.e. downsample) using strided convolutions."""
 
@@ -222,6 +225,7 @@ class CharactersToMolecules(nn.Module):
         return result
 
 
+# ConvProjection：卷积上采样，将分子表示投影回字符长度
 class ConvProjection(nn.Module):
     """
     Project representations from hidden_size*2 back to hidden_size across a window of w = config.upsampling_kernel_size
@@ -278,6 +282,7 @@ class ConvProjection(nn.Module):
         return query_seq
 
 
+# CanineSelfAttention：CANINE 自注意力（支持局部 stride 窗口）
 class CanineSelfAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -359,6 +364,7 @@ class CanineSelfAttention(nn.Module):
         return outputs
 
 
+# CanineSelfOutput：注意力输出投影与残差 LayerNorm
 class CanineSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -375,6 +381,7 @@ class CanineSelfOutput(nn.Module):
         return hidden_states
 
 
+# CanineAttention：自注意力封装（含局部/全局两种模式）
 class CanineAttention(nn.Module):
     """
     Additional arguments related to local attention:
@@ -498,6 +505,7 @@ class CanineAttention(nn.Module):
         return outputs
 
 
+# CanineIntermediate：FFN 中间 Dense+激活
 class CanineIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -513,6 +521,7 @@ class CanineIntermediate(nn.Module):
         return hidden_states
 
 
+# CanineOutput：FFN 输出与残差 LayerNorm
 class CanineOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -527,6 +536,7 @@ class CanineOutput(nn.Module):
         return hidden_states
 
 
+# CanineLayer：单层 CANINE Transformer
 class CanineLayer(GradientCheckpointingLayer):
     def __init__(
         self,
@@ -583,6 +593,7 @@ class CanineLayer(GradientCheckpointingLayer):
         return layer_output
 
 
+# CanineEncoder：堆叠 CanineLayer 的编码器（浅层或深层）
 class CanineEncoder(nn.Module):
     def __init__(
         self,
@@ -647,6 +658,7 @@ class CanineEncoder(nn.Module):
         )
 
 
+# CaninePooler：取 [CLS] 码点的 Dense+Tanh 池化
 class CaninePooler(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -662,6 +674,7 @@ class CaninePooler(nn.Module):
         return pooled_output
 
 
+# CaninePredictionHeadTransform：MLM head 前变换
 class CaninePredictionHeadTransform(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -679,6 +692,7 @@ class CaninePredictionHeadTransform(nn.Module):
         return hidden_states
 
 
+# CanineLMPredictionHead：带 bias 的 MLM 预测头
 class CanineLMPredictionHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -698,6 +712,7 @@ class CanineLMPredictionHead(nn.Module):
         return hidden_states
 
 
+# CanineOnlyMLMHead：仅 MLM 预测头封装
 class CanineOnlyMLMHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -712,6 +727,7 @@ class CanineOnlyMLMHead(nn.Module):
 
 
 @auto_docstring
+# CaninePreTrainedModel：权重初始化基类
 class CaninePreTrainedModel(PreTrainedModel):
     config: CanineConfig
     base_model_prefix = "canine"
@@ -724,6 +740,7 @@ class CaninePreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# CanineModel：完整 CANINE 骨干（浅层+深层+上采样）
 class CanineModel(CaninePreTrainedModel):
     def __init__(self, config, add_pooling_layer=True):
         r"""
@@ -992,6 +1009,7 @@ class CanineModel(CaninePreTrainedModel):
     output) e.g. for GLUE tasks.
     """
 )
+# CanineForSequenceClassification：序列级分类
 class CanineForSequenceClassification(CaninePreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1077,6 +1095,7 @@ class CanineForSequenceClassification(CaninePreTrainedModel):
 
 
 @auto_docstring
+# CanineForMultipleChoice：多选任务分类
 class CanineForMultipleChoice(CaninePreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1180,6 +1199,7 @@ class CanineForMultipleChoice(CaninePreTrainedModel):
 
 
 @auto_docstring
+# CanineForTokenClassification：字符级 token 分类
 class CanineForTokenClassification(CaninePreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1276,6 +1296,7 @@ class CanineForTokenClassification(CaninePreTrainedModel):
 
 
 @auto_docstring
+# CanineForQuestionAnswering：抽取式 QA span 预测
 class CanineForQuestionAnswering(CaninePreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

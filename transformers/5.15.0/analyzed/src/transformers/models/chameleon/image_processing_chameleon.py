@@ -29,6 +29,7 @@ logger = logging.get_logger(__name__)
 
 
 @auto_docstring
+# ChameleonImageProcessor：rescale_factor=0.0078，RGBA 透明层白底合成
 class ChameleonImageProcessor(TorchvisionBackend):
     """Torchvision backend for Chameleon with custom convert_to_rgb."""
 
@@ -48,6 +49,7 @@ class ChameleonImageProcessor(TorchvisionBackend):
     def __init__(self, **kwargs: Unpack[ImagesKwargs]):
         super().__init__(**kwargs)
 
+# convert_to_rgb：RGBA 透明像素与白色背景 alpha 混合
     def convert_to_rgb(self, image: ImageInput) -> ImageInput:
         """
         Convert image to RGB by blending the transparency layer if it's in RGBA format.

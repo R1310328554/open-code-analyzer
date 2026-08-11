@@ -26,6 +26,7 @@ from ...utils import auto_docstring
 
 
 @auto_docstring
+# ChameleonImageProcessorPil：PIL 路径的 resize/crop/normalize 流水线
 class ChameleonImageProcessorPil(PilBackend):
     """PIL backend for Chameleon with custom convert_to_rgb."""
 
@@ -45,6 +46,7 @@ class ChameleonImageProcessorPil(PilBackend):
     def __init__(self, **kwargs: Unpack[ImagesKwargs]):
         super().__init__(**kwargs)
 
+# convert_to_rgb：处理带透明通道的 PIL 图像
     def convert_to_rgb(self, image: ImageInput) -> ImageInput:
         """
         Convert image to RGB by blending the transparency layer if it's in RGBA format.

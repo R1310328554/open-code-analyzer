@@ -25,6 +25,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="facebook/chameleon-7b")
 @strict
+# ChameleonVQVAEConfig：VQ-GAN 编码器分辨率/通道/残块/注意力配置
 class ChameleonVQVAEConfig(PreTrainedConfig):
     r"""
     resolution (`int`, *optional*, defaults to 512):
@@ -63,6 +64,7 @@ class ChameleonVQVAEConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="facebook/chameleon-7b")
 @strict
+# ChameleonConfig：LLM 侧 hidden/层数/RoPE/Swin norm 与 vq_config 聚合
 class ChameleonConfig(PreTrainedConfig):
     r"""
     model_parallel_size (`int`, *optional*, defaults to 1):
@@ -115,6 +117,7 @@ class ChameleonConfig(PreTrainedConfig):
     vocabulary_map: dict | None = None
     mlp_bias: bool = False
 
+# __post_init__：补全 VQ 子配置并解析 image_token_id
     def __post_init__(self, **kwargs):
         if self.vq_config is None:
             logger.info("vq_config is None. initializing the ChameleonVQConfig with default values.")
