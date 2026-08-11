@@ -15,23 +15,8 @@
     "src/transformers/models/mask2former/modular_mask2former.py",
     "src/transformers/models/maskformer/__init__.py",
     "src/transformers/models/maskformer/configuration_maskformer.py",
-    "src/transformers/models/maskformer/configuration_maskformer_swin.py",
-    "src/transformers/models/maskformer/image_processing_maskformer.py",
-    "src/transformers/models/maskformer/image_processing_pil_maskformer.py",
-    "src/transformers/models/maskformer/modeling_maskformer.py",
-    "src/transformers/models/maskformer/modeling_maskformer_swin.py",
-    "src/transformers/models/maskformer/modular_maskformer.py",
-    "src/transformers/models/mbart/__init__.py",
-    "src/transformers/models/mbart/configuration_mbart.py",
-    "src/transformers/models/mbart/modeling_mbart.py",
-    "src/transformers/models/mbart/tokenization_mbart.py",
-    "src/transformers/models/mbart50/__init__.py",
-    "src/transformers/models/mbart50/tokenization_mbart50.py",
-    "src/transformers/models/megatron_bert/__init__.py",
-    "src/transformers/models/megatron_bert/configuration_megatron_bert.py",
-    "src/transformers/models/megatron_bert/modeling_megatron_bert.py",
-    "src/transformers/models/mellum/__init__.py"
+    "src/transformers/models/maskformer/configuration_maskformer_swin.py"
   ],
   "remaining_pending": 1329,
-  "done": 1320
+  "done": 1335
 }
