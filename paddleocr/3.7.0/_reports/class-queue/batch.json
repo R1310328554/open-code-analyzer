@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T07:22:32Z",
   "files": [
-    "ppocr/modeling/heads/self_attention.py",
-    "ppocr/modeling/heads/sr_rensnet_transformer.py",
-    "ppocr/modeling/heads/table_att_head.py",
-    "ppocr/modeling/heads/table_master_head.py",
-    "ppocr/modeling/necks/__init__.py",
-    "ppocr/modeling/necks/csp_pan.py",
-    "ppocr/modeling/necks/ct_fpn.py",
-    "ppocr/modeling/necks/db_fpn.py",
-    "ppocr/modeling/necks/east_fpn.py",
-    "ppocr/modeling/necks/fce_fpn.py",
-    "ppocr/modeling/necks/fpn.py",
-    "ppocr/modeling/necks/fpn_unet.py",
-    "ppocr/modeling/necks/intracl.py",
-    "ppocr/modeling/necks/pg_fpn.py",
-    "ppocr/modeling/necks/pren_fpn.py",
     "ppocr/modeling/necks/rf_adaptor.py",
     "ppocr/modeling/necks/rnn.py",
     "ppocr/modeling/necks/sast_fpn.py",
@@ -33,5 +18,5 @@
     "ppocr/optimizer/optimizer.py"
   ],
   "remaining_pending": 122,
-  "done": 450
+  "done": 465
 }
