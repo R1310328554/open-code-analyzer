@@ -9,6 +9,7 @@ from django.utils.encoding import force_str
 from django.utils.regex_helper import _lazy_re_compile
 
 
+# MySQL SQL 操作：日期函数、类型转换与 ON DUPLICATE KEY
 class DatabaseOperations(BaseDatabaseOperations):
     compiler_module = "django.db.backends.mysql.compiler"
 
@@ -40,6 +41,7 @@ class DatabaseOperations(BaseDatabaseOperations):
     # EXTRACT format cannot be passed in parameters.
     _extract_format_re = _lazy_re_compile(r"[A-Z_]+")
 
+    # DAYOFWEEK/WEEK/EXTRACT 等 MySQL 日期提取
     def date_extract_sql(self, lookup_type, sql, params):
         # https://dev.mysql.com/doc/mysql/en/date-and-time-functions.html
         if lookup_type == "week_day":
@@ -64,6 +66,7 @@ class DatabaseOperations(BaseDatabaseOperations):
                 raise ValueError(f"Invalid lookup type: {lookup_type!r}")
             return f"EXTRACT({lookup_type} FROM {sql})", params
 
+    # DATE_FORMAT/MAKEDATE 日期截断
     def date_trunc_sql(self, lookup_type, sql, params, tzname=None):
         sql, params = self._convert_sql_to_tz(sql, params, tzname)
         fields = {
@@ -169,11 +172,13 @@ class DatabaseOperations(BaseDatabaseOperations):
         # 2**64 - 1, as recommended by the MySQL documentation
         return 18446744073709551615
 
+    # 反引号引用标识符
     def quote_name(self, name):
         if name.startswith("`") and name.endswith("`"):
             return name  # Quoting once is enough.
         return "`%s`" % name
 
+    # TRUNCATE 或 DELETE，前后切换 FOREIGN_KEY_CHECKS
     def sql_flush(self, style, tables, *, reset_sequences=False, allow_cascade=False):
         if not tables:
             return []
@@ -226,6 +231,7 @@ class DatabaseOperations(BaseDatabaseOperations):
             )
         return value
 
+    # USE_TZ 时将 aware datetime 转为 naive
     def adapt_datetimefield_value(self, value):
         if value is None:
             return None
@@ -265,6 +271,7 @@ class DatabaseOperations(BaseDatabaseOperations):
     def pk_default_value(self):
         return "NULL"
 
+    # 位运算转 CONVERT(SIGNED)，异或映射 POW
     def combine_expression(self, connector, sub_expressions):
         if connector == "^":
             return "POW(%s)" % ",".join(sub_expressions)
@@ -338,6 +345,7 @@ class DatabaseOperations(BaseDatabaseOperations):
         params = (*rhs_params, *lhs_params)
         return "TIMESTAMPDIFF(MICROSECOND, %s, %s)" % (rhs_sql, lhs_sql), params
 
+    # EXPLAIN FORMAT=TREE/ANALYZE，MariaDB 与 MySQL 差异
     def explain_query_prefix(self, format=None, **options):
         # Alias MySQL's TRADITIONAL to TEXT for consistency with other
         # backends.
@@ -360,6 +368,7 @@ class DatabaseOperations(BaseDatabaseOperations):
             prefix += " FORMAT=%s" % format
         return prefix
 
+    # MariaDB REGEXP 或 MySQL REGEXP_LIKE
     def regex_lookup(self, lookup_type):
         # REGEXP_LIKE doesn't exist in MariaDB.
         if self.connection.mysql_is_mariadb:
@@ -392,6 +401,7 @@ class DatabaseOperations(BaseDatabaseOperations):
                 lookup = "JSON_UNQUOTE(%s)"
         return lookup
 
+    # ON DUPLICATE KEY UPDATE（MySQL AS new / MariaDB VALUE）
     def on_conflict_suffix_sql(self, fields, on_conflict, update_fields, unique_fields):
         if on_conflict == OnConflict.UPDATE:
             conflict_suffix_sql = "ON DUPLICATE KEY UPDATE %(fields)s"

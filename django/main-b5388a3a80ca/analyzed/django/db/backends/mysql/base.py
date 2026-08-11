@@ -1,4 +1,6 @@
 """
+# MySQL/MariaDB 数据库后端（依赖 mysqlclient）
+MySQL database backend for Django."""
 MySQL database backend for Django.
 
 Requires mysqlclient: https://pypi.org/project/mysqlclient/
@@ -52,6 +54,7 @@ django_conversions = {
 server_version_re = _lazy_re_compile(r"(\d{1,2})\.(\d{1,2})\.(\d{1,2})")
 
 
+# MySQLdb 游标包装：将部分 OperationalError 映射为 IntegrityError
 class CursorWrapper:
     """
     A thin wrapper around MySQLdb's normal cursor class that catches particular
@@ -72,6 +75,7 @@ class CursorWrapper:
     def __init__(self, cursor):
         self.cursor = cursor
 
+    # 执行单条 SQL，转换特定错误码
     def execute(self, query, args=None):
         try:
             # args is None means no string interpolation
@@ -83,6 +87,7 @@ class CursorWrapper:
                 raise IntegrityError(*tuple(e.args))
             raise
 
+    # 批量执行 SQL
     def executemany(self, query, args):
         try:
             return self.cursor.executemany(query, args)
@@ -100,6 +105,7 @@ class CursorWrapper:
         return iter(self.cursor)
 
 
+# MySQL 连接包装器：字段类型映射、约束检查与版本探测
 class DatabaseWrapper(BaseDatabaseWrapper):
     vendor = "mysql"
     # This dictionary maps Field objects to their associated MySQL column
@@ -211,6 +217,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
     def get_database_version(self):
         return self.mysql_version
 
+    # 组装 mysqlclient.connect 参数字典
     def get_connection_params(self):
         kwargs = {
             "conv": django_conversions,
@@ -251,10 +258,12 @@ class DatabaseWrapper(BaseDatabaseWrapper):
         return kwargs
 
     @async_unsafe
+    # 建立 MySQLdb 连接
     def get_new_connection(self, conn_params):
         connection = Database.connect(**conn_params)
         return connection
 
+    # 设置 SQL_AUTO_IS_NULL 与会话隔离级别
     def init_connection_state(self):
         super().init_connection_state()
         assignments = []
@@ -276,6 +285,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
                 cursor.execute("; ".join(assignments))
 
     @async_unsafe
+    # 返回 CursorWrapper 包装的游标
     def create_cursor(self, name=None):
         cursor = self.connection.cursor()
         return CursorWrapper(cursor)
@@ -290,6 +300,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
         with self.wrap_database_errors:
             self.connection.autocommit(autocommit)
 
+    # SET foreign_key_checks=0
     def disable_constraint_checking(self):
         """
         Disable foreign key checks, primarily for use in adding rows with
@@ -300,6 +311,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
             cursor.execute("SET foreign_key_checks=0")
         return True
 
+    # SET foreign_key_checks=1
     def enable_constraint_checking(self):
         """
         Re-enable foreign key checks after they have been disabled.
@@ -313,6 +325,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
         finally:
             self.needs_rollback = needs_rollback
 
+    # 校验外键引用完整性
     def check_constraints(self, table_names=None):
         """
         Check each table name in `table_names` for rows with invalid foreign
@@ -370,6 +383,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
                             )
                         )
 
+    # ping 检测连接是否存活
     def is_usable(self):
         try:
             self.connection.ping()
@@ -394,6 +408,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
         return {}
 
     @cached_property
+    # 缓存 VERSION、sql_mode、存储引擎等服务器变量
     def mysql_server_data(self):
         with self.temporary_connection() as cursor:
             # Select some server variables and test if the time zone

@@ -18,6 +18,7 @@ from django.utils.duration import duration_microseconds
 from django.utils.encoding import force_str
 
 
+# 数据库 SQL 操作抽象基类：日期截断、类型转换、分页与冲突处理
 class BaseDatabaseOperations:
     """
     Encapsulate backend-specific differences, such as the way a backend
@@ -61,6 +62,7 @@ class BaseDatabaseOperations:
     # Prefix for EXPLAIN queries, or None EXPLAIN isn't supported.
     explain_prefix = None
 
+    # 绑定 BaseDatabaseWrapper 实例
     def __init__(self, connection):
         self.connection = connection
         self._cache = None
@@ -68,6 +70,7 @@ class BaseDatabaseOperations:
     def __del__(self):
         del self.connection
 
+    # 返回自增主键建表 SQL（子类实现）
     def autoinc_sql(self, table, column):
         """
         Return any SQL needed to support auto-incrementing primary keys, or
@@ -77,6 +80,7 @@ class BaseDatabaseOperations:
         """
         return None
 
+    # 计算 bulk_create 每批最大行数
     def bulk_batch_size(self, fields, objs):
         """
         Return the maximum allowed batch size for the backend. The fields
@@ -120,6 +124,7 @@ class BaseDatabaseOperations:
         """
         return "%s"
 
+    # 生成日期 EXTRACT 类 SQL 片段
     def date_extract_sql(self, lookup_type, sql, params):
         """
         Given a lookup_type of 'year', 'month', or 'day', return the SQL that
@@ -130,6 +135,7 @@ class BaseDatabaseOperations:
             "method"
         )
 
+    # 生成日期截断 SQL
     def date_trunc_sql(self, lookup_type, sql, params, tzname=None):
         """
         Given a lookup_type of 'year', 'month', or 'day', return the SQL that
@@ -173,6 +179,7 @@ class BaseDatabaseOperations:
             "method"
         )
 
+    # 生成 datetime 截断 SQL
     def datetime_trunc_sql(self, lookup_type, sql, params, tzname):
         """
         Given a lookup_type of 'year', 'month', 'day', 'hour', 'minute', or
@@ -238,6 +245,7 @@ class BaseDatabaseOperations:
         """
         return []
 
+    # 生成 SELECT FOR UPDATE 子句
     def for_update_sql(self, nowait=False, skip_locked=False, of=(), no_key=False):
         """
         Return the FOR UPDATE SQL clause to lock rows for an update operation.
@@ -257,6 +265,7 @@ class BaseDatabaseOperations:
             return self.connection.ops.no_limit_value(), offset
         return None, offset
 
+    # 生成分页 LIMIT/OFFSET SQL
     def limit_offset_sql(self, low_mark, high_mark):
         """Return LIMIT/OFFSET SQL clause."""
         limit, offset = self._get_limit_offset_params(low_mark, high_mark)
@@ -284,6 +293,7 @@ class BaseDatabaseOperations:
         values_sql = ", ".join([f"({sql})" for sql in placeholder_rows_sql])
         return f"VALUES {values_sql}"
 
+    # 返回游标上次实际执行的 SQL 字符串
     def last_executed_query(self, cursor, sql, params):
         """
         Return a string of the query last executed by the given cursor, with
@@ -403,6 +413,7 @@ class BaseDatabaseOperations:
         """
         return cursor.fetchall()
 
+    # 按名称加载 SQL 编译器类
     def compiler(self, compiler_name):
         """
         Return the SQLCompiler class corresponding to the given name,
@@ -413,6 +424,7 @@ class BaseDatabaseOperations:
             self._cache = import_module(self.compiler_module)
         return getattr(self._cache, compiler_name)
 
+    # 引用标识符（表名、列名）
     def quote_name(self, name):
         """
         Return a quoted version of the given table, index, or column name. Do
@@ -463,6 +475,7 @@ class BaseDatabaseOperations:
         """
         return ""
 
+    # 返回清空指定表的 SQL 语句列表
     def sql_flush(self, style, tables, *, reset_sequences=False, allow_cascade=False):
         """
         Return a list of SQL statements required to remove all data from
@@ -581,6 +594,7 @@ class BaseDatabaseOperations:
             return None
         return str(value)
 
+    # 将 Python datetime 适配为数据库参数
     def adapt_datetimefield_value(self, value):
         """
         Transform a datetime value to an object compatible with what is
@@ -674,6 +688,7 @@ class BaseDatabaseOperations:
         second = self.adapt_datetimefield_value(second)
         return [first, second]
 
+    # 返回从数据库值到 Python 的转换器列表
     def get_db_converters(self, expression):
         """
         Return a list of functions needed to convert field data.
@@ -739,6 +754,7 @@ class BaseDatabaseOperations:
             return True
         return False
 
+    # 组合位运算、幂运算等表达式 SQL
     def combine_expression(self, connector, sub_expressions):
         """
         Combine a list of subexpressions into a single expression, using
@@ -839,6 +855,7 @@ class BaseDatabaseOperations:
             )
         return start_, end_
 
+    # 生成 EXPLAIN 查询前缀
     def explain_query_prefix(self, format=None, **options):
         if not self.connection.features.supports_explaining_query_execution:
             raise NotSupportedError(
@@ -860,9 +877,11 @@ class BaseDatabaseOperations:
             raise ValueError("Unknown options: %s" % ", ".join(sorted(options.keys())))
         return self.explain_prefix
 
+    # 返回 INSERT/INSERT OR IGNORE 等语句前缀
     def insert_statement(self, on_conflict=None):
         return "INSERT INTO"
 
+    # 生成 ON CONFLICT/UPSERT 后缀 SQL
     def on_conflict_suffix_sql(self, fields, on_conflict, update_fields, unique_fields):
         return ""
 

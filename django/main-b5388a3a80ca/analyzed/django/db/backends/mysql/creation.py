@@ -7,7 +7,9 @@ from django.db.backends.base.creation import BaseDatabaseCreation
 from .client import DatabaseClient
 
 
+# MySQL 测试库创建、克隆（mysqldump）与字符集后缀
 class DatabaseCreation(BaseDatabaseCreation):
+    # 返回 CREATE DATABASE 的 CHARACTER SET/COLLATE 后缀
     def sql_table_creation_suffix(self):
         suffix = []
         test_settings = self.connection.settings_dict["TEST"]
@@ -17,6 +19,7 @@ class DatabaseCreation(BaseDatabaseCreation):
             suffix.append("COLLATE %s" % test_settings["COLLATION"])
         return " ".join(suffix)
 
+    # 创建测试库，1007（库已存在）时允许 keepdb 继续
     def _execute_create_test_db(self, cursor, parameters, keepdb=False):
         try:
             super()._execute_create_test_db(cursor, parameters, keepdb)
@@ -28,6 +31,7 @@ class DatabaseCreation(BaseDatabaseCreation):
             else:
                 raise
 
+    # 通过 mysqldump 管道克隆测试库
     def _clone_test_db(self, suffix, verbosity, keepdb=False):
         source_database_name = self.connection.settings_dict["NAME"]
         target_database_name = self.get_test_db_clone_settings(suffix)["NAME"]
@@ -59,6 +63,7 @@ class DatabaseCreation(BaseDatabaseCreation):
                     sys.exit(2)
         self._clone_db(source_database_name, target_database_name)
 
+    # mysqldump 导出源库并导入目标库
     def _clone_db(self, source_database_name, target_database_name):
         cmd_args, cmd_env = DatabaseClient.settings_to_cmd_args_env(
             self.connection.settings_dict, []

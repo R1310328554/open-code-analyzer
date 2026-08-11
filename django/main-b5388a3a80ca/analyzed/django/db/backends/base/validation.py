@@ -1,15 +1,19 @@
+# 数据库后端字段校验抽象基类
 class BaseDatabaseValidation:
     """Encapsulate backend-specific validation."""
 
+    # 绑定 BaseDatabaseWrapper 实例
     def __init__(self, connection):
         self.connection = connection
 
     def __del__(self):
         del self.connection
 
+    # 系统检查入口，默认无错误
     def check(self, **kwargs):
         return []
 
+    # 校验单个字段类型是否被后端支持
     def check_field(self, field, **kwargs):
         errors = []
         # Backends may implement a check_field_type() method.

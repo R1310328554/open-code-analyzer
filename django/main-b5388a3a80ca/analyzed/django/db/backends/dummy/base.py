@@ -1,4 +1,6 @@
 """
+# 占位数据库后端：除 close 外所有 API 均抛出 ImproperlyConfigured
+Dummy database backend for Django."""
 Dummy database backend for Django.
 
 Django uses this if the database ENGINE setting is empty (None or empty
@@ -17,6 +19,7 @@ from django.db.backends.base.operations import BaseDatabaseOperations
 from django.db.backends.dummy.features import DummyDatabaseFeatures
 
 
+# 抛出 DATABASES.ENGINE 未配置错误
 def complain(*args, **kwargs):
     raise ImproperlyConfigured(
         "settings.DATABASES is improperly configured. "
@@ -25,24 +28,29 @@ def complain(*args, **kwargs):
     )
 
 
+# 空操作，用于 rollback/close 等
 def ignore(*args, **kwargs):
     pass
 
 
+# 占位 Operations：quote_name 等调用 complain
 class DatabaseOperations(BaseDatabaseOperations):
     quote_name = complain
 
 
+# 占位 Client：runshell 调用 complain
 class DatabaseClient(BaseDatabaseClient):
     runshell = complain
 
 
+# 占位 Creation：测试库操作多为 ignore
 class DatabaseCreation(BaseDatabaseCreation):
     create_test_db = ignore
     destroy_test_db = ignore
     serialize_db_to_string = ignore
 
 
+# 占位 Introspection：内省方法调用 complain
 class DatabaseIntrospection(BaseDatabaseIntrospection):
     get_table_list = complain
     get_table_description = complain
@@ -50,6 +58,7 @@ class DatabaseIntrospection(BaseDatabaseIntrospection):
     get_indexes = complain
 
 
+# 占位连接包装器：实际数据库操作均不可用
 class DatabaseWrapper(BaseDatabaseWrapper):
     operators = {}
     # Override the base class implementations with null
@@ -72,5 +81,6 @@ class DatabaseWrapper(BaseDatabaseWrapper):
     introspection_class = DatabaseIntrospection
     ops_class = DatabaseOperations
 
+    # 占位后端始终视为可用（直到真正访问）
     def is_usable(self):
         return True

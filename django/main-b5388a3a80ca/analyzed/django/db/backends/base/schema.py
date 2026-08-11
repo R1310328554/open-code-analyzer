@@ -23,6 +23,7 @@ from django.utils import timezone
 logger = logging.getLogger("django.db.backends.schema")
 
 
+# 判断修改字段时是否需临时删除该关系上的约束
 def _is_relevant_relation(relation, altered_field):
     """
     When altering the given field, must constraints on its model from the given
@@ -42,6 +43,7 @@ def _is_relevant_relation(relation, altered_field):
     )
 
 
+# 按名称排序返回模型全部反向关系字段
 def _all_related_fields(model):
     # Related fields must be returned in a deterministic order.
     return sorted(
@@ -55,6 +57,7 @@ def _all_related_fields(model):
     )
 
 
+# 递归收集需同步处理的外键关系对（排除 M2M）
 def _related_non_m2m_objects(old_field, new_field):
     # Filter out m2m objects from reverse relations.
     # Return (old_relation, new_relation) tuples.
@@ -78,6 +81,7 @@ def _related_non_m2m_objects(old_field, new_field):
         )
 
 
+# Schema 变更编辑器抽象基类：建表、改列、索引与约束
 class BaseDatabaseSchemaEditor:
     """
     This class and its subclasses are responsible for emitting schema-changing
@@ -151,6 +155,7 @@ class BaseDatabaseSchemaEditor:
     sql_alter_table_comment = "COMMENT ON TABLE %(table)s IS %(comment)s"
     sql_alter_column_comment = "COMMENT ON COLUMN %(table)s.%(column)s IS %(comment)s"
 
+    # collect_sql 为真时仅收集 SQL 不执行
     def __init__(self, connection, collect_sql=False, atomic=True):
         self.connection = connection
         self.collect_sql = collect_sql
@@ -163,6 +168,7 @@ class BaseDatabaseSchemaEditor:
 
     # State-managing methods
 
+    # 进入上下文：初始化 deferred_sql 并可选开启 atomic
     def __enter__(self):
         self.deferred_sql = []
         if self.atomic_migration:
@@ -170,6 +176,7 @@ class BaseDatabaseSchemaEditor:
             self.atomic.__enter__()
         return self
 
+    # 无异常时执行 deferred_sql，并退出 atomic 块
     def __exit__(self, exc_type, exc_value, traceback):
         if exc_type is None:
             for sql in self.deferred_sql:
@@ -179,6 +186,7 @@ class BaseDatabaseSchemaEditor:
 
     # Core utility functions
 
+    # 执行单条 DDL/DML，collect_sql 模式下追加到 collected_sql
     def execute(self, sql, params=()):
         """Execute the given SQL statement, with optional parameters."""
         # Don't perform the transactional DDL check if SQL is being collected
@@ -513,6 +521,7 @@ class BaseDatabaseSchemaEditor:
 
     # Actions
 
+    # 创建模型对应表及索引、约束
     def create_model(self, model):
         """
         Create a table and any accompanying indexes or unique constraints for
@@ -548,6 +557,7 @@ class BaseDatabaseSchemaEditor:
             if field.remote_field.through._meta.auto_created:
                 self.create_model(field.remote_field.through)
 
+    # 删除模型表
     def delete_model(self, model):
         """Delete a model from the database."""
         # Handle auto-created intermediary models
@@ -569,6 +579,7 @@ class BaseDatabaseSchemaEditor:
             ):
                 self.deferred_sql.remove(sql)
 
+    # 创建索引
     def add_index(self, model, index):
         """Add an index on a model."""
         if (
@@ -580,6 +591,7 @@ class BaseDatabaseSchemaEditor:
         # necessity to avoid escaping attempts on execution.
         self.execute(index.create_sql(model, self), params=None)
 
+    # 删除索引
     def remove_index(self, model, index):
         """Remove an index from a model."""
         if (
@@ -599,6 +611,7 @@ class BaseDatabaseSchemaEditor:
             self.remove_index(model, old_index)
             self.add_index(model, new_index)
 
+    # 添加 Check/Unique 等表级约束
     def add_constraint(self, model, constraint):
         """Add a constraint to a model."""
         sql = constraint.create_sql(model, self)
@@ -607,6 +620,7 @@ class BaseDatabaseSchemaEditor:
             # params=None a necessity to avoid escaping attempts on execution.
             self.execute(sql, params=None)
 
+    # 删除表级约束
     def remove_constraint(self, model, constraint):
         """Remove a constraint from a model."""
         sql = constraint.remove_sql(model, self)
@@ -709,6 +723,7 @@ class BaseDatabaseSchemaEditor:
             )
         self.execute(self._delete_constraint_sql(sql, model, constraint_names[0]))
 
+    # 重命名表
     def alter_db_table(self, model, old_db_table, new_db_table):
         """Rename the table a model points to."""
         if old_db_table == new_db_table or (
@@ -757,6 +772,7 @@ class BaseDatabaseSchemaEditor:
             }
         )
 
+    # 向已有表添加字段
     def add_field(self, model, field):
         """
         Create a field on a model. Usually involves adding a column, but may
@@ -846,6 +862,7 @@ class BaseDatabaseSchemaEditor:
         if self.connection.features.connection_persists_old_columns:
             self.connection.close()
 
+    # 从表删除字段
     def remove_field(self, model, field):
         """
         Remove a field from a model. Usually involves deleting a column,
@@ -878,6 +895,7 @@ class BaseDatabaseSchemaEditor:
             ):
                 self.deferred_sql.remove(sql)
 
+    # 修改字段类型、约束或默认值
     def alter_field(self, model, old_field, new_field, strict=False):
         """
         Allow a field's type, uniqueness, nullability, default, column,

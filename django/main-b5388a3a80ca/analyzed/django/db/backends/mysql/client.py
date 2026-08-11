@@ -3,10 +3,12 @@ import signal
 from django.db.backends.base.client import BaseDatabaseClient
 
 
+# MySQL 命令行客户端（mysql）启动封装
 class DatabaseClient(BaseDatabaseClient):
     executable_name = "mysql"
 
     @classmethod
+    # 将 DATABASES 配置转为 mysql 命令行参数与 MYSQL_PWD 环境变量
     def settings_to_cmd_args_env(cls, settings_dict, parameters):
         args = [cls.executable_name]
         env = None
@@ -61,6 +63,7 @@ class DatabaseClient(BaseDatabaseClient):
         args.extend(parameters)
         return args, env
 
+    # 启动 mysql shell，临时忽略 SIGINT 以便中止查询
     def runshell(self, parameters):
         sigint_handler = signal.getsignal(signal.SIGINT)
         try:

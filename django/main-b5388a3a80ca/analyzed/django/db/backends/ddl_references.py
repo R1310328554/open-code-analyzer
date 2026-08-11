@@ -1,4 +1,6 @@
 """
+# 延迟 DDL 语句的引用对象，支持迁移中重命名表/列
+Helpers to manipulate deferred DDL statements"""
 Helpers to manipulate deferred DDL statements that might need to be adjusted or
 discarded when executing a migration.
 """
@@ -6,15 +8,18 @@ discarded when executing a migration.
 from copy import deepcopy
 
 
+# DDL 引用基类：判断与重命名表/列/索引引用
 class Reference:
     """Base class that defines the reference interface."""
 
+    # 是否引用指定表
     def references_table(self, table):
         """
         Return whether or not this instance references the specified table.
         """
         return False
 
+    # 是否引用指定列
     def references_column(self, table, column):
         """
         Return whether or not this instance references the specified column.
@@ -27,6 +32,7 @@ class Reference:
         """
         return False
 
+    # 将旧表名替换为新表名
     def rename_table_references(self, old_table, new_table):
         """
         Rename all references to the old_name to the new_table.
@@ -48,6 +54,7 @@ class Reference:
         )
 
 
+# 单表名引用
 class Table(Reference):
     """Hold a reference to a table."""
 
@@ -69,6 +76,7 @@ class Table(Reference):
         return self.quote_name(self.table)
 
 
+# 表多列引用基类
 class TableColumns(Table):
     """Base class for references to multiple columns of a table."""
 
@@ -86,6 +94,7 @@ class TableColumns(Table):
                     self.columns[index] = new_column
 
 
+# 一列或多列的引用，渲染为带引号的列列表
 class Columns(TableColumns):
     """Hold a reference to one or many columns."""
 
@@ -110,6 +119,7 @@ class Columns(TableColumns):
         )
 
 
+# 索引名引用
 class IndexName(TableColumns):
     """Hold a reference to an index name."""
 
@@ -122,6 +132,7 @@ class IndexName(TableColumns):
         return self.create_index_name(self.table, self.columns, self.suffix)
 
 
+# 带操作符类的索引列引用
 class IndexColumns(Columns):
     def __init__(self, table, columns, quote_name, col_suffixes=(), opclasses=()):
         self.opclasses = opclasses
@@ -145,6 +156,7 @@ class IndexColumns(Columns):
         )
 
 
+# 外键约束名引用（含源表与目标表）
 class ForeignKeyName(TableColumns):
     """Hold a reference to a foreign key name."""
 
@@ -191,6 +203,7 @@ class ForeignKeyName(TableColumns):
         return self.create_fk_name(self.table, self.columns, suffix)
 
 
+# SQL 模板与命名部分的容器，支持嵌套引用
 class Statement(Reference):
     """
     Statement template and formatting parameters container.
@@ -236,6 +249,7 @@ class Statement(Reference):
         return self.template % self.parts
 
 
+# 基于 Query 表达式的索引/约束列引用
 class Expressions(TableColumns):
     def __init__(self, table, expressions, compiler, quote_value):
         self.compiler = compiler

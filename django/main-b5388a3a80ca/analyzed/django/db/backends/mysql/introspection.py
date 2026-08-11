@@ -9,6 +9,7 @@ from django.db.backends.base.introspection import TableInfo as BaseTableInfo
 from django.db.models import Index
 from django.utils.datastructures import OrderedSet
 
+# 扩展 BaseFieldInfo：unsigned、JSON 约束与列注释
 FieldInfo = namedtuple(
     "FieldInfo",
     [
@@ -25,9 +26,11 @@ InfoLine = namedtuple(
     "col_name data_type max_len num_prec num_scale extra column_default "
     "collation is_unsigned comment",
 )
+# 扩展 BaseTableInfo：表注释
 TableInfo = namedtuple("TableInfo", [*BaseTableInfo._fields, "comment"])
 
 
+# MySQL information_schema 内省实现
 class DatabaseIntrospection(BaseDatabaseIntrospection):
     data_types_reverse = {
         FIELD_TYPE.BLOB: "TextField",
@@ -53,6 +56,7 @@ class DatabaseIntrospection(BaseDatabaseIntrospection):
         FIELD_TYPE.VAR_STRING: "CharField",
     }
 
+    # 识别 AutoField、无符号整型与 JSONField
     def get_field_type(self, data_type, description):
         field_type = super().get_field_type(data_type, description)
         if "auto_increment" in description.extra:
@@ -77,6 +81,7 @@ class DatabaseIntrospection(BaseDatabaseIntrospection):
             return "JSONField"
         return field_type
 
+    # 返回当前库的表与视图列表
     def get_table_list(self, cursor):
         """Return a list of table and view names in the current database."""
         cursor.execute("""
@@ -92,6 +97,7 @@ class DatabaseIntrospection(BaseDatabaseIntrospection):
             for row in cursor.fetchall()
         ]
 
+    # 合并 information_schema 与 cursor.description 列信息
     def get_table_description(self, cursor, table_name):
         """
         Return a description of the table with the DB-API cursor.description
@@ -192,6 +198,7 @@ class DatabaseIntrospection(BaseDatabaseIntrospection):
                 return [{"table": table_name, "column": field_info.name}]
         return []
 
+    # 从 key_column_usage 读取外键关系
     def get_relations(self, cursor, table_name):
         """
         Return a dictionary of
@@ -259,6 +266,7 @@ class DatabaseIntrospection(BaseDatabaseIntrospection):
                 check_columns.add(token.value[1:-1])
         return check_columns
 
+    # 汇总主键、唯一、外键、Check 与 SHOW INDEX 信息
     def get_constraints(self, cursor, table_name):
         """
         Retrieve any constraints or keys (unique, pk, fk, check, index) across

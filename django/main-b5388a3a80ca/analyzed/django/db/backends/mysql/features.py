@@ -4,6 +4,7 @@ from django.db.backends.base.features import BaseDatabaseFeatures
 from django.utils.functional import cached_property
 
 
+# MySQL/MariaDB 能力标志：版本分支、存储引擎与 sql_mode 差异
 class DatabaseFeatures(BaseDatabaseFeatures):
     empty_fetchmany_value = ()
     related_fields_match_type = True
@@ -63,6 +64,7 @@ class DatabaseFeatures(BaseDatabaseFeatures):
     supports_json_negative_indexing = False
 
     @cached_property
+    # MariaDB 10.11+ 或 MySQL 8.4+
     def minimum_database_version(self):
         if self.connection.mysql_is_mariadb:
             return (10, 11)
@@ -81,6 +83,7 @@ class DatabaseFeatures(BaseDatabaseFeatures):
     test_now_utc_template = "UTC_TIMESTAMP(6)"
 
     @cached_property
+    # 按后端限制跳过不兼容的 Django 测试
     def django_test_skips(self):
         skips = {
             "This doesn't work on MySQL.": {
@@ -139,6 +142,7 @@ class DatabaseFeatures(BaseDatabaseFeatures):
         return self.connection.mysql_is_mariadb
 
     @cached_property
+    # MyISAM 无法内省外键
     def can_introspect_foreign_keys(self):
         "Confirm support for introspected foreign keys"
         return self._mysql_storage_engine != "MyISAM"
@@ -162,6 +166,7 @@ class DatabaseFeatures(BaseDatabaseFeatures):
     )
 
     @cached_property
+    # mysql.time_zone 表是否已加载
     def has_zoneinfo_database(self):
         return self.connection.mysql_server_data["has_zoneinfo_database"]
 
@@ -183,6 +188,7 @@ class DatabaseFeatures(BaseDatabaseFeatures):
         return formats
 
     @cached_property
+    # MyISAM 不支持事务
     def supports_transactions(self):
         """
         All storage engines except MyISAM support transactions.
