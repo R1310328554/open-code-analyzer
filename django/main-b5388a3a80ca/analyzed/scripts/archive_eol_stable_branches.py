@@ -1,10 +1,17 @@
 #! /usr/bin/env python3
-import argparse
+"""
+archive_eol_stable_branches — 将已 EOL 的稳定分支打 tag 并删除远程分支。
+
+供发布经理在停止维护旧 stable 分支时归档提交历史。
+"""
+
+import argparseimport argparse
 import os
 import subprocess
 import sys
 
 
+# 执行 shell 命令；dry_run 时仅打印不执行
 def run(cmd, *, cwd=None, env=None, dry_run=True):
     """Run a command with optional dry-run behavior."""
     environ = os.environ.copy()
@@ -27,6 +34,7 @@ def run(cmd, *, cwd=None, env=None, dry_run=True):
         return result.decode().strip()
 
 
+# 校验 --checkout-dir 存在且为目录
 def validate_env(checkout_dir):
     if not checkout_dir:
         sys.exit("Error: checkout directory not provided (--checkout-dir).")
@@ -36,6 +44,7 @@ def validate_env(checkout_dir):
         sys.exit(f"Error: '{checkout_dir}' is not a directory.")
 
 
+# 列出远程分支并按 include_fn 过滤
 def get_remote_branches(checkout_dir, include_fn):
     """Return list of remote branches filtered by include_fn."""
     result = run(
@@ -47,6 +56,7 @@ def get_remote_branches(checkout_dir, include_fn):
     return [b for b in branches if include_fn(b)]
 
 
+# 返回分支 tip 的 commit hash 与最后提交时间
 def get_branch_info(checkout_dir, branch):
     """Return (commit_hash, last_update_date) for a given branch."""
     commit_hash = run(["git", "rev-parse", branch], cwd=checkout_dir, dry_run=False)
@@ -58,6 +68,7 @@ def get_branch_info(checkout_dir, branch):
     return commit_hash, last_update
 
 
+# 在分支最后一次提交处创建带签名的本地 tag
 def create_tag(checkout_dir, branch, commit_hash, last_update, *, dry_run=True):
     """Create a tag locally for a given branch at its last update."""
     tag_name = branch.replace("origin/", "", 1)
@@ -71,6 +82,7 @@ def create_tag(checkout_dir, branch, commit_hash, last_update, *, dry_run=True):
     return tag_name
 
 
+# 删除本地跟踪分支并向 origin 推送 --delete
 def delete_remote_and_local_branch(checkout_dir, branch, *, dry_run=True):
     """Delete a remote branch from origin and the maching local branch."""
     try:
@@ -89,6 +101,7 @@ def delete_remote_and_local_branch(checkout_dir, branch, *, dry_run=True):
     )
 
 
+# CLI：匹配分支、确认后打 tag、删分支并 push --tags
 def main():
     parser = argparse.ArgumentParser(
         description="Archive Django branches into tags and optionally delete them."

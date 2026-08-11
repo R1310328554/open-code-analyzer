@@ -1,6 +1,9 @@
 #! /usr/bin/env python
 
-"""Helper to build and publish Django artifacts.
+"""
+do_django_release — 构建 wheel/tarball、生成校验和并输出发布清单。
+
+Helper to build and publish Django artifacts."""Helper to build and publish Django artifacts.
 
 Original author: Tim Graham.
 Other authors: Mariusz Felisiak, Natalia Bidart.
@@ -13,7 +16,8 @@ import re
 import subprocess
 from datetime import date
 
-checksum_file_text = """This file contains MD5, SHA1, and SHA256 checksums for the
+# 发布 checksum 文件模板：MD5/SHA1/SHA256 与 Git tag 说明
+checksum_file_text = """This file contains MD5checksum_file_text = """This file contains MD5, SHA1, and SHA256 checksums for the
 source-code tarball and wheel files of Django {django_version}, released {release_date}.
 
 It also includes the commit hash of the release tag, identifying the exact
@@ -66,21 +70,25 @@ The {django_version} tag points to commit {commit_hash}.
 """
 
 
+# 调用 build 模块生成 dist/ 下的 wheel 与 sdist
 def build_artifacts():
     from build.__main__ import main as build_main
 
     build_main([])
 
 
+# 对指定发布文件计算十六进制摘要
 def do_checksum(checksum_algo, release_file, dist_path):
     with open(os.path.join(dist_path, release_file), "rb") as f:
         return checksum_algo(f.read()).hexdigest()
 
 
+# 当前 HEAD 的 commit hash，写入 checksum 文件
 def get_commit_hash():
     return subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
 
 
+# 从完整版本号提取主版本（去掉 a/b/rc 后缀）供 diff 目录名
 def parse_major_version(django_version):
     major = ".".join(django_version.split(".")[:2])
     match = re.search("[abrc]", major)
@@ -89,6 +97,7 @@ def parse_major_version(django_version):
     return major
 
 
+# 在 dist/ 中定位 .whl 与 .tar.gz 文件名
 def find_release_artifacts(dist_path):
     wheel_name = None
     tarball_name = None
@@ -100,6 +109,7 @@ def find_release_artifacts(dist_path):
     return wheel_name, tarball_name
 
 
+# 填充 checksum 模板并写入 Django-{version}.checksum.txt
 def create_checksum_file(
     *,
     django_version,
@@ -137,6 +147,7 @@ def create_checksum_file(
         f.write(checksum_file_text.format(**kwargs).encode("ascii"))
 
 
+# 主流程：清理、构建、校验、diff 源码并打印发布步骤
 def main():
     pgp_key_id = os.getenv("PGP_KEY_ID")
     pgp_key_url = os.getenv("PGP_KEY_URL")
@@ -153,7 +164,8 @@ def main():
         dest_folder
     ), "Missing DEST_FOLDER: Set this env var to the path to place the artifacts."
 
-    # Ensure the working directory is clean.
+    # 发布前 git clean -fdx 确保工作区干净
+    # Ensure the working directory is clean.    # Ensure the working directory is clean.
     subprocess.call(["git", "clean", "-fdx"])
 
     commit_hash = get_commit_hash()
@@ -161,6 +173,7 @@ def main():
     django_repo_path = os.path.abspath(os.path.curdir)
     dist_path = os.path.join(django_repo_path, "dist")
 
+    # 构建 wheel 与源码 tarball
     # Build release files.
     build_artifacts()
     wheel_name, tarball_name = find_release_artifacts(dist_path)
@@ -189,8 +202,10 @@ def main():
         pgp_key_url=pgp_key_url,
     )
 
+    # 解压 wheel 与 checkout 中 django/ 做 diff -qr  sanity check
     print("\n\nDiffing release with checkout for sanity check.")
 
+    # 解压 wheel、对比包内 django 与当前树，再删除临时目录
     # Unzip and diff...
     unzip_command = [
         "unzip",
@@ -215,25 +230,31 @@ def main():
         ]
     )
 
+    # 以下打印 gpg 签名、打 tag、上传 PyPI 等人工步骤
     print("\n\n=> Commands to run NOW:")
 
-    # Sign the checksum file, this may prompt for a passphrase.
+    # 对 checksum 文件 clearsign（可能提示 PGP 口令）
+    # Sign the checksum file, this may prompt for a passphrase.    # Sign the checksum file, this may prompt for a passphrase.
     pgp_email_flag = f"-u {pgp_email} " if pgp_email else ""
     print(f"gpg --clearsign {pgp_email_flag}--digest-algo SHA256 {checksum_file_path}")
-    # Create, verify and push tag.
+    # 创建带签名 release tag 并本地 verify
+    # Create, verify and push tag.    # Create, verify and push tag.
     print(f'git tag --sign --message="Tag {django_version}" {django_version}')
     print(f"git tag --verify {django_version}")
 
-    # Copy binaries outside the current repo tree to avoid lossing them.
+    # 将 dist 复制到 DEST_FOLDER 以免 clean 丢失产物
+    # Copy binaries outside the current repo tree to avoid lossing them.    # Copy binaries outside the current repo tree to avoid lossing them.
     subprocess.run(["cp", "-r", dist_path, artifacts_path])
 
-    # Make the binaries available to the world
+    # 临近发布时间再上传 djangoproject admin 与 PyPI
+    # Make the binaries available to the world    # Make the binaries available to the world
     print(
         "\n\n=> These ONLY 15 MINUTES BEFORE RELEASE TIME (consider new terminal "
         "session with isolated venv)!"
     )
 
-    # Upload the checksum file and artifacts to the djangoproject admin.
+    # 在 releases/release 后台添加上传 tarball、wheel 与 .asc
+    # Upload the checksum file and artifacts to the djangoproject admin.    # Upload the checksum file and artifacts to the djangoproject admin.
     print(
         "\n==> ACTION Add tarball, wheel, and checksum files to the Release entry at:"
         f"https://www.djangoproject.com/admin/releases/release/{django_version}"
@@ -243,17 +264,20 @@ def main():
         f"* Signed checksum {checksum_file_path}.asc"
     )
 
-    # Verify the release artifacts (GPG signature, checksums, and smoke test).
+    # 运行 verify_release.sh 校验 GPG、摘要与冒烟测试
+    # Verify the release artifacts (GPG signature, checksums, and smoke test).    # Verify the release artifacts (GPG signature, checksums, and smoke test).
     print("\n==> ACTION Verify the release artifacts:")
     print(f"VERSION={django_version} verify_release.sh")
 
-    # Upload to PyPI.
+    # twine upload --repository django 上传 wheel/sdist
+    # Upload to PyPI.    # Upload to PyPI.
     print("\n==> ACTION Upload to PyPI, ensure your release venv is activated:")
     print(f"cd {artifacts_path}")
     print("pip install -U pip twine")
     print("twine upload --repository django dist/*")
 
-    # Push the tags.
+    # 最后 git push --tags 推送 release tag
+    # Push the tags.    # Push the tags.
     print("\n==> ACTION Push the tags:")
     print("git push --tags")
 

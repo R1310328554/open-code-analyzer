@@ -1,8 +1,11 @@
-/* global QUnit, MapWidget, ol */
+/* GIS OLMapWidget：OpenLayers 地图控件序列化、交互与底图行为 */
+/* global QUnit, MapWidget, ol *//* global QUnit, MapWidget, ol */
 "use strict";
 
+// OpenLayers MapWidget 单元测试套件
 QUnit.module("gis.OLMapWidget");
 
+// 新建 Point 控件时矢量层含默认要素，serialize 写入 textarea
 QUnit.test("MapWidget.featureAdded", function (assert) {
     const options = {
         id: "id_point",
@@ -19,6 +22,7 @@ QUnit.test("MapWidget.featureAdded", function (assert) {
     );
 });
 
+// 地图视图投影默认为 Web Mercator EPSG:3857
 QUnit.test("MapWidget.map_srid", function (assert) {
     const options = {
         id: "id_point",
@@ -33,6 +37,7 @@ QUnit.test("MapWidget.map_srid", function (assert) {
     );
 });
 
+// defaultCenter：无坐标时为 0,0；可配置 default_lat/lon 并设缩放
 QUnit.test("MapWidget.defaultCenter", function (assert) {
     const options = {
         id: "id_point",
@@ -56,6 +61,7 @@ QUnit.test("MapWidget.defaultCenter", function (assert) {
     assert.equal(Math.round(widget.map.getView().getZoom()), 17);
 });
 
+// 已有几何时 draw  inactive、modify active
 QUnit.test("MapWidget.interactions", function (assert) {
     const options = {
         id: "id_point",
@@ -76,6 +82,7 @@ QUnit.test("MapWidget.interactions", function (assert) {
     );
 });
 
+// clearFeatures 清空隐藏字段中的 GeoJSON
 QUnit.test("MapWidget.clearFeatures", function (assert) {
     const options = {
         id: "id_point",
@@ -89,6 +96,7 @@ QUnit.test("MapWidget.clearFeatures", function (assert) {
     document.getElementById("id_point").value = initial_value;
 });
 
+// MultiPolygon 集合类型：is_collection 为真且 draw 默认可用
 QUnit.test("MapWidget.multipolygon", function (assert) {
     const options = {
         id: "id_multipolygon",
@@ -104,6 +112,7 @@ QUnit.test("MapWidget.multipolygon", function (assert) {
     );
 });
 
+// 各 geom_name 对应 is_collection：Multi* 与 GeometryCollection 为真
 QUnit.test("MapWidget.IsCollection", function (assert) {
     const options = {
         id: "id_point",
@@ -140,13 +149,16 @@ QUnit.test("MapWidget.IsCollection", function (assert) {
     assert.ok(widget.options.is_collection);
 });
 
+// layerBuilder.osm 返回 Tile 层且源为 ol.source.OSM
 QUnit.test("MapWidget.layerBuilder.osm returns OSM layer", function (assert) {
     const layer = MapWidget.layerBuilder.osm();
     assert.ok(layer instanceof ol.layer.Tile, "Layer is Tile");
     assert.ok(layer.getSource() instanceof ol.source.OSM, "Source is OSM");
 });
 
+// nasaWorldview 底图使用 XYZ 源且 URL 含 earthdata.nasa.gov
 QUnit.test(
+    "MapWidget.layerBuilder.nasaWorldview returns XYZ layer",QUnit.test(
     "MapWidget.layerBuilder.nasaWorldview returns XYZ layer",
     function (assert) {
         const layer = MapWidget.layerBuilder.nasaWorldview();
@@ -159,7 +171,9 @@ QUnit.test(
     },
 );
 
+// 未指定 base_layer 时默认 OSM 底图
 QUnit.test(
+    "MapWidget uses default OSM base layer when none specified",QUnit.test(
     "MapWidget uses default OSM base layer when none specified",
     function (assert) {
         const widget = new MapWidget({
@@ -174,7 +188,9 @@ QUnit.test(
     },
 );
 
+// base_layer 字符串从 layerBuilder 解析命名底图
 QUnit.test(
+    "MapWidget uses named base layer from layerBuilder",QUnit.test(
     "MapWidget uses named base layer from layerBuilder",
     function (assert) {
         const widget = new MapWidget({
@@ -190,7 +206,9 @@ QUnit.test(
     },
 );
 
+// 传入 ol.layer 实例时直接使用，不经过 builder
 QUnit.test(
+    "MapWidget uses passed-in base layer object directly",QUnit.test(
     "MapWidget uses passed-in base layer object directly",
     function (assert) {
         const customLayer = new ol.layer.Tile({ source: new ol.source.OSM() });
@@ -208,7 +226,9 @@ QUnit.test(
     },
 );
 
+// initMapWidgetInSection 扫描 dj_map_wrapper，跳过 formset __prefix__ 模板
 QUnit.test(
+    "initMapWidgetInSection initializes widgets and skips __prefix__",QUnit.test(
     "initMapWidgetInSection initializes widgets and skips __prefix__",
     function (assert) {
         const wrapper1 = document.createElement("div");

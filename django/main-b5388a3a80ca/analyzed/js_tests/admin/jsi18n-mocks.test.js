@@ -1,30 +1,40 @@
-"use strict";
+/* admin jsi18n 模拟库：QUnit 测试中替代真实 JavaScriptCatalog 的 gettext/格式桩 */
+"use strict";"use strict";
 {
-    const django = this.django;
+    // 在测试全局对象上挂载 django 命名空间
+    const django = this.django;    const django = this.django;
 
-    django.pluralidx = function (count) {
+    // 英语复数规则桩：单数返回 0，否则 1
+    django.pluralidx = function (count) {    django.pluralidx = function (count) {
         return count === 1 ? 0 : 1;
     };
 
-    /* gettext identity library */
+    /* gettext 恒等实现：直接返回 msgid，不做翻译 */
+    /* gettext identity library */    /* gettext identity library */
 
-    django.gettext = function (msgid) {
+    // gettext：原样返回消息 id
+    django.gettext = function (msgid) {    django.gettext = function (msgid) {
         return msgid;
     };
-    django.ngettext = function (singular, plural, count) {
+    // ngettext：按 count 选择单复数字符串
+    django.ngettext = function (singular, plural, count) {    django.ngettext = function (singular, plural, count) {
         return count === 1 ? singular : plural;
     };
-    django.gettext_noop = function (msgid) {
+    // gettext_noop：标记待翻译字符串但不翻译
+    django.gettext_noop = function (msgid) {    django.gettext_noop = function (msgid) {
         return msgid;
     };
-    django.pgettext = function (context, msgid) {
+    // pgettext：带上下文的 gettext 桩
+    django.pgettext = function (context, msgid) {    django.pgettext = function (context, msgid) {
         return msgid;
     };
-    django.npgettext = function (context, singular, plural, count) {
+    // npgettext：带上下文的 ngettext 桩
+    django.npgettext = function (context, singular, plural, count) {    django.npgettext = function (context, singular, plural, count) {
         return count === 1 ? singular : plural;
     };
 
-    django.interpolate = function (fmt, obj, named) {
+    // interpolate：按 %(name)s 或 %s 占位符填充字符串
+    django.interpolate = function (fmt, obj, named) {    django.interpolate = function (fmt, obj, named) {
         if (named) {
             return fmt.replace(/%\(\w+\)s/g, function (match) {
                 return String(obj[match.slice(2, -2)]);
@@ -36,7 +46,8 @@
         }
     };
 
-    /* formatting library */
+    /* 本地化格式常量：日期/时间/数字分组等默认值 */
+    /* formatting library */    /* formatting library */
 
     django.formats = {
         DATETIME_FORMAT: "N j, Y, P",
@@ -68,7 +79,8 @@
         YEAR_MONTH_FORMAT: "F Y",
     };
 
-    django.get_format = function (format_type) {
+    // get_format：返回 formats 字典中的格式，未知键则原样返回
+    django.get_format = function (format_type) {    django.get_format = function (format_type) {
         const value = django.formats[format_type];
         if (typeof value === "undefined") {
             return format_type;
@@ -77,7 +89,8 @@
         }
     };
 
-    /* add to global namespace */
+    /* 将 django 上的 i18n 函数复制到全局，供 admin JS 直接调用 */
+    /* add to global namespace */    /* add to global namespace */
     this.pluralidx = django.pluralidx;
     this.gettext = django.gettext;
     this.ngettext = django.ngettext;
