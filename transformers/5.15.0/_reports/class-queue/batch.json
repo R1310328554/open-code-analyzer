@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T00:47:31Z",
-  "files": [
-    "src/transformers/models/depth_anything/__init__.py",
-    "src/transformers/models/depth_anything/configuration_depth_anything.py",
-    "src/transformers/models/depth_anything/modeling_depth_anything.py",
-    "src/transformers/models/depth_pro/__init__.py",
-    "src/transformers/models/depth_pro/configuration_depth_pro.py",
-    "src/transformers/models/depth_pro/image_processing_depth_pro.py",
-    "src/transformers/models/depth_pro/modeling_depth_pro.py",
-    "src/transformers/models/detr/__init__.py",
-    "src/transformers/models/detr/configuration_detr.py",
-    "src/transformers/models/detr/image_processing_detr.py",
-    "src/transformers/models/detr/image_processing_pil_detr.py",
-    "src/transformers/models/detr/modeling_detr.py",
-    "src/transformers/models/dia/__init__.py",
-    "src/transformers/models/dia/configuration_dia.py",
-    "src/transformers/models/dia/feature_extraction_dia.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2079,
-  "done": 585
+  "done": 600
 }
