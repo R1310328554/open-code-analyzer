@@ -11,6 +11,8 @@ SQL tables and derived rowsets.
 
 """
 
+# SELECT 可选项：FromClause、Join、Select 与子查询
+
 from __future__ import annotations
 
 import collections
@@ -154,6 +156,7 @@ _LabelConventionCallable = Callable[
 ]
 
 
+# join() 右表目标 Protocol
 class _JoinTargetProtocol(Protocol):
     @util.ro_non_memoized_property
     def _from_objects(self) -> List[FromClause]: ...
@@ -192,6 +195,7 @@ _SetupJoinsElement = Tuple[
 _SelectIterable = Iterable[Union["ColumnElement[Any]", "TextClause"]]
 
 
+# LIMIT/OFFSET 绑定参数专用 BindParameter
 class _OffsetLimitParam(BindParameter[int]):
     inherit_cache = True
 
@@ -200,6 +204,7 @@ class _OffsetLimitParam(BindParameter[int]):
         return self.effective_value
 
 
+# 返回行集的 ClauseElement 基类
 class ReturnsRows(roles.ReturnsRowsRole, DQLDMLClauseElement):
     """The base-most class for Core constructs that have some concept of
     columns that can represent rows.
@@ -288,14 +293,17 @@ class ReturnsRows(roles.ReturnsRowsRole, DQLDMLClauseElement):
         raise NotImplementedError()
 
 
+# 可执行且返回行集的语句 mixin
 class ExecutableReturnsRows(Executable, ReturnsRows):
     """base for executable statements that return rows."""
 
 
+# 带行类型参数的 ReturnsRows 泛型
 class TypedReturnsRows(ExecutableReturnsRows, Generic[_TP]):
     """base for a typed executable statements that return rows."""
 
 
+# 可选中/可 FROM 的子句基类
 class Selectable(ReturnsRows):
     """Mark a class as being selectable."""
 
@@ -374,6 +382,7 @@ class Selectable(ReturnsRows):
         )
 
 
+# 支持 SELECT 前缀（DISTINCT 等）mixin
 class HasPrefixes:
     _prefixes: Tuple[Tuple[DQLDMLClauseElement, str], ...] = ()
 
@@ -425,6 +434,7 @@ class HasPrefixes:
         return self
 
 
+# 支持 SELECT 后缀 mixin
 class HasSuffixes:
     _suffixes: Tuple[Tuple[DQLDMLClauseElement, str], ...] = ()
 
@@ -477,6 +487,7 @@ class HasSuffixes:
         return self
 
 
+# 支持优化器 hint mixin
 class HasHints:
     _hints: util.immutabledict[Tuple[FromClause, str], str] = (
         util.immutabledict()
@@ -603,6 +614,7 @@ class HasHints:
         return self
 
 
+# FROM 子句元素：表、Join、子查询
 class FromClause(roles.AnonymizedFromClauseRole, Selectable):
     """Represent an element that can be used within the ``FROM``
     clause of a ``SELECT`` statement.
@@ -1058,6 +1070,7 @@ class FromClause(roles.AnonymizedFromClauseRole, Selectable):
         ) -> Union[FromGrouping, Self]: ...
 
 
+# 具显式 name 的 FromClause
 class NamedFromClause(FromClause):
     """A :class:`.FromClause` that has a name.
 
@@ -1102,6 +1115,7 @@ class NamedFromClause(FromClause):
         return TableValuedColumn(self, type_api.TABLEVALUE)
 
 
+# SELECT 列标签风格枚举
 class SelectLabelStyle(Enum):
     """Label style constants that may be passed to
     :meth:`_sql.Select.set_label_style`."""
@@ -1230,6 +1244,7 @@ class SelectLabelStyle(Enum):
 LABEL_STYLE_DEFAULT = LABEL_STYLE_DISAMBIGUATE_ONLY
 
 
+# JOIN 表达式：内连接/外连接/on 条件
 class Join(roles.DMLTableRole, FromClause):
     """Represent a ``JOIN`` construct between two
     :class:`_expression.FromClause`
@@ -1664,6 +1679,7 @@ class Join(roles.DMLTableRole, FromClause):
         return self_list + self.left._from_objects + self.right._from_objects
 
 
+# 禁止直接 __init__ 的 mixin（别名类用）
 class NoInit:
     def __init__(self, *arg: Any, **kw: Any):
         raise NotImplementedError(
@@ -1679,6 +1695,8 @@ class NoInit:
         )
 
 
+# LATERAL 派生表 mixin
+# LATERAL 子查询/函数别名
 class LateralFromClause(NamedFromClause):
     """mark a FROM clause as being able to render directly as LATERAL"""
 
@@ -1693,6 +1711,8 @@ class LateralFromClause(NamedFromClause):
 #        -> TableSample -> only for FromClause
 
 
+# 带 alias 的行返回 FromClause 基类
+# 表/子查询 SQL 别名
 class AliasedReturnsRows(NoInit, NamedFromClause):
     """Base class of aliases against tables, subqueries, and other
     selectables."""
@@ -1792,6 +1812,7 @@ class AliasedReturnsRows(NoInit, NamedFromClause):
         return [self]
 
 
+# FromClause 别名包装基类
 class FromClauseAlias(AliasedReturnsRows):
     element: FromClause
 
@@ -1840,6 +1861,7 @@ class Alias(roles.DMLTableRole, FromClauseAlias):
         ).alias(name=name, flat=flat)
 
 
+# 表值函数结果的 Lateral Alias
 class TableValuedAlias(LateralFromClause, Alias):
     """An alias against a "table valued" SQL function.
 
@@ -2057,6 +2079,7 @@ class Lateral(FromClauseAlias, LateralFromClause):
         ).lateral(name=name)
 
 
+# TABLESAMPLE 采样子句别名
 class TableSample(FromClauseAlias):
     """Represent a TABLESAMPLE clause.
 
@@ -2115,6 +2138,7 @@ class TableSample(FromClauseAlias):
         return self.sampling
 
 
+# 公共表表达式 CTE：WITH 子句命名子查询
 class CTE(
     roles.DMLTableRole,
     roles.IsCTERole,
@@ -2312,10 +2336,12 @@ class CTE(
         return self._restates if self._restates is not None else self
 
 
+# CTE 编译选项 NamedTuple
 class _CTEOpts(NamedTuple):
     nesting: bool
 
 
+# 列对象与名称对 NamedTuple
 class _ColumnsPlusNames(NamedTuple):
     required_label_name: Optional[str]
     """
@@ -2349,6 +2375,7 @@ class _ColumnsPlusNames(NamedTuple):
     """
 
 
+# SELECT 类语句（含 compound）基类
 class SelectsRows(ReturnsRows):
     """Sub-base of ReturnsRows for elements that deliver rows
     directly, namely SELECT and INSERT/UPDATE/DELETE..RETURNING"""
@@ -2524,6 +2551,7 @@ class SelectsRows(ReturnsRows):
         return result
 
 
+# 可定义/引用 CTE 的 SELECT mixin
 class HasCTE(roles.HasCTERole, SelectsRows):
     """Mixin that declares a class to include CTE support."""
 
@@ -2952,6 +2980,7 @@ class HasCTE(roles.HasCTERole, SelectsRows):
         )
 
 
+# 命名子查询（.subquery() 产物）
 class Subquery(AliasedReturnsRows):
     """Represent a subquery of a SELECT.
 
@@ -3013,6 +3042,7 @@ class Subquery(AliasedReturnsRows):
         return self.element.set_label_style(LABEL_STYLE_NONE).scalar_subquery()
 
 
+# 括号分组的 FROM 元素
 class FromGrouping(GroupedElement, FromClause):
     """Represent a grouping of a FROM clause"""
 
@@ -3075,6 +3105,7 @@ class FromGrouping(GroupedElement, FromClause):
         ) -> Self: ...
 
 
+# 具名 FROM 分组
 class NamedFromGrouping(FromGrouping, NamedFromClause):
     """represent a grouping of a named FROM clause
 
@@ -3091,6 +3122,7 @@ class NamedFromGrouping(FromGrouping, NamedFromClause):
         ) -> Self: ...
 
 
+# 无 MetaData 的临时表定义（Core select 用）
 class TableClause(roles.DMLTableRole, Immutable, NamedFromClause):
     """Represents a minimal "table" construct.
 
@@ -3253,6 +3285,7 @@ class TableClause(roles.DMLTableRole, Immutable, NamedFromClause):
 ForUpdateParameter = Union["ForUpdateArg", None, bool, Dict[str, Any]]
 
 
+# SELECT FOR UPDATE 参数封装
 class ForUpdateArg(ClauseElement):
     _traverse_internals: _TraverseInternalsType = [
         ("of", InternalTraversal.dp_clauseelement_list),
@@ -3323,6 +3356,7 @@ class ForUpdateArg(ClauseElement):
             self.of = None
 
 
+# VALUES 子句/构造（INSERT 或独立 VALUES）
 class Values(roles.InElementRole, HasCTE, Generative, LateralFromClause):
     """Represent a ``VALUES`` construct that can be used as a FROM element
     in a statement.
@@ -3480,6 +3514,7 @@ class Values(roles.InElementRole, HasCTE, Generative, LateralFromClause):
         return [self]
 
 
+# 标量 VALUES 用于 IN 比较
 class ScalarValues(roles.InElementRole, GroupedElement, ColumnElement[Any]):
     """Represent a scalar ``VALUES`` construct that can be used as a
     COLUMN element in a statement.
@@ -3528,6 +3563,7 @@ class ScalarValues(roles.InElementRole, GroupedElement, ColumnElement[Any]):
         def _ungroup(self) -> ColumnElement[Any]: ...
 
 
+# SELECT 语句抽象基类：CTE、compound、clone 支持
 class SelectBase(
     roles.SelectStatementRole,
     roles.DMLSelectRole,
@@ -3861,6 +3897,8 @@ class SelectBase(
 _SB = TypeVar("_SB", bound=SelectBase)
 
 
+# 括号包裹的 SELECT（优先级分组）
+# Select 编译状态与 memoized 属性
 class SelectStatementGrouping(GroupedElement, SelectBase, Generic[_SB]):
     """Represent a grouping of a :class:`_expression.SelectBase`.
 
@@ -3968,6 +4006,7 @@ class SelectStatementGrouping(GroupedElement, SelectBase, Generic[_SB]):
         raise NotImplementedError
 
 
+# 可链式修改的 SELECT 基类
 class GenerativeSelect(DialectKWArgs, SelectBase, Generative):
     """Base class for SELECT statements where additional elements can be
     added.
@@ -4483,6 +4522,8 @@ class GenerativeSelect(DialectKWArgs, SelectBase, Generative):
 
 
 @CompileState.plugin_for("default", "compound_select")
+# UNION 等复合 SELECT 编译状态
+# UNION/INTERSECT/EXCEPT 复合查询
 class CompoundSelectState(CompileState):
     @util.memoized_property
     def _label_resolve_dict(
@@ -4499,6 +4540,7 @@ class CompoundSelectState(CompileState):
         return d, d, d
 
 
+# UNION/INTERSECT/EXCEPT 关键字枚举
 class _CompoundSelectKeyword(Enum):
     UNION = "UNION"
     UNION_ALL = "UNION ALL"
@@ -5193,6 +5235,7 @@ class SelectState(util.MemoizedSlots, CompileState):
         return replace_from_obj_index
 
 
+# Select FROM 元素内部容器
 class _SelectFromElements:
     __slots__ = ()
 
@@ -5224,6 +5267,7 @@ class _SelectFromElements:
             yield element
 
 
+# Select 实体 memoization 辅助
 class _MemoizedSelectEntities(
     cache_key.HasCacheKey, traversals.HasCopyInternals, visitors.Traversible
 ):
@@ -5282,6 +5326,7 @@ class _MemoizedSelectEntities(
             select_stmt._setup_joins = select_stmt._with_options = ()
 
 
+# Core SELECT 语句：列、FROM、WHERE、ORDER BY 等
 class Select(
     HasPrefixes,
     HasSuffixes,
@@ -6744,6 +6789,7 @@ class Select(
         return CompoundSelect._create_intersect_all(self, *other)
 
 
+# 标量子查询（correlate/where 封装）
 class ScalarSelect(
     roles.InElementRole, Generative, GroupedElement, ColumnElement[_T]
 ):
@@ -6891,6 +6937,7 @@ class ScalarSelect(
         return self
 
 
+# EXISTS 子查询表达式
 class Exists(UnaryExpression[bool]):
     """Represent an ``EXISTS`` clause.
 
@@ -7041,6 +7088,7 @@ class Exists(UnaryExpression[bool]):
         return e
 
 
+# text() 包装的 SELECT 语句
 class TextualSelect(SelectBase, ExecutableReturnsRows, Generative):
     """Wrap a :class:`_expression.TextClause` construct within a
     :class:`_expression.SelectBase`
@@ -7205,6 +7253,7 @@ TextAsFrom = TextualSelect
 """Backwards compatibility with the previous name"""
 
 
+# 带 annotation 的 FromClause 子类
 class AnnotatedFromClause(Annotated):
     def _copy_internals(
         self,

@@ -6,7 +6,8 @@
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
 
-from collections import defaultdict as defaultdict
+# util 公开 API：集合、并发、compat 与 langhelpers 重导出
+from collections import defaultdict as defaultdictfrom collections import defaultdict as defaultdict
 from functools import partial as partial
 from functools import update_wrapper as update_wrapper
 

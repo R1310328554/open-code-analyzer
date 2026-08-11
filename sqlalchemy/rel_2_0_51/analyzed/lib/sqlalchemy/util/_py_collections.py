@@ -6,6 +6,8 @@
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 # mypy: allow-untyped-defs, allow-untyped-calls
 
+# 纯 Python 集合实现：C 扩展不可用时的回退
+
 from __future__ import annotations
 
 from itertools import filterfalse
@@ -35,6 +37,7 @@ _KT = TypeVar("_KT", bound=Any)
 _VT = TypeVar("_VT", bound=Any)
 
 
+# 禁止 mutating 操作的只读容器基类
 class ReadOnlyContainer:
     __slots__ = ()
 
@@ -56,6 +59,7 @@ class ReadOnlyContainer:
         self._readonly()
 
 
+# 不可变 dict 基类
 class ImmutableDictBase(ReadOnlyContainer, Dict[_KT, _VT]):
     if TYPE_CHECKING:
 
@@ -82,6 +86,7 @@ class ImmutableDictBase(ReadOnlyContainer, Dict[_KT, _VT]):
         self._readonly()
 
 
+# 不可变 dict 实现
 class immutabledict(ImmutableDictBase[_KT, _VT]):
     def __new__(cls, *args):
         new = ImmutableDictBase.__new__(cls)
@@ -158,6 +163,7 @@ class immutabledict(ImmutableDictBase[_KT, _VT]):
         )
 
 
+# 保持插入顺序的 set
 class OrderedSet(Set[_T]):
     __slots__ = ("_list",)
 
@@ -301,6 +307,7 @@ class OrderedSet(Set[_T]):
         return self
 
 
+# 按 identity 比较元素的 set
 class IdentitySet:
     """A set that considers only object id() for uniqueness.
 

@@ -6,10 +6,12 @@
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 # mypy: ignore-errors
 
-import os
+# Cython 扩展探测：运行时检测 cyextension 是否可用
+import osimport os
 import typing
 
 
+# 导入全部可选 Cython 扩展模块
 def _import_cy_extensions():
     # all cython extension extension modules are treated as optional by the
     # setup, so to ensure that all are compiled, all should be imported here

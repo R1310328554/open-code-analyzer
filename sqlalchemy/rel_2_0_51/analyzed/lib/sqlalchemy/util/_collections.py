@@ -8,6 +8,8 @@
 
 """Collection classes and helpers."""
 
+# 集合工具：LRUCache、Properties、IdentitySet 与注册表
+
 from __future__ import annotations
 
 import operator
@@ -141,6 +143,7 @@ def coerce_to_immutabledict(d: Mapping[_KT, _VT]) -> immutabledict[_KT, _VT]:
 EMPTY_DICT: immutabledict[Any, Any] = immutabledict()
 
 
+# 只读外观 dict：映射视图不复制底层
 class FacadeDict(ImmutableDictBase[_KT, _VT]):
     """A dictionary that is not publicly mutable."""
 
@@ -170,6 +173,7 @@ _DT = TypeVar("_DT", bound=Any)
 _F = TypeVar("_F", bound=Any)
 
 
+# 有序属性容器（类 __dict__ 与 annotations 合并）
 class Properties(Generic[_T]):
     """Provide a __getattr__/__setattr__ interface over a dict."""
 
@@ -257,6 +261,7 @@ class Properties(Generic[_T]):
         self._data.clear()
 
 
+# 保持插入顺序的 Properties
 class OrderedProperties(Properties[_T]):
     """Provide a __getattr__/__setattr__ interface with an OrderedDict
     as backing store."""
@@ -267,6 +272,7 @@ class OrderedProperties(Properties[_T]):
         Properties.__init__(self, OrderedDict())
 
 
+# 只读 Properties
 class ReadOnlyProperties(ReadOnlyContainer, Properties[_T]):
     """Provide immutable dict/object attribute to an underlying dictionary."""
 
@@ -287,6 +293,7 @@ OrderedDict = dict
 sort_dictionary = _ordered_dictionary_sort
 
 
+# 弱引用元素序列
 class WeakSequence(Sequence[_T]):
     def __init__(self, __elements: Sequence[_T] = ()):
         # adapted from weakref.WeakKeyDictionary, prevent reference
@@ -316,6 +323,7 @@ class WeakSequence(Sequence[_T]):
         return self._storage[index]()
 
 
+# 保持插入顺序的 IdentitySet
 class OrderedIdentitySet(IdentitySet):
     def __init__(self, iterable: Optional[Iterable[Any]] = None):
         IdentitySet.__init__(self)
@@ -325,6 +333,7 @@ class OrderedIdentitySet(IdentitySet):
                 self.add(o)
 
 
+# 首次赋值时调用 factory 的 dict
 class PopulateDict(Dict[_KT, _VT]):
     """A dict which populates missing values via a creation function.
 
@@ -341,6 +350,7 @@ class PopulateDict(Dict[_KT, _VT]):
         return val
 
 
+# 弱引用值的 PopulateDict
 class WeakPopulateDict(Dict[_KT, _VT]):
     """Like PopulateDict, but assumes a self + a method and does not create
     a reference cycle.
@@ -366,6 +376,7 @@ column_dict = dict
 ordered_column_set = OrderedSet
 
 
+# 去重追加列表（事件注册等场景）
 class UniqueAppender(Generic[_T]):
     """Appends items to a collection ensuring uniqueness.
 
@@ -474,6 +485,7 @@ def flatten_iterator(x: Iterable[_T]) -> Iterator[_T]:
             yield elem
 
 
+# 线程安全 LRU 缓存
 class LRUCache(typing.MutableMapping[_KT, _VT]):
     """Dictionary with 'squishy' removal of least
     recently used items.
@@ -579,14 +591,17 @@ class LRUCache(typing.MutableMapping[_KT, _VT]):
             self._mutex.release()
 
 
+# ScopedRegistry 工厂 callable Protocol
 class _CreateFuncType(Protocol[_T_co]):
     def __call__(self) -> _T_co: ...
 
 
+# ScopedRegistry 作用域 key callable Protocol
 class _ScopeFuncType(Protocol):
     def __call__(self) -> Any: ...
 
 
+# 按 scope 函数隔离的单例注册表
 class ScopedRegistry(Generic[_T]):
     """A Registry that can store one or multiple instances of a single
     class on the basis of a "scope" function.
@@ -651,6 +666,7 @@ class ScopedRegistry(Generic[_T]):
             pass
 
 
+# 线程本地 ScopedRegistry
 class ThreadLocalRegistry(ScopedRegistry[_T]):
     """A :class:`.ScopedRegistry` that uses a ``threading.local()``
     variable for storage.

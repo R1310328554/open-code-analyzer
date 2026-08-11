@@ -7,6 +7,8 @@
 
 """Base types API."""
 
+# 类型系统 API：TypeEngine、TypeDecorator 与编译绑定
+
 from __future__ import annotations
 
 from enum import Enum
@@ -72,6 +74,7 @@ _MatchedOnType = Union[
 ]
 
 
+# IN 列表空值哨兵枚举
 class _NoValueInList(Enum):
     NO_VALUE_IN_LIST = 0
     """indicates we are trying to determine the type of an expression
@@ -81,27 +84,33 @@ class _NoValueInList(Enum):
 _NO_VALUE_IN_LIST = _NoValueInList.NO_VALUE_IN_LIST
 
 
+# 字面量 SQL 渲染 callable Protocol
 class _LiteralProcessorType(Protocol[_T_co]):
     def __call__(self, value: Any) -> str: ...
 
 
+# 绑定参数预处理 callable Protocol
 class _BindProcessorType(Protocol[_T_con]):
     def __call__(self, value: Optional[_T_con]) -> Any: ...
 
 
+# 结果行后处理 callable Protocol
 class _ResultProcessorType(Protocol[_T_co]):
     def __call__(self, value: Any) -> Optional[_T_co]: ...
 
 
+# INSERT sentinel 值处理 Protocol
 class _SentinelProcessorType(Protocol[_T_co]):
     def __call__(self, value: Any) -> Optional[_T_co]: ...
 
 
+# 类型 memoization 基础 TypedDict
 class _BaseTypeMemoDict(TypedDict):
     impl: TypeEngine[Any]
     result: Dict[Any, Optional[_ResultProcessorType[Any]]]
 
 
+# 完整类型 memo TypedDict
 class _TypeMemoDict(_BaseTypeMemoDict, total=False):
     literal: Optional[_LiteralProcessorType[Any]]
     bind: Optional[_BindProcessorType[Any]]
@@ -109,12 +118,14 @@ class _TypeMemoDict(_BaseTypeMemoDict, total=False):
     custom: Dict[Any, object]
 
 
+# 类型比较器工厂 Protocol
 class _ComparatorFactory(Protocol[_T]):
     def __call__(
         self, expr: ColumnElement[_T]
     ) -> TypeEngine.Comparator[_T]: ...
 
 
+# SQL 类型引擎基类：编译、绑定与结果处理
 class TypeEngine(Visitable, Generic[_T]):
     """The ultimate base class for all SQL datatypes.
 
@@ -1107,6 +1118,7 @@ class TypeEngine(Visitable, Generic[_T]):
         return util.generic_repr(self)
 
 
+# TypeEngine 共享 mixin（非完整类型）
 class TypeEngineMixin:
     """classes which subclass this can act as "mixin" classes for
     TypeEngine."""
@@ -1135,6 +1147,7 @@ class TypeEngineMixin:
         def dialect_impl(self, dialect: Dialect) -> TypeEngine[Any]: ...
 
 
+# 需外部 Python 库的类型 mixin
 class ExternalType(TypeEngineMixin):
     """mixin that defines attributes and behaviors specific to third-party
     datatypes.
@@ -1312,6 +1325,7 @@ class ExternalType(TypeEngineMixin):
         return NO_CACHE
 
 
+# 用户自定义类型基类
 class UserDefinedType(
     ExternalType, TypeEngineMixin, TypeEngine[_T], util.EnsureKWArg
 ):
@@ -1402,6 +1416,7 @@ class UserDefinedType(
         def get_col_spec(self, **kw: Any) -> str: ...
 
 
+# 由其他类型模拟实现的类型 mixin
 class Emulated(TypeEngineMixin):
     """Mixin for base types that emulate the behavior of a DB-native type.
 
@@ -1474,6 +1489,7 @@ def _is_native_for_emulated(
     return hasattr(typ, "adapt_emulated_to_native")
 
 
+# 原生类型与 Emulated 配对 mixin
 class NativeForEmulated(TypeEngineMixin):
     """Indicates DB-native types supported by an :class:`.Emulated` type.
 
@@ -1520,6 +1536,7 @@ class NativeForEmulated(TypeEngineMixin):
     #        ...
 
 
+# 包装现有类型的装饰器基类
 class TypeDecorator(SchemaEventTarget, ExternalType, TypeEngine[_T]):
     '''Allows the creation of types which add additional functionality
     to an existing type.
@@ -2309,6 +2326,7 @@ class TypeDecorator(SchemaEventTarget, ExternalType, TypeEngine[_T]):
         return util.generic_repr(self, to_inspect=self.impl_instance)
 
 
+# 方言相关类型变体（with_variant）
 class Variant(TypeDecorator[_T]):
     """deprecated.  symbol is present for backwards-compatibility with
     workaround recipes, however this actual type should not be used.

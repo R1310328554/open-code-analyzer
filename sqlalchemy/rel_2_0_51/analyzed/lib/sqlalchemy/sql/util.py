@@ -8,6 +8,8 @@
 
 """High level utilities which build upon other modules here."""
 
+# SQL 高层工具：列适配、repr 与语句裁剪
+
 from __future__ import annotations
 
 from collections import deque
@@ -548,6 +550,7 @@ def _quote_ddl_expr(element):
         return repr(element)
 
 
+# SQL 元素 repr 格式化基类
 class _repr_base:
     _LIST: int = 0
     _TUPLE: int = 1
@@ -579,6 +582,7 @@ def _repr_single_value(value):
     return rp.trunc(value)
 
 
+# 结果行 repr 辅助
 class _repr_row(_repr_base):
     """Provide a string view of a row."""
 
@@ -596,6 +600,7 @@ class _repr_row(_repr_base):
         )
 
 
+# 超长 SQL 字符串截断显示
 class _long_statement(str):
     def __str__(self) -> str:
         lself = len(self)
@@ -611,6 +616,7 @@ class _long_statement(str):
             return str.__str__(self)
 
 
+# 绑定参数 repr 辅助
 class _repr_params(_repr_base):
     """Provide a string view of bound parameters.
 
@@ -1032,6 +1038,7 @@ def criterion_as_pairs(
     return pairs
 
 
+# 替换列/表的 traverse 适配器
 class ClauseAdapter(visitors.ReplacingExternalTraversal):
     """Clones and modifies clauses based on column correspondence.
 
@@ -1212,6 +1219,7 @@ class ClauseAdapter(visitors.ReplacingExternalTraversal):
         )
 
 
+# ColumnAdapter 列查找 Protocol
 class _ColumnLookup(Protocol):
     @overload
     def __getitem__(self, key: None) -> None: ...
@@ -1228,6 +1236,7 @@ class _ColumnLookup(Protocol):
     def __getitem__(self, key: Any) -> Any: ...
 
 
+# 按 selectable 映射替换列引用
 class ColumnAdapter(ClauseAdapter):
     """Extends ClauseAdapter with extra utility functions.
 

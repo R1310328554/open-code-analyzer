@@ -6,6 +6,8 @@
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 # mypy: allow-untyped-defs, allow-untyped-calls
 
+# SQL 树遍历：浅拷贝、克隆与结构比较
+
 from __future__ import annotations
 
 from collections import deque
@@ -40,6 +42,7 @@ COMPARE_FAILED = False
 COMPARE_SUCCEEDED = True
 
 
+# 比较两棵 SQL 表达式树是否结构等价
 def compare(obj1: Any, obj2: Any, **kw: Any) -> bool:
     strategy: TraversalComparatorStrategy
     if kw.get("use_proxies", False):
@@ -68,6 +71,7 @@ def _preconfigure_traversals(target_hierarchy: Type[Any]) -> None:
             )
 
 
+# 支持 _clone 浅拷贝的 traverse mixin
 class HasShallowCopy(HasTraverseInternals):
     """attribute-wide operations that are useful for classes that use
     __slots__ and therefore can't operate on their attributes in a dictionary.
@@ -182,6 +186,7 @@ class HasShallowCopy(HasTraverseInternals):
         return c
 
 
+# traverse 时触发 generative 语义的 mixin
 class GenerativeOnTraversal(HasShallowCopy):
     """Supplies Generative behavior but making use of traversals to shallow
     copy.
@@ -206,6 +211,7 @@ def _clone(element, **kw):
     return element._clone()
 
 
+# 支持 _copy_internals 深拷贝的 mixin
 class HasCopyInternals(HasTraverseInternals):
     __slots__ = ()
 
@@ -244,6 +250,7 @@ class HasCopyInternals(HasTraverseInternals):
                     setattr(self, attrname, result)
 
 
+# 按 InternalTraversal 分发 _copy_internals
 class _CopyInternalsTraversal(HasTraversalDispatch):
     """Generate a _copy_internals internal traversal dispatch for classes
     with a _traverse_internals collection."""
@@ -381,6 +388,7 @@ def _flatten_clauseelement(element):
     return element
 
 
+# 按 InternalTraversal 收集子节点
 class _GetChildrenTraversal(HasTraversalDispatch):
     """Generate a _children_traversal internal traversal dispatch for classes
     with a _traverse_internals collection."""
@@ -463,6 +471,7 @@ def _resolve_name_for_compare(element, name, anon_map, **kw):
     return name
 
 
+# SQL 树结构比较策略
 class TraversalComparatorStrategy(HasTraversalDispatch, util.MemoizedSlots):
     __slots__ = "stack", "cache", "anon_map"
 
@@ -990,6 +999,7 @@ class TraversalComparatorStrategy(HasTraversalDispatch, util.MemoizedSlots):
         return omit
 
 
+# 按列 identity 代理的比较策略
 class ColIdentityComparatorStrategy(TraversalComparatorStrategy):
     def compare_column_element(
         self, left, right, use_proxies=True, equivalents=(), **kw

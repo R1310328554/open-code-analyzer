@@ -10,6 +10,8 @@
 
 """Defines operators used in SQL expressions."""
 
+# SQL 表达式运算符：比较、逻辑与自定义 op() 封装
+
 from __future__ import annotations
 
 from enum import IntEnum
@@ -63,6 +65,7 @@ _T = TypeVar("_T", bound=Any)
 _FN = TypeVar("_FN", bound=Callable[..., Any])
 
 
+# op() 可调用对象的 Protocol：统一运算符签名
 class OperatorType(Protocol):
     """describe an op() function."""
 
@@ -119,6 +122,7 @@ sub = cast(OperatorType, _uncast_sub)
 truediv = cast(OperatorType, _uncast_truediv)
 
 
+# 比较与逻辑运算符基类：operate/reverse_operate 分发
 class Operators:
     """Base of comparison and logical operators.
 
@@ -379,6 +383,7 @@ class Operators:
         raise NotImplementedError(str(op))
 
 
+# 自定义 SQL 运算符：可指定 precedence 与 is_comparison
 class custom_op(OperatorType, Generic[_T]):
     """Represent a 'custom' operator.
 
@@ -495,6 +500,7 @@ class custom_op(OperatorType, Generic[_T]):
             )
 
 
+# ColumnElement 布尔/比较/算术运算符 mixin
 class ColumnOperators(Operators):
     """Defines boolean, comparison, and other operators for
     :class:`_expression.ColumnElement` expressions.
@@ -2538,6 +2544,7 @@ def _asbool(a: Any) -> Any:
     raise NotImplementedError()
 
 
+# 运算符嵌套深度上限枚举（防止无限递归）
 class _OpLimit(IntEnum):
     _smallest = -100
     _largest = 100

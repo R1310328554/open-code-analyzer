@@ -8,6 +8,8 @@
 
 """SQL specific types."""
 
+# SQL 内建类型：String、Numeric、DateTime、JSON、ARRAY 等
+
 from __future__ import annotations
 
 import collections.abc as collections_abc
@@ -86,6 +88,7 @@ _TE = TypeVar("_TE", bound="TypeEngine[Any]")
 _P = TypeVar("_P")
 
 
+# 支持 expression 类型查找的 TypeEngine mixin
 class HasExpressionLookup(TypeEngineMixin):
     """Mixin expression adaptations based on lookup tables.
 
@@ -124,6 +127,7 @@ class HasExpressionLookup(TypeEngineMixin):
     comparator_factory: _ComparatorFactory[Any] = Comparator
 
 
+# 支持 || 字符串拼接的类型 mixin
 class Concatenable(TypeEngineMixin):
     """A mixin that marks a type as supporting 'concatenation',
     typically strings."""
@@ -147,6 +151,7 @@ class Concatenable(TypeEngineMixin):
     comparator_factory: _ComparatorFactory[Any] = Comparator
 
 
+# 支持 [] 下标访问的类型 mixin（JSON/ARRAY）
 class Indexable(TypeEngineMixin):
     """A mixin that marks a type as supporting indexing operations,
     such as array or JSON structures.
@@ -172,6 +177,7 @@ class Indexable(TypeEngineMixin):
     comparator_factory: _ComparatorFactory[Any] = Comparator
 
 
+# 变长字符串类型
 class String(Concatenable, TypeEngine[str]):
     """The base for all string and character types.
 
@@ -267,6 +273,7 @@ class String(Concatenable, TypeEngine[str]):
         return dbapi.STRING
 
 
+# 无限长文本类型
 class Text(String):
     """A variably sized string type.
 
@@ -279,6 +286,7 @@ class Text(String):
     __visit_name__ = "text"
 
 
+# Unicode 变长字符串
 class Unicode(String):
     """A variable length Unicode string type.
 
@@ -322,6 +330,7 @@ class Unicode(String):
     __visit_name__ = "unicode"
 
 
+# Unicode 无限长文本
 class UnicodeText(Text):
     """An unbounded-length Unicode string type.
 
@@ -337,6 +346,7 @@ class UnicodeText(Text):
     __visit_name__ = "unicode_text"
 
 
+# 整数类型
 class Integer(HasExpressionLookup, TypeEngine[int]):
     """A type for ``int`` integers."""
 
@@ -385,6 +395,7 @@ class Integer(HasExpressionLookup, TypeEngine[int]):
         }
 
 
+# 小整数类型
 class SmallInteger(Integer):
     """A type for smaller ``int`` integers.
 
@@ -396,6 +407,7 @@ class SmallInteger(Integer):
     __visit_name__ = "small_integer"
 
 
+# 大整数类型
 class BigInteger(Integer):
     """A type for bigger ``int`` integers.
 
@@ -410,6 +422,7 @@ class BigInteger(Integer):
 _N = TypeVar("_N", bound=Union[decimal.Decimal, float])
 
 
+# 精确数值 DECIMAL/NUMERIC
 class Numeric(HasExpressionLookup, TypeEngine[_N]):
     """Base for non-integer numeric types, such as
     ``NUMERIC``, ``FLOAT``, ``DECIMAL``, and other variants.
@@ -592,6 +605,7 @@ class Numeric(HasExpressionLookup, TypeEngine[_N]):
         }
 
 
+# 浮点类型
 class Float(Numeric[_N]):
     """Type representing floating point types, such as ``FLOAT`` or ``REAL``.
 
@@ -697,6 +711,7 @@ class Float(Numeric[_N]):
             return None
 
 
+# 双精度浮点
 class Double(Float[_N]):
     """A type for double ``FLOAT`` floating point types.
 
@@ -711,6 +726,7 @@ class Double(Float[_N]):
     __visit_name__ = "double"
 
 
+# ISO8601 日期/时间字面量渲染 mixin
 class _RenderISO8601NoT:
     def _literal_processor_datetime(self, dialect):
         return self._literal_processor_portion(dialect, None)
@@ -736,6 +752,8 @@ class _RenderISO8601NoT:
         return process
 
 
+# 日期时间类型
+# 日期类型
 class DateTime(
     _RenderISO8601NoT, HasExpressionLookup, TypeEngine[dt.datetime]
 ):
@@ -841,6 +859,7 @@ class Date(_RenderISO8601NoT, HasExpressionLookup, TypeEngine[dt.date]):
         }
 
 
+# 时间类型
 class Time(_RenderISO8601NoT, HasExpressionLookup, TypeEngine[dt.time]):
     """A type for ``datetime.time()`` objects."""
 
@@ -877,6 +896,7 @@ class Time(_RenderISO8601NoT, HasExpressionLookup, TypeEngine[dt.time]):
         return self._literal_processor_time(dialect)
 
 
+# 二进制数据基类
 class _Binary(TypeEngine[bytes]):
     """Define base behavior for binary types."""
 
@@ -948,6 +968,7 @@ class _Binary(TypeEngine[bytes]):
         return dbapi.BINARY
 
 
+# 大二进制/BLOB 类型
 class LargeBinary(_Binary):
     """A type for large binary byte data.
 
@@ -971,6 +992,7 @@ class LargeBinary(_Binary):
         _Binary.__init__(self, length=length)
 
 
+# 需 DDL 创建/删除的枚举等 schema 类型基类
 class SchemaType(SchemaEventTarget, TypeEngineMixin):
     """Add capabilities to a type which allow for schema-level DDL to be
     associated with a type.
@@ -1221,6 +1243,7 @@ class SchemaType(SchemaEventTarget, TypeEngineMixin):
 _EnumTupleArg = Union[Sequence[enum.Enum], Sequence[str]]
 
 
+# 数据库 ENUM 类型
 class Enum(String, SchemaType, Emulated, TypeEngine[Union[str, enum.Enum]]):
     """Generic Enum Type.
 
@@ -1843,6 +1866,7 @@ class Enum(String, SchemaType, Emulated, TypeEngine[Union[str, enum.Enum]]):
             return super().python_type
 
 
+# Python pickle 序列化类型
 class PickleType(TypeDecorator[object]):
     """Holds Python objects, which are serialized using pickle.
 
@@ -1948,6 +1972,7 @@ class PickleType(TypeDecorator[object]):
             return x == y
 
 
+# 布尔类型
 class Boolean(SchemaType, Emulated, TypeEngine[bool]):
     """A bool datatype.
 
@@ -2089,6 +2114,7 @@ class Boolean(SchemaType, Emulated, TypeEngine[bool]):
             return processors.int_to_boolean
 
 
+# 时间间隔抽象基类
 class _AbstractInterval(HasExpressionLookup, TypeEngine[dt.timedelta]):
     @util.memoized_property
     def _expression_adaptations(self):
@@ -2112,6 +2138,7 @@ class _AbstractInterval(HasExpressionLookup, TypeEngine[dt.timedelta]):
         return Interval
 
 
+# datetime.timedelta 间隔类型
 class Interval(Emulated, _AbstractInterval, TypeDecorator[dt.timedelta]):
     """A type for ``datetime.timedelta()`` objects.
 
@@ -2235,6 +2262,7 @@ class Interval(Emulated, _AbstractInterval, TypeDecorator[dt.timedelta]):
         return process
 
 
+# JSON 文档类型
 class JSON(Indexable, TypeEngine[Any]):
     """Represent a SQL JSON type.
 
@@ -2823,6 +2851,7 @@ class JSON(Indexable, TypeEngine[Any]):
         return process
 
 
+# SQL 数组类型（PostgreSQL 等后端实现）
 class ARRAY(
     SchemaEventTarget, Indexable, Concatenable, TypeEngine[Sequence[_T]]
 ):
@@ -3262,6 +3291,7 @@ class ARRAY(
             )
 
 
+# Python tuple 复合类型
 class TupleType(TypeEngine[Tuple[Any, ...]]):
     """represent the composite type of a Tuple."""
 
@@ -3307,6 +3337,7 @@ class TupleType(TypeEngine[Tuple[Any, ...]]):
         )
 
 
+# REAL 浮点类型别名
 class REAL(Float[_N]):
     """The SQL REAL type.
 
@@ -3319,6 +3350,7 @@ class REAL(Float[_N]):
     __visit_name__ = "REAL"
 
 
+# FLOAT 浮点类型别名
 class FLOAT(Float[_N]):
     """The SQL FLOAT type.
 
@@ -3331,6 +3363,7 @@ class FLOAT(Float[_N]):
     __visit_name__ = "FLOAT"
 
 
+# DOUBLE 双精度别名
 class DOUBLE(Double[_N]):
     """The SQL DOUBLE type.
 
@@ -3345,6 +3378,7 @@ class DOUBLE(Double[_N]):
     __visit_name__ = "DOUBLE"
 
 
+# DOUBLE PRECISION 别名
 class DOUBLE_PRECISION(Double[_N]):
     """The SQL DOUBLE PRECISION type.
 
@@ -3359,6 +3393,7 @@ class DOUBLE_PRECISION(Double[_N]):
     __visit_name__ = "DOUBLE_PRECISION"
 
 
+# NUMERIC 精确数值别名
 class NUMERIC(Numeric[_N]):
     """The SQL NUMERIC type.
 
@@ -3371,6 +3406,7 @@ class NUMERIC(Numeric[_N]):
     __visit_name__ = "NUMERIC"
 
 
+# DECIMAL 精确数值别名
 class DECIMAL(Numeric[_N]):
     """The SQL DECIMAL type.
 
@@ -3383,6 +3419,7 @@ class DECIMAL(Numeric[_N]):
     __visit_name__ = "DECIMAL"
 
 
+# INTEGER 整数别名
 class INTEGER(Integer):
     """The SQL INT or INTEGER type.
 
@@ -3398,6 +3435,7 @@ class INTEGER(Integer):
 INT = INTEGER
 
 
+# SMALLINT 小整数别名
 class SMALLINT(SmallInteger):
     """The SQL SMALLINT type.
 
@@ -3410,6 +3448,7 @@ class SMALLINT(SmallInteger):
     __visit_name__ = "SMALLINT"
 
 
+# BIGINT 大整数别名
 class BIGINT(BigInteger):
     """The SQL BIGINT type.
 
@@ -3422,6 +3461,8 @@ class BIGINT(BigInteger):
     __visit_name__ = "BIGINT"
 
 
+# TIMESTAMP 日期时间别名
+# TIME 时间别名
 class TIMESTAMP(DateTime):
     """The SQL TIMESTAMP type.
 
@@ -3451,6 +3492,8 @@ class TIMESTAMP(DateTime):
         return dbapi.TIMESTAMP
 
 
+# DATETIME 日期时间别名
+# DATE 日期别名
 class DATETIME(DateTime):
     """The SQL DATETIME type."""
 
@@ -3469,12 +3512,14 @@ class TIME(Time):
     __visit_name__ = "TIME"
 
 
+# TEXT 文本别名
 class TEXT(Text):
     """The SQL TEXT type."""
 
     __visit_name__ = "TEXT"
 
 
+# CLOB 大文本别名
 class CLOB(Text):
     """The CLOB type.
 
@@ -3484,54 +3529,63 @@ class CLOB(Text):
     __visit_name__ = "CLOB"
 
 
+# VARCHAR 变长字符串别名
 class VARCHAR(String):
     """The SQL VARCHAR type."""
 
     __visit_name__ = "VARCHAR"
 
 
+# NVARCHAR Unicode 变长别名
 class NVARCHAR(Unicode):
     """The SQL NVARCHAR type."""
 
     __visit_name__ = "NVARCHAR"
 
 
+# CHAR 定长字符串别名
 class CHAR(String):
     """The SQL CHAR type."""
 
     __visit_name__ = "CHAR"
 
 
+# NCHAR Unicode 定长别名
 class NCHAR(Unicode):
     """The SQL NCHAR type."""
 
     __visit_name__ = "NCHAR"
 
 
+# BLOB 大二进制别名
 class BLOB(LargeBinary):
     """The SQL BLOB type."""
 
     __visit_name__ = "BLOB"
 
 
+# BINARY 二进制别名
 class BINARY(_Binary):
     """The SQL BINARY type."""
 
     __visit_name__ = "BINARY"
 
 
+# VARBINARY 变长二进制别名
 class VARBINARY(_Binary):
     """The SQL VARBINARY type."""
 
     __visit_name__ = "VARBINARY"
 
 
+# BOOLEAN 布尔别名
 class BOOLEAN(Boolean):
     """The SQL BOOLEAN type."""
 
     __visit_name__ = "BOOLEAN"
 
 
+# 未知/空类型占位
 class NullType(TypeEngine[None]):
     """An unknown type.
 
@@ -3583,6 +3637,7 @@ class NullType(TypeEngine[None]):
     comparator_factory = Comparator
 
 
+# 表值函数返回行类型
 class TableValueType(HasCacheKey, TypeEngine[Any]):
     """Refers to a table value type."""
 
@@ -3599,6 +3654,7 @@ class TableValueType(HasCacheKey, TypeEngine[Any]):
         ]
 
 
+# 全文 MATCH 结果布尔类型
 class MatchType(Boolean):
     """Refers to the return type of the MATCH operator.
 
@@ -3616,6 +3672,7 @@ class MatchType(Boolean):
 _UUID_RETURN = TypeVar("_UUID_RETURN", str, _python_UUID)
 
 
+# 跨方言 UUID 类型
 class Uuid(Emulated, TypeEngine[_UUID_RETURN]):
     """Represent a database agnostic UUID datatype.
 
@@ -3806,6 +3863,7 @@ class Uuid(Emulated, TypeEngine[_UUID_RETURN]):
                 return process
 
 
+# UUID 类型别名（NativeForEmulated）
 class UUID(Uuid[_UUID_RETURN], type_api.NativeForEmulated):
     """Represent the SQL UUID type.
 

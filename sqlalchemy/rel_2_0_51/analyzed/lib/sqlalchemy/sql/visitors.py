@@ -7,6 +7,8 @@
 
 """Visitor/traversal interface and library functions."""
 
+# 访问者模式：traverse、clone 与内外部遍历分发
+
 from __future__ import annotations
 
 from collections import deque
@@ -68,10 +70,12 @@ __all__ = [
 ]
 
 
+# 编译器 visit_* 分发 callable Protocol
 class _CompilerDispatchType(Protocol):
     def __call__(_self, self: Visitable, visitor: Any, **kw: Any) -> Any: ...
 
 
+# 可被 visit 遍历的节点基类
 class Visitable:
     """Base class for visitable objects.
 
@@ -146,6 +150,7 @@ class Visitable:
         return cls
 
 
+# 内部子节点遍历方式枚举
 class InternalTraversal(Enum):
     r"""Defines visitor symbols used for internal traversal.
 
@@ -435,6 +440,7 @@ be handled.
 """
 
 
+# 声明 _traverse_internals 的 mixin
 class HasTraverseInternals:
     """base for classes that have a "traverse internals" element,
     which defines all kinds of ways of traversing the elements of an object.
@@ -487,10 +493,12 @@ class HasTraverseInternals:
         )
 
 
+# 内部 traverse 分发 Protocol
 class _InternalTraversalDispatchType(Protocol):
     def __call__(s, self: object, visitor: HasTraversalDispatch) -> Any: ...
 
 
+# 按 InternalTraversal 自动分发的 mixin
 class HasTraversalDispatch:
     r"""Define infrastructure for classes that perform internal traversals
 
@@ -589,6 +597,7 @@ _dispatch_lookup = HasTraversalDispatch._dispatch_lookup
 _generate_traversal_dispatch()
 
 
+# 外部 clone/traverse 入口 mixin
 class ExternallyTraversible(HasTraverseInternals, Visitable):
     __slots__ = ()
 
@@ -629,10 +638,12 @@ _CE = TypeVar("_CE", bound="ColumnElement[Any]")
 _TraverseCallableType = Callable[[_ET], None]
 
 
+# clone 访问回调 Protocol
 class _CloneCallableType(Protocol):
     def __call__(self, element: _ET, **kw: Any) -> _ET: ...
 
 
+# traverse 变换回调 Protocol
 class _TraverseTransformCallableType(Protocol[_ET]):
     def __call__(self, element: _ET, **kw: Any) -> Optional[_ET]: ...
 
@@ -640,6 +651,7 @@ class _TraverseTransformCallableType(Protocol[_ET]):
 _ExtT = TypeVar("_ExtT", bound="ExternalTraversal")
 
 
+# 外部遍历/克隆基类
 class ExternalTraversal(util.MemoizedSlots):
     """Base class for visitor objects which can traverse externally using
     the :func:`.visitors.traverse` function.
@@ -714,6 +726,7 @@ class ExternalTraversal(util.MemoizedSlots):
         return self
 
 
+# 遍历时克隆子树的 traverse 基类
 class CloningExternalTraversal(ExternalTraversal):
     """Base class for visitor objects which can traverse using
     the :func:`.visitors.cloned_traverse` function.
@@ -753,6 +766,7 @@ class CloningExternalTraversal(ExternalTraversal):
         )
 
 
+# 遍历时替换节点的 traverse 基类
 class ReplacingExternalTraversal(CloningExternalTraversal):
     """Base class for visitor objects which can traverse using
     the :func:`.visitors.replacement_traverse` function.

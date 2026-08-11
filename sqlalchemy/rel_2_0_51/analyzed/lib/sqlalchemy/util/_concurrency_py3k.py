@@ -6,7 +6,8 @@
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 # mypy: allow-untyped-defs, allow-untyped-calls
 
-from __future__ import annotations
+# asyncio 与 greenlet 桥接：greenlet_spawn 与异步锁
+from __future__ import annotationsfrom __future__ import annotations
 
 import asyncio
 from contextvars import Context
@@ -71,6 +72,7 @@ def is_exit_exception(e: BaseException) -> bool:
 # Issue for context: https://github.com/python-greenlet/greenlet/issues/173
 
 
+# 在 asyncio 事件循环中运行的 greenlet
 class _AsyncIoGreenlet(greenlet):
     dead: bool
 
@@ -211,6 +213,7 @@ async def greenlet_spawn(
     return result  # type: ignore[no-any-return]
 
 
+# 跨 greenlet/asyncio 的互斥锁适配
 class AsyncAdaptedLock:
     @memoized_property
     def mutex(self) -> asyncio.Lock:

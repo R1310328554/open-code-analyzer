@@ -7,6 +7,9 @@
 
 """Compatibility namespace for sqlalchemy.sql.types."""
 
+# 类型公开命名空间：重导出 sqltypes 与 type_api 中的类型
+"""Compatibility namespace for sqlalchemy.sql.types."""
+
 from __future__ import annotations
 
 from .sql.sqltypes import _Binary as _Binary

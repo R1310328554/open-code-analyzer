@@ -29,6 +29,8 @@ as components in SQL expressions.
 
 """
 
+# 数据库元数据 schema：Table、Column、Constraint 与 MetaData
+
 from __future__ import annotations
 
 from abc import ABC
@@ -128,6 +130,7 @@ _ServerDefaultArgument = Union[
 _ServerOnUpdateArgument = _ServerDefaultArgument
 
 
+# schema 级常量枚举（RETAIN_SCHEMA 等）
 class SchemaConst(Enum):
     RETAIN_SCHEMA = 1
     """Symbol indicating that a :class:`_schema.Table`, :class:`.Sequence`
@@ -212,6 +215,7 @@ def _copy_expression(
 
 
 @inspection._self_inspects
+# 可创建/删除的数据库实体基类
 class SchemaItem(SchemaVisitable):
     """Base class for items that define a database schema."""
 
@@ -257,6 +261,7 @@ class SchemaItem(SchemaVisitable):
     _use_schema_map = True
 
 
+# 条件 DDL（如 PostgreSQL 部分索引）mixin
 class HasConditionalDDL:
     """define a class that includes the :meth:`.HasConditionalDDL.ddl_if`
     method, allowing for conditional rendering of DDL.
@@ -308,12 +313,14 @@ class HasConditionalDDL:
         return self
 
 
+# 带顶层 schema 名的 schema 项 mixin
 class HasSchemaAttr(SchemaItem):
     """schema item that includes a top-level schema name"""
 
     schema: Optional[str]
 
 
+# 持久化数据库表：绑定 MetaData，支持 DDL 与反射
 class Table(
     DialectKWArgs, HasSchemaAttr, TableClause, inspection.Inspectable["Table"]
 ):
@@ -1494,6 +1501,7 @@ class Table(
         return self._schema_item_copy(table)
 
 
+# 数据库表列定义：类型、约束与 server_default
 class Column(DialectKWArgs, SchemaItem, ColumnClause[_T]):
     """Represents a column in a database table."""
 
@@ -2748,6 +2756,7 @@ def insert_sentinel(
     )
 
 
+# 单列外键引用定义
 class ForeignKey(DialectKWArgs, SchemaItem):
     """Defines a dependency between two columns.
 
@@ -3340,6 +3349,7 @@ else:
     default_is_scalar = operator.attrgetter("is_scalar")
 
 
+# 列默认值生成器基类（DDL 可访问）
 class DefaultGenerator(Executable, SchemaItem):
     """Base class for column *default* values.
 
@@ -3403,6 +3413,7 @@ class DefaultGenerator(Executable, SchemaItem):
         )
 
 
+# 静态/Python 列默认值抽象基类
 class ColumnDefault(DefaultGenerator, ABC):
     """A plain default value on a column.
 
@@ -3488,6 +3499,7 @@ class ColumnDefault(DefaultGenerator, ABC):
         return f"{self.__class__.__name__}({self.arg!r})"
 
 
+# 标量 ClauseElement 列默认值
 class ScalarElementColumnDefault(ColumnDefault):
     """default generator for a fixed scalar Python value
 
@@ -3508,6 +3520,7 @@ class ScalarElementColumnDefault(ColumnDefault):
         )
 
 
+# INSERT sentinel 列默认值（批量插入优化）
 class _InsertSentinelColumnDefault(ColumnDefault):
     """Default generator that's specific to the use of a "sentinel" column
     when using the insertmanyvalues feature.
@@ -3549,6 +3562,7 @@ class _InsertSentinelColumnDefault(ColumnDefault):
 _SQLExprDefault = Union["ColumnElement[Any]", "TextClause"]
 
 
+# 任意 ClauseElement 列默认值
 class ColumnElementColumnDefault(ColumnDefault):
     """default generator for a SQL expression
 
@@ -3581,10 +3595,12 @@ class ColumnElementColumnDefault(ColumnDefault):
         return not isinstance(self.arg.type, sqltypes.NullType)
 
 
+# 可调用列默认值 Protocol
 class _CallableColumnDefaultProtocol(Protocol):
     def __call__(self, context: ExecutionContext) -> Any: ...
 
 
+# Python callable 列默认值
 class CallableColumnDefault(ColumnDefault):
     """default generator for a callable Python function
 
@@ -3637,6 +3653,8 @@ class CallableColumnDefault(ColumnDefault):
             )
 
 
+# IDENTITY/AUTOINCREMENT 选项容器
+# IDENTITY 列定义（SQL 标准自增）
 class IdentityOptions:
     """Defines options for a named database sequence or an identity column.
 
@@ -3694,6 +3712,7 @@ class IdentityOptions:
         return self.increment is not None and self.increment < 0
 
 
+# 独立 SEQUENCE 对象（Oracle/PostgreSQL 等）
 class Sequence(HasSchemaAttr, IdentityOptions, DefaultGenerator):
     """Represents a named database sequence.
 
@@ -3982,6 +4001,7 @@ class Sequence(HasSchemaAttr, IdentityOptions, DefaultGenerator):
 
 
 @inspection._self_inspects
+# 服务端生成值标记（autoincrement/FetchedValue）
 class FetchedValue(SchemaEventTarget):
     """A marker for a transparent database-side default.
 
@@ -4042,6 +4062,7 @@ class FetchedValue(SchemaEventTarget):
         return util.generic_repr(self)
 
 
+# DDL 层列/server 默认值子句
 class DefaultClause(FetchedValue):
     """A DDL-specified DEFAULT column value.
 
@@ -4086,6 +4107,7 @@ class DefaultClause(FetchedValue):
         return "DefaultClause(%r, for_update=%r)" % (self.arg, self.for_update)
 
 
+# 表级/列级约束基类
 class Constraint(DialectKWArgs, HasConditionalDDL, SchemaItem):
     """A table-level SQL constraint.
 
@@ -4201,6 +4223,7 @@ class Constraint(DialectKWArgs, HasConditionalDDL, SchemaItem):
         raise NotImplementedError()
 
 
+# 多列约束的列集合 mixin
 class ColumnCollectionMixin:
     """A :class:`_expression.ColumnCollection` of :class:`_schema.Column`
     objects.
@@ -4349,6 +4372,7 @@ class ColumnCollectionMixin:
                 self._columns.add(col)
 
 
+# 基于列集合的约束基类
 class ColumnCollectionConstraint(ColumnCollectionMixin, Constraint):
     """A constraint that proxies a ColumnCollection."""
 
@@ -4473,6 +4497,7 @@ class ColumnCollectionConstraint(ColumnCollectionMixin, Constraint):
         return len(self._columns)
 
 
+# CHECK 约束
 class CheckConstraint(ColumnCollectionConstraint):
     """A table- or column-level CHECK constraint.
 
@@ -4584,6 +4609,7 @@ class CheckConstraint(ColumnCollectionConstraint):
         return self._schema_item_copy(c)
 
 
+# 多列外键约束
 class ForeignKeyConstraint(ColumnCollectionConstraint):
     """A table-level FOREIGN KEY constraint.
 
@@ -4894,6 +4920,7 @@ class ForeignKeyConstraint(ColumnCollectionConstraint):
         return self._schema_item_copy(fkc)
 
 
+# 主键约束
 class PrimaryKeyConstraint(ColumnCollectionConstraint):
     """A table-level PRIMARY KEY constraint.
 
@@ -5130,6 +5157,7 @@ class PrimaryKeyConstraint(ColumnCollectionConstraint):
             return autoinc
 
 
+# 唯一约束
 class UniqueConstraint(ColumnCollectionConstraint):
     """A table-level UNIQUE constraint.
 
@@ -5142,6 +5170,7 @@ class UniqueConstraint(ColumnCollectionConstraint):
     __visit_name__ = "unique_constraint"
 
 
+# 表级 INDEX：单列或多列索引定义
 class Index(
     DialectKWArgs, ColumnCollectionMixin, HasConditionalDDL, SchemaItem
 ):
@@ -5387,6 +5416,7 @@ DEFAULT_NAMING_CONVENTION: _NamingSchemaParameter = util.immutabledict(
 )
 
 
+# schema 元素逻辑分组与 DDL 执行容器
 class MetaData(HasSchemaAttr):
     """A collection of :class:`_schema.Table`
     objects and their associated schema
@@ -5960,6 +5990,7 @@ class MetaData(HasSchemaAttr):
         )
 
 
+# GENERATED ALWAYS AS 计算列定义
 class Computed(FetchedValue, SchemaItem):
     """Defines a generated column, i.e. "GENERATED ALWAYS AS" syntax.
 
