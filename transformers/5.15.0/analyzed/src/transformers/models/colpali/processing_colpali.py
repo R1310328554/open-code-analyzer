@@ -31,6 +31,7 @@ if is_torch_available():
     import torch
 
 
+# ColPaliProcessorKwargs：处理器默认 kwargs
 class ColPaliProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -46,14 +47,18 @@ class ColPaliProcessorKwargs(ProcessingKwargs, total=False):
     }
 
 
+# IMAGE_TOKEN：PaliGemma 风格图像占位符字符串
 IMAGE_TOKEN = "<image>"
+# EXTRA_TOKENS：位置/分割辅助特殊 token 列表
 EXTRA_TOKENS = [f"<loc{i:0>4}>" for i in range(1024)] + [f"<seg{i:0>3}>" for i in range(128)]
 
 
 @auto_docstring
+# ColPaliProcessor：组合 image_processor + tokenizer 的 ColPali 多模态处理器
 class ColPaliProcessor(ProcessorMixin):
     valid_processor_kwargs = ColPaliProcessorKwargs
 
+# __init__：校验 image_seq_length，注册特殊 token 并关闭 BOS/EOS 自动添加
     def __init__(
         self,
         image_processor=None,
@@ -92,6 +97,7 @@ class ColPaliProcessor(ProcessorMixin):
         super().__init__(image_processor, tokenizer, chat_template=chat_template)
 
     @auto_docstring
+# __call__：互斥处理 text/images，图像路径生成 token_type_ids 与 labels
     def __call__(
         self,
         images: ImageInput | None = None,
@@ -131,6 +137,7 @@ class ColPaliProcessor(ProcessorMixin):
             model_inputs["labels"] = model_inputs["input_ids"].masked_fill(model_inputs["token_type_ids"] == 0, -100)
         return model_inputs
 
+# prepare_inputs_layout：为每张文档页构造 image_token + visual_prompt
     def prepare_inputs_layout(self, images=None, text=None, **kwargs):
         images, text, *_ = super().prepare_inputs_layout(images=images, text=text, **kwargs)
         if images is not None:
@@ -141,6 +148,7 @@ class ColPaliProcessor(ProcessorMixin):
             ]
         return images, text, None, None
 
+# validate_inputs：强制 text 或 images 至少其一
     def validate_inputs(
         self,
         images: ImageInput | None = None,
@@ -151,9 +159,11 @@ class ColPaliProcessor(ProcessorMixin):
         if text is None and images is None:
             raise ValueError("Either text or images must be provided")
 
+# replace_image_token：返回固定长度 image_seq_length 的占位符串
     def replace_image_token(self, image_inputs: dict, image_idx: int, **kwargs) -> str:
         return self.image_token * self.image_seq_length
 
+# _get_num_multimodal_tokens：按 image_seq_length 估算多模态占位 token 数
     def _get_num_multimodal_tokens(self, image_sizes=None, **kwargs):
         """
         Computes the number of placeholder tokens needed for multimodal inputs with the given sizes.
@@ -173,10 +183,12 @@ class ColPaliProcessor(ProcessorMixin):
         return MultiModalData(**vision_data)
 
     @property
+# model_input_names：追加 token_type_ids 与 labels 字段名
     def model_input_names(self):
         return super().model_input_names + ["token_type_ids", "labels"]
 
     @property
+# query_augmentation_token：查询增强 pad token
     def query_augmentation_token(self) -> str:
         """
         Return the query augmentation token.
@@ -188,6 +200,7 @@ class ColPaliProcessor(ProcessorMixin):
     @auto_docstring(
         custom_intro="This method forwards the `images` and `kwargs` arguments to ColPaliProcessor's [`~ColPaliProcessor.__call__`]."
     )
+# process_images：转发至 __call__(images=...)
     def process_images(
         self,
         images: ImageInput | None = None,
@@ -198,6 +211,7 @@ class ColPaliProcessor(ProcessorMixin):
     @auto_docstring(
         custom_intro="This method forwards the `text` and `kwargs` arguments to ColPaliProcessor's [`~ColPaliProcessor.__call__`]."
     )
+# process_queries：转发至 __call__(text=...)
     def process_queries(
         self,
         text: TextInput | list[TextInput],
@@ -205,6 +219,7 @@ class ColPaliProcessor(ProcessorMixin):
     ) -> BatchFeature:
         return self.__call__(text=text, **kwargs)
 
+# score_retrieval：MaxSim 检索打分，支持 list 或 padded tensor 嵌入
     def score_retrieval(
         self,
         query_embeddings: Union["torch.Tensor", list["torch.Tensor"]],

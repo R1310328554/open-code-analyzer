@@ -35,6 +35,7 @@ if is_torch_available():
 
 
 @auto_docstring
+# ColQwen2PreTrainedModel：ColVision 检索基类，支持 SDPA/Flash/Flex 注意力
 class ColQwen2PreTrainedModel(PreTrainedModel):
     config: ColQwen2Config
     base_model_prefix = "model"
@@ -55,6 +56,7 @@ class ColQwen2PreTrainedModel(PreTrainedModel):
     """
 )
 @dataclass
+# ColQwen2ForRetrievalOutput：forward 输出 embeddings、past_key_values 等
 class ColQwen2ForRetrievalOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -89,9 +91,11 @@ class ColQwen2ForRetrievalOutput(ModelOutput):
     [*ColPali: Efficient Document Retrieval with Vision Language Models*](https://huggingface.co/papers/2407.01449).
     """
 )
+# ColQwen2ForRetrieval：文档截图多向量嵌入 + ColBERT 迟交互检索
 class ColQwen2ForRetrieval(ColQwen2PreTrainedModel):
     base_model_prefix = "vlm"
 
+# __init__：AutoModel 加载 Qwen2-VL 并添加 embedding_dim 线性投影层
     def __init__(self, config: ColQwen2Config):
         super().__init__(config)
         self.config = config
@@ -109,6 +113,7 @@ class ColQwen2ForRetrieval(ColQwen2PreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+# forward：去填充 pixel_values → 融合图像嵌入 → VLM 前向 → 投影 → L2 归一化
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -126,6 +131,7 @@ class ColQwen2ForRetrieval(ColQwen2PreTrainedModel):
         **kwargs,
     ) -> ColQwen2ForRetrievalOutput:
         # Handle the custom "pixel_values" input obtained with `ColQwen2Processor` through unpadding
+# 根据 image_grid_thw 有效 patch 数去填充 pixel_values（与 Processor 填充对齐）
         if pixel_values is not None and image_grid_thw is not None:
             # NOTE: image_grid_thw: (batch_size, 3) where image_grid_thw[i] = (num_patches_h, num_patches_w, temporal_patch_size)
             offsets = image_grid_thw[:, 1] * image_grid_thw[:, 2]  # (batch_size,)
@@ -141,6 +147,7 @@ class ColQwen2ForRetrieval(ColQwen2PreTrainedModel):
         return_dict = return_dict if return_dict is not None else self.config.return_dict
 
         # Custom data preparation to fix an issue with the gradient flow when training with multiple GPUs.
+# 自定义嵌入融合：文本 token 嵌入与 visual pooler 输出 masked_scatter 合并
         if inputs_embeds is None:
             inputs_embeds = self.vlm.get_input_embeddings()(input_ids)
 
@@ -168,6 +175,7 @@ class ColQwen2ForRetrieval(ColQwen2PreTrainedModel):
         proj_dtype = self.embedding_proj_layer.weight.dtype
         embeddings = self.embedding_proj_layer(last_hidden_states.to(proj_dtype))  # (batch_size, sequence_length, dim)
 
+# 对投影嵌入做 L2 归一化，attention_mask 处清零 padding
         # L2 normalization
         embeddings = embeddings / embeddings.norm(dim=-1, keepdim=True)  # (batch_size, sequence_length, dim)
         if attention_mask is not None:

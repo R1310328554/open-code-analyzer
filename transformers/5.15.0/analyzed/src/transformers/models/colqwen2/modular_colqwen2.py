@@ -32,6 +32,7 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# ColQwen2ProcessorKwargs：ColQwen2 处理器默认 kwargs
 class ColQwen2ProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -47,9 +48,11 @@ class ColQwen2ProcessorKwargs(ProcessingKwargs, total=False):
     }
 
 
+# ColQwen2Processor：Qwen2 聊天模板 visual/query 前缀，DDP 友好的 pixel_values 填充
 class ColQwen2Processor(ColPaliProcessor):
     valid_processor_kwargs = ColQwen2ProcessorKwargs
 
+# __init__：设置 <|image_pad|> token 与 Qwen2 默认 visual/query 前缀
     def __init__(
         self,
         image_processor=None,
@@ -73,6 +76,7 @@ class ColQwen2Processor(ColPaliProcessor):
         self.query_prefix = query_prefix or "Query: "
         self.image_token_id = tokenizer.convert_tokens_to_ids(self.image_token)
 
+# __call__：查询模式加 suffix 增强；图像模式按 grid_thw 拆分并 pad pixel_values
     def __call__(
         self,
         images: ImageInput | None = None,
@@ -91,6 +95,7 @@ class ColQwen2Processor(ColPaliProcessor):
         output_kwargs["text_kwargs"]["return_token_type_ids"] = suffix is not None
 
         if text is not None:
+# 查询模式：在分词前拼接 query_prefix 与 augmentation suffix
             # Query mode: augment text before base class tokenizes it
             if suffix is None:
                 suffix = self.query_augmentation_token * 10
@@ -100,6 +105,7 @@ class ColQwen2Processor(ColPaliProcessor):
         model_inputs = ProcessorMixin.__call__(images=images, text=text, **output_kwargs)
 
         if images is not None:
+# 多 GPU DDP：按每张图 patch 数拆分 pixel_values 再 stack 对齐 batch
             # NOTE: The following adjustment ensures correct behavior with DDP on multiple GPUs.
             offsets = model_inputs["image_grid_thw"][:, 1] * model_inputs["image_grid_thw"][:, 2]
             pixel_values = list(torch.split(model_inputs["pixel_values"], offsets.tolist()))
@@ -115,6 +121,7 @@ class ColQwen2Processor(ColPaliProcessor):
                 )
         return model_inputs
 
+# prepare_inputs_layout：每页图像复制 visual_prompt_prefix
     def prepare_inputs_layout(self, images=None, text=None, **kwargs):
         images, text, *_ = super().prepare_inputs_layout(images=images, text=text, **kwargs)
         if images is not None:
@@ -122,10 +129,12 @@ class ColQwen2Processor(ColPaliProcessor):
             text = [self.visual_prompt_prefix] * len(images)
         return images, text, None, None
 
+# replace_image_token：按 merge_size 与 image_grid_thw 计算动态占位 token 数
     def replace_image_token(self, image_inputs: dict, image_idx: int, **kwargs) -> str:
         merge_length = self.image_processor.merge_size**2
         return self.image_token * (int(image_inputs["image_grid_thw"][image_idx].prod()) // merge_length)
 
+# _get_num_multimodal_tokens：按 patch 数与 merge_size 估算图像 token
     def _get_num_multimodal_tokens(self, image_sizes=None, **kwargs):
         """
         Computes the number of placeholder tokens needed for multimodal inputs with the given sizes.
@@ -153,6 +162,7 @@ class ColQwen2Processor(ColPaliProcessor):
         return MultiModalData(**vision_data)
 
     @property
+# model_input_names：排除视频相关字段，合并 tokenizer 与图像处理器名
     def model_input_names(self):
         tokenizer_input_names = self.tokenizer.model_input_names
         image_processor_input_names = self.image_processor.model_input_names
@@ -165,6 +175,7 @@ class ColQwen2Processor(ColPaliProcessor):
         return tokenizer_input_names + image_processor_input_names
 
 
+# ColQwen2PreTrainedModel：继承 ColPali 预训练基类（空扩展）
 class ColQwen2PreTrainedModel(ColPaliPreTrainedModel):
     pass
 
@@ -175,6 +186,7 @@ class ColQwen2PreTrainedModel(ColPaliPreTrainedModel):
     """
 )
 @dataclass
+# ColQwen2ForRetrievalOutput：检索 forward 输出结构
 class ColQwen2ForRetrievalOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -209,13 +221,16 @@ class ColQwen2ForRetrievalOutput(ModelOutput):
     [*ColPali: Efficient Document Retrieval with Vision Language Models*](https://huggingface.co/papers/2407.01449).
     """
 )
+# ColQwen2ForRetrieval：Qwen2-VL 检索头，重写 forward 处理 grid_thw 与嵌入融合
 class ColQwen2ForRetrieval(ColPaliForRetrieval):
+# __init__：初始化后删除 _tied_weights_keys
     def __init__(self, config: ColQwen2Config):
         super().__init__(config)
         del self._tied_weights_keys
 
     @can_return_tuple
     @auto_docstring
+# forward：与 modeling 生成文件相同的 VLM 嵌入投影与 L2 归一化流程
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,

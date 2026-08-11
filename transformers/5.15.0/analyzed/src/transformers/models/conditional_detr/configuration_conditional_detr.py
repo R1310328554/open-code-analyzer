@@ -23,6 +23,7 @@ from ..auto import AutoConfig
 
 @auto_docstring(checkpoint="microsoft/conditional-detr-resnet-50")
 @strict
+# ConditionalDetrConfig：DETR 变体，含 anchor 条件解码与辅助损失开关
 class ConditionalDetrConfig(PreTrainedConfig):
     r"""
     num_queries (`int`, *optional*, defaults to 300):
@@ -92,6 +93,7 @@ class ConditionalDetrConfig(PreTrainedConfig):
     giou_loss_coefficient: int = 2
     focal_alpha: float = 0.25
 
+# __post_init__：consolidate_backbone_kwargs 初始化 timm ResNet 骨干配置
     def __post_init__(self, **kwargs):
         # Init timm backbone with hardcoded values for BC
         backbone_kwargs = kwargs.get("backbone_kwargs", {})

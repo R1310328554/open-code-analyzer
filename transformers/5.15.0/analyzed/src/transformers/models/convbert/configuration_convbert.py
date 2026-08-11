@@ -21,6 +21,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="YituTech/conv-bert-base")
 @strict
+# ConvBertConfig：在 BERT 基础上增加 head_ratio 缩减注意力头、conv_kernel_size 卷积核
 class ConvBertConfig(PreTrainedConfig):
     r"""
     head_ratio (`int`, *optional*, defaults to 2):

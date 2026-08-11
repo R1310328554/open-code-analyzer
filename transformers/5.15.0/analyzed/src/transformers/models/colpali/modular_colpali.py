@@ -29,6 +29,7 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# ColPaliProcessorKwargs：文本/图像/common 默认 kwargs（longest 填充、channels_first 等）
 class ColPaliProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -44,9 +45,11 @@ class ColPaliProcessorKwargs(ProcessingKwargs, total=False):
     }
 
 
+# ColPaliProcessor：ColPali 检索处理器，文本与图像互斥输入，支持 MaxSim 打分
 class ColPaliProcessor(PaliGemmaProcessor):
     valid_processor_kwargs = ColPaliProcessorKwargs
 
+# __init__：设置 visual/query 前缀并初始化 PaliGemma 处理器组件
     def __init__(
         self,
         image_processor=None,
@@ -66,6 +69,7 @@ class ColPaliProcessor(PaliGemmaProcessor):
         super().__init__(image_processor=image_processor, tokenizer=tokenizer, chat_template=chat_template)
 
     @property
+# query_augmentation_token：查询增强缓冲 token（默认 pad_token），推理时作 reasoning buffer
     def query_augmentation_token(self) -> str:
         """
         Return the query augmentation token.
@@ -75,6 +79,7 @@ class ColPaliProcessor(PaliGemmaProcessor):
         return self.tokenizer.pad_token
 
     @auto_docstring
+# __call__：单模态处理；查询模式加 BOS/前缀/suffix，图像模式生成 labels 掩码
     def __call__(
         self,
         images: ImageInput | None = None,
@@ -102,6 +107,7 @@ class ColPaliProcessor(PaliGemmaProcessor):
             model_inputs["labels"] = model_inputs["input_ids"].masked_fill(model_inputs["token_type_ids"] == 0, -100)
         return model_inputs
 
+# validate_inputs：校验至少提供 text 或 images 之一
     def validate_inputs(
         self,
         images: ImageInput | None = None,
@@ -112,6 +118,7 @@ class ColPaliProcessor(PaliGemmaProcessor):
         if text is None and images is None:
             raise ValueError("Either text or images must be provided")
 
+# prepare_inputs_layout：图像 batch 时为每页生成 image_token + visual_prompt 占位文本
     def prepare_inputs_layout(self, images=None, text=None, **kwargs):
         images, text, *_ = ProcessorMixin.prepare_inputs_layout(images=images, text=text, **kwargs)
         if images is not None:
@@ -122,12 +129,14 @@ class ColPaliProcessor(PaliGemmaProcessor):
             ]
         return images, text, None, None
 
+# replace_image_token：按 image_seq_length 重复图像占位 token
     def replace_image_token(self, image_inputs: dict, image_idx: int, **kwargs) -> str:
         return self.image_token * self.image_seq_length
 
     @auto_docstring(
         custom_intro="This method forwards the `images` and `kwargs` arguments to ColPaliProcessor's [`~ColPaliProcessor.__call__`]."
     )
+# process_images：文档页图像 → pixel_values/input_ids/labels
     def process_images(
         self,
         images: ImageInput | None = None,
@@ -138,6 +147,7 @@ class ColPaliProcessor(PaliGemmaProcessor):
     @auto_docstring(
         custom_intro="This method forwards the `text` and `kwargs` arguments to ColPaliProcessor's [`~ColPaliProcessor.__call__`]."
     )
+# process_queries：检索查询文本 → 多向量嵌入输入
     def process_queries(
         self,
         text: TextInput | list[TextInput],
@@ -145,6 +155,7 @@ class ColPaliProcessor(PaliGemmaProcessor):
     ) -> BatchFeature:
         return self.__call__(text=text, **kwargs)
 
+# score_retrieval：ColBERT 式 MaxSim 迟交互，分批 einsum 计算查询-段落相似度矩阵
     def score_retrieval(
         self,
         query_embeddings: Union["torch.Tensor", list["torch.Tensor"]],

@@ -32,6 +32,7 @@ if is_torch_available():
     import torch.nn.functional as F
 
 
+# ColQwen2ProcessorKwargs：处理器默认 kwargs
 class ColQwen2ProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -48,9 +49,11 @@ class ColQwen2ProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# ColQwen2Processor：Qwen2 多模态检索处理器（image_processor + tokenizer）
 class ColQwen2Processor(ProcessorMixin):
     valid_processor_kwargs = ColQwen2ProcessorKwargs
 
+# __init__：注册 <|image_pad|> 与 Qwen2 默认 prompt 前缀
     def __init__(
         self,
         image_processor=None,
@@ -75,6 +78,7 @@ class ColQwen2Processor(ProcessorMixin):
         self.image_token_id = tokenizer.convert_tokens_to_ids(self.image_token)
 
     @auto_docstring
+# __call__：互斥 text/images；图像路径 pad pixel_values 并可选生成 labels
     def __call__(
         self,
         images: ImageInput | None = None,
@@ -129,6 +133,7 @@ class ColQwen2Processor(ProcessorMixin):
                 )
         return model_inputs
 
+# prepare_inputs_layout：为每页复制 visual_prompt_prefix
     def prepare_inputs_layout(self, images=None, text=None, **kwargs):
         images, text, *_ = super().prepare_inputs_layout(images=images, text=text, **kwargs)
         if images is not None:
@@ -136,6 +141,7 @@ class ColQwen2Processor(ProcessorMixin):
             text = [self.visual_prompt_prefix] * len(images)
         return images, text, None, None
 
+# validate_inputs：校验 text 或 images 至少其一
     def validate_inputs(
         self,
         images: ImageInput | None = None,
@@ -146,10 +152,12 @@ class ColQwen2Processor(ProcessorMixin):
         if text is None and images is None:
             raise ValueError("Either text or images must be provided")
 
+# replace_image_token：按 grid_thw 与 merge_size 生成占位 token 串
     def replace_image_token(self, image_inputs: dict, image_idx: int, **kwargs) -> str:
         merge_length = self.image_processor.merge_size**2
         return self.image_token * (int(image_inputs["image_grid_thw"][image_idx].prod()) // merge_length)
 
+# _get_num_multimodal_tokens：估算每张图的 patch/token 数量
     def _get_num_multimodal_tokens(self, image_sizes=None, **kwargs):
         """
         Computes the number of placeholder tokens needed for multimodal inputs with the given sizes.
@@ -177,6 +185,7 @@ class ColQwen2Processor(ProcessorMixin):
         return MultiModalData(**vision_data)
 
     @property
+# model_input_names：合并 tokenizer 与图像处理器输入名（无视频）
     def model_input_names(self):
         tokenizer_input_names = self.tokenizer.model_input_names
         image_processor_input_names = self.image_processor.model_input_names
@@ -189,6 +198,7 @@ class ColQwen2Processor(ProcessorMixin):
         return tokenizer_input_names + image_processor_input_names
 
     @property
+# query_augmentation_token：查询增强 pad token
     def query_augmentation_token(self) -> str:
         """
         Return the query augmentation token.
@@ -200,6 +210,7 @@ class ColQwen2Processor(ProcessorMixin):
     @auto_docstring(
         custom_intro="This method forwards the `images` and `kwargs` arguments to ColQwen2Processor's [`~ColQwen2Processor.__call__`]."
     )
+# process_images：文档页图像预处理入口
     def process_images(
         self,
         images: ImageInput | None = None,
@@ -210,6 +221,7 @@ class ColQwen2Processor(ProcessorMixin):
     @auto_docstring(
         custom_intro="This method forwards the `text` and `kwargs` arguments to ColQwen2Processor's [`~ColQwen2Processor.__call__`]."
     )
+# process_queries：检索查询文本预处理入口
     def process_queries(
         self,
         text: TextInput | list[TextInput],
@@ -217,6 +229,7 @@ class ColQwen2Processor(ProcessorMixin):
     ) -> BatchFeature:
         return self.__call__(text=text, **kwargs)
 
+# score_retrieval：MaxSim 迟交互检索相似度矩阵
     def score_retrieval(
         self,
         query_embeddings: Union["torch.Tensor", list["torch.Tensor"]],

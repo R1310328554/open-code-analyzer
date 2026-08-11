@@ -47,6 +47,7 @@ from .configuration_conditional_detr import ConditionalDetrConfig
     """
 )
 @dataclass
+# ConditionalDetrDecoderOutput：解码器输出 + intermediate_hidden_states/reference_points
 class ConditionalDetrDecoderOutput(BaseModelOutputWithCrossAttentions):
     r"""
     intermediate_hidden_states (`torch.FloatTensor` of shape `(config.decoder_layers, batch_size, num_queries, hidden_size)`, *optional*, returned when `config.auxiliary_loss=True`):
@@ -69,6 +70,7 @@ class ConditionalDetrDecoderOutput(BaseModelOutputWithCrossAttentions):
     """
 )
 @dataclass
+# ConditionalDetrModelOutput：编解码联合输出，含辅助解码层 hidden states
 class ConditionalDetrModelOutput(Seq2SeqModelOutput):
     r"""
     intermediate_hidden_states (`torch.FloatTensor` of shape `(config.decoder_layers, batch_size, sequence_length, hidden_size)`, *optional*, returned when `config.auxiliary_loss=True`):
@@ -89,6 +91,7 @@ class ConditionalDetrModelOutput(Seq2SeqModelOutput):
     """
 )
 @dataclass
+# ConditionalDetrObjectDetectionOutput：检测 logits/pred_boxes/辅助输出
 class ConditionalDetrObjectDetectionOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` are provided)):
@@ -132,6 +135,7 @@ class ConditionalDetrObjectDetectionOutput(ModelOutput):
     """
 )
 @dataclass
+# ConditionalDetrSegmentationOutput：检测 + pred_masks 分割 logits
 class ConditionalDetrSegmentationOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` are provided)):
@@ -176,6 +180,7 @@ class ConditionalDetrSegmentationOutput(ModelOutput):
     encoder_attentions: tuple[torch.FloatTensor] | None = None
 
 
+# ConditionalDetrFrozenBatchNorm2d：冻结 BN（ResNet 骨干），避免非 torchvision 模型 NaN
 class ConditionalDetrFrozenBatchNorm2d(nn.Module):
     """
     BatchNorm2d where the batch statistics and the affine parameters are fixed.
@@ -202,6 +207,7 @@ class ConditionalDetrFrozenBatchNorm2d(nn.Module):
             state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs
         )
 
+# forward：图像特征 → 编解码 → class/bbox(/mask) 预测
     def forward(self, x):
         # move reshapes to the beginning
         # to make it user-friendly
@@ -215,6 +221,7 @@ class ConditionalDetrFrozenBatchNorm2d(nn.Module):
         return x * scale + bias
 
 
+# replace_batch_norm：递归将 BatchNorm2d 替换为 FrozenBatchNorm2d
 def replace_batch_norm(model):
     r"""
     Recursively replace all `torch.nn.BatchNorm2d` with `ConditionalDetrFrozenBatchNorm2d`.
@@ -239,6 +246,7 @@ def replace_batch_norm(model):
             replace_batch_norm(module)
 
 
+# ConditionalDetrConvEncoder：timm 骨干 + 1x1 投影至 d_model 的多尺度特征
 class ConditionalDetrConvEncoder(nn.Module):
     """
     Convolutional backbone, using either the AutoBackbone API or one from the timm library.
@@ -291,6 +299,7 @@ class ConditionalDetrConvEncoder(nn.Module):
         return out
 
 
+# ConditionalDetrSinePositionEmbedding：2D 正弦位置编码（默认 sine 类型）
 class ConditionalDetrSinePositionEmbedding(nn.Module):
     """
     This is a more standard version of the position embedding, very similar to the one used by the Attention is all you
@@ -368,6 +377,7 @@ class ConditionalDetrSinePositionEmbedding(nn.Module):
         )
 
 
+# ConditionalDetrLearnedPositionEmbedding：可学习 2D 位置嵌入
 class ConditionalDetrLearnedPositionEmbedding(nn.Module):
     """
     This module learns positional embeddings up to a fixed maximum size.
@@ -398,6 +408,7 @@ class ConditionalDetrLearnedPositionEmbedding(nn.Module):
         return pos
 
 
+# eager_attention_forward：标准缩放点积注意力实现
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -426,6 +437,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# ConditionalDetrSelfAttention：编码器自注意力（含 position 偏置）
 class ConditionalDetrSelfAttention(nn.Module):
     """
     Multi-headed self-attention from 'Attention Is All You Need' paper.
@@ -492,6 +504,7 @@ class ConditionalDetrSelfAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# ConditionalDetrDecoderSelfAttention：解码器自注意力 + reference point 条件
 class ConditionalDetrDecoderSelfAttention(nn.Module):
     """
     Multi-headed self-attention for Conditional DETR decoder layers.
@@ -575,6 +588,7 @@ class ConditionalDetrDecoderSelfAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# ConditionalDetrDecoderCrossAttention：解码器-编码器交叉注意力（条件 DETR 核心）
 class ConditionalDetrDecoderCrossAttention(nn.Module):
     """
     Multi-headed cross-attention for Conditional DETR decoder layers.
@@ -698,6 +712,7 @@ class ConditionalDetrDecoderCrossAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# ConditionalDetrMLP：FFN 前馈子层（Linear-Act-Linear）
 class ConditionalDetrMLP(nn.Module):
     def __init__(self, config: ConditionalDetrConfig, hidden_size: int, intermediate_size: int):
         super().__init__()
@@ -715,6 +730,7 @@ class ConditionalDetrMLP(nn.Module):
         return hidden_states
 
 
+# ConditionalDetrEncoderLayer：编码器层（自注意力 + FFN + 残差/LN）
 class ConditionalDetrEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: ConditionalDetrConfig):
         super().__init__()
@@ -772,6 +788,7 @@ class ConditionalDetrEncoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# ConditionalDetrDecoderLayer：解码器层（自注意力 + 交叉注意力 + FFN）
 class ConditionalDetrDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: ConditionalDetrConfig):
         super().__init__()
@@ -867,6 +884,7 @@ class ConditionalDetrDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# ConditionalDetrMLPPredictionHead：3 层 MLP 分类/bbox 预测头
 class ConditionalDetrMLPPredictionHead(nn.Module):
     """
     Very simple multi-layer perceptron (MLP, also called FFN), used to predict the normalized center coordinates,
@@ -886,6 +904,7 @@ class ConditionalDetrMLPPredictionHead(nn.Module):
         return x
 
 
+# ConditionalDetrConvBlock：分割 mask head 卷积块
 class ConditionalDetrConvBlock(nn.Module):
     """Basic conv block: Conv3x3 -> GroupNorm -> Activation."""
 
@@ -899,6 +918,7 @@ class ConditionalDetrConvBlock(nn.Module):
         return self.activation(self.norm(self.conv(x)))
 
 
+# ConditionalDetrFPNFusionStage：FPN 多尺度特征融合阶段
 class ConditionalDetrFPNFusionStage(nn.Module):
     """Single FPN fusion stage combining low-resolution features with high-resolution FPN features."""
 
@@ -921,6 +941,7 @@ class ConditionalDetrFPNFusionStage(nn.Module):
         return self.refine(fpn_features + features)
 
 
+# ConditionalDetrMaskHeadSmallConv：轻量卷积 mask 预测头
 class ConditionalDetrMaskHeadSmallConv(nn.Module):
     """
     Segmentation mask head that generates per-query masks using FPN-based progressive upsampling.
@@ -994,6 +1015,7 @@ class ConditionalDetrMaskHeadSmallConv(nn.Module):
         return self.output_conv(hidden_states)
 
 
+# ConditionalDetrMHAttentionMap：多头注意力图用于 mask 细化
 class ConditionalDetrMHAttentionMap(nn.Module):
     """This is a 2D attention module, which only returns the attention softmax (no multiplication by value)"""
 
@@ -1046,6 +1068,7 @@ class ConditionalDetrMHAttentionMap(nn.Module):
 
 
 @auto_docstring
+# ConditionalDetrPreTrainedModel：权重初始化与 _no_split_modules 配置
 class ConditionalDetrPreTrainedModel(PreTrainedModel):
     config: ConditionalDetrConfig
     base_model_prefix = "model"
@@ -1083,6 +1106,7 @@ class ConditionalDetrPreTrainedModel(PreTrainedModel):
             init.uniform_(module.column_embeddings.weight)
 
 
+# ConditionalDetrEncoder：堆叠 ConditionalDetrEncoderLayer
 class ConditionalDetrEncoder(ConditionalDetrPreTrainedModel):
     """
     Transformer encoder that processes a flattened feature map from a vision backbone, composed of a stack of
@@ -1144,6 +1168,7 @@ class ConditionalDetrEncoder(ConditionalDetrPreTrainedModel):
         return BaseModelOutput(last_hidden_state=hidden_states)
 
 
+# encode_sinusoidal_position_embedding：anchor 坐标正弦编码（DETR pos_y/pos_x 顺序）
 def encode_sinusoidal_position_embedding(
     pos_tensor: torch.Tensor,
     num_pos_feats: int = 128,
@@ -1180,6 +1205,7 @@ def encode_sinusoidal_position_embedding(
     return torch.cat(embeddings, dim=-1).to(pos_tensor.dtype)
 
 
+# ConditionalDetrDecoder：条件 anchor 迭代 refine 的 object query 解码器
 class ConditionalDetrDecoder(ConditionalDetrPreTrainedModel):
     """
     Transformer decoder consisting of *config.decoder_layers* layers. Each layer is a [`ConditionalDetrDecoderLayer`].
@@ -1334,6 +1360,7 @@ class ConditionalDetrDecoder(ConditionalDetrPreTrainedModel):
     any specific head on top.
     """
 )
+# ConditionalDetrModel：骨干 + 编码器 + 解码器 DETR 主干
 class ConditionalDetrModel(ConditionalDetrPreTrainedModel):
     def __init__(self, config: ConditionalDetrConfig):
         super().__init__(config)
@@ -1493,6 +1520,7 @@ class ConditionalDetrModel(ConditionalDetrPreTrainedModel):
         )
 
 
+# inverse_sigmoid：bbox 参数化用的 logit 逆变换
 def inverse_sigmoid(x, eps=1e-5):
     x = x.clamp(min=0, max=1)
     x1 = x.clamp(min=eps)
@@ -1506,6 +1534,7 @@ def inverse_sigmoid(x, eps=1e-5):
     such as COCO detection.
     """
 )
+# ConditionalDetrForObjectDetection：Hungarian 匹配 + focal/L1/GIoU 检测损失
 class ConditionalDetrForObjectDetection(ConditionalDetrPreTrainedModel):
     def __init__(self, config: ConditionalDetrConfig):
         super().__init__(config)
@@ -1652,6 +1681,7 @@ class ConditionalDetrForObjectDetection(ConditionalDetrPreTrainedModel):
     such as COCO panoptic.
     """
 )
+# ConditionalDetrForSegmentation：检测头 + mask head，Dice/mask 分割损失
 class ConditionalDetrForSegmentation(ConditionalDetrPreTrainedModel):
     def __init__(self, config: ConditionalDetrConfig):
         super().__init__(config)

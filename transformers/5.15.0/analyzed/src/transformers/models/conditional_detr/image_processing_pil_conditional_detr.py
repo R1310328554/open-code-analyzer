@@ -65,6 +65,7 @@ logger = logging.get_logger(__name__)
 SUPPORTED_ANNOTATION_FORMATS = (AnnotationFormat.COCO_DETECTION, AnnotationFormat.COCO_PANOPTIC)
 
 
+# ConditionalDetrImageProcessorKwargs：图像预处理 kwargs
 class ConditionalDetrImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     format (`str`, *optional*, defaults to `AnnotationFormat.COCO_DETECTION`):
@@ -80,6 +81,7 @@ class ConditionalDetrImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 # inspired by https://github.com/facebookresearch/conditional_detr/blob/master/datasets/coco.py#L33
+# convert_coco_poly_to_mask：PIL 路径下 COCO 多边形转 numpy mask
 def convert_coco_poly_to_mask(segmentations, height: int, width: int) -> np.ndarray:
     """
     Convert a COCO polygon annotation to a mask.
@@ -115,6 +117,7 @@ def convert_coco_poly_to_mask(segmentations, height: int, width: int) -> np.ndar
 
 
 # inspired by https://github.com/facebookresearch/conditional_detr/blob/master/datasets/coco.py#L50
+# prepare_coco_detection_annotation：检测标注 bbox 归一化
 def prepare_coco_detection_annotation(
     image,
     target,
@@ -175,6 +178,7 @@ def prepare_coco_detection_annotation(
     return new_target
 
 
+# masks_to_boxes：numpy mask 批量求边界框
 def masks_to_boxes(masks: np.ndarray) -> np.ndarray:
     """
     Compute the bounding boxes around the provided panoptic segmentation masks.
@@ -223,6 +227,7 @@ def rgb_to_id(color):
     return int(color[0] + 256 * color[1] + 256 * 256 * color[2])
 
 
+# prepare_coco_panoptic_annotation：全景标注解析
 def prepare_coco_panoptic_annotation(
     image: np.ndarray,
     target: dict,
@@ -265,6 +270,7 @@ def prepare_coco_panoptic_annotation(
 
 
 # Adapted from transformers.models.conditional_detr.image_processing_conditional_detr.binary_mask_to_rle
+# binary_mask_to_rle：二值 mask RLE 编码
 def binary_mask_to_rle(mask):
     """
     Converts given binary mask of shape `(height, width)` to the run-length encoding (RLE) format.
@@ -290,6 +296,7 @@ def binary_mask_to_rle(mask):
 
 
 # Adapted from transformers.models.conditional_detr.image_processing_conditional_detr.check_segment_validity
+# check_segment_validity：实例 mask 有效性校验
 def check_segment_validity(mask_labels, mask_probs, k, mask_threshold=0.5, overlap_mask_area_threshold=0.8):
     # Get the mask associated with the k class
     mask_k = mask_labels == k
@@ -309,6 +316,7 @@ def check_segment_validity(mask_labels, mask_probs, k, mask_threshold=0.5, overl
 
 
 # Adapted from transformers.models.conditional_detr.image_processing_conditional_detr.compute_segments
+# compute_segments：实例/全景分割 segment 聚合
 def compute_segments(
     mask_probs,
     pred_scores,
@@ -373,6 +381,7 @@ def compute_segments(
 
 
 # Adapted from transformers.models.conditional_detr.image_processing_conditional_detr.convert_segmentation_to_rle
+# convert_segmentation_to_rle：分割图转 RLE
 def convert_segmentation_to_rle(segmentation):
     """
     Converts given segmentation map of shape `(height, width)` to the run-length encoding (RLE) format.
@@ -397,6 +406,7 @@ def convert_segmentation_to_rle(segmentation):
 
 
 # Adapted from transformers.models.conditional_detr.image_processing_conditional_detr.remove_low_and_no_objects
+# remove_low_and_no_objects：低分与背景 query 过滤
 def remove_low_and_no_objects(masks, scores, labels, object_mask_threshold, num_labels):
     """
     Binarize the given masks using `object_mask_threshold`, it returns the associated values of `masks`, `scores` and
@@ -426,6 +436,7 @@ def remove_low_and_no_objects(masks, scores, labels, object_mask_threshold, num_
 
 
 @auto_docstring
+# ConditionalDetrImageProcessorPil：PIL 后端图像处理器，接口与 Torchvision 版对齐
 class ConditionalDetrImageProcessorPil(PilBackend):
     resample = PILImageResampling.BILINEAR
     image_mean = IMAGENET_DEFAULT_MEAN
@@ -440,6 +451,7 @@ class ConditionalDetrImageProcessorPil(PilBackend):
     model_input_names = ["pixel_values", "pixel_mask"]
     valid_kwargs = ConditionalDetrImageProcessorKwargs
 
+# __init__：size 字典解析与 do_convert_annotations 向后兼容
     def __init__(self, **kwargs: Unpack[ConditionalDetrImageProcessorKwargs]) -> None:
         kwargs.setdefault("do_pad", kwargs.pop("pad_and_return_pixel_mask", self.do_pad))
 
@@ -460,6 +472,7 @@ class ConditionalDetrImageProcessorPil(PilBackend):
 
         super().__init__(**kwargs)
 
+# prepare_annotation：COCO detection/panoptic 标注预处理
     def prepare_annotation(
         self,
         image: np.ndarray,
@@ -492,6 +505,7 @@ class ConditionalDetrImageProcessorPil(PilBackend):
             raise ValueError(f"Format {format} is not supported.")
         return target
 
+# resize：PIL/numpy 图像保持宽高比缩放
     def resize(
         self,
         image: np.ndarray,
@@ -840,6 +854,7 @@ class ConditionalDetrImageProcessorPil(PilBackend):
         return encoded_inputs
 
     @requires(backends=("torch",))
+# post_process_object_detection：检测输出后处理（需 torch）
     def post_process_object_detection(
         self, outputs, threshold: float = 0.5, target_sizes: TensorType | list[tuple] = None, top_k: int = 100
     ):
@@ -901,6 +916,7 @@ class ConditionalDetrImageProcessorPil(PilBackend):
         return results
 
     @requires(backends=("torch",))
+# post_process_semantic_segmentation：语义分割 logits 合成
     def post_process_semantic_segmentation(
         self,
         outputs,
@@ -974,6 +990,7 @@ class ConditionalDetrImageProcessorPil(PilBackend):
         return semantic_segmentation
 
     @requires(backends=("torch",))
+# post_process_instance_segmentation：实例分割后处理
     def post_process_instance_segmentation(
         self,
         outputs,
@@ -1063,6 +1080,7 @@ class ConditionalDetrImageProcessorPil(PilBackend):
         return results
 
     @requires(backends=("torch",))
+# post_process_panoptic_segmentation：全景分割后处理
     def post_process_panoptic_segmentation(
         self,
         outputs,
