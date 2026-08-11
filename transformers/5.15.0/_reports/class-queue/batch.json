@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T00:20:26Z",
-  "files": [
-    "src/transformers/models/blip/__init__.py",
-    "src/transformers/models/blip/configuration_blip.py",
-    "src/transformers/models/blip/image_processing_blip.py",
-    "src/transformers/models/blip/image_processing_pil_blip.py",
-    "src/transformers/models/blip/modeling_blip.py",
-    "src/transformers/models/blip/modeling_blip_text.py",
-    "src/transformers/models/blip/processing_blip.py",
-    "src/transformers/models/blip_2/__init__.py",
-    "src/transformers/models/blip_2/configuration_blip_2.py",
-    "src/transformers/models/blip_2/modeling_blip_2.py",
-    "src/transformers/models/blip_2/processing_blip_2.py",
-    "src/transformers/models/bloom/__init__.py",
-    "src/transformers/models/bloom/configuration_bloom.py",
-    "src/transformers/models/bloom/modeling_bloom.py",
-    "src/transformers/models/blt/__init__.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2349,
-  "done": 315
+  "done": 330
 }
