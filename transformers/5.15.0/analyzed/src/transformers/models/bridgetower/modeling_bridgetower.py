@@ -53,6 +53,7 @@ _TOKENIZER_FOR_DOC = "RobertaTokenizer"
     """
 )
 @dataclass
+# BridgeTowerModelOutput：联合编码 hidden states 与 pooler 输出
 class BridgeTowerModelOutput(ModelOutput):
     r"""
     text_features (`torch.FloatTensor` of shape `(batch_size, text_sequence_length, hidden_size)`):
@@ -77,6 +78,7 @@ class BridgeTowerModelOutput(ModelOutput):
     """
 )
 @dataclass
+# BridgeTowerContrastiveOutput：对比学习 ITC 损失与 logits
 class BridgeTowerContrastiveOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `return_loss` is `True`):
@@ -103,6 +105,7 @@ class BridgeTowerContrastiveOutput(ModelOutput):
     attentions: tuple[torch.FloatTensor] | None = None
 
 
+# BridgeTowerResidualAttention：带残差的多头注意力封装
 class BridgeTowerResidualAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -147,6 +150,7 @@ class BridgeTowerResidualAttention(nn.Module):
         return hidden_state
 
 
+# BridgeTowerTransformer：通用 Transformer 层堆叠
 class BridgeTowerTransformer(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -174,6 +178,7 @@ class BridgeTowerTransformer(nn.Module):
 
 
 # Copied from transformers.models.clip.modeling_clip.CLIPVisionEmbeddings with CLIP->BridgeTower
+# BridgeTowerVisionEmbeddings：ViT patch 嵌入 + 位置编码
 class BridgeTowerVisionEmbeddings(nn.Module):
     def __init__(self, config: BridgeTowerVisionConfig):
         super().__init__()
@@ -257,6 +262,7 @@ class BridgeTowerVisionEmbeddings(nn.Module):
         return embeddings
 
 
+# BridgeTowerVisionTransformer：视觉 Transformer 编码器
 class BridgeTowerVisionTransformer(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -315,6 +321,7 @@ class BridgeTowerVisionTransformer(nn.Module):
         return visual_output_post
 
 
+# BridgeTowerLinkTower：跨模态桥接塔，融合 vision/text 特征
 class BridgeTowerLinkTower(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -341,6 +348,7 @@ class BridgeTowerLinkTower(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertSelfOutput with Bert->BridgeTower
+# BridgeTowerSelfOutput：自注意力输出投影与 LayerNorm
 class BridgeTowerSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -356,6 +364,7 @@ class BridgeTowerSelfOutput(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertIntermediate with Bert->BridgeTower
+# BridgeTowerIntermediate：FFN 中间 Dense+GELU
 class BridgeTowerIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -372,6 +381,7 @@ class BridgeTowerIntermediate(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOutput with Bert->BridgeTower
+# BridgeTowerOutput：FFN 输出投影与残差 LayerNorm
 class BridgeTowerOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -387,6 +397,7 @@ class BridgeTowerOutput(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPooler with Bert->BridgeTower
+# BridgeTowerPooler：取 [CLS] 的 Dense+Tanh 池化
 class BridgeTowerPooler(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -403,6 +414,7 @@ class BridgeTowerPooler(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.eager_attention_forward
+# eager_attention_forward：BridgeTower eager 注意力实现
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -432,6 +444,7 @@ def eager_attention_forward(
 
 
 # Copied from transformers.models.roberta.modeling_roberta.RobertaSelfAttention with Roberta->BridgeTower
+# BridgeTowerSelfAttention：文本/视觉侧自注意力
 class BridgeTowerSelfAttention(nn.Module):
     def __init__(self, config, is_causal=False, layer_idx=None):
         super().__init__()
@@ -500,6 +513,7 @@ class BridgeTowerSelfAttention(nn.Module):
 
 
 # Copied from transformers.models.roberta.modeling_roberta.RobertaCrossAttention with Roberta->BridgeTower
+# BridgeTowerCrossAttention：文本-视觉交叉注意力
 class BridgeTowerCrossAttention(nn.Module):
     def __init__(self, config, is_causal=False, layer_idx=None):
         super().__init__()
@@ -577,6 +591,7 @@ class BridgeTowerCrossAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertAttention with Bert->BridgeTower,BERT->BRIDGE_TOWER
+# BridgeTowerAttention：自/交叉注意力统一封装
 class BridgeTowerAttention(nn.Module):
     def __init__(self, config, is_causal=False, layer_idx=None, is_cross_attention=False):
         super().__init__()
@@ -606,6 +621,7 @@ class BridgeTowerAttention(nn.Module):
         return attention_output, attn_weights
 
 
+# BridgeTowerBertCrossLayer：BERT 风格交叉注意力层
 class BridgeTowerBertCrossLayer(nn.Module):
     def __init__(self, config, layer_idx=None):
         super().__init__()
@@ -665,6 +681,7 @@ class BridgeTowerBertCrossLayer(nn.Module):
         return layer_output
 
 
+# BridgeTowerTextLayer：文本 Transformer 单层
 class BridgeTowerTextLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_idx=None):
         super().__init__()
@@ -732,6 +749,7 @@ class BridgeTowerTextLayer(GradientCheckpointingLayer):
 
 
 # copied from transformers.models.roberta.modeling_roberta.RobertaEncoder with Roberta->BridgeTowerText
+# BridgeTowerTextEncoder：堆叠文本层 + 可选 cross-attn
 class BridgeTowerTextEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -767,6 +785,7 @@ class BridgeTowerTextEncoder(nn.Module):
 
 
 # Copied from transformers.models.roberta.modeling_roberta.RobertaEmbeddings with Roberta->BridgeTowerText
+# BridgeTowerTextEmbeddings：词/位置/类型嵌入 + LayerNorm
 class BridgeTowerTextEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
@@ -870,6 +889,7 @@ class BridgeTowerTextEmbeddings(nn.Module):
 
 
 @auto_docstring
+# BridgeTowerPreTrainedModel：权重初始化与 checkpoint 映射基类
 class BridgeTowerPreTrainedModel(PreTrainedModel):
     config: BridgeTowerConfig
     base_model_prefix = "bridgetower"
@@ -914,6 +934,7 @@ class BridgeTowerPreTrainedModel(PreTrainedModel):
             init.zeros_(module.bias)
 
 
+# BridgeTowerVisionModel：纯视觉 ViT 骨干
 class BridgeTowerVisionModel(BridgeTowerPreTrainedModel):
     config: BridgeTowerVisionConfig
     input_modalities = ("image",)
@@ -945,6 +966,7 @@ class BridgeTowerVisionModel(BridgeTowerPreTrainedModel):
     .. _*Attention is all you need*: https://huggingface.co/papers/1706.03762
     """
 )
+# BridgeTowerTextModel：纯文本 RoBERTa 骨干
 class BridgeTowerTextModel(BridgeTowerPreTrainedModel):
     config: BridgeTowerTextConfig
     input_modalities = ("text",)
@@ -1076,6 +1098,7 @@ class BridgeTowerTextModel(BridgeTowerPreTrainedModel):
     The bare BridgeTower Model transformer outputting BridgeTowerModelOutput object without any specific head on
     """
 )
+# BridgeTowerModel：双塔 + Link Tower 联合多模态编码
 class BridgeTowerModel(BridgeTowerPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1366,6 +1389,7 @@ class BridgeTowerModel(BridgeTowerPreTrainedModel):
 
 
 # Copied from transformers.models.vilt.modeling_vilt.ViltPredictionHeadTransform with Vilt->BridgeTower
+# BridgeTowerPredictionHeadTransform：MLM head 前变换
 class BridgeTowerPredictionHeadTransform(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1383,6 +1407,7 @@ class BridgeTowerPredictionHeadTransform(nn.Module):
         return hidden_states
 
 
+# BridgeTowerMLMHead：掩码语言建模预测头
 class BridgeTowerMLMHead(nn.Module):
     def __init__(self, config, weight=None):
         super().__init__()
@@ -1399,6 +1424,7 @@ class BridgeTowerMLMHead(nn.Module):
         return mlm_score
 
 
+# BridgeTowerITMHead：图文匹配二分类头
 class BridgeTowerITMHead(nn.Module):
     def __init__(self, hidden_size):
         super().__init__()
@@ -1414,6 +1440,7 @@ class BridgeTowerITMHead(nn.Module):
     BridgeTower Model with a language modeling head on top as done during pretraining.
     """
 )
+# BridgeTowerForMaskedLM：掩码语言建模预训练
 class BridgeTowerForMaskedLM(BridgeTowerPreTrainedModel):
     _tied_weights_keys = {"mlm_score.decoder.weight": "bridgetower.text_model.embeddings.word_embeddings.weight"}
 
@@ -1515,6 +1542,7 @@ class BridgeTowerForMaskedLM(BridgeTowerPreTrainedModel):
     [CLS] token) for image-to-text matching.
     """
 )
+# BridgeTowerForImageAndTextRetrieval：图文检索（ITM 相似度）
 class BridgeTowerForImageAndTextRetrieval(BridgeTowerPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1602,6 +1630,7 @@ class BridgeTowerForImageAndTextRetrieval(BridgeTowerPreTrainedModel):
         )
 
 
+# BridgeTowerContrastiveHead：对比学习投影头
 class BridgeTowerContrastiveHead(nn.Module):
     def __init__(self, hidden_size, embed_size):
         super().__init__()
@@ -1617,6 +1646,7 @@ class BridgeTowerContrastiveHead(nn.Module):
     BridgeTower Model with a image-text contrastive head on top computing image-text contrastive loss.
     """
 )
+# BridgeTowerForContrastiveLearning：图像-文本对比预训练（ITC）
 class BridgeTowerForContrastiveLearning(BridgeTowerPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

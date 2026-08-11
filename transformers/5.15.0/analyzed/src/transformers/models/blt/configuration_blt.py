@@ -25,6 +25,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="itazap/blt-1b-hf")
 @strict
+# BltLocalEncoderConfig：局部字节编码器，支持跨 patch 交叉注意力
 class BltLocalEncoderConfig(PreTrainedConfig):
     r"""
     cross_attn_all_layers (`bool`, *optional*, defaults to `True`):
@@ -54,6 +55,7 @@ class BltLocalEncoderConfig(PreTrainedConfig):
     intermediate_size: int | None = None
     initializer_range: float = 0.02
 
+# __post_init__：初始化子配置并计算 encoder 交叉输出维度
     def __post_init__(self, **kwargs):
         self.num_key_value_heads = self.num_key_value_heads or self.num_attention_heads
         self.intermediate_size = self.intermediate_size or int(8 * self.hidden_size / 3)
@@ -63,6 +65,7 @@ class BltLocalEncoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="itazap/blt-1b-hf")
 @strict
+# BltLocalDecoderConfig：局部解码器，从全局表示生成本地字节序列
 class BltLocalDecoderConfig(PreTrainedConfig):
     r"""
     cross_attn_all_layers (`bool`, *optional*, defaults to `True`):
@@ -106,6 +109,7 @@ class BltLocalDecoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="itazap/blt-1b-hf")
 @strict
+# BltGlobalTransformerConfig：全局 Transformer，在 patch 级建模长程依赖
 class BltGlobalTransformerConfig(PreTrainedConfig):
     model_type = "blt_global_transformer"
     default_theta = 500000.0
@@ -134,6 +138,7 @@ class BltGlobalTransformerConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="itazap/blt-1b-hf")
 @strict
+# BltPatcherConfig：熵驱动动态分 patch 的小模型配置
 class BltPatcherConfig(PreTrainedConfig):
     model_type = "blt_patcher"
 
@@ -162,6 +167,7 @@ class BltPatcherConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="itazap/blt-1b-hf")
 @strict
+# BltConfig：顶层 BLT 配置，聚合四组件与哈希字节嵌入超参
 class BltConfig(PreTrainedConfig):
     r"""
     patch_in_forward (`bool`, *optional*, defaults to `True`):

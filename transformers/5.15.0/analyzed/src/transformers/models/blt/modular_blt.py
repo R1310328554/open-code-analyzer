@@ -54,6 +54,7 @@ from .configuration_blt import (
 logger = logging.get_logger(__name__)
 
 
+# rolling_polynomial_hash：多项式滚动哈希识别字节级重复模式
 def rolling_polynomial_hash(token_tensor, prime: int = 1000000007):
     """
     A polynomial rolling hash algorithm that converts sequences
@@ -83,6 +84,7 @@ def rolling_polynomial_hash(token_tensor, prime: int = 1000000007):
     return torch.sum(token_tensor * prime_powers, dim=-1)
 
 
+# byte_group_hash_function：字节组滑动窗口哈希
 def byte_group_hash_function(
     token_ids: torch.Tensor, group_size: int = 2, prime: int = 1000000007, max_hash: int = 30000
 ):
@@ -101,6 +103,7 @@ def byte_group_hash_function(
     return hash_values
 
 
+# compute_hash_embeddings：基础嵌入与哈希嵌入求和
 def compute_hash_embeddings(
     local_encoder_tokens: torch.Tensor,
     local_encoder,
@@ -139,6 +142,7 @@ def compute_hash_embeddings(
     return embeddings
 
 
+# _prepare_patch_cross_attention_mask：patch 交叉注意力掩码（沿用 mllama 方案）
 def _prepare_patch_cross_attention_mask(
     patch_ids: torch.Tensor,
     num_patches: int,
@@ -217,6 +221,7 @@ def _prepare_patch_cross_attention_mask(
     return cross_attention_mask
 
 
+# process_patch_lengths：按 max_patch_length 拆分并打包 patch 长度
 def process_patch_lengths(patch_lengths: torch.Tensor, max_patch_length: int | None) -> torch.Tensor:
     """
     Splits patch lengths into smaller segments if they exceed `max_patch_length`.
@@ -264,14 +269,17 @@ def process_patch_lengths(patch_lengths: torch.Tensor, max_patch_length: int | N
     return packed_segments[:, :max_len]
 
 
+# BltMLP：继承 Mllama FFN
 class BltMLP(MllamaTextMLP):
     pass
 
 
+# BltRMSNorm：继承 Mllama RMSNorm
 class BltRMSNorm(MllamaTextRMSNorm):
     pass
 
 
+# BltRotaryEmbedding：RoPE 变体，freqs 用 interleave 拼接
 class BltRotaryEmbedding(LlamaRotaryEmbedding):
     @torch.no_grad()
     @dynamic_rope_update  # power user: used with advanced RoPE types (e.g. dynamic rope)
@@ -289,6 +297,7 @@ class BltRotaryEmbedding(LlamaRotaryEmbedding):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# BltTransformerLayer：Mllama 解码层 + BLT 自注意力
 class BltTransformerLayer(MllamaSelfAttentionDecoderLayer):
     def __init__(self, config, layer_idx: int):
         super().__init__()
@@ -299,11 +308,13 @@ class BltTransformerLayer(MllamaSelfAttentionDecoderLayer):
         self.post_attention_layernorm = BltRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
 
+# BltSelfAttention：Mllama 文本自注意力适配 BLT 配置
 class BltSelfAttention(MllamaTextSelfAttention):
     def __init__(self, config: BltConfig, layer_idx: int):
         super().__init__(config, layer_idx)
 
 
+# BltCrossAttention：带 q/k LayerNorm 的交叉注意力
 class BltCrossAttention(MllamaTextCrossAttention):
     """Cross-attention module for Blt, following transformers style"""
 
@@ -352,6 +363,7 @@ class BltCrossAttention(MllamaTextCrossAttention):
 
 
 @auto_docstring
+# BltPreTrainedModel：截断正态初始化，对齐原版 ByteLatentTransformer
 class BltPreTrainedModel(MllamaPreTrainedModel):
     config: BltConfig
     _supports_attention_backend = False
@@ -513,6 +525,7 @@ class BltPreTrainedModel(MllamaPreTrainedModel):
             return
 
 
+# BltLocalEncoder：局部编码 + patch 交叉状态输出
 class BltLocalEncoder(BltPreTrainedModel):
     config: BltLocalEncoderConfig
     _can_record_outputs = {
@@ -626,6 +639,7 @@ class BltLocalEncoder(BltPreTrainedModel):
         return reduced_embeddings
 
 
+# BltLocalDecoder：全局 patch 嵌入经交叉注意力注入解码
 class BltLocalDecoder(BltPreTrainedModel):
     config: BltLocalDecoderConfig
 
@@ -702,6 +716,7 @@ class BltLocalDecoder(BltPreTrainedModel):
         return logits
 
 
+# BltGlobalTransformer：patch 级全局 Transformer 栈
 class BltGlobalTransformer(BltPreTrainedModel):
     config: BltGlobalTransformerConfig
     _can_record_outputs = {
@@ -753,6 +768,7 @@ class BltGlobalTransformer(BltPreTrainedModel):
         return hidden_states
 
 
+# BltPatcher：熵阈值驱动 patch 边界预测
 class BltPatcher(BltPreTrainedModel):
     config: BltPatcherConfig
 
@@ -886,6 +902,7 @@ class BltPatcher(BltPreTrainedModel):
         return patch_lengths
 
 
+# BltModel：四阶段 BLT 前向（哈希嵌入→分 patch→编码→全局→解码）
 class BltModel(BltPreTrainedModel):
     def __init__(self, config: BltConfig):
         super().__init__(config)
@@ -1066,6 +1083,7 @@ class BltModel(BltPreTrainedModel):
     The Blt Text Model with a language modeling head on top.
     """
 )
+# BltForCausalLM：因果 LM 头，embed_tokens 与 lm_head 权重绑定
 class BltForCausalLM(BltPreTrainedModel, GenerationMixin):
     config: BltConfig
     _can_compile_fullgraph = False

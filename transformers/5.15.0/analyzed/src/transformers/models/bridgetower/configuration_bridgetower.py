@@ -24,6 +24,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="BridgeTower/bridgetower-base")
 @strict
+# BridgeTowerVisionConfig：ViT 视觉塔（288 分辨率、16 patch）
 class BridgeTowerVisionConfig(PreTrainedConfig):
     r"""
     stop_gradient (`bool`, *optional*, defaults to `False`):
@@ -62,6 +63,7 @@ class BridgeTowerVisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="BridgeTower/bridgetower-base")
 @strict
+# BridgeTowerTextConfig：RoBERTa 风格文本编码器配置
 class BridgeTowerTextConfig(PreTrainedConfig):
     r"""
     Example:
@@ -101,6 +103,7 @@ class BridgeTowerTextConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="BridgeTower/bridgetower-base")
 @strict
+# BridgeTowerConfig：聚合 vision/text 与 link_tower 共享策略
 class BridgeTowerConfig(PreTrainedConfig):
     r"""
     share_cross_modal_transformer_layers (`bool`, *optional*, defaults to `True`):

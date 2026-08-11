@@ -22,6 +22,7 @@ from ...utils import logging
 logger = logging.get_logger(__name__)
 
 
+# ByT5Tokenizer：256 字节词表 + extra_id 哨兵 token
 class ByT5Tokenizer(PreTrainedTokenizer):
     """
     Construct a ByT5 tokenizer. ByT5 simply uses raw bytes utf-8 encoding.
@@ -57,6 +58,7 @@ class ByT5Tokenizer(PreTrainedTokenizer):
 
     model_input_names = ["input_ids", "attention_mask"]
 
+# __init__：注册 pad/eos/unk 与 extra_ids 特殊 token
     def __init__(
         self,
         eos_token="</s>",
@@ -97,14 +99,17 @@ class ByT5Tokenizer(PreTrainedTokenizer):
         )
 
     @property
+# vocab_size：固定 256（UTF-8 单字节）
     def vocab_size(self):
         return self._utf_vocab_size
 
+# get_vocab：合并字节 id 与 added_tokens
     def get_vocab(self):
         vocab = {self.convert_ids_to_tokens(i): i for i in range(self.vocab_size + self.offset)}
         vocab.update(self.added_tokens_encoder)
         return vocab
 
+# get_special_tokens_mask：序列末尾 eos 标记为特殊 token
     def get_special_tokens_mask(
         self, token_ids_0: list[int], token_ids_1: list[int] | None = None, already_has_special_tokens: bool = False
     ) -> list[int]:
@@ -133,6 +138,7 @@ class ByT5Tokenizer(PreTrainedTokenizer):
             return ([0] * len(token_ids_0)) + [1]
         return ([0] * len(token_ids_0)) + [1] + ([0] * len(token_ids_1)) + [1]
 
+# _add_eos_if_not_present：单/双序列末尾追加 eos
     def _add_eos_if_not_present(self, token_ids: list[int]) -> list[int]:
         """Do not add eos again if user already added it."""
         if len(token_ids) > 0 and token_ids[-1] == self.eos_token_id:
@@ -144,6 +150,7 @@ class ByT5Tokenizer(PreTrainedTokenizer):
         else:
             return token_ids + [self.eos_token_id]
 
+# create_token_type_ids_from_sequences：ByT5 不使用 segment id，返回全零
     def create_token_type_ids_from_sequences(
         self, token_ids_0: list[int], token_ids_1: list[int] | None = None
     ) -> list[int]:
@@ -166,6 +173,7 @@ class ByT5Tokenizer(PreTrainedTokenizer):
             return len(token_ids_0 + eos) * [0]
         return len(token_ids_0 + eos + token_ids_1 + eos) * [0]
 
+# build_inputs_with_special_tokens：单序列 X</s>，双序列 A</s>B</s>
     def build_inputs_with_special_tokens(
         self, token_ids_0: list[int], token_ids_1: list[int] | None = None
     ) -> list[int]:
@@ -192,11 +200,13 @@ class ByT5Tokenizer(PreTrainedTokenizer):
             token_ids_1 = self._add_eos_if_not_present(token_ids_1)
             return token_ids_0 + token_ids_1
 
+# _tokenize：UTF-8 encode 后逐字节 chr 化为 token
     def _tokenize(self, text: str) -> list[str]:
         """Take as input a string and return a list of strings (tokens) for words/sub-words"""
         tokens = [chr(i) for i in text.encode("utf-8")]
         return tokens
 
+# _convert_token_to_id：单字符 ord + offset 映射为 id
     def _convert_token_to_id(self, token):
         """Converts a token (str) in an id using the vocab."""
 
@@ -207,11 +217,13 @@ class ByT5Tokenizer(PreTrainedTokenizer):
 
         return token_id
 
+# _convert_id_to_token：id 减 offset 后 chr 还原字节字符
     def _convert_id_to_token(self, index):
         """Converts an index (integer) in a token (str) using the vocab."""
         token = chr(index - self.offset)
         return token
 
+# convert_tokens_to_string：字节序列拼接后 UTF-8 decode
     def convert_tokens_to_string(self, tokens):
         """Converts a sequence of tokens (string) in a single string."""
         bstring = b""
@@ -227,6 +239,7 @@ class ByT5Tokenizer(PreTrainedTokenizer):
         return string
 
     # ByT5Tokenizer has no vocab file
+# save_vocabulary：ByT5 无外部词表文件，返回空元组
     def save_vocabulary(self, save_directory: str, filename_prefix: str | None = None) -> tuple[str]:
         return ()
 

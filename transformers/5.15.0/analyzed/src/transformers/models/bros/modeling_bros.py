@@ -47,6 +47,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# BrosSpadeOutput：Spade 关系抽取 logits 与损失输出
 class BrosSpadeOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -64,6 +65,7 @@ class BrosSpadeOutput(ModelOutput):
     attentions: tuple[torch.FloatTensor] | None = None
 
 
+# BrosPositionalEmbedding1D：一维序列位置嵌入
 class BrosPositionalEmbedding1D(nn.Module):
     # Reference: https://github.com/kimiyoung/transformer-xl/blob/master/pytorch/mem_transformer.py#L15
 
@@ -85,6 +87,7 @@ class BrosPositionalEmbedding1D(nn.Module):
         return pos_emb
 
 
+# BrosPositionalEmbedding2D：二维文档布局位置嵌入
 class BrosPositionalEmbedding2D(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -104,6 +107,7 @@ class BrosPositionalEmbedding2D(nn.Module):
         return bbox_pos_emb
 
 
+# BrosBboxEmbeddings：边界框坐标嵌入（x0,y0,x1,y1 四元组）
 class BrosBboxEmbeddings(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -119,6 +123,7 @@ class BrosBboxEmbeddings(nn.Module):
         return bbox_pos_emb
 
 
+# BrosTextEmbeddings：词嵌入 + 1D/2D 位置 + bbox 融合
 class BrosTextEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
@@ -180,6 +185,7 @@ class BrosTextEmbeddings(nn.Module):
         return embeddings
 
 
+# BrosSelfAttention：双向自注意力（文档全连接）
 class BrosSelfAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -258,6 +264,7 @@ class BrosSelfAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertSelfOutput with Bert->Bros
+# BrosSelfOutput：自注意力输出投影与 LayerNorm
 class BrosSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -272,6 +279,7 @@ class BrosSelfOutput(nn.Module):
         return hidden_states
 
 
+# BrosAttention：自注意力模块封装
 class BrosAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -299,6 +307,7 @@ class BrosAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertIntermediate with Bert->Bros
+# BrosIntermediate：FFN 中间层
 class BrosIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -314,6 +323,7 @@ class BrosIntermediate(nn.Module):
         return hidden_states
 
 
+# BrosOutput：FFN 输出与残差
 class BrosOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -328,6 +338,7 @@ class BrosOutput(nn.Module):
         return hidden_states
 
 
+# BrosLayer：单层 BROS Transformer
 class BrosLayer(GradientCheckpointingLayer):
     def __init__(self, config):
         super().__init__()
@@ -388,6 +399,7 @@ class BrosLayer(GradientCheckpointingLayer):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPooler with Bert->Bros
+# BrosPooler：序列级 [CLS] 池化
 class BrosPooler(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -403,6 +415,7 @@ class BrosPooler(nn.Module):
         return pooled_output
 
 
+# BrosRelationExtractor：Spade 实体间关系分类头
 class BrosRelationExtractor(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -438,6 +451,7 @@ class BrosRelationExtractor(nn.Module):
 
 
 @auto_docstring
+# BrosPreTrainedModel：BROS 权重初始化基类
 class BrosPreTrainedModel(PreTrainedModel):
     config: BrosConfig
     base_model_prefix = "bros"
@@ -464,6 +478,7 @@ class BrosPreTrainedModel(PreTrainedModel):
             init.copy_(module.inv_freq, inv_freq)
 
 
+# BrosEncoder：堆叠 BrosLayer 的文档编码器
 class BrosEncoder(BrosPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -497,6 +512,7 @@ class BrosEncoder(BrosPreTrainedModel):
 
 
 @auto_docstring
+# BrosModel：完整 BROS 骨干（文本+bbox 嵌入→编码器）
 class BrosModel(BrosPreTrainedModel):
     def __init__(self, config, add_pooling_layer=True):
         r"""
@@ -617,6 +633,7 @@ class BrosModel(BrosPreTrainedModel):
 
 
 @auto_docstring
+# BrosForTokenClassification：逐 token 序列标注（NER 等）
 class BrosForTokenClassification(BrosPreTrainedModel):
     _keys_to_ignore_on_load_unexpected = [r"pooler"]
 
@@ -717,6 +734,7 @@ class BrosForTokenClassification(BrosPreTrainedModel):
     since it predicts next token from one token.
     """
 )
+# BrosSpadeEEForTokenClassification：Spade 实体抽取（Entity Extraction）
 class BrosSpadeEEForTokenClassification(BrosPreTrainedModel):
     _keys_to_ignore_on_load_unexpected = [r"pooler"]
 
@@ -860,6 +878,7 @@ class BrosSpadeEEForTokenClassification(BrosPreTrainedModel):
     for Entity-Linking. The entity_linker is used to predict intra-entity links (one entity to another entity).
     """
 )
+# BrosSpadeELForTokenClassification：Spade 实体链接（Entity Linking）
 class BrosSpadeELForTokenClassification(BrosPreTrainedModel):
     _keys_to_ignore_on_load_unexpected = [r"pooler"]
 

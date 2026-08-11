@@ -30,6 +30,7 @@ from ...utils import TensorType, auto_docstring
 
 
 # Adapted from transformers.models.bridgetower.image_processing_bridgetower.BridgeTowerImageProcessorKwargs
+# BridgeTowerImageProcessorKwargs：PIL 路径图像处理 kwargs
 class BridgeTowerImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     size_divisor (`int`, *optional*, defaults to `self.size_divisor`):
@@ -40,6 +41,7 @@ class BridgeTowerImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 # adapted from transformers.models.bridgetower.image_processing_bridgetower.get_resize_output_image_size
+# get_resize_output_image_size：PIL/Tensor 通用的自适应 resize 尺寸计算
 def get_resize_output_image_size(
     input_image: np.ndarray,
     shorter: int = 800,
@@ -72,6 +74,7 @@ def get_resize_output_image_size(
 
 
 @auto_docstring
+# BridgeTowerImageProcessorPil：PIL resize/center_crop/normalize
 class BridgeTowerImageProcessorPil(PilBackend):
     """PIL backend for BridgeTower with custom resize and center_crop."""
 

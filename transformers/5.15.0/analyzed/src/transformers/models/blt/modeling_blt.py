@@ -49,6 +49,7 @@ from .configuration_blt import (
 )
 
 
+# BltMLP：SwiGLU 风格前馈网络（gate/up/down 投影）
 class BltMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -66,6 +67,7 @@ class BltMLP(nn.Module):
         return down_proj
 
 
+# BltRMSNorm：RMS 归一化，等价于 T5 LayerNorm
 class BltRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -86,6 +88,7 @@ class BltRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# BltRotaryEmbedding：RoPE 旋转位置编码（interleave 而非 concat）
 class BltRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: BltConfig, device=None):
@@ -141,6 +144,7 @@ class BltRotaryEmbedding(nn.Module):
 
 
 # Modified from transformers.models.llama.modeling_llama.LlamaDecoderLayer
+# BltTransformerLayer：单层自注意力 + FFN + 残差
 class BltTransformerLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_idx: int):
         super().__init__()
@@ -209,6 +213,7 @@ class BltTransformerLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# repeat_kv：GQA 场景下重复 KV 头以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -221,6 +226,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：标准 eager 多头注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -246,6 +252,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# rotate_half：RoPE 旋转辅助，将向量后半维取反
 def rotate_half(x):
     # Split and rotate. Note that this function is different from e.g. Llama.
     x1 = x[..., ::2]
@@ -254,6 +261,7 @@ def rotate_half(x):
     return rot_x
 
 
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -279,6 +287,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# BltSelfAttention：因果自注意力，支持 GQA 与多种后端
 class BltSelfAttention(nn.Module):
     def __init__(self, config: BltConfig, layer_idx: int):
         super().__init__()
@@ -344,6 +353,7 @@ class BltSelfAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# BltCrossAttention：patch 与字节序列间的交叉注意力
 class BltCrossAttention(nn.Module):
     """Cross-attention module for Blt, following transformers style"""
 
@@ -407,6 +417,7 @@ class BltCrossAttention(nn.Module):
 
 
 @auto_docstring
+# BltPreTrainedModel：BLT 权重初始化（截断正态，1/sqrt(d)）基类
 class BltPreTrainedModel(PreTrainedModel):
     config: BltConfig
     base_model_prefix = "model"
@@ -565,6 +576,7 @@ class BltPreTrainedModel(PreTrainedModel):
             return
 
 
+# BltLocalEncoder：字节级局部编码，scatter_reduce 聚合 patch 嵌入
 class BltLocalEncoder(BltPreTrainedModel):
     config: BltLocalEncoderConfig
     _can_record_outputs = {
@@ -678,6 +690,7 @@ class BltLocalEncoder(BltPreTrainedModel):
         return reduced_embeddings
 
 
+# BltLocalDecoder：接收全局 patch 表示解码为字节 logits
 class BltLocalDecoder(BltPreTrainedModel):
     config: BltLocalDecoderConfig
 
@@ -754,6 +767,7 @@ class BltLocalDecoder(BltPreTrainedModel):
         return logits
 
 
+# BltGlobalTransformer：在 patch 序列上建模全局上下文
 class BltGlobalTransformer(BltPreTrainedModel):
     config: BltGlobalTransformerConfig
     _can_record_outputs = {
@@ -805,6 +819,7 @@ class BltGlobalTransformer(BltPreTrainedModel):
         return hidden_states
 
 
+# process_patch_lengths：超长 patch 切分并填充到统一长度
 def process_patch_lengths(patch_lengths: torch.Tensor, max_patch_length: int | None) -> torch.Tensor:
     """
     Splits patch lengths into smaller segments if they exceed `max_patch_length`.
@@ -852,6 +867,7 @@ def process_patch_lengths(patch_lengths: torch.Tensor, max_patch_length: int | N
     return packed_segments[:, :max_len]
 
 
+# BltPatcher：基于预测熵的动态分 patch（推理时冻结）
 class BltPatcher(BltPreTrainedModel):
     config: BltPatcherConfig
 
@@ -985,6 +1001,7 @@ class BltPatcher(BltPreTrainedModel):
         return patch_lengths
 
 
+# rolling_polynomial_hash：多项式滚动哈希，编码字节 n-gram 模式
 def rolling_polynomial_hash(token_tensor, prime: int = 1000000007):
     """
     A polynomial rolling hash algorithm that converts sequences
@@ -1014,6 +1031,7 @@ def rolling_polynomial_hash(token_tensor, prime: int = 1000000007):
     return torch.sum(token_tensor * prime_powers, dim=-1)
 
 
+# byte_group_hash_function：滑动窗口字节组哈希并映射到词表范围
 def byte_group_hash_function(
     token_ids: torch.Tensor, group_size: int = 2, prime: int = 1000000007, max_hash: int = 30000
 ):
@@ -1032,6 +1050,7 @@ def byte_group_hash_function(
     return hash_values
 
 
+# compute_hash_embeddings：词嵌入叠加多组哈希字节嵌入
 def compute_hash_embeddings(
     local_encoder_tokens: torch.Tensor,
     local_encoder,
@@ -1070,6 +1089,7 @@ def compute_hash_embeddings(
     return embeddings
 
 
+# _prepare_patch_cross_attention_mask：构造 patch 级交叉注意力掩码
 def _prepare_patch_cross_attention_mask(
     patch_ids: torch.Tensor,
     num_patches: int,
@@ -1148,6 +1168,7 @@ def _prepare_patch_cross_attention_mask(
     return cross_attention_mask
 
 
+# BltModel：完整 BLT 骨干（patcher→encoder→global→decoder）
 class BltModel(BltPreTrainedModel):
     def __init__(self, config: BltConfig):
         super().__init__(config)
@@ -1328,6 +1349,7 @@ class BltModel(BltPreTrainedModel):
     The Blt Text Model with a language modeling head on top.
     """
 )
+# BltForCausalLM：带 LM head 的字节级因果语言建模与生成
 class BltForCausalLM(BltPreTrainedModel, GenerationMixin):
     config: BltConfig
     _can_compile_fullgraph = False

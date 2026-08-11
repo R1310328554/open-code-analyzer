@@ -19,6 +19,7 @@ from ...processing_utils import ProcessingKwargs, ProcessorMixin
 from ...utils import auto_docstring
 
 
+# BrosProcessorKwargs：文本分词与 bbox 默认 kwargs
 class BrosProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -35,6 +36,7 @@ class BrosProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# BrosProcessor：封装 tokenizer，处理 input_ids 与 bbox 输入
 class BrosProcessor(ProcessorMixin):
     valid_processor_kwargs = BrosProcessorKwargs
 

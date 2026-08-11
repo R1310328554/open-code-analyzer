@@ -34,6 +34,7 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring, is_torch_available
 
 
+# get_resize_output_image_size：保持宽高比 resize，并对齐 size_divisor
 def get_resize_output_image_size(
     input_image: Union[np.ndarray, "torch.Tensor"],
     shorter: int = 800,
@@ -68,6 +69,7 @@ def get_resize_output_image_size(
     return new_height, new_width
 
 
+# BridgeTowerImageProcessorKwargs：size_divisor 等图像 kwargs
 class BridgeTowerImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     size_divisor (`int`, *optional*, defaults to `self.size_divisor`):
@@ -78,6 +80,7 @@ class BridgeTowerImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# BridgeTowerImageProcessor：resize/center_crop/normalize 流水线
 class BridgeTowerImageProcessor(TorchvisionBackend):
     """Torchvision backend for BridgeTower with custom resize and center_crop."""
 

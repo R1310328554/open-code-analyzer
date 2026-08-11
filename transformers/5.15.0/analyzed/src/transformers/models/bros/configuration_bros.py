@@ -21,6 +21,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="jinho8345/bros-base-uncased")
 @strict
+# BrosConfig：RoBERTa 风格 + 2D 位置/bbox 嵌入 + n_relations
 class BrosConfig(PreTrainedConfig):
     r"""
     dim_bbox (`int`, *optional*, defaults to 8):

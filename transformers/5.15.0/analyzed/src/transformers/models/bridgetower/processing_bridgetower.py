@@ -19,6 +19,7 @@ from ...processing_utils import ProcessingKwargs, ProcessorMixin
 from ...utils import auto_docstring
 
 
+# BridgeTowerProcessorKwargs：文本与图像默认 kwargs
 class BridgeTowerProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -39,9 +40,11 @@ class BridgeTowerProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# BridgeTowerProcessor：组合 image_processor 与 tokenizer
 class BridgeTowerProcessor(ProcessorMixin):
     valid_processor_kwargs = BridgeTowerProcessorKwargs
 
+# __init__：注册图像处理器与 RoBERTa 分词器
     def __init__(self, image_processor, tokenizer):
         super().__init__(image_processor, tokenizer)
 
