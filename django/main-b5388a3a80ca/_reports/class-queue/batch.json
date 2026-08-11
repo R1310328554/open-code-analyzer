@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T05:02:57Z",
   "files": [
-    "django/contrib/gis/forms/__init__.py",
-    "django/contrib/gis/forms/fields.py",
-    "django/contrib/gis/forms/widgets.py",
-    "django/contrib/gis/gdal/__init__.py",
-    "django/contrib/gis/gdal/base.py",
-    "django/contrib/gis/gdal/datasource.py",
-    "django/contrib/gis/gdal/driver.py",
-    "django/contrib/gis/gdal/envelope.py",
-    "django/contrib/gis/gdal/error.py",
-    "django/contrib/gis/gdal/feature.py",
-    "django/contrib/gis/gdal/field.py",
-    "django/contrib/gis/gdal/geometries.py",
-    "django/contrib/gis/gdal/geomtype.py",
-    "django/contrib/gis/gdal/layer.py",
-    "django/contrib/gis/gdal/libgdal.py",
     "django/contrib/gis/gdal/prototypes/__init__.py",
     "django/contrib/gis/gdal/prototypes/ds.py",
     "django/contrib/gis/gdal/prototypes/errcheck.py",
@@ -33,5 +18,5 @@
     "django/contrib/gis/geometry.py"
   ],
   "remaining_pending": 552,
-  "done": 360
+  "done": 375
 }
