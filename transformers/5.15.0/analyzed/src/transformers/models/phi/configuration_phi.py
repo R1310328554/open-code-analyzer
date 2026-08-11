@@ -14,6 +14,8 @@
 
 """Phi model configuration"""
 
+# Phi 配置：Microsoft Phi-1/1.5 小型高效因果 LM 超参
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
@@ -21,8 +23,10 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# PhiConfig：Microsoft Phi-1/1.5 小型因果 LM 超参
 @auto_docstring(checkpoint="microsoft/phi-1")
 @strict
+# PhiConfig：Microsoft Phi-1/1.5 小型因果 LM 超参
 class PhiConfig(PreTrainedConfig):
     r"""
     qk_layernorm (`bool`, *optional*, defaults to `False`):
@@ -81,6 +85,7 @@ class PhiConfig(PreTrainedConfig):
     eos_token_id: int | list[int] | None = 2
     pad_token_id: int | None = None
 
+    # __post_init__：初始化后解析子配置与默认 RoPE 参数
     def __post_init__(self, **kwargs):
         if self.num_key_value_heads is None:
             self.num_key_value_heads = self.num_attention_heads

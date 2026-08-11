@@ -12,6 +12,8 @@
 # limitations under the License.
 """PerceptionLM model configuration"""
 
+# PerceptionLM 配置：Meta 视觉-语言多模态 LLaVA 风格超参
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
@@ -20,8 +22,10 @@ from ..auto import CONFIG_MAPPING, AutoConfig
 from ..timm_wrapper.configuration_timm_wrapper import TimmWrapperConfig
 
 
+# PerceptionLMConfig：Meta Perception-LM 视觉-语言多模态超参
 @auto_docstring(checkpoint="facebook/Perception-LM-1B")
 @strict
+# PerceptionLMConfig：Meta Perception-LM 视觉-语言多模态超参
 class PerceptionLMConfig(PreTrainedConfig):
     r"""
     vision_use_cls_token (`bool`, *optional*, defaults to `True`):
@@ -41,6 +45,7 @@ class PerceptionLMConfig(PreTrainedConfig):
     video_token_id: int = 128003
     tie_word_embeddings: bool | None = None
 
+    # __post_init__：初始化后解析子配置与默认 RoPE 参数
     def __post_init__(self, **kwargs):
         if isinstance(self.vision_config, dict):
             self.vision_config = TimmWrapperConfig(**self.vision_config)

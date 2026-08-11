@@ -13,6 +13,8 @@
 # limitations under the License.
 """Persimmon model configuration"""
 
+# Persimmon 配置：Adept Persimmon-8B 部分 RoPE 因果 LM 超参
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
@@ -20,8 +22,10 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# PersimmonConfig：Adept Persimmon-8B 因果 LM 超参
 @auto_docstring(checkpoint="adept/persimmon-8b-base")
 @strict
+# PersimmonConfig：Adept Persimmon-8B 因果 LM 超参
 class PersimmonConfig(PreTrainedConfig):
     r"""
     qk_layernorm (`bool`, *optional*, default to `True`):
@@ -58,6 +62,7 @@ class PersimmonConfig(PreTrainedConfig):
     bos_token_id: int | None = 1
     eos_token_id: int | list[int] | None = 2
 
+    # __post_init__：初始化后解析子配置与默认 RoPE 参数
     def __post_init__(self, **kwargs):
         kwargs.setdefault("partial_rotary_factor", 0.5)  # assign default for BC
         super().__post_init__(**kwargs)

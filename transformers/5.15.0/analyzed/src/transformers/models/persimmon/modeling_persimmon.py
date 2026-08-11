@@ -18,6 +18,8 @@
 # limitations under the License.
 """PyTorch Persimmon model."""
 
+# Persimmon 建模：融合 QKV 注意力 + ReLU² MLP 解码器堆叠
+
 from collections.abc import Callable
 
 import torch
@@ -54,8 +56,10 @@ logger = logging.get_logger(__name__)
 
 
 # Copied from transformers.models.llama.modeling_llama.LlamaRotaryEmbedding with Llama->Persimmon
+# PersimmonRotaryEmbedding：Persimmon 部分 RoPE 旋转位置编码
 class PersimmonRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PersimmonConfig, device=None):
         super().__init__()
         self.max_seq_len_cached = config.max_position_embeddings
@@ -75,6 +79,7 @@ class PersimmonRotaryEmbedding(nn.Module):
     @staticmethod
     # Ignore copy
     @deprecate_kwarg("device", version="5.18")
+    # compute_default_rope_parameters：按 config 计算默认 RoPE 频率参数
     def compute_default_rope_parameters(config: PersimmonConfig, device=None, **kwargs) -> tuple[torch.Tensor, float]:
         """
         Computes the inverse frequencies according to the original RoPE implementation
@@ -96,6 +101,7 @@ class PersimmonRotaryEmbedding(nn.Module):
 
     @torch.no_grad()
     @dynamic_rope_update  # power user: used with advanced RoPE types (e.g. dynamic rope)
+    # forward：模块前向计算
     def forward(self, x, position_ids):
         inv_freq_expanded = (
             self.inv_freq[None, :, None].expand(position_ids.shape[0], -1, 1).to(dtype=torch.float, device=x.device)
@@ -114,6 +120,7 @@ class PersimmonRotaryEmbedding(nn.Module):
 
 
 # Copied from transformers.models.llama.modeling_llama.rotate_half
+# rotate_half：RoPE 中将向量后半维取反拼接
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -122,6 +129,7 @@ def rotate_half(x):
 
 
 # Copied from transformers.models.llama.modeling_llama.apply_rotary_pos_emb
+# apply_rotary_pos_emb：对 Q/K 张量应用 RoPE 旋转位置编码
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -148,13 +156,16 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
 
 
 # Copied from transformers.models.gpt_neox.modeling_gpt_neox.GPTNeoXMLP with GPTNeoX->Persimmon
+# PersimmonMLP：Persimmon ReLU² 前馈 MLP
 class PersimmonMLP(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.dense_h_to_4h = nn.Linear(config.hidden_size, config.intermediate_size)
         self.dense_4h_to_h = nn.Linear(config.intermediate_size, config.hidden_size)
         self.act = ACT2FN[config.hidden_act]
 
+    # forward：模块前向计算
     def forward(self, hidden_states):
         hidden_states = self.dense_h_to_4h(hidden_states)
         hidden_states = self.act(hidden_states)
@@ -162,6 +173,7 @@ class PersimmonMLP(nn.Module):
         return hidden_states
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -184,9 +196,11 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# PersimmonAttention：Persimmon 融合 QKV 多头自注意力（可选 QK LayerNorm）
 class PersimmonAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PersimmonConfig, layer_idx: int | None = None):
         super().__init__()
         self.config = config
@@ -224,6 +238,7 @@ class PersimmonAttention(nn.Module):
             )
         self.attention_dropout = nn.Dropout(config.attention_dropout)
 
+    # _split_heads：将融合 QKV 张量拆分为 Q/K/V 三头
     def _split_heads(self, fused_qkv: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Split the last dimension into (num_heads, head_dim) without making any copies, results share same memory
@@ -240,6 +255,7 @@ class PersimmonAttention(nn.Module):
         fused_qkv = fused_qkv.view(batch_size, seq_length, self.num_heads, 3, self.head_dim)
         return fused_qkv[..., 0, :], fused_qkv[..., 1, :], fused_qkv[..., 2, :]
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -308,7 +324,9 @@ class PersimmonAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# PersimmonDecoderLayer：Persimmon 解码器单层（Attn + MLP + 残差）
 class PersimmonDecoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PersimmonConfig, layer_idx: int):
         super().__init__()
         self.hidden_size = config.hidden_size
@@ -318,6 +336,7 @@ class PersimmonDecoderLayer(GradientCheckpointingLayer):
         self.post_attention_layernorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -356,6 +375,7 @@ class PersimmonDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# PersimmonPreTrainedModel：Persimmon 预训练基类与权重初始化
 class PersimmonPreTrainedModel(PreTrainedModel):
     config: PersimmonConfig
     base_model_prefix = "model"
@@ -373,6 +393,7 @@ class PersimmonPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# PersimmonModel：Persimmon Transformer 解码器堆叠主干
 class PersimmonModel(PersimmonPreTrainedModel):
     """
     Transformer decoder consisting of *config.num_hidden_layers* layers. Each layer is a [`PersimmonDecoderLayer`]
@@ -381,6 +402,7 @@ class PersimmonModel(PersimmonPreTrainedModel):
         config: PersimmonConfig
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PersimmonConfig):
         super().__init__(config)
         self.padding_idx = config.pad_token_id
@@ -399,6 +421,7 @@ class PersimmonModel(PersimmonPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -453,10 +476,12 @@ class PersimmonModel(PersimmonPreTrainedModel):
         )
 
 
+# PersimmonForCausalLM：Persimmon 因果语言建模
 class PersimmonForCausalLM(PersimmonPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
 
     # Copied from transformers.models.llama.modeling_llama.LlamaForCausalLM.__init__ with LLAMA->PERSIMMON,Llama->Persimmon
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__(config)
         self.model = PersimmonModel(config)
@@ -468,6 +493,7 @@ class PersimmonForCausalLM(PersimmonPreTrainedModel, GenerationMixin):
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -529,9 +555,11 @@ class PersimmonForCausalLM(PersimmonPreTrainedModel, GenerationMixin):
         )
 
 
+# PersimmonForSequenceClassification：Persimmon 序列分类
 class PersimmonForSequenceClassification(GenericForSequenceClassification, PersimmonPreTrainedModel): ...
 
 
+# PersimmonForTokenClassification：Persimmon  token 分类
 class PersimmonForTokenClassification(GenericForTokenClassification, PersimmonPreTrainedModel): ...
 
 

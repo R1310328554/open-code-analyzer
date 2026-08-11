@@ -13,6 +13,8 @@
 # limitations under the License.
 """PyTorch Perceiver model."""
 
+# Perceiver 建模：DeepMind Perceiver IO 通用感知器与多任务头
+
 import abc
 import math
 from collections.abc import Callable, Mapping
@@ -50,6 +52,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# PerceiverModelOutput：Perceiver 主干前向输出 dataclass
 class PerceiverModelOutput(ModelOutput):
     r"""
     logits (`torch.FloatTensor` of shape `(batch_size, num_labels)`):
@@ -69,6 +72,7 @@ class PerceiverModelOutput(ModelOutput):
     """
 )
 @dataclass
+# PerceiverDecoderOutput：Perceiver 解码器输出 dataclass
 class PerceiverDecoderOutput(ModelOutput):
     r"""
     logits (`torch.FloatTensor` of shape `(batch_size, num_labels)`):
@@ -85,6 +89,7 @@ class PerceiverDecoderOutput(ModelOutput):
     """
 )
 @dataclass
+# PerceiverMaskedLMOutput：Perceiver 掩码语言建模输出
 class PerceiverMaskedLMOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -107,6 +112,7 @@ class PerceiverMaskedLMOutput(ModelOutput):
     """
 )
 @dataclass
+# PerceiverClassifierOutput：Perceiver 分类任务输出
 class PerceiverClassifierOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -122,20 +128,25 @@ class PerceiverClassifierOutput(ModelOutput):
     cross_attentions: tuple[torch.FloatTensor] | None = None
 
 
+# PerceiverEmbeddings：Perceiver 可学习 latent 查询嵌入
 class PerceiverEmbeddings(nn.Module):
     """Construct the latent embeddings."""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.latents = nn.Parameter(torch.randn(config.num_latents, config.d_latents))
 
+    # forward：模块前向计算
     def forward(self, batch_size: int):
         return self.latents.expand(batch_size, -1, -1)  # Thanks, Phil Wang
 
 
+# PerceiverSelfAttention：Perceiver latent 堆叠自注意力
 class PerceiverSelfAttention(nn.Module):
     """Multi-headed {cross, self}-attention. Can be used both in the encoder as well as in the decoder."""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         config,
@@ -177,11 +188,13 @@ class PerceiverSelfAttention(nn.Module):
 
         self.dropout = nn.Dropout(config.attention_probs_dropout_prob)
 
+    # transpose_for_scores：将 Q/K/V 张量 reshape 为多头格式
     def transpose_for_scores(self, x, channels_per_head):
         new_x_shape = x.size()[:-1] + (self.num_heads, channels_per_head)
         x = x.view(*new_x_shape)
         return x.permute(0, 2, 1, 3)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -243,19 +256,24 @@ class PerceiverSelfAttention(nn.Module):
         return outputs
 
 
+# PerceiverSelfOutput：Perceiver 自注意力输出投影层
 class PerceiverSelfOutput(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config, input_channels, output_channels):
         super().__init__()
         self.dense = nn.Linear(input_channels, output_channels)
 
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         return hidden_states
 
 
+# PerceiverAttention：Perceiver 交叉注意力（latent↔输入）
 class PerceiverAttention(nn.Module):
     """Attention module, including a dense block."""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         config,
@@ -303,6 +321,7 @@ class PerceiverAttention(nn.Module):
         self.output = PerceiverSelfOutput(config, input_channels=self.self.v_channels, output_channels=output_channels)
         self.use_query_residual = use_query_residual
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -332,9 +351,11 @@ class PerceiverAttention(nn.Module):
         return outputs
 
 
+# PerceiverMLP：Perceiver 前馈 MLP（GELU + 线性投影）
 class PerceiverMLP(nn.Module):
     """A Transformer-style dense module to follow attention."""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config, input_size, widening_factor):
         super().__init__()
         self.dense1 = nn.Linear(input_size, widening_factor * input_size)
@@ -344,6 +365,7 @@ class PerceiverMLP(nn.Module):
             self.intermediate_act_fn = config.hidden_act
         self.dense2 = nn.Linear(widening_factor * input_size, input_size)
 
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense1(hidden_states)
         hidden_states = self.intermediate_act_fn(hidden_states)
@@ -351,7 +373,9 @@ class PerceiverMLP(nn.Module):
         return hidden_states
 
 
+# PerceiverLayer：Perceiver 单层（自 Attn + 交叉 Attn + FFN）
 class PerceiverLayer(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         config,
@@ -380,6 +404,7 @@ class PerceiverLayer(nn.Module):
         self.layernorm = nn.LayerNorm(q_dim)
         self.mlp = PerceiverMLP(config, input_size=q_dim, widening_factor=widening_factor)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -409,15 +434,18 @@ class PerceiverLayer(nn.Module):
 
         return outputs
 
+    # feed_forward_chunk：分块前馈计算以节省显存
     def feed_forward_chunk(self, attention_output):
         layer_output = self.layernorm(attention_output)
         layer_output = self.mlp(layer_output)
         return layer_output
 
 
+# PerceiverEncoder：Perceiver latent Transformer 编码器堆叠
 class PerceiverEncoder(nn.Module):
     """The Perceiver Encoder: a scalable, fully attentional encoder."""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config, kv_dim=None):
         super().__init__()
         self.config = config
@@ -465,6 +493,7 @@ class PerceiverEncoder(nn.Module):
 
         self.self_attends = nn.ModuleList(self_attention_layers)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -526,6 +555,7 @@ class PerceiverEncoder(nn.Module):
 
 
 @auto_docstring
+# PerceiverPreTrainedModel：Perceiver 预训练基类与权重初始化
 class PerceiverPreTrainedModel(PreTrainedModel):
     config: PerceiverConfig
     base_model_prefix = "perceiver"
@@ -533,6 +563,7 @@ class PerceiverPreTrainedModel(PreTrainedModel):
     input_modalities = ("image",)  # technically can be anything but HF impl has only image processor
 
     @torch.no_grad()
+    # _init_weights：按模块类型初始化权重
     def _init_weights(self, module):
         """Initialize the weights"""
         super()._init_weights(module)
@@ -558,7 +589,9 @@ class PerceiverPreTrainedModel(PreTrainedModel):
     </Tip>
     """
 )
+# PerceiverModel：Perceiver IO 通用感知器主干
 class PerceiverModel(PerceiverPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         config,
@@ -588,13 +621,16 @@ class PerceiverModel(PerceiverPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # get_input_embeddings：返回 token 嵌入层
     def get_input_embeddings(self):
         return self.embeddings.latents
 
+    # set_input_embeddings：替换 token 嵌入层
     def set_input_embeddings(self, value):
         self.embeddings.latents = value
 
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         inputs: torch.FloatTensor,
@@ -804,7 +840,9 @@ class PerceiverModel(PerceiverPreTrainedModel):
     Example use of Perceiver for masked language modeling.
     """
 )
+# PerceiverForMaskedLM：Perceiver 掩码语言建模
 class PerceiverForMaskedLM(PerceiverPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PerceiverConfig):
         super().__init__(config)
 
@@ -837,6 +875,7 @@ class PerceiverForMaskedLM(PerceiverPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         inputs: torch.Tensor | None = None,
@@ -941,7 +980,9 @@ class PerceiverForMaskedLM(PerceiverPreTrainedModel):
     Example use of Perceiver for text classification.
     """
 )
+# PerceiverForSequenceClassification：Perceiver 序列分类
 class PerceiverForSequenceClassification(PerceiverPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__(config)
 
@@ -963,6 +1004,7 @@ class PerceiverForSequenceClassification(PerceiverPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         inputs: torch.Tensor | None = None,
@@ -1063,7 +1105,9 @@ class PerceiverForSequenceClassification(PerceiverPreTrainedModel):
     [`PerceiverModel`] into classification logits.
     """
 )
+# PerceiverForImageClassificationLearned：Perceiver 可学习位置编码图像分类
 class PerceiverForImageClassificationLearned(PerceiverPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__(config)
 
@@ -1095,6 +1139,7 @@ class PerceiverForImageClassificationLearned(PerceiverPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         inputs: torch.Tensor | None = None,
@@ -1188,7 +1233,9 @@ class PerceiverForImageClassificationLearned(PerceiverPreTrainedModel):
     [`PerceiverModel`] into classification logits.
     """
 )
+# PerceiverForImageClassificationFourier：Perceiver 傅里叶位置编码图像分类
 class PerceiverForImageClassificationFourier(PerceiverPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__(config)
 
@@ -1221,6 +1268,7 @@ class PerceiverForImageClassificationFourier(PerceiverPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         inputs: torch.Tensor | None = None,
@@ -1311,7 +1359,9 @@ class PerceiverForImageClassificationFourier(PerceiverPreTrainedModel):
     [`PerceiverModel`] into classification logits.
     """
 )
+# PerceiverForImageClassificationConvProcessing：Perceiver 卷积预处理图像分类
 class PerceiverForImageClassificationConvProcessing(PerceiverPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__(config)
 
@@ -1345,6 +1395,7 @@ class PerceiverForImageClassificationConvProcessing(PerceiverPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         inputs: torch.Tensor | None = None,
@@ -1435,7 +1486,9 @@ class PerceiverForImageClassificationConvProcessing(PerceiverPreTrainedModel):
     using the same encoding used for the input.
     """
 )
+# PerceiverForOpticalFlow：Perceiver 光流估计
 class PerceiverForOpticalFlow(PerceiverPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__(config)
 
@@ -1486,6 +1539,7 @@ class PerceiverForOpticalFlow(PerceiverPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         inputs: torch.Tensor | None = None,
@@ -1577,7 +1631,9 @@ class PerceiverForOpticalFlow(PerceiverPreTrainedModel):
     "label" modality), this auto-encoding model becomes a Kinetics 700 video classifier.
     """
 )
+# PerceiverForMultimodalAutoencoding：Perceiver 多模态自编码重建
 class PerceiverForMultimodalAutoencoding(PerceiverPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PerceiverConfig):
         super().__init__(config)
 
@@ -1694,6 +1750,7 @@ class PerceiverForMultimodalAutoencoding(PerceiverPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         inputs: torch.Tensor | None = None,
@@ -1786,6 +1843,7 @@ class PerceiverForMultimodalAutoencoding(PerceiverPreTrainedModel):
 # Below: position encodings
 
 
+# build_position_encoding：按配置构建 Perceiver 位置编码模块
 def build_position_encoding(
     position_encoding_type,
     out_channels=None,
@@ -1823,23 +1881,28 @@ def build_position_encoding(
 # Below: Perceiver decoders
 
 
+# PerceiverAbstractDecoder：Perceiver 解码器抽象基类
 class PerceiverAbstractDecoder(nn.Module, metaclass=abc.ABCMeta):
     """Perceiver abstract decoder."""
 
     @abc.abstractmethod
+    # decoder_query：构造解码器查询向量（各任务子类实现）
     def decoder_query(self, inputs, modality_sizes=None, inputs_without_pos=None, subsampled_points=None):
         raise NotImplementedError
 
     @property
     @abc.abstractmethod
+    # num_query_channels：解码器查询通道数
     def num_query_channels(self):
         raise NotImplementedError
 
     @abc.abstractmethod
+    # forward：模块前向计算
     def forward(self, query, z, query_mask=None):
         raise NotImplementedError
 
 
+# PerceiverProjectionDecoder：Perceiver 线性投影解码器
 class PerceiverProjectionDecoder(PerceiverAbstractDecoder):
     """
     Baseline projection decoder (no cross-attention).
@@ -1849,13 +1912,16 @@ class PerceiverProjectionDecoder(PerceiverAbstractDecoder):
             Model configuration.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.classifier = nn.Linear(config.d_latents, config.num_labels)
 
+    # decoder_query：构造解码器查询向量（各任务子类实现）
     def decoder_query(self, inputs, modality_sizes=None, inputs_without_pos=None, subsampled_points=None):
         return None
 
+    # forward：模块前向计算
     def forward(
         self, query: torch.Tensor, z: torch.FloatTensor, query_mask: torch.FloatTensor | None = None
     ) -> torch.FloatTensor:
@@ -1866,6 +1932,7 @@ class PerceiverProjectionDecoder(PerceiverAbstractDecoder):
         return logits
 
 
+# PerceiverBasicDecoder：Perceiver 通用交叉注意力解码器
 class PerceiverBasicDecoder(PerceiverAbstractDecoder):
     """
     Cross-attention-based decoder. This class can be used to decode the final hidden states of the latents using a
@@ -1902,6 +1969,7 @@ class PerceiverBasicDecoder(PerceiverAbstractDecoder):
             Whether to only use this class to define output queries.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         config: PerceiverConfig,
@@ -1960,6 +2028,7 @@ class PerceiverBasicDecoder(PerceiverAbstractDecoder):
             self.final_layer = nn.Linear(num_channels, output_num_channels) if final_project else nn.Identity()
 
     @property
+    # num_query_channels：解码器查询通道数
     def num_query_channels(self) -> int:
         if self.position_encoding_type == "none":  # Queries come from elsewhere
             raise ValueError(
@@ -1973,6 +2042,7 @@ class PerceiverBasicDecoder(PerceiverAbstractDecoder):
             return self.output_num_channels
         return self.num_channels
 
+    # decoder_query：构造解码器查询向量（各任务子类实现）
     def decoder_query(self, inputs, modality_sizes=None, inputs_without_pos=None, subsampled_points=None):
         if self.position_encoding_type == "none":  # Queries come from elsewhere
             raise ValueError("You cannot construct decoder queries when position_encoding_type is set to none")
@@ -2021,6 +2091,7 @@ class PerceiverBasicDecoder(PerceiverAbstractDecoder):
 
         return pos_emb
 
+    # forward：模块前向计算
     def forward(
         self,
         query: torch.Tensor,
@@ -2051,6 +2122,7 @@ class PerceiverBasicDecoder(PerceiverAbstractDecoder):
         return PerceiverDecoderOutput(logits=logits, cross_attentions=cross_attentions)
 
 
+# PerceiverClassificationDecoder：Perceiver 分类任务解码器
 class PerceiverClassificationDecoder(PerceiverAbstractDecoder):
     """
     Cross-attention based classification decoder. Light-weight wrapper of [`PerceiverBasicDecoder`] for logit output.
@@ -2062,6 +2134,7 @@ class PerceiverClassificationDecoder(PerceiverAbstractDecoder):
             Model configuration.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config, **decoder_kwargs):
         super().__init__()
 
@@ -2074,14 +2147,17 @@ class PerceiverClassificationDecoder(PerceiverAbstractDecoder):
         )
 
     @property
+    # num_query_channels：解码器查询通道数
     def num_query_channels(self) -> int:
         return self.decoder.num_query_channels
 
+    # decoder_query：构造解码器查询向量（各任务子类实现）
     def decoder_query(self, inputs, modality_sizes=None, inputs_without_pos=None, subsampled_points=None):
         return self.decoder.decoder_query(
             inputs, modality_sizes, inputs_without_pos, subsampled_points=subsampled_points
         )
 
+    # forward：模块前向计算
     def forward(
         self,
         query: torch.Tensor,
@@ -2097,9 +2173,11 @@ class PerceiverClassificationDecoder(PerceiverAbstractDecoder):
         return PerceiverDecoderOutput(logits=logits, cross_attentions=decoder_outputs.cross_attentions)
 
 
+# PerceiverOpticalFlowDecoder：Perceiver 光流解码器
 class PerceiverOpticalFlowDecoder(PerceiverAbstractDecoder):
     """Cross-attention based optical flow decoder."""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config, output_image_shape, output_num_channels=2, rescale_factor=100.0, **decoder_kwargs):
         super().__init__()
 
@@ -2109,14 +2187,17 @@ class PerceiverOpticalFlowDecoder(PerceiverAbstractDecoder):
         self.decoder = PerceiverBasicDecoder(config, output_num_channels=output_num_channels, **decoder_kwargs)
 
     @property
+    # num_query_channels：解码器查询通道数
     def num_query_channels(self) -> int:
         return self.decoder.num_query_channels
 
+    # decoder_query：构造解码器查询向量（各任务子类实现）
     def decoder_query(self, inputs, modality_sizes=None, inputs_without_pos=None, subsampled_points=None):
         if subsampled_points is not None:
             raise ValueError("FlowDecoder doesn't support subsampling yet.")
         return inputs
 
+    # forward：模块前向计算
     def forward(
         self,
         query: torch.Tensor,
@@ -2132,6 +2213,7 @@ class PerceiverOpticalFlowDecoder(PerceiverAbstractDecoder):
         return PerceiverDecoderOutput(logits=preds, cross_attentions=decoder_outputs.cross_attentions)
 
 
+# PerceiverBasicVideoAutoencodingDecoder：Perceiver 视频自编码解码器
 class PerceiverBasicVideoAutoencodingDecoder(PerceiverAbstractDecoder):
     """
     Cross-attention based video-autoencoding decoder. Light-weight wrapper of [*PerceiverBasicDecoder*] with video
@@ -2146,6 +2228,7 @@ class PerceiverBasicVideoAutoencodingDecoder(PerceiverAbstractDecoder):
             The type of position encoding to use. Can be either "trainable", "fourier", or "none".
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self, config: PerceiverConfig, output_shape: list[int], position_encoding_type: str, **decoder_kwargs
     ) -> None:
@@ -2164,9 +2247,11 @@ class PerceiverBasicVideoAutoencodingDecoder(PerceiverAbstractDecoder):
         )
 
     @property
+    # num_query_channels：解码器查询通道数
     def num_query_channels(self) -> int:
         return self.decoder.num_query_channels
 
+    # decoder_query：构造解码器查询向量（各任务子类实现）
     def decoder_query(self, inputs, modality_sizes=None, inputs_without_pos=None, subsampled_points=None):
         return self.decoder.decoder_query(
             inputs,
@@ -2175,6 +2260,7 @@ class PerceiverBasicVideoAutoencodingDecoder(PerceiverAbstractDecoder):
             subsampled_points=subsampled_points,
         )
 
+    # forward：模块前向计算
     def forward(
         self, query: torch.Tensor, z: torch.FloatTensor, query_mask: torch.FloatTensor | None = None
     ) -> PerceiverDecoderOutput:
@@ -2185,6 +2271,7 @@ class PerceiverBasicVideoAutoencodingDecoder(PerceiverAbstractDecoder):
         return PerceiverDecoderOutput(logits=logits, cross_attentions=decoder_outputs.cross_attentions)
 
 
+# restructure：按模态尺寸将拼接输入拆分为字典
 def restructure(modality_sizes: ModalitySizeType, inputs: torch.Tensor) -> Mapping[str, torch.Tensor]:
     """
     Partitions a [B, N, C] tensor into tensors for each modality.
@@ -2209,6 +2296,7 @@ def restructure(modality_sizes: ModalitySizeType, inputs: torch.Tensor) -> Mappi
     return outputs
 
 
+# PerceiverMultimodalDecoder：Perceiver 多模态联合解码器
 class PerceiverMultimodalDecoder(PerceiverAbstractDecoder):
     """
     Multimodal decoding by composing uni-modal decoders. The *modalities* argument of the constructor is a dictionary
@@ -2235,6 +2323,7 @@ class PerceiverMultimodalDecoder(PerceiverAbstractDecoder):
             modality.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         config: PerceiverConfig,
@@ -2267,11 +2356,13 @@ class PerceiverMultimodalDecoder(PerceiverAbstractDecoder):
         )
 
     @property
+    # num_query_channels：解码器查询通道数
     def num_query_channels(self) -> int:
         max_channel_size = max(decoder.num_query_channels for _, decoder in self.modalities.items())
         common_channel_size = max_channel_size + self.min_padding_size
         return common_channel_size
 
+    # decoder_query：构造解码器查询向量（各任务子类实现）
     def decoder_query(self, inputs, modality_sizes, inputs_without_pos=None, subsampled_points=None):
         # Partition the flat inputs among the different modalities
         inputs = restructure(modality_sizes, inputs)
@@ -2295,6 +2386,7 @@ class PerceiverMultimodalDecoder(PerceiverAbstractDecoder):
 
         # Pad all queries with trainable position encodings to make them have the same channels
 
+        # embed：多模态解码器中对单模态输入做嵌入
         def embed(modality, x):
             x = torch.reshape(x, [x.shape[0], np.prod(x.shape[1:-1]), x.shape[-1]])
             pos = self.padding[modality]
@@ -2306,6 +2398,7 @@ class PerceiverMultimodalDecoder(PerceiverAbstractDecoder):
             [embed(modality, decoder_queries[modality]) for modality in sorted(self.modalities.keys())], dim=1
         )
 
+    # forward：模块前向计算
     def forward(
         self,
         query: torch.Tensor,
@@ -2320,6 +2413,7 @@ class PerceiverMultimodalDecoder(PerceiverAbstractDecoder):
 
 
 # Below: IO pre- and post-processor classes for Perceiver.
+# space_to_depth：将空间维度重排为通道深度（视频块化）
 def space_to_depth(frames: torch.Tensor, temporal_block_size: int = 1, spatial_block_size: int = 1) -> torch.Tensor:
     """
     Space to depth transform. Rearranges blocks of spatial data, into depth.
@@ -2378,25 +2472,30 @@ def space_to_depth(frames: torch.Tensor, temporal_block_size: int = 1, spatial_b
         )
 
 
+# Conv2dSamePadding：带 SAME padding 的 2D 卷积
 class Conv2dSamePadding(nn.Conv2d):
     """
     Conv2d layer with padding="same" support. Source:
     https://gist.github.com/sumanmichael/4de9dee93f972d47c80c4ade8e149ea6
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.zero_pad_2d = nn.ZeroPad2d(
             reduce(__add__, [(k // 2 + (k - 2 * (k // 2)) - 1, k // 2) for k in self.kernel_size[::-1]])
         )
 
+    # forward：模块前向计算
     def forward(self, input):
         return self._conv_forward(self.zero_pad_2d(input), self.weight, self.bias)
 
 
+# Conv2DDownsample：Perceiver 2D 卷积下采样模块
 class Conv2DDownsample(nn.Module):
     """Downsamples 4x by applying a 2D convolution and doing max pooling."""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         num_layers: int = 1,
@@ -2424,6 +2523,7 @@ class Conv2DDownsample(nn.Module):
         self.relu = nn.ReLU()
         self.max_pool = nn.MaxPool2d(kernel_size=3, stride=2)
 
+    # forward：模块前向计算
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         out = self.conv(inputs)
         out = self.batchnorm(out)
@@ -2432,6 +2532,7 @@ class Conv2DDownsample(nn.Module):
         return out
 
 
+# generate_fourier_features：生成傅里叶位置特征（多频带 sin/cos）
 def generate_fourier_features(pos, num_bands, max_resolution=(224, 224), concat_pos=True, sine_only=False):
     """
     Generate a Fourier frequency position encoding with linear spacing.
@@ -2484,6 +2585,7 @@ def generate_fourier_features(pos, num_bands, max_resolution=(224, 224), concat_
     return per_pos_features
 
 
+# build_linear_positions：构建线性归一化空间坐标网格
 def build_linear_positions(index_dims, output_range=(-1.0, 1.0)):
     """
     Generate an array of position indices for an N-D input array.
@@ -2498,6 +2600,7 @@ def build_linear_positions(index_dims, output_range=(-1.0, 1.0)):
       `torch.FloatTensor` of shape `(index_dims[0], index_dims[1], .., index_dims[-1], N)`.
     """
 
+    # _linspace：沿单维生成等间距坐标
     def _linspace(n_xels_per_dim):
         return torch.linspace(start=output_range[0], end=output_range[1], steps=n_xels_per_dim, dtype=torch.float32)
 
@@ -2507,26 +2610,32 @@ def build_linear_positions(index_dims, output_range=(-1.0, 1.0)):
     return torch.stack(array_index_grid, dim=-1)
 
 
+# PerceiverAbstractPositionEncoding：Perceiver 位置编码抽象基类
 class PerceiverAbstractPositionEncoding(nn.Module, metaclass=abc.ABCMeta):
     """Perceiver abstract position encoding."""
 
     @property
     @abc.abstractmethod
+    # num_dimensions：位置编码空间维度数
     def num_dimensions(self) -> int:
         raise NotImplementedError
 
     @abc.abstractmethod
+    # output_size：位置编码输出通道数
     def output_size(self, *args, **kwargs) -> int:
         raise NotImplementedError
 
     @abc.abstractmethod
+    # forward：模块前向计算
     def forward(self, batch_size, pos):
         raise NotImplementedError
 
 
+# PerceiverTrainablePositionEncoding：Perceiver 可学习位置编码
 class PerceiverTrainablePositionEncoding(PerceiverAbstractPositionEncoding):
     """Trainable position encoding."""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, index_dims, num_channels=128):
         super().__init__()
         self._num_channels = num_channels
@@ -2535,14 +2644,17 @@ class PerceiverTrainablePositionEncoding(PerceiverAbstractPositionEncoding):
         self.position_embeddings = nn.Parameter(torch.randn(index_dim, num_channels))
 
     @property
+    # num_dimensions：位置编码空间维度数
     def num_dimensions(self) -> int:
         if isinstance(self._index_dims, int):
             return 1
         return len(self._index_dims)
 
+    # output_size：位置编码输出通道数
     def output_size(self, *args, **kwargs) -> int:
         return self._num_channels
 
+    # interpolate_pos_encoding：双线性插值扩展位置编码分辨率
     def interpolate_pos_encoding(self, position_embeddings: torch.Tensor, height: int, width: int) -> torch.Tensor:
         num_positions = position_embeddings.shape[0]
         new_height = new_width = torch_int(num_positions**0.5)
@@ -2564,6 +2676,7 @@ class PerceiverTrainablePositionEncoding(PerceiverAbstractPositionEncoding):
         position_embeddings = position_embeddings.reshape(1, self._num_channels, -1).permute(0, 2, 1).squeeze(0)
         return position_embeddings
 
+    # forward：模块前向计算
     def forward(
         self, batch_size: int, interpolate_pos_encoding: bool = False, input_size: torch.Size | None = None
     ) -> torch.Tensor:
@@ -2578,6 +2691,7 @@ class PerceiverTrainablePositionEncoding(PerceiverAbstractPositionEncoding):
         return position_embeddings
 
 
+# _check_or_build_spatial_positions：校验或构造空间位置坐标
 def _check_or_build_spatial_positions(pos, index_dims, batch_size):
     """
     Checks or builds spatial position features (x, y, ...).
@@ -2608,9 +2722,11 @@ def _check_or_build_spatial_positions(pos, index_dims, batch_size):
     return pos
 
 
+# PerceiverFourierPositionEncoding：Perceiver 傅里叶位置编码
 class PerceiverFourierPositionEncoding(PerceiverAbstractPositionEncoding):
     """Fourier (Sinusoidal) position encoding."""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, num_bands, max_resolution, concat_pos=True, sine_only=False):
         super().__init__()
         self.num_bands = num_bands
@@ -2619,9 +2735,11 @@ class PerceiverFourierPositionEncoding(PerceiverAbstractPositionEncoding):
         self.sine_only = sine_only
 
     @property
+    # num_dimensions：位置编码空间维度数
     def num_dimensions(self) -> int:
         return len(self.max_resolution)
 
+    # output_size：位置编码输出通道数
     def output_size(self):
         """Returns size of positional encodings last dimension."""
         num_dims = len(self.max_resolution)
@@ -2633,6 +2751,7 @@ class PerceiverFourierPositionEncoding(PerceiverAbstractPositionEncoding):
 
         return encoding_size
 
+    # forward：模块前向计算
     def forward(
         self,
         index_dims: list[int],
@@ -2652,6 +2771,7 @@ class PerceiverFourierPositionEncoding(PerceiverAbstractPositionEncoding):
         return fourier_pos_enc
 
 
+# AbstractPreprocessor：Perceiver 输入预处理器抽象基类
 class AbstractPreprocessor(nn.Module):
     @property
     def num_channels(self) -> int:
@@ -2659,6 +2779,7 @@ class AbstractPreprocessor(nn.Module):
         raise NotImplementedError()
 
 
+# PerceiverTextPreprocessor：Perceiver 文本嵌入预处理器
 class PerceiverTextPreprocessor(AbstractPreprocessor):
     """
     Text preprocessing for Perceiver Encoder. Can be used to embed `inputs` and add positional encodings.
@@ -2670,6 +2791,7 @@ class PerceiverTextPreprocessor(AbstractPreprocessor):
             Model configuration.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PerceiverConfig) -> None:
         super().__init__()
         self.config = config
@@ -2680,6 +2802,7 @@ class PerceiverTextPreprocessor(AbstractPreprocessor):
     def num_channels(self) -> int:
         return self.config.d_model
 
+    # forward：模块前向计算
     def forward(
         self,
         inputs: torch.LongTensor,
@@ -2696,6 +2819,7 @@ class PerceiverTextPreprocessor(AbstractPreprocessor):
         return embeddings, None, embeddings_without_pos
 
 
+# PerceiverEmbeddingDecoder：Perceiver 嵌入层解码器（MLM 重建）
 class PerceiverEmbeddingDecoder(nn.Module):
     """
     Module to decode embeddings (for masked language modeling).
@@ -2705,12 +2829,14 @@ class PerceiverEmbeddingDecoder(nn.Module):
             Model configuration.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PerceiverConfig) -> None:
         super().__init__()
         self.config = config
         self.vocab_size = config.vocab_size
         self.bias = nn.Parameter(torch.zeros(self.vocab_size))
 
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.Tensor, embedding_layer: torch.Tensor) -> torch.Tensor:
         batch_size, seq_len, d_model = hidden_states.shape
         # Flatten batch dim
@@ -2720,6 +2846,7 @@ class PerceiverEmbeddingDecoder(nn.Module):
         return output.reshape([batch_size, seq_len, self.vocab_size])
 
 
+# PerceiverMultimodalPostprocessor：Perceiver 多模态后处理分发器
 class PerceiverMultimodalPostprocessor(nn.Module):
     """
     Multimodal postprocessing for Perceiver. Can be used to combine modality-specific postprocessors into a single
@@ -2733,11 +2860,13 @@ class PerceiverMultimodalPostprocessor(nn.Module):
             False, input is a tensor which is sliced up during postprocessing by *modality_sizes*.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, modalities: Mapping[str, PostprocessorType], input_is_dict: bool = False):
         super().__init__()
         self.modalities = nn.ModuleDict(modalities)
         self.input_is_dict = input_is_dict
 
+    # forward：模块前向计算
     def forward(
         self, inputs: torch.Tensor, pos: torch.Tensor | None = None, modality_sizes=None
     ) -> Mapping[str, torch.Tensor]:
@@ -2754,6 +2883,7 @@ class PerceiverMultimodalPostprocessor(nn.Module):
         return outputs
 
 
+# PerceiverClassificationPostprocessor：Perceiver 分类后处理（均值池化+线性）
 class PerceiverClassificationPostprocessor(nn.Module):
     """
     Classification postprocessing for Perceiver. Can be used to convert the decoder output to classification logits.
@@ -2765,15 +2895,18 @@ class PerceiverClassificationPostprocessor(nn.Module):
             Number of channels in the input.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PerceiverConfig, in_channels: int) -> None:
         super().__init__()
         self.classifier = nn.Linear(in_channels, config.num_labels)
 
+    # forward：模块前向计算
     def forward(self, inputs, pos: torch.Tensor | None = None, modality_sizes=None) -> torch.Tensor:
         logits = self.classifier(inputs)
         return logits[:, 0, :]
 
 
+# PerceiverAudioPostprocessor：Perceiver 音频后处理（patch/频谱重建）
 class PerceiverAudioPostprocessor(nn.Module):
     """
     Audio postprocessing for Perceiver. Can be used to convert the decoder output to audio features.
@@ -2787,6 +2920,7 @@ class PerceiverAudioPostprocessor(nn.Module):
             Postprocessor type to use. Currently, only "patches" is supported.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PerceiverConfig, in_channels: int, postproc_type: str = "patches") -> None:
         super().__init__()
 
@@ -2796,11 +2930,13 @@ class PerceiverAudioPostprocessor(nn.Module):
         # Architecture parameters:
         self.classifier = nn.Linear(in_channels, config.samples_per_patch)
 
+    # forward：模块前向计算
     def forward(self, inputs: torch.Tensor, pos: torch.Tensor | None = None, modality_sizes=None) -> torch.Tensor:
         logits = self.classifier(inputs)
         return torch.reshape(logits, [inputs.shape[0], -1])
 
 
+# PerceiverProjectionPostprocessor：Perceiver 线性投影后处理器
 class PerceiverProjectionPostprocessor(nn.Module):
     """
     Projection postprocessing for Perceiver. Can be used to project the channels of the decoder output to a lower
@@ -2813,15 +2949,18 @@ class PerceiverProjectionPostprocessor(nn.Module):
             Number of channels in the output.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, in_channels: int, out_channels: int) -> None:
         super().__init__()
         self.classifier = nn.Linear(in_channels, out_channels)
 
+    # forward：模块前向计算
     def forward(self, inputs: torch.Tensor, pos: torch.Tensor | None = None, modality_sizes=None) -> torch.Tensor:
         logits = self.classifier(inputs)
         return logits
 
 
+# PerceiverImagePreprocessor：Perceiver 图像卷积/傅里叶预处理器
 class PerceiverImagePreprocessor(AbstractPreprocessor):
     """
     Image preprocessing for Perceiver Encoder.
@@ -2859,6 +2998,7 @@ class PerceiverImagePreprocessor(AbstractPreprocessor):
             Keyword arguments for the position encoding.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         config,
@@ -2966,6 +3106,7 @@ class PerceiverImagePreprocessor(AbstractPreprocessor):
 
         return inp_dim + pos_dim
 
+    # _build_network_inputs：构建网络输入（位置编码+特征拼接）
     def _build_network_inputs(
         self, inputs: torch.Tensor, network_input_is_1d: bool = True, interpolate_pos_encoding: bool = False
     ):
@@ -3004,6 +3145,7 @@ class PerceiverImagePreprocessor(AbstractPreprocessor):
             inputs_with_pos = inputs + pos_enc
         return inputs_with_pos, inputs
 
+    # forward：模块前向计算
     def forward(
         self,
         inputs: torch.Tensor,
@@ -3060,6 +3202,7 @@ class PerceiverImagePreprocessor(AbstractPreprocessor):
         return inputs, modality_sizes, inputs_without_pos
 
 
+# PerceiverOneHotPreprocessor：Perceiver one-hot 标签预处理器
 class PerceiverOneHotPreprocessor(AbstractPreprocessor):
     """
     One-hot preprocessor for Perceiver Encoder. Can be used to add a dummy index dimension to the input.
@@ -3069,6 +3212,7 @@ class PerceiverOneHotPreprocessor(AbstractPreprocessor):
             Model configuration.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PerceiverConfig) -> None:
         super().__init__()
         self.config: PerceiverConfig = config
@@ -3077,6 +3221,7 @@ class PerceiverOneHotPreprocessor(AbstractPreprocessor):
     def num_channels(self) -> int:
         return self.config.num_labels
 
+    # forward：模块前向计算
     def forward(self, inputs: torch.Tensor, pos: torch.Tensor | None = None, network_input_is_1d: bool = True):
         # Add a dummy index dimension.
         inputs = inputs[:, None, :]
@@ -3086,6 +3231,7 @@ class PerceiverOneHotPreprocessor(AbstractPreprocessor):
         return inputs, None, inputs
 
 
+# PerceiverAudioPreprocessor：Perceiver 音频 Mel 频谱预处理器
 class PerceiverAudioPreprocessor(AbstractPreprocessor):
     """
     Audio preprocessing for Perceiver Encoder.
@@ -3109,6 +3255,7 @@ class PerceiverAudioPreprocessor(AbstractPreprocessor):
             Keyword arguments for the position encoding.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         config,
@@ -3153,6 +3300,7 @@ class PerceiverAudioPreprocessor(AbstractPreprocessor):
             return pos_dim
         return self.samples_per_patch + pos_dim
 
+    # _build_network_inputs：构建网络输入（位置编码+特征拼接）
     def _build_network_inputs(self, inputs):
         """Construct the final input, including position encoding."""
         batch_size = inputs.shape[0]
@@ -3174,6 +3322,7 @@ class PerceiverAudioPreprocessor(AbstractPreprocessor):
 
         return inputs_with_pos, inputs
 
+    # forward：模块前向计算
     def forward(
         self,
         inputs: torch.Tensor,
@@ -3189,6 +3338,7 @@ class PerceiverAudioPreprocessor(AbstractPreprocessor):
         return inputs, modality_sizes, inputs_without_pos
 
 
+# PerceiverMultimodalPreprocessor：Perceiver 多模态输入联合预处理器
 class PerceiverMultimodalPreprocessor(AbstractPreprocessor):
     """
     Multimodal preprocessing for Perceiver Encoder.
@@ -3206,6 +3356,7 @@ class PerceiverMultimodalPreprocessor(AbstractPreprocessor):
             channels across all modalities plus min_padding_size.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         modalities: Mapping[str, PreprocessorType],
@@ -3232,6 +3383,7 @@ class PerceiverMultimodalPreprocessor(AbstractPreprocessor):
         common_channel_size = max_channel_size + self.min_padding_size
         return common_channel_size
 
+    # forward：模块前向计算
     def forward(
         self,
         inputs: Mapping[str, torch.Tensor],

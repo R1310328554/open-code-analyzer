@@ -12,6 +12,8 @@
 # limitations under the License.
 """PyTorch PerceptionLM model."""
 
+# PerceptionLM modular 源：继承 LLaVA 实现自适应池化与多模态投影
+
 import math
 
 import torch
@@ -42,11 +44,14 @@ from .configuration_perception_lm import PerceptionLMConfig
 logger = logging.get_logger(__name__)
 
 
+# PerceptionLMAdaptiveAvgPooling：PerceptionLM 视觉 token 2D 自适应平均池化
 class PerceptionLMAdaptiveAvgPooling(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, pooling_ratio=2):
         super().__init__()
         self.pooling_ratio = pooling_ratio
 
+    # forward：模块前向计算
     def forward(self, hidden_states):
         b, num_tokens, c = hidden_states.shape
         h = int(math.sqrt(num_tokens))
@@ -61,7 +66,9 @@ class PerceptionLMAdaptiveAvgPooling(nn.Module):
         return hidden_states
 
 
+# PerceptionLMMultiModalProjector：PerceptionLM 视觉特征→LLM 维度投影 MLP
 class PerceptionLMMultiModalProjector(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PerceptionLMConfig):
         super().__init__()
         input_size = config.vision_config.model_args["embed_dim"]
@@ -83,6 +90,7 @@ class PerceptionLMMultiModalProjector(nn.Module):
             else nn.Identity()
         )
 
+    # forward：模块前向计算
     def forward(self, features):
         features = features.permute(1, 0, 2)  # NLD -> LND
         features = self.linear_1(features)
@@ -93,10 +101,12 @@ class PerceptionLMMultiModalProjector(nn.Module):
         return features
 
 
+# PerceptionLMPreTrainedModel：PerceptionLM 预训练基类与权重初始化
 class PerceptionLMPreTrainedModel(LlavaPreTrainedModel):
     base_model_prefix = "model"
 
 
+# PerceptionLMModelOutputWithPast：PerceptionLM 主干输出（含 past KV）
 class PerceptionLMModelOutputWithPast(LlavaModelOutputWithPast):
     r"""
     past_key_values (`Cache`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
@@ -115,6 +125,7 @@ class PerceptionLMModelOutputWithPast(LlavaModelOutputWithPast):
     video_hidden_states: torch.FloatTensor | None = None
 
 
+# PerceptionLMCausalLMOutputWithPast：PerceptionLM 因果 LM 输出
 class PerceptionLMCausalLMOutputWithPast(LlavaCausalLMOutputWithPast):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -138,7 +149,9 @@ class PerceptionLMCausalLMOutputWithPast(LlavaCausalLMOutputWithPast):
 
 
 @auto_docstring
+# PerceptionLMModel：PerceptionLM 视觉塔 + LLM 多模态主干
 class PerceptionLMModel(LlavaModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PerceptionLMConfig):
         super().__init__(config)
         self.vision_tower = AutoModel.from_config(config.vision_config)
@@ -149,6 +162,7 @@ class PerceptionLMModel(LlavaModel):
     @auto_docstring(
         custom_intro="Obtains image last hidden states from the vision tower and apply multimodal projection."
     )
+    # get_image_features：提取并投影视觉特征嵌入
     def get_image_features(
         self,
         pixel_values: torch.FloatTensor,
@@ -163,6 +177,7 @@ class PerceptionLMModel(LlavaModel):
 
         return image_outputs
 
+    # get_placeholder_mask：构造 image/video 占位 token 的 attention mask
     def get_placeholder_mask(
         self,
         input_ids: torch.LongTensor,
@@ -206,6 +221,7 @@ class PerceptionLMModel(LlavaModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -268,9 +284,11 @@ class PerceptionLMModel(LlavaModel):
 
 
 @auto_docstring
+# PerceptionLMForConditionalGeneration：PerceptionLM 多模态条件文本生成
 class PerceptionLMForConditionalGeneration(LlavaForConditionalGeneration):
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -370,6 +388,7 @@ class PerceptionLMForConditionalGeneration(LlavaForConditionalGeneration):
             video_hidden_states=outputs.video_hidden_states,
         )
 
+    # get_image_features：提取并投影视觉特征嵌入
     def get_image_features(self, **kwargs):
         raise AttributeError("Not needed for PerceptionLM")
 

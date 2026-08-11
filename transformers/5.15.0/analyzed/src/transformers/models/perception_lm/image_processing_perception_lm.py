@@ -12,6 +12,8 @@
 # limitations under the License.
 """Image processor class for PerceptionLM."""
 
+# PerceptionLM 图像处理：thumb+tile 多尺度 aspect-ratio 自适应切分
+
 import math
 from functools import reduce
 
@@ -32,6 +34,7 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# PerceptionLMImageProcessorKwargs：PerceptionLM 图像预处理 kwargs 类型
 class PerceptionLMImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     vision_input_type (`str`, *optional*, defaults to `"thumb+tile"`):
@@ -49,6 +52,7 @@ class PerceptionLMImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# PerceptionLMImageProcessor：PerceptionLM 多尺度 tile 图像预处理
 class PerceptionLMImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.BICUBIC
     image_mean = IMAGENET_STANDARD_MEAN
@@ -63,14 +67,17 @@ class PerceptionLMImageProcessor(TorchvisionBackend):
     size = {"width": 448, "height": 448}  # for backward compatibility in tests
     valid_kwargs = PerceptionLMImageProcessorKwargs
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, **kwargs: Unpack[PerceptionLMImageProcessorKwargs]) -> None:
         super().__init__(**kwargs)
 
     @auto_docstring
+    # preprocess：PerceptionLM 图像预处理入口（thumb+tile 策略）
     def preprocess(self, images: ImageInput, **kwargs: Unpack[PerceptionLMImageProcessorKwargs]) -> BatchFeature:
         return super().preprocess(images, **kwargs)
 
     @staticmethod
+    # _factors：计算整数所有因子（aspect ratio 枚举用）
     def _factors(n: int):
         """Return all factors of a number."""
         return set(
@@ -80,6 +87,7 @@ class PerceptionLMImageProcessor(TorchvisionBackend):
             )
         )
 
+    # _find_supported_aspect_ratios：枚举 tile 布局支持的宽高比
     def _find_supported_aspect_ratios(self):
         """
         This function computes all the allowed aspect ratios for a fixed
@@ -111,6 +119,7 @@ class PerceptionLMImageProcessor(TorchvisionBackend):
                     asp_dict[k].append(ratio)
         return asp_dict
 
+    # _get_image_height_width：解析图像原始高宽
     def _get_image_height_width(
         self, image_width: int, image_height: int, target_width: int, target_height: int
     ) -> tuple[int, int]:
@@ -142,6 +151,7 @@ class PerceptionLMImageProcessor(TorchvisionBackend):
 
         return new_w, new_h
 
+    # _fit_image_to_canvas：将图像适配到 tile 画布尺寸
     def _fit_image_to_canvas(self, img_width: int, img_height: int, tile_size: int):
         """
         Given an image width, height and target number of chunks this function will see if the image
@@ -192,6 +202,7 @@ class PerceptionLMImageProcessor(TorchvisionBackend):
                         optimal_image_width_height = image_width_height
         return optimal_canvas
 
+    # _find_closest_aspect_ratio：选取最接近的 tile 宽高比
     def _find_closest_aspect_ratio(self, img_width: int, img_height: int, tile_size: int) -> tuple:
         """
         Given an image width, height and target number of chunks
@@ -217,6 +228,7 @@ class PerceptionLMImageProcessor(TorchvisionBackend):
             # select largest height
             return max(tiles_given_aspect_ratio, key=lambda x: x[1])
 
+    # _split：将 resize 后图像切分为 ncw×nch 个 tile
     def _split(self, image: torch.Tensor, ncw: int, nch: int) -> torch.Tensor:
         # Split image into number of required tiles (width x height)
         batch_size, num_channels, height, width = image.size()
@@ -227,6 +239,7 @@ class PerceptionLMImageProcessor(TorchvisionBackend):
         image = image.view(batch_size, ncw * nch, num_channels, height // nch, width // ncw)
         return image
 
+    # resize：PerceptionLM 多 tile 自适应 resize
     def resize(
         self,
         image: "torch.Tensor",
@@ -251,6 +264,7 @@ class PerceptionLMImageProcessor(TorchvisionBackend):
         image = super().resize(image, SizeDict(height=new_height, width=new_width), resample=resample)
         return image, aspect_ratio
 
+    # _preprocess：图像/视频预处理流水线
     def _preprocess(
         self,
         images: list["torch.Tensor"],

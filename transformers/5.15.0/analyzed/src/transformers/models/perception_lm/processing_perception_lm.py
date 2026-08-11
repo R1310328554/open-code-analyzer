@@ -14,11 +14,14 @@
 Processor class for PerceptionLM.
 """
 
+# PerceptionLM 处理器：图像/视频/文本三模态联合预处理
+
 from ...image_utils import get_image_size, to_numpy_array
 from ...processing_utils import MultiModalData, ProcessingKwargs, ProcessorMixin
 from ...utils import auto_docstring
 
 
+# PerceptionLMProcessorKwargs：PerceptionLM 联合处理器 kwargs
 class PerceptionLMProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -29,9 +32,11 @@ class PerceptionLMProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# PerceptionLMProcessor：PerceptionLM 图像/视频/文本联合处理器
 class PerceptionLMProcessor(ProcessorMixin):
     valid_processor_kwargs = PerceptionLMProcessorKwargs
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         video_processor=None,
@@ -56,6 +61,7 @@ class PerceptionLMProcessor(ProcessorMixin):
         self.video_token_id = tokenizer.video_token_id
         super().__init__(video_processor, image_processor, tokenizer, chat_template=chat_template)
 
+    # replace_image_token：按图像 tile 数替换占位 image token
     def replace_image_token(self, image_inputs: dict, image_idx: int, **kwargs) -> str:
         media = image_inputs["pixel_values"][image_idx]
         height, width = get_image_size(to_numpy_array(media))
@@ -67,6 +73,7 @@ class PerceptionLMProcessor(ProcessorMixin):
         )
         return self.image_token * num_tokens
 
+    # replace_video_token：按视频帧数替换占位 video token
     def replace_video_token(self, video_inputs: dict, video_idx: int, **kwargs) -> str:
         media = video_inputs["pixel_values_videos"][video_idx]
         height, width = get_image_size(to_numpy_array(media))
@@ -78,6 +85,7 @@ class PerceptionLMProcessor(ProcessorMixin):
         )
         return self.video_token * num_tokens
 
+    # _get_num_multimodal_tokens：估算多模态 token 数量
     def _get_num_multimodal_tokens(self, image_sizes=None, **kwargs):
         """
         Computes the number of placeholder tokens needed for multimodal inputs with the given sizes.

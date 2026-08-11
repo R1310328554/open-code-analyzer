@@ -12,10 +12,13 @@
 # limitations under the License.
 """Video processor class for PerceptionLM."""
 
+# PerceptionLM 视频处理：448×448 resize 与 ImageNet 归一化
+
 from ...image_utils import IMAGENET_STANDARD_MEAN, IMAGENET_STANDARD_STD, PILImageResampling
 from ...video_processing_utils import BaseVideoProcessor
 
 
+# PerceptionLMVideoProcessor：PerceptionLM 视频帧 resize 与归一化
 class PerceptionLMVideoProcessor(BaseVideoProcessor):
     resample = PILImageResampling.BICUBIC
     image_mean = IMAGENET_STANDARD_MEAN

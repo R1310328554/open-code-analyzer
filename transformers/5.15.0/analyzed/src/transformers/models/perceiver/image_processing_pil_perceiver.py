@@ -13,6 +13,8 @@
 # limitations under the License.
 """Image processor class for Perceiver."""
 
+# Perceiver 图像处理：256 resize + 224 center crop（PIL 后端）
+
 import numpy as np
 
 from ...image_processing_backends import PilBackend
@@ -28,6 +30,7 @@ from ...utils import TensorType, auto_docstring
 
 
 @auto_docstring
+# PerceiverImageProcessorPil：Perceiver PIL 图像预处理（256→224 center crop）
 class PerceiverImageProcessorPil(PilBackend):
     """PIL backend for Perceiver with custom center crop."""
 
@@ -41,9 +44,11 @@ class PerceiverImageProcessorPil(PilBackend):
     do_rescale = True
     do_normalize = True
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, **kwargs: Unpack[ImagesKwargs]):
         super().__init__(**kwargs)
 
+    # center_crop：Perceiver 自定义 center crop（先 resize 再裁剪）
     def center_crop(
         self,
         image: np.ndarray,
@@ -71,6 +76,7 @@ class PerceiverImageProcessorPil(PilBackend):
             **kwargs,
         )
 
+    # _preprocess：图像/视频预处理流水线
     def _preprocess(
         self,
         images: list[np.ndarray],

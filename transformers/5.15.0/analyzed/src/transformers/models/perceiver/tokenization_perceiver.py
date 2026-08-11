@@ -13,6 +13,8 @@
 # limitations under the License.
 """Tokenization class for Perceiver."""
 
+# Perceiver 分词：原始 UTF-8 字节级编码
+
 from ...tokenization_python import AddedToken, PreTrainedTokenizer
 from ...utils import logging
 
@@ -20,6 +22,7 @@ from ...utils import logging
 logger = logging.get_logger(__name__)
 
 
+# PerceiverTokenizer：Perceiver 原始 UTF-8 字节级分词器
 class PerceiverTokenizer(PreTrainedTokenizer):
     """
     Construct a Perceiver tokenizer. The Perceiver simply uses raw bytes utf-8 encoding.
@@ -53,6 +56,7 @@ class PerceiverTokenizer(PreTrainedTokenizer):
 
     model_input_names = ["input_ids", "attention_mask"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         pad_token="[PAD]",
@@ -94,6 +98,7 @@ class PerceiverTokenizer(PreTrainedTokenizer):
             **kwargs,
         )
 
+    # get_vocab：返回词表字典（token→id）
     def get_vocab(self) -> dict[str, int]:
         vocab = {}
         for i in range(self._utf_vocab_size):
@@ -103,9 +108,11 @@ class PerceiverTokenizer(PreTrainedTokenizer):
         return vocab
 
     @property
+    # vocab_size：词表大小（256 字节 + 特殊 token）
     def vocab_size(self):
         return self._utf_vocab_size
 
+    # get_special_tokens_mask：标记序列中特殊 token 位置
     def get_special_tokens_mask(
         self, token_ids_0: list[int], token_ids_1: list[int] | None = None, already_has_special_tokens: bool = False
     ) -> list[int]:
@@ -134,6 +141,7 @@ class PerceiverTokenizer(PreTrainedTokenizer):
             return [1] + [0] * len(token_ids_0) + [1]
         return [1] + ([0] * len(token_ids_0)) + [1] + ([0] * len(token_ids_1)) + [1]
 
+    # build_inputs_with_special_tokens：在序列首尾插入 BOS/EOS
     def build_inputs_with_special_tokens(
         self, token_ids_0: list[int], token_ids_1: list[int] | None = None
     ) -> list[int]:
@@ -158,11 +166,13 @@ class PerceiverTokenizer(PreTrainedTokenizer):
         else:
             return [self.cls_token_id] + token_ids_0 + [self.sep_token_id] + token_ids_1 + [self.sep_token_id]
 
+    # _tokenize：将文本按 UTF-8 字节切分为 token 列表
     def _tokenize(self, text: str) -> list[str]:
         """Take as input a string and return a list of strings (tokens) for words/sub-words"""
         tokens = [chr(i) for i in text.encode("utf-8")]
         return tokens
 
+    # _convert_token_to_id：token 字符串→整数 id
     def _convert_token_to_id(self, token):
         """Converts a token (str) in an id using the vocab."""
         if len(token) != 1:
@@ -171,12 +181,14 @@ class PerceiverTokenizer(PreTrainedTokenizer):
             token_id = ord(token) + self._num_special_tokens
         return token_id
 
+    # _convert_id_to_token：整数 id→token 字符串
     def _convert_id_to_token(self, index):
         """Converts an index (integer) in a token (str) using the vocab."""
         token = chr(index - self._num_special_tokens)
         return token
 
     # TODO @ArthurZ refactor this as well....
+    # convert_tokens_to_string：token 列表解码为 UTF-8 字符串
     def convert_tokens_to_string(self, tokens):
         """Converts a sequence of tokens (string) in a single string."""
         bstring = b""
@@ -190,6 +202,7 @@ class PerceiverTokenizer(PreTrainedTokenizer):
         return string
 
     # PerceiverTokenizer has no vocab file
+    # save_vocabulary：保存词表到目录（Perceiver 无独立词表文件）
     def save_vocabulary(self, save_directory: str, filename_prefix: str | None = None) -> tuple[str]:
         return ()
 
