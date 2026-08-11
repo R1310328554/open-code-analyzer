@@ -25,8 +25,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# GLM-OCR 配置：视觉 ViT + 文本解码器 OCR 多模态联合超参
+
+# GlmOcrVisionConfig：zai-org/GLM-OCR 视觉 ViT 编码器默认超参
 @auto_docstring(checkpoint="zai-org/GLM-OCR")
 @strict
+# GlmOcrVisionConfig：GLM-OCR 视觉 ViT patch 编码器超参
 class GlmOcrVisionConfig(PreTrainedConfig):
     r"""
     out_hidden_size (`int`, *optional*, defaults to 4096):
@@ -67,8 +71,10 @@ class GlmOcrVisionConfig(PreTrainedConfig):
     initializer_range: float = 0.02
 
 
+# GlmOcrTextConfig：zai-org/GLM-OCR 文本解码器默认超参
 @auto_docstring(checkpoint="zai-org/GLM-OCR")
 @strict
+# GlmOcrTextConfig：GLM-OCR 文本解码器超参（GQA + mRoPE）
 class GlmOcrTextConfig(PreTrainedConfig):
     r"""
     Example:
@@ -127,8 +133,10 @@ class GlmOcrTextConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# GlmOcrConfig：zai-org/GLM-OCR 视觉+文本 OCR 多模态联合默认超参
 @auto_docstring(checkpoint="zai-org/GLM-OCR")
 @strict
+# GlmOcrConfig：GLM-OCR 视觉+文本 OCR 多模态联合配置
 class GlmOcrConfig(PreTrainedConfig):
     r"""
     image_start_token_id (`int`, *optional*, defaults to 59256):

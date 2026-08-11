@@ -48,11 +48,15 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# GLM-ASR modular 源：基于 AudioFlamingo3/GLM/Llama 组合语音识别多模态
+
+# GlmAsrProcessorKwargs：GLM-ASR Processor 可选参数字典类型
 class GlmAsrProcessorKwargs(AudioFlamingo3ProcessorKwargs): ...
 
 
 @requires(backends=("torch",))
 @auto_docstring
+# GlmAsrProcessor：GLM-ASR 音频预处理与分词器联合输入管线
 class GlmAsrProcessor(AudioFlamingo3Processor):
     def __init__(
         self,
@@ -165,9 +169,11 @@ class GlmAsrProcessor(AudioFlamingo3Processor):
         )
 
 
+# GlmAsrRotaryEmbedding：GLM-ASR RoPE 旋转位置编码
 class GlmAsrRotaryEmbedding(GlmRotaryEmbedding): ...
 
 
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, position_ids=None, unsqueeze_dim=1):
     cos = cos.unsqueeze(unsqueeze_dim)
     sin = sin.unsqueeze(unsqueeze_dim)
@@ -187,6 +193,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, position_ids=None, unsqueeze_dim=1):
 
 
 @no_inherit_decorator
+# GlmAsrAttention：GLM-ASR 多头自注意力（GQA + RoPE）
 class GlmAsrAttention(LlamaAttention):
     def __init__(self, config: GlmAsrConfig, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -232,6 +239,7 @@ class GlmAsrAttention(LlamaAttention):
         return attn_output, attn_weights
 
 
+# GlmAsrMLP：GLM-ASR 前馈 MLP
 class GlmAsrMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -246,6 +254,7 @@ class GlmAsrMLP(nn.Module):
         return hidden_states
 
 
+# GlmAsrEncoderLayer：GLM-ASR 音频编码器 Transformer 单层
 class GlmAsrEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: GlmAsrConfig, layer_idx: int):
         super().__init__()
@@ -281,10 +290,12 @@ class GlmAsrEncoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# GlmAsrPreTrainedModel：GLM-ASR 预训练基类与权重初始化
 class GlmAsrPreTrainedModel(AudioFlamingo3PreTrainedModel): ...
 
 
 # TODO: @eustlb, this is what WhisperEncoder should look like
+# GlmAsrEncoder：GLM-ASR 音频 Mel 频谱编码器主干
 class GlmAsrEncoder(GlmAsrPreTrainedModel):
     config: GlmAsrEncoderConfig
     main_input_name = "input_features"
@@ -328,6 +339,7 @@ class GlmAsrEncoder(GlmAsrPreTrainedModel):
         return BaseModelOutputWithPooling(last_hidden_state=hidden_states)
 
 
+# GlmAsrMultiModalProjector：音频特征到 LLM 隐藏维度的多模态投影层
 class GlmAsrMultiModalProjector(AudioFlamingo3MultiModalProjector):
     def __init__(self, config: GlmAsrConfig):
         super().__init__()
@@ -340,6 +352,7 @@ class GlmAsrMultiModalProjector(AudioFlamingo3MultiModalProjector):
     The GlmAsr model which consists of a fine-tuned Whisper encoder, a multi-modal projector and a Llama language model.
     """
 )
+# GlmAsrModel：GLM-ASR 音频编码器 + 文本解码器联合主干
 class GlmAsrModel(AudioFlamingo3Model):
     @can_return_tuple
     @auto_docstring(
@@ -375,6 +388,7 @@ class GlmAsrModel(AudioFlamingo3Model):
     The GlmAsr model which consists of a fine-tuned Whisper encoder, a multi-modal projector and a Llama language model.
     """
 )
+# GlmAsrForConditionalGeneration：GLM-ASR 语音识别条件生成
 class GlmAsrForConditionalGeneration(AudioFlamingo3ForConditionalGeneration):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
 

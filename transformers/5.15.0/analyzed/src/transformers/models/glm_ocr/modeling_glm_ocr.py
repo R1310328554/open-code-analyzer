@@ -51,10 +51,14 @@ from ...utils.generic import (
 )
 from ...utils.output_capturing import capture_outputs
 from ...vision_utils import get_vision_attention_seqlens, get_vision_position_ids
+# modeling_glm_ocr 由 modular_glm_ocr.py 自动生成
 from .configuration_glm_ocr import GlmOcrConfig, GlmOcrTextConfig, GlmOcrVisionConfig
 
 
+# GLM-OCR 建模：视觉 ViT + 文本解码器联合文档 OCR 多模态 VLM
+
 @use_kernel_forward_from_hub("RMSNorm")
+# GlmOcrRMSNorm：GLM-OCR RMS LayerNorm
 class GlmOcrRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -75,6 +79,7 @@ class GlmOcrRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# GlmOcrVisionMlp：GLM-OCR 视觉编码器前馈 MLP
 class GlmOcrVisionMlp(nn.Module):
     def __init__(self, config, bias: bool = True):
         super().__init__()
@@ -89,6 +94,7 @@ class GlmOcrVisionMlp(nn.Module):
         return self.down_proj(self.act_fn(self.gate_proj(hidden_state)) * self.up_proj(hidden_state))
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -101,6 +107,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -126,6 +133,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# rotate_half_llm：文本 RoPE 中将向量后半部分旋转取负
 def rotate_half_llm(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., 0::2]
@@ -133,6 +141,7 @@ def rotate_half_llm(x):
     return torch.stack((-x2, x1), dim=-1).flatten(-2)
 
 
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -173,6 +182,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# GlmOcrTextAttention：GLM-OCR 文本多头自注意力（GQA + mRoPE）
 class GlmOcrTextAttention(nn.Module):
     """
     Multi-headed attention from 'Attention Is All You Need' paper.
@@ -242,6 +252,7 @@ class GlmOcrTextAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# GlmOcrTextMLP：GLM-OCR 文本前馈 MLP
 class GlmOcrTextMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -260,6 +271,7 @@ class GlmOcrTextMLP(nn.Module):
         return self.down_proj(up_states)
 
 
+# GlmOcrTextDecoderLayer：GLM-OCR 文本解码器单层
 class GlmOcrTextDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: GlmOcrTextConfig, layer_idx: int):
         super().__init__()
@@ -310,6 +322,7 @@ class GlmOcrTextDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# GlmOcrVisionRotaryEmbedding：GLM-OCR 视觉多维 RoPE 旋转位置编码
 class GlmOcrVisionRotaryEmbedding(nn.Module):
     def __init__(self, dim: int, theta: float = 10000.0) -> None:
         super().__init__()
@@ -323,6 +336,7 @@ class GlmOcrVisionRotaryEmbedding(nn.Module):
 
 
 @auto_docstring
+# GlmOcrPreTrainedModel：GLM-OCR 预训练基类与权重初始化
 class GlmOcrPreTrainedModel(PreTrainedModel):
     config: GlmOcrConfig
     base_model_prefix = "model"
@@ -346,6 +360,7 @@ class GlmOcrPreTrainedModel(PreTrainedModel):
 
 @auto_docstring
 @dataclass
+# GlmOcrModelOutputWithPast：GLM-OCR 多模态主干输出 dataclass
 class GlmOcrModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     rope_deltas (`torch.LongTensor` of shape `(batch_size, )`, *optional*):
@@ -356,6 +371,7 @@ class GlmOcrModelOutputWithPast(BaseModelOutputWithPast):
     rope_deltas: torch.LongTensor | None = None
 
 
+# rotate_half：RoPE 中将向量后半部分旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -363,6 +379,7 @@ def rotate_half(x):
     return torch.cat((-x2, x1), dim=-1)
 
 
+# apply_rotary_pos_emb_vision：将多维 RoPE 应用到视觉 Q/K
 def apply_rotary_pos_emb_vision(
     q: torch.Tensor, k: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor
 ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -377,6 +394,7 @@ def apply_rotary_pos_emb_vision(
     return q_embed, k_embed
 
 
+# GlmOcrVisionAttention：GLM-OCR 视觉多头自注意力
 class GlmOcrVisionAttention(nn.Module):
     def __init__(self, config: GlmOcrVisionConfig) -> None:
         super().__init__()
@@ -465,6 +483,7 @@ class GlmOcrVisionAttention(nn.Module):
         return attn_output
 
 
+# GlmOcrVisionBlock：GLM-OCR 视觉 Transformer 单层
 class GlmOcrVisionBlock(GradientCheckpointingLayer):
     def __init__(self, config) -> None:
         super().__init__()
@@ -495,6 +514,7 @@ class GlmOcrVisionBlock(GradientCheckpointingLayer):
         return hidden_states
 
 
+# GlmOcrVisionPatchMerger：视觉 patch 空间合并投影到 LLM 维度
 class GlmOcrVisionPatchMerger(nn.Module):
     def __init__(self, dim: int, context_dim: int, hidden_act: str, bias: bool = False) -> None:
         super().__init__()
@@ -512,6 +532,7 @@ class GlmOcrVisionPatchMerger(nn.Module):
         return self.down_proj(self.act_fn(self.gate_proj(hidden_state)) * self.up_proj(hidden_state))
 
 
+# GlmOcrVisionPatchEmbed：视觉 patch 嵌入与 3D 位置编码
 class GlmOcrVisionPatchEmbed(nn.Module):
     def __init__(self, config: GlmOcrVisionConfig) -> None:
         super().__init__()
@@ -532,6 +553,7 @@ class GlmOcrVisionPatchEmbed(nn.Module):
         return hidden_states
 
 
+# GlmOcrVisionModel：GLM-OCR 视觉 ViT 编码器主干
 class GlmOcrVisionModel(GlmOcrPreTrainedModel):
     config: GlmOcrVisionConfig
     input_modalities = ("image", "video")
@@ -626,6 +648,7 @@ class GlmOcrVisionModel(GlmOcrPreTrainedModel):
         )
 
 
+# GlmOcrTextRotaryEmbedding：GLM-OCR 文本 mRoPE 旋转位置编码
 class GlmOcrTextRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: GlmOcrTextConfig, device=None):
@@ -693,6 +716,7 @@ class GlmOcrTextRotaryEmbedding(nn.Module):
 
 
 @auto_docstring
+# GlmOcrTextModel：GLM-OCR 纯文本解码器主干
 class GlmOcrTextModel(GlmOcrPreTrainedModel):
     config: GlmOcrTextConfig
     input_modalities = ("text",)
@@ -798,6 +822,7 @@ class GlmOcrTextModel(GlmOcrPreTrainedModel):
 
 
 @auto_docstring
+# GlmOcrModel：GLM-OCR 视觉+文本联合 OCR 多模态主干
 class GlmOcrModel(GlmOcrPreTrainedModel):
     base_model_prefix = "model"
     # Reference: fix gemma3 grad acc #37208
@@ -1158,6 +1183,7 @@ class GlmOcrModel(GlmOcrPreTrainedModel):
 
 @auto_docstring
 @dataclass
+# GlmOcrCausalLMOutputWithPast：GLM-OCR 多模态因果 LM 输出 dataclass
 class GlmOcrCausalLMOutputWithPast(CausalLMOutputWithPast):
     r"""
     rope_deltas (`torch.LongTensor` of shape `(batch_size, )`, *optional*):
@@ -1168,6 +1194,7 @@ class GlmOcrCausalLMOutputWithPast(CausalLMOutputWithPast):
     rope_deltas: torch.LongTensor | None = None
 
 
+# GlmOcrForConditionalGeneration：GLM-OCR 文档 OCR 视觉-语言条件生成
 class GlmOcrForConditionalGeneration(GlmOcrPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
     # Reference: fix gemma3 grad acc #37208

@@ -31,6 +31,9 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# GLM-GA 图像处理：Torchvision 后端 smart_resize + patch 切分
+
+# GlmgaImageProcessorKwargs：GLM-GA 图像处理器可选参数字典
 class GlmgaImageProcessorKwargs(ImagesKwargs, total=False):
     """
     patch_size (`int`, *optional*, defaults to 14):
@@ -49,6 +52,7 @@ class GlmgaImageProcessorKwargs(ImagesKwargs, total=False):
     patch_expand_factor: int
 
 
+# smart_resize：按时空 patch 因子与像素预算自适应 resize 高宽
 def smart_resize(
     num_frames: int,
     height: int,
@@ -86,6 +90,7 @@ def smart_resize(
 
 
 @auto_docstring
+# GlmgaImageProcessor：GLM-GA 图像 patch 化预处理（复用 GLM-4.6V 逻辑）
 class GlmgaImageProcessor(TorchvisionBackend):
     do_resize = True
     resample = PILImageResampling.BICUBIC

@@ -36,6 +36,9 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# GLM-ASR Processor：音频 Mel 频谱预处理与分词器联合 prompt 组装
+
+# GlmAsrProcessorKwargs：GLM-ASR Processor 可选参数字典类型
 class GlmAsrProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -55,6 +58,7 @@ class GlmAsrProcessorKwargs(ProcessingKwargs, total=False):
 
 @requires(backends=("torch",))
 @auto_docstring
+# GlmAsrProcessor：封装音频 chat template 与 Mel 频谱特征提取
 class GlmAsrProcessor(ProcessorMixin):
     valid_processor_kwargs = GlmAsrProcessorKwargs
 

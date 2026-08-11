@@ -43,10 +43,14 @@ from ..glm4v.modeling_glm4v import (
 )
 
 
+# GLM-OCR modular 源：基于 GLM-4.1V 复用视觉-语言 OCR 多模态实现
+
+# GlmOcrRMSNorm：GLM-OCR RMS LayerNorm
 class GlmOcrRMSNorm(Glm4vRMSNorm):
     pass
 
 
+# GlmOcrVisionMlp：GLM-OCR 视觉编码器前馈 MLP
 class GlmOcrVisionMlp(Glm4VisionMlp):
     def __init__(self, config, bias: bool = True):
         super().__init__(config)
@@ -55,6 +59,7 @@ class GlmOcrVisionMlp(Glm4VisionMlp):
 
 @auto_docstring(checkpoint="zai-org/GLM-OCR")
 @strict
+# GlmOcrVisionConfig：GLM-OCR 视觉 ViT patch 编码器超参
 class GlmOcrVisionConfig(Glm4vVisionConfig):
     hidden_size: int = 1024
     attention_bias: bool = True
@@ -65,6 +70,7 @@ class GlmOcrVisionConfig(Glm4vVisionConfig):
 
 @auto_docstring(checkpoint="zai-org/GLM-OCR")
 @strict
+# GlmOcrTextConfig：GLM-OCR 文本解码器超参（GQA + mRoPE）
 class GlmOcrTextConfig(Glm4vTextConfig):
     r"""
     Example:
@@ -93,6 +99,7 @@ class GlmOcrTextConfig(Glm4vTextConfig):
 
 @auto_docstring(checkpoint="zai-org/GLM-OCR")
 @strict
+# GlmOcrConfig：GLM-OCR 视觉+文本 OCR 多模态联合配置
 class GlmOcrConfig(Glm4vConfig):
     r"""
     image_start_token_id (`int`, *optional*, defaults to 59256):
@@ -125,6 +132,7 @@ class GlmOcrConfig(Glm4vConfig):
     video_end_token_id: int = 59259
 
 
+# GlmOcrTextAttention：GLM-OCR 文本多头自注意力（GQA + mRoPE）
 class GlmOcrTextAttention(Glm4vTextAttention, nn.Module):
     def __init__(self, config: GlmOcrTextConfig, layer_idx: int | None = None):
         super().__init__()
@@ -134,18 +142,22 @@ class GlmOcrTextAttention(Glm4vTextAttention, nn.Module):
         self.v_proj = nn.Linear(self.hidden_size, self.num_key_value_heads * self.head_dim, bias=False)
 
 
+# GlmOcrTextDecoderLayer：GLM-OCR 文本解码器单层
 class GlmOcrTextDecoderLayer(Glm4vTextDecoderLayer):
     pass
 
 
+# GlmOcrPreTrainedModel：GLM-OCR 预训练基类与权重初始化
 class GlmOcrPreTrainedModel(Glm4vPreTrainedModel):
     _keys_to_ignore_on_load_unexpected = [r"model\.language_model\.layers\.16.*"]
 
 
+# GlmOcrModelOutputWithPast：GLM-OCR 多模态主干输出 dataclass
 class GlmOcrModelOutputWithPast(Glm4vModelOutputWithPast):
     pass
 
 
+# GlmOcrVisionAttention：GLM-OCR 视觉多头自注意力
 class GlmOcrVisionAttention(Glm4vVisionAttention):
     def __init__(self, config: GlmOcrVisionConfig) -> None:
         super().__init__()
@@ -226,16 +238,19 @@ class GlmOcrVisionAttention(Glm4vVisionAttention):
         return attn_output
 
 
+# GlmOcrVisionBlock：GLM-OCR 视觉 Transformer 单层
 class GlmOcrVisionBlock(Glm4vVisionBlock):
     def __init__(self, config) -> None:
         super().__init__()
         self.mlp = GlmOcrVisionMlp(config, bias=config.attention_bias)
 
 
+# GlmOcrVisionPatchMerger：视觉 patch 空间合并投影到 LLM 维度
 class GlmOcrVisionPatchMerger(Glm4vVisionPatchMerger):
     pass
 
 
+# GlmOcrVisionModel：GLM-OCR 视觉 ViT 编码器主干
 class GlmOcrVisionModel(Glm4vVisionModel):
     def __init__(self, config) -> None:
         super().__init__(config)
@@ -293,6 +308,7 @@ class GlmOcrVisionModel(Glm4vVisionModel):
         )
 
 
+# GlmOcrTextModel：GLM-OCR 纯文本解码器主干
 class GlmOcrTextModel(Glm4vTextModel):
     _can_record_outputs = {
         "hidden_states": GlmOcrTextDecoderLayer,
@@ -300,10 +316,12 @@ class GlmOcrTextModel(Glm4vTextModel):
     }
 
 
+# GlmOcrModel：GLM-OCR 视觉+文本联合 OCR 多模态主干
 class GlmOcrModel(Glm4vModel):
     pass
 
 
+# GlmOcrForConditionalGeneration：GLM-OCR 文档 OCR 视觉-语言条件生成
 class GlmOcrForConditionalGeneration(Glm4vForConditionalGeneration):
     pass
 

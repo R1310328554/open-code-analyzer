@@ -45,8 +45,11 @@ from ..deepseek_v32.modeling_deepseek_v32 import (
 logger = logging.get_logger(__name__)
 
 
+# GLM-MoE-DSA modular 源：基于 DeepSeek-V3.2 扩展交错 RoPE 与跨层 top-k 共享
+
 @auto_docstring(checkpoint="zai-org/GLM-5")
 @strict
+# GlmMoeDsaConfig：GLM-5 MoE + DSA 稀疏注意力与 256 路由专家超参
 class GlmMoeDsaConfig(DeepseekV32Config):
     r"""
     n_group (`int`, *optional*, defaults to 1):
@@ -122,14 +125,17 @@ class GlmMoeDsaConfig(DeepseekV32Config):
         super().__post_init__(**kwargs)
 
 
+# GlmMoeDsaRMSNorm：GLM-MoE-DSA RMS LayerNorm
 class GlmMoeDsaRMSNorm(DeepseekV3RMSNorm):
     pass
 
 
+# GlmMoeDsaRotaryEmbedding：GLM-MoE-DSA RoPE 旋转位置编码（支持 YaRN）
 class GlmMoeDsaRotaryEmbedding(DeepseekV32RotaryEmbedding):
     pass
 
 
+# GlmMoeDsaIndexer：DSA 索引器，按 top-k 选择稀疏注意力 token
 class GlmMoeDsaIndexer(DeepseekV32Indexer):
     @torch.no_grad()
     def forward(
@@ -194,6 +200,7 @@ class GlmMoeDsaIndexer(DeepseekV32Indexer):
         return index_scores.topk(topk, dim=-1).indices.to(torch.int32)  # [B, S, topk]
 
 
+# GlmMoeDsaAttention：DeepSeek-V3 MLA + DSA 索引器，支持跨层 top-k 共享
 class GlmMoeDsaAttention(DeepseekV3Attention):
     """
     DeepSeek-V3 MLA + a DSA indexer, extended with **cross-layer top-k sharing**.
@@ -295,6 +302,7 @@ class GlmMoeDsaAttention(DeepseekV3Attention):
         return attn_output, attn_weights, topk_indices
 
 
+# GlmMoeDsaDecoderLayer：GLM-MoE-DSA 解码器单层（自注意力 + MoE/MLP）
 class GlmMoeDsaDecoderLayer(DeepseekV32DecoderLayer):
     def forward(
         self,
@@ -329,10 +337,12 @@ class GlmMoeDsaDecoderLayer(DeepseekV32DecoderLayer):
         return hidden_states, topk_indices
 
 
+# GlmMoeDsaPreTrainedModel：GLM-MoE-DSA 预训练基类与权重初始化
 class GlmMoeDsaPreTrainedModel(DeepseekV32PreTrainedModel):
     _keys_to_ignore_on_load_unexpected = [r"model\.layers\.78.*"]
 
 
+# GlmMoeDsaModel：GLM-MoE-DSA 纯文本解码器主干
 class GlmMoeDsaModel(DeepseekV32Model):
     def forward(
         self,
@@ -392,6 +402,7 @@ class GlmMoeDsaModel(DeepseekV32Model):
         )
 
 
+# GlmMoeDsaForCausalLM：GLM-MoE-DSA 因果语言建模与文本生成
 class GlmMoeDsaForCausalLM(DeepseekV32ForCausalLM):
     _fsdp_plan = {"lm_head": "keep_full_weight"}
 

@@ -25,8 +25,12 @@ from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# GLM-GA 配置：视觉+文本多模态联合超参（复用 GLM-4.6V 建模与处理器映射）
+
+# GlmgaConfig：GLM-GA 视觉+文本多模态联合默认超参（复用 GLM-4.6V 实现）
 @auto_docstring(checkpoint="zai-org/GLM-4.1V-9B-Thinking")
 @strict
+# GlmgaConfig：GLM-GA 视觉+文本多模态联合配置（复用 GLM-4.6V 建模）
 class GlmgaConfig(PreTrainedConfig):
     r"""
     image_start_token_id (`int`, *optional*, defaults to 151339):

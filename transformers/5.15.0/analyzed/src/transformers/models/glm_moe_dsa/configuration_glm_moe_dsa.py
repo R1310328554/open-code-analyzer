@@ -25,8 +25,12 @@ from ...modeling_rope_utils import RotaryEmbeddingConfigMixin
 from ...utils import auto_docstring
 
 
+# GLM-MoE-DSA 配置：256 路由专家 + DSA 稀疏注意力 + MLA 低秩 KV 超参
+
+# GlmMoeDsaConfig：zai-org/GLM-5 MoE + DSA 稀疏注意力默认超参
 @auto_docstring(checkpoint="zai-org/GLM-5")
 @strict
+# GlmMoeDsaConfig：GLM-5 MoE + DSA 稀疏注意力与 256 路由专家超参
 class GlmMoeDsaConfig(PreTrainedConfig, RotaryEmbeddingConfigMixin):
     r"""
     n_group (`int`, *optional*, defaults to 1):

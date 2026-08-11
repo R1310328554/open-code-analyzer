@@ -41,10 +41,14 @@ from ...utils import TransformersKwargs, auto_docstring, can_return_tuple
 from ...utils.deprecation import deprecate_kwarg
 from ...utils.generic import maybe_autocast, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
+# modeling_glm_moe_dsa 由 modular_glm_moe_dsa.py 自动生成
 from .configuration_glm_moe_dsa import GlmMoeDsaConfig
 
 
+# GLM-MoE-DSA 建模：MoE 稀疏专家 + DSA 索引稀疏注意力解码器
+
 @use_kernel_forward_from_hub("RMSNorm")
+# GlmMoeDsaRMSNorm：GLM-MoE-DSA RMS LayerNorm
 class GlmMoeDsaRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -65,6 +69,7 @@ class GlmMoeDsaRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# GlmMoeDsaRotaryEmbedding：GLM-MoE-DSA RoPE 旋转位置编码（支持 YaRN）
 class GlmMoeDsaRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: GlmMoeDsaConfig, device=None):
@@ -122,6 +127,7 @@ class GlmMoeDsaRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# apply_rotary_pos_emb_interleave：交错模式 RoPE 位置编码应用到 Q/K
 def apply_rotary_pos_emb_interleave(q, k, cos, sin, position_ids=None, unsqueeze_dim=1):
     r"""
     Applies interleaved Rotary Position Embedding to the query and key tensors.
@@ -161,6 +167,7 @@ def apply_rotary_pos_emb_interleave(q, k, cos, sin, position_ids=None, unsqueeze
     return q_embed, k_embed
 
 
+# GlmMoeDsaIndexer：DSA 索引器，按 top-k 选择稀疏注意力 token
 class GlmMoeDsaIndexer(nn.Module):
     """
     DeepSeek Sparse Attention (DSA) indexer for selecting top-k tokens.
@@ -255,6 +262,7 @@ class GlmMoeDsaIndexer(nn.Module):
         return index_scores.topk(topk, dim=-1).indices.to(torch.int32)  # [B, S, topk]
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -267,6 +275,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -292,12 +301,14 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# yarn_get_mscale：YaRN 长上下文 RoPE 幅度缩放因子计算
 def yarn_get_mscale(scale=1, mscale=1):
     if scale <= 1:
         return 1.0
     return 0.1 * mscale * math.log(scale) + 1.0
 
 
+# yarn_apply_mscale：按 scaling 因子对 RoPE cos/sin 应用 YaRN mscale
 def yarn_apply_mscale(rope_parameters, scaling):
     if rope_parameters.get("rope_type", "default") != "default":
         mscale_all_dim = rope_parameters.get("mscale_all_dim", 0)
@@ -308,6 +319,7 @@ def yarn_apply_mscale(rope_parameters, scaling):
     return scaling
 
 
+# GlmMoeDsaAttention：DeepSeek-V3 MLA + DSA 索引器，支持跨层 top-k 共享
 class GlmMoeDsaAttention(nn.Module):
     """
     DeepSeek-V3 MLA + a DSA indexer, extended with **cross-layer top-k sharing**.
@@ -470,6 +482,7 @@ class GlmMoeDsaAttention(nn.Module):
         return attn_output, attn_weights, topk_indices
 
 
+# GlmMoeDsaMLP：GLM-MoE-DSA 稠密前馈 MLP（SwiGLU 结构）
 class GlmMoeDsaMLP(nn.Module):
     def __init__(self, config, intermediate_size=None):
         super().__init__()
@@ -486,6 +499,7 @@ class GlmMoeDsaMLP(nn.Module):
         return down_proj
 
 
+# GlmMoeDsaTopkRouter：MoE 路由门控，按 top-k 选择专家
 class GlmMoeDsaTopkRouter(nn.Module):
     def __init__(self, config: GlmMoeDsaConfig):
         super().__init__()
@@ -528,6 +542,7 @@ class GlmMoeDsaTopkRouter(nn.Module):
 
 
 @use_experts_implementation
+# GlmMoeDsaExperts：MoE 专家 FFN 参数组（grouped GEMM 布局）
 class GlmMoeDsaExperts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
@@ -567,6 +582,7 @@ class GlmMoeDsaExperts(nn.Module):
         return final_hidden_states
 
 
+# GlmMoeDsaMoE：稀疏 MoE 层（路由 + 共享专家 + 路由专家）
 class GlmMoeDsaMoE(nn.Module):
     """
     A mixed expert module containing shared experts.
@@ -591,6 +607,7 @@ class GlmMoeDsaMoE(nn.Module):
         return hidden_states
 
 
+# GlmMoeDsaDecoderLayer：GLM-MoE-DSA 解码器单层（自注意力 + MoE/MLP）
 class GlmMoeDsaDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: GlmMoeDsaConfig, layer_idx: int):
         super().__init__()
@@ -639,6 +656,7 @@ class GlmMoeDsaDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# GlmMoeDsaPreTrainedModel：GLM-MoE-DSA 预训练基类与权重初始化
 class GlmMoeDsaPreTrainedModel(PreTrainedModel):
     config: GlmMoeDsaConfig
     base_model_prefix = "model"
@@ -671,6 +689,7 @@ class GlmMoeDsaPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# GlmMoeDsaModel：GLM-MoE-DSA 纯文本解码器主干
 class GlmMoeDsaModel(GlmMoeDsaPreTrainedModel):
     def __init__(self, config: GlmMoeDsaConfig):
         super().__init__(config)
@@ -750,6 +769,7 @@ class GlmMoeDsaModel(GlmMoeDsaPreTrainedModel):
 
 
 @auto_docstring
+# GlmMoeDsaForCausalLM：GLM-MoE-DSA 因果语言建模与文本生成
 class GlmMoeDsaForCausalLM(GlmMoeDsaPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}

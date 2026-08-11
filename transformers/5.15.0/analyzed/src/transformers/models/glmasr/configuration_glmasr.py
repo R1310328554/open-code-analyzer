@@ -20,8 +20,12 @@ from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# GLM-ASR 配置：Whisper 风格音频编码器 + 文本解码器联合超参
+
+# GlmAsrEncoderConfig：zai-org/GLM-ASR-Nano 音频编码器默认超参
 @auto_docstring(checkpoint="zai-org/GLM-ASR-Nano-2512")
 @strict
+# GlmAsrEncoderConfig：GLM-ASR 音频编码器（Whisper 风格）超参
 class GlmAsrEncoderConfig(PreTrainedConfig):
     r"""
     Example:
@@ -61,8 +65,10 @@ class GlmAsrEncoderConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# GlmAsrConfig：zai-org/GLM-ASR-Nano 音频+文本联合默认超参
 @auto_docstring(checkpoint="zai-org/GLM-ASR-Nano-2512")
 @strict
+# GlmAsrConfig：GLM-ASR 音频编码器 + 文本解码器联合配置
 class GlmAsrConfig(PreTrainedConfig):
     r"""
     Example:

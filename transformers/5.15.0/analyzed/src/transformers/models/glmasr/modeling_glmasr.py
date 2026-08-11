@@ -39,14 +39,18 @@ from ...utils.deprecation import deprecate_kwarg
 from ...utils.generic import can_return_tuple, maybe_autocast, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
 from ..auto import AutoModel
+# modeling_glmasr 由 modular_glmasr.py 自动生成
 from .configuration_glmasr import GlmAsrConfig, GlmAsrEncoderConfig
 
+
+# GLM-ASR 建模：音频 Mel 编码器 + 文本解码器联合语音识别
 
 if is_torch_available():
     import torch
     from torch import nn
 
 
+# GlmAsrRotaryEmbedding：GLM-ASR RoPE 旋转位置编码
 class GlmAsrRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: GlmAsrConfig, device=None):
@@ -106,6 +110,7 @@ class GlmAsrRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# rotate_half：RoPE 中将向量后半部分旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -113,6 +118,7 @@ def rotate_half(x):
     return torch.cat((-x2, x1), dim=-1)
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -125,6 +131,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -150,6 +157,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, position_ids=None, unsqueeze_dim=1):
     cos = cos.unsqueeze(unsqueeze_dim)
     sin = sin.unsqueeze(unsqueeze_dim)
@@ -168,6 +176,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, position_ids=None, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# GlmAsrAttention：GLM-ASR 多头自注意力（GQA + RoPE）
 class GlmAsrAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -221,6 +230,7 @@ class GlmAsrAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# GlmAsrMLP：GLM-ASR 前馈 MLP
 class GlmAsrMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -235,6 +245,7 @@ class GlmAsrMLP(nn.Module):
         return hidden_states
 
 
+# GlmAsrEncoderLayer：GLM-ASR 音频编码器 Transformer 单层
 class GlmAsrEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: GlmAsrConfig, layer_idx: int):
         super().__init__()
@@ -271,6 +282,7 @@ class GlmAsrEncoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# GlmAsrPreTrainedModel：GLM-ASR 预训练基类与权重初始化
 class GlmAsrPreTrainedModel(PreTrainedModel):
     config: GlmAsrConfig
     base_model_prefix = "model"
@@ -284,6 +296,7 @@ class GlmAsrPreTrainedModel(PreTrainedModel):
 
 
 # TODO: @eustlb, this is what WhisperEncoder should look like
+# GlmAsrEncoder：GLM-ASR 音频 Mel 频谱编码器主干
 class GlmAsrEncoder(GlmAsrPreTrainedModel):
     config: GlmAsrEncoderConfig
     main_input_name = "input_features"
@@ -327,6 +340,7 @@ class GlmAsrEncoder(GlmAsrPreTrainedModel):
         return BaseModelOutputWithPooling(last_hidden_state=hidden_states)
 
 
+# GlmAsrMultiModalProjector：音频特征到 LLM 隐藏维度的多模态投影层
 class GlmAsrMultiModalProjector(nn.Module):
     """
     Audio adaptor (small MLP) that projects GlmAsrEncoder features
@@ -347,6 +361,7 @@ class GlmAsrMultiModalProjector(nn.Module):
 
 
 @dataclass
+# GlmAsrModelOutputWithPast：GLM-ASR 多模态主干输出 dataclass
 class GlmAsrModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     audio_hidden_states (`torch.FloatTensor`, *optional*):
@@ -361,6 +376,7 @@ class GlmAsrModelOutputWithPast(BaseModelOutputWithPast):
     The GlmAsr model which consists of a fine-tuned Whisper encoder, a multi-modal projector and a Llama language model.
     """
 )
+# GlmAsrModel：GLM-ASR 音频编码器 + 文本解码器联合主干
 class GlmAsrModel(GlmAsrPreTrainedModel):
     _tp_plan = None
     _pp_plan = None
@@ -488,6 +504,7 @@ class GlmAsrModel(GlmAsrPreTrainedModel):
     """
 )
 @dataclass
+# GlmAsrCausalLMOutputWithPast：GLM-ASR 因果 LM 输出 dataclass
 class GlmAsrCausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -513,6 +530,7 @@ class GlmAsrCausalLMOutputWithPast(ModelOutput):
     The GlmAsr model which consists of a fine-tuned Whisper encoder, a multi-modal projector and a Llama language model.
     """
 )
+# GlmAsrForConditionalGeneration：GLM-ASR 语音识别条件生成
 class GlmAsrForConditionalGeneration(GlmAsrPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
 
