@@ -1,3 +1,8 @@
+"""
+django.contrib.auth.forms — 用户创建、登录与密码管理表单。
+
+涵盖认证、重置密码及 Admin 后台密码变更等场景。
+"""
 import logging
 import unicodedata
 
@@ -32,6 +37,7 @@ def _unicode_ci_compare(s1, s2):
     )
 
 
+# 只读展示密码哈希摘要的管理后台控件
 class ReadOnlyPasswordHashWidget(forms.Widget):
     template_name = "auth/widgets/read_only_password_hash.html"
 
@@ -56,6 +62,7 @@ class ReadOnlyPasswordHashField(forms.Field):
         super().__init__(*args, **kwargs)
 
 
+# 用户名字段：NFKC 规范化并设置 autocomplete 属性
 class UsernameField(forms.CharField):
     def to_python(self, value):
         value = super().to_python(value)
@@ -76,6 +83,7 @@ class UsernameField(forms.CharField):
         }
 
 
+# 表单混入：创建/校验双密码字段并调用 set_password 保存
 class SetPasswordMixin:
     """
     Form mixin that validates and sets a password for a user.
@@ -138,6 +146,7 @@ class SetPasswordMixin:
         return cls
 
 
+# 表单混入：可选禁用基于密码的认证
 class SetUnusablePasswordMixin:
     """
     Form mixin that allows setting an unusable password for a user.
@@ -210,6 +219,7 @@ class SetUnusablePasswordMixin:
         return user
 
 
+# 创建普通用户的基类表单，扩展时建议保持结构稳定
 class BaseUserCreationForm(SetPasswordMixin, forms.ModelForm):
     """
     A form that creates a user, with no privileges, from the given username and
@@ -302,6 +312,7 @@ class UserChangeForm(forms.ModelForm):
             )
 
 
+# 用户名密码登录表单，clean() 中调用 authenticate
 class AuthenticationForm(forms.Form):
     """
     Base class for authenticating users. Extend this to get a form that accepts
@@ -384,6 +395,7 @@ class AuthenticationForm(forms.Form):
         )
 
 
+# 按邮箱查找用户并发送一次性密码重置链接
 class PasswordResetForm(forms.Form):
     email = forms.EmailField(
         label=_("Email"),
@@ -488,6 +500,7 @@ class PasswordResetForm(forms.Form):
             )
 
 
+# 无需旧密码即可设置新密码（如重置流程确认页）
 class SetPasswordForm(SetPasswordMixin, forms.Form):
     """
     A form that lets a user set their password without entering the old
@@ -511,6 +524,7 @@ class SetPasswordForm(SetPasswordMixin, forms.Form):
         return self.set_password_and_save(self.user, "new_password1", commit=commit)
 
 
+# 已登录用户修改密码，需验证旧密码
 class PasswordChangeForm(SetPasswordForm):
     """
     A form that lets a user change their password by entering their old
@@ -547,6 +561,7 @@ class PasswordChangeForm(SetPasswordForm):
         return old_password
 
 
+# Admin 后台修改用户密码，支持禁用密码认证
 class AdminPasswordChangeForm(SetUnusablePasswordMixin, SetPasswordMixin, forms.Form):
     """
     A form used to change the password of a user in the admin interface.

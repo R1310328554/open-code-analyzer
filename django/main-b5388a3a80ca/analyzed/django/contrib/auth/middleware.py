@@ -1,3 +1,8 @@
+"""
+django.contrib.auth.middleware — 请求级认证与登录强制中间件。
+
+将 user 绑定到 request，并支持 REMOTE_USER 等外部认证头。
+"""
 from functools import partial
 from inspect import iscoroutinefunction, markcoroutinefunction
 from urllib.parse import urlsplit
@@ -14,6 +19,7 @@ from django.shortcuts import resolve_url
 from django.utils.functional import SimpleLazyObject
 
 
+# 懒加载并缓存 session 中的当前用户
 def get_user(request):
     if not hasattr(request, "_cached_user"):
         request._cached_user = auth.get_user(request)
@@ -26,6 +32,7 @@ async def auser(request):
     return request._acached_user
 
 
+# 为 request 注入 SimpleLazyObject user 与 auser 协程
 class AuthenticationMiddleware(MiddlewareMixin):
     def process_request(self, request):
         if not hasattr(request, "session"):
@@ -40,6 +47,7 @@ class AuthenticationMiddleware(MiddlewareMixin):
         request.auser = partial(auser, request)
 
 
+# 未认证请求重定向登录，login_not_required 装饰的视图除外
 class LoginRequiredMiddleware(MiddlewareMixin):
     """
     Middleware that redirects all unauthenticated requests to a login page.
@@ -90,6 +98,7 @@ class LoginRequiredMiddleware(MiddlewareMixin):
         )
 
 
+# 从 request.META 读取 REMOTE_USER 等头并自动登录
 class RemoteUserMiddleware:
     """
     Middleware for utilizing web-server-provided authentication.
@@ -278,6 +287,7 @@ class RemoteUserMiddleware:
                 await auth.alogout(request)
 
 
+# 无认证头时不登出，适用于仅登录页走外部认证的场景
 class PersistentRemoteUserMiddleware(RemoteUserMiddleware):
     """
     Middleware for web-server provided authentication on logon pages.

@@ -1,3 +1,8 @@
+"""
+django.contrib.auth.hashers — 密码哈希、校验与算法升级。
+
+通过 PASSWORD_HASHERS 配置可插拔算法，支持自动升级工作因子。
+"""
 import base64
 import binascii
 import functools
@@ -36,6 +41,7 @@ def is_password_usable(encoded):
     return encoded is None or not encoded.startswith(UNUSABLE_PASSWORD_PREFIX)
 
 
+# 校验密码并判断是否需要按首选算法重新哈希
 def verify_password(password, encoded, preferred="default"):
     """
     Return two booleans. The first is whether the raw password matches the
@@ -72,6 +78,7 @@ def verify_password(password, encoded, preferred="default"):
     return is_correct, must_update
 
 
+# 校验密码；正确且需升级时调用 setter 写回新哈希
 def check_password(password, encoded, setter=None, preferred="default"):
     """
     Return a boolean of whether the raw password matches the three part encoded
@@ -97,6 +104,7 @@ async def acheck_password(password, encoded, setter=None, preferred="default"):
     return is_correct
 
 
+# 明文转存储哈希；password 为 None 时生成不可登录占位符
 def make_password(password, salt=None, hasher="default"):
     """Turn a plaintext password into a hash for database storage.
 
@@ -169,6 +177,7 @@ def get_hasher(algorithm="default"):
             )
 
 
+# 从编码串识别算法并返回对应 Hasher 实例
 def identify_hasher(encoded):
     """
     Return an instance of a loaded password hasher.
@@ -206,6 +215,7 @@ def must_update_salt(salt, expected_entropy):
     return len(salt) * math.log2(len(RANDOM_STRING_CHARS)) < expected_entropy
 
 
+# 密码 Hasher 抽象基类：encode/verify/safe_summary 等
 class BasePasswordHasher:
     """
     Abstract base class for password hashers
@@ -313,6 +323,7 @@ class BasePasswordHasher:
         )
 
 
+# 默认推荐：PBKDF2-HMAC-SHA256，可配置迭代次数
 class PBKDF2PasswordHasher(BasePasswordHasher):
     """
     Secure password hashing using the PBKDF2 algorithm (recommended)
@@ -382,6 +393,7 @@ class PBKDF2SHA1PasswordHasher(PBKDF2PasswordHasher):
     digest = hashlib.sha1
 
 
+# Argon2id 哈希，需安装 argon2-cffi
 class Argon2PasswordHasher(BasePasswordHasher):
     """
     Secure password hashing using the argon2 algorithm.
@@ -484,6 +496,7 @@ class Argon2PasswordHasher(BasePasswordHasher):
         )
 
 
+# 先 SHA256 再 bcrypt，避免 72 字节截断问题
 class BCryptSHA256PasswordHasher(BasePasswordHasher):
     """
     Secure password hashing using the bcrypt algorithm (recommended)
@@ -575,6 +588,7 @@ class BCryptPasswordHasher(BCryptSHA256PasswordHasher):
     digest = None
 
 
+# 标准库 hashlib.scrypt 实现
 class ScryptPasswordHasher(BasePasswordHasher):
     """
     Secure password hashing using the Scrypt algorithm.
@@ -653,6 +667,7 @@ class ScryptPasswordHasher(BasePasswordHasher):
         pass
 
 
+# 加盐 MD5（遗留兼容，不推荐新部署使用）
 class MD5PasswordHasher(BasePasswordHasher):
     """
     The Salted MD5 password hashing algorithm (not recommended)

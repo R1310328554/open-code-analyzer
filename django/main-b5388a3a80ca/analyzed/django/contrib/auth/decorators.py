@@ -1,3 +1,8 @@
+"""
+django.contrib.auth.decorators — 视图级登录与权限装饰器。
+
+支持同步/异步视图，并与 LoginRequiredMiddleware 共享元数据。
+"""
 from functools import wraps
 from inspect import iscoroutinefunction
 from urllib.parse import urlsplit
@@ -10,6 +15,7 @@ from django.core.exceptions import PermissionDenied
 from django.shortcuts import resolve_url
 
 
+# 通用装饰器：用户通过 test_func 则执行视图，否则重定向登录
 def user_passes_test(
     test_func, login_url=None, redirect_field_name=REDIRECT_FIELD_NAME
 ):
@@ -71,6 +77,7 @@ def user_passes_test(
     return decorator
 
 
+# 要求已认证用户，未登录时重定向至 LOGIN_URL
 def login_required(
     function=None, redirect_field_name=REDIRECT_FIELD_NAME, login_url=None
 ):
@@ -88,6 +95,7 @@ def login_required(
     return actual_decorator
 
 
+# 标记视图允许匿名访问，供 LoginRequiredMiddleware 跳过
 def login_not_required(view_func):
     """
     Decorator for views that allows access to unauthenticated requests.
@@ -96,6 +104,7 @@ def login_not_required(view_func):
     return view_func
 
 
+# 要求用户拥有指定权限，可选抛出 PermissionDenied
 def permission_required(perm, login_url=None, raise_exception=False):
     """
     Decorator for views that checks whether a user has a particular permission

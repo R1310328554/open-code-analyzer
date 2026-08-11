@@ -1,3 +1,8 @@
+"""
+django.contrib.auth.handlers.modwsgi — mod_wsgi 认证处理器。
+
+供 Apache mod_wsgi 调用 Django 用户库校验密码并返回用户组。
+"""
 from django import db
 from django.contrib import auth
 
@@ -20,6 +25,7 @@ def _get_user(username):
     return user
 
 
+# mod_wsgi 入口：校验用户名密码，返回 None/True/False
 def check_password(environ, username, password):
     """
     Authenticate against Django's auth database.
@@ -41,6 +47,7 @@ def check_password(environ, username, password):
         db.close_old_connections()
 
 
+# mod_wsgi 入口：返回用户所属组的字节串列表
 def groups_for_user(environ, username):
     """
     Authorize a user based on groups

@@ -2,6 +2,11 @@
 Management utility to create superusers.
 """
 
+# django.contrib.auth.management.commands.createsuperuser — 创建超级用户
+"""
+Management utility to create superusers.
+"""
+
 import getpass
 import os
 import sys
@@ -23,6 +28,7 @@ class NotRunningInTTYException(Exception):
 PASSWORD_FIELD = "password"
 
 
+# 交互式或非交互式创建 is_superuser 用户，支持 REQUIRED_FIELDS
 class Command(BaseCommand):
     help = "Used to create a superuser."
     requires_migrations_checks = True
@@ -89,6 +95,7 @@ class Command(BaseCommand):
         self.stdin = options.get("stdin", sys.stdin)  # Used for testing
         return super().execute(*args, **options)
 
+    # 收集用户名、必填字段与密码，调用 create_superuser
     def handle(self, *args, **options):
         username = options[self.UserModel.USERNAME_FIELD]
         database = options["database"]
@@ -302,6 +309,7 @@ class Command(BaseCommand):
     def natural_key_defined(self):
         return hasattr(self.UserModel._default_manager, "get_by_natural_key")
 
+    # 校验用户名唯一性与字段 clean 规则
     def _validate_username(self, username, verbose_field_name, database):
         """Validate username. If invalid, return a string error message."""
         if self.username_is_unique and self.natural_key_defined:

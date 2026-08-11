@@ -3,6 +3,10 @@ Creates permissions for all installed apps that need permissions, and renames
 them on model renames.
 """
 
+# django.contrib.auth.management — 迁移后权限创建与重命名
+on model renames.
+"""
+
 import getpass
 import sys
 import unicodedata
@@ -38,6 +42,7 @@ def _get_builtin_permissions(opts):
     return perms
 
 
+# post_migrate 处理器：为应用模型批量创建缺失的内置权限
 def create_permissions(
     app_config,
     verbosity=2,
@@ -124,6 +129,7 @@ def _get_permission_metadata(apps, app_label, model_name):
     )
 
 
+# 模型 RenameModel 后同步更新 Permission 的 codename 与 name
 def rename_permissions_after_model_rename(
     app_config,
     verbosity=2,
@@ -243,6 +249,7 @@ def get_system_username():
     return result
 
 
+# 交互式 createsuperuser 的默认用户名建议（系统用户经校验且未占用）
 def get_default_username(check_db=True, database=DEFAULT_DB_ALIAS):
     """
     Try to determine the current system user's username to use as a default.

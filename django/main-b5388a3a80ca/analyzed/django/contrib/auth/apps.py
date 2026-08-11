@@ -1,3 +1,8 @@
+"""
+django.contrib.auth.apps — 认证应用配置。
+
+在 ready() 中注册迁移后权限创建、模型重命名同步及系统检查。
+"""
 from django.apps import AppConfig
 from django.core import checks
 from django.db.models.query_utils import DeferredAttribute
@@ -10,11 +15,13 @@ from .management import create_permissions, rename_permissions_after_model_renam
 from .signals import user_logged_in
 
 
+# 内置 auth 应用的 AppConfig
 class AuthConfig(AppConfig):
     default_auto_field = "django.db.models.AutoField"
     name = "django.contrib.auth"
     verbose_name = _("Authentication and Authorization")
 
+    # 连接 post_migrate 信号、last_login 更新与 auth 系统检查
     def ready(self):
         post_migrate.connect(
             rename_permissions_after_model_rename,

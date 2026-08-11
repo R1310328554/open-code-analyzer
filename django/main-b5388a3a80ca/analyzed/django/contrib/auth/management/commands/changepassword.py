@@ -1,3 +1,8 @@
+"""
+django.contrib.auth.management.commands.changepassword — 修改用户密码。
+
+交互式输入新密码并通过 AUTH_PASSWORD_VALIDATORS 校验。
+"""
 import getpass
 
 from django.contrib.auth import get_user_model
@@ -9,6 +14,7 @@ from django.db import DEFAULT_DB_ALIAS, connections
 UserModel = get_user_model()
 
 
+# manage.py changepassword：按 USERNAME_FIELD 定位用户并设置新密码
 class Command(BaseCommand):
     help = "Change a user's password for django.contrib.auth."
     requires_migrations_checks = True

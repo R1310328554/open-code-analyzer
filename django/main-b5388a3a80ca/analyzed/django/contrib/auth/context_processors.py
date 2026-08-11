@@ -1,7 +1,9 @@
-# PermWrapper and PermLookupDict proxy the permissions system into objects that
+# django.contrib.auth.context_processors — 模板上下文中的用户与权限代理
+# PermWrapper and PermLookupDict proxy the permissions system into objects that# PermWrapper and PermLookupDict proxy the permissions system into objects that
 # the template system can understand.
 
 
+# 按 app_label 代理 has_perm，供模板 perms.app.codename 语法使用
 class PermLookupDict:
     def __init__(self, user, app_label):
         self.user, self.app_label = user, app_label
@@ -21,6 +23,7 @@ class PermLookupDict:
         return self.user.has_module_perms(self.app_label)
 
 
+# 根权限代理：perms[app_label] 返回 PermLookupDict
 class PermWrapper:
     def __init__(self, user):
         self.user = user
@@ -46,6 +49,7 @@ class PermWrapper:
         return self[app_label][perm_name]
 
 
+# 上下文处理器：注入 request.user 与 perms
 def auth(request):
     """
     Return context variables required by apps that use Django's authentication

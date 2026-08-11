@@ -1,3 +1,8 @@
+"""
+django.contrib.auth.checks — auth 应用的 Django 系统检查。
+
+校验自定义 User 模型、内置权限长度及中间件顺序配置。
+"""
 from itertools import chain
 
 from django.apps import apps
@@ -24,6 +29,7 @@ def _subclass_index(class_path, candidate_paths):
     return -1
 
 
+# 检查 REQUIRED_FIELDS、USERNAME_FIELD 唯一性及 is_anonymous/is_authenticated
 def check_user_model(app_configs, **kwargs):
     if app_configs is None:
         cls = apps.get_model(settings.AUTH_USER_MODEL)
@@ -120,6 +126,7 @@ def check_user_model(app_configs, **kwargs):
     return errors
 
 
+# 检查各模型内置与自定义权限的名称、codename 长度及冲突
 def check_models_permissions(app_configs, **kwargs):
     if app_configs is None:
         models = apps.get_models()
@@ -236,6 +243,7 @@ def check_models_permissions(app_configs, **kwargs):
     return errors
 
 
+# 确保 LoginRequiredMiddleware 位于 AuthenticationMiddleware 之后
 def check_middleware(app_configs, **kwargs):
     errors = []
 

@@ -3,6 +3,10 @@ This module allows importing AbstractBaseUser even when django.contrib.auth is
 not in INSTALLED_APPS.
 """
 
+# django.contrib.auth.base_user — 抽象用户基类，未安装 auth 时也可导入
+not in INSTALLED_APPS.
+"""
+
 import unicodedata
 
 from django.conf import settings
@@ -18,6 +22,7 @@ from django.utils.crypto import salted_hmac
 from django.utils.translation import gettext_lazy as _
 
 
+# 用户 Manager：邮箱规范化与自然键查询
 class BaseUserManager(models.Manager):
     @classmethod
     def normalize_email(cls, email):
@@ -40,6 +45,7 @@ class BaseUserManager(models.Manager):
         return await self.aget(**{self.model.USERNAME_FIELD: username})
 
 
+# 仅含密码与 last_login 的抽象用户，子类需定义 USERNAME_FIELD
 class AbstractBaseUser(models.Model):
     password = models.CharField(_("password"), max_length=128)
     last_login = models.DateTimeField(_("last login"), blank=True, null=True)
@@ -90,10 +96,12 @@ class AbstractBaseUser(models.Model):
         """
         return True
 
+    # 将明文密码哈希后写入 password 字段
     def set_password(self, raw_password):
         self.password = make_password(raw_password)
         self._password = raw_password
 
+    # 校验明文密码，必要时通过 setter 升级哈希算法
     def check_password(self, raw_password):
         """
         Return a boolean of whether the raw_password was correct. Handles
@@ -129,6 +137,7 @@ class AbstractBaseUser(models.Model):
         """
         return is_password_usable(self.password)
 
+    # 基于密码字段生成会话认证哈希，用于密码变更后会话失效
     def get_session_auth_hash(self):
         """
         Return an HMAC of the password field.

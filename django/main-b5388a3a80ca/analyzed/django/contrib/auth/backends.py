@@ -1,3 +1,8 @@
+"""
+django.contrib.auth.backends — 认证与授权后端实现。
+
+提供基于 User 模型的本地认证、远程用户认证及权限查询抽象。
+"""
 from asgiref.sync import sync_to_async
 
 from django.contrib.auth import (
@@ -12,6 +17,7 @@ from django.views.decorators.debug import sensitive_variables
 UserModel = get_user_model()
 
 
+# 认证/授权后端的抽象基类，定义 authenticate 与权限查询接口
 class BaseBackend:
     def authenticate(self, request, **kwargs):
         return None
@@ -56,12 +62,14 @@ class BaseBackend:
         return perm in await self.aget_all_permissions(user_obj, obj)
 
 
+# 针对 settings.AUTH_USER_MODEL 的默认用户名密码认证后端
 class ModelBackend(BaseBackend):
     """
     Authenticates against settings.AUTH_USER_MODEL.
     """
 
     @sensitive_variables("password")
+    # 校验凭据并返回活跃用户，含计时攻击缓解
     def authenticate(self, request, username=None, password=None, **kwargs):
         if username is None:
             username = kwargs.get(UserModel.USERNAME_FIELD)
@@ -106,6 +114,7 @@ class ModelBackend(BaseBackend):
     def _get_group_permissions(self, user_obj):
         return Permission.objects.filter(group__in=user_obj.groups.all())
 
+    # 汇总用户或组权限并缓存为 app_label.codename 集合
     def _get_permissions(self, user_obj, obj, from_name):
         """
         Return the permissions of `user_obj` from `from_name`. `from_name` can
@@ -247,11 +256,13 @@ class ModelBackend(BaseBackend):
         return user if self.user_can_authenticate(user) else None
 
 
+# ModelBackend 变体：允许 is_active=False 的用户通过认证
 class AllowAllUsersModelBackend(ModelBackend):
     def user_can_authenticate(self, user):
         return True
 
 
+# 信任 Web 服务器传入的 remote_user，可选自动创建未知用户
 class RemoteUserBackend(ModelBackend):
     """
     This backend is to be used in conjunction with the ``RemoteUserMiddleware``
@@ -342,6 +353,7 @@ class RemoteUserBackend(ModelBackend):
         return await sync_to_async(self.configure_user)(request, user, created)
 
 
+# RemoteUserBackend 变体：不拒绝 inactive 用户
 class AllowAllUsersRemoteUserBackend(RemoteUserBackend):
     def user_can_authenticate(self, user):
         return True
