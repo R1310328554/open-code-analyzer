@@ -928,3 +928,9 @@ js_tests/admin/URLify.test.js
 js_tests/admin/actions.test.js
 js_tests/admin/core.test.js
 js_tests/admin/inlines.test.js
+js_tests/admin/jsi18n-mocks.test.js
+js_tests/admin/navigation.test.js
+js_tests/gis/mapwidget.test.js
+scripts/archive_eol_stable_branches.py
+scripts/check_migrations.py
+scripts/do_django_release.py

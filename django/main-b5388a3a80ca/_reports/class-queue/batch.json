@@ -1,12 +1,6 @@
 {
   "claimed_at": "2026-08-11T05:58:16Z",
   "files": [
-    "js_tests/admin/jsi18n-mocks.test.js",
-    "js_tests/admin/navigation.test.js",
-    "js_tests/gis/mapwidget.test.js",
-    "scripts/archive_eol_stable_branches.py",
-    "scripts/check_migrations.py",
-    "scripts/do_django_release.py",
     "scripts/manage_translations.py",
     "scripts/pr_quality/__init__.py",
     "scripts/pr_quality/check_pr.py",
@@ -15,5 +9,5 @@
     "scripts/tests.py"
   ],
   "remaining_pending": 0,
-  "done": 930
+  "done": 936
 }
