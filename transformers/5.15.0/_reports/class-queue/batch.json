@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T02:27:26Z",
-  "files": [
-    "src/transformers/models/opt/__init__.py",
-    "src/transformers/models/opt/configuration_opt.py",
-    "src/transformers/models/opt/modeling_opt.py",
-    "src/transformers/models/ovis2/__init__.py",
-    "src/transformers/models/ovis2/configuration_ovis2.py",
-    "src/transformers/models/ovis2/image_processing_ovis2.py",
-    "src/transformers/models/ovis2/image_processing_pil_ovis2.py",
-    "src/transformers/models/ovis2/modeling_ovis2.py",
-    "src/transformers/models/ovis2/modular_ovis2.py",
-    "src/transformers/models/ovis2/processing_ovis2.py",
-    "src/transformers/models/owlv2/__init__.py",
-    "src/transformers/models/owlv2/configuration_owlv2.py",
-    "src/transformers/models/owlv2/image_processing_owlv2.py",
-    "src/transformers/models/owlv2/image_processing_pil_owlv2.py",
-    "src/transformers/models/owlv2/modeling_owlv2.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1059,
-  "done": 1605
+  "done": 1620
 }
