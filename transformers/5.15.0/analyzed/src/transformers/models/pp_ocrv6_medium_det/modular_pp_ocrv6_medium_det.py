@@ -16,6 +16,8 @@ import torch.nn as nn
 from huggingface_hub.dataclasses import strict
 
 from ...backbone_utils import (
+# PP-OCRv6 中等检测 modular 源：复用 v5 检测组件并替换 LCNetV4 骨干
+
     consolidate_backbone_kwargs_to_config,
 )
 from ...configuration_utils import PreTrainedConfig
@@ -39,9 +41,11 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="PaddlePaddle/PP-OCRv6_medium_det_safetensors")
 @strict
+# PPOCRV6MediumDetConfig：中等检测配置：继承服务端 DB 检测并换 LCNetV4 骨干
 class PPOCRV6MediumDetConfig(PPOCRV5ServerDetConfig):
     hidden_act = AttributeError()
 
+    # __post_init__：校验并补全配置默认值与骨干合并
     def __post_init__(self, **kwargs):
         self.backbone_config, kwargs = consolidate_backbone_kwargs_to_config(
             backbone_config=self.backbone_config,
@@ -54,15 +58,19 @@ class PPOCRV6MediumDetConfig(PPOCRV5ServerDetConfig):
         PreTrainedConfig.__post_init__(**kwargs)
 
 
+# PPOCRV6MediumDetHead：DB 检测头：多尺度概率图与阈值图预测
 class PPOCRV6MediumDetHead(PPOCRV5MobileDetHead):
     pass
 
 
+# PPOCRV6MediumDetIntraclassBlock：类内特征块 ICB：增强同类文本区域表征
 class PPOCRV6MediumDetIntraclassBlock(PPOCRV5ServerDetIntraclassBlock):
     pass
 
 
+# PPOCRV6MediumDetNeck：FPN 颈部：多尺度特征融合与上采样对齐
 class PPOCRV6MediumDetNeck(PPOCRV5ServerDetNeck):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         nn.Module.__init__(self)
         self.interpolate_mode = config.interpolate_mode
@@ -126,6 +134,7 @@ class PPOCRV6MediumDetNeck(PPOCRV5ServerDetNeck):
 
 
 @auto_docstring(custom_intro="PPOCRV6MediumDet model for text detection tasks.")
+# PPOCRV6MediumDetForObjectDetection：文本检测完整模型：骨干 Neck 与 DB 头推理
 class PPOCRV6MediumDetForObjectDetection(PPOCRV5ServerDetForObjectDetection):
     pass
 

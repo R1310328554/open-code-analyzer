@@ -27,6 +27,8 @@ from ...feature_extraction_utils import BatchFeature
 from ...image_processing_backends import TorchvisionBackend
 from ...image_transforms import group_images_by_shape, reorder_images
 from ...image_utils import (
+# PP-OCRv5 服务端识别 modular 源：配置、图像处理与完整建模实现
+
     PILImageResampling,
     SizeDict,
 )
@@ -58,6 +60,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="PaddlePaddle/PP-OCRv5_server_rec_safetensors")
 @strict
+# PPOCRV5ServerRecConfig：服务端识别配置：隐藏维度、SVTR 深度与词表输出通道
 class PPOCRV5ServerRecConfig(PreTrainedConfig):
     r"""
     head_out_channels (`int`, *optional*, defaults to 18385):
@@ -79,6 +82,7 @@ class PPOCRV5ServerRecConfig(PreTrainedConfig):
     attention_dropout: float | int = 0.0
     layer_norm_eps: float = 1e-6
 
+    # __post_init__：校验并补全配置默认值与骨干合并
     def __post_init__(self, **kwargs):
         if self.conv_kernel_size is None:
             self.conv_kernel_size = [1, 3]
@@ -102,6 +106,7 @@ class PPOCRV5ServerRecConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# PPOCRV5ServerRecImageProcessorKwargs：识别图像处理器关键字参数：最大宽度与字符表
 class PPOCRV5ServerRecImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     max_image_width (`int`, *optional*, defaults to `3200`):
@@ -115,6 +120,7 @@ class PPOCRV5ServerRecImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# PPOCRV5ServerRecImageProcessor：识别图像处理器：按最宽图动态缩放并 CTC 解码
 class PPOCRV5ServerRecImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.BILINEAR
     image_mean = IMAGENET_STANDARD_MEAN
@@ -130,6 +136,7 @@ class PPOCRV5ServerRecImageProcessor(TorchvisionBackend):
     character_list = []
     valid_kwargs = PPOCRV5ServerRecImageProcessorKwargs
 
+    # _preprocess：批量预处理：分组缩放、归一化与可选填充
     def _preprocess(
         self,
         images: list["torch.Tensor"],
@@ -182,6 +189,7 @@ class PPOCRV5ServerRecImageProcessor(TorchvisionBackend):
 
         return BatchFeature(data={"pixel_values": processed_images}, tensor_type=return_tensors)
 
+    # get_target_size：按批次最宽图计算目标缩放尺寸
     def get_target_size(self, shape_list: list[torch.Size]):
         """
         Calculate the width and height from the widest image in the batch.
@@ -209,6 +217,7 @@ class PPOCRV5ServerRecImageProcessor(TorchvisionBackend):
 
         return SizeDict(height=target_height, width=target_width)
 
+    # post_process_text_recognition：CTC 解码：去重、去 blank 并计算置信度
     def post_process_text_recognition(
         self,
         predictions,
@@ -254,7 +263,9 @@ class PPOCRV5ServerRecImageProcessor(TorchvisionBackend):
         return results
 
 
+# PPOCRV5ServerRecBlock：SVTR 编码块：自注意力与前馈 MLP 残差堆叠
 class PPOCRV5ServerRecBlock(CLIPEncoderLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.mlp = PPOCRV5ServerRecMLP(
@@ -263,6 +274,7 @@ class PPOCRV5ServerRecBlock(CLIPEncoderLayer):
             hidden_features=int(self.embed_dim * config.mlp_ratio),
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -272,7 +284,9 @@ class PPOCRV5ServerRecBlock(CLIPEncoderLayer):
         super().forward(hidden_states, attention_mask, **kwargs)
 
 
+# PPOCRV5ServerRecAttention：SVTR 自注意力：多头缩放点积注意力
 class PPOCRV5ServerRecAttention(Blip2Attention):
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -282,7 +296,9 @@ class PPOCRV5ServerRecAttention(Blip2Attention):
         super().forward(hidden_states, **kwargs)
 
 
+# PPOCRV5ServerRecConvLayer：识别卷积层：带激活的二维卷积特征变换
 class PPOCRV5ServerRecConvLayer(ResNetConvLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         in_channels: int,
@@ -302,6 +318,7 @@ class PPOCRV5ServerRecConvLayer(ResNetConvLayer):
         )
 
 
+# PPOCRV5ServerRecPreTrainedModel：识别预训练基类：权重初始化与模块切分策略
 class PPOCRV5ServerRecPreTrainedModel(PaddleOCRVLPreTrainedModel):
     _no_split_modules = ["PPOCRV5ServerRecBlock"]
     main_input_name = "pixel_values"
@@ -310,17 +327,21 @@ class PPOCRV5ServerRecPreTrainedModel(PaddleOCRVLPreTrainedModel):
         "hidden_states": PPOCRV5ServerRecBlock,
     }
 
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module):
         raise AttributeError("No override needed here")
 
 
+# PPOCRV5ServerRecHead：识别分类头：SVTR 编码后线性映射并 softmax
 class PPOCRV5ServerRecHead(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
 
         self.encoder = PPOCRV5ServerRecEncoderWithSVTR(config)
         self.head = nn.Linear(config.hidden_size, config.head_out_channels)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.FloatTensor, **kwargs: Unpack[TransformersKwargs]):
         outputs = self.encoder(hidden_states, **kwargs)
         hidden_states = self.head(outputs.last_hidden_state)
@@ -329,16 +350,19 @@ class PPOCRV5ServerRecHead(nn.Module):
         return BaseModelOutputWithNoAttention(last_hidden_state=hidden_states, hidden_states=outputs.hidden_states)
 
 
+# PPOCRV5ServerRecMLP：识别前馈 MLP：扩展隐藏维度并投影回嵌入维
 class PPOCRV5ServerRecMLP(FocalNetMlp):
     pass
 
 
+# PPOCRV5ServerRecEncoderWithSVTR：SVTR 视觉编码器：卷积 stem + Transformer 序列建模
 class PPOCRV5ServerRecEncoderWithSVTR(PPOCRV5ServerRecPreTrainedModel):
     """
     SVTR: Scene Text Recognition with a Single Visual Model
     https://www.paddleocr.ai/v2.10.0/en/algorithm/text_recognition/algorithm_rec_svtr.html
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config,
@@ -373,6 +397,7 @@ class PPOCRV5ServerRecEncoderWithSVTR(PPOCRV5ServerRecPreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.FloatTensor, **kwargs: Unpack[TransformersKwargs]):
         residual = hidden_states
 
@@ -395,7 +420,9 @@ class PPOCRV5ServerRecEncoderWithSVTR(PPOCRV5ServerRecPreTrainedModel):
 
 
 @auto_docstring(custom_intro="PPOCRV5ServerRec model, consisting of Backbone and Head networks.")
+# PPOCRV5ServerRecModel：识别骨干模型：HGNetV2 特征提取与池化
 class PPOCRV5ServerRecModel(PPOCRV5ServerRecPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: PPOCRV5ServerRecConfig):
         super().__init__(config)
         self.backbone = load_backbone(config)
@@ -405,6 +432,7 @@ class PPOCRV5ServerRecModel(PPOCRV5ServerRecPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -422,6 +450,7 @@ class PPOCRV5ServerRecModel(PPOCRV5ServerRecPreTrainedModel):
 
 @auto_docstring
 @dataclass
+# PPOCRV5ServerRecForTextRecognitionOutput：识别任务输出结构：含头部中间隐状态
 class PPOCRV5ServerRecForTextRecognitionOutput(BaseModelOutputWithNoAttention):
     r"""
     head_hidden_states (`tuple(torch.FloatTensor)`, *optional*, returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
@@ -432,9 +461,11 @@ class PPOCRV5ServerRecForTextRecognitionOutput(BaseModelOutputWithNoAttention):
 
 
 @auto_docstring(custom_intro="PPOCRV5ServerRec model for text recognition tasks.")
+# PPOCRV5ServerRecForTextRecognition：端到端文本识别：骨干 + SVTR 头联合推理
 class PPOCRV5ServerRecForTextRecognition(PPOCRV5ServerRecPreTrainedModel):
     _keys_to_ignore_on_load_missing = ["num_batches_tracked"]
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: PPOCRV5ServerRecConfig):
         super().__init__(config)
         self.model = PPOCRV5ServerRecModel(config)
@@ -444,6 +475,7 @@ class PPOCRV5ServerRecForTextRecognition(PPOCRV5ServerRecPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,

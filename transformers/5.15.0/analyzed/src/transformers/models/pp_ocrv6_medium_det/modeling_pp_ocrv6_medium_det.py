@@ -29,13 +29,17 @@ from ...modeling_utils import PreTrainedModel
 from ...processing_utils import Unpack
 from ...utils import TransformersKwargs, auto_docstring, can_return_tuple
 from .configuration_pp_ocrv6_medium_det import PPOCRV6MediumDetConfig
+# PP-OCRv6 中等检测建模：FPN 颈部、类内块与 DB 文本区域检测
 
 
+
+# PPOCRV6MediumDetConvBatchnormLayer：检测卷积-BN 层：Conv2d 与 BatchNorm2d 组合
 class PPOCRV6MediumDetConvBatchnormLayer(nn.Module):
     """
     A basic wrapper for Convolution-BatchNorm-Activation, typically used for head components.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         in_channels: int,
@@ -70,6 +74,7 @@ class PPOCRV6MediumDetConvBatchnormLayer(nn.Module):
         self.norm = nn.BatchNorm2d(out_channels)
         self.act_fn = nn.Identity() if activation is None else ACT2FN[activation]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.convolution(hidden_states)
         hidden_states = self.norm(hidden_states)
@@ -77,12 +82,14 @@ class PPOCRV6MediumDetConvBatchnormLayer(nn.Module):
         return hidden_states
 
 
+# PPOCRV6MediumDetHead：DB 检测头：多尺度概率图与阈值图预测
 class PPOCRV6MediumDetHead(nn.Module):
     """
     Standard segmentation head for generating probability maps. It uses transposed
     convolution to upsample the feature map back to the original image size.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: PPOCRV6MediumDetConfig,
@@ -112,6 +119,7 @@ class PPOCRV6MediumDetHead(nn.Module):
             stride=2,
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         hidden_states = self.conv_down(hidden_states)
         hidden_states = self.conv_up(hidden_states)
@@ -120,6 +128,7 @@ class PPOCRV6MediumDetHead(nn.Module):
         return hidden_states
 
 
+# PPOCRV6MediumDetIntraclassBlock：类内特征块 ICB：增强同类文本区域表征
 class PPOCRV6MediumDetIntraclassBlock(nn.Module):
     """
     Intra-Class Relationship Block. It uses multi-scale convolution (7x7, 5x5, 3x3)
@@ -127,6 +136,7 @@ class PPOCRV6MediumDetIntraclassBlock(nn.Module):
     within text regions.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         intraclass_block_config: dict | None = None,
@@ -178,6 +188,7 @@ class PPOCRV6MediumDetIntraclassBlock(nn.Module):
             bias=True,
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         residual = hidden_states
         hidden_states = self.conv_reduce_channel(hidden_states)
@@ -203,6 +214,7 @@ class PPOCRV6MediumDetIntraclassBlock(nn.Module):
         return residual + hidden_states
 
 
+# PPOCRV6MediumDetNeck：FPN 颈部：多尺度特征融合与上采样对齐
 class PPOCRV6MediumDetNeck(nn.Module):
     """
     Large Kernel Path Aggregation Network (Neck) for PPOCRV5 Server Detection.
@@ -210,6 +222,7 @@ class PPOCRV6MediumDetNeck(nn.Module):
     enhanced with large kernel convolution for better spatial dependency modeling.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.interpolate_mode = config.interpolate_mode
@@ -271,6 +284,7 @@ class PPOCRV6MediumDetNeck(nn.Module):
                 )
             )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, backbone_stage_feature_maps: list[torch.Tensor], **kwargs) -> torch.Tensor:
         channel_adjusted = []
         for i, feature_map in enumerate(backbone_stage_feature_maps):
@@ -321,6 +335,7 @@ class PPOCRV6MediumDetNeck(nn.Module):
         return torch.cat(upsampled[::-1], dim=1)
 
 
+# PPOCRV6MediumDetPreTrainedModel：中等检测预训练基类：通用初始化与输入名
 class PPOCRV6MediumDetPreTrainedModel(PreTrainedModel):
     """
     Base class for all PPOCRV5 Server Det pre-trained models. Handles model initialization,
@@ -335,7 +350,9 @@ class PPOCRV6MediumDetPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# PPOCRV6MediumDetModel：中等检测骨干：LCNetV4 + Neck 特征金字塔
 class PPOCRV6MediumDetModel(PPOCRV6MediumDetPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: PPOCRV6MediumDetConfig):
         super().__init__(config)
         self.backbone = load_backbone(config)
@@ -344,6 +361,7 @@ class PPOCRV6MediumDetModel(PPOCRV6MediumDetPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -360,9 +378,11 @@ class PPOCRV6MediumDetModel(PPOCRV6MediumDetPreTrainedModel):
 
 
 @auto_docstring(custom_intro="PPOCRV6MediumDet model for text detection tasks.")
+# PPOCRV6MediumDetForObjectDetection：文本检测完整模型：骨干 Neck 与 DB 头推理
 class PPOCRV6MediumDetForObjectDetection(PPOCRV6MediumDetPreTrainedModel):
     _keys_to_ignore_on_load_missing = ["num_batches_tracked"]
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: PPOCRV6MediumDetConfig):
         super().__init__(config)
         self.model = PPOCRV6MediumDetModel(config)
@@ -370,6 +390,7 @@ class PPOCRV6MediumDetForObjectDetection(PPOCRV6MediumDetPreTrainedModel):
         self.post_init()
 
     @can_return_tuple
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,

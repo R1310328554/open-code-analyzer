@@ -17,6 +17,8 @@ import torch.nn as nn
 from huggingface_hub.dataclasses import strict
 
 from ...backbone_utils import (
+# PP-OCRv6 轻量检测 modular 源：移动端检测 Neck 与 SE 注意力变体
+
     consolidate_backbone_kwargs_to_config,
 )
 from ...configuration_utils import PreTrainedConfig
@@ -42,6 +44,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="PaddlePaddle/PP-OCRv6_small_det_safetensors")
 @strict
+# PPOCRV6SmallDetConfig：轻量检测配置：RSE 颈部通道与膨胀卷积核大小
 class PPOCRV6SmallDetConfig(PPOCRV5MobileDetConfig):
     r"""
     reduction (`int`, *optional*, defaults to 4):
@@ -66,6 +69,7 @@ class PPOCRV6SmallDetConfig(PPOCRV5MobileDetConfig):
 
     dilated_kernel_size: int = 7
 
+    # __post_init__：校验并补全配置默认值与骨干合并
     def __post_init__(self, **kwargs):
         self.backbone_config, kwargs = consolidate_backbone_kwargs_to_config(
             backbone_config=self.backbone_config,
@@ -78,14 +82,17 @@ class PPOCRV6SmallDetConfig(PPOCRV5MobileDetConfig):
         PreTrainedConfig.__post_init__(**kwargs)
 
 
+# PPOCRV6SmallDetHead：轻量 DB 检测头：低通道多尺度文本概率预测
 class PPOCRV6SmallDetHead(PPOCRV5MobileDetHead):
     pass
 
 
+# PPOCRV6SmallDetSqueezeExcitationModule：SE 注意力：通道维全局池化与重标定
 class PPOCRV6SmallDetSqueezeExcitationModule(PPOCRV5MobileDetSqueezeExcitationModule):
     pass
 
 
+# PPOCRV6SmallDetDepthwiseSeparableConvLayer：深度可分离卷积：DW+PW 降低计算量
 class PPOCRV6SmallDetDepthwiseSeparableConvLayer(PPLCNetDepthwiseSeparableConvLayer):
     """
     The differences from PPLCNetDepthwiseSeparableConvLayer are:
@@ -94,6 +101,7 @@ class PPOCRV6SmallDetDepthwiseSeparableConvLayer(PPLCNetDepthwiseSeparableConvLa
     3. Adds a residual connection at the end.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         in_channels,
@@ -119,6 +127,7 @@ class PPOCRV6SmallDetDepthwiseSeparableConvLayer(PPLCNetDepthwiseSeparableConvLa
             bias=False,
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.depthwise_convolution(hidden_states)
         hidden_states = self.pointwise_convolution(hidden_states)
@@ -127,15 +136,18 @@ class PPOCRV6SmallDetDepthwiseSeparableConvLayer(PPLCNetDepthwiseSeparableConvLa
         return hidden_states
 
 
+# PPOCRV6SmallDetResidualSqueezeExcitationLayer：RSE 残差块：SE 模块与跳跃连接
 class PPOCRV6SmallDetResidualSqueezeExcitationLayer(PPOCRV5MobileDetResidualSqueezeExcitationLayer):
     pass
 
 
+# PPOCRV6SmallDetNeck：轻量 FPN 颈部：RSE 融合多尺度骨干特征
 class PPOCRV6SmallDetNeck(PPOCRV5MobileDetNeck):
     """
     The only difference from PPOCRV5MobileDetNeck is the module used by input_conv.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: PPOCRV6SmallDetConfig):
         nn.Module.__init__(self)
         self.interpolate_mode = config.interpolate_mode
@@ -159,6 +171,7 @@ class PPOCRV6SmallDetNeck(PPOCRV5MobileDetNeck):
 
 
 @auto_docstring(custom_intro="PPOCR6SmallRec model for text recognition tasks.")
+# PPOCRV6SmallDetForObjectDetection：轻量文本检测：端到端 DB 推理与框输出
 class PPOCRV6SmallDetForObjectDetection(PPOCRV5ServerDetForObjectDetection):
     pass
 

@@ -24,10 +24,13 @@ from ...backbone_utils import consolidate_backbone_kwargs_to_config
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 from ..auto import AutoConfig
+# PP-OCRv5 服务端识别配置：HGNetV2 骨干、SVTR 编码器与 CTC 分类头超参数
+
 
 
 @auto_docstring(checkpoint="PaddlePaddle/PP-OCRv5_server_rec_safetensors")
 @strict
+# PPOCRV5ServerRecConfig：服务端识别配置：隐藏维度、SVTR 深度与词表输出通道
 class PPOCRV5ServerRecConfig(PreTrainedConfig):
     r"""
     head_out_channels (`int`, *optional*, defaults to 18385):
@@ -49,6 +52,7 @@ class PPOCRV5ServerRecConfig(PreTrainedConfig):
     attention_dropout: float | int = 0.0
     layer_norm_eps: float = 1e-6
 
+    # __post_init__：校验并补全配置默认值与骨干合并
     def __post_init__(self, **kwargs):
         if self.conv_kernel_size is None:
             self.conv_kernel_size = [1, 3]

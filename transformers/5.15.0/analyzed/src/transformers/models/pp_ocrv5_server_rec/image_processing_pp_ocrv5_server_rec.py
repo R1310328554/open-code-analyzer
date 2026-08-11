@@ -31,8 +31,11 @@ from ...processing_utils import ImagesKwargs
 from ...utils import auto_docstring, requires_backends
 from ...utils.constants import IMAGENET_STANDARD_MEAN, IMAGENET_STANDARD_STD
 from ...utils.generic import TensorType
+# PP-OCRv5 服务端识别图像处理器：动态宽高缩放、归一化与 CTC 解码后处理
 
 
+
+# PPOCRV5ServerRecImageProcessorKwargs：识别图像处理器关键字参数：最大宽度与字符表
 class PPOCRV5ServerRecImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     max_image_width (`int`, *optional*, defaults to `3200`):
@@ -46,6 +49,7 @@ class PPOCRV5ServerRecImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# PPOCRV5ServerRecImageProcessor：识别图像处理器：按最宽图动态缩放并 CTC 解码
 class PPOCRV5ServerRecImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.BILINEAR
     image_mean = IMAGENET_STANDARD_MEAN
@@ -61,6 +65,7 @@ class PPOCRV5ServerRecImageProcessor(TorchvisionBackend):
     character_list = []
     valid_kwargs = PPOCRV5ServerRecImageProcessorKwargs
 
+    # _preprocess：批量预处理：分组缩放、归一化与可选填充
     def _preprocess(
         self,
         images: list["torch.Tensor"],
@@ -113,6 +118,7 @@ class PPOCRV5ServerRecImageProcessor(TorchvisionBackend):
 
         return BatchFeature(data={"pixel_values": processed_images}, tensor_type=return_tensors)
 
+    # get_target_size：按批次最宽图计算目标缩放尺寸
     def get_target_size(self, shape_list: list[torch.Size]):
         """
         Calculate the width and height from the widest image in the batch.
@@ -140,6 +146,7 @@ class PPOCRV5ServerRecImageProcessor(TorchvisionBackend):
 
         return SizeDict(height=target_height, width=target_width)
 
+    # post_process_text_recognition：CTC 解码：去重、去 blank 并计算置信度
     def post_process_text_recognition(
         self,
         predictions,

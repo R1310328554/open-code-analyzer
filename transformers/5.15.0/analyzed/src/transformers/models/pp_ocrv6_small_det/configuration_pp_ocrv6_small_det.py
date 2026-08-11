@@ -24,10 +24,13 @@ from ...backbone_utils import consolidate_backbone_kwargs_to_config
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 from ..auto import AutoConfig
+# PP-OCRv6 轻量检测配置：PPLCNetV4 骨干、RSE 颈部与膨胀卷积参数
+
 
 
 @auto_docstring(checkpoint="PaddlePaddle/PP-OCRv6_small_det_safetensors")
 @strict
+# PPOCRV6SmallDetConfig：轻量检测配置：RSE 颈部通道与膨胀卷积核大小
 class PPOCRV6SmallDetConfig(PreTrainedConfig):
     r"""
     reduction (`int`, *optional*, defaults to 4):
@@ -62,6 +65,7 @@ class PPOCRV6SmallDetConfig(PreTrainedConfig):
 
     dilated_kernel_size: int = 7
 
+    # __post_init__：校验并补全配置默认值与骨干合并
     def __post_init__(self, **kwargs):
         self.backbone_config, kwargs = consolidate_backbone_kwargs_to_config(
             backbone_config=self.backbone_config,

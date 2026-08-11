@@ -24,10 +24,13 @@ from ...backbone_utils import consolidate_backbone_kwargs_to_config
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 from ..auto import AutoConfig
+# PP-OCRv6 轻量识别配置：PPLCNetV4 骨干与 SVTR 识别头通道数
+
 
 
 @auto_docstring(checkpoint="PaddlePaddle/PP-OCRv6_small_rec_safetensors")
 @strict
+# PPOCRV6SmallRecConfig：轻量识别配置：LCNetV4 骨干与更大 CTC 词表通道
 class PPOCRV6SmallRecConfig(PreTrainedConfig):
     r"""
     head_out_channels (`int`, *optional*, defaults to 18714):
@@ -50,6 +53,7 @@ class PPOCRV6SmallRecConfig(PreTrainedConfig):
     attention_dropout: float | int = 0.0
     layer_norm_eps: float = 1e-6
 
+    # __post_init__：校验并补全配置默认值与骨干合并
     def __post_init__(self, **kwargs):
         if self.conv_kernel_size is None:
             self.conv_kernel_size = [1, 7]

@@ -30,13 +30,17 @@ from ...modeling_utils import PreTrainedModel
 from ...processing_utils import Unpack
 from ...utils import TransformersKwargs, auto_docstring, can_return_tuple
 from .configuration_pp_ocrv6_small_det import PPOCRV6SmallDetConfig
+# PP-OCRv6 轻量检测建模：深度可分离卷积、RSE 模块与 DB 检测头
 
 
+
+# PPOCRV6SmallDetConvBatchnormLayer：轻量检测卷积-BN：深度可分离前的标准卷积块
 class PPOCRV6SmallDetConvBatchnormLayer(nn.Module):
     """
     A basic wrapper for Convolution-BatchNorm-Activation, typically used for head components.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         in_channels: int,
@@ -71,6 +75,7 @@ class PPOCRV6SmallDetConvBatchnormLayer(nn.Module):
         self.norm = nn.BatchNorm2d(out_channels)
         self.act_fn = nn.Identity() if activation is None else ACT2FN[activation]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.convolution(hidden_states)
         hidden_states = self.norm(hidden_states)
@@ -78,12 +83,14 @@ class PPOCRV6SmallDetConvBatchnormLayer(nn.Module):
         return hidden_states
 
 
+# PPOCRV6SmallDetHead：轻量 DB 检测头：低通道多尺度文本概率预测
 class PPOCRV6SmallDetHead(nn.Module):
     """
     Standard segmentation head for generating probability maps. It uses transposed
     convolution to upsample the feature map back to the original image size.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: PPOCRV6SmallDetConfig,
@@ -113,6 +120,7 @@ class PPOCRV6SmallDetHead(nn.Module):
             stride=2,
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         hidden_states = self.conv_down(hidden_states)
         hidden_states = self.conv_up(hidden_states)
@@ -121,12 +129,14 @@ class PPOCRV6SmallDetHead(nn.Module):
         return hidden_states
 
 
+# PPOCRV6SmallDetSqueezeExcitationModule：SE 注意力：通道维全局池化与重标定
 class PPOCRV6SmallDetSqueezeExcitationModule(nn.Module):
     """
     Simplified Squeeze-and-Excitation (SE) Module for the neck network.
     Applies channel-wise recalibration with a clamped activation to stabilize training.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, in_channels, reduction, activation="relu"):
         super().__init__()
 
@@ -147,6 +157,7 @@ class PPOCRV6SmallDetSqueezeExcitationModule(nn.Module):
         )
         self.act_fn = ACT2FN[activation]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         residual = hidden_states
         hidden_states = self.avg_pool(hidden_states)
@@ -155,6 +166,7 @@ class PPOCRV6SmallDetSqueezeExcitationModule(nn.Module):
         return residual * hidden_states
 
 
+# PPOCRV6SmallDetDepthwiseSeparableConvLayer：深度可分离卷积：DW+PW 降低计算量
 class PPOCRV6SmallDetDepthwiseSeparableConvLayer(GradientCheckpointingLayer):
     """
     The differences from PPLCNetDepthwiseSeparableConvLayer are:
@@ -163,6 +175,7 @@ class PPOCRV6SmallDetDepthwiseSeparableConvLayer(GradientCheckpointingLayer):
     3. Adds a residual connection at the end.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         in_channels,
@@ -188,6 +201,7 @@ class PPOCRV6SmallDetDepthwiseSeparableConvLayer(GradientCheckpointingLayer):
             bias=False,
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.depthwise_convolution(hidden_states)
         hidden_states = self.pointwise_convolution(hidden_states)
@@ -196,12 +210,14 @@ class PPOCRV6SmallDetDepthwiseSeparableConvLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# PPOCRV6SmallDetResidualSqueezeExcitationLayer：RSE 残差块：SE 模块与跳跃连接
 class PPOCRV6SmallDetResidualSqueezeExcitationLayer(nn.Module):
     """
     Residual Squeeze-and-Excitation (RSE) Layer for the neck network.
     Combines a 1x1/3x3 convolution with an SE Module.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, in_channels, out_channels, kernel_size, reduction):
         super().__init__()
         self.in_conv = nn.Conv2d(
@@ -213,6 +229,7 @@ class PPOCRV6SmallDetResidualSqueezeExcitationLayer(nn.Module):
         )
         self.squeeze_excitation_block = PPOCRV6SmallDetSqueezeExcitationModule(out_channels, reduction)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.in_conv(hidden_states)
         hidden_states = hidden_states + self.squeeze_excitation_block(hidden_states)
@@ -220,11 +237,13 @@ class PPOCRV6SmallDetResidualSqueezeExcitationLayer(nn.Module):
         return hidden_states
 
 
+# PPOCRV6SmallDetNeck：轻量 FPN 颈部：RSE 融合多尺度骨干特征
 class PPOCRV6SmallDetNeck(nn.Module):
     """
     The only difference from PPOCRV5MobileDetNeck is the module used by input_conv.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: PPOCRV6SmallDetConfig):
         super().__init__()
         self.interpolate_mode = config.interpolate_mode
@@ -246,6 +265,7 @@ class PPOCRV6SmallDetNeck(nn.Module):
                 )
             )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, feature_maps):
         fused = []
         for conv, feature in zip(self.insert_conv, feature_maps):  # [p2, p3, p4, p5]
@@ -272,6 +292,7 @@ class PPOCRV6SmallDetNeck(nn.Module):
         return fused_feature_map
 
 
+# PPOCRV6SmallDetPreTrainedModel：轻量检测预训练基类：权重加载与模块划分
 class PPOCRV6SmallDetPreTrainedModel(PreTrainedModel):
     """
     Base class for all PPOCRV5 Server Det pre-trained models. Handles model initialization,
@@ -286,7 +307,9 @@ class PPOCRV6SmallDetPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# PPOCRV6SmallDetModel：轻量检测骨干：PPLCNetV4 与 Neck 前向
 class PPOCRV6SmallDetModel(PPOCRV6SmallDetPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: PPOCRV6SmallDetConfig):
         super().__init__(config)
         self.backbone = load_backbone(config)
@@ -295,6 +318,7 @@ class PPOCRV6SmallDetModel(PPOCRV6SmallDetPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -311,9 +335,11 @@ class PPOCRV6SmallDetModel(PPOCRV6SmallDetPreTrainedModel):
 
 
 @auto_docstring(custom_intro="PPOCR6SmallRec model for text recognition tasks.")
+# PPOCRV6SmallDetForObjectDetection：轻量文本检测：端到端 DB 推理与框输出
 class PPOCRV6SmallDetForObjectDetection(PPOCRV6SmallDetPreTrainedModel):
     _keys_to_ignore_on_load_missing = ["num_batches_tracked"]
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: PPOCRV6SmallDetConfig):
         super().__init__(config)
         self.model = PPOCRV6SmallDetModel(config)
@@ -321,6 +347,7 @@ class PPOCRV6SmallDetForObjectDetection(PPOCRV6SmallDetPreTrainedModel):
         self.post_init()
 
     @can_return_tuple
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,

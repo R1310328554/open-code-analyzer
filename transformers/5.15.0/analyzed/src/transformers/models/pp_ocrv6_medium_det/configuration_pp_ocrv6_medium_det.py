@@ -24,10 +24,13 @@ from ...backbone_utils import consolidate_backbone_kwargs_to_config
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 from ..auto import AutoConfig
+# PP-OCRv6 中等检测配置：PPLCNetV4 骨干与 DB 检测头 Neck/ICB 参数
+
 
 
 @auto_docstring(checkpoint="PaddlePaddle/PP-OCRv6_medium_det_safetensors")
 @strict
+# PPOCRV6MediumDetConfig：中等检测配置：继承服务端 DB 检测并换 LCNetV4 骨干
 class PPOCRV6MediumDetConfig(PreTrainedConfig):
     r"""
     interpolate_mode (`str`, *optional*, defaults to `"nearest"`):
@@ -62,6 +65,7 @@ class PPOCRV6MediumDetConfig(PreTrainedConfig):
     kernel_list: list | None = None
     id2label: dict[int, str] | dict[str, str] | None = None
 
+    # __post_init__：校验并补全配置默认值与骨干合并
     def __post_init__(self, **kwargs):
         self.backbone_config, kwargs = consolidate_backbone_kwargs_to_config(
             backbone_config=self.backbone_config,

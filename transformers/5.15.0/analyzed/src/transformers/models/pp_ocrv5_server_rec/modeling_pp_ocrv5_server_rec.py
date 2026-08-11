@@ -35,9 +35,13 @@ from ...utils import TransformersKwargs, auto_docstring, can_return_tuple
 from ...utils.generic import merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
 from .configuration_pp_ocrv5_server_rec import PPOCRV5ServerRecConfig
+# PP-OCRv5 服务端识别建模：SVTR 编码器、CTC 头与端到端文本识别前向
 
 
+
+# PPOCRV5ServerRecBlock：SVTR 编码块：自注意力与前馈 MLP 残差堆叠
 class PPOCRV5ServerRecBlock(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.embed_dim = config.hidden_size
@@ -50,6 +54,7 @@ class PPOCRV5ServerRecBlock(GradientCheckpointingLayer):
         )
         self.layer_norm2 = nn.LayerNorm(self.embed_dim, eps=config.layer_norm_eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -75,6 +80,7 @@ class PPOCRV5ServerRecBlock(GradientCheckpointingLayer):
 
 
 # Adapted from transformers.models.siglip.modeling_siglip.eager_attention_forward -> BLIP doesn't cast attn weights to fp32
+# eager_attention_forward：标准缩放点积注意力：softmax 加权求值
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -98,9 +104,11 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# PPOCRV5ServerRecAttention：SVTR 自注意力：多头缩放点积注意力
 class PPOCRV5ServerRecAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -135,6 +143,7 @@ class PPOCRV5ServerRecAttention(nn.Module):
     def _shape(self, tensor: torch.Tensor, seq_len: int, bsz: int):
         return tensor.view(bsz, seq_len, self.num_heads, self.head_dim).transpose(1, 2).contiguous()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -173,7 +182,9 @@ class PPOCRV5ServerRecAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# PPOCRV5ServerRecConvLayer：识别卷积层：带激活的二维卷积特征变换
 class PPOCRV5ServerRecConvLayer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         in_channels: int,
@@ -194,6 +205,7 @@ class PPOCRV5ServerRecConvLayer(nn.Module):
         self.normalization = nn.BatchNorm2d(out_channels)
         self.activation = ACT2FN[activation] if activation is not None else nn.Identity()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.convolution(hidden_states)
         hidden_states = self.normalization(hidden_states)
@@ -202,6 +214,7 @@ class PPOCRV5ServerRecConvLayer(nn.Module):
 
 
 @auto_docstring
+# PPOCRV5ServerRecPreTrainedModel：识别预训练基类：权重初始化与模块切分策略
 class PPOCRV5ServerRecPreTrainedModel(PreTrainedModel):
     config: PPOCRV5ServerRecConfig
     base_model_prefix = "model"
@@ -221,13 +234,16 @@ class PPOCRV5ServerRecPreTrainedModel(PreTrainedModel):
     input_modalities = ("image",)
 
 
+# PPOCRV5ServerRecHead：识别分类头：SVTR 编码后线性映射并 softmax
 class PPOCRV5ServerRecHead(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
 
         self.encoder = PPOCRV5ServerRecEncoderWithSVTR(config)
         self.head = nn.Linear(config.hidden_size, config.head_out_channels)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.FloatTensor, **kwargs: Unpack[TransformersKwargs]):
         outputs = self.encoder(hidden_states, **kwargs)
         hidden_states = self.head(outputs.last_hidden_state)
@@ -236,7 +252,9 @@ class PPOCRV5ServerRecHead(nn.Module):
         return BaseModelOutputWithNoAttention(last_hidden_state=hidden_states, hidden_states=outputs.hidden_states)
 
 
+# PPOCRV5ServerRecMLP：识别前馈 MLP：扩展隐藏维度并投影回嵌入维
 class PPOCRV5ServerRecMLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, in_features, hidden_features=None, out_features=None, drop=0.0):
         super().__init__()
         out_features = out_features or in_features
@@ -246,6 +264,7 @@ class PPOCRV5ServerRecMLP(nn.Module):
         self.fc2 = nn.Linear(hidden_features, out_features)
         self.drop = nn.Dropout(drop)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state):
         hidden_state = self.fc1(hidden_state)
         hidden_state = self.activation(hidden_state)
@@ -255,12 +274,14 @@ class PPOCRV5ServerRecMLP(nn.Module):
         return hidden_state
 
 
+# PPOCRV5ServerRecEncoderWithSVTR：SVTR 视觉编码器：卷积 stem + Transformer 序列建模
 class PPOCRV5ServerRecEncoderWithSVTR(PPOCRV5ServerRecPreTrainedModel):
     """
     SVTR: Scene Text Recognition with a Single Visual Model
     https://www.paddleocr.ai/v2.10.0/en/algorithm/text_recognition/algorithm_rec_svtr.html
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config,
@@ -295,6 +316,7 @@ class PPOCRV5ServerRecEncoderWithSVTR(PPOCRV5ServerRecPreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.FloatTensor, **kwargs: Unpack[TransformersKwargs]):
         residual = hidden_states
 
@@ -317,7 +339,9 @@ class PPOCRV5ServerRecEncoderWithSVTR(PPOCRV5ServerRecPreTrainedModel):
 
 
 @auto_docstring(custom_intro="PPOCRV5ServerRec model, consisting of Backbone and Head networks.")
+# PPOCRV5ServerRecModel：识别骨干模型：HGNetV2 特征提取与池化
 class PPOCRV5ServerRecModel(PPOCRV5ServerRecPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: PPOCRV5ServerRecConfig):
         super().__init__(config)
         self.backbone = load_backbone(config)
@@ -327,6 +351,7 @@ class PPOCRV5ServerRecModel(PPOCRV5ServerRecPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -344,6 +369,7 @@ class PPOCRV5ServerRecModel(PPOCRV5ServerRecPreTrainedModel):
 
 @auto_docstring
 @dataclass
+# PPOCRV5ServerRecForTextRecognitionOutput：识别任务输出结构：含头部中间隐状态
 class PPOCRV5ServerRecForTextRecognitionOutput(BaseModelOutputWithNoAttention):
     r"""
     head_hidden_states (`tuple(torch.FloatTensor)`, *optional*, returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
@@ -354,9 +380,11 @@ class PPOCRV5ServerRecForTextRecognitionOutput(BaseModelOutputWithNoAttention):
 
 
 @auto_docstring(custom_intro="PPOCRV5ServerRec model for text recognition tasks.")
+# PPOCRV5ServerRecForTextRecognition：端到端文本识别：骨干 + SVTR 头联合推理
 class PPOCRV5ServerRecForTextRecognition(PPOCRV5ServerRecPreTrainedModel):
     _keys_to_ignore_on_load_missing = ["num_batches_tracked"]
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: PPOCRV5ServerRecConfig):
         super().__init__(config)
         self.model = PPOCRV5ServerRecModel(config)
@@ -366,6 +394,7 @@ class PPOCRV5ServerRecForTextRecognition(PPOCRV5ServerRecPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,
