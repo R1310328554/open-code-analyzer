@@ -15,23 +15,8 @@
     "src/transformers/pipelines/object_detection.py",
     "src/transformers/pipelines/pt_utils.py",
     "src/transformers/pipelines/table_question_answering.py",
-    "src/transformers/pipelines/text_classification.py",
-    "src/transformers/pipelines/text_generation.py",
-    "src/transformers/pipelines/text_to_audio.py",
-    "src/transformers/pipelines/token_classification.py",
-    "src/transformers/pipelines/video_classification.py",
-    "src/transformers/pipelines/zero_shot_audio_classification.py",
-    "src/transformers/pipelines/zero_shot_classification.py",
-    "src/transformers/pipelines/zero_shot_image_classification.py",
-    "src/transformers/pipelines/zero_shot_object_detection.py",
-    "src/transformers/processing_utils.py",
-    "src/transformers/pytorch_utils.py",
-    "src/transformers/quantizers/__init__.py",
-    "src/transformers/quantizers/auto.py",
-    "src/transformers/quantizers/base.py",
-    "src/transformers/quantizers/quantizer_aqlm.py",
-    "src/transformers/quantizers/quantizer_auto_round.py"
+    "src/transformers/pipelines/text_classification.py"
   ],
   "remaining_pending": 159,
-  "done": 2490
+  "done": 2505
 }
