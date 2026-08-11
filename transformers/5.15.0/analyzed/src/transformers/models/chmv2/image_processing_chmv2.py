@@ -36,6 +36,7 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring, is_torch_available, requires_backends
 
 
+# CHMv2ImageProcessorKwargs：ensure_multiple_of / keep_aspect_ratio 等 kwargs
 class CHMv2ImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     ensure_multiple_of (`int`, *optional*, defaults to 1):
@@ -56,6 +57,7 @@ class CHMv2ImageProcessorKwargs(ImagesKwargs, total=False):
     do_reduce_labels: bool
 
 
+# get_resize_output_image_size：保持宽高比 resize 并对齐 multiple 倍数
 def get_resize_output_image_size(
     input_image: "torch.Tensor",
     output_size: int | Iterable[int],
@@ -96,6 +98,7 @@ def get_resize_output_image_size(
 
 
 @auto_docstring
+# CHMv2ImageProcessor：pad/resize/normalize + 语义分割后处理
 class CHMv2ImageProcessor(TorchvisionBackend):
     """PIL backend for CHMV2 with reduce_label support."""
 
@@ -119,10 +122,12 @@ class CHMv2ImageProcessor(TorchvisionBackend):
     keep_aspect_ratio = True
     size_divisor = 16
 
+# __init__：继承 TorchvisionBackend 并注册 valid_kwargs
     def __init__(self, **kwargs: Unpack[CHMv2ImageProcessorKwargs]):
         super().__init__(**kwargs)
 
     @auto_docstring
+# preprocess：可选 segmentation_maps 的联合预处理入口
     def preprocess(
         self,
         images: ImageInput,
@@ -135,6 +140,7 @@ class CHMv2ImageProcessor(TorchvisionBackend):
         """
         return super().preprocess(images, segmentation_maps, **kwargs)
 
+# _preprocess_image_like_inputs：分离处理 pixel_values 与 labels
     def _preprocess_image_like_inputs(
         self,
         images: ImageInput,
@@ -179,6 +185,7 @@ class CHMv2ImageProcessor(TorchvisionBackend):
 
         return BatchFeature(data=data, tensor_type=return_tensors)
 
+# reduce_label：分割标签减 1，背景 0 映射为 255
     def reduce_label(self, labels: list["torch.Tensor"]) -> list["torch.Tensor"]:
         """Reduce label values by 1, replacing 0 with 255."""
         for idx in range(len(labels)):
@@ -189,6 +196,7 @@ class CHMv2ImageProcessor(TorchvisionBackend):
             labels[idx] = label
         return labels
 
+# _preprocess：CHMv2 定制 resize→归一化→pad 流水线
     def _preprocess(
         self,
         images: list["torch.Tensor"],
@@ -248,6 +256,7 @@ class CHMv2ImageProcessor(TorchvisionBackend):
 
         return processed_images
 
+# post_process_semantic_segmentation：logits 双线性插值 + argmax 语义图
     def post_process_semantic_segmentation(
         self, outputs, target_sizes: list[tuple] | None = None, return_segmentation_scores: bool = False
     ) -> "list[torch.Tensor] | list[SemanticSegmentationPostProcessorOutput]":
@@ -314,6 +323,7 @@ class CHMv2ImageProcessor(TorchvisionBackend):
 
         return semantic_segmentation
 
+# resize：按 keep_aspect_ratio 与 ensure_multiple_of 缩放
     def resize(
         self,
         image: "torch.Tensor",
@@ -354,6 +364,7 @@ class CHMv2ImageProcessor(TorchvisionBackend):
         )
         return super().resize(image, output_size, resample=resample, antialias=antialias)
 
+# pad_image：居中 pad 至 size_divisor 整数倍
     def pad_image(
         self,
         image: "torch.Tensor",
@@ -382,6 +393,7 @@ class CHMv2ImageProcessor(TorchvisionBackend):
         padding = (pad_left, pad_top, pad_right, pad_bottom)
         return tvF.pad(image, padding)
 
+# post_process_depth_estimation：深度预测双线性插值至 target_sizes
     def post_process_depth_estimation(
         self,
         outputs: "DepthEstimatorOutput",

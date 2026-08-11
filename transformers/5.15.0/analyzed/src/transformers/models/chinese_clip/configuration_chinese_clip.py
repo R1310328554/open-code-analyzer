@@ -28,6 +28,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="OFA-Sys/chinese-clip-vit-base-patch16")
 @strict
+# ChineseCLIPTextConfig：中文 CLIP 文本塔，BERT 风格双向编码器超参
 class ChineseCLIPTextConfig(PreTrainedConfig):
     r"""
     type_vocab_size (`int`, *optional*, defaults to 2):
@@ -68,6 +69,7 @@ class ChineseCLIPTextConfig(PreTrainedConfig):
     attention_probs_dropout_prob: float | int = 0.1
     type_vocab_size: int = 2
 
+# validate_architecture：校验 hidden_size 可被 num_attention_heads 整除
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if self.hidden_size % self.num_attention_heads != 0:
@@ -79,6 +81,7 @@ class ChineseCLIPTextConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="OFA-Sys/chinese-clip-vit-base-patch16")
 @strict
+# ChineseCLIPVisionConfig：ViT 视觉塔，quick_gelu 激活与 patch 嵌入
 class ChineseCLIPVisionConfig(PreTrainedConfig):
     r"""
     Example:
@@ -123,6 +126,7 @@ class ChineseCLIPVisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="OFA-Sys/chinese-clip-vit-base-patch16")
 @strict
+# ChineseCLIPConfig：聚合 text/vision 子配置与 logit_scale 初值
 class ChineseCLIPConfig(PreTrainedConfig):
     r"""
     Example:
@@ -159,6 +163,7 @@ class ChineseCLIPConfig(PreTrainedConfig):
 
     initializer_range: float = 0.02
 
+# __post_init__：合并 text/vision 字典并兼容旧版 *_config_dict 参数
     def __post_init__(self, **kwargs):
         if self.text_config is None:
             text_config = {}

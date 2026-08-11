@@ -30,6 +30,7 @@ from ..auto import AutoConfig
 
 @auto_docstring(checkpoint="facebook/dinov3-vitl16-chmv2-dpt-head")
 @strict
+# CHMv2Config：DPT 重组/融合/深度 bin 策略与 DINOv3 骨干超参
 class CHMv2Config(PreTrainedConfig):
     r"""
     backbone_config (`Union[dict, "PreTrainedConfig"]`, *optional*):
@@ -83,6 +84,7 @@ class CHMv2Config(PreTrainedConfig):
     bins_strategy: Literal["linear", "log", "chmv2_mixlog"] = "chmv2_mixlog"
     norm_strategy: Literal["linear", "softmax", "sigmoid", "chmv2_mixlog"] = "chmv2_mixlog"
 
+# __post_init__：默认 reassemble 因子与 consolidate DINOv3 骨干配置
     def __post_init__(self, **kwargs):
         if self.reassemble_factors is None:
             self.reassemble_factors = [4, 2, 1, 0.5]

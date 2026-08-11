@@ -20,7 +20,9 @@ from ...utils import auto_docstring
 
 
 @auto_docstring
+# ChineseCLIPProcessor：图像预处理 + 中文分词联合封装
 class ChineseCLIPProcessor(ProcessorMixin):
+# __init__：绑定图像处理器与分词器
     def __init__(self, image_processor=None, tokenizer=None, **kwargs):
         super().__init__(image_processor, tokenizer)
 

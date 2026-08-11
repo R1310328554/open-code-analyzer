@@ -24,6 +24,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="laion/clap-htsat-fused")
 @strict
+# ClapTextConfig：CLAP 文本编码器，RoBERTa 风格超参
 class ClapTextConfig(PreTrainedConfig):
     r"""
     Examples:
@@ -65,6 +66,7 @@ class ClapTextConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="laion/clap-htsat-fused")
 @strict
+# ClapAudioConfig：HTS-AT 音频塔，谱图 patch + Swin 层级
 class ClapAudioConfig(PreTrainedConfig):
     r"""
     window_size (`int`, *optional*, defaults to 8):
@@ -142,6 +144,7 @@ class ClapAudioConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="laion/clap-htsat-fused")
 @strict
+# ClapConfig：聚合 text/audio 子配置并同步 projection_dim
 class ClapConfig(PreTrainedConfig):
     r"""
     Example:
@@ -178,6 +181,7 @@ class ClapConfig(PreTrainedConfig):
     projection_hidden_act: str = "relu"
     initializer_factor: float = 1.0
 
+# __post_init__：初始化子配置并传播 projection 超参到双塔
     def __post_init__(self, **kwargs):
         if self.text_config is None:
             self.text_config = ClapTextConfig()

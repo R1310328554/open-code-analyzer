@@ -33,6 +33,7 @@ logger = logging.get_logger(__name__)
 
 
 @requires(backends=("torch",))
+# ClapFeatureExtractor：48kHz 音频→log-Mel 谱图，兼容 torchaudio/librosa 滤波器
 class ClapFeatureExtractor(SequenceFeatureExtractor):
     r"""
     Constructs a CLAP feature extractor.
@@ -85,6 +86,7 @@ class ClapFeatureExtractor(SequenceFeatureExtractor):
 
     model_input_names = ["input_features", "is_longer"]
 
+# __init__：构建 HTK/Slaney 两套 mel 滤波器组与 hop/window 参数
     def __init__(
         self,
         feature_size=64,
@@ -138,6 +140,7 @@ class ClapFeatureExtractor(SequenceFeatureExtractor):
             mel_scale="slaney",
         )
 
+# to_dict：序列化配置（省略体积过大的 mel 滤波器矩阵）
     def to_dict(self) -> dict[str, Any]:
         """
         Serializes this instance to a Python dictionary.
@@ -154,6 +157,7 @@ class ClapFeatureExtractor(SequenceFeatureExtractor):
             del output["mel_filters_slaney"]
         return output
 
+# _np_extract_fbank_features：Hann 窗 STFT + log-Mel 谱图
     def _np_extract_fbank_features(self, waveform: np.ndarray, mel_filters: np.ndarray | None = None) -> np.ndarray:
         """
         Compute the log-mel spectrogram of the provided `waveform` using the Hann window. In CLAP, two different filter
@@ -176,6 +180,7 @@ class ClapFeatureExtractor(SequenceFeatureExtractor):
         )
         return log_mel_spectrogram.T
 
+# _random_mel_fusion：3 段随机裁剪 + 全谱下采样，供 fusion 模式堆叠 4 路 Mel
     def _random_mel_fusion(self, mel, total_frames, chunk_frames):
         ranges = np.array_split(list(range(0, total_frames - chunk_frames + 1)), 3)
         if len(ranges[1]) == 0:
@@ -201,6 +206,7 @@ class ClapFeatureExtractor(SequenceFeatureExtractor):
         mel_fusion = np.stack([mel_shrink, mel_chunk_front, mel_chunk_middle, mel_chunk_back], axis=0)
         return mel_fusion
 
+# _get_input_mel：按 truncation/padding 策略生成 input_mel 与 is_longer 标志
     def _get_input_mel(self, waveform: np.ndarray, max_length, truncation, padding) -> np.ndarray:
         """
         Extracts the mel spectrogram and prepares it for the mode based on the `truncation` and `padding` arguments.
@@ -259,6 +265,7 @@ class ClapFeatureExtractor(SequenceFeatureExtractor):
 
         return input_mel, longer
 
+# __call__：批量 featurize 原始波形，输出 input_features 与 is_longer
     def __call__(
         self,
         raw_speech: np.ndarray | list[float] | list[np.ndarray] | list[list[float]],

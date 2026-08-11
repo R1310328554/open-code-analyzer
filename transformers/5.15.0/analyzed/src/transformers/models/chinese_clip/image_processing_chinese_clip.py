@@ -19,6 +19,7 @@ from ...utils import auto_docstring
 
 
 @auto_docstring
+# ChineseCLIPImageProcessor：与 OpenAI CLIP 相同的图像预处理流水线
 class ChineseCLIPImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.BICUBIC
     image_mean = OPENAI_CLIP_MEAN

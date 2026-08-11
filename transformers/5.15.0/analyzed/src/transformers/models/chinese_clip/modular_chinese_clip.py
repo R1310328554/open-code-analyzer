@@ -53,6 +53,7 @@ from ..clip.modeling_clip import (
 
 @auto_docstring(checkpoint="OFA-Sys/chinese-clip-vit-base-patch16")
 @strict
+# ChineseCLIPTextConfig：继承 CLIP 文本配置，增加 type_vocab_size
 class ChineseCLIPTextConfig(CLIPTextConfig):
     r"""
     type_vocab_size (`int`, *optional*, defaults to 2):
@@ -92,6 +93,7 @@ class ChineseCLIPTextConfig(CLIPTextConfig):
 
 @auto_docstring(checkpoint="OFA-Sys/chinese-clip-vit-base-patch16")
 @strict
+# ChineseCLIPVisionConfig：继承 CLIP 视觉配置
 class ChineseCLIPVisionConfig(CLIPVisionConfig):
     r"""
     Example:
@@ -111,6 +113,7 @@ class ChineseCLIPVisionConfig(CLIPVisionConfig):
 
 @auto_docstring(checkpoint="OFA-Sys/chinese-clip-vit-base-patch16")
 @strict
+# ChineseCLIPConfig：继承 CLIP 联合配置
 class ChineseCLIPConfig(CLIPConfig):
     r"""
     Example:
@@ -139,52 +142,64 @@ class ChineseCLIPConfig(CLIPConfig):
     initializer_range: float = 0.02
 
 
+# ChineseCLIPOutput：复用 CLIP 输出 dataclass
 class ChineseCLIPOutput(CLIPOutput):
     pass
 
 
+# ChineseCLIPTextEmbeddings：复用 Align 文本嵌入
 class ChineseCLIPTextEmbeddings(AlignTextEmbeddings):
     pass
 
 
+# ChineseCLIPVisionEmbeddings：复用 CLIP 视觉嵌入
 class ChineseCLIPVisionEmbeddings(CLIPVisionEmbeddings):
     pass
 
 
+# ChineseCLIPTextSelfAttention：双向自注意力（is_causal=False）
 class ChineseCLIPTextSelfAttention(AlignTextSelfAttention):
     def __init__(self, config):
         super().__init__(config)
         self.is_causal = False
 
 
+# ChineseCLIPTextSelfOutput：BERT 自注意力输出层
 class ChineseCLIPTextSelfOutput(BertSelfOutput):
     pass
 
 
+# ChineseCLIPTextAttention：Align 文本注意力封装
 class ChineseCLIPTextAttention(AlignTextAttention):
     pass
 
 
+# ChineseCLIPVisionAttention：CLIP 视觉注意力
 class ChineseCLIPVisionAttention(CLIPAttention):
     pass
 
 
+# ChineseCLIPTextIntermediate：BERT FFN 中间层
 class ChineseCLIPTextIntermediate(BertIntermediate):
     pass
 
 
+# ChineseCLIPTextOutput：BERT FFN 输出层
 class ChineseCLIPTextOutput(BertOutput):
     pass
 
 
+# ChineseCLIPVisionMLP：CLIP 视觉 MLP
 class ChineseCLIPVisionMLP(CLIPMLP):
     pass
 
 
+# ChineseCLIPTextLayer：Align 文本 Transformer 层
 class ChineseCLIPTextLayer(AlignTextLayer):
     pass
 
 
+# ChineseCLIPVisionLayer：自定义 self_attn 与 mlp 的 CLIP 视觉层
 class ChineseCLIPVisionLayer(CLIPEncoderLayer):
     def __init__(self, config: ChineseCLIPConfig):
         super().__init__()
@@ -192,11 +207,13 @@ class ChineseCLIPVisionLayer(CLIPEncoderLayer):
         self.mlp = ChineseCLIPVisionMLP(config)
 
 
+# ChineseCLIPTextPooler：BERT [CLS] 池化
 class ChineseCLIPTextPooler(BertPooler):
     pass
 
 
 @auto_docstring
+# ChineseCLIPPreTrainedModel：Chinese-CLIP 专用权重初始化
 class ChineseCLIPPreTrainedModel(CLIPPreTrainedModel):
     _no_split_modules = [
         "ChineseCLIPVisionEmbeddings",
@@ -251,10 +268,12 @@ class ChineseCLIPPreTrainedModel(CLIPPreTrainedModel):
             )
 
 
+# ChineseCLIPTextEncoder：Align 文本编码器栈
 class ChineseCLIPTextEncoder(AlignTextEncoder):
     pass
 
 
+# ChineseCLIPVisionEncoder：ChineseCLIPVisionLayer 堆叠
 class ChineseCLIPVisionEncoder(CLIPEncoder):
     """
     Transformer encoder consisting of `config.num_hidden_layers` self attention layers. Each layer is a
@@ -274,6 +293,7 @@ class ChineseCLIPVisionEncoder(CLIPEncoder):
     The vision model from CHINESE_CLIP without any head or projection on top.
     """
 )
+# ChineseCLIPVisionModel：Chinese-CLIP 视觉骨干
 class ChineseCLIPVisionModel(CLIPVisionModel):
     def __init__(self, config: ChineseCLIPVisionConfig):
         super().__init__(config)
@@ -311,6 +331,7 @@ class ChineseCLIPVisionModel(CLIPVisionModel):
     The text model from CHINESE_CLIP without any head or projection on top.
     """
 )
+# ChineseCLIPTextModel：独立文本塔，支持 token_type_ids 与双向 mask
 class ChineseCLIPTextModel(ChineseCLIPPreTrainedModel):
     config: ChineseCLIPTextConfig
     input_modalities = ("text",)
@@ -392,6 +413,7 @@ class ChineseCLIPTextModel(ChineseCLIPPreTrainedModel):
 
 
 @auto_docstring
+# ChineseCLIPModel：完整 Chinese-CLIP，文本取 [CLS] 投影
 class ChineseCLIPModel(CLIPModel):
     def __init__(self, config: ChineseCLIPConfig):
         super().__init__(config)

@@ -31,6 +31,7 @@ from ...utils import TransformersKwargs, auto_docstring, can_return_tuple
 from .configuration_chmv2 import CHMv2Config
 
 
+# _get_backbone_hidden_size：从 backbone_config 读取 hidden_size
 def _get_backbone_hidden_size(config):
     if config.backbone_config is not None and hasattr(config.backbone_config, "hidden_size"):
         return config.backbone_config.hidden_size
@@ -38,6 +39,7 @@ def _get_backbone_hidden_size(config):
         return config.hidden_size
 
 
+# CHMv2ReassembleLayer：1×1 投影 + 上/下采样重组单尺度特征
 class CHMv2ReassembleLayer(nn.Module):
     def __init__(self, config: CHMv2Config, channels: int, factor: int):
         super().__init__()
@@ -60,6 +62,7 @@ class CHMv2ReassembleLayer(nn.Module):
         return hidden_state
 
 
+# CHMv2ReassembleStage：多尺度 backbone 特征重组为空间特征图
 class CHMv2ReassembleStage(nn.Module):
     """
     Reassemble stage that processes hidden states from the backbone into image-like feature
@@ -116,6 +119,7 @@ class CHMv2ReassembleStage(nn.Module):
         return out
 
 
+# CHMv2PreActResidualLayer：Pre-activation 残差卷积单元
 class CHMv2PreActResidualLayer(nn.Module):
     """
     ResidualConvUnit, pre-activate residual unit.
@@ -158,6 +162,7 @@ class CHMv2PreActResidualLayer(nn.Module):
         return hidden_state + residual
 
 
+# CHMv2FeatureFusionLayer：自顶向下特征融合 + 2× 双线性上采样
 class CHMv2FeatureFusionLayer(nn.Module):
     def __init__(self, config: CHMv2Config, is_first_layer: bool = False):
         super().__init__()
@@ -195,6 +200,7 @@ class CHMv2FeatureFusionLayer(nn.Module):
         return hidden_state
 
 
+# CHMv2UpsampleConvHead：Conv→2×上采样→Conv→ReLU→1×1 深度头
 class CHMv2UpsampleConvHead(nn.Module):
     """
     Convolutional head with intermediate upsampling.
@@ -220,6 +226,7 @@ class CHMv2UpsampleConvHead(nn.Module):
         return hidden_states
 
 
+# CHMv2Head：DPT 风格 dense head（重组→投影→融合→UpConv）
 class CHMv2Head(nn.Module):
     """
     CHMv2 dense-prediction head adapted from DPT.
@@ -265,6 +272,7 @@ class CHMv2Head(nn.Module):
         return out
 
 
+# CHMv2FeaturesToDepth：深度 bin logits 经 mixlog/softmax 加权为连续深度
 class CHMv2FeaturesToDepth(nn.Module):
     """Converts raw logits from the CHMv2 head into a depth map using depth bins."""
 
@@ -356,6 +364,7 @@ class CHMv2FeaturesToDepth(nn.Module):
 
 
 @auto_docstring
+# CHMv2PreTrainedModel：trunc_normal 权重初始化基类
 class CHMv2PreTrainedModel(PreTrainedModel):
     config: CHMv2Config
     base_model_prefix = "chmv2"
@@ -381,6 +390,7 @@ class CHMv2PreTrainedModel(PreTrainedModel):
     estimation.
     """
 )
+# CHMv2ForDepthEstimation：完整冠层高度估计模型（backbone→head→depth）
 class CHMv2ForDepthEstimation(CHMv2PreTrainedModel):
     def __init__(self, config: CHMv2Config):
         super().__init__(config)

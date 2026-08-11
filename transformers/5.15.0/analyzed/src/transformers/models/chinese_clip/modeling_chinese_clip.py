@@ -41,6 +41,7 @@ from .configuration_chinese_clip import ChineseCLIPConfig, ChineseCLIPTextConfig
 
 @auto_docstring
 @dataclass
+# ChineseCLIPOutput：对比损失、图文相似度 logits 与双塔中间输出
 class ChineseCLIPOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `return_loss` is `True`):
@@ -73,6 +74,7 @@ class ChineseCLIPOutput(ModelOutput):
         return tuple(v.to_tuple() if isinstance(v, ModelOutput) else v for v in self.values())
 
 
+# ChineseCLIPTextEmbeddings：词/位置/segment 三类嵌入求和
 class ChineseCLIPTextEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
@@ -129,6 +131,7 @@ class ChineseCLIPTextEmbeddings(nn.Module):
         return embeddings
 
 
+# ChineseCLIPVisionEmbeddings：CLS + patch 卷积嵌入 + 位置编码
 class ChineseCLIPVisionEmbeddings(nn.Module):
     def __init__(self, config: ChineseCLIPVisionConfig):
         super().__init__()
@@ -212,6 +215,7 @@ class ChineseCLIPVisionEmbeddings(nn.Module):
         return embeddings
 
 
+# eager_attention_forward：标准 eager 多头注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -234,6 +238,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# ChineseCLIPTextSelfAttention：双向自注意力（非因果）
 class ChineseCLIPTextSelfAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -289,6 +294,7 @@ class ChineseCLIPTextSelfAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# ChineseCLIPTextSelfOutput：注意力输出投影 + 残差 + LayerNorm
 class ChineseCLIPTextSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -303,6 +309,7 @@ class ChineseCLIPTextSelfOutput(nn.Module):
         return hidden_states
 
 
+# ChineseCLIPTextAttention：自注意力 + 输出子层
 class ChineseCLIPTextAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -325,6 +332,7 @@ class ChineseCLIPTextAttention(nn.Module):
         return hidden_states
 
 
+# ChineseCLIPVisionAttention：ViT 多头自注意力
 class ChineseCLIPVisionAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -383,6 +391,7 @@ class ChineseCLIPVisionAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# ChineseCLIPTextIntermediate：BERT 风格 FFN 中间层
 class ChineseCLIPTextIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -398,6 +407,7 @@ class ChineseCLIPTextIntermediate(nn.Module):
         return hidden_states
 
 
+# ChineseCLIPTextOutput：FFN 输出投影 + 残差 + LayerNorm
 class ChineseCLIPTextOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -412,6 +422,7 @@ class ChineseCLIPTextOutput(nn.Module):
         return hidden_states
 
 
+# ChineseCLIPVisionMLP：ViT 前馈网络（fc1→激活→fc2）
 class ChineseCLIPVisionMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -427,6 +438,7 @@ class ChineseCLIPVisionMLP(nn.Module):
         return hidden_states
 
 
+# ChineseCLIPTextLayer：文本 Transformer 单层
 class ChineseCLIPTextLayer(GradientCheckpointingLayer):
     def __init__(self, config):
         super().__init__()
@@ -460,6 +472,7 @@ class ChineseCLIPTextLayer(GradientCheckpointingLayer):
         return layer_output
 
 
+# ChineseCLIPVisionLayer：视觉 Transformer 单层
 class ChineseCLIPVisionLayer(GradientCheckpointingLayer):
     def __init__(self, config: ChineseCLIPConfig):
         super().__init__()
@@ -493,6 +506,7 @@ class ChineseCLIPVisionLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# ChineseCLIPTextPooler：取 [CLS] 向量经 tanh 得到句向量
 class ChineseCLIPTextPooler(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -509,6 +523,7 @@ class ChineseCLIPTextPooler(nn.Module):
 
 
 @auto_docstring
+# ChineseCLIPPreTrainedModel：权重初始化与 checkpoint 映射基类
 class ChineseCLIPPreTrainedModel(PreTrainedModel):
     config: ChineseCLIPConfig
     base_model_prefix = "chinese_clip"
@@ -572,6 +587,7 @@ class ChineseCLIPPreTrainedModel(PreTrainedModel):
             )
 
 
+# ChineseCLIPTextEncoder：堆叠 num_hidden_layers 个文本层
 class ChineseCLIPTextEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -597,6 +613,7 @@ class ChineseCLIPTextEncoder(nn.Module):
         )
 
 
+# ChineseCLIPVisionEncoder：堆叠 num_hidden_layers 个视觉层
 class ChineseCLIPVisionEncoder(nn.Module):
     """
     Transformer encoder consisting of `config.num_hidden_layers` self attention layers. Each layer is a
@@ -636,6 +653,7 @@ class ChineseCLIPVisionEncoder(nn.Module):
     The vision model from CHINESE_CLIP without any head or projection on top.
     """
 )
+# ChineseCLIPVisionModel：仅视觉塔，无投影头
 class ChineseCLIPVisionModel(ChineseCLIPPreTrainedModel):
     config: ChineseCLIPVisionConfig
     main_input_name = "pixel_values"
@@ -707,6 +725,7 @@ class ChineseCLIPVisionModel(ChineseCLIPPreTrainedModel):
     The text model from CHINESE_CLIP without any head or projection on top.
     """
 )
+# ChineseCLIPTextModel：仅文本塔，支持 token_type_ids
 class ChineseCLIPTextModel(ChineseCLIPPreTrainedModel):
     config: ChineseCLIPTextConfig
     input_modalities = ("text",)
@@ -789,16 +808,19 @@ class ChineseCLIPTextModel(ChineseCLIPPreTrainedModel):
 
 # contrastive loss function, adapted from
 # https://sachinruk.github.io/blog/2021-03-07-chinese_clip.html
+# contrastive_loss：对称 InfoNCE 对比损失
 def contrastive_loss(logits: torch.Tensor) -> torch.Tensor:
     return nn.functional.cross_entropy(logits, torch.arange(len(logits), device=logits.device))
 
 
+# image_text_contrastive_loss：图文双向对比损失求和
 def image_text_contrastive_loss(similarity: torch.Tensor) -> torch.Tensor:
     caption_loss = contrastive_loss(similarity)
     image_loss = contrastive_loss(similarity.T)
     return (caption_loss + image_loss) / 2.0
 
 
+# _get_vector_norm：L2 归一化嵌入向量
 def _get_vector_norm(tensor: torch.Tensor) -> torch.Tensor:
     """
     This method is equivalent to tensor.norm(p=2, dim=-1, keepdim=True) and used to make
@@ -811,6 +833,7 @@ def _get_vector_norm(tensor: torch.Tensor) -> torch.Tensor:
 
 
 @auto_docstring
+# ChineseCLIPModel：完整双塔 CLIP，输出图文相似度与可选对比损失
 class ChineseCLIPModel(ChineseCLIPPreTrainedModel):
     def __init__(self, config: ChineseCLIPConfig):
         super().__init__(config)

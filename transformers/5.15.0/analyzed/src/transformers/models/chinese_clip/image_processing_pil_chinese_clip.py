@@ -19,6 +19,7 @@ from ...utils import auto_docstring
 
 
 @auto_docstring
+# ChineseCLIPImageProcessorPil：纯 PIL 路径的 Chinese-CLIP 图像预处理
 class ChineseCLIPImageProcessorPil(PilBackend):
     resample = PILImageResampling.BICUBIC
     image_mean = OPENAI_CLIP_MEAN

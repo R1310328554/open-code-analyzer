@@ -36,6 +36,7 @@ from ..dpt.modeling_dpt import DPTReassembleLayer, _get_backbone_hidden_size
 
 @auto_docstring(checkpoint="facebook/dinov3-vitl16-chmv2-dpt-head")
 @strict
+# CHMv2Config：DINOv3 骨干 + DPT 深度头超参定义
 class CHMv2Config(PreTrainedConfig):
     r"""
     backbone_config (`Union[dict, "PreTrainedConfig"]`, *optional*):
@@ -120,6 +121,7 @@ class CHMv2Config(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# CHMv2ImageProcessorKwargs：图像预处理扩展 kwargs
 class CHMv2ImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     ensure_multiple_of (`int`, *optional*, defaults to 1):
@@ -140,6 +142,7 @@ class CHMv2ImageProcessorKwargs(ImagesKwargs, total=False):
     do_reduce_labels: bool
 
 
+# CHMv2ImageProcessor：继承 DPT 处理器并覆盖 pad/归一化参数
 class CHMv2ImageProcessor(DPTImageProcessor):
     do_resize = False
     do_pad = True
@@ -192,10 +195,12 @@ class CHMv2ImageProcessor(DPTImageProcessor):
         return results
 
 
+# CHMv2ReassembleLayer：复用 DPT 重组层
 class CHMv2ReassembleLayer(DPTReassembleLayer):
     pass
 
 
+# CHMv2ReassembleStage：多尺度特征重组（含 CLS readout 投影）
 class CHMv2ReassembleStage(nn.Module):
     """
     Reassemble stage that processes hidden states from the backbone into image-like feature
@@ -252,10 +257,12 @@ class CHMv2ReassembleStage(nn.Module):
         return out
 
 
+# CHMv2PreActResidualLayer：复用 DepthAnything 残差块
 class CHMv2PreActResidualLayer(DepthAnythingPreActResidualLayer):
     pass
 
 
+# CHMv2FeatureFusionLayer：自顶向下多尺度特征融合
 class CHMv2FeatureFusionLayer(nn.Module):
     def __init__(self, config: CHMv2Config, is_first_layer: bool = False):
         super().__init__()
@@ -293,6 +300,7 @@ class CHMv2FeatureFusionLayer(nn.Module):
         return hidden_state
 
 
+# CHMv2UpsampleConvHead：带 2× 上采样的卷积深度头
 class CHMv2UpsampleConvHead(nn.Module):
     """
     Convolutional head with intermediate upsampling.
@@ -318,6 +326,7 @@ class CHMv2UpsampleConvHead(nn.Module):
         return hidden_states
 
 
+# CHMv2Head：整合重组、投影、融合与 UpConv 的 dense 预测头
 class CHMv2Head(nn.Module):
     """
     CHMv2 dense-prediction head adapted from DPT.
@@ -363,6 +372,7 @@ class CHMv2Head(nn.Module):
         return out
 
 
+# CHMv2FeaturesToDepth：mixlog/linear/log bin 策略将 logits 转为深度图
 class CHMv2FeaturesToDepth(nn.Module):
     """Converts raw logits from the CHMv2 head into a depth map using depth bins."""
 
@@ -454,6 +464,7 @@ class CHMv2FeaturesToDepth(nn.Module):
 
 
 @auto_docstring
+# CHMv2PreTrainedModel：权重初始化与 SDPA/Flash 后端支持
 class CHMv2PreTrainedModel(PreTrainedModel):
     config: CHMv2Config
     base_model_prefix = "chmv2"
@@ -479,6 +490,7 @@ class CHMv2PreTrainedModel(PreTrainedModel):
     estimation.
     """
 )
+# CHMv2ForDepthEstimation：DINOv3 骨干 + CHMv2Head 冠层高度推理
 class CHMv2ForDepthEstimation(CHMv2PreTrainedModel):
     def __init__(self, config: CHMv2Config):
         super().__init__(config)
