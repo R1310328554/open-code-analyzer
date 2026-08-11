@@ -25,6 +25,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="nvidia/Cosmos3-Edge-Reasoner")
 @strict
+# Cosmos3EdgeTextConfig：7B 级文本塔，GQA + relu2 MLP + 交错 M-RoPE（mrope_section）
 class Cosmos3EdgeTextConfig(PreTrainedConfig):
     r"""
     ```python
@@ -81,6 +82,7 @@ class Cosmos3EdgeTextConfig(PreTrainedConfig):
     default_theta = 100_000_000.0
     ignore_keys_at_rope_validation = {"mrope_section"}
 
+# __post_init__：dict 子配置实例化为 Text/Vision Config 对象
     def __post_init__(self, **kwargs):
         if self.rope_parameters is None:
             self.rope_parameters = {
@@ -95,6 +97,7 @@ class Cosmos3EdgeTextConfig(PreTrainedConfig):
 
         super().__post_init__(**kwargs)
 
+# validate_architecture：校验 hidden_size 整除 head 数与 mrope_section 三分段
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if self.hidden_size % self.num_attention_heads != 0:
@@ -116,6 +119,7 @@ class Cosmos3EdgeTextConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="nvidia/Cosmos3-Edge-Reasoner")
 @strict
+# Cosmos3EdgeVisionConfig：SigLIP2 风格视觉编码器，patch=16，spatial_merge_size=2
 class Cosmos3EdgeVisionConfig(PreTrainedConfig):
     r"""
     num_patches (`int`, *optional*, defaults to 256):
@@ -139,6 +143,7 @@ class Cosmos3EdgeVisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="nvidia/Cosmos3-Edge-Reasoner")
 @strict
+# Cosmos3EdgeConfig：聚合 text/vision 子配置与 image/video/vision 特殊 token id
 class Cosmos3EdgeConfig(PreTrainedConfig):
     r"""
     projector_hidden_size (`int`, *optional*, defaults to 11520):

@@ -81,6 +81,7 @@ def smart_resize(
 
 
 @auto_docstring
+# Cosmos3EdgeImageProcessorPil：逐图 PIL 预处理并拼接 pixel_values
 class Cosmos3EdgeImageProcessorPil(PilBackend):
     do_resize = True
     resample = PILImageResampling.BICUBIC
@@ -131,6 +132,7 @@ class Cosmos3EdgeImageProcessorPil(PilBackend):
             resample=resample,
         )
 
+# patchify：float32 重排为 block-major 扁平 patch 序列
     def patchify(
         self,
         image: np.ndarray,

@@ -40,6 +40,7 @@ class ConvNextImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# ConvNextImageProcessorPil：逐图 PIL 预处理流水线
 class ConvNextImageProcessorPil(PilBackend):
     """PIL backend for ConvNeXT with custom resize."""
 
@@ -98,6 +99,7 @@ class ConvNextImageProcessorPil(PilBackend):
                 **kwargs,
             )
 
+# _preprocess：单张循环 resize/crop/rescale/normalize
     def _preprocess(
         self,
         images: list[np.ndarray],

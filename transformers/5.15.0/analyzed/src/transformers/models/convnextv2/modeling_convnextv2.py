@@ -36,6 +36,7 @@ from .configuration_convnextv2 import ConvNextV2Config
 logger = logging.get_logger(__name__)
 
 
+# ConvNextV2GRN：Global Response Normalization，按空间 L2 范数归一化后仿射变换
 class ConvNextV2GRN(nn.Module):
     """GRN (Global Response Normalization) layer"""
 
@@ -54,6 +55,7 @@ class ConvNextV2GRN(nn.Module):
 
 
 # Copied from transformers.models.convnext.modeling_convnext.ConvNextLayerNorm with ConvNext->ConvNextV2
+# ConvNextV2LayerNorm：channels_first/last 双格式 LayerNorm
 class ConvNextV2LayerNorm(nn.LayerNorm):
     r"""LayerNorm that supports two data formats: channels_last (default) or channels_first.
     The ordering of the dimensions in the inputs. channels_last corresponds to inputs with shape (batch_size, height,
@@ -81,6 +83,7 @@ class ConvNextV2LayerNorm(nn.LayerNorm):
 
 
 # Copied from transformers.models.convnext.modeling_convnext.ConvNextEmbeddings with ConvNext->ConvNextV2
+# ConvNextV2Embeddings：patch 卷积嵌入 + channels_first LayerNorm
 class ConvNextV2Embeddings(nn.Module):
     """This class is comparable to (and inspired by) the SwinEmbeddings class
     found in src/transformers/models/swin/modeling_swin.py.
@@ -106,6 +109,7 @@ class ConvNextV2Embeddings(nn.Module):
 
 
 # Copied from transformers.models.swin.modular_swin.SwinDropPath with SwinDropPath->ConvNextV2DropPath
+# ConvNextV2DropPath：训练期随机深度正则
 class ConvNextV2DropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -130,6 +134,7 @@ class ConvNextV2DropPath(nn.Module):
         return f"p={self.drop_prob}"
 
 
+# ConvNextV2Layer：DwConv → LN → MLP → GRN → 残差，无 layer scale
 class ConvNextV2Layer(nn.Module):
     """This corresponds to the `Block` class in the original implementation.
 
@@ -174,6 +179,7 @@ class ConvNextV2Layer(nn.Module):
 
 
 # Copied from transformers.models.convnext.modeling_convnext.ConvNextStage with ConvNeXT->ConvNeXTV2, ConvNext->ConvNextV2
+# ConvNextV2Stage：下采样 + 堆叠 ConvNextV2Layer
 class ConvNextV2Stage(nn.Module):
     """ConvNeXTV2 stage, consisting of an optional downsampling layer + multiple residual blocks.
 
@@ -211,6 +217,7 @@ class ConvNextV2Stage(nn.Module):
 
 
 @auto_docstring
+# ConvNextV2PreTrainedModel：GRN weight/bias 零初始化
 class ConvNextV2PreTrainedModel(PreTrainedModel):
     config: ConvNextV2Config
     base_model_prefix = "convnextv2"
@@ -228,6 +235,7 @@ class ConvNextV2PreTrainedModel(PreTrainedModel):
 
 
 # Copied from transformers.models.convnext.modeling_convnext.ConvNextEncoder with CONVNEXT->CONVNEXTV2, ConvNext->ConvNextV2
+# ConvNextV2Encoder：四阶段编码器，drop_path 线性分配
 class ConvNextV2Encoder(ConvNextV2PreTrainedModel):
     main_input_name = "hidden_states"
     _can_record_outputs = {"hidden_states": ConvNextV2Stage}
@@ -270,6 +278,7 @@ class ConvNextV2Encoder(ConvNextV2PreTrainedModel):
 
 @auto_docstring
 # Copied from transformers.models.convnext.modeling_convnext.ConvNextModel with CONVNEXT->CONVNEXTV2, ConvNext->ConvNextV2
+# ConvNextV2Model：完整骨干 + GAP 池化 + pooler LayerNorm
 class ConvNextV2Model(ConvNextV2PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -313,6 +322,7 @@ class ConvNextV2Model(ConvNextV2PreTrainedModel):
     """
 )
 # Copied from transformers.models.convnext.modeling_convnext.ConvNextForImageClassification with CONVNEXT->CONVNEXTV2,ConvNext->ConvNextV2,convnext->convnextv2
+# ConvNextV2ForImageClassification：分类线性头
 class ConvNextV2ForImageClassification(ConvNextV2PreTrainedModel):
     accepts_loss_kwargs = False
 
@@ -363,6 +373,7 @@ class ConvNextV2ForImageClassification(ConvNextV2PreTrainedModel):
     """
 )
 # Copied from transformers.models.convnext.modeling_convnext.ConvNextBackbone with CONVNEXT->CONVNEXTV2,ConvNext->ConvNextV2,facebook/convnext-tiny-224->facebook/convnextv2-tiny-1k-224
+# ConvNextV2Backbone：多尺度特征图供检测/分割框架
 class ConvNextV2Backbone(BackboneMixin, ConvNextV2PreTrainedModel):
     has_attentions = False
 

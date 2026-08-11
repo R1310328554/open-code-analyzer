@@ -16,6 +16,7 @@
 from ...models.bert.tokenization_bert import BertTokenizer
 
 
+# ConvBertTokenizer：无额外逻辑，复用 BERT 分词与特殊 token 处理
 class ConvBertTokenizer(BertTokenizer):
     r"""
     Construct a ConvBERT tokenizer (backed by HuggingFace's tokenizers library). Based on WordPiece.

@@ -49,6 +49,7 @@ from .configuration_convbert import ConvBertConfig
 logger = logging.get_logger(__name__)
 
 
+# ConvBertEmbeddings：词/位置/段类型嵌入求和后经 LayerNorm 与 Dropout
 class ConvBertEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
@@ -103,6 +104,7 @@ class ConvBertEmbeddings(nn.Module):
         return embeddings
 
 
+# SeparableConv1D：深度可分离 1D 卷积（depthwise + pointwise），用于 key 卷积注意力
 class SeparableConv1D(nn.Module):
     """This class implements separable convolution, i.e. a depthwise and a pointwise layer"""
 
@@ -129,6 +131,7 @@ class SeparableConv1D(nn.Module):
         return x
 
 
+# ConvBertSelfAttention：混合全局点积注意力与局部卷积注意力，head_ratio 缩减 Q/K/V 头数
 class ConvBertSelfAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -197,6 +200,7 @@ class ConvBertSelfAttention(nn.Module):
         key_layer = mixed_key_layer.view(hidden_shape).transpose(1, 2)
         value_layer = mixed_value_layer.view(hidden_shape).transpose(1, 2)
 
+# 逐元素乘 key 卷积分支与 query，生成卷积核权重 logits
         conv_attn_layer = torch.multiply(mixed_key_conv_attn_layer, mixed_query_layer)
 
         conv_kernel_layer = self.conv_kernel_layer(conv_attn_layer)
@@ -240,6 +244,7 @@ class ConvBertSelfAttention(nn.Module):
         conv_out = torch.reshape(
             conv_out_layer, [input_shape[0], -1, self.num_attention_heads, self.attention_head_size]
         )
+# 拼接标准注意力输出与卷积分支输出，通道维加倍
         context_layer = torch.cat([context_layer, conv_out], 2)
 
         # conv and context
@@ -251,6 +256,7 @@ class ConvBertSelfAttention(nn.Module):
         return context_layer, attention_probs
 
 
+# ConvBertSelfOutput：注意力输出线性投影 + 残差 LayerNorm
 class ConvBertSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -265,6 +271,7 @@ class ConvBertSelfOutput(nn.Module):
         return hidden_states
 
 
+# ConvBertAttention：自注意力子模块 + 输出投影封装
 class ConvBertAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -288,6 +295,7 @@ class ConvBertAttention(nn.Module):
         return attention_output
 
 
+# GroupedLinearLayer：按 num_groups 分组矩阵乘，降低 FFN 参数量
 class GroupedLinearLayer(nn.Module):
     def __init__(self, input_size, output_size, num_groups):
         super().__init__()
@@ -310,6 +318,7 @@ class GroupedLinearLayer(nn.Module):
         return x
 
 
+# ConvBertIntermediate：FFN 升维（Linear 或 GroupedLinear）+ 激活
 class ConvBertIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -330,6 +339,7 @@ class ConvBertIntermediate(nn.Module):
         return hidden_states
 
 
+# ConvBertOutput：FFN 降维 + Dropout + 残差 LayerNorm
 class ConvBertOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -349,6 +359,7 @@ class ConvBertOutput(nn.Module):
         return hidden_states
 
 
+# ConvBertLayer：单层 Transformer（自注意力、可选交叉注意力、分块 FFN）
 class ConvBertLayer(GradientCheckpointingLayer):
     def __init__(self, config):
         super().__init__()
@@ -403,6 +414,7 @@ class ConvBertLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# ConvBertPreTrainedModel：权重初始化（SeparableConv1D/GroupedLinear/Embeddings 特殊处理）
 class ConvBertPreTrainedModel(PreTrainedModel):
     config: ConvBertConfig
     base_model_prefix = "convbert"
@@ -426,6 +438,7 @@ class ConvBertPreTrainedModel(PreTrainedModel):
             init.zeros_(module.token_type_ids)
 
 
+# ConvBertEncoder：堆叠 num_hidden_layers 个 ConvBertLayer
 class ConvBertEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -455,6 +468,7 @@ class ConvBertEncoder(nn.Module):
         )
 
 
+# ConvBertPredictionHeadTransform：MLM 预测头前的 dense+激活+LayerNorm
 class ConvBertPredictionHeadTransform(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -473,6 +487,7 @@ class ConvBertPredictionHeadTransform(nn.Module):
 
 
 # Copied from transformers.models.xlm.modeling_xlm.XLMSequenceSummary with XLM->ConvBert
+# ConvBertSequenceSummary：序列池化（last/first/mean/cls_index）+ 可选投影与激活
 class ConvBertSequenceSummary(nn.Module):
     r"""
     Compute a single vector summary of a sequence hidden states.
@@ -573,6 +588,7 @@ class ConvBertSequenceSummary(nn.Module):
 
 
 @auto_docstring
+# ConvBertModel：ConvBERT 编码器骨干，embedding_size≠hidden_size 时线性投影
 class ConvBertModel(ConvBertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -649,6 +665,7 @@ class ConvBertModel(ConvBertPreTrainedModel):
         return encoder_outputs
 
 
+# ConvBertGeneratorPredictions：ELECTRA 式生成器 MLM 预测两层 MLP
 class ConvBertGeneratorPredictions(nn.Module):
     """Prediction module for the generator, made up of two dense layers."""
 
@@ -668,6 +685,7 @@ class ConvBertGeneratorPredictions(nn.Module):
 
 
 @auto_docstring
+# ConvBertForMaskedLM：掩码语言建模，generator_lm_head 与词嵌入权重绑定
 class ConvBertForMaskedLM(ConvBertPreTrainedModel):
     _tied_weights_keys = {"generator_lm_head.weight": "convbert.embeddings.word_embeddings.weight"}
 
@@ -732,6 +750,7 @@ class ConvBertForMaskedLM(ConvBertPreTrainedModel):
         )
 
 
+# ConvBertClassificationHead：取 [CLS] 向量经 MLP 输出 num_labels logits
 class ConvBertClassificationHead(nn.Module):
     """Head for sentence-level classification tasks."""
 
@@ -762,6 +781,7 @@ class ConvBertClassificationHead(nn.Module):
     pooled output) e.g. for GLUE tasks.
     """
 )
+# ConvBertForSequenceClassification：序列分类/回归（GLUE 等）
 class ConvBertForSequenceClassification(ConvBertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -835,6 +855,7 @@ class ConvBertForSequenceClassification(ConvBertPreTrainedModel):
 
 
 @auto_docstring
+# ConvBertForMultipleChoice：多选任务，展平 num_choices 维后池化分类
 class ConvBertForMultipleChoice(ConvBertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -930,6 +951,7 @@ class ConvBertForMultipleChoice(ConvBertPreTrainedModel):
 
 
 @auto_docstring
+# ConvBertForTokenClassification：逐 token NER/序列标注
 class ConvBertForTokenClassification(ConvBertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -989,6 +1011,7 @@ class ConvBertForTokenClassification(ConvBertPreTrainedModel):
 
 
 @auto_docstring
+# ConvBertForQuestionAnswering：抽取式 QA，预测 span 起止位置
 class ConvBertForQuestionAnswering(ConvBertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

@@ -30,6 +30,7 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# Cosmos3EdgeImageProcessorKwargs：patch_size/temporal_patch_size/merge_size 预处理参数
 class Cosmos3EdgeImageProcessorKwargs(ImagesKwargs, total=False):
     """
     patch_size (`int`, *optional*, defaults to 14):
@@ -45,6 +46,7 @@ class Cosmos3EdgeImageProcessorKwargs(ImagesKwargs, total=False):
     merge_size: int
 
 
+# smart_resize：在 min/max 像素约束下对齐 factor 倍数，控制长宽比≤200
 def smart_resize(
     num_frames: int,
     height: int,
@@ -82,6 +84,7 @@ def smart_resize(
 
 
 @auto_docstring
+# Cosmos3EdgeImageProcessor：动态 resize → 归一化 → block-major patch 展平
 class Cosmos3EdgeImageProcessor(TorchvisionBackend):
     do_resize = True
     resample = PILImageResampling.BICUBIC
@@ -132,6 +135,7 @@ class Cosmos3EdgeImageProcessor(TorchvisionBackend):
             resample=resample,
         )
 
+# patchify：按 merge_size 分块重排为 (seq_len, patch_dim) 供视觉塔消费
     def patchify(
         self,
         images: "torch.Tensor",
@@ -231,6 +235,7 @@ class Cosmos3EdgeImageProcessor(TorchvisionBackend):
             data={"pixel_values": pixel_values, "image_grid_thw": image_grid_thw}, tensor_type=return_tensors
         )
 
+# get_number_of_image_patches：预估给定尺寸经 smart_resize 后的 patch 数量
     def get_number_of_image_patches(self, height: int, width: int, images_kwargs: dict | None = None) -> int:
         """
         A utility that returns number of image patches for a given image size.

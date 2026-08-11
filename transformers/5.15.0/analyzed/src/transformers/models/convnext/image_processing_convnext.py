@@ -30,6 +30,7 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# ConvNextImageProcessorKwargs：可选 crop_pct 控制评估分辨率缩放
 class ConvNextImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     crop_pct (`float`, *optional*, defaults to `self.crop_pct`):
@@ -40,6 +41,7 @@ class ConvNextImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# ConvNextImageProcessor：ImageNet 均值/方差归一化，默认 shortest_edge=384
 class ConvNextImageProcessor(TorchvisionBackend):
     """Torchvision backend for ConvNeXT with custom resize."""
 
@@ -71,6 +73,7 @@ class ConvNextImageProcessor(TorchvisionBackend):
             raise ValueError(f"Size dictionary must contain 'shortest_edge' key. Got {size.keys()}")
         shortest_edge = size.shortest_edge
 
+# 短边小于 384：按比例放大至 shortest_edge/crop_pct 再中心裁剪
         if shortest_edge < 384:
             # maintain same ratio, resizing shortest edge to shortest_edge/crop_pct
             resize_shortest_edge = int(shortest_edge / crop_pct)
@@ -89,6 +92,7 @@ class ConvNextImageProcessor(TorchvisionBackend):
                 SizeDict(height=shortest_edge, width=shortest_edge),
                 **kwargs,
             )
+# 短边≥384：直接 warp 至正方形，不裁剪
         else:
             # warping (no cropping) when evaluated at 384 or larger
             return super().resize(
@@ -98,6 +102,7 @@ class ConvNextImageProcessor(TorchvisionBackend):
                 **kwargs,
             )
 
+# _preprocess：按形状分组 resize → center_crop → rescale/normalize
     def _preprocess(
         self,
         images: list["torch.Tensor"],

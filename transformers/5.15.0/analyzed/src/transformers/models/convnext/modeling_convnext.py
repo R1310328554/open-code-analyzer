@@ -36,6 +36,7 @@ from .configuration_convnext import ConvNextConfig
 logger = logging.get_logger(__name__)
 
 
+# ConvNextLayerNorm：同时支持 channels_first 与 channels_last 的 LayerNorm
 class ConvNextLayerNorm(nn.LayerNorm):
     r"""LayerNorm that supports two data formats: channels_last (default) or channels_first.
     The ordering of the dimensions in the inputs. channels_last corresponds to inputs with shape (batch_size, height,
@@ -62,6 +63,7 @@ class ConvNextLayerNorm(nn.LayerNorm):
         return features
 
 
+# ConvNextEmbeddings：patch 卷积 stem（stride=patch_size）+ LayerNorm
 class ConvNextEmbeddings(nn.Module):
     """This class is comparable to (and inspired by) the SwinEmbeddings class
     found in src/transformers/models/swin/modeling_swin.py.
@@ -87,6 +89,7 @@ class ConvNextEmbeddings(nn.Module):
 
 
 # Copied from transformers.models.swin.modular_swin.SwinDropPath with SwinDropPath->ConvNextDropPath
+# ConvNextDropPath：随机深度（Stochastic Depth），训练时按样本丢弃残差路径
 class ConvNextDropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -111,6 +114,7 @@ class ConvNextDropPath(nn.Module):
         return f"p={self.drop_prob}"
 
 
+# ConvNextLayer：DwConv 7×7 → LN → Linear 4× 扩展 → GELU → Linear + Layer Scale
 class ConvNextLayer(nn.Module):
     """This corresponds to the `Block` class in the original implementation.
 
@@ -154,6 +158,7 @@ class ConvNextLayer(nn.Module):
         return features
 
 
+# ConvNextStage：可选下采样（LN+Conv stride 2）+ 多个 ConvNextLayer
 class ConvNextStage(nn.Module):
     """ConvNeXT stage, consisting of an optional downsampling layer + multiple residual blocks.
 
@@ -191,6 +196,7 @@ class ConvNextStage(nn.Module):
 
 
 @auto_docstring
+# ConvNextPreTrainedModel：layer_scale_parameter 常量初始化
 class ConvNextPreTrainedModel(PreTrainedModel):
     config: ConvNextConfig
     base_model_prefix = "convnext"
@@ -207,6 +213,7 @@ class ConvNextPreTrainedModel(PreTrainedModel):
                 init.constant_(module.layer_scale_parameter, self.config.layer_scale_init_value)
 
 
+# ConvNextEncoder：多阶段堆叠，线性递增 drop_path_rate
 class ConvNextEncoder(ConvNextPreTrainedModel):
     main_input_name = "hidden_states"
     _can_record_outputs = {"hidden_states": ConvNextStage}
@@ -248,6 +255,7 @@ class ConvNextEncoder(ConvNextPreTrainedModel):
 
 
 @auto_docstring
+# ConvNextModel：embeddings + encoder + 全局平均池化 + 末层 LN
 class ConvNextModel(ConvNextPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -275,6 +283,7 @@ class ConvNextModel(ConvNextPreTrainedModel):
         last_hidden_state = encoder_outputs.last_hidden_state
 
         # global average pooling, (N, C, H, W) -> (N, C)
+# 对 H×W 维全局平均池化后 LayerNorm 得 pooler_output
         pooled_output = self.layernorm(last_hidden_state.mean([-2, -1]))
 
         return BaseModelOutputWithPoolingAndNoAttention(
@@ -290,6 +299,7 @@ class ConvNextModel(ConvNextPreTrainedModel):
     ImageNet.
     """
 )
+# ConvNextForImageClassification：ImageNet 等图像分类线性头
 class ConvNextForImageClassification(ConvNextPreTrainedModel):
     accepts_loss_kwargs = False
 
@@ -339,6 +349,7 @@ class ConvNextForImageClassification(ConvNextPreTrainedModel):
     ConvNeXt backbone, to be used with frameworks like DETR and MaskFormer.
     """
 )
+# ConvNextBackbone：多尺度 feature_maps 输出，供 DETR/MaskFormer
 class ConvNextBackbone(BackboneMixin, ConvNextPreTrainedModel):
     has_attentions = False
 

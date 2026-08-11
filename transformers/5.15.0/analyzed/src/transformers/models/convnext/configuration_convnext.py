@@ -22,6 +22,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="facebook/convnext-tiny-224")
 @strict
+# ConvNextConfig：4 阶段 CNN 塔，patch_size=4 stem，layer_scale 与 drop_path 可调
 class ConvNextConfig(BackboneConfigMixin, PreTrainedConfig):
     r"""
     num_stages (`int`, *optional*, defaults to 4):
@@ -57,6 +58,7 @@ class ConvNextConfig(BackboneConfigMixin, PreTrainedConfig):
     _out_features: list[str] | None = None
     _out_indices: list[int] | None = None
 
+# __post_init__：生成 stage_names 并设置 out_features/out_indices
     def __post_init__(self, **kwargs):
         self.stage_names = ["stem"] + [f"stage{idx}" for idx in range(1, len(self.depths) + 1)]
         self.set_output_features_output_indices(

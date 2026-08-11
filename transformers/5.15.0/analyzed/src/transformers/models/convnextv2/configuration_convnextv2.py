@@ -22,6 +22,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="facebook/convnextv2-tiny-1k-224")
 @strict
+# ConvNextV2Config：全卷积视觉塔，默认 tiny 224 四阶段通道 96→768
 class ConvNextV2Config(BackboneConfigMixin, PreTrainedConfig):
     r"""
     num_stages (`int`, *optional*, defaults to 4):
@@ -56,6 +57,7 @@ class ConvNextV2Config(BackboneConfigMixin, PreTrainedConfig):
     _out_features: list[str] | None = None
     _out_indices: list[int] | None = None
 
+# __post_init__：stage 命名与 backbone 输出特征索引
     def __post_init__(self, **kwargs):
         self.stage_names = ["stem"] + [f"stage{idx}" for idx in range(1, len(self.depths) + 1)]
         self.set_output_features_output_indices(

@@ -55,6 +55,7 @@ from ...vision_utils import get_vision_attention_seqlens
 from .configuration_cosmos3_edge import Cosmos3EdgeConfig, Cosmos3EdgeTextConfig, Cosmos3EdgeVisionConfig
 
 
+# Cosmos3EdgeTextRotaryEmbedding：交错 M-RoPE，temporal/height/width 三轴逆频率矩阵
 class Cosmos3EdgeTextRotaryEmbedding(nn.Module):
     """Interleaved M-RoPE used for Cosmos3 Edge text and visual tokens."""
 
@@ -111,6 +112,7 @@ class Cosmos3EdgeTextRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# rotate_half：RoPE 旋转：后半维取负并与前半交换
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -119,6 +121,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：对 Q/K 应用 cos/sin 旋转位置编码
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -144,6 +147,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -156,6 +160,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：标准缩放点积注意力 eager 实现
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -182,6 +187,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# Cosmos3EdgeTextAttention：GQA 因果自注意力 + M-RoPE
 class Cosmos3EdgeTextAttention(nn.Module):
     """Dense GQA attention with Cosmos3 Edge M-RoPE."""
 
@@ -249,6 +255,7 @@ class Cosmos3EdgeTextAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# Cosmos3EdgeTextMLP：relu2 激活的两层 MLP（fc1→激活→fc2）
 class Cosmos3EdgeTextMLP(nn.Module):
     """The dense two-projection ReLU-squared MLP used by Cosmos3 Edge."""
 
@@ -268,6 +275,7 @@ class Cosmos3EdgeTextMLP(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# Cosmos3EdgeTextRMSNorm：RMSNorm，等价 T5 LayerNorm
 class Cosmos3EdgeTextRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -288,6 +296,7 @@ class Cosmos3EdgeTextRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# Cosmos3EdgeTextDecoderLayer：Pre-LN 解码层（自注意力 + MLP 双残差）
 class Cosmos3EdgeTextDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Cosmos3EdgeTextConfig, layer_idx: int):
         super().__init__()
@@ -329,6 +338,7 @@ class Cosmos3EdgeTextDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Cosmos3EdgeVisionEmbeddings：线性 patch 嵌入 + 可学习位置网格双线性插值
 class Cosmos3EdgeVisionEmbeddings(nn.Module):
     """SigLIP2 patch and learned-position embeddings for packed Edge vision inputs."""
 
@@ -348,6 +358,7 @@ class Cosmos3EdgeVisionEmbeddings(nn.Module):
         self.position_embedding = nn.Embedding(self.num_patches, self.embed_dim)
 
     @staticmethod
+# resize_positional_embeddings：按 grid_thw 独立插值参考位置网格
     def resize_positional_embeddings(
         positional_embeddings: torch.Tensor,
         grid_thw: torch.LongTensor,
@@ -422,6 +433,7 @@ class Cosmos3EdgeVisionEmbeddings(nn.Module):
         return patch_embeds + position_embeddings
 
 
+# Cosmos3EdgeVisionAttention：packed 非因果注意力，cu_seqlens 分隔各图/帧
 class Cosmos3EdgeVisionAttention(nn.Module):
     """Packed non-causal SigLIP2 attention with one sequence per image or video frame."""
 
@@ -506,6 +518,7 @@ class Cosmos3EdgeVisionAttention(nn.Module):
         return self.out_proj(attn_output.reshape(sequence_length, -1).contiguous())
 
 
+# Cosmos3EdgeMLP：视觉塔 GELU 两层 FFN
 class Cosmos3EdgeMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -521,6 +534,7 @@ class Cosmos3EdgeMLP(nn.Module):
         return hidden_states
 
 
+# Cosmos3EdgeVisionEncoderLayer：Pre-LN ViT 块（自注意力 + MLP）
 class Cosmos3EdgeVisionEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Cosmos3EdgeVisionConfig):
         super().__init__()
@@ -554,6 +568,7 @@ class Cosmos3EdgeVisionEncoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Cosmos3EdgeEncoder：堆叠 vision num_hidden_layers 层
 class Cosmos3EdgeEncoder(nn.Module):
     """
     Transformer encoder consisting of `config.num_hidden_layers` self attention layers. Each layer is a
@@ -589,6 +604,7 @@ class Cosmos3EdgeEncoder(nn.Module):
         return hidden_states
 
 
+# VisionRotaryEmbedding：视觉 RoPE 频率（本模型主要用 M-RoPE）
 class VisionRotaryEmbedding(nn.Module):
     def __init__(self, dim: int, theta: float = 10000.0) -> None:
         super().__init__()
@@ -615,6 +631,7 @@ _COSMOS3_EDGE_DROPPED_GENERATOR_KEYS = [
 
 
 @auto_docstring
+# Cosmos3EdgePreTrainedModel：多模态基类，忽略生成器专用 checkpoint 键
 class Cosmos3EdgePreTrainedModel(PreTrainedModel):
     config: Cosmos3EdgeConfig
     base_model_prefix = "model"
@@ -642,6 +659,7 @@ class Cosmos3EdgePreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# Cosmos3EdgeTextModel：纯文本因果 LM 骨干，3D position_ids 扩展为 M-RoPE
 class Cosmos3EdgeTextModel(Cosmos3EdgePreTrainedModel):
     config_class = Cosmos3EdgeTextConfig
     input_modalities = ("text",)
@@ -720,6 +738,7 @@ class Cosmos3EdgeTextModel(Cosmos3EdgePreTrainedModel):
         return BaseModelOutputWithPast(last_hidden_state=hidden_states, past_key_values=past_key_values)
 
 
+# Cosmos3EdgeVisionModel：可变分辨率 packed SigLIP2 视觉塔
 class Cosmos3EdgeVisionModel(Cosmos3EdgePreTrainedModel):
     """Packed variable-resolution SigLIP2 vision tower used by Cosmos3 Edge."""
 
@@ -750,6 +769,7 @@ class Cosmos3EdgeVisionModel(Cosmos3EdgePreTrainedModel):
         return BaseModelOutputWithPooling(last_hidden_state=last_hidden_state)
 
 
+# Cosmos3EdgePatchMerger：spatial_merge_size² patch 合并后经 MLP 投影到文本 hidden_size
 class Cosmos3EdgePatchMerger(nn.Module):
     def __init__(self, config: Cosmos3EdgeConfig) -> None:
         super().__init__()
@@ -770,6 +790,7 @@ class Cosmos3EdgePatchMerger(nn.Module):
 
 
 @auto_docstring
+# Cosmos3EdgeModel：visual + projector + language_model，融合图像/视频嵌入到 input_ids 占位符
 class Cosmos3EdgeModel(Cosmos3EdgePreTrainedModel):
     base_model_prefix = "model"
     accepts_loss_kwargs = False
@@ -785,6 +806,7 @@ class Cosmos3EdgeModel(Cosmos3EdgePreTrainedModel):
         self.rope_deltas = None
         self.post_init()
 
+# get_vision_position_ids：为单图/视频帧生成 T×H×W 三维位置索引
     def get_vision_position_ids(
         self,
         start_position: int,
@@ -837,6 +859,7 @@ class Cosmos3EdgeModel(Cosmos3EdgePreTrainedModel):
         vision_position_ids[0] += start_position  # must be after time_interval multiply
         return vision_position_ids
 
+# get_rope_index：混合序列中按模态分段计算 3D M-RoPE 与 rope_deltas
     def get_rope_index(
         self,
         input_ids: torch.LongTensor,
@@ -975,6 +998,7 @@ class Cosmos3EdgeModel(Cosmos3EdgePreTrainedModel):
 
         return vision_outputs
 
+# get_placeholder_mask：校验 image/video token 数与特征向量长度一致
     def get_placeholder_mask(
         self,
         input_ids: torch.LongTensor,
@@ -1016,6 +1040,7 @@ class Cosmos3EdgeModel(Cosmos3EdgePreTrainedModel):
             )
         return special_image_mask, special_video_mask
 
+# compute_3d_position_ids：prefill 或增量生成时推断 3D position_ids
     def compute_3d_position_ids(
         self,
         input_ids: torch.Tensor | None,
@@ -1129,6 +1154,7 @@ class Cosmos3EdgeModel(Cosmos3EdgePreTrainedModel):
         )
 
 
+# Cosmos3EdgeForConditionalGeneration：多模态条件生成，lm_head 输出词表 logits
 class Cosmos3EdgeForConditionalGeneration(Cosmos3EdgePreTrainedModel, GenerationMixin):
     _tied_weights_keys = {}
     config_class = Cosmos3EdgeConfig
@@ -1256,6 +1282,7 @@ class Cosmos3EdgeForConditionalGeneration(Cosmos3EdgePreTrainedModel, Generation
             attentions=outputs.attentions,
         )
 
+# _prepare_position_ids_for_generation：生成前为视觉 token 预计算 M-RoPE 位置
     def _prepare_position_ids_for_generation(self, inputs_tensor, model_kwargs):
         # Qwen2-VL exposes four axes (text plus three visual axes). Edge's interleaved M-RoPE consumes the three
         # visual axes directly, so start from the common 2D text positions rather than Qwen2-VL's four-axis helper.
@@ -1347,6 +1374,7 @@ class Cosmos3EdgeForConditionalGeneration(Cosmos3EdgePreTrainedModel, Generation
 
         return image_nums, video_nums
 
+# _expand_inputs_for_generation：beam search 时按样本重复 packed pixel_values 与 grid_thw
     def _expand_inputs_for_generation(
         self,
         expand_size: int = 1,
