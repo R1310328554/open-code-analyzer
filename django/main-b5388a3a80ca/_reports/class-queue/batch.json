@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T04:50:26Z",
-  "files": [
-    "django/contrib/admin/tests.py",
-    "django/contrib/admin/utils.py",
-    "django/contrib/admin/views/__init__.py",
-    "django/contrib/admin/views/autocomplete.py",
-    "django/contrib/admin/views/decorators.py",
-    "django/contrib/admin/views/main.py",
-    "django/contrib/admin/widgets.py",
-    "django/contrib/admindocs/__init__.py",
-    "django/contrib/admindocs/apps.py",
-    "django/contrib/admindocs/middleware.py",
-    "django/contrib/admindocs/urls.py",
-    "django/contrib/admindocs/utils.py",
-    "django/contrib/admindocs/views.py",
-    "django/contrib/auth/__init__.py",
-    "django/contrib/auth/admin.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 702,
-  "done": 225
+  "done": 240
 }
