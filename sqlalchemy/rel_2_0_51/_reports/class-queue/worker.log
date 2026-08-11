@@ -208,3 +208,14 @@
 2026-08-11T06:32:58Z DONE lib/sqlalchemy/sql/functions.py wave7a Chinese class docs
 2026-08-11T06:32:58Z DONE lib/sqlalchemy/sql/lambdas.py wave7a Chinese class docs
 2026-08-11T06:32:58Z DONE lib/sqlalchemy/sql/naming.py wave7a Chinese class docs
+2026-08-11T06:34:34Z DONE setup.py wave8b Chinese class docs
+2026-08-11T06:34:34Z DONE tools/format_docs_code.py wave8b Chinese class docs
+2026-08-11T06:34:34Z DONE tools/generate_proxy_methods.py wave8b Chinese class docs
+2026-08-11T06:34:34Z DONE tools/generate_sql_functions.py wave8b Chinese class docs
+2026-08-11T06:34:34Z DONE tools/generate_tuple_map_overloads.py wave8b Chinese class docs
+2026-08-11T06:34:34Z DONE tools/normalize_file_headers.py wave8b Chinese class docs
+2026-08-11T06:34:34Z DONE tools/sync_test_files.py wave8b Chinese class docs
+2026-08-11T06:34:34Z DONE tools/toxnox.py wave8b Chinese class docs
+2026-08-11T06:34:34Z DONE tools/trace_orm_adapter.py wave8b Chinese class docs
+2026-08-11T06:34:34Z DONE tools/walk_packages.py wave8b Chinese class docs
+2026-08-11T06:34:34Z DONE tools/warn_tox.py wave8b Chinese class docs

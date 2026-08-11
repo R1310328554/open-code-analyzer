@@ -208,3 +208,14 @@ lib/sqlalchemy/sql/expression.py
 lib/sqlalchemy/sql/functions.py
 lib/sqlalchemy/sql/lambdas.py
 lib/sqlalchemy/sql/naming.py
+setup.py
+tools/format_docs_code.py
+tools/generate_proxy_methods.py
+tools/generate_sql_functions.py
+tools/generate_tuple_map_overloads.py
+tools/normalize_file_headers.py
+tools/sync_test_files.py
+tools/toxnox.py
+tools/trace_orm_adapter.py
+tools/walk_packages.py
+tools/warn_tox.py

@@ -11,19 +11,8 @@
     "lib/sqlalchemy/util/topological.py",
     "lib/sqlalchemy/util/typing.py",
     "noxfile.py",
-    "reap_dbs.py",
-    "setup.py",
-    "tools/format_docs_code.py",
-    "tools/generate_proxy_methods.py",
-    "tools/generate_sql_functions.py",
-    "tools/generate_tuple_map_overloads.py",
-    "tools/normalize_file_headers.py",
-    "tools/sync_test_files.py",
-    "tools/toxnox.py",
-    "tools/trace_orm_adapter.py",
-    "tools/walk_packages.py",
-    "tools/warn_tox.py"
+    "reap_dbs.py"
   ],
   "remaining_pending": 0,
-  "done": 210
+  "done": 221
 }
