@@ -219,3 +219,14 @@
 2026-08-11T06:34:34Z DONE tools/trace_orm_adapter.py wave8b Chinese class docs
 2026-08-11T06:34:34Z DONE tools/walk_packages.py wave8b Chinese class docs
 2026-08-11T06:34:34Z DONE tools/warn_tox.py wave8b Chinese class docs
+2026-08-11T06:35:31Z DONE lib/sqlalchemy/util/compat.py wave8a Chinese class docs
+2026-08-11T06:35:31Z DONE lib/sqlalchemy/util/concurrency.py wave8a Chinese class docs
+2026-08-11T06:35:31Z DONE lib/sqlalchemy/util/deprecations.py wave8a Chinese class docs
+2026-08-11T06:35:31Z DONE lib/sqlalchemy/util/langhelpers.py wave8a Chinese class docs
+2026-08-11T06:35:31Z DONE lib/sqlalchemy/util/preloaded.py wave8a Chinese class docs
+2026-08-11T06:35:31Z DONE lib/sqlalchemy/util/queue.py wave8a Chinese class docs
+2026-08-11T06:35:31Z DONE lib/sqlalchemy/util/tool_support.py wave8a Chinese class docs
+2026-08-11T06:35:31Z DONE lib/sqlalchemy/util/topological.py wave8a Chinese class docs
+2026-08-11T06:35:31Z DONE lib/sqlalchemy/util/typing.py wave8a Chinese class docs
+2026-08-11T06:35:31Z DONE noxfile.py wave8a Chinese class docs
+2026-08-11T06:35:31Z DONE reap_dbs.py wave8a Chinese class docs

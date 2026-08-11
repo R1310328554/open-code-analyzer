@@ -219,3 +219,14 @@ tools/toxnox.py
 tools/trace_orm_adapter.py
 tools/walk_packages.py
 tools/warn_tox.py
+lib/sqlalchemy/util/compat.py
+lib/sqlalchemy/util/concurrency.py
+lib/sqlalchemy/util/deprecations.py
+lib/sqlalchemy/util/langhelpers.py
+lib/sqlalchemy/util/preloaded.py
+lib/sqlalchemy/util/queue.py
+lib/sqlalchemy/util/tool_support.py
+lib/sqlalchemy/util/topological.py
+lib/sqlalchemy/util/typing.py
+noxfile.py
+reap_dbs.py
