@@ -15,23 +15,8 @@
     "django/db/models/options.py",
     "django/db/models/query.py",
     "django/db/models/query_utils.py",
-    "django/db/models/signals.py",
-    "django/db/models/sql/__init__.py",
-    "django/db/models/sql/compiler.py",
-    "django/db/models/sql/constants.py",
-    "django/db/models/sql/datastructures.py",
-    "django/db/models/sql/query.py",
-    "django/db/models/sql/subqueries.py",
-    "django/db/models/sql/where.py",
-    "django/db/models/utils.py",
-    "django/db/transaction.py",
-    "django/db/utils.py",
-    "django/dispatch/__init__.py",
-    "django/dispatch/dispatcher.py",
-    "django/forms/__init__.py",
-    "django/forms/boundfield.py",
-    "django/forms/fields.py"
+    "django/db/models/signals.py"
   ],
   "remaining_pending": 162,
-  "done": 750
+  "done": 765
 }
