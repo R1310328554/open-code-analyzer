@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T02:17:39Z",
-  "files": [
-    "src/transformers/models/muse_glimmer/processing_muse_glimmer.py",
-    "src/transformers/models/muse_glimmer/video_processing_muse_glimmer.py",
-    "src/transformers/models/muse_glimmer_assistant/__init__.py",
-    "src/transformers/models/muse_glimmer_assistant/configuration_muse_glimmer_assistant.py",
-    "src/transformers/models/muse_glimmer_assistant/modeling_muse_glimmer_assistant.py",
-    "src/transformers/models/muse_glimmer_assistant/modular_muse_glimmer_assistant.py",
-    "src/transformers/models/musicflamingo/__init__.py",
-    "src/transformers/models/musicflamingo/configuration_musicflamingo.py",
-    "src/transformers/models/musicflamingo/modeling_musicflamingo.py",
-    "src/transformers/models/musicflamingo/modular_musicflamingo.py",
-    "src/transformers/models/musicflamingo/processing_musicflamingo.py",
-    "src/transformers/models/musicgen/__init__.py",
-    "src/transformers/models/musicgen/configuration_musicgen.py",
-    "src/transformers/models/musicgen/modeling_musicgen.py",
-    "src/transformers/models/musicgen/processing_musicgen.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1149,
-  "done": 1515
+  "done": 1530
 }
