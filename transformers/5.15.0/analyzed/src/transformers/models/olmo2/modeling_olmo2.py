@@ -47,8 +47,12 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_olmo2 import Olmo2Config
 
 
+# OLMo2 建模：Post-Norm RMSNorm + Q/K Norm 因果 Transformer 解码器
+
 @use_kernel_forward_from_hub("RMSNorm")
+# Olmo2RMSNorm：OLMo2 RMS 层归一化（先乘 weight 再 cast 回输入 dtype）
 class Olmo2RMSNorm(nn.Module):
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
         Olmo2RMSNorm is equivalent to T5LayerNorm
@@ -68,8 +72,10 @@ class Olmo2RMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# Olmo2RotaryEmbedding：OLMo2 RoPE 旋转位置编码（继承 OLMo）
 class Olmo2RotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(self, config: Olmo2Config, device=None):
         super().__init__()
         self.max_seq_len_cached = config.max_position_embeddings
@@ -121,6 +127,7 @@ class Olmo2RotaryEmbedding(nn.Module):
         return cos, sin
 
 
+# repeat_kv：GQA 中将 KV 头重复扩展以匹配 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -133,6 +140,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -159,6 +167,7 @@ def eager_attention_forward(
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：对 Q/K 张量应用 RoPE 旋转位置编码
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -185,6 +194,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed.to(q_type), k_embed.to(k_type)
 
 
+# rotate_half：RoPE 中将向量后半维旋转 180°
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -193,9 +203,11 @@ def rotate_half(x):
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# Olmo2Attention：OLMo2 自注意力（Q/K 前 RMSNorm，无 qkv clip）
 class Olmo2Attention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(self, config: Olmo2Config, layer_idx: int | None = None):
         super().__init__()
         self.config = config
@@ -266,7 +278,9 @@ class Olmo2Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# Olmo2MLP：OLMo2 SwiGLU 前馈 MLP
 class Olmo2MLP(nn.Module):
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -282,7 +296,9 @@ class Olmo2MLP(nn.Module):
         return down_proj
 
 
+# Olmo2DecoderLayer：OLMo2 解码器单层（Post-Norm + RMSNorm）
 class Olmo2DecoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(self, config: Olmo2Config, layer_idx: int):
         super().__init__()
         self.hidden_size = config.hidden_size
@@ -324,6 +340,7 @@ class Olmo2DecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Olmo2PreTrainedModel：OLMo2 预训练基类
 class Olmo2PreTrainedModel(PreTrainedModel):
     config: Olmo2Config
     base_model_prefix = "model"
@@ -343,7 +360,9 @@ class Olmo2PreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# Olmo2Model：OLMo2 因果 Transformer 解码器主干
 class Olmo2Model(Olmo2PreTrainedModel):
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(self, config: Olmo2Config):
         super().__init__(config)
         self.padding_idx = config.pad_token_id
@@ -417,12 +436,14 @@ class Olmo2Model(Olmo2PreTrainedModel):
 
 
 @auto_docstring
+# Olmo2ForCausalLM：OLMo2 因果语言建模与生成头
 class Olmo2ForCausalLM(Olmo2PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
     _pp_plan = {"lm_head": (["hidden_states"], ["logits"])}
     _fsdp_plan = {"lm_head": "keep_full_weight"}
 
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(self, config):
         super().__init__(config)
         self.model = Olmo2Model(config)
@@ -491,6 +512,7 @@ class Olmo2ForCausalLM(Olmo2PreTrainedModel, GenerationMixin):
         )
 
 
+# Olmo2ForSequenceClassification：OLMo2 序列分类头
 class Olmo2ForSequenceClassification(GenericForSequenceClassification, Olmo2PreTrainedModel):
     pass
 

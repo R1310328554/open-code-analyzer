@@ -36,9 +36,12 @@ if is_nltk_available():
 
 logger = logging.get_logger(__name__)
 
+# Nougat 分词：BPE + OCR 生成后处理（Markdown/表格/引用修正）
+
 VOCAB_FILES_NAMES = {"vocab_file": "vocab.json", "merges_file": "merges.txt", "tokenizer_file": "tokenizer.json"}
 
 
+# markdown_compatible：将 Nougat 输出修正为 Markdown 兼容格式
 def markdown_compatible(text: str) -> str:
     """
     Make text compatible with Markdown formatting.
@@ -81,6 +84,7 @@ def markdown_compatible(text: str) -> str:
     return text
 
 
+# normalize_list_like_lines：规范化列表项缩进与嵌套层级
 def normalize_list_like_lines(generation):
     """
     Normalize lines in the given text that resemble list items. The function looks for lines that start optionally with
@@ -132,6 +136,7 @@ def normalize_list_like_lines(generation):
     return "\n".join(output_lines)
 
 
+# find_next_punctuation：自 start_idx 查找下一标点/换行位置
 def find_next_punctuation(text: str, start_idx=0):
     """
     Find the index of the next punctuation mark.
@@ -150,6 +155,7 @@ def find_next_punctuation(text: str, start_idx=0):
     return None
 
 
+# truncate_repetitions：截断尾部连续重复文本片段
 def truncate_repetitions(text: str, min_len: int = 30) -> str:
     """
     Attempt to truncate repeating segments in the input string.
@@ -218,6 +224,7 @@ def truncate_repetitions(text: str, min_len: int = 30) -> str:
     return text_out
 
 
+# remove_numbers：去除行内数字与 ** 标记用于引用比对
 def remove_numbers(lines):
     def _clean(s):
         return re.sub(r"(?:[\d_]|\*\*)", "", s).strip()
@@ -230,6 +237,7 @@ def remove_numbers(lines):
     return out
 
 
+# get_slices：按 Levenshtein 相似度检测重复/幻觉引用片段区间
 def get_slices(lines, clean_lines):
     """
     Get slices of text based on specific criteria within the lines.
@@ -279,6 +287,7 @@ def get_slices(lines, clean_lines):
     return [sli for sli in slices if sli[1] - sli[0] > 15]
 
 
+# remove_slice_from_lines：从行列表中移除指定重复引用切片
 def remove_slice_from_lines(lines, clean_text, slice) -> str:
     """
     Remove a slice of text from the lines based on specific criteria.
@@ -344,6 +353,7 @@ def remove_slice_from_lines(lines, clean_text, slice) -> str:
     return to_delete.strip()
 
 
+# NougatTokenizer：facebook/nougat-base BPE 分词器（含 OCR 后处理）
 class NougatTokenizer(TokenizersBackend):
     """
     Tokenizer for Nougat (backed by HuggingFace tokenizers library).
@@ -389,6 +399,7 @@ class NougatTokenizer(TokenizersBackend):
     model_input_names = ["input_ids", "attention_mask"]
     model = BPE
 
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(
         self,
         errors: str = "replace",
@@ -460,6 +471,7 @@ class NougatTokenizer(TokenizersBackend):
         self._tokenizer.enable_truncation(max_length=4096)
         self._tokenizer.enable_padding(length=4096, pad_id=self.pad_token_id, pad_token=str(pad_token))
 
+    # remove_hallucinated_references：移除幻觉或缺失的参考文献块
     def remove_hallucinated_references(self, text: str) -> str:
         """
         Remove hallucinated or missing references from the text.
@@ -490,6 +502,7 @@ class NougatTokenizer(TokenizersBackend):
         )
         return text
 
+    # correct_tables：修正 LaTeX 表格/tabular 格式与异常长行
     def correct_tables(self, generation: str) -> str:
         """
         Takes a generated string and fixes tables/tabulars to make them match the markdown format needed.
@@ -525,6 +538,7 @@ class NougatTokenizer(TokenizersBackend):
         generation = generation.replace("\\begin{tabular}{}\n\n\\end{tabular}", "")
         return generation
 
+    # post_process_single：单条 OCR 生成文本的正则后处理流水线
     def post_process_single(self, generation: str, fix_markdown: bool = True) -> str:
         """
         Postprocess a single generated text. Regular expressions used here are taken directly from the Nougat article
@@ -620,6 +634,7 @@ class NougatTokenizer(TokenizersBackend):
         else:
             return generation
 
+    # post_process_generation：转发至 tokenizer 的 OCR 生成后处理
     def post_process_generation(
         self,
         generation: str | list[str],

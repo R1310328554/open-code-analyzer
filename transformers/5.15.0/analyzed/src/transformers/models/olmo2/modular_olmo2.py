@@ -45,8 +45,12 @@ from ..olmo.modeling_olmo import (
 logger = logging.get_logger(__name__)
 
 
+# OLMo2 modular 源：在 OLMo 基础上改用 Post-Norm RMSNorm 与 Q/K Norm
+
+# Olmo2Config：allenai/Olmo2-7B-1124-hf 第二代 OLMo 因果 LLM 超参
 @auto_docstring(checkpoint="allenai/Olmo2-7B-1124-hf")
 @strict
+# Olmo2Config：allenai/Olmo2-7B-1124-hf 第二代 OLMo 因果 LLM 超参
 class Olmo2Config(OlmoConfig):
     r"""
     Example:
@@ -87,6 +91,7 @@ class Olmo2Config(OlmoConfig):
 
 # OLMo2 RMS norm is identical to Llama RMS norm except:
 # - Weight and hidden states are multiplied before converting back to the input dtype, rather than after.
+# Olmo2RMSNorm：OLMo2 RMS 层归一化（先乘 weight 再 cast 回输入 dtype）
 class Olmo2RMSNorm(LlamaRMSNorm):
     def forward(self, hidden_states):
         input_dtype = hidden_states.dtype
@@ -96,10 +101,12 @@ class Olmo2RMSNorm(LlamaRMSNorm):
         return (self.weight * hidden_states).to(input_dtype)
 
 
+# Olmo2RotaryEmbedding：OLMo2 RoPE 旋转位置编码（继承 OLMo）
 class Olmo2RotaryEmbedding(OlmoRotaryEmbedding):
     pass
 
 
+# rotate_half：RoPE 中将向量后半维旋转 180°
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -110,7 +117,9 @@ def rotate_half(x):
 # Olmo2 attention is identical to OLMo attention except:
 # - Norm is applied to attention queries and keys.
 # - No qkv clipping.
+# Olmo2Attention：OLMo2 自注意力（Q/K 前 RMSNorm，无 qkv clip）
 class Olmo2Attention(OlmoAttention):
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(self, config: Olmo2Config, layer_idx: int | None = None):
         super().__init__(config, layer_idx=layer_idx)
         self.q_norm = Olmo2RMSNorm(config.num_attention_heads * self.head_dim, config.rms_norm_eps)
@@ -164,7 +173,9 @@ class Olmo2Attention(OlmoAttention):
 # The OLMo2 layers are identical to those of the OLMo model except:
 # - RMSNorm is used instead of standard layer norm.
 # - Norm is applied after attention/feedforward rather than before.
+# Olmo2DecoderLayer：OLMo2 解码器单层（Post-Norm + RMSNorm）
 class Olmo2DecoderLayer(OlmoDecoderLayer):
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(self, config: Olmo2Config, layer_idx: int):
         super().__init__(config, layer_idx=layer_idx)
         self.post_attention_layernorm = Olmo2RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
@@ -203,13 +214,16 @@ class Olmo2DecoderLayer(OlmoDecoderLayer):
         return hidden_states
 
 
+# Olmo2PreTrainedModel：OLMo2 预训练基类
 class Olmo2PreTrainedModel(LlamaPreTrainedModel):
     pass
 
 
 # The OLMo2 model is identical to the OLMo model, except RMSNorm is used instead of
 # standard layer norm for the output norm.
+# Olmo2Model：OLMo2 因果 Transformer 解码器主干
 class Olmo2Model(OlmoModel):
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(self, config: Olmo2Config):
         super().__init__(config)
         self.norm = Olmo2RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
@@ -219,10 +233,12 @@ class Olmo2Model(OlmoModel):
 
 
 # The heads now only need to redefine the model inside to the correct `RobertaModel`
+# Olmo2ForCausalLM：OLMo2 因果语言建模与生成头
 class Olmo2ForCausalLM(OlmoForCausalLM):
     pass
 
 
+# Olmo2ForSequenceClassification：OLMo2 序列分类头
 class Olmo2ForSequenceClassification(OlmoForSequenceClassification):
     pass
 

@@ -13,14 +13,18 @@
 # limitations under the License.
 """Nystromformer model configuration"""
 
+# Nystromformer 配置：Nystrom landmark 近似自注意力 BERT 超参
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# NystromformerConfig：uw-madison/nystromformer-512 Nystrom 近似自注意力 BERT 超参
 @auto_docstring(checkpoint="uw-madison/nystromformer-512")
 @strict
+# NystromformerConfig：uw-madison/nystromformer-512 Nystrom 近似自注意力 BERT 超参
 class NystromformerConfig(PreTrainedConfig):
     r"""
     segment_means_seq_len (`int`, *optional*, defaults to 64):

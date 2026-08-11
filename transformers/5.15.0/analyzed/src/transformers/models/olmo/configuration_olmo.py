@@ -18,6 +18,8 @@
 # limitations under the License.
 """OLMo model configuration"""
 
+# OLMo 配置：EleutherAI 因果 LLM 超参（无 bias LayerNorm + clip_qkv）
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
@@ -25,8 +27,10 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# OlmoConfig：allenai/OLMo-7B-hf 因果 LLM 超参（无 bias LayerNorm + RoPE）
 @auto_docstring(checkpoint="allenai/OLMo-7B-hf")
 @strict
+# OlmoConfig：allenai/OLMo-7B-hf 因果 LLM 超参（无 bias LayerNorm + RoPE）
 class OlmoConfig(PreTrainedConfig):
     r"""
     clip_qkv (`float`, *optional*):

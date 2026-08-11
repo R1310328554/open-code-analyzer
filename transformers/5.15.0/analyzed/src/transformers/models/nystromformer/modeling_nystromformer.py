@@ -43,9 +43,13 @@ from .configuration_nystromformer import NystromformerConfig
 logger = logging.get_logger(__name__)
 
 
+# Nystromformer 建模：landmark 近似自注意力编码器与 MLM/分类/QA 任务头
+
+# NystromformerEmbeddings：词/位置/类型嵌入与 LayerNorm
 class NystromformerEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(self, config):
         super().__init__()
         self.word_embeddings = nn.Embedding(config.vocab_size, config.hidden_size, padding_idx=config.pad_token_id)
@@ -98,7 +102,9 @@ class NystromformerEmbeddings(nn.Module):
         return embeddings
 
 
+# NystromformerSelfAttention：Nystrom 近似 softmax 自注意力（landmark + 卷积）
 class NystromformerSelfAttention(nn.Module):
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(self, config):
         super().__init__()
         if config.hidden_size % config.num_attention_heads != 0 and not hasattr(config, "embedding_size"):
@@ -221,7 +227,9 @@ class NystromformerSelfAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertSelfOutput
+# NystromformerSelfOutput：自注意力输出 Dense + Dropout + 残差投影
 class NystromformerSelfOutput(nn.Module):
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
@@ -235,7 +243,9 @@ class NystromformerSelfOutput(nn.Module):
         return hidden_states
 
 
+# NystromformerAttention：自注意力子层（SelfAttention + SelfOutput）
 class NystromformerAttention(nn.Module):
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(self, config):
         super().__init__()
         self.self = NystromformerSelfAttention(config)
@@ -249,7 +259,9 @@ class NystromformerAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertIntermediate with Bert->Nystromformer
+# NystromformerIntermediate：Transformer FFN 中间 Dense + 激活
 class NystromformerIntermediate(nn.Module):
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.intermediate_size)
@@ -265,7 +277,9 @@ class NystromformerIntermediate(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOutput with Bert->Nystromformer
+# NystromformerOutput：FFN 输出 Dense + Dropout + 残差投影
 class NystromformerOutput(nn.Module):
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.intermediate_size, config.hidden_size)
@@ -279,7 +293,9 @@ class NystromformerOutput(nn.Module):
         return hidden_states
 
 
+# NystromformerLayer：Nystromformer 编码器单层（注意力 + FFN）
 class NystromformerLayer(GradientCheckpointingLayer):
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(self, config):
         super().__init__()
         self.chunk_size_feed_forward = config.chunk_size_feed_forward
@@ -308,7 +324,9 @@ class NystromformerLayer(GradientCheckpointingLayer):
         return layer_output
 
 
+# NystromformerEncoder：Nystromformer Transformer 编码器堆叠
 class NystromformerEncoder(nn.Module):
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -349,7 +367,9 @@ class NystromformerEncoder(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPredictionHeadTransform with Bert->Nystromformer
+# NystromformerPredictionHeadTransform：MLM 头前的 Dense + 激活 + LayerNorm
 class NystromformerPredictionHeadTransform(nn.Module):
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
@@ -367,7 +387,9 @@ class NystromformerPredictionHeadTransform(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertLMPredictionHead with Bert->Nystromformer
+# NystromformerLMPredictionHead：语言建模预测头（变换 + 解码器）
 class NystromformerLMPredictionHead(nn.Module):
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(self, config):
         super().__init__()
         self.transform = NystromformerPredictionHeadTransform(config)
@@ -384,7 +406,9 @@ class NystromformerLMPredictionHead(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOnlyMLMHead with Bert->Nystromformer
+# NystromformerOnlyMLMHead：仅 MLM 预测头包装
 class NystromformerOnlyMLMHead(nn.Module):
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(self, config):
         super().__init__()
         self.predictions = NystromformerLMPredictionHead(config)
@@ -395,6 +419,7 @@ class NystromformerOnlyMLMHead(nn.Module):
 
 
 @auto_docstring
+# NystromformerPreTrainedModel：Nystromformer 预训练基类与权重初始化
 class NystromformerPreTrainedModel(PreTrainedModel):
     config: NystromformerConfig
     base_model_prefix = "nystromformer"
@@ -408,7 +433,9 @@ class NystromformerPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# NystromformerModel：Nystromformer 编码器主干
 class NystromformerModel(NystromformerPreTrainedModel):
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(self, config):
         super().__init__(config)
         self.config = config
@@ -502,12 +529,14 @@ class NystromformerModel(NystromformerPreTrainedModel):
 
 
 @auto_docstring
+# NystromformerForMaskedLM：Nystromformer 掩码语言建模
 class NystromformerForMaskedLM(NystromformerPreTrainedModel):
     _tied_weights_keys = {
         "cls.predictions.decoder.weight": "nystromformer.embeddings.word_embeddings.weight",
         "cls.predictions.decoder.bias": "cls.predictions.bias",
     }
 
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(self, config):
         super().__init__(config)
 
@@ -577,9 +606,11 @@ class NystromformerForMaskedLM(NystromformerPreTrainedModel):
         )
 
 
+# NystromformerClassificationHead：序列分类池化 + 线性头
 class NystromformerClassificationHead(nn.Module):
     """Head for sentence-level classification tasks."""
 
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
@@ -604,7 +635,9 @@ class NystromformerClassificationHead(nn.Module):
     pooled output) e.g. for GLUE tasks.
     """
 )
+# NystromformerForSequenceClassification：Nystromformer 序列分类
 class NystromformerForSequenceClassification(NystromformerPreTrainedModel):
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
@@ -685,7 +718,9 @@ class NystromformerForSequenceClassification(NystromformerPreTrainedModel):
 
 
 @auto_docstring
+# NystromformerForMultipleChoice：Nystromformer 多项选择
 class NystromformerForMultipleChoice(NystromformerPreTrainedModel):
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(self, config):
         super().__init__(config)
 
@@ -790,7 +825,9 @@ class NystromformerForMultipleChoice(NystromformerPreTrainedModel):
 
 
 @auto_docstring
+# NystromformerForTokenClassification：Nystromformer token 分类
 class NystromformerForTokenClassification(NystromformerPreTrainedModel):
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
@@ -856,7 +893,9 @@ class NystromformerForTokenClassification(NystromformerPreTrainedModel):
 
 
 @auto_docstring
+# NystromformerForQuestionAnswering：Nystromformer 抽取式问答
 class NystromformerForQuestionAnswering(NystromformerPreTrainedModel):
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(self, config):
         super().__init__(config)
 

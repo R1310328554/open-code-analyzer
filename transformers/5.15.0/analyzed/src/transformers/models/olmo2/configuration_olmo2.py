@@ -30,8 +30,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# OLMo2 配置：Post-Norm RMSNorm + Q/K 归一化的第二代 OLMo 超参
+
+# Olmo2Config：allenai/Olmo2-7B-1124-hf 第二代 OLMo 因果 LLM 超参
 @auto_docstring(checkpoint="allenai/Olmo2-7B-1124-hf")
 @strict
+# Olmo2Config：allenai/Olmo2-7B-1124-hf 第二代 OLMo 因果 LLM 超参
 class Olmo2Config(PreTrainedConfig):
     r"""
     Example:

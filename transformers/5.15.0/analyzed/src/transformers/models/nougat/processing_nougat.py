@@ -19,6 +19,9 @@ from ...processing_utils import ProcessingKwargs, ProcessorMixin
 from ...utils import auto_docstring
 
 
+# Nougat 处理器：图像与 BPE tokenizer 联合封装（训练 labels 构造）
+
+# NougatProcessorKwargs：Nougat 联合处理器默认 text/images 参数
 class NougatProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -34,13 +37,16 @@ class NougatProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# NougatProcessor：Nougat 图像处理器与 tokenizer 联合封装
 class NougatProcessor(ProcessorMixin):
     valid_processor_kwargs = NougatProcessorKwargs
 
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(self, image_processor, tokenizer):
         super().__init__(image_processor, tokenizer)
 
     @auto_docstring
+    # __call__：联合编码图像与文本，训练时 labels 替换 input_ids
     def __call__(self, images=None, text=None, **kwargs):
         model_inputs = super().__call__(images=images, text=text, **kwargs)
         if text is not None and images is not None:
@@ -48,6 +54,7 @@ class NougatProcessor(ProcessorMixin):
             model_inputs.pop("attention_mask", None)
         return model_inputs
 
+    # post_process_generation：转发至 tokenizer 的 OCR 生成后处理
     def post_process_generation(self, *args, **kwargs):
         """
         This method forwards all its arguments to NougatTokenizer's [`~PreTrainedTokenizer.post_process_generation`].

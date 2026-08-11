@@ -46,9 +46,13 @@ from .configuration_olmo import OlmoConfig
 logger = logging.get_logger(__name__)
 
 
+# OLMo modular 源：Llama 组件扩展的无 bias LayerNorm 因果 LLM
+
+# OlmoLayerNorm：无可学习参数的 LayerNorm（OLMo 专用）
 class OlmoLayerNorm(nn.Module):
     """LayerNorm but with no learnable weight or bias."""
 
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(self, hidden_size: int) -> None:
         super().__init__()
         self.normalized_shape = (hidden_size,)
@@ -60,7 +64,9 @@ class OlmoLayerNorm(nn.Module):
         )
 
 
+# OlmoMLP：OLMo SwiGLU 前馈 MLP（gate/up/down 无 bias）
 class OlmoMLP(LlamaMLP):
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(self, config):
         super().__init__(config)
         self.gate_proj = nn.Linear(self.hidden_size, self.intermediate_size, bias=False)
@@ -70,6 +76,7 @@ class OlmoMLP(LlamaMLP):
 
 # This is identical to LlamaRotaryEmbedding except the output cos and sin are returned
 # as float32 rather than the input type.
+# OlmoRotaryEmbedding：OLMo RoPE（cos/sin 强制 float32 输出）
 class OlmoRotaryEmbedding(LlamaRotaryEmbedding):
     @torch.no_grad()
     @dynamic_rope_update  # power user: used with advanced RoPE types (e.g. dynamic rope)
@@ -87,6 +94,7 @@ class OlmoRotaryEmbedding(LlamaRotaryEmbedding):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：对 Q/K 张量应用 RoPE 旋转位置编码
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -113,6 +121,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed.to(q_type), k_embed.to(k_type)
 
 
+# OlmoAttention：OLMo 多头因果自注意力（可选 clip_qkv + RoPE）
 class OlmoAttention(LlamaAttention):
     def forward(
         self,
@@ -164,7 +173,9 @@ class OlmoAttention(LlamaAttention):
         return attn_output, attn_weights
 
 
+# OlmoDecoderLayer：OLMo 解码器单层（自注意力 + MLP + 残差）
 class OlmoDecoderLayer(LlamaDecoderLayer):
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(self, config: OlmoConfig, layer_idx: int):
         super().__init__(config, layer_idx)
         self.input_layernorm = OlmoLayerNorm(config.hidden_size)
@@ -172,7 +183,9 @@ class OlmoDecoderLayer(LlamaDecoderLayer):
         self.self_attn = OlmoAttention(config=config, layer_idx=layer_idx)
 
 
+# OlmoModel：OLMo 因果 Transformer 解码器主干
 class OlmoModel(LlamaModel):
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(self, config: OlmoConfig):
         super().__init__(config)
         self.layers = nn.ModuleList(
@@ -181,10 +194,12 @@ class OlmoModel(LlamaModel):
         self.norm = OlmoLayerNorm(config.hidden_size)
 
 
+# OlmoForCausalLM：OLMo 因果语言建模与生成头
 class OlmoForCausalLM(LlamaForCausalLM):
     pass
 
 
+# OlmoForSequenceClassification：OLMo 序列分类头
 class OlmoForSequenceClassification(LlamaForSequenceClassification):
     pass
 

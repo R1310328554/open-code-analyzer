@@ -38,6 +38,9 @@ from ...utils import (
 )
 
 
+# Nougat 图像预处理：Torchvision 后端文档页裁剪/缩略图/长轴对齐
+
+# NougatImageProcessorKwargs：Nougat 图像预处理可选参数字典（边距裁剪/缩略图/长轴对齐）
 class NougatImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     do_crop_margin (`bool`, *optional*, defaults to `self.do_crop_margin`):
@@ -54,6 +57,7 @@ class NougatImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# NougatImageProcessor：facebook/nougat-base 文档页 Torchvision 图像预处理器
 class NougatImageProcessor(TorchvisionBackend):
     valid_kwargs = NougatImageProcessorKwargs
     resample = PILImageResampling.BILINEAR
@@ -68,13 +72,16 @@ class NougatImageProcessor(TorchvisionBackend):
     do_rescale = True
     do_crop_margin = True
 
+    # __init__：初始化处理器默认参数与后端配置
     def __init__(self, **kwargs: Unpack[NougatImageProcessorKwargs]):
         super().__init__(**kwargs)
 
     @auto_docstring
+    # preprocess：批量预处理文档图像并返回 pixel_values
     def preprocess(self, images: ImageInput, **kwargs: Unpack[NougatImageProcessorKwargs]) -> BatchFeature:
         return super().preprocess(images, **kwargs)
 
+    # python_find_non_zero：等价 cv2.findNonZero 的非零像素坐标查找
     def python_find_non_zero(
         self,
         image: "torch.Tensor",
@@ -86,6 +93,7 @@ class NougatImageProcessor(TorchvisionBackend):
         idxvec = idxvec.reshape(-1, 1, 2)
         return idxvec
 
+    # python_bounding_rect：等价 cv2.boundingRect 的最小外接矩形
     def python_bounding_rect(self, coordinates):
         """This is a reimplementation of a BoundingRect function equivalent to cv2."""
 
@@ -97,6 +105,7 @@ class NougatImageProcessor(TorchvisionBackend):
         height = max_values[1] - y_min + 1
         return x_min, y_min, width, height
 
+    # crop_margin：按灰度阈值裁剪文档页空白边距
     def crop_margin(
         self,
         image: "torch.Tensor",
@@ -127,6 +136,7 @@ class NougatImageProcessor(TorchvisionBackend):
 
         return image
 
+    # align_long_axis：旋转图像使长边与目标 size 长边对齐
     def align_long_axis(
         self,
         image: "torch.Tensor",
@@ -153,6 +163,7 @@ class NougatImageProcessor(TorchvisionBackend):
 
         return image
 
+    # thumbnail：缩略图缩放（各维不超过目标尺寸）
     def thumbnail(
         self,
         image: "torch.Tensor",
@@ -188,6 +199,7 @@ class NougatImageProcessor(TorchvisionBackend):
 
         return tvF.resize(image, new_size, interpolation=tvF.InterpolationMode.BICUBIC)
 
+    # pad_images：将图像居中填充至固定 height×width
     def pad_images(
         self,
         image: "torch.Tensor",
@@ -217,6 +229,7 @@ class NougatImageProcessor(TorchvisionBackend):
         padding = (pad_left, pad_top, pad_right, pad_bottom)
         return tvF.pad(image, padding)
 
+    # resize：按最短边等比缩放到目标尺寸
     def resize(
         self,
         image: "torch.Tensor",
@@ -247,6 +260,7 @@ class NougatImageProcessor(TorchvisionBackend):
             image, SizeDict(height=new_size[0], width=new_size[1]), resample=resample, antialias=antialias, **kwargs
         )
 
+    # _preprocess：Nougat 预处理流水线（裁剪→缩放→缩略图→填充→归一化）
     def _preprocess(
         self,
         images: list["torch.Tensor"],
