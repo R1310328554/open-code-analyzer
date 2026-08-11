@@ -8,7 +8,9 @@
 
 
 """
-.. dialect:: sqlite+pysqlcipher
+sqlite+pysqlcipher：SQLCipher 加密 SQLite。
+
+.. dialect:: sqlite+pysqlcipher.. dialect:: sqlite+pysqlcipher
     :name: pysqlcipher
     :dbapi: sqlcipher 3 or pysqlcipher
     :connectstring: sqlite+pysqlcipher://:passphrase@/file_path[?kdf_iter=<iter>]
@@ -102,6 +104,7 @@ from .pysqlite import SQLiteDialect_pysqlite
 from ... import pool
 
 
+# 加密方言：pragma key 与 SingletonThreadPool
 class SQLiteDialect_pysqlcipher(SQLiteDialect_pysqlite):
     driver = "pysqlcipher"
     supports_statement_cache = True
@@ -109,6 +112,7 @@ class SQLiteDialect_pysqlcipher(SQLiteDialect_pysqlite):
     pragmas = ("kdf_iter", "cipher", "cipher_page_size", "cipher_use_hmac")
 
     @classmethod
+    # sqlcipher3 或 pysqlcipher3
     def import_dbapi(cls):
         try:
             import sqlcipher3 as sqlcipher
@@ -122,9 +126,11 @@ class SQLiteDialect_pysqlcipher(SQLiteDialect_pysqlite):
         return sqlcipher
 
     @classmethod
+    # 默认 SingletonThreadPool
     def get_pool_class(cls, url):
         return pool.SingletonThreadPool
 
+    # 连接时 PRAGMA key 与加密参数
     def on_connect_url(self, url):
         super_on_connect = super().on_connect_url(url)
 
@@ -151,10 +157,12 @@ class SQLiteDialect_pysqlcipher(SQLiteDialect_pysqlite):
 
         return on_connect
 
+    # 密码与加密 pragma 不进 connect 参数
     def create_connect_args(self, url):
         plain_url = url._replace(password=None)
         plain_url = plain_url.difference_update_query(self.pragmas)
         return super().create_connect_args(plain_url)
 
 
+# 方言入口
 dialect = SQLiteDialect_pysqlcipher

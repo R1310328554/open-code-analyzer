@@ -6,7 +6,9 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
-"""defines generic type conversion functions, as used in bind and result
+# 纯 Python 类型转换处理器（bind/result 共用，None 透传）
+
+"""defines generic type conversion functions"""defines generic type conversion functions, as used in bind and result
 processors.
 
 They all share one common characteristic: None is passed through unchanged.
@@ -33,6 +35,7 @@ _DT = TypeVar(
 )
 
 
+# 正则工厂：解析 datetime/time/date 字符串
 def str_to_datetime_processor_factory(
     regexp: typing.Pattern[str], type_: Callable[..., _DT]
 ) -> Callable[[Optional[str]], Optional[_DT]]:
@@ -76,6 +79,7 @@ def str_to_datetime_processor_factory(
     return process
 
 
+# float -> Decimal（固定小数位）
 def to_decimal_processor_factory(
     target_class: Type[Decimal], scale: int
 ) -> Callable[[Optional[float]], Optional[Decimal]]:
@@ -90,6 +94,7 @@ def to_decimal_processor_factory(
     return process
 
 
+# int/float -> float
 def to_float(value: Optional[Union[int, float]]) -> Optional[float]:
     if value is None:
         return None
@@ -97,6 +102,7 @@ def to_float(value: Optional[Union[int, float]]) -> Optional[float]:
         return float(value)
 
 
+# 任意值 -> str
 def to_str(value: Optional[Any]) -> Optional[str]:
     if value is None:
         return None
@@ -104,6 +110,7 @@ def to_str(value: Optional[Any]) -> Optional[str]:
         return str(value)
 
 
+# 0/1 -> bool
 def int_to_boolean(value: Optional[int]) -> Optional[bool]:
     if value is None:
         return None
@@ -111,6 +118,7 @@ def int_to_boolean(value: Optional[int]) -> Optional[bool]:
         return bool(value)
 
 
+# ISO 字符串 -> datetime
 def str_to_datetime(value: Optional[str]) -> Optional[datetime.datetime]:
     if value is not None:
         dt_value = datetime_cls.fromisoformat(value)
@@ -119,6 +127,7 @@ def str_to_datetime(value: Optional[str]) -> Optional[datetime.datetime]:
     return dt_value
 
 
+# ISO 字符串 -> time
 def str_to_time(value: Optional[str]) -> Optional[datetime.time]:
     if value is not None:
         dt_value = time_cls.fromisoformat(value)
@@ -127,6 +136,7 @@ def str_to_time(value: Optional[str]) -> Optional[datetime.time]:
     return dt_value
 
 
+# ISO 字符串 -> date
 def str_to_date(value: Optional[str]) -> Optional[datetime.date]:
     if value is not None:
         dt_value = date_cls.fromisoformat(value)

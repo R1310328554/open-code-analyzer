@@ -4,6 +4,8 @@
 #
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
+# PostgreSQL 专用 SQLAlchemy 类型映射
+
 from __future__ import annotations
 
 import datetime as dt
@@ -29,6 +31,7 @@ _FLOAT_TYPES = (700, 701, 1021, 1022)
 _INT_TYPES = (20, 21, 23, 26, 1005, 1007, 1016)
 
 
+# PG UUID：绑定/字面量 CAST
 class PGUuid(sqltypes.UUID[sqltypes._UUID_RETURN]):
     render_bind_cast = True
     render_literal_cast = True
@@ -36,7 +39,9 @@ class PGUuid(sqltypes.UUID[sqltypes._UUID_RETURN]):
     if TYPE_CHECKING:
 
         @overload
-        def __init__(
+        # timezone / precision 构造
+    # length 与 varying 标志
+    def __init__(
             self: PGUuid[_python_UUID], as_uuid: Literal[True] = ...
         ) -> None: ...
 
@@ -48,12 +53,16 @@ class PGUuid(sqltypes.UUID[sqltypes._UUID_RETURN]):
         def __init__(self, as_uuid: bool = True) -> None: ...
 
 
+# 二进制 BYTEA
 class BYTEA(sqltypes.LargeBinary):
     __visit_name__ = "BYTEA"
 
 
+# 网络地址类型 mixin：比较值保持同类型
 class _NetworkAddressTypeMixin:
 
+    # 比较运算不强制转换
+    # 比较保持 CITEXT
     def coerce_compared_value(
         self, op: Optional[OperatorType], value: Any
     ) -> TypeEngine[Any]:
@@ -62,6 +71,7 @@ class _NetworkAddressTypeMixin:
         return self
 
 
+# IPv4/IPv6 INET
 class INET(_NetworkAddressTypeMixin, sqltypes.TypeEngine[str]):
     __visit_name__ = "INET"
 
@@ -69,6 +79,7 @@ class INET(_NetworkAddressTypeMixin, sqltypes.TypeEngine[str]):
 PGInet = INET
 
 
+# CIDR 网段
 class CIDR(_NetworkAddressTypeMixin, sqltypes.TypeEngine[str]):
     __visit_name__ = "CIDR"
 
@@ -76,6 +87,7 @@ class CIDR(_NetworkAddressTypeMixin, sqltypes.TypeEngine[str]):
 PGCidr = CIDR
 
 
+# MAC 地址
 class MACADDR(_NetworkAddressTypeMixin, sqltypes.TypeEngine[str]):
     __visit_name__ = "MACADDR"
 
@@ -83,6 +95,7 @@ class MACADDR(_NetworkAddressTypeMixin, sqltypes.TypeEngine[str]):
 PGMacAddr = MACADDR
 
 
+# MAC 地址（EUI-64）
 class MACADDR8(_NetworkAddressTypeMixin, sqltypes.TypeEngine[str]):
     __visit_name__ = "MACADDR8"
 
@@ -90,6 +103,7 @@ class MACADDR8(_NetworkAddressTypeMixin, sqltypes.TypeEngine[str]):
 PGMacAddr8 = MACADDR8
 
 
+# MONEY：驱动常返回带货币符号字符串
 class MONEY(sqltypes.TypeEngine[str]):
     r"""Provide the PostgreSQL MONEY type.
 
@@ -137,12 +151,14 @@ class MONEY(sqltypes.TypeEngine[str]):
     __visit_name__ = "MONEY"
 
 
+# 对象 OID
 class OID(sqltypes.TypeEngine[int]):
     """Provide the PostgreSQL OID type."""
 
     __visit_name__ = "OID"
 
 
+# 全文 regconfig
 class REGCONFIG(sqltypes.TypeEngine[str]):
     """Provide the PostgreSQL REGCONFIG type.
 
@@ -153,6 +169,7 @@ class REGCONFIG(sqltypes.TypeEngine[str]):
     __visit_name__ = "REGCONFIG"
 
 
+# 全文 tsquery
 class TSQUERY(sqltypes.TypeEngine[str]):
     """Provide the PostgreSQL TSQUERY type.
 
@@ -163,6 +180,7 @@ class TSQUERY(sqltypes.TypeEngine[str]):
     __visit_name__ = "TSQUERY"
 
 
+# 系统目录 regclass
 class REGCLASS(sqltypes.TypeEngine[str]):
     """Provide the PostgreSQL REGCLASS type.
 
@@ -173,6 +191,7 @@ class REGCLASS(sqltypes.TypeEngine[str]):
     __visit_name__ = "REGCLASS"
 
 
+# PG TIMESTAMP（可选 precision）
 class TIMESTAMP(sqltypes.TIMESTAMP):
     """Provide the PostgreSQL TIMESTAMP type."""
 
@@ -193,6 +212,7 @@ class TIMESTAMP(sqltypes.TIMESTAMP):
         self.precision = precision
 
 
+# PG TIME
 class TIME(sqltypes.TIME):
     """PostgreSQL TIME type."""
 
@@ -213,6 +233,7 @@ class TIME(sqltypes.TIME):
         self.precision = precision
 
 
+# PG INTERVAL：native 与 make_interval 字面量
 class INTERVAL(type_api.NativeForEmulated, sqltypes._AbstractInterval):
     """PostgreSQL INTERVAL type."""
 
@@ -236,6 +257,7 @@ class INTERVAL(type_api.NativeForEmulated, sqltypes._AbstractInterval):
         self.fields = fields
 
     @classmethod
+    # 从通用 Interval 适配
     def adapt_emulated_to_native(
         cls, interval: sqltypes.Interval, **kw: Any  # type: ignore[override]
     ) -> INTERVAL:
@@ -252,6 +274,7 @@ class INTERVAL(type_api.NativeForEmulated, sqltypes._AbstractInterval):
     def python_type(self) -> Type[dt.timedelta]:
         return dt.timedelta
 
+    # 字面量 make_interval(secs=>...)
     def literal_processor(
         self, dialect: Dialect
     ) -> Optional[_LiteralProcessorType[dt.timedelta]]:
@@ -264,6 +287,7 @@ class INTERVAL(type_api.NativeForEmulated, sqltypes._AbstractInterval):
 PGInterval = INTERVAL
 
 
+# BIT / BIT VARYING
 class BIT(sqltypes.TypeEngine[int]):
     __visit_name__ = "BIT"
 
@@ -282,6 +306,7 @@ class BIT(sqltypes.TypeEngine[int]):
 PGBit = BIT
 
 
+# 全文 tsvector
 class TSVECTOR(sqltypes.TypeEngine[str]):
     """The :class:`_postgresql.TSVECTOR` type implements the PostgreSQL
     text search type TSVECTOR.
@@ -298,6 +323,7 @@ class TSVECTOR(sqltypes.TypeEngine[str]):
     __visit_name__ = "TSVECTOR"
 
 
+# 大小写不敏感 CITEXT
 class CITEXT(sqltypes.TEXT):
     """Provide the PostgreSQL CITEXT type.
 

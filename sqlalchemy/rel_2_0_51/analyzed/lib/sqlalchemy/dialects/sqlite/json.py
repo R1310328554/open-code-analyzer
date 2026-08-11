@@ -6,9 +6,12 @@
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 # mypy: ignore-errors
 
+# SQLite JSON1：JSON_EXTRACT + JSON_QUOTE
+
 from ... import types as sqltypes
 
 
+# SQLite JSON 类型（依赖 JSON1 扩展）
 class JSON(sqltypes.JSON):
     """SQLite JSON type.
 
@@ -44,10 +47,14 @@ class JSON(sqltypes.JSON):
 # Note: these objects currently match exactly those of MySQL, however since
 # these are not generalizable to all JSON implementations, remain separately
 # implemented for each dialect.
+# JSON 索引/路径 bind 格式化 mixin
 class _FormatTypeMixin:
+    # 格式化索引路径
+    # 拼接 JSONPath
     def _format_value(self, value):
         raise NotImplementedError()
 
+    # bind 前 _format_value
     def bind_processor(self, dialect):
         super_proc = self.string_bind_processor(dialect)
 
@@ -59,6 +66,7 @@ class _FormatTypeMixin:
 
         return process
 
+    # 字面量同样格式化
     def literal_processor(self, dialect):
         super_proc = self.string_literal_processor(dialect)
 
@@ -71,6 +79,7 @@ class _FormatTypeMixin:
         return process
 
 
+# 索引键 -> $."key" 或 $[n]
 class JSONIndexType(_FormatTypeMixin, sqltypes.JSON.JSONIndexType):
     def _format_value(self, value):
         if isinstance(value, int):
@@ -80,6 +89,7 @@ class JSONIndexType(_FormatTypeMixin, sqltypes.JSON.JSONIndexType):
         return value
 
 
+# 路径元组 -> $.a.b[n]
 class JSONPathType(_FormatTypeMixin, sqltypes.JSON.JSONPathType):
     def _format_value(self, value):
         return "$%s" % (

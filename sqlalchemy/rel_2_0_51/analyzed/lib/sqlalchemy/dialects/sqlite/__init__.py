@@ -7,6 +7,8 @@
 # mypy: ignore-errors
 
 
+# SQLite 方言包：类型 re-export 与默认 pysqlite 方言
+
 from . import aiosqlite  # noqa
 from . import base  # noqa
 from . import pysqlcipher  # noqa
@@ -31,9 +33,11 @@ from .dml import Insert
 from .dml import insert
 
 # default dialect
+# 默认方言指向 pysqlite
 base.dialect = dialect = pysqlite.dialect
 
 
+# 公开导出符号
 __all__ = (
     "BLOB",
     "BOOLEAN",

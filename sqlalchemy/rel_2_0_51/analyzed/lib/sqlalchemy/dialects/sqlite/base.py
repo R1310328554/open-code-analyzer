@@ -7,7 +7,10 @@
 # mypy: ignore-errors
 
 
+# SQLite 方言核心：类型、编译器、反射与 DDL
+
 r'''
+.. dialect:: sqliter'''
 .. dialect:: sqlite
     :name: SQLite
     :normal_support: 3.12+
@@ -1033,7 +1036,12 @@ if TYPE_CHECKING:
     from ...sql.type_api import _ResultProcessorType
 
 
+# SQLite JSON 结果处理：纯数字 JSON 容错
 class _SQliteJson(JSON):
+    # 数字 TypeError 时原样返回
+    # 正则或 fromisoformat 解析
+    # result：解析为 date
+    # result 处理器
     def result_processor(self, dialect, coltype):
         default_processor = super().result_processor(dialect, coltype)
 
@@ -1049,10 +1057,13 @@ class _SQliteJson(JSON):
         return process
 
 
+# 日期时间 mixin：storage_format / regexp / TEXT affinity
 class _DateTimeMixin:
     _reg = None
     _storage_format = None
 
+    # 自定义存储格式与解析正则
+    # native_datetime / json 序列化 / 版本特性探测
     def __init__(self, storage_format=None, regexp=None, **kw):
         super().__init__(**kw)
         if regexp is not None:
@@ -1061,6 +1072,7 @@ class _DateTimeMixin:
             self._storage_format = storage_format
 
     @property
+    # 存储格式是否强制 TEXT affinity
     def format_is_text_affinity(self):
         """return True if the storage format will automatically imply
         a TEXT affinity.
@@ -1082,6 +1094,7 @@ class _DateTimeMixin:
         }
         return bool(re.search(r"[^0-9]", spec))
 
+    # adapt 时保留 format/regexp
     def adapt(self, cls, **kw):
         if issubclass(cls, _DateTimeMixin):
             if self._storage_format:
@@ -1090,6 +1103,7 @@ class _DateTimeMixin:
                 kw["regexp"] = self._reg
         return super().adapt(cls, **kw)
 
+    # 字面量加引号
     def literal_processor(self, dialect):
         bp = self.bind_processor(dialect)
 
@@ -1099,6 +1113,7 @@ class _DateTimeMixin:
         return process
 
 
+# ISO 字符串存储的 DATETIME
 class DATETIME(_DateTimeMixin, sqltypes.DateTime):
     r"""Represent a Python datetime object in SQLite using a string.
 
@@ -1153,6 +1168,8 @@ class DATETIME(_DateTimeMixin, sqltypes.DateTime):
         "%(hour)02d:%(minute)02d:%(second)02d.%(microsecond)06d"
     )
 
+    # truncate_microseconds 等
+    # 构造与 truncate 选项
     def __init__(self, *args, **kwargs):
         truncate_microseconds = kwargs.pop("truncate_microseconds", False)
         super().__init__(*args, **kwargs)
@@ -1170,6 +1187,8 @@ class DATETIME(_DateTimeMixin, sqltypes.DateTime):
                 "%(hour)02d:%(minute)02d:%(second)02d"
             )
 
+    # 序列化为 storage_format
+    # bind：格式化为字符串
     def bind_processor(
         self, dialect: Dialect
     ) -> Optional[_BindProcessorType[Any]]:
@@ -1219,6 +1238,7 @@ class DATETIME(_DateTimeMixin, sqltypes.DateTime):
             return processors.str_to_datetime
 
 
+# ISO 字符串 DATE
 class DATE(_DateTimeMixin, sqltypes.Date):
     r"""Represent a Python date object in SQLite using a string.
 
@@ -1299,6 +1319,7 @@ class DATE(_DateTimeMixin, sqltypes.Date):
             return processors.str_to_date
 
 
+# ISO 字符串 TIME
 class TIME(_DateTimeMixin, sqltypes.Time):
     r"""Represent a Python time object in SQLite using a string.
 
@@ -1361,6 +1382,7 @@ class TIME(_DateTimeMixin, sqltypes.Time):
             )
             self._storage_format = "%(hour)02d:%(minute)02d:%(second)02d"
 
+    # bind 处理器
     def bind_processor(self, dialect):
         datetime_time = datetime.time
         format_ = self._storage_format
@@ -1430,6 +1452,7 @@ ischema_names = {
 }
 
 
+# SQLite SQL 编译：函数/JSON/ON CONFLICT
 class SQLiteCompiler(compiler.SQLCompiler):
     extract_map = util.update_copy(
         compiler.SQLCompiler.extract_map,
@@ -1447,6 +1470,7 @@ class SQLiteCompiler(compiler.SQLCompiler):
         },
     )
 
+    # 真除：右操作数 +0.0
     def visit_truediv_binary(self, binary, operator, **kw):
         return (
             self.process(binary.left, **kw)
@@ -1454,30 +1478,38 @@ class SQLiteCompiler(compiler.SQLCompiler):
             + "(%s + 0.0)" % self.process(binary.right, **kw)
         )
 
+    # now -> CURRENT_TIMESTAMP
     def visit_now_func(self, fn, **kw):
         return "CURRENT_TIMESTAMP"
 
+    # localtimestamp
     def visit_localtimestamp_func(self, func, **kw):
         return "DATETIME(CURRENT_TIMESTAMP, 'localtime')"
 
+    # TRUE -> 1
     def visit_true(self, expr, **kw):
         return "1"
 
+    # FALSE -> 0
     def visit_false(self, expr, **kw):
         return "0"
 
+    # length()
     def visit_char_length_func(self, fn, **kw):
         return "length%s" % self.function_argspec(fn)
 
+    # group_concat
     def visit_aggregate_strings_func(self, fn, **kw):
         return "group_concat%s" % self.function_argspec(fn)
 
+    # 旧版 SQLite 无 CAST 时透传
     def visit_cast(self, cast, **kwargs):
         if self.dialect.supports_cast:
             return super().visit_cast(cast, **kwargs)
         else:
             return self.process(cast.clause, **kwargs)
 
+    # STRFTIME 提取日期部分
     def visit_extract(self, extract, **kw):
         try:
             return "CAST(STRFTIME('%s', %s) AS INTEGER)" % (
@@ -1489,6 +1521,7 @@ class SQLiteCompiler(compiler.SQLCompiler):
                 "%s is not a valid extract argument." % extract.field
             ) from err
 
+    # RETURNING 不含表名
     def returning_clause(
         self,
         stmt,
@@ -1502,6 +1535,7 @@ class SQLiteCompiler(compiler.SQLCompiler):
             stmt, returning_cols, populate_result_map=populate_result_map, **kw
         )
 
+    # LIMIT/OFFSET（无 LIMIT 时用 -1）
     def limit_clause(self, select, **kw):
         text = ""
         if select._limit_clause is not None:
@@ -1514,10 +1548,12 @@ class SQLiteCompiler(compiler.SQLCompiler):
             text += " OFFSET " + self.process(sql.literal(0), **kw)
         return text
 
+    # SQLite 无 FOR UPDATE
     def for_update_clause(self, select, **kw):
         # sqlite has no "FOR UPDATE" AFAICT
         return ""
 
+    # UPDATE ... FROM
     def update_from_clause(
         self, update_stmt, from_table, extra_froms, from_hints, **kw
     ):
@@ -1527,18 +1563,21 @@ class SQLiteCompiler(compiler.SQLCompiler):
             for t in extra_froms
         )
 
+    # IS NOT 模拟 DISTINCT FROM
     def visit_is_distinct_from_binary(self, binary, operator, **kw):
         return "%s IS NOT %s" % (
             self.process(binary.left),
             self.process(binary.right),
         )
 
+    # IS 模拟 NOT DISTINCT FROM
     def visit_is_not_distinct_from_binary(self, binary, operator, **kw):
         return "%s IS %s" % (
             self.process(binary.left),
             self.process(binary.right),
         )
 
+    # JSON_QUOTE(JSON_EXTRACT(...))
     def visit_json_getitem_op_binary(self, binary, operator, **kw):
         if binary.type._type_affinity is sqltypes.JSON:
             expr = "JSON_QUOTE(JSON_EXTRACT(%s, %s))"
@@ -1550,6 +1589,7 @@ class SQLiteCompiler(compiler.SQLCompiler):
             self.process(binary.right, **kw),
         )
 
+    # JSON 路径访问
     def visit_json_path_getitem_op_binary(self, binary, operator, **kw):
         if binary.type._type_affinity is sqltypes.JSON:
             expr = "JSON_QUOTE(JSON_EXTRACT(%s, %s))"
@@ -1561,23 +1601,28 @@ class SQLiteCompiler(compiler.SQLCompiler):
             self.process(binary.right, **kw),
         )
 
+    # 空集 IN 子查询降级
     def visit_empty_set_op_expr(self, type_, expand_op, **kw):
         # slightly old SQLite versions don't seem to be able to handle
         # the empty set impl
         return self.visit_empty_set_expr(type_)
 
+    # 空集 SELECT 占位
     def visit_empty_set_expr(self, element_types, **kw):
         return "SELECT %s FROM (SELECT %s) WHERE 1!=1" % (
             ", ".join("1" for type_ in element_types or [INTEGER()]),
             ", ".join("1" for type_ in element_types or [INTEGER()]),
         )
 
+    # REGEXP 匹配
     def visit_regexp_match_op_binary(self, binary, operator, **kw):
         return self._generate_generic_binary(binary, " REGEXP ", **kw)
 
+    # NOT REGEXP
     def visit_not_regexp_match_op_binary(self, binary, operator, **kw):
         return self._generate_generic_binary(binary, " NOT REGEXP ", **kw)
 
+    # ON CONFLICT 目标列/WHERE
     def _on_conflict_target(self, clause, **kw):
         if clause.inferred_target_elements is not None:
             target_text = "(%s)" % ", ".join(
@@ -1605,6 +1650,7 @@ class SQLiteCompiler(compiler.SQLCompiler):
 
         return target_text
 
+    # ON CONFLICT DO NOTHING
     def visit_on_conflict_do_nothing(self, on_conflict, **kw):
         target_text = self._on_conflict_target(on_conflict, **kw)
 
@@ -1613,6 +1659,7 @@ class SQLiteCompiler(compiler.SQLCompiler):
         else:
             return "ON CONFLICT DO NOTHING"
 
+    # ON CONFLICT DO UPDATE SET
     def visit_on_conflict_do_update(self, on_conflict, **kw):
         clause = on_conflict
 
@@ -1687,6 +1734,7 @@ class SQLiteCompiler(compiler.SQLCompiler):
 
         return "ON CONFLICT %s DO UPDATE SET %s" % (target_text, action_text)
 
+    # XOR 用 (a|b)-(a&b) 模拟
     def visit_bitwise_xor_op_binary(self, binary, operator, **kw):
         # sqlite has no xor. Use "a XOR b" = "(a | b) - (a & b)".
         kw["eager_grouping"] = True
@@ -1695,7 +1743,9 @@ class SQLiteCompiler(compiler.SQLCompiler):
         return f"({or_} - {and_})"
 
 
+# DDL：列规格、约束 ON CONFLICT、索引
 class SQLiteDDLCompiler(compiler.DDLCompiler):
+    # 列 DDL：AUTOINCREMENT/NOT NULL ON CONFLICT
     def get_column_specification(self, column, **kwargs):
         coltype = self.dialect.type_compiler_instance.process(
             column.type, type_expression=column
@@ -1751,6 +1801,7 @@ class SQLiteDDLCompiler(compiler.DDLCompiler):
 
         return colspec
 
+    # 内联 PK 时跳过独立 CONSTRAINT
     def visit_primary_key_constraint(self, constraint, **kw):
         # for columns with sqlite_autoincrement=True,
         # the PRIMARY KEY constraint can only be inline
@@ -1780,6 +1831,7 @@ class SQLiteDDLCompiler(compiler.DDLCompiler):
 
         return text
 
+    # UNIQUE + ON CONFLICT
     def visit_unique_constraint(self, constraint, **kw):
         text = super().visit_unique_constraint(constraint)
 
@@ -1798,6 +1850,7 @@ class SQLiteDDLCompiler(compiler.DDLCompiler):
 
         return text
 
+    # CHECK + ON CONFLICT
     def visit_check_constraint(self, constraint, **kw):
         text = super().visit_check_constraint(constraint)
 
@@ -1810,6 +1863,7 @@ class SQLiteDDLCompiler(compiler.DDLCompiler):
 
         return text
 
+    # 列级 CHECK 不支持 ON CONFLICT
     def visit_column_check_constraint(self, constraint, **kw):
         text = super().visit_column_check_constraint(constraint)
 
@@ -1821,6 +1875,7 @@ class SQLiteDDLCompiler(compiler.DDLCompiler):
 
         return text
 
+    # 跨 schema FK 不渲染
     def visit_foreign_key_constraint(self, constraint, **kw):
         local_table = constraint.elements[0].parent.table
         remote_table = constraint.elements[0].column.table
@@ -1830,11 +1885,13 @@ class SQLiteDDLCompiler(compiler.DDLCompiler):
         else:
             return super().visit_foreign_key_constraint(constraint)
 
+    # FK 引用表名
     def define_constraint_remote_table(self, constraint, table, preparer):
         """Format the remote table clause of a CREATE CONSTRAINT clause."""
 
         return preparer.format_table(table, use_schema=False)
 
+    # CREATE INDEX + sqlite_where
     def visit_create_index(
         self, create, include_schema=False, include_table_schema=True, **kw
     ):
@@ -1870,6 +1927,7 @@ class SQLiteDDLCompiler(compiler.DDLCompiler):
 
         return text
 
+    # WITHOUT ROWID / STRICT
     def post_create_table(self, table):
         table_options = []
 
@@ -1885,10 +1943,13 @@ class SQLiteDDLCompiler(compiler.DDLCompiler):
             return ""
 
 
+# 类型名：DATETIME_CHAR / JSON 等
 class SQLiteTypeCompiler(compiler.GenericTypeCompiler):
+    # BLOB
     def visit_large_binary(self, type_, **kw):
         return self.visit_BLOB(type_)
 
+    # NUMERIC affinity 时用 DATETIME_CHAR
     def visit_DATETIME(self, type_, **kw):
         if (
             not isinstance(type_, _DateTimeMixin)
@@ -1898,6 +1959,7 @@ class SQLiteTypeCompiler(compiler.GenericTypeCompiler):
         else:
             return "DATETIME_CHAR"
 
+    # DATE / DATE_CHAR
     def visit_DATE(self, type_, **kw):
         if (
             not isinstance(type_, _DateTimeMixin)
@@ -1907,6 +1969,7 @@ class SQLiteTypeCompiler(compiler.GenericTypeCompiler):
         else:
             return "DATE_CHAR"
 
+    # TIME / TIME_CHAR
     def visit_TIME(self, type_, **kw):
         if (
             not isinstance(type_, _DateTimeMixin)
@@ -1916,6 +1979,7 @@ class SQLiteTypeCompiler(compiler.GenericTypeCompiler):
         else:
             return "TIME_CHAR"
 
+    # JSON（NUMERIC affinity）
     def visit_JSON(self, type_, **kw):
         # note this name provides NUMERIC affinity, not TEXT.
         # should not be an issue unless the JSON value consists of a single
@@ -1923,6 +1987,7 @@ class SQLiteTypeCompiler(compiler.GenericTypeCompiler):
         return "JSON"
 
 
+# 标识符引用与 SQLite 保留字
 class SQLiteIdentifierPreparer(compiler.IdentifierPreparer):
     reserved_words = {
         "add",
@@ -2045,14 +2110,17 @@ class SQLiteIdentifierPreparer(compiler.IdentifierPreparer):
     }
 
 
+# 执行上下文：列名去 schema 前缀
 class SQLiteExecutionContext(default.DefaultExecutionContext):
     @util.memoized_property
+    # 是否保留带点号的原始列名
     def _preserve_raw_colnames(self):
         return (
             not self.dialect._broken_dotted_colnames
             or self.execution_options.get("sqlite_raw_colnames", False)
         )
 
+    # UNION 结果列名去 tablename. 前缀
     def _translate_colname(self, colname):
         # TODO: detect SQLite version 3.10.0 or greater;
         # see [ticket:3633]
@@ -2067,6 +2135,7 @@ class SQLiteExecutionContext(default.DefaultExecutionContext):
             return colname, None
 
 
+# SQLite 方言：能力标志、隔离、反射
 class SQLiteDialect(default.DefaultDialect):
     name = "sqlite"
     supports_alter = False
@@ -2222,9 +2291,11 @@ class SQLiteDialect(default.DefaultDialect):
         {"READ UNCOMMITTED": 1, "SERIALIZABLE": 0}
     )
 
+    # READ UNCOMMITTED / SERIALIZABLE
     def get_isolation_level_values(self, dbapi_connection):
         return list(self._isolation_lookup)
 
+    # PRAGMA read_uncommitted
     def set_isolation_level(
         self, dbapi_connection: DBAPIConnection, level: IsolationLevel
     ) -> None:
@@ -2234,6 +2305,7 @@ class SQLiteDialect(default.DefaultDialect):
         cursor.execute(f"PRAGMA read_uncommitted = {isolation_level}")
         cursor.close()
 
+    # 读取当前隔离级别
     def get_isolation_level(self, dbapi_connection):
         cursor = dbapi_connection.cursor()
         cursor.execute("PRAGMA read_uncommitted")
@@ -2257,12 +2329,14 @@ class SQLiteDialect(default.DefaultDialect):
             assert False, "Unknown isolation level %s" % value
 
     @reflection.cache
+    # PRAGMA database_list
     def get_schema_names(self, connection, **kw):
         s = "PRAGMA database_list"
         dl = connection.exec_driver_sql(s)
 
         return [db[1] for db in dl if db[1] != "temp"]
 
+    # schema.table 格式化
     def _format_schema(self, schema, table_name):
         if schema is not None:
             qschema = self.identifier_preparer.quote_identifier(schema)
@@ -2271,6 +2345,7 @@ class SQLiteDialect(default.DefaultDialect):
             name = table_name
         return name
 
+    # sqlite_master 查询模板
     def _sqlite_main_query(
         self,
         table: str,
@@ -2291,6 +2366,7 @@ class SQLiteDialect(default.DefaultDialect):
         return query
 
     @reflection.cache
+    # 表名列表
     def get_table_names(
         self, connection, schema=None, sqlite_include_internal=False, **kw
     ):
@@ -2301,6 +2377,7 @@ class SQLiteDialect(default.DefaultDialect):
         return names
 
     @reflection.cache
+    # 临时表
     def get_temp_table_names(
         self, connection, sqlite_include_internal=False, **kw
     ):
@@ -2311,6 +2388,7 @@ class SQLiteDialect(default.DefaultDialect):
         return names
 
     @reflection.cache
+    # 临时视图
     def get_temp_view_names(
         self, connection, sqlite_include_internal=False, **kw
     ):
@@ -2321,6 +2399,7 @@ class SQLiteDialect(default.DefaultDialect):
         return names
 
     @reflection.cache
+    # table_info 判断存在
     def has_table(self, connection, table_name, schema=None, **kw):
         self._ensure_has_table_connection(connection)
 
@@ -2334,10 +2413,12 @@ class SQLiteDialect(default.DefaultDialect):
         )
         return bool(info)
 
+    # 默认 main
     def _get_default_schema_name(self, connection):
         return "main"
 
     @reflection.cache
+    # 视图名
     def get_view_names(
         self, connection, schema=None, sqlite_include_internal=False, **kw
     ):
@@ -2348,6 +2429,7 @@ class SQLiteDialect(default.DefaultDialect):
         return names
 
     @reflection.cache
+    # 视图 CREATE SQL
     def get_view_definition(self, connection, view_name, schema=None, **kw):
         if schema is not None:
             qschema = self.identifier_preparer.quote_identifier(schema)
@@ -2382,6 +2464,7 @@ class SQLiteDialect(default.DefaultDialect):
             )
 
     @reflection.cache
+    # table_xinfo / 生成列
     def get_columns(self, connection, table_name, schema=None, **kw):
         pragma = "table_info"
         # computed columns are threaded as hidden, they require table_xinfo
@@ -2446,6 +2529,7 @@ class SQLiteDialect(default.DefaultDialect):
         else:
             return ReflectionDefaults.columns()
 
+    # PRAGMA 行转列反射信息
     def _get_column_info(
         self,
         name,
@@ -2490,6 +2574,7 @@ class SQLiteDialect(default.DefaultDialect):
             colspec["computed"] = {"sqltext": sqltext, "persisted": persisted}
         return colspec
 
+    # 按 affinity 规则解析列类型
     def _resolve_type_affinity(self, type_):
         """Return a data type from a reflected column, using affinity rules.
 
@@ -2545,6 +2630,7 @@ class SQLiteDialect(default.DefaultDialect):
         return coltype
 
     @reflection.cache
+    # 主键：DDL 名 + PK 列
     def get_pk_constraint(self, connection, table_name, schema=None, **kw):
         constraint_name = None
         table_data = self._get_table_sql(connection, table_name, schema=schema)
@@ -2569,6 +2655,7 @@ class SQLiteDialect(default.DefaultDialect):
             return ReflectionDefaults.pk_constraint()
 
     @reflection.cache
+    # FK：PRAGMA + DDL 正则
     def get_foreign_keys(self, connection, table_name, schema=None, **kw):
         # sqlite makes this *extremely difficult*.
         # First, use the pragma to get the actual FKs.
@@ -2621,6 +2708,7 @@ class SQLiteDialect(default.DefaultDialect):
             if rcol:
                 fk["referred_columns"].append(rcol)
 
+            # FK 签名用于 PRAGMA/DDL 对齐
         def fk_sig(constrained_columns, referred_table, referred_columns):
             return (
                 tuple(constrained_columns)
@@ -2643,6 +2731,7 @@ class SQLiteDialect(default.DefaultDialect):
 
         table_data = self._get_table_sql(connection, table_name, schema=schema)
 
+            # 从 CREATE TABLE 解析 FK 名与 ON DELETE
         def parse_fks():
             if table_data is None:
                 # system tables, etc.
@@ -2740,11 +2829,13 @@ class SQLiteDialect(default.DefaultDialect):
         else:
             return ReflectionDefaults.foreign_keys()
 
+    # 从约束签名提取列名
     def _find_cols_in_sig(self, sig):
         for match in re.finditer(r'(?:"(.+?)")|([a-z0-9_]+)', sig, re.I):
             yield match.group(1) or match.group(2)
 
     @reflection.cache
+    # UNIQUE：DDL 与 autoindex 对齐
     def get_unique_constraints(
         self, connection, table_name, schema=None, **kw
     ):
@@ -2766,6 +2857,7 @@ class SQLiteDialect(default.DefaultDialect):
         )
         unique_constraints = []
 
+            # 解析 UNIQUE 约束
         def parse_uqs():
             if table_data is None:
                 return
@@ -2805,6 +2897,7 @@ class SQLiteDialect(default.DefaultDialect):
             return ReflectionDefaults.unique_constraints()
 
     @reflection.cache
+    # CHECK：平衡括号解析
     def get_check_constraints(self, connection, table_name, schema=None, **kw):
         table_data = self._get_table_sql(
             connection, table_name, schema=schema, **kw
@@ -2899,6 +2992,7 @@ class SQLiteDialect(default.DefaultDialect):
             return ReflectionDefaults.check_constraints()
 
     @reflection.cache
+    # index_list + 部分索引 WHERE
     def get_indexes(self, connection, table_name, schema=None, **kw):
         pragma_indexes = self._get_table_pragma(
             connection, "index_list", table_name, schema=schema
@@ -2988,6 +3082,7 @@ class SQLiteDialect(default.DefaultDialect):
         else:
             return ReflectionDefaults.indexes()
 
+    # 系统表名判断
     def _is_sys_table(self, table_name):
         return table_name in {
             "sqlite_schema",
@@ -2997,6 +3092,7 @@ class SQLiteDialect(default.DefaultDialect):
         }
 
     @reflection.cache
+    # 取 CREATE TABLE/VIEW SQL
     def _get_table_sql(self, connection, table_name, schema=None, **kw):
         if schema:
             schema_expr = "%s." % (
@@ -3025,6 +3121,7 @@ class SQLiteDialect(default.DefaultDialect):
             raise exc.NoSuchTableError(f"{schema_expr}{table_name}")
         return value
 
+    # PRAGMA main/temp
     def _get_table_pragma(self, connection, pragma, table_name, schema=None):
         quote = self.identifier_preparer.quote_identifier
         if schema is not None:

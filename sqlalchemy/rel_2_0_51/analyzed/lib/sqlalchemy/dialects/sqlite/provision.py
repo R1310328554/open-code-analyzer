@@ -23,6 +23,8 @@ from ...testing.provision import post_configure_testing_engine
 from ...testing.provision import run_reap_dbs
 from ...testing.provision import stop_test_class_outside_fixtures
 from ...testing.provision import temp_table_keyword_args
+# SQLite 测试供给：URL、ATTACH、UPSERT
+
 from ...testing.provision import upsert
 
 # TODO: I can't get this to build dynamically with pytest-xdist procs
@@ -35,6 +37,7 @@ _drivernames = {
 }
 
 
+# 规范化 sqlite 测试库文件名与驱动
 def _format_url(url, driver, ident):
     """given a sqlite url + desired driver + ident, make a canonical
     URL out of it
@@ -83,6 +86,7 @@ def _format_url(url, driver, ident):
 
 
 @generate_driver_url.for_db("sqlite")
+# 按驱动生成测试 URL
 def generate_driver_url(url, driver, query_str):
     url = _format_url(url, driver, None)
 
@@ -95,11 +99,13 @@ def generate_driver_url(url, driver, query_str):
 
 
 @follower_url_from_main.for_db("sqlite")
+# follower 库 URL
 def _sqlite_follower_url_from_main(url, ident):
     return _format_url(url, None, ident)
 
 
 @post_configure_engine.for_db("sqlite")
+# connect 时 ATTACH test_schema
 def _sqlite_post_configure_engine(url, engine, follower_ident):
     from sqlalchemy import event
 
@@ -142,6 +148,7 @@ def _sqlite_post_configure_engine(url, engine, follower_ident):
 
 
 @post_configure_testing_engine.for_db("sqlite")
+# savepoint / 共享连接池
 def _sqlite_post_configure_testing_engine(url, engine, options, scope):
 
     sqlite_savepoint = options.get("sqlite_savepoint", False)
@@ -167,15 +174,18 @@ def _sqlite_post_configure_testing_engine(url, engine, options, scope):
 
 
 @create_db.for_db("sqlite")
+# 创建库（SQLite 无操作）
 def _sqlite_create_db(cfg, eng, ident):
     pass
 
 
 @drop_db.for_db("sqlite")
+# 删除匹配 ident 的 .db 文件
 def _sqlite_drop_db(cfg, eng, ident):
     _drop_dbs_w_ident(eng.url.database, eng.driver, ident)
 
 
+# 按 ident 清理磁盘库
 def _drop_dbs_w_ident(databasename, driver, ident):
     for path in os.listdir("."):
         fname, ext = os.path.split(path)
@@ -185,16 +195,19 @@ def _drop_dbs_w_ident(databasename, driver, ident):
 
 
 @stop_test_class_outside_fixtures.for_db("sqlite")
+# 测试类结束 dispose
 def stop_test_class_outside_fixtures(config, db, cls):
     db.dispose()
 
 
 @temp_table_keyword_args.for_db("sqlite")
+# TEMPORARY 表前缀
 def _sqlite_temp_table_keyword_args(cfg, eng):
     return {"prefixes": ["TEMPORARY"]}
 
 
 @run_reap_dbs.for_db("sqlite")
+# reaper 清理 follower 库
 def _reap_sqlite_dbs(url, idents):
     log.info("db reaper connecting to %r", url)
     log.info("identifiers in file: %s", ", ".join(idents))
@@ -205,6 +218,7 @@ def _reap_sqlite_dbs(url, idents):
 
 
 @upsert.for_db("sqlite")
+# SQLite UPSERT：insert on_conflict
 def _upsert(
     cfg,
     table,

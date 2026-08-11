@@ -7,7 +7,9 @@
 # mypy: ignore-errors
 
 r"""
-.. dialect:: postgresql+psycopg2cffi
+postgresql+psycopg2cffi 方言：CFFI 版 psycopg2，适用于 PyPy 等环境。
+
+.. dialect:: postgresql+psycopg2cffi.. dialect:: postgresql+psycopg2cffi
     :name: psycopg2cffi
     :dbapi: psycopg2cffi
     :connectstring: postgresql+psycopg2cffi://user:password@host:port/dbname[?key=value&key=value...]
@@ -27,6 +29,7 @@ from .psycopg2 import PGDialect_psycopg2
 from ... import util
 
 
+# 继承 psycopg2 方言，仅覆盖驱动导入与特性版本映射
 class PGDialect_psycopg2cffi(PGDialect_psycopg2):
     driver = "psycopg2cffi"
     supports_unicode_statements = True
@@ -36,6 +39,7 @@ class PGDialect_psycopg2cffi(PGDialect_psycopg2):
     # __version__ as 2.4.4.  Subsequent releases seem to have
     # fixed this.
 
+    # 特性版本阈值（psycopg2cffi 首版报告 2.4.4）
     FEATURE_VERSION_MAP = dict(
         native_json=(2, 4, 4),
         native_jsonb=(2, 7, 1),
@@ -45,18 +49,22 @@ class PGDialect_psycopg2cffi(PGDialect_psycopg2):
     )
 
     @classmethod
+    # 导入 psycopg2cffi 模块
     def import_dbapi(cls):
         return __import__("psycopg2cffi")
 
     @util.memoized_property
+    # 延迟加载 psycopg2cffi.extensions
     def _psycopg2_extensions(cls):
         root = __import__("psycopg2cffi", fromlist=["extensions"])
         return root.extensions
 
     @util.memoized_property
+    # 延迟加载 psycopg2cffi.extras
     def _psycopg2_extras(cls):
         root = __import__("psycopg2cffi", fromlist=["extras"])
         return root.extras
 
 
+# 方言入口
 dialect = PGDialect_psycopg2cffi

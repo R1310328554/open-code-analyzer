@@ -4,6 +4,8 @@
 #
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
+# SQLite INSERT ... ON CONFLICT 方言扩展
+
 from __future__ import annotations
 
 from typing import Any
@@ -36,6 +38,7 @@ from ...util.typing import Self
 __all__ = ("Insert", "insert")
 
 
+# 构造 SQLite 专用 Insert
 def insert(table: _DMLTableArgument) -> Insert:
     """Construct a sqlite-specific variant :class:`_sqlite.Insert`
     construct.
@@ -56,6 +59,7 @@ def insert(table: _DMLTableArgument) -> Insert:
     return Insert(table)
 
 
+# 扩展 ON CONFLICT DO UPDATE/NOTHING
 class Insert(StandardInsert):
     """SQLite-specific implementation of INSERT.
 
@@ -76,6 +80,7 @@ class Insert(StandardInsert):
     inherit_cache = False
 
     @util.memoized_property
+    # ON CONFLICT 的 excluded 伪表列
     def excluded(
         self,
     ) -> ReadOnlyColumnCollection[str, KeyedColumnElement[Any]]:
@@ -109,6 +114,7 @@ class Insert(StandardInsert):
 
     @_generative
     @_on_conflict_exclusive
+    # DO UPDATE SET
     def on_conflict_do_update(
         self,
         index_elements: _OnConflictIndexElementsT = None,
@@ -162,6 +168,7 @@ class Insert(StandardInsert):
 
     @_generative
     @_on_conflict_exclusive
+    # DO NOTHING
     def on_conflict_do_nothing(
         self,
         index_elements: _OnConflictIndexElementsT = None,
@@ -187,6 +194,7 @@ class Insert(StandardInsert):
         return self
 
 
+# ON CONFLICT 子句基类
 class OnConflictClause(ClauseElement):
     stringify_dialect = "sqlite"
 
@@ -195,6 +203,8 @@ class OnConflictClause(ClauseElement):
         Union[ColumnElement[Any], TextClause]
     ]
 
+    # 推断冲突目标索引元素
+    # set_ 字典与 update WHERE
     def __init__(
         self,
         index_elements: _OnConflictIndexElementsT = None,
@@ -219,10 +229,12 @@ class OnConflictClause(ClauseElement):
             ) = None
 
 
+# DO NOTHING 子句
 class OnConflictDoNothing(OnConflictClause):
     __visit_name__ = "on_conflict_do_nothing"
 
 
+# DO UPDATE 子句
 class OnConflictDoUpdate(OnConflictClause):
     __visit_name__ = "on_conflict_do_update"
 

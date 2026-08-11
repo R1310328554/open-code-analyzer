@@ -4,6 +4,8 @@
 #
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
+# 纯 Python Row 实现（C 扩展不可用时的后备）
+
 from __future__ import annotations
 
 import operator
@@ -28,6 +30,7 @@ if typing.TYPE_CHECKING:
 MD_INDEX = 0  # integer index in cursor.description
 
 
+# 结果行：不可变 tuple + 列名映射
 class BaseRow:
     __slots__ = ("_parent", "_data", "_key_to_index")
 
@@ -35,6 +38,7 @@ class BaseRow:
     _key_to_index: Mapping[_KeyType, int]
     _data: _RawRowType
 
+    # 应用 result processors
     def __init__(
         self,
         parent: ResultMetaData,
@@ -61,21 +65,25 @@ class BaseRow:
         else:
             object.__setattr__(self, "_data", tuple(data))
 
+    # pickle 支持
     def __reduce__(self) -> Tuple[Callable[..., BaseRow], Tuple[Any, ...]]:
         return (
             rowproxy_reconstructor,
             (self.__class__, self.__getstate__()),
         )
 
+    # 序列化状态
     def __getstate__(self) -> Dict[str, Any]:
         return {"_parent": self._parent, "_data": self._data}
 
+    # 反序列化
     def __setstate__(self, state: Dict[str, Any]) -> None:
         parent = state["_parent"]
         object.__setattr__(self, "_parent", parent)
         object.__setattr__(self, "_data", state["_data"])
         object.__setattr__(self, "_key_to_index", parent._key_to_index)
 
+    # 值列表
     def _values_impl(self) -> List[Any]:
         return list(self)
 
@@ -88,9 +96,11 @@ class BaseRow:
     def __hash__(self) -> int:
         return hash(self._data)
 
+    # 索引/切片访问
     def __getitem__(self, key: Any) -> Any:
         return self._data[key]
 
+    # 按列名映射访问
     def _get_by_key_impl_mapping(self, key: str) -> Any:
         try:
             return self._data[self._key_to_index[key]]
@@ -98,6 +108,7 @@ class BaseRow:
             pass
         self._parent._key_not_found(key, False)
 
+    # 属性式列访问
     def __getattr__(self, name: str) -> Any:
         try:
             return self._data[self._key_to_index[name]]
@@ -105,12 +116,14 @@ class BaseRow:
             pass
         self._parent._key_not_found(name, True)
 
+    # 底层 tuple
     def _to_tuple_instance(self) -> Tuple[Any, ...]:
         return self._data
 
 
 # This reconstructor is necessary so that pickles with the Cy extension or
 # without use the same Binary format.
+# pickle 重建 Row
 def rowproxy_reconstructor(
     cls: Type[BaseRow], state: Dict[str, Any]
 ) -> BaseRow:
@@ -119,6 +132,7 @@ def rowproxy_reconstructor(
     return obj
 
 
+# 连续索引用 slice itemgetter 优化
 def tuplegetter(*indexes: int) -> _TupleGetterType:
     if len(indexes) != 1:
         for i in range(1, len(indexes)):

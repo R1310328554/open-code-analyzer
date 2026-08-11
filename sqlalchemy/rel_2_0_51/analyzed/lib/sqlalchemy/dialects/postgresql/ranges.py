@@ -5,6 +5,8 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
+# PostgreSQL RANGE / MULTIRANGE：Python 值对象与 SQLAlchemy 类型
+
 from __future__ import annotations
 
 import dataclasses
@@ -57,6 +59,7 @@ else:
 
 
 @dataclasses.dataclass(frozen=True, **dc_slots)
+# 不可变区间值：上下界、开闭区间与空区间
 class Range(Generic[_T]):
     """Represent a PostgreSQL range.
 
@@ -112,6 +115,7 @@ class Range(Generic[_T]):
                 }
             )
 
+    # 非空区间时为 True
     def __bool__(self) -> bool:
         return not self.empty
 
@@ -128,12 +132,14 @@ class Range(Generic[_T]):
         return self.empty
 
     @property
+    # 下界是否闭区间
     def lower_inc(self) -> bool:
         """Return True if the lower bound is inclusive."""
 
         return self.bounds[0] == "["
 
     @property
+    # 下界是否为负无穷
     def lower_inf(self) -> bool:
         """Return True if this range is non-empty and lower bound is
         infinite."""
@@ -141,12 +147,14 @@ class Range(Generic[_T]):
         return not self.empty and self.lower is None
 
     @property
+    # 上界是否闭区间
     def upper_inc(self) -> bool:
         """Return True if the upper bound is inclusive."""
 
         return self.bounds[1] == "]"
 
     @property
+    # 上界是否为正无穷
     def upper_inf(self) -> bool:
         """Return True if this range is non-empty and the upper bound is
         infinite."""
@@ -157,6 +165,7 @@ class Range(Generic[_T]):
     def __sa_type_engine__(self) -> AbstractSingleRange[_T]:
         return AbstractSingleRange()
 
+    # 判断标量是否在区间内
     def _contains_value(self, value: _T) -> bool:
         """Return True if this range contains the given value."""
 
@@ -187,6 +196,7 @@ class Range(Generic[_T]):
             else value <= self.upper
         )
 
+    # 离散类型步长（int=1，date=1天）
     def _get_discrete_step(self) -> Any:
         "Determine the “step” for this range, if it is a discrete one."
 
@@ -207,6 +217,7 @@ class Range(Generic[_T]):
         else:
             return None
 
+    # 比较两边界：值与开闭性
     def _compare_edges(
         self,
         value1: Optional[_T],
@@ -296,6 +307,7 @@ class Range(Generic[_T]):
             else:
                 return 0
 
+    # 按上下界与 bounds 判等
     def __eq__(self, other: Any) -> bool:
         """Compare this range to the `other` taking into account
         bounds inclusivity, returning ``True`` if they are equal.
@@ -323,6 +335,7 @@ class Range(Generic[_T]):
             and self._compare_edges(supper, supper_b, oupper, oupper_b) == 0
         )
 
+    # 是否被 other 包含
     def contained_by(self, other: Range[_T]) -> bool:
         "Determine whether this range is a contained by `other`."
 
@@ -352,6 +365,7 @@ class Range(Generic[_T]):
 
         return True
 
+    # 包含标量或子区间
     def contains(self, value: Union[_T, Range[_T]]) -> bool:
         "Determine whether this range contains `value`."
 
@@ -362,6 +376,7 @@ class Range(Generic[_T]):
 
     __contains__ = contains
 
+    # 是否与 other 重叠
     def overlaps(self, other: Range[_T]) -> bool:
         "Determine whether this range overlaps with `other`."
 
@@ -394,6 +409,7 @@ class Range(Generic[_T]):
 
         return False
 
+    # 是否严格位于 other 左侧
     def strictly_left_of(self, other: Range[_T]) -> bool:
         "Determine whether this range is completely to the left of `other`."
 
@@ -411,6 +427,7 @@ class Range(Generic[_T]):
 
     __lshift__ = strictly_left_of
 
+    # 是否严格位于 other 右侧
     def strictly_right_of(self, other: Range[_T]) -> bool:
         "Determine whether this range is completely to the right of `other`."
 
@@ -428,6 +445,7 @@ class Range(Generic[_T]):
 
     __rshift__ = strictly_right_of
 
+    # 左端不超出 other
     def not_extend_left_of(self, other: Range[_T]) -> bool:
         "Determine whether this does not extend to the left of `other`."
 
@@ -443,6 +461,7 @@ class Range(Generic[_T]):
         # Check whether this lower edge is not less than other's lower end
         return self._compare_edges(slower, slower_b, olower, olower_b) >= 0
 
+    # 右端不超出 other
     def not_extend_right_of(self, other: Range[_T]) -> bool:
         "Determine whether this does not extend to the right of `other`."
 
@@ -458,6 +477,7 @@ class Range(Generic[_T]):
         # Check whether this upper edge is not greater than other's upper end
         return self._compare_edges(supper, supper_b, oupper, oupper_b) <= 0
 
+    # 上界与下界是否相邻
     def _upper_edge_adjacent_to_lower(
         self,
         value1: Optional[_T],
@@ -505,6 +525,7 @@ class Range(Generic[_T]):
         else:
             return False
 
+    # 是否与 other 相邻
     def adjacent_to(self, other: Range[_T]) -> bool:
         "Determine whether this range is adjacent to the `other`."
 
@@ -527,6 +548,7 @@ class Range(Generic[_T]):
             oupper, oupper_b, slower, slower_b
         )
 
+    # 并集（须重叠或相邻）
     def union(self, other: Range[_T]) -> Range[_T]:
         """Compute the union of this range with the `other`.
 
@@ -576,6 +598,7 @@ class Range(Generic[_T]):
     def __add__(self, other: Range[_T]) -> Range[_T]:
         return self.union(other)
 
+    # 差集
     def difference(self, other: Range[_T]) -> Range[_T]:
         """Compute the difference between this range and the `other`.
 
@@ -655,6 +678,7 @@ class Range(Generic[_T]):
     def __sub__(self, other: Range[_T]) -> Range[_T]:
         return self.difference(other)
 
+    # 交集
     def intersection(self, other: Range[_T]) -> Range[_T]:
         """Compute the intersection of this range with the `other`.
 
@@ -699,6 +723,7 @@ class Range(Generic[_T]):
     def __str__(self) -> str:
         return self._stringify()
 
+    # 序列化为 PG 区间字面量
     def _stringify(self) -> str:
         if self.empty:
             return "empty"
@@ -712,6 +737,7 @@ class Range(Generic[_T]):
         return f"{b0}{l},{r}{b1}"
 
 
+# 多区间列表：字面量多值时推断 MULTIRANGE 类型
 class MultiRange(List[Range[_T]]):
     """Represents a multirange sequence.
 
@@ -738,6 +764,7 @@ class MultiRange(List[Range[_T]]):
         return AbstractMultiRange()
 
 
+# RANGE 类型基类：adapt 与比较器
 class AbstractRange(sqltypes.TypeEngine[_T]):
     """Base class for single and multi Range SQL types."""
 
@@ -746,6 +773,7 @@ class AbstractRange(sqltypes.TypeEngine[_T]):
     __abstract__ = True
 
     @overload
+    # 动态适配为驱动专用 RangeImpl
     def adapt(self, cls: Type[_TE], **kw: Any) -> _TE: ...
 
     @overload
@@ -787,9 +815,11 @@ class AbstractRange(sqltypes.TypeEngine[_T]):
         else:
             return super().adapt(cls)
 
+        # 区间比较与集合运算 SQL 表达式
     class comparator_factory(TypeEngine.Comparator[Range[Any]]):
         """Define comparison operations for range types."""
 
+            # @> 包含
         def contains(self, other: Any, **kw: Any) -> ColumnElement[bool]:
             """Boolean expression. Returns true if the right hand operand,
             which can be an element or a range, is contained within the
@@ -800,18 +830,21 @@ class AbstractRange(sqltypes.TypeEngine[_T]):
             """
             return self.expr.operate(CONTAINS, other)
 
+            # <@ 被包含
         def contained_by(self, other: Any) -> ColumnElement[bool]:
             """Boolean expression. Returns true if the column is contained
             within the right hand operand.
             """
             return self.expr.operate(CONTAINED_BY, other)
 
+            # && 重叠
         def overlaps(self, other: Any) -> ColumnElement[bool]:
             """Boolean expression. Returns true if the column overlaps
             (has points in common with) the right hand operand.
             """
             return self.expr.operate(OVERLAP, other)
 
+            # << 严格在左
         def strictly_left_of(self, other: Any) -> ColumnElement[bool]:
             """Boolean expression. Returns true if the column is strictly
             left of the right hand operand.
@@ -820,6 +853,7 @@ class AbstractRange(sqltypes.TypeEngine[_T]):
 
         __lshift__ = strictly_left_of
 
+            # >> 严格在右
         def strictly_right_of(self, other: Any) -> ColumnElement[bool]:
             """Boolean expression. Returns true if the column is strictly
             right of the right hand operand.
@@ -828,24 +862,28 @@ class AbstractRange(sqltypes.TypeEngine[_T]):
 
         __rshift__ = strictly_right_of
 
+            # &< 右端不超出
         def not_extend_right_of(self, other: Any) -> ColumnElement[bool]:
             """Boolean expression. Returns true if the range in the column
             does not extend right of the range in the operand.
             """
             return self.expr.operate(NOT_EXTEND_RIGHT_OF, other)
 
+            # &> 左端不超出
         def not_extend_left_of(self, other: Any) -> ColumnElement[bool]:
             """Boolean expression. Returns true if the range in the column
             does not extend left of the range in the operand.
             """
             return self.expr.operate(NOT_EXTEND_LEFT_OF, other)
 
+            # -|- 相邻
         def adjacent_to(self, other: Any) -> ColumnElement[bool]:
             """Boolean expression. Returns true if the range in the column
             is adjacent to the range in the operand.
             """
             return self.expr.operate(ADJACENT_TO, other)
 
+            # + 并集
         def union(self, other: Any) -> ColumnElement[bool]:
             """Range expression. Returns the union of the two ranges.
             Will raise an exception if the resulting range is not
@@ -853,6 +891,7 @@ class AbstractRange(sqltypes.TypeEngine[_T]):
             """
             return self.expr.operate(operators.add, other)
 
+            # - 差集
         def difference(self, other: Any) -> ColumnElement[bool]:
             """Range expression. Returns the union of the two ranges.
             Will raise an exception if the resulting range is not
@@ -860,6 +899,7 @@ class AbstractRange(sqltypes.TypeEngine[_T]):
             """
             return self.expr.operate(operators.sub, other)
 
+            # * 交集
         def intersection(self, other: Any) -> ColumnElement[Range[_T]]:
             """Range expression. Returns the intersection of the two ranges.
             Will raise an exception if the resulting range is not
@@ -868,6 +908,7 @@ class AbstractRange(sqltypes.TypeEngine[_T]):
             return self.expr.operate(operators.mul, other)
 
 
+# 单区间 SQL 类型基类
 class AbstractSingleRange(AbstractRange[Range[_T]]):
     """Base for PostgreSQL RANGE types.
 
@@ -881,6 +922,7 @@ class AbstractSingleRange(AbstractRange[Range[_T]]):
 
     __abstract__ = True
 
+    # 按字面量元素推断 INT4/INT8/NUM/DATE/TS 等
     def _resolve_for_literal(self, value: Range[Any]) -> Any:
         spec = value.lower if value.lower is not None else value.upper
 
@@ -903,11 +945,13 @@ class AbstractSingleRange(AbstractRange[Range[_T]]):
             return sqltypes.NULLTYPE
 
 
+# 标记类：驱动侧单区间实现
 class AbstractSingleRangeImpl(AbstractSingleRange[_T]):
     """Marker for AbstractSingleRange that will apply a subclass-specific
     adaptation"""
 
 
+# 多区间 SQL 类型基类
 class AbstractMultiRange(AbstractRange[Sequence[Range[_T]]]):
     """Base for PostgreSQL MULTIRANGE types.
 
@@ -918,6 +962,7 @@ class AbstractMultiRange(AbstractRange[Sequence[Range[_T]]]):
 
     __abstract__ = True
 
+    # 按 MultiRange 首元素推断 MULTIRANGE 子类型
     def _resolve_for_literal(self, value: Sequence[Range[Any]]) -> Any:
         if not value:
             # empty MultiRange, SQL datatype can't be determined here
@@ -944,77 +989,90 @@ class AbstractMultiRange(AbstractRange[Sequence[Range[_T]]]):
             return sqltypes.NULLTYPE
 
 
+# 标记类：驱动侧多区间实现
 class AbstractMultiRangeImpl(AbstractMultiRange[_T]):
     """Marker for AbstractMultiRange that will apply a subclass-specific
     adaptation"""
 
 
+# int4 区间
 class INT4RANGE(AbstractSingleRange[int]):
     """Represent the PostgreSQL INT4RANGE type."""
 
     __visit_name__ = "INT4RANGE"
 
 
+# int8 区间
 class INT8RANGE(AbstractSingleRange[int]):
     """Represent the PostgreSQL INT8RANGE type."""
 
     __visit_name__ = "INT8RANGE"
 
 
+# numeric 区间
 class NUMRANGE(AbstractSingleRange[Decimal]):
     """Represent the PostgreSQL NUMRANGE type."""
 
     __visit_name__ = "NUMRANGE"
 
 
+# date 区间
 class DATERANGE(AbstractSingleRange[date]):
     """Represent the PostgreSQL DATERANGE type."""
 
     __visit_name__ = "DATERANGE"
 
 
+# timestamp 区间
 class TSRANGE(AbstractSingleRange[datetime]):
     """Represent the PostgreSQL TSRANGE type."""
 
     __visit_name__ = "TSRANGE"
 
 
+# timestamptz 区间
 class TSTZRANGE(AbstractSingleRange[datetime]):
     """Represent the PostgreSQL TSTZRANGE type."""
 
     __visit_name__ = "TSTZRANGE"
 
 
+# int4 多区间
 class INT4MULTIRANGE(AbstractMultiRange[int]):
     """Represent the PostgreSQL INT4MULTIRANGE type."""
 
     __visit_name__ = "INT4MULTIRANGE"
 
 
+# int8 多区间
 class INT8MULTIRANGE(AbstractMultiRange[int]):
     """Represent the PostgreSQL INT8MULTIRANGE type."""
 
     __visit_name__ = "INT8MULTIRANGE"
 
 
+# numeric 多区间
 class NUMMULTIRANGE(AbstractMultiRange[Decimal]):
     """Represent the PostgreSQL NUMMULTIRANGE type."""
 
     __visit_name__ = "NUMMULTIRANGE"
 
 
+# date 多区间
 class DATEMULTIRANGE(AbstractMultiRange[date]):
     """Represent the PostgreSQL DATEMULTIRANGE type."""
 
     __visit_name__ = "DATEMULTIRANGE"
 
 
+# timestamp 多区间
 class TSMULTIRANGE(AbstractMultiRange[datetime]):
     """Represent the PostgreSQL TSRANGE type."""
 
     __visit_name__ = "TSMULTIRANGE"
 
 
+# timestamptz 多区间
 class TSTZMULTIRANGE(AbstractMultiRange[datetime]):
     """Represent the PostgreSQL TSTZRANGE type."""
 
@@ -1025,6 +1083,7 @@ _max_int_32 = 2**31 - 1
 _min_int_32 = -(2**31)
 
 
+# 判断区间界是否落在 int32 内
 def _is_int32(r: Range[int]) -> bool:
     return (r.lower is None or _min_int_32 <= r.lower <= _max_int_32) and (
         r.upper is None or _min_int_32 <= r.upper <= _max_int_32

@@ -5,7 +5,9 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
-"""SQL connections, SQL execution and high-level DB-API interface.
+# engine 包入口：Engine、Connection、Result 等公开 API
+
+"""SQL connections, SQL execution and high-level DB-API interface."""SQL connections, SQL execution and high-level DB-API interface.
 
 The engine package defines the basic components used to interface
 DB-API modules with higher-level statement construction,

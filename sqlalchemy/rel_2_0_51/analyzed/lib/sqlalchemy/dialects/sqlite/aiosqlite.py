@@ -8,7 +8,9 @@
 
 r"""
 
-.. dialect:: sqlite+aiosqlite
+sqlite+aiosqlite 异步方言：后台线程包装 pysqlite。
+
+.. dialect:: sqlite+aiosqlite.. dialect:: sqlite+aiosqlite
     :name: aiosqlite
     :dbapi: aiosqlite
     :connectstring: sqlite+aiosqlite:///file_path
@@ -118,6 +120,7 @@ if TYPE_CHECKING:
     from ...pool.base import PoolProxiedConnection
 
 
+# 同步风格游标：await_ 桥接 aiosqlite
 class AsyncAdapt_aiosqlite_cursor:
     # TODO: base on connectors/asyncio.py
     # see #10415
@@ -144,12 +147,14 @@ class AsyncAdapt_aiosqlite_cursor:
         self.description: Optional[_DBAPICursorDescription] = None
         self._rows: Deque[Any] = deque()
 
+    # 软关闭占位
     async def _async_soft_close(self) -> None:
         return
 
     def close(self) -> None:
         self._rows.clear()
 
+    # 执行 SQL，非 server_side 时预取全部行
     def execute(
         self,
         operation: Any,
@@ -182,6 +187,7 @@ class AsyncAdapt_aiosqlite_cursor:
         except Exception as error:
             self._adapt_connection._handle_exception(error)
 
+    # 批量执行
     def executemany(
         self,
         operation: Any,
@@ -204,12 +210,15 @@ class AsyncAdapt_aiosqlite_cursor:
         while self._rows:
             yield self._rows.popleft()
 
+    # 从 deque 取一行
+    # 异步 fetchone
     def fetchone(self) -> Optional[Any]:
         if self._rows:
             return self._rows.popleft()
         else:
             return None
 
+    # 取多行
     def fetchmany(self, size: Optional[int] = None) -> Sequence[Any]:
         if size is None:
             size = self.arraysize
@@ -217,12 +226,14 @@ class AsyncAdapt_aiosqlite_cursor:
         rr = self._rows
         return [rr.popleft() for _ in range(min(size, len(rr)))]
 
+    # 取剩余全部
     def fetchall(self) -> Sequence[Any]:
         retval = list(self._rows)
         self._rows.clear()
         return retval
 
 
+# 服务端游标：逐行异步 fetch
 class AsyncAdapt_aiosqlite_ss_cursor(AsyncAdapt_aiosqlite_cursor):
     # TODO: base on connectors/asyncio.py
     # see #10415
@@ -254,6 +265,7 @@ class AsyncAdapt_aiosqlite_ss_cursor(AsyncAdapt_aiosqlite_cursor):
         return self.await_(self._cursor.fetchall())
 
 
+# 异步连接：事务/UDF/terminate
 class AsyncAdapt_aiosqlite_connection(AsyncAdapt_terminate, AdaptedConnection):
     await_ = staticmethod(await_only)
     __slots__ = ("dbapi",)
@@ -267,6 +279,7 @@ class AsyncAdapt_aiosqlite_connection(AsyncAdapt_terminate, AdaptedConnection):
         return cast(str, self._connection.isolation_level)
 
     @isolation_level.setter
+    # 经 aiosqlite 队列设置隔离级别
     def isolation_level(self, value: Optional[str]) -> None:
         # aiosqlite's isolation_level setter works outside the Thread
         # that it's supposed to, necessitating setting check_same_thread=False.
@@ -288,12 +301,14 @@ class AsyncAdapt_aiosqlite_connection(AsyncAdapt_terminate, AdaptedConnection):
         except Exception as error:
             self._handle_exception(error)
 
+    # 注册 UDF
     def create_function(self, *args: Any, **kw: Any) -> None:
         try:
             self.await_(self._connection.create_function(*args, **kw))
         except Exception as error:
             self._handle_exception(error)
 
+    # 普通或 server_side 游标
     def cursor(self, server_side: bool = False) -> AsyncAdapt_aiosqlite_cursor:
         if server_side:
             return AsyncAdapt_aiosqlite_ss_cursor(self)
@@ -331,6 +346,7 @@ class AsyncAdapt_aiosqlite_connection(AsyncAdapt_terminate, AdaptedConnection):
         except Exception as error:
             self._handle_exception(error)
 
+    # no active connection -> OperationalError
     def _handle_exception(self, error: Exception) -> NoReturn:
         if (
             isinstance(error, ValueError)
@@ -342,10 +358,12 @@ class AsyncAdapt_aiosqlite_connection(AsyncAdapt_terminate, AdaptedConnection):
         else:
             raise error
 
+    # 优雅关闭
     async def _terminate_graceful_close(self) -> None:
         """Try to close connection gracefully"""
         await self._connection.close()
 
+    # 调用 connection.stop()
     def _terminate_force_close(self) -> None:
         """Terminate the connection"""
 
@@ -361,12 +379,14 @@ class AsyncAdapt_aiosqlite_connection(AsyncAdapt_terminate, AdaptedConnection):
             meth()
 
 
+# await_fallback 变体
 class AsyncAdaptFallback_aiosqlite_connection(AsyncAdapt_aiosqlite_connection):
     __slots__ = ()
 
     await_ = staticmethod(await_fallback)
 
 
+# DBAPI 模块适配：connect 与异常映射
 class AsyncAdapt_aiosqlite_dbapi(AsyncAdapt_dbapi_module):
     def __init__(self, aiosqlite: ModuleType, sqlite: ModuleType):
         self.aiosqlite = aiosqlite
@@ -394,6 +414,7 @@ class AsyncAdapt_aiosqlite_dbapi(AsyncAdapt_dbapi_module):
         for name in ("Binary",):
             setattr(self, name, getattr(self.sqlite, name))
 
+    # 创建连接并设 daemon 线程
     def connect(self, *arg: Any, **kw: Any) -> AsyncAdapt_aiosqlite_connection:
         async_fallback = kw.pop("async_fallback", False)
 
@@ -423,11 +444,14 @@ class AsyncAdapt_aiosqlite_dbapi(AsyncAdapt_dbapi_module):
             )
 
 
+# 执行上下文：server_side 游标
 class SQLiteExecutionContext_aiosqlite(SQLiteExecutionContext):
+    # 返回 ss 游标
     def create_server_side_cursor(self) -> DBAPICursor:
         return self._dbapi_connection.cursor(server_side=True)
 
 
+# aiosqlite 方言：异步池与断连检测
 class SQLiteDialect_aiosqlite(SQLiteDialect_pysqlite):
     driver = "aiosqlite"
     supports_statement_cache = True
@@ -445,18 +469,21 @@ class SQLiteDialect_aiosqlite(SQLiteDialect_pysqlite):
             self.has_terminate = False
 
     @classmethod
+    # 包装 aiosqlite + sqlite3
     def import_dbapi(cls) -> AsyncAdapt_aiosqlite_dbapi:
         return AsyncAdapt_aiosqlite_dbapi(
             __import__("aiosqlite"), __import__("sqlite3")
         )
 
     @classmethod
+    # 文件库 AsyncAdaptedQueuePool，内存 StaticPool
     def get_pool_class(cls, url: URL) -> type[pool.Pool]:
         if cls._is_url_file_db(url):
             return pool.AsyncAdaptedQueuePool
         else:
             return pool.StaticPool
 
+    # no active connection 视为断连
     def is_disconnect(
         self,
         e: DBAPIModule.Error,
@@ -471,13 +498,16 @@ class SQLiteDialect_aiosqlite(SQLiteDialect_pysqlite):
 
         return super().is_disconnect(e, connection, cursor)
 
+    # 底层 aiosqlite 连接
     def get_driver_connection(
         self, connection: DBAPIConnection
     ) -> AsyncIODBAPIConnection:
         return connection._connection  # type: ignore[no-any-return]
 
+    # 终止连接
     def do_terminate(self, dbapi_connection: DBAPIConnection) -> None:
         dbapi_connection.terminate()
 
 
+# 方言入口
 dialect = SQLiteDialect_aiosqlite

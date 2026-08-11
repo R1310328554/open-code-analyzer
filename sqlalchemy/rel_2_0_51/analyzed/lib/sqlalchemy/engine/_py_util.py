@@ -4,6 +4,8 @@
 #
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
+# 执行参数规范化（2.0 与 DBAPI 层）
+
 from __future__ import annotations
 
 import typing
@@ -24,6 +26,7 @@ if typing.TYPE_CHECKING:
 _no_tuple: Tuple[Any, ...] = ()
 
 
+# 2.0 风格：单 dict -> [dict]，list 须全为 Mapping
 def _distill_params_20(
     params: Optional[_CoreAnyExecuteParams],
 ) -> _CoreMultiExecuteParams:
@@ -49,6 +52,7 @@ def _distill_params_20(
         raise exc.ArgumentError("mapping or list expected for parameters")
 
 
+# DBAPI 层：单 tuple/dict -> 列表
 def _distill_raw_params(
     params: Optional[_DBAPIAnyExecuteParams],
 ) -> _DBAPIMultiExecuteParams:

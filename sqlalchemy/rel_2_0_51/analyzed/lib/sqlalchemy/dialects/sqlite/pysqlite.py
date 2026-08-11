@@ -429,7 +429,9 @@ if TYPE_CHECKING:
     from ...sql.type_api import _ResultProcessorType
 
 
+# pysqlite TIMESTAMP：native_datetime 时跳过处理器
 class _SQLite_pysqliteTimeStamp(DATETIME):
+    # bind
     def bind_processor(  # type: ignore[override]
         self, dialect: SQLiteDialect
     ) -> Optional[_BindProcessorType[Any]]:
@@ -438,6 +440,7 @@ class _SQLite_pysqliteTimeStamp(DATETIME):
         else:
             return DATETIME.bind_processor(self, dialect)
 
+    # result
     def result_processor(  # type: ignore[override]
         self, dialect: SQLiteDialect, coltype: object
     ) -> Optional[_ResultProcessorType[Any]]:
@@ -447,6 +450,7 @@ class _SQLite_pysqliteTimeStamp(DATETIME):
             return DATETIME.result_processor(self, dialect, coltype)
 
 
+# pysqlite DATE 适配
 class _SQLite_pysqliteDate(DATE):
     def bind_processor(  # type: ignore[override]
         self, dialect: SQLiteDialect
@@ -465,6 +469,7 @@ class _SQLite_pysqliteDate(DATE):
             return DATE.result_processor(self, dialect, coltype)
 
 
+# 标准 sqlite3/pysqlite 方言
 class SQLiteDialect_pysqlite(SQLiteDialect):
     default_paramstyle = "qmark"
     supports_statement_cache = True
@@ -483,12 +488,14 @@ class SQLiteDialect_pysqlite(SQLiteDialect):
     driver = "pysqlite"
 
     @classmethod
+    # 导入 sqlite3.dbapi2
     def import_dbapi(cls) -> DBAPIModule:
         from sqlite3 import dbapi2 as sqlite
 
         return cast("DBAPIModule", sqlite)
 
     @classmethod
+    # 是否文件库（非 :memory:）
     def _is_url_file_db(cls, url: URL) -> bool:
         if (url.database and url.database != ":memory:") and (
             url.query.get("mode", None) != "memory"
@@ -498,12 +505,14 @@ class SQLiteDialect_pysqlite(SQLiteDialect):
             return False
 
     @classmethod
+    # 文件 QueuePool，内存 SingletonThreadPool
     def get_pool_class(cls, url: URL) -> type[pool.Pool]:
         if cls._is_url_file_db(url):
             return pool.QueuePool
         else:
             return pool.SingletonThreadPool
 
+    # sqlite_version_info
     def _get_server_version_info(self, connection: Any) -> VersionInfoType:
         return self.dbapi.sqlite_version_info  # type: ignore
 
@@ -513,6 +522,7 @@ class SQLiteDialect_pysqlite(SQLiteDialect):
         }
     )
 
+    # AUTOCOMMIT -> isolation_level None
     def set_isolation_level(
         self, dbapi_connection: DBAPIConnection, level: IsolationLevel
     ) -> None:
@@ -522,9 +532,11 @@ class SQLiteDialect_pysqlite(SQLiteDialect):
             dbapi_connection.isolation_level = ""
             return super().set_isolation_level(dbapi_connection, level)
 
+    # isolation_level is None
     def detect_autocommit_setting(self, dbapi_conn: DBAPIConnection) -> bool:
         return dbapi_conn.isolation_level is None
 
+    # 注册 regexp/floor UDF
     def on_connect(self) -> Callable[[DBAPIConnection], None]:
         def regexp(a: str, b: Optional[str]) -> Optional[bool]:
             if b is None:
@@ -562,6 +574,8 @@ class SQLiteDialect_pysqlite(SQLiteDialect):
 
         return connect
 
+    # 解析 URI/timeout/check_same_thread
+    # factory 修复 :1 绑定
     def create_connect_args(self, url: URL) -> ConnectArgsType:
         if url.username or url.password or url.host or url.port:
             raise exc.ArgumentError(
@@ -624,6 +638,7 @@ class SQLiteDialect_pysqlite(SQLiteDialect):
 
         return ([filename], pysqlite_opts)
 
+    # closed database ProgrammingError
     def is_disconnect(
         self,
         e: DBAPIModule.Error,
@@ -636,9 +651,11 @@ class SQLiteDialect_pysqlite(SQLiteDialect):
         ) and "Cannot operate on a closed database." in str(e)
 
 
+# 方言入口
 dialect = SQLiteDialect_pysqlite
 
 
+# 测试用 numeric 参数风格
 class _SQLiteDialect_pysqlite_numeric(SQLiteDialect_pysqlite):
     """numeric dialect for testing only
 
@@ -663,6 +680,7 @@ class _SQLiteDialect_pysqlite_numeric(SQLiteDialect_pysqlite):
         opts["factory"] = self._fix_sqlite_issue_99953()
         return arg, opts
 
+    # 元组参数转 :n 字典
     def _fix_sqlite_issue_99953(self) -> Any:
         import sqlite3
 
@@ -690,6 +708,7 @@ class _SQLiteDialect_pysqlite_numeric(SQLiteDialect_pysqlite):
             else:
                 return ()
 
+            # 重写 execute/executemany
         class SQLiteFix99953Cursor(sqlite3.Cursor):
             def execute(self, sql: str, parameters: Any = ()) -> Self:
                 _test_sql(sql)
@@ -705,6 +724,7 @@ class _SQLiteDialect_pysqlite_numeric(SQLiteDialect_pysqlite):
                     ]
                 return super().executemany(sql, parameters)
 
+            # 默认 Cursor 工厂
         class SQLiteFix99953Connection(sqlite3.Connection):
             _CursorT = TypeVar("_CursorT", bound=sqlite3.Cursor)
 
@@ -737,6 +757,7 @@ class _SQLiteDialect_pysqlite_numeric(SQLiteDialect_pysqlite):
         return SQLiteFix99953Connection
 
 
+# 测试用 $1 参数风格
 class _SQLiteDialect_pysqlite_dollar(_SQLiteDialect_pysqlite_numeric):
     """numeric dialect that uses $ for testing only
 
