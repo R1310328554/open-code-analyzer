@@ -17,9 +17,11 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+# 优化器封装：统一 __call__(model) 接口绑定可训练参数
 from paddle import optimizer as optim
 
 
+    # Momentum 优化器封装
 class Momentum(object):
     """
     Simple Momentum optimizer with velocity state.
@@ -53,6 +55,7 @@ class Momentum(object):
         return opt
 
 
+    # Adam 优化器封装，支持分组学习率
 class Adam(object):
     def __init__(
         self,
@@ -81,6 +84,7 @@ class Adam(object):
         self.training_step = kwargs.get("training_step", None)
 
     def __call__(self, model):
+        # VisionLAN LF_2：MLM 相关参数与基座使用不同学习率
         if self.group_lr:
             if self.training_step == "LF_2":
                 import paddle
@@ -144,6 +148,7 @@ class Adam(object):
         return opt
 
 
+    # RMSProp 优化器封装
 class RMSProp(object):
     """
     Root Mean Squared Propagation (RMSProp) is an unpublished, adaptive learning rate method.
@@ -190,6 +195,7 @@ class RMSProp(object):
         return opt
 
 
+    # Adadelta 优化器封装
 class Adadelta(object):
     def __init__(
         self,
@@ -227,6 +233,7 @@ class Adadelta(object):
         return opt
 
 
+    # AdamW 优化器：decoupled weight decay + 参数名白名单
 class AdamW(object):
     def __init__(
         self,

@@ -13,9 +13,11 @@
 # limitations under the License.
 
 import math
+# 自定义学习率调度器：周期 cosine、OneCycle、两阶段 cosine
 from paddle.optimizer.lr import LRScheduler
 
 
+    # 周期余弦 LRScheduler：每 cycle 步重复 cosine 曲线
 class CyclicalCosineDecay(LRScheduler):
     def __init__(
         self, learning_rate, T_max, cycle=1, last_epoch=-1, eta_min=0.0, verbose=False
@@ -45,6 +47,7 @@ class CyclicalCosineDecay(LRScheduler):
         return lr
 
 
+    # OneCycle LRScheduler：分阶段 cosine/linear 退火
 class OneCycleDecay(LRScheduler):
     """
     One Cycle learning rate decay
@@ -165,6 +168,7 @@ class OneCycleDecay(LRScheduler):
         return computed_lr
 
 
+    # 两阶段余弦：T_max1 前与之后使用不同周期
 class TwoStepCosineDecay(LRScheduler):
     def __init__(
         self, learning_rate, T_max1, T_max2, eta_min=0, last_epoch=-1, verbose=False

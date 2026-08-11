@@ -24,6 +24,7 @@ import paddle
 from paddle import nn, ParamAttr
 from paddle.nn import functional as F
 import numpy as np
+# TPS 空间变换器：预计算核矩阵，将源控制点映射到目标采样坐标
 import itertools
 
 
@@ -87,6 +88,7 @@ def build_output_control_points(num_control_points, margins):
     return output_ctrl_pts
 
 
+    # TPS 空间变换：预计算 inverse kernel + 批量 grid_sample
 class TPSSpatialTransformer(nn.Layer):
     def __init__(self, output_image_size=None, num_control_points=None, margins=None):
         super(TPSSpatialTransformer, self).__init__()
@@ -165,6 +167,7 @@ class TPSSpatialTransformer(nn.Layer):
             grid, 0, 1
         )  # the source_control_points may be out of [0, 1].
         # the input to grid_sample is normalized [-1, 1], but what we get is [0, 1]
+        # grid_sample 需要 [-1,1] 归一化坐标
         grid = 2.0 * grid - 1.0
         output_maps = grid_sample(input, grid, canvas=None)
         return output_maps, source_coordinate

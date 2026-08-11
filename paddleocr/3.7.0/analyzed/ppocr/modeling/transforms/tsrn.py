@@ -31,9 +31,11 @@ warnings.filterwarnings("ignore")
 
 from .tps_spatial_transformer import TPSSpatialTransformer
 from .stn import STN as STN_model
+# TSRN 超分：循环残差块 + PixelShuffle 上采样 + 冻结识别 Transformer 监督
 from ppocr.modeling.heads.sr_rensnet_transformer import Transformer
 
 
+    # 文本超分辨率网络：RRB 堆叠 + 上采样，训练时用识别头辅助
 class TSRN(nn.Layer):
     def __init__(
         self,
@@ -117,6 +119,7 @@ class TSRN(nn.Layer):
             (block["1"] + block[str(self.srb_nums + 2)])
         )
 
+        # tanh 输出归一化到 [-1,1] 超分图像
         sr_img = paddle.tanh(block[str(self.srb_nums + 3)])
 
         output["sr_img"] = sr_img
@@ -144,6 +147,7 @@ class TSRN(nn.Layer):
         return output
 
 
+    # 循环残差块：双 Conv + 双向 GRU 时序建模
 class RecurrentResidualBlock(nn.Layer):
     def __init__(self, channels):
         super(RecurrentResidualBlock, self).__init__()
@@ -166,6 +170,7 @@ class RecurrentResidualBlock(nn.Layer):
         return self.gru2(x + residual)
 
 
+    # 上采样块：通道扩展 + PixelShuffle
 class UpsampleBLock(nn.Layer):
     def __init__(self, in_channels, up_scale):
         super(UpsampleBLock, self).__init__()
@@ -183,6 +188,7 @@ class UpsampleBLock(nn.Layer):
         return x
 
 
+    # Mish 激活：x * tanh(softplus(x))
 class mish(nn.Layer):
     def __init__(
         self,
@@ -196,6 +202,7 @@ class mish(nn.Layer):
         return x
 
 
+    # 2D GRU：沿高度方向双向序列建模
 class GruBlock(nn.Layer):
     def __init__(self, in_channels, out_channels):
         super(GruBlock, self).__init__()

@@ -23,6 +23,8 @@ import paddle
 __all__ = ["build_optimizer"]
 
 
+# 优化器构建入口：学习率调度 + 正则化 + 梯度裁剪 + 权重衰减 cosine 退火
+    # 权重衰减 cosine 退火：逐步更新 optimizer.regularization 系数
 class CosineWeightDecayScheduler(object):
     """Cosine-anneal the optimizer's weight decay each step.
 
@@ -72,9 +74,11 @@ def build_optimizer(config, epochs, step_each_epoch, model):
     from . import regularizer, optimizer
 
     config = copy.deepcopy(config)
+    # 步骤 1：按配置名构建学习率调度器
     # step1 build lr
     lr = build_lr_scheduler(config.pop("lr"), epochs, step_each_epoch)
 
+    # 步骤 2：构建 L2 等正则项，CosineL2Decay 时附带 wd 调度参数
     # step2 build regularization
     wd_scheduler = None
     if "regularizer" in config and config["regularizer"] is not None:
@@ -101,6 +105,7 @@ def build_optimizer(config, epochs, step_each_epoch, model):
     else:
         reg = None
 
+    # 步骤 3：实例化 Adam/Momentum 等优化器并绑定模型参数
     # step3 build optimizer
     optim_name = config.pop("name")
     if "clip_norm" in config:

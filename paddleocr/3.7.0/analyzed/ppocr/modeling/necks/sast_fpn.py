@@ -19,9 +19,11 @@ from __future__ import print_function
 import paddle
 from paddle import nn
 import paddle.nn.functional as F
+# SAST 检测 Neck：双向 FPN 融合 + 可选十字交叉注意力（CAB）
 from paddle import ParamAttr
 
 
+    # 标准 Conv+BN 块
 class ConvBNLayer(nn.Layer):
     def __init__(
         self,
@@ -63,6 +65,7 @@ class ConvBNLayer(nn.Layer):
         return x
 
 
+    # 转置卷积+BN 上采样块
 class DeConvBNLayer(nn.Layer):
     def __init__(
         self,
@@ -103,6 +106,7 @@ class DeConvBNLayer(nn.Layer):
         return x
 
 
+    # 自顶向下 FPN：逐层反卷积与 lateral 相加
 class FPN_Up_Fusion(nn.Layer):
     def __init__(self, in_channels):
         super(FPN_Up_Fusion, self).__init__()
@@ -191,6 +195,7 @@ class FPN_Up_Fusion(nn.Layer):
         return g4
 
 
+    # 自底向上 FPN：步长卷积下采样融合
 class FPN_Down_Fusion(nn.Layer):
     def __init__(self, in_channels):
         super(FPN_Down_Fusion, self).__init__()
@@ -253,6 +258,7 @@ class FPN_Down_Fusion(nn.Layer):
         return g2
 
 
+    # 十字交叉注意力：水平/垂直两路自注意力后拼接
 class Cross_Attention(nn.Layer):
     def __init__(self, in_channels):
         super(Cross_Attention, self).__init__()
@@ -311,6 +317,7 @@ class Cross_Attention(nn.Layer):
         f_phi = self.phi_conv(f_common)
         f_g = self.g_conv(f_common)
 
+        # 水平方向：沿宽度轴计算注意力并残差融合
         ######## horizon ########
         fh_weight = self._cal_fweight(
             [f_theta, f_phi, f_g], [f_shape[0], f_shape[2], f_shape[3]]
@@ -321,6 +328,7 @@ class Cross_Attention(nn.Layer):
         fh_sc = self.fh_sc_conv(f_common)
         f_h = F.relu(fh_weight + fh_sc)
 
+        # 垂直方向：转置后在高度轴做同样注意力
         ######## vertical ########
         fv_theta = paddle.transpose(f_theta, [0, 1, 3, 2])
         fv_phi = paddle.transpose(f_phi, [0, 1, 3, 2])
@@ -340,6 +348,7 @@ class Cross_Attention(nn.Layer):
         return f_attn
 
 
+    # SAST 特征金字塔：Down+Up 融合，可选 CAB 增强
 class SASTFPN(nn.Layer):
     def __init__(self, in_channels, with_cab=False, **kwargs):
         super(SASTFPN, self).__init__()
@@ -361,6 +370,7 @@ class SASTFPN(nn.Layer):
         f_common = paddle.add(x=f_down, y=f_up)
         f_common = F.relu(f_common)
 
+        # 可选 CAB：水平+垂直交叉注意力增强融合特征
         if self.with_cab:
             # print('enhence f_common with CAB.')
             f_common = self.cross_attention(f_common)

@@ -24,9 +24,11 @@ import math
 import paddle
 from paddle import nn, ParamAttr
 from paddle.nn import functional as F
+# TPS 薄板样条变换：定位网络预测基准点 + 网格生成 + grid_sample（RARE）
 import numpy as np
 
 
+    # TPS 定位网络用 Conv+BN 块
 class ConvBNLayer(nn.Layer):
     def __init__(
         self,
@@ -65,6 +67,7 @@ class ConvBNLayer(nn.Layer):
         return x
 
 
+    # 定位网络：Conv 塔 + FC 回归几何变换控制点
 class LocalizationNetwork(nn.Layer):
     def __init__(self, in_channels, num_fiducial, loc_lr, model_name):
         super(LocalizationNetwork, self).__init__()
@@ -163,6 +166,7 @@ class LocalizationNetwork(nn.Layer):
         return initial_bias
 
 
+    # TPS 网格生成：RBF 插值构建采样网格
 class GridGenerator(nn.Layer):
     def __init__(self, in_channels, num_fiducial):
         super(GridGenerator, self).__init__()
@@ -294,6 +298,7 @@ class GridGenerator(nn.Layer):
         return batch_C_ex_part_tensor
 
 
+    # 薄板样条校正模块：定位→网格→可微分采样 rectified 图像
 class TPS(nn.Layer):
     def __init__(self, in_channels, num_fiducial, loc_lr, model_name):
         super(TPS, self).__init__()
@@ -305,6 +310,7 @@ class TPS(nn.Layer):
 
     def forward(self, image):
         image.stop_gradient = False
+        # 定位网络输出 F 个 fiducial 控制点坐标
         batch_C_prime = self.loc_net(image)
         batch_P_prime = self.grid_generator(batch_C_prime, image.shape[2:])
         batch_P_prime = batch_P_prime.reshape([-1, image.shape[2], image.shape[3], 2])

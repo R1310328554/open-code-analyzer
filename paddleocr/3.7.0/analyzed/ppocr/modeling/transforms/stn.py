@@ -25,6 +25,7 @@ from paddle import nn, ParamAttr
 from paddle.nn import functional as F
 import numpy as np
 
+# STN 空间变换：CNN 定位网络预测控制点 + TPS 文本行校正（ASTER 移植）
 from .tps_spatial_transformer import TPSSpatialTransformer
 
 
@@ -44,6 +45,7 @@ def conv3x3_block(in_channels, out_channels, stride=1):
     return block
 
 
+    # 定位网络：卷积骨干 + FC 回归 TPS 控制点坐标
 class STN(nn.Layer):
     def __init__(self, in_channels, num_ctrlpoints, activation="none"):
         super(STN, self).__init__()
@@ -107,6 +109,7 @@ class STN(nn.Layer):
         batch_size, _, h, w = x.shape
         x = paddle.reshape(x, shape=(batch_size, -1))
         img_feat = self.stn_fc1(x)
+        # 缩小 FC 输入幅度，稳定控制点回归训练
         x = self.stn_fc2(0.1 * img_feat)
         if self.activation == "sigmoid":
             x = F.sigmoid(x)
@@ -114,6 +117,7 @@ class STN(nn.Layer):
         return img_feat, x
 
 
+    # STN 封装：缩放下采样→预测控制点→TPS 校正原图
 class STN_ON(nn.Layer):
     def __init__(
         self,

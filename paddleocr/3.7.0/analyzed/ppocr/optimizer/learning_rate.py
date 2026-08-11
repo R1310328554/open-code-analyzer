@@ -18,9 +18,11 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from paddle.optimizer import lr
+# 学习率策略工厂类：封装 Paddle 内置与自定义 LRScheduler
 from .lr_scheduler import CyclicalCosineDecay, OneCycleDecay, TwoStepCosineDecay
 
 
+    # 线性/多项式衰减，可选 warmup
 class Linear(object):
     """
     Linear learning rate decay
@@ -70,6 +72,7 @@ class Linear(object):
         return learning_rate
 
 
+    # 余弦退火学习率，可选线性 warmup
 class Cosine(object):
     """
     Cosine learning rate decay
@@ -113,6 +116,7 @@ class Cosine(object):
         return learning_rate
 
 
+    # 线性 warmup + 余弦退火至 min_lr
 class LinearWarmupCosine(object):
     """
     LinearWarmupCosine learning rate decay
@@ -162,6 +166,7 @@ class LinearWarmupCosine(object):
         return learning_rate
 
 
+    # 固定步长阶梯衰减
 class Step(object):
     """
     Piecewise learning rate decay
@@ -209,6 +214,7 @@ class Step(object):
         return learning_rate
 
 
+    # 分段常数学习率（按 epoch 边界切换）
 class Piecewise(object):
     """
     Piecewise learning rate decay
@@ -249,6 +255,7 @@ class Piecewise(object):
         return learning_rate
 
 
+    # 周期余弦：短周期内重复 cosine 波形
 class CyclicalCosine(object):
     """
     Cyclical cosine learning rate decay
@@ -295,6 +302,7 @@ class CyclicalCosine(object):
         return learning_rate
 
 
+    # OneCycle 策略：先升后降的单周期 LR
 class OneCycle(object):
     """
     One Cycle learning rate decay
@@ -349,6 +357,7 @@ class OneCycle(object):
         return learning_rate
 
 
+    # 恒定学习率，可选 warmup
 class Const(object):
     """
     Const learning rate decay
@@ -379,6 +388,7 @@ class Const(object):
         return learning_rate
 
 
+    # 多项式衰减至 end_lr
 class DecayLearningRate(object):
     """
     DecayLearningRate learning rate decay
@@ -411,6 +421,7 @@ class DecayLearningRate(object):
         return learning_rate
 
 
+    # 多里程碑阶梯衰减
 class MultiStepDecay(object):
     """
     Piecewise learning rate decay
@@ -458,6 +469,7 @@ class MultiStepDecay(object):
         return learning_rate
 
 
+    # 两阶段余弦：前期 T_max1、后期 T_max2
 class TwoStepCosine(object):
     """
     Cosine learning rate decay

@@ -20,6 +20,7 @@ import paddle
 from paddle import nn
 from paddle.nn.initializer import KaimingNormal
 
+# 序列编码 Neck：2D 特征展平后经 RNN/FC/SVTR 转为时序表示
 from ppocr.modeling.heads.rec_ctc_head import get_para_bias_attr
 from ppocr.modeling.backbones.rec_svtrnet import (
     Block,
@@ -30,6 +31,7 @@ from ppocr.modeling.backbones.rec_svtrnet import (
 )
 
 
+    # 2D→序列：squeeze 高度后转置为 (batch, width, channels)
 class Im2Seq(nn.Layer):
     def __init__(self, in_channels, **kwargs):
         super().__init__()
@@ -37,12 +39,14 @@ class Im2Seq(nn.Layer):
 
     def forward(self, x):
         B, C, H, W = x.shape
+        # 输入高度必须为 1：文本行特征图已压成单行
         assert H == 1
         x = x.squeeze(axis=2)
         x = x.transpose([0, 2, 1])  # (NTC)(batch, width, channels)
         return x
 
 
+    # 双层双向 LSTM 序列编码器
 class EncoderWithRNN(nn.Layer):
     def __init__(self, in_channels, hidden_size):
         super(EncoderWithRNN, self).__init__()
@@ -56,6 +60,7 @@ class EncoderWithRNN(nn.Layer):
         return x
 
 
+    # 可配置双向 LSTM，可选末端线性投影
 class BidirectionalLSTM(nn.Layer):
     def __init__(
         self,
@@ -93,6 +98,7 @@ class BidirectionalLSTM(nn.Layer):
         return recurrent
 
 
+    # 级联多层 BidirectionalLSTM 编码
 class EncoderWithCascadeRNN(nn.Layer):
     def __init__(
         self, in_channels, hidden_size, out_channels, num_layers=2, with_linear=False
@@ -119,6 +125,7 @@ class EncoderWithCascadeRNN(nn.Layer):
         return x
 
 
+    # 单层全连接降维序列编码
 class EncoderWithFC(nn.Layer):
     def __init__(self, in_channels, hidden_size):
         super(EncoderWithFC, self).__init__()
@@ -137,6 +144,7 @@ class EncoderWithFC(nn.Layer):
         return x
 
 
+    # SVTR 全局注意力 + 卷积残差融合的 2D 序列编码
 class EncoderWithSVTR(nn.Layer):
     def __init__(
         self,
@@ -215,6 +223,7 @@ class EncoderWithSVTR(nn.Layer):
 
     def forward(self, x):
         # for use guide
+        # 引导模式：阻断梯度回传至骨干，作隐式正则
         if self.use_guide:
             z = x.clone()
             z.stop_gradient = True
@@ -239,6 +248,7 @@ class EncoderWithSVTR(nn.Layer):
         return z
 
 
+    # 轻量 SVTR：DWConv 局部上下文 + 1×1 跳连
 class EncoderWithLightSVTR(nn.Layer):
     """Light SVTR neck: attention with lightweight skip connection.
 
@@ -345,6 +355,7 @@ class EncoderWithLightSVTR(nn.Layer):
         return z
 
 
+    # 序列 Neck 入口：按类型选择 reshape/FC/RNN/SVTR 编码
 class SequenceEncoder(nn.Layer):
     def __init__(self, in_channels, encoder_type, hidden_size=48, **kwargs):
         super(SequenceEncoder, self).__init__()
@@ -381,6 +392,7 @@ class SequenceEncoder(nn.Layer):
             self.only_reshape = False
 
     def forward(self, x):
+        # 常规编码：先 Im2Seq 再 RNN/FC；SVTR 类先 2D 编码再展平
         if self.encoder_type not in ("svtr", "lightsvtr"):
             x = self.encoder_reshape(x)
             if not self.only_reshape:

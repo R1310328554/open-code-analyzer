@@ -16,6 +16,7 @@ This code is refer from:
 https://github.com/hikopensource/DAVAR-Lab-OCR/blob/main/davarocr/davar_rcg/models/connects/single_block/RFAdaptor.py
 """
 
+# RF 适配器：视觉-语义双向特征融合，用于识别与检测联合建模（DAVAR 移植）
 import paddle
 import paddle.nn as nn
 from paddle.nn.initializer import TruncatedNormal, Constant, Normal, KaimingNormal
@@ -25,6 +26,7 @@ zeros_ = Constant(value=0.0)
 ones_ = Constant(value=1.0)
 
 
+    # 语义→视觉适配：通道注意力加权增强视觉特征
 class S2VAdaptor(nn.Layer):
     """Semantic to Visual adaptation module"""
 
@@ -53,6 +55,7 @@ class S2VAdaptor(nn.Layer):
     def forward(self, semantic):
         semantic_source = semantic  # batch, channel, height, width
 
+        # 沿宽度维做通道注意力，增强语义特征
         # feature transformation
         semantic = semantic.squeeze(2).transpose([0, 2, 1])  # batch, width, channel
         channel_att = self.channel_inter(semantic)  # batch, width, channel
@@ -68,6 +71,7 @@ class S2VAdaptor(nn.Layer):
         return channel_output
 
 
+    # 视觉→语义适配：提取视觉通道权重调制识别分支
 class V2SAdaptor(nn.Layer):
     """Visual to Semantic adaptation module"""
 
@@ -101,6 +105,7 @@ class V2SAdaptor(nn.Layer):
         return channel_output
 
 
+    # RF 融合 Neck：可选 V2S/S2V 双路适配并输出对齐特征
 class RFAdaptor(nn.Layer):
     def __init__(self, in_channels=512, use_v2s=True, use_s2v=True, **kwargs):
         super(RFAdaptor, self).__init__()
@@ -127,11 +132,13 @@ class RFAdaptor(nn.Layer):
                 [batch, source_channels, 1, v_source_height * v_source_width]
             )
 
+        # 视觉→语义：用视觉通道注意力调制识别特征
         if self.neck_v2s is not None:
             v_rcg_feature = rcg_feature * self.neck_v2s(visual_feature)
         else:
             v_rcg_feature = rcg_feature
 
+        # 语义→视觉：将语义增强特征残差加到视觉特征
         if self.neck_s2v is not None:
             v_visual_feature = visual_feature + self.neck_s2v(rcg_feature)
         else:

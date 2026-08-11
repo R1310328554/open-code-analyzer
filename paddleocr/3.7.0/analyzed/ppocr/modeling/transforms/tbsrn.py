@@ -28,6 +28,7 @@ warnings.filterwarnings("ignore")
 from .tps_spatial_transformer import TPSSpatialTransformer
 from .stn import STN as STNHead
 from .tsrn import GruBlock, mish, UpsampleBLock
+# TBSRN 超分：带 Transformer 特征增强的循环残差网络 + 可选 STN
 from ppocr.modeling.heads.sr_rensnet_transformer import (
     Transformer,
     LayerNorm,
@@ -73,6 +74,7 @@ def positionalencoding2d(d_model, height, width):
     return pe
 
 
+    # 特征增强：2D 位置编码 + 多头自注意力 + FFN
 class FeatureEnhancer(nn.Layer):
     def __init__(self):
         super(FeatureEnhancer, self).__init__()
@@ -129,6 +131,7 @@ def str_filt(str_, voc_type):
     return str_
 
 
+    # 望远镜超分网络：RRB 堆叠 + 上采样 + Transformer 辅助损失
 class TBSRN(nn.Layer):
     def __init__(
         self,
@@ -231,6 +234,7 @@ class TBSRN(nn.Layer):
             output["lr_img"] = x[0]
             output["hr_img"] = x[1]
             y = x[0]
+        # 训练阶段可选 STN：先 TPS 校正低分辨率文本行
         if self.stn and self.training:
             _, ctrl_points_x = self.stn_head(y)
             y, _ = self.tps(y, ctrl_points_x)
@@ -248,6 +252,7 @@ class TBSRN(nn.Layer):
         if self.training:
             hr_img = x[1]
 
+            # 训练：用冻结 Transformer 对 HR/SR 做识别监督
             # add transformer
             label = [str_filt(i, "lower") + "-" for i in x[2]]
             length_tensor, input_tensor, text_gt = self.label_encoder(label)
@@ -267,6 +272,7 @@ class TBSRN(nn.Layer):
         return output
 
 
+    # 循环残差块：Conv→GRU 序列建模 + FeatureEnhancer
 class RecurrentResidualBlock(nn.Layer):
     def __init__(self, channels):
         super(RecurrentResidualBlock, self).__init__()

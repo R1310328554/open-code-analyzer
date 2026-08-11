@@ -22,6 +22,7 @@ from paddle import nn, ParamAttr
 from paddle.nn import functional as F
 import numpy as np
 import functools
+# GA-SPIN 变换：结构保持幂次变换（SPN）+ 可选 AIN 偏移 + TPS 几何校正
 from .tps import GridGenerator
 
 """This code is refer from:
@@ -29,6 +30,7 @@ https://github.com/hikopensource/DAVAR-Lab-OCR/davarocr/davar_rcg/models/transfo
 """
 
 
+    # 结构保持变换（SPN）：多幂次加权组合增强对比度
 class SP_TransformerNetwork(nn.Layer):
     """
     Sturture-Preserving Transformation (SPT) as Equa. (2) in Ref. [1]
@@ -98,6 +100,7 @@ class SP_TransformerNetwork(nn.Layer):
         return batch_weight_sum
 
 
+    # GA-SPIN：SPN + 可选 AIN 偏移 + 可选 TPS 网格采样
 class GA_SPIN_Transformer(nn.Layer):
     """
     Geometric-Absorbed SPIN Transformation (GA-SPIN) proposed in Ref. [1]
@@ -263,6 +266,7 @@ class GA_SPIN_Transformer(nn.Layer):
             sp_weight_fusion = sp_weight_fusion.reshape(
                 [x.shape[0], self.out_weight, 1]
             )
+            # 带 AIN：学习逐像素颜色偏移并与原图门控融合
             if self.offsets:  # SPIN w. AIN
                 lambda_color = sp_weight_fusion[:, self.spt_length, 0]
                 lambda_color = (
@@ -281,6 +285,7 @@ class GA_SPIN_Transformer(nn.Layer):
                     offsets, size=(x.shape[2], x.shape[3]), mode="bilinear"
                 )
 
+                # 可选 STN：预测 TPS 控制点并用 grid_sample 做几何校正
                 if self.stn:
                     batch_C_prime = sp_weight_fusion[
                         :, (self.spt_length + 1) :, :

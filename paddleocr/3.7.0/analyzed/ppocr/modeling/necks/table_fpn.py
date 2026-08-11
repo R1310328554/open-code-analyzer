@@ -19,9 +19,11 @@ from __future__ import print_function
 import paddle
 from paddle import nn
 import paddle.nn.functional as F
+# 表格结构识别 FPN：多尺度 lateral 融合后上采样至统一分辨率
 from paddle import ParamAttr
 
 
+    # 表格 FPN：C2–C5 1×1 对齐 + 自顶向下加和 + 多路 fuse
 class TableFPN(nn.Layer):
     def __init__(self, in_channels, out_channels, **kwargs):
         super(TableFPN, self).__init__()
@@ -118,6 +120,7 @@ class TableFPN(nn.Layer):
         p4 = F.upsample(out4, size=in5.shape[2:4], mode="nearest", align_mode=1)
         p3 = F.upsample(out3, size=in5.shape[2:4], mode="nearest", align_mode=1)
         p2 = F.upsample(out2, size=in5.shape[2:4], mode="nearest", align_mode=1)
+        # 四尺度特征拼接后 3×3 融合，缩放 0.005 稳定残差幅度
         fuse = paddle.concat([in5, p4, p3, p2], axis=1)
         fuse_conv = self.fuse_conv(fuse) * 0.005
         return [c5 + fuse_conv]

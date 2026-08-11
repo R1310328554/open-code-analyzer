@@ -15,6 +15,7 @@
 __all__ = ["build_transform"]
 
 
+# 几何/超分变换工厂：按 name 实例化 TPS、STN、SPIN、TSRN 等校正模块
 def build_transform(config):
     from .tps import TPS
     from .stn import STN_ON
@@ -22,6 +23,7 @@ def build_transform(config):
     from .tbsrn import TBSRN
     from .gaspin_transformer import GA_SPIN_Transformer as GA_SPIN
 
+    # 支持的变换类型：薄板样条、空间变换网络、SPIN、超分辨率网络
     support_dict = ["TPS", "STN_ON", "GA_SPIN", "TSRN", "TBSRN"]
 
     module_name = config.pop("name")
