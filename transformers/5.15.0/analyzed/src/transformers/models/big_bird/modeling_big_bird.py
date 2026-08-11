@@ -67,6 +67,7 @@ _TRIVIA_QA_MAPPING = {
 }
 
 
+# BigBirdEmbeddings：词/位置/类型嵌入与 LayerNorm+Dropout
 class BigBirdEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
@@ -129,6 +130,7 @@ class BigBirdEmbeddings(nn.Module):
         return embeddings
 
 
+# BigBirdSelfAttention：标准全注意力（attention_type=original_full）
 class BigBirdSelfAttention(nn.Module):
     def __init__(self, config, layer_idx=None):
         super().__init__()
@@ -207,6 +209,7 @@ class BigBirdSelfAttention(nn.Module):
         return context_layer, attention_probs
 
 
+# BigBirdBlockSparseAttention：块稀疏注意力核心（随机+局部+全局块）
 class BigBirdBlockSparseAttention(nn.Module):
     def __init__(self, config, seed=None):
         super().__init__()
@@ -1044,6 +1047,7 @@ class BigBirdBlockSparseAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertSelfOutput with Bert->BigBird
+# BigBirdSelfOutput：注意力输出投影与残差 LayerNorm
 class BigBirdSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1058,6 +1062,7 @@ class BigBirdSelfOutput(nn.Module):
         return hidden_states
 
 
+# BigBirdAttention：按 config 在 full/sparse 注意力间切换
 class BigBirdAttention(nn.Module):
     def __init__(self, config, seed=None):
         super().__init__()
@@ -1143,6 +1148,7 @@ class BigBirdAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertIntermediate with Bert->BigBird
+# BigBirdIntermediate：FFN 中间层（gelu_new 激活）
 class BigBirdIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1159,6 +1165,7 @@ class BigBirdIntermediate(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOutput with Bert->BigBird
+# BigBirdOutput：FFN 输出投影与残差 LayerNorm
 class BigBirdOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1173,6 +1180,7 @@ class BigBirdOutput(nn.Module):
         return hidden_states
 
 
+# BigBirdLayer：单层 Transformer（自注意力 + FFN）
 class BigBirdLayer(GradientCheckpointingLayer):
     def __init__(self, config, seed=None):
         super().__init__()
@@ -1259,6 +1267,7 @@ class BigBirdLayer(GradientCheckpointingLayer):
         return layer_output
 
 
+# BigBirdEncoder：堆叠 BigBirdLayer 编码器
 class BigBirdEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1320,6 +1329,7 @@ class BigBirdEncoder(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPredictionHeadTransform with Bert->BigBird
+# BigBirdPredictionHeadTransform：MLM head 前的 Dense+激活+LayerNorm
 class BigBirdPredictionHeadTransform(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1338,6 +1348,7 @@ class BigBirdPredictionHeadTransform(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertLMPredictionHead with Bert->BigBird
+# BigBirdLMPredictionHead：带 bias 的 MLM 预测头
 class BigBirdLMPredictionHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1355,6 +1366,7 @@ class BigBirdLMPredictionHead(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOnlyMLMHead with Bert->BigBird
+# BigBirdOnlyMLMHead：仅 MLM 预测头封装
 class BigBirdOnlyMLMHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1366,6 +1378,7 @@ class BigBirdOnlyMLMHead(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOnlyNSPHead with Bert->BigBird
+# BigBirdOnlyNSPHead：下一句预测（NSP）分类头
 class BigBirdOnlyNSPHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1377,6 +1390,7 @@ class BigBirdOnlyNSPHead(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPreTrainingHeads with Bert->BigBird
+# BigBirdPreTrainingHeads：MLM + NSP 联合预训练头
 class BigBirdPreTrainingHeads(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1390,6 +1404,7 @@ class BigBirdPreTrainingHeads(nn.Module):
 
 
 @auto_docstring
+# BigBirdPreTrainedModel：权重初始化与 checkpoint 键名映射基类
 class BigBirdPreTrainedModel(PreTrainedModel):
     config: BigBirdConfig
     base_model_prefix = "bert"
@@ -1420,6 +1435,7 @@ class BigBirdPreTrainedModel(PreTrainedModel):
     """
 )
 @dataclass
+# BigBirdForPreTrainingOutput：预训练 loss 与 logits 输出结构
 class BigBirdForPreTrainingOutput(ModelOutput):
     r"""
     loss (*optional*, returned when `labels` is provided, `torch.FloatTensor` of shape `(1,)`):
@@ -1445,6 +1461,7 @@ class BigBirdForPreTrainingOutput(ModelOutput):
     """
 )
 @dataclass
+# BigBirdForQuestionAnsweringModelOutput：问答 start/end logits 输出结构
 class BigBirdForQuestionAnsweringModelOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -1462,6 +1479,7 @@ class BigBirdForQuestionAnsweringModelOutput(ModelOutput):
 
 
 @auto_docstring
+# BigBirdModel：BigBird 编码器骨干（pooler + 可选 cross-attention）
 class BigBirdModel(BigBirdPreTrainedModel):
     """
 
@@ -1754,6 +1772,7 @@ class BigBirdModel(BigBirdPreTrainedModel):
         return padding_len, input_ids, attention_mask, token_type_ids, position_ids, inputs_embeds
 
 
+# BigBirdForPreTraining：MLM+NSP 联合预训练
 class BigBirdForPreTraining(BigBirdPreTrainedModel):
     _tied_weights_keys = {
         "cls.predictions.decoder.bias": "cls.predictions.bias",
@@ -1849,6 +1868,7 @@ class BigBirdForPreTraining(BigBirdPreTrainedModel):
 
 
 @auto_docstring
+# BigBirdForMaskedLM：掩码语言建模微调
 class BigBirdForMaskedLM(BigBirdPreTrainedModel):
     _tied_weights_keys = {
         "cls.predictions.decoder.bias": "cls.predictions.bias",
@@ -1970,6 +1990,7 @@ class BigBirdForMaskedLM(BigBirdPreTrainedModel):
     BigBird Model with a `language modeling` head on top for CLM fine-tuning.
     """
 )
+# BigBirdForCausalLM：因果语言建模与文本生成
 class BigBirdForCausalLM(BigBirdPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {
         "cls.predictions.decoder.bias": "cls.predictions.bias",
@@ -2050,6 +2071,7 @@ class BigBirdForCausalLM(BigBirdPreTrainedModel, GenerationMixin):
         )
 
 
+# BigBirdClassificationHead：序列分类 Dense+Tanh+Dropout 头
 class BigBirdClassificationHead(nn.Module):
     """Head for sentence-level classification tasks."""
 
@@ -2080,6 +2102,7 @@ class BigBirdClassificationHead(nn.Module):
     pooled output) e.g. for GLUE tasks.
     """
 )
+# BigBirdForSequenceClassification：序列级分类
 class BigBirdForSequenceClassification(BigBirdPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -2188,6 +2211,7 @@ class BigBirdForSequenceClassification(BigBirdPreTrainedModel):
 
 
 @auto_docstring
+# BigBirdForMultipleChoice：多选问答（展平 batch×choice）
 class BigBirdForMultipleChoice(BigBirdPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -2282,6 +2306,7 @@ class BigBirdForMultipleChoice(BigBirdPreTrainedModel):
 
 
 @auto_docstring
+# BigBirdForTokenClassification：逐 token 命名实体/词性标注
 class BigBirdForTokenClassification(BigBirdPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -2340,6 +2365,7 @@ class BigBirdForTokenClassification(BigBirdPreTrainedModel):
         )
 
 
+# BigBirdForQuestionAnsweringHead：抽取式 QA span 预测头
 class BigBirdForQuestionAnsweringHead(nn.Module):
     """Head for question answering tasks."""
 
@@ -2359,6 +2385,7 @@ class BigBirdForQuestionAnsweringHead(nn.Module):
 
 
 @auto_docstring
+# BigBirdForQuestionAnswering：抽取式阅读理解
 class BigBirdForQuestionAnswering(BigBirdPreTrainedModel):
     def __init__(self, config, add_pooling_layer=False):
         r"""

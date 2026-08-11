@@ -28,6 +28,7 @@ VOCAB_FILES_NAMES = {
 }
 
 
+# get_pairs：提取 BPE 合并所需的相邻符号对
 def get_pairs(word):
     """
     Return set of symbol pairs in a word. word is represented as tuple of symbols (symbols being variable-length
@@ -41,6 +42,7 @@ def get_pairs(word):
     return pairs
 
 
+# BioGptTokenizer：vocab.json + merges.txt 的 GPT-2 风格 BPE 分词器
 class BioGptTokenizer(PreTrainedTokenizer):
     """
     Construct an FAIRSEQ Transformer tokenizer. Moses tokenization followed by Byte-Pair Encoding.

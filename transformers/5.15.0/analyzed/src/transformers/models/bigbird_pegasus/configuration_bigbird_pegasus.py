@@ -21,6 +21,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="google/bigbird-pegasus-large-arxiv")
 @strict
+# BigBirdPegasusConfig：encoder/decoder 层数、block_size、attention_type 等
 class BigBirdPegasusConfig(PreTrainedConfig):
     r"""
     attention_type (`str`, *optional*, defaults to `"block_sparse"`):
@@ -91,3 +92,5 @@ class BigBirdPegasusConfig(PreTrainedConfig):
 
 
 __all__ = ["BigBirdPegasusConfig"]
+# 模块 src/transformers/models/bigbird_pegasus/configuration_bigbird_pegasus.py：Transformers 5.15.0 wave10b 中文文档注释。
+

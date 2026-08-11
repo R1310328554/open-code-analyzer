@@ -28,6 +28,7 @@ VOCAB_FILES_NAMES = {"vocab_file": "spiece.model", "tokenizer_file": "tokenizer.
 SPIECE_UNDERLINE = "▁"
 
 
+# BigBirdTokenizer：SentencePiece Unigram，CLS/SEP 模板与 prefix space 控制
 class BigBirdTokenizer(TokenizersBackend):
     """
     Construct a "fast" BigBird tokenizer (backed by HuggingFace's *tokenizers* library). Based on

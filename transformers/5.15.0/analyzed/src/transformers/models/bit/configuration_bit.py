@@ -22,6 +22,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="google/bit-50")
 @strict
+# BitConfig：depths/hidden_sizes/width_factor 等 ResNet 阶段超参
 class BitConfig(BackboneConfigMixin, PreTrainedConfig):
     r"""
     layer_type (`str`, *optional*, defaults to `"preactivation"`):
@@ -69,6 +70,7 @@ class BitConfig(BackboneConfigMixin, PreTrainedConfig):
     _out_features: list[str] | None = None
     _out_indices: list[int] | None = None
 
+# __post_init__：规范化 padding、stage 名称与 out_indices
     def __post_init__(self, **kwargs):
         self.hidden_sizes = list(self.hidden_sizes)
         self.depths = list(self.depths)
@@ -83,6 +85,7 @@ class BitConfig(BackboneConfigMixin, PreTrainedConfig):
 
         super().__post_init__(**kwargs)
 
+# validate_architecture：校验 layer_type 与 global_padding 合法性
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if self.layer_type not in self.layer_types:

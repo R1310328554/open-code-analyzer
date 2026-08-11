@@ -48,6 +48,7 @@ from ..opt.modeling_opt import OPTLearnedPositionalEmbedding
 from .configuration_biogpt import BioGptConfig
 
 
+# BioGptLearnedPositionalEmbedding：继承 OPT 可学习位置嵌入
 class BioGptLearnedPositionalEmbedding(OPTLearnedPositionalEmbedding):
     def forward(
         self,
@@ -59,14 +60,17 @@ class BioGptLearnedPositionalEmbedding(OPTLearnedPositionalEmbedding):
         return super().forward(attention_mask, past_key_values_length, position_ids)
 
 
+# BioGptScaledWordEmbedding：继承 Bart 缩放词嵌入
 class BioGptScaledWordEmbedding(BartScaledWordEmbedding):
     pass
 
 
+# BioGptAttention：继承 Bart 注意力（因果解码器模式）
 class BioGptAttention(BartAttention):
     pass
 
 
+# BioGptDecoderLayer：BioGPT 解码层（重写 embed_dim 与因果自注意力）
 class BioGptDecoderLayer(BartDecoderLayer):
     def __init__(self, config: BioGptConfig, layer_idx: int | None = None):
         super().__init__(config)
@@ -135,6 +139,7 @@ class BioGptDecoderLayer(BartDecoderLayer):
 
 
 @auto_docstring
+# BioGptPreTrainedModel：权重初始化基类
 class BioGptPreTrainedModel(PreTrainedModel):
     config: BioGptConfig
     base_model_prefix = "biogpt"
@@ -150,6 +155,7 @@ class BioGptPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# BioGptModel：BioGPT 解码器骨干
 class BioGptModel(BioGptPreTrainedModel):
     def __init__(self, config: BioGptConfig):
         super().__init__(config)
@@ -249,6 +255,7 @@ class BioGptModel(BioGptPreTrainedModel):
     BioGPT Model with a `language modeling` head on top for CLM fine-tuning.
     """
 )
+# BioGptForCausalLM：因果语言建模与文本生成
 class BioGptForCausalLM(BioGptPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"output_projection.weight": "biogpt.embed_tokens.weight"}
 
@@ -316,6 +323,7 @@ class BioGptForCausalLM(BioGptPreTrainedModel, GenerationMixin):
 
 
 @auto_docstring
+# BioGptForTokenClassification：逐 token 分类
 class BioGptForTokenClassification(BioGptPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -400,6 +408,7 @@ class BioGptForTokenClassification(BioGptPreTrainedModel):
     each row of the batch).
     """
 )
+# BioGptForSequenceClassification：序列分类
 class BioGptForSequenceClassification(BioGptPreTrainedModel):
     def __init__(self, config: BioGptConfig):
         super().__init__(config)

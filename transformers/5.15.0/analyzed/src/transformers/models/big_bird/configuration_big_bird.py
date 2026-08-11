@@ -21,6 +21,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="google/bigbird-roberta-base")
 @strict
+# BigBirdConfig：hidden/block_size/num_random_blocks 等块稀疏注意力超参
 class BigBirdConfig(PreTrainedConfig):
     r"""
     attention_type (`str`, *optional*, defaults to `"block_sparse"`):

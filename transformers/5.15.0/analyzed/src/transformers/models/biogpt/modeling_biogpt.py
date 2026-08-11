@@ -48,6 +48,7 @@ from .configuration_biogpt import BioGptConfig
 logger = logging.get_logger(__name__)
 
 
+# BioGptLearnedPositionalEmbedding：可学习绝对位置嵌入
 class BioGptLearnedPositionalEmbedding(nn.Embedding):
     """
     This module learns positional embeddings up to a fixed maximum size.
@@ -76,6 +77,7 @@ class BioGptLearnedPositionalEmbedding(nn.Embedding):
         return super().forward(position_ids + self.offset)
 
 
+# BioGptScaledWordEmbedding：词嵌入 sqrt(d_model) 缩放
 class BioGptScaledWordEmbedding(nn.Embedding):
     """
     This module overrides nn.Embeddings' forward by multiplying with embeddings scale.
@@ -89,6 +91,7 @@ class BioGptScaledWordEmbedding(nn.Embedding):
         return super().forward(input_ids) * self.embed_scale
 
 
+# eager_attention_forward：标准 eager 多头注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -117,6 +120,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# BioGptAttention：因果自注意力（eager/SDPA/Flash 分发）
 class BioGptAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -234,6 +238,7 @@ class BioGptAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# BioGptDecoderLayer：解码器单层（自注意力 + FFN）
 class BioGptDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: BioGptConfig, layer_idx: int | None = None):
         super().__init__()
@@ -303,6 +308,7 @@ class BioGptDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# BioGptPreTrainedModel：权重初始化基类
 class BioGptPreTrainedModel(PreTrainedModel):
     config: BioGptConfig
     base_model_prefix = "biogpt"
@@ -318,6 +324,7 @@ class BioGptPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# BioGptModel：BioGPT 解码器骨干（无 LM head）
 class BioGptModel(BioGptPreTrainedModel):
     def __init__(self, config: BioGptConfig):
         super().__init__(config)
@@ -417,6 +424,7 @@ class BioGptModel(BioGptPreTrainedModel):
     BioGPT Model with a `language modeling` head on top for CLM fine-tuning.
     """
 )
+# BioGptForCausalLM：生物医学文本生成与续写
 class BioGptForCausalLM(BioGptPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"output_projection.weight": "biogpt.embed_tokens.weight"}
 
@@ -484,6 +492,7 @@ class BioGptForCausalLM(BioGptPreTrainedModel, GenerationMixin):
 
 
 @auto_docstring
+# BioGptForTokenClassification：生物医学 NER/实体标注
 class BioGptForTokenClassification(BioGptPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -568,6 +577,7 @@ class BioGptForTokenClassification(BioGptPreTrainedModel):
     each row of the batch).
     """
 )
+# BioGptForSequenceClassification：序列级分类（如文献主题）
 class BioGptForSequenceClassification(BioGptPreTrainedModel):
     def __init__(self, config: BioGptConfig):
         super().__init__(config)

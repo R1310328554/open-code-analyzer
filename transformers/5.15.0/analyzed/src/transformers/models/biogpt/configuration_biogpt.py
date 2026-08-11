@@ -21,6 +21,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="microsoft/biogpt")
 @strict
+# BioGptConfig：24 层 decoder-only Transformer，vocab 约 42k 生物医学词表
 class BioGptConfig(PreTrainedConfig):
     r"""
     Example:

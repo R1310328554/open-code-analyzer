@@ -32,6 +32,7 @@ VOCAB_FILES_NAMES = {
 }
 
 
+# get_pairs：提取 BPE 合并所需的相邻符号对
 def get_pairs(word):
     """
     Return set of symbol pairs in a word.
@@ -48,6 +49,7 @@ def get_pairs(word):
     return pairs
 
 
+# BertweetTokenizer：SentencePiece + BPE，支持推文 @用户名 与 #话题 切分
 class BertweetTokenizer(PreTrainedTokenizer):
     """
     Constructs a BERTweet tokenizer, using Byte-Pair-Encoding.
@@ -531,6 +533,7 @@ ENT_RE = regex.compile(r"&(#?(x?))([^&;\s]+);")
 ######################################################################
 
 
+# _str_to_unicode：字节/字符串统一转为 unicode
 def _str_to_unicode(text, encoding=None, errors="strict"):
     if encoding is None:
         encoding = "utf-8"
@@ -539,6 +542,7 @@ def _str_to_unicode(text, encoding=None, errors="strict"):
     return text
 
 
+# _replace_html_entities：将 HTML 实体转为 Unicode 字符
 def _replace_html_entities(text, keep=(), remove_illegal=True, encoding="utf-8"):
     """
     Remove entities from text by converting them to their corresponding unicode character.
@@ -603,6 +607,7 @@ def _replace_html_entities(text, keep=(), remove_illegal=True, encoding="utf-8")
 ######################################################################
 
 
+# TweetTokenizer：NLTK 风格推文分词（表情、话题标签、重复字母压缩）
 class TweetTokenizer:
     r"""
     Examples:
@@ -659,6 +664,7 @@ class TweetTokenizer:
 ######################################################################
 
 
+# reduce_lengthening：将连续 3+ 重复字符压缩为 3 个
 def reduce_lengthening(text):
     """
     Replace repeated character sequences of length 3 or greater with sequences of length 3.
@@ -667,6 +673,7 @@ def reduce_lengthening(text):
     return pattern.sub(r"\1\1\1", text)
 
 
+# remove_handles：移除 @用户名 句柄
 def remove_handles(text):
     """
     Remove Twitter username handles from text.
@@ -683,6 +690,7 @@ def remove_handles(text):
 ######################################################################
 
 
+# casual_tokenize：TweetTokenizer 的便捷封装
 def casual_tokenize(text, preserve_case=True, reduce_len=False, strip_handles=False):
     """
     Convenience function for wrapping the tokenizer.

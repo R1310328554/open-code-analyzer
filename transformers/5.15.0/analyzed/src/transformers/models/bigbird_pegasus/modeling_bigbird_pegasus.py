@@ -57,6 +57,7 @@ logger = logging.get_logger(__name__)
 _EXPECTED_OUTPUT_SHAPE = [1, 7, 1024]
 
 
+# shift_tokens_right：解码器 teacher forcing 右移 input_ids
 def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start_token_id: int):
     """
     Shift input ids one token to the right.
@@ -73,6 +74,7 @@ def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start
     return shifted_input_ids
 
 
+# BigBirdPegasusLearnedPositionalEmbedding：可学习绝对位置嵌入
 class BigBirdPegasusLearnedPositionalEmbedding(nn.Embedding):
     """
     This module learns positional embeddings up to a fixed maximum size.
@@ -95,6 +97,7 @@ class BigBirdPegasusLearnedPositionalEmbedding(nn.Embedding):
 
 
 # Copied from transformers.models.bart.modeling_bart.BartScaledWordEmbedding with Bart->BigBirdPegasus
+# BigBirdPegasusScaledWordEmbedding：词嵌入 sqrt(d_model) 缩放
 class BigBirdPegasusScaledWordEmbedding(nn.Embedding):
     """
     This module overrides nn.Embeddings' forward by multiplying with embeddings scale.
@@ -109,6 +112,7 @@ class BigBirdPegasusScaledWordEmbedding(nn.Embedding):
 
 
 # Copied from transformers.models.big_bird.modeling_big_bird.BigBirdSelfAttention with BigBird->BigBirdPegasus
+# BigBirdPegasusSelfAttention：编码器全注意力变体
 class BigBirdPegasusSelfAttention(nn.Module):
     def __init__(self, config, layer_idx=None):
         super().__init__()
@@ -188,6 +192,7 @@ class BigBirdPegasusSelfAttention(nn.Module):
 
 
 # Copied from transformers.models.big_bird.modeling_big_bird.BigBirdBlockSparseAttention with BigBird->BigBirdPegasus
+# BigBirdPegasusBlockSparseAttention：编码器块稀疏注意力
 class BigBirdPegasusBlockSparseAttention(nn.Module):
     def __init__(self, config, seed=None):
         super().__init__()
@@ -1024,6 +1029,7 @@ class BigBirdPegasusBlockSparseAttention(nn.Module):
         return np.array(selected_random_blocks, dtype=np.int32)
 
 
+# BigBirdPegasusEncoderAttention：编码器注意力（sparse/full 分发）
 class BigBirdPegasusEncoderAttention(nn.Module):
     def __init__(self, config, seed=None):
         super().__init__()
@@ -1100,6 +1106,7 @@ class BigBirdPegasusEncoderAttention(nn.Module):
         return attention_output, attention_probs
 
 
+# eager_attention_forward：标准 eager 多头注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -1129,6 +1136,7 @@ def eager_attention_forward(
 
 
 # Copied from transformers.models.bart.modeling_bart.BartAttention with BartConfig->BigBirdPegasusConfig, Bart->BigBirdPegasusDecoder
+# BigBirdPegasusDecoderAttention：解码器自注意力 + 交叉注意力
 class BigBirdPegasusDecoderAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -1246,6 +1254,7 @@ class BigBirdPegasusDecoderAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# BigBirdPegasusEncoderLayer：编码器单层（块稀疏自注意力 + FFN）
 class BigBirdPegasusEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: BigBirdPegasusConfig, seed=None):
         super().__init__()
@@ -1314,6 +1323,7 @@ class BigBirdPegasusEncoderLayer(GradientCheckpointingLayer):
         self.self_attn.set_attention_type(value)
 
 
+# BigBirdPegasusDecoderLayer：解码器单层（自注意力 + 交叉注意力 + FFN）
 class BigBirdPegasusDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: BigBirdPegasusConfig, layer_idx: int | None = None):
         super().__init__()
@@ -1409,6 +1419,7 @@ class BigBirdPegasusDecoderLayer(GradientCheckpointingLayer):
 
 
 # Copied from transformers.models.bart.modeling_bart.BartClassificationHead with Bart->BigBirdPegasus
+# BigBirdPegasusClassificationHead：序列分类 Dense+Tanh 头
 class BigBirdPegasusClassificationHead(nn.Module):
     """Head for sentence-level classification tasks."""
 
@@ -1434,6 +1445,7 @@ class BigBirdPegasusClassificationHead(nn.Module):
 
 
 @auto_docstring
+# BigBirdPegasusPreTrainedModel：权重初始化与 checkpoint 映射基类
 class BigBirdPegasusPreTrainedModel(PreTrainedModel):
     config: BigBirdPegasusConfig
     base_model_prefix = "model"
@@ -1458,6 +1470,7 @@ class BigBirdPegasusPreTrainedModel(PreTrainedModel):
         return dummy_inputs
 
 
+# BigBirdPegasusEncoder：块稀疏 BigBird 编码器堆叠
 class BigBirdPegasusEncoder(BigBirdPegasusPreTrainedModel):
     """
     Transformer encoder consisting of *config.encoder_layers* self attention layers. Each layer is a
@@ -1679,6 +1692,7 @@ class BigBirdPegasusEncoder(BigBirdPegasusPreTrainedModel):
         return padding_len, hidden_states, attention_mask
 
 
+# BigBirdPegasusDecoder：Pegasus 风格解码器堆叠
 class BigBirdPegasusDecoder(BigBirdPegasusPreTrainedModel):
     """
     Transformer decoder consisting of *config.decoder_layers* layers. Each layer is a [`BigBirdPegasusDecoderLayer`]
@@ -1809,6 +1823,7 @@ class BigBirdPegasusDecoder(BigBirdPegasusPreTrainedModel):
 
 
 @auto_docstring
+# BigBirdPegasusModel：完整编解码器骨干（无 LM head）
 class BigBirdPegasusModel(BigBirdPegasusPreTrainedModel):
     _tied_weights_keys = {
         "encoder.embed_tokens.weight": "shared.weight",
@@ -1921,6 +1936,7 @@ class BigBirdPegasusModel(BigBirdPegasusPreTrainedModel):
     The BigBirdPegasus Model with a language modeling head. Can be used for summarization.
     """
 )
+# BigBirdPegasusForConditionalGeneration：长文档摘要条件生成
 class BigBirdPegasusForConditionalGeneration(BigBirdPegasusPreTrainedModel, GenerationMixin):
     base_model_prefix = "model"
     _tied_weights_keys = {
@@ -2066,6 +2082,7 @@ class BigBirdPegasusForConditionalGeneration(BigBirdPegasusPreTrainedModel, Gene
     for GLUE tasks.
     """
 )
+# BigBirdPegasusForSequenceClassification：编码器输出序列分类
 class BigBirdPegasusForSequenceClassification(BigBirdPegasusPreTrainedModel):
     def __init__(self, config: BigBirdPegasusConfig, **kwargs):
         super().__init__(config, **kwargs)
@@ -2183,6 +2200,7 @@ class BigBirdPegasusForSequenceClassification(BigBirdPegasusPreTrainedModel):
 
 
 @auto_docstring
+# BigBirdPegasusForQuestionAnswering：抽取式问答 span 预测
 class BigBirdPegasusForQuestionAnswering(BigBirdPegasusPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -2278,6 +2296,7 @@ class BigBirdPegasusForQuestionAnswering(BigBirdPegasusPreTrainedModel):
 
 
 # Copied from transformers.models.pegasus.modeling_pegasus.PegasusDecoderWrapper with Pegasus->BigBirdPegasus
+# BigBirdPegasusDecoderWrapper：仅解码器包装（供 CausalLM 复用）
 class BigBirdPegasusDecoderWrapper(BigBirdPegasusPreTrainedModel):
     """
     This wrapper class is a helper class to correctly load pretrained checkpoints when the causal language model is
@@ -2293,6 +2312,7 @@ class BigBirdPegasusDecoderWrapper(BigBirdPegasusPreTrainedModel):
         return self.decoder(*args, **kwargs)
 
 
+# BigBirdPegasusForCausalLM：仅解码器因果语言建模
 class BigBirdPegasusForCausalLM(BigBirdPegasusPreTrainedModel, GenerationMixin):
     def __init__(self, config):
         config.is_decoder = True
