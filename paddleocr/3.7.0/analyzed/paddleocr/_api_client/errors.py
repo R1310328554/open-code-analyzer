@@ -12,7 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# PaddleOCR 云端 API SDK 异常层次：HTTP、轮询、解析与网络错误
+# limitations under the License.
 
+
+    # 所有 SDK 异常的基类
 class PaddleOCRAPIError(Exception):
     """Base exception for PaddleOCR API SDK."""
 
@@ -21,14 +25,17 @@ class PaddleOCRAPIError(Exception):
         super().__init__(message)
 
 
+    # Token 缺失、无效或过期（HTTP 401/403）
 class AuthError(PaddleOCRAPIError):
     """Token missing, invalid, or expired (HTTP 401/403)."""
 
 
+    # 请求参数不合法（HTTP 400）
 class InvalidRequestError(PaddleOCRAPIError):
     """Invalid parameters (HTTP 400)."""
 
 
+    # API 返回非 2xx 状态码
 class APIError(PaddleOCRAPIError):
     """Non-2xx response from the API server."""
 
@@ -37,6 +44,7 @@ class APIError(PaddleOCRAPIError):
         super().__init__(f"HTTP {status_code}: {message}")
 
 
+    # 每日配额超限（HTTP 429）
 class RateLimitError(APIError):
     """Daily quota exceeded (HTTP 429)."""
 
@@ -51,6 +59,7 @@ class ServiceUnavailableError(APIError):
         super().__init__(status_code, message)
 
 
+    # 服务端 job 执行失败
 class JobFailedError(PaddleOCRAPIError):
     """Job execution failed on the server side."""
 
@@ -64,6 +73,7 @@ class RequestTimeoutError(PaddleOCRAPIError):
     """A single HTTP request exceeded the configured timeout."""
 
 
+    # 轮询等待 job 完成超时
 class PollTimeoutError(PaddleOCRAPIError):
     """Polling timed out waiting for job completion."""
 
@@ -77,9 +87,11 @@ class ResponseFormatError(PaddleOCRAPIError):
     """A successful API response did not match the documented schema."""
 
 
+    # 结果 JSONL 无法解析为预期结构
 class ResultParseError(PaddleOCRAPIError):
     """A result JSONL payload could not be parsed as the expected result type."""
 
 
+    # 网络连接失败
 class NetworkError(PaddleOCRAPIError):
     """Network connection failure."""

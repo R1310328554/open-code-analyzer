@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# paddleocr 主 CLI：注册 pipeline、单模型、doc2md、api 与 GenAI 子命令
 import argparse
 import logging
 import subprocess
@@ -54,6 +55,7 @@ from ._utils.deprecation import CLIDeprecationWarning
 from ._utils.logging import logger
 
 
+    # 为各 Pipeline 类注册子解析器与 execute_with_args
 def _register_pipelines(subparsers):
     for cls in [
         DocPreprocessor,
@@ -72,6 +74,7 @@ def _register_pipelines(subparsers):
         subparser.set_defaults(executor=subcommand_executor.execute_with_args)
 
 
+    # 为单模型推理类注册 CLI 子命令
 def _register_models(subparsers):
     for cls in [
         ChartParsing,
@@ -165,6 +168,7 @@ def _register_genai_server_command(subparsers):
     subparser.set_defaults(executor=_run_genai_server)
 
 
+    # 注册 doc2md：Office 文档转 Markdown
 def _register_doc2md_command(subparsers):
     """Register the doc2md subcommand."""
 
@@ -272,12 +276,14 @@ def _register_doc2md_command(subparsers):
     subparser.set_defaults(executor=_execute_doc2md)
 
 
+    # 委托 _api_client.cli 注册云端 API 子命令
 def _register_api_command(subparsers):
     from ._api_client.cli import register_api_command
 
     register_api_command(subparsers)
 
 
+    # 构建顶层 argparse：version 与各子命令 subparsers
 def _get_parser():
     parser = argparse.ArgumentParser(prog="paddleocr")
     parser.add_argument(
@@ -298,6 +304,7 @@ def _execute(args):
     args.executor(args)
 
 
+    # CLI 入口：解析参数并 dispatch 到对应 executor
 def main():
     logger.setLevel(logging.INFO)
     warnings.filterwarnings("default", category=CLIDeprecationWarning)

@@ -13,6 +13,9 @@
 # limitations under the License.
 """paddleocr._doc2md - Convert office documents to Markdown."""
 
+# doc2md 子包入口：convert、supported_formats 与转换器注册表
+"""paddleocr._doc2md - Convert office documents to Markdown."""
+
 from .core import convert, supported_formats
 from .base import ConvertResult, BaseConverter
 from .registry import default_registry

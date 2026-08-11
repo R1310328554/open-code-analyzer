@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 异步 PaddleOCR 云端 API 客户端：aiohttp 提交、轮询与结果解析
 import asyncio
 import os
 from typing import Optional, Union
@@ -42,6 +43,7 @@ from .models import (
 from .results import BatchStatus, DocParsingResult, Job, JobStatus, OCRResult
 
 
+    # 支持 asyncio.gather 并发提交与轮询的 AI Studio OCR SDK
 class AsyncPaddleOCRClient:
     """Async client for PaddleOCR API.
 
@@ -86,6 +88,7 @@ class AsyncPaddleOCRClient:
     async def close(self):
         await self._http.close()
 
+        # 提交 OCR 任务并阻塞轮询直至返回 OCRResult
     async def ocr(
         self,
         file_url: Optional[str] = None,
@@ -107,6 +110,7 @@ class AsyncPaddleOCRClient:
         jsonl_data, _ = await self._poller.poll_until_done(job_id)
         return parse_ocr_result(job_id, jsonl_data)
 
+        # 提交文档解析任务并返回 DocParsingResult
     async def parse_document(
         self,
         model: Union[Model, str] = Model.PADDLE_OCR_VL_16,
@@ -124,6 +128,7 @@ class AsyncPaddleOCRClient:
         jsonl_data, _ = await self._poller.poll_until_done(job_id)
         return parse_doc_parsing_result(job_id, jsonl_data)
 
+        # 仅提交 OCR job，返回 Job 供后续 wait_ocr_result
     async def submit_ocr(
         self,
         file_url: Optional[str] = None,
@@ -160,6 +165,7 @@ class AsyncPaddleOCRClient:
         )
         return Job(job_id=job_id, model=model.value, task="document_parsing")
 
+        # 对已提交 job 轮询并解析 OCR 结果
     async def wait_ocr_result(self, job: Union[Job, str]) -> OCRResult:
         job_id = job_id_for_task(job, "ocr")
         jsonl_data, _ = await self._poller.poll_until_done(job_id)
@@ -225,6 +231,7 @@ class AsyncPaddleOCRClient:
             timeout=self._http.timeout,
         )
 
+        # 内部：校验输入源，组装 optionalPayload 并 submit_url/file
     async def _submit(
         self,
         model: Model,

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 同步 PaddleOCR 云端 API 客户端：提交 → 轮询 → 拉取 JSONL 结果
 import os
 from typing import Optional, Union
 
@@ -39,6 +40,7 @@ from .models import (
 from .results import BatchStatus, DocParsingResult, Job, JobStatus, OCRResult
 
 
+    # 阻塞式封装 HTTPClient 与 Poller，供 CLI 与脚本直接调用
 class PaddleOCRClient:
     """Synchronous blocking client for PaddleOCR official API.
 
@@ -78,6 +80,7 @@ class PaddleOCRClient:
     def close(self):
         self._http.close()
 
+        # 一站式 OCR：提交任务、轮询完成并解析 OCRResult
     def ocr(
         self,
         file_url: Optional[str] = None,
@@ -99,6 +102,7 @@ class PaddleOCRClient:
         jsonl_data, _ = self._poller.poll_until_done(job_id)
         return parse_ocr_result(job_id, jsonl_data)
 
+        # 一站式文档解析：支持 PP-StructureV3 与 PaddleOCR-VL 模型
     def parse_document(
         self,
         model: Union[Model, str] = Model.PADDLE_OCR_VL_16,
@@ -116,6 +120,7 @@ class PaddleOCRClient:
         jsonl_data, _ = self._poller.poll_until_done(job_id)
         return parse_doc_parsing_result(job_id, jsonl_data)
 
+        # 异步工作流：仅提交 OCR job 返回 Job 句柄
     def submit_ocr(
         self,
         file_url: Optional[str] = None,
@@ -165,6 +170,7 @@ class PaddleOCRClient:
     def get_status(self, job_id: str) -> JobStatus:
         return self._poller.get_status(job_id)
 
+        # 查询同一 batch_id 下关联任务的聚合状态
     def get_batch_status(self, batch_id: str) -> BatchStatus:
         return self._poller.get_batch_status(batch_id)
 
@@ -212,6 +218,7 @@ class PaddleOCRClient:
             timeout=self._http.timeout,
         )
 
+        # 内部提交：file_url 走 JSON POST，file_path 走 multipart
     def _submit(
         self,
         model: Model,

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# API 结果资源下载：从预签名 URL 保存 OCR/文档解析图片与附件
 import os
 import tempfile
 from pathlib import Path
@@ -24,6 +25,7 @@ from .errors import InvalidRequestError, NetworkError, RequestTimeoutError
 from .results import DocParsingResult, OCRResult
 
 
+    # 下载单个 http(s) 资源到目标路径，支持原子写入与 overwrite
 def save_resource(
     resource_url: str,
     destination: str,
@@ -60,6 +62,7 @@ def save_resource(
     return str(target)
 
 
+    # 批量保存 OCRResult 各页 ocr_image_url 到目录
 def save_ocr_result_resources(
     result: OCRResult,
     destination: str,
@@ -86,6 +89,7 @@ def save_ocr_result_resources(
     return saved_paths
 
 
+    # 批量保存文档解析结果中的 markdown/output 图片资源
 def save_document_parsing_result_resources(
     result: DocParsingResult,
     destination: str,
@@ -119,6 +123,7 @@ def save_document_parsing_result_resources(
     return saved_paths
 
 
+    # 根据 destination 与 filename 解析最终写入路径
 def _resolve_destination(
     url_path: str, destination: str, filename: Optional[str]
 ) -> Path:
@@ -155,6 +160,7 @@ def _require_writable_target(target: Path, overwrite: bool) -> None:
         raise InvalidRequestError(f"Destination already exists: {target}")
 
 
+    # 先写临时文件再 link/replace，避免半写损坏
 def _atomic_write(target: Path, content: bytes, overwrite: bool) -> None:
     fd, temp_path = tempfile.mkstemp(
         prefix=f".{target.name}.tmp-",

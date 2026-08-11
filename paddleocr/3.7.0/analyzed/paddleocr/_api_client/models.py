@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# API 模型枚举与可选参数 dataclass：snake_case 转 camelCase 载荷
 from dataclasses import dataclass, fields
 from enum import Enum
 from typing import Optional, Union
@@ -20,6 +21,7 @@ from ._naming import snake_to_camel
 from .errors import InvalidRequestError
 
 
+    # 云端支持的 OCR 与文档解析模型名称
 class Model(str, Enum):
     PP_OCRV5 = "PP-OCRv5"
     PP_OCRV5_LATIN = "PP-OCRv5-latin"
@@ -57,6 +59,7 @@ def _coerce_model(model: Union[Model, str]) -> Optional[Model]:
         return None
 
 
+    # 判断模型是否属于 OCR 系列（PP-OCRv5/v6 等）
 def is_ocr_model(model: Union[Model, str]) -> bool:
     return _coerce_model(model) in _OCR_MODELS
 
@@ -65,11 +68,13 @@ def is_document_parsing_model(model: Union[Model, str]) -> bool:
     return _coerce_model(model) in _DOCUMENT_PARSING_MODELS
 
 
+    # 判断是否为 PaddleOCR-VL 视觉语言模型
 def is_vl_model(model: Union[Model, str]) -> bool:
     return _coerce_model(model) in _VL_MODELS
 
 
 @dataclass
+    # OCR 预处理、检测与识别参数，to_payload 生成 optionalPayload
 class OCROptions:
     use_doc_orientation_classify: Optional[bool] = None
     use_doc_unwarping: Optional[bool] = None
@@ -88,6 +93,7 @@ class OCROptions:
 
 
 @dataclass
+    # PP-StructureV3 文档解析：表格、公式、版面等开关
 class PPStructureV3Options:
     use_doc_orientation_classify: Optional[bool] = None
     use_doc_unwarping: Optional[bool] = None
@@ -127,6 +133,7 @@ class PPStructureV3Options:
 
 
 @dataclass
+    # PaddleOCR-VL 文档解析：VLM 采样与版面参数
 class PaddleOCRVLOptions:
     use_doc_orientation_classify: Optional[bool] = None
     use_doc_unwarping: Optional[bool] = None
@@ -168,6 +175,7 @@ class PaddleOCRVLOptions:
 DocParsingOptions = Union[PPStructureV3Options, PaddleOCRVLOptions]
 
 
+    # 将 dataclass 非 None 字段转为 camelCase API 载荷
 def _build_payload(options) -> dict:
     payload = {}
     for field in fields(options):

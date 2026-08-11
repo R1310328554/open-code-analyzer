@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# DOCX → Markdown 转换器：标题、列表、表格、OMML 公式与图片提取
 import re
 from collections import Counter
 from pathlib import Path
@@ -300,6 +301,7 @@ def _detect_heading_level(para, body_font_size: float) -> int:
     return 0
 
 
+    # 跨段落 w:fldChar 域代码状态（如 HYPERLINK 超链接）
 class _FieldState:
     """Mutable state for tracking w:fldChar field codes across paragraphs."""
 
@@ -829,6 +831,7 @@ def _get_content_width(doc) -> int:
     return section.page_width - section.left_margin - section.right_margin
 
 
+    # 将 python-docx Table 转为 HTML，处理合并单元格与内嵌图片
 def _table_to_html(
     table, doc, image_counter: list, images: dict, content_width: int = 0
 ) -> str:
@@ -1285,6 +1288,7 @@ def _get_list_info(para, numbering_map) -> tuple | None:
     return (list_type, ilvl, num_id)
 
 
+    # 按文档顺序遍历 body，生成 Markdown 与 images 字典
 def _convert_body(doc, *, extract_drawings=True) -> tuple:
     """Traverse body elements in order and produce Markdown. Returns (markdown_str, images_dict)."""
     try:
@@ -1587,12 +1591,14 @@ def _extract_headers_footers(doc) -> tuple:
 
 
 @default_registry.register
+    # 注册到 default_registry 的 Word .docx 转换实现
 class DocxConverter(BaseConverter):
     supported_extensions = ["docx"]
     supported_mimetypes = [
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     ]
 
+        # 打开 DOCX，可选提取页眉页脚，返回 ConvertResult
     def convert_file(self, file_path: Path, **kwargs) -> ConvertResult:
         try:
             from docx import Document

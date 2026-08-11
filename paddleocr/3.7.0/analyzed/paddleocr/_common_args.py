@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# CLI 与 Python API 共用推理参数：设备、引擎、TensorRT 与 MKL-DNN
 from paddlex.utils.device import get_default_device, parse_device
 
 from ._constants import (
@@ -35,6 +36,7 @@ SUPPORTED_INFERENCE_ENGINE_LIST = [
 ]
 
 
+    # 合并默认推理参数并校验 engine/precision 合法性
 def parse_common_args(kwargs, *, default_enable_hpi):
     default_vals = {
         "device": DEFAULT_DEVICE,
@@ -99,6 +101,7 @@ def _build_paddle_static_engine_config(common_args, device_type):
     return cfg
 
 
+    # 将通用参数转为 PaddleX 模型 init 的 engine_config
 def prepare_common_init_args(model_name, common_args):
     device = common_args["device"]
     if device is None:
@@ -126,6 +129,7 @@ def prepare_common_init_args(model_name, common_args):
     return init_kwargs
 
 
+    # 向 argparse 添加 --device、--engine、--use_tensorrt 等选项
 def add_common_cli_opts(parser, *, default_enable_hpi, allow_multiple_devices):
     if allow_multiple_devices:
         help_ = "Device(s) to use for inference, e.g., `cpu`, `gpu`, `npu`, `gpu:0`, `gpu:0,1`. If multiple devices are specified, inference will be performed in parallel. Note that parallel inference is not always supported. By default, GPU 0 will be used if available; otherwise, the CPU will be used."

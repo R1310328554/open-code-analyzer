@@ -13,6 +13,9 @@
 # limitations under the License.
 """Built-in converters - importing this package triggers registration of all converters."""
 
+# 内置转换器包：导入时自动注册 docx/pptx/xlsx 模块
+"""Built-in converters - importing this package triggers registration of all converters."""
+
 import importlib
 
 _converter_modules = [

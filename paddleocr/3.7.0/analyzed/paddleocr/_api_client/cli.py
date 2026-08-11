@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# paddleocr api 子命令：命令行调用云端 OCR 与文档解析 API
 import json
 import sys
 
@@ -27,6 +28,7 @@ from .models import (
 )
 
 
+    # 注册 api 子解析器：模型、文件源、超时与预处理/识别选项
 def register_api_command(subparsers):
     """Register the 'api' subcommand into paddleocr CLI."""
     subparser = subparsers.add_parser(
@@ -205,6 +207,7 @@ def register_api_command(subparsers):
     subparser.set_defaults(executor=_execute_api)
 
 
+    # 根据 model_type 构造 OCROptions 或 DocParsingOptions 并执行
 def _execute_api(args):
     kwargs = {}
     if args.token:
@@ -318,6 +321,7 @@ def _execute_api(args):
         client.close()
 
 
+    # 将 CLI 模型字符串解析为 Model 枚举
 def _resolve_model(model_str: str) -> Model:
     try:
         return Model(model_str)
@@ -330,6 +334,7 @@ def _resolve_model(model_str: str) -> Model:
         sys.exit(1)
 
 
+    # 将 OCRResult 序列化为 CLI 输出 JSON 结构
 def _ocr_result_to_dict(result) -> dict:
     return {
         "jobId": result.job_id,
@@ -343,6 +348,7 @@ def _ocr_result_to_dict(result) -> dict:
     }
 
 
+    # 将 DocParsingResult 序列化为 CLI 输出 JSON 结构
 def _doc_parsing_result_to_dict(result) -> dict:
     return {
         "jobId": result.job_id,

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 推理默认常量：设备、TensorRT、MKL-DNN、精度与 CPU 线程数
 DEFAULT_DEVICE = None
 DEFAULT_USE_TENSORRT = False
 DEFAULT_PRECISION = "fp32"
