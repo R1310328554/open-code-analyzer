@@ -5,6 +5,11 @@ Exposes one class, ``MultiPartParser``, which feeds chunks of uploaded data to
 file upload handlers for processing.
 """
 
+# django.http.multipartparser — RFC 7578 multipart/form-data 流式解析
+Exposes one class, ``MultiPartParser``, which feeds chunks of uploaded data to
+file upload handlers for processing.
+"""
+
 import base64
 import binascii
 import collections
@@ -26,10 +31,12 @@ from django.utils.regex_helper import _lazy_re_compile
 __all__ = ("MultiPartParser", "MultiPartParserError", "InputStreamExhausted")
 
 
+# multipart 解析失败时抛出的异常
 class MultiPartParserError(Exception):
     pass
 
 
+# 输入流已耗尽，禁止继续读取
 class InputStreamExhausted(Exception):
     """
     No more reads are allowed from this device.
@@ -45,6 +52,7 @@ FIELD_TYPES = frozenset([FIELD, RAW])
 MAX_TOTAL_HEADER_SIZE = 1024
 
 
+# 主解析器：分块读取 POST/FILES 并委托 upload_handlers
 class MultiPartParser:
     """
     An RFC 7578 multipart/form-data parser.
@@ -419,6 +427,7 @@ class MultiPartParser:
                 handler.file.close()
 
 
+# 惰性字节流：按需读取并跟踪 position
 class LazyStream:
     """
     The LazyStream wrapper allows one to get and "unget" bytes from a stream.
@@ -538,6 +547,7 @@ class LazyStream:
             )
 
 
+# 固定大小分块迭代 input stream
 class ChunkIter:
     """
     An iterable that will yield chunks of data. Given a file-like object as the
@@ -562,6 +572,7 @@ class ChunkIter:
         return self
 
 
+# 在 multipart 边界之间迭代各 part 流
 class InterBoundaryIter:
     """
     A Producer that will iterate over boundaries.
@@ -581,6 +592,7 @@ class InterBoundaryIter:
             raise StopIteration()
 
 
+# 按 boundary 切分并解析 part 头与 body
 class BoundaryIter:
     """
     A Producer that is sensitive to boundaries.
@@ -747,6 +759,7 @@ def parse_boundary_stream(stream, max_header_size):
     return (TYPE, outdict, stream)
 
 
+# 底层状态机：解析 Content-Disposition 与字段/文件类型
 class Parser:
     def __init__(self, stream, boundary):
         self._stream = stream

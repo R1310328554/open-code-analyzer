@@ -1,4 +1,9 @@
 """
+django.forms.models — 由 Model 生成 Form/FormSet 与模型选择字段。
+
+fields_for_model、ModelForm 元类及 inline 与 choice 字段工厂。
+"""
+"""
 Helper functions for creating Form classes from Django models
 and database field objects.
 """
@@ -257,6 +262,7 @@ def fields_for_model(
     return field_dict
 
 
+# ModelForm Meta 选项容器：model/fields/exclude/widgets 等
 class ModelFormOptions:
     def __init__(self, options=None):
         self.model = getattr(options, "model", None)
@@ -271,6 +277,7 @@ class ModelFormOptions:
         self.formfield_callback = getattr(options, "formfield_callback", None)
 
 
+# 元类：从 Meta.model 生成 base_fields 并校验字段名
 class ModelFormMetaclass(DeclarativeFieldsMetaclass):
     def __new__(mcs, name, bases, attrs):
         new_class = super().__new__(mcs, name, bases, attrs)
@@ -344,6 +351,7 @@ class ModelFormMetaclass(DeclarativeFieldsMetaclass):
         return new_class
 
 
+# 模型表单基类：instance 绑定、save 与 _update/_save_m2m
 class BaseModelForm(BaseForm, AltersData):
     def __init__(
         self,
@@ -582,6 +590,7 @@ class BaseModelForm(BaseForm, AltersData):
     save.alters_data = True
 
 
+# 声明式 ModelForm：Meta 指定 model 与字段白/黑名单
 class ModelForm(BaseModelForm, metaclass=ModelFormMetaclass):
     pass
 
@@ -678,6 +687,7 @@ def modelform_factory(
 # ModelFormSets ##############################################################
 
 
+# 模型表单集：queryset、save_existing/new/delete 批量持久化
 class BaseModelFormSet(BaseFormSet, AltersData):
     """
     A ``FormSet`` for editing a queryset and/or adding new objects to it.
@@ -1108,6 +1118,7 @@ def modelformset_factory(
 # InlineFormSets #############################################################
 
 
+# 内联表单集：外键关联与 extra/max_num 约束
 class BaseInlineFormSet(BaseModelFormSet):
     """A formset for child objects related to a parent."""
 
@@ -1373,6 +1384,7 @@ def inlineformset_factory(
 # Fields #####################################################################
 
 
+# 内联隐藏外键字段：parent_instance 与 pk 校验
 class InlineForeignKeyField(Field):
     """
     A basic integer field that deals with validating the given value to a
@@ -1417,6 +1429,7 @@ class InlineForeignKeyField(Field):
         return False
 
 
+# ModelChoice 选项值包装：保留 model instance 引用
 class ModelChoiceIteratorValue:
     def __init__(self, value, instance):
         self.value = value
@@ -1434,6 +1447,7 @@ class ModelChoiceIteratorValue:
         return self.value == other
 
 
+# 遍历 queryset 生成 (value, label) 选项
 class ModelChoiceIterator(BaseChoiceIterator):
     def __init__(self, field):
         self.field = field
@@ -1465,6 +1479,7 @@ class ModelChoiceIterator(BaseChoiceIterator):
         )
 
 
+# 单选模型字段：queryset 过滤与 to_python 实例解析
 class ModelChoiceField(ChoiceField):
     """A ChoiceField whose choices are a model QuerySet."""
 
@@ -1613,6 +1628,7 @@ class ModelChoiceField(ChoiceField):
         return str(self.prepare_value(initial_value)) != str(data_value)
 
 
+# 多选模型字段：QuerySet/PrimaryKey 集合 clean 与 compress
 class ModelMultipleChoiceField(ModelChoiceField):
     """A MultipleChoiceField whose choices are a model QuerySet."""
 

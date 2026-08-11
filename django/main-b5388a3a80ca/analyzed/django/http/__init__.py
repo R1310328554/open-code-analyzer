@@ -1,4 +1,10 @@
-from django.http.cookie import SimpleCookie, parse_cookie
+"""
+django.http — HTTP 请求/响应、Cookie 与 QueryDict 公共导出。
+
+聚合 request、response、cookie 子模块的核心类型与异常。
+"""
+
+from django.http.cookie import SimpleCookie, parse_cookiefrom django.http.cookie import SimpleCookie, parse_cookie
 from django.http.request import (
     HttpHeaders,
     HttpRequest,

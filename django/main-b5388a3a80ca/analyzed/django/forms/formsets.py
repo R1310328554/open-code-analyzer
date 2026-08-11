@@ -6,7 +6,15 @@ from django.forms.utils import ErrorList, RenderableFormMixin
 from django.forms.widgets import CheckboxInput, HiddenInput, NumberInput
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
+"""
+django.forms.formsets — 同构表单集合与管理层隐藏字段。
+
+BaseFormSet 管理多份 Form 实例的绑定、校验与增删排序。
+"""
+
 from django.utils.translation import ngettext_lazy
+
+__all__from django.utils.translation import ngettext_lazy
 
 __all__ = ("BaseFormSet", "formset_factory", "all_valid")
 
@@ -25,6 +33,7 @@ DEFAULT_MIN_NUM = 0
 DEFAULT_MAX_NUM = 1000
 
 
+# 隐藏字段表单：记录 TOTAL/INITIAL/MIN/MAX 表单数量
 class ManagementForm(Form):
     """
     Keep track of how many form instances are displayed on the page. If adding
@@ -49,6 +58,7 @@ class ManagementForm(Form):
         return cleaned_data
 
 
+# 表单集基类：management_form、clean 与 extra 表单实例
 class BaseFormSet(RenderableFormMixin):
     """
     A collection of instances of the same Form class.

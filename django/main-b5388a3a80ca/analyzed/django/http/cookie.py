@@ -1,4 +1,10 @@
-from http import cookies
+"""
+django.http.cookie — Cookie 头解析与 stdlib SimpleCookie 别名。
+
+parse_cookie 将 Cookie 头解析为字典；SimpleCookie 保持 2.1 兼容。
+"""
+
+from http import cookiesfrom http import cookies
 
 # For backwards compatibility in Django 2.1.
 SimpleCookie = cookies.SimpleCookie

@@ -1,4 +1,10 @@
-import json
+"""
+django.forms.utils — 表单渲染混入与错误集合。
+
+RenderableMixin 统一 as_* 模板输出；ErrorDict/ErrorList 结构化错误。
+"""
+
+import jsonimport json
 from collections import UserList
 
 from django.conf import settings
@@ -42,6 +48,7 @@ def flatatt(attrs):
     )
 
 
+# 可渲染混入：get_context + renderer.render 输出 HTML
 class RenderableMixin:
     def get_context(self):
         raise NotImplementedError(
@@ -58,6 +65,7 @@ class RenderableMixin:
     __html__ = render
 
 
+# 字段级渲染：as_widget/as_hidden/as_field_group
 class RenderableFieldMixin(RenderableMixin):
     def as_field_group(self):
         return self.render()
@@ -81,6 +89,7 @@ class RenderableFieldMixin(RenderableMixin):
     __html__ = __str__
 
 
+# 表单级渲染：as_p/as_table/as_ul/as_div 布局
 class RenderableFormMixin(RenderableMixin):
     def as_p(self):
         """Render as <p> elements."""
@@ -99,6 +108,7 @@ class RenderableFormMixin(RenderableMixin):
         return self.render(self.template_name_div)
 
 
+# 错误渲染：as_json/as_text/as_ul 多种格式
 class RenderableErrorMixin(RenderableMixin):
     def as_json(self, escape_html=False):
         return json.dumps(self.get_json_data(escape_html))
@@ -110,6 +120,7 @@ class RenderableErrorMixin(RenderableMixin):
         return self.render(self.template_name_ul)
 
 
+# 字段名→ErrorList 映射，支持 as_data 与 JSON 导出
 class ErrorDict(dict, RenderableErrorMixin):
     """
     A collection of errors that knows how to display itself in various formats.
@@ -138,6 +149,7 @@ class ErrorDict(dict, RenderableErrorMixin):
         }
 
 
+# 单字段或多条非字段错误的可渲染列表
 class ErrorList(UserList, list, RenderableErrorMixin):
     """
     A collection of errors that knows how to display itself in various formats.

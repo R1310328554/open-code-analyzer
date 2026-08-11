@@ -45,6 +45,10 @@ More details about how the caching works:
   "Cache-Control: public", the response will vary on Authorization.
 """
 
+# django.middleware.cache — 全页缓存 update/fetch 两阶段中间件
+  "Cache-Control: public", the response will vary on Authorization.
+"""
+
 import time
 
 from django.conf import settings
@@ -61,6 +65,7 @@ from django.utils.cache import (
 from django.utils.http import parse_http_date_safe, split_directive_names
 
 
+# 响应阶段：可缓存 200/304 写入 cache 并 patch 头
 class UpdateCacheMiddleware(MiddlewareMixin):
     """
     Response-phase cache middleware that updates the cache if the response is
@@ -144,6 +149,7 @@ class UpdateCacheMiddleware(MiddlewareMixin):
         return response
 
 
+# 请求阶段：GET/HEAD 命中则返回缓存副本
 class FetchFromCacheMiddleware(MiddlewareMixin):
     """
     Request-phase cache middleware that fetches a page from the cache.
@@ -203,6 +209,7 @@ class FetchFromCacheMiddleware(MiddlewareMixin):
         return response
 
 
+# 单类组合 update+fetch，亦作 cache_page 装饰器后端
 class CacheMiddleware(UpdateCacheMiddleware, FetchFromCacheMiddleware):
     """
     Cache middleware that provides basic behavior for many simple sites.

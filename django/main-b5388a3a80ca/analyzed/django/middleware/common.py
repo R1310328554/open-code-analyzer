@@ -1,4 +1,10 @@
-import re
+"""
+django.middleware.common — URL 规范化与禁止 User-Agent 等通用处理。
+
+APPEND_SLASH/PREPEND_WWW 重定向及 404 断链邮件通知。
+"""
+
+import reimport re
 from urllib.parse import urlsplit
 
 from django.conf import settings
@@ -10,6 +16,7 @@ from django.urls import is_valid_path
 from django.utils.http import escape_leading_slashes
 
 
+# 禁止 UA、补斜杠/www 前缀重定向与 Content-Length
 class CommonMiddleware(MiddlewareMixin):
     """
     "Common" middleware for taking care of some basic operations:
@@ -117,6 +124,7 @@ class CommonMiddleware(MiddlewareMixin):
         return response
 
 
+# 非 DEBUG 下对 404 且 referer 为本站的请求邮件通知管理员
 class BrokenLinkEmailsMiddleware(MiddlewareMixin):
     # Set to override the mail.mailers alias used for sending the email.
     using = None

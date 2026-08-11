@@ -1,4 +1,10 @@
-import functools
+"""
+django.forms.renderers — 表单/字段/错误模板渲染后端。
+
+支持 Django 模板、Jinja2 或 settings.TEMPLATES 统一加载。
+"""
+
+import functoolsimport functools
 from pathlib import Path
 
 from django.conf import settings
@@ -14,6 +20,7 @@ def get_default_renderer():
     return renderer_class()
 
 
+# 渲染器抽象基类：模板名常量与 render/get_template
 class BaseRenderer:
     form_template_name = "django/forms/div.html"
     formset_template_name = "django/forms/formsets/div.html"
@@ -29,6 +36,7 @@ class BaseRenderer:
         return template.render(context, request=request).strip()
 
 
+# 混入：cached_property engine 与 get_template 委托
 class EngineMixin:
     def get_template(self, template_name):
         return self.engine.get_template(template_name)
@@ -45,6 +53,7 @@ class EngineMixin:
         )
 
 
+# 使用 DjangoTemplates 后端加载 forms/templates
 class DjangoTemplates(EngineMixin, BaseRenderer):
     """
     Load Django templates from the built-in widget templates in
@@ -54,6 +63,7 @@ class DjangoTemplates(EngineMixin, BaseRenderer):
     backend = DjangoTemplates
 
 
+# 使用 Jinja2 后端加载 forms/jinja2 目录模板
 class Jinja2(EngineMixin, BaseRenderer):
     """
     Load Jinja2 templates from the built-in widget templates in
@@ -67,6 +77,7 @@ class Jinja2(EngineMixin, BaseRenderer):
         return Jinja2
 
 
+# 通过 template.loader.get_template 按 TEMPLATES 配置渲染
 class TemplatesSetting(BaseRenderer):
     """
     Load templates using template.loader.get_template() which is configured

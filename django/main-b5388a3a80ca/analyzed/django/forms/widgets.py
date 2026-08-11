@@ -1,4 +1,9 @@
 """
+django.forms.widgets — HTML 控件与 Media 资源聚合。
+
+Widget 负责 value 与 attrs；Media 合并 JS/CSS 依赖图。
+"""
+"""
 HTML Widget classes
 """
 
@@ -59,11 +64,14 @@ __all__ = (
 MEDIA_TYPES = ("css", "js")
 
 
+# Media 合并时检测到循环或冲突依赖顺序的警告
 class MediaOrderConflictWarning(RuntimeWarning):
     pass
 
 
+# 可渲染静态资源基类：path 与 HTML 属性
 @html_safe
+class MediaAsset:@html_safe
 class MediaAsset:
     element_template = "{path}"
 
@@ -121,6 +129,7 @@ class MediaAsset:
         return static(self._path)
 
 
+# JavaScript 资源：<script src=...> 元素
 class Script(MediaAsset):
     element_template = '<script src="{path}"{attributes}></script>'
 
@@ -129,6 +138,7 @@ class Script(MediaAsset):
         super().__init__(src, **attributes)
 
 
+# CSS 资源：<link rel=stylesheet> 元素
 class Stylesheet(MediaAsset):
     element_template = '<link href="{path}"{attributes}>'
 
@@ -136,7 +146,9 @@ class Stylesheet(MediaAsset):
         super().__init__(path=href, rel="stylesheet", **attributes)
 
 
+# 聚合 css/js 字典，支持 + 合并与拓扑排序
 @html_safe
+class Media:@html_safe
 class Media:
     def __init__(self, media=None, css=None, js=None):
         if media is not None:
@@ -303,6 +315,7 @@ def media_property(cls):
     return property(_media)
 
 
+# 元类：收集子类 Media 声明到 media 属性
 class MediaDefiningClass(type):
     """
     Metaclass for classes that can have media definitions.
@@ -317,6 +330,7 @@ class MediaDefiningClass(type):
         return new_class
 
 
+# 控件基类：render/format_value/id_for_label 与 needs_multipart
 class Widget(metaclass=MediaDefiningClass):
     needs_multipart_form = False  # Determines does this widget need multipart form
     is_localized = False
@@ -410,6 +424,7 @@ class Widget(metaclass=MediaDefiningClass):
         return not self.is_hidden
 
 
+# 单行 <input> 基类：input_type 与 type 属性
 class Input(Widget):
     """
     Base class for all <input> widgets.
@@ -430,41 +445,49 @@ class Input(Widget):
         return context
 
 
+# 文本输入：input_type=text
 class TextInput(Input):
     input_type = "text"
     template_name = "django/forms/widgets/text.html"
 
 
+# 数字输入：input_type=number
 class NumberInput(Input):
     input_type = "number"
     template_name = "django/forms/widgets/number.html"
 
 
+# 邮箱输入：input_type=email
 class EmailInput(Input):
     input_type = "email"
     template_name = "django/forms/widgets/email.html"
 
 
+# URL 输入：input_type=url
 class URLInput(Input):
     input_type = "url"
     template_name = "django/forms/widgets/url.html"
 
 
+# 颜色选择：input_type=color
 class ColorInput(Input):
     input_type = "color"
     template_name = "django/forms/widgets/color.html"
 
 
+# 搜索框：input_type=search
 class SearchInput(Input):
     input_type = "search"
     template_name = "django/forms/widgets/search.html"
 
 
+# 电话输入：input_type=tel
 class TelInput(Input):
     input_type = "tel"
     template_name = "django/forms/widgets/tel.html"
 
 
+# 密码输入：可选 render_value 隐藏已填值
 class PasswordInput(Input):
     input_type = "password"
     template_name = "django/forms/widgets/password.html"
@@ -479,11 +502,13 @@ class PasswordInput(Input):
         return super().get_context(name, value, attrs)
 
 
+# 隐藏字段：input_type=hidden
 class HiddenInput(Input):
     input_type = "hidden"
     template_name = "django/forms/widgets/hidden.html"
 
 
+# 多值隐藏：为 list/tuple 每项生成 hidden input
 class MultipleHiddenInput(HiddenInput):
     """
     Handle <input type="hidden"> for fields that have a list
@@ -522,6 +547,7 @@ class MultipleHiddenInput(HiddenInput):
         return [] if value is None else value
 
 
+# 文件上传：input_type=file，需 multipart 编码
 class FileInput(Input):
     allow_multiple_selected = False
     input_type = "file"
@@ -569,6 +595,7 @@ class FileInput(Input):
 FILE_INPUT_CONTRADICTION = object()
 
 
+# 可清除文件：展示链接与 clear 复选框
 class ClearableFileInput(FileInput):
     clear_checkbox_label = _("Clear")
     initial_text = _("Currently")
@@ -644,6 +671,7 @@ class ClearableFileInput(FileInput):
         )
 
 
+# 多行文本：<textarea> 控件
 class Textarea(Widget):
     template_name = "django/forms/widgets/textarea.html"
 
@@ -655,6 +683,7 @@ class Textarea(Widget):
         super().__init__(default_attrs)
 
 
+# 日期时间输入基类：format_value 与时区转换
 class DateTimeBaseInput(TextInput):
     format_key = ""
     supports_microseconds = False
@@ -669,16 +698,19 @@ class DateTimeBaseInput(TextInput):
         )
 
 
+# 日期输入：type=date 或文本格式
 class DateInput(DateTimeBaseInput):
     format_key = "DATE_INPUT_FORMATS"
     template_name = "django/forms/widgets/date.html"
 
 
+# 日期时间输入：type=datetime-local 或文本
 class DateTimeInput(DateTimeBaseInput):
     format_key = "DATETIME_INPUT_FORMATS"
     template_name = "django/forms/widgets/datetime.html"
 
 
+# 时间输入：type=time 或文本
 class TimeInput(DateTimeBaseInput):
     format_key = "TIME_INPUT_FORMATS"
     template_name = "django/forms/widgets/time.html"
@@ -689,6 +721,7 @@ def boolean_check(v):
     return not (v is False or v is None or v == "")
 
 
+# 布尔复选框：check_test 与 value 映射
 class CheckboxInput(Input):
     input_type = "checkbox"
     template_name = "django/forms/widgets/checkbox.html"
@@ -728,6 +761,7 @@ class CheckboxInput(Input):
         return False
 
 
+# 选项控件基类：choices 迭代与 optgroups
 class ChoiceWidget(Widget):
     allow_multiple_selected = False
     input_type = None
@@ -866,6 +900,7 @@ class ChoiceWidget(Widget):
         self._choices = normalize_choices(value)
 
 
+# 下拉单选：<select> 与 option 渲染
 class Select(ChoiceWidget):
     input_type = "select"
     template_name = "django/forms/widgets/select.html"
@@ -904,6 +939,7 @@ class Select(ChoiceWidget):
         )
 
 
+# 三态布尔下拉：未知/是/否
 class NullBooleanSelect(Select):
     """
     A Select Widget intended to be used with NullBooleanField.
@@ -946,6 +982,7 @@ class NullBooleanSelect(Select):
         }.get(value)
 
 
+# 下拉多选：multiple 属性与 list 值
 class SelectMultiple(Select):
     allow_multiple_selected = True
 
@@ -962,6 +999,7 @@ class SelectMultiple(Select):
         return False
 
 
+# 单选按钮组：ul/li 包裹 radio input
 class RadioSelect(ChoiceWidget):
     input_type = "radio"
     template_name = "django/forms/widgets/radio.html"
@@ -979,6 +1017,7 @@ class RadioSelect(ChoiceWidget):
         return super().id_for_label(id_, index)
 
 
+# 多选复选框组：checkbox 替代 radio
 class CheckboxSelectMultiple(RadioSelect):
     allow_multiple_selected = True
     input_type = "checkbox"
@@ -996,6 +1035,7 @@ class CheckboxSelectMultiple(RadioSelect):
         return False
 
 
+# 复合控件：decompress 子 widget 列表并合并输出
 class MultiWidget(Widget):
     """
     A widget that is composed of multiple widgets.
@@ -1103,6 +1143,7 @@ class MultiWidget(Widget):
         return any(w.needs_multipart_form for w in self.widgets)
 
 
+# 日期+时间拆分：两个子 widget 合并 datetime
 class SplitDateTimeWidget(MultiWidget):
     """
     A widget that splits datetime input into two <input type="text"> boxes.
@@ -1138,6 +1179,7 @@ class SplitDateTimeWidget(MultiWidget):
         return [None, None]
 
 
+# 隐藏版 SplitDateTime：子字段均为 HiddenInput
 class SplitHiddenDateTimeWidget(SplitDateTimeWidget):
     """
     A widget that splits datetime input into two <input type="hidden"> inputs.
@@ -1158,6 +1200,7 @@ class SplitHiddenDateTimeWidget(SplitDateTimeWidget):
             widget.input_type = "hidden"
 
 
+# 年/月/日三下拉：无 JS 的日期选择
 class SelectDateWidget(Widget):
     """
     A widget that splits date input into three <select> boxes.

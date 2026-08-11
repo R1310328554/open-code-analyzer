@@ -1,10 +1,17 @@
-from inspect import iscoroutinefunction, markcoroutinefunction
+"""
+django.middleware — 中间件基类与 sync/async 兼容调用链。
+
+MiddlewareMixin 包装 get_response 并调度 process_request/response。
+"""
+
+from inspect import iscoroutinefunction, markcoroutinefunctionfrom inspect import iscoroutinefunction, markcoroutinefunction
 
 from asgiref.sync import sync_to_async
 
 __all__ = ["MiddlewareMixin"]
 
 
+# 中间件混入：自动切换 __call__/__acall__ 支持 ASGI
 class MiddlewareMixin:
     sync_capable = True
     async_capable = True

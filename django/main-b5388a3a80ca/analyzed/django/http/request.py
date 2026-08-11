@@ -1,4 +1,10 @@
-import codecs
+"""
+django.http.request — WSGI/ASGI 请求对象与 QueryDict。
+
+HttpRequest 封装 META、GET/POST/FILES 与 body 读取。
+"""
+
+import codecsimport codecs
 import copy
 import operator
 import os
@@ -37,10 +43,12 @@ host_validation_re = _lazy_re_compile(
 )
 
 
+# 无法读取 POST body 时的 OSError 子类
 class UnreadablePostError(OSError):
     pass
 
 
+# 已访问 POST/FILES 后禁止再读 raw_post_data
 class RawPostDataException(Exception):
     """
     You cannot access raw_post_data from a request that has
@@ -51,6 +59,7 @@ class RawPostDataException(Exception):
     pass
 
 
+# HTTP 请求：scheme/host/path、session 与 upload_handlers
 class HttpRequest:
     """A basic HTTP request."""
 
@@ -525,6 +534,7 @@ class HttpRequest:
         return list(self)
 
 
+# 大小写不敏感请求头映射，封装 META HTTP_ 前缀
 class HttpHeaders(CaseInsensitiveMapping):
     HTTP_PREFIX = "HTTP_"
     # PEP 333 gives two headers which aren't prepended with HTTP_.
@@ -576,6 +586,7 @@ class HttpHeaders(CaseInsensitiveMapping):
         }
 
 
+# 不可变/可变查询与表单字典：urlencode 与 encoding
 class QueryDict(MultiValueDict):
     """
     A specialized MultiValueDict which represents a query string.
@@ -748,6 +759,7 @@ class QueryDict(MultiValueDict):
         return "&".join(output)
 
 
+# 解析 Content-Type：main_type/sub_type 与 params
 class MediaType:
     def __init__(self, media_type_raw_line):
         full_type, self.params = parse_header_parameters(

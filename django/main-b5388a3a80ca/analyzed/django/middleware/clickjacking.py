@@ -5,10 +5,15 @@ This module provides a middleware that implements protection against a
 malicious site loading resources from your site in a hidden frame.
 """
 
+# django.middleware.clickjacking — X-Frame-Options 点击劫持防护
+malicious site loading resources from your site in a hidden frame.
+"""
+
 from django.conf import settings
 from django.middleware import MiddlewareMixin
 
 
+# 为响应设置 X-Frame-Options（默认 DENY，可 SAMEORIGIN）
 class XFrameOptionsMiddleware(MiddlewareMixin):
     """
     Set the X-Frame-Options HTTP header in HTTP responses.

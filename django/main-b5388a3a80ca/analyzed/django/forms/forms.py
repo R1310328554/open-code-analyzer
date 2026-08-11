@@ -1,4 +1,9 @@
 """
+django.forms.forms — 表单核心逻辑与声明式字段元类。
+
+BaseForm 实现验证、绑定与渲染；Form 通过元类收集声明式字段。
+"""
+"""
 Form classes
 """
 
@@ -18,6 +23,7 @@ from .renderers import get_default_renderer
 __all__ = ("BaseForm", "Form")
 
 
+# 元类：沿 MRO 合并 declared_fields 并处理字段遮蔽
 class DeclarativeFieldsMetaclass(MediaDefiningClass):
     """Collect Fields declared on the base classes."""
 
@@ -49,6 +55,7 @@ class DeclarativeFieldsMetaclass(MediaDefiningClass):
         return new_class
 
 
+# 表单主实现：is_bound、clean、errors 与字段绑定
 class BaseForm(RenderableFormMixin):
     """
     The main implementation of all the Form logic. Note that this class is
@@ -429,7 +436,9 @@ class BaseForm(RenderableFormMixin):
         return value
 
 
+# 声明式 Form：类属性 Field 由元类注入 base_fields
 class Form(BaseForm, metaclass=DeclarativeFieldsMetaclass):
+    "A collection of Fields, plus their associated data."class Form(BaseForm, metaclass=DeclarativeFieldsMetaclass):
     "A collection of Fields, plus their associated data."
 
     # This is a separate class from BaseForm in order to abstract the way

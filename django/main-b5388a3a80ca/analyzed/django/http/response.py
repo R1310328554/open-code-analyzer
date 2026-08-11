@@ -1,4 +1,10 @@
-import datetime
+"""
+django.http.response — HTTP 响应基类、流式响应与状态码快捷类。
+
+ResponseHeaders 处理 latin-1 编码；JsonResponse 序列化 JSON。
+"""
+
+import datetimeimport datetime
 import io
 import json
 import mimetypes
@@ -37,6 +43,7 @@ _charset_from_content_type_re = _lazy_re_compile(
 _control_chars_re = _lazy_re_compile(r"[\x00-\x1f\x7f-\x9f]")
 
 
+# 响应头映射：ascii/latin-1 编码与 MIME 编码非法字符
 class ResponseHeaders(CaseInsensitiveMapping):
     def __init__(self, data):
         """
@@ -103,10 +110,12 @@ class ResponseHeaders(CaseInsensitiveMapping):
             self[key] = value
 
 
+# 响应头含换行或非法字符时抛出
 class BadHeaderError(ValueError):
     pass
 
 
+# 响应基类：headers/cookies/status，不含 content 体
 class HttpResponseBase:
     """
     An HTTP response base class with dictionary-accessed headers.
@@ -374,6 +383,7 @@ class HttpResponseBase:
         raise OSError("This %s instance is not writable" % self.__class__.__name__)
 
 
+# 缓冲式响应：bytes/str content 与 write 接口
 class HttpResponse(HttpResponseBase):
     """
     An HTTP response class with a string as content.
@@ -447,6 +457,7 @@ class HttpResponse(HttpResponseBase):
             self.write(line)
 
 
+# 流式响应：streaming_content 迭代器，无 content 属性
 class StreamingHttpResponse(HttpResponseBase):
     """
     A streaming HTTP response class with an iterator as content.
@@ -554,6 +565,7 @@ class StreamingHttpResponse(HttpResponseBase):
         return b"".join(self.streaming_content)
 
 
+# 文件响应：as_attachment 与 Content-Disposition
 class FileResponse(StreamingHttpResponse):
     """
     A streaming HTTP response class optimized for files.
@@ -636,6 +648,7 @@ class FileResponse(StreamingHttpResponse):
             self.headers["Content-Disposition"] = content_disposition
 
 
+# 重定向基类：Location 头与允许的主机校验
 class HttpResponseRedirectBase(HttpResponse):
     allowed_schemes = ["http", "https", "ftp"]
 
@@ -675,16 +688,19 @@ class HttpResponseRedirectBase(HttpResponse):
         )
 
 
+# 302 临时重定向
 class HttpResponseRedirect(HttpResponseRedirectBase):
     status_code = 302
     status_code_preserve_request = 307
 
 
+# 301 永久重定向
 class HttpResponsePermanentRedirect(HttpResponseRedirectBase):
     status_code = 301
     status_code_preserve_request = 308
 
 
+# 304 Not Modified：无 body
 class HttpResponseNotModified(HttpResponse):
     status_code = 304
 
@@ -701,18 +717,22 @@ class HttpResponseNotModified(HttpResponse):
         self._container = []
 
 
+# 400 Bad Request
 class HttpResponseBadRequest(HttpResponse):
     status_code = 400
 
 
+# 404 Not Found
 class HttpResponseNotFound(HttpResponse):
     status_code = 404
 
 
+# 403 Forbidden
 class HttpResponseForbidden(HttpResponse):
     status_code = 403
 
 
+# 405 Method Not Allowed，可带 Allow 头
 class HttpResponseNotAllowed(HttpResponse):
     status_code = 405
 
@@ -729,18 +749,22 @@ class HttpResponseNotAllowed(HttpResponse):
         }
 
 
+# 410 Gone
 class HttpResponseGone(HttpResponse):
     status_code = 410
 
 
+# 500 Internal Server Error
 class HttpResponseServerError(HttpResponse):
     status_code = 500
 
 
+# 视图层抛出的 404 信号异常
 class Http404(Exception):
     pass
 
 
+# JSON 响应：DjangoJSONEncoder 序列化 data
 class JsonResponse(HttpResponse):
     """
     An HTTP response class that consumes data to be serialized to JSON.
