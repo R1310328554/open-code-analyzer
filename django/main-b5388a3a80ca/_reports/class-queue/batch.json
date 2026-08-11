@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T05:00:37Z",
-  "files": [
-    "django/contrib/gis/db/backends/spatialite/features.py",
-    "django/contrib/gis/db/backends/spatialite/introspection.py",
-    "django/contrib/gis/db/backends/spatialite/models.py",
-    "django/contrib/gis/db/backends/spatialite/operations.py",
-    "django/contrib/gis/db/backends/spatialite/schema.py",
-    "django/contrib/gis/db/backends/utils.py",
-    "django/contrib/gis/db/models/__init__.py",
-    "django/contrib/gis/db/models/aggregates.py",
-    "django/contrib/gis/db/models/fields.py",
-    "django/contrib/gis/db/models/functions.py",
-    "django/contrib/gis/db/models/lookups.py",
-    "django/contrib/gis/db/models/proxy.py",
-    "django/contrib/gis/db/models/sql/__init__.py",
-    "django/contrib/gis/db/models/sql/conversion.py",
-    "django/contrib/gis/feeds.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 582,
-  "done": 345
+  "done": 360
 }
