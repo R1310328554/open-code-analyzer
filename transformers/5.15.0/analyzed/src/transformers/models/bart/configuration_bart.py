@@ -21,6 +21,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="facebook/bart-large")
 @strict
+# BartConfig：BART 编解码层数、注意力头、dropout 等超参
 class BartConfig(PreTrainedConfig):
     r"""
     Example:
@@ -74,6 +75,7 @@ class BartConfig(PreTrainedConfig):
     is_decoder: bool | None = False
     tie_word_embeddings: bool = True
 
+# __post_init__：未传 id2label 时默认 num_labels=3 并调用父类校验
     def __post_init__(self, **kwargs):
         # Set the default `num_labels` only if `id2label` is not
         # yet set, i.e. user didn't pass `id2label/lable2id` in kwargs

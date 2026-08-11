@@ -29,6 +29,7 @@ VOCAB_FILES_NAMES = {"vocab_file": "sentencepiece.bpe.model", "monolingual_vocab
 
 
 @requires(backends=("sentencepiece",))
+# BartphoTokenizer：多语 XLM-R 词表 + 越南语 monolingual 子集
 class BartphoTokenizer(SentencePieceBackend):
     """
     Adapted from [`XLMRobertaTokenizer`]. Based on [SentencePiece](https://github.com/google/sentencepiece).
@@ -157,6 +158,7 @@ class BartphoTokenizer(SentencePieceBackend):
         )
         self._align_added_tokens_with_fairseq_vocab()
 
+# build_inputs_with_special_tokens：拼接 <s> 句对 </s> 特殊 token 序列
     def build_inputs_with_special_tokens(
         self, token_ids_0: list[int], token_ids_1: list[int] | None = None
     ) -> list[int]:
@@ -183,6 +185,7 @@ class BartphoTokenizer(SentencePieceBackend):
         sep = [self.sep_token_id]
         return cls + token_ids_0 + sep + sep + token_ids_1 + sep
 
+# get_special_tokens_mask：标记 special token 位置供 loss 掩码
     def get_special_tokens_mask(
         self, token_ids_0: list[int], token_ids_1: list[int] | None = None, already_has_special_tokens: bool = False
     ) -> list[int]:
@@ -211,6 +214,7 @@ class BartphoTokenizer(SentencePieceBackend):
             return [1] + ([0] * len(token_ids_0)) + [1]
         return [1] + ([0] * len(token_ids_0)) + [1, 1] + ([0] * len(token_ids_1)) + [1]
 
+# create_token_type_ids_from_sequences：双句输入的 segment id（0/1）
     def create_token_type_ids_from_sequences(
         self, token_ids_0: list[int], token_ids_1: list[int] | None = None
     ) -> list[int]:
@@ -270,6 +274,7 @@ class BartphoTokenizer(SentencePieceBackend):
         """Converts an index (integer) in a token (str) using the fairseq vocab."""
         return self.fairseq_ids_to_tokens[index]
 
+# _align_added_tokens_with_fairseq_vocab：对齐 fairseq 与 HF added tokens
     def _align_added_tokens_with_fairseq_vocab(self):
         """
         The slow tokenizer base class populates `_added_tokens_*` using SentencePiece ids. Remap those entries so that
@@ -288,6 +293,7 @@ class BartphoTokenizer(SentencePieceBackend):
         self._added_tokens_decoder = remapped_decoder
         self._added_tokens_encoder = {token.content: idx for idx, token in remapped_decoder.items()}
 
+# save_vocabulary：保存 SentencePiece 与 monolingual dict 词表文件
     def save_vocabulary(self, save_directory: str, filename_prefix: str | None = None) -> tuple[str]:
         if not os.path.isdir(save_directory):
             logger.error(f"Vocabulary path ({save_directory}) should be a directory")

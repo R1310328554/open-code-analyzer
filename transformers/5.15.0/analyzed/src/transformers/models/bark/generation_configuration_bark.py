@@ -22,6 +22,7 @@ from ...utils import logging
 logger = logging.get_logger(__name__)
 
 
+# BarkSemanticGenerationConfig：语义阶段采样与 EOS 早停策略
 class BarkSemanticGenerationConfig(GenerationConfig):
     model_type = "semantic"
 
@@ -113,6 +114,7 @@ class BarkSemanticGenerationConfig(GenerationConfig):
         self.min_eos_p = min_eos_p
 
 
+# BarkCoarseGenerationConfig：粗声学双码本交替生成配置
 class BarkCoarseGenerationConfig(GenerationConfig):
     model_type = "coarse_acoustics"
 
@@ -193,6 +195,7 @@ class BarkCoarseGenerationConfig(GenerationConfig):
         self.sliding_window_len = sliding_window_len
 
 
+# BarkFineGenerationConfig：细声学多码本并行 refine 配置
 class BarkFineGenerationConfig(GenerationConfig):
     model_type = "fine_acoustics"
 
@@ -235,6 +238,7 @@ class BarkFineGenerationConfig(GenerationConfig):
         """
 
 
+# BarkGenerationConfig：嵌套三阶段生成配置的顶层容器
 class BarkGenerationConfig(GenerationConfig):
     model_type = "bark"
 
@@ -290,6 +294,7 @@ class BarkGenerationConfig(GenerationConfig):
         self.codebook_size = codebook_size
 
     @classmethod
+# from_sub_model_configs：由各子模型 GenerationConfig 组装 BarkGenerationConfig
     def from_sub_model_configs(
         cls,
         semantic_config: BarkSemanticGenerationConfig,
@@ -310,6 +315,7 @@ class BarkGenerationConfig(GenerationConfig):
             **kwargs,
         )
 
+# to_dict：深拷贝并序列化嵌套 semantic/coarse/fine 子配置
     def to_dict(self):
         """
         Serializes this instance to a Python dictionary. Override the default [`~PreTrainedConfig.to_dict`].

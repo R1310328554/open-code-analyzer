@@ -25,6 +25,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="suno/bark")
 @strict
+# BarkSubModelConfig：各 Bark 子模型的通用 GPT 风格超参基类
 class BarkSubModelConfig(PreTrainedConfig):
     r"""
     block_size (`int`, *optional*, defaults to 1024):
@@ -65,6 +66,7 @@ class BarkSubModelConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="suno/bark")
 @strict
+# BarkSemanticConfig：语义 token 生成子模型配置（文本→语义码）
 class BarkSemanticConfig(BarkSubModelConfig):
     r"""
     block_size (`int`, *optional*, defaults to 1024):
@@ -102,6 +104,7 @@ class BarkSemanticConfig(BarkSubModelConfig):
 
 @auto_docstring(checkpoint="suno/bark")
 @strict
+# BarkCoarseConfig：粗声学码本子模型配置（语义→粗 EnCodec 码）
 class BarkCoarseConfig(BarkSubModelConfig):
     r"""
     block_size (`int`, *optional*, defaults to 1024):
@@ -139,6 +142,7 @@ class BarkCoarseConfig(BarkSubModelConfig):
 
 @auto_docstring(checkpoint="suno/bark")
 @strict
+# BarkFineConfig：细声学码本子模型配置（粗码→精细 EnCodec 码）
 class BarkFineConfig(BarkSubModelConfig):
     r"""
     block_size (`int`, *optional*, defaults to 1024):
@@ -185,6 +189,7 @@ class BarkFineConfig(BarkSubModelConfig):
 
 @auto_docstring(checkpoint="suno/bark")
 @strict
+# BarkConfig：聚合 semantic/coarse/fine/codec 四段配置的顶层入口
 class BarkConfig(PreTrainedConfig):
     r"""
     semantic_config ([`BarkSemanticConfig`], *optional*):
@@ -241,6 +246,7 @@ class BarkConfig(PreTrainedConfig):
     codec_config: dict | PreTrainedConfig | None = None
     initializer_range: float = 0.02
 
+# __post_init__：将 dict 子配置实例化为对应 Config 类并补全默认值
     def __post_init__(self, **kwargs):
         if self.semantic_config is None:
             self.semantic_config = BarkSemanticConfig()

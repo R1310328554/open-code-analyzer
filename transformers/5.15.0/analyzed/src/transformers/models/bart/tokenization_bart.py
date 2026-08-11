@@ -17,7 +17,9 @@ from ..roberta.tokenization_roberta import RobertaTokenizer as _RobertaTokenizer
 
 
 # Public aliases maintained for backwards compatibility
+# BartTokenizer：指向 RobertaTokenizer 的公开别名（慢/快统一）
 BartTokenizer = _RobertaTokenizer
+# BartTokenizerFast：与 BartTokenizer 相同，保留旧 API 兼容
 BartTokenizerFast = _RobertaTokenizer
 
 __all__ = ["BartTokenizer", "BartTokenizerFast"]

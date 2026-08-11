@@ -29,6 +29,7 @@ VOCAB_FILES_NAMES = {"vocab_file": "sentencepiece.bpe.model", "tokenizer_file": 
 SPIECE_UNDERLINE = "▁"
 
 
+# BarthezTokenizer：基于 tokenizers 库的 BARThez 分词实现
 class BarthezTokenizer(TokenizersBackend):
     """
     Adapted from [`CamembertTokenizer`] and [`BartTokenizer`]. Construct a "fast" BARThez tokenizer. Based on
@@ -87,6 +88,7 @@ class BarthezTokenizer(TokenizersBackend):
     model_input_names = ["input_ids", "attention_mask"]
     slow_tokenizer_class = None
 
+# __init__：构建 Unigram 模型并配置法语 normalizer/pre_tokenizer
     def __init__(
         self,
         vocab: str | dict | list | None = None,

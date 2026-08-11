@@ -32,6 +32,7 @@ logger = logging.get_logger(__name__)
 
 
 @auto_docstring
+# BarkProcessor：加载/校验 speaker_embeddings 并组装生成输入
 class BarkProcessor(ProcessorMixin):
     preset_shape = {
         "semantic_prompt": 1,  # 1D array of shape (X,)
@@ -53,6 +54,7 @@ class BarkProcessor(ProcessorMixin):
         self.speaker_embeddings = speaker_embeddings
 
     @classmethod
+# from_pretrained：从 Hub 加载 tokenizer 与 speaker_embeddings_path.json
     def from_pretrained(
         cls, pretrained_processor_name_or_path, speaker_embeddings_dict_path="speaker_embeddings_path.json", **kwargs
     ):
@@ -110,6 +112,7 @@ class BarkProcessor(ProcessorMixin):
 
         return cls(tokenizer=tokenizer, speaker_embeddings=speaker_embeddings)
 
+# save_pretrained：保存 tokenizer 与说话人嵌入 npy 文件
     def save_pretrained(
         self,
         save_directory,
@@ -182,6 +185,7 @@ class BarkProcessor(ProcessorMixin):
         if not contained:
             raise ValueError(f"Invalid voice preset path: {offending_value!r}")
 
+# _load_voice_preset：按 preset 名加载 semantic/coarse/fine 提示嵌入
     def _load_voice_preset(self, voice_preset: str | None = None, **kwargs):
         voice_preset_paths = self.speaker_embeddings[voice_preset]
 
@@ -222,6 +226,7 @@ class BarkProcessor(ProcessorMixin):
 
         return voice_preset_dict
 
+# _validate_voice_preset_dict：校验 voice preset 字典形状与键名
     def _validate_voice_preset_dict(self, voice_preset: dict | None = None):
         for key in ["semantic_prompt", "coarse_prompt", "fine_prompt"]:
             if key not in voice_preset:
@@ -234,6 +239,7 @@ class BarkProcessor(ProcessorMixin):
                 raise ValueError(f"{key} voice preset must be a {str(self.preset_shape[key])}D ndarray.")
 
     @property
+# available_voice_presets：返回已注册说话人 preset 名称列表
     def available_voice_presets(self) -> list:
         """
         Returns a list of available voice presets.
@@ -273,6 +279,7 @@ class BarkProcessor(ProcessorMixin):
                     del self.speaker_embeddings[voice_preset]
 
     @auto_docstring
+# __call__：将文本与可选 voice preset 转为模型 generate 输入
     def __call__(
         self,
         text=None,

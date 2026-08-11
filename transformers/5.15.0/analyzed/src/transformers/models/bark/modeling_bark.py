@@ -62,6 +62,7 @@ if is_flash_attn_available():
 logger = logging.get_logger(__name__)
 
 
+# BarkSelfAttention：因果自注意力（支持 past KV 缓存）
 class BarkSelfAttention(nn.Module):
     # adapted from GPTNeoSelfAttention and Bark code
     # BarkSelfAttention can have two attention type, i.e full attention or causal attention
@@ -173,6 +174,7 @@ class BarkSelfAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# BarkSelfFlashAttention2：Flash Attention 2 加速实现
 class BarkSelfFlashAttention2(BarkSelfAttention):
     """
     Bark flash attention module. This module inherits from `BarkSelfAttention` as the weights of the module stays
@@ -255,6 +257,7 @@ BARK_ATTENTION_CLASSES = {
 }
 
 
+# BarkMLP：两层 GELU 前馈网络
 class BarkMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -271,6 +274,7 @@ class BarkMLP(nn.Module):
         return hidden_states
 
 
+# BarkBlock：Transformer 解码块（Attn + MLP + 残差）
 class BarkBlock(GradientCheckpointingLayer):
     def __init__(self, config, is_causal=False, layer_idx=None):
         super().__init__()
@@ -321,6 +325,7 @@ class BarkBlock(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# BarkPreTrainedModel：权重初始化与 _no_split_modules 定义
 class BarkPreTrainedModel(PreTrainedModel):
     config: BarkConfig
     supports_gradient_checkpointing = False
@@ -356,6 +361,7 @@ class BarkPreTrainedModel(PreTrainedModel):
 
 
 # GPT2-like autoregressive model
+# BarkCausalModel：带 generate 的因果 LM 基类（semantic/coarse 共用）
 class BarkCausalModel(BarkPreTrainedModel, GenerationMixin):
     config: BarkSubModelConfig
     output_modalities = ("audio",)
@@ -521,6 +527,7 @@ class BarkCausalModel(BarkPreTrainedModel, GenerationMixin):
     It is a GPT-2 like autoregressive model with a language modeling head on top.
     """
 )
+# BarkSemanticModel：文本条件语义 token 自回归生成
 class BarkSemanticModel(BarkCausalModel):
     base_model_prefix = "semantic"
     config: BarkSemanticConfig
@@ -637,6 +644,7 @@ class BarkSemanticModel(BarkCausalModel):
     language modeling head on top.
     """
 )
+# BarkCoarseModel：语义条件下粗 EnCodec 码本生成
 class BarkCoarseModel(BarkCausalModel):
     base_model_prefix = "coarse_acoustics"
     config: BarkCoarseConfig
@@ -861,6 +869,7 @@ class BarkCoarseModel(BarkCausalModel):
     language modeling heads, one for each codebook.
     """
 )
+# BarkFineModel：粗码条件下细 EnCodec 多码本 refine
 class BarkFineModel(BarkPreTrainedModel):
     base_model_prefix = "fine_acoustics"
     config: BarkFineConfig
@@ -1255,6 +1264,7 @@ class BarkFineModel(BarkPreTrainedModel):
     output sound according to specific predefined voice.
     """
 )
+# BarkModel：编排 semantic→coarse→fine→codec 的完整 TTS 流水线
 class BarkModel(BarkPreTrainedModel, GenerationMixin):
     config: BarkConfig
 

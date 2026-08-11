@@ -35,6 +35,7 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring, is_torch_available
 
 
+# BeitImageProcessorKwargs：扩展 do_reduce_labels 等 BEiT 专用预处理参数
 class BeitImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     do_reduce_labels (`bool`, *optional*, defaults to `self.do_reduce_labels`):
@@ -47,6 +48,7 @@ class BeitImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# BeitImageProcessor：基于 Torchvision 后端的 BEiT 图像预处理器
 class BeitImageProcessor(TorchvisionBackend):
     """PIL backend for BEiT with reduce_label support."""
 
@@ -68,6 +70,7 @@ class BeitImageProcessor(TorchvisionBackend):
         super().__init__(**kwargs)
 
     @auto_docstring
+# preprocess：对图像与可选 segmentation_maps 批量预处理
     def preprocess(
         self,
         images: ImageInput,
@@ -124,6 +127,7 @@ class BeitImageProcessor(TorchvisionBackend):
 
         return BatchFeature(data=data, tensor_type=return_tensors)
 
+# reduce_label：分割标签减 1 并将背景 0 映射为 255
     def reduce_label(self, labels: list["torch.Tensor"]) -> list["torch.Tensor"]:
         """Reduce label values by 1, replacing 0 with 255."""
         for idx in range(len(labels)):
@@ -134,6 +138,7 @@ class BeitImageProcessor(TorchvisionBackend):
             labels[idx] = label
         return labels
 
+# _preprocess：按尺寸分组 resize 并融合 rescale+normalize
     def _preprocess(
         self,
         images: list["torch.Tensor"],
@@ -180,6 +185,7 @@ class BeitImageProcessor(TorchvisionBackend):
 
         return processed_images
 
+# post_process_semantic_segmentation：logits 上采样为语义分割类别图
     def post_process_semantic_segmentation(
         self, outputs, target_sizes: list[tuple] | None = None, return_segmentation_scores: bool = False
     ) -> "list[torch.Tensor] | list[SemanticSegmentationPostProcessorOutput]":

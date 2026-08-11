@@ -55,6 +55,7 @@ from .configuration_bart import BartConfig
 logger = logging.get_logger(__name__)
 
 
+# shift_tokens_right：解码器 teacher forcing 时将 input_ids 右移一位
 def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start_token_id: int):
     """
     Shift input ids one token to the right.
@@ -71,6 +72,7 @@ def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start
     return shifted_input_ids
 
 
+# BartLearnedPositionalEmbedding：可学习绝对位置嵌入（支持 padding 偏移）
 class BartLearnedPositionalEmbedding(nn.Embedding):
     """
     This module learns positional embeddings up to a fixed maximum size.
@@ -98,6 +100,7 @@ class BartLearnedPositionalEmbedding(nn.Embedding):
         return super().forward(position_ids + self.offset)
 
 
+# BartScaledWordEmbedding：词嵌入乘以 sqrt(d_model) 缩放
 class BartScaledWordEmbedding(nn.Embedding):
     """
     This module overrides nn.Embeddings' forward by multiplying with embeddings scale.
@@ -140,6 +143,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# BartAttention：多头自注意力/交叉注意力（eager/SDPA/Flash 分发）
 class BartAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -257,6 +261,7 @@ class BartAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# BartEncoderLayer：编码器单层（自注意力 + FFN）
 class BartEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: BartConfig, layer_idx: int | None = None):
         super().__init__()
@@ -308,6 +313,7 @@ class BartEncoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# BartDecoderLayer：解码器单层（自注意力 + 交叉注意力 + FFN）
 class BartDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: BartConfig, layer_idx: int | None = None):
         super().__init__()
@@ -460,6 +466,7 @@ class BartPretrainedModel(BartPreTrainedModel):
         )
 
 
+# BartEncoder：堆叠编码层，输出 memory hidden states
 class BartEncoder(BartPreTrainedModel):
     """
     Transformer encoder consisting of *config.encoder_layers* self attention layers. Each layer is a
@@ -549,6 +556,7 @@ class BartEncoder(BartPreTrainedModel):
         )
 
 
+# BartDecoder：堆叠解码层，交叉关注 encoder 输出
 class BartDecoder(BartPreTrainedModel):
     """
     Transformer decoder consisting of *config.decoder_layers* layers. Each layer is a [`BartDecoderLayer`]
@@ -677,6 +685,7 @@ class BartDecoder(BartPreTrainedModel):
 
 
 @auto_docstring
+# BartModel：完整编码器-解码器骨干（无 LM head）
 class BartModel(BartPreTrainedModel):
     _tied_weights_keys = {
         "decoder.embed_tokens.weight": "shared.weight",
@@ -798,6 +807,7 @@ class BartModel(BartPreTrainedModel):
     The BART Model with a language modeling head. Can be used for summarization.
     """
 )
+# BartForConditionalGeneration：带 LM head 的条件生成（摘要/翻译）
 class BartForConditionalGeneration(BartPreTrainedModel, GenerationMixin):
     base_model_prefix = "model"
     _tied_weights_keys = {
@@ -967,6 +977,7 @@ class BartForConditionalGeneration(BartPreTrainedModel, GenerationMixin):
     tasks.
     """
 )
+# BartForSequenceClassification：序列分类 head（池化 last hidden state）
 class BartForSequenceClassification(BartPreTrainedModel):
     def __init__(self, config: BartConfig, **kwargs):
         super().__init__(config, **kwargs)
@@ -1095,6 +1106,7 @@ class BartForSequenceClassification(BartPreTrainedModel):
 
 
 @auto_docstring
+# BartForQuestionAnswering：抽取式问答 span 预测 head
 class BartForQuestionAnswering(BartPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1220,6 +1232,7 @@ class BartDecoderWrapper(BartPreTrainedModel):
     BART decoder with a language modeling head on top (linear layer with weights tied to the input embeddings).
     """
 )
+# BartForCausalLM：仅解码器的因果语言建模变体
 class BartForCausalLM(BartPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {
         "lm_head.weight": "model.decoder.embed_tokens.weight",

@@ -22,6 +22,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="microsoft/beit-base-patch16-224-pt22k")
 @strict
+# BeitConfig：BEiT 图像分类/分割/骨干网络架构超参
 class BeitConfig(BackboneConfigMixin, PreTrainedConfig):
     r"""
     use_mask_token (`bool`, *optional*, defaults to `False`):
@@ -101,6 +102,7 @@ class BeitConfig(BackboneConfigMixin, PreTrainedConfig):
     add_fpn: bool = False
     reshape_hidden_states: bool = True
 
+# __post_init__：设置 stage 名称、out_indices 并校验 FPN 四尺度输出
     def __post_init__(self, **kwargs):
         if "segmentation_indices" in kwargs and kwargs.get("out_indices") is None:
             kwargs["out_indices"] = kwargs.pop("segmentation_indices")
