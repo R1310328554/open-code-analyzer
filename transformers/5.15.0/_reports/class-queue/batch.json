@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T01:34:45Z",
   "files": [
-    "src/transformers/models/hubert/modeling_hubert.py",
-    "src/transformers/models/hubert/modular_hubert.py",
-    "src/transformers/models/hunyuan_v1_dense/__init__.py",
-    "src/transformers/models/hunyuan_v1_dense/configuration_hunyuan_v1_dense.py",
-    "src/transformers/models/hunyuan_v1_dense/modeling_hunyuan_v1_dense.py",
-    "src/transformers/models/hunyuan_v1_dense/modular_hunyuan_v1_dense.py",
-    "src/transformers/models/hunyuan_v1_moe/__init__.py",
-    "src/transformers/models/hunyuan_v1_moe/configuration_hunyuan_v1_moe.py",
-    "src/transformers/models/hunyuan_v1_moe/modeling_hunyuan_v1_moe.py",
-    "src/transformers/models/hunyuan_v1_moe/modular_hunyuan_v1_moe.py",
-    "src/transformers/models/hunyuan_vl/__init__.py",
-    "src/transformers/models/hunyuan_vl/configuration_hunyuan_vl.py",
-    "src/transformers/models/hunyuan_vl/image_processing_hunyuan_vl.py",
-    "src/transformers/models/hunyuan_vl/image_processing_pil_hunyuan_vl.py",
-    "src/transformers/models/hunyuan_vl/modeling_hunyuan_vl.py",
     "src/transformers/models/hunyuan_vl/modular_hunyuan_vl.py",
     "src/transformers/models/hunyuan_vl/processing_hunyuan_vl.py",
     "src/transformers/models/hy_v3/__init__.py",
@@ -33,5 +18,5 @@
     "src/transformers/models/idefics/__init__.py"
   ],
   "remaining_pending": 1599,
-  "done": 1050
+  "done": 1065
 }
