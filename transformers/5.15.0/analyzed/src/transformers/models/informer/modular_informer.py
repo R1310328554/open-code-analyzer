@@ -13,6 +13,8 @@
 # limitations under the License.
 """PyTorch Informer model."""
 
+# Informer modular 源：复用时序 Transformer 组件并替换 ProbSparse 注意力
+
 import math
 
 import torch
@@ -32,6 +34,7 @@ from ...utils import TransformersKwargs, auto_docstring
 from ...utils.generic import merge_with_config_defaults
 from ...utils.output_capturing import OutputRecorder, capture_outputs
 from ..bart.modeling_bart import BartAttention
+# modular 复用时序 Transformer 嵌入/缩放/编解码器并注入 ProbSparse 注意力
 from ..time_series_transformer.modeling_time_series_transformer import (
     TimeSeriesFeatureEmbedder,
     TimeSeriesMeanScaler,
@@ -49,6 +52,7 @@ from ..time_series_transformer.modeling_time_series_transformer import (
 from .configuration_informer import InformerConfig
 
 
+# nll：负对数似然损失（分布与目标）
 def nll(input: torch.distributions.Distribution, target: torch.Tensor) -> torch.Tensor:
     """
     Computes the negative log likelihood loss from input distribution with respect to target.
@@ -56,31 +60,38 @@ def nll(input: torch.distributions.Distribution, target: torch.Tensor) -> torch.
     return -input.log_prob(target)
 
 
+# InformerFeatureEmbedder：Informer 时序特征嵌入（类别/数值/时间特征）
 class InformerFeatureEmbedder(TimeSeriesFeatureEmbedder):
     pass
 
 
+# InformerStdScaler：Informer 标准差缩放器（按 loc/scale 归一化）
 class InformerStdScaler(TimeSeriesStdScaler):
     pass
 
 
+# InformerMeanScaler：Informer 均值缩放器（按 loc/scale 归一化）
 class InformerMeanScaler(TimeSeriesMeanScaler):
     pass
 
 
+# InformerNOPScaler：Informer 恒等缩放器（不做归一化）
 class InformerNOPScaler(TimeSeriesNOPScaler):
     pass
 
 
+# InformerSinusoidalPositionalEmbedding：Informer 正弦位置编码嵌入
 class InformerSinusoidalPositionalEmbedding(TimeSeriesSinusoidalPositionalEmbedding):
     pass
 
 
+# InformerValueEmbedding：Informer 数值特征线性嵌入
 class InformerValueEmbedding(TimeSeriesValueEmbedding):
     pass
 
 
 @auto_docstring
+# InformerPreTrainedModel：Informer 预训练基类与权重初始化
 class InformerPreTrainedModel(PreTrainedModel):
     config: InformerConfig
     base_model_prefix = "model"
@@ -95,10 +106,12 @@ class InformerPreTrainedModel(PreTrainedModel):
             init.copy_(module.weight, module.create_weight())
 
 
+# InformerAttention：Informer 标准多头自/交叉注意力
 class InformerAttention(BartAttention):
     pass
 
 
+# InformerProbSparseAttention：Informer ProbSparse 概率稀疏注意力（O(L log L)）
 class InformerProbSparseAttention(nn.Module):
     """Probabilistic Attention mechanism to select the "active"
     queries rather than the "lazy" queries and provides a sparse Transformer thus mitigating the quadratic compute and
@@ -302,6 +315,7 @@ class InformerProbSparseAttention(nn.Module):
 
 
 # source: https://github.com/zhouhaoyi/Informer2020/blob/main/models/encoder.py
+# InformerConvLayer：Informer 1D 卷积层（蒸馏/局部特征提取）
 class InformerConvLayer(GradientCheckpointingLayer):
     def __init__(self, c_in):
         super().__init__()
@@ -325,6 +339,7 @@ class InformerConvLayer(GradientCheckpointingLayer):
         return x
 
 
+# InformerEncoderLayer：Informer 编码器单层（自注意力 + 卷积 + FFN）
 class InformerEncoderLayer(TimeSeriesTransformerEncoderLayer):
     def __init__(self, config: InformerConfig):
         super().__init__(config)
@@ -347,6 +362,7 @@ class InformerEncoderLayer(TimeSeriesTransformerEncoderLayer):
             )
 
 
+# InformerDecoderLayer：Informer 解码器单层（自注意力 + 交叉注意力 + FFN）
 class InformerDecoderLayer(TimeSeriesTransformerDecoderLayer):
     def __init__(self, config: InformerConfig, layer_idx: int | None = None):
         super().__init__(config)
@@ -373,6 +389,7 @@ class InformerDecoderLayer(TimeSeriesTransformerDecoderLayer):
             )
 
 
+# InformerEncoder：Informer 多层编码器堆叠（ProbSparse 注意力）
 class InformerEncoder(TimeSeriesTransformerEncoder):
     _can_record_outputs = {
         "hidden_states": InformerEncoderLayer,
@@ -448,6 +465,7 @@ class InformerEncoder(TimeSeriesTransformerEncoder):
         )
 
 
+# InformerDecoder：Informer 多层解码器堆叠（自注意力 + 交叉注意力）
 class InformerDecoder(TimeSeriesTransformerDecoder):
     _can_record_outputs = {
         "hidden_states": InformerDecoderLayer,
@@ -474,6 +492,7 @@ class InformerDecoder(TimeSeriesTransformerDecoder):
         self.post_init()
 
 
+# InformerModel：Informer 编码器-解码器时序预测主干
 class InformerModel(TimeSeriesTransformerModel):
     def __init__(self, config: InformerConfig):
         PreTrainedModel.__init__(self, config)
@@ -619,6 +638,7 @@ class InformerModel(TimeSeriesTransformerModel):
         super().forward(**super_kwargs)
 
 
+# InformerForPrediction：Informer 概率分布时序预测头
 class InformerForPrediction(TimeSeriesTransformerForPrediction):
     def __init__(self, config: InformerConfig):
         PreTrainedModel.__init__(self, config)

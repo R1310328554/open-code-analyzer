@@ -15,6 +15,8 @@
 Processor class for InstructBLIP. Largely copy of Blip2Processor with addition of a tokenizer for the Q-Former.
 """
 
+# InstructBLIP Processor：图像预处理与 Q-Former/LLM 分词器联合输入组装
+
 from ...image_processing_utils import BatchFeature
 from ...image_utils import ImageInput
 from ...processing_utils import ProcessingKwargs, ProcessorMixin, Unpack
@@ -25,6 +27,7 @@ from ...utils import auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# InstructBlipProcessorKwargs：InstructBLIP Processor 可选参数字典类型
 class InstructBlipProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -42,6 +45,7 @@ class InstructBlipProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# InstructBlipProcessor：封装图像预处理与 Q-Former/LLM 分词器的指令输入管线
 class InstructBlipProcessor(ProcessorMixin):
     def __init__(self, image_processor, tokenizer, qformer_tokenizer, num_query_tokens=None, **kwargs):
         r"""

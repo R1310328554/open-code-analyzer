@@ -13,6 +13,8 @@
 # limitations under the License.
 """PyTorch InstructBLIP model."""
 
+# InstructBLIP 建模：EVA-CLIP 视觉塔 + Q-Former 桥接 + 指令 LLM 条件生成
+
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
@@ -49,6 +51,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring
 @dataclass
+# BaseModelOutputWithVisionQformerOutputs：InstructBLIP 视觉+Q-Former 联合输出 dataclass
 class BaseModelOutputWithVisionQformerOutputs(BaseModelOutputWithPooling):
     r"""
     vision_outputs (`BaseModelOutputWithPooling`):
@@ -68,6 +71,7 @@ class BaseModelOutputWithVisionQformerOutputs(BaseModelOutputWithPooling):
 )
 @dataclass
 # Copied from transformers.models.blip_2.modeling_blip_2.Blip2ForConditionalGenerationModelOutput with Blip2->InstructBlip
+# InstructBlipForConditionalGenerationModelOutput：InstructBLIP 条件生成输出 dataclass
 class InstructBlipForConditionalGenerationModelOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor`, *optional*, returned when `labels` is provided, `torch.FloatTensor` of shape `(1,)`):
@@ -98,6 +102,7 @@ class InstructBlipForConditionalGenerationModelOutput(ModelOutput):
 
 
 # Copied from transformers.models.blip.modeling_blip.BlipVisionEmbeddings with Blip->InstructBlip
+# InstructBlipVisionEmbeddings：InstructBLIP 视觉 patch 嵌入 + 位置编码
 class InstructBlipVisionEmbeddings(nn.Module):
     def __init__(self, config: InstructBlipVisionConfig):
         super().__init__()
@@ -173,6 +178,7 @@ class InstructBlipVisionEmbeddings(nn.Module):
 
 
 # Adapted from transformers.models.siglip.modeling_siglip.eager_attention_forward -> InstructBLIP doesn't cast attn weights to fp32
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -197,6 +203,7 @@ def eager_attention_forward(
 
 
 # Copied from transformers.models.blip_2.modeling_blip_2.Blip2Attention with Blip2->InstructBlip
+# InstructBlipAttention：InstructBLIP 视觉塔多头自注意力
 class InstructBlipAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -272,6 +279,7 @@ class InstructBlipAttention(nn.Module):
 
 
 # Copied from transformers.models.blip.modeling_blip.BlipMLP
+# InstructBlipMLP：InstructBLIP 视觉塔前馈 MLP
 class InstructBlipMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -288,6 +296,7 @@ class InstructBlipMLP(nn.Module):
 
 
 # Copied from transformers.models.blip.modeling_blip.BlipEncoderLayer with Blip->InstructBlip
+# InstructBlipEncoderLayer：InstructBLIP 视觉 Transformer 编码器单层
 class InstructBlipEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: InstructBlipConfig):
         super().__init__()
@@ -321,6 +330,7 @@ class InstructBlipEncoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# InstructBlipPreTrainedModel：InstructBLIP 预训练基类与权重初始化
 class InstructBlipPreTrainedModel(PreTrainedModel):
     config: InstructBlipConfig
     base_model_prefix = "blip"
@@ -357,6 +367,7 @@ class InstructBlipPreTrainedModel(PreTrainedModel):
 
 
 # Copied from transformers.models.blip.modeling_blip.BlipEncoder with Blip->InstructBlip
+# InstructBlipEncoder：InstructBLIP 视觉 Transformer 多层编码器堆叠
 class InstructBlipEncoder(nn.Module):
     """
     Transformer encoder consisting of `config.num_hidden_layers` self attention layers. Each layer is a
@@ -389,6 +400,7 @@ class InstructBlipEncoder(nn.Module):
         return BaseModelOutput(last_hidden_state=hidden_states)
 
 
+# InstructBlipVisionModel：InstructBLIP 视觉 Transformer 编码塔
 class InstructBlipVisionModel(InstructBlipPreTrainedModel):
     main_input_name = "pixel_values"
     input_modalities = ("image",)
@@ -443,6 +455,7 @@ class InstructBlipVisionModel(InstructBlipPreTrainedModel):
         return self.embeddings
 
 
+# InstructBlipQFormerMultiHeadAttention：InstructBLIP Q-Former 多头注意力
 class InstructBlipQFormerMultiHeadAttention(nn.Module):
     def __init__(self, config, is_cross_attention=False):
         super().__init__()
@@ -516,6 +529,7 @@ class InstructBlipQFormerMultiHeadAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertSelfOutput with Bert->InstructBlipQFormer
+# InstructBlipQFormerSelfOutput：InstructBLIP Q-Former 自注意力输出投影
 class InstructBlipQFormerSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -531,6 +545,7 @@ class InstructBlipQFormerSelfOutput(nn.Module):
 
 
 # Copied from transformers.models.blip_2.modeling_blip_2.Blip2QFormerAttention with Blip2->InstructBlip
+# InstructBlipQFormerAttention：InstructBLIP Q-Former 自注意力模块
 class InstructBlipQFormerAttention(nn.Module):
     def __init__(self, config, is_cross_attention=False):
         super().__init__()
@@ -557,6 +572,7 @@ class InstructBlipQFormerAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertIntermediate with Bert->InstructBlipQFormer
+# InstructBlipQFormerIntermediate：InstructBLIP Q-Former 中间 FFN
 class InstructBlipQFormerIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -573,6 +589,7 @@ class InstructBlipQFormerIntermediate(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOutput with Bert->InstructBlipQFormer
+# InstructBlipQFormerOutput：InstructBLIP Q-Former 层输出投影
 class InstructBlipQFormerOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -587,6 +604,7 @@ class InstructBlipQFormerOutput(nn.Module):
         return hidden_states
 
 
+# InstructBlipQFormerLayer：InstructBLIP Q-Former 单层（自/交叉注意力 + FFN）
 class InstructBlipQFormerLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_idx):
         super().__init__()
@@ -673,6 +691,7 @@ class InstructBlipQFormerLayer(GradientCheckpointingLayer):
 
 
 # Copied from transformers.models.blip_2.modeling_blip_2.Blip2QFormerEncoder with Blip2->InstructBlip
+# InstructBlipQFormerEncoder：InstructBLIP Q-Former 多层编码器堆叠
 class InstructBlipQFormerEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -709,6 +728,7 @@ class InstructBlipQFormerEncoder(nn.Module):
         )
 
 
+# InstructBlipQFormerEmbeddings：InstructBLIP Q-Former 词嵌入 + 位置编码
 class InstructBlipQFormerEmbeddings(nn.Module):
     """Construct the embeddings from word and position embeddings."""
 
@@ -757,6 +777,7 @@ class InstructBlipQFormerEmbeddings(nn.Module):
         return embeddings
 
 
+# InstructBlipQFormerModel：InstructBLIP Q-Former 桥接模块（视觉→LLM）
 class InstructBlipQFormerModel(InstructBlipPreTrainedModel):
     """
     Querying Transformer (Q-Former), used in InstructBLIP. Slightly modified from BLIP-2 as it also takes the
@@ -862,6 +883,7 @@ class InstructBlipQFormerModel(InstructBlipPreTrainedModel):
     InstructBLIP base Model consisting of language model, qformer and vision encoder.
     """
 )
+# InstructBLIP 视觉+Q-Former+LLM 多模态联合主干
 class InstructBlipModel(InstructBlipPreTrainedModel):
     main_input_name = "pixel_values"
     _keep_in_fp32_modules = ["query_tokens"]  # TODO @ArthurZucker I don't know why this is required for FP8
@@ -1023,6 +1045,7 @@ class InstructBlipModel(InstructBlipPreTrainedModel):
     the prompt. Otherwise, the language model starts generating text from the [BOS] (beginning-of-sequence) token.
     """
 )
+# InstructBlipForConditionalGeneration：InstructBLIP 指令条件生成（Flan-T5/LLaMA 等）
 class InstructBlipForConditionalGeneration(InstructBlipPreTrainedModel, GenerationMixin):
     config: InstructBlipConfig
     main_input_name = "pixel_values"

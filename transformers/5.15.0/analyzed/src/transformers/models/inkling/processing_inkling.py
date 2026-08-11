@@ -25,12 +25,16 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# Inkling Processor：图像/音频预处理与分词器联合多模态输入组装
+
+# InklingProcessorKwargs：Inkling Processor 可选参数字典类型
 class InklingProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {}
 
 
 @auto_docstring
 @requires(backends=("torch",))
+# InklingProcessor：封装图像/音频预处理与分词器的多模态输入管线
 class InklingProcessor(ProcessorMixin):
     valid_processor_kwargs = InklingProcessorKwargs
 

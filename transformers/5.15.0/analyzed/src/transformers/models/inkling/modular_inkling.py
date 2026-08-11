@@ -57,7 +57,10 @@ from ..qwen3_next.modeling_qwen3_next import apply_mask_to_padding_states, causa
 logger = logging.get_logger(__name__)
 
 
+# Inkling modular 源：组合 Gemma3/Mixtral/Qwen3-Next 组件构建多模态 MoE
+
 @strict
+# InklingTextConfig：Inkling 文本骨干超参（MoE + MTP + 滑动窗口）
 class InklingTextConfig(PreTrainedConfig):
     model_type = "inkling_text"
     base_config_key = "text_config"
@@ -183,6 +186,7 @@ class InklingTextConfig(PreTrainedConfig):
 
 
 @strict
+# InklingAudioConfig：Inkling 音频塔超参（mel 码本嵌入）
 class InklingAudioConfig(PreTrainedConfig):
     model_type = "inkling_audio"
     base_config_key = "audio_config"
@@ -200,6 +204,7 @@ class InklingAudioConfig(PreTrainedConfig):
 
 
 @strict
+# InklingVisionConfig：Inkling 视觉塔超参（时空 patch ViT）
 class InklingVisionConfig(PreTrainedConfig):
     model_type = "inkling_vision"
     base_config_key = "vision_config"
@@ -217,6 +222,7 @@ class InklingVisionConfig(PreTrainedConfig):
 
 
 @strict
+# InklingConfig：Inkling 图文音多模态顶层配置
 class InklingConfig(PreTrainedConfig):
     """Top-level multimodal config (`InklingMMConfig` in the SGLang source)."""
 
@@ -263,18 +269,22 @@ class InklingConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# InklingModelOutputWithPast：Inkling 多模态输出 dataclass（含 past_key_values）
 class InklingModelOutputWithPast(Gemma3ModelOutputWithPast):
     pass
 
 
+# InklingCausalLMOutputWithPast：Inkling 因果 LM 输出 dataclass（含 logits 与 past）
 class InklingCausalLMOutputWithPast(Gemma3CausalLMOutputWithPast):
     pass
 
 
+# InklingRMSNorm：Inkling RMS LayerNorm
 class InklingRMSNorm(LlamaRMSNorm):
     pass
 
 
+# InklingRelativeLogits：Inkling 相对位置 logits 偏置
 class InklingRelativeLogits(nn.Module):
     """hidden states conditioned relative position bias. `proj` is a trained bank of bias-vs-distance profiles; each token's
     `relative_states` mixes them into one bias value per backward distance
@@ -301,6 +311,7 @@ class InklingRelativeLogits(nn.Module):
         return position_bias.masked_fill((distance < 0) | (distance >= self.rel_extent), 0.0)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -329,6 +340,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# InklingAttention：Inkling 文本解码器多头自注意力（含 RoPE/滑动窗口）
 class InklingAttention(nn.Module):
     def __init__(self, config: InklingTextConfig, layer_idx: int):
         super().__init__()
@@ -429,6 +441,7 @@ class InklingAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# InklingMLP：Inkling 前馈 MLP（GELU 激活）
 class InklingMLP(Gemma3MLP):
     def __init__(self, config: InklingTextConfig):
         super().__init__(config)
@@ -440,6 +453,7 @@ class InklingMLP(Gemma3MLP):
         return hidden_states * self.global_scale
 
 
+# InklingExperts：Inkling MoE 专家 FFN 集合
 class InklingExperts(MixtralExperts):
     def __init__(self, config: InklingTextConfig):
         super().__init__(config)
@@ -447,6 +461,7 @@ class InklingExperts(MixtralExperts):
         self.intermediate_dim = config.moe_intermediate_size
 
 
+# InklingTopkRouter：Inkling MoE top-k 路由门控
 class InklingTopkRouter(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -485,6 +500,7 @@ class InklingTopkRouter(nn.Module):
         return routed_logits, topk_weights, topk_indices, shared_gammas
 
 
+# InklingSharedExperts：Inkling MoE 共享专家 FFN
 class InklingSharedExperts(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -513,6 +529,7 @@ class InklingSharedExperts(nn.Module):
         return out.view(input_shape)
 
 
+# InklingMoE：Inkling 混合专家前馈层（路由 + 专家 + 共享）
 class InklingMoE(nn.Module):
     """Gate -> routed experts (+ shared experts), TML flavour."""
 
@@ -534,6 +551,7 @@ class InklingMoE(nn.Module):
 
 
 @use_kernelized_func([causal_conv1d_update, causal_conv1d_fn])
+# InklingShortConvolution：Inkling 短卷积层（Qwen3-Next 风格）
 class InklingShortConvolution(nn.Module):
     def __init__(self, hidden_size: int, conv_kernel_size: int, layer_idx: int, conv_idx: int):
         super().__init__()
@@ -596,6 +614,7 @@ class InklingShortConvolution(nn.Module):
         return hidden_states
 
 
+# InklingDecoderLayer：Inkling 文本解码器单层（注意力 + MoE/MLP）
 class InklingDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: InklingTextConfig, layer_idx: int):
         super().__init__()
@@ -646,6 +665,7 @@ class InklingDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# InklingPreTrainedModel：Inkling 预训练基类与权重初始化
 class InklingPreTrainedModel(PreTrainedModel):
     config_class = InklingConfig
     base_model_prefix = "model"
@@ -696,6 +716,7 @@ class InklingPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# InklingTextModel：Inkling 文本解码器主干（MoE + MTP）
 class InklingTextModel(InklingPreTrainedModel):
     config: InklingTextConfig
 
@@ -775,6 +796,7 @@ class InklingTextModel(InklingPreTrainedModel):
         )
 
 
+# InklingForCausalLM：Inkling 文本因果语言建模头
 class InklingForCausalLM(Gemma3ForCausalLM):
     # `embed` and `unembed` are separate tensors in the checkpoints, never tied
     _tied_weights_keys = {}
@@ -843,9 +865,11 @@ class InklingForCausalLM(Gemma3ForCausalLM):
         )
 
 
+# InklingAudioModelEmbeddings：Inkling 音频 mel 码本嵌入
 class InklingAudioModelEmbeddings(HiggsAudioV2Embeddings): ...
 
 
+# InklingAudioModel：Inkling 音频编码塔
 class InklingAudioModel(InklingPreTrainedModel):
     def __init__(self, config: InklingAudioConfig):
         super().__init__(config)
@@ -861,6 +885,7 @@ class InklingAudioModel(InklingPreTrainedModel):
         )
 
 
+# InklingVisionEncoderLayer：Inkling 视觉 Transformer 编码器单层
 class InklingVisionEncoderLayer(nn.Module):
     def __init__(self, input_dim: int, output_dim: int, t_fold: int, hw_fold: int, add_norm: bool):
         super().__init__()
@@ -898,6 +923,7 @@ class InklingVisionEncoderLayer(nn.Module):
         return hidden_states
 
 
+# prime_factors：整数质因数分解（用于视觉下采样规划）
 def prime_factors(number: int) -> list[int]:
     factors = []
 
@@ -915,6 +941,7 @@ def prime_factors(number: int) -> list[int]:
     return factors
 
 
+# plan_out_scales：规划视觉塔各层输出空间尺度
 def plan_out_scales(
     temporal_patch_size: int, patch_size: int, n_layers: int, n_channels: int, device="cpu"
 ) -> torch.LongTensor:
@@ -977,6 +1004,7 @@ def plan_out_scales(
     return scales[idxs]
 
 
+# InklingVisionModel：Inkling 时空 patch 视觉编码塔
 class InklingVisionModel(InklingPreTrainedModel):
     def __init__(self, config: InklingVisionConfig):
         super().__init__(config)
@@ -1028,6 +1056,7 @@ class InklingVisionModel(InklingPreTrainedModel):
     The Base Inkling model which consists of a vision backbone and a language model without language modeling head.,
     """
 )
+# InklingModel：Inkling 文本+音频+视觉多模态联合主干
 class InklingModel(InklingPreTrainedModel):
     # we are filtering the logits/labels so we shouldn't divide the loss based on num_items_in_batch
     accepts_loss_kwargs = False
@@ -1208,6 +1237,7 @@ class InklingModel(InklingPreTrainedModel):
     The Base Inkling model which consists of a vision backbone and a language model without language modeling head.,
     """
 )
+# InklingForConditionalGeneration：Inkling 多模态条件生成
 class InklingForConditionalGeneration(InklingPreTrainedModel, GenerationMixin):
     # `embed` and `unembed` are separate tensors in the checkpoints, never tied
     _tied_weights_keys = {}

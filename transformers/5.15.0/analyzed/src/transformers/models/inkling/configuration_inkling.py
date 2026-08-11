@@ -24,7 +24,11 @@ from huggingface_hub.dataclasses import strict
 from ...configuration_utils import PreTrainedConfig
 
 
+# Inkling 配置：图文音多模态（MoE 文本 + mel 音频 + 时空 ViT）超参
+
+# InklingTextConfig：Inkling 文本骨干默认超参（MoE + MTP）
 @strict
+# InklingTextConfig：Inkling 文本骨干超参（MoE + MTP + 滑动窗口）
 class InklingTextConfig(PreTrainedConfig):
     model_type = "inkling_text"
     base_config_key = "text_config"
@@ -149,7 +153,9 @@ class InklingTextConfig(PreTrainedConfig):
         return None
 
 
+# InklingAudioConfig：Inkling 音频塔默认超参（mel 码本）
 @strict
+# InklingAudioConfig：Inkling 音频塔超参（mel 码本嵌入）
 class InklingAudioConfig(PreTrainedConfig):
     model_type = "inkling_audio"
     base_config_key = "audio_config"
@@ -166,7 +172,9 @@ class InklingAudioConfig(PreTrainedConfig):
     initializer_range: float = 0.02
 
 
+# InklingVisionConfig：Inkling 视觉塔默认超参（时空 patch ViT）
 @strict
+# InklingVisionConfig：Inkling 视觉塔超参（时空 patch ViT）
 class InklingVisionConfig(PreTrainedConfig):
     model_type = "inkling_vision"
     base_config_key = "vision_config"
@@ -183,7 +191,9 @@ class InklingVisionConfig(PreTrainedConfig):
     initializer_range: float = 0.02
 
 
+# InklingConfig：Inkling 图文音多模态顶层默认超参
 @strict
+# InklingConfig：Inkling 图文音多模态顶层配置
 class InklingConfig(PreTrainedConfig):
     """Top-level multimodal config (`InklingMMConfig` in the SGLang source)."""
 

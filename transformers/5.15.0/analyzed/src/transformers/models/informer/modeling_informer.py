@@ -44,12 +44,16 @@ from ...time_series_utils import NegativeBinomialOutput, NormalOutput, StudentTO
 from ...utils import TransformersKwargs, auto_docstring, logging
 from ...utils.generic import merge_with_config_defaults
 from ...utils.output_capturing import OutputRecorder, capture_outputs
+# modeling_informer 由 modular_informer.py 自动生成
 from .configuration_informer import InformerConfig
 
 
 logger = logging.get_logger(__name__)
 
 
+# Informer 建模：ProbSparse 注意力时序预测（由 modular_informer.py 自动生成）
+
+# InformerFeatureEmbedder：Informer 时序特征嵌入（类别/数值/时间特征）
 class InformerFeatureEmbedder(nn.Module):
     """
     Embed a sequence of categorical features.
@@ -84,6 +88,7 @@ class InformerFeatureEmbedder(nn.Module):
         )
 
 
+# InformerStdScaler：Informer 标准差缩放器（按 loc/scale 归一化）
 class InformerStdScaler(nn.Module):
     """
     Standardize features by calculating the mean and scaling along the first dimension, and then normalizes it by
@@ -119,6 +124,7 @@ class InformerStdScaler(nn.Module):
         return (data - loc) / scale, loc, scale
 
 
+# InformerMeanScaler：Informer 均值缩放器（按 loc/scale 归一化）
 class InformerMeanScaler(nn.Module):
     """
     Computes a scaling factor as the weighted average absolute value along the first dimension, and scales the data
@@ -173,6 +179,7 @@ class InformerMeanScaler(nn.Module):
         return scaled_data, torch.zeros_like(scale), scale
 
 
+# InformerNOPScaler：Informer 恒等缩放器（不做归一化）
 class InformerNOPScaler(nn.Module):
     """
     Assigns a scaling factor equal to 1 along the first dimension, and therefore applies no scaling to the input data.
@@ -200,6 +207,7 @@ class InformerNOPScaler(nn.Module):
         return data, loc, scale
 
 
+# InformerSinusoidalPositionalEmbedding：Informer 正弦位置编码嵌入
 class InformerSinusoidalPositionalEmbedding(nn.Embedding):
     """This module produces sinusoidal positional embeddings of any length."""
 
@@ -234,6 +242,7 @@ class InformerSinusoidalPositionalEmbedding(nn.Embedding):
         return super().forward(position_ids)
 
 
+# InformerValueEmbedding：Informer 数值特征线性嵌入
 class InformerValueEmbedding(nn.Module):
     def __init__(self, feature_size, d_model):
         super().__init__()
@@ -244,6 +253,7 @@ class InformerValueEmbedding(nn.Module):
 
 
 @auto_docstring
+# InformerPreTrainedModel：Informer 预训练基类与权重初始化
 class InformerPreTrainedModel(PreTrainedModel):
     config: InformerConfig
     base_model_prefix = "model"
@@ -258,6 +268,7 @@ class InformerPreTrainedModel(PreTrainedModel):
             init.copy_(module.weight, module.create_weight())
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -286,6 +297,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# InformerAttention：Informer 标准多头自/交叉注意力
 class InformerAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -403,6 +415,7 @@ class InformerAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# InformerProbSparseAttention：Informer ProbSparse 概率稀疏注意力（O(L log L)）
 class InformerProbSparseAttention(nn.Module):
     """Probabilistic Attention mechanism to select the "active"
     queries rather than the "lazy" queries and provides a sparse Transformer thus mitigating the quadratic compute and
@@ -606,6 +619,7 @@ class InformerProbSparseAttention(nn.Module):
 
 
 # source: https://github.com/zhouhaoyi/Informer2020/blob/main/models/encoder.py
+# InformerConvLayer：Informer 1D 卷积层（蒸馏/局部特征提取）
 class InformerConvLayer(GradientCheckpointingLayer):
     def __init__(self, c_in):
         super().__init__()
@@ -629,6 +643,7 @@ class InformerConvLayer(GradientCheckpointingLayer):
         return x
 
 
+# InformerEncoderLayer：Informer 编码器单层（自注意力 + 卷积 + FFN）
 class InformerEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: InformerConfig):
         super().__init__()
@@ -687,6 +702,7 @@ class InformerEncoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# InformerDecoderLayer：Informer 解码器单层（自注意力 + 交叉注意力 + FFN）
 class InformerDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: InformerConfig, layer_idx: int | None = None):
         super().__init__()
@@ -778,6 +794,7 @@ class InformerDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# InformerEncoder：Informer 多层编码器堆叠（ProbSparse 注意力）
 class InformerEncoder(InformerPreTrainedModel):
     """
     Transformer encoder consisting of *config.encoder_layers* self attention layers. Each layer is a
@@ -860,6 +877,7 @@ class InformerEncoder(InformerPreTrainedModel):
         )
 
 
+# InformerDecoder：Informer 多层解码器堆叠（自注意力 + 交叉注意力）
 class InformerDecoder(InformerPreTrainedModel):
     """
     Transformer decoder consisting of *config.decoder_layers* layers. Each layer is a
@@ -991,6 +1009,7 @@ class InformerDecoder(InformerPreTrainedModel):
 
 
 @auto_docstring
+# InformerModel：Informer 编码器-解码器时序预测主干
 class InformerModel(InformerPreTrainedModel):
     def __init__(self, config: InformerConfig):
         super().__init__(config)
@@ -1322,6 +1341,7 @@ class InformerModel(InformerPreTrainedModel):
         )
 
 
+# weighted_average：按权重对张量加权平均
 def weighted_average(input_tensor: torch.Tensor, weights: torch.Tensor | None = None, dim=None) -> torch.Tensor:
     """
     Computes the weighted average of a given tensor across a given `dim`, masking values associated with weight zero,
@@ -1346,6 +1366,7 @@ def weighted_average(input_tensor: torch.Tensor, weights: torch.Tensor | None = 
         return input_tensor.mean(dim=dim)
 
 
+# nll：负对数似然损失（分布与目标）
 def nll(input: torch.distributions.Distribution, target: torch.Tensor) -> torch.Tensor:
     """
     Computes the negative log likelihood loss from input distribution with respect to target.
@@ -1354,6 +1375,7 @@ def nll(input: torch.distributions.Distribution, target: torch.Tensor) -> torch.
 
 
 @auto_docstring
+# InformerForPrediction：Informer 概率分布时序预测头
 class InformerForPrediction(InformerPreTrainedModel):
     def __init__(self, config: InformerConfig):
         super().__init__(config)

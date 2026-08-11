@@ -26,6 +26,9 @@ from ...utils import TensorType, auto_docstring
 from ...utils.constants import OPENAI_CLIP_MEAN, OPENAI_CLIP_STD
 
 
+# Inkling 图像预处理：Torchvision 后端 patch 切分与 CLIP 归一化
+
+# InklingImageProcessorKwargs：Inkling 图像处理器可选参数字典类型
 class InklingImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     rescale_image_frac (`float`, *optional*):
@@ -41,6 +44,7 @@ class InklingImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 # Slightly different from `image_transforms.divide_to_patches`
+# divide_to_patches：将图像张量切分为固定大小 patch 列表
 def divide_to_patches(image: "torch.Tensor", patch_size: int) -> list["torch.Tensor"]:
     height, width = image.shape[-2], image.shape[-1]
     num_rows = (height + patch_size - 1) // patch_size
@@ -57,6 +61,7 @@ def divide_to_patches(image: "torch.Tensor", patch_size: int) -> list["torch.Ten
 
 
 @auto_docstring(custom_intro="Constructs a Inkling image processor.")
+# InklingImageProcessor：Inkling Torchvision 后端图像预处理（patch 切分）
 class InklingImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.LANCZOS
     image_mean = OPENAI_CLIP_MEAN

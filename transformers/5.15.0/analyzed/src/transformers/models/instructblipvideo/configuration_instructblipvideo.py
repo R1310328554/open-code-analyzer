@@ -30,8 +30,12 @@ from ..auto import CONFIG_MAPPING, AutoConfig
 logger = logging.get_logger(__name__)
 
 
+# InstructBLIP-Video 配置：Salesforce/instructblip-flan-t5-xl 视频视觉+Q-Former+LLM 超参
+
+# InstructBlipVideoVisionConfig：Salesforce/instructblip-flan-t5-xl 视频视觉塔默认超参
 @auto_docstring(checkpoint="Salesforce/instructblip-flan-t5-xl")
 @strict
+# InstructBlipVideoVisionConfig：InstructBLIP-Video 视觉塔超参（帧级 ViT）
 class InstructBlipVideoVisionConfig(PreTrainedConfig):
     r"""
     Example:
@@ -65,8 +69,10 @@ class InstructBlipVideoVisionConfig(PreTrainedConfig):
     qkv_bias: bool = True
 
 
+# InstructBlipVideoQFormerConfig：Salesforce/instructblip-flan-t5-xl 视频 Q-Former 默认超参
 @auto_docstring(checkpoint="Salesforce/instructblip-flan-t5-xl")
 @strict
+# InstructBlipVideoQFormerConfig：InstructBLIP-Video Q-Former 超参
 class InstructBlipVideoQFormerConfig(PreTrainedConfig):
     r"""
     cross_attention_frequency (`int`, *optional*, defaults to 2):
@@ -107,8 +113,10 @@ class InstructBlipVideoQFormerConfig(PreTrainedConfig):
     encoder_hidden_size: int = 1408
 
 
+# InstructBlipVideoConfig：Salesforce/instructblip-flan-t5-xl 视频指令微调顶层默认超参
 @auto_docstring(checkpoint="Salesforce/instructblip-flan-t5-xl")
 @strict
+# InstructBlipVideoConfig：InstructBLIP-Video 视频指令微调顶层配置
 class InstructBlipVideoConfig(PreTrainedConfig):
     r"""
     qformer_config (`dict`, *optional*):

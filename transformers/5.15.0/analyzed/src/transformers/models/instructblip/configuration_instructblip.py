@@ -24,8 +24,12 @@ from ..auto import CONFIG_MAPPING, AutoConfig
 logger = logging.get_logger(__name__)
 
 
+# InstructBLIP 配置：Salesforce/instructblip-flan-t5-xl 视觉+Q-Former+LLM 超参
+
+# InstructBlipVisionConfig：Salesforce/instructblip-flan-t5-xl 视觉塔默认超参
 @auto_docstring(checkpoint="Salesforce/instructblip-flan-t5-xl")
 @strict
+# InstructBlipVisionConfig：InstructBLIP 视觉塔超参（EVA-CLIP 风格 ViT）
 class InstructBlipVisionConfig(PreTrainedConfig):
     r"""
     Example:
@@ -59,8 +63,10 @@ class InstructBlipVisionConfig(PreTrainedConfig):
     qkv_bias: bool = True
 
 
+# InstructBlipQFormerConfig：Salesforce/instructblip-flan-t5-xl Q-Former 默认超参
 @auto_docstring(checkpoint="Salesforce/instructblip-flan-t5-xl")
 @strict
+# InstructBlipQFormerConfig：InstructBLIP Q-Former 超参（交叉注意力桥接）
 class InstructBlipQFormerConfig(PreTrainedConfig):
     r"""
     cross_attention_frequency (`int`, *optional*, defaults to 2):
@@ -101,8 +107,10 @@ class InstructBlipQFormerConfig(PreTrainedConfig):
     encoder_hidden_size: int = 1408
 
 
+# InstructBlipConfig：Salesforce/instructblip-flan-t5-xl 图文指令微调顶层默认超参
 @auto_docstring(checkpoint="Salesforce/instructblip-flan-t5-xl")
 @strict
+# InstructBlipConfig：InstructBLIP 图文指令微调顶层配置
 class InstructBlipConfig(PreTrainedConfig):
     r"""
     qformer_config (`dict`, *optional*):

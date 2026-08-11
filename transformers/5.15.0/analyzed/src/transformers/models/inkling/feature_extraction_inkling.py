@@ -27,6 +27,9 @@ from ...utils.import_utils import requires
 logger = logging.get_logger(__name__)
 
 
+# Inkling 音频特征提取：mel 滤波器组与 log-mel 频谱
+
+# _to_exact_int：将浮点采样数校验并转为整数
 def _to_exact_int(value: float, name: str, tolerance: float = 1e-6) -> int:
     rounded = round(value)
     if abs(value - rounded) > tolerance:
@@ -35,6 +38,7 @@ def _to_exact_int(value: float, name: str, tolerance: float = 1e-6) -> int:
 
 
 @requires(backends=("torch",))
+# InklingFeatureExtractor：Inkling 音频 mel 频谱特征提取
 class InklingFeatureExtractor(SequenceFeatureExtractor):
     r"""
     Constructs a TML audio feature extractor, which converts raw audio waveforms into log-mel spectrogram
