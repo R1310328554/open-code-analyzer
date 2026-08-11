@@ -15,23 +15,8 @@
     "src/transformers/models/lw_detr/modeling_lw_detr.py",
     "src/transformers/models/lw_detr/modular_lw_detr.py",
     "src/transformers/models/lxmert/__init__.py",
-    "src/transformers/models/lxmert/configuration_lxmert.py",
-    "src/transformers/models/lxmert/modeling_lxmert.py",
-    "src/transformers/models/m2m_100/__init__.py",
-    "src/transformers/models/m2m_100/configuration_m2m_100.py",
-    "src/transformers/models/m2m_100/modeling_m2m_100.py",
-    "src/transformers/models/m2m_100/tokenization_m2m_100.py",
-    "src/transformers/models/mamba/__init__.py",
-    "src/transformers/models/mamba/configuration_mamba.py",
-    "src/transformers/models/mamba/modeling_mamba.py",
-    "src/transformers/models/mamba2/__init__.py",
-    "src/transformers/models/mamba2/configuration_mamba2.py",
-    "src/transformers/models/mamba2/modeling_mamba2.py",
-    "src/transformers/models/marian/__init__.py",
-    "src/transformers/models/marian/configuration_marian.py",
-    "src/transformers/models/marian/modeling_marian.py",
-    "src/transformers/models/marian/tokenization_marian.py"
+    "src/transformers/models/lxmert/configuration_lxmert.py"
   ],
   "remaining_pending": 1359,
-  "done": 1290
+  "done": 1305
 }
