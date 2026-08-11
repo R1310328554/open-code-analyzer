@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T05:17:06Z",
-  "files": [
-    "django/contrib/staticfiles/finders.py",
-    "django/contrib/staticfiles/handlers.py",
-    "django/contrib/staticfiles/management/__init__.py",
-    "django/contrib/staticfiles/management/commands/__init__.py",
-    "django/contrib/staticfiles/management/commands/collectstatic.py",
-    "django/contrib/staticfiles/management/commands/findstatic.py",
-    "django/contrib/staticfiles/management/commands/runserver.py",
-    "django/contrib/staticfiles/storage.py",
-    "django/contrib/staticfiles/testing.py",
-    "django/contrib/staticfiles/urls.py",
-    "django/contrib/staticfiles/utils.py",
-    "django/contrib/staticfiles/views.py",
-    "django/contrib/syndication/__init__.py",
-    "django/contrib/syndication/apps.py",
-    "django/contrib/syndication/views.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 402,
-  "done": 525
+  "done": 540
 }
