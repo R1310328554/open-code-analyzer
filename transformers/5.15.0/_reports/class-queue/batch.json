@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T00:57:47Z",
-  "files": [
-    "src/transformers/models/eomt_dinov3/modular_eomt_dinov3.py",
-    "src/transformers/models/ernie/__init__.py",
-    "src/transformers/models/ernie/configuration_ernie.py",
-    "src/transformers/models/ernie/modeling_ernie.py",
-    "src/transformers/models/ernie/modular_ernie.py",
-    "src/transformers/models/ernie4_5/__init__.py",
-    "src/transformers/models/ernie4_5/configuration_ernie4_5.py",
-    "src/transformers/models/ernie4_5/modeling_ernie4_5.py",
-    "src/transformers/models/ernie4_5/modular_ernie4_5.py",
-    "src/transformers/models/ernie4_5_moe/__init__.py",
-    "src/transformers/models/ernie4_5_moe/configuration_ernie4_5_moe.py",
-    "src/transformers/models/ernie4_5_moe/modeling_ernie4_5_moe.py",
-    "src/transformers/models/ernie4_5_moe/modular_ernie4_5_moe.py",
-    "src/transformers/models/ernie4_5_vl_moe/__init__.py",
-    "src/transformers/models/ernie4_5_vl_moe/configuration_ernie4_5_vl_moe.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1959,
-  "done": 705
+  "done": 720
 }
