@@ -45,6 +45,9 @@ JSON for ``attachments`` on nodes (empty after the activities pass in some
 bundles).
 """
 
+# extract_xcresult_attachments.py — 从 Xcode .xcresult 测试包中提取指定名称的 XCTAttachment。
+# 依赖 xcrun xcresulttool：遍历测试活动树、匹配附件名并导出到本地目录。
+
 from __future__ import annotations
 
 import argparse
@@ -59,6 +62,7 @@ from typing import Any, List, Optional, Set, Tuple
 AttachmentRow = Tuple[str, str, str]  # stored_name, test_id_url, payload_id
 
 
+# _die 输出结构化失败信息（原因、位置、下一步）并以给定退出码结束。
 def _die(what: str, where: str, next_step: str, code: int = 1) -> int:
     sys.stderr.write(
         f"[extract_xcresult_attachments] FAIL: {what}\n  Where: {where}\n  Next:  {next_step}\n"
@@ -66,10 +70,12 @@ def _die(what: str, where: str, next_step: str, code: int = 1) -> int:
     return code
 
 
+# _run 封装 subprocess.run，捕获 stdout/stderr 且不自动抛出异常。
 def _run(cmd: List[str]) -> subprocess.CompletedProcess:
     return subprocess.run(cmd, capture_output=True, check=False)
 
 
+# _check_xcresulttool_capability 检测当前 Xcode 是否支持 test-results 子命令。
 def _check_xcresulttool_capability() -> None:
     """Require `xcrun xcresulttool help get` to list `test-results` (command exists)."""
     r = _run(["xcrun", "xcresulttool", "help", "get"])
@@ -84,6 +90,7 @@ def _check_xcresulttool_capability() -> None:
         )
 
 
+# _load_tests_json 调用 xcresulttool get test-results tests 并解析 JSON。
 def _load_tests_json(result_path: Path) -> dict:
     r = _run(
         [
@@ -118,6 +125,7 @@ def _load_tests_json(result_path: Path) -> dict:
         )
 
 
+# _collect_test_case_urls 递归收集测试树中 Test Case 节点的 nodeIdentifierURL。
 def _collect_test_case_urls(node: dict) -> List[str]:
     urls: List[str] = []
     if node.get("nodeType") == "Test Case":
@@ -129,6 +137,7 @@ def _collect_test_case_urls(node: dict) -> List[str]:
     return urls
 
 
+# _walk_activity_tree 遍历活动树，收集附件 name 与 payloadId。
 def _walk_activity_tree(act: dict, acc: List[AttachmentRow], test_url: str) -> None:
     for att in act.get("attachments") or []:
         name = att.get("name")
@@ -139,6 +148,7 @@ def _walk_activity_tree(act: dict, acc: List[AttachmentRow], test_url: str) -> N
         _walk_activity_tree(ch, acc, test_url)
 
 
+# _attachments_from_activities 按 test-id 拉取 activities JSON 并汇总附件列表。
 def _attachments_from_activities(
     result_path: Path, test_url: str
 ) -> List[AttachmentRow]:
@@ -170,6 +180,7 @@ def _attachments_from_activities(
     return acc
 
 
+# _walk_attachments_legacy 回退路径：直接扫描 tests JSON 节点上的 attachments。
 def _walk_attachments_legacy(node: dict, acc: List[AttachmentRow]) -> None:
     """Fallback: walk ``tests`` JSON for ``attachments`` on nodes (used if activities path is empty)."""
     identifier = node.get("identifier") or node.get("nodeIdentifierURL") or ""
@@ -182,6 +193,7 @@ def _walk_attachments_legacy(node: dict, acc: List[AttachmentRow]) -> None:
         _walk_attachments_legacy(child, acc)
 
 
+# _enumerate 优先走 activities 路径，无结果时回退 legacy 扫描。
 def _enumerate(result_path: Path) -> List[AttachmentRow]:
     parsed = _load_tests_json(result_path)
     acc: List[AttachmentRow] = []
@@ -197,6 +209,7 @@ def _enumerate(result_path: Path) -> List[AttachmentRow]:
     return acc
 
 
+# _matches_wanted_attachment 精确匹配或 stem_ 前缀 + 后缀的启发式匹配。
 def _matches_wanted_attachment(stored: str, wanted: str) -> bool:
     if stored == wanted:
         return True
@@ -205,6 +218,7 @@ def _matches_wanted_attachment(stored: str, wanted: str) -> bool:
     return stored.startswith(stem + "_") and stored.endswith(suffix)
 
 
+# _pick_exported_file 根据 manifest.json 或目录内容解析导出后的本地文件名。
 def _pick_exported_file(
     td_path: Path, wanted_out_name: str, stored_name: str
 ) -> Optional[Path]:
@@ -253,6 +267,7 @@ def _pick_exported_file(
     return None
 
 
+# _export_one 调用 xcresulttool export attachments 并将结果移动到目标路径。
 def _export_one(
     result_path: Path,
     test_identifier: str,
@@ -297,6 +312,7 @@ def _export_one(
         shutil.move(str(src), str(out_path))
 
 
+# main CLI 入口：校验参数、枚举附件并按 --name / --optional-name 导出。
 def main(argv: List[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(

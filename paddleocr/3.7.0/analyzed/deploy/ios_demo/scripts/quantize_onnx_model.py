@@ -31,6 +31,8 @@ Examples:
     --calib-data-dir ./my_calib_npy
 """
 
+# quantize_onnx_model.py — 对 PaddleOCR 打包 ONNX 模型执行动态或静态 int8 量化。
+
 from __future__ import annotations
 
 import argparse
@@ -55,6 +57,7 @@ def _same_file(a: Path, b: Path) -> bool:
         return False
 
 
+# _run_ort_quant_pre_process 运行 ORT quant_pre_process，失败时逐级跳过符号形状/优化。
 def _run_ort_quant_pre_process(src_onnx: Path, work_dir: Path) -> Path:
     """Run ORT *quant_pre_process*; write a new ONNX with ``onnx.quant.pre_process`` metadata.
 
@@ -116,6 +119,7 @@ def _run_ort_quant_pre_process(src_onnx: Path, work_dir: Path) -> Path:
     )
 
 
+# _quantize_dynamic 权重 int8 动态量化，无需校准数据。
 def _quantize_dynamic(src_onnx: Path, dst_onnx: Path, per_channel: bool) -> None:
     from onnxruntime.quantization import QuantType, quantize_dynamic
 
@@ -127,6 +131,7 @@ def _quantize_dynamic(src_onnx: Path, dst_onnx: Path, per_channel: bool) -> None
     )
 
 
+# _quantize_static QDQ 静态量化：需 .npy 校准样本目录。
 def _quantize_static(
     src_onnx: Path,
     dst_onnx: Path,
@@ -195,6 +200,7 @@ def _try_onnx_opset_via_version_converter(path: Path, target_opset: int) -> str:
     return "converted"
 
 
+# _verify_onnx_file 用 ONNX checker 校验量化后模型完整性。
 def _verify_onnx_file(path: Path) -> None:
     """Validate the output with the ONNX checker (avoids ORT IR / build skew in the host venv)."""
     import onnx
@@ -206,10 +212,12 @@ def _verify_onnx_file(path: Path) -> None:
         die(f"output model failed ONNX checker validation: {e}")
 
 
+# _atomic_replace 原子替换目标 ONNX 文件，避免写入中途损坏。
 def _atomic_replace(src: Path, dst: Path) -> None:
     os.replace(str(src), str(dst))
 
 
+# main CLI 入口：解析量化模式、可选 ORT 预处理与 opset 转换后写输出目录。
 def main() -> None:
     p = argparse.ArgumentParser(description="Quantize PaddleOCR ONNX model.")
     p.add_argument(

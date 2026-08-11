@@ -14,7 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import asyncio
+# app.py — PaddleOCR-VL 高性能服务（HPS）API 网关：FastAPI 代理 Triton 与 VLM 后端。
+
+import asyncioimport asyncio
 import json
 import logging
 import os
@@ -59,6 +61,7 @@ TRITON_MODELS = (TRITON_MODEL_LAYOUT_PARSING, TRITON_MODEL_RESTRUCTURE_PAGES)
 logger = logging.getLogger(__name__)
 
 
+# _configure_logger 按 HPS_LOG_LEVEL 配置控制台日志格式与级别。
 def _configure_logger(logger: logging.Logger) -> None:
     level = getattr(logging, LOG_LEVEL.upper(), logging.INFO)
     logger.setLevel(level)
@@ -74,6 +77,7 @@ def _configure_logger(logger: logging.Logger) -> None:
 _configure_logger(logger)
 
 
+# _create_aistudio_output_without_result 构造 AIStudio 标准错误响应 JSON。
 def _create_aistudio_output_without_result(
     error_code: int, error_msg: str, *, log_id: Optional[str] = None
 ) -> dict:
@@ -87,6 +91,7 @@ def _create_aistudio_output_without_result(
 
 
 @asynccontextmanager
+# _lifespan 应用生命周期：启动时初始化 Triton 客户端与并发信号量，关闭时释放连接。
 async def _lifespan(app: fastapi.FastAPI):
     """
     Manage application lifecycle:
@@ -128,6 +133,7 @@ async def _lifespan(app: fastapi.FastAPI):
     logger.info("Gateway shutdown complete")
 
 
+# FastAPI 应用实例：挂载健康检查、版面解析与页面重组推理路由。
 app = fastapi.FastAPI(
     title="PaddleOCR-VL HPS Gateway",
     description="High Performance Server Gateway for PaddleOCR-VL",
@@ -137,11 +143,13 @@ app = fastapi.FastAPI(
 
 
 @app.get("/health", operation_id="checkHealth")
+# health 存活探针：进程运行即返回 Healthy。
 async def health():
     """Liveness check - returns healthy if the gateway process is running."""
     return _create_aistudio_output_without_result(0, "Healthy")
 
 
+# _check_vlm_ready 异步探测 VLM 服务器 /health 是否就绪。
 async def _check_vlm_ready() -> bool:
     """Check if the VLM server is ready by querying its health endpoint."""
 
@@ -157,6 +165,7 @@ async def _check_vlm_ready() -> bool:
 
 
 @app.get("/health/ready", operation_id="checkReady")
+# ready 就绪探针：校验 Triton 服务、必需模型与 VLM 均可访问。
 async def ready(request: Request):
     """Readiness check - verifies Triton server, models, and VLM server."""
     try:
@@ -218,6 +227,7 @@ async def ready(request: Request):
         )
 
 
+# _process_triton_request 经信号量限流后转发请求到 Triton 并统一错误处理。
 async def _process_triton_request(
     request: Request,
     body: dict,
@@ -330,6 +340,7 @@ async def _process_triton_request(
     summary=f"Invoke {TRITON_MODEL_LAYOUT_PARSING} model",
     response_class=JSONResponse,
 )
+# _handle_infer POST /layout-parsing：调用 layout-parsing Triton 模型。
 async def _handle_infer(request: Request, body: dict):
     """Handle layout-parsing inference request."""
     return await _process_triton_request(
@@ -346,6 +357,7 @@ async def _handle_infer(request: Request, body: dict):
     summary=f"Invoke {TRITON_MODEL_RESTRUCTURE_PAGES} model",
     response_class=JSONResponse,
 )
+# _handle_restructure_pages POST /restructure-pages：页面重组（非推理类限流）。
 async def _handle_restructure_pages(request: Request, body: dict):
     """Handle restructure-pages request (non-inference)."""
     return await _process_triton_request(
@@ -405,6 +417,7 @@ async def _general_exception_handler(request: Request, exc: Exception):
     )
 
 
+# _HealthEndpointFilter 过滤 uvicorn 访问日志中的 /health 探针噪声。
 class _HealthEndpointFilter(logging.Filter):
     """Filter out health check endpoints from access logs."""
 

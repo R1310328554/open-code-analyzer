@@ -24,6 +24,9 @@ Inputs:
 All inputs are optional; missing sections render placeholders.
 """
 
+# generate_benchmark_report.py — 合并 iOS 基准测试 JSON 并生成本地 Markdown 报告。
+# 支持精度对比、真机性能、运行状态与 XCTest 内存指标等多源输入。
+
 from __future__ import annotations
 
 import argparse
@@ -34,6 +37,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
 
 
+# _run_text 运行外部命令并返回 stdout 文本，失败时返回 None。
 def _run_text(cmd: List[str]) -> Optional[str]:
     try:
         return subprocess.check_output(
@@ -55,6 +59,7 @@ def _sw_vers() -> Optional[str]:
     return _run_text(["sw_vers", "-productVersion"])
 
 
+# _load_json 读取 JSON 文件并保证返回 dict 类型。
 def _load_json(path: Path) -> Dict[str, Any]:
     with path.open("r", encoding="utf-8") as f:
         data = json.load(f)
@@ -136,6 +141,7 @@ def _benchmark_warnings(
     return warnings
 
 
+# _benchmark_metadata_markdown 渲染 ORT 执行提供者、构建设备等元数据表格。
 def _benchmark_metadata_markdown(
     status: Dict[str, Any],
     perf_data: Optional[Dict[str, Any]],
@@ -172,6 +178,7 @@ def _benchmark_metadata_markdown(
     return "\n".join(rows)
 
 
+# _model_artifacts_markdown 汇总检测/识别模型与应用二进制体积。
 def _model_artifacts_markdown(status: Dict[str, Any]) -> str:
     benchmark = (
         status.get("benchmark") if isinstance(status.get("benchmark"), dict) else {}
@@ -210,6 +217,7 @@ def _model_artifacts_markdown(status: Dict[str, Any]) -> str:
 # ---------- run-status ----------
 
 
+# _run_status_section 生成 run-status 步骤表格与整体运行窗口。
 def _run_status_section(status: Dict[str, Any]) -> str:
     lines: List[str] = ["## Run status", ""]
     lines.append(f"- **Exit code:** `{status.get('exitCode', '—')}`")
@@ -268,6 +276,7 @@ def _performance_section_banner(overall: Optional[str]) -> str:
 # ---------- timing + memory (on-device performance) ----------
 
 
+# _timing_markdown 渲染 OCR 各阶段延迟 mean/stdev/p90 统计表。
 def _timing_markdown(data: Dict[str, Any]) -> str:
     lines = ["| Metric | mean | stdev | p90 |", "|--------|------|-------|-----|"]
     for key, label in [
@@ -460,6 +469,7 @@ def _xctest_memory_rows(xctest_metrics: Optional[Dict[str, Any]]) -> List[str]:
     return rows
 
 
+# _memory_markdown 合并 XCTest 内存指标与 task_vm_info 占用快照。
 def _memory_markdown(
     data: Dict[str, Any],
     xctest_metrics: Optional[Dict[str, Any]],
@@ -488,6 +498,7 @@ def _memory_markdown(
     return "\n".join(rows)
 
 
+# _on_device_section 组装真机运行时性能章节（元数据、输入轮廓、延迟、内存）。
 def _on_device_section(
     data: Dict[str, Any],
     xctest_metrics: Optional[Dict[str, Any]],
@@ -543,6 +554,7 @@ def _compare_section(data: Dict[str, Any]) -> str:
     )
 
 
+# _accuracy_section 在启用精度检查时渲染 compare_ocr_json 摘要。
 def _accuracy_section(
     summary_data: Optional[Dict[str, Any]],
     run_status: Dict[str, Any],
@@ -590,6 +602,7 @@ def _placeholder_from_status(status: Dict[str, Any], for_step: str) -> str:
     return "*Unavailable — no artifact and no run-status reason.*"
 
 
+# generate_report 驱动函数：加载各 JSON 输入并写入 Markdown 报告文件。
 def generate_report(
     *,
     out_path: Path,
@@ -671,6 +684,7 @@ def generate_report(
     print(f"Wrote {out_path}")
 
 
+# main CLI 入口：解析可选 JSON 路径并调用 generate_report。
 def main(argv: Optional[Sequence[str]] = None) -> int:
     root = Path(__file__).resolve().parent.parent
     parser = argparse.ArgumentParser(description=__doc__)

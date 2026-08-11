@@ -28,11 +28,19 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class OCRApplication : Application() {
+/**
+ * OCRApplication — 全局 Application：后台加载 PaddleOCR 模型并暴露加载状态。
+ * 通过 [modelState] StateFlow 向 UI 层广播 Loading / Ready / Error。
+ */
+class OCRApplication : Application() {class OCRApplication : Application() {
 
+    /** ModelState 密封类：描述 OCR 模型加载过程中的三种状态。 */
     sealed class ModelState {
+        // Loading — 模型正在后台加载。
         data object Loading : ModelState()
+        // Ready — 加载成功，持有可用的 PaddleOCR 实例。
         data class Ready(val ocr: PaddleOCR) : ModelState()
+        // Error — 加载失败，携带可读错误信息。
         data class Error(val message: String) : ModelState()
     }
 
@@ -47,17 +55,20 @@ class OCRApplication : Application() {
     val isModelLoaded: Boolean
         get() = _modelState.value is ModelState.Ready
 
+    // onCreate 保存单例引用并触发首次模型加载。
     override fun onCreate() {
         super.onCreate()
         instance = this
         loadModels()
     }
 
+    // retryLoadModels 在非 Loading 状态下重新发起模型加载。
     fun retryLoadModels() {
         if (_modelState.value is ModelState.Loading) return
         loadModels()
     }
 
+    // loadModels 在 IO 协程中初始化 OpenCV 并创建 PaddleOCR 实例。
     private fun loadModels() {
         _modelState.value = ModelState.Loading
         applicationScope.launch {
@@ -82,6 +93,7 @@ class OCRApplication : Application() {
         }
     }
 
+    // modelLoadErrorMessage 拼接异常链消息供 UI 展示。
     private fun modelLoadErrorMessage(error: Throwable): String {
         val details = listOfNotNull(error.message, error.cause?.message)
             .distinct()
@@ -93,6 +105,7 @@ class OCRApplication : Application() {
         }
     }
 
+    // onTerminate 释放 PaddleOCR 原生资源（调试/模拟器场景）。
     override fun onTerminate() {
         super.onTerminate()
         applicationScope.launch {
@@ -100,6 +113,7 @@ class OCRApplication : Application() {
         }
     }
 
+    // companion object 提供进程级单例 [instance] 供 Activity/Compose 访问。
     companion object {
         private const val TAG = "OCRApplication"
 

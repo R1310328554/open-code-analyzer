@@ -35,6 +35,7 @@ import androidx.compose.ui.layout.ContentScale
 import com.paddle.ocr.model.OCRResult
 import kotlin.math.max
 
+// BOX_COLORS — OCR 检测框循环使用的调色板。
 private val BOX_COLORS = listOf(
     Color(0xFFE53935),
     Color(0xFF1E88E5),
@@ -46,7 +47,12 @@ private val BOX_COLORS = listOf(
     Color(0xFF6D4C41),
 )
 
+/**
+ * ImagePreview — 在原图上叠加 OCR 多边形检测框与序号角标。
+ * Canvas 与 Image 同宽高比，坐标按 bitmap 尺寸线性缩放映射。
+ */
 @Composable
+fun ImagePreview(@Composable
 fun ImagePreview(
     bitmap: Bitmap,
     results: List<OCRResult>,

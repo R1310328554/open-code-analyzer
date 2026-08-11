@@ -27,6 +27,8 @@ Examples:
     --ios-models-root /path/to/PaddleOCRDemo/Models --device cpu --align-ios-defaults
 """
 
+# ocr_reference_run.py — 用 PaddleOCR（onnxruntime 引擎）生成 iOS 演示对比用的参考 JSON。
+
 from __future__ import annotations
 
 import argparse
@@ -36,14 +38,17 @@ from pathlib import Path
 from typing import Any, Dict, List, Sequence
 
 
+# _paddleocr_package_root 定位 paddleocr 包根目录以注入 sys.path。
 def _paddleocr_package_root() -> Path:
     return Path(__file__).resolve().parents[3]
 
 
+# _default_ios_models_root 返回 iOS Demo 默认 Models 目录路径。
 def _default_ios_models_root() -> Path:
     return Path(__file__).resolve().parent.parent / "PaddleOCRDemo" / "Models"
 
 
+# _load_yaml_model_name 从 inference.yml 读取 Global.model_name。
 def _load_yaml_model_name(path: Path) -> str:
     try:
         import yaml
@@ -54,6 +59,7 @@ def _load_yaml_model_name(path: Path) -> str:
     return data["Global"]["model_name"]
 
 
+# _numpy_to_python 递归将 ndarray 等 NumPy 类型转为 JSON 可序列化 Python 对象。
 def _numpy_to_python(obj: Any) -> Any:
     if obj is None:
         return None
@@ -68,6 +74,7 @@ def _numpy_to_python(obj: Any) -> Any:
     return str(obj)
 
 
+# _extract_items 从 OCR predict 结果构建 {polygon, text, score} 列表。
 def _extract_items(result_obj: Any) -> List[Dict[str, Any]]:
     """Build a list of {polygon, text, score} from an OCR pipeline result."""
     if isinstance(result_obj, dict):
@@ -102,6 +109,7 @@ def _extract_items_from_res_dict(res: Dict[str, Any]) -> List[Dict[str, Any]]:
     return items
 
 
+# _build_ocr 构造 PaddleOCR 实例：关闭文档矫正模块，指定 onnxruntime 引擎。
 def _build_ocr(
     *,
     device: str,
@@ -130,6 +138,7 @@ def _build_ocr(
     return PaddleOCR(**kwargs)
 
 
+# main 加载 iOS 模型目录、可选对齐 Swift 默认参数并写出参考 JSON。
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="OCR reference JSON for iOS demo comparison"

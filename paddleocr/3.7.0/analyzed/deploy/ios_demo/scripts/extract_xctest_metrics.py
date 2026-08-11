@@ -15,6 +15,8 @@
 
 """Export XCTest performance metrics from an xcresult bundle."""
 
+# extract_xctest_metrics.py — 从 .xcresult 导出 XCTest 性能指标（侧重内存类）。
+
 from __future__ import annotations
 
 import argparse
@@ -25,11 +27,13 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
 
 
+# _die 将错误信息写入 stderr 并返回退出码。
 def _die(message: str, code: int = 1) -> int:
     sys.stderr.write(f"[extract_xctest_metrics] {message}\n")
     return code
 
 
+# _metric_summary 计算测量值的 count/min/max/mean 汇总统计。
 def _metric_summary(values: List[float]) -> Dict[str, float]:
     if not values:
         return {}
@@ -41,6 +45,7 @@ def _metric_summary(values: List[float]) -> Dict[str, float]:
     }
 
 
+# export_metrics 调用 xcresulttool get test-results metrics 并筛选内存指标。
 def export_metrics(result: Path) -> Dict[str, Any]:
     proc = subprocess.run(
         [
@@ -108,6 +113,7 @@ def export_metrics(result: Path) -> Dict[str, Any]:
     }
 
 
+# main 解析 --result 与 --output，导出 JSON 格式的指标文档。
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--result", type=Path, required=True)

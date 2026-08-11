@@ -39,7 +39,14 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 
+/**
+ * ImagePicker — 图像来源选择区：相册按钮与内置示例缩略图列表。
+ * @param onGalleryClick 打开系统相册
+ * @param onSampleClick 选择 drawable 示例资源 id
+ * @param sampleImages 示例图资源 id 列表
+ */
 @Composable
+fun ImagePicker(@Composable
 fun ImagePicker(
     onGalleryClick: () -> Unit,
     onSampleClick: (Int) -> Unit,

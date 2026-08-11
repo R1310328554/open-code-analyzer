@@ -19,6 +19,8 @@ Entry scripts prepend this file's directory to ``sys.path`` before ``from utils 
 generic; the scripts resolve ``utils.py`` in this same ``scripts/`` directory first.
 """
 
+# utils.py — iOS Demo 脚本共享工具：校准数据读取、图输入名解析与统一错误退出。
+
 from __future__ import annotations
 
 import sys
@@ -32,11 +34,13 @@ __all__ = [
 ]
 
 
+# die 打印错误信息并以退出码 1 终止进程。
 def die(msg: str) -> None:
     print(f"error: {msg}", file=sys.stderr)
     raise SystemExit(1)
 
 
+# user_input_names 返回 ONNX 图中非 initializer 的用户可见输入名列表。
 def user_input_names(model_path: Path) -> list[str]:
     """Return non-initializer graph input names (user-visible inputs)."""
     import onnx
@@ -46,6 +50,7 @@ def user_input_names(model_path: Path) -> list[str]:
     return [i.name for i in m.graph.input if i.name not in init]
 
 
+# build_npy_dir_reader 构造 ORT CalibrationDataReader：按文件名顺序逐条加载 .npy。
 def build_npy_dir_reader(
     model_path: Path, data_dir: Path, *, max_samples: int | None = None
 ) -> Any:
@@ -56,6 +61,7 @@ def build_npy_dir_reader(
     """
     from onnxruntime.quantization import CalibrationDataReader
 
+    # NpyDirectoryDataReader 静态量化校准迭代器，要求单输入 float32 NCHW 张量。
     class NpyDirectoryDataReader(CalibrationDataReader):
         def __init__(self) -> None:
             names = user_input_names(model_path)

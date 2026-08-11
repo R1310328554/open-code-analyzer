@@ -21,7 +21,12 @@ import androidx.activity.enableEdgeToEdge
 import com.paddle.ocr.demo.ui.screen.HomeScreen
 import com.paddle.ocr.demo.ui.theme.PPOCRTheme
 
-class MainActivity : ComponentActivity() {
+/**
+ * MainActivity — PP-OCR Android 演示应用主入口 Activity。
+ * 使用 Jetpack Compose 加载 [HomeScreen]，并启用 edge-to-edge 全屏布局。
+ */
+class MainActivity : ComponentActivity() {class MainActivity : ComponentActivity() {
+    // onCreate 初始化 PPOCRTheme 主题并展示 OCR 主界面。
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()

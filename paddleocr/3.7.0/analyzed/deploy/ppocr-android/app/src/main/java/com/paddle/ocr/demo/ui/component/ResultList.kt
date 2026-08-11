@@ -30,7 +30,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.paddle.ocr.model.OCRResult
 
+/**
+ * ResultList — OCR 识别结果列表：序号、文本、置信度百分比与一键复制。
+ * @param results PaddleOCR 返回的 OCRResult 列表
+ * @param onCopyAll 将全部识别文本复制到剪贴板
+ */
 @Composable
+fun ResultList(@Composable
 fun ResultList(
     results: List<OCRResult>,
     onCopyAll: () -> Unit,

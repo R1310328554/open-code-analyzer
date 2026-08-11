@@ -26,7 +26,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
+/**
+ * ErrorDialog — Material3 错误弹窗：展示失败信息并提供重试与关闭操作。
+ * @param message 向用户展示的错误详情
+ * @param onRetry 点击 Retry 时的回调
+ * @param onDismiss 点击 Dismiss 或外部取消时的回调
+ */
 @Composable
+fun ErrorDialog(@Composable
 fun ErrorDialog(
     message: String,
     onRetry: () -> Unit,

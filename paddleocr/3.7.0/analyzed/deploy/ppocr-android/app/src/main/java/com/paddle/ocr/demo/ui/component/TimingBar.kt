@@ -25,7 +25,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
+/**
+ * TimingBar — 推理耗时摘要条：检测、识别与总耗时 AssistChip 展示。
+ * @param detectionMs 文本检测阶段毫秒数
+ * @param recognitionMs 文本识别阶段毫秒数
+ * @param totalMs 端到端总耗时毫秒数
+ */
 @Composable
+fun TimingBar(@Composable
 fun TimingBar(
     detectionMs: Long,
     recognitionMs: Long,

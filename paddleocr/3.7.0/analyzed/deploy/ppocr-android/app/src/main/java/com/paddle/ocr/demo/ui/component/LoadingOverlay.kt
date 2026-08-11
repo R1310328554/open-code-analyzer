@@ -29,7 +29,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
+/**
+ * LoadingOverlay — 全屏加载遮罩：CircularProgressIndicator 与可定制提示文案。
+ * 模型加载或推理进行中时覆盖主界面。
+ */
 @Composable
+fun LoadingOverlay(message: String = "Loading models...", modifier: Modifier = Modifier) {@Composable
 fun LoadingOverlay(message: String = "Loading models...", modifier: Modifier = Modifier) {
     Box(
         modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
