@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# CAN 公式识别头：计数模块 + 带覆盖注意力的 GRU 字符解码
 """
 This code is refer from:
 https://github.com/LBH1024/CAN/models/can.py
@@ -28,11 +29,13 @@ import paddle.nn as nn
 import paddle
 import math
 
+# 计数分支：双尺度 CountingDecoder 预测字符分布热力图
 """
 Counting Module
 """
 
 
+    # 通道注意力：全局池化→FC→Sigmoid 重标定特征
 class ChannelAtt(nn.Layer):
     def __init__(self, channel, reduction):
         super(ChannelAtt, self).__init__()
@@ -52,6 +55,7 @@ class ChannelAtt(nn.Layer):
         return x * y
 
 
+    # 计数解码：卷积变换 + ChannelAtt + 1×1 预测字符计数图
 class CountingDecoder(nn.Layer):
     def __init__(self, in_channel, out_channel, kernel_size):
         super(CountingDecoder, self).__init__()
@@ -95,6 +99,7 @@ Attention Decoder
 """
 
 
+    # 二维正弦位置编码，mask 累积坐标归一化
 class PositionEmbeddingSine(nn.Layer):
     def __init__(
         self, num_pos_feats=64, temperature=10000, normalize=False, scale=None
@@ -146,6 +151,7 @@ class PositionEmbeddingSine(nn.Layer):
         return pos
 
 
+    # 注意力 GRU 解码：融合 CNN/计数/位置编码逐步出字
 class AttDecoder(nn.Layer):
     def __init__(
         self,
@@ -268,6 +274,7 @@ Attention Module
 """
 
 
+    # 覆盖注意力：hidden + coverage + 特征 conv 能量→alpha
 class Attention(nn.Layer):
     def __init__(self, hidden_size, attention_dim):
         super(Attention, self).__init__()
@@ -310,6 +317,7 @@ class Attention(nn.Layer):
         return context_vector, alpha, alpha_sum
 
 
+    # CAN 总头：双 CountingDecoder 平均 + AttDecoder 序列预测
 class CANHead(nn.Layer):
     def __init__(self, in_channel, out_channel, ratio, attdecoder, **kwargs):
         super(CANHead, self).__init__()

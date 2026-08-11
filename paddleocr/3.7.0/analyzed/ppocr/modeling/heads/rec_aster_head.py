@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# ASTER 识别头：CNN 特征 + 注意力解码 + beam search 推理
 """
 This code is refer from:
 https://github.com/ayumiymk/aster.pytorch/blob/master/lib/models/attention_recognition_head.py
@@ -26,6 +27,7 @@ from paddle import nn
 from paddle.nn import functional as F
 
 
+    # ASTER 总头：Embedding 全局向量 + AttentionRecognitionHead 解码
 class AsterHead(nn.Layer):
     def __init__(
         self,
@@ -72,6 +74,7 @@ class AsterHead(nn.Layer):
         return return_dict
 
 
+    # 将 [T×C] 特征展平线性映射为 300 维全局嵌入
 class Embedding(nn.Layer):
     def __init__(self, in_timestep, in_planes, mid_dim=4096, embed_dim=300):
         super(Embedding, self).__init__()
@@ -89,6 +92,7 @@ class Embedding(nn.Layer):
         return x
 
 
+    # 注意力识别解码器：逐步 GRU + 注意力 + 分类
 class AttentionRecognitionHead(nn.Layer):
     """
     input: [b x 16 x 64 x in_planes]
@@ -319,6 +323,7 @@ class AttentionRecognitionHead(nn.Layer):
         return p, paddle.ones_like(p)
 
 
+    # 加性注意力：sPrev 与 x 投影求和 tanh→标量权重
 class AttentionUnit(nn.Layer):
     def __init__(self, sDim, xDim, attDim):
         super(AttentionUnit, self).__init__()
@@ -353,6 +358,7 @@ class AttentionUnit(nn.Layer):
         return alpha
 
 
+    # 单步解码：AttentionUnit→context 拼接 token→GRU→fc
 class DecoderUnit(nn.Layer):
     def __init__(self, sDim, xDim, yDim, attDim):
         super(DecoderUnit, self).__init__()

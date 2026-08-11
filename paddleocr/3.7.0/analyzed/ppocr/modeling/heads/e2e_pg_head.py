@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# PGNet 端到端头：score/border/char/direction 四路密集预测
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -23,6 +24,7 @@ import paddle.nn.functional as F
 from paddle import ParamAttr
 
 
+    # PGNet 用 Conv+BN，训练时 use_global_stats=False
 class ConvBNLayer(nn.Layer):
     def __init__(
         self,
@@ -66,6 +68,7 @@ class ConvBNLayer(nn.Layer):
         return x
 
 
+    # PGNet 头：检测 score/border + 识别 char + 阅读方向 direction
 class PGHead(nn.Layer):
     """ """
 
@@ -74,6 +77,7 @@ class PGHead(nn.Layer):
     ):
         super(PGHead, self).__init__()
 
+        # 从字典文件统计字符类别数（+1 背景）供 char 分支输出
         # get character_length
         with open(character_dict_path, "rb") as fin:
             lines = fin.readlines()

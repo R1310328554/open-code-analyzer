@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# ABINet 识别头：视觉 Transformer + 位置注意力 + 可选语言模型迭代对齐
 """
 This code is refer from:
 https://github.com/FangShancheng/ABINet/tree/main/modules
@@ -24,6 +25,7 @@ from paddle.nn import LayerList
 from ppocr.modeling.heads.rec_nrtr_head import TransformerBlock, PositionalEncoding
 
 
+    # 双向上下文语言模型：token 投影 + 位置编码 + 交叉注意力解码
 class BCNLanguage(nn.Layer):
     def __init__(
         self,
@@ -88,12 +90,14 @@ class BCNLanguage(nn.Layer):
         return output, logits
 
 
+    # 下采样编码块：Conv→BN→ReLU
 def encoder_layer(in_c, out_c, k=3, s=2, p=1):
     return nn.Sequential(
         nn.Conv2D(in_c, out_c, k, s, p), nn.BatchNorm2D(out_c), nn.ReLU()
     )
 
 
+    # 上采样解码块：Upsample→Conv→BN→ReLU
 def decoder_layer(
     in_c, out_c, k=3, s=1, p=1, mode="nearest", scale_factor=None, size=None
 ):
@@ -108,6 +112,7 @@ def decoder_layer(
     )
 
 
+    # 位置注意力：U-Net 式 key 编码 + 可学习 query 对齐字符位置
 class PositionAttention(nn.Layer):
     def __init__(
         self,
@@ -171,6 +176,7 @@ class PositionAttention(nn.Layer):
         return attn_vecs, attn_scores.reshape([0, self.max_length, H, W])
 
 
+    # ABINet 总头：视觉编码→PositionAttention→可选语言迭代对齐
 class ABINetHead(nn.Layer):
     def __init__(
         self,
@@ -268,6 +274,7 @@ class ABINetHead(nn.Layer):
             return F.softmax(logits, -1)
 
 
+    # 从 logits 贪婪推断有效序列长度（遇 padding 0 停止）
 def _get_length(logit):
     """Greed decoder to obtain length from logit"""
     out = logit.argmax(-1) == 0
@@ -282,6 +289,7 @@ def _get_length(logit):
     return out
 
 
+    # 生成交叉注意力 padding mask（无效位 -inf）
 def _get_mask(length, max_length):
     """Generate a square mask for the sequence. The masked positions are filled with float('-inf').
     Unmasked positions are filled with float(0.0).

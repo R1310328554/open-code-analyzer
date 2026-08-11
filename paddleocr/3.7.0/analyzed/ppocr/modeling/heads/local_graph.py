@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# DRRG 训练局部图构建：RoI 特征 + 几何嵌入 + k-hop 子图
 """
 This code is refer from:
 https://github.com/open-mmlab/mmocr/blob/main/mmocr/models/textdet/modules/local_graph.py
@@ -26,6 +27,7 @@ import paddle.nn as nn
 from ppocr.ext_op import RoIAlignRotated
 
 
+    # 对称归一化邻接矩阵：加自环 + D^{-1/2} A D^{-1/2}
 def normalize_adjacent_matrix(A):
     assert A.ndim == 2
     assert A.shape[0] == A.shape[1]
@@ -40,6 +42,7 @@ def normalize_adjacent_matrix(A):
     return G
 
 
+    # 计算两组点之间的欧氏距离矩阵
 def euclidean_distance_matrix(A, B):
     """Calculate the Euclidean distance matrix.
 
@@ -67,6 +70,7 @@ def euclidean_distance_matrix(A, B):
     return D
 
 
+    # 正弦/余弦位置式特征扩展，补齐到 out_feat_len 维
 def feature_embedding(input_feats, out_feat_len):
     """Embed features. This code was partially adapted from
     https://github.com/GXYM/DRRG licensed under the MIT license.
@@ -134,6 +138,7 @@ def feature_embedding(input_feats, out_feat_len):
     return embedded_feats
 
 
+    # 训练阶段局部图：按 GT 组件构建 k-hop 子图与 GCN 输入
 class LocalGraphs:
     def __init__(
         self,

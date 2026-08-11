@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# SDMGR KIE 头：节点/边嵌入 + GNN 推理实体关系与语义
 # reference from : https://github.com/open-mmlab/mmocr/blob/main/mmocr/models/kie/heads/sdmgr_head.py
 
 from __future__ import absolute_import
@@ -24,6 +25,7 @@ import paddle.nn.functional as F
 from paddle import ParamAttr
 
 
+    # SDMGR 关键信息提取头：LSTM 节点编码 + GNN + 节点/边分类
 class SDMGRHead(nn.Layer):
     def __init__(
         self,
@@ -99,6 +101,7 @@ class SDMGRHead(nn.Layer):
         embed_edges = self.edge_embed(all_edges.astype("float32"))
         embed_edges = F.normalize(embed_edges)
 
+        # 逐层 GNN 更新节点表示并累积边特征 cat_nodes
         for gnn_layer in self.gnn_layers:
             nodes, cat_nodes = gnn_layer(nodes, embed_edges, node_nums)
 
@@ -106,6 +109,7 @@ class SDMGRHead(nn.Layer):
         return node_cls, edge_cls
 
 
+    # 图神经网络层：节点对拼接 + 边特征→注意力聚合残差
 class GNNLayer(nn.Layer):
     def __init__(self, node_dim=256, edge_dim=256):
         super().__init__()
@@ -150,6 +154,7 @@ class GNNLayer(nn.Layer):
         return [nodes, cat_nodes]
 
 
+    # 多模态融合 Block：分块双线性池化（MUTAN 风格）
 class Block(nn.Layer):
     def __init__(
         self,

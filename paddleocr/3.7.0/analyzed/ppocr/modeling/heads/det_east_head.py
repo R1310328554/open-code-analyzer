@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# EAST 检测头：score 文本区域 + geo 四边形几何参数（large/small 两档通道）
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -23,6 +24,7 @@ import paddle.nn.functional as F
 from paddle import ParamAttr
 
 
+    # 基础 Conv+BN 模块，可选激活
 class ConvBNLayer(nn.Layer):
     def __init__(
         self,
@@ -65,6 +67,7 @@ class ConvBNLayer(nn.Layer):
         return x
 
 
+    # EAST 检测头：两层卷积特征 + score/geo 双分支输出
 class EASTHead(nn.Layer):
     """ """
 
@@ -123,6 +126,7 @@ class EASTHead(nn.Layer):
         f_score = self.score_conv(f_det)
         f_score = F.sigmoid(f_score)
         f_geo = self.geo_conv(f_det)
+        # geo 映射到 [-800,800] 像素偏移，供后处理还原四边形
         f_geo = (F.sigmoid(f_geo) - 0.5) * 2 * 800
 
         pred = {"f_score": f_score, "f_geo": f_geo}

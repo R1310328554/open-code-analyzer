@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# SAST 检测头：双分支预测 score/border 与 tvo/tco 几何
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -23,6 +24,7 @@ import paddle.nn.functional as F
 from paddle import ParamAttr
 
 
+    # Conv+BN，padding 由 kernel 自动推算
 class ConvBNLayer(nn.Layer):
     def __init__(
         self,
@@ -64,6 +66,7 @@ class ConvBNLayer(nn.Layer):
         return x
 
 
+    # SAST 头 1：score（文本置信）+ border（边界偏移）
 class SAST_Header1(nn.Layer):
     def __init__(self, in_channels, **kwargs):
         super(SAST_Header1, self).__init__()
@@ -100,6 +103,7 @@ class SAST_Header1(nn.Layer):
         return f_score, f_border
 
 
+    # SAST 头 2：tvo（顶点偏移 8 维）+ tco（中心偏移 2 维）
 class SAST_Header2(nn.Layer):
     def __init__(self, in_channels, **kwargs):
         super(SAST_Header2, self).__init__()
@@ -131,6 +135,7 @@ class SAST_Header2(nn.Layer):
         return f_tvo, f_tco
 
 
+    # SAST 总头：组合 Header1/2，返回四路预测 dict
 class SASTHead(nn.Layer):
     """ """
 

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# CPPD 识别头：字符/位置双节点 Transformer + 边解码字符序列
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -36,6 +37,7 @@ from ppocr.modeling.backbones.rec_svtrnet import (
 )
 
 
+    # CPPD 交叉注意力：query 与 key-value 分离的多头注意力
 class Attention(nn.Layer):
     def __init__(
         self,
@@ -79,6 +81,7 @@ class Attention(nn.Layer):
         return x
 
 
+    # 边解码层：位置节点与视觉节点做点积边注意力
 class EdgeDecoderLayer(nn.Layer):
     def __init__(
         self,
@@ -150,6 +153,7 @@ class EdgeDecoderLayer(nn.Layer):
         return x
 
 
+    # 标准解码层：交叉 Attention + MLP 残差
 class DecoderLayer(nn.Layer):
     def __init__(
         self,
@@ -206,6 +210,7 @@ class DecoderLayer(nn.Layer):
         return x
 
 
+    # CPPD 总头：char/pos 双分支解码 + edge 输出字符 logits
 class CPPDHead(nn.Layer):
     def __init__(
         self,
@@ -333,6 +338,7 @@ class CPPDHead(nn.Layer):
         visual_feats = x + self.vis_pos_embed
         bs = visual_feats.shape[0]
 
+        # ch 模式：训练时用 GT 字符嵌入；否则用全字符表节点
         if self.ch:
             char_node_embed = self.char_node_embed(targets[-2])
         else:

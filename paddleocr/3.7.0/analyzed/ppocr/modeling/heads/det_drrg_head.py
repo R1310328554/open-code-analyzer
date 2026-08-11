@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# DRRG 检测头：文本组件预测 + 局部图 GCN 边分类，组合成文本行
 """
 This code is refer from:
 https://github.com/open-mmlab/mmocr/blob/main/mmocr/models/textdet/dense_heads/drrg_head.py
@@ -31,6 +32,7 @@ from .local_graph import LocalGraphs
 from .proposal_local_graph import ProposalLocalGraphs
 
 
+    # DRRG 检测头：1×1 预测 6 通道图 + 训练/推理两套局部图 + GCN 边分类
 class DRRGHead(nn.Layer):
     def __init__(
         self,
@@ -147,6 +149,7 @@ class DRRGHead(nn.Layer):
                 - | gt_labels (Tensor): Ground-truth label with shape
                     :math:`(N, 8)`.
         """
+        # 训练：LocalGraphs 构图 + GCN 预测组件邻接；推理走 single_test
         if self.training:
             assert targets is not None
             gt_comp_attribs = targets[7]

@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# FCENet 检测头：傅里叶轮廓嵌入，分类 tr/tcl + 回归傅里叶系数
 """
 This code is refer from:
 https://github.com/open-mmlab/mmocr/blob/main/mmocr/models/textdet/dense_heads/fce_head.py
@@ -24,12 +25,14 @@ import paddle
 from functools import partial
 
 
+    # 对多尺度特征列表逐层调用 func，zip 转置返回
 def multi_apply(func, *args, **kwargs):
     pfunc = partial(func, **kwargs) if kwargs else func
     map_results = map(pfunc, *args)
     return tuple(map(list, zip(*map_results)))
 
 
+    # FCENet 头：cls 4 通道（tr/tcl）+ reg 傅里叶系数 (2k+1)×2
 class FCEHead(nn.Layer):
     """The class for implementing FCENet head.
     FCENet(CVPR2021): Fourier Contour Embedding for Arbitrary-shaped Text

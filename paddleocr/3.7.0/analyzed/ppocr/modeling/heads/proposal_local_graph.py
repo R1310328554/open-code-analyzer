@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# DRRG 推理局部图：从预测图提案组件 + NMS + 构图供 GCN 连边
 """
 This code is refer from:
 https://github.com/open-mmlab/mmocr/blob/main/mmocr/models/textdet/modules/proposal_local_graph.py
@@ -35,6 +36,7 @@ from .local_graph import (
 )
 
 
+    # floodFill 填充 mask 孔洞，保证文本区域连通
 def fill_hole(input_mask):
     h, w = input_mask.shape
     canvas = np.zeros((h + 2, w + 2), np.uint8)
@@ -48,6 +50,7 @@ def fill_hole(input_mask):
     return ~canvas | input_mask
 
 
+    # 推理提案图：propose_comps→局部图→GCN 边分数→文本行组合
 class ProposalLocalGraphs:
     def __init__(
         self,

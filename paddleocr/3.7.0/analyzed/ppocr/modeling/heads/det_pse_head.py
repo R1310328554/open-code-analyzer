@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# PSENet 检测头：渐进式尺度扩展，输出多尺度文本核概率图
 """
 This code is refer from:
 https://github.com/whai362/PSENet/blob/python3/models/head/psenet_head.py
@@ -19,6 +20,7 @@ https://github.com/whai362/PSENet/blob/python3/models/head/psenet_head.py
 from paddle import nn
 
 
+    # PSENet 头：3×3 卷积→BN→ReLU→1×1 输出 out_channels 张尺度图
 class PSEHead(nn.Layer):
     def __init__(self, in_channels, hidden_dim=256, out_channels=7, **kwargs):
         super(PSEHead, self).__init__()

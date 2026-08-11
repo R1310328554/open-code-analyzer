@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# DRRG 图卷积模块：均值聚合 GraphConv 堆叠 + 边二分类
 """
 This code is refer from:
 https://github.com/open-mmlab/mmocr/blob/main/mmocr/models/textdet/modules/gcn.py
@@ -25,6 +26,7 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 
 
+    # BatchNorm1D 封装：momentum 换算与 affine 学习率控制
 class BatchNorm1D(nn.BatchNorm1D):
     def __init__(
         self,
@@ -50,12 +52,14 @@ class BatchNorm1D(nn.BatchNorm1D):
         )
 
 
+    # 图均值聚合：邻接矩阵 A 左乘节点特征
 class MeanAggregator(nn.Layer):
     def forward(self, features, A):
         x = paddle.bmm(A, features)
         return x
 
 
+    # 图卷积层：自特征与聚合特征拼接→线性→ReLU
 class GraphConv(nn.Layer):
     def __init__(self, in_dim, out_dim):
         super().__init__()
@@ -82,6 +86,7 @@ class GraphConv(nn.Layer):
         return out
 
 
+    # 四层 GraphConv + 边分类 MLP，输出组件邻接二分类
 class GCN(nn.Layer):
     def __init__(self, feat_len):
         super(GCN, self).__init__()

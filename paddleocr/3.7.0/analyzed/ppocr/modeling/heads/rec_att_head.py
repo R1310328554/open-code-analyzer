@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 经典注意力识别头：GRU/LSTM 注意力单元 + 逐步字符分类
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -22,6 +23,7 @@ import paddle.nn.functional as F
 import numpy as np
 
 
+    # GRU 注意力识别头：AttentionGRUCell 逐步解码
 class AttentionHead(nn.Layer):
     def __init__(self, in_channels, out_channels, hidden_size, **kwargs):
         super(AttentionHead, self).__init__()
@@ -84,6 +86,7 @@ class AttentionHead(nn.Layer):
         return probs
 
 
+    # 注意力 GRU 单元：加性注意力 context + 字符 one-hot→GRU
 class AttentionGRUCell(nn.Layer):
     def __init__(self, input_size, hidden_size, num_embeddings, use_gru=False):
         super(AttentionGRUCell, self).__init__()
@@ -115,6 +118,7 @@ class AttentionGRUCell(nn.Layer):
         return cur_hidden, alpha
 
 
+    # LSTM 注意力识别头：AttentionLSTMCell 逐步解码
 class AttentionLSTM(nn.Layer):
     def __init__(self, in_channels, out_channels, hidden_size, **kwargs):
         super(AttentionLSTM, self).__init__()
@@ -182,6 +186,7 @@ class AttentionLSTM(nn.Layer):
         return probs
 
 
+    # 注意力 LSTM 单元：与 GRU 版结构相同，RNN 换 LSTMCell
 class AttentionLSTMCell(nn.Layer):
     def __init__(self, input_size, hidden_size, num_embeddings, use_gru=False):
         super(AttentionLSTMCell, self).__init__()
