@@ -23,10 +23,13 @@ from huggingface_hub.dataclasses import strict
 from ...configuration_utils import PreTrainedConfig
 from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
+# SmolLM3 配置：NoPE/RoPE 交替层、滑动窗口与 Llama 风格超参数
+
 
 
 @auto_docstring(checkpoint="HuggingFaceTB/SmolLM3-3B")
 @strict
+# SmolLM3Config：SmolLM3 配置：NoPE 层间隔、GQA 与 RoPE/滑动窗口策略
 class SmolLM3Config(PreTrainedConfig):
     r"""
     no_rope_layers (`List[int]`, *optional*):
@@ -94,6 +97,7 @@ class SmolLM3Config(PreTrainedConfig):
     mlp_bias: bool = False
     tie_word_embeddings: bool = True
 
+    # __post_init__：后初始化：解析子配置并设置派生字段
     def __post_init__(self, **kwargs):
         if self.num_key_value_heads is None:
             self.num_key_value_heads = self.num_attention_heads

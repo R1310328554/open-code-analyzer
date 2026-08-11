@@ -28,6 +28,8 @@ from ...image_processing_backends import PilBackend
 from ...image_processing_utils import BatchFeature
 from ...image_transforms import PaddingMode, pad
 from ...image_utils import (
+# SmolVLM PIL 图像预处理：多图切分、填充与像素注意力掩码
+
     IMAGENET_STANDARD_MEAN,
     IMAGENET_STANDARD_STD,
     ImageInput,
@@ -39,6 +41,7 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# SmolVLMImageProcessorKwargs：SmolVLM 图像处理器参数：切分、最大尺寸与行列信息选项
 class SmolVLMImageProcessorKwargs(ImagesKwargs, total=False):
     """
     do_image_splitting (`bool`, *optional*, defaults to `True`):
@@ -55,6 +58,7 @@ class SmolVLMImageProcessorKwargs(ImagesKwargs, total=False):
     return_row_col_info: bool
 
 
+# _make_pixel_mask：生成像素掩码：1 表示有效像素，0 表示填充区域
 def _make_pixel_mask(image: np.ndarray, output_size: tuple[int, int]) -> np.ndarray:
     """Make pixel mask: 1=valid, 0=padding. Images are CHW."""
     h, w = image.shape[-2:]
@@ -68,6 +72,7 @@ MAX_IMAGE_SIZE = 4096  # 4k resolution as absolute maximum
 
 
 # Adapted from transformers.models.smolvlm.image_processing_smolvlm._resize_output_size_rescale_to_max_len
+# _resize_output_size_rescale_to_max_len：按最长边缩放：保持宽高比并限制最小尺寸
 def _resize_output_size_rescale_to_max_len(
     height: int, width: int, min_len: int | None = 1, max_len: int | None = None
 ) -> tuple[int, int]:
@@ -106,6 +111,7 @@ def _resize_output_size_rescale_to_max_len(
 
 
 # Adapted from transformers.models.smolvlm.image_processing_smolvlm._resize_output_size_scale_below_upper_bound
+# _resize_output_size_scale_below_upper_bound：按上界缩放：确保输出不超过最大边长
 def _resize_output_size_scale_below_upper_bound(
     height: int, width: int, max_len: dict[str, int] | None = None
 ) -> tuple[int, int]:
@@ -137,6 +143,7 @@ def _resize_output_size_scale_below_upper_bound(
     return height, width
 
 
+# get_max_height_width：获取批次内所有子图的最大高宽
 def get_max_height_width(images_list: list[list[np.ndarray]]) -> tuple[int, int]:
     """
     Get the maximum height and width across all images in a batch.
@@ -151,6 +158,7 @@ def get_max_height_width(images_list: list[list[np.ndarray]]) -> tuple[int, int]
     return (max_height, max_width)
 
 
+# get_num_channels：获取批次图像通道数（跳过空子列表）
 def get_num_channels(images_list: list[list[np.ndarray]]) -> int:
     """
     Get the number of channels across all images in a batch. Handle empty sublists like in [[], [image]].
@@ -162,6 +170,7 @@ def get_num_channels(images_list: list[list[np.ndarray]]) -> int:
     raise ValueError("No images found in the batch.")
 
 
+# get_resize_output_image_size：计算 resize 目标尺寸：最长边对齐并受 4K 上限约束
 def get_resize_output_image_size(
     image: np.ndarray,
     resolution_max_side: int,
@@ -187,6 +196,7 @@ def get_resize_output_image_size(
 
 
 @auto_docstring
+# SmolVLMImageProcessorPil：SmolVLM PIL 处理器：多图切分、填充与像素掩码
 class SmolVLMImageProcessorPil(PilBackend):
     resample = PILImageResampling.LANCZOS
     image_mean = IMAGENET_STANDARD_MEAN
@@ -203,17 +213,21 @@ class SmolVLMImageProcessorPil(PilBackend):
     valid_kwargs = SmolVLMImageProcessorKwargs
     model_input_names = ["pixel_values", "pixel_attention_mask"]
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[SmolVLMImageProcessorKwargs]):
         super().__init__(**kwargs)
 
     @auto_docstring
+    # preprocess：预处理：缩放归一化并打包为模型输入
     def preprocess(self, images: ImageInput, **kwargs: Unpack[SmolVLMImageProcessorKwargs]) -> BatchFeature:
         return super().preprocess(images, **kwargs)
 
+    # _prepare_images_structure：准备嵌套图像结构：加载 URL/路径并转为列表
     def _prepare_images_structure(self, images: ImageInput, expected_ndims: int = 3) -> ImageInput:
         images = self.fetch_images(images)
         return make_nested_list_of_images(images, expected_ndims=expected_ndims)
 
+    # resize：缩放图像：最长边对齐或指定高宽，保持宽高比
     def resize(
         self,
         image: np.ndarray,
@@ -229,6 +243,7 @@ class SmolVLMImageProcessorPil(PilBackend):
             raise ValueError("size must be a dictionary with key 'longest_edge' or 'height' and 'width'.")
         return super().resize(image, SizeDict(height=new_size[0], width=new_size[1]), resample=resample, **kwargs)
 
+    # split_images：图像切分：大图分块并与全局缩略图拼接为序列
     def split_images(
         self,
         image: np.ndarray,
@@ -264,6 +279,7 @@ class SmolVLMImageProcessorPil(PilBackend):
 
         return frames, num_splits_h, num_splits_w
 
+    # resize_for_vision_encoder：对齐视觉编码器：尺寸调整为 patch 尺寸的整数倍
     def resize_for_vision_encoder(
         self,
         image: np.ndarray,
@@ -284,6 +300,7 @@ class SmolVLMImageProcessorPil(PilBackend):
         new_size = SizeDict(height=height, width=width)
         return self.resize(image, size=new_size, resample=resample)
 
+    # pad：填充图像至统一尺寸并可选返回像素注意力掩码
     def pad(
         self,
         image: np.ndarray,
@@ -317,6 +334,7 @@ class SmolVLMImageProcessorPil(PilBackend):
 
         return image, pixel_mask
 
+    # _preprocess：内部预处理：分组 resize、切分、归一化与填充
     def _preprocess(
         self,
         images: list[list[np.ndarray]],
@@ -430,12 +448,14 @@ class SmolVLMImageProcessorPil(PilBackend):
 
         return encoding
 
+    # to_dict：序列化处理器配置（移除内部键）
     def to_dict(self):
         encoder_dict = super().to_dict()
         encoder_dict.pop("_valid_processor_keys", None)
         encoder_dict.pop("return_row_col_info", None)
         return encoder_dict
 
+    # get_number_of_image_patches：估算给定尺寸下的图像 patch 数与行列切分数
     def get_number_of_image_patches(
         self, height: int, width: int, images_kwargs: dict | None = None
     ) -> tuple[int, int, int]:

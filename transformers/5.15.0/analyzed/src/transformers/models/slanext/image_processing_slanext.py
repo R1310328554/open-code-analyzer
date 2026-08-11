@@ -30,6 +30,8 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import auto_docstring, is_torchdynamo_compiling, logging
 from ...utils.generic import TensorType
 from ...utils.import_utils import requires
+# SLANeXt 图像预处理：定长缩放、HTML 结构词表与表格后处理
+
 
 
 logger = logging.get_logger(__name__)
@@ -37,6 +39,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring
 @requires(backends=("torch",))
+# SLANeXtImageProcessor：SLANeXt 图像处理器：定长缩放、归一化与 HTML 结构后处理
 class SLANeXtImageProcessor(TorchvisionBackend):
     resample = 2  # PILImageResampling.BILINEAR
     image_mean = IMAGENET_DEFAULT_MEAN
@@ -49,6 +52,7 @@ class SLANeXtImageProcessor(TorchvisionBackend):
     do_normalize = True
     do_pad = True
 
+    # _resize：自定义 resize：定长缩放或双线性插值（SLANeXt 定点实现）
     def _resize(
         self,
         image: "torch.Tensor",
@@ -115,6 +119,7 @@ class SLANeXtImageProcessor(TorchvisionBackend):
 
         return result.view(batch_size, channels, target_height, target_width).to(dtype=image.dtype)
 
+    # _preprocess：内部预处理：分组 resize、切分、归一化与填充
     def _preprocess(
         self,
         images: list["torch.Tensor"],
@@ -165,10 +170,12 @@ class SLANeXtImageProcessor(TorchvisionBackend):
 
         return BatchFeature(data={"pixel_values": processed_images}, tensor_type=return_tensors)
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[ImagesKwargs]):
         super().__init__(**kwargs)
         self.init_decoder()
 
+    # init_decoder：初始化解码词表：HTML 表格结构 token 与 sos/eos 索引
     def init_decoder(self):
         """
         Initialize the decoder vocabulary for table structure recognition.
@@ -205,6 +212,7 @@ class SLANeXtImageProcessor(TorchvisionBackend):
         self.bos_id = self.dict["sos"]
         self.eos_id = self.dict["eos"]
 
+    # post_process_table_recognition：表格识别后处理：argmax 解码为 HTML 结构序列
     def post_process_table_recognition(self, outputs):
         """
         Post-process the raw model outputs to decode the predicted table structure into an HTML token sequence.

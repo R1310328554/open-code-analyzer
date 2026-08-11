@@ -30,6 +30,8 @@ from ...image_processing_backends import TorchvisionBackend
 from ...image_processing_utils import BatchFeature
 from ...image_transforms import group_images_by_shape, reorder_images
 from ...image_utils import (
+# SmolVLM Torch 图像预处理：批量切分、归一化与 patch 计数工具
+
     IMAGENET_STANDARD_MEAN,
     IMAGENET_STANDARD_STD,
     ImageInput,
@@ -41,6 +43,7 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# SmolVLMImageProcessorKwargs：SmolVLM 图像处理器参数：切分、最大尺寸与行列信息选项
 class SmolVLMImageProcessorKwargs(ImagesKwargs, total=False):
     """
     do_image_splitting (`bool`, *optional*, defaults to `True`):
@@ -60,6 +63,7 @@ class SmolVLMImageProcessorKwargs(ImagesKwargs, total=False):
 MAX_IMAGE_SIZE = 4096  # 4k resolution as absolute maximum
 
 
+# _resize_output_size_rescale_to_max_len：按最长边缩放：保持宽高比并限制最小尺寸
 def _resize_output_size_rescale_to_max_len(
     height: int, width: int, min_len: int | None = 1, max_len: int | None = None
 ) -> tuple[int, int]:
@@ -97,6 +101,7 @@ def _resize_output_size_rescale_to_max_len(
     return height, width
 
 
+# _resize_output_size_scale_below_upper_bound：按上界缩放：确保输出不超过最大边长
 def _resize_output_size_scale_below_upper_bound(
     height: int, width: int, max_len: dict[str, int] | None = None
 ) -> tuple[int, int]:
@@ -128,6 +133,7 @@ def _resize_output_size_scale_below_upper_bound(
     return height, width
 
 
+# get_resize_output_image_size：计算 resize 目标尺寸：最长边对齐并受 4K 上限约束
 def get_resize_output_image_size(
     image: "torch.Tensor",
     resolution_max_side: int,
@@ -152,6 +158,7 @@ def get_resize_output_image_size(
     return height, width
 
 
+# get_max_height_width：获取批次内所有子图的最大高宽
 def get_max_height_width(images_list: list[list["torch.Tensor|np.ndarray"]]) -> tuple[int, int]:
     """
     Get the maximum height and width across all images in a batch.
@@ -166,6 +173,7 @@ def get_max_height_width(images_list: list[list["torch.Tensor|np.ndarray"]]) -> 
     return (max_height, max_width)
 
 
+# get_num_channels：获取批次图像通道数（跳过空子列表）
 def get_num_channels(images_list: list[list["torch.Tensor|np.ndarray"]]) -> int:
     """
     Get the number of channels across all images in a batch. Handle empty sublists like in [[], [image]].
@@ -177,6 +185,7 @@ def get_num_channels(images_list: list[list["torch.Tensor|np.ndarray"]]) -> int:
     raise ValueError("No images found in the batch.")
 
 
+# get_device_from_images：从嵌套图像列表中取首个非空张量的设备
 def get_device_from_images(images_list: list[list["torch.Tensor"]]) -> "torch.device":
     """
     Get the device from the first non-empty element in a nested list of images.
@@ -188,6 +197,7 @@ def get_device_from_images(images_list: list[list["torch.Tensor"]]) -> "torch.de
 
 
 @auto_docstring
+# SmolVLMImageProcessor：SmolVLM Torch 处理器：批量切分、归一化与 patch 计数
 class SmolVLMImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.LANCZOS
     image_mean = IMAGENET_STANDARD_MEAN
@@ -204,13 +214,16 @@ class SmolVLMImageProcessor(TorchvisionBackend):
     valid_kwargs = SmolVLMImageProcessorKwargs
     model_input_names = ["pixel_values", "pixel_attention_mask"]
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[SmolVLMImageProcessorKwargs]):
         super().__init__(**kwargs)
 
     @auto_docstring
+    # preprocess：预处理：缩放归一化并打包为模型输入
     def preprocess(self, images: ImageInput, **kwargs: Unpack[SmolVLMImageProcessorKwargs]) -> BatchFeature:
         return super().preprocess(images, **kwargs)
 
+    # _prepare_images_structure：准备嵌套图像结构：加载 URL/路径并转为列表
     def _prepare_images_structure(self, images: ImageInput, expected_ndims: int = 3) -> ImageInput:
         """
         Prepare a nested images structure for processing.
@@ -219,6 +232,7 @@ class SmolVLMImageProcessor(TorchvisionBackend):
         images = self.fetch_images(images)
         return make_nested_list_of_images(images, expected_ndims=expected_ndims)
 
+    # resize：缩放图像：最长边对齐或指定高宽，保持宽高比
     def resize(
         self,
         image: "torch.Tensor",
@@ -246,6 +260,7 @@ class SmolVLMImageProcessor(TorchvisionBackend):
 
         return super().resize(image, SizeDict(height=new_size[0], width=new_size[1]), resample=resample, **kwargs)
 
+    # split_images：图像切分：大图分块并与全局缩略图拼接为序列
     def split_images(
         self,
         images: torch.Tensor,
@@ -305,6 +320,7 @@ class SmolVLMImageProcessor(TorchvisionBackend):
 
         return frames, num_splits_h, num_splits_w
 
+    # resize_for_vision_encoder：对齐视觉编码器：尺寸调整为 patch 尺寸的整数倍
     def resize_for_vision_encoder(
         self,
         image: torch.Tensor,
@@ -336,6 +352,7 @@ class SmolVLMImageProcessor(TorchvisionBackend):
         new_size = SizeDict(height=height, width=width)
         return self.resize(image, size=new_size, resample=resample)
 
+    # pad：填充图像至统一尺寸并可选返回像素注意力掩码
     def pad(
         self,
         image: torch.Tensor,
@@ -366,6 +383,7 @@ class SmolVLMImageProcessor(TorchvisionBackend):
 
         return image, pixel_mask
 
+    # _preprocess：内部预处理：分组 resize、切分、归一化与填充
     def _preprocess(
         self,
         images: list[list["torch.Tensor"]],
@@ -488,12 +506,14 @@ class SmolVLMImageProcessor(TorchvisionBackend):
 
         return encoding
 
+    # to_dict：序列化处理器配置（移除内部键）
     def to_dict(self):
         encoder_dict = super().to_dict()
         encoder_dict.pop("_valid_processor_keys", None)
         encoder_dict.pop("return_row_col_info", None)
         return encoder_dict
 
+    # get_number_of_image_patches：估算给定尺寸下的图像 patch 数与行列切分数
     def get_number_of_image_patches(
         self, height: int, width: int, images_kwargs: dict | None = None
     ) -> tuple[int, int, int]:

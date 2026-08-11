@@ -39,6 +39,8 @@ from ...utils.import_utils import requires
 from ...utils.output_capturing import capture_outputs
 from ..got_ocr2.configuration_got_ocr2 import GotOcr2VisionConfig
 from ..got_ocr2.modeling_got_ocr2 import (
+# SLANeXt modular 源：复用 GotOCR2 视觉组件并实现 SLA 解码
+
     GotOcr2VisionAttention,
     GotOcr2VisionEncoder,
 )
@@ -49,16 +51,19 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="PaddlePaddle/SLANeXt_wired_safetensors")
 @strict
+# SLANeXtVisionConfig：SLANeXt 视觉配置：SAM 风格 ViT 窗口/全局注意力参数
 class SLANeXtVisionConfig(GotOcr2VisionConfig):
     image_size: int = 512
 
 
+# SLANeXtVisionAttention：SLANeXt 视觉注意力：分解相对位置编码的多头自注意力
 class SLANeXtVisionAttention(GotOcr2VisionAttention):
     pass
 
 
 @auto_docstring(checkpoint="PaddlePaddle/SLANeXt_wired_safetensors")
 @strict
+# SLANeXtConfig：SLANeXt 联合配置：视觉子配置与结构解码头超参数
 class SLANeXtConfig(PreTrainedConfig):
     r"""
     vision_config (`dict` or [`SLANeXtVisionConfig`], *optional*):
@@ -86,6 +91,7 @@ class SLANeXtConfig(PreTrainedConfig):
     hidden_size: int = 512
     max_text_length: int = 500
 
+    # __post_init__：后初始化：解析子配置并设置派生字段
     def __post_init__(self, **kwargs):
         if self.vision_config is None:
             self.vision_config = SLANeXtVisionConfig()
@@ -94,7 +100,9 @@ class SLANeXtConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# SLANeXtAttentionGRUCell：SLANeXt 注意力 GRU：对序列特征做软注意力并驱动 GRU
 class SLANeXtAttentionGRUCell(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, input_size, hidden_size, num_embeddings):
         super().__init__()
 
@@ -104,6 +112,7 @@ class SLANeXtAttentionGRUCell(nn.Module):
 
         self.rnn = nn.GRUCell(input_size + num_embeddings, hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         prev_hidden: torch.FloatTensor,
@@ -127,13 +136,16 @@ class SLANeXtAttentionGRUCell(nn.Module):
         return hidden_states, attn_weights
 
 
+# SLANeXtMLP：SLANeXt MLP：结构 token 分类前馈网络
 class SLANeXtMLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, hidden_size, out_channels, activation=None):
         super().__init__()
         self.fc1 = nn.Linear(hidden_size, hidden_size)
         self.fc2 = nn.Linear(hidden_size, out_channels)
         self.act_fn = nn.Identity() if activation is None else ACT2CLS[activation]()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.fc1(hidden_states)
         hidden_states = self.fc2(hidden_states)
@@ -141,6 +153,7 @@ class SLANeXtMLP(nn.Module):
         return hidden_states
 
 
+# SLANeXtPreTrainedModel：SLANeXt 预训练基类：位置/相对编码与 SLA 头初始化
 class SLANeXtPreTrainedModel(PreTrainedModel):
     config: SLANeXtConfig
     base_model_prefix = "backbone"
@@ -150,6 +163,7 @@ class SLANeXtPreTrainedModel(PreTrainedModel):
     _keep_in_fp32_modules_strict = ["structure_attention_cell", "structure_generator"]
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层、卷积与位置编码权重
     def _init_weights(self, module):
         """Initialize the weights"""
         super()._init_weights(module)
@@ -187,11 +201,14 @@ class SLANeXtPreTrainedModel(PreTrainedModel):
                             init.uniform_(layer.bias, -std, std)
 
 
+# SLANeXtVisionEncoder：SLANeXt 视觉编码器：patch 嵌入 + 多层窗口/全局注意力
 class SLANeXtVisionEncoder(GotOcr2VisionEncoder):
     pass
 
 
+# SLANeXtBackbone：SLANeXt 骨干：视觉塔 + 后卷积下采样至序列特征
 class SLANeXtBackbone(SLANeXtPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: dict | None = None,
@@ -204,6 +221,7 @@ class SLANeXtBackbone(SLANeXtPreTrainedModel):
         )
         self.post_init()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, **kwargs: Unpack[TransformersKwargs]):
         vision_output = self.vision_tower(hidden_states, **kwargs)
         hidden_states = self.post_conv(vision_output.last_hidden_state)
@@ -215,11 +233,13 @@ class SLANeXtBackbone(SLANeXtPreTrainedModel):
         )
 
 
+# SLANeXtSLAHead：SLANeXt SLA 头：自回归预测表格 HTML 结构序列
 class SLANeXtSLAHead(SLANeXtPreTrainedModel):
     _can_record_outputs = {
         "attentions": SLANeXtAttentionGRUCell,
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: dict | None = None,
@@ -237,6 +257,7 @@ class SLANeXtSLAHead(SLANeXtPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @filter_output_hidden_states
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.FloatTensor,
@@ -269,6 +290,7 @@ class SLANeXtSLAHead(SLANeXtPreTrainedModel):
 
 @auto_docstring
 @dataclass
+# SLANeXtForTableRecognitionOutput：SLANeXt 表格识别输出：结构概率与头注意力
 class SLANeXtForTableRecognitionOutput(BaseModelOutput):
     r"""
     head_hidden_states (`tuple(torch.FloatTensor)`, *optional*, returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
@@ -287,7 +309,9 @@ class SLANeXtForTableRecognitionOutput(BaseModelOutput):
     and returns outputs compatible with the Transformers table recognition API.
     """
 )
+# SLANeXtForTableRecognition：SLANeXt 表格识别：骨干 + SLA 头完整前向
 class SLANeXtForTableRecognition(SLANeXtPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SLANeXtConfig):
         super().__init__(config)
         self.backbone = SLANeXtBackbone(config=config)
@@ -296,6 +320,7 @@ class SLANeXtForTableRecognition(SLANeXtPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self, pixel_values: torch.FloatTensor, **kwargs: Unpack[TransformersKwargs]
     ) -> tuple[torch.FloatTensor] | SLANeXtForTableRecognitionOutput:
@@ -312,6 +337,7 @@ class SLANeXtForTableRecognition(SLANeXtPreTrainedModel):
 
 @auto_docstring
 @requires(backends=("torch",))
+# SLANeXtImageProcessor：SLANeXt 图像处理器：定长缩放、归一化与 HTML 结构后处理
 class SLANeXtImageProcessor(TorchvisionBackend):
     resample = 2  # PILImageResampling.BILINEAR
     image_mean = IMAGENET_DEFAULT_MEAN
@@ -324,6 +350,7 @@ class SLANeXtImageProcessor(TorchvisionBackend):
     do_normalize = True
     do_pad = True
 
+    # _resize：自定义 resize：定长缩放或双线性插值（SLANeXt 定点实现）
     def _resize(
         self,
         image: "torch.Tensor",
@@ -390,6 +417,7 @@ class SLANeXtImageProcessor(TorchvisionBackend):
 
         return result.view(batch_size, channels, target_height, target_width).to(dtype=image.dtype)
 
+    # _preprocess：内部预处理：分组 resize、切分、归一化与填充
     def _preprocess(
         self,
         images: list["torch.Tensor"],
@@ -440,10 +468,12 @@ class SLANeXtImageProcessor(TorchvisionBackend):
 
         return BatchFeature(data={"pixel_values": processed_images}, tensor_type=return_tensors)
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[ImagesKwargs]):
         super().__init__(**kwargs)
         self.init_decoder()
 
+    # init_decoder：初始化解码词表：HTML 表格结构 token 与 sos/eos 索引
     def init_decoder(self):
         """
         Initialize the decoder vocabulary for table structure recognition.
@@ -480,6 +510,7 @@ class SLANeXtImageProcessor(TorchvisionBackend):
         self.bos_id = self.dict["sos"]
         self.eos_id = self.dict["eos"]
 
+    # post_process_table_recognition：表格识别后处理：argmax 解码为 HTML 结构序列
     def post_process_table_recognition(self, outputs):
         """
         Post-process the raw model outputs to decode the predicted table structure into an HTML token sequence.

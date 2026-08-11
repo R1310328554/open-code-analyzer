@@ -25,6 +25,8 @@ from ...modeling_utils import ALL_ATTENTION_FUNCTIONS
 from ...processing_utils import Unpack
 from ...utils import auto_docstring, logging
 from ..llama.modeling_llama import (
+# SmolLM3 modular 源：复用 Llama/Qwen2 组件并实现 NoPE 注意力
+
     LlamaAttention,
     LlamaDecoderLayer,
     LlamaForCausalLM,
@@ -43,6 +45,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="HuggingFaceTB/SmolLM3-3B")
 @strict
+# SmolLM3Config：SmolLM3 配置：NoPE 层间隔、GQA 与 RoPE/滑动窗口策略
 class SmolLM3Config(PreTrainedConfig):
     r"""
     no_rope_layers (`List[int]`, *optional*):
@@ -110,6 +113,7 @@ class SmolLM3Config(PreTrainedConfig):
     mlp_bias: bool = False
     tie_word_embeddings: bool = True
 
+    # __post_init__：后初始化：解析子配置并设置派生字段
     def __post_init__(self, **kwargs):
         if self.num_key_value_heads is None:
             self.num_key_value_heads = self.num_attention_heads
@@ -131,11 +135,14 @@ class SmolLM3Config(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# SmolLM3RotaryEmbedding：SmolLM3 RoPE 嵌入：计算 cos/sin 位置编码
 class SmolLM3RotaryEmbedding(Qwen2RotaryEmbedding):
     pass
 
 
+# SmolLM3Attention：SmolLM3 注意力：可选 RoPE 与滑动窗口的 GQA 自注意力
 class SmolLM3Attention(LlamaAttention):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SmolLM3Config, layer_idx: int):
         super().__init__(config, layer_idx)
 
@@ -146,6 +153,7 @@ class SmolLM3Attention(LlamaAttention):
             else None
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -189,30 +197,37 @@ class SmolLM3Attention(LlamaAttention):
         return attn_output, attn_weights
 
 
+# SmolLM3DecoderLayer：SmolLM3 解码层：Pre-LN 自注意力 + MLP 残差块
 class SmolLM3DecoderLayer(LlamaDecoderLayer):
     pass
 
 
+# SmolLM3PreTrainedModel：SmolLM3 预训练基类：梯度检查点与 Flash 注意力支持
 class SmolLM3PreTrainedModel(LlamaPreTrainedModel):
     pass
 
 
+# SmolLM3Model：SmolLM3 基础模型：嵌入 + 多层解码器 + 最终 RMSNorm
 class SmolLM3Model(Qwen2Model):
     pass
 
 
+# SmolLM3ForCausalLM：SmolLM3 因果 LM：语言建模头与生成接口
 class SmolLM3ForCausalLM(LlamaForCausalLM):
     pass
 
 
+# SmolLM3ForSequenceClassification：SmolLM3 序列分类：池化隐藏状态做文本分类
 class SmolLM3ForSequenceClassification(LlamaForSequenceClassification):
     pass
 
 
+# SmolLM3ForTokenClassification：SmolLM3 词元分类：逐 token 标注预测头
 class SmolLM3ForTokenClassification(LlamaForTokenClassification):
     pass
 
 
+# SmolLM3ForQuestionAnswering：SmolLM3 问答：span 抽取式阅读理解头
 class SmolLM3ForQuestionAnswering(LlamaForQuestionAnswering):
     pass
 

@@ -37,8 +37,11 @@ from ...utils import TransformersKwargs, auto_docstring, can_return_tuple
 from ...utils.generic import merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
 from .configuration_slanet import SLANetConfig
+# SLANet 表格识别建模：CSP-PAN 骨干 + 注意力 GRU 结构解码头
 
 
+
+# SLANetPreTrainedModel：SLANet 预训练基类：GRU/SLA 头权重初始化
 class SLANetPreTrainedModel(PreTrainedModel):
     config: SLANetConfig
     base_model_prefix = "backbone"
@@ -48,6 +51,7 @@ class SLANetPreTrainedModel(PreTrainedModel):
     _keep_in_fp32_modules_strict = []
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层、卷积与位置编码权重
     def _init_weights(self, module):
         """Initialize the weights"""
         super()._init_weights(module)
@@ -76,6 +80,7 @@ class SLANetPreTrainedModel(PreTrainedModel):
 
 @auto_docstring
 @dataclass
+# SLANetForTableRecognitionOutput：SLANet 表格识别输出：结构概率与解码中间态
 class SLANetForTableRecognitionOutput(BaseModelOutputWithNoAttention):
     r"""
     head_hidden_states (`tuple(torch.FloatTensor)`, *optional*, returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
@@ -88,7 +93,9 @@ class SLANetForTableRecognitionOutput(BaseModelOutputWithNoAttention):
     head_attentions: torch.FloatTensor | None = None
 
 
+# SLANetAttentionGRUCell：SLANet 注意力 GRU 单元：对视觉特征做加性注意力并更新隐状态
 class SLANetAttentionGRUCell(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, input_size, hidden_size, num_embeddings):
         super().__init__()
 
@@ -98,6 +105,7 @@ class SLANetAttentionGRUCell(nn.Module):
 
         self.rnn = nn.GRUCell(input_size + num_embeddings, hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         prev_hidden: torch.FloatTensor,
@@ -121,13 +129,16 @@ class SLANetAttentionGRUCell(nn.Module):
         return hidden_states, attn_weights
 
 
+# SLANetMLP：SLANet MLP：两层线性结构 token 预测头
 class SLANetMLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, hidden_size, out_channels, activation=None):
         super().__init__()
         self.fc1 = nn.Linear(hidden_size, hidden_size)
         self.fc2 = nn.Linear(hidden_size, out_channels)
         self.act_fn = nn.Identity() if activation is None else ACT2CLS[activation]()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.fc1(hidden_states)
         hidden_states = self.fc2(hidden_states)
@@ -135,11 +146,13 @@ class SLANetMLP(nn.Module):
         return hidden_states
 
 
+# SLANetSLAHead：SLANet SLA 头：自回归逐步预测 HTML 表格结构 token
 class SLANetSLAHead(SLANetPreTrainedModel):
     _can_record_outputs = {
         "attentions": SLANetAttentionGRUCell,
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: dict | None = None,
@@ -157,6 +170,7 @@ class SLANetSLAHead(SLANetPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @filter_output_hidden_states
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.FloatTensor,
@@ -187,7 +201,9 @@ class SLANetSLAHead(SLANetPreTrainedModel):
         return BaseModelOutput(last_hidden_state=structure_preds, hidden_states=structure_preds_list)
 
 
+# SLANetConvLayer：SLANet 卷积层：Conv2d + BatchNorm + 激活
 class SLANetConvLayer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         in_channels: int,
@@ -213,6 +229,7 @@ class SLANetConvLayer(nn.Module):
         self.normalization = nn.BatchNorm2d(out_channels)
         self.activation = ACT2FN[activation] if activation is not None else nn.Identity()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.convolution(hidden_states)
         hidden_states = self.normalization(hidden_states)
@@ -220,6 +237,7 @@ class SLANetConvLayer(nn.Module):
         return hidden_states
 
 
+# SLANetDepthwiseSeparableConvLayer：SLANet 深度可分离卷积：逐通道卷积 + 逐点卷积
 class SLANetDepthwiseSeparableConvLayer(GradientCheckpointingLayer):
     """
     Depthwise Separable Convolution Layer: Depthwise Conv -> Pointwise Conv
@@ -227,6 +245,7 @@ class SLANetDepthwiseSeparableConvLayer(GradientCheckpointingLayer):
     the number of parameters and computational cost.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         in_channels,
@@ -253,6 +272,7 @@ class SLANetDepthwiseSeparableConvLayer(GradientCheckpointingLayer):
             activation=config.hidden_act,
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state):
         hidden_state = self.depthwise_convolution(hidden_state)
         hidden_state = self.squeeze_excitation_module(hidden_state)
@@ -261,7 +281,9 @@ class SLANetDepthwiseSeparableConvLayer(GradientCheckpointingLayer):
         return hidden_state
 
 
+# SLANetBottleneck：SLANet 瓶颈块：1x1 降维 + 深度可分离卷积
 class SLANetBottleneck(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         in_channels,
@@ -282,6 +304,7 @@ class SLANetBottleneck(nn.Module):
             config=config,
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.FloatTensor) -> torch.FloatTensor:
         hidden_states = self.conv1(hidden_states)
         hidden_states = self.conv2(hidden_states)
@@ -289,11 +312,13 @@ class SLANetBottleneck(nn.Module):
         return hidden_states
 
 
+# SLANetCSPLayer：SLANet CSP 层：跨阶段部分连接与瓶颈堆叠
 class SLANetCSPLayer(nn.Module):
     """
     Cross Stage Partial (CSP) network layer. Similar in structure to DFineCSPRepLayer, but with a different forward computation.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config,
@@ -316,6 +341,7 @@ class SLANetCSPLayer(nn.Module):
             ]
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.FloatTensor) -> torch.FloatTensor:
         residual = self.conv1(hidden_states)
 
@@ -329,11 +355,13 @@ class SLANetCSPLayer(nn.Module):
         return hidden_states
 
 
+# SLANetCSPPAN：SLANet CSP-PAN：自顶向下/自底向上特征金字塔聚合
 class SLANetCSPPAN(nn.Module):
     """
     CSP-PAN: Path Aggregation Network with CSP layers
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config,
@@ -397,6 +425,7 @@ class SLANetCSPPAN(nn.Module):
             ]
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.FloatTensor) -> torch.FloatTensor:
         projected_features = []
         for idx in range(len(self.channel_projector)):
@@ -425,7 +454,9 @@ class SLANetCSPPAN(nn.Module):
         return hidden_states
 
 
+# SLANetBackbone：SLANet 骨干：PP-LCNet 视觉塔 + CSP-PAN 后处理
 class SLANetBackbone(SLANetPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SLANetConfig):
         super().__init__(config)
         self.vision_backbone = load_backbone(config)
@@ -435,6 +466,7 @@ class SLANetBackbone(SLANetPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self, hidden_states: torch.FloatTensor, **kwargs: Unpack[TransformersKwargs]
     ) -> tuple[torch.FloatTensor] | BaseModelOutputWithNoAttention:
@@ -452,9 +484,11 @@ class SLANetBackbone(SLANetPreTrainedModel):
     and returns outputs compatible with the Transformers table recognition API.
     """
 )
+# SLANetForTableRecognition：SLANet 表格识别：骨干 + SLA 头端到端推理
 class SLANetForTableRecognition(SLANetPreTrainedModel):
     _keys_to_ignore_on_load_missing = ["num_batches_tracked"]
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SLANetConfig):
         super().__init__(config)
         self.backbone = SLANetBackbone(config=config)
@@ -463,6 +497,7 @@ class SLANetForTableRecognition(SLANetPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self, pixel_values: torch.FloatTensor, **kwargs: Unpack[TransformersKwargs]
     ) -> tuple[torch.FloatTensor] | SLANetForTableRecognitionOutput:

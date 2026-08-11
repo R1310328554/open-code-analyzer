@@ -23,10 +23,13 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# SLANeXt 配置：SAM 风格视觉编码器与表格结构解码超参数
+
 
 
 @auto_docstring(checkpoint="PaddlePaddle/SLANeXt_wired_safetensors")
 @strict
+# SLANeXtVisionConfig：SLANeXt 视觉配置：SAM 风格 ViT 窗口/全局注意力参数
 class SLANeXtVisionConfig(PreTrainedConfig):
     r"""
     output_channels (`int`, *optional*, defaults to 256):
@@ -65,6 +68,7 @@ class SLANeXtVisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="PaddlePaddle/SLANeXt_wired_safetensors")
 @strict
+# SLANeXtConfig：SLANeXt 联合配置：视觉子配置与结构解码头超参数
 class SLANeXtConfig(PreTrainedConfig):
     r"""
     vision_config (`dict` or [`SLANeXtVisionConfig`], *optional*):
@@ -92,6 +96,7 @@ class SLANeXtConfig(PreTrainedConfig):
     hidden_size: int = 512
     max_text_length: int = 500
 
+    # __post_init__：后初始化：解析子配置并设置派生字段
     def __post_init__(self, **kwargs):
         if self.vision_config is None:
             self.vision_config = SLANeXtVisionConfig()

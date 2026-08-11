@@ -25,6 +25,8 @@ from huggingface_hub.dataclasses import strict
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring, logging
 from ..auto import CONFIG_MAPPING, AutoConfig
+# SmolVLM 配置：SigLIP 风格视觉子配置与 Llama 文本子配置
+
 
 
 logger = logging.get_logger(__name__)
@@ -32,6 +34,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="HuggingFaceTB/SmolVLM2-2.2B-Instruct")
 @strict
+# SmolVLMVisionConfig：SmolVLM 视觉配置：SigLIP 风格 ViT patch 编码器参数
 class SmolVLMVisionConfig(PreTrainedConfig):
     r"""
     Example:
@@ -68,6 +71,7 @@ class SmolVLMVisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="HuggingFaceTB/SmolVLM2-2.2B-Instruct")
 @strict
+# SmolVLMConfig：SmolVLM 联合配置：视觉/文本子配置与图像 token 标识
 class SmolVLMConfig(PreTrainedConfig):
     r"""
     scale_factor (`int`, *optional*, defaults to 2):
@@ -95,6 +99,7 @@ class SmolVLMConfig(PreTrainedConfig):
     scale_factor: int = 2
     pad_token_id: int | None = 128_002
 
+    # __post_init__：后初始化：解析子配置并设置派生字段
     def __post_init__(self, **kwargs):
         if self.vision_config is None:
             self.vision_config = SmolVLMVisionConfig()

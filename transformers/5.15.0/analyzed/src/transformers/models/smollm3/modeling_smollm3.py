@@ -30,6 +30,8 @@ from ...integrations import use_kernel_forward_from_hub, use_kernelized_func
 from ...masking_utils import create_causal_mask, create_sliding_window_causal_mask
 from ...modeling_flash_attention_utils import FlashAttentionKwargs
 from ...modeling_layers import (
+# SmolLM3 建模：GQA 解码器、可选 RoPE 与因果语言建模头
+
     GenericForQuestionAnswering,
     GenericForSequenceClassification,
     GenericForTokenClassification,
@@ -46,8 +48,10 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_smollm3 import SmolLM3Config
 
 
+# SmolLM3RotaryEmbedding：SmolLM3 RoPE 嵌入：计算 cos/sin 位置编码
 class SmolLM3RotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SmolLM3Config, device=None):
         super().__init__()
         self.max_seq_len_cached = config.max_position_embeddings
@@ -66,6 +70,7 @@ class SmolLM3RotaryEmbedding(nn.Module):
 
     @staticmethod
     @deprecate_kwarg("device", version="5.18")
+    # compute_default_rope_parameters：计算默认 RoPE 逆频率与注意力缩放因子
     def compute_default_rope_parameters(config: SmolLM3Config, device=None, **kwargs) -> tuple[torch.Tensor, float]:
         """
         Computes the inverse frequencies according to the original RoPE implementation
@@ -86,6 +91,7 @@ class SmolLM3RotaryEmbedding(nn.Module):
 
     @torch.no_grad()
     @dynamic_rope_update  # power user: used with advanced RoPE types (e.g. dynamic rope)
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x, position_ids):
         inv_freq_expanded = self.inv_freq[None, :, None].float().expand(position_ids.shape[0], -1, 1).to(x.device)
         position_ids_expanded = position_ids[:, None, :].float()
@@ -100,6 +106,7 @@ class SmolLM3RotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# rotate_half：RoPE 辅助：将隐藏维度后半部分旋转以应用位置编码
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -108,6 +115,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：对 Q/K 张量应用旋转位置嵌入
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -133,6 +141,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 键值头重复：将 KV 头广播至与 Q 头数一致
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -145,6 +154,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：标准注意力前向：QK^T 缩放 softmax 加权 V
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -171,9 +181,11 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# SmolLM3Attention：SmolLM3 注意力：可选 RoPE 与滑动窗口的 GQA 自注意力
 class SmolLM3Attention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SmolLM3Config, layer_idx: int):
         super().__init__()
         self.config = config
@@ -204,6 +216,7 @@ class SmolLM3Attention(nn.Module):
             else None
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -248,7 +261,9 @@ class SmolLM3Attention(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# SmolLM3RMSNorm：SmolLM3 RMSNorm：根均方层归一化
 class SmolLM3RMSNorm(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
         SmolLM3RMSNorm is equivalent to T5LayerNorm
@@ -257,6 +272,7 @@ class SmolLM3RMSNorm(nn.Module):
         self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         input_dtype = hidden_states.dtype
         hidden_states = hidden_states.to(torch.float32)
@@ -264,11 +280,14 @@ class SmolLM3RMSNorm(nn.Module):
         hidden_states = hidden_states * torch.rsqrt(variance + self.variance_epsilon)
         return self.weight * hidden_states.to(input_dtype)
 
+    # extra_repr：打印模块_repr_ 时的额外形状与 eps 信息
     def extra_repr(self):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# SmolLM3MLP：SmolLM3 MLP：SwiGLU 风格门控前馈网络
 class SmolLM3MLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -279,12 +298,15 @@ class SmolLM3MLP(nn.Module):
         self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=config.mlp_bias)
         self.act_fn = ACT2FN[config.hidden_act]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         down_proj = self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
         return down_proj
 
 
+# SmolLM3DecoderLayer：SmolLM3 解码层：Pre-LN 自注意力 + MLP 残差块
 class SmolLM3DecoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SmolLM3Config, layer_idx: int):
         super().__init__()
         self.hidden_size = config.hidden_size
@@ -295,6 +317,7 @@ class SmolLM3DecoderLayer(GradientCheckpointingLayer):
         self.input_layernorm = SmolLM3RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.post_attention_layernorm = SmolLM3RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -328,6 +351,7 @@ class SmolLM3DecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# SmolLM3PreTrainedModel：SmolLM3 预训练基类：梯度检查点与 Flash 注意力支持
 class SmolLM3PreTrainedModel(PreTrainedModel):
     config: SmolLM3Config
     base_model_prefix = "model"
@@ -347,7 +371,9 @@ class SmolLM3PreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# SmolLM3Model：SmolLM3 基础模型：嵌入 + 多层解码器 + 最终 RMSNorm
 class SmolLM3Model(SmolLM3PreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SmolLM3Config):
         super().__init__(config)
         self.padding_idx = config.pad_token_id
@@ -368,6 +394,7 @@ class SmolLM3Model(SmolLM3PreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -432,12 +459,14 @@ class SmolLM3Model(SmolLM3PreTrainedModel):
 
 
 @auto_docstring
+# SmolLM3ForCausalLM：SmolLM3 因果 LM：语言建模头与生成接口
 class SmolLM3ForCausalLM(SmolLM3PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
     _pp_plan = {"lm_head": (["hidden_states"], ["logits"])}
     _fsdp_plan = {"lm_head": "keep_full_weight"}
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.model = SmolLM3Model(config)
@@ -449,6 +478,7 @@ class SmolLM3ForCausalLM(SmolLM3PreTrainedModel, GenerationMixin):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -506,14 +536,17 @@ class SmolLM3ForCausalLM(SmolLM3PreTrainedModel, GenerationMixin):
         )
 
 
+# SmolLM3ForSequenceClassification：SmolLM3 序列分类：池化隐藏状态做文本分类
 class SmolLM3ForSequenceClassification(GenericForSequenceClassification, SmolLM3PreTrainedModel):
     pass
 
 
+# SmolLM3ForTokenClassification：SmolLM3 词元分类：逐 token 标注预测头
 class SmolLM3ForTokenClassification(GenericForTokenClassification, SmolLM3PreTrainedModel):
     pass
 
 
+# SmolLM3ForQuestionAnswering：SmolLM3 问答：span 抽取式阅读理解头
 class SmolLM3ForQuestionAnswering(GenericForQuestionAnswering, SmolLM3PreTrainedModel):
     base_model_prefix = "transformer"  # For BC, where `transformer` was used instead of `model`
 

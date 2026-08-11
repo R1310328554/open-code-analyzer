@@ -38,11 +38,15 @@ from ...utils import TransformersKwargs, auto_docstring, can_return_tuple
 from ...utils.generic import merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
 from .configuration_slanext import SLANeXtConfig, SLANeXtVisionConfig
+# SLANeXt 建模：窗口/全局注意力视觉塔 + SLA 自回归结构头
 
 
+
+# SLANeXtVisionAttention：SLANeXt 视觉注意力：分解相对位置编码的多头自注意力
 class SLANeXtVisionAttention(nn.Module):
     """Multi-head Attention block with relative position embeddings."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, window_size):
         super().__init__()
         input_size = (
@@ -68,6 +72,7 @@ class SLANeXtVisionAttention(nn.Module):
             self.rel_pos_h = nn.Parameter(torch.zeros(2 * input_size[0] - 1, head_dim))
             self.rel_pos_w = nn.Parameter(torch.zeros(2 * input_size[1] - 1, head_dim))
 
+    # get_rel_pos：获取相对位置嵌入：按 query/key 尺寸插值相对编码
     def get_rel_pos(self, q_size: int, k_size: int, rel_pos: torch.Tensor) -> torch.Tensor:
         """
         Get relative positional embeddings according to the relative positions of
@@ -100,6 +105,7 @@ class SLANeXtVisionAttention(nn.Module):
 
         return rel_pos_resized[relative_coords.long()]
 
+    # get_decomposed_rel_pos：分解相对位置：高度/宽度轴分别计算 MViTv2 式偏置
     def get_decomposed_rel_pos(
         self,
         query: torch.Tensor,
@@ -142,6 +148,7 @@ class SLANeXtVisionAttention(nn.Module):
 
         return decomposed_rel_pos
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, output_attentions=None) -> tuple[torch.Tensor, torch.Tensor]:
         batch_size, height, width, _ = hidden_states.shape
         # qkv with shape (3, batch_size, nHead, height * width, channel)
@@ -173,7 +180,9 @@ class SLANeXtVisionAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# SLANeXtAttentionGRUCell：SLANeXt 注意力 GRU：对序列特征做软注意力并驱动 GRU
 class SLANeXtAttentionGRUCell(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, input_size, hidden_size, num_embeddings):
         super().__init__()
 
@@ -183,6 +192,7 @@ class SLANeXtAttentionGRUCell(nn.Module):
 
         self.rnn = nn.GRUCell(input_size + num_embeddings, hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         prev_hidden: torch.FloatTensor,
@@ -206,13 +216,16 @@ class SLANeXtAttentionGRUCell(nn.Module):
         return hidden_states, attn_weights
 
 
+# SLANeXtMLP：SLANeXt MLP：结构 token 分类前馈网络
 class SLANeXtMLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, hidden_size, out_channels, activation=None):
         super().__init__()
         self.fc1 = nn.Linear(hidden_size, hidden_size)
         self.fc2 = nn.Linear(hidden_size, out_channels)
         self.act_fn = nn.Identity() if activation is None else ACT2CLS[activation]()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.fc1(hidden_states)
         hidden_states = self.fc2(hidden_states)
@@ -220,6 +233,7 @@ class SLANeXtMLP(nn.Module):
         return hidden_states
 
 
+# SLANeXtPreTrainedModel：SLANeXt 预训练基类：位置/相对编码与 SLA 头初始化
 class SLANeXtPreTrainedModel(PreTrainedModel):
     config: SLANeXtConfig
     base_model_prefix = "backbone"
@@ -229,6 +243,7 @@ class SLANeXtPreTrainedModel(PreTrainedModel):
     _keep_in_fp32_modules_strict = ["structure_attention_cell", "structure_generator"]
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层、卷积与位置编码权重
     def _init_weights(self, module):
         """Initialize the weights"""
         super()._init_weights(module)
@@ -266,13 +281,16 @@ class SLANeXtPreTrainedModel(PreTrainedModel):
                             init.uniform_(layer.bias, -std, std)
 
 
+# SLANeXtMLPBlock：SLANeXt MLP 块：ViT 前馈两层线性 + 激活
 class SLANeXtMLPBlock(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.lin1 = nn.Linear(config.hidden_size, config.mlp_dim)
         self.lin2 = nn.Linear(config.mlp_dim, config.hidden_size)
         self.act = ACT2FN[config.hidden_act]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.lin1(hidden_states)
         hidden_states = self.act(hidden_states)
@@ -280,7 +298,9 @@ class SLANeXtMLPBlock(nn.Module):
         return hidden_states
 
 
+# SLANeXtVisionLayer：SLANeXt 视觉层：窗口划分注意力 + MLP 残差块
 class SLANeXtVisionLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, window_size):
         super().__init__()
         self.layer_norm1 = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
@@ -289,6 +309,7 @@ class SLANeXtVisionLayer(GradientCheckpointingLayer):
         self.mlp = SLANeXtMLPBlock(config)
         self.window_size = window_size
 
+    # window_partition：窗口划分：将特征图切分为不重叠窗口并必要时填充
     def window_partition(self, hidden_states: torch.Tensor, window_size: int) -> tuple[torch.Tensor, tuple[int, int]]:
         """
         Args:
@@ -313,6 +334,7 @@ class SLANeXtVisionLayer(GradientCheckpointingLayer):
         windows = hidden_states.permute(0, 1, 3, 2, 4, 5).contiguous().reshape(-1, window_size, window_size, channel)
         return windows, (pad_height, pad_width)
 
+    # window_unpartition：窗口还原：合并窗口并去除填充恢复原始空间尺寸
     def window_unpartition(
         self, windows: torch.Tensor, window_size: int, padding_shape: tuple[int, int], original_shape: tuple[int, int]
     ) -> torch.Tensor:
@@ -343,6 +365,7 @@ class SLANeXtVisionLayer(GradientCheckpointingLayer):
         hidden_states = hidden_states[:, :height, :width, :].contiguous()
         return hidden_states
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> tuple[torch.FloatTensor]:
         residual = hidden_states
         hidden_states = self.layer_norm1(hidden_states)
@@ -371,6 +394,7 @@ class SLANeXtVisionLayer(GradientCheckpointingLayer):
     """
 )
 @dataclass
+# SLANeXtVisionEncoderOutput：SLANeXt 视觉编码输出：patch 特征与可选投影嵌入
 class SLANeXtVisionEncoderOutput(ModelOutput):
     r"""
     image_embeds (`torch.FloatTensor` of shape `(batch_size, output_dim)` *optional* returned when model is initialized with `with_projection=True`):
@@ -383,6 +407,7 @@ class SLANeXtVisionEncoderOutput(ModelOutput):
     attentions: tuple[torch.FloatTensor, ...] | None = None
 
 
+# SLANeXtPatchEmbeddings：SLANeXt patch 嵌入：Conv2d 将图像块投影为 token
 class SLANeXtPatchEmbeddings(nn.Module):
     """
     This class turns `pixel_values` of shape `(batch_size, num_channels, height, width)` into the initial
@@ -390,6 +415,7 @@ class SLANeXtPatchEmbeddings(nn.Module):
     Transformer.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         image_size, patch_size = config.image_size, config.patch_size
@@ -404,6 +430,7 @@ class SLANeXtPatchEmbeddings(nn.Module):
 
         self.projection = nn.Conv2d(num_channels, hidden_size, kernel_size=patch_size, stride=patch_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values):
         batch_size, num_channels, height, width = pixel_values.shape
         if num_channels != self.num_channels:
@@ -418,18 +445,21 @@ class SLANeXtPatchEmbeddings(nn.Module):
         return embeddings
 
 
+# SLANeXtLayerNorm：SLANeXt LayerNorm：支持 channels_first/last 两种格式
 class SLANeXtLayerNorm(nn.LayerNorm):
     r"""LayerNorm that supports two data formats: channels_last (default) or channels_first.
     The ordering of the dimensions in the inputs. channels_last corresponds to inputs with shape (batch_size, height,
     width, channels) while channels_first corresponds to inputs with shape (batch_size, channels, height, width).
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, normalized_shape, *, eps=1e-6, data_format="channels_last", **kwargs):
         super().__init__(normalized_shape, eps=eps, **kwargs)
         if data_format not in ["channels_last", "channels_first"]:
             raise NotImplementedError(f"Unsupported data format: {data_format}")
         self.data_format = data_format
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, features: torch.Tensor) -> torch.Tensor:
         """
         Args:
@@ -444,7 +474,9 @@ class SLANeXtLayerNorm(nn.LayerNorm):
         return features
 
 
+# SLANeXtVisionNeck：SLANeXt 视觉颈部：1x1/3x3 卷积降维与归一化
 class SLANeXtVisionNeck(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SLANeXtVisionConfig):
         super().__init__()
         self.config = config
@@ -454,6 +486,7 @@ class SLANeXtVisionNeck(nn.Module):
         self.conv2 = nn.Conv2d(config.output_channels, config.output_channels, kernel_size=3, padding=1, bias=False)
         self.layer_norm2 = SLANeXtLayerNorm(config.output_channels, data_format="channels_first")
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = hidden_states.permute(0, 3, 1, 2)
         hidden_states = self.conv1(hidden_states)
@@ -464,10 +497,12 @@ class SLANeXtVisionNeck(nn.Module):
         return hidden_states
 
 
+# SLANeXtVisionEncoder：SLANeXt 视觉编码器：patch 嵌入 + 多层窗口/全局注意力
 class SLANeXtVisionEncoder(SLANeXtPreTrainedModel):
     _can_record_outputs = {"hidden_states": SLANeXtVisionLayer, "attentions": SLANeXtVisionAttention}
     input_modalities = ("image",)
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SLANeXtVisionConfig):
         super().__init__(config)
         self.config = config
@@ -499,11 +534,13 @@ class SLANeXtVisionEncoder(SLANeXtPreTrainedModel):
         self.gradient_checkpointing = False
         self.post_init()
 
+    # get_input_embeddings：返回 patch 嵌入层作为输入嵌入模块
     def get_input_embeddings(self):
         return self.patch_embed
 
     @merge_with_config_defaults
     @capture_outputs(tie_last_hidden_states=False)
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self, pixel_values: torch.FloatTensor | None = None, **kwargs: Unpack[TransformersKwargs]
     ) -> tuple | SLANeXtVisionEncoderOutput:
@@ -521,7 +558,9 @@ class SLANeXtVisionEncoder(SLANeXtPreTrainedModel):
         )
 
 
+# SLANeXtBackbone：SLANeXt 骨干：视觉塔 + 后卷积下采样至序列特征
 class SLANeXtBackbone(SLANeXtPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: dict | None = None,
@@ -534,6 +573,7 @@ class SLANeXtBackbone(SLANeXtPreTrainedModel):
         )
         self.post_init()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, **kwargs: Unpack[TransformersKwargs]):
         vision_output = self.vision_tower(hidden_states, **kwargs)
         hidden_states = self.post_conv(vision_output.last_hidden_state)
@@ -545,11 +585,13 @@ class SLANeXtBackbone(SLANeXtPreTrainedModel):
         )
 
 
+# SLANeXtSLAHead：SLANeXt SLA 头：自回归预测表格 HTML 结构序列
 class SLANeXtSLAHead(SLANeXtPreTrainedModel):
     _can_record_outputs = {
         "attentions": SLANeXtAttentionGRUCell,
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: dict | None = None,
@@ -567,6 +609,7 @@ class SLANeXtSLAHead(SLANeXtPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @filter_output_hidden_states
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.FloatTensor,
@@ -599,6 +642,7 @@ class SLANeXtSLAHead(SLANeXtPreTrainedModel):
 
 @auto_docstring
 @dataclass
+# SLANeXtForTableRecognitionOutput：SLANeXt 表格识别输出：结构概率与头注意力
 class SLANeXtForTableRecognitionOutput(BaseModelOutput):
     r"""
     head_hidden_states (`tuple(torch.FloatTensor)`, *optional*, returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
@@ -617,7 +661,9 @@ class SLANeXtForTableRecognitionOutput(BaseModelOutput):
     and returns outputs compatible with the Transformers table recognition API.
     """
 )
+# SLANeXtForTableRecognition：SLANeXt 表格识别：骨干 + SLA 头完整前向
 class SLANeXtForTableRecognition(SLANeXtPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SLANeXtConfig):
         super().__init__(config)
         self.backbone = SLANeXtBackbone(config=config)
@@ -626,6 +672,7 @@ class SLANeXtForTableRecognition(SLANeXtPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self, pixel_values: torch.FloatTensor, **kwargs: Unpack[TransformersKwargs]
     ) -> tuple[torch.FloatTensor] | SLANeXtForTableRecognitionOutput:
