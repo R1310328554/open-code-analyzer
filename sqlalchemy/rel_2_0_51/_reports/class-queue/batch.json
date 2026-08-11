@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T06:14:42Z",
   "files": [
-    "lib/sqlalchemy/dialects/postgresql/psycopg2cffi.py",
-    "lib/sqlalchemy/dialects/postgresql/ranges.py",
-    "lib/sqlalchemy/dialects/postgresql/types.py",
-    "lib/sqlalchemy/dialects/sqlite/__init__.py",
-    "lib/sqlalchemy/dialects/sqlite/aiosqlite.py",
-    "lib/sqlalchemy/dialects/sqlite/base.py",
-    "lib/sqlalchemy/dialects/sqlite/dml.py",
-    "lib/sqlalchemy/dialects/sqlite/json.py",
-    "lib/sqlalchemy/dialects/sqlite/provision.py",
-    "lib/sqlalchemy/dialects/sqlite/pysqlcipher.py",
-    "lib/sqlalchemy/dialects/sqlite/pysqlite.py",
-    "lib/sqlalchemy/engine/__init__.py",
-    "lib/sqlalchemy/engine/_py_processors.py",
-    "lib/sqlalchemy/engine/_py_row.py",
-    "lib/sqlalchemy/engine/_py_util.py",
     "lib/sqlalchemy/engine/base.py",
     "lib/sqlalchemy/engine/characteristics.py",
     "lib/sqlalchemy/engine/create.py",
@@ -33,5 +18,5 @@
     "lib/sqlalchemy/engine/util.py"
   ],
   "remaining_pending": 142,
-  "done": 60
+  "done": 75
 }
