@@ -24,6 +24,15 @@ from django.utils.datastructures import OrderedSet
 from django.utils.functional import cached_property
 from django.utils.hashable import make_hashable
 
+"""
+django.db.models.lookups — 字段查找与 Transform 表达式。
+
+Lookup 将 lhs/rhs 编译为 WHERE 子句；BuiltinLookup 注册到 Field。
+"""
+
+# 查找表达式基类：lhs 操作符 rhs，含 bilateral transform
+class Lookup(Expression):from django.utils.hashable import make_hashable
+
 
 class Lookup(Expression):
     lookup_name = None
@@ -207,6 +216,7 @@ class Lookup(Expression):
         return self.lhs.allowed_default and self.rhs.allowed_default
 
 
+# 单参数 Func，可注册为 lookup 或 field transform
 class Transform(RegisterLookupMixin, Func):
     """
     RegisterLookupMixin() is first so that get_lookup() and get_transform()
@@ -230,6 +240,7 @@ class Transform(RegisterLookupMixin, Func):
         return bilateral_transforms
 
 
+# 内置查找：process_lhs 加 lookup_cast，用 operators 模板
 class BuiltinLookup(Lookup):
     def process_lhs(self, compiler, connection, lhs=None):
         lhs_sql, params = super().process_lhs(compiler, connection, lhs)
@@ -250,6 +261,7 @@ class BuiltinLookup(Lookup):
         return connection.operators[self.lookup_name] % rhs
 
 
+# 查找前对 rhs 调用 Field.get_db_prep_value
 class FieldGetDbPrepValueMixin:
     """
     Some lookups require Field.get_db_prep_value() to be called on their
@@ -281,6 +293,7 @@ class FieldGetDbPrepValueMixin:
         )
 
 
+# 对 IN/range 等可迭代 rhs 逐项 get_db_prep_value
 class FieldGetDbPrepValueIterableMixin(FieldGetDbPrepValueMixin):
     """
     Some lookups require Field.get_db_prep_value() to be called on each value
@@ -354,6 +367,7 @@ class FieldGetDbPrepValueIterableMixin(FieldGetDbPrepValueMixin):
         return sql, tuple(params)
 
 
+# PostgreSQL 专用操作符查找（如 @>）
 class PostgresOperatorLookup(Lookup):
     """Lookup defined by operators on PostgreSQL."""
 
@@ -366,6 +380,7 @@ class PostgresOperatorLookup(Lookup):
         return "%s %s %s" % (lhs, self.postgres_operator, rhs), params
 
 
+# 精确相等 exact；布尔字段可简化为 WHERE col
 @Field.register_lookup
 class Exact(FieldGetDbPrepValueMixin, BuiltinLookup):
     lookup_name = "exact"
@@ -407,6 +422,7 @@ class Exact(FieldGetDbPrepValueMixin, BuiltinLookup):
         return super().as_sql(compiler, connection)
 
 
+# 不区分大小写精确 iexact
 @Field.register_lookup
 class IExact(BuiltinLookup):
     lookup_name = "iexact"
@@ -419,26 +435,31 @@ class IExact(BuiltinLookup):
         return rhs, params
 
 
+# 大于 gt
 @Field.register_lookup
 class GreaterThan(FieldGetDbPrepValueMixin, BuiltinLookup):
     lookup_name = "gt"
 
 
+# 大于等于 gte
 @Field.register_lookup
 class GreaterThanOrEqual(FieldGetDbPrepValueMixin, BuiltinLookup):
     lookup_name = "gte"
 
 
+# 小于 lt
 @Field.register_lookup
 class LessThan(FieldGetDbPrepValueMixin, BuiltinLookup):
     lookup_name = "lt"
 
 
+# 小于等于 lte
 @Field.register_lookup
 class LessThanOrEqual(FieldGetDbPrepValueMixin, BuiltinLookup):
     lookup_name = "lte"
 
 
+# IntegerField 查找：rhs 超出范围时 EmptyResultSet/FullResultSet
 class IntegerFieldOverflow:
     underflow_exception = EmptyResultSet
     overflow_exception = EmptyResultSet
@@ -457,6 +478,7 @@ class IntegerFieldOverflow:
         return super().process_rhs(compiler, connection)
 
 
+# IntegerField 查找：float rhs 向上取整
 class IntegerFieldFloatRounding:
     """
     Allow floats to work as query values for IntegerField. Without this, the
@@ -469,33 +491,40 @@ class IntegerFieldFloatRounding:
         return super().get_prep_lookup()
 
 
+# IntegerField 专用 exact
 @IntegerField.register_lookup
 class IntegerFieldExact(IntegerFieldOverflow, Exact):
     pass
 
 
+# IntegerField 专用 gt
 @IntegerField.register_lookup
 class IntegerGreaterThan(IntegerFieldOverflow, GreaterThan):
     underflow_exception = FullResultSet
 
 
+# IntegerField 专用 gte（含 float 取整）
 @IntegerField.register_lookup
+class IntegerGreaterThanOrEqual(@IntegerField.register_lookup
 class IntegerGreaterThanOrEqual(
     IntegerFieldOverflow, IntegerFieldFloatRounding, GreaterThanOrEqual
 ):
     underflow_exception = FullResultSet
 
 
+# IntegerField 专用 lt
 @IntegerField.register_lookup
 class IntegerLessThan(IntegerFieldOverflow, IntegerFieldFloatRounding, LessThan):
     overflow_exception = FullResultSet
 
 
+# IntegerField 专用 lte
 @IntegerField.register_lookup
 class IntegerLessThanOrEqual(IntegerFieldOverflow, LessThanOrEqual):
     overflow_exception = FullResultSet
 
 
+# IN 查找；超 max_in_list_size 时拆 OR
 @Field.register_lookup
 class In(FieldGetDbPrepValueIterableMixin, BuiltinLookup):
     lookup_name = "in"
@@ -578,6 +607,7 @@ class In(FieldGetDbPrepValueIterableMixin, BuiltinLookup):
         return "".join(in_clause_elements), params
 
 
+# LIKE 模式查找基类：contains/startswith/endswith
 class PatternLookup(BuiltinLookup):
     param_pattern = "%%%s%%"
     prepare_rhs = False
@@ -619,38 +649,45 @@ class PatternLookup(BuiltinLookup):
         return self.rhs_is_direct_value() and not self.bilateral_transforms
 
 
+# 包含 contains
 @Field.register_lookup
 class Contains(PatternLookup):
     lookup_name = "contains"
 
 
+# 不区分大小写包含 icontains
 @Field.register_lookup
 class IContains(Contains):
     lookup_name = "icontains"
 
 
+# 前缀 startswith
 @Field.register_lookup
 class StartsWith(PatternLookup):
     lookup_name = "startswith"
     param_pattern = "%s%%"
 
 
+# 不区分大小写前缀 istartswith
 @Field.register_lookup
 class IStartsWith(StartsWith):
     lookup_name = "istartswith"
 
 
+# 后缀 endswith
 @Field.register_lookup
 class EndsWith(PatternLookup):
     lookup_name = "endswith"
     param_pattern = "%%%s"
 
 
+# 不区分大小写后缀 iendswith
 @Field.register_lookup
 class IEndsWith(EndsWith):
     lookup_name = "iendswith"
 
 
+# 闭区间 range：BETWEEN low AND high
 @Field.register_lookup
 class Range(FieldGetDbPrepValueIterableMixin, BuiltinLookup):
     lookup_name = "range"
@@ -659,6 +696,7 @@ class Range(FieldGetDbPrepValueIterableMixin, BuiltinLookup):
         return "BETWEEN %s AND %s" % (rhs[0], rhs[1])
 
 
+# NULL 判断 isnull
 @Field.register_lookup
 class IsNull(BuiltinLookup):
     lookup_name = "isnull"
@@ -685,6 +723,7 @@ class IsNull(BuiltinLookup):
             return "%s IS NOT NULL" % sql, params
 
 
+# 正则匹配 regex
 @Field.register_lookup
 class Regex(BuiltinLookup):
     lookup_name = "regex"
@@ -701,11 +740,13 @@ class Regex(BuiltinLookup):
             return sql_template % (lhs, rhs), params
 
 
+# 不区分大小写正则 iregex
 @Field.register_lookup
 class IRegex(Regex):
     lookup_name = "iregex"
 
 
+# 按年过滤：直接范围比较以利用索引
 class YearLookup(Lookup):
     def year_lookup_bounds(self, connection, year):
         from django.db.models.functions import ExtractIsoYear
@@ -747,6 +788,7 @@ class YearLookup(Lookup):
         )
 
 
+# 年份精确 year__exact
 class YearExact(YearLookup, Exact):
     def get_direct_rhs_sql(self, connection, rhs):
         return "BETWEEN %s AND %s"
@@ -755,26 +797,31 @@ class YearExact(YearLookup, Exact):
         return (start, finish)
 
 
+# 年份大于 year__gt
 class YearGt(YearLookup, GreaterThan):
     def get_bound_params(self, start, finish):
         return (finish,)
 
 
+# 年份大于等于 year__gte
 class YearGte(YearLookup, GreaterThanOrEqual):
     def get_bound_params(self, start, finish):
         return (start,)
 
 
+# 年份小于 year__lt
 class YearLt(YearLookup, LessThan):
     def get_bound_params(self, start, finish):
         return (start,)
 
 
+# 年份小于等于 year__lte
 class YearLte(YearLookup, LessThanOrEqual):
     def get_bound_params(self, start, finish):
         return (finish,)
 
 
+# 无原生 UUID 类型时去连字符再比较
 class UUIDTextMixin:
     """
     Strip hyphens from a value when filtering a UUIDField on backends without
@@ -794,36 +841,43 @@ class UUIDTextMixin:
         return rhs, params
 
 
+# UUID 不区分大小写精确
 @UUIDField.register_lookup
 class UUIDIExact(UUIDTextMixin, IExact):
     pass
 
 
+# UUID 包含
 @UUIDField.register_lookup
 class UUIDContains(UUIDTextMixin, Contains):
     pass
 
 
+# UUID 不区分大小写包含
 @UUIDField.register_lookup
 class UUIDIContains(UUIDTextMixin, IContains):
     pass
 
 
+# UUID 前缀
 @UUIDField.register_lookup
 class UUIDStartsWith(UUIDTextMixin, StartsWith):
     pass
 
 
+# UUID 不区分大小写前缀
 @UUIDField.register_lookup
 class UUIDIStartsWith(UUIDTextMixin, IStartsWith):
     pass
 
 
+# UUID 后缀
 @UUIDField.register_lookup
 class UUIDEndsWith(UUIDTextMixin, EndsWith):
     pass
 
 
+# UUID 不区分大小写后缀
 @UUIDField.register_lookup
 class UUIDIEndsWith(UUIDTextMixin, IEndsWith):
     pass

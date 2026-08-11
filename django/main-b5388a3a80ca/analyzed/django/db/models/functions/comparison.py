@@ -3,6 +3,15 @@
 from django.db.models.expressions import Func, Value
 from django.utils.regex_helper import _lazy_re_compile
 
+"""
+django.db.models.functions.comparison — 比较与类型转换数据库函数。
+
+Cast/Coalesce/Greatest/Least/NullIf/Collate 等跨后端 SQL 函数表达式。
+"""
+
+# 将表达式强制转换为指定 output_field 类型
+class Cast(Func):from django.utils.regex_helper import _lazy_re_compile
+
 
 class Cast(Func):
     """Coerce an expression to a new field type."""
@@ -67,6 +76,7 @@ class Cast(Func):
         return self.as_sql(compiler, connection, **extra_context)
 
 
+# 从左到右返回第一个非 NULL 表达式
 class Coalesce(Func):
     """Return, from left to right, the first non-null expression."""
 
@@ -101,6 +111,7 @@ class Coalesce(Func):
         return self.as_sql(compiler, connection, **extra_context)
 
 
+# 为表达式指定 COLLATE 排序规则（PostgreSQL 等）
 class Collate(Func):
     function = "COLLATE"
     template = "%(expressions)s %(function)s %(collation)s"
@@ -120,6 +131,7 @@ class Collate(Func):
         return super().as_sql(compiler, connection, **extra_context)
 
 
+# 返回多个表达式中的最大值；NULL 处理因数据库而异
 class Greatest(Func):
     """
     Return the maximum expression.
@@ -141,6 +153,7 @@ class Greatest(Func):
         return super().as_sqlite(compiler, connection, function="MAX", **extra_context)
 
 
+# 返回多个表达式中的最小值；NULL 处理因数据库而异
 class Least(Func):
     """
     Return the minimum expression.
@@ -162,6 +175,7 @@ class Least(Func):
         return super().as_sqlite(compiler, connection, function="MIN", **extra_context)
 
 
+# 两表达式相等时返回 NULL，否则返回第一表达式
 class NullIf(Func):
     function = "NULLIF"
     arity = 2

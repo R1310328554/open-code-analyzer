@@ -3,9 +3,18 @@ from functools import partial
 from django.db.models.utils import make_model_tuple
 from django.dispatch import Signal
 
+"""
+django.db.models.signals — 模型生命周期信号。
+
+pre/post_init/save/delete、m2m_changed 及迁移前后信号。
+"""
+
+class_prepared = Signal()from django.dispatch import Signal
+
 class_prepared = Signal()
 
 
+# 支持 sender 为 app_label.ModelName 字符串的懒解析 Signal
 class ModelSignal(Signal):
     """
     Signal subclass that allows the sender to be lazily specified as a string

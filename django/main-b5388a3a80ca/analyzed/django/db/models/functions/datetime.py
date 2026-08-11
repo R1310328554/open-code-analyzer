@@ -18,6 +18,15 @@ from django.db.models.lookups import (
 )
 from django.utils import timezone
 
+"""
+django.db.models.functions.datetime — 日期时间提取与截断函数。
+
+Extract/Trunc/Now 及按年/月/日等分量提取，支持时区转换。
+"""
+
+# 为 Extract/Trunc 提供 USE_TZ 下的时区名解析
+class TimezoneMixin:from django.utils import timezone
+
 
 class TimezoneMixin:
     tzinfo = None
@@ -36,6 +45,7 @@ class TimezoneMixin:
         return tzname
 
 
+# 从日期/时间/时长字段提取指定分量（year/month/hour 等）
 class Extract(TimezoneMixin, Transform):
     lookup_name = None
     output_field = IntegerField()
@@ -121,24 +131,29 @@ class Extract(TimezoneMixin, Transform):
         return copy
 
 
+# 提取年份
 class ExtractYear(Extract):
     lookup_name = "year"
 
 
+# 提取 ISO-8601 周年份
 class ExtractIsoYear(Extract):
     """Return the ISO-8601 week-numbering year."""
 
     lookup_name = "iso_year"
 
 
+# 提取月份
 class ExtractMonth(Extract):
     lookup_name = "month"
 
 
+# 提取日
 class ExtractDay(Extract):
     lookup_name = "day"
 
 
+# 提取 ISO 周序号（1–52/53）
 class ExtractWeek(Extract):
     """
     Return 1-52 or 53, based on ISO-8601, i.e., Monday is the first of the
@@ -148,6 +163,7 @@ class ExtractWeek(Extract):
     lookup_name = "week"
 
 
+# 提取星期（Sunday=1 … Saturday=7）
 class ExtractWeekDay(Extract):
     """
     Return Sunday=1 through Saturday=7.
@@ -158,24 +174,29 @@ class ExtractWeekDay(Extract):
     lookup_name = "week_day"
 
 
+# 提取 ISO 星期（Monday=1 … Sunday=7）
 class ExtractIsoWeekDay(Extract):
     """Return Monday=1 through Sunday=7, based on ISO-8601."""
 
     lookup_name = "iso_week_day"
 
 
+# 提取季度
 class ExtractQuarter(Extract):
     lookup_name = "quarter"
 
 
+# 提取小时
 class ExtractHour(Extract):
     lookup_name = "hour"
 
 
+# 提取分钟
 class ExtractMinute(Extract):
     lookup_name = "minute"
 
 
+# 提取秒
 class ExtractSecond(Extract):
     lookup_name = "second"
 
@@ -210,6 +231,7 @@ ExtractIsoYear.register_lookup(YearLt)
 ExtractIsoYear.register_lookup(YearLte)
 
 
+# 当前数据库时间戳（各后端模板不同）
 class Now(Func):
     template = "CURRENT_TIMESTAMP"
     output_field = DateTimeField()
@@ -241,6 +263,7 @@ class Now(Func):
         )
 
 
+# 按 kind 截断日期/时间/日期时间到指定精度
 class TruncBase(TimezoneMixin, Transform):
     kind = None
     tzinfo = None
@@ -345,6 +368,7 @@ class TruncBase(TimezoneMixin, Transform):
         return connection.ops.convert_trunc_expression(value, expression)
 
 
+# 通用截断：kind 参数指定 year/quarter/month 等
 class Trunc(TruncBase):
     def __init__(
         self,
@@ -358,28 +382,34 @@ class Trunc(TruncBase):
         super().__init__(expression, output_field=output_field, tzinfo=tzinfo, **extra)
 
 
+# 截断到年
 class TruncYear(TruncBase):
     kind = "year"
 
 
+# 截断到季度
 class TruncQuarter(TruncBase):
     kind = "quarter"
 
 
+# 截断到月
 class TruncMonth(TruncBase):
     kind = "month"
 
 
+# 截断到该周周一 0 点
 class TruncWeek(TruncBase):
     """Truncate to midnight on the Monday of the week."""
 
     kind = "week"
 
 
+# 截断到日
 class TruncDay(TruncBase):
     kind = "day"
 
 
+# 转为 DateField（cast 而非 truncate）
 class TruncDate(TruncBase):
     kind = "date"
     lookup_name = "date"
@@ -392,6 +422,7 @@ class TruncDate(TruncBase):
         return connection.ops.datetime_cast_date_sql(sql, tuple(params), tzname)
 
 
+# 转为 TimeField（cast 而非 truncate）
 class TruncTime(TruncBase):
     kind = "time"
     lookup_name = "time"
@@ -404,14 +435,17 @@ class TruncTime(TruncBase):
         return connection.ops.datetime_cast_time_sql(sql, tuple(params), tzname)
 
 
+# 截断到小时
 class TruncHour(TruncBase):
     kind = "hour"
 
 
+# 截断到分钟
 class TruncMinute(TruncBase):
     kind = "minute"
 
 
+# 截断到秒
 class TruncSecond(TruncBase):
     kind = "second"
 

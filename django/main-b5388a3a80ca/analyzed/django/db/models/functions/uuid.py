@@ -2,6 +2,15 @@ from django.db import NotSupportedError
 from django.db.models.expressions import Func
 from django.db.models.fields import UUIDField
 
+"""
+django.db.models.functions.uuid — UUID 生成数据库函数。
+
+UUID4/UUID7 在各后端映射为原生或兼容函数名。
+"""
+
+# 生成随机 UUID v4
+class UUID4(Func):from django.db.models.fields import UUIDField
+
 
 class UUID4(Func):
     function = "UUIDV4"
@@ -35,6 +44,7 @@ class UUID4(Func):
         return self.as_sql(compiler, connection, function="UUID", **extra_context)
 
 
+# 生成时间排序 UUID v7；可选 shift 参数
 class UUID7(Func):
     function = "UUIDV7"
     arity = 1

@@ -53,6 +53,15 @@ REPR_OUTPUT_SIZE = 20
 
 DEFAULT_FETCH_MODE = FETCH_ONE
 
+"""
+django.db.models.query — QuerySet 与查询结果迭代。
+
+惰性 SQL 构建、CRUD、prefetch/select_related 及多种 values 迭代器。
+"""
+
+# 查询结果迭代器基类：chunked_fetch 与 chunk_size
+class BaseIterable:DEFAULT_FETCH_MODE = FETCH_ONE
+
 
 class BaseIterable:
     def __init__(
@@ -90,6 +99,7 @@ class BaseIterable:
         return self._async_generator()
 
 
+# 逐行实例化完整 Model 对象
 class ModelIterable(BaseIterable):
     """Iterable that yields a model instance for each row."""
 
@@ -168,6 +178,7 @@ class ModelIterable(BaseIterable):
             yield obj
 
 
+# raw() 查询逐行实例化 Model
 class RawModelIterable(BaseIterable):
     """
     Iterable that yields a model instance for each row from a raw queryset.
@@ -224,6 +235,7 @@ class RawModelIterable(BaseIterable):
                 query.cursor.close()
 
 
+# values() 逐行 yield dict
 class ValuesIterable(BaseIterable):
     """
     Iterable returned by QuerySet.values() that yields a dict for each row.
@@ -250,6 +262,7 @@ class ValuesIterable(BaseIterable):
             yield {names[i]: row[i] for i in indexes}
 
 
+# values_list(flat=False) 逐行 yield tuple
 class ValuesListIterable(BaseIterable):
     """
     Iterable returned by QuerySet.values_list(flat=False) that yields a tuple
@@ -267,6 +280,7 @@ class ValuesListIterable(BaseIterable):
         )
 
 
+# values_list(named=True) 逐行 yield namedtuple
 class NamedValuesListIterable(ValuesListIterable):
     """
     Iterable returned by QuerySet.values_list(named=True) that yields a
@@ -290,6 +304,7 @@ class NamedValuesListIterable(ValuesListIterable):
             yield new(tuple_class, row)
 
 
+# values_list(flat=True) 逐行 yield 单值
 class FlatValuesListIterable(BaseIterable):
     """
     Iterable returned by QuerySet.values_list(flat=True) that yields single
@@ -305,6 +320,7 @@ class FlatValuesListIterable(BaseIterable):
             yield row[0]
 
 
+# 上下文内禁止 QuerySet 克隆，原地修改 filter 等
 class PreventQuerySetCloning:
     """
     Temporarily prevent the given QuerySet from creating new QuerySet instances
@@ -327,6 +343,7 @@ class PreventQuerySetCloning:
         self.queryset._enable_cloning()
 
 
+# ORM 核心：惰性查询集，链式 filter/exclude/annotate 等
 class QuerySet(AltersData):
     """Represent a lazy database lookup for a set of objects."""
 
@@ -2367,11 +2384,13 @@ class QuerySet(AltersData):
         cloned_query.combined_queries = tuple(combined_queries)
 
 
+# EmptyQuerySet 的 isinstance 元类
 class InstanceCheckMeta(type):
     def __instancecheck__(self, instance):
         return isinstance(instance, QuerySet) and instance.query.is_empty()
 
 
+# qs.none() 的标记类，不可实例化
 class EmptyQuerySet(metaclass=InstanceCheckMeta):
     """
     Marker class to checking if a queryset is empty by .none():
@@ -2382,6 +2401,7 @@ class EmptyQuerySet(metaclass=InstanceCheckMeta):
         raise TypeError("EmptyQuerySet can't be instantiated")
 
 
+# 原始 SQL 查询集，映射列到模型字段
 class RawQuerySet:
     """
     Provide an iterator which converts the results of raw SQL queries into
@@ -2542,6 +2562,7 @@ class RawQuerySet:
         }
 
 
+# prefetch_related 查找与可选自定义 QuerySet/to_attr
 class Prefetch:
     def __init__(self, lookup, queryset=None, to_attr=None):
         # `prefetch_through` is the path we traverse to perform the prefetch.
@@ -2956,6 +2977,7 @@ def prefetch_one_level(instances, prefetcher, lookup, level):
     return all_related_objects, additional_lookups
 
 
+# select_related 行数据填充关联对象的辅助类
 class RelatedPopulator:
     """
     RelatedPopulator is used for select_related() object instantiation.

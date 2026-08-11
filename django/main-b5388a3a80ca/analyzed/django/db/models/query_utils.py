@@ -38,6 +38,7 @@ def subclasses(cls):
         yield from subclasses(subclass)
 
 
+# 可 & | ~ 组合的查询条件树（AND/OR/XOR）
 class Q(tree.Node):
     """
     Encapsulate filters as objects that can then be combined logically (using
@@ -247,6 +248,7 @@ class Q(tree.Node):
         }
 
 
+# 延迟加载字段描述符：首次访问时查库
 class DeferredAttribute:
     """
     A wrapper for a deferred-loading field. When the value is read from this
@@ -308,6 +310,7 @@ class DeferredAttribute:
             setattr(instance, attname, value_by_pk[instance.pk])
 
 
+# RegisterLookupMixin 用：类/实例方法分派
 class class_or_instance_method:
     """
     Hook used in RegisterLookupMixin to return partial functions depending on
@@ -324,6 +327,7 @@ class class_or_instance_method:
         return functools.partial(self.instance_method, instance)
 
 
+# Field/Transform 注册与解析 lookup/transform
 class RegisterLookupMixin:
     def _get_lookup(self, lookup_name):
         return self.get_lookups().get(lookup_name, None)
@@ -508,6 +512,7 @@ def check_rel_lookup_compatibility(model, target_opts, field):
     )
 
 
+# JOIN ON 子句自定义 Q 条件（annotate 预过滤）
 class FilteredRelation:
     """Specify custom filtering in the ON clause of SQL joins."""
 

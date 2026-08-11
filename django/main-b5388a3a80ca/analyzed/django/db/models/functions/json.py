@@ -4,6 +4,15 @@ from django.db.models.fields import TextField
 from django.db.models.fields.json import JSONField
 from django.db.models.functions import Cast
 
+"""
+django.db.models.functions.json — JSON 构造数据库函数。
+
+JSONArray/JSONObject 在各后端生成 JSON 数组与对象字面量。
+"""
+
+# 由多个表达式构造 JSON 数组
+class JSONArray(Func):from django.db.models.functions import Cast
+
 
 class JSONArray(Func):
     function = "JSON_ARRAY"
@@ -65,6 +74,7 @@ class JSONArray(Func):
         return self.as_native(compiler, connection, returning="CLOB", **extra_context)
 
 
+# 由键值对构造 JSON 对象
 class JSONObject(Func):
     function = "JSON_OBJECT"
     output_field = JSONField()

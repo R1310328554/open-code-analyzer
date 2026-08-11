@@ -3,6 +3,15 @@ import sys
 from django.db.models.fields import DecimalField, FloatField, IntegerField
 from django.db.models.functions import Cast
 
+"""
+django.db.models.functions.mixins — 数据库函数输入/输出字段修正 Mixin。
+
+PostgreSQL 小数、MySQL/Oracle Duration 等后端差异的通用适配。
+"""
+
+# PostgreSQL：Float 参数先 Cast 为 Decimal 再调用函数
+class FixDecimalInputMixin:from django.db.models.functions import Cast
+
 
 class FixDecimalInputMixin:
     def as_postgresql(self, compiler, connection, **extra_context):
@@ -25,6 +34,7 @@ class FixDecimalInputMixin:
         return clone.as_sql(compiler, connection, **extra_context)
 
 
+# MySQL/Oracle：DurationField 聚合前的 CAST 或秒/区间转换
 class FixDurationInputMixin:
     def as_mysql(self, compiler, connection, **extra_context):
         sql, params = super().as_sql(compiler, connection, **extra_context)
@@ -52,6 +62,7 @@ class FixDurationInputMixin:
         return super().as_sql(compiler, connection, **extra_context)
 
 
+# 根据源字段推断 Decimal/Float 输出类型
 class NumericOutputFieldMixin:
     def _resolve_output_field(self):
         source_fields = self.get_source_fields()

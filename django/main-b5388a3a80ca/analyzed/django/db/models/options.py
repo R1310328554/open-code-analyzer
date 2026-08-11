@@ -87,7 +87,14 @@ def make_immutable_fields_list(name, data):
     return ImmutableList(data, warning=IMMUTABLE_WARNING % name)
 
 
-class Options:
+"""
+django.db.models.options — 模型 _meta（Options）元数据。
+
+字段、关系、Manager、索引/约束、代理/MPTT 等模型级配置。
+"""
+
+# 模型元数据容器：model._meta 指向的 Options 实例
+class Options:class Options:
     FORWARD_PROPERTIES = {
         "fields",
         "many_to_many",

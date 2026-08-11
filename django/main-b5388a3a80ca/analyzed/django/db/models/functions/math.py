@@ -9,27 +9,40 @@ from django.db.models.functions.mixins import (
 )
 from django.db.models.lookups import Transform
 
+"""
+django.db.models.functions.math — 数学数据库函数与 Transform。
+
+三角/对数/取整/随机等，含 SpatiaLite 与 Oracle 特殊适配。
+"""
+
+# 绝对值 ABS
+class Abs(Transform):from django.db.models.lookups import Transform
+
 
 class Abs(Transform):
     function = "ABS"
     lookup_name = "abs"
 
 
+# 反余弦 ACOS
 class ACos(NumericOutputFieldMixin, Transform):
     function = "ACOS"
     lookup_name = "acos"
 
 
+# 反正弦 ASIN
 class ASin(NumericOutputFieldMixin, Transform):
     function = "ASIN"
     lookup_name = "asin"
 
 
+# 反正切 ATAN
 class ATan(NumericOutputFieldMixin, Transform):
     function = "ATAN"
     lookup_name = "atan"
 
 
+# 两参数反正切 ATAN2；SpatiaLite <5 参数顺序相反
 class ATan2(NumericOutputFieldMixin, Func):
     function = "ATAN2"
     arity = 2
@@ -58,6 +71,7 @@ class ATan2(NumericOutputFieldMixin, Func):
         return clone.as_sql(compiler, connection, **extra_context)
 
 
+# 向上取整 CEILING/CEIL
 class Ceil(Transform):
     function = "CEILING"
     lookup_name = "ceil"
@@ -66,11 +80,13 @@ class Ceil(Transform):
         return super().as_sql(compiler, connection, function="CEIL", **extra_context)
 
 
+# 余弦 COS
 class Cos(NumericOutputFieldMixin, Transform):
     function = "COS"
     lookup_name = "cos"
 
 
+# 余切 COT；Oracle 用 1/TAN 模拟
 class Cot(NumericOutputFieldMixin, Transform):
     function = "COT"
     lookup_name = "cot"
@@ -81,6 +97,7 @@ class Cot(NumericOutputFieldMixin, Transform):
         )
 
 
+# 弧度转角度 DEGREES
 class Degrees(NumericOutputFieldMixin, Transform):
     function = "DEGREES"
     lookup_name = "degrees"
@@ -94,21 +111,25 @@ class Degrees(NumericOutputFieldMixin, Transform):
         )
 
 
+# 指数 EXP
 class Exp(NumericOutputFieldMixin, Transform):
     function = "EXP"
     lookup_name = "exp"
 
 
+# 向下取整 FLOOR
 class Floor(Transform):
     function = "FLOOR"
     lookup_name = "floor"
 
 
+# 自然对数 LN
 class Ln(NumericOutputFieldMixin, Transform):
     function = "LN"
     lookup_name = "ln"
 
 
+# 对数 LOG(b, x)；SpatiaLite 参数顺序相反
 class Log(FixDecimalInputMixin, NumericOutputFieldMixin, Func):
     function = "LOG"
     arity = 2
@@ -123,11 +144,13 @@ class Log(FixDecimalInputMixin, NumericOutputFieldMixin, Func):
         return clone.as_sql(compiler, connection, **extra_context)
 
 
+# 取模 MOD
 class Mod(FixDecimalInputMixin, NumericOutputFieldMixin, Func):
     function = "MOD"
     arity = 2
 
 
+# 圆周率常量 PI
 class Pi(NumericOutputFieldMixin, Func):
     function = "PI"
     arity = 0
@@ -138,11 +161,13 @@ class Pi(NumericOutputFieldMixin, Func):
         )
 
 
+# 幂运算 POWER
 class Power(NumericOutputFieldMixin, Func):
     function = "POWER"
     arity = 2
 
 
+# 角度转弧度 RADIANS
 class Radians(NumericOutputFieldMixin, Transform):
     function = "RADIANS"
     lookup_name = "radians"
@@ -156,6 +181,7 @@ class Radians(NumericOutputFieldMixin, Transform):
         )
 
 
+# 随机数 RANDOM/RAND；不参与 GROUP BY
 class Random(NumericOutputFieldMixin, Func):
     function = "RANDOM"
     arity = 0
@@ -175,6 +201,7 @@ class Random(NumericOutputFieldMixin, Func):
         return []
 
 
+# 四舍五入 ROUND，可选精度参数
 class Round(FixDecimalInputMixin, Transform):
     function = "ROUND"
     lookup_name = "round"
@@ -194,21 +221,25 @@ class Round(FixDecimalInputMixin, Transform):
         return source.output_field
 
 
+# 符号函数 SIGN
 class Sign(Transform):
     function = "SIGN"
     lookup_name = "sign"
 
 
+# 正弦 SIN
 class Sin(NumericOutputFieldMixin, Transform):
     function = "SIN"
     lookup_name = "sin"
 
 
+# 平方根 SQRT
 class Sqrt(NumericOutputFieldMixin, Transform):
     function = "SQRT"
     lookup_name = "sqrt"
 
 
+# 正切 TAN
 class Tan(NumericOutputFieldMixin, Transform):
     function = "TAN"
     lookup_name = "tan"

@@ -6,6 +6,15 @@ from importlib import import_module
 from django.db import router
 from django.db.models.query import QuerySet
 
+"""
+django.db.models.manager — 模型 Manager 与描述符。
+
+BaseManager 委托 QuerySet；Manager 为默认 objects；EmptyManager 返回空集。
+"""
+
+# Manager 基类：创建 QuerySet、路由数据库、迁移序列化
+class BaseManager:from django.db.models.query import QuerySet
+
 
 class BaseManager:
     # To retain order, track each time a Manager instance is created.
@@ -173,10 +182,12 @@ class BaseManager:
         return id(self)
 
 
+# 默认 Manager，继承 QuerySet 全部查询方法
 class Manager(BaseManager.from_queryset(QuerySet)):
     pass
 
 
+# 描述符：Model.objects 访问类级 Manager
 class ManagerDescriptor:
     def __init__(self, manager):
         self.manager = manager
@@ -204,6 +215,7 @@ class ManagerDescriptor:
         return cls._meta.managers_map[self.manager.name]
 
 
+# 始终返回 .none() 的空 Manager
 class EmptyManager(Manager):
     def __init__(self, model):
         super().__init__()

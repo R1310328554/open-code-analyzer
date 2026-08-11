@@ -10,6 +10,15 @@ from django.utils.functional import partition
 
 __all__ = ["Index"]
 
+"""
+django.db.models.indexes — 模型索引声明与 DDL 生成。
+
+Index 支持字段、表达式、条件、include 与 opclasses。
+"""
+
+# 数据库索引：字段或表达式 + 名称/表空间/条件等
+class Index:__all__ = ["Index"]
+
 
 class Index:
     suffix = "idx"
@@ -304,6 +313,7 @@ class Index:
         return NotImplemented
 
 
+# CREATE INDEX 用的表达式包装（OrderBy/Collate）
 class IndexExpression(Func):
     """Order and wrap expressions for CREATE INDEX statements."""
 

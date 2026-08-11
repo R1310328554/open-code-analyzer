@@ -4,6 +4,15 @@ from django.db.models.fields import CharField, IntegerField, TextField
 from django.db.models.functions import Cast, Coalesce
 from django.db.models.lookups import Transform
 
+"""
+django.db.models.functions.text — 文本处理与哈希数据库函数。
+
+连接/截取/大小写/填充/哈希等，含各后端 SHA 实现 Mixin。
+"""
+
+# MySQL：SHA2 函数模板适配
+class MySQLSHA2Mixin:from django.db.models.lookups import Transform
+
 
 class MySQLSHA2Mixin:
     def as_mysql(self, compiler, connection, **extra_context):
@@ -15,6 +24,7 @@ class MySQLSHA2Mixin:
         )
 
 
+# Oracle：STANDARD_HASH + RAWTOHEX 实现哈希
 class OracleHashMixin:
     def as_oracle(self, compiler, connection, **extra_context):
         return super().as_sql(
@@ -28,6 +38,7 @@ class OracleHashMixin:
         )
 
 
+# PostgreSQL：pgcrypto DIGEST + ENCODE 实现哈希
 class PostgreSQLSHAMixin:
     def as_postgresql(self, compiler, connection, **extra_context):
         return super().as_sql(
@@ -39,6 +50,7 @@ class PostgreSQLSHAMixin:
         )
 
 
+# 码点转字符 CHR/CHAR
 class Chr(Transform):
     function = "CHR"
     lookup_name = "chr"
@@ -65,6 +77,7 @@ class Chr(Transform):
         return super().as_sql(compiler, connection, function="CHAR", **extra_context)
 
 
+# 连接两个字符串；Concat 递归调用以支持多参数
 class ConcatPair(Func):
     """
     Concatenate two arguments together. This is used by `Concat` because not
@@ -122,6 +135,7 @@ class ConcatPair(Func):
         return c
 
 
+# 多字符串连接；NULL 时部分后端用 Coalesce 包装
 class Concat(Func):
     """
     Concatenate text fields together. Backends that result in an entire
@@ -151,6 +165,7 @@ class Concat(Func):
         )
 
 
+# 取字符串左侧 n 个字符 LEFT
 class Left(Func):
     function = "LEFT"
     arity = 2
@@ -176,6 +191,7 @@ class Left(Func):
         return self.get_substr().as_sqlite(compiler, connection, **extra_context)
 
 
+# 字符串长度 LENGTH/CHAR_LENGTH
 class Length(Transform):
     """Return the number of characters in the expression."""
 
@@ -189,11 +205,13 @@ class Length(Transform):
         )
 
 
+# 转小写 LOWER
 class Lower(Transform):
     function = "LOWER"
     lookup_name = "lower"
 
 
+# 左侧填充 LPAD
 class LPad(Func):
     function = "LPAD"
     output_field = CharField()
@@ -208,16 +226,19 @@ class LPad(Func):
         super().__init__(expression, length, fill_text, **extra)
 
 
+# 去左空白 LTRIM
 class LTrim(Transform):
     function = "LTRIM"
     lookup_name = "ltrim"
 
 
+# MD5 哈希
 class MD5(OracleHashMixin, Transform):
     function = "MD5"
     lookup_name = "md5"
 
 
+# 首字符码点 ASCII/ORD/UNICODE
 class Ord(Transform):
     function = "ASCII"
     lookup_name = "ord"
@@ -230,6 +251,7 @@ class Ord(Transform):
         return super().as_sql(compiler, connection, function="UNICODE", **extra_context)
 
 
+# 重复字符串 REPEAT
 class Repeat(Func):
     function = "REPEAT"
     output_field = CharField()
@@ -250,6 +272,7 @@ class Repeat(Func):
         return rpad.as_sql(compiler, connection, **extra_context)
 
 
+# 子串替换 REPLACE
 class Replace(Func):
     function = "REPLACE"
 
@@ -257,6 +280,7 @@ class Replace(Func):
         super().__init__(expression, text, replacement, **extra)
 
 
+# 反转字符串 REVERSE；Oracle 用 LISTAGG 子查询
 class Reverse(Transform):
     function = "REVERSE"
     lookup_name = "reverse"
@@ -279,6 +303,7 @@ class Reverse(Transform):
         return sql, params * 3
 
 
+# 取字符串右侧 n 个字符 RIGHT
 class Right(Left):
     function = "RIGHT"
 
@@ -290,20 +315,24 @@ class Right(Left):
         )
 
 
+# 右侧填充 RPAD
 class RPad(LPad):
     function = "RPAD"
 
 
+# 去右空白 RTRIM
 class RTrim(Transform):
     function = "RTRIM"
     lookup_name = "rtrim"
 
 
+# SHA1 哈希
 class SHA1(OracleHashMixin, PostgreSQLSHAMixin, Transform):
     function = "SHA1"
     lookup_name = "sha1"
 
 
+# SHA224 哈希；Oracle 不支持
 class SHA224(MySQLSHA2Mixin, PostgreSQLSHAMixin, Transform):
     function = "SHA224"
     lookup_name = "sha224"
@@ -312,21 +341,25 @@ class SHA224(MySQLSHA2Mixin, PostgreSQLSHAMixin, Transform):
         raise NotSupportedError("SHA224 is not supported on Oracle.")
 
 
+# SHA256 哈希
 class SHA256(MySQLSHA2Mixin, OracleHashMixin, PostgreSQLSHAMixin, Transform):
     function = "SHA256"
     lookup_name = "sha256"
 
 
+# SHA384 哈希
 class SHA384(MySQLSHA2Mixin, OracleHashMixin, PostgreSQLSHAMixin, Transform):
     function = "SHA384"
     lookup_name = "sha384"
 
 
+# SHA512 哈希
 class SHA512(MySQLSHA2Mixin, OracleHashMixin, PostgreSQLSHAMixin, Transform):
     function = "SHA512"
     lookup_name = "sha512"
 
 
+# 子串首次出现位置 INSTR/STRPOS（1 索引，未找到为 0）
 class StrIndex(Func):
     """
     Return a positive integer corresponding to the 1-indexed position of the
@@ -342,6 +375,7 @@ class StrIndex(Func):
         return super().as_sql(compiler, connection, function="STRPOS", **extra_context)
 
 
+# 子串 SUBSTRING/SUBSTR
 class Substr(Func):
     function = "SUBSTRING"
     output_field = CharField()
@@ -367,11 +401,13 @@ class Substr(Func):
         return super().as_sql(compiler, connection, function="SUBSTR", **extra_context)
 
 
+# 去两端空白 TRIM
 class Trim(Transform):
     function = "TRIM"
     lookup_name = "trim"
 
 
+# 转大写 UPPER
 class Upper(Transform):
     function = "UPPER"
     lookup_name = "upper"
