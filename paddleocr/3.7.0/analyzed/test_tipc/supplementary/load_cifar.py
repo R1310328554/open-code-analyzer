@@ -1,8 +1,10 @@
+# CIFAR 原始 pickle 批文件加载：reshape 为 NCHW 并导出 PNG 与标签
 import pickle as p
 import numpy as np
 from PIL import Image
 
 
+# 读取单 batch pickle，返回 (X[N,3,32,32], Y[N]) 图像与细粒度标签
 def load_CIFAR_batch(filename):
     """load single batch of cifar"""
     with open(filename, "rb") as f:

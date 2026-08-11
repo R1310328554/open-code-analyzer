@@ -1,3 +1,4 @@
+# CIFAR-100 DataLoader 构建：分布式 BatchSampler 与 Ctrl+C 进程组清理
 import numpy as np
 from paddle.vision.datasets import Cifar100
 from paddle.vision.transforms import Normalize
@@ -6,6 +7,7 @@ import os
 from paddle.io import Dataset, DataLoader, DistributedBatchSampler
 
 
+# 信号处理：终止当前进程组内所有子进程
 def term_mp(sig_num, frame):
     """kill all child processes"""
     pid = os.getpid()
@@ -15,6 +17,7 @@ def term_mp(sig_num, frame):
     return
 
 
+# 按 train/test 模式构建 Cifar100 + DistributedBatchSampler 的 DataLoader
 def build_dataloader(mode, batch_size=4, seed=None, num_workers=0, device="gpu:0"):
     normalize = Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], data_format="HWC")
 

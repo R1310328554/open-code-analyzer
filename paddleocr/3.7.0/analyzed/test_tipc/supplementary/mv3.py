@@ -14,6 +14,7 @@
 
 from __future__ import absolute_import
 from __future__ import division
+# MobileNetV3 骨干：Inverted Residual + SE + HardSwish，含蒸馏/孪生变体
 from __future__ import print_function
 
 import numpy as np
@@ -36,6 +37,7 @@ custom_ops = load(
 )
 
 
+# 通道数对齐到 divisor 整数倍，保证硬件友好
 def make_divisible(v, divisor=8, min_value=None):
     if min_value is None:
         min_value = divisor
@@ -45,6 +47,7 @@ def make_divisible(v, divisor=8, min_value=None):
     return new_v
 
 
+    # MobileNetV3 large/small：可配置 scale、dropout 与 custom ReLU
 class MobileNetV3(nn.Layer):
     def __init__(
         self,
@@ -187,6 +190,7 @@ class MobileNetV3(nn.Layer):
         return x
 
 
+    # Conv2D + BatchNorm + ReLU/HardSwish，可选 custom_relu
 class ConvBNLayer(nn.Layer):
     def __init__(
         self,
@@ -243,6 +247,7 @@ class ConvBNLayer(nn.Layer):
         return x
 
 
+    # 倒残差块：expand-depthwise-linear，可选 SE 与 shortcut
 class ResidualUnit(nn.Layer):
     def __init__(
         self,
@@ -310,6 +315,7 @@ class ResidualUnit(nn.Layer):
         return x
 
 
+    # Squeeze-Excitation：全局池化 + 两层 1x1 卷积通道重标定
 class SEModule(nn.Layer):
     def __init__(self, channel, reduction=4, name=""):
         super(SEModule, self).__init__()
@@ -392,6 +398,7 @@ def MobileNetV3_large_x1_25(**args):
     return
 
 
+    # 双 student MobileNetV3 并行前向，返回 {student, student1} logits
 class DistillMV3(nn.Layer):
     def __init__(
         self,
@@ -430,6 +437,7 @@ def distillmv3_large_x0_5(**args):
     return model
 
 
+    # 孪生 MV3：两路 block 特征相加后共享分类头
 class SiameseMV3(nn.Layer):
     def __init__(
         self,
@@ -489,6 +497,7 @@ def siamese_mv3(class_dim, use_custom_relu):
     return model
 
 
+# 按 model_type 构建 cls / cls_distill / cls_distill_multiopt 模型
 def build_model(config):
     model_type = config["model_type"]
     if model_type == "cls":

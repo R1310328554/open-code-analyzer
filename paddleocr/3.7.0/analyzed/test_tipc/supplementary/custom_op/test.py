@@ -1,3 +1,4 @@
+# 自定义 ReLU 算子 JIT 编译示例：LeNet 训练验证 custom_ops.custom_relu
 import paddle
 import paddle.nn as nn
 from paddle.vision.transforms import Compose, Normalize
@@ -15,6 +16,7 @@ custom_ops = load(
 )
 
 
+    # LeNet-5 变体：卷积/池化间插入 JIT 编译的 custom_relu 激活
 class LeNet(nn.Layer):
     def __init__(self):
         super(LeNet, self).__init__()

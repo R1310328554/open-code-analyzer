@@ -1,3 +1,4 @@
+# 训练配置加载：YAML 解析、全局 AttrDict 合并与 preprocess 入口
 import numpy as np
 import os
 import sys
@@ -12,6 +13,7 @@ from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from utils import get_logger, print_dict
 
 
+    # 扩展 ArgumentParser：-c 配置文件、-o 覆盖项与 profiler 选项
 class ArgsParser(ArgumentParser):
     def __init__(self):
         super(ArgsParser, self).__init__(formatter_class=RawDescriptionHelpFormatter)
@@ -42,6 +44,7 @@ class ArgsParser(ArgumentParser):
         return config
 
 
+    # 单层属性字典：支持 config.key 点式访问
 class AttrDict(dict):
     """Single level attribute dict, NOT recursive"""
 
@@ -64,6 +67,7 @@ default_config = {
 }
 
 
+# 从 yml/yaml 加载配置并 merge 到 global_config
 def load_config(file_path):
     """
     Load config from yml/yaml file.
@@ -78,6 +82,7 @@ def load_config(file_path):
     return global_config
 
 
+# 将 dict 合并进 global_config，支持点号嵌套键
 def merge_config(config):
     """
     Merge config into global config.
@@ -106,6 +111,7 @@ def merge_config(config):
                     cur = cur[sub_key]
 
 
+# 解析命令行、加载/合并配置、创建 logger 并返回 (config, logger)
 def preprocess(is_train=False):
     FLAGS = ArgsParser().parse_args()
     profiler_options = FLAGS.profiler_options

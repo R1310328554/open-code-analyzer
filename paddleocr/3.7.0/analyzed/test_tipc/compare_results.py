@@ -1,3 +1,4 @@
+# TIPC 推理结果对比：解析日志与真值文件，按精度类型 assert_allclose 校验
 import numpy as np
 import os
 import subprocess
@@ -6,6 +7,7 @@ import argparse
 import glob
 
 
+# 构建命令行参数：atol/rtol 容差、真值路径、日志路径与精度类型
 def init_args():
     parser = argparse.ArgumentParser()
     # params for testing assert allclose
@@ -17,11 +19,13 @@ def init_args():
     return parser
 
 
+# 解析命令行并返回 Namespace
 def parse_args():
     parser = init_args()
     return parser.parse_args()
 
 
+# 执行 shell 命令，成功返回 stdout 字符串，失败返回 None
 def run_shell_command(cmd):
     p = subprocess.Popen(
         cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
@@ -34,6 +38,7 @@ def run_shell_command(cmd):
         return None
 
 
+# 从日志 grep 指定 key，解析 JSON 或四坐标数组为预测字典
 def parser_results_from_log_by_name(log_path, names_list):
     if not os.path.exists(log_path):
         raise ValueError("The log file {} does not exists!".format(log_path))
@@ -55,6 +60,7 @@ def parser_results_from_log_by_name(log_path, names_list):
     return parser_results
 
 
+# 从 tab 分隔真值文件加载 {图像名: 检测结果} 字典
 def load_gt_from_file(gt_file):
     if not os.path.exists(gt_file):
         raise ValueError("The log file {} does not exists!".format(gt_file))
@@ -73,6 +79,7 @@ def load_gt_from_file(gt_file):
     return parser_gt
 
 
+# glob 匹配多真值文件，按 fp32/fp16/int8 文件名分类汇总
 def load_gt_from_txts(gt_file):
     gt_list = glob.glob(gt_file)
     gt_collection = {}
@@ -90,6 +97,7 @@ def load_gt_from_txts(gt_file):
     return gt_collection
 
 
+# 批量解析推理日志，返回 {日志文件名: 预测字典}
 def collect_predict_from_logs(log_path, key_list):
     log_list = glob.glob(log_path)
     pred_collection = {}
@@ -101,6 +109,7 @@ def collect_predict_from_logs(log_path, key_list):
     return pred_collection
 
 
+# 逐 key 对两字典 ndarray 做 np.testing.assert_allclose
 def testing_assert_allclose(dict_x, dict_y, atol=1e-7, rtol=1e-7):
     for k in dict_x:
         np.testing.assert_allclose(

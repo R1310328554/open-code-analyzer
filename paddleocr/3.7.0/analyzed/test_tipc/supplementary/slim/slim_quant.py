@@ -1,3 +1,4 @@
+# 量化训练：PACT 可学习截断激活与 QAT quant_config 默认参数
 import paddle
 import numpy as np
 import os
@@ -5,6 +6,7 @@ import paddle.nn as nn
 import paddleslim
 
 
+    # PACT 激活预处理：可学习 alpha 对称截断 ReLU 范围
 class PACT(paddle.nn.Layer):
     def __init__(self):
         super(PACT, self).__init__()

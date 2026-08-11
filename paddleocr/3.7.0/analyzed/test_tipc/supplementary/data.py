@@ -1,3 +1,4 @@
+# 图像数据预处理算子与 SimpleDataset：Decode/Normalize/CHW 变换链
 import numpy as np
 import paddle
 import os
@@ -5,6 +6,7 @@ import cv2
 import glob
 
 
+# 顺序执行预处理算子列表，任一返回 None 则中断
 def transform(data, ops=None):
     """transform"""
     if ops is None:
@@ -16,6 +18,7 @@ def transform(data, ops=None):
     return data
 
 
+# 按 YAML 算子配置 eval 实例化并返回算子列表
 def create_operators(op_param_list, global_config=None):
     """
     create operators based on the config
@@ -35,6 +38,7 @@ def create_operators(op_param_list, global_config=None):
     return ops
 
 
+    # 字节流解码为 OpenCV 图像，支持 RGB/GRAY 与 CHW 排列
 class DecodeImage(object):
     """decode image"""
 
@@ -63,6 +67,7 @@ class DecodeImage(object):
         return data
 
 
+    # 图像减均值除标准差，默认 ImageNet 统计量
 class NormalizeImage(object):
     """normalize image such as subtract mean, divide std"""
 
@@ -88,6 +93,7 @@ class NormalizeImage(object):
         return data
 
 
+    # HWC 转 CHW，同步变换 image 与 src_image
 class ToCHWImage(object):
     """convert hwc image to chw image"""
 
@@ -112,6 +118,7 @@ class ToCHWImage(object):
         return data
 
 
+    # 简易数据集：glob 图像列表并挂载 transforms 算子
 class SimpleDataset(nn.Dataset):
     def __init__(self, config, mode, logger, seed=None):
         self.logger = logger

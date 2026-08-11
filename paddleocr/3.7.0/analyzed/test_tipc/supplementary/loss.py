@@ -1,7 +1,9 @@
+# 分类损失：交叉熵/标签平滑、多模型蒸馏与 KL/JS 散度 DML 损失
 import paddle
 import paddle.nn.functional as F
 
 
+    # 交叉熵损失：可选 label smoothing，支持 pure fp16 求和
 class Loss(object):
     """
     Loss
@@ -43,12 +45,14 @@ class Loss(object):
         return self._crossentropy(input, target)
 
 
+# 按 config.class_dim 与 epsilon 构建 Loss 实例
 def build_loss(config, epsilon=None):
     class_dim = config["class_dim"]
     loss_func = Loss(class_dim=class_dim, epsilon=epsilon)
     return loss_func
 
 
+    # 蒸馏损失：对 model_name_list 中各分支分别计算 CE
 class LossDistill(Loss):
     def __init__(self, model_name_list, class_dim=1000, epsilon=None):
         assert class_dim > 1, "class_dim=%d is not larger than 1" % (class_dim)
@@ -71,6 +75,7 @@ class LossDistill(Loss):
         return losses
 
 
+    # KL 或 JS 散度：softmax 后比较两 logits 分布
 class KLJSLoss(object):
     def __init__(self, mode="kl"):
         assert mode in [
@@ -99,6 +104,7 @@ class KLJSLoss(object):
         return loss
 
 
+    # 深度互学习：对模型名对计算 KL/JS 成对损失字典
 class DMLLoss(object):
     def __init__(self, model_name_pairs, mode="js"):
         self.model_name_pairs = self._check_model_name_pairs(model_name_pairs)

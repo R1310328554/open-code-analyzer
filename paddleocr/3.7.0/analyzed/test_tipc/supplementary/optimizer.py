@@ -1,3 +1,4 @@
+# 学习率调度与优化器工厂：Cosine/Piecewise/Warmup 及 Momentum/RMSProp
 import sys
 import math
 from paddle.optimizer.lr import LinearWarmup
@@ -9,6 +10,7 @@ import paddle.regularizer as regularizer
 from copy import deepcopy
 
 
+    # 余弦退火学习率：T_max = step_each_epoch * epochs
 class Cosine(CosineAnnealingDecay):
     """
     Cosine learning rate decay
@@ -28,6 +30,7 @@ class Cosine(CosineAnnealingDecay):
         self.update_specified = False
 
 
+    # 分段常数衰减：decay_epochs 边界乘以 gamma 幂次
 class Piecewise(PiecewiseDecay):
     """
     Piecewise learning rate decay
@@ -46,6 +49,7 @@ class Piecewise(PiecewiseDecay):
         self.update_specified = False
 
 
+    # 线性 warmup 后接余弦衰减
 class CosineWarmup(LinearWarmup):
     """
     Cosine learning rate decay with warmup
@@ -79,6 +83,7 @@ class CosineWarmup(LinearWarmup):
         self.update_specified = False
 
 
+    # 线性 warmup 后接指数衰减，支持指定步长更新
 class ExponentialWarmup(LinearWarmup):
     """
     Exponential learning rate decay with warmup
@@ -120,6 +125,7 @@ class ExponentialWarmup(LinearWarmup):
         self.step_each_epoch = step_each_epoch
 
 
+    # 按 function 名反射实例化学习率调度器
 class LearningRateBuilder:
     """
     Build learning rate variable
@@ -141,6 +147,7 @@ class LearningRateBuilder:
         return lr
 
 
+    # L1 权重衰减正则工厂
 class L1Decay(object):
     """
     L1 Weight Decay Regularization, which encourages the weights to be sparse.
@@ -157,6 +164,7 @@ class L1Decay(object):
         return reg
 
 
+    # L2 权重衰减正则工厂
 class L2Decay(object):
     """
     L2 Weight Decay Regularization, which encourages the weights to be sparse.
@@ -173,6 +181,7 @@ class L2Decay(object):
         return reg
 
 
+    # Momentum 优化器包装，__call__ 返回 paddle.optimizer.Momentum
 class Momentum(object):
     """
     Simple Momentum optimizer with velocity state.
@@ -202,6 +211,7 @@ class Momentum(object):
         return opt
 
 
+    # RMSProp 优化器包装
 class RMSProp(object):
     """
     Root Mean Squared Propagation (RMSProp) is an unpublished, adaptive learning rate method.
@@ -244,6 +254,7 @@ class RMSProp(object):
         return opt
 
 
+    # 按配置创建优化器并注入 regularization
 class OptimizerBuilder(object):
     """
     Build optimizer
@@ -272,6 +283,7 @@ class OptimizerBuilder(object):
         )()
 
 
+# 按 LEARNING_RATE + OPTIMIZER 配置创建 (optimizer, lr_scheduler)
 def create_optimizer(config, parameter_list=None):
     """
     Create an optimizer using config, usually including
@@ -312,6 +324,7 @@ def create_optimizer(config, parameter_list=None):
     return opt(lr, parameter_list), lr
 
 
+# 多优化器场景下的 create_optimizer 变体
 def create_multi_optimizer(config, parameter_list=None):
     """ """
     # create learning_rate instance

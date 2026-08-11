@@ -1,8 +1,10 @@
+# 分类精度指标：top1/topk accuracy，分布式 eval 时 all_reduce 平均
 import paddle
 import paddle.nn.functional as F
 from collections import OrderedDict
 
 
+# 计算 softmax 后 top1 与 topk 准确率，返回 OrderedDict 指标
 def create_metric(
     out,
     label,

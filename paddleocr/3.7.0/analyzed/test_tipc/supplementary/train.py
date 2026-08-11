@@ -1,3 +1,4 @@
+# TIPC 补充训练入口：分类/蒸馏/多优化器，集成 QAT 剪枝与 AMP
 import paddle
 import numpy as np
 import os
@@ -21,6 +22,7 @@ from slim.slim_fpgm import prune_model
 from utils import load_model
 
 
+# 多进程安全创建目录，EEXIST 时忽略
 def _mkdir_if_not_exist(path, logger):
     """
     mkdir if not exists, ignore the exception when multiprocess mkdir together
@@ -37,6 +39,7 @@ def _mkdir_if_not_exist(path, logger):
                 raise OSError("Failed to mkdir {}".format(path))
 
 
+# 保存 pdparams/pdopt，多优化器时分别写入 _1 后缀
 def save_model(
     model, optimizer, model_path, logger, is_best=False, prefix="ppocr", **kwargs
 ):
@@ -62,6 +65,7 @@ def save_model(
         logger.info("save model in {}".format(model_prefix))
 
 
+# 按 AMP 配置创建 GradScaler，未启用时返回 None
 def amp_scaler(config):
     if "AMP" in config and config["AMP"]["use_amp"] is True:
         AMP_RELATED_FLAGS_SETTING = {
@@ -79,11 +83,13 @@ def amp_scaler(config):
         return None
 
 
+# 固定 paddle 与 numpy 随机种子
 def set_seed(seed):
     paddle.seed(seed)
     np.random.seed(seed)
 
 
+# 标准分类训练：build_model + CE loss + 周期性 eval 存 best
 def train(config, scaler=None):
     EPOCH = config["epoch"]
     topk = config["topk"]
@@ -196,6 +202,7 @@ def train(config, scaler=None):
             )
 
 
+# 双 student 蒸馏：CE + DML JS 联合损失，eval student 分支
 def train_distill(config, scaler=None):
     EPOCH = config["epoch"]
     topk = config["topk"]
@@ -313,6 +320,7 @@ def train_distill(config, scaler=None):
             )
 
 
+# 蒸馏 + 双优化器：student/student1 各自 backward 与 step
 def train_distill_multiopt(config, scaler=None):
     EPOCH = config["epoch"]
     topk = config["topk"]
@@ -446,6 +454,7 @@ def train_distill_multiopt(config, scaler=None):
             )
 
 
+# 验证集前向聚合 logits，计算 top1/top5 并打日志
 def eval(config, model):
     batch_size = config["VALID"]["batch_size"]
     num_workers = config["VALID"]["num_workers"]
