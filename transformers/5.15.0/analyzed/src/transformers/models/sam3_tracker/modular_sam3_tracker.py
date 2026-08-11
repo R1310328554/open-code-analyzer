@@ -22,6 +22,8 @@ from ...modeling_utils import PreTrainedModel
 from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoModel
 from ..sam2.configuration_sam2 import (
+# SAM3 Tracker modular 源：复用 SAM2 组件并实现 Tracker 专用逻辑
+
     Sam2Config,
     Sam2MaskDecoderConfig,
     Sam2PromptEncoderConfig,
@@ -45,6 +47,7 @@ from ..sam2.processing_sam2 import Sam2Processor
 
 @auto_docstring(checkpoint="facebook/sam3")
 @strict
+# Sam3TrackerPromptEncoderConfig：SAM3 Tracker 提示编码器配置：点/框/掩码嵌入维度
 class Sam3TrackerPromptEncoderConfig(Sam2PromptEncoderConfig):
     r"""
     mask_input_channels (`int`, *optional*, defaults to 16):
@@ -61,18 +64,21 @@ class Sam3TrackerPromptEncoderConfig(Sam2PromptEncoderConfig):
     patch_size: int | list[int] | tuple[int, int] = 14
 
 
+# Sam3TrackerProcessor：SAM3 Tracker 处理器：图像与点框掩码提示打包
 class Sam3TrackerProcessor(Sam2Processor):
     pass
 
 
 @auto_docstring(checkpoint="facebook/sam3")
 @strict
+# Sam3TrackerMaskDecoderConfig：SAM3 Tracker 掩码解码器配置：双向 Transformer 与上采样
 class Sam3TrackerMaskDecoderConfig(Sam2MaskDecoderConfig):
     pass
 
 
 @auto_docstring(checkpoint="facebook/sam3")
 @strict
+# Sam3TrackerConfig：SAM3 Tracker 联合配置：视觉骨干、提示与掩码解码超参数
 class Sam3TrackerConfig(Sam2Config):
     r"""
     prompt_encoder_config (Union[`dict`, `Sam3TrackerPromptEncoderConfig`], *optional*):
@@ -131,10 +137,12 @@ class Sam3TrackerConfig(Sam2Config):
         PreTrainedConfig.__post_init__(**kwargs)
 
 
+# Sam3TrackerImageSegmentationOutput：SAM3 Tracker 图像分割输出：掩码 logits 与 IoU 预测
 class Sam3TrackerImageSegmentationOutput(Sam2ImageSegmentationOutput):
     pass
 
 
+# Sam3TrackerFeedForward：SAM3 Tracker FFN：两层线性 + 激活的前馈网络
 class Sam3TrackerFeedForward(Sam2FeedForward):
     pass
 
@@ -145,8 +153,10 @@ class Sam3TrackerFeedForward(Sam2FeedForward):
     input points and labels, boxes, or masks.
     """
 )
+# Sam3TrackerPreTrainedModel：SAM3 Tracker 预训练基类：权重初始化与输出录制
 class Sam3TrackerPreTrainedModel(Sam2PreTrainedModel):
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module):
         PreTrainedModel._init_weights(module)
         if isinstance(module, Sam3TrackerModel):
@@ -156,38 +166,47 @@ class Sam3TrackerPreTrainedModel(Sam2PreTrainedModel):
             init.normal_(module.positional_embedding, std=module.scale)
 
 
+# Sam3TrackerPositionalEmbedding：SAM3 Tracker 位置嵌入：可学习或固定空间位置编码
 class Sam3TrackerPositionalEmbedding(Sam2PositionalEmbedding):
     pass
 
 
+# Sam3TrackerMaskEmbedding：SAM3 Tracker 掩码嵌入：将二值掩码映射为 dense 特征
 class Sam3TrackerMaskEmbedding(Sam2MaskEmbedding):
     pass
 
 
+# Sam3TrackerPromptEncoder：SAM3 Tracker 提示编码器：点/框/掩码提示转为稀疏与 dense 嵌入
 class Sam3TrackerPromptEncoder(Sam2PromptEncoder):
     pass
 
 
+# Sam3TrackerAttention：SAM3 Tracker 注意力：标准多头缩放点积自/交叉注意力
 class Sam3TrackerAttention(Sam2Attention):
     pass
 
 
+# Sam3TrackerTwoWayAttentionBlock：SAM3 Tracker 双向注意力块：query 与图像特征双向交互
 class Sam3TrackerTwoWayAttentionBlock(Sam2TwoWayAttentionBlock):
     pass
 
 
+# Sam3TrackerTwoWayTransformer：SAM3 Tracker 双向 Transformer：prompt 与图像 token 双向更新
 class Sam3TrackerTwoWayTransformer(Sam2TwoWayTransformer):
     pass
 
 
+# Sam3TrackerLayerNorm：SAM3 Tracker LayerNorm：通道归一化适配视觉特征
 class Sam3TrackerLayerNorm(Sam2LayerNorm):
     pass
 
 
+# Sam3TrackerMaskDecoder：SAM3 Tracker 掩码解码器：上采样生成高分辨率分割掩码
 class Sam3TrackerMaskDecoder(Sam2MaskDecoder):
     pass
 
 
+# Sam3TrackerModel：SAM3 Tracker 完整模型：Hiera 编码 + 提示 + 掩码解码
 class Sam3TrackerModel(Sam2Model):
     _base_model_prefix = "tracker_model"
     _keys_to_ignore_on_load_unexpected = [
@@ -201,6 +220,7 @@ class Sam3TrackerModel(Sam2Model):
         "occlusion_spatial_embedding_parameter",
     ]
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3TrackerConfig):
         # loading from a sam3_video config
         if hasattr(config, "tracker_config") and config.tracker_config is not None:

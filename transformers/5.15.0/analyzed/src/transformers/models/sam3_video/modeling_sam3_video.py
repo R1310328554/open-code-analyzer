@@ -30,6 +30,8 @@ from ...modeling_utils import PreTrainedModel
 from ...utils import ModelOutput, auto_docstring, is_kernels_available, logging
 from ..auto import AutoModel
 from .configuration_sam3_video import Sam3VideoConfig
+# SAM3 Video 建模：检测-跟踪联合推理、记忆管理与掩码 NMS 后处理
+
 
 
 if is_kernels_available():
@@ -40,6 +42,7 @@ logger = logging.get_logger(__name__)
 cv_utils_kernel = None  # None = not attempted, False = failed, kernel object = success
 
 
+# _load_cv_utils_kernel_once：懒加载 CV 工具内核：一次性注册连通域等自定义算子
 def _load_cv_utils_kernel_once():
     """Load cv_utils_kernel once on first use."""
     global cv_utils_kernel
@@ -64,9 +67,11 @@ def _load_cv_utils_kernel_once():
         cv_utils_kernel = False
 
 
+# Sam3VideoInferenceCache：SAM3 Video 推理缓存：存储跨帧检测与跟踪状态
 class Sam3VideoInferenceCache:
     """Cache for vision features and model constants."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         inference_device: torch.device | str = "cpu",
@@ -116,6 +121,7 @@ class Sam3VideoInferenceCache:
         self._vision_features.clear()
 
 
+# Sam3VideoInferenceSession：SAM3 Video 推理会话：管理多帧输入与检测-跟踪流水线
 class Sam3VideoInferenceSession:
     r"""
     Manages video inference session parameters, state and cache.
@@ -139,6 +145,7 @@ class Sam3VideoInferenceSession:
             The maximum number of vision features to cache.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         video: torch.FloatTensor | None = None,
@@ -459,6 +466,7 @@ class Sam3VideoInferenceSession:
 
 @auto_docstring(custom_intro="Base class for the Sam3Video model's output.")
 @dataclass
+# Sam3VideoSegmentationOutput：SAM3 Video 视频分割输出：逐帧掩码、框与对象分数
 class Sam3VideoSegmentationOutput(ModelOutput):
     r"""
     object_ids (`list[int]`, *optional*):
@@ -487,6 +495,7 @@ class Sam3VideoSegmentationOutput(ModelOutput):
     frame_idx: int | None = None
 
 
+# Sam3VideoPreTrainedModel：SAM3 Video 预训练基类：权重初始化与输出录制
 class Sam3VideoPreTrainedModel(PreTrainedModel):
     """
     An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
@@ -504,7 +513,9 @@ class Sam3VideoPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# Sam3VideoModel：SAM3 Video 完整模型：检测-跟踪联合推理与掩码后处理
 class Sam3VideoModel(Sam3VideoPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3VideoConfig):
         super().__init__(config)
         self.config = config
@@ -1692,6 +1703,7 @@ class Sam3VideoModel(Sam3VideoPreTrainedModel):
 
     @torch.inference_mode()
     @auto_docstring(custom_intro="Propagate the objects through a streamed video frame.")
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         inference_session: Sam3VideoInferenceSession,
@@ -1843,6 +1855,7 @@ class Sam3VideoModel(Sam3VideoPreTrainedModel):
 
 
 @torch.jit.script
+# fast_diag_box_iou：快速对角框 IoU：批量计算同索引框对的交并比
 def fast_diag_box_iou(boxes1, boxes2):
     box1_xy = boxes1[:, 2:]
     box1_XY = boxes1[:, :2]
@@ -1860,6 +1873,7 @@ def fast_diag_box_iou(boxes1, boxes2):
     return iou
 
 
+# mask_iou：掩码 IoU：逐像素计算预测与真值掩码交并比
 def mask_iou(pred_masks: torch.Tensor, gt_masks: torch.Tensor) -> torch.Tensor:
     """
     Compute the IoU (Intersection over Union) between predicted masks and ground truth masks.
@@ -1883,6 +1897,7 @@ def mask_iou(pred_masks: torch.Tensor, gt_masks: torch.Tensor) -> torch.Tensor:
     return ious  # shape: (N, M)
 
 
+# nms_masks：掩码 NMS：按分数过滤重叠实例掩码
 def nms_masks(
     pred_probs: torch.Tensor,
     pred_masks: torch.Tensor,
@@ -1925,6 +1940,7 @@ def nms_masks(
     return keep
 
 
+# fill_holes_in_mask_scores：掩码分数填洞：填充小孔洞并去除孤立噪点
 def fill_holes_in_mask_scores(mask, max_area, fill_holes=True, remove_sprinkles=True):
     """
     A post processor to fill small holes in mask scores with area under `max_area`.
@@ -1964,6 +1980,7 @@ def fill_holes_in_mask_scores(mask, max_area, fill_holes=True, remove_sprinkles=
     return mask
 
 
+# _get_connected_components_with_padding：连通域分析：带 padding 的二值掩码连通分量标记
 def _get_connected_components_with_padding(mask):
     """Get connected components from masks (possibly padding them to an even size)."""
     mask = mask.to(torch.uint8)

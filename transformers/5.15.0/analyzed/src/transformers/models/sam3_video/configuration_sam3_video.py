@@ -18,6 +18,8 @@ from huggingface_hub.dataclasses import strict
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring, logging
 from ..auto import CONFIG_MAPPING, AutoConfig
+# SAM3 Video 配置：检测跟踪联合推理与掩码后处理超参数
+
 
 
 logger = logging.get_logger(__name__)
@@ -25,6 +27,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="facebook/sam3")
 @strict
+# Sam3VideoConfig：SAM3 Video 联合配置：检测跟踪推理与掩码后处理超参数
 class Sam3VideoConfig(PreTrainedConfig):
     r"""
     detector_config (`dict` or `Sam3Config`, *optional*):

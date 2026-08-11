@@ -22,6 +22,8 @@ from ...utils import TransformersKwargs, auto_docstring, can_return_tuple
 from ..auto import CONFIG_MAPPING, AutoConfig, AutoModel
 from ..sam2_video.configuration_sam2_video import Sam2VideoMaskDecoderConfig, Sam2VideoPromptEncoderConfig
 from ..sam2_video.modeling_sam2_video import (
+# SAM3 Tracker Video modular 源：复用 SAM2 Video 组件并实现 Tracker 逻辑
+
     Sam2VideoAttention,
     Sam2VideoFeedForward,
     Sam2VideoImageSegmentationOutput,
@@ -54,6 +56,7 @@ from ..sam2_video.processing_sam2_video import Sam2VideoProcessor
 
 @auto_docstring(checkpoint="facebook/sam3")
 @strict
+# Sam3TrackerVideoPromptEncoderConfig：SAM3 Tracker Video 提示编码器配置：嵌入维度与输入类型
 class Sam3TrackerVideoPromptEncoderConfig(Sam2VideoPromptEncoderConfig):
     r"""
     mask_input_channels (`int`, *optional*, defaults to 16):
@@ -70,18 +73,21 @@ class Sam3TrackerVideoPromptEncoderConfig(Sam2VideoPromptEncoderConfig):
     patch_size: int | list[int] | tuple[int, int] = 14
 
 
+# Sam3TrackerVideoProcessor：SAM3 Tracker Video 处理器：视频帧与点框掩码提示打包
 class Sam3TrackerVideoProcessor(Sam2VideoProcessor):
     pass
 
 
 @auto_docstring(checkpoint="facebook/sam3")
 @strict
+# Sam3TrackerVideoMaskDecoderConfig：SAM3 Tracker Video 掩码解码器配置：Transformer 层数与上采样
 class Sam3TrackerVideoMaskDecoderConfig(Sam2VideoMaskDecoderConfig):
     pass
 
 
 @auto_docstring(checkpoint="facebook/sam3")
 @strict
+# Sam3TrackerVideoConfig：SAM3 Tracker Video 联合配置：编码器、记忆与解码器超参数
 class Sam3TrackerVideoConfig(PreTrainedConfig):
     r"""
     prompt_encoder_config (Union[`dict`, `Sam3TrackerVideoPromptEncoderConfig`], *optional*):
@@ -292,109 +298,136 @@ class Sam3TrackerVideoConfig(PreTrainedConfig):
         self.__dict__["image_size"] = value
 
 
+# Sam3TrackerVideoInferenceCache：SAM3 Tracker Video 推理缓存：存储跨帧记忆特征与对象状态
 class Sam3TrackerVideoInferenceCache(Sam2VideoInferenceCache):
     pass
 
 
+# Sam3TrackerVideoInferenceSession：SAM3 Tracker Video 推理会话：管理多帧输入、提示与跟踪状态
 class Sam3TrackerVideoInferenceSession(Sam2VideoInferenceSession):
     pass
 
 
+# Sam3TrackerVideoLayerNorm：SAM3 Tracker Video LayerNorm：通道归一化适配视觉特征
 class Sam3TrackerVideoLayerNorm(Sam2VideoLayerNorm):
     pass
 
 
+# Sam3TrackerVideoPositionEmbeddingSine：SAM3 Tracker Video 正弦位置编码：2D 空间坐标嵌入
 class Sam3TrackerVideoPositionEmbeddingSine(Sam2VideoPositionEmbeddingSine):
     pass
 
 
+# Sam3TrackerVideoAttention：SAM3 Tracker Video 注意力：标准多头缩放点积自/交叉注意力
 class Sam3TrackerVideoAttention(Sam2VideoAttention):
     pass
 
 
+# Sam3TrackerVideoTwoWayAttentionBlock：SAM3 Tracker Video 双向注意力块：query 与图像特征双向交互
 class Sam3TrackerVideoTwoWayAttentionBlock(Sam2VideoTwoWayAttentionBlock):
     pass
 
 
+# Sam3TrackerVideoFeedForward：SAM3 Tracker Video FFN：两层线性 + 激活的前馈网络
 class Sam3TrackerVideoFeedForward(Sam2VideoFeedForward):
     pass
 
 
+# Sam3TrackerVideoImageSegmentationOutput：SAM3 Tracker Video 图像分割输出：掩码 logits 与 IoU 预测
 class Sam3TrackerVideoImageSegmentationOutput(Sam2VideoImageSegmentationOutput):
     pass
 
 
+# Sam3TrackerVideoSegmentationOutput：SAM3 Tracker Video 视频分割输出：逐帧掩码与对象分数
 class Sam3TrackerVideoSegmentationOutput(Sam2VideoSegmentationOutput):
     pass
 
 
+# Sam3TrackerVideoPreTrainedModel：SAM3 Tracker Video 预训练基类：权重初始化与输出录制
 class Sam3TrackerVideoPreTrainedModel(Sam2VideoPreTrainedModel):
     base_model_prefix = "tracker_model"
 
 
+# Sam3TrackerVideoVisionRotaryEmbedding：SAM3 Tracker Video 视觉 RoPE：2D 旋转位置编码基频
 class Sam3TrackerVideoVisionRotaryEmbedding(Sam2VideoVisionRotaryEmbedding):
     pass
 
 
+# Sam3TrackerVideoRoPEAttention：SAM3 Tracker Video RoPE 注意力：带 2D 旋转位置编码的多头注意力
 class Sam3TrackerVideoRoPEAttention(Sam2VideoRoPEAttention):
     pass
 
 
+# Sam3TrackerVideoMemoryAttentionLayer：SAM3 Tracker Video 记忆注意力层：当前帧与历史记忆特征交互
 class Sam3TrackerVideoMemoryAttentionLayer(Sam2VideoMemoryAttentionLayer):
     pass
 
 
+# Sam3TrackerVideoMemoryAttention：SAM3 Tracker Video 记忆注意力模块：堆叠多层记忆 cross-attention
 class Sam3TrackerVideoMemoryAttention(Sam2VideoMemoryAttention):
     pass
 
 
+# Sam3TrackerVideoMemoryFuserCXBlock：SAM3 Tracker Video 记忆融合 CX 块：ConvNeXt 风格特征融合
 class Sam3TrackerVideoMemoryFuserCXBlock(Sam2VideoMemoryFuserCXBlock):
     pass
 
 
+# Sam3TrackerVideoMemoryFuser：SAM3 Tracker Video 记忆融合器：将记忆特征注入当前帧表示
 class Sam3TrackerVideoMemoryFuser(Sam2VideoMemoryFuser):
     pass
 
 
+# Sam3TrackerVideoMaskDownSamplerLayer：SAM3 Tracker Video 掩码下采样层：逐步降低掩码空间分辨率
 class Sam3TrackerVideoMaskDownSamplerLayer(Sam2VideoMaskDownSamplerLayer):
     pass
 
 
+# Sam3TrackerVideoMaskDownSampler：SAM3 Tracker Video 掩码下采样器：多层卷积压缩掩码提示
 class Sam3TrackerVideoMaskDownSampler(Sam2VideoMaskDownSampler):
     pass
 
 
+# Sam3TrackerVideoMemoryEncoder：SAM3 Tracker Video 记忆编码器：将 past 帧掩码与特征编码为记忆
 class Sam3TrackerVideoMemoryEncoder(Sam2VideoMemoryEncoder):
     pass
 
 
+# Sam3TrackerVideoVisionEncoderOutput：SAM3 Tracker Video 视觉编码输出：多尺度特征图与池化向量
 class Sam3TrackerVideoVisionEncoderOutput(Sam2VideoVisionEncoderOutput):
     pass
 
 
+# Sam3TrackerVideoPositionalEmbedding：SAM3 Tracker Video 位置嵌入：可学习或固定空间位置编码
 class Sam3TrackerVideoPositionalEmbedding(Sam2VideoPositionalEmbedding):
     pass
 
 
+# Sam3TrackerVideoMaskEmbedding：SAM3 Tracker Video 掩码嵌入：将二值掩码映射为 dense 特征
 class Sam3TrackerVideoMaskEmbedding(Sam2VideoMaskEmbedding):
     pass
 
 
+# Sam3TrackerVideoPromptEncoder：SAM3 Tracker Video 提示编码器：点/框/掩码提示转为稀疏与 dense 嵌入
 class Sam3TrackerVideoPromptEncoder(Sam2VideoPromptEncoder):
     pass
 
 
+# Sam3TrackerVideoTwoWayTransformer：SAM3 Tracker Video 双向 Transformer：prompt 与图像 token 双向更新
 class Sam3TrackerVideoTwoWayTransformer(Sam2VideoTwoWayTransformer):
     pass
 
 
+# Sam3TrackerVideoMaskDecoder：SAM3 Tracker Video 掩码解码器：上采样生成高分辨率分割掩码
 class Sam3TrackerVideoMaskDecoder(Sam2VideoMaskDecoder):
     pass
 
 
+# Sam3TrackerVideoModel：SAM3 Tracker Video 完整模型：编码器 + 记忆 + 提示 + 掩码解码
 class Sam3TrackerVideoModel(Sam2VideoModel):
     _keys_to_ignore_on_load_unexpected = [r"^detector_model."]
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3TrackerVideoConfig, remove_vision_encoder: bool = False):
         r"""
         remove_vision_encoder (`bool`, *optional*, defaults to `False`):

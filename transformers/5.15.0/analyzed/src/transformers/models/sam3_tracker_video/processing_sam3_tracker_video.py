@@ -32,11 +32,15 @@ from ...utils import TensorType, auto_docstring
 from ...utils.import_utils import requires
 from ...video_utils import VideoInput
 from .modeling_sam3_tracker_video import Sam3TrackerVideoInferenceSession
+# SAM3 Tracker Video 处理器：协调视频帧预处理与点/框/掩码提示输入
+
 
 
 @requires(backends=("torch",))
 @auto_docstring
+# Sam3TrackerVideoProcessor：SAM3 Tracker Video 处理器：视频帧与点框掩码提示打包
 class Sam3TrackerVideoProcessor(ProcessorMixin):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self, image_processor, video_processor, target_size: int | None = None, point_pad_value: int = -10, **kwargs
     ):
@@ -55,6 +59,7 @@ class Sam3TrackerVideoProcessor(ProcessorMixin):
         self.target_size = target_size if target_size is not None else self.image_processor.size["height"]
 
     @auto_docstring
+    # __call__：处理器调用：预处理输入并返回 BatchFeature
     def __call__(
         self,
         images: ImageInput | None = None,

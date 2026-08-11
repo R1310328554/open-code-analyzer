@@ -24,10 +24,13 @@ from huggingface_hub.dataclasses import strict
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
+# SAM3 Tracker 配置：提示编码器、掩码解码器与 Hiera 视觉骨干超参数
+
 
 
 @auto_docstring(checkpoint="facebook/sam3")
 @strict
+# Sam3TrackerPromptEncoderConfig：SAM3 Tracker 提示编码器配置：点/框/掩码嵌入维度
 class Sam3TrackerPromptEncoderConfig(PreTrainedConfig):
     r"""
     mask_input_channels (`int`, *optional*, defaults to 16):
@@ -53,6 +56,7 @@ class Sam3TrackerPromptEncoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="facebook/sam3")
 @strict
+# Sam3TrackerMaskDecoderConfig：SAM3 Tracker 掩码解码器配置：双向 Transformer 与上采样
 class Sam3TrackerMaskDecoderConfig(PreTrainedConfig):
     r"""
     mlp_dim (`int`, *optional*, defaults to 2048):
@@ -91,6 +95,7 @@ class Sam3TrackerMaskDecoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="facebook/sam3")
 @strict
+# Sam3TrackerConfig：SAM3 Tracker 联合配置：视觉骨干、提示与掩码解码超参数
 class Sam3TrackerConfig(PreTrainedConfig):
     r"""
     prompt_encoder_config (Union[`dict`, `Sam3TrackerPromptEncoderConfig`], *optional*):

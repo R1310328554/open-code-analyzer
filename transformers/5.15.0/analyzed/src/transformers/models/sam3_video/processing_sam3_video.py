@@ -14,6 +14,8 @@
 from typing import Union
 
 from ...utils import is_torch_available
+# SAM3 Video 处理器：视频帧与文本/几何提示协调预处理
+
 
 
 if is_torch_available():
@@ -36,7 +38,9 @@ from .modeling_sam3_video import Sam3VideoInferenceSession
 
 @requires(backends=("torch", "torchvision"))
 @auto_docstring
+# Sam3VideoProcessor：SAM3 Video 处理器：视频帧与文本/几何提示协调打包
 class Sam3VideoProcessor(ProcessorMixin):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         image_processor,
@@ -53,6 +57,7 @@ class Sam3VideoProcessor(ProcessorMixin):
         self.target_size = target_size if target_size is not None else self.image_processor.size["height"]
 
     @auto_docstring
+    # __call__：处理器调用：预处理输入并返回 BatchFeature
     def __call__(
         self,
         images: ImageInput | None = None,

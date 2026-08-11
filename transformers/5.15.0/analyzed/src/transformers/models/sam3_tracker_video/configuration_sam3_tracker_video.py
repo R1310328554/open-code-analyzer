@@ -24,10 +24,13 @@ from huggingface_hub.dataclasses import strict
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
+# SAM3 Tracker Video 配置：记忆编码、RoPE 注意力与掩码解码超参数
+
 
 
 @auto_docstring(checkpoint="facebook/sam3")
 @strict
+# Sam3TrackerVideoPromptEncoderConfig：SAM3 Tracker Video 提示编码器配置：嵌入维度与输入类型
 class Sam3TrackerVideoPromptEncoderConfig(PreTrainedConfig):
     r"""
     mask_input_channels (`int`, *optional*, defaults to 16):
@@ -53,6 +56,7 @@ class Sam3TrackerVideoPromptEncoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="facebook/sam3")
 @strict
+# Sam3TrackerVideoMaskDecoderConfig：SAM3 Tracker Video 掩码解码器配置：Transformer 层数与上采样
 class Sam3TrackerVideoMaskDecoderConfig(PreTrainedConfig):
     r"""
     mlp_dim (`int`, *optional*, defaults to 2048):
@@ -91,6 +95,7 @@ class Sam3TrackerVideoMaskDecoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="facebook/sam3")
 @strict
+# Sam3TrackerVideoConfig：SAM3 Tracker Video 联合配置：编码器、记忆与解码器超参数
 class Sam3TrackerVideoConfig(PreTrainedConfig):
     r"""
     prompt_encoder_config (Union[`dict`, `Sam3TrackerVideoPromptEncoderConfig`], *optional*):

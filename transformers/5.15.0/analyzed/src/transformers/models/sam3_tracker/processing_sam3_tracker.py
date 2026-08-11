@@ -29,11 +29,15 @@ from ...processing_utils import ProcessorMixin
 from ...tokenization_utils_base import BatchEncoding
 from ...utils import TensorType, auto_docstring
 from ...utils.import_utils import requires
+# SAM3 Tracker 处理器：图像与点/框/掩码提示联合预处理与批处理
+
 
 
 @requires(backends=("torch",))
 @auto_docstring
+# Sam3TrackerProcessor：SAM3 Tracker 处理器：图像与点框掩码提示打包
 class Sam3TrackerProcessor(ProcessorMixin):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, image_processor, target_size: int | None = None, point_pad_value: int = -10, **kwargs):
         r"""
         target_size (`int`, *optional*):
@@ -50,6 +54,7 @@ class Sam3TrackerProcessor(ProcessorMixin):
         self.target_size = target_size if target_size is not None else self.image_processor.size["height"]
 
     @auto_docstring
+    # __call__：处理器调用：预处理输入并返回 BatchFeature
     def __call__(
         self,
         images: ImageInput | None = None,

@@ -45,6 +45,8 @@ from ...utils.generic import is_flash_attention_requested
 from ...utils.output_capturing import OutputRecorder
 from ..auto import AutoModel
 from .configuration_sam3_tracker_video import (
+# SAM3 Tracker Video 建模：记忆注意力、提示编码、掩码解码与跨帧跟踪
+
     Sam3TrackerVideoConfig,
     Sam3TrackerVideoMaskDecoderConfig,
     Sam3TrackerVideoPromptEncoderConfig,
@@ -54,9 +56,11 @@ from .configuration_sam3_tracker_video import (
 logger = logging.get_logger(__name__)
 
 
+# Sam3TrackerVideoInferenceCache：SAM3 Tracker Video 推理缓存：存储跨帧记忆特征与对象状态
 class Sam3TrackerVideoInferenceCache:
     """Cache for vision features and model constants."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         inference_device: torch.device | str = "cpu",
@@ -106,6 +110,7 @@ class Sam3TrackerVideoInferenceCache:
         self._vision_features.clear()
 
 
+# Sam3TrackerVideoInferenceSession：SAM3 Tracker Video 推理会话：管理多帧输入、提示与跟踪状态
 class Sam3TrackerVideoInferenceSession:
     r"""
     Manages video inference session parameters, state and cache.
@@ -129,6 +134,7 @@ class Sam3TrackerVideoInferenceSession:
             The maximum number of vision features to cache.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         video: torch.FloatTensor | None = None,
@@ -346,18 +352,21 @@ class Sam3TrackerVideoInferenceSession:
         self.cache.clear_all()
 
 
+# Sam3TrackerVideoLayerNorm：SAM3 Tracker Video LayerNorm：通道归一化适配视觉特征
 class Sam3TrackerVideoLayerNorm(nn.LayerNorm):
     r"""LayerNorm that supports two data formats: channels_last (default) or channels_first.
     The ordering of the dimensions in the inputs. channels_last corresponds to inputs with shape (batch_size, height,
     width, channels) while channels_first corresponds to inputs with shape (batch_size, channels, height, width).
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, normalized_shape, *, eps=1e-6, data_format="channels_last", **kwargs):
         super().__init__(normalized_shape, eps=eps, **kwargs)
         if data_format not in ["channels_last", "channels_first"]:
             raise NotImplementedError(f"Unsupported data format: {data_format}")
         self.data_format = data_format
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, features: torch.Tensor) -> torch.Tensor:
         """
         Args:
@@ -372,12 +381,14 @@ class Sam3TrackerVideoLayerNorm(nn.LayerNorm):
         return features
 
 
+# Sam3TrackerVideoPositionEmbeddingSine：SAM3 Tracker Video 正弦位置编码：2D 空间坐标嵌入
 class Sam3TrackerVideoPositionEmbeddingSine(nn.Module):
     """
     This is a more standard version of the position embedding, very similar to the one used by the Attention is all you
     need paper, generalized to work on images.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         num_position_features: int = 64,
@@ -437,6 +448,7 @@ class Sam3TrackerVideoPositionEmbeddingSine(nn.Module):
         pos = torch.cat((pos_y, pos_x), dim=3).permute(0, 3, 1, 2)
         return pos
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         shape: torch.Size,
@@ -449,6 +461,7 @@ class Sam3TrackerVideoPositionEmbeddingSine(nn.Module):
         )
 
 
+# eager_attention_forward：标准注意力前向：QK^T 缩放 softmax 加权 V
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -471,12 +484,14 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# Sam3TrackerVideoAttention：SAM3 Tracker Video 注意力：标准多头缩放点积自/交叉注意力
 class Sam3TrackerVideoAttention(nn.Module):
     """
     SAM3_TRACKER_VIDEO's attention layer that allows for downscaling the size of the embedding after projection to queries, keys, and
     values.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, downsample_rate=None):
         super().__init__()
         downsample_rate = config.attention_downsample_rate if downsample_rate is None else downsample_rate
@@ -493,6 +508,7 @@ class Sam3TrackerVideoAttention(nn.Module):
         self.v_proj = nn.Linear(self.hidden_size, self.internal_dim)
         self.o_proj = nn.Linear(self.internal_dim, self.hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         query: torch.Tensor,
@@ -542,7 +558,9 @@ class Sam3TrackerVideoAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# Sam3TrackerVideoTwoWayAttentionBlock：SAM3 Tracker Video 双向注意力块：query 与图像特征双向交互
 class Sam3TrackerVideoTwoWayAttentionBlock(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3TrackerVideoMaskDecoderConfig, skip_first_layer_pe: bool = False):
         """
         A transformer block with four layers:
@@ -574,6 +592,7 @@ class Sam3TrackerVideoTwoWayAttentionBlock(GradientCheckpointingLayer):
 
         self.skip_first_layer_pe = skip_first_layer_pe
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         queries: Tensor,
@@ -619,7 +638,9 @@ class Sam3TrackerVideoTwoWayAttentionBlock(GradientCheckpointingLayer):
         return queries, keys, attn_out
 
 
+# Sam3TrackerVideoFeedForward：SAM3 Tracker Video FFN：两层线性 + 激活的前馈网络
 class Sam3TrackerVideoFeedForward(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         input_dim: int,
@@ -637,6 +658,7 @@ class Sam3TrackerVideoFeedForward(nn.Module):
         self.layers = nn.ModuleList([nn.Linear(hidden_dim, hidden_dim) for _ in range(num_layers - 2)])
         self.sigmoid_output = sigmoid_output
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.proj_in(hidden_states)
         hidden_states = self.activation(hidden_states)
@@ -651,6 +673,7 @@ class Sam3TrackerVideoFeedForward(nn.Module):
 
 @auto_docstring(custom_intro="Base class for the Sam3TrackerVideo model's output.")
 @dataclass
+# Sam3TrackerVideoImageSegmentationOutput：SAM3 Tracker Video 图像分割输出：掩码 logits 与 IoU 预测
 class Sam3TrackerVideoImageSegmentationOutput(ModelOutput):
     r"""
     iou_scores (`torch.FloatTensor` of shape `(batch_size, point_batch_size, num_masks)`):
@@ -692,6 +715,7 @@ class Sam3TrackerVideoImageSegmentationOutput(ModelOutput):
 
 @auto_docstring(custom_intro="Base class for the Sam2 model's output.")
 @dataclass
+# Sam3TrackerVideoSegmentationOutput：SAM3 Tracker Video 视频分割输出：逐帧掩码与对象分数
 class Sam3TrackerVideoSegmentationOutput(ModelOutput):
     r"""
     object_ids (`list[int]`, *optional*):
@@ -711,6 +735,7 @@ class Sam3TrackerVideoSegmentationOutput(ModelOutput):
 
 
 @auto_docstring
+# Sam3TrackerVideoPreTrainedModel：SAM3 Tracker Video 预训练基类：权重初始化与输出录制
 class Sam3TrackerVideoPreTrainedModel(PreTrainedModel):
     config_class = Sam3TrackerVideoConfig
     base_model_prefix = "tracker_model"
@@ -721,6 +746,7 @@ class Sam3TrackerVideoPreTrainedModel(PreTrainedModel):
     _supports_attention_backend = True
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, Sam3TrackerVideoModel):
@@ -743,12 +769,14 @@ class Sam3TrackerVideoPreTrainedModel(PreTrainedModel):
             init.normal_(module.positional_embedding, std=module.scale)
 
 
+# Sam3TrackerVideoVisionRotaryEmbedding：SAM3 Tracker Video 视觉 RoPE：2D 旋转位置编码基频
 class Sam3TrackerVideoVisionRotaryEmbedding(nn.Module):
     """
     Vision Rotary Position Embedding for SAM2, following transformers library standards.
     Supports 2D (axial) rotary embeddings for spatial dimensions.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3TrackerVideoConfig):
         super().__init__()
         self.dim = config.memory_attention_hidden_size // (
@@ -766,6 +794,7 @@ class Sam3TrackerVideoVisionRotaryEmbedding(nn.Module):
         self.rope_embeddings_sin = nn.Buffer(inv_freq.sin(), persistent=False)
 
     @torch.no_grad()
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self) -> tuple[torch.Tensor, torch.Tensor]:
         # As the feature map size is fixed, we can just return the pre-computed embeddings.
         return self.rope_embeddings_cos, self.rope_embeddings_sin
@@ -785,6 +814,7 @@ class Sam3TrackerVideoVisionRotaryEmbedding(nn.Module):
         return inv_freq
 
 
+# rotate_pairwise：成对旋转：将特征拆分为复数对并应用 RoPE
 def rotate_pairwise(x):
     """
     pairwise rotation of the hidden dims of the input. Different from Llama Half-Tensor Rotation.
@@ -804,6 +834,7 @@ def rotate_pairwise(x):
 
 
 # TODO: This leads to ~1e-07 max diff and ~1e-09 avg diff for q_embed and k_embed from the original implementation, most likely due to the use of complex tensors in the original implementation.
+# apply_rotary_pos_emb_2d：2D RoPE 应用：在 H/W 维度注入旋转位置编码
 def apply_rotary_pos_emb_2d(
     q: torch.Tensor,
     k: torch.Tensor,
@@ -851,9 +882,11 @@ def apply_rotary_pos_emb_2d(
     return q_embed.type_as(q), k_embed
 
 
+# Sam3TrackerVideoRoPEAttention：SAM3 Tracker Video RoPE 注意力：带 2D 旋转位置编码的多头注意力
 class Sam3TrackerVideoRoPEAttention(nn.Module):
     """Attention with rotary position encoding."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: Sam3TrackerVideoConfig,
@@ -879,6 +912,7 @@ class Sam3TrackerVideoRoPEAttention(nn.Module):
         self.rope_k_repeat = rope_k_repeat
         self.dropout_p = config.memory_attention_rope_dropout
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         query: torch.Tensor,
@@ -924,7 +958,9 @@ class Sam3TrackerVideoRoPEAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# Sam3TrackerVideoMemoryAttentionLayer：SAM3 Tracker Video 记忆注意力层：当前帧与历史记忆特征交互
 class Sam3TrackerVideoMemoryAttentionLayer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3TrackerVideoConfig):
         super().__init__()
         hidden_size = config.memory_attention_hidden_size
@@ -945,6 +981,7 @@ class Sam3TrackerVideoMemoryAttentionLayer(nn.Module):
 
         self.activation = ACT2FN[config.memory_attention_feed_forward_hidden_act]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         queries: Tensor,
@@ -975,7 +1012,9 @@ class Sam3TrackerVideoMemoryAttentionLayer(nn.Module):
         return queries
 
 
+# Sam3TrackerVideoMemoryAttention：SAM3 Tracker Video 记忆注意力模块：堆叠多层记忆 cross-attention
 class Sam3TrackerVideoMemoryAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3TrackerVideoConfig):
         super().__init__()
         self.layers = nn.ModuleList(
@@ -984,6 +1023,7 @@ class Sam3TrackerVideoMemoryAttention(nn.Module):
         self.layer_norm = nn.LayerNorm(config.memory_attention_hidden_size)
         self.rotary_emb = Sam3TrackerVideoVisionRotaryEmbedding(config=config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         current_vision_features: torch.Tensor,
@@ -1032,7 +1072,9 @@ class Sam3TrackerVideoMemoryAttention(nn.Module):
 
 
 # Lightly adapted from ConvNext (https://github.com/facebookresearch/ConvNeXt)
+# Sam3TrackerVideoMemoryFuserCXBlock：SAM3 Tracker Video 记忆融合 CX 块：ConvNeXt 风格特征融合
 class Sam3TrackerVideoMemoryFuserCXBlock(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3TrackerVideoConfig):
         super().__init__()
         self.depthwise_conv = nn.Conv2d(
@@ -1055,6 +1097,7 @@ class Sam3TrackerVideoMemoryFuserCXBlock(GradientCheckpointingLayer):
             requires_grad=True,
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         input = hidden_states
         hidden_states = self.depthwise_conv(hidden_states)
@@ -1070,13 +1113,16 @@ class Sam3TrackerVideoMemoryFuserCXBlock(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Sam3TrackerVideoMemoryFuser：SAM3 Tracker Video 记忆融合器：将记忆特征注入当前帧表示
 class Sam3TrackerVideoMemoryFuser(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3TrackerVideoConfig):
         super().__init__()
         self.layers = nn.ModuleList(
             [Sam3TrackerVideoMemoryFuserCXBlock(config) for _ in range(config.memory_fuser_num_layers)]
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         # normally hidden_states: (N, C, H, W)
         for layer in self.layers:
@@ -1084,7 +1130,9 @@ class Sam3TrackerVideoMemoryFuser(nn.Module):
         return hidden_states
 
 
+# Sam3TrackerVideoMaskDownSamplerLayer：SAM3 Tracker Video 掩码下采样层：逐步降低掩码空间分辨率
 class Sam3TrackerVideoMaskDownSamplerLayer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3TrackerVideoConfig, in_channels: int, out_channels: int):
         super().__init__()
         self.conv = nn.Conv2d(
@@ -1097,10 +1145,12 @@ class Sam3TrackerVideoMaskDownSamplerLayer(nn.Module):
         self.layer_norm = Sam3TrackerVideoLayerNorm(out_channels, eps=1e-6, data_format="channels_first")
         self.activation = ACT2FN[config.mask_downsampler_hidden_act]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         return self.activation(self.layer_norm(self.conv(x)))
 
 
+# Sam3TrackerVideoMaskDownSampler：SAM3 Tracker Video 掩码下采样器：多层卷积压缩掩码提示
 class Sam3TrackerVideoMaskDownSampler(nn.Module):
     """
     Progressively downsample a mask by total_stride, each time by stride.
@@ -1110,6 +1160,7 @@ class Sam3TrackerVideoMaskDownSampler(nn.Module):
     In the end, we linearly project to embed_dim channels.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3TrackerVideoConfig):
         super().__init__()
 
@@ -1125,6 +1176,7 @@ class Sam3TrackerVideoMaskDownSampler(nn.Module):
 
         self.final_conv = nn.Conv2d(mask_out_chans, config.mask_downsampler_embed_dim, kernel_size=1)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         for layer in self.layers:
             x = layer(x)
@@ -1132,7 +1184,9 @@ class Sam3TrackerVideoMaskDownSampler(nn.Module):
         return x
 
 
+# Sam3TrackerVideoMemoryEncoder：SAM3 Tracker Video 记忆编码器：将 past 帧掩码与特征编码为记忆
 class Sam3TrackerVideoMemoryEncoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3TrackerVideoConfig):
         super().__init__()
 
@@ -1146,6 +1200,7 @@ class Sam3TrackerVideoMemoryEncoder(nn.Module):
         )
         self.projection = nn.Conv2d(hidden_size, output_channels, kernel_size=1)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         vision_features: torch.Tensor,
@@ -1167,6 +1222,7 @@ class Sam3TrackerVideoMemoryEncoder(nn.Module):
 
 @auto_docstring(custom_intro="Base class for the vision encoder's outputs.")
 @dataclass
+# Sam3TrackerVideoVisionEncoderOutput：SAM3 Tracker Video 视觉编码输出：多尺度特征图与池化向量
 class Sam3TrackerVideoVisionEncoderOutput(BaseModelOutputWithPooling):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, height, width, hidden_size)`):
@@ -1183,13 +1239,16 @@ class Sam3TrackerVideoVisionEncoderOutput(BaseModelOutputWithPooling):
     fpn_position_encoding: torch.FloatTensor | None = None
 
 
+# Sam3TrackerVideoPositionalEmbedding：SAM3 Tracker Video 位置嵌入：可学习或固定空间位置编码
 class Sam3TrackerVideoPositionalEmbedding(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3TrackerVideoPromptEncoderConfig):
         super().__init__()
         self.scale = config.scale
         positional_embedding = self.scale * torch.randn((2, config.hidden_size // 2))
         self.positional_embedding = nn.Buffer(positional_embedding)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input_coords, input_shape=None):
         """Positionally encode points that are normalized to [0,1]."""
         coordinates = input_coords.clone()
@@ -1208,7 +1267,9 @@ class Sam3TrackerVideoPositionalEmbedding(nn.Module):
         return torch.cat([torch.sin(coordinates), torch.cos(coordinates)], dim=-1)
 
 
+# Sam3TrackerVideoMaskEmbedding：SAM3 Tracker Video 掩码嵌入：将二值掩码映射为 dense 特征
 class Sam3TrackerVideoMaskEmbedding(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3TrackerVideoPromptEncoderConfig):
         super().__init__()
         self.mask_input_channels = config.mask_input_channels // 4
@@ -1223,6 +1284,7 @@ class Sam3TrackerVideoMaskEmbedding(nn.Module):
             self.mask_input_channels * 4, eps=config.layer_norm_eps, data_format="channels_first"
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, masks):
         hidden_states = self.conv1(masks)
         hidden_states = self.layer_norm1(hidden_states)
@@ -1235,7 +1297,9 @@ class Sam3TrackerVideoMaskEmbedding(nn.Module):
         return dense_embeddings
 
 
+# Sam3TrackerVideoPromptEncoder：SAM3 Tracker Video 提示编码器：点/框/掩码提示转为稀疏与 dense 嵌入
 class Sam3TrackerVideoPromptEncoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3TrackerVideoPromptEncoderConfig):
         super().__init__()
         self.shared_embedding = Sam3TrackerVideoPositionalEmbedding(config)
@@ -1287,6 +1351,7 @@ class Sam3TrackerVideoPromptEncoder(nn.Module):
         corner_embedding[:, :, 2, :] = self.not_a_point_embed.weight.expand_as(corner_embedding[:, :, 2, :])
         return corner_embedding
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_points: tuple[torch.Tensor, torch.Tensor] | None,
@@ -1330,7 +1395,9 @@ class Sam3TrackerVideoPromptEncoder(nn.Module):
         return sparse_embeddings, dense_embeddings
 
 
+# Sam3TrackerVideoTwoWayTransformer：SAM3 Tracker Video 双向 Transformer：prompt 与图像 token 双向更新
 class Sam3TrackerVideoTwoWayTransformer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3TrackerVideoMaskDecoderConfig):
         super().__init__()
         self.config = config
@@ -1344,6 +1411,7 @@ class Sam3TrackerVideoTwoWayTransformer(nn.Module):
         self.final_attn_token_to_image = Sam3TrackerVideoAttention(config)
         self.layer_norm_final_attn = nn.LayerNorm(config.hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         point_embeddings: Tensor,
@@ -1387,7 +1455,9 @@ class Sam3TrackerVideoTwoWayTransformer(nn.Module):
         return queries, keys
 
 
+# Sam3TrackerVideoMaskDecoder：SAM3 Tracker Video 掩码解码器：上采样生成高分辨率分割掩码
 class Sam3TrackerVideoMaskDecoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3TrackerVideoMaskDecoderConfig):
         super().__init__()
         self.config = config
@@ -1429,6 +1499,7 @@ class Sam3TrackerVideoMaskDecoder(nn.Module):
         self.dynamic_multimask_stability_delta = config.dynamic_multimask_stability_delta
         self.dynamic_multimask_stability_thresh = config.dynamic_multimask_stability_thresh
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         image_embeddings: torch.Tensor,
@@ -1594,6 +1665,7 @@ class Sam3TrackerVideoMaskDecoder(nn.Module):
 NO_OBJ_SCORE = -1024.0
 
 
+# get_1d_sine_pe：1D 正弦位置编码：按索引生成 sin/cos 嵌入
 def get_1d_sine_pe(pos_inds, dim, temperature=10000):
     """
     Get 1D sine positional embedding as in the original Transformer paper.
@@ -1608,12 +1680,14 @@ def get_1d_sine_pe(pos_inds, dim, temperature=10000):
 
 
 @auto_docstring
+# Sam3TrackerVideoModel：SAM3 Tracker Video 完整模型：编码器 + 记忆 + 提示 + 掩码解码
 class Sam3TrackerVideoModel(Sam3TrackerVideoPreTrainedModel):
     input_modalities = ("video", "text")
     _can_record_outputs = {"mask_decoder_attentions": OutputRecorder(Sam3TrackerVideoTwoWayAttentionBlock, index=2)}
     _tied_weights_keys = {}
     _keys_to_ignore_on_load_unexpected = [r"^detector_model."]
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam3TrackerVideoConfig, remove_vision_encoder: bool = False):
         r"""
         remove_vision_encoder (`bool`, *optional*, defaults to `False`):
@@ -1752,6 +1826,7 @@ class Sam3TrackerVideoModel(Sam3TrackerVideoPreTrainedModel):
 
     @torch.inference_mode()
     @auto_docstring(custom_intro="Propagate the objects through a streamed video frame.")
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         inference_session: Sam3TrackerVideoInferenceSession,

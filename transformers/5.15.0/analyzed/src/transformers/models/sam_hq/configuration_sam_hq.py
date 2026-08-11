@@ -22,10 +22,13 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# SAM-HQ 配置：ViT 视觉骨干、提示编码器与高质量掩码解码超参数
+
 
 
 @auto_docstring(checkpoint="syscv-community/sam-hq-vit-base")
 @strict
+# SamHQPromptEncoderConfig：SAM-HQ 提示编码器配置：点/框/掩码嵌入维度与图像尺寸
 class SamHQPromptEncoderConfig(PreTrainedConfig):
     r"""
     mask_input_channels (`int`, *optional*, defaults to 16):
@@ -51,6 +54,7 @@ class SamHQPromptEncoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="syscv-community/sam-hq-vit-base")
 @strict
+# SamHQVisionConfig：SAM-HQ 视觉骨干配置：ViT 隐藏维度、层数与注意力头数
 class SamHQVisionConfig(PreTrainedConfig):
     r"""
     output_channels (`int`, *optional*, defaults to 256):
@@ -116,6 +120,7 @@ class SamHQVisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="syscv-community/sam-hq-vit-base")
 @strict
+# SamHQMaskDecoderConfig：SAM-HQ 掩码解码器配置：高质量掩码头与 IoU 预测超参数
 class SamHQMaskDecoderConfig(PreTrainedConfig):
     r"""
     mlp_dim (`int`, *optional*, defaults to 2048):
@@ -150,6 +155,7 @@ class SamHQMaskDecoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="syscv-community/sam-hq-vit-base")
 @strict
+# SamHQConfig：SAM-HQ 顶层配置：聚合提示编码器、掩码解码器与视觉配置
 class SamHQConfig(PreTrainedConfig):
     r"""
     prompt_encoder_config (Union[`dict`, `SamHQPromptEncoderConfig`], *optional*):
