@@ -10,6 +10,7 @@ from django.core.management.color import no_style
 from django.utils.functional import cached_property
 
 
+# collectstatic 命令 — 将各 finder 发现的文件汇总到 STATIC_ROOT
 class Command(BaseCommand):
     """
     Copies or symlinks static files from different locations to the
@@ -19,6 +20,7 @@ class Command(BaseCommand):
     help = "Collect static files in a single location."
     requires_system_checks = [Tags.staticfiles]
 
+    # 初始化收集统计列表与 staticfiles_storage
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.copied_files = []
@@ -30,6 +32,7 @@ class Command(BaseCommand):
         self.storage = staticfiles_storage
         self.style = no_style()
 
+    # 判断目标 storage 是否支持本地 path()
     @cached_property
     def local(self):
         try:
@@ -38,6 +41,7 @@ class Command(BaseCommand):
             return False
         return True
 
+    # 注册 --noinput、--clear、--link、--dry-run 等选项
     def add_arguments(self, parser):
         parser.add_argument(
             "--noinput",
@@ -91,6 +95,7 @@ class Command(BaseCommand):
             ),
         )
 
+    # 从命令行选项设置实例变量与 ignore 模式
     def set_options(self, **options):
         """
         Set instance variables based on an options dict
@@ -106,6 +111,7 @@ class Command(BaseCommand):
         self.ignore_patterns = list({os.path.normpath(p) for p in ignore_patterns})
         self.post_process = options["post_process"]
 
+    # 核心收集逻辑：遍历 finder、复制/链接、可选后处理
     def collect(self):
         """
         Perform the bulk of the work of collectstatic.
@@ -176,6 +182,7 @@ class Command(BaseCommand):
             "deleted": self.deleted_files,
         }
 
+    # 交互确认后执行 collect 并输出统计摘要
     def handle(self, **options):
         self.set_options(**options)
         message = ["\n"]
@@ -256,6 +263,7 @@ class Command(BaseCommand):
                 ),
             }
 
+    # 按 verbosity 输出日志
     def log(self, msg, level=2):
         """
         Small log helper
@@ -263,9 +271,11 @@ class Command(BaseCommand):
         if self.verbosity >= level:
             self.stdout.write(msg)
 
+    # 目标 storage 是否为 FileSystemStorage
     def is_local_storage(self):
         return isinstance(self.storage, FileSystemStorage)
 
+    # 递归删除目标 storage 下指定相对路径的文件
     def clear_dir(self, path):
         """
         Delete the given relative path using the destination storage backend.
@@ -295,6 +305,7 @@ class Command(BaseCommand):
         for d in dirs:
             self.clear_dir(os.path.join(path, d))
 
+    # 比较修改时间决定是否跳过未变更文件，必要时删除旧目标
     def delete_file(self, path, prefixed_path, source_storage):
         """
         Check if the target file should be deleted if it already exists.
@@ -346,6 +357,7 @@ class Command(BaseCommand):
                 self.storage.delete(prefixed_path)
         return True
 
+    # 创建指向源文件的符号链接
     def link_file(self, path, prefixed_path, source_storage):
         """
         Attempt to link ``path``
@@ -381,6 +393,7 @@ class Command(BaseCommand):
         if prefixed_path not in self.symlinked_files:
             self.symlinked_files.append(prefixed_path)
 
+    # 从源 storage 复制文件到目标 storage
     def copy_file(self, path, prefixed_path, source_storage):
         """
         Attempt to copy ``path`` with storage

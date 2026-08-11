@@ -12,20 +12,28 @@ from django.utils.functional import LazyObject, empty
 from django.utils.module_loading import import_string
 
 # To keep track on which directories the finder has searched the static files.
+# 记录 finder 已搜索过的静态文件目录
 searched_locations = []
 
 
+# 静态文件查找器基类 — 自定义 finder 需继承并实现 find/list
 class BaseFinder:
     """
     A base file finder to be used for custom staticfiles finder classes.
     """
 
+    # 校验 finder 配置；子类可重写
+    # 校验 STATICFILES_DIRS 类型、前缀斜杠及与 STATIC_ROOT 冲突
     def check(self, **kwargs):
         raise NotImplementedError(
             "subclasses may provide a check() method to verify the finder is "
             "configured correctly."
         )
 
+    # 按相对路径查找绝对路径；find_all 为 True 时返回全部匹配
+    # 在各 extra location 中查找并记录 searched_locations
+    # 在各应用 static 目录中查找匹配文件
+    # 在本地 storage 中查找文件
     def find(self, path, find_all=False):
         """
         Given a relative file path, find an absolute file path.
@@ -37,6 +45,10 @@ class BaseFinder:
             "subclasses of BaseFinder must provide a find() method"
         )
 
+    # 列出可收集的静态文件，返回 (相对路径, storage) 迭代器
+    # 遍历各 location 下文件（跳过不存在的目录）
+    # 遍历各应用 storage 中的文件
+    # 列出 storage 中所有可收集文件
     def list(self, ignore_patterns):
         """
         Given an optional list of paths to ignore, return a two item iterable
@@ -47,12 +59,15 @@ class BaseFinder:
         )
 
 
+# 基于 STATICFILES_DIRS 在额外目录中查找静态文件
 class FileSystemFinder(BaseFinder):
     """
     A static files finder that uses the ``STATICFILES_DIRS`` setting
     to locate files.
     """
 
+    # 解析 STATICFILES_DIRS，为每个根目录创建 FileSystemStorage
+    # 为每个应用创建 static 目录的 storage（目录存在才加入）
     def __init__(self, app_names=None, *args, **kwargs):
         # List of locations with static files
         self.locations = []
@@ -128,6 +143,7 @@ class FileSystemFinder(BaseFinder):
                 matches.append(matched_path)
         return matches
 
+    # 在指定根目录与前缀下解析路径并返回存在的绝对路径
     def find_location(self, root, path, prefix=None):
         """
         Find a requested static file in a location and return the found
@@ -154,6 +170,7 @@ class FileSystemFinder(BaseFinder):
                     yield path, storage
 
 
+# 在各已安装应用的 static/ 子目录中查找静态文件
 class AppDirectoriesFinder(BaseFinder):
     """
     A static files finder that looks in the directory of each app as
@@ -207,6 +224,7 @@ class AppDirectoriesFinder(BaseFinder):
                 matches.append(match)
         return matches
 
+    # 在指定应用的 storage 中查找单个路径
     def find_in_app(self, app, path):
         """
         Find a requested static file in an app's static locations.
@@ -219,6 +237,7 @@ class AppDirectoriesFinder(BaseFinder):
                 return matched_path
 
 
+# 基于 storage 后端的查找器基类 — 需指定 storage 类
 class BaseStorageFinder(BaseFinder):
     """
     A base static files finder to be used to extended
@@ -227,6 +246,7 @@ class BaseStorageFinder(BaseFinder):
 
     storage = None
 
+    # 实例化 storage 并校验已配置
     def __init__(self, storage=None, *args, **kwargs):
         if storage is not None:
             self.storage = storage
@@ -267,6 +287,7 @@ class BaseStorageFinder(BaseFinder):
             yield path, self.storage
 
 
+# 使用 default_storage 作为查找后端的 finder
 class DefaultStorageFinder(BaseStorageFinder):
     """
     A static files finder that uses the default storage backend.
@@ -274,6 +295,7 @@ class DefaultStorageFinder(BaseStorageFinder):
 
     storage = default_storage
 
+    # 校验 default_storage 具有有效 base_location
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         base_location = getattr(self.storage, "base_location", empty)
@@ -285,6 +307,7 @@ class DefaultStorageFinder(BaseStorageFinder):
             )
 
 
+# 调用所有已启用 finder 查找静态文件
 def find(path, find_all=False):
     """
     Find a static file with the given path using all enabled finders.
@@ -307,11 +330,13 @@ def find(path, find_all=False):
     return [] if find_all else None
 
 
+# 按 STATICFILES_FINDERS 设置逐个 yield finder 实例
 def get_finders():
     for finder_path in settings.STATICFILES_FINDERS:
         yield get_finder(finder_path)
 
 
+# 导入并实例化 finder 类，校验其为 BaseFinder 子类
 @functools.cache
 def get_finder(import_path):
     """

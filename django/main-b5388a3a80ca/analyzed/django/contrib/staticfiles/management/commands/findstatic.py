@@ -4,10 +4,12 @@ from django.contrib.staticfiles import finders
 from django.core.management.base import LabelCommand
 
 
+# findstatic 命令 — 查找给定静态文件的绝对路径
 class Command(LabelCommand):
     help = "Finds the absolute paths for the given static file(s)."
     label = "staticfile"
 
+    # 添加 --first 选项（仅返回首个匹配）
     def add_arguments(self, parser):
         super().add_arguments(parser)
         parser.add_argument(
@@ -17,6 +19,7 @@ class Command(LabelCommand):
             help="Only return the first match for each static file.",
         )
 
+    # 调用 finders.find 并格式化输出路径与搜索目录
     def handle_label(self, path, **options):
         verbosity = options["verbosity"]
         result = finders.find(path, find_all=options["all"])

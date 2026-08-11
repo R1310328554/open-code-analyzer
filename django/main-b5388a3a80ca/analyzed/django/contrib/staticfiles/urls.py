@@ -5,6 +5,7 @@ from django.contrib.staticfiles.views import serve
 urlpatterns = []
 
 
+# 返回用于开发环境服务静态文件的 URL 模式
 def staticfiles_urlpatterns(prefix=None):
     """
     Helper function to return a URL pattern for serving static files.

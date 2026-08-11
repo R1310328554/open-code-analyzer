@@ -31,6 +31,7 @@ _js_ignored_re = _lazy_re_compile(
 )
 
 
+# 静态文件标准文件系统存储 — 默认 location/base_url 为 STATIC_ROOT/STATIC_URL
 class StaticFilesStorage(FileSystemStorage):
     """
     Standard file system storage for static files.
@@ -39,6 +40,7 @@ class StaticFilesStorage(FileSystemStorage):
     ``STATIC_ROOT`` and ``STATIC_URL``.
     """
 
+    # 从 settings 填充路径与 URL 并校验
     def __init__(self, location=None, base_url=None, *args, **kwargs):
         if location is None:
             location = settings.STATIC_ROOT
@@ -52,6 +54,7 @@ class StaticFilesStorage(FileSystemStorage):
             self.base_location = None
             self.location = None
 
+    # 要求已配置 STATIC_ROOT 后返回本地绝对路径
     def path(self, name):
         if not self.location:
             raise ImproperlyConfigured(
@@ -62,6 +65,7 @@ class StaticFilesStorage(FileSystemStorage):
         return super().path(name)
 
 
+# 内容哈希 mixin — collectstatic 后处理时重写 CSS/JS 内 URL 并加 hash 后缀
 class HashedFilesMixin:
     default_template = """url("%(url)s")"""
     max_post_process_passes = 5
@@ -130,6 +134,7 @@ class HashedFilesMixin:
     )
     keep_intermediate_files = True
 
+    # 编译 URL 替换正则模式（含可选 JS 模块 import 聚合）
     def __init__(self, *args, **kwargs):
         if self.support_js_module_import_aggregation:
             self.patterns += (self._js_module_import_aggregation_patterns,)
@@ -152,6 +157,7 @@ class HashedFilesMixin:
                     (compiled, template, ignored_re)
                 )
 
+    # 对文件内容计算 MD5 并取前 12 位十六进制
     def file_hash(self, name, content=None):
         """
         Return a hash of the file with the given name and optional content.
@@ -163,6 +169,7 @@ class HashedFilesMixin:
             hasher.update(chunk)
         return hasher.hexdigest()[:12]
 
+    # 在文件名中插入内容 hash 以支持缓存失效
     def hashed_name(self, name, content=None, filename=None):
         # `filename` is the name of file to hash if `content` isn't given.
         # `name` is the base name to construct the new hashed filename from.
@@ -197,6 +204,7 @@ class HashedFilesMixin:
             unparsed_name[2] += "?"
         return urlunsplit(unparsed_name)
 
+    # DEBUG 下返回非 hash URL；否则经 hashed_name_func 解析
     def _url(self, hashed_name_func, name, force=False, hashed_files=None):
         """
         Return the non-hashed URL in DEBUG mode.
@@ -228,12 +236,14 @@ class HashedFilesMixin:
 
         return unquote(final_url)
 
+    # 对外 URL 接口，委托 _url 与 stored_name
     def url(self, name, force=False):
         """
         Return the non-hashed URL in DEBUG mode.
         """
         return self._url(self.stored_name, name, force)
 
+    # 返回 URL 重写时应忽略的注释/字符串字面量区间
     def get_ignored_blocks(self, content, pattern):
         """
         Return a sorted list of (start, end) tuples for content that should
@@ -243,6 +253,7 @@ class HashedFilesMixin:
         """
         return [(match.start(), match.end()) for match in re.finditer(pattern, content)]
 
+    # 判断位置是否落在忽略块内
     def is_in_ignored_block(self, pos, ignored_blocks):
         for start, end in ignored_blocks:
             if start < pos < end:
@@ -251,6 +262,7 @@ class HashedFilesMixin:
                 return False
         return False
 
+    # 返回将匹配 URL 转为 hash 版本的替换函数
     def url_converter(self, name, hashed_files, template=None, ignored_blocks=None):
         """
         Return the custom URL converter for the given file name.
@@ -341,6 +353,7 @@ class HashedFilesMixin:
 
         return converter
 
+    # collectstatic 后处理：重命名 hash 文件并修正引用
     def post_process(self, paths, dry_run=False, **options):
         """
         Post process the given dictionary of files (called from collectstatic).
@@ -405,6 +418,7 @@ class HashedFilesMixin:
         # Yield adjustable files with final, hashed name.
         yield from processed_adjustable_paths.values()
 
+    # 单轮后处理：读源文件、替换 URL、保存 hash 副本
     def _post_process(self, paths, adjustable_paths, hashed_files):
         # Sort the files by directory level
         def path_level(name):
@@ -490,12 +504,15 @@ class HashedFilesMixin:
 
                 yield name, hashed_name, processed, substitutions
 
+    # 将路径分隔符统一为正斜杠
     def clean_name(self, name):
         return name.replace("\\", "/")
 
+    # 缓存键，默认即为 clean_name
     def hash_key(self, name):
         return name
 
+    # 从 hashed_files 缓存或重新计算 stored hash 名
     def _stored_name(self, name, hashed_files):
         # Normalize the path to avoid multiple names for the same file like
         # ../foo/bar.css and ../foo/../foo/bar.css which normalize to the same
@@ -508,6 +525,8 @@ class HashedFilesMixin:
             cache_name = self.clean_name(self.hashed_name(name))
         return cache_name
 
+    # 解析最终对外使用的 hash 文件名
+    # 严格模式下缺失 manifest 条目则报错
     def stored_name(self, name):
         cleaned_name = self.clean_name(name)
         hash_key = self.hash_key(cleaned_name)
@@ -533,12 +552,14 @@ class HashedFilesMixin:
         raise ValueError("The name '%s' could not be hashed with %r." % (name, self))
 
 
+# 将 hash 映射写入 staticfiles.json manifest 的 mixin
 class ManifestFilesMixin(HashedFilesMixin):
     manifest_version = "1.1"  # the manifest format standard
     manifest_name = "staticfiles.json"
     manifest_strict = True
     keep_intermediate_files = False
 
+    # 加载已有 manifest 到 hashed_files
     def __init__(self, *args, manifest_storage=None, **kwargs):
         super().__init__(*args, **kwargs)
         if manifest_storage is None:
@@ -546,6 +567,7 @@ class ManifestFilesMixin(HashedFilesMixin):
         self.manifest_storage = manifest_storage
         self.hashed_files, self.manifest_hash = self.load_manifest()
 
+    # 读取 manifest 文件内容为字符串
     def read_manifest(self):
         try:
             with self.manifest_storage.open(self.manifest_name) as manifest:
@@ -553,6 +575,7 @@ class ManifestFilesMixin(HashedFilesMixin):
         except FileNotFoundError:
             return None
 
+    # 解析 JSON manifest，返回 paths 字典与 hash
     def load_manifest(self):
         content = self.read_manifest()
         if content is None:
@@ -570,12 +593,14 @@ class ManifestFilesMixin(HashedFilesMixin):
             % (self.manifest_name, self.manifest_version)
         )
 
+    # 后处理后清空并重建 manifest
     def post_process(self, *args, **kwargs):
         self.hashed_files = {}
         yield from super().post_process(*args, **kwargs)
         if not kwargs.get("dry_run"):
             self.save_manifest()
 
+    # 将 sorted hashed_files 序列化写入 manifest 文件
     def save_manifest(self):
         sorted_hashed_files = sorted(self.hashed_files.items())
         self.manifest_hash = self.file_hash(
@@ -611,6 +636,7 @@ class ManifestFilesMixin(HashedFilesMixin):
         return urlunsplit(unparsed_name)
 
 
+# 带 manifest 的静态文件存储 — collectstatic 生成 hash 映射 JSON
 class ManifestStaticFilesStorage(ManifestFilesMixin, StaticFilesStorage):
     """
     A static file system storage backend which also saves
@@ -620,9 +646,12 @@ class ManifestStaticFilesStorage(ManifestFilesMixin, StaticFilesStorage):
     pass
 
 
+# 按 STATICFILES_STORAGE 延迟加载的 storage 包装
 class ConfiguredStorage(LazyObject):
+    # 从 storages 注册表取 STATICFILES_STORAGE 实例
     def _setup(self):
         self._wrapped = storages[STATICFILES_STORAGE_ALIAS]
 
 
+# 模块级默认静态文件 storage 单例
 staticfiles_storage = ConfiguredStorage()

@@ -1,6 +1,9 @@
 """
 Views and functions for serving static files. These are only to be used during
 development, and SHOULD NOT be used in a production setting.
+"""
+
+# 开发环境静态文件视图 — 通过 finder 定位并用 django.views.static 提供development, and SHOULD NOT be used in a production setting.
 
 """
 
@@ -13,6 +16,7 @@ from django.http import Http404
 from django.views import static
 
 
+# 查找静态文件绝对路径并以 static.serve 响应；非 DEBUG 且非 insecure 时 404
 def serve(request, path, insecure=False, **kwargs):
     """
     Serve static files below a given point in the directory structure or

@@ -5,6 +5,7 @@ from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
 
+# 路径是否匹配任一 glob 忽略模式
 def matches_patterns(path, patterns):
     """
     Return True or False depending on whether the ``path`` should be
@@ -13,6 +14,7 @@ def matches_patterns(path, patterns):
     return any(fnmatch.fnmatchcase(path, pattern) for pattern in patterns)
 
 
+# 递归遍历 storage 目录，yield 应复制的文件相对路径
 def get_files(storage, ignore_patterns=None, location=""):
     """
     Recursively walk the storage directories yielding the paths
@@ -39,6 +41,7 @@ def get_files(storage, ignore_patterns=None, location=""):
         yield from get_files(storage, ignore_patterns, dir)
 
 
+# 校验 STATIC_URL/MEDIA_URL/MEDIA_ROOT/STATIC_ROOT 配置合理
 def check_settings(base_url=None):
     """
     Check if the staticfiles settings have sane values.

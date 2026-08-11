@@ -12,6 +12,7 @@ from django.utils.timezone import get_default_timezone, is_naive, make_aware
 from django.utils.translation import get_language
 
 
+# 为相对 URL 补全协议与域名，支持 // 网络路径引用
 def add_domain(domain, url, secure=False):
     protocol = "https" if secure else "http"
     if url.startswith("//"):
@@ -22,16 +23,19 @@ def add_domain(domain, url, secure=False):
     return url
 
 
+# 订阅 feed 参数无效时抛出的异常
 class FeedDoesNotExist(ObjectDoesNotExist):
     pass
 
 
+# 订阅源基类 — 子类定义 items/item_* 等，__call__ 生成 HTTP 响应
 class Feed:
     feed_type = feedgenerator.DefaultFeed
     title_template = None
     description_template = None
     language = None
 
+    # 解析对象、生成 feed 并设置 Last-Modified 头
     def __call__(self, request, *args, **kwargs):
         try:
             obj = self.get_object(request, *args, **kwargs)
@@ -48,13 +52,16 @@ class Feed:
         feedgen.write(response, "utf-8")
         return response
 
+    # 默认条目标题（双重 escape）
     def item_title(self, item):
         # Titles should be double escaped by default (see #6533)
         return escape(str(item))
 
+    # 默认条目描述
     def item_description(self, item):
         return str(item)
 
+    # 默认用 item.get_absolute_url() 作为链接
     def item_link(self, item):
         try:
             return item.get_absolute_url()
@@ -64,6 +71,7 @@ class Feed:
                 "item_link() method in your Feed class." % item.__class__.__name__
             )
 
+    # 若配置了 enclosure 属性则构建 Enclosure 列表
     def item_enclosures(self, item):
         enc_url = self._get_dynamic_attr("item_enclosure_url", item)
         if enc_url:
@@ -75,6 +83,7 @@ class Feed:
             return [enc]
         return []
 
+    # 读取属性或调用方法；校验装饰器使用 wraps
     def _get_dynamic_attr(self, attname, obj, default=None):
         try:
             attr = getattr(self, attname)
@@ -105,6 +114,7 @@ class Feed:
                 return attr()
         return attr
 
+    # 传给 feed_type 构造器的额外关键字参数
     def feed_extra_kwargs(self, obj):
         """
         Return an extra keyword arguments dictionary that is used when
@@ -112,6 +122,7 @@ class Feed:
         """
         return {}
 
+    # 传给 add_item 的额外关键字参数
     def item_extra_kwargs(self, item):
         """
         Return an extra keyword arguments dictionary that is used with
@@ -119,9 +130,11 @@ class Feed:
         """
         return {}
 
+    # 子类重写：从 URL 参数解析 feed 上下文对象
     def get_object(self, request, *args, **kwargs):
         return None
 
+    # 模板渲染时的默认上下文（obj、site）
     def get_context_data(self, **kwargs):
         """
         Return a dictionary to use as extra context if either
@@ -132,6 +145,7 @@ class Feed:
         """
         return {"obj": kwargs.get("item"), "site": kwargs.get("site")}
 
+    # 组装 feedgenerator 并逐条 add_item，返回完整 Feed 对象
     def get_feed(self, obj, request):
         """
         Return a feedgenerator.DefaultFeed object, fully populated, for
