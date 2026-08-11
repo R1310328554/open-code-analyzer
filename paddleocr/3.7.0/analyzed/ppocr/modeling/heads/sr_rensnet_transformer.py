@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 超分 ResNet+Transformer：灰度图 CNN 编码 + 字符序列交叉注意力解码
 """
 This code is refer from:
 https://github.com/FudanVI/FudanOCR/blob/main/text-gestalt/loss/transformer_english_decomposition.py
@@ -23,6 +24,7 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 
 
+    # 生成上三角因果 mask，解码时屏蔽未来位置
 def subsequent_mask(size):
     """Generate a square mask for the sequence. The masked positions are filled with float('-inf').
     Unmasked positions are filled with float(0.0).
@@ -46,6 +48,7 @@ def masked_fill(x, mask, value):
     return paddle.where(mask, y, x)
 
 
+    # 缩放点积注意力：softmax(QK^T/√d) V
 def attention(query, key, value, mask=None, dropout=None, attention_map=None):
     d_k = query.shape[-1]
     scores = paddle.matmul(query, paddle.transpose(key, [0, 1, 3, 2])) / math.sqrt(d_k)
@@ -62,6 +65,7 @@ def attention(query, key, value, mask=None, dropout=None, attention_map=None):
     return paddle.matmul(p_attn, value), p_attn
 
 
+    # 多头注意力：4 路 Linear + 可选注意力图压缩
 class MultiHeadedAttention(nn.Layer):
     def __init__(self, h, d_model, dropout=0.1, compress_attention=False):
         super(MultiHeadedAttention, self).__init__()
@@ -102,6 +106,7 @@ class MultiHeadedAttention(nn.Layer):
         return self.linears[-1](x), attention_map
 
 
+    # 灰度 ResNet 骨干：BasicBlock/Bottleneck 堆叠提取视觉特征
 class ResNet(nn.Layer):
     def __init__(self, num_in, block, layers):
         super(ResNet, self).__init__()
@@ -188,6 +193,7 @@ class ResNet(nn.Layer):
         return x
 
 
+    # ResNet 瓶颈块：1×1 降维→3×3 卷积→1×1 升维
 class Bottleneck(nn.Layer):
     def __init__(self, input_dim):
         super(Bottleneck, self).__init__()
@@ -214,6 +220,7 @@ class Bottleneck(nn.Layer):
         return out
 
 
+    # 正弦位置编码：按序列长度生成并 dropout
 class PositionalEncoding(nn.Layer):
     "Implement the PE function."
 
@@ -236,6 +243,7 @@ class PositionalEncoding(nn.Layer):
         return self.dropout(x)
 
 
+    # 逐位置 FFN：Linear→ReLU→Linear
 class PositionwiseFeedForward(nn.Layer):
     "Implements FFN equation."
 
@@ -249,6 +257,7 @@ class PositionwiseFeedForward(nn.Layer):
         return self.w_2(self.dropout(F.relu(self.w_1(x))))
 
 
+    # 输出投影：Linear 映射到字符类别 logits
 class Generator(nn.Layer):
     "Define standard linear + softmax generation step."
 
@@ -262,6 +271,7 @@ class Generator(nn.Layer):
         return out
 
 
+    # 字符嵌入：Embedding × √d_model
 class Embeddings(nn.Layer):
     def __init__(self, d_model, vocab):
         super(Embeddings, self).__init__()
@@ -273,6 +283,7 @@ class Embeddings(nn.Layer):
         return embed
 
 
+    # 自定义 LayerNorm：均值方差归一化 + 可学习仿射
 class LayerNorm(nn.Layer):
     "Construct a layernorm module (See citation for details)."
 
@@ -292,6 +303,7 @@ class LayerNorm(nn.Layer):
         return self.a_2 * (x - mean) / (std + self.eps) + self.b_2
 
 
+    # Transformer 解码器：自注意力 + 交叉注意力 + FFN 堆叠
 class Decoder(nn.Layer):
     def __init__(self):
         super(Decoder, self).__init__()
@@ -323,6 +335,7 @@ class Decoder(nn.Layer):
         return result, attention_map
 
 
+    # ResNet 基础残差块：双 3×3 卷积 + shortcut
 class BasicBlock(nn.Layer):
     def __init__(self, inplanes, planes, downsample):
         super(BasicBlock, self).__init__()
@@ -352,6 +365,7 @@ class BasicBlock(nn.Layer):
         return out
 
 
+    # 视觉编码器：单通道 ResNet 输出卷积特征图
 class Encoder(nn.Layer):
     def __init__(self):
         super(Encoder, self).__init__()
@@ -362,6 +376,7 @@ class Encoder(nn.Layer):
         return conv_result
 
 
+    # 超分总模型：灰度化→Encoder→Decoder→字符预测
 class Transformer(nn.Layer):
     def __init__(self, in_channels=1, alphabet="0123456789"):
         super(Transformer, self).__init__()

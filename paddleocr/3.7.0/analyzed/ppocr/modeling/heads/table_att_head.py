@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 表格注意力头：HTML 结构 token 序列解码 + 单元格位置回归
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -40,6 +41,7 @@ def get_para_bias_attr(l2_decay, k):
     return [weight_attr, bias_attr]
 
 
+    # 表格结构头：AttentionGRU 解码 HTML token + loc 坐标
 class TableAttentionHead(nn.Layer):
     def __init__(
         self,
@@ -135,6 +137,7 @@ class TableAttentionHead(nn.Layer):
         return {"structure_probs": structure_probs, "loc_preds": loc_preds}
 
 
+    # 水平/垂直条带注意力：QKV 分头 softmax 加权
 class HWAttention(nn.Layer):
     def __init__(
         self,
@@ -162,6 +165,7 @@ class HWAttention(nn.Layer):
         return x
 
 
+    # 将特征图按窗口切分，供条带注意力并行计算
 def img2windows(img, H_sp, W_sp):
     """
     img: B C H W
@@ -183,6 +187,7 @@ def windows2img(img_splits_hw, H_sp, W_sp, H, W):
     return img
 
 
+    # SLA 窗口块：条带 HWAttention + MLP 残差
 class Block(nn.Layer):
     def __init__(
         self,
@@ -249,6 +254,7 @@ class Block(nn.Layer):
         return x
 
 
+    # 结构-位置联合头：可选 Block 交叉注意力 + 双分支生成
 class SLAHead(nn.Layer):
     def __init__(
         self,

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# DB 系列 FPN：多尺度 lateral 融合 + 可选 ASF/RSE/RepLK 变体
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -31,6 +32,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(__dir__, "../../..")))
 from ppocr.modeling.backbones.det_mobilenet_v3 import SEModule
 
 
+    # 深度可分离卷积块：DW+PW+BN+可选激活
 class DSConv(nn.Layer):
     def __init__(
         self,
@@ -113,6 +115,7 @@ class DSConv(nn.Layer):
         return x
 
 
+    # DBNet 标准 FPN：1×1 横向 + 逐级上采样相加 + 3×3 平滑
 class DBFPN(nn.Layer):
     def __init__(self, in_channels, out_channels, use_asf=False, **kwargs):
         super(DBFPN, self).__init__()
@@ -210,6 +213,7 @@ class DBFPN(nn.Layer):
         p4 = F.upsample(p4, scale_factor=4, mode="nearest", align_mode=1)
         p3 = F.upsample(p3, scale_factor=2, mode="nearest", align_mode=1)
 
+        # 四尺度上采样对齐后 concat，供 DBNet 分割头
         fuse = paddle.concat([p5, p4, p3, p2], axis=1)
 
         if self.use_asf is True:
@@ -218,6 +222,7 @@ class DBFPN(nn.Layer):
         return fuse
 
 
+    # 残差 SE 模块：Conv+SE 门控 + shortcut
 class RSELayer(nn.Layer):
     def __init__(self, in_channels, out_channels, kernel_size, shortcut=True):
         super(RSELayer, self).__init__()
@@ -243,6 +248,7 @@ class RSELayer(nn.Layer):
         return out
 
 
+    # RSE 版 DB-FPN：各层用 RSELayer 替代普通卷积
 class RSEFPN(nn.Layer):
     def __init__(self, in_channels, out_channels, shortcut=True, **kwargs):
         super(RSEFPN, self).__init__()
@@ -304,6 +310,7 @@ class RSEFPN(nn.Layer):
         return fuse
 
 
+    # 大核重参数 FPN：RepLK 块增强感受野
 class RepLKFPN(nn.Layer):
     """Optimized RSEFPN: replaces 3x3 standard Conv in inp_conv with
     DilatedReparamBlock (DW, 5x5) + PWConv 1x1 + SE.
@@ -429,6 +436,7 @@ class RepLKFPN(nn.Layer):
         self.is_repped = True
 
 
+    # Large Kernel PAN：大核卷积路径聚合
 class LKPAN(nn.Layer):
     def __init__(self, in_channels, out_channels, mode="large", **kwargs):
         super(LKPAN, self).__init__()
@@ -551,6 +559,7 @@ class LKPAN(nn.Layer):
         return fuse
 
 
+    # 膨胀重参数块：多 dilation 分支训练、单核推理
 class DilatedReparamBlock(nn.Layer):
     """
     Dilated Reparam Block from UniRepLKNet.
@@ -726,6 +735,7 @@ class DilatedReparamBlock(nn.Layer):
             delattr(self, "dil_bn_k{}_{}".format(k, r))
 
 
+    # 膨胀重参数卷积：merge 多分支为单一等效核
 class DilatedReparamConv(nn.Layer):
     """
     A drop-in replacement for standard Conv2D (in_ch → out_ch, large kernel)
@@ -792,6 +802,7 @@ class DilatedReparamConv(nn.Layer):
         self.is_repped = True
 
 
+    # RepLK + PAN 结构：大核路径聚合 neck
 class RepLKPAN(nn.Layer):
     """
     Optimized LKPAN using UniRepLKNet's DilatedReparamBlock.
@@ -952,6 +963,7 @@ class RepLKPAN(nn.Layer):
         self.is_repped = True
 
 
+    # 自适应尺度融合：学习权重聚合 p2–p5 多路特征
 class ASFBlock(nn.Layer):
     """
     This code is referred from:

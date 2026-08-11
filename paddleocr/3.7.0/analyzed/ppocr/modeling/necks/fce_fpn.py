@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# FCENet FPN：横向 1×1 + 自顶向下融合，可选 extra conv 与 norm
 """
 This code is refer from:
 https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.3/ppdet/modeling/necks/fpn.py
@@ -26,6 +27,7 @@ from paddle.regularizer import L2Decay
 __all__ = ["FCEFPN"]
 
 
+    # Conv+BN/GN/SyncBN，支持 freeze 与 L2 衰减
 class ConvNormLayer(nn.Layer):
     def __init__(
         self,
@@ -88,6 +90,7 @@ class ConvNormLayer(nn.Layer):
         return out
 
 
+    # FCENet 特征金字塔：lateral + fpn_conv 多尺度输出
 class FCEFPN(nn.Layer):
     """
     Feature Pyramid Network, see https://arxiv.org/abs/1612.03144

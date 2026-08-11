@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# PREN FPN：池化/权重双路聚合 + GCN 融合多尺度为序列特征
 """
 Code is refer from:
 https://github.com/RuijieJ/pren/blob/main/Nets/Aggregation.py
@@ -25,6 +26,7 @@ from paddle import nn
 import paddle.nn.functional as F
 
 
+    # 池化聚合：多路 stride-2 卷积 + 全局池化得 region 向量
 class PoolAggregate(nn.Layer):
     def __init__(self, n_r, d_in, d_middle=None, d_out=None):
         super(PoolAggregate, self).__init__()
@@ -79,6 +81,7 @@ class PoolAggregate(nn.Layer):
         return out
 
 
+    # 权重聚合：空间注意力图与特征图 bmm 得 region 表示
 class WeightAggregate(nn.Layer):
     def __init__(self, n_r, d_in, d_middle=None, d_out=None):
         super(WeightAggregate, self).__init__()
@@ -119,6 +122,7 @@ class WeightAggregate(nn.Layer):
         return r
 
 
+    # 图卷积 1D：Conv1D + Linear + Swish 更新节点
 class GCN(nn.Layer):
     def __init__(self, d_in, n_in, d_out=None, n_out=None, dropout=0.1):
         super(GCN, self).__init__()
@@ -138,6 +142,7 @@ class GCN(nn.Layer):
         return self.act(x)
 
 
+    # PREN 颈部：三尺度 pool/weight 聚合→GCN→序列输出
 class PRENFPN(nn.Layer):
     def __init__(self, in_channels, n_r, d_model, max_len, dropout):
         super(PRENFPN, self).__init__()

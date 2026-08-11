@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# TableMASTER 头：Transformer 解码 HTML 结构 token 并回归 bbox
 """
 This code is refer from:
 https://github.com/JiaquanYe/TableMASTER-mmocr/blob/master/mmocr/models/textrecog/decoders/master_decoder.py
@@ -23,6 +24,7 @@ from paddle import nn
 from paddle.nn import functional as F
 
 
+    # TableMASTER 总头：共享编码 + cls/bbox 双解码分支
 class TableMasterHead(nn.Layer):
     """
     Split to two transformer header at the last layer.
@@ -152,6 +154,7 @@ class TableMasterHead(nn.Layer):
         return self.forward_test(out_enc)
 
 
+    # 解码层：自注意力 + 源特征交叉注意力 + FFN
 class DecoderLayer(nn.Layer):
     """
     Decoder is made of self attention, source attention and feed forward.
@@ -170,6 +173,7 @@ class DecoderLayer(nn.Layer):
         return self.sublayer[2](x, self.feed_forward)
 
 
+    # 多头注意力：4×Linear 投影 + scaled dot-product
 class MultiHeadAttention(nn.Layer):
     def __init__(self, headers, d_model, dropout):
         super(MultiHeadAttention, self).__init__()
@@ -197,6 +201,7 @@ class MultiHeadAttention(nn.Layer):
         return self.linears[-1](x)
 
 
+    # 前馈层：Linear→ReLU→Dropout→Linear
 class FeedForward(nn.Layer):
     def __init__(self, d_model, d_ff, dropout):
         super(FeedForward, self).__init__()
@@ -208,6 +213,7 @@ class FeedForward(nn.Layer):
         return self.w_2(self.dropout(F.relu(self.w_1(x))))
 
 
+    # 子层残差连接：LayerNorm + Dropout + 子模块
 class SubLayerConnection(nn.Layer):
     """
     A residual connection followed by a layer norm.
@@ -228,6 +234,7 @@ def masked_fill(x, mask, value):
     return x * paddle.logical_not(mask).astype(x.dtype) + mask * value
 
 
+    # 缩放点积自/交叉注意力，返回加权 value 与权重
 def self_attention(query, key, value, mask=None, dropout=None):
     """
     Compute 'Scale Dot Product Attention'
@@ -251,6 +258,7 @@ def clones(module, N):
     return nn.LayerList([copy.deepcopy(module) for _ in range(N)])
 
 
+    # 结构 token 嵌入：Embedding × √d_model
 class Embeddings(nn.Layer):
     def __init__(self, d_model, vocab):
         super(Embeddings, self).__init__()
@@ -262,6 +270,7 @@ class Embeddings(nn.Layer):
         return self.lut(x) * math.sqrt(self.d_model)
 
 
+    # 正弦位置编码 buffer，按序列长度切片
 class PositionalEncoding(nn.Layer):
     """Implement the PE function."""
 

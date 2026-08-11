@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# CT-FPN 颈部：FPEM 特征金字塔增强 + 四尺度拼接供 CentripetalText 检测
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -34,6 +35,7 @@ sys.path.append(__dir__)
 sys.path.insert(0, os.path.abspath(os.path.join(__dir__, "../../..")))
 
 
+    # 基础 Conv+BN+ReLU，Kaiming/常数初始化
 class Conv_BN_ReLU(nn.Layer):
     def __init__(self, in_planes, out_planes, kernel_size=1, stride=1, padding=0):
         super(Conv_BN_ReLU, self).__init__()
@@ -61,6 +63,7 @@ class Conv_BN_ReLU(nn.Layer):
         return self.relu(self.bn(self.conv(x)))
 
 
+    # 特征金字塔增强：先上后下双向深度卷积平滑多尺度
 class FPEM(nn.Layer):
     def __init__(self, in_channels, out_channels):
         super(FPEM, self).__init__()
@@ -131,6 +134,7 @@ class FPEM(nn.Layer):
         )
         self.smooth_layer4_2 = Conv_BN_ReLU(planes, planes)
 
+    # 双线性 2× 上采样后与低层特征相加
     def _upsample_add(self, x, y):
         return F.upsample(x, scale_factor=2, mode="bilinear") + y
 
@@ -148,6 +152,7 @@ class FPEM(nn.Layer):
         return f1, f2, f3, f4
 
 
+    # CT-FPN：通道压缩→双 FPEM→FFM 相加→上采样 concat
 class CTFPN(nn.Layer):
     def __init__(self, in_channels, out_channel=128):
         super(CTFPN, self).__init__()

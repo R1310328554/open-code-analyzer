@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# PGNet FPN：多路反卷积上采样 + skip 融合，输出端到端密集特征
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -22,6 +23,7 @@ import paddle.nn.functional as F
 from paddle import ParamAttr
 
 
+    # PGNet Conv+BN，可选 vd 模式 AvgPool 下采样
 class ConvBNLayer(nn.Layer):
     def __init__(
         self,
@@ -70,6 +72,7 @@ class ConvBNLayer(nn.Layer):
         return y
 
 
+    # 转置卷积上采样 + BatchNorm
 class DeConvBNLayer(nn.Layer):
     def __init__(
         self,
@@ -113,6 +116,7 @@ class DeConvBNLayer(nn.Layer):
         return x
 
 
+    # PGNet 特征金字塔：自顶向下 deconv 与横向 conv 融合
 class PGFPN(nn.Layer):
     def __init__(self, in_channels, **kwargs):
         super(PGFPN, self).__init__()

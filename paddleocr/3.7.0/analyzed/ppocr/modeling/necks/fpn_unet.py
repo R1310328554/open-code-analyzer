@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# FPN-UNet 颈部：自顶向下逐级上采样 concat，输出 4× 分辨率特征
 """
 This code is refer from:
 https://github.com/open-mmlab/mmocr/blob/main/mmocr/models/textdet/necks/fpn_unet.py
@@ -21,6 +22,7 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 
 
+    # 上采样块：1×1→3×3→ConvTranspose 2× 放大
 class UpBlock(nn.Layer):
     def __init__(self, in_channels, out_channels):
         super().__init__()
@@ -45,6 +47,7 @@ class UpBlock(nn.Layer):
         return x
 
 
+    # UNet 式 FPN：C5 起逐层上采样与 C4–C2 skip 拼接
 class FPN_UNet(nn.Layer):
     def __init__(self, in_channels, out_channels):
         super().__init__()

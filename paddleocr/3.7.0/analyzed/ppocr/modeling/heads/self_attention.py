@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 自注意力编码器组件：PrepareEncoder/Encoder/多头注意力，供识别 Transformer 复用
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -27,6 +28,8 @@ import numpy as np
 gradient_clip = 10
 
 
+    # 特征图编码包装：卷积特征 + 位置嵌入→多层 Encoder
+    # 词序列编码包装：词嵌入 + 位置→Encoder 输出上下文
 class WrapEncoderForFeature(nn.Layer):
     def __init__(
         self,
@@ -126,6 +129,7 @@ class WrapEncoder(nn.Layer):
         return enc_output
 
 
+    # Transformer 编码器：堆叠 EncoderLayer + 输出 PrePostProcess
 class Encoder(nn.Layer):
     """
     encoder
@@ -178,6 +182,7 @@ class Encoder(nn.Layer):
         return enc_output
 
 
+    # 编码层：自注意力 + FFN，各带 PrePost 残差
 class EncoderLayer(nn.Layer):
     """
     EncoderLayer
@@ -225,6 +230,7 @@ class EncoderLayer(nn.Layer):
         return ffn_output
 
 
+    # 多头注意力：QKV 线性投影 + 缩放点积 softmax + 输出投影
 class MultiHeadAttention(nn.Layer):
     """
     Multi-Head Attention
@@ -251,6 +257,7 @@ class MultiHeadAttention(nn.Layer):
         )
 
     def _prepare_qkv(self, queries, keys, values, cache=None):
+        # keys 为空时为自注意力，否则为交叉注意力并可缓存 static_kv
         if keys is None:  # self-attention
             keys, values = queries, queries
             static_kv = False
@@ -312,6 +319,7 @@ class MultiHeadAttention(nn.Layer):
         return out
 
 
+    # 前/后处理：LayerNorm、Dropout、Add 残差组合
 class PrePostProcessLayer(nn.Layer):
     """
     PrePostProcessLayer
@@ -357,6 +365,7 @@ class PrePostProcessLayer(nn.Layer):
         return x
 
 
+    # 编码输入准备：特征缩放 + 位置嵌入相加
 class PrepareEncoder(nn.Layer):
     def __init__(
         self,
@@ -391,6 +400,7 @@ class PrepareEncoder(nn.Layer):
         return out
 
 
+    # 解码侧编码准备：词嵌入 + 位置嵌入（复用编码结构）
 class PrepareDecoder(nn.Layer):
     def __init__(
         self,
@@ -440,6 +450,7 @@ class PrepareDecoder(nn.Layer):
         return out
 
 
+    # 前馈网络：两层线性 + ReLU + Dropout
 class FFN(nn.Layer):
     """
     Feed-Forward Network

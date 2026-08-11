@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# EAST FPN：U-Net 式上采样解码 + 横向 skip 融合多尺度
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -22,6 +23,7 @@ import paddle.nn.functional as F
 from paddle import ParamAttr
 
 
+    # Conv+BN+可选 ReLU，支持命名 ParamAttr
 class ConvBNLayer(nn.Layer):
     def __init__(
         self,
@@ -64,6 +66,7 @@ class ConvBNLayer(nn.Layer):
         return x
 
 
+    # 转置卷积上采样 + BatchNorm
 class DeConvBNLayer(nn.Layer):
     def __init__(
         self,
@@ -105,6 +108,7 @@ class DeConvBNLayer(nn.Layer):
         return x
 
 
+    # EAST 颈部：g 支路上采样与 h 支路 skip concat
 class EASTFPN(nn.Layer):
     def __init__(self, in_channels, model_name, **kwargs):
         super(EASTFPN, self).__init__()

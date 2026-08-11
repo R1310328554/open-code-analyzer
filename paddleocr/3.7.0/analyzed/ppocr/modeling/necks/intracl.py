@@ -1,9 +1,11 @@
 import paddle
 from paddle import nn
 
+# IntraCL 模块：通道内多尺度 Q/K/V 卷积建模局部关系，残差增强
 # refer from: https://github.com/ViTAE-Transformer/I3CL/blob/736c80237f66d352d488e83b05f3e33c55201317/mmdet/models/detectors/intra_cl_module.py
 
 
+    # 通道内对比学习块：7/5/3 多尺度 C+V+Q 卷积 + 残差
 class IntraCLBlock(nn.Layer):
     def __init__(self, in_channels=96, reduce_factor=4):
         super(IntraCLBlock, self).__init__()
@@ -113,6 +115,7 @@ class IntraCLBlock(nn.Layer):
         return x + x_relation
 
 
+    # 堆叠 num_block 个 IntraCLBlock 供 DB-FPN 等调用
 def build_intraclblock_list(num_block):
     IntraCLBlock_list = nn.LayerList()
     for i in range(num_block):

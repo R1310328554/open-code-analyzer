@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# PSENet 风格 FPN：top layer + lateral + smooth 四尺度 concat
 """
 This code is refer from:
 https://github.com/whai362/PSENet/blob/python3/models/neck/fpn.py
@@ -22,6 +23,7 @@ import math
 import paddle.nn.functional as F
 
 
+    # Conv+BN+ReLU，He 初始化
 class Conv_BN_ReLU(nn.Layer):
     def __init__(self, in_planes, out_planes, kernel_size=1, stride=1, padding=0):
         super(Conv_BN_ReLU, self).__init__()
@@ -62,6 +64,7 @@ class Conv_BN_ReLU(nn.Layer):
         return self.relu(self.bn(self.conv(x)))
 
 
+    # 标准 FPN：C2–C5 横向 1×1 + 上采样融合 + 3×3 平滑
 class FPN(nn.Layer):
     def __init__(self, in_channels, out_channels):
         super(FPN, self).__init__()

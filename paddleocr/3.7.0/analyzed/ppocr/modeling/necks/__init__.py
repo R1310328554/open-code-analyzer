@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 颈部模块工厂：按配置 name 实例化 FPN/PAN/RNN 等特征融合网络
 __all__ = ["build_neck"]
 
 
@@ -55,5 +56,6 @@ def build_neck(config):
         "neck only support {}".format(support_dict)
     )
 
+    # 动态构造 neck 类并传入剩余超参
     module_class = eval(module_name)(**config)
     return module_class

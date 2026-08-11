@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# CSP-PAN 颈部：CSP 模块 + 自顶向下/自底向上路径聚合多尺度特征
 # The code is based on:
 # https://github.com/PaddlePaddle/PaddleDetection/blob/release%2F2.3/ppdet/modeling/necks/csp_pan.py
 
@@ -23,6 +24,7 @@ from paddle import ParamAttr
 __all__ = ["CSPPAN"]
 
 
+    # 基础 Conv+BN，可选 LeakyReLU/Hardswish
 class ConvBNLayer(nn.Layer):
     def __init__(
         self,
@@ -58,6 +60,7 @@ class ConvBNLayer(nn.Layer):
         return x
 
 
+    # 深度可分离卷积：DWConv + PWConv + BN + 激活
 class DPModule(nn.Layer):
     """
     Depth-wise and point-wise module.
@@ -111,6 +114,7 @@ class DPModule(nn.Layer):
         return x
 
 
+    # Darknet 瓶颈：1×1→3×3 卷积 + 可选 shortcut
 class DarknetBottleneck(nn.Layer):
     """The basic bottleneck block used in Darknet.
     Each Block consists of two ConvModules and the input is added to the
@@ -163,6 +167,7 @@ class DarknetBottleneck(nn.Layer):
             return out
 
 
+    # CSP 层：通道拆分→多 Bottleneck→拼接→1×1 融合
 class CSPLayer(nn.Layer):
     """Cross Stage Partial Layer.
     Args:
@@ -219,6 +224,7 @@ class CSPLayer(nn.Layer):
         return self.final_conv(x_final)
 
 
+    # 多尺度 1×1 通道对齐，统一各层 out_channels
 class Channel_T(nn.Layer):
     def __init__(self, in_channels=[116, 232, 464], out_channels=96, act="leaky_relu"):
         super(Channel_T, self).__init__()
@@ -231,6 +237,7 @@ class Channel_T(nn.Layer):
         return outs
 
 
+    # CSP 路径聚合网络：top-down + bottom-up 融合 backbone 特征
 class CSPPAN(nn.Layer):
     """Path Aggregation Network with CSP module.
     Args:
