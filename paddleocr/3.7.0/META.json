@@ -1,0 +1,7 @@
+{
+  "project": "paddleocr",
+  "version": "3.7.0",
+  "git_ref": "v3.7.0",
+  "repo_url": "https://github.com/PaddlePaddle/PaddleOCR",
+  "source": "release"
+}

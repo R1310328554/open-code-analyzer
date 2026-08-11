@@ -30,6 +30,7 @@
 | transformers | 5.15.0 | 2679 | 0 ✅ |
 | django | main-b5388a3a80ca | 942 | 0 ✅ |
 | sqlalchemy | rel_2_0_51 | 232 | 0 ✅ |
+| paddleocr | 3.7.0 | 0 | 602 |
 
 已完成：springframework / springboot / fastapi / rxjava / sentinel / rocketmq / redisson / flask / gson / hikaricp / disruptor / gin / arthas / netty / nacos / keycloak / harness / ollama / ragflow / prometheus / loki / transformers / django / sqlalchemy。  
-进行中：paddleocr（待脚手架）。
+进行中：paddleocr 3.7.0（Python，pending=602）。
