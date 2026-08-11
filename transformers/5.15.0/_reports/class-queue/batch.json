@@ -15,23 +15,8 @@
     "src/transformers/models/jetmoe/configuration_jetmoe.py",
     "src/transformers/models/jetmoe/modeling_jetmoe.py",
     "src/transformers/models/jetmoe/modular_jetmoe.py",
-    "src/transformers/models/jina_embeddings_v3/__init__.py",
-    "src/transformers/models/jina_embeddings_v3/configuration_jina_embeddings_v3.py",
-    "src/transformers/models/jina_embeddings_v3/modeling_jina_embeddings_v3.py",
-    "src/transformers/models/jina_embeddings_v3/modular_jina_embeddings_v3.py",
-    "src/transformers/models/kimi_k25/__init__.py",
-    "src/transformers/models/kimi_k25/configuration_kimi_k25.py",
-    "src/transformers/models/kimi_k25/image_processing_kimi_k25.py",
-    "src/transformers/models/kimi_k25/modeling_kimi_k25.py",
-    "src/transformers/models/kimi_k25/modular_kimi_k25.py",
-    "src/transformers/models/kimi_k25/processing_kimi_k25.py",
-    "src/transformers/models/kimi_k25/video_processing_kimi_k25.py",
-    "src/transformers/models/kosmos2/__init__.py",
-    "src/transformers/models/kosmos2/configuration_kosmos2.py",
-    "src/transformers/models/kosmos2/modeling_kosmos2.py",
-    "src/transformers/models/kosmos2/processing_kosmos2.py",
-    "src/transformers/models/kosmos2_5/__init__.py"
+    "src/transformers/models/jina_embeddings_v3/__init__.py"
   ],
   "remaining_pending": 1509,
-  "done": 1140
+  "done": 1155
 }
