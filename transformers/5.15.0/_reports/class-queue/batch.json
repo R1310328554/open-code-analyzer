@@ -15,23 +15,8 @@
     "src/transformers/models/olmo2/__init__.py",
     "src/transformers/models/olmo2/configuration_olmo2.py",
     "src/transformers/models/olmo2/modeling_olmo2.py",
-    "src/transformers/models/olmo2/modular_olmo2.py",
-    "src/transformers/models/olmo3/__init__.py",
-    "src/transformers/models/olmo3/configuration_olmo3.py",
-    "src/transformers/models/olmo3/modeling_olmo3.py",
-    "src/transformers/models/olmo3/modular_olmo3.py",
-    "src/transformers/models/olmo_hybrid/__init__.py",
-    "src/transformers/models/olmo_hybrid/configuration_olmo_hybrid.py",
-    "src/transformers/models/olmo_hybrid/modeling_olmo_hybrid.py",
-    "src/transformers/models/olmo_hybrid/modular_olmo_hybrid.py",
-    "src/transformers/models/olmoe/__init__.py",
-    "src/transformers/models/olmoe/configuration_olmoe.py",
-    "src/transformers/models/olmoe/modeling_olmoe.py",
-    "src/transformers/models/olmoe/modular_olmoe.py",
-    "src/transformers/models/omdet_turbo/__init__.py",
-    "src/transformers/models/omdet_turbo/configuration_omdet_turbo.py",
-    "src/transformers/models/omdet_turbo/modeling_omdet_turbo.py"
+    "src/transformers/models/olmo2/modular_olmo2.py"
   ],
   "remaining_pending": 1089,
-  "done": 1560
+  "done": 1575
 }
