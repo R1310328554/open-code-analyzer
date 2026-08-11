@@ -13,6 +13,8 @@
 # limitations under the License.
 """PyTorch PatchTST model."""
 
+# PatchTST 建模：patch Transformer 时序预训练、预测、分类与回归
+
 import math
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -36,6 +38,7 @@ logger = logging.get_logger(__name__)
 
 
 # Copied from transformers.models.bert.modeling_bert.eager_attention_forward
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -65,9 +68,11 @@ def eager_attention_forward(
 
 
 # Copied from transformers.models.wav2vec2.modeling_wav2vec2.Wav2Vec2Attention with Wav2Vec2->PatchTST
+# PatchTSTAttention：PatchTST 多头自注意力（可选通道注意力）
 class PatchTSTAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         embed_dim: int,
@@ -99,6 +104,7 @@ class PatchTSTAttention(nn.Module):
         self.q_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
         self.out_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -150,15 +156,18 @@ class PatchTSTAttention(nn.Module):
         return attn_output, attn_weights, None
 
 
+# PatchTSTBatchNorm：PatchTST 可学习仿射 BatchNorm 封装
 class PatchTSTBatchNorm(nn.Module):
     """
     Compute batch normalization over the sequence length (time) dimension.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSTConfig):
         super().__init__()
         self.batchnorm = nn.BatchNorm1d(config.d_model, eps=config.norm_eps)
 
+    # forward：模块前向计算
     def forward(self, inputs: torch.Tensor):
         """
         Parameters:
@@ -172,6 +181,7 @@ class PatchTSTBatchNorm(nn.Module):
         return output.transpose(1, 2)
 
 
+# random_masking：预训练随机 mask patch 并返回 mask 索引
 def random_masking(
     inputs: torch.Tensor,
     mask_ratio: float,
@@ -230,6 +240,7 @@ def random_masking(
     return inputs_mask, mask[..., 0]
 
 
+# forecast_masking：预测任务对未来 horizon patch 做 mask
 def forecast_masking(
     inputs: torch.Tensor,
     num_forecast_mask_patches: list | int,
@@ -298,6 +309,7 @@ def forecast_masking(
     return inputs_mask, mask[..., 0]
 
 
+# PatchTSTPatchify：将时序切分为 patch 并可选注入位置编码
 class PatchTSTPatchify(nn.Module):
     """
     A class to patchify the time series sequence into different patches
@@ -306,6 +318,7 @@ class PatchTSTPatchify(nn.Module):
         `torch.Tensor` of shape `(batch_size, num_channels, num_patches, patch_length)`
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSTConfig):
         super().__init__()
 
@@ -323,6 +336,7 @@ class PatchTSTPatchify(nn.Module):
         new_sequence_length = self.patch_length + self.patch_stride * (self.num_patches - 1)
         self.sequence_start = self.sequence_length - new_sequence_length
 
+    # forward：模块前向计算
     def forward(self, past_values: torch.Tensor):
         """
         Parameters:
@@ -346,6 +360,7 @@ class PatchTSTPatchify(nn.Module):
         return output
 
 
+# PatchTSTMasking：预训练/预测 mask 策略统一封装
 class PatchTSTMasking(nn.Module):
     """
     Class to perform random or forecast masking.
@@ -359,6 +374,7 @@ class PatchTSTMasking(nn.Module):
             Bool tensor indicating True on masked points
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSTConfig):
         super().__init__()
         self.random_mask_ratio = config.random_mask_ratio
@@ -370,6 +386,7 @@ class PatchTSTMasking(nn.Module):
         if self.unmasked_channel_indices is not None:
             self.unmasked_channel_indices = sorted(self.unmasked_channel_indices)
 
+    # forward：模块前向计算
     def forward(self, patch_input: torch.Tensor):
         """
         Parameters:
@@ -406,11 +423,13 @@ class PatchTSTMasking(nn.Module):
         return masked_input, mask
 
 
+# PatchTSTEncoderLayer：PatchTST Transformer 编码器单层（Attn+FFN）
 class PatchTSTEncoderLayer(nn.Module):
     """
     PatchTST encoder layer
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSTConfig):
         super().__init__()
 
@@ -461,6 +480,7 @@ class PatchTSTEncoderLayer(nn.Module):
 
         self.pre_norm = config.pre_norm
 
+    # forward：模块前向计算
     def forward(self, hidden_state: torch.Tensor, output_attentions: bool | None = None):
         """
         Parameters:
@@ -546,6 +566,7 @@ class PatchTSTEncoderLayer(nn.Module):
 
 
 @auto_docstring
+# PatchTSTPreTrainedModel：PatchTST 预训练基类与权重初始化
 class PatchTSTPreTrainedModel(PreTrainedModel):
     config: PatchTSTConfig
     base_model_prefix = "model"
@@ -557,6 +578,7 @@ class PatchTSTPreTrainedModel(PreTrainedModel):
     _supports_flex_attn = True
 
     @torch.no_grad()
+    # _init_weights：按模块类型初始化权重
     def _init_weights(self, module: nn.Module):
         """
         Initialize weights
@@ -582,12 +604,15 @@ class PatchTSTPreTrainedModel(PreTrainedModel):
             else:
                 init.copy_(module.position_enc, position_enc)
 
+    # _set_gradient_checkpointing：启用/关闭编码器梯度检查点
     def _set_gradient_checkpointing(self, module, value=False):
         if isinstance(module, (PatchTSTEncoder)):
             module.gradient_checkpointing = value
 
 
+# PatchTSTEmbedding：PatchTST patch 线性嵌入层
 class PatchTSTEmbedding(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSTConfig):
         super().__init__()
         self.num_input_channels = config.num_input_channels
@@ -600,6 +625,7 @@ class PatchTSTEmbedding(nn.Module):
             for _ in range(config.num_input_channels):
                 self.input_embedding.append(nn.Linear(config.patch_length, config.d_model))
 
+    # forward：模块前向计算
     def forward(self, patch_input: torch.Tensor):
         """
         Parameters:
@@ -623,11 +649,13 @@ class PatchTSTEmbedding(nn.Module):
         return embeddings
 
 
+# PatchTSTPositionalEncoding：PatchTST 正弦/随机位置编码
 class PatchTSTPositionalEncoding(nn.Module):
     """
     Class for positional encoding
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSTConfig, num_patches: int):
         super().__init__()
         self.use_cls_token = config.use_cls_token
@@ -644,6 +672,7 @@ class PatchTSTPositionalEncoding(nn.Module):
         )
 
     @staticmethod
+    # _init_pe：初始化正弦或随机 patch 位置编码参数
     def _init_pe(config: PatchTSTConfig, num_patches: int) -> nn.Parameter:
         # Positional encoding
         if config.positional_encoding_type == "random":
@@ -663,6 +692,7 @@ class PatchTSTPositionalEncoding(nn.Module):
             )
         return position_enc
 
+    # forward：模块前向计算
     def forward(self, patch_input: torch.Tensor):
         if self.use_cls_token:
             # patch_input: [bs x num_channels x num_patches x d_model]
@@ -679,11 +709,13 @@ class PatchTSTPositionalEncoding(nn.Module):
         return hidden_state
 
 
+# PatchTSTEncoder：PatchTST patch Transformer 编码器堆叠
 class PatchTSTEncoder(PatchTSTPreTrainedModel):
     """
     PatchTST Encoder
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSTConfig, num_patches: int):
         super().__init__(config)
         self.gradient_checkpointing = False
@@ -698,6 +730,7 @@ class PatchTSTEncoder(PatchTSTPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # forward：模块前向计算
     def forward(
         self,
         patch_input: torch.Tensor,
@@ -748,6 +781,7 @@ class PatchTSTEncoder(PatchTSTPreTrainedModel):
     """
 )
 @dataclass
+# PatchTSTModelOutput：PatchTST 编码器主干输出 dataclass
 class PatchTSTModelOutput(ModelOutput):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, num_channels, num_patches, patch_length)`):
@@ -781,6 +815,7 @@ class PatchTSTModelOutput(ModelOutput):
     """
 )
 @dataclass
+# PatchTSTForPretrainingOutput：PatchTST 自监督预训练输出
 class PatchTSTForPretrainingOutput(ModelOutput):
     r"""
     loss (*optional*, returned when `labels` is provided, `torch.FloatTensor` of shape `(1,)`):
@@ -801,6 +836,7 @@ class PatchTSTForPretrainingOutput(ModelOutput):
     """
 )
 @dataclass
+# PatchTSTForRegressionOutput：PatchTST 时序回归输出
 class PatchTSTForRegressionOutput(ModelOutput):
     r"""
     loss (*optional*, returned when `labels` is provided, `torch.FloatTensor` of shape `(1,)`):
@@ -821,6 +857,7 @@ class PatchTSTForRegressionOutput(ModelOutput):
     """
 )
 @dataclass
+# PatchTSTForPredictionOutput：PatchTST 概率/点预测输出
 class PatchTSTForPredictionOutput(ModelOutput):
     r"""
     loss (*optional*, returned when `labels` is provided, `torch.FloatTensor` of shape `(1,)`):
@@ -853,6 +890,7 @@ class PatchTSTForPredictionOutput(ModelOutput):
     """
 )
 @dataclass
+# PatchTSTForClassificationOutput：PatchTST 时序分类输出
 class PatchTSTForClassificationOutput(ModelOutput):
     r"""
     loss (*optional*, returned when `labels` is provided, `torch.FloatTensor` of shape `(1,)`):
@@ -875,6 +913,7 @@ class PatchTSTForClassificationOutput(ModelOutput):
     """
 )
 @dataclass
+# SamplePatchTSTOutput：PatchTST 多样本概率预测采样输出
 class SamplePatchTSTOutput(ModelOutput):
     r"""
     sequences (`torch.FloatTensor` of shape `(batch_size, num_samples, prediction_length, num_targets)`):
@@ -885,6 +924,7 @@ class SamplePatchTSTOutput(ModelOutput):
 
 
 # Copied from transformers.models.time_series_transformer.modeling_time_series_transformer.nll
+# nll：负对数似然损失（概率预测分布与目标）
 def nll(input: torch.distributions.Distribution, target: torch.Tensor) -> torch.Tensor:
     """
     Computes the negative log likelihood loss from input distribution with respect to target.
@@ -893,6 +933,7 @@ def nll(input: torch.distributions.Distribution, target: torch.Tensor) -> torch.
 
 
 # Copied from transformers.models.time_series_transformer.modeling_time_series_transformer.weighted_average
+# weighted_average：按权重对张量沿指定维加权平均
 def weighted_average(input_tensor: torch.Tensor, weights: torch.Tensor | None = None, dim=None) -> torch.Tensor:
     """
     Computes the weighted average of a given tensor across a given `dim`, masking values associated with weight zero,
@@ -918,18 +959,21 @@ def weighted_average(input_tensor: torch.Tensor, weights: torch.Tensor | None = 
 
 
 # Copied from transformers.models.time_series_transformer.modeling_time_series_transformer.TimeSeriesStdScaler with TimeSeriesTransformer->PatchTST,TimeSeries->PatchTST
+# PatchTSTStdScaler：按序列标准差缩放时序输入
 class PatchTSTStdScaler(nn.Module):
     """
     Standardize features by calculating the mean and scaling along the first dimension, and then normalizes it by
     subtracting from the mean and dividing by the standard deviation.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSTConfig):
         super().__init__()
         self.dim = config.scaling_dim if hasattr(config, "scaling_dim") else 1
         self.keepdim = config.keepdim if hasattr(config, "keepdim") else True
         self.minimum_scale = config.minimum_scale if hasattr(config, "minimum_scale") else 1e-5
 
+    # forward：模块前向计算
     def forward(
         self, data: torch.Tensor, observed_indicator: torch.Tensor
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -954,12 +998,14 @@ class PatchTSTStdScaler(nn.Module):
 
 
 # Copied from transformers.models.time_series_transformer.modeling_time_series_transformer.TimeSeriesMeanScaler with TimeSeriesTransformer->PatchTST,TimeSeries->PatchTST
+# PatchTSTMeanScaler：按序列均值缩放时序输入
 class PatchTSTMeanScaler(nn.Module):
     """
     Computes a scaling factor as the weighted average absolute value along the first dimension, and scales the data
     accordingly.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSTConfig):
         super().__init__()
         self.dim = config.scaling_dim if hasattr(config, "scaling_dim") else 1
@@ -967,6 +1013,7 @@ class PatchTSTMeanScaler(nn.Module):
         self.minimum_scale = config.minimum_scale if hasattr(config, "minimum_scale") else 1e-10
         self.default_scale = config.default_scale if hasattr(config, "default_scale") else None
 
+    # forward：模块前向计算
     def forward(
         self, data: torch.Tensor, observed_indicator: torch.Tensor
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -1009,16 +1056,19 @@ class PatchTSTMeanScaler(nn.Module):
 
 
 # Copied from transformers.models.time_series_transformer.modeling_time_series_transformer.TimeSeriesNOPScaler with TimeSeriesTransformer->PatchTST,TimeSeries->PatchTST
+# PatchTSTNOPScaler：恒等缩放（不做归一化）
 class PatchTSTNOPScaler(nn.Module):
     """
     Assigns a scaling factor equal to 1 along the first dimension, and therefore applies no scaling to the input data.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSTConfig):
         super().__init__()
         self.dim = config.scaling_dim if hasattr(config, "scaling_dim") else 1
         self.keepdim = config.keepdim if hasattr(config, "keepdim") else True
 
+    # forward：模块前向计算
     def forward(
         self, data: torch.Tensor, observed_indicator: torch.Tensor | None = None
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -1036,7 +1086,9 @@ class PatchTSTNOPScaler(nn.Module):
         return data, loc, scale
 
 
+# PatchTSTScaler：PatchTST 缩放器工厂（std/mean/none）
 class PatchTSTScaler(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSTConfig):
         super().__init__()
         if config.scaling == "mean" or config.scaling is True:
@@ -1046,6 +1098,7 @@ class PatchTSTScaler(nn.Module):
         else:
             self.scaler = PatchTSTNOPScaler(config)
 
+    # forward：模块前向计算
     def forward(
         self, data: torch.Tensor, observed_indicator: torch.Tensor
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -1065,7 +1118,9 @@ class PatchTSTScaler(nn.Module):
 
 
 @auto_docstring
+# PatchTSTModel：PatchTST 编码器 + 缩放器主干
 class PatchTSTModel(PatchTSTPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSTConfig):
         super().__init__(config)
 
@@ -1084,6 +1139,7 @@ class PatchTSTModel(PatchTSTPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # forward：模块前向计算
     def forward(
         self,
         past_values: torch.Tensor,
@@ -1178,17 +1234,20 @@ class PatchTSTModel(PatchTSTPreTrainedModel):
         )
 
 
+# PatchTSTMaskPretrainHead：掩码 patch 自监督预训练重建头
 class PatchTSTMaskPretrainHead(nn.Module):
     """
     Pretraining head for mask modelling
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSTConfig):
         super().__init__()
         self.dropout = nn.Dropout(config.head_dropout) if config.head_dropout > 0 else nn.Identity()
         self.linear = nn.Linear(config.d_model, config.patch_length)
         self.use_cls_token = config.use_cls_token
 
+    # forward：模块前向计算
     def forward(self, embedding: torch.Tensor) -> torch.Tensor:
         """
         Parameters:
@@ -1211,7 +1270,9 @@ class PatchTSTMaskPretrainHead(nn.Module):
     The PatchTST for pretrain model.
     """
 )
+# PatchTSTForPretraining：PatchTST 掩码 patch 自监督预训练
 class PatchTSTForPretraining(PatchTSTPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSTConfig):
         super().__init__(config)
 
@@ -1222,6 +1283,7 @@ class PatchTSTForPretraining(PatchTSTPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # forward：模块前向计算
     def forward(
         self,
         past_values: torch.Tensor,
@@ -1323,7 +1385,9 @@ class PatchTSTForPretraining(PatchTSTPreTrainedModel):
         )
 
 
+# PatchTSTClassificationHead：PatchTST 时序分类线性头
 class PatchTSTClassificationHead(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSTConfig):
         super().__init__()
         self.use_cls_token = config.use_cls_token
@@ -1332,6 +1396,7 @@ class PatchTSTClassificationHead(nn.Module):
         self.dropout = nn.Dropout(config.head_dropout) if config.head_dropout > 0 else nn.Identity()
         self.linear = nn.Linear(config.num_input_channels * config.d_model, config.num_targets)
 
+    # forward：模块前向计算
     def forward(self, embedding: torch.Tensor):
         """
         Parameters:
@@ -1365,7 +1430,9 @@ class PatchTSTClassificationHead(nn.Module):
     The PatchTST for classification model.
     """
 )
+# PatchTSTForClassification：PatchTST 时序分类
 class PatchTSTForClassification(PatchTSTPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSTConfig):
         super().__init__(config)
 
@@ -1381,6 +1448,7 @@ class PatchTSTForClassification(PatchTSTPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         past_values: torch.Tensor,
@@ -1458,7 +1526,9 @@ class PatchTSTForClassification(PatchTSTPreTrainedModel):
     The PatchTST for regression Model.
     """
 )
+# PatchTSTPredictionHead：预测任务分布参数头（Normal/StudentT 等）
 class PatchTSTPredictionHead(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSTConfig, num_patches: int, distribution_output=None):
         r"""
         num_patches (`int`):
@@ -1502,6 +1572,7 @@ class PatchTSTPredictionHead(nn.Module):
                 self.projection = distribution_output.get_parameter_projection(head_dim)
             self.dropout = nn.Dropout(config.head_dropout) if config.head_dropout > 0 else nn.Identity()
 
+    # forward：模块前向计算
     def forward(self, embedding: torch.Tensor):
         """
         Parameters:
@@ -1559,7 +1630,9 @@ class PatchTSTPredictionHead(nn.Module):
     The PatchTST for prediction model.
     """
 )
+# PatchTSTForPrediction：PatchTST 时序概率/点预测
 class PatchTSTForPrediction(PatchTSTPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSTConfig):
         super().__init__(config)
 
@@ -1589,6 +1662,7 @@ class PatchTSTForPrediction(PatchTSTPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # forward：模块前向计算
     def forward(
         self,
         past_values: torch.Tensor,
@@ -1748,11 +1822,13 @@ class PatchTSTForPrediction(PatchTSTPreTrainedModel):
         return SamplePatchTSTOutput(sequences=samples)
 
 
+# PatchTSTRegressionHead：PatchTST 时序回归线性头
 class PatchTSTRegressionHead(nn.Module):
     """
     Regression head
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSTConfig, distribution_output=None):
         super().__init__()
         self.y_range = config.output_range
@@ -1770,6 +1846,7 @@ class PatchTSTRegressionHead(nn.Module):
         else:
             self.projection = distribution_output.get_parameter_projection(head_dim)
 
+    # forward：模块前向计算
     def forward(self, embedding: torch.Tensor):
         """
         Parameters:
@@ -1808,7 +1885,9 @@ class PatchTSTRegressionHead(nn.Module):
     The PatchTST for regression model.
     """
 )
+# PatchTSTForRegression：PatchTST 时序回归
 class PatchTSTForRegression(PatchTSTPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSTConfig):
         super().__init__(config)
 
@@ -1836,6 +1915,7 @@ class PatchTSTForRegression(PatchTSTPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         past_values: torch.Tensor,

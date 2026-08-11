@@ -14,6 +14,9 @@
 from ...processing_utils import ProcessorMixin
 
 
+# PeAudio 处理器：音频特征提取与 tokenizer 联合封装
+
+# PeAudioProcessor：PeAudio 特征提取器与 tokenizer 联合封装
 class PeAudioProcessor(ProcessorMixin):
     attributes = ["feature_extractor", "tokenizer"]
     feature_extractor_class = "PeAudioFeatureExtractor"

@@ -45,15 +45,20 @@ from ..auto import AutoModel
 from .configuration_pe_audio import PeAudioConfig, PeAudioEncoderConfig
 
 
+# PeAudio 建模：DAC 音频编码 + Transformer + 音文对比学习（自动生成）
+
+# Snake1d：DAC 一维 Snake 激活函数（可学习频率）
 class Snake1d(nn.Module):
     """
     A 1-dimensional Snake activation function module.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, hidden_dim):
         super().__init__()
         self.alpha = nn.Parameter(torch.ones(1, hidden_dim, 1))
 
+    # forward：模块前向计算
     def forward(self, hidden_states):
         shape = hidden_states.shape
         hidden_states = hidden_states.reshape(shape[0], shape[1], -1)
@@ -62,11 +67,13 @@ class Snake1d(nn.Module):
         return hidden_states
 
 
+# PeAudioDacResidualUnit：DAC 音频编码器残差卷积单元
 class PeAudioDacResidualUnit(nn.Module):
     """
     A residual unit composed of Snake1d and weight-normalized Conv1d layers with dilations.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, dimension: int = 16, dilation: int = 1):
         super().__init__()
         pad = ((7 - 1) * dilation) // 2
@@ -76,6 +83,7 @@ class PeAudioDacResidualUnit(nn.Module):
         self.snake2 = Snake1d(dimension)
         self.conv2 = nn.Conv1d(dimension, dimension, kernel_size=1)
 
+    # forward：模块前向计算
     def forward(self, hidden_state):
         """
         Forward pass through the residual unit.
@@ -99,9 +107,11 @@ class PeAudioDacResidualUnit(nn.Module):
         return output_tensor
 
 
+# PeAudioDacEncoderBlock：DAC 音频编码器下采样卷积块
 class PeAudioDacEncoderBlock(nn.Module):
     """Encoder block used in PE_AUDIO_DAC encoder."""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PreTrainedConfig, stride: int = 1, stride_index: int = 1):
         super().__init__()
 
@@ -114,6 +124,7 @@ class PeAudioDacEncoderBlock(nn.Module):
             dimension // 2, dimension, kernel_size=2 * stride, stride=stride, padding=math.ceil(stride / 2)
         )
 
+    # forward：模块前向计算
     def forward(self, hidden_state):
         hidden_state = self.res_unit1(hidden_state)
         hidden_state = self.res_unit2(hidden_state)
@@ -123,9 +134,11 @@ class PeAudioDacEncoderBlock(nn.Module):
         return hidden_state
 
 
+# PeAudioDacEncoder：DAC 离散音频 codec 编码器堆叠
 class PeAudioDacEncoder(nn.Module):
     """PE_AUDIO_DAC Encoder"""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PreTrainedConfig):
         super().__init__()
 
@@ -143,6 +156,7 @@ class PeAudioDacEncoder(nn.Module):
         self.snake1 = Snake1d(d_model)
         self.conv2 = nn.Conv1d(d_model, config.hidden_size, kernel_size=3, padding=1)
 
+    # forward：模块前向计算
     def forward(self, hidden_state):
         hidden_state = self.conv1(hidden_state)
 
@@ -155,7 +169,9 @@ class PeAudioDacEncoder(nn.Module):
         return hidden_state
 
 
+# PeAudioEncoderEmbedder：PeAudio 音频波形→token 嵌入前端（DAC+投影）
 class PeAudioEncoderEmbedder(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PeAudioEncoderConfig):
         super().__init__()
         self.dac_encoder = PeAudioDacEncoder(config.dac_config)
@@ -163,6 +179,7 @@ class PeAudioEncoderEmbedder(nn.Module):
         self.data_proj = nn.Linear(config.dac_config.codebook_dim, config.hidden_size)
         self.config = config
 
+    # forward：模块前向计算
     def forward(
         self,
         input_values: torch.Tensor,
@@ -181,7 +198,9 @@ class PeAudioEncoderEmbedder(nn.Module):
         return inputs_embeds, padding_mask
 
 
+# PeAudioContrastiveHead：PeAudio 对比学习线性投影头
 class PeAudioContrastiveHead(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         in_dim: int,
@@ -191,11 +210,14 @@ class PeAudioContrastiveHead(nn.Module):
         self.layer_norm = nn.LayerNorm(normalized_shape=in_dim, eps=1e-6)
         self.proj = nn.Linear(in_dim, out_dim, bias=False)
 
+    # forward：模块前向计算
     def forward(self, x: torch.Tensor) -> torch.FloatTensor:
         return self.proj(self.layer_norm(x))
 
 
+# PeAudioMaskedGroupNorm：PeAudio 支持 padding mask 的 GroupNorm
 class PeAudioMaskedGroupNorm(nn.GroupNorm):
+    # forward：模块前向计算
     def forward(self, x, padding_mask=None):
         if padding_mask is None:
             return super().forward(x)
@@ -219,7 +241,9 @@ class PeAudioMaskedGroupNorm(nn.GroupNorm):
         return x_norm * padding_mask
 
 
+# PeAudioConvBlock1d：PeAudio 一维卷积块（Conv+Norm+Act）
 class PeAudioConvBlock1d(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.groupnorm = PeAudioMaskedGroupNorm(num_groups=1, num_channels=config.hidden_size)
@@ -231,18 +255,22 @@ class PeAudioConvBlock1d(nn.Module):
             padding="same",
         )
 
+    # forward：模块前向计算
     def forward(self, x, padding_mask=None):
         x = self.groupnorm(x, padding_mask=padding_mask)
         x = self.activation(x)
         return self.project(x)
 
 
+# PeAudioResnetBlock1d：PeAudio 一维 ResNet 残差卷积块
 class PeAudioResnetBlock1d(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.block1 = PeAudioConvBlock1d(config)
         self.block2 = PeAudioConvBlock1d(config)
 
+    # forward：模块前向计算
     def forward(self, hidden_states, padding_mask=None):
         """
         Args:
@@ -266,12 +294,15 @@ class PeAudioResnetBlock1d(nn.Module):
         return hidden_states.transpose(1, 2)
 
 
+# PeAudioEncoderPatchEmbedder：PeAudio patch 级时序下采样嵌入
 class PeAudioEncoderPatchEmbedder(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.resnet_block = PeAudioResnetBlock1d(config)
         self.class_embedding = nn.Parameter(torch.randn(1, 1, config.hidden_size))
 
+    # forward：模块前向计算
     def forward(self, inputs_embeds, padding_mask=None):
         # Embedding step: prepend class token and run the ResNet block.
         hidden_states = torch.cat(
@@ -287,6 +318,7 @@ class PeAudioEncoderPatchEmbedder(nn.Module):
         return hidden_states, padding_mask
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -299,6 +331,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -324,6 +357,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# stack_freqs：RoPE 将 cos/sin 频率堆叠为复数旋转因子
 def stack_freqs(cos: torch.Tensor, sin: torch.Tensor):
     dim = cos.size(-1)
     cos = cos.narrow(-1, 0, dim // 2)
@@ -332,6 +366,7 @@ def stack_freqs(cos: torch.Tensor, sin: torch.Tensor):
     return freqs_cis
 
 
+# apply_rotary_pos_emb：对 Q/K 张量应用 RoPE 旋转位置编码
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     freqs_cis = stack_freqs(cos, sin)
     freqs_cis = freqs_cis.unsqueeze(unsqueeze_dim)
@@ -341,7 +376,9 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# PeAudioEncoderRMSNorm：PeAudio 编码器 RMS 层归一化
 class PeAudioEncoderRMSNorm(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
         PeAudioEncoderRMSNorm is equivalent to T5LayerNorm
@@ -350,6 +387,7 @@ class PeAudioEncoderRMSNorm(nn.Module):
         self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
 
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         input_dtype = hidden_states.dtype
         hidden_states = hidden_states.to(torch.float32)
@@ -361,9 +399,11 @@ class PeAudioEncoderRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# PeAudioEncoderAttention：PeAudio 编码器 GQA 自注意力
 class PeAudioEncoderAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config, layer_idx):
         super().__init__()
         self.layer_type = config.layer_types[layer_idx] if hasattr(config, "layer_types") else None
@@ -394,6 +434,7 @@ class PeAudioEncoderAttention(nn.Module):
             self.head_dim, eps=config.rms_norm_eps
         )  # thus post q_norm does not need reshape
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -431,7 +472,9 @@ class PeAudioEncoderAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# PeAudioEncoderMLP：PeAudio 编码器 SwiGLU 前馈 MLP
 class PeAudioEncoderMLP(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -442,12 +485,15 @@ class PeAudioEncoderMLP(nn.Module):
         self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=False)
         self.act_fn = ACT2FN[config.hidden_act]
 
+    # forward：模块前向计算
     def forward(self, x):
         down_proj = self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
         return down_proj
 
 
+# PeAudioEncoderLayer：PeAudio 编码器单层（Attn+MLP+残差）
 class PeAudioEncoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config, layer_idx):
         super().__init__()
         self.hidden_size = config.hidden_size
@@ -458,6 +504,7 @@ class PeAudioEncoderLayer(GradientCheckpointingLayer):
         self.input_layernorm = PeAudioEncoderRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.post_attention_layernorm = PeAudioEncoderRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -491,6 +538,7 @@ class PeAudioEncoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# PeAudioPreTrainedModel：PeAudio 预训练基类与权重初始化
 class PeAudioPreTrainedModel(PreTrainedModel):
     config: PeAudioConfig
     base_model_prefix = "audio_model"
@@ -509,6 +557,7 @@ class PeAudioPreTrainedModel(PreTrainedModel):
     }
 
     @torch.no_grad()
+    # _init_weights：按模块类型初始化权重
     def _init_weights(self, module):
         super()._init_weights(module)
 
@@ -538,6 +587,7 @@ class PeAudioPreTrainedModel(PreTrainedModel):
     """
 )
 @dataclass
+# PeAudioEncoderOutput：PeAudio 音频编码器输出 dataclass
 class PeAudioEncoderOutput(BaseModelOutputWithPooling):
     r"""
     codec_features (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`, *optional*):
@@ -552,8 +602,10 @@ class PeAudioEncoderOutput(BaseModelOutputWithPooling):
     output_mask: tuple[torch.FloatTensor] | None = None
 
 
+# PeAudioEncoderRotaryEmbedding：PeAudio 编码器 RoPE 旋转位置编码
 class PeAudioEncoderRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PeAudioEncoderConfig, device=None):
         super().__init__()
         self.max_seq_len_cached = config.max_position_embeddings
@@ -572,6 +624,7 @@ class PeAudioEncoderRotaryEmbedding(nn.Module):
 
     @staticmethod
     @deprecate_kwarg("device", version="5.18")
+    # compute_default_rope_parameters：计算 RoPE 默认频率与缓存参数
     def compute_default_rope_parameters(
         config: PeAudioEncoderConfig, device=None, **kwargs
     ) -> tuple[torch.Tensor, float]:
@@ -594,6 +647,7 @@ class PeAudioEncoderRotaryEmbedding(nn.Module):
 
     @torch.no_grad()
     @dynamic_rope_update  # power user: used with advanced RoPE types (e.g. dynamic rope)
+    # forward：模块前向计算
     def forward(self, x, position_ids):
         inv_freq_expanded = self.inv_freq[None, :, None].float().expand(position_ids.shape[0], -1, 1).to(x.device)
         position_ids_expanded = position_ids[:, None, :].float()
@@ -613,11 +667,13 @@ class PeAudioEncoderRotaryEmbedding(nn.Module):
     The PeAudio Encoder model.
     """
 )
+# PeAudioEncoder：PeAudio DAC+Transformer 音频编码器堆叠
 class PeAudioEncoder(PeAudioPreTrainedModel):
     config: PeAudioEncoderConfig
     main_input_name = "input_values"
     base_model_prefix = "audio_model.audio_encoder"
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PeAudioEncoderConfig):
         super().__init__(config)
         self.embedder = PeAudioEncoderEmbedder(config)
@@ -635,6 +691,7 @@ class PeAudioEncoder(PeAudioPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_values: torch.Tensor,
@@ -687,6 +744,7 @@ class PeAudioEncoder(PeAudioPreTrainedModel):
     """
 )
 @dataclass
+# PeAudioOutput：PeAudio 图文/音文对比学习输出
 class PeAudioOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*):
@@ -712,13 +770,16 @@ class PeAudioOutput(ModelOutput):
     text_outputs: BaseModelOutputWithPooling = None
     audio_outputs: BaseModelOutputWithPooling = None
 
+    # to_tuple：将 ModelOutput dataclass 转为 tuple
     def to_tuple(self) -> tuple[Any]:
         return tuple(
             self[k] if k not in ["text_outputs", "audio_outputs"] else getattr(self, k).to_tuple() for k in self.keys()
         )
 
 
+# PeAudioModel：PeAudio 文本+音频双塔对比学习模型
 class PeAudioModel(PeAudioPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PeAudioConfig):
         super().__init__(config)
         self.text_model = AutoModel.from_config(config.text_config)
@@ -732,6 +793,7 @@ class PeAudioModel(PeAudioPreTrainedModel):
 
         self.post_init()
 
+    # get_text_audio_embeds：提取文本 CLS 嵌入并投影到音文对比空间
     def get_text_audio_embeds(self, input_ids, attention_mask=None):
         # TODO: naming can be improved here...
         text_outputs: MaskedLMOutput = self.text_model(
@@ -742,6 +804,7 @@ class PeAudioModel(PeAudioPreTrainedModel):
         text_audio_embeds = text_outputs.hidden_states[-1][:, 0]
         return self.text_audio_head(text_audio_embeds)
 
+    # get_audio_embeds：提取音频池化/帧级嵌入并投影到对比空间
     def get_audio_embeds(self, input_values, padding_mask=None):
         audio_outputs: BaseModelOutputWithPooling = self.audio_encoder(
             input_values=input_values,
@@ -753,6 +816,7 @@ class PeAudioModel(PeAudioPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.Tensor,
@@ -807,7 +871,9 @@ class PeAudioModel(PeAudioPreTrainedModel):
 # TODO: underline in documentation that logits output shape is
 # 1. Model: (n_audio, n_text)
 # 2. Frame-level: (n_audio, n_text, n_frames)
+# PeAudioFrameLevelModel：PeAudio 帧级音文对比学习（逐帧 logits）
 class PeAudioFrameLevelModel(PeAudioModel):
+    # get_audio_embeds：提取音频池化/帧级嵌入并投影到对比空间
     def get_audio_embeds(self, input_values, padding_mask=None):
         audio_outputs: BaseModelOutputWithPooling = self.audio_encoder(
             input_values=input_values,
@@ -820,6 +886,7 @@ class PeAudioFrameLevelModel(PeAudioModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.Tensor,

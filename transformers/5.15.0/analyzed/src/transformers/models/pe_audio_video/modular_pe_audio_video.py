@@ -31,7 +31,11 @@ from ..qwen3.modeling_qwen3 import Qwen3Attention, Qwen3DecoderLayer, Qwen3RMSNo
 from .configuration_pe_audio_video import PeAudioVideoConfig, PeAudioVideoEncoderConfig
 
 
+# PeAudioVideo modular 源：Qwen3Attention + 音视频嵌入前端组合
+
+# PeAudioVideoMaskedGroupNorm：PeAudioVideo 支持 padding mask 的 GroupNorm
 class PeAudioVideoMaskedGroupNorm(nn.GroupNorm):
+    # forward：模块前向计算
     def forward(self, x, padding_mask=None):
         if padding_mask is None:
             return super().forward(x)
@@ -55,7 +59,9 @@ class PeAudioVideoMaskedGroupNorm(nn.GroupNorm):
         return x_norm * padding_mask
 
 
+# PeAudioVideoConvBlock1d：PeAudioVideo 一维卷积块
 class PeAudioVideoConvBlock1d(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.groupnorm = PeAudioVideoMaskedGroupNorm(num_groups=1, num_channels=config.hidden_size)
@@ -67,18 +73,22 @@ class PeAudioVideoConvBlock1d(nn.Module):
             padding="same",
         )
 
+    # forward：模块前向计算
     def forward(self, x, padding_mask=None):
         x = self.groupnorm(x, padding_mask=padding_mask)
         x = self.activation(x)
         return self.project(x)
 
 
+# PeAudioVideoResnetBlock1d：PeAudioVideo 一维 ResNet 残差卷积块
 class PeAudioVideoResnetBlock1d(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.block1 = PeAudioVideoConvBlock1d(config)
         self.block2 = PeAudioVideoConvBlock1d(config)
 
+    # forward：模块前向计算
     def forward(self, hidden_states, padding_mask=None):
         """
         Args:
@@ -102,12 +112,15 @@ class PeAudioVideoResnetBlock1d(nn.Module):
         return hidden_states.transpose(1, 2)
 
 
+# PeAudioVideoEncoderPatchEmbedder：PeAudioVideo patch 级时序下采样嵌入
 class PeAudioVideoEncoderPatchEmbedder(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.resnet_block = PeAudioVideoResnetBlock1d(config)
         self.class_embedding = nn.Parameter(torch.randn(1, 1, config.hidden_size))
 
+    # forward：模块前向计算
     def forward(self, inputs_embeds, padding_mask=None):
         # Embedding step: prepend class token and run the ResNet block.
         hidden_states = torch.cat(
@@ -123,7 +136,9 @@ class PeAudioVideoEncoderPatchEmbedder(nn.Module):
         return hidden_states, padding_mask
 
 
+# PeAudioVideoContrastiveHead：PeAudioVideo 对比学习线性投影头
 class PeAudioVideoContrastiveHead(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         in_dim: int,
@@ -133,11 +148,14 @@ class PeAudioVideoContrastiveHead(nn.Module):
         self.layer_norm = nn.LayerNorm(normalized_shape=in_dim, eps=1e-6)
         self.proj = nn.Linear(in_dim, out_dim, bias=False)
 
+    # forward：模块前向计算
     def forward(self, x: torch.Tensor) -> torch.FloatTensor:
         return self.proj(self.layer_norm(x))
 
 
+# PeAudioVideoEncoderEmbedder：PeAudioVideo 音视频波形/帧→联合嵌入前端
 class PeAudioVideoEncoderEmbedder(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PeAudioVideoEncoderConfig):
         super().__init__()
         self.audio_encoder = AutoModel.from_config(config.audio_config)
@@ -152,6 +170,7 @@ class PeAudioVideoEncoderEmbedder(nn.Module):
         )
         self.data_proj = nn.Linear(config.hidden_size, config.hidden_size)
 
+    # _align_video_hidden_state：对齐视频帧 hidden 状态与音频时序长度
     def _align_video_hidden_state(
         self,
         video_hidden_state: torch.Tensor,
@@ -205,6 +224,7 @@ class PeAudioVideoEncoderEmbedder(nn.Module):
 
         return aligned_hidden_state
 
+    # forward：模块前向计算
     def forward(
         self,
         input_values: torch.Tensor,
@@ -235,12 +255,15 @@ class PeAudioVideoEncoderEmbedder(nn.Module):
 
 
 @no_inherit_decorator
+# PeAudioVideoEncoderAttention：PeAudioVideo 联合编码器 GQA 自注意力
 class PeAudioVideoEncoderAttention(Qwen3Attention):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config, layer_idx):
         super().__init__(config, layer_idx)
         self.is_causal = False
         del self.sliding_window
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -278,15 +301,19 @@ class PeAudioVideoEncoderAttention(Qwen3Attention):
         return attn_output, attn_weights
 
 
+# PeAudioVideoEncoderLayer：PeAudioVideo 联合编码器单层（Attn+MLP）
 class PeAudioVideoEncoderLayer(Qwen3DecoderLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config, layer_idx):
         super().__init__(config, layer_idx)
         del self.attention_type
 
 
+# PeAudioVideoEncoderRMSNorm：PeAudioVideo 联合编码器 RMS 层归一化
 class PeAudioVideoEncoderRMSNorm(Qwen3RMSNorm): ...
 
 
+# stack_freqs：RoPE 将 cos/sin 频率堆叠为复数旋转因子
 def stack_freqs(cos: torch.Tensor, sin: torch.Tensor):
     dim = cos.size(-1)
     cos = cos.narrow(-1, 0, dim // 2)
@@ -295,6 +322,7 @@ def stack_freqs(cos: torch.Tensor, sin: torch.Tensor):
     return freqs_cis
 
 
+# apply_rotary_pos_emb：对 Q/K 张量应用 RoPE 旋转位置编码
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     freqs_cis = stack_freqs(cos, sin)
     freqs_cis = freqs_cis.unsqueeze(unsqueeze_dim)
@@ -303,10 +331,12 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return (q_ * freqs_cis).sum(5).flatten(3), (k_ * freqs_cis).sum(5).flatten(3)
 
 
+# PeAudioVideoEncoderRotaryEmbedding：PeAudioVideo 联合编码器 RoPE
 class PeAudioVideoEncoderRotaryEmbedding(Qwen3RotaryEmbedding): ...
 
 
 @auto_docstring
+# PeAudioVideoPreTrainedModel：PeAudioVideo 预训练基类与权重初始化
 class PeAudioVideoPreTrainedModel(PreTrainedModel):
     config: PeAudioVideoConfig
     base_model_prefix = "model"
@@ -324,6 +354,7 @@ class PeAudioVideoPreTrainedModel(PreTrainedModel):
         "attentions": PeAudioVideoEncoderAttention,
     }
 
+    # _init_weights：按模块类型初始化权重
     def _init_weights(self, module):
         super()._init_weights(module)
 
@@ -344,6 +375,7 @@ class PeAudioVideoPreTrainedModel(PreTrainedModel):
     """
 )
 @dataclass
+# PeAudioVideoEncoderOutput：PeAudioVideo 联合编码器输出（含音/视频子输出）
 class PeAudioVideoEncoderOutput(BaseModelOutputWithPooling):
     r"""
     audio_model_output (`BaseModelOutputWithPooling`, *optional*):
@@ -363,11 +395,13 @@ class PeAudioVideoEncoderOutput(BaseModelOutputWithPooling):
     The PeAudioVideo Encoder model.
     """
 )
+# PeAudioVideoEncoder：PeAudioVideo 音视频联合 Transformer 编码器
 class PeAudioVideoEncoder(PeAudioVideoPreTrainedModel):
     config: PeAudioVideoEncoderConfig
     main_input_name = "input_values"
     base_model_prefix = "audio_video_encoder"
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PeAudioVideoEncoderConfig):
         super().__init__(config)
         self.embedder = PeAudioVideoEncoderEmbedder(config)
@@ -385,6 +419,7 @@ class PeAudioVideoEncoder(PeAudioVideoPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_values: torch.Tensor | None = None,
@@ -449,6 +484,7 @@ class PeAudioVideoEncoder(PeAudioVideoPreTrainedModel):
     """
 )
 @dataclass
+# PeAudioVideoOutput：PeAudioVideo 多模态对比学习输出（含多路 loss）
 class PeAudioVideoOutput(ModelOutput):
     r"""
     audio_embeds (`torch.FloatTensor`, *optional*):
@@ -536,17 +572,20 @@ class PeAudioVideoOutput(ModelOutput):
     video_plus_text_audio_loss: torch.FloatTensor | None = None
     loss: torch.FloatTensor | None = None
 
+    # to_tuple：将 ModelOutput dataclass 转为 tuple
     def to_tuple(self) -> tuple[Any]:
         return tuple(self[k] if not k.endswith("model_output") else getattr(self, k).to_tuple() for k in self.keys())
 
 
 @dataclass
+# AudioVideoEmbeddings：PeAudioVideo 音视频嵌入三元组 dataclass
 class AudioVideoEmbeddings(ModelOutput):
     audio_embeds: torch.FloatTensor | None = None
     video_embeds: torch.FloatTensor | None = None
     audio_video_embeds: torch.FloatTensor | None = None
 
 
+# PeAudioVideoModel：PeAudioVideo 文本+音频+视频+联合四塔对比学习
 class PeAudioVideoModel(PeAudioVideoPreTrainedModel):
     _tied_weights_keys = {
         r"audio_model\.text_model\.(?!rotary_emb)": r"^text_model\.(?!rotary_emb)",
@@ -555,6 +594,7 @@ class PeAudioVideoModel(PeAudioVideoPreTrainedModel):
         r"audio_video_encoder\.embedder\.video_encoder\.(?!rotary_emb|.*\.rope\.pos_embed)": r"video_model\.video_encoder\.(?!rotary_emb|.*\.rope\.pos_embed)",
     }
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PeAudioVideoConfig):
         super().__init__(config)
         self.text_model = AutoModel.from_config(config.text_config)
@@ -586,17 +626,21 @@ class PeAudioVideoModel(PeAudioVideoPreTrainedModel):
 
         self.post_init()
 
+    # _contrastive_loss：对角线 sigmoid 对比学习损失
     def _contrastive_loss(self, logits: torch.Tensor) -> torch.Tensor:
         labels = torch.eye(logits.shape[0], device=logits.device)
         loss = -nn.functional.logsigmoid(labels * logits).sum() / logits.shape[0]
         return loss
 
+    # get_text_audio_embeds：提取文本 CLS 嵌入并投影到音文对比空间
     def get_text_audio_embeds(self, input_ids, attention_mask=None):
         return self.audio_model.get_text_embeds(input_ids, attention_mask)
 
+    # get_text_video_embeds：提取文本嵌入用于视频-文本对比
     def get_text_video_embeds(self, input_ids, attention_mask=None):
         return self.video_model.get_text_embeds(input_ids, attention_mask)
 
+    # get_text_audio_video_embeds：提取文本嵌入用于三模态对比
     def get_text_audio_video_embeds(self, input_ids, attention_mask=None):
         text_outputs: MaskedLMOutput = self.text_model(
             input_ids=input_ids,
@@ -607,12 +651,15 @@ class PeAudioVideoModel(PeAudioVideoPreTrainedModel):
         text_embeds = text_outputs.hidden_states[-1][:, 0]
         return self.text_audio_video_head(text_embeds)
 
+    # get_audio_embeds：提取音频池化/帧级嵌入并投影到对比空间
     def get_audio_embeds(self, input_values, padding_mask=None):
         return self.audio_model.get_audio_embeds(input_values, padding_mask)
 
+    # get_video_embeds：提取视频池化嵌入并投影到对比空间
     def get_video_embeds(self, pixel_values_videos, padding_mask_videos=None):
         return self.video_model.get_video_embeds(pixel_values_videos, padding_mask_videos)
 
+    # get_audio_video_embeds：提取音视频联合嵌入（可选单模态分支）
     def get_audio_video_embeds(
         self,
         input_values: torch.Tensor,
@@ -642,6 +689,7 @@ class PeAudioVideoModel(PeAudioVideoPreTrainedModel):
             audio_video_embeds=audio_video_embeds,
         )
 
+    # get_audio_plus_text_embeds：拼接音频+文本嵌入用于音文联合对比
     def get_audio_plus_text_embeds(
         self,
         input_ids: torch.Tensor,
@@ -665,6 +713,7 @@ class PeAudioVideoModel(PeAudioVideoPreTrainedModel):
         audio_plus_text_embeds = torch.cat([text_embeds, audio_embeds], dim=-1)
         return self.audio_plus_text_head(audio_plus_text_embeds)
 
+    # get_video_plus_text_embeds：拼接视频+文本嵌入用于视文联合对比
     def get_video_plus_text_embeds(
         self,
         input_ids: torch.Tensor,
@@ -690,6 +739,7 @@ class PeAudioVideoModel(PeAudioVideoPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.Tensor | None = None,

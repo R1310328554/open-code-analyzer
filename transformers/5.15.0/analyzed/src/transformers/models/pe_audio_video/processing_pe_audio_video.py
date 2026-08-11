@@ -14,7 +14,11 @@
 from ...processing_utils import ProcessorMixin
 
 
+# PeAudioVideo 处理器：音频/视频/文本三模态联合预处理
+
+# PeAudioVideoProcessor：PeAudioVideo 特征提取/视频/文本联合处理器
 class PeAudioVideoProcessor(ProcessorMixin):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, feature_extractor=None, video_processor=None, tokenizer=None, **kwargs):
         super().__init__(feature_extractor, video_processor, tokenizer, **kwargs)
 

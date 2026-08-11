@@ -21,8 +21,10 @@ from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# PeAudioEncoderConfig：facebook/pe-av-large DAC 音频编码器 + Transformer 超参
 @auto_docstring(checkpoint="facebook/pe-av-large")
 @strict
+# PeAudioEncoderConfig：facebook/pe-av-large DAC 音频编码器 + Transformer 超参
 class PeAudioEncoderConfig(PreTrainedConfig):
     r"""
     dac_config (`Union[PreTrainedConfig, dict]`, *optional*):
@@ -67,6 +69,7 @@ class PeAudioEncoderConfig(PreTrainedConfig):
     attention_bias: bool = False
     attention_dropout: float | int = 0.0
 
+    # __post_init__：初始化后解析子配置对象与默认 RoPE/DAC 参数
     def __post_init__(self, **kwargs):
         if self.num_key_value_heads is None:
             self.num_key_value_heads = self.num_attention_heads
@@ -85,8 +88,10 @@ class PeAudioEncoderConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# PeAudioConfig：PeAudio 文本 ModernBERT + 音频编码器对比学习联合超参
 @auto_docstring(checkpoint="facebook/pe-av-large")
 @strict
+# PeAudioConfig：PeAudio 文本 ModernBERT + 音频编码器对比学习联合超参
 class PeAudioConfig(PreTrainedConfig):
     r"""
     Example:
@@ -119,6 +124,7 @@ class PeAudioConfig(PreTrainedConfig):
     text_config: dict | PreTrainedConfig | None = None
     audio_config: dict | PreTrainedConfig | None = None
 
+    # __post_init__：初始化后解析子配置对象与默认 RoPE/DAC 参数
     def __post_init__(self, **kwargs):
         if isinstance(self.text_config, dict):
             self.text_config["model_type"] = self.text_config.get("model_type", "modernbert")

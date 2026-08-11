@@ -13,14 +13,18 @@
 # limitations under the License.
 """PatchTST model configuration"""
 
+# PatchTST 配置：时序 patch Transformer 预训练/预测/分类/回归超参
+
 from huggingface_hub.dataclasses import strict
 
 from transformers.configuration_utils import PreTrainedConfig
 from transformers.utils import auto_docstring
 
 
+# PatchTSTConfig：ibm-granite/patchtst 时序 patch Transformer 超参
 @auto_docstring(checkpoint="ibm-granite/granite-timeseries-patchtst")
 @strict
+# PatchTSTConfig：ibm-granite/patchtst 时序 patch Transformer 超参
 class PatchTSTConfig(PreTrainedConfig):
     r"""
     context_length (`int`, *optional*, defaults to 32):

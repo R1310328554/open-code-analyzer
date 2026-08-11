@@ -23,6 +23,9 @@ from ...utils import PaddingStrategy, TensorType, logging
 logger = logging.get_logger(__name__)
 
 
+# PeAudio 特征提取：原始波形分帧与反射填充（hop_length 对齐）
+
+# PeAudioFeatureExtractor：PeAudio 原始波形特征提取（hop_length 分帧）
 class PeAudioFeatureExtractor(SequenceFeatureExtractor):
     r"""
     Constructs a PeAudioFeatureExtractor feature extractor.
@@ -43,6 +46,7 @@ class PeAudioFeatureExtractor(SequenceFeatureExtractor):
 
     model_input_names = ["input_values"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         feature_size: int = 1,
@@ -54,12 +58,14 @@ class PeAudioFeatureExtractor(SequenceFeatureExtractor):
         super().__init__(feature_size=feature_size, sampling_rate=sampling_rate, padding_value=padding_value, **kwargs)
         self.hop_length = hop_length
 
+    # _reflect_pad：反射填充波形至 hop_length 整数倍
     def _reflect_pad(self, wav):
         if len(wav) % self.hop_length == 0:
             return wav
         p1d = (0, self.hop_length - (len(wav) % self.hop_length))
         return np.pad(wav, p1d, "reflect")
 
+    # __call__：联合编码多模态/音频输入为模型 batch
     def __call__(
         self,
         raw_audio: np.ndarray | list[float] | list[np.ndarray] | list[list[float]] | str | list[str],

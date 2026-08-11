@@ -35,17 +35,25 @@ from ..pe_audio_video.modeling_pe_audio_video import (
 from .configuration_pe_audio import PeAudioConfig, PeAudioEncoderConfig
 
 
+# PeAudio modular 源：DAC + PeAudioVideo 组件组合的纯音频对比模型
+
+# PeAudioDacEncoderBlock：DAC 音频编码器下采样卷积块
 class PeAudioDacEncoderBlock(DacEncoderBlock):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PreTrainedConfig, stride: int = 1, stride_index: int = 1):
         super().__init__(config, stride=stride, stride_index=stride_index)
 
 
+# PeAudioDacEncoder：DAC 离散音频 codec 编码器堆叠
 class PeAudioDacEncoder(DacEncoder):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PreTrainedConfig):
         super().__init__(config)
 
 
+# PeAudioEncoderEmbedder：PeAudio 音频波形→token 嵌入前端（DAC+投影）
 class PeAudioEncoderEmbedder(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PeAudioEncoderConfig):
         super().__init__()
         self.dac_encoder = PeAudioDacEncoder(config.dac_config)
@@ -53,6 +61,7 @@ class PeAudioEncoderEmbedder(nn.Module):
         self.data_proj = nn.Linear(config.dac_config.codebook_dim, config.hidden_size)
         self.config = config
 
+    # forward：模块前向计算
     def forward(
         self,
         input_values: torch.Tensor,
@@ -71,14 +80,17 @@ class PeAudioEncoderEmbedder(nn.Module):
         return inputs_embeds, padding_mask
 
 
+# PeAudioContrastiveHead：PeAudio 对比学习线性投影头
 class PeAudioContrastiveHead(PeAudioVideoContrastiveHead): ...
 
 
+# PeAudioPreTrainedModel：PeAudio 预训练基类与权重初始化
 class PeAudioPreTrainedModel(PeAudioVideoPreTrainedModel):
     base_model_prefix = "audio_model"
     _no_split_modules = ["PeAudioEncoderLayer", "TimmWrapperForImageClassification"]
 
     @torch.no_grad()
+    # _init_weights：按模块类型初始化权重
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, nn.Conv1d):
@@ -98,6 +110,7 @@ class PeAudioPreTrainedModel(PeAudioVideoPreTrainedModel):
     """
 )
 @dataclass
+# PeAudioEncoderOutput：PeAudio 音频编码器输出 dataclass
 class PeAudioEncoderOutput(BaseModelOutputWithPooling):
     r"""
     codec_features (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`, *optional*):
@@ -118,12 +131,14 @@ class PeAudioEncoderOutput(BaseModelOutputWithPooling):
     The PeAudio Encoder model.
     """
 )
+# PeAudioEncoder：PeAudio DAC+Transformer 音频编码器堆叠
 class PeAudioEncoder(PeAudioVideoEncoder):
     base_model_prefix = "audio_model.audio_encoder"
 
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_values: torch.Tensor,
@@ -176,6 +191,7 @@ class PeAudioEncoder(PeAudioVideoEncoder):
     """
 )
 @dataclass
+# PeAudioOutput：PeAudio 图文/音文对比学习输出
 class PeAudioOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*):
@@ -201,13 +217,16 @@ class PeAudioOutput(ModelOutput):
     text_outputs: BaseModelOutputWithPooling = None
     audio_outputs: BaseModelOutputWithPooling = None
 
+    # to_tuple：将 ModelOutput dataclass 转为 tuple
     def to_tuple(self) -> tuple[Any]:
         return tuple(
             self[k] if k not in ["text_outputs", "audio_outputs"] else getattr(self, k).to_tuple() for k in self.keys()
         )
 
 
+# PeAudioModel：PeAudio 文本+音频双塔对比学习模型
 class PeAudioModel(PeAudioPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PeAudioConfig):
         super().__init__(config)
         self.text_model = AutoModel.from_config(config.text_config)
@@ -221,6 +240,7 @@ class PeAudioModel(PeAudioPreTrainedModel):
 
         self.post_init()
 
+    # get_text_audio_embeds：提取文本 CLS 嵌入并投影到音文对比空间
     def get_text_audio_embeds(self, input_ids, attention_mask=None):
         # TODO: naming can be improved here...
         text_outputs: MaskedLMOutput = self.text_model(
@@ -231,6 +251,7 @@ class PeAudioModel(PeAudioPreTrainedModel):
         text_audio_embeds = text_outputs.hidden_states[-1][:, 0]
         return self.text_audio_head(text_audio_embeds)
 
+    # get_audio_embeds：提取音频池化/帧级嵌入并投影到对比空间
     def get_audio_embeds(self, input_values, padding_mask=None):
         audio_outputs: BaseModelOutputWithPooling = self.audio_encoder(
             input_values=input_values,
@@ -242,6 +263,7 @@ class PeAudioModel(PeAudioPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.Tensor,
@@ -296,7 +318,9 @@ class PeAudioModel(PeAudioPreTrainedModel):
 # TODO: underline in documentation that logits output shape is
 # 1. Model: (n_audio, n_text)
 # 2. Frame-level: (n_audio, n_text, n_frames)
+# PeAudioFrameLevelModel：PeAudio 帧级音文对比学习（逐帧 logits）
 class PeAudioFrameLevelModel(PeAudioModel):
+    # get_audio_embeds：提取音频池化/帧级嵌入并投影到对比空间
     def get_audio_embeds(self, input_values, padding_mask=None):
         audio_outputs: BaseModelOutputWithPooling = self.audio_encoder(
             input_values=input_values,
@@ -309,6 +333,7 @@ class PeAudioFrameLevelModel(PeAudioModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.Tensor,

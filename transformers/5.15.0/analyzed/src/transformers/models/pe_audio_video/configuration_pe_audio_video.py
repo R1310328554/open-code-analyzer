@@ -21,8 +21,12 @@ from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# PeAudioVideo 配置：文本 + 音视频联合编码器多模态对比学习超参
+
+# PeAudioVideoEncoderConfig：PeAudioVideo 音视频联合编码器超参
 @auto_docstring(checkpoint="facebook/pe-av-large")
 @strict
+# PeAudioVideoEncoderConfig：PeAudioVideo 音视频联合编码器超参
 class PeAudioVideoEncoderConfig(PreTrainedConfig):
     r"""
     video_config (`Union[PreTrainedConfig, dict]`, *optional*):
@@ -63,6 +67,7 @@ class PeAudioVideoEncoderConfig(PreTrainedConfig):
     attention_bias: bool = False
     attention_dropout: float | int = 0.0
 
+    # __post_init__：初始化后解析子配置对象与默认 RoPE/DAC 参数
     def __post_init__(self, **kwargs):
         if self.num_key_value_heads is None:
             self.num_key_value_heads = self.num_attention_heads
@@ -84,8 +89,10 @@ class PeAudioVideoEncoderConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# PeAudioVideoConfig：PeAudioVideo 文本+音视频多模态对比学习联合超参
 @auto_docstring(checkpoint="facebook/pe-av-large")
 @strict
+# PeAudioVideoConfig：PeAudioVideo 文本+音视频多模态对比学习联合超参
 class PeAudioVideoConfig(PreTrainedConfig):
     r"""
     audio_video_config (`dict` or `PreTrainedConfig`, *optional*):
@@ -119,6 +126,7 @@ class PeAudioVideoConfig(PreTrainedConfig):
     audio_video_config: dict | PreTrainedConfig | None = None
     tie_word_embeddings: bool = True
 
+    # __post_init__：初始化后解析子配置对象与默认 RoPE/DAC 参数
     def __post_init__(self, **kwargs):
         if isinstance(self.text_config, dict):
             self.text_config["model_type"] = self.text_config.get("model_type", "modernbert")
@@ -136,6 +144,7 @@ class PeAudioVideoConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
     @property
+    # audio_config：由联合配置派生 PeAudio 子配置
     def audio_config(self):
         return CONFIG_MAPPING["pe_audio"](
             text_config=self.text_config,
@@ -143,6 +152,7 @@ class PeAudioVideoConfig(PreTrainedConfig):
         )
 
     @property
+    # video_config：由联合配置派生 PeVideo 子配置
     def video_config(self):
         return CONFIG_MAPPING["pe_video"](
             text_config=self.text_config,
