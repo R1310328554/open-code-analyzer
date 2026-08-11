@@ -15,23 +15,8 @@
     "src/transformers/models/efficientloftr/image_processing_efficientloftr.py",
     "src/transformers/models/efficientloftr/image_processing_pil_efficientloftr.py",
     "src/transformers/models/efficientloftr/modeling_efficientloftr.py",
-    "src/transformers/models/efficientloftr/modular_efficientloftr.py",
-    "src/transformers/models/efficientnet/__init__.py",
-    "src/transformers/models/efficientnet/configuration_efficientnet.py",
-    "src/transformers/models/efficientnet/image_processing_efficientnet.py",
-    "src/transformers/models/efficientnet/image_processing_pil_efficientnet.py",
-    "src/transformers/models/efficientnet/modeling_efficientnet.py",
-    "src/transformers/models/electra/__init__.py",
-    "src/transformers/models/electra/configuration_electra.py",
-    "src/transformers/models/electra/modeling_electra.py",
-    "src/transformers/models/emu3/__init__.py",
-    "src/transformers/models/emu3/configuration_emu3.py",
-    "src/transformers/models/emu3/image_processing_emu3.py",
-    "src/transformers/models/emu3/modeling_emu3.py",
-    "src/transformers/models/emu3/modular_emu3.py",
-    "src/transformers/models/emu3/processing_emu3.py",
-    "src/transformers/models/encodec/__init__.py"
+    "src/transformers/models/efficientloftr/modular_efficientloftr.py"
   ],
   "remaining_pending": 1989,
-  "done": 660
+  "done": 675
 }
