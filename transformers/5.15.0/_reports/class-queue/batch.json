@@ -15,23 +15,8 @@
     "src/transformers/models/tvp/configuration_tvp.py",
     "src/transformers/models/tvp/image_processing_pil_tvp.py",
     "src/transformers/models/tvp/image_processing_tvp.py",
-    "src/transformers/models/tvp/modeling_tvp.py",
-    "src/transformers/models/tvp/processing_tvp.py",
-    "src/transformers/models/udop/__init__.py",
-    "src/transformers/models/udop/configuration_udop.py",
-    "src/transformers/models/udop/modeling_udop.py",
-    "src/transformers/models/udop/processing_udop.py",
-    "src/transformers/models/udop/tokenization_udop.py",
-    "src/transformers/models/umt5/__init__.py",
-    "src/transformers/models/umt5/configuration_umt5.py",
-    "src/transformers/models/umt5/modeling_umt5.py",
-    "src/transformers/models/unispeech/__init__.py",
-    "src/transformers/models/unispeech/configuration_unispeech.py",
-    "src/transformers/models/unispeech/modeling_unispeech.py",
-    "src/transformers/models/unispeech/modular_unispeech.py",
-    "src/transformers/models/unispeech_sat/__init__.py",
-    "src/transformers/models/unispeech_sat/configuration_unispeech_sat.py"
+    "src/transformers/models/tvp/modeling_tvp.py"
   ],
   "remaining_pending": 429,
-  "done": 2220
+  "done": 2235
 }
