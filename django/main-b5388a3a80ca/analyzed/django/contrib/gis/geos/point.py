@@ -6,11 +6,13 @@ from django.contrib.gis.geos.error import GEOSException
 from django.contrib.gis.geos.geometry import GEOSGeometry
 
 
+# 点几何：二维或三维坐标点
 class Point(GEOSGeometry):
     _minlength = 2
     _maxlength = 3
     has_cs = True
 
+    # 支持元组或单独 x/y/z 参数初始化
     def __init__(self, x=None, y=None, z=None, srid=None):
         """
         The Point object may be initialized with either a tuple, or individual
@@ -57,6 +59,7 @@ class Point(GEOSGeometry):
         return cls._create_point(None, None)
 
     @classmethod
+    # 创建坐标序列并构造 GEOS 点指针
     def _create_point(cls, ndim, coords):
         """
         Create a coordinate sequence, set X, Y, [Z], and create point
@@ -76,6 +79,7 @@ class Point(GEOSGeometry):
 
         return capi.create_point(cs)
 
+    # 重建点几何（用于列表式修改）
     def _set_list(self, length, items):
         ptr = self._create_point(length, items)
         if ptr:
@@ -117,6 +121,7 @@ class Point(GEOSGeometry):
     _get_single_internal = _get_single_external
 
     @property
+    # X 坐标属性
     def x(self):
         "Return the X component of the Point."
         return self._cs.getOrdinate(0, 0)
@@ -127,6 +132,7 @@ class Point(GEOSGeometry):
         self._cs.setOrdinate(0, 0, value)
 
     @property
+    # Y 坐标属性
     def y(self):
         "Return the Y component of the Point."
         return self._cs.getOrdinate(1, 0)
@@ -137,6 +143,7 @@ class Point(GEOSGeometry):
         self._cs.setOrdinate(1, 0, value)
 
     @property
+    # Z 坐标属性（仅 3D 点有效）
     def z(self):
         "Return the Z component of the Point."
         return self._cs.getOrdinate(2, 0) if self.hasz else None
@@ -150,6 +157,7 @@ class Point(GEOSGeometry):
 
     # ### Tuple setting and retrieval routines. ###
     @property
+    # 返回坐标元组
     def tuple(self):
         "Return a tuple of the point."
         return self._cs.tuple

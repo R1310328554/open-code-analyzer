@@ -1,6 +1,9 @@
 # Copyright (c) 2008-2009 Aryeh Leib Taurog, all rights reserved.
 # Released under the New BSD license.
 """
+可变列表混入基类 — 为 GEOS 几何提供 Python 列表式增删改接口。
+
+This module contains a base type which provides list-style mutations"""
 This module contains a base type which provides list-style mutations
 without specific data storage methods.
 
@@ -13,6 +16,7 @@ from functools import total_ordering
 
 
 @total_ordering
+# 列表接口混入：子类需实现 _get_single_external 与 _set_list
 class ListMixin:
     """
     A base class which provides complete list interface.
@@ -60,6 +64,7 @@ class ListMixin:
 
     # ### Python initialization and special list interface methods ###
 
+    # 初始化内部/外部访问器及默认重建策略
     def __init__(self, *args, **kwargs):
         if not hasattr(self, "_get_single_internal"):
             self._get_single_internal = self._get_single_external
@@ -70,6 +75,7 @@ class ListMixin:
 
         super().__init__(*args, **kwargs)
 
+    # 按索引或切片获取元素
     def __getitem__(self, index):
         "Get the item(s) at the specified index/slice."
         if isinstance(index, slice):
@@ -80,6 +86,7 @@ class ListMixin:
             index = self._checkindex(index)
             return self._get_single_external(index)
 
+    # 按索引或切片删除元素并重建
     def __delitem__(self, index):
         "Delete the item(s) at the specified index/slice."
         if not isinstance(index, (int, slice)):
@@ -100,6 +107,7 @@ class ListMixin:
 
         self._rebuild(newLen, newItems)
 
+    # 按索引或切片赋值
     def __setitem__(self, index, val):
         "Set the item(s) at the specified index/slice."
         if isinstance(index, slice):
@@ -110,6 +118,7 @@ class ListMixin:
             self._set_single(index, val)
 
     # ### Special methods for arithmetic operations ###
+    # 拼接两个类列表对象
     def __add__(self, other):
         "add another list-like object"
         return self.__class__([*self, *other])
@@ -185,39 +194,47 @@ class ListMixin:
         raise ValueError("%s not found in object" % val)
 
     # ## Mutating ##
+    # 在末尾追加元素
     def append(self, val):
         "Standard list append method"
         self[len(self) :] = [val]
 
+    # 批量追加元素
     def extend(self, vals):
         "Standard list extend method"
         self[len(self) :] = vals
 
+    # 在指定位置插入元素
     def insert(self, index, val):
         "Standard list insert method"
         if not isinstance(index, int):
             raise TypeError("%s is not a legal index" % index)
         self[index:index] = [val]
 
+    # 弹出并返回指定索引元素
     def pop(self, index=-1):
         "Standard list pop method"
         result = self[index]
         del self[index]
         return result
 
+    # 删除首个匹配元素
     def remove(self, val):
         "Standard list remove method"
         del self[self.index(val)]
 
+    # 原地反转元素顺序
     def reverse(self):
         "Standard list reverse method"
         self[:] = self[-1::-1]
 
+    # 原地排序
     def sort(self, key=None, reverse=False):
         "Standard list sort method"
         self[:] = sorted(self, key=key, reverse=reverse)
 
     # ### Private routines ###
+    # 校验长度约束后调用 _set_list 重建
     def _rebuild(self, newLen, newItems):
         if newLen and newLen < self._minlength:
             raise ValueError("Must have at least %d items" % self._minlength)
@@ -229,6 +246,7 @@ class ListMixin:
     def _set_single_rebuild(self, index, value):
         self._set_slice(slice(index, index + 1, 1), [value])
 
+    # 规范化并校验索引范围
     def _checkindex(self, index):
         length = len(self)
         if 0 <= index < length:
@@ -237,11 +255,13 @@ class ListMixin:
             return index + length
         raise IndexError("invalid index: %s" % index)
 
+    # 校验元素类型是否在 _allowed 允许范围内
     def _check_allowed(self, items):
         if hasattr(self, "_allowed"):
             if False in [isinstance(val, self._allowed) for val in items]:
                 raise TypeError("Invalid type encountered in the arguments.")
 
+    # 对切片赋值，区分简单切片与扩展切片
     def _set_slice(self, index, values):
         "Assign values to a slice of the object"
         try:

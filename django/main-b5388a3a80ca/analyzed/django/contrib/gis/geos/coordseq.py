@@ -1,4 +1,7 @@
 """
+GEOSCoordSeq 模块 — 点/线/环几何内部的坐标序列封装。
+
+This module houses the GEOSCoordSeq object"""
 This module houses the GEOSCoordSeq object, which is used internally
 by GEOSGeometry to house the actual coordinates of the Point,
 LineString, and LinearRing geometries.
@@ -13,11 +16,13 @@ from django.contrib.gis.geos.libgeos import CS_PTR, geos_version_tuple
 from django.contrib.gis.shortcuts import numpy
 
 
+# 坐标序列：管理几何内部的 (x,y[,z][,m]) 坐标点
 class GEOSCoordSeq(GEOSBase):
     "The internal representation of a list of coordinates inside a Geometry."
 
     ptr_type = CS_PTR
 
+    # 从 GEOS CS_PTR 指针初始化
     def __init__(self, ptr, z=False):
         "Initialize from a GEOS pointer."
         # TODO when dropping support for GEOS 3.13 the z argument can be
@@ -40,11 +45,13 @@ class GEOSCoordSeq(GEOSBase):
         "Return the string representation of the coordinate sequence."
         return str(self.tuple)
 
+    # 按索引获取坐标元组
     def __getitem__(self, index):
         "Return the coordinate sequence value at the given index."
         self._checkindex(index)
         return self._point_getter(index)
 
+    # 按索引设置坐标，自动匹配维度
     def __setitem__(self, index, value):
         "Set the coordinate sequence value at the given index."
         # Checking the input value
@@ -161,12 +168,14 @@ class GEOSCoordSeq(GEOSBase):
         self._set_m(index, m)
 
     # #### Ordinate getting and setting routines ####
+    # 获取指定维度与索引的坐标值
     def getOrdinate(self, dimension, index):
         "Return the value for the given dimension and index."
         self._checkindex(index)
         self._checkdim(dimension)
         return capi.cs_getordinate(self.ptr, index, dimension, byref(c_double()))
 
+    # 设置指定维度与索引的坐标值
     def setOrdinate(self, dimension, index, value):
         "Set the value for the given dimension and index."
         self._checkindex(index)
@@ -207,11 +216,13 @@ class GEOSCoordSeq(GEOSBase):
 
     # ### Dimensions ###
     @property
+    # 返回坐标点数量
     def size(self):
         "Return the size of this coordinate sequence."
         return capi.cs_getsize(self.ptr, byref(c_uint()))
 
     @property
+    # 返回坐标维度数
     def dims(self):
         "Return the dimensions of this coordinate sequence."
         return capi.cs_getdims(self.ptr, byref(c_uint()))
@@ -225,6 +236,7 @@ class GEOSCoordSeq(GEOSBase):
         return self._z
 
     @property
+    # 是否包含 M 维度（需 GEOS 3.14+）
     def hasm(self):
         """
         Return whether this coordinate sequence has M dimension.
@@ -237,6 +249,7 @@ class GEOSCoordSeq(GEOSBase):
             )
 
     # ### Other Methods ###
+    # 克隆坐标序列
     def clone(self):
         "Clone this coordinate sequence."
         return GEOSCoordSeq(capi.cs_clone(self.ptr), self.hasz)
@@ -262,6 +275,7 @@ class GEOSCoordSeq(GEOSBase):
         return tuple(get_point(i) for i in range(n))
 
     @property
+    # 判断坐标序列是否逆时针方向
     def is_counterclockwise(self):
         """Return whether this coordinate sequence is counterclockwise."""
         ret = c_byte()

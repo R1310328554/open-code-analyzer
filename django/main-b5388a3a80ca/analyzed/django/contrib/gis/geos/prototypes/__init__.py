@@ -1,10 +1,14 @@
 """
+GEOS ctypes 函数原型集合 — 封装 GEOS C 库与 Python 的交互。
+
+This module contains all of the GEOS ctypes function prototypes."""
 This module contains all of the GEOS ctypes function prototypes. Each
 prototype handles the interaction between the GEOS library and Python
 via ctypes.
 """
 
-from django.contrib.gis.geos.prototypes.coordseq import (  # NOQA
+# 坐标序列、几何创建/销毁、谓词与拓扑运算的 C 函数绑定
+from django.contrib.gis.geos.prototypes.coordseq import (  # NOQAfrom django.contrib.gis.geos.prototypes.coordseq import (  # NOQA
     create_cs,
     cs_clone,
     cs_getdims,

@@ -1,4 +1,7 @@
 """
+GEOSGeometry 基类模块 — 所有 GEOS 几何类型的公共行为与拓扑运算。
+
+This module contains the 'base' GEOSGeometry object"""
 This module contains the 'base' GEOSGeometry object -- all GEOS Geometries
 inherit from this object.
 """
@@ -27,6 +30,7 @@ from django.utils.deconstruct import deconstructible
 from django.utils.encoding import force_bytes, force_str
 
 
+# GEOS 几何基类：指针管理、序列化、谓词与拓扑
 class GEOSGeometryBase(GEOSBase):
     _GEOS_CLASSES = None
 
@@ -34,6 +38,7 @@ class GEOSGeometryBase(GEOSBase):
     destructor = capi.destroy_geom
     has_cs = False  # Only Point, LineString, LinearRing have coordinate sequences
 
+    # 从 GEOS 指针初始化，必要时动态切换具体子类
     def __init__(self, ptr, cls):
         self._ptr = ptr
 
@@ -66,6 +71,7 @@ class GEOSGeometryBase(GEOSBase):
             self.__class__ = cls
         self._post_init()
 
+    # 初始化后绑定坐标序列（若几何类型支持）
     def _post_init(self):
         "Perform post-initialization setup."
         # Setting the coordinate sequence for the geometry (will be None on
@@ -74,6 +80,7 @@ class GEOSGeometryBase(GEOSBase):
             GEOSCoordSeq(capi.get_cs(self.ptr), self.hasz) if self.has_cs else None
         )
 
+    # 浅拷贝返回 clone，避免 C 指针失效
     def __copy__(self):
         """
         Return a clone because the copy of a GEOSGeometry may contain an
@@ -125,6 +132,7 @@ class GEOSGeometryBase(GEOSBase):
         return wkb_r().read(wkb, max_geom_collections)
 
     @staticmethod
+    # 从 EWKT（含 SRID 前缀）解析几何
     def from_ewkt(ewkt):
         ewkt = force_bytes(ewkt)
         srid = None
@@ -150,6 +158,7 @@ class GEOSGeometryBase(GEOSBase):
         return gdal.OGRGeometry.from_gml(gml_string).geos
 
     # Comparison operators
+    # 与另一几何或 EWKT 字符串比较等价性
     def __eq__(self, other):
         """
         Equivalence testing, a Geometry may be compared with another Geometry
@@ -173,16 +182,19 @@ class GEOSGeometryBase(GEOSBase):
     # Thanks to Sean Gillies for inspiration:
     #  http://lists.gispython.org/pipermail/community/2007-July/001034.html
     # g = g1 | g2
+    # 集合并运算（union）
     def __or__(self, other):
         "Return the union of this Geometry and the other."
         return self.union(other)
 
     # g = g1 & g2
+    # 集合交运算（intersection）
     def __and__(self, other):
         "Return the intersection of this Geometry and the other."
         return self.intersection(other)
 
     # g = g1 - g2
+    # 集合差运算（difference）
     def __sub__(self, other):
         "Return the difference this Geometry and the other."
         return self.difference(other)
@@ -201,6 +213,7 @@ class GEOSGeometryBase(GEOSBase):
 
     # #### Geometry Info ####
     @property
+    # 几何类型名称字符串
     def geom_type(self):
         "Return a string representing the Geometry type, e.g. 'Polygon'"
         return capi.geos_type(self.ptr).decode()
@@ -230,6 +243,7 @@ class GEOSGeometryBase(GEOSBase):
         "Return the dimension of this Geometry (0=point, 1=line, 2=surface)."
         return capi.get_dims(self.ptr)
 
+    # 转换为规范形式
     def normalize(self, clone=False):
         """
         Convert this Geometry to normal form (or canonical form).
@@ -242,6 +256,7 @@ class GEOSGeometryBase(GEOSBase):
             return clone
         capi.geos_normalize(self.ptr)
 
+    # 修复无效几何
     def make_valid(self):
         """
         Attempt to create a valid representation of a given invalid geometry
@@ -251,6 +266,7 @@ class GEOSGeometryBase(GEOSBase):
 
     # #### Unary predicates ####
     @property
+    # 是否为空几何
     def empty(self):
         """
         Return a boolean indicating whether the set of points in this Geometry
@@ -259,6 +275,7 @@ class GEOSGeometryBase(GEOSBase):
         return capi.geos_isempty(self.ptr)
 
     @property
+    # 是否含 Z 维度
     def hasz(self):
         "Return whether the geometry has a Z dimension."
         return capi.geos_hasz(self.ptr)
@@ -281,6 +298,7 @@ class GEOSGeometryBase(GEOSBase):
         return capi.geos_issimple(self.ptr)
 
     @property
+    # 几何有效性检测
     def valid(self):
         "Test the validity of this Geometry."
         return capi.geos_isvalid(self.ptr)
@@ -293,6 +311,7 @@ class GEOSGeometryBase(GEOSBase):
         return capi.geos_isvalidreason(self.ptr).decode()
 
     # #### Binary predicates. ####
+    # 空间包含谓词
     def contains(self, other):
         "Return true if other.within(this) returns true."
         return capi.geos_contains(self.ptr, other.ptr)
@@ -344,6 +363,7 @@ class GEOSGeometryBase(GEOSBase):
             )
         return capi.geos_equalsidentical(self.ptr, other.ptr)
 
+    # 空间相交谓词
     def intersects(self, other):
         "Return true if disjoint return false."
         return capi.geos_intersects(self.ptr, other.ptr)
@@ -381,6 +401,7 @@ class GEOSGeometryBase(GEOSBase):
 
     # #### SRID Routines ####
     @property
+    # 空间参考标识符 SRID
     def srid(self):
         "Get the SRID for the geometry. Return None if no SRID is set."
         s = capi.geos_get_srid(self.ptr)
@@ -404,6 +425,7 @@ class GEOSGeometryBase(GEOSBase):
         return "SRID=%s;%s" % (srid, self.wkt) if srid else self.wkt
 
     @property
+    # WKT 文本表示
     def wkt(self):
         "Return the WKT (Well-Known Text) representation of this Geometry."
         return wkt_w(dim=3 if self.hasz else 2, trim=True).write(self).decode()
@@ -429,6 +451,7 @@ class GEOSGeometryBase(GEOSBase):
         return ewkb_w(dim=3 if self.hasz else 2).write_hex(self)
 
     @property
+    # GeoJSON 表示
     def json(self):
         """
         Return GeoJSON representation of this Geometry.
@@ -438,6 +461,7 @@ class GEOSGeometryBase(GEOSBase):
     geojson = json
 
     @property
+    # WKB 二进制表示
     def wkb(self):
         """
         Return the WKB (Well-Known Binary) representation of this Geometry
@@ -462,6 +486,7 @@ class GEOSGeometryBase(GEOSBase):
         return "<%s>%s</%s>" % (gtype, self.coord_seq.kml, gtype)
 
     @property
+    # 返回预计算几何以加速谓词运算
     def prepared(self):
         """
         Return a PreparedGeometry corresponding to this geometry -- it is
@@ -493,6 +518,7 @@ class GEOSGeometryBase(GEOSBase):
         "Alias for `srs` property."
         return self.srs
 
+    # 通过 GDAL 坐标变换转换几何
     def transform(self, ct, clone=False):
         """
         Requires GDAL. Transform the geometry according to the given
@@ -547,6 +573,7 @@ class GEOSGeometryBase(GEOSBase):
         "Return the boundary as a newly allocated Geometry object."
         return self._topology(capi.geos_boundary(self.ptr))
 
+    # 按给定距离生成缓冲几何
     def buffer(self, width, quadsegs=8):
         """
         Return a geometry that represents all points whose distance from this
@@ -574,6 +601,7 @@ class GEOSGeometryBase(GEOSBase):
         )
 
     @property
+    # 几何质心
     def centroid(self):
         """
         The centroid is equal to the centroid of the set of component
@@ -590,6 +618,7 @@ class GEOSGeometryBase(GEOSBase):
         """
         return self._topology(capi.geos_convexhull(self.ptr))
 
+    # 拓扑差集
     def difference(self, other):
         """
         Return a Geometry representing the points making up this Geometry
@@ -602,6 +631,7 @@ class GEOSGeometryBase(GEOSBase):
         "Return the envelope for this geometry (a polygon)."
         return self._topology(capi.geos_envelope(self.ptr))
 
+    # 拓扑交集
     def intersection(self, other):
         """
         Return a Geometry representing the points shared by this Geometry and
@@ -620,6 +650,7 @@ class GEOSGeometryBase(GEOSBase):
         """
         return capi.geos_relate(self.ptr, other.ptr).decode()
 
+    # Douglas-Peucker 简化
     def simplify(self, tolerance=0.0, preserve_topology=False):
         """
         Return the Geometry, simplified using the Douglas-Peucker algorithm
@@ -649,6 +680,7 @@ class GEOSGeometryBase(GEOSBase):
         "Return the union of all the elements of this geometry."
         return self._topology(capi.geos_unary_union(self.ptr))
 
+    # 拓扑并集
     def union(self, other):
         """
         Return a Geometry representing all the points in this Geometry and
@@ -658,10 +690,12 @@ class GEOSGeometryBase(GEOSBase):
 
     # #### Other Routines ####
     @property
+    # 面积
     def area(self):
         "Return the area of the Geometry."
         return capi.geos_area(self.ptr, byref(c_double()))
 
+    # 两几何最近点距离
     def distance(self, other):
         """
         Return the distance between the closest points on this Geometry
@@ -673,6 +707,7 @@ class GEOSGeometryBase(GEOSBase):
         return capi.geos_distance(self.ptr, other.ptr, byref(c_double()))
 
     @property
+    # 边界框 (xmin, ymin, xmax, ymax)
     def extent(self):
         """
         Return the extent of this geometry as a 4-tuple, consisting of
@@ -690,6 +725,7 @@ class GEOSGeometryBase(GEOSBase):
         return (xmin, ymin, xmax, ymax)
 
     @property
+    # 长度或周长
     def length(self):
         """
         Return the length of this Geometry (e.g., 0 for point, or the
@@ -697,22 +733,26 @@ class GEOSGeometryBase(GEOSBase):
         """
         return capi.geos_length(self.ptr, byref(c_double()))
 
+    # 克隆几何
     def clone(self):
         "Clone this Geometry."
         return GEOSGeometry(capi.geom_clone(self.ptr))
 
 
+# 线几何混入：插值、投影、合并等线特有操作
 class LinearGeometryMixin:
     """
     Used for LineString and MultiLineString.
     """
 
+    # 沿线上按距离插值取点
     def interpolate(self, distance):
         return self._topology(capi.geos_interpolate(self.ptr, distance))
 
     def interpolate_normalized(self, distance):
         return self._topology(capi.geos_interpolate_normalized(self.ptr, distance))
 
+    # 计算点在线上的投影距离
     def project(self, point):
         from .point import Point
 
@@ -728,6 +768,7 @@ class LinearGeometryMixin:
         return capi.geos_project_normalized(self.ptr, point.ptr)
 
     @property
+    # 线合并
     def merged(self):
         """
         Return the line merge of this Geometry.
@@ -735,6 +776,7 @@ class LinearGeometryMixin:
         return self._topology(capi.geos_linemerge(self.ptr))
 
     @property
+    # 是否闭合
     def closed(self):
         """
         Return whether or not this Geometry is closed.
@@ -743,9 +785,11 @@ class LinearGeometryMixin:
 
 
 @deconstructible
+# GEOS 几何主类：支持 WKT/WKB/HEX/GeoJSON 多种输入
 class GEOSGeometry(GEOSGeometryBase, ListMixin):
     "A class that, generally, encapsulates a GEOS geometry."
 
+    # 从字符串、指针或 memoryview 构造几何，限制嵌套集合深度
     def __init__(
         self, geo_input, srid=None, *, max_geom_collections=MAX_GEOM_COLLECTIONS
     ):

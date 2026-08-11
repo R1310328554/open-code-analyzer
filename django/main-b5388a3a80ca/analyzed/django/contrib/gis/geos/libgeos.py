@@ -1,4 +1,7 @@
 """
+GEOS 库 ctypes 初始化、错误/通知回调及 C 指针类型定义。
+
+This module houses the ctypes initialization procedures"""
 This module houses the ctypes initialization procedures, as well
 as the notice and error handler function callbacks (get called
 when an error occurs in GEOS).
@@ -19,6 +22,7 @@ from django.utils.version import get_version_tuple
 logger = logging.getLogger("django.contrib.gis")
 
 
+# 加载 GEOS 共享库并配置 C API 函数原型
 def load_geos():
     # Custom library path set?
     try:
@@ -80,6 +84,7 @@ def load_geos():
 NOTICEFUNC = CFUNCTYPE(None, c_char_p, c_char_p)
 
 
+# GEOS 通知消息回调，写入 django.contrib.gis 日志
 def notice_h(fmt, lst):
     fmt, lst = fmt.decode(), lst.decode()
     try:
@@ -94,6 +99,7 @@ notice_h = NOTICEFUNC(notice_h)
 ERRORFUNC = CFUNCTYPE(None, c_char_p, c_char_p)
 
 
+# GEOS 错误消息回调，写入 django.contrib.gis 日志
 def error_h(fmt, lst):
     fmt, lst = fmt.decode(), lst.decode()
     try:
@@ -109,18 +115,22 @@ error_h = ERRORFUNC(error_h)
 
 
 # Opaque GEOS geometry structures, used for GEOM_PTR and CS_PTR
+# 不透明 GEOS 几何 C 结构体
 class GEOSGeom_t(Structure):
     pass
 
 
+# 预计算几何 C 结构体
 class GEOSPrepGeom_t(Structure):
     pass
 
 
+# 坐标序列 C 结构体
 class GEOSCoordSeq_t(Structure):
     pass
 
 
+# GEOS 线程上下文句柄 C 结构体
 class GEOSContextHandle_t(Structure):
     pass
 
@@ -135,6 +145,7 @@ CONTEXT_PTR = POINTER(GEOSContextHandle_t)
 lgeos = SimpleLazyObject(load_geos)
 
 
+# 延迟绑定 GEOS C 函数的工厂类
 class GEOSFuncFactory:
     """
     Lazy loading of GEOS functions.
@@ -144,6 +155,7 @@ class GEOSFuncFactory:
     restype = None
     errcheck = None
 
+    # 记录函数名与 ctypes 签名参数
     def __init__(self, func_name, *, restype=None, errcheck=None, argtypes=None):
         self.func_name = func_name
         if restype is not None:
@@ -153,10 +165,12 @@ class GEOSFuncFactory:
         if argtypes is not None:
             self.argtypes = argtypes
 
+    # 调用已绑定的 GEOS C 函数
     def __call__(self, *args):
         return self.func(*args)
 
     @cached_property
+    # 懒加载并缓存 GEOSFunc 实例
     def func(self):
         from django.contrib.gis.geos.prototypes.threadsafe import GEOSFunc
 
@@ -168,11 +182,13 @@ class GEOSFuncFactory:
         return func
 
 
+# 返回 GEOS 库版本字符串
 def geos_version():
     """Return the string version of the GEOS library."""
     return lgeos.GEOSversion()
 
 
+# 返回 GEOS 版本 (major, minor, subminor) 元组
 def geos_version_tuple():
     """Return the GEOS version as a tuple (major, minor, subminor)."""
     return get_version_tuple(geos_version().decode())

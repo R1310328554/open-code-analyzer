@@ -1,9 +1,13 @@
 """
+GeoDjango GEOS 模块 — 封装 GEOS C 库的几何对象与 I/O 工具。
+
+The GeoDjango GEOS module."""
 The GeoDjango GEOS module. Please consult the GeoDjango documentation
 for more details: https://docs.djangoproject.com/en/dev/ref/contrib/gis/geos/
 """
 
-from .collections import (  # NOQA
+# 导出几何集合、工厂函数、读写器及基础几何类型
+from .collections import (  # NOQAfrom .collections import (  # NOQA
     GeometryCollection,
     MultiLineString,
     MultiPoint,

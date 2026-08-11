@@ -4,9 +4,11 @@ from django.contrib.gis.geos.libgeos import GEOM_PTR
 from django.contrib.gis.geos.linestring import LinearRing
 
 
+# 多边形几何：外环 + 零或多个内环（洞）
 class Polygon(GEOSGeometry):
     _minlength = 1
 
+    # 从外环和可选内环序列初始化
     def __init__(self, *args, **kwargs):
         """
         Initialize on an exterior ring and a sequence of holes (both
@@ -55,6 +57,7 @@ class Polygon(GEOSGeometry):
         return self.num_interior_rings + 1
 
     @classmethod
+    # 从边界框四元组构造矩形多边形
     def from_bbox(cls, bbox):
         "Construct a Polygon from a bounding box (4-tuple)."
         x0, y0, x1, y1 = bbox
@@ -67,6 +70,7 @@ class Polygon(GEOSGeometry):
         return Polygon(((x0, y0), (x0, y1), (x1, y1), (x1, y0), (x0, y0)))
 
     # ### These routines are needed for list-like operation w/ListMixin ###
+    # 构造外环与内环指针并创建 GEOS 多边形
     def _create_polygon(self, length, items):
         # Instantiate LinearRing objects if necessary, but don't clone them yet
         # _construct_ring will throw a TypeError if a parameter isn't a valid
@@ -124,6 +128,7 @@ class Polygon(GEOSGeometry):
             self.srid = srid
         capi.destroy_geom(prev_ptr)
 
+    # 按索引返回环指针（0=外环，>0=内环）
     def _get_single_internal(self, index):
         """
         Return the ring at the specified index. The first index, 0, will
@@ -152,6 +157,7 @@ class Polygon(GEOSGeometry):
 
     # #### Polygon Properties ####
     @property
+    # 内环（洞）数量
     def num_interior_rings(self):
         "Return the number of interior rings."
         # Getting the number of rings
@@ -166,10 +172,12 @@ class Polygon(GEOSGeometry):
         self[0] = ring
 
     # Properties for the exterior ring/shell.
+    # 外环属性（shell 别名）
     exterior_ring = property(_get_ext_ring, _set_ext_ring)
     shell = exterior_ring
 
     @property
+    # 返回各环坐标元组的元组
     def tuple(self):
         "Get the tuple for each ring in this Polygon."
         return tuple(self[i].tuple for i in range(len(self)))

@@ -6,11 +6,13 @@ from django.contrib.gis.geos.point import Point
 from django.contrib.gis.shortcuts import numpy
 
 
+# 线串几何：由有序坐标点组成的线
 class LineString(LinearGeometryMixin, GEOSGeometry):
     _init_func = capi.create_linestring
     _minlength = 2
     has_cs = True
 
+    # 从坐标序列、NumPy 数组或 Point 列表初始化
     def __init__(self, *args, **kwargs):
         """
         Initialize on the given sequence: may take lists, tuples, NumPy arrays
@@ -110,6 +112,7 @@ class LineString(LinearGeometryMixin, GEOSGeometry):
 
     _get_single_internal = _get_single_external
 
+    # 重建线串几何
     def _set_list(self, length, items):
         ndim = self._cs.dims
         hasz = self._cs.hasz  # I don't understand why these are different
@@ -140,6 +143,7 @@ class LineString(LinearGeometryMixin, GEOSGeometry):
 
     # #### Sequence Properties ####
     @property
+    # 返回所有坐标点的元组
     def tuple(self):
         "Return a tuple version of the geometry from the coordinate sequence."
         return self._cs.tuple
@@ -158,6 +162,7 @@ class LineString(LinearGeometryMixin, GEOSGeometry):
             return lst
 
     @property
+    # 返回 NumPy 数组形式的坐标
     def array(self):
         "Return a numpy array for the LineString."
         return self._listarr(self._cs.__getitem__)
@@ -182,11 +187,13 @@ class LineString(LinearGeometryMixin, GEOSGeometry):
 
 
 # LinearRings are LineStrings used within Polygons.
+# 线性环：闭合线串，用作多边形外环/内环
 class LinearRing(LineString):
     _minlength = 4
     _init_func = capi.create_linearring
 
     @property
+    # 判断环是否逆时针方向
     def is_counterclockwise(self):
         if self.empty:
             raise ValueError("Orientation of an empty LinearRing cannot be determined.")
