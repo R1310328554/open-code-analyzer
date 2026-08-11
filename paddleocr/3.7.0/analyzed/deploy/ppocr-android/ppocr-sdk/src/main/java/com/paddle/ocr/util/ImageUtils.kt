@@ -12,14 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.paddle.ocr.util
+// ImageUtils.kt — 检测预处理用的图像缩放工具（32 倍数对齐）。
+
+package com.paddle.ocr.utilpackage com.paddle.ocr.util
 
 import org.opencv.core.Mat
 import org.opencv.core.Size
 import org.opencv.imgproc.Imgproc
 
+/**
+ * ImageUtils 按 limit_type（max/min/resize_long）计算缩放比，
+ * 输出宽高均为 32 倍数的新 Mat，满足 DB 网络 stride 要求。
+ */
 object ImageUtils {
 
+    // resizeToMultipleOf32 缩放图像并四舍五入到 32 倍数，受 maxSideLimit 约束。
     fun resizeToMultipleOf32(
         src: Mat,
         limitSideLen: Int,

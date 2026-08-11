@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.paddle.ocr.preprocess
+// DetPreprocessor.kt — DB 检测模型输入预处理：缩放、归一化与张量打包。
+
+package com.paddle.ocr.preprocesspackage com.paddle.ocr.preprocess
 
 import android.graphics.Bitmap
 import com.paddle.ocr.util.BitmapUtils
@@ -23,6 +25,9 @@ import org.opencv.core.Mat
 import org.opencv.core.Scalar
 import org.opencv.imgproc.Imgproc
 
+/**
+ * DetPreprocessResult 检测预处理输出：NCHW float 张量及原图尺寸。
+ */
 data class DetPreprocessResult(
     val tensorData: FloatArray,
     val shape: LongArray,
@@ -30,11 +35,16 @@ data class DetPreprocessResult(
     val originalW: Int,
 )
 
+/**
+ * DetPreprocessor 将 Bitmap/Mat 转为检测网络输入：
+ * 32 倍数缩放、ImageNet mean/std 归一化，通道顺序 CHW。
+ */
 object DetPreprocessor {
     private val mean = doubleArrayOf(0.485, 0.456, 0.406)
     private val std = doubleArrayOf(0.229, 0.224, 0.225)
     private const val scale = 1.0 / 255.0
 
+    // preprocess(Bitmap) 从 Android Bitmap 入口，内部转 BGR Mat 后处理。
     fun preprocess(
         bitmap: Bitmap,
         limitSideLen: Int,
@@ -50,6 +60,7 @@ object DetPreprocessor {
         }
     }
 
+    // preprocess(Mat) 核心流程：可选 RGB 转换、缩放、归一化并打包张量。
     fun preprocess(
         src: Mat,
         limitSideLen: Int,

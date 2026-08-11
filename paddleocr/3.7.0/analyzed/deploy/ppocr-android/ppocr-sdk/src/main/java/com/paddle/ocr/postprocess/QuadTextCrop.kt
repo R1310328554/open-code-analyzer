@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.paddle.ocr.postprocess
+// QuadTextCrop.kt — 按检测四边形做透视裁剪，得到水平文本行图像。
+
+package com.paddle.ocr.postprocesspackage com.paddle.ocr.postprocess
 
 import com.paddle.ocr.model.OCRBox
 import org.opencv.core.Core
@@ -25,10 +27,17 @@ import org.opencv.imgproc.Imgproc
 import kotlin.math.hypot
 import kotlin.math.max
 
+/**
+ * QuadTextCrop 对齐 PaddleX CropByPolys.get_minarea_rect_crop：
+ * 重算最小外接矩形后透视变换；竖长条自动逆时针旋转 90°。
+ */
 object QuadTextCrop {
+    // VERTICAL_CROP_RATIO 高宽比超过此值时判定为竖排文本并旋转。
     private const val VERTICAL_CROP_RATIO = 1.5
 
+    // crop 从原图 Mat 中裁剪 box 对应文本区域，返回 BGR 子图。
     fun crop(src: Mat, box: OCRBox): Mat {
+        // 与 PaddleX 一致：透视变换前基于检测四边形重算 minAreaRect。
         // Align with PaddleX CropByPolys.get_minarea_rect_crop: recompute minAreaRect
         // from the detected quad before perspective transform.
         val rectPoints = box.points.map { Point(it.x.toDouble(), it.y.toDouble()) }

@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.paddle.ocr.postprocess
+// PolygonUnclip.kt — 多边形 outward offset（unclip）扩框，与 DB 后处理配套。
+
+package com.paddle.ocr.postprocesspackage com.paddle.ocr.postprocess
 
 import org.opencv.core.Point
 import kotlin.math.PI
@@ -24,10 +26,15 @@ import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.sin
 
+/**
+ * PolygonUnclip 按面积与周长计算扩边距离，沿各边法向偏移并圆角连接。
+ * 用于 DB 检测框略微外扩以完整覆盖文本区域。
+ */
 internal object PolygonUnclip {
     private const val EPS = 1e-6
     private const val ARC_TOLERANCE = 0.25
 
+    // unclip 对输入多边形做 outward offset，返回扩边后的顶点列表。
     fun unclip(points: List<Point>, unclipRatio: Float): List<Point> {
         if (points.size < 3) return points
 
@@ -73,6 +80,7 @@ internal object PolygonUnclip {
         return if (expanded.size >= 3) expanded else points
     }
 
+    // appendRoundJoin 在顶点处沿圆弧插值连接两条偏移边。
     private fun appendRoundJoin(
         output: MutableList<Point>,
         center: Point,
@@ -103,6 +111,7 @@ internal object PolygonUnclip {
         }
     }
 
+    // arcStepAngle 根据扩边距离计算圆弧离散步长角。
     private fun arcStepAngle(distance: Double): Double {
         val ratio = (1.0 - ARC_TOLERANCE / distance).coerceIn(-1.0, 1.0)
         val step = 2.0 * acos(ratio)
@@ -116,6 +125,7 @@ internal object PolygonUnclip {
         }
     }
 
+    // signedArea 计算有符号面积，用于判定多边形绕序。
     private fun signedArea(points: List<Point>): Double {
         var sum = 0.0
         for (i in points.indices) {

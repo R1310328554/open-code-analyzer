@@ -12,19 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.paddle.ocr.postprocess
+// BoxSorter.kt — 将检测框按自然阅读顺序（自上而下、从左到右）排序。
+
+package com.paddle.ocr.postprocesspackage com.paddle.ocr.postprocess
 
 import com.paddle.ocr.model.OCRBox
 
+/**
+ * BoxSorter 对齐 PaddleX SortQuadBoxes 逻辑：
+ * 先按左上角 y/x 排序，再在 10 像素行带内冒泡修正左右顺序。
+ */
 object BoxSorter {
+    // ROW_THRESHOLD_Y 判定同一文本行的垂直距离阈值（像素）。
     private const val ROW_THRESHOLD_Y = 10f
 
+    // sortInReadingOrder 返回按阅读顺序排列的检测框副本。
     fun sortInReadingOrder(boxes: List<OCRBox>): List<OCRBox> {
         if (boxes.size <= 1) return boxes
 
         val list = boxes.toMutableList()
         list.sortWith(compareBy({ it.points[0].y }, { it.points[0].x }))
 
+        // 与 PaddleX SortQuadBoxes 一致：在 10px 行带内自左向右冒泡交换。
         // Align with PaddleX SortQuadBoxes: bubble left-to-right inside a 10px row band.
         for (i in 0 until list.size - 1) {
             var j = i

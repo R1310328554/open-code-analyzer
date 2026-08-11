@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.paddle.ocr.preprocess
+// RecPreprocessor.kt — 识别模型批量预处理：定高缩放、归一化与宽度对齐。
+
+package com.paddle.ocr.preprocesspackage com.paddle.ocr.preprocess
 
 import org.opencv.core.Core
 import org.opencv.core.CvType
@@ -21,16 +23,27 @@ import org.opencv.core.Size
 import org.opencv.imgproc.Imgproc
 import kotlin.math.ceil
 
+/**
+ * RecPreprocessResult 识别批量预处理输出：NCHW float 张量及 shape。
+ */
 data class RecPreprocessResult(
     val tensorData: FloatArray,
     val shape: LongArray,
 )
 
+/**
+ * RecPreprocessor 将文本行裁剪 Mat 列表打包为识别网络 batch 输入。
+ * 固定高度 48、等比缩放、右侧零填充至 batch 内最大宽度。
+ */
 object RecPreprocessor {
+    // FIXED_HEIGHT 识别模型输入固定高度（像素）。
     private const val FIXED_HEIGHT = 48
+    // MAX_IMG_W 单张裁剪图最大宽度上限，防止极端长图。
     private const val MAX_IMG_W = 3200
 
+    // preprocessBatch 批量预处理裁剪图，返回对齐宽度的 float 张量。
     fun preprocessBatch(crops: List<Mat>): RecPreprocessResult {
+        // 第一步：BGR→RGB，定高等比缩放到 FIXED_HEIGHT。
         // Convert BGR to RGB and resize to fixed height while preserving aspect ratio
         val resizedMats = mutableListOf<Mat>()
         for (crop in crops) {
@@ -47,6 +60,7 @@ object RecPreprocessor {
             resizedMats.add(dst)
         }
 
+        // 第二步：转 float 并按 (x/127.5)-1 归一化到 [-1,1]。
         // Convert to float and normalize: (x / 255 - 0.5) / 0.5 = x / 127.5 - 1
         val floatMats = mutableListOf<Mat>()
         for (mat in resizedMats) {
@@ -64,6 +78,7 @@ object RecPreprocessor {
         val maxW = floatMats.maxOf { it.cols() }
         val n = floatMats.size
 
+        // 第三步：右侧零填充，使 batch 内各样本宽度一致。
         // Pad to max width
         val paddedMats = mutableListOf<Mat>()
         for (mat in floatMats) {
@@ -80,6 +95,7 @@ object RecPreprocessor {
         }
         floatMats.clear()
 
+        // 第四步：按 NCHW 布局拆分通道并写入连续 float 数组。
         // Build tensor data
         val channelSize = FIXED_HEIGHT * maxW
         val tensorData = FloatArray(n * 3 * channelSize)

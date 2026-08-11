@@ -12,11 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.paddle.ocr.postprocess
+// QuadGeometry.kt — 四边形顶点排序，统一为左上、右上、右下、左下顺序。
+
+package com.paddle.ocr.postprocesspackage com.paddle.ocr.postprocess
 
 import org.opencv.core.Point
 
+/**
+ * QuadGeometry 对 minAreaRect 输出的四个角点重新排序，
+ * 保证后续透视变换与 PaddleX 坐标约定一致。
+ */
 internal object QuadGeometry {
+    // orderMinAreaRectPoints 按 x/y 比较将四点排为 TL-TR-BR-BL。
     fun orderMinAreaRectPoints(points: Array<Point>): List<Point> {
         val sorted = points.sortedBy { it.x }
         val topLeft: Point

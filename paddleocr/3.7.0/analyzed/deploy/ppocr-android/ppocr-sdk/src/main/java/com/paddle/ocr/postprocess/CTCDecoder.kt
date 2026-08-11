@@ -12,11 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.paddle.ocr.postprocess
+// CTCDecoder.kt — 对识别模型 CTC 输出做贪心解码，生成文本与置信度。
 
+package com.paddle.ocr.postprocesspackage com.paddle.ocr.postprocess
+
+/**
+ * CTCDecoder 实现标准 CTC 贪心解码：
+ * 每时间步取最大概率类别，去除 blank 与连续重复后拼接字符。
+ */
 object CTCDecoder {
+    // BLANK_IDX CTC blank 标签索引，解码时跳过。
     private const val BLANK_IDX = 0
 
+    // decode 按 batch 维度解码，返回 (文本, 平均置信度) 列表。
     fun decode(output: FloatArray, shape: LongArray, characterList: List<String>): List<Pair<String, Float>> {
         val batchSize = shape[0].toInt()
         val timeSteps = shape[1].toInt()

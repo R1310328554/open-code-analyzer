@@ -12,15 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.paddle.ocr.util
+// OpenCVUtils.kt — OpenCV 原生库加载与一次性初始化。
+
+package com.paddle.ocr.utilpackage com.paddle.ocr.util
 
 import android.content.Context
 import android.util.Log
 
+/**
+ * OpenCVUtils 负责在 Android 端加载 opencv_java4 动态库。
+ * init 幂等，失败时记录日志并返回 false。
+ */
 object OpenCVUtils {
 
     private var initialized = false
 
+    // init 加载 OpenCV JNI 库；context 预留供未来扩展，当前未使用。
     fun init(context: Context): Boolean {
         if (initialized) return true
         try {

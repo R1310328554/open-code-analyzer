@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.paddle.ocr.util
+// BitmapUtils.kt — Android Bitmap 与 OpenCV Mat 之间的编解码与色彩空间转换。
+
+package com.paddle.ocr.utilpackage com.paddle.ocr.util
 
 import android.graphics.Bitmap
 import org.opencv.android.Utils
@@ -22,8 +24,12 @@ import org.opencv.core.MatOfByte
 import org.opencv.imgcodecs.Imgcodecs
 import org.opencv.imgproc.Imgproc
 
+/**
+ * BitmapUtils 封装 imdecode、Bitmap↔Mat 转换，统一 BGR/RGBA 色彩约定。
+ */
 object BitmapUtils {
 
+    // imdecodeBGR 从 JPEG/PNG 字节流解码为 BGR Mat。
     fun imdecodeBGR(imageBytes: ByteArray): Mat {
         val encoded = MatOfByte(*imageBytes)
         return try {
@@ -33,14 +39,17 @@ object BitmapUtils {
         }
     }
 
+    // bitmapToBGRMat 将 ARGB Bitmap 转为 OpenCV BGR Mat。
     fun bitmapToBGRMat(bitmap: Bitmap): Mat {
         return bitmapToMat(bitmap, Imgproc.COLOR_RGBA2BGR)
     }
 
+    // bitmapToRGBMat 将 ARGB Bitmap 转为 OpenCV RGB Mat。
     fun bitmapToRGBMat(bitmap: Bitmap): Mat {
         return bitmapToMat(bitmap, Imgproc.COLOR_RGBA2RGB)
     }
 
+    // bgrMatToBitmap 将 BGR Mat 转回 ARGB_8888 Bitmap。
     fun bgrMatToBitmap(mat: Mat): Bitmap {
         val rgba = Mat()
         return try {
@@ -53,6 +62,7 @@ object BitmapUtils {
         }
     }
 
+    // bitmapToMat 内部通用转换：Bitmap→RGBA Mat→目标色彩空间。
     private fun bitmapToMat(bitmap: Bitmap, colorConversionCode: Int): Mat {
         val bmp = bitmap.copy(Bitmap.Config.ARGB_8888, false)
         val rgba = Mat(bmp.height, bmp.width, CvType.CV_8UC4)

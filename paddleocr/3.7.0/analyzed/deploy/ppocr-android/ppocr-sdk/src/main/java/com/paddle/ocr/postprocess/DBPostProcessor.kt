@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.paddle.ocr.postprocess
+// DBPostProcessor.kt — DB 检测模型后处理：阈值化、轮廓提取、扩框与坐标还原。
+
+package com.paddle.ocr.postprocesspackage com.paddle.ocr.postprocess
 
 import android.graphics.PointF
 import com.paddle.ocr.model.OCRBox
@@ -26,10 +28,17 @@ import org.opencv.core.Point
 import org.opencv.core.Scalar
 import org.opencv.imgproc.Imgproc
 
+/**
+ * DBPostProcessor 将 DB 网络概率图转为四边形文本框列表。
+ * 支持可选膨胀、slow/fast 评分模式及 unclip 扩框，仅 box_type=quad。
+ */
 object DBPostProcessor {
+    // MIN_SIZE_BEFORE_UNCLIP unclip 前最小边长过滤阈值。
     private const val MIN_SIZE_BEFORE_UNCLIP = 3f
+    // MIN_SIZE_AFTER_UNCLIP unclip 后最小边长过滤阈值。
     private const val MIN_SIZE_AFTER_UNCLIP = 5f
 
+    // process 从 pred 概率图提取 OCRBox，坐标映射回原图尺寸。
     fun process(
         pred: FloatArray,
         predShape: LongArray,
@@ -148,6 +157,7 @@ object DBPostProcessor {
         }
     }
 
+    // scalePoint 将特征图坐标按 scaleX/scaleY 还原并钳制到原图边界。
     private fun scalePoint(
         point: Point,
         scaleX: Double,
@@ -161,6 +171,7 @@ object DBPostProcessor {
         )
     }
 
+    // computeBoxScore 在概率图 ROI 内对多边形区域求均值作为框置信度。
     private fun computeBoxScore(probMap: Mat, points: List<Point>): Float {
         if (points.isEmpty()) return 0f
 
