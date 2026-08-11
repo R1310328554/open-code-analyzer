@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T07:25:41Z",
   "files": [
-    "ppocr/optimizer/regularizer.py",
-    "ppocr/postprocess/__init__.py",
-    "ppocr/postprocess/cls_postprocess.py",
-    "ppocr/postprocess/ct_postprocess.py",
-    "ppocr/postprocess/db_postprocess.py",
-    "ppocr/postprocess/drrg_postprocess.py",
-    "ppocr/postprocess/east_postprocess.py",
-    "ppocr/postprocess/fce_postprocess.py",
-    "ppocr/postprocess/locality_aware_nms.py",
-    "ppocr/postprocess/pg_postprocess.py",
-    "ppocr/postprocess/picodet_postprocess.py",
-    "ppocr/postprocess/pse_postprocess/__init__.py",
-    "ppocr/postprocess/pse_postprocess/pse/__init__.py",
-    "ppocr/postprocess/pse_postprocess/pse/setup.py",
-    "ppocr/postprocess/pse_postprocess/pse_postprocess.py",
     "ppocr/postprocess/rec_postprocess.py",
     "ppocr/postprocess/sast_postprocess.py",
     "ppocr/postprocess/table_postprocess.py",
@@ -33,5 +18,5 @@
     "ppocr/utils/export_model.py"
   ],
   "remaining_pending": 92,
-  "done": 480
+  "done": 495
 }
