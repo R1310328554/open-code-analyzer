@@ -1,4 +1,10 @@
-from collections.abc import Iterable
+"""
+django.template.library — 自定义模板标签与过滤器的注册库。
+
+提供 tag/filter/simple_tag/inclusion_tag 装饰器及解析辅助。
+"""
+
+from collections.abc import Iterablefrom collections.abc import Iterable
 from functools import wraps
 from importlib import import_module
 from inspect import unwrap
@@ -10,10 +16,12 @@ from .base import Node, Template, token_kwargs
 from .exceptions import TemplateSyntaxError
 
 
+# 无法导入 templatetags 模块或缺少 register 时抛出
 class InvalidTemplateLibrary(Exception):
     pass
 
 
+# 模板库：filters/tags 字典与 tag/filter/simple_tag 注册 API
 class Library:
     """
     A class for registering template tags and filters. Compiled filter and
@@ -310,6 +318,7 @@ class Library:
         return dec
 
 
+# 标签辅助节点基类：解析位置/关键字参数并调用装饰函数
 class TagHelperNode(Node):
     """
     Base class for tag helper nodes such as SimpleNode and InclusionNode.
@@ -331,6 +340,7 @@ class TagHelperNode(Node):
         return resolved_args, resolved_kwargs
 
 
+# simple_tag 渲染节点：支持 as 变量赋值与 autoescape
 class SimpleNode(TagHelperNode):
     child_nodelists = ()
 
@@ -349,6 +359,7 @@ class SimpleNode(TagHelperNode):
         return output
 
 
+# simple_block_tag 节点：将块内容作为 content 参数传入
 class SimpleBlockNode(SimpleNode):
     def __init__(self, nodelist, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -366,6 +377,7 @@ class SimpleBlockNode(SimpleNode):
         return resolved_args, resolved_kwargs
 
 
+# inclusion_tag 节点：调用函数后渲染指定子模板
 class InclusionNode(TagHelperNode):
     def __init__(self, func, takes_context, args, kwargs, filename):
         super().__init__(func, takes_context, args, kwargs)
@@ -403,6 +415,7 @@ class InclusionNode(TagHelperNode):
         return t.render(new_context)
 
 
+# 解析 simple_tag/inclusion_tag 的位置与关键字参数，检测语法错误
 def parse_bits(
     parser,
     bits,
@@ -482,6 +495,7 @@ def parse_bits(
     return args, kwargs
 
 
+# 从 templatetags 模块加载 register 库对象
 def import_library(name):
     """
     Load a Library object from a template tag module.

@@ -1,4 +1,10 @@
 """
+django.template.exceptions — 模板后端通用的异常类型。
+
+DTL 内部也复用这些异常；DTL 专属异常不应添加于此。
+"""
+
+"""
 This module contains generic exceptions used by template backends. Although,
 due to historical reasons, the Django template language also internally uses
 these exceptions, other exceptions specific to the DTL should not be added
@@ -6,6 +12,7 @@ here.
 """
 
 
+# 模板不存在：可携带 backend、tried 来源链与 chain 嵌套异常
 class TemplateDoesNotExist(Exception):
     """
     The exception used when a template does not exist. Optional arguments:
@@ -36,6 +43,7 @@ class TemplateDoesNotExist(Exception):
         super().__init__(msg)
 
 
+# 模板解析或渲染阶段的语法错误
 class TemplateSyntaxError(Exception):
     """
     The exception used for syntax errors during parsing or rendering.

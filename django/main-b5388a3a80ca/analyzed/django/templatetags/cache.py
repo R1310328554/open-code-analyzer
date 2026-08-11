@@ -1,10 +1,17 @@
-from django.core.cache import InvalidCacheBackendError, caches
+"""
+django.templatetags.cache — {% cache %} 模板片段缓存标签。
+
+按 fragment_name 与 vary_on 生成键，写入 template_fragments 或指定后端。
+"""
+
+from django.core.cache import InvalidCacheBackendError, cachesfrom django.core.cache import InvalidCacheBackendError, caches
 from django.core.cache.utils import make_template_fragment_key
 from django.template import Library, Node, TemplateSyntaxError, VariableDoesNotExist
 
 register = Library()
 
 
+# cache 标签节点：命中缓存则跳过 nodelist 渲染
 class CacheNode(Node):
     def __init__(self, nodelist, expire_time_var, fragment_name, vary_on, cache_name):
         self.nodelist = nodelist
@@ -55,6 +62,7 @@ class CacheNode(Node):
         return value
 
 
+# {% cache expire fragment [vary…] [using=cachename] %}…{% endcache %}
 @register.tag("cache")
 def do_cache(parser, token):
     """

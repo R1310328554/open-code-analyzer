@@ -1,7 +1,14 @@
-from . import engines
+"""
+django.template.loader — 跨引擎加载与渲染模板的便捷 API。
+
+get_template/select_template/render_to_string 封装 TEMPLATES 配置。
+"""
+
+from . import enginesfrom . import engines
 from .exceptions import TemplateDoesNotExist
 
 
+# 按名称加载模板；遍历引擎并聚合 TemplateDoesNotExist 链
 def get_template(template_name, using=None):
     """
     Load and return a template for the given name.
@@ -19,6 +26,7 @@ def get_template(template_name, using=None):
     raise TemplateDoesNotExist(template_name, chain=chain)
 
 
+# 按列表顺序尝试多个模板名，返回首个命中
 def select_template(template_name_list, using=None):
     """
     Load and return a template for one of the given names.
@@ -49,6 +57,7 @@ def select_template(template_name_list, using=None):
         raise TemplateDoesNotExist("No template names provided")
 
 
+# 加载模板并用 context/request 渲染为字符串
 def render_to_string(template_name, context=None, request=None, using=None):
     """
     Load a template and render it with a context. Return a string.
@@ -62,5 +71,6 @@ def render_to_string(template_name, context=None, request=None, using=None):
     return template.render(context, request)
 
 
+# 返回全部或指定别名的模板引擎列表
 def _engine_list(using=None):
     return engines.all() if using is None else [engines[using]]

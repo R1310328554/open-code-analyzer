@@ -1,4 +1,10 @@
 """
+django.template.loaders.filesystem — 从文件系统目录加载模板。
+
+使用 safe_join 防止路径穿越，按 engine.dirs 或构造参数搜索。
+"""
+
+"""
 Wrapper for loading templates from the filesystem.
 """
 
@@ -9,6 +15,7 @@ from django.utils._os import safe_join
 from .base import Loader as BaseLoader
 
 
+# 文件系统加载器：open 读取 Origin.name 对应文件
 class Loader(BaseLoader):
     def __init__(self, engine, dirs=None):
         super().__init__(engine)

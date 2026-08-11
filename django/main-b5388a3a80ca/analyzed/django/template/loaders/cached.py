@@ -1,4 +1,10 @@
 """
+django.template.loaders.cached — 组合多个加载器并缓存解析结果。
+
+对缺失模板采用特殊缓存策略以控制内存（见 ticket #26306）。
+"""
+
+"""
 Wrapper class that takes a list of template loaders as an argument and attempts
 to load templates from them in order, caching the result.
 """
@@ -11,6 +17,7 @@ from django.template.backends.django import copy_exception
 from .base import Loader as BaseLoader
 
 
+# 缓存加载器：委托子 loader 链，cache_key 含 skip 哈希
 class Loader(BaseLoader):
     def __init__(self, engine, loaders):
         self.get_template_cache = {}

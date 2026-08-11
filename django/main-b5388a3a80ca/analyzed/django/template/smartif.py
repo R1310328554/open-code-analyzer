@@ -1,4 +1,10 @@
 """
+django.template.smartif — {% if %} 标签的表达式解析器。
+
+自顶向下解析器，支持 and/or/not/in/is 等 Python 风格运算符。
+"""
+
+"""
 Parser and utilities for the smart 'if' tag
 """
 
@@ -9,6 +15,7 @@ Parser and utilities for the smart 'if' tag
 # 'bp' = binding power (left = lbp, right = rbp)
 
 
+# 运算符与字面量基类：nud/led 前缀与中缀绑定
 class TokenBase:
     """
     Base class for operators and literals, mainly for debugging and for
@@ -42,6 +49,7 @@ class TokenBase:
         return "(" + " ".join(out) + ")"
 
 
+# 中缀运算符工厂：led 解析右操作数并 eval 时捕获异常为 False
 def infix(bp, func):
     """
     Create an infix operator, given a binding power and a function that
@@ -69,6 +77,7 @@ def infix(bp, func):
     return Operator
 
 
+# 前缀运算符工厂：nud 解析操作数
 def prefix(bp, func):
     """
     Create a prefix operator, given a binding power and a function that
@@ -121,6 +130,7 @@ def _init_operators():
 _init_operators()
 
 
+# 字面量/变量占位：TemplateIfParser 会覆盖 create_var
 class Literal(TokenBase):
     """
     A basic self-resolvable object similar to a Django template variable.
@@ -158,6 +168,7 @@ class EndToken(TokenBase):
 EndToken = EndToken()
 
 
+# if 表达式解析器：合并 is not/not in 双词 token
 class IfParser:
     error_class = ValueError
 

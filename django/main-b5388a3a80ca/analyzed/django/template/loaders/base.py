@@ -1,6 +1,13 @@
-from django.template import Template, TemplateDoesNotExist
+"""
+django.template.loaders.base — 模板加载器抽象基类。
+
+遍历 get_template_sources、读取内容并构造 Template 对象。
+"""
+
+from django.template import Template, TemplateDoesNotExistfrom django.template import Template, TemplateDoesNotExist
 
 
+# 加载器 ABC：get_template 遍历来源，skip 避免 extends 递归
 class Loader:
     def __init__(self, engine):
         self.engine = engine

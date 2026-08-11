@@ -1,4 +1,10 @@
-import posixpath
+"""
+django.template.loader_tags — 模板继承与包含的内置标签。
+
+实现 {% block %}、{% extends %}、{% include %} 及 BlockContext。
+"""
+
+import posixpathimport posixpath
 from collections import defaultdict
 
 from django.utils.safestring import mark_safe
@@ -11,6 +17,7 @@ register = Library()
 BLOCK_CONTEXT_KEY = "block_context"
 
 
+# 块上下文：按名称维护 FIFO 队列以支持 override 与 super
 class BlockContext:
     def __init__(self):
         # Dictionary of FIFO queues.
@@ -39,6 +46,7 @@ class BlockContext:
             return None
 
 
+# {% block %} 节点：渲染时从 BlockContext 弹出/压栈
 class BlockNode(Node):
     def __init__(self, name, nodelist, parent=None):
         self.name = name
@@ -83,6 +91,7 @@ class BlockNode(Node):
         return ""
 
 
+# {% extends %} 节点：解析父模板并合并块定义
 class ExtendsNode(Node):
     must_be_first = True
     context_key = "extends_context"
@@ -160,6 +169,7 @@ class ExtendsNode(Node):
             return compiled_parent._render(context)
 
 
+# {% include %} 节点：加载子模板并可选 with/only 隔离上下文
 class IncludeNode(Node):
     context_key = "__include_context"
 
@@ -211,6 +221,7 @@ class IncludeNode(Node):
             return template.render(context)
 
 
+# {% block name %}…{% endblock %} 定义可被子模板覆盖的块
 @register.tag("block")
 def do_block(parser, token):
     """
@@ -243,6 +254,7 @@ def do_block(parser, token):
     return BlockNode(block_name, nodelist)
 
 
+# 将 ./ ../ 相对路径解析为基于当前模板的绝对名称
 def construct_relative_path(
     current_template_name,
     relative_name,
@@ -288,6 +300,7 @@ def construct_relative_path(
     return f'"{new_name}"' if has_quotes else new_name
 
 
+# {% extends %} 声明本模板继承父模板（必须为首个非文本节点）
 @register.tag("extends")
 def do_extends(parser, token):
     """
@@ -312,6 +325,7 @@ def do_extends(parser, token):
     return ExtendsNode(nodelist, parent_name)
 
 
+# {% include %} 加载并渲染子模板，支持 with 与 only
 @register.tag("include")
 def do_include(parser, token):
     """

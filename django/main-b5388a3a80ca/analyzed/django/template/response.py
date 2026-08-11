@@ -1,12 +1,20 @@
-from django.http import HttpResponse
+"""
+django.template.response — 延迟渲染的模板 HTTP 响应类。
+
+SimpleTemplateResponse/TemplateResponse 在 render() 前不加载模板。
+"""
+
+from django.http import HttpResponsefrom django.http import HttpResponse
 
 from .loader import get_template, select_template
 
 
+# 在 render 前访问 content 或迭代响应时抛出
 class ContentNotRenderedError(Exception):
     pass
 
 
+# 简单模板响应：template_name/context_data，支持 post_render 回调
 class SimpleTemplateResponse(HttpResponse):
     rendering_attrs = ["template_name", "context_data", "_post_render_callbacks"]
 
@@ -144,6 +152,7 @@ class SimpleTemplateResponse(HttpResponse):
         self._is_rendered = True
 
 
+# 带 request 的模板响应，渲染时传入 template.render(context, request)
 class TemplateResponse(SimpleTemplateResponse):
     rendering_attrs = [*SimpleTemplateResponse.rendering_attrs, "_request"]
 

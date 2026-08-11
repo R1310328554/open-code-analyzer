@@ -1,4 +1,10 @@
-import functools
+"""
+django.template.utils — 模板引擎配置与 app 模板目录工具。
+
+EngineHandler 按 settings.TEMPLATES 懒加载各 BACKEND 实例。
+"""
+
+import functoolsimport functools
 from collections import Counter
 from pathlib import Path
 
@@ -9,10 +15,12 @@ from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
 
 
+# 找不到指定别名的 TEMPLATES 配置时抛出
 class InvalidTemplateEngineError(ImproperlyConfigured):
     pass
 
 
+# 模板引擎处理器：__getitem__ 按别名实例化并缓存 engine
 class EngineHandler:
     def __init__(self, templates=None):
         """
@@ -95,6 +103,7 @@ class EngineHandler:
 
 
 @functools.lru_cache
+# 返回各已安装 app 下 dirname 子目录的路径元组（可缓存）
 def get_app_template_dirs(dirname):
     """
     Return an iterable of paths of directories to load app templates from.
