@@ -29,6 +29,9 @@ if is_bs4_available():
 logger = logging.get_logger(__name__)
 
 
+# MarkupLM 特征提取：BeautifulSoup 解析 HTML 得到节点与 XPath
+
+# MarkupLMFeatureExtractor：从 HTML 解析 DOM 节点列表与 XPath 路径特征
 class MarkupLMFeatureExtractor(FeatureExtractionMixin):
     r"""
     Constructs a MarkupLM feature extractor. This can be used to get a list of nodes and corresponding xpaths from HTML

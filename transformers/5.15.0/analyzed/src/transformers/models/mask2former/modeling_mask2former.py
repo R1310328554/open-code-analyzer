@@ -33,6 +33,8 @@ from ...utils import auto_docstring, is_accelerate_available, logging, torch_com
 from .configuration_mask2former import Mask2FormerConfig
 
 
+# Mask2Former 建模：像素级模块 + 掩码注意力 query 解码通用分割
+
 if is_scipy_available():
     from scipy.optimize import linear_sum_assignment
 
@@ -50,6 +52,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# Mask2FormerPixelDecoderOutput：像素解码器输出 dataclass（多尺度特征图）
 class Mask2FormerPixelDecoderOutput(ModelOutput):
     r"""
     multi_scale_features (`tuple(torch.FloatTensor)`):
@@ -77,6 +80,7 @@ class Mask2FormerPixelDecoderOutput(ModelOutput):
     """
 )
 @dataclass
+# Mask2FormerMaskedAttentionDecoderOutput：掩码注意力解码器输出 dataclass
 class Mask2FormerMaskedAttentionDecoderOutput(BaseModelOutputWithCrossAttentions):
     r"""
     hidden_states (`tuple(torch.FloatTensor)`, *optional*):
@@ -112,6 +116,7 @@ class Mask2FormerMaskedAttentionDecoderOutput(BaseModelOutputWithCrossAttentions
     """
 )
 @dataclass
+# Mask2FormerPixelLevelModuleOutput：像素级模块输出 dataclass
 class Mask2FormerPixelLevelModuleOutput(ModelOutput):
     r"""
     encoder_last_hidden_state (`torch.FloatTensor`):
@@ -140,6 +145,7 @@ class Mask2FormerPixelLevelModuleOutput(ModelOutput):
     """
 )
 @dataclass
+# Mask2FormerModelOutput：Mask2Former 主干输出 dataclass
 class Mask2FormerModelOutput(ModelOutput):
     r"""
     encoder_last_hidden_state (`torch.FloatTensor` of shape `(batch_size, num_channels, height, width)`, *optional*):
@@ -193,6 +199,7 @@ class Mask2FormerModelOutput(ModelOutput):
     """
 )
 @dataclass
+# Mask2FormerForUniversalSegmentationOutput：通用分割推理输出 dataclass
 class Mask2FormerForUniversalSegmentationOutput(ModelOutput):
     r"""
     loss (`torch.Tensor`, *optional*):
@@ -242,6 +249,7 @@ class Mask2FormerForUniversalSegmentationOutput(ModelOutput):
 
 
 # Adapted from https://github.com/facebookresearch/detectron2/blob/main/projects/PointRend/point_rend/point_features.py
+# sample_point：在掩码区域随机采样点坐标供点监督损失
 def sample_point(
     input_features: torch.Tensor, point_coordinates: torch.Tensor, add_dim=False, **kwargs
 ) -> torch.Tensor:
@@ -275,6 +283,7 @@ def sample_point(
 
 
 # Copied from transformers.models.maskformer.modeling_maskformer.dice_loss
+# dice_loss：Dice 损失（实例/语义掩码分割）
 def dice_loss(inputs: Tensor, labels: Tensor, num_masks: int) -> Tensor:
     r"""
     Compute the DICE loss, similar to generalized IOU for masks as follows:
@@ -305,6 +314,7 @@ def dice_loss(inputs: Tensor, labels: Tensor, num_masks: int) -> Tensor:
     return loss
 
 
+# sigmoid_cross_entropy_loss：Sigmoid 二元交叉熵掩码损失
 def sigmoid_cross_entropy_loss(inputs: torch.Tensor, labels: torch.Tensor, num_masks: int) -> torch.Tensor:
     r"""
     Args:
@@ -325,6 +335,7 @@ def sigmoid_cross_entropy_loss(inputs: torch.Tensor, labels: torch.Tensor, num_m
 
 
 # Copied from transformers.models.maskformer.modeling_maskformer.pair_wise_dice_loss
+# pair_wise_dice_loss：匈牙利匹配前逐对 Dice 损失矩阵
 def pair_wise_dice_loss(inputs: Tensor, labels: Tensor) -> Tensor:
     """
     A pair wise version of the dice loss, see `dice_loss` for usage.
@@ -347,6 +358,7 @@ def pair_wise_dice_loss(inputs: Tensor, labels: Tensor) -> Tensor:
     return loss
 
 
+# pair_wise_sigmoid_cross_entropy_loss：匈牙利匹配前逐对 Sigmoid CE 损失矩阵
 def pair_wise_sigmoid_cross_entropy_loss(inputs: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
     r"""
     A pair wise version of the cross entropy loss, see `sigmoid_cross_entropy_loss` for usage.
@@ -375,6 +387,7 @@ def pair_wise_sigmoid_cross_entropy_loss(inputs: torch.Tensor, labels: torch.Ten
 
 
 # Adapted from https://github.com/facebookresearch/Mask2Former/blob/main/mask2former/modeling/matcher.py
+# Mask2FormerHungarianMatcher：预测-真值掩码/query 匈牙利最优匹配
 class Mask2FormerHungarianMatcher(nn.Module):
     """This class computes an assignment between the labels and the predictions of the network.
 
@@ -482,6 +495,7 @@ class Mask2FormerHungarianMatcher(nn.Module):
 
 
 # Adapted from https://github.com/facebookresearch/Mask2Former/blob/main/mask2former/modeling/criterion.py
+# Mask2FormerLoss：Mask2Former 分类+掩码 Dice+CE 联合训练损失
 class Mask2FormerLoss(nn.Module):
     def __init__(self, config: Mask2FormerConfig, weight_dict: dict[str, float]):
         """
@@ -795,6 +809,7 @@ class Mask2FormerLoss(nn.Module):
 
 
 # Copied from transformers.models.oneformer.modeling_oneformer.multi_scale_deformable_attention
+# multi_scale_deformable_attention：多尺度可变形注意力核心算子
 def multi_scale_deformable_attention(
     value: Tensor,
     value_spatial_shapes: Tensor | list[tuple],
@@ -838,6 +853,7 @@ def multi_scale_deformable_attention(
 
 
 # Copied from transformers.models.maskformer.modeling_maskformer.MaskFormerSinePositionEmbedding with MaskFormer->Mask2Former
+# Mask2FormerSinePositionEmbedding：Mask2Former 正弦二维位置编码
 class Mask2FormerSinePositionEmbedding(nn.Module):
     """
     This is a more standard version of the position embedding, very similar to the one used by the Attention is all you
@@ -916,6 +932,7 @@ class Mask2FormerSinePositionEmbedding(nn.Module):
 
 
 # Modified from transformers.models.detr.modeling_deformable_detr.DeformableDetrMultiscaleDeformableAttention
+# Mask2FormerPixelDecoderEncoderMultiscaleDeformableAttention：像素解码器编码器多尺度可变形注意力
 class Mask2FormerPixelDecoderEncoderMultiscaleDeformableAttention(nn.Module):
     """
     Multiscale deformable attention as proposed in Deformable DETR.
@@ -1014,6 +1031,7 @@ class Mask2FormerPixelDecoderEncoderMultiscaleDeformableAttention(nn.Module):
         return output, attention_weights
 
 
+# Mask2FormerPixelDecoderEncoderLayer：像素解码器编码器单层（可变形注意力+FFN）
 class Mask2FormerPixelDecoderEncoderLayer(nn.Module):
     def __init__(self, config: Mask2FormerConfig):
         super().__init__()
@@ -1104,6 +1122,7 @@ class Mask2FormerPixelDecoderEncoderLayer(nn.Module):
 
 
 # Modified from from transformers.models.detr.modeling_deformable_detr.DeformableDetrEncoder with DeformableDetrEncoder->Mask2FormerPixelDecoderEncoderOnly
+# Mask2FormerPixelDecoderEncoderOnly：像素解码器仅编码器堆叠
 class Mask2FormerPixelDecoderEncoderOnly(nn.Module):
     """
     Transformer encoder consisting of *config.encoder_layers* deformable attention layers. Each layer is a
@@ -1233,6 +1252,7 @@ class Mask2FormerPixelDecoderEncoderOnly(nn.Module):
 
 
 # Modified from from transformers.models.detr.modeling_deformable_detr.DeformableDetrModel with DeformableDetrModel->Mask2FormerPixelDecoder
+# Mask2FormerPixelDecoder：Mask2Former 像素解码器（FPN+可变形编码器）
 class Mask2FormerPixelDecoder(nn.Module):
     def __init__(self, config: Mask2FormerConfig, feature_channels):
         super().__init__()
@@ -1419,6 +1439,7 @@ class Mask2FormerPixelDecoder(nn.Module):
         )
 
 
+# Mask2FormerPixelLevelModule：Mask2Former 像素级模块（骨干+像素解码器）
 class Mask2FormerPixelLevelModule(nn.Module):
     def __init__(self, config: Mask2FormerConfig):
         """
@@ -1448,6 +1469,7 @@ class Mask2FormerPixelLevelModule(nn.Module):
 
 
 # Modified from transformers.models.detr.modeling_detr.DetrAttention with Detr->Mask2Former
+# Mask2FormerAttention：Mask2Former 解码器多头自/交叉注意力
 class Mask2FormerAttention(nn.Module):
     """
     Multi-headed attention from 'Attention Is All You Need' paper. Here, we add position embeddings to the queries and
@@ -1584,6 +1606,7 @@ class Mask2FormerAttention(nn.Module):
         return attn_output, attn_weights_reshaped
 
 
+# Mask2FormerMaskedAttentionDecoderLayer：掩码注意力解码器单层（支持梯度检查点）
 class Mask2FormerMaskedAttentionDecoderLayer(GradientCheckpointingLayer):
     """
     The Mask2FormerMaskedAttentionDecoderLayer is made up of self-attention, cross (masked) attention as well as FFN
@@ -1798,6 +1821,7 @@ class Mask2FormerMaskedAttentionDecoderLayer(GradientCheckpointingLayer):
         return outputs
 
 
+# Mask2FormerMaskedAttentionDecoder：Mask2Former 多层掩码注意力 query 解码器
 class Mask2FormerMaskedAttentionDecoder(nn.Module):
     """
     Transformer decoder consisting of *config.decoder_layers* layers. Each layer is a
@@ -1961,6 +1985,7 @@ class Mask2FormerMaskedAttentionDecoder(nn.Module):
 
 
 # Copied from transformers.models.maskformer.modeling_maskformer.PredictionBlock with MaskFormer->Mask2Former
+# Mask2FormerPredictionBlock：Mask2Former 预测块（FFN 封装）
 class Mask2FormerPredictionBlock(nn.Module):
     def __init__(self, in_dim: int, out_dim: int, activation: nn.Module) -> None:
         super().__init__()
@@ -1976,6 +2001,7 @@ class Mask2FormerPredictionBlock(nn.Module):
         return hidden_state
 
 
+# Mask2FormerMLPPredictionHead：Mask2Former 分类/掩码 MLP 预测头
 class Mask2FormerMLPPredictionHead(nn.Module):
     def __init__(self, input_dim: int, hidden_dim: int, output_dim: int, num_layers: int = 3):
         """
@@ -2015,6 +2041,7 @@ class Mask2FormerMLPPredictionHead(nn.Module):
         return hidden_state
 
 
+# Mask2FormerMaskPredictor：Mask2Former 掩码 logits 预测器
 class Mask2FormerMaskPredictor(nn.Module):
     def __init__(self, hidden_size: int, num_heads: int, mask_feature_size: torch.Tensor):
         """
@@ -2056,6 +2083,7 @@ class Mask2FormerMaskPredictor(nn.Module):
         return outputs_mask, attention_mask
 
 
+# Mask2FormerTransformerModule：Mask2Former 像素级+query 解码 Transformer 模块
 class Mask2FormerTransformerModule(nn.Module):
     """
     The Mask2Former's transformer module.
@@ -2130,6 +2158,7 @@ class Mask2FormerTransformerModule(nn.Module):
 
 
 @auto_docstring
+# Mask2FormerPreTrainedModel：Mask2Former 预训练基类与权重初始化
 class Mask2FormerPreTrainedModel(PreTrainedModel):
     config: Mask2FormerConfig
     base_model_prefix = "model"
@@ -2199,6 +2228,7 @@ class Mask2FormerPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# Mask2FormerModel：Mask2Former 通用分割主干（像素级+query 解码）
 class Mask2FormerModel(Mask2FormerPreTrainedModel):
     main_input_name = "pixel_values"
 
@@ -2275,6 +2305,7 @@ class Mask2FormerModel(Mask2FormerPreTrainedModel):
     The Mask2Former Model with heads on top for instance/semantic/panoptic segmentation.
     """
 )
+# Mask2FormerForUniversalSegmentation：Mask2Former 端到端通用分割模型
 class Mask2FormerForUniversalSegmentation(Mask2FormerPreTrainedModel):
     main_input_name = "pixel_values"
 

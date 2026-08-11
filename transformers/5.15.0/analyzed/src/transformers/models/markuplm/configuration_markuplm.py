@@ -19,8 +19,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# MarkupLM 配置：HTML DOM 节点与 XPath 结构感知 BERT 式预训练超参
+
+# MarkupLMConfig：microsoft/markuplm-base HTML DOM+XPath 结构感知预训练默认超参
 @auto_docstring(checkpoint="microsoft/markuplm-base")
 @strict
+# MarkupLMConfig：microsoft/markuplm-base HTML DOM 节点+XPath 结构感知预训练超参
 class MarkupLMConfig(PreTrainedConfig):
     r"""
     max_xpath_tag_unit_embeddings (`int`, *optional*, defaults to 256):

@@ -17,6 +17,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# configuration_maskformer 由 modular_maskformer.py 自动生成
 from huggingface_hub.dataclasses import strict
 
 from ...backbone_utils import consolidate_backbone_kwargs_to_config
@@ -28,8 +29,10 @@ from ..auto import CONFIG_MAPPING, AutoConfig
 logger = logging.get_logger(__name__)
 
 
+# MaskFormerDetrConfig：facebook/maskformer-swin-base-ade DETR 解码器默认超参
 @auto_docstring(checkpoint="facebook/maskformer-swin-base-ade")
 @strict
+# MaskFormerDetrConfig：facebook/maskformer-swin-base-ade DETR 解码器与 query 超参
 class MaskFormerDetrConfig(PreTrainedConfig):
     r"""
     num_queries (`int`, *optional*, defaults to 100):
@@ -118,8 +121,10 @@ class MaskFormerDetrConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# MaskFormerConfig：facebook/maskformer-swin-base-ade 掩码分类语义分割默认超参
 @auto_docstring(checkpoint="facebook/maskformer-swin-base-ade")
 @strict
+# MaskFormerConfig：facebook/maskformer-swin-base-ade 掩码分类语义分割顶层超参
 class MaskFormerConfig(PreTrainedConfig):
     r"""
     fpn_feature_size (`int`, *optional*, defaults to 256):

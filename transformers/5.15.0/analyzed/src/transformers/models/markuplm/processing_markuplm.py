@@ -21,7 +21,10 @@ from ...tokenization_utils_base import BatchEncoding, PaddingStrategy, Truncatio
 from ...utils import auto_docstring
 
 
+# MarkupLM Processor：HTML 特征提取与分词器联合输入组装
+
 @auto_docstring
+# MarkupLMProcessor：HTML 解析、XPath 编码与分词联合多模态输入管线
 class MarkupLMProcessor(ProcessorMixin):
     parse_html = True
 

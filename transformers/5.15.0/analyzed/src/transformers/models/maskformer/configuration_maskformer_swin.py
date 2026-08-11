@@ -20,8 +20,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# MaskFormer Swin 配置：Swin Transformer 视觉骨干窗口注意力超参
+
+# MaskFormerSwinConfig：microsoft/swin-tiny-patch4-window7-224 Swin 视觉骨干默认超参
 @auto_docstring(checkpoint="microsoft/swin-tiny-patch4-window7-224")
 @strict
+# MaskFormerSwinConfig：microsoft/swin-tiny-patch4-window7-224 MaskFormer Swin 视觉骨干超参
 class MaskFormerSwinConfig(BackboneConfigMixin, PreTrainedConfig):
     r"""
     window_size (`int`, *optional*, defaults to 7):

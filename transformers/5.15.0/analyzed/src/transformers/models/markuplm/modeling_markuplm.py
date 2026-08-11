@@ -39,9 +39,12 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_markuplm import MarkupLMConfig
 
 
+# MarkupLM 建模：XPath 嵌入 + BERT 编码器及 Web 页面理解下游任务
+
 logger = logging.get_logger(__name__)
 
 
+# XPathEmbeddings：DOM 节点 XPath 路径（tag/subscript）嵌入层
 class XPathEmbeddings(nn.Module):
     """Construct the embeddings from xpath tags and subscripts.
 
@@ -92,6 +95,7 @@ class XPathEmbeddings(nn.Module):
         return xpath_embeddings
 
 
+# MarkupLMEmbeddings：词嵌入 + XPath 嵌入 + 位置/类型嵌入 + LayerNorm
 class MarkupLMEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
@@ -206,6 +210,7 @@ class MarkupLMEmbeddings(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertSelfOutput with Bert->MarkupLM
+# MarkupLMSelfOutput：自注意力输出投影 + 残差 + LayerNorm
 class MarkupLMSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -221,6 +226,7 @@ class MarkupLMSelfOutput(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertIntermediate
+# MarkupLMIntermediate：Transformer FFN 中间层（升维 + 激活）
 class MarkupLMIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -237,6 +243,7 @@ class MarkupLMIntermediate(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOutput with Bert->MarkupLM
+# MarkupLMOutput：Transformer FFN 输出层（降维 + 残差 + LayerNorm）
 class MarkupLMOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -252,6 +259,7 @@ class MarkupLMOutput(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPooler
+# MarkupLMPooler：取 [CLS] 隐状态经线性+Tanh 得到句向量
 class MarkupLMPooler(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -268,6 +276,7 @@ class MarkupLMPooler(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPredictionHeadTransform with Bert->MarkupLM
+# MarkupLMPredictionHeadTransform：MLM 预测头中间变换（dense + 激活 + LayerNorm）
 class MarkupLMPredictionHeadTransform(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -286,6 +295,7 @@ class MarkupLMPredictionHeadTransform(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertLMPredictionHead with Bert->MarkupLM
+# MarkupLMLMPredictionHead：掩码语言建模预测头（解码器权重绑定）
 class MarkupLMLMPredictionHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -303,6 +313,7 @@ class MarkupLMLMPredictionHead(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOnlyMLMHead with Bert->MarkupLM
+# MarkupLMOnlyMLMHead：仅 MLM 预测头封装
 class MarkupLMOnlyMLMHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -314,6 +325,7 @@ class MarkupLMOnlyMLMHead(nn.Module):
 
 
 # Copied from transformers.models.align.modeling_align.eager_attention_forward
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -337,6 +349,7 @@ def eager_attention_forward(
 
 
 # Copied from transformers.models.align.modeling_align.AlignTextSelfAttention with AlignText->MarkupLM
+# MarkupLMSelfAttention：MarkupLM 多头自注意力（词元+XPath 联合）
 class MarkupLMSelfAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -392,6 +405,7 @@ class MarkupLMSelfAttention(nn.Module):
 
 
 # Copied from transformers.models.align.modeling_align.AlignTextAttention with AlignText->MarkupLM
+# MarkupLMAttention：封装 MarkupLMSelfAttention 与 SelfOutput
 class MarkupLMAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -415,6 +429,7 @@ class MarkupLMAttention(nn.Module):
 
 
 # Copied from transformers.models.align.modeling_align.AlignTextLayer with AlignText->MarkupLM
+# MarkupLMLayer：MarkupLM 单层（自注意力 + FFN，支持梯度检查点）
 class MarkupLMLayer(GradientCheckpointingLayer):
     def __init__(self, config):
         super().__init__()
@@ -449,6 +464,7 @@ class MarkupLMLayer(GradientCheckpointingLayer):
 
 
 # Copied from transformers.models.align.modeling_align.AlignTextEncoder with AlignText->MarkupLM
+# MarkupLMEncoder：多层 MarkupLMLayer 堆叠编码器
 class MarkupLMEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -475,6 +491,7 @@ class MarkupLMEncoder(nn.Module):
 
 
 @auto_docstring
+# MarkupLMPreTrainedModel：MarkupLM 预训练基类与权重初始化
 class MarkupLMPreTrainedModel(PreTrainedModel):
     config: MarkupLMConfig
     base_model_prefix = "markuplm"
@@ -494,6 +511,7 @@ class MarkupLMPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# MarkupLMModel：MarkupLM HTML 结构感知编码主干
 class MarkupLMModel(MarkupLMPreTrainedModel):
     # Copied from transformers.models.clap.modeling_clap.ClapTextModel.__init__ with ClapText->MarkupLM
     def __init__(self, config, add_pooling_layer=True):
@@ -600,6 +618,7 @@ class MarkupLMModel(MarkupLMPreTrainedModel):
 
 
 @auto_docstring
+# MarkupLMForQuestionAnswering：MarkupLM 抽取式问答（Web 页面理解）
 class MarkupLMForQuestionAnswering(MarkupLMPreTrainedModel):
     # Copied from transformers.models.bert.modeling_bert.BertForQuestionAnswering.__init__ with bert->markuplm, Bert->MarkupLM
     def __init__(self, config):
@@ -706,6 +725,7 @@ class MarkupLMForQuestionAnswering(MarkupLMPreTrainedModel):
     MarkupLM Model with a `token_classification` head on top.
     """
 )
+# MarkupLMForTokenClassification：MarkupLM 词元分类（DOM 节点标注等）
 class MarkupLMForTokenClassification(MarkupLMPreTrainedModel):
     # Copied from transformers.models.bert.modeling_bert.BertForTokenClassification.__init__ with bert->markuplm, Bert->MarkupLM
     def __init__(self, config):
@@ -801,6 +821,7 @@ class MarkupLMForTokenClassification(MarkupLMPreTrainedModel):
     pooled output) e.g. for GLUE tasks.
     """
 )
+# MarkupLMForSequenceClassification：MarkupLM 序列分类
 class MarkupLMForSequenceClassification(MarkupLMPreTrainedModel):
     # Copied from transformers.models.bert.modeling_bert.BertForSequenceClassification.__init__ with bert->markuplm, Bert->MarkupLM
     def __init__(self, config):

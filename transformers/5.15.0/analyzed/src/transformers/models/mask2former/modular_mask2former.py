@@ -34,6 +34,9 @@ from .image_processing_mask2former import (
 logger = logging.get_logger(__name__)
 
 
+# Mask2Former modular 源：复用 MaskFormer 图像处理扩展 Mask2Former 后处理
+
+# Mask2FormerImageProcessor：Mask2Former Torchvision 后端 resize/归一化/后处理
 class Mask2FormerImageProcessor(MaskFormerImageProcessor):
     def post_process_semantic_segmentation(
         self,
@@ -330,6 +333,7 @@ class Mask2FormerImageProcessor(MaskFormerImageProcessor):
 
 
 @requires(backends=("torch",))
+# Mask2FormerImageProcessorPil：Mask2Former PIL 后端 resize/归一化/后处理
 class Mask2FormerImageProcessorPil(MaskFormerImageProcessorPil):
     def post_process_semantic_segmentation(
         self,

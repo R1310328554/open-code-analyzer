@@ -34,6 +34,8 @@ from ...utils import add_end_docstrings, logging
 
 logger = logging.get_logger(__name__)
 
+
+# MarkupLM 分词：词元序列与 DOM XPath 路径联合编码
 VOCAB_FILES_NAMES = {"vocab_file": "vocab.json", "merges_file": "merges.txt", "tokenizer_file": "tokenizer.json"}
 
 
@@ -88,6 +90,7 @@ MARKUPLM_ENCODE_PLUS_ADDITIONAL_KWARGS_DOCSTRING = r"""
 """
 
 
+# MarkupLMTokenizer：词元+XPath tag/subscript 联合分词与编码
 class MarkupLMTokenizer(TokenizersBackend):
     r"""
     Construct a MarkupLM tokenizer. Based on byte-level Byte-Pair-Encoding (BPE).

@@ -24,8 +24,12 @@ from ..auto import AutoConfig
 logger = logging.get_logger(__name__)
 
 
+# Mask2Former 配置：Swin 骨干 + 像素解码器 + 掩码 query 通用分割超参
+
+# Mask2FormerConfig：facebook/mask2former-swin-small-coco-instance 通用分割默认超参
 @auto_docstring(checkpoint="facebook/mask2former-swin-small-coco-instance")
 @strict
+# Mask2FormerConfig：facebook/mask2former-swin-small-coco-instance 通用分割超参
 class Mask2FormerConfig(PreTrainedConfig):
     r"""
     feature_size (`int`, *optional*, defaults to 256):
