@@ -1,3 +1,8 @@
+"""
+django.contrib.admin.helpers — 变更表单与内联 formset 的 HTML 渲染辅助类。
+
+AdminForm、Fieldset、InlineAdminFormSet 等将 ModelAdmin 配置转为模板可用结构。
+"""
 import json
 
 from django import forms
@@ -24,9 +29,11 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 
+# 变更列表批量操作复选框的 POST 字段名
 ACTION_CHECKBOX_NAME = "_selected_action"
 
 
+# 列表页顶部「动作」下拉与 select_across 隐藏字段
 class ActionForm(forms.Form):
     action = forms.ChoiceField(label=_("Action:"))
     select_across = forms.BooleanField(
@@ -37,6 +44,7 @@ class ActionForm(forms.Form):
     )
 
 
+# 单个 ModelAdmin 表单的字段分组与 readonly 字段封装
 class AdminForm:
     def __init__(
         self,
@@ -97,6 +105,7 @@ class AdminForm:
         return media
 
 
+# 对应 fieldsets 配置中的一组字段（标题、描述、字段列表）
 class Fieldset:
     def __init__(
         self,
@@ -132,6 +141,7 @@ class Fieldset:
             )
 
 
+# fieldset 内一行字段（支持多列布局）
 class Fieldline:
     def __init__(self, form, field, readonly_fields=None, model_admin=None):
         self.form = form  # A django.forms.Form instance
@@ -167,6 +177,7 @@ class Fieldline:
         )
 
 
+# 可编辑表单字段的 label、widget 与错误信息包装
 class AdminField:
     def __init__(self, form, field, is_first):
         self.field = form[field]  # A django.forms.BoundField instance
@@ -200,6 +211,7 @@ class AdminField:
         return mark_safe(self.field.errors.as_ul())
 
 
+# 只读字段在变更页上的展示包装
 class AdminReadonlyField:
     def __init__(self, form, field, is_first, model_admin=None):
         # Make self.field look a little bit like a field. This means that
@@ -301,6 +313,7 @@ class AdminReadonlyField:
         return conditional_escape(result_repr)
 
 
+# 内联 formset 的整体渲染上下文（增删改权限、空表单等）
 class InlineAdminFormSet:
     """
     A wrapper around an inline formset for use in the admin system.
@@ -465,6 +478,7 @@ class InlineAdminFormSet:
         return media
 
 
+# 内联表单中的单条实例（含 original、deletion_field）
 class InlineAdminForm(AdminForm):
     """
     A wrapper around an inline form for use in the admin system.
@@ -537,6 +551,7 @@ class InlineAdminForm(AdminForm):
         return AdminField(self.form, DELETION_FIELD_NAME, False)
 
 
+# 内联表单使用的 fieldset 变体
 class InlineFieldset(Fieldset):
     def __init__(self, formset, *args, **kwargs):
         self.formset = formset
@@ -551,6 +566,7 @@ class InlineFieldset(Fieldset):
                 )
 
 
+# 后台表单错误列表，支持按字段分组展示
 class AdminErrorList(forms.utils.ErrorList):
     """Store errors for the form/formsets in an add/change view."""
 

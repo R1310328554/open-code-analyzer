@@ -1,6 +1,12 @@
+"""
+django.contrib.admin.decorators — action、display、register 装饰器。
+
+简化 ModelAdmin 动作属性、列表列展示属性及模型注册写法。
+"""
 from django.contrib.admin.options import ActionLocation
 
 
+# 为批量动作函数设置 allowed_permissions、short_description 与 locations
 def action(
     function=None,
     *,
@@ -48,6 +54,7 @@ def action(
         return decorator(function)
 
 
+# 为列表展示方法设置 boolean、admin_order_field、short_description 等
 def display(
     function=None, *, boolean=None, ordering=None, description=None, empty_value=None
 ):
@@ -94,6 +101,7 @@ def display(
         return decorator(function)
 
 
+# 将 ModelAdmin 子类注册到指定或默认 AdminSite
 def register(*models, site=None):
     """
     Register the given model(s) classes and wrapped ModelAdmin class with

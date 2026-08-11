@@ -1,8 +1,12 @@
+"""
+django.contrib.admin.forms — 后台登录与改密表单。
+"""
 from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
 
+# 后台登录表单：额外要求用户 is_staff
 class AdminAuthenticationForm(AuthenticationForm):
     """
     A custom authentication form used in the admin app.
@@ -27,5 +31,6 @@ class AdminAuthenticationForm(AuthenticationForm):
             )
 
 
+# 后台修改密码表单，标记 required CSS 类
 class AdminPasswordChangeForm(PasswordChangeForm):
     required_css_class = "required"

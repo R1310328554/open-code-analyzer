@@ -1,3 +1,4 @@
+# 迁移 0003：为 action_flag 添加 Addition/Change/Deletion 选项（无数据库结构变更）
 from django.db import migrations, models
 
 

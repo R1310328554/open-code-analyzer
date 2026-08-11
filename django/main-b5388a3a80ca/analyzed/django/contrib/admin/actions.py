@@ -1,4 +1,9 @@
 """
+内置的全局可用管理后台批量动作。
+
+当前提供 delete_selected：带确认页的批量删除。
+"""
+"""
 Built-in, globally-available admin actions.
 """
 
@@ -16,6 +21,7 @@ from django.utils.translation import gettext_lazy
     permissions=["delete"],
     description=gettext_lazy("Delete selected %(verbose_name_plural)s"),
 )
+# 默认批量删除动作：展示关联对象确认页后执行删除
 def delete_selected(modeladmin, request, queryset):
     """
     Default action which deletes the selected objects.

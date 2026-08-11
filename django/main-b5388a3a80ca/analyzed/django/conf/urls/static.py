@@ -1,3 +1,8 @@
+"""
+django.conf.urls.static — DEBUG 模式下静态/媒体文件的 URL 路由辅助。
+
+static() 在开发环境为 document_root 下的文件生成 serve 路由。
+"""
 import re
 from urllib.parse import urlsplit
 
@@ -7,6 +12,7 @@ from django.urls import re_path
 from django.views.static import serve
 
 
+# 返回用于提供本地静态文件的 URL 模式列表（非 DEBUG 或远程 prefix 时为空）
 def static(prefix, view=serve, **kwargs):
     """
     Return a URL pattern for serving files in debug mode.

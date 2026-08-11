@@ -1,4 +1,7 @@
 """
+django.contrib.admin.filters — 变更列表页侧边栏过滤器实现。
+
+This encapsulates the logic for displaying filters in the Django admin."""
 This encapsulates the logic for displaying filters in the Django admin.
 Filters are specified in models with the "list_filter" option.
 
@@ -23,6 +26,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 
+# 过滤器基类：子类实现 choices() 与 queryset() 以限制列表结果
 class ListFilter:
     title = None  # Human-readable title to appear in the right sidebar.
     template = "admin/filter.html"
@@ -74,6 +78,7 @@ class ListFilter:
         )
 
 
+# 为过滤器提供 facet 计数展示的 mixin
 class FacetsMixin:
     def get_facet_counts(self, pk_attname, filtered_qs):
         raise NotImplementedError(
@@ -89,6 +94,7 @@ class FacetsMixin:
         )
 
 
+# 基于固定 lookup_choices 的简单枚举过滤器
 class SimpleListFilter(FacetsMixin, ListFilter):
     # The parameter that should be used in the query string for that filter.
     parameter_name = None
@@ -168,6 +174,7 @@ class SimpleListFilter(FacetsMixin, ListFilter):
             }
 
 
+# 按模型字段类型自动选择具体 FieldListFilter 子类
 class FieldListFilter(FacetsMixin, ListFilter):
     _field_list_filters = []
     _take_priority_index = 0
@@ -219,6 +226,7 @@ class FieldListFilter(FacetsMixin, ListFilter):
                 )
 
 
+# 外键/多对多字段：按关联模型实例过滤
 class RelatedFieldListFilter(FieldListFilter):
     def __init__(self, field, request, params, model, model_admin, field_path):
         other_model = get_model_from_relation(field)
@@ -325,6 +333,7 @@ class RelatedFieldListFilter(FieldListFilter):
 FieldListFilter.register(lambda f: f.remote_field, RelatedFieldListFilter)
 
 
+# 布尔字段：是/否/全部 三态过滤
 class BooleanFieldListFilter(FieldListFilter):
     def __init__(self, field, request, params, model, model_admin, field_path):
         self.lookup_kwarg = "%s__exact" % field_path
@@ -396,6 +405,7 @@ FieldListFilter.register(
 )
 
 
+# 带 choices 的字段：按枚举值过滤
 class ChoicesFieldListFilter(FieldListFilter):
     def __init__(self, field, request, params, model, model_admin, field_path):
         self.lookup_kwarg = "%s__exact" % field_path
@@ -461,6 +471,7 @@ class ChoicesFieldListFilter(FieldListFilter):
 FieldListFilter.register(lambda f: bool(f.choices), ChoicesFieldListFilter)
 
 
+# 日期/日期时间字段：今天、过去 7 天、本月等区间
 class DateFieldListFilter(FieldListFilter):
     def __init__(self, field, request, params, model, model_admin, field_path):
         self.field_generic = "%s__" % field_path
@@ -561,6 +572,7 @@ FieldListFilter.register(lambda f: isinstance(f, models.DateField), DateFieldLis
 # This should be registered last, because it's a last resort. For example,
 # if a field is eligible to use the BooleanFieldListFilter, that'd be much
 # more appropriate, and the AllValuesFieldListFilter won't get used for it.
+# 按字段 distinct 值列表过滤
 class AllValuesFieldListFilter(FieldListFilter):
     def __init__(self, field, request, params, model, model_admin, field_path):
         self.lookup_kwarg = field_path
@@ -638,6 +650,7 @@ class AllValuesFieldListFilter(FieldListFilter):
 FieldListFilter.register(lambda f: True, AllValuesFieldListFilter)
 
 
+# 外键过滤：仅显示当前 changelist queryset 中出现的关联对象
 class RelatedOnlyFieldListFilter(RelatedFieldListFilter):
     def field_choices(self, field, request, model_admin):
         pk_qs = (
@@ -651,6 +664,7 @@ class RelatedOnlyFieldListFilter(RelatedFieldListFilter):
         )
 
 
+# 按字段是否为空（NULL 或空字符串）过滤
 class EmptyFieldListFilter(FieldListFilter):
     def __init__(self, field, request, params, model, model_admin, field_path):
         if not field.empty_strings_allowed and not field.null:

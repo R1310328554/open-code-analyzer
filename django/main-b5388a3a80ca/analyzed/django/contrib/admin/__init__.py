@@ -1,3 +1,8 @@
+"""
+django.contrib.admin — 管理后台公共 API 导出与 autodiscover。
+
+对外暴露 ModelAdmin、过滤器、装饰器与默认 site；启动时扫描各 app 的 admin 模块。
+"""
 from django.contrib.admin.decorators import action, display, register
 from django.contrib.admin.filters import (
     AllValuesFieldListFilter,
@@ -52,5 +57,6 @@ __all__ = [
 ]
 
 
+# 在各已安装应用中加载 admin.py 并注册 ModelAdmin
 def autodiscover():
     autodiscover_modules("admin", register_to=site)

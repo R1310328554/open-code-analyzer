@@ -1,3 +1,4 @@
+# 迁移 0002：调整 action_time 字段，移除 auto_now 并设 default=timezone.now
 from django.db import migrations, models
 from django.utils import timezone
 

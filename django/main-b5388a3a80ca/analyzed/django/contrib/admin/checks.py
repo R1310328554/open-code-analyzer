@@ -1,3 +1,8 @@
+"""
+django.contrib.admin.checks — ModelAdmin 配置的系统检查（checks 框架）。
+
+校验 list_display、list_filter、inlines 等选项是否合法，并在启动时检查依赖。
+"""
 import collections
 from itertools import chain
 
@@ -44,6 +49,7 @@ def _contains_subclass(class_path, candidate_paths):
     return False
 
 
+# 对所有已注册 AdminSite 实例运行 site.check()
 def check_admin_app(app_configs, **kwargs):
     from django.contrib.admin.sites import all_sites
 
@@ -53,6 +59,7 @@ def check_admin_app(app_configs, **kwargs):
     return errors
 
 
+# 确认 contenttypes、auth、messages 等依赖已安装且模板配置正确
 def check_dependencies(**kwargs):
     """
     Check that the admin's dependencies are correctly installed.
@@ -174,6 +181,7 @@ def check_dependencies(**kwargs):
     return errors
 
 
+# ModelAdmin 与 InlineModelAdmin 共用的配置项检查逻辑
 class BaseModelAdminChecks:
     def check(self, admin_obj, **kwargs):
         return [
@@ -845,6 +853,7 @@ class BaseModelAdminChecks:
             return []
 
 
+# 针对 ModelAdmin 的 changelist、actions、search 等专项检查
 class ModelAdminChecks(BaseModelAdminChecks):
     def check(self, admin_obj, **kwargs):
         return [
@@ -1285,6 +1294,7 @@ class ModelAdminChecks(BaseModelAdminChecks):
         return errors
 
 
+# 针对内联 ModelAdmin 的 fk_name、max_num 等配置检查
 class InlineModelAdminChecks(BaseModelAdminChecks):
     def check(self, inline_obj, **kwargs):
         parent_model = inline_obj.parent_model
@@ -1376,6 +1386,7 @@ class InlineModelAdminChecks(BaseModelAdminChecks):
             return []
 
 
+# 断言某 Admin 选项为指定类型的辅助函数
 def must_be(type, option, obj, id):
     return [
         checks.Error(
@@ -1386,6 +1397,7 @@ def must_be(type, option, obj, id):
     ]
 
 
+# 断言某 Admin 选项为 parent 子类的辅助函数
 def must_inherit_from(parent, option, obj, id):
     return [
         checks.Error(
@@ -1396,6 +1408,7 @@ def must_inherit_from(parent, option, obj, id):
     ]
 
 
+# 生成指向不存在字段的 checks.Error
 def refer_to_missing_field(field, option, obj, id):
     return [
         checks.Error(

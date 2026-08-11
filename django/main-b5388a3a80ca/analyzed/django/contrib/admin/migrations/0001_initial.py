@@ -1,3 +1,4 @@
+# 初始迁移：创建 LogEntry 模型（django_admin_log 表），记录后台操作审计日志
 import django.contrib.admin.models
 from django.conf import settings
 from django.db import migrations, models
