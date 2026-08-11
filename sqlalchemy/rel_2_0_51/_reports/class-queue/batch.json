@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T06:30:28Z",
-  "files": [
-    "lib/sqlalchemy/sql/annotation.py",
-    "lib/sqlalchemy/sql/base.py",
-    "lib/sqlalchemy/sql/cache_key.py",
-    "lib/sqlalchemy/sql/coercions.py",
-    "lib/sqlalchemy/sql/compiler.py",
-    "lib/sqlalchemy/sql/crud.py",
-    "lib/sqlalchemy/sql/ddl.py",
-    "lib/sqlalchemy/sql/default_comparator.py",
-    "lib/sqlalchemy/sql/dml.py",
-    "lib/sqlalchemy/sql/elements.py",
-    "lib/sqlalchemy/sql/events.py",
-    "lib/sqlalchemy/sql/expression.py",
-    "lib/sqlalchemy/sql/functions.py",
-    "lib/sqlalchemy/sql/lambdas.py",
-    "lib/sqlalchemy/sql/naming.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 22,
-  "done": 195
+  "done": 210
 }
