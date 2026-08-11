@@ -1,3 +1,4 @@
+# 规范化 lib/sqlalchemy 源文件头：路径注释 + MIT 许可证块
 from datetime import date
 from pathlib import Path
 import re
@@ -23,6 +24,8 @@ contributors
 """
 
 
+# 为单个 .py/.pyx/.pxd 补全或更新 # path 与 Copyright 头
+# 递归遍历 sqlalchemy 包下所有源文件并调用 run_file
 def run_file(cmd: code_writer_cmd, file: Path, update_year: bool):
     content = file.read_text("utf-8")
     path = str(file.relative_to(sa_path)).replace("\\", "/")  # handle windows

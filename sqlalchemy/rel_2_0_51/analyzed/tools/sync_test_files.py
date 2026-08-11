@@ -1,7 +1,7 @@
-"""Synchronizes test files that require the future annotation import.
+# 同步需要 # 测试文件同步工具：复制源测试并注入 future annotations 头
 
-.. versionadded:: 2.0
-"""
+from __future__ import annotations 的自动生成测试文件。
+# .. versionadded:: 2.0
 
 from __future__ import annotations
 
@@ -29,6 +29,7 @@ this_file = Path(__file__).relative_to(home).as_posix()
 remove_str = "# anno only: "
 
 
+# 读取源文件、拼接自动生成头、black 后写入目标路径
 def run_operation(
     name: str, source: str, dest: str, cmd: code_writer_cmd
 ) -> None:
@@ -46,6 +47,7 @@ def run_operation(
     cmd.write_output_file_from_tempfile(buf.name, dest)
 
 
+# 按 files 映射同步单个或全部 future-annotations 测试副本
 def main(file: str, cmd: code_writer_cmd) -> None:
     if file == "all":
         operations: Iterable[Any] = files.items()

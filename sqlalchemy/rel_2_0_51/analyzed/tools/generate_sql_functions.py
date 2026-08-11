@@ -1,6 +1,8 @@
-"""Generate inline stubs for generic functions on func"""
+# 为 func 命名空间中的泛型 SQL 函数生成内联 overload 与 typing 测试存根
 
 # mypy: ignore-errors
+
+# SQL func 访问器静态生成：registry 驱动的 overload 与 TypeAlias
 
 from __future__ import annotations
 
@@ -19,6 +21,7 @@ from sqlalchemy.types import TypeEngine
 from sqlalchemy.util.tool_support import code_writer_cmd
 
 
+# 按注册表键排序遍历内置 SQL 函数类（跳过基类）
 def _fns_in_deterministic_order():
     reg = _registry["_default"]
     for key in sorted(reg):
@@ -28,6 +31,7 @@ def _fns_in_deterministic_order():
         yield key, cls
 
 
+# 在标记块内生成 accessor overload、typing 测试与 TypeAlias
 def process_functions(filename: str, cmd: code_writer_cmd) -> str:
     with (
         NamedTemporaryFile(
@@ -286,6 +290,7 @@ reveal_type(stmt{count})
     return buf.name
 
 
+# 对 lib/sqlalchemy/sql/functions.py 与对应 typing 测试文件运行生成
 def main(cmd: code_writer_cmd) -> None:
     for path in [functions_py, test_functions_py]:
         destination_path = path

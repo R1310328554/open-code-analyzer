@@ -1,23 +1,9 @@
-r"""Generate tuple mapping overloads.
-
-the problem solved by this script is that of there's no way in current
-pep-484 typing to unpack \*args: _T into Tuple[_T].  pep-646 is the first
-pep to provide this, but it doesn't work for the actual Tuple class
-and also mypy does not have support for pep-646 as of yet.  Better pep-646
-support would allow us to use a TypeVarTuple with Unpack, but TypeVarTuple
-does not have support for sequence operations like ``__getitem__`` and
-iteration; there's also no way for TypeVarTuple to be translated back to a
-Tuple which does have those things without a combinatoric hardcoding approach
-to each length of tuple.
-
-So here, the script creates a map from `*args` to a Tuple directly using a
-combinatoric generated code approach.
-
-.. versionadded:: 2.0
-
-"""
+# 组合生成 *args 到 Tuple[_T0, ...] 的 @overload 映射（弥补 PEP-484 无法 unpack）。
+# .. versionadded:: 2.0
 
 # mypy: ignore-errors
+
+# 元组长度 combinatoric overload 生成器：select()/session.get() 等 API
 
 from __future__ import annotations
 
@@ -37,6 +23,7 @@ is_posix = os.name == "posix"
 sys.path.append(str(Path(__file__).parent.parent))
 
 
+# 在 START/END OVERLOADED FUNCTIONS 块内写入指定长度范围的 overload
 def process_module(
     modname: str, filename: str, expected_number: int, cmd: code_writer_cmd
 ) -> str:
@@ -125,6 +112,7 @@ def {current_fnname}(
     return buf.name
 
 
+# 导入目标模块、生成、格式化并写回源文件
 def run_module(modname: str, count: int, cmd: code_writer_cmd) -> None:
     cmd.write_status(f"importing module {modname}\n")
     mod = importlib.import_module(modname)
@@ -138,6 +126,7 @@ def run_module(modname: str, count: int, cmd: code_writer_cmd) -> None:
     cmd.write_output_file_from_tempfile(tempfile, destination_path)
 
 
+# 按 entries 列表批量处理各模块的 overload 块
 def main(cmd: code_writer_cmd) -> None:
     for modname, count in entries:
         if cmd.args.module in {"all", modname}:

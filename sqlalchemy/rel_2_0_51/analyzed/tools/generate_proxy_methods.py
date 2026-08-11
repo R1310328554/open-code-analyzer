@@ -1,47 +1,10 @@
-"""Generate static proxy code for SQLAlchemy classes that proxy other
-objects.
-
-This tool is run at source code authoring / commit time whenever we add new
-methods to engines/connections/sessions that need to be generically proxied by
-scoped_session or asyncio.   The generated code is part of what's committed
-to source just as though we typed it all by hand.
-
-The original "proxy" class was scoped_session. Then with asyncio, all the
-asyncio objects are essentially "proxy" objects as well; while all the methods
-that are "async" needed to be written by hand, there's lots of other attributes
-and methods that are proxied exactly.
-
-To eliminate redundancy, all of these classes made use of the
-@langhelpers.create_proxy_methods() decorator which at runtime would read a
-selected list of methods and attributes from the proxied class and generate new
-methods and properties descriptors on the proxying class; this way the proxy
-would have all the same methods signatures / attributes / docstrings consumed
-by Sphinx and look just like the proxied class.
-
-Then mypy and typing came along, which don't care about runtime generated code
-and never will. So this script takes that same
-@langhelpers.create_proxy_methods() decorator, keeps its public interface just
-as is, and uses it to generate all the code and docs in those proxy classes
-statically, as though we sat there and spent seven hours typing it all by hand.
-The runtime code generation part is removed from ``create_proxy_methods()``.
-Now we have static code that is perfectly consumable by all the typing tools
-and we also reduce import time a bit.
-
-A similar approach is used in Alembic where a dynamic approach towards creating
-alembic "ops" was enhanced to generate a .pyi stubs file statically for
-consumption by typing tools.
-
-Note that the usual OO approach of having a common interface class with
-concrete subtypes doesn't really solve any problems here; the concrete subtypes
-must still list out all methods, arguments, typing annotations, and docstrings,
-all of which is copied by this script rather than requiring it all be
-typed by hand.
-
-.. versionadded:: 2.0
-
-"""
+# 为 scoped_session/asyncio 等代理类静态生成 proxied 方法与属性存根。
+# 提交时运行：读取 @create_proxy_methods 收集的配置，写入 START/END 块供 mypy/Sphinx 消费。
+# .. versionadded:: 2.0
 
 # mypy: ignore-errors
+
+# 代理方法静态代码生成器：替代运行时 create_proxy_methods 装饰器
 
 from __future__ import annotations
 
@@ -76,6 +39,7 @@ is_posix = os.name == "posix"
 sys.path.append(str(Path(__file__).parent.parent))
 
 
+# 源码生成占位：repr 返回固定符号名（如 util.EMPTY_DICT）
 class _repr_sym:
     __slots__ = ("sym",)
 
@@ -93,6 +57,7 @@ classes: collections.defaultdict[str, Dict[str, Tuple[Any, ...]]] = (
 _T = TypeVar("_T", bound="Any")
 
 
+# 装饰器：收集目标类与代理类的方法/属性清单供后续静态生成
 def create_proxy_methods(
     target_cls: Type[Any],
     target_cls_sphinx_name: str,
@@ -130,6 +95,7 @@ def create_proxy_methods(
     return decorate
 
 
+# 从源文件向上扫描并提取函数的 @overload 桩定义
 def _grab_overloads(fn):
     """grab @overload entries for a function, assuming black-formatted
     code ;) so that we can do a simple regex
@@ -175,6 +141,7 @@ def _grab_overloads(fn):
     return output
 
 
+# 为单个代理类生成方法、classmethod 与 property 静态实现
 def process_class(
     buf: TextIO,
     target_cls: Type[Any],
@@ -358,6 +325,7 @@ def process_class(
         instrument(buf, prop, clslevel=True)
 
 
+# 在 START/END PROXY METHODS 标记块内写入生成代码
 def process_module(modname: str, filename: str, cmd: code_writer_cmd) -> str:
     class_entries = classes[modname]
 
@@ -400,6 +368,7 @@ def process_module(modname: str, filename: str, cmd: code_writer_cmd) -> str:
     return buf.name
 
 
+# 导入模块、生成临时文件、zimports/black 后写回目标路径
 def run_module(modname: str, cmd: code_writer_cmd) -> None:
     cmd.write_status(f"importing module {modname}\n")
     mod = importlib.import_module(modname)
@@ -413,6 +382,7 @@ def run_module(modname: str, cmd: code_writer_cmd) -> None:
     cmd.write_output_file_from_tempfile(tempfile, destination_path)
 
 
+# 注册 create_proxy_methods 钩子并按 entries 批量生成模块
 def main(cmd: code_writer_cmd) -> None:
     from sqlalchemy import util
     from sqlalchemy.util import langhelpers

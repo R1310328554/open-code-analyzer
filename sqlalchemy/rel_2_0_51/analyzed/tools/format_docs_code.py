@@ -1,14 +1,10 @@
-"""Format the code blocks in the documentation using black.
-
-this script parses the documentation files and runs black on the code blocks
-that it extracts from the documentation.
-
-.. versionadded:: 2.0
-
-"""
+# 使用 black 格式化文档与源码中的代码块。
+# 解析文档文件，提取 doctest 与 :: 缩进块并运行 black。
+# .. versionadded:: 2.0
 
 # mypy: ignore-errors
 
+# 文档代码块 black 格式化 CLI
 from argparse import ArgumentParser
 from argparse import RawDescriptionHelpFormatter
 from collections.abc import Iterator
@@ -44,6 +40,7 @@ ignore_paths = (
 CUSTOM_TARGET_VERSIONS = {"declarative_tables.rst": "PY312"}
 
 
+# 代码块单行记录：原始行、行号、代码内容与缩进/SQL 标记
 class BlockLine(NamedTuple):
     line: str
     line_no: int
@@ -55,6 +52,7 @@ class BlockLine(NamedTuple):
 _Block = list[BlockLine]
 
 
+# 对单个 doctest/plain 代码块调用 black 并保留缩进与 SQL 前缀
 def _format_block(
     input_block: _Block,
     exit_on_error: bool,
@@ -146,6 +144,7 @@ start_space = re.compile(r"^(\s*)[^ ]?")
 not_python_line = re.compile(r"^\s+[$:]")
 
 
+# 扫描文件中的代码块段并格式化或仅检查差异
 def format_file(
     file: Path, exit_on_error: bool, check: bool
 ) -> tuple[bool, int]:
@@ -324,6 +323,7 @@ def format_file(
     return equal, len(errors)
 
 
+# 按 include/ignore 规则遍历文档目录下的 .rst/.py
 def iter_files(directory: str) -> Iterator[Path]:
     dir_path = home / directory
 
@@ -335,6 +335,7 @@ def iter_files(directory: str) -> Iterator[Path]:
             yield file
 
 
+# CLI 入口：指定文件或整个目录批量格式化/检查
 def main(
     file: list[str] | None, directory: str, exit_on_error: bool, check: bool
 ):

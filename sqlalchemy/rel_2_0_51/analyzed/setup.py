@@ -1,3 +1,5 @@
+# setuptools 安装入口：按环境变量决定是否编译 Cython 扩展
+
 from __future__ import annotations
 
 import os

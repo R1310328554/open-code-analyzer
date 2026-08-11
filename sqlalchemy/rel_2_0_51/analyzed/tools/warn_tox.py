@@ -1,3 +1,4 @@
+# 打印 tox 已弃用、请改用 nox 运行的醒目终端警告
 def warn_tox():
     print(
         "\n"

@@ -1,31 +1,10 @@
-"""
-Debug ORMAdapter calls within ORM runs.
-
-Demos::
-
-    $ python tools/trace_orm_adapter.py -m pytest \
-        test/orm/inheritance/test_polymorphic_rel.py::PolymorphicAliasedJoinsTest::test_primary_eager_aliasing_joinedload
-
-    $ python tools/trace_orm_adapter.py -m pytest \
-        test/orm/test_eager_relations.py::LazyLoadOptSpecificityTest::test_pathed_joinedload_aliased_abs_bcs
-
-    $ python tools/trace_orm_adapter.py my_test_script.py
-
-
-The above two tests should spit out a ton of debug output.  If a test or program
-has no debug output at all, that's a good thing!  it means ORMAdapter isn't
-used for that case.
-
-You can then set a breakpoint at the end of any adapt step::
-
-    $ python tools/trace_orm_adapter.py -d 10 -m pytest -s \
-        test/orm/test_eager_relations.py::LazyLoadOptSpecificityTest::test_pathed_joinedload_aliased_abs_bcs
-
-
-"""  # noqa: E501
+# ORM 列适配调试工具：在 ORMAdapter.replace/_locate_col 调用链上打印跟踪输出。
+# 用法：python tools/trace_orm_adapter.py -m pytest <test> 或 -d N 在指定步断点。  # noqa: E501
 
 # mypy: ignore-errors
 
+
+# ORMAdapter 运行时跟踪：动态 mixin 注入并经由 runpy 运行测试/脚本
 
 from __future__ import annotations
 
@@ -45,6 +24,7 @@ if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
 
 
+# ORMAdapter 调试 mixin：contextvar 栈式跟踪 adapt 步骤
 class _ORMAdapterTrace:
     def _locate_col(
         self, col: ColumnElement[Any]
@@ -124,6 +104,7 @@ util.ORMStatementAdapter.__bases__ = (
 ) + util.ORMStatementAdapter.__bases__
 
 
+# 按 SQL visit_name 格式化 Table/Column/Join 等调试输出
 def _orm_adapter_trace_print(obj):
     if obj is None:
         return "None"
@@ -155,6 +136,7 @@ DEBUG_ADAPT_STEP = None
 REAL_STDOUT = sys.__stdout__
 
 
+# 解析 -m/-d 参数并通过 runpy 运行 pytest 模块或脚本文件
 def main():
     global DEBUG_ADAPT_STEP
 

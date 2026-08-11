@@ -1,12 +1,7 @@
-"""Provides the tox_parameters() utility, which generates parameterized
-sections for nox tests, which include tags that indicate various combinations
-of those parameters in such a way that it's somewhat similar to how
-we were using the tox project; where individual dash-separated tags could
-be added to add more specificity to the suite configuration, or omitting them
-would fall back to defaults.
+# nox 测试参数化工具：模拟 tox 风格的 tag 组合与默认值省略语义。
 
 
-"""
+# tox 风格 nox 参数装饰器与 pytest 选项提取辅助
 
 from __future__ import annotations
 
@@ -24,6 +19,7 @@ import nox
 OUR_PYTHON = f"{sys.version_info.major}.{sys.version_info.minor}"
 
 
+# 装饰器：由 token 列表生成 nox.parametrize 与 dash 连接 tags
 def tox_parameters(
     names: Sequence[str],
     token_lists: Sequence[Sequence[str]],
@@ -177,6 +173,7 @@ def tox_parameters(
     return nox.parametrize(names, params)
 
 
+# 从 session.posargs 弹出 --flag 并返回命名元组选项
 def extract_opts(posargs: list[str], *args: str) -> tuple[list[str], Any]:
     """Pop individual flag options from session.posargs.
 
@@ -207,6 +204,7 @@ def extract_opts(posargs: list[str], *args: str) -> tuple[list[str], Any]:
     )
 
 
+# 根据 token 后缀配置 coverage XML 与 junitxml 等 pytest 参数
 def apply_pytest_opts(
     session: nox.Session,
     cov: str,
