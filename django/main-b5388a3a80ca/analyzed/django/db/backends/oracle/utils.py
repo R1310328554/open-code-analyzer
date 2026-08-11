@@ -1,9 +1,13 @@
 import datetime
 import decimal
 
+"""
+django.db.backends.oracle.utils — Oracle 绑定变量与 DSN 工具。
+"""
 from .base import Database
 
 
+# 延迟绑定游标变量，用于 RETURNING INTO 获取插入 ID
 class BoundVar:
     """
     A late-binding cursor variable that can be passed to Cursor.execute
@@ -41,6 +45,7 @@ class BoundVar:
         return self.bound_param.getvalue()
 
 
+# 带 input_size=TIMESTAMP 的 datetime，保留微秒精度
 class Oracle_datetime(datetime.datetime):
     """
     A datetime object, with an additional class attribute
@@ -62,6 +67,7 @@ class Oracle_datetime(datetime.datetime):
         )
 
 
+# bulk insert 时按字段类型映射 TO_NUMBER/TO_NCLOB 等转换
 class BulkInsertMapper:
     BLOB = "TO_BLOB(%s)"
     DATE = "TO_DATE(%s)"
@@ -92,6 +98,7 @@ class BulkInsertMapper:
     }
 
 
+# 根据 HOST/PORT/NAME 构造 oracledb makedsn 或直接使用 NAME
 def dsn(settings_dict):
     if settings_dict["PORT"]:
         host = settings_dict["HOST"].strip() or "localhost"

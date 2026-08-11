@@ -1,4 +1,9 @@
 """
+django.db.backends.postgresql.base — PostgreSQL 连接包装器。
+
+支持 psycopg2/psycopg3、连接池、时区配置与服务器端游标。
+
+PostgreSQL database backend for Django."""
 PostgreSQL database backend for Django.
 
 Requires psycopg2 >= 2.9.9 or psycopg >= 3.1.12
@@ -31,6 +36,7 @@ except ImportError:
 
 
 @lru_cache
+# 解析 psycopg/psycopg2 版本元组
 def psycopg_version():
     version = Database.__version__.split(" ", 1)[0]
     return get_version_tuple(version)
@@ -83,6 +89,7 @@ from .operations import DatabaseOperations  # NOQA isort:skip
 from .schema import DatabaseSchemaEditor  # NOQA isort:skip
 
 
+# max_length 为 None 时返回无长度 varchar
 def _get_varchar_column(data):
     if data["max_length"] is None:
         return "varchar"
@@ -95,6 +102,7 @@ def _get_decimal_column(data):
     return "numeric(%(max_digits)s, %(decimal_places)s)" % data
 
 
+# PostgreSQL 连接：data_types、operators 与 psycopg 连接池
 class DatabaseWrapper(BaseDatabaseWrapper):
     vendor = "postgresql"
     display_name = "PostgreSQL"
@@ -191,6 +199,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
     _connection_pools = {}
 
     @property
+    # OPTIONS.pool 启用 psycopg_pool.ConnectionPool
     def pool(self):
         pool_options = self.settings_dict["OPTIONS"].get("pool")
         if self.alias == NO_DB_ALIAS or not pool_options:
@@ -247,6 +256,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
         """
         return divmod(self.pg_version, 10000)
 
+    # 组装 dbname/user/password/host/port 与 psycopg3 适配器
     def get_connection_params(self):
         settings_dict = self.settings_dict
         # None may be used to connect to the default 'postgres' db
@@ -315,6 +325,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
         return conn_params
 
     @async_unsafe
+    # 从池 getconn 或 Database.connect，设置 isolation_level
     def get_new_connection(self, conn_params):
         # self.isolation_level must be set:
         # - after connecting to the database in order to obtain the database's
@@ -354,6 +365,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
             )
         return connection
 
+    # 关闭连接池并 SET TIME ZONE 同步会话时区
     def ensure_timezone(self):
         # Close the pool so new connections pick up the correct timezone.
         self.close_pool()
@@ -417,6 +429,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
                 self.connection.commit()
 
     @async_unsafe
+    # 命名游标用 ServerSideCursor；注册 timestamptz 加载器
     def create_cursor(self, name=None):
         if name:
             if is_psycopg3 and (
@@ -455,6 +468,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
         return self.timezone
 
     @async_unsafe
+    # 生成线程/任务唯一的命名服务器端游标
     def chunked_cursor(self):
         self._named_cursor_idx += 1
         # Get the current async task
@@ -514,6 +528,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
         return super().close_if_health_check_failed()
 
     @contextmanager
+    # 连接 postgres 库；失败时回退到其他 PostgreSQL 库
     def _nodb_cursor(self):
         cursor = None
         try:
@@ -562,6 +577,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
 
 if is_psycopg3:
 
+# psycopg3 游标混入：实现 callproc
     class CursorMixin:
         """
         A subclass of psycopg cursor implementing callproc.
@@ -589,6 +605,7 @@ if is_psycopg3:
     class Cursor(CursorMixin, Database.ClientCursor):
         pass
 
+# 命名游标：ClientCursorMixin 强制客户端绑定 + ServerCursor
     class ServerSideCursor(
         CursorMixin, Database.client_cursor.ClientCursorMixin, Database.ServerCursor
     ):

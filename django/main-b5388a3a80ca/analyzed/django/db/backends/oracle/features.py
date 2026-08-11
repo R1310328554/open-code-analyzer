@@ -1,8 +1,14 @@
 from django.db import DatabaseError, InterfaceError
+"""
+django.db.backends.oracle.features — Oracle 后端能力标志。
+
+声明版本相关的 JSON、布尔表达式、生成列与测试跳过规则。
+"""
 from django.db.backends.base.features import BaseDatabaseFeatures
 from django.utils.functional import cached_property
 
 
+# Oracle 特性：最低 19c、LOB GROUP BY 限制、deferrable 约束等
 class DatabaseFeatures(BaseDatabaseFeatures):
     minimum_database_version = (19,)
     # Oracle crashes with "ORA-00932: inconsistent datatypes: expected - got
@@ -92,10 +98,12 @@ class DatabaseFeatures(BaseDatabaseFeatures):
     )
 
     @cached_property
+    # Oracle 21c+ 支持 JSON 负索引
     def supports_json_negative_indexing(self):
         return self.connection.oracle_version >= (21,)
 
     @cached_property
+    # 按 Oracle 版本与连接池模式跳过不兼容测试
     def django_test_skips(self):
         skips = {
             "Oracle doesn't support SHA224.": {
@@ -211,6 +219,7 @@ class DatabaseFeatures(BaseDatabaseFeatures):
         return self.connection.oracle_version >= (21,)
 
     @cached_property
+    # Oracle 23c+ SELECT 子句支持布尔表达式
     def supports_boolean_expr_in_select_clause(self):
         return self.connection.oracle_version >= (23,)
 
@@ -223,6 +232,7 @@ class DatabaseFeatures(BaseDatabaseFeatures):
         return self.connection.oracle_version >= (23,)
 
     @cached_property
+    # Oracle <23c 裸 SELECT 需 FROM DUAL
     def bare_select_suffix(self):
         return "" if self.connection.oracle_version >= (23,) else " FROM DUAL"
 

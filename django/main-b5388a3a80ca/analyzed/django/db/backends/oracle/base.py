@@ -1,4 +1,9 @@
 """
+django.db.backends.oracle.base — Oracle 数据库连接包装器。
+
+依赖 oracledb 驱动，处理 NLS 环境、连接池、占位符转换与完整性错误映射。
+
+Oracle database backend for Django."""
 Oracle database backend for Django.
 
 Requires oracledb: https://oracle.github.io/python-oracledb/
@@ -26,6 +31,7 @@ except ImportError as e:
     raise ImproperlyConfigured(f"Error loading oracledb module: {e}")
 
 
+# Cygwin 下通过 ctypes 设置 Oracle 客户端环境变量
 def _setup_environment(environ):
     # Cygwin requires some special voodoo to set the environment variables
     # properly so that Oracle will see them.
@@ -68,6 +74,7 @@ from .utils import Oracle_datetime, dsn  # NOQA
 from .validation import DatabaseValidation  # NOQA
 
 
+# 将 ORA-02291/ORA-00001 包装为 Django IntegrityError
 @contextmanager
 def wrap_oracle_errors():
     try:
@@ -94,6 +101,7 @@ def wrap_oracle_errors():
         raise
 
 
+# 延迟初始化 operators：首次访问时探测 LIKE 与 LIKEC 兼容性
 class _UninitializedOperatorsDescriptor:
     def __get__(self, instance, cls=None):
         # If connection.operators is looked up before a connection has been
@@ -106,12 +114,14 @@ class _UninitializedOperatorsDescriptor:
         return instance.__dict__["operators"]
 
 
+# 根据 max_digits/decimal_places 生成 NUMBER 列类型
 def _get_decimal_column(data):
     if data["max_digits"] is None and data["decimal_places"] is None:
         return "NUMBER"
     return "NUMBER(%(max_digits)s, %(decimal_places)s)" % data
 
 
+# Oracle 连接包装器：data_types、operators 与连接池
 class DatabaseWrapper(BaseDatabaseWrapper):
     vendor = "oracle"
     display_name = "Oracle"
@@ -252,6 +262,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
         self.features.can_return_rows_from_update = use_returning_into
 
     @property
+    # OPTIONS.pool 为 True 时使用 oracledb 连接池
     def is_pool(self):
         return self.settings_dict["OPTIONS"].get("pool", False)
 
@@ -298,6 +309,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
         return conn_params
 
     @async_unsafe
+    # 从连接池 acquire 或直接 Database.connect
     def get_new_connection(self, conn_params):
         if self.pool:
             return self.pool.acquire()
@@ -308,6 +320,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
             **conn_params,
         )
 
+    # 设置 NLS 格式、探测 LIKE 运算符、启用 stmtcache
     def init_connection_state(self):
         super().init_connection_state()
         cursor = self.create_cursor()
@@ -352,6 +365,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
             self.commit()
 
     @async_unsafe
+    # 返回 FormatStylePlaceholderCursor 适配 %s 占位符
     def create_cursor(self, name=None):
         return FormatStylePlaceholderCursor(self.connection, self)
 
@@ -375,6 +389,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
         with self.wrap_database_errors:
             self.connection.autocommit = autocommit
 
+    # SET CONSTRAINTS ALL IMMEDIATE 后恢复 DEFERRED
     def check_constraints(self, table_names=None):
         """
         Check constraints by setting them to immediate. Return them to deferred
@@ -408,6 +423,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
         return get_version_tuple(Database.__version__)
 
 
+# 绑定参数包装：超 4000 字符设 CLOB、datetime 设 TIMESTAMP
 class OracleParam:
     """
     Wrapper object for formatting parameters for Oracle. If the string
@@ -462,6 +478,7 @@ class OracleParam:
             self.input_size = None
 
 
+# 游标变量适配器，避免 OracleParam 将其转为字符串
 class VariableWrapper:
     """
     An adapter class for cursor variables that prevents the wrapped object
@@ -486,6 +503,7 @@ class VariableWrapper:
             setattr(self.var, key, value)
 
 
+# 将 Django %s 占位符转为 Oracle :var 命名绑定
 class FormatStylePlaceholderCursor:
     """
     Django uses "format" (e.g. '%s') style placeholders, but Oracle uses ":var"
@@ -627,12 +645,14 @@ class FormatStylePlaceholderCursor:
             query %= tuple(args)
         return query, self._format_params(params)
 
+    # 格式化 SQL、猜测 input_size 并执行
     def execute(self, query, params=None):
         query, params = self._fix_for_params(query, params, unify_by_values=True)
         self._guess_input_sizes([params])
         with wrap_oracle_errors():
             return self.cursor.execute(query, self._param_generator(params))
 
+    # 批量执行：统一格式化后 executemany
     def executemany(self, query, params=None):
         if not params:
             # No params given, nothing to do

@@ -2,6 +2,11 @@ import sys
 
 from django.conf import settings
 from django.db import DatabaseError
+"""
+django.db.backends.oracle.creation — Oracle 测试库创建与销毁。
+
+Oracle 无独立测试库概念，通过表空间与独立测试用户实现隔离。
+"""
 from django.db.backends.base.creation import BaseDatabaseCreation
 from django.utils.crypto import get_random_string
 from django.utils.functional import cached_property
@@ -9,10 +14,12 @@ from django.utils.functional import cached_property
 TEST_DATABASE_PREFIX = "test_"
 
 
+# Oracle 测试库：CREATE TABLESPACE/USER 与 SAVED_USER 切换
 class DatabaseCreation(BaseDatabaseCreation):
     destroy_test_db_connection_close_method = "close"
 
     @cached_property
+    # 管理连接：Oracle 仅主连接可创建/删除测试表空间
     def _maindb_connection(self):
         """
         This is analogous to other backends' `_nodb_connection` property,
@@ -28,6 +35,7 @@ class DatabaseCreation(BaseDatabaseCreation):
         DatabaseWrapper = type(self.connection)
         return DatabaseWrapper(settings_dict, alias=self.connection.alias)
 
+    # 创建表空间与测试用户，处理 ORA-01543/01920 冲突
     def _create_test_db(self, verbosity=1, autoclobber=False, keepdb=False):
         parameters = self._get_test_db_params()
         with self._maindb_connection.cursor() as cursor:
@@ -126,6 +134,7 @@ class DatabaseCreation(BaseDatabaseCreation):
         self._switch_to_test_user(parameters)
         return self.connection.settings_dict["NAME"]
 
+    # 保存主用户凭证到 SAVED_USER/PASSWORD 并切换到测试用户
     def _switch_to_test_user(self, parameters):
         """
         Switch to the user that's used for creating the test database.
@@ -203,6 +212,7 @@ class DatabaseCreation(BaseDatabaseCreation):
             self.log("Tests cancelled -- test database cannot be recreated.")
             sys.exit(1)
 
+    # 恢复主用户、关闭连接池并删除测试用户与表空间
     def _destroy_test_db(self, test_database_name, verbosity=1):
         """
         Destroy a test database, prompting the user for confirmation if the
@@ -230,6 +240,7 @@ class DatabaseCreation(BaseDatabaseCreation):
         self._maindb_connection.close()
         self._maindb_connection.close_pool()
 
+    # CREATE TABLESPACE 与 TEMPORARY TABLESPACE
     def _execute_test_db_creation(self, cursor, parameters, verbosity, keepdb=False):
         if verbosity >= 2:
             self.log("_create_test_db(): dbname = %s" % parameters["user"])
@@ -265,6 +276,7 @@ class DatabaseCreation(BaseDatabaseCreation):
             cursor, statements, parameters, verbosity, acceptable_ora_err
         )
 
+    # CREATE USER 并 GRANT SESSION/TABLE/SEQUENCE 等权限
     def _create_test_user(self, cursor, parameters, verbosity, keepdb=False):
         if verbosity >= 2:
             self.log("_create_test_user(): username = %s" % parameters["user"])
@@ -339,6 +351,7 @@ class DatabaseCreation(BaseDatabaseCreation):
                     self.log("Failed (%s)" % (err))
                 raise
 
+    # 允许指定 ORA 错误码静默失败（如表空间已存在）
     def _execute_allow_fail_statements(
         self, cursor, statements, parameters, verbosity, acceptable_ora_err
     ):
@@ -460,6 +473,7 @@ class DatabaseCreation(BaseDatabaseCreation):
         """
         return self.connection.settings_dict["NAME"]
 
+    # 返回 (HOST, PORT, ENGINE, NAME, test_user) 用于并行测试
     def test_db_signature(self):
         settings_dict = self.connection.settings_dict
         return (

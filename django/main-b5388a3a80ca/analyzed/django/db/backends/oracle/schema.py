@@ -3,6 +3,11 @@ import datetime
 import re
 
 from django.db import DatabaseError
+"""
+django.db.backends.oracle.schema — Oracle DDL 迁移编辑器。
+
+处理 identity 列、类型变更 workaround 与表空间注释。
+"""
 from django.db.backends.base.schema import (
     BaseDatabaseSchemaEditor,
     _related_non_m2m_objects,
@@ -10,6 +15,7 @@ from django.db.backends.base.schema import (
 from django.utils.duration import duration_iso_string
 
 
+# Oracle Schema：MODIFY COLUMN、CASCADE CONSTRAINTS 与 identity 管理
 class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
     sql_create_column = "ALTER TABLE %(table)s ADD %(column)s %(definition)s"
     sql_alter_column_type = "MODIFY %(column)s %(type)s%(collation)s"
@@ -26,6 +32,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
     sql_delete_table = "DROP TABLE %(table)s CASCADE CONSTRAINTS"
     sql_create_index = "CREATE INDEX %(name)s ON %(table)s (%(columns)s)%(extra)s"
 
+    # 日期/时间间隔/字符串/布尔字面量引用
     def quote_value(self, value):
         if isinstance(value, (datetime.date, datetime.time, datetime.datetime)):
             return "'%s'" % value
@@ -40,6 +47,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
         else:
             return str(value)
 
+    # 删除 identity 列前先 DROP IDENTITY
     def remove_field(self, model, field):
         # If the column is an identity column, drop the identity before
         # removing the field.
@@ -47,6 +55,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
             self._drop_identity(model._meta.db_table, field.column)
         super().remove_field(model, field)
 
+    # 删除模型后清理手动创建的 _SQ 序列
     def delete_model(self, model):
         # Run superclass action
         super().delete_model(model)
@@ -70,6 +79,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
             }
         )
 
+    # 捕获 ORA-22858/30675/30673 等错误并执行类型变更 workaround
     def alter_field(self, model, old_field, new_field, strict=False):
         try:
             super().alter_field(model, old_field, new_field, strict)
@@ -100,6 +110,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
             else:
                 raise
 
+    # 临时列迁移：ADD → UPDATE → DROP → RENAME
     def _alter_field_type_workaround(self, model, old_field, new_field):
         """
         Oracle refuses to change from some type to other type.
@@ -201,6 +212,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
     def prepare_default(self, value):
         return self.quote_value(value)
 
+    # CLOB/NCLOB/BLOB 列不支持数据库索引
     def _field_should_be_indexed(self, model, field):
         create_index = super()._field_should_be_indexed(model, field)
         db_type = field.db_type(self.connection)
@@ -211,6 +223,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
             return False
         return create_index
 
+    # 查询 user_tab_cols.identity_column 是否为 YES
     def _is_identity_column(self, table_name, column_name):
         if not column_name:
             return False

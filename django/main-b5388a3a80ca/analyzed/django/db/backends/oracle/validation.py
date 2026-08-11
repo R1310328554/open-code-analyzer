@@ -1,8 +1,13 @@
 from django.core import checks
+"""
+django.db.backends.oracle.validation — Oracle 字段类型校验。
+"""
 from django.db.backends.base.validation import BaseDatabaseValidation
 
 
+# Oracle 校验：CLOB/NCLOB/BLOB 列不支持 db_index
 class DatabaseValidation(BaseDatabaseValidation):
+    # 受限类型建索引时发出 fields.W162 警告
     def check_field_type(self, field, field_type):
         """Oracle doesn't support a database index on some data types."""
         errors = []

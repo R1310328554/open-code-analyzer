@@ -1,14 +1,22 @@
 from django.core import checks
+"""
+django.db.backends.mysql.validation — MySQL 数据库配置与字段校验。
+
+检查 sql_mode 严格模式及 varchar 唯一索引长度等 MySQL 特有约束。
+"""
 from django.db.backends.base.validation import BaseDatabaseValidation
 from django.utils.version import get_docs_version
 
 
+# MySQL 校验器：sql_mode 与字段类型兼容性
 class DatabaseValidation(BaseDatabaseValidation):
+    # 合并基类检查与 sql_mode 严格模式警告
     def check(self, **kwargs):
         issues = super().check(**kwargs)
         issues.extend(self._check_sql_mode(**kwargs))
         return issues
 
+    # 未启用 STRICT_TRANS_TABLES/STRICT_ALL_TABLES 时发出 W002 警告
     def _check_sql_mode(self, **kwargs):
         if not (
             self.connection.sql_mode & {"STRICT_TRANS_TABLES", "STRICT_ALL_TABLES"}
@@ -35,6 +43,7 @@ class DatabaseValidation(BaseDatabaseValidation):
             ]
         return []
 
+    # 唯一 varchar 长度 >255 及受限类型索引不可建时发出警告
     def check_field_type(self, field, field_type):
         """
         MySQL has the following field length restriction:

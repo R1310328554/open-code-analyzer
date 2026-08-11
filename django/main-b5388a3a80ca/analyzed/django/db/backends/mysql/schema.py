@@ -1,8 +1,14 @@
+"""
+django.db.backends.mysql.schema — MySQL/MariaDB DDL 迁移编辑器。
+
+生成 MySQL 特有的 ALTER/CREATE/DROP 语句，处理 InnoDB 外键索引与 BLOB/TEXT 默认值限制。
+"""
 from django.db.backends.base.schema import BaseDatabaseSchemaEditor
 from django.db.models import NOT_PROVIDED, F, UniqueConstraint
 from django.db.models.constants import LOOKUP_SEP
 
 
+# MySQL Schema 编辑器：RENAME TABLE、MODIFY COLUMN 与索引/约束 SQL 模板
 class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
     sql_rename_table = "RENAME TABLE %(old_table)s TO %(new_table)s"
 
@@ -40,6 +46,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
             return "ALTER TABLE %(table)s DROP CONSTRAINT IF EXISTS %(name)s"
         return "ALTER TABLE %(table)s DROP CHECK %(name)s"
 
+    # 通过 MySQLdb/PyMySQL escape 引用字面量
     def quote_value(self, value):
         self.connection.ensure_connection()
         # MySQLdb escapes to string, PyMySQL to bytes.
@@ -50,6 +57,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
             quoted = quoted.decode()
         return quoted
 
+    # 判断字段类型是否属于 BLOB/TEXT 等受限类型
     def _is_limited_data_type(self, field):
         db_type = field.db_type(self.connection)
         return (
@@ -57,16 +65,19 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
             and db_type.lower() in self.connection._limited_data_types
         )
 
+    # 判断列类型是否为 TEXT 或 BLOB 族
     def _is_text_or_blob(self, field):
         db_type = field.db_type(self.connection)
         return db_type and db_type.lower().endswith(("blob", "text"))
 
+    # TEXT/BLOB 空字符串默认值需跳过 DDL 默认子句
     def skip_default(self, field):
         default_is_empty = self.effective_default(field) in ("", b"")
         if default_is_empty and self._is_text_or_blob(field):
             return True
         return False
 
+    # ALTER COLUMN 时 MySQL 不支持 BLOB/TEXT 默认值
     def skip_default_on_alter(self, field):
         if self.skip_default(field):
             return True
@@ -83,6 +94,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
             return "(%s)"
         return super()._column_default_sql(field)
 
+    # 添加字段后对 skip_default 字段执行 UPDATE 模拟一次性默认值
     def add_field(self, model, field):
         super().add_field(model, field)
 
@@ -99,6 +111,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
                 [effective_default],
             )
 
+    # 删除唯一约束前补建可能缺失的外键隐式索引
     def remove_constraint(self, model, constraint):
         if (
             isinstance(constraint, UniqueConstraint)
@@ -111,6 +124,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
             )
         super().remove_constraint(model, constraint)
 
+    # 删除索引前补建被覆盖的外键隐式索引
     def remove_index(self, model, index):
         self._create_missing_fk_index(
             model,
@@ -119,6 +133,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
         )
         super().remove_index(model, index)
 
+    # InnoDB 外键已有隐式索引；受限类型不建索引
     def _field_should_be_indexed(self, model, field):
         if not super()._field_should_be_indexed(model, field):
             return False
@@ -137,6 +152,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
             return False
         return not self._is_limited_data_type(field)
 
+    # MySQL 删除复合索引时可能移除外键隐式索引，需手动补建
     def _create_missing_fk_index(
         self,
         model,
@@ -191,6 +207,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
         self._create_missing_fk_index(model, fields=fields)
         return super()._delete_composed_index(model, fields, *args)
 
+    # MODIFY 时保留 NULL/DEFAULT 属性
     def _set_field_new_type(self, field, new_type):
         """
         Keep the NULL and DEFAULT properties of the old field. If it has
@@ -214,6 +231,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
             model, old_field, new_field, new_type, old_collation, new_collation
         )
 
+    # MySQL 检查约束名与列名相同，重命名列时需显式重建
     def _field_db_check(self, field, field_db_params):
         if self.connection.mysql_is_mariadb:
             return super()._field_db_check(field, field_db_params)
@@ -229,6 +247,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
         # Comment is alter when altering the column type.
         return "", []
 
+    # MySQL 列/表注释语法：COMMENT '...'
     def _comment_sql(self, comment):
         comment_sql = super()._comment_sql(comment)
         return f" COMMENT {comment_sql}"

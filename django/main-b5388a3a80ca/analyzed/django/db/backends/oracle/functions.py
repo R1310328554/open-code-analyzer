@@ -1,6 +1,10 @@
+"""
+django.db.backends.oracle.functions — Oracle 时间间隔 SQL 函数。
+"""
 from django.db.models import DecimalField, DurationField, Func
 
 
+# 将 INTERVAL DAY TO SECOND 转为秒数（DecimalField 输出）
 class IntervalToSeconds(Func):
     function = ""
     template = """
@@ -16,6 +20,7 @@ class IntervalToSeconds(Func):
         )
 
 
+# NUMTODSINTERVAL 将秒数转为 INTERVAL 类型
 class SecondsToInterval(Func):
     function = "NUMTODSINTERVAL"
     template = "%(function)s(%(expressions)s, 'SECOND')"

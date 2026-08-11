@@ -12,10 +12,16 @@ from django.utils.encoding import force_bytes, force_str
 from django.utils.functional import cached_property
 from django.utils.regex_helper import _lazy_re_compile
 
+"""
+django.db.backends.oracle.operations — Oracle SQL 编译与类型转换。
+
+实现 TO_CHAR/TRUNC、RETURNING INTO、LIMIT/OFFSET 与 bulk insert 等。
+"""
 from .base import Database
 from .utils import BoundVar, BulkInsertMapper, Oracle_datetime
 
 
+# Oracle 操作：日期提取/截断、时区转换与集合 MINUS
 class DatabaseOperations(BaseDatabaseOperations):
     # Oracle uses NUMBER(5), NUMBER(11), and NUMBER(19) for integer fields.
     # SmallIntegerField uses NUMBER(11) instead of NUMBER(5), which is used by
@@ -78,6 +84,7 @@ END;
     # EXTRACT format cannot be passed in parameters.
     _extract_format_re = _lazy_re_compile(r"[A-Z_]+")
 
+    # TO_CHAR/EXTRACT 实现 week/quarter/iso_year 等查找
     def date_extract_sql(self, lookup_type, sql, params):
         extract_sql = f"TO_CHAR({sql}, %s)"
         extract_param = None
@@ -126,6 +133,7 @@ END;
         tzname, sign, offset = split_tzname_delta(tzname)
         return f"{sign}{offset}" if offset else tzname
 
+    # FROM_TZ ... AT TIME ZONE 转换连接时区到目标时区
     def _convert_sql_to_tz(self, sql, params, tzname):
         if not (settings.USE_TZ and tzname):
             return sql, params
@@ -210,6 +218,7 @@ END;
             return f"CAST({sql} AS DATE)", params
         return f"TRUNC({sql}, %s)", (*params, trunc_param)
 
+    # LOB 读取、布尔/日期/UUID 转换及空字符串还原
     def get_db_converters(self, expression):
         converters = super().get_db_converters(expression)
         internal_type = expression.output_field.get_internal_type()
@@ -289,6 +298,7 @@ END;
     def deferrable_sql(self):
         return " DEFERRABLE INITIALLY DEFERRED"
 
+    # INSERT/UPDATE RETURNING ... INTO BoundVar 占位符
     def returning_columns(self, fields):
         if not fields:
             return "", ()
@@ -314,6 +324,7 @@ END;
     def no_limit_value(self):
         return None
 
+    # OFFSET n ROWS FETCH FIRST m ROWS ONLY 分页
     def limit_offset_sql(self, low_mark, high_mark):
         fetch, offset = self._get_limit_offset_params(low_mark, high_mark)
         return " ".join(
@@ -381,6 +392,7 @@ END;
             return ""
         return value.read()
 
+    # 标识符大写、截断至 30 字符并转义 %
     def quote_name(self, name):
         # SQL92 requires delimited (quoted) names to be case-sensitive. When
         # not quoted, Oracle has case-insensitive behavior for identifiers, but
@@ -449,6 +461,7 @@ END;
         # Django's test suite.
         return lru_cache(maxsize=512)(self.__foreign_key_constraints)
 
+    # 禁用 FK 约束后 TRUNCATE，模拟 PostgreSQL CASCADE 行为
     def sql_flush(self, style, tables, *, reset_sequences=False, allow_cascade=False):
         if not tables:
             return []
@@ -578,6 +591,7 @@ END;
         """
         return value
 
+    # 时区感知 datetime 转为 naive Oracle_datetime
     def adapt_datetimefield_value(self, value):
         """
         Transform a datetime value to an object compatible with what is
@@ -659,6 +673,7 @@ END;
         row = cursor.fetchone()
         return self._get_no_autofield_sequence_name(table) if row is None else row[0]
 
+    # UNION ALL 子查询批量插入，规避 identity 与 UNION 冲突
     def bulk_insert_sql(self, fields, placeholder_rows):
         field_placeholders = [
             BulkInsertMapper.types.get(

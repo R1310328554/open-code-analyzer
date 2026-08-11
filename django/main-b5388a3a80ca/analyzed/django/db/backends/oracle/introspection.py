@@ -3,6 +3,11 @@ from collections import namedtuple
 import oracledb
 
 from django.db import models
+"""
+django.db.backends.oracle.introspection — Oracle 元数据内省。
+
+查询 USER_* 视图获取表、列、约束、索引与 identity 序列信息。
+"""
 from django.db.backends.base.introspection import BaseDatabaseIntrospection
 from django.db.backends.base.introspection import FieldInfo as BaseFieldInfo
 from django.db.backends.base.introspection import TableInfo as BaseTableInfo
@@ -13,6 +18,7 @@ FieldInfo = namedtuple(
 TableInfo = namedtuple("TableInfo", [*BaseTableInfo._fields, "comment"])
 
 
+# Oracle 内省：NUMBER 精度映射、identity 列与 JSON 列检测
 class DatabaseIntrospection(BaseDatabaseIntrospection):
     cache_bust_counter = 1
 
@@ -32,6 +38,7 @@ class DatabaseIntrospection(BaseDatabaseIntrospection):
         oracledb.DB_TYPE_VARCHAR: "CharField",
     }
 
+    # NUMBER 按 precision/scale 映射 AutoField/IntegerField/BooleanField 等
     def get_field_type(self, data_type, description):
         if data_type == oracledb.NUMBER:
             precision, scale = description[4:6]
@@ -57,6 +64,7 @@ class DatabaseIntrospection(BaseDatabaseIntrospection):
 
         return super().get_field_type(data_type, description)
 
+    # 返回 user_tables/views/mviews 的 TableInfo 列表
     def get_table_list(self, cursor):
         """Return a list of table and view names in the current database."""
         cursor.execute("""
@@ -84,6 +92,7 @@ class DatabaseIntrospection(BaseDatabaseIntrospection):
             for row in cursor.fetchall()
         ]
 
+    # 结合 user_tab_cols 与 cursor.description 返回 FieldInfo
     def get_table_description(self, cursor, table_name):
         """
         Return a description of the table with the DB-API cursor.description
@@ -217,10 +226,12 @@ class DatabaseIntrospection(BaseDatabaseIntrospection):
             )
         return description
 
+    # Oracle 标识符比较不区分大小写，统一转小写
     def identifier_converter(self, name):
         """Identifier comparison is case insensitive under Oracle."""
         return name.lower()
 
+    # 从 user_tab_identity_cols 获取 identity 序列
     def get_sequences(self, cursor, table_name, table_fields=()):
         cursor.execute(
             """
@@ -257,6 +268,7 @@ class DatabaseIntrospection(BaseDatabaseIntrospection):
                 return [{"table": table_name, "column": f.column}]
         return []
 
+    # 查询 user_constraints 获取外键关系
     def get_relations(self, cursor, table_name):
         """
         Return a dictionary of
@@ -310,6 +322,7 @@ class DatabaseIntrospection(BaseDatabaseIntrospection):
         )
         return [self.identifier_converter(row[0]) for row in cursor.fetchall()]
 
+    # 汇总主键、唯一、检查、外键与普通索引约束
     def get_constraints(self, cursor, table_name):
         """
         Retrieve any constraints or keys (unique, pk, fk, check, index) across
