@@ -19,9 +19,12 @@ from ...providers import InferenceProvider
 from ..shared.http_base import HTTPInferenceBase
 from ..types import InferenceResult
 from ..shared.http_result_parsers import parse_doc_parsing_result
+# paddleocr_vl/self_hosted.py — 自建 PaddleOCR-VL layout-parsing HTTP 服务客户端
 from .params import PADDLEOCR_VL_DEFAULT_PARAMS, PADDLEOCR_VL_RUNTIME_PARAMS
 
 
+class PaddleOCRVLSelfHostedInference(HTTPInferenceBase):
+    # 自建 VL 服务：POST layout-parsing，无需 API key
 class PaddleOCRVLSelfHostedInference(HTTPInferenceBase):
     def __init__(self, base_url: str, http_timeout: int = 600):
         super().__init__(
@@ -32,10 +35,12 @@ class PaddleOCRVLSelfHostedInference(HTTPInferenceBase):
         )
 
     @override
+        # REST 路径为 layout-parsing（与千帆 paddleocr 路由不同）
     def _get_endpoint(self) -> str:
         return "layout-parsing"
 
     @override
+        # 返回 VL runtime 白名单与 PADDLEOCR_VL_DEFAULT_PARAMS
     def _get_params(self) -> tuple[set[str], dict[str, Any]]:
         return (
             set(PADDLEOCR_VL_RUNTIME_PARAMS.keys()),
@@ -43,6 +48,7 @@ class PaddleOCRVLSelfHostedInference(HTTPInferenceBase):
         )
 
     @override
+        # 解析 HTTP JSON 为 DocParsingResult
     def _parse_result(self, response: dict[str, Any]) -> InferenceResult:
         result_data = response.get("result", response)
         return parse_doc_parsing_result(result_data)

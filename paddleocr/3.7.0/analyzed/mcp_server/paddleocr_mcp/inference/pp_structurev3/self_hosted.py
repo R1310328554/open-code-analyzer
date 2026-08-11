@@ -19,9 +19,12 @@ from ...providers import InferenceProvider
 from ..shared.http_base import HTTPInferenceBase
 from ..types import InferenceResult
 from ..shared.http_result_parsers import parse_doc_parsing_result
+# pp_structurev3/self_hosted.py — 自建 PP-StructureV3 layout-parsing HTTP 服务
 from .params import PP_STRUCTUREV3_DEFAULT_PARAMS, PP_STRUCTUREV3_RUNTIME_PARAMS
 
 
+class PPStructureV3SelfHostedInference(HTTPInferenceBase):
+    # 自建 StructureV3：无 API key，POST layout-parsing 端点
 class PPStructureV3SelfHostedInference(HTTPInferenceBase):
     def __init__(self, base_url: str, http_timeout: int = 600):
         super().__init__(
@@ -32,10 +35,12 @@ class PPStructureV3SelfHostedInference(HTTPInferenceBase):
         )
 
     @override
+        # REST 后缀 layout-parsing
     def _get_endpoint(self) -> str:
         return "layout-parsing"
 
     @override
+        # 返回 StructureV3 runtime 白名单与默认值
     def _get_params(self) -> tuple[set[str], dict[str, Any]]:
         return (
             set(PP_STRUCTUREV3_RUNTIME_PARAMS.keys()),
@@ -43,6 +48,7 @@ class PPStructureV3SelfHostedInference(HTTPInferenceBase):
         )
 
     @override
+        # HTTP JSON → DocParsingResult
     def _parse_result(self, response: dict[str, Any]) -> InferenceResult:
         result_data = response.get("result", response)
         return parse_doc_parsing_result(result_data)

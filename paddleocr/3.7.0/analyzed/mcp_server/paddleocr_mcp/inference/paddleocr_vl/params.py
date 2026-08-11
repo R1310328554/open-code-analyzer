@@ -15,13 +15,19 @@
 from typing import Any
 
 
+# paddleocr_vl/params.py — PaddleOCR-VL runtime 参数：布局检测、图表/印章与 VLM 采样
+# 白名单涵盖 layout 阈值、prompt_label、temperature 等 VL 生成控制项
 PADDLEOCR_VL_RUNTIME_PARAMS: dict[str, type] = {
     "use_doc_orientation_classify": bool,
     "use_doc_unwarping": bool,
+    # use_layout_detection 是否启用版面区域检测
     "use_layout_detection": bool,
+    # use_chart_recognition 是否识别图表块
     "use_chart_recognition": bool,
+    # use_seal_recognition 是否识别印章区域
     "use_seal_recognition": bool,
     "use_ocr_for_image_block": bool,
+    # layout_threshold 版面检测置信度阈值
     "layout_threshold": float,
     "layout_nms": bool,
     "layout_unclip_ratio": float,
@@ -30,16 +36,19 @@ PADDLEOCR_VL_RUNTIME_PARAMS: dict[str, type] = {
     "prompt_label": str,
     "format_block_content": bool,
     "repetition_penalty": float,
+    # temperature VLM 文本生成采样温度
     "temperature": float,
     "top_p": float,
     "min_pixels": int,
     "max_pixels": int,
+    # max_new_tokens VLM 单次生成最大 token 数
     "max_new_tokens": int,
     "vlm_extra_args": dict,
     "merge_layout_blocks": bool,
     "markdown_ignore_labels": list,
 }
 
+# PADDLEOCR_VL_DEFAULT_PARAMS VL 文档解析默认开关（图表/印章默认可用）
 PADDLEOCR_VL_DEFAULT_PARAMS: dict[str, Any] = {
     "use_doc_orientation_classify": False,
     "use_doc_unwarping": False,

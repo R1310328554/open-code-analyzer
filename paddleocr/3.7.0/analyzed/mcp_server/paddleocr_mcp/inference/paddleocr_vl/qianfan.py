@@ -19,16 +19,21 @@ from ...providers import InferenceProvider
 from ..shared.http_base import HTTPInferenceBase
 from ..types import InferenceResult
 from ..shared.http_result_parsers import parse_doc_parsing_result
+# paddleocr_vl/qianfan.py — 百度千帆平台 PaddleOCR-VL HTTP 推理客户端
 from .params import PADDLEOCR_VL_DEFAULT_PARAMS, PADDLEOCR_VL_RUNTIME_PARAMS
 
 
 class PaddleOCRVLQianfanInference(HTTPInferenceBase):
+    # 千帆 VL 推理：携带 api_key 请求 paddleocr 端点，解析 DocParsingResult
+class PaddleOCRVLQianfanInference(HTTPInferenceBase):
+        # base_url 为千帆 API 根地址，api_key 用于鉴权
     def __init__(self, base_url: str, api_key: str, http_timeout: int = 600):
         super().__init__(
             base_url, http_timeout, api_key, provider=InferenceProvider.QIANFAN
         )
 
     @override
+        # 千帆统一 paddleocr 路由
     def _get_endpoint(self) -> str:
         return "paddleocr"
 
@@ -40,6 +45,7 @@ class PaddleOCRVLQianfanInference(HTTPInferenceBase):
         )
 
     @override
+        # 调用 parse_doc_parsing_result 将 JSON 转为 DocParsingResult
     def _parse_result(self, response: dict[str, Any]) -> InferenceResult:
         result_data = response.get("result", response)
         return parse_doc_parsing_result(result_data)

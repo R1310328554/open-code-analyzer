@@ -38,9 +38,12 @@ from ..errors import (
 from ..shared.doc_parsing_result_adapters import parse_aistudio_doc_parsing_result
 from ..shared.input_adapters import AISTUDIO_INPUT_ADAPTER, InputAdapter
 from ..types import DocParsingResult, InferenceRequest
+# paddleocr_vl/aistudio.py — AI Studio 云端 PaddleOCR-VL 文档解析（布局+VL 生成 Markdown）
 from .params import PADDLEOCR_VL_DEFAULT_PARAMS, PADDLEOCR_VL_RUNTIME_PARAMS
 
 
+class PaddleOCRVLAIStudioInference(Inference):
+    # PaddleOCR-VL AI Studio 适配器：parse_document 异步任务并解析 DocParsingResult
 class PaddleOCRVLAIStudioInference(Inference):
     def __init__(
         self,
@@ -61,6 +64,7 @@ class PaddleOCRVLAIStudioInference(Inference):
     def input_adapter(self) -> InputAdapter:
         return AISTUDIO_INPUT_ADAPTER
 
+        # 初始化 AsyncPaddleOCRClient 并校验 token
     async def start(self) -> None:
         try:
             self._client = AsyncPaddleOCRClient(
@@ -77,6 +81,7 @@ class PaddleOCRVLAIStudioInference(Inference):
             await self._client.close()
             self._client = None
 
+        # 以 PaddleOCRVLOptions 包装 runtime_params 调用 parse_document
     async def predict(self, request: InferenceRequest) -> DocParsingResult:
         if not self._client:
             raise RuntimeError("Inference not started")
@@ -107,5 +112,6 @@ class PaddleOCRVLAIStudioInference(Inference):
     def get_default_params(self) -> dict[str, object]:
         return PADDLEOCR_VL_DEFAULT_PARAMS.copy()
 
+        # 委托 parse_aistudio_doc_parsing_result 转换 SDK 文档解析结果
     def _parse_result(self, result) -> DocParsingResult:
         return parse_aistudio_doc_parsing_result(result)

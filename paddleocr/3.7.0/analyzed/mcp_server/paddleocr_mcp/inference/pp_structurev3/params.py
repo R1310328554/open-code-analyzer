@@ -15,15 +15,21 @@
 from typing import Any
 
 
+# pp_structurev3/params.py — PP-StructureV3 runtime 参数白名单
+# 涵盖版面检测、表格/公式/印章/图表识别及 OCR 子模块阈值配置
 PP_STRUCTUREV3_RUNTIME_PARAMS: dict[str, type] = {
     "use_doc_orientation_classify": bool,
     "use_doc_unwarping": bool,
     "use_textline_orientation": bool,
     "use_seal_recognition": bool,
+    # use_table_recognition 是否启用表格结构识别
     "use_table_recognition": bool,
+    # use_formula_recognition 是否启用公式识别
     "use_formula_recognition": bool,
+    # use_chart_recognition 是否启用图表识别
     "use_chart_recognition": bool,
     "use_region_detection": bool,
+    # layout_threshold 版面区域检测置信度阈值
     "layout_threshold": float,
     "layout_nms": bool,
     "layout_unclip_ratio": float,
@@ -41,6 +47,7 @@ PP_STRUCTUREV3_RUNTIME_PARAMS: dict[str, type] = {
     "seal_det_box_thresh": float,
     "seal_det_unclip_ratio": float,
     "seal_rec_score_thresh": float,
+    # use_wired_table_cells_trans_to_html 有线表格单元格是否转 HTML
     "use_wired_table_cells_trans_to_html": bool,
     "use_wireless_table_cells_trans_to_html": bool,
     "use_table_orientation_classify": bool,
@@ -50,6 +57,7 @@ PP_STRUCTUREV3_RUNTIME_PARAMS: dict[str, type] = {
     "markdown_ignore_labels": list,
 }
 
+# PP_STRUCTUREV3_DEFAULT_PARAMS 默认关闭文档矫正，开启图表识别
 PP_STRUCTUREV3_DEFAULT_PARAMS: dict[str, Any] = {
     "use_doc_orientation_classify": False,
     "use_doc_unwarping": False,

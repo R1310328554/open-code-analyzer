@@ -22,6 +22,7 @@ from ..shared.local_sync_runner import LocalSyncRunner
 from ..types import InferenceRequest, OCRResult, TextLine
 from .params import OCR_DEFAULT_PARAMS, OCR_RUNTIME_PARAMS
 
+# ocr/local.py — 本地 PaddleOCR pipeline 推理，通过 LocalSyncRunner 在线程池执行
 _LOCAL_OCR_INIT_BY_MODEL: dict[str, dict[str, str]] = {
     "PP-OCRv5": {"ocr_version": "PP-OCRv5"},
     "PP-OCRv6": {"ocr_version": "PP-OCRv6"},
@@ -32,6 +33,7 @@ _LOCAL_OCR_INIT_BY_MODEL: dict[str, dict[str, str]] = {
 }
 
 
+# _build_local_ocr_init_kwargs 根据 model 名或 paddlex_config 组装 PaddleOCR 构造参数
 def _build_local_ocr_init_kwargs(
     *,
     config: Optional[str],
@@ -51,6 +53,8 @@ def _build_local_ocr_init_kwargs(
 
 
 class OCRLocalInference(Inference):
+    # 本地 OCR 推理：加载 PaddleOCR，predict 经 LocalSyncRunner 异步包装同步调用
+class OCRLocalInference(Inference):
     def __init__(
         self,
         config: Optional[str] = None,
@@ -64,9 +68,11 @@ class OCRLocalInference(Inference):
         self._wrapper: Optional[LocalSyncRunner] = None
 
     @property
+        # 使用 LOCAL_INPUT_ADAPTER 处理本地文件路径或字节流
     def input_adapter(self) -> InputAdapter:
         return LOCAL_INPUT_ADAPTER
 
+        # 实例化 PaddleOCR 与 LocalSyncRunner；失败时抛出 RuntimeError
     async def start(self) -> None:
         try:
             init_kwargs = _build_local_ocr_init_kwargs(
@@ -79,11 +85,13 @@ class OCRLocalInference(Inference):
         except Exception as e:
             raise RuntimeError(f"Failed to create PaddleOCR inference: {str(e)}") from e
 
+        # 关闭 LocalSyncRunner 释放线程池
     async def stop(self) -> None:
         if self._wrapper:
             await self._wrapper.close()
             self._wrapper = None
 
+        # 经 input_adapter 预处理后调用 inference.predict 并解析结果
     async def predict(self, request: InferenceRequest) -> OCRResult:
         if not self._wrapper:
             raise RuntimeError("Inference not started")
@@ -103,6 +111,7 @@ class OCRLocalInference(Inference):
     def get_default_params(self) -> dict[str, Any]:
         return OCR_DEFAULT_PARAMS.copy()
 
+        # 将 PaddleOCR predict 返回的 rec_texts/rec_scores/rec_boxes 转为 OCRResult
     def _parse_result(self, result: Any) -> OCRResult:
         clean_texts, confidences, text_lines = [], [], []
 

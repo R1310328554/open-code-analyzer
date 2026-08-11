@@ -37,10 +37,14 @@ from ..errors import (
 )
 from ..shared.input_adapters import AISTUDIO_INPUT_ADAPTER, InputAdapter
 from ..types import InferenceRequest, OCRResult, TextLine
+# ocr/aistudio.py — 通过 AI Studio 官方 API 异步调用云端 PP-OCR 模型
 from .params import OCR_DEFAULT_PARAMS, OCR_RUNTIME_PARAMS
 
 
 class OCRAIStudioInference(Inference):
+    # AI Studio OCR 推理适配器：AsyncPaddleOCRClient 提交任务并解析 JSONL 结果
+class OCRAIStudioInference(Inference):
+    # 初始化 token、base_url、请求/轮询超时及 OCR 模型名
     def __init__(
         self,
         token: str,
@@ -57,9 +61,11 @@ class OCRAIStudioInference(Inference):
         self._client = None
 
     @property
+        # 使用 AISTUDIO_INPUT_ADAPTER 校验 fileUrl/filePath 等云端输入
     def input_adapter(self) -> InputAdapter:
         return AISTUDIO_INPUT_ADAPTER
 
+        # 创建 AsyncPaddleOCRClient；AuthError 映射为 AuthenticationError
     async def start(self) -> None:
         try:
             self._client = AsyncPaddleOCRClient(
@@ -71,11 +77,13 @@ class OCRAIStudioInference(Inference):
         except AuthError as e:
             raise AuthenticationError(f"Authentication failed: {e}")
 
+        # 关闭 HTTP 客户端并释放连接
     async def stop(self) -> None:
         if self._client:
             await self._client.close()
             self._client = None
 
+        # 调用 client.ocr，将 SDK 结果转为 MCP 统一的 OCRResult
     async def predict(self, request: InferenceRequest) -> OCRResult:
         if not self._client:
             raise RuntimeError("Inference not started")
@@ -99,12 +107,15 @@ class OCRAIStudioInference(Inference):
         except RequestTimeoutError as e:
             raise ExecutionTimeoutError(f"Request timeout: {e}")
 
+        # 返回 OCR_RUNTIME_PARAMS 允许的 runtime 字段名
     def get_valid_params(self) -> set[str]:
         return set(OCR_RUNTIME_PARAMS.keys())
 
+        # 返回 OCR 默认阈值与预处理开关
     def get_default_params(self) -> dict[str, object]:
         return OCR_DEFAULT_PARAMS.copy()
 
+        # 遍历各页 pruned_result，提取 rec_texts/scores/boxes 组装 TextLine
     def _parse_result(self, result) -> OCRResult:
         clean_texts, confidences, text_lines = [], [], []
 

@@ -19,16 +19,21 @@ from ...providers import InferenceProvider
 from ..shared.http_base import HTTPInferenceBase
 from ..types import InferenceResult
 from ..shared.http_result_parsers import parse_doc_parsing_result
+# pp_structurev3/qianfan.py — 百度千帆 PP-StructureV3 文档解析 HTTP 客户端
 from .params import PP_STRUCTUREV3_DEFAULT_PARAMS, PP_STRUCTUREV3_RUNTIME_PARAMS
 
 
 class PPStructureV3QianfanInference(HTTPInferenceBase):
+    # 千帆 StructureV3：api_key 鉴权，paddleocr 端点，解析 DocParsingResult
+class PPStructureV3QianfanInference(HTTPInferenceBase):
+        # 注入千帆 base_url 与 API key
     def __init__(self, base_url: str, api_key: str, http_timeout: int = 600):
         super().__init__(
             base_url, http_timeout, api_key, provider=InferenceProvider.QIANFAN
         )
 
     @override
+        # 千帆统一文档解析路由 paddleocr
     def _get_endpoint(self) -> str:
         return "paddleocr"
 
@@ -40,6 +45,7 @@ class PPStructureV3QianfanInference(HTTPInferenceBase):
         )
 
     @override
+        # 从响应 JSON 提取 result 并 parse_doc_parsing_result
     def _parse_result(self, response: dict[str, Any]) -> InferenceResult:
         result_data = response.get("result", response)
         return parse_doc_parsing_result(result_data)

@@ -38,9 +38,12 @@ from ..errors import (
 from ..shared.doc_parsing_result_adapters import parse_aistudio_doc_parsing_result
 from ..shared.input_adapters import AISTUDIO_INPUT_ADAPTER, InputAdapter
 from ..types import DocParsingResult, InferenceRequest
+# pp_structurev3/aistudio.py — AI Studio 云端 PP-StructureV3 文档结构解析
 from .params import PP_STRUCTUREV3_DEFAULT_PARAMS, PP_STRUCTUREV3_RUNTIME_PARAMS
 
 
+class PPStructureV3AIStudioInference(Inference):
+    # PP-StructureV3 AI Studio 适配器：表格/公式/图表等多模态版面解析
 class PPStructureV3AIStudioInference(Inference):
     def __init__(
         self,
@@ -61,6 +64,7 @@ class PPStructureV3AIStudioInference(Inference):
     def input_adapter(self) -> InputAdapter:
         return AISTUDIO_INPUT_ADAPTER
 
+        # 创建 AsyncPaddleOCRClient 并绑定访问令牌
     async def start(self) -> None:
         try:
             self._client = AsyncPaddleOCRClient(
@@ -77,6 +81,7 @@ class PPStructureV3AIStudioInference(Inference):
             await self._client.close()
             self._client = None
 
+        # 以 PPStructureV3Options 调用 parse_document，visualize 固定 False
     async def predict(self, request: InferenceRequest) -> DocParsingResult:
         if not self._client:
             raise RuntimeError("Inference not started")
@@ -108,5 +113,6 @@ class PPStructureV3AIStudioInference(Inference):
     def get_default_params(self) -> dict[str, object]:
         return PP_STRUCTUREV3_DEFAULT_PARAMS.copy()
 
+        # 委托 parse_aistudio_doc_parsing_result 统一转换结果格式
     def _parse_result(self, result) -> DocParsingResult:
         return parse_aistudio_doc_parsing_result(result)

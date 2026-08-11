@@ -28,6 +28,7 @@ try:
 except ImportError:
     LOCAL_VL_AVAILABLE = False
 
+# paddleocr_vl/local.py — 本地 PaddleOCR-VL pipeline，按模型名选择 pipeline 版本
 _PIPELINE_VERSION_BY_MODEL = {
     "PaddleOCR-VL": "v1",
     "PaddleOCR-VL-1.5": "v1.5",
@@ -35,6 +36,8 @@ _PIPELINE_VERSION_BY_MODEL = {
 }
 
 
+class PaddleOCRVLLocalInference(Inference):
+    # 本地 VL 推理：需安装 paddleocr 且含 PaddleOCRVL；否则 start 报错
 class PaddleOCRVLLocalInference(Inference):
     def __init__(
         self,
@@ -52,6 +55,7 @@ class PaddleOCRVLLocalInference(Inference):
     def input_adapter(self) -> InputAdapter:
         return LOCAL_INPUT_ADAPTER
 
+        # 按 _PIPELINE_VERSION_BY_MODEL 映射实例化 PaddleOCRVL
     async def start(self) -> None:
         if not LOCAL_VL_AVAILABLE:
             raise RuntimeError("PaddleOCRVL is not locally available")
@@ -73,6 +77,7 @@ class PaddleOCRVLLocalInference(Inference):
             await self._wrapper.close()
             self._wrapper = None
 
+        # 经 LocalSyncRunner 调用 predict，返回结构化 DocParsingResult
     async def predict(self, request: InferenceRequest) -> DocParsingResult:
         if not self._wrapper:
             raise RuntimeError("Inference not started")
@@ -92,5 +97,6 @@ class PaddleOCRVLLocalInference(Inference):
     def get_default_params(self) -> dict[str, Any]:
         return PADDLEOCR_VL_DEFAULT_PARAMS.copy()
 
+        # 委托 parse_local_doc_parsing_result 解析本地 pipeline 输出
     def _parse_result(self, result: Any) -> DocParsingResult:
         return parse_local_doc_parsing_result(result)

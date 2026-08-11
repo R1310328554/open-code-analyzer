@@ -26,13 +26,17 @@ from .pp_structurev3.local import PPStructureV3LocalInference
 from .pp_structurev3.qianfan import PPStructureV3QianfanInference
 from .pp_structurev3.self_hosted import PPStructureV3SelfHostedInference
 from ..selection import tool_for_model
+# inference/factory.py — 推理后端工厂：按 (工具, provider) 注册并实例化 OCR/Structure/VL 适配器
 from ..providers import InferenceProvider, normalize_provider
 
 
 class InferenceFactory:
+    # 推理工厂：维护 (tool, provider) → 构造函数的注册表，供 MCP 服务按 CLI 参数创建后端
+class InferenceFactory:
     _registry: dict[tuple[str, InferenceProvider], Callable[..., Inference]] = {}
 
     @classmethod
+    # register 将指定工具与 provider 的构造函数写入 _registry
     def register(
         cls,
         tool: str,
@@ -42,6 +46,7 @@ class InferenceFactory:
         cls._registry[(tool, normalize_provider(provider))] = factory_fn
 
     @classmethod
+    # create 根据 model 解析 tool 名，查找注册表并传入 kwargs 实例化 Inference
     def create(
         cls,
         model: str,
@@ -67,10 +72,12 @@ class InferenceFactory:
         return factory_fn(model=model, **kwargs)
 
     @classmethod
+    # list_supported 返回当前已注册的全部 (tool, provider) 组合
     def list_supported(cls) -> set[tuple[str, InferenceProvider]]:
         return set(cls._registry.keys())
 
 
+# _create_ocr_local 构造本地 PaddleOCR 推理实例
 def _create_ocr_local(model: str, **kwargs: Any) -> Inference:
     return OCRLocalInference(
         config=kwargs.get("config"),
@@ -79,6 +86,7 @@ def _create_ocr_local(model: str, **kwargs: Any) -> Inference:
     )
 
 
+# _create_ocr_aistudio 构造 AI Studio 云端 OCR 客户端
 def _create_ocr_aistudio(model: str, **kwargs: Any) -> Inference:
     return OCRAIStudioInference(
         token=kwargs["token"],
@@ -89,6 +97,7 @@ def _create_ocr_aistudio(model: str, **kwargs: Any) -> Inference:
     )
 
 
+# _create_ocr_self_hosted 构造指向自建 HTTP 服务的 OCR 客户端
 def _create_ocr_self_hosted(model: str, **kwargs: Any) -> Inference:
     return OCRSelfHostedInference(
         base_url=kwargs["base_url"],
@@ -96,6 +105,7 @@ def _create_ocr_self_hosted(model: str, **kwargs: Any) -> Inference:
     )
 
 
+# _create_pp_structurev3_local 构造本地 PP-StructureV3 文档解析 pipeline
 def _create_pp_structurev3_local(model: str, **kwargs: Any) -> Inference:
     return PPStructureV3LocalInference(
         config=kwargs.get("config"),
@@ -103,6 +113,7 @@ def _create_pp_structurev3_local(model: str, **kwargs: Any) -> Inference:
     )
 
 
+# _create_pp_structurev3_aistudio 构造 AI Studio PP-StructureV3 客户端
 def _create_pp_structurev3_aistudio(model: str, **kwargs: Any) -> Inference:
     return PPStructureV3AIStudioInference(
         token=kwargs["token"],
@@ -113,6 +124,7 @@ def _create_pp_structurev3_aistudio(model: str, **kwargs: Any) -> Inference:
     )
 
 
+# _create_pp_structurev3_self_hosted 构造自建 PP-StructureV3 HTTP 客户端
 def _create_pp_structurev3_self_hosted(model: str, **kwargs: Any) -> Inference:
     return PPStructureV3SelfHostedInference(
         base_url=kwargs["base_url"],
@@ -120,6 +132,7 @@ def _create_pp_structurev3_self_hosted(model: str, **kwargs: Any) -> Inference:
     )
 
 
+# _create_paddleocr_vl_local 构造本地 PaddleOCR-VL 视觉语言文档解析
 def _create_paddleocr_vl_local(model: str, **kwargs: Any) -> Inference:
     return PaddleOCRVLLocalInference(
         config=kwargs.get("config"),
@@ -128,6 +141,7 @@ def _create_paddleocr_vl_local(model: str, **kwargs: Any) -> Inference:
     )
 
 
+# _create_paddleocr_vl_aistudio 构造 AI Studio PaddleOCR-VL 客户端
 def _create_paddleocr_vl_aistudio(model: str, **kwargs: Any) -> Inference:
     return PaddleOCRVLAIStudioInference(
         token=kwargs["token"],
@@ -138,6 +152,7 @@ def _create_paddleocr_vl_aistudio(model: str, **kwargs: Any) -> Inference:
     )
 
 
+# _create_paddleocr_vl_self_hosted 构造自建 PaddleOCR-VL HTTP 客户端
 def _create_paddleocr_vl_self_hosted(model: str, **kwargs: Any) -> Inference:
     return PaddleOCRVLSelfHostedInference(
         base_url=kwargs["base_url"],
@@ -145,6 +160,7 @@ def _create_paddleocr_vl_self_hosted(model: str, **kwargs: Any) -> Inference:
     )
 
 
+# _create_pp_structurev3_qianfan 构造千帆平台 PP-StructureV3 客户端
 def _create_pp_structurev3_qianfan(model: str, **kwargs: Any) -> Inference:
     return PPStructureV3QianfanInference(
         base_url=kwargs["base_url"],
@@ -153,6 +169,7 @@ def _create_pp_structurev3_qianfan(model: str, **kwargs: Any) -> Inference:
     )
 
 
+# _create_paddleocr_vl_qianfan 构造千帆平台 PaddleOCR-VL 客户端
 def _create_paddleocr_vl_qianfan(model: str, **kwargs: Any) -> Inference:
     return PaddleOCRVLQianfanInference(
         base_url=kwargs["base_url"],
@@ -161,6 +178,7 @@ def _create_paddleocr_vl_qianfan(model: str, **kwargs: Any) -> Inference:
     )
 
 
+# 模块加载时注册 OCR / PP-StructureV3 / PaddleOCR-VL 各 provider 的工厂函数
 InferenceFactory.register("ocr", InferenceProvider.LOCAL, _create_ocr_local)
 InferenceFactory.register("ocr", InferenceProvider.AISTUDIO, _create_ocr_aistudio)
 InferenceFactory.register("ocr", InferenceProvider.SELF_HOSTED, _create_ocr_self_hosted)
@@ -192,6 +210,7 @@ InferenceFactory.register(
 )
 
 
+# create_inference 对外便捷入口，委托 InferenceFactory.create
 def create_inference(
     model: str,
     provider: InferenceProvider | str,

@@ -21,6 +21,7 @@ from ..shared.local_sync_runner import LocalSyncRunner
 from ..types import DocParsingResult, InferenceRequest
 from .params import PP_STRUCTUREV3_DEFAULT_PARAMS, PP_STRUCTUREV3_RUNTIME_PARAMS
 
+# pp_structurev3/local.py — 本地 PPStructureV3 pipeline：版面、表格、公式等结构化解析
 try:
     from paddleocr import PPStructureV3
 
@@ -29,6 +30,8 @@ except ImportError:
     LOCAL_PPSTRUCTURE_AVAILABLE = False
 
 
+class PPStructureV3LocalInference(Inference):
+    # 本地 StructureV3：需 paddleocr 含 PPStructureV3；经 LocalSyncRunner 异步调用
 class PPStructureV3LocalInference(Inference):
     def __init__(self, config: Optional[str] = None, device: Optional[str] = None):
         self._config = config
@@ -40,6 +43,7 @@ class PPStructureV3LocalInference(Inference):
     def input_adapter(self) -> InputAdapter:
         return LOCAL_INPUT_ADAPTER
 
+        # 检查 LOCAL_PPSTRUCTURE_AVAILABLE 后实例化 PPStructureV3
     async def start(self) -> None:
         if not LOCAL_PPSTRUCTURE_AVAILABLE:
             raise RuntimeError("PPStructureV3 is not locally available")
@@ -58,6 +62,7 @@ class PPStructureV3LocalInference(Inference):
             await self._wrapper.close()
             self._wrapper = None
 
+        # 预处理输入后调用 predict，runtime_params 透传至 pipeline
     async def predict(self, request: InferenceRequest) -> DocParsingResult:
         if not self._wrapper:
             raise RuntimeError("Inference not started")
@@ -77,5 +82,6 @@ class PPStructureV3LocalInference(Inference):
     def get_default_params(self) -> dict[str, Any]:
         return PP_STRUCTUREV3_DEFAULT_PARAMS.copy()
 
+        # 委托 parse_local_doc_parsing_result 解析本地输出
     def _parse_result(self, result: Any) -> DocParsingResult:
         return parse_local_doc_parsing_result(result)
