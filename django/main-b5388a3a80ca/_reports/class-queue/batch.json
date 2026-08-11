@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T05:28:06Z",
-  "files": [
-    "django/core/serializers/xml_serializer.py",
-    "django/core/servers/__init__.py",
-    "django/core/servers/basehttp.py",
-    "django/core/signals.py",
-    "django/core/signing.py",
-    "django/core/validators.py",
-    "django/core/wsgi.py",
-    "django/db/__init__.py",
-    "django/db/backends/__init__.py",
-    "django/db/backends/base/__init__.py",
-    "django/db/backends/base/base.py",
-    "django/db/backends/base/client.py",
-    "django/db/backends/base/creation.py",
-    "django/db/backends/base/features.py",
-    "django/db/backends/base/introspection.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 282,
-  "done": 645
+  "done": 660
 }
