@@ -18,6 +18,7 @@ import torch.nn as nn
 
 from ...utils import logging
 from ...utils.generic import no_inherit_decorator
+# modular 复用 Llama 的注意力/RoPE 等基础组件
 from ..llama.modeling_llama import (
     LlamaAttention,
     LlamaForCausalLM,
@@ -34,10 +35,12 @@ logger = logging.get_logger(__name__)
 _CHECKPOINT_FOR_DOC = "THUDM/glm-4-9b"
 
 
+# GlmMLP：GLM 前馈 MLP（gate/up 合并投影 + SiLU 门控）
 class GlmMLP(Phi3MLP):
     pass
 
 
+# GlmRotaryEmbedding：GLM 旋转位置编码（支持 partial_rotary_factor）
 class GlmRotaryEmbedding(LlamaRotaryEmbedding):
     def compute_default_rope_parameters(config: GlmConfig, device=None, **kwargs) -> tuple[torch.Tensor, float]:
         """
@@ -60,6 +63,7 @@ class GlmRotaryEmbedding(LlamaRotaryEmbedding):
         return inv_freq.to(device), attention_factor
 
 
+# rotate_half：RoPE 中将向量后半部分旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., 0::2]
@@ -67,6 +71,7 @@ def rotate_half(x):
     return torch.stack((-x2, x1), dim=-1).flatten(-2)
 
 
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K（交错格式）
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -108,20 +113,24 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
 
 
 @no_inherit_decorator
+# GlmAttention：GLM 多头自注意力（GQA + 部分 RoPE + 无 o_proj bias）
 class GlmAttention(LlamaAttention):
     def __init__(self, config: GlmConfig, layer_idx: int | None = None):
         super().__init__(config, layer_idx)
         self.o_proj = nn.Linear(config.num_attention_heads * self.head_dim, config.hidden_size, bias=False)
 
 
+# GlmForCausalLM：GLM 因果语言建模与文本生成
 class GlmForCausalLM(LlamaForCausalLM):
     pass
 
 
+# GlmForSequenceClassification：GLM 序列分类任务头
 class GlmForSequenceClassification(LlamaForSequenceClassification):
     pass
 
 
+# GlmForTokenClassification：GLM 词元分类任务头
 class GlmForTokenClassification(LlamaForTokenClassification):
     pass
 

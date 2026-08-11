@@ -21,6 +21,7 @@ from ...modeling_layers import GradientCheckpointingLayer
 from ...modeling_outputs import CausalLMOutputWithPast
 from ...processing_utils import Unpack
 from ...utils import TransformersKwargs, logging
+# modular 复用 GLM 的注意力与任务头实现
 from ..glm.modeling_glm import GlmAttention, GlmForCausalLM, GlmForSequenceClassification, GlmForTokenClassification
 from ..phi3.modeling_phi3 import Phi3MLP
 from .configuration_glm4 import Glm4Config
@@ -32,10 +33,12 @@ logger = logging.get_logger(__name__)
 _CHECKPOINT_FOR_DOC = "THUDM/GLM-4-9B-0414"
 
 
+# Glm4MLP：GLM-4 前馈 MLP（继承 Phi3MLP gate/up 结构）
 class Glm4MLP(Phi3MLP):
     pass
 
 
+# Glm4DecoderLayer：GLM-4 解码器单层（四层 RMSNorm post-norm 结构）
 class Glm4DecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Glm4Config, layer_idx: int):
         super().__init__()
@@ -82,10 +85,12 @@ class Glm4DecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Glm4Attention：GLM-4 多头自注意力（继承 GLM 注意力，无 o_proj bias）
 class Glm4Attention(GlmAttention):
     pass
 
 
+# Glm4ForCausalLM：GLM-4 因果语言建模与文本生成
 class Glm4ForCausalLM(GlmForCausalLM):
     def forward(
         self,
@@ -116,10 +121,12 @@ class Glm4ForCausalLM(GlmForCausalLM):
         return super().forward(**super_kwargs)
 
 
+# Glm4ForSequenceClassification：GLM-4 序列分类任务头
 class Glm4ForSequenceClassification(GlmForSequenceClassification):
     pass
 
 
+# Glm4ForTokenClassification：GLM-4 词元分类任务头
 class Glm4ForTokenClassification(GlmForTokenClassification):
     pass
 

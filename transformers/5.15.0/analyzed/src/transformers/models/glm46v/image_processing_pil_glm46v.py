@@ -30,6 +30,7 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# GLM-4.6V 图像处理：PIL 后端 smart_resize + patch 网格 THW
 class Glm46VImageProcessorKwargs(ImagesKwargs, total=False):
     """
     patch_size (`int`, *optional*, defaults to 14):
@@ -45,6 +46,7 @@ class Glm46VImageProcessorKwargs(ImagesKwargs, total=False):
     merge_size: int
 
 
+# smart_resize：按像素预算与宽高比约束动态 resize 图像/视频帧
 def smart_resize(
     num_frames: int,
     height: int,
@@ -82,6 +84,7 @@ def smart_resize(
 
 
 @auto_docstring
+# Glm46VImageProcessorPil：PIL 后端的 GLM-4.6V 图像 patch 预处理
 class Glm46VImageProcessorPil(PilBackend):
     do_resize = True
     resample = PILImageResampling.BICUBIC

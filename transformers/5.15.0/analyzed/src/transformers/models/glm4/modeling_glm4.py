@@ -43,9 +43,13 @@ from ...utils import TransformersKwargs, auto_docstring, can_return_tuple
 from ...utils.deprecation import deprecate_kwarg
 from ...utils.generic import maybe_autocast, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
+# modeling_glm4 由 modular_glm4.py 自动生成，此处为独立完整实现
 from .configuration_glm4 import Glm4Config
 
 
+# GLM-4 建模：扩展 post-norm 解码器（四层 RMSNorm + GQA 注意力）
+
+# Glm4MLP：GLM-4 前馈 MLP（继承 Phi3MLP gate/up 结构）
 class Glm4MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -64,6 +68,7 @@ class Glm4MLP(nn.Module):
         return self.down_proj(up_states)
 
 
+# Glm4DecoderLayer：GLM-4 解码器单层（四层 RMSNorm post-norm 结构）
 class Glm4DecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Glm4Config, layer_idx: int):
         super().__init__()
@@ -110,6 +115,7 @@ class Glm4DecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -122,6 +128,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -147,6 +154,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# rotate_half：RoPE 中将向量后半部分旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., 0::2]
@@ -154,6 +162,7 @@ def rotate_half(x):
     return torch.stack((-x2, x1), dim=-1).flatten(-2)
 
 
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K（交错格式）
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -194,6 +203,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# Glm4Attention：GLM-4 多头自注意力（继承 GLM 注意力，无 o_proj bias）
 class Glm4Attention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -259,6 +269,7 @@ class Glm4Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# Glm4RotaryEmbedding：GLM-4 旋转位置编码
 class Glm4RotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: Glm4Config, device=None):
@@ -319,6 +330,7 @@ class Glm4RotaryEmbedding(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# Glm4RMSNorm：GLM-4 RMS LayerNorm
 class Glm4RMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -340,6 +352,7 @@ class Glm4RMSNorm(nn.Module):
 
 
 @auto_docstring
+# Glm4PreTrainedModel：GLM-4 预训练基类与权重初始化
 class Glm4PreTrainedModel(PreTrainedModel):
     config: Glm4Config
     base_model_prefix = "model"
@@ -359,6 +372,7 @@ class Glm4PreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# Glm4Model：GLM-4 纯文本解码器主干
 class Glm4Model(Glm4PreTrainedModel):
     def __init__(self, config: Glm4Config):
         super().__init__(config)
@@ -433,6 +447,7 @@ class Glm4Model(Glm4PreTrainedModel):
 
 
 @auto_docstring
+# Glm4ForCausalLM：GLM-4 因果语言建模与文本生成
 class Glm4ForCausalLM(Glm4PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
@@ -512,10 +527,12 @@ class Glm4ForCausalLM(Glm4PreTrainedModel, GenerationMixin):
         )
 
 
+# Glm4ForSequenceClassification：GLM-4 序列分类任务头
 class Glm4ForSequenceClassification(GenericForSequenceClassification, Glm4PreTrainedModel):
     pass
 
 
+# Glm4ForTokenClassification：GLM-4 词元分类任务头
 class Glm4ForTokenClassification(GenericForTokenClassification, Glm4PreTrainedModel):
     pass
 

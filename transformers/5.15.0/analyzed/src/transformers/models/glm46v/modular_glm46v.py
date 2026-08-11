@@ -22,13 +22,17 @@ from ...video_utils import VideoMetadata
 from ..auto import CONFIG_MAPPING, AutoConfig, AutoModel
 from ..glm4v.image_processing_glm4v import Glm4vImageProcessor
 from ..glm4v.image_processing_pil_glm4v import Glm4vImageProcessorPil
+# modular 复用 GLM4V 的多模态主干与条件生成实现
 from ..glm4v.modeling_glm4v import Glm4vForConditionalGeneration, Glm4vModel, Glm4vPreTrainedModel
 from ..glm4v.processing_glm4v import Glm4vProcessor
 from ..glm4v.video_processing_glm4v import Glm4vVideoProcessor
 
 
+# GLM-4.6V modular 源：基于 GLM4V 扩展动态 FPS 视频采样与帧 token
+
 @auto_docstring(checkpoint="zai-org/GLM-4.1V-9B-Thinking")
 @strict
+# Glm46VConfig：GLM-4.6V 图文/视频多模态视觉-语言模型联合超参
 class Glm46VConfig(PreTrainedConfig):
     r"""
     image_start_token_id (`int`, *optional*, defaults to 151339):
@@ -83,6 +87,7 @@ class Glm46VConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# Glm46VPreTrainedModel：GLM-4.6V 多模态预训练基类
 class Glm46VPreTrainedModel(Glm4vPreTrainedModel):
     _can_record_outputs = None
     _no_split_modules = None
@@ -91,6 +96,7 @@ class Glm46VPreTrainedModel(Glm4vPreTrainedModel):
         raise AttributeError("Not needed")
 
 
+# Glm46VModel：GLM-4.6V 视觉-语言联合主干（视觉塔 + 语言模型）
 class Glm46VModel(Glm4vModel):
     _no_split_modules = None
 
@@ -100,23 +106,28 @@ class Glm46VModel(Glm4vModel):
         self.language_model = AutoModel.from_config(config.text_config)
 
 
+# Glm46VForConditionalGeneration：GLM-4.6V 图文/视频条件生成
 class Glm46VForConditionalGeneration(Glm4vForConditionalGeneration):
     pass
 
 
+# Glm46VProcessor：GLM-4.6V 多模态输入预处理（图像/视频/文本联合）
 class Glm46VProcessor(Glm4vProcessor):
     def replace_frame_token_id(self, timestamp_sec, num_image_tokens: int = 1):
         return f"<|begin_of_image|>{self.image_token * num_image_tokens}<|end_of_image|>{timestamp_sec:.1f} seconds"
 
 
+# Glm46VImageProcessorPil：PIL 后端的 GLM-4.6V 图像 patch 预处理
 class Glm46VImageProcessorPil(Glm4vImageProcessorPil):
     pass
 
 
+# Glm46VImageProcessor：Torchvision 后端的 GLM-4.6V 图像 patch 预处理
 class Glm46VImageProcessor(Glm4vImageProcessor):
     pass
 
 
+# Glm46VVideoProcessor：GLM-4.6V 视频帧动态 FPS 采样与 patch 预处理
 class Glm46VVideoProcessor(Glm4vVideoProcessor):
     def sample_frames(
         self,

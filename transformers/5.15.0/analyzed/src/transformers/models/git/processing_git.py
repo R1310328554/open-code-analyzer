@@ -19,7 +19,9 @@ from ...processing_utils import ProcessorMixin
 from ...utils import auto_docstring
 
 
+# GitProcessor：GIT GenerativeImage2Text 图像/文本联合预处理
 @auto_docstring
+# GitProcessor：封装 ViT 图像处理器与分词器的联合预处理入口
 class GitProcessor(ProcessorMixin):
     def __init__(self, image_processor, tokenizer):
         super().__init__(image_processor, tokenizer)

@@ -21,8 +21,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# GLM 配置：智谱 GLM-4 系列因果语言模型超参（GQA + 部分 RoPE）
+
+# GlmConfig：THUDM/glm-4-9b-chat 默认超参
 @auto_docstring(checkpoint="THUDM/glm-4-9b-chat")
 @strict
+# GlmConfig：智谱 GLM-4 因果语言模型超参（GQA + 部分 RoPE）
 class GlmConfig(PreTrainedConfig):
     r"""
     Example:

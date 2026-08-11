@@ -26,8 +26,12 @@ from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# GLM-4.6V 配置：图文/视频多模态视觉-语言模型联合超参
+
+# Glm46VConfig：zai-org/GLM-4.1V-9B-Thinking 多模态默认超参
 @auto_docstring(checkpoint="zai-org/GLM-4.1V-9B-Thinking")
 @strict
+# Glm46VConfig：GLM-4.6V 图文/视频多模态视觉-语言模型联合超参
 class Glm46VConfig(PreTrainedConfig):
     r"""
     image_start_token_id (`int`, *optional*, defaults to 151339):

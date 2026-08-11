@@ -21,8 +21,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# GLM-4 配置：智谱 GLM-4 OCR/对话模型超参（扩展 post-norm 结构）
+
+# Glm4Config：zai-org/GLM-OCR 默认超参
 @auto_docstring(checkpoint="zai-org/GLM-OCR")
 @strict
+# Glm4Config：智谱 GLM-4 OCR/对话模型超参（扩展 post-norm 结构）
 class Glm4Config(PreTrainedConfig):
     r"""
     Example:

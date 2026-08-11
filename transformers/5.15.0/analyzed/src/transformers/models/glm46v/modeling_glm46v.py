@@ -39,10 +39,14 @@ from ...utils import (
 )
 from ...utils.generic import accepts_precomputed_kwargs
 from ..auto import AutoModel
+# modeling_glm46v 由 modular_glm46v.py 自动生成，此处为独立完整实现
 from .configuration_glm46v import Glm46VConfig
 
 
+# GLM-4.6V 建模：图文/视频多模态 VLM（3D RoPE + 动态帧采样）
+
 @auto_docstring
+# Glm46VPreTrainedModel：GLM-4.6V 多模态预训练基类
 class Glm46VPreTrainedModel(PreTrainedModel):
     config: Glm46VConfig
     base_model_prefix = "model"
@@ -60,6 +64,7 @@ class Glm46VPreTrainedModel(PreTrainedModel):
 
 @auto_docstring
 @dataclass
+# Glm46VModelOutputWithPast：GLM-4.6V 主干输出 dataclass（含 rope_deltas）
 class Glm46VModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     rope_deltas (`torch.LongTensor` of shape `(batch_size, )`, *optional*):
@@ -71,6 +76,7 @@ class Glm46VModelOutputWithPast(BaseModelOutputWithPast):
 
 
 @auto_docstring
+# Glm46VModel：GLM-4.6V 视觉-语言联合主干（视觉塔 + 语言模型）
 class Glm46VModel(Glm46VPreTrainedModel):
     base_model_prefix = "model"
     # Reference: fix gemma3 grad acc #37208
@@ -431,6 +437,7 @@ class Glm46VModel(Glm46VPreTrainedModel):
 
 @auto_docstring
 @dataclass
+# Glm46VCausalLMOutputWithPast：GLM-4.6V 条件生成输出 dataclass
 class Glm46VCausalLMOutputWithPast(CausalLMOutputWithPast):
     r"""
     rope_deltas (`torch.LongTensor` of shape `(batch_size, )`, *optional*):
@@ -441,6 +448,7 @@ class Glm46VCausalLMOutputWithPast(CausalLMOutputWithPast):
     rope_deltas: torch.LongTensor | None = None
 
 
+# Glm46VForConditionalGeneration：GLM-4.6V 图文/视频条件生成
 class Glm46VForConditionalGeneration(Glm46VPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
     # Reference: fix gemma3 grad acc #37208
