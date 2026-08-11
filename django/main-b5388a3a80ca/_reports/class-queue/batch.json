@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T05:19:15Z",
   "files": [
-    "django/core/__init__.py",
-    "django/core/asgi.py",
-    "django/core/cache/__init__.py",
-    "django/core/cache/backends/__init__.py",
-    "django/core/cache/backends/base.py",
-    "django/core/cache/backends/db.py",
-    "django/core/cache/backends/dummy.py",
-    "django/core/cache/backends/filebased.py",
-    "django/core/cache/backends/locmem.py",
-    "django/core/cache/backends/memcached.py",
-    "django/core/cache/backends/redis.py",
-    "django/core/cache/utils.py",
-    "django/core/checks/__init__.py",
-    "django/core/checks/async_checks.py",
-    "django/core/checks/caches.py",
     "django/core/checks/commands.py",
     "django/core/checks/compatibility/__init__.py",
     "django/core/checks/compatibility/django_4_0.py",
@@ -33,5 +18,5 @@
     "django/core/checks/translation.py"
   ],
   "remaining_pending": 372,
-  "done": 540
+  "done": 555
 }
