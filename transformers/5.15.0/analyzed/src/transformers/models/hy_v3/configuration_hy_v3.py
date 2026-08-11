@@ -21,11 +21,16 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...modeling_rope_utils import RopeParameters
+# configuration_hy_v3 由 modular_hy_v3.py 自动生成
 from ...utils import auto_docstring
 
 
+# Hy3 配置：腾讯 Hy3-preview 稀疏 MoE 因果解码器（Top-K 路由 + 共享专家）超参
+
+# HYV3Config：tencent/Hy3-preview MoE 因果解码器默认超参
 @auto_docstring(checkpoint="tencent/Hy3-preview")
 @strict
+# HYV3Config：腾讯 Hy3-preview MoE 因果解码器超参（Top-K 路由 + 共享专家）
 class HYV3Config(PreTrainedConfig):
     r"""
     router_scaling_factor (*float*):

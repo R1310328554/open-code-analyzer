@@ -32,6 +32,7 @@ from ...utils import (
     logging,
 )
 from ...utils.output_capturing import OutputRecorder
+# modular 复用 Apertus/DeepSeek/MiniMax/Qwen3-MoE 并实现 Hy3 MoE 解码栈
 from ..apertus.modeling_apertus import ApertusAttention
 from ..deepseek_v3.modeling_deepseek_v3 import DeepseekV3DecoderLayer
 from ..llama.modeling_llama import (
@@ -49,8 +50,12 @@ from ..qwen3_moe.modeling_qwen3_moe import Qwen3MoeExperts
 logger = logging.get_logger(__name__)
 
 
+# Hy3 modular 源：复用 Apertus/DeepSeek/MiniMax/Qwen3-MoE 组件并实现 Hy3 MoE 栈
+
+# HYV3Config：tencent/Hy3-preview MoE 因果解码器默认超参
 @auto_docstring(checkpoint="tencent/Hy3-preview")
 @strict
+# HYV3Config：腾讯 Hy3-preview MoE 因果解码器超参（Top-K 路由 + 共享专家）
 class HYV3Config(PreTrainedConfig):
     r"""
     router_scaling_factor (*float*):
@@ -142,24 +147,29 @@ class HYV3Config(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# HYV3RMSNorm：Hy3 RMS LayerNorm
 class HYV3RMSNorm(LlamaRMSNorm):
     pass
 
 
+# HYV3RotaryEmbedding：Hy3 RoPE 旋转位置编码
 class HYV3RotaryEmbedding(LlamaRotaryEmbedding):
     pass
 
 
+# HYV3MLP：Hy3 SwiGLU 前馈 MLP
 class HYV3MLP(LlamaMLP):
     def __init__(self, config: HYV3Config, intermediate_size: int | None = None):
         super().__init__(config)
         self.intermediate_size = intermediate_size or config.intermediate_size
 
 
+# HYV3Attention：Hy3 多头自注意力（GQA + RoPE + Q/K Norm）
 class HYV3Attention(ApertusAttention):
     pass
 
 
+# HYV3TopKRouter：Hy3 MoE top-k 路由门控
 class HYV3TopKRouter(MixtralTopKRouter):
     def __init__(self, config: HYV3Config):
         super().__init__(config)
@@ -185,10 +195,12 @@ class HYV3TopKRouter(MixtralTopKRouter):
         return router_logits, top_k_weights, top_k_index
 
 
+# HYV3Experts：Hy3 MoE 专家 FFN 参数组
 class HYV3Experts(Qwen3MoeExperts):
     pass
 
 
+# HYV3MoE：Hy3 稀疏 MoE 层（路由 + 专家 + 共享专家）
 class HYV3MoE(MiniMaxM2SparseMoeBlock):
     def __init__(self, config: HYV3Config):
         super().__init__(config)
@@ -217,6 +229,7 @@ class HYV3MoE(MiniMaxM2SparseMoeBlock):
         return hidden_states.reshape(batch_size, seq_len, hidden_dim)
 
 
+# HYV3DecoderLayer：Hy3 解码器单层（自注意力 + MoE/Dense FFN）
 class HYV3DecoderLayer(DeepseekV3DecoderLayer):
     def __init__(self, config: HYV3Config, layer_idx: int):
         nn.Module.__init__(self)
@@ -227,6 +240,7 @@ class HYV3DecoderLayer(DeepseekV3DecoderLayer):
         self.post_attention_layernorm = HYV3RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
 
+# HYV3PreTrainedModel：Hy3 预训练基类与权重初始化
 class HYV3PreTrainedModel(LlamaPreTrainedModel):
     # Not supporting multi-token prediction (MTP) atm
     _keys_to_ignore_on_load_unexpected = [r"model\.layers\.80.*"]
@@ -250,6 +264,7 @@ class HYV3PreTrainedModel(LlamaPreTrainedModel):
             init.zeros_(module.e_score_correction_bias)
 
 
+# HYV3Model：Hy3 稀疏 MoE 纯文本解码器主干
 class HYV3Model(MiniMaxM2Model):
     def __init__(self, config: HYV3Config):
         super().__init__(config)
@@ -260,6 +275,7 @@ class HYV3Model(MiniMaxM2Model):
         self.rotary_emb = HYV3RotaryEmbedding(config=config)
 
 
+# HYV3ForCausalLM：Hy3 因果语言建模与文本生成
 class HYV3ForCausalLM(LlamaForCausalLM):
     def __init__(self, config: HYV3Config):
         super().__init__(config)

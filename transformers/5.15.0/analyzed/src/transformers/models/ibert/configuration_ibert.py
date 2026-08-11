@@ -15,14 +15,18 @@
 # limitations under the License.
 """I-BERT configuration"""
 
+# I-BERT 配置：整数量化 BERT（QuantLinear/QuantAct/IntGELU 等）超参
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# IBertConfig：kssteven/ibert-roberta-base 整数量化 BERT 默认超参
 @auto_docstring(checkpoint="kssteven/ibert-roberta-base")
 @strict
+# IBertConfig：I-BERT 整数量化 BERT 超参（QuantLinear/QuantAct 等）
 class IBertConfig(PreTrainedConfig):
     r"""
     type_vocab_size (`int`, *optional*, defaults to 2):

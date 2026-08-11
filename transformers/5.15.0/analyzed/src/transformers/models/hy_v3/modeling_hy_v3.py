@@ -39,10 +39,14 @@ from ...utils import TransformersKwargs, auto_docstring, can_return_tuple
 from ...utils.deprecation import deprecate_kwarg
 from ...utils.generic import maybe_autocast, merge_with_config_defaults
 from ...utils.output_capturing import OutputRecorder, capture_outputs
+# modeling_hy_v3 由 modular_hy_v3.py 自动生成
 from .configuration_hy_v3 import HYV3Config
 
 
+# Hy3 建模：稀疏 MoE 解码器（由 modular_hy_v3.py 自动生成）
+
 @use_kernel_forward_from_hub("RMSNorm")
+# HYV3RMSNorm：Hy3 RMS LayerNorm
 class HYV3RMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -63,6 +67,7 @@ class HYV3RMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# HYV3RotaryEmbedding：Hy3 RoPE 旋转位置编码
 class HYV3RotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: HYV3Config, device=None):
@@ -120,6 +125,7 @@ class HYV3RotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# HYV3MLP：Hy3 SwiGLU 前馈 MLP
 class HYV3MLP(nn.Module):
     def __init__(self, config: HYV3Config, intermediate_size: int | None = None):
         super().__init__()
@@ -136,6 +142,7 @@ class HYV3MLP(nn.Module):
         return down_proj
 
 
+# rotate_half：RoPE 中将向量后半部分旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -144,6 +151,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -169,6 +177,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -181,6 +190,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -207,6 +217,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# HYV3Attention：Hy3 多头自注意力（GQA + RoPE + Q/K Norm）
 class HYV3Attention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -278,6 +289,7 @@ class HYV3Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# HYV3TopKRouter：Hy3 MoE top-k 路由门控
 class HYV3TopKRouter(nn.Module):
     def __init__(self, config: HYV3Config):
         super().__init__()
@@ -308,6 +320,7 @@ class HYV3TopKRouter(nn.Module):
 
 
 @use_experts_implementation
+# HYV3Experts：Hy3 MoE 专家 FFN 参数组
 class HYV3Experts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
@@ -347,6 +360,7 @@ class HYV3Experts(nn.Module):
         return final_hidden_states
 
 
+# HYV3MoE：Hy3 稀疏 MoE 层（路由 + 专家 + 共享专家）
 class HYV3MoE(nn.Module):
     def __init__(self, config: HYV3Config):
         super().__init__()
@@ -376,6 +390,7 @@ class HYV3MoE(nn.Module):
         return hidden_states.reshape(batch_size, seq_len, hidden_dim)
 
 
+# HYV3DecoderLayer：Hy3 解码器单层（自注意力 + MoE/Dense FFN）
 class HYV3DecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: HYV3Config, layer_idx: int):
         super().__init__()
@@ -418,6 +433,7 @@ class HYV3DecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# HYV3PreTrainedModel：Hy3 预训练基类与权重初始化
 class HYV3PreTrainedModel(PreTrainedModel):
     config: HYV3Config
     base_model_prefix = "model"
@@ -453,6 +469,7 @@ class HYV3PreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# HYV3Model：Hy3 稀疏 MoE 纯文本解码器主干
 class HYV3Model(HYV3PreTrainedModel):
     def __init__(self, config: HYV3Config):
         super().__init__(config)
@@ -529,6 +546,7 @@ class HYV3Model(HYV3PreTrainedModel):
 
 
 @auto_docstring
+# HYV3ForCausalLM：Hy3 因果语言建模与文本生成
 class HYV3ForCausalLM(HYV3PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}

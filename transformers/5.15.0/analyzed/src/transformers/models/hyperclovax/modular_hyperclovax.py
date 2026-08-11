@@ -21,6 +21,7 @@ from ...cache_utils import Cache
 from ...modeling_outputs import CausalLMOutputWithPast
 from ...processing_utils import Unpack
 from ...utils import TransformersKwargs, auto_docstring, can_return_tuple
+# modular 复用 Granite 解码层并定制 MuP embedding/logits 缩放
 from ..granite.configuration_granite import GraniteConfig
 from ..granite.modeling_granite import (
     GraniteAttention,
@@ -33,8 +34,12 @@ from ..granite.modeling_granite import (
 )
 
 
+# HyperCLOVAX modular 源：复用 Granite 组件并定制 MuP embedding/logits 缩放
+
+# HyperCLOVAXConfig：naver-hyperclovax/HyperCLOVAX-SEED-Think-14B 因果解码器默认超参
 @auto_docstring(checkpoint="naver-hyperclovax/HyperCLOVAX-SEED-Think-14B")
 @strict
+# HyperCLOVAXConfig：NAVER HyperCLOVAX-SEED-Think 因果解码器超参（Granite + MuP 缩放）
 class HyperCLOVAXConfig(GraniteConfig):
     r"""
     embedding_multiplier (`float`, *optional*, defaults to `1.0`):
@@ -99,18 +104,22 @@ class HyperCLOVAXConfig(GraniteConfig):
             )
 
 
+# HyperCLOVAXRMSNorm：HyperCLOVAX RMS LayerNorm
 class HyperCLOVAXRMSNorm(GraniteRMSNorm):
     pass
 
 
+# HyperCLOVAXRotaryEmbedding：HyperCLOVAX RoPE 旋转位置编码
 class HyperCLOVAXRotaryEmbedding(GraniteRotaryEmbedding):
     pass
 
 
+# HyperCLOVAXAttention：HyperCLOVAX 多头自注意力（缩放 attention_multiplier）
 class HyperCLOVAXAttention(GraniteAttention):
     pass
 
 
+# HyperCLOVAXDecoderLayer：HyperCLOVAX 解码器单层（自注意力 + MLP）
 class HyperCLOVAXDecoderLayer(GraniteDecoderLayer):
     def __init__(self, config: HyperCLOVAXConfig, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -157,16 +166,19 @@ class HyperCLOVAXDecoderLayer(GraniteDecoderLayer):
 
 
 @auto_docstring
+# HyperCLOVAXPreTrainedModel：HyperCLOVAX 预训练基类与权重初始化
 class HyperCLOVAXPreTrainedModel(GranitePreTrainedModel):
     pass
 
 
 @auto_docstring
+# HyperCLOVAXModel：HyperCLOVAX 纯文本解码器主干
 class HyperCLOVAXModel(GraniteModel):
     pass
 
 
 @auto_docstring
+# HyperCLOVAXForCausalLM：HyperCLOVAX 因果语言建模与文本生成
 class HyperCLOVAXForCausalLM(GraniteForCausalLM):
     @can_return_tuple
     @auto_docstring

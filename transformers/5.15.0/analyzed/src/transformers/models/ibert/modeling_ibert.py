@@ -43,6 +43,7 @@ from .quant_modules import IntGELU, IntLayerNorm, IntSoftmax, QuantAct, QuantEmb
 logger = logging.get_logger(__name__)
 
 
+# IBertEmbeddings：I-BERT 词/位置/类型嵌入（整数量化）
 class IBertEmbeddings(nn.Module):
     """
     Same as BertEmbeddings with a tiny tweak for positional embeddings indexing.
@@ -159,6 +160,7 @@ class IBertEmbeddings(nn.Module):
         return position_ids.unsqueeze(0).expand(input_shape)
 
 
+# IBertSelfAttention：I-BERT 自注意力（整数量化 Q/K/V）
 class IBertSelfAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -290,6 +292,7 @@ class IBertSelfAttention(nn.Module):
         return outputs, output_scaling_factor
 
 
+# IBertSelfOutput：I-BERT 自注意力输出投影与残差
 class IBertSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -337,6 +340,7 @@ class IBertSelfOutput(nn.Module):
         return hidden_states, hidden_states_scaling_factor
 
 
+# IBertAttention：I-BERT 注意力子层（SelfAttention + SelfOutput）
 class IBertAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -365,6 +369,7 @@ class IBertAttention(nn.Module):
         return outputs, outputs_scaling_factor
 
 
+# IBertIntermediate：I-BERT 前馈中间层（IntGELU 激活）
 class IBertIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -399,6 +404,7 @@ class IBertIntermediate(nn.Module):
         return hidden_states, hidden_states_scaling_factor
 
 
+# IBertOutput：I-BERT 前馈输出投影与残差
 class IBertOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -446,6 +452,7 @@ class IBertOutput(nn.Module):
         return hidden_states, hidden_states_scaling_factor
 
 
+# IBertLayer：I-BERT Transformer 编码器单层
 class IBertLayer(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -502,6 +509,7 @@ class IBertLayer(nn.Module):
         return layer_output, layer_output_scaling_factor
 
 
+# IBertEncoder：I-BERT 多层 Transformer 编码器堆叠
 class IBertEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -559,6 +567,7 @@ class IBertEncoder(nn.Module):
         )
 
 
+# IBertPooler：I-BERT 序列 [CLS] 池化头
 class IBertPooler(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -576,6 +585,7 @@ class IBertPooler(nn.Module):
 
 
 @auto_docstring
+# IBertPreTrainedModel：I-BERT 预训练基类与权重初始化
 class IBertPreTrainedModel(PreTrainedModel):
     config: IBertConfig
     base_model_prefix = "ibert"
@@ -618,6 +628,7 @@ class IBertPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# IBertModel：I-BERT 整数量化 BERT 编码主干
 class IBertModel(IBertPreTrainedModel):
     """
 
@@ -725,6 +736,7 @@ class IBertModel(IBertPreTrainedModel):
 
 
 @auto_docstring
+# IBertForMaskedLM：I-BERT 掩码语言建模头
 class IBertForMaskedLM(IBertPreTrainedModel):
     _tied_weights_keys = {
         "lm_head.decoder.weight": "ibert.embeddings.word_embeddings.weight$",
@@ -799,6 +811,7 @@ class IBertForMaskedLM(IBertPreTrainedModel):
         )
 
 
+# IBertLMHead：I-BERT 语言建模输出头
 class IBertLMHead(nn.Module):
     """I-BERT Head for masked language modeling."""
 
@@ -827,6 +840,7 @@ class IBertLMHead(nn.Module):
     output) e.g. for GLUE tasks.
     """
 )
+# IBertForSequenceClassification：I-BERT 序列分类头
 class IBertForSequenceClassification(IBertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -908,6 +922,7 @@ class IBertForSequenceClassification(IBertPreTrainedModel):
 
 
 @auto_docstring
+# IBertForMultipleChoice：I-BERT 多项选择分类头
 class IBertForMultipleChoice(IBertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1010,6 +1025,7 @@ class IBertForMultipleChoice(IBertPreTrainedModel):
 
 
 @auto_docstring
+# IBertForTokenClassification：I-BERT 词元分类头
 class IBertForTokenClassification(IBertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1075,6 +1091,7 @@ class IBertForTokenClassification(IBertPreTrainedModel):
         )
 
 
+# IBertClassificationHead：I-BERT 分类输出头
 class IBertClassificationHead(nn.Module):
     """Head for sentence-level classification tasks."""
 
@@ -1095,6 +1112,7 @@ class IBertClassificationHead(nn.Module):
 
 
 @auto_docstring
+# IBertForQuestionAnswering：I-BERT 抽取式问答头
 class IBertForQuestionAnswering(IBertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1171,6 +1189,7 @@ class IBertForQuestionAnswering(IBertPreTrainedModel):
         )
 
 
+# create_position_ids_from_input_ids：从 input_ids 生成位置 id（跳过 padding）
 def create_position_ids_from_input_ids(input_ids, padding_idx, past_key_values_length=0):
     """
     Replace non-padding symbols with their position numbers. Position numbers begin at padding_idx+1. Padding symbols

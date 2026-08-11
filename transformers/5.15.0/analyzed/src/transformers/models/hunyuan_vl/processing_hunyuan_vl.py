@@ -22,6 +22,9 @@ from ...utils import auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# HunYuanVL Processor：图像预处理与分词器联合输入组装（多模态 RoPE 占位符扩展）
+
+# HunYuanVLProcessorKwargs：HunYuanVL Processor 可选参数字典类型
 class HunYuanVLProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -33,6 +36,7 @@ class HunYuanVLProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# HunYuanVLProcessor：封装图像预处理与分词器的 OCR/文档理解输入管线
 class HunYuanVLProcessor(ProcessorMixin):
     r"""
     HunYuanVL processor that wraps an image processor and a tokenizer for image-text-to-text generation.

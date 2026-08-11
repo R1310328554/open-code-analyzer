@@ -21,11 +21,16 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...modeling_rope_utils import RopeParameters
+# configuration_hyperclovax 由 modular_hyperclovax.py 自动生成
 from ...utils import auto_docstring
 
 
+# HyperCLOVAX 配置：NAVER SEED-Think 因果解码器（Granite + MuP 缩放）超参
+
+# HyperCLOVAXConfig：naver-hyperclovax/HyperCLOVAX-SEED-Think-14B 因果解码器默认超参
 @auto_docstring(checkpoint="naver-hyperclovax/HyperCLOVAX-SEED-Think-14B")
 @strict
+# HyperCLOVAXConfig：NAVER HyperCLOVAX-SEED-Think 因果解码器超参（Granite + MuP 缩放）
 class HyperCLOVAXConfig(PreTrainedConfig):
     r"""
     embedding_multiplier (`float`, *optional*, defaults to `1.0`):

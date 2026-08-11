@@ -27,6 +27,9 @@ from ...utils import logging
 logger = logging.get_logger(__name__)
 
 
+# I-BERT 量化模块：对称/非对称整数量化层与定点 GELU/Softmax/LayerNorm
+
+# QuantEmbedding：整数量化嵌入层（对称量化 + 反量化）
 class QuantEmbedding(nn.Module):
     """
     Quantized version of `torch.nn.Embedding`. Adds quantization-specific arguments on top of `torch.nn.Embedding`.
@@ -110,6 +113,7 @@ class QuantEmbedding(nn.Module):
         return emb_int * self.weight_scaling_factor, self.weight_scaling_factor
 
 
+# QuantAct：整数量化激活层（动态/静态 scale 与 zero_point）
 class QuantAct(nn.Module):
     """
     Quantizes the given activation.
@@ -216,6 +220,7 @@ class QuantAct(nn.Module):
         return quant_act_int * correct_output_scale, self.act_scaling_factor
 
 
+# QuantLinear：整数量化线性层（对称/非对称量化权重与激活）
 class QuantLinear(nn.Module):
     """
     Quantized version of `torch.nn.Linear`. Adds quantization-specific arguments on top of `torch.nn.Linear`.
@@ -296,6 +301,7 @@ class QuantLinear(nn.Module):
         )
 
 
+# IntGELU：整数近似 GELU 激活（查找表 + 定点运算）
 class IntGELU(nn.Module):
     """
     Quantized version of `torch.nn.GELU`. Adds quantization-specific arguments on top of `torch.nn.GELU`.
@@ -353,6 +359,7 @@ class IntGELU(nn.Module):
         return x_int * scaling_factor, scaling_factor
 
 
+# IntSoftmax：整数近似 Softmax（定点指数与归一化）
 class IntSoftmax(nn.Module):
     """
     Quantized version of `torch.nn.Softmax`. Adds quantization-specific arguments on top of `torch.nn.Softmax`.
@@ -424,6 +431,7 @@ class IntSoftmax(nn.Module):
         return exp_int * scaling_factor, scaling_factor
 
 
+# IntLayerNorm：整数近似 LayerNorm（定点均值/方差）
 class IntLayerNorm(nn.Module):
     """
     Quantized version of `torch.nn.LayerNorm`. Adds quantization-specific arguments on top of `torch.nn.LayerNorm`.
@@ -525,6 +533,7 @@ class IntLayerNorm(nn.Module):
         return x, scaling_factor
 
 
+# get_percentile_min_max：按百分位计算张量 min/max（校准量化范围）
 def get_percentile_min_max(input, lower_percentile, upper_percentile, output_tensor=False):
     """
     Calculate the percentile max and min values in a given tensor
@@ -561,6 +570,7 @@ def get_percentile_min_max(input, lower_percentile, upper_percentile, output_ten
     return lower_bound, upper_bound
 
 
+# linear_quantize：仿射线性量化（scale + zero_point）
 def linear_quantize(input, scale, zero_point, inplace=False):
     """
     Quantize single-precision input tensor to integers with the given scaling factor and zeropoint.
@@ -596,6 +606,7 @@ def linear_quantize(input, scale, zero_point, inplace=False):
     return torch.round(1.0 / scale * input + zero_point)
 
 
+# symmetric_linear_quantization_params：对称线性量化 scale/zero_point 计算
 def symmetric_linear_quantization_params(num_bits, saturation_min, saturation_max, per_channel=False):
     """
     Compute the scaling factor with the given quantization range for symmetric quantization.
@@ -628,6 +639,7 @@ def symmetric_linear_quantization_params(num_bits, saturation_min, saturation_ma
     return scale
 
 
+# SymmetricQuantFunction：对称量化 autograd 函数（STE 梯度）
 class SymmetricQuantFunction(Function):
     """
     Class to quantize the given floating-point values using symmetric quantization with given range and bitwidth.
@@ -673,6 +685,7 @@ class SymmetricQuantFunction(Function):
         return grad_output.clone() / scale, None, None, None, None
 
 
+# floor_ste：向下取整直通估计器（Straight-Through Estimator）
 class floor_ste(Function):
     """
     Straight-through Estimator(STE) for torch.floor()
@@ -687,6 +700,7 @@ class floor_ste(Function):
         return grad_output.clone()
 
 
+# round_ste：四舍五入直通估计器（Straight-Through Estimator）
 class round_ste(Function):
     """
     Straight-through Estimator(STE) for torch.round()
@@ -701,6 +715,7 @@ class round_ste(Function):
         return grad_output.clone()
 
 
+# batch_frexp：批量浮点分解为尾数与指数（定点乘法）
 def batch_frexp(inputs, max_bit=31):
     """
     Decompose the scaling factor into mantissa and twos exponent.
@@ -735,6 +750,7 @@ def batch_frexp(inputs, max_bit=31):
     )
 
 
+# FixedPointMul：定点乘法 autograd 函数（整数近似浮点乘）
 class FixedPointMul(Function):
     """
     Function to perform fixed-point arithmetic that can match integer arithmetic on hardware.
