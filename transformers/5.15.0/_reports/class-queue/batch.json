@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T02:30:50Z",
-  "files": [
-    "src/transformers/models/paligemma/__init__.py",
-    "src/transformers/models/paligemma/configuration_paligemma.py",
-    "src/transformers/models/paligemma/modeling_paligemma.py",
-    "src/transformers/models/paligemma/processing_paligemma.py",
-    "src/transformers/models/parakeet/__init__.py",
-    "src/transformers/models/parakeet/configuration_parakeet.py",
-    "src/transformers/models/parakeet/feature_extraction_parakeet.py",
-    "src/transformers/models/parakeet/generation_parakeet.py",
-    "src/transformers/models/parakeet/modeling_parakeet.py",
-    "src/transformers/models/parakeet/modular_parakeet.py",
-    "src/transformers/models/parakeet/processing_parakeet.py",
-    "src/transformers/models/parakeet/tokenization_parakeet.py",
-    "src/transformers/models/patchtsmixer/__init__.py",
-    "src/transformers/models/patchtsmixer/configuration_patchtsmixer.py",
-    "src/transformers/models/patchtsmixer/modeling_patchtsmixer.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1029,
-  "done": 1635
+  "done": 1650
 }
