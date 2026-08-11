@@ -28,7 +28,11 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# Voxtral Realtime 特征提取：PyTorch STFT 计算 log-mel，与 mistral-common 对齐
+
+
 @requires(backends=("torch",))
+# VoxtralRealtimeFeatureExtractor：实时 mel 特征提取与 padding
 class VoxtralRealtimeFeatureExtractor(SequenceFeatureExtractor):
     r"""
     Constructs a VOXTRAL_REALTIME feature extractor.

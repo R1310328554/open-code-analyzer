@@ -43,6 +43,10 @@ from .configuration_voxtral import VoxtralConfig, VoxtralEncoderConfig
 logger = logging.get_logger(__name__)
 
 
+# Voxtral 建模：Whisper 音频塔 + 多模态投影 + Llama 语言模型
+
+
+# eager_attention_forward：标准 eager 多头缩放点积注意力
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -69,6 +73,8 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# VoxtralAttention：Whisper 编码器多头自注意力
+# VoxtralAttention：Whisper 编码器多头自注意力
 class VoxtralAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -157,6 +163,8 @@ class VoxtralAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# VoxtralEncoderLayer：Pre-LN 自注意力 + FFN 编码器层
+# VoxtralEncoderLayer：Pre-LN 自注意力 + FFN 编码器层
 class VoxtralEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: VoxtralConfig):
         super().__init__()
@@ -214,6 +222,7 @@ class VoxtralEncoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# VoxtralPreTrainedModel：Voxtral 预训练基类，支持音频/文本双模态
 class VoxtralPreTrainedModel(PreTrainedModel):
     config: VoxtralConfig
     base_model_prefix = "model"
@@ -234,6 +243,8 @@ class VoxtralPreTrainedModel(PreTrainedModel):
     The Voxtral encoder, which is a Whisper encoder.
     """
 )
+# VoxtralEncoder：Conv1d 前端 + Transformer 音频编码器
+# VoxtralEncoder：Conv1d 前端 + Transformer 音频编码器
 class VoxtralEncoder(VoxtralPreTrainedModel):
     """
     Transformer encoder consisting of *config.encoder_layers* self attention layers. Each layer is a
@@ -346,6 +357,8 @@ class VoxtralEncoder(VoxtralPreTrainedModel):
         return input_lengths, output_lengths
 
 
+# VoxtralMultiModalProjector：两层线性将音频特征投影到文本隐藏维度
+# VoxtralMultiModalProjector：两层线性将音频特征投影到文本隐藏维度
 class VoxtralMultiModalProjector(nn.Module):
     def __init__(self, config: VoxtralConfig):
         super().__init__()
@@ -366,6 +379,7 @@ class VoxtralMultiModalProjector(nn.Module):
     """
 )
 @dataclass
+# VoxtralModelOutputWithPast：模型输出，额外携带投影后的 audio_hidden_states
 class VoxtralModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     audio_hidden_states (`torch.FloatTensor`, *optional*):
@@ -381,6 +395,8 @@ class VoxtralModelOutputWithPast(BaseModelOutputWithPast):
     without a language modeling head.
     """
 )
+# VoxtralModel：音频塔 + 投影 + 语言模型，无 lm_head
+# VoxtralModel：音频塔 + 投影 + 语言模型，无 lm_head
 class VoxtralModel(VoxtralPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -487,6 +503,8 @@ class VoxtralModel(VoxtralPreTrainedModel):
     The Voxtral model, which consists of Whisper encoder, a multi-modal projector and a Llama language model.
     """
 )
+# VoxtralForConditionalGeneration：带 lm_head 的多模态条件生成模型
+# VoxtralForConditionalGeneration：带 lm_head 的多模态条件生成模型
 class VoxtralForConditionalGeneration(VoxtralPreTrainedModel, GenerationMixin):
     _keep_in_fp32_modules_strict = ["embed_positions"]
 

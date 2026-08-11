@@ -44,6 +44,10 @@ from ...utils.chat_template_utils import _get_template_variables
 logger = logging.get_logger(__name__)
 
 
+# Voxtral 处理器：Whisper 特征提取 + Mistral 分词，支持对话与转录模板
+
+
+# VoxtralAudioKwargs：音频处理参数，含 max_source_positions 分块
 class VoxtralAudioKwargs(AudioKwargs, total=False):
     """
     max_source_positions (`int`, *optional*, defaults to `3000`):
@@ -53,6 +57,8 @@ class VoxtralAudioKwargs(AudioKwargs, total=False):
     max_source_positions: int | None
 
 
+# VoxtralProcessorKwargs：文本/音频/公共 kwargs 默认值
+# VoxtralProcessorKwargs：文本/音频/公共 kwargs 默认值
 class VoxtralProcessorKwargs(ProcessingKwargs, total=False):
     audio_kwargs: VoxtralAudioKwargs
     _defaults = {
@@ -76,6 +82,7 @@ class VoxtralProcessorKwargs(ProcessingKwargs, total=False):
 
 @requires(backends=("torch",))
 @auto_docstring
+# VoxtralProcessor：多模态处理器，apply_chat_template 与转录请求
 class VoxtralProcessor(ProcessorMixin):
     def __init__(
         self,

@@ -40,14 +40,22 @@ from ..qwen2_audio.modeling_qwen2_audio import (
 from .configuration_voxtral import VoxtralConfig
 
 
+# Voxtral 模块化实现：复用 Qwen2-Audio 组件并扩展多模态投影与生成头
+
+
+# VoxtralAttention：复用 Qwen2AudioAttention
 class VoxtralAttention(Qwen2AudioAttention):
     pass
 
 
+# VoxtralEncoderLayer：复用 Qwen2AudioEncoderLayer
+# VoxtralEncoderLayer：复用 Qwen2AudioEncoderLayer
 class VoxtralEncoderLayer(Qwen2AudioEncoderLayer):
     pass
 
 
+# VoxtralPreTrainedModel：Voxtral 预训练基类
+# VoxtralPreTrainedModel：Voxtral 预训练基类
 class VoxtralPreTrainedModel(Qwen2AudioPreTrainedModel):
     _supports_flex_attn = True
     _supports_cache_class = True
@@ -62,6 +70,8 @@ class VoxtralPreTrainedModel(Qwen2AudioPreTrainedModel):
     The Voxtral encoder, which is a Whisper encoder.
     """
 )
+# VoxtralEncoder：Whisper 风格音频编码器，校验 mel 序列长度
+# VoxtralEncoder：Whisper 风格音频编码器，校验 mel 序列长度
 class VoxtralEncoder(Qwen2AudioEncoder):
     _can_record_outputs = {
         "attentions": VoxtralAttention,
@@ -116,6 +126,8 @@ class VoxtralEncoder(Qwen2AudioEncoder):
         )
 
 
+# VoxtralMultiModalProjector：音频到文本空间的线性投影 MLP
+# VoxtralMultiModalProjector：音频到文本空间的线性投影 MLP
 class VoxtralMultiModalProjector(nn.Module):
     def __init__(self, config: VoxtralConfig):
         super().__init__()
@@ -136,6 +148,7 @@ class VoxtralMultiModalProjector(nn.Module):
     """
 )
 @dataclass
+# VoxtralModelOutputWithPast：含 audio_hidden_states 的模型输出
 class VoxtralModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     audio_hidden_states (`torch.FloatTensor`, *optional*):
@@ -151,6 +164,8 @@ class VoxtralModelOutputWithPast(BaseModelOutputWithPast):
     without a language modeling head.
     """
 )
+# VoxtralModel：多模态骨干，音频占位符替换为投影嵌入
+# VoxtralModel：多模态骨干，音频占位符替换为投影嵌入
 class VoxtralModel(VoxtralPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -257,6 +272,8 @@ class VoxtralModel(VoxtralPreTrainedModel):
     The Voxtral model, which consists of Whisper encoder, a multi-modal projector and a Llama language model.
     """
 )
+# VoxtralForConditionalGeneration：条件生成，含 lm_head
+# VoxtralForConditionalGeneration：条件生成，含 lm_head
 class VoxtralForConditionalGeneration(VoxtralPreTrainedModel, GenerationMixin):
     _keep_in_fp32_modules_strict = ["embed_positions"]
 

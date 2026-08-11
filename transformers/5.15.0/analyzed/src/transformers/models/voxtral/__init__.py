@@ -24,5 +24,6 @@ if TYPE_CHECKING:
 else:
     import sys
 
+    # voxtral 包：延迟加载 Voxtral 配置、建模与处理器子模块
     _file = globals()["__file__"]
     sys.modules[__name__] = _LazyModule(__name__, _file, define_import_structure(_file), module_spec=__spec__)

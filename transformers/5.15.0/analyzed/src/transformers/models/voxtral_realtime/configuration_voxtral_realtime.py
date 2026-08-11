@@ -21,8 +21,12 @@ from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# Voxtral Realtime 配置：流式音频编码 + Mistral 文本 + 延迟 token 参数
+
+
 @auto_docstring(checkpoint="mistralai/Voxtral-Mini-4B-Realtime-2602")
 @strict
+# VoxtralRealtimeTextConfig：文本解码器配置，滑动窗口与 RoPE 参数
 class VoxtralRealtimeTextConfig(PreTrainedConfig):
     model_type = "voxtral_realtime_text"
     keys_to_ignore_at_inference = ["past_key_values"]
@@ -70,6 +74,7 @@ class VoxtralRealtimeTextConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="mistralai/Voxtral-Mini-4B-Realtime-2602")
 @strict
+# VoxtralRealtimeEncoderConfig：流式音频编码器配置
 class VoxtralRealtimeEncoderConfig(PreTrainedConfig):
     r"""
     Example:
@@ -121,6 +126,7 @@ class VoxtralRealtimeEncoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="mistralai/Voxtral-Mini-4B-Realtime-2602")
 @strict
+# VoxtralRealtimeConfig：复合配置，含 downsample_factor 与 default_num_delay_tokens
 class VoxtralRealtimeConfig(PreTrainedConfig):
     r"""
     audio_length_per_tok (`int`, *optional*, defaults to 8):

@@ -20,8 +20,12 @@ from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# Voxtral 配置：Whisper 风格音频编码器 + Llama 文本子配置的复合模型
+
+
 @auto_docstring(checkpoint="mistralai/Voxtral-Mini-3B-2507")
 @strict
+# VoxtralEncoderConfig：音频编码器配置，mel 维度、层数与最大源序列长度
 class VoxtralEncoderConfig(PreTrainedConfig):
     r"""
     max_source_positions (`int`, *optional*, defaults to 1500):
@@ -73,6 +77,7 @@ class VoxtralEncoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="mistralai/Voxtral-Mini-3B-2507")
 @strict
+# VoxtralConfig：多模态主配置，嵌套 audio_config/text_config 与投影激活
 class VoxtralConfig(PreTrainedConfig):
     r"""
     Example:

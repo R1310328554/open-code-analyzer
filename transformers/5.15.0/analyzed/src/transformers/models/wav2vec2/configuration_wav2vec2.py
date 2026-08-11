@@ -13,6 +13,8 @@
 # limitations under the License.
 """Wav2Vec2 model configuration"""
 
+# Wav2Vec2 配置：自监督语音表示学习，含卷积前端、SpecAugment 与量化参数
+
 import functools
 import operator
 
@@ -24,6 +26,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="facebook/wav2vec2-base-960h")
 @strict
+# Wav2Vec2Config：主配置，conv 前端维度、掩码增强、CTC/XVector 等任务参数
 class Wav2Vec2Config(PreTrainedConfig):
     r"""
     feat_proj_dropout (`float`, *optional*, defaults to 0.0):

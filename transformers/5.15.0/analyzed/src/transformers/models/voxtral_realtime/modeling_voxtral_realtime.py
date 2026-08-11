@@ -52,6 +52,10 @@ from .configuration_voxtral_realtime import (
 logger = logging.get_logger(__name__)
 
 
+# Voxtral Realtime 建模：因果卷积缓存、流式音频编码与 AdaRMS 文本解码
+
+
+# VoxtralRealtimeConv1dCacheLayer：单层 Conv1d 左填充状态缓存
 class VoxtralRealtimeConv1dCacheLayer:
     def __init__(self):
         self.cache: torch.Tensor | None = None
@@ -99,6 +103,8 @@ class VoxtralRealtimeConv1dCacheLayer:
         return current_cache
 
 
+# VoxtralRealtimeConv1dPaddingCache：按 cache_key 管理多层 Conv1d 填充
+# VoxtralRealtimeConv1dPaddingCache：按 cache_key 管理多层 Conv1d 填充
 class VoxtralRealtimeConv1dPaddingCache:
     def __init__(self):
         self.layers = {}
@@ -113,11 +119,13 @@ class VoxtralRealtimeConv1dPaddingCache:
 
 
 @dataclass
+# VoxtralRealtimeEncoderOutput：编码器输出，携带 padding_cache
 class VoxtralRealtimeEncoderOutput(BaseModelOutputWithPast):
     padding_cache: VoxtralRealtimeConv1dPaddingCache | None = None
 
 
 @dataclass
+# VoxtralRealtimeModelOutputWithPast：多模态输出，含 encoder_past_key_values
 class VoxtralRealtimeModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     Args:
@@ -136,6 +144,7 @@ class VoxtralRealtimeModelOutputWithPast(BaseModelOutputWithPast):
 
 
 @dataclass
+# VoxtralRealtimeCausalLMOutputWithPast：LM 输出，含流式编码器 KV 缓存
 class VoxtralRealtimeCausalLMOutputWithPast(CausalLMOutputWithPast):
     r"""
     Args:
@@ -150,6 +159,8 @@ class VoxtralRealtimeCausalLMOutputWithPast(CausalLMOutputWithPast):
     padding_cache: VoxtralRealtimeConv1dPaddingCache | None = None
 
 
+# VoxtralRealtimeRotaryEmbedding：RoPE 频率缓存与 dynamic_rope 更新
+# VoxtralRealtimeRotaryEmbedding：RoPE 频率缓存与 dynamic_rope 更新
 class VoxtralRealtimeRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: VoxtralRealtimeConfig, device=None):
@@ -209,6 +220,8 @@ class VoxtralRealtimeRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# VoxtralRealtimeCausalConv1d：因果 Conv1d，流式 chunk 经 padding_cache 拼接
+# VoxtralRealtimeCausalConv1d：因果 Conv1d，流式 chunk 经 padding_cache 拼接
 class VoxtralRealtimeCausalConv1d(nn.Conv1d):
     def __init__(
         self,
@@ -245,6 +258,8 @@ class VoxtralRealtimeCausalConv1d(nn.Conv1d):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# VoxtralRealtimeRMSNorm：RMS 层归一化
+# VoxtralRealtimeRMSNorm：RMS 层归一化
 class VoxtralRealtimeRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -265,6 +280,8 @@ class VoxtralRealtimeRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# rotate_half：RoPE 旋转辅助，交换并取反维度对
+# rotate_half：RoPE 旋转辅助，交换并取反维度对
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -273,6 +290,8 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -298,6 +317,8 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 中将 KV head 重复以匹配 Q head 数
+# repeat_kv：GQA 中将 KV head 重复以匹配 Q head 数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -310,6 +331,8 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：标准 eager 缩放点积注意力
+# eager_attention_forward：标准 eager 缩放点积注意力
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -336,6 +359,8 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# VoxtralRealtimeAttention：音频编码器 GQA 自注意力
+# VoxtralRealtimeAttention：音频编码器 GQA 自注意力
 class VoxtralRealtimeAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -396,6 +421,8 @@ class VoxtralRealtimeAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# VoxtralRealtimeMLP：SiLU 门控 FFN
+# VoxtralRealtimeMLP：SiLU 门控 FFN
 class VoxtralRealtimeMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -412,6 +439,8 @@ class VoxtralRealtimeMLP(nn.Module):
         return down_proj
 
 
+# VoxtralRealtimeEmbedder：GELU 因果 Conv1d mel 嵌入
+# VoxtralRealtimeEmbedder：GELU 因果 Conv1d mel 嵌入
 class VoxtralRealtimeEmbedder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -430,6 +459,8 @@ class VoxtralRealtimeEmbedder(nn.Module):
         return inputs_embeds
 
 
+# VoxtralRealtimeEncoderLayer：Pre-RMSNorm 自注意力 + FFN
+# VoxtralRealtimeEncoderLayer：Pre-RMSNorm 自注意力 + FFN
 class VoxtralRealtimeEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_idx: int):
         super().__init__()
@@ -480,6 +511,7 @@ class VoxtralRealtimeEncoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# VoxtralRealtimePreTrainedModel：Realtime 预训练基类
 class VoxtralRealtimePreTrainedModel(PreTrainedModel):
     config: VoxtralRealtimeConfig
     base_model_prefix = "model"
@@ -509,6 +541,8 @@ class VoxtralRealtimePreTrainedModel(PreTrainedModel):
     The VoxtralRealtime encoder, which is a Whisper encoder.
     """
 )
+# VoxtralRealtimeEncoder：流式 RoPE 音频 Transformer 编码器
+# VoxtralRealtimeEncoder：流式 RoPE 音频 Transformer 编码器
 class VoxtralRealtimeEncoder(VoxtralRealtimePreTrainedModel):
     """
     Transformer encoder consisting of *config.encoder_layers* self attention layers. Each layer is a
@@ -608,6 +642,8 @@ class VoxtralRealtimeEncoder(VoxtralRealtimePreTrainedModel):
         )
 
 
+# VoxtralRealtimeTextAdaRmsNorm：时间条件 AdaRMS 缩放因子
+# VoxtralRealtimeTextAdaRmsNorm：时间条件 AdaRMS 缩放因子
 class VoxtralRealtimeTextAdaRmsNorm(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -622,6 +658,7 @@ class VoxtralRealtimeTextAdaRmsNorm(nn.Module):
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# VoxtralRealtimeTextAttention：文本 GQA 因果自注意力
 class VoxtralRealtimeTextAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -681,6 +718,8 @@ class VoxtralRealtimeTextAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# VoxtralRealtimeTextMLP：文本 SiLU 门控 FFN
+# VoxtralRealtimeTextMLP：文本 SiLU 门控 FFN
 class VoxtralRealtimeTextMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -697,6 +736,8 @@ class VoxtralRealtimeTextMLP(nn.Module):
         return down_proj
 
 
+# VoxtralRealtimeTextDecoderLayer：AdaRMS 条件 + 自注意力 + FFN
+# VoxtralRealtimeTextDecoderLayer：AdaRMS 条件 + 自注意力 + FFN
 class VoxtralRealtimeTextDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_idx):
         super().__init__()
@@ -743,6 +784,8 @@ class VoxtralRealtimeTextDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# VoxtralRealtimeTextPreTrainedModel：文本子模型预训练基类
+# VoxtralRealtimeTextPreTrainedModel：文本子模型预训练基类
 class VoxtralRealtimeTextPreTrainedModel(PreTrainedModel):
     config: VoxtralRealtimeTextConfig
     base_model_prefix = "model"
@@ -762,6 +805,8 @@ class VoxtralRealtimeTextPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# VoxtralRealtimeTextModel：堆叠解码层 + RMSNorm + RoPE
+# VoxtralRealtimeTextModel：堆叠解码层 + RMSNorm + RoPE
 class VoxtralRealtimeTextModel(VoxtralRealtimeTextPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -835,6 +880,8 @@ class VoxtralRealtimeTextModel(VoxtralRealtimeTextPreTrainedModel):
         )
 
 
+# VoxtralRealtimeTimeEmbedding：正弦时间嵌入，编码 delay token
+# VoxtralRealtimeTimeEmbedding：正弦时间嵌入，编码 delay token
 class VoxtralRealtimeTimeEmbedding(nn.Module):
     """Sinusoidal Embedding for encoding time"""
 
@@ -851,6 +898,8 @@ class VoxtralRealtimeTimeEmbedding(nn.Module):
         return torch.cat((emb.cos(), emb.sin()))
 
 
+# VoxtralRealtimeMultiModalProjector：下采样音频特征线性投影
+# VoxtralRealtimeMultiModalProjector：下采样音频特征线性投影
 class VoxtralRealtimeMultiModalProjector(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -873,6 +922,8 @@ class VoxtralRealtimeMultiModalProjector(nn.Module):
     a Mistral-based language model and a time embedding, without a language modeling head.
     """
 )
+# VoxtralRealtimeModel：音频嵌入叠加 + 时间条件文本解码
+# VoxtralRealtimeModel：音频嵌入叠加 + 时间条件文本解码
 class VoxtralRealtimeModel(VoxtralRealtimePreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1020,6 +1071,8 @@ class VoxtralRealtimeModel(VoxtralRealtimePreTrainedModel):
         )
 
 
+# VoxtralRealtimeForConditionalGeneration：带 lm_head 的实时多模态生成
+# VoxtralRealtimeForConditionalGeneration：带 lm_head 的实时多模态生成
 class VoxtralRealtimeForConditionalGeneration(VoxtralRealtimePreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
 

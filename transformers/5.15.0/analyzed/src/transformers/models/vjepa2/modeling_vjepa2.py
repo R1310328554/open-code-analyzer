@@ -32,12 +32,16 @@ from .configuration_vjepa2 import VJEPA2Config
 logger = logging.get_logger(__name__)
 
 
+# VJEPA2 建模：视频联合嵌入预测架构，3D patch 嵌入 + RoPE 注意力编码器与掩码预测器
+
+
 @auto_docstring(
     custom_intro="""
     VJEPA Predictor outputs that also contains the masked encoder outputs
     """
 )
 @dataclass
+# VJEPA2WithMaskedInputPredictorOutput：预测器输出，含掩码/目标隐藏状态
 class VJEPA2WithMaskedInputPredictorOutput(ModelOutput):
     r"""
     masked_hidden_state (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`, *optional*, returned when `context_mask` is provided which is applied on VJEPA2Encoder outputs):
@@ -60,6 +64,7 @@ class VJEPA2WithMaskedInputPredictorOutput(ModelOutput):
     """
 )
 @dataclass
+# VJEPA2WithMaskedInputModelOutput：完整模型输出，含编码器掩码状态与预测器输出
 class VJEPA2WithMaskedInputModelOutput(ModelOutput):
     r"""
     masked_hidden_state (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`, *optional*, returned when `context_mask` is provided which is applied on VJEPA2Encoder outputs):
@@ -81,6 +86,8 @@ class VJEPA2WithMaskedInputModelOutput(ModelOutput):
         return tuple(output)
 
 
+# VJEPA2PatchEmbeddings3D：3D 卷积将视频 tubelet 投影为 patch token 序列
+# VJEPA2PatchEmbeddings3D：3D 卷积将视频 tubelet 投影为 patch token 序列
 class VJEPA2PatchEmbeddings3D(nn.Module):
     """
     Image to Patch Embedding
@@ -116,6 +123,8 @@ class VJEPA2PatchEmbeddings3D(nn.Module):
         return x
 
 
+# VJEPA2Embeddings：视频 patch 嵌入层，处理 tubelet 维度与 dtype 对齐
+# VJEPA2Embeddings：视频 patch 嵌入层，处理 tubelet 维度与 dtype 对齐
 class VJEPA2Embeddings(nn.Module):
     """
     Construct mask token, position and patch embeddings.
@@ -151,6 +160,7 @@ class VJEPA2Embeddings(nn.Module):
 
 
 # Adapted from transformers.models.vit.modeling_vit.eager_attention_forward
+# eager_attention_forward：标准 eager 缩放点积注意力
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -177,6 +187,8 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# rotate_queries_or_keys：对 Q/K 施加时空分解 RoPE 旋转
+# rotate_queries_or_keys：对 Q/K 施加时空分解 RoPE 旋转
 def rotate_queries_or_keys(x, pos):
     B, num_heads, N, D = x.size()
 
@@ -204,6 +216,8 @@ def rotate_queries_or_keys(x, pos):
     return (x * emb_cos) + (y * emb_sin)
 
 
+# VJEPA2RopeAttention：时空 RoPE 自注意力，支持帧/高/宽位置编码
+# VJEPA2RopeAttention：时空 RoPE 自注意力，支持帧/高/宽位置编码
 class VJEPA2RopeAttention(nn.Module):
     def __init__(
         self,
@@ -329,6 +343,8 @@ class VJEPA2RopeAttention(nn.Module):
         return context_layer, attention_probs
 
 
+# VJEPA2MLP：两层线性 FFN，可配置 mlp_ratio
+# VJEPA2MLP：两层线性 FFN，可配置 mlp_ratio
 class VJEPA2MLP(nn.Module):
     def __init__(self, config: VJEPA2Config, hidden_size: int = 1024, mlp_ratio: float = 4.0):
         super().__init__()
@@ -346,6 +362,8 @@ class VJEPA2MLP(nn.Module):
 
 
 # Copied from transformers.models.swin.modular_swin.SwinDropPath with SwinDropPath->VJEPA2DropPath
+# VJEPA2DropPath：随机深度 DropPath，训练时按样本丢弃残差路径
+# VJEPA2DropPath：随机深度 DropPath，训练时按样本丢弃残差路径
 class VJEPA2DropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -370,6 +388,8 @@ class VJEPA2DropPath(nn.Module):
         return f"p={self.drop_prob}"
 
 
+# VJEPA2Layer：Pre-LN Transformer 块，RoPE 自注意力 + FFN 双残差
+# VJEPA2Layer：Pre-LN Transformer 块，RoPE 自注意力 + FFN 双残差
 class VJEPA2Layer(GradientCheckpointingLayer):
     """This corresponds to the Block class in the original implementation."""
 
@@ -418,6 +438,8 @@ class VJEPA2Layer(GradientCheckpointingLayer):
         return hidden_states, attn_weights
 
 
+# VJEPA2Encoder：视频 Transformer 编码器，堆叠 VJEPA2Layer
+# VJEPA2Encoder：视频 Transformer 编码器，堆叠 VJEPA2Layer
 class VJEPA2Encoder(nn.Module):
     def __init__(self, config: VJEPA2Config):
         super().__init__()
@@ -461,6 +483,8 @@ class VJEPA2Encoder(nn.Module):
         )
 
 
+# apply_masks：按掩码索引 gather patch，用于上下文/目标 token 选择
+# apply_masks：按掩码索引 gather patch，用于上下文/目标 token 选择
 def apply_masks(tensor: torch.Tensor, masks: list[torch.Tensor]) -> torch.Tensor:
     """
     Args:
@@ -478,6 +502,8 @@ def apply_masks(tensor: torch.Tensor, masks: list[torch.Tensor]) -> torch.Tensor
     return torch.cat(all_masked_tensors, dim=0)
 
 
+# VJEPA2PredictorEmbeddings：预测器嵌入，拼接上下文与可学习 mask token
+# VJEPA2PredictorEmbeddings：预测器嵌入，拼接上下文与可学习 mask token
 class VJEPA2PredictorEmbeddings(nn.Module):
     """
     Construct mask token, position and patch embeddings.
@@ -548,6 +574,8 @@ class VJEPA2PredictorEmbeddings(nn.Module):
         return embeddings, masks
 
 
+# VJEPA2Predictor：掩码预测 Transformer，从上下文预测被掩码 patch 表示
+# VJEPA2Predictor：掩码预测 Transformer，从上下文预测被掩码 patch 表示
 class VJEPA2Predictor(nn.Module):
     def __init__(self, config: VJEPA2Config):
         super().__init__()
@@ -629,6 +657,8 @@ class VJEPA2Predictor(nn.Module):
         )
 
 
+# VJEPA2PoolerSelfAttention：Attentive Pooler 自注意力层
+# VJEPA2PoolerSelfAttention：Attentive Pooler 自注意力层
 class VJEPA2PoolerSelfAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -685,6 +715,8 @@ class VJEPA2PoolerSelfAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# VJEPA2PoolerCrossAttention：Attentive Pooler 交叉注意力，无 o_proj
+# VJEPA2PoolerCrossAttention：Attentive Pooler 交叉注意力，无 o_proj
 class VJEPA2PoolerCrossAttention(nn.Module):
     """It's different from other cross-attention layers, doesn't have output projection layer (o_proj)"""
 
@@ -750,6 +782,8 @@ class VJEPA2PoolerCrossAttention(nn.Module):
 
 
 # Modified from SiglipEncoderLayer, but we have to propagate proper hidden_size to VJEPA2MLP
+# VJEPA2PoolerSelfAttentionLayer：Pooler 自注意力块，Pre-LN + FFN
+# VJEPA2PoolerSelfAttentionLayer：Pooler 自注意力块，Pre-LN + FFN
 class VJEPA2PoolerSelfAttentionLayer(GradientCheckpointingLayer):
     def __init__(self, config: VJEPA2Config):
         super().__init__()
@@ -786,6 +820,8 @@ class VJEPA2PoolerSelfAttentionLayer(GradientCheckpointingLayer):
         return hidden_states, attn_weights
 
 
+# VJEPA2PoolerCrossAttentionLayer：Pooler 交叉注意力块 + FFN
+# VJEPA2PoolerCrossAttentionLayer：Pooler 交叉注意力块 + FFN
 class VJEPA2PoolerCrossAttentionLayer(GradientCheckpointingLayer):
     def __init__(self, config: VJEPA2Config):
         super().__init__()
@@ -820,6 +856,8 @@ class VJEPA2PoolerCrossAttentionLayer(GradientCheckpointingLayer):
         return hidden_state, *attn_weights
 
 
+# VJEPA2AttentivePooler：可学习 query token 聚合序列表示用于分类
+# VJEPA2AttentivePooler：可学习 query token 聚合序列表示用于分类
 class VJEPA2AttentivePooler(nn.Module):
     """Attentive Pooler"""
 
@@ -840,6 +878,7 @@ class VJEPA2AttentivePooler(nn.Module):
 
 
 @auto_docstring
+# VJEPA2PreTrainedModel：VJEPA2 预训练基类，含 patch/预测器/Pooler 权重初始化
 class VJEPA2PreTrainedModel(PreTrainedModel):
     config: VJEPA2Config
     base_model_prefix = "vjepa2"
@@ -885,6 +924,7 @@ class VJEPA2PreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# VJEPA2Model：编码器 + 预测器联合模型，支持 context/target 掩码
 class VJEPA2Model(VJEPA2PreTrainedModel):
     def __init__(self, config: VJEPA2Config):
         super().__init__(config)
@@ -973,6 +1013,8 @@ class VJEPA2Model(VJEPA2PreTrainedModel):
     V-JEPA 2 Model transformer with a video classification head on top (a linear layer on top of the attentive pooler).
     """
 )
+# VJEPA2ForVideoClassification：Attentive Pooler + 线性头视频分类
+# VJEPA2ForVideoClassification：Attentive Pooler + 线性头视频分类
 class VJEPA2ForVideoClassification(VJEPA2PreTrainedModel):
     def __init__(self, config: VJEPA2Config):
         super().__init__(config)

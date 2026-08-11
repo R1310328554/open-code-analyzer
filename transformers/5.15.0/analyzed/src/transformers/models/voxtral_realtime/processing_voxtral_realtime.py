@@ -31,6 +31,10 @@ from ...processing_utils import ProcessingKwargs, ProcessorMixin, Unpack
 logger = logging.get_logger(__name__)
 
 
+# Voxtral Realtime 处理器：流式转录请求与 mel 特征对齐校验
+
+
+# VoxtralRealtimeProcessorKwargs：Realtime 处理 kwargs 默认值
 class VoxtralRealtimeProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -47,6 +51,7 @@ class VoxtralRealtimeProcessorKwargs(ProcessingKwargs, total=False):
 
 @auto_docstring
 @requires(backends=("mistral-common",))
+# VoxtralRealtimeProcessor：MistralCommon 后端 + 特征提取器联合处理
 class VoxtralRealtimeProcessor(ProcessorMixin):
     def __init__(self, feature_extractor, tokenizer):
         if not isinstance(tokenizer, MistralCommonBackend):

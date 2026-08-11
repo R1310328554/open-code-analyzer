@@ -13,11 +13,15 @@
 # limitations under the License.
 """Fast Video processor class for VJEPA2."""
 
+# VJEPA2 视频预处理：缩放、中心裁剪与 ImageNet 归一化
+
 from ...image_utils import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD, PILImageResampling
 from ...processing_utils import Unpack, VideosKwargs
 from ...video_processing_utils import BaseVideoProcessor
 
 
+# VJEPA2VideoProcessor：VJEPA2 视频处理器，crop_size 驱动 resize 短边
+# VJEPA2VideoProcessor：VJEPA2 视频处理器，crop_size 驱动 resize 短边
 class VJEPA2VideoProcessor(BaseVideoProcessor):
     resample = PILImageResampling.BILINEAR
     image_mean = IMAGENET_DEFAULT_MEAN
