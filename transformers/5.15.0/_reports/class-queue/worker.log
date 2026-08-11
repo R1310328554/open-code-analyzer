@@ -2668,3 +2668,8 @@
 2026-08-11T04:19:23Z DONE utils/patch_helper.py wave89a Chinese class docs
 2026-08-11T04:19:23Z DONE utils/post_mlinter_review.py wave89a Chinese class docs
 2026-08-11T04:19:23Z DONE utils/pr_slow_ci_models.py wave89a Chinese class docs
+2026-08-11T04:23:37Z DONE utils/test_module/custom_pipeline.py wave90a Chinese class docs
+2026-08-11T04:23:37Z DONE utils/test_module/custom_processing.py wave90a Chinese class docs
+2026-08-11T04:23:37Z DONE utils/test_module/custom_tokenization.py wave90a Chinese class docs
+2026-08-11T04:23:37Z DONE utils/test_module/custom_tokenization_fast.py wave90a Chinese class docs
+2026-08-11T04:23:37Z DONE utils/test_module/custom_video_processing.py wave90a Chinese class docs

@@ -2668,3 +2668,8 @@ utils/notification_service_doc_tests.py
 utils/patch_helper.py
 utils/post_mlinter_review.py
 utils/pr_slow_ci_models.py
+utils/test_module/custom_pipeline.py
+utils/test_module/custom_processing.py
+utils/test_module/custom_tokenization.py
+utils/test_module/custom_tokenization_fast.py
+utils/test_module/custom_video_processing.py
