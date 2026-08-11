@@ -43,6 +43,9 @@ import torch.nn as nn
 from .configuration_idefics import IdeficsConfig
 
 
+# Idefics Perceiver Resampler：Flamingo 风格交叉注意力压缩视觉 token 为固定 latent
+
+# IdeficsPerceiverResampler：Idefics Perceiver Resampler（交叉注意力压缩视觉序列）
 class IdeficsPerceiverResampler(nn.Module):
     def __init__(
         self, config: IdeficsConfig, embed_dim: int, depth: int, n_heads: int, head_dim: int, n_latents: int
@@ -103,6 +106,7 @@ class IdeficsPerceiverResampler(nn.Module):
         return self.layer_norm(latents)
 
 
+# IdeficsPerceiverAttention：Idefics Perceiver 交叉/自注意力模块
 class IdeficsPerceiverAttention(nn.Module):
     def __init__(self, embed_dim: int, n_heads: int, head_dim: int, qk_layer_norms: bool) -> None:
         """Perceiver Cross-Attention Module --> let long-form inputs be `context`, resampled embeddings be `latents`"""
@@ -168,6 +172,7 @@ class IdeficsPerceiverAttention(nn.Module):
         return self.output_proj(resampled.transpose(1, 2).flatten(-2))
 
 
+# IdeficsMLP：Idefics 前馈 MLP（GELU 激活）
 class IdeficsMLP(nn.Module):
     def __init__(self, intermediate_size, config: IdeficsConfig):
         """Simple MLP block with intermediate_size and embedding size"""

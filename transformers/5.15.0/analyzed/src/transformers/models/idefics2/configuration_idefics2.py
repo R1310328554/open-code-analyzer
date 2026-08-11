@@ -22,8 +22,12 @@ from ..auto import CONFIG_MAPPING, AutoConfig
 logger = logging.get_logger(__name__)
 
 
+# Idefics2 配置：HuggingFaceM4/idefics2-8b 图文多模态（SigLIP 视觉 + Perceiver + Mistral）超参
+
+# Idefics2VisionConfig：HuggingFaceM4/idefics2-8b 视觉塔默认超参
 @auto_docstring(checkpoint="HuggingFaceM4/idefics2-8b")
 @strict
+# Idefics2VisionConfig：Idefics2 视觉塔超参（SigLIP 风格 ViT）
 class Idefics2VisionConfig(PreTrainedConfig):
     r"""
     Example:
@@ -58,8 +62,10 @@ class Idefics2VisionConfig(PreTrainedConfig):
     initializer_range: float = 0.02
 
 
+# Idefics2PerceiverConfig：HuggingFaceM4/idefics2-8b Perceiver Resampler 默认超参
 @auto_docstring(checkpoint="HuggingFaceM4/idefics2-8b")
 @strict
+# Idefics2PerceiverConfig：Idefics2 Perceiver Resampler 超参
 class Idefics2PerceiverConfig(PreTrainedConfig):
     r"""
     resampler_n_latents (`int`, *optional*, defaults to 64):
@@ -94,8 +100,10 @@ class Idefics2PerceiverConfig(PreTrainedConfig):
             )
 
 
+# Idefics2Config：HuggingFaceM4/idefics2-8b 图文多模态顶层默认超参
 @auto_docstring(checkpoint="HuggingFaceM4/idefics2-8b")
 @strict
+# Idefics2Config：Idefics2 图文多模态顶层配置（视觉塔 + Perceiver + Mistral 文本）
 class Idefics2Config(PreTrainedConfig):
     r"""
     perceiver_config (`IdeficsPerceiverConfig` or `dict`, *optional*):

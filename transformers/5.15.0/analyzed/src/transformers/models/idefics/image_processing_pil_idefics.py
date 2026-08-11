@@ -28,7 +28,10 @@ IDEFICS_STANDARD_MEAN = [0.48145466, 0.4578275, 0.40821073]
 IDEFICS_STANDARD_STD = [0.26862954, 0.26130258, 0.27577711]
 
 
+# Idefics 图像处理：PIL 后端 CLIP 风格归一化与缩放
+
 # Adapted from transformers.models.idefics.image_processing_idefics.IdeficsImageProcessorKwargs
+# IdeficsImageProcessorKwargs：Idefics 图像处理器可选参数字典类型
 class IdeficsImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     transform (`Callable`, *optional*, defaults to `None`):
@@ -48,6 +51,7 @@ class IdeficsImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# IdeficsImageProcessorPil：Idefics PIL 后端图像预处理
 class IdeficsImageProcessorPil(PilBackend):
     valid_kwargs = IdeficsImageProcessorKwargs
     resample = PILImageResampling.BICUBIC

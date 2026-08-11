@@ -37,14 +37,19 @@ if TYPE_CHECKING:
 logger = logging.get_logger(__name__)
 
 
+# Idefics2 Processor：多图/URL 与 image token 占位符联合文本输入组装
+
+# is_url：判断字符串是否为 HTTP/HTTPS URL
 def is_url(val) -> bool:
     return isinstance(val, str) and val.startswith("http")
 
 
+# is_image_or_image_url：判断元素是否为图像或图像 URL
 def is_image_or_image_url(elem):
     return is_url(elem) or is_valid_image(elem)
 
 
+# Idefics2ProcessorKwargs：Idefics2 Processor 联合可选参数字典类型
 class Idefics2ProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -56,6 +61,7 @@ class Idefics2ProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# Idefics2Processor：封装图像预处理与分词器的多图多模态输入管线
 class Idefics2Processor(ProcessorMixin):
     valid_processor_kwargs = Idefics2ProcessorKwargs
 

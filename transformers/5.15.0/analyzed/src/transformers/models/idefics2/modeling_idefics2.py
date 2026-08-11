@@ -36,6 +36,8 @@ from ..auto import AutoModel
 from .configuration_idefics2 import Idefics2Config, Idefics2PerceiverConfig, Idefics2VisionConfig
 
 
+# Idefics2 建模：SigLIP 视觉塔 + Perceiver Resampler + Mistral 文本解码器多模态联合
+
 logger = logging.get_logger(__name__)
 
 
@@ -45,6 +47,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# Idefics2BaseModelOutputWithPast：Idefics2 多模态输出 dataclass（含 past_key_values）
 class Idefics2BaseModelOutputWithPast(ModelOutput):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`):
@@ -71,6 +74,7 @@ class Idefics2BaseModelOutputWithPast(ModelOutput):
 )
 @dataclass
 # Copied from transformers.models.idefics.modeling_idefics.IdeficsCausalLMOutputWithPast with Idefics->Idefics2
+# Idefics2CausalLMOutputWithPast：Idefics2 因果 LM 输出 dataclass（含 logits 与 past）
 class Idefics2CausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -97,6 +101,7 @@ class Idefics2CausalLMOutputWithPast(ModelOutput):
     image_hidden_states: tuple[torch.FloatTensor] | None = None
 
 
+# Idefics2VisionEmbeddings：Idefics2 视觉 patch 嵌入 + 位置编码
 class Idefics2VisionEmbeddings(nn.Module):
     """
     This is a modified version of `siglip.modelign_siglip.SiglipVisionEmbeddings` to enable images of variable
@@ -173,6 +178,7 @@ class Idefics2VisionEmbeddings(nn.Module):
         return embeddings
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -200,6 +206,7 @@ def eager_attention_forward(
 
 
 # Copied from transformers.models.siglip.modeling_siglip.SiglipAttention with Siglip->Idefics2Vision
+# Idefics2VisionAttention：Idefics2 视觉塔多头自注意力
 class Idefics2VisionAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -263,6 +270,7 @@ class Idefics2VisionAttention(nn.Module):
 
 
 # Copied from transformers.models.siglip.modeling_siglip.SiglipMLP with Siglip->Idefics2Vision
+# Idefics2VisionMLP：Idefics2 视觉塔前馈 MLP
 class Idefics2VisionMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -297,6 +305,7 @@ class Idefics2MLP(nn.Module):
 
 
 # Copied from transformers.models.siglip.modeling_siglip.SiglipMultiheadAttentionPoolingHead with Siglip->Idefics2
+# Idefics2MultiheadAttentionPoolingHead：Idefics2 视觉多头注意力池化头
 class Idefics2MultiheadAttentionPoolingHead(nn.Module):
     """Multihead Attention Pooling."""
 
@@ -327,6 +336,7 @@ class Idefics2MultiheadAttentionPoolingHead(nn.Module):
         return hidden_state[:, 0]
 
 
+# Idefics2EncoderLayer：Idefics2 视觉 Transformer 编码器单层
 class Idefics2EncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Idefics2VisionConfig):
         super().__init__()
@@ -363,6 +373,7 @@ class Idefics2EncoderLayer(GradientCheckpointingLayer):
 
 
 # Copied from transformers.models.siglip.modeling_siglip.SiglipEncoder with Siglip->Idefics2
+# Idefics2Encoder：Idefics2 视觉 Transformer 多层编码器堆叠
 class Idefics2Encoder(nn.Module):
     """
     Transformer encoder consisting of `config.num_hidden_layers` self attention layers. Each layer is a
@@ -398,6 +409,7 @@ class Idefics2Encoder(nn.Module):
 
 
 @auto_docstring
+# Idefics2PreTrainedModel：Idefics2 预训练基类与权重初始化
 class Idefics2PreTrainedModel(PreTrainedModel):
     config: Idefics2Config
     base_model_prefix = "model"
@@ -425,6 +437,7 @@ class Idefics2PreTrainedModel(PreTrainedModel):
     Idefics2 vision encoder model that returnss raw image embeddings.
     """
 )
+# Idefics2VisionTransformer：Idefics2 视觉 Transformer 编码塔
 class Idefics2VisionTransformer(Idefics2PreTrainedModel):
     config: Idefics2VisionConfig
     input_modalities = ("image",)
@@ -497,6 +510,7 @@ class Idefics2VisionTransformer(Idefics2PreTrainedModel):
 
 
 # Copied from transformers.models.llama.modeling_llama.repeat_kv
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -510,6 +524,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
 
 
 # Copied from transformers.models.llama.modeling_llama.LlamaRMSNorm with Llama->Idefics2
+# Idefics2RMSNorm：Idefics2 RMS LayerNorm
 class Idefics2RMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -612,6 +627,7 @@ class Idefics2PerceiverAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# Idefics2PerceiverLayer：Idefics2 Perceiver Resampler 单层（交叉+自注意力）
 class Idefics2PerceiverLayer(nn.Module):
     def __init__(self, config, layer_idx: int):
         super().__init__()
@@ -680,6 +696,7 @@ class Idefics2PerceiverLayer(nn.Module):
     Idefics2 perceiver resampler model that performs `depth` blocks of cross-attention with a fixed
     """
 )
+# Idefics2PerceiverResampler：Idefics2 Perceiver Resampler（压缩视觉 token 到固定 latent）
 class Idefics2PerceiverResampler(Idefics2PreTrainedModel):
     config: Idefics2PerceiverConfig
     input_modalities = ("image",)
@@ -743,6 +760,7 @@ class Idefics2PerceiverResampler(Idefics2PreTrainedModel):
         return compressed_context
 
 
+# Idefics2Connector：Idefics2 视觉-文本连接器（Perceiver 输出投影到 LLM 维度）
 class Idefics2Connector(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -765,6 +783,7 @@ class Idefics2Connector(nn.Module):
     Idefics2 model consisting of a SIGLIP vision encoder and Mistral language decoder
     """
 )
+# Idefics2Model：Idefics2 视觉+文本多模态联合主干
 class Idefics2Model(Idefics2PreTrainedModel):
     def __init__(self, config: Idefics2Config):
         super().__init__(config)
@@ -962,6 +981,7 @@ class Idefics2Model(Idefics2PreTrainedModel):
     The Idefics2 Model with a language modeling head. It is made up a SigLIP vision encoder, with a language modeling head on top.
     """
 )
+# Idefics2ForConditionalGeneration：Idefics2 条件生成（图文理解与对话）
 class Idefics2ForConditionalGeneration(Idefics2PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.text_model.embed_tokens.weight"}
 

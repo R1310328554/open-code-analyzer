@@ -22,8 +22,12 @@ from ..auto import CONFIG_MAPPING, AutoConfig
 logger = logging.get_logger(__name__)
 
 
+# Idefics3 配置：HuggingFaceM4/Idefics3-8B-Llama3 图文多模态（SigLIP 视觉 + Llama3 文本）超参
+
+# Idefics3VisionConfig：HuggingFaceM4/Idefics3-8B-Llama3 视觉塔默认超参
 @auto_docstring(checkpoint="HuggingFaceM4/Idefics3-8B-Llama3")
 @strict
+# Idefics3VisionConfig：Idefics3 视觉塔超参（SigLIP 风格 + scale_factor）
 class Idefics3VisionConfig(PreTrainedConfig):
     r"""
     Example:
@@ -58,8 +62,10 @@ class Idefics3VisionConfig(PreTrainedConfig):
     initializer_range: float = 0.02
 
 
+# Idefics3Config：HuggingFaceM4/Idefics3-8B-Llama3 图文多模态顶层默认超参
 @auto_docstring(checkpoint="HuggingFaceM4/Idefics3-8B-Llama3")
 @strict
+# Idefics3Config：Idefics3 图文多模态顶层配置（视觉塔 + Llama3 文本骨干）
 class Idefics3Config(PreTrainedConfig):
     r"""
     scale_factor (`int`, *optional*, defaults to 2):

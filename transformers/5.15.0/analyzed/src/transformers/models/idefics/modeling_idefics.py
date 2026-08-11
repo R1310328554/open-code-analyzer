@@ -43,6 +43,8 @@ from .perceiver import IdeficsPerceiverResampler
 from .vision import IdeficsVisionEmbeddings, IdeficsVisionTransformer
 
 
+# Idefics 建模：Flamingo 风格门控交叉注意力多模态（视觉塔 + Perceiver + 文本解码器）
+
 logger = logging.get_logger(__name__)
 
 
@@ -52,6 +54,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# IdeficsBaseModelOutputWithPast：Idefics 多模态输出 dataclass（含 past_key_values）
 class IdeficsBaseModelOutputWithPast(ModelOutput):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`):
@@ -79,6 +82,7 @@ class IdeficsBaseModelOutputWithPast(ModelOutput):
     """
 )
 @dataclass
+# IdeficsCausalLMOutputWithPast：Idefics 因果 LM 输出 dataclass（含 logits 与 past）
 class IdeficsCausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -105,6 +109,7 @@ class IdeficsCausalLMOutputWithPast(ModelOutput):
     image_hidden_states: tuple[torch.FloatTensor] | None = None
 
 
+# expand_inputs_for_generation：生成时扩展 input_ids 以匹配 past 长度
 def expand_inputs_for_generation(
     input_ids,
     expand_size=1,
@@ -150,6 +155,7 @@ def expand_inputs_for_generation(
     return input_ids, model_kwargs
 
 
+# freeze_model：按模块名冻结模型参数（支持例外列表）
 def freeze_model(model, module_exceptions=()):
     mapping = {
         "LayerNorm": nn.LayerNorm,
@@ -165,6 +171,7 @@ def freeze_model(model, module_exceptions=()):
     return model
 
 
+# IdeficsDecoupledEmbedding：Idefics 解耦嵌入层（额外 vocab 与主 vocab 分离）
 class IdeficsDecoupledEmbedding(nn.Embedding):
     # Derived from https://pytorch.org/docs/stable/_modules/torch/nn/modules/sparse.html#Embedding
     """
@@ -270,6 +277,7 @@ class IdeficsDecoupledEmbedding(nn.Embedding):
         return f"num_embeddings={self.num_embeddings}, num_additional_embeddings={self.num_additional_embeddings}, embedding_dim={self.embedding_dim}, partially_freeze={self.partially_freeze}"
 
 
+# IdeficsDecoupledLinear：Idefics 解耦线性层（额外 vocab 输出头）
 class IdeficsDecoupledLinear(nn.Linear):
     # Derived from https://pytorch.org/docs/stable/_modules/torch/nn/modules/linear.html#Linear
     """
@@ -330,6 +338,7 @@ class IdeficsDecoupledLinear(nn.Linear):
 
 
 # this was adapted from LlamaRMSNorm
+# IdeficsRMSNorm：Idefics RMS LayerNorm
 class IdeficsRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps=1e-6):
         """
@@ -354,6 +363,7 @@ class IdeficsRMSNorm(nn.Module):
 
 
 # this was adapted from LlamaRotaryEmbedding
+# IdeficsEmbedding：Idefics 文本 token 嵌入（含额外 vocab 通道）
 class IdeficsEmbedding(torch.nn.Module):
     def __init__(self, dim, max_position_embeddings=2048, base=10000, device=None):
         super().__init__()
@@ -393,6 +403,7 @@ class IdeficsEmbedding(torch.nn.Module):
         )
 
 
+# rotate_half：RoPE 中将向量后半部分旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -400,6 +411,7 @@ def rotate_half(x):
     return torch.cat((-x2, x1), dim=-1)
 
 
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, position_ids, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -429,6 +441,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, position_ids, unsqueeze_dim=1):
 
 
 # this was adapted from LlamaMLP
+# IdeficsMLP：Idefics 前馈 MLP（GELU 激活）
 class IdeficsMLP(nn.Module):
     def __init__(
         self,
@@ -447,6 +460,7 @@ class IdeficsMLP(nn.Module):
 
 
 # Copied from transformers.models.siglip.modeling_siglip.eager_attention_forward
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -471,6 +485,7 @@ def eager_attention_forward(
 
 
 # this was adapted from LlamaAttention
+# IdeficsAttention：Idefics 文本解码器多头自注意力（含 RoPE）
 class IdeficsAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -621,6 +636,7 @@ class IdeficsAttention(nn.Module):
 
 
 # this was adapted from LlamaDecoderLayer
+# IdeficsDecoderLayer：Idefics 文本解码器单层（自注意力 + MLP）
 class IdeficsDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: IdeficsConfig, layer_idx: int | None = None):
         super().__init__()
@@ -675,6 +691,7 @@ class IdeficsDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# IdeficsGatedCrossAttentionLayer：Idefics 门控交叉注意力层（文本查询视觉 latent）
 class IdeficsGatedCrossAttentionLayer(GradientCheckpointingLayer):
     def __init__(self, config: IdeficsConfig, layer_idx: int | None = None):
         super().__init__()
@@ -803,6 +820,7 @@ class IdeficsGatedCrossAttentionLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# IdeficsPreTrainedModel：Idefics 预训练基类与权重初始化
 class IdeficsPreTrainedModel(PreTrainedModel):
     config: IdeficsConfig
     base_model_prefix = "model"
@@ -853,6 +871,7 @@ class IdeficsPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# IdeficsModel：Idefics 视觉+文本多模态联合主干
 class IdeficsModel(IdeficsPreTrainedModel):
     """
     Transformer decoder consisting of `config.num_hidden_layers` layers. Each layer is a [`IdeficsDecoderLayer`]
@@ -1081,6 +1100,7 @@ class IdeficsModel(IdeficsPreTrainedModel):
         )
 
 
+# IdeficsForVisionText2Text：Idefics 视觉-文本条件生成（Flamingo 风格）
 class IdeficsForVisionText2Text(IdeficsPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
 

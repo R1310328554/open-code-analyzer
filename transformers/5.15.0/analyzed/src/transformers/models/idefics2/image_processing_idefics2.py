@@ -37,6 +37,9 @@ if is_vision_available():
 from torchvision.transforms.v2 import functional as tvF
 
 
+# Idefics2 图像处理：Torchvision 后端动态缩放、padding 与像素掩码
+
+# get_resize_output_image_size：按 min/max 像素约束计算缩放后图像尺寸
 def get_resize_output_image_size(image, size: SizeDict) -> tuple[int, int]:
     """
     Get the output size of the image after resizing given a dictionary specifying the max and min sizes.
@@ -59,6 +62,7 @@ def get_resize_output_image_size(image, size: SizeDict) -> tuple[int, int]:
     return height, width
 
 
+# convert_to_rgb：将图像转换为 RGB 三通道格式
 def convert_to_rgb(image: ImageInput) -> ImageInput:
     """
     Converts an image to RGB format. Only converts if the image is of type PIL.Image.Image, otherwise returns the image
@@ -77,6 +81,7 @@ def convert_to_rgb(image: ImageInput) -> ImageInput:
     return alpha_composite
 
 
+# Idefics2ImageProcessorKwargs：Idefics2 图像处理器可选参数字典类型
 class Idefics2ImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     do_image_splitting (`bool`, *optional*, defaults to `self.do_image_splitting`):
@@ -86,6 +91,7 @@ class Idefics2ImageProcessorKwargs(ImagesKwargs, total=False):
     do_image_splitting: bool
 
 
+# get_max_height_width：批量图像中最大高宽（用于统一 padding）
 def get_max_height_width(images_list: list[list["torch.Tensor|np.ndarray"]]) -> tuple[int, int]:
     """
     Get the maximum height and width across all images in a batch.
@@ -100,6 +106,7 @@ def get_max_height_width(images_list: list[list["torch.Tensor|np.ndarray"]]) -> 
     return (max_height, max_width)
 
 
+# make_pixel_mask：生成像素有效区域掩码（padding 区域为 0）
 def make_pixel_mask(image: "torch.Tensor", output_size: tuple[int, int]) -> "torch.Tensor":
     """
     Make a pixel mask for the image, where 1 indicates a valid pixel and 0 indicates padding.
@@ -111,6 +118,7 @@ def make_pixel_mask(image: "torch.Tensor", output_size: tuple[int, int]) -> "tor
 
 
 @auto_docstring
+# Idefics2ImageProcessor：Idefics2 Torchvision 后端图像预处理
 class Idefics2ImageProcessor(TorchvisionBackend):
     valid_kwargs = Idefics2ImageProcessorKwargs
     resample = PILImageResampling.BILINEAR
@@ -133,6 +141,7 @@ class Idefics2ImageProcessor(TorchvisionBackend):
     def preprocess(self, images: ImageInput, **kwargs: Unpack[Idefics2ImageProcessorKwargs]) -> BatchFeature:
         return super().preprocess(images, **kwargs)
 
+    # convert_to_rgb：将图像转换为 RGB 三通道格式
     def convert_to_rgb(self, image: ImageInput) -> ImageInput:
         """Convert an image to RGB format."""
         return convert_to_rgb(image)

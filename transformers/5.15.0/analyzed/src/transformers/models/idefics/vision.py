@@ -36,7 +36,10 @@ from .configuration_idefics import IdeficsVisionConfig
 logger = logging.get_logger(__name__)
 
 
+# Idefics 视觉塔：CLIP 风格 ViT 编码图像 patch 序列
+
 @dataclass
+# IdeficsVisionModelOutput：Idefics 视觉塔输出 dataclass（含 image_embeds）
 class IdeficsVisionModelOutput(ModelOutput):
     """
     Base class for vision model's outputs that also contains image embeddings of the pooling of the last hidden states.
@@ -66,6 +69,7 @@ class IdeficsVisionModelOutput(ModelOutput):
 
 
 # Adapted from transformers.models.clip.modeling_clip.CLIPVisionEmbeddings
+# IdeficsVisionEmbeddings：Idefics 视觉 patch 卷积嵌入 + 位置编码
 class IdeficsVisionEmbeddings(nn.Module):
     def __init__(self, config: IdeficsVisionConfig):
         super().__init__()
@@ -166,6 +170,7 @@ class IdeficsVisionEmbeddings(nn.Module):
 
 
 # Copied from transformers.models.siglip.modeling_siglip.eager_attention_forward
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -189,6 +194,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# IdeficsVisionAttention：Idefics 视觉塔多头自注意力
 class IdeficsVisionAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -253,6 +259,7 @@ class IdeficsVisionAttention(nn.Module):
 
 
 # Copied from transformers.models.clip.modeling_clip.CLIPMLP with CLIP->IdeficsVision
+# IdeficsVisionMLP：Idefics 视觉塔前馈 MLP
 class IdeficsVisionMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -269,6 +276,7 @@ class IdeficsVisionMLP(nn.Module):
 
 
 # Copied from transformers.models.altclip.modeling_altclip.AltCLIPEncoderLayer with AltCLIPVisionConfig->IdeficsVisionConfig,AltCLIP->IdeficsVision
+# IdeficsVisionEncoderLayer：Idefics 视觉 Transformer 编码器单层
 class IdeficsVisionEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: IdeficsVisionConfig):
         super().__init__()
@@ -303,6 +311,7 @@ class IdeficsVisionEncoderLayer(GradientCheckpointingLayer):
 
 
 # Copied from transformers.models.altclip.modeling_altclip.AltCLIPEncoder with AltCLIP->IdeficsVision
+# IdeficsVisionEncoder：Idefics 视觉 Transformer 多层编码器堆叠
 class IdeficsVisionEncoder(nn.Module):
     """
     Transformer encoder consisting of `config.num_hidden_layers` self attention layers. Each layer is a
@@ -338,6 +347,7 @@ class IdeficsVisionEncoder(nn.Module):
 
 
 # Adapted from transformers.models.clip.modeling_clip.CLIPVisionTransformer
+# IdeficsVisionTransformer：Idefics 视觉 Transformer 编码塔
 class IdeficsVisionTransformer(nn.Module):
     def __init__(self, config: IdeficsVisionConfig):
         super().__init__()

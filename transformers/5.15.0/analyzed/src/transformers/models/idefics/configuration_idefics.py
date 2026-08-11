@@ -24,8 +24,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# Idefics 配置：HuggingFaceM4/idefics-9b 图文多模态（视觉塔 + Perceiver + 文本解码器）超参
+
+# IdeficsVisionConfig：HuggingFaceM4/idefics-9b 视觉塔默认超参
 @auto_docstring(checkpoint="HuggingFaceM4/idefics-9b")
 @strict
+# IdeficsVisionConfig：Idefics 视觉塔超参（CLIP 风格 ViT patch 编码）
 class IdeficsVisionConfig(PreTrainedConfig):
     model_type = "idefics_vision"
     attribute_map = {"hidden_size": "embed_dim"}
@@ -44,8 +48,10 @@ class IdeficsVisionConfig(PreTrainedConfig):
     initializer_factor: float = 1.0
 
 
+# IdeficsPerceiverConfig：HuggingFaceM4/idefics-9b Perceiver Resampler 默认超参
 @auto_docstring(checkpoint="HuggingFaceM4/idefics-9b")
 @strict
+# IdeficsPerceiverConfig：Idefics Perceiver Resampler 超参（压缩视觉 token）
 class IdeficsPerceiverConfig(PreTrainedConfig):
     r"""
     use_resampler (`bool`, *optional*, defaults to `False`):
@@ -72,8 +78,10 @@ class IdeficsPerceiverConfig(PreTrainedConfig):
     qk_layer_norms_perceiver: bool = False
 
 
+# IdeficsConfig：HuggingFaceM4/idefics-9b 图文多模态顶层默认超参
 @auto_docstring(checkpoint="HuggingFaceM4/idefics-9b")
 @strict
+# IdeficsConfig：Idefics 图文多模态顶层配置（视觉塔 + Perceiver + 文本解码器）
 class IdeficsConfig(PreTrainedConfig):
     r"""
     additional_vocab_size (`int`, *optional*, defaults to 0):

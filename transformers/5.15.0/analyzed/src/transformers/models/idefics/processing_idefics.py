@@ -36,6 +36,9 @@ if is_torch_available():
 IMAGE_TOKEN = "<image>"
 
 
+# Idefics Processor：图像 URL/本地图与 <image> 占位符联合文本输入组装
+
+# IdeficsTextKwargs：Idefics Processor 文本侧可选参数字典类型
 class IdeficsTextKwargs(TextKwargs, total=False):
     """
     add_eos_token (`bool`, *optional*, defaults to `False`):
@@ -51,6 +54,7 @@ class IdeficsTextKwargs(TextKwargs, total=False):
     add_end_of_utterance_token: bool | None
 
 
+# IdeficsProcessorKwargs：Idefics Processor 联合可选参数字典类型
 class IdeficsProcessorKwargs(ProcessingKwargs, total=False):
     text_kwargs: IdeficsTextKwargs
     _defaults = {
@@ -64,6 +68,7 @@ class IdeficsProcessorKwargs(ProcessingKwargs, total=False):
 
 
 # copied from m4.training.packing
+# incremental_to_binary_attention_mask：增量掩码转二值注意力掩码
 def incremental_to_binary_attention_mask(incremental_mask, return_tensors, num_classes=-1):
     # Set elements >= num_classes to -1
     if num_classes != -1:
@@ -81,11 +86,13 @@ def incremental_to_binary_attention_mask(incremental_mask, return_tensors, num_c
 
 
 # copied from m4.training.packing
+# image_attention_mask_for_packed_input_ids：打包 input_ids 的图像注意力掩码
 def image_attention_mask_for_packed_input_ids(input_ids, tokenizer, return_tensors):
     if return_tensors == "pt":
         return image_attention_mask_for_packed_input_ids_pt(input_ids, tokenizer)
 
 
+# image_attention_mask_for_packed_input_ids_pt：PyTorch 版打包 input_ids 图像注意力掩码
 def image_attention_mask_for_packed_input_ids_pt(input_ids, tokenizer):
     image_attention_mask = torch.full_like(input_ids, fill_value=-1)
     next_image_attention_mask = torch.full_like(input_ids, fill_value=-1)
@@ -133,6 +140,7 @@ def image_attention_mask_for_packed_input_ids_pt(input_ids, tokenizer):
     return image_attention_mask, next_image_attention_mask
 
 
+# is_url：判断字符串是否为 HTTP/HTTPS URL
 def is_url(string):
     """Checks if the passed string contains a valid url and nothing else. e.g. if space is included it's immediately
     invalidated the url"""
@@ -143,6 +151,7 @@ def is_url(string):
 
 
 @auto_docstring
+# IdeficsProcessor：封装图像预处理与分词器的 Flamingo 风格多模态输入管线
 class IdeficsProcessor(ProcessorMixin):
     valid_processor_kwargs = IdeficsProcessorKwargs
 
