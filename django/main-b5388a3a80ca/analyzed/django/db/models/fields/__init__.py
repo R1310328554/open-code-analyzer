@@ -38,7 +38,14 @@ from django.utils.functional import Promise, cached_property
 from django.utils.ipv6 import MAX_IPV6_ADDRESS_LENGTH, clean_ipv6_address
 from django.utils.text import capfirst
 from django.utils.translation import gettext_lazy as _
+"""
+django.db.models.fields — 内置模型字段类型集合。
+
+CharField、IntegerField、DateTimeField 等及 AutoField 族与校验逻辑。
+"""
 from django.utils.warnings import django_file_prefixes
+
+__all__ = [from django.utils.warnings import django_file_prefixes
 
 __all__ = [
     "AutoField",
@@ -78,10 +85,12 @@ __all__ = [
 ]
 
 
+# 字段空值哨兵，可伪装为任意字段类型
 class Empty:
     pass
 
 
+# 表示构造参数未提供的哨兵对象
 class NOT_PROVIDED:
     pass
 
@@ -125,6 +134,7 @@ def return_None():
     return None
 
 
+# 所有模型字段的基类：db_type、get_prep_value、contribute_to_class
 @total_ordering
 class Field(RegisterLookupMixin):
     """Base class for all field types"""
@@ -1198,6 +1208,7 @@ class Field(RegisterLookupMixin):
         raise NotSupportedError("This field does not support slicing.")
 
 
+# 布尔字段，数据库存 0/1 或 TRUE/FALSE
 class BooleanField(Field):
     empty_strings_allowed = False
     default_error_messages = {
@@ -1244,6 +1255,7 @@ class BooleanField(Field):
         return super().formfield(**{**defaults, **kwargs})
 
 
+# 定长/变长字符串，max_length 约束
 class CharField(Field):
     def __init__(self, *args, db_collation=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1363,6 +1375,7 @@ class CharField(Field):
         return Substr(expression, start, length)
 
 
+# 逗号分隔整数字符串（已弃用，继承 CharField）
 class CommaSeparatedIntegerField(CharField):
     default_validators = [validators.validate_comma_separated_integer_list]
     description = _("Comma-separated integers")
@@ -1389,6 +1402,7 @@ def _get_naive_now():
     return _to_naive(timezone.now())
 
 
+# 日期时间字段共用的 auto_now/auto_now_add 校验
 class DateTimeCheckMixin:
     def check(self, **kwargs):
         return [
@@ -1462,6 +1476,7 @@ class DateTimeCheckMixin:
         return []
 
 
+# 日期字段，不含时分秒
 class DateField(DateTimeCheckMixin, Field):
     empty_strings_allowed = False
     default_error_messages = {
@@ -1597,6 +1612,7 @@ class DateField(DateTimeCheckMixin, Field):
         )
 
 
+# 日期时间字段，支持 USE_TZ 与时区 aware
 class DateTimeField(DateField):
     empty_strings_allowed = False
     default_error_messages = {
@@ -1738,6 +1754,7 @@ class DateTimeField(DateField):
         )
 
 
+# 精确小数，max_digits 与 decimal_places
 class DecimalField(Field):
     empty_strings_allowed = False
     default_error_messages = {
@@ -1934,6 +1951,7 @@ class DecimalField(Field):
         )
 
 
+# timedelta 时长字段
 class DurationField(Field):
     """
     Store timedelta objects.
@@ -1995,6 +2013,7 @@ class DurationField(Field):
         )
 
 
+# 带 EmailValidator 的 CharField
 class EmailField(CharField):
     default_validators = [validators.validate_email]
     description = _("Email address")
@@ -2021,6 +2040,7 @@ class EmailField(CharField):
         )
 
 
+# 文件系统路径选择，path/match 限制可选文件
 class FilePathField(Field):
     description = _("File path")
 
@@ -2097,6 +2117,7 @@ class FilePathField(Field):
         return "FilePathField"
 
 
+# 浮点数，精度因后端而异
 class FloatField(Field):
     empty_strings_allowed = False
     default_error_messages = {
@@ -2139,6 +2160,7 @@ class FloatField(Field):
         )
 
 
+# 整数，含 min/max 校验
 class IntegerField(Field):
     empty_strings_allowed = False
     default_error_messages = {
@@ -2239,6 +2261,7 @@ class IntegerField(Field):
         )
 
 
+# 64 位大整数
 class BigIntegerField(IntegerField):
     description = _("Big (8 byte) integer")
     MAX_BIGINT = 9223372036854775807
@@ -2256,6 +2279,7 @@ class BigIntegerField(IntegerField):
         )
 
 
+# 16 位小整数
 class SmallIntegerField(IntegerField):
     description = _("Small integer")
 
@@ -2263,6 +2287,7 @@ class SmallIntegerField(IntegerField):
         return "SmallIntegerField"
 
 
+# IPv4 字符串（已弃用，用 GenericIPAddressField）
 class IPAddressField(Field):
     empty_strings_allowed = False
     description = _("IPv4 address")
@@ -2294,6 +2319,7 @@ class IPAddressField(Field):
         return "IPAddressField"
 
 
+# IPv4/IPv6 通用 IP 地址
 class GenericIPAddressField(Field):
     empty_strings_allowed = False
     description = _("IP address")
@@ -2385,6 +2411,7 @@ class GenericIPAddressField(Field):
         )
 
 
+# 三态布尔 null/true/false（已弃用）
 class NullBooleanField(BooleanField):
     default_error_messages = {
         "invalid": _("“%(value)s” value must be either None, True or False."),
@@ -2412,6 +2439,7 @@ class NullBooleanField(BooleanField):
         return name, path, args, kwargs
 
 
+# 无符号整型在各后端的数据库类型映射
 class PositiveIntegerRelDbTypeMixin:
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -2440,6 +2468,7 @@ class PositiveIntegerRelDbTypeMixin:
             return self.integer_field_class().db_type(connection=connection)
 
 
+# 非负大整数
 class PositiveBigIntegerField(PositiveIntegerRelDbTypeMixin, BigIntegerField):
     description = _("Positive big integer")
 
@@ -2455,6 +2484,7 @@ class PositiveBigIntegerField(PositiveIntegerRelDbTypeMixin, BigIntegerField):
         )
 
 
+# 非负整数
 class PositiveIntegerField(PositiveIntegerRelDbTypeMixin, IntegerField):
     description = _("Positive integer")
 
@@ -2470,6 +2500,7 @@ class PositiveIntegerField(PositiveIntegerRelDbTypeMixin, IntegerField):
         )
 
 
+# 非负小整数
 class PositiveSmallIntegerField(PositiveIntegerRelDbTypeMixin, SmallIntegerField):
     description = _("Positive small integer")
 
@@ -2485,6 +2516,7 @@ class PositiveSmallIntegerField(PositiveIntegerRelDbTypeMixin, SmallIntegerField
         )
 
 
+# URL 友好短字符串，默认 ASCIISlugValidator
 class SlugField(CharField):
     default_validators = [validators.validate_slug]
     description = _("Slug (up to %(max_length)s)")
@@ -2522,6 +2554,7 @@ class SlugField(CharField):
         )
 
 
+# 不限长度文本
 class TextField(Field):
     description = _("Text")
 
@@ -2599,6 +2632,7 @@ class TextField(Field):
         return Substr(expression, start, length)
 
 
+# 时分秒时间，不含日期
 class TimeField(DateTimeCheckMixin, Field):
     empty_strings_allowed = False
     default_error_messages = {
@@ -2717,6 +2751,7 @@ class TimeField(DateTimeCheckMixin, Field):
         )
 
 
+# 带 URLValidator 的 CharField
 class URLField(CharField):
     default_validators = [validators.URLValidator()]
     description = _("URL")
@@ -2742,6 +2777,7 @@ class URLField(CharField):
         )
 
 
+# 二进制 blob 数据
 class BinaryField(Field):
     description = _("Raw binary data")
     empty_values = [None, b""]
@@ -2817,6 +2853,7 @@ class BinaryField(Field):
         return value
 
 
+# UUID 主键或标识符
 class UUIDField(Field):
     default_error_messages = {
         "invalid": _("“%(value)s” is not a valid UUID."),
@@ -2872,6 +2909,7 @@ class UUIDField(Field):
         )
 
 
+# 自增主键共用逻辑：db_returning、get_prep_value
 class AutoFieldMixin:
     db_returning = True
 
@@ -2929,6 +2967,7 @@ class AutoFieldMixin:
         return None
 
 
+# AutoField 元类：禁止手动赋值 primary_key
 class AutoFieldMeta(type):
     """
     Metaclass to maintain backward inheritance compatibility for AutoField.
@@ -2961,6 +3000,7 @@ class AutoFieldMeta(type):
         )
 
 
+# 32 位自增主键
 class AutoField(AutoFieldMixin, IntegerField, metaclass=AutoFieldMeta):
     def get_internal_type(self):
         return "AutoField"
@@ -2969,6 +3009,7 @@ class AutoField(AutoFieldMixin, IntegerField, metaclass=AutoFieldMeta):
         return IntegerField().db_type(connection=connection)
 
 
+# 64 位自增主键
 class BigAutoField(AutoFieldMixin, BigIntegerField):
     def get_internal_type(self):
         return "BigAutoField"
@@ -2977,6 +3018,7 @@ class BigAutoField(AutoFieldMixin, BigIntegerField):
         return BigIntegerField().db_type(connection=connection)
 
 
+# 16 位自增主键
 class SmallAutoField(AutoFieldMixin, SmallIntegerField):
     def get_internal_type(self):
         return "SmallAutoField"

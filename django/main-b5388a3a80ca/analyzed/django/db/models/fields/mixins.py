@@ -1,7 +1,16 @@
 from django.core import checks
 from django.utils.functional import cached_property
 
+"""
+django.db.models.fields.mixins — 字段共用 mixin。
+
+FieldCacheMixin 管理实例字段缓存；CheckFieldDefaultMixin 校验 default 可调用。
+"""
 NOT_PROVIDED = object()
+
+
+# 读写 instance._state.fields_cache 中的字段缓存
+class FieldCacheMixin:NOT_PROVIDED = object()
 
 
 class FieldCacheMixin:
@@ -34,6 +43,7 @@ class FieldCacheMixin:
         del instance._state.fields_cache[self.cache_name]
 
 
+# 检查 default 应为 callable 而非共享实例
 class CheckFieldDefaultMixin:
     _default_hint = ("<valid default>", "<invalid default>")
 

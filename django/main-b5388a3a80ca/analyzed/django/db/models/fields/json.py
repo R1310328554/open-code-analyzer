@@ -19,7 +19,16 @@ from django.utils.warnings import django_file_prefixes
 from . import Field
 from .mixins import CheckFieldDefaultMixin
 
+"""
+django.db.models.fields.json — JSONField 及键路径查找。
+
+KeyTransform、HasKey 等 JSON 运算符与后端适配。
+"""
 __all__ = ["JSONField"]
+
+
+# JSON 文档字段，Python dict/list 与数据库 JSON 互转
+class JSONField(CheckFieldDefaultMixin, Field):__all__ = ["JSONField"]
 
 
 class JSONField(CheckFieldDefaultMixin, Field):
@@ -151,6 +160,7 @@ class JSONField(CheckFieldDefaultMixin, Field):
         )
 
 
+# JSON 包含 @> 查找
 class DataContains(FieldGetDbPrepValueMixin, PostgresOperatorLookup):
     lookup_name = "contains"
     postgres_operator = "@>"
@@ -166,6 +176,7 @@ class DataContains(FieldGetDbPrepValueMixin, PostgresOperatorLookup):
         return "JSON_CONTAINS(%s, %s)" % (lhs, rhs), params
 
 
+# JSON 被包含 <@ 查找
 class ContainedBy(FieldGetDbPrepValueMixin, PostgresOperatorLookup):
     lookup_name = "contained_by"
     postgres_operator = "<@"
@@ -181,6 +192,7 @@ class ContainedBy(FieldGetDbPrepValueMixin, PostgresOperatorLookup):
         return "JSON_CONTAINS(%s, %s)" % (rhs, lhs), params
 
 
+# 键存在查找基类：? / ?& / ?|
 class HasKeyLookup(PostgresOperatorLookup):
     logical_operator = None
 
@@ -266,12 +278,14 @@ class HasKeyLookup(PostgresOperatorLookup):
         )
 
 
+# 单个键存在 ?
 class HasKey(HasKeyLookup):
     lookup_name = "has_key"
     postgres_operator = "?"
     prepare_rhs = False
 
 
+# 全部键存在 ?&
 class HasKeys(HasKeyLookup):
     lookup_name = "has_keys"
     postgres_operator = "?&"
@@ -281,17 +295,20 @@ class HasKeys(HasKeyLookup):
         return [str(item) for item in self.rhs]
 
 
+# 任一键存在 ?|
 class HasAnyKeys(HasKeys):
     lookup_name = "has_any_keys"
     postgres_operator = "?|"
     logical_operator = " OR "
 
 
+# 键或数组下标存在
 class HasKeyOrArrayIndex(HasKey):
     def compile_json_path_final_key(self, connection, key_transform):
         return connection.ops.compile_json_path([key_transform], include_root=False)
 
 
+# JSON 文本查找的大小写不敏感 mixin
 class CaseInsensitiveMixin:
     """
     Mixin to allow case-insensitive comparison of JSON values on MySQL.
@@ -313,6 +330,7 @@ class CaseInsensitiveMixin:
         return rhs, rhs_params
 
 
+# JSON 精确相等，处理 null 与类型
 class JSONExact(lookups.Exact):
     # RemovedInDjango70Warning: When the deprecation period is over, remove
     # the following line.
@@ -351,10 +369,12 @@ class JSONExact(lookups.Exact):
         return f"JSON_EQUAL({lhs}, {rhs} ERROR ON ERROR)", (*lhs_params, *rhs_params)
 
 
+# JSON 字符串 icontains
 class JSONIContains(CaseInsensitiveMixin, lookups.IContains):
     pass
 
 
+# 预处理 JSON 左侧为 jsonb 路径表达式
 class ProcessJSONLHSMixin:
     def _get_json_path(self, connection, key_transforms):
         if key_transforms is None:
@@ -401,6 +421,7 @@ class ProcessJSONLHSMixin:
         return "JSON_EXTRACT(%s, %%s)" % sql, (*params, json_path)
 
 
+# JSON 值 IN 列表查找
 class JSONIn(ProcessJSONLHSMixin, lookups.In):
     def resolve_expression_parameter(self, compiler, connection, sql, param):
         sql, params = super().resolve_expression_parameter(
@@ -472,6 +493,7 @@ JSONField.register_lookup(JSONIContains)
 JSONField.register_lookup(JSONIn)
 
 
+# 键路径 transform：field__key__subkey
 class KeyTransform(ProcessJSONLHSMixin, Transform):
     postgres_operator = "->"
     postgres_nested_operator = "#>"
@@ -516,6 +538,7 @@ class KeyTransform(ProcessJSONLHSMixin, Transform):
         return self._process_as_sqlite(lhs, params, connection, key_transforms)
 
 
+# 键路径取文本值
 class KeyTextTransform(KeyTransform):
     postgres_operator = "->>"
     postgres_nested_operator = "#>>"
@@ -548,6 +571,7 @@ class KeyTextTransform(KeyTransform):
 KT = KeyTextTransform.from_lookup
 
 
+# 键路径文本查找共用 mixin
 class KeyTransformTextLookupMixin:
     """
     Mixin for combining with a lookup expecting a text lhs from a JSONField
@@ -570,6 +594,7 @@ class KeyTransformTextLookupMixin:
         super().__init__(key_text_transform, *args, **kwargs)
 
 
+# 键路径 isnull
 class KeyTransformIsNull(lookups.IsNull):
     # key__isnull=False is the same as has_key='key'
     def as_oracle(self, compiler, connection):
@@ -594,10 +619,12 @@ class KeyTransformIsNull(lookups.IsNull):
         )
 
 
+# 键路径 IN 查找
 class KeyTransformIn(JSONIn):
     pass
 
 
+# 键路径精确相等
 class KeyTransformExact(JSONExact):
     # RemovedInDjango70Warning: When deprecation period ends, uncomment the
     # flag below.
@@ -642,6 +669,7 @@ class KeyTransformExact(JSONExact):
         return super().as_sql(compiler, connection)
 
 
+# 键路径 iexact
 class KeyTransformIExact(
     CaseInsensitiveMixin, KeyTransformTextLookupMixin, lookups.IExact
 ):
@@ -660,42 +688,50 @@ class KeyTransformIExact(
         return super().as_sql(compiler, connection)
 
 
+# 键路径 icontains
 class KeyTransformIContains(
     CaseInsensitiveMixin, KeyTransformTextLookupMixin, lookups.IContains
 ):
     pass
 
 
+# 键路径 startswith
 class KeyTransformStartsWith(KeyTransformTextLookupMixin, lookups.StartsWith):
     pass
 
 
+# 键路径 istartswith
 class KeyTransformIStartsWith(
     CaseInsensitiveMixin, KeyTransformTextLookupMixin, lookups.IStartsWith
 ):
     pass
 
 
+# 键路径 endswith
 class KeyTransformEndsWith(KeyTransformTextLookupMixin, lookups.EndsWith):
     pass
 
 
+# 键路径 iendswith
 class KeyTransformIEndsWith(
     CaseInsensitiveMixin, KeyTransformTextLookupMixin, lookups.IEndsWith
 ):
     pass
 
 
+# 键路径 regex
 class KeyTransformRegex(KeyTransformTextLookupMixin, lookups.Regex):
     pass
 
 
+# 键路径 iregex
 class KeyTransformIRegex(
     CaseInsensitiveMixin, KeyTransformTextLookupMixin, lookups.IRegex
 ):
     pass
 
 
+# 键路径数值比较 mixin
 class KeyTransformNumericLookupMixin:
     def process_rhs(self, compiler, connection):
         rhs, rhs_params = super().process_rhs(compiler, connection)
@@ -704,18 +740,22 @@ class KeyTransformNumericLookupMixin:
         return rhs, rhs_params
 
 
+# 键路径小于
 class KeyTransformLt(KeyTransformNumericLookupMixin, lookups.LessThan):
     pass
 
 
+# 键路径小于等于
 class KeyTransformLte(KeyTransformNumericLookupMixin, lookups.LessThanOrEqual):
     pass
 
 
+# 键路径大于
 class KeyTransformGt(KeyTransformNumericLookupMixin, lookups.GreaterThan):
     pass
 
 
+# 键路径大于等于
 class KeyTransformGte(KeyTransformNumericLookupMixin, lookups.GreaterThanOrEqual):
     pass
 
@@ -738,6 +778,7 @@ KeyTransform.register_lookup(KeyTransformGt)
 KeyTransform.register_lookup(KeyTransformGte)
 
 
+# 按 key_name 动态构造 KeyTransform 链
 class KeyTransformFactory:
     def __init__(self, key_name):
         self.key_name = key_name

@@ -1,4 +1,7 @@
 """
+django.db.models.fields.reverse_related — 反向关系元信息。
+
+"Rel objects" for related fields."""
 "Rel objects" for related fields.
 
 "Rel objects" (for lack of a better name) carry information about the relation
@@ -17,6 +20,7 @@ from ..utils import get_blank_choice_label
 from .mixins import FieldCacheMixin
 
 
+# 关系元对象基类，存于 field.remote_field
 class ForeignObjectRel(FieldCacheMixin):
     """
     Used by ForeignObject to store information about the relation.
@@ -248,6 +252,7 @@ class ForeignObjectRel(FieldCacheMixin):
         return self.accessor_name
 
 
+# 多对一反向：multiple 侧访问 one 侧
 class ManyToOneRel(ForeignObjectRel):
     """
     Used by the ForeignKey field to store information about the relation.
@@ -310,6 +315,7 @@ class ManyToOneRel(ForeignObjectRel):
         self.field_name = self.field_name or self.model._meta.pk.name
 
 
+# 一对一反向：multiple=False
 class OneToOneRel(ManyToOneRel):
     """
     Used by OneToOneField to store information about the relation.
@@ -343,6 +349,7 @@ class OneToOneRel(ManyToOneRel):
         self.multiple = False
 
 
+# 多对多反向：symmetrical、through 信息
 class ManyToManyRel(ForeignObjectRel):
     """
     Used by ManyToManyField to store information about the relation.

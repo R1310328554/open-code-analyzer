@@ -12,7 +12,14 @@ from django.db.models.lookups import (
 )
 
 
-def get_normalized_value(value, lhs):
+"""
+django.db.models.fields.related_lookups — 关系字段专用查找。
+
+将 Model 实例规范化为 pk 元组以匹配 ColPairs。
+"""
+
+# 关系过滤右侧：Model 转为 pk 或字段元组
+def get_normalized_value(value, lhs):def get_normalized_value(value, lhs):
     from django.db.models import Model
 
     if isinstance(value, Model):
@@ -39,6 +46,7 @@ def get_normalized_value(value, lhs):
     return value
 
 
+# 关系 IN：子查询或 pk 元组列表
 class RelatedIn(In):
     def get_prep_lookup(self):
         from django.db.models.sql.query import Query  # avoid circular import
@@ -95,6 +103,7 @@ class RelatedIn(In):
         return super().as_sql(compiler, connection)
 
 
+# 关系精确/比较查找：RHS 规范化为 target_field 值
 class RelatedLookupMixin:
     def get_prep_lookup(self):
         if not isinstance(self.lhs, ColPairs) and not hasattr(
@@ -128,25 +137,31 @@ class RelatedLookupMixin:
         return super().as_sql(compiler, connection)
 
 
+# 关系精确匹配
 class RelatedExact(RelatedLookupMixin, Exact):
     pass
 
 
+# 关系小于
 class RelatedLessThan(RelatedLookupMixin, LessThan):
     pass
 
 
+# 关系大于
 class RelatedGreaterThan(RelatedLookupMixin, GreaterThan):
     pass
 
 
+# 关系大于等于
 class RelatedGreaterThanOrEqual(RelatedLookupMixin, GreaterThanOrEqual):
     pass
 
 
+# 关系小于等于
 class RelatedLessThanOrEqual(RelatedLookupMixin, LessThanOrEqual):
     pass
 
 
+# 关系 isnull
 class RelatedIsNull(RelatedLookupMixin, IsNull):
     pass

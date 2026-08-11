@@ -13,7 +13,16 @@ from django.db.models.expressions import DatabaseDefault
 from django.db.models.fields import Field
 from django.db.models.query_utils import DeferredAttribute
 from django.db.models.utils import AltersData
+"""
+django.db.models.fields.files — FileField 与 ImageField。
+
+FieldFile 包装存储文件，描述符处理上传与 save 时写盘。
+"""
 from django.utils.translation import gettext_lazy as _
+
+
+# 模型实例上的文件对象，委托 storage 读写
+class FieldFile(File, AltersData):from django.utils.translation import gettext_lazy as _
 
 
 class FieldFile(File, AltersData):
@@ -156,6 +165,7 @@ class FieldFile(File, AltersData):
         self.storage = self.field.storage
 
 
+# FileField 描述符：赋值时标记未提交并更新 __dict__
 class FileDescriptor(DeferredAttribute):
     """
     The descriptor for the file attribute on the model instance. Return a
@@ -236,6 +246,7 @@ class FileDescriptor(DeferredAttribute):
         instance.__dict__[self.field.attname] = value
 
 
+# 文件路径字段，upload_to 与 storage 配置
 class FileField(Field):
     # The class to wrap instance attributes in. Accessing the file object off
     # the instance will always return an instance of attr_class.
@@ -380,6 +391,7 @@ class FileField(Field):
         )
 
 
+# ImageField 描述符：额外校验 width/height
 class ImageFileDescriptor(FileDescriptor):
     """
     Just like the FileDescriptor, but for ImageFields. The only difference is
@@ -403,6 +415,7 @@ class ImageFileDescriptor(FileDescriptor):
             self.field.update_dimension_fields(instance, force=True)
 
 
+# 带尺寸信息的 FieldFile
 class ImageFieldFile(ImageFile, FieldFile):
     def _set_instance_attribute(self, name, content):
         setattr(self.instance, self.field.attname, content)
@@ -417,6 +430,7 @@ class ImageFieldFile(ImageFile, FieldFile):
         super().delete(save)
 
 
+# 图片字段：Pillow 校验与 width_field/height_field
 class ImageField(FileField):
     attr_class = ImageFieldFile
     descriptor_class = ImageFileDescriptor

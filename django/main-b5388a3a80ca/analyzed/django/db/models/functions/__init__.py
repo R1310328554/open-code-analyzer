@@ -1,5 +1,11 @@
-from .comparison import Cast, Coalesce, Collate, Greatest, Least, NullIf
-from .datetime import (
+"""
+django.db.models.functions — 数据库函数表达式公共导出。
+
+聚合 comparison/datetime/json/math/text/uuid/window 子模块中的 Func 类。
+"""
+from .comparison import Cast, Coalesce, Collate, Greatest, Least, NullIffrom .comparison import Cast, Coalesce, Collate, Greatest, Least, NullIf
+# 日期时间提取与截断函数
+from .datetime import (from .datetime import (
     Extract,
     ExtractDay,
     ExtractHour,
@@ -25,8 +31,10 @@ from .datetime import (
     TruncWeek,
     TruncYear,
 )
-from .json import JSONArray, JSONObject
-from .math import (
+# JSON 构造函数
+from .json import JSONArray, JSONObjectfrom .json import JSONArray, JSONObject
+# 数学函数
+from .math import (from .math import (
     Abs,
     ACos,
     ASin,
@@ -51,7 +59,8 @@ from .math import (
     Sqrt,
     Tan,
 )
-from .text import (
+# 文本与哈希函数
+from .text import (from .text import (
     MD5,
     SHA1,
     SHA224,
@@ -78,8 +87,10 @@ from .text import (
     Trim,
     Upper,
 )
-from .uuid import UUID4, UUID7
-from .window import (
+# UUID 生成函数
+from .uuid import UUID4, UUID7from .uuid import UUID4, UUID7
+# 窗口排名与偏移函数
+from .window import (from .window import (
     CumeDist,
     DenseRank,
     FirstValue,

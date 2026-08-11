@@ -1,4 +1,13 @@
+"""
+django.db.models.fetch_modes — 延迟字段的取值策略。
+
+控制 prefetch/defer 场景下访问字段时是单取、批量取 peers 还是禁止。
+"""
 from django.core.exceptions import FieldFetchBlocked
+
+
+# 字段取值策略抽象基类
+class FetchMode:from django.core.exceptions import FieldFetchBlocked
 
 
 class FetchMode:
@@ -10,6 +19,7 @@ class FetchMode:
         raise NotImplementedError("Subclasses must implement this method.")
 
 
+# 仅对当前实例调用 fetcher.fetch_one
 class FetchOne(FetchMode):
     __slots__ = ()
 
@@ -23,6 +33,7 @@ class FetchOne(FetchMode):
 FETCH_ONE = FetchOne()
 
 
+# 若存在多个 peer 实例则 fetch_many，否则 fetch_one
 class FetchPeers(FetchMode):
     __slots__ = ()
 
@@ -46,6 +57,7 @@ class FetchPeers(FetchMode):
 FETCH_PEERS = FetchPeers()
 
 
+# 禁止取值，抛出 FieldFetchBlocked
 class FetchRaise(FetchMode):
     __slots__ = ()
 

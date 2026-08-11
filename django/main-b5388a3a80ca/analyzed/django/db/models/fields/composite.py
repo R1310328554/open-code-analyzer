@@ -12,7 +12,16 @@ from django.db.models.fields.tuple_lookups import (
     TupleLessThan,
     TupleLessThanOrEqual,
 )
+"""
+django.db.models.fields.composite — 复合主键字段。
+
+CompositePrimaryKey 将多列组合为逻辑主键，配合 Tuple 查找。
+"""
 from django.utils.functional import cached_property
+
+
+# 动态 setattr 的简单容器
+class AttributeSetter:from django.utils.functional import cached_property
 
 
 class AttributeSetter:
@@ -20,6 +29,7 @@ class AttributeSetter:
         setattr(self, name, value)
 
 
+# 复合字段描述符：读写为元组，映射到各 attname
 class CompositeAttribute:
     def __init__(self, field):
         self.field = field
@@ -47,6 +57,7 @@ class CompositeAttribute:
             setattr(instance, attname, value)
 
 
+# 复合主键：至少两列、不可编辑、无 default/db_column
 class CompositePrimaryKey(Field):
     descriptor_class = CompositeAttribute
 

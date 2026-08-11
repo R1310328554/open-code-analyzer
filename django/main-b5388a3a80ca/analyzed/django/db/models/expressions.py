@@ -18,6 +18,15 @@ from django.utils.functional import cached_property, classproperty
 from django.utils.hashable import make_hashable
 from django.utils.inspect import signature
 
+"""
+django.db.models.expressions — ORM 查询表达式体系。
+
+F/Value/Func/Case/Subquery/Window 等可编译为 SQL 片段的表达式树。
+"""
+
+# SQLite 上 DecimalField 输出需 CAST 为 NUMERIC 才能正确过滤
+class SQLiteNumericMixin:from django.utils.inspect import signature
+
 
 class SQLiteNumericMixin:
     """
@@ -35,6 +44,7 @@ class SQLiteNumericMixin:
         return sql, params
 
 
+# 提供 +、-、*、/、位运算等表达式组合运算符
 class Combinable:
     """
     Provide the ability to combine one or two objects with
@@ -167,10 +177,12 @@ class Combinable:
         return NegatedExpression(self)
 
 
+# output_field 未设置时抛出的 FieldError
 class OutputFieldIsNoneError(FieldError):
     pass
 
 
+# 所有查询表达式的抽象基类：resolve/as_sql/output_field
 class BaseExpression:
     """Base class for all query expressions."""
 
@@ -516,6 +528,7 @@ class BaseExpression:
         return self
 
 
+# 可组合、可序列化的表达式基类
 @deconstructible
 class Expression(BaseExpression, Combinable):
     """An expression that can be combined with other expressions."""
@@ -725,6 +738,7 @@ def _resolve_combined_type(connector, lhs_type, rhs_type):
             return combined_type
 
 
+# 两表达式经 ADD/SUB/MUL 等连接器组合
 class CombinedExpression(SQLiteNumericMixin, Expression):
     def __init__(self, lhs, connector, rhs, output_field=None):
         super().__init__(output_field=output_field)
@@ -812,6 +826,7 @@ class CombinedExpression(SQLiteNumericMixin, Expression):
         return self.lhs.allowed_default and self.rhs.allowed_default
 
 
+# DurationField 加减：两侧须为 Duration 或 datetime
 class DurationExpression(CombinedExpression):
     def compile(self, side, compiler, connection):
         try:
@@ -863,6 +878,7 @@ class DurationExpression(CombinedExpression):
         return sql, params
 
 
+# 日期/时间相减，输出 DurationField
 class TemporalSubtraction(CombinedExpression):
     output_field = fields.DurationField()
 
@@ -879,6 +895,7 @@ class TemporalSubtraction(CombinedExpression):
 
 
 @deconstructible(path="django.db.models.F")
+# 引用模型字段：F('name') 参与 UPDATE/WHERE/ORDER BY
 class F(Combinable):
     """An object capable of resolving references to existing query objects."""
 
@@ -943,6 +960,7 @@ class F(Combinable):
         return copy.copy(self)
 
 
+# 子查询中已解析为外层 Col 的 OuterRef
 class ResolvedOuterRef(F):
     """
     An object that contains a reference to an outer query.
@@ -980,6 +998,7 @@ class ResolvedOuterRef(F):
         return []
 
 
+# 子查询引用外层查询字段，resolve 时替换为 Col
 class OuterRef(F):
     contains_aggregate = False
     contains_over_clause = False
@@ -993,6 +1012,7 @@ class OuterRef(F):
         return self
 
 
+# 数组/JSON 字段切片：F('arr')[0:3]
 class Sliced(F):
     """
     An object that contains a slice of an F expression.
@@ -1051,6 +1071,7 @@ class Sliced(F):
 
 
 @deconstructible(path="django.db.models.Func")
+# SQL 函数调用：function 名 + 参数表达式列表
 class Func(SQLiteNumericMixin, Expression):
     """An SQL function call."""
 
@@ -1145,6 +1166,7 @@ class Func(SQLiteNumericMixin, Expression):
 
 
 @deconstructible(path="django.db.models.Value")
+# 常量值表达式，编译为参数化字面量
 class Value(Expression):
     """Represent a wrapped value as a node within an expression."""
 
@@ -1242,6 +1264,7 @@ class Value(Expression):
 
 
 @deconstructible(path="django.db.models.JSONNull")
+# JSON null 常量（与 SQL NULL 区分）
 class JSONNull(Value):
     """Represent JSON `null` primitive."""
 
@@ -1265,6 +1288,7 @@ class JSONNull(Value):
         return sql, params
 
 
+# 原始 SQL 片段，用于无法用 ORM 表达的语句
 class RawSQL(Expression):
     allowed_default = True
 
@@ -1300,6 +1324,7 @@ class RawSQL(Expression):
         )
 
 
+# SELECT 列表中的 * 星号
 class Star(Expression):
     def __repr__(self):
         return "'*'"
@@ -1308,6 +1333,7 @@ class Star(Expression):
         return "*", ()
 
 
+# 数据库列默认值占位（INSERT 时省略该列）
 class DatabaseDefault(Expression):
     """
     Expression to use DEFAULT keyword during insert otherwise the underlying
@@ -1348,6 +1374,7 @@ class DatabaseDefault(Expression):
         return "DEFAULT", ()
 
 
+# 表列引用：alias + target field
 class Col(Expression):
     contains_column_references = True
     possibly_multivalued = False
@@ -1387,6 +1414,7 @@ class Col(Expression):
         ) + self.target.get_db_converters(connection)
 
 
+# 复合主键多列引用，用于 Tuple 查找
 class ColPairs(Expression):
     def __init__(self, alias, targets, sources, output_field):
         super().__init__(output_field=output_field)
@@ -1444,6 +1472,7 @@ class ColPairs(Expression):
         return sql, params
 
 
+# 引用 SELECT 子句中的别名列
 class Ref(Expression):
     """
     Reference to column alias of the query. For example, Ref('sum_cost') in
@@ -1485,6 +1514,7 @@ class Ref(Expression):
         return [self]
 
 
+# 逗号分隔的多表达式列表
 class ExpressionList(Func):
     """
     An expression containing multiple expressions. Can be used to provide a
@@ -1513,6 +1543,7 @@ class ExpressionList(Func):
         return group_by_cols
 
 
+# ORDER BY 用的表达式列表
 class OrderByList(ExpressionList):
     allowed_default = False
     template = "ORDER BY %(expressions)s"
@@ -1545,6 +1576,7 @@ class OrderByList(ExpressionList):
 
 
 @deconstructible(path="django.db.models.ExpressionWrapper")
+# 包装子表达式并强制指定 output_field
 class ExpressionWrapper(SQLiteNumericMixin, Expression):
     """
     An expression that can wrap another expression so that it can provide
@@ -1581,6 +1613,7 @@ class ExpressionWrapper(SQLiteNumericMixin, Expression):
         return self.expression.allowed_default
 
 
+# 逻辑非：NOT (expr)
 class NegatedExpression(ExpressionWrapper):
     """The logical negation of a conditional expression."""
 
@@ -1633,6 +1666,7 @@ class NegatedExpression(ExpressionWrapper):
 
 
 @deconstructible(path="django.db.models.When")
+# CASE WHEN 单分支：condition + then 值
 class When(Expression):
     template = "WHEN %(condition)s THEN %(result)s"
     # This isn't a complete conditional expression, must be used in Case().
@@ -1714,6 +1748,7 @@ class When(Expression):
 
 
 @deconstructible(path="django.db.models.Case")
+# CASE 条件表达式，可含多个 When 与 default
 class Case(SQLiteNumericMixin, Expression):
     """
     An SQL searched CASE expression:
@@ -1813,6 +1848,7 @@ class Case(SQLiteNumericMixin, Expression):
         )
 
 
+# 子查询表达式，嵌入 SELECT/WHERE
 class Subquery(BaseExpression, Combinable):
     """
     An explicit subquery. It may contain OuterRef() references to the outer
@@ -1884,6 +1920,7 @@ class Subquery(BaseExpression, Combinable):
         return self.query.get_group_by_cols(wrapper=self)
 
 
+# EXISTS (subquery) 布尔存在性检测
 class Exists(Subquery):
     template = "EXISTS(%(subquery)s)"
     output_field = fields.BooleanField()
@@ -1912,6 +1949,7 @@ class Exists(Subquery):
 
 
 @deconstructible(path="django.db.models.OrderBy")
+# ORDER BY 排序项：表达式 + ASC/DESC + NULLS
 class OrderBy(Expression):
     template = "%(expression)s %(ordering)s"
     conditional = False
@@ -2017,6 +2055,7 @@ class OrderBy(Expression):
         self.descending = True
 
 
+# 窗口函数：source + partition_by + order_by + frame
 class Window(SQLiteNumericMixin, Expression):
     template = "%(expression)s OVER (%(window)s)"
     # Although the main expression may either be an aggregate or an
@@ -2124,6 +2163,7 @@ class Window(SQLiteNumericMixin, Expression):
         return group_by_cols
 
 
+# 窗口帧 EXCLUDE 选项枚举
 class WindowFrameExclusion(Enum):
     CURRENT_ROW = "CURRENT ROW"
     GROUP = "GROUP"
@@ -2134,6 +2174,7 @@ class WindowFrameExclusion(Enum):
         return f"{self.__class__.__qualname__}.{self._name_}"
 
 
+# 窗口帧边界：ROWS/RANGE BETWEEN ... AND ...
 class WindowFrame(Expression):
     """
     Model the frame clause in window expressions. There are two types of frame
@@ -2221,6 +2262,7 @@ class WindowFrame(Expression):
         raise NotImplementedError("Subclasses must implement window_frame_start_end().")
 
 
+# ROWS 帧：按物理行偏移
 class RowRange(WindowFrame):
     frame_type = "ROWS"
 
@@ -2228,6 +2270,7 @@ class RowRange(WindowFrame):
         return connection.ops.window_frame_rows_start_end(start, end)
 
 
+# RANGE 帧：按 ORDER BY 值域偏移
 class ValueRange(WindowFrame):
     frame_type = "RANGE"
 

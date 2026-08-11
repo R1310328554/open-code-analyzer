@@ -20,7 +20,16 @@ from django.db.models.lookups import (
     LessThanOrEqual,
 )
 from django.db.models.sql import Query
+"""
+django.db.models.fields.tuple_lookups — 复合主键元组比较。
+
+Tuple 表达式与 exact/in/比较查找，适配各后端 ROW 语法。
+"""
 from django.db.models.sql.where import AND, OR, WhereNode
+
+
+# 多列元组 Func，用于 (a,b) 比较
+class Tuple(Func):from django.db.models.sql.where import AND, OR, WhereNode
 
 
 class Tuple(Func):
@@ -46,6 +55,7 @@ class Tuple(Func):
         return self.as_sql(compiler, connection)
 
 
+# 元组查找共用：校验 RHS 长度与类型
 class TupleLookupMixin:
     allows_composite_expressions = True
 
@@ -148,6 +158,7 @@ class TupleLookupMixin:
         return super().as_sql(compiler, connection)
 
 
+# 元组精确相等
 class TupleExact(TupleLookupMixin, Exact):
     def get_fallback_sql(self, compiler, connection):
         if isinstance(self.rhs, Query):
@@ -162,6 +173,7 @@ class TupleExact(TupleLookupMixin, Exact):
         return root.as_sql(compiler, connection)
 
 
+# 元组 isnull
 class TupleIsNull(TupleLookupMixin, IsNull):
     def get_prep_lookup(self):
         rhs = self.rhs
@@ -184,6 +196,7 @@ class TupleIsNull(TupleLookupMixin, IsNull):
         return root.as_sql(compiler, connection)
 
 
+# 元组大于
 class TupleGreaterThan(TupleLookupMixin, GreaterThan):
     def get_fallback_sql(self, compiler, connection):
         # Process right-hand-side to trigger sanitization.
@@ -212,6 +225,7 @@ class TupleGreaterThan(TupleLookupMixin, GreaterThan):
         return root.as_sql(compiler, connection)
 
 
+# 元组大于等于
 class TupleGreaterThanOrEqual(TupleLookupMixin, GreaterThanOrEqual):
     def get_fallback_sql(self, compiler, connection):
         # Process right-hand-side to trigger sanitization.
@@ -240,6 +254,7 @@ class TupleGreaterThanOrEqual(TupleLookupMixin, GreaterThanOrEqual):
         return root.as_sql(compiler, connection)
 
 
+# 元组小于
 class TupleLessThan(TupleLookupMixin, LessThan):
     def get_fallback_sql(self, compiler, connection):
         # Process right-hand-side to trigger sanitization.
@@ -268,6 +283,7 @@ class TupleLessThan(TupleLookupMixin, LessThan):
         return root.as_sql(compiler, connection)
 
 
+# 元组小于等于
 class TupleLessThanOrEqual(TupleLookupMixin, LessThanOrEqual):
     def get_fallback_sql(self, compiler, connection):
         # Process right-hand-side to trigger sanitization.
@@ -296,6 +312,7 @@ class TupleLessThanOrEqual(TupleLookupMixin, LessThanOrEqual):
         return root.as_sql(compiler, connection)
 
 
+# 元组 IN 列表
 class TupleIn(TupleLookupMixin, In):
     def get_prep_lookup(self):
         if self.rhs_is_direct_value():

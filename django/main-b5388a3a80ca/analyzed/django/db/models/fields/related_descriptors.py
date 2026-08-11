@@ -1,4 +1,7 @@
 """
+django.db.models.fields.related_descriptors — 关系访问描述符。
+
+Accessors for related objects."""
 Accessors for related objects.
 
 When a field defines a relation between two models, each model class provides
@@ -84,6 +87,7 @@ from django.db.models.utils import AltersData, resolve_callables
 from django.utils.functional import cached_property
 
 
+# 外键 attname 描述符：赋值时清除关联对象缓存
 class ForeignKeyDeferredAttribute(DeferredAttribute):
     def __set__(self, instance, value):
         if instance.__dict__.get(self.field.attname) != value and self.field.is_cached(
@@ -129,6 +133,7 @@ def _traverse_ancestors(model, starting_instance):
         current_instance = ancestor
 
 
+# 正向多对一：child.parent 取关联实例
 class ForwardManyToOneDescriptor:
     """
     Accessor to the related object on the forward side of a many-to-one or
@@ -375,6 +380,7 @@ class ForwardManyToOneDescriptor:
         return getattr, (self.field.model, self.field.name)
 
 
+# 正向一对一：多表继承时避免多余查询
 class ForwardOneToOneDescriptor(ForwardManyToOneDescriptor):
     """
     Accessor to the related object on the forward side of a one-to-one
@@ -428,6 +434,7 @@ class ForwardOneToOneDescriptor(ForwardManyToOneDescriptor):
                 setattr(instance, rel_model_pk_name, raw_value)
 
 
+# 反向一对一：parent.child 经 unique 外键反查
 class ReverseOneToOneDescriptor:
     """
     Accessor to the related object on the reverse side of a one-to-one
@@ -652,6 +659,7 @@ class ReverseOneToOneDescriptor:
         return getattr, (self.related.model, self.related.name)
 
 
+# 反向多对一管理器：parent.children 相关管理器
 class ReverseManyToOneDescriptor:
     """
     Accessor to the related objects manager on the reverse side of a
@@ -1023,6 +1031,7 @@ def create_reverse_many_to_one_manager(superclass, rel):
     return RelatedManager
 
 
+# 多对多管理器：对称，经中间表 add/remove/set
 class ManyToManyDescriptor(ReverseManyToOneDescriptor):
     """
     Accessor to the related objects manager on the forward and reverse sides of

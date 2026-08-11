@@ -46,7 +46,16 @@ from .related_lookups import (
 )
 from .reverse_related import ForeignObjectRel, ManyToManyRel, ManyToOneRel, OneToOneRel
 
+"""
+django.db.models.fields.related — 关系字段：ForeignKey/OneToOne/M2M。
+
+path_infos、remote_field 与 on_delete 行为定义。
+"""
 RECURSIVE_RELATIONSHIP_CONSTANT = "self"
+
+
+# 将 relation 解析为 app_label.ModelName 或模型类
+def resolve_relation(scope_model, relation):RECURSIVE_RELATIONSHIP_CONSTANT = "self"
 
 
 def resolve_relation(scope_model, relation):
@@ -95,6 +104,7 @@ def lazy_related_operation(function, model, *related_models, **kwargs):
     return apps.lazy_model_operation(partial(function, **kwargs), *model_keys)
 
 
+# 关系字段基类：related_name、limit_choices_to
 class RelatedField(FieldCacheMixin, Field):
     """Base class that all relational fields inherit from."""
 
@@ -541,6 +551,7 @@ class RelatedField(FieldCacheMixin, Field):
         return self.name
 
 
+# 通用多列外键，ForeignKey 的底层实现
 class ForeignObject(RelatedField):
     """
     Abstraction of the ForeignKey relation to support multi-column relations.
@@ -959,6 +970,7 @@ ForeignObject.register_lookup(RelatedLessThanOrEqual)
 ForeignObject.register_lookup(RelatedIsNull)
 
 
+# 多对一外键，to_field/on_delete/db_constraint
 class ForeignKey(ForeignObject):
     """
     Provide a many-to-one relation by adding a column to the local model
@@ -1340,6 +1352,7 @@ class ForeignKey(ForeignObject):
         return super().get_col(alias, output_field)
 
 
+# 一对一：unique 外键，parent_link 用于多表继承
 class OneToOneField(ForeignKey):
     """
     A OneToOneField is essentially the same as a ForeignKey, with the exception
@@ -1447,6 +1460,7 @@ def create_many_to_many_intermediary_model(field, klass):
     )
 
 
+# 多对多：中间表、through 与对称性
 class ManyToManyField(RelatedField):
     """
     Provide a many-to-many relation by using an intermediary model that

@@ -5,7 +5,16 @@ from django.utils.functional import cached_property
 
 from . import NOT_PROVIDED, Field
 
+"""
+django.db.models.fields.generated — 数据库生成列字段。
+
+由 expression 定义，db_persist 控制是否物理存储。
+"""
 __all__ = ["GeneratedField"]
+
+
+# 生成列：不可编辑，SQL 由 expression 编译
+class GeneratedField(Field):__all__ = ["GeneratedField"]
 
 
 class GeneratedField(Field):
