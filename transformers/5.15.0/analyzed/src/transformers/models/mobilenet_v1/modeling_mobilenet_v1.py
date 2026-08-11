@@ -23,9 +23,12 @@ from ...utils import auto_docstring, logging
 from .configuration_mobilenet_v1 import MobileNetV1Config
 
 
+# MobileNetV1 建模：深度可分离卷积轻量 CNN 图像分类
+
 logger = logging.get_logger(__name__)
 
 
+# apply_tf_padding：为卷积层应用 TensorFlow 风格 SAME 填充
 def apply_tf_padding(features: torch.Tensor, conv_layer: nn.Conv2d) -> torch.Tensor:
     """
     Apply TensorFlow-style "SAME" padding to a convolution layer. See the notes at:
@@ -54,6 +57,7 @@ def apply_tf_padding(features: torch.Tensor, conv_layer: nn.Conv2d) -> torch.Ten
     return nn.functional.pad(features, padding, "constant", 0.0)
 
 
+# MobileNetV1ConvLayer：MobileNetV1 卷积 + BatchNorm + 激活组合层
 class MobileNetV1ConvLayer(nn.Module):
     def __init__(
         self,
@@ -121,6 +125,7 @@ class MobileNetV1ConvLayer(nn.Module):
 
 
 @auto_docstring
+# MobileNetV1PreTrainedModel：MobileNetV1 预训练基类与权重初始化
 class MobileNetV1PreTrainedModel(PreTrainedModel):
     config: MobileNetV1Config
     base_model_prefix = "mobilenet_v1"
@@ -131,6 +136,7 @@ class MobileNetV1PreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# MobileNetV1Model：MobileNetV1 深度可分离卷积主干（含全局池化）
 class MobileNetV1Model(MobileNetV1PreTrainedModel):
     def __init__(self, config: MobileNetV1Config, add_pooling_layer: bool = True):
         r"""
@@ -235,6 +241,7 @@ class MobileNetV1Model(MobileNetV1PreTrainedModel):
     ImageNet.
     """
 )
+# MobileNetV1ForImageClassification：MobileNetV1 图像分类（线性头 + Dropout）
 class MobileNetV1ForImageClassification(MobileNetV1PreTrainedModel):
     def __init__(self, config: MobileNetV1Config) -> None:
         super().__init__(config)

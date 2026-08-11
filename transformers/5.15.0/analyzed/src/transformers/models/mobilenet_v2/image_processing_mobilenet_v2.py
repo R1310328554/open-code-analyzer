@@ -34,6 +34,9 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring, is_torch_available
 
 
+# MobileNetV2 图像预处理：Torchvision 后端，支持语义分割标签 reduce
+
+# MobileNetV2ImageProcessorKwargs：MobileNetV2 图像预处理可选参数（含 reduce_labels）
 class MobileNetV2ImageProcessorKwargs(ImagesKwargs, total=False):
     """
     do_reduce_labels (`bool`, *optional*, defaults to `self.do_reduce_labels`):
@@ -46,6 +49,7 @@ class MobileNetV2ImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# MobileNetV2ImageProcessor：MobileNetV2 图像预处理（Torchvision 后端，支持语义分割标签）
 class MobileNetV2ImageProcessor(TorchvisionBackend):
     """Torchvision backend for MobileNetV2 with reduce_label support."""
 
@@ -67,6 +71,7 @@ class MobileNetV2ImageProcessor(TorchvisionBackend):
         super().__init__(**kwargs)
 
     @auto_docstring
+    # preprocess：图像与可选分割图联合预处理入口
     def preprocess(
         self,
         images: ImageInput,
@@ -79,6 +84,7 @@ class MobileNetV2ImageProcessor(TorchvisionBackend):
         """
         return super().preprocess(images, segmentation_maps, **kwargs)
 
+    # _preprocess_image_like_inputs：处理图像及附加分割图输入
     def _preprocess_image_like_inputs(
         self,
         images: ImageInput,
@@ -129,6 +135,7 @@ class MobileNetV2ImageProcessor(TorchvisionBackend):
 
         return BatchFeature(data=data, tensor_type=return_tensors)
 
+    # reduce_label：语义分割标签减 1（背景 0 映射为 255 忽略）
     def reduce_label(self, labels: list["torch.Tensor"]) -> list["torch.Tensor"]:
         """Reduce label values by 1, replacing 0 with 255."""
         for idx in range(len(labels)):
@@ -139,6 +146,7 @@ class MobileNetV2ImageProcessor(TorchvisionBackend):
             labels[idx] = label
         return labels
 
+    # _preprocess：MobileNetV2 自定义 resize/crop/归一化流水线
     def _preprocess(
         self,
         images: list["torch.Tensor"],
@@ -181,6 +189,7 @@ class MobileNetV2ImageProcessor(TorchvisionBackend):
 
         return processed_images
 
+    # post_process_semantic_segmentation：将语义分割 logits 上采样为类别掩码
     def post_process_semantic_segmentation(
         self,
         outputs,

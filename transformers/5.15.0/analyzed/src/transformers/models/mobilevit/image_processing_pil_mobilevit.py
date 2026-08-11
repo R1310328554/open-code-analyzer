@@ -45,7 +45,10 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# MobileViT 图像预处理：PIL 后端，BGR 通道序 + 256 中心裁剪
+
 # Adapted from transformers.models.mobilevit.image_processing_mobilevit.MobileVitImageProcessorKwargs
+# MobileVitImageProcessorKwargs：MobileViT 图像预处理可选参数（BGR 翻转与 reduce_labels）
 class MobileVitImageProcessorKwargs(ImagesKwargs, total=False):
     """
     do_flip_channel_order (`bool`, *optional*, defaults to `self.do_flip_channel_order`):
@@ -61,6 +64,7 @@ class MobileVitImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# MobileViTImageProcessorPil：MobileViT 图像预处理（PIL 后端，BGR 通道序）
 class MobileViTImageProcessorPil(PilBackend):
     """PIL backend for MobileViT with flip_channel_order and reduce_label support."""
 
@@ -84,6 +88,7 @@ class MobileViTImageProcessorPil(PilBackend):
         super().__init__(**kwargs)
 
     @auto_docstring
+    # preprocess：图像与可选分割图联合预处理入口
     def preprocess(
         self,
         images: ImageInput,
@@ -96,6 +101,7 @@ class MobileViTImageProcessorPil(PilBackend):
         """
         return super().preprocess(images, segmentation_maps, **kwargs)
 
+    # _preprocess_image_like_inputs：处理图像及附加分割图输入
     def _preprocess_image_like_inputs(
         self,
         images: ImageInput,
@@ -145,6 +151,7 @@ class MobileViTImageProcessorPil(PilBackend):
 
         return BatchFeature(data=data, tensor_type=return_tensors)
 
+    # reduce_label：语义分割标签减 1（背景 0 映射为 255 忽略）
     def reduce_label(self, image: np.ndarray) -> np.ndarray:
         """Reduce label values by 1, replacing 0 with 255."""
         image[image == 0] = 255
@@ -152,12 +159,14 @@ class MobileViTImageProcessorPil(PilBackend):
         image[image == 254] = 255
         return image
 
+    # flip_channel_order：RGB 与 BGR 通道顺序互换
     def flip_channel_order(self, image: np.ndarray) -> np.ndarray:
         """Flip RGB to BGR or vice versa."""
         return np_flip_channel_order(
             image, data_format=ChannelDimension.FIRST, input_data_format=ChannelDimension.FIRST
         )
 
+    # _preprocess：MobileNetV2 自定义 resize/crop/归一化流水线
     def _preprocess(
         self,
         images: list[np.ndarray],
@@ -189,6 +198,7 @@ class MobileViTImageProcessorPil(PilBackend):
         return processed_images
 
     @requires(backends=("torch",))
+    # post_process_semantic_segmentation：将语义分割 logits 上采样为类别掩码
     def post_process_semantic_segmentation(
         self,
         outputs,

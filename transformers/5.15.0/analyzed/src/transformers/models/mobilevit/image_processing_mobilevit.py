@@ -42,6 +42,9 @@ from ...utils import (
 logger = logging.get_logger(__name__)
 
 
+# MobileViT 图像预处理：Torchvision 后端，BGR 通道序 + 256 中心裁剪
+
+# MobileVitImageProcessorKwargs：MobileViT 图像预处理可选参数（BGR 翻转与 reduce_labels）
 class MobileVitImageProcessorKwargs(ImagesKwargs, total=False):
     """
     do_flip_channel_order (`bool`, *optional*, defaults to `self.do_flip_channel_order`):
@@ -57,6 +60,7 @@ class MobileVitImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# MobileViTImageProcessor：MobileViT 图像预处理（Torchvision 后端，BGR 通道序）
 class MobileViTImageProcessor(TorchvisionBackend):
     """Torchvision backend for MobileViT with flip_channel_order and reduce_label support."""
 
@@ -80,6 +84,7 @@ class MobileViTImageProcessor(TorchvisionBackend):
         super().__init__(**kwargs)
 
     @auto_docstring
+    # preprocess：图像与可选分割图联合预处理入口
     def preprocess(
         self,
         images: ImageInput,
@@ -92,6 +97,7 @@ class MobileViTImageProcessor(TorchvisionBackend):
         """
         return super().preprocess(images, segmentation_maps, **kwargs)
 
+    # _preprocess_image_like_inputs：处理图像及附加分割图输入
     def _preprocess_image_like_inputs(
         self,
         images: ImageInput,
@@ -141,6 +147,7 @@ class MobileViTImageProcessor(TorchvisionBackend):
 
         return BatchFeature(data=data, tensor_type=return_tensors)
 
+    # reduce_label：语义分割标签减 1（背景 0 映射为 255 忽略）
     def reduce_label(self, labels: list["torch.Tensor"]) -> list["torch.Tensor"]:
         """Reduce label values by 1, replacing 0 with 255."""
         for idx in range(len(labels)):
@@ -151,6 +158,7 @@ class MobileViTImageProcessor(TorchvisionBackend):
             labels[idx] = label
         return labels
 
+    # flip_channel_order：RGB 与 BGR 通道顺序互换
     def flip_channel_order(self, images: "torch.Tensor") -> "torch.Tensor":
         """Flip RGB to BGR or vice versa."""
         if images.ndim == 3:
@@ -165,6 +173,7 @@ class MobileViTImageProcessor(TorchvisionBackend):
             return flipped
         return images
 
+    # _preprocess：MobileNetV2 自定义 resize/crop/归一化流水线
     def _preprocess(
         self,
         images: list["torch.Tensor"],
@@ -205,6 +214,7 @@ class MobileViTImageProcessor(TorchvisionBackend):
         processed_images = reorder_images(processed_images_grouped, grouped_images_index)
         return processed_images
 
+    # post_process_semantic_segmentation：将语义分割 logits 上采样为类别掩码
     def post_process_semantic_segmentation(
         self,
         outputs,

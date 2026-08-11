@@ -19,8 +19,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# MobileNetV2 配置：倒残差 + 线性瓶颈轻量 CNN 超参
+
+# MobileNetV2Config：google/mobilenet_v2_1.0_224 倒残差 CNN 默认超参
 @auto_docstring(checkpoint="google/mobilenet_v2_1.0_224")
 @strict
+# MobileNetV2Config：google/mobilenet_v2_1.0_224 倒残差 CNN 默认超参
 class MobileNetV2Config(PreTrainedConfig):
     r"""
     depth_divisible_by (`int`, *optional*, defaults to 8):
@@ -75,6 +79,7 @@ class MobileNetV2Config(PreTrainedConfig):
     layer_norm_eps: float = 0.001
     semantic_loss_ignore_index: int = 255
 
+    # validate_architecture：@strict 校验 depth_multiplier 等架构约束
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if self.depth_multiplier <= 0:

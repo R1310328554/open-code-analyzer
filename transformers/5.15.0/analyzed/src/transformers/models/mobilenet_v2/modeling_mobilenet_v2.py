@@ -28,9 +28,12 @@ from ...utils import auto_docstring, logging
 from .configuration_mobilenet_v2 import MobileNetV2Config
 
 
+# MobileNetV2 建模：倒残差 CNN，支持分类与 DeepLabV3+ 语义分割
+
 logger = logging.get_logger(__name__)
 
 
+# make_divisible：将通道数向上取整为 divisor 的倍数
 def make_divisible(value: int, divisor: int = 8, min_value: int | None = None) -> int:
     """
     Ensure that all layers have a channel count that is divisible by `divisor`.
@@ -44,10 +47,12 @@ def make_divisible(value: int, divisor: int = 8, min_value: int | None = None) -
     return int(new_value)
 
 
+# apply_depth_multiplier：按 depth_multiplier 缩放并规整通道数
 def apply_depth_multiplier(config: MobileNetV2Config, channels: int) -> int:
     return make_divisible(int(round(channels * config.depth_multiplier)), config.depth_divisible_by, config.min_depth)
 
 
+# apply_tf_padding：为卷积层应用 TensorFlow 风格 SAME 填充
 def apply_tf_padding(features: torch.Tensor, conv_layer: nn.Conv2d) -> torch.Tensor:
     """
     Apply TensorFlow-style "SAME" padding to a convolution layer. See the notes at:
@@ -83,6 +88,7 @@ def apply_tf_padding(features: torch.Tensor, conv_layer: nn.Conv2d) -> torch.Ten
     return nn.functional.pad(features, padding, "constant", 0.0)
 
 
+# MobileNetV2ConvLayer：MobileNetV2 卷积 + BatchNorm + 激活组合层
 class MobileNetV2ConvLayer(nn.Module):
     def __init__(
         self,
@@ -152,6 +158,7 @@ class MobileNetV2ConvLayer(nn.Module):
         return features
 
 
+# MobileNetV2InvertedResidual：MobileNetV2 倒残差块（expand → depthwise → project）
 class MobileNetV2InvertedResidual(nn.Module):
     def __init__(
         self, config: MobileNetV2Config, in_channels: int, out_channels: int, stride: int, dilation: int = 1
@@ -199,6 +206,7 @@ class MobileNetV2InvertedResidual(nn.Module):
         return residual + features if self.use_residual else features
 
 
+# MobileNetV2Stem：MobileNetV2 首层卷积 stem（可选首层扩展）
 class MobileNetV2Stem(nn.Module):
     def __init__(self, config: MobileNetV2Config, in_channels: int, expanded_channels: int, out_channels: int) -> None:
         super().__init__()
@@ -247,6 +255,7 @@ class MobileNetV2Stem(nn.Module):
 
 
 @auto_docstring
+# MobileNetV2PreTrainedModel：MobileNetV2 预训练基类与权重初始化
 class MobileNetV2PreTrainedModel(PreTrainedModel):
     config: MobileNetV2Config
     base_model_prefix = "mobilenet_v2"
@@ -257,6 +266,7 @@ class MobileNetV2PreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# MobileNetV2Model：MobileNetV2 倒残差堆叠主干（含 output_stride 空洞卷积）
 class MobileNetV2Model(MobileNetV2PreTrainedModel):
     def __init__(self, config: MobileNetV2Config, add_pooling_layer: bool = True):
         r"""
@@ -371,6 +381,7 @@ class MobileNetV2Model(MobileNetV2PreTrainedModel):
     ImageNet.
     """
 )
+# MobileNetV2ForImageClassification：MobileNetV2 图像分类（线性头 + Dropout）
 class MobileNetV2ForImageClassification(MobileNetV2PreTrainedModel):
     def __init__(self, config: MobileNetV2Config) -> None:
         super().__init__(config)
@@ -425,6 +436,7 @@ class MobileNetV2ForImageClassification(MobileNetV2PreTrainedModel):
         )
 
 
+# MobileNetV2DeepLabV3Plus：MobileNetV2 DeepLabV3+ 语义分割解码头（ASPP + 跳跃连接）
 class MobileNetV2DeepLabV3Plus(nn.Module):
     """
     The neural network from the paper "Encoder-Decoder with Atrous Separable Convolution for Semantic Image
@@ -505,6 +517,7 @@ class MobileNetV2DeepLabV3Plus(nn.Module):
     MobileNetV2 model with a semantic segmentation head on top, e.g. for Pascal VOC.
     """
 )
+# MobileNetV2ForSemanticSegmentation：MobileNetV2 语义分割（DeepLabV3+ 头）
 class MobileNetV2ForSemanticSegmentation(MobileNetV2PreTrainedModel):
     def __init__(self, config: MobileNetV2Config) -> None:
         super().__init__(config)

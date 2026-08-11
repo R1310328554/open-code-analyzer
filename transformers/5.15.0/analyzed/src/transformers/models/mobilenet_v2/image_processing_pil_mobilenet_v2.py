@@ -37,11 +37,14 @@ from ...utils import TensorType, auto_docstring, is_torch_available
 from ...utils.import_utils import requires
 
 
+# MobileNetV2 图像预处理：PIL 后端，支持语义分割标签 reduce
+
 if is_torch_available():
     import torch
 
 
 # Adapted from transformers.models.mobilenet_v2.image_processing_mobilenet_v2.MobileNetV2ImageProcessorKwargs
+# MobileNetV2ImageProcessorKwargs：MobileNetV2 图像预处理可选参数（含 reduce_labels）
 class MobileNetV2ImageProcessorKwargs(ImagesKwargs, total=False):
     """
     do_reduce_labels (`bool`, *optional*, defaults to `self.do_reduce_labels`):
@@ -54,6 +57,7 @@ class MobileNetV2ImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# MobileNetV2ImageProcessorPil：MobileNetV2 图像预处理（PIL 后端，支持语义分割标签）
 class MobileNetV2ImageProcessorPil(PilBackend):
     """PIL backend for MobileNetV2 with reduce_label support."""
 
@@ -75,6 +79,7 @@ class MobileNetV2ImageProcessorPil(PilBackend):
         super().__init__(**kwargs)
 
     @auto_docstring
+    # preprocess：图像与可选分割图联合预处理入口
     def preprocess(
         self,
         images: ImageInput,
@@ -87,6 +92,7 @@ class MobileNetV2ImageProcessorPil(PilBackend):
         """
         return super().preprocess(images, segmentation_maps, **kwargs)
 
+    # _preprocess_image_like_inputs：处理图像及附加分割图输入
     def _preprocess_image_like_inputs(
         self,
         images: ImageInput,
@@ -137,6 +143,7 @@ class MobileNetV2ImageProcessorPil(PilBackend):
 
         return BatchFeature(data=data, tensor_type=return_tensors)
 
+    # reduce_label：语义分割标签减 1（背景 0 映射为 255 忽略）
     def reduce_label(self, image: np.ndarray) -> np.ndarray:
         """Reduce label values by 1, replacing 0 with 255."""
         # Avoid using underflow conversion
@@ -145,6 +152,7 @@ class MobileNetV2ImageProcessorPil(PilBackend):
         image[image == 254] = 255
         return image
 
+    # _preprocess：MobileNetV2 自定义 resize/crop/归一化流水线
     def _preprocess(
         self,
         images: list[np.ndarray],
@@ -178,6 +186,7 @@ class MobileNetV2ImageProcessorPil(PilBackend):
         return processed_images
 
     @requires(backends=("torch",))
+    # post_process_semantic_segmentation：将语义分割 logits 上采样为类别掩码
     def post_process_semantic_segmentation(
         self,
         outputs,

@@ -19,8 +19,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# MobileNetV1 配置：深度可分离卷积轻量 CNN 超参
+
+# MobileNetV1Config：google/mobilenet_v1_1.0_224 轻量 CNN 默认超参
 @auto_docstring(checkpoint="google/mobilenet_v1_1.0_224")
 @strict
+# MobileNetV1Config：google/mobilenet_v1_1.0_224 轻量 CNN 默认超参
 class MobileNetV1Config(PreTrainedConfig):
     r"""
     min_depth (`int`, *optional*, defaults to 8):
@@ -55,6 +59,7 @@ class MobileNetV1Config(PreTrainedConfig):
     initializer_range: float = 0.02
     layer_norm_eps: float = 0.001
 
+    # validate_architecture：@strict 校验 depth_multiplier 等架构约束
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if self.depth_multiplier <= 0:

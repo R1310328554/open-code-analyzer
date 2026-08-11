@@ -22,7 +22,10 @@ from ...image_utils import (
 from ...utils import auto_docstring
 
 
+# MobileNetV1 图像预处理：Torchvision 后端，256 短边缩放 + 224 中心裁剪
+
 @auto_docstring(custom_intro="Constructs a MobileNetV1 image processor.")
+# MobileNetV1ImageProcessor：MobileNetV1 图像预处理（Torchvision 后端，ImageNet 标准化）
 class MobileNetV1ImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.BILINEAR
     image_mean = IMAGENET_STANDARD_MEAN

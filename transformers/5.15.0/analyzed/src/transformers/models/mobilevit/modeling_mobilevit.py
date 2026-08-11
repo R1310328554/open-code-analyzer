@@ -35,9 +35,12 @@ from ...utils import auto_docstring, logging, torch_int
 from .configuration_mobilevit import MobileViTConfig
 
 
+# MobileViT 建模：MobileNet 骨干 + 局部 Transformer，支持分类与语义分割
+
 logger = logging.get_logger(__name__)
 
 
+# make_divisible：将通道数向上取整为 divisor 的倍数
 def make_divisible(value: int, divisor: int = 8, min_value: int | None = None) -> int:
     """
     Ensure that all layers have a channel count that is divisible by `divisor`.
@@ -51,6 +54,7 @@ def make_divisible(value: int, divisor: int = 8, min_value: int | None = None) -
     return int(new_value)
 
 
+# MobileViTConvLayer：MobileViT 卷积 + BatchNorm + 激活组合层
 class MobileViTConvLayer(nn.Module):
     def __init__(
         self,
@@ -115,6 +119,7 @@ class MobileViTConvLayer(nn.Module):
         return features
 
 
+# MobileViTInvertedResidual：MobileViT 倒残差块（MobileNetV2 风格）
 class MobileViTInvertedResidual(nn.Module):
     """
     Inverted residual block (MobileNetv2): https://huggingface.co/papers/1801.04381
@@ -163,6 +168,7 @@ class MobileViTInvertedResidual(nn.Module):
         return residual + features if self.use_residual else features
 
 
+# MobileViTMobileNetLayer：MobileViT MobileNet 骨干阶段（多倒残差堆叠）
 class MobileViTMobileNetLayer(nn.Module):
     def __init__(
         self, config: MobileViTConfig, in_channels: int, out_channels: int, stride: int = 1, num_stages: int = 1
@@ -186,6 +192,7 @@ class MobileViTMobileNetLayer(nn.Module):
         return features
 
 
+# MobileViTSelfAttention：MobileViT 多头自注意力（无位置编码，局部 patch）
 class MobileViTSelfAttention(nn.Module):
     def __init__(self, config: MobileViTConfig, hidden_size: int) -> None:
         super().__init__()
@@ -232,6 +239,7 @@ class MobileViTSelfAttention(nn.Module):
         return context_layer
 
 
+# MobileViTSelfOutput：MobileViT 注意力输出投影与 dropout
 class MobileViTSelfOutput(nn.Module):
     def __init__(self, config: MobileViTConfig, hidden_size: int) -> None:
         super().__init__()
@@ -244,6 +252,7 @@ class MobileViTSelfOutput(nn.Module):
         return hidden_states
 
 
+# MobileViTAttention：MobileViT 完整注意力子层（SelfAttention + Output）
 class MobileViTAttention(nn.Module):
     def __init__(self, config: MobileViTConfig, hidden_size: int) -> None:
         super().__init__()
@@ -256,6 +265,7 @@ class MobileViTAttention(nn.Module):
         return attention_output
 
 
+# MobileViTIntermediate：MobileViT Transformer FFN 中间层（mlp_ratio 扩展）
 class MobileViTIntermediate(nn.Module):
     def __init__(self, config: MobileViTConfig, hidden_size: int, intermediate_size: int) -> None:
         super().__init__()
@@ -271,6 +281,7 @@ class MobileViTIntermediate(nn.Module):
         return hidden_states
 
 
+# MobileViTOutput：MobileViT Transformer FFN 输出投影
 class MobileViTOutput(nn.Module):
     def __init__(self, config: MobileViTConfig, hidden_size: int, intermediate_size: int) -> None:
         super().__init__()
@@ -284,6 +295,7 @@ class MobileViTOutput(nn.Module):
         return hidden_states
 
 
+# MobileViTTransformerLayer：MobileViT 单层 Transformer（注意力 + FFN + 残差）
 class MobileViTTransformerLayer(nn.Module):
     def __init__(self, config: MobileViTConfig, hidden_size: int, intermediate_size: int) -> None:
         super().__init__()
@@ -303,6 +315,7 @@ class MobileViTTransformerLayer(nn.Module):
         return layer_output
 
 
+# MobileViTTransformer：MobileViT 局部 patch Transformer 堆叠
 class MobileViTTransformer(nn.Module):
     def __init__(self, config: MobileViTConfig, hidden_size: int, num_stages: int) -> None:
         super().__init__()
@@ -322,6 +335,7 @@ class MobileViTTransformer(nn.Module):
         return hidden_states
 
 
+# MobileViTLayer：MobileViT 混合层（局部 Transformer + 全局卷积融合）
 class MobileViTLayer(GradientCheckpointingLayer):
     """
     MobileViT block: https://huggingface.co/papers/2110.02178
@@ -491,6 +505,7 @@ class MobileViTLayer(GradientCheckpointingLayer):
         return features
 
 
+# MobileViTEncoder：MobileViT 编码器（MobileNet 骨干 + MobileViT 层序列）
 class MobileViTEncoder(nn.Module):
     def __init__(self, config: MobileViTConfig) -> None:
         super().__init__()
@@ -587,6 +602,7 @@ class MobileViTEncoder(nn.Module):
 
 
 @auto_docstring
+# MobileViTPreTrainedModel：MobileViT 预训练基类与权重初始化
 class MobileViTPreTrainedModel(PreTrainedModel):
     config: MobileViTConfig
     base_model_prefix = "mobilevit"
@@ -610,6 +626,7 @@ class MobileViTPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# MobileViTModel：MobileViT 混合 CNN-Transformer 主干
 class MobileViTModel(MobileViTPreTrainedModel):
     def __init__(self, config: MobileViTConfig, expand_output: bool = True):
         r"""
@@ -692,6 +709,7 @@ class MobileViTModel(MobileViTPreTrainedModel):
     ImageNet.
     """
 )
+# MobileViTForImageClassification：MobileViT 图像分类（全局池化 + 线性头）
 class MobileViTForImageClassification(MobileViTPreTrainedModel):
     def __init__(self, config: MobileViTConfig) -> None:
         super().__init__(config)
@@ -746,6 +764,7 @@ class MobileViTForImageClassification(MobileViTPreTrainedModel):
         )
 
 
+# MobileViTASPPPooling：MobileViT ASPP 全局平均池化分支
 class MobileViTASPPPooling(nn.Module):
     def __init__(self, config: MobileViTConfig, in_channels: int, out_channels: int) -> None:
         super().__init__()
@@ -770,6 +789,7 @@ class MobileViTASPPPooling(nn.Module):
         return features
 
 
+# MobileViTASPP：MobileViT 空洞空间金字塔池化（多 atrous rate）
 class MobileViTASPP(nn.Module):
     """
     ASPP module defined in DeepLab papers: https://huggingface.co/papers/1606.00915, https://huggingface.co/papers/1706.05587
@@ -829,6 +849,7 @@ class MobileViTASPP(nn.Module):
         return pooled_features
 
 
+# MobileViTDeepLabV3：MobileViT DeepLabV3 语义分割解码头
 class MobileViTDeepLabV3(nn.Module):
     """
     DeepLabv3 architecture: https://huggingface.co/papers/1706.05587
@@ -862,6 +883,7 @@ class MobileViTDeepLabV3(nn.Module):
     MobileViT model with a semantic segmentation head on top, e.g. for Pascal VOC.
     """
 )
+# MobileViTForSemanticSegmentation：MobileViT 语义分割（DeepLabV3 + ASPP）
 class MobileViTForSemanticSegmentation(MobileViTPreTrainedModel):
     def __init__(self, config: MobileViTConfig) -> None:
         super().__init__(config)

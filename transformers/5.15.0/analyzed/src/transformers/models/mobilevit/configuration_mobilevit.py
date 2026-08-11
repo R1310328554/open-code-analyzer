@@ -19,8 +19,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# MobileViT 配置：MobileNet 骨干 + 局部 Transformer 混合架构超参
+
+# MobileViTConfig：Apple MobileViT 混合 CNN-Transformer 默认超参
 @auto_docstring(checkpoint="google/mobilenet_v2_1.0_224")
 @strict
+# MobileViTConfig：Apple MobileViT 混合 CNN-Transformer 默认超参
 class MobileViTConfig(PreTrainedConfig):
     r"""
     neck_hidden_sizes (`list[int]`, *optional*, defaults to `[16, 32, 64, 96, 128, 160, 640]`):
