@@ -18,8 +18,12 @@ from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# Nemotron 3.5 ASR 配置：流式 FastConformer 编码器 + 语言 prompt RNN-T 超参
+
+# Nemotron3_5AsrConfig：nvidia/nemotron-3.5-asr-streaming-0.6b RNN-T + 语言 prompt 超参
 @auto_docstring(checkpoint="nvidia/nemotron-3.5-asr-streaming-0.6b")
 @strict
+# Nemotron3_5AsrConfig：nvidia/nemotron-3.5-asr-streaming-0.6b RNN-T + 语言 prompt 超参
 class Nemotron3_5AsrConfig(PreTrainedConfig):
     r"""
     vocab_size (`int`, *optional*, defaults to 13088):
@@ -75,6 +79,7 @@ class Nemotron3_5AsrConfig(PreTrainedConfig):
     prompt_intermediate_size: int = 2048
     default_prompt_id: int = 101
 
+    # __post_init__：初始化后补全 head_dim、encoder 子配置或 RoPE 默认值
     def __post_init__(self, **kwargs):
         if isinstance(self.encoder_config, dict):
             self.encoder_config["model_type"] = self.encoder_config.get("model_type", "nemotron_asr_streaming_encoder")

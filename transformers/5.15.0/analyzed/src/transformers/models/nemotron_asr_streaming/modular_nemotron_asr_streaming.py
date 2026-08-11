@@ -67,8 +67,12 @@ LOG_ZERO_GUARD_VALUE = 2**-24
 logger = logging.get_logger(__name__)
 
 
+# Nemotron 流式 ASR modular 源：Parakeet/Voxtral 组件组合的 cache-aware 实现
+
+# NemotronAsrStreamingEncoderConfig：流式 FastConformer 编码器超参（chunked_limited 注意力）
 @auto_docstring(checkpoint="nvidia/nemotron-speech-streaming-en-0.6b")
 @strict
+# NemotronAsrStreamingEncoderConfig：流式 FastConformer 编码器超参（chunked_limited 注意力）
 class NemotronAsrStreamingEncoderConfig(ParakeetEncoderConfig):
     r"""
     convolution_bias (`bool`, *optional*, defaults to `True`):
@@ -116,6 +120,7 @@ class NemotronAsrStreamingEncoderConfig(ParakeetEncoderConfig):
     default_num_lookahead_tokens: int = 13
 
     @property
+    # subsampling_out_hidden_size：子采样卷积输出 hidden 维度（只读属性）
     def subsampling_out_hidden_size(self) -> int:
         """Flattened feature size out of the subsampling stack (`channels * remaining freq bins`); the encoder projection input dim."""
         total_pad = (self.subsampling_conv_kernel_size - 1) + (self.subsampling_conv_stride - 1)
@@ -127,8 +132,10 @@ class NemotronAsrStreamingEncoderConfig(ParakeetEncoderConfig):
         return self.subsampling_conv_channels * out_length
 
 
+# NemotronAsrStreamingConfig：nvidia/nemotron-speech-streaming-en-0.6b RNN-T 联合超参
 @auto_docstring(checkpoint="nvidia/nemotron-speech-streaming-en-0.6b")
 @strict
+# NemotronAsrStreamingConfig：nvidia/nemotron-speech-streaming-en-0.6b RNN-T 联合超参
 class NemotronAsrStreamingConfig(ParakeetRNNTConfig):
     r"""
     decoder_hidden_size (`int`, *optional*, defaults to 640):
@@ -167,7 +174,9 @@ class NemotronAsrStreamingConfig(ParakeetRNNTConfig):
     blank_token_id: int = 1024
 
 
+# NemotronAsrStreamingFeatureExtractor：16kHz mel 滤波器组特征提取（numpy STFT 对齐 torch.stft）
 class NemotronAsrStreamingFeatureExtractor(ParakeetFeatureExtractor):
+    # _torch_extract_fbank_features：STFT 计算 log-mel 滤波器组特征
     def _torch_extract_fbank_features(self, waveform, device="cpu", center=True):
         window = torch.hann_window(self.win_length, periodic=False, device=device)
         stft = torch.stft(
@@ -335,14 +344,17 @@ class NemotronAsrStreamingFeatureExtractor(ParakeetFeatureExtractor):
         )
 
 
+# NemotronAsrStreamingEncoderCausalConv1dCacheLayer：Conformer depthwise Conv1d 流式 padding 缓存层
 class NemotronAsrStreamingEncoderCausalConv1dCacheLayer(VoxtralRealtimeConv1dCacheLayer): ...
 
 
+# NemotronAsrStreamingEncoderCausalConv2dCacheLayer：子采样 Conv2d 流式 padding 缓存层
 class NemotronAsrStreamingEncoderCausalConv2dCacheLayer:
     def __init__(self):
         self.cache: torch.Tensor | None = None
         self.is_initialized: bool = False
 
+    # lazy_initialization：首次前向时按输入形状懒初始化 conv 缓存
     def lazy_initialization(self, hidden_states, conv_module):
         self.left_pad = conv_module.left_pad
         self.init_pad = conv_module.left_pad_init - conv_module.left_pad
@@ -383,6 +395,7 @@ class NemotronAsrStreamingEncoderCausalConv2dCacheLayer:
         return current_cache
 
 
+# NemotronAsrStreamingEncoderCausalConvPaddingCache：统一流式卷积 padding 缓存容器
 class NemotronAsrStreamingEncoderCausalConvPaddingCache:
     def __init__(self):
         self.layers: dict[str, NemotronAsrStreamingEncoderCausalConv1dCacheLayer] = {}
@@ -400,9 +413,11 @@ class NemotronAsrStreamingEncoderCausalConvPaddingCache:
         return torch.cat([padding_states, hidden_states], dim=2)
 
 
+# NemotronAsrStreamingEncoderCausalConv1d：因果 Conv1d（支持流式 left_pad 缓存）
 class NemotronAsrStreamingEncoderCausalConv1d(VoxtralRealtimeCausalConv1d): ...
 
 
+# NemotronAsrStreamingEncoderCausalConv2D：因果 Conv2d 子采样（支持流式 time/freq pad）
 class NemotronAsrStreamingEncoderCausalConv2D(nn.Conv2d):
     def __init__(
         self,
@@ -421,21 +436,26 @@ class NemotronAsrStreamingEncoderCausalConv2D(nn.Conv2d):
         self.cache_key = cache_key
 
     @property
+    # left_pad：因果卷积左侧 padding 宽度（属性）
     def left_pad(self):
         return self.kernel_size[0] - self.stride[0]
 
     @property
+    # left_pad_init：首块流式输入的初始 left padding 宽度
     def left_pad_init(self):
         return self.kernel_size[0] - 1
 
     @property
+    # time_pad：Conv2d 时间维因果 padding 宽度
     def time_pad(self):
         return (self.kernel_size[0] - 1, self.stride[0] - 1)
 
     @property
+    # freq_pad：Conv2d 频率维 padding 宽度
     def freq_pad(self):
         return (self.kernel_size[1] - 1, self.stride[1] - 1)
 
+    # output_length：由输入 mel 长度推算卷积输出帧数
     def output_length(self, input_lengths: torch.Tensor | None, streaming: bool = False) -> torch.Tensor | None:
         # Streaming consumes `left_pad` cached frames on the left and no right padding; offline uses the
         # full causal padding `(kernel - 1, stride - 1)` on the time axis.
@@ -465,6 +485,7 @@ class NemotronAsrStreamingEncoderCausalConv2D(nn.Conv2d):
     """
 )
 @dataclass
+# NemotronAsrStreamingEncoderModelOutput：编码器输出（含 past_key_values 与 padding_cache）
 class NemotronAsrStreamingEncoderModelOutput(BaseModelOutputWithPooling):
     r"""
     attention_mask (`torch.Tensor` of shape `(batch_size, sequence_length)`, *optional*):
@@ -484,6 +505,7 @@ class NemotronAsrStreamingEncoderModelOutput(BaseModelOutputWithPooling):
     padding_cache: NemotronAsrStreamingEncoderCausalConvPaddingCache | None = None
 
 
+# NemotronAsrStreamingEncoderRelPositionalEncoding：FastConformer 相对位置编码（支持缓存帧偏移）
 class NemotronAsrStreamingEncoderRelPositionalEncoding(ParakeetEncoderRelPositionalEncoding):
     @torch.no_grad()
     def forward(self, hidden_states: torch.Tensor, cached_frames: int | None = None):
@@ -518,6 +540,7 @@ class NemotronAsrStreamingEncoderRelPositionalEncoding(ParakeetEncoderRelPositio
         return pos_embed.to(dtype=hidden_states.dtype)
 
 
+# NemotronAsrStreamingEncoderConvolutionModule：Conformer 卷积模块（depthwise + pointwise）
 class NemotronAsrStreamingEncoderConvolutionModule(FastSpeech2ConformerConvolutionModule):
     def __init__(self, config: NemotronAsrStreamingEncoderConfig, module_config=None, layer_idx: int | None = None):
         super().__init__(config, module_config)
@@ -567,6 +590,7 @@ class NemotronAsrStreamingEncoderConvolutionModule(FastSpeech2ConformerConvoluti
         return hidden_states
 
 
+# NemotronAsrStreamingEncoderAttention：FastConformer 双向自注意力（chunked_limited 掩码）
 class NemotronAsrStreamingEncoderAttention(ParakeetEncoderAttention):
     """
     Multi-head attention with relative positional encoding.
@@ -638,6 +662,7 @@ class NemotronAsrStreamingEncoderAttention(ParakeetEncoderAttention):
         return attn_output, attn_weights
 
 
+# _mask_subsampled_frames：按有效长度掩码 subsampled 编码帧
 def _mask_subsampled_frames(hidden_states: torch.Tensor, lengths: torch.Tensor | None) -> torch.Tensor:
     """Zero out time frames beyond each sequence's valid length so they don't leak into the next conv."""
     if lengths is None:
@@ -646,6 +671,7 @@ def _mask_subsampled_frames(hidden_states: torch.Tensor, lengths: torch.Tensor |
     return hidden_states * (time < lengths[:, None])[:, None, :, None]
 
 
+# NemotronAsrStreamingEncoderSubsamplingLayer：mel 子采样层（Conv2d + 线性投影）
 class NemotronAsrStreamingEncoderSubsamplingLayer(nn.Module):
     """Depthwise-separable subsampling stage: depthwise strided causal Conv2d + 1x1 pointwise Conv2d."""
 
@@ -674,6 +700,7 @@ class NemotronAsrStreamingEncoderSubsamplingLayer(nn.Module):
         return _mask_subsampled_frames(hidden_states, lengths), lengths
 
 
+# NemotronAsrStreamingEncoderSubsamplingConv2D：2D 卷积 mel 下采样（8x 默认）
 class NemotronAsrStreamingEncoderSubsamplingConv2D(nn.Module):
     def __init__(self, config: NemotronAsrStreamingEncoderConfig):
         super().__init__()
@@ -720,6 +747,7 @@ class NemotronAsrStreamingEncoderSubsamplingConv2D(nn.Module):
         return hidden_states
 
 
+# NemotronAsrStreamingEncoderBlock：FastConformer 单层（FFN + 自注意力 + 卷积 + FFN）
 class NemotronAsrStreamingEncoderBlock(ParakeetEncoderBlock):
     def __init__(self, config: NemotronAsrStreamingEncoderConfig, layer_idx: int | None = None):
         super().__init__(config, layer_idx)
@@ -763,11 +791,13 @@ class NemotronAsrStreamingEncoderBlock(ParakeetEncoderBlock):
 
 
 @auto_docstring
+# NemotronAsrStreamingPreTrainedModel：流式 ASR 预训练基类
 class NemotronAsrStreamingPreTrainedModel(ParakeetPreTrainedModel):
     config: NemotronAsrStreamingConfig
     # flex attention is incompatible as this model uses a float attention mask (relative position bias) across the board
     _supports_flex_attn = False
 
+    # _get_subsampling_output_length：由 mel 长度推算 subsampled 编码帧数
     def _get_subsampling_output_length(self, input_lengths: torch.Tensor):
         encoder_config = getattr(self.config, "encoder_config", self.config)
 
@@ -787,6 +817,7 @@ class NemotronAsrStreamingPreTrainedModel(ParakeetPreTrainedModel):
         return lengths.to(dtype=torch.int)
 
 
+# chunked_limited_mask_function：构造 chunked_limited 双向注意力掩码函数
 def chunked_limited_mask_function(left_ctx: int, right_ctx: int) -> Callable:
     """
     `chunked_limited` attention mask.
@@ -794,6 +825,7 @@ def chunked_limited_mask_function(left_ctx: int, right_ctx: int) -> Callable:
     chunk_size = right_ctx + 1
     left_context_chunks = left_ctx // chunk_size if left_ctx >= 0 else 10_000
 
+    # inner_mask：chunked_limited 掩码内核（左/右上下文窗口）
     def inner_mask(batch_idx: int, head_idx: int, q_idx: int, kv_idx: int) -> bool:
         q_chunk = torch.div(q_idx, chunk_size, rounding_mode="trunc")
         kv_chunk = torch.div(kv_idx, chunk_size, rounding_mode="trunc")
@@ -808,6 +840,7 @@ def chunked_limited_mask_function(left_ctx: int, right_ctx: int) -> Callable:
     The NemotronAsrStreaming Encoder model, based on the [Fast Conformer architecture](https://huggingface.co/papers/2305.05084).
     """
 )
+# NemotronAsrStreamingEncoder：cache-aware 流式 FastConformer 编码器
 class NemotronAsrStreamingEncoder(ParakeetEncoder):
     @auto_docstring
     @merge_with_config_defaults
@@ -931,6 +964,7 @@ class NemotronAsrStreamingEncoder(ParakeetEncoder):
             padding_cache=padding_cache,
         )
 
+    # _resolve_attn_context：解析 num_lookahead_tokens 对应的左右注意力上下文
     def _resolve_attn_context(self, num_lookahead_tokens: int | None = None) -> tuple[int, int]:
         if num_lookahead_tokens is None:
             num_lookahead_tokens = self.config.default_num_lookahead_tokens
@@ -946,6 +980,7 @@ class NemotronAsrStreamingEncoder(ParakeetEncoder):
 
 
 @dataclass
+# NemotronAsrStreamingRNNTOutput：流式 RNN-T 前向输出结构
 class NemotronAsrStreamingRNNTOutput(ParakeetRNNTOutput):
     r"""
     encoder_past_key_values (`Cache`, *optional*):
@@ -960,11 +995,13 @@ class NemotronAsrStreamingRNNTOutput(ParakeetRNNTOutput):
     padding_cache: NemotronAsrStreamingEncoderCausalConvPaddingCache | None = None
 
 
+# NemotronAsrStreamingRNNTDecoder：RNN-T 预测网络（多层 LSTM）
 class NemotronAsrStreamingRNNTDecoder(ParakeetRNNTDecoder):
     def __init__(self, config: NemotronAsrStreamingConfig):
         super().__init__(config)
 
 
+# NemotronAsrStreamingRNNTJointNetwork：RNN-T 联合网络（encoder+decoder 融合 logits）
 class NemotronAsrStreamingRNNTJointNetwork(ParakeetRNNTJointNetwork):
     def __init__(self, config: NemotronAsrStreamingConfig):
         super().__init__(config)
@@ -975,6 +1012,7 @@ class NemotronAsrStreamingRNNTJointNetwork(ParakeetRNNTJointNetwork):
     NemotronAsrStreaming Encoder with an RNN-T (Recurrent Neural Network Transducer) head.
     """
 )
+# NemotronAsrStreamingForRNNT：流式 FastConformer + RNN-T 端到端语音识别
 class NemotronAsrStreamingForRNNT(
     ParakeetForRNNT, NemotronAsrStreamingPreTrainedModel, NemotronAsrStreamingGenerationMixin
 ):

@@ -37,7 +37,10 @@ logger = logging.get_logger(__name__)
 LOG_ZERO_GUARD_VALUE = 2**-24
 
 
+# Nemotron 流式 ASR 特征提取：16kHz log-mel 滤波器组（numpy STFT）
+
 @requires(backends=("torch", "librosa"))
+# NemotronAsrStreamingFeatureExtractor：16kHz mel 滤波器组特征提取（numpy STFT 对齐 torch.stft）
 class NemotronAsrStreamingFeatureExtractor(SequenceFeatureExtractor):
     r"""
     Constructs a NemotronAsrStreaming feature extractor.
@@ -101,6 +104,7 @@ class NemotronAsrStreamingFeatureExtractor(SequenceFeatureExtractor):
         )
         self.mel_filters = torch.from_numpy(mel_filters).to(torch.float32)
 
+    # _torch_extract_fbank_features：STFT 计算 log-mel 滤波器组特征
     def _torch_extract_fbank_features(self, waveform, device="cpu", center=True):
         window = torch.hann_window(self.win_length, periodic=False, device=device)
         stft = torch.stft(

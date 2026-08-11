@@ -24,12 +24,17 @@ from ...models.parakeet.generation_parakeet import (
 )
 
 
+# Nemotron 流式 ASR 生成：cache-aware 分块 mel 编码 + RNN-T 贪心解码
+
+# NemotronAsrStreamingRNNTDecoderCache：流式 ASR RNN-T 解码器 LSTM 缓存
 class NemotronAsrStreamingRNNTDecoderCache(ParakeetRNNTDecoderCache): ...
 
 
+# NemotronAsrStreamingGenerateOutput：流式 RNN-T 生成输出（含 durations 时间戳）
 class NemotronAsrStreamingGenerateOutput(ParakeetRNNTGenerateOutput): ...
 
 
+# NemotronAsrStreamingGenerationMixin：流式 RNN-T 生成 mixin（chunked_limited 分块编码）
 class NemotronAsrStreamingGenerationMixin(ParakeetRNNTGenerationMixin):
     """Generation mixin for NemotronAsrStreaming RNN-T models.
 
@@ -39,6 +44,7 @@ class NemotronAsrStreamingGenerationMixin(ParakeetRNNTGenerationMixin):
     chunks, which are encoded incrementally and appended to the encoder frame buffer as the decoder consumes it.
     """
 
+    # _update_model_kwargs_for_generation：生成步更新 encoder 帧缓冲与流式缓存
     def _update_model_kwargs_for_generation(self, outputs, model_kwargs, *args, **kwargs):
         model_kwargs = super()._update_model_kwargs_for_generation(outputs, model_kwargs, *args, **kwargs)
 
@@ -75,6 +81,7 @@ class NemotronAsrStreamingGenerationMixin(ParakeetRNNTGenerationMixin):
         self._encoder_finished = model_kwargs["encoder_frame_idxs"] >= model_kwargs["encoder_valid_lengths"]
         return model_kwargs
 
+    # _prepare_generated_length：估算流式生成最大输出长度
     def _prepare_generated_length(
         self,
         generation_config,
@@ -100,6 +107,7 @@ class NemotronAsrStreamingGenerationMixin(ParakeetRNNTGenerationMixin):
             inputs_tensor,
         )
 
+    # _required_stream_chunk_frames：计算下一块 mel 所需 encoder 帧数
     def _required_stream_chunk_frames(self, is_first_chunk: bool) -> int:
         """
         The exact number of mel frames a streaming chunk must carry, given the attention right context.
@@ -118,6 +126,7 @@ class NemotronAsrStreamingGenerationMixin(ParakeetRNNTGenerationMixin):
             return 1 + subsampling_factor * right
         return subsampling_factor * (right + 1)
 
+    # _validate_stream_chunk：校验流式 mel 分块形状与帧数
     def _validate_stream_chunk(self, chunk, is_first_chunk: bool):
         """
         Check a streaming mel chunk has exactly the size required by the attention right context.
@@ -136,6 +145,7 @@ class NemotronAsrStreamingGenerationMixin(ParakeetRNNTGenerationMixin):
                 f"(right + 1)). Pad the final chunk to the required length if needed."
             )
 
+    # _prepare_model_inputs：生成前准备 input_features（支持 generator 分块）
     def _prepare_model_inputs(self, inputs=None, bos_token_id=None, model_kwargs=None):
         input_features = inputs if inputs is not None else (model_kwargs or {}).get("input_features")
 
@@ -156,6 +166,7 @@ class NemotronAsrStreamingGenerationMixin(ParakeetRNNTGenerationMixin):
         # Offline: encode the full mel spectrogram up front. Delegate to Parakeet's shared implementation.
         return super()._prepare_model_inputs(inputs, bos_token_id, model_kwargs)
 
+    # _prepare_encoder_decoder_kwargs_for_generation：生成前编码音频并填充 encoder 帧索引
     def _prepare_encoder_decoder_kwargs_for_generation(
         self, inputs_tensor, model_kwargs, model_input_name, generation_config
     ):
@@ -185,9 +196,11 @@ class NemotronAsrStreamingGenerationMixin(ParakeetRNNTGenerationMixin):
         model_kwargs["encoder_frame_idxs"] = torch.zeros(batch_size, dtype=torch.long, device=self.device)
         return model_kwargs
 
+    # _prepare_cache_for_generation：生成前分配 decoder/encoder 流式缓存
     def _prepare_cache_for_generation(self, generation_config, model_kwargs, *args, **kwargs):
         model_kwargs["decoder_cache"] = NemotronAsrStreamingRNNTDecoderCache(self.config)
 
+    # prepare_inputs_for_generation：单步生成输入（decoder_input_ids + 缓存）
     def prepare_inputs_for_generation(self, input_ids, *args, **kwargs):
         from .modeling_nemotron_asr_streaming import NemotronAsrStreamingEncoderModelOutput
 
@@ -209,6 +222,7 @@ class NemotronAsrStreamingGenerationMixin(ParakeetRNNTGenerationMixin):
 
         return model_inputs
 
+    # generate：RNN-T 贪心/流式转写生成（支持 mel 分块 generator 输入）
     def generate(self, inputs=None, generation_config=None, **kwargs):
         input_features = kwargs.get("input_features", inputs)
         self._streaming = isinstance(input_features, GeneratorType)

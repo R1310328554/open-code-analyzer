@@ -26,8 +26,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# Nemotron 流式 ASR 配置：FastConformer 编码器与 RNN-T 解码器联合超参
+
+# NemotronAsrStreamingEncoderConfig：流式 FastConformer 编码器超参（chunked_limited 注意力）
 @auto_docstring(checkpoint="nvidia/nemotron-speech-streaming-en-0.6b")
 @strict
+# NemotronAsrStreamingEncoderConfig：流式 FastConformer 编码器超参（chunked_limited 注意力）
 class NemotronAsrStreamingEncoderConfig(PreTrainedConfig):
     r"""
     convolution_bias (`bool`, *optional*, defaults to `True`):
@@ -99,11 +103,13 @@ class NemotronAsrStreamingEncoderConfig(PreTrainedConfig):
     sliding_window: int = 71
     default_num_lookahead_tokens: int = 13
 
+    # __post_init__：初始化后补全 head_dim、encoder 子配置或 RoPE 默认值
     def __post_init__(self, **kwargs):
         self.num_key_value_heads = self.num_attention_heads
         super().__post_init__(**kwargs)
 
     @property
+    # subsampling_out_hidden_size：子采样卷积输出 hidden 维度（只读属性）
     def subsampling_out_hidden_size(self) -> int:
         """Flattened feature size out of the subsampling stack (`channels * remaining freq bins`); the encoder projection input dim."""
         total_pad = (self.subsampling_conv_kernel_size - 1) + (self.subsampling_conv_stride - 1)
@@ -115,8 +121,10 @@ class NemotronAsrStreamingEncoderConfig(PreTrainedConfig):
         return self.subsampling_conv_channels * out_length
 
 
+# NemotronAsrStreamingConfig：nvidia/nemotron-speech-streaming-en-0.6b RNN-T 联合超参
 @auto_docstring(checkpoint="nvidia/nemotron-speech-streaming-en-0.6b")
 @strict
+# NemotronAsrStreamingConfig：nvidia/nemotron-speech-streaming-en-0.6b RNN-T 联合超参
 class NemotronAsrStreamingConfig(PreTrainedConfig):
     r"""
     decoder_hidden_size (`int`, *optional*, defaults to 640):
@@ -161,6 +169,7 @@ class NemotronAsrStreamingConfig(PreTrainedConfig):
     blank_token_id: int = 1024
     is_encoder_decoder: bool = True
 
+    # __post_init__：初始化后补全 head_dim、encoder 子配置或 RoPE 默认值
     def __post_init__(self, **kwargs):
         if isinstance(self.encoder_config, dict):
             self.encoder_config = NemotronAsrStreamingEncoderConfig(**self.encoder_config)

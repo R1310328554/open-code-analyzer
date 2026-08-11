@@ -14,6 +14,8 @@
 # limitations under the License.
 """Nemotron model configuration"""
 
+# Nemotron 配置：NVIDIA thhaus/nemotron3 因果 LLM 超参（GQA + 部分 RoPE）
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
@@ -21,8 +23,10 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# NemotronConfig：thhaus/nemotron3-8b 因果 LLM 超参（GQA + 部分 RoPE）
 @auto_docstring(checkpoint="thhaus/nemotron3-8b")
 @strict
+# NemotronConfig：thhaus/nemotron3-8b 因果 LLM 超参（GQA + 部分 RoPE）
 class NemotronConfig(PreTrainedConfig):
     r"""
     Example:
@@ -64,6 +68,7 @@ class NemotronConfig(PreTrainedConfig):
     attention_dropout: float | int = 0.0
     mlp_bias: bool = False
 
+    # __post_init__：初始化后补全 head_dim、encoder 子配置或 RoPE 默认值
     def __post_init__(self, **kwargs):
         self.head_dim = self.head_dim if self.head_dim is not None else self.hidden_size // self.num_attention_heads
         kwargs.setdefault("partial_rotary_factor", 0.5)  # assign default for BC

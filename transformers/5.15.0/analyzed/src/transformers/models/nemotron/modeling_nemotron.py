@@ -48,9 +48,12 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_nemotron import NemotronConfig
 
 
+# Nemotron 建模：NVIDIA 因果 Transformer（LayerNorm1P + 部分 RoPE + relu2 MLP）
+
 logger = logging.get_logger(__name__)
 
 
+# _cast_if_autocast_enabled：autocast 开启时将张量 cast 到目标 dtype
 def _cast_if_autocast_enabled(device_type, *args):
     if not torch.is_autocast_enabled():
         return args
@@ -59,6 +62,7 @@ def _cast_if_autocast_enabled(device_type, *args):
         return torch.amp.autocast_mode._cast(args, device_type, target_dtype)
 
 
+# NemotronLayerNorm1P：Nemotron 专用 LayerNorm（weight 偏移 +1）
 class NemotronLayerNorm1P(nn.LayerNorm):
     def __init__(
         self,
@@ -81,6 +85,7 @@ class NemotronLayerNorm1P(nn.LayerNorm):
 
 
 # Copied from transformers.models.llama.modeling_llama.LlamaRotaryEmbedding with LLAMA->NEMOTRON,Llama->Nemotron,llama->nemotron
+# NemotronRotaryEmbedding：Nemotron 部分 RoPE 旋转位置编码
 class NemotronRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: NemotronConfig, device=None):
@@ -102,6 +107,7 @@ class NemotronRotaryEmbedding(nn.Module):
     @staticmethod
     # Ignore copy
     @deprecate_kwarg("device", version="5.18")
+    # compute_default_rope_parameters：按 partial_rotary_factor 计算 RoPE 逆频率
     def compute_default_rope_parameters(config: NemotronConfig, device=None, **kwargs) -> tuple[torch.Tensor, float]:
         """
         Computes the inverse frequencies according to the original RoPE implementation
@@ -142,6 +148,7 @@ class NemotronRotaryEmbedding(nn.Module):
 
 
 # Copied from transformers.models.llama.modeling_llama.rotate_half
+# rotate_half：RoPE 中将向量后半维旋转 180°
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -149,6 +156,7 @@ def rotate_half(x):
     return torch.cat((-x2, x1), dim=-1)
 
 
+# apply_rotary_pos_emb：将 cos/sin RoPE 应用到 Q/K（支持部分旋转维）
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -180,6 +188,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return torch.cat((q_embed, q_pass), dim=-1), torch.cat((k_embed, k_pass), dim=-1)
 
 
+# NemotronMLP：Nemotron 前馈 MLP（relu2 激活 + 可选 bias）
 class NemotronMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -195,6 +204,7 @@ class NemotronMLP(nn.Module):
 
 
 # Copied from transformers.models.llama.modeling_llama.repeat_kv
+# repeat_kv：GQA 中将 KV 头重复扩展以匹配 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -208,6 +218,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
 
 
 # Copied from transformers.models.llama.modeling_llama.eager_attention_forward
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -233,6 +244,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# NemotronAttention：Nemotron GQA 因果自注意力（部分 RoPE）
 class NemotronAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -298,6 +310,7 @@ class NemotronAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# NemotronDecoderLayer：Nemotron 解码器单层（自注意力 + MLP + 残差）
 class NemotronDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: NemotronConfig, layer_idx: int):
         super().__init__()
@@ -345,6 +358,7 @@ class NemotronDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# NemotronPreTrainedModel：Nemotron 预训练基类（LayerNorm1P 特殊初始化）
 class NemotronPreTrainedModel(PreTrainedModel):
     config: NemotronConfig
     base_model_prefix = "model"
@@ -363,6 +377,7 @@ class NemotronPreTrainedModel(PreTrainedModel):
     }
 
     @torch.no_grad()
+    # _init_weights：按模块类型初始化权重（含 LayerNorm1P weight=1）
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, NemotronLayerNorm1P):
@@ -371,6 +386,7 @@ class NemotronPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# NemotronModel：Nemotron 因果 Transformer 解码器主干
 class NemotronModel(NemotronPreTrainedModel):
     """
     Transformer decoder consisting of *config.num_hidden_layers* layers. Each layer is a [`NemotronDecoderLayer`]
@@ -453,6 +469,7 @@ class NemotronModel(NemotronPreTrainedModel):
 
 
 # TODO: re-enable check: Copied from transformers.models.llama.modeling_llama.LlamaForCausalLM with LLAMA->NEMOTRON,Llama->Nemotron,llama->nemotron
+# NemotronForCausalLM：Nemotron 因果语言建模条件生成
 class NemotronForCausalLM(NemotronPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
 
@@ -528,13 +545,16 @@ class NemotronForCausalLM(NemotronPreTrainedModel, GenerationMixin):
         )
 
 
+# NemotronForSequenceClassification：Nemotron 序列分类头
 class NemotronForSequenceClassification(GenericForSequenceClassification, NemotronPreTrainedModel): ...
 
 
+# NemotronForQuestionAnswering：Nemotron 抽取式问答头
 class NemotronForQuestionAnswering(GenericForQuestionAnswering, NemotronPreTrainedModel):
     base_model_prefix = "transformer"
 
 
+# NemotronForTokenClassification：Nemotron  token 分类头
 class NemotronForTokenClassification(GenericForTokenClassification, NemotronPreTrainedModel): ...
 
 

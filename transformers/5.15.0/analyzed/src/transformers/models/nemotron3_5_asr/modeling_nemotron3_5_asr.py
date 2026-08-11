@@ -41,7 +41,10 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# Nemotron 3.5 ASR 建模：流式编码器 + 语言 prompt 融合 + RNN-T 转写头
+
 @dataclass
+# Nemotron3_5AsrRNNTOutput：3.5 ASR RNN-T 前向输出（含流式 encoder/conv 缓存）
 class Nemotron3_5AsrRNNTOutput(BaseModelOutputWithPooling):
     """
     encoder_past_key_values (`Cache`, *optional*):
@@ -61,6 +64,7 @@ class Nemotron3_5AsrRNNTOutput(BaseModelOutputWithPooling):
 
 
 @auto_docstring
+# Nemotron3_5AsrPreTrainedModel：3.5 ASR 预训练基类
 class Nemotron3_5AsrPreTrainedModel(PreTrainedModel):
     config: Nemotron3_5AsrConfig
     base_model_prefix = "model"
@@ -81,9 +85,11 @@ class Nemotron3_5AsrPreTrainedModel(PreTrainedModel):
     _can_record_outputs = {}
 
     @torch.no_grad()
+    # _init_weights：按模块类型初始化权重（含 LayerNorm1P weight=1）
     def _init_weights(self, module):
         super()._init_weights(module)
 
+    # _get_subsampling_output_length：由 mel 长度推算 subsampled 编码帧数
     def _get_subsampling_output_length(self, input_lengths: torch.Tensor):
         encoder_config = getattr(self.config, "encoder_config", self.config)
 
@@ -102,6 +108,7 @@ class Nemotron3_5AsrPreTrainedModel(PreTrainedModel):
 
         return lengths.to(dtype=torch.int)
 
+    # _get_output_attention_mask：将 mel 级 attention_mask 下采样到编码帧长度
     def _get_output_attention_mask(self, attention_mask: torch.Tensor, target_length: int | None = None):
         """
         Convert the input attention mask to its subsampled form. `target_length` sets the desired output length, useful
@@ -114,6 +121,7 @@ class Nemotron3_5AsrPreTrainedModel(PreTrainedModel):
         return attention_mask
 
 
+# Nemotron3_5AsrPromptProjector：encoder 隐状态与语言 one-hot prompt 融合 MLP
 class Nemotron3_5AsrPromptProjector(nn.Module):
     def __init__(self, config: Nemotron3_5AsrConfig):
         super().__init__()
@@ -130,6 +138,7 @@ class Nemotron3_5AsrPromptProjector(nn.Module):
         return hidden_states
 
 
+# Nemotron3_5AsrRNNTDecoder：3.5 ASR RNN-T 预测网络（多层 LSTM）
 class Nemotron3_5AsrRNNTDecoder(nn.Module):
     """LSTM-based prediction network For RNN-T"""
 
@@ -178,6 +187,7 @@ class Nemotron3_5AsrRNNTDecoder(nn.Module):
         return decoder_output
 
 
+# Nemotron3_5AsrRNNTJointNetwork：3.5 ASR RNN-T 联合网络（encoder+decoder 融合）
 class Nemotron3_5AsrRNNTJointNetwork(nn.Module):
     """Joint network that combines encoder and decoder outputs to predict token logits."""
 
@@ -202,6 +212,7 @@ class Nemotron3_5AsrRNNTJointNetwork(nn.Module):
     prompt conditioning.
     """
 )
+# Nemotron3_5AsrForRNNT：3.5 ASR 流式 FastConformer + 语言 prompt RNN-T 转写
 class Nemotron3_5AsrForRNNT(Nemotron3_5AsrPreTrainedModel, Nemotron3_5AsrGenerationMixin):
     config: Nemotron3_5AsrConfig
     _no_split_modules = ["Nemotron3_5AsrRNNTDecoder"]
@@ -219,6 +230,7 @@ class Nemotron3_5AsrForRNNT(Nemotron3_5AsrPreTrainedModel, Nemotron3_5AsrGenerat
         self.post_init()
 
     @can_return_tuple
+    # get_audio_features：编码 mel 特征并融合 language prompt 得到 pooler 输出
     def get_audio_features(
         self,
         input_features: torch.Tensor,

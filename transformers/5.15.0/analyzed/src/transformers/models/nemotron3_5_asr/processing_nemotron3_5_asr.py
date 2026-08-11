@@ -35,6 +35,9 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# Nemotron 3.5 ASR 处理器：mel 特征提取 + 语言 prompt 解析 + RNN-T 标签构造
+
+# Nemotron3_5AsrProcessorKwargs：3.5 ASR 处理器默认参数（含 prompt 相关）
 class Nemotron3_5AsrProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "audio_kwargs": {
@@ -184,6 +187,7 @@ DEFAULT_PROMPT_DICTIONARY = {
 
 @requires(backends=("torch",))
 @auto_docstring
+# Nemotron3_5AsrProcessor：3.5 ASR 音频+文本联合处理器（语言 prompt 解析）
 class Nemotron3_5AsrProcessor(ProcessorMixin):
     def __init__(
         self,
@@ -313,15 +317,18 @@ class Nemotron3_5AsrProcessor(ProcessorMixin):
         return inputs
 
     @property
+    # model_input_names：模型 forward 所需的 processor 输出键名
     def model_input_names(self):
         feature_extractor_input_names = self.feature_extractor.model_input_names
         return feature_extractor_input_names + ["labels", "decoder_input_ids", "prompt_ids"]
 
+    # batch_decode：批量解码 RNN-T token 序列为文本
     def batch_decode(self, *args, **kwargs):
         # RNN-T keeps repeated tokens (each is a separate emission), so consecutive identical tokens are not merged.
         kwargs.setdefault("group_tokens", False)
         return self.tokenizer.batch_decode(*args, **kwargs)
 
+    # decode：单条 RNN-T 输出解码为文本（可选帧级时间戳）
     def decode(self, *args, durations=None, **kwargs):
         """
         Forward arguments to [`~PreTrainedTokenizer.decode`] and post-process the token-level timestamps (if
@@ -373,6 +380,7 @@ class Nemotron3_5AsrProcessor(ProcessorMixin):
             return decoded, proc_timestamps
         return decoded
 
+    # _refine_timestamps：按帧率细化字符级时间戳偏移
     def _refine_timestamps(self, char_offsets, frame_rate):
         # RNN-T mirrors NeMo's raw char-level timestamps, which keep every token (punctuation included) at its
         # own emitted frame. Only convert frame indices to seconds.
@@ -381,6 +389,7 @@ class Nemotron3_5AsrProcessor(ProcessorMixin):
             offset["end"] = offset["end"] * frame_rate
         return char_offsets
 
+    # set_num_lookahead_tokens：设置流式编码右上下文（lookahead 帧数）
     def set_num_lookahead_tokens(self, num_lookahead_tokens: int):
         """
         Select the right attention context (lookahead, in subsampled encoder frames) used for streaming.
@@ -401,6 +410,7 @@ class Nemotron3_5AsrProcessor(ProcessorMixin):
         self.default_num_lookahead_tokens = num_lookahead_tokens
 
     @property
+    # _subsampling_factor：encoder 子采样倍率（mel 帧 → 编码帧）
     def _subsampling_factor(self) -> int:
         output_kwargs = self._merge_kwargs(
             Nemotron3_5AsrProcessorKwargs, tokenizer_init_kwargs=self.tokenizer.init_kwargs
@@ -408,6 +418,7 @@ class Nemotron3_5AsrProcessor(ProcessorMixin):
         return output_kwargs["audio_kwargs"]["subsampling_factor"]
 
     @property
+    # _encoder_frame_ms：单帧 subsampled encoder 输出对应毫秒数
     def _encoder_frame_ms(self) -> float:
         """Duration in milliseconds of one subsampled encoder frame (`subsampling_factor * hop_length / sampling_rate`)."""
         return (
@@ -415,6 +426,7 @@ class Nemotron3_5AsrProcessor(ProcessorMixin):
         )
 
     @property
+    # streaming_latency_ms：当前 lookahead 配置对应的流式延迟（毫秒）
     def streaming_latency_ms(self) -> int:
         """
         Streaming latency (ms) of the currently-selected right attention context
@@ -426,6 +438,7 @@ class Nemotron3_5AsrProcessor(ProcessorMixin):
         return round((self.default_num_lookahead_tokens + 1) * self._encoder_frame_ms)
 
     @property
+    # supported_streaming_latencies_ms：各 lookahead 可选流式延迟映射
     def supported_streaming_latencies_ms(self) -> dict[int, int]:
         """
         Mapping from each supported right attention context (`supported_num_lookahead_tokens`) to its streaming
@@ -435,6 +448,7 @@ class Nemotron3_5AsrProcessor(ProcessorMixin):
         return {right: round((right + 1) * frame_ms) for right in self.supported_num_lookahead_tokens}
 
     @property
+    # num_mel_frames_first_audio_chunk：首块音频所需 mel 帧数
     def num_mel_frames_first_audio_chunk(self) -> int:
         """
         Number of mel frames the first cache-aware streaming chunk must carry, for the model's
@@ -443,6 +457,7 @@ class Nemotron3_5AsrProcessor(ProcessorMixin):
         return 1 + self._subsampling_factor * self.default_num_lookahead_tokens
 
     @property
+    # num_mel_frames_per_audio_chunk：后续每块音频 mel 帧数
     def num_mel_frames_per_audio_chunk(self) -> int:
         """
         Number of mel frames each subsequent cache-aware streaming chunk must carry, for the model's
@@ -451,6 +466,7 @@ class Nemotron3_5AsrProcessor(ProcessorMixin):
         return self._subsampling_factor * (self.default_num_lookahead_tokens + 1)
 
     @property
+    # num_samples_first_audio_chunk：首块原始音频采样点数
     def num_samples_first_audio_chunk(self) -> int:
         """
         Number of raw audio samples to feed the processor (with `is_first_audio_chunk=True`, i.e. `center=True`)
@@ -461,6 +477,7 @@ class Nemotron3_5AsrProcessor(ProcessorMixin):
         ) * self.feature_extractor.hop_length + self.feature_extractor.win_length // 2
 
     @property
+    # num_samples_per_audio_chunk：后续每块原始音频采样点数
     def num_samples_per_audio_chunk(self) -> int:
         """
         Number of raw audio samples to feed the processor (with `is_first_audio_chunk=False`, i.e. `center=False`)
@@ -470,6 +487,7 @@ class Nemotron3_5AsrProcessor(ProcessorMixin):
             self.num_mel_frames_per_audio_chunk * self.feature_extractor.hop_length + self.feature_extractor.win_length
         )
 
+    # _resolve_prompt_ids：将 language 字符串映射为 prompt 索引张量
     def _resolve_prompt_ids(self, language: "str | list[str]", batch_size: int) -> "torch.LongTensor":
         if isinstance(language, str):
             language = [language] * batch_size

@@ -42,6 +42,8 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# Nemotron 3.5 ASR modular 源：继承流式 ASR 并扩展多语言 prompt 条件
+
 DEFAULT_PROMPT_DICTIONARY = {
     "en-US": 0,
     "en": 0,
@@ -167,12 +169,14 @@ DEFAULT_PROMPT_DICTIONARY = {
 }
 
 
+# Nemotron3_5AsrProcessorKwargs：3.5 ASR 处理器默认参数（含 prompt 相关）
 class Nemotron3_5AsrProcessorKwargs(NemotronAsrStreamingProcessorKwargs, total=False):
     pass
 
 
 @requires(backends=("torch",))
 @auto_docstring
+# Nemotron3_5AsrProcessor：3.5 ASR 音频+文本联合处理器（语言 prompt 解析）
 class Nemotron3_5AsrProcessor(NemotronAsrStreamingProcessor):
     def __init__(
         self,
@@ -216,6 +220,7 @@ class Nemotron3_5AsrProcessor(NemotronAsrStreamingProcessor):
             default_num_lookahead_tokens=default_num_lookahead_tokens,
         )
 
+    # _resolve_prompt_ids：将 language 字符串映射为 prompt 索引张量
     def _resolve_prompt_ids(self, language: "str | list[str]", batch_size: int) -> "torch.LongTensor":
         if isinstance(language, str):
             language = [language] * batch_size
@@ -309,12 +314,14 @@ class Nemotron3_5AsrProcessor(NemotronAsrStreamingProcessor):
         return inputs
 
     @property
+    # model_input_names：模型 forward 所需的 processor 输出键名
     def model_input_names(self):
         feature_extractor_input_names = self.feature_extractor.model_input_names
         return feature_extractor_input_names + ["labels", "decoder_input_ids", "prompt_ids"]
 
 
 @dataclass
+# Nemotron3_5AsrRNNTOutput：3.5 ASR RNN-T 前向输出（含流式 encoder/conv 缓存）
 class Nemotron3_5AsrRNNTOutput(BaseModelOutputWithPooling):
     """
     encoder_past_key_values (`Cache`, *optional*):
@@ -333,15 +340,18 @@ class Nemotron3_5AsrRNNTOutput(BaseModelOutputWithPooling):
     padding_cache: "NemotronAsrStreamingEncoderCausalConvPaddingCache | None" = None  # noqa: F821
 
 
+# Nemotron3_5AsrPreTrainedModel：3.5 ASR 预训练基类
 class Nemotron3_5AsrPreTrainedModel(NemotronAsrStreamingPreTrainedModel):
     _no_split_modules = None
     _can_record_outputs = {}
 
     @torch.no_grad()
+    # _init_weights：按模块类型初始化权重（含 LayerNorm1P weight=1）
     def _init_weights(self, module):
         PreTrainedModel._init_weights(self, module)
 
 
+# Nemotron3_5AsrPromptProjector：encoder 隐状态与语言 one-hot prompt 融合 MLP
 class Nemotron3_5AsrPromptProjector(nn.Module):
     def __init__(self, config: Nemotron3_5AsrConfig):
         super().__init__()
@@ -364,6 +374,7 @@ class Nemotron3_5AsrPromptProjector(nn.Module):
     prompt conditioning.
     """
 )
+# Nemotron3_5AsrForRNNT：3.5 ASR 流式 FastConformer + 语言 prompt RNN-T 转写
 class Nemotron3_5AsrForRNNT(NemotronAsrStreamingForRNNT, Nemotron3_5AsrGenerationMixin):
     def __init__(self, config: Nemotron3_5AsrConfig):
         super().__init__(config)
@@ -371,6 +382,7 @@ class Nemotron3_5AsrForRNNT(NemotronAsrStreamingForRNNT, Nemotron3_5AsrGeneratio
         self.post_init()
 
     @can_return_tuple
+    # get_audio_features：编码 mel 特征并融合 language prompt 得到 pooler 输出
     def get_audio_features(
         self,
         input_features: torch.Tensor,

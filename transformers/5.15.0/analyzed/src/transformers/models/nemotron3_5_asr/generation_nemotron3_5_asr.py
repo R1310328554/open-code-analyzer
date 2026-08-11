@@ -18,10 +18,15 @@ from ..nemotron_asr_streaming.generation_nemotron_asr_streaming import (
 )
 
 
+# Nemotron 3.5 ASR 生成：RNN-T 解码 mixin（注入 language prompt_ids）
+
+# Nemotron3_5AsrRNNTDecoderCache：3.5 ASR RNN-T 解码器 LSTM 缓存
 class Nemotron3_5AsrRNNTDecoderCache(NemotronAsrStreamingRNNTDecoderCache): ...
 
 
+# Nemotron3_5AsrGenerationMixin：3.5 ASR 生成 mixin（注入 prompt_ids 到音频编码）
 class Nemotron3_5AsrGenerationMixin(NemotronAsrStreamingGenerationMixin):
+    # generate：RNN-T 贪心/流式转写生成（支持 mel 分块 generator 输入）
     def generate(self, inputs=None, generation_config=None, **kwargs):
         self._prompt_ids = kwargs.pop("prompt_ids", None)
         get_audio_features = self.get_audio_features
