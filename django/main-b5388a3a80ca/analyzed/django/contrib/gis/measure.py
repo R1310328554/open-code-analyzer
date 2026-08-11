@@ -28,6 +28,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 """
+距离与面积度量对象 — 支持多单位换算与算术运算。
+
+Distance and Area objects to allow for sensible and convenient calculation"""
 Distance and Area objects to allow for sensible and convenient calculation
 and conversions.
 
@@ -46,17 +49,20 @@ NUMERIC_TYPES = (int, float, Decimal)
 AREA_PREFIX = "sq_"
 
 
+# 返回类名或实例类名，用于错误消息
 def pretty_name(obj):
     return obj.__name__ if obj.__class__ == type else obj.__class__.__name__
 
 
 @total_ordering
+# 度量基类：标准单位存储、单位属性访问与比较/算术
 class MeasureBase:
     STANDARD_UNIT = None
     ALIAS = {}
     UNITS = {}
     LALIAS = {}
 
+    # 从关键字参数解析单位值并设默认显示单位
     def __init__(self, default_unit=None, **kwargs):
         value, self._default_unit = self.default_units(kwargs)
         setattr(self, self.STANDARD_UNIT, value)
@@ -71,6 +77,7 @@ class MeasureBase:
 
     standard = property(_get_standard, _set_standard)
 
+    # 按单位名动态返回换算后的数值
     def __getattr__(self, name):
         if name in self.UNITS:
             return self.standard / self.UNITS[name]
@@ -148,6 +155,7 @@ class MeasureBase:
                 % {"class": pretty_name(self)}
             )
 
+    # 两 Distance 相乘得 Area，与数字相乘得缩放 Distance
     def __mul__(self, other):
         if isinstance(other, NUMERIC_TYPES):
             return self.__class__(
@@ -199,6 +207,7 @@ class MeasureBase:
     def __bool__(self):
         return bool(self.standard)
 
+    # 将多单位关键字参数归一化为标准单位值
     def default_units(self, kwargs):
         """
         Return the unit value and the default units specified
@@ -230,6 +239,7 @@ class MeasureBase:
         return val, default_unit
 
     @classmethod
+    # 将单位字符串解析为 UNITS 字典中的属性名
     def unit_attname(cls, unit_str):
         """
         Retrieve the unit attribute name for the given unit string.
@@ -247,6 +257,7 @@ class MeasureBase:
             raise AttributeError(f"Unknown unit type: {unit_str}")
 
 
+# 距离度量：米为标准单位，支持链、英尺、英里等
 class Distance(MeasureBase):
     STANDARD_UNIT = "m"
     UNITS = {
@@ -346,6 +357,7 @@ class Distance(MeasureBase):
             )
 
 
+# 面积度量：平方米为标准单位，由 Distance 平方单位派生
 class Area(MeasureBase):
     STANDARD_UNIT = AREA_PREFIX + Distance.STANDARD_UNIT
     # Getting the square units values and the alias dictionary.

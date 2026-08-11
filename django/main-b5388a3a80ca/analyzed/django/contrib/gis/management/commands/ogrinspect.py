@@ -1,16 +1,19 @@
-import argparse
+# ogrinspect 管理命令 — 从 OGR 数据源生成 GeoDjango 模型代码
+import argparseimport argparse
 
 from django.contrib.gis import gdal
 from django.core.management.base import BaseCommand, CommandError
 from django.utils.inspect import get_func_args
 
 
+# layer 参数解析：支持整数索引或字符串图层名
 class LayerOptionAction(argparse.Action):
     """
     Custom argparse action for the `ogrinspect` `layer_key` keyword option
     which may be an integer or a string.
     """
 
+    # 尝试转为 int，失败则保留字符串
     def __call__(self, parser, namespace, value, option_string=None):
         try:
             setattr(namespace, self.dest, int(value))
@@ -18,6 +21,7 @@ class LayerOptionAction(argparse.Action):
             setattr(namespace, self.dest, value)
 
 
+# 逗号分隔列表参数解析，'true' 转为布尔 True
 class ListOptionAction(argparse.Action):
     """
     Custom argparse action for `ogrinspect` keywords that require
@@ -32,6 +36,7 @@ class ListOptionAction(argparse.Action):
             setattr(namespace, self.dest, value.split(","))
 
 
+# 检查 OGR 数据源并输出 GeoDjango 模型定义
 class Command(BaseCommand):
     help = (
         "Inspects the given OGR-compatible data source (e.g., a shapefile) and "
@@ -41,6 +46,7 @@ class Command(BaseCommand):
 
     requires_system_checks = []
 
+    # 注册数据源路径、模型名及 blank/decimal/layer 等选项
     def add_arguments(self, parser):
         parser.add_argument("data_source", help="Path to the data source.")
         parser.add_argument("model_name", help="Name of the model to create.")
@@ -108,6 +114,7 @@ class Command(BaseCommand):
             help="Generate mapping dictionary for use with `LayerMapping`.",
         )
 
+    # 打开数据源，调用 _ogrinspect 生成模型代码，可选输出 LayerMapping
     def handle(self, *args, **options):
         data_source, model_name = options.pop("data_source"), options.pop("model_name")
 

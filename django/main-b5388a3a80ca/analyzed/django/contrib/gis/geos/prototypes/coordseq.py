@@ -1,4 +1,5 @@
-from ctypes import POINTER, c_byte, c_double, c_int, c_uint
+# 坐标序列 GEOS C 函数 ctypes 原型
+from ctypes import POINTER, c_byte, c_double, c_int, c_uintfrom ctypes import POINTER, c_byte, c_double, c_int, c_uint
 
 from django.contrib.gis.geos.libgeos import (
     CS_PTR,
@@ -13,6 +14,7 @@ from django.contrib.gis.geos.prototypes.errcheck import (
 
 
 # ## Error-checking routines specific to coordinate sequences. ##
+# 校验坐标序列写操作状态码
 def check_cs_op(result, func, cargs):
     "Check the status code of a coordinate sequence operation."
     if result == 0:
@@ -21,6 +23,7 @@ def check_cs_op(result, func, cargs):
         return result
 
 
+# 校验坐标序列读操作并返回引用参数值
 def check_cs_get(result, func, cargs):
     "Check the coordinate sequence retrieval."
     check_cs_op(result, func, cargs)
@@ -29,6 +32,7 @@ def check_cs_get(result, func, cargs):
 
 
 # ## Coordinate sequence prototype factory classes. ##
+# 返回整数的坐标序列 C 函数工厂
 class CsInt(GEOSFuncFactory):
     "For coordinate sequence routines that return an integer."
 
@@ -37,11 +41,13 @@ class CsInt(GEOSFuncFactory):
     errcheck = staticmethod(check_cs_get)
 
 
+# 坐标序列读写操作工厂，支持 ordinate/get 模式
 class CsOperation(GEOSFuncFactory):
     "For coordinate sequence operations."
 
     restype = c_int
 
+    # 按 get/ordinate 配置 errcheck 与 argtypes
     def __init__(self, *args, ordinate=False, get=False, **kwargs):
         if get:
             # Get routines have double parameter passed-in by reference.
@@ -62,10 +68,12 @@ class CsOperation(GEOSFuncFactory):
         )
 
 
+# 返回坐标序列指针的 C 函数工厂
 class CsOutput(GEOSFuncFactory):
     restype = CS_PTR
 
     @staticmethod
+    # 校验返回的坐标序列指针非空
     def errcheck(result, func, cargs):
         if not result:
             raise GEOSException(
@@ -75,6 +83,7 @@ class CsOutput(GEOSFuncFactory):
         return result
 
 
+# 坐标序列一元谓词工厂
 class CsUnaryPredicate(GEOSFuncFactory):
     argtypes = [CS_PTR]
     restype = c_byte

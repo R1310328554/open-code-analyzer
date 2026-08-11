@@ -1,4 +1,5 @@
-from ctypes import c_byte
+# 预计算几何（Prepared Geometry）C 函数 ctypes 原型
+from ctypes import c_bytefrom ctypes import c_byte
 
 from django.contrib.gis.geos.libgeos import GEOM_PTR, PREPGEOM_PTR, GEOSFuncFactory
 from django.contrib.gis.geos.prototypes.errcheck import check_predicate
@@ -9,6 +10,7 @@ prepared_destroy = GEOSFuncFactory("GEOSPreparedGeom_destroy", argtypes=[PREPGEO
 
 
 # Prepared geometry binary predicate support.
+# 预计算几何二元谓词工厂，加速 contains/intersects 等
 class PreparedPredicate(GEOSFuncFactory):
     argtypes = [PREPGEOM_PTR, GEOM_PTR]
     restype = c_byte

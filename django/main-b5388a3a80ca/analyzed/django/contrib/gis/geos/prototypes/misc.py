@@ -1,4 +1,7 @@
 """
+GEOS 杂项度量 C 函数原型 — 面积、距离、长度与有效性原因。
+
+This module is for the miscellaneous GEOS routines, particularly the"""
 This module is for the miscellaneous GEOS routines, particularly the
 ones that return the area, distance, and length.
 """
@@ -12,6 +15,7 @@ from django.contrib.gis.geos.prototypes.geom import geos_char_p
 __all__ = ["geos_area", "geos_distance", "geos_length", "geos_isvalidreason"]
 
 
+# 输入几何、通过引用返回 double 的 C 函数工厂
 class DblFromGeom(GEOSFuncFactory):
     """
     Argument is a Geometry, return type is double that is passed

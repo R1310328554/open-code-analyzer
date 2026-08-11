@@ -1,4 +1,7 @@
 """
+GEOS 空间谓词 C 函数原型 — 一元/二元拓扑关系判断。
+
+This module houses the GEOS ctypes prototype functions for the"""
 This module houses the GEOS ctypes prototype functions for the
 unary and binary predicate operations on geometries.
 """
@@ -10,6 +13,7 @@ from django.contrib.gis.geos.prototypes.errcheck import check_predicate
 
 
 # ## Binary & unary predicate factories ##
+# 一元谓词工厂（单几何输入，返回 bool）
 class UnaryPredicate(GEOSFuncFactory):
     "For GEOS unary predicate functions."
 
@@ -18,6 +22,7 @@ class UnaryPredicate(GEOSFuncFactory):
     errcheck = staticmethod(check_predicate)
 
 
+# 二元谓词工厂（两几何输入，返回 bool）
 class BinaryPredicate(UnaryPredicate):
     "For GEOS binary predicate functions."
 

@@ -1,6 +1,8 @@
-from ctypes import c_void_p
+# C 指针访问基类 — 防止 NULL 指针传入 GEOS/GDAL 例程
+from ctypes import c_void_pfrom ctypes import c_void_p
 
 
+# 管理底层 C 指针生命周期与类型校验
 class CPointerBase:
     """
     Base class for objects that have a pointer access property
@@ -13,6 +15,7 @@ class CPointerBase:
     null_ptr_exception_class = AttributeError
 
     @property
+    # 返回有效指针，NULL 时抛出 null_ptr_exception_class
     def ptr(self):
         # Raise an exception if the pointer isn't valid so that NULL pointers
         # aren't passed to routines -- that's very bad.
@@ -30,6 +33,7 @@ class CPointerBase:
             raise TypeError("Incompatible pointer type: %s." % type(ptr))
         self._ptr = ptr
 
+    # 析构时调用 destructor 释放 C 对象内存
     def __del__(self):
         """
         Free the memory used by the C++ object.

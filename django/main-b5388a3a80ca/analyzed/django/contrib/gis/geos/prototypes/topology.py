@@ -1,4 +1,7 @@
 """
+GEOS 拓扑运算 C 函数原型 — buffer、union、intersection 等。
+
+This module houses the GEOS ctypes prototype functions for the"""
 This module houses the GEOS ctypes prototype functions for the
 topological operations on geometries.
 """
@@ -14,6 +17,7 @@ from django.contrib.gis.geos.prototypes.errcheck import (
 from django.contrib.gis.geos.prototypes.geom import geos_char_p
 
 
+# 一元/二元拓扑运算工厂，返回新几何指针
 class Topology(GEOSFuncFactory):
     "For GEOS unary topology functions."
 

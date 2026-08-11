@@ -1,4 +1,7 @@
 """
+GEOS ctypes 函数的错误检查回调 — 统一处理返回值与内存释放。
+
+Error checking functions for GEOS ctypes prototype functions."""
 Error checking functions for GEOS ctypes prototype functions.
 """
 
@@ -13,11 +16,13 @@ free = GEOSFuncFactory("GEOSFree")
 free.argtypes = [c_void_p]
 
 
+# 读取最后一个 C 引用参数的值
 def last_arg_byref(args):
     "Return the last C argument's value by reference."
     return args[-1]._obj.value
 
 
+# 校验状态码并返回 double 引用参数值
 def check_dbl(result, func, cargs):
     """
     Check the status code and returns the double value passed in by reference.
@@ -29,6 +34,7 @@ def check_dbl(result, func, cargs):
     return last_arg_byref(cargs)
 
 
+# 校验 GEOS 几何指针返回值
 def check_geom(result, func, cargs):
     "Error checking on routines that return Geometries."
     if not result:
@@ -39,6 +45,7 @@ def check_geom(result, func, cargs):
     return result
 
 
+# 返回值不应为 -1 时的错误检查
 def check_minus_one(result, func, cargs):
     "Error checking on routines that should not return -1."
     if result == -1:
@@ -49,6 +56,7 @@ def check_minus_one(result, func, cargs):
         return result
 
 
+# 一元/二元谓词：1→True，0→False，其他抛异常
 def check_predicate(result, func, cargs):
     "Error checking for unary/binary predicate functions."
     if result == 1:
@@ -61,6 +69,7 @@ def check_predicate(result, func, cargs):
         )
 
 
+# 读取带长度参数的字符串并释放 GEOS 分配的内存
 def check_sized_string(result, func, cargs):
     """
     Error checking for routines that return explicitly sized strings.
@@ -80,6 +89,7 @@ def check_sized_string(result, func, cargs):
     return s
 
 
+# 读取 C 字符串指针并释放 GEOS 分配的内存
 def check_string(result, func, cargs):
     """
     Error checking for routines that return strings.

@@ -1,4 +1,5 @@
-import re
+# WKB/WKT 读写器 ctypes 原型与线程本地 I/O 管理
+import reimport re
 import threading
 from ctypes import POINTER, Structure, byref, c_byte, c_char_p, c_int, c_size_t
 
@@ -20,18 +21,22 @@ from django.utils.regex_helper import _lazy_re_compile
 
 
 # ### The WKB/WKT Reader/Writer structures and pointers ###
+# WKT 读取器 C 结构体
 class WKTReader_st(Structure):
     pass
 
 
+# WKT 写入器 C 结构体
 class WKTWriter_st(Structure):
     pass
 
 
+# WKB 读取器 C 结构体
 class WKBReader_st(Structure):
     pass
 
 
+# WKB 写入器 C 结构体
 class WKBWriter_st(Structure):
     pass
 
@@ -81,6 +86,7 @@ wkb_reader_create = GEOSFuncFactory("GEOSWKBReader_create", restype=WKB_READ_PTR
 wkb_reader_destroy = GEOSFuncFactory("GEOSWKBReader_destroy", argtypes=[WKB_READ_PTR])
 
 
+# WKB 读取函数工厂，支持 Python 字符串直接传参
 class WKBReadFunc(GEOSFuncFactory):
     # Although the function definitions take `const unsigned char *`
     # as their parameter, we use c_char_p here so the function may
@@ -101,6 +107,7 @@ wkb_writer_destroy = GEOSFuncFactory("GEOSWKBWriter_destroy", argtypes=[WKB_WRIT
 
 
 # WKB Writing prototypes.
+# WKB 写入函数工厂，返回带长度的二进制缓冲
 class WKBWriteFunc(GEOSFuncFactory):
     argtypes = [WKB_WRITE_PTR, GEOM_PTR, POINTER(c_size_t)]
     restype = c_uchar_p
@@ -112,11 +119,13 @@ wkb_writer_write_hex = WKBWriteFunc("GEOSWKBWriter_writeHEX")
 
 
 # WKBWriter property getter/setter prototypes.
+# WKB 写入器属性 getter 工厂
 class WKBWriterGet(GEOSFuncFactory):
     argtypes = [WKB_WRITE_PTR]
     restype = c_int
 
 
+# WKB 写入器属性 setter 工厂
 class WKBWriterSet(GEOSFuncFactory):
     argtypes = [WKB_WRITE_PTR, c_int]
 
@@ -134,9 +143,11 @@ wkb_writer_set_include_srid = WKBWriterSet(
 
 
 # ### Base I/O Class ###
+# GEOS I/O 对象基类：管理构造/析构指针
 class IOBase(GEOSBase):
     "Base class for GEOS I/O objects."
 
+    # 调用 C 构造函数并预加载析构函数
     def __init__(self):
         # Getting the pointer with the constructor.
         self.ptr = self._constructor()
@@ -175,6 +186,7 @@ _WKT_COLLECTION_ROOT_BYTES_RE = _lazy_re_compile(
 )
 
 
+# 构建 WKB 几何集合头正则，用于嵌套深度限制
 def _build_collection_header_re():
     """GEOS normalizes WKB types using: (type_code & 0xFFFF) % 1000
 
@@ -203,11 +215,13 @@ _COLLECTION_HEADER_RE = _build_collection_header_re()
 # Non-public WKB/WKT reader classes for internal use because
 # their `read` methods return _pointers_ instead of GEOSGeometry
 # objects.
+# 内部 WKT 读取器，read 返回 C 指针而非 GEOSGeometry
 class _WKTReader(IOBase):
     _constructor = wkt_reader_create
     ptr_type = WKT_READ_PTR
     destructor = wkt_reader_destroy
 
+    # 解析 WKT 嵌套 GeometryCollection 深度，超限抛 ValueError
     def limit(self, wkt, max_geom_collections):
         if max_geom_collections is None:
             return
@@ -246,6 +260,7 @@ class _WKTReader(IOBase):
                 msg = "WKT contains too many possible GeometryCollections."
                 raise ValueError(msg)
 
+    # 读取 WKT 并返回 GEOS 几何 C 指针
     def read(self, wkt, max_geom_collections=MAX_GEOM_COLLECTIONS):
         if not isinstance(wkt, (bytes, str)):
             raise TypeError(f"'wkt' must be bytes or str (got {wkt!r} instead).")
@@ -253,11 +268,13 @@ class _WKTReader(IOBase):
         return wkt_reader_read(self.ptr, force_bytes(wkt))
 
 
+# 内部 WKB 读取器，支持二进制/十六进制输入
 class _WKBReader(IOBase):
     _constructor = wkb_reader_create
     ptr_type = WKB_READ_PTR
     destructor = wkb_reader_destroy
 
+    # 限制 WKB 二进制中 GeometryCollection 数量
     def limit_wkb(self, wkb, max_geom_collections):
         if max_geom_collections is None:
             return
@@ -266,6 +283,7 @@ class _WKBReader(IOBase):
                 msg = "WKB contains too many possible GeometryCollections."
                 raise ValueError(msg)
 
+    # 限制 HEX WKB 中 GeometryCollection 数量
     def limit_hex(self, wkb, max_geom_collections):
         if max_geom_collections is None:
             return
@@ -295,6 +313,7 @@ class _WKBReader(IOBase):
                     msg = "WKB contains too many possible GeometryCollections."
                     raise ValueError(msg)
 
+    # 读取 WKB/HEX 并返回 GEOS 几何 C 指针
     def read(self, wkb, max_geom_collections=MAX_GEOM_COLLECTIONS):
         "Return a _pointer_ to C GEOS Geometry object from the given WKB."
         limiter = self.limit_hex
@@ -318,6 +337,7 @@ class _WKBReader(IOBase):
         return reader(self.ptr, wkb, len(wkb))
 
 
+# GEOS 3.12+ 默认 trim 为 True，旧版为 False
 def default_trim_value():
     """
     GEOS changed the default value in 3.12.0. Can be replaced by True when
@@ -330,12 +350,14 @@ DEFAULT_TRIM_VALUE = SimpleLazyObject(default_trim_value)
 
 
 # ### WKB/WKT Writer Classes ###
+# WKT 写入器：控制输出维度、trim 与精度
 class WKTWriter(IOBase):
     _constructor = wkt_writer_create
     ptr_type = WKT_WRITE_PTR
     destructor = wkt_writer_destroy
     _precision = None
 
+    # 初始化写入器并配置维度/trim/精度
     def __init__(self, dim=2, trim=False, precision=None):
         super().__init__()
         self._trim = DEFAULT_TRIM_VALUE
@@ -344,6 +366,8 @@ class WKTWriter(IOBase):
             self.precision = precision
         self.outdim = dim
 
+    # 将几何写出为 WKT 字符串
+    # 将几何写出为 WKB memoryview
     def write(self, geom):
         "Return the WKT representation of the given geometry."
         return wkt_writer_write(self.ptr, geom.ptr)
@@ -383,6 +407,7 @@ class WKTWriter(IOBase):
             wkt_writer_set_precision(self.ptr, -1 if precision is None else precision)
 
 
+# WKB 写入器：控制字节序、维度与 SRID 标志
 class WKBWriter(IOBase):
     _constructor = wkb_writer_create
     ptr_type = WKB_WRITE_PTR
@@ -393,6 +418,7 @@ class WKBWriter(IOBase):
         super().__init__()
         self.outdim = dim
 
+    # 空点 WKB 需特殊处理（PostGIS NaN 约定）
     def _handle_empty_point(self, geom):
         from django.contrib.gis.geos import Point
 
@@ -412,6 +438,7 @@ class WKBWriter(IOBase):
         wkb = wkb_writer_write(self.ptr, geom.ptr, byref(c_size_t()))
         return memoryview(wkb)
 
+    # 将几何写出为 HEXEWKB 字符串
     def write_hex(self, geom):
         "Return the HEXEWKB representation of the given geometry."
         geom = self._handle_empty_point(geom)
@@ -458,6 +485,7 @@ class WKBWriter(IOBase):
 # objects that are local to the thread. The `GEOSGeometry` internals
 # access these instances by calling the module-level functions, defined
 # below.
+# 线程本地 WKT/WKB 读写器实例容器
 class ThreadLocalIO(threading.local):
     wkt_r = None
     wkt_w = None
@@ -471,11 +499,13 @@ thread_context = ThreadLocalIO()
 
 # These module-level routines return the I/O object that is local to the
 # thread. If the I/O object does not exist yet it will be initialized.
+# 获取当前线程的 WKT 读取器
 def wkt_r():
     thread_context.wkt_r = thread_context.wkt_r or _WKTReader()
     return thread_context.wkt_r
 
 
+# 获取或配置当前线程的 WKT 写入器
 def wkt_w(dim=2, trim=False, precision=None):
     if not thread_context.wkt_w:
         thread_context.wkt_w = WKTWriter(dim=dim, trim=trim, precision=precision)
@@ -486,11 +516,13 @@ def wkt_w(dim=2, trim=False, precision=None):
     return thread_context.wkt_w
 
 
+# 获取当前线程的 WKB 读取器
 def wkb_r():
     thread_context.wkb_r = thread_context.wkb_r or _WKBReader()
     return thread_context.wkb_r
 
 
+# 获取或配置当前线程的 WKB 写入器
 def wkb_w(dim=2):
     if not thread_context.wkb_w:
         thread_context.wkb_w = WKBWriter(dim=dim)
@@ -499,6 +531,7 @@ def wkb_w(dim=2):
     return thread_context.wkb_w
 
 
+# 获取或配置当前线程的 EWKB（含 SRID）写入器
 def ewkb_w(dim=2):
     if not thread_context.ewkb_w:
         thread_context.ewkb_w = WKBWriter(dim=dim)

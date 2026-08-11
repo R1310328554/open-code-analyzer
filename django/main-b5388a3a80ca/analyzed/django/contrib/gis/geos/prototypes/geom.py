@@ -1,4 +1,5 @@
-from ctypes import POINTER, c_char_p, c_int, c_ubyte, c_uint
+# 几何创建/查询/销毁的 GEOS C 函数 ctypes 原型
+from ctypes import POINTER, c_char_p, c_int, c_ubyte, c_uintfrom ctypes import POINTER, c_char_p, c_int, c_ubyte, c_uint
 
 from django.contrib.gis.geos.libgeos import CS_PTR, GEOM_PTR, GEOSFuncFactory
 from django.contrib.gis.geos.prototypes.errcheck import (
@@ -18,11 +19,13 @@ c_uchar_p = POINTER(c_ubyte)
 # the return type would just be omitted and the integer address would be
 # used -- but this allows us to be specific in the function definition and
 # keeps the reference so it may be free'd.
+# 保留 C 字符串地址以便 errcheck 中释放 GEOS 内存
 class geos_char_p(c_char_p):
     pass
 
 
 # ### ctypes factory classes ###
+# 返回几何指针的 C 函数工厂
 class GeomOutput(GEOSFuncFactory):
     "For GEOS routines that return a geometry."
 
@@ -30,6 +33,7 @@ class GeomOutput(GEOSFuncFactory):
     errcheck = staticmethod(check_geom)
 
 
+# 输入几何、返回整数的 C 函数工厂
 class IntFromGeom(GEOSFuncFactory):
     "Argument is a geometry, return type is an integer."
 
@@ -38,6 +42,7 @@ class IntFromGeom(GEOSFuncFactory):
     errcheck = staticmethod(check_minus_one)
 
 
+# 输入几何、返回字符串的 C 函数工厂
 class StringFromGeom(GEOSFuncFactory):
     "Argument is a Geometry, return type is a string."
 
