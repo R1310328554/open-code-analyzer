@@ -15,23 +15,8 @@
     "ppstructure/table/tablepyxl/style.py",
     "ppstructure/table/tablepyxl/tablepyxl.py",
     "ppstructure/utility.py",
-    "setup.py",
-    "test_tipc/compare_results.py",
-    "test_tipc/supplementary/__init__.py",
-    "test_tipc/supplementary/config.py",
-    "test_tipc/supplementary/custom_op/test.py",
-    "test_tipc/supplementary/data.py",
-    "test_tipc/supplementary/data_loader.py",
-    "test_tipc/supplementary/load_cifar.py",
-    "test_tipc/supplementary/loss.py",
-    "test_tipc/supplementary/metric.py",
-    "test_tipc/supplementary/mv3.py",
-    "test_tipc/supplementary/optimizer.py",
-    "test_tipc/supplementary/slim/__init__.py",
-    "test_tipc/supplementary/slim/slim_fpgm.py",
-    "test_tipc/supplementary/slim/slim_quant.py",
-    "test_tipc/supplementary/train.py"
+    "setup.py"
   ],
   "remaining_pending": 32,
-  "done": 540
+  "done": 555
 }
