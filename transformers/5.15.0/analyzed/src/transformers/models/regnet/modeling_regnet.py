@@ -21,6 +21,8 @@ from torch import Tensor, nn
 from ... import initialization as init
 from ...activations import ACT2FN
 from ...modeling_outputs import (
+# RegNet 视觉骨干建模：Design Space 卷积堆栈、SE 注意力与图像分类头
+
     BaseModelOutputWithNoAttention,
     BaseModelOutputWithPoolingAndNoAttention,
     ImageClassifierOutputWithNoAttention,
@@ -33,7 +35,9 @@ from .configuration_regnet import RegNetConfig
 logger = logging.get_logger(__name__)
 
 
+# RegNetConvLayer：RegNet 卷积块：Conv2d + BatchNorm + 激活函数
 class RegNetConvLayer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         in_channels: int,
@@ -56,6 +60,7 @@ class RegNetConvLayer(nn.Module):
         self.normalization = nn.BatchNorm2d(out_channels)
         self.activation = ACT2FN[activation] if activation is not None else nn.Identity()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state):
         hidden_state = self.convolution(hidden_state)
         hidden_state = self.normalization(hidden_state)
@@ -63,11 +68,13 @@ class RegNetConvLayer(nn.Module):
         return hidden_state
 
 
+# RegNetEmbeddings：RegNet stem 嵌入：首层大步长卷积将像素映射到嵌入维度
 class RegNetEmbeddings(nn.Module):
     """
     RegNet Embeddings (stem) composed of a single aggressive convolution.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RegNetConfig):
         super().__init__()
         self.embedder = RegNetConvLayer(
@@ -75,6 +82,7 @@ class RegNetEmbeddings(nn.Module):
         )
         self.num_channels = config.num_channels
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values):
         num_channels = pixel_values.shape[1]
         if num_channels != self.num_channels:
@@ -86,28 +94,33 @@ class RegNetEmbeddings(nn.Module):
 
 
 # Copied from transformers.models.resnet.modeling_resnet.ResNetShortCut with ResNet->RegNet
+# RegNetShortCut：RegNet 残差捷径：1×1 卷积对齐通道与空间尺寸
 class RegNetShortCut(nn.Module):
     """
     RegNet shortcut, used to project the residual features to the correct size. If needed, it is also used to
     downsample the input using `stride=2`.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, in_channels: int, out_channels: int, stride: int = 2):
         super().__init__()
         self.convolution = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False)
         self.normalization = nn.BatchNorm2d(out_channels)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input: Tensor) -> Tensor:
         hidden_state = self.convolution(input)
         hidden_state = self.normalization(hidden_state)
         return hidden_state
 
 
+# RegNetSELayer：Squeeze-Excitation 层：全局池化 + 通道注意力重标定
 class RegNetSELayer(nn.Module):
     """
     Squeeze and Excitation layer (SE) proposed in [Squeeze-and-Excitation Networks](https://huggingface.co/papers/1709.01507).
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, in_channels: int, reduced_channels: int):
         super().__init__()
 
@@ -119,6 +132,7 @@ class RegNetSELayer(nn.Module):
             nn.Sigmoid(),
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state):
         # b c h w -> b c 1 1
         pooled = self.pooler(hidden_state)
@@ -127,11 +141,13 @@ class RegNetSELayer(nn.Module):
         return hidden_state
 
 
+# RegNetXLayer：RegNetX 块：分组卷积 + SE 注意力的残差单元
 class RegNetXLayer(nn.Module):
     """
     RegNet's layer composed by three `3x3` convolutions, same as a ResNet bottleneck layer with reduction = 1.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RegNetConfig, in_channels: int, out_channels: int, stride: int = 1):
         super().__init__()
         should_apply_shortcut = in_channels != out_channels or stride != 1
@@ -146,6 +162,7 @@ class RegNetXLayer(nn.Module):
         )
         self.activation = ACT2FN[config.hidden_act]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state):
         residual = hidden_state
         hidden_state = self.layer(hidden_state)
@@ -155,11 +172,13 @@ class RegNetXLayer(nn.Module):
         return hidden_state
 
 
+# RegNetYLayer：RegNetY 块：标准卷积 + SE 注意力的残差单元
 class RegNetYLayer(nn.Module):
     """
     RegNet's Y layer: an X layer with Squeeze and Excitation.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RegNetConfig, in_channels: int, out_channels: int, stride: int = 1):
         super().__init__()
         should_apply_shortcut = in_channels != out_channels or stride != 1
@@ -175,6 +194,7 @@ class RegNetYLayer(nn.Module):
         )
         self.activation = ACT2FN[config.hidden_act]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state):
         residual = hidden_state
         hidden_state = self.layer(hidden_state)
@@ -184,11 +204,13 @@ class RegNetYLayer(nn.Module):
         return hidden_state
 
 
+# RegNetStage：RegNet 阶段：堆叠多个 X/Y 层并控制下采样
 class RegNetStage(nn.Module):
     """
     A RegNet stage composed by stacked layers.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: RegNetConfig,
@@ -212,12 +234,15 @@ class RegNetStage(nn.Module):
             *[layer(config, out_channels, out_channels) for _ in range(depth - 1)],
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state):
         hidden_state = self.layers(hidden_state)
         return hidden_state
 
 
+# RegNetEncoder：RegNet 编码器：stem + 多阶段卷积特征提取
 class RegNetEncoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RegNetConfig):
         super().__init__()
         self.stages = nn.ModuleList([])
@@ -235,6 +260,7 @@ class RegNetEncoder(nn.Module):
         for (in_channels, out_channels), depth in zip(in_out_channels, config.depths[1:]):
             self.stages.append(RegNetStage(config, in_channels, out_channels, depth=depth))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self, hidden_state: Tensor, output_hidden_states: bool = False, return_dict: bool = True
     ) -> BaseModelOutputWithNoAttention:
@@ -256,6 +282,7 @@ class RegNetEncoder(nn.Module):
 
 
 @auto_docstring
+# RegNetPreTrainedModel：RegNet 预训练基类：卷积权重初始化策略
 class RegNetPreTrainedModel(PreTrainedModel):
     config: RegNetConfig
     base_model_prefix = "regnet"
@@ -263,6 +290,7 @@ class RegNetPreTrainedModel(PreTrainedModel):
     _no_split_modules = ["RegNetYLayer"]
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module):
         if isinstance(module, nn.Conv2d):
             init.kaiming_normal_(module.weight, mode="fan_out", nonlinearity="relu")
@@ -279,7 +307,9 @@ class RegNetPreTrainedModel(PreTrainedModel):
 
 @auto_docstring
 # Copied from transformers.models.resnet.modeling_resnet.ResNetModel with RESNET->REGNET,ResNet->RegNet
+# RegNetModel：RegNet 骨干：输出最后一层特征图与池化表征
 class RegNetModel(RegNetPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.config = config
@@ -290,6 +320,7 @@ class RegNetModel(RegNetPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: Tensor,
@@ -329,7 +360,9 @@ class RegNetModel(RegNetPreTrainedModel):
     """
 )
 # Copied from transformers.models.resnet.modeling_resnet.ResNetForImageClassification with RESNET->REGNET,ResNet->RegNet,resnet->regnet
+# RegNetForImageClassification：RegNet 图像分类：全局池化 + 线性分类头
 class RegNetForImageClassification(RegNetPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
@@ -343,6 +376,7 @@ class RegNetForImageClassification(RegNetPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor | None = None,

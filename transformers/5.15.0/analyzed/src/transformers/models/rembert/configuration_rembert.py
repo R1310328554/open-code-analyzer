@@ -17,10 +17,13 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# RemBERT 配置：256 维嵌入、相对位置编码与 ALBERT 风格参数共享超参数
+
 
 
 @auto_docstring(checkpoint="google/rembert")
 @strict
+# RemBertConfig：RemBERT 超参数：隐藏维度、层数、相对位置桶与 ALBERT 共享设置
 class RemBertConfig(PreTrainedConfig):
     r"""
     input_embedding_size (`int`, *optional*, defaults to 256):

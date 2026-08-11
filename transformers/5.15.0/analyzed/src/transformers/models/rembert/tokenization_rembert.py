@@ -18,6 +18,8 @@ from tokenizers.models import Unigram
 
 from ...tokenization_utils_tokenizers import TokenizersBackend
 from ...utils import logging
+# RemBERT 分词器：SentencePiece 后端与多语言文本预处理
+
 
 
 logger = logging.get_logger(__name__)
@@ -25,6 +27,7 @@ logger = logging.get_logger(__name__)
 VOCAB_FILES_NAMES = {"vocab_file": "sentencepiece.model", "tokenizer_file": "tokenizer.json"}
 
 
+# RemBertTokenizer：RemBERT 分词器：SentencePiece 子词切分与特殊 token 处理
 class RemBertTokenizer(TokenizersBackend):
     """
     Construct a "fast" RemBert tokenizer (backed by HuggingFace's *tokenizers* library). Based on
@@ -73,6 +76,7 @@ class RemBertTokenizer(TokenizersBackend):
     model_input_names = ["input_ids", "attention_mask"]
     model = Unigram
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         vocab: str | list[tuple[str, float]] | None = None,

@@ -22,6 +22,8 @@ from ... import initialization as init
 from ...activations import ACT2FN
 from ...backbone_utils import BackboneMixin, filter_output_hidden_states
 from ...modeling_outputs import (
+# ResNet 建模：Basic/Bottleneck 残差块、多阶段编码器与分类/Backbone 接口
+
     BackboneOutput,
     BaseModelOutputWithNoAttention,
     BaseModelOutputWithPoolingAndNoAttention,
@@ -36,7 +38,9 @@ from .configuration_resnet import ResNetConfig
 logger = logging.get_logger(__name__)
 
 
+# ResNetConvLayer：ResNet 卷积块：Conv2d + BatchNorm + 激活
 class ResNetConvLayer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         in_channels: int,
@@ -62,6 +66,7 @@ class ResNetConvLayer(nn.Module):
         self.normalization = nn.BatchNorm2d(out_channels)
         self.activation = ACT2FN[activation] if activation is not None else nn.Identity()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.convolution(hidden_states)
         hidden_states = self.normalization(hidden_states)
@@ -69,11 +74,13 @@ class ResNetConvLayer(nn.Module):
         return hidden_states
 
 
+# ResNetEmbeddings：ResNet stem：7×7 卷积 + MaxPool 初始下采样
 class ResNetEmbeddings(nn.Module):
     """
     ResNet Embeddings (stem) composed of a single aggressive convolution.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: ResNetConfig):
         super().__init__()
         self.embedder = ResNetConvLayer(
@@ -82,6 +89,7 @@ class ResNetEmbeddings(nn.Module):
         self.pooler = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.num_channels = config.num_channels
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values: Tensor) -> Tensor:
         num_channels = pixel_values.shape[1]
         if num_channels != self.num_channels:
@@ -93,28 +101,33 @@ class ResNetEmbeddings(nn.Module):
         return embedding
 
 
+# ResNetShortCut：ResNet 残差捷径：1×1 卷积对齐维度与步长
 class ResNetShortCut(nn.Module):
     """
     ResNet shortcut, used to project the residual features to the correct size. If needed, it is also used to
     downsample the input using `stride=2`.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, in_channels: int, out_channels: int, stride: int = 2):
         super().__init__()
         self.convolution = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False)
         self.normalization = nn.BatchNorm2d(out_channels)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input: Tensor) -> Tensor:
         hidden_state = self.convolution(input)
         hidden_state = self.normalization(hidden_state)
         return hidden_state
 
 
+# ResNetBasicLayer：Basic 残差块：两层 3×3 卷积 + 捷径连接
 class ResNetBasicLayer(nn.Module):
     """
     A classic ResNet's residual layer composed by two `3x3` convolutions.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, in_channels: int, out_channels: int, stride: int = 1, activation: str = "relu"):
         super().__init__()
         should_apply_shortcut = in_channels != out_channels or stride != 1
@@ -127,6 +140,7 @@ class ResNetBasicLayer(nn.Module):
         )
         self.activation = ACT2FN[activation]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state):
         residual = hidden_state
         hidden_state = self.layer(hidden_state)
@@ -136,6 +150,7 @@ class ResNetBasicLayer(nn.Module):
         return hidden_state
 
 
+# ResNetBottleNeckLayer：Bottleneck 残差块：1×1-3×3-1×1 卷积降维/升维
 class ResNetBottleNeckLayer(nn.Module):
     """
     A classic ResNet's bottleneck layer composed by three `3x3` convolutions.
@@ -145,6 +160,7 @@ class ResNetBottleNeckLayer(nn.Module):
     `downsample_in_bottleneck` is true, downsample will be in the first layer instead of the second layer.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         in_channels: int,
@@ -169,6 +185,7 @@ class ResNetBottleNeckLayer(nn.Module):
         )
         self.activation = ACT2FN[activation]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state):
         residual = hidden_state
         hidden_state = self.layer(hidden_state)
@@ -178,11 +195,13 @@ class ResNetBottleNeckLayer(nn.Module):
         return hidden_state
 
 
+# ResNetStage：ResNet 阶段：堆叠 Basic/Bottleneck 块并控制下采样
 class ResNetStage(nn.Module):
     """
     A ResNet stage composed by stacked layers.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: ResNetConfig,
@@ -209,6 +228,7 @@ class ResNetStage(nn.Module):
             first_layer, *[layer(out_channels, out_channels, activation=config.hidden_act) for _ in range(depth - 1)]
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input: Tensor) -> Tensor:
         hidden_state = input
         for layer in self.layers:
@@ -216,7 +236,9 @@ class ResNetStage(nn.Module):
         return hidden_state
 
 
+# ResNetEncoder：ResNet 编码器：stem + 四阶段残差特征提取
 class ResNetEncoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: ResNetConfig):
         super().__init__()
         self.stages = nn.ModuleList([])
@@ -234,6 +256,7 @@ class ResNetEncoder(nn.Module):
         for (in_channels, out_channels), depth in zip(in_out_channels, config.depths[1:]):
             self.stages.append(ResNetStage(config, in_channels, out_channels, depth=depth))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self, hidden_state: Tensor, output_hidden_states: bool = False, return_dict: bool = True
     ) -> BaseModelOutputWithNoAttention:
@@ -258,6 +281,7 @@ class ResNetEncoder(nn.Module):
 
 
 @auto_docstring
+# ResNetPreTrainedModel：ResNet 预训练基类：Kaiming 初始化卷积权重
 class ResNetPreTrainedModel(PreTrainedModel):
     config: ResNetConfig
     base_model_prefix = "resnet"
@@ -266,6 +290,7 @@ class ResNetPreTrainedModel(PreTrainedModel):
     _no_split_modules = ["ResNetConvLayer", "ResNetShortCut"]
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, nn.Conv2d):
@@ -288,7 +313,9 @@ class ResNetPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# ResNetModel：ResNet 骨干：输出最后一层特征图与池化向量
 class ResNetModel(ResNetPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.config = config
@@ -299,6 +326,7 @@ class ResNetModel(ResNetPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: Tensor,
@@ -337,7 +365,9 @@ class ResNetModel(ResNetPreTrainedModel):
     ImageNet.
     """
 )
+# ResNetForImageClassification：ResNet 图像分类：全局平均池化 + 线性头
 class ResNetForImageClassification(ResNetPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
@@ -351,6 +381,7 @@ class ResNetForImageClassification(ResNetPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor | None = None,
@@ -389,9 +420,11 @@ class ResNetForImageClassification(ResNetPreTrainedModel):
     ResNet backbone, to be used with frameworks like DETR and MaskFormer.
     """
 )
+# ResNetBackbone：ResNet Backbone 接口：多阶段特征图输出供下游检测/分割
 class ResNetBackbone(BackboneMixin, ResNetPreTrainedModel):
     has_attentions = False
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -405,6 +438,7 @@ class ResNetBackbone(BackboneMixin, ResNetPreTrainedModel):
     @can_return_tuple
     @filter_output_hidden_states
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: Tensor,

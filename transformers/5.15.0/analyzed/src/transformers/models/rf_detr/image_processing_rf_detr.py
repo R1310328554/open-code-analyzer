@@ -28,6 +28,8 @@ from torchvision.transforms.v2 import functional as tvF
 from ...image_processing_backends import TorchvisionBackend
 from ...image_processing_utils import BatchFeature, get_size_dict
 from ...image_transforms import (
+# RF-DETR 图像预处理：缩放归一化、COCO 标注转换与 RLE 掩码编码
+
     center_to_corners_format,
     corners_to_center_format,
     get_size_with_aspect_ratio,
@@ -50,6 +52,7 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# RfDetrImageProcessorKwargs：图像处理器参数：尺寸、归一化与 COCO 标注选项
 class RfDetrImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     format (`str`, *optional*, defaults to `AnnotationFormat.COCO_DETECTION`):
@@ -67,6 +70,7 @@ class RfDetrImageProcessorKwargs(ImagesKwargs, total=False):
 SUPPORTED_ANNOTATION_FORMATS = (AnnotationFormat.COCO_DETECTION, AnnotationFormat.COCO_PANOPTIC)
 
 
+# binary_mask_to_rle：二值掩码转 RLE：COCO 游程长度编码格式
 def binary_mask_to_rle(mask):
     """
     Converts given binary mask of shape `(height, width)` to the run-length encoding (RLE) format.
@@ -91,6 +95,7 @@ def binary_mask_to_rle(mask):
     return list(runs)
 
 
+# convert_segmentation_to_rle：分割掩码批量转 RLE：逐实例编码
 def convert_segmentation_to_rle(segmentation):
     """
     Converts given segmentation map of shape `(height, width)` to the run-length encoding (RLE) format.
@@ -113,6 +118,7 @@ def convert_segmentation_to_rle(segmentation):
 
 
 # inspired by https://github.com/facebookresearch/rf_detr/blob/master/datasets/coco.py#L33
+# convert_coco_poly_to_mask：COCO 多边形转掩码：栅格化实例分割标注
 def convert_coco_poly_to_mask(segmentations, height: int, width: int, device: torch.device) -> torch.Tensor:
     """
     Convert a COCO polygon annotation to a mask.
@@ -148,6 +154,7 @@ def convert_coco_poly_to_mask(segmentations, height: int, width: int, device: to
 
 
 # inspired by https://github.com/facebookresearch/rf_detr/blob/master/datasets/coco.py#L50
+# prepare_coco_detection_annotation：COCO 检测标注预处理：框坐标归一化与类别映射
 def prepare_coco_detection_annotation(
     image,
     target,
@@ -213,6 +220,7 @@ def prepare_coco_detection_annotation(
 
 
 @auto_docstring
+# RfDetrImageProcessor：RF-DETR 图像预处理：缩放、归一化与检测标注打包
 class RfDetrImageProcessor(TorchvisionBackend):
     valid_kwargs = RfDetrImageProcessorKwargs
     resample = PILImageResampling.BILINEAR
@@ -227,6 +235,7 @@ class RfDetrImageProcessor(TorchvisionBackend):
     default_to_square = False
     model_input_names = ["pixel_values", "pixel_mask"]
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[RfDetrImageProcessorKwargs]) -> None:
         kwargs.setdefault("do_pad", kwargs.pop("pad_and_return_pixel_mask", self.do_pad))
 
@@ -450,6 +459,7 @@ class RfDetrImageProcessor(TorchvisionBackend):
         return image, pixel_mask, annotation
 
     @auto_docstring
+    # preprocess：图像预处理：缩放、归一化并打包为模型输入
     def preprocess(
         self,
         images: ImageInput,

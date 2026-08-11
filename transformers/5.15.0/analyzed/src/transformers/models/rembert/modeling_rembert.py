@@ -26,6 +26,8 @@ from ...generation import GenerationMixin
 from ...masking_utils import create_bidirectional_mask
 from ...modeling_layers import GradientCheckpointingLayer
 from ...modeling_outputs import (
+# RemBERT 建模：相对位置自注意力、跨层参数共享与多任务下游头
+
     BaseModelOutputWithPastAndCrossAttentions,
     BaseModelOutputWithPoolingAndCrossAttentions,
     CausalLMOutputWithCrossAttentions,
@@ -44,9 +46,11 @@ from .configuration_rembert import RemBertConfig
 logger = logging.get_logger(__name__)
 
 
+# RemBertEmbeddings：RemBERT 嵌入：词嵌入 + 层归一化（无绝对位置嵌入）
 class RemBertEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.word_embeddings = nn.Embedding(
@@ -61,6 +65,7 @@ class RemBertEmbeddings(nn.Module):
         # position_ids (1, len position emb) is contiguous in memory and exported when serialized
         self.position_ids = nn.Buffer(torch.arange(config.max_position_embeddings).expand((1, -1)), persistent=False)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -95,12 +100,15 @@ class RemBertEmbeddings(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPooler with Bert->RemBert
+# RemBertPooler：RemBERT 池化：取 [CLS] 隐状态经 tanh 投影为句向量
 class RemBertPooler(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
         self.activation = nn.Tanh()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         # We "pool" the model by simply taking the hidden state corresponding
         # to the first token.
@@ -110,7 +118,9 @@ class RemBertPooler(nn.Module):
         return pooled_output
 
 
+# RemBertSelfAttention：RemBERT 自注意力：相对位置偏置 + 缩放点积注意力
 class RemBertSelfAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_idx=None):
         super().__init__()
         if config.hidden_size % config.num_attention_heads != 0 and not hasattr(config, "embedding_size"):
@@ -132,6 +142,7 @@ class RemBertSelfAttention(nn.Module):
         self.is_decoder = config.is_decoder
         self.layer_idx = layer_idx
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -200,13 +211,16 @@ class RemBertSelfAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertSelfOutput with Bert->RemBert
+# RemBertSelfOutput：自注意力输出投影：线性映射 + Dropout + 残差 LayerNorm
 class RemBertSelfOutput(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
@@ -214,12 +228,15 @@ class RemBertSelfOutput(nn.Module):
         return hidden_states
 
 
+# RemBertAttention：完整注意力模块：自注意力 + 输出投影与残差归一化
 class RemBertAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_idx=None):
         super().__init__()
         self.self = RemBertSelfAttention(config, layer_idx=layer_idx)
         self.output = RemBertSelfOutput(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -242,7 +259,9 @@ class RemBertAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertIntermediate with Bert->RemBert
+# RemBertIntermediate：FFN 中间层：线性升维 + 激活函数
 class RemBertIntermediate(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.intermediate_size)
@@ -251,6 +270,7 @@ class RemBertIntermediate(nn.Module):
         else:
             self.intermediate_act_fn = config.hidden_act
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.intermediate_act_fn(hidden_states)
@@ -258,13 +278,16 @@ class RemBertIntermediate(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOutput with Bert->RemBert
+# RemBertOutput：FFN 输出层：线性降维 + Dropout + 残差 LayerNorm
 class RemBertOutput(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.intermediate_size, config.hidden_size)
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
@@ -272,7 +295,9 @@ class RemBertOutput(nn.Module):
         return hidden_states
 
 
+# RemBertLayer：RemBERT Transformer 层：自注意力 + FFN 残差堆叠
 class RemBertLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_idx=None):
         super().__init__()
         self.chunk_size_feed_forward = config.chunk_size_feed_forward
@@ -288,6 +313,7 @@ class RemBertLayer(GradientCheckpointingLayer):
         self.output = RemBertOutput(config)
 
     # copied from transformers.models.bert.modeling_bert.BertLayer.forward
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -338,7 +364,9 @@ class RemBertLayer(GradientCheckpointingLayer):
         return layer_output
 
 
+# RemBertEncoder：RemBERT 编码器：多层 Transformer 提取上下文表征
 class RemBertEncoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -347,6 +375,7 @@ class RemBertEncoder(nn.Module):
         self.layer = nn.ModuleList([RemBertLayer(config, layer_idx=i) for i in range(config.num_hidden_layers)])
         self.gradient_checkpointing = False
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -419,7 +448,9 @@ class RemBertEncoder(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPredictionHeadTransform with Bert->RemBert
+# RemBertPredictionHeadTransform：MLM 头变换：Dense + 激活 + LayerNorm
 class RemBertPredictionHeadTransform(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
@@ -429,6 +460,7 @@ class RemBertPredictionHeadTransform(nn.Module):
             self.transform_act_fn = config.hidden_act
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.transform_act_fn(hidden_states)
@@ -436,7 +468,9 @@ class RemBertPredictionHeadTransform(nn.Module):
         return hidden_states
 
 
+# RemBertLMPredictionHead：语言模型预测头：变换 + 词表 logits 投影
 class RemBertLMPredictionHead(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.output_embedding_size)
@@ -444,6 +478,7 @@ class RemBertLMPredictionHead(nn.Module):
         self.activation = ACT2FN[config.hidden_act]
         self.LayerNorm = nn.LayerNorm(config.output_embedding_size, eps=config.layer_norm_eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.activation(hidden_states)
@@ -453,22 +488,27 @@ class RemBertLMPredictionHead(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOnlyMLMHead with Bert->RemBert
+# RemBertOnlyMLMHead：仅 MLM 头封装：预测头 + 词嵌入权重绑定
 class RemBertOnlyMLMHead(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.predictions = RemBertLMPredictionHead(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, sequence_output: torch.Tensor) -> torch.Tensor:
         prediction_scores = self.predictions(sequence_output)
         return prediction_scores
 
 
 @auto_docstring
+# RemBertPreTrainedModel：RemBERT 预训练基类：ALBERT 风格权重初始化
 class RemBertPreTrainedModel(PreTrainedModel):
     config: RemBertConfig
     base_model_prefix = "rembert"
     supports_gradient_checkpointing = True
 
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, RemBertEmbeddings):
@@ -487,7 +527,9 @@ class RemBertPreTrainedModel(PreTrainedModel):
     `add_cross_attention` set to `True`; an `encoder_hidden_states` is then expected as an input to the forward pass.
     """
 )
+# RemBertModel：RemBERT 编码器骨干：输出序列隐状态与池化句向量
 class RemBertModel(RemBertPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, add_pooling_layer=True):
         r"""
         add_pooling_layer (bool, *optional*, defaults to `True`):
@@ -511,6 +553,7 @@ class RemBertModel(RemBertPreTrainedModel):
         self.embeddings.word_embeddings = value
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -608,7 +651,9 @@ class RemBertModel(RemBertPreTrainedModel):
 
 
 @auto_docstring
+# RemBertForMaskedLM：掩码语言建模：预测被 [MASK] 替换的 token
 class RemBertForMaskedLM(RemBertPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -631,6 +676,7 @@ class RemBertForMaskedLM(RemBertPreTrainedModel):
         self.cls.predictions.decoder = new_embeddings
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -692,7 +738,9 @@ class RemBertForMaskedLM(RemBertPreTrainedModel):
     RemBERT Model with a `language modeling` head on top for CLM fine-tuning.
     """
 )
+# RemBertForCausalLM：因果语言建模：自回归 next-token 预测与生成
 class RemBertForCausalLM(RemBertPreTrainedModel, GenerationMixin):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -712,6 +760,7 @@ class RemBertForCausalLM(RemBertPreTrainedModel, GenerationMixin):
         self.cls.predictions.decoder = new_embeddings
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -798,7 +847,9 @@ class RemBertForCausalLM(RemBertPreTrainedModel, GenerationMixin):
     pooled output) e.g. for GLUE tasks.
     """
 )
+# RemBertForSequenceClassification：序列分类：池化句向量 + 线性分类头
 class RemBertForSequenceClassification(RemBertPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
@@ -810,6 +861,7 @@ class RemBertForSequenceClassification(RemBertPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.FloatTensor | None = None,
@@ -882,7 +934,9 @@ class RemBertForSequenceClassification(RemBertPreTrainedModel):
 
 
 @auto_docstring
+# RemBertForMultipleChoice：多项选择：拼接选项后 softmax 选取最佳答案
 class RemBertForMultipleChoice(RemBertPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -894,6 +948,7 @@ class RemBertForMultipleChoice(RemBertPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.FloatTensor | None = None,
@@ -985,7 +1040,9 @@ class RemBertForMultipleChoice(RemBertPreTrainedModel):
 
 
 @auto_docstring
+# RemBertForTokenClassification：Token 分类：逐 token 线性头用于 NER 等任务
 class RemBertForTokenClassification(RemBertPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
@@ -998,6 +1055,7 @@ class RemBertForTokenClassification(RemBertPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.FloatTensor | None = None,
@@ -1051,7 +1109,9 @@ class RemBertForTokenClassification(RemBertPreTrainedModel):
 
 
 @auto_docstring
+# RemBertForQuestionAnswering：抽取式问答：预测答案 span 起止位置
 class RemBertForQuestionAnswering(RemBertPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -1064,6 +1124,7 @@ class RemBertForQuestionAnswering(RemBertPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.FloatTensor | None = None,

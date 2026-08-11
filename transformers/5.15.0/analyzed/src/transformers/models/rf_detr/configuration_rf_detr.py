@@ -23,10 +23,13 @@ from ...backbone_utils import BackboneConfigMixin, consolidate_backbone_kwargs_t
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 from ..auto import AutoConfig
+# RF-DETR 配置：DINOv2 视觉骨干与多尺度可变形注意力解码器超参数
+
 
 
 @auto_docstring(checkpoint="Roboflow/rf-detr-base")
 @strict
+# RfDetrDinov2Config：RF-DETR DINOv2 骨干配置：ViT 深度、patch 与 register token
 class RfDetrDinov2Config(BackboneConfigMixin, PreTrainedConfig):
     r"""
     layerscale_value (`float`, *optional*, defaults to 1.0):
@@ -100,6 +103,7 @@ class RfDetrDinov2Config(BackboneConfigMixin, PreTrainedConfig):
 
 @auto_docstring(checkpoint="Roboflow/rf-detr-base")
 @strict
+# RfDetrConfig：RF-DETR 联合配置：骨干 + 解码器 + 检测/分割任务超参数
 class RfDetrConfig(PreTrainedConfig):
     r"""
     hidden_expansion (`float`, *optional*, defaults to 0.5):

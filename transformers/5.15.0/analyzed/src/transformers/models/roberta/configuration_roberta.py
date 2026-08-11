@@ -18,10 +18,13 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# RoBERTa 配置：BERT 架构变体、位置嵌入与掩码/分类任务超参数
+
 
 
 @auto_docstring(checkpoint="FacebookAI/roberta-base")
 @strict
+# RobertaConfig：RoBERTa 超参数：隐藏维度、注意力头、位置嵌入与 dropout
 class RobertaConfig(PreTrainedConfig):
     r"""
     Examples:

@@ -20,10 +20,13 @@ from huggingface_hub.dataclasses import strict
 from ...backbone_utils import BackboneConfigMixin
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# ResNet 配置：层深度、通道宽度、stem 尺寸与 Backbone 输出索引
+
 
 
 @auto_docstring(checkpoint="microsoft/resnet-50")
 @strict
+# ResNetConfig：ResNet 超参数：层类型、深度、通道数与 Backbone 输出阶段
 class ResNetConfig(BackboneConfigMixin, PreTrainedConfig):
     r"""
     layer_type (`str`, *optional*, defaults to `"bottleneck"`):
