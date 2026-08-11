@@ -1,10 +1,12 @@
 from django.contrib.sessions.base_session import AbstractBaseSession, BaseSessionManager
 
 
+# Session 模型管理器 — 标记可在迁移中使用
 class SessionManager(BaseSessionManager):
     use_in_migrations = True
 
 
+# 数据库会话模型 — 服务端存储匿名访客会话数据
 class Session(AbstractBaseSession):
     """
     Django provides full support for anonymous sessions. The session
@@ -25,6 +27,7 @@ class Session(AbstractBaseSession):
 
     objects = SessionManager()
 
+    # 返回 db 后端的 SessionStore
     @classmethod
     def get_session_store_class(cls):
         from django.contrib.sessions.backends.db import SessionStore

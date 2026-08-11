@@ -5,6 +5,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.utils import translation
 
 
+# 站点地图基类 — 生成 URL 列表供 XML 模板渲染
 class Sitemap:
     # This limit is defined by Google. See the index documentation at
     # https://www.sitemaps.org/protocol.html#index.
@@ -26,6 +27,7 @@ class Sitemap:
     # Add an alternate/hreflang link with value 'x-default'.
     x_default = False
 
+    # 读取属性或调用可调用属性；i18n 模式下解包 (item, lang_code)
     def _get(self, name, item, default=None):
         try:
             attr = getattr(self, name)
@@ -39,15 +41,18 @@ class Sitemap:
             return attr(item)
         return attr
 
+    # 返回该条目应展示的语言列表
     def get_languages_for_item(self, item):
         """Languages for which this item is displayed."""
         return self._languages()
 
+    # 返回配置的 languages 或 settings.LANGUAGES
     def _languages(self):
         if self.languages is not None:
             return self.languages
         return [lang_code for lang_code, _ in settings.LANGUAGES]
 
+    # i18n 时展开为 (item, lang_code) 元组列表
     def _items(self):
         if self.i18n:
             # Create (item, lang_code) tuples for all items and languages.
@@ -61,6 +66,7 @@ class Sitemap:
             return items
         return self.items()
 
+    # 在指定语言上下文中解析 location
     def _location(self, item, force_lang_code=None):
         if self.i18n:
             obj, lang_code = item
@@ -70,20 +76,26 @@ class Sitemap:
                 return self._get("location", item)
         return self._get("location", item)
 
+    # 按 Google 上限 limit 对条目分页
     @property
     def paginator(self):
         return paginator.Paginator(self._items(), self.limit)
 
+    # 子类重写：返回待收录的对象列表
+    # 返回 queryset 克隆以避免过早求值
     def items(self):
         return []
 
+    # 默认用 get_absolute_url 作为路径
     def location(self, item):
         return item.get_absolute_url()
 
+    # 确定 URL 协议，默认 https
     def get_protocol(self, protocol=None):
         # Determine protocol
         return self.protocol or protocol or "https"
 
+    # 从 Site 模型或传入 site 获取域名
     def get_domain(self, site=None):
         # Determine domain
         if site is None:
@@ -100,11 +112,14 @@ class Sitemap:
                 )
         return site.domain
 
+    # 生成指定页的 URL 信息字典列表
     def get_urls(self, page=1, site=None, protocol=None):
         protocol = self.get_protocol(protocol)
         domain = self.get_domain(site)
         return self._urls(page, protocol, domain)
 
+    # 汇总所有条目的最新 lastmod
+    # 按 date_field 降序取第一条作为最新 lastmod
     def get_latest_lastmod(self):
         if not hasattr(self, "lastmod"):
             return None
@@ -116,6 +131,7 @@ class Sitemap:
         else:
             return self.lastmod
 
+    # 分页遍历条目，组装 location/priority/lastmod/alternates
     def _urls(self, page, protocol, domain):
         urls = []
         latest_lastmod = None
@@ -172,10 +188,12 @@ class Sitemap:
         return urls
 
 
+# 通用站点地图 — 基于 QuerySet 与可选 date_field 生成条目
 class GenericSitemap(Sitemap):
     priority = None
     changefreq = None
 
+    # 从 info_dict 取 queryset 与 date_field
     def __init__(self, info_dict, priority=None, changefreq=None, protocol=None):
         self.queryset = info_dict["queryset"]
         self.date_field = info_dict.get("date_field")
@@ -187,6 +205,7 @@ class GenericSitemap(Sitemap):
         # Make sure to return a clone; we don't want premature evaluation.
         return self.queryset.filter()
 
+    # 从 date_field 读取条目的修改时间
     def lastmod(self, item):
         if self.date_field is not None:
             return getattr(item, self.date_field)

@@ -11,12 +11,14 @@ from django.utils import timezone
 from django.utils.http import http_date
 
 
+# 站点地图索引项 — location 与可选 last_mod
 @dataclass
 class SitemapIndexItem:
     location: str
     last_mod: bool = None
 
 
+# 装饰器 — 响应添加 X-Robots-Tag 禁止索引
 def x_robots_tag(func):
     @wraps(func)
     def inner(request, *args, **kwargs):
@@ -27,6 +29,7 @@ def x_robots_tag(func):
     return inner
 
 
+# 比较并返回较新的 lastmod（统一为 aware datetime）
 def _get_latest_lastmod(current_lastmod, new_lastmod):
     """
     Returns the latest `lastmod` where `lastmod` can be either a date or a
@@ -39,6 +42,7 @@ def _get_latest_lastmod(current_lastmod, new_lastmod):
     return new_lastmod if current_lastmod is None else max(current_lastmod, new_lastmod)
 
 
+# 渲染站点地图索引 XML，列出各 section 的分页 URL
 @x_robots_tag
 def index(
     request,
@@ -88,6 +92,7 @@ def index(
     )
 
 
+# 渲染单个 section 或全部 section 的 sitemap.xml
 @x_robots_tag
 def sitemap(
     request,

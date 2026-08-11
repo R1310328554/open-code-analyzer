@@ -9,16 +9,20 @@ from django.utils.cache import patch_vary_headers
 from django.utils.http import http_date
 
 
+# 会话中间件 — 请求时绑定 SessionStore，响应时读写 Cookie
 class SessionMiddleware(MiddlewareMixin):
+    # 按 SESSION_ENGINE 加载 SessionStore 类
     def __init__(self, get_response):
         super().__init__(get_response)
         engine = import_module(settings.SESSION_ENGINE)
         self.SessionStore = engine.SessionStore
 
+    # 从 Cookie 读取 session_key 并挂载 request.session
     def process_request(self, request):
         session_key = request.COOKIES.get(settings.SESSION_COOKIE_NAME)
         request.session = self.SessionStore(session_key)
 
+    # 会话变更或 SAVE_EVERY_REQUEST 时保存并设置/删除 Cookie
     def process_response(self, request, response):
         """
         If request.session was modified, or if the configuration is to save the

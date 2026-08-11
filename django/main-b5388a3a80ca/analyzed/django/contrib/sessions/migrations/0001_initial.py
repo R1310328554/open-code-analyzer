@@ -2,6 +2,7 @@ import django.contrib.sessions.models
 from django.db import migrations, models
 
 
+# 初始迁移 — 创建 django_session 表
 class Migration(migrations.Migration):
     dependencies = []
 
