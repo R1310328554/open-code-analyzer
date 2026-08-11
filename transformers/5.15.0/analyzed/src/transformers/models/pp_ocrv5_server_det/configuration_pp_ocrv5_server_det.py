@@ -22,11 +22,15 @@ from huggingface_hub.dataclasses import strict
 
 from ...backbone_utils import consolidate_backbone_kwargs_to_config
 from ...configuration_utils import PreTrainedConfig
-from ...utils import auto_docstring
+from ...utils import
+
+# PP-OCRv5 服务端检测配置：HGNetV2 骨干 + Intra-Class Neck
+ auto_docstring
 from ..auto import AutoConfig
 
 
 @auto_docstring(checkpoint="PaddlePaddle/PP-OCRv5_server_det_safetensors")
+# PPOCRV5ServerDetConfig：服务端文本检测配置：Neck 通道、ICB 与缩放因子
 @strict
 class PPOCRV5ServerDetConfig(PreTrainedConfig):
     r"""
@@ -63,6 +67,7 @@ class PPOCRV5ServerDetConfig(PreTrainedConfig):
     kernel_list: list | None = None
     id2label: dict[int, str] | dict[str, str] | None = None
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         self.backbone_config, kwargs = consolidate_backbone_kwargs_to_config(
             backbone_config=self.backbone_config,

@@ -24,5 +24,6 @@ if TYPE_CHECKING:
 else:
     import sys
 
+    # 运行时以 _LazyModule 延迟加载 PPOCRV5ServerDet 配置、图像处理与建模类
     _file = globals()["__file__"]
     sys.modules[__name__] = _LazyModule(__name__, _file, define_import_structure(_file), module_spec=__spec__)

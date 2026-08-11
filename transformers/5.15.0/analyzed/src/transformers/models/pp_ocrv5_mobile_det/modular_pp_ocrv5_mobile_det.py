@@ -23,7 +23,10 @@ from ...backbone_utils import consolidate_backbone_kwargs_to_config, load_backbo
 from ...configuration_utils import PreTrainedConfig
 from ...modeling_outputs import BaseModelOutputWithNoAttention
 from ...processing_utils import Unpack
-from ...utils import (
+from ...utils import
+
+# PP-OCRv5 移动端检测 modular 源：配置与 Neck/Head 实现
+ (
     TransformersKwargs,
     auto_docstring,
     logging,
@@ -42,6 +45,7 @@ logger = logging.get_logger(__name__)
 
 
 @auto_docstring(checkpoint="PaddlePaddle/PP-OCRv5_mobile_det_safetensors")
+# PPOCRV5MobileDetConfig：移动端检测配置：默认 PP-LCNetV3 骨干
 @strict
 class PPOCRV5MobileDetConfig(PreTrainedConfig):
     r"""
@@ -72,6 +76,7 @@ class PPOCRV5MobileDetConfig(PreTrainedConfig):
     kernel_list: list[int] | tuple[int, ...] = (3, 2, 2)
     layer_list_out_channels: list[int] | tuple[int, ...] = (12, 18, 42, 360)
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         self.backbone_config, kwargs = consolidate_backbone_kwargs_to_config(
             backbone_config=self.backbone_config,
@@ -90,17 +95,20 @@ class PPOCRV5MobileDetConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# PPOCRV5MobileDetPreTrainedModel：预训练基类别名：继承 ServerDet 基类
 @auto_docstring
 class PPOCRV5MobileDetPreTrainedModel(PPOCRV5ServerDetPreTrainedModel):
     pass
 
 
+# PPOCRV5MobileDetSqueezeExcitationModule：简化 SE 模块实现
 class PPOCRV5MobileDetSqueezeExcitationModule(nn.Module):
     """
     Simplified Squeeze-and-Excitation (SE) Module for the neck network.
     Applies channel-wise recalibration with a clamped activation to stabilize training.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, in_channels, reduction, activation="relu"):
         super().__init__()
 
@@ -121,6 +129,7 @@ class PPOCRV5MobileDetSqueezeExcitationModule(nn.Module):
         )
         self.act_fn = ACT2FN[activation]
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states):
         residual = hidden_states
         hidden_states = self.avg_pool(hidden_states)
@@ -129,12 +138,14 @@ class PPOCRV5MobileDetSqueezeExcitationModule(nn.Module):
         return residual * hidden_states
 
 
+# PPOCRV5MobileDetResidualSqueezeExcitationLayer：RSE 层：1×1/3×3 卷积 + SE
 class PPOCRV5MobileDetResidualSqueezeExcitationLayer(nn.Module):
     """
     Residual Squeeze-and-Excitation (RSE) Layer for the neck network.
     Combines a 1x1/3x3 convolution with an SE Module.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, in_channels, out_channels, kernel_size, reduction):
         super().__init__()
         self.in_conv = nn.Conv2d(
@@ -146,6 +157,7 @@ class PPOCRV5MobileDetResidualSqueezeExcitationLayer(nn.Module):
         )
         self.squeeze_excitation_block = PPOCRV5MobileDetSqueezeExcitationModule(out_channels, reduction)
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states):
         hidden_states = self.in_conv(hidden_states)
         hidden_states = hidden_states + self.squeeze_excitation_block(hidden_states)
@@ -153,6 +165,7 @@ class PPOCRV5MobileDetResidualSqueezeExcitationLayer(nn.Module):
         return hidden_states
 
 
+# PPOCRV5MobileDetNeck：Neck：多尺度 RSE 上采样融合
 class PPOCRV5MobileDetNeck(nn.Module):
     """
     Neck network for PPOCRV5 Mobile Det, responsible for multi-scale feature fusion.
@@ -160,6 +173,7 @@ class PPOCRV5MobileDetNeck(nn.Module):
     then concatenates the fused features for input to the head network.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPOCRV5MobileDetConfig):
         super().__init__()
         self.interpolate_mode = config.interpolate_mode
@@ -181,6 +195,7 @@ class PPOCRV5MobileDetNeck(nn.Module):
                 )
             )
 
+    # forward：前向计算主逻辑
     def forward(self, feature_maps):
         fused = []
         for conv, feature in zip(self.insert_conv, feature_maps):  # [p2, p3, p4, p5]
@@ -207,8 +222,10 @@ class PPOCRV5MobileDetNeck(nn.Module):
         return fused_feature_map
 
 
+# PPOCRV5MobileDetHead：检测头：继承 ServerDet 分割头（无残差特征）
 class PPOCRV5MobileDetHead(PPOCRV5ServerDetSegmentationHead):
     # MobileDet does not return residual features
+    # forward：前向计算主逻辑
     def forward(self, hidden_states: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         hidden_states = self.conv_down(hidden_states)
         hidden_states = self.conv_up(hidden_states)
@@ -223,7 +240,9 @@ class PPOCRV5MobileDetHead(PPOCRV5ServerDetSegmentationHead):
     Generates binary text segmentation maps for text detection tasks.
     """
 )
+# PPOCRV5MobileDetModel：核心模型：骨干 + Neck 多尺度融合
 class PPOCRV5MobileDetModel(PPOCRV5MobileDetPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPOCRV5MobileDetConfig):
         super().__init__(config)
 
@@ -240,6 +259,7 @@ class PPOCRV5MobileDetModel(PPOCRV5MobileDetPreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs
+    # forward：前向计算主逻辑
     def forward(
         self,
         hidden_states: torch.FloatTensor,
@@ -261,6 +281,7 @@ class PPOCRV5MobileDetModel(PPOCRV5MobileDetPreTrainedModel):
     and returns outputs compatible with the Transformers object detection API.
     """
 )
+# PPOCRV5MobileDetForObjectDetection：检测封装：继承 ServerDet 检测类
 class PPOCRV5MobileDetForObjectDetection(PPOCRV5ServerDetForObjectDetection):
     pass
 

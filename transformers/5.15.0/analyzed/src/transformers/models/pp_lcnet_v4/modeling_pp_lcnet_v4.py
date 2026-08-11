@@ -32,21 +32,29 @@ from ...processing_utils import Unpack
 from ...utils import TransformersKwargs, auto_docstring
 from ...utils.generic import can_return_tuple, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
-from .configuration_pp_lcnet_v4 import PPLCNetV4Config
+from .configuration_pp
+
+# PP-LCNetV4 建模：轻量卷积骨干 + 深度可分离块 + SE 注意力
+_lcnet_v4 import PPLCNetV4Config
 
 
+# PPLCNetV4LearnableAffineBlock：可学习仿射块：逐通道缩放与偏置
 class PPLCNetV4LearnableAffineBlock(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, scale_value: float = 1.0, bias_value: float = 0.0):
         super().__init__()
         self.scale = nn.Parameter(torch.tensor([scale_value]), requires_grad=True)
         self.bias = nn.Parameter(torch.tensor([bias_value]), requires_grad=True)
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_state: Tensor) -> Tensor:
         hidden_state = self.scale * hidden_state + self.bias
         return hidden_state
 
 
+# PPLCNetV4ConvLayer：标准卷积层：Conv-BN-激活 + 可选 LAB
 class PPLCNetV4ConvLayer(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         in_channels: int,
@@ -74,6 +82,7 @@ class PPLCNetV4ConvLayer(nn.Module):
         else:
             self.lab = nn.Identity()
 
+    # forward：前向计算主逻辑
     def forward(self, input: Tensor) -> Tensor:
         hidden_state = self.convolution(input)
         hidden_state = self.normalization(hidden_state)
@@ -82,12 +91,14 @@ class PPLCNetV4ConvLayer(nn.Module):
         return hidden_state
 
 
+# PPLCNetV4SqueezeExcitationModule：SE 模块：通道注意力重标定
 class PPLCNetV4SqueezeExcitationModule(nn.Module):
     """
     Squeeze-and-Excitation (SE) Module: Adaptive feature recalibration
     Enhances the model's ability to focus on important channels by learning channel-wise attention weights.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, channel, reduction=4):
         super().__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
@@ -109,6 +120,7 @@ class PPLCNetV4SqueezeExcitationModule(nn.Module):
             )
             self.convolutions.append(activation)
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_state):
         residual = hidden_state
         hidden_state = self.avg_pool(hidden_state)
@@ -119,7 +131,9 @@ class PPLCNetV4SqueezeExcitationModule(nn.Module):
         return hidden_state
 
 
+# PPLCNetV4LargeStem：大型 Stem：多分支卷积与池化融合
 class PPLCNetV4LargeStem(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPLCNetV4Config):
         super().__init__()
 
@@ -167,6 +181,7 @@ class PPLCNetV4LargeStem(nn.Module):
         self.pool = nn.MaxPool2d(kernel_size=2, stride=1, ceil_mode=True)
         self.num_channels = config.num_channels
 
+    # forward：前向计算主逻辑
     def forward(self, pixel_values: Tensor) -> Tensor:
         num_channels = pixel_values.shape[1]
         if num_channels != self.num_channels:
@@ -185,7 +200,9 @@ class PPLCNetV4LargeStem(nn.Module):
         return embedding
 
 
+# PPLCNetV4SmallStem：小型 Stem：两层卷积下采样
 class PPLCNetV4SmallStem(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.conv1 = PPLCNetV4ConvLayer(
@@ -204,6 +221,7 @@ class PPLCNetV4SmallStem(nn.Module):
             activation=None,
         )
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.conv1(hidden_states)
         hidden_states = self.act_fn(hidden_states)
@@ -212,7 +230,9 @@ class PPLCNetV4SmallStem(nn.Module):
         return hidden_states
 
 
+# PPLCNetV4DepthwiseSeparableConvLayer：深度可分离卷积块：token 混合 + 通道 MLP
 class PPLCNetV4DepthwiseSeparableConvLayer(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         in_channels,
@@ -259,6 +279,7 @@ class PPLCNetV4DepthwiseSeparableConvLayer(nn.Module):
             in_channels=in_channels * 2, out_channels=out_channels, kernel_size=1, stride=1, activation=None
         )
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.token_conv(hidden_states)
         hidden_states = self.token_squeeze_excitation(hidden_states)
@@ -273,7 +294,9 @@ class PPLCNetV4DepthwiseSeparableConvLayer(nn.Module):
         return hidden_states
 
 
+# PPLCNetV4Block：阶段块：堆叠多个深度可分离层
 class PPLCNetV4Block(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config, stage_index):
         super().__init__()
         self.config = config
@@ -293,12 +316,14 @@ class PPLCNetV4Block(nn.Module):
                 )
             )
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         for block in self.blocks:
             hidden_states = block(hidden_states)
         return hidden_states
 
 
+# PPLCNetV4PreTrainedModel：PP-LCNetV4 预训练基类：权重初始化与加载
 @auto_docstring
 class PPLCNetV4PreTrainedModel(PreTrainedModel):
     """
@@ -318,7 +343,9 @@ class PPLCNetV4PreTrainedModel(PreTrainedModel):
     }
 
 
+# PPLCNetV4Encoder：编码器：Stem + 多阶段特征提取
 class PPLCNetV4Encoder(PPLCNetV4PreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPLCNetV4Config):
         super().__init__(config)
         self.config = config
@@ -335,6 +362,7 @@ class PPLCNetV4Encoder(PPLCNetV4PreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs
+    # forward：前向计算主逻辑
     def forward(self, pixel_values: torch.Tensor, **kwargs) -> BaseModelOutputWithNoAttention:
         hidden_state = self.convolution(pixel_values)
         for block in self.blocks:
@@ -348,9 +376,11 @@ class PPLCNetV4Encoder(PPLCNetV4PreTrainedModel):
     PPLCNetV4 backbone model for feature extraction.
     """
 )
+# PPLCNetV4Backbone：骨干网络：多尺度特征图输出
 class PPLCNetV4Backbone(BackboneMixin, PPLCNetV4PreTrainedModel):
     has_attentions = False
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPLCNetV4Config):
         super().__init__(config)
         num_features = [config.stem_channels]
@@ -364,6 +394,7 @@ class PPLCNetV4Backbone(BackboneMixin, PPLCNetV4PreTrainedModel):
     @can_return_tuple
     @filter_output_hidden_states
     @auto_docstring
+    # forward：前向计算主逻辑
     def forward(
         self,
         pixel_values: torch.Tensor,

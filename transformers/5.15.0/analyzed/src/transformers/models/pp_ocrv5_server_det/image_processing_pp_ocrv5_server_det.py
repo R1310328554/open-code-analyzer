@@ -29,7 +29,10 @@ from ...image_processing_backends import TorchvisionBackend
 from ...image_transforms import group_images_by_shape, reorder_images
 from ...image_utils import PILImageResampling, SizeDict
 from ...processing_utils import ImagesKwargs
-from ...utils import auto_docstring, is_cv2_available, requires_backends
+from ...utils import
+
+# PP-OCRv5 服务端检测图像预处理：缩放、归一化与 DB 后处理
+ auto_docstring, is_cv2_available, requires_backends
 from ...utils.generic import TensorType
 from ...utils.import_utils import requires
 
@@ -38,6 +41,8 @@ if is_cv2_available():
     import cv2
 
 
+# PPOCRV5ServerDetImageProcessorKwargs：图像处理器关键字参数类型
+# PPOCRV5ServerDetImageProcessor：检测图像处理器：预处理与 DB 框解码
 class PPOCRV5ServerDetImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     limit_side_len (`int`, *optional*, defaults to `960`):
@@ -362,6 +367,7 @@ class PPOCRV5ServerDetImageProcessor(TorchvisionBackend):
             [height, width], dtype=torch.float32, device=image.device
         )
 
+    # post_process_object_detection：将检测输出解码为文本框与置信度
     def post_process_object_detection(
         self,
         predictions,

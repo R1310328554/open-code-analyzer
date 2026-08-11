@@ -16,7 +16,10 @@
 from huggingface_hub.dataclasses import strict
 
 from ...backbone_utils import consolidate_backbone_kwargs_to_config
-from ...utils import (
+from ...utils import
+
+# PP-OCRv5 移动端识别 modular 源：继承 ServerRec 并定制骨干
+ (
     auto_docstring,
     logging,
 )
@@ -33,8 +36,10 @@ logger = logging.get_logger(__name__)
 
 
 @auto_docstring(checkpoint="PaddlePaddle/PP-OCRv5_mobile_rec_safetensors")
+# PPOCRV5MobileRecConfig：移动端识别配置：PP-LCNetV3 默认骨干
 @strict
 class PPOCRV5MobileRecConfig(PPOCRV5ServerRecConfig):
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         if self.conv_kernel_size is None:
             self.conv_kernel_size = [1, 3]
@@ -52,7 +57,9 @@ class PPOCRV5MobileRecConfig(PPOCRV5ServerRecConfig):
         super().__post_init__(**kwargs)
 
 
+# PPOCRV5MobileRecEncoderWithSVTR：SVTR 编码器：按骨干输出调整输入通道
 class PPOCRV5MobileRecEncoderWithSVTR(PPOCRV5ServerRecEncoderWithSVTR):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         config,
@@ -65,11 +72,13 @@ class PPOCRV5MobileRecEncoderWithSVTR(PPOCRV5ServerRecEncoderWithSVTR):
         self.post_init()
 
 
+# PPOCRV5MobileRecModel：核心模型别名：继承 ServerRecModel
 class PPOCRV5MobileRecModel(PPOCRV5ServerRecModel):
     pass
 
 
 @auto_docstring(custom_intro="PPOCRV5MobileRec model for text recognition tasks.")
+# PPOCRV5MobileRecForTextRecognition：文本识别封装：继承 ServerRec 识别类
 class PPOCRV5MobileRecForTextRecognition(PPOCRV5ServerRecForTextRecognition):
     pass
 

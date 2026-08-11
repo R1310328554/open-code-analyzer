@@ -28,9 +28,13 @@ from ...modeling_outputs import BaseModelOutputWithNoAttention
 from ...modeling_utils import PreTrainedModel
 from ...processing_utils import Unpack
 from ...utils import TransformersKwargs, auto_docstring, can_return_tuple
-from .configuration_pp_ocrv5_server_det import PPOCRV5ServerDetConfig
+from .configuration_pp
+
+# PP-OCRv5 服务端检测建模：ICB Neck + 分割/局部检测头
+_ocrv5_server_det import PPOCRV5ServerDetConfig
 
 
+# PPOCRV5ServerDetIntraclassBlock：Intra-Class Block：类内特征增强模块
 class PPOCRV5ServerDetIntraclassBlock(nn.Module):
     """
     Intra-Class Relationship Block. It uses multi-scale convolution (7x7, 5x5, 3x3)
@@ -38,6 +42,7 @@ class PPOCRV5ServerDetIntraclassBlock(nn.Module):
     within text regions.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         intraclass_block_config: dict | None = None,
@@ -89,6 +94,7 @@ class PPOCRV5ServerDetIntraclassBlock(nn.Module):
             bias=True,
         )
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         residual = hidden_states
         hidden_states = self.conv_reduce_channel(hidden_states)
@@ -114,6 +120,7 @@ class PPOCRV5ServerDetIntraclassBlock(nn.Module):
         return residual + hidden_states
 
 
+# PPOCRV5ServerDetNeck：Neck 网络：ICB + 多尺度特征融合
 class PPOCRV5ServerDetNeck(nn.Module):
     """
     Large Kernel Path Aggregation Network (Neck) for PPOCRV5 Server Detection.
@@ -121,6 +128,7 @@ class PPOCRV5ServerDetNeck(nn.Module):
     enhanced with large kernel convolution for better spatial dependency modeling.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.interpolate_mode = config.interpolate_mode
@@ -180,6 +188,7 @@ class PPOCRV5ServerDetNeck(nn.Module):
                 )
             )
 
+    # forward：前向计算主逻辑
     def forward(self, backbone_stage_feature_maps: list[torch.Tensor], **kwargs) -> torch.Tensor:
         channel_adjusted = []
         for i, feature_map in enumerate(backbone_stage_feature_maps):
@@ -230,11 +239,13 @@ class PPOCRV5ServerDetNeck(nn.Module):
         return torch.cat(upsampled[::-1], dim=1)
 
 
+# PPOCRV5ServerDetConvBatchnormLayer：Conv-BN-激活包装层
 class PPOCRV5ServerDetConvBatchnormLayer(nn.Module):
     """
     A basic wrapper for Convolution-BatchNorm-Activation, typically used for head components.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         in_channels: int,
@@ -269,6 +280,7 @@ class PPOCRV5ServerDetConvBatchnormLayer(nn.Module):
         self.norm = nn.BatchNorm2d(out_channels)
         self.act_fn = nn.Identity() if activation is None else ACT2FN[activation]
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.convolution(hidden_states)
         hidden_states = self.norm(hidden_states)
@@ -276,12 +288,14 @@ class PPOCRV5ServerDetConvBatchnormLayer(nn.Module):
         return hidden_states
 
 
+# PPOCRV5ServerDetSegmentationHead：分割检测头：转置卷积上采样
 class PPOCRV5ServerDetSegmentationHead(nn.Module):
     """
     Standard segmentation head for generating probability maps. It uses transposed
     convolution to upsample the feature map back to the original image size.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         config: PPOCRV5ServerDetConfig,
@@ -311,6 +325,7 @@ class PPOCRV5ServerDetSegmentationHead(nn.Module):
             stride=2,
         )
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         hidden_states = self.conv_down(hidden_states)
         hidden_states = self.conv_up(hidden_states)
@@ -320,12 +335,14 @@ class PPOCRV5ServerDetSegmentationHead(nn.Module):
         return hidden_states, feature
 
 
+# PPOCRV5ServerDetLocalModule：局部检测模块：小区域文本定位
 class PPOCRV5ServerDetLocalModule(nn.Module):
     """
     Local Refinement Module that refines the initial probability map by
     concatenating it with higher-resolution features.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, in_channels: int, out_channels: int, hidden_act: str):
         super().__init__()
         self.convolution_backbone = PPOCRV5ServerDetConvBatchnormLayer(
@@ -344,6 +361,7 @@ class PPOCRV5ServerDetLocalModule(nn.Module):
             padding=0,
         )
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states: torch.Tensor, init_map: torch.Tensor) -> torch.Tensor:
         hidden_states = torch.cat([init_map, hidden_states], dim=1)
         # last Conv
@@ -352,12 +370,14 @@ class PPOCRV5ServerDetLocalModule(nn.Module):
         return hidden_states
 
 
+# PPOCRV5ServerDetHead：检测头：分割 + 局部模块组合
 class PPOCRV5ServerDetHead(nn.Module):
     """
     PPOCRV5ServerDetHead implements the Progressive Fusion Head with Local refinement,
     the core detection head of PP-OCRv5.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPOCRV5ServerDetConfig):
         super().__init__()
         self.binarize_head = PPOCRV5ServerDetSegmentationHead(config)
@@ -367,6 +387,7 @@ class PPOCRV5ServerDetHead(nn.Module):
             config.neck_out_channels // 4, config.neck_out_channels // 4, config.hidden_act
         )
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states, feature = self.binarize_head(hidden_states)
         residual = hidden_states
@@ -377,6 +398,7 @@ class PPOCRV5ServerDetHead(nn.Module):
         return 0.5 * (residual + hidden_states)
 
 
+# PPOCRV5ServerDetPreTrainedModel：服务端检测预训练基类
 class PPOCRV5ServerDetPreTrainedModel(PreTrainedModel):
     """
     Base class for all PPOCRV5 Server Det pre-trained models. Handles model initialization,
@@ -390,8 +412,10 @@ class PPOCRV5ServerDetPreTrainedModel(PreTrainedModel):
     _can_compile_fullgraph = True
 
 
+# PPOCRV5ServerDetModel：核心模型：骨干 + Neck 特征提取
 @auto_docstring
 class PPOCRV5ServerDetModel(PPOCRV5ServerDetPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPOCRV5ServerDetConfig):
         super().__init__(config)
         self.backbone = load_backbone(config)
@@ -400,6 +424,7 @@ class PPOCRV5ServerDetModel(PPOCRV5ServerDetPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向计算主逻辑
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -421,9 +446,11 @@ class PPOCRV5ServerDetModel(PPOCRV5ServerDetPreTrainedModel):
     and returns outputs compatible with the Transformers object detection API.
     """
 )
+# PPOCRV5ServerDetForObjectDetection：文本检测封装：兼容目标检测 API
 class PPOCRV5ServerDetForObjectDetection(PPOCRV5ServerDetPreTrainedModel):
     _keys_to_ignore_on_load_missing = ["num_batches_tracked"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPOCRV5ServerDetConfig):
         super().__init__(config)
         self.model = PPOCRV5ServerDetModel(config)
@@ -431,6 +458,7 @@ class PPOCRV5ServerDetForObjectDetection(PPOCRV5ServerDetPreTrainedModel):
         self.post_init()
 
     @can_return_tuple
+    # forward：前向计算主逻辑
     def forward(
         self,
         pixel_values: torch.FloatTensor,

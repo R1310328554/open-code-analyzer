@@ -21,7 +21,10 @@ from huggingface_hub.dataclasses import strict
 
 from ...activations import ACT2FN
 from ...configuration_utils import PreTrainedConfig
-from ...utils import (
+from ...utils import
+
+# PP-LCNetV4 modular 源：配置与骨干模块定义
+ (
     auto_docstring,
 )
 from ..hgnet_v2.modeling_hgnet_v2 import HGNetV2ConvLayer, HGNetV2Embeddings
@@ -35,6 +38,7 @@ from ..pp_lcnet.modeling_pp_lcnet import (
 
 
 @auto_docstring(checkpoint="PaddlePaddle/Not_yet_released")
+# PPLCNetV4Config：PP-LCNetV4 配置：通道缩放、Stem 类型与块结构
 @strict
 class PPLCNetV4Config(PPLCNetConfig):
     r"""
@@ -78,6 +82,7 @@ class PPLCNetV4Config(PPLCNetConfig):
     hidden_dropout_prob = AttributeError()
     class_expand = AttributeError()
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         # Default block configs for PP-LCNetV3
         # Each tuple: (kernel_size, in_channels, out_channels, stride, use_squeeze_excitation)
@@ -116,6 +121,7 @@ class PPLCNetV4Config(PPLCNetConfig):
         self.stage_out_channels = [blocks[-1][2] for blocks in self.block_configs]
         PreTrainedConfig.__post_init__(**kwargs)
 
+    # validate_architecture：校验模型架构配置合法性
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if len(self.block_configs) != 4:
@@ -124,19 +130,24 @@ class PPLCNetV4Config(PPLCNetConfig):
             raise ValueError(f"stem_type must be either 'large' or 'small', but got {self.stem_type}")
 
 
+# PPLCNetV4ConvLayer：卷积层别名：继承 HGNetV2ConvLayer
 class PPLCNetV4ConvLayer(HGNetV2ConvLayer):
     pass
 
 
+# PPLCNetV4SqueezeExcitationModule：SE 模块别名：继承 PPLCNet SE
 class PPLCNetV4SqueezeExcitationModule(PPLCNetSqueezeExcitationModule):
     pass
 
 
+# PPLCNetV4LargeStem：大型 Stem 别名：继承 HGNetV2Embeddings
 class PPLCNetV4LargeStem(HGNetV2Embeddings):
     pass
 
 
+# PPLCNetV4SmallStem：小型 Stem：两层 GELU 卷积下采样
 class PPLCNetV4SmallStem(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.conv1 = PPLCNetV4ConvLayer(
@@ -155,6 +166,7 @@ class PPLCNetV4SmallStem(nn.Module):
             activation=None,
         )
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.conv1(hidden_states)
         hidden_states = self.act_fn(hidden_states)
@@ -163,7 +175,9 @@ class PPLCNetV4SmallStem(nn.Module):
         return hidden_states
 
 
+# PPLCNetV4DepthwiseSeparableConvLayer：深度可分离卷积块实现
 class PPLCNetV4DepthwiseSeparableConvLayer(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         in_channels,
@@ -210,6 +224,7 @@ class PPLCNetV4DepthwiseSeparableConvLayer(nn.Module):
             in_channels=in_channels * 2, out_channels=out_channels, kernel_size=1, stride=1, activation=None
         )
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.token_conv(hidden_states)
         hidden_states = self.token_squeeze_excitation(hidden_states)
@@ -224,7 +239,9 @@ class PPLCNetV4DepthwiseSeparableConvLayer(nn.Module):
         return hidden_states
 
 
+# PPLCNetV4Block：阶段块：按配置堆叠深度可分离层
 class PPLCNetV4Block(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config, stage_index):
         super().__init__()
         self.config = config
@@ -244,17 +261,21 @@ class PPLCNetV4Block(nn.Module):
                 )
             )
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         for block in self.blocks:
             hidden_states = block(hidden_states)
         return hidden_states
 
 
+# PPLCNetV4PreTrainedModel：预训练基类别名
 class PPLCNetV4PreTrainedModel(PPLCNetPreTrainedModel):
     pass
 
 
+# PPLCNetV4Encoder：编码器：按 stem_type 选择 Stem
 class PPLCNetV4Encoder(PPLCNetEncoder):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPLCNetV4Config):
         super().__init__(config)
         self.config = config
@@ -263,6 +284,7 @@ class PPLCNetV4Encoder(PPLCNetEncoder):
         self.convolution = PPLCNetV4LargeStem(config) if config.stem_type == "large" else PPLCNetV4SmallStem(config)
 
 
+# PPLCNetV4Backbone：骨干网络别名
 class PPLCNetV4Backbone(PPLCNetBackbone):
     pass
 

@@ -23,11 +23,15 @@ from huggingface_hub.dataclasses import strict
 
 from ...backbone_utils import consolidate_backbone_kwargs_to_config
 from ...configuration_utils import PreTrainedConfig
-from ...utils import auto_docstring
+from ...utils import
+
+# PP-OCRv5 移动端检测配置：Neck/Head 通道与插值模式
+ auto_docstring
 from ..auto import AutoConfig
 
 
 @auto_docstring(checkpoint="PaddlePaddle/PP-OCRv5_mobile_det_safetensors")
+# PPOCRV5MobileDetConfig：移动端文本检测配置：骨干、Neck 与检测头参数
 @strict
 class PPOCRV5MobileDetConfig(PreTrainedConfig):
     r"""
@@ -58,6 +62,7 @@ class PPOCRV5MobileDetConfig(PreTrainedConfig):
     kernel_list: list[int] | tuple[int, ...] = (3, 2, 2)
     layer_list_out_channels: list[int] | tuple[int, ...] = (12, 18, 42, 360)
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         self.backbone_config, kwargs = consolidate_backbone_kwargs_to_config(
             backbone_config=self.backbone_config,

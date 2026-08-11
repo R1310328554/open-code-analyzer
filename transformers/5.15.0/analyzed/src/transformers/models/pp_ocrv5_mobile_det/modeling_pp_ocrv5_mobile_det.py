@@ -31,9 +31,13 @@ from ...processing_utils import Unpack
 from ...utils import TransformersKwargs, auto_docstring, can_return_tuple
 from ...utils.generic import merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
-from .configuration_pp_ocrv5_mobile_det import PPOCRV5MobileDetConfig
+from .configuration_pp
+
+# PP-OCRv5 移动端检测建模：骨干 + RSE Neck + 分割检测头
+_ocrv5_mobile_det import PPOCRV5MobileDetConfig
 
 
+# PPOCRV5MobileDetPreTrainedModel：移动端检测预训练基类
 @auto_docstring
 class PPOCRV5MobileDetPreTrainedModel(PreTrainedModel):
     """
@@ -48,12 +52,14 @@ class PPOCRV5MobileDetPreTrainedModel(PreTrainedModel):
     _can_compile_fullgraph = True
 
 
+# PPOCRV5MobileDetSqueezeExcitationModule：简化 SE 模块：带 clamp 的通道重标定
 class PPOCRV5MobileDetSqueezeExcitationModule(nn.Module):
     """
     Simplified Squeeze-and-Excitation (SE) Module for the neck network.
     Applies channel-wise recalibration with a clamped activation to stabilize training.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, in_channels, reduction, activation="relu"):
         super().__init__()
 
@@ -74,6 +80,7 @@ class PPOCRV5MobileDetSqueezeExcitationModule(nn.Module):
         )
         self.act_fn = ACT2FN[activation]
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states):
         residual = hidden_states
         hidden_states = self.avg_pool(hidden_states)
@@ -82,12 +89,14 @@ class PPOCRV5MobileDetSqueezeExcitationModule(nn.Module):
         return residual * hidden_states
 
 
+# PPOCRV5MobileDetResidualSqueezeExcitationLayer：RSE 层：卷积 + SE 残差融合
 class PPOCRV5MobileDetResidualSqueezeExcitationLayer(nn.Module):
     """
     Residual Squeeze-and-Excitation (RSE) Layer for the neck network.
     Combines a 1x1/3x3 convolution with an SE Module.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, in_channels, out_channels, kernel_size, reduction):
         super().__init__()
         self.in_conv = nn.Conv2d(
@@ -99,6 +108,7 @@ class PPOCRV5MobileDetResidualSqueezeExcitationLayer(nn.Module):
         )
         self.squeeze_excitation_block = PPOCRV5MobileDetSqueezeExcitationModule(out_channels, reduction)
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states):
         hidden_states = self.in_conv(hidden_states)
         hidden_states = hidden_states + self.squeeze_excitation_block(hidden_states)
@@ -106,6 +116,7 @@ class PPOCRV5MobileDetResidualSqueezeExcitationLayer(nn.Module):
         return hidden_states
 
 
+# PPOCRV5MobileDetNeck：Neck 网络：多尺度 RSE 特征融合
 class PPOCRV5MobileDetNeck(nn.Module):
     """
     Neck network for PPOCRV5 Mobile Det, responsible for multi-scale feature fusion.
@@ -113,6 +124,7 @@ class PPOCRV5MobileDetNeck(nn.Module):
     then concatenates the fused features for input to the head network.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPOCRV5MobileDetConfig):
         super().__init__()
         self.interpolate_mode = config.interpolate_mode
@@ -134,6 +146,7 @@ class PPOCRV5MobileDetNeck(nn.Module):
                 )
             )
 
+    # forward：前向计算主逻辑
     def forward(self, feature_maps):
         fused = []
         for conv, feature in zip(self.insert_conv, feature_maps):  # [p2, p3, p4, p5]
@@ -160,11 +173,13 @@ class PPOCRV5MobileDetNeck(nn.Module):
         return fused_feature_map
 
 
+# PPOCRV5MobileDetConvBatchnormLayer：Conv-BN-激活包装层
 class PPOCRV5MobileDetConvBatchnormLayer(nn.Module):
     """
     A basic wrapper for Convolution-BatchNorm-Activation, typically used for head components.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         in_channels: int,
@@ -199,6 +214,7 @@ class PPOCRV5MobileDetConvBatchnormLayer(nn.Module):
         self.norm = nn.BatchNorm2d(out_channels)
         self.act_fn = nn.Identity() if activation is None else ACT2FN[activation]
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.convolution(hidden_states)
         hidden_states = self.norm(hidden_states)
@@ -206,12 +222,14 @@ class PPOCRV5MobileDetConvBatchnormLayer(nn.Module):
         return hidden_states
 
 
+# PPOCRV5MobileDetHead：分割检测头：转置卷积上采样至原图尺寸
 class PPOCRV5MobileDetHead(nn.Module):
     """
     Standard segmentation head for generating probability maps. It uses transposed
     convolution to upsample the feature map back to the original image size.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         config: PPOCRV5MobileDetConfig,
@@ -241,6 +259,7 @@ class PPOCRV5MobileDetHead(nn.Module):
             stride=2,
         )
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         hidden_states = self.conv_down(hidden_states)
         hidden_states = self.conv_up(hidden_states)
@@ -255,7 +274,9 @@ class PPOCRV5MobileDetHead(nn.Module):
     Generates binary text segmentation maps for text detection tasks.
     """
 )
+# PPOCRV5MobileDetModel：核心模型：骨干 + Neck 特征提取
 class PPOCRV5MobileDetModel(PPOCRV5MobileDetPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPOCRV5MobileDetConfig):
         super().__init__(config)
 
@@ -272,6 +293,7 @@ class PPOCRV5MobileDetModel(PPOCRV5MobileDetPreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs
+    # forward：前向计算主逻辑
     def forward(
         self,
         hidden_states: torch.FloatTensor,
@@ -293,9 +315,11 @@ class PPOCRV5MobileDetModel(PPOCRV5MobileDetPreTrainedModel):
     and returns outputs compatible with the Transformers object detection API.
     """
 )
+# PPOCRV5MobileDetForObjectDetection：文本检测封装：兼容目标检测 API
 class PPOCRV5MobileDetForObjectDetection(PPOCRV5MobileDetPreTrainedModel):
     _keys_to_ignore_on_load_missing = ["num_batches_tracked"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPOCRV5MobileDetConfig):
         super().__init__(config)
         self.model = PPOCRV5MobileDetModel(config)
@@ -303,6 +327,7 @@ class PPOCRV5MobileDetForObjectDetection(PPOCRV5MobileDetPreTrainedModel):
         self.post_init()
 
     @can_return_tuple
+    # forward：前向计算主逻辑
     def forward(
         self,
         pixel_values: torch.FloatTensor,

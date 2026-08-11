@@ -35,12 +35,17 @@ from ...processing_utils import Unpack
 from ...utils import TransformersKwargs, auto_docstring
 from ...utils.generic import can_return_tuple, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
-from .configuration_pp_ocrv5_mobile_rec import PPOCRV5MobileRecConfig
+from .configuration_pp
+
+# PP-OCRv5 移动端识别建模：SVTR 编码器 + CTC 分类头
+_ocrv5_mobile_rec import PPOCRV5MobileRecConfig
 
 
+# PPOCRV5MobileRecAttention：SVTR 自注意力：多头缩放点积注意力
 class PPOCRV5MobileRecAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -75,6 +80,7 @@ class PPOCRV5MobileRecAttention(nn.Module):
     def _shape(self, tensor: torch.Tensor, seq_len: int, bsz: int):
         return tensor.view(bsz, seq_len, self.num_heads, self.head_dim).transpose(1, 2).contiguous()
 
+    # forward：前向计算主逻辑
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -113,7 +119,9 @@ class PPOCRV5MobileRecAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# PPOCRV5MobileRecMLP：SVTR MLP：两层全连接前馈网络
 class PPOCRV5MobileRecMLP(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config, in_features, hidden_features=None, out_features=None, drop=0.0):
         super().__init__()
         out_features = out_features or in_features
@@ -123,6 +131,7 @@ class PPOCRV5MobileRecMLP(nn.Module):
         self.fc2 = nn.Linear(hidden_features, out_features)
         self.drop = nn.Dropout(drop)
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_state):
         hidden_state = self.fc1(hidden_state)
         hidden_state = self.activation(hidden_state)
@@ -132,7 +141,9 @@ class PPOCRV5MobileRecMLP(nn.Module):
         return hidden_state
 
 
+# PPOCRV5MobileRecBlock：SVTR 块：注意力 + MLP 残差结构
 class PPOCRV5MobileRecBlock(GradientCheckpointingLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.embed_dim = config.hidden_size
@@ -145,6 +156,7 @@ class PPOCRV5MobileRecBlock(GradientCheckpointingLayer):
         )
         self.layer_norm2 = nn.LayerNorm(self.embed_dim, eps=config.layer_norm_eps)
 
+    # forward：前向计算主逻辑
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -193,7 +205,9 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# PPOCRV5MobileRecConvLayer：SVTR 卷积层：深度可分离卷积
 class PPOCRV5MobileRecConvLayer(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         in_channels: int,
@@ -214,6 +228,7 @@ class PPOCRV5MobileRecConvLayer(nn.Module):
         self.normalization = nn.BatchNorm2d(out_channels)
         self.activation = ACT2FN[activation] if activation is not None else nn.Identity()
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.convolution(hidden_states)
         hidden_states = self.normalization(hidden_states)
@@ -221,6 +236,7 @@ class PPOCRV5MobileRecConvLayer(nn.Module):
         return hidden_states
 
 
+# PPOCRV5MobileRecPreTrainedModel：移动端识别预训练基类
 @auto_docstring
 class PPOCRV5MobileRecPreTrainedModel(PreTrainedModel):
     config: PPOCRV5MobileRecConfig
@@ -254,12 +270,14 @@ def make_divisible(value: int, divisor: int = 8, min_value: int | None = None) -
     return int(new_value)
 
 
+# PPOCRV5MobileRecEncoderWithSVTR：SVTR 编码器：卷积 + Transformer 混合
 class PPOCRV5MobileRecEncoderWithSVTR(PPOCRV5MobileRecPreTrainedModel):
     """
     SVTR: Scene Text Recognition with a Single Visual Model
     https://www.paddleocr.ai/v2.10.0/en/algorithm/text_recognition/algorithm_rec_svtr.html
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         config,
@@ -297,6 +315,7 @@ class PPOCRV5MobileRecEncoderWithSVTR(PPOCRV5MobileRecPreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs
+    # forward：前向计算主逻辑
     def forward(self, hidden_states: torch.FloatTensor, **kwargs: Unpack[TransformersKwargs]):
         residual = hidden_states
 
@@ -319,7 +338,9 @@ class PPOCRV5MobileRecEncoderWithSVTR(PPOCRV5MobileRecPreTrainedModel):
 
 
 @auto_docstring(custom_intro="PPOCRV5MobileRec model, consisting of Backbone and Head networks.")
+# PPOCRV5MobileRecModel：核心模型：骨干 + SVTR 编码器
 class PPOCRV5MobileRecModel(PPOCRV5MobileRecPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPOCRV5MobileRecConfig):
         super().__init__(config)
         self.backbone = load_backbone(config)
@@ -329,6 +350,7 @@ class PPOCRV5MobileRecModel(PPOCRV5MobileRecPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向计算主逻辑
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -344,13 +366,16 @@ class PPOCRV5MobileRecModel(PPOCRV5MobileRecPreTrainedModel):
         )
 
 
+# PPOCRV5MobileRecHead：识别头：线性分类输出字符 logits
 class PPOCRV5MobileRecHead(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
 
         self.encoder = PPOCRV5MobileRecEncoderWithSVTR(config)
         self.head = nn.Linear(config.hidden_size, config.head_out_channels)
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states: torch.FloatTensor, **kwargs: Unpack[TransformersKwargs]):
         outputs = self.encoder(hidden_states, **kwargs)
         hidden_states = self.head(outputs.last_hidden_state)
@@ -361,6 +386,8 @@ class PPOCRV5MobileRecHead(nn.Module):
 
 @auto_docstring
 @dataclass
+# PPOCRV5MobileRecForTextRecognitionOutput：文本识别输出 dataclass
+# PPOCRV5MobileRecForTextRecognition：文本识别封装：CTC 解码兼容 API
 class PPOCRV5MobileRecForTextRecognitionOutput(BaseModelOutputWithNoAttention):
     r"""
     head_hidden_states (`tuple(torch.FloatTensor)`, *optional*, returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
@@ -374,6 +401,7 @@ class PPOCRV5MobileRecForTextRecognitionOutput(BaseModelOutputWithNoAttention):
 class PPOCRV5MobileRecForTextRecognition(PPOCRV5MobileRecPreTrainedModel):
     _keys_to_ignore_on_load_missing = ["num_batches_tracked"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPOCRV5MobileRecConfig):
         super().__init__(config)
         self.model = PPOCRV5MobileRecModel(config)
@@ -383,6 +411,7 @@ class PPOCRV5MobileRecForTextRecognition(PPOCRV5MobileRecPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向计算主逻辑
     def forward(
         self,
         pixel_values: torch.FloatTensor,

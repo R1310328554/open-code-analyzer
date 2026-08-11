@@ -23,11 +23,15 @@ from huggingface_hub.dataclasses import strict
 
 from ...backbone_utils import consolidate_backbone_kwargs_to_config
 from ...configuration_utils import PreTrainedConfig
-from ...utils import auto_docstring
+from ...utils import
+
+# PP-OCRv5 移动端识别配置：SVTR 编码器与分类头通道
+ auto_docstring
 from ..auto import AutoConfig
 
 
 @auto_docstring(checkpoint="PaddlePaddle/PP-OCRv5_mobile_rec_safetensors")
+# PPOCRV5MobileRecConfig：移动端文本识别配置：骨干、SVTR 与 head 输出维度
 @strict
 class PPOCRV5MobileRecConfig(PreTrainedConfig):
     r"""
@@ -50,6 +54,7 @@ class PPOCRV5MobileRecConfig(PreTrainedConfig):
     attention_dropout: float | int = 0.0
     layer_norm_eps: float = 1e-6
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         if self.conv_kernel_size is None:
             self.conv_kernel_size = [1, 3]
