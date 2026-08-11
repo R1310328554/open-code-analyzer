@@ -18,8 +18,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# Parakeet 配置：Conformer 编码器 + CTC/RNN-T/TDT 语音识别超参
+
+# ParakeetEncoderConfig：nvidia/parakeet Conformer 编码器超参
 @auto_docstring(checkpoint="nvidia/parakeet-ctc-1.1b")
 @strict
+# ParakeetEncoderConfig：nvidia/parakeet Conformer 编码器超参
 class ParakeetEncoderConfig(PreTrainedConfig):
     r"""
     convolution_bias (`bool`, *optional*, defaults to `True`):
@@ -81,13 +85,16 @@ class ParakeetEncoderConfig(PreTrainedConfig):
     scale_input: bool = True
     initializer_range: float = 0.02
 
+    # __post_init__：初始化后解析 encoder 子配置与 KV 头数
     def __post_init__(self, **kwargs):
         self.num_key_value_heads = self.num_attention_heads
         super().__post_init__(**kwargs)
 
 
+# ParakeetCTCConfig：Parakeet CTC 语音识别联合超参
 @auto_docstring(checkpoint="nvidia/parakeet-ctc-1.1b")
 @strict
+# ParakeetCTCConfig：Parakeet CTC 语音识别联合超参
 class ParakeetCTCConfig(PreTrainedConfig):
     r"""
     ctc_loss_reduction (`str`, *optional*, defaults to `"mean"`):
@@ -122,6 +129,7 @@ class ParakeetCTCConfig(PreTrainedConfig):
     encoder_config: dict | PreTrainedConfig | None = None
     pad_token_id: int | None = 1024
 
+    # __post_init__：初始化后解析 encoder 子配置与 KV 头数
     def __post_init__(self, **kwargs):
         if isinstance(self.encoder_config, dict):
             self.encoder_config = ParakeetEncoderConfig(**self.encoder_config)
@@ -131,8 +139,10 @@ class ParakeetCTCConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# ParakeetRNNTConfig：Parakeet RNN-T 转导器语音识别超参
 @auto_docstring(checkpoint="nvidia/parakeet-rnnt-0.6b")
 @strict
+# ParakeetRNNTConfig：Parakeet RNN-T 转导器语音识别超参
 class ParakeetRNNTConfig(PreTrainedConfig):
     r"""
     decoder_hidden_size (`int`, *optional*, defaults to 640):
@@ -174,6 +184,7 @@ class ParakeetRNNTConfig(PreTrainedConfig):
     blank_token_id: int = 8192
     is_encoder_decoder: bool = True
 
+    # __post_init__：初始化后解析 encoder 子配置与 KV 头数
     def __post_init__(self, **kwargs):
         if isinstance(self.encoder_config, dict):
             self.encoder_config = ParakeetEncoderConfig(**self.encoder_config)
@@ -183,8 +194,10 @@ class ParakeetRNNTConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# ParakeetTDTConfig：Parakeet TDT 令牌-时长转导器超参（扩展 RNN-T）
 @auto_docstring(checkpoint="nvidia/parakeet-tdt-0.6b-v3")
 @strict
+# ParakeetTDTConfig：Parakeet TDT 令牌-时长转导器超参（扩展 RNN-T）
 class ParakeetTDTConfig(ParakeetRNNTConfig):
     r"""
     A TDT (Token-and-Duration Transducer) extends the base RNN-T configuration [`ParakeetRNNTConfig`] with a

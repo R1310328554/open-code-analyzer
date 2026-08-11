@@ -13,6 +13,8 @@
 # limitations under the License.
 """PyTorch PatchTSMixer model."""
 
+# PatchTSMixer 建模：patch MLP-Mixer 时序预训练、预测、分类与回归
+
 import math
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -35,6 +37,7 @@ from .configuration_patchtsmixer import PatchTSMixerConfig
 logger = logging.get_logger(__name__)
 
 
+# PatchTSMixerGatedAttention：PatchTSMixer 门控注意力（sigmoid 门控线性投影）
 class PatchTSMixerGatedAttention(nn.Module):
     """
     Module that applies gated attention to input data.
@@ -44,11 +47,13 @@ class PatchTSMixerGatedAttention(nn.Module):
         out_size (`int`): The output size.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, in_size: int, out_size: int):
         super().__init__()
         self.attn_layer = nn.Linear(in_size, out_size)
         self.attn_softmax = nn.Softmax(dim=-1)
 
+    # forward：模块前向计算
     def forward(self, inputs):
         attn_weight = self.attn_softmax(self.attn_layer(inputs))
         inputs = inputs * attn_weight
@@ -56,15 +61,18 @@ class PatchTSMixerGatedAttention(nn.Module):
 
 
 # Copied from transformers.models.patchtst.modeling_patchtst.PatchTSTBatchNorm with PatchTST->PatchTSMixer
+# PatchTSMixerBatchNorm：PatchTSMixer 可学习仿射 BatchNorm 封装
 class PatchTSMixerBatchNorm(nn.Module):
     """
     Compute batch normalization over the sequence length (time) dimension.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSMixerConfig):
         super().__init__()
         self.batchnorm = nn.BatchNorm1d(config.d_model, eps=config.norm_eps)
 
+    # forward：模块前向计算
     def forward(self, inputs: torch.Tensor):
         """
         Parameters:
@@ -78,11 +86,13 @@ class PatchTSMixerBatchNorm(nn.Module):
         return output.transpose(1, 2)
 
 
+# PatchTSMixerPositionalEncoding：PatchTSMixer 正弦位置编码
 class PatchTSMixerPositionalEncoding(nn.Module):
     """
     Class for positional encoding
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSMixerConfig):
         super().__init__()
         # positional encoding: [num_patches x d_model]
@@ -111,12 +121,14 @@ class PatchTSMixerPositionalEncoding(nn.Module):
             )
         return position_enc
 
+    # forward：模块前向计算
     def forward(self, patch_input: torch.Tensor):
         # hidden_state: [bs x num_channels x num_patches x d_model]
         hidden_state = patch_input + self.position_enc
         return hidden_state
 
 
+# PatchTSMixerNormLayer：PatchTSMixer 归一化层（BN 或 LayerNorm 可选）
 class PatchTSMixerNormLayer(nn.Module):
     """Normalization block
 
@@ -125,6 +137,7 @@ class PatchTSMixerNormLayer(nn.Module):
             Configuration.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSMixerConfig):
         super().__init__()
 
@@ -135,6 +148,7 @@ class PatchTSMixerNormLayer(nn.Module):
         else:
             self.norm = nn.LayerNorm(config.d_model, eps=config.norm_eps)
 
+    # forward：模块前向计算
     def forward(self, inputs: torch.Tensor):
         """
         Args:
@@ -166,7 +180,9 @@ class PatchTSMixerNormLayer(nn.Module):
         return inputs
 
 
+# PatchTSMixerMLP：PatchTSMixer 两层 MLP 前馈块
 class PatchTSMixerMLP(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, in_features, out_features, config):
         super().__init__()
         num_hidden = in_features * config.expansion_factor
@@ -175,6 +191,7 @@ class PatchTSMixerMLP(nn.Module):
         self.fc2 = nn.Linear(num_hidden, out_features)
         self.dropout2 = nn.Dropout(config.dropout)
 
+    # forward：模块前向计算
     def forward(self, inputs: torch.Tensor):
         """
         Args:
@@ -189,6 +206,7 @@ class PatchTSMixerMLP(nn.Module):
         return inputs
 
 
+# PatchTSMixerChannelFeatureMixerBlock：PatchTSMixer 通道-特征双轴 Mixer 块
 class PatchTSMixerChannelFeatureMixerBlock(nn.Module):
     """This module mixes the features in the channel dimension.
 
@@ -197,6 +215,7 @@ class PatchTSMixerChannelFeatureMixerBlock(nn.Module):
             Configuration.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSMixerConfig):
         super().__init__()
 
@@ -213,6 +232,7 @@ class PatchTSMixerChannelFeatureMixerBlock(nn.Module):
                 in_size=config.num_input_channels, out_size=config.num_input_channels
             )
 
+    # forward：模块前向计算
     def forward(self, inputs: torch.Tensor):
         """
         Args:
@@ -238,6 +258,7 @@ class PatchTSMixerChannelFeatureMixerBlock(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.eager_attention_forward
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -267,9 +288,11 @@ def eager_attention_forward(
 
 
 # Copied from transformers.models.wav2vec2.modeling_wav2vec2.Wav2Vec2Attention with Wav2Vec2->PatchTSMixer
+# PatchTSMixerAttention：PatchTSMixer 多头自注意力（可选 RoPE）
 class PatchTSMixerAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         embed_dim: int,
@@ -301,6 +324,7 @@ class PatchTSMixerAttention(nn.Module):
         self.q_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
         self.out_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -352,6 +376,7 @@ class PatchTSMixerAttention(nn.Module):
         return attn_output, attn_weights, None
 
 
+# PatchMixerBlock：Patch 维度 MLP-Mixer 块（跨 patch 混合）
 class PatchMixerBlock(nn.Module):
     """This module mixes the patch dimension.
 
@@ -360,6 +385,7 @@ class PatchMixerBlock(nn.Module):
             Configuration.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSMixerConfig):
         super().__init__()
 
@@ -386,6 +412,7 @@ class PatchMixerBlock(nn.Module):
             )
             self.norm_attn = PatchTSMixerNormLayer(config)
 
+    # forward：模块前向计算
     def forward(self, hidden_state):
         """
         Args:
@@ -422,6 +449,7 @@ class PatchMixerBlock(nn.Module):
         return out
 
 
+# FeatureMixerBlock：特征维度 MLP-Mixer 块（跨 channel 混合）
 class FeatureMixerBlock(nn.Module):
     """This module mixes the hidden feature dimension.
 
@@ -431,6 +459,7 @@ class FeatureMixerBlock(nn.Module):
 
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSMixerConfig):
         super().__init__()
 
@@ -447,6 +476,7 @@ class FeatureMixerBlock(nn.Module):
         if config.gated_attn:
             self.gating_block = PatchTSMixerGatedAttention(in_size=config.d_model, out_size=config.d_model)
 
+    # forward：模块前向计算
     def forward(self, hidden: torch.Tensor):
         """
         Args:
@@ -467,6 +497,7 @@ class FeatureMixerBlock(nn.Module):
         return out
 
 
+# PatchTSMixerLayer：PatchTSMixer 单层（Attn + PatchMixer + FeatureMixer）
 class PatchTSMixerLayer(nn.Module):
     """
     The `PatchTSMixer` layer that does all three kinds of mixing.
@@ -477,6 +508,7 @@ class PatchTSMixerLayer(nn.Module):
 
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSMixerConfig):
         super().__init__()
 
@@ -488,6 +520,7 @@ class PatchTSMixerLayer(nn.Module):
         if config.mode == "mix_channel":
             self.channel_feature_mixer = PatchTSMixerChannelFeatureMixerBlock(config=config)
 
+    # forward：模块前向计算
     def forward(self, hidden: torch.Tensor):
         """
         Args:
@@ -505,6 +538,7 @@ class PatchTSMixerLayer(nn.Module):
         return hidden
 
 
+# PatchTSMixerBlock：PatchTSMixer 多层堆叠块
 class PatchTSMixerBlock(nn.Module):
     """The main computing framework of the `PatchTSMixer` model.
 
@@ -513,6 +547,7 @@ class PatchTSMixerBlock(nn.Module):
             Configuration.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSMixerConfig):
         super().__init__()
 
@@ -520,6 +555,7 @@ class PatchTSMixerBlock(nn.Module):
 
         self.mixers = nn.ModuleList([PatchTSMixerLayer(config=config) for _ in range(num_layers)])
 
+    # forward：模块前向计算
     def forward(self, hidden_state, output_hidden_states: bool = False):
         """
         Args:
@@ -546,6 +582,7 @@ class PatchTSMixerBlock(nn.Module):
             return embedding, None
 
 
+# PatchTSMixerForPredictionHead：预测任务分布参数头（Normal/StudentT 等）
 class PatchTSMixerForPredictionHead(nn.Module):
     """Prediction Head for Forecasting
 
@@ -554,6 +591,7 @@ class PatchTSMixerForPredictionHead(nn.Module):
             Configuration.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSMixerConfig, distribution_output=None):
         super().__init__()
 
@@ -572,6 +610,7 @@ class PatchTSMixerForPredictionHead(nn.Module):
 
         self.flatten = nn.Flatten(start_dim=-2)
 
+    # forward：模块前向计算
     def forward(self, hidden_features):
         """
 
@@ -602,6 +641,7 @@ class PatchTSMixerForPredictionHead(nn.Module):
         return forecast
 
 
+# PatchTSMixerLinearHead：线性回归/点预测输出头
 class PatchTSMixerLinearHead(nn.Module):
     """Linear head for Classification and Regression.
 
@@ -610,6 +650,7 @@ class PatchTSMixerLinearHead(nn.Module):
             Configuration.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSMixerConfig, distribution_output=None):
         super().__init__()
 
@@ -638,6 +679,7 @@ class PatchTSMixerLinearHead(nn.Module):
 
         self.dropout = nn.Dropout(config.head_dropout)
 
+    # forward：模块前向计算
     def forward(self, hidden_features):
         """
         Args:
@@ -674,6 +716,7 @@ class PatchTSMixerLinearHead(nn.Module):
 
 
 @auto_docstring
+# PatchTSMixerPreTrainedModel：PatchTSMixer 预训练基类与权重初始化
 class PatchTSMixerPreTrainedModel(PreTrainedModel):
     # Weight initialization
     config: PatchTSMixerConfig
@@ -683,6 +726,7 @@ class PatchTSMixerPreTrainedModel(PreTrainedModel):
     supports_gradient_checkpointing = False
 
     @torch.no_grad()
+    # _init_weights：按模块类型初始化权重
     def _init_weights(self, module):
         """Initialize weights"""
         super()._init_weights(module)
@@ -695,6 +739,7 @@ class PatchTSMixerPreTrainedModel(PreTrainedModel):
             init.ones_(module.batchnorm.weight)
 
 
+# PatchTSMixerPretrainHead：自监督预训练重建头
 class PatchTSMixerPretrainHead(nn.Module):
     """Pretraining head.
 
@@ -703,12 +748,14 @@ class PatchTSMixerPretrainHead(nn.Module):
             Configuration.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSMixerConfig):
         super().__init__()
 
         self.dropout_layer = nn.Dropout(config.head_dropout)
         self.base_pt_block = nn.Linear(config.d_model, config.patch_length)
 
+    # forward：模块前向计算
     def forward(self, hidden_features):
         """
         Args:
@@ -726,6 +773,7 @@ class PatchTSMixerPretrainHead(nn.Module):
 
 
 # Copied from transformers.models.patchtst.modeling_patchtst.random_masking
+# random_masking：预训练随机 mask patch 并返回 mask 索引
 def random_masking(
     inputs: torch.Tensor,
     mask_ratio: float,
@@ -785,6 +833,7 @@ def random_masking(
 
 
 # Copied from transformers.models.patchtst.modeling_patchtst.forecast_masking
+# forecast_masking：预测任务对未来 horizon patch 做 mask
 def forecast_masking(
     inputs: torch.Tensor,
     num_forecast_mask_patches: list | int,
@@ -854,6 +903,7 @@ def forecast_masking(
 
 
 # Copied from transformers.models.patchtst.modeling_patchtst.PatchTSTPatchify with PatchTST->PatchTSMixer
+# PatchTSMixerPatchify：将时序切分为 patch 并可选注入位置编码
 class PatchTSMixerPatchify(nn.Module):
     """
     A class to patchify the time series sequence into different patches
@@ -862,6 +912,7 @@ class PatchTSMixerPatchify(nn.Module):
         `torch.Tensor` of shape `(batch_size, num_channels, num_patches, patch_length)`
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSMixerConfig):
         super().__init__()
 
@@ -879,6 +930,7 @@ class PatchTSMixerPatchify(nn.Module):
         new_sequence_length = self.patch_length + self.patch_stride * (self.num_patches - 1)
         self.sequence_start = self.sequence_length - new_sequence_length
 
+    # forward：模块前向计算
     def forward(self, past_values: torch.Tensor):
         """
         Parameters:
@@ -903,6 +955,7 @@ class PatchTSMixerPatchify(nn.Module):
 
 
 # Copied from transformers.models.patchtst.modeling_patchtst.PatchTSTMasking with PatchTST->PatchTSMixer
+# PatchTSMixerMasking：预训练/预测 mask 策略统一封装
 class PatchTSMixerMasking(nn.Module):
     """
     Class to perform random or forecast masking.
@@ -916,6 +969,7 @@ class PatchTSMixerMasking(nn.Module):
             Bool tensor indicating True on masked points
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSMixerConfig):
         super().__init__()
         self.random_mask_ratio = config.random_mask_ratio
@@ -927,6 +981,7 @@ class PatchTSMixerMasking(nn.Module):
         if self.unmasked_channel_indices is not None:
             self.unmasked_channel_indices = sorted(self.unmasked_channel_indices)
 
+    # forward：模块前向计算
     def forward(self, patch_input: torch.Tensor):
         """
         Parameters:
@@ -964,18 +1019,21 @@ class PatchTSMixerMasking(nn.Module):
 
 
 # Copied from transformers.models.patchtst.modeling_patchtst.PatchTSTStdScaler with PatchTST->PatchTSMixer
+# PatchTSMixerStdScaler：按序列标准差缩放时序输入
 class PatchTSMixerStdScaler(nn.Module):
     """
     Standardize features by calculating the mean and scaling along the first dimension, and then normalizes it by
     subtracting from the mean and dividing by the standard deviation.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSMixerConfig):
         super().__init__()
         self.dim = config.scaling_dim if hasattr(config, "scaling_dim") else 1
         self.keepdim = config.keepdim if hasattr(config, "keepdim") else True
         self.minimum_scale = config.minimum_scale if hasattr(config, "minimum_scale") else 1e-5
 
+    # forward：模块前向计算
     def forward(
         self, data: torch.Tensor, observed_indicator: torch.Tensor
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -1000,12 +1058,14 @@ class PatchTSMixerStdScaler(nn.Module):
 
 
 # Copied from transformers.models.patchtst.modeling_patchtst.PatchTSTMeanScaler with PatchTST->PatchTSMixer
+# PatchTSMixerMeanScaler：按序列均值缩放时序输入
 class PatchTSMixerMeanScaler(nn.Module):
     """
     Computes a scaling factor as the weighted average absolute value along the first dimension, and scales the data
     accordingly.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSMixerConfig):
         super().__init__()
         self.dim = config.scaling_dim if hasattr(config, "scaling_dim") else 1
@@ -1013,6 +1073,7 @@ class PatchTSMixerMeanScaler(nn.Module):
         self.minimum_scale = config.minimum_scale if hasattr(config, "minimum_scale") else 1e-10
         self.default_scale = config.default_scale if hasattr(config, "default_scale") else None
 
+    # forward：模块前向计算
     def forward(
         self, data: torch.Tensor, observed_indicator: torch.Tensor
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -1055,16 +1116,19 @@ class PatchTSMixerMeanScaler(nn.Module):
 
 
 # Copied from transformers.models.patchtst.modeling_patchtst.PatchTSTNOPScaler with PatchTST->PatchTSMixer
+# PatchTSMixerNOPScaler：恒等缩放（不做归一化）
 class PatchTSMixerNOPScaler(nn.Module):
     """
     Assigns a scaling factor equal to 1 along the first dimension, and therefore applies no scaling to the input data.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSMixerConfig):
         super().__init__()
         self.dim = config.scaling_dim if hasattr(config, "scaling_dim") else 1
         self.keepdim = config.keepdim if hasattr(config, "keepdim") else True
 
+    # forward：模块前向计算
     def forward(
         self, data: torch.Tensor, observed_indicator: torch.Tensor | None = None
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -1088,6 +1152,7 @@ class PatchTSMixerNOPScaler(nn.Module):
     """
 )
 @dataclass
+# PatchTSMixerEncoderOutput：PatchTSMixer 编码器输出 dataclass
 class PatchTSMixerEncoderOutput(ModelOutput):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, num_channels, num_patches, d_model)`):
@@ -1100,6 +1165,7 @@ class PatchTSMixerEncoderOutput(ModelOutput):
     hidden_states: tuple[torch.FloatTensor] | None = None
 
 
+# PatchTSMixerEncoder：PatchTSMixer patch 编码器堆叠
 class PatchTSMixerEncoder(PatchTSMixerPreTrainedModel):
     """
     Encoder for PatchTSMixer which inputs patched time-series and outputs patched embeddings.
@@ -1109,6 +1175,7 @@ class PatchTSMixerEncoder(PatchTSMixerPreTrainedModel):
             Configuration.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSMixerConfig):
         super().__init__(config)
 
@@ -1124,6 +1191,7 @@ class PatchTSMixerEncoder(PatchTSMixerPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         past_values: torch.Tensor,
@@ -1166,6 +1234,7 @@ class PatchTSMixerEncoder(PatchTSMixerPreTrainedModel):
     """
 )
 @dataclass
+# PatchTSMixerModelOutput：PatchTSMixer 完整模型输出
 class PatchTSMixerModelOutput(ModelOutput):
     r"""
     last_hidden_state (`torch.FloatTensor`  of shape `(batch_size, num_channels, num_patches, d_model)`):
@@ -1197,7 +1266,9 @@ class PatchTSMixerModelOutput(ModelOutput):
     The PatchTSMixer Model for time-series forecasting.
     """
 )
+# PatchTSMixerModel：PatchTSMixer 编码器 + 缩放器主干
 class PatchTSMixerModel(PatchTSMixerPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSMixerConfig, mask_input: bool = False):
         r"""
         mask_input (bool, *optional*, defaults to `False`):
@@ -1225,6 +1296,7 @@ class PatchTSMixerModel(PatchTSMixerPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         past_values: torch.Tensor,
@@ -1287,6 +1359,7 @@ class PatchTSMixerModel(PatchTSMixerPreTrainedModel):
     """
 )
 @dataclass
+# PatchTSMixerForPreTrainingOutput：自监督预训练输出
 class PatchTSMixerForPreTrainingOutput(ModelOutput):
     r"""
     loss (*optional*, returned when `y` is provided, `torch.FloatTensor` of shape `()`):
@@ -1310,7 +1383,9 @@ class PatchTSMixerForPreTrainingOutput(ModelOutput):
     `PatchTSMixer` for mask pretraining.
     """
 )
+# PatchTSMixerForPretraining：PatchTSMixer 掩码 patch 自监督预训练
 class PatchTSMixerForPretraining(PatchTSMixerPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSMixerConfig):
         super().__init__(config)
         self.model = PatchTSMixerModel(config, mask_input=True)
@@ -1322,6 +1397,7 @@ class PatchTSMixerForPretraining(PatchTSMixerPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         past_values: torch.Tensor,
@@ -1389,6 +1465,7 @@ class PatchTSMixerForPretraining(PatchTSMixerPreTrainedModel):
     """
 )
 @dataclass
+# PatchTSMixerForPredictionOutput：概率/点预测任务输出
 class PatchTSMixerForPredictionOutput(ModelOutput):
     r"""
     loss (*optional*, returned when `y` is provided, `torch.FloatTensor` of shape `()`):
@@ -1420,6 +1497,7 @@ class PatchTSMixerForPredictionOutput(ModelOutput):
     """
 )
 @dataclass
+# SamplePatchTSMixerPredictionOutput：多样本概率预测采样输出
 class SamplePatchTSMixerPredictionOutput(ModelOutput):
     r"""
     sequences (`torch.FloatTensor` of shape `(batch_size, num_samples, prediction_length, number_channels)`):
@@ -1436,6 +1514,7 @@ class SamplePatchTSMixerPredictionOutput(ModelOutput):
     """
 )
 @dataclass
+# SamplePatchTSMixerRegressionOutput：多样本回归预测采样输出
 class SamplePatchTSMixerRegressionOutput(ModelOutput):
     r"""
     sequences (`torch.FloatTensor` of shape `(batch_size, num_samples, prediction_length, number_channels)`):
@@ -1446,6 +1525,7 @@ class SamplePatchTSMixerRegressionOutput(ModelOutput):
 
 
 # Copied from transformers.models.time_series_transformer.modeling_time_series_transformer.nll
+# nll：负对数似然损失（概率预测分布与目标）
 def nll(input: torch.distributions.Distribution, target: torch.Tensor) -> torch.Tensor:
     """
     Computes the negative log likelihood loss from input distribution with respect to target.
@@ -1454,6 +1534,7 @@ def nll(input: torch.distributions.Distribution, target: torch.Tensor) -> torch.
 
 
 # Copied from transformers.models.time_series_transformer.modeling_time_series_transformer.weighted_average
+# weighted_average：按权重对张量沿指定维加权平均
 def weighted_average(input_tensor: torch.Tensor, weights: torch.Tensor | None = None, dim=None) -> torch.Tensor:
     """
     Computes the weighted average of a given tensor across a given `dim`, masking values associated with weight zero,
@@ -1478,6 +1559,7 @@ def weighted_average(input_tensor: torch.Tensor, weights: torch.Tensor | None = 
         return input_tensor.mean(dim=dim)
 
 
+# PatchTSMixerForPrediction：PatchTSMixer 时序概率/点预测
 class PatchTSMixerForPrediction(PatchTSMixerPreTrainedModel):
     r"""
     `PatchTSMixer` for forecasting application.
@@ -1490,6 +1572,7 @@ class PatchTSMixerForPrediction(PatchTSMixerPreTrainedModel):
         `None`.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSMixerConfig):
         super().__init__(config)
         self.loss = config.loss
@@ -1522,6 +1605,7 @@ class PatchTSMixerForPrediction(PatchTSMixerPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         past_values: torch.Tensor,
@@ -1632,6 +1716,7 @@ class PatchTSMixerForPrediction(PatchTSMixerPreTrainedModel):
         )
 
     @torch.no_grad()
+    # generate：RNN-T/TDT 转导式语音识别生成入口
     def generate(
         self,
         past_values: torch.Tensor,
@@ -1686,6 +1771,7 @@ class PatchTSMixerForPrediction(PatchTSMixerPreTrainedModel):
     """
 )
 @dataclass
+# PatchTSMixerForTimeSeriesClassificationOutput：时序分类输出
 class PatchTSMixerForTimeSeriesClassificationOutput(ModelOutput):
     r"""
     loss (*optional*, returned when `y` is provided, `torch.FloatTensor` of shape `()`):
@@ -1704,6 +1790,7 @@ class PatchTSMixerForTimeSeriesClassificationOutput(ModelOutput):
     hidden_states: tuple[torch.FloatTensor] | None = None
 
 
+# PatchTSMixerForTimeSeriesClassification：PatchTSMixer 时序分类
 class PatchTSMixerForTimeSeriesClassification(PatchTSMixerPreTrainedModel):
     r"""
     `PatchTSMixer` for classification application.
@@ -1716,6 +1803,7 @@ class PatchTSMixerForTimeSeriesClassification(PatchTSMixerPreTrainedModel):
         `None`.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSMixerConfig):
         super().__init__(config)
 
@@ -1733,6 +1821,7 @@ class PatchTSMixerForTimeSeriesClassification(PatchTSMixerPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         past_values: torch.Tensor,
@@ -1809,6 +1898,7 @@ class PatchTSMixerForTimeSeriesClassification(PatchTSMixerPreTrainedModel):
     """
 )
 @dataclass
+# PatchTSMixerForRegressionOutput：时序回归输出
 class PatchTSMixerForRegressionOutput(ModelOutput):
     r"""
     loss (*optional*, returned when `y` is provided, `torch.FloatTensor` of shape `()`):
@@ -1827,7 +1917,9 @@ class PatchTSMixerForRegressionOutput(ModelOutput):
     hidden_states: tuple[torch.FloatTensor] | None = None
 
 
+# InjectScalerStatistics4D：将缩放统计量注入 4D 时序张量
 class InjectScalerStatistics4D(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, d_model: int, num_patches: int, expansion: int = 2):
         super().__init__()
 
@@ -1837,6 +1929,7 @@ class InjectScalerStatistics4D(nn.Module):
         self.map_scale_compression = nn.Linear(2 * expansion, 2)
         self.num_patches = num_patches
 
+    # forward：模块前向计算
     def forward(self, inputs: torch.Tensor, loc: torch.Tensor, scale: torch.Tensor):
         """
         Args:
@@ -1872,7 +1965,9 @@ class InjectScalerStatistics4D(nn.Module):
     `PatchTSMixer` for regression application.
     """
 )
+# PatchTSMixerForRegression：PatchTSMixer 时序回归
 class PatchTSMixerForRegression(PatchTSMixerPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PatchTSMixerConfig):
         super().__init__(config)
 
@@ -1912,6 +2007,7 @@ class PatchTSMixerForRegression(PatchTSMixerPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         past_values: torch.Tensor,
@@ -1995,6 +2091,7 @@ class PatchTSMixerForRegression(PatchTSMixerPreTrainedModel):
         )
 
     @torch.no_grad()
+    # generate：RNN-T/TDT 转导式语音识别生成入口
     def generate(
         self,
         past_values: torch.Tensor,

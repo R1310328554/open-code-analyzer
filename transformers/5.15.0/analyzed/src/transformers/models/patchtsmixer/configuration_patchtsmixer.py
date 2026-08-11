@@ -13,14 +13,18 @@
 # limitations under the License.
 """PatchTSMixer model configuration"""
 
+# PatchTSMixer 配置：时序 patch MLP-Mixer 预训练/预测/分类超参
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# PatchTSMixerConfig：ibm/patchtsmixer 时序 patch MLP-Mixer 超参
 @auto_docstring(checkpoint="ibm/patchtsmixer-etth1-pretrain")
 @strict
+# PatchTSMixerConfig：ibm/patchtsmixer 时序 patch MLP-Mixer 超参
 class PatchTSMixerConfig(PreTrainedConfig):
     r"""
     context_length (`int`, *optional*, defaults to 32):
@@ -157,6 +161,7 @@ class PatchTSMixerConfig(PreTrainedConfig):
     output_range: list | None = None
     head_aggregation: str | None = "max_pool"
 
+    # __post_init__：初始化后解析 encoder 子配置与 KV 头数
     def __post_init__(self, **kwargs):
         self.num_patches = (max(self.context_length, self.patch_length) - self.patch_length) // self.patch_stride + 1
         self.patch_last = True

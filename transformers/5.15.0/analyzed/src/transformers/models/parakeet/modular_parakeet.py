@@ -13,6 +13,8 @@
 # limitations under the License.
 """PyTorch Parakeet model."""
 
+# Parakeet modular 源：LlamaAttention + FastSpeech2Conformer 组件组合
+
 import math
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -58,6 +60,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# ParakeetEncoderModelOutput：Conformer 编码器输出（含压缩后 attention_mask）
 class ParakeetEncoderModelOutput(BaseModelOutputWithPooling):
     r"""
     attention_mask (`torch.Tensor` of shape `(batch_size, sequence_length)`, *optional*):
@@ -71,8 +74,10 @@ class ParakeetEncoderModelOutput(BaseModelOutputWithPooling):
     attention_mask: torch.Tensor | None = None
 
 
+# ParakeetEncoderRelPositionalEncoding：Conformer 相对正弦位置编码
 class ParakeetEncoderRelPositionalEncoding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: ParakeetEncoderConfig, device=None):
         super().__init__()
         self.max_position_embeddings = config.max_position_embeddings
@@ -88,6 +93,7 @@ class ParakeetEncoderRelPositionalEncoding(nn.Module):
         return inv_freq.to(device)
 
     @torch.no_grad()
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.Tensor):
         seq_length = hidden_states.shape[1]
         position_ids = torch.arange(seq_length - 1, -seq_length, -1, device=hidden_states.device)
@@ -112,7 +118,9 @@ class ParakeetEncoderRelPositionalEncoding(nn.Module):
         return pos_embed.to(dtype=hidden_states.dtype)
 
 
+# ParakeetEncoderFeedForward：Conformer 前馈子层（SiLU 激活）
 class ParakeetEncoderFeedForward(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: ParakeetEncoderConfig):
         super().__init__()
         self.linear1 = nn.Linear(config.hidden_size, config.intermediate_size, bias=config.attention_bias)
@@ -120,6 +128,7 @@ class ParakeetEncoderFeedForward(nn.Module):
         self.linear2 = nn.Linear(config.intermediate_size, config.hidden_size, bias=config.attention_bias)
         self.activation_dropout = config.activation_dropout
 
+    # forward：模块前向计算
     def forward(self, hidden_states):
         hidden_states = self.activation(self.linear1(hidden_states))
         hidden_states = nn.functional.dropout(hidden_states, p=self.activation_dropout, training=self.training)
@@ -127,14 +136,18 @@ class ParakeetEncoderFeedForward(nn.Module):
         return hidden_states
 
 
+# ParakeetEncoderConvolutionModule：Conformer 深度可分离卷积模块
 class ParakeetEncoderConvolutionModule(FastSpeech2ConformerConvolutionModule):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: ParakeetEncoderConfig, module_config=None):
         super().__init__(config, module_config)
 
 
+# ParakeetEncoderAttention：Conformer 多头自注意力（相对位置 + RoPE）
 class ParakeetEncoderAttention(LlamaAttention):
     """Multi-head attention with relative positional encoding. See section 3.3 of https://huggingface.co/papers/1901.02860."""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: ParakeetEncoderConfig, layer_idx: int):
         super().__init__(config, layer_idx=layer_idx)
         self.is_causal = False
@@ -145,6 +158,7 @@ class ParakeetEncoderAttention(LlamaAttention):
         # global positional bias
         self.bias_v = nn.Parameter(torch.zeros(config.num_attention_heads, self.head_dim))
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -211,7 +225,9 @@ class ParakeetEncoderAttention(LlamaAttention):
         return attention_scores
 
 
+# ParakeetEncoderSubsamplingConv2D：Conformer 2D 卷积时序下采样前端
 class ParakeetEncoderSubsamplingConv2D(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: ParakeetEncoderConfig):
         super().__init__()
 
@@ -258,6 +274,7 @@ class ParakeetEncoderSubsamplingConv2D(nn.Module):
 
         return input_lengths
 
+    # forward：模块前向计算
     def forward(self, input_features: torch.Tensor, attention_mask: torch.Tensor = None):
         hidden_states = input_features.unsqueeze(1)
         current_lengths = attention_mask.sum(-1) if attention_mask is not None else None
@@ -280,7 +297,9 @@ class ParakeetEncoderSubsamplingConv2D(nn.Module):
         return hidden_states
 
 
+# ParakeetEncoderBlock：Conformer 编码器单层（Attn+Conv+FFN+残差）
 class ParakeetEncoderBlock(GradientCheckpointingLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: ParakeetEncoderConfig, layer_idx: int | None = None):
         super().__init__()
         self.gradient_checkpointing = False
@@ -296,6 +315,7 @@ class ParakeetEncoderBlock(GradientCheckpointingLayer):
         self.norm_feed_forward2 = nn.LayerNorm(config.hidden_size)
         self.norm_out = nn.LayerNorm(config.hidden_size)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -328,6 +348,7 @@ class ParakeetEncoderBlock(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# ParakeetPreTrainedModel：Parakeet 预训练基类与权重初始化
 class ParakeetPreTrainedModel(PreTrainedModel):
     config: ParakeetCTCConfig
     base_model_prefix = "model"
@@ -350,6 +371,7 @@ class ParakeetPreTrainedModel(PreTrainedModel):
     }
 
     @torch.no_grad()
+    # _init_weights：按模块类型初始化权重
     def _init_weights(self, module):
         super()._init_weights(module)
         std = getattr(self.config, "initializer_range", 0.02)
@@ -395,10 +417,12 @@ class ParakeetPreTrainedModel(PreTrainedModel):
     The Parakeet Encoder model, based on the [Fast Conformer architecture](https://huggingface.co/papers/2305.05084).
     """
 )
+# ParakeetEncoder：Parakeet Conformer 语音编码器堆叠
 class ParakeetEncoder(ParakeetPreTrainedModel):
     config: ParakeetEncoderConfig
     base_model_prefix = "encoder"
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: ParakeetEncoderConfig):
         super().__init__(config)
         self.config = config
@@ -421,6 +445,7 @@ class ParakeetEncoder(ParakeetPreTrainedModel):
     @auto_docstring
     @merge_with_config_defaults
     @capture_outputs
+    # forward：模块前向计算
     def forward(
         self,
         input_features: torch.Tensor,
@@ -491,6 +516,7 @@ class ParakeetEncoder(ParakeetPreTrainedModel):
 
 
 @dataclass
+# ParakeetCTCGenerateOutput：CTC 生成输出（logits + 可选时间戳）
 class ParakeetCTCGenerateOutput(ModelOutput):
     """
     Outputs of Parakeet CTC model generation.
@@ -518,11 +544,13 @@ class ParakeetCTCGenerateOutput(ModelOutput):
 
 
 @dataclass
+# ParakeetGenerateOutput：Parakeet 通用生成输出（扩展 CTC 输出）
 class ParakeetGenerateOutput(ParakeetCTCGenerateOutput):
     """
     Deprecated alias for ParakeetCTCGenerateOutput. Use ParakeetCTCGenerateOutput instead.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         logger.warning_once(
@@ -535,9 +563,11 @@ class ParakeetGenerateOutput(ParakeetCTCGenerateOutput):
     Parakeet Encoder with a Connectionist Temporal Classification (CTC) head.
     """
 )
+# ParakeetForCTC：Parakeet CTC 端到端语音识别
 class ParakeetForCTC(ParakeetPreTrainedModel, GenerationMixin):
     config: ParakeetCTCConfig
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: ParakeetCTCConfig):
         super().__init__(config)
         self.encoder = AutoModel.from_config(config.encoder_config)
@@ -548,6 +578,7 @@ class ParakeetForCTC(ParakeetPreTrainedModel, GenerationMixin):
 
     @auto_docstring
     @can_return_tuple
+    # forward：模块前向计算
     def forward(
         self,
         input_features: torch.Tensor,
@@ -617,6 +648,7 @@ class ParakeetForCTC(ParakeetPreTrainedModel, GenerationMixin):
         )
 
     @torch.no_grad()
+    # generate：RNN-T/TDT 转导式语音识别生成入口
     def generate(
         self,
         input_features: torch.Tensor,
@@ -677,9 +709,11 @@ class ParakeetForCTC(ParakeetPreTrainedModel, GenerationMixin):
         return sequences
 
 
+# ParakeetRNNTDecoder：RNN-T LSTM 预测网络（label 嵌入 + 多层 LSTM）
 class ParakeetRNNTDecoder(nn.Module):
     """LSTM-based prediction network For RNN-T"""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: ParakeetRNNTConfig):
         super().__init__()
         self.blank_token_id = config.blank_token_id
@@ -692,6 +726,7 @@ class ParakeetRNNTDecoder(nn.Module):
         )
         self.decoder_projector = nn.Linear(config.decoder_hidden_size, config.decoder_hidden_size)
 
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor,
@@ -725,15 +760,18 @@ class ParakeetRNNTDecoder(nn.Module):
         return decoder_output
 
 
+# ParakeetRNNTJointNetwork：RNN-T 联合网络（encoder+decoder 隐状态融合分类）
 class ParakeetRNNTJointNetwork(nn.Module):
     """Joint network that combines encoder and decoder outputs to predict token logits."""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: ParakeetRNNTConfig):
         super().__init__()
         self.activation = ACT2FN[config.hidden_act]
         self.head = nn.Linear(config.decoder_hidden_size, config.vocab_size)
         self.vocab_size = config.vocab_size
 
+    # forward：模块前向计算
     def forward(
         self,
         decoder_hidden_states: torch.Tensor,
@@ -744,6 +782,7 @@ class ParakeetRNNTJointNetwork(nn.Module):
 
 
 @dataclass
+# ParakeetRNNTOutput：RNN-T 前向输出（logits + encoder 隐状态）
 class ParakeetRNNTOutput(BaseModelOutputWithPooling):
     """
     Output of the Parakeet RNN-T forward pass.
@@ -768,11 +807,13 @@ class ParakeetRNNTOutput(BaseModelOutputWithPooling):
     Parakeet Encoder with an RNN-T (RNN Transducer) head.
     """
 )
+# ParakeetForRNNT：Parakeet RNN-T 转导式语音识别
 class ParakeetForRNNT(ParakeetPreTrainedModel, ParakeetRNNTGenerationMixin):
     config: ParakeetRNNTConfig
     _no_split_modules = ["ParakeetRNNTDecoder"]
     _supported_generation_modes = [GenerationMode.GREEDY_SEARCH]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: ParakeetRNNTConfig):
         super().__init__(config)
         self.encoder = AutoModel.from_config(config.encoder_config)
@@ -800,6 +841,7 @@ class ParakeetForRNNT(ParakeetPreTrainedModel, ParakeetRNNTGenerationMixin):
 
     @auto_docstring
     @can_return_tuple
+    # forward：模块前向计算
     def forward(
         self,
         input_features: torch.Tensor | None = None,
@@ -881,6 +923,7 @@ class ParakeetForRNNT(ParakeetPreTrainedModel, ParakeetRNNTGenerationMixin):
         )
 
 
+# ParakeetTDTJointNetwork：TDT 联合网络（扩展 duration 预测头）
 class ParakeetTDTJointNetwork(ParakeetRNNTJointNetwork):
     """Extends the RNN-T joint network with a duration head.
 
@@ -888,6 +931,7 @@ class ParakeetTDTJointNetwork(ParakeetRNNTJointNetwork):
     `vocab_size` to `vocab_size + len(durations)` so the network jointly predicts tokens and durations.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: ParakeetTDTConfig):
         super().__init__(config)
         self.head = nn.Linear(config.decoder_hidden_size, config.vocab_size + len(config.durations))
@@ -898,9 +942,11 @@ class ParakeetTDTJointNetwork(ParakeetRNNTJointNetwork):
     Parakeet Encoder with a TDT (Token Duration Transducer) head.
     """
 )
+# ParakeetForTDT：Parakeet TDT 令牌-时长转导式语音识别
 class ParakeetForTDT(ParakeetTDTGenerationMixin, ParakeetForRNNT):
     config: ParakeetTDTConfig
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: ParakeetTDTConfig):
         super().__init__(config)
         self.joint = ParakeetTDTJointNetwork(config)
@@ -909,6 +955,7 @@ class ParakeetForTDT(ParakeetTDTGenerationMixin, ParakeetForRNNT):
 
     @auto_docstring
     @can_return_tuple
+    # forward：模块前向计算
     def forward(
         self,
         input_features: torch.Tensor | None = None,

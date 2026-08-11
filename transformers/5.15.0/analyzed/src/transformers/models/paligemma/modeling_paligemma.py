@@ -13,6 +13,8 @@
 # limitations under the License.
 """PyTorch PaliGemmamodel."""
 
+# PaliGemma 建模：Siglip ViT + Gemma LLM 视觉-语言条件生成
+
 from dataclasses import dataclass
 
 import torch
@@ -47,6 +49,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# PaligemmaModelOutputWithPast：PaliGemma 多模态前向输出（含 image_hidden_states）
 class PaligemmaModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     image_hidden_states (`torch.FloatTensor`, *optional*):
@@ -63,6 +66,7 @@ class PaligemmaModelOutputWithPast(BaseModelOutputWithPast):
     """
 )
 @dataclass
+# PaliGemmaCausalLMOutputWithPast：PaliGemma 条件生成输出（logits + past）
 class PaliGemmaCausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -87,11 +91,14 @@ class PaliGemmaCausalLMOutputWithPast(ModelOutput):
     image_hidden_states: torch.FloatTensor | None = None
 
 
+# PaliGemmaMultiModalProjector：视觉特征线性投影到文本 hidden 维
 class PaliGemmaMultiModalProjector(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PaliGemmaConfig):
         super().__init__()
         self.linear = nn.Linear(config.vision_config.hidden_size, config.vision_config.projection_dim, bias=True)
 
+    # forward：模块前向计算
     def forward(self, image_features):
         hidden_states = self.linear(image_features)
 
@@ -99,6 +106,7 @@ class PaliGemmaMultiModalProjector(nn.Module):
 
 
 @auto_docstring
+# PaliGemmaPreTrainedModel：PaliGemma 预训练基类与权重初始化
 class PaliGemmaPreTrainedModel(PreTrainedModel):
     config: PaliGemmaConfig
     base_model_prefix = "model"
@@ -118,10 +126,12 @@ class PaliGemmaPreTrainedModel(PreTrainedModel):
     The Base Paligemma model which consists of a vision backbone and a language model without language modeling head.,
     """
 )
+# PaliGemmaModel：PaliGemma 视觉 ViT + Gemma LLM 多模态融合主干
 class PaliGemmaModel(PaliGemmaPreTrainedModel):
     # we are filtering the logits/labels so we shouldn't divide the loss based on num_items_in_batch
     accepts_loss_kwargs = False
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PaliGemmaConfig):
         super().__init__(config)
         self.vision_tower = AutoModel.from_config(config=config.vision_config)
@@ -174,6 +184,7 @@ class PaliGemmaModel(PaliGemmaPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -290,9 +301,11 @@ class PaliGemmaModel(PaliGemmaPreTrainedModel):
     The Base Paligemma model which consists of a vision backbone and a language model without language modeling head.,
     """
 )
+# PaliGemmaForConditionalGeneration：PaliGemma 视觉-语言条件生成
 class PaliGemmaForConditionalGeneration(PaliGemmaPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PaliGemmaConfig):
         super().__init__(config)
         self.model = PaliGemmaModel(config)
@@ -305,6 +318,7 @@ class PaliGemmaForConditionalGeneration(PaliGemmaPreTrainedModel, GenerationMixi
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -381,6 +395,7 @@ class PaliGemmaForConditionalGeneration(PaliGemmaPreTrainedModel, GenerationMixi
             image_hidden_states=outputs.image_hidden_states,
         )
 
+    # prepare_inputs_for_generation：单步自回归生成输入预处理
     def prepare_inputs_for_generation(self, input_ids, **kwargs):
         model_inputs = super().prepare_inputs_for_generation(input_ids, **kwargs)
         # position_ids in Paligemma are 1-indexed

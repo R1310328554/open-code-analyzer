@@ -34,7 +34,10 @@ LOG_ZERO_GUARD_VALUE = 2**-24
 logger = logging.get_logger(__name__)
 
 
+# Parakeet 特征提取：梅尔滤波器组 + 对数能量（对齐 torch.stft）
+
 @requires(backends=("torch", "librosa"))
+# ParakeetFeatureExtractor：Parakeet 梅尔频谱特征提取（对齐 torch.stft）
 class ParakeetFeatureExtractor(SequenceFeatureExtractor):
     r"""
     Constructs a Parakeet feature extractor.
@@ -64,6 +67,7 @@ class ParakeetFeatureExtractor(SequenceFeatureExtractor):
 
     model_input_names = ["input_features", "attention_mask"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         feature_size=80,
@@ -126,6 +130,7 @@ class ParakeetFeatureExtractor(SequenceFeatureExtractor):
 
         return mel_spec
 
+    # __call__：联合编码多模态/音频输入为模型 batch
     def __call__(
         self,
         raw_speech: np.ndarray | list[float] | list[np.ndarray] | list[list[float]],

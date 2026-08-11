@@ -12,6 +12,8 @@
 # limitations under the License.
 """PaliGemmamodel configuration"""
 
+# PaliGemma 配置：Siglip 视觉 + Gemma 文本多模态 VLM 超参
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
@@ -19,8 +21,10 @@ from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# PaliGemmaConfig：google/paligemma Siglip 视觉 + Gemma 文本多模态超参
 @auto_docstring(checkpoint="google/paligemma-3b-pt-224")
 @strict
+# PaliGemmaConfig：google/paligemma Siglip 视觉 + Gemma 文本多模态超参
 class PaliGemmaConfig(PreTrainedConfig):
     r"""
     Example:
@@ -59,6 +63,7 @@ class PaliGemmaConfig(PreTrainedConfig):
     hidden_size: int = 2048
     tie_word_embeddings: bool = True
 
+    # __post_init__：初始化后解析 encoder 子配置与 KV 头数
     def __post_init__(self, **kwargs):
         if isinstance(self.vision_config, dict):
             self.vision_config["model_type"] = self.vision_config.get("model_type", "siglip_vision_model")

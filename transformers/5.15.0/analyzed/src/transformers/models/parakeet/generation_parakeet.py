@@ -20,7 +20,11 @@ from ...generation import GenerationMixin, StoppingCriteria
 from ...utils import ModelOutput
 
 
+# Parakeet 生成：RNN-T/TDT 转导式解码与 LSTM 缓存管理
+
+# ParakeetRNNTDecoderCache：RNN-T LSTM 预测网络 KV 与隐状态缓存
 class ParakeetRNNTDecoderCache:
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         self.config = config
         self.cache: torch.Tensor | None = None
@@ -28,6 +32,7 @@ class ParakeetRNNTDecoderCache:
         self.cell_state: torch.Tensor | None = None
         self.is_initialized: bool = False
 
+    # lazy_initialization：首次前向时延迟分配 LSTM 解码器缓存张量
     def lazy_initialization(self, hidden_states):
         self.cache = torch.zeros(
             hidden_states.shape[0],
@@ -57,6 +62,7 @@ class ParakeetRNNTDecoderCache:
 
         self.is_initialized = True
 
+    # update：单步解码后更新 LSTM 隐状态与 token 嵌入缓存
     def update(
         self,
         decoder_output,
@@ -83,10 +89,12 @@ class ParakeetRNNTDecoderCache:
 
 
 # BC: see #46331
+# ParakeetTDTDecoderCache：TDT 解码器缓存（继承 RNN-T 缓存结构）
 class ParakeetTDTDecoderCache(ParakeetRNNTDecoderCache): ...
 
 
 @dataclass
+# ParakeetRNNTGenerateOutput：RNN-T 生成输出（序列 logits + 时间戳）
 class ParakeetRNNTGenerateOutput(ModelOutput):
     """
     Outputs of Parakeet transducer (RNN-T / TDT) generation.
@@ -110,18 +118,22 @@ class ParakeetRNNTGenerateOutput(ModelOutput):
     hidden_states: tuple[tuple[torch.FloatTensor]] | None = None
 
 
+# EncoderExhaustedCriteria：编码器帧耗尽时停止 RNN-T/TDT 解码
 class EncoderExhaustedCriteria(StoppingCriteria):
     """Stops generation when all batch elements have walked past their encoder output length."""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, model):
         self.model = model
 
+    # __call__：联合编码多模态/音频输入为模型 batch
     def __call__(self, input_ids, scores, **kwargs):
         if self.model._encoder_finished is None:
             return torch.zeros(input_ids.shape[0], dtype=torch.bool, device=input_ids.device)
         return self.model._encoder_finished
 
 
+# ParakeetRNNTGenerationMixin：Parakeet RNN-T 贪婪/束搜索生成混入
 class ParakeetRNNTGenerationMixin(GenerationMixin):
     """Generation mixin for Parakeet RNN-T models, and the base for all Parakeet transducer generation.
 
@@ -133,11 +145,13 @@ class ParakeetRNNTGenerationMixin(GenerationMixin):
     by advancing the frame pointer by a predicted duration instead.
     """
 
+    # _get_stopping_criteria：组装 RNN-T 生成停止条件（含编码器耗尽）
     def _get_stopping_criteria(self, *args, **kwargs):
         criteria = super()._get_stopping_criteria(*args, **kwargs)
         criteria.append(EncoderExhaustedCriteria(self))
         return criteria
 
+    # _update_model_kwargs_for_generation：每步生成后更新 encoder 帧指针等 kwargs
     def _update_model_kwargs_for_generation(self, outputs, *args, **kwargs):
         model_kwargs = super()._update_model_kwargs_for_generation(outputs, *args, **kwargs)
 
@@ -162,6 +176,7 @@ class ParakeetRNNTGenerationMixin(GenerationMixin):
 
         return model_kwargs
 
+    # _prepare_generated_length：按 max_symbols_per_step 估算生成长度上界
     def _prepare_generated_length(
         self,
         generation_config,
@@ -189,6 +204,7 @@ class ParakeetRNNTGenerationMixin(GenerationMixin):
             inputs_tensor,
         )
 
+    # _prepare_model_inputs：RNN-T 生成前组装 encoder 输出与 decoder 输入
     def _prepare_model_inputs(self, *args, **kwargs):
         inputs, input_name, model_kwargs = super()._prepare_model_inputs(*args, **kwargs)
         explicit = {"input_features", "attention_mask", "output_attention_mask"}
@@ -227,9 +243,11 @@ class ParakeetRNNTGenerationMixin(GenerationMixin):
 
         return inputs, input_name, model_kwargs
 
+    # _prepare_cache_for_generation：生成前初始化 RNN-T decoder 缓存
     def _prepare_cache_for_generation(self, generation_config, model_kwargs, *args, **kwargs):
         model_kwargs["decoder_cache"] = ParakeetRNNTDecoderCache(self.config)
 
+    # prepare_inputs_for_generation：单步自回归生成输入预处理
     def prepare_inputs_for_generation(self, input_ids, *args, **kwargs):
         from .modeling_parakeet import ParakeetEncoderModelOutput
 
@@ -247,6 +265,7 @@ class ParakeetRNNTGenerationMixin(GenerationMixin):
 
         return model_inputs
 
+    # generate：RNN-T/TDT 转导式语音识别生成入口
     def generate(self, inputs=None, generation_config=None, **kwargs):
         # TODO @eustlb: this is temporary — we're going to modularize generate to allow doing this cleanly.
         self._encoder_finished = None
@@ -268,6 +287,7 @@ class ParakeetRNNTGenerationMixin(GenerationMixin):
         )
 
 
+# ParakeetTDTGenerationMixin：Parakeet TDT 时长感知转导生成混入
 class ParakeetTDTGenerationMixin(ParakeetRNNTGenerationMixin):
     """Generation mixin for Parakeet TDT models.
 
@@ -277,6 +297,7 @@ class ParakeetTDTGenerationMixin(ParakeetRNNTGenerationMixin):
     sizing) is inherited unchanged.
     """
 
+    # _update_model_kwargs_for_generation：每步生成后更新 encoder 帧指针等 kwargs
     def _update_model_kwargs_for_generation(self, outputs, *args, **kwargs):
         # Skip ParakeetRNNTGenerationMixin's update (it counts per-frame symbols we don't use) and go
         # straight to the base GenerationMixin bookkeeping.

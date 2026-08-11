@@ -17,6 +17,9 @@ import itertools
 from ...tokenization_utils_tokenizers import TokenizersBackend
 
 
+# Parakeet 分词：HuggingFace tokenizers 后端 + CTC 专用解码
+
+# ParakeetTokenizer：Parakeet 分词器（CTC 解码合并连续 token 并过滤 blank）
 class ParakeetTokenizer(TokenizersBackend):
     """
     Inherits all methods from [`PreTrainedTokenizerFast`]. Users should refer to this superclass for more information regarding those methods,
@@ -25,6 +28,7 @@ class ParakeetTokenizer(TokenizersBackend):
     2. Filter out the blank token
     """
 
+    # _decode：CTC 风格解码（合并连续 token 并过滤 blank）
     def _decode(
         self,
         token_ids: int | list[int],

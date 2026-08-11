@@ -15,6 +15,8 @@
 Processor class for PaliGemma.
 """
 
+# PaliGemma 处理器：图像 token 占位与 Gemma tokenizer 联合预处理
+
 import numpy as np
 
 from ...feature_extraction_utils import BatchFeature
@@ -36,6 +38,7 @@ IMAGE_TOKEN = "<image>"
 EXTRA_TOKENS = [f"<loc{i:0>4}>" for i in range(1024)] + [f"<seg{i:0>3}>" for i in range(128)]
 
 
+# PaliGemmaTextKwargs：PaliGemma 文本 kwargs（含微调 suffix 字段）
 class PaliGemmaTextKwargs(TextKwargs):
     """
     suffix (`str`, `list[str]`, `list[list[str]]`):
@@ -46,6 +49,7 @@ class PaliGemmaTextKwargs(TextKwargs):
     suffix: TextInput | PreTokenizedInput | list[TextInput] | list[PreTokenizedInput] | None
 
 
+# PaliGemmaProcessorKwargs：PaliGemma 联合处理器默认 text/images 参数
 class PaliGemmaProcessorKwargs(ProcessingKwargs, total=False):
     text_kwargs: PaliGemmaTextKwargs
     _defaults = {
@@ -60,9 +64,11 @@ class PaliGemmaProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# PaliGemmaProcessor：PaliGemma 图像处理器与 Gemma tokenizer 联合封装
 class PaliGemmaProcessor(ProcessorMixin):
     valid_processor_kwargs = PaliGemmaProcessorKwargs
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         image_processor=None,
@@ -92,6 +98,7 @@ class PaliGemmaProcessor(ProcessorMixin):
         super().__init__(image_processor, tokenizer, chat_template=chat_template)
 
     @auto_docstring
+    # __call__：联合编码多模态/音频输入为模型 batch
     def __call__(
         self,
         images: ImageInput | None = None,

@@ -24,6 +24,9 @@ from ...utils import auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# Parakeet 处理器：音频特征提取与 tokenizer 联合封装（CTC/RNN-T/TDT）
+
+# ParakeetProcessorKwargs：Parakeet 联合处理器默认 audio/text 参数
 class ParakeetProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "audio_kwargs": {
@@ -42,7 +45,9 @@ class ParakeetProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# ParakeetProcessor：Parakeet 特征提取器与 tokenizer 联合封装（CTC/RNN-T/TDT）
 class ParakeetProcessor(ProcessorMixin):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, feature_extractor, tokenizer, blank_token="<blank>", decoder_type=None):
         r"""
         blank_token (`str`, *optional*, defaults to `"<blank>"`):
@@ -71,6 +76,7 @@ class ParakeetProcessor(ProcessorMixin):
         return "ctc" if self.blank_token not in self.tokenizer.get_vocab() else "tdt"
 
     @auto_docstring
+    # __call__：联合编码多模态/音频输入为模型 batch
     def __call__(
         self,
         audio: AudioInput,
