@@ -1,3 +1,6 @@
+"""
+GeoDjango 空间查找：GISLookup 基类及 OGC 拓扑与距离谓词。
+"""
 from django.contrib.gis.db.models.fields import BaseSpatialField
 from django.contrib.gis.measure import Distance
 from django.db import NotSupportedError
@@ -6,11 +9,14 @@ from django.db.models.sql.query import Query
 from django.utils.regex_helper import _lazy_re_compile
 
 
+# 栅格波段变换：编译时直接传递左操作数 SQL
 class RasterBandTransform(Transform):
+    # 组装 lhs/rhs SQL 并委托 gis_operators 渲染最终谓词
     def as_sql(self, compiler, connection):
         return compiler.compile(self.lhs)
 
 
+# 空间查找基类：处理波段索引、几何占位符与 SpatialOperator
 class GISLookup(Lookup):
     sql_template = None
     transform_func = None
@@ -34,6 +40,7 @@ class GISLookup(Lookup):
         elif isinstance(self.lhs, RasterBandTransform):
             self.process_band_indices(only_lhs=True)
 
+    # 从波段变换与右值元组提取 PostGIS 1-based 波段索引
     def process_band_indices(self, only_lhs=False):
         """
         Extract the lhs band index from the band transform class and the rhs
@@ -90,6 +97,7 @@ class GISLookup(Lookup):
         return rhs_op.as_sql(connection, self, template_params, sql_params)
 
 
+# OGC 几何拓扑与边界框运算符
 # ------------------
 # Geometry operators
 # ------------------
@@ -225,6 +233,7 @@ class ContainedLookup(GISLookup):
 
 
 @BaseSpatialField.register_lookup
+# contains：A 完全包含 B
 class ContainsLookup(GISLookup):
     lookup_name = "contains"
 
@@ -260,6 +269,7 @@ class EqualsLookup(GISLookup):
 
 
 @BaseSpatialField.register_lookup
+# intersects：两几何相交
 class IntersectsLookup(GISLookup):
     lookup_name = "intersects"
 
@@ -270,6 +280,7 @@ class OverlapsLookup(GISLookup):
 
 
 @BaseSpatialField.register_lookup
+# relate：按 DE-9IM 掩码判断拓扑关系
 class RelateLookup(GISLookup):
     lookup_name = "relate"
     sql_template = "%(func)s(%(lhs)s, %(rhs)s, %%s)"
@@ -293,10 +304,12 @@ class TouchesLookup(GISLookup):
 
 
 @BaseSpatialField.register_lookup
+# within：A 完全位于 B 内部
 class WithinLookup(GISLookup):
     lookup_name = "within"
 
 
+# 距离查找基类：处理 Distance 对象与测地/投影单位
 class DistanceLookupBase(GISLookup):
     distance = True
     sql_template = "%(func)s(%(lhs)s, %(rhs)s) %(op)s %(value)s"
@@ -331,6 +344,7 @@ class DistanceLookupBase(GISLookup):
 
 
 @BaseSpatialField.register_lookup
+# dwithin：在指定距离内
 class DWithinLookup(DistanceLookupBase):
     lookup_name = "dwithin"
     sql_template = "%(func)s(%(lhs)s, %(rhs)s, %(value)s)"
@@ -372,6 +386,7 @@ class DistanceLookupFromFunction(DistanceLookupBase):
 
 
 @BaseSpatialField.register_lookup
+# distance_gt：距离大于给定值
 class DistanceGTLookup(DistanceLookupFromFunction):
     lookup_name = "distance_gt"
     op = ">"

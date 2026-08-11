@@ -1,4 +1,7 @@
 """
+SpatialProxy：几何/栅格字段的延迟加载描述符。
+
+The SpatialProxy object allows for lazy-geometries and lazy-rasters."""
 The SpatialProxy object allows for lazy-geometries and lazy-rasters. The proxy
 uses Python descriptors for instantiating and setting Geometry or Raster
 objects corresponding to geographic model fields.
@@ -9,6 +12,7 @@ Thanks to Robert Coup for providing this functionality (see #4322).
 from django.db.models.query_utils import DeferredAttribute
 
 
+# 延迟实例化 GEOS 几何或 GDAL 栅格，避免大查询集过早构造对象
 class SpatialProxy(DeferredAttribute):
     def __init__(self, klass, field, load_func=None):
         """
@@ -19,6 +23,7 @@ class SpatialProxy(DeferredAttribute):
         self._load_func = load_func or klass
         super().__init__(field)
 
+    # 读取字段值并缓存为几何/栅格对象
     def __get__(self, instance, cls=None):
         """
         Retrieve the geometry or raster, initializing it using the
@@ -52,6 +57,7 @@ class SpatialProxy(DeferredAttribute):
             setattr(instance, self.field.attname, geo_obj)
         return geo_obj
 
+    # 校验类型后写入实例字典（支持 WKT/HEX/WKB/JSON）
     def __set__(self, instance, value):
         """
         Retrieve the proxied geometry or raster with the corresponding class

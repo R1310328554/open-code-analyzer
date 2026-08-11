@@ -1,3 +1,6 @@
+"""
+GeoDjango 几何与栅格字段：SRID 缓存、BaseSpatialField 及具体几何类型字段。
+"""
 from collections import defaultdict, namedtuple
 
 from django.contrib.gis import forms, gdal
@@ -33,6 +36,7 @@ SRIDCacheEntry = namedtuple(
 )
 
 
+# 从 spatial_ref_sys 查询并缓存 SRID 的单位、椭球体与测地标志
 def get_srid_info(srid, connection):
     """
     Return the units, unit name, and spheroid WKT associated with the
@@ -71,6 +75,7 @@ def get_srid_info(srid, connection):
     return _srid_cache[alias][srid]
 
 
+# GIS 字段基类：SRID、空间索引与距离查询单位属性
 class BaseSpatialField(Field):
     """
     The Base GIS Field.
@@ -132,6 +137,7 @@ class BaseSpatialField(Field):
     def units_name(self, connection):
         return get_srid_info(self.srid, connection).units_name
 
+    # 判断字段 SRID 是否使用非投影（经纬度）坐标系
     def geodetic(self, connection):
         """
         Return true if this field's SRID corresponds with a coordinate
@@ -159,6 +165,7 @@ class BaseSpatialField(Field):
         else:
             return srid
 
+    # 包装为后端 Adapter，geography 字段附加 geography=True
     def get_db_prep_value(self, value, connection, *args, **kwargs):
         if value is None:
             return None
@@ -242,6 +249,7 @@ class BaseSpatialField(Field):
         return obj
 
 
+# 基础几何字段：映射 OpenGIS Geometry 类型，支持 lazy SpatialProxy
 class GeometryField(BaseSpatialField):
     """
     The base Geometry field -- maps to the OpenGIS Specification Geometry type.
@@ -319,6 +327,7 @@ class GeometryField(BaseSpatialField):
             kwargs["max_geom_collections"] = self.max_geom_collections
         return name, path, args, kwargs
 
+    # 注册 SpatialProxy 实现延迟实例化 GEOS 几何对象
     def contribute_to_class(self, cls, name, **kwargs):
         super().contribute_to_class(cls, name, **kwargs)
 
@@ -354,7 +363,9 @@ class GeometryField(BaseSpatialField):
         return sql, params
 
 
+# OpenGIS 具体几何类型字段（Point、LineString、Polygon 等）
 # The OpenGIS Geometry Type Fields
+# 点几何字段
 class PointField(GeometryField):
     geom_type = "POINT"
     geom_class = Point
@@ -362,6 +373,7 @@ class PointField(GeometryField):
     description = _("Point")
 
 
+# 线串几何字段
 class LineStringField(GeometryField):
     geom_type = "LINESTRING"
     geom_class = LineString
@@ -369,6 +381,7 @@ class LineStringField(GeometryField):
     description = _("Line string")
 
 
+# 多边形几何字段
 class PolygonField(GeometryField):
     geom_type = "POLYGON"
     geom_class = Polygon
@@ -397,6 +410,7 @@ class MultiPolygonField(GeometryField):
     description = _("Multi polygon")
 
 
+# 几何集合字段
 class GeometryCollectionField(GeometryField):
     geom_type = "GEOMETRYCOLLECTION"
     geom_class = GeometryCollection
@@ -404,6 +418,7 @@ class GeometryCollectionField(GeometryField):
     description = _("Geometry collection")
 
 
+# extent 聚合返回值字段
 class ExtentField(Field):
     "Used as a return value from an extent aggregate"
 
@@ -417,6 +432,7 @@ class ExtentField(Field):
         return select % sql if select else sql, params
 
 
+# 栅格字段：求值为 GDALRaster，通过 SpatialProxy 延迟加载
 class RasterField(BaseSpatialField):
     """
     Raster field for GeoDjango -- evaluates into GDALRaster objects.
@@ -452,6 +468,7 @@ class RasterField(BaseSpatialField):
         # of the raster attribute.
         setattr(cls, self.attname, SpatialProxy(gdal.GDALRaster, self))
 
+    # 支持按波段索引名返回 RasterBandTransform
     def get_transform(self, name):
         from django.contrib.gis.db.models.lookups import RasterBandTransform
 

@@ -1,13 +1,18 @@
+"""
+GeoDjango 联合供稿：在 RSS/Atom 订阅中嵌入 GeoRSS 或 W3C Geo 元素。
+"""
 from django.contrib.syndication.views import Feed as BaseFeed
 from django.utils.feedgenerator import Atom1Feed, Rss201rev2Feed
 
 
+# GeoRSS/W3C Geo 混入：坐标格式化与点/线/面元素生成
 class GeoFeedMixin:
     """
     This mixin provides the necessary routines for SyndicationFeed subclasses
     to produce simple GeoRSS or W3C Geo elements.
     """
 
+    # GeoRSS 坐标串：纬度在前、经度在后，空格分隔
     def georss_coords(self, coords):
         """
         In GeoRSS coordinate pairs are ordered by lat/lon and separated by
@@ -16,6 +21,7 @@ class GeoFeedMixin:
         """
         return " ".join("%f %f" % (coord[1], coord[0]) for coord in coords)
 
+    # 添加点元素（GeoRSS point 或 W3C geo:lat/geo:lon）
     def add_georss_point(self, handler, coords, w3c_geo=False):
         """
         Adds a GeoRSS point with the given coords using the given handler.
@@ -29,6 +35,7 @@ class GeoFeedMixin:
         else:
             handler.addQuickElement("georss:point", self.georss_coords((coords,)))
 
+    # 根据 item 中 geometry 类型渲染 GeoRSS 子元素
     def add_georss_element(self, handler, item, w3c_geo=False):
         """Add a GeoRSS XML element using the given item and handler."""
         # Getting the Geometry object.
@@ -88,6 +95,7 @@ class GeoFeedMixin:
 
 
 # ### SyndicationFeed subclasses ###
+# RSS 2.0 + GeoRSS 命名空间
 class GeoRSSFeed(Rss201rev2Feed, GeoFeedMixin):
     def rss_attributes(self):
         attrs = super().rss_attributes()
@@ -103,6 +111,7 @@ class GeoRSSFeed(Rss201rev2Feed, GeoFeedMixin):
         self.add_georss_element(handler, self.feed)
 
 
+# Atom 1.0 + GeoRSS 命名空间
 class GeoAtom1Feed(Atom1Feed, GeoFeedMixin):
     def root_attributes(self):
         attrs = super().root_attributes()
@@ -118,6 +127,7 @@ class GeoAtom1Feed(Atom1Feed, GeoFeedMixin):
         self.add_georss_element(handler, self.feed)
 
 
+# RSS 2.0 + W3C Basic Geo 命名空间（仅支持点）
 class W3CGeoFeed(Rss201rev2Feed, GeoFeedMixin):
     def rss_attributes(self):
         attrs = super().rss_attributes()
@@ -134,6 +144,7 @@ class W3CGeoFeed(Rss201rev2Feed, GeoFeedMixin):
 
 
 # ### Feed subclass ###
+# 用户可定义 geometry()/item_geometry() 的地理联合供稿基类
 class Feed(BaseFeed):
     """
     This is a subclass of the `Feed` from `django.contrib.syndication`.

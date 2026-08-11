@@ -1,3 +1,4 @@
+# django.contrib.gis.db.models — GeoDjango ORM 模型层（几何字段、聚合、查找与函数）
 from django.db.models import *  # NOQA isort:skip
 from django.db.models import __all__ as models_all  # isort:skip
 import django.contrib.gis.db.models.functions  # NOQA

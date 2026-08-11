@@ -1,3 +1,6 @@
+"""
+GeoDjango 数据库几何函数：Area、Distance、Transform 等 SQL Func/Transform 表达式。
+"""
 from decimal import Decimal
 
 from django.contrib.gis.db.models.fields import BaseSpatialField, GeometryField
@@ -23,6 +26,7 @@ from django.utils.functional import cached_property
 NUMERIC_TYPES = (int, float, Decimal)
 
 
+# 几何函数混入：校验几何参数、自动 SRID 转换与后端函数名映射
 class GeoFuncMixin:
     function = None
     geom_param_pos = (0,)
@@ -109,10 +113,12 @@ class GeoFuncMixin:
         return value
 
 
+# 通用几何 SQL 函数基类
 class GeoFunc(GeoFuncMixin, Func):
     pass
 
 
+# 输出 GeometryField 的几何函数基类
 class GeomOutputGeoFunc(GeoFunc):
     @cached_property
     def output_field(self):
@@ -156,6 +162,7 @@ class OracleToleranceMixin:
         return clone.as_sql(compiler, connection, **extra_context)
 
 
+# 计算几何面积，输出 AreaField
 class Area(OracleToleranceMixin, GeoFunc):
     arity = 1
 
@@ -257,11 +264,13 @@ class AsSVG(GeoFunc):
         super().__init__(*expressions, **extra)
 
 
+# 输出 Well-Known Binary
 class AsWKB(GeoFunc):
     output_field = BinaryField()
     arity = 1
 
 
+# 输出 Well-Known Text 字符串
 class AsWKT(GeoFunc):
     output_field = TextField()
     arity = 1
@@ -286,6 +295,7 @@ class BoundingCircle(OracleToleranceMixin, GeomOutputGeoFunc):
         )
 
 
+# 返回几何质心
 class Centroid(OracleToleranceMixin, GeomOutputGeoFunc):
     arity = 1
 
@@ -309,6 +319,7 @@ class DistanceResultMixin:
         return self.geo_field.geography and self.geo_field.srid == 4326
 
 
+# 计算两几何间距离，输出 DistanceField
 class Distance(DistanceResultMixin, OracleToleranceMixin, GeoFunc):
     geom_param_pos = (0, 1)
     spheroid = None
@@ -360,6 +371,7 @@ class Distance(DistanceResultMixin, OracleToleranceMixin, GeoFunc):
         return super().as_sql(compiler, connection, **extra_context)
 
 
+# 返回最小外接矩形
 class Envelope(GeomOutputGeoFunc):
     arity = 1
 
@@ -457,6 +469,7 @@ class IsEmpty(GeoFuncMixin, Transform):
 
 
 @BaseSpatialField.register_lookup
+# 判断几何是否有效（Transform 形式）
 class IsValid(OracleToleranceMixin, GeoFuncMixin, Transform):
     lookup_name = "isvalid"
     output_field = BooleanField()
@@ -466,6 +479,7 @@ class IsValid(OracleToleranceMixin, GeoFuncMixin, Transform):
         return "CASE %s WHEN 'TRUE' THEN 1 ELSE 0 END" % sql, params
 
 
+# 计算线串长度
 class Length(DistanceResultMixin, OracleToleranceMixin, GeoFunc):
     def __init__(self, expr1, spheroid=True, **extra):
         self.spheroid = spheroid
@@ -615,6 +629,7 @@ class SymDifference(OracleToleranceMixin, GeomOutputGeoFunc):
     geom_param_pos = (0, 1)
 
 
+# 将几何转换到指定 SRID
 class Transform(GeomOutputGeoFunc):
     def __init__(self, expression, srid, **extra):
         expressions = [
@@ -635,6 +650,7 @@ class Translate(Scale):
         return super(Translate, clone).as_sqlite(compiler, connection, **extra_context)
 
 
+# 两几何并集
 class Union(OracleToleranceMixin, GeomOutputGeoFunc):
     arity = 2
     geom_param_pos = (0, 1)

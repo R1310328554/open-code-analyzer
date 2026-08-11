@@ -1,4 +1,8 @@
 """
+SpatiaLite 后端的 GeometryColumns 与 SpatialRefSys 未托管模型。
+
+The GeometryColumns and SpatialRefSys models for the SpatiaLite backend.
+""""""
 The GeometryColumns and SpatialRefSys models for the SpatiaLite backend.
 """
 
@@ -6,6 +10,7 @@ from django.contrib.gis.db.backends.base.models import SpatialRefSysMixin
 from django.db import models
 
 
+# 映射 SpatiaLite geometry_columns 元数据表
 class SpatialiteGeometryColumns(models.Model):
     """
     The 'geometry_columns' table from SpatiaLite.
@@ -33,6 +38,7 @@ class SpatialiteGeometryColumns(models.Model):
         )
 
     @classmethod
+    # 类方法：返回存储要素表名的元数据列名
     def table_name_col(cls):
         """
         Return the name of the metadata column used to store the feature table
@@ -41,6 +47,7 @@ class SpatialiteGeometryColumns(models.Model):
         return "f_table_name"
 
     @classmethod
+    # 类方法：返回存储几何列名的元数据列名
     def geom_col_name(cls):
         """
         Return the name of the metadata column used to store the feature
@@ -49,6 +56,7 @@ class SpatialiteGeometryColumns(models.Model):
         return "f_geometry_column"
 
 
+# 映射 SpatiaLite spatial_ref_sys 空间参考系统表
 class SpatialiteSpatialRefSys(models.Model, SpatialRefSysMixin):
     """
     The 'spatial_ref_sys' table from SpatiaLite.
@@ -67,5 +75,6 @@ class SpatialiteSpatialRefSys(models.Model, SpatialRefSysMixin):
         managed = False
 
     @property
+    # srtext 字段的 WKT 别名属性
     def wkt(self):
         return self.srtext

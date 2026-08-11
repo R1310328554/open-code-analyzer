@@ -1,3 +1,6 @@
+"""
+SpatiaLite 内省：扩展 SQLite 内省以识别几何列类型与空间索引约束。
+"""
 from django.contrib.gis.gdal import OGRGeomType
 from django.db.backends.sqlite3.introspection import (
     DatabaseIntrospection,
@@ -5,6 +8,7 @@ from django.db.backends.sqlite3.introspection import (
 )
 
 
+# 扩展反向类型映射，将 SpatiaLite 几何类型名映射为 GeometryField
 class GeoFlexibleFieldLookupDict(FlexibleFieldLookupDict):
     """
     Subclass that includes updates the `base_data_types_reverse` dict
@@ -23,9 +27,11 @@ class GeoFlexibleFieldLookupDict(FlexibleFieldLookupDict):
     }
 
 
+# SpatiaLite 内省：从 geometry_columns 表读取几何元数据
 class SpatiaLiteIntrospection(DatabaseIntrospection):
     data_types_reverse = GeoFlexibleFieldLookupDict()
 
+    # 查询 geometry_columns 获取维度、SRID 与 OGC 类型，返回 Django 字段类与参数
     def get_geometry_type(self, table_name, description):
         with self.connection.cursor() as cursor:
             # Querying the `geometry_columns` table to get additional metadata.
@@ -63,6 +69,7 @@ class SpatiaLiteIntrospection(DatabaseIntrospection):
                 field_params["dim"] = 3
         return field_type, field_params
 
+    # 为启用 spatial_index 的几何列追加虚拟空间索引约束条目
     def get_constraints(self, cursor, table_name):
         constraints = super().get_constraints(cursor, table_name)
         cursor.execute(

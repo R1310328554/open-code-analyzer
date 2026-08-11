@@ -1,7 +1,11 @@
+"""
+SpatiaLite schema 编辑器：通过存储过程管理几何列与空间索引。
+"""
 from django.db import DatabaseError
 from django.db.backends.sqlite3.schema import DatabaseSchemaEditor
 
 
+# SpatiaLite DDL：AddGeometryColumn、CreateSpatialIndex 等 SQL 模板
 class SpatialiteSchemaEditor(DatabaseSchemaEditor):
     sql_add_geometry_column = (
         "SELECT AddGeometryColumn(%(table)s, %(column)s, %(srid)s, "
@@ -36,6 +40,7 @@ class SpatialiteSchemaEditor(DatabaseSchemaEditor):
     def geo_quote_name(self, name):
         return self.connection.ops.geo_quote_name(name)
 
+    # 几何字段延迟到 create_model/add_field 时通过存储过程创建
     def column_sql(self, model, field, include_default=False):
         from django.contrib.gis.db.models import GeometryField
 
@@ -65,6 +70,7 @@ class SpatialiteSchemaEditor(DatabaseSchemaEditor):
             )
         return None, None
 
+    # 调用 DiscardGeometryColumn 并删除空间索引表
     def remove_geometry_metadata(self, model, field):
         self.execute(
             self.sql_remove_geometry_metadata
@@ -81,6 +87,7 @@ class SpatialiteSchemaEditor(DatabaseSchemaEditor):
             }
         )
 
+    # 建表后执行累积的 geometry_sql 语句
     def create_model(self, model):
         super().create_model(model)
         # Create geometry columns
@@ -88,6 +95,7 @@ class SpatialiteSchemaEditor(DatabaseSchemaEditor):
             self.execute(sql)
         self.geometry_sql = []
 
+    # 删除模型前清理 geometry_columns 等元数据表
     def delete_model(self, model, **kwargs):
         from django.contrib.gis.db.models import GeometryField
 
@@ -110,6 +118,7 @@ class SpatialiteSchemaEditor(DatabaseSchemaEditor):
                 pass
         super().delete_model(model, **kwargs)
 
+    # 几何字段走存储过程路径，普通字段委托父类
     def add_field(self, model, field):
         from django.contrib.gis.db.models import GeometryField
 
@@ -122,6 +131,7 @@ class SpatialiteSchemaEditor(DatabaseSchemaEditor):
         else:
             super().add_field(model, field)
 
+    # 几何字段需重建表，因无数据库类型可 ALTER
     def remove_field(self, model, field):
         from django.contrib.gis.db.models import GeometryField
 
@@ -135,6 +145,7 @@ class SpatialiteSchemaEditor(DatabaseSchemaEditor):
         else:
             super().remove_field(model, field)
 
+    # 重命名表时更新 geometry_columns 并恢复几何元数据
     def alter_db_table(self, model, old_db_table, new_db_table):
         from django.contrib.gis.db.models import GeometryField
 

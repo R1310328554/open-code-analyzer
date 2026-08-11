@@ -1,3 +1,6 @@
+"""
+GeoDjango 空间聚合：Collect、Extent、MakeLine、Union 等几何聚合表达式。
+"""
 from django.contrib.gis.db.models.fields import (
     ExtentField,
     GeometryCollectionField,
@@ -10,11 +13,13 @@ from django.utils.functional import cached_property
 __all__ = ["Collect", "Extent", "Extent3D", "MakeLine", "Union"]
 
 
+# 空间聚合基类：校验几何源字段并映射后端 spatial_aggregate_name
 class GeoAggregate(Aggregate):
     function = None
     is_extent = False
 
     @cached_property
+    # 输出字段继承源几何的 SRID
     def output_field(self):
         return self.output_field_class(self.source_expressions[0].output_field.srid)
 
@@ -29,6 +34,7 @@ class GeoAggregate(Aggregate):
             **extra_context,
         )
 
+    # Oracle 非 extent 聚合需先包装 SDOAGGRTYPE
     def as_oracle(self, compiler, connection, **extra_context):
         if not self.is_extent:
             tolerance = self.extra.get("tolerance") or getattr(self, "tolerance", 0.05)
@@ -57,11 +63,13 @@ class GeoAggregate(Aggregate):
         return c
 
 
+# Collect 聚合：输出 GeometryCollectionField
 class Collect(GeoAggregate):
     name = "Collect"
     output_field_class = GeometryCollectionField
 
 
+# 2D 范围聚合：输出 ExtentField 并调用 convert_extent
 class Extent(GeoAggregate):
     name = "Extent"
     is_extent = "2D"
@@ -73,6 +81,7 @@ class Extent(GeoAggregate):
         return connection.ops.convert_extent(value)
 
 
+# 3D 范围聚合：输出 ExtentField 并调用 convert_extent3d
 class Extent3D(GeoAggregate):
     name = "Extent3D"
     is_extent = "3D"
@@ -84,11 +93,13 @@ class Extent3D(GeoAggregate):
         return connection.ops.convert_extent3d(value)
 
 
+# MakeLine 聚合：将点集合并为 LineStringField
 class MakeLine(GeoAggregate):
     name = "MakeLine"
     output_field_class = LineStringField
 
 
+# Union 聚合：合并几何为 GeometryField
 class Union(GeoAggregate):
     name = "Union"
     output_field_class = GeometryField

@@ -1,4 +1,7 @@
 """
+SpatiaLite 空间 SQL 操作：函数映射、运算符与版本检测。
+
+SQL functions reference lists:"""
 SQL functions reference lists:
 https://www.gaia-gis.it/gaia-sins/spatialite-sql-4.3.0.html
 """
@@ -16,12 +19,14 @@ from django.utils.functional import cached_property
 from django.utils.version import get_version_tuple
 
 
+# 空间运算符包装：将 SpatiaLite 布尔结果转为 > 0 比较
 class SpatialiteNullCheckOperator(SpatialOperator):
     def as_sql(self, connection, lookup, template_params, sql_params):
         sql, params = super().as_sql(connection, lookup, template_params, sql_params)
         return "%s > 0" % sql, params
 
 
+# SpatiaLite 空间操作：GIS 运算符、聚合与库版本查询
 class SpatiaLiteOperations(BaseSpatialOperations, DatabaseOperations):
     name = "spatialite"
     spatialite = True
@@ -94,6 +99,7 @@ class SpatiaLiteOperations(BaseSpatialOperations, DatabaseOperations):
         return unsupported
 
     @cached_property
+    # 检测 SpatiaLite 库版本，低于 4.3.0 则抛出 ImproperlyConfigured
     def spatial_version(self):
         """Determine the version of the SpatiaLite library."""
         try:
@@ -108,6 +114,7 @@ class SpatiaLiteOperations(BaseSpatialOperations, DatabaseOperations):
             raise ImproperlyConfigured("GeoDjango supports SpatiaLite 4.3.0 and above.")
         return version
 
+    # 将 SpatiaLite 范围多边形转为 (xmin, ymin, xmax, ymax)
     def convert_extent(self, box):
         """
         Convert the polygon data received from SpatiaLite to min/max values.
@@ -119,6 +126,7 @@ class SpatiaLiteOperations(BaseSpatialOperations, DatabaseOperations):
         xmax, ymax = shell[2][:2]
         return (xmin, ymin, xmax, ymax)
 
+    # 几何列通过 AddGeometryColumn 存储过程添加，返回 None
     def geo_db_type(self, f):
         """
         Return None because geometry columns are added via the
@@ -126,6 +134,7 @@ class SpatiaLiteOperations(BaseSpatialOperations, DatabaseOperations):
         """
         return None
 
+    # 根据测地/投影坐标系将 Distance 对象转为数据库距离参数
     def get_distance(self, f, value, lookup_type):
         """
         Return the distance parameters for the given geometry field,
@@ -180,6 +189,7 @@ class SpatiaLiteOperations(BaseSpatialOperations, DatabaseOperations):
         """Return the version of RTTOPO library used by SpatiaLite."""
         return self._get_spatialite_func("rttopo_version()")
 
+    # SpatiaLite 5+ 使用 rttopo，否则使用 lwgeom
     def geom_lib_version(self):
         """
         Return the version of the version-dependent geom library used by
@@ -211,6 +221,7 @@ class SpatiaLiteOperations(BaseSpatialOperations, DatabaseOperations):
         return getattr(self, agg_name)
 
     # Routines for getting the OGC-compliant models.
+    # 返回 SpatialiteGeometryColumns 模型类
     def geometry_columns(self):
         from django.contrib.gis.db.backends.spatialite.models import (
             SpatialiteGeometryColumns,
@@ -218,6 +229,7 @@ class SpatiaLiteOperations(BaseSpatialOperations, DatabaseOperations):
 
         return SpatialiteGeometryColumns
 
+    # 返回 SpatialiteSpatialRefSys 模型类
     def spatial_ref_sys(self):
         from django.contrib.gis.db.backends.spatialite.models import (
             SpatialiteSpatialRefSys,
@@ -225,6 +237,7 @@ class SpatiaLiteOperations(BaseSpatialOperations, DatabaseOperations):
 
         return SpatialiteSpatialRefSys
 
+    # WKB 读取器将 BLOB 转为 GEOSGeometryBase
     def get_geometry_converter(self, expression):
         geom_class = expression.output_field.geom_class
         read = wkb_r().read
