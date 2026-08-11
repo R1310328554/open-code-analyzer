@@ -22,6 +22,7 @@ Handles loading of checkpoints that contain:
   - KV cache quantization scales
 """
 
+# Gemma 预量化器：Google Gemma INT 打包权重、SRQ 激活 scale 与 KV cache 量化
 from typing import TYPE_CHECKING
 
 from .base import HfQuantizer
@@ -31,6 +32,7 @@ if TYPE_CHECKING:
     from ..utils.quantization_config import GemmaQuantizationConfig
 
 
+# GemmaQuantizer：Gemma 预量化器：INT2/4/8 打包权重、SRQ scale 与量化 Embedding 加载
 class GemmaQuantizer(HfQuantizer):
     """HfQuantizer for pre-quantized Gemma checkpoints.
 

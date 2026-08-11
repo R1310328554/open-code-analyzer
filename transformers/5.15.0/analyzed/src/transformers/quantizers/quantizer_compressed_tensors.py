@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# compressed-tensors 量化器：压缩 checkpoint 加载、FP8 内核与 MoE 专家反量化
 from copy import deepcopy
 
 from ..utils import is_compressed_tensors_available, is_torch_available, logging
@@ -35,6 +36,7 @@ def _is_fp8_scheme(scheme) -> bool:
     return weights is not None and weights.type == "float" and weights.num_bits == 8
 
 
+# CompressedTensorsHfQuantizer：compressed-tensors 量化器：压缩/解压、FP8 优化推理与 MoE 权重转换
 class CompressedTensorsHfQuantizer(HfQuantizer):
     """
     Quantizer for the compressed_tensors package. Loads and restores models to

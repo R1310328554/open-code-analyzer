@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# HQQ 量化器：半精度权重量化，nn.Linear→HQQLinear 延迟转换
 from typing import TYPE_CHECKING
 
 from ..integrations import prepare_for_hqq_linear
@@ -43,6 +44,7 @@ if is_hqq_available():
 logger = logging.get_logger(__name__)
 
 
+# HqqHfQuantizer：HQQ 量化器：prepare_for_hqq_linear 标记与多 GPU forward 补丁
 class HqqHfQuantizer(HfQuantizer):
     """
     HQQ quantizer base HF class.

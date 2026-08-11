@@ -1,3 +1,4 @@
+# 细粒度 FP8 量化器：块级 scale、MoE 专家与 DeepGEMM/Triton 路径
 from typing import TYPE_CHECKING
 
 from ..utils import is_accelerate_available, is_torch_available, is_torch_xpu_available, logging
@@ -15,6 +16,7 @@ if TYPE_CHECKING:
 logger = logging.get_logger(__name__)
 
 
+# FineGrainedFP8HfQuantizer：细粒度 FP8 量化器：块级 scale、UE8M0 与 MoE FP8Experts
 class FineGrainedFP8HfQuantizer(HfQuantizer):
     """
     FP8 quantization implementation supporting both standard and MoE models.

@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# AWQ 量化器：激活感知权重量化，gptqmodel 内核加载与 AWQ 线性层替换
 import importlib.metadata
 from typing import TYPE_CHECKING
 
@@ -33,6 +34,7 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# AwqQuantizer：AWQ 4-bit 量化器：replace_with_awq_linear 与 gptqmodel 后初始化
 class AwqQuantizer(HfQuantizer):
     """
     4-bit quantization for Activation-aware Weight Quantization(AWQ) (https://huggingface.co/papers/2306.00978)

@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# BitNet 量化器：1.58-bit 权重量化，Linear→BitLinear 模块替换
 from typing import TYPE_CHECKING
 
 from .base import HfQuantizer
@@ -30,6 +31,7 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# BitNetHfQuantizer：BitNet 1.58-bit 量化器：BitLinear 替换与 QAT 在线模式
 class BitNetHfQuantizer(HfQuantizer):
     """
     1.58-bit quantization from BitNet quantization method:

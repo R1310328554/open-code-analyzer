@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# Metal 量化器：Apple Silicon MPS 低比特仿射量化与融合 matmul 内核
 from typing import TYPE_CHECKING, Any
 
 from ..utils import is_kernels_available, is_torch_available, logging
@@ -28,6 +29,7 @@ if TYPE_CHECKING:
 logger = logging.get_logger(__name__)
 
 
+# MetalHfQuantizer：Metal 量化器：MetalLinear 替换、MPS 低比特 pack 与反量化加载
 class MetalHfQuantizer(HfQuantizer):
     """
     Quantizer for Metal affine quantization on Apple Silicon (MPS) devices.

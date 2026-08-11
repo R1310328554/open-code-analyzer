@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# bitsandbytes 8-bit 量化器：LLM.int8 混合精度线性层加载
 from typing import TYPE_CHECKING
 
 from .base import HfQuantizer
@@ -42,6 +43,7 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# Bnb8BitHfQuantizer：bnb 8-bit 量化器：Linear8bitLt 替换与 SCB 权重加载
 class Bnb8BitHfQuantizer(HfQuantizer):
     """
     8-bit quantization from bitsandbytes quantization method

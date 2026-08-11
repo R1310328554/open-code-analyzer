@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# FP-Quant 量化器：Blackwell/qutlass 真实量化或 Triton 伪量化
 from typing import TYPE_CHECKING, Optional
 
 from .base import HfQuantizer
@@ -31,6 +32,7 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# FPQuantHfQuantizer：FP-Quant 量化器：FPQuantLinear 替换、NVFP4/MXFP4 与 QAT 训练
 class FPQuantHfQuantizer(HfQuantizer):
     """
     Quantizer for the FP-Quant method. Enables the loading of prequantized models and in-flight quantization of full-precision models.

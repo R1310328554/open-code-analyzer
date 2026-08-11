@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# bitsandbytes 4-bit 量化器：NF4/FP4 线性层与 CPU/GPU 混合 offload
 from typing import TYPE_CHECKING
 
 from .base import HfQuantizer
@@ -42,6 +43,7 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# Bnb4BitHfQuantizer：bnb 4-bit 量化器：Linear4bit 替换、反量化与权重反序列化
 class Bnb4BitHfQuantizer(HfQuantizer):
     """
     4-bit quantization from bitsandbytes quantization method

@@ -1,3 +1,4 @@
+# fouroversix 量化器：FP4 权重量化与预量化 checkpoint 格式转换
 from typing import TYPE_CHECKING
 
 from ..utils.import_utils import is_fouroversix_available
@@ -18,6 +19,7 @@ if is_torch_available():
     import torch
 
 
+# FourOverSixHfQuantizer：fouroversix FP4 量化器：quantize_model 与跨格式权重转换
 class FourOverSixHfQuantizer(HfQuantizer):
     """
     FP4 quantization with fouroversix.

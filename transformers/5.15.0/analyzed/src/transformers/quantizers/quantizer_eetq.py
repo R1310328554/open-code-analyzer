@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# EETQ 量化器：GPU 8-bit 权重量化与 EetqLinear 模块替换
 from typing import TYPE_CHECKING
 
 from .base import HfQuantizer
@@ -31,6 +32,7 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# EetqHfQuantizer：EETQ 8-bit 量化器：EetqLinear 替换与 CUDA 在线量化
 class EetqHfQuantizer(HfQuantizer):
     """
     8-bit quantization from EETQ quantization method

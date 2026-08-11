@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# FBGEMM FP8 量化器：H100 等 GPU 上 fbgemm-gpu FP8 矩阵乘内核
 from typing import TYPE_CHECKING
 
 from .base import HfQuantizer
@@ -38,6 +39,7 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# FbgemmFp8HfQuantizer：FBGEMM FP8 量化器：FbgemmFp8Linear 替换与 Llama4 TP 计划
 class FbgemmFp8HfQuantizer(HfQuantizer):
     """
     FP8 quantization using fbgemm kernels

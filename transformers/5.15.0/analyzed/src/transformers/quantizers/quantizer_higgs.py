@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# HIGGS 量化器：Hadamard+FLUTE 内核预量化/在线量化与权重重打包
 from typing import TYPE_CHECKING
 
 from ..utils.logging import tqdm
@@ -32,6 +33,7 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# HiggsHfQuantizer：HIGGS 量化器：HiggsLinear 替换、FLUTE 重打包与反量化
 class HiggsHfQuantizer(HfQuantizer):
     """
     Quantizer of the HIGGS method. Enables the loading of prequantized models and in-flight quantization of full-precision models.

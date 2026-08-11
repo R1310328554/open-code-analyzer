@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# GPTQ 量化器：optimum/gptqmodel 预量化加载与在线校准量化
 from importlib import metadata
 from typing import TYPE_CHECKING
 
@@ -36,6 +37,7 @@ MIN_GPTQ_VERSION = "1.4.3"
 MIN_OPTIMUM_VERSION = "1.24.0"
 
 
+# GptqHfQuantizer：GPTQ 量化器：optimum GPTQQuantizer 转换/校准与 post_init
 class GptqHfQuantizer(HfQuantizer):
     """
     Quantizer of the GPTQ method - for GPTQ the quantizer support calibration of the model through
