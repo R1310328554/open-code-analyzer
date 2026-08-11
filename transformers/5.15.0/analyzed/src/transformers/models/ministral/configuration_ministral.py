@@ -26,8 +26,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# Ministral 配置：Ministral-8B 滑动窗口 GQA 与 layer_types 超参
+
+# MinistralConfig：mistralai/Ministral-8B 滑动窗口 GQA 因果 LM 默认超参
 @auto_docstring(checkpoint="mistralai/Ministral-8B-Instruct-2410")
 @strict
+# MinistralConfig：mistralai/Ministral-8B 滑动窗口 GQA 因果 LM 默认超参
 class MinistralConfig(PreTrainedConfig):
     r"""
     Example:

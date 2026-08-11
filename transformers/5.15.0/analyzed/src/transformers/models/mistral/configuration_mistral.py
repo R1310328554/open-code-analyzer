@@ -23,8 +23,12 @@ from ...utils import auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# Mistral 配置：Mistral-7B GQA 滑动窗口因果 LM 超参
+
+# MistralConfig：mistralai/Mistral-7B GQA 滑动窗口因果 LM 默认超参
 @auto_docstring(checkpoint="mistralai/Mistral-7B-v0.1")
 @strict
+# MistralConfig：mistralai/Mistral-7B GQA 滑动窗口因果 LM 默认超参
 class MistralConfig(PreTrainedConfig):
     r"""
     Example:

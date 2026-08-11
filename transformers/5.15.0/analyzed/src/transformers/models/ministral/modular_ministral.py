@@ -41,8 +41,12 @@ from ..qwen2.modeling_qwen2 import (
 )
 
 
+# Ministral modular 源：MistralConfig + Qwen2 解码器因果 LM 实现
+
+# MinistralConfig：mistralai/Ministral-8B 滑动窗口 GQA 因果 LM 默认超参
 @auto_docstring(checkpoint="mistralai/Ministral-8B-Instruct-2410")
 @strict
+# MinistralConfig：mistralai/Ministral-8B 滑动窗口 GQA 因果 LM 默认超参
 class MinistralConfig(MistralConfig):
     r"""
     Example:
@@ -76,10 +80,12 @@ class MinistralConfig(MistralConfig):
         PreTrainedConfig.__post_init__(self, **kwargs)
 
 
+# MinistralMLP：Ministral SwiGLU 前馈 MLP 子层
 class MinistralMLP(Qwen2MLP):
     pass
 
 
+# MinistralAttention：Ministral 多头因果自注意力（GQA，支持滑动窗口层类型）
 class MinistralAttention(Qwen2Attention):
     def __init__(self, config, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -89,22 +95,27 @@ class MinistralAttention(Qwen2Attention):
         self.v_proj = nn.Linear(config.hidden_size, config.num_key_value_heads * self.head_dim, bias=False)
 
 
+# MinistralRMSNorm：Ministral RMS 层归一化（等价 T5LayerNorm）
 class MinistralRMSNorm(Qwen2RMSNorm):
     pass
 
 
+# MinistralDecoderLayer：Ministral 解码器单层（自注意力 + MLP）
 class MinistralDecoderLayer(Qwen2DecoderLayer):
     pass
 
 
+# MinistralPreTrainedModel：Ministral 预训练基类与权重初始化
 class MinistralPreTrainedModel(Qwen2PreTrainedModel):
     pass
 
 
+# MinistralRotaryEmbedding：Ministral 旋转位置编码（RoPE）
 class MinistralRotaryEmbedding(Qwen2RotaryEmbedding):
     pass
 
 
+# MinistralModel：Ministral 因果 Transformer 解码器主干
 class MinistralModel(Qwen2Model):
     def __init__(self, config: MinistralConfig):
         super().__init__(config)
@@ -174,18 +185,22 @@ class MinistralModel(Qwen2Model):
         )
 
 
+# MinistralForCausalLM：Ministral 因果语言建模条件生成
 class MinistralForCausalLM(Qwen2ForCausalLM):
     pass
 
 
+# MinistralForSequenceClassification：Ministral 序列分类
 class MinistralForSequenceClassification(Qwen2ForSequenceClassification):
     pass
 
 
+# MinistralForTokenClassification：Ministral 词元分类
 class MinistralForTokenClassification(Qwen2ForTokenClassification):
     pass
 
 
+# MinistralForQuestionAnswering：Ministral 抽取式问答
 class MinistralForQuestionAnswering(Qwen2ForQuestionAnswering):
     pass
 

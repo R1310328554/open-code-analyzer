@@ -21,8 +21,12 @@ from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# Mistral3 配置：Pixtral 视觉编码器 + Mistral 文本 LLM 多模态组合超参
+
+# Mistral3Config：mistralai/Mistral-Small-3.1 Pixtral 视觉 + Mistral 文本多模态超参
 @auto_docstring(checkpoint="mistralai/Mistral-Small-3.1-24B-Instruct-2503")
 @strict
+# Mistral3Config：mistralai/Mistral-Small-3.1 Pixtral 视觉 + Mistral 文本多模态超参
 class Mistral3Config(PreTrainedConfig):
     r"""
     Example:

@@ -32,6 +32,9 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_ministral3 import Ministral3Config
 
 
+# Ministral3 建模：Llama-4 位置缩放 GQA 因果 LM（由 modular 自动生成）
+
+# rotate_half：将张量后半维度旋转 180°（RoPE 辅助函数）
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -40,6 +43,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：将 RoPE cos/sin 应用到 query/key 张量
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -65,6 +69,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 下将 KV 头重复扩展以匹配 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -77,6 +82,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：Ministral eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -102,12 +108,14 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# get_llama_4_attn_scale：Llama-4 位置相关注意力 log 缩放因子计算
 def get_llama_4_attn_scale(positions_ids: torch.Tensor, beta: float, max_position_embeddings: int) -> torch.Tensor:
     scaling = 1 + beta * torch.log(1 + torch.floor(positions_ids / max_position_embeddings))
     return scaling[:, None, :, None]
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# Ministral3Attention：Ministral3 多头自注意力（Llama-4 位置缩放 + GQA）
 class Ministral3Attention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -173,6 +181,7 @@ class Ministral3Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# Ministral3MLP：Ministral3 SwiGLU 前馈 MLP 子层
 class Ministral3MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -190,6 +199,7 @@ class Ministral3MLP(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# Ministral3RMSNorm：Ministral3 RMS 层归一化
 class Ministral3RMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -210,6 +220,7 @@ class Ministral3RMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# Ministral3DecoderLayer：Ministral3 解码器单层（注意力 + MLP）
 class Ministral3DecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Ministral3Config, layer_idx: int):
         super().__init__()
@@ -252,6 +263,7 @@ class Ministral3DecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Ministral3PreTrainedModel：Ministral3 预训练基类与权重初始化
 class Ministral3PreTrainedModel(PreTrainedModel):
     config: Ministral3Config
     base_model_prefix = "model"
@@ -270,6 +282,7 @@ class Ministral3PreTrainedModel(PreTrainedModel):
     }
 
 
+# Ministral3RotaryEmbedding：Ministral3 旋转位置编码（RoPE）
 class Ministral3RotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: Ministral3Config, device=None):
@@ -328,6 +341,7 @@ class Ministral3RotaryEmbedding(nn.Module):
 
 
 @auto_docstring
+# Ministral3Model：Ministral3 因果 Transformer 解码器主干
 class Ministral3Model(Ministral3PreTrainedModel):
     def __init__(self, config: Ministral3Config):
         super().__init__(config)
@@ -402,6 +416,7 @@ class Ministral3Model(Ministral3PreTrainedModel):
 
 
 @auto_docstring
+# Ministral3ForCausalLM：Ministral3 因果语言建模
 class Ministral3ForCausalLM(Ministral3PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
@@ -476,14 +491,17 @@ class Ministral3ForCausalLM(Ministral3PreTrainedModel, GenerationMixin):
         )
 
 
+# Ministral3ForTokenClassification：Ministral3 词元分类
 class Ministral3ForTokenClassification(GenericForTokenClassification, Ministral3PreTrainedModel):
     pass
 
 
+# Ministral3ForSequenceClassification：Ministral3 序列分类
 class Ministral3ForSequenceClassification(GenericForSequenceClassification, Ministral3PreTrainedModel):
     pass
 
 
+# Ministral3ForQuestionAnswering：Ministral3 抽取式问答
 class Ministral3ForQuestionAnswering(GenericForQuestionAnswering, Ministral3PreTrainedModel):
     pass
 

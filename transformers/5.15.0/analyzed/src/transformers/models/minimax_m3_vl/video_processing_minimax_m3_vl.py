@@ -20,6 +20,9 @@ from ...video_utils import group_videos_by_shape, reorder_videos
 from .image_processing_minimax_m3_vl import smart_resize
 
 
+# MiniMax M3 VL 视频预处理：可变分辨率帧缩放、归一化与 patch 网格化
+
+# MiniMaxM3VLVideoProcessorKwargs：MiniMax M3 VL 视频处理器可选参数字典类型
 class MiniMaxM3VLVideoProcessorKwargs(VideosKwargs, total=False):
     patch_size: int
     temporal_patch_size: int
@@ -32,6 +35,7 @@ class MiniMaxM3VLVideoProcessorKwargs(VideosKwargs, total=False):
     fps: float | int
 
 
+# MiniMaxM3VLVideoProcessor：MiniMax M3 VL 视频帧缩放、归一化与 patch 网格化预处理
 class MiniMaxM3VLVideoProcessor(BaseVideoProcessor):
     do_resize = True
     resample = PILImageResampling.BICUBIC
@@ -59,6 +63,7 @@ class MiniMaxM3VLVideoProcessor(BaseVideoProcessor):
     def __init__(self, **kwargs: Unpack[MiniMaxM3VLVideoProcessorKwargs]):
         super().__init__(**kwargs)
 
+    # _preprocess：按形状分组处理视频帧并输出 pixel_values_videos 与 video_grid_thw
     def _preprocess(
         self,
         videos: list[torch.Tensor],

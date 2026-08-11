@@ -26,11 +26,15 @@ from ..mistral.modeling_mistral import (
 logger = logging.get_logger(__name__)
 
 
+# Ministral3 modular 源：Mistral 注意力 + Llama-4 位置缩放扩展
+
+# get_llama_4_attn_scale：Llama-4 位置相关注意力 log 缩放因子计算
 def get_llama_4_attn_scale(positions_ids: torch.Tensor, beta: float, max_position_embeddings: int) -> torch.Tensor:
     scaling = 1 + beta * torch.log(1 + torch.floor(positions_ids / max_position_embeddings))
     return scaling[:, None, :, None]
 
 
+# Ministral3Attention：Ministral3 多头自注意力（Llama-4 位置缩放 + GQA）
 class Ministral3Attention(MistralAttention):
     def forward(
         self,
@@ -80,33 +84,40 @@ class Ministral3Attention(MistralAttention):
         return attn_output, attn_weights
 
 
+# Ministral3DecoderLayer：Ministral3 解码器单层（注意力 + MLP）
 class Ministral3DecoderLayer(MistralDecoderLayer):
     pass
 
 
 @auto_docstring
+# Ministral3PreTrainedModel：Ministral3 预训练基类与权重初始化
 class Ministral3PreTrainedModel(MistralPreTrainedModel):
     pass
 
 
 @auto_docstring
+# Ministral3Model：Ministral3 因果 Transformer 解码器主干
 class Ministral3Model(MistralModel):
     pass
 
 
 @auto_docstring
+# Ministral3ForCausalLM：Ministral3 因果语言建模
 class Ministral3ForCausalLM(MistralForCausalLM):
     pass
 
 
+# Ministral3ForTokenClassification：Ministral3 词元分类
 class Ministral3ForTokenClassification(GenericForTokenClassification, Ministral3PreTrainedModel):
     pass
 
 
+# Ministral3ForSequenceClassification：Ministral3 序列分类
 class Ministral3ForSequenceClassification(GenericForSequenceClassification, Ministral3PreTrainedModel):
     pass
 
 
+# Ministral3ForQuestionAnswering：Ministral3 抽取式问答
 class Ministral3ForQuestionAnswering(GenericForQuestionAnswering, Ministral3PreTrainedModel):
     pass
 

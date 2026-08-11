@@ -32,6 +32,9 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_mistral import MistralConfig
 
 
+# Mistral 建模：Mistral AI GQA 滑动窗口因果 LM（由 modular 自动生成）
+
+# MistralMLP：Mistral SwiGLU 前馈 MLP 子层
 class MistralMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -48,6 +51,7 @@ class MistralMLP(nn.Module):
         return down_proj
 
 
+# rotate_half：将张量后半维度旋转 180°（RoPE 辅助函数）
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -56,6 +60,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：将 RoPE cos/sin 应用到 query/key 张量
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -81,6 +86,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 下将 KV 头重复扩展以匹配 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -93,6 +99,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：Ministral eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -119,6 +126,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# MistralAttention：Mistral 多头因果自注意力（GQA，滑动窗口）
 class MistralAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -179,6 +187,7 @@ class MistralAttention(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# MistralRMSNorm：Mistral RMS 层归一化（等价 T5LayerNorm）
 class MistralRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -199,6 +208,7 @@ class MistralRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# MistralDecoderLayer：Mistral 解码器单层（自注意力 + MLP）
 class MistralDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: MistralConfig, layer_idx: int):
         super().__init__()
@@ -241,6 +251,7 @@ class MistralDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# MistralPreTrainedModel：Mistral 预训练基类与权重初始化
 class MistralPreTrainedModel(PreTrainedModel):
     config: MistralConfig
     base_model_prefix = "model"
@@ -259,6 +270,7 @@ class MistralPreTrainedModel(PreTrainedModel):
     }
 
 
+# MistralRotaryEmbedding：Mistral 旋转位置编码（RoPE）
 class MistralRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: MistralConfig, device=None):
@@ -317,6 +329,7 @@ class MistralRotaryEmbedding(nn.Module):
 
 
 @auto_docstring
+# MistralModel：Mistral 因果 Transformer 解码器主干
 class MistralModel(MistralPreTrainedModel):
     def __init__(self, config: MistralConfig):
         super().__init__(config)
@@ -391,6 +404,7 @@ class MistralModel(MistralPreTrainedModel):
 
 
 @auto_docstring
+# MistralForCausalLM：Mistral 因果语言建模
 class MistralForCausalLM(MistralPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
@@ -465,14 +479,17 @@ class MistralForCausalLM(MistralPreTrainedModel, GenerationMixin):
         )
 
 
+# MistralForTokenClassification：Mistral 词元分类
 class MistralForTokenClassification(GenericForTokenClassification, MistralPreTrainedModel):
     pass
 
 
+# MistralForSequenceClassification：Mistral 序列分类
 class MistralForSequenceClassification(GenericForSequenceClassification, MistralPreTrainedModel):
     pass
 
 
+# MistralForQuestionAnswering：Mistral 抽取式问答
 class MistralForQuestionAnswering(GenericForQuestionAnswering, MistralPreTrainedModel): ...
 
 

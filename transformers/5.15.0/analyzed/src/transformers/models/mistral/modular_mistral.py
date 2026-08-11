@@ -33,6 +33,9 @@ from .configuration_mistral import MistralConfig
 logger = logging.get_logger(__name__)
 
 
+# Mistral modular 源：Llama 解码器 + 无 bias 的 q/k/v 投影
+
+# MistralMLP：Mistral SwiGLU 前馈 MLP 子层
 class MistralMLP(LlamaMLP):
     def __init__(self, config):
         super().__init__(config)
@@ -41,6 +44,7 @@ class MistralMLP(LlamaMLP):
         self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=False)
 
 
+# MistralAttention：Mistral 多头因果自注意力（GQA，滑动窗口）
 class MistralAttention(LlamaAttention):
     def __init__(self, config: MistralConfig, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -92,6 +96,7 @@ class MistralAttention(LlamaAttention):
         return attn_output, attn_weights
 
 
+# MistralDecoderLayer：Mistral 解码器单层（自注意力 + MLP）
 class MistralDecoderLayer(LlamaDecoderLayer):
     def __init__(self, config: MistralConfig, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -99,6 +104,7 @@ class MistralDecoderLayer(LlamaDecoderLayer):
         self.mlp = MistralMLP(config)
 
 
+# MistralPreTrainedModel：Mistral 预训练基类与权重初始化
 class MistralPreTrainedModel(LlamaPreTrainedModel):
     _can_record_outputs = {
         "hidden_states": MistralDecoderLayer,
@@ -106,6 +112,7 @@ class MistralPreTrainedModel(LlamaPreTrainedModel):
     }
 
 
+# MistralModel：Mistral 因果 Transformer 解码器主干
 class MistralModel(LlamaModel):
     @merge_with_config_defaults
     @capture_outputs
@@ -163,18 +170,22 @@ class MistralModel(LlamaModel):
         )
 
 
+# MistralForCausalLM：Mistral 因果语言建模
 class MistralForCausalLM(LlamaForCausalLM):
     pass
 
 
+# MistralForTokenClassification：Mistral 词元分类
 class MistralForTokenClassification(LlamaForTokenClassification):
     pass
 
 
+# MistralForSequenceClassification：Mistral 序列分类
 class MistralForSequenceClassification(LlamaForSequenceClassification):
     pass
 
 
+# MistralForQuestionAnswering：Mistral 抽取式问答
 class MistralForQuestionAnswering(GenericForQuestionAnswering, MistralPreTrainedModel): ...
 
 

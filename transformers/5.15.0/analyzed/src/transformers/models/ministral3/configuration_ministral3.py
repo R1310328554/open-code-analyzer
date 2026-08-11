@@ -23,8 +23,12 @@ from ...utils import auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# Ministral3 配置：Ministral-3 Llama-4 注意力缩放与长上下文超参
+
+# Ministral3Config：mistralai/Ministral-3-8B Llama-4 风格注意力缩放因果 LM 超参
 @auto_docstring(checkpoint="mistralai/Ministral-3-8B-Base-2512")
 @strict
+# Ministral3Config：mistralai/Ministral-3-8B Llama-4 风格注意力缩放因果 LM 超参
 class Ministral3Config(PreTrainedConfig):
     r"""
     Example:
