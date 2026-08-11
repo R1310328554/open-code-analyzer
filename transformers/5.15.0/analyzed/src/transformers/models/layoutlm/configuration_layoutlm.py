@@ -19,8 +19,12 @@ from ... import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# LayoutLM 配置：microsoft/layoutlm-base-uncased 文档布局 BERT（2D 位置嵌入）超参
+
+# LayoutLMConfig：microsoft/layoutlm-base-uncased 文档布局 BERT 默认超参
 @auto_docstring(checkpoint="microsoft/layoutlm-base-uncased")
 @strict
+# LayoutLMConfig：microsoft/layoutlm-base-uncased 文档布局 BERT 超参（2D 位置嵌入）
 class LayoutLMConfig(PreTrainedConfig):
     r"""
     max_2d_position_embeddings (`int`, *optional*, defaults to 1024):

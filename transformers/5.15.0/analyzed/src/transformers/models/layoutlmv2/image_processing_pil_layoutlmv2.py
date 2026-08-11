@@ -39,7 +39,10 @@ except ImportError:
     pytesseract = None
 
 
+# LayoutLMv2 PIL 图像预处理：PIL resize + Tesseract OCR 词与 bbox 提取
+
 # Adapted from transformers.models.layoutlmv2.image_processing_layoutlmv2.LayoutLMv2ImageProcessorKwargs
+# LayoutLMv2ImageProcessorKwargs：LayoutLMv2 图像处理器可选参数字典类型
 class LayoutLMv2ImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     apply_ocr (`bool`, *optional*, defaults to `self.apply_ocr`):
@@ -60,6 +63,7 @@ class LayoutLMv2ImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 # Adapted from transformers.models.layoutlmv2.image_processing_layoutlmv2.normalize_box
+# normalize_box：将像素 bbox 归一化到 0–1000 坐标系
 def normalize_box(box, width, height):
     return [
         int(1000 * (box[0] / width)),
@@ -70,6 +74,7 @@ def normalize_box(box, width, height):
 
 
 # Adapted from transformers.models.layoutlmv2.image_processing_layoutlmv2.apply_tesseract
+# apply_tesseract：对文档图像运行 Tesseract OCR 并返回词与 bbox
 def apply_tesseract(
     image: np.ndarray,
     lang: str | None,
@@ -118,6 +123,7 @@ def apply_tesseract(
 
 
 @auto_docstring
+# LayoutLMv2ImageProcessorPil：LayoutLMv2 PIL 后端图像 resize + OCR 预处理
 class LayoutLMv2ImageProcessorPil(PilBackend):
     valid_kwargs = LayoutLMv2ImageProcessorKwargs
     resample = PILImageResampling.BILINEAR

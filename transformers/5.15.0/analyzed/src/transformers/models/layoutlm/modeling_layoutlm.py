@@ -39,12 +39,15 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_layoutlm import LayoutLMConfig
 
 
+# LayoutLM 建模：带 2D 布局位置嵌入的文档 BERT 编码器
+
 logger = logging.get_logger(__name__)
 
 
 LayoutLMLayerNorm = nn.LayerNorm
 
 
+# LayoutLMEmbeddings：LayoutLM 词/1D 位置/2D 布局/token 类型嵌入
 class LayoutLMEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
@@ -120,6 +123,7 @@ class LayoutLMEmbeddings(nn.Module):
 
 
 # Copied from transformers.models.align.modeling_align.eager_attention_forward
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -143,6 +147,7 @@ def eager_attention_forward(
 
 
 # Copied from transformers.models.align.modeling_align.AlignTextSelfAttention with AlignText->LayoutLM
+# LayoutLMSelfAttention：LayoutLM 双向多头自注意力
 class LayoutLMSelfAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -198,6 +203,7 @@ class LayoutLMSelfAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertSelfOutput with Bert->LayoutLM
+# LayoutLMSelfOutput：LayoutLM 自注意力输出投影 + 残差 + LayerNorm
 class LayoutLMSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -213,6 +219,7 @@ class LayoutLMSelfOutput(nn.Module):
 
 
 # Copied from transformers.models.align.modeling_align.AlignTextAttention with AlignText->LayoutLM
+# LayoutLMAttention：LayoutLM 自注意力子层封装
 class LayoutLMAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -236,6 +243,7 @@ class LayoutLMAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertIntermediate
+# LayoutLMIntermediate：LayoutLM 前馈中间层（GELU 激活）
 class LayoutLMIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -252,6 +260,7 @@ class LayoutLMIntermediate(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOutput with Bert->LayoutLM
+# LayoutLMOutput：LayoutLM 前馈输出投影 + 残差 + LayerNorm
 class LayoutLMOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -267,6 +276,7 @@ class LayoutLMOutput(nn.Module):
 
 
 # Copied from transformers.models.align.modeling_align.AlignTextLayer with AlignText->LayoutLM
+# LayoutLMLayer：LayoutLM Transformer 编码器单层
 class LayoutLMLayer(GradientCheckpointingLayer):
     def __init__(self, config):
         super().__init__()
@@ -301,6 +311,7 @@ class LayoutLMLayer(GradientCheckpointingLayer):
 
 
 # Copied from transformers.models.align.modeling_align.AlignTextEncoder with AlignText->LayoutLM
+# LayoutLMEncoder：LayoutLM 多层 Transformer 编码器堆叠
 class LayoutLMEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -327,6 +338,7 @@ class LayoutLMEncoder(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPooler
+# LayoutLMPooler：LayoutLM [CLS] 池化层
 class LayoutLMPooler(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -343,6 +355,7 @@ class LayoutLMPooler(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPredictionHeadTransform with Bert->LayoutLM
+# LayoutLMPredictionHeadTransform：LayoutLM MLM 头变换层
 class LayoutLMPredictionHeadTransform(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -361,6 +374,7 @@ class LayoutLMPredictionHeadTransform(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertLMPredictionHead with Bert->LayoutLM
+# LayoutLMLMPredictionHead：LayoutLM 掩码语言建模预测头
 class LayoutLMLMPredictionHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -378,6 +392,7 @@ class LayoutLMLMPredictionHead(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOnlyMLMHead with Bert->LayoutLM
+# LayoutLMOnlyMLMHead：LayoutLM 仅 MLM 头封装
 class LayoutLMOnlyMLMHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -389,6 +404,7 @@ class LayoutLMOnlyMLMHead(nn.Module):
 
 
 @auto_docstring
+# LayoutLMPreTrainedModel：LayoutLM 预训练基类与权重初始化
 class LayoutLMPreTrainedModel(PreTrainedModel):
     config: LayoutLMConfig
     base_model_prefix = "layoutlm"
@@ -409,6 +425,7 @@ class LayoutLMPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# LayoutLMModel：LayoutLM 文档布局 BERT 编码器主干
 class LayoutLMModel(LayoutLMPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -525,6 +542,7 @@ class LayoutLMModel(LayoutLMPreTrainedModel):
 
 
 @auto_docstring
+# LayoutLMForMaskedLM：LayoutLM 掩码语言建模
 class LayoutLMForMaskedLM(LayoutLMPreTrainedModel):
     _tied_weights_keys = {
         "cls.predictions.decoder.bias": "cls.predictions.bias",
@@ -646,6 +664,7 @@ class LayoutLMForMaskedLM(LayoutLMPreTrainedModel):
     document image classification tasks such as the [RVL-CDIP](https://www.cs.cmu.edu/~aharley/rvl-cdip/) dataset.
     """
 )
+# LayoutLMForSequenceClassification：LayoutLM 序列分类
 class LayoutLMForSequenceClassification(LayoutLMPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -774,6 +793,7 @@ class LayoutLMForSequenceClassification(LayoutLMPreTrainedModel):
     dataset and the [SROIE](https://rrc.cvc.uab.es/?ch=13) dataset.
     """
 )
+# LayoutLMForTokenClassification：LayoutLM 词元分类
 class LayoutLMForTokenClassification(LayoutLMPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -876,6 +896,7 @@ class LayoutLMForTokenClassification(LayoutLMPreTrainedModel):
 
 
 @auto_docstring
+# LayoutLMForQuestionAnswering：LayoutLM 抽取式问答
 class LayoutLMForQuestionAnswering(LayoutLMPreTrainedModel):
     def __init__(self, config, has_visual_segment_embedding=True):
         r"""

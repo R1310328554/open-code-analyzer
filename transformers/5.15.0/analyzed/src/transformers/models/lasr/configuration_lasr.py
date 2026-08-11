@@ -24,8 +24,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# LASR 配置：google/medasr Conformer 编码器 + CTC 语音识别超参（由 modular 自动生成）
+
+# LasrEncoderConfig：google/medasr Conformer 编码器默认超参
 @auto_docstring(checkpoint="google/medasr")
 @strict
+# LasrEncoderConfig：google/medasr Conformer 编码器超参（RoPE + 子采样卷积）
 class LasrEncoderConfig(PreTrainedConfig):
     r"""
     convolution_bias (`bool`, *optional*, defaults to `False`):
@@ -98,8 +102,10 @@ class LasrEncoderConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# LasrCTCConfig：google/medasr CTC 语音识别默认超参
 @auto_docstring(checkpoint="google/medasr")
 @strict
+# LasrCTCConfig：google/medasr CTC 语音识别顶层超参
 class LasrCTCConfig(PreTrainedConfig):
     r"""
     ctc_loss_reduction (`str`, *optional*, defaults to `"mean"`):

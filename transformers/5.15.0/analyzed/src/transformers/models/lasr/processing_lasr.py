@@ -28,6 +28,9 @@ from ...utils import auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# LASR Processor：mel 特征提取与 Unigram 分词器联合语音输入组装
+
+# LasrProcessorKwargs：LasrProcessor 可选参数字典类型
 class LasrProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "audio_kwargs": {
@@ -45,6 +48,7 @@ class LasrProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# LasrProcessor：封装 mel 特征提取与分词器的语音+文本输入管线
 class LasrProcessor(ProcessorMixin):
     valid_processor_kwargs = LasrProcessorKwargs
 

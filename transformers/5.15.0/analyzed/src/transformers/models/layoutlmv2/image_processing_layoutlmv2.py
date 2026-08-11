@@ -39,6 +39,9 @@ from torchvision.transforms.v2 import functional as tvF
 logger = logging.get_logger(__name__)
 
 
+# LayoutLMv2 图像预处理：Torchvision resize + Tesseract OCR 词与 bbox 提取
+
+# normalize_box：将像素 bbox 归一化到 0–1000 坐标系
 def normalize_box(box, width, height):
     return [
         int(1000 * (box[0] / width)),
@@ -48,6 +51,7 @@ def normalize_box(box, width, height):
     ]
 
 
+# apply_tesseract：对文档图像运行 Tesseract OCR 并返回词与 bbox
 def apply_tesseract(
     image: "np.ndarray | torch.Tensor",
     lang: str | None,
@@ -95,6 +99,7 @@ def apply_tesseract(
     return words, normalized_boxes
 
 
+# LayoutLMv2ImageProcessorKwargs：LayoutLMv2 图像处理器可选参数字典类型
 class LayoutLMv2ImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     apply_ocr (`bool`, *optional*, defaults to `self.apply_ocr`):
@@ -115,6 +120,7 @@ class LayoutLMv2ImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# LayoutLMv2ImageProcessor：LayoutLMv2 Torchvision 图像 resize + OCR 预处理
 class LayoutLMv2ImageProcessor(TorchvisionBackend):
     valid_kwargs = LayoutLMv2ImageProcessorKwargs
     resample = PILImageResampling.BILINEAR

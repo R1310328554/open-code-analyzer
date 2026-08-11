@@ -19,13 +19,17 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring, is_detectron2_available
 
 
+# LayoutLMv2 配置：microsoft/layoutlmv2-base-uncased 视觉+文本多模态文档理解超参
+
 # soft dependency
 if is_detectron2_available():
     import detectron2
 
 
+# LayoutLMv2Config：microsoft/layoutlmv2-base-uncased 多模态文档理解默认超参
 @auto_docstring(checkpoint="microsoft/layoutlmv2-base-uncased")
 @strict
+# LayoutLMv2Config：microsoft/layoutlmv2-base-uncased 多模态文档理解超参
 class LayoutLMv2Config(PreTrainedConfig):
     r"""
     max_2d_position_embeddings (`int`, *optional*, defaults to 1024):

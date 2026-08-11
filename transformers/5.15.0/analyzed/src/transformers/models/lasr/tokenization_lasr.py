@@ -30,6 +30,9 @@ from ...tokenization_utils_tokenizers import TokenizersBackend
 VOCAB_FILES_NAMES = {"vocab_file": "spiece.model", "tokenizer_file": "tokenizer.json"}
 
 
+# LASR 分词器：Unigram/SentencePiece 后端（由 modular_lasr.py 自动生成）
+
+# LasrTokenizer：LASR Unigram/SentencePiece 分词器（T5 风格 extra_id）
 class LasrTokenizer(TokenizersBackend):
     """
     Construct a LASR tokenizer (backed by HuggingFace's *tokenizers* library). Based on

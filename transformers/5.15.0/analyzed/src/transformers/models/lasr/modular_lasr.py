@@ -45,6 +45,9 @@ from ..t5.tokenization_t5 import T5Tokenizer
 logger = logging.get_logger(__name__)
 
 
+# LASR modular 源：复用 Parakeet/Llama/T5 组件构建 Conformer CTC 语音识别
+
+# LasrTokenizer：LASR Unigram/SentencePiece 分词器（T5 风格 extra_id）
 class LasrTokenizer(T5Tokenizer, TokenizersBackend):
     def __init__(
         self,
@@ -148,6 +151,7 @@ class LasrTokenizer(T5Tokenizer, TokenizersBackend):
         )
 
 
+# LasrProcessorKwargs：LasrProcessor 可选参数字典类型
 class LasrProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "audio_kwargs": {
@@ -165,6 +169,7 @@ class LasrProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# LasrProcessor：LASR 特征提取器与分词器联合语音+文本输入管线
 class LasrProcessor(ProcessorMixin):
     valid_processor_kwargs = LasrProcessorKwargs
 
@@ -213,8 +218,10 @@ class LasrProcessor(ProcessorMixin):
         return feature_extractor_input_names + ["labels"]
 
 
+# LasrEncoderConfig：google/medasr Conformer 编码器默认超参
 @auto_docstring(checkpoint="google/medasr")
 @strict
+# LasrEncoderConfig：google/medasr Conformer 编码器超参（RoPE + 子采样卷积）
 class LasrEncoderConfig(ParakeetEncoderConfig):
     r"""
     convolution_bias (`bool`, *optional*, defaults to `False`):
@@ -273,8 +280,10 @@ class LasrEncoderConfig(ParakeetEncoderConfig):
     scale_input = AttributeError()
 
 
+# LasrCTCConfig：google/medasr CTC 语音识别默认超参
 @auto_docstring(checkpoint="google/medasr")
 @strict
+# LasrCTCConfig：google/medasr CTC 语音识别顶层超参
 class LasrCTCConfig(ParakeetCTCConfig):
     r"""
     ctc_loss_reduction (`str`, *optional*, defaults to `"mean"`):
@@ -307,6 +316,7 @@ class LasrCTCConfig(ParakeetCTCConfig):
         return self.encoder_config.subsampling_conv_stride**2
 
 
+# LasrEncoderSubsampling：LASR 编码器 mel 线性投影 + 1D 卷积子采样
 class LasrEncoderSubsampling(nn.Module):
     def __init__(self, config: LasrEncoderConfig):
         super().__init__()
@@ -335,9 +345,11 @@ class LasrEncoderSubsampling(nn.Module):
         return self.dense_1(hidden_states)
 
 
+# LasrEncoderRotaryEmbedding：LASR 编码器旋转位置编码（RoPE）
 class LasrEncoderRotaryEmbedding(LlamaRotaryEmbedding): ...
 
 
+# LasrEncoderAttention：LASR Conformer 多头自注意力（RoPE + 双向）
 class LasrEncoderAttention(LlamaAttention):
     def __init__(self, config: LasrEncoderConfig, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -380,6 +392,7 @@ class LasrEncoderAttention(LlamaAttention):
         return attn_output, attn_weights
 
 
+# LasrEncoderConvolutionModule：LASR Conformer 深度可分离卷积模块
 class LasrEncoderConvolutionModule(ParakeetEncoderConvolutionModule):
     def __init__(self, config: LasrEncoderConfig, module_config=None):
         super().__init__(config, module_config)
@@ -387,6 +400,7 @@ class LasrEncoderConvolutionModule(ParakeetEncoderConvolutionModule):
         self.norm = nn.BatchNorm1d(config.hidden_size, momentum=config.batch_norm_momentum)
 
 
+# LasrEncoderBlock：LASR Conformer 编码器单层（注意力 + 卷积 + FFN）
 class LasrEncoderBlock(ParakeetEncoderBlock):
     def __init__(self, config: LasrEncoderConfig, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -436,6 +450,7 @@ class LasrEncoderBlock(ParakeetEncoderBlock):
         return hidden_states
 
 
+# LasrPreTrainedModel：LASR 预训练基类与权重初始化
 class LasrPreTrainedModel(ParakeetPreTrainedModel):
     # padding is incompatible with flex attention as the resulting mask cannot be used to apply padding
     _supports_flex_attn = False
@@ -455,6 +470,7 @@ class LasrPreTrainedModel(ParakeetPreTrainedModel):
         return input_lengths
 
 
+# LasrEncoderModelOutput：LASR 编码器输出 dataclass（含池化特征）
 class LasrEncoderModelOutput(ParakeetEncoderModelOutput):
     pass
 
@@ -464,6 +480,7 @@ class LasrEncoderModelOutput(ParakeetEncoderModelOutput):
     The LasrEncoder model, based on the Conformer architecture](https://arxiv.org/abs/2005.08100).
     """
 )
+# LasrEncoder：LASR Conformer 语音编码器主干
 class LasrEncoder(LasrPreTrainedModel):
     config: LasrEncoderConfig
     base_model_prefix = "encoder"
@@ -563,6 +580,7 @@ class LasrEncoder(LasrPreTrainedModel):
         )
 
 
+# LasrForCTC：LASR CTC 连接时序分类语音识别
 class LasrForCTC(ParakeetForCTC):
     def generate(**super_kwargs):
         r"""

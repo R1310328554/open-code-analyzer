@@ -28,7 +28,10 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# LASR 特征提取：mel 滤波器组 STFT 与 log-mel 特征计算
+
 # TODO: @eustlb, we should be able to remove this and use mel_filter_bank from audio_utils
+# linear_to_mel_weight_matrix：NumPy 版 Kaldi mel 滤波器组权重矩阵
 def linear_to_mel_weight_matrix(
     num_mel_bins: int,
     num_spectrogram_bins: int,
@@ -67,6 +70,7 @@ def linear_to_mel_weight_matrix(
 
 
 @requires(backends=("torch",))
+# LasrFeatureExtractor：LASR 语音 mel 滤波器组特征提取（STFT + log-mel）
 class LasrFeatureExtractor(SequenceFeatureExtractor):
     r"""
     Constructs a LASR feature extractor.

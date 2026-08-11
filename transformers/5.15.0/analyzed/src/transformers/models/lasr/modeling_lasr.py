@@ -38,9 +38,13 @@ from ...utils.deprecation import deprecate_kwarg
 from ...utils.generic import maybe_autocast, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
 from ..auto import AutoModel
+# modeling_lasr 由 modular_lasr.py 自动生成
 from .configuration_lasr import LasrCTCConfig, LasrEncoderConfig
 
 
+# LASR 建模：Conformer 编码器 + CTC 语音识别（由 modular_lasr.py 自动生成）
+
+# LasrEncoderSubsampling：LASR 编码器 mel 线性投影 + 1D 卷积子采样
 class LasrEncoderSubsampling(nn.Module):
     def __init__(self, config: LasrEncoderConfig):
         super().__init__()
@@ -69,6 +73,7 @@ class LasrEncoderSubsampling(nn.Module):
         return self.dense_1(hidden_states)
 
 
+# LasrEncoderRotaryEmbedding：LASR 编码器旋转位置编码（RoPE）
 class LasrEncoderRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: LasrEncoderConfig, device=None):
@@ -128,6 +133,7 @@ class LasrEncoderRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# rotate_half：RoPE 中将向量后半维旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -136,6 +142,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：对 Q/K 应用旋转位置编码（RoPE）
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -161,6 +168,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -173,6 +181,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -199,6 +208,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# LasrEncoderAttention：LASR Conformer 多头自注意力（RoPE + 双向）
 class LasrEncoderAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -262,6 +272,7 @@ class LasrEncoderAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# LasrEncoderConvolutionModule：LASR Conformer 深度可分离卷积模块
 class LasrEncoderConvolutionModule(nn.Module):
     def __init__(self, config: LasrEncoderConfig, module_config=None):
         """
@@ -334,6 +345,7 @@ class LasrEncoderConvolutionModule(nn.Module):
         return hidden_states.transpose(1, 2)
 
 
+# LasrEncoderFeedForward：LASR Conformer 前馈 MLP（SiLU 激活）
 class LasrEncoderFeedForward(nn.Module):
     def __init__(self, config: LasrEncoderConfig):
         super().__init__()
@@ -349,6 +361,7 @@ class LasrEncoderFeedForward(nn.Module):
         return hidden_states
 
 
+# LasrEncoderBlock：LASR Conformer 编码器单层（注意力 + 卷积 + FFN）
 class LasrEncoderBlock(GradientCheckpointingLayer):
     def __init__(self, config: LasrEncoderConfig, layer_idx: int):
         super().__init__()
@@ -405,6 +418,7 @@ class LasrEncoderBlock(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# LasrPreTrainedModel：LASR 预训练基类与权重初始化
 class LasrPreTrainedModel(PreTrainedModel):
     config: LasrCTCConfig
     base_model_prefix = "model"
@@ -457,6 +471,7 @@ class LasrPreTrainedModel(PreTrainedModel):
     """
 )
 @dataclass
+# LasrEncoderModelOutput：LASR 编码器输出 dataclass（含池化特征）
 class LasrEncoderModelOutput(BaseModelOutputWithPooling):
     r"""
     attention_mask (`torch.Tensor` of shape `(batch_size, sequence_length)`, *optional*):
@@ -475,6 +490,7 @@ class LasrEncoderModelOutput(BaseModelOutputWithPooling):
     The LasrEncoder model, based on the Conformer architecture](https://arxiv.org/abs/2005.08100).
     """
 )
+# LasrEncoder：LASR Conformer 语音编码器主干
 class LasrEncoder(LasrPreTrainedModel):
     config: LasrEncoderConfig
     base_model_prefix = "encoder"
@@ -575,6 +591,7 @@ class LasrEncoder(LasrPreTrainedModel):
 
 
 @dataclass
+# LasrCTCGenerateOutput：LASR CTC 生成输出 dataclass
 class LasrCTCGenerateOutput(ModelOutput):
     """
     Outputs of Lasr CTC model generation.
@@ -606,6 +623,7 @@ class LasrCTCGenerateOutput(ModelOutput):
     Lasr Encoder with a Connectionist Temporal Classification (CTC) head.
     """
 )
+# LasrForCTC：LASR CTC 连接时序分类语音识别
 class LasrForCTC(LasrPreTrainedModel, GenerationMixin):
     config: LasrCTCConfig
 

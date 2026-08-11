@@ -38,6 +38,8 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_layoutlmv2 import LayoutLMv2Config
 
 
+# LayoutLMv2 建模：Detectron2 视觉骨干 + 相对位置注意力文档多模态编码器
+
 # soft dependency
 if is_detectron2_available():
     import detectron2
@@ -50,6 +52,7 @@ if is_detectron2_available():
 logger = logging.get_logger(__name__)
 
 
+# LayoutLMv2Embeddings：LayoutLMv2 词/1D 位置/2D 布局/token 类型嵌入
 class LayoutLMv2Embeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
@@ -95,6 +98,7 @@ class LayoutLMv2Embeddings(nn.Module):
         return spatial_position_embeddings
 
 
+# LayoutLMv2SelfAttention：LayoutLMv2 带相对位置偏置的双向自注意力
 class LayoutLMv2SelfAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -178,6 +182,7 @@ class LayoutLMv2SelfAttention(nn.Module):
         return context_layer, attention_probs
 
 
+# LayoutLMv2Attention：LayoutLMv2 自注意力子层封装
 class LayoutLMv2Attention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -204,6 +209,7 @@ class LayoutLMv2Attention(nn.Module):
         return attention_output
 
 
+# LayoutLMv2SelfOutput：LayoutLMv2 自注意力输出投影 + 残差 + LayerNorm
 class LayoutLMv2SelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -219,6 +225,7 @@ class LayoutLMv2SelfOutput(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertIntermediate with Bert->LayoutLMv2
+# LayoutLMv2Intermediate：LayoutLMv2 前馈中间层
 class LayoutLMv2Intermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -235,6 +242,7 @@ class LayoutLMv2Intermediate(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOutput with Bert->LayoutLM
+# LayoutLMv2Output：LayoutLMv2 前馈输出投影 + 残差 + LayerNorm
 class LayoutLMv2Output(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -249,6 +257,7 @@ class LayoutLMv2Output(nn.Module):
         return hidden_states
 
 
+# LayoutLMv2Layer：LayoutLMv2 Transformer 编码器单层
 class LayoutLMv2Layer(GradientCheckpointingLayer):
     def __init__(self, config):
         super().__init__()
@@ -286,6 +295,7 @@ class LayoutLMv2Layer(GradientCheckpointingLayer):
         return layer_output
 
 
+# relative_position_bucket：将相对位置映射到有限桶索引
 def relative_position_bucket(relative_position, bidirectional=True, num_buckets=32, max_distance=128):
     """
     Adapted from Mesh Tensorflow:
@@ -330,6 +340,7 @@ def relative_position_bucket(relative_position, bidirectional=True, num_buckets=
     return ret
 
 
+# LayoutLMv2Encoder：LayoutLMv2 多层 Transformer 编码器堆叠
 class LayoutLMv2Encoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -418,6 +429,7 @@ class LayoutLMv2Encoder(nn.Module):
 
 
 @auto_docstring
+# LayoutLMv2PreTrainedModel：LayoutLMv2 预训练基类与权重初始化
 class LayoutLMv2PreTrainedModel(PreTrainedModel):
     config: LayoutLMv2Config
     base_model_prefix = "layoutlmv2"
@@ -448,6 +460,7 @@ class LayoutLMv2PreTrainedModel(PreTrainedModel):
             init.constant_(module.running_var, 1.0 - module.eps)
 
 
+# my_convert_sync_batchnorm：将 BatchNorm 转为 SyncBatchNorm（Detectron2 兼容）
 def my_convert_sync_batchnorm(module, process_group=None):
     # same as `nn.modules.SyncBatchNorm.convert_sync_batchnorm` but allowing converting from `detectron2.layers.FrozenBatchNorm2d`
     if isinstance(module, torch.nn.modules.batchnorm._BatchNorm):
@@ -472,6 +485,7 @@ def my_convert_sync_batchnorm(module, process_group=None):
     return module_output
 
 
+# LayoutLMv2VisualBackbone：LayoutLMv2 Detectron2 视觉骨干（ResNet + FPN）
 class LayoutLMv2VisualBackbone(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -532,6 +546,7 @@ class LayoutLMv2VisualBackbone(nn.Module):
         self.backbone = my_convert_sync_batchnorm(self.backbone, process_group=sync_bn_groups[node_rank])
 
 
+# LayoutLMv2Pooler：LayoutLMv2 [CLS] 池化层
 class LayoutLMv2Pooler(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -548,6 +563,7 @@ class LayoutLMv2Pooler(nn.Module):
 
 
 @auto_docstring
+# LayoutLMv2Model：LayoutLMv2 视觉+文本多模态文档理解主干
 class LayoutLMv2Model(LayoutLMv2PreTrainedModel):
     _can_record_outputs = {"hidden_states": LayoutLMv2Layer, "attentions": LayoutLMv2SelfAttention}
 
@@ -789,6 +805,7 @@ class LayoutLMv2Model(LayoutLMv2PreTrainedModel):
     [RVL-CDIP](https://www.cs.cmu.edu/~aharley/rvl-cdip/) dataset.
     """
 )
+# LayoutLMv2ForSequenceClassification：LayoutLMv2 序列分类
 class LayoutLMv2ForSequenceClassification(LayoutLMv2PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -987,6 +1004,7 @@ class LayoutLMv2ForSequenceClassification(LayoutLMv2PreTrainedModel):
     [CORD](https://github.com/clovaai/cord) and [Kleister-NDA](https://github.com/applicaai/kleister-nda).
     """
 )
+# LayoutLMv2ForTokenClassification：LayoutLMv2 词元分类
 class LayoutLMv2ForTokenClassification(LayoutLMv2PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1124,6 +1142,7 @@ class LayoutLMv2ForTokenClassification(LayoutLMv2PreTrainedModel):
 
 
 @auto_docstring
+# LayoutLMv2ForQuestionAnswering：LayoutLMv2 抽取式问答
 class LayoutLMv2ForQuestionAnswering(LayoutLMv2PreTrainedModel):
     def __init__(self, config, has_visual_segment_embedding=True):
         r"""
