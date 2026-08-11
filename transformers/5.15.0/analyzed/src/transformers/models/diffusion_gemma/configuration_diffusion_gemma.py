@@ -30,8 +30,10 @@ from ..auto import CONFIG_MAPPING, AutoConfig
 logger = logging.get_logger(__name__)
 
 
+# DiffusionGemma 配置：google/diffusiongemma-26B-A4B-it checkpoint 默认超参
 @auto_docstring(checkpoint="google/diffusiongemma-26B-A4B-it")
 @strict
+# DiffusionGemmaTextConfig：MoE top_k、双向注意力模式与 Gemma4 文本骨干参数
 class DiffusionGemmaTextConfig(PreTrainedConfig):
     r"""
     use_bidirectional_attention (`str`, *optional*):
@@ -151,6 +153,7 @@ class DiffusionGemmaTextConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="google/diffusiongemma-26B-A4B-it")
 @strict
+# DiffusionGemmaConfig：聚合 text_config 与块扩散/自条件生成超参
 class DiffusionGemmaConfig(PreTrainedConfig):
     r"""
     boi_token_id (`int`, *optional*, defaults to 255999):

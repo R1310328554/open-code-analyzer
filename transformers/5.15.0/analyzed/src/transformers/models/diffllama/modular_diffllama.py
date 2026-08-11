@@ -47,18 +47,22 @@ _CHECKPOINT_FOR_DOC = "kajuma/DiffLlama-0.3B-handcut"
 _CONFIG_FOR_DOC = "DiffLlamaConfig"
 
 
+# DiffLlamaMLP：继承 Mistral SwiGLU 前馈
 class DiffLlamaMLP(MistralMLP):
     pass
 
 
+# lambda_init_fn：差分 λ 按层衰减初始化
 def lambda_init_fn(layer_idx):
     return 0.8 - 0.6 * math.exp(-0.3 * layer_idx)
 
 
+# DiffLlamaRotaryEmbedding：继承 Llama RoPE
 class DiffLlamaRotaryEmbedding(LlamaRotaryEmbedding):
     pass
 
 
+# DiffLlamaAttention：在 Llama 注意力上扩展差分 QK 路径与 λ 门控
 class DiffLlamaAttention(LlamaAttention):
     """Multi-headed differential attention (https://huggingface.co/papers/2410.05258).
 
@@ -164,6 +168,7 @@ class DiffLlamaAttention(LlamaAttention):
         return attn_output, attn_weights
 
 
+# DiffLlamaDecoderLayer：替换为差分注意力解码层
 class DiffLlamaDecoderLayer(LlamaDecoderLayer):
     def __init__(self, config: DiffLlamaConfig, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -171,6 +176,7 @@ class DiffLlamaDecoderLayer(LlamaDecoderLayer):
         self.self_attn = DiffLlamaAttention(config=config, layer_idx=layer_idx)
 
 
+# DiffLlamaPreTrainedModel：继承 Llama 预训练基类
 class DiffLlamaPreTrainedModel(LlamaPreTrainedModel):
     @torch.no_grad()
     def _init_weights(self, module):
@@ -182,22 +188,27 @@ class DiffLlamaPreTrainedModel(LlamaPreTrainedModel):
             init.normal_(module.lambda_k2, 0, self.config.lambda_std_dev)
 
 
+# DiffLlamaModel：DiffLlama 骨干 modular 源
 class DiffLlamaModel(LlamaModel):
     pass
 
 
+# DiffLlamaForCausalLM：因果 LM 头 modular 源
 class DiffLlamaForCausalLM(GemmaForCausalLM):
     pass
 
 
+# DiffLlamaForSequenceClassification：序列分类 modular 源
 class DiffLlamaForSequenceClassification(LlamaForSequenceClassification):
     pass
 
 
+# DiffLlamaForQuestionAnswering：问答 modular 源
 class DiffLlamaForQuestionAnswering(LlamaForQuestionAnswering):
     pass
 
 
+# DiffLlamaForTokenClassification：token 分类 modular 源
 class DiffLlamaForTokenClassification(LlamaForTokenClassification):
     pass
 

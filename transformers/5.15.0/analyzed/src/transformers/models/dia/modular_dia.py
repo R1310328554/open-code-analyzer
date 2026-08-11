@@ -49,6 +49,7 @@ logger = logging.get_logger(__name__)
 
 
 @auto_docstring
+# DiaPreTrainedModel：modular 源定义的预训练基类
 class DiaPreTrainedModel(PreTrainedModel):
     config: DiaConfig
     base_model_prefix = "model"
@@ -67,6 +68,7 @@ class DiaPreTrainedModel(PreTrainedModel):
             init.copy_(module.offsets, offsets)
 
 
+# DiaMultiChannelEmbedding：多通道嵌入 modular 源
 class DiaMultiChannelEmbedding(nn.Module):
     """In order to efficiently compute the audio embedding from the 9 different channels,
     we vectorize the embedding process by using a single embedding layer and an offset.
@@ -97,18 +99,22 @@ class DiaMultiChannelEmbedding(nn.Module):
         return embeds.sum(dim=2)
 
 
+# DiaMLP：继承 Phi3 SwiGLU 前馈
 class DiaMLP(Phi3MLP):
     pass
 
 
+# DiaRMSNorm：继承 Llama RMSNorm
 class DiaRMSNorm(LlamaRMSNorm):
     pass
 
 
+# DiaRotaryEmbedding：继承 Llama RoPE
 class DiaRotaryEmbedding(LlamaRotaryEmbedding):
     pass
 
 
+# DiaSelfAttention：继承 Llama 自注意力
 class DiaSelfAttention(LlamaAttention):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -131,6 +137,7 @@ class DiaSelfAttention(LlamaAttention):
         self.o_proj = nn.Linear(self.num_heads * self.head_dim, self.hidden_size, bias=False)
 
 
+# DiaCrossAttention：交叉注意力 modular 源
 class DiaCrossAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -205,6 +212,7 @@ class DiaCrossAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# DiaEncoderLayer：编码层 modular 源
 class DiaEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: DiaEncoderConfig, layer_idx: int):
         super().__init__()
@@ -238,6 +246,7 @@ class DiaEncoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# DiaEncoder：文本/条件编码器
 class DiaEncoder(DiaPreTrainedModel):
     _can_record_outputs = {
         "hidden_states": DiaEncoderLayer,
@@ -294,6 +303,7 @@ class DiaEncoder(DiaPreTrainedModel):
         return BaseModelOutput(last_hidden_state=hidden_states)
 
 
+# DiaDecoderLayer：解码层 modular 源
 class DiaDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: DiaDecoderConfig, layer_idx: int):
         super().__init__()
@@ -351,6 +361,7 @@ class DiaDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# DiaDecoder：多通道音频解码器
 class DiaDecoder(DiaPreTrainedModel):
     """Transformer Decoder Stack using DenseGeneral."""
 
@@ -449,6 +460,7 @@ class DiaDecoder(DiaPreTrainedModel):
     The bare Dia model outputting raw hidden-states without any specific head on top.
     """
 )
+# DiaModel：完整 Dia Encoder-Decoder 模型
 class DiaModel(DiaPreTrainedModel):
     def __init__(self, config: DiaConfig):
         super().__init__(config)
@@ -560,6 +572,7 @@ class DiaModel(DiaPreTrainedModel):
     The Dia model consisting of a (byte) text encoder and audio decoder with a prediction head on top.
     """
 )
+# DiaForConditionalGeneration：条件生成 TTS 任务头
 class DiaForConditionalGeneration(DiaPreTrainedModel, DiaGenerationMixin):
     base_model_prefix = "model"
     output_modalities = ("audio",)

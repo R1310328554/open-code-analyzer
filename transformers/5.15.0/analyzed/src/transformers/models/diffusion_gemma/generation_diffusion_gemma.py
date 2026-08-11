@@ -52,6 +52,7 @@ logger = logging.get_logger(__name__)
 
 
 # TODO(joaogante): block audio and video tokens from gemma4 from being sampled? (some logits processor)
+# DiffusionGemmaGenerationConfig：块大小、扩散步数、温度调度与采样策略参数
 class DiffusionGemmaGenerationConfig(GenerationConfig):
     # no-format
     """
@@ -244,6 +245,7 @@ class DiffusionGemmaGenerationConfig(GenerationConfig):
 
 
 @dataclass
+# DiffusionGemmaGenerationOutput：生成序列、每步 logits 与停止信息
 class DiffusionGemmaGenerationOutput(ModelOutput):
     """
     Output class for DiffusionGemma generation.
@@ -273,6 +275,7 @@ class DiffusionGemmaGenerationOutput(ModelOutput):
     hidden_states: None = None  # Unused for now, kept in the interface for BC with AR generation
 
 
+# LinearTemperatureScheduleLogitsProcessor：线性退火温度 logits 处理器
 class LinearTemperatureScheduleLogitsProcessor(LogitsProcessor):
     r"""
     Logits processor that applies a linear temperature schedule to the logits. This is similar to
@@ -317,6 +320,7 @@ class LinearTemperatureScheduleLogitsProcessor(LogitsProcessor):
 
 
 @dataclass
+# EntropyBoundSamplerConfig：熵上/下界与 top-k/p 采样配置
 class EntropyBoundSamplerConfig:
     """
     Configuration class for the entropy bound sampler.
@@ -340,6 +344,7 @@ class EntropyBoundSamplerConfig:
         return obj_dict
 
 
+# EntropyBoundSampler：约束熵范围的块扩散 token 采样器
 class EntropyBoundSampler:
     r"""
     Sampler class that initializes a canvas with random tokens, accepts tokens based on token-level entropy, and
@@ -469,6 +474,7 @@ class EntropyBoundSampler:
         return renoised_canvas
 
 
+# DiffusionGemmaAdaptiveStopping：自适应停止准则抽象基类
 class DiffusionGemmaAdaptiveStopping(ABC):
     """
     Base class for DiffusionGemma adaptive stopping strategies. It may be stateful or stateless.
@@ -481,6 +487,7 @@ class DiffusionGemmaAdaptiveStopping(ABC):
         pass  # Default no-op for stateless stoppers
 
 
+# StableAndConfidentStoppingCriteria：序列稳定且高置信时提前停止
 class StableAndConfidentStoppingCriteria(DiffusionGemmaAdaptiveStopping):
     """
     Adaptive stopping strategy that stops when the diffusion process is confident and stable. To be more specific:
@@ -540,6 +547,7 @@ class StableAndConfidentStoppingCriteria(DiffusionGemmaAdaptiveStopping):
         self.argmax_canvas_history = None
 
 
+# DiffusionGemmaGenerationMixin：块扩散 generate 主逻辑与迭代 refine
 class DiffusionGemmaGenerationMixin:
     """
     Mixin class for DiffusionGemma generation. Contains all the model-level methods.

@@ -20,6 +20,7 @@ from ...utils import logging
 logger = logging.get_logger(__name__)
 
 
+# DiaTokenizer：256 字节 vocab + [S1]/[S2] 说话人 token，无 BOS/EOS
 class DiaTokenizer(PreTrainedTokenizer):
     """
     Construct a Dia tokenizer. Dia simply uses raw bytes utf-8 encoding except for special tokens `[S1]` and `[S2]`.
@@ -68,14 +69,17 @@ class DiaTokenizer(PreTrainedTokenizer):
         )
 
     @property
+# vocab_size：UTF-8 字节词表大小（256）
     def vocab_size(self):
         return self._utf_vocab_size
 
+# get_vocab：合并字节 vocab 与 added_tokens
     def get_vocab(self):
         vocab = {self.convert_ids_to_tokens(i): i for i in range(self.vocab_size + self.offset)}
         vocab.update(self.added_tokens_encoder)
         return vocab
 
+# _tokenize：将文本按 UTF-8 字节切分为 token 列表
     def _tokenize(self, text: str) -> list[str]:
         """Take as input a string and return a list of strings (tokens) for words/sub-words"""
         tokens = [chr(i) for i in text.encode("utf-8")]

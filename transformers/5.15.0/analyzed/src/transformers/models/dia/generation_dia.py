@@ -37,10 +37,12 @@ from ...utils import logging
 logger = logging.get_logger(__name__)
 
 
+# DiaGenerationMixin：TTS 多通道解码，集成 CFG/EOS delay 与 delay mask 主循环
 class DiaGenerationMixin(GenerationMixin):
     # Indicates CFG which needs preparation to be properly handled by repeats
     _uses_cfg = None
 
+# _get_logits_processor：组装温度/EOS 通道过滤/CFG 等 Dia 专用 logits 处理器
     def _get_logits_processor(
         self,
         generation_config: GenerationConfig,
@@ -108,6 +110,7 @@ class DiaGenerationMixin(GenerationMixin):
 
         return merged_processors
 
+# _prepare_generation_config：合并默认生成配置与 delay_pattern 相关参数
     def _prepare_generation_config(
         self, generation_config: GenerationConfig | None, **kwargs: Any
     ) -> tuple[GenerationConfig, dict]:
@@ -127,6 +130,7 @@ class DiaGenerationMixin(GenerationMixin):
 
         return generation_config, model_kwargs
 
+# _prepare_model_inputs：构造 encoder/decoder 输入与 cross-attention mask
     def _prepare_model_inputs(
         self,
         inputs: torch.Tensor | None = None,
@@ -149,6 +153,7 @@ class DiaGenerationMixin(GenerationMixin):
 
         return inputs, input_name, model_kwargs
 
+# _prepare_decoder_input_ids_for_generation：按 delay_pattern 初始化多通道 decoder 输入
     def _prepare_decoder_input_ids_for_generation(
         self,
         batch_size: int,
@@ -200,6 +205,7 @@ class DiaGenerationMixin(GenerationMixin):
 
         return decoder_input_ids, model_kwargs
 
+# prepare_inputs_for_generation：逐步生成时更新 past KV 与 decoder 状态
     def prepare_inputs_for_generation(
         self,
         input_ids,
@@ -239,6 +245,7 @@ class DiaGenerationMixin(GenerationMixin):
         return model_inputs
 
     @staticmethod
+# apply_delay_mask：对多通道 token 应用 delay pattern 掩码，屏蔽未激活帧
     def apply_delay_mask(input_ids: torch.Tensor, pad_id: int, delay_mask: torch.Tensor | None) -> torch.Tensor:
         if delay_mask is None:
             return input_ids
@@ -252,6 +259,7 @@ class DiaGenerationMixin(GenerationMixin):
 
         return input_ids
 
+# _main_generate_loop：逐帧采样各码本通道并应用 delay/EOS 规则
     def _main_generate_loop(
         self,
         inputs: torch.Tensor | None = None,
@@ -404,6 +412,7 @@ class DiaGenerationMixin(GenerationMixin):
         )
 
     @torch.no_grad()
+# generate：Dia TTS 生成入口，支持 classifier-free guidance 与流式输出
     def generate(
         self,
         inputs: torch.Tensor | None = None,

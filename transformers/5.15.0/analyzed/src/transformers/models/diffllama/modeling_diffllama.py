@@ -49,6 +49,7 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_diffllama import DiffLlamaConfig
 
 
+# DiffLlamaMLP：SwiGLU 前馈 MLP
 class DiffLlamaMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -65,6 +66,7 @@ class DiffLlamaMLP(nn.Module):
         return down_proj
 
 
+# DiffLlamaRotaryEmbedding：RoPE 旋转位置嵌入
 class DiffLlamaRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: DiffLlamaConfig, device=None):
@@ -122,6 +124,7 @@ class DiffLlamaRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# rotate_half：RoPE 向量旋转辅助函数
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -130,6 +133,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：对 Q/K 施加 RoPE
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -155,6 +159,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA KV 头重复
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -167,6 +172,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：标准缩放点积注意力
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -192,11 +198,13 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# lambda_init_fn：按层索引计算差分注意力 λ 初始值
 def lambda_init_fn(layer_idx):
     return 0.8 - 0.6 * math.exp(-0.3 * layer_idx)
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# DiffLlamaAttention：差分注意力，λ 门控标准与差分 QK 路径
 class DiffLlamaAttention(nn.Module):
     """Multi-headed differential attention (https://huggingface.co/papers/2410.05258).
 
@@ -323,6 +331,7 @@ class DiffLlamaAttention(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# DiffLlamaRMSNorm：RMS 归一化层
 class DiffLlamaRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -343,6 +352,7 @@ class DiffLlamaRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# DiffLlamaDecoderLayer：Pre-RMSNorm 差分注意力 + MLP 残差块
 class DiffLlamaDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: DiffLlamaConfig, layer_idx: int):
         super().__init__()
@@ -387,6 +397,7 @@ class DiffLlamaDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# DiffLlamaPreTrainedModel：权重初始化与 Flash/SDPA 支持
 class DiffLlamaPreTrainedModel(PreTrainedModel):
     config: DiffLlamaConfig
     base_model_prefix = "model"
@@ -415,6 +426,7 @@ class DiffLlamaPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# DiffLlamaModel：词嵌入 + 堆叠解码层 + 最终 RMSNorm
 class DiffLlamaModel(DiffLlamaPreTrainedModel):
     def __init__(self, config: DiffLlamaConfig):
         super().__init__(config)
@@ -489,6 +501,7 @@ class DiffLlamaModel(DiffLlamaPreTrainedModel):
 
 
 @auto_docstring
+# DiffLlamaForCausalLM：因果 LM 头，支持 generate 与 KV 缓存
 class DiffLlamaForCausalLM(DiffLlamaPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
@@ -563,14 +576,17 @@ class DiffLlamaForCausalLM(DiffLlamaPreTrainedModel, GenerationMixin):
         )
 
 
+# DiffLlamaForSequenceClassification：序列分类任务头
 class DiffLlamaForSequenceClassification(GenericForSequenceClassification, DiffLlamaPreTrainedModel):
     pass
 
 
+# DiffLlamaForQuestionAnswering：抽取式问答任务头
 class DiffLlamaForQuestionAnswering(GenericForQuestionAnswering, DiffLlamaPreTrainedModel):
     base_model_prefix = "transformer"  # For BC, where `transformer` was used instead of `model`
 
 
+# DiffLlamaForTokenClassification：token 级分类任务头
 class DiffLlamaForTokenClassification(GenericForTokenClassification, DiffLlamaPreTrainedModel):
     pass
 

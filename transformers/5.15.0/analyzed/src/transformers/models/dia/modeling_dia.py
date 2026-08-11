@@ -51,6 +51,7 @@ logger = logging.get_logger(__name__)
 
 
 @auto_docstring
+# DiaPreTrainedModel：Dia 预训练基类，支持 Flash/SDPA/Flex 注意力
 class DiaPreTrainedModel(PreTrainedModel):
     config: DiaConfig
     base_model_prefix = "model"
@@ -69,6 +70,7 @@ class DiaPreTrainedModel(PreTrainedModel):
             init.copy_(module.offsets, offsets)
 
 
+# DiaMultiChannelEmbedding：9 通道独立词嵌入 + 共享位置编码
 class DiaMultiChannelEmbedding(nn.Module):
     """In order to efficiently compute the audio embedding from the 9 different channels,
     we vectorize the embedding process by using a single embedding layer and an offset.
@@ -99,6 +101,7 @@ class DiaMultiChannelEmbedding(nn.Module):
         return embeds.sum(dim=2)
 
 
+# DiaMLP：SwiGLU 前馈 MLP（gate/up/down 三线性）
 class DiaMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -118,6 +121,7 @@ class DiaMLP(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# DiaRMSNorm：RMS 归一化，可接入 hub RMSNorm 内核
 class DiaRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -138,6 +142,7 @@ class DiaRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# DiaRotaryEmbedding：RoPE 旋转位置嵌入，支持 dynamic_rope_update
 class DiaRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: DiaConfig, device=None):
@@ -195,6 +200,7 @@ class DiaRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# rotate_half：RoPE 中将向量后半维取负并与前半维交换
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -203,6 +209,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：对 Q/K 施加 cos/sin 旋转位置编码
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -228,6 +235,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 中将 KV 头重复至 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -240,6 +248,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：缩放点积注意力 eager 实现
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -266,6 +275,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# DiaSelfAttention：多头自注意力，支持 RoPE 与多种 attention 后端
 class DiaSelfAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -328,6 +338,7 @@ class DiaSelfAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# DiaCrossAttention：decoder 对 encoder 输出的交叉注意力
 class DiaCrossAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -402,6 +413,7 @@ class DiaCrossAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# DiaEncoderLayer：Pre-RMSNorm 自注意力 + MLP 编码层
 class DiaEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: DiaEncoderConfig, layer_idx: int):
         super().__init__()
@@ -435,6 +447,7 @@ class DiaEncoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# DiaEncoder：堆叠编码层，处理文本/条件输入
 class DiaEncoder(DiaPreTrainedModel):
     _can_record_outputs = {
         "hidden_states": DiaEncoderLayer,
@@ -491,6 +504,7 @@ class DiaEncoder(DiaPreTrainedModel):
         return BaseModelOutput(last_hidden_state=hidden_states)
 
 
+# DiaDecoderLayer：自注意力 + 交叉注意力 + MLP 解码层
 class DiaDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: DiaDecoderConfig, layer_idx: int):
         super().__init__()
@@ -548,6 +562,7 @@ class DiaDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# DiaDecoder：多通道音频 token 自回归解码器
 class DiaDecoder(DiaPreTrainedModel):
     """Transformer Decoder Stack using DenseGeneral."""
 
@@ -646,6 +661,7 @@ class DiaDecoder(DiaPreTrainedModel):
     The bare Dia model outputting raw hidden-states without any specific head on top.
     """
 )
+# DiaModel：Encoder-Decoder 骨干，输出 cross-attention 隐状态
 class DiaModel(DiaPreTrainedModel):
     def __init__(self, config: DiaConfig):
         super().__init__(config)
@@ -757,6 +773,7 @@ class DiaModel(DiaPreTrainedModel):
     The Dia model consisting of a (byte) text encoder and audio decoder with a prediction head on top.
     """
 )
+# DiaForConditionalGeneration：条件 TTS 头，文本→多通道音频码本
 class DiaForConditionalGeneration(DiaPreTrainedModel, DiaGenerationMixin):
     base_model_prefix = "model"
     output_modalities = ("audio",)

@@ -29,6 +29,7 @@ if is_soundfile_available():
     import soundfile as sf
 
 
+# DiaAudioKwargs：BOS/EOS/PAD、delay_pattern 与 generation 模式参数
 class DiaAudioKwargs(AudioKwargs, total=False):
     """
     bos_token_id (`int`, *optional*, defaults to `1026`):
@@ -57,6 +58,7 @@ class DiaAudioKwargs(AudioKwargs, total=False):
     generation: bool
 
 
+# DiaProcessorKwargs：text/audio/common 三类 kwargs 默认值
 class DiaProcessorKwargs(ProcessingKwargs, total=False):
     audio_kwargs: DiaAudioKwargs
     _defaults = {
@@ -81,6 +83,7 @@ class DiaProcessorKwargs(ProcessingKwargs, total=False):
 
 @requires(backends=("torch",))
 @auto_docstring
+# DiaProcessor：整合 feature_extractor、tokenizer 与 DacModel 音频编解码
 class DiaProcessor(ProcessorMixin):
     audio_tokenizer_class = "DacModel"
     valid_processor_kwargs = DiaProcessorKwargs
@@ -92,6 +95,7 @@ class DiaProcessor(ProcessorMixin):
         """
         super().__init__(feature_extractor, tokenizer, audio_tokenizer=audio_tokenizer)
 
+# _process_audio：特征提取 → DAC 码本编码 → delay pattern 对齐
     def _process_audio(self, audio, **kwargs):
         """Full audio processing: feature extraction → DAC codebook encoding → delay pattern."""
         # Pop unused kwargs by feature_extractor
@@ -142,6 +146,7 @@ class DiaProcessor(ProcessorMixin):
         return {"decoder_input_ids": decoder_input_ids, "decoder_attention_mask": decoder_attention_mask}, []
 
     @auto_docstring
+# __call__：批量处理 text/audio，返回 model 输入张量
     def __call__(
         self,
         text: str | list[str],
@@ -233,6 +238,7 @@ class DiaProcessor(ProcessorMixin):
 
         return model_inputs
 
+# validate_inputs：校验 text/audio 输入格式与长度约束
     def validate_inputs(
         self,
         text: str | list[str],
@@ -244,6 +250,7 @@ class DiaProcessor(ProcessorMixin):
         if text is None:
             raise ValueError("You need to specify the `text` input to process.")
 
+# batch_decode：批量将码本 token 解码为波形
     def batch_decode(
         self,
         decoder_input_ids: "torch.Tensor",
@@ -315,6 +322,7 @@ class DiaProcessor(ProcessorMixin):
 
         return audios
 
+# decode：单条码本序列 → DAC 解码 → 音频数组
     def decode(
         self,
         decoder_input_ids: "torch.Tensor",
@@ -332,6 +340,7 @@ class DiaProcessor(ProcessorMixin):
 
         return self.batch_decode(decoder_input_ids, audio_prompt_len, **kwargs)[0]
 
+# get_audio_prompt_len：计算音频 prompt 在 delay pattern 下的有效长度
     def get_audio_prompt_len(
         self,
         decoder_attention_mask: "torch.Tensor",
@@ -353,6 +362,7 @@ class DiaProcessor(ProcessorMixin):
         return decoder_attention_mask.shape[1] - max(delay_pattern)
 
     # Copied from transformers.models.csm.processing_csm.CsmProcessor.save_audio with Csm->Dia
+# save_audio：解码并保存为 WAV 文件
     def save_audio(
         self,
         audio: AudioInput,
@@ -387,6 +397,7 @@ class DiaProcessor(ProcessorMixin):
             sf.write(p, audio_value, sampling_rate)
 
     @staticmethod
+# build_indices：构造 delay pattern 下的多通道索引矩阵
     def build_indices(
         bsz: int,
         seq_len: int,
@@ -422,6 +433,7 @@ class DiaProcessor(ProcessorMixin):
         return sequence_idx, all_idx
 
     @staticmethod
+# apply_audio_delay：对码本序列应用通道间帧延迟
     def apply_audio_delay(
         audio: "torch.Tensor",
         pad_token_id: int,

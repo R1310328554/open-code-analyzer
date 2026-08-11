@@ -77,6 +77,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="google/diffusiongemma-26B-A4B-it")
 @strict
+# DiffusionGemmaTextConfig：扩展 Gemma4 文本配置，增加双向注意力与 MoE 参数
 class DiffusionGemmaTextConfig(Gemma4TextConfig):
     r"""
     use_bidirectional_attention (`str`, *optional*):
@@ -108,6 +109,7 @@ class DiffusionGemmaTextConfig(Gemma4TextConfig):
 
 @auto_docstring(checkpoint="google/diffusiongemma-26B-A4B-it")
 @strict
+# DiffusionGemmaConfig：聚合 text/vision 子配置与块扩散超参
 class DiffusionGemmaConfig(Gemma4Config):
     r"""
     boi_token_id (`int`, *optional*, defaults to 255999):
@@ -183,6 +185,7 @@ class DiffusionGemmaConfig(Gemma4Config):
 
 
 # Add support for `partial_rotary_factor` in full attention layers
+# DiffusionGemmaTextRotaryEmbedding：继承 Gemma4 RoPE
 class DiffusionGemmaTextRotaryEmbedding(Gemma4TextRotaryEmbedding):
     @staticmethod
     def compute_default_rope_parameters(
@@ -213,10 +216,12 @@ class DiffusionGemmaTextRotaryEmbedding(Gemma4TextRotaryEmbedding):
         return inv_freq.to(device), attention_factor
 
 
+# DiffusionGemmaRMSNorm：继承 Gemma4 RMSNorm
 class DiffusionGemmaRMSNorm(Gemma4RMSNorm):
     pass
 
 
+# DiffusionGemmaClippableLinear：继承 Gemma4 可裁剪线性层
 class DiffusionGemmaClippableLinear(Gemma4ClippableLinear):
     def __init__(
         self,
@@ -227,6 +232,7 @@ class DiffusionGemmaClippableLinear(Gemma4ClippableLinear):
         super().__init__(config, in_features, out_features)
 
 
+# DiffusionGemmaEncoderTextAttention：encoder 注意力 modular 源
 class DiffusionGemmaEncoderTextAttention(nn.Module):
     """Attention layer for the diffusion model.
 
@@ -324,6 +330,7 @@ class DiffusionGemmaEncoderTextAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# DiffusionGemmaDecoderTextAttention：decoder 注意力 modular 源
 class DiffusionGemmaDecoderTextAttention(nn.Module):
     """Attention layer for the diffusion model.
 
@@ -455,6 +462,7 @@ class DiffusionGemmaDecoderTextAttention(nn.Module):
         return keys, values
 
 
+# DiffusionGemmaText4MLP：继承 Gemma4 前馈 MLP
 class DiffusionGemmaText4MLP(Gemma4TextMLP):
     def __init__(self, config: DiffusionGemmaTextConfig, layer_idx: int):
         nn.Module.__init__()
@@ -467,14 +475,17 @@ class DiffusionGemmaText4MLP(Gemma4TextMLP):
         self.act_fn = ACT2FN[config.hidden_activation]
 
 
+# DiffusionGemmaTextRouter：MoE 路由 modular 源
 class DiffusionGemmaTextRouter(Gemma4TextRouter):
     pass
 
 
+# DiffusionGemmaTextExperts：MoE 专家 modular 源
 class DiffusionGemmaTextExperts(Gemma4TextExperts):
     pass
 
 
+# DiffusionGemmaEncoderTextLayer：encoder 层 modular 源
 class DiffusionGemmaEncoderTextLayer(nn.Module):
     """Encoder layer for the diffusion encoder.
 
@@ -551,6 +562,7 @@ class DiffusionGemmaEncoderTextLayer(nn.Module):
         return hidden_states
 
 
+# DiffusionGemmaDecoderTextLayer：继承 Gemma4 decoder 层
 class DiffusionGemmaDecoderTextLayer(Gemma4TextDecoderLayer):
     """Decoder layer for the diffusion decoder.
 
@@ -629,10 +641,12 @@ class DiffusionGemmaDecoderTextLayer(Gemma4TextDecoderLayer):
         return hidden_states
 
 
+# DiffusionGemmaTextScaledWordEmbedding：缩放词嵌入
 class DiffusionGemmaTextScaledWordEmbedding(Gemma4TextScaledWordEmbedding):
     pass
 
 
+# DiffusionGemmaMultimodalEmbedder：多模态嵌入 modular 源
 class DiffusionGemmaMultimodalEmbedder(Gemma4MultimodalEmbedder):
     def __init__(
         self,
@@ -642,6 +656,7 @@ class DiffusionGemmaMultimodalEmbedder(Gemma4MultimodalEmbedder):
         super().__init__(multimodal_config, text_config)
 
 
+# DiffusionGemmaSelfConditioning：块扩散自条件 modular 源
 class DiffusionGemmaSelfConditioning(nn.Module):
     """
     Self-conditioning module using a feed-forward block.
@@ -678,6 +693,7 @@ class DiffusionGemmaSelfConditioning(nn.Module):
         return self.post_norm(combined)
 
 
+# DiffusionGemmaPreTrainedModel：继承 T5Gemma2 预训练基类
 class DiffusionGemmaPreTrainedModel(T5Gemma2PreTrainedModel):
     _no_split_modules = [
         "DiffusionGemmaDecoderTextLayer",
@@ -737,6 +753,7 @@ class DiffusionGemmaPreTrainedModel(T5Gemma2PreTrainedModel):
         raise NotImplementedError("Diffusion Gemma doesn't uses noise-init canvas as decoder inputs")
 
 
+# DiffusionGemmaEncoderTextModel：文本 encoder modular 源
 class DiffusionGemmaEncoderTextModel(DiffusionGemmaPreTrainedModel):
     config: DiffusionGemmaTextConfig
     input_modalities = ("text",)
@@ -839,6 +856,7 @@ class DiffusionGemmaEncoderTextModel(DiffusionGemmaPreTrainedModel):
     assumes the MoE code path in the inner layers.
     """
 )
+# DiffusionGemmaEncoderModel：多模态 encoder
 class DiffusionGemmaEncoderModel(DiffusionGemmaPreTrainedModel, Gemma4Model):
     _can_record_outputs = {
         "router_logits": OutputRecorder(DiffusionGemmaTextRouter, index=0),
@@ -1020,6 +1038,7 @@ class DiffusionGemmaEncoderModel(DiffusionGemmaPreTrainedModel, Gemma4Model):
         return create_masks_for_generate(**mask_kwargs)
 
 
+# DiffusionGemmaDecoderModel：decoder modular 源
 class DiffusionGemmaDecoderModel(DiffusionGemmaPreTrainedModel):
     """
     Decoder model for DiffusionGemma.
@@ -1270,6 +1289,7 @@ class DiffusionGemmaDecoderModel(DiffusionGemmaPreTrainedModel):
 
 @auto_docstring
 @dataclass
+# DiffusionGemmaModelOutputWithPast：带 KV 缓存输出 dataclass
 class DiffusionGemmaModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     encoder_last_hidden_state (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`, *optional*):
@@ -1282,6 +1302,7 @@ class DiffusionGemmaModelOutputWithPast(BaseModelOutputWithPast):
 
 @auto_docstring
 @dataclass
+# DiffusionGemmaBlockDiffusionOutputWithPast：块扩散 LM 输出
 class DiffusionGemmaBlockDiffusionOutputWithPast(CausalLMOutputWithPast):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*):
@@ -1296,6 +1317,7 @@ class DiffusionGemmaBlockDiffusionOutputWithPast(CausalLMOutputWithPast):
     encoder_last_hidden_state: torch.FloatTensor | None = None
 
 
+# DiffusionGemmaModel：完整 Encoder-Decoder 模型
 class DiffusionGemmaModel(DiffusionGemmaPreTrainedModel, T5Gemma2Model):
     """
     DiffusionGemma model consisting of an auto-regressive encoder (DiffusionGemmaEncoderModel, very similar to a
@@ -1405,6 +1427,7 @@ class DiffusionGemmaModel(DiffusionGemmaPreTrainedModel, T5Gemma2Model):
         )
 
 
+# DiffusionGemmaForBlockDiffusion：块扩散生成任务头
 class DiffusionGemmaForBlockDiffusion(DiffusionGemmaPreTrainedModel, DiffusionGemmaGenerationMixin):
     """
     DiffusionGemma model for block diffusion. It calls `DiffusionGemmaModel` to obtains the hidden states for

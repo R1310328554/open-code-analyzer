@@ -61,6 +61,7 @@ from .configuration_diffusion_gemma import DiffusionGemmaConfig, DiffusionGemmaT
 from .generation_diffusion_gemma import DiffusionGemmaGenerationConfig, DiffusionGemmaGenerationMixin
 
 
+# DiffusionGemmaTextRotaryEmbedding：Gemma 风格 RoPE 位置嵌入
 class DiffusionGemmaTextRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: DiffusionGemmaTextConfig, device=None):
@@ -144,6 +145,7 @@ class DiffusionGemmaTextRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# DiffusionGemmaRMSNorm：RMS 归一化
 class DiffusionGemmaRMSNorm(nn.Module):
     def __init__(self, dim: int, eps: float = 1e-6, with_scale: bool = True):
         super().__init__()
@@ -165,6 +167,7 @@ class DiffusionGemmaRMSNorm(nn.Module):
         return normed_output.type_as(hidden_states)
 
 
+# DiffusionGemmaClippableLinear：可裁剪权重的线性层（量化友好）
 class DiffusionGemmaClippableLinear(nn.Module):
     def __init__(
         self,
@@ -194,6 +197,7 @@ class DiffusionGemmaClippableLinear(nn.Module):
         return hidden_states
 
 
+# rotate_half：RoPE 旋转辅助
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -201,6 +205,7 @@ def rotate_half(x):
     return torch.cat((-x2, x1), dim=-1)
 
 
+# apply_rotary_pos_emb：单向量 RoPE 应用
 def apply_rotary_pos_emb(x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor, unsqueeze_dim: int = 1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -223,6 +228,7 @@ def apply_rotary_pos_emb(x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor, 
     return (x * cos) + (rotate_half(x) * sin)
 
 
+# repeat_kv：GQA KV 头重复
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -235,6 +241,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：缩放点积注意力 eager 实现
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -269,6 +276,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# DiffusionGemmaEncoderTextAttention：encoder 双向/因果混合自注意力
 class DiffusionGemmaEncoderTextAttention(nn.Module):
     """Attention layer for the diffusion model.
 
@@ -366,6 +374,7 @@ class DiffusionGemmaEncoderTextAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# DiffusionGemmaDecoderTextAttention：decoder 滑动窗口 + 全局 token 注意力
 class DiffusionGemmaDecoderTextAttention(nn.Module):
     """Attention layer for the diffusion model.
 
@@ -497,6 +506,7 @@ class DiffusionGemmaDecoderTextAttention(nn.Module):
         return keys, values
 
 
+# DiffusionGemmaText4MLP：Gemma4 风格前馈 MLP
 class DiffusionGemmaText4MLP(nn.Module):
     def __init__(self, config: DiffusionGemmaTextConfig, layer_idx: int):
         super().__init__()
@@ -513,6 +523,7 @@ class DiffusionGemmaText4MLP(nn.Module):
         return down_proj
 
 
+# DiffusionGemmaTextRouter：MoE 路由门控，top-k 专家选择
 class DiffusionGemmaTextRouter(nn.Module):
     def __init__(self, config: DiffusionGemmaTextConfig):
         super().__init__()
@@ -551,6 +562,7 @@ class DiffusionGemmaTextRouter(nn.Module):
 
 
 @use_experts_implementation
+# DiffusionGemmaTextExperts：MoE 专家 SwiGLU 权重堆叠
 class DiffusionGemmaTextExperts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
@@ -590,6 +602,7 @@ class DiffusionGemmaTextExperts(nn.Module):
         return final_hidden_states
 
 
+# DiffusionGemmaEncoderTextLayer：encoder 自注意力 + MoE/MLP 层
 class DiffusionGemmaEncoderTextLayer(nn.Module):
     """Encoder layer for the diffusion encoder.
 
@@ -666,6 +679,7 @@ class DiffusionGemmaEncoderTextLayer(nn.Module):
         return hidden_states
 
 
+# DiffusionGemmaDecoderTextLayer：decoder 自注意力 + MoE/MLP 层
 class DiffusionGemmaDecoderTextLayer(GradientCheckpointingLayer):
     """Decoder layer for the diffusion decoder.
 
@@ -744,6 +758,7 @@ class DiffusionGemmaDecoderTextLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# DiffusionGemmaTextScaledWordEmbedding：嵌入乘以 sqrt(hidden_size)
 class DiffusionGemmaTextScaledWordEmbedding(nn.Embedding):
     """
     This module overrides nn.Embeddings' forward by multiplying with embeddings scale.
@@ -758,6 +773,7 @@ class DiffusionGemmaTextScaledWordEmbedding(nn.Embedding):
         return super().forward(input_ids) * self.embed_scale.to(self.weight.dtype)
 
 
+# DiffusionGemmaMultimodalEmbedder：文本/视觉/音频多模态嵌入融合
 class DiffusionGemmaMultimodalEmbedder(nn.Module):
     """Embeds token ids or soft tokens for multimodal content into language model space."""
 
@@ -787,6 +803,7 @@ class DiffusionGemmaMultimodalEmbedder(nn.Module):
         return self.embedding_projection(embs_normed)
 
 
+# DiffusionGemmaSelfConditioning：块扩散自条件，上一步输出作为下一步输入
 class DiffusionGemmaSelfConditioning(nn.Module):
     """
     Self-conditioning module using a feed-forward block.
@@ -824,6 +841,7 @@ class DiffusionGemmaSelfConditioning(nn.Module):
 
 
 @auto_docstring
+# DiffusionGemmaPreTrainedModel：MoE/块扩散权重初始化
 class DiffusionGemmaPreTrainedModel(PreTrainedModel):
     config: DiffusionGemmaConfig
     base_model_prefix = "model"
@@ -888,6 +906,7 @@ class DiffusionGemmaPreTrainedModel(PreTrainedModel):
             init.ones_(module.std_scale)
 
 
+# DiffusionGemmaEncoderTextModel：纯文本 encoder 堆叠
 class DiffusionGemmaEncoderTextModel(DiffusionGemmaPreTrainedModel):
     config: DiffusionGemmaTextConfig
     input_modalities = ("text",)
@@ -983,6 +1002,7 @@ class DiffusionGemmaEncoderTextModel(DiffusionGemmaPreTrainedModel):
         )
 
 
+# get_block_sequence_ids_for_mask：为多模态 token 生成块级序列 ID 供 mask 使用
 def get_block_sequence_ids_for_mask(mm_token_type_ids: torch.Tensor, device: torch.device) -> torch.Tensor:
     mm_token_type_ids = mm_token_type_ids.to(device)
 
@@ -1002,6 +1022,7 @@ def get_block_sequence_ids_for_mask(mm_token_type_ids: torch.Tensor, device: tor
     assumes the MoE code path in the inner layers.
     """
 )
+# DiffusionGemmaEncoderModel：多模态 encoder，处理 text/vision/audio 输入
 class DiffusionGemmaEncoderModel(DiffusionGemmaPreTrainedModel):
     # we are filtering the logits/labels so we shouldn't divide the loss based on num_items_in_batch
     accepts_loss_kwargs = False
@@ -1190,6 +1211,7 @@ class DiffusionGemmaEncoderModel(DiffusionGemmaPreTrainedModel):
         return create_masks_for_generate(**mask_kwargs)
 
 
+# DiffusionGemmaDecoderModel：decoder 堆叠，支持块扩散与自条件
 class DiffusionGemmaDecoderModel(DiffusionGemmaPreTrainedModel):
     """
     Decoder model for DiffusionGemma.
@@ -1440,6 +1462,7 @@ class DiffusionGemmaDecoderModel(DiffusionGemmaPreTrainedModel):
 
 @auto_docstring
 @dataclass
+# DiffusionGemmaModelOutputWithPast：带 past KV 的模型输出
 class DiffusionGemmaModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     encoder_last_hidden_state (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`, *optional*):
@@ -1452,6 +1475,7 @@ class DiffusionGemmaModelOutputWithPast(BaseModelOutputWithPast):
 
 @auto_docstring
 @dataclass
+# DiffusionGemmaBlockDiffusionOutputWithPast：块扩散 LM 输出含 loss/logits
 class DiffusionGemmaBlockDiffusionOutputWithPast(CausalLMOutputWithPast):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*):
@@ -1467,6 +1491,7 @@ class DiffusionGemmaBlockDiffusionOutputWithPast(CausalLMOutputWithPast):
 
 
 @auto_docstring
+# DiffusionGemmaModel：Encoder + Decoder 联合骨干
 class DiffusionGemmaModel(DiffusionGemmaPreTrainedModel):
     """
     DiffusionGemma model consisting of an auto-regressive encoder (DiffusionGemmaEncoderModel, very similar to a
@@ -1592,6 +1617,7 @@ class DiffusionGemmaModel(DiffusionGemmaPreTrainedModel):
         )
 
 
+# DiffusionGemmaForBlockDiffusion：块扩散生成任务头，集成 generate mixin
 class DiffusionGemmaForBlockDiffusion(DiffusionGemmaPreTrainedModel, DiffusionGemmaGenerationMixin):
     """
     DiffusionGemma model for block diffusion. It calls `DiffusionGemmaModel` to obtains the hidden states for

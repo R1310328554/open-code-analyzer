@@ -23,8 +23,10 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# DiffLlamaConfig：kajuma/DiffLlama-0.3B-handcut checkpoint 默认配置
 @auto_docstring(checkpoint="kajuma/DiffLlama-0.3B-handcut")
 @strict
+# DiffLlamaConfig：lambda_std_dev 控制差分注意力 λ 初始化，继承 Llama 架构参数
 class DiffLlamaConfig(PreTrainedConfig):
     r"""
     lambda_std_dev (`float`, *optional*, defaults to 0.1):
