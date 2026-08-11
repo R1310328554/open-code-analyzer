@@ -1,4 +1,9 @@
 """
+django.contrib.admin.widgets — Admin 专用表单控件。
+
+含 FilteredSelectMultiple、raw_id、RelatedField 包装、日期时间与 Select2 自动完成等。
+"""
+"""
 Form Widget classes specific to the Django admin site.
 """
 
@@ -20,6 +25,7 @@ from django.utils.translation import get_language
 from django.utils.translation import gettext as _
 
 
+# 带 JS 双栏过滤的多选框（SelectFilter2）
 class FilteredSelectMultiple(forms.SelectMultiple):
     """
     A SelectMultiple with a JavaScript filter interface.
@@ -93,6 +99,7 @@ class AdminTimeWidget(BaseAdminTimeWidget):
     template_name = "admin/widgets/time.html"
 
 
+# Admin 样式的日期+时间拆分控件
 class AdminSplitDateTime(forms.SplitDateTimeWidget):
     """
     A SplitDateTime Widget that has some admin-specific styling.
@@ -147,6 +154,7 @@ def url_params_from_lookup_dict(lookups):
     return params
 
 
+# raw_id 外键：文本框 + 放大镜跳转 changelist
 class ForeignKeyRawIdWidget(forms.TextInput):
     """
     A Widget for displaying ForeignKeys in the "raw_id" interface rather than
@@ -261,6 +269,7 @@ class ManyToManyRawIdWidget(ForeignKeyRawIdWidget):
         return ",".join(str(v) for v in value) if value else ""
 
 
+# 为关联字段 widget 附加增/改/删/查看图标链接
 class RelatedFieldWidgetWrapper(forms.Widget):
     """
     This class is a wrapper to a given widget to add the add icon for the
@@ -501,6 +510,7 @@ SELECT2_TRANSLATIONS = {
 SELECT2_TRANSLATIONS.update({"zh-hans": "zh-CN", "zh-hant": "zh-TW"})
 
 
+# 将 Django 语言代码映射为 Select2 i18n 文件名
 def get_select2_language():
     lang_code = get_language()
     supported_code = SELECT2_TRANSLATIONS.get(lang_code)
@@ -514,6 +524,7 @@ def get_select2_language():
     return supported_code
 
 
+# Select2 AJAX 自动完成：设置 data-ajax 属性并加载静态资源
 class AutocompleteMixin:
     """
     Select widget mixin that loads options from AutocompleteJsonView via AJAX.
@@ -625,9 +636,11 @@ class AutocompleteMixin:
         )
 
 
+# 单选外键自动完成 Select
 class AutocompleteSelect(AutocompleteMixin, forms.Select):
     pass
 
 
+# 多选 M2M 自动完成 SelectMultiple
 class AutocompleteSelectMultiple(AutocompleteMixin, forms.SelectMultiple):
     pass

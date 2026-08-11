@@ -1,3 +1,8 @@
+"""
+django.contrib.admin.views.autocomplete — AutocompleteWidget 的 AJAX 数据源视图。
+
+根据 app_label/model_name/field_name 解析关联 ModelAdmin，返回 Select2 所需的分页 JSON 结果。
+"""
 from django.apps import apps
 from django.contrib.admin.exceptions import NotRegistered
 from django.core.exceptions import FieldDoesNotExist, PermissionDenied
@@ -5,12 +10,14 @@ from django.http import Http404, JsonResponse
 from django.views.generic.list import BaseListView
 
 
+# 处理外键/M2M 自动完成控件的 GET 搜索请求
 class AutocompleteJsonView(BaseListView):
     """Handle AutocompleteWidget's AJAX requests for data."""
 
     paginate_by = 20
     admin_site = None
 
+    # 校验权限后返回 {results, pagination} 结构的 JsonResponse
     def get(self, request, *args, **kwargs):
         """
         Return a JsonResponse with search results as defined in
@@ -53,6 +60,7 @@ class AutocompleteJsonView(BaseListView):
         """Use the ModelAdmin's paginator."""
         return self.model_admin.get_paginator(self.request, *args, **kwargs)
 
+    # 基于 ModelAdmin.get_search_results 过滤并可选 distinct
     def get_queryset(self):
         """Return queryset based on ModelAdmin.get_search_results()."""
         qs = self.model_admin.get_queryset(self.request)
@@ -64,6 +72,7 @@ class AutocompleteJsonView(BaseListView):
             qs = qs.distinct()
         return qs
 
+    # 解析并校验请求参数，返回 term、model_admin、source_field、to_field
     def process_request(self, request):
         """
         Validate request integrity, extract and return request parameters.
@@ -118,6 +127,7 @@ class AutocompleteJsonView(BaseListView):
 
         return term, model_admin, source_field, to_field_name
 
+    # 委托关联 ModelAdmin 的 has_view_permission
     def has_perm(self, request, obj=None):
         """Check if user has permission to access the related model."""
         return self.model_admin.has_view_permission(request, obj=obj)

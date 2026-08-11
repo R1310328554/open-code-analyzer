@@ -1,7 +1,11 @@
+"""
+django.contrib.admin.views.decorators — Admin 视图访问控制装饰器。
+"""
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.contrib.auth.decorators import user_passes_test
 
 
+# 要求用户已登录且 is_staff，否则重定向到 Admin 登录页
 def staff_member_required(
     view_func=None, redirect_field_name=REDIRECT_FIELD_NAME, login_url="admin:login"
 ):

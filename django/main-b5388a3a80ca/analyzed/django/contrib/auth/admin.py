@@ -1,3 +1,8 @@
+"""
+django.contrib.auth.admin — User 与 Group 的 ModelAdmin 注册。
+
+含用户创建/改密专用表单、权限 fieldsets 及密码字段 lookup 限制。
+"""
 from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.admin.options import IS_POPUP_VAR
@@ -23,6 +28,7 @@ from django.views.decorators.debug import sensitive_post_parameters
 
 
 @admin.register(Group)
+# 用户组管理：水平过滤器选择 permissions，queryset 预取 content_type
 class GroupAdmin(admin.ModelAdmin):
     search_fields = ("name",)
     ordering = ("name",)
@@ -38,6 +44,7 @@ class GroupAdmin(admin.ModelAdmin):
 
 
 @admin.register(User)
+# 用户管理：分 fieldsets、独立改密 URL、add 需同时具备 change 权限
 class UserAdmin(admin.ModelAdmin):
     add_form_template = "admin/auth/user/add_form.html"
     change_user_password_template = None
@@ -94,6 +101,7 @@ class UserAdmin(admin.ModelAdmin):
         defaults.update(kwargs)
         return super().get_form(request, obj, **defaults)
 
+    # 在默认 CRUD URL 前插入 <id>/password/ 改密路由
     def get_urls(self):
         return [
             path(
@@ -147,6 +155,7 @@ class UserAdmin(admin.ModelAdmin):
         return super().add_view(request, form_url, extra_context)
 
     @method_decorator(sensitive_post_parameters())
+    # 渲染并处理 AdminPasswordChangeForm，成功后 update_session_auth_hash
     def user_change_password(self, request, id, form_url=""):
         user = self.get_object(request, unquote(id))
         if not self.has_change_permission(request, user):
@@ -234,6 +243,7 @@ class UserAdmin(admin.ModelAdmin):
             context,
         )
 
+    # 新增用户后默认等同「保存并继续编辑」（popup/另增除外）
     def response_add(self, request, obj, post_url_continue=None):
         """
         Determine the HttpResponse for the add_view stage. It mostly defers to

@@ -1,6 +1,12 @@
+"""
+django.contrib.admindocs.urls — admindocs 文档站点 URL 配置。
+
+索引页、模板标签/过滤器、视图与模型文档及模板源码查看路由。
+"""
 from django.contrib.admindocs import views
 from django.urls import path, re_path
 
+# admindocs 各文档子页面的 path/re_path 列表
 urlpatterns = [
     path(
         "",

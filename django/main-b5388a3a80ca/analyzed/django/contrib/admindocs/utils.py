@@ -1,3 +1,6 @@
+"""
+django.contrib.admindocs.utils — 文档字符串解析、reST 转 HTML 与交叉引用角色。
+"""
 "Misc. utility functions/classes for admin documentation generator."
 
 import re
@@ -24,6 +27,7 @@ else:
     docutils_is_available = True
 
 
+# 返回视图可导入路径（类视图取 view_class 限定名）
 def get_view_name(view_func):
     if hasattr(view_func, "view_class"):
         klass = view_func.view_class
@@ -33,6 +37,7 @@ def get_view_name(view_func):
     return mod_name + "." + view_name
 
 
+# 将 docstring 拆为 (标题, 正文, 元数据字典)
 def parse_docstring(docstring):
     """
     Parse out the parts of a docstring. Return (title, body, metadata).
@@ -61,6 +66,7 @@ def parse_docstring(docstring):
     return title, body, metadata
 
 
+# 用 docutils 将 reST 片段转为 XHTML（admindocs 页面正文）
 def parse_rst(text, default_reference_context, thing_being_parsed=None):
     """
     Convert the string from reST to an XHTML fragment.
@@ -123,6 +129,7 @@ def split_explicit_title(text):
     return False, text, text
 
 
+# 注册 :model:/:view:/:tag: 等 admindocs 专用 reST 角色
 def create_reference_role(rolename, urlbase):
     # Views and template names are case-sensitive.
     is_case_sensitive = rolename in ["template", "view"]

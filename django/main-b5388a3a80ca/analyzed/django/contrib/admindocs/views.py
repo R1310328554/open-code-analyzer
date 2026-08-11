@@ -1,3 +1,8 @@
+"""
+django.contrib.admindocs.views — 后台文档各索引页与详情页视图。
+
+扫描模板库、URL 模式与已安装模型，渲染标签/过滤器/视图/模型文档。
+"""
 import inspect
 from importlib import import_module
 from inspect import cleandoc
@@ -35,6 +40,7 @@ from .utils import get_view_name, strip_p_tags
 MODEL_METHODS_EXCLUDE = ("_", "add_", "delete", "save", "set_")
 
 
+# 要求 staff 且 docutils 可用，否则显示缺失 docutils 提示页
 class BaseAdminDocsView(TemplateView):
     """
     Base view for admindocs views.
@@ -61,6 +67,7 @@ class BookmarkletsView(BaseAdminDocsView):
     template_name = "admin_doc/bookmarklets.html"
 
 
+# 枚举所有已注册模板标签及其 docstring 解析结果
 class TemplateTagIndexView(BaseAdminDocsView):
     template_name = "admin_doc/template_tag_index.html"
 
@@ -137,6 +144,7 @@ class TemplateFilterIndexView(BaseAdminDocsView):
         return super().get_context_data(**{**kwargs, "filters": filters})
 
 
+# 从 ROOT_URLCONF 提取全部视图函数列表
 class ViewIndexView(BaseAdminDocsView):
     template_name = "admin_doc/view_index.html"
 
@@ -160,6 +168,7 @@ class ViewIndexView(BaseAdminDocsView):
         return super().get_context_data(**{**kwargs, "views": views})
 
 
+# 展示单个视图的 docstring 与 reST 渲染正文
 class ViewDetailView(BaseAdminDocsView):
     template_name = "admin_doc/view_detail.html"
 
@@ -210,6 +219,7 @@ def user_has_model_view_permission(user, opts):
     )
 
 
+# 列出当前用户有 view/change 权限的模型
 class ModelIndexView(BaseAdminDocsView):
     template_name = "admin_doc/model_index.html"
 
@@ -222,6 +232,7 @@ class ModelIndexView(BaseAdminDocsView):
         return super().get_context_data(**{**kwargs, "models": m_list})
 
 
+# 展示模型字段、M2M 访问器、方法与反向关系文档
 class ModelDetailView(BaseAdminDocsView):
     template_name = "admin_doc/model_detail.html"
 
@@ -406,6 +417,7 @@ class ModelDetailView(BaseAdminDocsView):
         )
 
 
+# 在各模板目录中查找并展示模板文件源码
 class TemplateDetailView(BaseAdminDocsView):
     template_name = "admin_doc/template_detail.html"
 
@@ -462,6 +474,7 @@ def get_return_data_type(func_name):
     return ""
 
 
+# 返回字段类型的可读描述（支持 description 格式串）
 def get_readable_field_data_type(field):
     """
     Return the description for a given field type, if it exists. Fields'

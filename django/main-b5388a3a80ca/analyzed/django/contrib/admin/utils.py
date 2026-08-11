@@ -1,3 +1,8 @@
+"""
+django.contrib.admin.utils — Admin 变更列表、删除确认与显示格式化工具。
+
+含 URL 引号转义、嵌套删除对象收集、字段查找/标签解析及列表单元格渲染。
+"""
 import datetime
 import decimal
 import json
@@ -28,12 +33,14 @@ UNQUOTE_MAP = {v: chr(k) for k, v in QUOTE_MAP.items()}
 UNQUOTE_RE = _lazy_re_compile("_(?:%s)" % "|".join([x[1:] for x in UNQUOTE_MAP]))
 
 
+# 字段名为外键 attname（如 author_id）时的查找异常
 class FieldIsAForeignKeyColumnName(Exception):
     """A field is a foreign key attname, i.e. <FK>_id."""
 
     pass
 
 
+# 判断 lookup 路径是否会因 M2M 等关系产生重复行
 def lookup_spawns_duplicates(opts, lookup_path):
     """
     Return True if the given lookup path spawns duplicates.
@@ -88,6 +95,7 @@ def build_q_object_from_lookup_parameters(parameters):
     return q_object
 
 
+# 转义主键中的 /、: 等字符，避免 Admin URL 解析歧义
 def quote(s):
     """
     Ensure that primary key values do not confuse the admin URLs by escaping
@@ -98,6 +106,7 @@ def quote(s):
     return s.translate(QUOTE_MAP) if isinstance(s, str) else s
 
 
+# quote() 的逆操作
 def unquote(s):
     """Undo the effects of quote()."""
     return UNQUOTE_RE.sub(lambda m: UNQUOTE_MAP[m[0]], s)
@@ -124,6 +133,7 @@ def flatten_fieldsets(fieldsets):
     return field_names
 
 
+# 收集级联删除对象树、权限不足项与受保护对象，供删除确认页展示
 def get_deleted_objects(objs, request, admin_site):
     """
     Find all objects related to ``objs`` that should also be deleted. ``objs``
@@ -191,6 +201,7 @@ def get_deleted_objects(objs, request, admin_site):
     return to_delete, model_count, perms_needed, protected
 
 
+# 扩展 Collector：构建嵌套删除图并记录 PROTECT/RESTRICT 阻止删除的对象
 class NestedObjects(Collector):
     def __init__(self, *args, force_collection=True, **kwargs):
         super().__init__(*args, force_collection=force_collection, **kwargs)
@@ -288,6 +299,7 @@ def model_ngettext(obj, n=None):
     return ngettext(singular, plural, n or 0)
 
 
+# 解析 list_display 列名，返回 (字段, 属性, 显示值)
 def lookup_field(name, obj, model_admin=None):
     opts = obj._meta
     try:
@@ -352,6 +364,7 @@ def _get_non_gfk_field(opts, name):
     return field
 
 
+# 为列名或 callable 生成可读标签（verbose_name 或方法名美化）
 def label_for_field(name, model, model_admin=None, return_attr=False, form=None):
     """
     Return a sensible label for a field name. The name can be a callable,
@@ -430,6 +443,7 @@ def help_text_for_field(name, model):
     return help_text
 
 
+# 按字段类型格式化变更列表中的单元格值（日期、布尔、文件链接等）
 def display_for_field(value, field, empty_value_display, avoid_link=False):
     from django.contrib.admin.templatetags.admin_list import _boolean_icon
     from django.db.models.expressions import DatabaseDefault
@@ -570,6 +584,7 @@ def get_fields_from_path(model, path):
     return fields
 
 
+# 构造 LogEntry.change_message 用的 JSON 结构（新增/修改/内联变更）
 def construct_change_message(form, formsets, add):
     """
     Construct a JSON structure describing changes from a changed object.

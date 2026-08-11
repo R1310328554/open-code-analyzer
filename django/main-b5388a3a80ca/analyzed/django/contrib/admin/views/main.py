@@ -1,3 +1,8 @@
+"""
+django.contrib.admin.views.main — 变更列表（ChangeList）核心逻辑。
+
+解析查询参数、应用 list_filter 与搜索、分页排序，为 changelist 模板提供上下文。
+"""
 from datetime import datetime, timedelta
 
 from django import forms
@@ -37,6 +42,7 @@ from django.utils.http import urlencode
 from django.utils.timezone import make_aware
 from django.utils.translation import gettext
 
+# 变更列表 URL 查询参数名常量
 # Changelist settings
 ALL_VAR = "all"
 ORDER_VAR = "o"
@@ -55,6 +61,7 @@ IGNORED_PARAMS = (
 )
 
 
+# 动态构建仅含搜索框 q 参数的表单
 class ChangeListSearchForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -64,6 +71,7 @@ class ChangeListSearchForm(forms.Form):
         }
 
 
+# 封装一次 changelist 请求的过滤、排序、分页与结果集
 class ChangeList:
     search_form_class = ChangeListSearchForm
 
@@ -172,6 +180,7 @@ class ChangeList:
                 del lookup_params[ignored]
         return lookup_params
 
+    # 实例化 list_filter，返回 filter_specs 与剩余 lookup 参数
     def get_filters(self, request):
         lookup_params = self.get_filters_params()
         may_have_duplicates = False
@@ -294,6 +303,7 @@ class ChangeList:
                 p[k] = v
         return "?%s" % urlencode(sorted(p.items()), doseq=True)
 
+    # 分页并设置 result_list、result_count 等模板变量
     def get_results(self, request):
         paginator = self.model_admin.get_paginator(
             request, self.queryset, self.list_per_page
@@ -372,6 +382,7 @@ class ChangeList:
                 attr = attr.fget
             return getattr(attr, "admin_order_field", None)
 
+    # 合并 ModelAdmin 默认排序与 URL 中的 o= 列排序
     def get_ordering(self, request, queryset):
         """
         Return the list of ordering fields for the change list.
@@ -461,6 +472,7 @@ class ChangeList:
                 ordering_fields[idx] = "desc" if pfx == "-" else "asc"
         return ordering_fields
 
+    # 串联过滤器、剩余 Q 对象、select_related、排序与搜索
     def get_queryset(self, request, exclude_parameters=None):
         # First, we collect all the declared list filters.
         (
@@ -552,6 +564,7 @@ class ChangeList:
                     fields.append(field_name)
         return fields
 
+    # 生成单条结果指向 change 页的 Admin URL
     def url_for_result(self, result):
         pk = getattr(result, self.pk_attname)
         return reverse(

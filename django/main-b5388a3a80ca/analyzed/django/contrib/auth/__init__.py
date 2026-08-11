@@ -1,3 +1,8 @@
+"""
+django.contrib.auth — 认证与会话用户 API。
+
+authenticate/login/logout、get_user、AUTH_USER_MODEL 解析及权限 codename 辅助。
+"""
 import re
 
 from asgiref.sync import sync_to_async
@@ -13,6 +18,7 @@ from django.views.decorators.debug import sensitive_variables
 
 from .signals import user_logged_in, user_logged_out, user_login_failed
 
+# 会话中存储已登录用户主键的键名
 SESSION_KEY = "_auth_user_id"
 BACKEND_SESSION_KEY = "_auth_user_backend"
 HASH_SESSION_KEY = "_auth_user_hash"
@@ -121,6 +127,7 @@ async def _aget_user_session_key(request):
 
 
 @sensitive_variables("credentials")
+# 依次调用 AUTHENTICATION_BACKENDS，成功则附加 user.backend 并返回 User
 def authenticate(request=None, **credentials):
     """
     If the given credentials are valid, return a User object.
@@ -166,6 +173,7 @@ async def aauthenticate(request=None, **credentials):
     )
 
 
+# 将用户 id、backend 与 session hash 写入 session 并发送 user_logged_in
 def login(request, user, backend=None):
     """
     Persist a user id and a backend in the request. This way a user doesn't
@@ -227,6 +235,7 @@ async def alogin(request, user, backend=None):
     await user_logged_in.asend(sender=user.__class__, request=request, user=user)
 
 
+# 发送 user_logged_out 后 flush session 并置为 AnonymousUser
 def logout(request):
     """
     Remove the authenticated user's ID from the request and flush their session
@@ -258,6 +267,7 @@ async def alogout(request):
     _set_auth_user(request)
 
 
+# 返回 settings.AUTH_USER_MODEL 对应的 User 模型类
 def get_user_model():
     """
     Return the User model that is active in this project.
@@ -275,6 +285,7 @@ def get_user_model():
         )
 
 
+# 从 session 加载 User，校验 session hash，失败则 AnonymousUser
 def get_user(request):
     """
     Return the user model instance associated with the given request session.
@@ -360,6 +371,7 @@ async def aget_user(request):
     return user or AnonymousUser()
 
 
+# 生成标准权限 codename，如 change_user
 def get_permission_codename(action, opts):
     """
     Return the codename of the permission for the specified action.
@@ -367,6 +379,7 @@ def get_permission_codename(action, opts):
     return "%s_%s" % (action, opts.model_name)
 
 
+# 改密后刷新当前 session 的 HASH_SESSION_KEY，避免被登出
 def update_session_auth_hash(request, user):
     """
     Updating a user's password logs out all sessions for the user.

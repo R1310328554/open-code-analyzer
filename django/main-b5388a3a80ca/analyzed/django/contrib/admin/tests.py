@@ -1,3 +1,9 @@
+"""
+django.contrib.admin.tests — Admin 界面 Selenium 集成测试基类。
+
+提供 CSP 安全策略下的 LiveServer 测试环境，以及等待 DOM、登录后台、
+操作下拉框等常用 Selenium 辅助方法。
+"""
 from contextlib import contextmanager
 
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
@@ -22,6 +28,7 @@ __unittest = True
         "style-src": [CSP.SELF],
     },
 )
+# Admin Selenium 测试基类：加载 admin/auth 等应用并校验 CSP 无违规
 class AdminSeleniumTestCase(SeleniumTestCase, StaticLiveServerTestCase):
     available_apps = [
         "django.contrib.admin",
@@ -31,11 +38,13 @@ class AdminSeleniumTestCase(SeleniumTestCase, StaticLiveServerTestCase):
         "django.contrib.sites",
     ]
 
+    # 断言浏览器未记录 CSP 安全违规日志
     def tearDown(self):
         # Ensure that no CSP violations were logged in the browser.
         self.assertEqual(self.get_browser_logs(source="security"), [])
         super().tearDown()
 
+    # 阻塞直到 callback 返回真值（用于异步页面更新后断言）
     def wait_until(self, callback, timeout=10):
         """
         Block the execution of the tests until the specified callback returns a
@@ -47,6 +56,7 @@ class AdminSeleniumTestCase(SeleniumTestCase, StaticLiveServerTestCase):
 
         WebDriverWait(self.selenium, timeout).until(callback)
 
+    # 等待弹出窗口就绪并切换到最新窗口
     def wait_for_and_switch_to_popup(self, num_windows=2, timeout=10):
         """
         Block until `num_windows` are present and are ready (usually 2, but can
@@ -156,6 +166,7 @@ class AdminSeleniumTestCase(SeleniumTestCase, StaticLiveServerTestCase):
         self.selenium.set_window_size(width, height)
         self.wait_page_ready()
 
+    # 通过 Selenium 在后台登录页完成用户名密码登录
     def admin_login(self, username, password, login_url="/admin/"):
         """
         Log in to the admin.
@@ -173,6 +184,7 @@ class AdminSeleniumTestCase(SeleniumTestCase, StaticLiveServerTestCase):
                 By.XPATH, '//input[@value="%s"]' % login_text
             ).click()
 
+    # 在指定 CSS 选择器的 SELECT 中选中给定 value 的 OPTION
     def select_option(self, selector, value):
         """
         Select the <OPTION> with the value `value` inside the <SELECT> widget
@@ -228,6 +240,7 @@ class AdminSeleniumTestCase(SeleniumTestCase, StaticLiveServerTestCase):
                     )
                 )
 
+    # 断言 SELECT 控件包含且仅包含指定的 option 值列表
     def assertSelectOptions(self, selector, values):
         """
         Assert that the <SELECT> widget identified by `selector` has the
