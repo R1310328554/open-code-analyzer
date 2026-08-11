@@ -1,5 +1,9 @@
 """
 Internationalization support.
+
+django.utils.translation — i18n 公共 API 与 Trans 惰性后端切换。
+""""""
+Internationalization support.
 """
 
 from contextlib import ContextDecorator
@@ -34,6 +38,7 @@ __all__ = [
 ]
 
 
+# 模板译员注释格式警告
 class TranslatorCommentWarning(SyntaxWarning):
     pass
 
@@ -47,6 +52,7 @@ class TranslatorCommentWarning(SyntaxWarning):
 # settings).
 
 
+# 首次调用时按 USE_I18N 绑定 trans_real 或 trans_null
 class Trans:
     """
     The purpose of this class is to store the actual translation function upon
@@ -112,6 +118,7 @@ gettext_lazy = lazy(gettext, str)
 pgettext_lazy = lazy(pgettext, str)
 
 
+# 支持复数/数量的 lazy 翻译字符串
 def lazy_number(func, resultclass, number=None, **kwargs):
     if isinstance(number, int):
         kwargs["number"] = number
@@ -186,6 +193,7 @@ def deactivate():
     return _trans.deactivate()
 
 
+# 临时切换激活语言
 class override(ContextDecorator):
     def __init__(self, language, deactivate=False):
         self.language = language
@@ -219,6 +227,7 @@ def check_for_language(lang_code):
     return _trans.check_for_language(lang_code)
 
 
+# locale 名 (en_US) 转语言码 (en-us)
 def to_language(locale):
     """Turn a locale name (en_US) into a language name (en-us)."""
     p = locale.find("_")
@@ -228,6 +237,7 @@ def to_language(locale):
         return locale.lower()
 
 
+# 语言码 (en-us) 转 locale 名 (en_US)
 def to_locale(language):
     """Turn a language name (en-us) into a locale name (en_US)."""
     lang, _, country = language.lower().partition("-")
@@ -266,6 +276,7 @@ def deactivate_all():
     return _trans.deactivate_all()
 
 
+# 从 LANG_INFO 返回语言元数据（含 name_translated）
 def get_language_info(lang_code):
     from django.conf.locale import LANG_INFO
 

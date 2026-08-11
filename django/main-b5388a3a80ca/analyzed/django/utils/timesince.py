@@ -1,9 +1,16 @@
-import datetime
+"""
+django.utils.timesince — 人性化相对时间描述（timesince/timeuntil）。
+
+考虑年月长度差异，支持 depth 控制相邻单位数量。
+"""
+
+import datetimeimport datetime
 
 from django.utils.html import avoid_wrapping
 from django.utils.timezone import is_aware
 from django.utils.translation import gettext, ngettext_lazy
 
+# 各时间单位的 ngettext_lazy 模板
 TIME_STRINGS = {
     "year": ngettext_lazy("%(num)d year", "%(num)d years", "num"),
     "month": ngettext_lazy("%(num)d month", "%(num)d months", "num"),
@@ -25,6 +32,7 @@ TIME_CHUNKS = [
 MONTHS_DAYS = (31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 
 
+# 返回 d 到 now 的本地化时间差字符串
 def timesince(d, now=None, reversed=False, time_strings=None, depth=2):
     """
     Take two datetime objects and return the time between d and now as a nicely
@@ -135,6 +143,7 @@ def timesince(d, now=None, reversed=False, time_strings=None, depth=2):
     return gettext(", ").join(result)
 
 
+# 返回 now 到 d 的剩余时间字符串
 def timeuntil(d, now=None, time_strings=None, depth=2):
     """
     Like timesince, but return a string measuring the time until the given

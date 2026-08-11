@@ -1,4 +1,8 @@
-import warnings
+"""
+django.utils.translation.template — 将 Django 模板转为 xgettext 可解析伪 Python。
+"""
+
+import warningsimport warnings
 from io import StringIO
 
 from django.template.base import Lexer, TokenType
@@ -11,6 +15,7 @@ TRANSLATOR_COMMENT_MARK = "Translators"
 dot_re = _lazy_re_compile(r"\S")
 
 
+# 非空白字符替换为占位符（templatize 内部用）
 def blankout(src, char):
     """
     Change every non-whitespace character to the given char.
@@ -36,6 +41,7 @@ plural_re = _lazy_re_compile(r"""^\s*plural$""")
 constant_re = _lazy_re_compile(r"""_\(((?:".*?")|(?:'.*?'))\)""")
 
 
+# trans/blocktrans 标签转 gettext/ngettext/pgettext 调用
 def templatize(src, origin=None):
     """
     Turn a Django template into something that is understood by xgettext. It

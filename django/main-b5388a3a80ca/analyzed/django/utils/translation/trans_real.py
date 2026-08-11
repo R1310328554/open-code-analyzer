@@ -1,4 +1,7 @@
-"""Translation helper functions."""
+"""Translation helper functions.
+
+django.utils.translation.trans_real — GNU gettext 集成与语言协商。
+""""""Translation helper functions."""
 
 import functools
 import gettext as gettext_module
@@ -60,6 +63,7 @@ language_code_prefix_re = _lazy_re_compile(r"^/(\w+([@-]\w+){0,2})(/|$)")
 
 
 @receiver(setting_changed)
+# LANGUAGES/LANGUAGE_CODE 变更时清 LRU 缓存
 def reset_cache(*, setting, **kwargs):
     """
     Reset global state when LANGUAGES setting has been changed, as some
@@ -71,6 +75,7 @@ def reset_cache(*, setting, **kwargs):
         get_supported_language_variant.cache_clear()
 
 
+# 多 catalog 合并字典，按 plural 函数分层
 class TranslationCatalog:
     """
     Simulate a dict for DjangoTranslation._catalog so as multiple catalogs
@@ -128,6 +133,7 @@ class TranslationCatalog:
         raise KeyError
 
 
+# 合并多 locale 目录的 GNUTranslations
 class DjangoTranslation(gettext_module.GNUTranslations):
     """
     Set up the GNUTranslations context with regard to output charset.
@@ -287,6 +293,7 @@ class DjangoTranslation(gettext_module.GNUTranslations):
         return tmsg
 
 
+# 获取或创建指定语言的翻译对象
 def translation(language):
     """
     Return a translation object in the default 'django' domain.
@@ -296,6 +303,7 @@ def translation(language):
     return _translations[language]
 
 
+# 激活线程本地语言并加载 catalog
 def activate(language):
     """
     Fetch the translation object for a given language and install it as the
@@ -369,6 +377,7 @@ def catalog():
     return _default
 
 
+# 查找并返回翻译字符串
 def gettext(message):
     """
     Translate the 'message' string. It uses the current thread to find the
@@ -427,6 +436,7 @@ def do_ntranslate(singular, plural, number, translation_function):
     return getattr(_default, translation_function)(singular, plural, number)
 
 
+# 复数形式翻译
 def ngettext(singular, plural, number):
     """
     Return a string of the translation of either the singular or plural,
@@ -572,6 +582,7 @@ def get_language_from_path(path, strict=False):
         return None
 
 
+# 从 Accept-Language、Cookie、URL 前缀解析语言
 def get_language_from_request(request, check_path=False):
     """
     Analyze the request to find what language the user wants the system to
@@ -644,6 +655,7 @@ def _parse_accept_lang_header(lang_string):
     return tuple(result)
 
 
+# 解析 RFC 9110 Accept-Language 为 (lang, q) 列表
 def parse_accept_lang_header(lang_string):
     """
     Parse the value of the Accept-Language header up to a maximum length.

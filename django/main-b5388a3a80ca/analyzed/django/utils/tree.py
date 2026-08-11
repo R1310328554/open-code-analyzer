@@ -1,6 +1,9 @@
 """
 A class for storing a tree graph. Primarily used for filter constructs in the
 ORM.
+
+django.utils.tree — ORM Q 对象等使用的通用树节点。
+"""ORM.
 """
 
 import copy
@@ -8,6 +11,7 @@ import copy
 from django.utils.hashable import make_hashable
 
 
+# 树节点：connector 连接子节点，支持 negated 与 add 合并
 class Node:
     """
     A single internal node in the tree graph. A Node should be viewed as a

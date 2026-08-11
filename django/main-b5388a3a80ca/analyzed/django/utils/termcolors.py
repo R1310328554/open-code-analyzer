@@ -1,5 +1,9 @@
 """
 termcolors.py
+
+django.utils.termcolors — 终端 ANSI 颜色与 Django 管理命令调色板。
+""""""
+termcolors.py
 """
 
 color_names = ("black", "red", "green", "yellow", "blue", "magenta", "cyan", "white")
@@ -16,6 +20,7 @@ opt_dict = {
 }
 
 
+# 用 fg/bg/opts 包裹文本为 ANSI 转义序列
 def colorize(text="", opts=(), **kwargs):
     """
     Return your text, enclosed in ANSI graphics codes.
@@ -61,6 +66,7 @@ def colorize(text="", opts=(), **kwargs):
     return "%s%s" % (("\x1b[%sm" % ";".join(code_list)), text or "")
 
 
+# 返回预设参数的 colorize 闭包
 def make_style(opts=(), **kwargs):
     """
     Return a function with default parameters for colorize()
@@ -149,6 +155,7 @@ PALETTES = {
 DEFAULT_PALETTE = DARK_PALETTE
 
 
+# 解析 DJANGO_COLORS 环境变量为角色调色板
 def parse_color_setting(config_string):
     """Parse a DJANGO_COLORS environment variable to produce the system palette
 

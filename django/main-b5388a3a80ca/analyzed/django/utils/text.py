@@ -1,4 +1,10 @@
-import gzip
+"""
+django.utils.text — 字符串处理、截断、slug 与 gzip 压缩辅助。
+
+供模板、admin 与文件上传使用的文本工具集。
+"""
+
+import gzipimport gzip
 import re
 import secrets
 import textwrap
@@ -23,6 +29,7 @@ from django.utils.translation import gettext_lazy, pgettext
 
 
 @keep_lazy_text
+# 将字符串首字母大写
 def capfirst(x):
     """Capitalize the first letter of a string."""
     if not x:
@@ -38,6 +45,7 @@ re_camel_case = _lazy_re_compile(r"(((?<=[a-z])[A-Z])|([A-Z](?![A-Z]|$)))")
 
 
 @keep_lazy_text
+# 保留现有换行的 word-wrap
 def wrap(text, width):
     """
     A word-wrap function that preserves existing line breaks. Expects that
@@ -70,6 +78,7 @@ def wrap(text, width):
     return "\n".join(result)
 
 
+# 追加截断省略文本（支持 %(truncated_text)s 占位）
 def add_truncation_text(text, truncate=None):
     if truncate is None:
         truncate = pgettext(
@@ -86,6 +95,7 @@ def add_truncation_text(text, truncate=None):
     return f"{text}{truncate}"
 
 
+# 计算截断后可见字符长度（忽略组合字符）
 def calculate_truncate_chars_length(length, replacement):
     truncate_len = length
     for char in add_truncation_text("", replacement):
@@ -96,6 +106,7 @@ def calculate_truncate_chars_length(length, replacement):
     return truncate_len
 
 
+# HTML 感知截断解析器基类
 class TruncateHTMLParser(HTMLParser):
     class TruncationCompleted(Exception):
         pass
@@ -154,6 +165,7 @@ class TruncateHTMLParser(HTMLParser):
             self.reset()
 
 
+# 按字符数截断 HTML
 class TruncateCharsHTMLParser(TruncateHTMLParser):
     def __init__(self, *, length, replacement, convert_charrefs=True):
         self.length = length
@@ -175,6 +187,7 @@ class TruncateCharsHTMLParser(TruncateHTMLParser):
         return data, output
 
 
+# 按词数截断 HTML
 class TruncateWordsHTMLParser(TruncateHTMLParser):
     def process(self, data):
         data = re.split(r"(?<=\S)\s+(?=\S)", data)
@@ -182,6 +195,7 @@ class TruncateWordsHTMLParser(TruncateHTMLParser):
         return data, output
 
 
+# 统一 chars/words 截断接口的惰性包装
 class Truncator(SimpleLazyObject):
     """
     An object used to truncate text, either by characters or words.
@@ -262,6 +276,7 @@ class Truncator(SimpleLazyObject):
 
 
 @keep_lazy_text
+# 清理为跨平台安全文件名
 def get_valid_filename(name):
     """
     Return the given string converted to a string that can be used for a clean
@@ -279,6 +294,7 @@ def get_valid_filename(name):
 
 
 @keep_lazy_text
+# 将列表格式化为自然语言枚举（a, b or c）
 def get_text_list(list_, last_word=gettext_lazy("or")):
     """
     >>> get_text_list(['a', 'b', 'c', 'd'])
@@ -305,12 +321,14 @@ def get_text_list(list_, last_word=gettext_lazy("or")):
 
 
 @keep_lazy_text
+# 统一换行符为 \n
 def normalize_newlines(text):
     """Normalize CRLF and CR newlines to just LF."""
     return re_newlines.sub("\n", str(text))
 
 
 @keep_lazy_text
+# 电话按键字母转数字
 def phone2numeric(phone):
     """Convert a phone number with letters into its numeric equivalent."""
     char2number = {
@@ -348,6 +366,7 @@ def _get_random_filename(max_random_bytes):
     return b"a" * secrets.randbelow(max_random_bytes)
 
 
+# gzip 压缩字节串
 def compress_string(s, *, max_random_bytes=None):
     compressed_data = gzip_compress(s, compresslevel=6, mtime=0)
 
@@ -363,6 +382,7 @@ def compress_string(s, *, max_random_bytes=None):
     return bytes(header) + filename + compressed_view[10:]
 
 
+# 流式 gzip 压缩的中间缓冲
 class StreamingBuffer(BytesIO):
     def read(self):
         ret = self.getvalue()
@@ -372,6 +392,7 @@ class StreamingBuffer(BytesIO):
 
 
 # Like compress_string, but for iterators of strings.
+# 对可迭代字节块流式 gzip 压缩
 def compress_sequence(sequence, *, max_random_bytes=None):
     buf = StreamingBuffer()
     filename = _get_random_filename(max_random_bytes) if max_random_bytes else None
@@ -422,6 +443,7 @@ smart_split_re = _lazy_re_compile(
 )
 
 
+# 类似 shlex 的引号感知分词
 def smart_split(text):
     r"""
     Generator that splits a string by spaces, leaving quoted phrases together.
@@ -442,6 +464,7 @@ def smart_split(text):
 
 
 @keep_lazy_text
+# 解析 Python 字符串字面量转义
 def unescape_string_literal(s):
     r"""
     Convert quoted string literals to unquoted strings with escaped quotes and
@@ -463,6 +486,7 @@ def unescape_string_literal(s):
 
 
 @keep_lazy_text
+# URL 友好 slug（NFKC、去标点、连字符）
 def slugify(value, allow_unicode=False):
     """
     Convert to ASCII if 'allow_unicode' is False. Convert spaces or repeated
@@ -483,6 +507,7 @@ def slugify(value, allow_unicode=False):
     return re.sub(r"[-\s]+", "-", value).strip("-_")
 
 
+# CamelCase 转空格分隔
 def camel_case_to_spaces(value):
     """
     Split CamelCase and convert to lowercase. Strip surrounding whitespace.
@@ -490,6 +515,7 @@ def camel_case_to_spaces(value):
     return re_camel_case.sub(r" \1", value).strip().lower()
 
 
+# lazy 格式化：求值时调用 format
 def _format_lazy(format_string, *args, **kwargs):
     """
     Apply str.format() on 'format_string' where format_string, args,

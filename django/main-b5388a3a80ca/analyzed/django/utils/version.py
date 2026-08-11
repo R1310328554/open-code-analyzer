@@ -4,7 +4,11 @@ import os
 import subprocess
 import sys
 
-from django.utils.regex_helper import _lazy_re_compile
+"""
+django.utils.version — Django 版本号、Python 版本常量与 git changeset。
+"""
+
+from django.utils.regex_helper import _lazy_re_compilefrom django.utils.regex_helper import _lazy_re_compile
 
 # Private, stable API for detecting the Python implementation.
 PYPY = sys.implementation.name == "pypy"
@@ -21,6 +25,7 @@ PY314 = sys.version_info >= (3, 14)
 PY315 = sys.version_info >= (3, 15)
 
 
+# 生成 PEP 440 版本字符串
 def get_version(version=None):
     """Return a PEP 440-compliant version number from VERSION."""
     version = get_complete_version(version)
@@ -75,6 +80,7 @@ def get_docs_version(version=None):
 
 
 @functools.lru_cache
+# 开发版：最新 git commit 的 UTC 时间戳
 def get_git_changeset():
     """Return a numeric identifier of the latest git changeset.
 
@@ -106,6 +112,7 @@ def get_git_changeset():
 version_component_re = _lazy_re_compile(r"(\d+|[a-z]+|\.)")
 
 
+# 版本字符串解析为 (major, minor, …) 元组
 def get_version_tuple(version):
     """
     Return a tuple of version numbers (e.g. (1, 2, 3)) from the version

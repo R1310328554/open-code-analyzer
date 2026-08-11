@@ -1,5 +1,9 @@
 """
 Timezone-related classes and functions.
+
+django.utils.timezone — 线程本地时区、aware/naive 转换与模板 localtime。
+""""""
+Timezone-related classes and functions.
 """
 
 import functools
@@ -30,6 +34,7 @@ __all__ = [
 ]
 
 
+# 返回固定 UTC 偏移的 tzinfo
 def get_fixed_timezone(offset):
     """Return a tzinfo instance with a fixed offset from UTC."""
     if isinstance(offset, timedelta):
@@ -43,6 +48,7 @@ def get_fixed_timezone(offset):
 # In order to avoid accessing settings at compile time,
 # wrap the logic in a function and cache the result.
 @functools.lru_cache
+# 从 settings.TIME_ZONE 获取默认 ZoneInfo
 def get_default_timezone():
     """
     Return the default time zone as a tzinfo instance.
@@ -61,6 +67,7 @@ def get_default_timezone_name():
 _active = Local()
 
 
+# 当前线程激活的时区
 def get_current_timezone():
     """Return the currently active time zone as a tzinfo instance."""
     return getattr(_active, "value", get_default_timezone())
@@ -85,6 +92,7 @@ def _get_timezone_name(timezone):
 # because it isn't thread safe.
 
 
+# 为当前线程设置时区
 def activate(timezone):
     """
     Set the time zone for the current thread.
@@ -100,6 +108,7 @@ def activate(timezone):
         raise ValueError("Invalid timezone: %r" % timezone)
 
 
+# 清除线程时区，回退到默认
 def deactivate():
     """
     Unset the time zone for the current thread.
@@ -110,6 +119,7 @@ def deactivate():
         del _active.value
 
 
+# 上下文管理器：临时切换时区
 class override(ContextDecorator):
     """
     Temporarily set the time zone for the current thread.
@@ -143,6 +153,7 @@ class override(ContextDecorator):
 # Templates
 
 
+# 模板引擎：按需将 datetime 转为本地时间
 def template_localtime(value, use_tz=None):
     """
     Check if value is a datetime and converts it to local time if necessary.
@@ -164,6 +175,7 @@ def template_localtime(value, use_tz=None):
 # Utilities
 
 
+# aware datetime 转指定/当前时区
 def localtime(value=None, timezone=None):
     """
     Convert an aware datetime.datetime to local time.
@@ -184,6 +196,7 @@ def localtime(value=None, timezone=None):
     return value.astimezone(timezone)
 
 
+# localtime 后取 date 部分
 def localdate(value=None, timezone=None):
     """
     Convert an aware datetime to local time and return the value's date.
@@ -197,6 +210,7 @@ def localdate(value=None, timezone=None):
     return localtime(value, timezone).date()
 
 
+# 按 USE_TZ 返回 aware 或 naive 的当前时间
 def now():
     """
     Return an aware or naive datetime.datetime, depending on settings.USE_TZ.
@@ -208,6 +222,7 @@ def now():
 # The caller should ensure that they don't receive an invalid value like None.
 
 
+# 判断 datetime 是否带时区信息
 def is_aware(value):
     """
     Determine if a given datetime.datetime is aware.
@@ -221,6 +236,7 @@ def is_aware(value):
     return value.utcoffset() is not None
 
 
+# 判断 datetime 是否 naive
 def is_naive(value):
     """
     Determine if a given datetime.datetime is naive.
@@ -234,6 +250,7 @@ def is_naive(value):
     return value.utcoffset() is None
 
 
+# naive datetime 附加 tzinfo
 def make_aware(value, timezone=None):
     """Make a naive datetime.datetime in a given time zone aware."""
     if timezone is None:
@@ -245,6 +262,7 @@ def make_aware(value, timezone=None):
     return value.replace(tzinfo=timezone)
 
 
+# aware datetime 在指定时区去 tzinfo
 def make_naive(value, timezone=None):
     """Make an aware datetime.datetime naive in a given time zone."""
     if timezone is None:
