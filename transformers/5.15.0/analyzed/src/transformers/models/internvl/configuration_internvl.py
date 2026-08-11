@@ -20,8 +20,12 @@ from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# InternVL 配置：OpenGVLab/InternVL3-1B-hf 视觉塔 + Qwen2 文本骨干多模态超参
+
+# InternVLVisionConfig：OpenGVLab/InternVL3-1B-hf 视觉塔默认超参
 @auto_docstring(checkpoint="OpenGVLab/InternVL3-1B-hf")
 @strict
+# InternVLVisionConfig：InternVL 视觉塔超参（InternViT 风格 ViT）
 class InternVLVisionConfig(PreTrainedConfig):
     r"""
     projection_dropout (`float`, *optional*, defaults to 0.0):
@@ -83,8 +87,10 @@ class InternVLVisionConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# InternVLConfig：OpenGVLab/InternVL3-1B-hf 图文多模态顶层默认超参
 @auto_docstring(checkpoint="OpenGVLab/InternVL3-1B-hf")
 @strict
+# InternVLConfig：InternVL 图文多模态顶层配置（视觉塔 + Qwen2 文本骨干）
 class InternVLConfig(PreTrainedConfig):
     r"""
     downsample_ratio (`float`, *optional*, defaults to 0.5):

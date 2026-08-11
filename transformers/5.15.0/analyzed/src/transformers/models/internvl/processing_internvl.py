@@ -24,6 +24,9 @@ from ...utils import auto_docstring
 from ...video_utils import VideoInput
 
 
+# InternVL Processor：图像/视频预处理与分词器联合多模态输入组装
+
+# InternVLProcessorKwargs：InternVL Processor 可选参数字典类型
 class InternVLProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -40,6 +43,7 @@ class InternVLProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# InternVLProcessor：封装图像/视频预处理与分词器的多模态输入管线
 class InternVLProcessor(ProcessorMixin):
     valid_processor_kwargs = InternVLProcessorKwargs
 

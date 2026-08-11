@@ -31,7 +31,10 @@ from ...video_utils import VideoInput
 logger = logging.get_logger(__name__)
 
 
+# InstructBLIP-Video Processor：视频预处理与 Q-Former/LLM 分词器联合输入组装
+
 @auto_docstring
+# InstructBlipVideoProcessor：封装视频预处理与 Q-Former/LLM 分词器的指令输入管线
 class InstructBlipVideoProcessor(ProcessorMixin):
     def __init__(self, video_processor, tokenizer, qformer_tokenizer, num_query_tokens=None, **kwargs):
         r"""

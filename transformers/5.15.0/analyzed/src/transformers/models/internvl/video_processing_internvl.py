@@ -13,6 +13,8 @@
 # limitations under the License.
 """Fast Video processor class for InternVL."""
 
+# InternVL 视频预处理：均匀帧采样、resize 与 CLIP 风格归一化
+
 import torch
 import torchvision.transforms.v2.functional as tvF
 
@@ -24,10 +26,12 @@ from ...video_processing_utils import BaseVideoProcessor
 from ...video_utils import VideoMetadata, group_videos_by_shape, reorder_videos
 
 
+# InternVLVideoProcessorInitKwargs：InternVL 视频处理器初始化可选参数字典类型
 class InternVLVideoProcessorInitKwargs(VideosKwargs, total=False):
     initial_shift: bool | float | int
 
 
+# InternVLVideoProcessor：InternVL 视频帧采样与 resize/归一化预处理
 class InternVLVideoProcessor(BaseVideoProcessor):
     resample = PILImageResampling.BICUBIC
     image_mean = OPENAI_CLIP_MEAN

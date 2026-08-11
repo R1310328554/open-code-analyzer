@@ -27,8 +27,12 @@ from ..llama.modeling_llama import (
 from ..nemotron.modeling_nemotron import NemotronMLP
 
 
+# Jais-2 modular 源：复用 Llama 解码器与 Nemotron MLP，替换为 LayerNorm
+
+# Jais2Config：inceptionai/Jais-2-8B-Chat 阿拉伯语 LLM 默认超参
 @auto_docstring(checkpoint="inceptionai/Jais-2-8B-Chat")
 @strict
+# Jais2Config：Inception Jais-2 阿拉伯语 LLM 超参（LayerNorm + ReLU² MLP）
 class Jais2Config(LlamaConfig):
     base_model_tp_plan = {
         "layers.*.self_attn.q_proj": "colwise",
@@ -54,10 +58,12 @@ class Jais2Config(LlamaConfig):
     pretraining_tp = AttributeError()
 
 
+# Jais2MLP：Jais-2 前馈 MLP（ReLU² 激活，Nemotron 风格）
 class Jais2MLP(NemotronMLP):
     pass
 
 
+# Jais2DecoderLayer：Jais-2 解码器单层（自注意力 + MLP + LayerNorm）
 class Jais2DecoderLayer(LlamaDecoderLayer):
     def __init__(self, config: Jais2Config, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -65,16 +71,19 @@ class Jais2DecoderLayer(LlamaDecoderLayer):
         self.post_attention_layernorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
 
 
+# Jais2PreTrainedModel：Jais-2 预训练基类与权重初始化
 class Jais2PreTrainedModel(LlamaPreTrainedModel):
     pass
 
 
+# Jais2Model：Jais-2 解码器-only 语言模型主干
 class Jais2Model(LlamaModel):
     def __init__(self, config: Jais2Config):
         super().__init__(config)
         self.norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
 
 
+# Jais2ForCausalLM：Jais-2 因果语言建模与对话生成头
 class Jais2ForCausalLM(LlamaForCausalLM):
     @can_return_tuple
     @auto_docstring

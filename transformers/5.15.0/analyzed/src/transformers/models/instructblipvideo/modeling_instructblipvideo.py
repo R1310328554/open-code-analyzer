@@ -46,6 +46,7 @@ from ...utils import ModelOutput, TransformersKwargs, auto_docstring, can_return
 from ...utils.generic import merge_with_config_defaults
 from ...utils.output_capturing import OutputRecorder, capture_outputs
 from ..auto import AutoModel, AutoModelForCausalLM, AutoModelForSeq2SeqLM
+# modeling_instructblipvideo 由 modular_instructblipvideo.py 自动生成
 from .configuration_instructblipvideo import (
     InstructBlipVideoConfig,
     InstructBlipVideoQFormerConfig,
@@ -53,9 +54,12 @@ from .configuration_instructblipvideo import (
 )
 
 
+# InstructBLIP-Video 建模：帧级 ViT + Q-Former 桥接 + 指令 LLM 视频条件生成（由 modular 自动生成）
+
 logger = logging.get_logger(__name__)
 
 
+# InstructBlipVideoVisionEmbeddings：InstructBLIP-Video 视觉 patch 嵌入 + 位置编码
 class InstructBlipVideoVisionEmbeddings(nn.Module):
     def __init__(self, config: InstructBlipVideoVisionConfig):
         super().__init__()
@@ -130,6 +134,7 @@ class InstructBlipVideoVisionEmbeddings(nn.Module):
         return embeddings
 
 
+# InstructBlipVideoQFormerEmbeddings：InstructBLIP-Video Q-Former 词嵌入 + 位置编码
 class InstructBlipVideoQFormerEmbeddings(nn.Module):
     """Construct the embeddings from word and position embeddings."""
 
@@ -179,6 +184,7 @@ class InstructBlipVideoQFormerEmbeddings(nn.Module):
 
 
 @auto_docstring
+# InstructBlipVideoPreTrainedModel：InstructBLIP-Video 预训练基类与权重初始化
 class InstructBlipVideoPreTrainedModel(PreTrainedModel):
     config: InstructBlipVideoConfig
     base_model_prefix = "blip"
@@ -215,6 +221,7 @@ class InstructBlipVideoPreTrainedModel(PreTrainedModel):
 
 
 # Adapted from transformers.models.siglip.modeling_siglip.eager_attention_forward -> InstructBlipVideo doesn't cast attn weights to fp32
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -238,6 +245,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# InstructBlipVideoAttention：InstructBLIP-Video 视觉塔多头自注意力
 class InstructBlipVideoAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -312,6 +320,7 @@ class InstructBlipVideoAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# InstructBlipVideoMLP：InstructBLIP-Video 视觉塔前馈 MLP
 class InstructBlipVideoMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -327,6 +336,7 @@ class InstructBlipVideoMLP(nn.Module):
         return hidden_states
 
 
+# InstructBlipVideoEncoderLayer：InstructBLIP-Video 视觉 Transformer 编码器单层
 class InstructBlipVideoEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: InstructBlipVideoConfig):
         super().__init__()
@@ -359,6 +369,7 @@ class InstructBlipVideoEncoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# InstructBlipVideoEncoder：InstructBLIP-Video 视觉 Transformer 多层编码器堆叠
 class InstructBlipVideoEncoder(nn.Module):
     """
     Transformer encoder consisting of `config.num_hidden_layers` self attention layers. Each layer is a
@@ -391,6 +402,7 @@ class InstructBlipVideoEncoder(nn.Module):
         return BaseModelOutput(last_hidden_state=hidden_states)
 
 
+# InstructBlipVideoVisionModel：InstructBLIP-Video 帧级视觉 Transformer 编码塔
 class InstructBlipVideoVisionModel(InstructBlipVideoPreTrainedModel):
     main_input_name = "pixel_values"
     input_modalities = "video"
@@ -445,6 +457,7 @@ class InstructBlipVideoVisionModel(InstructBlipVideoPreTrainedModel):
         return self.embeddings
 
 
+# InstructBlipVideoQFormerMultiHeadAttention：InstructBLIP-Video Q-Former 多头注意力
 class InstructBlipVideoQFormerMultiHeadAttention(nn.Module):
     def __init__(self, config, is_cross_attention=False):
         super().__init__()
@@ -517,6 +530,7 @@ class InstructBlipVideoQFormerMultiHeadAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# InstructBlipVideoQFormerSelfOutput：InstructBLIP-Video Q-Former 自注意力输出投影
 class InstructBlipVideoQFormerSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -531,6 +545,7 @@ class InstructBlipVideoQFormerSelfOutput(nn.Module):
         return hidden_states
 
 
+# InstructBlipVideoQFormerAttention：InstructBLIP-Video Q-Former 自注意力模块
 class InstructBlipVideoQFormerAttention(nn.Module):
     def __init__(self, config, is_cross_attention=False):
         super().__init__()
@@ -556,6 +571,7 @@ class InstructBlipVideoQFormerAttention(nn.Module):
         return attention_output
 
 
+# InstructBlipVideoQFormerIntermediate：InstructBLIP-Video Q-Former 中间 FFN
 class InstructBlipVideoQFormerIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -571,6 +587,7 @@ class InstructBlipVideoQFormerIntermediate(nn.Module):
         return hidden_states
 
 
+# InstructBlipVideoQFormerOutput：InstructBLIP-Video Q-Former 层输出投影
 class InstructBlipVideoQFormerOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -585,6 +602,7 @@ class InstructBlipVideoQFormerOutput(nn.Module):
         return hidden_states
 
 
+# InstructBlipVideoQFormerLayer：InstructBLIP-Video Q-Former 单层（自/交叉注意力 + FFN）
 class InstructBlipVideoQFormerLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_idx):
         super().__init__()
@@ -670,6 +688,7 @@ class InstructBlipVideoQFormerLayer(GradientCheckpointingLayer):
         return layer_output
 
 
+# InstructBlipVideoQFormerEncoder：InstructBLIP-Video Q-Former 多层编码器堆叠
 class InstructBlipVideoQFormerEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -706,6 +725,7 @@ class InstructBlipVideoQFormerEncoder(nn.Module):
         )
 
 
+# InstructBlipVideoQFormerModel：InstructBLIP-Video Q-Former 桥接模块（视觉→LLM）
 class InstructBlipVideoQFormerModel(InstructBlipVideoPreTrainedModel):
     """
     Querying Transformer (Q-Former), used in InstructBlipVideo. Slightly modified from BLIP-2 as it also takes the
@@ -812,6 +832,7 @@ class InstructBlipVideoQFormerModel(InstructBlipVideoPreTrainedModel):
     """
 )
 @dataclass
+# InstructBlipVideoForConditionalGenerationModelOutput：InstructBLIP-Video 条件生成输出 dataclass
 class InstructBlipVideoForConditionalGenerationModelOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor`, *optional*, returned when `labels` is provided, `torch.FloatTensor` of shape `(1,)`):
@@ -846,6 +867,7 @@ class InstructBlipVideoForConditionalGenerationModelOutput(ModelOutput):
     InstructBlipVideo base Model consisting of language model, qformer and vision encoder.
     """
 )
+# InstructBlipVideoModel：InstructBLIP-Video 视觉+Q-Former+LLM 多模态联合主干
 class InstructBlipVideoModel(InstructBlipVideoPreTrainedModel):
     main_input_name = "pixel_values"
     _keep_in_fp32_modules = ["query_tokens"]  # TODO @ArthurZucker I don't know why this is required for FP8
@@ -1018,6 +1040,7 @@ class InstructBlipVideoModel(InstructBlipVideoPreTrainedModel):
 
 @auto_docstring
 @dataclass
+# BaseModelOutputWithVisionQformerOutputs：InstructBLIP-Video 视觉+Q-Former 联合输出 dataclass
 class BaseModelOutputWithVisionQformerOutputs(BaseModelOutputWithPooling):
     r"""
     vision_outputs (`BaseModelOutputWithPooling`):
@@ -1039,6 +1062,7 @@ class BaseModelOutputWithVisionQformerOutputs(BaseModelOutputWithPooling):
     the prompt. Otherwise, the language model starts generating text from the [BOS] (beginning-of-sequence) token.
     """
 )
+# InstructBlipVideoForConditionalGeneration：InstructBLIP-Video 视频指令条件生成
 class InstructBlipVideoForConditionalGeneration(InstructBlipVideoPreTrainedModel, GenerationMixin):
     config: InstructBlipVideoConfig
     main_input_name = "pixel_values"

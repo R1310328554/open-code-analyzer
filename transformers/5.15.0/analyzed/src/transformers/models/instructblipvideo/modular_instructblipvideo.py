@@ -37,8 +37,12 @@ from ...processing_utils import Unpack
 from ...utils import auto_docstring, can_return_tuple
 
 
+# InstructBLIP-Video modular 源：复用 InstructBLIP 组件并扩展视频帧批处理与 video token
+
+# InstructBlipVideoVisionConfig：Salesforce/instructblip-flan-t5-xl 视频视觉塔默认超参
 @auto_docstring(checkpoint="Salesforce/instructblip-flan-t5-xl")
 @strict
+# InstructBlipVideoVisionConfig：InstructBLIP-Video 视觉塔超参（帧级 ViT）
 class InstructBlipVideoVisionConfig(InstructBlipVisionConfig):
     r"""
     Example:
@@ -57,8 +61,10 @@ class InstructBlipVideoVisionConfig(InstructBlipVisionConfig):
     ```"""
 
 
+# InstructBlipVideoQFormerConfig：Salesforce/instructblip-flan-t5-xl 视频 Q-Former 默认超参
 @auto_docstring(checkpoint="Salesforce/instructblip-flan-t5-xl")
 @strict
+# InstructBlipVideoQFormerConfig：InstructBLIP-Video Q-Former 超参
 class InstructBlipVideoQFormerConfig(InstructBlipQFormerConfig):
     r"""
     cross_attention_frequency (`int`, *optional*, defaults to 2):
@@ -81,8 +87,10 @@ class InstructBlipVideoQFormerConfig(InstructBlipQFormerConfig):
     ```"""
 
 
+# InstructBlipVideoConfig：Salesforce/instructblip-flan-t5-xl 视频指令微调顶层默认超参
 @auto_docstring(checkpoint="Salesforce/instructblip-flan-t5-xl")
 @strict
+# InstructBlipVideoConfig：InstructBLIP-Video 视频指令微调顶层配置
 class InstructBlipVideoConfig(InstructBlipConfig):
     r"""
     qformer_config (`dict`, *optional*):
@@ -125,22 +133,27 @@ class InstructBlipVideoConfig(InstructBlipConfig):
     image_token_index = AttributeError()
 
 
+# InstructBlipVideoPreTrainedModel：InstructBLIP-Video 预训练基类与权重初始化
 class InstructBlipVideoPreTrainedModel(InstructBlipPreTrainedModel):
     input_modalities = ("video", "text")
 
 
+# InstructBlipVideoVisionModel：InstructBLIP-Video 帧级视觉 Transformer 编码塔
 class InstructBlipVideoVisionModel(InstructBlipVisionModel):
     input_modalities = "video"
 
 
+# InstructBlipVideoQFormerModel：InstructBLIP-Video Q-Former 桥接模块（视觉→LLM）
 class InstructBlipVideoQFormerModel(InstructBlipQFormerModel):
     pass
 
 
+# InstructBlipVideoForConditionalGenerationModelOutput：InstructBLIP-Video 条件生成输出 dataclass
 class InstructBlipVideoForConditionalGenerationModelOutput(InstructBlipForConditionalGenerationModelOutput):
     pass
 
 
+# InstructBlipVideoModel：InstructBLIP-Video 视觉+Q-Former+LLM 多模态联合主干
 class InstructBlipVideoModel(InstructBlipModel):
     @can_return_tuple
     @auto_docstring
@@ -238,6 +251,7 @@ class InstructBlipVideoModel(InstructBlipModel):
         )
 
 
+# InstructBlipVideoForConditionalGeneration：InstructBLIP-Video 视频指令条件生成
 class InstructBlipVideoForConditionalGeneration(InstructBlipForConditionalGeneration):
     @can_return_tuple
     @auto_docstring

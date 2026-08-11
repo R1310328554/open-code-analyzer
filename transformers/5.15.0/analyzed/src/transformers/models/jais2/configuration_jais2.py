@@ -27,8 +27,12 @@ from ...utils import auto_docstring
 from ...utils.type_validators import interval
 
 
+# Jais-2 配置：inceptionai/Jais-2-8B-Chat 阿拉伯语 LLM（LayerNorm + ReLU² MLP）超参
+
+# Jais2Config：inceptionai/Jais-2-8B-Chat 阿拉伯语 LLM 默认超参
 @auto_docstring(checkpoint="inceptionai/Jais-2-8B-Chat")
 @strict
+# Jais2Config：Inception Jais-2 阿拉伯语 LLM 超参（LayerNorm + ReLU² MLP）
 class Jais2Config(PreTrainedConfig):
     r"""
     ```python

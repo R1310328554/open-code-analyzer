@@ -38,9 +38,13 @@ from ...utils import TransformersKwargs, auto_docstring, can_return_tuple
 from ...utils.deprecation import deprecate_kwarg
 from ...utils.generic import maybe_autocast, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
+# modeling_jais2 由 modular_jais2.py 自动生成
 from .configuration_jais2 import Jais2Config
 
 
+# Jais-2 建模：GQA 解码器 + RoPE + LayerNorm（由 modular_jais2.py 自动生成）
+
+# Jais2MLP：Jais-2 前馈 MLP（ReLU² 激活，Nemotron 风格）
 class Jais2MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -55,6 +59,7 @@ class Jais2MLP(nn.Module):
         return self.down_proj(self.act_fn(self.up_proj(x)))
 
 
+# rotate_half：RoPE 中将向量后半维旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -63,6 +68,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：对 Q/K 应用旋转位置编码（RoPE）
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -88,6 +94,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -100,6 +107,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -126,6 +134,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# Jais2Attention：Jais-2 多头自注意力（GQA + RoPE）
 class Jais2Attention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -193,6 +202,7 @@ class Jais2Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# Jais2DecoderLayer：Jais-2 解码器单层（自注意力 + MLP + LayerNorm）
 class Jais2DecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Jais2Config, layer_idx: int):
         super().__init__()
@@ -237,6 +247,7 @@ class Jais2DecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Jais2PreTrainedModel：Jais-2 预训练基类与权重初始化
 class Jais2PreTrainedModel(PreTrainedModel):
     config: Jais2Config
     base_model_prefix = "model"
@@ -255,6 +266,7 @@ class Jais2PreTrainedModel(PreTrainedModel):
     }
 
 
+# Jais2RotaryEmbedding：Jais-2 旋转位置编码（RoPE）嵌入
 class Jais2RotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: Jais2Config, device=None):
@@ -313,6 +325,7 @@ class Jais2RotaryEmbedding(nn.Module):
 
 
 @auto_docstring
+# Jais2Model：Jais-2 解码器-only 语言模型主干
 class Jais2Model(Jais2PreTrainedModel):
     def __init__(self, config: Jais2Config):
         super().__init__(config)
@@ -387,6 +400,7 @@ class Jais2Model(Jais2PreTrainedModel):
 
 
 @auto_docstring
+# Jais2ForCausalLM：Jais-2 因果语言建模与对话生成头
 class Jais2ForCausalLM(Jais2PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}

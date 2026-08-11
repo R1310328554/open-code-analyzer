@@ -43,6 +43,9 @@ from ..llava.modeling_llava import (
 from .configuration_internvl import InternVLConfig, InternVLVisionConfig
 
 
+# InternVL modular 源：复用 Llama/CLIP/Janus/Llava 组件构建 InternViT 多模态
+
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -69,10 +72,12 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# InternVLVisionRMSNorm：InternVL 视觉塔 RMS LayerNorm
 class InternVLVisionRMSNorm(LlamaRMSNorm):
     pass
 
 
+# InternVLVisionAttention：InternVL 视觉塔多头自注意力（可选 QK 归一化）
 class InternVLVisionAttention(JanusVisionAttention):
     def __init__(self, config: InternVLVisionConfig):
         super().__init__(config)
@@ -133,6 +138,7 @@ class InternVLVisionAttention(JanusVisionAttention):
     """
 )
 @dataclass
+# InternVLVisionModelOutputWithPooling：InternVL 视觉塔带池化输出 dataclass
 class InternVLVisionModelOutputWithPooling(BaseModelOutputWithPooling):
     r"""
     pooler_output (`torch.FloatTensor` of shape `(batch_size, hidden_size)`):
@@ -142,6 +148,7 @@ class InternVLVisionModelOutputWithPooling(BaseModelOutputWithPooling):
     """
 
 
+# InternVLVisionPatchEmbeddings：InternVL 视觉 patch 卷积嵌入
 class InternVLVisionPatchEmbeddings(nn.Module):
     """
     This class turns `pixel_values` of shape `(batch_size, num_channels, height, width)` into the initial
@@ -179,6 +186,7 @@ class InternVLVisionPatchEmbeddings(nn.Module):
 
 # Based on timm implementation, which can be found here:
 # https://github.com/rwightman/pytorch-image-models/blob/master/timm/models/vision_transformer.py
+# InternVLVisionEmbeddings：InternVL 视觉嵌入层（patch + 位置编码）
 class InternVLVisionEmbeddings(nn.Module):
     """
     Construct the CLS token, position and patch embeddings. Optionally, also the mask token.
@@ -273,6 +281,7 @@ class InternVLVisionEmbeddings(nn.Module):
         return embeddings
 
 
+# InternVLVisionMLP：InternVL 视觉塔前馈 MLP
 class InternVLVisionMLP(CLIPMLP):
     pass
 
@@ -280,6 +289,7 @@ class InternVLVisionMLP(CLIPMLP):
 NORM2FN = {"layer_norm": nn.LayerNorm, "rms_norm": InternVLVisionRMSNorm}
 
 
+# InternVLVisionLayer：InternVL 视觉 Transformer 编码器单层
 class InternVLVisionLayer(GradientCheckpointingLayer):
     """This corresponds to the Block class in the timm implementation."""
 
@@ -326,6 +336,7 @@ class InternVLVisionLayer(GradientCheckpointingLayer):
         return layer_output
 
 
+# InternVLVisionEncoder：InternVL 视觉 Transformer 多层编码器堆叠
 class InternVLVisionEncoder(nn.Module):
     def __init__(self, config: InternVLVisionConfig) -> None:
         super().__init__()
@@ -346,6 +357,7 @@ class InternVLVisionEncoder(nn.Module):
 
 
 @auto_docstring
+# InternVLVisionPreTrainedModel：InternVL 视觉塔预训练基类与权重初始化
 class InternVLVisionPreTrainedModel(PreTrainedModel):
     config: InternVLVisionConfig
     base_model_prefix = "internvl_vision"
@@ -379,6 +391,7 @@ class InternVLVisionPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# InternVLVisionModel：InternVL InternViT 视觉编码塔
 class InternVLVisionModel(InternVLVisionPreTrainedModel):
     def __init__(self, config: InternVLVisionConfig) -> None:
         super().__init__(config)
@@ -420,6 +433,7 @@ class InternVLVisionModel(InternVLVisionPreTrainedModel):
         )
 
 
+# InternVLPreTrainedModel：InternVL 多模态预训练基类与权重初始化
 class InternVLPreTrainedModel(LlavaPreTrainedModel):
     input_modalities = ("image", "text", "video")
 
@@ -427,6 +441,7 @@ class InternVLPreTrainedModel(LlavaPreTrainedModel):
 INTERNVL_INPUTS_DOCSTRING = None
 
 
+# InternVLMultiModalProjector：InternVL 视觉特征到 LLM 维度的 MLP 投影器
 class InternVLMultiModalProjector(nn.Module):
     def __init__(self, config: InternVLConfig):
         super().__init__()
@@ -445,10 +460,12 @@ class InternVLMultiModalProjector(nn.Module):
         return hidden_states
 
 
+# InternVLModelOutputWithPast：InternVL 多模态输出 dataclass（含 past_key_values）
 class InternVLModelOutputWithPast(LlavaModelOutputWithPast):
     pass
 
 
+# InternVLModel：InternVL 视觉+文本多模态联合主干
 class InternVLModel(LlavaModel):
     def pixel_shuffle(self, vision_features: torch.Tensor, scale_factor: float = 0.5):
         """Perform pixel shuffle downsampling on vision features.
@@ -586,10 +603,12 @@ class InternVLModel(LlavaModel):
         )
 
 
+# InternVLCausalLMOutputWithPast：InternVL 因果 LM 输出 dataclass（含 logits 与 past）
 class InternVLCausalLMOutputWithPast(LlavaCausalLMOutputWithPast):
     pass
 
 
+# InternVLForConditionalGeneration：InternVL 图文/视频条件生成
 class InternVLForConditionalGeneration(LlavaForConditionalGeneration):
     def forward(**super_kwargs):
         r"""

@@ -16,6 +16,8 @@
 Video processor class for InstructBLIPVideo
 """
 
+# InstructBLIP-Video 视频预处理：帧 resize、归一化与 CLIP 风格标准化
+
 import torch
 import torchvision.transforms.v2.functional as tvF
 
@@ -26,6 +28,7 @@ from ...video_processing_utils import BaseVideoProcessor
 from ...video_utils import group_videos_by_shape, reorder_videos
 
 
+# InstructBlipVideoVideoProcessor：InstructBLIP-Video 视频帧 resize/归一化预处理
 class InstructBlipVideoVideoProcessor(BaseVideoProcessor):
     resample = PILImageResampling.BICUBIC
     image_mean = OPENAI_CLIP_MEAN
