@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T03:00:33Z",
-  "files": [
-    "src/transformers/models/qwen3/__init__.py",
-    "src/transformers/models/qwen3/configuration_qwen3.py",
-    "src/transformers/models/qwen3/modeling_qwen3.py",
-    "src/transformers/models/qwen3/modular_qwen3.py",
-    "src/transformers/models/qwen3_5/__init__.py",
-    "src/transformers/models/qwen3_5/configuration_qwen3_5.py",
-    "src/transformers/models/qwen3_5/modeling_qwen3_5.py",
-    "src/transformers/models/qwen3_5/modular_qwen3_5.py",
-    "src/transformers/models/qwen3_5/tokenization_qwen3_5.py",
-    "src/transformers/models/qwen3_5_moe/__init__.py",
-    "src/transformers/models/qwen3_5_moe/configuration_qwen3_5_moe.py",
-    "src/transformers/models/qwen3_5_moe/modeling_qwen3_5_moe.py",
-    "src/transformers/models/qwen3_5_moe/modular_qwen3_5_moe.py",
-    "src/transformers/models/qwen3_asr/__init__.py",
-    "src/transformers/models/qwen3_asr/configuration_qwen3_asr.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 789,
-  "done": 1875
+  "done": 1890
 }
