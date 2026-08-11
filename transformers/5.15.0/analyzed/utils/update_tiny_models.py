@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """A script running `create_dummy_models.py` with a pre-defined set of arguments.
+# CI 微型模型：批量创建/上传 tiny checkpoint 并维护 tiny_model_summary.json
 
 This file is intended to be used in a CI workflow file without the need of specifying arguments. It creates and uploads
 tiny models for all model classes (if their tiny versions are not on the Hub yet), as well as produces an updated
@@ -36,6 +37,7 @@ from transformers.image_processing_utils import BaseImageProcessor
 logger = logging.get_logger(__name__)
 
 
+# get_all_model_names：从 modeling_auto 各 MAPPING_NAMES 收集模型类名
 def get_all_model_names():
     model_names = set()
 
@@ -56,6 +58,7 @@ def get_all_model_names():
     return sorted(model_names)
 
 
+# get_tiny_model_names_from_repo：读取本地 tiny_model_summary.json 已有类名
 def get_tiny_model_names_from_repo():
     with open("tests/utils/tiny_model_summary.json") as fp:
         tiny_model_info = json.load(fp)
@@ -66,6 +69,7 @@ def get_tiny_model_names_from_repo():
     return sorted(tiny_models_names)
 
 
+# get_tiny_model_summary_from_hub：扫描 Hub tiny-random 仓库并汇总 tokenizer/processor/model 类
 def get_tiny_model_summary_from_hub(output_path):
     api = HfApi()
     special_models = COMPOSITE_MODELS.values()
@@ -146,6 +150,7 @@ def get_tiny_model_summary_from_hub(output_path):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+# __main__：spawn 多进程调用 create_tiny_models，跳过已有 tiny 并上传 Hub
     parser.add_argument("--num_workers", default=1, type=int, help="The number of workers to run.")
     args = parser.parse_args()
 

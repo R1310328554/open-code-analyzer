@@ -45,6 +45,7 @@ Base use to fetch the tests on a the main branch (with diff from the last commit
 
 ```bash
 python utils/tests_fetcher.py --diff_with_last_commit
+# 测试选取器 V2：按 PR 变更与依赖反向图推断需运行的 pytest 子集
 ```
 """
 
@@ -63,6 +64,7 @@ from git import Repo
 # List here the models not to be filtered by `filter_tests`.
 
 
+# 仓库路径常量：examples/src/tests 根目录与触发全量 CI 的阈值
 PATH_TO_REPO = Path(__file__).parent.parent.resolve()
 PATH_TO_EXAMPLES = PATH_TO_REPO / "examples"
 PATH_TO_TRANSFORMERS = PATH_TO_REPO / "src/transformers"
@@ -73,6 +75,7 @@ NUM_MODELS_TO_TRIGGER_FULL_CI = 15
 
 # A list of very important files that should trigger all tests if modified (because they can have impact almost anywhere
 # in the library)
+# CORE_FILES：修改后应触发全库测试的核心文件列表
 CORE_FILES = (
     "setup.py",
     ".circleci/create_circleci_config.py",
@@ -85,6 +88,7 @@ CORE_FILES = (
 
 
 @contextmanager
+# checkout_commit：临时检出指定 commit，退出时恢复 HEAD
 def checkout_commit(repo: Repo, commit_id: str):
     """
     Context manager that checks out a given commit when entered, but gets back to the reference it was at on exit.
@@ -103,6 +107,7 @@ def checkout_commit(repo: Repo, commit_id: str):
         repo.git.checkout(current_head)
 
 
+# clean_code：剥离 docstring/注释/空行，判断 diff 是否仅文档变更
 def clean_code(content: str) -> str:
     """
     Remove docstrings, empty line or comments from some code (used to detect if a diff is real or only concern
@@ -135,6 +140,7 @@ def clean_code(content: str) -> str:
     return "\n".join(lines_to_keep)
 
 
+# keep_doc_examples_only：仅保留 ``` 代码示例块用于 doctest diff
 def keep_doc_examples_only(content: str) -> str:
     """
     Remove everything from the code content except the doc examples (used to determined if a diff should trigger doc
@@ -162,6 +168,7 @@ def keep_doc_examples_only(content: str) -> str:
     return "\n".join(lines_to_keep)
 
 
+# get_all_tests：枚举 tests 下可并行拆分的目录与 test_*.py
 def get_all_tests() -> list[str]:
     """
     Walks the `tests` folder to return a list of files/subfolders. This is used to split the tests to run when using
@@ -191,6 +198,7 @@ def get_all_tests() -> list[str]:
     return tests
 
 
+# diff_is_docstring_only：比较分支点与当前文件，diff 是否只在文档
 def diff_is_docstring_only(repo: Repo, branching_point: str, filename: str) -> bool:
     """
     Check if the diff is only in docstrings (or comments and whitespace) in a filename.
@@ -217,6 +225,7 @@ def diff_is_docstring_only(repo: Repo, branching_point: str, filename: str) -> b
     return old_content_clean == new_content_clean
 
 
+# diff_contains_doc_examples：检测 diff 是否涉及 doc 内代码示例
 def diff_contains_doc_examples(repo: Repo, branching_point: str, filename: str) -> bool:
     """
     Check if the diff is only in code examples of the doc in a filename.
@@ -243,6 +252,7 @@ def diff_contains_doc_examples(repo: Repo, branching_point: str, filename: str) 
     return old_content_clean != new_content_clean
 
 
+# get_impacted_files_from_tiny_model_summary：tiny_model_summary.json 变更映射到 modeling 文件
 def get_impacted_files_from_tiny_model_summary(diff_with_last_commit: bool = False) -> list[str]:
     """
     Return a list of python modeling files that are impacted by the changes of `tiny_model_summary.json` in between:
@@ -322,6 +332,7 @@ def get_impacted_files_from_tiny_model_summary(diff_with_last_commit: bool = Fal
     return sorted(files)
 
 
+# get_diff：base 与分支 commit 间 Python 文件有效 diff 列表
 def get_diff(repo: Repo, base_commit: str, commits: list[str]) -> list[str]:
     """
     Get the diff between a base commit and one or several commits.
@@ -360,6 +371,7 @@ def get_diff(repo: Repo, base_commit: str, commits: list[str]) -> list[str]:
     return code_diff
 
 
+# get_modified_python_files：PR 或上一 commit 相对 main 的改动文件
 def get_modified_python_files(diff_with_last_commit: bool = False) -> list[str]:
     """
     Return a list of python files that have been modified between:
@@ -390,6 +402,7 @@ def get_modified_python_files(diff_with_last_commit: bool = False) -> list[str]:
         return get_diff(repo, repo.head.commit, parent_commits)
 
 
+# get_diff_for_doctesting：提取含 doc example 变更的 .py/.md
 def get_diff_for_doctesting(repo: Repo, base_commit: str, commits: list[str]) -> list[str]:
     """
     Get the diff in doc examples between a base commit and one or several commits.
@@ -431,6 +444,7 @@ def get_diff_for_doctesting(repo: Repo, base_commit: str, commits: list[str]) ->
     return code_diff
 
 
+# get_all_doctest_files：src 与 docs/source/en 下全部 doctest 候选
 def get_all_doctest_files() -> list[str]:
     """
     Return the complete list of python and Markdown files on which we run doctest.
@@ -464,6 +478,7 @@ def get_all_doctest_files() -> list[str]:
     return sorted(test_files_to_run)
 
 
+# get_new_doctest_files：not_doctested.txt 中被移除的路径
 def get_new_doctest_files(repo, base_commit, branching_commit) -> list[str]:
     """
     Get the list of files that were removed from "utils/not_doctested.txt", between `base_commit` and
@@ -491,6 +506,7 @@ def get_new_doctest_files(repo, base_commit, branching_commit) -> list[str]:
     return []
 
 
+# get_doctest_files：PR 内需运行的 doctest 文件（排除 slow 列表）
 def get_doctest_files(diff_with_last_commit: bool = False) -> list[str]:
     """
     Return a list of python and Markdown files where doc example have been modified between:
@@ -543,6 +559,7 @@ def get_doctest_files(diff_with_last_commit: bool = False) -> list[str]:
 # \s*from\s+(\.+\S+)\s+import\s+([^\n]+) -> Line only contains from .xxx import yyy and we catch .xxx and yyy
 # (?=\n) -> Look-ahead to a new line. We can't just put \n here or using find_all on this re will only catch every
 #           other import.
+# 导入解析正则：匹配相对/绝对 from ... import 单行与多行语句
 _re_single_line_relative_imports = re.compile(r"(?:^|\n)\s*from\s+(\.+\S+)\s+import\s+([^\n]+)(?=\n)")
 # (:?^|\n) -> Non-catching group for the beginning of the doc or a new line.
 # \s*from\s+(\.+\S+)\s+import\s+\(([^\)]+)\) -> Line continues with from .xxx import (yyy) and we catch .xxx and yyy
@@ -560,6 +577,7 @@ _re_single_line_direct_imports = re.compile(r"(?:^|\n)\s*from\s+transformers(\S*
 _re_multi_line_direct_imports = re.compile(r"(?:^|\n)\s*from\s+transformers(\S*)\s+import\s+\(([^\)]+)\)")
 
 
+# extract_imports：解析模块内相对/绝对 transformers 导入
 def extract_imports(module_fname: str, cache: dict[str, list[str]] | None = None) -> list[str]:
     """
     Get the imports a given module makes.
@@ -642,6 +660,7 @@ def extract_imports(module_fname: str, cache: dict[str, list[str]] | None = None
     return result
 
 
+# get_module_dependencies：展开 __init__ 与 define_import_structure 依赖
 def get_module_dependencies(module_fname: str, cache: dict[str, list[str]] | None = None) -> list[str]:
     """
     Refines the result of `extract_imports` to remove subfolders and get a proper list of module filenames: if a file
@@ -725,6 +744,7 @@ def get_module_dependencies(module_fname: str, cache: dict[str, list[str]] | Non
     return dependencies
 
 
+# create_reverse_dependency_tree：构建 (被依赖, 依赖方) 边列表
 def create_reverse_dependency_tree() -> list[tuple[str, str]]:
     """
     Create a list of all edges (a, b) which mean that modifying a impacts b with a going over all module and test files.
@@ -739,6 +759,7 @@ def create_reverse_dependency_tree() -> list[tuple[str, str]]:
     return list(set(edges))
 
 
+# get_tree_starting_at：从某模块出发 BFS 依赖传播树
 def get_tree_starting_at(module: str, edges: list[tuple[str, str]]) -> list[str | list[str]]:
     """
     Returns the tree starting at a given module following all edges.
@@ -767,6 +788,7 @@ def get_tree_starting_at(module: str, edges: list[tuple[str, str]]) -> list[str 
     return tree
 
 
+# print_tree_deps_of：打印依赖某模块的全部下游模块树
 def print_tree_deps_of(module, all_edges=None):
     """
     Prints the tree of modules depending on a given module.
@@ -800,6 +822,7 @@ def print_tree_deps_of(module, all_edges=None):
         print(line[0])
 
 
+# init_test_examples_dependencies：examples/pytorch 测试与示例映射
 def init_test_examples_dependencies() -> tuple[dict[str, list[str]], list[str]]:
     """
     The test examples do not import from the examples (which are just scripts, not modules) so we need some extra
@@ -832,6 +855,7 @@ def init_test_examples_dependencies() -> tuple[dict[str, list[str]], list[str]]:
     return test_example_deps, all_examples
 
 
+# create_reverse_dependency_map：文件→递归依赖它的模块/测试
 def create_reverse_dependency_map() -> dict[str, list[str]]:
     """
     Create the dependency map from module/test filename to the list of modules/tests that depend on it recursively.
@@ -887,6 +911,7 @@ def create_reverse_dependency_map() -> dict[str, list[str]]:
     return reverse_map
 
 
+# create_module_to_test_map：从反向依赖图提取各文件对应测试
 def create_module_to_test_map(reverse_map: dict[str, list[str]] | None = None) -> dict[str, list[str]]:
     """
     Extract the tests from the reverse_dependency_map and potentially filters the model tests.
@@ -916,6 +941,7 @@ def create_module_to_test_map(reverse_map: dict[str, list[str]] | None = None) -
     return test_map
 
 
+# get_repo_utils_tests：tests/repo_utils 下 test_*.py 列表
 def get_repo_utils_tests() -> list[str]:
     """
     Return the list of repo utils tests.
@@ -929,6 +955,7 @@ def get_repo_utils_tests() -> list[str]:
     return sorted(str(path.relative_to(PATH_TO_REPO)) for path in repo_utils_dir.glob("test_*.py"))
 
 
+# should_run_repo_utils_tests：utils/ 改动时是否跑 repo utils 测试
 def should_run_repo_utils_tests(modified_files: list[str]) -> bool:
     """
     Return whether repo utils tests should be scheduled based on the modified files.
@@ -943,6 +970,7 @@ def should_run_repo_utils_tests(modified_files: list[str]) -> bool:
     return any(path.startswith("utils/") for path in modified_files)
 
 
+# get_conftest_tests：tests/conftest_tests 守护 pytest 基础设施
 def get_conftest_tests() -> list[str]:
     """
     Return the list of tests guarding the pytest ``conftest.py`` machinery itself.
@@ -956,6 +984,7 @@ def get_conftest_tests() -> list[str]:
     return sorted(str(path.relative_to(PATH_TO_REPO)) for path in conftest_dir.glob("test_*.py"))
 
 
+# should_run_conftest_tests：conftest.py 变更时是否跑 conftest 测试
 def should_run_conftest_tests(modified_files: list[str]) -> bool:
     """
     Return whether the ``conftest.py`` tests should be scheduled based on the modified files.
@@ -973,6 +1002,7 @@ def should_run_conftest_tests(modified_files: list[str]) -> bool:
     return any(os.path.basename(path) == "conftest.py" for path in modified_files)
 
 
+# _print_list：将列表格式化为带 - 前缀的多行文本
 def _print_list(l) -> str:
     """
     Pretty print a list of elements with one line per element and a - starting each line.
@@ -980,6 +1010,7 @@ def _print_list(l) -> str:
     return "\n".join([f"- {f}" for f in l])
 
 
+# infer_tests_to_run：主流程：diff→依赖→测试列表与 doctest 输出
 def infer_tests_to_run(output_file: str, diff_with_last_commit: bool = False, test_all: bool = False):
     """
     The main function called by the test fetcher. Determines the tests to run from the diff.
@@ -1066,6 +1097,7 @@ def infer_tests_to_run(output_file: str, diff_with_last_commit: bool = False, te
             f.write(" ".join(doctest_list))
 
 
+# filter_tests：从输出文件剔除指定文件夹下的测试
 def filter_tests(output_file: str, filters: list[str]):
     """
     Reads the content of the output file and filters out all the tests in a list of given folders.
@@ -1093,6 +1125,7 @@ def filter_tests(output_file: str, filters: list[str]):
         f.write(" ".join(test_files))
 
 
+# parse_commit_message：解析 [ci skip]/[test all] 等 commit 指令
 def parse_commit_message(commit_message: str) -> dict[str, bool]:
     """
     Parses the commit message to detect if a command is there to skip, force all or part of the CI.
@@ -1119,6 +1152,7 @@ def parse_commit_message(commit_message: str) -> dict[str, bool]:
         return {"skip": False, "no_filter": False, "test_all": False}
 
 
+# JOB_TO_TEST_FILE：CircleCI 作业名到测试路径正则的映射
 JOB_TO_TEST_FILE = {
     "tests_torch": r"tests/models/.*/test_modeling_.*",
     "tests_generate": r"(tests/models/.*/test_modeling_.*|tests/generation/test_.*\.py)",
@@ -1140,6 +1174,7 @@ JOB_TO_TEST_FILE = {
 }
 
 
+# create_test_list_from_filter：按 JOB 正则拆分并写入各 job 列表
 def create_test_list_from_filter(full_test_list, out_path):
     os.makedirs(out_path, exist_ok=True)
     all_test_files = "\n".join(full_test_list)

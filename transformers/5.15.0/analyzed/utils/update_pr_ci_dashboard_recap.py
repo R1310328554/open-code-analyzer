@@ -14,6 +14,7 @@
 # limitations under the License.
 
 """Update a PR with a CI badge and a compact CI recap from the Grafana pytest dashboard."""
+# PR CI 仪表盘：从 Grafana/Prometheus 拉取指标，更新 PR 徽章与 recap 评论
 
 import json
 import os
@@ -28,6 +29,7 @@ import urllib.request
 from github_utils import github_request
 
 
+# 常量：GitHub API、Grafana Prometheus 代理与 HTML 标记区间
 GITHUB_API_URL = "https://api.github.com"
 GRAFANA_QUERY_URL = "https://transformers-ci.lor-e.huggingface.cool/api/datasources/proxy/uid/prometheus/api/v1/query"
 DASHBOARD_URL = (
@@ -44,6 +46,7 @@ OLD_DASHBOARD_COMMENT_MARKERS = (
 )
 
 
+# log_workflow_run：打印 workflow_run 事件关键字段便于调试
 def log_workflow_run(workflow_run):
     """Print the GitHub Actions workflow_run payload fields used for debugging."""
     print("=== Triggering PR CI workflow_run info ===")
@@ -62,6 +65,7 @@ def log_workflow_run(workflow_run):
     print("==========================================")
 
 
+# request_json：GET URL 并解析 JSON（Grafana 数据源代理专用）
 def request_json(url):
     """GET a URL and parse the response body as JSON (used for the Grafana datasource proxy).
 
@@ -81,6 +85,7 @@ def request_json(url):
     return json.loads(raw)
 
 
+# github_paginate：分页拉取 GitHub API 列表直至末页
 def github_paginate(path, token, key=None):
     """Return all items from a paginated GitHub API endpoint."""
     page = 1
@@ -99,11 +104,13 @@ def github_paginate(path, token, key=None):
     return items
 
 
+# prometheus_string：Prometheus 标签选择器字符串转义
 def prometheus_string(value):
     """Escape a value for use inside a Prometheus label selector string."""
     return str(value).replace("\\", "\\\\").replace('"', '\\"')
 
 
+# query_prometheus：经 Grafana 代理执行 PromQL 查询
 def query_prometheus(query):
     """Run a Prometheus query through the Grafana datasource proxy."""
     url = f"{GRAFANA_QUERY_URL}?{urllib.parse.urlencode({'query': query})}"
@@ -113,6 +120,7 @@ def query_prometheus(query):
     return payload["data"]["result"]
 
 
+# first_value：取 Prometheus 结果首个样本的 float 值
 def first_value(result):
     """Return the first Prometheus sample value as a float, if present."""
     if not result:
@@ -123,6 +131,7 @@ def first_value(result):
         return None
 
 
+# get_latest_run_id：查询 PR 最近一次 pytest run_id
 def get_latest_run_id(pr_number):
     """Return the latest pytest dashboard run id recorded for a PR."""
     pr = prometheus_string(pr_number)
@@ -132,6 +141,7 @@ def get_latest_run_id(pr_number):
     return result[0].get("metric", {}).get("run_id")
 
 
+# get_metric_value：主查询失败或为零时可选 fallback 查询
 def get_metric_value(query, fallback_query=None, fallback_on_zero=False):
     """Return a metric value, optionally using a fallback query when the primary value is missing."""
     value = first_value(query_prometheus(query))
@@ -140,6 +150,7 @@ def get_metric_value(query, fallback_query=None, fallback_on_zero=False):
     return value
 
 
+# get_ci_recap：汇总 duration/failures/jobs/tests 等 CI 指标
 def get_ci_recap(pr_number, current_run_url, current_run_conclusion):
     """Collect the compact CI metrics displayed in the PR recap comment."""
     pr = prometheus_string(pr_number)
@@ -171,6 +182,7 @@ def get_ci_recap(pr_number, current_run_url, current_run_conclusion):
     }
 
 
+# format_number：数值格式化为紧凑 Markdown 字符串
 def format_number(value):
     """Format a numeric metric for compact Markdown display."""
     if value is None:
@@ -178,6 +190,7 @@ def format_number(value):
     return f"{int(value):,}" if value.is_integer() else f"{value:,.2f}"
 
 
+# format_duration：秒数转为 xh ym 或 xm ys 可读时长
 def format_duration(seconds):
     """Format a duration in seconds as a short human-readable value."""
     if seconds is None:
@@ -193,6 +206,7 @@ def format_duration(seconds):
     return f"{remaining_seconds}s"
 
 
+# render_ci_badge：生成 PR 正文顶部的 CI 徽章 Markdown
 def render_ci_badge(pr_number, dashboard_url):
     """Render the CI dashboard badge block inserted at the top of the PR body."""
     badge_url = f"{BADGE_URL}?pr={pr_number}"
@@ -205,6 +219,7 @@ def render_ci_badge(pr_number, dashboard_url):
     )
 
 
+# render_ci_recap：生成 PR 评论中的 CI recap Markdown 块
 def render_ci_recap(dashboard_url, recap, workflow_run, quality_failed):
     """Render the Markdown body of the CI recap comment."""
     lines = [
@@ -251,6 +266,7 @@ def render_ci_recap(dashboard_url, recap, workflow_run, quality_failed):
     return "\n".join(lines)
 
 
+# replace_marked_block：按 HTML 注释标记替换 Markdown 区域
 def replace_marked_block(body, start_marker, end_marker, replacement):
     """Replace all Markdown regions delimited by marker comments, if any exist."""
     existing_body = body or ""
@@ -260,6 +276,7 @@ def replace_marked_block(body, start_marker, end_marker, replacement):
     return None
 
 
+# remove_marked_block：删除标记区间并压缩多余空行
 def remove_marked_block(body, start_marker, end_marker):
     """Remove all marked Markdown regions from a body and normalize blank lines."""
     updated = replace_marked_block(body, start_marker, end_marker, "")
@@ -268,6 +285,7 @@ def remove_marked_block(body, start_marker, end_marker):
     return re.sub(r"\n{3,}", "\n\n", updated).strip()
 
 
+# inject_ci_badge：插入或更新 PR body 中的 CI 徽章块
 def inject_ci_badge(body, badge):
     """Insert or replace the CI dashboard badge block in a PR body."""
     replaced = replace_marked_block(body, BADGE_START, BADGE_END, badge)
@@ -277,12 +295,14 @@ def inject_ci_badge(body, badge):
     return f"{badge}\n\n{existing_body.lstrip()}".rstrip()
 
 
+# find_open_pr_for_sha：按 head SHA 匹配当前 open PR
 def find_open_pr_for_sha(repo, token, head_sha):
     """Find the open pull request whose head commit matches a workflow run SHA."""
     prs = github_paginate(f"/repos/{repo}/pulls?state=open", token)
     return next((pr for pr in prs if pr["head"]["sha"] == head_sha), None)
 
 
+# delete_old_dashboard_comments：删除旧版仪表盘评论
 def delete_old_dashboard_comments(repo, token, pr_number):
     """Delete legacy dashboard comments created before the recap marker flow."""
     comments = github_paginate(f"/repos/{repo}/issues/{pr_number}/comments", token)
@@ -294,6 +314,7 @@ def delete_old_dashboard_comments(repo, token, pr_number):
             )
 
 
+# recreate_ci_recap_comment：删旧 recap 评论并新建一条
 def recreate_ci_recap_comment(repo, token, pr_number, recap):
     """Delete existing recap comments and create a fresh one at the bottom of the PR timeline."""
     comments = github_paginate(f"/repos/{repo}/issues/{pr_number}/comments", token)
@@ -314,6 +335,7 @@ def recreate_ci_recap_comment(repo, token, pr_number, recap):
     )
 
 
+# quality_job_failed：PR CI workflow 中代码质量 job 是否失败
 def quality_job_failed(repo, token, run_id):
     """Return whether the PR CI workflow's code quality job failed."""
     jobs = github_paginate(f"/repos/{repo}/actions/runs/{run_id}/jobs", token, key="jobs")
@@ -321,6 +343,7 @@ def quality_job_failed(repo, token, run_id):
     return quality_job is not None and quality_job.get("conclusion") == "failure"
 
 
+# main：workflow_run 触发入口：更新 PR body 与 recap 评论
 def main():
     """Entrypoint for the workflow_run-triggered GitHub Action."""
     token = os.environ["GITHUB_TOKEN"]

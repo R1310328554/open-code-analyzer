@@ -25,6 +25,7 @@ that new pipelines are properly added as metadata (as used in `make check-repo`)
 
 ```bash
 python utils/update_metadata.py --check-only
+# 元数据同步：将 pipeline/auto 映射写入 huggingface/transformers-metadata Hub 数据集
 ```
 """
 
@@ -42,6 +43,7 @@ from transformers.models.auto.modeling_auto import MODEL_FOR_MULTIMODAL_LM_MAPPI
 from transformers.utils import direct_transformers_import
 
 
+# CHECKER_CONFIG：make check-repo 中 pipeline 元数据完整性检查配置
 CHECKER_CONFIG = {
     "name": "update_metadata",
     "label": "Model metadata",
@@ -69,6 +71,7 @@ _re_pt_models = re.compile(r"(.*)(?:Model|Encoder|Decoder|ForConditionalGenerati
 
 
 # Fill this with tuples (pipeline_tag, model_mapping, auto_model)
+# PIPELINE_TAGS_AND_AUTO_MODELS：pipeline tag → Auto 映射名 → Auto 类名三元组
 PIPELINE_TAGS_AND_AUTO_MODELS = [
     ("pretraining", "MODEL_FOR_PRETRAINING_MAPPING_NAMES", "AutoModelForPreTraining"),
     ("feature-extraction", "MODEL_MAPPING_NAMES", "AutoModel"),
@@ -133,6 +136,7 @@ PIPELINE_TAGS_AND_AUTO_MODELS = [
 ]
 
 
+# camel_case_split：驼峰标识符拆分为单词列表
 def camel_case_split(identifier: str) -> list[str]:
     """
     Split a camel-cased name into words.
@@ -155,6 +159,7 @@ def camel_case_split(identifier: str) -> list[str]:
     return [m.group(0) for m in matches]
 
 
+# get_frameworks_table：生成各 model_type 的 PyTorch/Processor 支持表
 def get_frameworks_table() -> pd.DataFrame:
     """
     Generates a dataframe containing the supported auto classes for each model type, using the content of the auto
@@ -211,6 +216,7 @@ def get_frameworks_table() -> pd.DataFrame:
     return pd.DataFrame(data)
 
 
+# update_pipeline_and_auto_class_table：合并 pipeline tag 与 Auto 类到模型类映射
 def update_pipeline_and_auto_class_table(table: dict[str, tuple[str, str]]) -> dict[str, tuple[str, str]]:
     """
     Update the table mapping models to pipelines and auto classes without removing old keys if they don't exist anymore.
@@ -244,6 +250,7 @@ def update_pipeline_and_auto_class_table(table: dict[str, tuple[str, str]]) -> d
     return table
 
 
+# update_metadata：对比 Hub 后上传 frameworks.json 与 pipeline_tags.json
 def update_metadata(token: str, commit_sha: str):
     """
     Update the metadata for the Transformers repo in `huggingface/transformers-metadata`.
@@ -327,6 +334,7 @@ def update_metadata(token: str, commit_sha: str):
         )
 
 
+# check_pipeline_tags：SUPPORTED_TASKS 是否均在 PIPELINE_TAGS 常量中
 def check_pipeline_tags():
     """
     Check all pipeline tags are properly defined in the `PIPELINE_TAGS_AND_AUTO_MODELS` constant of this script.
@@ -351,6 +359,7 @@ def check_pipeline_tags():
         )
 
 
+# check_multimodal_auto_class_assignment：非多模态模型不得误标 AutoModelForMultimodalLM
 def check_multimodal_auto_class_assignment():
     """
     Check that non-multimodal models are never assigned ``AutoModelForMultimodalLM`` as their auto
