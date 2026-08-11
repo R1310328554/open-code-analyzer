@@ -37,11 +37,15 @@ from ...utils import (
 logger = logging.get_logger(__name__)
 
 
+# LFM2-VL 图像预处理：动态宽高比 resize、patch 切分与 ImageNet 归一化
+
+# round_by_factor：将数值四舍五入到最接近的 factor 整数倍
 def round_by_factor(number: float, factor: int) -> int:
     """Returns the closest integer to 'number' that is divisible by 'factor'."""
     return round(number / factor) * factor
 
 
+# find_closest_aspect_ratio：在候选宽高比中选取与图像最接近且 patch 数不超过上限的比例
 def find_closest_aspect_ratio(
     aspect_ratio: float,
     target_ratios: list[tuple[int, int]],
@@ -84,6 +88,7 @@ def find_closest_aspect_ratio(
 
 # copied from Siglip2ImageProcessor
 @lru_cache(maxsize=256)
+# get_image_size_for_max_num_patches：按最大 patch 数约束计算 resize 后的图像尺寸
 def get_image_size_for_max_num_patches(
     image_height: int, image_width: int, patch_size: int, max_num_patches: int, eps: float = 1e-5
 ) -> tuple[int, int]:
@@ -131,6 +136,7 @@ def get_image_size_for_max_num_patches(
     return target_height, target_width
 
 
+# convert_image_to_patches：将图像张量按 patch 尺寸切分为 patch 序列
 def convert_image_to_patches(images: "torch.Tensor", patch_size: int) -> "torch.Tensor":
     """
     Convert 3D array image of shape (image_height, image_width, num_channels) into 2D array of patches of shape
@@ -147,6 +153,7 @@ def convert_image_to_patches(images: "torch.Tensor", patch_size: int) -> "torch.
     return patched_image
 
 
+# pad_along_first_dim：沿 batch 第一维对张量 padding 到统一长度
 def pad_along_first_dim(
     images: "torch.Tensor", target_length: int, pad_value: int = 0
 ) -> tuple["torch.Tensor", "torch.Tensor"]:
@@ -163,6 +170,7 @@ def pad_along_first_dim(
     return images, pixel_mask
 
 
+# Lfm2VlImageProcessorKwargs：LFM2-VL 图像处理器可选参数字典类型
 class Lfm2VlImageProcessorKwargs(ImagesKwargs, total=False):
     """
     downsample_factor (`int`, *optional*, defaults to `2`):
@@ -215,6 +223,7 @@ class Lfm2VlImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# Lfm2VlImageProcessor：LFM2-VL Torchvision 后端动态分辨率 patch 预处理
 class Lfm2VlImageProcessor(TorchvisionBackend):
     downsample_factor = 2
     do_image_splitting = True

@@ -23,11 +23,16 @@ from huggingface_hub.dataclasses import strict
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
+# configuration_lightglue 由 modular_lightglue.py 自动生成
 from ..superpoint import SuperPointConfig
 
 
+# LightGlue 配置：SuperPoint 关键点检测器 + LightGlue 匹配器联合超参（由 modular 自动生成）
+
+# LightGlueConfig：ETH-CVG/lightglue_superpoint 关键点匹配默认超参
 @auto_docstring(checkpoint="ETH-CVG/lightglue_superpoint")
 @strict
+# LightGlueConfig：ETH-CVG/lightglue_superpoint 关键点检测与匹配超参
 class LightGlueConfig(PreTrainedConfig):
     r"""
     keypoint_detector_config (`Union[AutoConfig, dict]`,  *optional*, defaults to `SuperPointConfig`):

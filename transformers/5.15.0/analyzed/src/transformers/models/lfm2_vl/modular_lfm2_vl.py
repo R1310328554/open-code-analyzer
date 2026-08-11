@@ -34,6 +34,9 @@ from .configuration_lfm2_vl import Lfm2VlConfig
 logger = logging.get_logger(__name__)
 
 
+# LFM2-VL modular 源：复用 Llava 多模态主干扩展 LFM2 视觉-语言实现
+
+# Lfm2VlMultiModalProjector：LFM2-VL 视觉 patch 下采样投影到文本隐空间
 class Lfm2VlMultiModalProjector(nn.Module):
     def __init__(self, config: Lfm2VlConfig):
         super().__init__()
@@ -73,19 +76,23 @@ class Lfm2VlMultiModalProjector(nn.Module):
         return hidden_states
 
 
+# Lfm2VlPreTrainedModel：LFM2-VL 多模态预训练基类与权重初始化
 class Lfm2VlPreTrainedModel(LlavaPreTrainedModel):
     _can_compile_fullgraph = False
     base_model_prefix = "model"
 
 
+# Lfm2VlCausalLMOutputWithPast：LFM2-VL 条件生成输出 dataclass（含 logits 与 KV 缓存）
 class Lfm2VlCausalLMOutputWithPast(LlavaCausalLMOutputWithPast):
     pass
 
 
+# Lfm2VlModelOutputWithPast：LFM2-VL 多模态主干输出 dataclass（含 past_key_values）
 class Lfm2VlModelOutputWithPast(LlavaModelOutputWithPast):
     pass
 
 
+# Lfm2VlModel：LFM2-VL 视觉编码 + 文本解码多模态联合主干
 class Lfm2VlModel(LlavaModel):
     def __init__(self, config: Lfm2VlConfig):
         super().__init__(config)
@@ -225,6 +232,7 @@ class Lfm2VlModel(LlavaModel):
         )
 
 
+# Lfm2VlForConditionalGeneration：LFM2-VL 图文条件生成模型
 class Lfm2VlForConditionalGeneration(LlavaForConditionalGeneration):
     @auto_docstring
     def get_image_features(

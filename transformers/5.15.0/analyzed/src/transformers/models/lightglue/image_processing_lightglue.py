@@ -44,6 +44,9 @@ if TYPE_CHECKING:
     from .modeling_lightglue import LightGlueKeypointMatchingOutput
 
 
+# LightGlue 图像预处理：Torchvision 后端灰度化、resize 与图像对格式化
+
+# LightGlueImageProcessorKwargs：LightGlue 图像处理器可选参数字典类型
 class LightGlueImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     do_grayscale (`bool`, *optional*, defaults to `self.do_grayscale`):
@@ -53,12 +56,14 @@ class LightGlueImageProcessorKwargs(ImagesKwargs, total=False):
     do_grayscale: bool
 
 
+# _is_valid_image：校验输入是否为有效图像对象
 def _is_valid_image(image):
     return is_pil_image(image) or (
         is_valid_image(image) and get_image_type(image) != ImageType.PIL and len(image.shape) == 3
     )
 
 
+# validate_and_format_image_pairs：校验并格式化图像对为匹配任务所需结构
 def validate_and_format_image_pairs(images: ImageInput):
     error_message = (
         "Input images must be a one of the following :",
@@ -68,6 +73,7 @@ def validate_and_format_image_pairs(images: ImageInput):
         " - A list of pairs of 3D arrays.",
     )
 
+    # _is_valid_image：校验输入是否为有效图像对象
     def _is_valid_image(image):
         """images is a PIL Image or a 3D array."""
         return is_pil_image(image) or (
@@ -87,6 +93,7 @@ def validate_and_format_image_pairs(images: ImageInput):
     raise ValueError(error_message)
 
 
+# is_grayscale：判断图像是否为灰度图
 def is_grayscale(
     image: "torch.Tensor",
 ):
@@ -98,6 +105,7 @@ def is_grayscale(
     )
 
 
+# convert_to_grayscale：将图像转换为灰度格式
 def convert_to_grayscale(
     image: "torch.Tensor",
 ) -> "torch.Tensor":
@@ -118,6 +126,7 @@ def convert_to_grayscale(
 
 
 @auto_docstring
+# LightGlueImageProcessor：LightGlue Torchvision 后端灰度化与 resize 预处理
 class LightGlueImageProcessor(TorchvisionBackend):
     valid_kwargs = LightGlueImageProcessorKwargs
     resample = PILImageResampling.BILINEAR

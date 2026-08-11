@@ -41,8 +41,12 @@ from ..superpoint import SuperPointConfig
 logger = logging.get_logger(__name__)
 
 
+# LightGlue modular 源：复用 SuperGlue/SuperPoint/Llama 组件构建关键点匹配
+
+# LightGlueConfig：ETH-CVG/lightglue_superpoint 关键点匹配默认超参
 @auto_docstring(checkpoint="ETH-CVG/lightglue_superpoint")
 @strict
+# LightGlueConfig：ETH-CVG/lightglue_superpoint 关键点检测与匹配超参
 class LightGlueConfig(PreTrainedConfig):
     r"""
     keypoint_detector_config (`Union[AutoConfig, dict]`,  *optional*, defaults to `SuperPointConfig`):
@@ -121,6 +125,7 @@ class LightGlueConfig(PreTrainedConfig):
     """
 )
 @dataclass
+# LightGlueKeypointMatchingOutput：LightGlue 关键点匹配输出 dataclass
 class LightGlueKeypointMatchingOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*):
@@ -156,10 +161,12 @@ class LightGlueKeypointMatchingOutput(ModelOutput):
     attentions: tuple[torch.FloatTensor] | None = None
 
 
+# LightGlueImageProcessorKwargs：LightGlue 图像处理器可选参数字典类型
 class LightGlueImageProcessorKwargs(SuperGlueImageProcessorKwargs):
     pass
 
 
+# LightGlueImageProcessor：LightGlue Torchvision 后端灰度化与 resize 预处理
 class LightGlueImageProcessor(SuperGlueImageProcessor):
     def post_process_keypoint_matching(
         self,
@@ -171,6 +178,7 @@ class LightGlueImageProcessor(SuperGlueImageProcessor):
 
 
 @requires(backends=("torch",))
+# LightGlueImageProcessorPil：LightGlue PIL 后端灰度化与 resize 预处理
 class LightGlueImageProcessorPil(SuperGlueImageProcessorPil):
     @requires(backends=("torch",))
     def post_process_keypoint_matching(
@@ -182,6 +190,7 @@ class LightGlueImageProcessorPil(SuperGlueImageProcessorPil):
         return super().post_process_keypoint_matching(outputs, target_sizes, threshold)
 
 
+# LightGluePositionalEncoder：LightGlue 关键点坐标位置编码器
 class LightGluePositionalEncoder(nn.Module):
     def __init__(self, config: LightGlueConfig):
         super().__init__()
@@ -200,6 +209,7 @@ class LightGluePositionalEncoder(nn.Module):
 
 
 @no_inherit_decorator
+# LightGlueAttention：LightGlue 多头自注意力（RoPE + 交叉注意力）
 class LightGlueAttention(LlamaAttention):
     def __init__(self, config: LightGlueConfig, layer_idx: int):
         super().__init__()
@@ -250,6 +260,7 @@ class LightGlueAttention(LlamaAttention):
         return attn_output, attn_weights
 
 
+# LightGlueMLP：LightGlue 前馈 MLP
 class LightGlueMLP(CLIPMLP):
     def __init__(self, config: LightGlueConfig):
         super().__init__(config)
@@ -264,6 +275,7 @@ class LightGlueMLP(CLIPMLP):
         return hidden_states
 
 
+# LightGlueTransformerLayer：LightGlue Transformer 匹配层（自/交叉注意力 + FFN）
 class LightGlueTransformerLayer(nn.Module):
     def __init__(self, config: LightGlueConfig, layer_idx: int):
         super().__init__()
@@ -347,6 +359,7 @@ class LightGlueTransformerLayer(nn.Module):
         return descriptors, all_hidden_states, all_attentions
 
 
+# sigmoid_log_double_softmax：匹配分数的双向 log-softmax 与 sigmoid 组合
 def sigmoid_log_double_softmax(
     similarity: torch.Tensor, matchability0: torch.Tensor, matchability1: torch.Tensor
 ) -> torch.Tensor:
@@ -362,6 +375,7 @@ def sigmoid_log_double_softmax(
     return scores
 
 
+# LightGlueMatchAssignmentLayer：LightGlue 可微匹配分配层（Sinkhorn 风格）
 class LightGlueMatchAssignmentLayer(nn.Module):
     def __init__(self, config: LightGlueConfig):
         super().__init__()
@@ -403,6 +417,7 @@ class LightGlueMatchAssignmentLayer(nn.Module):
         return matchability
 
 
+# LightGlueTokenConfidenceLayer：LightGlue 关键点匹配置信度预测层
 class LightGlueTokenConfidenceLayer(nn.Module):
     def __init__(self, config: LightGlueConfig):
         super().__init__()
@@ -416,6 +431,7 @@ class LightGlueTokenConfidenceLayer(nn.Module):
 
 
 @auto_docstring
+# LightGluePreTrainedModel：LightGlue 预训练基类与权重初始化
 class LightGluePreTrainedModel(PreTrainedModel):
     """
     An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
@@ -431,6 +447,7 @@ class LightGluePreTrainedModel(PreTrainedModel):
     _supports_sdpa = True
 
 
+# get_matches_from_scores：从匹配分数矩阵提取高于阈值的关键点对
 def get_matches_from_scores(scores: torch.Tensor, threshold: float) -> tuple[torch.Tensor, torch.Tensor]:
     """obtain matches from a score matrix [Bx M+1 x N+1]"""
     batch_size, _, _ = scores.shape
@@ -463,6 +480,7 @@ def get_matches_from_scores(scores: torch.Tensor, threshold: float) -> tuple[tor
     return matches, matching_scores
 
 
+# normalize_keypoints：将关键点坐标归一化到 [-1, 1] 图像坐标系
 def normalize_keypoints(keypoints: torch.Tensor, height: int, width: int) -> torch.Tensor:
     """
     Normalize keypoints locations based on image_shape
@@ -490,6 +508,7 @@ def normalize_keypoints(keypoints: torch.Tensor, height: int, width: int) -> tor
     LightGlue model taking images as inputs and outputting the matching of them.
     """
 )
+# LightGlueForKeypointMatching：LightGlue 关键点检测与匹配端到端模型
 class LightGlueForKeypointMatching(LightGluePreTrainedModel):
     """
     LightGlue is a model matching keypoints in images by leveraging detections from a keypoint detector such as

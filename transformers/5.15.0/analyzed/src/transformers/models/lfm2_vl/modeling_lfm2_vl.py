@@ -34,6 +34,9 @@ from ..auto import AutoModel
 from .configuration_lfm2_vl import Lfm2VlConfig
 
 
+# LFM2-VL 建模：SigLIP2 视觉编码 + LFM2 文本解码多模态（由 modular 自动生成）
+
+# Lfm2VlMultiModalProjector：LFM2-VL 视觉 patch 下采样投影到文本隐空间
 class Lfm2VlMultiModalProjector(nn.Module):
     def __init__(self, config: Lfm2VlConfig):
         super().__init__()
@@ -74,6 +77,7 @@ class Lfm2VlMultiModalProjector(nn.Module):
 
 
 @auto_docstring
+# Lfm2VlPreTrainedModel：LFM2-VL 多模态预训练基类与权重初始化
 class Lfm2VlPreTrainedModel(PreTrainedModel):
     config: Lfm2VlConfig
     base_model_prefix = "model"
@@ -94,6 +98,7 @@ class Lfm2VlPreTrainedModel(PreTrainedModel):
     """
 )
 @dataclass
+# Lfm2VlCausalLMOutputWithPast：LFM2-VL 条件生成输出 dataclass（含 logits 与 KV 缓存）
 class Lfm2VlCausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -124,6 +129,7 @@ class Lfm2VlCausalLMOutputWithPast(ModelOutput):
     """
 )
 @dataclass
+# Lfm2VlModelOutputWithPast：LFM2-VL 多模态主干输出 dataclass（含 past_key_values）
 class Lfm2VlModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     past_key_values (`Cache`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
@@ -144,6 +150,7 @@ class Lfm2VlModelOutputWithPast(BaseModelOutputWithPast):
     The Lfm2Vl model which consists of a vision backbone and a language model, without a language modeling head.
     """
 )
+# Lfm2VlModel：LFM2-VL 视觉编码 + 文本解码多模态联合主干
 class Lfm2VlModel(Lfm2VlPreTrainedModel):
     def __init__(self, config: Lfm2VlConfig):
         super().__init__(config)
@@ -293,6 +300,7 @@ class Lfm2VlModel(Lfm2VlPreTrainedModel):
     The LFM2_VL model which consists of a vision backbone and a language model.
     """
 )
+# Lfm2VlForConditionalGeneration：LFM2-VL 图文条件生成模型
 class Lfm2VlForConditionalGeneration(Lfm2VlPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
 

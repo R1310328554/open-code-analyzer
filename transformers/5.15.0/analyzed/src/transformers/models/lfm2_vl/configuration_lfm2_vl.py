@@ -20,8 +20,12 @@ from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# LFM2-VL 配置：LiquidAI/LFM2-VL-1.6B 视觉塔 + LFM2 文本解码器联合超参
+
+# Lfm2VlConfig：LiquidAI/LFM2-VL-1.6B 视觉-语言多模态默认超参
 @auto_docstring(checkpoint="LiquidAI/LFM2-VL-1.6B")
 @strict
+# Lfm2VlConfig：LiquidAI/LFM2-VL-1.6B 视觉-语言多模态顶层超参（SigLIP2 视觉塔 + LFM2 文本）
 class Lfm2VlConfig(PreTrainedConfig):
     r"""
     projector_use_layernorm (`bool`, *optional*, defaults to `True`):

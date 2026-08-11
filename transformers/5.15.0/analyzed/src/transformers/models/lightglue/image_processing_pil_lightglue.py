@@ -46,6 +46,9 @@ if is_torch_available():
     import torch
 
 
+# LightGlue PIL 图像预处理：PIL 后端灰度化、resize 与图像对格式化
+
+# LightGlueImageProcessorKwargs：LightGlue 图像处理器可选参数字典类型
 class LightGlueImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     do_grayscale (`bool`, *optional*, defaults to `self.do_grayscale`):
@@ -55,12 +58,14 @@ class LightGlueImageProcessorKwargs(ImagesKwargs, total=False):
     do_grayscale: bool
 
 
+# is_grayscale：判断图像是否为灰度图
 def is_grayscale(image: np.ndarray):
     if image.shape[0] == 1:
         return True
     return np.all(image[0, ...] == image[1, ...]) and np.all(image[1, ...] == image[2, ...])
 
 
+# convert_to_grayscale：将图像转换为灰度格式
 def convert_to_grayscale(image: ImageInput) -> ImageInput:
     """
     Converts an image to grayscale format using the NTSC formula. Only support numpy and PIL Image.
@@ -90,6 +95,7 @@ def convert_to_grayscale(image: ImageInput) -> ImageInput:
 
 
 # Adapted from transformers.models.lightglue.image_processing_lightglue.validate_and_format_image_pairs
+# validate_and_format_image_pairs：校验并格式化图像对为匹配任务所需结构
 def validate_and_format_image_pairs(images: ImageInput):
     error_message = (
         "Input images must be a one of the following :",
@@ -99,6 +105,7 @@ def validate_and_format_image_pairs(images: ImageInput):
         " - A list of pairs of 3D arrays.",
     )
 
+    # _is_valid_image：校验输入是否为有效图像对象
     def _is_valid_image(image):
         """images is a PIL Image or a 3D array."""
         return is_pil_image(image) or (
@@ -119,6 +126,7 @@ def validate_and_format_image_pairs(images: ImageInput):
 
 
 @requires(backends=("torch",))
+# LightGlueImageProcessorPil：LightGlue PIL 后端灰度化与 resize 预处理
 class LightGlueImageProcessorPil(PilBackend):
     valid_kwargs = LightGlueImageProcessorKwargs
     resample = PILImageResampling.BILINEAR

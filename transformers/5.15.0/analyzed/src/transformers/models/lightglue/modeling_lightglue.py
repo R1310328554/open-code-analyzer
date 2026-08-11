@@ -32,8 +32,11 @@ from ...modeling_utils import ALL_ATTENTION_FUNCTIONS, PreTrainedModel
 from ...processing_utils import Unpack
 from ...utils import ModelOutput, TransformersKwargs, auto_docstring, can_return_tuple
 from ..auto.modeling_auto import AutoModelForKeypointDetection
+# modeling_lightglue 由 modular_lightglue.py 自动生成
 from .configuration_lightglue import LightGlueConfig
 
+
+# LightGlue 建模：SuperPoint 特征 + Transformer 交叉匹配（由 modular 自动生成）
 
 @auto_docstring(
     custom_intro="""
@@ -45,6 +48,7 @@ from .configuration_lightglue import LightGlueConfig
     """
 )
 @dataclass
+# LightGlueKeypointMatchingOutput：LightGlue 关键点匹配输出 dataclass
 class LightGlueKeypointMatchingOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*):
@@ -80,6 +84,7 @@ class LightGlueKeypointMatchingOutput(ModelOutput):
     attentions: tuple[torch.FloatTensor] | None = None
 
 
+# LightGluePositionalEncoder：LightGlue 关键点坐标位置编码器
 class LightGluePositionalEncoder(nn.Module):
     def __init__(self, config: LightGlueConfig):
         super().__init__()
@@ -97,6 +102,7 @@ class LightGluePositionalEncoder(nn.Module):
         return output
 
 
+# rotate_half：RoPE 中将向量后半维旋转取负
 def rotate_half(x):
     # Split and rotate. Note that this function is different from e.g. Llama.
     x1 = x[..., ::2]
@@ -105,6 +111,7 @@ def rotate_half(x):
     return rot_x
 
 
+# apply_rotary_pos_emb：对 Q/K 应用旋转位置编码（RoPE）
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -133,6 +140,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed.to(dtype=dtype), k_embed.to(dtype=dtype)
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -145,6 +153,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -170,6 +179,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# LightGlueAttention：LightGlue 多头自注意力（RoPE + 交叉注意力）
 class LightGlueAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -241,6 +251,7 @@ class LightGlueAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# LightGlueMLP：LightGlue 前馈 MLP
 class LightGlueMLP(nn.Module):
     def __init__(self, config: LightGlueConfig):
         super().__init__()
@@ -258,6 +269,7 @@ class LightGlueMLP(nn.Module):
         return hidden_states
 
 
+# LightGlueTransformerLayer：LightGlue Transformer 匹配层（自/交叉注意力 + FFN）
 class LightGlueTransformerLayer(nn.Module):
     def __init__(self, config: LightGlueConfig, layer_idx: int):
         super().__init__()
@@ -341,6 +353,7 @@ class LightGlueTransformerLayer(nn.Module):
         return descriptors, all_hidden_states, all_attentions
 
 
+# sigmoid_log_double_softmax：匹配分数的双向 log-softmax 与 sigmoid 组合
 def sigmoid_log_double_softmax(
     similarity: torch.Tensor, matchability0: torch.Tensor, matchability1: torch.Tensor
 ) -> torch.Tensor:
@@ -356,6 +369,7 @@ def sigmoid_log_double_softmax(
     return scores
 
 
+# LightGlueMatchAssignmentLayer：LightGlue 可微匹配分配层（Sinkhorn 风格）
 class LightGlueMatchAssignmentLayer(nn.Module):
     def __init__(self, config: LightGlueConfig):
         super().__init__()
@@ -397,6 +411,7 @@ class LightGlueMatchAssignmentLayer(nn.Module):
         return matchability
 
 
+# LightGlueTokenConfidenceLayer：LightGlue 关键点匹配置信度预测层
 class LightGlueTokenConfidenceLayer(nn.Module):
     def __init__(self, config: LightGlueConfig):
         super().__init__()
@@ -410,6 +425,7 @@ class LightGlueTokenConfidenceLayer(nn.Module):
 
 
 @auto_docstring
+# LightGluePreTrainedModel：LightGlue 预训练基类与权重初始化
 class LightGluePreTrainedModel(PreTrainedModel):
     """
     An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
@@ -425,6 +441,7 @@ class LightGluePreTrainedModel(PreTrainedModel):
     _supports_sdpa = True
 
 
+# get_matches_from_scores：从匹配分数矩阵提取高于阈值的关键点对
 def get_matches_from_scores(scores: torch.Tensor, threshold: float) -> tuple[torch.Tensor, torch.Tensor]:
     """obtain matches from a score matrix [Bx M+1 x N+1]"""
     batch_size, _, _ = scores.shape
@@ -457,6 +474,7 @@ def get_matches_from_scores(scores: torch.Tensor, threshold: float) -> tuple[tor
     return matches, matching_scores
 
 
+# normalize_keypoints：将关键点坐标归一化到 [-1, 1] 图像坐标系
 def normalize_keypoints(keypoints: torch.Tensor, height: int, width: int) -> torch.Tensor:
     """
     Normalize keypoints locations based on image_shape
@@ -484,6 +502,7 @@ def normalize_keypoints(keypoints: torch.Tensor, height: int, width: int) -> tor
     LightGlue model taking images as inputs and outputting the matching of them.
     """
 )
+# LightGlueForKeypointMatching：LightGlue 关键点检测与匹配端到端模型
 class LightGlueForKeypointMatching(LightGluePreTrainedModel):
     """
     LightGlue is a model matching keypoints in images by leveraging detections from a keypoint detector such as

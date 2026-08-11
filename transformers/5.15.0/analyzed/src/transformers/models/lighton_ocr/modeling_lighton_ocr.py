@@ -32,10 +32,14 @@ from ...processing_utils import Unpack
 from ...utils import TransformersKwargs, auto_docstring, can_return_tuple, torch_compilable_check
 from ...utils.generic import merge_with_config_defaults
 from ..auto import AutoModel
+# modeling_lighton_ocr 由 modular_lighton_ocr.py 自动生成
 from .configuration_lighton_ocr import LightOnOcrConfig
 
 
+# LightOnOCR 建模：视觉 patch 合并 + 文本解码 OCR 多模态（由 modular 自动生成）
+
 @use_kernel_forward_from_hub("RMSNorm")
+# LightOnOcrRMSNorm：LightOnOCR RMS 层归一化（等价 T5LayerNorm）
 class LightOnOcrRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -56,6 +60,7 @@ class LightOnOcrRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# LightOnOcrPatchMerger：LightOnOCR 视觉 patch 合并与下采样模块
 class LightOnOcrPatchMerger(nn.Module):
     """
     Learned merging of spatial_merge_size ** 2 patches
@@ -94,6 +99,7 @@ class LightOnOcrPatchMerger(nn.Module):
         return image_features
 
 
+# LightOnOcrMultiModalProjector：LightOnOCR 视觉特征投影到文本隐空间
 class LightOnOcrMultiModalProjector(nn.Module):
     def __init__(self, config: LightOnOcrConfig):
         super().__init__()
@@ -119,6 +125,7 @@ class LightOnOcrMultiModalProjector(nn.Module):
     """
 )
 @dataclass
+# LightOnOcrModelOutputWithPast：LightOnOCR 多模态主干输出 dataclass（含 past_key_values）
 class LightOnOcrModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     past_key_values (`Cache`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
@@ -135,6 +142,7 @@ class LightOnOcrModelOutputWithPast(BaseModelOutputWithPast):
 
 
 @auto_docstring
+# LightOnOcrPreTrainedModel：LightOnOCR 预训练基类与权重初始化
 class LightOnOcrPreTrainedModel(PreTrainedModel):
     config: LightOnOcrConfig
     base_model_prefix = "model"
@@ -155,6 +163,7 @@ class LightOnOcrPreTrainedModel(PreTrainedModel):
     The LightOnOcr model which consists of a vision backbone and a language model, without a language modeling head.
     """
 )
+# LightOnOcrModel：LightOnOCR 视觉编码 + 文本解码 OCR 多模态主干
 class LightOnOcrModel(LightOnOcrPreTrainedModel):
     base_model_prefix = ""
 
@@ -260,6 +269,7 @@ class LightOnOcrModel(LightOnOcrPreTrainedModel):
     """
 )
 @dataclass
+# LightOnOcrCausalLMOutputWithPast：LightOnOCR 条件生成输出 dataclass（含 logits 与 KV 缓存）
 class LightOnOcrCausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -289,6 +299,7 @@ class LightOnOcrCausalLMOutputWithPast(ModelOutput):
     The LIGHTON_OCR model which consists of a vision backbone and a language model.
     """
 )
+# LightOnOcrForConditionalGeneration：LightOnOCR 文档 OCR 条件生成模型
 class LightOnOcrForConditionalGeneration(LightOnOcrPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
 

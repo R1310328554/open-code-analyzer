@@ -25,8 +25,12 @@ from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# LightOnOCR 配置：lightonai/LightOnOCR-1B-1025 视觉 OCR 多模态超参（由 modular 自动生成）
+
+# LightOnOcrConfig：lightonai/LightOnOCR-1B-1025 文档 OCR 多模态默认超参
 @auto_docstring(checkpoint="lightonai/LightOnOCR-1B-1025")
 @strict
+# LightOnOcrConfig：lightonai/LightOnOCR-1B-1025 视觉 OCR 多模态超参
 class LightOnOcrConfig(PreTrainedConfig):
     r"""
     Example:

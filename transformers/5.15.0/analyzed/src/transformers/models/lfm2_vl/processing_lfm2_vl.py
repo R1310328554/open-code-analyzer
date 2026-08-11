@@ -28,6 +28,9 @@ from ...utils import auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# LFM2-VL Processor：图像 patch 预处理与分词器联合多模态输入组装
+
+# Lfm2VlTextKwargs：LFM2-VL 文本侧 Processor 可选参数字典类型
 class Lfm2VlTextKwargs(TextKwargs, total=False):
     """
     use_image_special_tokens (`bool`, *optional*, defaults to `True`):
@@ -39,6 +42,7 @@ class Lfm2VlTextKwargs(TextKwargs, total=False):
     use_image_special_tokens: bool | None
 
 
+# Lfm2VlProcessorKwargs：LFM2-VL Processor 可选参数字典类型
 class Lfm2VlProcessorKwargs(ProcessingKwargs, total=False):
     text_kwargs: Lfm2VlTextKwargs
     _defaults = {
@@ -55,6 +59,7 @@ class Lfm2VlProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# Lfm2VlProcessor：封装图像 patch 预处理与分词器的多模态输入管线
 class Lfm2VlProcessor(ProcessorMixin):
     valid_processor_kwargs = Lfm2VlProcessorKwargs
 
