@@ -20,8 +20,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# Hiera 配置：Meta 分层窗口 Transformer（MAE 预训练可选）超参
+
+# HieraConfig：facebook/hiera-base-224 分层视觉 Transformer 默认超参
 @auto_docstring(checkpoint="facebook/hiera-base-224")
 @strict
+# HieraConfig：Meta Hiera 分层视觉 Transformer 超参（MAE 预训练可选）
 class HieraConfig(BackboneConfigMixin, PreTrainedConfig):
     r"""
     patch_stride (`list(int)`, *optional*, defaults to `[4, 4]`):

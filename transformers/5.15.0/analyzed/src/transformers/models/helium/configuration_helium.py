@@ -21,8 +21,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# Helium 配置：Kyutai 2B 因果解码器（GQA + RoPE + SwiGLU）超参
+
+# HeliumConfig：kyutai/helium-1-preview 2B 因果解码器默认超参
 @auto_docstring(checkpoint="kyutai/helium-1-preview")
 @strict
+# HeliumConfig：Kyutai Helium 2B 因果解码器超参（GQA + RoPE）
 class HeliumConfig(PreTrainedConfig):
     r"""
     Example:

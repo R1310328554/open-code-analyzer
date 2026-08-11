@@ -28,6 +28,9 @@ from .configuration_helium import HeliumConfig
 logger = logging.get_logger(__name__)
 
 
+# Helium modular 源：复用 Llama/Gemma/Granite 组件并定制 RoPE 与 Attention
+
+# HeliumRMSNorm：Helium RMS LayerNorm
 class HeliumRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps=1e-6):
         super().__init__()
@@ -45,14 +48,17 @@ class HeliumRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# HeliumRotaryEmbedding：Helium RoPE 旋转位置编码
 class HeliumRotaryEmbedding(LlamaRotaryEmbedding):
     pass
 
 
+# HeliumMLP：Helium SwiGLU 前馈 MLP
 class HeliumMLP(LlamaMLP):
     pass
 
 
+# rotate_half：RoPE 中将向量后半部分旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., 0::2]
@@ -60,6 +66,7 @@ def rotate_half(x):
     return torch.stack((-x2, x1), dim=-1).flatten(-2)
 
 
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K（交错格式）
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -92,6 +99,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
 
 
 @no_inherit_decorator
+# HeliumAttention：Helium 多头自注意力（Granite 风格缩放）
 class HeliumAttention(GraniteAttention):
     def __init__(self, config: HeliumConfig, layer_idx: int | None = None):
         super().__init__(config, layer_idx)
@@ -99,6 +107,7 @@ class HeliumAttention(GraniteAttention):
         self.scaling = 1 / math.sqrt(self.head_dim)
 
 
+# HeliumDecoderLayer：Helium 解码器单层（自注意力 + MLP）
 class HeliumDecoderLayer(LlamaDecoderLayer):
     def __init__(self, config: HeliumConfig, layer_idx: int | None = None):
         super().__init__(config, layer_idx)
@@ -108,10 +117,12 @@ class HeliumDecoderLayer(LlamaDecoderLayer):
         self.post_attention_layernorm = HeliumRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
 
+# HeliumPreTrainedModel：Helium 预训练基类与权重初始化
 class HeliumPreTrainedModel(LlamaPreTrainedModel):
     pass
 
 
+# HeliumModel：Helium 纯文本解码器主干
 class HeliumModel(HeliumPreTrainedModel, LlamaModel):
     def __init__(self, config: HeliumConfig):
         super().__init__(config)
@@ -125,14 +136,17 @@ class HeliumModel(HeliumPreTrainedModel, LlamaModel):
         self.post_init()
 
 
+# HeliumForCausalLM：Helium 因果语言建模与文本生成
 class HeliumForCausalLM(GemmaForCausalLM):
     pass
 
 
+# HeliumForSequenceClassification：Helium 序列分类头
 class HeliumForSequenceClassification(GemmaForSequenceClassification):
     pass
 
 
+# HeliumForTokenClassification：Helium  token 分类头
 class HeliumForTokenClassification(GemmaForTokenClassification):
     pass
 

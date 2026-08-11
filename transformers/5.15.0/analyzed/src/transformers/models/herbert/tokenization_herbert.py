@@ -22,9 +22,12 @@ from ...utils import logging
 
 logger = logging.get_logger(__name__)
 
+
+# HerBERT 分词：波兰语 BPE（BertPreTokenizer 空格与标点拆分）
 VOCAB_FILES_NAMES = {"vocab_file": "vocab.json", "merges_file": "merges.txt"}
 
 
+# HerbertTokenizer：波兰语 HerBERT BPE 分词器（BertPreTokenizer + BPE）
 class HerbertTokenizer(TokenizersBackend):
     """
     Construct a BPE tokenizer for HerBERT (backed by HuggingFace's tokenizers library).

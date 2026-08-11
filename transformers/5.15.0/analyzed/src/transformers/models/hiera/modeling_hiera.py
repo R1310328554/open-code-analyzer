@@ -36,6 +36,8 @@ from ...utils.generic import can_return_tuple
 from .configuration_hiera import HieraConfig
 
 
+# Hiera 建模：分层窗口 Transformer + MAE 预训练/分类/骨干
+
 logger = logging.get_logger(__name__)
 
 
@@ -45,6 +47,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# HieraEncoderOutput：Hiera 编码器输出 dataclass（含 reshaped 隐藏态）
 class HieraEncoderOutput(ModelOutput):
     r"""
     reshaped_hidden_states (`tuple(torch.FloatTensor)`, *optional*, returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
@@ -67,6 +70,7 @@ class HieraEncoderOutput(ModelOutput):
     """
 )
 @dataclass
+# HieraModelOutput：Hiera 联合输出 dataclass（pooler/隐藏态）
 class HieraModelOutput(ModelOutput):
     r"""
     pooler_output (`torch.FloatTensor` of shape `(batch_size, hidden_size)`, *optional*, returned when `add_pooling_layer=True` is passed):
@@ -98,6 +102,7 @@ class HieraModelOutput(ModelOutput):
     """
 )
 @dataclass
+# HieraForImageClassificationOutput：Hiera 图像分类输出 dataclass
 class HieraForImageClassificationOutput(ImageClassifierOutput):
     r"""
     reshaped_hidden_states (`tuple(torch.FloatTensor)`, `optional`):
@@ -117,6 +122,7 @@ class HieraForImageClassificationOutput(ImageClassifierOutput):
     """
 )
 @dataclass
+# HieraForPreTrainingOutput：Hiera MAE 预训练输出 dataclass
 class HieraForPreTrainingOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`):
@@ -142,6 +148,7 @@ class HieraForPreTrainingOutput(ModelOutput):
     reshaped_hidden_states: tuple[torch.FloatTensor] | None = None
 
 
+# HieraPatchEmbeddings：Hiera 多尺度 patch 卷积嵌入
 class HieraPatchEmbeddings(nn.Module):
     """
     This class turns `pixel_values` of shape `(batch_size, num_channels, height, width)` into the initial
@@ -236,6 +243,7 @@ class HieraPatchEmbeddings(nn.Module):
         return embeddings, bool_masked_pos, ids_restore
 
 
+# HieraEmbeddings：Hiera 位置编码与 mask unit 嵌入
 class HieraEmbeddings(nn.Module):
     """
     Construct position and patch embeddings.
@@ -312,6 +320,7 @@ class HieraEmbeddings(nn.Module):
         return embeddings, bool_masked_pos, ids_restore
 
 
+# HieraMaskUnitAttention：Hiera mask unit 局部窗口注意力
 class HieraMaskUnitAttention(nn.Module):
     """
     Computes either Mask Unit or Global Attention. Also is able to perform query pooling.
@@ -375,6 +384,7 @@ class HieraMaskUnitAttention(nn.Module):
         return (attn_output, attn_weights) if output_attentions else (attn_output, None)
 
 
+# HieraMlp：Hiera 前馈 MLP
 class HieraMlp(nn.Module):
     def __init__(self, config, dim: int) -> None:
         super().__init__()
@@ -390,6 +400,7 @@ class HieraMlp(nn.Module):
 
 
 # Copied from transformers.models.swin.modular_swin.SwinDropPath with SwinDropPath->HieraDropPath
+# HieraDropPath：Hiera Stochastic Depth 随机深度
 class HieraDropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -414,6 +425,7 @@ class HieraDropPath(nn.Module):
         return f"p={self.drop_prob}"
 
 
+# HieraLayer：Hiera Transformer 单层（窗口注意力 + MLP）
 class HieraLayer(nn.Module):
     def __init__(
         self,
@@ -475,6 +487,7 @@ class HieraLayer(nn.Module):
         return (hidden_states, attn_weights)
 
 
+# HieraStage：Hiera 多 stage 堆叠（含 query pool 下采样）
 class HieraStage(GradientCheckpointingLayer):
     def __init__(
         self,
@@ -522,6 +535,7 @@ class HieraStage(GradientCheckpointingLayer):
         return hidden_states, attn_weights
 
 
+# undo_windowing：将窗口化隐藏状态还原为完整空间布局
 def undo_windowing(hidden_states: torch.Tensor, shape: list[int], mask_unit_shape: list[int]) -> torch.Tensor:
     """
     Restore spatial organization by undoing windowed organization of mask units.
@@ -548,6 +562,7 @@ def undo_windowing(hidden_states: torch.Tensor, shape: list[int], mask_unit_shap
     return hidden_states
 
 
+# HieraEncoder：Hiera 分层窗口 Transformer 编码器
 class HieraEncoder(nn.Module):
     def __init__(self, config: HieraConfig) -> None:
         super().__init__()
@@ -689,6 +704,7 @@ class HieraEncoder(nn.Module):
         )
 
 
+# unroll：将 mask unit 序列展开为完整 2D 特征图
 def unroll(
     hidden_states: torch.Tensor, image_shape: tuple[int, int], patch_stride: tuple[int, int], schedule: list[list[int]]
 ) -> torch.Tensor:
@@ -744,6 +760,7 @@ def unroll(
 
 
 @auto_docstring
+# HieraPreTrainedModel：Hiera 预训练基类与权重初始化
 class HieraPreTrainedModel(PreTrainedModel):
     config: HieraConfig
     base_model_prefix = "hiera"
@@ -774,6 +791,7 @@ class HieraPreTrainedModel(PreTrainedModel):
             init.constant_(module.weight, self.config.layer_norm_init)
 
 
+# HieraPooler：Hiera 全局平均池化头
 class HieraPooler(nn.Module):
     def __init__(self, config: HieraConfig):
         super().__init__()
@@ -790,6 +808,7 @@ class HieraPooler(nn.Module):
 
 
 @auto_docstring
+# HieraModel：Hiera 视觉编码主干（含 pooler）
 class HieraModel(HieraPreTrainedModel):
     def __init__(self, config: HieraConfig, add_pooling_layer: bool = True, is_mae: bool = False):
         r"""
@@ -888,6 +907,7 @@ class HieraModel(HieraPreTrainedModel):
         )
 
 
+# HieraDecoder：Hiera MAE 预训练解码器（上采样重建）
 class HieraDecoder(nn.Module):
     def __init__(self, config: HieraConfig):
         super().__init__()
@@ -990,6 +1010,7 @@ class HieraDecoder(nn.Module):
         return hidden_states, bool_masked_pos
 
 
+# HieraMultiScaleHead：Hiera 多尺度特征融合预测头
 class HieraMultiScaleHead(nn.Module):
     def __init__(self, config: HieraConfig):
         super().__init__()
@@ -1058,6 +1079,7 @@ class HieraMultiScaleHead(nn.Module):
     </Tip>
     """
 )
+# HieraForPreTraining：Hiera 掩码自编码预训练
 class HieraForPreTraining(HieraPreTrainedModel):
     def __init__(self, config: HieraConfig) -> None:
         super().__init__(config)
@@ -1204,6 +1226,7 @@ class HieraForPreTraining(HieraPreTrainedModel):
     </Tip>
     """
 )
+# HieraForImageClassification：Hiera 图像分类
 class HieraForImageClassification(HieraPreTrainedModel):
     def __init__(self, config: HieraConfig) -> None:
         super().__init__(config)
@@ -1276,6 +1299,7 @@ class HieraForImageClassification(HieraPreTrainedModel):
     Hiera backbone, to be used with frameworks like DETR and MaskFormer.
     """
 )
+# HieraBackbone：Hiera 视觉骨干（BackboneMixin 多尺度输出）
 class HieraBackbone(BackboneMixin, HieraPreTrainedModel):
     def __init__(self, config: HieraConfig):
         super().__init__(config)

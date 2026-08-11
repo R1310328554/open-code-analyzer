@@ -30,13 +30,17 @@ from ...modeling_outputs import BackboneOutput, BaseModelOutputWithNoAttention, 
 from ...modeling_utils import PreTrainedModel
 from ...utils import auto_docstring
 from ...utils.generic import can_return_tuple
+# modeling_hgnet_v2 由 modular_hgnet_v2.py 自动生成
 from .configuration_hgnet_v2 import HGNetV2Config
 
+
+# HGNetV2 建模：高分辨率卷积骨干（由 modular_hgnet_v2.py 自动生成）
 
 # General docstring
 
 
 @auto_docstring
+# HGNetV2PreTrainedModel：HGNetV2 预训练基类与 BatchNorm 权重初始化
 class HGNetV2PreTrainedModel(PreTrainedModel):
     config: HGNetV2Config
     base_model_prefix = "hgnetv2"
@@ -54,6 +58,7 @@ class HGNetV2PreTrainedModel(PreTrainedModel):
             init.ones_(module.running_var)
 
 
+# HGNetV2LearnableAffineBlock：HGNetV2 可学习仿射缩放+偏移块
 class HGNetV2LearnableAffineBlock(nn.Module):
     def __init__(self, scale_value: float = 1.0, bias_value: float = 0.0):
         super().__init__()
@@ -65,6 +70,7 @@ class HGNetV2LearnableAffineBlock(nn.Module):
         return hidden_state
 
 
+# HGNetV2ConvLayer：HGNetV2 标准卷积块（Conv+BN+ReLU+可选 SE）
 class HGNetV2ConvLayer(nn.Module):
     def __init__(
         self,
@@ -101,6 +107,7 @@ class HGNetV2ConvLayer(nn.Module):
         return hidden_state
 
 
+# HGNetV2ConvLayerLight：HGNetV2 轻量卷积块（无 SE 注意力）
 class HGNetV2ConvLayerLight(nn.Module):
     def __init__(
         self, in_channels: int, out_channels: int, kernel_size: int, use_learnable_affine_block: bool = False
@@ -127,6 +134,7 @@ class HGNetV2ConvLayerLight(nn.Module):
         return hidden_state
 
 
+# HGNetV2Embeddings：HGNetV2 stem 多阶段卷积嵌入
 class HGNetV2Embeddings(nn.Module):
     def __init__(self, config: HGNetV2Config):
         super().__init__()
@@ -193,6 +201,7 @@ class HGNetV2Embeddings(nn.Module):
         return embedding
 
 
+# HGNetV2BasicLayer：HGNetV2 基础重复卷积层（含残差与下采样）
 class HGNetV2BasicLayer(nn.Module):
     def __init__(
         self,
@@ -264,6 +273,7 @@ class HGNetV2BasicLayer(nn.Module):
         return hidden_state
 
 
+# HGNetV2Stage：HGNetV2 骨干单阶段（BasicLayer 堆叠）
 class HGNetV2Stage(nn.Module):
     def __init__(self, config: HGNetV2Config, stage_index: int, drop_path: float = 0.0):
         super().__init__()
@@ -309,6 +319,7 @@ class HGNetV2Stage(nn.Module):
         return hidden_state
 
 
+# HGNetV2Encoder：HGNetV2 多阶段卷积编码器
 class HGNetV2Encoder(nn.Module):
     def __init__(self, config: HGNetV2Config):
         super().__init__()
@@ -340,6 +351,7 @@ class HGNetV2Encoder(nn.Module):
         )
 
 
+# HGNetV2Backbone：HGNetV2 视觉骨干（BackboneMixin 多尺度特征）
 class HGNetV2Backbone(BackboneMixin, HGNetV2PreTrainedModel):
     has_attentions = False
 
@@ -417,6 +429,7 @@ class HGNetV2Backbone(BackboneMixin, HGNetV2PreTrainedModel):
     ImageNet.
     """
 )
+# HGNetV2ForImageClassification：HGNetV2 图像分类头
 class HGNetV2ForImageClassification(HGNetV2PreTrainedModel):
     def __init__(self, config: HGNetV2Config):
         super().__init__(config)

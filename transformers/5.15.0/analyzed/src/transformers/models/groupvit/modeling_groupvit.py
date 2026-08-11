@@ -34,22 +34,27 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_groupvit import GroupViTConfig, GroupViTTextConfig, GroupViTVisionConfig
 
 
+# GroupViT 建模：分组视觉 Transformer + CLIP 文本编码器联合对比学习
+
 logger = logging.get_logger(__name__)
 
 
 # contrastive loss function, adapted from
 # https://sachinruk.github.io/blog/pytorch/pytorch%20lightning/loss%20function/gpu/2021/03/07/CLIP.html
+# contrastive_loss：CLIP 风格对比学习交叉熵损失（对角线为正样本）
 def contrastive_loss(logits: torch.Tensor) -> torch.Tensor:
     return nn.functional.cross_entropy(logits, torch.arange(len(logits), device=logits.device))
 
 
 # Copied from transformers.models.clip.modeling_clip.image_text_contrastive_loss
+# image_text_contrastive_loss：图文双向对比损失（caption+image 对称）
 def image_text_contrastive_loss(similarity: torch.Tensor) -> torch.Tensor:
     caption_loss = contrastive_loss(similarity)
     image_loss = contrastive_loss(similarity.T)
     return (caption_loss + image_loss) / 2.0
 
 
+# hard_softmax：Gumbel-Softmax 直通估计器硬 one-hot 采样
 def hard_softmax(logits: torch.Tensor, dim: int):
     y_soft = logits.softmax(dim)
     # Straight through.
@@ -60,6 +65,7 @@ def hard_softmax(logits: torch.Tensor, dim: int):
     return ret
 
 
+# gumbel_softmax：Gumbel-Softmax 重参数化（可选 hard 直通）
 def gumbel_softmax(logits: torch.Tensor, tau: float = 1, hard: bool = False, dim: int = -1) -> torch.Tensor:
     # more stable https://github.com/pytorch/pytorch/issues/41663
     gumbel_dist = torch.distributions.gumbel.Gumbel(
@@ -82,6 +88,7 @@ def gumbel_softmax(logits: torch.Tensor, tau: float = 1, hard: bool = False, dim
     return ret
 
 
+# resize_attention_map：将分组注意力图双线性插值到目标空间尺寸
 def resize_attention_map(attentions, height, width, align_corners=False):
     """
     Args:
@@ -112,6 +119,7 @@ def resize_attention_map(attentions, height, width, align_corners=False):
     return attentions
 
 
+# get_grouping_from_attentions：逐层累积注意力得到最终分组图
 def get_grouping_from_attentions(attentions, hw_shape):
     """
     Args:
@@ -141,6 +149,7 @@ def get_grouping_from_attentions(attentions, hw_shape):
     return final_grouping
 
 
+# GroupViTCrossAttentionLayer：GroupViT 视觉交叉注意力层（query 与 key 融合）
 class GroupViTCrossAttentionLayer(nn.Module):
     def __init__(self, config: GroupViTVisionConfig):
         super().__init__()
@@ -157,6 +166,7 @@ class GroupViTCrossAttentionLayer(nn.Module):
         return x
 
 
+# GroupViTAssignAttention：GroupViT 分组 token 分配注意力（Gumbel-Softmax 路由）
 class GroupViTAssignAttention(nn.Module):
     def __init__(self, config: GroupViTVisionConfig):
         super().__init__()
@@ -205,6 +215,7 @@ class GroupViTAssignAttention(nn.Module):
         return out, soft_attn
 
 
+# GroupViTTokenAssign：GroupViT 图像 patch 到分组 token 的分配模块
 class GroupViTTokenAssign(nn.Module):
     def __init__(self, config: GroupViTVisionConfig, num_group_token, num_output_group):
         super().__init__()
@@ -262,6 +273,7 @@ class GroupViTTokenAssign(nn.Module):
 
 @auto_docstring
 @dataclass
+# GroupViTModelOutput：GroupViT 联合输出 dataclass（logits/loss/分组图）
 class GroupViTModelOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `return_loss` is `True`):
@@ -310,6 +322,7 @@ class GroupViTModelOutput(ModelOutput):
         )
 
 
+# GroupViTPatchEmbeddings：GroupViT 图像 patch 卷积嵌入
 class GroupViTPatchEmbeddings(nn.Module):
     """
     Image to Patch Embedding.
@@ -344,6 +357,7 @@ class GroupViTPatchEmbeddings(nn.Module):
         return x
 
 
+# GroupViTVisionEmbeddings：GroupViT 视觉位置+分组 token 嵌入
 class GroupViTVisionEmbeddings(nn.Module):
     def __init__(self, config: GroupViTVisionConfig):
         super().__init__()
@@ -419,6 +433,7 @@ class GroupViTVisionEmbeddings(nn.Module):
 
 
 # Copied from transformers.models.clip.modeling_clip.CLIPTextEmbeddings with CLIP->GroupViT
+# GroupViTTextEmbeddings：GroupViT CLIP 风格文本 token+位置嵌入
 class GroupViTTextEmbeddings(nn.Module):
     def __init__(self, config: GroupViTTextConfig):
         super().__init__()
@@ -457,6 +472,7 @@ class GroupViTTextEmbeddings(nn.Module):
         return embeddings
 
 
+# GroupViTStage：GroupViT 视觉分组阶段（含 token 分配与子 stage）
 class GroupViTStage(nn.Module):
     """This corresponds to the `GroupingLayer` class in the GroupViT implementation."""
 
@@ -550,6 +566,7 @@ class GroupViTStage(nn.Module):
         return outputs
 
 
+# GroupViTMLP：GroupViT 前馈 MLP（LayerNorm + GELU）
 class GroupViTMLP(nn.Module):
     def __init__(
         self,
@@ -574,12 +591,14 @@ class GroupViTMLP(nn.Module):
         return hidden_states
 
 
+# GroupViTMixerMLP：GroupViT 混合 MLP（继承 GroupViTMLP）
 class GroupViTMixerMLP(GroupViTMLP):
     def forward(self, x):
         x = super().forward(x.transpose(1, 2))
         return x.transpose(1, 2)
 
 
+# GroupViTAttention：GroupViT 多头自/交叉注意力
 class GroupViTAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -677,6 +696,7 @@ class GroupViTAttention(nn.Module):
 
 
 # Copied from transformers.models.altclip.modeling_altclip.AltCLIPEncoderLayer with AltCLIP->GroupViT
+# GroupViTEncoderLayer：GroupViT 文本编码器 Transformer 单层
 class GroupViTEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: GroupViTVisionConfig):
         super().__init__()
@@ -711,6 +731,7 @@ class GroupViTEncoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# GroupViTPreTrainedModel：GroupViT 预训练基类与权重初始化
 class GroupViTPreTrainedModel(PreTrainedModel):
     config: GroupViTConfig
     base_model_prefix = "groupvit"
@@ -747,6 +768,7 @@ class GroupViTPreTrainedModel(PreTrainedModel):
             init.normal_(module.fc2.weight, std=in_proj_std)
 
 
+# GroupViTVisionEncoder：GroupViT 视觉分组 Transformer 编码器
 class GroupViTVisionEncoder(nn.Module):
     def __init__(self, config: GroupViTVisionConfig) -> None:
         super().__init__()
@@ -805,6 +827,7 @@ class GroupViTVisionEncoder(nn.Module):
         )
 
 
+# GroupViTTextEncoder：GroupViT CLIP 风格文本 Transformer 编码器
 class GroupViTTextEncoder(nn.Module):
     """
     Transformer encoder consisting of `config.num_hidden_layers` self-attention layers. Each layer is a
@@ -853,6 +876,7 @@ class GroupViTTextEncoder(nn.Module):
         )
 
 
+# GroupViTTextTransformer：GroupViT 文本 Transformer 包装（含投影头）
 class GroupViTTextTransformer(GroupViTPreTrainedModel):
     def __init__(self, config: GroupViTTextConfig):
         super().__init__(config)
@@ -930,6 +954,7 @@ class GroupViTTextTransformer(GroupViTPreTrainedModel):
         )
 
 
+# GroupViTTextModel：GroupViT 纯文本编码模型
 class GroupViTTextModel(GroupViTPreTrainedModel):
     config: GroupViTTextConfig
     input_modalities = ("text",)
@@ -977,6 +1002,7 @@ class GroupViTTextModel(GroupViTPreTrainedModel):
         )
 
 
+# GroupViTVisionTransformer：GroupViT 视觉分组 Transformer 主干
 class GroupViTVisionTransformer(nn.Module):
     def __init__(self, config: GroupViTVisionConfig):
         super().__init__()
@@ -1030,6 +1056,7 @@ class GroupViTVisionTransformer(nn.Module):
         )
 
 
+# GroupViTVisionModel：GroupViT 纯视觉编码模型
 class GroupViTVisionModel(GroupViTPreTrainedModel):
     config: GroupViTVisionConfig
     main_input_name = "pixel_values"
@@ -1085,6 +1112,7 @@ class GroupViTVisionModel(GroupViTPreTrainedModel):
 
 
 @auto_docstring
+# GroupViTModel：GroupViT 图文联合对比学习模型
 class GroupViTModel(GroupViTPreTrainedModel):
     config: GroupViTConfig
 

@@ -25,13 +25,18 @@ from huggingface_hub.dataclasses import strict
 
 from ...backbone_utils import BackboneConfigMixin
 from ...configuration_utils import PreTrainedConfig
+# configuration_hgnet_v2 由 modular_hgnet_v2.py 自动生成
 from ...utils import auto_docstring
 
 
+# HGNetV2 配置：百度高分辨率卷积骨干（DFINE 检测）超参
+
 # TODO: Modular conversion for resnet must be fixed as
 # it provides incorrect import for configuration like resnet_resnet
+# HGNetV2Config：ustc-community/dfine_x_coco 高分辨率骨干默认超参
 @auto_docstring(checkpoint="ustc-community/dfine_x_coco")
 @strict
+# HGNetV2Config：百度 HGNetV2 高分辨率骨干网络超参（DFINE 检测）
 class HGNetV2Config(BackboneConfigMixin, PreTrainedConfig):
     r"""
     stem_channels (`list[int]`, *optional*, defaults to `[3, 32, 48]`):
