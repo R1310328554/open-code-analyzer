@@ -15,23 +15,8 @@
     "utils/check_pipeline_typing.py",
     "utils/check_repo.py",
     "utils/check_self_hosted_runner.py",
-    "utils/check_types.py",
-    "utils/checkers.py",
-    "utils/collated_reports.py",
-    "utils/compare_test_runs.py",
-    "utils/create_dependency_mapping.py",
-    "utils/create_dummy_models.py",
-    "utils/custom_init_isort.py",
-    "utils/deprecate_models.py",
-    "utils/download_glue_data.py",
-    "utils/extract_metadata.py",
-    "utils/extract_pr_number_from_circleci.py",
-    "utils/extract_warnings.py",
-    "utils/fetch_hub_objects_for_ci.py",
-    "utils/format_extras_slack_message.py",
-    "utils/get_ci_error_statistics.py",
-    "utils/get_github_job_time.py"
+    "utils/check_types.py"
   ],
   "remaining_pending": 39,
-  "done": 2610
+  "done": 2625
 }
