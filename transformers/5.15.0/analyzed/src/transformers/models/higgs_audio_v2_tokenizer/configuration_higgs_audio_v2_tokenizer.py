@@ -26,11 +26,16 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# configuration_higgs_audio_v2_tokenizer 由 modular_higgs_audio_v2_tokenizer.py 自动生成
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# Higgs Audio V2 Tokenizer 配置：语义 HuBERT + 声学 DAC 双分支编解码超参
+
+# HiggsAudioV2TokenizerConfig：bosonai/higgs-audio-v2-tokenizer 神经音频编解码默认超参
 @auto_docstring(checkpoint="bosonai/higgs-audio-v2-tokenizer")
 @strict
+# HiggsAudioV2TokenizerConfig：Higgs Audio V2 神经音频编解码器超参（语义+声学双分支）
 class HiggsAudioV2TokenizerConfig(PreTrainedConfig):
     r"""
     target_bandwidths (`List[float]`, *optional*, defaults to `[0.5, 1, 1.5, 2]`):

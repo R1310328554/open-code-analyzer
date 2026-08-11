@@ -38,6 +38,7 @@ from ...utils import TransformersKwargs, auto_docstring, can_return_tuple, loggi
 from ...utils.deprecation import deprecate_kwarg
 from ...utils.generic import maybe_autocast
 from ...utils.output_capturing import capture_outputs
+# modeling_higgs_audio_v2 由 modular_higgs_audio_v2.py 自动生成
 from .configuration_higgs_audio_v2 import HiggsAudioV2Config
 from .generation_higgs_audio_v2 import HiggsAudioV2GenerationMixin
 
@@ -45,6 +46,7 @@ from .generation_higgs_audio_v2 import HiggsAudioV2GenerationMixin
 logger = logging.get_logger(__name__)
 
 
+# HiggsAudioV2MLP：Higgs Audio V2 SwiGLU 前馈 MLP
 class HiggsAudioV2MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -62,6 +64,7 @@ class HiggsAudioV2MLP(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# HiggsAudioV2RMSNorm：Higgs Audio V2 RMS LayerNorm
 class HiggsAudioV2RMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -82,6 +85,7 @@ class HiggsAudioV2RMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# rotate_half：RoPE 中将向量后半部分旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -90,6 +94,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -115,6 +120,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -127,6 +133,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -153,6 +160,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# HiggsAudioV2Attention：Higgs Audio V2 多头自注意力（GQA + RoPE）
 class HiggsAudioV2Attention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -220,6 +228,7 @@ class HiggsAudioV2Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# HiggsAudioV2DecoderLayer：Higgs Audio V2 解码器单层（自注意力 + MLP）
 class HiggsAudioV2DecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: HiggsAudioV2Config, layer_idx: int):
         super().__init__()
@@ -290,6 +299,7 @@ class HiggsAudioV2DecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# HiggsAudioV2Embeddings：Higgs Audio V2 文本+多码本音频 token 嵌入
 class HiggsAudioV2Embeddings(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -305,6 +315,7 @@ class HiggsAudioV2Embeddings(nn.Module):
 
 
 @auto_docstring
+# HiggsAudioV2PreTrainedModel：Higgs Audio V2 预训练基类与权重初始化
 class HiggsAudioV2PreTrainedModel(PreTrainedModel):
     config: HiggsAudioV2Config
     base_model_prefix = "model"
@@ -332,6 +343,7 @@ class HiggsAudioV2PreTrainedModel(PreTrainedModel):
             )
 
 
+# HiggsAudioV2RotaryEmbedding：Higgs Audio V2 RoPE 旋转位置编码
 class HiggsAudioV2RotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: HiggsAudioV2Config, device=None):
@@ -392,6 +404,7 @@ class HiggsAudioV2RotaryEmbedding(nn.Module):
 
 
 @auto_docstring
+# HiggsAudioV2Model：Higgs Audio V2 纯文本/音频联合解码器主干
 class HiggsAudioV2Model(HiggsAudioV2PreTrainedModel):
     def __init__(self, config: HiggsAudioV2Config):
         super().__init__(config)
@@ -591,6 +604,7 @@ class HiggsAudioV2Model(HiggsAudioV2PreTrainedModel):
     The Higgs Audio model, a llama-like auto-regressive transformer model with dual-FFN.
     """
 )
+# HiggsAudioV2ForConditionalGeneration：Higgs Audio V2 条件生成（TTS 多码本输出）
 class HiggsAudioV2ForConditionalGeneration(HiggsAudioV2PreTrainedModel, HiggsAudioV2GenerationMixin):
     base_model_prefix = "model"
     _keys_to_ignore_on_load_unexpected = ["text_lm_head.weight"]

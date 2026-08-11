@@ -36,6 +36,9 @@ if is_soundfile_available():
 logger = logging.get_logger(__name__)
 
 
+# Higgs Audio V2 Processor：特征提取+分词+音频编解码联合输入组装
+
+# HiggsAudioV2ProcessorKwargs：Higgs Audio V2 Processor 可选参数字典类型
 class HiggsAudioV2ProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -50,6 +53,7 @@ class HiggsAudioV2ProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @requires(backends=("torch",))
+# HiggsAudioV2Processor：封装特征提取、分词与音频编解码的 TTS 输入管线
 class HiggsAudioV2Processor(ProcessorMixin):
     r"""
     Constructs a Higgs Audio processor which wraps a [`DacFeatureExtractor`], a [`AutoTokenizer`],

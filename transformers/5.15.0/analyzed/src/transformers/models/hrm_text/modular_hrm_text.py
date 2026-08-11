@@ -28,6 +28,7 @@ from ...modeling_utils import ALL_ATTENTION_FUNCTIONS, PreTrainedModel
 from ...processing_utils import Unpack
 from ...utils import auto_docstring, logging
 from ...utils.generic import TransformersKwargs, is_flash_attention_requested, split_attention_implementation
+# modular 复用 Llama 注意力/MLP 并实现 H/L 循环分层推理栈
 from ..llama.configuration_llama import LlamaConfig
 from ..llama.modeling_llama import (
     LlamaAttention,
@@ -45,8 +46,11 @@ from ..nanochat.modeling_nanochat import NanoChatRMSNorm
 logger = logging.get_logger(__name__)
 
 
+# HRM-Text modular 源：复用 Llama/NanoChat 组件并实现 H/L 循环推理栈
+
 @auto_docstring(checkpoint="sapientinc/HRM-Text-1B")
 @strict
+# HrmTextConfig：Sapient HRM-Text 分层推理文本解码器超参（H/L 循环 + prefix LM）
 class HrmTextConfig(LlamaConfig):
     r"""
     H_cycles (`int`, *optional*, defaults to 2):
@@ -138,14 +142,17 @@ class HrmTextConfig(LlamaConfig):
         PreTrainedConfig._attn_implementation.__set__(self, value)
 
 
+# HrmTextRMSNorm：HRM-Text RMS LayerNorm
 class HrmTextRMSNorm(NanoChatRMSNorm):
     pass
 
 
+# HrmTextMLP：HRM-Text SwiGLU 前馈 MLP
 class HrmTextMLP(LlamaMLP):
     pass
 
 
+# HrmTextAttention：HRM-Text 多头自注意力（GQA + RoPE + prefix LM 掩码）
 class HrmTextAttention(LlamaAttention):
     def __init__(self, config: HrmTextConfig, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -212,6 +219,7 @@ class HrmTextAttention(LlamaAttention):
         return attn_output, attn_weights
 
 
+# HrmTextDecoderLayer：HRM-Text 解码器单层（自注意力 + MLP）
 class HrmTextDecoderLayer(LlamaDecoderLayer):
     def __init__(self, config: HrmTextConfig, layer_idx: int):
         super().__init__()
@@ -219,6 +227,7 @@ class HrmTextDecoderLayer(LlamaDecoderLayer):
         self.post_attention_layernorm = HrmTextRMSNorm(eps=config.rms_norm_eps)
 
 
+# HrmTextStack：HRM-Text H/L 堆叠 Transformer 层组
 class HrmTextStack(nn.Module):
     """A single transformer stack — used twice inside, once as H module and once as L module"""
 
@@ -251,6 +260,7 @@ class HrmTextStack(nn.Module):
 
 
 @auto_docstring
+# HrmTextPreTrainedModel：HRM-Text 预训练基类与权重初始化
 class HrmTextPreTrainedModel(LlamaPreTrainedModel):
     config: HrmTextConfig
 
@@ -279,6 +289,7 @@ class HrmTextPreTrainedModel(LlamaPreTrainedModel):
 
 
 @auto_docstring
+# HrmTextModel：HRM-Text 分层推理纯文本解码器主干
 class HrmTextModel(LlamaModel):
     def __init__(self, config: HrmTextConfig):
         super().__init__(config)
@@ -407,6 +418,7 @@ class HrmTextModel(LlamaModel):
 
 
 @auto_docstring
+# HrmTextForCausalLM：HRM-Text 因果语言建模与文本生成
 class HrmTextForCausalLM(LlamaForCausalLM):
     @staticmethod
     def create_masks_for_generate(

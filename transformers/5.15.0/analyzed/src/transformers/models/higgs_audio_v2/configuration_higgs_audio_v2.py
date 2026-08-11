@@ -24,11 +24,16 @@ from huggingface_hub.dataclasses import strict
 from ...configuration_utils import PreTrainedConfig
 from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
+# configuration_higgs_audio_v2 由 modular_higgs_audio_v2.py 自动生成
 from ...utils.type_validators import interval
 
 
+# Higgs Audio V2 配置：Boson 多码本 TTS 解码器（Llama3 RoPE + 音频 token）超参
+
+# HiggsAudioV2Config：bosonai/higgs-audio-v2-generation-3B-base 多码本 TTS 默认超参
 @auto_docstring(checkpoint="bosonai/higgs-audio-v2-generation-3B-base")
 @strict
+# HiggsAudioV2Config：Boson Higgs Audio V2 多码本 TTS 解码器超参（Llama3 RoPE + 音频 token）
 class HiggsAudioV2Config(PreTrainedConfig):
     r"""
     audio_bos_token_id (`int`, *optional*, defaults to 128013):

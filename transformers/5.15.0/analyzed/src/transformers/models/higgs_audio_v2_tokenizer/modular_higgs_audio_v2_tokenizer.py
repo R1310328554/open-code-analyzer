@@ -25,8 +25,12 @@ from ..xcodec.configuration_xcodec import XcodecConfig
 from ..xcodec.modeling_xcodec import XcodecEuclideanCodebook, XcodecModel, XcodecPreTrainedModel
 
 
+# Higgs Audio V2 Tokenizer modular 源：基于 Xcodec 扩展语义 HuBERT 分支
+
+# HiggsAudioV2TokenizerConfig：bosonai/higgs-audio-v2-tokenizer 神经音频编解码默认超参
 @auto_docstring(checkpoint="bosonai/higgs-audio-v2-tokenizer")
 @strict
+# HiggsAudioV2TokenizerConfig：Higgs Audio V2 神经音频编解码器超参（语义+声学双分支）
 class HiggsAudioV2TokenizerConfig(XcodecConfig):
     r"""
     target_bandwidths (`List[float]`, *optional*, defaults to `[0.5, 1, 1.5, 2]`):
@@ -82,14 +86,17 @@ class HiggsAudioV2TokenizerConfig(XcodecConfig):
 
 @requires(backends=("torchaudio",))
 @auto_docstring
+# HiggsAudioV2TokenizerPreTrainedModel：Higgs Audio V2 Tokenizer 预训练基类
 class HiggsAudioV2TokenizerPreTrainedModel(XcodecPreTrainedModel):
     _no_split_modules = ["HiggsAudioV2TokenizerResidualVectorQuantization"]
     _keys_to_ignore_on_load_unexpected = ["semantic_model.masked_spec_embed"]
 
 
+# HiggsAudioV2TokenizerEuclideanCodebook：Higgs Audio V2 Tokenizer 欧氏距离向量量化码本
 class HiggsAudioV2TokenizerEuclideanCodebook(XcodecEuclideanCodebook): ...
 
 
+# HiggsAudioV2TokenizerVectorQuantization：Higgs Audio V2 Tokenizer 单层向量量化模块
 class HiggsAudioV2TokenizerVectorQuantization(nn.Module):
     def __init__(self, config: HiggsAudioV2TokenizerConfig):
         super().__init__()
@@ -112,6 +119,7 @@ class HiggsAudioV2TokenizerVectorQuantization(nn.Module):
 
 @requires(backends=("torchaudio",))
 @auto_docstring(custom_intro="""The HiggsAudioV2Tokenizer neural audio codec model.""")
+# HiggsAudioV2TokenizerModel：Higgs Audio V2 Tokenizer 神经音频编解码器（语义+声学）
 class HiggsAudioV2TokenizerModel(XcodecModel):
     def _extract_semantic_features(self, input_values: torch.FloatTensor) -> torch.FloatTensor:
         if self.config.sample_rate != self.config.semantic_sample_rate:

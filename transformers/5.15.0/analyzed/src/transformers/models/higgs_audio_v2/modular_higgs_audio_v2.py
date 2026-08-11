@@ -30,6 +30,7 @@ from ...utils import (
     logging,
 )
 from ...utils.output_capturing import capture_outputs
+# modular 复用 Llama 解码层与 CSM 多码本嵌入，并接入 TTS 生成 mixin
 from ..csm.modeling_csm import CsmBackboneModelEmbeddings
 from ..llama.configuration_llama import LlamaConfig
 from ..llama.modeling_llama import LlamaDecoderLayer, LlamaMLP, LlamaModel, LlamaPreTrainedModel, LlamaRMSNorm
@@ -39,8 +40,11 @@ from .generation_higgs_audio_v2 import HiggsAudioV2GenerationMixin
 logger = logging.get_logger(__name__)
 
 
+# Higgs Audio V2 modular 源：复用 Llama/CSM 组件并扩展多码本 TTS 生成
+
 @auto_docstring(checkpoint="bosonai/higgs-audio-v2-generation-3B-base")
 @strict
+# HiggsAudioV2Config：Boson Higgs Audio V2 多码本 TTS 解码器超参（Llama3 RoPE + 音频 token）
 class HiggsAudioV2Config(LlamaConfig):
     r"""
     audio_bos_token_id (`int`, *optional*, defaults to 128013):
@@ -98,14 +102,17 @@ class HiggsAudioV2Config(LlamaConfig):
         super().__post_init__(**kwargs)
 
 
+# HiggsAudioV2MLP：Higgs Audio V2 SwiGLU 前馈 MLP
 class HiggsAudioV2MLP(LlamaMLP):
     pass
 
 
+# HiggsAudioV2RMSNorm：Higgs Audio V2 RMS LayerNorm
 class HiggsAudioV2RMSNorm(LlamaRMSNorm):
     pass
 
 
+# HiggsAudioV2DecoderLayer：Higgs Audio V2 解码器单层（自注意力 + MLP）
 class HiggsAudioV2DecoderLayer(LlamaDecoderLayer):
     def __init__(self, config: HiggsAudioV2Config, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -169,6 +176,7 @@ class HiggsAudioV2DecoderLayer(LlamaDecoderLayer):
         return hidden_states
 
 
+# HiggsAudioV2Embeddings：Higgs Audio V2 文本+多码本音频 token 嵌入
 class HiggsAudioV2Embeddings(CsmBackboneModelEmbeddings):
     def forward(self, input_ids):
         inputs_embeds = self.embed_audio_tokens(input_ids + self.audio_tokens_offsets)
@@ -176,6 +184,7 @@ class HiggsAudioV2Embeddings(CsmBackboneModelEmbeddings):
         return inputs_embeds
 
 
+# HiggsAudioV2PreTrainedModel：Higgs Audio V2 预训练基类与权重初始化
 class HiggsAudioV2PreTrainedModel(LlamaPreTrainedModel, PreTrainedModel):
     @torch.no_grad()
     def _init_weights(self, module):
@@ -187,6 +196,7 @@ class HiggsAudioV2PreTrainedModel(LlamaPreTrainedModel, PreTrainedModel):
             )
 
 
+# HiggsAudioV2Model：Higgs Audio V2 纯文本/音频联合解码器主干
 class HiggsAudioV2Model(LlamaModel):
     def __init__(self, config: HiggsAudioV2Config):
         super().__init__(config)
@@ -373,6 +383,7 @@ class HiggsAudioV2Model(LlamaModel):
     The Higgs Audio model, a llama-like auto-regressive transformer model with dual-FFN.
     """
 )
+# HiggsAudioV2ForConditionalGeneration：Higgs Audio V2 条件生成（TTS 多码本输出）
 class HiggsAudioV2ForConditionalGeneration(HiggsAudioV2PreTrainedModel, HiggsAudioV2GenerationMixin):
     base_model_prefix = "model"
     _keys_to_ignore_on_load_unexpected = ["text_lm_head.weight"]

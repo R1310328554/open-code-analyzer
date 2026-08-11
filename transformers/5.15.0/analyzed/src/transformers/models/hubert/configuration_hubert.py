@@ -13,6 +13,8 @@
 # limitations under the License.
 """Hubert model configuration"""
 
+# HuBERT 配置：Meta 自监督语音表征（Wav2Vec2 风格卷积+Transformer）超参
+
 import functools
 import operator
 
@@ -22,8 +24,10 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# HubertConfig：facebook/hubert-base-ls960 自监督语音表征默认超参
 @auto_docstring(checkpoint="facebook/hubert-base-ls960")
 @strict
+# HubertConfig：Meta HuBERT 自监督语音表征 Wav2Vec2 风格超参
 class HubertConfig(PreTrainedConfig):
     r"""
     feat_proj_layer_norm (`bool`, *optional*, defaults to `True`):

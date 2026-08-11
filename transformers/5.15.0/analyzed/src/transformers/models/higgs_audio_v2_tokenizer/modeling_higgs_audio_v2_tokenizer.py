@@ -35,11 +35,15 @@ from ...processing_utils import Unpack
 from ...utils import ModelOutput, TransformersKwargs, auto_docstring, can_return_tuple
 from ...utils.import_utils import requires
 from ..auto import AutoModel
+# modeling_higgs_audio_v2_tokenizer 由 modular_higgs_audio_v2_tokenizer.py 自动生成
 from .configuration_higgs_audio_v2_tokenizer import HiggsAudioV2TokenizerConfig
 
 
+# Higgs Audio V2 Tokenizer 建模：语义+声学 RVQ 神经音频编解码器
+
 @requires(backends=("torchaudio",))
 @auto_docstring
+# HiggsAudioV2TokenizerPreTrainedModel：Higgs Audio V2 Tokenizer 预训练基类
 class HiggsAudioV2TokenizerPreTrainedModel(PreTrainedAudioTokenizerBase):
     """
     An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
@@ -159,6 +163,7 @@ class HiggsAudioV2TokenizerPreTrainedModel(PreTrainedAudioTokenizerBase):
         return input_length
 
 
+# HiggsAudioV2TokenizerEuclideanCodebook：Higgs Audio V2 Tokenizer 欧氏距离向量量化码本
 class HiggsAudioV2TokenizerEuclideanCodebook(nn.Module):
     """Codebook with Euclidean distance."""
 
@@ -190,6 +195,7 @@ class HiggsAudioV2TokenizerEuclideanCodebook(nn.Module):
         return quantized
 
 
+# HiggsAudioV2TokenizerVectorQuantization：Higgs Audio V2 Tokenizer 单层向量量化模块
 class HiggsAudioV2TokenizerVectorQuantization(nn.Module):
     def __init__(self, config: HiggsAudioV2TokenizerConfig):
         super().__init__()
@@ -211,6 +217,7 @@ class HiggsAudioV2TokenizerVectorQuantization(nn.Module):
 
 
 @dataclass
+# HiggsAudioV2TokenizerOutput：Higgs Audio V2 Tokenizer 编解码联合输出 dataclass
 class HiggsAudioV2TokenizerOutput(ModelOutput):
     """
     Args:
@@ -225,6 +232,7 @@ class HiggsAudioV2TokenizerOutput(ModelOutput):
 
 
 @dataclass
+# HiggsAudioV2TokenizerEncoderOutput：Higgs Audio V2 Tokenizer 编码器输出 dataclass
 class HiggsAudioV2TokenizerEncoderOutput(ModelOutput):
     """
     Args:
@@ -236,6 +244,7 @@ class HiggsAudioV2TokenizerEncoderOutput(ModelOutput):
 
 
 @dataclass
+# HiggsAudioV2TokenizerDecoderOutput：Higgs Audio V2 Tokenizer 解码器输出 dataclass
 class HiggsAudioV2TokenizerDecoderOutput(ModelOutput):
     """
     Args:
@@ -246,6 +255,7 @@ class HiggsAudioV2TokenizerDecoderOutput(ModelOutput):
     audio_values: torch.FloatTensor | None = None
 
 
+# HiggsAudioV2TokenizerResidualUnit：Higgs Audio V2 Tokenizer 语义分支残差卷积单元
 class HiggsAudioV2TokenizerResidualUnit(nn.Module):
     """Residual block for SemanticEncoder and SemanticDecoder used in HiggsAudioV2Tokenizer."""
 
@@ -273,6 +283,7 @@ class HiggsAudioV2TokenizerResidualUnit(nn.Module):
         return hidden_state + output_tensor
 
 
+# HiggsAudioV2TokenizerSemanticEncoderBlock：Higgs Audio V2 Tokenizer 语义编码器卷积块
 class HiggsAudioV2TokenizerSemanticEncoderBlock(nn.Module):
     def __init__(self, config: HiggsAudioV2TokenizerConfig, in_channels: int, out_channels: int, stride: int):
         super().__init__()
@@ -295,6 +306,7 @@ class HiggsAudioV2TokenizerSemanticEncoderBlock(nn.Module):
         return hidden_state
 
 
+# SemanticEncoder：Higgs Audio V2 Tokenizer 语义 HuBERT 特征编码器
 class SemanticEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -325,6 +337,7 @@ class SemanticEncoder(nn.Module):
         return hidden_state
 
 
+# SemanticDecoderBlock：Higgs Audio V2 Tokenizer 语义解码器卷积块
 class SemanticDecoderBlock(nn.Module):
     def __init__(self, config: HiggsAudioV2TokenizerConfig, in_channels: int, out_channels: int, stride: int):
         super().__init__()
@@ -359,6 +372,7 @@ class SemanticDecoderBlock(nn.Module):
         return hidden_state
 
 
+# SemanticDecoder：Higgs Audio V2 Tokenizer 语义特征解码器
 class SemanticDecoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -399,6 +413,7 @@ class SemanticDecoder(nn.Module):
         return hidden_state
 
 
+# HiggsAudioV2TokenizerResidualVectorQuantization：Higgs Audio V2 Tokenizer 残差向量量化（RVQ）
 class HiggsAudioV2TokenizerResidualVectorQuantization(nn.Module):
     """
     Residual vector quantization implementation. Follows Algorithm 1 in https://huggingface.co/papers/2107.03312
@@ -453,6 +468,7 @@ class HiggsAudioV2TokenizerResidualVectorQuantization(nn.Module):
 
 @requires(backends=("torchaudio",))
 @auto_docstring(custom_intro="""The HiggsAudioV2Tokenizer neural audio codec model.""")
+# HiggsAudioV2TokenizerModel：Higgs Audio V2 Tokenizer 神经音频编解码器（语义+声学）
 class HiggsAudioV2TokenizerModel(HiggsAudioV2TokenizerPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

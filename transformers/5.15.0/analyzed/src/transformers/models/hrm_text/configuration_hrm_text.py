@@ -24,11 +24,16 @@ from ...configuration_utils import PreTrainedConfig
 from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 from ...utils.generic import is_flash_attention_requested, split_attention_implementation
+# configuration_hrm_text 由 modular_hrm_text.py 自动生成
 from ...utils.type_validators import interval
 
 
+# HRM-Text 配置：Sapient 分层推理文本解码器（H/L 循环 + prefix LM）超参
+
+# HrmTextConfig：sapientinc/HRM-Text-1B 分层推理文本解码器默认超参
 @auto_docstring(checkpoint="sapientinc/HRM-Text-1B")
 @strict
+# HrmTextConfig：Sapient HRM-Text 分层推理文本解码器超参（H/L 循环 + prefix LM）
 class HrmTextConfig(PreTrainedConfig):
     r"""
     H_cycles (`int`, *optional*, defaults to 2):

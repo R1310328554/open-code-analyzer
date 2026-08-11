@@ -41,6 +41,8 @@ from ...utils import add_start_docstrings, logging
 logger = logging.get_logger(__name__)
 
 
+# Higgs Audio V2 生成：多码本 delay pattern 自回归 TTS 生成 mixin
+
 LOGITS_PROCESSOR_INPUTS_DOCSTRING = r"""
     Args:
         input_ids (`torch.LongTensor` of shape `(batch_size, sequence_length)`):
@@ -55,6 +57,7 @@ LOGITS_PROCESSOR_INPUTS_DOCSTRING = r"""
 """
 
 
+# HiggsAudioV2DelayPatternLogitsProcessor：多码本音频 delay pattern 生成 logits 处理器
 class HiggsAudioV2DelayPatternLogitsProcessor(LogitsProcessor):
     r"""
     [`LogitsProcessor`] for Higgs Audio V2 text-to-speech model to handle codebook delay pattern.
@@ -161,6 +164,7 @@ class HiggsAudioV2DelayPatternLogitsProcessor(LogitsProcessor):
 
 
 @dataclass
+# HiggsAudioV2GenerationOutput：Higgs Audio V2 文本到语音生成输出 dataclass
 class HiggsAudioV2GenerationOutput(GenerateDecoderOnlyOutput):
     """
     Outputs of HiggsAudioV2 generation models, when using non-beam methods.
@@ -197,6 +201,7 @@ class HiggsAudioV2GenerationOutput(GenerateDecoderOnlyOutput):
     audio_sequences: list[torch.LongTensor] | None = None
 
 
+# HiggsAudioV2GenerationMixin：Higgs Audio V2 多码本自回归生成 mixin
 class HiggsAudioV2GenerationMixin(GenerationMixin):
     # Logits processors that only operate on scores and are safe to apply per-codebook.
     # Other processors (e.g. RepetitionPenaltyLogitsProcessor) use input_ids to index into
