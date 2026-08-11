@@ -36,6 +36,9 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring, is_vision_available
 
 
+# Mllama PIL 图像预处理：NumPy 路径的分块与 aspect ratio 处理
+
+# split_to_tiles_np：NumPy 路径将图像切分为 tile 网格
 def split_to_tiles_np(image: np.ndarray, num_tiles_height: int, num_tiles_width: int) -> np.ndarray:
     """Split an image into tiles (numpy version)."""
     num_channels, height, width = image.shape
@@ -49,6 +52,7 @@ def split_to_tiles_np(image: np.ndarray, num_tiles_height: int, num_tiles_width:
     return np.ascontiguousarray(image)
 
 
+# build_aspect_ratio_mask_np：NumPy 版构建 tile 宽高比掩码
 def build_aspect_ratio_mask_np(aspect_ratios: list[list[tuple[int, int]]], max_image_tiles: int) -> np.ndarray:
     """
     Build aspect ratio mask (numpy version).
@@ -81,6 +85,7 @@ def build_aspect_ratio_mask_np(aspect_ratios: list[list[tuple[int, int]]], max_i
     return aspect_ratio_mask
 
 
+# pack_images：将多 tile 图像打包为固定形状 batch 张量
 def pack_images(
     batch_images: list[list[np.ndarray]],
     max_image_tiles: int,
@@ -133,6 +138,7 @@ def pack_images(
     return stacked_images, all_num_tiles
 
 
+# convert_aspect_ratios_to_ids_np：NumPy 版宽高比到 id 映射
 def convert_aspect_ratios_to_ids_np(aspect_ratios: list[list[tuple[int, int]]], max_image_tiles: int) -> np.ndarray:
     """
     Convert aspect ratio tuples to ids (numpy version).
@@ -164,6 +170,7 @@ def convert_aspect_ratios_to_ids_np(aspect_ratios: list[list[tuple[int, int]]], 
 
 
 # Adapted from transformers.models.mllama.image_processing_mllama.MllamaImageProcessorKwargs
+# MllamaImageProcessorKwargs：Mllama 图像处理器可选参数字典类型
 class MllamaImageProcessorKwargs(ImagesKwargs, total=False):
     """
     max_image_tiles (`int`, *optional*):
@@ -174,6 +181,7 @@ class MllamaImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 # Adapted from transformers.models.mllama.image_processing_mllama._validate_size
+# _validate_size：校验 size 参数为 int 或 (h, w) 元组
 def _validate_size(size: SizeDict) -> None:
     if not (size.height and size.width):
         raise ValueError(f"Argument `size` must be a dictionary with keys 'height' and 'width'. Got: {size}")
@@ -182,6 +190,7 @@ def _validate_size(size: SizeDict) -> None:
 
 
 # Adapted from transformers.models.mllama.image_processing_mllama._validate_mllama_preprocess_arguments
+# _validate_mllama_preprocess_arguments：校验 Mllama 预处理尺寸与 tile 参数
 def _validate_mllama_preprocess_arguments(do_resize, size, do_pad, max_image_tiles):
     if not do_pad:
         raise ValueError("MllamaImageProcessor doesn't support `do_pad=False` mode.")
@@ -193,6 +202,7 @@ def _validate_mllama_preprocess_arguments(do_resize, size, do_pad, max_image_til
 
 
 # Adapted from transformers.models.idefics2.image_processing_idefics2.convert_to_rgb
+# convert_to_rgb：将 PIL/数组图像统一转换为 RGB 格式
 def convert_to_rgb(image: ImageInput) -> ImageInput:
     """
     Converts an image to RGB format. Only converts if the image is of type PIL.Image.Image, otherwise returns the image
@@ -213,6 +223,7 @@ def convert_to_rgb(image: ImageInput) -> ImageInput:
 
 # Adapted from transformers.models.mllama.image_processing_mllama.get_all_supported_aspect_ratios
 @lru_cache(maxsize=10)
+# get_all_supported_aspect_ratios：按 max_num_tiles 枚举支持的宽高比分块方案
 def get_all_supported_aspect_ratios(max_image_tiles: int) -> list[tuple[int, int]]:
     """
     Computes all allowed aspect ratios for a given maximum number of input tiles.
@@ -243,6 +254,7 @@ def get_all_supported_aspect_ratios(max_image_tiles: int) -> list[tuple[int, int
 
 
 # Adapted from transformers.models.mllama.image_processing_mllama.get_image_size_fit_to_canvas
+# get_image_size_fit_to_canvas：将图像缩放到指定 tile 画布内的最优尺寸
 def get_image_size_fit_to_canvas(
     image_height: int,
     image_width: int,
@@ -296,6 +308,7 @@ def get_image_size_fit_to_canvas(
 
 # Adapted from transformers.models.mllama.image_processing_mllama.get_optimal_tiled_canvas
 @lru_cache(maxsize=100)
+# get_optimal_tiled_canvas：为给定宽高比选择最优 tile 网格画布
 def get_optimal_tiled_canvas(
     image_height: int,
     image_width: int,
@@ -354,6 +367,7 @@ def get_optimal_tiled_canvas(
 
 
 @auto_docstring
+# MllamaImageProcessorPil：基于 PIL/NumPy 的 Mllama 图像预处理器
 class MllamaImageProcessorPil(PilBackend):
     resample = PILImageResampling.BILINEAR
     image_mean = IMAGENET_STANDARD_MEAN
@@ -368,6 +382,7 @@ class MllamaImageProcessorPil(PilBackend):
     valid_kwargs = MllamaImageProcessorKwargs
     model_input_names = ["pixel_values", "num_tiles", "aspect_ratio_ids", "aspect_ratio_mask"]
 
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, **kwargs: Unpack[MllamaImageProcessorKwargs]):
         super().__init__(**kwargs)
         _validate_mllama_preprocess_arguments(self.do_resize, self.size, self.do_pad, self.max_image_tiles)
@@ -385,10 +400,12 @@ class MllamaImageProcessorPil(PilBackend):
         images = self.fetch_images(images)
         return make_nested_list_of_images(images, expected_ndims=expected_ndims)
 
+    # convert_to_rgb：将 PIL/数组图像统一转换为 RGB 格式
     def convert_to_rgb(self, image: ImageInput) -> ImageInput:
         """Converts an image to RGB format."""
         return convert_to_rgb(image)
 
+    # pad：对 BatchEncoding 按 max_length 填充对齐
     def pad(
         self,
         image: np.ndarray,

@@ -13,6 +13,8 @@
 # limitations under the License
 """Tokenization classes for mLUKE."""
 
+
+# mLUKE 分词器：多语言实体 span 编码与实体分类/配对/链接任务
 import itertools
 import json
 import os
@@ -126,6 +128,7 @@ ENCODE_PLUS_ADDITIONAL_KWARGS_DOCSTRING = r"""
 """
 
 
+# MLukeTokenizer：多语言实体感知 LUKE 分词器（实体 span 与实体词表）
 class MLukeTokenizer(TokenizersBackend):
     """
     Adapted from [`XLMRobertaTokenizer`] and [`LukeTokenizer`]. Based on
@@ -214,6 +217,7 @@ class MLukeTokenizer(TokenizersBackend):
     vocab_files_names = VOCAB_FILES_NAMES
     model_input_names = ["input_ids", "attention_mask"]
 
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(
         self,
         bos_token="<s>",
@@ -390,6 +394,7 @@ class MLukeTokenizer(TokenizersBackend):
         # Call _post_init for tokenizers created directly (not from_pretrained)
         self._post_init()
 
+    # _post_init：加载后校验实体词表并注册额外特殊 token
     def _post_init(self):
         """
         Post-initialization to configure the post-processor for MLuke's special token format.
@@ -415,14 +420,17 @@ class MLukeTokenizer(TokenizersBackend):
         )
 
     @property
+    # vocab_size：返回主词表大小
     def vocab_size(self):
         return self._vocab_size + self.fairseq_offset + 1  # Add the <mask> token
 
+    # get_vocab：返回 token 到 id 的完整词表字典
     def get_vocab(self):
         vocab = {self.convert_ids_to_tokens(i): i for i in range(self.vocab_size)}
         vocab.update(self.added_tokens_encoder)
         return vocab
 
+    # _convert_token_to_id：token 字符串转 id（含实体 token 查表）
     def _convert_token_to_id(self, token):
         """Converts a token (str) in an id using the vocab."""
         if token in self.fairseq_tokens_to_ids:
@@ -434,6 +442,7 @@ class MLukeTokenizer(TokenizersBackend):
         # Need to return unknown token if not found (token_to_id returns None)
         return token_id + self.fairseq_offset if token_id is not None else self.unk_token_id
 
+    # _convert_id_to_token：id 转 token 字符串
     def _convert_id_to_token(self, index):
         """Converts an index (integer) in a token (str) using the vocab."""
         if index in self.fairseq_ids_to_tokens:
@@ -441,11 +450,13 @@ class MLukeTokenizer(TokenizersBackend):
         token = self._tokenizer.id_to_token(index - self.fairseq_offset)
         return token if token is not None else self.unk_token
 
+    # convert_tokens_to_string：token 列表拼接为原始文本
     def convert_tokens_to_string(self, tokens):
         """Converts a sequence of tokens (strings for sub-words) in a single string."""
         out_string = "".join(tokens).replace(SPIECE_UNDERLINE, " ").strip()
         return out_string
 
+    # num_special_tokens_to_add：序列对编码时需追加的特殊 token 数量
     def num_special_tokens_to_add(self, pair: bool = False) -> int:
         """
         Returns the number of added tokens when encoding a sequence with special tokens.
@@ -461,6 +472,7 @@ class MLukeTokenizer(TokenizersBackend):
         return 4 if pair else 2
 
     @add_end_docstrings(ENCODE_KWARGS_DOCSTRING, ENCODE_PLUS_ADDITIONAL_KWARGS_DOCSTRING)
+    # __call__：实体感知分词主入口（支持多种实体任务）
     def __call__(
         self,
         text: TextInput | list[TextInput],
@@ -651,6 +663,7 @@ class MLukeTokenizer(TokenizersBackend):
                 **kwargs,
             )
 
+    # _encode_plus：单条文本/实体 span 编码为模型输入
     def _encode_plus(
         self,
         text: TextInput,
@@ -762,6 +775,7 @@ class MLukeTokenizer(TokenizersBackend):
             verbose=verbose,
         )
 
+    # _batch_encode_plus：批量文本与实体 span 编码
     def _batch_encode_plus(
         self,
         batch_text_or_text_pairs: list[TextInput] | list[TextInputPair],
@@ -905,6 +919,7 @@ class MLukeTokenizer(TokenizersBackend):
 
         return BatchEncoding(batch_outputs)
 
+    # _check_entity_input_format：校验 entities 与 entity_spans 输入格式
     def _check_entity_input_format(self, entities: EntityInput | None, entity_spans: EntitySpanInput | None):
         if not isinstance(entity_spans, list):
             raise TypeError("entity_spans should be given as a list")
@@ -923,6 +938,7 @@ class MLukeTokenizer(TokenizersBackend):
             if len(entities) != len(entity_spans):
                 raise ValueError("If you specify entities, entities and entity_spans must be the same length")
 
+    # _create_input_sequence：构造含实体标记的 input_ids 与 entity 元数据
     def _create_input_sequence(
         self,
         text: TextInput,
@@ -1076,6 +1092,7 @@ class MLukeTokenizer(TokenizersBackend):
         )
 
     @add_end_docstrings(ENCODE_KWARGS_DOCSTRING, ENCODE_PLUS_ADDITIONAL_KWARGS_DOCSTRING)
+    # _batch_prepare_for_model：批量整理 padding 前的模型输入字典
     def _batch_prepare_for_model(
         self,
         batch_ids_pairs: list[tuple[list[int], None]],
@@ -1161,6 +1178,7 @@ class MLukeTokenizer(TokenizersBackend):
         return batch_outputs
 
     @add_end_docstrings(ENCODE_KWARGS_DOCSTRING, ENCODE_PLUS_ADDITIONAL_KWARGS_DOCSTRING)
+    # prepare_for_model：单条序列整理为模型输入（含实体位置/id）
     def prepare_for_model(
         self,
         ids: list[int],
@@ -1392,6 +1410,7 @@ class MLukeTokenizer(TokenizersBackend):
 
         return batch_outputs
 
+    # pad：对 BatchEncoding 按 max_length 填充对齐
     def pad(
         self,
         encoded_inputs: BatchEncoding
@@ -1554,6 +1573,7 @@ class MLukeTokenizer(TokenizersBackend):
 
         return BatchEncoding(batch_outputs, tensor_type=return_tensors)
 
+    # _pad：底层填充逻辑（input_ids、entity 相关字段同步 pad）
     def _pad(
         self,
         encoded_inputs: dict[str, EncodedInput] | BatchEncoding,
@@ -1698,6 +1718,7 @@ class MLukeTokenizer(TokenizersBackend):
 
         return encoded_inputs
 
+    # save_vocabulary：持久化 SentencePiece 与实体词表文件
     def save_vocabulary(self, save_directory: str, filename_prefix: str | None = None) -> tuple[str]:
         """
         Save only the entity vocabulary file. The tokenizer.json is saved by the parent TokenizersBackend.
@@ -1715,6 +1736,7 @@ class MLukeTokenizer(TokenizersBackend):
 
         return (entity_vocab_file,)
 
+    # build_inputs_with_special_tokens：在 token 序列首尾插入 BOS/EOS 等特殊 token
     def build_inputs_with_special_tokens(
         self, token_ids_0: list[int], token_ids_1: list[int] | None = None
     ) -> list[int]:
@@ -1741,6 +1763,7 @@ class MLukeTokenizer(TokenizersBackend):
         sep = [self.sep_token_id]
         return cls + token_ids_0 + sep + sep + token_ids_1 + sep
 
+    # get_special_tokens_mask：生成特殊 token 位置 0/1 掩码
     def get_special_tokens_mask(
         self, token_ids_0: list[int], token_ids_1: list[int] | None = None, already_has_special_tokens: bool = False
     ) -> list[int]:
@@ -1769,6 +1792,7 @@ class MLukeTokenizer(TokenizersBackend):
             return [1] + ([0] * len(token_ids_0)) + [1]
         return [1] + ([0] * len(token_ids_0)) + [1, 1] + ([0] * len(token_ids_1)) + [1]
 
+    # create_token_type_ids_from_sequences：为句对构造 token_type_ids
     def create_token_type_ids_from_sequences(
         self, token_ids_0: list[int], token_ids_1: list[int] | None = None
     ) -> list[int]:

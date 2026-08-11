@@ -21,6 +21,8 @@
 # SOFTWARE.
 
 from collections.abc import Callable
+# MobileBERT 建模：瓶颈 Transformer 编码器与多种下游任务头
+
 from dataclasses import dataclass
 
 import torch
@@ -52,7 +54,9 @@ from .configuration_mobilebert import MobileBertConfig
 logger = logging.get_logger(__name__)
 
 
+# NoNorm：MobileBERT 可选的无归一化层（替代 LayerNorm）
 class NoNorm(nn.Module):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, feat_size, eps=None):
         super().__init__()
         self.bias = nn.Parameter(torch.zeros(feat_size))
@@ -65,9 +69,11 @@ class NoNorm(nn.Module):
 NORM2FN = {"layer_norm": nn.LayerNorm, "no_norm": NoNorm}
 
 
+# MobileBertEmbeddings：词嵌入 + 位置嵌入 + 三元组卷积输入
 class MobileBertEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__()
         self.trigram_input = config.trigram_input
@@ -140,6 +146,7 @@ class MobileBertEmbeddings(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.eager_attention_forward
+# eager_attention_forward：Mllama eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -168,7 +175,9 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# MobileBertSelfAttention：MobileBERT 自注意力（可选瓶颈共享 Q/K）
 class MobileBertSelfAttention(nn.Module):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -220,7 +229,9 @@ class MobileBertSelfAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# MobileBertSelfOutput：自注意力输出投影与残差
 class MobileBertSelfOutput(nn.Module):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__()
         self.use_bottleneck = config.use_bottleneck
@@ -237,7 +248,9 @@ class MobileBertSelfOutput(nn.Module):
         return layer_outputs
 
 
+# MobileBertAttention：MobileBERT 完整自注意力子层
 class MobileBertAttention(nn.Module):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__()
         self.self = MobileBertSelfAttention(config)
@@ -265,7 +278,9 @@ class MobileBertAttention(nn.Module):
         return attention_output, attn_weights
 
 
+# MobileBertIntermediate：MobileBERT 前馈中间层
 class MobileBertIntermediate(nn.Module):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.true_hidden_size, config.intermediate_size)
@@ -280,7 +295,9 @@ class MobileBertIntermediate(nn.Module):
         return hidden_states
 
 
+# OutputBottleneck：MobileBERT 输出瓶颈线性变换
 class OutputBottleneck(nn.Module):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.true_hidden_size, config.hidden_size)
@@ -294,7 +311,9 @@ class OutputBottleneck(nn.Module):
         return layer_outputs
 
 
+# MobileBertOutput：MobileBERT 前馈输出子层
 class MobileBertOutput(nn.Module):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__()
         self.use_bottleneck = config.use_bottleneck
@@ -318,7 +337,9 @@ class MobileBertOutput(nn.Module):
         return layer_output
 
 
+# BottleneckLayer：MobileBERT 瓶颈层（降维-升维）
 class BottleneckLayer(nn.Module):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.intra_bottleneck_size)
@@ -330,7 +351,9 @@ class BottleneckLayer(nn.Module):
         return layer_input
 
 
+# Bottleneck：MobileBERT 瓶颈模块封装
 class Bottleneck(nn.Module):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__()
         self.key_query_shared_bottleneck = config.key_query_shared_bottleneck
@@ -366,7 +389,9 @@ class Bottleneck(nn.Module):
             return (hidden_states, hidden_states, hidden_states, bottlenecked_hidden_states)
 
 
+# FFNOutput：MobileBERT 多 FFN 分支输出聚合
 class FFNOutput(nn.Module):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.intermediate_size, config.true_hidden_size)
@@ -378,7 +403,9 @@ class FFNOutput(nn.Module):
         return layer_outputs
 
 
+# FFNLayer：MobileBERT 单个前馈网络分支
 class FFNLayer(nn.Module):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__()
         self.intermediate = MobileBertIntermediate(config)
@@ -390,7 +417,9 @@ class FFNLayer(nn.Module):
         return layer_outputs
 
 
+# MobileBertLayer：MobileBERT 编码器单层（注意力 + 多 FFN）
 class MobileBertLayer(GradientCheckpointingLayer):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__()
         self.use_bottleneck = config.use_bottleneck
@@ -434,7 +463,9 @@ class MobileBertLayer(GradientCheckpointingLayer):
         return layer_output
 
 
+# MobileBertEncoder：MobileBERT Transformer 编码器堆叠
 class MobileBertEncoder(nn.Module):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__()
         self.layer = nn.ModuleList([MobileBertLayer(config) for _ in range(config.num_hidden_layers)])
@@ -454,7 +485,9 @@ class MobileBertEncoder(nn.Module):
         return BaseModelOutput(last_hidden_state=hidden_states)
 
 
+# MobileBertPooler：MobileBERT [CLS] 池化头
 class MobileBertPooler(nn.Module):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__()
         self.do_activate = config.classifier_activation
@@ -473,7 +506,9 @@ class MobileBertPooler(nn.Module):
             return pooled_output
 
 
+# MobileBertPredictionHeadTransform：MLM 预测头变换层
 class MobileBertPredictionHeadTransform(nn.Module):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
@@ -490,7 +525,9 @@ class MobileBertPredictionHeadTransform(nn.Module):
         return hidden_states
 
 
+# MobileBertLMPredictionHead：MobileBERT 语言建模预测头
 class MobileBertLMPredictionHead(nn.Module):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__()
         self.transform = MobileBertPredictionHeadTransform(config)
@@ -507,7 +544,9 @@ class MobileBertLMPredictionHead(nn.Module):
         return hidden_states
 
 
+# MobileBertOnlyMLMHead：仅 MLM 头的轻量包装
 class MobileBertOnlyMLMHead(nn.Module):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__()
         self.predictions = MobileBertLMPredictionHead(config)
@@ -517,7 +556,9 @@ class MobileBertOnlyMLMHead(nn.Module):
         return prediction_scores
 
 
+# MobileBertPreTrainingHeads：预训练 MLM + NSP 双任务头
 class MobileBertPreTrainingHeads(nn.Module):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__()
         self.predictions = MobileBertLMPredictionHead(config)
@@ -530,6 +571,7 @@ class MobileBertPreTrainingHeads(nn.Module):
 
 
 @auto_docstring
+# MobileBertPreTrainedModel：MobileBERT 预训练基类
 class MobileBertPreTrainedModel(PreTrainedModel):
     config: MobileBertConfig
     base_model_prefix = "mobilebert"
@@ -562,6 +604,7 @@ class MobileBertPreTrainedModel(PreTrainedModel):
     """
 )
 @dataclass
+# MobileBertForPreTrainingOutput：预训练任务输出容器
 class MobileBertForPreTrainingOutput(ModelOutput):
     r"""
     loss (*optional*, returned when `labels` is provided, `torch.FloatTensor` of shape `(1,)`):
@@ -582,11 +625,13 @@ class MobileBertForPreTrainingOutput(ModelOutput):
 
 
 @auto_docstring
+# MobileBertModel：MobileBERT 编码器主干
 class MobileBertModel(MobileBertPreTrainedModel):
     """
     https://huggingface.co/papers/2004.02984
     """
 
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config, add_pooling_layer=True):
         r"""
         add_pooling_layer (bool, *optional*, defaults to `True`):
@@ -658,12 +703,14 @@ class MobileBertModel(MobileBertPreTrainedModel):
     `next sentence prediction (classification)` head.
     """
 )
+# MobileBertForPreTraining：MobileBERT MLM + NSP 预训练
 class MobileBertForPreTraining(MobileBertPreTrainedModel):
     _tied_weights_keys = {
         "cls.predictions.decoder.bias": "cls.predictions.bias",
         "cls.predictions.decoder.weight": "mobilebert.embeddings.word_embeddings.weight",
     }
 
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__(config)
         self.mobilebert = MobileBertModel(config)
@@ -757,12 +804,14 @@ class MobileBertForPreTraining(MobileBertPreTrainedModel):
 
 
 @auto_docstring
+# MobileBertForMaskedLM：MobileBERT 掩码语言建模
 class MobileBertForMaskedLM(MobileBertPreTrainedModel):
     _tied_weights_keys = {
         "cls.predictions.decoder.bias": "cls.predictions.bias",
         "cls.predictions.decoder.weight": "mobilebert.embeddings.word_embeddings.weight",
     }
 
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__(config)
         self.mobilebert = MobileBertModel(config, add_pooling_layer=False)
@@ -830,7 +879,9 @@ class MobileBertForMaskedLM(MobileBertPreTrainedModel):
         )
 
 
+# MobileBertOnlyNSPHead：仅下一句预测头
 class MobileBertOnlyNSPHead(nn.Module):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__()
         self.seq_relationship = nn.Linear(config.hidden_size, 2)
@@ -845,7 +896,9 @@ class MobileBertOnlyNSPHead(nn.Module):
     MobileBert Model with a `next sentence prediction (classification)` head on top.
     """
 )
+# MobileBertForNextSentencePrediction：MobileBERT 下一句预测
 class MobileBertForNextSentencePrediction(MobileBertPreTrainedModel):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__(config)
 
@@ -926,7 +979,9 @@ class MobileBertForNextSentencePrediction(MobileBertPreTrainedModel):
     """
 )
 # Copied from transformers.models.bert.modeling_bert.BertForSequenceClassification with Bert->MobileBert all-casing
+# MobileBertForSequenceClassification：MobileBERT 序列分类
 class MobileBertForSequenceClassification(MobileBertPreTrainedModel):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
@@ -1008,7 +1063,9 @@ class MobileBertForSequenceClassification(MobileBertPreTrainedModel):
 
 @auto_docstring
 # Copied from transformers.models.bert.modeling_bert.BertForQuestionAnswering with Bert->MobileBert all-casing
+# MobileBertForQuestionAnswering：MobileBERT 抽取式问答
 class MobileBertForQuestionAnswering(MobileBertPreTrainedModel):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
@@ -1077,7 +1134,9 @@ class MobileBertForQuestionAnswering(MobileBertPreTrainedModel):
 
 @auto_docstring
 # Copied from transformers.models.bert.modeling_bert.BertForMultipleChoice with Bert->MobileBert all-casing
+# MobileBertForMultipleChoice：MobileBERT 多项选择
 class MobileBertForMultipleChoice(MobileBertPreTrainedModel):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__(config)
 
@@ -1176,7 +1235,9 @@ class MobileBertForMultipleChoice(MobileBertPreTrainedModel):
 
 @auto_docstring
 # Copied from transformers.models.bert.modeling_bert.BertForTokenClassification with Bert->MobileBert all-casing
+# MobileBertForTokenClassification：MobileBERT 词元分类
 class MobileBertForTokenClassification(MobileBertPreTrainedModel):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels

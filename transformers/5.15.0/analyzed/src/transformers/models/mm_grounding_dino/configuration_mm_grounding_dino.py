@@ -28,8 +28,12 @@ from ..auto import CONFIG_MAPPING, AutoConfig
 logger = logging.get_logger(__name__)
 
 
+# MM Grounding DINO 配置：开放词汇检测与文本-视觉融合超参
+
+# MMGroundingDinoConfig：openmmlab MM Grounding DINO 开放词汇目标检测超参
 @auto_docstring(checkpoint="openmmlab-community/mm_grounding_dino_tiny_o365v1_goldg_v3det")
 @strict
+# MMGroundingDinoConfig：openmmlab MM Grounding DINO 开放词汇目标检测超参
 class MMGroundingDinoConfig(PreTrainedConfig):
     r"""
     num_queries (`int`, *optional*, defaults to 900):

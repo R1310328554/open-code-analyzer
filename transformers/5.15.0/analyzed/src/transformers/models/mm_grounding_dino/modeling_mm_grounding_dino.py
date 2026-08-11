@@ -36,7 +36,11 @@ from ..auto.modeling_auto import AutoModel
 from .configuration_mm_grounding_dino import MMGroundingDinoConfig
 
 
+# MM Grounding DINO 建模：多尺度可变形 DETR + 文本对比开放词汇检测
+
+# MMGroundingDinoContrastiveEmbedding：文本-视觉对比嵌入（开放词汇分类）
 class MMGroundingDinoContrastiveEmbedding(nn.Module):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__()
         self.max_text_len = config.max_text_len
@@ -61,6 +65,7 @@ class MMGroundingDinoContrastiveEmbedding(nn.Module):
 
 
 @use_kernel_forward_from_hub("MultiScaleDeformableAttention")
+# MultiScaleDeformableAttention：多尺度可变形注意力 CUDA/CPU 内核封装
 class MultiScaleDeformableAttention(nn.Module):
     def forward(
         self,
@@ -115,11 +120,13 @@ class MultiScaleDeformableAttention(nn.Module):
         return output.transpose(1, 2).contiguous()
 
 
+# MMGroundingDinoLearnedPositionEmbedding：可学习 2D 位置嵌入
 class MMGroundingDinoLearnedPositionEmbedding(nn.Module):
     """
     This module learns positional embeddings up to a fixed maximum size.
     """
 
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__()
 
@@ -140,11 +147,13 @@ class MMGroundingDinoLearnedPositionEmbedding(nn.Module):
         return pos
 
 
+# MMGroundingDinoMultiscaleDeformableAttention：MM Grounding DINO 多尺度可变形注意力层
 class MMGroundingDinoMultiscaleDeformableAttention(nn.Module):
     """
     Multiscale deformable attention as proposed in Deformable DETR.
     """
 
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config: MMGroundingDinoConfig, num_heads: int, n_points: int):
         super().__init__()
 
@@ -247,7 +256,9 @@ class MMGroundingDinoMultiscaleDeformableAttention(nn.Module):
         return output, attention_weights
 
 
+# MMGroundingDinoBiMultiHeadAttention：双向多头注意力（视觉-文本融合）
 class MMGroundingDinoBiMultiHeadAttention(nn.Module):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__()
 
@@ -398,6 +409,7 @@ class MMGroundingDinoBiMultiHeadAttention(nn.Module):
         return (vision_attn_output, vision_attn_weights), (text_attn_output, text_attn_weights)
 
 
+# MMGroundingDinoDropPath：随机深度（DropPath）正则化
 class MMGroundingDinoDropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -405,6 +417,7 @@ class MMGroundingDinoDropPath(nn.Module):
     <https://arxiv.org/abs/1603.09382>`_.
     """
 
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, drop_prob: float = 0.0) -> None:
         super().__init__()
         self.drop_prob = drop_prob
@@ -422,7 +435,9 @@ class MMGroundingDinoDropPath(nn.Module):
         return f"p={self.drop_prob}"
 
 
+# MMGroundingDinoFusionLayer：视觉-语言特征融合层
 class MMGroundingDinoFusionLayer(nn.Module):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__()
         drop_path = config.fusion_droppath
@@ -486,6 +501,7 @@ class MMGroundingDinoFusionLayer(nn.Module):
 
 
 @auto_docstring
+# MMGroundingDinoPreTrainedModel：MM Grounding DINO 预训练基类
 class MMGroundingDinoPreTrainedModel(PreTrainedModel):
     config: MMGroundingDinoConfig
     base_model_prefix = "model"
@@ -553,6 +569,7 @@ class MMGroundingDinoPreTrainedModel(PreTrainedModel):
             module.gradient_checkpointing = value
 
 
+# MMGroundingDinoFrozenBatchNorm2d：冻结 BatchNorm2d（骨干网络用）
 class MMGroundingDinoFrozenBatchNorm2d(nn.Module):
     """
     BatchNorm2d where the batch statistics and the affine parameters are fixed.
@@ -561,6 +578,7 @@ class MMGroundingDinoFrozenBatchNorm2d(nn.Module):
     torchvision.models.resnet[18,34,50,101] produce nans.
     """
 
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, n):
         super().__init__()
         self.weight = nn.Buffer(torch.ones(n))
@@ -592,6 +610,7 @@ class MMGroundingDinoFrozenBatchNorm2d(nn.Module):
         return x * scale + bias
 
 
+# replace_batch_norm：递归将 BatchNorm 替换为 FrozenBatchNorm2d
 def replace_batch_norm(model):
     r"""
     Recursively replace all `torch.nn.BatchNorm2d` with `MMGroundingDinoFrozenBatchNorm2d`.
@@ -616,6 +635,7 @@ def replace_batch_norm(model):
             replace_batch_norm(module)
 
 
+# MMGroundingDinoConvEncoder：卷积骨干特征提取与多尺度投影
 class MMGroundingDinoConvEncoder(nn.Module):
     """
     Convolutional backbone, using either the AutoBackbone API or one from the timm library.
@@ -624,6 +644,7 @@ class MMGroundingDinoConvEncoder(nn.Module):
 
     """
 
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__()
 
@@ -655,11 +676,13 @@ class MMGroundingDinoConvEncoder(nn.Module):
 
 
 # TODO: use modular - Copied from transformers.models.detr.modeling_detr.DetrConvModel with Detr->MMGroundingDino
+# MMGroundingDinoConvModel：骨干 + 位置编码的卷积特征模型
 class MMGroundingDinoConvModel(nn.Module):
     """
     This module adds 2D position embeddings to all intermediate feature maps of the convolutional encoder.
     """
 
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, conv_encoder, position_embedding):
         super().__init__()
         self.conv_encoder = conv_encoder
@@ -684,6 +707,7 @@ class MMGroundingDinoConvModel(nn.Module):
     """
 )
 @dataclass
+# MMGroundingDinoEncoderOutput：编码器输出容器（多尺度特征与文本增强）
 class MMGroundingDinoEncoderOutput(ModelOutput):
     r"""
     last_hidden_state_vision (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`):
@@ -707,9 +731,11 @@ class MMGroundingDinoEncoderOutput(ModelOutput):
     attentions: tuple[tuple[torch.FloatTensor]] | None = None
 
 
+# MMGroundingDinoMultiheadAttention：标准多头自注意力封装
 class MMGroundingDinoMultiheadAttention(nn.Module):
     """Equivalent implementation of nn.MultiheadAttention with `batch_first=True`."""
 
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config, num_attention_heads=None):
         super().__init__()
         if config.hidden_size % num_attention_heads != 0 and not hasattr(config, "embedding_size"):
@@ -779,9 +805,11 @@ class MMGroundingDinoMultiheadAttention(nn.Module):
         return outputs
 
 
+# MMGroundingDinoTextEnhancerLayer：文本特征增强 Transformer 层
 class MMGroundingDinoTextEnhancerLayer(nn.Module):
     """Vanilla Transformer with text embeddings as input"""
 
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__()
         self.self_attn = MMGroundingDinoMultiheadAttention(
@@ -861,7 +889,9 @@ class MMGroundingDinoTextEnhancerLayer(nn.Module):
         return hidden_states, attention_weights
 
 
+# MMGroundingDinoDeformableLayer：可变形 DETR 编码器/解码器层基类
 class MMGroundingDinoDeformableLayer(nn.Module):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config: MMGroundingDinoConfig):
         super().__init__()
         self.embed_dim = config.d_model
@@ -945,6 +975,7 @@ class MMGroundingDinoDeformableLayer(nn.Module):
         return hidden_states, attn_weights
 
 
+# encode_sinusoidal_position_embedding：正弦位置编码生成函数
 def encode_sinusoidal_position_embedding(
     pos_tensor: torch.Tensor,
     num_pos_feats: int = 128,
@@ -981,7 +1012,9 @@ def encode_sinusoidal_position_embedding(
     return torch.cat(embeddings, dim=-1).to(pos_tensor.dtype)
 
 
+# MMGroundingDinoEncoderLayer：Grounding DINO 编码器单层（自注意力 + 可变形注意力）
 class MMGroundingDinoEncoderLayer(nn.Module):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config) -> None:
         super().__init__()
 
@@ -1061,6 +1094,7 @@ class MMGroundingDinoEncoderLayer(nn.Module):
         )
 
 
+# MMGroundingDinoEncoder：MM Grounding DINO 多尺度编码器堆叠
 class MMGroundingDinoEncoder(MMGroundingDinoPreTrainedModel):
     """
     Transformer encoder consisting of *config.encoder_layers* deformable attention layers. Each layer is a
@@ -1072,6 +1106,7 @@ class MMGroundingDinoEncoder(MMGroundingDinoPreTrainedModel):
         config: MMGroundingDinoConfig
     """
 
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config: MMGroundingDinoConfig):
         super().__init__(config)
 
@@ -1243,6 +1278,7 @@ class MMGroundingDinoEncoder(MMGroundingDinoPreTrainedModel):
     """
 )
 @dataclass
+# MMGroundingDinoDecoderOutput：解码器输出容器（query 与参考点）
 class MMGroundingDinoDecoderOutput(ModelOutput):
     r"""
     intermediate_hidden_states (`torch.FloatTensor` of shape `(batch_size, config.decoder_layers, num_queries, hidden_size)`):
@@ -1258,7 +1294,9 @@ class MMGroundingDinoDecoderOutput(ModelOutput):
     attentions: tuple[tuple[torch.FloatTensor]] | None = None
 
 
+# MMGroundingDinoDecoderLayer：Grounding DINO 解码器单层
 class MMGroundingDinoDecoderLayer(nn.Module):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config: MMGroundingDinoConfig):
         super().__init__()
         self.embed_dim = config.d_model
@@ -1376,6 +1414,7 @@ class MMGroundingDinoDecoderLayer(nn.Module):
         return outputs
 
 
+# MMGroundingDinoDecoder：MM Grounding DINO 目标 query 解码器
 class MMGroundingDinoDecoder(MMGroundingDinoPreTrainedModel):
     """
     Transformer decoder consisting of *config.decoder_layers* layers. Each layer is a [`MMGroundingDinoDecoderLayer`].
@@ -1391,6 +1430,7 @@ class MMGroundingDinoDecoder(MMGroundingDinoPreTrainedModel):
         config: MMGroundingDinoConfig
     """
 
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config: MMGroundingDinoConfig):
         super().__init__(config)
 
@@ -1624,6 +1664,7 @@ class MMGroundingDinoDecoder(MMGroundingDinoPreTrainedModel):
     """
 )
 @dataclass
+# MMGroundingDinoModelOutput：联合模型输出容器
 class MMGroundingDinoModelOutput(ModelOutput):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, num_queries, hidden_size)`):
@@ -1681,12 +1722,14 @@ class MMGroundingDinoModelOutput(ModelOutput):
     encoder_pred_boxes: torch.FloatTensor | None = None
 
 
+# MMGroundingDinoSinePositionEmbedding：正弦 2D 位置编码模块
 class MMGroundingDinoSinePositionEmbedding(nn.Module):
     """
     This is a more standard version of the position embedding, very similar to the one used by the Attention is all you
     need paper, generalized to work on images.
     """
 
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__()
         self.embedding_dim = config.d_model // 2
@@ -1711,6 +1754,7 @@ class MMGroundingDinoSinePositionEmbedding(nn.Module):
         return pos
 
 
+# build_position_encoding：按配置构建 sine/learned 位置编码
 def build_position_encoding(config):
     if config.position_embedding_type == "sine":
         position_embedding = MMGroundingDinoSinePositionEmbedding(config)
@@ -1726,6 +1770,7 @@ def build_position_encoding(config):
 SPECIAL_TOKENS = [101, 102, 1012, 1029]
 
 
+# generate_masks_with_special_tokens_and_transfer_map：文本特殊 token 掩码与对齐映射
 def generate_masks_with_special_tokens_and_transfer_map(input_ids: torch.LongTensor) -> tuple[Tensor, Tensor]:
     """Generate attention mask between each pair of special tokens and positional ids.
     Args:
@@ -1780,7 +1825,9 @@ def generate_masks_with_special_tokens_and_transfer_map(input_ids: torch.LongTen
     hidden-states without any specific head on top.
     """
 )
+# MMGroundingDinoModel：MM Grounding DINO 视觉-文本联合检测主干
 class MMGroundingDinoModel(MMGroundingDinoPreTrainedModel):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config: MMGroundingDinoConfig):
         super().__init__(config)
 
@@ -2177,6 +2224,7 @@ class MMGroundingDinoModel(MMGroundingDinoPreTrainedModel):
         )
 
 
+# MMGroundingDinoMLPPredictionHead：边界框回归 MLP 预测头
 class MMGroundingDinoMLPPredictionHead(nn.Module):
     """
     Very simple multi-layer perceptron (MLP, also called FFN), used to predict the normalized center coordinates,
@@ -2184,6 +2232,7 @@ class MMGroundingDinoMLPPredictionHead(nn.Module):
 
     """
 
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, input_dim, hidden_dim, output_dim, num_layers):
         super().__init__()
         self.num_layers = num_layers
@@ -2202,6 +2251,7 @@ class MMGroundingDinoMLPPredictionHead(nn.Module):
     """
 )
 @dataclass
+# MMGroundingDinoObjectDetectionOutput：开放词汇检测输出容器
 class MMGroundingDinoObjectDetectionOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` are provided)):
@@ -2278,6 +2328,7 @@ class MMGroundingDinoObjectDetectionOutput(ModelOutput):
     input_ids: torch.LongTensor | None = None
 
 
+# build_label_maps：从 caption 构建 token 级标签映射
 def build_label_maps(logits: torch.FloatTensor, input_ids: torch.LongTensor) -> tuple[torch.FloatTensor]:
     """
     Computes a mapping between tokens and their corresponding labels, where `num_labels` is determined by the number of classes in the input prompt.
@@ -2334,6 +2385,7 @@ def build_label_maps(logits: torch.FloatTensor, input_ids: torch.LongTensor) -> 
     return label_maps
 
 
+# build_text_mask：构造文本有效 token 注意力掩码
 def build_text_mask(logits, attention_mask):
     """
     Create text_mask based on the matching indices
@@ -2351,6 +2403,7 @@ def build_text_mask(logits, attention_mask):
     for tasks such as COCO detection.
     """
 )
+# MMGroundingDinoForObjectDetection：MM Grounding DINO 开放词汇目标检测
 class MMGroundingDinoForObjectDetection(MMGroundingDinoPreTrainedModel):
     _tied_weights_keys = {
         r"bbox_embed.(?![0])\d+": r"bbox_embed.0",
@@ -2364,6 +2417,7 @@ class MMGroundingDinoForObjectDetection(MMGroundingDinoPreTrainedModel):
     ]
     _keys_to_ignore_on_load_missing = [r".*swin.layernorm.*"]
 
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config: MMGroundingDinoConfig):
         super().__init__(config)
 

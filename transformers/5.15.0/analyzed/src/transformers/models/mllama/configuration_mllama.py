@@ -21,8 +21,12 @@ from ...utils import auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# Mllama 配置：Llama 3.2 Vision 视觉 tile 分块与文本 GQA 解码器超参
+
+# MllamaVisionConfig：Llama 3.2 Vision 视觉编码器（分块 tile + 全局层）超参
 @auto_docstring(checkpoint="meta-llama/Llama-3.2-11B-Vision")
 @strict
+# MllamaVisionConfig：Llama 3.2 Vision 视觉编码器（分块 tile + 全局层）超参
 class MllamaVisionConfig(PreTrainedConfig):
     r"""
     num_global_layers (`int`, *optional*, defaults to 8):
@@ -95,8 +99,10 @@ class MllamaVisionConfig(PreTrainedConfig):
         return len(self.supported_aspect_ratios)
 
 
+# MllamaTextConfig：Llama 3.2 Vision 文本解码器（GQA + 交叉注意力层）超参
 @auto_docstring(checkpoint="meta-llama/Llama-3.2-11B-Vision")
 @strict
+# MllamaTextConfig：Llama 3.2 Vision 文本解码器（GQA + 交叉注意力层）超参
 class MllamaTextConfig(PreTrainedConfig):
     r"""
     cross_attention_layers (`list[int]`, *optional*):
@@ -146,8 +152,10 @@ class MllamaTextConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# MllamaConfig：meta-llama/Llama-3.2-11B-Vision 视觉-文本多模态联合超参
 @auto_docstring(checkpoint="meta-llama/Llama-3.2-11B-Vision")
 @strict
+# MllamaConfig：meta-llama/Llama-3.2-11B-Vision 视觉-文本多模态联合超参
 class MllamaConfig(PreTrainedConfig):
     r"""
     Example:

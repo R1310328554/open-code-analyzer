@@ -14,6 +14,8 @@
 
 """Processor class for Mllama."""
 
+# Mllama 处理器：图像分块与文本 token 联合对齐（含交叉注意力掩码）
+
 import numpy as np
 
 from ...feature_extraction_utils import BatchFeature
@@ -23,6 +25,7 @@ from ...tokenization_utils_base import PreTokenizedInput, TextInput
 from ...utils import auto_docstring
 
 
+# MllamaProcessorKwargs：Mllama 处理器可选参数字典类型
 class MllamaProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "image_kwargs": {
@@ -31,6 +34,7 @@ class MllamaProcessorKwargs(ProcessingKwargs, total=False):
     }
 
 
+# get_cross_attention_token_mask：生成图像 token 的交叉注意力 span 掩码
 def get_cross_attention_token_mask(input_ids: list[int], image_token_id: int) -> list[list[int]]:
     """
     Generate a cross-attention token mask for image tokens in the input sequence.
@@ -79,6 +83,7 @@ def get_cross_attention_token_mask(input_ids: list[int], image_token_id: int) ->
     return vision_masks
 
 
+# convert_sparse_cross_attention_mask_to_dense：稀疏交叉注意力掩码转稠密张量
 def convert_sparse_cross_attention_mask_to_dense(
     cross_attention_token_mask: list[list[list[int]]],
     num_tiles: list[list[int]],
@@ -127,6 +132,7 @@ def convert_sparse_cross_attention_mask_to_dense(
     return cross_attention_mask
 
 
+# build_string_from_input：将 input_ids 解码为可读字符串（调试辅助）
 def build_string_from_input(prompt: str, bos_token: str, image_token: str) -> str:
     """
     Builds a string from the input prompt by adding `bos_token` if not already present.
@@ -165,9 +171,11 @@ def build_string_from_input(prompt: str, bos_token: str, image_token: str) -> st
 
 
 @auto_docstring
+# MllamaProcessor：Mllama 图像与文本联合预处理与 token 对齐
 class MllamaProcessor(ProcessorMixin):
     valid_processor_kwargs = MllamaProcessorKwargs
 
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, image_processor, tokenizer, chat_template=None):
         if not hasattr(tokenizer, "image_token"):
             self.image_token = "<|image|>"
@@ -182,6 +190,7 @@ class MllamaProcessor(ProcessorMixin):
         super().__init__(image_processor, tokenizer, chat_template=chat_template)
 
     @auto_docstring
+    # __call__：实体感知分词主入口（支持多种实体任务）
     def __call__(
         self,
         images: ImageInput | None = None,

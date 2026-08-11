@@ -40,8 +40,12 @@ from ..grounding_dino.modeling_grounding_dino import (
 logger = logging.get_logger(__name__)
 
 
+# MM Grounding DINO modular 源：Grounding DINO 扩展 + 自定义对比嵌入
+
+# MMGroundingDinoConfig：openmmlab MM Grounding DINO 开放词汇目标检测超参
 @auto_docstring(checkpoint="openmmlab-community/mm_grounding_dino_tiny_o365v1_goldg_v3det")
 @strict
+# MMGroundingDinoConfig：openmmlab MM Grounding DINO 开放词汇目标检测超参
 class MMGroundingDinoConfig(PreTrainedConfig):
     r"""
     num_queries (`int`, *optional*, defaults to 900):
@@ -158,7 +162,9 @@ class MMGroundingDinoConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# MMGroundingDinoContrastiveEmbedding：文本-视觉对比嵌入（开放词汇分类）
 class MMGroundingDinoContrastiveEmbedding(GroundingDinoContrastiveEmbedding):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__(config)
         self.bias = nn.Parameter(torch.tensor(0.0))
@@ -181,6 +187,7 @@ class MMGroundingDinoContrastiveEmbedding(GroundingDinoContrastiveEmbedding):
         return new_res
 
 
+# MMGroundingDinoPreTrainedModel：MM Grounding DINO 预训练基类
 class MMGroundingDinoPreTrainedModel(GroundingDinoPreTrainedModel):
     @torch.no_grad()
     def _init_weights(self, module):
@@ -189,23 +196,29 @@ class MMGroundingDinoPreTrainedModel(GroundingDinoPreTrainedModel):
             init.constant_(module.bias, -math.log((1 - 0.01) / 0.01))
 
 
+# MMGroundingDinoConvEncoder：卷积骨干特征提取与多尺度投影
 class MMGroundingDinoConvEncoder(GroundingDinoConvEncoder):
     pass
 
 
+# MMGroundingDinoConvModel：骨干 + 位置编码的卷积特征模型
 class MMGroundingDinoConvModel(GroundingDinoConvModel):
     pass
 
 
+# MMGroundingDinoEncoder：MM Grounding DINO 多尺度编码器堆叠
 class MMGroundingDinoEncoder(GroundingDinoEncoder):
     pass
 
 
+# MMGroundingDinoDecoder：MM Grounding DINO 目标 query 解码器
 class MMGroundingDinoDecoder(GroundingDinoDecoder):
     pass
 
 
+# MMGroundingDinoModel：MM Grounding DINO 视觉-文本联合检测主干
 class MMGroundingDinoModel(GroundingDinoModel, MMGroundingDinoPreTrainedModel):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config: MMGroundingDinoConfig):
         MMGroundingDinoPreTrainedModel.__init__(self, config)
 
@@ -257,10 +270,12 @@ class MMGroundingDinoModel(GroundingDinoModel, MMGroundingDinoPreTrainedModel):
         self.post_init()
 
 
+# MMGroundingDinoMLPPredictionHead：边界框回归 MLP 预测头
 class MMGroundingDinoMLPPredictionHead(GroundingDinoMLPPredictionHead):
     pass
 
 
+# MMGroundingDinoForObjectDetection：MM Grounding DINO 开放词汇目标检测
 class MMGroundingDinoForObjectDetection(GroundingDinoForObjectDetection, MMGroundingDinoPreTrainedModel):
     _tied_weights_keys = {
         r"bbox_embed.(?![0])\d+": r"bbox_embed.0",
@@ -269,6 +284,7 @@ class MMGroundingDinoForObjectDetection(GroundingDinoForObjectDetection, MMGroun
         "model.decoder.class_embed": "class_embed",
     }
 
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config: MMGroundingDinoConfig):
         MMGroundingDinoPreTrainedModel.__init__(self, config)
 

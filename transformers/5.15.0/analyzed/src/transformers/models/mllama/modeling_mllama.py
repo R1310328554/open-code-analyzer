@@ -13,6 +13,8 @@
 # limitations under the License.
 """PyTorch Mllama model."""
 
+# Mllama 建模：Llama 3.2 Vision 视觉-文本多模态条件生成
+
 import math
 from collections.abc import Callable
 
@@ -44,6 +46,7 @@ from .configuration_mllama import MllamaConfig, MllamaTextConfig, MllamaVisionCo
 logger = logging.get_logger(__name__)
 
 
+# _prepare_cross_attention_mask：构造文本-图像交叉注意力掩码
 def _prepare_cross_attention_mask(
     cross_attention_mask: torch.Tensor,
     num_vision_tokens: int,
@@ -72,6 +75,7 @@ def _prepare_cross_attention_mask(
     return cross_attention_mask, full_text_row_masked_out_mask
 
 
+# _prepare_aspect_ratio_attention_mask：构造视觉 tile 宽高比注意力掩码
 def _prepare_aspect_ratio_attention_mask(
     aspect_ratio_mask: torch.Tensor,
     num_patches: int,
@@ -99,7 +103,9 @@ def _prepare_aspect_ratio_attention_mask(
     return attention_mask
 
 
+# MllamaPrecomputedAspectRatioEmbedding：预计算宽高比嵌入查表模块
 class MllamaPrecomputedAspectRatioEmbedding(nn.Module):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config: MllamaVisionConfig, is_gated: bool = True):
         super().__init__()
         self.max_num_tiles = config.max_num_tiles
@@ -122,7 +128,9 @@ class MllamaPrecomputedAspectRatioEmbedding(nn.Module):
         return hidden_state
 
 
+# MllamaPrecomputedPositionEmbedding：预计算 2D 位置嵌入查表模块
 class MllamaPrecomputedPositionEmbedding(nn.Module):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config: MllamaVisionConfig):
         super().__init__()
         self.max_num_tiles = config.max_num_tiles
@@ -160,7 +168,9 @@ class MllamaPrecomputedPositionEmbedding(nn.Module):
 
 
 # Copied from transformers.models.clip.modeling_clip.CLIPMLP with CLIP->MllamaVision
+# MllamaVisionMLP：Mllama 视觉编码器前馈 MLP 子层
 class MllamaVisionMLP(nn.Module):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -176,6 +186,7 @@ class MllamaVisionMLP(nn.Module):
 
 
 # Copied from transformers.models.llama.modeling_llama.repeat_kv
+# repeat_kv：GQA 下将 KV 头重复扩展以匹配 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -189,6 +200,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
 
 
 # Copied from transformers.models.llama.modeling_llama.eager_attention_forward
+# eager_attention_forward：Mllama eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -214,7 +226,9 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# MllamaVisionAttention：Mllama 视觉 Transformer 多头自注意力
 class MllamaVisionAttention(nn.Module):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config: MllamaVisionConfig):
         super().__init__()
 
@@ -269,7 +283,9 @@ class MllamaVisionAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# MllamaVisionEncoderLayer：Mllama 视觉编码器单层（注意力 + MLP）
 class MllamaVisionEncoderLayer(nn.Module):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config: MllamaVisionConfig, is_gated: bool = False):
         super().__init__()
 
@@ -313,6 +329,7 @@ class MllamaVisionEncoderLayer(nn.Module):
         return hidden_states
 
 
+# MllamaVisionEncoder：Mllama 视觉 Transformer 编码器堆叠
 class MllamaVisionEncoder(nn.Module):
     """
     Transformer encoder consisting of `config.num_hidden_layers` self attention layers. Each layer is a
@@ -322,6 +339,7 @@ class MllamaVisionEncoder(nn.Module):
         config: MllamaConfig
     """
 
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config: MllamaVisionConfig, num_layers=32, is_gated=False):
         super().__init__()
         self.config = config
@@ -361,7 +379,9 @@ class MllamaVisionEncoder(nn.Module):
 
 
 # Copied from transformers.models.llama.modeling_llama.LlamaRMSNorm with Llama->MllamaText
+# MllamaTextRMSNorm：Mllama 文本解码器 RMS 层归一化
 class MllamaTextRMSNorm(nn.Module):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
         MllamaTextRMSNorm is equivalent to T5LayerNorm
@@ -381,9 +401,11 @@ class MllamaTextRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# MllamaTextCrossAttention：Mllama 文本对视觉特征的交叉注意力
 class MllamaTextCrossAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(
         self,
         config: MllamaTextConfig | None = None,
@@ -466,6 +488,7 @@ class MllamaTextCrossAttention(nn.Module):
 
 
 # Copied from transformers.models.llama.modeling_llama.rotate_half
+# rotate_half：将张量后半维度旋转 180°（RoPE 辅助函数）
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -474,6 +497,7 @@ def rotate_half(x):
 
 
 # Copied from transformers.models.llama.modeling_llama.apply_rotary_pos_emb
+# apply_rotary_pos_emb：将 RoPE cos/sin 应用到 query/key 张量
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -499,7 +523,9 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# MllamaTextSelfAttention：Mllama 文本解码器 GQA 因果自注意力
 class MllamaTextSelfAttention(nn.Module):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config: MllamaTextConfig, layer_idx: int):
         super().__init__()
         self.config = config
@@ -565,7 +591,9 @@ class MllamaTextSelfAttention(nn.Module):
 
 
 # Copied from transformers.models.gemma2.modeling_gemma2.Gemma2MLP with Gemma2->MllamaText
+# MllamaTextMLP：Mllama 文本解码器 SwiGLU 前馈 MLP
 class MllamaTextMLP(nn.Module):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -583,7 +611,9 @@ class MllamaTextMLP(nn.Module):
 
 
 # Modified from transformers.models.llama.modeling_llama.LlamaDecoderLayer
+# MllamaSelfAttentionDecoderLayer：Mllama 纯自注意力解码器层
 class MllamaSelfAttentionDecoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config: MllamaTextConfig, layer_idx: int):
         super().__init__()
         self.hidden_size = config.hidden_size
@@ -652,9 +682,11 @@ class MllamaSelfAttentionDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# MllamaCrossAttentionDecoderLayer：Mllama 交叉注意力解码器层（文本 attend 视觉）
 class MllamaCrossAttentionDecoderLayer(GradientCheckpointingLayer):
     """Cross-attention transformer block with tanh-gated attention and feedforward."""
 
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config: MllamaTextConfig, layer_idx: int) -> None:
         super().__init__()
         self.layer_idx = layer_idx
@@ -703,8 +735,10 @@ class MllamaCrossAttentionDecoderLayer(GradientCheckpointingLayer):
 
 
 # Copied from transformers.models.llama.modeling_llama.LlamaRotaryEmbedding with LlamaConfig->MllamaTextConfig,Llama->Mllama
+# MllamaRotaryEmbedding：Mllama 文本旋转位置编码（RoPE）
 class MllamaRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config: MllamaTextConfig, device=None):
         super().__init__()
         self.max_seq_len_cached = config.max_position_embeddings
@@ -759,6 +793,7 @@ class MllamaRotaryEmbedding(nn.Module):
 
 
 @auto_docstring
+# MllamaPreTrainedModel：Mllama 预训练基类与权重初始化
 class MllamaPreTrainedModel(PreTrainedModel):
     config: MllamaConfig
     base_model_prefix = "model"
@@ -809,11 +844,13 @@ class MllamaPreTrainedModel(PreTrainedModel):
     The Mllama Vision Model which consists of two vision encoders.
     """
 )
+# MllamaVisionModel：Mllama 视觉编码器（tile 分块 ViT + 全局层）
 class MllamaVisionModel(MllamaPreTrainedModel):
     config: MllamaVisionConfig
     base_model_prefix = "vision_model"
     input_modalities = ("image",)
 
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config: MllamaVisionConfig):
         super().__init__(config)
         self.image_size = config.image_size
@@ -1010,11 +1047,13 @@ class MllamaVisionModel(MllamaPreTrainedModel):
     The Mllama Text Model which consists of transformer with self and cross attention layers.
     """
 )
+# MllamaTextModel：Mllama 文本因果 Transformer 解码器主干
 class MllamaTextModel(MllamaPreTrainedModel):
     config: MllamaTextConfig
     base_model_prefix = "language_model.model"
     input_modalities = ("text",)
 
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config: MllamaTextConfig):
         super().__init__(config)
         self.padding_idx = config.pad_token_id
@@ -1157,11 +1196,13 @@ class MllamaTextModel(MllamaPreTrainedModel):
     The Mllama Text Model with a language modeling head on top.
     """
 )
+# MllamaForCausalLM：Mllama 文本因果语言建模头
 class MllamaForCausalLM(MllamaPreTrainedModel, GenerationMixin):
     config: MllamaTextConfig
     _can_compile_fullgraph = True  # only the LLM without cross attn can do compile
     base_model_prefix = "language_model"
 
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config):
         super().__init__(config.get_text_config())
         self.text_config = config.get_text_config()
@@ -1268,7 +1309,9 @@ class MllamaForCausalLM(MllamaPreTrainedModel, GenerationMixin):
     The Mllama model which consists of a vision encoder and a language model without language modeling head.
     """
 )
+# MllamaModel：Mllama 视觉-文本多模态联合主干
 class MllamaModel(MllamaPreTrainedModel):
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config: MllamaConfig):
         super().__init__(config)
         self.vocab_size = config.text_config.vocab_size
@@ -1395,9 +1438,11 @@ class MllamaModel(MllamaPreTrainedModel):
     The Mllama model which consists of a vision encoder and a language model.
     """,
 )
+# MllamaForConditionalGeneration：Mllama 图文条件生成（Llama 3.2 Vision）
 class MllamaForConditionalGeneration(MllamaPreTrainedModel, GenerationMixin):
     # _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
 
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, config: MllamaConfig):
         super().__init__(config)
         self.model = MllamaModel(config)

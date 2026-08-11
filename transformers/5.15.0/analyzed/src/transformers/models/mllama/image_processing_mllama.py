@@ -40,6 +40,9 @@ if is_vision_available():
 from torchvision.transforms.v2 import functional as tvF
 
 
+# Mllama 图像预处理：aspect ratio 分块、缩放、归一化与 tile 打包
+
+# MllamaImageProcessorKwargs：Mllama 图像处理器可选参数字典类型
 class MllamaImageProcessorKwargs(ImagesKwargs, total=False):
     """
     max_image_tiles (`int`, *optional*):
@@ -50,6 +53,7 @@ class MllamaImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @lru_cache(maxsize=10)
+# get_all_supported_aspect_ratios：按 max_num_tiles 枚举支持的宽高比分块方案
 def get_all_supported_aspect_ratios(max_image_tiles: int) -> list[tuple[int, int]]:
     """
     Computes all allowed aspect ratios for a given maximum number of input tiles.
@@ -79,6 +83,7 @@ def get_all_supported_aspect_ratios(max_image_tiles: int) -> list[tuple[int, int
     return aspect_ratios
 
 
+# get_image_size_fit_to_canvas：将图像缩放到指定 tile 画布内的最优尺寸
 def get_image_size_fit_to_canvas(
     image_height: int,
     image_width: int,
@@ -131,6 +136,7 @@ def get_image_size_fit_to_canvas(
 
 
 @lru_cache(maxsize=100)
+# get_optimal_tiled_canvas：为给定宽高比选择最优 tile 网格画布
 def get_optimal_tiled_canvas(
     image_height: int,
     image_width: int,
@@ -188,6 +194,7 @@ def get_optimal_tiled_canvas(
     return tuple(optimal_canvas)
 
 
+# _validate_size：校验 size 参数为 int 或 (h, w) 元组
 def _validate_size(size: SizeDict) -> None:
     if not (size.height and size.width):
         raise ValueError(f"Argument `size` must be a dictionary with keys 'height' and 'width'. Got: {size}")
@@ -195,6 +202,7 @@ def _validate_size(size: SizeDict) -> None:
         raise ValueError(f"Argument `size` must have the same height and width, got {size}")
 
 
+# _validate_mllama_preprocess_arguments：校验 Mllama 预处理尺寸与 tile 参数
 def _validate_mllama_preprocess_arguments(do_resize, size, do_pad, max_image_tiles):
     if not do_pad:
         raise ValueError("MllamaImageProcessor doesn't support `do_pad=False` mode.")
@@ -205,6 +213,7 @@ def _validate_mllama_preprocess_arguments(do_resize, size, do_pad, max_image_til
     _validate_size(size)
 
 
+# build_aspect_ratio_mask：构建各 tile 有效区域的宽高比掩码张量
 def build_aspect_ratio_mask(
     aspect_ratios: list[list[tuple[int, int]]],
     max_image_tiles: int,
@@ -244,6 +253,7 @@ def build_aspect_ratio_mask(
     return aspect_ratio_mask
 
 
+# pad_batches_and_tiles：对 batch 与 tile 维度进行对齐填充
 def pad_batches_and_tiles(
     batch_images: list[list["torch.Tensor"]],
     max_image_tiles: int,
@@ -297,6 +307,7 @@ def pad_batches_and_tiles(
     return stacked_images, all_num_tiles
 
 
+# convert_aspect_ratios_to_ids：将宽高比列表映射为 aspect_ratio_id
 def convert_aspect_ratios_to_ids(
     aspect_ratios: list[list[tuple[int, int]]],
     max_image_tiles: int,
@@ -334,6 +345,7 @@ def convert_aspect_ratios_to_ids(
 
 
 # Copied from transformers.models.idefics2.image_processing_idefics2.convert_to_rgb
+# convert_to_rgb：将 PIL/数组图像统一转换为 RGB 格式
 def convert_to_rgb(image: ImageInput) -> ImageInput:
     """
     Converts an image to RGB format. Only converts if the image is of type PIL.Image.Image, otherwise returns the image
@@ -353,6 +365,7 @@ def convert_to_rgb(image: ImageInput) -> ImageInput:
 
 
 @auto_docstring
+# MllamaImageProcessor：Mllama 图像分块、缩放、归一化与 aspect ratio 预处理
 class MllamaImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.BILINEAR
     image_mean = IMAGENET_STANDARD_MEAN
@@ -367,6 +380,7 @@ class MllamaImageProcessor(TorchvisionBackend):
     valid_kwargs = MllamaImageProcessorKwargs
     model_input_names = ["pixel_values", "num_tiles", "aspect_ratio_ids", "aspect_ratio_mask"]
 
+    # __init__：初始化 SentencePiece 词表、实体词表与任务相关特殊 token
     def __init__(self, **kwargs: Unpack[MllamaImageProcessorKwargs]):
         super().__init__(**kwargs)
         _validate_mllama_preprocess_arguments(self.do_resize, self.size, self.do_pad, self.max_image_tiles)
@@ -384,10 +398,12 @@ class MllamaImageProcessor(TorchvisionBackend):
         images = self.fetch_images(images)
         return make_nested_list_of_images(images, expected_ndims=expected_ndims)
 
+    # convert_to_rgb：将 PIL/数组图像统一转换为 RGB 格式
     def convert_to_rgb(self, image: ImageInput) -> ImageInput:
         """Converts an image to RGB format."""
         return convert_to_rgb(image)
 
+    # pad：对 BatchEncoding 按 max_length 填充对齐
     def pad(
         self,
         image: "torch.Tensor",

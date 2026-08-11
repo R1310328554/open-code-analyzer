@@ -19,8 +19,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# MobileBERT 配置：瓶颈结构、三元组输入与多 FFN 轻量 BERT 超参
+
+# MobileBertConfig：google/mobilebert-uncased 轻量 BERT 瓶颈结构超参
 @auto_docstring(checkpoint="google/mobilebert-uncased")
 @strict
+# MobileBertConfig：google/mobilebert-uncased 轻量 BERT 瓶颈结构超参
 class MobileBertConfig(PreTrainedConfig):
     r"""
     embedding_size (`int`, *optional*, defaults to 128):
