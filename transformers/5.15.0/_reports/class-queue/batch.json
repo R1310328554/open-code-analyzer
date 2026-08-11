@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T02:27:26Z",
   "files": [
-    "src/transformers/models/omdet_turbo/processing_omdet_turbo.py",
-    "src/transformers/models/oneformer/__init__.py",
-    "src/transformers/models/oneformer/configuration_oneformer.py",
-    "src/transformers/models/oneformer/image_processing_oneformer.py",
-    "src/transformers/models/oneformer/image_processing_pil_oneformer.py",
-    "src/transformers/models/oneformer/modeling_oneformer.py",
-    "src/transformers/models/oneformer/processing_oneformer.py",
-    "src/transformers/models/openai/__init__.py",
-    "src/transformers/models/openai/configuration_openai.py",
-    "src/transformers/models/openai/modeling_openai.py",
-    "src/transformers/models/openai/tokenization_openai.py",
-    "src/transformers/models/openai_privacy_filter/__init__.py",
-    "src/transformers/models/openai_privacy_filter/configuration_openai_privacy_filter.py",
-    "src/transformers/models/openai_privacy_filter/modeling_openai_privacy_filter.py",
-    "src/transformers/models/openai_privacy_filter/modular_openai_privacy_filter.py",
     "src/transformers/models/opt/__init__.py",
     "src/transformers/models/opt/configuration_opt.py",
     "src/transformers/models/opt/modeling_opt.py",
@@ -33,5 +18,5 @@
     "src/transformers/models/owlv2/modeling_owlv2.py"
   ],
   "remaining_pending": 1059,
-  "done": 1590
+  "done": 1605
 }
