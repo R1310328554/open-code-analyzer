@@ -598,3 +598,5 @@
 2026-08-11T07:36:08Z DONE tools/infer_table.py wave20b Chinese class docs
 2026-08-11T07:36:08Z DONE tools/naive_sync_bn.py wave20b Chinese class docs
 2026-08-11T07:36:08Z DONE tools/program.py wave20b Chinese class docs
+2026-08-11T07:39:03Z DONE tools/resolve_doc_github_refs.py wave21a Chinese class docs (final)
+2026-08-11T07:39:03Z DONE tools/train.py wave21a Chinese class docs (final)

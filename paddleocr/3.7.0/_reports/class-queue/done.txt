@@ -598,3 +598,5 @@ tools/infer_sr.py
 tools/infer_table.py
 tools/naive_sync_bn.py
 tools/program.py
+tools/resolve_doc_github_refs.py
+tools/train.py
