@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T01:26:40Z",
   "files": [
-    "src/transformers/models/gpt_neox_japanese/__init__.py",
-    "src/transformers/models/gpt_neox_japanese/configuration_gpt_neox_japanese.py",
-    "src/transformers/models/gpt_neox_japanese/modeling_gpt_neox_japanese.py",
-    "src/transformers/models/gpt_neox_japanese/tokenization_gpt_neox_japanese.py",
-    "src/transformers/models/gpt_oss/__init__.py",
-    "src/transformers/models/gpt_oss/configuration_gpt_oss.py",
-    "src/transformers/models/gpt_oss/modeling_gpt_oss.py",
-    "src/transformers/models/gpt_oss/modular_gpt_oss.py",
-    "src/transformers/models/gpt_sw3/__init__.py",
-    "src/transformers/models/gpt_sw3/tokenization_gpt_sw3.py",
-    "src/transformers/models/gptj/__init__.py",
-    "src/transformers/models/gptj/configuration_gptj.py",
-    "src/transformers/models/gptj/modeling_gptj.py",
-    "src/transformers/models/granite/__init__.py",
-    "src/transformers/models/granite/configuration_granite.py",
     "src/transformers/models/granite/modeling_granite.py",
     "src/transformers/models/granite/modular_granite.py",
     "src/transformers/models/granite4_vision/__init__.py",
@@ -33,5 +18,5 @@
     "src/transformers/models/granite_speech_plus/modeling_granite_speech_plus.py"
   ],
   "remaining_pending": 1689,
-  "done": 960
+  "done": 975
 }
