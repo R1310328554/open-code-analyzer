@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T06:55:42Z",
-  "files": [
-    "paddleocr-js/packages/core/src/viz/types.ts",
-    "paddleocr-js/packages/core/src/worker/client.ts",
-    "paddleocr-js/packages/core/src/worker/entry.ts",
-    "paddleocr-js/packages/core/src/worker/protocol.ts",
-    "paddleocr-js/packages/core/vite.config.ts",
-    "paddleocr-js/vitest.config.js",
-    "paddleocr/__init__.py",
-    "paddleocr/__main__.py",
-    "paddleocr/_abstract.py",
-    "paddleocr/_api_client/__init__.py",
-    "paddleocr/_api_client/_async_http.py",
-    "paddleocr/_api_client/_async_poller.py",
-    "paddleocr/_api_client/_core.py",
-    "paddleocr/_api_client/_http.py",
-    "paddleocr/_api_client/_naming.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 392,
-  "done": 195
+  "done": 210
 }
