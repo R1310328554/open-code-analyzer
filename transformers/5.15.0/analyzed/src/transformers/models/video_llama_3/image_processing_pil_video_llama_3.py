@@ -30,6 +30,9 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# VideoLLaMA3 PIL 图像处理器：smart_resize 动态分辨率、patch 合并与 ImageNet 归一化
+
+# VideoLlama3ImageProcessorKwargs：图像预处理参数：min/max 像素、patch/merge 尺寸与 temporal patch
 class VideoLlama3ImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     min_pixels (`int`, *optional*, defaults to `56 * 56`):
@@ -51,6 +54,7 @@ class VideoLlama3ImageProcessorKwargs(ImagesKwargs, total=False):
     merge_size: int
 
 
+# smart_resize：动态分辨率：在 min/max 像素约束下对齐 patch 与 merge 网格尺寸
 def smart_resize(
     height: int, width: int, factor: int = 28, min_pixels: int = 56 * 56, max_pixels: int = 14 * 14 * 4 * 1280
 ):
@@ -81,6 +85,7 @@ def smart_resize(
 
 
 @auto_docstring
+# VideoLlama3ImageProcessorPil：PIL 后端图像处理器：smart_resize + patch 网格合并输出
 class VideoLlama3ImageProcessorPil(PilBackend):
     do_resize = True
     resample = PILImageResampling.BICUBIC
@@ -101,6 +106,7 @@ class VideoLlama3ImageProcessorPil(PilBackend):
         "image_merge_sizes",
     ]
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[VideoLlama3ImageProcessorKwargs]):
         # backward compatibility: override size with min_pixels and max_pixels if they are provided
         size = kwargs.pop("size", None)
@@ -188,6 +194,7 @@ class VideoLlama3ImageProcessorPil(PilBackend):
         return flatten_patches, grid_h, grid_w
 
     @auto_docstring
+    # preprocess：预处理入口：resize/crop/归一化并打包 pixel_values
     def preprocess(
         self,
         images: ImageInput,

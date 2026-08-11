@@ -38,9 +38,12 @@ from ...image_utils import (
 from ...utils import TensorType, filter_out_non_signature_kwargs, logging
 
 
+# VideoLLaVA 图像处理器：CLIP 风格 resize/crop 与归一化，输出 pixel_values
+
 logger = logging.get_logger(__name__)
 
 
+# VideoLlavaImageProcessor：CLIP 风格图像处理器：resize/center_crop 与 pixel_values 批处理
 class VideoLlavaImageProcessor(BaseImageProcessor):
     r"""
     Constructs a CLIP image processor.
@@ -82,6 +85,7 @@ class VideoLlavaImageProcessor(BaseImageProcessor):
 
     model_input_names = ["pixel_values"]
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         do_resize: bool = True,
@@ -165,6 +169,7 @@ class VideoLlavaImageProcessor(BaseImageProcessor):
         )
 
     @filter_out_non_signature_kwargs()
+    # preprocess：预处理入口：resize/crop/归一化并打包 pixel_values
     def preprocess(
         self,
         images: list[ImageInput] | None = None,

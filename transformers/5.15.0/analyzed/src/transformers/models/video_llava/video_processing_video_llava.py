@@ -17,6 +17,9 @@ from ...image_utils import OPENAI_CLIP_MEAN, OPENAI_CLIP_STD, PILImageResampling
 from ...video_processing_utils import BaseVideoProcessor
 
 
+# VideoLLaVA 视频处理器：帧级 CLIP 预处理并堆叠为视频张量
+
+# VideoLlavaVideoProcessor：VideoLLaVA 视频处理器：逐帧 CLIP 预处理并堆叠视频 batch
 class VideoLlavaVideoProcessor(BaseVideoProcessor):
     resample = PILImageResampling.BICUBIC
     image_mean = OPENAI_CLIP_MEAN

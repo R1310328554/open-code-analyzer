@@ -19,8 +19,11 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# VideoMAE 配置：tubelet patch、编码器/解码器层数与 masked 预训练超参
+
 @auto_docstring(checkpoint="MCG-NJU/videomae-base")
 @strict
+# VideoMAEConfig：VideoMAE 主配置：tubelet 尺寸、帧数、编码器/解码器结构与 norm_pix_loss
 class VideoMAEConfig(PreTrainedConfig):
     r"""
     num_frames (`int`, *optional*, defaults to 16):

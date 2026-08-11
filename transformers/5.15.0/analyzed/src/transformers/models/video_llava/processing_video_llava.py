@@ -22,6 +22,9 @@ from ...processing_utils import ProcessingKwargs, ProcessorMixin
 from ...utils import auto_docstring
 
 
+# VideoLLaVA 处理器：图像/视频预处理 + 分词，对齐 image/video 序列长度
+
+# VideoLlavaProcessorKwargs：VideoLLaVA 处理器参数：padding 策略与 image/video 序列长度
 class VideoLlavaProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -34,9 +37,11 @@ class VideoLlavaProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# VideoLlavaProcessor：VideoLLaVA 联合处理器：视觉预处理 + 分词与特殊 token 对齐
 class VideoLlavaProcessor(ProcessorMixin):
     valid_processor_kwargs = VideoLlavaProcessorKwargs
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         image_processor=None,

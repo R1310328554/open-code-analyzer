@@ -21,9 +21,12 @@ from ...processing_utils import MultiModalData, ProcessingKwargs, ProcessorMixin
 from ...utils import auto_docstring, logging
 
 
+# VideoLLaMA3 处理器：图像/视频预处理 + 分词，注入 image/video 占位符 token
+
 logger = logging.get_logger(__name__)
 
 
+# VideoLlama3ProcessorKwargs：多模态处理器参数：文本/图像/视频 kwargs 默认值与对齐策略
 class VideoLlama3ProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -35,9 +38,11 @@ class VideoLlama3ProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# VideoLlama3Processor：VideoLLaMA3 联合处理器：图像/视频预处理 + 分词与占位符替换
 class VideoLlama3Processor(ProcessorMixin):
     valid_processor_kwargs = VideoLlama3ProcessorKwargs
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, image_processor=None, tokenizer=None, video_processor=None, chat_template=None, **kwargs):
         self.image_token = "<|image_pad|>" if not hasattr(tokenizer, "image_token") else tokenizer.image_token
         self.video_token = "<|video_pad|>" if not hasattr(tokenizer, "video_token") else tokenizer.video_token

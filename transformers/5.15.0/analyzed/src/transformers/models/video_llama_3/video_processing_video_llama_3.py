@@ -31,6 +31,9 @@ from ...video_processing_utils import BaseVideoProcessor
 from ...video_utils import VideoMetadata, group_videos_by_shape, reorder_videos
 
 
+# VideoLLaMA3 视频处理器：帧采样、smart_resize 与时空 patch 批处理
+
+# VideoLlama3VideoProcessorInitKwargs：视频预处理初始化参数：帧率采样、像素预算与 patch 配置
 class VideoLlama3VideoProcessorInitKwargs(VideosKwargs, total=False):
     r"""
     min_pixels (`int`, *optional*, defaults to `56 * 56`):
@@ -62,6 +65,7 @@ class VideoLlama3VideoProcessorInitKwargs(VideosKwargs, total=False):
     use_token_compression: bool | None
 
 
+# smart_resize：动态分辨率：在 min/max 像素约束下对齐 patch 与 merge 网格尺寸
 def smart_resize(
     height: int, width: int, factor: int = 28, min_pixels: int = 56 * 56, max_pixels: int = 14 * 14 * 4 * 1280
 ):
@@ -92,6 +96,7 @@ def smart_resize(
 
 
 @auto_docstring
+# VideoLlama3VideoProcessor：视频处理器：帧提取、smart_resize 与时空 patch 批特征
 class VideoLlama3VideoProcessor(BaseVideoProcessor):
     resample = PILImageResampling.BICUBIC
     size = {"shortest_edge": 128 * 28 * 28, "longest_edge": 28 * 28 * 768}
@@ -112,6 +117,7 @@ class VideoLlama3VideoProcessor(BaseVideoProcessor):
     use_token_compression = True
     return_metadata = True
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[VideoLlama3VideoProcessorInitKwargs]):
         # backward compatibility: override size with min_pixels and max_pixels if they are provided
         size = kwargs.pop("size", None)

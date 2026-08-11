@@ -21,11 +21,14 @@ from ...utils import auto_docstring, logging
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# VideoLLaVA 配置：CLIP 视觉子配置 + Llama 文本子配置与 image/video token 索引
+
 logger = logging.get_logger(__name__)
 
 
 @auto_docstring(checkpoint="LanguageBind/Video-LLaVA-7B-hf")
 @strict
+# VideoLlavaConfig：VideoLLaVA 主配置：CLIP vision + Llama text 子配置与投影器参数
 class VideoLlavaConfig(PreTrainedConfig):
     r"""
     Example:
@@ -68,6 +71,7 @@ class VideoLlavaConfig(PreTrainedConfig):
     multimodal_projector_bias: bool = True
     tie_word_embeddings: bool = False
 
+    # __post_init__：后初始化：解析 vision/text 子配置 dict 并实例化配置对象
     def __post_init__(self, **kwargs):
         if isinstance(self.vision_config, dict):
             if "model_type" not in self.vision_config:

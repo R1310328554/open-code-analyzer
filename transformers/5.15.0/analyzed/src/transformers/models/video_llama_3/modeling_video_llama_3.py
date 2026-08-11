@@ -46,7 +46,11 @@ from ..auto.modeling_auto import AutoModel
 from .configuration_video_llama_3 import VideoLlama3Config, VideoLlama3VisionConfig
 
 
+# VideoLLaMA3 建模：ViT 视觉编码器 + 投影器 + 因果语言模型多模态条件生成
+
+# VideoLlama3VisionRotaryEmbedding：视觉 RoPE：2D 空间位置旋转编码，供 ViT 注意力使用
 class VideoLlama3VisionRotaryEmbedding(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, dim: int, theta: float = 10000.0) -> None:
         super().__init__()
         self.dim = dim
@@ -54,11 +58,14 @@ class VideoLlama3VisionRotaryEmbedding(nn.Module):
         inv_freq = 1.0 / (theta ** (torch.arange(0, dim, 2, dtype=torch.float) / dim))
         self.inv_freq = nn.Buffer(inv_freq, persistent=False)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, position_ids: torch.Tensor) -> torch.Tensor:
         return (position_ids.unsqueeze(-1) * self.inv_freq).flatten(1)
 
 
+# VideoLlama3VisionEmbeddings：视觉嵌入：patch 投影 + 可学习位置编码
 class VideoLlama3VisionEmbeddings(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoLlama3VisionConfig) -> None:
         super().__init__()
         self.config = config
@@ -73,6 +80,7 @@ class VideoLlama3VisionEmbeddings(nn.Module):
             padding="valid",
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = hidden_states.view(-1, self.config.num_channels, self.patch_size, self.patch_size)
         patch_embeds = self.patch_embedding(hidden_states)
@@ -80,7 +88,9 @@ class VideoLlama3VisionEmbeddings(nn.Module):
         return embeddings
 
 
+# VideoLlama3VisionMLP：视觉 FFN：Siglip 风格 MLP 前馈子模块
 class VideoLlama3VisionMLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -88,6 +98,7 @@ class VideoLlama3VisionMLP(nn.Module):
         self.fc1 = nn.Linear(config.hidden_size, config.intermediate_size)
         self.fc2 = nn.Linear(config.intermediate_size, config.hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.fc1(hidden_states)
         hidden_states = self.activation_fn(hidden_states)
@@ -95,6 +106,7 @@ class VideoLlama3VisionMLP(nn.Module):
         return hidden_states
 
 
+# eager_attention_forward：标准 eager 注意力：QK^T 缩放 softmax 加权 V，支持 attention_mask
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -120,6 +132,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# rotate_half：RoPE 辅助：hidden 维后半段取负并与前半段拼接实现旋转
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -127,6 +140,7 @@ def rotate_half(x):
     return torch.cat((-x2, x1), dim=-1)
 
 
+# repeat_kv：GQA KV 扩展：将 key/value 头重复至与 query 头数对齐
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -139,6 +153,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# apply_rotary_pos_emb_vision：视觉 RoPE 应用：对 Q/K 施加 2D 空间 cos/sin 旋转位置编码
 def apply_rotary_pos_emb_vision(
     q: torch.Tensor, k: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor
 ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -153,9 +168,11 @@ def apply_rotary_pos_emb_vision(
     return q_embed, k_embed
 
 
+# VideoLlama3VisionAttention：视觉自注意力：多头 patch 注意力，支持 RoPE 与 flash/eager 后端
 class VideoLlama3VisionAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -177,6 +194,7 @@ class VideoLlama3VisionAttention(nn.Module):
         self.scaling = self.head_dim**-0.5
         self.attention_dropout = config.attention_dropout
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -259,7 +277,9 @@ class VideoLlama3VisionAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# VideoLlama3VisionEncoderLayer：视觉编码层：自注意力 + MLP 双残差，可选梯度检查点
 class VideoLlama3VisionEncoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoLlama3VisionConfig):
         super().__init__()
         self.embed_dim = config.hidden_size
@@ -269,6 +289,7 @@ class VideoLlama3VisionEncoderLayer(GradientCheckpointingLayer):
         self.mlp = VideoLlama3VisionMLP(config=config)
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -301,6 +322,7 @@ class VideoLlama3VisionEncoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# VideoLlama3VisionEncoder：视觉编码器：堆叠 ViT 层输出 patch 隐藏状态序列
 class VideoLlama3VisionEncoder(nn.Module):
     """
     Transformer encoder consisting of `config.num_hidden_layers` self attention layers. Each layer is a
@@ -310,6 +332,7 @@ class VideoLlama3VisionEncoder(nn.Module):
         config: VideoLlama3VisionConfig
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoLlama3VisionConfig):
         super().__init__()
         self.config = config
@@ -319,6 +342,7 @@ class VideoLlama3VisionEncoder(nn.Module):
     # Ignore copy
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -344,6 +368,7 @@ class VideoLlama3VisionEncoder(nn.Module):
 
 
 @auto_docstring
+# VideoLlama3PreTrainedModel：VideoLLaMA3 预训练基类：权重初始化、模块绑定与 TP/PP 计划
 class VideoLlama3PreTrainedModel(PreTrainedModel):
     config: VideoLlama3Config
     base_model_prefix = "model"
@@ -357,6 +382,7 @@ class VideoLlama3PreTrainedModel(PreTrainedModel):
     _can_compile_fullgraph = True
     _supports_attention_backend = True
 
+    # _init_weights：权重初始化：Linear/Conv 截断正态、LayerNorm 偏置置零
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, VideoLlama3VisionRotaryEmbedding):
@@ -364,6 +390,7 @@ class VideoLlama3PreTrainedModel(PreTrainedModel):
             init.copy_(module.inv_freq, inv_freq)
 
 
+# VideoLlama3VisionModel：视觉塔：patch 嵌入 + 编码器，输出视觉 token 序列
 class VideoLlama3VisionModel(VideoLlama3PreTrainedModel):
     config: VideoLlama3VisionConfig
     main_input_name = "pixel_values"
@@ -373,6 +400,7 @@ class VideoLlama3VisionModel(VideoLlama3PreTrainedModel):
         "attentions": VideoLlama3VisionAttention,
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoLlama3VisionConfig):
         super().__init__(config)
         head_dim = config.hidden_size // config.num_attention_heads
@@ -384,6 +412,7 @@ class VideoLlama3VisionModel(VideoLlama3PreTrainedModel):
 
         self.post_init()
 
+    # get_input_embeddings：获取输入嵌入：返回 token embedding 层
     def get_input_embeddings(self) -> VideoLlama3VisionEmbeddings:
         return self.embeddings.patch_embedding
 
@@ -413,6 +442,7 @@ class VideoLlama3VisionModel(VideoLlama3PreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs(tie_last_hidden_states=False)
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.Tensor,
@@ -449,7 +479,9 @@ class VideoLlama3VisionModel(VideoLlama3PreTrainedModel):
         return BaseModelOutput(last_hidden_state=last_hidden_state)
 
 
+# VideoLlama3Projector：多模态投影器：视觉 hidden 映射至 LLM 词嵌入维度
 class VideoLlama3Projector(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoLlama3Config) -> None:
         super().__init__()
         in_hidden_size = config.vision_config.hidden_size
@@ -460,6 +492,7 @@ class VideoLlama3Projector(nn.Module):
             nn.Linear(out_hidden_size, out_hidden_size),
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.readout(hidden_states)
         return hidden_states
@@ -471,6 +504,7 @@ class VideoLlama3Projector(nn.Module):
     """
 )
 @dataclass
+# VideoLlama3ModelOutputWithPast：基模型输出：last_hidden_state、past KV 与视觉 hidden
 class VideoLlama3ModelOutputWithPast(ModelOutput):
     r"""
     past_key_values (`Cache`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
@@ -496,12 +530,14 @@ class VideoLlama3ModelOutputWithPast(ModelOutput):
 
 
 @auto_docstring
+# VideoLlama3Model：VideoLLaMA3 基模型：视觉编码 + 投影 + 文本解码器融合
 class VideoLlama3Model(VideoLlama3PreTrainedModel):
     base_model_prefix = "model"
     # Reference: fix gemma3 grad acc #37208
     accepts_loss_kwargs = False
     _can_compile_fullgraph = False
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoLlama3Config):
         super().__init__(config)
         self.vision_model = AutoModel.from_config(config.vision_config)
@@ -604,6 +640,7 @@ class VideoLlama3Model(VideoLlama3PreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor = None,
@@ -683,6 +720,7 @@ class VideoLlama3Model(VideoLlama3PreTrainedModel):
     """
 )
 @dataclass
+# VideoLlama3CausalLMOutputWithPast：条件生成输出：logits、loss 与 past_key_values
 class VideoLlama3CausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -712,10 +750,12 @@ class VideoLlama3CausalLMOutputWithPast(ModelOutput):
     video_hidden_states: torch.FloatTensor | None = None
 
 
+# VideoLlama3ForConditionalGeneration：VideoLLaMA3 条件生成：图像/视频 + 文本 autoregressive 解码
 class VideoLlama3ForConditionalGeneration(VideoLlama3PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
     _can_compile_fullgraph = False
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoLlama3Config):
         super().__init__(config)
         self.model = VideoLlama3Model(config)
@@ -751,6 +791,7 @@ class VideoLlama3ForConditionalGeneration(VideoLlama3PreTrainedModel, Generation
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor = None,

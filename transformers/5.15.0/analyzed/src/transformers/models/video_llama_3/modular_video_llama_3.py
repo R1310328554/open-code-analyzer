@@ -79,11 +79,14 @@ from ..siglip.modeling_siglip import (
 )
 
 
+# VideoLLaMA3 模块化实现：复用 Qwen2VL/Siglip 组件并扩展视频帧处理逻辑
+
 logger = logging.get_logger(__name__)
 
 
 @auto_docstring(checkpoint="lkhl/VideoLLaMA3-2B-Image-HF")
 @strict
+# VideoLlama3VisionConfig：视觉子配置：继承 Siglip ViT patch/层数/注意力头参数
 class VideoLlama3VisionConfig(SiglipVisionConfig):
     model_type = "video_llama_3_vision"
     base_config_key = "vision_config"
@@ -93,6 +96,7 @@ class VideoLlama3VisionConfig(SiglipVisionConfig):
 
 @auto_docstring(checkpoint="lkhl/VideoLLaMA3-2B-Image-HF")
 @strict
+# VideoLlama3Config：多模态主配置：vision_config + text_config 与 image/video token id
 class VideoLlama3Config(PreTrainedConfig):
     model_type = "video_llama_3"
     sub_configs = {"vision_config": VideoLlama3VisionConfig, "text_config": AutoConfig}
@@ -104,6 +108,7 @@ class VideoLlama3Config(PreTrainedConfig):
     video_token_id: int = 151656
     tie_word_embeddings: bool = False
 
+    # __post_init__：后初始化：解析 vision/text 子配置 dict 并实例化配置对象
     def __post_init__(self, **kwargs):
         if isinstance(self.vision_config, dict):
             self.vision_config = self.sub_configs["vision_config"](**self.vision_config)
@@ -124,11 +129,14 @@ class VideoLlama3Config(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# VideoLlama3VisionRotaryEmbedding：视觉 RoPE：2D 空间位置旋转编码，供 ViT 注意力使用
 class VideoLlama3VisionRotaryEmbedding(VisionRotaryEmbedding):
     pass
 
 
+# VideoLlama3VisionEmbeddings：视觉嵌入：patch 投影 + 可学习位置编码
 class VideoLlama3VisionEmbeddings(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoLlama3VisionConfig) -> None:
         super().__init__()
         self.config = config
@@ -143,6 +151,7 @@ class VideoLlama3VisionEmbeddings(nn.Module):
             padding="valid",
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = hidden_states.view(-1, self.config.num_channels, self.patch_size, self.patch_size)
         patch_embeds = self.patch_embedding(hidden_states)
@@ -150,11 +159,14 @@ class VideoLlama3VisionEmbeddings(nn.Module):
         return embeddings
 
 
+# VideoLlama3VisionMLP：视觉 FFN：Siglip 风格 MLP 前馈子模块
 class VideoLlama3VisionMLP(SiglipMLP):
     pass
 
 
+# VideoLlama3VisionAttention：视觉自注意力：多头 patch 注意力，支持 RoPE 与 flash/eager 后端
 class VideoLlama3VisionAttention(SiglipAttention):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.num_key_value_groups = 1
@@ -163,6 +175,7 @@ class VideoLlama3VisionAttention(SiglipAttention):
         del self.scale
         del self.dropout
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -245,12 +258,15 @@ class VideoLlama3VisionAttention(SiglipAttention):
         return attn_output, attn_weights
 
 
+# VideoLlama3VisionEncoderLayer：视觉编码层：自注意力 + MLP 双残差，可选梯度检查点
 class VideoLlama3VisionEncoderLayer(SiglipEncoderLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoLlama3VisionConfig):
         super().__init__(config)
         self.self_attn = VideoLlama3VisionAttention(config=config)
         self.mlp = VideoLlama3VisionMLP(config=config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -283,13 +299,16 @@ class VideoLlama3VisionEncoderLayer(SiglipEncoderLayer):
         return hidden_states
 
 
+# VideoLlama3VisionEncoder：视觉编码器：堆叠 ViT 层输出 patch 隐藏状态序列
 class VideoLlama3VisionEncoder(SiglipEncoder):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoLlama3VisionConfig):
         super().__init__(config)
         self.layers = nn.ModuleList([VideoLlama3VisionEncoderLayer(config) for _ in range(config.num_hidden_layers)])
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -314,10 +333,12 @@ class VideoLlama3VisionEncoder(SiglipEncoder):
         return BaseModelOutput(last_hidden_state=hidden_states)
 
 
+# VideoLlama3PreTrainedModel：VideoLLaMA3 预训练基类：权重初始化、模块绑定与 TP/PP 计划
 class VideoLlama3PreTrainedModel(Qwen2VLPreTrainedModel):
     config: VideoLlama3Config
     _no_split_modules = ["VideoLlama3VisionEncoderLayer"]
 
+    # _init_weights：权重初始化：Linear/Conv 截断正态、LayerNorm 偏置置零
     def _init_weights(self, module):
         PreTrainedModel._init_weights(self, module)
         if isinstance(module, VideoLlama3VisionRotaryEmbedding):
@@ -325,6 +346,7 @@ class VideoLlama3PreTrainedModel(Qwen2VLPreTrainedModel):
             init.copy_(module.inv_freq, inv_freq)
 
 
+# VideoLlama3VisionModel：视觉塔：patch 嵌入 + 编码器，输出视觉 token 序列
 class VideoLlama3VisionModel(VideoLlama3PreTrainedModel):
     config: VideoLlama3VisionConfig
     main_input_name = "pixel_values"
@@ -334,6 +356,7 @@ class VideoLlama3VisionModel(VideoLlama3PreTrainedModel):
         "attentions": VideoLlama3VisionAttention,
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoLlama3VisionConfig):
         super().__init__(config)
         head_dim = config.hidden_size // config.num_attention_heads
@@ -345,6 +368,7 @@ class VideoLlama3VisionModel(VideoLlama3PreTrainedModel):
 
         self.post_init()
 
+    # get_input_embeddings：获取输入嵌入：返回 token embedding 层
     def get_input_embeddings(self) -> VideoLlama3VisionEmbeddings:
         return self.embeddings.patch_embedding
 
@@ -374,6 +398,7 @@ class VideoLlama3VisionModel(VideoLlama3PreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs(tie_last_hidden_states=False)
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.Tensor,
@@ -410,7 +435,9 @@ class VideoLlama3VisionModel(VideoLlama3PreTrainedModel):
         return BaseModelOutput(last_hidden_state=last_hidden_state)
 
 
+# VideoLlama3Projector：多模态投影器：视觉 hidden 映射至 LLM 词嵌入维度
 class VideoLlama3Projector(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoLlama3Config) -> None:
         super().__init__()
         in_hidden_size = config.vision_config.hidden_size
@@ -421,6 +448,7 @@ class VideoLlama3Projector(nn.Module):
             nn.Linear(out_hidden_size, out_hidden_size),
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.readout(hidden_states)
         return hidden_states
@@ -432,6 +460,7 @@ class VideoLlama3Projector(nn.Module):
     """
 )
 @dataclass
+# VideoLlama3ModelOutputWithPast：基模型输出：last_hidden_state、past KV 与视觉 hidden
 class VideoLlama3ModelOutputWithPast(ModelOutput):
     r"""
     past_key_values (`Cache`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
@@ -456,9 +485,11 @@ class VideoLlama3ModelOutputWithPast(ModelOutput):
     video_hidden_states: torch.FloatTensor | None = None
 
 
+# VideoLlama3Model：VideoLLaMA3 基模型：视觉编码 + 投影 + 文本解码器融合
 class VideoLlama3Model(Qwen2VLModel):
     _can_compile_fullgraph = False
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoLlama3Config):
         PreTrainedModel.__init__(self, config)
         self.vision_model = AutoModel.from_config(config.vision_config)
@@ -521,6 +552,7 @@ class VideoLlama3Model(Qwen2VLModel):
 
         return vision_outputs
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor = None,
@@ -600,6 +632,7 @@ class VideoLlama3Model(Qwen2VLModel):
     """
 )
 @dataclass
+# VideoLlama3CausalLMOutputWithPast：条件生成输出：logits、loss 与 past_key_values
 class VideoLlama3CausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -629,12 +662,15 @@ class VideoLlama3CausalLMOutputWithPast(ModelOutput):
     video_hidden_states: torch.FloatTensor | None = None
 
 
+# VideoLlama3ForConditionalGeneration：VideoLLaMA3 条件生成：图像/视频 + 文本 autoregressive 解码
 class VideoLlama3ForConditionalGeneration(Qwen2VLForConditionalGeneration):
     _can_compile_fullgraph = False
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoLlama3Config):
         super().__init__(config)  # just to add type hint on config
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor = None,
@@ -905,6 +941,7 @@ class VideoLlama3ForConditionalGeneration(Qwen2VLForConditionalGeneration):
         return input_ids, model_kwargs
 
 
+# VideoLlama3ProcessorKwargs：多模态处理器参数：文本/图像/视频 kwargs 默认值与对齐策略
 class VideoLlama3ProcessorKwargs(Qwen2VLProcessorKwargs):
     _defaults = {
         "text_kwargs": {
@@ -915,7 +952,9 @@ class VideoLlama3ProcessorKwargs(Qwen2VLProcessorKwargs):
     }
 
 
+# VideoLlama3Processor：VideoLLaMA3 联合处理器：图像/视频预处理 + 分词与占位符替换
 class VideoLlama3Processor(Qwen3VLProcessor):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, image_processor=None, tokenizer=None, video_processor=None, chat_template=None, **kwargs):
         self.image_token = "<|image_pad|>" if not hasattr(tokenizer, "image_token") else tokenizer.image_token
         self.video_token = "<|video_pad|>" if not hasattr(tokenizer, "video_token") else tokenizer.video_token
@@ -964,6 +1003,7 @@ class VideoLlama3Processor(Qwen3VLProcessor):
         raise AttributeError("VideoLlama doesn't need this method")
 
 
+# VideoLlama3ImageProcessorKwargs：图像预处理参数：min/max 像素、patch/merge 尺寸与 temporal patch
 class VideoLlama3ImageProcessorKwargs(Qwen2VLImageProcessorKwargs):
     r"""
     min_pixels (`int`, *optional*, defaults to `56 * 56`):
@@ -979,6 +1019,7 @@ class VideoLlama3ImageProcessorKwargs(Qwen2VLImageProcessorKwargs):
     """
 
 
+# VideoLlama3ImageProcessorPil：PIL 后端图像处理器：smart_resize + patch 网格合并输出
 class VideoLlama3ImageProcessorPil(Qwen2VLImageProcessorPil):
     image_mean = IMAGENET_STANDARD_MEAN
     image_std = IMAGENET_STANDARD_STD
@@ -1049,6 +1090,7 @@ class VideoLlama3ImageProcessorPil(Qwen2VLImageProcessorPil):
         )
 
 
+# VideoLlama3ImageProcessor：Torchvision 后端图像处理器：张量路径 smart_resize 与归一化
 class VideoLlama3ImageProcessor(Qwen2VLImageProcessor):
     image_mean = IMAGENET_STANDARD_MEAN
     image_std = IMAGENET_STANDARD_STD
@@ -1129,6 +1171,7 @@ class VideoLlama3ImageProcessor(Qwen2VLImageProcessor):
         )
 
 
+# VideoLlama3VideoProcessorInitKwargs：视频预处理初始化参数：帧率采样、像素预算与 patch 配置
 class VideoLlama3VideoProcessorInitKwargs(Qwen2VLVideoProcessorInitKwargs):
     r"""
     min_pixels (`int`, *optional*, defaults to `56 * 56`):
@@ -1152,6 +1195,7 @@ class VideoLlama3VideoProcessorInitKwargs(Qwen2VLVideoProcessorInitKwargs):
     use_token_compression: bool | None
 
 
+# VideoLlama3VideoProcessor：视频处理器：帧提取、smart_resize 与时空 patch 批特征
 class VideoLlama3VideoProcessor(Qwen2VLVideoProcessor):
     use_token_compression = True
     image_mean = IMAGENET_STANDARD_MEAN

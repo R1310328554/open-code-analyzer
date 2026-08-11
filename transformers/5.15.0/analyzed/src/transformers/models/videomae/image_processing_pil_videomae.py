@@ -29,7 +29,10 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# VideoMAE PIL 图像处理器：224 中心裁剪、ImageNet 归一化与视频帧批处理
+
 @auto_docstring
+# VideoMAEImageProcessorPil：VideoMAE PIL 处理器：224 缩放裁剪、归一化与 nested 视频帧结构
 class VideoMAEImageProcessorPil(PilBackend):
     resample = PILImageResampling.BILINEAR
     image_mean = IMAGENET_STANDARD_MEAN
@@ -42,13 +45,16 @@ class VideoMAEImageProcessorPil(PilBackend):
     do_rescale = True
     do_normalize = True
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[ImagesKwargs]):
         super().__init__(**kwargs)
 
+    # _prepare_images_structure：图像结构整理：嵌套列表规范化以支持单帧/批量/视频帧
     def _prepare_images_structure(self, images: ImageInput, expected_ndims: int = 3) -> ImageInput:
         return make_nested_list_of_images(images, expected_ndims=expected_ndims)
 
     @auto_docstring
+    # preprocess：预处理入口：resize/crop/归一化并打包 pixel_values
     def preprocess(self, videos: ImageInput, **kwargs: Unpack[ImagesKwargs]) -> BatchFeature:
         r"""
         videos (`ImageInput`):

@@ -31,6 +31,9 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# VideoLLaMA3 Torchvision 图像处理器：动态像素预算缩放与视觉编码器 patch 对齐
+
+# VideoLlama3ImageProcessorKwargs：图像预处理参数：min/max 像素、patch/merge 尺寸与 temporal patch
 class VideoLlama3ImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     min_pixels (`int`, *optional*, defaults to `56 * 56`):
@@ -52,6 +55,7 @@ class VideoLlama3ImageProcessorKwargs(ImagesKwargs, total=False):
     merge_size: int
 
 
+# smart_resize：动态分辨率：在 min/max 像素约束下对齐 patch 与 merge 网格尺寸
 def smart_resize(
     height: int, width: int, factor: int = 28, min_pixels: int = 56 * 56, max_pixels: int = 14 * 14 * 4 * 1280
 ):
@@ -82,6 +86,7 @@ def smart_resize(
 
 
 @auto_docstring
+# VideoLlama3ImageProcessor：Torchvision 后端图像处理器：张量路径 smart_resize 与归一化
 class VideoLlama3ImageProcessor(TorchvisionBackend):
     do_resize = True
     resample = PILImageResampling.BICUBIC
@@ -102,6 +107,7 @@ class VideoLlama3ImageProcessor(TorchvisionBackend):
         "image_merge_sizes",
     ]
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[VideoLlama3ImageProcessorKwargs]):
         # backward compatibility: override size with min_pixels and max_pixels if they are provided
         size = kwargs.pop("size", None)
@@ -126,6 +132,7 @@ class VideoLlama3ImageProcessor(TorchvisionBackend):
         return super()._standardize_kwargs(size=size, **kwargs)
 
     @auto_docstring
+    # preprocess：预处理入口：resize/crop/归一化并打包 pixel_values
     def preprocess(
         self,
         images: ImageInput,

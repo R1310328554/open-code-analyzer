@@ -32,6 +32,8 @@ from ..auto import AutoModel
 from .configuration_video_llava import VideoLlavaConfig
 
 
+# VideoLLaVA 建模：CLIP 视觉塔 + 多模态投影器 + Llama 文本栈条件生成
+
 logger = logging.get_logger(__name__)
 
 
@@ -41,6 +43,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# VideoLlavaModelOutputWithPast：VideoLLaVA 基模型输出：文本 hidden、KV cache 与 image/video 视觉状态
 class VideoLlavaModelOutputWithPast(ModelOutput):
     r"""
     past_key_values (`Cache`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
@@ -70,6 +73,7 @@ class VideoLlavaModelOutputWithPast(ModelOutput):
     """
 )
 @dataclass
+# VideoLlavaCausalLMOutputWithPast：VideoLLaVA 因果 LM 输出：logits、loss 与 past_key_values
 class VideoLlavaCausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -99,7 +103,9 @@ class VideoLlavaCausalLMOutputWithPast(ModelOutput):
 
 
 # Copied from transformers.models.llava.modeling_llava.LlavaMultiModalProjector with Llava->VideoLlava
+# VideoLlavaMultiModalProjector：多模态投影器：CLIP 视觉特征 Linear 映射至 Llama 隐藏维
 class VideoLlavaMultiModalProjector(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoLlavaConfig):
         super().__init__()
         # We have hidden_size * the number of vision feature layers
@@ -114,6 +120,7 @@ class VideoLlavaMultiModalProjector(nn.Module):
             config.text_config.hidden_size, config.text_config.hidden_size, bias=config.multimodal_projector_bias
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, image_features):
         hidden_states = self.linear_1(image_features)
         hidden_states = self.act(hidden_states)
@@ -122,6 +129,7 @@ class VideoLlavaMultiModalProjector(nn.Module):
 
 
 @auto_docstring
+# VideoLlavaPreTrainedModel：VideoLLaVA 预训练基类：权重初始化与 vision/text 模块绑定
 class VideoLlavaPreTrainedModel(PreTrainedModel):
     config: VideoLlavaConfig
     base_model_prefix = "model"
@@ -134,6 +142,7 @@ class VideoLlavaPreTrainedModel(PreTrainedModel):
     _supports_attention_backend = True
 
     @torch.no_grad()
+    # _init_weights：权重初始化：Linear/Conv 截断正态、LayerNorm 偏置置零
     def _init_weights(self, module):
         super()._init_weights(module)
         std = (
@@ -150,7 +159,9 @@ class VideoLlavaPreTrainedModel(PreTrainedModel):
     The VideoLlava model which consists of a vision backbone and a language model without language modeling head.
     """,
 )
+# VideoLlavaModel：VideoLLaVA 基模型：CLIP 视觉塔 + 投影 + Llama 文本栈前向
 class VideoLlavaModel(VideoLlavaPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoLlavaConfig):
         super().__init__(config)
         self.video_tower = AutoModel.from_config(config.vision_config)
@@ -299,6 +310,7 @@ class VideoLlavaModel(VideoLlavaPreTrainedModel):
     @merge_with_config_defaults
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -372,9 +384,11 @@ class VideoLlavaModel(VideoLlavaPreTrainedModel):
     The VideoLlava model which consists of a vision backbone and a language model.
     """
 )
+# VideoLlavaForConditionalGeneration：VideoLLaVA 条件生成：图像/视频理解 + 文本 autoregressive 解码
 class VideoLlavaForConditionalGeneration(VideoLlavaPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: VideoLlavaConfig):
         super().__init__(config)
         self.model = VideoLlavaModel(config)
@@ -415,6 +429,7 @@ class VideoLlavaForConditionalGeneration(VideoLlavaPreTrainedModel, GenerationMi
     @merge_with_config_defaults
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
