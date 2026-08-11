@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T07:05:56Z",
   "files": [
-    "paddleocr/_utils/logging.py",
-    "paddleocr/_utils/naming.py",
-    "paddleocr/_version.py",
-    "ppocr/__init__.py",
-    "ppocr/data/__init__.py",
-    "ppocr/data/collate_fn.py",
-    "ppocr/data/imaug/ColorJitter.py",
-    "ppocr/data/imaug/__init__.py",
-    "ppocr/data/imaug/abinet_aug.py",
-    "ppocr/data/imaug/copy_paste.py",
-    "ppocr/data/imaug/ct_process.py",
-    "ppocr/data/imaug/drrg_targets.py",
-    "ppocr/data/imaug/east_process.py",
-    "ppocr/data/imaug/fce_aug.py",
-    "ppocr/data/imaug/fce_targets.py",
     "ppocr/data/imaug/iaa_augment.py",
     "ppocr/data/imaug/label_ops.py",
     "ppocr/data/imaug/latex_ocr_aug.py",
@@ -33,5 +18,5 @@
     "ppocr/data/imaug/text_image_aug/__init__.py"
   ],
   "remaining_pending": 302,
-  "done": 270
+  "done": 285
 }
