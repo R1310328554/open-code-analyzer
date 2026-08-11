@@ -32,10 +32,13 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# OWLv2 图像处理：高分辨率 resize 与检测框坐标变换（Torchvision）
+
 if TYPE_CHECKING:
     from .modeling_owlv2 import Owlv2ObjectDetectionOutput
 
 
+# _upcast：数值运算前上转型以避免溢出
 def _upcast(t):
     # Protects from numerical overflows in multiplications by upcasting to the equivalent higher type
     if t.is_floating_point():
@@ -44,6 +47,7 @@ def _upcast(t):
         return t if t.dtype in (torch.int32, torch.int64) else t.int()
 
 
+# box_area：计算 axis-aligned 边界框面积
 def box_area(boxes):
     """
     Computes the area of a set of bounding boxes, which are specified by its (x1, y1, x2, y2) coordinates.
@@ -59,6 +63,7 @@ def box_area(boxes):
     return (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
 
 
+# box_iou：计算两组边界框的 IoU 矩阵
 def box_iou(boxes1, boxes2):
     area1 = box_area(boxes1)
     area2 = box_area(boxes2)
@@ -75,6 +80,7 @@ def box_iou(boxes1, boxes2):
     return iou, union
 
 
+# _scale_boxes：将归一化框坐标缩放到目标图像尺寸
 def _scale_boxes(boxes, target_sizes):
     """
     Scale batch of bounding boxes to the target sizes.
@@ -107,6 +113,7 @@ def _scale_boxes(boxes, target_sizes):
 
 
 @auto_docstring
+# Owlv2ImageProcessor：OWLv2 Torchvision 后端图像预处理与框变换
 class Owlv2ImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.BILINEAR
     image_mean = OPENAI_CLIP_MEAN

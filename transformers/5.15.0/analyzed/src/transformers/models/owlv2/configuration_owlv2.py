@@ -13,6 +13,8 @@
 # limitations under the License.
 """OWLv2 model configuration"""
 
+# OWLv2 配置：CLIP 双塔 + 开放词汇零样本检测超参
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
@@ -24,7 +26,9 @@ logger = logging.get_logger(__name__)
 
 @strict
 @auto_docstring(checkpoint="google/owlv2-base-patch16")
+# Owlv2TextConfig：OWLv2 CLIP 风格文本编码器超参
 # Copied from transformers.models.owlvit.configuration_owlvit.OwlViTTextConfig with OwlViT->Owlv2, owlvit-base-patch32->owlv2-base-patch16, owlvit->owlv2, OWL-ViT->OWLv2
+# Owlv2TextConfig：OWLv2 CLIP 风格文本编码器超参
 class Owlv2TextConfig(PreTrainedConfig):
     r"""
     Example:
@@ -63,7 +67,9 @@ class Owlv2TextConfig(PreTrainedConfig):
 
 @strict
 @auto_docstring(checkpoint="google/owlv2-base-patch16")
+# Owlv2VisionConfig：OWLv2 CLIP 风格视觉 ViT 超参
 # Copied from transformers.models.owlvit.configuration_owlvit.OwlViTVisionConfig with OwlViT->Owlv2, owlvit-base-patch32->owlv2-base-patch16, owlvit->owlv2, OWL-ViT->OWLv2, 32->16
+# Owlv2VisionConfig：OWLv2 CLIP 风格视觉 ViT 超参
 class Owlv2VisionConfig(PreTrainedConfig):
     r"""
     Example:
@@ -100,7 +106,9 @@ class Owlv2VisionConfig(PreTrainedConfig):
 
 @strict
 @auto_docstring(checkpoint="google/owlv2-base-patch16")
+# Owlv2Config：OWLv2 图文对比 + 开放词汇检测联合超参
 # Copied from transformers.models.owlvit.configuration_owlvit.OwlViTConfig with OwlViT->Owlv2, owlvit-base-patch32->owlv2-base-patch16, owlvit->owlv2, OWL-ViT->OWLv2
+# Owlv2Config：OWLv2 图文对比 + 开放词汇检测联合超参
 class Owlv2Config(PreTrainedConfig):
     model_type = "owlv2"
     sub_configs = {"text_config": Owlv2TextConfig, "vision_config": Owlv2VisionConfig}
@@ -112,6 +120,7 @@ class Owlv2Config(PreTrainedConfig):
     return_dict: bool = True
     initializer_factor: float = 1.0
 
+    # __post_init__：初始化后解析 text/vision 子配置对象
     def __post_init__(self, **kwargs):
         if self.text_config is None:
             self.text_config = Owlv2TextConfig()

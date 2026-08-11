@@ -40,6 +40,8 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_owlv2 import Owlv2Config, Owlv2TextConfig, Owlv2VisionConfig
 
 
+# OWLv2 建模：CLIP 图文对比 + 开放词汇零样本目标检测
+
 if is_vision_available():
     from transformers.image_transforms import center_to_corners_format
 
@@ -51,11 +53,13 @@ logger = logging.get_logger(__name__)
 
 
 # Copied from transformers.models.clip.modeling_clip.contrastive_loss with clip->owlv2
+# contrastive_loss：CLIP 风格对称对比学习损失
 def contrastive_loss(logits: torch.Tensor) -> torch.Tensor:
     return nn.functional.cross_entropy(logits, torch.arange(len(logits), device=logits.device))
 
 
 # Copied from transformers.models.clip.modeling_clip.image_text_contrastive_loss
+# image_text_contrastive_loss：图文双向对比损失（image↔text）
 def image_text_contrastive_loss(similarity: torch.Tensor) -> torch.Tensor:
     caption_loss = contrastive_loss(similarity)
     image_loss = contrastive_loss(similarity.T)
@@ -64,6 +68,7 @@ def image_text_contrastive_loss(similarity: torch.Tensor) -> torch.Tensor:
 
 @auto_docstring
 @dataclass
+# Owlv2Output：OWLv2 图文对比模型输出（logits + 嵌入）
 class Owlv2Output(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `return_loss` is `True`):
@@ -101,6 +106,7 @@ class Owlv2Output(ModelOutput):
 
 
 # Copied from transformers.loss.loss_for_object_detection._upcast
+# _upcast：数值运算前上转型以避免溢出
 def _upcast(t: Tensor) -> Tensor:
     # Protects from numerical overflows in multiplications by upcasting to the equivalent higher type
     if t.is_floating_point():
@@ -110,6 +116,7 @@ def _upcast(t: Tensor) -> Tensor:
 
 
 # Copied from transformers.loss.loss_for_object_detection.box_area
+# box_area：计算 axis-aligned 边界框面积
 def box_area(boxes: Tensor) -> Tensor:
     """
     Computes the area of a set of bounding boxes, which are specified by its (x1, y1, x2, y2) coordinates.
@@ -127,6 +134,7 @@ def box_area(boxes: Tensor) -> Tensor:
 
 
 # Copied from transformers.loss.loss_for_object_detection.box_iou
+# box_iou：计算两组边界框的 IoU 矩阵
 def box_iou(boxes1, boxes2):
     area1 = box_area(boxes1)
     area2 = box_area(boxes2)
@@ -144,6 +152,7 @@ def box_iou(boxes1, boxes2):
 
 
 # Copied from transformers.loss.loss_for_object_detection.generalized_box_iou
+# generalized_box_iou：广义 IoU（含不相交框惩罚项）
 def generalized_box_iou(boxes1, boxes2):
     """
     Generalized IoU from https://giou.stanford.edu/. The boxes should be in [x0, y0, x1, y1] (corner) format.
@@ -174,6 +183,7 @@ def generalized_box_iou(boxes1, boxes2):
     """
 )
 @dataclass
+# Owlv2ObjectDetectionOutput：OWLv2 文本引导目标检测输出
 class Owlv2ObjectDetectionOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` are provided)):
@@ -231,6 +241,7 @@ class Owlv2ObjectDetectionOutput(ModelOutput):
 )
 @dataclass
 # Copied from transformers.models.owlvit.modeling_owlvit.OwlViTImageGuidedObjectDetectionOutput with OwlViT->Owlv2,OWL-ViT->OWLv2
+# Owlv2ImageGuidedObjectDetectionOutput：OWLv2 图像引导目标检测输出
 class Owlv2ImageGuidedObjectDetectionOutput(ModelOutput):
     r"""
     logits (`torch.FloatTensor` of shape `(batch_size, num_patches, num_queries)`):
@@ -277,6 +288,7 @@ class Owlv2ImageGuidedObjectDetectionOutput(ModelOutput):
 
 
 # Copied from transformers.models.owlvit.modeling_owlvit.OwlViTVisionEmbeddings with OwlViT->Owlv2
+# Owlv2VisionEmbeddings：OWLv2 视觉 patch/class 嵌入
 class Owlv2VisionEmbeddings(nn.Module):
     def __init__(self, config: Owlv2VisionConfig):
         super().__init__()
@@ -355,6 +367,7 @@ class Owlv2VisionEmbeddings(nn.Module):
 
 
 # Copied from transformers.models.owlvit.modeling_owlvit.OwlViTTextEmbeddings with OwlViT->Owlv2
+# Owlv2TextEmbeddings：OWLv2 文本 token + 位置嵌入
 class Owlv2TextEmbeddings(nn.Module):
     def __init__(self, config: Owlv2TextConfig):
         super().__init__()
@@ -385,6 +398,7 @@ class Owlv2TextEmbeddings(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.eager_attention_forward
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -414,6 +428,7 @@ def eager_attention_forward(
 
 
 # Copied from transformers.models.owlvit.modeling_owlvit.OwlViTAttention with OwlViT->Owlv2
+# Owlv2Attention：OWLv2 多头自注意力
 class Owlv2Attention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -472,6 +487,7 @@ class Owlv2Attention(nn.Module):
 
 
 # Copied from transformers.models.clip.modeling_clip.CLIPMLP with CLIP->Owlv2
+# Owlv2MLP：OWLv2 两层 MLP 前馈
 class Owlv2MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -488,6 +504,7 @@ class Owlv2MLP(nn.Module):
 
 
 # Copied from transformers.models.clip.modeling_clip.CLIPEncoderLayer with CLIP->Owlv2
+# Owlv2EncoderLayer：OWLv2 Transformer 编码器单层
 class Owlv2EncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Owlv2VisionConfig | Owlv2TextConfig):
         super().__init__()
@@ -523,6 +540,7 @@ class Owlv2EncoderLayer(GradientCheckpointingLayer):
 
 @auto_docstring
 # Copied from transformers.models.owlvit.modeling_owlvit.OwlViTPreTrainedModel with OwlViT->Owlv2,owlvit->owlv2
+# Owlv2PreTrainedModel：OWLv2 预训练基类与权重初始化
 class Owlv2PreTrainedModel(PreTrainedModel):
     config: Owlv2Config
     base_model_prefix = "owlv2"
@@ -579,6 +597,7 @@ class Owlv2PreTrainedModel(PreTrainedModel):
 
 
 # Copied from transformers.models.owlvit.modeling_owlvit.OwlViTEncoder with OwlViT->Owlv2
+# Owlv2Encoder：OWLv2 Transformer 编码器堆叠
 class Owlv2Encoder(nn.Module):
     """
     Transformer encoder consisting of `config.num_hidden_layers` self attention layers. Each layer is a
@@ -614,6 +633,7 @@ class Owlv2Encoder(nn.Module):
 
 
 # Copied from transformers.models.owlvit.modeling_owlvit.OwlViTTextTransformer with OWLVIT->OWLV2,OwlViT->Owlv2
+# Owlv2TextTransformer：OWLv2 文本 Transformer 编码器
 class Owlv2TextTransformer(Owlv2PreTrainedModel):
     def __init__(self, config: Owlv2TextConfig):
         super().__init__(config)
@@ -678,6 +698,7 @@ class Owlv2TextTransformer(Owlv2PreTrainedModel):
 
 
 # Copied from transformers.models.owlvit.modeling_owlvit.OwlViTTextModel with google/owlvit-base-patch32->google/owlv2-base-patch16, OWLVIT->OWLV2,OwlViT->Owlv2
+# Owlv2TextModel：OWLv2 文本编码器封装
 class Owlv2TextModel(Owlv2PreTrainedModel):
     config: Owlv2TextConfig
     input_modalities = ("text",)
@@ -729,6 +750,7 @@ class Owlv2TextModel(Owlv2PreTrainedModel):
 
 
 # Copied from transformers.models.owlvit.modeling_owlvit.OwlViTVisionTransformer with OWLVIT->OWLV2,OwlViT->Owlv2
+# Owlv2VisionTransformer：OWLv2 视觉 Transformer 编码器
 class Owlv2VisionTransformer(Owlv2PreTrainedModel):
     def __init__(self, config: Owlv2VisionConfig):
         super().__init__(config)
@@ -773,6 +795,7 @@ class Owlv2VisionTransformer(Owlv2PreTrainedModel):
 
 
 # Copied from transformers.models.owlvit.modeling_owlvit.OwlViTVisionModel with OWLVIT->OWLV2,OwlViT->Owlv2,google/owlvit-base-patch32->google/owlv2-base-patch16
+# Owlv2VisionModel：OWLv2 视觉编码器封装
 class Owlv2VisionModel(Owlv2PreTrainedModel):
     config: Owlv2VisionConfig
     main_input_name = "pixel_values"
@@ -824,6 +847,7 @@ class Owlv2VisionModel(Owlv2PreTrainedModel):
 
 @auto_docstring
 # Copied from transformers.models.owlvit.modeling_owlvit.OwlViTModel with google/owlvit-base-patch32->google/owlv2-base-patch16-ensemble, OWLVIT->OWLV2,OwlViT->Owlv2,owlvit->owlv2,OWL-ViT->OWLv2
+# Owlv2Model：OWLv2 图文对比双塔模型
 class Owlv2Model(Owlv2PreTrainedModel):
     config: Owlv2Config
 
@@ -999,6 +1023,7 @@ class Owlv2Model(Owlv2PreTrainedModel):
 
 
 # Copied from transformers.models.owlvit.modeling_owlvit.OwlViTBoxPredictionHead with OwlViT->Owlv2
+# Owlv2BoxPredictionHead：OWLv2 检测框回归预测头
 class Owlv2BoxPredictionHead(nn.Module):
     def __init__(self, config: Owlv2Config, out_dim: int = 4):
         super().__init__()
@@ -1019,6 +1044,7 @@ class Owlv2BoxPredictionHead(nn.Module):
 
 
 # Copied from transformers.models.owlvit.modeling_owlvit.OwlViTClassPredictionHead with OwlViT->Owlv2
+# Owlv2ClassPredictionHead：OWLv2 开放词汇类别匹配预测头
 class Owlv2ClassPredictionHead(nn.Module):
     def __init__(self, config: Owlv2Config):
         super().__init__()
@@ -1067,6 +1093,7 @@ class Owlv2ClassPredictionHead(nn.Module):
         return (pred_logits, image_class_embeds)
 
 
+# Owlv2ForObjectDetection：OWLv2 开放词汇零样本目标检测
 class Owlv2ForObjectDetection(Owlv2PreTrainedModel):
     config: Owlv2Config
 

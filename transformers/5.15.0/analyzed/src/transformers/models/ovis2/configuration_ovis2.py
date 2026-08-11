@@ -20,8 +20,12 @@ from ...utils import auto_docstring
 from ..qwen2.configuration_qwen2 import Qwen2Config
 
 
+# Ovis2 配置：Qwen2 文本 + 视觉 ViT 多模态联合超参
+
+# Ovis2VisionConfig：Ovis2 视觉 ViT 骨干与视觉指示 token 超参
 @auto_docstring(checkpoint="thisisiron/Ovis2-1B-hf")
 @strict
+# Ovis2VisionConfig：Ovis2 视觉 ViT 骨干与视觉指示 token 超参
 class Ovis2VisionConfig(PreTrainedConfig):
     r"""
     hidden_stride (`int`, *optional*, defaults to 1):
@@ -53,8 +57,10 @@ class Ovis2VisionConfig(PreTrainedConfig):
     tokenize_function: str = "softmax"
 
 
+# Ovis2Config：Ovis2 多模态（Qwen2 文本 + 视觉）联合超参
 @auto_docstring(checkpoint="thisisiron/Ovis2-1B-hf")
 @strict
+# Ovis2Config：Ovis2 多模态（Qwen2 文本 + 视觉）联合超参
 class Ovis2Config(PreTrainedConfig):
     r"""
     visual_indicator_token_ids (`List[int]`, *optional*, defaults to `[151666, 151667, 151668, 151669, 151670]`):
@@ -85,6 +91,7 @@ class Ovis2Config(PreTrainedConfig):
     hidden_size: int = 1536
     tie_word_embeddings: bool = True
 
+    # __post_init__：初始化后解析 text/vision 子配置对象
     def __post_init__(self, **kwargs):
         if isinstance(self.vision_config, dict):
             self.vision_config = Ovis2VisionConfig(**self.vision_config)

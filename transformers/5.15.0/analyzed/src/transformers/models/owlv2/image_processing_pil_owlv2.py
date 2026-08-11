@@ -42,6 +42,7 @@ if is_torch_available():
     import torch
 
 
+# _upcast：数值运算前上转型以避免溢出
 def _upcast(t):
     # Protects from numerical overflows in multiplications by upcasting to the equivalent higher type
     import torch
@@ -52,6 +53,7 @@ def _upcast(t):
         return t if t.dtype in (torch.int32, torch.int64) else t.int()
 
 
+# box_area：计算 axis-aligned 边界框面积
 def box_area(boxes):
     """
     Computes the area of a set of bounding boxes, which are specified by its (x1, y1, x2, y2) coordinates.
@@ -68,6 +70,7 @@ def box_area(boxes):
 
 
 # Adapted from transformers.models.owlv2.image_processing_owlv2.box_iou
+# box_iou：计算两组边界框的 IoU 矩阵
 def box_iou(boxes1, boxes2):
     import torch
 
@@ -86,6 +89,7 @@ def box_iou(boxes1, boxes2):
     return iou, union
 
 
+# _preprocess_resize_output_shape：resize 后输出尺寸与裁剪区域对齐
 def _preprocess_resize_output_shape(image, output_shape):
     """Validate resize output shape according to input image.
 
@@ -125,6 +129,7 @@ def _preprocess_resize_output_shape(image, output_shape):
     return image, output_shape
 
 
+# _clip_warp_output：仿射变换后裁剪输出到有效图像范围
 def _clip_warp_output(input_image, output_image):
     """Clip output image to range of values of input image.
 
@@ -155,6 +160,7 @@ def _clip_warp_output(input_image, output_image):
     return output_image
 
 
+# _scale_boxes：将归一化框坐标缩放到目标图像尺寸
 def _scale_boxes(boxes, target_sizes):
     """
     Scale batch of bounding boxes to the target sizes.
@@ -188,6 +194,7 @@ def _scale_boxes(boxes, target_sizes):
 
 @auto_docstring
 @requires(backends=("torch",))
+# Owlv2ImageProcessorPil：OWLv2 PIL 后端图像预处理与框变换
 class Owlv2ImageProcessorPil(PilBackend):
     resample = PILImageResampling.BILINEAR
     image_mean = OPENAI_CLIP_MEAN

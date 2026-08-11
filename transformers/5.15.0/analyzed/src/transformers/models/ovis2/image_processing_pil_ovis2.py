@@ -13,6 +13,8 @@
 # limitations under the License.
 """PIL Image processor class for OVIS2."""
 
+# Ovis2 图像处理：自适应分块 tile 与 CLIP 归一化（PIL）
+
 from functools import lru_cache
 
 import numpy as np
@@ -34,6 +36,7 @@ from ...utils import TensorType, auto_docstring
 
 
 # Adapted from transformers.models.ovis2.image_processing_ovis2.Ovis2ImageProcessorKwargs
+# Ovis2ImageProcessorKwargs：Ovis2 图像预处理 kwargs 类型
 class Ovis2ImageProcessorKwargs(ImagesKwargs, total=False):
     """
     crop_to_patches (`bool`, *optional*, defaults to `False`):
@@ -59,6 +62,7 @@ class Ovis2ImageProcessorKwargs(ImagesKwargs, total=False):
 
 # Adapted from transformers.models.ovis2.image_processing_ovis2.get_all_supported_aspect_ratios
 @lru_cache(maxsize=10)
+# get_all_supported_aspect_ratios：枚举 tile 数量约束下允许的宽高比
 def get_all_supported_aspect_ratios(min_image_tiles: int, max_image_tiles: int) -> list[tuple[int, int]]:
     """Computes all allowed aspect ratios for a given minimum and maximum number of input tiles."""
     aspect_ratios = []
@@ -70,6 +74,7 @@ def get_all_supported_aspect_ratios(min_image_tiles: int, max_image_tiles: int) 
 
 
 # Adapted from transformers.models.ovis2.image_processing_ovis2.compute_patch_covering_area
+# compute_patch_covering_area：计算 patch 网格对图像区域的覆盖面积
 def compute_patch_covering_area(left: int, upper: int, right: int, lower: int, side: int) -> float:
     w = right - left
     h = lower - upper
@@ -81,6 +86,7 @@ def compute_patch_covering_area(left: int, upper: int, right: int, lower: int, s
 
 
 # Adapted from transformers.models.ovis2.image_processing_ovis2.split_image_into_grid
+# split_image_into_grid：将图像按网格切分为 patch 坐标块
 def split_image_into_grid(h: int, w: int, grid: tuple[int, int]) -> list[tuple[int, int, int, int]]:
     row_height = h // grid[0]
     col_width = w // grid[1]
@@ -98,6 +104,7 @@ def split_image_into_grid(h: int, w: int, grid: tuple[int, int]) -> list[tuple[i
 
 # Adapted from transformers.models.ovis2.image_processing_ovis2.get_min_tile_covering_grid
 @lru_cache(maxsize=100)
+# get_min_tile_covering_grid：求覆盖 patch 网格的最小 tile 布局
 def get_min_tile_covering_grid(
     image_size: tuple[int, int],
     target_patch_size: int,
@@ -126,6 +133,7 @@ def get_min_tile_covering_grid(
 
 # Adapted from transformers.models.ovis2.image_processing_ovis2.get_optimal_tiled_canvas
 @lru_cache(maxsize=100)
+# get_optimal_tiled_canvas：按图像尺寸选取最优分块画布布局
 def get_optimal_tiled_canvas(
     original_image_size: tuple[int, int],
     target_tile_size: tuple[int, int],
@@ -154,6 +162,7 @@ def get_optimal_tiled_canvas(
 
 
 @auto_docstring
+# Ovis2ImageProcessorPil：Ovis2 PIL 后端图像分块与归一化
 class Ovis2ImageProcessorPil(PilBackend):
     resample = PILImageResampling.BICUBIC
     image_mean = OPENAI_CLIP_MEAN

@@ -13,14 +13,18 @@
 # limitations under the License.
 """OPT model configuration"""
 
+# OPT 配置：Meta OPT 解码器-only 因果 LLM 超参
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# OPTConfig：facebook/opt 解码器-only 因果语言模型超参
 @auto_docstring(checkpoint="facebook/opt-350m")
 @strict
+# OPTConfig：facebook/opt 解码器-only 因果语言模型超参
 class OPTConfig(PreTrainedConfig):
     r"""
     do_layer_norm_before (`bool`, *optional*, defaults to `True`):
@@ -73,6 +77,7 @@ class OPTConfig(PreTrainedConfig):
     layer_norm_elementwise_affine: bool = True
     tie_word_embeddings: bool = True
 
+    # __post_init__：初始化后解析 text/vision 子配置对象
     def __post_init__(self, **kwargs):
         self.word_embed_proj_dim = (
             self.word_embed_proj_dim if self.word_embed_proj_dim is not None else self.hidden_size

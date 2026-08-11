@@ -41,8 +41,11 @@ from ..auto import AutoModel
 from .configuration_ovis2 import Ovis2Config, Ovis2VisionConfig
 
 
+# Ovis2 建模：视觉 ViT + Qwen2 LLM 多模态条件生成
+
 @auto_docstring
 @dataclass
+# BaseModelOutputWithVisualIndicatorFeatures：含视觉指示特征的模型输出
 class BaseModelOutputWithVisualIndicatorFeatures(BaseModelOutputWithPooling):
     r"""
     visual_indicator_features (`torch.FloatTensor` of shape `(batch_size, visual_indicator_size)`):
@@ -58,6 +61,7 @@ class BaseModelOutputWithVisualIndicatorFeatures(BaseModelOutputWithPooling):
     """
 )
 @dataclass
+# Ovis2ModelOutputWithPast：Ovis2 多模态前向输出（含 KV cache）
 class Ovis2ModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     past_key_values (`Cache`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
@@ -79,6 +83,7 @@ class Ovis2ModelOutputWithPast(BaseModelOutputWithPast):
     """
 )
 @dataclass
+# Ovis2CausalLMOutputWithPast：Ovis2 条件生成输出（logits + past）
 class Ovis2CausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -104,6 +109,7 @@ class Ovis2CausalLMOutputWithPast(ModelOutput):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# Ovis2RMSNorm：Ovis2 RMS 层归一化
 class Ovis2RMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -124,6 +130,7 @@ class Ovis2RMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# Ovis2VisionMLP：Ovis2 视觉 SwiGLU 前馈 MLP
 class Ovis2VisionMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -140,6 +147,7 @@ class Ovis2VisionMLP(nn.Module):
         return down_proj
 
 
+# Ovis2VisionEmbeddings：Ovis2 视觉 patch 嵌入与位置编码
 class Ovis2VisionEmbeddings(nn.Module):
     def __init__(self, config: Ovis2VisionConfig):
         super().__init__()
@@ -173,6 +181,7 @@ class Ovis2VisionEmbeddings(nn.Module):
         return embeddings
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -196,6 +205,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# Ovis2VisionAttention：Ovis2 视觉多头自注意力
 class Ovis2VisionAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -254,6 +264,7 @@ class Ovis2VisionAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# Ovis2MLP：Ovis2 通用 SwiGLU 前馈 MLP
 class Ovis2MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -270,6 +281,7 @@ class Ovis2MLP(nn.Module):
         return down_proj
 
 
+# Ovis2VisionEncoderLayer：Ovis2 视觉 Transformer 编码器单层
 class Ovis2VisionEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Ovis2VisionConfig):
         super().__init__()
@@ -295,6 +307,7 @@ class Ovis2VisionEncoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Ovis2VisionEncoder：Ovis2 视觉 Transformer 编码器堆叠
 class Ovis2VisionEncoder(nn.Module):
     """
     Transformer encoder consisting of `config.num_hidden_layers` self attention layers. Each layer is a
@@ -326,6 +339,7 @@ class Ovis2VisionEncoder(nn.Module):
         return BaseModelOutput(last_hidden_state=hidden_states)
 
 
+# Ovis2VisionTransformer：Ovis2 完整视觉 ViT 骨干
 class Ovis2VisionTransformer(nn.Module):
     def __init__(self, config: Ovis2VisionConfig):
         super().__init__()
@@ -356,6 +370,7 @@ class Ovis2VisionTransformer(nn.Module):
         return BaseModelOutput(last_hidden_state=last_hidden_state)
 
 
+# Ovis2VisualEmbeddingTable：视觉指示 token 嵌入查表
 class Ovis2VisualEmbeddingTable(nn.Embedding):
     def forward(self, visual_tokens: torch.Tensor) -> torch.Tensor:
         if visual_tokens.dtype in [torch.int8, torch.int16, torch.int32, torch.int64, torch.long]:
@@ -363,6 +378,7 @@ class Ovis2VisualEmbeddingTable(nn.Embedding):
         return torch.matmul(visual_tokens, self.weight)
 
 
+# Ovis2PreTrainedModel：Ovis2 预训练基类与权重初始化
 class Ovis2PreTrainedModel(PreTrainedModel):
     config: Ovis2Config
     base_model_prefix = "model"
@@ -384,6 +400,7 @@ class Ovis2PreTrainedModel(PreTrainedModel):
             init.copy_(module.position_ids, torch.arange(module.position_ids.shape[-1]).expand((1, -1)))
 
 
+# hard_softmax：直通估计器的 hard softmax（视觉指示 token 离散化）
 def hard_softmax(logits: torch.Tensor, dim: int):
     y_soft = logits.softmax(dim)
     # Straight through.
@@ -394,6 +411,7 @@ def hard_softmax(logits: torch.Tensor, dim: int):
     return ret
 
 
+# Ovis2VisionModel：Ovis2 视觉编码器封装
 class Ovis2VisionModel(Ovis2PreTrainedModel):
     config: Ovis2VisionConfig
     _can_record_outputs = {
@@ -464,6 +482,7 @@ class Ovis2VisionModel(Ovis2PreTrainedModel):
     The Ovis2 model which consists of a vision backbone and a language model, without a language modeling head.
     """
 )
+# Ovis2Model：Ovis2 多模态融合模型（视觉 + 文本 LLM）
 class Ovis2Model(Ovis2PreTrainedModel):
     def __init__(self, config: Ovis2Config):
         super().__init__(config)
@@ -598,6 +617,7 @@ class Ovis2Model(Ovis2PreTrainedModel):
 
 
 @auto_docstring
+# Ovis2ForConditionalGeneration：Ovis2 视觉-语言条件生成
 class Ovis2ForConditionalGeneration(Ovis2PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
 

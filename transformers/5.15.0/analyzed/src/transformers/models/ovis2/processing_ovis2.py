@@ -17,6 +17,9 @@ from ...processing_utils import ProcessingKwargs, ProcessorMixin
 from ...utils import auto_docstring
 
 
+# Ovis2 处理器：图像 token 占位与 tokenizer 联合预处理
+
+# Ovis2ProcessorKwargs：Ovis2 处理器默认 kwargs 类型
 class Ovis2ProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -27,6 +30,7 @@ class Ovis2ProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# Ovis2Processor：Ovis2 图像+文本联合预处理与 chat 模板
 class Ovis2Processor(ProcessorMixin):
     valid_processor_kwargs = Ovis2ProcessorKwargs
 

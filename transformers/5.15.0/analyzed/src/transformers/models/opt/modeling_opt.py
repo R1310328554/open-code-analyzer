@@ -39,9 +39,12 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_opt import OPTConfig
 
 
+# OPT 建模：解码器-only 因果 Transformer 与多任务头
+
 logger = logging.get_logger(__name__)
 
 
+# OPTLearnedPositionalEmbedding：可学习绝对位置嵌入（相对偏移编码）
 class OPTLearnedPositionalEmbedding(nn.Embedding):
     """
     This module learns positional embeddings up to a fixed maximum size.
@@ -71,6 +74,7 @@ class OPTLearnedPositionalEmbedding(nn.Embedding):
 
 
 # Copied from transformers.models.siglip.modeling_siglip.eager_attention_forward
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -94,6 +98,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# OPTAttention：OPT 多头自注意力（可选 bias 与 layer norm 前置）
 class OPTAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -181,6 +186,7 @@ class OPTAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# OPTDecoderLayer：OPT 解码器单层（自注意力 + FFN + 残差）
 class OPTDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: OPTConfig, layer_idx: int | None = None):
         super().__init__()
@@ -254,6 +260,7 @@ class OPTDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# OPTPreTrainedModel：OPT 预训练基类与权重初始化
 class OPTPreTrainedModel(PreTrainedModel):
     config: OPTConfig
     base_model_prefix = "model"
@@ -270,6 +277,7 @@ class OPTPreTrainedModel(PreTrainedModel):
     }
 
 
+# OPTDecoder：OPT 因果 Transformer 解码器堆叠
 class OPTDecoder(OPTPreTrainedModel):
     """
     Transformer decoder consisting of *config.num_hidden_layers* layers. Each layer is a [`OPTDecoderLayer`]
@@ -397,6 +405,7 @@ class OPTDecoder(OPTPreTrainedModel):
 
 
 @auto_docstring
+# OPTModel：OPT 解码器主干（无 LM 头）
 class OPTModel(OPTPreTrainedModel):
     def __init__(self, config: OPTConfig):
         super().__init__(config)
@@ -440,6 +449,7 @@ class OPTModel(OPTPreTrainedModel):
         )
 
 
+# OPTForCausalLM：OPT 因果语言建模与生成头
 class OPTForCausalLM(OPTPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.decoder.embed_tokens.weight"}
 
@@ -538,6 +548,7 @@ class OPTForCausalLM(OPTPreTrainedModel, GenerationMixin):
     each row of the batch).
     """
 )
+# OPTForSequenceClassification：OPT 序列分类任务头
 class OPTForSequenceClassification(OPTPreTrainedModel):
     def __init__(self, config: OPTConfig):
         super().__init__(config)
@@ -641,6 +652,7 @@ class OPTForSequenceClassification(OPTPreTrainedModel):
 
 
 @auto_docstring
+# OPTForQuestionAnswering：OPT 抽取式问答任务头
 class OPTForQuestionAnswering(OPTPreTrainedModel):
     def __init__(self, config: OPTConfig):
         super().__init__(config)

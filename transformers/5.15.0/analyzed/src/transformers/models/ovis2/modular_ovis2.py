@@ -36,6 +36,9 @@ from ..siglip.modeling_siglip import SiglipEncoder, SiglipVisionEmbeddings
 from .configuration_ovis2 import Ovis2Config, Ovis2VisionConfig
 
 
+# Ovis2 modular 源：Llava/Llama/Siglip/Aimv2 组件组合的多模态 LLM
+
+# hard_softmax：直通估计器的 hard softmax（视觉指示 token 离散化）
 def hard_softmax(logits: torch.Tensor, dim: int):
     y_soft = logits.softmax(dim)
     # Straight through.
@@ -48,6 +51,7 @@ def hard_softmax(logits: torch.Tensor, dim: int):
 
 @auto_docstring
 @dataclass
+# BaseModelOutputWithVisualIndicatorFeatures：含视觉指示特征的模型输出
 class BaseModelOutputWithVisualIndicatorFeatures(BaseModelOutputWithPooling):
     r"""
     visual_indicator_features (`torch.FloatTensor` of shape `(batch_size, visual_indicator_size)`):
@@ -57,22 +61,27 @@ class BaseModelOutputWithVisualIndicatorFeatures(BaseModelOutputWithPooling):
     visual_indicator_features: torch.FloatTensor | None = None
 
 
+# Ovis2ModelOutputWithPast：Ovis2 多模态前向输出（含 KV cache）
 class Ovis2ModelOutputWithPast(LlavaNextModelOutputWithPast):
     pass
 
 
+# Ovis2CausalLMOutputWithPast：Ovis2 条件生成输出（logits + past）
 class Ovis2CausalLMOutputWithPast(LlavaNextCausalLMOutputWithPast):
     pass
 
 
+# Ovis2RMSNorm：Ovis2 RMS 层归一化
 class Ovis2RMSNorm(LlamaRMSNorm):
     pass
 
 
+# Ovis2VisionMLP：Ovis2 视觉 SwiGLU 前馈 MLP
 class Ovis2VisionMLP(LlamaMLP):
     pass
 
 
+# Ovis2VisionEmbeddings：Ovis2 视觉 patch 嵌入与位置编码
 class Ovis2VisionEmbeddings(SiglipVisionEmbeddings):
     def __init__(self, config: Ovis2VisionConfig):
         super().__init__(config)
@@ -92,16 +101,19 @@ class Ovis2VisionEmbeddings(SiglipVisionEmbeddings):
         return embeddings
 
 
+# Ovis2VisionAttention：Ovis2 视觉多头自注意力
 class Ovis2VisionAttention(Aimv2Attention):
     pass
 
 
+# Ovis2VisionEncoderLayer：Ovis2 视觉 Transformer 编码器单层
 class Ovis2VisionEncoderLayer(Aimv2EncoderLayer):
     def __init__(self, config: Ovis2VisionConfig):
         super().__init__()
         self.attention = Ovis2VisionAttention(config)
 
 
+# Ovis2VisionEncoder：Ovis2 视觉 Transformer 编码器堆叠
 class Ovis2VisionEncoder(SiglipEncoder):
     def __init__(self, config: Ovis2VisionConfig):
         super().__init__(config)
@@ -122,6 +134,7 @@ class Ovis2VisionEncoder(SiglipEncoder):
         return BaseModelOutput(last_hidden_state=hidden_states)
 
 
+# Ovis2VisionTransformer：Ovis2 完整视觉 ViT 骨干
 class Ovis2VisionTransformer(nn.Module):
     def __init__(self, config: Ovis2VisionConfig):
         super().__init__()
@@ -152,6 +165,7 @@ class Ovis2VisionTransformer(nn.Module):
         return BaseModelOutput(last_hidden_state=last_hidden_state)
 
 
+# Ovis2VisualEmbeddingTable：视觉指示 token 嵌入查表
 class Ovis2VisualEmbeddingTable(nn.Embedding):
     def forward(self, visual_tokens: torch.Tensor) -> torch.Tensor:
         if visual_tokens.dtype in [torch.int8, torch.int16, torch.int32, torch.int64, torch.long]:
@@ -159,6 +173,7 @@ class Ovis2VisualEmbeddingTable(nn.Embedding):
         return torch.matmul(visual_tokens, self.weight)
 
 
+# Ovis2PreTrainedModel：Ovis2 预训练基类与权重初始化
 class Ovis2PreTrainedModel(PreTrainedModel):
     config: Ovis2Config
     base_model_prefix = "model"
@@ -180,6 +195,7 @@ class Ovis2PreTrainedModel(PreTrainedModel):
             init.copy_(module.position_ids, torch.arange(module.position_ids.shape[-1]).expand((1, -1)))
 
 
+# Ovis2VisionModel：Ovis2 视觉编码器封装
 class Ovis2VisionModel(Ovis2PreTrainedModel):
     config: Ovis2VisionConfig
     _can_record_outputs = {
@@ -245,6 +261,7 @@ class Ovis2VisionModel(Ovis2PreTrainedModel):
         )
 
 
+# Ovis2Model：Ovis2 多模态融合模型（视觉 + 文本 LLM）
 class Ovis2Model(LlavaModel):
     def __init__(self, config: Ovis2Config):
         super().__init__(config)
@@ -355,6 +372,7 @@ class Ovis2Model(LlavaModel):
 
 
 @auto_docstring
+# Ovis2ForConditionalGeneration：Ovis2 视觉-语言条件生成
 class Ovis2ForConditionalGeneration(LlavaForConditionalGeneration, GenerationMixin):
     def __init__(self, config: Ovis2Config):
         super().__init__(config)
