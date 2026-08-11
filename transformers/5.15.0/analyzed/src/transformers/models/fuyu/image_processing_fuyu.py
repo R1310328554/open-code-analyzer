@@ -13,6 +13,8 @@
 # limitations under the License.
 """Image processor class for Fuyu."""
 
+# Fuyu 图像处理：Torchvision 后端 resize/pad/patch 切分
+
 import math
 
 import torch
@@ -40,6 +42,7 @@ from ...utils import (
 logger = logging.get_logger(__name__)
 
 
+# make_list_of_list_of_images：将多种嵌套图像输入规范化为二维列表
 def make_list_of_list_of_images(
     images: list[list[ImageInput]] | list[ImageInput] | ImageInput,
 ) -> list[list[ImageInput]]:
@@ -55,6 +58,7 @@ def make_list_of_list_of_images(
     raise ValueError("images must be a list of list of images or a list of images or an image.")
 
 
+# FuyuImagesKwargs：图像处理器可选参数字典类型
 class FuyuImagesKwargs(ImagesKwargs, total=False):
     r"""
     patch_size (`dict[str, int]`, *optional*, defaults to `{"height": 30, "width": 30}`):
@@ -71,6 +75,7 @@ class FuyuImagesKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# FuyuImageProcessor：Torchvision 后端的 Fuyu patch 切分与填充
 class FuyuImageProcessor(TorchvisionBackend):
     do_resize = True
     size = {"height": 1080, "width": 1920}

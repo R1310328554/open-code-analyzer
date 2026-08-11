@@ -13,6 +13,8 @@
 # limitations under the License.
 """Tokenization classes for FSMT."""
 
+# FSMT 分词：Fairseq BPE 双语翻译 tokenizer（Moses 预处理 + 双词表）
+
 import json
 import os
 import re
@@ -31,6 +33,7 @@ VOCAB_FILES_NAMES = {
 }
 
 
+# get_pairs：BPE 合并算法中统计词内相邻符号对频次
 def get_pairs(word):
     """
     Return set of symbol pairs in a word. word is represented as tuple of symbols (symbols being variable-length
@@ -44,6 +47,7 @@ def get_pairs(word):
     return pairs
 
 
+# replace_unicode_punct：Unicode 标点归一化为 ASCII（Moses 预处理）
 def replace_unicode_punct(text):
     """
     Port of https://github.com/moses-smt/mosesdecoder/blob/master/scripts/tokenizer/replace-unicode-punctuation.perl
@@ -87,6 +91,7 @@ def replace_unicode_punct(text):
     return text
 
 
+# remove_non_printing_char：移除不可见控制字符
 def remove_non_printing_char(text):
     """
     Port of https://github.com/moses-smt/mosesdecoder/blob/master/scripts/tokenizer/remove-non-printing-char.perl
@@ -109,6 +114,7 @@ def remove_non_printing_char(text):
 # - langs,
 
 
+# FSMTTokenizer：FSMT BPE 分词器（Fairseq 双语翻译预处理管线）
 class FSMTTokenizer(PreTrainedTokenizer):
     """
     Construct an FAIRSEQ Transformer tokenizer. Based on Byte-Pair Encoding. The tokenization process is the following:

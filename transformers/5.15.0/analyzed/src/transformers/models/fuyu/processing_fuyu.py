@@ -15,6 +15,8 @@
 Image/Text processor class for GIT
 """
 
+# FuyuProcessor：图像 patch 与文本/坐标混合 prompt 的多模态预处理
+
 import re
 from typing import Union
 
@@ -52,6 +54,7 @@ TOKEN_POINT_CLOSE_STRING = "<0x03>"  # </point>
 BEGINNING_OF_ANSWER_STRING = "<0x04>"  # <boa>
 
 
+# FuyuProcessorKwargs：Processor 可选参数字典类型
 class FuyuProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -70,6 +73,7 @@ class FuyuProcessorKwargs(ProcessingKwargs, total=False):
     }
 
 
+# full_unpacked_stream_to_tensor：将展开 token 流重组为 batch 张量
 def full_unpacked_stream_to_tensor(
     all_bi_tokens_to_place: list[int],
     full_unpacked_stream: list["torch.Tensor"],
@@ -101,6 +105,7 @@ def full_unpacked_stream_to_tensor(
     return new_padded_tensor
 
 
+# construct_full_unpacked_stream：构造含图像占位符的完整 token 流
 def construct_full_unpacked_stream(
     num_real_text_tokens: Union[list[list[int]], "torch.Tensor"],
     input_stream: "torch.Tensor",
@@ -129,6 +134,7 @@ def construct_full_unpacked_stream(
     return all_bi_stream
 
 
+# _replace_string_repr_with_token_tags：bbox/point 文本标签替换为特殊 token
 def _replace_string_repr_with_token_tags(prompt: str) -> str:
     prompt = prompt.replace(TEXT_REPR_POINT_OPEN, TOKEN_POINT_OPEN_STRING)
     prompt = prompt.replace(TEXT_REPR_POINT_CLOSE, TOKEN_POINT_CLOSE_STRING)
@@ -137,6 +143,7 @@ def _replace_string_repr_with_token_tags(prompt: str) -> str:
     return prompt
 
 
+# _segment_prompt_into_text_token_conversions：将 prompt 分段为文本与坐标转换段
 def _segment_prompt_into_text_token_conversions(prompt: str) -> list:
     """
     Given a string prompt, converts the prompt into a list of TextTokenConversions.
@@ -162,6 +169,7 @@ def _segment_prompt_into_text_token_conversions(prompt: str) -> list:
     return prompt_text_list
 
 
+# _transform_coordinates_and_tokenize：坐标缩放并按子串分词
 def _transform_coordinates_and_tokenize(prompt: str, scale_factor: float, tokenizer) -> list[int]:
     """
     This function transforms the prompt in the following fashion:
@@ -194,6 +202,7 @@ def _transform_coordinates_and_tokenize(prompt: str, scale_factor: float, tokeni
     return transformed_prompt_tokens
 
 
+# _transform_within_tags：解析 bbox/point 标签内坐标并 tokenize
 def _transform_within_tags(text: str, scale_factor: float, tokenizer) -> list[int]:
     """
     Given a bounding box of the fashion <box>1, 2, 3, 4</box> | <point>1, 2</point> This function is responsible for
@@ -229,6 +238,7 @@ def _transform_within_tags(text: str, scale_factor: float, tokenizer) -> list[in
     return [token_space_open_string] + tokens + [token_space_close_string]
 
 
+# _tokenize_prompts_with_image_and_batch：含图像占位符的 prompt 批量分词
 def _tokenize_prompts_with_image_and_batch(
     tokenizer,
     prompts: list[list[str]],
@@ -303,21 +313,25 @@ def _tokenize_prompts_with_image_and_batch(
 
 
 # Simplified assuming self.crop_top = self.padding_top = 0
+# original_to_transformed_h_coords：原始高度坐标映射到变换后图像
 def original_to_transformed_h_coords(original_coords, scale_h):
     return np.round(original_coords * scale_h).astype(np.int32)
 
 
 # Simplified assuming self.crop_left = self.padding_left = 0
+# original_to_transformed_w_coords：原始宽度坐标映射到变换后图像
 def original_to_transformed_w_coords(original_coords, scale_w):
     return np.round(original_coords * scale_w).astype(np.int32)
 
 
+# scale_point_to_transformed_image：点坐标按缩放因子映射到 patch 网格
 def scale_point_to_transformed_image(x: float, y: float, scale_factor: float) -> list[int]:
     x_scaled = original_to_transformed_w_coords(np.array([x / 2]), scale_factor)[0]
     y_scaled = original_to_transformed_h_coords(np.array([y / 2]), scale_factor)[0]
     return [x_scaled, y_scaled]
 
 
+# scale_bbox_to_transformed_image：边界框坐标按缩放因子映射到 patch 网格
 def scale_bbox_to_transformed_image(
     top: float, left: float, bottom: float, right: float, scale_factor: float
 ) -> list[int]:
@@ -330,6 +344,7 @@ def scale_bbox_to_transformed_image(
 
 @requires(backends=("vision",))
 @auto_docstring
+# FuyuProcessor：封装图像预处理、坐标 token 化与 batch 组装的联合入口
 class FuyuProcessor(ProcessorMixin):
     valid_processor_kwargs = FuyuProcessorKwargs
 

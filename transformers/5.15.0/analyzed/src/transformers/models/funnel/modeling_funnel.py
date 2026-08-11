@@ -13,6 +13,8 @@
 # limitations under the License.
 """PyTorch Funnel Transformer model."""
 
+# Funnel 建模：逐 block 池化压缩序列长度的 BERT/ELECTRA 风格 Transformer
+
 from dataclasses import dataclass
 
 import numpy as np
@@ -41,6 +43,7 @@ logger = logging.get_logger(__name__)
 INF = 1e6
 
 
+# FunnelEmbeddings：词嵌入 + LayerNorm + Dropout
 class FunnelEmbeddings(nn.Module):
     def __init__(self, config: FunnelConfig) -> None:
         super().__init__()
@@ -58,6 +61,7 @@ class FunnelEmbeddings(nn.Module):
         return embeddings
 
 
+# FunnelAttentionStructure：相对位置/分解式注意力结构（含池化与掩码）
 class FunnelAttentionStructure(nn.Module):
     """
     Contains helpers for `FunnelRelMultiheadAttention `.
@@ -318,6 +322,7 @@ class FunnelAttentionStructure(nn.Module):
         return attention_inputs
 
 
+# _relative_shift_gather：相对位置注意力 gather 偏移对齐
 def _relative_shift_gather(positional_attn: torch.Tensor, context_len: int, shift: int) -> torch.Tensor:
     batch_size, n_head, seq_len, max_rel_len = positional_attn.shape
     # max_rel_len = 2 * context_len + shift -1 is the numbers of possible relative positions i-j
@@ -334,6 +339,7 @@ def _relative_shift_gather(positional_attn: torch.Tensor, context_len: int, shif
     return positional_attn
 
 
+# FunnelRelMultiheadAttention：Funnel 相对位置多头自注意力
 class FunnelRelMultiheadAttention(nn.Module):
     def __init__(self, config: FunnelConfig, block_index: int) -> None:
         super().__init__()
@@ -478,6 +484,7 @@ class FunnelRelMultiheadAttention(nn.Module):
         return (output, attn_prob) if output_attentions else (output,)
 
 
+# FunnelPositionwiseFFN：逐位置前馈 FFN 子层
 class FunnelPositionwiseFFN(nn.Module):
     def __init__(self, config: FunnelConfig) -> None:
         super().__init__()
@@ -497,6 +504,7 @@ class FunnelPositionwiseFFN(nn.Module):
         return self.layer_norm(hidden + h)
 
 
+# FunnelLayer：单层注意力 + FFN（含残差与 LayerNorm）
 class FunnelLayer(nn.Module):
     def __init__(self, config: FunnelConfig, block_index: int) -> None:
         super().__init__()
@@ -516,6 +524,7 @@ class FunnelLayer(nn.Module):
         return (output, attn[1]) if output_attentions else (output,)
 
 
+# FunnelEncoder：多 block 堆叠编码器（含逐 block 池化下采样）
 class FunnelEncoder(nn.Module):
     def __init__(self, config: FunnelConfig) -> None:
         super().__init__()
@@ -579,6 +588,7 @@ class FunnelEncoder(nn.Module):
         return BaseModelOutput(last_hidden_state=hidden, hidden_states=all_hidden_states, attentions=all_attentions)
 
 
+# upsample：解码器路径将压缩序列上采样回原始长度
 def upsample(
     x: torch.Tensor, stride: int, target_len: int, separate_cls: bool = True, truncate_seq: bool = False
 ) -> torch.Tensor:
@@ -601,6 +611,7 @@ def upsample(
     return output
 
 
+# FunnelDecoder：将压缩隐状态上采样并与编码器特征融合
 class FunnelDecoder(nn.Module):
     def __init__(self, config: FunnelConfig) -> None:
         super().__init__()
@@ -650,6 +661,7 @@ class FunnelDecoder(nn.Module):
         return BaseModelOutput(last_hidden_state=hidden, hidden_states=all_hidden_states, attentions=all_attentions)
 
 
+# FunnelDiscriminatorPredictions：ELECTRA 风格判别器预测头
 class FunnelDiscriminatorPredictions(nn.Module):
     """Prediction module for the discriminator, made up of two dense layers."""
 
@@ -667,6 +679,7 @@ class FunnelDiscriminatorPredictions(nn.Module):
 
 
 @auto_docstring
+# FunnelPreTrainedModel：Funnel 预训练基类与权重初始化
 class FunnelPreTrainedModel(PreTrainedModel):
     config: FunnelConfig
     base_model_prefix = "funnel"
@@ -698,6 +711,7 @@ class FunnelPreTrainedModel(PreTrainedModel):
                 init.zeros_(module.word_embeddings.weight[module.word_embeddings.padding_idx])
 
 
+# FunnelClassificationHead：序列分类池化 + 线性头
 class FunnelClassificationHead(nn.Module):
     def __init__(self, config: FunnelConfig, n_labels: int) -> None:
         super().__init__()
@@ -718,6 +732,7 @@ class FunnelClassificationHead(nn.Module):
     """
 )
 @dataclass
+# FunnelForPreTrainingOutput：预训练阶段输出 dataclass
 class FunnelForPreTrainingOutput(ModelOutput):
     r"""
     loss (*optional*, returned when `labels` is provided, `torch.FloatTensor` of shape `(1,)`):
@@ -738,6 +753,7 @@ class FunnelForPreTrainingOutput(ModelOutput):
     decoder) or any task-specific head on top.
     """
 )
+# FunnelBaseModel：仅编码器主干（无解码器上采样）
 class FunnelBaseModel(FunnelPreTrainedModel):
     def __init__(self, config: FunnelConfig) -> None:
         super().__init__(config)
@@ -805,6 +821,7 @@ class FunnelBaseModel(FunnelPreTrainedModel):
 
 
 @auto_docstring
+# FunnelModel：编码器 + 解码器完整 Funnel 主干
 class FunnelModel(FunnelPreTrainedModel):
     def __init__(self, config: FunnelConfig) -> None:
         super().__init__(config)
@@ -904,6 +921,7 @@ class FunnelModel(FunnelPreTrainedModel):
     generated tokens.
     """
 )
+# FunnelForPreTraining：MLM + 判别器联合预训练
 class FunnelForPreTraining(FunnelPreTrainedModel):
     def __init__(self, config: FunnelConfig) -> None:
         super().__init__(config)
@@ -985,6 +1003,7 @@ class FunnelForPreTraining(FunnelPreTrainedModel):
 
 
 @auto_docstring
+# FunnelForMaskedLM：掩码语言建模下游任务
 class FunnelForMaskedLM(FunnelPreTrainedModel):
     _tied_weights_keys = {"lm_head.weight": "funnel.embeddings.word_embeddings.weight"}
 
@@ -1060,6 +1079,7 @@ class FunnelForMaskedLM(FunnelPreTrainedModel):
     first timestep of the last hidden state) e.g. for GLUE tasks.
     """
 )
+# FunnelForSequenceClassification：序列分类下游任务头
 class FunnelForSequenceClassification(FunnelPreTrainedModel):
     def __init__(self, config: FunnelConfig) -> None:
         super().__init__(config)
@@ -1142,6 +1162,7 @@ class FunnelForSequenceClassification(FunnelPreTrainedModel):
 
 
 @auto_docstring
+# FunnelForMultipleChoice：多选阅读理解任务头
 class FunnelForMultipleChoice(FunnelPreTrainedModel):
     def __init__(self, config: FunnelConfig) -> None:
         super().__init__(config)
@@ -1215,6 +1236,7 @@ class FunnelForMultipleChoice(FunnelPreTrainedModel):
 
 
 @auto_docstring
+# FunnelForTokenClassification：Token 级序列标注头
 class FunnelForTokenClassification(FunnelPreTrainedModel):
     def __init__(self, config: FunnelConfig) -> None:
         super().__init__(config)
@@ -1278,6 +1300,7 @@ class FunnelForTokenClassification(FunnelPreTrainedModel):
 
 
 @auto_docstring
+# FunnelForQuestionAnswering：抽取式问答 span 预测头
 class FunnelForQuestionAnswering(FunnelPreTrainedModel):
     def __init__(self, config: FunnelConfig) -> None:
         super().__init__(config)

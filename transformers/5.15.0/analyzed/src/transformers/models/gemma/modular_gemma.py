@@ -27,6 +27,7 @@ from ...modeling_rope_utils import RopeParameters
 from ...modeling_utils import PreTrainedModel
 from ...processing_utils import Unpack
 from ...utils import TransformersKwargs, auto_docstring, logging
+# modular 复用 Llama 的注意力/MLP/解码器层实现
 from ..llama.modeling_llama import (
     LlamaAttention,
     LlamaForCausalLM,
@@ -46,8 +47,10 @@ SPIECE_UNDERLINE = "▁"
 logger = logging.get_logger(__name__)
 
 
+# Gemma modular 源：基于 Llama 模块扩展 Gemma 特有 RMSNorm 与 embed 缩放
 @auto_docstring(checkpoint="google/gemma-7b")
 @strict
+# GemmaConfig：Google Gemma 解码器-only Transformer 超参
 class GemmaConfig(PreTrainedConfig):
     r"""
     use_bidirectional_attention (`bool`, *optional*):
@@ -102,6 +105,7 @@ class GemmaConfig(PreTrainedConfig):
     use_bidirectional_attention: bool | None = None
 
 
+# GemmaTextScaledWordEmbedding：带 embed_scale 缩放的词嵌入层
 class GemmaTextScaledWordEmbedding(nn.Embedding):
     """
     This module overrides nn.Embeddings' forward by multiplying with embeddings scale.
@@ -116,6 +120,7 @@ class GemmaTextScaledWordEmbedding(nn.Embedding):
         return super().forward(input_ids) * self.embed_scale.to(self.weight.dtype)
 
 
+# GemmaRMSNorm：Gemma 专用 RMS LayerNorm（含 (1+weight) 缩放）
 class GemmaRMSNorm(nn.Module):
     def __init__(self, dim: int, eps: float = 1e-6):
         super().__init__()
@@ -136,6 +141,7 @@ class GemmaRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.eps}"
 
 
+# GemmaMLP：Gemma 前馈 MLP（GELU-tanh 激活）
 class GemmaMLP(LlamaMLP):
     def __init__(self, config):
         super().__init__(config)
@@ -144,10 +150,12 @@ class GemmaMLP(LlamaMLP):
         self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=False)
 
 
+# GemmaRotaryEmbedding：RoPE 旋转位置编码
 class GemmaRotaryEmbedding(LlamaRotaryEmbedding):
     pass
 
 
+# GemmaAttention：Gemma 多头自注意力（支持 GQA 与多种 backend）
 class GemmaAttention(LlamaAttention):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -156,6 +164,7 @@ class GemmaAttention(LlamaAttention):
         self.is_causal = not getattr(config, "use_bidirectional_attention", False)
 
 
+# GemmaPreTrainedModel：Gemma 预训练基类与权重初始化
 class GemmaPreTrainedModel(LlamaPreTrainedModel):
     @torch.no_grad()
     def _init_weights(self, module):
@@ -167,6 +176,7 @@ class GemmaPreTrainedModel(LlamaPreTrainedModel):
             init.constant_(module.embed_scale, module.scalar_embed_scale)
 
 
+# GemmaModel：Gemma 解码器-only 主干（堆叠 DecoderLayer）
 class GemmaModel(LlamaModel):
     def __init__(self, config: GemmaConfig):
         super().__init__(config)
@@ -228,6 +238,7 @@ class GemmaModel(LlamaModel):
         )
 
 
+# GemmaForCausalLM：Gemma 因果语言建模与文本生成
 class GemmaForCausalLM(LlamaForCausalLM):
     def forward(**super_kwargs):
         r"""
@@ -250,10 +261,12 @@ class GemmaForCausalLM(LlamaForCausalLM):
         return super().forward(**super_kwargs)
 
 
+# GemmaForSequenceClassification：Gemma 序列分类下游任务头
 class GemmaForSequenceClassification(LlamaForSequenceClassification):
     pass
 
 
+# GemmaForTokenClassification：Gemma Token 级序列标注头
 class GemmaForTokenClassification(LlamaForTokenClassification):
     pass
 

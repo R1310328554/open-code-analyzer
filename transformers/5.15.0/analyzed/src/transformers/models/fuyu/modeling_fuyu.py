@@ -13,6 +13,8 @@
 # limitations under the License.
 """PyTorch Fuyu model."""
 
+# Fuyu 建模：Adept 任意分辨率视觉-语言模型（Persimmon + 图像 patch 嵌入）
+
 import torch
 from torch import nn
 
@@ -30,6 +32,7 @@ logger = logging.get_logger(__name__)
 
 
 @auto_docstring
+# FuyuPreTrainedModel：Fuyu 多模态预训练基类
 class FuyuPreTrainedModel(PreTrainedModel):
     config: FuyuConfig
     base_model_prefix = "model"
@@ -48,6 +51,7 @@ class FuyuPreTrainedModel(PreTrainedModel):
     The Fuyu model which consists of a vision backbone and a language model, without a language modeling head.
     """
 )
+# FuyuModel：Persimmon 视觉骨干 + 语言模型联合主干（无 LM 头）
 class FuyuModel(FuyuPreTrainedModel):
     def __init__(self, config: FuyuConfig):
         super().__init__(config)
@@ -205,6 +209,7 @@ class FuyuModel(FuyuPreTrainedModel):
     Fuyu Model with a language modeling head on top for causal language model conditioned on image patches and text.
     """
 )
+# FuyuForCausalLM：Fuyu 视觉-语言因果语言建模与生成
 class FuyuForCausalLM(FuyuPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
 

@@ -13,6 +13,8 @@
 # limitations under the License.
 """Image processor class for Fuyu."""
 
+# Fuyu 图像处理：PIL 后端 resize/pad/patch 切分
+
 import math
 from typing import TYPE_CHECKING
 
@@ -40,6 +42,7 @@ if is_torch_available():
     import torch
 
 
+# FuyuImagesKwargs：图像处理器可选参数字典类型
 class FuyuImagesKwargs(ImagesKwargs, total=False):
     r"""
     patch_size (`dict[str, int]`, *optional*, defaults to `{"height": 30, "width": 30}`):
@@ -56,6 +59,7 @@ class FuyuImagesKwargs(ImagesKwargs, total=False):
 
 
 # Adapted from transformers.models.fuyu.image_processing_fuyu.make_list_of_list_of_images
+# make_list_of_list_of_images：将多种嵌套图像输入规范化为二维列表
 def make_list_of_list_of_images(
     images: list[list[ImageInput]] | list[ImageInput] | ImageInput,
 ) -> list[list[ImageInput]]:
@@ -73,6 +77,7 @@ def make_list_of_list_of_images(
 
 @auto_docstring
 @requires(backends=("torch",))
+# FuyuImageProcessorPil：PIL 后端的 Fuyu 图像预处理
 class FuyuImageProcessorPil(PilBackend):
     do_resize = True
     size = {"height": 1080, "width": 1920}

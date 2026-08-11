@@ -24,8 +24,10 @@ from ..auto import CONFIG_MAPPING, AutoConfig
 logger = logging.get_logger(__name__)
 
 
+# FuyuConfig：adept/fuyu-8b 多模态视觉-语言默认超参
 @auto_docstring(checkpoint="adept/fuyu-8b")
 @strict
+# FuyuConfig：Adept Fuyu 多模态视觉-语言因果 LM 联合超参
 class FuyuConfig(PreTrainedConfig):
     r"""
     Example:

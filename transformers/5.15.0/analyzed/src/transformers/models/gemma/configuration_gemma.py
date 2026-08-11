@@ -27,8 +27,10 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# GemmaConfig：google/gemma-7b 解码器-only 默认超参
 @auto_docstring(checkpoint="google/gemma-7b")
 @strict
+# GemmaConfig：Google Gemma 解码器-only Transformer 超参
 class GemmaConfig(PreTrainedConfig):
     r"""
     use_bidirectional_attention (`bool`, *optional*):

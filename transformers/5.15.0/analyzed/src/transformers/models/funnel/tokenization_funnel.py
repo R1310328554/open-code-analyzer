@@ -13,6 +13,8 @@
 # limitations under the License.
 """Tokenization class for Funnel Transformer."""
 
+# Funnel 分词：WordPiece 词表，适配 Funnel Transformer 预训练格式
+
 from tokenizers import Tokenizer, decoders, normalizers, pre_tokenizers, processors
 from tokenizers.models import WordPiece
 
@@ -38,6 +40,7 @@ _model_names = [
 ]
 
 
+# FunnelTokenizer：Funnel WordPiece 分词器（tokenizers 后端）
 class FunnelTokenizer(TokenizersBackend):
     r"""
     Construct a Funnel Transformer tokenizer (backed by HuggingFace's tokenizers library). Based on WordPiece.

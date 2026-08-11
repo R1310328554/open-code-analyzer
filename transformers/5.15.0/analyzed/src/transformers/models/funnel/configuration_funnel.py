@@ -19,8 +19,10 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# FunnelConfig：funnel-transformer/small 逐层池化 Transformer 默认超参
 @auto_docstring(checkpoint="funnel-transformer/small")
 @strict
+# FunnelConfig：Google Funnel Transformer 逐层池化压缩序列的 BERT 风格超参
 class FunnelConfig(PreTrainedConfig):
     r"""
     block_sizes (`list[int]`, *optional*, defaults to `[4, 4, 4]`):

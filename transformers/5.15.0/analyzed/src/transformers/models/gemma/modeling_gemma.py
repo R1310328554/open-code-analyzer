@@ -44,9 +44,11 @@ from ...utils import TransformersKwargs, auto_docstring, can_return_tuple
 from ...utils.deprecation import deprecate_kwarg
 from ...utils.generic import maybe_autocast, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
+# modeling_gemma 由 modular_gemma.py 自动生成，此处为独立完整实现
 from .configuration_gemma import GemmaConfig
 
 
+# Gemma 建模：Google 开源解码器-only Transformer（RMSNorm + GQA + RoPE）
 class GemmaTextScaledWordEmbedding(nn.Embedding):
     """
     This module overrides nn.Embeddings' forward by multiplying with embeddings scale.
@@ -61,6 +63,7 @@ class GemmaTextScaledWordEmbedding(nn.Embedding):
         return super().forward(input_ids) * self.embed_scale.to(self.weight.dtype)
 
 
+# GemmaRMSNorm：Gemma 专用 RMS LayerNorm（含 (1+weight) 缩放）
 class GemmaRMSNorm(nn.Module):
     def __init__(self, dim: int, eps: float = 1e-6):
         super().__init__()
@@ -81,6 +84,7 @@ class GemmaRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.eps}"
 
 
+# GemmaMLP：Gemma 前馈 MLP（GELU-tanh 激活）
 class GemmaMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -97,6 +101,7 @@ class GemmaMLP(nn.Module):
         return down_proj
 
 
+# GemmaRotaryEmbedding：RoPE 旋转位置编码
 class GemmaRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: GemmaConfig, device=None):
@@ -154,6 +159,7 @@ class GemmaRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# rotate_half：RoPE 中将向量后半部分旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -162,6 +168,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -187,6 +194,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -199,6 +207,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -225,6 +234,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# GemmaAttention：Gemma 多头自注意力（支持 GQA 与多种 backend）
 class GemmaAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -292,6 +302,7 @@ class GemmaAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# GemmaDecoderLayer：Gemma 解码器单层（自注意力 + MLP + RMSNorm）
 class GemmaDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: GemmaConfig, layer_idx: int):
         super().__init__()
@@ -336,6 +347,7 @@ class GemmaDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# GemmaPreTrainedModel：Gemma 预训练基类与权重初始化
 class GemmaPreTrainedModel(PreTrainedModel):
     config: GemmaConfig
     base_model_prefix = "model"
@@ -364,6 +376,7 @@ class GemmaPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# GemmaModel：Gemma 解码器-only 主干（堆叠 DecoderLayer）
 class GemmaModel(GemmaPreTrainedModel):
     def __init__(self, config: GemmaConfig):
         super().__init__(config)
@@ -440,6 +453,7 @@ class GemmaModel(GemmaPreTrainedModel):
 
 
 @auto_docstring
+# GemmaForCausalLM：Gemma 因果语言建模与文本生成
 class GemmaForCausalLM(GemmaPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
@@ -514,10 +528,12 @@ class GemmaForCausalLM(GemmaPreTrainedModel, GenerationMixin):
         )
 
 
+# GemmaForSequenceClassification：Gemma 序列分类下游任务头
 class GemmaForSequenceClassification(GenericForSequenceClassification, GemmaPreTrainedModel):
     pass
 
 
+# GemmaForTokenClassification：Gemma Token 级序列标注头
 class GemmaForTokenClassification(GenericForTokenClassification, GemmaPreTrainedModel):
     pass
 
