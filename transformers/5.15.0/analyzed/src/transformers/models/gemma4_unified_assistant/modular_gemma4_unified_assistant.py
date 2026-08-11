@@ -15,6 +15,9 @@
 from ..gemma4_assistant.modeling_gemma4_assistant import Gemma4AssistantForCausalLM
 
 
+# Gemma 4 统一助手 modular 源：基于 Gemma4Assistant 扩展 KV 共享接口
+
+# Gemma4UnifiedAssistantForCausalLM：Gemma 4 统一助手因果 LM（KV 共享推理）
 class Gemma4UnifiedAssistantForCausalLM(Gemma4AssistantForCausalLM):
     _fsdp_plan = AttributeError()
 

@@ -40,6 +40,7 @@ from ..gemma4.image_processing_gemma4 import (
     convert_image_to_patches,
     pad_along_first_dim,
 )
+# modular 复用 Gemma4 的注意力/MLP/多模态嵌入等核心实现
 from ..gemma4.modeling_gemma4 import (
     Gemma4CausalLMOutputWithPast,
     Gemma4ForCausalLM,
@@ -66,6 +67,9 @@ from ..gemma4.video_processing_gemma4 import (
 from ..llama.modeling_llama import LlamaModel
 
 
+# Gemma 4 统一 modular 源：基于 Gemma4 扩展三模态嵌入与 KV 共享
+
+# Gemma4UnifiedImageProcessorKwargs：图像处理器可选参数字典类型
 class Gemma4UnifiedImageProcessorKwargs(Gemma4ImageProcessorKwargs):
     """
     patch_size (`int`, *optional*):
@@ -78,6 +82,7 @@ class Gemma4UnifiedImageProcessorKwargs(Gemma4ImageProcessorKwargs):
     """
 
 
+# patches_merge：合并 teacher patch 为 model patch（池化降采样）
 def patches_merge(
     patches: "torch.Tensor",
     positions_xy: "torch.Tensor",
@@ -153,6 +158,7 @@ def patches_merge(
 
 
 @auto_docstring(custom_intro="Constructs a Gemma4 unified image processor.")
+# Gemma4UnifiedImageProcessor：Torchvision 后端的 Gemma 4 统一图像预处理
 class Gemma4UnifiedImageProcessor(Gemma4ImageProcessor):
     def _preprocess(
         self,
@@ -241,10 +247,12 @@ class Gemma4UnifiedImageProcessor(Gemma4ImageProcessor):
         return BatchFeature(data=data, tensor_type=return_tensors)
 
 
+# Gemma4UnifiedVideoProcessorKwargs：视频处理器可选参数字典类型
 class Gemma4UnifiedVideoProcessorKwargs(Gemma4VideoProcessorKwargs):
     pass
 
 
+# Gemma4UnifiedVideoProcessor：Gemma 4 统一视频帧 patch 预处理
 class Gemma4UnifiedVideoProcessor(Gemma4VideoProcessor):
     def _preprocess(
         self,
@@ -329,10 +337,12 @@ class Gemma4UnifiedVideoProcessor(Gemma4VideoProcessor):
         return BatchFeature(data=data, tensor_type=return_tensors)
 
 
+# Gemma4UnifiedProcessorKwargs：Processor 可选参数字典类型
 class Gemma4UnifiedProcessorKwargs(Gemma4ProcessorKwargs):
     pass
 
 
+# Gemma4UnifiedProcessor：图像/视频/音频与分词器联合的多模态输入管线
 class Gemma4UnifiedProcessor(Gemma4Processor):
     def replace_audio_token(self, audio_inputs: dict, audio_idx: int, **kwargs) -> str:
         """Replace the audio placeholder with the correct number of audio tokens.
@@ -370,6 +380,7 @@ class Gemma4UnifiedProcessor(Gemma4Processor):
 
 @auto_docstring(checkpoint="google/gemma-4-12B-it")
 @strict
+# Gemma4UnifiedAudioConfig：Gemma 4 统一多模态音频编码器超参（原始波形软 token）
 class Gemma4UnifiedAudioConfig(PreTrainedConfig):
     r"""
     audio_embed_dim (`int`, defaults to 640):
@@ -422,6 +433,7 @@ class Gemma4UnifiedAudioConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="google/gemma-4-12B-it")
 @strict
+# Gemma4UnifiedTextConfig：Gemma 4 统一文本解码器超参（滑动窗口 + KV 共享）
 class Gemma4UnifiedTextConfig(Gemma4TextConfig):
     r"""
     use_bidirectional_attention (`str`, *optional*):
@@ -467,6 +479,7 @@ class Gemma4UnifiedTextConfig(Gemma4TextConfig):
 
 @auto_docstring(checkpoint="google/gemma-4-12B-it")
 @strict
+# Gemma4UnifiedVisionConfig：Gemma 4 统一视觉 patch 嵌入超参（无独立 ViT 塔）
 class Gemma4UnifiedVisionConfig(PreTrainedConfig):
     r"""
     patch_size (`int`, defaults to 16):
@@ -512,6 +525,7 @@ class Gemma4UnifiedVisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="google/gemma-4-12B-it")
 @strict
+# Gemma4UnifiedConfig：Gemma 4 文本+视觉+音频三模态联合配置
 class Gemma4UnifiedConfig(Gemma4Config):
     sub_configs = {
         "text_config": Gemma4UnifiedTextConfig,
@@ -526,6 +540,7 @@ class Gemma4UnifiedConfig(Gemma4Config):
 
 @auto_docstring
 @dataclass
+# Gemma4UnifiedAudioModelOutput：音频多模态投影输出 dataclass
 class Gemma4UnifiedAudioModelOutput(ModelOutput):
     r"""
     pooler_output (`torch.FloatTensor` of shape `(batch_size, ..., hidden_size)`):
@@ -540,6 +555,7 @@ class Gemma4UnifiedAudioModelOutput(ModelOutput):
 
 @auto_docstring
 @dataclass
+# Gemma4UnifiedVisionModelOutput：视觉多模态投影输出 dataclass
 class Gemma4UnifiedVisionModelOutput(ModelOutput):
     r"""
     pooler_output (`torch.FloatTensor` of shape `(batch_size, ..., hidden_size)`):
@@ -549,34 +565,42 @@ class Gemma4UnifiedVisionModelOutput(ModelOutput):
     pooler_output: torch.FloatTensor | None = None
 
 
+# Gemma4UnifiedTextModelOutputWithPast：含 shared_kv_states 的文本主干输出
 class Gemma4UnifiedTextModelOutputWithPast(Gemma4TextModelOutputWithPast):
     pass
 
 
+# Gemma4UnifiedCausalLMOutputWithPast：统一多模态因果 LM 输出 dataclass
 class Gemma4UnifiedCausalLMOutputWithPast(Gemma4CausalLMOutputWithPast):
     pass
 
 
+# Gemma4UnifiedModelOutputWithPast：多模态联合主干输出 dataclass
 class Gemma4UnifiedModelOutputWithPast(Gemma4ModelOutputWithPast):
     pass
 
 
+# Gemma4UnifiedRMSNorm：Gemma 4 统一 RMS LayerNorm
 class Gemma4UnifiedRMSNorm(Gemma4RMSNorm):
     pass
 
 
+# Gemma4UnifiedTextRotaryEmbedding：Gemma 4 统一 RoPE 旋转位置编码
 class Gemma4UnifiedTextRotaryEmbedding(Gemma4TextRotaryEmbedding):
     pass
 
 
+# Gemma4UnifiedTextAttention：Gemma 4 统一多头自注意力（滑动窗口 + softcapping）
 class Gemma4UnifiedTextAttention(Gemma4TextAttention):
     pass
 
 
+# Gemma4UnifiedTextMLP：Gemma 4 统一前馈 MLP（GELU-tanh 激活）
 class Gemma4UnifiedTextMLP(Gemma4TextMLP):
     pass
 
 
+# Gemma4UnifiedTextDecoderLayer：Gemma 4 统一解码器单层（自注意力 + MLP）
 class Gemma4UnifiedTextDecoderLayer(Gemma2DecoderLayer):
     def __init__(self, config: Gemma4UnifiedTextConfig | Gemma4UnifiedVisionConfig, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -621,10 +645,12 @@ class Gemma4UnifiedTextDecoderLayer(Gemma2DecoderLayer):
         return hidden_states
 
 
+# Gemma4UnifiedTextScaledWordEmbedding：带 embed_scale 缩放的词嵌入层
 class Gemma4UnifiedTextScaledWordEmbedding(Gemma4TextScaledWordEmbedding):
     pass
 
 
+# Gemma4UnifiedPreTrainedModel：Gemma 4 统一预训练基类与权重初始化
 class Gemma4UnifiedPreTrainedModel(Gemma4PreTrainedModel):
     _no_split_modules = ["Gemma4UnifiedTextDecoderLayer"]
 
@@ -658,6 +684,7 @@ class Gemma4UnifiedPreTrainedModel(Gemma4PreTrainedModel):
 
 
 @auto_docstring(custom_intro="The base Gemma 4 unified language model without a language modeling head.")
+# Gemma4UnifiedTextModel：Gemma 4 统一纯文本解码器主干
 class Gemma4UnifiedTextModel(Gemma4UnifiedPreTrainedModel, LlamaModel):
     config: Gemma4UnifiedTextConfig
     input_modalities = ("text",)
@@ -748,6 +775,7 @@ class Gemma4UnifiedTextModel(Gemma4UnifiedPreTrainedModel, LlamaModel):
         )
 
 
+# Gemma4UnifiedForCausalLM：Gemma 4 统一纯文本因果语言建模
 class Gemma4UnifiedForCausalLM(Gemma4ForCausalLM):
     def forward(
         self,
@@ -812,6 +840,7 @@ class Gemma4UnifiedForCausalLM(Gemma4ForCausalLM):
         )
 
 
+# Gemma4UnifiedVisionEmbedder：视觉 patch 嵌入与 2D 位置编码投影
 class Gemma4UnifiedVisionEmbedder(nn.Module):
     """Encoder-free vision embedder: projects raw merged pixel patches into LM space.
 
@@ -875,6 +904,7 @@ class Gemma4UnifiedVisionEmbedder(nn.Module):
         return hidden_states
 
 
+# Gemma4UnifiedMultimodalEmbedder：多模态特征投影到语言模型嵌入空间
 class Gemma4UnifiedMultimodalEmbedder(Gemma4MultimodalEmbedder):
     def __init__(
         self,
@@ -894,6 +924,7 @@ class Gemma4UnifiedMultimodalEmbedder(Gemma4MultimodalEmbedder):
         return self.embedding_projection(embs_normed)
 
 
+# Gemma4UnifiedModel：文本+视觉+音频联合多模态主干
 class Gemma4UnifiedModel(Gemma4Model):
     """Encoder-free multimodal model.
 
@@ -1146,6 +1177,7 @@ class Gemma4UnifiedModel(Gemma4Model):
         )
 
 
+# Gemma4UnifiedForConditionalGeneration：Gemma 4 统一视觉-语言-音频条件生成
 class Gemma4UnifiedForConditionalGeneration(Gemma4ForConditionalGeneration):
     def forward(
         self,

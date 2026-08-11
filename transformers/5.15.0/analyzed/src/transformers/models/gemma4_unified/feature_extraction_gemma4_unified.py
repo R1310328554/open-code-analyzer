@@ -27,6 +27,9 @@ if is_torch_available():
     import torch
 
 
+# Gemma 4 统一音频特征：原始 16kHz 波形分帧为软 token（无 Mel 编码）
+
+# Gemma4UnifiedAudioFeatureExtractor：无编码器音频特征提取（原始波形分帧）
 class Gemma4UnifiedAudioFeatureExtractor(SequenceFeatureExtractor):
     """Encoder-free audio feature extractor that chunks raw waveform into frames.
 

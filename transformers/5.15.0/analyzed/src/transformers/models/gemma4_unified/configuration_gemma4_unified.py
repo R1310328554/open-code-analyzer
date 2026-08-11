@@ -31,8 +31,12 @@ from ...utils import (
 logger = logging.get_logger(__name__)
 
 
+# Gemma 4 统一配置：文本+视觉 patch+音频波形三模态联合超参
+
+# Gemma4UnifiedAudioConfig：google/gemma-4-12B-it 音频软 token 默认超参
 @auto_docstring(checkpoint="google/gemma-4-12B-it")
 @strict
+# Gemma4UnifiedAudioConfig：Gemma 4 统一多模态音频编码器超参（原始波形软 token）
 class Gemma4UnifiedAudioConfig(PreTrainedConfig):
     r"""
     audio_embed_dim (`int`, defaults to 640):
@@ -83,8 +87,10 @@ class Gemma4UnifiedAudioConfig(PreTrainedConfig):
         self.audio_embed_dim = value
 
 
+# Gemma4UnifiedTextConfig：google/gemma-4-12B-it 文本解码器默认超参
 @auto_docstring(checkpoint="google/gemma-4-12B-it")
 @strict
+# Gemma4UnifiedTextConfig：Gemma 4 统一文本解码器超参（滑动窗口 + KV 共享）
 class Gemma4UnifiedTextConfig(PreTrainedConfig):
     r"""
     use_bidirectional_attention (`str`, *optional*):
@@ -196,8 +202,10 @@ class Gemma4UnifiedTextConfig(PreTrainedConfig):
         return kwargs
 
 
+# Gemma4UnifiedVisionConfig：google/gemma-4-12B-it 视觉 patch 嵌入默认超参
 @auto_docstring(checkpoint="google/gemma-4-12B-it")
 @strict
+# Gemma4UnifiedVisionConfig：Gemma 4 统一视觉 patch 嵌入超参（无独立 ViT 塔）
 class Gemma4UnifiedVisionConfig(PreTrainedConfig):
     r"""
     patch_size (`int`, defaults to 16):
@@ -241,8 +249,10 @@ class Gemma4UnifiedVisionConfig(PreTrainedConfig):
             )
 
 
+# Gemma4UnifiedConfig：google/gemma-4-12B-it 文本+视觉+音频三模态联合默认超参
 @auto_docstring(checkpoint="google/gemma-4-12B-it")
 @strict
+# Gemma4UnifiedConfig：Gemma 4 文本+视觉+音频三模态联合配置
 class Gemma4UnifiedConfig(PreTrainedConfig):
     r"""
     boi_token_id (`int`, *optional*, defaults to 255999):

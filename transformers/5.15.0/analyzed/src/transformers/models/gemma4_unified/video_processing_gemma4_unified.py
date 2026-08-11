@@ -37,6 +37,9 @@ from .processing_gemma4_unified import Gemma4UnifiedVideoProcessorKwargs
 _SUPPORTED_SOFT_TOKENS = (70, 140, 280, 560, 1120)
 
 
+# Gemma 4 统一视频处理：逐帧 patch 化与最大 patch 数填充
+
+# get_aspect_ratio_preserving_size：保持宽高比 resize 至 patch 预算内
 def get_aspect_ratio_preserving_size(
     height: int,
     width: int,
@@ -91,6 +94,7 @@ def get_aspect_ratio_preserving_size(
     return target_height, target_width
 
 
+# convert_video_to_patches：将视频帧张量切分为 patch
 def convert_video_to_patches(video: "torch.Tensor", patch_size: int) -> "torch.Tensor":
     """
     Convert 4D tensor video of shape (num_frames, num_channels, height, width) into 3D tensor of patches of shape
@@ -107,6 +111,7 @@ def convert_video_to_patches(video: "torch.Tensor", patch_size: int) -> "torch.T
     return patched_video
 
 
+# pad_to_max_patches：视频帧 patch 零填充至最大数量
 def pad_to_max_patches(
     video: "torch.Tensor", positions: "torch.Tensor", target_length: int
 ) -> tuple["torch.Tensor", "torch.Tensor"]:
@@ -123,6 +128,7 @@ def pad_to_max_patches(
     return video, positions
 
 
+# patches_merge：合并 teacher patch 为 model patch（池化降采样）
 def patches_merge(
     patches: "torch.Tensor",
     positions_xy: "torch.Tensor",
@@ -198,6 +204,7 @@ def patches_merge(
 
 
 @auto_docstring
+# Gemma4UnifiedVideoProcessor：Gemma 4 统一视频帧 patch 预处理
 class Gemma4UnifiedVideoProcessor(BaseVideoProcessor):
     resample = PILImageResampling.BICUBIC
     image_mean = [0.0, 0.0, 0.0]

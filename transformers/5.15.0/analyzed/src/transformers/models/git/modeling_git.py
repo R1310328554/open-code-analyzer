@@ -51,6 +51,8 @@ from .configuration_git import GitConfig, GitVisionConfig
 logger = logging.get_logger(__name__)
 
 
+# GIT 建模：Microsoft GenerativeImage2Text（ViT 视觉编码 + 文本解码器）
+
 @auto_docstring(
     custom_intro="""
     Base class for vision model's outputs that also contains image embeddings of the pooling of the last hidden states.
@@ -58,6 +60,7 @@ logger = logging.get_logger(__name__)
 )
 @dataclass
 # Copied from transformers.models.clip.modeling_clip.CLIPVisionModelOutput with CLIP->Git
+# GitVisionModelOutput：GIT 视觉模型输出 dataclass（含 image_embeds）
 class GitVisionModelOutput(ModelOutput):
     r"""
     image_embeds (`torch.FloatTensor` of shape `(batch_size, output_dim)` *optional* returned when model is initialized with `with_projection=True`):
@@ -70,6 +73,7 @@ class GitVisionModelOutput(ModelOutput):
     attentions: tuple[torch.FloatTensor, ...] | None = None
 
 
+# GitEmbeddings：GIT 文本词嵌入 + 位置嵌入层
 class GitEmbeddings(nn.Module):
     """Construct the embeddings from word and position embeddings."""
 
@@ -113,6 +117,7 @@ class GitEmbeddings(nn.Module):
         return embeddings
 
 
+# GitSelfAttention：GIT 文本自注意力（含相对位置偏置）
 class GitSelfAttention(nn.Module):
     def __init__(self, config, layer_idx=None):
         super().__init__()
@@ -183,6 +188,7 @@ class GitSelfAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertSelfOutput
+# GitSelfOutput：GIT 自注意力输出投影与残差
 class GitSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -202,6 +208,7 @@ GIT_SELF_ATTENTION_CLASSES = {
 }
 
 
+# GitAttention：GIT 文本注意力模块（自注意力 + 输出）
 class GitAttention(nn.Module):
     def __init__(self, config, layer_idx=None):
         super().__init__()
@@ -226,6 +233,7 @@ class GitAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertIntermediate
+# GitIntermediate：GIT 文本 FFN 中间层
 class GitIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -242,6 +250,7 @@ class GitIntermediate(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOutput
+# GitOutput：GIT 文本 FFN 输出层与残差
 class GitOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -256,6 +265,7 @@ class GitOutput(nn.Module):
         return hidden_states
 
 
+# GitLayer：GIT 文本解码器单层（注意力 + FFN）
 class GitLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_idx=None):
         super().__init__()
@@ -290,6 +300,7 @@ class GitLayer(GradientCheckpointingLayer):
         return layer_output
 
 
+# GitEncoder：GIT 文本 Transformer 编码器堆叠
 class GitEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -320,6 +331,7 @@ class GitEncoder(nn.Module):
 
 
 @auto_docstring
+# GitPreTrainedModel：GIT 预训练基类与权重初始化
 class GitPreTrainedModel(PreTrainedModel):
     config: GitConfig
     base_model_prefix = "git"
@@ -340,6 +352,7 @@ class GitPreTrainedModel(PreTrainedModel):
 
 
 # Copied from transformers.models.clip.modeling_clip.CLIPVisionEmbeddings with CLIP->Git
+# GitVisionEmbeddings：GIT 视觉 patch 嵌入 + 位置编码
 class GitVisionEmbeddings(nn.Module):
     def __init__(self, config: GitVisionConfig):
         super().__init__()
@@ -423,6 +436,7 @@ class GitVisionEmbeddings(nn.Module):
         return embeddings
 
 
+# GitVisionMLP：GIT 视觉 FFN 中间/输出 MLP
 class GitVisionMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -439,6 +453,7 @@ class GitVisionMLP(nn.Module):
 
 
 # Copied from transformers.models.siglip.modeling_siglip.eager_attention_forward
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -462,6 +477,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# GitVisionAttention：GIT 视觉多头自注意力
 class GitVisionAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -520,6 +536,7 @@ class GitVisionAttention(nn.Module):
 
 
 # Copied from transformers.models.altclip.modeling_altclip.AltCLIPEncoderLayer with AltCLIPVisionConfig->GitVisionConfig,AltCLIP->GitVision
+# GitVisionEncoderLayer：GIT 视觉 Transformer 单层
 class GitVisionEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: GitVisionConfig):
         super().__init__()
@@ -554,6 +571,7 @@ class GitVisionEncoderLayer(GradientCheckpointingLayer):
 
 
 # Copied from transformers.models.altclip.modeling_altclip.AltCLIPEncoder with AltCLIP->GitVision, CLIPConfig
+# GitVisionEncoder：GIT 视觉 Transformer 编码器堆叠
 class GitVisionEncoder(nn.Module):
     """
     Transformer encoder consisting of `config.num_hidden_layers` self attention layers. Each layer is a
@@ -588,6 +606,7 @@ class GitVisionEncoder(nn.Module):
         )
 
 
+# GitVisionTransformer：GIT 完整视觉 Transformer（嵌入 + 编码器）
 class GitVisionTransformer(nn.Module):
     def __init__(self, config: GitVisionConfig):
         super().__init__()
@@ -631,6 +650,7 @@ class GitVisionTransformer(nn.Module):
     The vision model from CLIP, used in GIT, without any head or projection on top.
     """
 )
+# GitVisionModel：GIT 视觉编码器（ViT）
 class GitVisionModel(GitPreTrainedModel):
     config: GitVisionConfig
     main_input_name = "pixel_values"
@@ -686,6 +706,7 @@ class GitVisionModel(GitPreTrainedModel):
         )
 
 
+# GitProjection：GIT 视觉特征到文本空间的线性投影
 class GitProjection(nn.Module):
     def __init__(self, config: GitConfig):
         super().__init__()
@@ -704,6 +725,7 @@ class GitProjection(nn.Module):
     The bare GIT Model transformer consisting of a CLIP image encoder and text decoder outputting raw hidden-states
     """
 )
+# GitModel：GIT 视觉-语言联合主干（ViT + 文本解码器）
 class GitModel(GitPreTrainedModel):
     _can_record_outputs = {
         "hidden_states": GitLayer,
@@ -889,6 +911,7 @@ class GitModel(GitPreTrainedModel):
     GIT Model with a `language modeling` head on top for autoregressive language modeling.
     """
 )
+# GitForCausalLM：GIT 图像描述因果语言建模与文本生成
 class GitForCausalLM(GitPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"output.weight": "git.embeddings.word_embeddings.weight"}
 

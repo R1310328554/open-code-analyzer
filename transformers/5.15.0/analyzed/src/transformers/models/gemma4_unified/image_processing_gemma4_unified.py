@@ -32,6 +32,9 @@ from ...utils import (
 )
 
 
+# Gemma 4 统一图像处理：patch 化 + 池化合并 + 宽高比保持 resize
+
+# Gemma4UnifiedImageProcessorKwargs：图像处理器可选参数字典类型
 class Gemma4UnifiedImageProcessorKwargs(ImagesKwargs, total=False):
     """
     patch_size (`int`, *optional*):
@@ -51,6 +54,7 @@ class Gemma4UnifiedImageProcessorKwargs(ImagesKwargs, total=False):
 _SUPPORTED_SOFT_TOKENS = (70, 140, 280, 560, 1120)
 
 
+# get_aspect_ratio_preserving_size：保持宽高比 resize 至 patch 预算内
 def get_aspect_ratio_preserving_size(
     height: int,
     width: int,
@@ -105,6 +109,7 @@ def get_aspect_ratio_preserving_size(
     return target_height, target_width
 
 
+# convert_image_to_patches：将图像张量切分为固定大小 patch
 def convert_image_to_patches(image: "torch.Tensor", patch_size: int) -> "torch.Tensor":
     """
     Convert 3D tensor image of shape (num_channels, image_height, image_width) into 2D tensor of patches of shape
@@ -120,6 +125,7 @@ def convert_image_to_patches(image: "torch.Tensor", patch_size: int) -> "torch.T
 
 
 # Adopted from Siglip2 (mask -> position ids)
+# pad_along_first_dim：沿首维零填充至目标 patch 数
 def pad_along_first_dim(
     image: "torch.Tensor", positions: "torch.Tensor", target_length: int
 ) -> tuple["torch.Tensor", "torch.Tensor"]:
@@ -136,6 +142,7 @@ def pad_along_first_dim(
     return image, positions
 
 
+# patches_merge：合并 teacher patch 为 model patch（池化降采样）
 def patches_merge(
     patches: "torch.Tensor",
     positions_xy: "torch.Tensor",
@@ -211,6 +218,7 @@ def patches_merge(
 
 
 @auto_docstring(custom_intro="Constructs a Gemma4 unified image processor.")
+# Gemma4UnifiedImageProcessor：Torchvision 后端的 Gemma 4 统一图像预处理
 class Gemma4UnifiedImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.BICUBIC
     image_mean = [0.0, 0.0, 0.0]

@@ -54,6 +54,7 @@ from ...utils.deprecation import deprecate_kwarg
 from ...utils.generic import maybe_autocast, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
 from ..auto.modeling_auto import AutoModel
+# modeling_gemma4_unified 由 modular_gemma4_unified.py 自动生成
 from .configuration_gemma4_unified import (
     Gemma4UnifiedAudioConfig,
     Gemma4UnifiedConfig,
@@ -62,8 +63,11 @@ from .configuration_gemma4_unified import (
 )
 
 
+# Gemma 4 统一建模：文本+视觉 patch+音频波形联合多模态 VLM
+
 @auto_docstring
 @dataclass
+# Gemma4UnifiedAudioModelOutput：音频多模态投影输出 dataclass
 class Gemma4UnifiedAudioModelOutput(ModelOutput):
     r"""
     pooler_output (`torch.FloatTensor` of shape `(batch_size, ..., hidden_size)`):
@@ -78,6 +82,7 @@ class Gemma4UnifiedAudioModelOutput(ModelOutput):
 
 @auto_docstring
 @dataclass
+# Gemma4UnifiedVisionModelOutput：视觉多模态投影输出 dataclass
 class Gemma4UnifiedVisionModelOutput(ModelOutput):
     r"""
     pooler_output (`torch.FloatTensor` of shape `(batch_size, ..., hidden_size)`):
@@ -88,6 +93,7 @@ class Gemma4UnifiedVisionModelOutput(ModelOutput):
 
 
 @dataclass
+# Gemma4UnifiedTextModelOutputWithPast：含 shared_kv_states 的文本主干输出
 class Gemma4UnifiedTextModelOutputWithPast(BaseModelOutputWithPast):
     """
     BaseModelOutputWithPast extended with shared_kv_states for KV sharing.
@@ -107,6 +113,7 @@ class Gemma4UnifiedTextModelOutputWithPast(BaseModelOutputWithPast):
     """
 )
 @dataclass
+# Gemma4UnifiedCausalLMOutputWithPast：统一多模态因果 LM 输出 dataclass
 class Gemma4UnifiedCausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -147,6 +154,7 @@ class Gemma4UnifiedCausalLMOutputWithPast(ModelOutput):
     """
 )
 @dataclass
+# Gemma4UnifiedModelOutputWithPast：多模态联合主干输出 dataclass
 class Gemma4UnifiedModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     past_key_values (`Cache`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
@@ -172,6 +180,7 @@ class Gemma4UnifiedModelOutputWithPast(BaseModelOutputWithPast):
     shared_kv_states: dict[str, tuple[torch.Tensor, torch.Tensor]] | None = None
 
 
+# Gemma4UnifiedRMSNorm：Gemma 4 统一 RMS LayerNorm
 class Gemma4UnifiedRMSNorm(nn.Module):
     def __init__(self, dim: int, eps: float = 1e-6, with_scale: bool = True):
         super().__init__()
@@ -193,6 +202,7 @@ class Gemma4UnifiedRMSNorm(nn.Module):
         return normed_output.type_as(hidden_states)
 
 
+# Gemma4UnifiedTextRotaryEmbedding：Gemma 4 统一 RoPE 旋转位置编码
 class Gemma4UnifiedTextRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: Gemma4UnifiedTextConfig, device=None):
@@ -275,6 +285,7 @@ class Gemma4UnifiedTextRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# rotate_half：RoPE 中将向量后半部分旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -282,6 +293,7 @@ def rotate_half(x):
     return torch.cat((-x2, x1), dim=-1)
 
 
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K
 def apply_rotary_pos_emb(x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor, unsqueeze_dim: int = 1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -304,6 +316,7 @@ def apply_rotary_pos_emb(x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor, 
     return (x * cos) + (rotate_half(x) * sin)
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -316,6 +329,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -350,6 +364,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# Gemma4UnifiedTextAttention：Gemma 4 统一多头自注意力（滑动窗口 + softcapping）
 class Gemma4UnifiedTextAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -466,6 +481,7 @@ class Gemma4UnifiedTextAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# Gemma4UnifiedTextMLP：Gemma 4 统一前馈 MLP（GELU-tanh 激活）
 class Gemma4UnifiedTextMLP(nn.Module):
     def __init__(self, config: Gemma4UnifiedTextConfig, layer_idx: int):
         super().__init__()
@@ -485,6 +501,7 @@ class Gemma4UnifiedTextMLP(nn.Module):
         return down_proj
 
 
+# Gemma4UnifiedTextDecoderLayer：Gemma 4 统一解码器单层（自注意力 + MLP）
 class Gemma4UnifiedTextDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Gemma4UnifiedTextConfig | Gemma4UnifiedVisionConfig, layer_idx: int):
         super().__init__()
@@ -536,6 +553,7 @@ class Gemma4UnifiedTextDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Gemma4UnifiedTextScaledWordEmbedding：带 embed_scale 缩放的词嵌入层
 class Gemma4UnifiedTextScaledWordEmbedding(nn.Embedding):
     """
     This module overrides nn.Embeddings' forward by multiplying with embeddings scale.
@@ -551,6 +569,7 @@ class Gemma4UnifiedTextScaledWordEmbedding(nn.Embedding):
 
 
 @auto_docstring
+# Gemma4UnifiedPreTrainedModel：Gemma 4 统一预训练基类与权重初始化
 class Gemma4UnifiedPreTrainedModel(PreTrainedModel):
     config: Gemma4UnifiedConfig
     base_model_prefix = "model"
@@ -584,6 +603,7 @@ class Gemma4UnifiedPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring(custom_intro="The base Gemma 4 unified language model without a language modeling head.")
+# Gemma4UnifiedTextModel：Gemma 4 统一纯文本解码器主干
 class Gemma4UnifiedTextModel(Gemma4UnifiedPreTrainedModel):
     config: Gemma4UnifiedTextConfig
     input_modalities = ("text",)
@@ -688,6 +708,7 @@ class Gemma4UnifiedTextModel(Gemma4UnifiedPreTrainedModel):
 
 
 @auto_docstring(custom_intro="The base Gemma 4 language model with a language modeling head.")
+# Gemma4UnifiedForCausalLM：Gemma 4 统一纯文本因果语言建模
 class Gemma4UnifiedForCausalLM(Gemma4UnifiedPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
@@ -770,6 +791,7 @@ class Gemma4UnifiedForCausalLM(Gemma4UnifiedPreTrainedModel, GenerationMixin):
         )
 
 
+# Gemma4UnifiedVisionEmbedder：视觉 patch 嵌入与 2D 位置编码投影
 class Gemma4UnifiedVisionEmbedder(nn.Module):
     """Encoder-free vision embedder: projects raw merged pixel patches into LM space.
 
@@ -833,6 +855,7 @@ class Gemma4UnifiedVisionEmbedder(nn.Module):
         return hidden_states
 
 
+# Gemma4UnifiedMultimodalEmbedder：多模态特征投影到语言模型嵌入空间
 class Gemma4UnifiedMultimodalEmbedder(nn.Module):
     """Embeds token ids or soft tokens for multimodal content into language model space."""
 
@@ -866,6 +889,7 @@ class Gemma4UnifiedMultimodalEmbedder(nn.Module):
         return self.embedding_projection(embs_normed)
 
 
+# get_block_sequence_ids_for_mask：按 token 类型生成 block 序列 ID 供掩码使用
 def get_block_sequence_ids_for_mask(mm_token_type_ids: torch.Tensor, device: torch.device) -> torch.Tensor:
     mm_token_type_ids = mm_token_type_ids.to(device)
 
@@ -884,6 +908,7 @@ def get_block_sequence_ids_for_mask(mm_token_type_ids: torch.Tensor, device: tor
     language modeling head.
     """
 )
+# Gemma4UnifiedModel：文本+视觉+音频联合多模态主干
 class Gemma4UnifiedModel(Gemma4UnifiedPreTrainedModel):
     """Encoder-free multimodal model.
 
@@ -1183,6 +1208,7 @@ class Gemma4UnifiedModel(Gemma4UnifiedPreTrainedModel):
         return self.get_image_features(pixel_values_videos, video_position_ids, **kwargs)
 
 
+# create_masks_for_vision_model：为多模态输入构造因果/滑动窗口/双向掩码
 def create_masks_for_vision_model(
     config: PreTrainedConfig,
     inputs_embeds: torch.Tensor,
@@ -1244,6 +1270,7 @@ def create_masks_for_vision_model(
     head.
     """
 )
+# Gemma4UnifiedForConditionalGeneration：Gemma 4 统一视觉-语言-音频条件生成
 class Gemma4UnifiedForConditionalGeneration(Gemma4UnifiedPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
     accepts_loss_kwargs = False

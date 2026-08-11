@@ -41,6 +41,9 @@ if is_vision_available():
 logger = logging.get_logger(__name__)
 
 
+# Gemma4UnifiedProcessor：图像/视频/音频预处理与分词器联合的多模态输入组装
+
+# Gemma4UnifiedVideoProcessorKwargs：视频处理器可选参数字典类型
 class Gemma4UnifiedVideoProcessorKwargs(VideosKwargs, total=False):
     """
     patch_size (`int`, *optional*):
@@ -57,6 +60,7 @@ class Gemma4UnifiedVideoProcessorKwargs(VideosKwargs, total=False):
     pooling_kernel_size: int
 
 
+# Gemma4UnifiedProcessorKwargs：Processor 可选参数字典类型
 class Gemma4UnifiedProcessorKwargs(ProcessingKwargs, total=False):
     images_kwargs: Gemma4UnifiedImageProcessorKwargs
     _defaults = {
@@ -74,6 +78,7 @@ class Gemma4UnifiedProcessorKwargs(ProcessingKwargs, total=False):
 
 @auto_docstring
 @requires(backends=("vision",))
+# Gemma4UnifiedProcessor：封装图像/视频/音频预处理与 token 类型 ID 的联合入口
 class Gemma4UnifiedProcessor(ProcessorMixin):
     valid_processor_kwargs = Gemma4UnifiedProcessorKwargs
 

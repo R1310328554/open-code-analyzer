@@ -22,8 +22,12 @@ from ...utils import auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# GIT 配置：GenerativeImage2Text 视觉-语言联合超参
+
+# GitVisionConfig：microsoft/git-base ViT 视觉编码器默认超参
 @auto_docstring(checkpoint="microsoft/git-base")
 @strict
+# GitVisionConfig：GIT 视觉编码器（ViT）超参
 class GitVisionConfig(PreTrainedConfig):
     r"""
     Example:
@@ -57,8 +61,10 @@ class GitVisionConfig(PreTrainedConfig):
     initializer_range: float = 0.02
 
 
+# GitConfig：microsoft/git-base 视觉-语言联合默认超参
 @auto_docstring(checkpoint="microsoft/git-base")
 @strict
+# GitConfig：GIT 视觉-语言联合配置（ViT + 文本解码器）
 class GitConfig(PreTrainedConfig):
     r"""
     num_image_with_embedding (`int`, *optional*):

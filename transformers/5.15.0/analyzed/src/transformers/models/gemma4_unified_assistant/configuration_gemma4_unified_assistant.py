@@ -20,8 +20,12 @@ from ...utils import auto_docstring
 from ..gemma4_unified.configuration_gemma4_unified import Gemma4UnifiedTextConfig
 
 
+# Gemma 4 统一助手配置：质心掩码嵌入与 KV 共享推理超参
+
+# Gemma4UnifiedAssistantConfig：google/gemma-4-12b-it 统一助手默认超参
 @auto_docstring(checkpoint="google/gemma-4-12b-it")
 @strict
+# Gemma4UnifiedAssistantConfig：Gemma 4 统一助手模型超参（质心掩码嵌入）
 class Gemma4UnifiedAssistantConfig(PreTrainedConfig):
     r"""
     backbone_hidden_size (`int`, defaults to 3840):

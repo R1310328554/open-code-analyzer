@@ -31,11 +31,15 @@ from ...modeling_utils import PreTrainedModel
 from ...processing_utils import Unpack
 from ...utils import TransformersKwargs, auto_docstring, can_return_tuple
 from ..auto.modeling_auto import AutoModel
+# modeling_gemma4_unified_assistant 由 modular 源自动生成
 from .configuration_gemma4_unified_assistant import Gemma4UnifiedAssistantConfig
 
 
+# Gemma 4 统一助手建模：质心稀疏嵌入 + 与统一主干 KV 共享推理
+
 @auto_docstring
 @dataclass
+# Gemma4UnifiedAssistantOutput：助手模型输出 dataclass
 class Gemma4UnifiedAssistantOutput(BaseModelOutput):
     r"""
     logits (`torch.FloatTensor` of shape `(batch_size, sequence_length, config.vocab_size)`):
@@ -45,6 +49,7 @@ class Gemma4UnifiedAssistantOutput(BaseModelOutput):
     logits: torch.FloatTensor | None = None
 
 
+# Gemma4UnifiedAssistantMaskedEmbedder：基于质心的稀疏掩码嵌入层
 class Gemma4UnifiedAssistantMaskedEmbedder(nn.Module):
     token_ordering: torch.Tensor
 
@@ -93,6 +98,7 @@ class Gemma4UnifiedAssistantMaskedEmbedder(nn.Module):
         return output.scatter_(dim=-1, index=scatter_idx, src=selected_logits)
 
 
+# Gemma4UnifiedAssistantPreTrainedModel：Gemma 4 统一助手预训练基类
 class Gemma4UnifiedAssistantPreTrainedModel(PreTrainedModel):
     config: Gemma4UnifiedAssistantConfig
     base_model_prefix = "model"
@@ -113,6 +119,7 @@ class Gemma4UnifiedAssistantPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring(custom_intro="A model for multi-token prediction-based assisted decoding with Gemma 4.")
+# Gemma4UnifiedAssistantForCausalLM：Gemma 4 统一助手因果 LM（KV 共享推理）
 class Gemma4UnifiedAssistantForCausalLM(Gemma4UnifiedAssistantPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
