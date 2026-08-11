@@ -15,23 +15,8 @@
     "django/template/context_processors.py",
     "django/template/defaultfilters.py",
     "django/template/defaulttags.py",
-    "django/template/engine.py",
-    "django/template/exceptions.py",
-    "django/template/library.py",
-    "django/template/loader.py",
-    "django/template/loader_tags.py",
-    "django/template/loaders/__init__.py",
-    "django/template/loaders/app_directories.py",
-    "django/template/loaders/base.py",
-    "django/template/loaders/cached.py",
-    "django/template/loaders/filesystem.py",
-    "django/template/loaders/locmem.py",
-    "django/template/response.py",
-    "django/template/smartif.py",
-    "django/template/utils.py",
-    "django/templatetags/__init__.py",
-    "django/templatetags/cache.py"
+    "django/template/engine.py"
   ],
   "remaining_pending": 102,
-  "done": 810
+  "done": 825
 }
