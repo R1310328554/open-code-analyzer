@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains various CTC decoders."""
+# PGNet 慢速文本点提取：曲线/水平/TotalText 多路径 pivot 生成
+"""Contains various CTC decoders."""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -342,6 +344,7 @@ def sort_and_expand_with_direction_v2(pos_list, f_direction, binary_tcl_map):
     return all_list
 
 
+    # 弯曲文本：骨架细化沿 TCL 中心线采样
 def generate_pivot_list_curved(
     p_score,
     p_char_maps,
@@ -406,6 +409,7 @@ def generate_pivot_list_curved(
         return center_pos_yxs, end_points_yxs
 
 
+    # 水平文本：按方向图排序并扩展 pivot
 def generate_pivot_list_horizontal(
     p_score, p_char_maps, f_direction, score_thresh=0.5, is_backbone=False, image_id=0
 ):
@@ -483,6 +487,7 @@ def generate_pivot_list_horizontal(
         return center_pos_yxs, end_points_yxs
 
 
+    # 慢速入口：curved/horizontal 分支 + CTC 字符序列
 def generate_pivot_list_slow(
     p_score,
     p_char_maps,
@@ -586,6 +591,7 @@ def sort_by_direction_with_image_id(pos_list, f_direction):
     return sorted_point
 
 
+    # TotalText 推理专用 pivot 生成
 def generate_pivot_list_tt_inference(
     p_score,
     p_char_maps,

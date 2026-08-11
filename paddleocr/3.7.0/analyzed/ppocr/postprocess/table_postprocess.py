@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 表格结构后处理：HTML 结构 token 序列 + 单元格 bbox 解码
 import numpy as np
 import paddle
 
 from .rec_postprocess import AttnLabelDecode
 
 
+    # 表格标签解码：structure_probs + loc_preds → HTML 与 bbox
 class TableLabelDecode(AttnLabelDecode):
     """ """
 
@@ -79,6 +81,7 @@ class TableLabelDecode(AttnLabelDecode):
                 if char_idx in ignored_tokens:
                     continue
                 text = self.character[char_idx]
+                # 遇 <td> 类 token 时解码对应 loc 预测为单元格框
                 if text in self.td_token:
                     bbox = bbox_preds[batch_idx, idx]
                     bbox = self._bbox_decode(bbox, shape_list[batch_idx])
@@ -137,6 +140,7 @@ class TableLabelDecode(AttnLabelDecode):
         return bbox
 
 
+    # TableMaster 变体：SOS/EOS/PAD/UKN 特殊符与 box_shape
 class TableMasterLabelDecode(TableLabelDecode):
     """ """
 

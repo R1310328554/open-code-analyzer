@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 模型指数滑动平均（EMA）：shadow 权重 warmup 更新与 bias 校正
 import math
 
 import paddle
 
 
+    # EMA 封装：threshold/exponential/normal 衰减，支持 checkpoint 存取
 class ModelEMA:
     """Exponential Moving Average for model parameters.
 
@@ -54,6 +56,7 @@ class ModelEMA:
 
         # Build black list: frozen params (excluding BN running stats)
         self.ema_black_list = set()
+        # 可选跳过 stop_gradient 参数（蒸馏 Teacher），保留 BN 统计
         if ema_filter_no_grad:
             bn_state_names = set()
             for name, layer in model.named_sublayers():

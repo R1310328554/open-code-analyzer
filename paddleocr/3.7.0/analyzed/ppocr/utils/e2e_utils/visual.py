@@ -11,11 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# E2E 可视化与预处理：图像缩放至 stride 倍数、多边形几何辅助
 import numpy as np
 import cv2
 import time
 
 
+    # 长边限制缩放并对齐 max_stride=128
 def resize_image(im, max_side_len=512):
     """
     resize image to a size multiple of max_stride which is required by the network
@@ -46,6 +48,7 @@ def resize_image(im, max_side_len=512):
     return im, (ratio_h, ratio_w)
 
 
+    # 短边限制缩放（小图放大）
 def resize_image_min(im, max_side_len=512):
     """ """
     h, w, _ = im.shape
@@ -70,6 +73,7 @@ def resize_image_min(im, max_side_len=512):
     return im, (ratio_h, ratio_w)
 
 
+    # TotalText 专用：固定 1.25 倍率缩放策略
 def resize_image_for_totaltext(im, max_side_len=512):
     """ """
     h, w, _ = im.shape
@@ -163,5 +167,6 @@ def norm2(x, axis=None):
     return np.sqrt(np.sum(x**2))
 
 
+    # 两向量夹角余弦，用于方向可视化
 def cos(p1, p2):
     return (p1 * p2).sum() / (norm2(p1) * norm2(p2))

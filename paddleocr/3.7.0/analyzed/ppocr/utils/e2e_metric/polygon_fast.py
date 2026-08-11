@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 多边形几何快算：Shapely 求面积、交并比与 IoD
 import numpy as np
 from shapely.geometry import Polygon
 
@@ -27,11 +28,13 @@ All the calculation of 'AREA' in this script is handled by:
 """
 
 
+    # 由顶点坐标构造 Polygon 并返回面积
 def area(x, y):
     polygon = Polygon(np.stack([x, y], axis=1))
     return float(polygon.area)
 
 
+    # 近似交集：最小外接矩形相交面积
 def approx_area_of_intersection(det_x, det_y, gt_x, gt_y):
     """
     This helper determine if both polygons are intersecting with each others with an approximation method.
@@ -59,6 +62,7 @@ def approx_area_of_intersection(det_x, det_y, gt_x, gt_y):
     return intersect_heights * intersect_widths
 
 
+    # 精确交集面积（buffer(0) 修复自交）
 def area_of_intersection(det_x, det_y, gt_x, gt_y):
     p1 = Polygon(np.stack([det_x, det_y], axis=1)).buffer(0)
     p2 = Polygon(np.stack([gt_x, gt_y], axis=1)).buffer(0)
@@ -71,12 +75,14 @@ def area_of_union(det_x, det_y, gt_x, gt_y):
     return float(p1.union(p2).area)
 
 
+    # 标准 IoU = 交集 / 并集
 def iou(det_x, det_y, gt_x, gt_y):
     return area_of_intersection(det_x, det_y, gt_x, gt_y) / (
         area_of_union(det_x, det_y, gt_x, gt_y) + 1.0
     )
 
 
+    # IoD = 交集 / 检测框面积（Deteval 过滤用）
 def iod(det_x, det_y, gt_x, gt_y):
     """
     This helper determine the fraction of intersection area over detection area

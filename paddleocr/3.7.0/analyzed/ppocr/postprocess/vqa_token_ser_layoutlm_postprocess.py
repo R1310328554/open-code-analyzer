@@ -11,11 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# VQA 语义实体识别后处理：BIO 标签映射到 OCR 文本块
 import numpy as np
 import paddle
 from ppocr.utils.utility import load_vqa_bio_label_maps
 
 
+    # SER 后处理：token 级 BIO → 每 OCR 段实体类别
 class VQASerTokenLayoutLMPostProcess(object):
     """Convert between text-label and text-index"""
 
@@ -81,6 +83,7 @@ class VQASerTokenLayoutLMPostProcess(object):
                 end_id = segment_offset_id[idx]
 
                 curr_pred = pred[start_id:end_id]
+                # 段内标签众数投票，写入 ocr_info 的 pred/pred_id
                 curr_pred = [self.label2id_map_for_draw[p] for p in curr_pred]
 
                 if len(curr_pred) <= 0:
@@ -94,6 +97,7 @@ class VQASerTokenLayoutLMPostProcess(object):
         return results
 
 
+    # 蒸馏 SER 后处理：多模型分支包装
 class DistillationSerPostProcess(VQASerTokenLayoutLMPostProcess):
     """
     DistillationSerPostProcess

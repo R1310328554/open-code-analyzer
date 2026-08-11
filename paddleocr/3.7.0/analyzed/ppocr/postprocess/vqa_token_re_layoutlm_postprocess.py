@@ -11,9 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# VQA 关系抽取后处理：LayoutLM token 关系预测与 OCR 实体配对
 import paddle
 
 
+    # RE 后处理：pred_relations 解码并与 SER 结果合并
 class VQAReTokenLayoutLMPostProcess(object):
     """Convert between text-label and text-index"""
 
@@ -45,6 +47,7 @@ class VQAReTokenLayoutLMPostProcess(object):
         ):
             result = []
             used_tail_id = []
+            # 去重 tail：将 head/tail 实体 OCR 框组成关系对
             for relation in pred_relation:
                 if relation["tail_id"] in used_tail_id:
                     continue
@@ -74,6 +77,7 @@ class VQAReTokenLayoutLMPostProcess(object):
         return pred_relations_new
 
 
+    # 蒸馏 RE 后处理：多 student 分支分别推理
 class DistillationRePostProcess(VQAReTokenLayoutLMPostProcess):
     """
     DistillationRePostProcess

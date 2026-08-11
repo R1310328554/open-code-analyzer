@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 识别后处理：各算法 logits/索引与文本标签互转，含 CTC/Attention/公式等解码器
 import os
 import numpy as np
 import paddle
@@ -20,6 +21,7 @@ import re
 import json
 
 
+    # 识别标签解码基类：字典加载、索引↔文本、词级分组
 class BaseRecLabelDecode(object):
     """Convert between text-label and text-index"""
 
@@ -41,6 +43,7 @@ class BaseRecLabelDecode(object):
             if use_space_char:
                 self.character_str.append(" ")
             dict_character = list(self.character_str)
+            # 阿拉伯语字典：解码后需按词段反转字符顺序
             if "arabic" in character_dict_path:
                 self.reverse = True
 
@@ -174,7 +177,8 @@ class BaseRecLabelDecode(object):
             if self.reverse:  # for arabic rec
                 text = self.pred_reverse(text)
 
-            if return_word_box:
+            # 可选返回词级框：按中英文/数字分组并映射到特征列
+        if return_word_box:
                 word_list, word_col_list, state_list = self.get_word_info(
                     text, selection
                 )
@@ -198,6 +202,7 @@ class BaseRecLabelDecode(object):
         return [0]  # for ctc blank
 
 
+    # CTC 解码：argmax 去重 blank，支持词框缩放
 class CTCLabelDecode(BaseRecLabelDecode):
     """Convert between text-label and text-index"""
 
@@ -232,6 +237,7 @@ class CTCLabelDecode(BaseRecLabelDecode):
         return dict_character
 
 
+    # 蒸馏 CTC 解码：多 student 分支分别解码
 class DistillationCTCLabelDecode(CTCLabelDecode):
     """
     Convert
@@ -269,6 +275,7 @@ class DistillationCTCLabelDecode(CTCLabelDecode):
         return output
 
 
+    # Attention 解码：自回归序列 argmax 至 EOS
 class AttnLabelDecode(BaseRecLabelDecode):
     """Convert between text-label and text-index"""
 
@@ -347,6 +354,7 @@ class AttnLabelDecode(BaseRecLabelDecode):
         return idx
 
 
+    # RFL 解码：双分支 CTC+Attention 联合输出
 class RFLLabelDecode(BaseRecLabelDecode):
     """Convert between text-label and text-index"""
 
@@ -434,6 +442,7 @@ class RFLLabelDecode(BaseRecLabelDecode):
         return idx
 
 
+    # SEED 解码：dict 含 rec_pred 键的端到端识别
 class SEEDLabelDecode(BaseRecLabelDecode):
     """Convert between text-label and text-index"""
 
@@ -512,6 +521,7 @@ class SEEDLabelDecode(BaseRecLabelDecode):
         return text, label
 
 
+    # SRN 解码：PVAM→GSRM 两阶段序列预测
 class SRNLabelDecode(BaseRecLabelDecode):
     """Convert between text-label and text-index"""
 
@@ -589,6 +599,7 @@ class SRNLabelDecode(BaseRecLabelDecode):
         return idx
 
 
+    # ParseQ 解码：BOS/EOS/PAD 包裹的 set 预测序列
 class ParseQLabelDecode(BaseRecLabelDecode):
     """Convert between text-label and text-index"""
 
@@ -681,6 +692,7 @@ class ParseQLabelDecode(BaseRecLabelDecode):
         return [self.dict[self.BOS], self.dict[self.EOS], self.dict[self.PAD]]
 
 
+    # SAR 解码：Show-Attend-Read，可选去符号
 class SARLabelDecode(BaseRecLabelDecode):
     """Convert between text-label and text-index"""
 
@@ -756,6 +768,7 @@ class SARLabelDecode(BaseRecLabelDecode):
         return [self.padding_idx]
 
 
+    # SATRN 解码：与 SAR 类似的双向注意力识别
 class SATRNLabelDecode(BaseRecLabelDecode):
     """Convert between text-label and text-index"""
 
@@ -831,6 +844,7 @@ class SATRNLabelDecode(BaseRecLabelDecode):
         return [self.padding_idx]
 
 
+    # 蒸馏 SAR 解码：多模型分支包装
 class DistillationSARLabelDecode(SARLabelDecode):
     """
     Convert
@@ -868,6 +882,7 @@ class DistillationSARLabelDecode(SARLabelDecode):
         return output
 
 
+    # PREN 解码：Permutation 等变序列识别
 class PRENLabelDecode(BaseRecLabelDecode):
     """Convert between text-label and text-index"""
 
@@ -925,6 +940,7 @@ class PRENLabelDecode(BaseRecLabelDecode):
         return text, label
 
 
+    # NRTR 解码：Transformer 识别，含 BOS/EOS/PAD
 class NRTRLabelDecode(BaseRecLabelDecode):
     """Convert between text-label and text-index"""
 
@@ -987,6 +1003,7 @@ class NRTRLabelDecode(BaseRecLabelDecode):
         return result_list
 
 
+    # ViTSTR 解码：继承 NRTR 的 ViT 文本识别
 class ViTSTRLabelDecode(NRTRLabelDecode):
     """Convert between text-label and text-index"""
 
@@ -1011,6 +1028,7 @@ class ViTSTRLabelDecode(NRTRLabelDecode):
         return dict_character
 
 
+    # ABINet 解码：语言模型校正后的 NRTR 变体
 class ABINetLabelDecode(NRTRLabelDecode):
     """Convert between text-label and text-index"""
 
@@ -1038,6 +1056,7 @@ class ABINetLabelDecode(NRTRLabelDecode):
         return dict_character
 
 
+    # SPIN 解码：Attn 变体，BOS/EOS 特殊符
 class SPINLabelDecode(AttnLabelDecode):
     """Convert between text-label and text-index"""
 
@@ -1052,6 +1071,7 @@ class SPINLabelDecode(AttnLabelDecode):
         return dict_character
 
 
+    # VisionLAN 解码：eval 模式逐步 top-k 展开序列
 class VLLabelDecode(BaseRecLabelDecode):
     """Convert between text-label and text-index"""
 
@@ -1160,6 +1180,7 @@ class VLLabelDecode(BaseRecLabelDecode):
         return text, label
 
 
+    # CAN 公式识别：计数注意力网络字符解码
 class CANLabelDecode(BaseRecLabelDecode):
     """Convert between latex-symbol and symbol-index"""
 
@@ -1191,6 +1212,7 @@ class CANLabelDecode(BaseRecLabelDecode):
         return text, label
 
 
+    # CPPD 解码：NRTR 系排列不变识别
 class CPPDLabelDecode(NRTRLabelDecode):
     """Convert between text-label and text-index"""
 
@@ -1220,6 +1242,7 @@ class CPPDLabelDecode(NRTRLabelDecode):
         return dict_character
 
 
+    # LaTeX-OCR 解码：fast tokenizer 生成 LaTeX 串
 class LaTeXOCRDecode(object):
     """Convert between latex-symbol and symbol-index"""
 
@@ -1276,6 +1299,7 @@ class LaTeXOCRDecode(object):
         return text, label
 
 
+    # UniMERNet 解码：公式 tokenizer 自回归生成
 class UniMERNetDecode(object):
 
     SPECIAL_TOKENS_ATTRIBUTES = [

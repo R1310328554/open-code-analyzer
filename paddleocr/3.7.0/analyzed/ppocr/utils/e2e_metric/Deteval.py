@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# ICDAR Deteval 端到端评分：模式 A/B/C 匹配检测框与识别文本
 import json
 import numpy as np
 import scipy.io as io
@@ -21,6 +22,7 @@ from ppocr.utils.utility import check_install
 from ppocr.utils.e2e_metric.polygon_fast import iod, area_of_intersection, area
 
 
+    # 模式 A：在线 GT dict，计算 sigma/tau 与全局匹配串
 def get_socre_A(gt_dir, pred_dict):
     allInputs = 1
 
@@ -81,6 +83,7 @@ def get_socre_A(gt_dir, pred_dict):
                     detection = list(map(int, detection))
                     det_x = detection[0::2]
                     det_y = detection[1::2]
+                    # IoD 过滤：检测框与 ignore GT 重叠则剔除
                     det_gt_iou = iod(det_x, det_y, gt_x, gt_y)
                     if det_gt_iou > threshold:
                         detections[det_id] = []
@@ -175,6 +178,7 @@ def get_socre_A(gt_dir, pred_dict):
     return single_data
 
 
+    # 模式 B：从 mat 文件加载单图 GT 后评分
 def get_socre_B(gt_dir, img_id, pred_dict):
     allInputs = 1
 
@@ -306,6 +310,7 @@ def get_socre_B(gt_dir, img_id, pred_dict):
     return single_data
 
 
+    # 模式 C：给定 label 索引与 pred 框/文本的单图 C 分数
 def get_score_C(gt_label, text, pred_bboxes):
     """
     get score for CentripetalText (CT) prediction.
@@ -422,6 +427,7 @@ def get_score_C(gt_label, text, pred_bboxes):
     return data
 
 
+    # 聚合多图 Deteval 结果，可选识别项统计
 def combine_results(all_data, rec_flag=True):
     tr = 0.7
     tp = 0.6

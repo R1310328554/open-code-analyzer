@@ -1,8 +1,10 @@
+# PGNet TCL 批处理：按 GPU 重组 pos_list 并 pad/裁剪至 tcl_bs
 import paddle
 import numpy as np
 import copy
 
 
+    # 按 img_id 分 GPU，重复或随机丢弃使每卡 ROI 数为 tcl_bs
 def org_tcl_rois(batch_size, pos_lists, pos_masks, label_lists, tcl_bs):
     """ """
     pos_lists_, pos_masks_, label_lists_ = [], [], []
@@ -50,6 +52,7 @@ def org_tcl_rois(batch_size, pos_lists, pos_masks, label_lists, tcl_bs):
     return pos_lists_, pos_masks_, label_lists_
 
 
+    # 从 batch 提取有效文本 ROI，调用 org_tcl_rois 并返回 Paddle 张量
 def pre_process(
     label_list, pos_list, pos_mask, max_text_length, max_text_nums, pad_num, tcl_bs
 ):

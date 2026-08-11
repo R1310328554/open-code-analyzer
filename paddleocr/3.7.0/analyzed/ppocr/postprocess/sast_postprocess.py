@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# SAST 检测后处理：TCL/TVO/TCO 图还原四边形 + 局部 NMS
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -30,6 +31,7 @@ import cv2
 import time
 
 
+    # SAST 后处理：中心线采样、宽度扩展、locality-aware NMS
 class SASTPostProcess(object):
     """
     The post process for SAST.
@@ -112,6 +114,7 @@ class SASTPostProcess(object):
         xy_text = xy_text[:, ::-1]  # (n, 2)
 
         # Sort the text boxes via the y axis
+        # 按 y 坐标排序文本中心点
         xy_text = xy_text[np.argsort(xy_text[:, 1])]
 
         scores = tcl_map[xy_text[:, 1], xy_text[:, 0], 0]
@@ -340,6 +343,7 @@ class SASTPostProcess(object):
             p_tco = tco_list[ino].transpose((1, 2, 0))
             src_h, src_w, ratio_h, ratio_w = shape_list[ino]
 
+            # 单图：score/border/tvo/tco 融合生成多边形列表
             poly_list = self.detect_sast(
                 p_score,
                 p_tvo,

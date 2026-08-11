@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# PGNet 后处理封装：调用 fast/slow 提取模块输出 poly 与 texts
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -26,6 +27,7 @@ from extract_textpoint_slow import *
 from extract_textpoint_fast import generate_pivot_list_fast, restore_poly
 
 
+    # PGNet 后处理：fast/slow 两路，score/border/char/direction → 检测+识别
 class PGNet_PostProcess(object):
     # two different post-process
     def __init__(
@@ -101,6 +103,7 @@ class PGNet_PostProcess(object):
             p_direction = p_direction[0]
             p_char = p_char[0]
         src_h, src_w, ratio_h, ratio_w = self.shape_list[0]
+        # TotalText 数据集启用曲线文本 slow 路径
         is_curved = self.valid_set == "totaltext"
         char_seq_idx_set, instance_yxs_list = generate_pivot_list_slow(
             p_score,

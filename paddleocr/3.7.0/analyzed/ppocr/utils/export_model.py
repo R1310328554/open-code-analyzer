@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 推理模型导出：动态图转静态、写 infer 配置、jit.save 保存
 import os
 import yaml
 import json
@@ -38,6 +39,7 @@ def setup_orderdict():
     yaml.add_representer(OrderedDict, represent_dictionary_order)
 
 
+    # 生成 deploy 用 infer YAML：动态 shape、HPI backend 配置
 def dump_infer_config(config, path, logger):
     setup_orderdict()
     infer_cfg = OrderedDict()
@@ -166,6 +168,7 @@ def dump_infer_config(config, path, logger):
     logger.info("Export inference config file to {}".format(os.path.join(path)))
 
 
+    # 按算法类型选择 input_spec，to_static 并 rep 重参数化层
 def dynamic_to_static(model, arch_config, logger, input_shape=None):
     if arch_config["algorithm"] == "SRN":
         max_text_length = arch_config["Head"]["max_text_length"]
@@ -361,6 +364,7 @@ def dynamic_to_static(model, arch_config, logger, input_shape=None):
     return model
 
 
+    # 单模型导出：PIR/旧 IR 分支保存，可选量化
 def export_single_model(
     model,
     arch_config,
@@ -404,6 +408,7 @@ def export_single_model(
     return
 
 
+    # 递归将 SyncBatchNorm 转为 BatchNorm2D
 def convert_bn(model):
     for n, m in model.named_children():
         if isinstance(m, nn.SyncBatchNorm):
@@ -416,6 +421,7 @@ def convert_bn(model):
             convert_bn(m)
 
 
+    # 导出主入口：构建 postprocess 确定 char_num，加载权重并导出
 def export(config, base_model=None, save_path=None):
     if paddle.distributed.get_rank() != 0:
         return
@@ -425,6 +431,7 @@ def export(config, base_model=None, save_path=None):
 
     # build model
     # for rec algorithm
+    # 识别模型：按字典长度设置 Head out_channels
     if hasattr(post_process_class, "character"):
         char_num = len(getattr(post_process_class, "character"))
         if config["Architecture"]["algorithm"] in [

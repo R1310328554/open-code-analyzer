@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains various CTC decoders."""
+# PGNet 快速文本点提取：CTC 贪心解码 + 方向排序 + 多边形还原
+"""Contains various CTC decoders."""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -254,6 +256,7 @@ def sort_and_expand_with_direction(pos_list, f_direction):
     return all_list
 
 
+    # v2 方向排序：结合 TCL 骨架细化扩展中心线
 def sort_and_expand_with_direction_v2(pos_list, f_direction, binary_tcl_map):
     """
     f_direction: h x w x 2
@@ -364,6 +367,7 @@ def expand_poly_along_width(poly, shrink_ratio_of_width=0.3):
     return poly
 
 
+    # 由 pivot 与 border 偏移还原原文坐标系多边形
 def restore_poly(
     instance_yxs_list, seq_strs, p_border, ratio_w, ratio_h, src_w, src_h, valid_set
 ):
@@ -409,6 +413,7 @@ def restore_poly(
     return poly_list, keep_str_list
 
 
+    # 快速路径：二值 TCL + CTC 解码生成 pivot 列表与识别串
 def generate_pivot_list_fast(
     p_score,
     p_char_maps,

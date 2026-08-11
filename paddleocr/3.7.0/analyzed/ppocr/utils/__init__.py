@@ -11,3 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# ppocr.utils 工具子包：E2E 评估、导出、EMA 等通用辅助（无公开重导出）
+# limitations under the License.
