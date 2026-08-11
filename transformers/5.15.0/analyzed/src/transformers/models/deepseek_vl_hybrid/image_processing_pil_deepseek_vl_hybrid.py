@@ -38,6 +38,7 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# DeepseekVLHybridImageProcessorKwargs：PIL 后端双分辨率预处理参数
 class DeepseekVLHybridImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     min_size (`int`, *optional*, defaults to 14):
@@ -65,6 +66,7 @@ class DeepseekVLHybridImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# DeepseekVLHybridImageProcessorPil：逐张生成 pixel_values 与 high_res_pixel_values
 class DeepseekVLHybridImageProcessorPil(PilBackend):
     resample = PILImageResampling.BICUBIC
     image_mean = OPENAI_CLIP_MEAN
@@ -96,6 +98,7 @@ class DeepseekVLHybridImageProcessorPil(PilBackend):
         self.high_res_background_color = tuple(high_res_background_color)
 
     @auto_docstring
+# preprocess：委托父类执行双分辨率预处理
     def preprocess(self, images: ImageInput, **kwargs: Unpack[DeepseekVLHybridImageProcessorKwargs]) -> BatchFeature:
         return super().preprocess(images, **kwargs)
 
@@ -163,6 +166,7 @@ class DeepseekVLHybridImageProcessorPil(PilBackend):
 
         return padded_image
 
+# _preprocess：高分辨率 resize/pad/归一化后降采样为低分辨率
     def _preprocess(
         self,
         images: list[np.ndarray],
@@ -218,6 +222,7 @@ class DeepseekVLHybridImageProcessorPil(PilBackend):
         """Applies post-processing to the decoded image tokens by reversing transformations applied during preprocessing."""
         raise AttributeError("Not needed for DeepseekVLHybrid")
 
+# _standardize_kwargs：统一 size 与 high_res_size 的类型
     def _standardize_kwargs(
         self,
         size: int | Iterable[int] | dict[str, int] | SizeDict | None = None,

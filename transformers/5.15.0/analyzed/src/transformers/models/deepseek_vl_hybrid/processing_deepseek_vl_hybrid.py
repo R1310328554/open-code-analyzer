@@ -22,6 +22,7 @@ from ...processing_utils import ProcessingKwargs, ProcessorMixin
 from ...utils import auto_docstring
 
 
+# DeepseekVLHybridProcessorKwargs：text/common 默认处理参数
 class DeepseekVLHybridProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -34,6 +35,7 @@ class DeepseekVLHybridProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# DeepseekVLHybridProcessor：输出 pixel_values 与 high_res_pixel_values
 class DeepseekVLHybridProcessor(ProcessorMixin):
     valid_processor_kwargs = DeepseekVLHybridProcessorKwargs
 
@@ -54,6 +56,7 @@ class DeepseekVLHybridProcessor(ProcessorMixin):
 
         super().__init__(image_processor, tokenizer, chat_template=chat_template)
 
+# replace_image_token：为每张图像插入 num_image_tokens 个占位 token
     def replace_image_token(self, image_inputs: dict, image_idx: int, **kwargs) -> str:
         return self.image_token * self.num_image_tokens
 

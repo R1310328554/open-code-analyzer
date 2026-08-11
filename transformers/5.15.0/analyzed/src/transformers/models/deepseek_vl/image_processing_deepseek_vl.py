@@ -30,6 +30,7 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# DeepseekVLImageProcessorKwargs：min_size 等图像预处理可选参数
 class DeepseekVLImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     min_size (`int`, *optional*, defaults to 14):
@@ -41,6 +42,7 @@ class DeepseekVLImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# DeepseekVLImageProcessor：最长边缩放、正方形填充与 CLIP 均值方差归一化
 class DeepseekVLImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.BICUBIC
     image_mean = OPENAI_CLIP_MEAN
@@ -61,6 +63,7 @@ class DeepseekVLImageProcessor(TorchvisionBackend):
             background_color = tuple(int(x * 255) for x in kwargs.get("image_mean"))
         self.background_color = tuple(background_color)
 
+# resize：最长边缩至目标尺寸，短边按比例缩放且不低于 min_size
     def resize(
         self,
         image: "torch.Tensor",
@@ -88,6 +91,7 @@ class DeepseekVLImageProcessor(TorchvisionBackend):
 
         return super().resize(image, size=output_size_nonpadded, resample=resample, antialias=antialias)
 
+# pad_to_square：以最长边为边长居中填充为正方形
     def pad_to_square(
         self,
         images: "torch.Tensor",
@@ -138,6 +142,7 @@ class DeepseekVLImageProcessor(TorchvisionBackend):
 
         return padded_images
 
+# _preprocess：按尺寸分组批量 resize → pad → rescale/normalize 流水线
     def _preprocess(
         self,
         images: list["torch.Tensor"],

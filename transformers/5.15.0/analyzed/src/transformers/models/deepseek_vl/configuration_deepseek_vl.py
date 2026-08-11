@@ -29,8 +29,10 @@ from ..auto import CONFIG_MAPPING, AutoConfig
 logger = logging.get_logger(__name__)
 
 
+# DeepseekVLConfig：1.3B 对话版 checkpoint，text/vision 子配置与 image_token_id
 @auto_docstring(checkpoint="deepseek-community/deepseek-vl-1.3b-chat")
 @strict
+# DeepseekVLConfig：组合 LlamaConfig 与 SiglipVisionConfig 的多模态配置
 class DeepseekVLConfig(PreTrainedConfig):
     r"""
     Example:
@@ -56,6 +58,7 @@ class DeepseekVLConfig(PreTrainedConfig):
     image_token_id: int = 100015
     tie_word_embeddings: bool = True
 
+# __post_init__：将 dict 子配置解析为 CONFIG_MAPPING 中的具体 Config 对象
     def __post_init__(self, **kwargs):
         if self.text_config is None:
             self.text_config = {}

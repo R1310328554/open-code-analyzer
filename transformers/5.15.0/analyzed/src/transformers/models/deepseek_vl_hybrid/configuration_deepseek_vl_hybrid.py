@@ -28,8 +28,10 @@ from ..auto import CONFIG_MAPPING, AutoConfig
 logger = logging.get_logger(__name__)
 
 
+# DeepseekVLHybridConfig：7B 混合视觉版 checkpoint 与 high_res_vision_config
 @auto_docstring(checkpoint="deepseek-community/deepseek-vl-7b-chat")
 @strict
+# DeepseekVLHybridConfig：新增 high_res_vision_config（默认 SamVisionConfig）
 class DeepseekVLHybridConfig(PreTrainedConfig):
     r"""
     high_res_vision_config (`Union[AutoConfig, dict]`,  *optional*, defaults to `SamVisionConfig`):
@@ -60,6 +62,7 @@ class DeepseekVLHybridConfig(PreTrainedConfig):
 
     high_res_vision_config: dict | PreTrainedConfig | None = None
 
+# __post_init__：解析 SAM 高分辨率视觉配置及 text/vision 子配置
     def __post_init__(self, **kwargs):
         if self.high_res_vision_config is None:
             self.high_res_vision_config = {}

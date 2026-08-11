@@ -21,8 +21,10 @@ from ...utils import auto_docstring
 from ..auto import AutoConfig
 
 
+# DeformableDetrConfig：300 queries、4 特征层、encoder/decoder 各 4 采样点
 @auto_docstring(checkpoint="SenseTime/deformable-detr")
 @strict
+# DeformableDetrConfig：two_stage/with_box_refine 与匈牙利匹配损失系数
 class DeformableDetrConfig(PreTrainedConfig):
     r"""
     num_queries (`int`, *optional*, defaults to 300):
@@ -117,6 +119,7 @@ class DeformableDetrConfig(PreTrainedConfig):
     disable_custom_kernels: bool = False
     tie_word_embeddings: bool = True
 
+# __post_init__：consolidate_backbone_kwargs 合并 timm/ResNet 骨干配置
     def __post_init__(self, **kwargs):
         # Init timm backbone with hardcoded values for BC
         timm_default_kwargs = {
@@ -139,6 +142,7 @@ class DeformableDetrConfig(PreTrainedConfig):
 
         super().__post_init__(**kwargs)
 
+# validate_architecture：two_stage 为 True 时要求 with_box_refine 也为 True
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if self.two_stage is True and self.with_box_refine is False:

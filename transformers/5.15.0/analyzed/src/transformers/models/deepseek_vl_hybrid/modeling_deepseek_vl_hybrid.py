@@ -36,6 +36,7 @@ from .configuration_deepseek_vl_hybrid import DeepseekVLHybridConfig
 
 @auto_docstring
 @dataclass
+# BaseModelOutputWithHighResVisionEncodings：含高分辨率 SAM 视觉隐状态的多模态输出
 class BaseModelOutputWithHighResVisionEncodings(BaseModelOutputWithPooling):
     r"""
     high_res_vision_last_hidden_state (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`):
@@ -64,6 +65,7 @@ class BaseModelOutputWithHighResVisionEncodings(BaseModelOutputWithPooling):
     """
 )
 @dataclass
+# DeepseekVLHybridBaseModelOutputWithPast：混合视觉多模态主干输出
 class DeepseekVLHybridBaseModelOutputWithPast(ModelOutput):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`):
@@ -91,6 +93,7 @@ class DeepseekVLHybridBaseModelOutputWithPast(ModelOutput):
     """
 )
 @dataclass
+# DeepseekVLHybridCausalLMOutputWithPast：混合视觉条件生成输出
 class DeepseekVLHybridCausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -117,6 +120,7 @@ class DeepseekVLHybridCausalLMOutputWithPast(ModelOutput):
     image_hidden_states: tuple[torch.FloatTensor] | None = None
 
 
+# DeepseekVLHybridLayerNorm：支持 channels_first/last 两种格式的 LayerNorm
 class DeepseekVLHybridLayerNorm(nn.LayerNorm):
     r"""LayerNorm that supports two data formats: channels_last (default) or channels_first.
     The ordering of the dimensions in the inputs. channels_last corresponds to inputs with shape (batch_size, height,
@@ -129,6 +133,7 @@ class DeepseekVLHybridLayerNorm(nn.LayerNorm):
             raise NotImplementedError(f"Unsupported data format: {data_format}")
         self.data_format = data_format
 
+# forward：双路 pixel_values 嵌入 image token 后语言模型解码
     def forward(self, features: torch.Tensor) -> torch.Tensor:
         """
         Args:
@@ -143,6 +148,7 @@ class DeepseekVLHybridLayerNorm(nn.LayerNorm):
         return features
 
 
+# DeepseekVLSamVisionNeck：SAM 视觉 neck，1×1/3×3 卷积 + LayerNorm
 class DeepseekVLSamVisionNeck(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -163,6 +169,7 @@ class DeepseekVLSamVisionNeck(nn.Module):
         return hidden_states
 
 
+# DeepseekVLSamVisionProj：双步 stride-2 卷积将 SAM 特征对齐 SigLIP 分辨率
 class DeepseekVLSamVisionProj(nn.Module):
     def __init__(self, config, output_size: int = 24):
         super().__init__()
@@ -189,6 +196,7 @@ class DeepseekVLSamVisionProj(nn.Module):
         return features
 
 
+# DeepseekVLHybridAligner：低/高分辨率视觉特征拼接后投影至文本隐层
 class DeepseekVLHybridAligner(nn.Module):
     def __init__(self, config: DeepseekVLHybridConfig):
         super().__init__()
@@ -219,6 +227,7 @@ class DeepseekVLHybridAligner(nn.Module):
 
 
 @auto_docstring
+# DeepseekVLHybridPreTrainedModel：混合视觉预训练基类，Conv2d Kaiming 初始化
 class DeepseekVLHybridPreTrainedModel(PreTrainedModel):
     config: DeepseekVLHybridConfig
     base_model_prefix = "model"
@@ -250,6 +259,7 @@ DEEPSEEK_VL_COMMON_CUSTOM_ARGS = r"""
 
 
 @auto_docstring
+# DeepseekVLHybridModel：SigLIP + SAM 双塔 + aligner + language_model
 class DeepseekVLHybridModel(DeepseekVLHybridPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -275,6 +285,7 @@ class DeepseekVLHybridModel(DeepseekVLHybridPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring(custom_args=DEEPSEEK_VL_COMMON_CUSTOM_ARGS)
+# get_image_features：融合低/高分辨率视觉特征并经 aligner 对齐
     def get_image_features(
         self,
         pixel_values: torch.FloatTensor,
@@ -378,9 +389,11 @@ class DeepseekVLHybridModel(DeepseekVLHybridPreTrainedModel):
             image_hidden_states=image_embeds if pixel_values is not None else None,
         )
 
+# get_low_res_image_features：SigLIP 低分辨率视觉塔前向
     def get_low_res_image_features(self, pixel_values: torch.FloatTensor, **kwargs: Unpack[TransformersKwargs]):
         return self.vision_model(pixel_values, return_dict=True, **kwargs)
 
+# get_high_res_image_features：SAM 高分辨率塔 + neck + alpha 加权融合
     def get_high_res_image_features(
         self,
         pixel_values: torch.FloatTensor,
@@ -411,6 +424,7 @@ class DeepseekVLHybridModel(DeepseekVLHybridPreTrainedModel):
         return high_res_outputs
 
 
+# DeepseekVLHybridForConditionalGeneration：7B 混合视觉多模态条件生成
 class DeepseekVLHybridForConditionalGeneration(DeepseekVLHybridPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
     output_modalities = ("text",)

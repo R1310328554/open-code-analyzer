@@ -36,6 +36,7 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# DeepseekVLImageProcessorKwargs：PIL 后端图像预处理可选参数
 class DeepseekVLImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     min_size (`int`, *optional*, defaults to 14):
@@ -47,6 +48,7 @@ class DeepseekVLImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# DeepseekVLImageProcessorPil：无 torch 依赖的 numpy 图像预处理路径
 class DeepseekVLImageProcessorPil(PilBackend):
     resample = PILImageResampling.BICUBIC
     image_mean = OPENAI_CLIP_MEAN
@@ -69,9 +71,11 @@ class DeepseekVLImageProcessorPil(PilBackend):
         self.background_color = tuple(background_color)
 
     @auto_docstring
+# preprocess：委托父类完成 resize/pad/归一化并返回 pixel_values
     def preprocess(self, images: ImageInput, **kwargs: Unpack[DeepseekVLImageProcessorKwargs]) -> BatchFeature:
         return super().preprocess(images, **kwargs)
 
+# resize：最长边缩至目标尺寸，短边按比例缩放
     def resize(
         self,
         image: np.ndarray,
@@ -102,6 +106,7 @@ class DeepseekVLImageProcessorPil(PilBackend):
             input_data_format=ChannelDimension.FIRST,
         )
 
+# pad_to_square：居中填充为正方形画布
     def pad_to_square(
         self,
         image: np.ndarray,
@@ -136,6 +141,7 @@ class DeepseekVLImageProcessorPil(PilBackend):
 
         return padded_image
 
+# _preprocess：逐张图像 resize → pad → rescale → normalize
     def _preprocess(
         self,
         images: list[np.ndarray],

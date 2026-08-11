@@ -67,8 +67,10 @@ DEEPSEEK_VL_COMMON_CUSTOM_ARGS = r"""
 """
 
 
+# DeepseekVLHybridConfig：继承 DeepseekVLConfig，新增 high_res_vision_config
 @auto_docstring(checkpoint="deepseek-community/deepseek-vl-7b-chat")
 @strict
+# DeepseekVLHybridConfig：默认 SamVisionConfig 作为高分辨率视觉骨干
 class DeepseekVLHybridConfig(DeepseekVLConfig):
     r"""
     high_res_vision_config (`Union[AutoConfig, dict]`,  *optional*, defaults to `SamVisionConfig`):
@@ -112,6 +114,7 @@ class DeepseekVLHybridConfig(DeepseekVLConfig):
 
 @auto_docstring
 @dataclass
+# BaseModelOutputWithHighResVisionEncodings：高分辨率 SAM 视觉中间输出类型
 class BaseModelOutputWithHighResVisionEncodings(BaseModelOutputWithPooling):
     r"""
     high_res_vision_last_hidden_state (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`):
@@ -134,23 +137,28 @@ class BaseModelOutputWithHighResVisionEncodings(BaseModelOutputWithPooling):
     high_res_vision_attentions: tuple[torch.FloatTensor] | None = None
 
 
+# DeepseekVLHybridBaseModelOutputWithPast：继承 Idefics 多模态输出
 class DeepseekVLHybridBaseModelOutputWithPast(IdeficsBaseModelOutputWithPast):
     pass
 
 
+# DeepseekVLHybridCausalLMOutputWithPast：继承 Idefics 因果 LM 输出
 class DeepseekVLHybridCausalLMOutputWithPast(IdeficsCausalLMOutputWithPast):
     pass
 
 
+# DeepseekVLHybridLayerNorm：复用 SAM LayerNorm 实现
 class DeepseekVLHybridLayerNorm(SamLayerNorm):
     pass
 
 
+# DeepseekVLSamVisionNeck：继承 SAM 视觉 neck
 class DeepseekVLSamVisionNeck(SamVisionNeck):
     def __init__(self, config):
         super().__init__(config)
 
 
+# DeepseekVLSamVisionProj：插值 + 卷积将 SAM 特征对齐 SigLIP token 网格
 class DeepseekVLSamVisionProj(nn.Module):
     def __init__(self, config, output_size: int = 24):
         super().__init__()
@@ -177,6 +185,7 @@ class DeepseekVLSamVisionProj(nn.Module):
         return features
 
 
+# DeepseekVLHybridAligner：双路线性投影拼接后经 GELU + 线性层对齐
 class DeepseekVLHybridAligner(nn.Module):
     def __init__(self, config: DeepseekVLHybridConfig):
         super().__init__()
@@ -206,6 +215,7 @@ class DeepseekVLHybridAligner(nn.Module):
         return encodings
 
 
+# DeepseekVLHybridPreTrainedModel：Conv2d 与 high_res_vision_alpha 特殊初始化
 class DeepseekVLHybridPreTrainedModel(DeepseekVLPreTrainedModel):
     @torch.no_grad()
     def _init_weights(self, module):
@@ -219,6 +229,7 @@ class DeepseekVLHybridPreTrainedModel(DeepseekVLPreTrainedModel):
             init.zeros_(module.high_res_vision_alpha)
 
 
+# DeepseekVLHybridModel：叠加 SAM 高分辨率塔与 DeepseekVLHybridAligner
 class DeepseekVLHybridModel(DeepseekVLModel):
     def __init__(self, config):
         self.output_size = config.vision_config.image_size // config.vision_config.patch_size
@@ -233,9 +244,11 @@ class DeepseekVLHybridModel(DeepseekVLModel):
 
         super().__init__(config)
 
+# get_low_res_image_features：SigLIP 低分辨率视觉编码
     def get_low_res_image_features(self, pixel_values: torch.FloatTensor, **kwargs: Unpack[TransformersKwargs]):
         return self.vision_model(pixel_values, return_dict=True, **kwargs)
 
+# get_high_res_image_features：SAM 全局/局部特征 alpha 加权融合
     def get_high_res_image_features(
         self,
         pixel_values: torch.FloatTensor,
@@ -267,6 +280,7 @@ class DeepseekVLHybridModel(DeepseekVLModel):
 
     @can_return_tuple
     @auto_docstring(custom_args=DEEPSEEK_VL_COMMON_CUSTOM_ARGS)
+# get_image_features：双塔特征经 aligner 融合为 pooler_output
     def get_image_features(
         self,
         pixel_values: torch.FloatTensor,
@@ -347,6 +361,7 @@ class DeepseekVLHybridModel(DeepseekVLModel):
         )
 
 
+# DeepseekVLHybridForConditionalGeneration：混合视觉条件生成 modular 定义
 class DeepseekVLHybridForConditionalGeneration(DeepseekVLForConditionalGeneration):
     @can_return_tuple
     @auto_docstring(custom_args=DEEPSEEK_VL_COMMON_CUSTOM_ARGS)
@@ -402,6 +417,7 @@ class DeepseekVLHybridForConditionalGeneration(DeepseekVLForConditionalGeneratio
         )
 
 
+# DeepseekVLHybridImageProcessorKwargs：双分辨率图像预处理参数
 class DeepseekVLHybridImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     min_size (`int`, *optional*, defaults to 14):
@@ -428,6 +444,7 @@ class DeepseekVLHybridImageProcessorKwargs(ImagesKwargs, total=False):
     high_res_image_std: float | list[float] | tuple[float, ...]
 
 
+# DeepseekVLHybridImageProcessorPil：PIL 双分辨率预处理
 class DeepseekVLHybridImageProcessorPil(DeepseekVLImageProcessorPil):
     high_res_image_mean = OPENAI_CLIP_MEAN
     high_res_image_std = OPENAI_CLIP_STD
@@ -539,6 +556,7 @@ class DeepseekVLHybridImageProcessorPil(DeepseekVLImageProcessorPil):
         )
 
 
+# DeepseekVLHybridImageProcessor：Torchvision 双分辨率预处理
 class DeepseekVLHybridImageProcessor(DeepseekVLImageProcessor):
     high_res_image_mean = OPENAI_CLIP_MEAN
     high_res_image_std = OPENAI_CLIP_STD
@@ -684,10 +702,12 @@ class DeepseekVLHybridImageProcessor(DeepseekVLImageProcessor):
         )
 
 
+# DeepseekVLHybridProcessorKwargs：继承 DeepseekVL Processor kwargs
 class DeepseekVLHybridProcessorKwargs(DeepseekVLProcessorKwargs):
     pass
 
 
+# DeepseekVLHybridProcessor：混合视觉多模态 Processor 别名
 class DeepseekVLHybridProcessor(DeepseekVLProcessor):
     pass
 

@@ -33,8 +33,10 @@ from ..janus.modeling_janus import JanusForConditionalGeneration, JanusModel, Ja
 logger = logging.get_logger(__name__)
 
 
+# DeepseekVLConfig：modular 定义，默认 Llama + SigLIP 子配置
 @auto_docstring(checkpoint="deepseek-community/deepseek-vl-1.3b-chat")
 @strict
+# DeepseekVLConfig：text_config/vision_config/image_token_id 多模态超参
 class DeepseekVLConfig(PreTrainedConfig):
     r"""
     Example:
@@ -78,14 +80,17 @@ class DeepseekVLConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# DeepseekVLBaseModelOutputWithPast：继承 Idefics 多模态输出类型
 class DeepseekVLBaseModelOutputWithPast(IdeficsBaseModelOutputWithPast):
     pass
 
 
+# DeepseekVLCausalLMOutputWithPast：继承 Idefics 因果 LM 输出
 class DeepseekVLCausalLMOutputWithPast(IdeficsCausalLMOutputWithPast):
     pass
 
 
+# DeepseekVLAligner：vision→text 维度的两层 GELU 对齐 MLP
 class DeepseekVLAligner(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -105,6 +110,7 @@ class DeepseekVLAligner(nn.Module):
         return x
 
 
+# DeepseekVLPreTrainedModel：继承 Janus 预训练基类，禁用权重初始化
 class DeepseekVLPreTrainedModel(JanusPreTrainedModel):
     _no_split_modules = AttributeError()
 
@@ -113,6 +119,7 @@ class DeepseekVLPreTrainedModel(JanusPreTrainedModel):
 
 
 @auto_docstring
+# DeepseekVLModel：替换 Janus 视觉/语言塔，移除 VQ 生成组件
 class DeepseekVLModel(JanusModel):
     def __init__(self, config):
         super().__init__(config)
@@ -133,6 +140,7 @@ class DeepseekVLModel(JanusModel):
         del self.generation_head
 
 
+# DeepseekVLForConditionalGeneration：纯文本输出，禁用 Janus 图像生成接口
 class DeepseekVLForConditionalGeneration(JanusForConditionalGeneration):
     output_modalities = ("text",)
 
@@ -146,6 +154,7 @@ class DeepseekVLForConditionalGeneration(JanusForConditionalGeneration):
         raise AttributeError("Not needed for DeepseekVL")
 
 
+# DeepseekVLImageProcessorPil：继承 Janus PIL 预处理，禁用 postprocess
 class DeepseekVLImageProcessorPil(JanusImageProcessorPil):
     def postprocess(self):
         raise AttributeError("Not needed for DeepseekVL")
@@ -154,11 +163,13 @@ class DeepseekVLImageProcessorPil(JanusImageProcessorPil):
         raise AttributeError("Not needed for DeepseekVL")
 
 
+# DeepseekVLImageProcessor：继承 Janus Torchvision 预处理
 class DeepseekVLImageProcessor(JanusImageProcessor):
     def postprocess(self):
         raise AttributeError("Not needed for DeepseekVL")
 
 
+# DeepseekVLProcessorKwargs：text/common 默认 kwargs
 class DeepseekVLProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -171,6 +182,7 @@ class DeepseekVLProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# DeepseekVLProcessor：image_processor + tokenizer 多模态 Processor
 class DeepseekVLProcessor(ProcessorMixin):
     valid_processor_kwargs = DeepseekVLProcessorKwargs
 
@@ -191,6 +203,7 @@ class DeepseekVLProcessor(ProcessorMixin):
 
         super().__init__(image_processor, tokenizer, chat_template=chat_template)
 
+# replace_image_token：用 num_image_tokens 个 image_token 占位视觉内容
     def replace_image_token(self, image_inputs: dict, image_idx: int, **kwargs) -> str:
         return self.image_token * self.num_image_tokens
 

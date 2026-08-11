@@ -32,6 +32,7 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# DeepseekVLHybridImageProcessorKwargs：high_res_size/mean/std 等双分辨率参数
 class DeepseekVLHybridImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     min_size (`int`, *optional*, defaults to 14):
@@ -59,6 +60,7 @@ class DeepseekVLHybridImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# DeepseekVLHybridImageProcessor：384 低分辨率 + 1024 高分辨率双路预处理
 class DeepseekVLHybridImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.BICUBIC
     image_mean = OPENAI_CLIP_MEAN
@@ -89,6 +91,7 @@ class DeepseekVLHybridImageProcessor(TorchvisionBackend):
         self.background_color = tuple(background_color)
         self.high_res_background_color = tuple(high_res_background_color)
 
+# resize：最长边缩放，保证输出边长一致
     def resize(
         self,
         image: "torch.Tensor",
@@ -116,6 +119,7 @@ class DeepseekVLHybridImageProcessor(TorchvisionBackend):
 
         return super().resize(image, size=output_size_nonpadded, resample=resample, antialias=antialias)
 
+# pad_to_square：按最长边居中填充正方形
     def pad_to_square(
         self,
         images: "torch.Tensor",
@@ -166,6 +170,7 @@ class DeepseekVLHybridImageProcessor(TorchvisionBackend):
 
         return padded_images
 
+# _preprocess：高分辨率 resize/pad/归一化后再降采样生成低分辨率分支
     def _preprocess(
         self,
         images: list["torch.Tensor"],
@@ -254,6 +259,7 @@ class DeepseekVLHybridImageProcessor(TorchvisionBackend):
     def postprocess(self) -> "torch.Tensor":
         raise AttributeError("Not needed for DeepseekVLHybrid")
 
+# _standardize_kwargs：将 size/high_res_size 等 kwargs 标准化为 SizeDict
     def _standardize_kwargs(
         self,
         size: int | Iterable[int] | dict[str, int] | SizeDict | None = None,

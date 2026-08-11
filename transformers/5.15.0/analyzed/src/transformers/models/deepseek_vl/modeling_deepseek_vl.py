@@ -40,6 +40,7 @@ from .configuration_deepseek_vl import DeepseekVLConfig
     """
 )
 @dataclass
+# DeepseekVLBaseModelOutputWithPast：多模态主干输出，含 image_hidden_states 与 past_key_values
 class DeepseekVLBaseModelOutputWithPast(ModelOutput):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`):
@@ -67,6 +68,7 @@ class DeepseekVLBaseModelOutputWithPast(ModelOutput):
     """
 )
 @dataclass
+# DeepseekVLCausalLMOutputWithPast：条件生成 loss/logits 与视觉隐状态
 class DeepseekVLCausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -93,6 +95,7 @@ class DeepseekVLCausalLMOutputWithPast(ModelOutput):
     image_hidden_states: tuple[torch.FloatTensor] | None = None
 
 
+# DeepseekVLAligner：两层 MLP 将视觉隐层对齐至文本 hidden_size
 class DeepseekVLAligner(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -105,6 +108,7 @@ class DeepseekVLAligner(nn.Module):
         self.activation = nn.GELU()
         self.linear2 = nn.Linear(out_features, out_features)
 
+# forward：将视觉特征 scatter 至 image token 占位符后语言模型前向
     def forward(self, vision_encodings: torch.Tensor) -> torch.Tensor:
         x = self.linear1(vision_encodings)
         x = self.activation(x)
@@ -113,6 +117,7 @@ class DeepseekVLAligner(nn.Module):
 
 
 @auto_docstring
+# DeepseekVLPreTrainedModel：声明 image+text 双模态输入的预训练基类
 class DeepseekVLPreTrainedModel(PreTrainedModel):
     config: DeepseekVLConfig
     base_model_prefix = "model"
@@ -126,6 +131,7 @@ class DeepseekVLPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# DeepseekVLModel：vision_model + aligner + language_model 多模态融合
 class DeepseekVLModel(DeepseekVLPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -142,6 +148,7 @@ class DeepseekVLModel(DeepseekVLPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+# get_image_features：视觉塔前向并经 aligner 投影，返回 pooler_output
     def get_image_features(
         self, pixel_values: torch.FloatTensor, **kwargs: Unpack[TransformersKwargs]
     ) -> tuple | BaseModelOutputWithPooling:
@@ -150,6 +157,7 @@ class DeepseekVLModel(DeepseekVLPreTrainedModel):
 
         return vision_outputs
 
+# get_placeholder_mask：校验 image token 数量与视觉特征长度一致
     def get_placeholder_mask(
         self, input_ids: torch.LongTensor, inputs_embeds: torch.FloatTensor, image_features: torch.FloatTensor
     ):
@@ -223,6 +231,7 @@ class DeepseekVLModel(DeepseekVLPreTrainedModel):
         )
 
 
+# DeepseekVLForConditionalGeneration：多模态条件生成，lm_head 预测下一 token
 class DeepseekVLForConditionalGeneration(DeepseekVLPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
     output_modalities = ("text",)

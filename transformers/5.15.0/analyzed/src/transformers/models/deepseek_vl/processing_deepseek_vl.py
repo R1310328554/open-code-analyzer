@@ -23,6 +23,7 @@ from ...processing_utils import ProcessingKwargs, ProcessorMixin
 from ...utils import auto_docstring
 
 
+# DeepseekVLProcessorKwargs：padding/return_tensors 等默认处理参数
 class DeepseekVLProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -35,6 +36,7 @@ class DeepseekVLProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# DeepseekVLProcessor：组合 image_processor 与 tokenizer 的多模态入口
 class DeepseekVLProcessor(ProcessorMixin):
     valid_processor_kwargs = DeepseekVLProcessorKwargs
 
@@ -55,6 +57,7 @@ class DeepseekVLProcessor(ProcessorMixin):
 
         super().__init__(image_processor, tokenizer, chat_template=chat_template)
 
+# replace_image_token：重复 image_token 以匹配视觉 token 数量（默认 576）
     def replace_image_token(self, image_inputs: dict, image_idx: int, **kwargs) -> str:
         return self.image_token * self.num_image_tokens
 
