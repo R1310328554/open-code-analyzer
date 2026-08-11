@@ -24,8 +24,12 @@ from ...utils import auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# LLaMA4 配置：meta-llama/Llama-4-Scout-17B-16E 视觉塔 + 稀疏 MoE 文本解码器联合超参
+
+# Llama4VisionConfig：meta-llama/Llama-4-Scout-17B-16E 视觉塔默认超参
 @auto_docstring(checkpoint="meta-llama/Llama-4-Scout-17B-16E")
 @strict
+# Llama4VisionConfig：meta-llama/Llama-4-Scout-17B-16E 视觉塔超参
 class Llama4VisionConfig(PreTrainedConfig):
     r"""
     vision_output_dim (`int`, *optional*, defaults to 7680):
@@ -74,8 +78,10 @@ class Llama4VisionConfig(PreTrainedConfig):
     rope_parameters: RopeParameters | dict | None = None
 
 
+# Llama4TextConfig：meta-llama/Llama-4-Scout-17B-16E 稀疏 MoE 文本解码器默认超参
 @auto_docstring(checkpoint="meta-llama/Llama-4-Scout-17B-16E")
 @strict
+# Llama4TextConfig：meta-llama/Llama-4-Scout-17B-16E 稀疏 MoE 文本解码器超参
 class Llama4TextConfig(PreTrainedConfig):
     r"""
     intermediate_size_mlp (`int`, *optional*, defaults to 16384):
@@ -202,8 +208,10 @@ class Llama4TextConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# Llama4Config：meta-llama/Llama-4-Scout-17B-16E 视觉-语言多模态顶层默认超参
 @auto_docstring(checkpoint="meta-llama/Llama-4-Scout-17B-16E")
 @strict
+# Llama4Config：meta-llama/Llama-4-Scout-17B-16E 视觉-语言多模态顶层超参
 class Llama4Config(PreTrainedConfig):
     r"""
     boi_token_index (`int`, *optional*, defaults to 200080):

@@ -19,8 +19,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# LiLT 配置：SCUT-DLVCLab/lilt-roberta-en-base 语言+布局联合文档理解超参
+
+# LiltConfig：SCUT-DLVCLab/lilt-roberta-en-base 语言+布局联合预训练默认超参
 @auto_docstring(checkpoint="SCUT-DLVCLab/lilt-roberta-en-base")
 @strict
+# LiltConfig：SCUT-DLVCLab/lilt-roberta-en-base 语言+布局联合预训练超参
 class LiltConfig(PreTrainedConfig):
     r"""
     channel_shrink_ratio (`int`, *optional*, defaults to 4):

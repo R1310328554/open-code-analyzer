@@ -19,6 +19,9 @@ from ...image_utils import make_flat_list_of_images
 from ...utils import auto_docstring
 
 
+# LLaMA4 Processor：动态画布图像 token 展开与分词器联合多模态输入组装
+
+# Llama4ProcessorKwargs：LLaMA4 Processor 可选参数字典类型
 class Llama4ProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -31,6 +34,7 @@ chat_template = "{{- bos_token }}\n{%- if custom_tools is defined %}\n    {%- se
 
 
 @auto_docstring
+# Llama4Processor：LLaMA4 动态画布图像预处理与分词器联合多模态输入管线
 class Llama4Processor(ProcessorMixin):
     valid_processor_kwargs = Llama4ProcessorKwargs
 

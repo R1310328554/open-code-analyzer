@@ -46,10 +46,13 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_llama import LlamaConfig
 
 
+# LLaMA 建模：RMSNorm + RoPE + SwiGLU 解码器-only 因果 Transformer
+
 logger = logging.get_logger(__name__)
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# LlamaRMSNorm：LLaMA RMS 层归一化（等价 T5LayerNorm）
 class LlamaRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -70,6 +73,7 @@ class LlamaRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# LlamaRotaryEmbedding：LLaMA 旋转位置编码（RoPE）
 class LlamaRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: LlamaConfig, device=None):
@@ -127,6 +131,7 @@ class LlamaRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# rotate_half：RoPE 中将向量后半维旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -135,6 +140,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：对 Q/K 应用旋转位置编码（RoPE）
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -160,6 +166,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# LlamaMLP：LLaMA SwiGLU 风格前馈 MLP（gate/up/down 投影）
 class LlamaMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -176,6 +183,7 @@ class LlamaMLP(nn.Module):
         return down_proj
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -188,6 +196,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -214,6 +223,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# LlamaAttention：LLaMA 多头因果自注意力（RoPE + GQA）
 class LlamaAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -281,6 +291,7 @@ class LlamaAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# LlamaDecoderLayer：LLaMA 解码器单层（自注意力 + MLP）
 class LlamaDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: LlamaConfig, layer_idx: int):
         super().__init__()
@@ -325,6 +336,7 @@ class LlamaDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# LlamaPreTrainedModel：LLaMA 预训练基类与权重初始化
 class LlamaPreTrainedModel(PreTrainedModel):
     config: LlamaConfig
     base_model_prefix = "model"
@@ -344,6 +356,7 @@ class LlamaPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# LlamaModel：LLaMA 多层因果解码器 Transformer 主干
 class LlamaModel(LlamaPreTrainedModel):
     def __init__(self, config: LlamaConfig):
         super().__init__(config)
@@ -418,6 +431,7 @@ class LlamaModel(LlamaPreTrainedModel):
 
 
 @auto_docstring
+# LlamaForCausalLM：LLaMA 因果语言建模
 class LlamaForCausalLM(LlamaPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
@@ -492,13 +506,16 @@ class LlamaForCausalLM(LlamaPreTrainedModel, GenerationMixin):
         )
 
 
+# LlamaForSequenceClassification：LLaMA 序列分类
 class LlamaForSequenceClassification(GenericForSequenceClassification, LlamaPreTrainedModel): ...
 
 
+# LlamaForQuestionAnswering：LLaMA 抽取式问答
 class LlamaForQuestionAnswering(GenericForQuestionAnswering, LlamaPreTrainedModel):
     base_model_prefix = "transformer"  # For BC, where `transformer` was used instead of `model`
 
 
+# LlamaForTokenClassification：LLaMA token 级分类
 class LlamaForTokenClassification(GenericForTokenClassification, LlamaPreTrainedModel): ...
 
 

@@ -23,6 +23,8 @@ from ...utils import logging
 logger = logging.get_logger(__name__)
 VOCAB_FILES_NAMES = {"vocab_file": "tokenizer.model", "tokenizer_file": "tokenizer.json"}
 
+
+# LLaMA 分词：字节级 BPE + Metaspace 预分词，支持 Llama-2 指令模板
 B_INST, E_INST = "[INST]", "[/INST]"
 B_SYS, E_SYS = "<<SYS>>\n", "\n<</SYS>>\n\n"
 
@@ -36,6 +38,7 @@ correct. If you don't know the answer to a question, please don't share false in
 # fmt: on
 
 
+# LlamaTokenizer：LLaMA 字节级 BPE 分词器（Metaspace 预分词）
 class LlamaTokenizer(TokenizersBackend):
     """
     Construct a Llama tokenizer. Based on byte-level Byte-Pair-Encoding.

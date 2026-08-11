@@ -52,6 +52,9 @@ from .configuration_llama4 import Llama4Config, Llama4TextConfig
 logger = logging.get_logger(__name__)
 
 
+# LLaMA4 建模：稀疏 MoE 文本解码器 + 视觉编码塔多模态条件生成
+
+# Llama4TextExperts：LLaMA4 稀疏 MoE 多专家 FFN 参数组
 class Llama4TextExperts(nn.Module):
     def __init__(self, config: Llama4TextConfig):
         super().__init__()
@@ -85,6 +88,7 @@ class Llama4TextExperts(nn.Module):
 
 
 # Phi3MLP
+# Llama4TextMLP：LLaMA4 稠密 SwiGLU 前馈 MLP
 class Llama4TextMLP(nn.Module):
     def __init__(self, config, intermediate_size=None):
         super().__init__()
@@ -103,6 +107,7 @@ class Llama4TextMLP(nn.Module):
         return self.down_proj(down_proj)
 
 
+# Llama4TextL2Norm：LLaMA4 文本 Q/K L2 归一化（稳定注意力）
 class Llama4TextL2Norm(torch.nn.Module):
     def __init__(self, eps: float = 1e-6):
         super().__init__()
@@ -118,6 +123,7 @@ class Llama4TextL2Norm(torch.nn.Module):
         return f"eps={self.eps}"
 
 
+# Llama4TextRMSNorm：LLaMA4 RMS 层归一化
 class Llama4TextRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps=1e-5):
         """
@@ -138,6 +144,7 @@ class Llama4TextRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.eps}"
 
 
+# Llama4Router：LLaMA4 MoE Top-K 路由门控
 class Llama4Router(nn.Linear):
     def __init__(self, config):
         super().__init__(config.hidden_size, config.num_local_experts, bias=False)
@@ -153,6 +160,7 @@ class Llama4Router(nn.Linear):
 
 
 # @use_kernel_forward_from_hub("Llama4TextMoe")
+# Llama4TextMoe：LLaMA4 稀疏 MoE 块（路由 + 专家 FFN + 共享专家）
 class Llama4TextMoe(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -175,6 +183,7 @@ class Llama4TextMoe(nn.Module):
 
 
 # Copied from transformers.models.llama.modeling_llama.LlamaRotaryEmbedding with Llama->Llama4Text
+# Llama4TextRotaryEmbedding：LLaMA4 文本旋转位置编码（RoPE）
 class Llama4TextRotaryEmbedding(nn.Module):
     # Ignore copy
     @deprecate_kwarg("device", version="5.18")
@@ -230,6 +239,7 @@ class Llama4TextRotaryEmbedding(nn.Module):
         return freqs_cis
 
 
+# apply_rotary_emb：对 Q/K 应用 RoPE 旋转嵌入
 def apply_rotary_emb(
     xq: torch.Tensor,
     xk: torch.Tensor,
@@ -242,6 +252,7 @@ def apply_rotary_emb(
     return xq_out.type_as(xq), xk_out.type_as(xk)
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -255,6 +266,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
 
 
 # Adapted from transformers.models.llama.modeling_llama.eager_attention_forward -> llama4 doesn't cast attn weights to fp32
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -281,6 +293,7 @@ def eager_attention_forward(
 
 
 # Adapted from transformers.models.llama.modeling_llama.eager_attention_forward -> llama4 doesn't cast attn weights to fp32
+# vision_eager_attention_forward：LLaMA4 视觉塔 eager 缩放点积注意力
 def vision_eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -306,6 +319,7 @@ def vision_eager_attention_forward(
     return attn_output, attn_weights
 
 
+# Llama4TextAttention：LLaMA4 文本多头因果自注意力（RoPE/NoPE + QK norm）
 class Llama4TextAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -398,6 +412,7 @@ class Llama4TextAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# Llama4TextDecoderLayer：LLaMA4 文本解码器单层（注意力 + MoE/MLP）
 class Llama4TextDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_idx):
         super().__init__()
@@ -449,6 +464,7 @@ class Llama4TextDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Llama4PreTrainedModel：LLaMA4 预训练基类与权重初始化
 class Llama4PreTrainedModel(PreTrainedModel):
     config: Llama4Config
     input_modalities = ("image", "text")
@@ -480,6 +496,7 @@ class Llama4PreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# Llama4TextModel：LLaMA4 稀疏 MoE 因果文本解码器主干
 class Llama4TextModel(Llama4PreTrainedModel):
     _no_split_modules = ["Llama4TextDecoderLayer"]
     base_model_prefix = "model"
@@ -573,6 +590,7 @@ class Llama4TextModel(Llama4PreTrainedModel):
         )
 
 
+# Llama4ForCausalLM：LLaMA4 文本因果语言建模
 class Llama4ForCausalLM(Llama4PreTrainedModel, GenerationMixin):
     _no_split_modules = ["Llama4TextDecoderLayer"]
     base_model_prefix = "language_model"
@@ -659,6 +677,7 @@ class Llama4ForCausalLM(Llama4PreTrainedModel, GenerationMixin):
     """
 )
 @dataclass
+# Llama4CausalLMOutputWithPast：LLaMA4 条件生成输出 dataclass
 class Llama4CausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -683,6 +702,7 @@ class Llama4CausalLMOutputWithPast(ModelOutput):
     image_hidden_states: torch.FloatTensor | None = None
 
 
+# Llama4VisionMLP2：LLaMA4 视觉塔二级 MLP 投影
 class Llama4VisionMLP2(torch.nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -700,6 +720,7 @@ class Llama4VisionMLP2(torch.nn.Module):
         return self.activation_fn(self.fc2(hidden_states))
 
 
+# Llama4MultiModalProjector：LLaMA4 视觉特征投影到文本隐空间
 class Llama4MultiModalProjector(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -714,6 +735,7 @@ class Llama4MultiModalProjector(nn.Module):
         return hidden_states
 
 
+# pixel_shuffle：LLaMA4 视觉 patch token 空间重排下采样
 def pixel_shuffle(input_tensor, shuffle_ratio):
     # input_tensor: [batch_size, num_patches, channels]
     batch_size, num_patches, channels = input_tensor.shape
@@ -734,6 +756,7 @@ def pixel_shuffle(input_tensor, shuffle_ratio):
     return output_tensor
 
 
+# Llama4VisionPixelShuffleMLP：LLaMA4 pixel-shuffle 后视觉 MLP 适配器
 class Llama4VisionPixelShuffleMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -748,12 +771,14 @@ class Llama4VisionPixelShuffleMLP(nn.Module):
 
 
 # TODO there is a different RoPE for vision encoder, defined as below
+# reshape_for_broadcast：将 RoPE 频率张量 reshape 以便广播
 def reshape_for_broadcast(freqs_ci: torch.Tensor, query: torch.Tensor):
     ndim = query.ndim
     shape = [d if i == 1 or i == ndim - 1 else 1 for i, d in enumerate(query.shape)]
     return freqs_ci.view(*shape)
 
 
+# vision_apply_rotary_emb：LLaMA4 视觉塔 RoPE 旋转嵌入
 def vision_apply_rotary_emb(
     query: torch.Tensor,
     key: torch.Tensor,
@@ -768,6 +793,7 @@ def vision_apply_rotary_emb(
     return query_out.type_as(query), key_out.type_as(key)  # but this drops to 8e-3
 
 
+# Llama4VisionAttention：LLaMA4 视觉塔多头自注意力
 class Llama4VisionAttention(nn.Module):
     def __init__(self, config: Llama4VisionConfig):
         super().__init__()
@@ -826,6 +852,7 @@ class Llama4VisionAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# Llama4VisionMLP：LLaMA4 视觉塔前馈 MLP
 class Llama4VisionMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -841,6 +868,7 @@ class Llama4VisionMLP(nn.Module):
         return hidden_states
 
 
+# Llama4VisionEncoderLayer：LLaMA4 视觉 Transformer 编码器单层
 class Llama4VisionEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Llama4VisionConfig):
         super().__init__()
@@ -885,6 +913,7 @@ class Llama4VisionEncoderLayer(GradientCheckpointingLayer):
         return outputs
 
 
+# Llama4VisionEncoder：LLaMA4 视觉 Transformer 多层编码器
 class Llama4VisionEncoder(nn.Module):
     """
     Transformer encoder consisting of `config.num_hidden_layers` self attention layers. Each layer is a
@@ -967,6 +996,7 @@ class Llama4VisionEncoder(nn.Module):
         )
 
 
+# Llama4UnfoldConvolution：LLaMA4 视觉 patch 卷积嵌入
 class Llama4UnfoldConvolution(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -987,6 +1017,7 @@ class Llama4UnfoldConvolution(nn.Module):
         return hidden_states
 
 
+# Llama4VisionRotaryEmbedding：LLaMA4 视觉 2D RoPE 位置编码
 class Llama4VisionRotaryEmbedding(nn.Module):
     def __init__(self, config: Llama4VisionConfig):
         super().__init__()
@@ -1017,6 +1048,7 @@ class Llama4VisionRotaryEmbedding(nn.Module):
         return self.freqs_ci.to(hidden_states.device)
 
 
+# Llama4VisionModel：LLaMA4 视觉编码塔（patch 嵌入 + 多层 Transformer）
 class Llama4VisionModel(Llama4PreTrainedModel):
     base_model_prefix = "vision_model"
     input_modalities = ("image",)
@@ -1155,6 +1187,7 @@ class Llama4VisionModel(Llama4PreTrainedModel):
         )
 
 
+# Llama4ForConditionalGeneration：LLaMA4 视觉-语言条件生成多模态模型
 class Llama4ForConditionalGeneration(Llama4PreTrainedModel, GenerationMixin):
     _no_split_modules = ["Llama4TextDecoderLayer", "Llama4VisionEncoderLayer"]
     _tp_plan = {}

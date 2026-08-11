@@ -26,8 +26,12 @@ from ...utils import auto_docstring
 from ...utils.type_validators import interval
 
 
+# LLaMA 配置：meta-llama/Llama-2-7b-hf 解码器-only 因果语言模型超参
+
+# LlamaConfig：meta-llama/Llama-2-7b-hf 解码器-only 因果 LM 默认超参
 @auto_docstring(checkpoint="meta-llama/Llama-2-7b-hf")
 @strict
+# LlamaConfig：meta-llama/Llama-2-7b-hf 解码器-only 因果语言模型超参
 class LlamaConfig(PreTrainedConfig):
     r"""
     ```python

@@ -36,9 +36,12 @@ from ...utils import auto_docstring, logging
 from .configuration_lilt import LiltConfig
 
 
+# LiLT 建模：RoBERTa 文本编码 + bbox 2D 布局嵌入联合文档理解
+
 logger = logging.get_logger(__name__)
 
 
+# LiltTextEmbeddings：LiLT 文本词/位置/类型嵌入层
 class LiltTextEmbeddings(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -123,6 +126,7 @@ class LiltTextEmbeddings(nn.Module):
         return position_ids.unsqueeze(0).expand(input_shape)
 
 
+# LiltLayoutEmbeddings：LiLT 文档 bbox 2D 布局位置嵌入层
 class LiltLayoutEmbeddings(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -179,6 +183,7 @@ class LiltLayoutEmbeddings(nn.Module):
         return spatial_position_embeddings
 
 
+# LiltSelfAttention：LiLT 文本与布局双路自注意力核心
 class LiltSelfAttention(nn.Module):
     def __init__(self, config, layer_idx=None):
         super().__init__()
@@ -285,6 +290,7 @@ class LiltSelfAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertSelfOutput
+# LiltSelfOutput：LiLT 自注意力输出投影与残差 dropout
 class LiltSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -299,6 +305,7 @@ class LiltSelfOutput(nn.Module):
         return hidden_states
 
 
+# LiltAttention：LiLT 注意力子层（文本+布局双路自注意力 + 输出）
 class LiltAttention(nn.Module):
     def __init__(self, config, layer_idx=None):
         super().__init__()
@@ -330,6 +337,7 @@ class LiltAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertIntermediate
+# LiltIntermediate：LiLT 前馈中间层（线性 + 激活）
 class LiltIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -346,6 +354,7 @@ class LiltIntermediate(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOutput
+# LiltOutput：LiLT 前馈输出投影与 dropout
 class LiltOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -360,6 +369,7 @@ class LiltOutput(nn.Module):
         return hidden_states
 
 
+# LiltLayer：LiLT 编码器单层（双路注意力 + FFN）
 class LiltLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_idx=None):
         super().__init__()
@@ -418,6 +428,7 @@ class LiltLayer(GradientCheckpointingLayer):
         return layer_output
 
 
+# LiltEncoder：LiLT 多层双向 Transformer 编码器堆叠
 class LiltEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -474,6 +485,7 @@ class LiltEncoder(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPooler
+# LiltPooler：LiLT 序列首 token 池化层
 class LiltPooler(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -490,6 +502,7 @@ class LiltPooler(nn.Module):
 
 
 @auto_docstring
+# LiltPreTrainedModel：LiLT 预训练基类与权重初始化
 class LiltPreTrainedModel(PreTrainedModel):
     config: LiltConfig
     base_model_prefix = "lilt"
@@ -503,6 +516,7 @@ class LiltPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# LiltModel：LiLT 语言+布局联合编码器主干
 class LiltModel(LiltPreTrainedModel):
     def __init__(self, config, add_pooling_layer=True):
         r"""
@@ -643,6 +657,7 @@ class LiltModel(LiltPreTrainedModel):
     output) e.g. for GLUE tasks.
     """
 )
+# LiltForSequenceClassification：LiLT 文档序列分类
 class LiltForSequenceClassification(LiltPreTrainedModel):
     # Copied from transformers.models.roberta.modeling_roberta.RobertaForSequenceClassification.__init__ with Roberta->Lilt, roberta->lilt
     def __init__(self, config):
@@ -756,6 +771,7 @@ class LiltForSequenceClassification(LiltPreTrainedModel):
 
 
 @auto_docstring
+# LiltForTokenClassification：LiLT 文档 token 级分类（如 NER）
 class LiltForTokenClassification(LiltPreTrainedModel):
     # Copied from transformers.models.roberta.modeling_roberta.RobertaForTokenClassification.__init__ with Roberta->Lilt, roberta->lilt
     def __init__(self, config):
@@ -854,6 +870,7 @@ class LiltForTokenClassification(LiltPreTrainedModel):
 
 
 # Copied from transformers.models.roberta.modeling_roberta.RobertaClassificationHead with Roberta->Lilt
+# LiltClassificationHead：LiLT 分类任务输出头
 class LiltClassificationHead(nn.Module):
     """Head for sentence-level classification tasks."""
 
@@ -877,6 +894,7 @@ class LiltClassificationHead(nn.Module):
 
 
 @auto_docstring
+# LiltForQuestionAnswering：LiLT 文档抽取式问答
 class LiltForQuestionAnswering(LiltPreTrainedModel):
     # Copied from transformers.models.roberta.modeling_roberta.RobertaForQuestionAnswering.__init__ with Roberta->Lilt, roberta->lilt
     def __init__(self, config):

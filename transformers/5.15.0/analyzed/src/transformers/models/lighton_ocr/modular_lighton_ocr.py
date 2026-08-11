@@ -38,8 +38,12 @@ from ..mistral3.modeling_mistral3 import (
 from ..pixtral.image_processing_pixtral import get_resize_output_image_size
 
 
+# LightOnOCR modular 源：复用 Mistral3/Pixtral/Qwen3 组件构建 OCR 多模态
+
+# LightOnOcrConfig：lightonai/LightOnOCR-1B-1025 文档 OCR 多模态默认超参
 @auto_docstring(checkpoint="lightonai/LightOnOCR-1B-1025")
 @strict
+# LightOnOcrConfig：lightonai/LightOnOCR-1B-1025 视觉 OCR 多模态超参（Pixtral 视觉 + Qwen3 文本）
 class LightOnOcrConfig(PreTrainedConfig):
     r"""
     Example:
@@ -113,6 +117,7 @@ class LightOnOcrConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# LightOnOcrProcessorKwargs：LightOnOCR Processor 可选参数字典类型
 class LightOnOcrProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -125,6 +130,7 @@ class LightOnOcrProcessorKwargs(ProcessingKwargs, total=False):
     }
 
 
+# LightOnOcrProcessor：LightOnOCR 图像预处理与分词器联合 OCR 多模态输入管线
 class LightOnOcrProcessor(ProcessorMixin):
     valid_processor_kwargs = LightOnOcrProcessorKwargs
 
@@ -201,6 +207,7 @@ class LightOnOcrProcessor(ProcessorMixin):
         return MultiModalData(**vision_data)
 
 
+# LightOnOcrMultiModalProjector：LightOnOCR 视觉特征 GELU 投影到文本隐空间
 class LightOnOcrMultiModalProjector(Mistral3MultiModalProjector):
     def __init__(self, config: LightOnOcrConfig):
         self.config = config
@@ -211,10 +218,12 @@ class LightOnOcrMultiModalProjector(Mistral3MultiModalProjector):
         del self.num_feature_layers
 
 
+# LightOnOcrModelOutputWithPast：LightOnOCR 多模态主干输出 dataclass（含 past_key_values）
 class LightOnOcrModelOutputWithPast(Mistral3ModelOutputWithPast):
     pass
 
 
+# LightOnOcrModel：LightOnOCR 视觉编码 + 文本解码 OCR 多模态主干
 class LightOnOcrModel(Mistral3Model):
     base_model_prefix = ""
 
@@ -290,6 +299,7 @@ class LightOnOcrModel(Mistral3Model):
         )
 
 
+# LightOnOcrForConditionalGeneration：LightOnOCR 文档 OCR 条件生成模型
 class LightOnOcrForConditionalGeneration(Mistral3ForConditionalGeneration):
     @auto_docstring
     def get_image_features(

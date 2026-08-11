@@ -23,9 +23,13 @@ import math
 import numpy as np
 
 from ...image_utils import ChannelDimension, ImageInput, get_image_size
+# processing_lighton_ocr 由 modular_lighton_ocr.py 自动生成
 from ...processing_utils import MultiModalData, ProcessingKwargs, ProcessorMixin
 
 
+# LightOnOCR Processor：图像 resize 与分词器联合 OCR 多模态输入组装（由 modular 自动生成）
+
+# LightOnOcrProcessorKwargs：LightOnOCR Processor 可选参数字典类型
 class LightOnOcrProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -38,6 +42,7 @@ class LightOnOcrProcessorKwargs(ProcessingKwargs, total=False):
     }
 
 
+# _num_image_tokens：按图像尺寸与 patch 大小计算视觉 token 网格数
 def _num_image_tokens(image_size: tuple[int, int], patch_size: tuple[int, int]) -> int:
     """
     Calculate the number of image tokens given the image size and patch size.
@@ -58,6 +63,7 @@ def _num_image_tokens(image_size: tuple[int, int], patch_size: tuple[int, int]) 
     return num_height_tokens, num_width_tokens
 
 
+# get_resize_output_image_size：在最长边约束下计算 resize 后图像尺寸
 def get_resize_output_image_size(
     input_image: ImageInput,
     size: int | tuple[int, int] | list[int] | tuple[int],
@@ -98,6 +104,7 @@ def get_resize_output_image_size(
     return num_height_tokens * patch_height, num_width_tokens * patch_width
 
 
+# LightOnOcrProcessor：LightOnOCR 图像预处理与分词器联合 OCR 多模态输入管线
 class LightOnOcrProcessor(ProcessorMixin):
     valid_processor_kwargs = LightOnOcrProcessorKwargs
 

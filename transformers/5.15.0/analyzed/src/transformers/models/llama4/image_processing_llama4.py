@@ -28,6 +28,9 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# LLaMA4 图像预处理：动态画布分块、无失真 resize 与 ImageNet 归一化
+
+# get_factors：计算整数的所有因子（无余数除数）
 def get_factors(dividend: int) -> set[int]:
     """
     Calculate all factors of a given number, i.e. a divisor that leaves
@@ -48,6 +51,7 @@ def get_factors(dividend: int) -> set[int]:
     return factors_set
 
 
+# get_max_res_without_distortion：在目标画布内无失真 resize 的最大分辨率
 def get_max_res_without_distortion(
     image_size: tuple[int, int],
     target_size: tuple[int, int],
@@ -85,6 +89,7 @@ def get_max_res_without_distortion(
 
 
 @lru_cache(maxsize=1)
+# find_supported_resolutions：按最大 chunk 数与 patch 尺寸枚举允许分辨率
 def find_supported_resolutions(max_num_chunks: int, patch_size: SizeDict) -> torch.Tensor:
     """
     Computes all of the allowed resolutions for a fixed number of chunks
@@ -141,6 +146,7 @@ def find_supported_resolutions(max_num_chunks: int, patch_size: SizeDict) -> tor
     return possible_resolutions
 
 
+# pad_to_best_fit：将图像 padding 到目标画布尺寸
 def pad_to_best_fit(
     images: "torch.Tensor",
     target_size: tuple[int, int],
@@ -177,6 +183,7 @@ def pad_to_best_fit(
     return padded_images
 
 
+# get_best_fit：从候选分辨率中选取最佳无失真画布
 def get_best_fit(
     image_size: tuple[int, int],
     possible_resolutions: torch.Tensor,
@@ -276,6 +283,7 @@ def get_best_fit(
     return optimal_canvas
 
 
+# Llama4ImageProcessorKwargs：LLaMA4 图像处理器可选参数字典类型
 class Llama4ImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     max_patches (`int`, *optional*, defaults to 16):
@@ -293,6 +301,7 @@ class Llama4ImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# Llama4ImageProcessor：LLaMA4 动态画布分块 resize + 归一化预处理
 class Llama4ImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.BILINEAR
     image_mean = [0.5, 0.5, 0.5]
