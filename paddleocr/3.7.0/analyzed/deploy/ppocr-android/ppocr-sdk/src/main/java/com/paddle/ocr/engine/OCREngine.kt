@@ -23,8 +23,12 @@ import com.paddle.ocr.model.OCRError
 import com.paddle.ocr.model.OCRResult
 import com.paddle.ocr.postprocess.BoxSorter
 import com.paddle.ocr.postprocess.QuadTextCrop
+// OCR 核心流水线：检测 → 阅读序排序 → 裁剪 → 批量识别
 import com.paddle.ocr.util.BitmapUtils
 
+/**
+ * 端到端 OCR 引擎：加载 det/rec ONNX，协调 DetectionEngine 与 RecognitionEngine。
+ */
 class OCREngine(
     context: Context,
     private val config: PaddleOCRConfig,
@@ -38,6 +42,7 @@ class OCREngine(
     private val recognitionEngine: RecognitionEngine
     val coldLoadTimeMs: Long get() = ortManager.coldLoadTimeMs
 
+    // 加载模型与 rec YAML 字典，失败时 release 并向上抛出
     init {
         val configured = try {
             ortManager.loadModels(detModelAsset, recModelAsset)
@@ -51,11 +56,13 @@ class OCREngine(
         recognitionEngine = RecognitionEngine(ortManager, configured.characterList)
     }
 
+    // Bitmap 转 BGR Mat 后进入统一 run 流程
     fun run(bitmap: Bitmap): OCREngineResult {
         val srcMat = BitmapUtils.bitmapToBGRMat(bitmap)
         return runWithOwnedMat(srcMat)
     }
 
+    // imdecode 解码字节为 Mat，空图抛出 InvalidImage
     fun run(imageBytes: ByteArray): OCREngineResult {
         val srcMat = BitmapUtils.imdecodeBGR(imageBytes)
         if (srcMat.empty()) {
@@ -65,6 +72,7 @@ class OCREngine(
         return runWithOwnedMat(srcMat)
     }
 
+    // 确保 srcMat 在 finally 中 release，避免 native 泄漏
     private fun runWithOwnedMat(srcMat: org.opencv.core.Mat): OCREngineResult {
         return try {
             run(srcMat)
@@ -73,6 +81,7 @@ class OCREngine(
         }
     }
 
+    // 主流程：detect → BoxSorter → QuadTextCrop 批识别 → 汇总 OCREngineResult
     private fun run(srcMat: org.opencv.core.Mat): OCREngineResult {
         val totalStart = System.currentTimeMillis()
         val detResult = detectionEngine.detect(srcMat)
@@ -94,9 +103,11 @@ class OCREngine(
             )
         }
 
+        // 2. 按阅读顺序（自上而下、自左而右）排序检测框
         // 2. Sort boxes
         val sortedBoxes = BoxSorter.sortInReadingOrder(boxes)
 
+        // 3. 按 recBatchSize 分批裁剪文本行并送入 RecognitionEngine
         // 3. Crop and recognize text regions
         var totalRecPreMs = 0L
         var totalRecInfMs = 0L
@@ -178,6 +189,7 @@ class OCREngine(
         )
     }
 
+    // 释放 ORT Session 与 OpenCV 相关资源
     fun release() {
         ortManager.release()
     }

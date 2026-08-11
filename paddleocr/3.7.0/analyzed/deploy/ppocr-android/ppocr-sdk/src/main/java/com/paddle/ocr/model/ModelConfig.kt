@@ -15,12 +15,18 @@
 package com.paddle.ocr.model
 
 import android.content.Context
+// 识别模型 YAML 配置解析：提取 PostProcess.character_dict 字符表
 import com.paddle.ocr.util.YamlUtils
 
+/**
+ * 识别模型配置：从 inference.yml 解析 CTC 解码用字符列表。
+ */
 data class ModelConfig(
     val characterList: List<String>,
 ) {
+    // 静态解析入口：读 assets YAML 并构造 ModelConfig
     companion object {
+        // 打开 assetPath，解析 character_dict 并在末尾补空格 token
         fun parse(context: Context, assetPath: String): ModelConfig {
             val content = try {
                 context.assets.open(assetPath).bufferedReader().use { it.readText() }
@@ -41,6 +47,7 @@ data class ModelConfig(
             return ModelConfig(characterList = charListWithSpace)
         }
 
+        // 定位 PostProcess: 块下的 character_dict: 列表项
         private fun extractCharacterDict(content: String, assetPath: String): List<String> {
             val lines = content.replace("\r\n", "\n").replace('\r', '\n').lines()
             val postProcessLine = lines.indexOfFirst { it.trim() == "PostProcess:" }
@@ -83,6 +90,7 @@ data class ModelConfig(
             return characters
         }
 
+        // 在 PostProcess 子树中查找 character_dict: 行号
         private fun findCharacterDictLine(
             lines: List<String>,
             startLine: Int,
@@ -104,6 +112,7 @@ data class ModelConfig(
             return -1
         }
 
+        // 解析 YAML 列表项标量，支持单引号、双引号与转义
         private fun parseYamlListScalar(rawValue: String): String {
             val value = rawValue.dropWhile { it == ' ' }
             if (value.length >= 2 && value.first() == '\'' && value.last() == '\'') {

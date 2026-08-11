@@ -14,6 +14,13 @@
 
 package com.paddle.ocr
 
+// ONNX Runtime 引擎运行时配置
+package com.paddle.ocr
+
+/**
+ * 推理引擎配置：控制 ONNX Runtime  intra-op 线程数等底层参数。
+ */
 data class EngineConfig(
+    // ONNX 算子内部并行线程数，默认 4
     val numThreads: Int = 4,
 )

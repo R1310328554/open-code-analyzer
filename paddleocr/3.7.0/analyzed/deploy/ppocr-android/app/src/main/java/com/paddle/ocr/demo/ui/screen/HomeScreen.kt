@@ -31,22 +31,29 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.paddle.ocr.demo.ui.component.*
+// PPOCR Android Demo 主界面：Compose 实现的图片选取、OCR 推理与结果展示
 import com.paddle.ocr.demo.ui.viewmodel.OCRViewModel
 
+/**
+ * 首页 Composable：根据 ViewModel 状态切换加载、就绪、处理中、结果与错误 UI。
+ */
 @Composable
 fun HomeScreen(viewModel: OCRViewModel = viewModel()) {
     val state by viewModel.uiState.collectAsState()
     val timing by viewModel.timing.collectAsState()
 
+    // 系统相册选择器：选中图片 URI 后交给 ViewModel 解码并识别
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri -> uri?.let { viewModel.onImageSelected(it) } }
 
     Column(modifier = Modifier.fillMaxSize()) {
         when (val s = state) {
+            // 模型冷启动加载中，显示全屏 Loading
             is OCRViewModel.UIState.Loading -> {
                 LoadingOverlay("Loading OCR models...")
             }
+            // 模型就绪：展示选图入口（相册 / 示例图）
             is OCRViewModel.UIState.Ready -> {
                 Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     Spacer(modifier = Modifier.height(32.dp))
@@ -57,6 +64,7 @@ fun HomeScreen(viewModel: OCRViewModel = viewModel()) {
                     )
                 }
             }
+            // 推理进行中：预览当前 Bitmap 并显示 Processing 遮罩
             is OCRViewModel.UIState.Processing -> {
                 Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     Spacer(modifier = Modifier.height(16.dp))
@@ -65,6 +73,7 @@ fun HomeScreen(viewModel: OCRViewModel = viewModel()) {
                     LoadingOverlay("Processing...")
                 }
             }
+            // 识别完成：绘制检测框、耗时条、结果列表与再次选图
             is OCRViewModel.UIState.Result -> {
                 Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     ImagePreview(
@@ -93,6 +102,7 @@ fun HomeScreen(viewModel: OCRViewModel = viewModel()) {
                     Spacer(modifier = Modifier.height(16.dp))
                 }
             }
+            // 出错时弹出 ErrorDialog，支持重试
             is OCRViewModel.UIState.Error -> {
                 LoadingOverlay("Error occurred")
                 ErrorDialog(

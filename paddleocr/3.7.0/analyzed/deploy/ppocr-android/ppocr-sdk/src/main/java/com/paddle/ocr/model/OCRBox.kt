@@ -14,11 +14,16 @@
 
 package com.paddle.ocr.model
 
+// OCR 检测框模型：四顶点四边形，用于绘制与透视裁剪
 import android.graphics.PointF
 
+/**
+ * 文本检测框：由 4 个 PointF 顶点定义的凸四边形（通常为顺时针）。
+ */
 data class OCRBox(
     val points: List<PointF>,
 ) {
+    // 构造时校验必须恰好 4 个点
     init {
         require(points.size == 4) { "OCRBox must have exactly 4 points, got ${points.size}" }
     }

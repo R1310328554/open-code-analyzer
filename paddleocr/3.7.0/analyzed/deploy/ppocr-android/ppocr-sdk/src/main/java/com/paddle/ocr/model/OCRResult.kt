@@ -14,9 +14,19 @@
 
 package com.paddle.ocr.model
 
+// 单行 OCR 识别结果数据模型
+package com.paddle.ocr.model
+
+/**
+ * 单条识别结果：检测框、识别文本、置信度及可选字级框。
+ */
 data class OCRResult(
+    // 该行文本对应的四边形检测框
     val box: OCRBox,
+    // CTC 解码后的字符串
     val text: String,
+    // 识别平均置信度，用于 recScoreThresh 过滤
     val confidence: Float,
+    // 可选字级/词级子框，默认可空
     val wordBoxes: List<OCRBox>? = null,
 )

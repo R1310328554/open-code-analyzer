@@ -21,16 +21,23 @@ import com.paddle.ocr.engine.OCREngineResult
 import com.paddle.ocr.model.OCRRunResult
 import com.paddle.ocr.model.OCRError
 import kotlinx.coroutines.Dispatchers
+// PaddleOCR Android SDK 公开入口：封装 OCREngine 并提供协程友好 API
 import kotlinx.coroutines.withContext
 
+/**
+ * PaddleOCR 门面类：通过 companion create 工厂加载模型，recognize 执行检测+识别。
+ */
 class PaddleOCR private constructor(
     private val engine: OCREngine,
 ) {
+    /** 冷启动加载 ONNX 检测/识别模型耗时（毫秒）。 */
     /** Time spent loading ONNX models (milliseconds). */
     val coldLoadTimeMs: Long get() = engine.coldLoadTimeMs
 
+    // 工厂方法：在 IO 调度器上构造 OCREngine 并返回 PaddleOCR 实例
     companion object {
 
+        // 使用默认 PaddleOCRConfig 与 EngineConfig 创建实例
         suspend fun create(context: Context): PaddleOCR {
             val appContext = context.applicationContext
             return withContext(Dispatchers.IO) {
@@ -39,6 +46,7 @@ class PaddleOCR private constructor(
             }
         }
 
+        // 自定义检测/识别阈值与批大小等推理参数
         suspend fun create(
             context: Context,
             config: PaddleOCRConfig,
@@ -51,6 +59,7 @@ class PaddleOCR private constructor(
             }
         }
 
+        // 指定 assets 中 det/rec ONNX 与 rec YAML 路径
         suspend fun create(
             context: Context,
             config: PaddleOCRConfig,
@@ -72,6 +81,7 @@ class PaddleOCR private constructor(
         }
     }
 
+    // 对 Bitmap 执行 OCR，空尺寸抛出 InvalidImage
     suspend fun recognize(bitmap: Bitmap): OCRRunResult {
         if (bitmap.width == 0 || bitmap.height == 0) {
             throw OCRError.InvalidImage()
@@ -79,6 +89,7 @@ class PaddleOCR private constructor(
         return recognizeResult { engine.run(bitmap) }
     }
 
+    // 对 JPEG/PNG 字节流解码并识别
     suspend fun recognize(imageBytes: ByteArray): OCRRunResult {
         if (imageBytes.isEmpty()) {
             throw OCRError.InvalidImage()
@@ -86,6 +97,7 @@ class PaddleOCR private constructor(
         return recognizeResult { engine.run(imageBytes) }
     }
 
+    // 在 IO 线程运行引擎并将 OCREngineResult 映射为 OCRRunResult
     private suspend fun recognizeResult(runEngine: () -> OCREngineResult): OCRRunResult {
         return withContext(Dispatchers.IO) {
             val result = runEngine()
@@ -110,6 +122,7 @@ class PaddleOCR private constructor(
         }
     }
 
+    // 释放 ONNX Session 与相关 native 资源
     suspend fun release() {
         withContext(Dispatchers.IO) {
             engine.release()

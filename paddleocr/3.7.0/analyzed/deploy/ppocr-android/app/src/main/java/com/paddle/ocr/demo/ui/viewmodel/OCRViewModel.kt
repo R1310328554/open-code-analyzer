@@ -28,10 +28,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+// OCR Demo ViewModel：管理 UI 状态、图片解码与 PaddleOCR 推理调用
 import kotlinx.coroutines.withContext
 
+/**
+ * 首页 ViewModel：订阅 Application 模型状态，驱动选图与 recognize 流程。
+ */
 class OCRViewModel : ViewModel() {
 
+    // 界面状态机：Loading / Ready / Processing / Result / Error
     sealed class UIState {
         data object Loading : UIState()
         data object Ready : UIState()
@@ -40,6 +45,7 @@ class OCRViewModel : ViewModel() {
         data class Error(val message: String) : UIState()
     }
 
+    // 各阶段耗时：检测、识别与总耗时（毫秒）
     data class TimingInfo(
         val detectionMs: Long,
         val recognitionMs: Long,
@@ -54,6 +60,7 @@ class OCRViewModel : ViewModel() {
     private val _timing = MutableStateFlow<TimingInfo?>(null)
     val timing: StateFlow<TimingInfo?> = _timing.asStateFlow()
 
+    // 将 Application.ModelState 映射为 UIState
     private fun uiStateForModelState(modelState: OCRApplication.ModelState): UIState {
         return when (modelState) {
             is OCRApplication.ModelState.Loading -> UIState.Loading
@@ -62,6 +69,7 @@ class OCRViewModel : ViewModel() {
         }
     }
 
+    // 监听全局模型加载状态，同步 Loading / Ready / Error
     init {
         viewModelScope.launch {
             OCRApplication.instance.modelState.collect { modelState ->
@@ -78,6 +86,7 @@ class OCRViewModel : ViewModel() {
         }
     }
 
+    // 从 ContentResolver 读取 URI 字节并采样解码后识别
     fun onImageSelected(uri: Uri) {
         viewModelScope.launch {
             try {
@@ -102,6 +111,7 @@ class OCRViewModel : ViewModel() {
         }
     }
 
+    // 从 raw 资源加载内置示例图并识别
     fun onSampleImageClicked(resId: Int) {
         viewModelScope.launch {
             val bytes = withContext(Dispatchers.IO) {
@@ -118,6 +128,7 @@ class OCRViewModel : ViewModel() {
         }
     }
 
+    // 切换 Processing 状态，调用 OCRApplication.ocr.recognize
     private suspend fun processImageBytes(bytes: ByteArray, bitmap: Bitmap) {
         _uiState.value = UIState.Processing(bitmap)
 
@@ -137,6 +148,7 @@ class OCRViewModel : ViewModel() {
         }
     }
 
+    // 错误后重试：已加载则回 Ready，否则触发 Application 重新加载模型
     fun retry() {
         val app = OCRApplication.instance
         if (app.isModelLoaded) {
@@ -146,6 +158,7 @@ class OCRViewModel : ViewModel() {
         }
     }
 
+    // 将全部识别文本拼接后写入系统剪贴板
     fun copyAllResults(results: List<OCRResult>) {
         val text = results.joinToString("\n") { it.text }
         val clipboard = OCRApplication.instance.getSystemService(android.content.Context.CLIPBOARD_SERVICE)
@@ -153,6 +166,7 @@ class OCRViewModel : ViewModel() {
         clipboard.setPrimaryClip(android.content.ClipData.newPlainText("OCR Results", text))
     }
 
+    // 两遍解码：先读 bounds 再按 inSampleSize 降采样，控制最大边长
     private fun decodeSampledBitmap(
         bytes: ByteArray,
         maxWidth: Int,

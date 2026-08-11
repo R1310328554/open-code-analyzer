@@ -17,8 +17,10 @@ package com.paddle.ocr.demo.ui.theme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+// PPOCR Demo Material3 主题：定义浅色配色方案
 import androidx.compose.ui.graphics.Color
 
+// 浅色 ColorScheme：主色 Paddle 蓝、辅色青绿与错误红
 private val LightColorScheme = lightColorScheme(
     primary = Color(0xFF1565C0),
     onPrimary = Color.White,
@@ -36,6 +38,9 @@ private val LightColorScheme = lightColorScheme(
     onError = Color.White,
 )
 
+/**
+ * 应用根主题 Composable，统一 Material3 颜色与排版。
+ */
 @Composable
 fun PPOCRTheme(content: @Composable () -> Unit) {
     MaterialTheme(

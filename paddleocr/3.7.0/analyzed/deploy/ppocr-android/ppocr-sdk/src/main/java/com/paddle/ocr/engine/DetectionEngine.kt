@@ -20,12 +20,17 @@ import com.paddle.ocr.model.OCRBox
 import com.paddle.ocr.postprocess.DBPostProcessor
 import com.paddle.ocr.preprocess.DetPreprocessResult
 import com.paddle.ocr.preprocess.DetPreprocessor
+// 文本检测引擎：Det 预处理 → ONNX DB 推理 → DBPostProcessor 后处理
 import org.opencv.core.Mat
 
+/**
+ * DB 检测引擎：封装 ORTSessionManager 与 PaddleOCRConfig 完成文本区域定位。
+ */
 class DetectionEngine(
     private val ortManager: ORTSessionManager,
     private val config: PaddleOCRConfig,
 ) {
+    // 检测结果：四边形框列表与各阶段毫秒耗时
     data class DetectionResult(
         val boxes: List<OCRBox>,
         val preprocessMs: Long,
@@ -35,6 +40,7 @@ class DetectionEngine(
         val inputShape: List<Int>,
     )
 
+    // 从 Android Bitmap 经 DetPreprocessor 缩放归一化后检测
     fun detect(bitmap: Bitmap): DetectionResult {
         return detect {
             DetPreprocessor.preprocess(
@@ -47,6 +53,7 @@ class DetectionEngine(
         }
     }
 
+    // 从 OpenCV BGR Mat 直接检测（与 OCREngine 流水线共用）
     fun detect(src: Mat): DetectionResult {
         return detect {
             DetPreprocessor.preprocess(
@@ -59,6 +66,7 @@ class DetectionEngine(
         }
     }
 
+    // 统一检测流程：预处理计时 → runDetection → DB 后处理
     private fun detect(preprocessor: () -> DetPreprocessResult): DetectionResult {
         val preStart = System.currentTimeMillis()
         val preResult = preprocessor()

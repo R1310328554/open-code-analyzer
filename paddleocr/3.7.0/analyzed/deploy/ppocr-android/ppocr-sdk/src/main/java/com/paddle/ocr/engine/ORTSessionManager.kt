@@ -20,8 +20,12 @@ import ai.onnxruntime.OrtSession
 import android.content.Context
 import com.paddle.ocr.EngineConfig
 import com.paddle.ocr.model.OCRError
+// ONNX Runtime 会话管理：加载 assets 模型、创建 Session 并执行推理
 import java.nio.FloatBuffer
 
+/**
+ * ORT 双 Session 管理器：分别持有 det/rec ONNX 模型与输入输出名。
+ */
 class ORTSessionManager(
     private val context: Context,
     private val config: EngineConfig,
@@ -31,9 +35,11 @@ class ORTSessionManager(
     private var recSession: OrtSession? = null
     private var detInputName: String = "x"
     private var recInputName: String = "x"
+    // 首次 loadModels 耗时，供性能面板展示
     var coldLoadTimeMs: Long = 0
         private set
 
+    // 从 assets 读取 ONNX 字节，ALL_OPT 优化并设置 intra 线程数
     fun loadModels(detAssetPath: String, recAssetPath: String) {
         val loadStart = System.currentTimeMillis()
         env = OrtEnvironment.getEnvironment()
@@ -74,6 +80,7 @@ class ORTSessionManager(
         }
     }
 
+    // 检测 Session 前向：返回概率图 flat 数组与 shape
     fun runDetection(input: FloatArray, shape: LongArray): Pair<FloatArray, LongArray> {
         val session = detSession
             ?: throw OCRError.ModelLoadFailed("detection", Exception("Session not initialized"))
@@ -82,6 +89,7 @@ class ORTSessionManager(
         return runSession(ortEnv, session, detInputName, input, shape, "detection")
     }
 
+    // 识别 Session 前向：返回 CTC logits 与 shape
     fun runRecognition(input: FloatArray, shape: LongArray): Pair<FloatArray, LongArray> {
         val session = recSession
             ?: throw OCRError.ModelLoadFailed("recognition", Exception("Session not initialized"))
@@ -90,6 +98,7 @@ class ORTSessionManager(
         return runSession(ortEnv, session, recInputName, input, shape, "recognition")
     }
 
+    // 依次 close det/rec Session 并清空 env 引用
     fun release() {
         try {
             detSession?.close()
@@ -104,6 +113,7 @@ class ORTSessionManager(
         }
     }
 
+    // 读取 assets 模型文件，缺失时抛 ModelNotFound
     private fun readModelAsset(assetPath: String): ByteArray {
         return try {
             context.assets.open(assetPath).use { it.readBytes() }
@@ -112,6 +122,7 @@ class ORTSessionManager(
         }
     }
 
+    // 通用推理：创建 OnnxTensor → session.run → 拷贝输出 FloatBuffer
     private fun runSession(
         ortEnv: OrtEnvironment,
         session: OrtSession,
@@ -151,6 +162,7 @@ class ORTSessionManager(
         }
     }
 
+    // duplicate + rewind 后拷贝为 Kotlin FloatArray
     private fun copyFloatBuffer(buffer: FloatBuffer): FloatArray {
         val duplicate = buffer.duplicate()
         duplicate.rewind()
