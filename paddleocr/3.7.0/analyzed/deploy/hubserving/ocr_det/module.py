@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import
+# module.py — OCR 文本检测 PaddleHub 模块：定位图像中文本区域的四边形框。
+
+from __future__ import absolute_importfrom __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
@@ -43,7 +45,9 @@ from deploy.hubserving.ocr_system.params import read_params
     author_email="paddle-dev@baidu.com",
     type="cv/text_detection",
 )
+# OCRDet 封装 TextDetector，基于 DB 后处理输出文本框坐标。
 class OCRDet(hub.Module):
+    # _initialize 加载检测模型并设置 GPU、IR 优化与 MKLDNN。
     def _initialize(self, use_gpu=False, enable_mkldnn=False):
         """
         initialize with the necessary elements
@@ -67,6 +71,7 @@ class OCRDet(hub.Module):
 
         self.text_detector = TextDetector(cfg)
 
+    # merge_configs 将 ocr_system.params 检测相关默认值写入 cfg。
     def merge_configs(
         self,
     ):
@@ -83,6 +88,7 @@ class OCRDet(hub.Module):
         sys.argv = copy.deepcopy(backup_argv)
         return cfg
 
+    # read_images 从文件路径列表加载 OpenCV BGR 图像。
     def read_images(self, paths=[]):
         images = []
         for img_path in paths:
@@ -96,6 +102,7 @@ class OCRDet(hub.Module):
             images.append(img)
         return images
 
+    # predict 对每张图运行检测，返回 text_region 多边形顶点列表。
     def predict(self, images=[], paths=[]):
         """
         Get the text box in the predicted images.
@@ -135,6 +142,7 @@ class OCRDet(hub.Module):
         return all_results
 
     @serving
+    # serving_method 在线检测服务：解码 base64 后调用 predict。
     def serving_method(self, images, **kwargs):
         """
         Run as a service.

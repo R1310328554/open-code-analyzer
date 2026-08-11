@@ -19,13 +19,18 @@ from __future__ import print_function
 from deploy.hubserving.ocr_system.params import read_params as pp_ocr_read_params
 
 
+# params.py — KIE SER+RE 联合服务默认参数（SER/RE 双模型路径与算法配置）。
+
+# Config 占位类，供 read_params 挂载动态属性。
 class Config(object):
     pass
 
 
+# read_params 继承 OCR 系统参数并追加 RE 模型与 KIE 算法设置。
 def read_params():
     cfg = pp_ocr_read_params()
 
+    # KIE 算法、SER/RE 推理目录、类别字典与可视化字体路径。
     # SER params
     cfg.kie_algorithm = "LayoutXLM"
     cfg.use_visual_backbone = False

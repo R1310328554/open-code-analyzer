@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import
+# module.py — OCR 方向分类 PaddleHub 模块：判断文本行是否需要旋转校正。
+
+from __future__ import absolute_importfrom __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
@@ -41,7 +43,9 @@ from deploy.hubserving.ocr_cls.params import read_params
     author_email="paddle-dev@baidu.com",
     type="cv/text_angle_cls",
 )
+# OCRCls 封装 TextClassifier，对裁剪文本块预测 0° 或 180° 方向。
 class OCRCls(hub.Module):
+    # _initialize 加载方向分类模型并配置 GPU/MKLDNN 加速选项。
     def _initialize(self, use_gpu=False, enable_mkldnn=False):
         """
         initialize with the necessary elements
@@ -65,6 +69,7 @@ class OCRCls(hub.Module):
 
         self.text_classifier = TextClassifier(cfg)
 
+    # merge_configs 合并 ocr_cls.params 中的分类器默认超参。
     def merge_configs(
         self,
     ):
@@ -81,6 +86,7 @@ class OCRCls(hub.Module):
         sys.argv = copy.deepcopy(backup_argv)
         return cfg
 
+    # read_images 批量读取本地图像供方向分类推理。
     def read_images(self, paths=[]):
         images = []
         for img_path in paths:
@@ -94,6 +100,7 @@ class OCRCls(hub.Module):
             images.append(img)
         return images
 
+    # predict 返回每张图的方向角（0/180）及置信度列表。
     def predict(self, images=[], paths=[]):
         """
         Get the text angle in the predicted images.
@@ -139,6 +146,7 @@ class OCRCls(hub.Module):
         return [rec_res_final]
 
     @serving
+    # serving_method HubServing 接口：接收 base64 编码图像并返回分类结果。
     def serving_method(self, images, **kwargs):
         """
         Run as a service.

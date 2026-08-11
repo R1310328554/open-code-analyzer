@@ -11,3 +11,5 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# ocr_cls 包：PaddleHub 部署文本方向分类（0°/180°）推理服务的模块入口。
+# limitations under the License.

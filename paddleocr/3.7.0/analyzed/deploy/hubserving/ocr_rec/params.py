@@ -17,13 +17,18 @@ from __future__ import division
 from __future__ import print_function
 
 
+# params.py — OCR 文本识别服务默认参数（CRNN 模型、字典与输入尺寸）。
+
+# Config 占位类，read_params 返回完整识别配置对象。
 class Config(object):
     pass
 
 
+# read_params 设置识别算法、模型目录、字符表路径及批处理大小。
 def read_params():
     cfg = Config()
 
+    # CRNN 识别模型路径、输入 shape、最大文本长度与字符字典配置。
     # params for text recognizer
     cfg.rec_algorithm = "CRNN"
     cfg.rec_model_dir = "./inference/ch_PP-OCRv3_rec_infer/"

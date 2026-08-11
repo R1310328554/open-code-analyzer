@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import
+# module.py — OCR 文本识别 PaddleHub 模块：对裁剪文本行图像解码为 Unicode 字符串。
+
+from __future__ import absolute_importfrom __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
@@ -41,7 +43,9 @@ from deploy.hubserving.ocr_rec.params import read_params
     author_email="paddle-dev@baidu.com",
     type="cv/text_recognition",
 )
+# OCRRec 封装 TextRecognizer，批量识别文本图像并输出文本与置信度。
 class OCRRec(hub.Module):
+    # _initialize 加载识别模型并配置推理设备与图优化选项。
     def _initialize(self, use_gpu=False, enable_mkldnn=False):
         """
         initialize with the necessary elements
@@ -65,6 +69,7 @@ class OCRRec(hub.Module):
 
         self.text_recognizer = TextRecognizer(cfg)
 
+    # merge_configs 将 ocr_rec.params 默认识别参数合并到运行时 cfg。
     def merge_configs(
         self,
     ):
@@ -81,6 +86,7 @@ class OCRRec(hub.Module):
         sys.argv = copy.deepcopy(backup_argv)
         return cfg
 
+    # read_images 读取本地文本行或词块图像用于识别。
     def read_images(self, paths=[]):
         images = []
         for img_path in paths:
@@ -94,6 +100,7 @@ class OCRRec(hub.Module):
             images.append(img)
         return images
 
+    # predict 对图像批次执行 CRNN 识别，返回 text 与 confidence 字典列表。
     def predict(self, images=[], paths=[]):
         """
         Get the text box in the predicted images.
@@ -139,6 +146,7 @@ class OCRRec(hub.Module):
         return [rec_res_final]
 
     @serving
+    # serving_method HubServing 入口：base64 图像解码后批量识别。
     def serving_method(self, images, **kwargs):
         """
         Run as a service.

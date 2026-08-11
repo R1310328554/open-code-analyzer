@@ -11,3 +11,5 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# ocr_det 包：PaddleHub 部署 PP-OCR 文本检测（DB 算法）推理服务的模块入口。
+# limitations under the License.

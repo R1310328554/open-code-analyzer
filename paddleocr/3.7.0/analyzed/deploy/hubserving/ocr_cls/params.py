@@ -17,13 +17,18 @@ from __future__ import division
 from __future__ import print_function
 
 
+# params.py — OCR 方向分类服务默认参数（模型目录、输入尺寸与阈值）。
+
+# Config 占位类，read_params 返回带分类器字段的配置对象。
 class Config(object):
     pass
 
 
+# read_params 构造方向分类推理所需的模型路径、标签与批大小。
 def read_params():
     cfg = Config()
 
+    # 分类模型目录、输入 shape、0/180 标签、批大小与置信度阈值。
     # params for text classifier
     cfg.cls_model_dir = "./inference/ch_ppocr_mobile_v2.0_cls_infer/"
     cfg.cls_image_shape = "3, 48, 192"

@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import
+# module.py — KIE SER+RE PaddleHub 模块：在 SER 基础上抽取实体间语义关系。
+
+from __future__ import absolute_importfrom __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
@@ -45,7 +47,9 @@ from deploy.hubserving.kie_ser_re.params import read_params
     author_email="paddle-dev@baidu.com",
     type="cv/KIE_SER_RE",
 )
+# KIESerRE 封装 SerRePredictor，串联 SER 与 RE 两阶段 KIE 推理。
 class KIESerRE(hub.Module):
+    # _initialize 合并配置并加载 SER+RE 联合预测器。
     def _initialize(self, use_gpu=False, enable_mkldnn=False):
         """
         initialize with the necessary elements
@@ -69,6 +73,7 @@ class KIESerRE(hub.Module):
 
         self.ser_re_predictor = SerRePredictor(cfg)
 
+    # merge_configs 将 kie_ser_re.params 默认值写入运行时 cfg。
     def merge_configs(
         self,
     ):
@@ -85,6 +90,7 @@ class KIESerRE(hub.Module):
         sys.argv = copy.deepcopy(backup_argv)
         return cfg
 
+    # read_images 从磁盘路径读取待推理文档图像。
     def read_images(self, paths=[]):
         images = []
         for img_path in paths:
@@ -98,6 +104,7 @@ class KIESerRE(hub.Module):
             images.append(img)
         return images
 
+    # predict 对每张图执行关系抽取，返回实体及关系结构化结果。
     def predict(self, images=[], paths=[]):
         """
         Get the chinese texts in the predicted images.
@@ -134,6 +141,7 @@ class KIESerRE(hub.Module):
         return all_results
 
     @serving
+    # serving_method 在线服务：base64 解码后批量调用 predict。
     def serving_method(self, images, **kwargs):
         """
         Run as a service.

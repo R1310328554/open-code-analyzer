@@ -17,19 +17,25 @@ from __future__ import division
 from __future__ import print_function
 
 
+# params.py — OCR 文本检测服务默认参数（DB 算法阈值与模型路径）。
+
+# Config 占位类，实际字段由 read_params 动态赋值。
 class Config(object):
     pass
 
 
+# read_params 返回 DB 检测器所需的算法名、模型目录与后处理超参。
 def read_params():
     cfg = Config()
 
+    # 检测算法、模型路径、边长限制及 DB 阈值/扩框比例等参数。
     # params for text detector
     cfg.det_algorithm = "DB"
     cfg.det_model_dir = "./inference/PP-OCRv3_mobile_det_infer/"
     cfg.det_limit_side_len = 960
     cfg.det_limit_type = "max"
 
+    # Differentiable Binarization 后处理：阈值、框过滤、unclip 与评分模式。
     # DB params
     cfg.det_db_thresh = 0.3
     cfg.det_db_box_thresh = 0.6

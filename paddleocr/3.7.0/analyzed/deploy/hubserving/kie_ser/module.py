@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import
+# module.py — KIE SER PaddleHub 模块：加载 LayoutXLM 模型并对文档图像做语义实体识别。
+
+from __future__ import absolute_importfrom __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
@@ -45,7 +47,9 @@ from deploy.hubserving.kie_ser.params import read_params
     author_email="paddle-dev@baidu.com",
     type="cv/KIE_SER",
 )
+# KIESer 封装 SerPredictor，提供本地预测与 HubServing HTTP 服务接口。
 class KIESer(hub.Module):
+    # _initialize 合并配置、设置 GPU/MKLDNN 并实例化 SER 推理器。
     def _initialize(self, use_gpu=False, enable_mkldnn=False):
         """
         initialize with the necessary elements
@@ -69,6 +73,7 @@ class KIESer(hub.Module):
 
         self.ser_predictor = SerPredictor(cfg)
 
+    # merge_configs 将 params.read_params 默认值覆盖到命令行解析配置。
     def merge_configs(
         self,
     ):
@@ -85,6 +90,7 @@ class KIESer(hub.Module):
         sys.argv = copy.deepcopy(backup_argv)
         return cfg
 
+    # read_images 按路径批量读取 BGR 图像，跳过无法解码的文件。
     def read_images(self, paths=[]):
         images = []
         for img_path in paths:
@@ -98,6 +104,7 @@ class KIESer(hub.Module):
             images.append(img)
         return images
 
+    # predict 对图像列表或路径列表执行 SER，返回每张图的实体识别结果。
     def predict(self, images=[], paths=[]):
         """
         Get the chinese texts in the predicted images.
@@ -132,6 +139,7 @@ class KIESer(hub.Module):
         return all_results
 
     @serving
+    # serving_method HubServing 入口：解码 base64 图像后调用 predict。
     def serving_method(self, images, **kwargs):
         """
         Run as a service.
