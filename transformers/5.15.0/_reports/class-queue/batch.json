@@ -15,23 +15,8 @@
     "src/transformers/utils/network_logging.py",
     "src/transformers/utils/notebook.py",
     "src/transformers/utils/output_capturing.py",
-    "src/transformers/utils/peft_utils.py",
-    "src/transformers/utils/pytest_helpers.py",
-    "src/transformers/utils/quantization_config.py",
-    "src/transformers/utils/sentencepiece_model_pb2.py",
-    "src/transformers/utils/sentencepiece_model_pb2_new.py",
-    "src/transformers/utils/type_validators.py",
-    "src/transformers/utils/versions.py",
-    "src/transformers/video_processing_utils.py",
-    "src/transformers/video_utils.py",
-    "src/transformers/vision_utils.py",
-    "utils/add_dates.py",
-    "utils/aggregate_failure_reports.py",
-    "utils/check_auto.py",
-    "utils/check_bad_commit.py",
-    "utils/check_config_attributes.py",
-    "utils/check_config_docstrings.py"
+    "src/transformers/utils/peft_utils.py"
   ],
   "remaining_pending": 69,
-  "done": 2580
+  "done": 2595
 }
