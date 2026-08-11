@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T07:11:31Z",
-  "files": [
-    "ppocr/losses/det_pse_loss.py",
-    "ppocr/losses/det_sast_loss.py",
-    "ppocr/losses/distillation_loss.py",
-    "ppocr/losses/e2e_pg_loss.py",
-    "ppocr/losses/kie_sdmgr_loss.py",
-    "ppocr/losses/rec_aster_loss.py",
-    "ppocr/losses/rec_att_loss.py",
-    "ppocr/losses/rec_can_loss.py",
-    "ppocr/losses/rec_ce_loss.py",
-    "ppocr/losses/rec_cppd_loss.py",
-    "ppocr/losses/rec_ctc_loss.py",
-    "ppocr/losses/rec_enhanced_ctc_loss.py",
-    "ppocr/losses/rec_latexocr_loss.py",
-    "ppocr/losses/rec_multi_loss.py",
-    "ppocr/losses/rec_nrtr_loss.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 242,
-  "done": 345
+  "done": 360
 }
