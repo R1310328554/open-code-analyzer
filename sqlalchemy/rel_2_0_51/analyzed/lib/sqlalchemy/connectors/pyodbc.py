@@ -5,6 +5,8 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
+# pyodbc 连接器 mixin：DSN 连接串组装、隔离级别与 setinputsizes
+
 from __future__ import annotations
 
 import re
@@ -32,6 +34,7 @@ if typing.TYPE_CHECKING:
     from ..engine.interfaces import IsolationLevel
 
 
+# pyodbc 方言 mixin：命名参数、decimal 原生类型与 ODBC 连接参数解析
 class PyODBCConnector(Connector):
     driver = "pyodbc"
 
@@ -57,6 +60,7 @@ class PyODBCConnector(Connector):
     def import_dbapi(cls) -> DBAPIModule:
         return __import__("pyodbc")
 
+    # 将 URL 译为 ODBC 连接串元组与 ansi/unicode/autocommit 等 kwargs
     def create_connect_args(self, url: URL) -> ConnectArgsType:
         opts = url.translate_connect_args(username="user")
         opts.update(url.query)
@@ -140,6 +144,7 @@ class PyODBCConnector(Connector):
 
         return ((";".join(connectors),), connect_args)
 
+    # ProgrammingError 含 closed connection 文案时视为断连
     def is_disconnect(
         self,
         e: Exception,
@@ -187,6 +192,7 @@ class PyODBCConnector(Connector):
                 pass
         return tuple(version)
 
+    # executemany+fast_executemany 时跳过；否则规范化 tuple 传给 setinputsizes
     def do_set_input_sizes(
         self,
         cursor: interfaces.DBAPICursor,
@@ -229,6 +235,7 @@ class PyODBCConnector(Connector):
     ) -> List[IsolationLevel]:
         return [*super().get_isolation_level_values(dbapi_conn), "AUTOCOMMIT"]
 
+    # AUTOCOMMIT 设 autocommit=True；否则关 autocommit 并调父类
     def set_isolation_level(
         self,
         dbapi_connection: interfaces.DBAPIConnection,

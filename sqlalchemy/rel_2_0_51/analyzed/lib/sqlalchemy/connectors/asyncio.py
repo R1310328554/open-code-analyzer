@@ -6,6 +6,8 @@
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
 """generic asyncio-adapted versions of DBAPI connection and cursor"""
+# 通用 asyncio DBAPI 适配：同步方言接口下包装 async 连接/游标
+"""generic asyncio-adapted versions of DBAPI connection and cursor"""
 
 from __future__ import annotations
 
@@ -38,6 +40,7 @@ if TYPE_CHECKING:
     from ..util.typing import Self
 
 
+# PEP 249 异步连接协议：commit/rollback/cursor 等为协程或同步方法
 class AsyncIODBAPIConnection(Protocol):
     """protocol representing an async adapted version of a
     :pep:`249` database connection.
@@ -59,6 +62,7 @@ class AsyncIODBAPIConnection(Protocol):
     def __setattr__(self, key: str, value: Any) -> None: ...
 
 
+# PEP 249 异步游标协议：execute/fetch/close 等 async 语义
 class AsyncIODBAPICursor(Protocol):
     """protocol representing an async adapted version
     of a :pep:`249` database cursor.
@@ -115,6 +119,7 @@ class AsyncIODBAPICursor(Protocol):
     def __aiter__(self) -> AsyncIterator[Any]: ...
 
 
+# 异步 DBAPI 模块占位：TYPE_CHECKING 下声明标准异常类
 class AsyncAdapt_dbapi_module:
     if TYPE_CHECKING:
         Error = DBAPIModule.Error
@@ -125,6 +130,7 @@ class AsyncAdapt_dbapi_module:
         def __getattr__(self, key: str) -> Any: ...
 
 
+# 同步外观游标：内部 await_ 桥接 async 驱动，客户端侧缓冲非 ss 结果
 class AsyncAdapt_dbapi_cursor:
     server_side = False
     __slots__ = (
@@ -185,6 +191,7 @@ class AsyncAdapt_dbapi_cursor:
     def lastrowid(self) -> int:
         return self._cursor.lastrowid
 
+    # 软关闭：保留 description 供后续同步上下文读取
     async def _async_soft_close(self) -> None:
         """close the cursor but keep the results pending, and memoize the
         description.
@@ -241,6 +248,7 @@ class AsyncAdapt_dbapi_cursor:
         except Exception as error:
             self._adapt_connection._handle_exception(error)
 
+    # 持锁执行单条语句；非 server_side 时预取全部行入 deque
     async def _execute_async(
         self, operation: Any, parameters: Optional[_DBAPISingleExecuteParams]
     ) -> Any:
@@ -304,6 +312,7 @@ class AsyncAdapt_dbapi_cursor:
         return retval
 
 
+# 服务端游标：fetch/迭代直接 await 底层 cursor，不本地缓冲
 class AsyncAdapt_dbapi_ss_cursor(AsyncAdapt_dbapi_cursor):
     __slots__ = ()
     server_side = True
@@ -331,6 +340,7 @@ class AsyncAdapt_dbapi_ss_cursor(AsyncAdapt_dbapi_cursor):
                 break
 
 
+# 异步 DBAPI 连接包装：cursor/execute/事务与异常重抛
 class AsyncAdapt_dbapi_connection(AdaptedConnection):
     _cursor_cls = AsyncAdapt_dbapi_cursor
     _ss_cursor_cls = AsyncAdapt_dbapi_ss_cursor
@@ -383,17 +393,20 @@ class AsyncAdapt_dbapi_connection(AdaptedConnection):
         self.await_(self._connection.close())
 
 
+# await_fallback 变体：在 greenlet/线程上下文中运行 async 代码
 class AsyncAdaptFallback_dbapi_connection(AsyncAdapt_dbapi_connection):
     __slots__ = ()
 
     await_ = staticmethod(await_fallback)
 
 
+# 连接终止 mixin：失效回收时优雅 shield close，否则强制关闭
 class AsyncAdapt_terminate:
     """Mixin for a AsyncAdapt_dbapi_connection to add terminate support."""
 
     __slots__ = ()
 
+    # greenlet 内尝试 graceful close；GC 路径直接 force close
     def terminate(self) -> None:
         if in_greenlet():
             # in a greenlet; this is the connection was invalidated case.

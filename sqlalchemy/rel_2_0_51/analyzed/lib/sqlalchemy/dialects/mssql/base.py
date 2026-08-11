@@ -1032,6 +1032,9 @@ from ...types import SMALLINT
 from ...types import TEXT
 from ...types import VARCHAR
 from ...util import update_wrapper
+
+
+# Microsoft SQL Server 方言核心：类型、编译器、反射 catalog 与 MSDialect
 from ...util.typing import Literal
 
 if TYPE_CHECKING:
@@ -1040,6 +1043,7 @@ if TYPE_CHECKING:
     from ...sql.selectable import TableClause
 
 # https://sqlserverbuilds.blogspot.com/
+# SQL Server 主版本号元组，用于运行时特性开关
 MS_2017_VERSION = (14,)
 MS_2016_VERSION = (13,)
 MS_2014_VERSION = (12,)
@@ -1048,6 +1052,7 @@ MS_2008_VERSION = (10,)
 MS_2005_VERSION = (9,)
 MS_2000_VERSION = (8,)
 
+# T-SQL 保留字；IdentifierPreparer 引用标识符时用方括号
 RESERVED_WORDS = {
     "add",
     "all",
@@ -1232,9 +1237,11 @@ RESERVED_WORDS = {
 }
 
 
+# REAL：SQL Server 上为 FLOAT(24) 同义词
 class REAL(sqltypes.REAL):
     """the SQL Server REAL datatype."""
 
+    # query_timeout、deprecate_large_types、legacy_schema_aliasing 等
     def __init__(self, **kw):
         # REAL is a synonym for FLOAT(24) on SQL server.
         # it is only accepted as the word "REAL" in DDL, the numeric
@@ -1243,6 +1250,7 @@ class REAL(sqltypes.REAL):
         super().__init__(**kw)
 
 
+# DOUBLE PRECISION：FLOAT(53) 同义词
 class DOUBLE_PRECISION(sqltypes.DOUBLE_PRECISION):
     """the SQL Server DOUBLE PRECISION datatype.
 
@@ -1258,6 +1266,7 @@ class DOUBLE_PRECISION(sqltypes.DOUBLE_PRECISION):
         super().__init__(**kw)
 
 
+# TINYINT 8 位无符号整数类型
 class TINYINT(sqltypes.Integer):
     __visit_name__ = "TINYINT"
 
@@ -1268,6 +1277,7 @@ class TINYINT(sqltypes.Integer):
 # not sure about other dialects).
 
 
+# DATE 绑定/结果处理：兼容 pyodbc 返回 str 或 datetime
 class _MSDate(sqltypes.Date):
     def bind_processor(self, dialect):
         def process(value):
@@ -1297,6 +1307,7 @@ class _MSDate(sqltypes.Date):
         return process
 
 
+# TIME 类型：pyodbc 需字符串绑定，结果可解析 HH:MM:SS
 class TIME(sqltypes.TIME):
     def __init__(self, precision=None, **kwargs):
         self.precision = precision
@@ -1342,10 +1353,12 @@ class TIME(sqltypes.TIME):
 _MSTime = TIME
 
 
+# colspec 用 TIME 内部实现别名
 class _BASETIMEIMPL(TIME):
     __visit_name__ = "_BASETIMEIMPL"
 
 
+# datetime 族绑定：date 自动升档为 datetime
 class _DateTimeBase:
     def bind_processor(self, dialect):
         def process(value):
@@ -1357,14 +1370,17 @@ class _DateTimeBase:
         return process
 
 
+# 经典 DATETIME 列类型映射
 class _MSDateTime(_DateTimeBase, sqltypes.DateTime):
     pass
 
 
+# SMALLDATETIME 精度至分钟
 class SMALLDATETIME(_DateTimeBase, sqltypes.DateTime):
     __visit_name__ = "SMALLDATETIME"
 
 
+# DATETIME2 可配置 fractional seconds precision
 class DATETIME2(_DateTimeBase, sqltypes.DateTime):
     __visit_name__ = "DATETIME2"
 
@@ -1373,6 +1389,7 @@ class DATETIME2(_DateTimeBase, sqltypes.DateTime):
         self.precision = precision
 
 
+# DATETIMEOFFSET 带时区偏移
 class DATETIMEOFFSET(_DateTimeBase, sqltypes.DateTime):
     __visit_name__ = "DATETIMEOFFSET"
 
@@ -1381,6 +1398,7 @@ class DATETIMEOFFSET(_DateTimeBase, sqltypes.DateTime):
         self.precision = precision
 
 
+# Unicode 字面量编译为 N'...' 并处理 %  doubling
 class _UnicodeLiteral:
     def literal_processor(self, dialect):
         def process(value):
@@ -1394,14 +1412,17 @@ class _UnicodeLiteral:
         return process
 
 
+# NVARCHAR 等 Unicode 字符串 colspec
 class _MSUnicode(_UnicodeLiteral, sqltypes.Unicode):
     pass
 
 
+# NVARCHAR(max) / Unicode 文本 colspec
 class _MSUnicodeText(_UnicodeLiteral, sqltypes.UnicodeText):
     pass
 
 
+# rowversion 二进制时间戳（非 SQL 标准 TIMESTAMP）
 class TIMESTAMP(sqltypes._Binary):
     """Implement the SQL Server TIMESTAMP type.
 
@@ -1450,6 +1471,7 @@ class TIMESTAMP(sqltypes._Binary):
             return super_
 
 
+# ROWVERSION：TIMESTAMP 推荐别名，只读不可 INSERT
 class ROWVERSION(TIMESTAMP):
     """Implement the SQL Server ROWVERSION type.
 
@@ -1474,6 +1496,7 @@ class ROWVERSION(TIMESTAMP):
     __visit_name__ = "ROWVERSION"
 
 
+# 旧版 NTEXT 大文本类型
 class NTEXT(sqltypes.UnicodeText):
     """MSSQL NTEXT type, for variable-length unicode text up to 2^30
     characters."""
@@ -1481,6 +1504,7 @@ class NTEXT(sqltypes.UnicodeText):
     __visit_name__ = "NTEXT"
 
 
+# VARBINARY：支持 FILESTREAM 与 large type 弃用策略
 class VARBINARY(sqltypes.VARBINARY, sqltypes.LargeBinary):
     """The MSSQL VARBINARY type.
 
@@ -1521,10 +1545,12 @@ class VARBINARY(sqltypes.VARBINARY, sqltypes.LargeBinary):
         super().__init__(length=length)
 
 
+# 旧版 IMAGE 大二进制（可由 deprecate_large_types 映射）
 class IMAGE(sqltypes.LargeBinary):
     __visit_name__ = "IMAGE"
 
 
+# XML 类型占位：反射用，无 Python 侧解析
 class XML(sqltypes.Text):
     """MSSQL XML type.
 
@@ -1538,6 +1564,7 @@ class XML(sqltypes.Text):
     __visit_name__ = "XML"
 
 
+# BIT：pyodbc/pymssql 直接映射 Python bool
 class BIT(sqltypes.Boolean):
     """MSSQL BIT type.
 
@@ -1549,14 +1576,17 @@ class BIT(sqltypes.Boolean):
     __visit_name__ = "BIT"
 
 
+# MONEY 货币类型
 class MONEY(sqltypes.TypeEngine):
     __visit_name__ = "MONEY"
 
 
+# SMALLMONEY 小范围货币
 class SMALLMONEY(sqltypes.TypeEngine):
     __visit_name__ = "SMALLMONEY"
 
 
+# Uuid colspec：native_uuid 与 as_uuid 分支绑定/字面量
 class MSUUid(sqltypes.Uuid):
     def bind_processor(self, dialect):
         if self.native_uuid:
@@ -1605,6 +1635,7 @@ class MSUUid(sqltypes.Uuid):
                 return process
 
 
+# UNIQUEIDENTIFIER 原生 UUID 列
 class UNIQUEIDENTIFIER(sqltypes.Uuid[sqltypes._UUID_RETURN]):
     __visit_name__ = "UNIQUEIDENTIFIER"
 
@@ -1635,6 +1666,7 @@ class UNIQUEIDENTIFIER(sqltypes.Uuid[sqltypes._UUID_RETURN]):
         self.native_uuid = True
 
 
+# sql_variant 任意标量（驱动支持有限）
 class SQL_VARIANT(sqltypes.TypeEngine):
     __visit_name__ = "SQL_VARIANT"
 
@@ -1663,6 +1695,7 @@ MSSmallMoney = SMALLMONEY
 MSUniqueIdentifier = UNIQUEIDENTIFIER
 MSVariant = SQL_VARIANT
 
+# 反射时 INFORMATION_SCHEMA 类型名到 SQLAlchemy 类型类
 ischema_names = {
     "int": INTEGER,
     "bigint": BIGINT,
@@ -1698,7 +1731,9 @@ ischema_names = {
 }
 
 
+# MSSQL DDL 类型名编译：COLLATE、FLOAT(n)、IDENTITY 相关 visit
 class MSTypeCompiler(compiler.GenericTypeCompiler):
+    # 拼接长度与 COLLATE 到类型声明字符串
     def _extend(self, spec, type_, length=None):
         """Extend a string-type declaration with standard SQL
         COLLATE annotations.
@@ -1863,6 +1898,7 @@ class MSTypeCompiler(compiler.GenericTypeCompiler):
         return "SQL_VARIANT"
 
 
+# 执行上下文：IDENTITY_INSERT、scope_identity 与 RETURNING 游标策略
 class MSExecutionContext(default.DefaultExecutionContext):
     _enable_identity_insert = False
     _select_lastrowid = False
@@ -1877,6 +1913,7 @@ class MSExecutionContext(default.DefaultExecutionContext):
 
         return statement
 
+    # INSERT 含 identity 列值时 SET IDENTITY_INSERT ON
     def pre_exec(self):
         """Activate IDENTITY_INSERT if needed."""
 
@@ -1926,6 +1963,7 @@ class MSExecutionContext(default.DefaultExecutionContext):
                     self,
                 )
 
+    # 取 lastrowid/缓冲 RETURNING；关闭 IDENTITY_INSERT
     def post_exec(self):
         """Disable IDENTITY_INSERT if enabled."""
 
@@ -1983,9 +2021,11 @@ class MSExecutionContext(default.DefaultExecutionContext):
                 self,
             )
 
+    # post_exec 缓存的 scope_identity/@@identity
     def get_lastrowid(self):
         return self._lastrowid
 
+    # 异常时尽力 SET IDENTITY_INSERT OFF
     def handle_dbapi_exception(self, e):
         if self._enable_identity_insert:
             try:
@@ -2000,6 +2040,7 @@ class MSExecutionContext(default.DefaultExecutionContext):
             except Exception:
                 pass
 
+    # T-SQL SEQUENCE：SELECT NEXT VALUE FOR
     def fire_sequence(self, seq, type_):
         return self._execute_scalar(
             (
@@ -2020,6 +2061,7 @@ class MSExecutionContext(default.DefaultExecutionContext):
         return super().get_insert_default(column)
 
 
+# T-SQL SELECT/DML 编译：TOP、OFFSET/FETCH、ROW_NUMBER、OUTPUT
 class MSSQLCompiler(compiler.SQLCompiler):
     returning_precedes_values = True
 
@@ -2092,6 +2134,7 @@ class MSSQLCompiler(compiler.SQLCompiler):
             self.process(binary.right, **kw),
         )
 
+    # LIMIT 映射为 TOP（字面量，因 ODBC 不支持 SELECT 内绑定）
     def get_select_precolumns(self, select, **kw):
         """MS-SQL puts TOP, it's version of LIMIT here"""
 
@@ -2187,6 +2230,7 @@ class MSSQLCompiler(compiler.SQLCompiler):
             self.process(element.typeclause, **kw),
         )
 
+    # 旧版无 OFFSET/FETCH 时用 ROW_NUMBER 子查询分页
     def translate_select_structure(self, select_stmt, **kwargs):
         """Look for ``LIMIT`` and OFFSET in a select statement, and if
         so tries to wrap it in a subquery with ``row_number()`` criterion.
@@ -2322,6 +2366,7 @@ class MSSQLCompiler(compiler.SQLCompiler):
             )
         return super().visit_binary(binary, **kwargs)
 
+    # INSERT/UPDATE/DELETE RETURNING 编译为 OUTPUT inserted/deleted
     def returning_clause(
         self, stmt, returning_cols, *, populate_result_map, **kw
     ):
@@ -2416,6 +2461,7 @@ class MSSQLCompiler(compiler.SQLCompiler):
         else:
             return ""
 
+    # UPDATE ... FROM 多表连接语法
     def update_from_clause(
         self, update_stmt, from_table, extra_froms, from_hints, **kw
     ):
@@ -2440,6 +2486,7 @@ class MSSQLCompiler(compiler.SQLCompiler):
             self, asfrom=True, iscrud=True, ashint=ashint, **kw
         )
 
+    # DELETE ... FROM 第二 FROM 子句
     def delete_extra_from_clause(
         self, delete_stmt, from_table, extra_froms, from_hints, **kw
     ):
@@ -2468,6 +2515,7 @@ class MSSQLCompiler(compiler.SQLCompiler):
             self.process(binary.right),
         )
 
+    # JSON 索引：JSON_VALUE 与 JSON_QUERY 按目标类型分支
     def _render_json_extract_from_binary(self, binary, operator, **kw):
         # note we are intentionally calling upon the process() calls in the
         # order in which they appear in the SQL String as this is used
@@ -2534,6 +2582,7 @@ class MSSQLCompiler(compiler.SQLCompiler):
         return "NEXT VALUE FOR %s" % self.preparer.format_sequence(seq)
 
 
+# 禁止 SELECT 子句绑定参数的严格编译器（部分 ODBC 驱动）
 class MSSQLStrictCompiler(MSSQLCompiler):
     """A subclass of MSSQLCompiler which disables the usage of bind
     parameters where not allowed natively by MS-SQL.
@@ -2559,6 +2608,7 @@ class MSSQLStrictCompiler(MSSQLCompiler):
             self.process(binary.right, **kw),
         )
 
+    # date/datetime 字面量格式化为 ODBC canonical 字符串
     def render_literal_value(self, value, type_):
         """
         For date and datetime values, convert to a string
@@ -2578,7 +2628,9 @@ class MSSQLStrictCompiler(MSSQLCompiler):
             return super().render_literal_value(value, type_)
 
 
+# CREATE TABLE/INDEX 等 DDL：IDENTITY、CLUSTERED、INCLUDE、注释
 class MSDDLCompiler(compiler.DDLCompiler):
+    # 列 DDL：类型、NULL、IDENTITY、DEFAULT、computed
     def get_column_specification(self, column, **kwargs):
         colspec = self.preparer.format_column(column)
 
@@ -2642,6 +2694,7 @@ class MSDDLCompiler(compiler.DDLCompiler):
 
         return colspec
 
+    # CREATE [UNIQUE] [CLUSTERED|NONCLUSTERED] INDEX ... INCLUDE WHERE
     def visit_create_index(self, create, include_schema=False, **kw):
         index = create.element
         self._verify_index_table(index)
@@ -2829,6 +2882,7 @@ class MSDDLCompiler(compiler.DDLCompiler):
             prefix = " AS %s" % self.type_compiler.process(data_type)
         return super().visit_create_sequence(create, prefix=prefix, **kw)
 
+    # IDENTITY(start, increment) 子句
     def visit_identity_column(self, identity, **kw):
         text = " IDENTITY"
         if identity.start is not None or identity.increment is not None:
@@ -2838,6 +2892,7 @@ class MSDDLCompiler(compiler.DDLCompiler):
         return text
 
 
+# 方括号标识符引用与 schema.db 拆分 quote_schema
 class MSIdentifierPreparer(compiler.IdentifierPreparer):
     reserved_words = RESERVED_WORDS
 
@@ -2855,6 +2910,7 @@ class MSIdentifierPreparer(compiler.IdentifierPreparer):
     def _unescape_identifier(self, value):
         return value.replace("]]", "]")
 
+    # dbname.owner 或单 owner 的 bracket 引用
     def quote_schema(self, schema, force=None):
         """Prepare a quoted table and schema name."""
 
@@ -2882,6 +2938,7 @@ class MSIdentifierPreparer(compiler.IdentifierPreparer):
         return result
 
 
+# 装饰器：列表型反射前 USE 目标库
 def _db_plus_owner_listing(fn):
     def wrap(dialect, connection, schema=None, **kw):
         dbname, owner = _owner_plus_db(dialect, schema)
@@ -2900,6 +2957,7 @@ def _db_plus_owner_listing(fn):
     return update_wrapper(wrap, fn)
 
 
+# 装饰器：单表反射前切换 catalog 并解析 owner
 def _db_plus_owner(fn):
     def wrap(dialect, connection, tablename, schema=None, **kw):
         dbname, owner = _owner_plus_db(dialect, schema)
@@ -2919,6 +2977,7 @@ def _db_plus_owner(fn):
     return update_wrapper(wrap, fn)
 
 
+# 临时 USE dbname 执行 fn 后恢复原库
 def _switch_db(dbname, connection, fn, *arg, **kw):
     if dbname:
         current_db = connection.exec_driver_sql("select db_name()").scalar()
@@ -2936,6 +2995,7 @@ def _switch_db(dbname, connection, fn, *arg, **kw):
             )
 
 
+# schema 字符串解析为 (catalog, owner)
 def _owner_plus_db(dialect, schema):
     if not schema:
         return None, dialect.default_schema_name
@@ -2946,6 +3006,7 @@ def _owner_plus_db(dialect, schema):
 _memoized_schema = util.LRUCache()
 
 
+# 解析 bracket/dot 分隔的 schema 为 dbname 与 owner（LRU 缓存）
 def _schema_elements(schema):
     if isinstance(schema, quoted_name) and schema.quote:
         return None, schema
@@ -3004,6 +3065,7 @@ def _schema_elements(schema):
     return dbname, owner
 
 
+# Microsoft SQL Server 主方言：编译器、反射、隔离级别与版本探测
 class MSDialect(default.DefaultDialect):
     # will assume it's at least mssql2005
     name = "mssql"
@@ -3158,6 +3220,7 @@ class MSDialect(default.DefaultDialect):
         self._json_serializer = json_serializer
         self._json_deserializer = json_deserializer
 
+    # 无显式事务时 BEGIN TRANSACTION 再 SAVEPOINT
     def do_savepoint(self, connection, name):
         # give the DBAPI a push
         connection.exec_driver_sql("IF @@TRANCOUNT = 0 BEGIN TRANSACTION")
@@ -3167,6 +3230,7 @@ class MSDialect(default.DefaultDialect):
         # SQL Server does not support RELEASE SAVEPOINT
         pass
 
+    # 可选忽略 111214「无对应事务」ProgrammingError
     def do_rollback(self, dbapi_connection):
         try:
             super().do_rollback(dbapi_connection)
@@ -3194,6 +3258,7 @@ class MSDialect(default.DefaultDialect):
     def get_isolation_level_values(self, dbapi_connection):
         return list(self._isolation_lookup)
 
+    # SET TRANSACTION ISOLATION LEVEL；SNAPSHOT 需 commit
     def set_isolation_level(self, dbapi_connection, level):
         cursor = dbapi_connection.cursor()
         cursor.execute(f"SET TRANSACTION ISOLATION LEVEL {level}")
@@ -3201,6 +3266,7 @@ class MSDialect(default.DefaultDialect):
         if level == "SNAPSHOT":
             dbapi_connection.commit()
 
+    # 查询 dm_exec_sessions 当前 SPID 的 isolation level
     def get_isolation_level(self, dbapi_connection):
         cursor = dbapi_connection.cursor()
         view_name = "sys.system_views"
@@ -3243,12 +3309,14 @@ class MSDialect(default.DefaultDialect):
         finally:
             cursor.close()
 
+    # 探测版本、nvarchar(max)、注释 API 支持
     def initialize(self, connection):
         super().initialize(connection)
         self._setup_version_attributes()
         self._setup_supports_nvarchar_max(connection)
         self._setup_supports_comments(connection)
 
+    # 按 server_version 设置 multivalues、offset/fetch、large types
     def _setup_version_attributes(self):
         if self.server_version_info >= MS_2008_VERSION:
             self.supports_multivalues_insert = True
@@ -3291,6 +3359,7 @@ class MSDialect(default.DefaultDialect):
         else:
             self.supports_comments = True
 
+    # SELECT schema_name() 作为 default schema
     def _get_default_schema_name(self, connection):
         query = sql.text("SELECT schema_name()")
         default_schema_name = connection.scalar(query)
@@ -3302,6 +3371,7 @@ class MSDialect(default.DefaultDialect):
             return self.schema_name
 
     @_db_plus_owner
+    # 表/视图是否存在（含 # 临时表 object_id 路径）
     def has_table(self, connection, tablename, dbname, owner, schema, **kw):
         self._ensure_has_table_connection(connection)
 
@@ -3348,6 +3418,7 @@ class MSDialect(default.DefaultDialect):
 
     @reflection.cache
     @_db_plus_owner_listing
+    # INFORMATION_SCHEMA.TABLES 中 BASE TABLE
     def get_table_names(self, connection, dbname, owner, schema, **kw):
         tables = ischema.tables
         s = (
@@ -3365,6 +3436,7 @@ class MSDialect(default.DefaultDialect):
 
     @reflection.cache
     @_db_plus_owner_listing
+    # INFORMATION_SCHEMA.TABLES 中 VIEW
     def get_view_names(self, connection, dbname, owner, schema, **kw):
         tables = ischema.tables
         s = (
@@ -3421,6 +3493,7 @@ class MSDialect(default.DefaultDialect):
 
     @reflection.cache
     @_db_plus_owner
+    # sys.indexes + index_columns：clustered/columnstore/filter
     def get_indexes(self, connection, tablename, dbname, owner, schema, **kw):
         filter_definition = (
             "ind.filter_definition"
@@ -3534,6 +3607,7 @@ order by
 
     @reflection.cache
     @_db_plus_owner
+    # sys.sql_modules 取视图 T-SQL 定义
     def get_view_definition(
         self, connection, viewname, dbname, owner, schema, **kw
     ):
@@ -3555,6 +3629,7 @@ order by
             raise exc.NoSuchTableError(f"{owner}.{viewname}")
 
     @reflection.cache
+    # fn_listextendedproperty MS_Description 表注释
     def get_table_comment(self, connection, table_name, schema=None, **kw):
         if not self.supports_comments:
             raise NotImplementedError(
@@ -3623,6 +3698,7 @@ order by
 
     @reflection.cache
     @_db_plus_owner
+    # sys.columns/types 联结：类型、默认、computed、identity、comment
     def get_columns(self, connection, tablename, dbname, owner, schema, **kw):
         sys_columns = ischema.sys_columns
         sys_types = ischema.sys_types
@@ -3860,6 +3936,7 @@ order by
 
     @reflection.cache
     @_db_plus_owner
+    # KEY_COLUMN_USAGE + CnstIsClustKey 主键与 clustered 选项
     def get_pk_constraint(
         self, connection, tablename, dbname, owner, schema, **kw
     ):
@@ -3917,6 +3994,7 @@ order by
 
     @reflection.cache
     @_db_plus_owner
+    # 复杂 CTE：REFERENTIAL_CONSTRAINTS 与 sys.indexes 双路径
     def get_foreign_keys(
         self, connection, tablename, dbname, owner, schema, **kw
     ):

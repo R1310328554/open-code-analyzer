@@ -6,6 +6,8 @@
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 # mypy: ignore-errors
 
+# MSSQL 测试环境 provision：建库、驱动 URL、临时表与 schema 清理
+
 from sqlalchemy import inspect
 from sqlalchemy import Integer
 from ... import create_engine
@@ -27,12 +29,14 @@ from ...testing.provision import run_reap_dbs
 from ...testing.provision import temp_table_keyword_args
 
 
+# pyodbc 引擎创建后关闭 DBAPI 连接池（测试隔离）
 @post_configure_engine.for_db("mssql")
 def post_configure_engine(url, engine, follower_ident):
     if engine.driver == "pyodbc":
         engine.dialect.dbapi.pooling = False
 
 
+# 为 pyodbc/aioodbc 等驱动生成测试 URL；未知模块返回 None
 @generate_driver_url.for_db("mssql")
 def generate_driver_url(url, driver, query_str):
     backend = url.get_backend_name()
@@ -56,6 +60,7 @@ def generate_driver_url(url, driver, query_str):
         return new_url
 
 
+# 创建 TEST 库并启用 SNAPSHOT/RCSI 及 test_schema 模式
 @create_db.for_db("mssql")
 def _mssql_create_db(cfg, eng, ident):
     with eng.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
@@ -71,12 +76,14 @@ def _mssql_create_db(cfg, eng, ident):
         conn.exec_driver_sql("create schema test_schema_2")
 
 
+# AUTOCOMMIT 连接上 DROP DATABASE
 @drop_db.for_db("mssql")
 def _mssql_drop_db(cfg, eng, ident):
     with eng.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
         _mssql_drop_ignore(conn, ident)
 
 
+# 尝试 drop database；失败记录 warning 并返回 False
 def _mssql_drop_ignore(conn, ident):
     try:
         # typically when this happens, we can't KILL the session anyway,
@@ -94,6 +101,7 @@ def _mssql_drop_ignore(conn, ident):
         return False
 
 
+# 清理无活跃会话的 TEST_% 陈旧测试库
 @run_reap_dbs.for_db("mssql")
 def _reap_mssql_dbs(url, idents):
     log.info("db reaper connecting to %r", url)
@@ -122,16 +130,19 @@ def _reap_mssql_dbs(url, idents):
         )
 
 
+# MSSQL 临时表无额外 keyword 参数
 @temp_table_keyword_args.for_db("mssql")
 def _mssql_temp_table_keyword_args(cfg, eng):
     return {}
 
 
+# 全局临时表名前缀 ##
 @get_temp_table_name.for_db("mssql")
 def _mssql_get_temp_table_name(cfg, eng, base_name):
     return "##" + base_name
 
 
+# 删表前移除全文索引/目录并 drop 外键约束
 @drop_all_schema_objects_pre_tables.for_db("mssql")
 def drop_all_schema_objects_pre_tables(cfg, eng):
     with eng.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
@@ -178,6 +189,7 @@ def drop_all_schema_objects_pre_tables(cfg, eng):
                     )
 
 
+# 未指定 start 时 SEQUENCE 默认从 1 开始
 @normalize_sequence.for_db("mssql")
 def normalize_sequence(cfg, sequence):
     if sequence.start is None:

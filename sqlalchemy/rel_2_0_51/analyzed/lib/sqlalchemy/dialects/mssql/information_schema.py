@@ -6,6 +6,8 @@
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 # mypy: ignore-errors
 
+# INFORMATION_SCHEMA / sys  catalog 表定义，供 MSSQL 反射查询
+
 from ... import cast
 from ... import Column
 from ... import MetaData
@@ -20,9 +22,11 @@ from ...types import String
 from ...types import TypeDecorator
 from ...types import Unicode
 
+# 反射用独立 MetaData，承载 information_schema 与 sys 视图
 ischema = MetaData()
 
 
+# 绑定值在 SQL Server 2005+ 上 CAST 为 Unicode，旧版直接透传
 class CoerceUnicode(TypeDecorator):
     impl = Unicode
     cache_ok = True
@@ -31,11 +35,13 @@ class CoerceUnicode(TypeDecorator):
         return _cast_on_2005(bindvalue)
 
 
+# 编译期按服务器版本决定是否对绑定值 CAST
 class _cast_on_2005(expression.ColumnElement):
     def __init__(self, bindvalue):
         self.bindvalue = bindvalue
 
 
+# 版本分支：低于 MS_2005 原样编译 bindvalue
 @compiles(_cast_on_2005)
 def _compile(element, compiler, **kw):
     from . import base
@@ -49,6 +55,7 @@ def _compile(element, compiler, **kw):
         return compiler.process(cast(element.bindvalue, Unicode), **kw)
 
 
+# INFORMATION_SCHEMA.SCHEMATA 模式列表
 schemata = Table(
     "SCHEMATA",
     ischema,
@@ -58,6 +65,7 @@ schemata = Table(
     schema="INFORMATION_SCHEMA",
 )
 
+# INFORMATION_SCHEMA.TABLES 基表/视图元数据
 tables = Table(
     "TABLES",
     ischema,
@@ -68,6 +76,7 @@ tables = Table(
     schema="INFORMATION_SCHEMA",
 )
 
+# INFORMATION_SCHEMA.COLUMNS 列级信息（标准视图）
 columns = Table(
     "COLUMNS",
     ischema,
@@ -87,6 +96,7 @@ columns = Table(
     schema="INFORMATION_SCHEMA",
 )
 
+# sys.columns 系统目录列定义
 sys_columns = Table(
     "columns",
     ischema,
@@ -104,6 +114,7 @@ sys_columns = Table(
     schema="sys",
 )
 
+# sys.types 用户与系统类型映射
 sys_types = Table(
     "types",
     ischema,
@@ -124,6 +135,7 @@ sys_types = Table(
     schema="sys",
 )
 
+# INFORMATION_SCHEMA.TABLE_CONSTRAINTS
 constraints = Table(
     "TABLE_CONSTRAINTS",
     ischema,
@@ -134,6 +146,7 @@ constraints = Table(
     schema="INFORMATION_SCHEMA",
 )
 
+# sys.default_constraints 列默认值
 sys_default_constraints = Table(
     "default_constraints",
     ischema,
@@ -145,6 +158,7 @@ sys_default_constraints = Table(
     schema="sys",
 )
 
+# INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE
 column_constraints = Table(
     "CONSTRAINT_COLUMN_USAGE",
     ischema,
@@ -155,6 +169,7 @@ column_constraints = Table(
     schema="INFORMATION_SCHEMA",
 )
 
+# INFORMATION_SCHEMA.KEY_COLUMN_USAGE 主外键列
 key_constraints = Table(
     "KEY_COLUMN_USAGE",
     ischema,
@@ -167,6 +182,7 @@ key_constraints = Table(
     schema="INFORMATION_SCHEMA",
 )
 
+# INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS 外键规则
 ref_constraints = Table(
     "REFERENTIAL_CONSTRAINTS",
     ischema,
@@ -193,6 +209,7 @@ ref_constraints = Table(
     schema="INFORMATION_SCHEMA",
 )
 
+# INFORMATION_SCHEMA.VIEWS 视图定义文本
 views = Table(
     "VIEWS",
     ischema,
@@ -205,6 +222,7 @@ views = Table(
     schema="INFORMATION_SCHEMA",
 )
 
+# sys.computed_columns 计算列 persisted 定义
 computed_columns = Table(
     "computed_columns",
     ischema,
@@ -217,6 +235,7 @@ computed_columns = Table(
     schema="sys",
 )
 
+# INFORMATION_SCHEMA.SEQUENCES T-SQL SEQUENCE
 sequences = Table(
     "SEQUENCES",
     ischema,
@@ -227,6 +246,7 @@ sequences = Table(
 )
 
 
+# identity_columns 中 sql_variant 数值列 CAST 为 Numeric(38,0)
 class NumericSqlVariant(TypeDecorator):
     r"""This type casts sql_variant columns in the identity_columns view
     to numeric. This is required because:
@@ -244,6 +264,7 @@ class NumericSqlVariant(TypeDecorator):
         return cast(colexpr, Numeric(38, 0))
 
 
+# sys.identity_columns IDENTITY 种子/增量/最后值
 identity_columns = Table(
     "identity_columns",
     ischema,
@@ -259,6 +280,7 @@ identity_columns = Table(
 )
 
 
+# extended_properties.value 从 sql_variant CAST 为 NVARCHAR
 class NVarcharSqlVariant(TypeDecorator):
     """This type casts sql_variant columns in the extended_properties view
     to nvarchar. This is required because pyodbc does not support sql_variant
@@ -271,6 +293,7 @@ class NVarcharSqlVariant(TypeDecorator):
         return cast(colexpr, NVARCHAR)
 
 
+# sys.extended_properties MS_Description 等扩展属性
 extended_properties = Table(
     "extended_properties",
     ischema,

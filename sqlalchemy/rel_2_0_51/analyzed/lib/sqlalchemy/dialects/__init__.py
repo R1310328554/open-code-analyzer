@@ -5,6 +5,8 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
+# 方言插件注册：PluginLoader 按 dialect[+driver] 懒加载各后端
+
 from __future__ import annotations
 
 from typing import Any
@@ -21,6 +23,7 @@ if TYPE_CHECKING:
 __all__ = ("mssql", "mysql", "oracle", "postgresql", "sqlite")
 
 
+# 默认方言导入器：解析 name 为 dialect.driver 并返回 dialect 类工厂
 def _auto_fn(name: str) -> Optional[Callable[[], Type[Dialect]]]:
     """default dialect importer.
 
@@ -57,6 +60,8 @@ def _auto_fn(name: str) -> Optional[Callable[[], Type[Dialect]]]:
         return None
 
 
+# sqlalchemy.dialects 入口点注册表，供 create_engine 解析 drivername
 registry = util.PluginLoader("sqlalchemy.dialects", auto_fn=_auto_fn)
 
+# sqlalchemy.plugins 通用插件加载器
 plugins = util.PluginLoader("sqlalchemy.plugins")

@@ -6,6 +6,8 @@
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 # mypy: ignore-errors
 
+# aioodbc 异步 ODBC 连接器：在 pyodbc 之上封装 asyncio 适配层
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -25,6 +27,7 @@ if TYPE_CHECKING:
     from ..engine.url import URL
 
 
+# aioodbc 游标适配：setinputsizes/fast_executemany 直连底层 _impl
 class AsyncAdapt_aioodbc_cursor(AsyncAdapt_dbapi_cursor):
     __slots__ = ()
 
@@ -44,12 +47,14 @@ class AsyncAdapt_aioodbc_cursor(AsyncAdapt_dbapi_cursor):
         self._cursor._impl.fast_executemany = value
 
 
+# aioodbc 服务端（流式）游标，组合普通游标与 ss_cursor 行为
 class AsyncAdapt_aioodbc_ss_cursor(
     AsyncAdapt_aioodbc_cursor, AsyncAdapt_dbapi_ss_cursor
 ):
     __slots__ = ()
 
 
+# aioodbc 连接适配：autocommit/ping/关闭态与 pyodbc 错误语义对齐
 class AsyncAdapt_aioodbc_connection(AsyncAdapt_dbapi_connection):
     _cursor_cls = AsyncAdapt_aioodbc_cursor
     _ss_cursor_cls = AsyncAdapt_aioodbc_ss_cursor
@@ -104,12 +109,14 @@ class AsyncAdapt_aioodbc_connection(AsyncAdapt_dbapi_connection):
             super().close()
 
 
+# async_fallback 模式下的 aioodbc 连接（await_fallback 驱动创建）
 class AsyncAdaptFallback_aioodbc_connection(
     AsyncAdaptFallback_dbapi_connection, AsyncAdapt_aioodbc_connection
 ):
     __slots__ = ()
 
 
+# 伪 DBAPI 模块：聚合 aioodbc/pyodbc 异常类并在 connect 返回异步连接
 class AsyncAdapt_aioodbc_dbapi:
     def __init__(self, aioodbc, pyodbc):
         self.aioodbc = aioodbc
@@ -119,6 +126,7 @@ class AsyncAdapt_aioodbc_dbapi:
         self.Cursor = AsyncAdapt_dbapi_cursor
         self.version = pyodbc.version
 
+    # 从 pyodbc 复制 Warning/Error 及 ODBC 类型常量到本适配模块
     def _init_dbapi_attributes(self):
         for name in (
             "Warning",
@@ -145,6 +153,7 @@ class AsyncAdapt_aioodbc_dbapi:
         ):
             setattr(self, name, getattr(self.pyodbc, name))
 
+    # 按 async_fallback 选择 Fallback 或 await_only 连接包装
     def connect(self, *arg, **kw):
         async_fallback = kw.pop("async_fallback", False)
         creator_fn = kw.pop("async_creator_fn", self.aioodbc.connect)
@@ -161,6 +170,7 @@ class AsyncAdapt_aioodbc_dbapi:
             )
 
 
+# aioodbc 方言连接器：异步、语句缓存、服务端游标与连接池类选择
 class aiodbcConnector(PyODBCConnector):
     is_async = True
     supports_statement_cache = True
@@ -173,6 +183,7 @@ class aiodbcConnector(PyODBCConnector):
             __import__("aioodbc"), __import__("pyodbc")
         )
 
+    # 将位置 DSN 参数转为关键字 dsn=
     def create_connect_args(self, url: URL) -> ConnectArgsType:
         arg, kw = super().create_connect_args(url)
         if arg and arg[0]:
@@ -181,6 +192,7 @@ class aiodbcConnector(PyODBCConnector):
         return (), kw
 
     @classmethod
+    # async_fallback 时用 FallbackAsyncAdaptedQueuePool
     def get_pool_class(cls, url):
         async_fallback = url.query.get("async_fallback", False)
 

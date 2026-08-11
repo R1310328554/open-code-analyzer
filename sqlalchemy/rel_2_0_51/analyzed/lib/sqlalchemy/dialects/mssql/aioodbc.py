@@ -40,6 +40,8 @@ styles are otherwise equivalent to those documented in the pyodbc section::
 
 """
 
+# mssql+aioodbc 异步方言：基于 aioodbc 与 MSDialect_pyodbc 组合
+
 from __future__ import annotations
 
 from .pyodbc import MSDialect_pyodbc
@@ -47,11 +49,13 @@ from .pyodbc import MSExecutionContext_pyodbc
 from ...connectors.aioodbc import aiodbcConnector
 
 
+# aioodbc 执行上下文：server_side 游标通过 cursor(server_side=True)
 class MSExecutionContext_aioodbc(MSExecutionContext_pyodbc):
     def create_server_side_cursor(self):
         return self._dbapi_connection.cursor(server_side=True)
 
 
+# SQL Server asyncio 方言：继承 ODBC 连接逻辑与 aio 连接器
 class MSDialectAsync_aioodbc(aiodbcConnector, MSDialect_pyodbc):
     driver = "aioodbc"
 
@@ -60,4 +64,5 @@ class MSDialectAsync_aioodbc(aiodbcConnector, MSDialect_pyodbc):
     execution_ctx_cls = MSExecutionContext_aioodbc
 
 
+# 方言注册名 mssql.aioodbc
 dialect = MSDialectAsync_aioodbc

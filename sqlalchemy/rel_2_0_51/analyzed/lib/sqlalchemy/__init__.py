@@ -5,6 +5,8 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
+# SQLAlchemy 公共 API 入口：自各子模块 re-export 引擎、SQL、Schema、类型等符号
+
 from __future__ import annotations
 
 from typing import Any
@@ -272,6 +274,7 @@ from .types import VARCHAR as VARCHAR
 __version__ = "2.0.51"
 
 
+# 包导入钩子：预加载 sqlalchemy 前缀并设置 exc._version_token
 def __go(lcls: Any) -> None:
     _util.preloaded.import_prefix("sqlalchemy")
 

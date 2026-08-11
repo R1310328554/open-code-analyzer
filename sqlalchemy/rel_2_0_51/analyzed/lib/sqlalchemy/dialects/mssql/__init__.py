@@ -6,6 +6,8 @@
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 # mypy: ignore-errors
 
+# MSSQL 方言包：导出类型常量、各驱动子模块与默认 pyodbc dialect
+
 from . import aioodbc  # noqa
 from . import base  # noqa
 from . import pymssql  # noqa
@@ -45,6 +47,7 @@ from .base import VARCHAR
 from .base import XML
 from ...sql import try_cast
 
+# 默认方言入口指向 pyodbc 驱动实现
 base.dialect = dialect = pyodbc.dialect
 
 

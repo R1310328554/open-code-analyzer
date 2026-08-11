@@ -6,6 +6,8 @@
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 # mypy: ignore-errors
 
+# MSSQL JSON 类型：DDL 为 NVARCHAR(max)，索引访问映射 JSON_VALUE/JSON_QUERY
+
 from ... import types as sqltypes
 
 # technically, all the dialect-specific datatypes that don't have any special
@@ -16,6 +18,7 @@ from ... import types as sqltypes
 # package-private at once.
 
 
+# SQL Server 2016+ JSON；比较与持久化适配 JSON_VALUE/JSON_QUERY 互斥语义
 class JSON(sqltypes.JSON):
     """MSSQL JSON type.
 
@@ -81,10 +84,12 @@ class JSON(sqltypes.JSON):
 # Note: these objects currently match exactly those of MySQL, however since
 # these are not generalizable to all JSON implementations, remain separately
 # implemented for each dialect.
+# JSON 路径/索引绑定值格式化 mixin
 class _FormatTypeMixin:
     def _format_value(self, value):
         raise NotImplementedError()
 
+    # 先 _format_value 再交 string_bind_processor
     def bind_processor(self, dialect):
         super_proc = self.string_bind_processor(dialect)
 
@@ -108,6 +113,7 @@ class _FormatTypeMixin:
         return process
 
 
+# 索引键：整数 $[n]，字符串 $."key"
 class JSONIndexType(_FormatTypeMixin, sqltypes.JSON.JSONIndexType):
     def _format_value(self, value):
         if isinstance(value, int):
@@ -117,6 +123,7 @@ class JSONIndexType(_FormatTypeMixin, sqltypes.JSON.JSONIndexType):
         return value
 
 
+# JSONPath：$ 前缀拼接各段 [n] 或 ."name"
 class JSONPathType(_FormatTypeMixin, sqltypes.JSON.JSONPathType):
     def _format_value(self, value):
         return "$%s" % (
