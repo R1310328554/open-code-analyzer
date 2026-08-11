@@ -1,6 +1,29 @@
 {
-  "claimed_at": null,
-  "files": [],
-  "remaining_pending": 22,
+  "claimed_at": "2026-08-11T06:33:20Z",
+  "files": [
+    "lib/sqlalchemy/util/compat.py",
+    "lib/sqlalchemy/util/concurrency.py",
+    "lib/sqlalchemy/util/deprecations.py",
+    "lib/sqlalchemy/util/langhelpers.py",
+    "lib/sqlalchemy/util/preloaded.py",
+    "lib/sqlalchemy/util/queue.py",
+    "lib/sqlalchemy/util/tool_support.py",
+    "lib/sqlalchemy/util/topological.py",
+    "lib/sqlalchemy/util/typing.py",
+    "noxfile.py",
+    "reap_dbs.py",
+    "setup.py",
+    "tools/format_docs_code.py",
+    "tools/generate_proxy_methods.py",
+    "tools/generate_sql_functions.py",
+    "tools/generate_tuple_map_overloads.py",
+    "tools/normalize_file_headers.py",
+    "tools/sync_test_files.py",
+    "tools/toxnox.py",
+    "tools/trace_orm_adapter.py",
+    "tools/walk_packages.py",
+    "tools/warn_tox.py"
+  ],
+  "remaining_pending": 0,
   "done": 210
 }
