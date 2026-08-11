@@ -18,6 +18,7 @@ VOCAB_FILES_NAMES = {"vocab_file": "spiece.model"}
 
 
 @requires(backends=("sentencepiece",))
+# GPTSw3Tokenizer：瑞典语 SentencePiece 编码与 Unicode 规范化
 class GPTSw3Tokenizer(SentencePieceBackend):
     """
     Construct an GPTSw3 tokenizer. Based on [SentencePiece](https://github.com/google/sentencepiece).

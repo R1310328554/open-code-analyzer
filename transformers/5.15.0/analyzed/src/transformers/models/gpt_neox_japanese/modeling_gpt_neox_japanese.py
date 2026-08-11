@@ -33,10 +33,13 @@ from ...utils.generic import maybe_autocast
 from .configuration_gpt_neox_japanese import GPTNeoXJapaneseConfig
 
 
+# 日语 GPT-NeoX 建模：并行残差解码器 + 偏置 dropout 注意力
+
 logger = logging.get_logger(__name__)
 
 
 @auto_docstring
+# GPTNeoXJapanesePreTrainedModel：日语 GPT-NeoX 预训练基类与权重初始化
 class GPTNeoXJapanesePreTrainedModel(PreTrainedModel):
     config: GPTNeoXJapaneseConfig
     base_model_prefix = "gpt_neox_japanese"
@@ -54,6 +57,7 @@ class GPTNeoXJapanesePreTrainedModel(PreTrainedModel):
 
 
 # Copied from transformers.models.llama.modeling_llama.LlamaRotaryEmbedding with Llama->GPTNeoXJapanese
+# GPTNeoXJapaneseRotaryEmbedding：日语 GPT-NeoX RoPE 旋转位置编码
 class GPTNeoXJapaneseRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: GPTNeoXJapaneseConfig, device=None):
@@ -113,6 +117,7 @@ class GPTNeoXJapaneseRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# rotate_half：RoPE 中将向量后半部分旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -121,6 +126,7 @@ def rotate_half(x):
 
 
 # Copied from transformers.models.llama.modeling_llama.apply_rotary_pos_emb
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -146,6 +152,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# GPTNeoXJapaneseAttention：日语 GPT-NeoX 多头自注意力（RoPE + 偏置 dropout）
 class GPTNeoXJapaneseAttention(nn.Module):
     def __init__(self, config, use_bias=False, layer_idx=None):
         super().__init__()
@@ -283,6 +290,7 @@ class GPTNeoXJapaneseAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# bias_dropout_add：并行残差分支的 bias + dropout + 残差相加
 def bias_dropout_add(x: Tensor, bias: Tensor, residual: Tensor | None, prob: float, training: bool) -> Tensor:
     """add bias to x, apply dropout and residual connection
 
@@ -304,6 +312,7 @@ def bias_dropout_add(x: Tensor, bias: Tensor, residual: Tensor | None, prob: flo
     return out
 
 
+# GPTNeoXJapaneseMLP：日语 GPT-NeoX 前馈 MLP（GELU 激活）
 class GPTNeoXJapaneseMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -320,6 +329,7 @@ class GPTNeoXJapaneseMLP(nn.Module):
         return output
 
 
+# GPTNeoXJapaneseLayer：日语 GPT-NeoX 解码器单层（并行残差结构）
 class GPTNeoXJapaneseLayer(nn.Module):
     def __init__(self, config, layer_number):
         super().__init__()
@@ -375,6 +385,7 @@ class GPTNeoXJapaneseLayer(nn.Module):
 
 
 @auto_docstring
+# GPTNeoXJapaneseModel：日语 GPT-NeoX 纯文本解码器主干
 class GPTNeoXJapaneseModel(GPTNeoXJapanesePreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -500,6 +511,7 @@ class GPTNeoXJapaneseModel(GPTNeoXJapanesePreTrainedModel):
     GPTNeoXJapanese Model with a `language modeling` head on top for Classifier Model fine-tuning.
     """
 )
+# GPTNeoXJapaneseForCausalLM：日语 GPT-NeoX 因果语言建模与文本生成
 class GPTNeoXJapaneseForCausalLM(GPTNeoXJapanesePreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"embed_out.weight": "gpt_neox_japanese.embed_in.weight"}
 

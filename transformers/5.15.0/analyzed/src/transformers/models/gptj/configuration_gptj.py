@@ -19,8 +19,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# GPT-J 配置：EleutherAI 部分 RoPE + 正弦位置编码解码器超参
+
+# GPTJConfig：EleutherAI GPT-J-6B 部分 RoPE 解码器默认超参
 @auto_docstring(checkpoint="EleutherAI/gpt-j-6B")
 @strict
+# GPTJConfig：EleutherAI GPT-J 解码器超参（部分 RoPE + 正弦位置编码）
 class GPTJConfig(PreTrainedConfig):
     r"""
     rotary_dim (`int`, *optional*, defaults to 64):

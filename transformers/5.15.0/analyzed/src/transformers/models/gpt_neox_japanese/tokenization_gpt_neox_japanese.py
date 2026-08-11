@@ -27,9 +27,12 @@ from ...utils import logging
 
 logger = logging.get_logger(__name__)
 
+
+# 日语 GPT-NeoX 分词器：子词 BPE 词表与 emoji 特殊 token
 VOCAB_FILES_NAMES = {"vocab_file": "vocab.txt", "emoji_file": "emoji.json"}
 
 
+# load_vocab_and_emoji：加载日语 BPE 词表与 emoji 映射 JSON
 def load_vocab_and_emoji(vocab_file, emoji_file):
     """Loads a vocabulary file and emoji file into a dictionary."""
     with open(emoji_file, "r", encoding="utf-8") as f:
@@ -50,6 +53,7 @@ def load_vocab_and_emoji(vocab_file, emoji_file):
     return vocab, raw_vocab, ids_to_tokens, emoji
 
 
+# GPTNeoXJapaneseTokenizer：封装日语 BPE 词表、emoji 与 SubWordJapaneseTokenizer
 class GPTNeoXJapaneseTokenizer(PreTrainedTokenizer):
     """
     This tokenizer inherits from [`PreTrainedTokenizer`] and is based on Japanese special Sub-Word-Encoding that is
@@ -192,6 +196,7 @@ class GPTNeoXJapaneseTokenizer(PreTrainedTokenizer):
         return vocab_file, emoji_file
 
 
+# SubWordJapaneseTokenizer：日语子词 BPE 编码器底层实现（MIT 许可）
 class SubWordJapaneseTokenizer:
     """
     https://github.com/tanreinama/Japanese-BPEEncoder_V2 This tokenizer class is under MIT License according to the

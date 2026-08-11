@@ -41,10 +41,14 @@ from ...utils import TransformersKwargs, auto_docstring, can_return_tuple
 from ...utils.deprecation import deprecate_kwarg
 from ...utils.generic import maybe_autocast, merge_with_config_defaults
 from ...utils.output_capturing import OutputRecorder, capture_outputs
+# modeling_gpt_oss 由 modular_gpt_oss.py 自动生成
 from .configuration_gpt_oss import GptOssConfig
 
 
+# GPT-OSS 建模：由 modular_gpt_oss.py 自动生成的 MoE 解码器
+
 @use_kernel_forward_from_hub("RMSNorm")
+# GptOssRMSNorm：GPT-OSS RMS LayerNorm（FP32 方差计算）
 class GptOssRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -66,6 +70,7 @@ class GptOssRMSNorm(nn.Module):
 
 
 @use_experts_implementation(is_concatenated=False, is_transposed=True, has_bias=True)
+# GptOssExperts：GPT-OSS MoE 专家 FFN 参数组（grouped GEMM + SwiGLU 变体）
 class GptOssExperts(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -114,6 +119,7 @@ class GptOssExperts(nn.Module):
         return next_states
 
 
+# GptOssTopKRouter：GPT-OSS MoE 路由门控，按 top-k 选择专家
 class GptOssTopKRouter(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -131,6 +137,7 @@ class GptOssTopKRouter(nn.Module):
 
 
 @use_kernel_forward_from_hub("MegaBlocksMoeMLP")
+# GptOssMLP：GPT-OSS 稀疏 MoE 层（路由 + 专家 FFN）
 class GptOssMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -146,6 +153,7 @@ class GptOssMLP(nn.Module):
         return hidden_states, router_scores
 
 
+# GptOssRotaryEmbedding：GPT-OSS RoPE 旋转位置编码
 class GptOssRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: GptOssConfig, device=None):
@@ -200,6 +208,7 @@ class GptOssRotaryEmbedding(nn.Module):
         return cos.to(x.dtype), sin.to(x.dtype)
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -212,6 +221,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# _apply_rotary_emb：GPT-OSS 复数域 RoPE 旋转辅助函数
 def _apply_rotary_emb(
     x: torch.Tensor,
     cos: torch.Tensor,
@@ -224,6 +234,7 @@ def _apply_rotary_emb(
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     cos = cos.unsqueeze(unsqueeze_dim)
     sin = sin.unsqueeze(unsqueeze_dim)
@@ -232,6 +243,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -264,6 +276,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# GptOssAttention：GPT-OSS 多头自注意力（RoPE + GQA + 滑动窗口）
 class GptOssAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -335,6 +348,7 @@ class GptOssAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# GptOssDecoderLayer：GPT-OSS 解码器单层（自注意力 + MoE FFN）
 class GptOssDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: GptOssConfig, layer_idx: int):
         super().__init__()
@@ -377,6 +391,7 @@ class GptOssDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# GptOssPreTrainedModel：GPT-OSS 预训练基类与权重初始化
 class GptOssPreTrainedModel(PreTrainedModel):
     config: GptOssConfig
     base_model_prefix = "model"
@@ -419,6 +434,7 @@ class GptOssPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# GptOssModel：GPT-OSS MoE 纯文本解码器主干
 class GptOssModel(GptOssPreTrainedModel):
     def __init__(self, config: GptOssConfig):
         super().__init__(config)
@@ -496,6 +512,7 @@ class GptOssModel(GptOssPreTrainedModel):
         )
 
 
+# load_balancing_loss_func：MoE 路由负载均衡辅助损失计算
 def load_balancing_loss_func(
     gate_logits: torch.Tensor | tuple[torch.Tensor] | None,
     num_experts: int | None = None,
@@ -579,6 +596,7 @@ def load_balancing_loss_func(
 
 
 @auto_docstring
+# GptOssForCausalLM：GPT-OSS 因果语言建模与文本生成
 class GptOssForCausalLM(GptOssPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
@@ -682,10 +700,12 @@ class GptOssForCausalLM(GptOssPreTrainedModel, GenerationMixin):
         )
 
 
+# GptOssForSequenceClassification：GPT-OSS 序列分类头
 class GptOssForSequenceClassification(GenericForSequenceClassification, GptOssPreTrainedModel):
     pass
 
 
+# GptOssForTokenClassification：GPT-OSS 逐 token 分类头
 class GptOssForTokenClassification(GenericForTokenClassification, GptOssPreTrainedModel):
     pass
 

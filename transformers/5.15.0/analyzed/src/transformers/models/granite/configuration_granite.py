@@ -25,8 +25,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# Granite 配置：IBM 缩放残差连接 + GQA 解码器超参
+
+# GraniteConfig：ibm-granite/granite-3.0-8b-base 缩放残差 GQA 解码器默认超参
 @auto_docstring(checkpoint="ibm-granite/granite-3.0-8b-base")
 @strict
+# GraniteConfig：IBM Granite 解码器超参（缩放残差连接 + GQA）
 class GraniteConfig(PreTrainedConfig):
     r"""
     ```python

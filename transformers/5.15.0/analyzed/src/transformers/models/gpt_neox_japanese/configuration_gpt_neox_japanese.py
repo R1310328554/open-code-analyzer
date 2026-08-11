@@ -20,8 +20,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# 日语 GPT-NeoX 配置：ABEJA 并行残差 + RoPE 日语解码器超参
+
+# GPTNeoXJapaneseConfig：abeja/gpt-neox-japanese-2.7b 日语并行残差解码器默认超参
 @auto_docstring(checkpoint="abeja/gpt-neox-japanese-2.7b")
 @strict
+# GPTNeoXJapaneseConfig：ABEJA 日语 GPT-NeoX 解码器超参（RoPE + 并行残差）
 class GPTNeoXJapaneseConfig(PreTrainedConfig):
     r"""
     intermediate_multiple_size (`int`, *optional*, defaults to 4):

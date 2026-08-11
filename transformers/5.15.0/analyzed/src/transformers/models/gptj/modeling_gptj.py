@@ -37,6 +37,8 @@ from ...utils import auto_docstring, logging
 from .configuration_gptj import GPTJConfig
 
 
+# GPT-J 建模：部分 RoPE 自注意力 + 正弦位置嵌入解码器
+
 if is_flash_attn_available():
     from ...modeling_flash_attention_utils import _flash_attention_forward
 
@@ -44,16 +46,19 @@ if is_flash_attn_available():
 logger = logging.get_logger(__name__)
 
 
+# create_sinusoidal_positions：生成 GPT-J 固定正弦位置编码表
 def create_sinusoidal_positions(num_pos: int, dim: int) -> torch.Tensor:
     inv_freq = 1.0 / (10000 ** (torch.arange(0, dim, 2, dtype=torch.int64) / dim))
     sinusoid_inp = torch.einsum("i , j -> i j", torch.arange(num_pos, dtype=torch.int64).float(), inv_freq).float()
     return torch.cat((torch.sin(sinusoid_inp), torch.cos(sinusoid_inp)), dim=1)
 
 
+# get_embed_positions：按 position_ids 索引正弦位置嵌入
 def get_embed_positions(embed_positions, position_ids):
     return embed_positions.to(position_ids.device).repeat(position_ids.shape[0], 1, 1)
 
 
+# rotate_every_two：GPT-J 部分 RoPE 逐对旋转向量
 def rotate_every_two(x: torch.Tensor) -> torch.Tensor:
     x1 = x[:, :, :, ::2]
     x2 = x[:, :, :, 1::2]
@@ -61,12 +66,14 @@ def rotate_every_two(x: torch.Tensor) -> torch.Tensor:
     return x.flatten(-2)  # in einsum notation: rearrange(x, '... d j -> ... (d j)')
 
 
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K
 def apply_rotary_pos_emb(tensor: torch.Tensor, sin: torch.Tensor, cos: torch.Tensor) -> torch.Tensor:
     sin = torch.repeat_interleave(sin[:, :, None, :], 2, 3)
     cos = torch.repeat_interleave(cos[:, :, None, :], 2, 3)
     return (tensor * cos) + (rotate_every_two(tensor) * sin)
 
 
+# GPTJAttention：GPT-J 多头自注意力（部分 RoPE + 加性偏置）
 class GPTJAttention(nn.Module):
     def __init__(self, config, layer_idx=None):
         super().__init__()
@@ -225,6 +232,7 @@ class GPTJAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# GPTJFlashAttention2：GPT-J Flash Attention 2 加速实现
 class GPTJFlashAttention2(GPTJAttention):
     """
     GPTJ flash attention module. This module inherits from `GPTJAttention` as the weights of the module stays
@@ -360,6 +368,7 @@ GPTJ_ATTENTION_CLASSES = {
 }
 
 
+# GPTJMLP：GPT-J 前馈 MLP（GELU-new 激活）
 class GPTJMLP(nn.Module):
     def __init__(self, intermediate_size, config):  # in MLP: intermediate_size= 4 * embed_dim
         super().__init__()
@@ -379,6 +388,7 @@ class GPTJMLP(nn.Module):
         return hidden_states
 
 
+# GPTJBlock：GPT-J 解码器单层（自注意力 + MLP）
 class GPTJBlock(GradientCheckpointingLayer):
     def __init__(self, config, layer_idx=None):
         super().__init__()
@@ -414,6 +424,7 @@ class GPTJBlock(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# GPTJPreTrainedModel：GPT-J 预训练基类与权重初始化
 class GPTJPreTrainedModel(PreTrainedModel):
     config: GPTJConfig
     base_model_prefix = "transformer"
@@ -430,6 +441,7 @@ class GPTJPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# GPTJModel：GPT-J 纯文本解码器主干
 class GPTJModel(GPTJPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -564,6 +576,7 @@ class GPTJModel(GPTJPreTrainedModel):
     The GPT-J Model transformer with a language modeling head on top.
     """
 )
+# GPTJForCausalLM：GPT-J 因果语言建模与文本生成
 class GPTJForCausalLM(GPTJPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "transformer.wte.weight"}
 
@@ -653,6 +666,7 @@ class GPTJForCausalLM(GPTJPreTrainedModel, GenerationMixin):
     each row of the batch).
     """
 )
+# GPTJForSequenceClassification：GPT-J 序列分类头
 class GPTJForSequenceClassification(GPTJPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -766,6 +780,7 @@ class GPTJForSequenceClassification(GPTJPreTrainedModel):
 
 
 @auto_docstring
+# GPTJForQuestionAnswering：GPT-J 抽取式问答头
 class GPTJForQuestionAnswering(GPTJPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

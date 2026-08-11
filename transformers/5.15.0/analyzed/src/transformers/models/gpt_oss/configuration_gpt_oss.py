@@ -19,8 +19,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# GPT-OSS 配置：OpenAI 稀疏 MoE 解码器（128 专家 + 滑动窗口）超参
+
+# GptOssConfig：openai/gpt-oss-20b 稀疏 MoE 解码器默认超参
 @auto_docstring(checkpoint="openai/gpt-oss-20b")
 @strict
+# GptOssConfig：OpenAI GPT-OSS MoE 稀疏解码器超参（128 本地专家）
 class GptOssConfig(PreTrainedConfig):
     model_type = "gpt_oss"
     attribute_map = {
