@@ -22,6 +22,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="tiiuae/falcon-7b")
 @strict
+# FalconConfig：支持 ALiBi/RoPE、并行注意力与新/旧解码器架构
 class FalconConfig(PreTrainedConfig):
     r"""
     num_ln_in_parallel_attn (`int`, *optional*):
@@ -88,7 +89,8 @@ class FalconConfig(PreTrainedConfig):
     activation: str | None = "gelu"
     tie_word_embeddings: bool = True
 
-    def __post_init__(self, **kwargs):
+    # __post_init__：兼容 n_embed 别名并推导 num_kv_heads、ffn_hidden_size
+def __post_init__(self, **kwargs):
         # Backward compatibility with n_embed kwarg
         n_embed = kwargs.pop("n_embed", None)
         self.hidden_size = self.hidden_size if n_embed is None else n_embed
@@ -99,11 +101,13 @@ class FalconConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
     @property
-    def head_dim(self):
+    # head_dim：注意力头维度 hidden_size // num_attention_heads
+def head_dim(self):
         return self.hidden_size // self.num_attention_heads
 
     @property
-    def rotary(self):
+    # rotary：是否使用 RoPE（与 alibi 互斥）
+def rotary(self):
         return not self.alibi
 
 

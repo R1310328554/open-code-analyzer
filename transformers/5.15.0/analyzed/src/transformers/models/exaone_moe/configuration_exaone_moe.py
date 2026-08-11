@@ -24,8 +24,10 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# K-EXAONE-236B-A23B MoE checkpoint 默认超参
 @auto_docstring(checkpoint="LGAI-EXAONE/K-EXAONE-236B-A23B")
 @strict
+# ExaoneMoeConfig：MoE 路由、shared expert 与 sliding window 混合配置
 class ExaoneMoeConfig(PreTrainedConfig):
     r"""
     sliding_window_pattern (`str`, *optional*, defaults to 4):
@@ -120,7 +122,8 @@ class ExaoneMoeConfig(PreTrainedConfig):
     n_group: int = 1
     topk_group: int = 1
 
-    def __post_init__(self, **kwargs):
+    # __post_init__：推导 mlp_layer_types 与 layer_types 注意力模式
+def __post_init__(self, **kwargs):
         if self.mlp_layer_types is None:
             self.mlp_layer_types = [
                 "dense" if i < self.first_k_dense_replace else "sparse" for i in range(self.num_hidden_layers)

@@ -25,8 +25,10 @@ from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# EXAONE-4.5-33B checkpoint 默认多模态超参
 @auto_docstring(checkpoint="LGAI-EXAONE/EXAONE-4.5-33B")
 @strict
+# Exaone4_5_VisionConfig：ViT 视觉塔，patch=14、window/full 注意力混合
 class Exaone4_5_VisionConfig(PreTrainedConfig):
     r"""
     window_size (`int`, *optional*, defaults to 11):
@@ -58,6 +60,7 @@ class Exaone4_5_VisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="LGAI-EXAONE/EXAONE-4.5-33B")
 @strict
+# Exaone4_5_Config：组合 vision_config 与 text_config 及图像/视频 token ID
 class Exaone4_5_Config(PreTrainedConfig):
     model_type = "exaone4_5"
     sub_configs = {"vision_config": AutoConfig, "text_config": AutoConfig}
@@ -69,7 +72,8 @@ class Exaone4_5_Config(PreTrainedConfig):
     video_token_id: int = 68
     tie_word_embeddings: bool = False
 
-    def __post_init__(self, **kwargs):
+    # __post_init__：解析子配置 dict 并兼容 exaone4_5_text 旧 model_type
+def __post_init__(self, **kwargs):
         if isinstance(self.vision_config, dict):
             self.vision_config["model_type"] = self.vision_config.get("model_type", "exaone4_5_vision")
             self.vision_config = CONFIG_MAPPING[self.vision_config["model_type"]](**self.vision_config)

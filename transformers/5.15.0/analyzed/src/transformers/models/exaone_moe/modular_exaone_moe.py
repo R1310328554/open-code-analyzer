@@ -43,6 +43,7 @@ from ..qwen2_moe.modeling_qwen2_moe import Qwen2MoeMLP
 
 @auto_docstring(checkpoint="LGAI-EXAONE/K-EXAONE-236B-A23B")
 @strict
+# ExaoneMoeConfig：扩展 Exaone4Config，增加 MoE 与 EP 并行计划
 class ExaoneMoeConfig(Exaone4Config):
     r"""
     sliding_window_pattern (`str`, *optional*, defaults to 4):
@@ -126,26 +127,31 @@ class ExaoneMoeConfig(Exaone4Config):
         super().__post_init__(**kwargs)
 
 
+# ExaoneMoeAttention：继承 EXAONE 4 混合注意力
 class ExaoneMoeAttention(Exaone4Attention):
     pass
 
 
+# ExaoneMoeMLP：Dense SwiGLU 前馈（浅层或 shared expert）
 class ExaoneMoeMLP(Qwen2MoeMLP):
     pass
 
 
+# ExaoneMoeTopkRouter：Top-K 专家路由 gate
 class ExaoneMoeTopkRouter(DeepseekV3TopkRouter):
     def __init__(self, config):
         super().__init__(self, config)
         self.num_experts = config.num_experts
 
 
+# ExaoneMoeExperts：Grouped GEMM 稀疏专家 SwiGLU
 class ExaoneMoeExperts(DeepseekV3Experts):
     def __init__(self, config):
         super().__init__(self, config)
         self.num_experts = config.num_experts
 
 
+# ExaoneMoeSparseMoEBlock：路由 + 稀疏/共享专家融合
 class ExaoneMoeSparseMoEBlock(DeepseekV3MoE):
     def __init__(self, config):
         super().__init__()
@@ -155,6 +161,7 @@ class ExaoneMoeSparseMoEBlock(DeepseekV3MoE):
         )
 
 
+# ExaoneMoeDecoderLayer：按 mlp_layer_types 切换 Dense 或 MoE MLP
 class ExaoneMoeDecoderLayer(OlmoeDecoderLayer):
     def __init__(self, config: ExaoneMoeConfig, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -163,6 +170,7 @@ class ExaoneMoeDecoderLayer(OlmoeDecoderLayer):
         )
 
 
+# ExaoneMoePreTrainedModel：MoE 预训练基类，初始化 router/expert 权重
 class ExaoneMoePreTrainedModel(Exaone4PreTrainedModel):
     config: ExaoneMoeConfig
 
@@ -186,10 +194,12 @@ class ExaoneMoePreTrainedModel(Exaone4PreTrainedModel):
             init.normal_(module.down_proj, mean=0.0, std=self.config.initializer_range)
 
 
+# ExaoneMoeModel：MoE 解码器堆叠
 class ExaoneMoeModel(Exaone4Model):
     pass
 
 
+# ExaoneMoeForCausalLM：MoE 因果语言建模头
 class ExaoneMoeForCausalLM(Exaone4ForCausalLM):
     def forward(
         self,

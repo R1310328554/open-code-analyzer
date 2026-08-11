@@ -47,6 +47,7 @@ from .configuration_exaone4 import Exaone4Config
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# Exaone4RMSNorm：RMS 层归一化，等价 T5LayerNorm
 class Exaone4RMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -67,6 +68,7 @@ class Exaone4RMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# Exaone4RotaryEmbedding：RoPE 逆频率缓存与动态更新
 class Exaone4RotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: Exaone4Config, device=None):
@@ -121,6 +123,7 @@ class Exaone4RotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# rotate_half：RoPE 半维旋转辅助函数
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -129,6 +132,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：对 Q/K 施加 RoPE 旋转位置编码
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -154,6 +158,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 将 KV 头重复扩展至 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -166,6 +171,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：缩放点积注意力 eager 实现
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -191,6 +197,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# Exaone4Attention：QK-Norm + 局部/全局 RoPE 混合自注意力
 class Exaone4Attention(nn.Module):
     def __init__(self, config: Exaone4Config, layer_idx: int):
         super().__init__()
@@ -265,6 +272,7 @@ class Exaone4Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# Exaone4MLP：SwiGLU 门控前馈网络
 class Exaone4MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -281,6 +289,7 @@ class Exaone4MLP(nn.Module):
         return down_proj
 
 
+# Exaone4DecoderLayer：Pre-RMSNorm 自注意力 + MLP 解码层
 class Exaone4DecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Exaone4Config, layer_idx: int):
         super().__init__()
@@ -323,6 +332,7 @@ class Exaone4DecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Exaone4PreTrainedModel：预训练基类、权重初始化与输出录制
 class Exaone4PreTrainedModel(PreTrainedModel):
     config: Exaone4Config
     base_model_prefix = "model"
@@ -343,6 +353,7 @@ class Exaone4PreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# Exaone4Model：嵌入 + 解码层堆叠 + 最终 RMSNorm
 class Exaone4Model(Exaone4PreTrainedModel):
     def __init__(self, config: Exaone4Config):
         super().__init__(config)
@@ -427,6 +438,7 @@ class Exaone4Model(Exaone4PreTrainedModel):
 
 
 @auto_docstring
+# Exaone4ForCausalLM：因果 LM 头，集成 GenerationMixin
 class Exaone4ForCausalLM(Exaone4PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
@@ -515,14 +527,17 @@ class Exaone4ForCausalLM(Exaone4PreTrainedModel, GenerationMixin):
         )
 
 
+# Exaone4ForSequenceClassification：序列分类下游头
 class Exaone4ForSequenceClassification(GenericForSequenceClassification, Exaone4PreTrainedModel):
     pass
 
 
+# Exaone4ForTokenClassification：Token 分类下游头
 class Exaone4ForTokenClassification(GenericForTokenClassification, Exaone4PreTrainedModel):
     pass
 
 
+# Exaone4ForQuestionAnswering：抽取式问答下游头
 class Exaone4ForQuestionAnswering(GenericForQuestionAnswering, Exaone4PreTrainedModel):
     base_model_prefix = "transformer"  # For BC, where `transformer` was used instead of `model`
 

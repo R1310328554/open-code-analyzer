@@ -44,6 +44,7 @@ from .configuration_exaone_moe import ExaoneMoeConfig
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# ExaoneMoeRMSNorm：RMS 层归一化
 class ExaoneMoeRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -64,6 +65,7 @@ class ExaoneMoeRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# rotate_half：RoPE 半维旋转辅助
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -72,6 +74,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：对 Q/K 施加 RoPE
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -97,6 +100,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA KV 头重复扩展
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -109,6 +113,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：缩放点积注意力 eager 实现
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -134,6 +139,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# ExaoneMoeAttention：QK-Norm 混合滑动窗口自注意力
 class ExaoneMoeAttention(nn.Module):
     def __init__(self, config: ExaoneMoeConfig, layer_idx: int):
         super().__init__()
@@ -208,6 +214,7 @@ class ExaoneMoeAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# ExaoneMoeMLP：Dense SwiGLU 前馈
 class ExaoneMoeMLP(nn.Module):
     def __init__(self, config, intermediate_size=None):
         super().__init__()
@@ -224,6 +231,7 @@ class ExaoneMoeMLP(nn.Module):
         return down_proj
 
 
+# ExaoneMoeTopkRouter：Top-K 专家路由与负载均衡
 class ExaoneMoeTopkRouter(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -266,6 +274,7 @@ class ExaoneMoeTopkRouter(nn.Module):
 
 
 @use_experts_implementation
+# ExaoneMoeExperts：多专家 grouped GEMM 前馈
 class ExaoneMoeExperts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
@@ -305,6 +314,7 @@ class ExaoneMoeExperts(nn.Module):
         return final_hidden_states
 
 
+# ExaoneMoeSparseMoEBlock：稀疏 MoE 块，融合 routed 与 shared expert
 class ExaoneMoeSparseMoEBlock(nn.Module):
     """
     A mixed expert module containing shared experts.
@@ -329,6 +339,7 @@ class ExaoneMoeSparseMoEBlock(nn.Module):
         return hidden_states
 
 
+# ExaoneMoeDecoderLayer：Pre-RMSNorm 注意力 + Dense/MoE MLP
 class ExaoneMoeDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: ExaoneMoeConfig, layer_idx: int):
         super().__init__()
@@ -373,6 +384,7 @@ class ExaoneMoeDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# ExaoneMoePreTrainedModel：MoE 预训练基类与 router 偏置初始化
 class ExaoneMoePreTrainedModel(PreTrainedModel):
     config: ExaoneMoeConfig
     base_model_prefix = "model"
@@ -407,6 +419,7 @@ class ExaoneMoePreTrainedModel(PreTrainedModel):
             init.normal_(module.down_proj, mean=0.0, std=self.config.initializer_range)
 
 
+# ExaoneMoeRotaryEmbedding：RoPE 逆频率缓存
 class ExaoneMoeRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: ExaoneMoeConfig, device=None):
@@ -462,6 +475,7 @@ class ExaoneMoeRotaryEmbedding(nn.Module):
 
 
 @auto_docstring
+# ExaoneMoeModel：嵌入 + MoE 解码层堆叠
 class ExaoneMoeModel(ExaoneMoePreTrainedModel):
     def __init__(self, config: ExaoneMoeConfig):
         super().__init__(config)
@@ -546,6 +560,7 @@ class ExaoneMoeModel(ExaoneMoePreTrainedModel):
 
 
 @auto_docstring
+# ExaoneMoeForCausalLM：MoE 因果 LM 头，集成 GenerationMixin
 class ExaoneMoeForCausalLM(ExaoneMoePreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}

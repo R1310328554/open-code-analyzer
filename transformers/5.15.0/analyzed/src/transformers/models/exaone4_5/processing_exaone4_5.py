@@ -22,6 +22,7 @@ from ...processing_utils import MultiModalData, ProcessingKwargs, ProcessorMixin
 from ...utils import auto_docstring
 
 
+# Exaone4_5_ProcessorKwargs：text/video 默认处理 kwargs
 class Exaone4_5_ProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -33,6 +34,7 @@ class Exaone4_5_ProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# Exaone4_5_Processor：组合 image/video processor 与 tokenizer
 class Exaone4_5_Processor(ProcessorMixin):
     valid_processor_kwargs = Exaone4_5_ProcessorKwargs
 
@@ -51,17 +53,20 @@ class Exaone4_5_Processor(ProcessorMixin):
         )
         super().__init__(image_processor, tokenizer, video_processor, chat_template=chat_template)
 
-    def replace_image_token(self, image_inputs: dict, image_idx: int, **kwargs) -> str:
+    # replace_image_token：按 grid_thw 计算图像占位 token 串
+def replace_image_token(self, image_inputs: dict, image_idx: int, **kwargs) -> str:
         merge_length = self.image_processor.merge_size**2
         num_image_tokens = image_inputs["image_grid_thw"][image_idx].prod() // merge_length
         return self.image_token * num_image_tokens
 
-    def replace_video_token(self, video_inputs: dict, video_idx: int, **kwargs) -> str:
+    # replace_video_token：按 grid_thw 计算视频占位 token 串
+def replace_video_token(self, video_inputs: dict, video_idx: int, **kwargs) -> str:
         merge_length = self.video_processor.merge_size**2
         num_video_tokens = video_inputs["video_grid_thw"][video_idx].prod() // merge_length
         return self.video_token * num_video_tokens
 
-    def _get_num_multimodal_tokens(self, image_sizes=None, video_sizes=None, **kwargs):
+    # _get_num_multimodal_tokens：估算各模态所需 placeholder token 数
+def _get_num_multimodal_tokens(self, image_sizes=None, video_sizes=None, **kwargs):
         """
         Computes the number of placeholder tokens needed for multimodal inputs with the given sizes.
         Args:
@@ -99,7 +104,8 @@ class Exaone4_5_Processor(ProcessorMixin):
 
         return MultiModalData(**vision_data)
 
-    def post_process_image_text_to_text(
+    # post_process_image_text_to_text：generate 输出 batch_decode 后处理
+def post_process_image_text_to_text(
         self, generated_outputs, skip_special_tokens=True, clean_up_tokenization_spaces=False, **kwargs
     ):
         """
@@ -127,7 +133,8 @@ class Exaone4_5_Processor(ProcessorMixin):
         )
 
     @property
-    def model_input_names(self):
+    # model_input_names：模型 forward 所需输入名列表
+def model_input_names(self):
         return super().model_input_names
 
 

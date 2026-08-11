@@ -51,6 +51,7 @@ from ..qwen2_vl.processing_qwen2_vl import Qwen2VLProcessor
 
 @auto_docstring(checkpoint="LGAI-EXAONE/EXAONE-4.5-33B")
 @strict
+# Exaone4_5_VisionConfig：继承 Qwen2.5-VL 视觉配置
 class Exaone4_5_VisionConfig(Qwen2_5_VLVisionConfig):
     r"""
     window_size (`int`, *optional*, defaults to 11):
@@ -69,6 +70,7 @@ class Exaone4_5_VisionConfig(Qwen2_5_VLVisionConfig):
 
 @auto_docstring(checkpoint="LGAI-EXAONE/EXAONE-4.5-33B")
 @strict
+# Exaone4_5_Config：多模态顶层配置，含 text/vision 子配置
 class Exaone4_5_Config(PreTrainedConfig):
     model_type = "exaone4_5"
     sub_configs = {"vision_config": AutoConfig, "text_config": AutoConfig}
@@ -99,18 +101,22 @@ class Exaone4_5_Config(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# Exaone4_5_PatchEmbed：3D patch 嵌入（空间+时间维）
 class Exaone4_5_PatchEmbed(Qwen2_5_VisionPatchEmbed):
     pass
 
 
+# Exaone4_5_VisionRotaryEmbedding：视觉 2D RoPE 位置编码
 class Exaone4_5_VisionRotaryEmbedding(Qwen2_5_VisionRotaryEmbedding):
     pass
 
 
+# Exaone4_5_PatchMerger：空间 merge 后 patch 特征融合
 class Exaone4_5_PatchMerger(Qwen2_5_VLPatchMerger):
     pass
 
 
+# Exaone4_5_VisionAttention：GQA 视觉 ViT 自注意力，支持 Flash/varlen
 class Exaone4_5_VisionAttention(Qwen2_5_VLVisionAttention):
     def __init__(self, config: Exaone4_5_VisionConfig):
         self.num_key_value_heads = config.num_key_value_heads
@@ -193,14 +199,17 @@ class Exaone4_5_VisionAttention(Qwen2_5_VLVisionAttention):
         return self.proj(attn_output)
 
 
+# Exaone4_5_MLP：视觉 MLP 前馈
 class Exaone4_5_MLP(Qwen2_5_VLMLP):
     pass
 
 
+# Exaone4_5_VisionBlock：视觉编码层（注意力 + MLP）
 class Exaone4_5_VisionBlock(Qwen2_5_VLVisionBlock):
     pass
 
 
+# Exaone4_5_PreTrainedModel：多模态预训练基类与视觉 RoPE 初始化
 class Exaone4_5_PreTrainedModel(Exaone4PreTrainedModel):
     config_class = Exaone4_5_Config
     _no_split_modules = ["Exaone4_5_VisionBlock", "Exaone4_5_DecoderLayer"]
@@ -213,6 +222,7 @@ class Exaone4_5_PreTrainedModel(Exaone4PreTrainedModel):
             init.copy_(module.inv_freq, inv_freq)
 
 
+# Exaone4_5_VisionModel：视觉 ViT 塔（patch embed + blocks + merger）
 class Exaone4_5_VisionModel(Exaone4_5_PreTrainedModel, Qwen2_5_VisionTransformerPretrainedModel):
     config_class = Exaone4_5_VisionConfig
 
@@ -236,6 +246,7 @@ class Exaone4_5_VisionModel(Exaone4_5_PreTrainedModel, Qwen2_5_VisionTransformer
         self.post_init()
 
 
+# Exaone4_5_Model：视觉特征注入文本嵌入的多模态融合模型
 class Exaone4_5_Model(Exaone4_5_PreTrainedModel, Qwen2VLModel):
     def __init__(self, config: Exaone4_5_Config):
         super().__init__(config)
@@ -312,6 +323,7 @@ class Exaone4_5_Model(Exaone4_5_PreTrainedModel, Qwen2VLModel):
         raise AttributeError("Exaone4.5 doesn't use 3D positions")
 
 
+# Exaone4_5_ForConditionalGeneration：图文/视频条件生成，含 lm_head 与 loss
 class Exaone4_5_ForConditionalGeneration(Exaone4_5_PreTrainedModel, Qwen2_5_VLForConditionalGeneration):
     """
     Main EXAONE 4.5 conditional generation class.
@@ -443,6 +455,7 @@ class Exaone4_5_ForConditionalGeneration(Exaone4_5_PreTrainedModel, Qwen2_5_VLFo
         raise AttributeError("Exaone4.5 doesn't use 3D positions")
 
 
+# Exaone4_5_ProcessorKwargs：Processor 默认 text/video 处理参数
 class Exaone4_5_ProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -453,6 +466,7 @@ class Exaone4_5_ProcessorKwargs(ProcessingKwargs, total=False):
     }
 
 
+# Exaone4_5_Processor：图像/视频 token 替换与多模态预处理
 class Exaone4_5_Processor(Qwen2VLProcessor):
     @property
     def model_input_names(self):

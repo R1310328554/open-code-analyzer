@@ -57,6 +57,7 @@ logger = logging.get_logger(__name__)
 
 # NOTE(Hesslow): Unfortunately we did not fuse matmul and bias during training, this means that there's one additional quantization to bfloat16 between the operations.
 # In order not to degrade the quality of our HF-port, we keep these characteristics in the final model.
+# FalconLinear：未融合 matmul+bias 的线性层，保持 HF 端口精度
 class FalconLinear(nn.Linear):
     def forward(self, input: torch.Tensor) -> torch.Tensor:
         hidden_states = input @ self.weight.T
@@ -66,6 +67,7 @@ class FalconLinear(nn.Linear):
 
 
 # Copied from transformers.models.llama.modeling_llama.rotate_half
+# rotate_half：RoPE 半维旋转辅助
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -74,6 +76,7 @@ def rotate_half(x):
 
 
 # Copied from transformers.models.llama.modeling_llama.apply_rotary_pos_emb
+# apply_rotary_pos_emb：对 Q/K 施加 RoPE
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -100,6 +103,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
 
 
 # Copied from transformers.models.llama.modeling_llama.LlamaRotaryEmbedding with Llama->Falcon
+# FalconRotaryEmbedding：RoPE 逆频率缓存
 class FalconRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: FalconConfig, device=None):
@@ -157,6 +161,7 @@ class FalconRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# build_alibi_tensor：构建 ALiBi 线性偏置注意力矩阵
 def build_alibi_tensor(attention_mask: torch.Tensor, num_heads: int, dtype: torch.dtype) -> torch.Tensor:
     batch_size, seq_length = attention_mask.shape
     closest_power_of_2 = 2 ** math.floor(math.log2(num_heads))
@@ -189,6 +194,7 @@ def build_alibi_tensor(attention_mask: torch.Tensor, num_heads: int, dtype: torc
 
 
 # Copied from transformers.models.bloom.modeling_bloom.dropout_add
+# dropout_add：残差连接与 dropout 融合
 def dropout_add(x: torch.Tensor, residual: torch.Tensor, prob: float, training: bool) -> torch.Tensor:
     """
     Dropout add function
@@ -208,6 +214,7 @@ def dropout_add(x: torch.Tensor, residual: torch.Tensor, prob: float, training: 
     return out
 
 
+# FalconAttention：多查询/分组查询自注意力，支持 ALiBi 或 RoPE
 class FalconAttention(nn.Module):
     def __init__(self, config: FalconConfig, layer_idx=None):
         super().__init__()
@@ -422,6 +429,7 @@ class FalconAttention(nn.Module):
             return attn_output, attention_probs
 
 
+# FalconFlashAttention2：Flash Attention 2 加速实现
 class FalconFlashAttention2(FalconAttention):
     """
     Falcon flash attention module. This module inherits from `FalconAttention` as the weights of the module stays
@@ -523,6 +531,7 @@ class FalconFlashAttention2(FalconAttention):
         return attn_output, attn_weights
 
 
+# FalconMLP：GELU 前馈网络
 class FalconMLP(nn.Module):
     def __init__(self, config: FalconConfig):
         super().__init__()
@@ -546,6 +555,7 @@ FALCON_ATTENTION_CLASSES = {
 }
 
 
+# FalconDecoderLayer：并行或串行注意力+MLP 解码层
 class FalconDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: FalconConfig, layer_idx=None):
         super().__init__()
@@ -632,6 +642,7 @@ class FalconDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# FalconPreTrainedModel：预训练基类与权重初始化
 class FalconPreTrainedModel(PreTrainedModel):
     config: FalconConfig
     base_model_prefix = "transformer"
@@ -663,6 +674,7 @@ class FalconPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# FalconModel：词嵌入 + 解码层堆叠 + 最终 LayerNorm
 class FalconModel(FalconPreTrainedModel):
     def __init__(self, config: FalconConfig):
         super().__init__(config)
@@ -834,6 +846,7 @@ class FalconModel(FalconPreTrainedModel):
     The Falcon Model transformer with a language modeling head on top (linear layer with weights tied to the input embeddings).
     """
 )
+# FalconForCausalLM：因果语言建模头
 class FalconForCausalLM(FalconPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "transformer.word_embeddings.weight"}
 
@@ -936,6 +949,7 @@ class FalconForCausalLM(FalconPreTrainedModel, GenerationMixin):
     each row of the batch).
     """
 )
+# FalconForSequenceClassification：序列分类下游头
 class FalconForSequenceClassification(FalconPreTrainedModel):
     def __init__(self, config: FalconConfig):
         super().__init__(config)
@@ -1053,6 +1067,7 @@ class FalconForSequenceClassification(FalconPreTrainedModel):
 
 
 @auto_docstring
+# FalconForTokenClassification：Token 分类下游头
 class FalconForTokenClassification(FalconPreTrainedModel):
     def __init__(self, config: FalconConfig):
         super().__init__(config)
@@ -1141,6 +1156,7 @@ class FalconForTokenClassification(FalconPreTrainedModel):
 
 
 @auto_docstring
+# FalconForQuestionAnswering：抽取式问答下游头
 class FalconForQuestionAnswering(FalconPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

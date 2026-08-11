@@ -25,8 +25,10 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# EXAONE-4.0-32B checkpoint 默认超参与张量并行计划
 @auto_docstring(checkpoint="LGAI-EXAONE/EXAONE-4.0-32B")
 @strict
+# Exaone4Config：滑动窗口/全局注意力混合解码器配置
 class Exaone4Config(PreTrainedConfig):
     r"""
     sliding_window_pattern (`str`, *optional*):
@@ -97,7 +99,8 @@ class Exaone4Config(PreTrainedConfig):
     sliding_window_pattern: str | int | None = 4
     layer_types: list[str] | None = None
 
-    def __post_init__(self, **kwargs):
+    # __post_init__：按 sliding_window_pattern 推导各层 layer_types
+def __post_init__(self, **kwargs):
         if self.sliding_window is None:
             self.sliding_window_pattern = 0
         if self.layer_types is None:

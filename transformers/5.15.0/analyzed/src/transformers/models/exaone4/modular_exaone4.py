@@ -56,6 +56,7 @@ _CONFIG_FOR_DOC = "Exaone4Config"
 
 @auto_docstring(checkpoint="LGAI-EXAONE/EXAONE-4.0-32B")
 @strict
+# Exaone4Config：modular 配置定义
 class Exaone4Config(PreTrainedConfig):
     r"""
     sliding_window_pattern (`str`, *optional*):
@@ -140,14 +141,17 @@ class Exaone4Config(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# Exaone4RMSNorm：继承 Llama RMSNorm
 class Exaone4RMSNorm(LlamaRMSNorm):
     pass
 
 
+# Exaone4RotaryEmbedding：继承 Gemma2 RoPE 位置编码
 class Exaone4RotaryEmbedding(Gemma2RotaryEmbedding):
     pass
 
 
+# Exaone4Attention：QK-Norm + 局部/全局 RoPE 混合自注意力
 class Exaone4Attention(nn.Module):
     def __init__(self, config: Exaone4Config, layer_idx: int):
         super().__init__()
@@ -222,19 +226,23 @@ class Exaone4Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# Exaone4MLP：继承 Olmo2 SwiGLU 前馈
 class Exaone4MLP(Olmo2MLP):
     pass
 
 
+# Exaone4DecoderLayer：解码层 modular 别名
 class Exaone4DecoderLayer(Olmo2DecoderLayer):
     pass
 
 
+# Exaone4PreTrainedModel：预训练基类与权重初始化
 class Exaone4PreTrainedModel(LlamaPreTrainedModel):
     config_class = Exaone4Config
     _no_split_modules = ["Exaone4DecoderLayer"]
 
 
+# Exaone4Model：堆叠解码层，按 layer_types 切换因果/滑动窗口掩码
 class Exaone4Model(Exaone4PreTrainedModel, LlamaModel):
     def __init__(self, config: Exaone4Config):
         super().__init__(config)
@@ -312,6 +320,7 @@ class Exaone4Model(Exaone4PreTrainedModel, LlamaModel):
         )
 
 
+# Exaone4ForCausalLM：因果语言建模头，支持 generate 与 chat template
 class Exaone4ForCausalLM(LlamaForCausalLM):
     def forward(
         self,
@@ -369,14 +378,17 @@ class Exaone4ForCausalLM(LlamaForCausalLM):
         )
 
 
+# Exaone4ForSequenceClassification：序列分类任务头
 class Exaone4ForSequenceClassification(LlamaForSequenceClassification):
     pass
 
 
+# Exaone4ForTokenClassification：Token 分类任务头
 class Exaone4ForTokenClassification(LlamaForTokenClassification):
     pass
 
 
+# Exaone4ForQuestionAnswering：抽取式问答任务头
 class Exaone4ForQuestionAnswering(LlamaForQuestionAnswering):
     pass
 

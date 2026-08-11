@@ -25,4 +25,5 @@ else:
     import sys
 
     _file = globals()["__file__"]
+# 运行时以 _LazyModule 延迟加载 Exaone4_5_Config / Exaone4_5_Model / Exaone4_5_Processor 等
     sys.modules[__name__] = _LazyModule(__name__, _file, define_import_structure(_file), module_spec=__spec__)

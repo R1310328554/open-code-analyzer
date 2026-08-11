@@ -48,6 +48,7 @@ from ..auto import AutoModel
 from .configuration_exaone4_5 import Exaone4_5_Config, Exaone4_5_VisionConfig
 
 
+# Exaone4_5_PatchEmbed：3D 卷积 patch 嵌入层
 class Exaone4_5_PatchEmbed(nn.Module):
     def __init__(
         self,
@@ -74,6 +75,7 @@ class Exaone4_5_PatchEmbed(nn.Module):
         return hidden_states
 
 
+# Exaone4_5_VisionRotaryEmbedding：视觉 RoPE 逆频率缓存
 class Exaone4_5_VisionRotaryEmbedding(nn.Module):
     def __init__(self, dim: int, theta: float = 10000.0) -> None:
         super().__init__()
@@ -87,6 +89,7 @@ class Exaone4_5_VisionRotaryEmbedding(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# Exaone4_5_RMSNorm：RMS 层归一化
 class Exaone4_5_RMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -107,6 +110,7 @@ class Exaone4_5_RMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# Exaone4_5_PatchMerger：spatial merge 后 MLP 特征融合
 class Exaone4_5_PatchMerger(nn.Module):
     def __init__(self, dim: int, context_dim: int, spatial_merge_size: int = 2) -> None:
         super().__init__()
@@ -123,6 +127,7 @@ class Exaone4_5_PatchMerger(nn.Module):
         return x
 
 
+# rotate_half：RoPE 半维旋转辅助
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -130,6 +135,7 @@ def rotate_half(x):
     return torch.cat((-x2, x1), dim=-1)
 
 
+# apply_rotary_pos_emb_vision：视觉塔 RoPE 施加
 def apply_rotary_pos_emb_vision(
     q: torch.Tensor, k: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor
 ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -144,6 +150,7 @@ def apply_rotary_pos_emb_vision(
     return q_embed, k_embed
 
 
+# repeat_kv：GQA KV 头重复扩展
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -156,6 +163,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：缩放点积注意力 eager 实现
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -181,6 +189,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# Exaone4_5_VisionAttention：视觉 ViT 多头自注意力
 class Exaone4_5_VisionAttention(nn.Module):
     def __init__(self, config: Exaone4_5_VisionConfig) -> None:
         super().__init__()
@@ -270,6 +279,7 @@ class Exaone4_5_VisionAttention(nn.Module):
         return self.proj(attn_output)
 
 
+# Exaone4_5_MLP：视觉 SwiGLU 前馈
 class Exaone4_5_MLP(nn.Module):
     def __init__(self, config, bias: bool = False):
         super().__init__()
@@ -284,6 +294,7 @@ class Exaone4_5_MLP(nn.Module):
         return self.down_proj(self.act_fn(self.gate_proj(hidden_state)) * self.up_proj(hidden_state))
 
 
+# Exaone4_5_VisionBlock：视觉 Pre-Norm 注意力 + MLP 块
 class Exaone4_5_VisionBlock(GradientCheckpointingLayer):
     def __init__(self, config, attn_implementation: str = "sdpa") -> None:
         super().__init__()
@@ -315,6 +326,7 @@ class Exaone4_5_VisionBlock(GradientCheckpointingLayer):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：文本 Q/K RoPE 旋转位置编码
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -340,6 +352,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# Exaone4_5_Attention：文本 GQA 自注意力 + QK-Norm
 class Exaone4_5_Attention(nn.Module):
     def __init__(self, config: Exaone4_5_Config, layer_idx: int):
         super().__init__()
@@ -414,6 +427,7 @@ class Exaone4_5_Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# Exaone4_5_DecoderLayer：文本 Pre-RMSNorm 解码层
 class Exaone4_5_DecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Exaone4_5_Config, layer_idx: int):
         super().__init__()
@@ -456,6 +470,7 @@ class Exaone4_5_DecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Exaone4_5_PreTrainedModel：多模态预训练基类
 class Exaone4_5_PreTrainedModel(PreTrainedModel):
     config: Exaone4_5_Config
     base_model_prefix = "model"
@@ -482,6 +497,7 @@ class Exaone4_5_PreTrainedModel(PreTrainedModel):
             init.copy_(module.inv_freq, inv_freq)
 
 
+# Exaone4_5_VisionModel：视觉 Transformer 编码塔
 class Exaone4_5_VisionModel(Exaone4_5_PreTrainedModel):
     config: Exaone4_5_VisionConfig
     _no_split_modules = ["Exaone4_5_VisionBlock"]
@@ -610,6 +626,7 @@ class Exaone4_5_VisionModel(Exaone4_5_PreTrainedModel):
 
 
 @auto_docstring
+# Exaone4_5_Model：视觉-文本多模态融合主干
 class Exaone4_5_Model(Exaone4_5_PreTrainedModel):
     base_model_prefix = "model"
     # Reference: fix gemma3 grad acc #37208
@@ -761,6 +778,7 @@ class Exaone4_5_Model(Exaone4_5_PreTrainedModel):
         )
 
 
+# Exaone4_5_ForConditionalGeneration：多模态条件生成与 lm_head
 class Exaone4_5_ForConditionalGeneration(Exaone4_5_PreTrainedModel, GenerationMixin):
     """
     Main EXAONE 4.5 conditional generation class.
