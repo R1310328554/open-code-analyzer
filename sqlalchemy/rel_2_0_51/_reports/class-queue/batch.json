@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T06:24:21Z",
-  "files": [
-    "lib/sqlalchemy/orm/bulk_persistence.py",
-    "lib/sqlalchemy/orm/clsregistry.py",
-    "lib/sqlalchemy/orm/collections.py",
-    "lib/sqlalchemy/orm/context.py",
-    "lib/sqlalchemy/orm/decl_api.py",
-    "lib/sqlalchemy/orm/decl_base.py",
-    "lib/sqlalchemy/orm/dependency.py",
-    "lib/sqlalchemy/orm/descriptor_props.py",
-    "lib/sqlalchemy/orm/dynamic.py",
-    "lib/sqlalchemy/orm/evaluator.py",
-    "lib/sqlalchemy/orm/events.py",
-    "lib/sqlalchemy/orm/exc.py",
-    "lib/sqlalchemy/orm/identity.py",
-    "lib/sqlalchemy/orm/instrumentation.py",
-    "lib/sqlalchemy/orm/interfaces.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 82,
-  "done": 135
+  "done": 150
 }
