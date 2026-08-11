@@ -1,8 +1,15 @@
-from importlib import import_module
+"""
+django.utils.deconstruct — 迁移序列化的 deconstructible 类装饰器。
+
+捕获构造参数，使自定义类可写入 migration 文件。
+"""
+
+from importlib import import_modulefrom importlib import import_module
 
 from django.utils.version import get_docs_version
 
 
+# 装饰类：附加 deconstruct() 返回 (path, args, kwargs)
 def deconstructible(*args, path=None):
     """
     Class decorator that allows the decorated class to be serialized

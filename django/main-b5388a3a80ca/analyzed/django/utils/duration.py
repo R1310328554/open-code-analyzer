@@ -1,6 +1,13 @@
-import datetime
+"""
+django.utils.duration — timedelta 格式化与 ISO 8601 字符串。
+
+供 admin 与序列化使用的非英语特定 duration 表示。
+"""
+
+import datetimeimport datetime
 
 
+# 分解 timedelta 为 days/hours/minutes/seconds/microseconds
 def _get_duration_components(duration):
     days = duration.days
     seconds = duration.seconds
@@ -15,6 +22,7 @@ def _get_duration_components(duration):
     return days, hours, minutes, seconds, microseconds
 
 
+# 人类可读 duration 字符串（非 locale 绑定）
 def duration_string(duration):
     """Version of str(timedelta) which is not English specific."""
     days, hours, minutes, seconds, microseconds = _get_duration_components(duration)
@@ -28,6 +36,7 @@ def duration_string(duration):
     return string
 
 
+# ISO 8601 duration 如 P1DT02:03:04.000005S
 def duration_iso_string(duration):
     if duration < datetime.timedelta(0):
         sign = "-"
@@ -42,5 +51,6 @@ def duration_iso_string(duration):
     )
 
 
+# timedelta 总微秒数
 def duration_microseconds(delta):
     return (24 * 60 * 60 * delta.days + delta.seconds) * 1000000 + delta.microseconds

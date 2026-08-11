@@ -1,4 +1,7 @@
-"""Functions to parse datetime objects."""
+"""Functions to parse datetime objects.
+
+django.utils.dateparse — ISO 8601 等字符串解析为 date/time/datetime/timedelta。
+""""""Functions to parse datetime objects."""
 
 # We're using regular expressions rather than time.strptime because:
 # - They provide both validation and parsing.
@@ -65,6 +68,7 @@ postgres_interval_re = _lazy_re_compile(
 )
 
 
+# 解析 YYYY-MM-DD 为 date
 def parse_date(value):
     """Parse a string and return a datetime.date.
 
@@ -79,6 +83,7 @@ def parse_date(value):
             return datetime.date(**kw)
 
 
+# 解析 HH:MM[:SS[.ffffff]] 为 time
 def parse_time(value):
     """Parse a string and return a datetime.time.
 
@@ -102,6 +107,7 @@ def parse_time(value):
             return datetime.time(**kw)
 
 
+# 解析日期时间字符串，可选时区后缀
 def parse_datetime(value):
     """Parse a string and return a datetime.datetime.
 
@@ -130,6 +136,7 @@ def parse_datetime(value):
             return datetime.datetime(**kw, tzinfo=tzinfo)
 
 
+# 解析标准/ISO8601/PostgreSQL interval 为 timedelta
 def parse_duration(value):
     """Parse a duration string and return a datetime.timedelta.
 

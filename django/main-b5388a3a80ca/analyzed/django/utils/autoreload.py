@@ -21,6 +21,12 @@ from django.dispatch import Signal
 from django.utils.functional import cached_property
 from django.utils.version import get_version_tuple
 
+"""
+django.utils.autoreload — 开发服务器代码变更自动重载。
+
+runserver 通过 StatReloader 或 WatchmanReloader 监控 Python 模块与额外文件。
+"""
+
 autoreload_started = Signal()
 file_changed = Signal()
 
@@ -48,16 +54,19 @@ except ImportError:
     pywatchman = None
 
 
+# 判断模块是否属于 Django 项目（用于过滤监控范围）
 def is_django_module(module):
     """Return True if the given module is nested under Django."""
     return module.__name__.startswith("django.")
 
 
+# 判断路径是否在 Django 安装目录或项目根下
 def is_django_path(path):
     """Return True if the given file path is nested under Django."""
     return Path(django.__file__).parent in Path(path).parents
 
 
+# 装饰器：捕获导入错误并记录到 _error_files
 def check_errors(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
@@ -109,6 +118,7 @@ def ensure_echo_on():
             signal.signal(signal.SIGTTOU, old_handler)
 
 
+# 遍历 sys.modules 中所有已加载 Python 模块的源文件路径
 def iter_all_python_module_files():
     # This is a hot path during reloading. Create a stable sorted list of
     # modules based on the module name and pass it to iter_modules_and_files().
@@ -124,6 +134,7 @@ def iter_all_python_module_files():
 
 
 @lru_cache(maxsize=1)
+# 合并模块文件与 extra_files，计算需监控的文件集合
 def iter_modules_and_files(modules, extra_files):
     """Iterate through all modules needed to be watched."""
     sys_file_paths = []
@@ -221,6 +232,7 @@ def sys_path_directories():
             yield resolved_path
 
 
+# 构造子进程 argv（含 --noreload 与 RUN_MAIN 环境）
 def get_child_arguments():
     """
     Return the executable. This contains a workaround for Windows if the
@@ -265,11 +277,13 @@ def get_child_arguments():
     return args
 
 
+# 记录变更文件并退出进程以触发父进程重启
 def trigger_reload(filename):
     logger.info("%s changed, reloading.", filename)
     sys.exit(3)
 
 
+# 循环 spawn 子进程直至非重载退出码
 def restart_with_reloader():
     new_environ = {**os.environ, DJANGO_AUTORELOAD_ENV: "true"}
     orig = getattr(sys, "orig_argv", ())
@@ -292,6 +306,7 @@ def restart_with_reloader():
             return p.returncode
 
 
+# 重载器基类：watch_dir、tick 循环与 file_changed 信号
 class BaseReloader:
     def __init__(self):
         self.extra_files = set()
@@ -398,6 +413,7 @@ class BaseReloader:
         self._stop_condition.set()
 
 
+# 基于 mtime 轮询的轻量重载器（无 watchman 依赖）
 class StatReloader(BaseReloader):
     SLEEP_TIME = 1  # Check for changes once per second.
 
@@ -441,10 +457,12 @@ class StatReloader(BaseReloader):
         return True
 
 
+# pywatchman 不可用或连接失败
 class WatchmanUnavailable(RuntimeError):
     pass
 
 
+# 使用 Facebook Watchman 订阅文件变更的高效重载器
 class WatchmanReloader(BaseReloader):
     def __init__(self):
         self.roots = defaultdict(set)
@@ -655,6 +673,7 @@ class WatchmanReloader(BaseReloader):
             raise WatchmanUnavailable("Watchman 4.9 or later is required.")
 
 
+# 按可用性选择 WatchmanReloader 或 StatReloader
 def get_reloader():
     """Return the most suitable reloader for this environment."""
     try:
@@ -664,6 +683,7 @@ def get_reloader():
     return WatchmanReloader()
 
 
+# 在子进程中运行 Django 主逻辑并接入重载器
 def start_django(reloader, main_func, *args, **kwargs):
     ensure_echo_on()
 
@@ -678,6 +698,7 @@ def start_django(reloader, main_func, *args, **kwargs):
         reloader.run(django_main_thread)
 
 
+# runserver 入口：设置 RUN_MAIN 并启动重载循环
 def run_with_reloader(main_func, *args, **kwargs):
     signal.signal(signal.SIGTERM, lambda *args: sys.exit(0))
     try:

@@ -1,7 +1,14 @@
-import copy
+"""
+django.utils.datastructures — 请求与配置常用的专用容器类型。
+
+OrderedSet、MultiValueDict、CaseInsensitiveMapping 等。
+"""
+
+import copyimport copy
 from collections.abc import Mapping
 
 
+# 保持插入顺序的集合（dict 键实现）
 class OrderedSet:
     """
     A set which keeps the ordering of the inserted items.
@@ -42,10 +49,12 @@ class OrderedSet:
         return f"{self.__class__.__qualname__}({data})"
 
 
+# MultiValueDict 键不存在
 class MultiValueDictKeyError(KeyError):
     pass
 
 
+# 同键多值字典：__getitem__ 返回最后一项，getlist 返回全部
 class MultiValueDict(dict):
     """
     A subclass of dictionary customized to handle multiple values for the
@@ -219,6 +228,7 @@ class MultiValueDict(dict):
         return {key: self[key] for key in self}
 
 
+# 只读 tuple 子类：变异操作抛出 AttributeError
 class ImmutableList(tuple):
     """
     A tuple-like object that raises useful errors when it is asked to mutate.
@@ -256,6 +266,7 @@ class ImmutableList(tuple):
     reverse = complain
 
 
+# 访问时通过 func 转换值的字典包装
 class DictWrapper(dict):
     """
     Wrap accesses to a dictionary so that certain values (those starting with
@@ -285,6 +296,7 @@ class DictWrapper(dict):
         return value
 
 
+# 键大小写不敏感的只读映射（HTTP 头等）
 class CaseInsensitiveMapping(Mapping):
     """
     Mapping allowing case-insensitive key lookups. Original case of keys is
@@ -347,6 +359,7 @@ class CaseInsensitiveMapping(Mapping):
             yield elem
 
 
+# 延迟解析子字典：首次访问时调用 func 填充
 class DeferredSubDict:
     """
     Wrap a dict, allowing deferred access to a sub-dict under a given key.

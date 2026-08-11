@@ -9,6 +9,10 @@ Usage:
 >>> print(df.format('jS F Y H:i'))
 7th October 2003 11:39
 >>>
+
+django.utils.dateformat — PHP date() 风格的日期时间格式化。
+7th October 2003 11:39
+>>>
 """
 
 import calendar
@@ -36,6 +40,7 @@ re_formatchars = _lazy_re_compile(r"(?<!\\)([aAbcdDeEfFgGhHiIjlLmMnNoOPrsStTUuwW
 re_escaped = _lazy_re_compile(r"\\(.)")
 
 
+# 格式串解析基类：按字符码分发 format 片段
 class Formatter:
     def format(self, formatstr):
         pieces = []
@@ -52,6 +57,7 @@ class Formatter:
         return "".join(pieces)
 
 
+# 时间格式化：时/分/秒及 12/24 小时制
 class TimeFormat(Formatter):
     def __init__(self, obj):
         self.data = obj
@@ -195,6 +201,7 @@ class TimeFormat(Formatter):
         return offset.days * 86400 + offset.seconds
 
 
+# 日期格式化：年月日、星期及本地化月份名
 class DateFormat(TimeFormat):
     def b(self):
         "Month, textual, 3 letters, lowercase; e.g. 'jan'"
@@ -323,12 +330,14 @@ class DateFormat(TimeFormat):
         return self.data.timetuple().tm_yday
 
 
+# 便捷函数：DateFormat(value).format(format_string)
 def format(value, format_string):
     "Convenience function"
     df = DateFormat(value)
     return df.format(format_string)
 
 
+# 便捷函数：TimeFormat(value).format(format_string)
 def time_format(value, format_string):
     "Convenience function"
     tf = TimeFormat(value)

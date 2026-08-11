@@ -1,8 +1,12 @@
 "Commonly-used date structures"
 
+# django.utils.dates — 本地化星期与月份名称常量
+"Commonly-used date structures"
+
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 
+# 完整星期名（gettext_lazy）
 WEEKDAYS = {
     0: _("Monday"),
     1: _("Tuesday"),
@@ -12,6 +16,7 @@ WEEKDAYS = {
     5: _("Saturday"),
     6: _("Sunday"),
 }
+# 星期缩写
 WEEKDAYS_ABBR = {
     0: _("Mon"),
     1: _("Tue"),
@@ -21,6 +26,7 @@ WEEKDAYS_ABBR = {
     5: _("Sat"),
     6: _("Sun"),
 }
+# 完整月份名
 MONTHS = {
     1: _("January"),
     2: _("February"),
@@ -35,6 +41,7 @@ MONTHS = {
     11: _("November"),
     12: _("December"),
 }
+# 三字母月份缩写
 MONTHS_3 = {
     1: _("jan"),
     2: _("feb"),
@@ -49,6 +56,7 @@ MONTHS_3 = {
     11: _("nov"),
     12: _("dec"),
 }
+# 美联社风格月份缩写
 MONTHS_AP = {  # month names in Associated Press style
     1: pgettext_lazy("abbrev. month", "Jan."),
     2: pgettext_lazy("abbrev. month", "Feb."),
@@ -63,6 +71,7 @@ MONTHS_AP = {  # month names in Associated Press style
     11: pgettext_lazy("abbrev. month", "Nov."),
     12: pgettext_lazy("abbrev. month", "Dec."),
 }
+# 部分 locale 长日期所需的替代月份名
 MONTHS_ALT = {  # required for long date representation by some locales
     1: pgettext_lazy("alt. month", "January"),
     2: pgettext_lazy("alt. month", "February"),

@@ -1,4 +1,10 @@
-import functools
+"""
+django.utils.deprecation — 弃用警告类别与装饰/元类辅助。
+
+RemovedInDjangoXXWarning、MiddlewareMixin 重导出及 positional 参数迁移。
+"""
+
+import functoolsimport functools
 import inspect
 import sys
 import warnings
@@ -10,10 +16,12 @@ from django.utils.inspect import signature
 from django.utils.warnings import django_file_prefixes
 
 
+# Django 7.0 将移除的 API
 class RemovedInDjango70Warning(DeprecationWarning):
     pass
 
 
+# 下一版本 pending 弃用
 class RemovedInDjango71Warning(PendingDeprecationWarning):
     pass
 
@@ -34,6 +42,7 @@ def __getattr__(name):
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
+# 仅对 Django 外部调用方发出弃用警告
 def warn_about_external_use(
     message,
     category,
@@ -113,6 +122,7 @@ def warn_about_external_use(
         warnings.warn(message, category=category, stacklevel=level + 1)
 
 
+# 对实现方（非调用方）发出弃用警告
 def warn_about_implementation(message, category, target):
     """Issue a warning about a specific function, class, or method definition.
 
@@ -165,6 +175,7 @@ def warn_about_implementation(message, category, target):
     )
 
 
+# 方法重命名时的调用期警告装饰器
 class warn_about_renamed_method:
     def __init__(
         self, class_name, old_method_name, new_method_name, deprecation_warning
@@ -187,6 +198,7 @@ class warn_about_renamed_method:
         return wrapper
 
 
+# 元类：自动桥接旧方法名到新方法名并警告
 class RenameMethodsBase(type):
     """
     Handles the deprecation paths when renaming a method.
@@ -232,6 +244,7 @@ class RenameMethodsBase(type):
         return new_class
 
 
+# 将多余位置参数映射为关键字并发出弃用警告
 def deprecate_posargs(deprecation_warning, remappable_names, /):
     """
     Function/method decorator to deprecate some or all positional arguments.

@@ -13,6 +13,15 @@ cache keys to prevent delivery of wrong content.
 
 An example: i18n middleware would need to distinguish caches by the
 "Accept-language" header.
+
+django.utils.cache — HTTP 缓存控制与条件请求辅助。
+管理 Vary/Cache-Control/ETag，支持页面缓存键生成与 304 响应。
+"""into account when building its cache key. Requests with the same path but
+different header content for headers named in "Vary" need to get different
+cache keys to prevent delivery of wrong content.
+
+An example: i18n middleware would need to distinguish caches by the
+"Accept-language" header.
 """
 
 import time
@@ -34,6 +43,7 @@ from django.utils.timezone import get_current_timezone_name
 from django.utils.translation import get_language
 
 
+# 向 Cache-Control 追加 max-age、s-maxage、public 等指令
 def patch_cache_control(response, **kwargs):
     """
     Patch the Cache-Control header by adding all keyword arguments to it.
@@ -103,6 +113,7 @@ def patch_cache_control(response, **kwargs):
     response.headers["Cache-Control"] = cc
 
 
+# 从 Cache-Control 解析 max-age 秒数
 def get_max_age(response):
     """
     Return the max-age from the response Cache-Control header as an integer,
@@ -119,6 +130,7 @@ def get_max_age(response):
         pass
 
 
+# 基于响应体计算并设置 ETag 头
 def set_response_etag(response):
     if not response.streaming and response.content:
         response.headers["ETag"] = quote_etag(
@@ -164,6 +176,7 @@ def _not_modified(request, response=None):
     return new_response
 
 
+# 处理 If-None-Match/If-Modified-Since，返回 304 或原响应
 def get_conditional_response(request, etag=None, last_modified=None, response=None):
     # Only return conditional responses on successful requests.
     if response and not (200 <= response.status_code < 300):
@@ -271,6 +284,7 @@ def _if_modified_since_passes(last_modified, if_modified_since):
     return not last_modified or last_modified > if_modified_since
 
 
+# 设置 Expires 与 Cache-Control max-age
 def patch_response_headers(response, cache_timeout=None):
     """
     Add HTTP caching headers to the given HttpResponse: Expires and
@@ -290,6 +304,7 @@ def patch_response_headers(response, cache_timeout=None):
     patch_cache_control(response, max_age=cache_timeout)
 
 
+# 禁止缓存：Cache-Control no-cache/no-store 等
 def add_never_cache_headers(response):
     """
     Add headers to a response to indicate that a page should never be cached.
@@ -300,6 +315,7 @@ def add_never_cache_headers(response):
     )
 
 
+# 合并 Vary 头字段列表
 def patch_vary_headers(response, newheaders):
     """
     Add (or update) the "Vary" header in the given HttpResponse object.
@@ -381,6 +397,7 @@ def _generate_cache_header_key(key_prefix, request):
     return _i18n_cache_key_suffix(request, cache_key)
 
 
+# 按 URL、Vary 头与前缀生成页面缓存键
 def get_cache_key(request, key_prefix=None, method="GET", cache=None):
     """
     Return a cache key based on the request URL and query. It can be used
@@ -403,6 +420,7 @@ def get_cache_key(request, key_prefix=None, method="GET", cache=None):
         return None
 
 
+# 从响应头学习 Vary 并写入缓存键映射
 def learn_cache_key(request, response, cache_timeout=None, key_prefix=None, cache=None):
     """
     Learn what headers to take into account for some request URL from the

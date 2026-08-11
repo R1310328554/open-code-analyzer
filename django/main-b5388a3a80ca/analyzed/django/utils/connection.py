@@ -1,9 +1,16 @@
-from asgiref.local import Local
+"""
+django.utils.connection — 多连接别名的线程/协程本地处理器基类。
+
+数据库与缓存后端通过 BaseConnectionHandler 懒创建连接。
+"""
+
+from asgiref.local import Localfrom asgiref.local import Local
 
 from django.conf import settings as django_settings
 from django.utils.functional import cached_property
 
 
+# 按别名代理访问底层连接对象的属性
 class ConnectionProxy:
     """Proxy for accessing a connection object's attributes."""
 
@@ -27,10 +34,12 @@ class ConnectionProxy:
         return self._connections[self._alias] == other
 
 
+# 请求的连接别名未在 settings 中配置
 class ConnectionDoesNotExist(Exception):
     pass
 
 
+# 连接处理器：Local 缓存、__getitem__ 懒实例化与 close_all
 class BaseConnectionHandler:
     settings_name = None
     exception_class = ConnectionDoesNotExist

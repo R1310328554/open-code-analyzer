@@ -1,9 +1,13 @@
 "Functions that help with dynamically creating decorators for views."
 
+# django.utils.decorators — 视图/方法装饰器与中间件装饰器工厂
+"Functions that help with dynamically creating decorators for views."
+
 from functools import partial, update_wrapper, wraps
 from inspect import iscoroutinefunction, markcoroutinefunction
 
 
+# 仅允许在类上调用、实例访问时 AttributeError
 class classonlymethod(classmethod):
     def __get__(self, instance, cls=None):
         if instance is not None:
@@ -58,6 +62,7 @@ def _multi_decorate(decorators, method):
     return _wrapper
 
 
+# 将函数装饰器转为可装饰类方法的装饰器
 def method_decorator(decorator, name=""):
     """
     Convert a function decorator into a method decorator
@@ -95,6 +100,7 @@ def method_decorator(decorator, name=""):
     return _dec
 
 
+# 带参中间件 -> 视图装饰器（如 cache_page(3600)）
 def decorator_from_middleware_with_args(middleware_class):
     """
     Like decorator_from_middleware, but return a function
@@ -111,6 +117,7 @@ def decorator_from_middleware_with_args(middleware_class):
     return make_middleware_decorator(middleware_class)
 
 
+# 无参中间件 -> 视图装饰器
 def decorator_from_middleware(middleware_class):
     """
     Given a middleware class (not an instance), return a view decorator. This
@@ -120,6 +127,7 @@ def decorator_from_middleware(middleware_class):
     return make_middleware_decorator(middleware_class)()
 
 
+# 核心：模拟 process_request/view/response 链
 def make_middleware_decorator(middleware_class):
     def _make_decorator(*m_args, **m_kwargs):
         def _decorator(view_func):
@@ -201,6 +209,7 @@ def make_middleware_decorator(middleware_class):
     return _make_decorator
 
 
+# 标记中间件工厂同时支持 sync/async 请求
 def sync_and_async_middleware(func):
     """
     Mark a middleware factory as returning a hybrid middleware supporting both
@@ -211,6 +220,7 @@ def sync_and_async_middleware(func):
     return func
 
 
+# 标记仅支持同步请求的中间件
 def sync_only_middleware(func):
     """
     Mark a middleware factory as returning a sync middleware.
@@ -221,6 +231,7 @@ def sync_only_middleware(func):
     return func
 
 
+# 标记仅支持异步请求的中间件
 def async_only_middleware(func):
     """Mark a middleware factory as returning an async middleware."""
     func.sync_capable = False

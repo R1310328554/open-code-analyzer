@@ -1,4 +1,10 @@
-import secrets
+"""
+django.utils.csp — Content-Security-Policy 常量与 nonce 辅助。
+
+CSP 枚举、LazyNonce 与 build_policy 供 SecurityMiddleware 使用。
+"""
+
+import secretsimport secrets
 from enum import StrEnum
 
 from django.utils.functional import SimpleLazyObject, empty
@@ -8,6 +14,7 @@ from django.utils.html import format_html
 CONTEXT_KEY = "csp_nonce"
 
 
+# CSP 指令值与 NONCE 占位符的类型安全枚举
 class CSP(StrEnum):
     """
     Content Security Policy constants for directive values and special tokens.
@@ -53,6 +60,7 @@ class CSP(StrEnum):
     NONCE = "<CSP_NONCE_SENTINEL>"
 
 
+# 首次访问时生成 nonce；未求值时在模板中省略属性
 class LazyNonce(SimpleLazyObject):
     """
     Lazily generates a cryptographically secure nonce string, for use in CSP
@@ -81,6 +89,7 @@ class LazyNonce(SimpleLazyObject):
         return self._wrapped is not empty
 
 
+# 模板标签：渲染 nonce="…" 或 Form/Media 属性
 def nonce_attr(context, media=None):
     nonce = context.get(CONTEXT_KEY)
     if media:
@@ -90,10 +99,12 @@ def nonce_attr(context, media=None):
     return format_html('nonce="{}"', nonce)
 
 
+# 生成 URL 安全的 16 字节 nonce
 def generate_nonce():
     return secrets.token_urlsafe(16)
 
 
+# 将 SECURE_CSP 配置序列化为 CSP 响应头字符串
 def build_policy(config, nonce=None):
     policy = []
 

@@ -1,5 +1,9 @@
 """
 Django's standard crypto functions and utilities.
+
+django.utils.crypto — HMAC、随机串、恒定时间比较与 PBKDF2 等密码学工具。
+""""""
+Django's standard crypto functions and utilities.
 """
 
 import hashlib
@@ -13,6 +17,7 @@ from django.utils.encoding import force_bytes
 from django.utils.warnings import django_file_prefixes
 
 
+# hashlib 不支持的算法名称
 class InvalidAlgorithm(ValueError):
     """Algorithm is not supported by hashlib."""
 
@@ -20,6 +25,7 @@ class InvalidAlgorithm(ValueError):
 
 
 # RemovedInDjango70Warning: algorithm="sha256"
+# 用 SECRET_KEY 派生密钥并计算 HMAC
 def salted_hmac(key_salt, value, secret=None, *, algorithm=None):
     """
     Return the HMAC of 'value', using a key generated from key_salt and a
@@ -64,6 +70,7 @@ def salted_hmac(key_salt, value, secret=None, *, algorithm=None):
 RANDOM_STRING_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 
+# secrets 驱动的加密安全随机字符串
 def get_random_string(length, allowed_chars=RANDOM_STRING_CHARS):
     """
     Return a securely generated random string.
@@ -78,11 +85,13 @@ def get_random_string(length, allowed_chars=RANDOM_STRING_CHARS):
     return "".join(secrets.choice(allowed_chars) for i in range(length))
 
 
+# 防时序攻击的字符串相等比较
 def constant_time_compare(val1, val2):
     """Return True if the two strings are equal, False otherwise."""
     return secrets.compare_digest(force_bytes(val1), force_bytes(val2))
 
 
+# PBKDF2-HMAC 密钥派生
 def pbkdf2(password, salt, iterations, dklen=0, digest=None):
     """Return the hash of password using pbkdf2."""
     if digest is None:
