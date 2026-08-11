@@ -81,6 +81,7 @@ for model_type, video_processors in VIDEO_PROCESSOR_MAPPING_NAMES.items():
 VIDEO_PROCESSOR_MAPPING = _LazyAutoMapping(CONFIG_MAPPING_NAMES, VIDEO_PROCESSOR_MAPPING_NAMES)
 
 
+# video_processor_class_from_name：按类名查找 VideoProcessor 类
 def video_processor_class_from_name(class_name: str):
     for module_name, extractor in VIDEO_PROCESSOR_MAPPING_NAMES.items():
         if class_name == extractor:
@@ -105,6 +106,7 @@ def video_processor_class_from_name(class_name: str):
     return None
 
 
+# get_video_processor_config：从 checkpoint 加载 video_preprocessor_config.json
 def get_video_processor_config(
     pretrained_model_name_or_path: str | os.PathLike,
     cache_dir: str | os.PathLike | None = None,
@@ -226,6 +228,7 @@ def get_video_processor_config(
 
 
 @requires(backends=("vision", "torchvision"))
+# AutoVideoProcessor：from_pretrained 工厂，实例化对应视频预处理器
 class AutoVideoProcessor:
     r"""
     This is a generic video processor class that will be instantiated as one of the video processor classes of the

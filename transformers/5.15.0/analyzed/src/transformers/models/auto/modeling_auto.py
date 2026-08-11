@@ -2170,6 +2170,7 @@ class AutoModelForImageToImage(_BaseAutoModelClass):
     _model_mapping = MODEL_FOR_IMAGE_TO_IMAGE_MAPPING
 
 
+# AutoModel：基础编码器/骨干 Auto 类，不含任务特定 head
 class AutoModel(_BaseAutoModelClass):
     _model_mapping = MODEL_MAPPING
 
@@ -2184,6 +2185,7 @@ class AutoModelForPreTraining(_BaseAutoModelClass):
 AutoModelForPreTraining = auto_class_update(AutoModelForPreTraining, head_doc="pretraining")
 
 
+# AutoModelForCausalLM：因果语言建模 Auto 类（含 GenerationMixin）
 class AutoModelForCausalLM(_BaseAutoModelClass):
     _model_mapping = MODEL_FOR_CAUSAL_LM_MAPPING
 
@@ -2201,6 +2203,7 @@ class AutoModelForCausalLM(_BaseAutoModelClass):
 AutoModelForCausalLM = auto_class_update(AutoModelForCausalLM, head_doc="causal language modeling")
 
 
+# AutoModelForMaskedLM：掩码语言建模 Auto 类
 class AutoModelForMaskedLM(_BaseAutoModelClass):
     _model_mapping = MODEL_FOR_MASKED_LM_MAPPING
 
@@ -2219,6 +2222,7 @@ AutoModelForSeq2SeqLM = auto_class_update(
 )
 
 
+# AutoModelForSequenceClassification：序列分类 Auto 类
 class AutoModelForSequenceClassification(_BaseAutoModelClass):
     _model_mapping = MODEL_FOR_SEQUENCE_CLASSIFICATION_MAPPING
 
@@ -2228,6 +2232,7 @@ AutoModelForSequenceClassification = auto_class_update(
 )
 
 
+# AutoModelForQuestionAnswering：抽取式问答 Auto 类
 class AutoModelForQuestionAnswering(_BaseAutoModelClass):
     _model_mapping = MODEL_FOR_QUESTION_ANSWERING_MAPPING
 
@@ -2268,6 +2273,7 @@ AutoModelForDocumentQuestionAnswering = auto_class_update(
 )
 
 
+# AutoModelForTokenClassification：逐 token 分类 Auto 类
 class AutoModelForTokenClassification(_BaseAutoModelClass):
     _model_mapping = MODEL_FOR_TOKEN_CLASSIFICATION_MAPPING
 
@@ -2291,6 +2297,7 @@ AutoModelForNextSentencePrediction = auto_class_update(
 )
 
 
+# AutoModelForImageClassification：图像分类 Auto 类
 class AutoModelForImageClassification(_BaseAutoModelClass):
     _model_mapping = MODEL_FOR_IMAGE_CLASSIFICATION_MAPPING
 
@@ -2350,6 +2357,7 @@ AutoModelForInstanceSegmentation = auto_class_update(
 )
 
 
+# AutoModelForObjectDetection：目标检测 Auto 类
 class AutoModelForObjectDetection(_BaseAutoModelClass):
     _model_mapping = MODEL_FOR_OBJECT_DETECTION_MAPPING
 

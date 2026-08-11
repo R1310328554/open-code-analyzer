@@ -175,6 +175,7 @@ FROM_PRETRAINED_TORCH_DOCSTRING = """
 """
 
 
+# _get_model_class：按 config 类型与 architectures 字段选取具体模型类
 def _get_model_class(config, model_mapping):
     supported_models = model_mapping[type(config)]
     if not isinstance(supported_models, (list, tuple)):
@@ -191,6 +192,7 @@ def _get_model_class(config, model_mapping):
     return supported_models[0]
 
 
+# _BaseAutoModelClass：AutoModel 基类，提供 from_config / from_pretrained 分发逻辑
 class _BaseAutoModelClass:
     # Base class for auto models.
     _model_mapping = None
@@ -427,6 +429,7 @@ class _BaseAutoModelClass:
         cls._model_mapping.register(config_class, model_class, exist_ok=exist_ok)
 
 
+# _BaseAutoBackboneClass：骨干网络 Auto 类，扩展 out_features 等接口
 class _BaseAutoBackboneClass(_BaseAutoModelClass):
     # Base class for auto backbone models.
     _model_mapping = None
@@ -466,6 +469,7 @@ class _BaseAutoBackboneClass(_BaseAutoModelClass):
         return super().from_pretrained(pretrained_model_name_or_path, *model_args, **kwargs)
 
 
+# insert_head_doc：在 Auto 类 docstring 中插入任务 head 说明段落
 def insert_head_doc(docstring, head_doc: str = ""):
     if len(head_doc) > 0:
         return docstring.replace(
@@ -477,6 +481,7 @@ def insert_head_doc(docstring, head_doc: str = ""):
     )
 
 
+# auto_class_update：为 Auto 子类注入 from_pretrained/from_config 文档与示例
 def auto_class_update(cls, checkpoint_for_example: str = "google-bert/bert-base-cased", head_doc: str = ""):
     # Create a new class with the right name from the base class
     model_mapping = cls._model_mapping
@@ -507,6 +512,7 @@ def auto_class_update(cls, checkpoint_for_example: str = "google-bert/bert-base-
     return cls
 
 
+# get_values：遍历 model_mapping 收集所有已注册模型类
 def get_values(model_mapping):
     result = []
     for model in model_mapping.values():
@@ -518,6 +524,7 @@ def get_values(model_mapping):
     return result
 
 
+# getattribute_from_module：从模块安全获取类或属性（支持列表/tuple）
 def getattribute_from_module(module, attr):
     if attr is None:
         return None
@@ -540,6 +547,7 @@ def getattribute_from_module(module, attr):
         raise ValueError(f"Could not find {attr} in {transformers_module}!")
 
 
+# add_generation_mixin_to_remote_model：为远程代码模型混入 GenerationMixin
 def add_generation_mixin_to_remote_model(model_class):
     """
     Adds `GenerationMixin` to the inheritance of `model_class`, if `model_class` is a PyTorch model.
@@ -572,6 +580,7 @@ def add_generation_mixin_to_remote_model(model_class):
     return model_class
 
 
+# _LazyAutoMapping：config→model 的延迟加载映射表
 class _LazyAutoMapping(OrderedDict[type[PreTrainedConfig], _LazyAutoMappingValue]):
     """
     A mapping config to object (model or tokenizer for instance) that will load keys and values when it is accessed.

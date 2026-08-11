@@ -21,6 +21,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="huggingface/autoformer-tourism-monthly")
 @strict
+# AutoformerConfig：Autoformer 编码器-解码器时序预测架构超参
 class AutoformerConfig(PreTrainedConfig):
     r"""
     prediction_length (`int`):
@@ -145,6 +146,7 @@ class AutoformerConfig(PreTrainedConfig):
             + self.input_size * 2  # the log1p(abs(loc)) and log(scale) features
         )
 
+# validate_architecture：@strict 校验 cardinality 与 embedding_dimension 长度一致
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if (

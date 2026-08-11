@@ -430,12 +430,14 @@ MODEL_IDS_TO_TOKENIZERS_BACKEND = [
 ]
 
 
+# load_vocab：从 vocab 文件加载 token→id 字典
 def load_vocab(vocab_file):
     """Loads a vocabulary file into a dictionary."""
     with open(vocab_file, "r", encoding="utf-8") as reader:
         return json.load(reader)
 
 
+# load_merges：从 merges 文件加载 BPE 合并规则
 def load_merges(merges_file):
     """Loads a merges file into a list."""
     merges = []
@@ -447,6 +449,7 @@ def load_merges(merges_file):
     return merges
 
 
+# _use_mistral_format：判断 checkpoint 是否使用 Mistral 风格 tokenizer 格式
 def _use_mistral_format(
     pretrained_model_name_or_path: str | os.PathLike[str],
     mistral_format: bool | None = None,
@@ -481,6 +484,7 @@ def _use_mistral_format(
     return resolve_mistral_format(pretrained_model_name_or_path, mistral_format=mistral_format, **probe_kwargs)[0]
 
 
+# tokenizer_class_from_name：按类名在 TOKENIZER_MAPPING 中查找 Tokenizer 类
 def tokenizer_class_from_name(class_name: str) -> type[Any] | None:
     # Bloom tokenizer classes were removed but should map to the fast backend for BC
     if class_name in {"BloomTokenizer", "BloomTokenizerFast"}:
@@ -535,6 +539,7 @@ def tokenizer_class_from_name(class_name: str) -> type[Any] | None:
     return None
 
 
+# get_tokenizer_config：从 Hub 或本地加载 tokenizer_config.json
 def get_tokenizer_config(
     pretrained_model_name_or_path: str | os.PathLike[str],
     cache_dir: str | os.PathLike[str] | None = None,
@@ -631,6 +636,7 @@ def get_tokenizer_config(
     return result
 
 
+# AutoTokenizer：from_pretrained 工厂，支持 slow/fast 分词器与 remote code
 class AutoTokenizer:
     r"""
     This is a generic tokenizer class that will be instantiated as one of the tokenizer classes of the library when

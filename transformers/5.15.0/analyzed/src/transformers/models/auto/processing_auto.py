@@ -87,6 +87,7 @@ else:
 PROCESSOR_MAPPING = _LazyAutoMapping(CONFIG_MAPPING_NAMES, PROCESSOR_MAPPING_NAMES)
 
 
+# processor_class_from_name：按类名在 PROCESSOR_MAPPING 中查找 Processor 类
 def processor_class_from_name(class_name: str):
     for module_name, processors in PROCESSOR_MAPPING_NAMES.items():
         if class_name in processors:
@@ -111,6 +112,7 @@ def processor_class_from_name(class_name: str):
     return None
 
 
+# AutoProcessor：from_pretrained 工厂，自动组装多模态 ProcessorMixin 子类
 class AutoProcessor:
     r"""
     This is a generic processor class that will be instantiated as one of the processor classes of the library when

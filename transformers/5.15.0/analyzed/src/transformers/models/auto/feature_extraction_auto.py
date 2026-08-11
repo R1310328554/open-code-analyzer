@@ -78,6 +78,7 @@ FEATURE_EXTRACTOR_MAPPING_NAMES.update(MISSING_FEATURE_EXTRACTOR_MAPPING_NAMES)
 FEATURE_EXTRACTOR_MAPPING = _LazyAutoMapping(CONFIG_MAPPING_NAMES, FEATURE_EXTRACTOR_MAPPING_NAMES)
 
 
+# feature_extractor_class_from_name：按类名在映射表中查找 FeatureExtractor 类
 def feature_extractor_class_from_name(class_name: str):
     for module_name, extractors in FEATURE_EXTRACTOR_MAPPING_NAMES.items():
         if class_name in extractors:
@@ -102,6 +103,7 @@ def feature_extractor_class_from_name(class_name: str):
     return None
 
 
+# get_feature_extractor_config：从 Hub 或本地目录加载 preprocessor_config.json
 def get_feature_extractor_config(
     pretrained_model_name_or_path: str | os.PathLike,
     cache_dir: str | os.PathLike | None = None,
@@ -212,6 +214,7 @@ def get_feature_extractor_config(
     return feature_extractor_dict or {}
 
 
+# AutoFeatureExtractor：from_pretrained 工厂，按 config 实例化对应特征提取器
 class AutoFeatureExtractor:
     r"""
     This is a generic feature extractor class that will be instantiated as one of the feature extractor classes of the

@@ -61,6 +61,7 @@ SPECIAL_MODEL_TYPE_TO_MODULE_NAME.update(
 DEPRECATED_MODELS = []
 
 
+# model_type_to_module_name：将 config key 转为 transformers.models 子模块名
 def model_type_to_module_name(key) -> str:
     """Converts a config key to the corresponding module."""
     # Special treatment
@@ -78,6 +79,7 @@ def model_type_to_module_name(key) -> str:
     return key
 
 
+# config_class_to_model_type：Config 类名反查 model_type 字符串
 def config_class_to_model_type(config) -> str | None:
     """Converts a config class name to the corresponding model type"""
     for key, cls in CONFIG_MAPPING_NAMES.items():
@@ -90,6 +92,7 @@ def config_class_to_model_type(config) -> str | None:
     return None
 
 
+# _LazyConfigMapping：按需 import 各模型 Config 的延迟字典
 class _LazyConfigMapping(OrderedDict[str, type[PreTrainedConfig]]):
     """
     A dictionary that lazily load its values when they are requested.
@@ -153,6 +156,7 @@ class _LazyConfigMapping(OrderedDict[str, type[PreTrainedConfig]]):
 CONFIG_MAPPING = _LazyConfigMapping(CONFIG_MAPPING_NAMES)
 
 
+# _LazyLoadAllMappings：批量延迟加载全部 Config 映射项
 class _LazyLoadAllMappings(OrderedDict[str, str]):
     """
     A mapping that will load all pairs of key values at the first access (either by indexing, requestions keys, values,
@@ -207,12 +211,14 @@ class _LazyLoadAllMappings(OrderedDict[str, str]):
         return (self.__class__, (dict(self._mapping),))
 
 
+# _get_class_name：从单类名或类名列表提取 docstring 展示名
 def _get_class_name(model_class: str | list[str]):
     if isinstance(model_class, list | tuple):
         return " or ".join([f"[`{c}`]" for c in model_class if c is not None])
     return f"[`{model_class}`]"
 
 
+# _list_model_options：生成 Auto 类 docstring 中的可选 model 列表
 def _list_model_options(indent, config_to_class=None, use_model_types=True):
     if config_to_class is None and not use_model_types:
         raise ValueError("Using `use_model_types=False` requires a `config_to_class` dictionary.")
@@ -246,6 +252,7 @@ def _list_model_options(indent, config_to_class=None, use_model_types=True):
     return "\n".join(lines)
 
 
+# replace_list_option_in_docstrings：装饰器，将 docstring 中 List options 替换为真实映射
 def replace_list_option_in_docstrings(
     config_to_class=None, use_model_types: bool = True
 ) -> Callable[[_CallableT], _CallableT]:
@@ -275,6 +282,7 @@ def replace_list_option_in_docstrings(
     return docstring_decorator
 
 
+# AutoConfig：通用配置入口，支持 from_pretrained / for_model 工厂方法
 class AutoConfig:
     r"""
     This is a generic configuration class that will be instantiated as one of the configuration classes of the library

@@ -46,6 +46,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# AutoFormerDecoderOutput：解码器前向输出（loc/scale/分布参数等）
 class AutoFormerDecoderOutput(ModelOutput):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`):
@@ -71,6 +72,7 @@ class AutoFormerDecoderOutput(ModelOutput):
     """
 )
 @dataclass
+# AutoformerModelOutput：完整模型输出（encoder/decoder hidden states）
 class AutoformerModelOutput(ModelOutput):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`):
@@ -110,6 +112,7 @@ class AutoformerModelOutput(ModelOutput):
 
 
 # Copied from transformers.models.time_series_transformer.modeling_time_series_transformer.TimeSeriesFeatureEmbedder with TimeSeries->Autoformer
+# AutoformerFeatureEmbedder：将滞后特征与时间特征嵌入 d_model 维度
 class AutoformerFeatureEmbedder(nn.Module):
     """
     Embed a sequence of categorical features.
@@ -344,6 +347,7 @@ class AutoformerValueEmbedding(nn.Module):
 # Class based on
 # https://github.com/thuml/Autoformer/blob/c6a0694ff484753f2d986cc0bb1f99ee850fc1a8/layers/Autoformer_EncDec.py#L39
 # where AutoformerSeriesDecompositionLayer is series_decomp + moving_average
+# AutoformerSeriesDecompositionLayer：移动平均分解趋势项与季节项
 class AutoformerSeriesDecompositionLayer(nn.Module):
     """
     Returns the trend and the seasonal parts of the time series. Calculated as:
@@ -389,6 +393,7 @@ class AutoformerLayernorm(nn.Module):
         return x_hat - bias
 
 
+# AutoformerAttention：AutoCorrelation 机制替代标准 softmax 注意力
 class AutoformerAttention(nn.Module):
     """
     AutoCorrelation Mechanism with the following two phases:
@@ -591,6 +596,7 @@ class AutoformerAttention(nn.Module):
         return attn_output, attn_weights_reshaped
 
 
+# AutoformerEncoderLayer：编码器单层（分解 + 自相关 + FFN）
 class AutoformerEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: AutoformerConfig):
         super().__init__()
@@ -651,6 +657,7 @@ class AutoformerEncoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# AutoformerDecoderLayer：解码器单层（自相关 + 交叉注意力 + FFN）
 class AutoformerDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: AutoformerConfig, layer_idx=None):
         super().__init__()
@@ -773,6 +780,7 @@ class AutoformerDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# AutoformerPreTrainedModel：权重初始化与 _no_split_modules 定义
 class AutoformerPreTrainedModel(PreTrainedModel):
     config: AutoformerConfig
     base_model_prefix = "model"
@@ -792,6 +800,7 @@ class AutoformerPreTrainedModel(PreTrainedModel):
 
 
 # copied from transformers.models.time_series_transformer.modeling_time_series_transformer.TimeSeriesTransformerEncoder with TimeSeriesTransformer->Autoformer,TimeSeries->Autoformer
+# AutoformerEncoder：堆叠编码层的时序特征提取器
 class AutoformerEncoder(AutoformerPreTrainedModel):
     """
     Transformer encoder consisting of *config.encoder_layers* self attention layers. Each layer is a
@@ -874,6 +883,7 @@ class AutoformerEncoder(AutoformerPreTrainedModel):
         )
 
 
+# AutoformerDecoder：堆叠解码层，直接多步非自回归预测
 class AutoformerDecoder(AutoformerPreTrainedModel):
     """
     Transformer decoder consisting of `config.decoder_layers` layers. Each layer is a [`AutoformerDecoderLayer`]
@@ -1010,6 +1020,7 @@ class AutoformerDecoder(AutoformerPreTrainedModel):
 
 
 @auto_docstring
+# AutoformerModel：完整编码器-解码器骨干（无预测 head）
 class AutoformerModel(AutoformerPreTrainedModel):
     def __init__(self, config: AutoformerConfig):
         super().__init__(config)
@@ -1376,6 +1387,7 @@ class AutoformerModel(AutoformerPreTrainedModel):
 
 
 @auto_docstring
+# AutoformerForPrediction：带分布输出头的时序概率预测模型
 class AutoformerForPrediction(AutoformerPreTrainedModel):
     def __init__(self, config: AutoformerConfig):
         super().__init__(config)

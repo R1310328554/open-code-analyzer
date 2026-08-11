@@ -26,6 +26,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="skt/A.X-K1")
 @strict
+# AXK1Config：A.X-K1 MoE 架构超参（n_group、topk_group、rope_interleave 等）
 class AXK1Config(PreTrainedConfig):
     r"""
     n_group (`int`, *optional*, defaults to 8):
@@ -113,6 +114,7 @@ class AXK1Config(PreTrainedConfig):
     attention_bias: bool = False
     attention_dropout: float | int | None = 0.0
 
+# __post_init__：推导 qk_head_dim/head_dim 并补全 num_key_value_heads 默认值
     def __post_init__(self, **kwargs):
         if self.num_key_value_heads is None:
             self.num_key_value_heads = self.num_attention_heads

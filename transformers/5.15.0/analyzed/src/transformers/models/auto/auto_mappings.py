@@ -21,6 +21,7 @@
 from collections import OrderedDict
 
 
+# CONFIG_MAPPING_NAMES：model_type → Config 类名的有序映射
 CONFIG_MAPPING_NAMES = OrderedDict(
     [
         ("afmoe", "AfmoeConfig"),
@@ -713,6 +714,7 @@ CONFIG_MAPPING_NAMES = OrderedDict(
     ]
 )
 
+# SPECIAL_MODEL_TYPE_TO_MODULE_NAME：非标准 model_type 到 Python 模块名的特例表
 SPECIAL_MODEL_TYPE_TO_MODULE_NAME = OrderedDict(
     [
         ("aimv2_text_model", "aimv2"),
@@ -956,7 +958,9 @@ SPECIAL_MODEL_TYPE_TO_MODULE_NAME = OrderedDict(
     ]
 )
 
-VIDEO_PROCESSOR_MAPPING_NAMES = OrderedDict(
+# VIDEO_PROCESSOR_MAPPING_NAMES：model_type → 视频预处理器类名映射
+VIDEO_# PROCESSOR_MAPPING_NAMES：model_type → 多模态 Processor 类名映射
+PROCESSOR_MAPPING_NAMES = OrderedDict(
     [
         ("cosmos3_edge", "Cosmos3EdgeVideoProcessor"),
         ("ernie4_5_vl_moe", "Ernie4_5_VLMoeVideoProcessor"),
@@ -989,6 +993,7 @@ VIDEO_PROCESSOR_MAPPING_NAMES = OrderedDict(
     ]
 )
 
+# FEATURE_EXTRACTOR_MAPPING_NAMES：model_type → 音频/特征提取器类名映射
 FEATURE_EXTRACTOR_MAPPING_NAMES = OrderedDict(
     [
         ("audio-spectrogram-transformer", "ASTFeatureExtractor"),
@@ -1162,6 +1167,7 @@ PROCESSOR_MAPPING_NAMES = OrderedDict(
     ]
 )
 
+# IMAGE_PROCESSOR_MAPPING_NAMES：model_type → 图像预处理器类名映射
 IMAGE_PROCESSOR_MAPPING_NAMES = OrderedDict(
     [
         ("aria", {"pil": "AriaImageProcessorPil", "torchvision": "AriaImageProcessor"}),

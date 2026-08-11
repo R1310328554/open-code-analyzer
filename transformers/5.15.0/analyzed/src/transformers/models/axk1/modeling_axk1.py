@@ -49,6 +49,7 @@ from .configuration_axk1 import AXK1Config
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# AXK1RMSNorm：Root Mean Square LayerNorm
 class AXK1RMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -69,6 +70,7 @@ class AXK1RMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# AXK1RotaryEmbedding：YaRN 扩展的 RoPE 频率缓存与 cos/sin 输出
 class AXK1RotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: AXK1Config, device=None):
@@ -126,6 +128,7 @@ class AXK1RotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# AXK1MLP：SwiGLU 风格前馈（gate/up/down 投影）
 class AXK1MLP(nn.Module):
     def __init__(self, config, intermediate_size=None):
         super().__init__()
@@ -142,6 +145,7 @@ class AXK1MLP(nn.Module):
         return down_proj
 
 
+# AXK1TopkRouter：分组 top-k 路由，为每个 token 选取专家子集
 class AXK1TopkRouter(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -184,6 +188,7 @@ class AXK1TopkRouter(nn.Module):
 
 
 @use_experts_implementation
+# AXK1Experts：并行专家 MLP 参数矩阵（grouped GEMM 布局）
 class AXK1Experts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
@@ -223,6 +228,7 @@ class AXK1Experts(nn.Module):
         return final_hidden_states
 
 
+# AXK1MoE：路由 + 专家 + shared experts 的混合专家块
 class AXK1MoE(nn.Module):
     """DeepSeek-V3 MoE with an extra `post_mlp_layernorm` on the block output (A.X-K1's single delta).
 
@@ -375,6 +381,7 @@ def apply_rotary_pos_emb_interleave(q, k, cos, sin, position_ids=None, unsqueeze
     return q_embed, k_embed
 
 
+# AXK1Attention：GQA 自注意力（eager/SDPA/Flash 分发）
 class AXK1Attention(nn.Module):
     """Multi-headed Latent Attention (MLA) from Deepseek V2"""
 
@@ -501,6 +508,7 @@ class AXK1Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# AXK1DecoderLayer：Decoder 单层（Attn + MoE/MLP + 残差）
 class AXK1DecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: AXK1Config, layer_idx: int):
         super().__init__()
@@ -549,6 +557,7 @@ class AXK1DecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# AXK1PreTrainedModel：权重初始化与 TP/EP 分片计划
 class AXK1PreTrainedModel(PreTrainedModel):
     config: AXK1Config
     base_model_prefix = "model"
@@ -580,6 +589,7 @@ class AXK1PreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# AXK1Model：堆叠 DecoderLayer 的因果 LM 骨干
 class AXK1Model(AXK1PreTrainedModel):
     def __init__(self, config: AXK1Config):
         super().__init__(config)
@@ -654,6 +664,7 @@ class AXK1Model(AXK1PreTrainedModel):
 
 
 @auto_docstring
+# AXK1ForCausalLM：因果语言建模 head + 生成接口
 class AXK1ForCausalLM(AXK1PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
@@ -728,10 +739,12 @@ class AXK1ForCausalLM(AXK1PreTrainedModel, GenerationMixin):
         )
 
 
+# AXK1ForSequenceClassification：序列分类 head
 class AXK1ForSequenceClassification(GenericForSequenceClassification, AXK1PreTrainedModel):
     pass
 
 
+# AXK1ForTokenClassification：逐 token 分类 head
 class AXK1ForTokenClassification(GenericForTokenClassification, AXK1PreTrainedModel):
     pass
 

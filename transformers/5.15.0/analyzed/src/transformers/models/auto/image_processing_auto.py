@@ -476,6 +476,7 @@ def _resolve_auto_map_class_ref(auto_map, backend):
 
 
 @requires(backends=("vision",))
+# AutoImageProcessor：from_pretrained 工厂，支持 timm 与 torchvision 后端切换
 class AutoImageProcessor:
     r"""
     This is a generic image processor class that will be instantiated as one of the image processor classes of the
