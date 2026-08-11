@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T03:20:43Z",
-  "files": [
-    "src/transformers/models/speech_to_text/processing_speech_to_text.py",
-    "src/transformers/models/speech_to_text/tokenization_speech_to_text.py",
-    "src/transformers/models/speecht5/__init__.py",
-    "src/transformers/models/speecht5/configuration_speecht5.py",
-    "src/transformers/models/speecht5/feature_extraction_speecht5.py",
-    "src/transformers/models/speecht5/modeling_speecht5.py",
-    "src/transformers/models/speecht5/number_normalizer.py",
-    "src/transformers/models/speecht5/processing_speecht5.py",
-    "src/transformers/models/speecht5/tokenization_speecht5.py",
-    "src/transformers/models/splinter/__init__.py",
-    "src/transformers/models/splinter/configuration_splinter.py",
-    "src/transformers/models/splinter/modeling_splinter.py",
-    "src/transformers/models/splinter/tokenization_splinter.py",
-    "src/transformers/models/squeezebert/__init__.py",
-    "src/transformers/models/squeezebert/configuration_squeezebert.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 549,
-  "done": 2115
+  "done": 2130
 }
