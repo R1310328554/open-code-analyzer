@@ -1,3 +1,8 @@
+"""
+django.contrib.gis.forms.fields — GIS 几何表单字段。
+
+将用户输入（WKT/GeoJSON 等）解析为 GEOSGeometry，并校验类型与 SRID 变换。
+"""
 from django import forms
 from django.contrib.gis.geos import GEOSException, GEOSGeometry
 from django.contrib.gis.geos.prototypes.io import MAX_GEOM_COLLECTIONS
@@ -7,6 +12,7 @@ from django.utils.translation import gettext_lazy as _
 from .widgets import OpenLayersWidget
 
 
+# 基础几何表单字段：接受 GEOS 可解析的文本输入
 class GeometryField(forms.Field):
     """
     This is the basic form field for a Geometry. Any textual input that is
@@ -28,6 +34,7 @@ class GeometryField(forms.Field):
         ),
     }
 
+    # 可配置 SRID、几何类型与集合元素上限
     def __init__(
         self, *, srid=None, geom_type=None, max_geom_collections=None, **kwargs
     ):
@@ -43,6 +50,7 @@ class GeometryField(forms.Field):
         # ignore this attribute still get the default limit via GEOSGeometry.
         self.widget.max_geom_collections = self.max_geom_collections
 
+    # 将输入转为 GEOSGeometry，必要时通过控件反序列化
     def to_python(self, value):
         """Transform the value to a Geometry object."""
         if value in self.empty_values:
@@ -72,6 +80,7 @@ class GeometryField(forms.Field):
                     value.srid = self.srid
         return value
 
+    # 校验几何类型并执行 SRID 坐标变换
     def clean(self, value):
         """
         Validate that the input value can be converted to a Geometry object
@@ -103,6 +112,7 @@ class GeometryField(forms.Field):
 
         return geom
 
+    # 以地理坐标精确比较判断字段是否变更
     def has_changed(self, initial, data):
         """Compare geographic value of data with its initial value."""
 
@@ -124,29 +134,36 @@ class GeometryField(forms.Field):
             return bool(initial) != bool(data)
 
 
+# 几何集合字段
 class GeometryCollectionField(GeometryField):
     geom_type = "GEOMETRYCOLLECTION"
 
 
+# 点几何字段
 class PointField(GeometryField):
     geom_type = "POINT"
 
 
+# 多点几何字段
 class MultiPointField(GeometryField):
     geom_type = "MULTIPOINT"
 
 
+# 线串几何字段
 class LineStringField(GeometryField):
     geom_type = "LINESTRING"
 
 
+# 多线串几何字段
 class MultiLineStringField(GeometryField):
     geom_type = "MULTILINESTRING"
 
 
+# 多边形几何字段
 class PolygonField(GeometryField):
     geom_type = "POLYGON"
 
 
+# 多多边形几何字段
 class MultiPolygonField(GeometryField):
     geom_type = "MULTIPOLYGON"

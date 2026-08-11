@@ -1,3 +1,6 @@
+"""
+django.contrib.gis.gdal.driver — GDAL/OGR 数据驱动包装器。
+"""
 from ctypes import c_void_p
 
 from django.contrib.gis.gdal.base import GDALBase
@@ -7,6 +10,7 @@ from django.contrib.gis.gdal.prototypes import ds as capi
 from django.utils.encoding import force_bytes, force_str
 
 
+# 封装 OGR 驱动，支持别名与自动注册
 class Driver(GDALBase):
     """
     Wrap a GDAL/OGR Data Source Driver.
@@ -39,6 +43,7 @@ class Driver(GDALBase):
             }
         )
 
+    # 从驱动名、索引或 ctypes 指针初始化
     def __init__(self, dr_input):
         """
         Initialize an GDAL/OGR driver on either a string or integer input.
@@ -77,6 +82,7 @@ class Driver(GDALBase):
         return self.name
 
     @classmethod
+    # 首次使用时注册全部 OGR 驱动
     def ensure_registered(cls):
         """
         Attempt to register all the data source drivers.
@@ -87,6 +93,7 @@ class Driver(GDALBase):
             capi.register_all()
 
     @classmethod
+    # 已注册驱动数量
     def driver_count(cls):
         """
         Return the number of GDAL/OGR data source drivers registered.
@@ -94,6 +101,7 @@ class Driver(GDALBase):
         return capi.get_driver_count()
 
     @property
+    # 驱动描述名称
     def name(self):
         """
         Return description/name string for this driver.

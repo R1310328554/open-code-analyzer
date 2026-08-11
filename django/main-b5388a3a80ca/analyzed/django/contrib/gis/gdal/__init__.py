@@ -1,4 +1,9 @@
 """
+django.contrib.gis.gdal — GDAL/OGR ctypes 绑定公共入口。
+
+封装坐标变换、驱动、数据源、几何、空间参考等 OGR 对象。
+
+This module houses ctypes interfaces for GDAL objects."""
 This module houses ctypes interfaces for GDAL objects. The following GDAL
 objects are supported:
 

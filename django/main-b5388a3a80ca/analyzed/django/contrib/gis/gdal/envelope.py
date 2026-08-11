@@ -1,4 +1,7 @@
 """
+django.contrib.gis.gdal.envelope — 几何外包矩形（Envelope）。
+
+The GDAL/OGR library uses an Envelope structure"""
 The GDAL/OGR library uses an Envelope structure to hold the bounding
 box information for a geometry. The envelope (bounding box) contains
 two pairs of coordinates, one for the lower left coordinate and one
@@ -19,6 +22,7 @@ from django.contrib.gis.gdal.error import GDALException
 # The OGR definition of an Envelope is a C structure containing four doubles.
 # See the 'ogr_core.h' source file for more information:
 # https://gdal.org/doxygen/ogr__core_8h_source.html
+# 对应 OGR C 结构体的 ctypes 定义
 class OGREnvelope(Structure):
     "Represent the OGREnvelope C Structure."
 
@@ -30,6 +34,7 @@ class OGREnvelope(Structure):
     ]
 
 
+# Python 层外包框：min/max X/Y 与 WKT 多边形表示
 class Envelope:
     """
     The Envelope object is a C structure that contains the minimum and
@@ -37,6 +42,7 @@ class Envelope:
     of the variables is compatible with the OGR Envelope structure.
     """
 
+    # 支持 OGREnvelope、四元组或四个独立坐标参数
     def __init__(self, *args):
         """
         The initialization function may take an OGREnvelope structure,
@@ -104,6 +110,7 @@ class Envelope:
         self._envelope.MaxX = seq[2]
         self._envelope.MaxY = seq[3]
 
+    # 扩展外包框以包含点、范围或另一个 Envelope
     def expand_to_include(self, *args):
         """
         Modify the envelope to expand to include the boundaries of
@@ -188,6 +195,7 @@ class Envelope:
         return (self.min_x, self.min_y, self.max_x, self.max_y)
 
     @property
+    # 将外包框转为 POLYGON WKT
     def wkt(self):
         "Return WKT representing a Polygon for this envelope."
         # TODO: Fix significant figures.

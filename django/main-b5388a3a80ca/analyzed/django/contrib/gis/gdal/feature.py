@@ -1,3 +1,6 @@
+"""
+django.contrib.gis.gdal.feature — OGR 矢量要素包装器。
+"""
 from django.contrib.gis.gdal.base import GDALBase
 from django.contrib.gis.gdal.error import GDALException
 from django.contrib.gis.gdal.field import Field
@@ -11,6 +14,7 @@ from django.utils.encoding import force_bytes, force_str
 # https://gdal.org/api/vector_c_api.html
 #
 # The OGR_F_* routines are relevant here.
+# 封装单个 OGR Feature，由 Layer 创建
 class Feature(GDALBase):
     """
     This class that wraps an OGR Feature, needs to be instantiated
@@ -19,6 +23,7 @@ class Feature(GDALBase):
 
     destructor = capi.destroy_feature
 
+    # 绑定要素指针与所属图层
     def __init__(self, feat, layer):
         """
         Initialize Feature from a pointer and its Layer object.
@@ -28,6 +33,7 @@ class Feature(GDALBase):
         self.ptr = feat
         self._layer = layer
 
+    # 按字段名或索引返回 Field 对象
     def __getitem__(self, index):
         """
         Get the Field object at the specified index, which may be either
@@ -91,6 +97,7 @@ class Feature(GDALBase):
         ]
 
     @property
+    # 要素关联的 OGR 几何
     def geom(self):
         "Return the OGR Geometry for this Feature."
         # Retrieving the geometry pointer for the feature.
@@ -103,6 +110,7 @@ class Feature(GDALBase):
         return OGRGeomType(capi.get_fd_geom_type(self._layer._ldefn))
 
     # #### Feature Methods ####
+    # 直接返回字段值而非 Field 实例
     def get(self, field):
         """
         Return the value of the field, instead of an instance of the Field
@@ -112,6 +120,7 @@ class Feature(GDALBase):
         field_name = getattr(field, "name", field)
         return self[field_name].value
 
+    # 按字段名查找索引
     def index(self, field_name):
         "Return the index of the given field name."
         i = capi.get_field_index(self.ptr, force_bytes(field_name))

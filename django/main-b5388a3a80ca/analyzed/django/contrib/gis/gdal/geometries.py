@@ -1,4 +1,7 @@
 """
+django.contrib.gis.gdal.geometries — OGR 几何对象及子类层次。
+
+The OGRGeometry is a wrapper for using the OGR Geometry class"""
 The OGRGeometry is a wrapper for using the OGR Geometry class
 (see https://gdal.org/api/ogrgeometry_cpp.html#_CPPv411OGRGeometry).
 OGRGeometry may be instantiated when reading geometries from OGR Data Sources
@@ -62,12 +65,14 @@ from django.utils.encoding import force_bytes
 #  https://gdal.org/api/vector_c_api.html
 #
 # The OGR_G_* routines are relevant here.
+# OGR 几何基类：WKT/WKB/GeoJSON 构造、拓扑运算与坐标变换
 class OGRGeometry(GDALBase):
     """Encapsulate an OGR geometry."""
 
     destructor = capi.destroy_geom
     geos_support = True
 
+    # 从 WKT、WKB、GeoJSON 或 OGR 指针构造几何
     def __init__(self, geom_input, srs=None):
         """Initialize Geometry on either WKT or an OGR pointer as input."""
         str_instance = isinstance(geom_input, str)
@@ -367,6 +372,7 @@ class OGRGeometry(GDALBase):
         return GEOSGeometry._from_wkb(self.wkb)
 
     @property
+    # 转为 GEOSGeometry（部分曲线类型不支持）
     def geos(self):
         "Return a GEOSGeometry object from this OGRGeometry."
         if self.geos_support:
@@ -458,6 +464,7 @@ class OGRGeometry(GDALBase):
         # Closing the open rings.
         capi.geom_close_rings(self.ptr)
 
+    # 变换到目标空间参考（可原地或克隆）
     def transform(self, coord_trans, clone=False):
         """
         Transform this geometry to a different spatial reference system.
@@ -552,6 +559,7 @@ class OGRGeometry(GDALBase):
         """
         return self._geomgen(capi.geom_convex_hull)
 
+    # 几何差集
     def difference(self, other):
         """
         Return a new geometry consisting of the region which is the difference
@@ -559,6 +567,7 @@ class OGRGeometry(GDALBase):
         """
         return self._geomgen(capi.geom_diff, other)
 
+    # 几何交集
     def intersection(self, other):
         """
         Return a new geometry consisting of the region of intersection of this
@@ -573,6 +582,7 @@ class OGRGeometry(GDALBase):
         """
         return self._geomgen(capi.geom_sym_diff, other)
 
+    # 几何并集
     def union(self, other):
         """
         Return a new geometry consisting of the region which is the union of
@@ -590,6 +600,7 @@ class OGRGeometry(GDALBase):
 
 
 # The subclasses for OGR Geometry.
+# 点几何
 class Point(OGRGeometry):
     def _geos_ptr(self):
         from django.contrib.gis import geos
@@ -636,6 +647,7 @@ class Point(OGRGeometry):
     coords = tuple
 
 
+# 线串几何，支持按索引访问坐标
 class LineString(OGRGeometry):
     def __getitem__(self, index):
         "Return the Point at the given index."
@@ -700,10 +712,12 @@ class LineString(OGRGeometry):
 
 
 # LinearRings are used in Polygons.
+# 线性环（多边形外环/内环）
 class LinearRing(LineString):
     pass
 
 
+# 多边形：外环 shell 与内环
 class Polygon(OGRGeometry):
     def __len__(self):
         "Return the number of interior rings in this Polygon."
@@ -755,6 +769,7 @@ class CompoundCurve(OGRGeometry):
 
 
 # Geometry Collection base class.
+# 几何集合，可 add 子几何
 class GeometryCollection(OGRGeometry):
     "The Geometry Collection class."
 
@@ -803,14 +818,17 @@ class GeometryCollection(OGRGeometry):
 
 
 # Multiple Geometry types.
+# 多点
 class MultiPoint(GeometryCollection):
     pass
 
 
+# 多线串
 class MultiLineString(GeometryCollection):
     pass
 
 
+# 多多边形
 class MultiPolygon(GeometryCollection):
     pass
 
@@ -824,6 +842,7 @@ class MultiCurve(GeometryCollection):
 
 
 # Class mapping dictionary (using the OGRwkbGeometryType as the key)
+# OGRwkbGeometryType 到 Python 几何子类的映射表
 GEO_CLASSES = {
     1: Point,
     2: LineString,

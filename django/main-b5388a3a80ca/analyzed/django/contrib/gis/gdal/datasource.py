@@ -1,4 +1,7 @@
 """
+django.contrib.gis.gdal.datasource — OGR 矢量数据源包装器。
+
+DataSource is a wrapper for the OGR Data Source object"""
 DataSource is a wrapper for the OGR Data Source object, which provides
 an interface for reading vector geometry data from many different file
 formats (including ESRI shapefiles).
@@ -47,11 +50,13 @@ from django.utils.encoding import force_bytes, force_str
 #  https://gdal.org/api/vector_c_api.html
 #
 # The OGR_DS_* routines are relevant here.
+# 封装 OGR 数据源，支持按索引或名称访问图层
 class DataSource(GDALBase):
     "Wraps an OGR Data Source object."
 
     destructor = capi.destroy_ds
 
+    # 从文件路径或 ctypes 指针打开矢量数据源
     def __init__(self, ds_input, ds_driver=False, write=False, encoding="utf-8"):
         # The write flag.
         self._write = capi.GDAL_OF_UPDATE if write else capi.GDAL_OF_READONLY
@@ -89,6 +94,7 @@ class DataSource(GDALBase):
             # Raise an exception if the returned pointer is NULL
             raise GDALException('Invalid data source file "%s"' % ds_input)
 
+    # 按图层名（str）或索引（int）获取 Layer
     def __getitem__(self, index):
         "Allows use of the index [] operator to get a layer at the index."
         if isinstance(index, str):
@@ -108,6 +114,7 @@ class DataSource(GDALBase):
             raise TypeError("Invalid index type: %s" % type(index))
         return Layer(layer, self)
 
+    # 返回图层数量
     def __len__(self):
         "Return the number of layers within the data source."
         return self.layer_count
@@ -117,11 +124,13 @@ class DataSource(GDALBase):
         return "%s (%s)" % (self.name, self.driver)
 
     @property
+    # 数据源中的图层数
     def layer_count(self):
         "Return the number of layers in the data source."
         return capi.get_layer_count(self._ptr)
 
     @property
+    # 数据源名称
     def name(self):
         "Return the name of the data source."
         name = capi.get_ds_name(self._ptr)

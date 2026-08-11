@@ -1,4 +1,7 @@
 """
+django.contrib.gis.gdal.error — GDAL/OGR 异常与错误码映射。
+
+This module houses the GDAL & SRS Exception objects"""
 This module houses the GDAL & SRS Exception objects, and the
 check_err() routine which checks the status code returned by
 GDAL/OGR methods.
@@ -6,10 +9,12 @@ GDAL/OGR methods.
 
 
 # #### GDAL & SRS Exceptions ####
+# GDAL/OGR 通用异常
 class GDALException(Exception):
     pass
 
 
+# 空间参考系统相关异常
 class SRSException(Exception):
     pass
 
@@ -46,6 +51,7 @@ CPLERR_DICT = {
 ERR_NONE = 0
 
 
+# 检查 OGR/CPL 错误码并在必要时抛出对应异常
 def check_err(code, cpl=False):
     """
     Check the given CPL/OGRERR and raise an exception where appropriate.

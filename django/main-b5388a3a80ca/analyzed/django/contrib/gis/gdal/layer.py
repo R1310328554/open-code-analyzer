@@ -1,3 +1,6 @@
+"""
+django.contrib.gis.gdal.layer — OGR 矢量图层包装器。
+"""
 from ctypes import byref, c_double
 
 from django.contrib.gis.gdal.base import GDALBase
@@ -18,12 +21,14 @@ from django.utils.encoding import force_bytes, force_str
 #  https://gdal.org/api/vector_c_api.html
 #
 # The OGR_L_* routines are relevant here.
+# 封装 OGR Layer，迭代 Feature 并暴露字段/范围元数据
 class Layer(GDALBase):
     """
     A class that wraps an OGR Layer, needs to be instantiated from a DataSource
     object.
     """
 
+    # 绑定图层指针并持有 DataSource 引用以防 GC
     def __init__(self, layer_ptr, ds):
         """
         Initialize on an OGR C pointer to the Layer and the `DataSource` object
@@ -39,6 +44,7 @@ class Layer(GDALBase):
         # Does the Layer support random reading?
         self._random_read = self.test_capability(b"RandomRead")
 
+    # 按 FID 或切片获取 Feature
     def __getitem__(self, index):
         "Get the Feature at the specified index."
         if isinstance(index, int):
@@ -57,6 +63,7 @@ class Layer(GDALBase):
                 "Integers and slices may only be used when indexing OGR Layers."
             )
 
+    # 顺序迭代全部要素
     def __iter__(self):
         "Iterate over each Feature in the Layer."
         # ResetReading() must be called before iteration is to begin.
@@ -96,6 +103,7 @@ class Layer(GDALBase):
 
     # #### Layer properties ####
     @property
+    # 图层外包 Envelope
     def extent(self):
         "Return the extent (an Envelope) of this layer."
         env = OGREnvelope()
@@ -202,6 +210,7 @@ class Layer(GDALBase):
     spatial_filter = property(_get_spatial_filter, _set_spatial_filter)
 
     # #### Layer Methods ####
+    # 收集图层中某字段的全部值
     def get_fields(self, field_name):
         """
         Return a list containing the given field name for every Feature
@@ -211,6 +220,7 @@ class Layer(GDALBase):
             raise GDALException("invalid field name: %s" % field_name)
         return [feat.get(field_name) for feat in self]
 
+    # 收集图层中全部几何（可选转为 GEOS）
     def get_geoms(self, geos=False):
         """
         Return a list containing the OGRGeometry for every Feature in
@@ -223,6 +233,7 @@ class Layer(GDALBase):
         else:
             return [feat.geom for feat in self]
 
+    # 检测图层是否支持指定 OGR 能力
     def test_capability(self, capability):
         """
         Return a bool indicating whether the this Layer supports the given

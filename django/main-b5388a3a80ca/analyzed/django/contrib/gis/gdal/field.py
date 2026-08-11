@@ -1,3 +1,6 @@
+"""
+django.contrib.gis.gdal.field — OGR 属性字段及类型子类。
+"""
 from ctypes import byref, c_float, c_int
 from datetime import date, datetime, time
 
@@ -11,6 +14,7 @@ from django.utils.encoding import force_str
 # https://gdal.org/api/vector_c_api.html
 #
 # The OGR_Fld_* routines are relevant here.
+# OGR 字段基类，按 OFT 类型动态切换子类
 class Field(GDALBase):
     """
     Wrap an OGR Field. Needs to be instantiated from a Feature object.
@@ -39,6 +43,7 @@ class Field(GDALBase):
         return str(self.value).strip()
 
     # #### Field Methods ####
+    # 读取浮点值
     def as_double(self):
         "Retrieve the Field's value as a double (float)."
         return (
@@ -47,6 +52,7 @@ class Field(GDALBase):
             else None
         )
 
+    # 读取整型值（可选 64 位）
     def as_int(self, is_64=False):
         "Retrieve the Field's value as an integer."
         if is_64:
@@ -62,6 +68,7 @@ class Field(GDALBase):
                 else None
             )
 
+    # 读取字符串值
     def as_string(self):
         "Retrieve the Field's value as a string."
         if not self.is_set:
@@ -69,6 +76,7 @@ class Field(GDALBase):
         string = capi.get_field_as_string(self._feat.ptr, self._index)
         return force_str(string, encoding=self._feat.encoding, strings_only=True)
 
+    # 读取日期时间各分量
     def as_datetime(self):
         "Retrieve the Field's value as a tuple of date & time components."
         if not self.is_set:
@@ -133,6 +141,7 @@ class Field(GDALBase):
 
 
 # ### The Field sub-classes for each OGR Field type. ###
+# 整型字段
 class OFTInteger(Field):
     _bit64 = False
 
@@ -151,6 +160,7 @@ class OFTInteger(Field):
         return 0
 
 
+# 浮点字段
 class OFTReal(Field):
     @property
     def value(self):
@@ -172,6 +182,7 @@ class OFTBinary(Field):
 
 
 # OFTDate, OFTTime, OFTDateTime fields.
+# 日期字段，转为 Python date
 class OFTDate(Field):
     @property
     def value(self):
@@ -183,6 +194,7 @@ class OFTDate(Field):
             return None
 
 
+# 日期时间字段，转为 Python datetime
 class OFTDateTime(Field):
     @property
     def value(self):
@@ -208,6 +220,7 @@ class OFTDateTime(Field):
             return None
 
 
+# 时间字段，转为 Python time
 class OFTTime(Field):
     @property
     def value(self):
@@ -247,6 +260,7 @@ class OFTInteger64List(Field):
 
 
 # Class mapping dictionary for OFT Types and reverse mapping.
+# OFT 类型码到 Python 字段子类的映射
 OGRFieldTypes = {
     0: OFTInteger,
     1: OFTIntegerList,

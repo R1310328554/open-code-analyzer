@@ -1,3 +1,6 @@
+"""
+django.contrib.gis.gdal.libgdal — 加载 GDAL C 库并注册错误处理。
+"""
 import logging
 import os
 import re
@@ -82,6 +85,7 @@ if os.name == "nt":
     lwingdal = WinDLL(lib_path)
 
 
+# Windows 上部分 OSR 例程需 WinDLL STDCALL 调用约定
 def std_call(func):
     """
     Return the correct STDCALL function for certain OSR routines on Win32
@@ -101,16 +105,19 @@ _version_info.argtypes = [c_char_p]
 _version_info.restype = c_char_p
 
 
+# 返回 GDAL 发行版本号
 def gdal_version():
     "Return only the GDAL version number information."
     return _version_info(b"RELEASE_NAME")
 
 
+# 返回完整版本信息字符串
 def gdal_full_version():
     "Return the full GDAL version information."
     return _version_info(b"")
 
 
+# 解析主/次/修订版本为元组
 def gdal_version_info():
     ver = gdal_version()
     m = re.match(rb"^(?P<major>\d+)\.(?P<minor>\d+)(?:\.(?P<subminor>\d+))?", ver)
@@ -126,6 +133,7 @@ GDAL_VERSION = gdal_version_info()
 CPLErrorHandler = CFUNCTYPE(None, c_int, c_int, c_char_p)
 
 
+# CPL 错误回调：写入 django.contrib.gis 日志
 def err_handler(error_class, error_number, message):
     logger.error("GDAL_ERROR %d: %s", error_number, message)
 
@@ -133,6 +141,7 @@ def err_handler(error_class, error_number, message):
 err_handler = CPLErrorHandler(err_handler)
 
 
+# 绑定 ctypes 函数签名
 def function(name, args, restype):
     func = std_call(name)
     func.argtypes = args

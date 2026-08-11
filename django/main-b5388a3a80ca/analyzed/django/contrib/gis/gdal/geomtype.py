@@ -1,6 +1,10 @@
+"""
+django.contrib.gis.gdal.geomtype — OGR 几何类型枚举包装。
+"""
 from django.contrib.gis.gdal.error import GDALException
 
 
+# 封装 OGR 几何类型码，支持字符串/整数/等价比较
 class OGRGeomType:
     "Encapsulate OGR Geometry Types."
 
@@ -78,6 +82,7 @@ class OGRGeomType:
     # Reverse type dictionary, keyed by lowercase of the name.
     _str_types = {v.lower(): k for k, v in _types.items()}
 
+    # 从类型名、整数或同类实例解析
     def __init__(self, type_input):
         "Figure out the correct OGR Type based upon the input."
         if isinstance(type_input, OGRGeomType):
@@ -126,6 +131,7 @@ class OGRGeomType:
         return self._types[self.num]
 
     @property
+    # 映射到 Django GeometryField 子类名
     def django(self):
         "Return the Django GeometryField for this OGR Type."
         s = self.name.replace("25D", "")
@@ -137,6 +143,7 @@ class OGRGeomType:
             s = "Point"
         return s + "Field"
 
+    # 将 Point/LineString/Polygon 转为对应 Multi 类型
     def to_multi(self):
         """
         Transform Point, LineString, Polygon, and their 25D equivalents

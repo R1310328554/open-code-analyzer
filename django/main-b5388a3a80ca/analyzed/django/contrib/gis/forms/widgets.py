@@ -1,3 +1,8 @@
+"""
+django.contrib.gis.forms.widgets — 地图几何控件。
+
+基于 OpenLayers 渲染可编辑几何，支持 WKT/GeoJSON 序列化与 SRID 转换。
+"""
 import logging
 
 from django.contrib.gis import gdal
@@ -10,6 +15,7 @@ from django.forms.widgets import Widget
 logger = logging.getLogger("django.contrib.gis")
 
 
+# 几何地图控件基类：序列化/反序列化与模板上下文
 class BaseGeometryWidget(Widget):
     """
     The base class for rich geometry widgets.
@@ -25,6 +31,7 @@ class BaseGeometryWidget(Widget):
     supports_3d = False
     template_name = ""  # set on subclasses
 
+    # 注入默认经纬度与缩放属性
     def __init__(self, attrs=None):
         self.attrs = {
             key: getattr(self, key)
@@ -33,9 +40,13 @@ class BaseGeometryWidget(Widget):
         if attrs:
             self.attrs.update(attrs)
 
+    # 将 GEOS 几何序列化为 WKT 字符串
+    # 使用 GeoJSON 格式输出
     def serialize(self, value):
         return value.wkt if value else ""
 
+    # 从字符串解析为 GEOSGeometry
+    # 解析 GeoJSON 并按地图 SRID 修正坐标系
     def deserialize(self, value):
         try:
             return GEOSGeometry(value, max_geom_collections=self.max_geom_collections)
@@ -43,6 +54,7 @@ class BaseGeometryWidget(Widget):
             logger.error("Error creating geometry from value '%s' (%s)", value, err)
         return None
 
+    # 构建模板上下文，必要时将几何变换到地图 SRID
     def get_context(self, name, value, attrs):
         context = super().get_context(name, value, attrs)
         # If a string reaches here (via a validation error on another
@@ -72,6 +84,7 @@ class BaseGeometryWidget(Widget):
         return context
 
 
+# OpenLayers 地图控件：Web Mercator (3857) 与 GeoJSON 序列化
 class OpenLayersWidget(BaseGeometryWidget):
     base_layer = "nasaWorldview"
     template_name = "gis/openlayers.html"
@@ -100,6 +113,7 @@ class OpenLayersWidget(BaseGeometryWidget):
         return geom
 
 
+# OpenStreetMap 底图控件，带默认中心与缩放级别
 class OSMWidget(OpenLayersWidget):
     """
     An OpenLayers/OpenStreetMap-based widget.
