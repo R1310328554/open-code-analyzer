@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T00:33:15Z",
-  "files": [
-    "src/transformers/models/colpali/modular_colpali.py",
-    "src/transformers/models/colpali/processing_colpali.py",
-    "src/transformers/models/colqwen2/__init__.py",
-    "src/transformers/models/colqwen2/configuration_colqwen2.py",
-    "src/transformers/models/colqwen2/modeling_colqwen2.py",
-    "src/transformers/models/colqwen2/modular_colqwen2.py",
-    "src/transformers/models/colqwen2/processing_colqwen2.py",
-    "src/transformers/models/conditional_detr/__init__.py",
-    "src/transformers/models/conditional_detr/configuration_conditional_detr.py",
-    "src/transformers/models/conditional_detr/image_processing_conditional_detr.py",
-    "src/transformers/models/conditional_detr/image_processing_pil_conditional_detr.py",
-    "src/transformers/models/conditional_detr/modeling_conditional_detr.py",
-    "src/transformers/models/conditional_detr/modular_conditional_detr.py",
-    "src/transformers/models/convbert/__init__.py",
-    "src/transformers/models/convbert/configuration_convbert.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2229,
-  "done": 435
+  "done": 450
 }
