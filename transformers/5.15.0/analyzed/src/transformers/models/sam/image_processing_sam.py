@@ -29,6 +29,8 @@ from ...image_processing_backends import TorchvisionBackend
 from ...image_processing_utils import BatchFeature, get_size_dict
 from ...image_transforms import group_images_by_shape, reorder_images
 from ...image_utils import (
+# SAM Torchvision 图像处理：张量预处理与 AMG 掩码生成辅助函数
+
     IMAGENET_DEFAULT_MEAN,
     IMAGENET_DEFAULT_STD,
     ChannelDimension,
@@ -44,6 +46,7 @@ if is_vision_available():
     import PIL
 
 
+# SamImageProcessorKwargs：SAM 图像处理参数：Resize/Normalize 与 AMG 生成选项
 class SamImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     mask_size (`dict[str, int]`, *optional*):
@@ -58,6 +61,7 @@ class SamImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# SamImageProcessor：SAM Torchvision 后端图像处理器：张量预处理与 AMG 后处理
 class SamImageProcessor(TorchvisionBackend):
     valid_kwargs = SamImageProcessorKwargs
     resample = PILImageResampling.BILINEAR
@@ -73,6 +77,7 @@ class SamImageProcessor(TorchvisionBackend):
     pad_size = {"height": 1024, "width": 1024}
     mask_pad_size = {"height": 256, "width": 256}
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[SamImageProcessorKwargs]):
         super().__init__(**kwargs)
 

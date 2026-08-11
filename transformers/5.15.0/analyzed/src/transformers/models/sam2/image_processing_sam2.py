@@ -30,6 +30,8 @@ from torchvision.ops.boxes import batched_nms
 from ...image_processing_backends import TorchvisionBackend
 from ...image_processing_utils import BatchFeature, get_size_dict
 from ...image_utils import (
+# SAM2 图像处理：Resize/Normalize 与 AMG 自动掩码生成后处理
+
     IMAGENET_DEFAULT_MEAN,
     IMAGENET_DEFAULT_STD,
     ChannelDimension,
@@ -45,6 +47,7 @@ if is_vision_available():
     import PIL
 
 
+# Sam2ImageProcessorKwargs：模型组件定义与接口
 class Sam2ImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     mask_size (`dict[str, int]`, *optional*):
@@ -367,6 +370,7 @@ def _mask_to_rle(input_mask: "torch.Tensor"):
 
 
 @auto_docstring
+# Sam2ImageProcessor：SAM2 图像处理器：Resize/Normalize 与 AMG 自动掩码生成
 class Sam2ImageProcessor(TorchvisionBackend):
     valid_kwargs = Sam2ImageProcessorKwargs
     resample = PILImageResampling.BILINEAR
@@ -384,6 +388,7 @@ class Sam2ImageProcessor(TorchvisionBackend):
     pad_size = None
     mask_pad_size = None
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[Sam2ImageProcessorKwargs]):
         super().__init__(**kwargs)
 

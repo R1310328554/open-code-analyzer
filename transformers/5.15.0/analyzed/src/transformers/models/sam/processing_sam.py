@@ -24,6 +24,8 @@ from ...image_utils import ImageInput
 from ...processing_utils import ImagesKwargs, ProcessingKwargs, ProcessorMixin
 from ...tokenization_utils_base import BatchEncoding, PreTokenizedInput, TextInput
 from ...utils import auto_docstring, is_torch_available
+# SAM 处理器：图像与点/框提示联合预处理与批处理封装
+
 
 
 if is_torch_available():
@@ -32,6 +34,7 @@ if is_torch_available():
 NestedList = list[Union[float | int | None, "NestedList"]]
 
 
+# SamImagesKwargs：SAM 图像预处理参数：Resize/Normalize 与 AMG 选项
 class SamImagesKwargs(ImagesKwargs, total=False):
     """
     segmentation_maps (`ImageInput`, *optional*):
@@ -69,6 +72,7 @@ class SamImagesKwargs(ImagesKwargs, total=False):
     mask_pad_size: dict[str, int]
 
 
+# SamProcessorKwargs：SAM 处理器参数：图像与提示联合预处理选项
 class SamProcessorKwargs(ProcessingKwargs, total=False):
     images_kwargs: SamImagesKwargs
     _defaults = {
@@ -79,7 +83,9 @@ class SamProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# SamProcessor：SAM 处理器：图像处理器 + 提示坐标归一化联合封装
 class SamProcessor(ProcessorMixin):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, image_processor):
         super().__init__(image_processor)
         self.target_size = self.image_processor.size["longest_edge"]

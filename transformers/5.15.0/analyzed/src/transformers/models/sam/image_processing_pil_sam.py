@@ -24,6 +24,8 @@ import numpy as np
 from ...image_processing_backends import PilBackend
 from ...image_processing_utils import BatchFeature, get_size_dict
 from ...image_utils import (
+# SAM PIL 图像处理：Resize/Normalize 与 AMG 自动掩码生成后处理
+
     IMAGENET_DEFAULT_MEAN,
     IMAGENET_DEFAULT_STD,
     ChannelDimension,
@@ -47,6 +49,7 @@ if TYPE_CHECKING:
     import torch
 
 
+# get_resize_output_image_size：计算 SAM 图像 Resize 后的输出尺寸（保持长宽比）
 def get_resize_output_image_size(
     input_image: np.ndarray,
     longest_edge: int,
@@ -65,6 +68,7 @@ def get_resize_output_image_size(
 
 
 # Adapted from transformers.models.sam.image_processing_sam.SamImageProcessorKwargs
+# SamImageProcessorKwargs：SAM 图像处理参数：Resize/Normalize 与 AMG 生成选项
 class SamImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     mask_size (`dict[str, int]`, *optional*):
@@ -80,6 +84,7 @@ class SamImageProcessorKwargs(ImagesKwargs, total=False):
 
 @auto_docstring
 @requires(backends=("torch",))
+# SamImageProcessorPil：SAM PIL 后端图像处理器：PIL 图像预处理与 AMG 后处理
 class SamImageProcessorPil(PilBackend):
     resample = PILImageResampling.BILINEAR
     image_mean = IMAGENET_DEFAULT_MEAN
@@ -95,6 +100,7 @@ class SamImageProcessorPil(PilBackend):
     mask_pad_size = {"height": 256, "width": 256}
     valid_kwargs = SamImageProcessorKwargs
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[SamImageProcessorKwargs]):
         super().__init__(**kwargs)
 

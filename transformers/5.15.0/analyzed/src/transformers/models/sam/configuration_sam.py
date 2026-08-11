@@ -17,10 +17,13 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# SAM 配置：提示编码器、掩码解码器与 ViT 视觉骨干超参数
+
 
 
 @auto_docstring(checkpoint="facebook/sam-vit-huge")
 @strict
+# SamPromptEncoderConfig：SAM 提示编码器配置：点/框/掩码嵌入维度与图像尺寸
 class SamPromptEncoderConfig(PreTrainedConfig):
     r"""
     mask_input_channels (`int`, *optional*, defaults to 16):
@@ -39,6 +42,7 @@ class SamPromptEncoderConfig(PreTrainedConfig):
     hidden_act: str = "gelu"
     layer_norm_eps: float = 1e-6
 
+    # __post_init__：配置实例化后派生字段（如 image_embedding_size）
     def __post_init__(self, **kwargs):
         self.image_embedding_size = self.image_size // self.patch_size
         super().__post_init__(**kwargs)
@@ -46,6 +50,7 @@ class SamPromptEncoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="facebook/sam-vit-huge")
 @strict
+# SamMaskDecoderConfig：SAM 掩码解码器配置：双向 Transformer 与 IoU 头超参数
 class SamMaskDecoderConfig(PreTrainedConfig):
     r"""
     mlp_dim (`int`, *optional*, defaults to 2048):
@@ -76,6 +81,7 @@ class SamMaskDecoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="facebook/sam-vit-huge")
 @strict
+# SamVisionConfig：SAM 视觉骨干配置：ViT 隐藏维度、层数与注意力头数
 class SamVisionConfig(PreTrainedConfig):
     r"""
     output_channels (`int`, *optional*, defaults to 256):
@@ -133,6 +139,7 @@ class SamVisionConfig(PreTrainedConfig):
     num_pos_feats: int = 128
     mlp_dim: int | None = None
 
+    # __post_init__：配置实例化后派生字段（如 image_embedding_size）
     def __post_init__(self, **kwargs):
         self.mlp_dim = int(self.hidden_size * self.mlp_ratio) if self.mlp_dim is None else self.mlp_dim
         self.scale = self.hidden_size // 2
@@ -141,6 +148,7 @@ class SamVisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="facebook/sam-vit-huge")
 @strict
+# SamConfig：SAM 顶层配置：聚合提示编码器、掩码解码器与视觉配置
 class SamConfig(PreTrainedConfig):
     r"""
     prompt_encoder_config (Union[`dict`, `SamPromptEncoderConfig`], *optional*):
@@ -190,6 +198,7 @@ class SamConfig(PreTrainedConfig):
     initializer_range: float = 0.02
     tie_word_embeddings: bool = True
 
+    # __post_init__：配置实例化后派生字段（如 image_embedding_size）
     def __post_init__(self, **kwargs):
         if isinstance(self.vision_config, dict):
             self.vision_config = SamVisionConfig(**self.vision_config)

@@ -25,6 +25,8 @@ from ...generation import GenerationMixin
 from ...modeling_layers import GradientCheckpointingLayer
 from ...modeling_utils import PreTrainedModel
 from ...utils import (
+# RWKV 建模：线性注意力 WKV 算子、时间衰减状态与因果语言建模头
+
     ModelOutput,
     auto_docstring,
     is_bitsandbytes_available,
@@ -42,6 +44,7 @@ logger = logging.get_logger(__name__)
 rwkv_cuda_kernel = None
 
 
+# load_wkv_cuda_kernel：加载 RWKV WKV CUDA 内核并设置最大序列长度
 def load_wkv_cuda_kernel(context_length):
     global rwkv_cuda_kernel
     if not is_kernels_available():
@@ -53,8 +56,10 @@ def load_wkv_cuda_kernel(context_length):
     rwkv_cuda_kernel.max_seq_length = context_length
 
 
+# RwkvLinearAttention：RWKV 线性注意力 CUDA 自定义 autograd：WKV 递推状态更新
 class RwkvLinearAttention(torch.autograd.Function):
     @staticmethod
+    # forward：前向传播：组装特征并返回模型输出
     def forward(ctx, time_decay, time_first, key, value, state=None, return_state=False):
         batch_size, seq_len, hidden_size = key.size()
         if seq_len > rwkv_cuda_kernel.max_seq_length:
@@ -159,6 +164,7 @@ class RwkvLinearAttention(torch.autograd.Function):
         )
 
 
+# rwkv_linear_attention_cpu：RWKV 线性注意力 CPU 实现：WKV 递推状态更新
 def rwkv_linear_attention_cpu(time_decay, time_first, key, value, state=None, return_state=False):
     # For CPU fallback. Will be slower and probably take more memory than the custom CUDA kernel if not executed
     # within a torch.no_grad.
@@ -203,6 +209,7 @@ def rwkv_linear_attention_cpu(time_decay, time_first, key, value, state=None, re
     return output, state
 
 
+# rwkv_linear_attention：RWKV 线性注意力入口：自动选择 CUDA 或 CPU 后端
 def rwkv_linear_attention(time_decay, time_first, key, value, state=None, return_state=False):
     no_cuda = any(t.device.type != "cuda" for t in [time_decay, time_first, key, value])
     # Launching the CUDA kernel for just one token will actually be slower (there is no for loop in the CPU version
@@ -214,7 +221,9 @@ def rwkv_linear_attention(time_decay, time_first, key, value, state=None, return
         return RwkvLinearAttention.apply(time_decay, time_first, key, value, state, return_state)
 
 
+# RwkvSelfAttention：RWKV 自注意力：时间衰减 + 通道混合的线性注意力块
 class RwkvSelfAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_id=0):
         super().__init__()
         self.config = config
@@ -264,6 +273,7 @@ class RwkvSelfAttention(nn.Module):
             state[1][:, :, self.layer_id] = hidden[:, -1]
         return receptance, key, value, state
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden, state=None, use_cache=False):
         receptance, key, value, state = self.extract_key_value(hidden, state=state)
         layer_state = tuple(s[:, :, self.layer_id] for s in state[2:]) if state is not None else None
@@ -284,7 +294,9 @@ class RwkvSelfAttention(nn.Module):
         return self.output(receptance * rwkv), state
 
 
+# RwkvFeedForward：RWKV 前馈：通道混合 + 门控 sigmoid 的 FFN 子层
 class RwkvFeedForward(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_id=0):
         super().__init__()
         self.config = config
@@ -302,6 +314,7 @@ class RwkvFeedForward(nn.Module):
         self.receptance = nn.Linear(hidden_size, hidden_size, bias=False)
         self.value = nn.Linear(intermediate_size, hidden_size, bias=False)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden, state=None):
         if hidden.size(1) == 1 and state is not None:
             shifted = state[0][:, :, self.layer_id]
@@ -322,7 +335,9 @@ class RwkvFeedForward(nn.Module):
         return receptance * value, state
 
 
+# RwkvBlock：RWKV Transformer 块：自注意力 + FFN 残差堆叠（支持梯度检查点）
 class RwkvBlock(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_id):
         super().__init__()
         self.config = config
@@ -337,6 +352,7 @@ class RwkvBlock(GradientCheckpointingLayer):
         self.attention = RwkvSelfAttention(config, layer_id)
         self.feed_forward = RwkvFeedForward(config, layer_id)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden, state=None, use_cache=False, output_attentions=False):
         if self.layer_id == 0:
             hidden = self.pre_ln(hidden)
@@ -357,6 +373,7 @@ class RwkvBlock(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# RwkvPreTrainedModel：RWKV 预训练基类：权重初始化与配置绑定
 class RwkvPreTrainedModel(PreTrainedModel):
     config: RwkvConfig
     base_model_prefix = "rwkv"
@@ -366,6 +383,7 @@ class RwkvPreTrainedModel(PreTrainedModel):
     _is_stateful = True
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module: nn.Module):
         """Initialize the weights."""
         super()._init_weights(module)
@@ -446,6 +464,7 @@ class RwkvPreTrainedModel(PreTrainedModel):
     """
 )
 @dataclass
+# RwkvOutput：RWKV 模型输出：最后一层隐状态与可选 past_key_values
 class RwkvOutput(ModelOutput):
     r"""
     state (list of five `torch.FloatTensor` of shape `(batch_size, hidden_size, num_hidden_layers)`):
@@ -465,6 +484,7 @@ class RwkvOutput(ModelOutput):
     """
 )
 @dataclass
+# RwkvCausalLMOutput：RWKV 因果 LM 输出：logits、loss 与 past_key_values
 class RwkvCausalLMOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -484,7 +504,9 @@ class RwkvCausalLMOutput(ModelOutput):
 
 
 @auto_docstring
+# RwkvModel：RWKV 骨干：多层 RWKV 块提取序列隐状态
 class RwkvModel(RwkvPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -506,6 +528,7 @@ class RwkvModel(RwkvPreTrainedModel):
         self.embeddings = new_embeddings
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -664,9 +687,11 @@ class RwkvModel(RwkvPreTrainedModel):
     embeddings).
     """
 )
+# RwkvForCausalLM：RWKV 因果语言建模：自回归 next-token 预测与生成
 class RwkvForCausalLM(RwkvPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"head.weight": "rwkv.embeddings.weight"}
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.rwkv = RwkvModel(config)
@@ -682,6 +707,7 @@ class RwkvForCausalLM(RwkvPreTrainedModel, GenerationMixin):
         self.head = new_embeddings
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,

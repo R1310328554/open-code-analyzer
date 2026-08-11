@@ -24,6 +24,8 @@ from ...processing_utils import ProcessorMixin
 from ...tokenization_utils_base import BatchEncoding
 from ...utils import TensorType, auto_docstring, is_torch_available, logging
 from ...utils.import_utils import requires
+# SAM2 处理器：图像与点/框提示联合预处理与批处理封装
+
 
 
 logger = logging.get_logger(__name__)
@@ -34,7 +36,9 @@ if is_torch_available():
 
 @requires(backends=("torch",))
 @auto_docstring
+# Sam2Processor：SAM2 处理器：图像与点/框提示联合预处理封装
 class Sam2Processor(ProcessorMixin):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, image_processor, target_size: int | None = None, point_pad_value: int = -10, **kwargs):
         r"""
         target_size (`int`, *optional*):

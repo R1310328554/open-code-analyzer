@@ -27,6 +27,8 @@ from ...activations import ACT2FN
 from ...image_processing_backends import TorchvisionBackend
 from ...image_processing_utils import BatchFeature, get_size_dict
 from ...image_utils import (
+# SAM2 modular 源：复用 SAM 组件并扩展 Hiera 多尺度视觉骨干
+
     IMAGENET_DEFAULT_MEAN,
     IMAGENET_DEFAULT_STD,
     ChannelDimension,
@@ -71,6 +73,7 @@ from .configuration_sam2 import (
 logger = logging.get_logger(__name__)
 
 
+# Sam2ImageProcessorKwargs：模型组件定义与接口
 class Sam2ImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     mask_size (`dict[str, int]`, *optional*):
@@ -81,6 +84,7 @@ class Sam2ImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# Sam2ImageProcessor：SAM2 图像处理器：Resize/Normalize 与 AMG 自动掩码生成
 class Sam2ImageProcessor(SamImageProcessor):
     resample = PILImageResampling.BILINEAR
     image_mean = IMAGENET_DEFAULT_MEAN
@@ -99,6 +103,7 @@ class Sam2ImageProcessor(SamImageProcessor):
     pad_size = None
     mask_pad_size = None
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[Sam2ImageProcessorKwargs]):
         TorchvisionBackend.__init__(self, **kwargs)
 
@@ -265,6 +270,7 @@ class Sam2ImageProcessor(SamImageProcessor):
 
 @auto_docstring(custom_intro="Base class for the vision encoder's outputs.")
 @dataclass
+# Sam2VisionEncoderOutput：SAM2 视觉编码输出：多尺度特征图与池化嵌入
 class Sam2VisionEncoderOutput(BaseModelOutputWithPooling):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, height, width, hidden_size)`):
@@ -283,6 +289,7 @@ class Sam2VisionEncoderOutput(BaseModelOutputWithPooling):
 
 @auto_docstring(custom_intro="Base class for the Sam2 model's output.")
 @dataclass
+# Sam2ImageSegmentationOutput：SAM2 分割输出：掩码 logits、IoU 分数与对象分数
 class Sam2ImageSegmentationOutput(ModelOutput):
     r"""
     iou_scores (`torch.FloatTensor` of shape `(batch_size, point_batch_size, num_masks)`):
@@ -315,6 +322,7 @@ class Sam2ImageSegmentationOutput(ModelOutput):
     mask_decoder_attentions: tuple[torch.FloatTensor, ...] | None = None
 
 
+# Sam2PatchEmbeddings：SAM2 图像块嵌入：Conv 投影输入到 Hiera 骨干
 class Sam2PatchEmbeddings(nn.Module):
     r"""
     Turns pixel values into patch embeddings for transformer consumption.
@@ -329,6 +337,7 @@ class Sam2PatchEmbeddings(nn.Module):
             Patch embeddings depend on image_size, patch_kernel_size, patch_stride and patch_padding
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam2HieraDetConfig):
         super().__init__()
         num_channels = config.num_channels
@@ -342,17 +351,21 @@ class Sam2PatchEmbeddings(nn.Module):
             padding=config.patch_padding,
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values):
         _, num_channels, height, width = pixel_values.shape
         embeddings = self.projection(pixel_values.to(self.projection.weight.dtype)).permute(0, 2, 3, 1)
         return embeddings
 
 
+# Sam2SinePositionEmbedding：SAM2 正弦位置编码：2D 正弦/余弦特征图位置嵌入
 class Sam2SinePositionEmbedding(DetrSinePositionEmbedding):
     pass
 
 
+# Sam2VisionNeck：SAM2 视觉 Neck：多尺度 FPN 特征融合到统一通道
 class Sam2VisionNeck(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam2VisionConfig):
         super().__init__()
         self.config = config
@@ -373,6 +386,7 @@ class Sam2VisionNeck(nn.Module):
             )
         self.fpn_top_down_levels = config.fpn_top_down_levels
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> tuple[tuple[torch.Tensor, ...], tuple[torch.Tensor, ...]]:
         fpn_hidden_states = ()
         fpn_position_encoding = ()
@@ -404,6 +418,7 @@ class Sam2VisionNeck(nn.Module):
         return fpn_hidden_states, fpn_position_encoding
 
 
+# do_pool：SAM2 池化辅助：按 query_stride 对特征图做平均池化
 def do_pool(x: torch.Tensor, query_stride: int | None = None) -> torch.Tensor:
     if query_stride is None:
         return x
@@ -415,7 +430,9 @@ def do_pool(x: torch.Tensor, query_stride: int | None = None) -> torch.Tensor:
     return x
 
 
+# Sam2MultiScaleAttention：SAM2 多尺度注意力：窗口分区 + 跨窗口全局注意力
 class Sam2MultiScaleAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: Sam2HieraDetConfig,
@@ -440,6 +457,7 @@ class Sam2MultiScaleAttention(nn.Module):
 
         self.is_causal = False
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, **kwargs) -> torch.Tensor:
         batch_size, height, width, _ = hidden_states.shape
         # qkv with shape (B, H * W, 3, nHead, C)
@@ -481,7 +499,9 @@ class Sam2MultiScaleAttention(nn.Module):
         return attn_output
 
 
+# Sam2FeedForward：SAM2 前馈：两层 MLP + GELU 激活
 class Sam2FeedForward(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         input_dim: int,
@@ -499,6 +519,7 @@ class Sam2FeedForward(nn.Module):
         self.layers = nn.ModuleList([nn.Linear(hidden_dim, hidden_dim) for _ in range(num_layers - 2)])
         self.sigmoid_output = sigmoid_output
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.proj_in(hidden_states)
         hidden_states = self.activation(hidden_states)
@@ -511,7 +532,9 @@ class Sam2FeedForward(nn.Module):
         return hidden_states
 
 
+# Sam2MultiScaleBlock：SAM2 多尺度块：窗口注意力 + FFN 残差（Hiera 核心单元）
 class Sam2MultiScaleBlock(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: Sam2HieraDetConfig,
@@ -559,6 +582,7 @@ class Sam2MultiScaleBlock(GradientCheckpointingLayer):
         if self.dim != self.dim_out:
             self.proj = nn.Linear(self.dim, self.dim_out)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -609,6 +633,7 @@ class Sam2MultiScaleBlock(GradientCheckpointingLayer):
     """
 )
 @dataclass
+# Sam2HieraDetModelOutput：SAM2 Hiera 检测输出：多阶段特征图列表
 class Sam2HieraDetModelOutput(ModelOutput):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, height, width, hidden_size)`):
@@ -624,6 +649,7 @@ class Sam2HieraDetModelOutput(ModelOutput):
 
 
 @auto_docstring
+# Sam2PreTrainedModel：SAM2 预训练基类：权重初始化与配置绑定
 class Sam2PreTrainedModel(PreTrainedModel):
     config_class = Sam2Config
     base_model_prefix = "sam2"
@@ -643,6 +669,7 @@ class Sam2PreTrainedModel(PreTrainedModel):
     ]
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, Sam2HieraDetModel):
@@ -657,6 +684,7 @@ class Sam2PreTrainedModel(PreTrainedModel):
                 init.zeros_(module.no_memory_embedding)
 
 
+# Sam2HieraDetModel：SAM2 Hiera 检测骨干：多尺度窗口 Transformer 特征提取
 class Sam2HieraDetModel(Sam2PreTrainedModel):
     config_class = Sam2HieraDetConfig
     main_input_name = "pixel_values"
@@ -665,6 +693,7 @@ class Sam2HieraDetModel(Sam2PreTrainedModel):
         "attentions": Sam2MultiScaleAttention,
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam2HieraDetConfig):
         super().__init__(config)
 
@@ -702,6 +731,7 @@ class Sam2HieraDetModel(Sam2PreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor | None = None,
@@ -731,6 +761,7 @@ class Sam2HieraDetModel(Sam2PreTrainedModel):
     The vision model from Sam without any head or projection on top.
     """
 )
+# Sam2VisionModel：SAM2 视觉模型：Hiera 骨干 + Neck 输出图像嵌入
 class Sam2VisionModel(Sam2PreTrainedModel):
     config_class = Sam2VisionConfig
     main_input_name = "pixel_values"
@@ -739,6 +770,7 @@ class Sam2VisionModel(Sam2PreTrainedModel):
         "attentions": Sam2MultiScaleAttention,
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam2VisionConfig):
         super().__init__(config)
         self.config = config
@@ -754,6 +786,7 @@ class Sam2VisionModel(Sam2PreTrainedModel):
         return self.backbone.get_input_embeddings()
 
     @can_return_tuple
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor | None = None,
@@ -781,13 +814,16 @@ class Sam2VisionModel(Sam2PreTrainedModel):
         )
 
 
+# Sam2PositionalEmbedding：SAM2 位置嵌入：随机 Fourier 特征编码提示坐标
 class Sam2PositionalEmbedding(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam2PromptEncoderConfig):
         super().__init__()
         self.scale = config.scale
         positional_embedding = self.scale * torch.randn((2, config.hidden_size // 2))
         self.positional_embedding = nn.Buffer(positional_embedding)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input_coords, input_shape=None):
         """Positionally encode points that are normalized to [0,1]."""
         coordinates = input_coords.clone()
@@ -806,11 +842,14 @@ class Sam2PositionalEmbedding(nn.Module):
         return torch.cat([torch.sin(coordinates), torch.cos(coordinates)], dim=-1)
 
 
+# Sam2MaskEmbedding：SAM2 掩码嵌入：Conv 下采样低分辨率输入掩码
 class Sam2MaskEmbedding(SamMaskEmbedding):
     pass
 
 
+# Sam2PromptEncoder：SAM2 提示编码器：融合点/框/掩码为稀疏与稠密嵌入
 class Sam2PromptEncoder(SamPromptEncoder):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam2PromptEncoderConfig):
         nn.Module.__init__(self)
         self.shared_embedding = Sam2PositionalEmbedding(config)
@@ -863,12 +902,14 @@ class Sam2PromptEncoder(SamPromptEncoder):
         return corner_embedding
 
 
+# Sam2Attention：SAM2 双向注意力：缩放点积 + 可选下采样 Q/K
 class Sam2Attention(nn.Module):
     """
     SAM2's attention layer that allows for downscaling the size of the embedding after projection to queries, keys, and
     values.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, downsample_rate=None):
         super().__init__()
         downsample_rate = config.attention_downsample_rate if downsample_rate is None else downsample_rate
@@ -885,6 +926,7 @@ class Sam2Attention(nn.Module):
         self.v_proj = nn.Linear(self.hidden_size, self.internal_dim)
         self.o_proj = nn.Linear(self.internal_dim, self.hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         query: torch.Tensor,
@@ -934,7 +976,9 @@ class Sam2Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# Sam2TwoWayAttentionBlock：SAM2 双向注意力块：图像↔提示交叉注意力 + 自注意力
 class Sam2TwoWayAttentionBlock(SamTwoWayAttentionBlock, GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam2MaskDecoderConfig, skip_first_layer_pe: bool = False):
         nn.Module.__init__(self)
         self.self_attn = Sam2Attention(config, downsample_rate=1)
@@ -954,15 +998,19 @@ class Sam2TwoWayAttentionBlock(SamTwoWayAttentionBlock, GradientCheckpointingLay
         self.skip_first_layer_pe = skip_first_layer_pe
 
 
+# Sam2TwoWayTransformer：SAM2 双向 Transformer：多层图像-提示交互堆栈
 class Sam2TwoWayTransformer(SamTwoWayTransformer):
     pass
 
 
+# Sam2LayerNorm：SAM2 LayerNorm：通道末维归一化
 class Sam2LayerNorm(SamLayerNorm):
     pass
 
 
+# Sam2MaskDecoder：SAM2 掩码解码器：双向 Transformer 输出多掩码与 IoU 预测
 class Sam2MaskDecoder(SamMaskDecoder):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam2MaskDecoderConfig):
         super().__init__(config)
         del self.iou_prediction_head
@@ -1033,6 +1081,7 @@ class Sam2MaskDecoder(SamMaskDecoder):
         )
         return mask_logits_out, iou_scores_out
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         image_embeddings: torch.Tensor,
@@ -1151,9 +1200,11 @@ class Sam2MaskDecoder(SamMaskDecoder):
     input points and labels, boxes, or masks.
     """
 )
+# Sam2Model：SAM2 完整模型：Hiera 视觉编码 + 提示编码 + 掩码解码
 class Sam2Model(SamModel):
     _tied_weights_keys = {}
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Sam2Config):
         PreTrainedModel.__init__(self, config)
         self.shared_image_embedding = Sam2PositionalEmbedding(config.prompt_encoder_config)
@@ -1248,6 +1299,7 @@ class Sam2Model(SamModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor | None = None,

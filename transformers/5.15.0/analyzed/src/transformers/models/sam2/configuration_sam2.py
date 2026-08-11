@@ -18,10 +18,13 @@ from huggingface_hub.dataclasses import strict
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
+# SAM2 配置：Hiera 检测骨干、多尺度视觉编码与掩码解码超参数
+
 
 
 @auto_docstring(checkpoint="facebook/sam2.1-hiera-tiny")
 @strict
+# Sam2HieraDetConfig：SAM2 Hiera 检测骨干配置：多尺度窗口注意力与阶段深度
 class Sam2HieraDetConfig(PreTrainedConfig):
     r"""
     patch_kernel_size (`list[int]`, *optional*, defaults to `[7, 7]`):
@@ -71,6 +74,7 @@ class Sam2HieraDetConfig(PreTrainedConfig):
     layer_norm_eps: float = 1e-6
     initializer_range: float = 0.02
 
+    # __post_init__：配置实例化后派生字段（如 image_embedding_size）
     def __post_init__(self, **kwargs):
         self.image_size = self.image_size if self.image_size is not None else [1024, 1024]
         self.patch_kernel_size = self.patch_kernel_size if self.patch_kernel_size is not None else [7, 7]
@@ -100,6 +104,7 @@ class Sam2HieraDetConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="facebook/sam2.1-hiera-tiny")
 @strict
+# Sam2VisionConfig：SAM2 视觉配置：Hiera 骨干输出通道与 FPN Neck 参数
 class Sam2VisionConfig(PreTrainedConfig):
     r"""
     backbone_channel_list (`List[int]`, *optional*, defaults to `[768, 384, 192, 96]`):
@@ -139,6 +144,7 @@ class Sam2VisionConfig(PreTrainedConfig):
     layer_norm_eps: float = 1e-6
     initializer_range: float = 0.02
 
+    # __post_init__：配置实例化后派生字段（如 image_embedding_size）
     def __post_init__(self, **kwargs):
         self.backbone_channel_list = (
             [768, 384, 192, 96] if self.backbone_channel_list is None else self.backbone_channel_list
@@ -159,6 +165,7 @@ class Sam2VisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="facebook/sam2.1-hiera-tiny")
 @strict
+# Sam2PromptEncoderConfig：SAM2 提示编码器配置：点/框/掩码嵌入维度
 class Sam2PromptEncoderConfig(PreTrainedConfig):
     r"""
     mask_input_channels (`int`, *optional*, defaults to 16):
@@ -183,6 +190,7 @@ class Sam2PromptEncoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="facebook/sam2.1-hiera-tiny")
 @strict
+# Sam2MaskDecoderConfig：SAM2 掩码解码器配置：双向 Transformer 与 IoU 头
 class Sam2MaskDecoderConfig(PreTrainedConfig):
     r"""
     mlp_dim (`int`, *optional*, defaults to 2048):
@@ -221,6 +229,7 @@ class Sam2MaskDecoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="facebook/sam2.1-hiera-tiny")
 @strict
+# Sam2Config：SAM2 顶层配置：聚合 Hiera 视觉、提示编码与掩码解码
 class Sam2Config(PreTrainedConfig):
     r"""
     prompt_encoder_config (Union[`dict`, `Sam2PromptEncoderConfig`], *optional*):
@@ -269,6 +278,7 @@ class Sam2Config(PreTrainedConfig):
     mask_decoder_config: dict | PreTrainedConfig | None = None
     initializer_range: float = 0.02
 
+    # __post_init__：配置实例化后派生字段（如 image_embedding_size）
     def __post_init__(self, **kwargs):
         if isinstance(self.vision_config, dict):
             self.vision_config["model_type"] = self.vision_config.get("model_type", "sam2_vision_model")

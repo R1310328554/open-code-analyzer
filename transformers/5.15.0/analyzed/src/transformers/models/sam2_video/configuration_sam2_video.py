@@ -22,10 +22,13 @@ from huggingface_hub.dataclasses import strict
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
+# SAM2 Video 配置：视频记忆编码、RoPE 注意力与掩码解码超参数
+
 
 
 @auto_docstring(checkpoint="facebook/sam2_video.1-hiera-tiny")
 @strict
+# Sam2VideoPromptEncoderConfig：SAM2 Video 提示编码器配置：视频帧点/框/掩码嵌入
 class Sam2VideoPromptEncoderConfig(PreTrainedConfig):
     r"""
     mask_input_channels (`int`, *optional*, defaults to 16):
@@ -50,6 +53,7 @@ class Sam2VideoPromptEncoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="facebook/sam2_video.1-hiera-tiny")
 @strict
+# Sam2VideoMaskDecoderConfig：SAM2 Video 掩码解码器配置：时序记忆与 RoPE 注意力
 class Sam2VideoMaskDecoderConfig(PreTrainedConfig):
     r"""
     mlp_dim (`int`, *optional*, defaults to 2048):
@@ -88,6 +92,7 @@ class Sam2VideoMaskDecoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="facebook/sam2.1-hiera-tiny")
 @strict
+# Sam2VideoConfig：SAM2 Video 顶层配置：视频记忆编码、视觉与掩码解码聚合
 class Sam2VideoConfig(PreTrainedConfig):
     r"""
     prompt_encoder_config (Union[`dict`, `Sam2PromptEncoderConfig`], *optional*):
@@ -247,6 +252,7 @@ class Sam2VideoConfig(PreTrainedConfig):
     memory_fuser_layer_scale_init_value: float = 1e-6
     memory_fuser_hidden_act: str = "gelu"
 
+    # __post_init__：配置实例化后派生字段（如 image_embedding_size）
     def __post_init__(self, **kwargs):
         self.memory_attention_rope_feat_sizes = (
             [64, 64] if self.memory_attention_rope_feat_sizes is None else self.memory_attention_rope_feat_sizes
