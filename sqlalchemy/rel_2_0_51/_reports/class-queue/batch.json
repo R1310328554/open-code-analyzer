@@ -15,23 +15,8 @@
     "lib/sqlalchemy/sql/expression.py",
     "lib/sqlalchemy/sql/functions.py",
     "lib/sqlalchemy/sql/lambdas.py",
-    "lib/sqlalchemy/sql/naming.py",
-    "lib/sqlalchemy/sql/operators.py",
-    "lib/sqlalchemy/sql/roles.py",
-    "lib/sqlalchemy/sql/schema.py",
-    "lib/sqlalchemy/sql/selectable.py",
-    "lib/sqlalchemy/sql/sqltypes.py",
-    "lib/sqlalchemy/sql/traversals.py",
-    "lib/sqlalchemy/sql/type_api.py",
-    "lib/sqlalchemy/sql/util.py",
-    "lib/sqlalchemy/sql/visitors.py",
-    "lib/sqlalchemy/types.py",
-    "lib/sqlalchemy/util/__init__.py",
-    "lib/sqlalchemy/util/_collections.py",
-    "lib/sqlalchemy/util/_concurrency_py3k.py",
-    "lib/sqlalchemy/util/_has_cy.py",
-    "lib/sqlalchemy/util/_py_collections.py"
+    "lib/sqlalchemy/sql/naming.py"
   ],
   "remaining_pending": 22,
-  "done": 180
+  "done": 195
 }
