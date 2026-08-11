@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T01:08:55Z",
   "files": [
-    "src/transformers/models/fastspeech2_conformer/tokenization_fastspeech2_conformer.py",
-    "src/transformers/models/flaubert/__init__.py",
-    "src/transformers/models/flaubert/configuration_flaubert.py",
-    "src/transformers/models/flaubert/modeling_flaubert.py",
-    "src/transformers/models/flaubert/tokenization_flaubert.py",
-    "src/transformers/models/flava/__init__.py",
-    "src/transformers/models/flava/configuration_flava.py",
-    "src/transformers/models/flava/image_processing_flava.py",
-    "src/transformers/models/flava/image_processing_pil_flava.py",
-    "src/transformers/models/flava/modeling_flava.py",
-    "src/transformers/models/flava/processing_flava.py",
-    "src/transformers/models/flex_olmo/__init__.py",
-    "src/transformers/models/flex_olmo/configuration_flex_olmo.py",
-    "src/transformers/models/flex_olmo/modeling_flex_olmo.py",
-    "src/transformers/models/flex_olmo/modular_flex_olmo.py",
     "src/transformers/models/florence2/__init__.py",
     "src/transformers/models/florence2/configuration_florence2.py",
     "src/transformers/models/florence2/modeling_florence2.py",
@@ -33,5 +18,5 @@
     "src/transformers/models/fsmt/modeling_fsmt.py"
   ],
   "remaining_pending": 1869,
-  "done": 780
+  "done": 795
 }
