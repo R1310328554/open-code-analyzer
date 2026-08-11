@@ -69,10 +69,13 @@ args_split_re = re.compile(
 returns_re = re.compile(r"\n\s*Returns:\n\s*(.*?)[\n\s]*(Raises:|\Z)", re.DOTALL)
 
 
+# TypeHintParsingException：类型提示解析异常：无法生成 JSON schema 时抛出
 class TypeHintParsingException(Exception):
     """Exception raised for errors in parsing type hints to generate JSON schemas"""
 
+# 聊天模板工具：Jinja 模板渲染、类型提示 JSON schema 与 Chat 封装
 
+# DocstringParsingException：docstring 解析异常：工具 schema 生成失败时抛出
 class DocstringParsingException(Exception):
     """Exception raised for errors in parsing docstrings to generate JSON schemas"""
 
@@ -619,6 +622,7 @@ def is_valid_message(message):
     return True
 
 
+# Chat：内部聊天封装：pipeline 用单会话消息列表，非 batch 样本
 class Chat:
     """This class is intended to just be used internally for pipelines and not exposed to users. We convert chats
     to this format because the rest of the pipeline code tends to assume that lists of messages are

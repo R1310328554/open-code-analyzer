@@ -13,6 +13,7 @@
 # limitations under the License.
 """Template loading and validation for response_template dicts."""
 
+# 响应模板加载：response_template 字典编译、校验与锚点匹配
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -28,6 +29,7 @@ logger = logging.get_logger(__name__)
 
 
 @dataclass
+# ResponseTemplateField：模板字段：开闭锚点 regex、content 解析器与 transform
 class ResponseTemplateField:
     name: str
     open_re: Any
@@ -45,6 +47,7 @@ class ResponseTemplateField:
 
 
 @dataclass
+# ResponseTemplate：响应模板：defaults/fields 与 start_anchor 截断 assistant 前缀
 class ResponseTemplate:
     defaults: dict
     fields: dict[str, ResponseTemplateField]

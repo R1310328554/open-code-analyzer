@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 聊天响应流式解析器：按 response_template 解析 assistant 输出
 from __future__ import annotations
 
 import json
@@ -82,6 +83,7 @@ def parse_response(
     return message
 
 
+# ResponseParser：流式响应解析器：按模板锚点逐块 feed 并发射 open/close 事件
 class ResponseParser:
     """This class implements a streaming parser with a `response_template`. If you don't need streaming and
     just want to parse a complete message, use the `parse_response` function above. Streaming parsing emits

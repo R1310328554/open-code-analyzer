@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 弃用工具：关键字参数 deprecate_kwarg 装饰器与 Action 策略
 import inspect
 import warnings
 from functools import wraps
@@ -26,6 +27,7 @@ if is_torch_available():
     import torch  # noqa: F401
 
 
+# Action：弃用策略枚举：none/notify/notify_always/raise
 class Action(ExplicitEnum):
     NONE = "none"
     NOTIFY = "notify"

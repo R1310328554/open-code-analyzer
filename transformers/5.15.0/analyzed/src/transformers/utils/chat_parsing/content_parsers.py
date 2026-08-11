@@ -14,6 +14,7 @@
 """This file contains the parsers used by chat response parsing. Each parser takes a chunk of captured text
 and parses it into a single key in the output message dictionary. Functions are generally boilerplate."""
 
+# 聊天响应内容解析器：将捕获文本块转换为消息 dict 字段值
 from __future__ import annotations
 
 import json

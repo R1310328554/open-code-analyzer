@@ -15,6 +15,7 @@
 Doc utilities: Utilities related to documentation
 """
 
+# 文档工具：docstring 装饰器、模型 forward 模板与返回类型说明
 import functools
 import inspect
 import re
