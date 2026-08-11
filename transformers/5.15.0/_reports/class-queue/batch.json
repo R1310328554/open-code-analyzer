@@ -15,23 +15,8 @@
     "src/transformers/loss/loss_lw_detr.py",
     "src/transformers/loss/loss_rf_detr.py",
     "src/transformers/loss/loss_rnnt.py",
-    "src/transformers/loss/loss_rt_detr.py",
-    "src/transformers/loss/loss_tdt.py",
-    "src/transformers/loss/loss_utils.py",
-    "src/transformers/masking_utils.py",
-    "src/transformers/model_debugging_utils.py",
-    "src/transformers/modelcard.py",
-    "src/transformers/modeling_attn_mask_utils.py",
-    "src/transformers/modeling_flash_attention_utils.py",
-    "src/transformers/modeling_gguf_pytorch_utils.py",
-    "src/transformers/modeling_layers.py",
-    "src/transformers/modeling_outputs.py",
-    "src/transformers/modeling_rope_utils.py",
-    "src/transformers/modeling_utils.py",
-    "src/transformers/models/__init__.py",
-    "src/transformers/models/afmoe/__init__.py",
-    "src/transformers/models/afmoe/configuration_afmoe.py"
+    "src/transformers/loss/loss_rt_detr.py"
   ],
   "remaining_pending": 2499,
-  "done": 150
+  "done": 165
 }
