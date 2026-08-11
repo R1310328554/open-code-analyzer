@@ -40,6 +40,9 @@ if TYPE_CHECKING:
 logger = logging.get_logger(__name__)
 
 
+# Grounding DINO modular 源：基于 DETR 图像预处理扩展 COCO 标注转换
+
+# _scale_boxes：边界框按目标图像尺寸缩放
 def _scale_boxes(boxes, target_sizes):
     """
     Scale batch of bounding boxes to the target sizes.
@@ -68,6 +71,7 @@ def _scale_boxes(boxes, target_sizes):
     return boxes
 
 
+# GroundingDinoImageProcessor：DETR 预处理 + Grounding DINO 边界框缩放后处理
 class GroundingDinoImageProcessor(DetrImageProcessor):
     def post_process_object_detection(
         self,
@@ -132,6 +136,7 @@ class GroundingDinoImageProcessor(DetrImageProcessor):
         raise NotImplementedError("Panoptic segmentation post-processing is not implemented for Grounding-Dino yet.")
 
 
+# GroundingDinoImageProcessorPil：Grounding DINO PIL 后端图像预处理
 class GroundingDinoImageProcessorPil(DetrImageProcessorPil):
     @requires(backends=("torch",))
     def post_process_object_detection(

@@ -33,6 +33,9 @@ if TYPE_CHECKING:
 AnnotationType = dict[str, int | str | list[dict]]
 
 
+# Grounding DINO Processor：图像预处理 + 分词器开放词汇检测输入组装
+
+# get_phrases_from_posmap：从 posmap 与 input_ids 提取检测短语 token
 def get_phrases_from_posmap(posmaps, input_ids):
     """Get token ids of phrases from posmaps and input_ids.
 
@@ -59,6 +62,7 @@ def get_phrases_from_posmap(posmaps, input_ids):
     return token_ids
 
 
+# _is_list_of_candidate_labels：判断文本是否为候选标签列表
 def _is_list_of_candidate_labels(text) -> bool:
     """Check that text is list/tuple of strings and each string is a candidate label and not merged candidate labels text.
     Merged candidate labels text is a string with candidate labels separated by a dot.
@@ -68,6 +72,7 @@ def _is_list_of_candidate_labels(text) -> bool:
     return False
 
 
+# _merge_candidate_labels_text：合并候选标签为小写点分字符串
 def _merge_candidate_labels_text(text: list[str]) -> str:
     """
     Merge candidate labels text into a single string. Ensure all labels are lowercase.
@@ -78,6 +83,7 @@ def _merge_candidate_labels_text(text: list[str]) -> str:
     return merged_labels_str
 
 
+# DictWithDeprecationWarning：labels 键弃用警告包装字典
 class DictWithDeprecationWarning(dict):
     message = (
         "The key `labels` is will return integer ids in `GroundingDinoProcessor.post_process_grounded_object_detection` "
@@ -95,6 +101,7 @@ class DictWithDeprecationWarning(dict):
         return super().get(key, *args, **kwargs)
 
 
+# GroundingDinoProcessorKwargs：Grounding DINO Processor 可选参数字典类型
 class GroundingDinoProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -112,6 +119,7 @@ class GroundingDinoProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# GroundingDinoProcessor：封装图像预处理、分词与开放词汇检测后处理
 class GroundingDinoProcessor(ProcessorMixin):
     valid_processor_kwargs = GroundingDinoProcessorKwargs
 

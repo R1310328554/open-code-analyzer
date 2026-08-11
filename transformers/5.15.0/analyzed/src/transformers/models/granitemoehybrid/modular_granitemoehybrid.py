@@ -26,6 +26,7 @@ from ...processing_utils import Unpack
 from ...utils import TransformersKwargs, auto_docstring, logging
 from ...utils.generic import merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
+# modular 组合 Bamba Mamba2、Gemma2 RoPE 与 GraniteMoeShared Attention/MoE
 from ..bamba.modeling_bamba import BambaMixer, BambaRMSNormGated
 from ..gemma2.modeling_gemma2 import Gemma2RotaryEmbedding
 from ..granitemoeshared.modeling_granitemoeshared import (
@@ -46,6 +47,9 @@ from .configuration_granitemoehybrid import GraniteMoeHybridConfig
 logger = logging.get_logger(__name__)
 
 
+# Granite MoE Hybrid modular 源：Bamba Mamba2 + Gemma2 RoPE + GraniteMoeShared
+
+# GraniteMoeHybridAttention：Hybrid 自注意力（支持 position_embeddings 为 None）
 class GraniteMoeHybridAttention(GraniteMoeSharedAttention):
     """Hybrid variant that handles ``position_embeddings is None`` — granitemoe-hybrid configs can
     opt out of RoPE via ``position_embedding_type=None``, in which case the model passes ``None``
@@ -91,29 +95,35 @@ class GraniteMoeHybridAttention(GraniteMoeSharedAttention):
         return attn_output, attn_weights
 
 
+# GraniteMoeHybridMambaLayer：Granite MoE Hybrid Mamba2 状态空间层
 class GraniteMoeHybridMambaLayer(BambaMixer):
     def __init__(self, config: GraniteMoeHybridConfig, layer_idx: int, initialize_mixer_weights: bool = True):
         super().__init__(config, layer_idx, initialize_mixer_weights)
 
 
+# GraniteMoeHybridRMSNormGated：Hybrid 门控 RMS LayerNorm（Mamba 分支）
 class GraniteMoeHybridRMSNormGated(BambaRMSNormGated):
     def __init__(self, hidden_size, eps=1e-6):
         super().__init__(hidden_size, eps)
 
 
+# GraniteMoeHybridMLP：Granite MoE Hybrid 共享/稠密前馈 MLP
 class GraniteMoeHybridMLP(GraniteMoeSharedMLP):
     def __init__(self, config: GraniteMoeHybridConfig):
         super().__init__(config)
 
 
+# GraniteMoeHybridRotaryEmbedding：Granite MoE Hybrid RoPE 旋转位置编码
 class GraniteMoeHybridRotaryEmbedding(Gemma2RotaryEmbedding):
     pass
 
 
+# GraniteMoeHybridMoE：Granite MoE Hybrid 稀疏专家层
 class GraniteMoeHybridMoE(GraniteMoeSharedMoE):
     pass
 
 
+# GraniteMoeHybridDecoderLayer：Hybrid 解码器单层（Attention/Mamba/MoE 按 layer_types 切换）
 class GraniteMoeHybridDecoderLayer(GraniteMoeSharedDecoderLayer):
     def __init__(self, config: GraniteMoeHybridConfig, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -178,6 +188,7 @@ class GraniteMoeHybridDecoderLayer(GraniteMoeSharedDecoderLayer):
         return hidden_states
 
 
+# GraniteMoeHybridPreTrainedModel：Granite MoE Hybrid 预训练基类与权重初始化
 class GraniteMoeHybridPreTrainedModel(GraniteMoeSharedPreTrainedModel):
     config: GraniteMoeHybridConfig
     _no_split_modules = ["GraniteMoeHybridDecoderLayer"]
@@ -194,6 +205,7 @@ class GraniteMoeHybridPreTrainedModel(GraniteMoeSharedPreTrainedModel):
             init.ones_(module.weight)
 
 
+# GraniteMoeHybridModel：Granite MoE Hybrid 纯文本解码器主干
 class GraniteMoeHybridModel(GraniteMoeSharedModel):
     def __init__(self, config: GraniteMoeHybridConfig):
         super().__init__(config)
@@ -269,6 +281,7 @@ class GraniteMoeHybridModel(GraniteMoeSharedModel):
         )
 
 
+# GraniteMoeHybridForCausalLM：Granite MoE Hybrid 因果语言建模与文本生成
 class GraniteMoeHybridForCausalLM(GraniteMoeSharedForCausalLM):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
 

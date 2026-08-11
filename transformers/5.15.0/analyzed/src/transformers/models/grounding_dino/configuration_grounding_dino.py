@@ -24,8 +24,12 @@ from ..auto import CONFIG_MAPPING, AutoConfig
 logger = logging.get_logger(__name__)
 
 
+# Grounding DINO 配置：开放词汇检测 DETR 解码器 + BERT 文本编码超参
+
+# GroundingDinoConfig：IDEA-Research grounding-dino-tiny 开放词汇检测默认超参
 @auto_docstring(checkpoint="IDEA-Research/grounding-dino-tiny")
 @strict
+# GroundingDinoConfig：Grounding DINO 开放词汇目标检测超参（DETR + BERT 文本编码）
 class GroundingDinoConfig(PreTrainedConfig):
     r"""
     num_queries (`int`, *optional*, defaults to 900):
@@ -145,6 +149,7 @@ class GroundingDinoConfig(PreTrainedConfig):
 
         super().__post_init__(**kwargs)
 
+    # validate_architecture：校验 num_hidden_layers 与 depths 之和一致
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if self.two_stage_bbox_embed_share and not self.decoder_bbox_embed_share:

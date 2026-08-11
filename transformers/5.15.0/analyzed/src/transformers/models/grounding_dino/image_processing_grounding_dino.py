@@ -53,13 +53,17 @@ from ...image_utils import (
     validate_annotations,
 )
 from ...processing_utils import ImagesKwargs, Unpack
+# image_processing_grounding_dino 由 modular_grounding_dino.py 自动生成
 from ...utils import TensorType, auto_docstring
 
+
+# Grounding DINO 图像预处理（Torchvision）：缩放/归一化 + COCO 标注转换
 
 if TYPE_CHECKING:
     from .modeling_grounding_dino import GroundingDinoObjectDetectionOutput
 
 
+# GroundingDinoImageProcessorKwargs：Grounding DINO 图像预处理可选参数字典类型
 class GroundingDinoImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     format (`str`, *optional*, defaults to `AnnotationFormat.COCO_DETECTION`):
@@ -78,6 +82,7 @@ SUPPORTED_ANNOTATION_FORMATS = (AnnotationFormat.COCO_DETECTION, AnnotationForma
 
 
 # inspired by https://github.com/facebookresearch/grounding_dino/blob/master/datasets/coco.py#L33
+# convert_coco_poly_to_mask：COCO 多边形分割标注转二值掩码
 def convert_coco_poly_to_mask(segmentations, height: int, width: int, device: torch.device) -> torch.Tensor:
     """
     Convert a COCO polygon annotation to a mask.
@@ -113,6 +118,7 @@ def convert_coco_poly_to_mask(segmentations, height: int, width: int, device: to
 
 
 # inspired by https://github.com/facebookresearch/grounding_dino/blob/master/datasets/coco.py#L50
+# prepare_coco_detection_annotation：COCO 检测标注转 Grounding DINO 格式
 def prepare_coco_detection_annotation(
     image,
     target,
@@ -177,6 +183,7 @@ def prepare_coco_detection_annotation(
     return new_target
 
 
+# masks_to_boxes：分割掩码转轴对齐边界框
 def masks_to_boxes(masks: torch.Tensor) -> torch.Tensor:
     """
     Compute the bounding boxes around the provided panoptic segmentation masks.
@@ -214,6 +221,7 @@ def masks_to_boxes(masks: torch.Tensor) -> torch.Tensor:
 # 2 functions below adapted from https://github.com/cocodataset/panopticapi/blob/master/panopticapi/utils.py
 # Copyright (c) 2018, Alexander Kirillov
 # All rights reserved.
+# rgb_to_id：RGB 颜色编码转 panoptic 实例 ID
 def rgb_to_id(color):
     """
     Converts RGB color to unique ID.
@@ -225,6 +233,7 @@ def rgb_to_id(color):
     return int(color[0] + 256 * color[1] + 256 * 256 * color[2])
 
 
+# prepare_coco_panoptic_annotation：COCO panoptic 标注转 Grounding DINO 格式
 def prepare_coco_panoptic_annotation(
     image: torch.Tensor,
     target: dict,
@@ -274,6 +283,7 @@ def prepare_coco_panoptic_annotation(
     return new_target
 
 
+# _scale_boxes：边界框按目标图像尺寸缩放
 def _scale_boxes(boxes, target_sizes):
     """
     Scale batch of bounding boxes to the target sizes.
@@ -303,6 +313,7 @@ def _scale_boxes(boxes, target_sizes):
 
 
 @auto_docstring
+# GroundingDinoImageProcessor：Grounding DINO Torchvision 后端图像预处理
 class GroundingDinoImageProcessor(TorchvisionBackend):
     valid_kwargs = GroundingDinoImageProcessorKwargs
     resample = PILImageResampling.BILINEAR

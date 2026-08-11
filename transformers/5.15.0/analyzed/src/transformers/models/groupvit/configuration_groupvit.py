@@ -22,8 +22,12 @@ from ...utils import auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# GroupViT 配置：分组视觉 Transformer + CLIP 文本编码器联合超参
+
+# GroupViTTextConfig：nvidia/groupvit-gcc-yfcc 文本编码器默认超参
 @auto_docstring(checkpoint="nvidia/groupvit-gcc-yfcc")
 @strict
+# GroupViTTextConfig：GroupViT 文本编码器 CLIP 风格超参
 class GroupViTTextConfig(PreTrainedConfig):
     r"""
     Example:
@@ -60,8 +64,10 @@ class GroupViTTextConfig(PreTrainedConfig):
     eos_token_id: int | list[int] | None = 49407
 
 
+# GroupViTVisionConfig：nvidia/groupvit-gcc-yfcc 视觉分组 Transformer 默认超参
 @auto_docstring(checkpoint="nvidia/groupvit-gcc-yfcc")
 @strict
+# GroupViTVisionConfig：GroupViT 视觉编码器分组 Transformer 超参
 class GroupViTVisionConfig(PreTrainedConfig):
     r"""
     depths (`list[int]`, *optional*, defaults to [6, 3, 3]):
@@ -111,6 +117,7 @@ class GroupViTVisionConfig(PreTrainedConfig):
     assign_eps: float = 1.0
     assign_mlp_ratio: list[float | int] | tuple[float | int, ...] = (0.5, 4)
 
+    # validate_architecture：校验 num_hidden_layers 与 depths 之和一致
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if self.num_hidden_layers != sum(self.depths):
@@ -120,8 +127,10 @@ class GroupViTVisionConfig(PreTrainedConfig):
             )
 
 
+# GroupViTConfig：nvidia/groupvit-gcc-yfcc 文本+视觉联合对比学习默认超参
 @auto_docstring(checkpoint="nvidia/groupvit-gcc-yfcc")
 @strict
+# GroupViTConfig：GroupViT 文本+视觉联合对比学习配置
 class GroupViTConfig(PreTrainedConfig):
     r"""
     projection_intermediate_dim (`int`, *optional*, defaults to 4096):

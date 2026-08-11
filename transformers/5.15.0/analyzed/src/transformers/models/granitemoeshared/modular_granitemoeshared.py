@@ -21,6 +21,7 @@ from ...activations import ACT2FN
 from ...cache_utils import Cache
 from ...processing_utils import Unpack
 from ...utils import logging
+# modular 复用 GraniteMoe 解码层并注入 Shared 缩放系数与 FlashAttention kwargs
 from ..granitemoe.modeling_granitemoe import (
     GraniteMoeDecoderLayer,
     GraniteMoeForCausalLM,
@@ -33,6 +34,9 @@ from .configuration_granitemoeshared import GraniteMoeSharedConfig
 logger = logging.get_logger(__name__)
 
 
+# Granite MoE Shared modular 源：复用 GraniteMoe 解码层并注入 Shared 缩放系数
+
+# GraniteFlashAttentionKwargs：Granite Flash Attention 可选参数字典类型
 class GraniteFlashAttentionKwargs(TypedDict, total=False):
     """
     Keyword arguments for advanced Flash Attention, causal-conv1d, and mamba_ssm kernel usage.
@@ -57,6 +61,7 @@ class GraniteFlashAttentionKwargs(TypedDict, total=False):
     seq_idx: torch.IntTensor
 
 
+# GraniteMoeSharedMLP：Granite MoE Shared 共享/稠密前馈 MLP
 class GraniteMoeSharedMLP(nn.Module):
     """
     MLP layer for shared experts
@@ -83,6 +88,7 @@ class GraniteMoeSharedMLP(nn.Module):
         return hidden_states
 
 
+# GraniteMoeSharedDecoderLayer：Granite MoE Shared 解码器单层（自注意力 + MoE FFN）
 class GraniteMoeSharedDecoderLayer(GraniteMoeDecoderLayer):
     def __init__(self, config: GraniteMoeSharedConfig, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -128,11 +134,13 @@ class GraniteMoeSharedDecoderLayer(GraniteMoeDecoderLayer):
         return hidden_states
 
 
+# GraniteMoeSharedPreTrainedModel：Granite MoE Shared 预训练基类与权重初始化
 class GraniteMoeSharedPreTrainedModel(GraniteMoePreTrainedModel):
     config: GraniteMoeSharedConfig
     _no_split_modules = ["GraniteMoeSharedDecoderLayer"]
 
 
+# GraniteMoeSharedModel：Granite MoE Shared 纯文本解码器主干
 class GraniteMoeSharedModel(GraniteMoeModel):
     def __init__(self, config: GraniteMoeSharedConfig):
         super().__init__(config)
@@ -141,6 +149,7 @@ class GraniteMoeSharedModel(GraniteMoeModel):
         )
 
 
+# GraniteMoeSharedForCausalLM：Granite MoE Shared 因果语言建模与文本生成
 class GraniteMoeSharedForCausalLM(GraniteMoeForCausalLM):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
 

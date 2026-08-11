@@ -25,8 +25,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# Granite MoE Shared 配置：共享专家 + IBM 缩放残差 MoE 解码器超参
+
+# GraniteMoeSharedConfig：ibm-granite-speech-3.2-8b 共享 MoE 解码器默认超参
 @auto_docstring(checkpoint="ibm-granite/granite-speech-3.2-8b")
 @strict
+# GraniteMoeSharedConfig：Granite MoE Shared 共享专家+缩放残差解码器超参
 class GraniteMoeSharedConfig(PreTrainedConfig):
     r"""
     embedding_multiplier (`float`, *optional*, defaults to 1.0):

@@ -32,10 +32,13 @@ from ..auto import AutoModel
 from .configuration_grounding_dino import GroundingDinoConfig
 
 
+# Grounding DINO 建模：视觉-文本融合 + 可变形 DETR 开放词汇目标检测
+
 logger = logging.get_logger(__name__)
 
 
 # Copied from transformers.models.conditional_detr.modeling_conditional_detr.encode_sinusoidal_position_embedding
+# encode_sinusoidal_position_embedding：正弦位置编码（归一化 anchor 坐标）
 def encode_sinusoidal_position_embedding(
     pos_tensor: torch.Tensor,
     num_pos_feats: int = 128,
@@ -74,6 +77,7 @@ def encode_sinusoidal_position_embedding(
 
 @use_kernel_forward_from_hub("MultiScaleDeformableAttention")
 # Copied from transformers.models.deformable_detr.modeling_deformable_detr.MultiScaleDeformableAttention
+# MultiScaleDeformableAttention：多尺度可变形注意力采样内核
 class MultiScaleDeformableAttention(nn.Module):
     def forward(
         self,
@@ -137,6 +141,7 @@ class MultiScaleDeformableAttention(nn.Module):
     """
 )
 @dataclass
+# GroundingDinoDecoderOutput：Grounding DINO 解码器输出 dataclass
 class GroundingDinoDecoderOutput(ModelOutput):
     r"""
     intermediate_hidden_states (`torch.FloatTensor` of shape `(batch_size, config.decoder_layers, num_queries, hidden_size)`):
@@ -160,6 +165,7 @@ class GroundingDinoDecoderOutput(ModelOutput):
     """
 )
 @dataclass
+# GroundingDinoEncoderOutput：Grounding DINO 编码器输出 dataclass
 class GroundingDinoEncoderOutput(ModelOutput):
     r"""
     last_hidden_state_vision (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`):
@@ -189,6 +195,7 @@ class GroundingDinoEncoderOutput(ModelOutput):
     """
 )
 @dataclass
+# GroundingDinoModelOutput：Grounding DINO 联合主干输出 dataclass
 class GroundingDinoModelOutput(ModelOutput):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, num_queries, hidden_size)`):
@@ -252,6 +259,7 @@ class GroundingDinoModelOutput(ModelOutput):
     """
 )
 @dataclass
+# GroundingDinoObjectDetectionOutput：Grounding DINO 开放词汇检测输出 dataclass
 class GroundingDinoObjectDetectionOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` are provided)):
@@ -329,6 +337,7 @@ class GroundingDinoObjectDetectionOutput(ModelOutput):
 
 
 # Copied from transformers.models.detr.modeling_detr.DetrFrozenBatchNorm2d with Detr->GroundingDino
+# GroundingDinoFrozenBatchNorm2d：冻结 BatchNorm2d（推理时固定 running stats）
 class GroundingDinoFrozenBatchNorm2d(nn.Module):
     """
     BatchNorm2d where the batch statistics and the affine parameters are fixed.
@@ -369,6 +378,7 @@ class GroundingDinoFrozenBatchNorm2d(nn.Module):
 
 
 # Copied from transformers.models.detr.modeling_detr.replace_batch_norm with Detr->GroundingDino
+# replace_batch_norm：将 BatchNorm2d 替换为 FrozenBatchNorm2d
 def replace_batch_norm(model):
     r"""
     Recursively replace all `torch.nn.BatchNorm2d` with `GroundingDinoFrozenBatchNorm2d`.
@@ -393,6 +403,7 @@ def replace_batch_norm(model):
             replace_batch_norm(module)
 
 
+# GroundingDinoConvEncoder：Grounding DINO 卷积骨干特征编码器
 class GroundingDinoConvEncoder(nn.Module):
     """
     Convolutional backbone, using either the AutoBackbone API or one from the timm library.
@@ -432,6 +443,7 @@ class GroundingDinoConvEncoder(nn.Module):
 
 
 # TODO: use modular - Copied from transformers.models.detr.modeling_detr.DetrConvModel with Detr->GroundingDino
+# GroundingDinoConvModel：Grounding DINO 卷积骨干包装（含位置编码）
 class GroundingDinoConvModel(nn.Module):
     """
     This module adds 2D position embeddings to all intermediate feature maps of the convolutional encoder.
@@ -453,6 +465,7 @@ class GroundingDinoConvModel(nn.Module):
         return out, pos
 
 
+# GroundingDinoSinePositionEmbedding：Grounding DINO 正弦 2D 位置编码
 class GroundingDinoSinePositionEmbedding(nn.Module):
     """
     This is a more standard version of the position embedding, very similar to the one used by the Attention is all you
@@ -483,6 +496,7 @@ class GroundingDinoSinePositionEmbedding(nn.Module):
         return pos
 
 
+# GroundingDinoLearnedPositionEmbedding：Grounding DINO 可学习 2D 位置编码
 class GroundingDinoLearnedPositionEmbedding(nn.Module):
     """
     This module learns positional embeddings up to a fixed maximum size.
@@ -508,6 +522,7 @@ class GroundingDinoLearnedPositionEmbedding(nn.Module):
         return pos
 
 
+# build_position_encoding：按配置构建 sine/learned 位置编码模块
 def build_position_encoding(config):
     if config.position_embedding_type == "sine":
         position_embedding = GroundingDinoSinePositionEmbedding(config)
@@ -520,6 +535,7 @@ def build_position_encoding(config):
 
 
 # Copied from transformers.models.deformable_detr.modeling_deformable_detr.DeformableDetrMultiscaleDeformableAttention with DeformableDetr->GroundingDino, Deformable DETR->Grounding DINO
+# GroundingDinoMultiscaleDeformableAttention：Grounding DINO 多尺度可变形交叉注意力
 class GroundingDinoMultiscaleDeformableAttention(nn.Module):
     """
     Multiscale deformable attention as proposed in Deformable DETR.
@@ -627,6 +643,7 @@ class GroundingDinoMultiscaleDeformableAttention(nn.Module):
         return output, attention_weights
 
 
+# GroundingDinoTextEnhancerLayer：Grounding DINO 文本 BERT 增强层
 class GroundingDinoTextEnhancerLayer(nn.Module):
     """Vanilla Transformer with text embeddings as input"""
 
@@ -709,6 +726,7 @@ class GroundingDinoTextEnhancerLayer(nn.Module):
         return hidden_states, attention_weights
 
 
+# GroundingDinoBiMultiHeadAttention：Grounding DINO 视觉-文本双向多头注意力
 class GroundingDinoBiMultiHeadAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -861,6 +879,7 @@ class GroundingDinoBiMultiHeadAttention(nn.Module):
 
 
 # Copied from transformers.models.swin.modular_swin.SwinDropPath with SwinDropPath->GroundingDinoDropPath
+# GroundingDinoDropPath：Grounding DINO Stochastic Depth 随机深度
 class GroundingDinoDropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -885,6 +904,7 @@ class GroundingDinoDropPath(nn.Module):
         return f"p={self.drop_prob}"
 
 
+# GroundingDinoFusionLayer：Grounding DINO 视觉-文本特征融合层
 class GroundingDinoFusionLayer(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -948,6 +968,7 @@ class GroundingDinoFusionLayer(nn.Module):
         return (vision_features, vision_attn), (text_features, text_attn)
 
 
+# GroundingDinoDeformableLayer：Grounding DINO 可变形自注意力层
 class GroundingDinoDeformableLayer(nn.Module):
     def __init__(self, config: GroundingDinoConfig):
         super().__init__()
@@ -1032,6 +1053,7 @@ class GroundingDinoDeformableLayer(nn.Module):
         return hidden_states, attn_weights
 
 
+# GroundingDinoEncoderLayer：Grounding DINO 编码器单层（融合+可变形注意力）
 class GroundingDinoEncoderLayer(nn.Module):
     def __init__(self, config) -> None:
         super().__init__()
@@ -1112,6 +1134,7 @@ class GroundingDinoEncoderLayer(nn.Module):
         )
 
 
+# GroundingDinoMultiheadAttention：Grounding DINO 标准多头自注意力
 class GroundingDinoMultiheadAttention(nn.Module):
     """Equivalent implementation of nn.MultiheadAttention with `batch_first=True`."""
 
@@ -1184,6 +1207,7 @@ class GroundingDinoMultiheadAttention(nn.Module):
         return outputs
 
 
+# GroundingDinoDecoderLayer：Grounding DINO 解码器单层（自注意力+交叉注意力+FFN）
 class GroundingDinoDecoderLayer(nn.Module):
     def __init__(self, config: GroundingDinoConfig):
         super().__init__()
@@ -1302,6 +1326,7 @@ class GroundingDinoDecoderLayer(nn.Module):
         return outputs
 
 
+# GroundingDinoContrastiveEmbedding：Grounding DINO 对比式文本-查询嵌入
 class GroundingDinoContrastiveEmbedding(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1324,6 +1349,7 @@ class GroundingDinoContrastiveEmbedding(nn.Module):
 
 
 @auto_docstring
+# GroundingDinoPreTrainedModel：Grounding DINO 预训练基类与权重初始化
 class GroundingDinoPreTrainedModel(PreTrainedModel):
     config: GroundingDinoConfig
     base_model_prefix = "model"
@@ -1389,6 +1415,7 @@ class GroundingDinoPreTrainedModel(PreTrainedModel):
             module.gradient_checkpointing = value
 
 
+# GroundingDinoEncoder：Grounding DINO 视觉-文本联合编码器
 class GroundingDinoEncoder(GroundingDinoPreTrainedModel):
     """
     Transformer encoder consisting of *config.encoder_layers* deformable attention layers. Each layer is a
@@ -1562,6 +1589,7 @@ class GroundingDinoEncoder(GroundingDinoPreTrainedModel):
         )
 
 
+# GroundingDinoDecoder：Grounding DINO 目标查询解码器
 class GroundingDinoDecoder(GroundingDinoPreTrainedModel):
     """
     Transformer decoder consisting of *config.decoder_layers* layers. Each layer is a [`GroundingDinoDecoderLayer`].
@@ -1808,6 +1836,7 @@ class GroundingDinoDecoder(GroundingDinoPreTrainedModel):
 SPECIAL_TOKENS = [101, 102, 1012, 1029]
 
 
+# generate_masks_with_special_tokens_and_transfer_map：特殊 token 掩码与文本-视觉对齐映射
 def generate_masks_with_special_tokens_and_transfer_map(input_ids: torch.LongTensor) -> tuple[Tensor, Tensor]:
     """Generate attention mask between each pair of special tokens and positional ids.
     Args:
@@ -1862,6 +1891,7 @@ def generate_masks_with_special_tokens_and_transfer_map(input_ids: torch.LongTen
     hidden-states without any specific head on top.
     """
 )
+# GroundingDinoModel：Grounding DINO 开放词汇检测联合主干
 class GroundingDinoModel(GroundingDinoPreTrainedModel):
     def __init__(self, config: GroundingDinoConfig):
         super().__init__(config)
@@ -2281,6 +2311,7 @@ class GroundingDinoModel(GroundingDinoPreTrainedModel):
 
 
 # Copied from transformers.models.detr.modeling_detr.DetrMLPPredictionHead
+# GroundingDinoMLPPredictionHead：Grounding DINO 边界框 MLP 预测头
 class GroundingDinoMLPPredictionHead(nn.Module):
     """
     Very simple multi-layer perceptron (MLP, also called FFN), used to predict the normalized center coordinates,
@@ -2300,6 +2331,7 @@ class GroundingDinoMLPPredictionHead(nn.Module):
         return x
 
 
+# build_label_maps：从 logits 构建 token 级标签映射矩阵
 def build_label_maps(logits: torch.FloatTensor, input_ids: torch.LongTensor) -> tuple[torch.FloatTensor]:
     """
     Computes a mapping between tokens and their corresponding labels, where `num_labels` is determined by the number of classes in the input prompt.
@@ -2356,6 +2388,7 @@ def build_label_maps(logits: torch.FloatTensor, input_ids: torch.LongTensor) -> 
     return label_maps
 
 
+# build_text_mask：构建文本有效 token 掩码
 def build_text_mask(logits, attention_mask):
     """
     Create text_mask based on the matching indices
@@ -2373,6 +2406,7 @@ def build_text_mask(logits, attention_mask):
     for tasks such as COCO detection.
     """
 )
+# GroundingDinoForObjectDetection：Grounding DINO 开放词汇目标检测头
 class GroundingDinoForObjectDetection(GroundingDinoPreTrainedModel):
     # When using clones, all layers > 0 will be clones, but layer 0 *is* required
     # the bbox_embed in the decoder are all clones though

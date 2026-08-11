@@ -46,9 +46,13 @@ from ...utils import TransformersKwargs, auto_docstring, can_return_tuple
 from ...utils.deprecation import deprecate_kwarg
 from ...utils.generic import maybe_autocast, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
+# modeling_granitemoehybrid 由 modular_granitemoehybrid.py 自动生成
 from .configuration_granitemoehybrid import GraniteMoeHybridConfig
 
 
+# Granite MoE Hybrid 建模：Mamba2 + Attention + MoE 混合层解码器
+
+# rotate_half：RoPE 中将向量后半部分旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -57,6 +61,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -82,6 +87,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -94,6 +100,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -120,6 +127,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# GraniteMoeHybridAttention：Hybrid 自注意力（支持 position_embeddings 为 None）
 class GraniteMoeHybridAttention(nn.Module):
     """Hybrid variant that handles ``position_embeddings is None`` — granitemoe-hybrid configs can
     opt out of RoPE via ``position_embedding_type=None``, in which case the model passes ``None``
@@ -191,6 +199,7 @@ class GraniteMoeHybridAttention(nn.Module):
 # Helper methods for segment sum computation
 
 
+# pad_tensor_by_size：按指定大小对张量末尾零填充
 def pad_tensor_by_size(input_tensor: torch.Tensor, pad_size: int):
     """
     Padding x tensor with `pad_size` on the seq_len dim (dim=1)
@@ -202,6 +211,7 @@ def pad_tensor_by_size(input_tensor: torch.Tensor, pad_size: int):
     return torch.nn.functional.pad(input_tensor, pad_shape, mode="constant", value=0)
 
 
+# reshape_into_chunks：将序列张量重塑为固定 chunk 块
 def reshape_into_chunks(input_tensor, pad_size, chunk_size):
     """
     Padding input_tensor with `pad_size` on the seq_len dim (dim=1) and
@@ -222,6 +232,7 @@ def reshape_into_chunks(input_tensor, pad_size, chunk_size):
         )
 
 
+# segment_sum：Mamba2 块内因果前缀和计算
 def segment_sum(input_tensor):
     """
     More stable segment sum calculation. Uses cumulative sums and masking instead of direct subtractions.
@@ -242,6 +253,7 @@ def segment_sum(input_tensor):
     return tensor_segsum
 
 
+# apply_mask_to_padding_states：对 padding 位置隐藏状态置零
 def apply_mask_to_padding_states(hidden_states, attention_mask):
     """
     Tunes out the hidden states for padding tokens, see https://github.com/state-spaces/mamba/issues/66
@@ -255,6 +267,7 @@ def apply_mask_to_padding_states(hidden_states, attention_mask):
 
 
 @use_kernel_func_from_hub_with_fallback("causal_conv1d_update", "causal_conv1d")
+# causal_conv1d_update：Mamba 因果 1D 卷积增量更新步
 def causal_conv1d_update(
     hidden_states: torch.Tensor,
     conv_state: torch.Tensor,
@@ -275,6 +288,7 @@ def causal_conv1d_update(
 
 
 @use_kernel_func_from_hub_with_fallback("causal_conv1d_fn", "causal_conv1d")
+# causal_conv1d_fn：Mamba 因果 1D 卷积前向
 def causal_conv1d_fn(
     hidden_states: torch.Tensor,
     weight: nn.Parameter,
@@ -298,6 +312,7 @@ def causal_conv1d_fn(
 
 
 @use_kernel_func_from_hub_with_fallback("mamba_split_conv1d_scan_combined", "mamba_ssm")
+# mamba2_split_conv1d_scan_combined：Mamba2 卷积+选择性扫描组合前向
 def mamba2_split_conv1d_scan_combined(
     zxbcdt: torch.Tensor,
     conv1d_weight: torch.Tensor,
@@ -323,6 +338,7 @@ def mamba2_split_conv1d_scan_combined(
 
 
 @use_kernel_func_from_hub_with_fallback("selective_state_update", "mamba_ssm")
+# mamba2_selective_state_update：Mamba2 选择性状态空间单步更新
 def mamba2_selective_state_update(
     state: torch.Tensor,
     hidden_states: torch.Tensor,
@@ -385,6 +401,7 @@ def mamba2_selective_state_update(
 
 
 @use_kernel_func_from_hub_with_fallback("mamba_chunk_scan_combined", "mamba_ssm")
+# mamba2_chunk_scan：Mamba2 分块选择性扫描
 def mamba2_chunk_scan(
     hidden_states: torch.Tensor,
     dt: torch.Tensor,
@@ -491,6 +508,7 @@ def mamba2_chunk_scan(
         mamba2_chunk_scan,
     ]
 )
+# GraniteMoeHybridMambaLayer：Granite MoE Hybrid Mamba2 状态空间层
 class GraniteMoeHybridMambaLayer(nn.Module):
     """
     Compute ∆, A, B, C, and D the state space parameters and compute the `contextualized_states`.
@@ -708,6 +726,7 @@ class GraniteMoeHybridMambaLayer(nn.Module):
         return contextualized_states
 
 
+# GraniteMoeHybridRMSNormGated：Hybrid 门控 RMS LayerNorm（Mamba 分支）
 class GraniteMoeHybridRMSNormGated(torch.nn.Module):
     def __init__(self, hidden_size, eps=1e-6):
         super().__init__()
@@ -726,6 +745,7 @@ class GraniteMoeHybridRMSNormGated(torch.nn.Module):
         return self.weight * hidden_states.to(input_dtype)
 
 
+# GraniteMoeHybridMLP：Granite MoE Hybrid 共享/稠密前馈 MLP
 class GraniteMoeHybridMLP(nn.Module):
     """
     MLP layer for shared experts
@@ -752,6 +772,7 @@ class GraniteMoeHybridMLP(nn.Module):
         return hidden_states
 
 
+# GraniteMoeHybridRotaryEmbedding：Granite MoE Hybrid RoPE 旋转位置编码
 class GraniteMoeHybridRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: GraniteMoeHybridConfig, device=None):
@@ -808,6 +829,7 @@ class GraniteMoeHybridRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# GraniteMoeHybridTopKRouter：Granite MoE Hybrid top-k 路由门控
 class GraniteMoeHybridTopKRouter(nn.Module):
     """Top-k gating that returns the routing decisions without grouping tokens by expert.
 
@@ -831,6 +853,7 @@ class GraniteMoeHybridTopKRouter(nn.Module):
 
 
 @use_experts_implementation
+# GraniteMoeHybridExperts：Granite MoE Hybrid 专家 FFN 参数组
 class GraniteMoeHybridExperts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
@@ -870,6 +893,7 @@ class GraniteMoeHybridExperts(nn.Module):
         return final_hidden_states
 
 
+# GraniteMoeHybridMoE：Granite MoE Hybrid 稀疏专家层
 class GraniteMoeHybridMoE(nn.Module):
     """Sparsely-gated mixture-of-experts block: router decides, experts compute."""
 
@@ -887,6 +911,7 @@ class GraniteMoeHybridMoE(nn.Module):
         return layer_output.view(bsz, length, self.input_size)
 
 
+# GraniteFlashAttentionKwargs：Granite Flash Attention 可选参数字典类型
 class GraniteFlashAttentionKwargs(TypedDict, total=False):
     """
     Keyword arguments for advanced Flash Attention, causal-conv1d, and mamba_ssm kernel usage.
@@ -912,6 +937,7 @@ class GraniteFlashAttentionKwargs(TypedDict, total=False):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# GraniteMoeHybridRMSNorm：Granite MoE Hybrid RMS LayerNorm
 class GraniteMoeHybridRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -932,6 +958,7 @@ class GraniteMoeHybridRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# GraniteMoeHybridDecoderLayer：Hybrid 解码器单层（Attention/Mamba/MoE 按 layer_types 切换）
 class GraniteMoeHybridDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: GraniteMoeHybridConfig, layer_idx: int):
         super().__init__()
@@ -1001,6 +1028,7 @@ class GraniteMoeHybridDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# GraniteMoeHybridPreTrainedModel：Granite MoE Hybrid 预训练基类与权重初始化
 class GraniteMoeHybridPreTrainedModel(PreTrainedModel):
     config: GraniteMoeHybridConfig
     base_model_prefix = "model"
@@ -1035,6 +1063,7 @@ class GraniteMoeHybridPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# GraniteMoeHybridModel：Granite MoE Hybrid 纯文本解码器主干
 class GraniteMoeHybridModel(GraniteMoeHybridPreTrainedModel):
     def __init__(self, config: GraniteMoeHybridConfig):
         super().__init__(config)
@@ -1119,6 +1148,7 @@ class GraniteMoeHybridModel(GraniteMoeHybridPreTrainedModel):
         )
 
 
+# load_balancing_loss_func：MoE 路由负载均衡辅助损失计算
 def load_balancing_loss_func(
     gate_logits: torch.Tensor | tuple[torch.Tensor] | None,
     num_experts: int | None = None,
@@ -1202,6 +1232,7 @@ def load_balancing_loss_func(
 
 
 @auto_docstring
+# GraniteMoeHybridForCausalLM：Granite MoE Hybrid 因果语言建模与文本生成
 class GraniteMoeHybridForCausalLM(GraniteMoeHybridPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
