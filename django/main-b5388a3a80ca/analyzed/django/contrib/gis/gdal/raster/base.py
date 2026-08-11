@@ -2,11 +2,13 @@ from django.contrib.gis.gdal.base import GDALBase
 from django.contrib.gis.gdal.prototypes import raster as capi
 
 
+# 栅格与波段共有的元数据读写基类
 class GDALRasterBase(GDALBase):
     """
     Attributes that exist on both GDALRaster and GDALBand.
     """
 
+    # 返回嵌套字典：域 -> 键值对；遍历所有元数据域
     @property
     def metadata(self):
         """
@@ -57,6 +59,7 @@ class GDALRasterBase(GDALBase):
             result[domain or "DEFAULT"] = domain_meta
         return result
 
+    # 按域更新元数据项
     @metadata.setter
     def metadata(self, value):
         """

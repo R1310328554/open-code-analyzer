@@ -1,4 +1,7 @@
 """
+GDAL 栅格数据源与波段相关的 ctypes 函数原型。
+
+This module houses the ctypes function prototypes for GDAL DataSource (raster)"""
 This module houses the ctypes function prototypes for GDAL DataSource (raster)
 related data structures.
 """
@@ -21,11 +24,13 @@ from django.contrib.gis.gdal.prototypes.generation import (
 # https://gdal.org/doxygen/gdalwarper_8h.html
 # https://gdal.org/api/gdal_utils.html
 
+# 预绑定 CPL 错误码检查的 partial 包装
 # Prepare partial functions that use cpl error codes
 void_output = partial(void_output, cpl=True)
 const_string_output = partial(const_string_output, cpl=True)
 double_output = partial(double_output, cpl=True)
 
+# 栅格数据集：创建、打开、投影、仿射变换与元数据
 # Raster Data Source Routines
 create_ds = voidptr_output(
     std_call("GDALCreate"), [c_void_p, c_char_p, c_int, c_int, c_int, c_int, c_void_p]
@@ -73,6 +78,7 @@ set_ds_metadata_item = const_string_output(
 )
 free_dsl = void_output(std_call("CSLDestroy"), [POINTER(c_char_p)], errcheck=False)
 
+# 栅格波段：IO、尺寸、NoData、统计与颜色解释
 # Raster Band Routines
 band_io = void_output(
     std_call("GDALRasterIO"),
@@ -137,6 +143,7 @@ compute_band_statistics = void_output(
     ],
 )
 
+# 重投影与自动创建 warped VRT
 # Reprojection routine
 reproject_image = void_output(
     std_call("GDALReprojectImage"),
@@ -158,6 +165,7 @@ auto_create_warped_vrt = voidptr_output(
     [c_void_p, c_char_p, c_char_p, c_int, c_double, c_void_p],
 )
 
+# VSI 内存文件系统：从缓冲区创建/读取/删除虚拟文件
 # Create VSI gdal raster files from in-memory buffers.
 # https://gdal.org/api/cpl.html#cpl-vsi-h
 create_vsi_file_from_mem_buffer = voidptr_output(

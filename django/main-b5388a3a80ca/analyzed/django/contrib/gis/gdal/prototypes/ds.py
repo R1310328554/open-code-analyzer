@@ -1,4 +1,7 @@
 """
+OGR 数据源相关 ctypes 函数原型：驱动、数据集、图层、要素与字段。
+
+This module houses the ctypes function prototypes for OGR DataSource"""
 This module houses the ctypes function prototypes for OGR DataSource
 related data structures. OGR_Dr_*, OGR_DS_*, OGR_L_*, OGR_F_*,
 OGR_Fld_* routines are relevant here.
@@ -20,9 +23,11 @@ from django.contrib.gis.gdal.prototypes.generation import (
     voidptr_output,
 )
 
+# 整型指针与浮点指针的快捷类型别名
 c_int_p = POINTER(c_int)  # shortcut type
 c_float_p = POINTER(c_float)
 
+# GDALOpenEx 打开模式与数据类型标志
 GDAL_OF_READONLY = 0x00
 GDAL_OF_UPDATE = 0x01
 
@@ -30,6 +35,7 @@ GDAL_OF_ALL = 0x00
 GDAL_OF_RASTER = 0x02
 GDAL_OF_VECTOR = 0x04
 
+# 驱动注册与查询：GDALAllRegister、GetDriverByName 等
 # Driver Routines
 register_all = void_output(lgdal.GDALAllRegister, [], errcheck=False)
 cleanup_all = void_output(lgdal.GDALDestroyDriverManager, [], errcheck=False)
@@ -40,6 +46,7 @@ get_driver_by_name = voidptr_output(
 get_driver_count = int_output(lgdal.GDALGetDriverCount, [])
 get_driver_description = const_string_output(lgdal.GDALGetDescription, [c_void_p])
 
+# 数据源：打开、关闭、按索引或名称获取图层
 # DataSource
 open_ds = voidptr_output(
     lgdal.GDALOpenEx,
@@ -54,6 +61,7 @@ get_layer_by_name = voidptr_output(
 )
 get_layer_count = int_output(lgdal.GDALDatasetGetLayerCount, [c_void_p])
 
+# 图层：范围、要素迭代、空间过滤器与能力检测
 # Layer Routines
 get_extent = void_output(lgdal.OGR_L_GetExtent, [c_void_p, POINTER(OGREnvelope), c_int])
 get_feature = voidptr_output(lgdal.OGR_L_GetFeature, [c_void_p, c_long])
@@ -73,6 +81,7 @@ set_spatial_filter_rect = void_output(
     errcheck=False,
 )
 
+# 要素定义：几何类型、名称、字段数量与字段定义
 # Feature Definition Routines
 get_fd_geom_type = int_output(lgdal.OGR_FD_GetGeomType, [c_void_p])
 get_fd_name = const_string_output(lgdal.OGR_FD_GetName, [c_void_p])
@@ -80,6 +89,7 @@ get_feat_name = const_string_output(lgdal.OGR_FD_GetName, [c_void_p])
 get_field_count = int_output(lgdal.OGR_FD_GetFieldCount, [c_void_p])
 get_field_defn = voidptr_output(lgdal.OGR_FD_GetFieldDefn, [c_void_p, c_int])
 
+# 要素：克隆、销毁、几何引用、FID 与字段读写
 # Feature Routines
 clone_feature = voidptr_output(lgdal.OGR_F_Clone, [c_void_p])
 destroy_feature = void_output(lgdal.OGR_F_Destroy, [c_void_p], errcheck=False)
@@ -108,6 +118,7 @@ get_field_as_string = const_string_output(
 )
 get_field_index = int_output(lgdal.OGR_F_GetFieldIndex, [c_void_p, c_char_p])
 
+# 字段定义：名称、精度、类型与宽度
 # Field Routines
 get_field_name = const_string_output(lgdal.OGR_Fld_GetNameRef, [c_void_p])
 get_field_precision = int_output(lgdal.OGR_Fld_GetPrecision, [c_void_p])

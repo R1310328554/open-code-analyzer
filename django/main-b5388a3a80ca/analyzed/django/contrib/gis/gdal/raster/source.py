@@ -32,6 +32,7 @@ from django.utils.encoding import force_bytes, force_str
 from django.utils.functional import cached_property
 
 
+# 查询上下文中禁止的栅格输入：dict 会触发写模式，str 可能访问 VSI
 class DisallowedRasterLookup(SuspiciousOperation):
     """
     Types that force GDALRaster to open in write mode (dict) or values that
@@ -40,6 +41,7 @@ class DisallowedRasterLookup(SuspiciousOperation):
     """
 
 
+# 仿射变换参数的可变二维点：origin/scale/skew 的 x/y 访问器
 class TransformPoint(list):
     indices = {
         "origin": (0, 3),
@@ -47,6 +49,7 @@ class TransformPoint(list):
         "skew": (2, 4),
     }
 
+    # 从 geotransform 提取指定属性（origin/scale/skew）的坐标
     def __init__(self, raster, prop):
         x = raster.geotransform[self.indices[prop][0]]
         y = raster.geotransform[self.indices[prop][1]]
@@ -54,20 +57,24 @@ class TransformPoint(list):
         self._raster = raster
         self._prop = prop
 
+    # X 分量
     @property
     def x(self):
         return self[0]
 
+    # 写回 geotransform 对应索引
     @x.setter
     def x(self, value):
         gtf = self._raster.geotransform
         gtf[self.indices[self._prop][0]] = value
         self._raster.geotransform = gtf
 
+    # Y 分量
     @property
     def y(self):
         return self[1]
 
+    # 写回 geotransform 对应索引
     @y.setter
     def y(self, value):
         gtf = self._raster.geotransform
@@ -75,6 +82,7 @@ class TransformPoint(list):
         self._raster.geotransform = gtf
 
 
+# 封装 GDAL 栅格数据源：文件、内存缓冲、字典创建与 VSI
 class GDALRaster(GDALRasterBase):
     """
     Wrap a raster GDAL Data Source object.
@@ -82,6 +90,7 @@ class GDALRaster(GDALRasterBase):
 
     destructor = capi.close_ds
 
+    # 支持路径、bytes 缓冲、创建 dict、c_void_p 等多种输入
     def __init__(self, ds_input, write=False):
         self._write = 1 if write else 0
         Driver.ensure_registered()
@@ -216,21 +225,25 @@ class GDALRaster(GDALRasterBase):
                 'Invalid data source input type: "{}".'.format(type(ds_input))
             )
 
+    # VSI 内存栅格销毁时删除虚拟文件
     def __del__(self):
         if self.is_vsi_based:
             # Remove the temporary file from the VSI in-memory filesystem.
             capi.unlink_vsi_file(force_bytes(self.name))
         super().__del__()
 
+    # 返回数据源名称
     def __str__(self):
         return self.name
 
+    # 简短指针表示，避免 WKB 过大
     def __repr__(self):
         """
         Short-hand representation because WKB may be very large.
         """
         return "<Raster object at %s>" % hex(addressof(self._ptr))
 
+    # 预处理 JSON 字符串与 Path 为 dict/str
     @classmethod
     def _preprocess_input(cls, ds_input):
         """
@@ -244,6 +257,7 @@ class GDALRaster(GDALRasterBase):
             ds_input = str(ds_input)
         return ds_input
 
+    # ORM 查询前校验：禁止裸 dict/str，须显式 GDALRaster()
     @classmethod
     def check_raster_lookup_value(cls, ds_input):
         """
@@ -260,6 +274,7 @@ class GDALRaster(GDALRasterBase):
             )
             raise DisallowedRasterLookup(msg)
 
+    # 写模式下将内存变更刷入底层文件
     def _flush(self):
         """
         Flush all data from memory into the source file if it exists.
@@ -274,6 +289,7 @@ class GDALRaster(GDALRasterBase):
             )
         capi.flush_ds(self._ptr)
 
+    # 读取 vsimem 栅格的原始字节缓冲
     @property
     def vsi_buffer(self):
         if not (
@@ -291,10 +307,12 @@ class GDALRaster(GDALRasterBase):
         # Read the full buffer pointer.
         return string_at(dat, out_length.value)
 
+    # 是否为 VSI 虚拟路径数据源
     @cached_property
     def is_vsi_based(self):
         return self._ptr and self.name.startswith(VSI_FILESYSTEM_PREFIX)
 
+    # 数据源描述/文件名
     @property
     def name(self):
         """
@@ -303,6 +321,7 @@ class GDALRaster(GDALRasterBase):
         """
         return force_str(capi.get_ds_description(self._ptr))
 
+    # 关联的 GDAL 驱动
     @cached_property
     def driver(self):
         """
@@ -311,6 +330,7 @@ class GDALRaster(GDALRasterBase):
         ds_driver = capi.get_ds_driver(self._ptr)
         return Driver(ds_driver)
 
+    # 栅格宽度（像素）
     @property
     def width(self):
         """
@@ -318,6 +338,7 @@ class GDALRaster(GDALRasterBase):
         """
         return capi.get_ds_xsize(self._ptr)
 
+    # 栅格高度（像素）
     @property
     def height(self):
         """
@@ -325,6 +346,7 @@ class GDALRaster(GDALRasterBase):
         """
         return capi.get_ds_ysize(self._ptr)
 
+    # 空间参考（从投影 WKT 解析）
     @property
     def srs(self):
         """
@@ -338,6 +360,7 @@ class GDALRaster(GDALRasterBase):
         except SRSException:
             return None
 
+    # 设置投影 WKT
     @srs.setter
     def srs(self, value):
         """
@@ -354,6 +377,7 @@ class GDALRaster(GDALRasterBase):
         capi.set_ds_projection_ref(self._ptr, srs.wkt.encode())
         self._flush()
 
+    # SRID 快捷属性
     @property
     def srid(self):
         """
@@ -361,6 +385,7 @@ class GDALRaster(GDALRasterBase):
         """
         return self.srs.srid
 
+    # 通过 SRID 设置 srs
     @srid.setter
     def srid(self, value):
         """
@@ -368,6 +393,7 @@ class GDALRaster(GDALRasterBase):
         """
         self.srs = value
 
+    # 六参数仿射变换；缺失时返回默认值
     @property
     def geotransform(self):
         """
@@ -380,6 +406,7 @@ class GDALRaster(GDALRasterBase):
         capi.get_ds_geotransform(self._ptr, byref(gtf))
         return list(gtf)
 
+    # 设置六参数 geotransform
     @geotransform.setter
     def geotransform(self, values):
         "Set the geotransform for the data source."
@@ -390,6 +417,7 @@ class GDALRaster(GDALRasterBase):
         capi.set_ds_geotransform(self._ptr, byref(values))
         self._flush()
 
+    # 栅格原点坐标
     @property
     def origin(self):
         """
@@ -397,6 +425,7 @@ class GDALRaster(GDALRasterBase):
         """
         return TransformPoint(self, "origin")
 
+    # 像素尺度（投影单位）
     @property
     def scale(self):
         """
@@ -404,6 +433,7 @@ class GDALRaster(GDALRasterBase):
         """
         return TransformPoint(self, "scale")
 
+    # 像素旋转/倾斜参数
     @property
     def skew(self):
         """
@@ -411,6 +441,7 @@ class GDALRaster(GDALRasterBase):
         """
         return TransformPoint(self, "skew")
 
+    # 外包范围 (xmin, ymin, xmax, ymax)
     @property
     def extent(self):
         """
@@ -427,10 +458,12 @@ class GDALRaster(GDALRasterBase):
 
         return xmin, ymin, xmax, ymax
 
+    # 波段列表 BandList
     @property
     def bands(self):
         return BandList(self)
 
+    # 按目标参数重采样并返回新 GDALRaster
     def warp(self, ds_input, resampling="NearestNeighbour", max_error=0.0):
         """
         Return a warped GDALRaster with the given input characteristics.
@@ -493,6 +526,7 @@ class GDALRaster(GDALRasterBase):
 
         return target
 
+    # 复制栅格（GDALCreateCopy 或新 vsimem 名）
     def clone(self, name=None):
         """Return a clone of this GDALRaster."""
         if name:
@@ -514,6 +548,7 @@ class GDALRaster(GDALRasterBase):
             write=self._write,
         )
 
+    # 重投影到目标 SRS，必要时 clone 或 warp
     def transform(
         self, srs, driver=None, name=None, resampling="NearestNeighbour", max_error=0.0
     ):
@@ -567,6 +602,7 @@ class GDALRaster(GDALRasterBase):
         # Warp the raster into new srid
         return self.warp(data, resampling=resampling, max_error=max_error)
 
+    # 等效 gdalinfo 命令行的文本信息
     @property
     def info(self):
         """

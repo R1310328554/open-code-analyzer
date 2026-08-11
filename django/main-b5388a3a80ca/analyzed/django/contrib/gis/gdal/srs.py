@@ -1,4 +1,7 @@
 """
+OGR 空间参考（SpatialReference）与坐标变换（CoordTransform）封装。
+
+The Spatial Reference class, represents OGR Spatial Reference objects."""
 The Spatial Reference class, represents OGR Spatial Reference objects.
 
 Example:
@@ -37,11 +40,13 @@ from django.contrib.gis.gdal.prototypes import srs as capi
 from django.utils.encoding import force_bytes, force_str
 
 
+# WKT 轴顺序：传统 (lon,lat) 或权威定义顺序
 class AxisOrder(IntEnum):
     TRADITIONAL = 0
     AUTHORITY = 1
 
 
+# OGRSpatialReference 包装：投影/基准与坐标系变换
 class SpatialReference(GDALBase):
     """
     A wrapper for the OGRSpatialReference object. According to the GDAL web
@@ -51,6 +56,7 @@ class SpatialReference(GDALBase):
 
     destructor = capi.release_srs
 
+    # 从 WKT、EPSG、PROJ、别名或已有指针创建 SRS
     def __init__(self, srs_input="", srs_type="user", axis_order=None):
         """
         Create a GDAL OSR Spatial Reference object from the given input.
@@ -110,6 +116,7 @@ class SpatialReference(GDALBase):
         elif srs_type == "epsg":
             self.import_epsg(srs_input)
 
+    # 按 WKT 节点名或 (节点, 索引) 读取属性值
     def __getitem__(self, target):
         """
         Return the value of the given string attribute node, None if the node
@@ -143,11 +150,14 @@ class SpatialReference(GDALBase):
         else:
             return self.attr_value(target)
 
+    # 使用 pretty WKT 作为字符串表示
+    # 显示源与目标坐标系名称
     def __str__(self):
         "Use 'pretty' WKT."
         return self.pretty_wkt
 
     # #### SpatialReference Methods ####
+    # 读取 WKT 树节点属性（如 PROJCS、AUTHORITY）
     def attr_value(self, target, index=0):
         """
         The attribute value for the given target node (e.g. 'PROJCS'). The
@@ -157,26 +167,31 @@ class SpatialReference(GDALBase):
             raise TypeError
         return capi.get_attr_value(self.ptr, force_bytes(target), index)
 
+    # 节点对应的权威机构名称（如 EPSG）
     def auth_name(self, target):
         "Return the authority name for the given string target node."
         return capi.get_auth_name(
             self.ptr, target if target is None else force_bytes(target)
         )
 
+    # 节点对应的权威代码（如 4326）
     def auth_code(self, target):
         "Return the authority code for the given string target node."
         return capi.get_auth_code(
             self.ptr, target if target is None else force_bytes(target)
         )
 
+    # 克隆 SpatialReference
     def clone(self):
         "Return a clone of this SpatialReference object."
         return SpatialReference(capi.clone_srs(self.ptr), axis_order=self.axis_order)
 
+    # 从 ESRI WKT 形态转为 EPSG 形态
     def from_esri(self):
         "Morph this SpatialReference from ESRI's format to EPSG."
         capi.morph_from_esri(self.ptr)
 
+    # 自动识别并附加 EPSG 权威节点
     def identify_epsg(self):
         """
         This method inspects the WKT of this SpatialReference, and will
@@ -184,15 +199,18 @@ class SpatialReference(GDALBase):
         """
         capi.identify_epsg(self.ptr)
 
+    # 转为 ESRI WKT 形态
     def to_esri(self):
         "Morph this SpatialReference to ESRI's format."
         capi.morph_to_esri(self.ptr)
 
+    # 校验 SRS 定义是否合法
     def validate(self):
         "Check to see if the given spatial reference is valid."
         capi.srs_validate(self.ptr)
 
     # #### Name & SRID properties ####
+    # 坐标系名称（按 geographic/projected/local 取根节点）
     @property
     def name(self):
         "Return the name of this Spatial Reference."
@@ -205,6 +223,7 @@ class SpatialReference(GDALBase):
         else:
             return None
 
+    # 顶层权威 SRID，未定义时为 None
     @property
     def srid(self):
         "Return the SRID of top-level authority, or None if undefined."
@@ -214,30 +233,35 @@ class SpatialReference(GDALBase):
             return None
 
     # #### Unit Properties ####
+    # 线性单位名称
     @property
     def linear_name(self):
         "Return the name of the linear units."
         units, name = capi.linear_units(self.ptr, byref(c_char_p()))
         return name
 
+    # 线性单位换算系数
     @property
     def linear_units(self):
         "Return the value of the linear units."
         units, name = capi.linear_units(self.ptr, byref(c_char_p()))
         return units
 
+    # 角度单位名称
     @property
     def angular_name(self):
         "Return the name of the angular units."
         units, name = capi.angular_units(self.ptr, byref(c_char_p()))
         return name
 
+    # 角度单位换算系数
     @property
     def angular_units(self):
         "Return the value of the angular units."
         units, name = capi.angular_units(self.ptr, byref(c_char_p()))
         return units
 
+    # 自动选择线性或角度单位的 (值, 名称) 元组
     @property
     def units(self):
         """
@@ -254,6 +278,7 @@ class SpatialReference(GDALBase):
         return (units, name)
 
     # #### Spheroid/Ellipsoid Properties ####
+    # 椭球参数：(半长轴, 半短轴, 扁率倒数)
     @property
     def ellipsoid(self):
         """
@@ -262,22 +287,26 @@ class SpatialReference(GDALBase):
         """
         return (self.semi_major, self.semi_minor, self.inverse_flattening)
 
+    # 椭球半长轴
     @property
     def semi_major(self):
         "Return the Semi Major Axis for this Spatial Reference."
         return capi.semi_major(self.ptr, byref(c_int()))
 
+    # 椭球半短轴
     @property
     def semi_minor(self):
         "Return the Semi Minor Axis for this Spatial Reference."
         return capi.semi_minor(self.ptr, byref(c_int()))
 
+    # 扁率倒数
     @property
     def inverse_flattening(self):
         "Return the Inverse Flattening for this Spatial Reference."
         return capi.invflattening(self.ptr, byref(c_int()))
 
     # #### Boolean Properties ####
+    # 是否为地理坐标系（GEOGCS）
     @property
     def geographic(self):
         """
@@ -286,6 +315,7 @@ class SpatialReference(GDALBase):
         """
         return bool(capi.isgeographic(self.ptr))
 
+    # 是否为本地坐标系（LOCAL_CS）
     @property
     def local(self):
         """
@@ -293,6 +323,7 @@ class SpatialReference(GDALBase):
         """
         return bool(capi.islocal(self.ptr))
 
+    # 是否为投影坐标系（PROJCS）
     @property
     def projected(self):
         """
@@ -302,58 +333,70 @@ class SpatialReference(GDALBase):
         return bool(capi.isprojected(self.ptr))
 
     # #### Import Routines #####
+    # 从 EPSG 整数代码导入
     def import_epsg(self, epsg):
         "Import the Spatial Reference from the EPSG code (an integer)."
         capi.from_epsg(self.ptr, epsg)
 
+    # 从 PROJ 字符串导入
     def import_proj(self, proj):
         """Import the Spatial Reference from a PROJ string."""
         capi.from_proj(self.ptr, proj)
 
+    # 从用户输入（EPSG:、别名等）导入
     def import_user_input(self, user_input):
         "Import the Spatial Reference from the given user input string."
         capi.from_user_input(self.ptr, force_bytes(user_input))
 
+    # 从 OGC WKT 导入
     def import_wkt(self, wkt):
         "Import the Spatial Reference from OGC WKT (string)"
         capi.from_wkt(self.ptr, byref(c_char_p(force_bytes(wkt))))
 
+    # 从 XML 导入
     def import_xml(self, xml):
         "Import the Spatial Reference from an XML string."
         capi.from_xml(self.ptr, xml)
 
     # #### Export Properties ####
+    # WKT 表示
     @property
     def wkt(self):
         "Return the WKT representation of this Spatial Reference."
         return capi.to_wkt(self.ptr, byref(c_char_p()))
 
+    # 格式化 WKT
     @property
     def pretty_wkt(self, simplify=0):
         "Return the 'pretty' representation of the WKT."
         return capi.to_pretty_wkt(self.ptr, byref(c_char_p()), simplify)
 
+    # PROJ4 字符串
     @property
     def proj(self):
         """Return the PROJ representation for this Spatial Reference."""
         return capi.to_proj(self.ptr, byref(c_char_p()))
 
+    # proj 属性别名
     @property
     def proj4(self):
         "Alias for proj()."
         return self.proj
 
+    # XML 表示
     @property
     def xml(self, dialect=""):
         "Return the XML representation of this Spatial Reference."
         return capi.to_xml(self.ptr, byref(c_char_p()), force_bytes(dialect))
 
 
+# 源 SRS 到目标 SRS 的坐标变换对象
 class CoordTransform(GDALBase):
     "The coordinate system transformation object."
 
     destructor = capi.destroy_ct
 
+    # 基于两个 SpatialReference 创建 OCT 变换
     def __init__(self, source, target):
         "Initialize on a source and target SpatialReference objects."
         if not isinstance(source, SpatialReference) or not isinstance(

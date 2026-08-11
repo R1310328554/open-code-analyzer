@@ -1,4 +1,7 @@
 """
+MaxMind GeoIP2 数据库的 Django 封装：IP/域名地理定位查询。
+
+This module houses the GeoIP2 object, a wrapper for the MaxMind GeoIP2(R)"""
 This module houses the GeoIP2 object, a wrapper for the MaxMind GeoIP2(R)
 Python API (https://geoip2.readthedocs.io/). This is an alternative to the
 Python GeoIP2 interface provided by MaxMind.
@@ -32,6 +35,7 @@ else:
     __all__ += ["GeoIP2", "GeoIP2Exception"]
 
 
+# MaxMind DB metadata 中支持的数据库类型白名单
 # These are the values stored in the `database_type` field of the metadata.
 # See https://maxmind.github.io/MaxMind-DB/#database_type for details.
 SUPPORTED_DATABASE_TYPES = {
@@ -44,10 +48,12 @@ SUPPORTED_DATABASE_TYPES = {
 }
 
 
+# GeoIP2 配置或查询异常
 class GeoIP2Exception(Exception):
     pass
 
 
+# GeoIP2 读取器：国家/城市库查询与缓存模式
 class GeoIP2:
     # The flags for GeoIP memory caching.
     # Try MODE_MMAP_EXT, MODE_MMAP, MODE_FILE in that order.
@@ -67,6 +73,7 @@ class GeoIP2:
     _path = None
     _reader = None
 
+    # 解析 GEOIP_PATH、打开 .mmdb 并校验 database_type
     def __init__(self, path=None, cache=0, country=None, city=None):
         """
         Initialize the GeoIP object. No parameters are required to use default
@@ -119,28 +126,34 @@ class GeoIP2:
         if database_type not in SUPPORTED_DATABASE_TYPES:
             raise GeoIP2Exception(f"Unable to handle database edition: {database_type}")
 
+    # 关闭 geoip2 Reader 句柄
     def __del__(self):
         # Cleanup any GeoIP file handles lying around.
         if self._reader:
             self._reader.close()
 
+    # 显示版本与数据库路径
     def __repr__(self):
         m = self._metadata
         version = f"v{m.binary_format_major_version}.{m.binary_format_minor_version}"
         return f"<{self.__class__.__name__} [{version}] _path='{self._path}'>"
 
+    # 读取 mmdb 元数据
     @cached_property
     def _metadata(self):
         return self._reader.metadata()
 
+    # 是否为 City 级数据库
     @cached_property
     def is_city(self):
         return "City" in self._metadata.database_type
 
+    # 是否为 Country 级数据库
     @cached_property
     def is_country(self):
         return "Country" in self._metadata.database_type
 
+    # 统一查询入口：校验 IP/主机名并调用 city 或 country
     def _query(self, query, *, require_city=False):
         if not isinstance(query, (str, ipaddress.IPv4Address, ipaddress.IPv6Address)):
             raise TypeError(
@@ -161,6 +174,7 @@ class GeoIP2:
         function = self._reader.city if self.is_city else self._reader.country
         return function(query)
 
+    # 返回城市级地理信息字典
     def city(self, query):
         """
         Return a dictionary of city information for the given IP address or
@@ -189,14 +203,17 @@ class GeoIP2:
             "region": region.iso_code if region else None,
         }
 
+    # 国家 ISO 代码快捷方法
     def country_code(self, query):
         "Return the country code for the given IP Address or FQDN."
         return self.country(query)["country_code"]
 
+    # 国家名称快捷方法
     def country_name(self, query):
         "Return the country name for the given IP Address or FQDN."
         return self.country(query)["country_name"]
 
+    # 返回国家/大洲信息字典
     def country(self, query):
         """
         Return a dictionary with the country code and name when given an
@@ -212,16 +229,19 @@ class GeoIP2:
             "is_in_european_union": response.country.is_in_european_union,
         }
 
+    # (经度, 纬度) 元组
     def lon_lat(self, query):
         "Return a tuple of the (longitude, latitude) for the given query."
         data = self.city(query)
         return data["longitude"], data["latitude"]
 
+    # (纬度, 经度) 元组
     def lat_lon(self, query):
         "Return a tuple of the (latitude, longitude) for the given query."
         data = self.city(query)
         return data["latitude"], data["longitude"]
 
+    # 返回 WGS84 GEOS Point
     def geos(self, query):
         "Return a GEOS Point object for the given query."
         # Allows importing and using GeoIP2() when GEOS is not installed.

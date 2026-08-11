@@ -14,15 +14,18 @@ from .const import (
 )
 
 
+# 封装单个 GDAL 栅格波段，须从 GDALRaster 获取
 class GDALBand(GDALRasterBase):
     """
     Wrap a GDAL raster band, needs to be obtained from a GDALRaster object.
     """
 
+    # 绑定父栅格与 1 基波段索引，获取波段指针
     def __init__(self, source, index):
         self.source = source
         self._ptr = capi.get_ds_raster_band(source._ptr, index)
 
+    # 刷新父栅格缓存并标记统计量需重新计算
     def _flush(self):
         """
         Call the flush method on the Band's parent raster and force a refresh
@@ -31,6 +34,7 @@ class GDALBand(GDALRasterBase):
         self.source._flush()
         self._stats_refresh = True
 
+    # 波段描述字符串
     @property
     def description(self):
         """
@@ -38,6 +42,7 @@ class GDALBand(GDALRasterBase):
         """
         return force_str(capi.get_band_description(self._ptr))
 
+    # 波段宽度（像素，X 轴）
     @property
     def width(self):
         """
@@ -45,6 +50,7 @@ class GDALBand(GDALRasterBase):
         """
         return capi.get_band_xsize(self._ptr)
 
+    # 波段高度（像素，Y 轴）
     @property
     def height(self):
         """
@@ -52,6 +58,7 @@ class GDALBand(GDALRasterBase):
         """
         return capi.get_band_ysize(self._ptr)
 
+    # 波段总像素数
     @property
     def pixel_count(self):
         """
@@ -61,6 +68,7 @@ class GDALBand(GDALRasterBase):
 
     _stats_refresh = False
 
+    # 计算最小/最大/均值/标准差；支持 PAM 缓存与近似统计
     def statistics(self, refresh=False, approximate=False):
         """
         Compute statistics on the pixel values of this band.
@@ -113,6 +121,7 @@ class GDALBand(GDALRasterBase):
 
         return result
 
+    # 最小像素值（委托 statistics）
     @property
     def min(self):
         """
@@ -120,6 +129,7 @@ class GDALBand(GDALRasterBase):
         """
         return self.statistics()[0]
 
+    # 最大像素值
     @property
     def max(self):
         """
@@ -127,6 +137,7 @@ class GDALBand(GDALRasterBase):
         """
         return self.statistics()[1]
 
+    # 像素均值
     @property
     def mean(self):
         """
@@ -134,6 +145,7 @@ class GDALBand(GDALRasterBase):
         """
         return self.statistics()[2]
 
+    # 像素标准差
     @property
     def std(self):
         """
@@ -141,6 +153,7 @@ class GDALBand(GDALRasterBase):
         """
         return self.statistics()[3]
 
+    # 无数据值；未设置时返回 None
     @property
     def nodata_value(self):
         """
@@ -156,6 +169,7 @@ class GDALBand(GDALRasterBase):
             value = int(value)
         return value
 
+    # 设置或清除 NoData 值
     @nodata_value.setter
     def nodata_value(self, value):
         """
@@ -169,6 +183,7 @@ class GDALBand(GDALRasterBase):
             capi.set_band_nodata_value(self._ptr, value)
         self._flush()
 
+    # GDAL 像素数据类型（可选返回 GDT_* 名称）
     def datatype(self, as_string=False):
         """
         Return the GDAL Pixel Datatype for this band.
@@ -178,6 +193,7 @@ class GDALBand(GDALRasterBase):
             dtype = GDAL_PIXEL_TYPES[dtype]
         return dtype
 
+    # 颜色解释（灰度/RGB/Alpha 等）
     def color_interp(self, as_string=False):
         """Return the GDAL color interpretation for this band."""
         color = capi.get_band_color_interp(self._ptr)
@@ -185,6 +201,7 @@ class GDALBand(GDALRasterBase):
             color = GDAL_COLOR_TYPES[color]
         return color
 
+    # 按块读写像素；读时返回 numpy 数组、memoryview 或 list
     def data(self, data=None, offset=None, size=None, shape=None, as_memoryview=False):
         """
         Read or writes pixel values for this band. Blocks of data can
@@ -254,18 +271,23 @@ class GDALBand(GDALRasterBase):
             self._flush()
 
 
+# 栅格波段列表：按 1 基索引迭代 GDALBand
 class BandList(list):
+    # 保存父 GDALRaster 引用
     def __init__(self, source):
         self.source = source
         super().__init__()
 
+    # 按波段序号 1..n 生成 GDALBand
     def __iter__(self):
         for idx in range(1, len(self) + 1):
             yield GDALBand(self.source, idx)
 
+    # 波段数量
     def __len__(self):
         return capi.get_ds_raster_count(self.source._ptr)
 
+    # 0 基索引访问波段（内部转为 1 基）
     def __getitem__(self, index):
         try:
             return GDALBand(self.source, index + 1)

@@ -15,7 +15,9 @@ from django.contrib.gis.gdal.prototypes.generation import (
 )
 
 
+# 本模块专用的 ctypes 包装辅助：包络、坐标点与拓扑谓词
 # ### Generation routines specific to this module ###
+# 获取 OGREnvelope 的函数包装
 def env_func(f, argtypes):
     "For getting OGREnvelopes."
     f.argtypes = argtypes
@@ -24,11 +26,13 @@ def env_func(f, argtypes):
     return f
 
 
+# 按索引读取点 X/Y/Z/M 坐标的 double 输出包装
 def pnt_func(f):
     "For accessing point information."
     return double_output(f, [c_void_p, c_int])
 
 
+# 拓扑关系谓词：返回 c_int 并转为 Python bool
 def topology_func(f):
     f.argtypes = [c_void_p, c_void_p]
     f.restype = c_int
@@ -36,8 +40,10 @@ def topology_func(f):
     return f
 
 
+# OGR 几何（OGR_G_*）ctypes 函数原型集合
 # ### OGR_G ctypes function prototypes ###
 
+# GeoJSON / KML 导入导出
 # GeoJSON routines.
 from_json = geom_output(lgdal.OGR_G_CreateGeometryFromJson, [c_char_p])
 to_json = string_output(
@@ -53,6 +59,7 @@ gety = pnt_func(lgdal.OGR_G_GetY)
 getz = pnt_func(lgdal.OGR_G_GetZ)
 getm = pnt_func(lgdal.OGR_G_GetM)
 
+# 从 WKB/WKT/GML/JSON 创建几何及克隆、子几何访问
 # Geometry creation routines.
 from_wkb = geom_output(
     lgdal.OGR_G_CreateFromWkbEx,
@@ -86,13 +93,16 @@ get_curve_geom = geom_output(
     lgdal.OGR_G_GetCurveGeometry, [c_void_p, POINTER(c_char_p)]
 )
 
+# 添加子几何、从 WKT 导入
 # Geometry modification routines.
 add_geom = void_output(lgdal.OGR_G_AddGeometry, [c_void_p, c_void_p])
 import_wkt = void_output(lgdal.OGR_G_ImportFromWkt, [c_void_p, POINTER(c_char_p)])
 
+# 销毁几何对象
 # Destroys a geometry
 destroy_geom = void_output(lgdal.OGR_G_DestroyGeometry, [c_void_p], errcheck=False)
 
+# 导出为 WKB/WKT/GML 及 WKB 尺寸查询
 # Geometry export routines.
 to_wkb = void_output(
     lgdal.OGR_G_ExportToWkb, None, errcheck=True
@@ -109,12 +119,14 @@ to_gml = string_output(
 )
 get_wkbsize = int_output(lgdal.OGR_G_WkbSizeEx, [c_void_p])
 
+# 分配与获取几何关联的空间参考
 # Geometry spatial-reference related routines.
 assign_srs = void_output(
     lgdal.OGR_G_AssignSpatialReference, [c_void_p, c_void_p], errcheck=False
 )
 get_geom_srs = srs_output(lgdal.OGR_G_GetSpatialReference, [c_void_p])
 
+# 面积、质心、维度、空几何检测与点访问
 # Geometry properties
 get_area = double_output(lgdal.OGR_G_GetArea, [c_void_p])
 get_centroid = void_output(lgdal.OGR_G_Centroid, [c_void_p, c_void_p])
@@ -147,6 +159,7 @@ get_point = void_output(
 )
 geom_close_rings = void_output(lgdal.OGR_G_CloseRings, [c_void_p], errcheck=False)
 
+# 九交模型拓扑：Contains、Intersects、Within 等
 # Topology routines.
 ogr_contains = topology_func(lgdal.OGR_G_Contains)
 ogr_crosses = topology_func(lgdal.OGR_G_Crosses)
@@ -157,9 +170,11 @@ ogr_overlaps = topology_func(lgdal.OGR_G_Overlaps)
 ogr_touches = topology_func(lgdal.OGR_G_Touches)
 ogr_within = topology_func(lgdal.OGR_G_Within)
 
+# 坐标变换：Transform / TransformTo
 # Transformation routines.
 geom_transform = void_output(lgdal.OGR_G_Transform, [c_void_p, c_void_p])
 geom_transform_to = void_output(lgdal.OGR_G_TransformTo, [c_void_p, c_void_p])
 
+# 获取几何外包矩形
 # For retrieving the envelope of the geometry.
 get_envelope = env_func(lgdal.OGR_G_GetEnvelope, [c_void_p, POINTER(OGREnvelope)])

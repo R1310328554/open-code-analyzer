@@ -1,4 +1,7 @@
 """
+根据 GDAL C API 签名生成 ctypes 函数原型及 errcheck 包装。
+
+This module contains functions that generate ctypes prototypes for the"""
 This module contains functions that generate ctypes prototypes for the
 GDAL routines.
 """
@@ -19,10 +22,12 @@ from django.contrib.gis.gdal.prototypes.errcheck import (
 )
 
 
+# 自定义 c_char_p 子类，便于 string_output 识别需释放的堆字符串
 class gdal_char_p(c_char_p):
     pass
 
 
+# 生成返回 c_bool 的 ctypes 函数
 def bool_output(func, argtypes, errcheck=None):
     """Generate a ctypes function that returns a boolean value."""
     func.argtypes = argtypes
@@ -32,6 +37,7 @@ def bool_output(func, argtypes, errcheck=None):
     return func
 
 
+# 生成返回 c_double 的函数，可选 errcheck 或 strarg 双返回值
 def double_output(func, argtypes, errcheck=False, strarg=False, cpl=False):
     "Generate a ctypes function that returns a double value."
     func.argtypes = argtypes
@@ -43,6 +49,7 @@ def double_output(func, argtypes, errcheck=False, strarg=False, cpl=False):
     return func
 
 
+# 生成返回几何指针的函数；offset 表示几何在 byref 参数中的位置
 def geom_output(func, argtypes, offset=None):
     """
     Generate a function that returns a Geometry either by reference
@@ -67,6 +74,7 @@ def geom_output(func, argtypes, offset=None):
     return func
 
 
+# 生成返回 c_int 的 ctypes 函数
 def int_output(func, argtypes, errcheck=None):
     "Generate a ctypes function that returns an integer value."
     func.argtypes = argtypes
@@ -76,6 +84,7 @@ def int_output(func, argtypes, errcheck=None):
     return func
 
 
+# 生成返回 c_int64 的 ctypes 函数
 def int64_output(func, argtypes):
     "Generate a ctypes function that returns a 64-bit integer value."
     func.argtypes = argtypes
@@ -83,6 +92,7 @@ def int64_output(func, argtypes):
     return func
 
 
+# 生成返回 OGR 空间参考指针的函数，绑定 check_srs
 def srs_output(func, argtypes):
     """
     Generate a ctypes prototype for the given function with
@@ -95,6 +105,7 @@ def srs_output(func, argtypes):
     return func
 
 
+# 生成返回常量字符串的函数，可选解码与 CPL 错误检查
 def const_string_output(func, argtypes, offset=None, decoding=None, cpl=False):
     func.argtypes = argtypes
     if offset:
@@ -113,6 +124,7 @@ def const_string_output(func, argtypes, offset=None, decoding=None, cpl=False):
     return func
 
 
+# 生成返回需释放或 byref 字符串的函数
 def string_output(func, argtypes, offset=-1, str_result=False, decoding=None):
     """
     Generate a ctypes prototype for the given function with the
@@ -142,6 +154,7 @@ def string_output(func, argtypes, offset=-1, str_result=False, decoding=None):
     return func
 
 
+# 无返回值或仅返回错误码的 void/int 包装
 def void_output(func, argtypes, errcheck=True, cpl=False):
     """
     For functions that don't only return an error code that needs to
@@ -160,6 +173,7 @@ def void_output(func, argtypes, errcheck=True, cpl=False):
     return func
 
 
+# 返回 c_void_p 的函数，默认 check_pointer
 def voidptr_output(func, argtypes, errcheck=True):
     "For functions that return c_void_p."
     func.argtypes = argtypes
@@ -169,6 +183,7 @@ def voidptr_output(func, argtypes, errcheck=True):
     return func
 
 
+# 返回 c_char_p 数组（如元数据域列表）的函数
 def chararray_output(func, argtypes, errcheck=True):
     """For functions that return a c_char_p array."""
     func.argtypes = argtypes

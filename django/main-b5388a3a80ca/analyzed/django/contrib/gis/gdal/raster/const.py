@@ -1,4 +1,8 @@
 """
+GDAL 栅格常量：像素类型、颜色解释、重采样与 VSI 路径。
+
+GDAL - Constant definitions
+""""""
 GDAL - Constant definitions
 """
 
@@ -15,6 +19,7 @@ from ctypes import (
     c_uint64,
 )
 
+# GDAL 像素数据类型枚举值到名称的映射
 # See https://gdal.org/api/raster_c_api.html#_CPPv412GDALDataType
 GDAL_PIXEL_TYPES = {
     0: "GDT_Unknown",  # Unknown or unspecified type
@@ -34,9 +39,11 @@ GDAL_PIXEL_TYPES = {
     14: "GDT_Int8",  # 8 bit signed integer (GDAL 3.7+).
 }
 
+# 整数型像素类型索引列表
 # A list of gdal datatypes that are integers.
 GDAL_INTEGER_TYPES = [1, 2, 3, 4, 5, 12, 13, 14]
 
+# 像素类型索引到 ctypes 类型的对照，供 band_io 分配缓冲区
 # Lookup values to convert GDAL pixel type indices into ctypes objects.
 # The GDAL band-io works with ctypes arrays to hold data to be written
 # or to hold the space for data to be read into. The lookup below helps
@@ -59,6 +66,7 @@ GDAL_TO_CTYPES = [
     c_int8,
 ]
 
+# 重采样算法名称到 GDAL 枚举 ID
 # List of resampling algorithms that can be used to warp a GDALRaster.
 GDAL_RESAMPLE_ALGORITHMS = {
     "NearestNeighbour": 0,
@@ -70,6 +78,7 @@ GDAL_RESAMPLE_ALGORITHMS = {
     "Mode": 6,
 }
 
+# 波段颜色解释类型映射
 # See https://gdal.org/api/raster_c_api.html#_CPPv415GDALColorInterp
 GDAL_COLOR_TYPES = {
     0: "GCI_Undefined",  # Undefined, default value, i.e. not known
@@ -91,15 +100,19 @@ GDAL_COLOR_TYPES = {
     16: "GCI_YCbCr_CrBand",  # Cr Chroma, also GCI_Max
 }
 
+# VSI 虚拟文件系统路径前缀
 # GDAL virtual filesystems prefix.
 VSI_FILESYSTEM_PREFIX = "/vsi"
 
+# 内存栅格默认 vsimem 基路径
 # Fixed base path for buffer-based GDAL in-memory files.
 VSI_MEM_FILESYSTEM_BASE_PATH = "/vsimem/"
 
+# VSI 是否接管缓冲区所有权（Django 由 __del__ 自行清理）
 # Should the memory file system take ownership of the buffer, freeing it when
 # the file is deleted? (No, GDALRaster.__del__() will delete the buffer.)
 VSI_TAKE_BUFFER_OWNERSHIP = False
 
+# 读取 VSI 缓冲区时是否删除虚拟文件
 # Should a VSI file be removed when retrieving its buffer?
 VSI_DELETE_BUFFER_ON_READ = False
