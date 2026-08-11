@@ -18,10 +18,13 @@ from huggingface_hub.dataclasses import strict
 from ...configuration_utils import PreTrainedConfig
 from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
+# StableLM 配置：3B 规模解码器、RoPE、并行残差与 Q/K LayerNorm 超参数
+
 
 
 @auto_docstring(checkpoint="stabilityai/stablelm-3b-4e1t")
 @strict
+# StableLmConfig：StableLM 配置：50304 词表、32 层 GQA 解码器与 partial RoPE 因子
 class StableLmConfig(PreTrainedConfig):
     r"""
     use_parallel_residual (`bool`, *optional*, defaults to `False`):
@@ -64,6 +67,7 @@ class StableLmConfig(PreTrainedConfig):
     eos_token_id: int | list[int] | None = 0
     pad_token_id: int | None = None
 
+    # __post_init__：后初始化：解析 RoPE 参数与派生配置字段
     def __post_init__(self, **kwargs):
         kwargs.setdefault("partial_rotary_factor", 0.25)  # assign default for BC
         super().__post_init__(**kwargs)

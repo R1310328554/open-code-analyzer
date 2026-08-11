@@ -18,10 +18,13 @@ from huggingface_hub.dataclasses import strict
 from ...configuration_utils import PreTrainedConfig
 from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
+# StarCoder2 配置：滑动窗口注意力、GQA 与 RoPE 的代码 LLM 超参数
+
 
 
 @auto_docstring(checkpoint="bigcode/starcoder2-7b")
 @strict
+# Starcoder2Config：StarCoder2 配置：16384 词表、滑动窗口与 GQA 解码器超参数
 class Starcoder2Config(PreTrainedConfig):
     r"""
     use_bias (`bool`, *optional*, defaults to `True`):

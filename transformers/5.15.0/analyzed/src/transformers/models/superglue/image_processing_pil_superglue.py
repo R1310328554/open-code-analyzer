@@ -21,6 +21,8 @@ from PIL import Image, ImageDraw
 from ...image_processing_backends import PilBackend
 from ...image_processing_utils import BatchFeature
 from ...image_utils import (
+# SuperGlue PIL 图像处理器：图像对校验、灰度转换与 resize 预处理
+
     ImageInput,
     ImageType,
     PILImageResampling,
@@ -41,12 +43,14 @@ if TYPE_CHECKING:
     from .modeling_superglue import SuperGlueKeypointMatchingOutput
 
 
+# is_grayscale：灰度判定：检查图像通道维是否为单通道
 def is_grayscale(image: np.ndarray):
     if image.shape[0] == 1:
         return True
     return np.all(image[0, ...] == image[1, ...]) and np.all(image[1, ...] == image[2, ...])
 
 
+# convert_to_grayscale：灰度转换：RGB 图像转为单通道灰度表示
 def convert_to_grayscale(image: ImageInput) -> ImageInput:
     """
     Converts an image to grayscale format using the NTSC formula. Only support numpy and PIL Image.
@@ -76,6 +80,7 @@ def convert_to_grayscale(image: ImageInput) -> ImageInput:
 
 
 # Adapted from transformers.models.superglue.image_processing_superglue.validate_and_format_image_pairs
+# validate_and_format_image_pairs：图像对校验：确保输入为成对图像并统一格式
 def validate_and_format_image_pairs(images: ImageInput):
     error_message = (
         "Input images must be a one of the following :",
@@ -104,6 +109,7 @@ def validate_and_format_image_pairs(images: ImageInput):
     raise ValueError(error_message)
 
 
+# SuperGlueImageProcessorKwargs：SuperGlue 预处理参数：target_size 等 resize 选项
 class SuperGlueImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     do_grayscale (`bool`, *optional*, defaults to `self.do_grayscale`):
@@ -114,6 +120,7 @@ class SuperGlueImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# SuperGlueImageProcessorPil：SuperGlue PIL 后端：图像对校验、灰度转换与 resize
 class SuperGlueImageProcessorPil(PilBackend):
     valid_kwargs = SuperGlueImageProcessorKwargs
     resample = PILImageResampling.BILINEAR
@@ -125,6 +132,7 @@ class SuperGlueImageProcessorPil(PilBackend):
     do_normalize = None
     do_grayscale = True
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[SuperGlueImageProcessorKwargs]):
         super().__init__(**kwargs)
 
@@ -137,6 +145,7 @@ class SuperGlueImageProcessorPil(PilBackend):
         images = self.fetch_images(images)
         return validate_and_format_image_pairs(images)
 
+    # _preprocess：内部预处理：resize、归一化与批内 padding 打包
     def _preprocess(
         self,
         images: list[np.ndarray],

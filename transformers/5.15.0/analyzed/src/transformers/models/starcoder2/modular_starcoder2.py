@@ -34,6 +34,8 @@ from ...utils import TransformersKwargs, logging
 from ...utils.generic import merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
 from ..mistral.modeling_mistral import (
+# StarCoder2 modular 源：继承 Mistral 组件并定制 QKV bias 与滑动窗口注意力
+
     MistralAttention,
     MistralDecoderLayer,
     MistralForCausalLM,
@@ -49,7 +51,9 @@ from .configuration_starcoder2 import Starcoder2Config
 logger = logging.get_logger(__name__)
 
 
+# Starcoder2MLP：StarCoder2 MLP：SwiGLU 前馈网络（gate/up/down 投影）
 class Starcoder2MLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Starcoder2Config):
         super().__init__()
         embed_dim = config.hidden_size
@@ -58,6 +62,7 @@ class Starcoder2MLP(nn.Module):
         self.act = ACT2FN[config.hidden_act]
         self.residual_dropout = config.residual_dropout
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: tuple[torch.FloatTensor] | None) -> torch.FloatTensor:
         hidden_states = self.c_fc(hidden_states)
         hidden_states = self.act(hidden_states)
@@ -66,7 +71,9 @@ class Starcoder2MLP(nn.Module):
         return hidden_states
 
 
+# Starcoder2Attention：StarCoder2 注意力：GQA + RoPE + 滑动窗口因果自注意力
 class Starcoder2Attention(MistralAttention):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Starcoder2Config, layer_idx: int | None = None):
         super().__init__(config=config, layer_idx=layer_idx)
         self.residual_dropout = config.residual_dropout
@@ -75,6 +82,7 @@ class Starcoder2Attention(MistralAttention):
         self.v_proj = nn.Linear(config.hidden_size, config.num_key_value_heads * self.head_dim, bias=config.use_bias)
         self.o_proj = nn.Linear(config.num_attention_heads * self.head_dim, config.hidden_size, bias=config.use_bias)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -121,7 +129,9 @@ class Starcoder2Attention(MistralAttention):
         return attn_output, attn_weights
 
 
+# Starcoder2DecoderLayer：StarCoder2 解码层：Pre-LN 自注意力 + MLP 残差堆叠
 class Starcoder2DecoderLayer(MistralDecoderLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Starcoder2Config, layer_idx: int):
         super().__init__(config, layer_idx)
         self.self_attn = Starcoder2Attention(config=config, layer_idx=layer_idx)
@@ -130,7 +140,9 @@ class Starcoder2DecoderLayer(MistralDecoderLayer):
         self.post_attention_layernorm = nn.LayerNorm(config.hidden_size, eps=config.norm_epsilon)
 
 
+# Starcoder2Model：StarCoder2 基模型：词嵌入 + 多层解码器 + RMSNorm
 class Starcoder2Model(MistralModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Starcoder2Config):
         super().__init__(config)
         self.layers = nn.ModuleList(
@@ -141,6 +153,7 @@ class Starcoder2Model(MistralModel):
 
     @merge_with_config_defaults
     @capture_outputs
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -199,14 +212,17 @@ class Starcoder2Model(MistralModel):
         )
 
 
+# Starcoder2ForCausalLM：StarCoder2 因果 LM：代码生成基模型 + lm_head 与 GenerationMixin
 class Starcoder2ForCausalLM(MistralForCausalLM):
     pass
 
 
+# Starcoder2ForSequenceClassification：StarCoder2 序列分类：Generic 分类头封装
 class Starcoder2ForSequenceClassification(MistralForSequenceClassification):
     pass
 
 
+# Starcoder2ForTokenClassification：StarCoder2 词元分类：Generic 词元分类头封装
 class Starcoder2ForTokenClassification(MistralForTokenClassification):
     pass
 

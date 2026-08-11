@@ -21,6 +21,8 @@ from ...image_processing_backends import TorchvisionBackend
 from ...image_processing_utils import BatchFeature
 from ...image_transforms import group_images_by_shape, reorder_images
 from ...image_utils import (
+# SuperGlue Torchvision 图像处理器：图像对校验、灰度转换与批量 resize
+
     ImageInput,
     ImageType,
     PILImageResampling,
@@ -47,12 +49,14 @@ if is_vision_available():
 from torchvision.transforms.v2 import functional as tvF
 
 
+# _is_valid_image：图像有效性检查：PIL/ndarray/tensor 格式校验
 def _is_valid_image(image):
     return is_pil_image(image) or (
         is_valid_image(image) and get_image_type(image) != ImageType.PIL and len(image.shape) == 3
     )
 
 
+# validate_and_format_image_pairs：图像对校验：确保输入为成对图像并统一格式
 def validate_and_format_image_pairs(images: ImageInput):
     error_message = (
         "Input images must be a one of the following :",
@@ -81,6 +85,7 @@ def validate_and_format_image_pairs(images: ImageInput):
     raise ValueError(error_message)
 
 
+# is_grayscale：灰度判定：检查图像通道维是否为单通道
 def is_grayscale(
     image: "torch.Tensor",
 ):
@@ -92,6 +97,7 @@ def is_grayscale(
     )
 
 
+# convert_to_grayscale：灰度转换：RGB 图像转为单通道灰度表示
 def convert_to_grayscale(
     image: "torch.Tensor",
 ) -> "torch.Tensor":
@@ -111,6 +117,7 @@ def convert_to_grayscale(
     return tvF.rgb_to_grayscale(image, num_output_channels=3)
 
 
+# SuperGlueImageProcessorKwargs：SuperGlue 预处理参数：target_size 等 resize 选项
 class SuperGlueImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     do_grayscale (`bool`, *optional*, defaults to `self.do_grayscale`):
@@ -121,6 +128,7 @@ class SuperGlueImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# SuperGlueImageProcessor：SuperGlue Torchvision 后端：批量图像对预处理与灰度转换
 class SuperGlueImageProcessor(TorchvisionBackend):
     valid_kwargs = SuperGlueImageProcessorKwargs
     resample = PILImageResampling.BILINEAR
@@ -132,6 +140,7 @@ class SuperGlueImageProcessor(TorchvisionBackend):
     do_normalize = None
     do_grayscale = True
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[SuperGlueImageProcessorKwargs]):
         super().__init__(**kwargs)
 
@@ -148,6 +157,7 @@ class SuperGlueImageProcessor(TorchvisionBackend):
         images = self.fetch_images(images)
         return validate_and_format_image_pairs(images)
 
+    # _preprocess：内部预处理：resize、归一化与批内 padding 打包
     def _preprocess(
         self,
         images: list["torch.Tensor"],

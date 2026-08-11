@@ -35,6 +35,8 @@ from ...integrations import use_kernel_forward_from_hub, use_kernelized_func
 from ...masking_utils import create_causal_mask, create_sliding_window_causal_mask
 from ...modeling_flash_attention_utils import FlashAttentionKwargs
 from ...modeling_layers import (
+# StarCoder2 建模：Mistral 风格 GQA 解码器，滑动窗口因果自注意力
+
     GenericForSequenceClassification,
     GenericForTokenClassification,
     GradientCheckpointingLayer,
@@ -50,7 +52,9 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_starcoder2 import Starcoder2Config
 
 
+# Starcoder2MLP：StarCoder2 MLP：SwiGLU 前馈网络（gate/up/down 投影）
 class Starcoder2MLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Starcoder2Config):
         super().__init__()
         embed_dim = config.hidden_size
@@ -59,6 +63,7 @@ class Starcoder2MLP(nn.Module):
         self.act = ACT2FN[config.hidden_act]
         self.residual_dropout = config.residual_dropout
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: tuple[torch.FloatTensor] | None) -> torch.FloatTensor:
         hidden_states = self.c_fc(hidden_states)
         hidden_states = self.act(hidden_states)
@@ -67,6 +72,7 @@ class Starcoder2MLP(nn.Module):
         return hidden_states
 
 
+# rotate_half：RoPE 辅助：将 hidden 维度对半旋转用于 sin/cos 位置编码
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -75,6 +81,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：应用 RoPE：对 Q/K 张量施加旋转位置嵌入
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -100,6 +107,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA KV 头扩展：将 key/value 头重复至与 query 头数对齐
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -112,6 +120,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：标准注意力前向：QK^T 缩放 softmax 加权 V（含 sliding window 掩码）
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -138,9 +147,11 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# Starcoder2Attention：StarCoder2 注意力：GQA + RoPE + 滑动窗口因果自注意力
 class Starcoder2Attention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Starcoder2Config, layer_idx: int | None = None):
         super().__init__()
         self.config = config
@@ -156,6 +167,7 @@ class Starcoder2Attention(nn.Module):
         self.o_proj = nn.Linear(config.num_attention_heads * self.head_dim, config.hidden_size, bias=config.use_bias)
         self.residual_dropout = config.residual_dropout
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -202,7 +214,9 @@ class Starcoder2Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# Starcoder2DecoderLayer：StarCoder2 解码层：Pre-LN 自注意力 + MLP 残差堆叠
 class Starcoder2DecoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Starcoder2Config, layer_idx: int):
         super().__init__()
         self.hidden_size = config.hidden_size
@@ -211,6 +225,7 @@ class Starcoder2DecoderLayer(GradientCheckpointingLayer):
         self.input_layernorm = nn.LayerNorm(config.hidden_size, eps=config.norm_epsilon)
         self.post_attention_layernorm = nn.LayerNorm(config.hidden_size, eps=config.norm_epsilon)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -244,6 +259,7 @@ class Starcoder2DecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Starcoder2PreTrainedModel：StarCoder2 预训练基类：权重初始化与梯度检查点支持
 class Starcoder2PreTrainedModel(PreTrainedModel):
     config: Starcoder2Config
     base_model_prefix = "model"
@@ -262,8 +278,10 @@ class Starcoder2PreTrainedModel(PreTrainedModel):
     }
 
 
+# Starcoder2RotaryEmbedding：StarCoder2 RoPE：旋转位置编码，支持 sliding window 上下文
 class Starcoder2RotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Starcoder2Config, device=None):
         super().__init__()
         self.max_seq_len_cached = config.max_position_embeddings
@@ -302,6 +320,7 @@ class Starcoder2RotaryEmbedding(nn.Module):
 
     @torch.no_grad()
     @dynamic_rope_update  # power user: used with advanced RoPE types (e.g. dynamic rope)
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x, position_ids):
         inv_freq_expanded = (
             self.inv_freq[None, :, None].expand(position_ids.shape[0], -1, 1).to(dtype=torch.float, device=x.device)
@@ -320,7 +339,9 @@ class Starcoder2RotaryEmbedding(nn.Module):
 
 
 @auto_docstring
+# Starcoder2Model：StarCoder2 基模型：词嵌入 + 多层解码器 + RMSNorm
 class Starcoder2Model(Starcoder2PreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Starcoder2Config):
         super().__init__(config)
         self.padding_idx = config.pad_token_id
@@ -340,6 +361,7 @@ class Starcoder2Model(Starcoder2PreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -399,12 +421,14 @@ class Starcoder2Model(Starcoder2PreTrainedModel):
 
 
 @auto_docstring
+# Starcoder2ForCausalLM：StarCoder2 因果 LM：代码生成基模型 + lm_head 与 GenerationMixin
 class Starcoder2ForCausalLM(Starcoder2PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
     _pp_plan = {"lm_head": (["hidden_states"], ["logits"])}
     _fsdp_plan = {"lm_head": "keep_full_weight"}
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.model = Starcoder2Model(config)
@@ -416,6 +440,7 @@ class Starcoder2ForCausalLM(Starcoder2PreTrainedModel, GenerationMixin):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -473,10 +498,12 @@ class Starcoder2ForCausalLM(Starcoder2PreTrainedModel, GenerationMixin):
         )
 
 
+# Starcoder2ForSequenceClassification：StarCoder2 序列分类：Generic 分类头封装
 class Starcoder2ForSequenceClassification(GenericForSequenceClassification, Starcoder2PreTrainedModel):
     pass
 
 
+# Starcoder2ForTokenClassification：StarCoder2 词元分类：Generic 词元分类头封装
 class Starcoder2ForTokenClassification(GenericForTokenClassification, Starcoder2PreTrainedModel):
     pass
 

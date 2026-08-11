@@ -17,10 +17,13 @@ from huggingface_hub.dataclasses import strict
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
+# SuperGlue 配置：GNN 层数、Sinkhorn 迭代次数与关键点/描述子维度
+
 
 
 @auto_docstring(checkpoint="magic-leap-community/superglue_indoor")
 @strict
+# SuperGlueConfig：SuperGlue 配置：GNN 层数、Sinkhorn 迭代与 keypoint/descriptor 维度
 class SuperGlueConfig(PreTrainedConfig):
     r"""
     keypoint_detector_config (`Union[AutoConfig, dict]`,  *optional*, defaults to `SuperPointConfig`):
@@ -63,6 +66,7 @@ class SuperGlueConfig(PreTrainedConfig):
     is_decoder: bool = False
     attention_probs_dropout_prob: int | float = 0.0
 
+    # __post_init__：后初始化：解析 RoPE 参数与派生配置字段
     def __post_init__(self, **kwargs):
         self.gnn_layers_types = self.gnn_layers_types if self.gnn_layers_types is not None else ["self", "cross"] * 9
         self.keypoint_encoder_sizes = (

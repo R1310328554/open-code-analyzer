@@ -28,6 +28,8 @@ from ...cache_utils import Cache, DynamicCache
 from ...generation import GenerationMixin
 from ...masking_utils import create_causal_mask
 from ...modeling_layers import (
+# StableLM 建模：GQA 因果 Transformer 解码器，支持并行残差与部分 RoPE
+
     GenericForSequenceClassification,
     GenericForTokenClassification,
     GradientCheckpointingLayer,
@@ -53,8 +55,10 @@ logger = logging.get_logger(__name__)
 
 
 # Copied from transformers.models.llama.modeling_llama.LlamaRotaryEmbedding with Llama->StableLm
+# StableLmRotaryEmbedding：StableLM RoPE：可配置 rope_type 的旋转位置编码缓冲
 class StableLmRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: StableLmConfig, device=None):
         super().__init__()
         self.max_seq_len_cached = config.max_position_embeddings
@@ -96,6 +100,7 @@ class StableLmRotaryEmbedding(nn.Module):
 
     @torch.no_grad()
     @dynamic_rope_update  # power user: used with advanced RoPE types (e.g. dynamic rope)
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x, position_ids):
         inv_freq_expanded = (
             self.inv_freq[None, :, None].expand(position_ids.shape[0], -1, 1).to(dtype=torch.float, device=x.device)
@@ -114,6 +119,7 @@ class StableLmRotaryEmbedding(nn.Module):
 
 
 # Copied from transformers.models.llama.modeling_llama.rotate_half
+# rotate_half：RoPE 辅助：将 hidden 维度对半旋转用于 sin/cos 位置编码
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -122,6 +128,7 @@ def rotate_half(x):
 
 
 # Copied from transformers.models.llama.modeling_llama.apply_rotary_pos_emb
+# apply_rotary_pos_emb：应用 RoPE：对 Q/K 张量施加旋转位置嵌入
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -148,7 +155,9 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
 
 
 # Copied from transformers.models.mistral.modeling_mistral.MistralMLP with Mistral->StableLm
+# StableLmMLP：StableLM MLP：SwiGLU 风格 gate/up/down 投影前馈网络
 class StableLmMLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -159,18 +168,22 @@ class StableLmMLP(nn.Module):
         self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=False)
         self.act_fn = ACT2FN[config.hidden_act]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         down_proj = self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
         return down_proj
 
 
+# StableLmLayerNormPerHead：StableLM 逐头 LayerNorm：对 Q/K 头维做 RMS 归一化
 class StableLmLayerNormPerHead(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, dim, num_heads, eps=1e-5, bias=False):
         super().__init__()
         self.dim = dim
         self.num_heads = num_heads
         self.norms = nn.ModuleList([nn.LayerNorm(dim, eps=eps, bias=bias) for _ in range(self.num_heads)])
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor):
         # Split along the num_heads axis to get per-head inputs
         # [batch_size, num_heads, seq_len, head_dim] -> [batch_size, 1, seq_len, head_dim] * num_heads
@@ -180,6 +193,7 @@ class StableLmLayerNormPerHead(nn.Module):
 
 
 # Copied from transformers.models.llama.modeling_llama.repeat_kv
+# repeat_kv：GQA KV 头扩展：将 key/value 头重复至与 query 头数对齐
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -193,6 +207,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
 
 
 # Copied from transformers.models.llama.modeling_llama.eager_attention_forward
+# eager_attention_forward：标准注意力前向：QK^T 缩放 softmax 加权 V（含 sliding window 掩码）
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -218,9 +233,11 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# StableLmAttention：StableLM 注意力：GQA 分组查询 + RoPE 因果自注意力（可选 QK Norm）
 class StableLmAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: StableLmConfig, layer_idx: int | None = None):
         super().__init__()
         self.config = config
@@ -261,6 +278,7 @@ class StableLmAttention(nn.Module):
 
         self.attention_dropout = config.attention_dropout
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -327,7 +345,9 @@ class StableLmAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# StableLmDecoderLayer：StableLM 解码层：Pre-LN 自注意力 + MLP，支持并行残差路径
 class StableLmDecoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: StableLmConfig, layer_idx: int):
         super().__init__()
         self.use_parallel_residual = config.use_parallel_residual
@@ -340,6 +360,7 @@ class StableLmDecoderLayer(GradientCheckpointingLayer):
             self.post_attention_layernorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -384,6 +405,7 @@ class StableLmDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# StableLmPreTrainedModel：StableLM 预训练基类：RoPE/Linear 权重初始化与输出录制
 class StableLmPreTrainedModel(PreTrainedModel):
     config: StableLmConfig
     base_model_prefix = "model"
@@ -400,6 +422,7 @@ class StableLmPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# StableLmModel：StableLM 基模型：词嵌入 + 多层解码器 + 最终 RMSNorm
 class StableLmModel(StableLmPreTrainedModel):
     """
     Transformer decoder consisting of *config.num_hidden_layers* layers. Each layer is a [`StableLmDecoderLayer`]
@@ -408,6 +431,7 @@ class StableLmModel(StableLmPreTrainedModel):
         config: StableLmConfig
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: StableLmConfig):
         super().__init__(config)
         self.padding_idx = config.pad_token_id
@@ -429,6 +453,7 @@ class StableLmModel(StableLmPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -484,10 +509,12 @@ class StableLmModel(StableLmPreTrainedModel):
 
 
 # Copied from transformers.models.persimmon.modeling_persimmon.PersimmonForCausalLM with PERSIMMON->STABLELM,Persimmon->StableLm
+# StableLmForCausalLM：StableLM 因果 LM：基模型 + lm_head，支持 KV cache 自回归生成
 class StableLmForCausalLM(StableLmPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
 
     # Copied from transformers.models.llama.modeling_llama.LlamaForCausalLM.__init__ with LLAMA->STABLELM,Llama->StableLm
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.model = StableLmModel(config)
@@ -500,6 +527,7 @@ class StableLmForCausalLM(StableLmPreTrainedModel, GenerationMixin):
     @can_return_tuple
     @auto_docstring
     # Ignore copy
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -561,9 +589,11 @@ class StableLmForCausalLM(StableLmPreTrainedModel, GenerationMixin):
         )
 
 
+# StableLmForSequenceClassification：StableLM 序列分类：复用 GenericForSequenceClassification 头
 class StableLmForSequenceClassification(GenericForSequenceClassification, StableLmPreTrainedModel): ...
 
 
+# StableLmForTokenClassification：StableLM 词元分类：复用 GenericForTokenClassification 头
 class StableLmForTokenClassification(GenericForTokenClassification, StableLmPreTrainedModel): ...
 
 

@@ -23,6 +23,8 @@ from ... import initialization as init
 from ...activations import ACT2FN
 from ...masking_utils import create_bidirectional_mask
 from ...modeling_outputs import (
+# SqueezeBERT 建模：Conv1d 替代 Linear 的 BERT 变体，NCW 布局下分组卷积自注意力与 FFN
+
     BaseModelOutput,
     BaseModelOutputWithPooling,
     MaskedLMOutput,
@@ -42,9 +44,11 @@ from .configuration_squeezebert import SqueezeBertConfig
 logger = logging.get_logger(__name__)
 
 
+# SqueezeBertEmbeddings：SqueezeBERT 嵌入层：词/位置/段类型嵌入求和后经 LayerNorm 与 Dropout
 class SqueezeBertEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.word_embeddings = nn.Embedding(config.vocab_size, config.embedding_size, padding_idx=config.pad_token_id)
@@ -57,6 +61,7 @@ class SqueezeBertEmbeddings(nn.Module):
         # position_ids (1, len position emb) is contiguous in memory and exported when serialized
         self.position_ids = nn.Buffer(torch.arange(config.max_position_embeddings).expand((1, -1)), persistent=False)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input_ids=None, token_type_ids=None, position_ids=None, inputs_embeds=None):
         if input_ids is not None:
             input_shape = input_ids.size()
@@ -82,15 +87,18 @@ class SqueezeBertEmbeddings(nn.Module):
         return embeddings
 
 
+# MatMulWrapper：矩阵乘包装器：封装 torch.matmul 便于 FLOP 统计
 class MatMulWrapper(nn.Module):
     """
     Wrapper for torch.matmul(). This makes flop-counting easier to implement. Note that if you directly call
     torch.matmul() in your code, the flop counter will typically ignore the flops of the matmul.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self):
         super().__init__()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, mat1, mat2):
         """
 
@@ -102,6 +110,7 @@ class MatMulWrapper(nn.Module):
         return torch.matmul(mat1, mat2)
 
 
+# SqueezeBertLayerNorm：SqueezeBERT LayerNorm：接受 NCW 布局并在通道维 C 上归一化
 class SqueezeBertLayerNorm(nn.LayerNorm):
     """
     This is a nn.LayerNorm subclass that accepts NCW data layout and performs normalization in the C dimension.
@@ -109,20 +118,24 @@ class SqueezeBertLayerNorm(nn.LayerNorm):
     N = batch C = channels W = sequence length
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, hidden_size, eps=1e-12):
         nn.LayerNorm.__init__(self, normalized_shape=hidden_size, eps=eps)  # instantiates self.{weight, bias, eps}
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         x = x.permute(0, 2, 1)
         x = nn.LayerNorm.forward(self, x)
         return x.permute(0, 2, 1)
 
 
+# ConvDropoutLayerNorm：卷积-Dropout-LayerNorm 块：1×1 Conv + 残差 + LayerNorm
 class ConvDropoutLayerNorm(nn.Module):
     """
     ConvDropoutLayerNorm: Conv, Dropout, LayerNorm
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, cin, cout, groups, dropout_prob):
         super().__init__()
 
@@ -130,6 +143,7 @@ class ConvDropoutLayerNorm(nn.Module):
         self.layernorm = SqueezeBertLayerNorm(cout)
         self.dropout = nn.Dropout(dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states, input_tensor):
         x = self.conv1d(hidden_states)
         x = self.dropout(x)
@@ -138,22 +152,27 @@ class ConvDropoutLayerNorm(nn.Module):
         return x
 
 
+# ConvActivation：卷积-激活块：1×1 分组 Conv1d 后接配置激活函数
 class ConvActivation(nn.Module):
     """
     ConvActivation: Conv, Activation
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, cin, cout, groups, act):
         super().__init__()
         self.conv1d = nn.Conv1d(in_channels=cin, out_channels=cout, kernel_size=1, groups=groups)
         self.act = ACT2FN[act]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         output = self.conv1d(x)
         return self.act(output)
 
 
+# SqueezeBertSelfAttention：SqueezeBERT 自注意力：Conv1d 投影 Q/K/V，NCW 布局缩放点积注意力
 class SqueezeBertSelfAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, cin, q_groups=1, k_groups=1, v_groups=1):
         """
         config = used for some things; ignored for others (work in progress...) cin = input channels = output channels
@@ -178,6 +197,7 @@ class SqueezeBertSelfAttention(nn.Module):
         self.matmul_qk = MatMulWrapper()
         self.matmul_qkv = MatMulWrapper()
 
+    # transpose_for_scores：Q/V 头维重排：[N,C,W] → [N,heads,W,head_dim]
     def transpose_for_scores(self, x):
         """
         - input: [N, C, W]
@@ -187,6 +207,7 @@ class SqueezeBertSelfAttention(nn.Module):
         x = x.view(*new_x_shape)
         return x.permute(0, 1, 3, 2)  # [N, C1, C2, W] --> [N, C1, W, C2]
 
+    # transpose_key_for_scores：K 头维重排：[N,C,W] → [N,heads,head_dim,W]（转置布局）
     def transpose_key_for_scores(self, x):
         """
         - input: [N, C, W]
@@ -197,6 +218,7 @@ class SqueezeBertSelfAttention(nn.Module):
         # no `permute` needed
         return x
 
+    # transpose_output：注意力输出合并：[N,heads,W,dim] → [N,C,W]
     def transpose_output(self, x):
         """
         - input: [N, C1, W, C2]
@@ -207,6 +229,7 @@ class SqueezeBertSelfAttention(nn.Module):
         x = x.view(*new_x_shape)
         return x
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states, attention_mask, output_attentions):
         """
         expects hidden_states in [N, C, W] data layout.
@@ -244,7 +267,9 @@ class SqueezeBertSelfAttention(nn.Module):
         return result
 
 
+# SqueezeBertModule：SqueezeBERT Transformer 层：自注意力 + 卷积 FFN 两段残差
 class SqueezeBertModule(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         """
         - hidden_size = input chans = output chans for Q, K, V (they are all the same ... for now) = output chans for
@@ -271,6 +296,7 @@ class SqueezeBertModule(nn.Module):
             cin=c2, cout=c3, groups=config.output_groups, dropout_prob=config.hidden_dropout_prob
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states, attention_mask, output_attentions):
         att = self.attention(hidden_states, attention_mask, output_attentions)
         attention_output = att["context_layer"]
@@ -286,7 +312,9 @@ class SqueezeBertModule(nn.Module):
         return output_dict
 
 
+# SqueezeBertEncoder：SqueezeBERT 编码器：堆叠多层 Module 并在 BSW↔BSW 布局间转换
 class SqueezeBertEncoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
 
@@ -298,6 +326,7 @@ class SqueezeBertEncoder(nn.Module):
 
         self.layers = nn.ModuleList(SqueezeBertModule(config) for _ in range(config.num_hidden_layers))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -338,12 +367,15 @@ class SqueezeBertEncoder(nn.Module):
         )
 
 
+# SqueezeBertPooler：SqueezeBERT 池化层：取 [CLS] 隐状态经 Linear+Tanh 得句向量
 class SqueezeBertPooler(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
         self.activation = nn.Tanh()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         # We "pool" the model by simply taking the hidden state corresponding
         # to the first token.
@@ -353,7 +385,9 @@ class SqueezeBertPooler(nn.Module):
         return pooled_output
 
 
+# SqueezeBertPredictionHeadTransform：MLM 预测头变换：Linear + 激活 + LayerNorm
 class SqueezeBertPredictionHeadTransform(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
@@ -363,6 +397,7 @@ class SqueezeBertPredictionHeadTransform(nn.Module):
             self.transform_act_fn = config.hidden_act
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.dense(hidden_states)
         hidden_states = self.transform_act_fn(hidden_states)
@@ -370,7 +405,9 @@ class SqueezeBertPredictionHeadTransform(nn.Module):
         return hidden_states
 
 
+# SqueezeBertLMPredictionHead：MLM 预测头：变换层 + 词表 Linear 解码（含 bias 绑定）
 class SqueezeBertLMPredictionHead(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.transform = SqueezeBertPredictionHeadTransform(config)
@@ -383,28 +420,34 @@ class SqueezeBertLMPredictionHead(nn.Module):
 
         # Need a link between the two variables so that the bias is correctly resized with `resize_token_embeddings`
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.transform(hidden_states)
         hidden_states = self.decoder(hidden_states)
         return hidden_states
 
 
+# SqueezeBertOnlyMLMHead：仅 MLM 头封装：包装 LMPredictionHead 输出 token logits
 class SqueezeBertOnlyMLMHead(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.predictions = SqueezeBertLMPredictionHead(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, sequence_output):
         prediction_scores = self.predictions(sequence_output)
         return prediction_scores
 
 
 @auto_docstring
+# SqueezeBertPreTrainedModel：SqueezeBERT 预训练基类：权重初始化与 position_ids 缓冲同步
 class SqueezeBertPreTrainedModel(PreTrainedModel):
     config: SqueezeBertConfig
     base_model_prefix = "transformer"
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层、嵌入与 LayerNorm 权重
     def _init_weights(self, module):
         """Initialize the weights"""
         super()._init_weights(module)
@@ -415,7 +458,9 @@ class SqueezeBertPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# SqueezeBertModel：SqueezeBERT 基模型：嵌入 + 编码器 + 池化器输出序列/句表示
 class SqueezeBertModel(SqueezeBertPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -426,13 +471,16 @@ class SqueezeBertModel(SqueezeBertPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # get_input_embeddings：返回词嵌入层引用
     def get_input_embeddings(self):
         return self.embeddings.word_embeddings
 
+    # set_input_embeddings：替换词嵌入层权重
     def set_input_embeddings(self, new_embeddings):
         self.embeddings.word_embeddings = new_embeddings
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.Tensor | None = None,
@@ -500,12 +548,14 @@ class SqueezeBertModel(SqueezeBertPreTrainedModel):
 
 
 @auto_docstring
+# SqueezeBertForMaskedLM：SqueezeBERT 掩码语言建模：基模型 + MLM 头与交叉熵损失
 class SqueezeBertForMaskedLM(SqueezeBertPreTrainedModel):
     _tied_weights_keys = {
         "cls.predictions.decoder.bias": "cls.predictions.bias",
         "cls.predictions.decoder.weight": "transformer.embeddings.word_embeddings.weight",
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -515,14 +565,17 @@ class SqueezeBertForMaskedLM(SqueezeBertPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # get_output_embeddings：返回 LM 输出嵌入（decoder）层
     def get_output_embeddings(self):
         return self.cls.predictions.decoder
 
+    # set_output_embeddings：替换 LM 输出嵌入并同步 bias
     def set_output_embeddings(self, new_embeddings):
         self.cls.predictions.decoder = new_embeddings
         self.cls.predictions.bias = new_embeddings.bias
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.Tensor | None = None,
@@ -581,7 +634,9 @@ class SqueezeBertForMaskedLM(SqueezeBertPreTrainedModel):
     pooled output) e.g. for GLUE tasks.
     """
 )
+# SqueezeBertForSequenceClassification：SqueezeBERT 序列分类：池化输出 + Linear 分类/回归头
 class SqueezeBertForSequenceClassification(SqueezeBertPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
@@ -595,6 +650,7 @@ class SqueezeBertForSequenceClassification(SqueezeBertPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.Tensor | None = None,
@@ -668,7 +724,9 @@ class SqueezeBertForSequenceClassification(SqueezeBertPreTrainedModel):
 
 
 @auto_docstring
+# SqueezeBertForMultipleChoice：SqueezeBERT 多选分类：展平 num_choices 维后 softmax 选答案
 class SqueezeBertForMultipleChoice(SqueezeBertPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -680,6 +738,7 @@ class SqueezeBertForMultipleChoice(SqueezeBertPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.Tensor | None = None,
@@ -771,7 +830,9 @@ class SqueezeBertForMultipleChoice(SqueezeBertPreTrainedModel):
 
 
 @auto_docstring
+# SqueezeBertForTokenClassification：SqueezeBERT 词元分类：序列隐状态 + per-token Linear 头
 class SqueezeBertForTokenClassification(SqueezeBertPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
@@ -784,6 +845,7 @@ class SqueezeBertForTokenClassification(SqueezeBertPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.Tensor | None = None,
@@ -837,7 +899,9 @@ class SqueezeBertForTokenClassification(SqueezeBertPreTrainedModel):
 
 
 @auto_docstring
+# SqueezeBertForQuestionAnswering：SqueezeBERT 问答：序列隐状态预测 span 起止位置 logits
 class SqueezeBertForQuestionAnswering(SqueezeBertPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
@@ -849,6 +913,7 @@ class SqueezeBertForQuestionAnswering(SqueezeBertPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.Tensor | None = None,

@@ -26,11 +26,14 @@ from ... import initialization as init
 from ...masking_utils import create_bidirectional_mask
 from ...utils import ModelOutput, auto_docstring, logging
 from ..auto import AutoModelForKeypointDetection
+# SuperGlue 建模：关键点编码 + 注意力 GNN + Sinkhorn 最优传输匹配
+
 
 
 logger = logging.get_logger(__name__)
 
 
+# concat_pairs：拼接图像对特征：将两帧 keypoint/descriptor 元组逐元素 concat
 def concat_pairs(tensor_tuple0: tuple[torch.Tensor], tensor_tuple1: tuple[torch.Tensor]) -> tuple[torch.Tensor]:
     """
     Concatenate two tuples of tensors pairwise
@@ -47,6 +50,7 @@ def concat_pairs(tensor_tuple0: tuple[torch.Tensor], tensor_tuple1: tuple[torch.
     return tuple(torch.cat([tensor0, tensor1]) for tensor0, tensor1 in zip(tensor_tuple0, tensor_tuple1))
 
 
+# normalize_keypoints：关键点归一化：按图像高宽将像素坐标映射到 [-1, 1]
 def normalize_keypoints(keypoints: torch.Tensor, height: int, width: int) -> torch.Tensor:
     """
     Normalize keypoints locations based on image_shape
@@ -68,6 +72,7 @@ def normalize_keypoints(keypoints: torch.Tensor, height: int, width: int) -> tor
     return (keypoints - center[:, None, :]) / scaling[:, None, :]
 
 
+# log_sinkhorn_iterations：对数域 Sinkhorn 迭代：行列归一化求解软匹配矩阵
 def log_sinkhorn_iterations(
     log_cost_matrix: torch.Tensor,
     log_source_distribution: torch.Tensor,
@@ -97,6 +102,7 @@ def log_sinkhorn_iterations(
     return log_cost_matrix + log_u_scaling.unsqueeze(2) + log_v_scaling.unsqueeze(1)
 
 
+# log_optimal_transport：对数最优传输：Sinkhorn-Knopp 算法计算匹配分配矩阵
 def log_optimal_transport(scores: torch.Tensor, reg_param: torch.Tensor, iterations: int) -> torch.Tensor:
     """
     Perform Differentiable Optimal Transport in Log-space for stability
@@ -142,6 +148,7 @@ def log_optimal_transport(scores: torch.Tensor, reg_param: torch.Tensor, iterati
     return log_optimal_transport_matrix
 
 
+# arange_like：同形状 arange：沿指定维生成与输入设备/dtype 一致的索引
 def arange_like(x, dim: int) -> torch.Tensor:
     return x.new_ones(x.shape[dim]).cumsum(0) - 1
 
@@ -156,6 +163,7 @@ def arange_like(x, dim: int) -> torch.Tensor:
     """
 )
 @dataclass
+# SuperGlueKeypointMatchingOutput：SuperGlue 输出：匹配索引、得分矩阵与关键点掩码
 class SuperGlueKeypointMatchingOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*):
@@ -186,13 +194,16 @@ class SuperGlueKeypointMatchingOutput(ModelOutput):
     attentions: tuple[torch.FloatTensor] | None = None
 
 
+# SuperGlueMultiLayerPerceptron：SuperGlue MLP：多层 Linear + ReLU 前馈子网络
 class SuperGlueMultiLayerPerceptron(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SuperGlueConfig, in_channels: int, out_channels: int) -> None:
         super().__init__()
         self.linear = nn.Linear(in_channels, out_channels)
         self.batch_norm = nn.BatchNorm1d(out_channels)
         self.activation = nn.ReLU()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state: torch.Tensor) -> torch.Tensor:
         hidden_state = self.linear(hidden_state)
         hidden_state = hidden_state.transpose(-1, -2)
@@ -202,7 +213,9 @@ class SuperGlueMultiLayerPerceptron(nn.Module):
         return hidden_state
 
 
+# SuperGlueKeypointEncoder：SuperGlue 关键点编码器：坐标+得分+描述子拼接后经 MLP 投影
 class SuperGlueKeypointEncoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SuperGlueConfig) -> None:
         super().__init__()
         layer_sizes = config.keypoint_encoder_sizes
@@ -217,6 +230,7 @@ class SuperGlueKeypointEncoder(nn.Module):
         layers.append(nn.Linear(encoder_channels[-2], encoder_channels[-1]))
         self.encoder = nn.ModuleList(layers)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         keypoints: torch.Tensor,
@@ -233,7 +247,9 @@ class SuperGlueKeypointEncoder(nn.Module):
         return hidden_state, all_hidden_states
 
 
+# SuperGlueSelfAttention：SuperGlue 自注意力：多头缩放点积，支持 keypoint 掩码
 class SuperGlueSelfAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         if config.hidden_size % config.num_attention_heads != 0 and not hasattr(config, "embedding_size"):
@@ -254,6 +270,7 @@ class SuperGlueSelfAttention(nn.Module):
 
         self.is_decoder = config.is_decoder
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -314,11 +331,14 @@ class SuperGlueSelfAttention(nn.Module):
         return outputs
 
 
+# SuperGlueSelfOutput：SuperGlue 自注意力输出：Linear 投影 + 残差 + LayerNorm
 class SuperGlueSelfOutput(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SuperGlueConfig):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, *args) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         return hidden_states
@@ -329,12 +349,15 @@ SUPERGLUE_SELF_ATTENTION_CLASSES = {
 }
 
 
+# SuperGlueAttention：SuperGlue 注意力块：自注意力 + 输出投影残差连接
 class SuperGlueAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.self = SUPERGLUE_SELF_ATTENTION_CLASSES[config._attn_implementation](config)
         self.output = SuperGlueSelfOutput(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -355,7 +378,9 @@ class SuperGlueAttention(nn.Module):
         return outputs
 
 
+# SuperGlueAttentionalPropagation：SuperGlue 注意力传播：交叉/自注意力消息传递单层
 class SuperGlueAttentionalPropagation(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SuperGlueConfig) -> None:
         super().__init__()
         hidden_size = config.hidden_size
@@ -368,6 +393,7 @@ class SuperGlueAttentionalPropagation(nn.Module):
         layers.append(nn.Linear(mlp_channels[-2], mlp_channels[-1]))
         self.mlp = nn.ModuleList(layers)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         descriptors: torch.Tensor,
@@ -398,13 +424,16 @@ class SuperGlueAttentionalPropagation(nn.Module):
         return hidden_state, all_hidden_states, attention
 
 
+# SuperGlueAttentionalGNN：SuperGlue 注意力 GNN：多层 AttentionalPropagation 图神经网络
 class SuperGlueAttentionalGNN(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SuperGlueConfig) -> None:
         super().__init__()
         self.hidden_size = config.hidden_size
         self.layers_types = config.gnn_layers_types
         self.layers = nn.ModuleList([SuperGlueAttentionalPropagation(config) for _ in range(len(self.layers_types))])
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         descriptors: torch.Tensor,
@@ -453,17 +482,21 @@ class SuperGlueAttentionalGNN(nn.Module):
         return descriptors, all_hidden_states, all_attentions
 
 
+# SuperGlueFinalProjection：SuperGlue 最终投影：匹配得分矩阵的 Linear 头
 class SuperGlueFinalProjection(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SuperGlueConfig) -> None:
         super().__init__()
         hidden_size = config.hidden_size
         self.final_proj = nn.Linear(hidden_size, hidden_size, bias=True)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, descriptors: torch.Tensor) -> torch.Tensor:
         return self.final_proj(descriptors)
 
 
 @auto_docstring
+# SuperGluePreTrainedModel：SuperGlue 预训练基类：关键点匹配权重初始化
 class SuperGluePreTrainedModel(PreTrainedModel):
     config: SuperGlueConfig
     base_model_prefix = "superglue"
@@ -471,6 +504,7 @@ class SuperGluePreTrainedModel(PreTrainedModel):
     input_modalities = ("image",)
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层、嵌入与 LayerNorm 权重
     def _init_weights(self, module: nn.Module) -> None:
         """Initialize the weights"""
         super()._init_weights(module)
@@ -483,6 +517,7 @@ class SuperGluePreTrainedModel(PreTrainedModel):
     SuperGlue model taking images as inputs and outputting the matching of them.
     """
 )
+# SuperGlueForKeypointMatching：SuperGlue 关键点匹配：编码 + GNN + Sinkhorn 最优传输推理
 class SuperGlueForKeypointMatching(SuperGluePreTrainedModel):
     """SuperGlue feature matching middle-end
 
@@ -501,6 +536,7 @@ class SuperGlueForKeypointMatching(SuperGluePreTrainedModel):
     Networks. In CVPR, 2020. https://huggingface.co/papers/1911.11763
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SuperGlueConfig) -> None:
         super().__init__(config)
 
@@ -663,6 +699,7 @@ class SuperGlueForKeypointMatching(SuperGluePreTrainedModel):
         )
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,
