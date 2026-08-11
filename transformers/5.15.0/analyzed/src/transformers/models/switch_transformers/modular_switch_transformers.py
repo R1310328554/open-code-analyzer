@@ -25,6 +25,8 @@ from ...generation import GenerationMixin
 from ...masking_utils import create_bidirectional_mask, create_causal_mask
 from ...modeling_layers import GradientCheckpointingLayer
 from ...modeling_outputs import (
+# Switch Transformers modular 源：复用 T5 组件并扩展稀疏专家 FFN 与路由损失
+
     MoEModelOutput,
     MoEModelOutputWithPastAndCrossAttentions,
     Seq2SeqMoEModelOutput,
@@ -56,6 +58,7 @@ logger = logging.get_logger(__name__)
 ####################################################
 
 
+# router_z_loss_func：路由 z-loss：鼓励 router logits 接近零以稳定 MoE 训练
 def router_z_loss_func(router_logits: torch.Tensor) -> float:
     r"""
     Compute the router z-loss implemented in PyTorch.
@@ -76,6 +79,7 @@ def router_z_loss_func(router_logits: torch.Tensor) -> float:
     return torch.sum(z_loss) / (num_groups * tokens_per_group)
 
 
+# load_balancing_loss_func：负载均衡损失：惩罚专家路由分布不均，促进 token 均匀分配
 def load_balancing_loss_func(router_probs: torch.Tensor, expert_indices: torch.Tensor) -> float:
     r"""
     Computes auxiliary load balancing loss as in Switch Transformer - implemented in Pytorch.
@@ -115,6 +119,7 @@ def load_balancing_loss_func(router_probs: torch.Tensor, expert_indices: torch.T
     return torch.mean(tokens_per_group_and_expert * router_prob_per_group_and_expert) * (num_experts**2)
 
 
+# SwitchTransformersTop1Router：Top-1 路由器：Linear 打分后 softmax 选单个专家
 class SwitchTransformersTop1Router(nn.Module):
     """
     Router using tokens choose top-1 experts assignment.
@@ -126,6 +131,7 @@ class SwitchTransformersTop1Router(nn.Module):
 
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SwitchTransformersConfig):
         super().__init__()
         self.num_experts = config.num_experts
@@ -135,6 +141,7 @@ class SwitchTransformersTop1Router(nn.Module):
         self.ignore_padding_tokens = config.router_ignore_padding_tokens
         self.dtype = getattr(torch, config.router_dtype)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         r"""
         Computes router probabilities from input hidden states.
@@ -173,21 +180,26 @@ class SwitchTransformersTop1Router(nn.Module):
         return router_probs, expert_index, router_logits
 
 
+# SwitchTransformersLayerNorm：Switch T5 LayerNorm：无 bias 的 RMS 风格归一化
 class SwitchTransformersLayerNorm(T5LayerNorm):
     pass
 
 
+# SwitchTransformersDenseActDense：Switch 标准 FFN：两层 Linear + 激活（非稀疏路径）
 class SwitchTransformersDenseActDense(T5DenseActDense):
     pass
 
 
+# SwitchTransformersExperts：专家字典：num_experts 个独立 FFN 子模块
 class SwitchTransformersExperts(nn.ModuleDict):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SwitchTransformersConfig):
         super().__init__()
         self.num_experts = config.num_experts
         for idx in range(config.num_experts):
             self[f"expert_{idx}"] = SwitchTransformersDenseActDense(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self, hidden_states: torch.Tensor, selected_experts: torch.Tensor, routing_weights: torch.Tensor
     ) -> torch.Tensor:
@@ -203,12 +215,15 @@ class SwitchTransformersExperts(nn.ModuleDict):
         return final_hidden_states
 
 
+# SwitchTransformersSparseMLP：稀疏 MoE FFN：Top-1 路由将 token 分发至对应专家
 class SwitchTransformersSparseMLP(nn.Module):  # inherit from mixtral
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SwitchTransformersConfig):
         super().__init__()
         self.router = SwitchTransformersTop1Router(config)
         self.experts = SwitchTransformersExperts(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         batch_size, sequence_length, hidden_dim = hidden_states.shape
         hidden_states = hidden_states.view(-1, hidden_dim)
@@ -218,6 +233,7 @@ class SwitchTransformersSparseMLP(nn.Module):  # inherit from mixtral
         return hidden_states
 
 
+# SwitchTransformersLayerFF：Switch FFN 层：稀疏或稠密 FFN + LayerNorm 残差
 class SwitchTransformersLayerFF(nn.Module):
     r"""
     Switch Transformers Feed Forward layer module. This is a wrapper around the Mixture of Experts module.
@@ -230,6 +246,7 @@ class SwitchTransformersLayerFF(nn.Module):
             Whether the MLP layer is a `Sparse` layer (contains a Mixture of Experts) or not
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SwitchTransformersConfig, is_sparse=False):
         super().__init__()
         self.is_sparse = is_sparse
@@ -243,6 +260,7 @@ class SwitchTransformersLayerFF(nn.Module):
         self.layer_norm = SwitchTransformersLayerNorm(config.d_model, eps=config.layer_norm_epsilon)
         self.dropout = nn.Dropout(config.dropout_rate)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states, **kwargs):
         forwarded_states = self.layer_norm(hidden_states)
         forwarded_states = self.mlp(forwarded_states)
@@ -250,19 +268,24 @@ class SwitchTransformersLayerFF(nn.Module):
         return output
 
 
+# SwitchTransformersAttention：Switch T5 注意力：相对位置偏置的自/交叉多头注意力
 class SwitchTransformersAttention(T5Attention):
     pass
 
 
+# SwitchTransformersLayerSelfAttention：Switch 自注意力层：T5Attention + LayerNorm 残差
 class SwitchTransformersLayerSelfAttention(T5LayerSelfAttention):
     pass
 
 
+# SwitchTransformersLayerCrossAttention：Switch 交叉注意力层：decoder 查询 encoder KV
 class SwitchTransformersLayerCrossAttention(T5LayerCrossAttention):
     pass
 
 
+# SwitchTransformersBlock：Switch Transformer 块：自注意力 + 可选交叉注意力 + MoE FFN
 class SwitchTransformersBlock(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, has_relative_attention_bias=False, is_sparse=False, layer_idx: int | None = None):
         super().__init__()
         self.is_decoder = config.is_decoder
@@ -278,6 +301,7 @@ class SwitchTransformersBlock(GradientCheckpointingLayer):
 
         self.layer.append(SwitchTransformersLayerFF(config, is_sparse=self.is_sparse))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -342,6 +366,7 @@ class SwitchTransformersBlock(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# SwitchTransformersPreTrainedModel：Switch 预训练基类：权重初始化与 MoE 专家初始化
 class SwitchTransformersPreTrainedModel(PreTrainedModel):
     config: SwitchTransformersConfig
     base_model_prefix = "switch_transformers"
@@ -350,6 +375,7 @@ class SwitchTransformersPreTrainedModel(PreTrainedModel):
     _no_split_modules = ["SwitchTransformersBlock"]
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层、嵌入与 LayerNorm 权重
     def _init_weights(self, module):
         """Initialize the weights"""
         super()._init_weights(module)
@@ -411,6 +437,7 @@ class SwitchTransformersPreTrainedModel(PreTrainedModel):
         return shifted_input_ids
 
 
+# SwitchTransformersStack：Switch 层栈：堆叠 Block 并管理 KV cache 与梯度检查点
 class SwitchTransformersStack(SwitchTransformersPreTrainedModel):
     _can_record_outputs = {
         "hidden_states": SwitchTransformersBlock,
@@ -419,6 +446,7 @@ class SwitchTransformersStack(SwitchTransformersPreTrainedModel):
         "router_logits": OutputRecorder(SwitchTransformersTop1Router, index=2),
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.embed_tokens = nn.Embedding(config.vocab_size, config.d_model)
@@ -445,6 +473,7 @@ class SwitchTransformersStack(SwitchTransformersPreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids=None,
@@ -541,6 +570,7 @@ class SwitchTransformersStack(SwitchTransformersPreTrainedModel):
 
 
 @auto_docstring
+# SwitchTransformersModel：Switch 基模型：共享嵌入 + encoder/decoder 双栈
 class SwitchTransformersModel(SwitchTransformersPreTrainedModel):
     _tied_weights_keys = {
         "encoder.embed_tokens.weight": "shared.weight",
@@ -548,6 +578,7 @@ class SwitchTransformersModel(SwitchTransformersPreTrainedModel):
     }
     _input_embed_layer = "shared"
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SwitchTransformersConfig):
         super().__init__(config)
         self.shared = nn.Embedding(config.vocab_size, config.d_model)
@@ -564,6 +595,7 @@ class SwitchTransformersModel(SwitchTransformersPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # set_input_embeddings：替换词嵌入层权重
     def set_input_embeddings(self, new_embeddings):
         self.shared = new_embeddings
         self.encoder.set_input_embeddings(new_embeddings)
@@ -571,6 +603,7 @@ class SwitchTransformersModel(SwitchTransformersPreTrainedModel):
 
     @auto_docstring
     @can_return_tuple
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -618,6 +651,7 @@ class SwitchTransformersModel(SwitchTransformersPreTrainedModel):
     SWITCH_TRANSFORMERS Model with a `language modeling` head on top.
     """
 )
+# SwitchTransformersForConditionalGeneration：Switch 条件生成：encoder-decoder + lm_head 与 MoE 辅助损失
 class SwitchTransformersForConditionalGeneration(SwitchTransformersPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {
         "encoder.embed_tokens.weight": "shared.weight",
@@ -625,6 +659,7 @@ class SwitchTransformersForConditionalGeneration(SwitchTransformersPreTrainedMod
         "lm_head.weight": "shared.weight",
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SwitchTransformersConfig):
         super().__init__(config)
         self.model_dim = config.d_model
@@ -647,9 +682,11 @@ class SwitchTransformersForConditionalGeneration(SwitchTransformersPreTrainedMod
         self.router_aux_loss_coef = config.router_aux_loss_coef
         self.post_init()
 
+    # get_input_embeddings：返回词嵌入层引用
     def get_input_embeddings(self):
         return self.shared
 
+    # set_input_embeddings：替换词嵌入层权重
     def set_input_embeddings(self, new_embeddings):
         self.shared = new_embeddings
         self.encoder.set_input_embeddings(new_embeddings)
@@ -657,6 +694,7 @@ class SwitchTransformersForConditionalGeneration(SwitchTransformersPreTrainedMod
 
     @auto_docstring
     @can_return_tuple
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -776,11 +814,13 @@ class SwitchTransformersForConditionalGeneration(SwitchTransformersPreTrainedMod
         return self._shift_right(labels)
 
 
+# SwitchTransformersEncoderModel：Switch 纯编码器：仅 encoder 栈输出序列表示
 class SwitchTransformersEncoderModel(SwitchTransformersPreTrainedModel):
     _tied_weights_keys = {
         "encoder.embed_tokens.weight": "shared.weight",
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SwitchTransformersConfig):
         super().__init__(config)
         self.shared = nn.Embedding(config.vocab_size, config.d_model)
@@ -791,15 +831,18 @@ class SwitchTransformersEncoderModel(SwitchTransformersPreTrainedModel):
         self.encoder = SwitchTransformersStack(encoder_config)
         self.post_init()
 
+    # get_input_embeddings：返回词嵌入层引用
     def get_input_embeddings(self):
         return self.shared
 
+    # set_input_embeddings：替换词嵌入层权重
     def set_input_embeddings(self, new_embeddings):
         self.shared = new_embeddings
         self.encoder.set_input_embeddings(new_embeddings)
 
     @auto_docstring
     @can_return_tuple
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,

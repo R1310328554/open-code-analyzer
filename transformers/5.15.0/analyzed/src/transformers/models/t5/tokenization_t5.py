@@ -20,6 +20,8 @@ from tokenizers.models import Unigram
 
 from ...tokenization_utils_tokenizers import TokenizersBackend
 from ...utils import logging
+# T5 分词器：Unigram SentencePiece 后端，支持 extra_id 哨兵 token 用于 span 预测
+
 
 
 logger = logging.get_logger(__name__)
@@ -79,6 +81,7 @@ class T5Tokenizer(TokenizersBackend):
         additional_special_tokens=None,
         **kwargs,
     ):
+        # 记录 extra_id 哨兵 token 数量，用于 span corruption 任务
         self._extra_ids = extra_ids
 
         # Handle extra_ids and additional_special_tokens
@@ -100,6 +103,7 @@ class T5Tokenizer(TokenizersBackend):
         if vocab is not None:
             self._vocab_scores = vocab
         else:
+            # 默认词表：<pad>=0、</s>=1、<unk>=2，再追加逆序 extra_id
             self._vocab_scores = [
                 (str(pad_token), 0.0),
                 (str(eos_token), 0.0),
@@ -109,6 +113,7 @@ class T5Tokenizer(TokenizersBackend):
             for i in range(extra_ids - 1, -1, -1):
                 self._vocab_scores.append((f"<extra_id_{i}>", 0.0))
 
+        # 构建 Unigram 分词器：Metaspace 预分词 + 空格替换为 ▁
         self._tokenizer = Tokenizer(
             Unigram(
                 self._vocab_scores,

@@ -29,6 +29,8 @@ from ...modeling_utils import PreTrainedModel
 from ...utils import ModelOutput, auto_docstring, logging, torch_int
 from ...utils.generic import can_return_tuple
 from .configuration_swinv2 import Swinv2Config
+# SwinV2 建模：分层窗口 Transformer 视觉骨干，支持分类、MIM 与 Backbone 接口
+
 
 
 logger = logging.get_logger(__name__)
@@ -44,6 +46,7 @@ logger = logging.get_logger(__name__)
 )
 @dataclass
 # Copied from transformers.models.swin.modeling_swin.SwinEncoderOutput with Swin->Swinv2
+# Swinv2EncoderOutput：SwinV2 编码器输出：各 stage 隐状态与最终序列表示
 class Swinv2EncoderOutput(ModelOutput):
     r"""
     reshaped_hidden_states (`tuple(torch.FloatTensor)`, *optional*, returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
@@ -67,6 +70,7 @@ class Swinv2EncoderOutput(ModelOutput):
 )
 @dataclass
 # Copied from transformers.models.swin.modeling_swin.SwinModelOutput with Swin->Swinv2
+# Swinv2ModelOutput：SwinV2 基模型输出：池化句向量、各 stage 特征与注意力权重
 class Swinv2ModelOutput(ModelOutput):
     r"""
     pooler_output (`torch.FloatTensor` of shape `(batch_size, hidden_size)`, *optional*, returned when `add_pooling_layer=True` is passed):
@@ -93,6 +97,7 @@ class Swinv2ModelOutput(ModelOutput):
 )
 @dataclass
 # Copied from transformers.models.swin.modeling_swin.SwinMaskedImageModelingOutput with Swin->Swinv2
+# Swinv2MaskedImageModelingOutput：SwinV2 MIM 输出：重建像素 logits 与损失
 class Swinv2MaskedImageModelingOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `bool_masked_pos` is provided):
@@ -121,6 +126,7 @@ class Swinv2MaskedImageModelingOutput(ModelOutput):
 )
 @dataclass
 # Copied from transformers.models.swin.modeling_swin.SwinImageClassifierOutput with Swin->Swinv2
+# Swinv2ImageClassifierOutput：SwinV2 分类输出：logits 与可选 hidden states
 class Swinv2ImageClassifierOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -143,6 +149,7 @@ class Swinv2ImageClassifierOutput(ModelOutput):
 
 
 # Copied from transformers.models.swin.modeling_swin.window_partition
+# window_partition：窗口划分：将特征图按 window_size 切分为不重叠窗口 batch
 def window_partition(input_feature, window_size):
     """
     Partitions the given input into windows.
@@ -156,6 +163,7 @@ def window_partition(input_feature, window_size):
 
 
 # Copied from transformers.models.swin.modeling_swin.window_reverse
+# window_reverse：窗口还原：将窗口 batch 重组回 (B,H,W,C) 空间布局
 def window_reverse(windows, window_size, height, width):
     """
     Merges windows to produce higher resolution features.
@@ -167,11 +175,13 @@ def window_reverse(windows, window_size, height, width):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinEmbeddings with Swin->Swinv2
+# Swinv2Embeddings：SwinV2 嵌入层：patch 投影 + 余弦位置编码 + 相对坐标偏置
 class Swinv2Embeddings(nn.Module):
     """
     Construct the patch and position embeddings. Optionally, also the mask token.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, use_mask_token=False):
         super().__init__()
 
@@ -231,6 +241,7 @@ class Swinv2Embeddings(nn.Module):
 
         return torch.cat((class_pos_embed, patch_pos_embed), dim=1)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor | None,
@@ -260,6 +271,7 @@ class Swinv2Embeddings(nn.Module):
 
 
 # Copied from transformers.models.swin.modeling_swin.SwinPatchEmbeddings with Swin->Swinv2
+# Swinv2PatchEmbeddings：SwinV2 patch 嵌入：Conv2d 切分 patch 并线性投影
 class Swinv2PatchEmbeddings(nn.Module):
     """
     This class turns `pixel_values` of shape `(batch_size, num_channels, height, width)` into the initial
@@ -267,6 +279,7 @@ class Swinv2PatchEmbeddings(nn.Module):
     Transformer.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         image_size, patch_size = config.image_size, config.patch_size
@@ -290,6 +303,7 @@ class Swinv2PatchEmbeddings(nn.Module):
             pixel_values = nn.functional.pad(pixel_values, pad_values)
         return pixel_values
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values: torch.FloatTensor | None) -> tuple[torch.Tensor, tuple[int]]:
         _, num_channels, height, width = pixel_values.shape
         # pad the input to be divisible by self.patch_size, if needed
@@ -302,6 +316,7 @@ class Swinv2PatchEmbeddings(nn.Module):
         return embeddings, output_dimensions
 
 
+# Swinv2PatchMerging：SwinV2 patch 合并：2×2 邻域拼接后 LayerNorm + Linear 降采样
 class Swinv2PatchMerging(nn.Module):
     """
     Patch Merging Layer.
@@ -315,6 +330,7 @@ class Swinv2PatchMerging(nn.Module):
             Normalization layer class.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, input_resolution: tuple[int], dim: int, norm_layer: nn.Module = nn.LayerNorm) -> None:
         super().__init__()
         self.input_resolution = input_resolution
@@ -330,6 +346,7 @@ class Swinv2PatchMerging(nn.Module):
 
         return input_feature
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input_feature: torch.Tensor, input_dimensions: tuple[int, int]) -> torch.Tensor:
         height, width = input_dimensions
         # `dim` is height * width
@@ -356,7 +373,9 @@ class Swinv2PatchMerging(nn.Module):
         return input_feature
 
 
+# Swinv2SelfAttention：SwinV2 窗口自注意力：连续相对位置偏置 + 余弦注意力
 class Swinv2SelfAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, dim, num_heads, window_size, pretrained_window_size=[0, 0]):
         super().__init__()
         if dim % num_heads != 0:
@@ -386,6 +405,7 @@ class Swinv2SelfAttention(nn.Module):
         self.value = nn.Linear(self.all_head_size, self.all_head_size, bias=config.qkv_bias)
         self.dropout = nn.Dropout(config.attention_probs_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -493,12 +513,15 @@ class Swinv2SelfAttention(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinSelfOutput with Swin->Swinv2
+# Swinv2SelfOutput：SwinV2 自注意力输出：Linear 投影 + Dropout 残差
 class Swinv2SelfOutput(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, dim):
         super().__init__()
         self.dense = nn.Linear(dim, dim)
         self.dropout = nn.Dropout(config.attention_probs_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
@@ -506,7 +529,9 @@ class Swinv2SelfOutput(nn.Module):
         return hidden_states
 
 
+# Swinv2Attention：SwinV2 注意力块：自注意力 + 输出投影残差连接
 class Swinv2Attention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, dim, num_heads, window_size, pretrained_window_size=0):
         super().__init__()
         self.self = Swinv2SelfAttention(
@@ -520,6 +545,7 @@ class Swinv2Attention(nn.Module):
         )
         self.output = Swinv2SelfOutput(config, dim)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -533,7 +559,9 @@ class Swinv2Attention(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinIntermediate with Swin->Swinv2
+# Swinv2Intermediate：SwinV2 FFN 中间层：Linear 扩展 + GELU 激活
 class Swinv2Intermediate(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, dim):
         super().__init__()
         self.dense = nn.Linear(dim, int(config.mlp_ratio * dim))
@@ -542,6 +570,7 @@ class Swinv2Intermediate(nn.Module):
         else:
             self.intermediate_act_fn = config.hidden_act
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.intermediate_act_fn(hidden_states)
@@ -549,12 +578,15 @@ class Swinv2Intermediate(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinOutput with Swin->Swinv2
+# Swinv2Output：SwinV2 FFN 输出层：Linear 压缩 + Dropout 残差
 class Swinv2Output(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, dim):
         super().__init__()
         self.dense = nn.Linear(int(config.mlp_ratio * dim), dim)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
@@ -562,6 +594,7 @@ class Swinv2Output(nn.Module):
 
 
 # Copied from transformers.models.swin.modular_swin.SwinDropPath with SwinDropPath->Swinv2DropPath
+# Swinv2DropPath：SwinV2 DropPath：随机深度正则化
 class Swinv2DropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -569,10 +602,12 @@ class Swinv2DropPath(nn.Module):
     <https://arxiv.org/abs/1603.09382>`_.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, drop_prob: float = 0.0) -> None:
         super().__init__()
         self.drop_prob = drop_prob
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         if self.drop_prob == 0.0 or not self.training:
             return hidden_states
@@ -586,7 +621,9 @@ class Swinv2DropPath(nn.Module):
         return f"p={self.drop_prob}"
 
 
+# Swinv2Layer：SwinV2 Transformer 层：移位窗口注意力 + FFN 两段残差
 class Swinv2Layer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self, config, dim, input_resolution, num_heads, drop_path_rate=0.0, shift_size=0, pretrained_window_size=0
     ):
@@ -649,6 +686,7 @@ class Swinv2Layer(nn.Module):
         hidden_states = nn.functional.pad(hidden_states, pad_values)
         return hidden_states, pad_values
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -705,7 +743,9 @@ class Swinv2Layer(nn.Module):
         return layer_outputs
 
 
+# Swinv2Stage：SwinV2 stage：多层 Layer 堆叠并在末层可选 patch 合并
 class Swinv2Stage(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self, config, dim, input_resolution, depth, num_heads, drop_path, downsample, pretrained_window_size=0
     ):
@@ -734,6 +774,7 @@ class Swinv2Stage(GradientCheckpointingLayer):
 
         self.pointing = False
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -765,7 +806,9 @@ class Swinv2Stage(GradientCheckpointingLayer):
         return stage_outputs
 
 
+# Swinv2Encoder：SwinV2 编码器：分层窗口 Transformer 提取视觉特征
 class Swinv2Encoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, grid_size, pretrained_window_sizes=(0, 0, 0, 0)):
         super().__init__()
         self.num_layers = len(config.depths)
@@ -791,6 +834,7 @@ class Swinv2Encoder(nn.Module):
 
         self.gradient_checkpointing = False
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -862,6 +906,7 @@ class Swinv2Encoder(nn.Module):
 
 
 @auto_docstring
+# Swinv2PreTrainedModel：SwinV2 预训练基类：权重初始化与 position_ids 缓冲
 class Swinv2PreTrainedModel(PreTrainedModel):
     config: Swinv2Config
     base_model_prefix = "swinv2"
@@ -871,6 +916,7 @@ class Swinv2PreTrainedModel(PreTrainedModel):
     _no_split_modules = ["Swinv2Stage"]
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层、嵌入与 LayerNorm 权重
     def _init_weights(self, module):
         """Initialize the weights"""
         super()._init_weights(module)
@@ -888,7 +934,9 @@ class Swinv2PreTrainedModel(PreTrainedModel):
 
 @auto_docstring
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinModel with SWIN->SWINV2,Swin->Swinv2
+# Swinv2Model：SwinV2 基模型：patch 嵌入 + 编码器 + 全局平均池化
 class Swinv2Model(Swinv2PreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, add_pooling_layer=True, use_mask_token=False):
         r"""
         add_pooling_layer (`bool`, *optional*, defaults to `True`):
@@ -910,10 +958,12 @@ class Swinv2Model(Swinv2PreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # get_input_embeddings：返回词嵌入层引用
     def get_input_embeddings(self):
         return self.embeddings.patch_embeddings
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor | None = None,
@@ -985,7 +1035,9 @@ class Swinv2Model(Swinv2PreTrainedModel):
     """
 )
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinForMaskedImageModeling with swin->swinv2, base-simmim-window6-192->tiny-patch4-window8-256,SWIN->SWINV2,Swin->Swinv2,192->256
+# Swinv2ForMaskedImageModeling：SwinV2 掩码图像建模：随机 patch 掩码后重建像素
 class Swinv2ForMaskedImageModeling(Swinv2PreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -1003,6 +1055,7 @@ class Swinv2ForMaskedImageModeling(Swinv2PreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor | None = None,
@@ -1104,7 +1157,9 @@ class Swinv2ForMaskedImageModeling(Swinv2PreTrainedModel):
     """
 )
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinForImageClassification with SWIN->SWINV2,Swin->Swinv2,swin->swinv2
+# Swinv2ForImageClassification：SwinV2 图像分类：编码器 + Linear 分类头
 class Swinv2ForImageClassification(Swinv2PreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -1120,6 +1175,7 @@ class Swinv2ForImageClassification(Swinv2PreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor | None = None,
@@ -1172,7 +1228,9 @@ class Swinv2ForImageClassification(Swinv2PreTrainedModel):
     Swinv2 backbone, to be used with frameworks like DETR and MaskFormer.
     """
 )
+# Swinv2Backbone：SwinV2 骨干网络：BackboneMixin 接口输出多尺度特征图
 class Swinv2Backbone(BackboneMixin, Swinv2PreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -1183,12 +1241,14 @@ class Swinv2Backbone(BackboneMixin, Swinv2PreTrainedModel):
         # initialize weights and apply final processing
         self.post_init()
 
+    # get_input_embeddings：返回词嵌入层引用
     def get_input_embeddings(self):
         return self.embeddings.patch_embeddings
 
     @can_return_tuple
     @filter_output_hidden_states
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: Tensor,

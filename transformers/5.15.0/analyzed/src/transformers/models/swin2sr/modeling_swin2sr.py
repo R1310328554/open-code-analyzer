@@ -27,6 +27,8 @@ from ...modeling_outputs import BaseModelOutput, ImageSuperResolutionOutput
 from ...modeling_utils import PreTrainedModel
 from ...utils import ModelOutput, auto_docstring, logging
 from .configuration_swin2sr import Swin2SRConfig
+# Swin2SR 建模：Swin Transformer V2 骨干 + 上采样头，用于图像超分辨率重建
+
 
 
 logger = logging.get_logger(__name__)
@@ -38,6 +40,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# Swin2SREncoderOutput：Swin2SR 编码器输出：各 stage 隐状态序列与最终特征图
 class Swin2SREncoderOutput(ModelOutput):
     last_hidden_state: torch.FloatTensor | None = None
     hidden_states: tuple[torch.FloatTensor] | None = None
@@ -45,6 +48,7 @@ class Swin2SREncoderOutput(ModelOutput):
 
 
 # Copied from transformers.models.swin.modeling_swin.window_partition
+# window_partition：窗口划分：将特征图按 window_size 切分为不重叠窗口 batch
 def window_partition(input_feature, window_size):
     """
     Partitions the given input into windows.
@@ -58,6 +62,7 @@ def window_partition(input_feature, window_size):
 
 
 # Copied from transformers.models.swin.modeling_swin.window_reverse
+# window_reverse：窗口还原：将窗口 batch 重组回 (B,H,W,C) 空间布局
 def window_reverse(windows, window_size, height, width):
     """
     Merges windows to produce higher resolution features.
@@ -68,11 +73,13 @@ def window_reverse(windows, window_size, height, width):
     return windows
 
 
+# Swin2SREmbeddings：Swin2SR 嵌入层：patch 投影 + 可选绝对位置编码
 class Swin2SREmbeddings(nn.Module):
     """
     Construct the patch and optional position embeddings.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
 
@@ -87,6 +94,7 @@ class Swin2SREmbeddings(nn.Module):
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.window_size = config.window_size
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values: torch.FloatTensor | None) -> tuple[torch.Tensor]:
         embeddings, output_dimensions = self.patch_embeddings(pixel_values)
 
@@ -98,7 +106,9 @@ class Swin2SREmbeddings(nn.Module):
         return embeddings, output_dimensions
 
 
+# Swin2SRPatchEmbeddings：Swin2SR patch 嵌入：Conv2d 将图像切分为 patch 并投影
 class Swin2SRPatchEmbeddings(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, normalize_patches=True):
         super().__init__()
         num_channels = config.embed_dim
@@ -113,6 +123,7 @@ class Swin2SRPatchEmbeddings(nn.Module):
         self.projection = nn.Conv2d(num_channels, config.embed_dim, kernel_size=patch_size, stride=patch_size)
         self.layernorm = nn.LayerNorm(config.embed_dim) if normalize_patches else None
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, embeddings: torch.FloatTensor | None) -> tuple[torch.Tensor, tuple[int]]:
         embeddings = self.projection(embeddings)
         _, _, height, width = embeddings.shape
@@ -125,14 +136,17 @@ class Swin2SRPatchEmbeddings(nn.Module):
         return embeddings, output_dimensions
 
 
+# Swin2SRPatchUnEmbeddings：Swin2SR patch 反嵌入：将序列特征还原为空间特征图布局
 class Swin2SRPatchUnEmbeddings(nn.Module):
     r"""Image to Patch Unembedding"""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
 
         self.embed_dim = config.embed_dim
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, embeddings, x_size):
         batch_size, height_width, num_channels = embeddings.shape
         embeddings = embeddings.transpose(1, 2).view(batch_size, self.embed_dim, x_size[0], x_size[1])  # B Ph*Pw C
@@ -140,6 +154,7 @@ class Swin2SRPatchUnEmbeddings(nn.Module):
 
 
 # Copied from transformers.models.swinv2.modeling_swinv2.Swinv2PatchMerging with Swinv2->Swin2SR
+# Swin2SRPatchMerging：Swin2SR patch 合并：2×2 邻域拼接后 Linear 降采样至下一 stage
 class Swin2SRPatchMerging(nn.Module):
     """
     Patch Merging Layer.
@@ -153,6 +168,7 @@ class Swin2SRPatchMerging(nn.Module):
             Normalization layer class.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, input_resolution: tuple[int], dim: int, norm_layer: nn.Module = nn.LayerNorm) -> None:
         super().__init__()
         self.input_resolution = input_resolution
@@ -168,6 +184,7 @@ class Swin2SRPatchMerging(nn.Module):
 
         return input_feature
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input_feature: torch.Tensor, input_dimensions: tuple[int, int]) -> torch.Tensor:
         height, width = input_dimensions
         # `dim` is height * width
@@ -195,7 +212,9 @@ class Swin2SRPatchMerging(nn.Module):
 
 
 # Copied from transformers.models.swinv2.modeling_swinv2.Swinv2SelfAttention with Swinv2->Swin2SR
+# Swin2SRSelfAttention：Swin2SR 窗口自注意力：相对位置偏置 + 余弦注意力缩放
 class Swin2SRSelfAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, dim, num_heads, window_size, pretrained_window_size=[0, 0]):
         super().__init__()
         if dim % num_heads != 0:
@@ -225,6 +244,7 @@ class Swin2SRSelfAttention(nn.Module):
         self.value = nn.Linear(self.all_head_size, self.all_head_size, bias=config.qkv_bias)
         self.dropout = nn.Dropout(config.attention_probs_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -332,12 +352,15 @@ class Swin2SRSelfAttention(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinSelfOutput with Swin->Swin2SR
+# Swin2SRSelfOutput：Swin2SR 自注意力输出：Linear 投影 + Dropout 残差
 class Swin2SRSelfOutput(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, dim):
         super().__init__()
         self.dense = nn.Linear(dim, dim)
         self.dropout = nn.Dropout(config.attention_probs_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
@@ -346,7 +369,9 @@ class Swin2SRSelfOutput(nn.Module):
 
 
 # Copied from transformers.models.swinv2.modeling_swinv2.Swinv2Attention with Swinv2->Swin2SR
+# Swin2SRAttention：Swin2SR 注意力块：自注意力 + 输出投影残差连接
 class Swin2SRAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, dim, num_heads, window_size, pretrained_window_size=0):
         super().__init__()
         self.self = Swin2SRSelfAttention(
@@ -360,6 +385,7 @@ class Swin2SRAttention(nn.Module):
         )
         self.output = Swin2SRSelfOutput(config, dim)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -373,7 +399,9 @@ class Swin2SRAttention(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinIntermediate with Swin->Swin2SR
+# Swin2SRIntermediate：Swin2SR FFN 中间层：Linear 扩展 + 激活函数
 class Swin2SRIntermediate(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, dim):
         super().__init__()
         self.dense = nn.Linear(dim, int(config.mlp_ratio * dim))
@@ -382,6 +410,7 @@ class Swin2SRIntermediate(nn.Module):
         else:
             self.intermediate_act_fn = config.hidden_act
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.intermediate_act_fn(hidden_states)
@@ -389,12 +418,15 @@ class Swin2SRIntermediate(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinOutput with Swin->Swin2SR
+# Swin2SROutput：Swin2SR FFN 输出层：Linear 压缩 + Dropout 残差
 class Swin2SROutput(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, dim):
         super().__init__()
         self.dense = nn.Linear(int(config.mlp_ratio * dim), dim)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
@@ -402,6 +434,7 @@ class Swin2SROutput(nn.Module):
 
 
 # Copied from transformers.models.swin.modular_swin.SwinDropPath with SwinDropPath->Swin2SRDropPath
+# Swin2SRDropPath：Swin2SR DropPath：随机深度正则，训练时按概率跳过子层
 class Swin2SRDropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -409,10 +442,12 @@ class Swin2SRDropPath(nn.Module):
     <https://arxiv.org/abs/1603.09382>`_.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, drop_prob: float = 0.0) -> None:
         super().__init__()
         self.drop_prob = drop_prob
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         if self.drop_prob == 0.0 or not self.training:
             return hidden_states
@@ -427,7 +462,9 @@ class Swin2SRDropPath(nn.Module):
 
 
 # Copied from transformers.models.swinv2.modeling_swinv2.Swinv2Layer with Swinv2->Swin2SR
+# Swin2SRLayer：Swin2SR Transformer 层：窗口/移位窗口注意力 + FFN 两段残差
 class Swin2SRLayer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self, config, dim, input_resolution, num_heads, drop_path_rate=0.0, shift_size=0, pretrained_window_size=0
     ):
@@ -490,6 +527,7 @@ class Swin2SRLayer(nn.Module):
         hidden_states = nn.functional.pad(hidden_states, pad_values)
         return hidden_states, pad_values
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -546,11 +584,13 @@ class Swin2SRLayer(nn.Module):
         return layer_outputs
 
 
+# Swin2SRStage：Swin2SR stage：堆叠多层 Layer 并在 stage 末可选 patch 合并
 class Swin2SRStage(GradientCheckpointingLayer):
     """
     This corresponds to the Residual Swin Transformer Block (RSTB) in the original implementation.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, dim, input_resolution, depth, num_heads, drop_path, pretrained_window_size=0):
         super().__init__()
         self.config = config
@@ -585,6 +625,7 @@ class Swin2SRStage(GradientCheckpointingLayer):
 
         self.patch_unembed = Swin2SRPatchUnEmbeddings(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -614,7 +655,9 @@ class Swin2SRStage(GradientCheckpointingLayer):
         return stage_outputs
 
 
+# Swin2SREncoder：Swin2SR 编码器：多 stage 窗口 Transformer 提取多尺度特征
 class Swin2SREncoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, grid_size):
         super().__init__()
         self.num_stages = len(config.depths)
@@ -637,6 +680,7 @@ class Swin2SREncoder(nn.Module):
 
         self.gradient_checkpointing = False
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -678,6 +722,7 @@ class Swin2SREncoder(nn.Module):
 
 
 @auto_docstring
+# Swin2SRPreTrainedModel：Swin2SR 预训练基类：权重初始化与 position_ids 缓冲同步
 class Swin2SRPreTrainedModel(PreTrainedModel):
     config: Swin2SRConfig
     base_model_prefix = "swin2sr"
@@ -686,6 +731,7 @@ class Swin2SRPreTrainedModel(PreTrainedModel):
     supports_gradient_checkpointing = True
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层、嵌入与 LayerNorm 权重
     def _init_weights(self, module):
         """Initialize the weights"""
         super()._init_weights(module)
@@ -707,7 +753,9 @@ class Swin2SRPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# Swin2SRModel：Swin2SR 基模型：patch 嵌入 + 编码器输出各 stage 特征
 class Swin2SRModel(Swin2SRPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.config = config
@@ -731,6 +779,7 @@ class Swin2SRModel(Swin2SRPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # get_input_embeddings：返回词嵌入层引用
     def get_input_embeddings(self):
         return self.embeddings.patch_embeddings
 
@@ -750,6 +799,7 @@ class Swin2SRModel(Swin2SRPreTrainedModel):
         return pixel_values
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -798,6 +848,7 @@ class Swin2SRModel(Swin2SRPreTrainedModel):
         )
 
 
+# Upsample：通用上采样：PixelShuffle 或 Nearest+Conv 组合放大特征图
 class Upsample(nn.Module):
     """Upsample module.
 
@@ -808,6 +859,7 @@ class Upsample(nn.Module):
             Channel number of intermediate features.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, scale, num_features):
         super().__init__()
 
@@ -823,6 +875,7 @@ class Upsample(nn.Module):
         else:
             raise ValueError(f"Scale {scale} is not supported. Supported scales: 2^n and 3.")
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state):
         if (self.scale & (self.scale - 1)) == 0:
             for i in range(int(math.log2(self.scale))):
@@ -836,6 +889,7 @@ class Upsample(nn.Module):
         return hidden_state
 
 
+# UpsampleOneStep：单步上采样：一次 PixelShuffle 完成 scale 倍放大
 class UpsampleOneStep(nn.Module):
     """UpsampleOneStep module (the difference with Upsample is that it always only has 1conv + 1pixelshuffle)
 
@@ -850,12 +904,14 @@ class UpsampleOneStep(nn.Module):
             Channel number of output features.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, scale, in_channels, out_channels):
         super().__init__()
 
         self.conv = nn.Conv2d(in_channels, (scale**2) * out_channels, 3, 1, 1)
         self.pixel_shuffle = nn.PixelShuffle(scale)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         x = self.conv(x)
         x = self.pixel_shuffle(x)
@@ -863,7 +919,9 @@ class UpsampleOneStep(nn.Module):
         return x
 
 
+# PixelShuffleUpsampler：PixelShuffle 上采样器：Conv 升维后 shuffle 重排像素
 class PixelShuffleUpsampler(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, num_features):
         super().__init__()
         self.conv_before_upsample = nn.Conv2d(config.embed_dim, num_features, 3, 1, 1)
@@ -871,6 +929,7 @@ class PixelShuffleUpsampler(nn.Module):
         self.upsample = Upsample(config.upscale, num_features)
         self.final_convolution = nn.Conv2d(num_features, config.num_channels_out, 3, 1, 1)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, sequence_output):
         x = self.conv_before_upsample(sequence_output)
         x = self.activation(x)
@@ -880,7 +939,9 @@ class PixelShuffleUpsampler(nn.Module):
         return x
 
 
+# NearestConvUpsampler：最近邻+Conv 上采样：插值放大后卷积细化
 class NearestConvUpsampler(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, num_features):
         super().__init__()
         if config.upscale != 4:
@@ -894,6 +955,7 @@ class NearestConvUpsampler(nn.Module):
         self.final_convolution = nn.Conv2d(num_features, config.num_channels_out, 3, 1, 1)
         self.lrelu = nn.LeakyReLU(negative_slope=0.2, inplace=True)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, sequence_output):
         sequence_output = self.conv_before_upsample(sequence_output)
         sequence_output = self.activation(sequence_output)
@@ -907,7 +969,9 @@ class NearestConvUpsampler(nn.Module):
         return reconstruction
 
 
+# PixelShuffleAuxUpsampler：带辅助分支的 PixelShuffle 上采样头
 class PixelShuffleAuxUpsampler(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, num_features):
         super().__init__()
 
@@ -920,6 +984,7 @@ class PixelShuffleAuxUpsampler(nn.Module):
         self.upsample = Upsample(config.upscale, num_features)
         self.final_convolution = nn.Conv2d(num_features, config.num_channels_out, 3, 1, 1)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, sequence_output, bicubic, height, width):
         bicubic = self.conv_bicubic(bicubic)
         sequence_output = self.conv_before_upsample(sequence_output)
@@ -940,7 +1005,9 @@ class PixelShuffleAuxUpsampler(nn.Module):
     Swin2SR Model transformer with an upsampler head on top for image super resolution and restoration.
     """
 )
+# Swin2SRForImageSuperResolution：Swin2SR 超分任务头：编码器 + 上采样重建高分辨率图像
 class Swin2SRForImageSuperResolution(Swin2SRPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -968,6 +1035,7 @@ class Swin2SRForImageSuperResolution(Swin2SRPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor | None = None,

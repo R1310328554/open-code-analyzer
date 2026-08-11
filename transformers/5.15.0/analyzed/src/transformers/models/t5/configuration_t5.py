@@ -17,10 +17,13 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# T5 配置：相对位置偏置、encoder-decoder 层数与 FFN 激活类型超参数
+
 
 
 @auto_docstring(checkpoint="google-t5/t5-small")
 @strict
+# T5Config：T5 配置：相对位置 bucket 数、FFN 类型与 encoder/decoder 层数
 class T5Config(PreTrainedConfig):
     r"""
     relative_attention_num_buckets (`int`, *optional*, defaults to 32):

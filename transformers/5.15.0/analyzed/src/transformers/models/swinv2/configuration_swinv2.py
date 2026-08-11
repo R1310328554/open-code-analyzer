@@ -18,10 +18,13 @@ from huggingface_hub.dataclasses import strict
 from ...backbone_utils import BackboneConfigMixin
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# SwinV2 配置：窗口注意力、相对位置偏置与 patch 合并阶段超参数
+
 
 
 @auto_docstring(checkpoint="microsoft/swinv2-tiny-patch4-window8-256")
 @strict
+# Swinv2Config：SwinV2 配置：窗口大小、embed 维度、stage 深度与 MIM/分类头参数
 class Swinv2Config(BackboneConfigMixin, PreTrainedConfig):
     r"""
     window_size (`int`, *optional*, defaults to 7):

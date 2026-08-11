@@ -19,10 +19,13 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# Switch Transformers 配置：稀疏专家路由、负载均衡与 T5 编码器-解码器超参数
+
 
 
 @auto_docstring(checkpoint="google/switch-base-8")
 @strict
+# SwitchTransformersConfig：Switch Transformers 配置：专家数、稀疏层数与路由 z-loss 系数
 class SwitchTransformersConfig(PreTrainedConfig):
     r"""
     num_sparse_encoder_layers (`int`, *optional*, defaults to 3):

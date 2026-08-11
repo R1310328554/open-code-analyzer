@@ -25,10 +25,13 @@ from huggingface_hub.dataclasses import strict
 from ...configuration_utils import PreTrainedConfig
 from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
+# T5Gemma 配置：Gemma2 模块参数、RoPE 与 encoder/decoder 独立子配置
+
 
 
 @auto_docstring(checkpoint="google/t5_gemma_module-7b")
 @strict
+# T5GemmaModuleConfig：T5Gemma 单模块配置：Gemma2 解码器层的 hidden/head/MLP 超参数
 class T5GemmaModuleConfig(PreTrainedConfig):
     r"""
     query_pre_attn_scalar (`float`, *optional*, defaults to 256):
@@ -111,6 +114,7 @@ class T5GemmaModuleConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="google/t5_gemma_module-7b")
 @strict
+# T5GemmaConfig：T5Gemma 总配置：encoder/decoder 子配置与共享词表参数
 class T5GemmaConfig(PreTrainedConfig):
     r"""
     encoder (`Union[T5GemmaModuleConfig, dict]`, optional, *optional*):

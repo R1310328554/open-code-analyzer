@@ -28,6 +28,8 @@ from ...generation import GenerationMixin
 from ...masking_utils import create_bidirectional_mask, create_causal_mask
 from ...modeling_layers import GradientCheckpointingLayer
 from ...modeling_outputs import (
+# T5 建模：相对位置自/交叉注意力 + 编码器-解码器栈的 seq2seq Transformer
+
     BaseModelOutput,
     BaseModelOutputWithPastAndCrossAttentions,
     Seq2SeqLMOutput,
@@ -47,7 +49,9 @@ from .configuration_t5 import T5Config
 logger = logging.get_logger(__name__)
 
 
+# T5LayerNorm：T5 LayerNorm：在 hidden 维做 RMS 归一化（无 bias）
 class T5LayerNorm(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, hidden_size, eps=1e-6):
         """
         Construct a layernorm module in the T5 style. No bias and no subtraction of mean.
@@ -56,6 +60,7 @@ class T5LayerNorm(nn.Module):
         self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         # T5 uses a layer_norm which only scales and doesn't shift, which is also known as Root Mean
         # Square Layer Normalization https://huggingface.co/papers/1910.07467 thus variance is calculated
@@ -72,7 +77,9 @@ class T5LayerNorm(nn.Module):
         return self.weight * hidden_states
 
 
+# T5DenseActDense：T5 标准 FFN：wi_0/wi_1 扩展 + 激活 + wo 压缩
 class T5DenseActDense(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: T5Config):
         super().__init__()
         self.wi = nn.Linear(config.d_model, config.d_ff, bias=False)
@@ -80,6 +87,7 @@ class T5DenseActDense(nn.Module):
         self.dropout = nn.Dropout(config.dropout_rate)
         self.act = ACT2FN[config.dense_act_fn]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.wi(hidden_states)
         hidden_states = self.act(hidden_states)
@@ -94,7 +102,9 @@ class T5DenseActDense(nn.Module):
         return hidden_states
 
 
+# T5DenseGatedActDense：T5 门控 FFN：Gated-GELU 双路 wi 投影后相乘
 class T5DenseGatedActDense(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: T5Config):
         super().__init__()
         self.wi_0 = nn.Linear(config.d_model, config.d_ff, bias=False)
@@ -103,6 +113,7 @@ class T5DenseGatedActDense(nn.Module):
         self.dropout = nn.Dropout(config.dropout_rate)
         self.act = ACT2FN[config.dense_act_fn]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_gelu = self.act(self.wi_0(hidden_states))
         hidden_linear = self.wi_1(hidden_states)
@@ -123,7 +134,9 @@ class T5DenseGatedActDense(nn.Module):
         return hidden_states
 
 
+# T5LayerFF：T5 FFN 层：DenseActDense 或 GatedActDense + LayerNorm 残差
 class T5LayerFF(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: T5Config):
         super().__init__()
         if config.is_gated_act:
@@ -134,6 +147,7 @@ class T5LayerFF(nn.Module):
         self.layer_norm = T5LayerNorm(config.d_model, eps=config.layer_norm_epsilon)
         self.dropout = nn.Dropout(config.dropout_rate)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         forwarded_states = self.layer_norm(hidden_states)
         forwarded_states = self.DenseReluDense(forwarded_states)
@@ -141,6 +155,7 @@ class T5LayerFF(nn.Module):
         return hidden_states
 
 
+# eager_attention_forward：标准注意力前向：QK^T 缩放 softmax 加权 V（含 relative bias 掩码）
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -173,7 +188,9 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# T5Attention：T5 注意力：相对位置偏置的多头自/交叉注意力
 class T5Attention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: T5Config,
@@ -278,6 +295,7 @@ class T5Attention(nn.Module):
         values = values.permute([2, 0, 1]).unsqueeze(0)  # shape (1, num_heads, query_length, key_length)
         return values
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -369,7 +387,9 @@ class T5Attention(nn.Module):
         return attn_output, position_bias, attn_weights
 
 
+# T5LayerSelfAttention：T5 自注意力层：Attention + LayerNorm 残差
 class T5LayerSelfAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, has_relative_attention_bias=False, layer_idx: int | None = None):
         super().__init__()
         self.SelfAttention = T5Attention(
@@ -381,6 +401,7 @@ class T5LayerSelfAttention(nn.Module):
         self.layer_norm = T5LayerNorm(config.d_model, eps=config.layer_norm_epsilon)
         self.dropout = nn.Dropout(config.dropout_rate)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -401,7 +422,9 @@ class T5LayerSelfAttention(nn.Module):
         return attention_output, position_bias, attn_weights
 
 
+# T5LayerCrossAttention：T5 交叉注意力层：decoder 查询 encoder 键值
 class T5LayerCrossAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_idx: int | None = None):
         super().__init__()
         self.EncDecAttention = T5Attention(
@@ -410,6 +433,7 @@ class T5LayerCrossAttention(nn.Module):
         self.layer_norm = T5LayerNorm(config.d_model, eps=config.layer_norm_epsilon)
         self.dropout = nn.Dropout(config.dropout_rate)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -432,7 +456,9 @@ class T5LayerCrossAttention(nn.Module):
         return layer_output, position_bias, attn_weights
 
 
+# T5Block：T5 Transformer 块：自注意力 + 可选交叉注意力 + FFN
 class T5Block(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, has_relative_attention_bias=False, layer_idx: int | None = None):
         super().__init__()
         self.is_decoder = config.is_decoder
@@ -445,6 +471,7 @@ class T5Block(GradientCheckpointingLayer):
 
         self.layer.append(T5LayerFF(config))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -509,15 +536,18 @@ class T5Block(GradientCheckpointingLayer):
         return hidden_states, self_attn_position_bias, cross_attn_position_bias
 
 
+# T5ClassificationHead：T5 分类头：序列末 token 隐状态 + Linear 分类
 class T5ClassificationHead(nn.Module):
     """Head for sentence-level classification tasks."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: T5Config):
         super().__init__()
         self.dense = nn.Linear(config.d_model, config.d_model)
         self.dropout = nn.Dropout(p=config.classifier_dropout)
         self.out_proj = nn.Linear(config.d_model, config.num_labels)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dropout(hidden_states)
         hidden_states = self.dense(hidden_states)
@@ -528,6 +558,7 @@ class T5ClassificationHead(nn.Module):
 
 
 @auto_docstring
+# T5PreTrainedModel：T5 预训练基类：权重初始化与共享嵌入绑定
 class T5PreTrainedModel(PreTrainedModel):
     config: T5Config
     base_model_prefix = "transformer"
@@ -560,6 +591,7 @@ class T5PreTrainedModel(PreTrainedModel):
         return dummy_inputs
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层、嵌入与 LayerNorm 权重
     def _init_weights(self, module):
         """Initialize the weights"""
         super()._init_weights(module)
@@ -637,7 +669,9 @@ class T5PreTrainedModel(PreTrainedModel):
         return shifted_input_ids
 
 
+# T5Stack：T5 层栈：堆叠 Block，管理 relative position bias 与 cache
 class T5Stack(T5PreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -654,12 +688,14 @@ class T5Stack(T5PreTrainedModel):
         self.post_init()
         self.gradient_checkpointing = False
 
+    # set_input_embeddings：替换词嵌入层权重
     def set_input_embeddings(self, new_embeddings):
         self.embed_tokens = new_embeddings
 
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids=None,
@@ -751,6 +787,7 @@ class T5Stack(T5PreTrainedModel):
 
 
 @auto_docstring
+# T5Model：T5 基模型：共享嵌入 + encoder/decoder 双栈前向
 class T5Model(T5PreTrainedModel):
     _keys_to_ignore_on_load_unexpected = [
         "decoder.block.0.layer.1.EncDecAttention.relative_attention_bias.weight",
@@ -760,6 +797,7 @@ class T5Model(T5PreTrainedModel):
         "decoder.embed_tokens.weight": "shared.weight",
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: T5Config):
         super().__init__(config)
         self.shared = nn.Embedding(config.vocab_size, config.d_model)
@@ -777,9 +815,11 @@ class T5Model(T5PreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # get_input_embeddings：返回词嵌入层引用
     def get_input_embeddings(self):
         return self.shared
 
+    # set_input_embeddings：替换词嵌入层权重
     def set_input_embeddings(self, new_embeddings):
         self.shared = new_embeddings
         self.encoder.set_input_embeddings(new_embeddings)
@@ -787,6 +827,7 @@ class T5Model(T5PreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -895,6 +936,7 @@ class T5Model(T5PreTrainedModel):
     T5 Model with a `language modeling` head on top.
     """
 )
+# T5ForConditionalGeneration：T5 条件生成：seq2seq lm_head 与交叉熵损失
 class T5ForConditionalGeneration(T5PreTrainedModel, GenerationMixin):
     _keys_to_ignore_on_load_unexpected = [
         "decoder.block.0.layer.1.EncDecAttention.relative_attention_bias.weight",
@@ -905,6 +947,7 @@ class T5ForConditionalGeneration(T5PreTrainedModel, GenerationMixin):
         "decoder.embed_tokens.weight": "shared.weight",
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: T5Config):
         super().__init__(config)
         self.model_dim = config.d_model
@@ -926,9 +969,11 @@ class T5ForConditionalGeneration(T5PreTrainedModel, GenerationMixin):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # get_input_embeddings：返回词嵌入层引用
     def get_input_embeddings(self):
         return self.shared
 
+    # set_input_embeddings：替换词嵌入层权重
     def set_input_embeddings(self, new_embeddings):
         self.shared = new_embeddings
         self.encoder.set_input_embeddings(new_embeddings)
@@ -936,6 +981,7 @@ class T5ForConditionalGeneration(T5PreTrainedModel, GenerationMixin):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -1070,10 +1116,12 @@ class T5ForConditionalGeneration(T5PreTrainedModel, GenerationMixin):
 
 
 @auto_docstring
+# T5EncoderModel：T5 纯编码器：仅 encoder 栈输出 hidden states
 class T5EncoderModel(T5PreTrainedModel):
     _tied_weights_keys = {"encoder.embed_tokens.weight": "shared.weight"}
     _keys_to_ignore_on_load_unexpected = [r"decoder"]
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: T5Config):
         super().__init__(config)
         self.shared = nn.Embedding(config.vocab_size, config.d_model)
@@ -1086,15 +1134,18 @@ class T5EncoderModel(T5PreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # get_input_embeddings：返回词嵌入层引用
     def get_input_embeddings(self):
         return self.shared
 
+    # set_input_embeddings：替换词嵌入层权重
     def set_input_embeddings(self, new_embeddings):
         self.shared = new_embeddings
         self.encoder.set_input_embeddings(new_embeddings)
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -1141,9 +1192,11 @@ class T5EncoderModel(T5PreTrainedModel):
     tasks.
     """
 )
+# T5ForSequenceClassification：T5 序列分类：encoder 末 token + 分类头
 class T5ForSequenceClassification(T5PreTrainedModel):
     _keys_to_ignore_on_load_unexpected = ["decoder.block.0.layer.1.EncDecAttention.relative_attention_bias.weight"]
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: T5Config):
         super().__init__(config)
         self.transformer = T5Model(config)
@@ -1154,6 +1207,7 @@ class T5ForSequenceClassification(T5PreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -1283,7 +1337,9 @@ class T5ForSequenceClassification(T5PreTrainedModel):
 
 
 @auto_docstring
+# T5ForTokenClassification：T5 词元分类：encoder 序列隐状态 + per-token Linear
 class T5ForTokenClassification(T5PreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: T5Config):
         super().__init__(config)
         self.num_labels = config.num_labels
@@ -1297,6 +1353,7 @@ class T5ForTokenClassification(T5PreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.Tensor | None = None,
@@ -1344,6 +1401,7 @@ class T5ForTokenClassification(T5PreTrainedModel):
 
 
 @auto_docstring
+# T5ForQuestionAnswering：T5 问答：encoder 输出预测 span 起止位置
 class T5ForQuestionAnswering(T5PreTrainedModel):
     _keys_to_ignore_on_load_unexpected = ["decoder.block.0.layer.1.EncDecAttention.relative_attention_bias.weight"]
     _tied_weights_keys = {
@@ -1351,6 +1409,7 @@ class T5ForQuestionAnswering(T5PreTrainedModel):
         "decoder.embed_tokens.weight": "shared.weight",
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: T5Config):
         super().__init__(config)
         self.model_dim = config.d_model
@@ -1373,9 +1432,11 @@ class T5ForQuestionAnswering(T5PreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # get_input_embeddings：返回词嵌入层引用
     def get_input_embeddings(self):
         return self.shared
 
+    # set_input_embeddings：替换词嵌入层权重
     def set_input_embeddings(self, new_embeddings):
         self.shared = new_embeddings
         self.encoder.set_input_embeddings(new_embeddings)
@@ -1383,6 +1444,7 @@ class T5ForQuestionAnswering(T5PreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
