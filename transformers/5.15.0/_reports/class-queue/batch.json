@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T01:13:33Z",
-  "files": [
-    "src/transformers/models/gemma3n/modeling_gemma3n.py",
-    "src/transformers/models/gemma3n/modular_gemma3n.py",
-    "src/transformers/models/gemma3n/processing_gemma3n.py",
-    "src/transformers/models/gemma4/__init__.py",
-    "src/transformers/models/gemma4/configuration_gemma4.py",
-    "src/transformers/models/gemma4/feature_extraction_gemma4.py",
-    "src/transformers/models/gemma4/image_processing_gemma4.py",
-    "src/transformers/models/gemma4/image_processing_pil_gemma4.py",
-    "src/transformers/models/gemma4/modeling_gemma4.py",
-    "src/transformers/models/gemma4/modular_gemma4.py",
-    "src/transformers/models/gemma4/processing_gemma4.py",
-    "src/transformers/models/gemma4/video_processing_gemma4.py",
-    "src/transformers/models/gemma4_assistant/__init__.py",
-    "src/transformers/models/gemma4_assistant/configuration_gemma4_assistant.py",
-    "src/transformers/models/gemma4_assistant/modeling_gemma4_assistant.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1809,
-  "done": 855
+  "done": 870
 }
