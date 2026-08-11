@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T06:49:29Z",
-  "files": [
-    "mcp_server/paddleocr_mcp/inference/shared/async_http_client.py",
-    "mcp_server/paddleocr_mcp/inference/shared/doc_parsing_result_adapters.py",
-    "mcp_server/paddleocr_mcp/inference/shared/http_base.py",
-    "mcp_server/paddleocr_mcp/inference/shared/http_result_parsers.py",
-    "mcp_server/paddleocr_mcp/inference/shared/input_adapters.py",
-    "mcp_server/paddleocr_mcp/inference/shared/input_contract.py",
-    "mcp_server/paddleocr_mcp/inference/shared/local_sync_runner.py",
-    "mcp_server/paddleocr_mcp/inference/shared/paddleocr_api_sdk.py",
-    "mcp_server/paddleocr_mcp/inference/shared/param_mapping.py",
-    "mcp_server/paddleocr_mcp/inference/types.py",
-    "mcp_server/paddleocr_mcp/providers.py",
-    "mcp_server/paddleocr_mcp/selection.py",
-    "mcp_server/paddleocr_mcp/tasks/__init__.py",
-    "mcp_server/paddleocr_mcp/tasks/base.py",
-    "mcp_server/paddleocr_mcp/tasks/doc_parsing.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 452,
-  "done": 135
+  "done": 150
 }
