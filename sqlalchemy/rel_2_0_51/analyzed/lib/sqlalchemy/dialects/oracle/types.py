@@ -5,6 +5,8 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 # mypy: ignore-errors
+# Oracle 方言专用 SQL 类型
+
 from __future__ import annotations
 
 import datetime as dt
@@ -22,6 +24,7 @@ if TYPE_CHECKING:
     from ...sql.type_api import _LiteralProcessorType
 
 
+# Oracle RAW 定长二进制
 class RAW(sqltypes._Binary):
     __visit_name__ = "RAW"
 
@@ -29,10 +32,12 @@ class RAW(sqltypes._Binary):
 OracleRaw = RAW
 
 
+# Oracle NCLOB
 class NCLOB(sqltypes.Text):
     __visit_name__ = "NCLOB"
 
 
+# Oracle VARCHAR2
 class VARCHAR2(VARCHAR):
     __visit_name__ = "VARCHAR2"
 
@@ -40,6 +45,7 @@ class VARCHAR2(VARCHAR):
 NVARCHAR2 = NVARCHAR
 
 
+# Oracle NUMBER
 class NUMBER(sqltypes.Numeric, sqltypes.Integer):
     __visit_name__ = "NUMBER"
 
@@ -63,6 +69,7 @@ class NUMBER(sqltypes.Numeric, sqltypes.Integer):
             return sqltypes.Integer
 
 
+# Oracle FLOAT（binary_precision）
 class FLOAT(sqltypes.FLOAT):
     """Oracle Database FLOAT.
 
@@ -110,6 +117,7 @@ class FLOAT(sqltypes.FLOAT):
         self.binary_precision = binary_precision
 
 
+# BINARY_DOUBLE
 class BINARY_DOUBLE(sqltypes.Double):
     """Implement the Oracle ``BINARY_DOUBLE`` datatype.
 
@@ -127,6 +135,7 @@ class BINARY_DOUBLE(sqltypes.Double):
     __visit_name__ = "BINARY_DOUBLE"
 
 
+# BINARY_FLOAT
 class BINARY_FLOAT(sqltypes.Float):
     """Implement the Oracle ``BINARY_FLOAT`` datatype.
 
@@ -144,14 +153,18 @@ class BINARY_FLOAT(sqltypes.Float):
     __visit_name__ = "BINARY_FLOAT"
 
 
+# BFILE 外部文件
 class BFILE(sqltypes.LargeBinary):
     __visit_name__ = "BFILE"
 
 
+# LONG 遗留文本
 class LONG(sqltypes.Text):
     __visit_name__ = "LONG"
 
 
+# TO_DATE/TO_TIMESTAMP 字面量 mixin
+# 纯 Date 适配
 class _OracleDateLiteralRender:
     def _literal_processor_datetime(self, dialect):
         def process(value):
@@ -190,6 +203,7 @@ class _OracleDateLiteralRender:
         return process
 
 
+# Oracle DATE（含时间）
 class DATE(_OracleDateLiteralRender, sqltypes.DateTime):
     """Provide the Oracle Database DATE type.
 
@@ -213,6 +227,7 @@ class _OracleDate(_OracleDateLiteralRender, sqltypes.Date):
         return self._literal_processor_date(dialect)
 
 
+# DAY TO SECOND INTERVAL
 class INTERVAL(sqltypes.NativeForEmulated, sqltypes._AbstractInterval):
     __visit_name__ = "INTERVAL"
 
@@ -273,6 +288,7 @@ class INTERVAL(sqltypes.NativeForEmulated, sqltypes._AbstractInterval):
         return process
 
 
+# TIMESTAMP 时区变体
 class TIMESTAMP(sqltypes.TIMESTAMP):
     """Oracle Database implementation of ``TIMESTAMP``, which supports
     additional Oracle Database-specific modes
@@ -301,6 +317,7 @@ class TIMESTAMP(sqltypes.TIMESTAMP):
         self.local_timezone = local_timezone
 
 
+# ROWID 类型
 class ROWID(sqltypes.TypeEngine):
     """Oracle Database ROWID type.
 
@@ -311,6 +328,7 @@ class ROWID(sqltypes.TypeEngine):
     __visit_name__ = "ROWID"
 
 
+# Boolean→NUMBER
 class _OracleBoolean(sqltypes.Boolean):
     def get_dbapi_type(self, dbapi):
         return dbapi.NUMBER

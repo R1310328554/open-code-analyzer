@@ -5,13 +5,16 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
-# generated using:
+# MySQL/MariaDB 保留字集合：标识符引用与 DDL 校验
+#
+# generated using:# generated using:
 # https://gist.github.com/kkirsche/4f31f2153ed7a3248be1ec44ca6ddbc9
 #
 # https://mariadb.com/kb/en/reserved-words/
 # includes: Reserved Words, Oracle Mode (separate set unioned)
 # excludes: Exceptions, Function Names
 
+# MariaDB 保留字（含 Oracle 模式并集）
 RESERVED_WORDS_MARIADB = {
     "accessible",
     "add",
@@ -288,6 +291,7 @@ RESERVED_WORDS_MARIADB = {
 # includes: MySQL x.0 Keywords and Reserved Words
 # excludes: MySQL x.0 New Keywords and Reserved Words,
 #       MySQL x.0 Removed Keywords and Reserved Words
+# MySQL 8 保留字
 RESERVED_WORDS_MYSQL = {
     "accessible",
     "add",

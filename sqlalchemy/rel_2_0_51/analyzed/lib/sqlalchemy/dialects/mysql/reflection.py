@@ -4,6 +4,8 @@
 #
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
+# MySQL SHOW CREATE TABLE 解析：列、索引、约束与分区
+
 from __future__ import annotations
 
 import re
@@ -33,6 +35,7 @@ if TYPE_CHECKING:
     from ...engine.interfaces import ReflectedColumn
 
 
+# 存储 SHOW CREATE TABLE 解析中间状态
 class ReflectedState:
     """Stores raw information about a SHOW CREATE TABLE statement."""
 
@@ -47,6 +50,7 @@ class ReflectedState:
         self.ck_constraints: List[Dict[str, Any]] = []
 
 
+# 解析 SHOW CREATE TABLE 输出为 ReflectedState
 class MySQLTableDefinitionParser:
     """Parses the results of a SHOW CREATE TABLE statement."""
 
@@ -57,6 +61,7 @@ class MySQLTableDefinitionParser:
         self.preparer = preparer
         self._prep_regexes()
 
+    # 逐行解析建表语句
     def parse(
         self, show_create: str, charset: Optional[str]
     ) -> ReflectedState:
@@ -93,9 +98,11 @@ class MySQLTableDefinitionParser:
                     pass
         return state
 
+    # 判断是否为视图定义
     def _check_view(self, sql: str) -> bool:
         return bool(self._re_is_view.match(sql))
 
+    # 解析行内 KEY/CONSTRAINT/FOREIGN KEY
     def _parse_constraints(self, line: str) -> Union[
         Tuple[None, str],
         Tuple[Literal["partition"], str],
@@ -152,6 +159,7 @@ class MySQLTableDefinitionParser:
         # No match.
         return (None, line)
 
+    # 提取表名
     def _parse_table_name(self, line: str, state: ReflectedState) -> None:
         """Extract the table name.
 
@@ -163,6 +171,7 @@ class MySQLTableDefinitionParser:
         if m:
             state.table_name = cleanup(m.group("name"))
 
+    # 解析 ENGINE/CHARSET 等表选项
     def _parse_table_options(self, line: str, state: ReflectedState) -> None:
         """Build a dictionary of all reflected table-level options.
 
@@ -189,6 +198,7 @@ class MySQLTableDefinitionParser:
         for opt, val in options.items():
             state.table_options["%s_%s" % (self.dialect.name, opt)] = val
 
+    # 解析 PARTITION BY 子句
     def _parse_partition_options(
         self, line: str, state: ReflectedState
     ) -> None:
@@ -247,6 +257,7 @@ class MySQLTableDefinitionParser:
             else:
                 state.table_options["%s_%s" % (self.dialect.name, opt)] = val
 
+    # 解析列定义：类型、默认值、注释
     def _parse_column(self, line: str, state: ReflectedState) -> None:
         """Extract column details.
 
@@ -353,6 +364,7 @@ class MySQLTableDefinitionParser:
         col_d.update(col_kw)
         state.columns.append(col_d)  # type: ignore[arg-type]
 
+    # DESCRIBE 结果转 CREATE 风格文本
     def _describe_to_create(
         self,
         table_name: str,
@@ -410,6 +422,7 @@ class MySQLTableDefinitionParser:
             ]
         )
 
+    # 解析索引/键表达式列表
     def _parse_keyexprs(
         self, identifiers: str
     ) -> List[Tuple[str, Optional[int], str]]:
@@ -422,6 +435,7 @@ class MySQLTableDefinitionParser:
             )
         ]
 
+    # 预编译列/选项/分区正则
     def _prep_regexes(self) -> None:
         """Pre-compile regular expressions."""
 
@@ -616,6 +630,7 @@ class MySQLTableDefinitionParser:
 
     _optional_equals = r"(?:\s*(?:=\s*)|\s+)"
 
+    # 注册字符串型表选项指令
     def _add_option_string(self, directive: str) -> None:
         regex = r"(?P<directive>%s)%s" r"'(?P<val>(?:[^']|'')*?)'(?!')" % (
             re.escape(directive),
@@ -623,6 +638,7 @@ class MySQLTableDefinitionParser:
         )
         self._pr_options.append(_pr_compile(regex, cleanup_text))
 
+    # 注册单词型表选项
     def _add_option_word(self, directive: str) -> None:
         regex = r"(?P<directive>%s)%s" r"(?P<val>\w+)" % (
             re.escape(directive),
@@ -630,6 +646,7 @@ class MySQLTableDefinitionParser:
         )
         self._pr_options.append(_pr_compile(regex))
 
+    # 注册分区选项关键字
     def _add_partition_option_word(self, directive: str) -> None:
         if directive == "PARTITION BY" or directive == "SUBPARTITION BY":
             regex = r"(?<!\S)(?P<directive>%s)%s" r"(?P<val>\w+.*)" % (
@@ -645,6 +662,7 @@ class MySQLTableDefinitionParser:
             regex = r"(?<!\S)(?P<directive>%s)(?!\S)" % (re.escape(directive),)
         self._pr_options.append(_pr_compile(regex))
 
+    # 注册正则匹配的表选项
     def _add_option_regex(self, directive: str, regex: str) -> None:
         regex = r"(?P<directive>%s)%s" r"(?P<val>%s)" % (
             re.escape(directive),
@@ -664,6 +682,7 @@ _options_of_type_string = (
 
 
 @overload
+# 重载兼容：编译正则
 def _pr_compile(
     regex: str, cleanup: Callable[[str], str]
 ) -> Tuple[re.Pattern[Any], Callable[[str], str]]: ...
@@ -683,12 +702,14 @@ def _pr_compile(
     return (_re_compile(regex), cleanup)
 
 
+# 编译并缓存正则
 def _re_compile(regex: str) -> re.Pattern[Any]:
     """Compile a string to regex, I and UNICODE."""
 
     return re.compile(regex, re.I | re.UNICODE)
 
 
+# 去除引号并 strip 字符串列表
 def _strip_values(values: Sequence[str]) -> List[str]:
     "Strip reflected values quotes"
     strip_values: List[str] = []
@@ -700,6 +721,7 @@ def _strip_values(values: Sequence[str]) -> List[str]:
     return strip_values
 
 
+# 清理 SHOW CREATE 文本中的噪声
 def cleanup_text(raw_text: str) -> str:
     if "\\" in raw_text:
         raw_text = re.sub(

@@ -8,7 +8,9 @@
 
 r"""
 
-.. dialect:: mysql+pyodbc
+mysql+pyodbc 方言：ODBC 连接 MySQL（非 CI 主测路径）。
+
+.. dialect:: mysql+pyodbc.. dialect:: mysql+pyodbc
     :name: PyODBC
     :dbapi: pyodbc
     :connectstring: mysql+pyodbc://<username>:<password>@<dsnname>
@@ -69,6 +71,7 @@ if TYPE_CHECKING:
     from ...sql.type_api import _ResultProcessorType
 
 
+# pyodbc TIME 结果处理器：驱动已返回 datetime.time
 class _pyodbcTIME(TIME):
     def result_processor(
         self, dialect: Dialect, coltype: object
@@ -80,6 +83,7 @@ class _pyodbcTIME(TIME):
         return process
 
 
+# pyodbc 执行上下文：LAST_INSERT_ID() 取自增
 class MySQLExecutionContext_pyodbc(MySQLExecutionContext):
     def get_lastrowid(self) -> int:
         cursor = self.create_cursor()
@@ -89,6 +93,7 @@ class MySQLExecutionContext_pyodbc(MySQLExecutionContext):
         return lastrowid  # type: ignore[no-any-return]
 
 
+# MySQL+pyodbc 方言：字符集探测与 Unicode 解码
 class MySQLDialect_pyodbc(PyODBCConnector, MySQLDialect):
     supports_statement_cache = True
     colspecs = util.update_copy(MySQLDialect.colspecs, {Time: _pyodbcTIME})
@@ -97,6 +102,7 @@ class MySQLDialect_pyodbc(PyODBCConnector, MySQLDialect):
 
     pyodbc_driver_name = "MySQL"
 
+    # 优先 character_set_client，失败回退 latin1
     def _detect_charset(self, connection: Connection) -> str:
         """Sniff out the character set in use for connection results."""
 
@@ -122,11 +128,13 @@ class MySQLDialect_pyodbc(PyODBCConnector, MySQLDialect):
         )
         return "latin1"
 
+    # 委托基类解析版本
     def _get_server_version_info(
         self, connection: Connection
     ) -> Tuple[int, ...]:
         return MySQLDialect._get_server_version_info(self, connection)
 
+    # 从 ODBC 错误串解析 (errno)
     def _extract_error_code(self, exception: BaseException) -> Optional[int]:
         m = re.compile(r"\((\d+)\)").search(str(exception.args))
         if m is None:
@@ -137,6 +145,7 @@ class MySQLDialect_pyodbc(PyODBCConnector, MySQLDialect):
         else:
             return None
 
+    # 连接时 setdecoding/setencoding 为 utf-8
     def on_connect(self) -> Callable[[DBAPIConnection], None]:
         super_ = super().on_connect()
 
@@ -155,4 +164,5 @@ class MySQLDialect_pyodbc(PyODBCConnector, MySQLDialect):
         return on_connect
 
 
+# 方言入口
 dialect = MySQLDialect_pyodbc

@@ -1002,8 +1002,11 @@ from ...types import INTEGER
 from ...types import NCHAR
 from ...types import NVARCHAR
 from ...types import REAL
+# Oracle 方言核心：编译器、DDL、反射与 OracleDialect
+
 from ...types import VARCHAR
 
+# Oracle 保留字集合
 RESERVED_WORDS = set(
     "SHARE RAW DROP BETWEEN FROM DESC OPTION PRIOR LONG THEN "
     "DEFAULT ALTER IS INTO MINUS INTEGER NUMBER GRANT IDENTIFIED "
@@ -1016,11 +1019,13 @@ RESERVED_WORDS = set(
     "DECIMAL UNION PUBLIC AND START UID COMMENT CURRENT LEVEL".split()
 )
 
+# 无参内置函数名
 NO_ARG_FNS = set(
     "UID CURRENT_DATE SYSDATE USER CURRENT_TIME CURRENT_TIMESTAMP".split()
 )
 
 
+# 通用类型到 Oracle 类型的 colspec 映射
 colspecs = {
     sqltypes.Boolean: _OracleBoolean,
     sqltypes.Interval: INTERVAL,
@@ -1028,6 +1033,7 @@ colspecs = {
     sqltypes.Date: _OracleDate,
 }
 
+# 反射时 information_schema 类型名映射
 ischema_names = {
     "VARCHAR2": VARCHAR,
     "NVARCHAR2": NVARCHAR,
@@ -1055,27 +1061,33 @@ ischema_names = {
 }
 
 
+# Oracle DDL 类型编译：DATE=DATETIME、NUMBER 精度等
 class OracleTypeCompiler(compiler.GenericTypeCompiler):
     # Note:
     # Oracle DATE == DATETIME
     # Oracle does not allow milliseconds in DATE
     # Oracle does not support TIME columns
 
+    # DateTime→DATE
     def visit_datetime(self, type_, **kw):
         return self.visit_DATE(type_, **kw)
 
+    # Float→FLOAT
     def visit_float(self, type_, **kw):
         return self.visit_FLOAT(type_, **kw)
 
+    # Double→DOUBLE PRECISION
     def visit_double(self, type_, **kw):
         return self.visit_DOUBLE_PRECISION(type_, **kw)
 
+    # Unicode→NVARCHAR2 或 VARCHAR2
     def visit_unicode(self, type_, **kw):
         if self.dialect._use_nchar_for_unicode:
             return self.visit_NVARCHAR2(type_, **kw)
         else:
             return self.visit_VARCHAR2(type_, **kw)
 
+    # INTERVAL DAY TO SECOND
     def visit_INTERVAL(self, type_, **kw):
         return "INTERVAL DAY%s TO SECOND%s" % (
             type_.day_precision is not None
@@ -1086,9 +1098,11 @@ class OracleTypeCompiler(compiler.GenericTypeCompiler):
             or "",
         )
 
+    # LONG 类型
     def visit_LONG(self, type_, **kw):
         return "LONG"
 
+    # TIMESTAMP 含时区变体
     def visit_TIMESTAMP(self, type_, **kw):
         if getattr(type_, "local_timezone", False):
             return "TIMESTAMP WITH LOCAL TIME ZONE"
@@ -1097,22 +1111,28 @@ class OracleTypeCompiler(compiler.GenericTypeCompiler):
         else:
             return "TIMESTAMP"
 
+    # DOUBLE PRECISION
     def visit_DOUBLE_PRECISION(self, type_, **kw):
         return self._generate_numeric(type_, "DOUBLE PRECISION", **kw)
 
+    # BINARY_DOUBLE
     def visit_BINARY_DOUBLE(self, type_, **kw):
         return self._generate_numeric(type_, "BINARY_DOUBLE", **kw)
 
+    # BINARY_FLOAT
     def visit_BINARY_FLOAT(self, type_, **kw):
         return self._generate_numeric(type_, "BINARY_FLOAT", **kw)
 
+    # FLOAT 需 binary_precision
     def visit_FLOAT(self, type_, **kw):
         kw["_requires_binary_precision"] = True
         return self._generate_numeric(type_, "FLOAT", **kw)
 
+    # NUMBER(p,s)
     def visit_NUMBER(self, type_, **kw):
         return self._generate_numeric(type_, "NUMBER", **kw)
 
+    # 数值类型 precision/scale 渲染
     def _generate_numeric(
         self,
         type_,
@@ -1158,20 +1178,25 @@ class OracleTypeCompiler(compiler.GenericTypeCompiler):
             n = "%(name)s(%(precision)s, %(scale)s)"
             return n % {"name": name, "precision": precision, "scale": scale}
 
+    # 字符串→VARCHAR2
     def visit_string(self, type_, **kw):
         return self.visit_VARCHAR2(type_, **kw)
 
+    # VARCHAR2 长度
     def visit_VARCHAR2(self, type_, **kw):
         return self._visit_varchar(type_, "", "2")
 
+    # NVARCHAR2
     def visit_NVARCHAR2(self, type_, **kw):
         return self._visit_varchar(type_, "N", "2")
 
     visit_NVARCHAR = visit_NVARCHAR2
 
+    # VARCHAR
     def visit_VARCHAR(self, type_, **kw):
         return self._visit_varchar(type_, "", "")
 
+    # VARCHAR/NVARCHAR 公共渲染
     def _visit_varchar(self, type_, n, num):
         if not type_.length:
             return "%(n)sVARCHAR%(two)s" % {"two": num, "n": n}
@@ -1182,33 +1207,41 @@ class OracleTypeCompiler(compiler.GenericTypeCompiler):
             varchar = "%(n)sVARCHAR%(two)s(%(length)s)"
             return varchar % {"length": type_.length, "two": num, "n": n}
 
+    # Text→CLOB
     def visit_text(self, type_, **kw):
         return self.visit_CLOB(type_, **kw)
 
+    # UnicodeText→NCLOB/CLOB
     def visit_unicode_text(self, type_, **kw):
         if self.dialect._use_nchar_for_unicode:
             return self.visit_NCLOB(type_, **kw)
         else:
             return self.visit_CLOB(type_, **kw)
 
+    # LargeBinary→BLOB
     def visit_large_binary(self, type_, **kw):
         return self.visit_BLOB(type_, **kw)
 
+    # BigInteger→NUMBER(19)
     def visit_big_integer(self, type_, **kw):
         return self.visit_NUMBER(type_, precision=19, **kw)
 
+    # Boolean→SMALLINT
     def visit_boolean(self, type_, **kw):
         return self.visit_SMALLINT(type_, **kw)
 
+    # RAW(n)
     def visit_RAW(self, type_, **kw):
         if type_.length:
             return "RAW(%(length)s)" % {"length": type_.length}
         else:
             return "RAW"
 
+    # ROWID
     def visit_ROWID(self, type_, **kw):
         return "ROWID"
 
+    # VECTOR(dim,format,type)
     def visit_VECTOR(self, type_, **kw):
         dim = type_.dim if type_.dim is not None else "*"
         storage_format = (
@@ -1222,6 +1255,7 @@ class OracleTypeCompiler(compiler.GenericTypeCompiler):
         return f"VECTOR({dim},{storage_format},{storage_type})"
 
 
+# Oracle SQL 编译：非 ANSI JOIN、LIMIT/OFFSET、RETURNING
 class OracleCompiler(compiler.SQLCompiler):
     """Oracle compiler modifies the lexical structure of Select
     statements to work under non-ANSI configured Oracle databases, if
@@ -1233,57 +1267,71 @@ class OracleCompiler(compiler.SQLCompiler):
         {expression.CompoundSelect.EXCEPT: "MINUS"},
     )
 
+    # 初始化 __wheres 用于旧式 JOIN
+    # use_ansi/optimize_limits/nchar 等构造参数
     def __init__(self, *args, **kwargs):
         self.__wheres = {}
         super().__init__(*args, **kwargs)
 
+    # mod() 取模
     def visit_mod_binary(self, binary, operator, **kw):
         return "mod(%s, %s)" % (
             self.process(binary.left, **kw),
             self.process(binary.right, **kw),
         )
 
+    # now()→CURRENT_TIMESTAMP
     def visit_now_func(self, fn, **kw):
         return "CURRENT_TIMESTAMP"
 
+    # char_length
     def visit_char_length_func(self, fn, **kw):
         return "LENGTH" + self.function_argspec(fn, **kw)
 
+    # MATCH 不支持
     def visit_match_op_binary(self, binary, operator, **kw):
         return "CONTAINS (%s, %s)" % (
             self.process(binary.left),
             self.process(binary.right),
         )
 
+    # true 字面量
     def visit_true(self, expr, **kw):
         return "1"
 
+    # false 字面量
     def visit_false(self, expr, **kw):
         return "0"
 
+    # CTE 前缀
     def get_cte_preamble(self, recursive):
         return "WITH"
 
+    # SELECT hint
     def get_select_hint_text(self, byfroms):
         return " ".join("/*+ %s */" % text for table, text in byfroms.items())
 
+    # 函数参数规格
     def function_argspec(self, fn, **kw):
         if len(fn.clauses) > 0 or fn.name.upper() not in NO_ARG_FNS:
             return compiler.SQLCompiler.function_argspec(self, fn, **kw)
         else:
             return ""
 
+    # 内置函数编译
     def visit_function(self, func, **kw):
         text = super().visit_function(func, **kw)
         if kw.get("asfrom", False) and func.name.lower() != "table":
             text = "TABLE (%s)" % text
         return text
 
+    # 表值列
     def visit_table_valued_column(self, element, **kw):
         text = super().visit_table_valued_column(element, **kw)
         text = text + ".COLUMN_VALUE"
         return text
 
+    # 无 FROM 时 dual
     def default_from(self):
         """Called when a ``SELECT`` statement has no froms,
         and no ``FROM`` clause is to be appended.
@@ -1293,6 +1341,7 @@ class OracleCompiler(compiler.SQLCompiler):
 
         return " FROM DUAL"
 
+    # JOIN：ANSI 或 Oracle 旧式 (+)
     def visit_join(self, join, from_linter=None, **kwargs):
         if self.dialect.use_ansi:
             return compiler.SQLCompiler.visit_join(
@@ -1313,6 +1362,7 @@ class OracleCompiler(compiler.SQLCompiler):
                 + self.process(right, from_linter=from_linter, **kwargs)
             )
 
+    # 非 ANSI JOIN 的 WHERE 条件
     def _get_nonansi_join_whereclause(self, froms):
         clauses = []
 
@@ -1355,17 +1405,21 @@ class OracleCompiler(compiler.SQLCompiler):
         else:
             return sql.and_(*clauses)
 
+    # 外连接 (+) 列
     def visit_outer_join_column(self, vc, **kw):
         return self.process(vc.column, **kw) + "(+)"
 
+    # 序列 nextval
     def visit_sequence(self, seq, **kw):
         return self.preparer.format_sequence(seq) + ".nextval"
 
+    # 别名后缀
     def get_render_as_alias_suffix(self, alias_name_text):
         """Oracle doesn't like ``FROM table AS alias``"""
 
         return " " + alias_name_text
 
+    # RETURNING 子句
     def returning_clause(
         self, stmt, returning_cols, *, populate_result_map, **kw
     ):
@@ -1432,6 +1486,7 @@ class OracleCompiler(compiler.SQLCompiler):
 
         return "RETURNING " + ", ".join(columns) + " INTO " + ", ".join(binds)
 
+    # ROWNUM / FETCH 行限制
     def _row_limit_clause(self, select, **kw):
         """Oracle Database 12c supports OFFSET/FETCH operators
         Use it instead subquery with row_number
@@ -1453,12 +1508,14 @@ class OracleCompiler(compiler.SQLCompiler):
                 **kw,
             )
 
+    # 解析 limit/offset
     def _get_limit_or_fetch(self, select):
         if select._fetch_clause is None:
             return select._limit_clause
         else:
             return select._fetch_clause
 
+    # OFFSET/FETCH NEXT
     def fetch_clause(
         self,
         select,
@@ -1482,6 +1539,7 @@ class OracleCompiler(compiler.SQLCompiler):
 
         return text
 
+    # 重写 SELECT 结构以支持分页
     def translate_select_structure(self, select_stmt, **kwargs):
         select = select_stmt
 
@@ -1630,12 +1688,15 @@ class OracleCompiler(compiler.SQLCompiler):
 
         return select
 
+    # LIMIT（可能为空，由结构翻译处理）
     def limit_clause(self, select, **kw):
         return ""
 
+    # 空集 SELECT FROM dual WHERE 1!=1
     def visit_empty_set_expr(self, type_, **kw):
         return "SELECT 1 FROM DUAL WHERE 1!=1"
 
+    # FOR UPDATE OF
     def for_update_clause(self, select, **kw):
         if self.is_subquery():
             return ""
@@ -1654,18 +1715,21 @@ class OracleCompiler(compiler.SQLCompiler):
 
         return tmp
 
+    # IS DISTINCT FROM
     def visit_is_distinct_from_binary(self, binary, operator, **kw):
         return "DECODE(%s, %s, 0, 1) = 1" % (
             self.process(binary.left),
             self.process(binary.right),
         )
 
+    # IS NOT DISTINCT FROM
     def visit_is_not_distinct_from_binary(self, binary, operator, **kw):
         return "DECODE(%s, %s, 0, 1) = 0" % (
             self.process(binary.left),
             self.process(binary.right),
         )
 
+    # REGEXP_LIKE
     def visit_regexp_match_op_binary(self, binary, operator, **kw):
         string = self.process(binary.left, **kw)
         pattern = self.process(binary.right, **kw)
@@ -1679,11 +1743,13 @@ class OracleCompiler(compiler.SQLCompiler):
                 self.render_literal_value(flags, sqltypes.STRINGTYPE),
             )
 
+    # NOT REGEXP_LIKE
     def visit_not_regexp_match_op_binary(self, binary, operator, **kw):
         return "NOT %s" % self.visit_regexp_match_op_binary(
             binary, operator, **kw
         )
 
+    # REGEXP_REPLACE
     def visit_regexp_replace_op_binary(self, binary, operator, **kw):
         string = self.process(binary.left, **kw)
         pattern_replace = self.process(binary.right, **kw)
@@ -1700,9 +1766,11 @@ class OracleCompiler(compiler.SQLCompiler):
                 self.render_literal_value(flags, sqltypes.STRINGTYPE),
             )
 
+    # LISTAGG
     def visit_aggregate_strings_func(self, fn, **kw):
         return "LISTAGG%s" % self.function_argspec(fn, **kw)
 
+    # 位运算（部分版本）
     def _visit_bitwise(self, binary, fn_name, custom_right=None, **kw):
         left = self.process(binary.left, **kw)
         right = self.process(
@@ -1710,27 +1778,35 @@ class OracleCompiler(compiler.SQLCompiler):
         )
         return f"{fn_name}({left}, {right})"
 
+    # 位异或不支持
     def visit_bitwise_xor_op_binary(self, binary, operator, **kw):
         return self._visit_bitwise(binary, "BITXOR", **kw)
 
+    # 位或
     def visit_bitwise_or_op_binary(self, binary, operator, **kw):
         return self._visit_bitwise(binary, "BITOR", **kw)
 
+    # 位与
     def visit_bitwise_and_op_binary(self, binary, operator, **kw):
         return self._visit_bitwise(binary, "BITAND", **kw)
 
+    # 右移不支持
     def visit_bitwise_rshift_op_binary(self, binary, operator, **kw):
         raise exc.CompileError("Cannot compile bitwise_rshift in oracle")
 
+    # 左移不支持
     def visit_bitwise_lshift_op_binary(self, binary, operator, **kw):
         raise exc.CompileError("Cannot compile bitwise_lshift in oracle")
 
+    # 位非不支持
     def visit_bitwise_not_op_unary_operator(self, element, operator, **kw):
         raise exc.CompileError("Cannot compile bitwise_not in oracle")
 
 
+# Oracle DDL：索引、注释、IDENTITY、VECTOR 索引
 class OracleDDLCompiler(compiler.DDLCompiler):
 
+    # VECTOR 索引 PARAMETERS 子句
     def _build_vector_index_config(
         self, vector_index_config: VectorIndexConfig
     ) -> str:
@@ -1772,6 +1848,7 @@ class OracleDDLCompiler(compiler.DDLCompiler):
 
         return " ".join(parts)
 
+    # ON DELETE CASCADE；无 ON UPDATE
     def define_constraint_cascades(self, constraint):
         text = ""
         if constraint.ondelete is not None:
@@ -1790,11 +1867,13 @@ class OracleDDLCompiler(compiler.DDLCompiler):
 
         return text
 
+    # COMMENT ON TABLE ... IS ''
     def visit_drop_table_comment(self, drop, **kw):
         return "COMMENT ON TABLE %s IS ''" % self.preparer.format_table(
             drop.element
         )
 
+    # CREATE INDEX/BITMAP/VECTOR
     def visit_create_index(self, create, **kw):
         index = create.element
         self._verify_index_table(index)
@@ -1831,6 +1910,7 @@ class OracleDDLCompiler(compiler.DDLCompiler):
             text += " " + self._build_vector_index_config(vector_options)
         return text
 
+    # 建表后 IDENTITY/COMMENT
     def post_create_table(self, table):
         table_opts = []
         opts = table.dialect_options["oracle"]
@@ -1850,6 +1930,7 @@ class OracleDDLCompiler(compiler.DDLCompiler):
             )
         return "".join(table_opts)
 
+    # GENERATED AS IDENTITY 选项
     def get_identity_options(self, identity_options):
         text = super().get_identity_options(identity_options)
         text = text.replace("NO MINVALUE", "NOMINVALUE")
@@ -1859,6 +1940,7 @@ class OracleDDLCompiler(compiler.DDLCompiler):
             text += " ORDER" if identity_options.order else " NOORDER"
         return text.strip()
 
+    # 计算列 VIRTUAL
     def visit_computed_column(self, generated, **kw):
         text = "GENERATED ALWAYS AS (%s)" % self.sql_compiler.process(
             generated.sqltext, include_table=False, literal_binds=True
@@ -1873,6 +1955,7 @@ class OracleDDLCompiler(compiler.DDLCompiler):
             text += " VIRTUAL"
         return text
 
+    # IDENTITY 列 DDL
     def visit_identity_column(self, identity, **kw):
         if identity.always is None:
             kind = ""
@@ -1888,12 +1971,14 @@ class OracleDDLCompiler(compiler.DDLCompiler):
         return text
 
 
+# 标识符与 savepoint 命名
 class OracleIdentifierPreparer(compiler.IdentifierPreparer):
     reserved_words = {x.lower() for x in RESERVED_WORDS}
     illegal_initial_characters = {str(dig) for dig in range(0, 10)}.union(
         ["_", "$"]
     )
 
+    # 绑定名是否需引号
     def _bindparam_requires_quotes(self, value):
         """Return True if the given identifier requires quoting."""
         lc_value = value.lower()
@@ -1903,12 +1988,15 @@ class OracleIdentifierPreparer(compiler.IdentifierPreparer):
             or not self.legal_characters.match(str(value))
         )
 
+    # SAVEPOINT 名称格式
     def format_savepoint(self, savepoint):
         name = savepoint.ident.lstrip("_")
         return super().format_savepoint(savepoint, name)
 
 
+# 执行上下文：序列、dblink 占位符替换
 class OracleExecutionContext(default.DefaultExecutionContext):
+    # 触发序列 nextval
     def fire_sequence(self, seq, type_):
         return self._execute_scalar(
             "SELECT "
@@ -1917,6 +2005,7 @@ class OracleExecutionContext(default.DefaultExecutionContext):
             type_,
         )
 
+    # 执行前替换 DB_LINK_PLACEHOLDER
     def pre_exec(self):
         if self.statement and "_oracle_dblink" in self.execution_options:
             self.statement = self.statement.replace(
@@ -1925,6 +2014,7 @@ class OracleExecutionContext(default.DefaultExecutionContext):
             )
 
 
+# Oracle 方言主类：反射、版本特性、隔离级别
 class OracleDialect(default.DefaultDialect):
     name = "oracle"
     supports_statement_cache = True
@@ -2020,6 +2110,7 @@ class OracleDialect(default.DefaultDialect):
             enable_offset_fetch
         )
 
+    # 版本检测：IDENTITY、OFFSET FETCH、Interval
     def initialize(self, connection):
         super().initialize(connection)
 
@@ -2039,6 +2130,7 @@ class OracleDialect(default.DefaultDialect):
             self.enable_offset_fetch and self.server_version_info >= (12,)
         )
 
+    # compatible 参数有效版本
     def _get_effective_compat_server_version_info(self, connection):
         # dialect does not need compat levels below 12.2, so don't query
         # in those cases
@@ -2061,35 +2153,43 @@ class OracleDialect(default.DefaultDialect):
             return self.server_version_info
 
     @property
+    # 是否 Oracle 8
     def _is_oracle_8(self):
         return self.server_version_info and self.server_version_info < (9,)
 
     @property
+    # 表压缩 10.1+
     def _supports_table_compression(self):
         return self.server_version_info and self.server_version_info >= (10, 1)
 
     @property
+    # COMPRESS FOR 11+
     def _supports_table_compress_for(self):
         return self.server_version_info and self.server_version_info >= (11,)
 
     @property
+    # CHAR 长度语义
     def _supports_char_length(self):
         return not self._is_oracle_8
 
     @property
+    # UPDATE RETURNING 计算列 18+
     def _supports_update_returning_computed_cols(self):
         # on version 18 this error is no longet present while it happens on 11
         # it may work also on versions before the 18
         return self.server_version_info and self.server_version_info >= (18,)
 
     @property
+    # EXCEPT ALL 21+
     def _supports_except_all(self):
         return self.server_version_info and self.server_version_info >= (21,)
 
+    # Oracle 无 RELEASE SAVEPOINT
     def do_release_savepoint(self, connection, name):
         # Oracle does not support RELEASE SAVEPOINT
         pass
 
+    # 标识符长度 30/128
     def _check_max_identifier_length(self, connection):
         if self._get_effective_compat_server_version_info(connection) < (
             12,
@@ -2100,9 +2200,11 @@ class OracleDialect(default.DefaultDialect):
             # use the default
             return None
 
+    # READ COMMITTED / SERIALIZABLE
     def get_isolation_level_values(self, dbapi_connection):
         return ["READ COMMITTED", "SERIALIZABLE"]
 
+    # 默认隔离级别
     def get_default_isolation_level(self, dbapi_conn):
         try:
             return self.get_isolation_level(dbapi_conn)
@@ -2111,6 +2213,7 @@ class OracleDialect(default.DefaultDialect):
         except:
             return "READ COMMITTED"
 
+    # 反射查询执行（dblink、LONG 类型）
     def _execute_reflection(
         self, connection, query, dblink, returns_long, params=None
     ):
@@ -2140,6 +2243,7 @@ class OracleDialect(default.DefaultDialect):
         )
 
     @util.memoized_property
+    # has_table 查询构造
     def _has_table_query(self):
         # materialized views are returned by all_tables
         tables = (
@@ -2163,6 +2267,7 @@ class OracleDialect(default.DefaultDialect):
         return query
 
     @reflection.cache
+    # 表是否存在
     def has_table(
         self, connection, table_name, schema=None, dblink=None, **kw
     ):
@@ -2186,6 +2291,7 @@ class OracleDialect(default.DefaultDialect):
         return bool(cursor.scalar())
 
     @reflection.cache
+    # 序列是否存在
     def has_sequence(
         self, connection, sequence_name, schema=None, dblink=None, **kw
     ):
@@ -2205,6 +2311,7 @@ class OracleDialect(default.DefaultDialect):
         )
         return bool(cursor.scalar())
 
+    # 当前 schema 用户名
     def _get_default_schema_name(self, connection):
         return self.normalize_name(
             connection.exec_driver_sql(
@@ -2212,6 +2319,7 @@ class OracleDialect(default.DefaultDialect):
             ).scalar()
         )
 
+    # schema 名反规范化
     def denormalize_schema_name(self, name):
         # look for quoted_name
         force = getattr(name, "quote", None)
@@ -2225,6 +2333,7 @@ class OracleDialect(default.DefaultDialect):
         ("filter_names", InternalTraversal.dp_string_list),
         ("dblink", InternalTraversal.dp_string),
     )
+    # 同义词解析
     def _get_synonyms(self, connection, schema, filter_names, dblink, **kw):
         owner = self.denormalize_schema_name(
             schema or self.default_schema_name
@@ -2249,6 +2358,7 @@ class OracleDialect(default.DefaultDialect):
         return result.all()
 
     @lru_cache()
+    # ALL_OBJECTS 查询
     def _all_objects_query(
         self, owner, scope, kind, has_filter_names, has_mat_views
     ):
@@ -2316,6 +2426,7 @@ class OracleDialect(default.DefaultDialect):
         ("filter_names", InternalTraversal.dp_string_list),
         ("dblink", InternalTraversal.dp_string),
     )
+    # 获取对象列表
     def _get_all_objects(
         self, connection, schema, scope, kind, filter_names, dblink, **kw
     ):
@@ -2347,6 +2458,7 @@ class OracleDialect(default.DefaultDialect):
 
         return result.all()
 
+    # 同义词装饰器
     def _handle_synonyms_decorator(fn):
         @wraps(fn)
         def wrapper(self, *args, **kwargs):
@@ -2354,6 +2466,7 @@ class OracleDialect(default.DefaultDialect):
 
         return wrapper
 
+    # 反射时解析同义词
     def _handle_synonyms(self, fn, connection, *args, **kwargs):
         if not kwargs.get("oracle_resolve_synonyms", False):
             return fn(self, connection, *args, **kwargs)
@@ -2393,6 +2506,7 @@ class OracleDialect(default.DefaultDialect):
         return data.items()
 
     @reflection.cache
+    # 所有 schema
     def get_schema_names(self, connection, dblink=None, **kw):
         """Supported kw arguments are: ``dblink`` to reflect via a db link."""
         query = select(dictionary.all_users.c.username).order_by(
@@ -2404,6 +2518,7 @@ class OracleDialect(default.DefaultDialect):
         return [self.normalize_name(row) for row in result]
 
     @reflection.cache
+    # 表名列表
     def get_table_names(self, connection, schema=None, dblink=None, **kw):
         """Supported kw arguments are: ``dblink`` to reflect via a db link."""
         # note that table_names() isn't loading DBLINKed or synonym'ed tables
@@ -2479,6 +2594,7 @@ class OracleDialect(default.DefaultDialect):
         return [self.normalize_name(row) for row in result]
 
     @reflection.cache
+    # 临时表名
     def get_temp_table_names(self, connection, dblink=None, **kw):
         """Supported kw arguments are: ``dblink`` to reflect via a db link."""
         schema = self.denormalize_schema_name(self.default_schema_name)
@@ -2502,6 +2618,7 @@ class OracleDialect(default.DefaultDialect):
         return [self.normalize_name(row) for row in result]
 
     @reflection.cache
+    # 物化视图名
     def get_materialized_view_names(
         self, connection, schema=None, dblink=None, _normalize=True, **kw
     ):
@@ -2522,6 +2639,7 @@ class OracleDialect(default.DefaultDialect):
             return result.all()
 
     @reflection.cache
+    # 视图名
     def get_view_names(self, connection, schema=None, dblink=None, **kw):
         """Supported kw arguments are: ``dblink`` to reflect via a db link."""
         if not schema:
@@ -2537,6 +2655,7 @@ class OracleDialect(default.DefaultDialect):
         return [self.normalize_name(row) for row in result]
 
     @reflection.cache
+    # 序列名
     def get_sequence_names(self, connection, schema=None, dblink=None, **kw):
         """Supported kw arguments are: ``dblink`` to reflect via a db link."""
         if not schema:
@@ -2551,6 +2670,7 @@ class OracleDialect(default.DefaultDialect):
         ).scalars()
         return [self.normalize_name(row) for row in result]
 
+    # 反射结果校验
     def _value_or_raise(self, data, table, schema):
         table = self.normalize_name(str(table))
         try:
@@ -2560,6 +2680,7 @@ class OracleDialect(default.DefaultDialect):
                 f"{schema}.{table}" if schema else table
             ) from None
 
+    # 规范化过滤名
     def _prepare_filter_names(self, filter_names):
         if filter_names:
             fn = [self.denormalize_name(name) for name in filter_names]
@@ -2568,6 +2689,7 @@ class OracleDialect(default.DefaultDialect):
             return False, {}
 
     @reflection.cache
+    # 表选项
     def get_table_options(self, connection, table_name, schema=None, **kw):
         """Supported kw arguments are: ``dblink`` to reflect via a db link;
         ``oracle_resolve_synonyms`` to resolve names to synonyms
@@ -2583,6 +2705,7 @@ class OracleDialect(default.DefaultDialect):
         return self._value_or_raise(data, table_name, schema)
 
     @lru_cache()
+    # ALL_TABLES 选项查询
     def _table_options_query(
         self, owner, scope, kind, has_filter_names, has_mat_views
     ):
@@ -2638,6 +2761,7 @@ class OracleDialect(default.DefaultDialect):
         return query
 
     @_handle_synonyms_decorator
+    # 批量表选项
     def get_multi_table_options(
         self,
         connection,
@@ -2706,6 +2830,7 @@ class OracleDialect(default.DefaultDialect):
         return options.items()
 
     @reflection.cache
+    # 列反射
     def get_columns(self, connection, table_name, schema=None, **kw):
         """Supported kw arguments are: ``dblink`` to reflect via a db link;
         ``oracle_resolve_synonyms`` to resolve names to synonyms
@@ -2721,6 +2846,7 @@ class OracleDialect(default.DefaultDialect):
         )
         return self._value_or_raise(data, table_name, schema)
 
+    # 分批执行反射查询
     def _run_batches(
         self, connection, query, dblink, returns_long, mappings, all_objects
     ):
@@ -2743,6 +2869,7 @@ class OracleDialect(default.DefaultDialect):
                 yield from result
 
     @lru_cache()
+    # ALL_TAB_COLS 查询
     def _column_query(self, owner):
         all_cols = dictionary.all_tab_cols
         all_comments = dictionary.all_col_comments
@@ -2817,6 +2944,7 @@ class OracleDialect(default.DefaultDialect):
         return query
 
     @_handle_synonyms_decorator
+    # 批量列反射
     def get_multi_columns(
         self,
         connection,
@@ -2955,6 +3083,7 @@ class OracleDialect(default.DefaultDialect):
         # )
         return columns.items()
 
+    # IDENTITY 选项解析
     def _parse_identity_options(self, identity_options, default_on_null):
         # identity_options is a string that starts with 'ALWAYS,' or
         # 'BY DEFAULT,' and continues with
@@ -2988,6 +3117,7 @@ class OracleDialect(default.DefaultDialect):
         return identity
 
     @reflection.cache
+    # 表注释
     def get_table_comment(self, connection, table_name, schema=None, **kw):
         """Supported kw arguments are: ``dblink`` to reflect via a db link;
         ``oracle_resolve_synonyms`` to resolve names to synonyms
@@ -3003,6 +3133,7 @@ class OracleDialect(default.DefaultDialect):
         return self._value_or_raise(data, table_name, schema)
 
     @lru_cache()
+    # 注释查询
     def _comment_query(self, owner, scope, kind, has_filter_names):
         # NOTE: all_tab_comments / all_mview_comments have a row for all
         # object even if they don't have comments
@@ -3059,6 +3190,7 @@ class OracleDialect(default.DefaultDialect):
         return query
 
     @_handle_synonyms_decorator
+    # 批量表注释
     def get_multi_table_comment(
         self,
         connection,
@@ -3100,6 +3232,7 @@ class OracleDialect(default.DefaultDialect):
         )
 
     @reflection.cache
+    # 索引反射
     def get_indexes(self, connection, table_name, schema=None, **kw):
         """Supported kw arguments are: ``dblink`` to reflect via a db link;
         ``oracle_resolve_synonyms`` to resolve names to synonyms
@@ -3115,6 +3248,7 @@ class OracleDialect(default.DefaultDialect):
         return self._value_or_raise(data, table_name, schema)
 
     @lru_cache()
+    # ALL_INDEXES 查询
     def _index_query(self, owner):
         return (
             select(
@@ -3172,6 +3306,7 @@ class OracleDialect(default.DefaultDialect):
         ("dblink", InternalTraversal.dp_string),
         ("all_objects", InternalTraversal.dp_string_list),
     )
+    # 索引行数据
     def _get_indexes_rows(self, connection, schema, dblink, all_objects, **kw):
         owner = self.denormalize_schema_name(
             schema or self.default_schema_name
@@ -3204,6 +3339,7 @@ class OracleDialect(default.DefaultDialect):
         ]
 
     @_handle_synonyms_decorator
+    # 批量索引
     def get_multi_indexes(
         self,
         connection,
@@ -3282,6 +3418,7 @@ class OracleDialect(default.DefaultDialect):
         )
 
     @reflection.cache
+    # 主键
     def get_pk_constraint(self, connection, table_name, schema=None, **kw):
         """Supported kw arguments are: ``dblink`` to reflect via a db link;
         ``oracle_resolve_synonyms`` to resolve names to synonyms
@@ -3297,6 +3434,7 @@ class OracleDialect(default.DefaultDialect):
         return self._value_or_raise(data, table_name, schema)
 
     @lru_cache()
+    # ALL_CONSTRAINTS 查询
     def _constraint_query(self, owner):
         local = dictionary.all_cons_columns.alias("local")
         remote = dictionary.all_cons_columns.alias("remote")
@@ -3352,6 +3490,7 @@ class OracleDialect(default.DefaultDialect):
         ("dblink", InternalTraversal.dp_string),
         ("all_objects", InternalTraversal.dp_string_list),
     )
+    # 约束行
     def _get_all_constraint_rows(
         self, connection, schema, dblink, all_objects, **kw
     ):
@@ -3374,6 +3513,7 @@ class OracleDialect(default.DefaultDialect):
         return values
 
     @_handle_synonyms_decorator
+    # 批量主键
     def get_multi_pk_constraint(
         self,
         connection,
@@ -3420,6 +3560,7 @@ class OracleDialect(default.DefaultDialect):
         )
 
     @reflection.cache
+    # 外键
     def get_foreign_keys(
         self,
         connection,
@@ -3441,6 +3582,7 @@ class OracleDialect(default.DefaultDialect):
         return self._value_or_raise(data, table_name, schema)
 
     @_handle_synonyms_decorator
+    # 批量外键
     def get_multi_foreign_keys(
         self,
         connection,
@@ -3575,6 +3717,7 @@ class OracleDialect(default.DefaultDialect):
         )
 
     @reflection.cache
+    # 唯一约束
     def get_unique_constraints(
         self, connection, table_name, schema=None, **kw
     ):
@@ -3592,6 +3735,7 @@ class OracleDialect(default.DefaultDialect):
         return self._value_or_raise(data, table_name, schema)
 
     @_handle_synonyms_decorator
+    # 批量唯一约束
     def get_multi_unique_constraints(
         self,
         connection,
@@ -3665,6 +3809,7 @@ class OracleDialect(default.DefaultDialect):
         )
 
     @reflection.cache
+    # 视图定义 SQL
     def get_view_definition(
         self,
         connection,
@@ -3716,6 +3861,7 @@ class OracleDialect(default.DefaultDialect):
             return rp
 
     @reflection.cache
+    # CHECK 约束
     def get_check_constraints(
         self, connection, table_name, schema=None, include_all=False, **kw
     ):
@@ -3734,6 +3880,7 @@ class OracleDialect(default.DefaultDialect):
         return self._value_or_raise(data, table_name, schema)
 
     @_handle_synonyms_decorator
+    # 批量 CHECK
     def get_multi_check_constraints(
         self,
         connection,
@@ -3791,6 +3938,7 @@ class OracleDialect(default.DefaultDialect):
             )
         )
 
+    # 列出 DB Link
     def _list_dblinks(self, connection, dblink=None):
         query = select(dictionary.all_db_links.c.db_link)
         links = self._execute_reflection(
@@ -3799,6 +3947,7 @@ class OracleDialect(default.DefaultDialect):
         return [self.normalize_name(link) for link in links]
 
 
+# 非 ANSI 外连接 (+) 列包装
 class _OuterJoinColumn(sql.ClauseElement):
     __visit_name__ = "outer_join_column"
 

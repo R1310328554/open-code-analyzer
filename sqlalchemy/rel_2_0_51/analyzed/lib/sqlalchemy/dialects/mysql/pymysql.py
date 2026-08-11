@@ -7,7 +7,9 @@
 
 r"""
 
-.. dialect:: mysql+pymysql
+mysql+pymysql 方言：纯 Python PyMySQL 驱动，兼容 MySQLdb 行为。
+
+.. dialect:: mysql+pymysql.. dialect:: mysql+pymysql
     :name: PyMySQL
     :dbapi: pymysql
     :connectstring: mysql+pymysql://<username>:<password>@<host>/<dbname>[?<options>]
@@ -71,6 +73,7 @@ if TYPE_CHECKING:
     from ...engine.url import URL
 
 
+# 检测 ping() 是否需传 reconnect=False（#10492/#13306）
 def _connection_ping_reconnects_true(connection_cls: Type[Any]) -> bool:
     """Given a Connection class like pymysql.Connection, aiomysql.Connection,
     asyncmy.Connection, inspect the ping() method and determine if it
@@ -96,6 +99,7 @@ def _connection_ping_reconnects_true(connection_cls: Type[Any]) -> bool:
         )
 
 
+# PyMySQL 方言：继承 mysqldb，覆盖 ping/断连/连接参数
 class MySQLDialect_pymysql(MySQLDialect_mysqldb):
     driver = "pymysql"
     supports_statement_cache = True
@@ -103,6 +107,7 @@ class MySQLDialect_pymysql(MySQLDialect_mysqldb):
     description_encoding = None
 
     @langhelpers.memoized_property
+    # 探测 pymysql.cursors.SSCursor 是否可用
     def supports_server_side_cursors(self) -> bool:
         try:
             cursors = __import__("pymysql.cursors").cursors
@@ -112,10 +117,12 @@ class MySQLDialect_pymysql(MySQLDialect_mysqldb):
             return False
 
     @classmethod
+    # 导入 pymysql 模块
     def import_dbapi(cls) -> DBAPIModule:
         return __import__("pymysql")
 
     @langhelpers.memoized_property
+    # 判断是否向 ping 传 False 禁用自动重连
     def _send_false_to_ping(self) -> bool:
         """determine if pymysql has deprecated, changed the default of,
         or removed the 'reconnect' argument of connection.ping().
@@ -137,6 +144,7 @@ class MySQLDialect_pymysql(MySQLDialect_mysqldb):
         else:
             return _connection_ping_reconnects_true(Connection)
 
+    # 连接保活 ping
     def do_ping(self, dbapi_connection: DBAPIConnection) -> Literal[True]:
         if self._send_false_to_ping:
             dbapi_connection.ping(False)
@@ -145,6 +153,7 @@ class MySQLDialect_pymysql(MySQLDialect_mysqldb):
 
         return True
 
+    # username 映射为 user 关键字
     def create_connect_args(
         self, url: URL, _translate_args: Optional[Dict[str, Any]] = None
     ) -> ConnectArgsType:
@@ -154,6 +163,7 @@ class MySQLDialect_pymysql(MySQLDialect_mysqldb):
             url, _translate_args=_translate_args
         )
 
+    # 扩展 already closed / connection was killed
     def is_disconnect(
         self,
         e: DBAPIModule.Error,
@@ -170,10 +180,12 @@ class MySQLDialect_pymysql(MySQLDialect_mysqldb):
         else:
             return False
 
+    # 从嵌套异常提取 errno
     def _extract_error_code(self, exception: BaseException) -> Any:
         if isinstance(exception.args[0], Exception):
             exception = exception.args[0]
         return exception.args[0]
 
 
+# 方言入口
 dialect = MySQLDialect_pymysql

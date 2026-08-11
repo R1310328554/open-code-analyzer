@@ -511,9 +511,12 @@ from ...sql._typing import is_sql_compiler
 
 # source:
 # https://github.com/oracle/python-cx_Oracle/issues/596#issuecomment-999243649
+# LOB 内联阈值：小于此字节内联传递
+
 _CX_ORACLE_MAGIC_LOB_SIZE = 131072
 
 
+# cx_Oracle Integer：STRING var + int 转换
 class _OracleInteger(sqltypes.Integer):
     def get_dbapi_type(self, dbapi):
         # see https://github.com/oracle/python-cx_Oracle/issues/
@@ -536,6 +539,7 @@ class _OracleInteger(sqltypes.Integer):
         return handler
 
 
+# Numeric/Float 绑定与 outputtypehandler
 class _OracleNumeric(sqltypes.Numeric):
     is_number = False
 
@@ -612,28 +616,34 @@ class _OracleNumeric(sqltypes.Numeric):
         return handler
 
 
+# UUID 类型
 class _OracleUUID(sqltypes.Uuid):
     def get_dbapi_type(self, dbapi):
         return dbapi.STRING
 
 
+# BINARY_FLOAT 基类
 class _OracleBinaryFloat(_OracleNumeric):
     def get_dbapi_type(self, dbapi):
         return dbapi.NATIVE_FLOAT
 
 
+# BINARY_FLOAT colspec
 class _OracleBINARY_FLOAT(_OracleBinaryFloat, oracle.BINARY_FLOAT):
     pass
 
 
+# BINARY_DOUBLE colspec
 class _OracleBINARY_DOUBLE(_OracleBinaryFloat, oracle.BINARY_DOUBLE):
     pass
 
 
+# NUMBER 专用 Numeric
 class _OracleNUMBER(_OracleNumeric):
     is_number = True
 
 
+# cx_Oracle Date 适配
 class _CXOracleDate(oracle._OracleDate):
     def bind_processor(self, dialect):
         return None
@@ -648,37 +658,44 @@ class _CXOracleDate(oracle._OracleDate):
         return process
 
 
+# TIMESTAMP 字面量
 class _CXOracleTIMESTAMP(_OracleDateLiteralRender, sqltypes.TIMESTAMP):
     def literal_processor(self, dialect):
         return self._literal_processor_datetime(dialect)
 
 
+# LOB 类型 mixin
 class _LOBDataType:
     pass
 
 
 # TODO: the names used across CHAR / VARCHAR / NCHAR / NVARCHAR
 # here are inconsistent and not very good
+# CHAR DBAPI 类型
 class _OracleChar(sqltypes.CHAR):
     def get_dbapi_type(self, dbapi):
         return dbapi.FIXED_CHAR
 
 
+# NCHAR
 class _OracleNChar(sqltypes.NCHAR):
     def get_dbapi_type(self, dbapi):
         return dbapi.FIXED_NCHAR
 
 
+# Unicode NVARCHAR2
 class _OracleUnicodeStringNCHAR(oracle.NVARCHAR2):
     def get_dbapi_type(self, dbapi):
         return dbapi.NCHAR
 
 
+# Unicode VARCHAR2
 class _OracleUnicodeStringCHAR(sqltypes.Unicode):
     def get_dbapi_type(self, dbapi):
         return dbapi.LONG_STRING
 
 
+# UnicodeText NCLOB
 class _OracleUnicodeTextNCLOB(_LOBDataType, oracle.NCLOB):
     def get_dbapi_type(self, dbapi):
         # previously, this was dbapi.NCLOB.
@@ -687,6 +704,7 @@ class _OracleUnicodeTextNCLOB(_LOBDataType, oracle.NCLOB):
         return dbapi.DB_TYPE_NVARCHAR
 
 
+# UnicodeText CLOB
 class _OracleUnicodeTextCLOB(_LOBDataType, sqltypes.UnicodeText):
     def get_dbapi_type(self, dbapi):
         # previously, this was dbapi.CLOB.
@@ -695,6 +713,7 @@ class _OracleUnicodeTextCLOB(_LOBDataType, sqltypes.UnicodeText):
         return dbapi.DB_TYPE_NVARCHAR
 
 
+# Text CLOB
 class _OracleText(_LOBDataType, sqltypes.Text):
     def get_dbapi_type(self, dbapi):
         # previously, this was dbapi.CLOB.
@@ -703,15 +722,18 @@ class _OracleText(_LOBDataType, sqltypes.Text):
         return dbapi.DB_TYPE_NVARCHAR
 
 
+# LONG
 class _OracleLong(_LOBDataType, oracle.LONG):
     def get_dbapi_type(self, dbapi):
         return dbapi.LONG_STRING
 
 
+# String
 class _OracleString(sqltypes.String):
     pass
 
 
+# Enum
 class _OracleEnum(sqltypes.Enum):
     def bind_processor(self, dialect):
         enum_proc = sqltypes.Enum.bind_processor(self, dialect)
@@ -723,6 +745,7 @@ class _OracleEnum(sqltypes.Enum):
         return process
 
 
+# BLOB
 class _OracleBinary(_LOBDataType, sqltypes.LargeBinary):
     def get_dbapi_type(self, dbapi):
         # previously, this was dbapi.BLOB.
@@ -740,20 +763,24 @@ class _OracleBinary(_LOBDataType, sqltypes.LargeBinary):
             return super().result_processor(dialect, coltype)
 
 
+# INTERVAL
 class _OracleInterval(oracle.INTERVAL):
     def get_dbapi_type(self, dbapi):
         return dbapi.INTERVAL
 
 
+# RAW
 class _OracleRaw(oracle.RAW):
     pass
 
 
+# ROWID
 class _OracleRowid(oracle.ROWID):
     def get_dbapi_type(self, dbapi):
         return dbapi.ROWID
 
 
+# cx_Oracle 编译器：绑定名转义
 class OracleCompiler_cx_oracle(OracleCompiler):
     _oracle_cx_sql_compiler = True
 
@@ -779,6 +806,7 @@ class OracleCompiler_cx_oracle(OracleCompiler):
         }
     )
 
+    # 绑定名转义与引号
     def bindparam_string(self, name, **kw):
         quote = getattr(name, "quote", None)
         if (
@@ -825,9 +853,11 @@ class OracleCompiler_cx_oracle(OracleCompiler):
         return OracleCompiler.bindparam_string(self, name, **kw)
 
 
+# OUT 参数、RETURNING、LOB
 class OracleExecutionContext_cx_oracle(OracleExecutionContext):
     out_parameters = None
 
+    # RETURNING/OUT 参数 var 列表
     def _generate_out_parameter_vars(self):
         # check for has_out_parameters or RETURNING, create cx_Oracle.var
         # objects if so
@@ -907,6 +937,7 @@ class OracleExecutionContext_cx_oracle(OracleExecutionContext):
                             out_parameters[name]
                         )
 
+    # 游标 outputtypehandler
     def _generate_cursor_outputtype_handler(self):
         output_handlers = {}
 
@@ -938,12 +969,14 @@ class OracleExecutionContext_cx_oracle(OracleExecutionContext):
 
             self.cursor.outputtypehandler = output_type_handler
 
+    # 按 impl 选 type handler
     def _get_cx_oracle_type_handler(self, impl):
         if hasattr(impl, "_cx_oracle_outputtypehandler"):
             return impl._cx_oracle_outputtypehandler(self.dialect)
         else:
             return None
 
+    # 执行前：OUT 参数、insertmanyvalues
     def pre_exec(self):
         super().pre_exec()
         if not getattr(self.compiled, "_oracle_cx_sql_compiler", False):
@@ -955,6 +988,7 @@ class OracleExecutionContext_cx_oracle(OracleExecutionContext):
 
         self._generate_cursor_outputtype_handler()
 
+    # 执行后收集 OUT 参数
     def post_exec(self):
         if (
             self.compiled
@@ -976,6 +1010,7 @@ class OracleExecutionContext_cx_oracle(OracleExecutionContext):
 
             self.cursor_fetch_strategy = fetch_strategy
 
+    # 创建游标并挂 outputtypehandler
     def create_cursor(self):
         c = self._dbapi_connection.cursor()
         if self.dialect.arraysize:
@@ -983,6 +1018,7 @@ class OracleExecutionContext_cx_oracle(OracleExecutionContext):
 
         return c
 
+    # executemany RETURNING 取行
     def fetchall_for_returning(self, cursor, *, _internal=False):
         compiled = self.compiled
         if (
@@ -1020,6 +1056,7 @@ class OracleExecutionContext_cx_oracle(OracleExecutionContext):
             )
         )
 
+    # 读取 OUT 参数值
     def get_out_parameter_values(self, out_param_names):
         # this method should not be called when the compiler has
         # RETURNING as we've turned the has_out_parameters flag set to
@@ -1032,6 +1069,7 @@ class OracleExecutionContext_cx_oracle(OracleExecutionContext):
         ]
 
 
+# cx_Oracle 方言：SessionPool、2PC、setinputsizes
 class OracleDialect_cx_oracle(OracleDialect):
     supports_statement_cache = True
     execution_ctx_cls = OracleExecutionContext_cx_oracle
@@ -1097,6 +1135,7 @@ class OracleDialect_cx_oracle(OracleDialect):
             ":func:`_sa.create_engine`.",
         )
     )
+    # auto_convert_lobs/coerce_to_decimal/arraysize
     def __init__(
         self,
         auto_convert_lobs=True,
@@ -1150,6 +1189,7 @@ class OracleDialect_cx_oracle(OracleDialect):
 
             self._paramval = lambda value: value.getvalue()
 
+    # 解析 cx_Oracle 版本
     def _load_version(self, dbapi_module):
         version = (0, 0, 0)
         if dbapi_module is not None:
@@ -1165,15 +1205,18 @@ class OracleDialect_cx_oracle(OracleDialect):
             )
 
     @classmethod
+    # import cx_Oracle
     def import_dbapi(cls):
         import cx_Oracle
 
         return cx_Oracle
 
+    # 初始化：小数分隔符等
     def initialize(self, connection):
         super().initialize(connection)
         self._detect_decimal_char(connection)
 
+    # 读取 v$transaction 隔离级别
     def get_isolation_level(self, dbapi_connection):
         # sources:
 
@@ -1221,11 +1264,13 @@ class OracleDialect_cx_oracle(OracleDialect):
 
         return result
 
+    # 支持的隔离级别
     def get_isolation_level_values(self, dbapi_connection):
         return super().get_isolation_level_values(dbapi_connection) + [
             "AUTOCOMMIT"
         ]
 
+    # 设置隔离级别
     def set_isolation_level(self, dbapi_connection, level):
         if level == "AUTOCOMMIT":
             dbapi_connection.autocommit = True
@@ -1235,9 +1280,11 @@ class OracleDialect_cx_oracle(OracleDialect):
             with dbapi_connection.cursor() as cursor:
                 cursor.execute(f"ALTER SESSION SET ISOLATION_LEVEL={level}")
 
+    # 检测 autocommit
     def detect_autocommit_setting(self, dbapi_conn) -> bool:
         return bool(dbapi_conn.autocommit)
 
+    # NLS 小数点字符
     def _detect_decimal_char(self, connection):
         # we have the option to change this setting upon connect,
         # or just look at what it is upon connect and convert.
@@ -1283,6 +1330,7 @@ class OracleDialect_cx_oracle(OracleDialect):
                 value.replace(self._decimal_char, ".")
             )
 
+    # 判断是否 Decimal
     def _detect_decimal(self, value):
         if "." in value:
             return self._to_decimal(value)
@@ -1291,6 +1339,7 @@ class OracleDialect_cx_oracle(OracleDialect):
 
     _to_decimal = decimal.Decimal
 
+    # 连接级 LOB/Numeric handler
     def _generate_connection_outputtype_handler(self):
         """establish the default outputtypehandler established at the
         connection level.
@@ -1380,6 +1429,7 @@ class OracleDialect_cx_oracle(OracleDialect):
 
         return output_type_handler
 
+    # 连接回调
     def on_connect(self):
         output_type_handler = self._generate_connection_outputtype_handler()
 
@@ -1388,6 +1438,7 @@ class OracleDialect_cx_oracle(OracleDialect):
 
         return on_connect
 
+    # makedsn/DSN 连接参数
     def create_connect_args(self, url):
         opts = dict(url.query)
 
@@ -1455,9 +1506,11 @@ class OracleDialect_cx_oracle(OracleDialect):
         util.coerce_kw_type(opts, "purity", convert_cx_oracle_constant)
         return ([], opts)
 
+    # 服务器版本
     def _get_server_version_info(self, connection):
         return tuple(int(x) for x in connection.connection.version.split("."))
 
+    # 断连判定
     def is_disconnect(self, e, connection, cursor):
         (error,) = e.args
         if isinstance(
@@ -1493,29 +1546,35 @@ class OracleDialect_cx_oracle(OracleDialect):
 
         return False
 
+    # 2PC XID
     def create_xid(self):
         id_ = random.randint(0, 2**128)
         return (0x1234, "%032x" % id_, "%032x" % 9)
 
+    # executemany 优化
     def do_executemany(self, cursor, statement, parameters, context=None):
         if isinstance(parameters, tuple):
             parameters = list(parameters)
         cursor.executemany(statement, parameters)
 
+    # 2PC begin
     def do_begin_twophase(self, connection, xid):
         connection.connection.begin(*xid)
         connection.connection.info["cx_oracle_xid"] = xid
 
+    # 2PC prepare
     def do_prepare_twophase(self, connection, xid):
         result = connection.connection.prepare()
         connection.info["cx_oracle_prepared"] = result
 
+    # 2PC rollback
     def do_rollback_twophase(
         self, connection, xid, is_prepared=True, recover=False
     ):
         self.do_rollback(connection.connection)
         # TODO: need to end XA state here
 
+    # 2PC commit
     def do_commit_twophase(
         self, connection, xid, is_prepared=True, recover=False
     ):
@@ -1531,6 +1590,7 @@ class OracleDialect_cx_oracle(OracleDialect):
                 self.do_commit(connection.connection)
         # TODO: need to end XA state here
 
+    # setinputsizes
     def do_set_input_sizes(self, cursor, list_of_tuples, context):
         if self.positional:
             # not usually used, here to support if someone is modifying
@@ -1547,6 +1607,7 @@ class OracleDialect_cx_oracle(OracleDialect):
 
             cursor.setinputsizes(**{key: dbtype for key, dbtype in collection})
 
+    # 2PC recover
     def do_recover_twophase(self, connection):
         raise NotImplementedError(
             "recover two phase query for cx_Oracle not implemented"

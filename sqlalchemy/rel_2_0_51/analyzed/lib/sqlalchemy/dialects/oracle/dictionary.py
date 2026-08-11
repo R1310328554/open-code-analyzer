@@ -6,6 +6,8 @@
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 # mypy: ignore-errors
 
+# Oracle 数据字典 all_* 视图的 Table 定义
+
 from .types import DATE
 from .types import LONG
 from .types import NUMBER
@@ -18,14 +20,18 @@ from ... import table
 from ...sql.sqltypes import CHAR
 
 # constants
+# DB Link 占位符
 DB_LINK_PLACEHOLDER = "__$sa_dblink$__"
 # tables
+# dual 表
 dual = table("dual")
+# 字典 MetaData
 dictionary_meta = MetaData()
 
 # NOTE: all the dictionary_meta are aliases because oracle does not like
 # using the full table@dblink for every column in query, and complains with
 # ORA-00960: ambiguous column naming in select list
+# ALL_TABLES
 all_tables = Table(
     "all_tables" + DB_LINK_PLACEHOLDER,
     dictionary_meta,
@@ -117,6 +123,7 @@ all_tables = Table(
     Column("logical_replication", VARCHAR2(8)),
 ).alias("a_tables")
 
+# ALL_VIEWS
 all_views = Table(
     "all_views" + DB_LINK_PLACEHOLDER,
     dictionary_meta,
@@ -147,6 +154,7 @@ all_views = Table(
     Column("pdb_local_only", VARCHAR2(3)),
 ).alias("a_views")
 
+# ALL_SEQUENCES
 all_sequences = Table(
     "all_sequences" + DB_LINK_PLACEHOLDER,
     dictionary_meta,
@@ -166,6 +174,7 @@ all_sequences = Table(
     Column("keep_value", VARCHAR2(1)),
 ).alias("a_sequences")
 
+# ALL_USERS
 all_users = Table(
     "all_users" + DB_LINK_PLACEHOLDER,
     dictionary_meta,
@@ -181,6 +190,7 @@ all_users = Table(
     Column("external_shard", VARCHAR2(3)),
 ).alias("a_users")
 
+# ALL_MVIEWS
 all_mviews = Table(
     "all_mviews" + DB_LINK_PLACEHOLDER,
     dictionary_meta,
@@ -225,6 +235,7 @@ all_mviews = Table(
     Column("auto", VARCHAR2(3)),
 ).alias("a_mviews")
 
+# IDENTITY 列
 all_tab_identity_cols = Table(
     "all_tab_identity_cols" + DB_LINK_PLACEHOLDER,
     dictionary_meta,
@@ -236,6 +247,7 @@ all_tab_identity_cols = Table(
     Column("identity_options", VARCHAR2(298)),
 ).alias("a_tab_identity_cols")
 
+# ALL_TAB_COLS
 all_tab_cols = Table(
     "all_tab_cols" + DB_LINK_PLACEHOLDER,
     dictionary_meta,
@@ -285,6 +297,7 @@ all_tab_cols = Table(
     Column("collated_column_id", NUMBER),
 ).alias("a_tab_cols")
 
+# 表注释
 all_tab_comments = Table(
     "all_tab_comments" + DB_LINK_PLACEHOLDER,
     dictionary_meta,
@@ -295,6 +308,7 @@ all_tab_comments = Table(
     Column("origin_con_id", NUMBER),
 ).alias("a_tab_comments")
 
+# 列注释
 all_col_comments = Table(
     "all_col_comments" + DB_LINK_PLACEHOLDER,
     dictionary_meta,
@@ -305,6 +319,7 @@ all_col_comments = Table(
     Column("origin_con_id", NUMBER),
 ).alias("a_col_comments")
 
+# 物化视图注释
 all_mview_comments = Table(
     "all_mview_comments" + DB_LINK_PLACEHOLDER,
     dictionary_meta,
@@ -313,6 +328,7 @@ all_mview_comments = Table(
     Column("comments", VARCHAR2(4000)),
 ).alias("a_mview_comments")
 
+# 索引列
 all_ind_columns = Table(
     "all_ind_columns" + DB_LINK_PLACEHOLDER,
     dictionary_meta,
@@ -328,6 +344,7 @@ all_ind_columns = Table(
     Column("collated_column_id", NUMBER),
 ).alias("a_ind_columns")
 
+# ALL_INDEXES
 all_indexes = Table(
     "all_indexes" + DB_LINK_PLACEHOLDER,
     dictionary_meta,
@@ -394,6 +411,7 @@ all_indexes = Table(
     Column("auto", VARCHAR2(3)),
 ).alias("a_indexes")
 
+# 表达式索引
 all_ind_expressions = Table(
     "all_ind_expressions" + DB_LINK_PLACEHOLDER,
     dictionary_meta,
@@ -405,6 +423,7 @@ all_ind_expressions = Table(
     Column("column_position", NUMBER, nullable=False),
 ).alias("a_ind_expressions")
 
+# 约束
 all_constraints = Table(
     "all_constraints" + DB_LINK_PLACEHOLDER,
     dictionary_meta,
@@ -432,6 +451,7 @@ all_constraints = Table(
     Column("origin_con_id", VARCHAR2(256)),
 ).alias("a_constraints")
 
+# 约束列
 all_cons_columns = Table(
     "all_cons_columns" + DB_LINK_PLACEHOLDER,
     dictionary_meta,
@@ -450,6 +470,7 @@ all_cons_columns = Table(
 # https://docs.oracle.com/cd/B28359_01/server.111/b28310/ds_admin005.htm
 # will need to hear from more users if we are doing
 # the right thing here.  See [ticket:2619]
+# DB Links
 all_db_links = Table(
     "all_db_links" + DB_LINK_PLACEHOLDER,
     dictionary_meta,
@@ -464,6 +485,7 @@ all_db_links = Table(
     Column("intra_cdb", VARCHAR2(3)),
 ).alias("a_db_links")
 
+# 同义词
 all_synonyms = Table(
     "all_synonyms" + DB_LINK_PLACEHOLDER,
     dictionary_meta,
@@ -475,6 +497,7 @@ all_synonyms = Table(
     Column("origin_con_id", VARCHAR2(256)),
 ).alias("a_synonyms")
 
+# ALL_OBJECTS
 all_objects = Table(
     "all_objects" + DB_LINK_PLACEHOLDER,
     dictionary_meta,

@@ -4,6 +4,8 @@
 #
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
+# MySQL 方言专用 SQLAlchemy 类型映射
+
 from __future__ import annotations
 
 import datetime
@@ -26,6 +28,7 @@ if TYPE_CHECKING:
     from ...sql.type_api import TypeEngine
 
 
+# 数值类型 mixin：display_width、unsigned、zerofill
 class _NumericType:
     """Base for MySQL numeric types.
 
@@ -47,6 +50,7 @@ class _NumericType:
         )
 
 
+# 浮点 mixin
 class _FloatType(_NumericType, sqltypes.Float[Union[decimal.Decimal, float]]):
     def __init__(
         self,
@@ -72,6 +76,7 @@ class _FloatType(_NumericType, sqltypes.Float[Union[decimal.Decimal, float]]):
         )
 
 
+# 整数 mixin
 class _IntegerType(_NumericType, sqltypes.Integer):
     def __init__(self, display_width: Optional[int] = None, **kw: Any):
         self.display_width = display_width
@@ -83,6 +88,7 @@ class _IntegerType(_NumericType, sqltypes.Integer):
         )
 
 
+# 字符串 mixin：charset/collation
 class _StringType(sqltypes.String):
     """Base for MySQL string types."""
 
@@ -113,6 +119,7 @@ class _StringType(sqltypes.String):
         )
 
 
+# FULLTEXT MATCH 专用类型
 class _MatchType(
     sqltypes.Float[Union[decimal.Decimal, float]], sqltypes.MatchType
 ):
@@ -122,6 +129,7 @@ class _MatchType(
         sqltypes.MatchType.__init__(self)
 
 
+# MySQL NUMERIC
 class NUMERIC(_NumericType, sqltypes.NUMERIC[Union[decimal.Decimal, float]]):
     """MySQL NUMERIC type."""
 
@@ -154,6 +162,7 @@ class NUMERIC(_NumericType, sqltypes.NUMERIC[Union[decimal.Decimal, float]]):
         )
 
 
+# MySQL DECIMAL
 class DECIMAL(_NumericType, sqltypes.DECIMAL[Union[decimal.Decimal, float]]):
     """MySQL DECIMAL type."""
 
@@ -186,6 +195,7 @@ class DECIMAL(_NumericType, sqltypes.DECIMAL[Union[decimal.Decimal, float]]):
         )
 
 
+# MySQL DOUBLE
 class DOUBLE(_FloatType, sqltypes.DOUBLE[Union[decimal.Decimal, float]]):
     """MySQL DOUBLE type."""
 
@@ -226,6 +236,7 @@ class DOUBLE(_FloatType, sqltypes.DOUBLE[Union[decimal.Decimal, float]]):
         )
 
 
+# MySQL REAL
 class REAL(_FloatType, sqltypes.REAL[Union[decimal.Decimal, float]]):
     """MySQL REAL type."""
 
@@ -266,6 +277,7 @@ class REAL(_FloatType, sqltypes.REAL[Union[decimal.Decimal, float]]):
         )
 
 
+# MySQL FLOAT
 class FLOAT(_FloatType, sqltypes.FLOAT[Union[decimal.Decimal, float]]):
     """MySQL FLOAT type."""
 
@@ -303,6 +315,7 @@ class FLOAT(_FloatType, sqltypes.FLOAT[Union[decimal.Decimal, float]]):
         return None
 
 
+# MySQL INTEGER
 class INTEGER(_IntegerType, sqltypes.INTEGER):
     """MySQL INTEGER type."""
 
@@ -324,6 +337,7 @@ class INTEGER(_IntegerType, sqltypes.INTEGER):
         super().__init__(display_width=display_width, **kw)
 
 
+# MySQL BIGINT
 class BIGINT(_IntegerType, sqltypes.BIGINT):
     """MySQL BIGINTEGER type."""
 
@@ -345,6 +359,7 @@ class BIGINT(_IntegerType, sqltypes.BIGINT):
         super().__init__(display_width=display_width, **kw)
 
 
+# MySQL MEDIUMINT
 class MEDIUMINT(_IntegerType):
     """MySQL MEDIUMINTEGER type."""
 
@@ -366,6 +381,7 @@ class MEDIUMINT(_IntegerType):
         super().__init__(display_width=display_width, **kw)
 
 
+# MySQL TINYINT
 class TINYINT(_IntegerType):
     """MySQL TINYINT type."""
 
@@ -393,6 +409,7 @@ class TINYINT(_IntegerType):
         )
 
 
+# MySQL SMALLINT
 class SMALLINT(_IntegerType, sqltypes.SMALLINT):
     """MySQL SMALLINTEGER type."""
 
@@ -414,6 +431,7 @@ class SMALLINT(_IntegerType, sqltypes.SMALLINT):
         super().__init__(display_width=display_width, **kw)
 
 
+# MySQL BIT(n)
 class BIT(sqltypes.TypeEngine[Any]):
     """MySQL BIT type.
 
@@ -453,6 +471,7 @@ class BIT(sqltypes.TypeEngine[Any]):
         return process
 
 
+# MySQL TIME
 class TIME(sqltypes.TIME):
     """MySQL TIME type."""
 
@@ -500,6 +519,7 @@ class TIME(sqltypes.TIME):
         return process
 
 
+# MySQL TIMESTAMP
 class TIMESTAMP(sqltypes.TIMESTAMP):
     """MySQL TIMESTAMP type."""
 
@@ -525,6 +545,7 @@ class TIMESTAMP(sqltypes.TIMESTAMP):
         self.fsp = fsp
 
 
+# MySQL DATETIME
 class DATETIME(sqltypes.DATETIME):
     """MySQL DATETIME type."""
 
@@ -550,6 +571,7 @@ class DATETIME(sqltypes.DATETIME):
         self.fsp = fsp
 
 
+# MySQL YEAR
 class YEAR(sqltypes.TypeEngine[Any]):
     """MySQL YEAR type, for single byte storage of years 1901-2155."""
 
@@ -559,6 +581,7 @@ class YEAR(sqltypes.TypeEngine[Any]):
         self.display_width = display_width
 
 
+# MySQL TEXT
 class TEXT(_StringType, sqltypes.TEXT):
     """MySQL TEXT type, for character storage encoded up to 2^16 bytes."""
 
@@ -595,6 +618,7 @@ class TEXT(_StringType, sqltypes.TEXT):
         super().__init__(length=length, **kw)
 
 
+# TINYTEXT
 class TINYTEXT(_StringType):
     """MySQL TINYTEXT type, for character storage encoded up to 2^8 bytes."""
 
@@ -627,6 +651,7 @@ class TINYTEXT(_StringType):
         super().__init__(**kwargs)
 
 
+# MEDIUMTEXT
 class MEDIUMTEXT(_StringType):
     """MySQL MEDIUMTEXT type, for character storage encoded up
     to 2^24 bytes."""
@@ -660,6 +685,7 @@ class MEDIUMTEXT(_StringType):
         super().__init__(**kwargs)
 
 
+# LONGTEXT
 class LONGTEXT(_StringType):
     """MySQL LONGTEXT type, for character storage encoded up to 2^32 bytes."""
 
@@ -692,6 +718,7 @@ class LONGTEXT(_StringType):
         super().__init__(**kwargs)
 
 
+# MySQL VARCHAR
 class VARCHAR(_StringType, sqltypes.VARCHAR):
     """MySQL VARCHAR type, for variable-length character data."""
 
@@ -724,6 +751,7 @@ class VARCHAR(_StringType, sqltypes.VARCHAR):
         super().__init__(length=length, **kwargs)
 
 
+# MySQL CHAR
 class CHAR(_StringType, sqltypes.CHAR):
     """MySQL CHAR type, for fixed-length character data."""
 
@@ -765,6 +793,7 @@ class CHAR(_StringType, sqltypes.CHAR):
             return CHAR(length=type_.length)
 
 
+# NVARCHAR
 class NVARCHAR(_StringType, sqltypes.NVARCHAR):
     """MySQL NVARCHAR type.
 
@@ -791,6 +820,7 @@ class NVARCHAR(_StringType, sqltypes.NVARCHAR):
         super().__init__(length=length, **kwargs)
 
 
+# NCHAR
 class NCHAR(_StringType, sqltypes.NCHAR):
     """MySQL NCHAR type.
 
@@ -817,18 +847,21 @@ class NCHAR(_StringType, sqltypes.NCHAR):
         super().__init__(length=length, **kwargs)
 
 
+# TINYBLOB
 class TINYBLOB(sqltypes._Binary):
     """MySQL TINYBLOB type, for binary data up to 2^8 bytes."""
 
     __visit_name__ = "TINYBLOB"
 
 
+# MEDIUMBLOB
 class MEDIUMBLOB(sqltypes._Binary):
     """MySQL MEDIUMBLOB type, for binary data up to 2^24 bytes."""
 
     __visit_name__ = "MEDIUMBLOB"
 
 
+# LONGBLOB
 class LONGBLOB(sqltypes._Binary):
     """MySQL LONGBLOB type, for binary data up to 2^32 bytes."""
 

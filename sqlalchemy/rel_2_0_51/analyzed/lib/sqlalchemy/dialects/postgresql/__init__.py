@@ -6,6 +6,8 @@
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 # mypy: ignore-errors
 
+# PostgreSQL 方言包入口：类型、扩展与默认 psycopg2 方言
+
 from types import ModuleType
 
 from . import array as arraylib  # noqa # keep above base and other dialects
@@ -90,13 +92,16 @@ from .types import TSQUERY
 from .types import TSVECTOR
 
 # Alias psycopg also as psycopg_async
+# psycopg3 异步方言模块别名
 psycopg_async = type(
     "psycopg_async", (ModuleType,), {"dialect": psycopg.dialect_async}
 )
 
+# 默认方言指向 psycopg2
 base.dialect = dialect = psycopg2.dialect
 
 
+# 公开导出符号列表
 __all__ = (
     "INTEGER",
     "BIGINT",

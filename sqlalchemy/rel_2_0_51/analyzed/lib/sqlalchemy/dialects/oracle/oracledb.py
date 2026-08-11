@@ -613,12 +613,14 @@ if TYPE_CHECKING:
     from oracledb import AsyncCursor
 
 
+# oracledb 执行上下文（继承 cx_oracle）
 class OracleExecutionContext_oracledb(
     _cx_oracle.OracleExecutionContext_cx_oracle
 ):
     pass
 
 
+# python-oracledb 方言：thin/thick 模式
 class OracleDialect_oracledb(_cx_oracle.OracleDialect_cx_oracle):
     supports_statement_cache = True
     execution_ctx_cls = OracleExecutionContext_oracledb
@@ -626,6 +628,7 @@ class OracleDialect_oracledb(_cx_oracle.OracleDialect_cx_oracle):
     driver = "oracledb"
     _min_version = (1,)
 
+    # thick_mode 时 init_oracle_client
     def __init__(
         self,
         auto_convert_lobs=True,
@@ -650,19 +653,23 @@ class OracleDialect_oracledb(_cx_oracle.OracleDialect_cx_oracle):
             self.dbapi.init_oracle_client(**kw)
 
     @classmethod
+    # import oracledb
     def import_dbapi(cls):
         import oracledb
 
         return oracledb
 
     @classmethod
+    # 是否 thin 模式
     def is_thin_mode(cls, connection):
         return connection.connection.dbapi_connection.thin
 
     @classmethod
+    # 返回异步方言类
     def get_async_dialect_cls(cls, url):
         return OracleDialectAsync_oracledb
 
+    # oracledb 版本校验
     def _load_version(self, dbapi_module):
         version = (0, 0, 0)
         if dbapi_module is not None:
@@ -680,15 +687,18 @@ class OracleDialect_oracledb(_cx_oracle.OracleDialect_cx_oracle):
                 f"oracledb version {self._min_version} and above are supported"
             )
 
+    # tpc_begin
     def do_begin_twophase(self, connection, xid):
         conn_xis = connection.connection.xid(*xid)
         connection.connection.tpc_begin(conn_xis)
         connection.connection.info["oracledb_xid"] = conn_xis
 
+    # tpc_prepare
     def do_prepare_twophase(self, connection, xid):
         should_commit = connection.connection.tpc_prepare()
         connection.info["oracledb_should_commit"] = should_commit
 
+    # tpc_rollback
     def do_rollback_twophase(
         self, connection, xid, is_prepared=True, recover=False
     ):
@@ -698,6 +708,7 @@ class OracleDialect_oracledb(_cx_oracle.OracleDialect_cx_oracle):
             conn_xid = None
         connection.connection.tpc_rollback(conn_xid)
 
+    # tpc_commit
     def do_commit_twophase(
         self, connection, xid, is_prepared=True, recover=False
     ):
@@ -712,6 +723,7 @@ class OracleDialect_oracledb(_cx_oracle.OracleDialect_cx_oracle):
         if should_commit:
             connection.connection.tpc_commit(conn_xid)
 
+    # tpc_recover
     def do_recover_twophase(self, connection):
         return [
             # oracledb seems to return bytes
@@ -723,6 +735,7 @@ class OracleDialect_oracledb(_cx_oracle.OracleDialect_cx_oracle):
             for fi, gti, bq in connection.connection.tpc_recover()
         ]
 
+    # thin 模式标识符长度
     def _check_max_identifier_length(self, connection):
         if self.oracledb_ver >= (2, 5):
             max_len = connection.connection.max_identifier_length
@@ -731,6 +744,7 @@ class OracleDialect_oracledb(_cx_oracle.OracleDialect_cx_oracle):
         return super()._check_max_identifier_length(connection)
 
 
+# 异步游标适配
 class AsyncAdapt_oracledb_cursor(AsyncAdapt_dbapi_cursor):
     _cursor: AsyncCursor
     _awaitable_cursor_close: bool = False
@@ -738,6 +752,7 @@ class AsyncAdapt_oracledb_cursor(AsyncAdapt_dbapi_cursor):
     __slots__ = ()
 
     @property
+    # 游标 outputtypehandler 属性
     def outputtypehandler(self):
         return self._cursor.outputtypehandler
 
@@ -745,9 +760,11 @@ class AsyncAdapt_oracledb_cursor(AsyncAdapt_dbapi_cursor):
     def outputtypehandler(self, value):
         self._cursor.outputtypehandler = value
 
+    # 委托 dbapi var
     def var(self, *args, **kwargs):
         return self._cursor.var(*args, **kwargs)
 
+    # setinputsizes
     def setinputsizes(self, *args: Any, **kwargs: Any) -> Any:
         return self._cursor.setinputsizes(*args, **kwargs)
 
@@ -784,6 +801,7 @@ class AsyncAdapt_oracledb_cursor(AsyncAdapt_dbapi_cursor):
         self.close()
 
 
+# 异步服务端游标
 class AsyncAdapt_oracledb_ss_cursor(
     AsyncAdapt_dbapi_ss_cursor, AsyncAdapt_oracledb_cursor
 ):
@@ -795,6 +813,7 @@ class AsyncAdapt_oracledb_ss_cursor(
             self._cursor = None  # type: ignore
 
 
+# 异步连接：autocommit/outputtypehandler
 class AsyncAdapt_oracledb_connection(AsyncAdapt_dbapi_connection):
     _connection: AsyncConnection
     __slots__ = ()
@@ -836,9 +855,11 @@ class AsyncAdapt_oracledb_connection(AsyncAdapt_dbapi_connection):
     def max_identifier_length(self):
         return self._connection.max_identifier_length
 
+    # 异步 cursor()
     def cursor(self):
         return AsyncAdapt_oracledb_cursor(self)
 
+    # 异步 ss_cursor
     def ss_cursor(self):
         return AsyncAdapt_oracledb_ss_cursor(self)
 
@@ -861,12 +882,14 @@ class AsyncAdapt_oracledb_connection(AsyncAdapt_dbapi_connection):
         return self.await_(self._connection.tpc_rollback(*args, **kwargs))
 
 
+# await_fallback 连接
 class AsyncAdaptFallback_oracledb_connection(
     AsyncAdaptFallback_dbapi_connection, AsyncAdapt_oracledb_connection
 ):
     __slots__ = ()
 
 
+# 伪 DBAPI：connect 返回异步连接
 class OracledbAdaptDBAPI:
     def __init__(self, oracledb) -> None:
         self.oracledb = oracledb
@@ -875,6 +898,7 @@ class OracledbAdaptDBAPI:
             if k != "connect":
                 self.__dict__[k] = v
 
+    # 创建 AsyncAdapt 连接
     def connect(self, *arg, **kw):
         async_fallback = kw.pop("async_fallback", False)
         creator_fn = kw.pop("async_creator_fn", self.oracledb.connect_async)
@@ -890,10 +914,12 @@ class OracledbAdaptDBAPI:
             )
 
 
+# 异步执行上下文
 class OracleExecutionContextAsync_oracledb(OracleExecutionContext_oracledb):
     # restore default create cursor
     create_cursor = default.DefaultExecutionContext.create_cursor
 
+    # 默认游标
     def create_default_cursor(self):
         # copy of OracleExecutionContext_cx_oracle.create_cursor
         c = self._dbapi_connection.cursor()
@@ -902,6 +928,7 @@ class OracleExecutionContextAsync_oracledb(OracleExecutionContext_oracledb):
 
         return c
 
+    # 服务端游标
     def create_server_side_cursor(self):
         c = self._dbapi_connection.ss_cursor()
         if self.dialect.arraysize:
@@ -910,6 +937,7 @@ class OracleExecutionContextAsync_oracledb(OracleExecutionContext_oracledb):
         return c
 
 
+# oracledb 异步方言
 class OracleDialectAsync_oracledb(OracleDialect_oracledb):
     is_async = True
     supports_server_side_cursors = True
@@ -926,6 +954,7 @@ class OracleDialectAsync_oracledb(OracleDialect_oracledb):
         return OracledbAdaptDBAPI(oracledb)
 
     @classmethod
+    # 异步连接池类
     def get_pool_class(cls, url):
         async_fallback = url.query.get("async_fallback", False)
 
@@ -934,6 +963,7 @@ class OracleDialectAsync_oracledb(OracleDialect_oracledb):
         else:
             return pool.AsyncAdaptedQueuePool
 
+    # 底层 dbapi 连接
     def get_driver_connection(self, connection):
         return connection._connection
 

@@ -16,10 +16,13 @@ from ...testing.provision import delete_from_all_tables
 from ...testing.provision import drop_db
 from ...testing.provision import generate_driver_url
 from ...testing.provision import temp_table_keyword_args
+# MySQL/MariaDB 测试供给钩子：建库、驱动 URL、UPSERT 等
+
 from ...testing.provision import upsert
 
 
 @generate_driver_url.for_db("mysql", "mariadb")
+# 按驱动生成 mysql/mariadb 测试 URL；处理 charset/collation
 def generate_driver_url(url, driver, query_str):
     backend = url.get_backend_name()
 
@@ -60,6 +63,7 @@ def generate_driver_url(url, driver, query_str):
 
 
 @create_db.for_db("mysql", "mariadb")
+# 创建主库及两个 test_schema 库（utf8mb4）
 def _mysql_create_db(cfg, eng, ident):
     with eng.begin() as conn:
         try:
@@ -80,12 +84,14 @@ def _mysql_create_db(cfg, eng, ident):
 
 
 @configure_follower.for_db("mysql", "mariadb")
+# 配置 follower 的 test_schema 名称
 def _mysql_configure_follower(config, ident):
     config.test_schema = "%s_test_schema" % ident
     config.test_schema_2 = "%s_test_schema_2" % ident
 
 
 @drop_db.for_db("mysql", "mariadb")
+# 删除主库与附属 schema 库
 def _mysql_drop_db(cfg, eng, ident):
     with eng.begin() as conn:
         conn.exec_driver_sql("DROP DATABASE %s_test_schema" % ident)
@@ -94,11 +100,13 @@ def _mysql_drop_db(cfg, eng, ident):
 
 
 @temp_table_keyword_args.for_db("mysql", "mariadb")
+# 临时表 DDL 前缀 TEMPORARY
 def _mysql_temp_table_keyword_args(cfg, eng):
     return {"prefixes": ["TEMPORARY"]}
 
 
 @upsert.for_db("mariadb")
+# MariaDB UPSERT：INSERT ... ON DUPLICATE KEY UPDATE
 def _upsert(
     cfg,
     table,
@@ -125,6 +133,7 @@ def _upsert(
 
 
 @delete_from_all_tables.for_db("mysql", "mariadb")
+# 清表前关闭外键检查
 def _delete_from_all_tables(connection, cfg, metadata):
     connection.exec_driver_sql("SET foreign_key_checks = 0")
     try:
@@ -134,6 +143,7 @@ def _delete_from_all_tables(connection, cfg, metadata):
 
 
 @allow_stale_update_impl.for_db("mariadb")
+# MariaDB 测试：关闭 innodb_snapshot_isolation
 def _allow_stale_update_impl(cfg):
     @contextlib.contextmanager
     def go():

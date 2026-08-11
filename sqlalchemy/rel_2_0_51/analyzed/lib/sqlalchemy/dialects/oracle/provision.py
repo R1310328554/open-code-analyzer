@@ -28,10 +28,13 @@ from ...testing.provision import set_default_schema_on_connection
 from ...testing.provision import stop_test_class_outside_fixtures
 from ...testing.provision import temp_table_keyword_args
 from ...testing.provision import update_db_opts
+# Oracle 测试供给：schema 用户、回收站、2PC
+
 from ...testing.warnings import warn_test_suite
 
 
 @generate_driver_url.for_db("oracle")
+# 生成 oracle 测试 URL
 def _oracle_generate_driver_url(url, driver, query_str):
 
     backend = url.get_backend_name()
@@ -65,6 +68,7 @@ def _oracle_generate_driver_url(url, driver, query_str):
 
 
 @create_db.for_db("oracle")
+# 创建测试 schema 用户
 def _oracle_create_db(cfg, eng, ident):
     # NOTE: make sure you've run "ALTER DATABASE default tablespace users" or
     # similar, so that the default tablespace is not "system"; reflection will
@@ -84,11 +88,13 @@ def _oracle_create_db(cfg, eng, ident):
 
 
 @configure_follower.for_db("oracle")
+# follower schema 配置
 def _oracle_configure_follower(config, ident):
     config.test_schema = "%s_ts1" % ident
     config.test_schema_2 = "%s_ts2" % ident
 
 
+# 忽略 DROP 不存在
 def _ora_drop_ignore(conn, dbname):
     try:
         conn.exec_driver_sql("drop user %s cascade" % dbname)
@@ -100,12 +106,14 @@ def _ora_drop_ignore(conn, dbname):
 
 
 @drop_all_schema_objects_pre_tables.for_db("oracle")
+# 删表前清理
 def _ora_drop_all_schema_objects_pre_tables(cfg, eng):
     _purge_recyclebin(eng)
     _purge_recyclebin(eng, cfg.test_schema)
 
 
 @drop_all_schema_objects_post_tables.for_db("oracle")
+# 删表后清理
 def _ora_drop_all_schema_objects_post_tables(cfg, eng):
     with eng.begin() as conn:
         for syn in conn.dialect._get_synonyms(conn, None, None, None):
@@ -123,6 +131,7 @@ def _ora_drop_all_schema_objects_post_tables(cfg, eng):
 
 
 @drop_db.for_db("oracle")
+# 删除测试用户
 def _oracle_drop_db(cfg, eng, ident):
     with eng.begin() as conn:
         # cx_Oracle seems to occasionally leak open connections when a large
@@ -136,6 +145,7 @@ def _oracle_drop_db(cfg, eng, ident):
 
 
 @stop_test_class_outside_fixtures.for_db("oracle")
+# 测试类结束清理
 def _ora_stop_test_class_outside_fixtures(config, db, cls):
     try:
         _purge_recyclebin(db)
@@ -143,6 +153,7 @@ def _ora_stop_test_class_outside_fixtures(config, db, cls):
         log.warning("purge recyclebin command failed: %s", err)
 
 
+# PURGE RECYCLEBIN
 def _purge_recyclebin(eng, schema=None):
     with eng.begin() as conn:
         if schema is None:
@@ -160,6 +171,7 @@ def _purge_recyclebin(eng, schema=None):
 
 
 @is_preferred_driver.for_db("oracle")
+# 优先 oracledb
 def _oracle_is_preferred_driver(cfg, engine):
     """establish oracledb as the preferred driver to use for tests, even
     though cx_Oracle is still the "default" driver"""
@@ -167,6 +179,7 @@ def _oracle_is_preferred_driver(cfg, engine):
     return engine.dialect.driver == "oracledb" and not engine.dialect.is_async
 
 
+# cx_oracle 连接重试
 def _connect_with_retry(dialect, conn_rec, cargs, cparams):
     assert dialect.driver == "cx_oracle"
 
@@ -193,6 +206,7 @@ def _connect_with_retry(dialect, conn_rec, cargs, cparams):
 
 
 @post_configure_testing_engine.for_db("oracle")
+# 测试引擎后配置
 def _oracle_post_configure_testing_engine(url, engine, options, scope):
     from ... import event
 
@@ -201,6 +215,7 @@ def _oracle_post_configure_testing_engine(url, engine, options, scope):
 
 
 @post_configure_engine.for_db("oracle")
+# follower 后配置
 def _oracle_post_configure_engine(url, engine, follower_ident):
 
     from ... import event
@@ -232,6 +247,7 @@ def _oracle_post_configure_engine(url, engine, follower_ident):
 
 
 @run_reap_dbs.for_db("oracle")
+# 回收遗留库
 def _reap_oracle_dbs(url, idents):
     log.info("db reaper connecting to %r", url)
     eng = create_engine(url)
@@ -265,12 +281,14 @@ def _reap_oracle_dbs(url, idents):
 
 
 @follower_url_from_main.for_db("oracle")
+# follower URL
 def _oracle_follower_url_from_main(url, ident):
     url = sa_url.make_url(url)
     return url.set(username=ident, password="xe")
 
 
 @temp_table_keyword_args.for_db("oracle")
+# 全局临时表参数
 def _oracle_temp_table_keyword_args(cfg, eng):
     return {
         "prefixes": ["GLOBAL TEMPORARY"],
@@ -279,6 +297,7 @@ def _oracle_temp_table_keyword_args(cfg, eng):
 
 
 @set_default_schema_on_connection.for_db("oracle")
+# SET CURRENT_SCHEMA
 def _oracle_set_default_schema_on_connection(
     cfg, dbapi_connection, schema_name
 ):
@@ -288,6 +307,7 @@ def _oracle_set_default_schema_on_connection(
 
 
 @update_db_opts.for_db("oracle")
+# 更新 db_opts
 def _update_db_opts(db_url, db_opts, options):
     """Set database options (db_opts) for a test database that we created."""
     if (

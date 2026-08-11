@@ -7,6 +7,8 @@
 # mypy: ignore-errors
 
 
+# Oracle VECTOR 索引/距离/存储与 SparseVector
+
 from __future__ import annotations
 
 import array
@@ -19,6 +21,7 @@ from ... import types
 from ...types import Float
 
 
+# VECTOR 索引：HNSW / IVF
 class VectorIndexType(Enum):
     """Enum representing different types of VECTOR index structures.
 
@@ -38,6 +41,7 @@ class VectorIndexType(Enum):
     """
 
 
+# 距离度量枚举
 class VectorDistanceType(Enum):
     """Enum representing different types of vector distance metrics.
 
@@ -69,6 +73,7 @@ class VectorDistanceType(Enum):
     """
 
 
+# 存储格式 INT8/BINARY/FLOAT
 class VectorStorageFormat(Enum):
     """Enum representing the data format used to store vector components.
 
@@ -96,6 +101,7 @@ class VectorStorageFormat(Enum):
     """
 
 
+# SPARSE / DENSE
 class VectorStorageType(Enum):
     """Enum representing the vector type,
 
@@ -118,6 +124,7 @@ class VectorStorageType(Enum):
 
 
 @dataclass
+# VECTOR 索引 DDL 配置
 class VectorIndexConfig:
     """Define the configuration for Oracle VECTOR Index.
 
@@ -179,6 +186,7 @@ class VectorIndexConfig:
     ivf_min_vectors_per_partition: Optional[int] = None
     parallel: Optional[int] = None
 
+    # 校验整型参数
     def __post_init__(self):
         self.index_type = VectorIndexType(self.index_type)
         for field in [
@@ -198,6 +206,7 @@ class VectorIndexConfig:
                 )
 
 
+# 稀疏向量 Python 表示
 class SparseVector:
     """
     Lightweight SQLAlchemy-side version of SparseVector.
@@ -231,6 +240,7 @@ class SparseVector:
         )
 
 
+# Oracle VECTOR 列类型
 class VECTOR(types.TypeEngine):
     """Oracle VECTOR datatype.
 
@@ -287,6 +297,7 @@ class VECTOR(types.TypeEngine):
         self.storage_format = storage_format
         self.storage_type = storage_type
 
+    # 绑定前转换 list/SparseVector
     def _cached_bind_processor(self, dialect):
         """
         Converts a Python-side SparseVector instance into an
@@ -320,6 +331,7 @@ class VECTOR(types.TypeEngine):
 
         return process
 
+    # 结果转 list/SparseVector
     def _cached_result_processor(self, dialect, coltype):
         """
         Converts database-returned values into Python-native representations.
@@ -346,12 +358,14 @@ class VECTOR(types.TypeEngine):
 
         return process
 
+    # storage_format→typecode
     def _array_typecode(self, typecode):
         """
         Map storage format to array typecode.
         """
         return self._typecode_map.get(typecode, "d")
 
+    # 向量距离 SQL 算子
     class comparator_factory(types.TypeEngine.Comparator):
         def l2_distance(self, other):
             return self.op("<->", return_type=Float)(other)

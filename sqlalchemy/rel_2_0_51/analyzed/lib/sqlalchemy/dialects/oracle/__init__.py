@@ -5,6 +5,8 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 # mypy: ignore-errors
+# Oracle 方言包入口：类型 re-export 与默认 cx_oracle 方言
+
 from types import ModuleType
 
 from . import base  # noqa
@@ -41,12 +43,15 @@ from .vector import VectorStorageFormat
 from .vector import VectorStorageType
 
 # Alias oracledb also as oracledb_async
+# oracledb 异步方言模块别名
 oracledb_async = type(
     "oracledb_async", (ModuleType,), {"dialect": oracledb.dialect_async}
 )
 
+# 默认方言指向 cx_oracle
 base.dialect = dialect = cx_oracle.dialect
 
+# 公开导出符号列表
 __all__ = (
     "VARCHAR",
     "NVARCHAR",
