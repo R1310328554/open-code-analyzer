@@ -7,6 +7,7 @@ from django.utils.translation import gettext_lazy as _
 __all__ = ["HStoreField"]
 
 
+# HStore 表单字段 — 接受 JSON 字典输入并规范化为字符串键值
 class HStoreField(forms.CharField):
     """
     A field for HStore data which accepts dictionary JSON input.
@@ -18,11 +19,13 @@ class HStoreField(forms.CharField):
         "invalid_format": _("Input must be a JSON dictionary."),
     }
 
+    # 字典序列化为 JSON 字符串供 textarea 展示
     def prepare_value(self, value):
         if isinstance(value, dict):
             return json.dumps(value, ensure_ascii=False)
         return value
 
+    # 解析 JSON 并确保结果为 dict，非空值转为 str
     def to_python(self, value):
         if not value:
             return {}

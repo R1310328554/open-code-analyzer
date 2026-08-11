@@ -5,6 +5,7 @@ from django.utils.functional import SimpleLazyObject
 from django.utils.text import format_lazy
 
 
+# 为 ValidationError 消息添加前缀，保留嵌套 error_list 结构
 def prefix_validation_error(error, prefix, code, params):
     """
     Prefix a validation error message while maintaining the existing
@@ -31,7 +32,9 @@ def prefix_validation_error(error, prefix, code, params):
     )
 
 
+# 混入 — 检查 django.contrib.postgres 是否在 INSTALLED_APPS 中
 class CheckPostgresInstalledMixin:
+    # 未安装时返回 postgres.E005 系统检查错误
     def _check_postgres_installed(self, *args):
         # When subclassed by Index or BaseConstraint subclasses, args is
         # (model, connection).

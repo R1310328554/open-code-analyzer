@@ -14,6 +14,7 @@ __all__ = [
 ]
 
 
+# PostgreSQL 索引基类 — 支持 USING 子句与 WITH 存储参数
 class PostgresIndex(CheckPostgresInstalledMixin, Index):
     @cached_property
     def max_name_length(self):
@@ -23,6 +24,7 @@ class PostgresIndex(CheckPostgresInstalledMixin, Index):
         # indexes.
         return Index.max_name_length - len(Index.suffix) + len(self.suffix)
 
+    # 生成 CREATE INDEX … USING suffix [WITH (...)] SQL
     def create_sql(self, model, schema_editor, using="", **kwargs):
         self.check_supported(schema_editor)
         statement = super().create_sql(
@@ -43,6 +45,7 @@ class PostgresIndex(CheckPostgresInstalledMixin, Index):
         return []
 
 
+# Bloom 过滤器索引 — 最多 32 列，可配置 length 与 colN 参数
 class BloomIndex(PostgresIndex):
     suffix = "bloom"
 
@@ -84,6 +87,7 @@ class BloomIndex(PostgresIndex):
         return with_params
 
 
+# BRIN 块范围索引 — 支持 autosummarize 与 pages_per_range
 class BrinIndex(PostgresIndex):
     suffix = "brin"
 
@@ -115,6 +119,7 @@ class BrinIndex(PostgresIndex):
         return with_params
 
 
+# B-tree 索引 — 可设 fillfactor 与 deduplicate_items
 class BTreeIndex(PostgresIndex):
     suffix = "btree"
 
@@ -142,6 +147,7 @@ class BTreeIndex(PostgresIndex):
         return with_params
 
 
+# GIN 倒排索引 — 可设 fastupdate 与 gin_pending_list_limit
 class GinIndex(PostgresIndex):
     suffix = "gin"
 
@@ -171,6 +177,7 @@ class GinIndex(PostgresIndex):
         return with_params
 
 
+# GiST 通用搜索树索引 — 可设 buffering 与 fillfactor
 class GistIndex(PostgresIndex):
     suffix = "gist"
 
@@ -196,6 +203,7 @@ class GistIndex(PostgresIndex):
         return with_params
 
 
+# 哈希索引 — 可设 fillfactor
 class HashIndex(PostgresIndex):
     suffix = "hash"
 
@@ -216,6 +224,7 @@ class HashIndex(PostgresIndex):
         return with_params
 
 
+# SP-GiST 空间分区 GiST 索引
 class SpGistIndex(PostgresIndex):
     suffix = "spgist"
 
@@ -236,6 +245,7 @@ class SpGistIndex(PostgresIndex):
         return with_params
 
 
+# 操作符类表达式 — 为索引列指定 PostgreSQL opclass
 class OpClass(Func):
     template = "%(expressions)s %(name)s"
     constraint_validation_compatible = False

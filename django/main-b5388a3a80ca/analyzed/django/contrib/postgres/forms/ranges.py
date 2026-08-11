@@ -19,17 +19,20 @@ __all__ = [
 ]
 
 
+# 范围控件 — 用两个相同子控件分别编辑下界与上界
 class RangeWidget(MultiWidget):
     def __init__(self, base_widget, attrs=None):
         widgets = (base_widget, base_widget)
         super().__init__(widgets, attrs)
 
+    # 将 range 对象拆为 (lower, upper) 元组
     def decompress(self, value):
         if value:
             return (value.lower, value.upper)
         return (None, None)
 
 
+# 隐藏范围控件 — 两个 hidden input 承载范围上下界
 class HiddenRangeWidget(RangeWidget):
     """A widget that splits input into two <input type="hidden"> inputs."""
 
@@ -37,6 +40,7 @@ class HiddenRangeWidget(RangeWidget):
         super().__init__(HiddenInput, attrs)
 
 
+# 范围字段基类 — 组合两个子字段并压缩为 PostgreSQL range 类型
 class BaseRangeField(forms.MultiValueField):
     default_error_messages = {
         "invalid": _("Enter two valid values."),
@@ -75,6 +79,7 @@ class BaseRangeField(forms.MultiValueField):
             ]
         return value
 
+    # 校验上下界顺序后构造 range_type 实例
     def compress(self, values):
         if not values:
             return None
@@ -95,24 +100,28 @@ class BaseRangeField(forms.MultiValueField):
             return range_value
 
 
+# 整数范围字段（NumericRange）
 class IntegerRangeField(BaseRangeField):
     default_error_messages = {"invalid": _("Enter two whole numbers.")}
     base_field = forms.IntegerField
     range_type = NumericRange
 
 
+# 小数范围字段（NumericRange）
 class DecimalRangeField(BaseRangeField):
     default_error_messages = {"invalid": _("Enter two numbers.")}
     base_field = forms.DecimalField
     range_type = NumericRange
 
 
+# 带时区日期时间范围字段（DateTimeTZRange）
 class DateTimeRangeField(BaseRangeField):
     default_error_messages = {"invalid": _("Enter two valid date/times.")}
     base_field = forms.DateTimeField
     range_type = DateTimeTZRange
 
 
+# 日期范围字段（DateRange）
 class DateRangeField(BaseRangeField):
     default_error_messages = {"invalid": _("Enter two valid dates.")}
     base_field = forms.DateField

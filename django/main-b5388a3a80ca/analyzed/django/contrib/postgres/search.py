@@ -38,6 +38,7 @@ spec_chars_re = _lazy_re_compile(r"['\0\[\]()|&:*!@<>\\]")
 multiple_spaces_re = _lazy_re_compile(r"\s{2,}")
 
 
+# 将连续空白折叠为单个空格并 strip
 def normalize_spaces(val):
     """Convert multiple spaces to single and strip from both sides."""
     if not (val := val.strip()):
@@ -45,12 +46,14 @@ def normalize_spaces(val):
     return multiple_spaces_re.sub(" ", val)
 
 
+# 转义全文检索查询中的特殊字符
 def psql_escape(query):
     """Replace chars not fit for use in search queries with a single space."""
     query = spec_chars_re.sub(" ", query)
     return normalize_spaces(query)
 
 
+# tsvector @@ tsquery 精确匹配查找
 class SearchVectorExact(Lookup):
     lookup_name = "exact"
 
@@ -68,11 +71,13 @@ class SearchVectorExact(Lookup):
         return "%s @@ %s" % (lhs, rhs), params
 
 
+# 数据库 tsvector 字段类型
 class SearchVectorField(CheckPostgresInstalledMixin, Field):
     def db_type(self, connection):
         return "tsvector"
 
 
+# 数据库 tsquery 字段类型
 class SearchQueryField(CheckPostgresInstalledMixin, Field):
     def db_type(self, connection):
         return "tsquery"
@@ -83,6 +88,7 @@ class _Float4Field(Field):
         return "float4"
 
 
+# 全文检索配置 regconfig 表达式
 class SearchConfig(Expression):
     def __init__(self, config):
         super().__init__()
@@ -107,6 +113,7 @@ class SearchConfig(Expression):
         return "%s::regconfig" % sql, params
 
 
+# SearchVector 组合协议 — 使用 || 连接
 class SearchVectorCombinable:
     ADD = "||"
 
@@ -126,6 +133,7 @@ register_combinable_fields(
 )
 
 
+# to_tsvector 全文向量 — 可选 config 与 weight
 class SearchVector(SearchVectorCombinable, Func):
     function = "to_tsvector"
     arg_joiner = " || ' ' || "
@@ -188,12 +196,14 @@ class SearchVector(SearchVectorCombinable, Func):
         return sql, (*config_params, *params, *extra_params)
 
 
+# 已组合的 SearchVector 表达式
 class CombinedSearchVector(SearchVectorCombinable, CombinedExpression):
     def __init__(self, lhs, connector, rhs, config, output_field=None):
         self.config = config
         super().__init__(lhs, connector, rhs, output_field)
 
 
+# SearchQuery 逻辑组合 — && 与 ||
 class SearchQueryCombinable:
     BITAND = "&&"
     BITOR = "||"
@@ -224,6 +234,7 @@ class SearchQueryCombinable:
         return self._combine(other, self.BITAND, True)
 
 
+# tsquery 构造 — 支持 plain/phrase/raw/websearch 模式
 class SearchQuery(SearchQueryCombinable, Func):
     output_field = SearchQueryField()
     SEARCH_TYPES = {
@@ -273,6 +284,7 @@ class SearchQuery(SearchQueryCombinable, Func):
         return ("~%s" % result) if self.invert else result
 
 
+# 已组合的 SearchQuery 表达式
 class CombinedSearchQuery(SearchQueryCombinable, CombinedExpression):
     def __init__(self, lhs, connector, rhs, config, output_field=None):
         self.config = config
@@ -282,6 +294,7 @@ class CombinedSearchQuery(SearchQueryCombinable, CombinedExpression):
         return "(%s)" % super().__str__()
 
 
+# ts_rank / ts_rank_cd 相关性排序
 class SearchRank(Func):
     function = "ts_rank"
     output_field = FloatField()
@@ -315,6 +328,7 @@ class SearchRank(Func):
         super().__init__(*expressions)
 
 
+# ts_headline 生成高亮摘要片段
 class SearchHeadline(Func):
     function = "ts_headline"
     template = "%(function)s(%(expressions)s%(options)s)"
@@ -380,6 +394,7 @@ class SearchHeadline(Func):
 SearchVectorField.register_lookup(SearchVectorExact)
 
 
+# 三元组相似度/距离函数基类
 class TrigramBase(Func):
     output_field = FloatField()
 
@@ -398,10 +413,12 @@ class TrigramWordBase(Func):
         super().__init__(string, expression, **extra)
 
 
+# SIMILARITY 相似度
 class TrigramSimilarity(TrigramBase):
     function = "SIMILARITY"
 
 
+# <-> 距离
 class TrigramDistance(TrigramBase):
     function = ""
     arg_joiner = " <-> "
@@ -417,6 +434,7 @@ class TrigramStrictWordDistance(TrigramWordBase):
     arg_joiner = " <<<-> "
 
 
+# WORD_SIMILARITY 词级相似度
 class TrigramWordSimilarity(TrigramWordBase):
     function = "WORD_SIMILARITY"
 
@@ -425,6 +443,7 @@ class TrigramStrictWordSimilarity(TrigramWordBase):
     function = "STRICT_WORD_SIMILARITY"
 
 
+# 词素 Lexeme 逻辑组合 — & 与 |
 class LexemeCombinable:
     BITAND = "&"
     BITOR = "|"
@@ -455,6 +474,7 @@ class LexemeCombinable:
         return self._combine(other, self.BITAND, True)
 
 
+# 原始 tsquery 词素 — 支持前缀、权重与取反
 class Lexeme(LexemeCombinable, Value):
     _output_field = SearchQueryField()
 
@@ -502,6 +522,7 @@ class Lexeme(LexemeCombinable, Value):
         return cloned
 
 
+# 组合词素 — 按德摩根定律支持取反
 class CombinedLexeme(LexemeCombinable, CombinedExpression):
     _output_field = SearchQueryField()
 

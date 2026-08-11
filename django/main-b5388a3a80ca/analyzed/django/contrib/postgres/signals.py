@@ -5,6 +5,7 @@ from django.db.backends.base.base import NO_DB_ALIAS
 from django.db.backends.postgresql.psycopg_any import is_psycopg3
 
 
+# 查询 pg_type 获取类型 OID 与数组 OID
 def get_type_oids(connection_alias, type_name):
     with connections[connection_alias].cursor() as cursor:
         cursor.execute(
@@ -19,18 +20,21 @@ def get_type_oids(connection_alias, type_name):
 
 
 @functools.lru_cache
+# 缓存 hstore 及其数组类型的 OID
 def get_hstore_oids(connection_alias):
     """Return hstore and hstore array OIDs."""
     return get_type_oids(connection_alias, "hstore")
 
 
 @functools.lru_cache
+# 缓存 citext 及其数组类型的 OID
 def get_citext_oids(connection_alias):
     """Return citext and citext array OIDs."""
     return get_type_oids(connection_alias, "citext")
 
 
 if is_psycopg3:
+    # psycopg3：注册 hstore 与 citext 数组类型适配器
     from psycopg.types import TypeInfo, hstore
 
     def register_type_handlers(connection, **kwargs):
@@ -49,6 +53,7 @@ if is_psycopg3:
 
 else:
     import psycopg2
+    # psycopg2：全局注册 hstore 与 citext[] 处理器
     from psycopg2.extras import register_hstore
 
     def register_type_handlers(connection, **kwargs):

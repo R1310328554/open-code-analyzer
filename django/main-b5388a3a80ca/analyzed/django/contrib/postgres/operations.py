@@ -9,6 +9,7 @@ from django.db.migrations.operations.base import Operation, OperationCategory
 from django.db.models.constraints import CheckConstraint
 
 
+# 迁移操作 — CREATE EXTENSION IF NOT EXISTS 并注册类型处理器
 class CreateExtension(Operation):
     reversible = True
     category = OperationCategory.ADDITION
@@ -71,46 +72,55 @@ class CreateExtension(Operation):
         return "create_extension_%s" % self.name
 
 
+# 安装 bloom 扩展
 class BloomExtension(CreateExtension):
     def __init__(self, hints=None):
         super().__init__("bloom", hints=hints)
 
 
+# 安装 btree_gin 扩展
 class BtreeGinExtension(CreateExtension):
     def __init__(self, hints=None):
         super().__init__("btree_gin", hints=hints)
 
 
+# 安装 btree_gist 扩展
 class BtreeGistExtension(CreateExtension):
     def __init__(self, hints=None):
         super().__init__("btree_gist", hints=hints)
 
 
+# 安装 citext 大小写不敏感文本扩展
 class CITextExtension(CreateExtension):
     def __init__(self, hints=None):
         super().__init__("citext", hints=hints)
 
 
+# 安装 pgcrypto 加密扩展
 class CryptoExtension(CreateExtension):
     def __init__(self, hints=None):
         super().__init__("pgcrypto", hints=hints)
 
 
+# 安装 hstore 键值存储扩展
 class HStoreExtension(CreateExtension):
     def __init__(self, hints=None):
         super().__init__("hstore", hints=hints)
 
 
+# 安装 pg_trgm 三元组相似度扩展
 class TrigramExtension(CreateExtension):
     def __init__(self, hints=None):
         super().__init__("pg_trgm", hints=hints)
 
 
+# 安装 unaccent 去重音扩展
 class UnaccentExtension(CreateExtension):
     def __init__(self, hints=None):
         super().__init__("unaccent", hints=hints)
 
 
+# 混入 — 禁止在原子事务块内执行 CONCURRENTLY 类操作
 class NotInTransactionMixin:
     def _ensure_not_in_transaction(self, schema_editor):
         if schema_editor.connection.in_atomic_block:
@@ -120,6 +130,7 @@ class NotInTransactionMixin:
             )
 
 
+# CREATE INDEX CONCURRENTLY 并发创建索引
 class AddIndexConcurrently(NotInTransactionMixin, AddIndex):
     """Create an index using PostgreSQL's CREATE INDEX CONCURRENTLY syntax."""
 
@@ -146,6 +157,7 @@ class AddIndexConcurrently(NotInTransactionMixin, AddIndex):
             schema_editor.remove_index(model, self.index, concurrently=True)
 
 
+# DROP INDEX CONCURRENTLY 并发删除索引
 class RemoveIndexConcurrently(NotInTransactionMixin, RemoveIndex):
     """Remove an index using PostgreSQL's DROP INDEX CONCURRENTLY syntax."""
 
@@ -172,6 +184,7 @@ class RemoveIndexConcurrently(NotInTransactionMixin, RemoveIndex):
             schema_editor.add_index(model, index, concurrently=True)
 
 
+# 排序规则操作基类 — CREATE/DROP COLLATION
 class CollationOperation(Operation):
     def __init__(self, name, locale, *, provider="libc", deterministic=True):
         self.name = name
@@ -216,6 +229,7 @@ class CollationOperation(Operation):
         )
 
 
+# 创建 PostgreSQL 排序规则
 class CreateCollation(CollationOperation):
     """Create a collation."""
 
@@ -246,6 +260,7 @@ class CreateCollation(CollationOperation):
         return super().reduce(operation, app_label)
 
 
+# 删除排序规则
 class RemoveCollation(CollationOperation):
     """Remove a collation."""
 
@@ -271,6 +286,7 @@ class RemoveCollation(CollationOperation):
         return "remove_collation_%s" % self.name.lower()
 
 
+# 添加 NOT VALID 检查约束（暂不校验已有行）
 class AddConstraintNotValid(AddConstraint):
     """
     Add a table constraint without enforcing validation, using PostgreSQL's
@@ -307,6 +323,7 @@ class AddConstraintNotValid(AddConstraint):
         return super().migration_name_fragment + "_not_valid"
 
 
+# VALIDATE CONSTRAINT 使 NOT VALID 约束生效
 class ValidateConstraint(Operation):
     """Validate a table NOT VALID constraint."""
 

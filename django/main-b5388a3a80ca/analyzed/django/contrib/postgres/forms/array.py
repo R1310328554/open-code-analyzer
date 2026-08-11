@@ -11,6 +11,7 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
 
+# 简单数组字段 — 用分隔符将字符串解析为元素列表并逐项校验
 class SimpleArrayField(forms.CharField):
     default_error_messages = {
         "item_invalid": _("Item %(nth)s in the array did not validate:"),
@@ -29,10 +30,12 @@ class SimpleArrayField(forms.CharField):
             self.max_length = max_length
             self.validators.append(ArrayMaxLengthValidator(int(max_length)))
 
+    # 解析后对每个元素调用 base_field.clean
     def clean(self, value):
         value = super().clean(value)
         return [self.base_field.clean(val) for val in value]
 
+    # 列表值用 delimiter 连接为展示字符串
     def prepare_value(self, value):
         if isinstance(value, list):
             return self.delimiter.join(
@@ -40,6 +43,7 @@ class SimpleArrayField(forms.CharField):
             )
         return value
 
+    # 按分隔符拆分并逐项 to_python，收集带序号的校验错误
     def to_python(self, value):
         if isinstance(value, list):
             items = value
@@ -112,6 +116,7 @@ class SimpleArrayField(forms.CharField):
         return super().has_changed(initial, data)
 
 
+# 拆分数组控件 — 将固定长度数组渲染为多个子控件
 class SplitArrayWidget(forms.Widget):
     template_name = "postgres/widgets/split_array.html"
 
@@ -124,6 +129,7 @@ class SplitArrayWidget(forms.Widget):
     def is_hidden(self):
         return self.widget.is_hidden
 
+    # 从 name_0、name_1… 子字段收集各元素值
     def value_from_datadict(self, data, files, name):
         return [
             self.widget.value_from_datadict(data, files, "%s_%s" % (name, index))
@@ -142,6 +148,7 @@ class SplitArrayWidget(forms.Widget):
             id_ += "_0"
         return id_
 
+    # 为每个槽位生成 subwidgets 渲染上下文
     def get_context(self, name, value, attrs=None):
         attrs = {} if attrs is None else attrs
         context = super().get_context(name, value, attrs)
@@ -179,6 +186,7 @@ class SplitArrayWidget(forms.Widget):
         return self.widget.needs_multipart_form
 
 
+# 拆分数组字段 — 固定 size 个独立子字段组成数组
 class SplitArrayField(forms.Field):
     default_error_messages = {
         "item_invalid": _("Item %(nth)s in the array did not validate:"),
@@ -192,6 +200,7 @@ class SplitArrayField(forms.Field):
         kwargs.setdefault("widget", widget)
         super().__init__(**kwargs)
 
+    # 可选地截去末尾连续空值
     def _remove_trailing_nulls(self, values):
         index = None
         if self.remove_trailing_nulls:
@@ -208,6 +217,7 @@ class SplitArrayField(forms.Field):
         value = super().to_python(value)
         return [self.base_field.to_python(item) for item in value]
 
+    # 逐槽位 clean 并合并 ValidationError 列表
     def clean(self, value):
         cleaned_data = []
         errors = []
