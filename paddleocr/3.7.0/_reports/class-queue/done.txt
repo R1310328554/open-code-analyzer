@@ -1,0 +1,15 @@
+api_sdk/go/client.go
+api_sdk/go/doc.go
+api_sdk/go/errors.go
+api_sdk/go/models.go
+api_sdk/go/ocr.go
+api_sdk/go/operation.go
+api_sdk/go/options.go
+api_sdk/go/poller.go
+api_sdk/go/resource.go
+api_sdk/go/results.go
+api_sdk/go/transport.go
+api_sdk/typescript/src/client.ts
+api_sdk/typescript/src/errors.ts
+api_sdk/typescript/src/index.ts
+api_sdk/typescript/src/internal/abort.ts
