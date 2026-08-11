@@ -42,6 +42,7 @@ from .configuration_clipseg import CLIPSegConfig, CLIPSegTextConfig, CLIPSegVisi
 
 @auto_docstring
 @dataclass
+# CLIPSegOutput：CLIP 风格联合输出 dataclass
 class CLIPSegOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `return_loss` is `True`):
@@ -76,6 +77,7 @@ class CLIPSegOutput(ModelOutput):
 
 @auto_docstring
 @dataclass
+# CLIPSegDecoderOutput：解码器输出，含像素级 logits
 class CLIPSegDecoderOutput(ModelOutput):
     r"""
     logits (`torch.FloatTensor` of shape `(batch_size, height, width)`):
@@ -96,6 +98,7 @@ class CLIPSegDecoderOutput(ModelOutput):
 
 @auto_docstring
 @dataclass
+# CLIPSegImageSegmentationOutput：分割任务完整输出（loss/logits/条件嵌入）
 class CLIPSegImageSegmentationOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -123,6 +126,7 @@ class CLIPSegImageSegmentationOutput(ModelOutput):
         return tuple(v.to_tuple() if isinstance(v, ModelOutput) else v for v in self.values())
 
 
+# CLIPSegVisionEmbeddings：ViT patch 嵌入，默认 interpolate_pos_encoding=True
 class CLIPSegVisionEmbeddings(nn.Module):
     def __init__(self, config: CLIPSegVisionConfig):
         super().__init__()
@@ -206,6 +210,7 @@ class CLIPSegVisionEmbeddings(nn.Module):
         return embeddings
 
 
+# CLIPSegTextEmbeddings：CLIP 文本嵌入层
 class CLIPSegTextEmbeddings(nn.Module):
     def __init__(self, config: CLIPSegTextConfig):
         super().__init__()
@@ -244,6 +249,7 @@ class CLIPSegTextEmbeddings(nn.Module):
         return embeddings
 
 
+# eager_attention_forward：标准 eager 多头注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -265,6 +271,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# CLIPSegAttention：CLIP 风格多头自注意力
 class CLIPSegAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -323,6 +330,7 @@ class CLIPSegAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# CLIPSegMLP：前馈网络 fc1→激活→fc2
 class CLIPSegMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -338,6 +346,7 @@ class CLIPSegMLP(nn.Module):
         return hidden_states
 
 
+# CLIPSegEncoderLayer：Pre-LN Transformer 编码层
 class CLIPSegEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: CLIPSegVisionConfig | CLIPSegTextConfig):
         super().__init__()
@@ -371,6 +380,7 @@ class CLIPSegEncoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# CLIPSegDecoderLayer：Post-LN 解码层（与编码层归一化顺序相反）
 class CLIPSegDecoderLayer(GradientCheckpointingLayer):
     """
     CLIPSeg decoder layer, which is identical to `CLIPSegEncoderLayer`, except that normalization is applied after
@@ -411,6 +421,7 @@ class CLIPSegDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# CLIPSegPreTrainedModel：权重初始化与 checkpoint 映射基类
 class CLIPSegPreTrainedModel(PreTrainedModel):
     config: CLIPSegConfig
     base_model_prefix = "clipseg"
@@ -464,6 +475,7 @@ class CLIPSegPreTrainedModel(PreTrainedModel):
             )
 
 
+# CLIPSegEncoder：堆叠 CLIPSegEncoderLayer
 class CLIPSegEncoder(nn.Module):
     """
     Transformer encoder consisting of `config.num_hidden_layers` self attention layers. Each layer is a
@@ -498,6 +510,7 @@ class CLIPSegEncoder(nn.Module):
         )
 
 
+# CLIPSegDecoder：FiLM 调制 + 多层融合 + 转置卷积上采样
 class CLIPSegDecoder(CLIPSegPreTrainedModel):
     def __init__(self, config: CLIPSegConfig):
         super().__init__(config)
@@ -591,6 +604,7 @@ class CLIPSegDecoder(CLIPSegPreTrainedModel):
     The text model from CLIPSEG without any head or projection on top.
     """
 )
+# CLIPSegTextModel：CLIP 文本塔，用于文本条件嵌入
 class CLIPSegTextModel(CLIPSegPreTrainedModel):
     config: CLIPSegTextConfig
     input_modalities = ("text",)
@@ -691,6 +705,7 @@ class CLIPSegTextModel(CLIPSegPreTrainedModel):
     The vision model from CLIPSEG without any head or projection on top.
     """
 )
+# CLIPSegVisionModel：CLIP 视觉塔，提取多层 hidden states
 class CLIPSegVisionModel(CLIPSegPreTrainedModel):
     config: CLIPSegVisionConfig
     main_input_name = "pixel_values"
@@ -758,16 +773,19 @@ class CLIPSegVisionModel(CLIPSegPreTrainedModel):
 
 # contrastive loss function, adapted from
 # https://sachinruk.github.io/blog/2021-03-07-clipseg.html
+# contrastive_loss：对称 InfoNCE 对比损失
 def contrastive_loss(logits: torch.Tensor) -> torch.Tensor:
     return nn.functional.cross_entropy(logits, torch.arange(len(logits), device=logits.device))
 
 
+# image_text_contrastive_loss：图文双向对比损失
 def image_text_contrastive_loss(similarity: torch.Tensor) -> torch.Tensor:
     caption_loss = contrastive_loss(similarity)
     image_loss = contrastive_loss(similarity.T)
     return (caption_loss + image_loss) / 2.0
 
 
+# _get_vector_norm：L2 归一化嵌入向量
 def _get_vector_norm(tensor: torch.Tensor) -> torch.Tensor:
     """
     This method is equivalent to tensor.norm(p=2, dim=-1, keepdim=True) and used to make
@@ -780,6 +798,7 @@ def _get_vector_norm(tensor: torch.Tensor) -> torch.Tensor:
 
 
 @auto_docstring
+# CLIPSegModel：完整 CLIP 双塔（分割任务预训练权重）
 class CLIPSegModel(CLIPSegPreTrainedModel):
     def __init__(self, config: CLIPSegConfig):
         super().__init__(config)
@@ -958,6 +977,7 @@ class CLIPSegModel(CLIPSegPreTrainedModel):
     CLIPSeg model with a Transformer-based decoder on top for zero-shot and one-shot image segmentation.
     """
 )
+# CLIPSegForImageSegmentation：端到端分割，文本/视觉 prompt + 解码器
 class CLIPSegForImageSegmentation(CLIPSegPreTrainedModel):
     config: CLIPSegConfig
 
@@ -969,6 +989,7 @@ class CLIPSegForImageSegmentation(CLIPSegPreTrainedModel):
 
         self.post_init()
 
+# get_conditional_embeddings：从文本或视觉 prompt 计算条件嵌入
     def get_conditional_embeddings(
         self,
         batch_size: int | None = None,

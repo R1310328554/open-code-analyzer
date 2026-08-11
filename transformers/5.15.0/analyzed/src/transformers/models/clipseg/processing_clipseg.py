@@ -21,11 +21,14 @@ from ...utils import auto_docstring
 
 
 @auto_docstring
+# CLIPSegProcessor：组合 image_processor 与 tokenizer
 class CLIPSegProcessor(ProcessorMixin):
+# __init__：注册图像处理器与分词器
     def __init__(self, image_processor=None, tokenizer=None, **kwargs):
         super().__init__(image_processor, tokenizer)
 
     @auto_docstring
+# __call__：处理 query 图像与 text/visual 条件，输出 pixel_values 等
     def __call__(self, text=None, images=None, visual_prompt=None, return_tensors=None, **kwargs):
         r"""
         visual_prompt (`PIL.Image.Image`, `np.ndarray`, `torch.Tensor`, `list[PIL.Image.Image]`, `list[np.ndarray]`, `list[torch.Tensor]`):

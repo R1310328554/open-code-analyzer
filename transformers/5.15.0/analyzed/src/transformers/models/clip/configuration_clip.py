@@ -24,6 +24,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="openai/clip-vit-base-patch32")
 @strict
+# CLIPTextConfig：文本塔超参，quick_gelu 与 77 token 上限
 class CLIPTextConfig(PreTrainedConfig):
     r"""
     Example:
@@ -63,6 +64,7 @@ class CLIPTextConfig(PreTrainedConfig):
     bos_token_id: int | None = 49406
     eos_token_id: int | list[int] | None = 49407
 
+# validate_architecture：校验 hidden_size 可被 num_attention_heads 整除
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if self.hidden_size % self.num_attention_heads != 0:
@@ -74,6 +76,7 @@ class CLIPTextConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="openai/clip-vit-base-patch32")
 @strict
+# CLIPVisionConfig：ViT 视觉塔，patch 嵌入与 image_size
 class CLIPVisionConfig(PreTrainedConfig):
     r"""
     Example:
@@ -119,6 +122,7 @@ class CLIPVisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="openai/clip-vit-base-patch32")
 @strict
+# CLIPConfig：聚合 text/vision 子配置与 logit_scale 初值
 class CLIPConfig(PreTrainedConfig):
     r"""
     text_config (`dict`, *optional*):
@@ -161,6 +165,7 @@ class CLIPConfig(PreTrainedConfig):
     logit_scale_init_value: float | int | None = 2.6592
     initializer_factor: float | None = 1.0
 
+# __post_init__：合并 text/vision 字典并兼容旧版 *_config_dict 参数
     def __post_init__(self, **kwargs):
         if self.text_config is None:
             text_config = {}

@@ -44,16 +44,19 @@ logger = logging.get_logger(__name__)
 
 # contrastive loss function, adapted from
 # https://sachinruk.github.io/blog/2021-03-07-clip.html
+# contrastive_loss：对称 InfoNCE 对比损失
 def contrastive_loss(logits: torch.Tensor) -> torch.Tensor:
     return nn.functional.cross_entropy(logits, torch.arange(len(logits), device=logits.device))
 
 
+# image_text_contrastive_loss：图文双向对比损失求平均
 def image_text_contrastive_loss(similarity: torch.Tensor) -> torch.Tensor:
     caption_loss = contrastive_loss(similarity)
     image_loss = contrastive_loss(similarity.T)
     return (caption_loss + image_loss) / 2.0
 
 
+# _get_vector_norm：L2 归一化嵌入（兼容 executorch 导出）
 def _get_vector_norm(tensor: torch.Tensor) -> torch.Tensor:
     """
     This method is equivalent to tensor.norm(p=2, dim=-1, keepdim=True) and used to make
@@ -71,6 +74,7 @@ def _get_vector_norm(tensor: torch.Tensor) -> torch.Tensor:
     """
 )
 @dataclass
+# CLIPVisionModelOutput：视觉塔输出，含 image_embeds
 class CLIPVisionModelOutput(ModelOutput):
     r"""
     image_embeds (`torch.FloatTensor` of shape `(batch_size, output_dim)` *optional* returned when model is initialized with `with_projection=True`):
@@ -89,6 +93,7 @@ class CLIPVisionModelOutput(ModelOutput):
     """
 )
 @dataclass
+# CLIPTextModelOutput：文本塔输出，含 text_embeds
 class CLIPTextModelOutput(ModelOutput):
     r"""
     text_embeds (`torch.FloatTensor` of shape `(batch_size, output_dim)` *optional* returned when model is initialized with `with_projection=True`):
@@ -103,6 +108,7 @@ class CLIPTextModelOutput(ModelOutput):
 
 @auto_docstring
 @dataclass
+# CLIPOutput：联合输出，含对比损失与图文相似度 logits
 class CLIPOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `return_loss` is `True`):
@@ -135,6 +141,7 @@ class CLIPOutput(ModelOutput):
         return tuple(v.to_tuple() if isinstance(v, ModelOutput) else v for v in self.values())
 
 
+# CLIPVisionEmbeddings：CLS + patch 卷积嵌入 + 位置编码
 class CLIPVisionEmbeddings(nn.Module):
     def __init__(self, config: CLIPVisionConfig):
         super().__init__()
@@ -218,6 +225,7 @@ class CLIPVisionEmbeddings(nn.Module):
         return embeddings
 
 
+# CLIPTextEmbeddings：词嵌入 + 可学习位置编码
 class CLIPTextEmbeddings(nn.Module):
     def __init__(self, config: CLIPTextConfig):
         super().__init__()
@@ -256,6 +264,7 @@ class CLIPTextEmbeddings(nn.Module):
         return embeddings
 
 
+# eager_attention_forward：标准 eager 多头注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -277,6 +286,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# CLIPAttention：多头自注意力（文本因果 / 视觉双向）
 class CLIPAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -335,6 +345,7 @@ class CLIPAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# CLIPMLP：前馈网络 fc1→激活→fc2
 class CLIPMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -350,6 +361,7 @@ class CLIPMLP(nn.Module):
         return hidden_states
 
 
+# CLIPEncoderLayer：Transformer 单层（注意力 + MLP）
 class CLIPEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: CLIPVisionConfig | CLIPTextConfig):
         super().__init__()
@@ -384,6 +396,7 @@ class CLIPEncoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# CLIPPreTrainedModel：权重初始化与 checkpoint 映射基类
 class CLIPPreTrainedModel(PreTrainedModel):
     config: CLIPConfig
     base_model_prefix = "clip"
@@ -452,6 +465,7 @@ class CLIPPreTrainedModel(PreTrainedModel):
             )
 
 
+# CLIPEncoder：堆叠 num_hidden_layers 个编码层
 class CLIPEncoder(nn.Module):
     """
     Transformer encoder consisting of `config.num_hidden_layers` self attention layers. Each layer is a
@@ -491,6 +505,7 @@ class CLIPEncoder(nn.Module):
     The text model from CLIP without any head or projection on top.
     """
 )
+# CLIPTextModel：因果文本编码塔，取 EOS 池化
 class CLIPTextModel(CLIPPreTrainedModel):
     config: CLIPTextConfig
     input_modalities = ("text",)
@@ -591,6 +606,7 @@ class CLIPTextModel(CLIPPreTrainedModel):
     The vision model from CLIP without any head or projection on top.
     """
 )
+# CLIPVisionModel：ViT 视觉编码塔，取 CLS 池化
 class CLIPVisionModel(CLIPPreTrainedModel):
     config: CLIPVisionConfig
     main_input_name = "pixel_values"
@@ -657,6 +673,7 @@ class CLIPVisionModel(CLIPPreTrainedModel):
 
 
 @auto_docstring
+# CLIPModel：完整双塔 CLIP，输出图文相似度与可选对比损失
 class CLIPModel(CLIPPreTrainedModel):
     def __init__(self, config: CLIPConfig):
         super().__init__(config)
@@ -832,6 +849,7 @@ class CLIPModel(CLIPPreTrainedModel):
 
 
 @auto_docstring
+# CLIPTextModelWithProjection：文本塔 + 投影头
 class CLIPTextModelWithProjection(CLIPPreTrainedModel):
     config: CLIPTextConfig
     input_modalities = ("text",)
@@ -895,6 +913,7 @@ class CLIPTextModelWithProjection(CLIPPreTrainedModel):
 
 
 @auto_docstring
+# CLIPVisionModelWithProjection：视觉塔 + 投影头
 class CLIPVisionModelWithProjection(CLIPPreTrainedModel):
     config: CLIPVisionConfig
     main_input_name = "pixel_values"
@@ -963,6 +982,7 @@ class CLIPVisionModelWithProjection(CLIPPreTrainedModel):
     the patch tokens) e.g. for ImageNet.
     """
 )
+# CLIPForImageClassification：CLIP 视觉塔 + 线性分类头
 class CLIPForImageClassification(CLIPPreTrainedModel):
     main_input_name = "pixel_values"
     input_modalities = ("image",)

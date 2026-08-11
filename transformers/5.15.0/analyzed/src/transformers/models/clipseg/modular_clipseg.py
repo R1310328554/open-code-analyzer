@@ -47,6 +47,7 @@ from ..clip.modeling_clip import (
 
 @auto_docstring(checkpoint="CIDAS/clipseg-rd64")
 @strict
+# CLIPSegTextConfig：继承 CLIP 文本配置，禁用 projection_dim
 class CLIPSegTextConfig(CLIPTextConfig):
     r"""
     Example:
@@ -69,6 +70,7 @@ class CLIPSegTextConfig(CLIPTextConfig):
 
 @auto_docstring(checkpoint="CIDAS/clipseg-rd64")
 @strict
+# CLIPSegVisionConfig：继承 CLIP 视觉配置
 class CLIPSegVisionConfig(CLIPVisionConfig):
     r"""
     Example:
@@ -91,6 +93,7 @@ class CLIPSegVisionConfig(CLIPVisionConfig):
 
 @auto_docstring(checkpoint="CIDAS/clipseg-rd64")
 @strict
+# CLIPSegConfig：继承 CLIP 联合配置，增加分割解码器超参
 class CLIPSegConfig(CLIPConfig):
     r"""
     extract_layers (`list[int]`, *optional*, defaults to `[3, 6, 9]`):
@@ -137,12 +140,14 @@ class CLIPSegConfig(CLIPConfig):
     use_complex_transposed_convolution: bool = False
 
 
+# CLIPSegOutput：复用 CLIP 输出 dataclass
 class CLIPSegOutput(CLIPOutput):
     pass
 
 
 @auto_docstring
 @dataclass
+# CLIPSegDecoderOutput：解码器像素 logits 输出
 class CLIPSegDecoderOutput(ModelOutput):
     r"""
     logits (`torch.FloatTensor` of shape `(batch_size, height, width)`):
@@ -163,6 +168,7 @@ class CLIPSegDecoderOutput(ModelOutput):
 
 @auto_docstring
 @dataclass
+# CLIPSegImageSegmentationOutput：分割任务完整输出结构
 class CLIPSegImageSegmentationOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -190,28 +196,34 @@ class CLIPSegImageSegmentationOutput(ModelOutput):
         return tuple(v.to_tuple() if isinstance(v, ModelOutput) else v for v in self.values())
 
 
+# CLIPSegVisionEmbeddings：默认开启 interpolate_pos_encoding
 class CLIPSegVisionEmbeddings(CLIPVisionEmbeddings):
     # Different default for `interpolate_pos_encoding` from CLIP
     def forward(self, pixel_values: torch.FloatTensor, interpolate_pos_encoding=True) -> torch.Tensor:
         super().forward(pixel_values, interpolate_pos_encoding)
 
 
+# CLIPSegTextEmbeddings：直接复用 CLIP 文本嵌入
 class CLIPSegTextEmbeddings(CLIPTextEmbeddings):
     pass
 
 
+# CLIPSegAttention：复用 CLIP 注意力实现
 class CLIPSegAttention(CLIPAttention):
     pass
 
 
+# CLIPSegMLP：复用 CLIP MLP
 class CLIPSegMLP(CLIPMLP):
     pass
 
 
+# CLIPSegEncoderLayer：复用 CLIP 编码层
 class CLIPSegEncoderLayer(CLIPEncoderLayer):
     pass
 
 
+# CLIPSegDecoderLayer：Post-LN 变体，归一化在子层之后
 class CLIPSegDecoderLayer(CLIPEncoderLayer):
     """
     CLIPSeg decoder layer, which is identical to `CLIPSegEncoderLayer`, except that normalization is applied after
@@ -244,6 +256,7 @@ class CLIPSegDecoderLayer(CLIPEncoderLayer):
 
 
 @auto_docstring
+# CLIPSegPreTrainedModel：CLIPSeg 专用权重初始化
 class CLIPSegPreTrainedModel(CLIPPreTrainedModel):
     _can_record_outputs = {
         "hidden_states": [CLIPSegEncoderLayer, CLIPSegDecoderLayer],
@@ -287,10 +300,12 @@ class CLIPSegPreTrainedModel(CLIPPreTrainedModel):
             )
 
 
+# CLIPSegEncoder：复用 CLIP 编码器栈
 class CLIPSegEncoder(CLIPEncoder):
     pass
 
 
+# CLIPSegDecoder：FiLM 条件调制 + 转置卷积解码
 class CLIPSegDecoder(CLIPSegPreTrainedModel):
     def __init__(self, config: CLIPSegConfig):
         super().__init__(config)
@@ -379,6 +394,7 @@ class CLIPSegDecoder(CLIPSegPreTrainedModel):
         return CLIPSegDecoderOutput(logits=logits)
 
 
+# CLIPSegTextModel：继承 CLIP 文本模型
 class CLIPSegTextModel(CLIPTextModel):
     def forward(self, **super_kwargs) -> tuple | BaseModelOutputWithPooling:
         r"""
@@ -399,6 +415,7 @@ class CLIPSegTextModel(CLIPTextModel):
         return super().forward(**super_kwargs)
 
 
+# CLIPSegVisionModel：继承 CLIP 视觉模型
 class CLIPSegVisionModel(CLIPVisionModel):
     def forward(
         self,
@@ -431,6 +448,7 @@ class CLIPSegVisionModel(CLIPVisionModel):
         return super().forward(pixel_values, interpolate_pos_encoding, **kwargs)
 
 
+# CLIPSegModel：继承 CLIP 双塔，保留对比学习接口
 class CLIPSegModel(CLIPModel):
     def get_text_features(self, **super_kwargs):
         r"""
@@ -511,6 +529,7 @@ class CLIPSegModel(CLIPModel):
     CLIPSeg model with a Transformer-based decoder on top for zero-shot and one-shot image segmentation.
     """
 )
+# CLIPSegForImageSegmentation：冻结 CLIP + 轻量解码器做零样本分割
 class CLIPSegForImageSegmentation(CLIPSegPreTrainedModel):
     config: CLIPSegConfig
 
@@ -522,6 +541,7 @@ class CLIPSegForImageSegmentation(CLIPSegPreTrainedModel):
 
         self.post_init()
 
+# get_conditional_embeddings：从文本 ID 或视觉 prompt 提取条件向量
     def get_conditional_embeddings(
         self,
         batch_size: int | None = None,

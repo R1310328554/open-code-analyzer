@@ -20,6 +20,7 @@ from ...utils import auto_docstring
 
 
 @auto_docstring
+# CLIPImageProcessor：与 OpenAI 原版一致的图像预处理流水线
 class CLIPImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.BICUBIC
     image_mean = OPENAI_CLIP_MEAN
@@ -33,6 +34,7 @@ class CLIPImageProcessor(TorchvisionBackend):
     do_normalize = True
     do_convert_rgb = True
 
+# __init__：兼容 KOSMOS-2 的 use_square_size 参数
     def __init__(self, **kwargs: Unpack[ImagesKwargs]):
         # for backwards compatibility of KOSMOS-2
         if "use_square_size" in kwargs and kwargs["use_square_size"]:

@@ -20,7 +20,9 @@ from ...utils import auto_docstring
 
 
 @auto_docstring
+# CLIPProcessor：组合 image_processor 与 tokenizer
 class CLIPProcessor(ProcessorMixin):
+# __init__：注册图像处理器与分词器子模块
     def __init__(self, image_processor=None, tokenizer=None, **kwargs):
         super().__init__(image_processor, tokenizer)
 

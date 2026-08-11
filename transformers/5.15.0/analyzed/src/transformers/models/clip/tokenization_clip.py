@@ -25,6 +25,7 @@ logger = logging.get_logger(__name__)
 VOCAB_FILES_NAMES = {"vocab_file": "vocab.json", "merges_file": "merges.txt", "tokenizer_file": "tokenizer.json"}
 
 
+# CLIPTokenizer：BPE 词表 + ByteLevel 预处理，最大 77 token
 class CLIPTokenizer(TokenizersBackend):
     """
     Construct a CLIP tokenizer (backed by HuggingFace's *tokenizers* library). Based on byte-level
@@ -53,6 +54,7 @@ class CLIPTokenizer(TokenizersBackend):
     model_input_names = ["input_ids", "attention_mask"]
     model = BPE
 
+# __init__：构建 NFC 规范化、BPE 模型与 Roberta 风格 post_processor
     def __init__(
         self,
         vocab: str | dict[str, int] | None = None,
@@ -124,6 +126,7 @@ class CLIPTokenizer(TokenizersBackend):
         # Very ugly hack to enable padding to have a correct decoding see https://github.com/huggingface/tokenizers/issues/872
         self._wrap_decode_method_backend_tokenizer()
 
+# _wrap_decode_method_backend_tokenizer：解码时去除 </w> 后缀以正确 padding
     def _wrap_decode_method_backend_tokenizer(self):
         orig_decode_method = self.backend_tokenizer.decode
 

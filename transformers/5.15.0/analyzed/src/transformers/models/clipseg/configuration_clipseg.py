@@ -28,6 +28,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="CIDAS/clipseg-rd64")
 @strict
+# CLIPSegTextConfig：CLIP 文本塔超参（无独立 projection_dim）
 class CLIPSegTextConfig(PreTrainedConfig):
     r"""
     Example:
@@ -77,6 +78,7 @@ class CLIPSegTextConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="CIDAS/clipseg-rd64")
 @strict
+# CLIPSegVisionConfig：CLIP 视觉塔超参，默认 patch_size=32
 class CLIPSegVisionConfig(PreTrainedConfig):
     r"""
     Example:
@@ -121,6 +123,7 @@ class CLIPSegVisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="CIDAS/clipseg-rd64")
 @strict
+# CLIPSegConfig：联合配置，含 extract_layers/reduce_dim/conditional_layer
 class CLIPSegConfig(PreTrainedConfig):
     r"""
     extract_layers (`list[int]`, *optional*, defaults to `[3, 6, 9]`):
@@ -175,6 +178,7 @@ class CLIPSegConfig(PreTrainedConfig):
     conditional_layer: int = 0
     use_complex_transposed_convolution: bool = False
 
+# __post_init__：合并 text/vision 子配置并兼容旧版 dict 参数
     def __post_init__(self, **kwargs):
         if self.text_config is None:
             text_config = {}

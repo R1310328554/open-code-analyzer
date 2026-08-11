@@ -44,6 +44,7 @@ logger = logging.get_logger(__name__)
 
 
 # Adapted from: https://github.com/LAION-AI/CLAP/blob/6ad05a971ba0622f6acee8c41993e0d02bbed639/src/open_clip/utils.py#L191
+# interpolate：时域插值，补偿 CNN 下采样造成的分辨率损失
 def interpolate(hidden_states, ratio):
     """
     Interpolate data in time domain. This is used to compensate the resolution reduction in downsampling of a CNN.
@@ -61,6 +62,7 @@ def interpolate(hidden_states, ratio):
 
 
 # Adapted from https://github.com/LAION-AI/CLAP/blob/6ad05a971ba0622f6acee8c41993e0d02bbed639/src/open_clip/htsat.py#L249
+# window_partition：将特征图划分为不重叠窗口（Swin 风格）
 def window_partition(hidden_states, window_size):
     """
     Returns the resized hidden states. The output shape should be `(batch_size * num_windows, window_size, window_size,
@@ -82,6 +84,7 @@ def window_partition(hidden_states, window_size):
 
 
 # Adapted from https://github.com/LAION-AI/CLAP/blob/6ad05a971ba0622f6acee8c41993e0d02bbed639/src/open_clip/htsat.py#L263
+# window_reverse：将窗口序列还原为二维特征图
 def window_reverse(windows, window_size, height, width):
     """
     Merges windows to produce higher resolution features.
@@ -103,6 +106,7 @@ def window_reverse(windows, window_size, height, width):
 
 # contrastive loss function, adapted from
 # https://sachinruk.github.io/blog/pytorch/pytorch%20lightning/loss%20function/gpu/2021/03/07/CLIP.html#CLIP-loss-function
+# contrastive_loss：对称 InfoNCE 对比损失
 def contrastive_loss(logits: torch.Tensor) -> torch.Tensor:
     labels = torch.arange(len(logits), device=logits.device)
     return nn.functional.cross_entropy(logits, labels)
@@ -115,6 +119,7 @@ def contrastive_loss(logits: torch.Tensor) -> torch.Tensor:
 )
 @dataclass
 # Copied from transformers.models.clip.modeling_clip.CLIPTextModelOutput with CLIP->Clap
+# ClapTextModelOutput：文本塔输出，含投影后的 text_embeds
 class ClapTextModelOutput(ModelOutput):
     r"""
     text_embeds (`torch.FloatTensor` of shape `(batch_size, output_dim)` *optional* returned when model is initialized with `with_projection=True`):
@@ -133,6 +138,7 @@ class ClapTextModelOutput(ModelOutput):
     """
 )
 @dataclass
+# ClapAudioModelOutput：音频塔输出，含投影后的 audio_embeds
 class ClapAudioModelOutput(ModelOutput):
     r"""
     audio_embeds (`torch.FloatTensor` of shape `(batch_size, hidden_size)`):
@@ -148,6 +154,7 @@ class ClapAudioModelOutput(ModelOutput):
 @auto_docstring
 @dataclass
 # Copied from transformers.models.clip.modeling_clip.CLIPOutput with CLIP->Clap, vision->audio, Vision->Audio, image->audio
+# ClapOutput：联合输出，含对比损失与音文相似度 logits
 class ClapOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `return_loss` is `True`):
@@ -181,6 +188,7 @@ class ClapOutput(ModelOutput):
 
 
 # Adapted from https://github.com/LAION-AI/CLAP/blob/6ad05a971ba0622f6acee8c41993e0d02bbed639/src/open_clip/feature_fusion.py#L133
+# ClapAudioAFFBlock：注意力特征融合块（AFF），增强 2D 谱图表示
 class ClapAudioAFFBlock(nn.Module):
     r"""
     ATTENTIONAL FEATURE FUSION Block from CLAP, since in CLAP we are always in 2D mode, it is not needed to implement
@@ -221,6 +229,7 @@ class ClapAudioAFFBlock(nn.Module):
         return output
 
 
+# ClapAudioPatchEmbed：Mel 谱图 patch 嵌入 + 2D 位置编码
 class ClapAudioPatchEmbed(nn.Module):
     """
     This module converts the hidden states reshaped as an image to patch embeddings ready to be passed to the
@@ -320,6 +329,7 @@ class ClapAudioPatchEmbed(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinSelfAttention with Swin->ClapAudio
+# ClapAudioSelfAttention：带相对位置偏置的窗口自注意力
 class ClapAudioSelfAttention(nn.Module):
     def __init__(self, config, dim, num_heads, window_size):
         super().__init__()
@@ -414,6 +424,7 @@ class ClapAudioSelfAttention(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinSelfOutput with Swin->ClapAudio
+# ClapAudioSelfOutput：音频自注意力输出投影 + dropout
 class ClapAudioSelfOutput(nn.Module):
     def __init__(self, config, dim):
         super().__init__()
@@ -428,6 +439,7 @@ class ClapAudioSelfOutput(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinAttention with Swin->ClapAudio
+# ClapAudioAttention：音频自注意力封装
 class ClapAudioAttention(nn.Module):
     def __init__(self, config, dim, num_heads, window_size):
         super().__init__()
@@ -447,6 +459,7 @@ class ClapAudioAttention(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinIntermediate with Swin->ClapAudio
+# ClapAudioIntermediate：音频 FFN 中间 Dense+激活
 class ClapAudioIntermediate(nn.Module):
     def __init__(self, config, dim):
         super().__init__()
@@ -463,6 +476,7 @@ class ClapAudioIntermediate(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinOutput with Swin->ClapAudio
+# ClapAudioOutput：音频 FFN 输出投影与残差
 class ClapAudioOutput(nn.Module):
     def __init__(self, config, dim):
         super().__init__()
@@ -476,6 +490,7 @@ class ClapAudioOutput(nn.Module):
 
 
 # Copied from transformers.models.swin.modular_swin.SwinDropPath with SwinDropPath->ClapDropPath
+# ClapDropPath：随机深度（Stochastic Depth）正则化
 class ClapDropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -501,6 +516,7 @@ class ClapDropPath(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinLayer with Swin->ClapAudio
+# ClapAudioLayer：Swin 单层（窗口注意力 + FFN + DropPath）
 class ClapAudioLayer(nn.Module):
     def __init__(self, config, dim, input_resolution, num_heads, drop_path_rate=0.0, shift_size=0):
         super().__init__()
@@ -621,6 +637,7 @@ class ClapAudioLayer(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinStage with Swin->ClapAudio
+# ClapAudioStage：Swin 阶段，堆叠若干 ClapAudioLayer
 class ClapAudioStage(GradientCheckpointingLayer):
     def __init__(self, config, dim, input_resolution, depth, num_heads, drop_path, downsample):
         super().__init__()
@@ -677,6 +694,7 @@ class ClapAudioStage(GradientCheckpointingLayer):
 
 
 # Copied from transformers.models.swin.modeling_swin.SwinPatchMerging with Swin->ClapAudio
+# ClapAudioPatchMerging：patch 合并下采样（空间分辨率减半）
 class ClapAudioPatchMerging(nn.Module):
     """
     Patch Merging Layer.
@@ -717,6 +735,7 @@ class ClapAudioPatchMerging(nn.Module):
         return input_feature
 
 
+# ClapAudioEncoder：HTS-AT 层级编码器，含 AFF 与长音频 fusion
 class ClapAudioEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -902,6 +921,7 @@ class ClapAudioEncoder(nn.Module):
         )
 
 
+# ClapProjectionLayer：线性投影到联合 embedding 空间
 class ClapProjectionLayer(nn.Module):
     def __init__(self, config: ClapAudioConfig | ClapTextConfig):
         super().__init__()
@@ -921,6 +941,7 @@ class ClapProjectionLayer(nn.Module):
 
 
 # Copied from transformers.models.roberta.modeling_roberta.RobertaEmbeddings with Roberta->ClapText, persistent=False->persistent=True
+# ClapTextEmbeddings：词/位置/segment 嵌入求和
 class ClapTextEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
@@ -1024,6 +1045,7 @@ class ClapTextEmbeddings(nn.Module):
 
 
 # Copied from transformers.models.align.modeling_align.eager_attention_forward
+# eager_attention_forward：标准 eager 多头注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -1047,6 +1069,7 @@ def eager_attention_forward(
 
 
 # Copied from transformers.models.align.modeling_align.AlignTextSelfAttention with Align->Clap
+# ClapTextSelfAttention：RoBERTa 风格双向自注意力
 class ClapTextSelfAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1102,6 +1125,7 @@ class ClapTextSelfAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertSelfOutput
+# ClapTextSelfOutput：文本注意力输出 + 残差 LayerNorm
 class ClapTextSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1117,6 +1141,7 @@ class ClapTextSelfOutput(nn.Module):
 
 
 # Copied from transformers.models.align.modeling_align.AlignTextAttention with Align->Clap
+# ClapTextAttention：文本自注意力子层封装
 class ClapTextAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1140,6 +1165,7 @@ class ClapTextAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertIntermediate
+# ClapTextIntermediate：文本 FFN 中间层
 class ClapTextIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1156,6 +1182,7 @@ class ClapTextIntermediate(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOutput
+# ClapTextOutput：文本 FFN 输出 + 残差 LayerNorm
 class ClapTextOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1171,6 +1198,7 @@ class ClapTextOutput(nn.Module):
 
 
 # Copied from transformers.models.align.modeling_align.AlignTextLayer with Align->Clap
+# ClapTextLayer：文本 Transformer 单层
 class ClapTextLayer(GradientCheckpointingLayer):
     def __init__(self, config):
         super().__init__()
@@ -1205,6 +1233,7 @@ class ClapTextLayer(GradientCheckpointingLayer):
 
 
 # Copied from transformers.models.align.modeling_align.AlignTextEncoder with Align->Clap
+# ClapTextEncoder：堆叠 num_hidden_layers 个文本层
 class ClapTextEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1231,6 +1260,7 @@ class ClapTextEncoder(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPooler
+# ClapTextPooler：取 [CLS] token 经 Dense+Tanh 池化
 class ClapTextPooler(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1247,6 +1277,7 @@ class ClapTextPooler(nn.Module):
 
 
 @auto_docstring
+# ClapPreTrainedModel：权重初始化与 checkpoint 映射基类
 class ClapPreTrainedModel(PreTrainedModel):
     config: ClapConfig
     base_model_prefix = "clap"
@@ -1279,6 +1310,7 @@ class ClapPreTrainedModel(PreTrainedModel):
             init.copy_(module.relative_position_index, module.create_relative_position_index())
 
 
+# ClapAudioModel：仅 HTS-AT 音频编码塔
 class ClapAudioModel(ClapPreTrainedModel):
     config: ClapAudioConfig
     main_input_name = "input_features"
@@ -1343,6 +1375,7 @@ class ClapAudioModel(ClapPreTrainedModel):
     .. _*Attention is all you need*: https://huggingface.co/papers/1706.03762
     """
 )
+# ClapTextModel：仅 RoBERTa 文本编码塔
 class ClapTextModel(ClapPreTrainedModel):
     config: ClapTextConfig
     input_modalities = ("text",)
@@ -1429,6 +1462,7 @@ class ClapTextModel(ClapPreTrainedModel):
 
 
 @auto_docstring
+# ClapModel：完整双塔 CLAP，输出音文相似度与可选对比损失
 class ClapModel(ClapPreTrainedModel):
     config: ClapConfig
 
@@ -1620,6 +1654,7 @@ class ClapModel(ClapPreTrainedModel):
 
 
 @auto_docstring
+# ClapTextModelWithProjection：文本塔 + 投影头，输出 text_embeds
 class ClapTextModelWithProjection(ClapPreTrainedModel):
     config: ClapTextConfig
     input_modalities = ("text",)
@@ -1682,6 +1717,7 @@ class ClapTextModelWithProjection(ClapPreTrainedModel):
 
 
 @auto_docstring
+# ClapAudioModelWithProjection：音频塔 + 投影头，输出 audio_embeds
 class ClapAudioModelWithProjection(ClapPreTrainedModel):
     config: ClapAudioConfig
     main_input_name = "input_features"

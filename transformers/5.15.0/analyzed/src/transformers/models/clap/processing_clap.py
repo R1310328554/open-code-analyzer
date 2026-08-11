@@ -23,7 +23,9 @@ logger = logging.get_logger(__name__)
 
 
 @auto_docstring
+# ClapProcessor：组合 feature_extractor 与 tokenizer
 class ClapProcessor(ProcessorMixin):
+# __init__：注册特征提取器与分词器子模块
     def __init__(self, feature_extractor, tokenizer):
         super().__init__(feature_extractor, tokenizer)
 
