@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T01:26:40Z",
-  "files": [
-    "src/transformers/models/granite/modeling_granite.py",
-    "src/transformers/models/granite/modular_granite.py",
-    "src/transformers/models/granite4_vision/__init__.py",
-    "src/transformers/models/granite4_vision/configuration_granite4_vision.py",
-    "src/transformers/models/granite4_vision/modeling_granite4_vision.py",
-    "src/transformers/models/granite4_vision/modular_granite4_vision.py",
-    "src/transformers/models/granite4_vision/processing_granite4_vision.py",
-    "src/transformers/models/granite_speech/__init__.py",
-    "src/transformers/models/granite_speech/configuration_granite_speech.py",
-    "src/transformers/models/granite_speech/feature_extraction_granite_speech.py",
-    "src/transformers/models/granite_speech/modeling_granite_speech.py",
-    "src/transformers/models/granite_speech/processing_granite_speech.py",
-    "src/transformers/models/granite_speech_plus/__init__.py",
-    "src/transformers/models/granite_speech_plus/configuration_granite_speech_plus.py",
-    "src/transformers/models/granite_speech_plus/modeling_granite_speech_plus.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1689,
-  "done": 975
+  "done": 990
 }
