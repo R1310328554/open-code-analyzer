@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T03:07:48Z",
   "files": [
-    "src/transformers/models/roberta/modeling_roberta.py",
-    "src/transformers/models/roberta/modular_roberta.py",
-    "src/transformers/models/roberta/tokenization_roberta.py",
-    "src/transformers/models/roberta/tokenization_roberta_old.py",
-    "src/transformers/models/roberta_prelayernorm/__init__.py",
-    "src/transformers/models/roberta_prelayernorm/configuration_roberta_prelayernorm.py",
-    "src/transformers/models/roberta_prelayernorm/modeling_roberta_prelayernorm.py",
-    "src/transformers/models/roc_bert/__init__.py",
-    "src/transformers/models/roc_bert/configuration_roc_bert.py",
-    "src/transformers/models/roc_bert/modeling_roc_bert.py",
-    "src/transformers/models/roc_bert/tokenization_roc_bert.py",
-    "src/transformers/models/roformer/__init__.py",
-    "src/transformers/models/roformer/configuration_roformer.py",
-    "src/transformers/models/roformer/modeling_roformer.py",
-    "src/transformers/models/roformer/tokenization_roformer.py",
     "src/transformers/models/roformer/tokenization_utils.py",
     "src/transformers/models/rt_detr/__init__.py",
     "src/transformers/models/rt_detr/configuration_rt_detr.py",
@@ -33,5 +18,5 @@
     "src/transformers/models/rwkv/configuration_rwkv.py"
   ],
   "remaining_pending": 699,
-  "done": 1950
+  "done": 1965
 }
