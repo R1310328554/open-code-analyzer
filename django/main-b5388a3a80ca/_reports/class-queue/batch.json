@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T05:02:57Z",
-  "files": [
-    "django/contrib/gis/gdal/prototypes/__init__.py",
-    "django/contrib/gis/gdal/prototypes/ds.py",
-    "django/contrib/gis/gdal/prototypes/errcheck.py",
-    "django/contrib/gis/gdal/prototypes/generation.py",
-    "django/contrib/gis/gdal/prototypes/geom.py",
-    "django/contrib/gis/gdal/prototypes/raster.py",
-    "django/contrib/gis/gdal/prototypes/srs.py",
-    "django/contrib/gis/gdal/raster/__init__.py",
-    "django/contrib/gis/gdal/raster/band.py",
-    "django/contrib/gis/gdal/raster/base.py",
-    "django/contrib/gis/gdal/raster/const.py",
-    "django/contrib/gis/gdal/raster/source.py",
-    "django/contrib/gis/gdal/srs.py",
-    "django/contrib/gis/geoip2.py",
-    "django/contrib/gis/geometry.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 552,
-  "done": 375
+  "done": 390
 }
