@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 图像分类 Pipeline：ViT/ResNet 等模型预测类别与置信度
 from typing import Any, Union, overload
 
 import numpy as np
@@ -52,6 +53,7 @@ def softmax(_outputs):
 
 
 # Copied from transformers.pipelines.text_classification.ClassificationFunction
+# ClassificationFunction：后处理激活函数枚举 sigmoid/softmax/none
 class ClassificationFunction(ExplicitEnum):
     SIGMOID = "sigmoid"
     SOFTMAX = "softmax"
@@ -70,6 +72,7 @@ class ClassificationFunction(ExplicitEnum):
             - `"softmax"`: Applies the softmax function on the output.
             - `"none"`: Does not apply any function on the output.""",
 )
+# ImageClassificationPipeline：图像分类 Pipeline，top-k 标签排序
 class ImageClassificationPipeline(Pipeline):
     """
     Image classification pipeline using any `AutoModelForImageClassification`. This pipeline predicts the class of an

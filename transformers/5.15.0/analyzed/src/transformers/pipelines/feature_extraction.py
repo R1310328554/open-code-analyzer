@@ -1,3 +1,4 @@
+# 文本特征提取 Pipeline：Transformer 隐层向量作为下游特征
 from typing import Any
 
 from ..utils import add_end_docstrings
@@ -12,6 +13,7 @@ from .base import GenericTensor, Pipeline, build_pipeline_init_args
         return_tensors (`bool`, *optional*):
             If `True`, returns a tensor according to the specified framework, otherwise returns a list.""",
 )
+# FeatureExtractionPipeline：文本特征提取，返回 last_hidden_state
 class FeatureExtractionPipeline(Pipeline):
     """
     Feature extraction pipeline uses no model head. This pipeline extracts the hidden states from the base

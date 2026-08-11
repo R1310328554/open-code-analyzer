@@ -1,3 +1,4 @@
+# 表格问答 Pipeline：结构化表格上的自然语言查询
 import collections
 import types
 
@@ -21,6 +22,7 @@ if is_torch_available():
     )
 
 
+# TableQuestionAnsweringArgumentHandler：表格 QA 参数处理器，解析 table/query
 class TableQuestionAnsweringArgumentHandler(ArgumentHandler):
     """
     Handles arguments for the TableQuestionAnsweringPipeline
@@ -75,6 +77,7 @@ class TableQuestionAnsweringArgumentHandler(ArgumentHandler):
 
 
 @add_end_docstrings(build_pipeline_init_args(has_tokenizer=True))
+# TableQuestionAnsweringPipeline：表格 QA Pipeline，TAPAS 等模型
 class TableQuestionAnsweringPipeline(Pipeline):
     """
     Table Question Answering pipeline using a `ModelForTableQuestionAnswering`. This pipeline is only available in

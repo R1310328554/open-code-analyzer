@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 关键点匹配 Pipeline：双图特征点对应与置信度
 from collections.abc import Sequence
 from typing import Any, TypeAlias, TypedDict, Union
 
@@ -31,11 +32,13 @@ if is_vision_available():
 ImagePair: TypeAlias = Sequence[Union["Image.Image", str]]
 
 
+# Keypoint：关键点坐标 TypedDict（x, y）
 class Keypoint(TypedDict):
     x: float
     y: float
 
 
+# Match：匹配结果 TypedDict，含双图关键点与 score
 class Match(TypedDict):
     keypoint_image_0: Keypoint
     keypoint_image_1: Keypoint
@@ -66,6 +69,7 @@ def validate_image_pairs(images: Any) -> Sequence[Sequence[ImagePair]]:
     raise ValueError(error_message)
 
 
+# KeypointMatchingPipeline：双图关键点匹配 Pipeline
 class KeypointMatchingPipeline(Pipeline):
     """
     Keypoint matching pipeline using any `AutoModelForKeypointMatching`. This pipeline matches keypoints between two images.

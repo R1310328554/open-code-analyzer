@@ -1,3 +1,4 @@
+# 图像分割 Pipeline：语义/实例/全景分割掩码与标签
 from typing import Any, Union, overload
 
 import numpy as np
@@ -24,6 +25,7 @@ logger = logging.get_logger(__name__)
 
 
 @add_end_docstrings(build_pipeline_init_args(has_image_processor=True))
+# ImageSegmentationPipeline：分割 Pipeline，语义/实例/全景掩码
 class ImageSegmentationPipeline(Pipeline):
     """
     Image segmentation pipeline using any `AutoModelForXXXSegmentation`. This pipeline predicts masks of objects and

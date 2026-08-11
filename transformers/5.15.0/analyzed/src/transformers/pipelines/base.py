@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# Pipeline 基础设施：模型加载、批处理、数据格式与任务注册表
 from __future__ import annotations
 
 import collections
@@ -363,6 +364,7 @@ def load_assistant_model(
     return loaded_assistant_model, loaded_assistant_tokenizer
 
 
+# PipelineException：Pipeline 调用异常，携带 task/model/reason
 class PipelineException(Exception):
     """
     Raised by a [`Pipeline`] when handling __call__.
@@ -380,6 +382,7 @@ class PipelineException(Exception):
         self.model = model
 
 
+# ArgumentHandler：Pipeline 参数解析抽象基类
 class ArgumentHandler(ABC):
     """
     Base interface for handling arguments for each [`~pipelines.Pipeline`].
@@ -390,6 +393,7 @@ class ArgumentHandler(ABC):
         raise NotImplementedError()
 
 
+# PipelineDataFormat：Pipeline 输入输出格式基类（JSON/CSV/pipe）
 class PipelineDataFormat:
     """
     Base class for all the pipeline supported data format both for reading and writing. Supported data formats
@@ -503,6 +507,7 @@ class PipelineDataFormat:
             raise KeyError(f"Unknown reader {format} (Available reader are json/csv/pipe)")
 
 
+# CsvPipelineDataFormat：CSV 读写与多列映射
 class CsvPipelineDataFormat(PipelineDataFormat):
     """
     Support for pipelines using CSV data format.
@@ -547,6 +552,7 @@ class CsvPipelineDataFormat(PipelineDataFormat):
                 writer.writerows(data)
 
 
+# JsonPipelineDataFormat：JSON 文件读写
 class JsonPipelineDataFormat(PipelineDataFormat):
     """
     Support for pipelines using JSON file format.
@@ -589,6 +595,7 @@ class JsonPipelineDataFormat(PipelineDataFormat):
             json.dump(data, f)
 
 
+# PipedPipelineDataFormat：stdin/stdout 管道格式
 class PipedPipelineDataFormat(PipelineDataFormat):
     """
     Read data from piped input to the python process. For multi columns data, columns should separated by \t
@@ -637,6 +644,7 @@ class PipedPipelineDataFormat(PipelineDataFormat):
         return super().save_binary(data)
 
 
+# _ScikitCompat：sklearn/Keras 兼容接口 transform/predict
 class _ScikitCompat(ABC):
     """
     Interface layer for the Scikit and Keras compatibility.
@@ -751,6 +759,7 @@ if is_torch_available():
         has_tokenizer=True, has_feature_extractor=True, has_image_processor=True, has_processor=True
     )
 )
+# Pipeline：所有任务 Pipeline 基类，预处理→推理→后处理
 class Pipeline(_ScikitCompat, PushToHubMixin):
     """
     The Pipeline class is the class from which all pipelines inherit. Refer to this class for methods shared across
@@ -1307,6 +1316,7 @@ if Pipeline.push_to_hub.__doc__ is not None:
     ).replace(".from_pretrained", "")
 
 
+# ChunkPipeline：分块预处理 Pipeline，支持生成器式 preprocess
 class ChunkPipeline(Pipeline):
     def run_single(self, inputs, preprocess_params, forward_params, postprocess_params):
         all_outputs = []
@@ -1339,6 +1349,7 @@ class ChunkPipeline(Pipeline):
         return final_iterator
 
 
+# PipelineRegistry：任务名→Pipeline 实现注册与查询
 class PipelineRegistry:
     def __init__(self, supported_tasks: dict[str, Any], task_aliases: dict[str, str]) -> None:
         self.supported_tasks = supported_tasks

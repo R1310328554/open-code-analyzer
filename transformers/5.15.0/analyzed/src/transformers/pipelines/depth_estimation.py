@@ -1,3 +1,4 @@
+# 深度估计 Pipeline：单目图像逐像素深度预测
 from typing import Any, Union, overload
 
 from ..utils import (
@@ -22,6 +23,7 @@ logger = logging.get_logger(__name__)
 
 
 @add_end_docstrings(build_pipeline_init_args(has_image_processor=True))
+# DepthEstimationPipeline：深度估计 Pipeline，输出张量与可视化深度图
 class DepthEstimationPipeline(Pipeline):
     """
     Depth estimation pipeline using any `AutoModelForDepthEstimation`. This pipeline predicts the depth of an image.

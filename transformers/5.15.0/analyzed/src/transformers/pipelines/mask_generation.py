@@ -1,3 +1,4 @@
+# 自动掩码生成 Pipeline：SAM 式全图候选掩码
 from collections import defaultdict
 from typing import TYPE_CHECKING, Any, Union, overload
 
@@ -33,6 +34,7 @@ logger = logging.get_logger(__name__)
         output_rle_masks (`bool`, *optional*, default to `False`):
             Whether or not to output the masks in `RLE` format""",
 )
+# MaskGenerationPipeline：SAM 自动掩码生成，分块 points_per_batch
 class MaskGenerationPipeline(ChunkPipeline):
     """
     Automatic mask generation for images using `SamForMaskGeneration`. This pipeline predicts binary masks for an

@@ -1,3 +1,4 @@
+# PyTorch Pipeline 工具：Dataset/IterableDataset 批处理与分块迭代
 import numpy as np
 import torch
 from torch.utils.data import Dataset, IterableDataset
@@ -5,6 +6,7 @@ from torch.utils.data import Dataset, IterableDataset
 from ..utils.generic import ModelOutput
 
 
+# PipelineDataset：将 preprocess 包装为 torch Dataset
 class PipelineDataset(Dataset):
     def __init__(self, dataset, process, params):
         self.dataset = dataset
@@ -20,6 +22,7 @@ class PipelineDataset(Dataset):
         return processed
 
 
+# PipelineIterator：DataLoader 上逐步 infer 的 IterableDataset
 class PipelineIterator(IterableDataset):
     def __init__(self, loader, infer, params, loader_batch_size=None):
         """
@@ -153,6 +156,7 @@ class PipelineIterator(IterableDataset):
             return processed
 
 
+# PipelineChunkIterator：展开 preprocess 生成器的嵌套迭代
 class PipelineChunkIterator(PipelineIterator):
     def __init__(self, loader, infer, params, loader_batch_size=None):
         """
@@ -198,6 +202,7 @@ class PipelineChunkIterator(PipelineIterator):
         return processed
 
 
+# PipelinePackIterator：按 is_last 重新打包分块输出
 class PipelinePackIterator(PipelineIterator):
     """
     Roughly equivalent to
@@ -298,6 +303,7 @@ class PipelinePackIterator(PipelineIterator):
         return accumulator
 
 
+# KeyDataset：从 Dataset 抽取单列/单键
 class KeyDataset(Dataset):
     def __init__(self, dataset: Dataset, key: str):
         self.dataset = dataset
@@ -310,6 +316,7 @@ class KeyDataset(Dataset):
         return self.dataset[i][self.key]
 
 
+# KeyPairDataset：抽取 text/text_pair 键对
 class KeyPairDataset(Dataset):
     def __init__(self, dataset: Dataset, key1: str, key2: str):
         self.dataset = dataset

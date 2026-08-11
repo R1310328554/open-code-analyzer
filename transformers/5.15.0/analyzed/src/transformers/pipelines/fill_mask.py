@@ -1,3 +1,4 @@
+# 掩码填充 Pipeline：MLM 模型预测 [MASK] 候选词
 from typing import Any, overload
 
 import numpy as np
@@ -25,6 +26,7 @@ logger = logging.get_logger(__name__)
         tokenizer_kwargs (`dict`, *optional*):
             Additional dictionary of keyword arguments passed along to the tokenizer.""",
 )
+# FillMaskPipeline：掩码语言建模 Pipeline，top-k 候选与序列
 class FillMaskPipeline(Pipeline):
     _load_processor = False
     _load_image_processor = False

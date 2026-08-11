@@ -1,3 +1,4 @@
+# 目标检测 Pipeline：边界框、类别与置信度
 from typing import TYPE_CHECKING, Any, Union, overload
 
 from ..utils import add_end_docstrings, is_torch_available, is_vision_available, logging, requires_backends
@@ -23,6 +24,7 @@ logger = logging.get_logger(__name__)
 
 
 @add_end_docstrings(build_pipeline_init_args(has_image_processor=True))
+# ObjectDetectionPipeline：目标检测 Pipeline，边界框与标签
 class ObjectDetectionPipeline(Pipeline):
     """
     Object detection pipeline using any `AutoModelForObjectDetection`. This pipeline predicts bounding boxes of objects

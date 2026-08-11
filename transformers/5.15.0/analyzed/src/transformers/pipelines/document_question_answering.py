@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 文档问答 Pipeline：图像+OCR 布局上的抽取式/生成式问答
 import re
 from typing import Any, Union, overload
 
@@ -196,6 +197,7 @@ def apply_tesseract(image: "Image.Image", lang: str | None, tesseract_config: st
     return words, normalized_boxes
 
 
+# ModelType：文档 QA 模型类型枚举（LayoutLM/LayoutLMv2v3/VED）
 class ModelType(ExplicitEnum):
     LayoutLM = "layoutlm"
     LayoutLMv2andv3 = "layoutlmv2andv3"
@@ -203,6 +205,7 @@ class ModelType(ExplicitEnum):
 
 
 @add_end_docstrings(build_pipeline_init_args(has_image_processor=True, has_tokenizer=True))
+# DocumentQuestionAnsweringPipeline：文档 QA Pipeline，图像+问题→答案
 class DocumentQuestionAnsweringPipeline(ChunkPipeline):
     # TODO: Update task_summary docs to include an example with document QA and then update the first sentence
     """

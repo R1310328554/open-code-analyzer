@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 图文转文本 Pipeline：图像条件生成与多轮对话
 import enum
 from typing import Any, Union, overload
 
@@ -43,6 +44,7 @@ logger = logging.get_logger(__name__)
 IMAGE_TOKEN = "<image>"
 
 
+# ReturnType：生成返回类型枚举：张量/新文本/完整文本
 class ReturnType(enum.Enum):
     TENSORS = 0
     NEW_TEXT = 1
@@ -50,6 +52,7 @@ class ReturnType(enum.Enum):
 
 
 @add_end_docstrings(build_pipeline_init_args(has_processor=True))
+# ImageTextToTextPipeline：图文生成 Pipeline，支持聊天多轮对话
 class ImageTextToTextPipeline(Pipeline):
     """
     Image-text-to-text pipeline using an `AutoModelForImageTextToText`. This pipeline generates text given an image and text.

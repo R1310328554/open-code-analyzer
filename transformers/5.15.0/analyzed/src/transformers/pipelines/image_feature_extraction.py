@@ -1,3 +1,4 @@
+# 图像特征提取 Pipeline：视觉骨干隐层或 pooler 输出
 from typing import Any, Union
 
 from ..utils import add_end_docstrings, is_vision_available
@@ -20,6 +21,7 @@ if is_vision_available():
             Whether or not to return the pooled output. If `False`, the model will return the raw hidden states.
     """,
 )
+# ImageFeatureExtractionPipeline：图像特征提取，可选 pooler 池化
 class ImageFeatureExtractionPipeline(Pipeline):
     """
     Image feature extraction pipeline uses no model head. This pipeline extracts the hidden states from the base

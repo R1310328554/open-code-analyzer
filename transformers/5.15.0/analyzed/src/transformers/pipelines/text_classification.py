@@ -1,3 +1,4 @@
+# 文本分类 Pipeline：序列级标签 softmax/sigmoid 打分
 import inspect
 from typing import Any
 
@@ -21,6 +22,7 @@ def softmax(_outputs):
     return shifted_exp / shifted_exp.sum(axis=-1, keepdims=True)
 
 
+# ClassificationFunction：后处理激活函数枚举 sigmoid/softmax/none
 class ClassificationFunction(ExplicitEnum):
     SIGMOID = "sigmoid"
     SOFTMAX = "softmax"
@@ -40,6 +42,7 @@ class ClassificationFunction(ExplicitEnum):
             - `"softmax"`: Applies the softmax function on the output.
             - `"none"`: Does not apply any function on the output.""",
 )
+# TextClassificationPipeline：文本分类 Pipeline，单/多标签打分
 class TextClassificationPipeline(Pipeline):
     """
     Text classification pipeline using any `ModelForSequenceClassification`. See the [sequence classification
