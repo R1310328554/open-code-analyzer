@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T01:23:27Z",
   "files": [
-    "src/transformers/models/glmga/image_processing_pil_glmga.py",
-    "src/transformers/models/glmga/modular_glmga.py",
-    "src/transformers/models/glmga/video_processing_glmga.py",
-    "src/transformers/models/glpn/__init__.py",
-    "src/transformers/models/glpn/configuration_glpn.py",
-    "src/transformers/models/glpn/image_processing_glpn.py",
-    "src/transformers/models/glpn/image_processing_pil_glpn.py",
-    "src/transformers/models/glpn/modeling_glpn.py",
-    "src/transformers/models/got_ocr2/__init__.py",
-    "src/transformers/models/got_ocr2/configuration_got_ocr2.py",
-    "src/transformers/models/got_ocr2/image_processing_got_ocr2.py",
-    "src/transformers/models/got_ocr2/image_processing_pil_got_ocr2.py",
-    "src/transformers/models/got_ocr2/modeling_got_ocr2.py",
-    "src/transformers/models/got_ocr2/modular_got_ocr2.py",
-    "src/transformers/models/got_ocr2/processing_got_ocr2.py",
     "src/transformers/models/gpt2/__init__.py",
     "src/transformers/models/gpt2/configuration_gpt2.py",
     "src/transformers/models/gpt2/modeling_gpt2.py",
@@ -33,5 +18,5 @@
     "src/transformers/models/gpt_neox/tokenization_gpt_neox.py"
   ],
   "remaining_pending": 1719,
-  "done": 930
+  "done": 945
 }
