@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T05:05:10Z",
   "files": [
-    "django/contrib/gis/geos/__init__.py",
-    "django/contrib/gis/geos/base.py",
-    "django/contrib/gis/geos/collections.py",
-    "django/contrib/gis/geos/coordseq.py",
-    "django/contrib/gis/geos/error.py",
-    "django/contrib/gis/geos/factory.py",
-    "django/contrib/gis/geos/geometry.py",
-    "django/contrib/gis/geos/io.py",
-    "django/contrib/gis/geos/libgeos.py",
-    "django/contrib/gis/geos/linestring.py",
-    "django/contrib/gis/geos/mutable_list.py",
-    "django/contrib/gis/geos/point.py",
-    "django/contrib/gis/geos/polygon.py",
-    "django/contrib/gis/geos/prepared.py",
-    "django/contrib/gis/geos/prototypes/__init__.py",
     "django/contrib/gis/geos/prototypes/coordseq.py",
     "django/contrib/gis/geos/prototypes/errcheck.py",
     "django/contrib/gis/geos/prototypes/geom.py",
@@ -33,5 +18,5 @@
     "django/contrib/gis/ptr.py"
   ],
   "remaining_pending": 522,
-  "done": 390
+  "done": 405
 }
