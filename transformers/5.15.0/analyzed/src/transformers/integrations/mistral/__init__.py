@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING
 from ...utils import _LazyModule
 
 
+# _import_structure：MistralConverter、convert_tekken_tokenizer、resolve_mistral_format
 _import_structure = {
     "tokenizer": [
         "MistralConverter",
@@ -36,4 +37,5 @@ if TYPE_CHECKING:
 else:
     import sys
 
+# 非 TYPE_CHECKING 时注册 _LazyModule，避免 eager import mistral 子模块
     sys.modules[__name__] = _LazyModule(__name__, globals()["__file__"], _import_structure, module_spec=__spec__)

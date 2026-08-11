@@ -100,7 +100,9 @@ from ..training_args import ParallelMode  # noqa: E402
 from ..utils import ENV_VARS_TRUE_VALUES, is_torch_xla_available  # noqa: E402
 
 
+# # 以下为各实验跟踪/调参库的可用性探测函数
 # Integration functions:
+# is_wandb_available：检测 wandb 是否已安装且可导入 run 属性
 def is_wandb_available():
     if importlib.util.find_spec("wandb") is not None:
         import wandb
@@ -120,6 +122,7 @@ def is_clearml_available():
     return importlib.util.find_spec("clearml") is not None
 
 
+# is_comet_available：检测 comet_ml 版本与 API Key 配置
 def is_comet_available():
     if _is_comet_installed is False:
         return False
@@ -146,10 +149,12 @@ def is_comet_available():
     return True
 
 
+# is_tensorboard_available：检测 tensorboard 或 tensorboardX
 def is_tensorboard_available():
     return importlib.util.find_spec("tensorboard") is not None or importlib.util.find_spec("tensorboardX") is not None
 
 
+# is_optuna_available：检测 Optuna 超参搜索库
 def is_optuna_available():
     return importlib.util.find_spec("optuna") is not None
 
@@ -158,6 +163,7 @@ def is_ray_available():
     return importlib.util.find_spec("ray") is not None
 
 
+# is_ray_tune_available：检测 Ray Tune 分布式 HPO
 def is_ray_tune_available():
     if not is_ray_available():
         return False
@@ -172,6 +178,7 @@ def is_azureml_available():
     return importlib.util.find_spec("azureml.core.run") is not None
 
 
+# is_mlflow_available：检测 MLflow（可通过 DISABLE_MLFLOW_INTEGRATION 禁用）
 def is_mlflow_available():
     if os.getenv("DISABLE_MLFLOW_INTEGRATION", "FALSE").upper() == "TRUE":
         return False
@@ -182,6 +189,7 @@ def is_dagshub_available():
     return None not in [importlib.util.find_spec("dagshub"), importlib.util.find_spec("mlflow")]
 
 
+# is_neptune_available：检测 Neptune 实验跟踪
 def is_neptune_available():
     return _has_neptune
 
@@ -214,6 +222,7 @@ def is_kubeflow_available():
     return os.getenv("KUBEFLOW_TRAINER_SERVER_URL") is not None
 
 
+# hp_params：从 Optuna/Ray/W&B trial 对象提取超参 dict
 def hp_params(trial):
     if is_optuna_available():
         import optuna
@@ -232,6 +241,7 @@ def hp_params(trial):
     raise RuntimeError(f"Unknown type for trial {trial.__class__}")
 
 
+# run_hp_search_optuna：使用 Optuna study 驱动 Trainer 超参搜索
 def run_hp_search_optuna(trainer, n_trials: int, direction: str, **kwargs) -> BestRun:
     import optuna
     from accelerate.utils.memory import release_memory
@@ -297,6 +307,7 @@ def run_hp_search_optuna(trainer, n_trials: int, direction: str, **kwargs) -> Be
         return None
 
 
+# run_hp_search_ray：使用 Ray Tune 调度多 trial 训练
 def run_hp_search_ray(trainer, n_trials: int, direction: str, **kwargs) -> BestRun:
     """
     Environment:
@@ -441,6 +452,7 @@ def run_hp_search_ray(trainer, n_trials: int, direction: str, **kwargs) -> BestR
     return best_run
 
 
+# run_hp_search_wandb：使用 W&B sweep 进行超参搜索
 def run_hp_search_wandb(trainer, n_trials: int, direction: str, **kwargs) -> BestRun:
     if not is_wandb_available():
         raise ImportError("This function needs wandb installed: `pip install wandb`")
@@ -516,6 +528,7 @@ def run_hp_search_wandb(trainer, n_trials: int, direction: str, **kwargs) -> Bes
     return BestRun(best_trial["run_id"], best_trial["objective"], best_trial["hyperparameters"], sweep_id)
 
 
+# get_available_reporting_integrations：返回当前环境可用的 report_to 集成名列表
 def get_available_reporting_integrations():
     integrations = []
     if is_azureml_available() and not is_mlflow_available():
@@ -547,6 +560,7 @@ def get_available_reporting_integrations():
     return integrations
 
 
+# rewrite_logs：将 Trainer 日志键名转换为各集成期望的格式
 def rewrite_logs(d):
     new_d = {}
     eval_prefix = "eval_"
@@ -574,6 +588,7 @@ def default_logdir() -> str:
     return os.path.join("runs", current_time + "_" + socket.gethostname())
 
 
+# TensorBoardCallback：将训练指标写入 TensorBoard
 class TensorBoardCallback(TrainerCallback):
     """
     A [`TrainerCallback`] that sends the logs to [TensorBoard](https://www.tensorflow.org/tensorboard).
@@ -692,6 +707,7 @@ class WandbLogModel(str, Enum):
         return WandbLogModel.FALSE
 
 
+# WandbCallback：W&B 实验记录、模型 artifact 与 sweep 支持
 class WandbCallback(TrainerCallback):
     """
     A [`TrainerCallback`] that logs metrics, media, model checkpoints to [Weight and Biases](https://www.wandb.com/).
@@ -932,6 +948,7 @@ class WandbCallback(TrainerCallback):
             self._wandb.log(metrics)
 
 
+# TrackioCallback：Trackio 轻量实验跟踪回调
 class TrackioCallback(TrainerCallback):
     """
     A [`TrainerCallback`] that logs metrics to Trackio.
@@ -1130,6 +1147,7 @@ class TrackioCallback(TrainerCallback):
         self._point_model_card_at_space(model)
 
 
+# CometCallback：Comet ML 实验与超参记录
 class CometCallback(TrainerCallback):
     """
     A [`TrainerCallback`] that sends the logs to [Comet ML](https://www.comet.com/site/).
@@ -1283,6 +1301,7 @@ class AzureMLCallback(TrainerCallback):
                     self.azureml_run.log(k, v, description=k)
 
 
+# MLflowCallback：MLflow 指标、参数与模型注册
 class MLflowCallback(TrainerCallback):
     """
     A [`TrainerCallback`] that sends the logs to [MLflow](https://www.mlflow.org/). Can be disabled by setting
@@ -1524,6 +1543,7 @@ class NeptuneMissingConfiguration(Exception):
         )
 
 
+# NeptuneCallback：Neptune.ai 实验跟踪与 artifact 上传
 class NeptuneCallback(TrainerCallback):
     """TrainerCallback that sends the logs to [Neptune](https://app.neptune.ai).
 
@@ -1840,6 +1860,7 @@ class CodeCarbonCallback(TrainerCallback):
             self.tracker.stop()
 
 
+# ClearMLCallback：ClearML 任务与模型版本管理
 class ClearMLCallback(TrainerCallback):
     """
     A [`TrainerCallback`] that sends the logs to [ClearML](https://clear.ml/).
@@ -2154,6 +2175,7 @@ class FlyteCallback(TrainerCallback):
             Deck("Log History", TableRenderer().to_html(log_history_df))
 
 
+# DVCLiveCallback：DVC Live 指标与实验对比
 class DVCLiveCallback(TrainerCallback):
     """
     A [`TrainerCallback`] that sends the logs to [DVCLive](https://www.dvc.org/doc/dvclive).
@@ -2259,6 +2281,7 @@ class DVCLiveCallback(TrainerCallback):
             self.live.end()
 
 
+# SwanLabCallback：SwanLab 实验跟踪回调
 class SwanLabCallback(TrainerCallback):
     """
     A [`TrainerCallback`] that logs metrics, media, model checkpoints to [SwanLab](https://swanlab.cn/).
@@ -2433,6 +2456,7 @@ class SwanLabCallback(TrainerCallback):
             self._swanlab.log(metrics)
 
 
+# KubeflowCallback：Kubeflow Trainer 分布式训练指标上报
 class KubeflowCallback(TrainerCallback):
     """
     A [`TrainerCallback`] that reports training progress to [Kubeflow Trainer](https://github.com/kubeflow/trainer).
@@ -2658,6 +2682,7 @@ INTEGRATION_TO_CALLBACK = {
 }
 
 
+# get_reporting_integration_callbacks：按 report_to 列表实例化对应 TrainerCallback
 def get_reporting_integration_callbacks(report_to):
     if report_to is None:
         return []

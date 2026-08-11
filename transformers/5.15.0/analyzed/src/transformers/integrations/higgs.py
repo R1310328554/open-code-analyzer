@@ -33,6 +33,7 @@ if is_hadamard_available():
 logger = logging.get_logger(__name__)
 
 
+# pad_to_block：将张量指定维度填充到 Hadamard 块大小的整数倍
 def pad_to_block(tensor, dims, had_block_size, value=0):
     pad_dims = [0 for _ in range(2 * len(tensor.shape))]
     for dim in dims:
@@ -44,6 +45,7 @@ def pad_to_block(tensor, dims, had_block_size, value=0):
     return nn.functional.pad(tensor, pad_dims, "constant", value)
 
 
+# get_higgs_grid：返回 HIGGS 量化码本网格（预计算的 EDEN 格点坐标）
 def get_higgs_grid(p: int, n: int) -> "torch.Tensor":
     if (p, n) == (2, 256):
         return torch.tensor(
@@ -436,6 +438,7 @@ def get_higgs_grid(p: int, n: int) -> "torch.Tensor":
         raise NotImplementedError(f"Unsupported p={p}, n={n}")
 
 
+# quantize_with_higgs：对 2D 权重执行 HIGGS 量化，输出 FLUTE 所需 packed 参数
 def quantize_with_higgs(weight, bits: int = 4, p: int = 2, group_size: int = 256, hadamard_size: int = 1024):
     assert len(weight.shape) == 2, "Only 2D weights are supported for now"
 
@@ -487,6 +490,7 @@ def quantize_with_higgs(weight, bits: int = 4, p: int = 2, group_size: int = 256
     }
 
 
+# HiggsLinear：FLUTE qgemm_v2 前向的 HIGGS 量化 Linear 替换层
 class HiggsLinear(torch.nn.Module):
     def __init__(
         self,
@@ -529,6 +533,7 @@ class HiggsLinear(torch.nn.Module):
         self.workspace = None  # must be set externally to be reused among layers
         self.tune_metadata: TuneMetaData = None  # must be set externally because architecture dependent
 
+# forward：padding 输入后调用 qgemm_v2（需外部设置 workspace 与 tune_metadata）
     def forward(self, x):
         x = pad_to_block(x, [-1], self.hadamard_size)
 
@@ -547,6 +552,7 @@ class HiggsLinear(torch.nn.Module):
         )
 
 
+# replace_with_higgs_linear：将 eligible nn.Linear 替换为 HiggsLinear（meta device 上实例化）
 def replace_with_higgs_linear(model, modules_to_not_convert: list[str] | None = None, quantization_config=None):
     """
     Public method that replaces the Linear layers of the given model with HIGGS quantized layers.
@@ -590,6 +596,7 @@ def replace_with_higgs_linear(model, modules_to_not_convert: list[str] | None = 
     return model
 
 
+# dequantize_higgs：通过单位矩阵前向将 HiggsLinear 还原为标准 nn.Linear
 def dequantize_higgs(model, current_key_name=None):
     """
     Dequantizes the HiggsLinear layers in the given model by replacing them with standard torch.nn.Linear layers.

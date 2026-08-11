@@ -21,4 +21,5 @@ from ..distributed.fsdp import (
 )
 
 
+# __all__：对外暴露的 FSDP 辅助函数（检测启用、checkpoint kwargs、PEFT 插件更新）
 __all__ = ["get_fsdp_ckpt_kwargs", "is_fsdp_enabled", "is_fsdp_managed_module", "update_fsdp_plugin_peft"]

@@ -23,17 +23,20 @@ logger = logging.get_logger(__name__)
 
 
 # Name all modules inside the model
+# autoname_modules：为所有子模块设置 .name 属性以便按 linear_tag 匹配
 def autoname_modules(model):
     for name, module in model.named_modules():
         module.name = name
 
 
 # Get the linear_tag from a module name. For example: model.layers.31.self_attn.k_proj -> self_attn.k_proj
+# name_to_linear_tag：从完整模块路径提取 linear_tag（如 self_attn.k_proj）
 def name_to_linear_tag(name):
     return ".".join([n for n in name.split(".") if ((n not in ["model", "layers"]) and (not n.isnumeric()))])
 
 
 # Get all linear tags available
+# get_linear_tags：收集模型中所有 Linear/HQQLinear 的 linear_tag 集合
 def get_linear_tags(model):
     if is_hqq_available():
         from hqq.core.quantize import HQQLinear
@@ -45,6 +48,7 @@ def get_linear_tags(model):
     return list(linear_tags)
 
 
+# _prepare_for_hqq_linear：递归为 Linear 注入 quant_config 与 W_q/meta 占位
 def _prepare_for_hqq_linear(model, patch_params, has_been_replaced, current_key_name=None):
     for name, module in model.named_children():
         if current_key_name is None:
@@ -82,6 +86,7 @@ def _prepare_for_hqq_linear(model, patch_params, has_been_replaced, current_key_
     return model, has_been_replaced
 
 
+# prepare_for_hqq_linear：构建 linear_tag→量化参数映射并准备 HQQ 量化
 def prepare_for_hqq_linear(model, quantization_config=None, modules_to_not_convert=None, has_been_replaced=False):
     """
     Prepares nn.Linear layers for HQQ quantization.

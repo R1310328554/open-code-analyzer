@@ -32,17 +32,20 @@ logger = logging.get_logger(__name__)
 _SENTINEL = object()
 
 
+# AmbiguousGlobalPerLayerAttributeError：在全局 config 上读取可能逐层不同的属性时抛出
 class AmbiguousGlobalPerLayerAttributeError(RuntimeError):
     """Raised when a per-layer attribute is read from a heterogeneous global config."""
 
 
 @dataclass
+# _HeterogeneitySpec：内部规格，保存 per_layer_overrides 与属性集合
 class _HeterogeneitySpec:
     per_layer_overrides: dict[int, dict[str, Any]]
     per_layer_attributes: set[str]
     explicit_per_layer_attributes: set[str]
 
 
+# _normalize_layer_overrides：规范化 skip 列表等 per-layer 覆盖字段
 def _normalize_layer_overrides(layer_overrides: dict[str, Any]) -> dict[str, Any]:
     normalized = copy.deepcopy(layer_overrides)
 
@@ -61,6 +64,7 @@ def _normalize_layer_overrides(layer_overrides: dict[str, Any]) -> dict[str, Any
     return normalized
 
 
+# _validate_layer_indices：校验层索引在 [0, num_hidden_layers) 范围内
 def _validate_layer_indices(config: PreTrainedConfig, per_layer_overrides: dict[int, dict[str, Any]]) -> None:
     if not per_layer_overrides:
         return
@@ -76,6 +80,7 @@ def _validate_layer_indices(config: PreTrainedConfig, per_layer_overrides: dict[
         )
 
 
+# _validate_sliding_window_and_attention_chunk_size：互斥属性 sliding_window 与 attention_chunk_size 校验
 def _validate_sliding_window_and_attention_chunk_size(
     config: PreTrainedConfig, per_layer_overrides: dict[int, dict[str, Any]]
 ) -> None:
@@ -159,6 +164,7 @@ def _modify_config_and_create_heterogeneity_spec(
     return heterogeneity_spec
 
 
+# _apply_heterogeneous_config：验证 overrides 并在 config 上挂载 _HeterogeneitySpec
 def _apply_heterogeneous_config(
     config: PreTrainedConfig,
     per_layer_config: dict[int | str, dict[str, Any]],
@@ -191,6 +197,7 @@ def _apply_heterogeneous_config(
     config._heterogeneity_spec = _modify_config_and_create_heterogeneity_spec(config, normalized_per_layer_overrides)
 
 
+# _get_layer_config：复制全局 config 并应用单层 override 得到层专用 config
 def _get_layer_config(
     config: PreTrainedConfig,
     layer_overrides: dict[str, Any],
@@ -208,6 +215,7 @@ def _get_layer_config(
     return output_config
 
 
+# _PerLayerConfigView：按层索引或 layer_type 字符串访问 PreTrainedConfig 的序列视图
 class _PerLayerConfigView(Sequence["PreTrainedConfig"]):
     def __init__(self, config: PreTrainedConfig) -> None:
         self._config = config
@@ -280,6 +288,7 @@ def _get_explicit_per_layer_overrides(config: PreTrainedConfig) -> dict[int, dic
     return explicit_per_layer_overrides
 
 
+# HeterogeneousConfigMixin：PreTrainedConfig 混入，管理 per_layer_config 属性访问与 to_dict 输出
 class HeterogeneousConfigMixin:
     """Mixin for heterogeneous per-layer config behavior.
 
@@ -288,6 +297,7 @@ class HeterogeneousConfigMixin:
     access, key iteration, and serialization.
     """
 
+# __getattribute__：阻止直接读取可能逐层不同的全局属性（除非显式允许）
     def __getattribute__(self, key: str) -> Any:
         # In heterogeneous configs, per-layer attributes are ambiguous on the global config.
         # Callers must read them from a concrete layer unless they explicitly opt into the global value.
@@ -316,6 +326,7 @@ class HeterogeneousConfigMixin:
         return hasattr(self, "_heterogeneity_spec")
 
     @property
+# per_layer_config：返回 _PerLayerConfigView，支持 config.per_layer_config[i]
     def per_layer_config(self) -> Sequence[PreTrainedConfig]:
         return _PerLayerConfigView(self)
 
@@ -359,6 +370,7 @@ class HeterogeneousConfigMixin:
         else:
             yield from keys
 
+# _update_heterogeneous_to_dict_output：序列化时将 per_layer_config 写入 dict
     def _update_heterogeneous_to_dict_output(self, d: dict[str, Any]) -> None:
         if not self.is_heterogeneous:
             return

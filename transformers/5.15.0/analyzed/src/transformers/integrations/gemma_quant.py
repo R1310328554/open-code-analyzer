@@ -20,6 +20,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+# apply_srq：静态范围量化（SRQ）舍入与裁剪，scale=0 时跳过
 def apply_srq(x: torch.Tensor, scale: torch.Tensor, bits: int = 8) -> torch.Tensor:
     """Apply Static Range Quantization rounding and clipping (in x's dtype).
 
@@ -36,6 +37,7 @@ def apply_srq(x: torch.Tensor, scale: torch.Tensor, bits: int = 8) -> torch.Tens
     return torch.where(calibrated, x_q, x)
 
 
+# _unpack_int4：从 uint8 存储解包 int4 权重（每字节 2 值）
 def _unpack_int4(packed: torch.Tensor, original_width: int) -> torch.Tensor:
     """Unpack int4 values from uint8 storage. Two values per byte.
 
@@ -50,6 +52,7 @@ def _unpack_int4(packed: torch.Tensor, original_width: int) -> torch.Tensor:
     return interleaved[..., :original_width]
 
 
+# _unpack_int2：从 uint8 存储解包 int2 权重（每字节 4 值）
 def _unpack_int2(packed: torch.Tensor, original_width: int) -> torch.Tensor:
     """Unpack int2 values from uint8 storage. Four values per byte.
 
@@ -64,6 +67,7 @@ def _unpack_int2(packed: torch.Tensor, original_width: int) -> torch.Tensor:
     return interleaved[..., :original_width]
 
 
+# QuantizedLinear：打包 int 权重 + per-row scale + 输入/输出 SRQ 的 Linear
 class QuantizedLinear(nn.Linear):
     """Linear layer with INT2/4/8 packed weights and SRQ activation rounding."""
 
@@ -94,6 +98,7 @@ class QuantizedLinear(nn.Linear):
         self.input_activation_scale = nn.Parameter(torch.tensor(0.0, dtype=torch.float32))
         self.output_activation_scale = nn.Parameter(torch.tensor(0.0, dtype=torch.float32))
 
+# _dequantize_weights：解包并按 scale 反量化权重矩阵
     def _dequantize_weights(self, dtype: torch.dtype | None = None) -> torch.Tensor:
         """Dequantize weights (handles int2/int4/int8 storage). If `dtype` is given,
         the math runs in that dtype; otherwise int×fp32 promotion gives fp32."""
@@ -107,6 +112,7 @@ class QuantizedLinear(nn.Linear):
             return int_weights * self.weight_scale
         return int_weights.to(dtype) * self.weight_scale.to(dtype)
 
+# forward：输入/输出 SRQ 后执行 linear
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = apply_srq(x, self.input_activation_scale)
         out = F.linear(x, self._dequantize_weights(x.dtype), self.bias)
@@ -119,6 +125,7 @@ class QuantizedLinear(nn.Linear):
         )
 
 
+# QuantizedEmbedding：打包 embedding 表，weight 属性返回反量化后的行
 class QuantizedEmbedding(nn.Module):
     """Embedding with INT2/4/8 packed table, per-row dequant scale, and architectural embed_scale.
 
@@ -156,6 +163,7 @@ class QuantizedEmbedding(nn.Module):
         self.embedding_quantized = nn.Parameter(embed_storage, requires_grad=False)
         self.embedding_scale = nn.Parameter(torch.ones(num_embeddings, 1, dtype=torch.float32))
 
+# # weight 属性：按需返回反量化 embedding 表，兼容 nn.Embedding 索引语义
     @property
     def weight(self) -> torch.Tensor:
         """Dequantized embedding table (no architectural `embed_scale` applied).
@@ -178,6 +186,7 @@ class QuantizedEmbedding(nn.Module):
         scale = scale_rows.repeat_interleave(block_size, dim=-1)
         return int_rows.to(self.output_dtype) * scale.to(self.output_dtype)
 
+# forward：索引打包表、反量化并乘以 embed_scale
     def forward(self, input_ids: torch.LongTensor) -> torch.Tensor:
         result = self._dequantize_weights(self.embedding_quantized[input_ids], self.embedding_scale[input_ids])
         return (result * self.scalar_embed_scale).to(self.output_dtype)
@@ -189,6 +198,7 @@ class QuantizedEmbedding(nn.Module):
         )
 
 
+# replace_with_quant_layers：遍历模型将 Linear/Embedding 替换为量化版本
 def replace_with_quant_layers(
     model: nn.Module,
     quantization_config=None,

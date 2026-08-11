@@ -1,3 +1,4 @@
+# FourOverSix 量化集成：加载 checkpoint 时将高精度权重转为 fouroversix 量化参数。
 import torch
 
 from ..quantizers.quantizers_utils import get_module_from_name
@@ -12,10 +13,12 @@ from transformers.utils.quantization_config import FourOverSixConfig
 from ..core_model_loading import ConversionOps
 
 
+# FourOverSixQuantize：权重转换 op，调用模块 get_quantized_parameters 并删除原 fp 权重
 class FourOverSixQuantize(ConversionOps):
     def __init__(self, hf_quantizer):
         self.hf_quantizer = hf_quantizer
 
+# convert：从 checkpoint 提取量化所需 4 个辅助值并返回量化张量字典
     def convert(
         self,
         input_dict: dict[str, torch.Tensor],
@@ -57,6 +60,7 @@ class FourOverSixQuantize(ConversionOps):
         }
 
 
+# adapt_fouroversix_config：将 HF FourOverSixConfig 映射为 fouroversix ModelQuantizationConfig
 def adapt_fouroversix_config(config: FourOverSixConfig):
     return ModelQuantizationConfig(
         activation_dtype=config.activation_dtype,

@@ -57,11 +57,13 @@ _MISSING_KERNELS_MESSAGE = (
 )
 
 
+# _TRANSFORMERS_USE_HUB_KERNELS：环境变量 USE_HUB_KERNELS 控制是否启用 Hub kernel
 _TRANSFORMERS_USE_HUB_KERNELS = os.environ.get("USE_HUB_KERNELS", "YES").upper()
 _kernels_enabled = _TRANSFORMERS_USE_HUB_KERNELS in ENV_VARS_TRUE_VALUES
 
 
 # Maps from func name to the internal module path
+# _KERNELS_INTERNAL_PATH_MAPPINGS：函数名到 kernels 包内模块路径的映射
 _KERNELS_INTERNAL_PATH_MAPPINGS = {
     "chunk_gated_delta_rule": "ops.gated_delta_rule",
     "recurrent_gated_delta_rule": "ops.gated_delta_rule",
@@ -95,6 +97,7 @@ if is_kernels_available():
     )
     from kernels import use_kernelized_func as _kernels_use_kernelized_func
 
+# use_kernel_forward_from_hub：装饰器，从 Hub 替换层 forward（禁用时返回恒等装饰器）
     def use_kernel_forward_from_hub(layer_name: str):
         if _kernels_enabled:
             return _kernels_use_kernel_forward_from_hub(layer_name)
@@ -133,6 +136,7 @@ if is_kernels_available():
     # repositories are only constructed when the user explicitly opts in via `use_kernels=True`.
     _KERNEL_MAPPING_CACHE: dict | None = None
 
+# _build_kernel_mapping：构建 transformers 默认 LayerRepository 映射（Mamba/Liger/RMSNorm 等）
     def _build_kernel_mapping() -> dict:
         _KERNEL_MAPPING: dict[str, dict[Device | str, LayerRepository | dict[Mode, LayerRepository]]] = {
             "MultiScaleDeformableAttention": {
@@ -507,6 +511,7 @@ if is_kernels_available():
 
         return _KERNEL_MAPPING
 
+# get_kernel_mapping_transformers：懒加载并缓存默认 kernel 映射
     def get_kernel_mapping_transformers() -> dict:
         """Return the default transformers kernel mapping, building it lazily on first use."""
         global _KERNEL_MAPPING_CACHE
@@ -585,6 +590,7 @@ _HUB_KERNEL_MAPPING: dict[str, dict[str, str]] = {
 _KERNEL_MODULE_MAPPING: dict[str, ModuleType | None] = {}
 
 
+# is_kernel：判断 attn_implementation 是否为 Hub repo 格式的 kernel 名
 def is_kernel(attn_implementation: str | None) -> bool:
     """Check whether `attn_implementation` matches a kernel pattern from the hub."""
     return (
@@ -593,6 +599,7 @@ def is_kernel(attn_implementation: str | None) -> bool:
     )
 
 
+# load_and_register_attn_kernel：从 Hub 加载注意力 kernel 并注册到 ALL_ATTENTION_FUNCTIONS
 def load_and_register_attn_kernel(
     attn_implementation: str, attention_wrapper: Callable | None = None, allow_all_kernels: bool = False
 ) -> ModuleType | None:
@@ -671,6 +678,7 @@ def load_and_register_attn_kernel(
     return kernel
 
 
+# lazy_load_kernel：按需加载 finegrained-fp8/deep-gemm 等命名 kernel 模块
 def lazy_load_kernel(kernel_name: str, mapping: dict[str, ModuleType | None] = _KERNEL_MODULE_MAPPING):
     if kernel_name in mapping and isinstance(mapping[kernel_name], ModuleType):
         return mapping[kernel_name]
@@ -721,6 +729,7 @@ def lazy_load_kernel(kernel_name: str, mapping: dict[str, ModuleType | None] = _
     return mapping[kernel_name]
 
 
+# kernelize：按设备与训练/推理模式对模型应用 kernels.kernelize 替换
 def kernelize(model: "PreTrainedModel", mode: "Mode | None" = None):
     """Temporarily register hidden kernel wrappers so `kernelize` can discover and replace them."""
     if not is_kernels_available():
@@ -744,6 +753,7 @@ def kernelize(model: "PreTrainedModel", mode: "Mode | None" = None):
     model._use_kernels = True
 
 
+# get_kernel：带 transformers user_agent 的 Hub get_kernel 封装
 def get_kernel(
     kernel_name: str,
     revision: str | None = None,
@@ -761,6 +771,7 @@ def get_kernel(
     )
 
 
+# use_kernel_func_from_hub_with_fallback：Hub kernel 优先、原包次之、纯 Torch 兜底的函数装饰器
 def use_kernel_func_from_hub_with_fallback(func_name: str, package: str, internal_path: str | None = None):
     """
     The same as `use_kernel_forward_from_hub` but with the optional fallback to an original package if it exists, e.g.,
@@ -822,6 +833,7 @@ def allow_all_hub_kernels():
         ALLOW_ALL_KERNELS = False
 
 
+# make_parent_class_for_kernel_fusion：将多个子模块融合为单个 kernel 布局类的动态父类
 def make_parent_class_for_kernel_fusion(
     parent_cls: type,
     child_names: list[str],
@@ -848,6 +860,7 @@ def make_parent_class_for_kernel_fusion(
     return patched_cls
 
 
+# register_kernel_replacements_and_fusions：根据 KernelConfig 注册 monkey patch 与 checkpoint 转换映射
 def register_kernel_replacements_and_fusions(
     cls: "type[PreTrainedModel]",
     config: "PretrainedConfig",

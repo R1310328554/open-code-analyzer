@@ -32,6 +32,7 @@ from ..utils.logging import tqdm
 logger = logging.get_logger(__name__)
 
 
+# GGUF_CONFIG_MAPPING：各架构 GGUF metadata 键到 HF config 字段的映射
 GGUF_CONFIG_MAPPING = {
     "general": {
         "architecture": "model_type",
@@ -339,6 +340,7 @@ GGUF_CONFIG_MAPPING = {
     },
 }
 
+# GGUF_TOKENIZER_MAPPING：GGUF tokenizer 元数据到 HF tokenizer 配置的映射
 GGUF_TOKENIZER_MAPPING = {
     "tokenizer": {
         "ggml.model": "tokenizer_type",
@@ -363,6 +365,7 @@ GGUF_TOKENIZER_MAPPING = {
 }
 
 # We only need to set here the parameters that default to different values between transformers and llamacpp.
+# GGUF_CONFIG_DEFAULTS_MAPPING：GGUF 与 HF 默认值不一致时的覆盖项
 GGUF_CONFIG_DEFAULTS_MAPPING = {
     "qwen3_moe": {
         # NOTE: Qwen3MoeConfig defaults to false but llama.cpp needs this to be true.
@@ -379,6 +382,7 @@ GGUF_CONFIG_DEFAULTS_MAPPING = {
 }
 
 
+# _gguf_parse_value：按 GGUF 类型码解析二进制 metadata 值
 def _gguf_parse_value(_value, data_type):
     if not isinstance(data_type, list):
         data_type = [data_type]
@@ -403,6 +407,7 @@ def _gguf_parse_value(_value, data_type):
     return _value
 
 
+# GGUFTokenizerSkeleton：从 dict 构造 tokenizer 骨架，缺失 merges 时在线重建
 class GGUFTokenizerSkeleton:
     def __init__(self, dict_):
         for k, v in dict_.items():
@@ -446,6 +451,7 @@ class GGUFTokenizerSkeleton:
             self.unk_token_id = self.unknown_token_id
 
 
+# GGUFLlamaConverter：Llama/Llama3 GGUF BPE 词表转 tokenizers.Tokenizer
 class GGUFLlamaConverter(LlamaConverter):
     def __init__(self, tokenizer_dict):
         self.proto = GGUFTokenizerSkeleton(tokenizer_dict)
@@ -567,6 +573,7 @@ class GGUFLlamaConverter(LlamaConverter):
         return tokenizer
 
 
+# GGUFQwen2Converter：Qwen2 系列 GGUF 词表转换并注入 chat special tokens
 class GGUFQwen2Converter(Qwen2Converter):
     def __init__(self, tokenizer_dict):
         self.original_tokenizer = GGUFTokenizerSkeleton(tokenizer_dict)
@@ -587,6 +594,7 @@ class GGUFQwen2Converter(Qwen2Converter):
         return tokenizer
 
 
+# GGUFPhi3Converter：Phi-3 GGUF BPE 词表转换
 class GGUFPhi3Converter(LlamaConverter):
     def __init__(self, tokenizer_dict):
         self.proto = GGUFTokenizerSkeleton(tokenizer_dict)
@@ -662,6 +670,7 @@ class GGUFPhi3Converter(LlamaConverter):
         return tokenizer
 
 
+# GGUFGPTConverter：GPT-2/Bloom/Falcon 等 GPT 风格 GGUF 词表转换
 class GGUFGPTConverter(GPT2Converter):
     def __init__(self, tokenizer_dict):
         self.original_tokenizer = GGUFTokenizerSkeleton(tokenizer_dict)
@@ -674,6 +683,7 @@ class GGUFGPTConverter(GPT2Converter):
         return tokenizer
 
 
+# GGUFT5Converter：T5/UMT5 Unigram GGUF 词表转换
 class GGUFT5Converter(T5Converter):
     def __init__(self, tokenizer_dict):
         # set dummy data to avoid unnecessary merges calculation
@@ -737,6 +747,7 @@ class GGUFT5Converter(T5Converter):
         return tokenizer
 
 
+# GGUGemmaConverter：Gemma 系列 Unigram GGUF 词表转换（空白/tab 特殊处理）
 class GGUFGemmaConverter(GemmaConverter):
     def __init__(self, tokenizer_dict):
         # set dummy data to avoid unnecessary merges calculation
@@ -802,6 +813,7 @@ class GGUFGemmaConverter(GemmaConverter):
         return tokenizer
 
 
+# GGUF_TO_FAST_CONVERTERS：架构名到对应 GGUF converter 类的注册表
 GGUF_TO_FAST_CONVERTERS = {
     "llama": GGUFLlamaConverter,
     "qwen2": GGUFQwen2Converter,
@@ -827,6 +839,7 @@ GGUF_TO_FAST_CONVERTERS = {
 }
 
 
+# convert_gguf_tokenizer：按架构选择 converter 并返回 fast Tokenizer 与额外 kwargs
 def convert_gguf_tokenizer(architecture: str, tokenizer_dict) -> tuple[Tokenizer, dict]:
     """
     Utilities to convert a slow tokenizer instance in a fast tokenizer instance.

@@ -40,6 +40,7 @@ from ..utils.import_utils import (
 )
 
 
+# _TORCH_FLEX_USE_AUX：PyTorch 2.9+ 通过 AuxRequest 请求 LSE
 _TORCH_FLEX_USE_AUX = is_torch_greater_or_equal("2.9.0")
 
 
@@ -56,6 +57,7 @@ if is_torch_flex_attn_available():
 logger = logging.get_logger(__name__)
 
 
+# WrappedFlexAttention：单例包装 flex_attention，首次调用时 torch.compile
 class WrappedFlexAttention:
     """
     We are doing a singleton class so that flex attention is compiled once when it's first called.
@@ -65,6 +67,7 @@ class WrappedFlexAttention:
     _is_flex_compiled = False
     _compiled_flex_attention = None
 
+# __new__：确保全局仅存在一个编译实例
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
             # Create a new instance if one doesn't already exist
@@ -72,6 +75,7 @@ class WrappedFlexAttention:
         return cls._instance
 
     @torch.compiler.disable(recursive=False)
+# __init__：按训练/推理模式与 PyTorch 版本选择 compile 策略
     def __init__(self, training):
         """
         Initialize or update the singleton instance.
@@ -97,6 +101,7 @@ class WrappedFlexAttention:
         return self._compiled_flex_attention
 
 
+# get_flex_attention_lse_kwargs：跨版本兼容地请求 log-sum-exp 输出
 def get_flex_attention_lse_kwargs(return_lse: bool) -> dict[str, bool | Optional["AuxRequest"]]:
     """
     Requests the LSE from flex_attention in a version-agnostic fashion.
@@ -111,6 +116,7 @@ def get_flex_attention_lse_kwargs(return_lse: bool) -> dict[str, bool | Optional
     return {"return_lse": return_lse}
 
 
+# compile_friendly_flex_attention：在 dynamo 编译中安全调用 flex attention
 def compile_friendly_flex_attention(
     query: torch.Tensor,
     key: torch.Tensor,
@@ -133,6 +139,7 @@ Offset = torch.Tensor | int
 
 
 # TODO: deprecate / rename to make_flex_block_mask for clarity as it's not only causal anymore
+# make_flex_block_causal_mask：由 2D mask 构建 BlockMask（因果/分块/文档 packing）
 def make_flex_block_causal_mask(
     attention_mask_2d: torch.Tensor,
     attention_chunk_size: int | None = None,
@@ -187,6 +194,7 @@ def make_flex_block_causal_mask(
     # computation prior to the softmax. For sample packing, we need both the
     # logic for both causal mask and document mask. See PyTorch's official
     # blog post for more details: https://pytorch.org/blog/flexattention/#mask-mods
+# causal_mask_mod：组合因果 mask、文档 ID 与 padding
     def causal_mask_mod(batch_idx, head_idx, q_idx, kv_idx):
         """
         Defines the logic of a block causal mask by combining both a standard causal mask
@@ -200,6 +208,7 @@ def make_flex_block_causal_mask(
         final_mask = causal_mask & padding_mask & document_mask
         return final_mask
 
+# chunk_causal_mask_mod：分块注意力下的 chunk+因果 mask
     def chunk_causal_mask_mod(batch_idx, head_idx, q_idx, kv_idx):
         """
         Combines the chunk mask with the causal mask for chunked attention.
@@ -208,6 +217,7 @@ def make_flex_block_causal_mask(
         causal_doc_mask = causal_mask_mod(batch_idx, head_idx, q_idx, kv_idx)
         return chunk_mask & causal_doc_mask
 
+# default_mask_mod：编码器/编解码器用的非因果 mask
     def default_mask_mod(batch_idx, head_idx, q_idx, kv_idx):
         """
         Utilizes default attention mask to enable encoder and encoder-decoder
@@ -247,6 +257,7 @@ def make_flex_block_causal_mask(
     )
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -259,6 +270,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# flex_attention_forward：模型侧 flex attention 入口，支持 softcap/sink/GQA
 def flex_attention_forward(
     module: torch.nn.Module,
     query: torch.Tensor,
@@ -287,6 +299,7 @@ def flex_attention_forward(
     if score_mask is not None:
         score_mask = score_mask[:, :, :, : key.shape[-2]]
 
+# score_mod：在 softmax 前对 attention score 施加修改
     def score_mod(score, batch_idx, head_idx, q_idx, kv_idx):
         if softcap is not None:
             score = softcap * torch.tanh(score / softcap)

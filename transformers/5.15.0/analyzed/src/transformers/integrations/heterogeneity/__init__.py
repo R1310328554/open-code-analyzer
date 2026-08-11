@@ -16,7 +16,10 @@
 from .configuration_utils import AmbiguousGlobalPerLayerAttributeError, HeterogeneousConfigMixin
 
 
+# __all__：HeterogeneousConfigMixin 与 AmbiguousGlobalPerLayerAttributeError
 __all__ = [
     "AmbiguousGlobalPerLayerAttributeError",
     "HeterogeneousConfigMixin",
 ]
+# 模块 src/transformers/integrations/heterogeneity/__init__.py：Transformers 5.15.0 wave5a 中文文档注释。
+

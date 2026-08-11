@@ -48,6 +48,7 @@ logger = logging.get_logger(__name__)
 _metal_kernel = None
 
 
+# _get_metal_kernel：懒加载 Hugging Face Hub 上的 mlx-quantization-metal-kernels
 def _get_metal_kernel():
     """Lazily load the quantization-mlx kernel from Hugging Face Hub."""
     global _metal_kernel
@@ -70,6 +71,7 @@ def _get_metal_kernel():
 # ---------------------------------------------------------------------------
 
 
+# MetalLinear：仿射量化 Linear，forward 调用 affine_qmm_t Metal kernel
 class MetalLinear(nn.Linear):
     """
     A quantized linear layer that stores weights in affine uint32 packed format
@@ -112,6 +114,7 @@ class MetalLinear(nn.Linear):
         else:
             self.register_parameter("bias", None)
 
+# forward：uint32 权重走 Metal kernel，否则回退 F.linear
     def forward(self, input: torch.Tensor) -> torch.Tensor:
         if self.weight.dtype != torch.uint32:
             return nn.functional.linear(input, self.weight, self.bias)
@@ -132,6 +135,7 @@ class MetalLinear(nn.Linear):
         return output
 
 
+# replace_with_metal_linear：遍历模型将 eligible nn.Linear 替换为 MetalLinear
 def replace_with_metal_linear(
     model,
     modules_to_not_convert: list[str] | None = None,
@@ -182,6 +186,7 @@ def replace_with_metal_linear(
     return model
 
 
+# _affine_quantize_tensor：将 fp 权重按组仿射量化为 packed uint32 + scales + biases
 def _affine_quantize_tensor(weight: torch.Tensor, group_size: int, bits: int):
     """
     Quantize a 2-D float weight ``[N, K]`` into packed uint32 + scales + biases.
@@ -215,6 +220,7 @@ def _affine_quantize_tensor(weight: torch.Tensor, group_size: int, bits: int):
     return w_packed.to(torch.uint32), scales, biases
 
 
+# _affine_dequantize_tensor：从 packed uint32 反量化回 float 权重矩阵
 def _affine_dequantize_tensor(
     w_packed: torch.Tensor, scales: torch.Tensor, biases: torch.Tensor, group_size: int, bits: int
 ):
@@ -238,6 +244,7 @@ def _affine_dequantize_tensor(
     return w_deq.reshape(N, K)
 
 
+# MetalQuantize：WeightConverter 量化 op，fp weight→(weight, scales, qbiases)
 class MetalQuantize(ConversionOps):
     """
     Quantize a full-precision weight tensor into (weight, scales, qbiases).
@@ -270,6 +277,7 @@ class MetalQuantize(ConversionOps):
         }
 
 
+# MetalDequantize：dequantize=True 时将量化权重还原为 fp 以供非 MPS 设备
 class MetalDequantize(ConversionOps):
     """
     Dequantize (weight, scales, qbiases) back to a full-precision tensor.

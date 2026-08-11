@@ -30,6 +30,7 @@ from ..core_model_loading import ConversionOps
 from ..quantizers.quantizers_utils import get_module_from_name
 
 
+# FpQuantQuantize：加载未量化 checkpoint 时触发 module.pre_forward 完成量化
 class FpQuantQuantize(ConversionOps):
     def __init__(self, hf_quantizer):
         self.hf_quantizer = hf_quantizer
@@ -68,6 +69,7 @@ class FpQuantQuantize(ConversionOps):
         return {}
 
 
+# FpQuantDeserialize：反序列化 qweight/dqweight 等 FP-Quant 专用参数布局
 class FpQuantDeserialize(ConversionOps):
     def __init__(self, hf_quantizer):
         self.hf_quantizer = hf_quantizer
@@ -116,6 +118,7 @@ class FpQuantDeserialize(ConversionOps):
             }
 
 
+# adapt_fp_quant_config：将字符串 dtype 配置转为 fp_quant.FPQuantConfig 枚举
 def adapt_fp_quant_config(config: FPQuantConfig):
     if config.forward_dtype == "mxfp4":
         forward_dtype = FPQuantDtype.MXFP4
