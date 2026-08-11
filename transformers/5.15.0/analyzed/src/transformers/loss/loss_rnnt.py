@@ -20,6 +20,7 @@ from ..utils import is_torchaudio_available, logging
 logger = logging.get_logger(__name__)
 
 
+# rnnt_loss：联合网络 transducer 负对数似然，支持 mean_volume 等归约
 def rnnt_loss(
     logits: torch.Tensor,
     targets: torch.Tensor,
@@ -88,6 +89,7 @@ def rnnt_loss(
     return losses
 
 
+# ParakeetForRNNTLoss：Parakeet RNNT 模型 forward 损失入口
 def ParakeetForRNNTLoss(
     logits,
     labels,

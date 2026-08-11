@@ -25,6 +25,7 @@ if is_scipy_available():
 
 # Similar to the one used in `DeformableDetr` but we reduce with sum and normalize by num_boxes
 # instead of mean.
+# sigmoid_focal_loss：按 num_boxes 求和归一化的 focal 变体
 def sigmoid_focal_loss(
     inputs: torch.Tensor,
     targets: torch.Tensor,
@@ -64,6 +65,7 @@ def sigmoid_focal_loss(
     return loss.sum() / num_boxes
 
 
+# GroundingDinoHungarianMatcher：含 label_maps 的 bipartite 匹配
 class GroundingDinoHungarianMatcher(HungarianMatcher):
     @torch.no_grad()
     def forward(self, outputs, targets):
@@ -125,6 +127,7 @@ class GroundingDinoHungarianMatcher(HungarianMatcher):
         return [(torch.as_tensor(i, dtype=torch.int64), torch.as_tensor(j, dtype=torch.int64)) for i, j in indices]
 
 
+# GroundingDinoImageLoss：Grounding DINO 训练损失组合
 class GroundingDinoImageLoss(ImageLoss):
     """
     This class computes the losses for `GroundingDinoForObjectDetection`. The process happens in two steps: 1) we
@@ -214,6 +217,7 @@ class GroundingDinoImageLoss(ImageLoss):
         return losses
 
 
+# GroundingDinoForObjectDetectionLoss：模型 forward 损失封装
 def GroundingDinoForObjectDetectionLoss(
     logits,
     labels,

@@ -46,6 +46,7 @@ def _set_aux_loss2(
     ]
 
 
+# weighting_function：生成边界框回归的非均匀离散权重 W(n)
 def weighting_function(max_num_bins: int, up: torch.Tensor, reg_scale: int) -> torch.Tensor:
     """
     Generates the non-uniform Weighting Function W(n) for bounding box regression.
@@ -71,6 +72,7 @@ def weighting_function(max_num_bins: int, up: torch.Tensor, reg_scale: int) -> t
     return values
 
 
+# translate_gt：连续 GT 映射到分布 bin 索引与插值权重
 def translate_gt(gt: torch.Tensor, max_num_bins: int, reg_scale: int, up: torch.Tensor):
     """
     Decodes bounding box ground truth (GT) values into distribution-based GT representations.
@@ -134,6 +136,7 @@ def translate_gt(gt: torch.Tensor, max_num_bins: int, reg_scale: int, up: torch.
     return indices, weight_right, weight_left
 
 
+# bbox2distance：预测框到参考点的距离分布标签
 def bbox2distance(points, bbox, max_num_bins, reg_scale, up, eps=0.1):
     """
     Converts bounding box coordinates to distances from a reference point.
@@ -162,6 +165,7 @@ def bbox2distance(points, bbox, max_num_bins, reg_scale, up, eps=0.1):
     return four_lens.reshape(-1).detach(), weight_right.detach(), weight_left.detach()
 
 
+# DFineLoss：D-FINE 主损失，含 FGL/DDF 等分布回归项
 class DFineLoss(RTDetrLoss):
     """
     This class computes the losses for D-FINE. The process happens in two steps: 1) we compute hungarian assignment
@@ -313,6 +317,7 @@ class DFineLoss(RTDetrLoss):
         return loss_map[loss](outputs, targets, indices, num_boxes)
 
 
+# DFineForObjectDetectionLoss：模型 forward 输出的损失封装入口
 def DFineForObjectDetectionLoss(
     logits,
     labels,

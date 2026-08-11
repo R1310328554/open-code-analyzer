@@ -35,6 +35,7 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# to_local：将 DTensor 解包为本地分片，供 CUTLASS/Triton 等自定义内核使用
 def to_local(t):
     """Unwrap a `DTensor` to its local shard if needed; pass through otherwise.
 
@@ -49,6 +50,7 @@ def to_local(t):
     return t
 
 
+# initialize_tensor_parallelism：初始化 TP 设备网格与后端
 def initialize_tensor_parallelism(
     tp_plan: str | dict[str, str] | None, tp_size: int | None = None, device_mesh=None, device_map=None
 ):
@@ -90,6 +92,7 @@ def initialize_tensor_parallelism(
     return device_map, device_mesh
 
 
+# replace_layer_number_by_wildcard：层号替换为通配符以匹配 tp_plan
 def replace_layer_number_by_wildcard(name: str) -> str:
     """
     Replace the numbers in the `name` by wildcards, only if they are in-between dots (`.`) or if they are between
@@ -100,6 +103,7 @@ def replace_layer_number_by_wildcard(name: str) -> str:
     return re.sub(r"\.\d+(\.|$)", lambda m: ".*" + m.group(1), name)
 
 
+# _get_parameter_tp_plan：从 tp_plan 解析参数的分片策略
 def _get_parameter_tp_plan(parameter_name: str, tp_plan: dict[str, str], is_weight=True) -> str | None:
     """
     Get the TP style for a parameter from the TP plan.
@@ -139,6 +143,7 @@ if is_torch_available():
     }
 
 
+# _blocks_to_block_sizes：将块数或比例转为各块尺寸
 def _blocks_to_block_sizes(total_size: int, blocks: int | list[int]) -> list[int]:
     """
     Convert block count or proportions to block sizes.
@@ -165,6 +170,7 @@ def _blocks_to_block_sizes(total_size: int, blocks: int | list[int]) -> list[int
         return [single_size] * blocks
 
 
+# get_packed_weights：gate_up 等打包权重按 TP 交错分片
 def get_packed_weights(param, empty_param, device_mesh, rank, dim):
     """
     When weights are packed (gate_up_proj), we need to make sure each shard gets its correct share.
@@ -233,6 +239,7 @@ def get_packed_weights(param, empty_param, device_mesh, rank, dim):
         return tensor.to(str_to_dtype[slice_dtype])
 
 
+# repack_weights：DTensor 全量还原后重排为规范打包布局
 def repack_weights(
     packed_parameter: torch.Tensor,
     sharded_dim: int,  # The dimension index in the global tensor that was sharded
@@ -298,6 +305,7 @@ def repack_weights(
     return final_ordered_tensor
 
 
+# get_tensor_shard：沿指定维按 rank 提取本地分片
 def get_tensor_shard(param, empty_param, device_mesh, rank, dim, tensor_idx: int | None = None):
     """
     Generalized tensor sharding across a multi-dimensional device mesh.
@@ -428,6 +436,7 @@ def _split_along_last_dim(x, world_size):
 # ===================
 
 
+# _AllReduceBackward：前向恒等、反向 all-reduce（列并行前）
 class _AllReduceBackward(torch.autograd.Function):
     """Identity forward, all-reduce backward. Used before colwise layers (f in Megatron)."""
 
@@ -446,6 +455,7 @@ class _AllReduceBackward(torch.autograd.Function):
         return grad_output, None
 
 
+# _AllReduceForward：前向 all-reduce、反向恒等（行并行后）
 class _AllReduceForward(torch.autograd.Function):
     """All-reduce forward, identity backward. Used after rowwise layers (g in Megatron)."""
 
@@ -461,6 +471,7 @@ class _AllReduceForward(torch.autograd.Function):
         return grad_output, None
 
 
+# _AllGather：前向 all-gather、反向 split
 class _AllGather(torch.autograd.Function):
     """All-gather forward, split backward. Gathers sharded outputs."""
 
@@ -495,6 +506,7 @@ class _AllGather(torch.autograd.Function):
         return chunks[rank].contiguous(), None
 
 
+# _Split：前向 split、反向 all-gather
 class _Split(torch.autograd.Function):
     """Split forward, all-gather backward. Scatters replicated input."""
 
@@ -529,6 +541,7 @@ class _Split(torch.autograd.Function):
         return torch.cat(tensor_list, dim=last_dim).contiguous(), None
 
 
+# _ReduceScatter：序列并行用的 reduce-scatter 原语
 class _ReduceScatter(torch.autograd.Function):
     """Reduce-scatter forward, all-gather backward. For sequence parallel."""
 
@@ -678,6 +691,7 @@ class TensorParallelLayer:
         pass
 
 
+# ColwiseParallel：列并行，权重沿输出维分片
 class ColwiseParallel(TensorParallelLayer):
     """
     Column-wise parallel: weight is sharded on dim -2 (output features).
@@ -835,6 +849,7 @@ class MlaKvAProjParallel(TensorParallelLayer):
         distribute_module(module, device_mesh, output_fn=self._prepare_output_fn)
 
 
+# RowwiseParallel：行并行，权重沿输入维分片
 class RowwiseParallel(TensorParallelLayer):
     """
     Row-wise parallel: weight is sharded on dim -1 (input features).
@@ -901,6 +916,7 @@ class RowwiseParallel(TensorParallelLayer):
             module.in_features = self.get_expected_sharded_shape(shape)[1]
 
 
+# PackedColwiseParallel：融合 gate_up 等的列并行分片
 class PackedColwiseParallel(ColwiseParallel):
     """Packed column-wise parallel for fused weights like gate_up_proj."""
 
@@ -923,6 +939,7 @@ class PackedColwiseParallel(ColwiseParallel):
         return parameter.to(device=device, dtype=dtype)
 
 
+# PackedRowwiseParallel：融合权重的行并行分片
 class PackedRowwiseParallel(RowwiseParallel):
     """Packed row-wise parallel for fused weights like gate_up_proj."""
 
@@ -949,6 +966,7 @@ class PackedRowwiseParallel(RowwiseParallel):
         return parameter.to(device=device, dtype=dtype)
 
 
+# EmbeddingParallel：词表/隐藏维并行的 Embedding 分片与 mask
 class EmbeddingParallel(TensorParallelLayer):
     """EmbeddingParallel: shards embedding table, handles masked lookups for vocab parallelism."""
 
@@ -1030,6 +1048,7 @@ class EmbeddingParallel(TensorParallelLayer):
             module.embedding_dim = self.get_expected_sharded_shape((module.embedding_dim,))[0]
 
 
+# SequenceParallel：序列维分片，权重复制
 class SequenceParallel(TensorParallelLayer):
     """
     Sequence Parallel: input/output sharded on sequence dimension.
@@ -1055,6 +1074,7 @@ class SequenceParallel(TensorParallelLayer):
         return param[...].to(device=device, dtype=dtype)
 
 
+# GroupedGemmParallel：MoE 专家按 EP 秩加载
 class GroupedGemmParallel(TensorParallelLayer):
     """
     Applies Expert Parallelism to MoE experts by loading the correct experts on each device.
@@ -1100,6 +1120,7 @@ class GroupedGemmParallel(TensorParallelLayer):
             module.num_experts = self.get_expected_sharded_shape((self.empty_param.shape[0],))[0]
 
 
+# RouterParallel：MoE 路由分数重映射为本地专家索引
 class RouterParallel(TensorParallelLayer):
     """
     Allows to reshape the router scores to support running expert parallel.
@@ -1288,6 +1309,7 @@ class MoeIdentityExpertParallel(TensorParallelLayer):
         distribute_module(module, device_mesh, input_fn=self._prepare_input_fn)
 
 
+# ParallelInterface：TP 策略名到层实例的全局注册表
 class ParallelInterface(GeneralInterface):
     # Class instance object, so that a call to `register` can be reflected into all other files correctly, even if
     # a new instance is created (in order to locally override a given entry)
@@ -1397,6 +1419,7 @@ def gather_full_tensor(
     return torch.cat(gathered_tensors, dim=shard_dim)
 
 
+# gather_state_dict_for_save：保存前 all-gather 重建完整 checkpoint
 def gather_state_dict_for_save(
     state_dict: dict[str, torch.Tensor],
     tp_plan: dict[str, str],
@@ -1468,6 +1491,7 @@ def gather_state_dict_for_save(
     return result
 
 
+# add_tensor_parallel_hooks_to_module：post_init 时注册 TP 前后向 hook
 def add_tensor_parallel_hooks_to_module(
     model,
     module,
@@ -1506,6 +1530,7 @@ def add_tensor_parallel_hooks_to_module(
         module.__repr__ = lambda: f"{module.__repr__()}\nTP Plan: {current_module_plan}"
 
 
+# shard_and_distribute_module：from_pretrained 加载时按 rank 分片参数
 def shard_and_distribute_module(
     model, param, empty_param, parameter_name, param_casting_dtype, is_contiguous, rank, device_mesh
 ):
@@ -1590,6 +1615,7 @@ def verify_tp_plan(expected_keys: list[str], tp_plan: dict[str, str] | None):
         logger.warning(f"The following layers were not sharded: {', '.join(unsharded_layers)}")
 
 
+# apply_tensor_parallelism：按 tp_plan 为模型启用张量并行
 def apply_tensor_parallelism(model, tp_plan, distributed_config, device_mesh):
     """Apply tensor parallelism to a model according to the TP plan."""
     model._tp_size = distributed_config.tp_size

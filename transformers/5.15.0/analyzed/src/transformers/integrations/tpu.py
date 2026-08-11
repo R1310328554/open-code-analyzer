@@ -24,6 +24,7 @@ from ..utils import WEIGHTS_NAME, PushToHubMixin, is_torch_xla_available, loggin
 logger = logging.get_logger(__name__)
 
 
+# tpu_spmd_dataloader：为 MpDeviceLoader 配置 fsdp 轴 input_sharding
 def tpu_spmd_dataloader(dataloader: DataLoader):
     if is_torch_xla_available():
         import torch_xla.distributed.parallel_loader as pl
@@ -43,6 +44,7 @@ def tpu_spmd_dataloader(dataloader: DataLoader):
         return dataloader
 
 
+# wrap_model_xla_fsdp：FSDP v1/v2 自动 wrap 与 xm.optimizer_step 补丁
 def wrap_model_xla_fsdp(model, args, is_fsdp_xla_v2_enabled):
     """
     Wraps a model with XLA Fully Sharded Data Parallelism (FSDP).
@@ -162,6 +164,7 @@ def wrap_model_xla_fsdp(model, args, is_fsdp_xla_v2_enabled):
     return model
 
 
+# save_tpu_checkpoint：XLA 上分片保存或 consolidate 后 save_pretrained
 def save_tpu_checkpoint(model, args, accelerator, processing_class, is_fsdp_xla_v1_enabled, output_dir=None):
     """
     Saves a model checkpoint on TPU/XLA devices.

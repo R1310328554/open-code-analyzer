@@ -11,3 +11,5 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 模块 src/transformers/loss/__init__.py：Transformers 5.15.0 wave6a 中文文档注释。
+

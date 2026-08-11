@@ -33,6 +33,7 @@ if is_scipy_available():
 
 
 # Copied from transformers.models.mask2former.modeling_mask2former.sigmoid_cross_entropy_loss
+# sigmoid_cross_entropy_loss：逐 mask BCE 并除以 num_masks
 def sigmoid_cross_entropy_loss(inputs: torch.Tensor, labels: torch.Tensor, num_masks: int) -> torch.Tensor:
     r"""
     Args:
@@ -53,6 +54,7 @@ def sigmoid_cross_entropy_loss(inputs: torch.Tensor, labels: torch.Tensor, num_m
 
 
 # Copied from transformers.models.mask2former.modeling_mask2former.pair_wise_sigmoid_cross_entropy_loss
+# pair_wise_sigmoid_cross_entropy_loss：query 与 GT 掩码的成对 BCE
 def pair_wise_sigmoid_cross_entropy_loss(inputs: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
     r"""
     A pair wise version of the cross entropy loss, see `sigmoid_cross_entropy_loss` for usage.
@@ -81,6 +83,7 @@ def pair_wise_sigmoid_cross_entropy_loss(inputs: torch.Tensor, labels: torch.Ten
 
 
 # Copied from transformers.models.mask2former.modeling_mask2former.pair_wise_dice_loss
+# pair_wise_dice_loss：成对 dice 用于匈牙利掩码匹配
 def pair_wise_dice_loss(inputs: Tensor, labels: Tensor) -> Tensor:
     """
     A pair wise version of the dice loss, see `dice_loss` for usage.
@@ -104,6 +107,7 @@ def pair_wise_dice_loss(inputs: Tensor, labels: Tensor) -> Tensor:
 
 
 # Copied from transformers.models.mask2former.modeling_mask2former.sample_point
+# sample_point：grid_sample 包装，支持 3D 点坐标采样特征
 def sample_point(
     input_features: torch.Tensor, point_coordinates: torch.Tensor, add_dim=False, **kwargs
 ) -> torch.Tensor:
@@ -186,6 +190,7 @@ def sample_points_using_uncertainty(
     return point_coordinates
 
 
+# RfDetrHungarianMatcher：框+掩码联合代价的 bipartite 匹配
 class RfDetrHungarianMatcher(HungarianMatcher):
     def __init__(
         self,
@@ -291,6 +296,7 @@ class RfDetrHungarianMatcher(HungarianMatcher):
         return matched_indices
 
 
+# RfDetrImageLoss：RF-DETR 检测与分割联合损失
 class RfDetrImageLoss(LwDetrImageLoss):
     def __init__(self, matcher, num_classes, focal_alpha, losses, group_detr, mask_point_sample_ratio):
         super().__init__(matcher, num_classes, focal_alpha, losses, group_detr)
@@ -401,6 +407,7 @@ def _set_aux_loss(outputs_class, outputs_coord, outputs_masks):
     ]
 
 
+# RfDetrForSegmentationLoss：RF-DETR 分割模型损失入口
 def RfDetrForSegmentationLoss(
     logits,
     labels,

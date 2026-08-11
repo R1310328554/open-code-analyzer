@@ -31,6 +31,7 @@ if is_vision_available():
     from transformers.image_transforms import center_to_corners_format
 
 
+# dice_loss：实例/掩码分割用的 DICE 损失
 def dice_loss(inputs, targets, num_boxes):
     """
     Compute the DICE loss, similar to generalized IOU for masks
@@ -50,6 +51,7 @@ def dice_loss(inputs, targets, num_boxes):
     return loss.sum() / num_boxes
 
 
+# sigmoid_focal_loss：RetinaNet 风格 sigmoid focal 分类损失
 def sigmoid_focal_loss(inputs, targets, num_boxes, alpha: float = 0.25, gamma: float = 2):
     """
     Loss used in RetinaNet for dense detection: https://huggingface.co/papers/1708.02002.
@@ -82,6 +84,7 @@ def sigmoid_focal_loss(inputs, targets, num_boxes, alpha: float = 0.25, gamma: f
 
 
 # taken from https://github.com/facebookresearch/detr/blob/master/models/detr.py
+# ImageLoss：DETR 两阶段（匹配 + 监督）损失基类
 class ImageLoss(nn.Module):
     """
     This class computes the losses for DetrForObjectDetection/DetrForSegmentation. The process happens in two steps: 1)
@@ -282,6 +285,7 @@ class ImageLoss(nn.Module):
 
 
 # taken from https://github.com/facebookresearch/detr/blob/master/models/matcher.py
+# HungarianMatcher：预测 query 与 GT 框的线性分配匹配
 class HungarianMatcher(nn.Module):
     """
     This class computes an assignment between the targets and the predictions of the network.
@@ -388,6 +392,7 @@ def box_area(boxes: Tensor) -> Tensor:
 
 
 # modified from torchvision to also return the union
+# box_iou：轴对齐框 IoU 矩阵
 def box_iou(boxes1, boxes2):
     area1 = box_area(boxes1)
     area2 = box_area(boxes2)
@@ -404,6 +409,7 @@ def box_iou(boxes1, boxes2):
     return iou, union
 
 
+# generalized_box_iou：GIoU，用于回归与匹配代价
 def generalized_box_iou(boxes1, boxes2):
     """
     Generalized IoU from https://giou.stanford.edu/. The boxes should be in [x0, y0, x1, y1] (corner) format.
@@ -438,6 +444,7 @@ def _max_by_axis(the_list):
     return maxes
 
 
+# NestedTensor：变长图像 batch 的 padding 张量封装
 class NestedTensor:
     def __init__(self, tensors, mask: Tensor | None):
         self.tensors = tensors
@@ -459,6 +466,7 @@ class NestedTensor:
         return str(self.tensors)
 
 
+# nested_tensor_from_tensor_list：列表图像堆叠为 NestedTensor
 def nested_tensor_from_tensor_list(tensor_list: list[Tensor]):
     if tensor_list[0].ndim == 3:
         max_size = _max_by_axis([list(img.shape) for img in tensor_list])
@@ -481,6 +489,7 @@ def _set_aux_loss(outputs_class, outputs_coord):
     return [{"logits": a, "pred_boxes": b} for a, b in zip(outputs_class[:-1], outputs_coord[:-1])]
 
 
+# ForSegmentationLoss：DetrForSegmentation 检测+掩码损失入口
 def ForSegmentationLoss(
     logits, labels, device, pred_boxes, pred_masks, config, outputs_class=None, outputs_coord=None, **kwargs
 ):
@@ -521,6 +530,7 @@ def ForSegmentationLoss(
     return loss, loss_dict, auxiliary_outputs
 
 
+# ForObjectDetectionLoss：DetrForObjectDetection 前向损失入口
 def ForObjectDetectionLoss(
     logits, labels, device, pred_boxes, config, outputs_class=None, outputs_coord=None, **kwargs
 ):

@@ -1,3 +1,4 @@
+# Deformable DETR 损失：sigmoid 分类代价的匈牙利匹配与 ImageLoss 变体。
 import torch
 import torch.nn as nn
 
@@ -16,6 +17,7 @@ if is_scipy_available():
     from scipy.optimize import linear_sum_assignment
 
 
+# DeformableDetrHungarianMatcher：focal 风格分类代价的 bipartite 匹配
 class DeformableDetrHungarianMatcher(HungarianMatcher):
     @torch.no_grad()
     def forward(self, outputs, targets):
@@ -56,6 +58,7 @@ class DeformableDetrHungarianMatcher(HungarianMatcher):
         return [(torch.as_tensor(i, dtype=torch.int64), torch.as_tensor(j, dtype=torch.int64)) for i, j in indices]
 
 
+# DeformableDetrImageLoss：多尺度 Deformable DETR 训练损失
 class DeformableDetrImageLoss(ImageLoss):
     def __init__(self, matcher, num_classes, focal_alpha, losses):
         nn.Module.__init__(self)
@@ -115,6 +118,7 @@ class DeformableDetrImageLoss(ImageLoss):
         return losses
 
 
+# DeformableDetrForSegmentationLoss：分割头 + 检测联合损失
 def DeformableDetrForSegmentationLoss(
     logits, labels, device, pred_boxes, pred_masks, config, outputs_class=None, outputs_coord=None, **kwargs
 ):
@@ -156,6 +160,7 @@ def DeformableDetrForSegmentationLoss(
     return loss, loss_dict, auxiliary_outputs
 
 
+# DeformableDetrForObjectDetectionLoss：纯检测 forward 损失入口
 def DeformableDetrForObjectDetectionLoss(
     logits, labels, device, pred_boxes, config, outputs_class=None, outputs_coord=None, **kwargs
 ):

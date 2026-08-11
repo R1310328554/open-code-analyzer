@@ -1,10 +1,12 @@
 from pathlib import Path
 from typing import Any
 
+# tiktoken 集成：将 tiktoken Encoding 导出为 PretrainedTokenizerFast 配置。
 from transformers.convert_slow_tokenizer import TikTokenConverter
 from transformers.tokenization_utils_tokenizers import TIKTOKEN_VOCAB_FILE, TOKENIZER_FILE
 
 
+# convert_tiktoken_to_fast：dump BPE 词表并经由 TikTokenConverter 保存 fast tokenizer
 def convert_tiktoken_to_fast(encoding: Any, output_dir: str):
     """
     Converts given `tiktoken` encoding to `PretrainedTokenizerFast` and saves the configuration of converted tokenizer

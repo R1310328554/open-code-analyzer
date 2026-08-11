@@ -39,6 +39,7 @@ def _set_aux_loss(outputs_class, outputs_coord):
     return [{"logits": a, "pred_boxes": b} for a, b in zip(outputs_class, outputs_coord)]
 
 
+# RTDetrHungarianMatcher：RT-DETR 专用 focal/softmax 分类代价匹配
 class RTDetrHungarianMatcher(nn.Module):
     """This class computes an assignment between the targets and the predictions of the network
 
@@ -120,6 +121,7 @@ class RTDetrHungarianMatcher(nn.Module):
         return [(torch.as_tensor(i, dtype=torch.int64), torch.as_tensor(j, dtype=torch.int64)) for i, j in indices]
 
 
+# RTDetrLoss：RT-DETR 主损失（匹配 + 分类/框/GIoU）
 class RTDetrLoss(nn.Module):
     """
     This class computes the losses for RTDetr. The process happens in two steps: 1) we compute hungarian assignment
@@ -430,6 +432,7 @@ class RTDetrLoss(nn.Module):
         return losses
 
 
+# RTDetrForObjectDetectionLoss：RT-DETR 前向损失封装
 def RTDetrForObjectDetectionLoss(
     logits,
     labels,

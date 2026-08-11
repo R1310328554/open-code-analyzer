@@ -25,6 +25,7 @@ if is_vision_available():
     from transformers.image_transforms import center_to_corners_format
 
 
+# Deimv2Loss：IoU 加权软标签 + focal 权重的 MAL 分类损失
 class Deimv2Loss(DFineLoss):
     def __init__(self, config):
         super().__init__(config)
@@ -39,6 +40,7 @@ class Deimv2Loss(DFineLoss):
         self.mal_alpha = config.mal_alpha
         self.use_dense_one_to_one = config.use_dense_one_to_one
 
+# loss_labels_mal：用匹配框 IoU 构造软 one-hot 目标
     def loss_labels_mal(self, outputs, targets, indices, num_boxes):
         """Compute the Matching Aware Loss (MAL), which uses IoU-weighted soft labels
         instead of hard one-hot targets, with focal-style weighting controlled by `mal_alpha`.
@@ -73,6 +75,7 @@ class Deimv2Loss(DFineLoss):
         loss = loss.mean(1).sum() * src_logits.shape[1] / num_boxes
         return {"loss_mal": loss}
 
+# _get_dense_o2o_indices：合并辅助层 dense 一对一匹配索引
     def _get_dense_o2o_indices(self, indices, indices_aux_list):
         results = []
         for indices_aux in indices_aux_list:
@@ -187,6 +190,7 @@ class Deimv2Loss(DFineLoss):
         return losses
 
 
+# Deimv2ForObjectDetectionLoss：DEIMv2 模型损失计算入口
 def Deimv2ForObjectDetectionLoss(
     logits,
     labels,

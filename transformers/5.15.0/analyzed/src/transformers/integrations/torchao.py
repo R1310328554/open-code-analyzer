@@ -35,6 +35,7 @@ if is_torchao_available():
 logger = logging.get_logger(__name__)
 
 
+# _linear_extra_repr：Linear 模块展示 TorchAO 量化权重类型
 def _linear_extra_repr(self):
     from torchao.utils import TorchAOBaseTensor
 
@@ -45,10 +46,12 @@ def _linear_extra_repr(self):
         return f"in_features={self.weight.shape[1]}, out_features={self.weight.shape[0]}, weight={weight}"
 
 
+# TorchAoQuantize：权重加载后按 FqnToConfig 对模块执行 quantize_
 class TorchAoQuantize(ConversionOps):
     def __init__(self, hf_quantizer):
         self.hf_quantizer = hf_quantizer
 
+# _quantize：CPU offload 时临时迁 CUDA 完成量化再迁回
     def _quantize(self, module, config, *args, **kwargs):
         """Run quantize_, moving to CUDA first if CPU offloading is active.
 
@@ -67,6 +70,7 @@ class TorchAoQuantize(ConversionOps):
         else:
             quantize_(module, config, *args, **kwargs)
 
+# convert：绑定 Parameter、处理 untie embedding 并标记 _is_hf_initialized
     def convert(
         self,
         input_dict: dict[str, torch.Tensor],
@@ -162,6 +166,7 @@ class TorchAoQuantize(ConversionOps):
         return {"lm_head.weight": lm_head} if is_embedding_param and untie_embedding_weights else {}
 
 
+# TorchAoDeserialize：合并 qdata/scale 等分量重建 Float8 等子类张量
 class TorchAoDeserialize(ConversionOps):
     def __init__(self, hf_quantizer):
         self.hf_quantizer = hf_quantizer
