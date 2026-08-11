@@ -21,7 +21,10 @@ from ...utils import TransformersKwargs, auto_docstring
 from ...utils.generic import merge_with_config_defaults, torch_int
 from ...utils.output_capturing import capture_outputs
 from ..depth_anything.configuration_depth_anything import DepthAnythingConfig
-from ..depth_anything.modeling_depth_anything import (
+from ..depth_anything.modeling_depth
+
+# PromptDepthAnything 模块化定义：在 DepthAnything 上扩展提示深度分支
+_anything import (
     DepthAnythingDepthEstimationHead,
     DepthAnythingFeatureFusionLayer,
     DepthAnythingFeatureFusionStage,
@@ -31,11 +34,14 @@ from ..depth_anything.modeling_depth_anything import (
 )
 
 
+# PromptDepthAnythingConfig：配置类：继承 DepthAnything 并保留提示深度参数
 class PromptDepthAnythingConfig(DepthAnythingConfig):
     pass
 
 
+# PromptDepthAnythingLayer：提示深度卷积编码层
 class PromptDepthAnythingLayer(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PromptDepthAnythingConfig):
         super().__init__()
         self.convolution1 = nn.Conv2d(
@@ -67,6 +73,7 @@ class PromptDepthAnythingLayer(nn.Module):
             bias=True,
         )
 
+    # forward：前向计算主逻辑
     def forward(self, prompt_depth: torch.Tensor) -> torch.Tensor:
         hidden_state = self.convolution1(prompt_depth)
         hidden_state = self.activation1(hidden_state)
@@ -76,11 +83,14 @@ class PromptDepthAnythingLayer(nn.Module):
         return hidden_state
 
 
+# PromptDepthAnythingFeatureFusionLayer：融合层：注入 prompt_depth 到 RGB 特征
 class PromptDepthAnythingFeatureFusionLayer(DepthAnythingFeatureFusionLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PromptDepthAnythingConfig):
         super().__init__(config)
         self.prompt_depth_layer = PromptDepthAnythingLayer(config)
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_state, residual=None, size=None, prompt_depth=None):
         if residual is not None:
             if hidden_state.shape != residual.shape:
@@ -111,7 +121,9 @@ class PromptDepthAnythingFeatureFusionLayer(DepthAnythingFeatureFusionLayer):
         return hidden_state
 
 
+# PromptDepthAnythingFeatureFusionStage：融合阶段：逐层传递提示深度
 class PromptDepthAnythingFeatureFusionStage(DepthAnythingFeatureFusionStage):
+    # forward：前向计算主逻辑
     def forward(self, hidden_states, size=None, prompt_depth=None):
         # reversing the hidden_states, we start from the last
         hidden_states = hidden_states[::-1]
@@ -133,7 +145,9 @@ class PromptDepthAnythingFeatureFusionStage(DepthAnythingFeatureFusionStage):
         return fused_hidden_states
 
 
+# PromptDepthAnythingDepthEstimationHead：深度头：支持相对与度量深度输出
 class PromptDepthAnythingDepthEstimationHead(DepthAnythingDepthEstimationHead):
+    # forward：前向计算主逻辑
     def forward(self, hidden_states: list[torch.Tensor], patch_height: int, patch_width: int) -> torch.Tensor:
         hidden_states = hidden_states[-1]
 
@@ -157,6 +171,7 @@ class PromptDepthAnythingDepthEstimationHead(DepthAnythingDepthEstimationHead):
         return predicted_depth
 
 
+# PromptDepthAnythingPreTrainedModel：预训练基类
 @auto_docstring
 class PromptDepthAnythingPreTrainedModel(PreTrainedModel):
     config: PromptDepthAnythingConfig
@@ -166,7 +181,9 @@ class PromptDepthAnythingPreTrainedModel(PreTrainedModel):
     supports_gradient_checkpointing = True
 
 
+# PromptDepthAnythingReassembleLayer：重组层：通道投影与空间缩放
 class PromptDepthAnythingReassembleLayer(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PromptDepthAnythingConfig, channels: int, factor: int):
         super().__init__()
         self.projection = nn.Conv2d(in_channels=config.reassemble_hidden_size, out_channels=channels, kernel_size=1)
@@ -181,6 +198,7 @@ class PromptDepthAnythingReassembleLayer(nn.Module):
             stride = torch_int(1 / factor)
             self.resize = nn.Conv2d(channels, channels, kernel_size=3, stride=stride, padding=1)
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_state):
         hidden_state = self.projection(hidden_state)
         hidden_state = self.resize(hidden_state)
@@ -188,11 +206,14 @@ class PromptDepthAnythingReassembleLayer(nn.Module):
         return hidden_state
 
 
+# PromptDepthAnythingReassembleStage：重组阶段：继承 DepthAnything 多尺度结构
 class PromptDepthAnythingReassembleStage(DepthAnythingReassembleStage):
     pass
 
 
+# PromptDepthAnythingNeck：颈部：融合提示深度后的特征金字塔
 class PromptDepthAnythingNeck(DepthAnythingNeck):
+    # forward：前向计算主逻辑
     def forward(
         self,
         hidden_states: list[torch.Tensor],
@@ -227,10 +248,12 @@ class PromptDepthAnythingNeck(DepthAnythingNeck):
     Prompt Depth Anything Model with a depth estimation head on top (consisting of 3 convolutional layers) e.g. for KITTI, NYUv2.
     """
 )
+# PromptDepthAnythingForDepthEstimation：深度估计任务入口：RGB + 提示深度输入
 class PromptDepthAnythingForDepthEstimation(DepthAnythingForDepthEstimation):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向计算主逻辑
     def forward(
         self,
         pixel_values: torch.FloatTensor,

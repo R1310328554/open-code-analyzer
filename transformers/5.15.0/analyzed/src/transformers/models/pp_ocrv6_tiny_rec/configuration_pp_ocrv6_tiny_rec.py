@@ -22,11 +22,15 @@ from huggingface_hub.dataclasses import strict
 
 from ...backbone_utils import consolidate_backbone_kwargs_to_config
 from ...configuration_utils import PreTrainedConfig
-from ...utils import auto_docstring
+from ...utils import
+
+# PP-OCRv6 超轻量识别配置：精简隐藏维度与词表
+ auto_docstring
 from ..auto import AutoConfig
 
 
 @auto_docstring(checkpoint="PaddlePaddle/PP-OCRv6_tiny_rec_safetensors")
+# PPOCRV6TinyRecConfig：超轻量识别配置：120 维隐藏层与 6625 类输出
 @strict
 class PPOCRV6TinyRecConfig(PreTrainedConfig):
     r"""
@@ -40,6 +44,7 @@ class PPOCRV6TinyRecConfig(PreTrainedConfig):
     hidden_size: int = 120
     head_out_channels: int = 6625
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         self.backbone_config, kwargs = consolidate_backbone_kwargs_to_config(
             backbone_config=self.backbone_config,

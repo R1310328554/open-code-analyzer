@@ -29,6 +29,8 @@ from ...image_utils import (
 )
 from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import (
+
+# PromptDepthAnything Torchvision 图像预处理：批量缩放与深度提示对齐
     TensorType,
     auto_docstring,
     requires_backends,
@@ -42,6 +44,7 @@ import torch
 from torchvision.transforms.v2 import functional as tvF
 
 
+# PromptDepthAnythingImageProcessorKwargs：Torchvision 处理器关键字参数
 class PromptDepthAnythingImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     keep_aspect_ratio (`bool`, *optional*):
@@ -102,6 +105,7 @@ def _get_resize_output_image_size(
     return (new_height, new_width)
 
 
+# PromptDepthAnythingImageProcessor：Torchvision 后端：RGB 与 prompt_depth 联合预处理
 @auto_docstring
 class PromptDepthAnythingImageProcessor(TorchvisionBackend):
     model_input_names = ["pixel_values", "prompt_depth"]
@@ -120,6 +124,7 @@ class PromptDepthAnythingImageProcessor(TorchvisionBackend):
     prompt_scale_to_meter = 0.001
     valid_kwargs = PromptDepthAnythingImageProcessorKwargs
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, **kwargs: Unpack[PromptDepthAnythingImageProcessorKwargs]):
         super().__init__(**kwargs)
 

@@ -28,11 +28,15 @@ from ...image_processing_backends import TorchvisionBackend
 from ...image_transforms import group_images_by_shape, reorder_images
 from ...image_utils import PILImageResampling, SizeDict
 from ...processing_utils import ImagesKwargs
-from ...utils import auto_docstring, requires_backends
+from ...utils import
+
+# PP-OCRv6 小型识别图像预处理：动态缩放、BGR 转换与 CTC 解码
+ auto_docstring, requires_backends
 from ...utils.constants import IMAGENET_STANDARD_MEAN, IMAGENET_STANDARD_STD
 from ...utils.generic import TensorType
 
 
+# PPOCRV6SmallRecImageProcessorKwargs：图像处理器关键字参数：最大宽度与字符表
 class PPOCRV6SmallRecImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     max_image_width (`int`, *optional*, defaults to `3200`):
@@ -45,6 +49,7 @@ class PPOCRV6SmallRecImageProcessorKwargs(ImagesKwargs, total=False):
     character_list: str
 
 
+# PPOCRV6SmallRecImageProcessor：小型识别图像处理器：Torchvision 后端预处理与后处理
 @auto_docstring
 class PPOCRV6SmallRecImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.BILINEAR
@@ -118,6 +123,7 @@ class PPOCRV6SmallRecImageProcessor(TorchvisionBackend):
 
         return BatchFeature(data={"pixel_values": processed_images}, tensor_type=return_tensors)
 
+    # get_target_size：按批次最宽图像计算目标缩放尺寸
     def get_target_size(self, shape_list: list[torch.Size]):
         """
         Calculate the width and height from the widest image in the batch.
@@ -145,6 +151,7 @@ class PPOCRV6SmallRecImageProcessor(TorchvisionBackend):
 
         return SizeDict(height=target_height, width=target_width)
 
+    # post_process_text_recognition：CTC 解码识别文本与置信度
     def post_process_text_recognition(
         self,
         predictions,

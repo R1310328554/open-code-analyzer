@@ -25,5 +25,6 @@ if TYPE_CHECKING:
 else:
     import sys
 
+    # 运行时以 _LazyModule 延迟加载 PPOCRV6TinyRec 配置与建模类
     _file = globals()["__file__"]
     sys.modules[__name__] = _LazyModule(__name__, _file, define_import_structure(_file), module_spec=__spec__)

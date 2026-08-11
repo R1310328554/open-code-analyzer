@@ -16,10 +16,14 @@
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
-from ...utils import auto_docstring
+from ...utils import
+
+# ProphetNet 配置：ngram 自回归预训练序列到序列模型
+ auto_docstring
 
 
 @auto_docstring(checkpoint="microsoft/prophetnet-large-uncased")
+# ProphetNetConfig：编码器-解码器配置，含 ngram 与相对位置桶
 @strict
 class ProphetNetConfig(PreTrainedConfig):
     r"""
@@ -74,6 +78,7 @@ class ProphetNetConfig(PreTrainedConfig):
     is_decoder: bool = False
     tie_word_embeddings: bool = True
 
+    # num_hidden_layers：只读属性，映射到编码器层数
     @property
     def num_hidden_layers(self) -> int:
         return self.num_encoder_layers

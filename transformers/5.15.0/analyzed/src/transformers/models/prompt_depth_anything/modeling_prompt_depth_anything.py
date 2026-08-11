@@ -27,10 +27,15 @@ from ...processing_utils import Unpack
 from ...utils import TransformersKwargs, auto_docstring
 from ...utils.generic import merge_with_config_defaults, torch_int
 from ...utils.output_capturing import capture_outputs
-from .configuration_prompt_depth_anything import PromptDepthAnythingConfig
+from .configuration_prompt
+
+# PromptDepthAnything 建模：提示深度引导的特征融合与深度回归
+_depth_anything import PromptDepthAnythingConfig
 
 
+# PromptDepthAnythingLayer：提示深度编码层：将单通道深度图映射到融合维度
 class PromptDepthAnythingLayer(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PromptDepthAnythingConfig):
         super().__init__()
         self.convolution1 = nn.Conv2d(
@@ -62,6 +67,7 @@ class PromptDepthAnythingLayer(nn.Module):
             bias=True,
         )
 
+    # forward：前向计算主逻辑
     def forward(self, prompt_depth: torch.Tensor) -> torch.Tensor:
         hidden_state = self.convolution1(prompt_depth)
         hidden_state = self.activation1(hidden_state)
@@ -71,6 +77,7 @@ class PromptDepthAnythingLayer(nn.Module):
         return hidden_state
 
 
+# PromptDepthAnythingPreActResidualLayer：预激活残差层：卷积 + 批归一化 + ReLU
 class PromptDepthAnythingPreActResidualLayer(nn.Module):
     """
     ResidualConvUnit, pre-activate residual unit.
@@ -80,6 +87,7 @@ class PromptDepthAnythingPreActResidualLayer(nn.Module):
             Model configuration class defining the model architecture.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
 
@@ -103,6 +111,7 @@ class PromptDepthAnythingPreActResidualLayer(nn.Module):
             bias=True,
         )
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_state: torch.Tensor) -> torch.Tensor:
         residual = hidden_state
         hidden_state = self.activation1(hidden_state)
@@ -113,6 +122,7 @@ class PromptDepthAnythingPreActResidualLayer(nn.Module):
         return hidden_state + residual
 
 
+# PromptDepthAnythingFeatureFusionLayer：特征融合层：拼接 RGB 特征与提示深度
 class PromptDepthAnythingFeatureFusionLayer(nn.Module):
     """Feature fusion layer, merges feature maps from different stages.
 
@@ -121,6 +131,7 @@ class PromptDepthAnythingFeatureFusionLayer(nn.Module):
             Model configuration class defining the model architecture.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PromptDepthAnythingConfig):
         super().__init__()
 
@@ -130,6 +141,7 @@ class PromptDepthAnythingFeatureFusionLayer(nn.Module):
         self.residual_layer2 = PromptDepthAnythingPreActResidualLayer(config)
         self.prompt_depth_layer = PromptDepthAnythingLayer(config)
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_state, residual=None, size=None, prompt_depth=None):
         if residual is not None:
             if hidden_state.shape != residual.shape:
@@ -160,13 +172,16 @@ class PromptDepthAnythingFeatureFusionLayer(nn.Module):
         return hidden_state
 
 
+# PromptDepthAnythingFeatureFusionStage：多尺度特征融合阶段
 class PromptDepthAnythingFeatureFusionStage(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PromptDepthAnythingConfig):
         super().__init__()
         self.layers = nn.ModuleList()
         for _ in range(len(config.neck_hidden_sizes)):
             self.layers.append(PromptDepthAnythingFeatureFusionLayer(config))
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states, size=None, prompt_depth=None):
         # reversing the hidden_states, we start from the last
         hidden_states = hidden_states[::-1]
@@ -188,6 +203,7 @@ class PromptDepthAnythingFeatureFusionStage(nn.Module):
         return fused_hidden_states
 
 
+# PromptDepthAnythingDepthEstimationHead：深度估计头：上采样并回归深度图
 class PromptDepthAnythingDepthEstimationHead(nn.Module):
     """
     Output head consisting of 3 convolutional layers. It progressively halves the feature dimension and upsamples
@@ -196,6 +212,7 @@ class PromptDepthAnythingDepthEstimationHead(nn.Module):
     type (relative or metric). For metric depth estimation, the output is scaled by the maximum depth used during pretraining.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
 
@@ -215,6 +232,7 @@ class PromptDepthAnythingDepthEstimationHead(nn.Module):
             raise ValueError(f"Unknown depth estimation type: {config.depth_estimation_type}")
         self.max_depth = config.max_depth
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states: list[torch.Tensor], patch_height: int, patch_width: int) -> torch.Tensor:
         hidden_states = hidden_states[-1]
 
@@ -238,6 +256,7 @@ class PromptDepthAnythingDepthEstimationHead(nn.Module):
         return predicted_depth
 
 
+# PromptDepthAnythingPreTrainedModel：预训练基类：DINOv2 骨干权重加载
 @auto_docstring
 class PromptDepthAnythingPreTrainedModel(PreTrainedModel):
     config: PromptDepthAnythingConfig
@@ -247,7 +266,9 @@ class PromptDepthAnythingPreTrainedModel(PreTrainedModel):
     supports_gradient_checkpointing = True
 
 
+# PromptDepthAnythingReassembleLayer：重组层：调整骨干特征分辨率
 class PromptDepthAnythingReassembleLayer(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PromptDepthAnythingConfig, channels: int, factor: int):
         super().__init__()
         self.projection = nn.Conv2d(in_channels=config.reassemble_hidden_size, out_channels=channels, kernel_size=1)
@@ -262,6 +283,7 @@ class PromptDepthAnythingReassembleLayer(nn.Module):
             stride = torch_int(1 / factor)
             self.resize = nn.Conv2d(channels, channels, kernel_size=3, stride=stride, padding=1)
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_state):
         hidden_state = self.projection(hidden_state)
         hidden_state = self.resize(hidden_state)
@@ -269,6 +291,7 @@ class PromptDepthAnythingReassembleLayer(nn.Module):
         return hidden_state
 
 
+# PromptDepthAnythingReassembleStage：重组阶段：多尺度特征重采样
 class PromptDepthAnythingReassembleStage(nn.Module):
     """
     This class reassembles the hidden states of the backbone into image-like feature representations at various
@@ -284,6 +307,7 @@ class PromptDepthAnythingReassembleStage(nn.Module):
             Model configuration class defining the model architecture.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
 
@@ -292,6 +316,7 @@ class PromptDepthAnythingReassembleStage(nn.Module):
         for channels, factor in zip(config.neck_hidden_sizes, config.reassemble_factors):
             self.layers.append(PromptDepthAnythingReassembleLayer(config, channels=channels, factor=factor))
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states: list[torch.Tensor], patch_height=None, patch_width=None) -> list[torch.Tensor]:
         """
         Args:
@@ -312,6 +337,7 @@ class PromptDepthAnythingReassembleStage(nn.Module):
         return out
 
 
+# PromptDepthAnythingNeck：颈部网络：特征投影与跨层融合
 class PromptDepthAnythingNeck(nn.Module):
     """
     PromptDepthAnythingNeck. A neck is a module that is normally used between the backbone and the head. It takes a list of tensors as
@@ -324,6 +350,7 @@ class PromptDepthAnythingNeck(nn.Module):
         config (dict): config dict.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -337,6 +364,7 @@ class PromptDepthAnythingNeck(nn.Module):
         # fusion
         self.fusion_stage = PromptDepthAnythingFeatureFusionStage(config)
 
+    # forward：前向计算主逻辑
     def forward(
         self,
         hidden_states: list[torch.Tensor],
@@ -371,7 +399,9 @@ class PromptDepthAnythingNeck(nn.Module):
     Prompt Depth Anything Model with a depth estimation head on top (consisting of 3 convolutional layers) e.g. for KITTI, NYUv2.
     """
 )
+# PromptDepthAnythingForDepthEstimation：端到端提示深度估计模型
 class PromptDepthAnythingForDepthEstimation(PromptDepthAnythingPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__(config)
 
@@ -385,6 +415,7 @@ class PromptDepthAnythingForDepthEstimation(PromptDepthAnythingPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向计算主逻辑
     def forward(
         self,
         pixel_values: torch.FloatTensor,

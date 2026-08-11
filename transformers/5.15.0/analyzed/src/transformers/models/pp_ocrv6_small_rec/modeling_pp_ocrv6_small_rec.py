@@ -34,10 +34,15 @@ from ...processing_utils import Unpack
 from ...utils import TransformersKwargs, auto_docstring, can_return_tuple
 from ...utils.generic import merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
-from .configuration_pp_ocrv6_small_rec import PPOCRV6SmallRecConfig
+from .configuration_pp
+
+# PP-OCRv6 小型识别建模：SVTR 编码器 + 字符分类头
+_ocrv6_small_rec import PPOCRV6SmallRecConfig
 
 
+# PPOCRV6SmallRecConvLayer：SVTR 卷积层：深度可分离卷积与批归一化
 class PPOCRV6SmallRecConvLayer(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         in_channels: int,
@@ -60,6 +65,7 @@ class PPOCRV6SmallRecConvLayer(nn.Module):
         self.normalization = nn.BatchNorm2d(out_channels)
         self.activation = ACT2FN[activation] if activation is not None else nn.Identity()
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.convolution(hidden_states)
         hidden_states = self.normalization(hidden_states)
@@ -67,9 +73,11 @@ class PPOCRV6SmallRecConvLayer(nn.Module):
         return hidden_states
 
 
+# PPOCRV6SmallRecAttention：SVTR 自注意力：多头缩放点积注意力
 class PPOCRV6SmallRecAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -104,6 +112,7 @@ class PPOCRV6SmallRecAttention(nn.Module):
     def _shape(self, tensor: torch.Tensor, seq_len: int, bsz: int):
         return tensor.view(bsz, seq_len, self.num_heads, self.head_dim).transpose(1, 2).contiguous()
 
+    # forward：前向计算主逻辑
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -142,7 +151,9 @@ class PPOCRV6SmallRecAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# PPOCRV6SmallRecMLP：SVTR MLP：两层全连接前馈网络
 class PPOCRV6SmallRecMLP(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config, in_features, hidden_features=None, out_features=None, drop=0.0):
         super().__init__()
         out_features = out_features or in_features
@@ -152,6 +163,7 @@ class PPOCRV6SmallRecMLP(nn.Module):
         self.fc2 = nn.Linear(hidden_features, out_features)
         self.drop = nn.Dropout(drop)
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_state):
         hidden_state = self.fc1(hidden_state)
         hidden_state = self.activation(hidden_state)
@@ -161,7 +173,9 @@ class PPOCRV6SmallRecMLP(nn.Module):
         return hidden_state
 
 
+# PPOCRV6SmallRecBlock：SVTR 块：注意力 + MLP 残差结构
 class PPOCRV6SmallRecBlock(GradientCheckpointingLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.embed_dim = config.hidden_size
@@ -174,6 +188,7 @@ class PPOCRV6SmallRecBlock(GradientCheckpointingLayer):
         )
         self.layer_norm2 = nn.LayerNorm(self.embed_dim, eps=config.layer_norm_eps)
 
+    # forward：前向计算主逻辑
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -222,6 +237,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# PPOCRV6SmallRecPreTrainedModel：小型识别预训练基类：权重初始化与骨干加载
 @auto_docstring
 class PPOCRV6SmallRecPreTrainedModel(PreTrainedModel):
     config: PPOCRV6SmallRecConfig
@@ -242,12 +258,14 @@ class PPOCRV6SmallRecPreTrainedModel(PreTrainedModel):
     input_modalities = ("image",)
 
 
+# PPOCRV6SmallRecEncoderWithSVTR：SVTR 编码器：卷积降维 + Transformer 混合
 class PPOCRV6SmallRecEncoderWithSVTR(PPOCRV6SmallRecPreTrainedModel):
     """
     SVTR: Scene Text Recognition with a Single Visual Model
     https://www.paddleocr.ai/v2.10.0/en/algorithm/text_recognition/algorithm_rec_svtr.html
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         config,
@@ -284,6 +302,7 @@ class PPOCRV6SmallRecEncoderWithSVTR(PPOCRV6SmallRecPreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs
+    # forward：前向计算主逻辑
     def forward(self, hidden_states: torch.FloatTensor, **kwargs: Unpack[TransformersKwargs]):
         # PP-OCRv6_small_rec uses the output of the first conv block as the residual.
         residual = self.conv_block[0](hidden_states)
@@ -305,13 +324,16 @@ class PPOCRV6SmallRecEncoderWithSVTR(PPOCRV6SmallRecPreTrainedModel):
         return BaseModelOutputWithNoAttention(last_hidden_state=hidden_states)
 
 
+# PPOCRV6SmallRecHead：识别分类头：将特征映射到字符词表
 class PPOCRV6SmallRecHead(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
 
         self.encoder = PPOCRV6SmallRecEncoderWithSVTR(config)
         self.head = nn.Linear(config.hidden_size, config.head_out_channels)
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states: torch.FloatTensor, **kwargs: Unpack[TransformersKwargs]):
         outputs = self.encoder(hidden_states, **kwargs)
         hidden_states = self.head(outputs.last_hidden_state)
@@ -321,7 +343,9 @@ class PPOCRV6SmallRecHead(nn.Module):
 
 
 @auto_docstring(custom_intro="PPOCRV6SmallRec model, consisting of Backbone and Head networks.")
+# PPOCRV6SmallRecModel：小型识别骨干：PP-LCNet 特征提取
 class PPOCRV6SmallRecModel(PPOCRV6SmallRecPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPOCRV6SmallRecConfig):
         super().__init__(config)
         self.backbone = load_backbone(config)
@@ -331,6 +355,7 @@ class PPOCRV6SmallRecModel(PPOCRV6SmallRecPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向计算主逻辑
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -348,6 +373,8 @@ class PPOCRV6SmallRecModel(PPOCRV6SmallRecPreTrainedModel):
 
 @auto_docstring
 @dataclass
+# PPOCRV6SmallRecForTextRecognitionOutput：文本识别输出容器：logits 与隐藏状态
+# PPOCRV6SmallRecForTextRecognition：端到端文本识别模型：编码器 + 分类头
 class PPOCRV6SmallRecForTextRecognitionOutput(BaseModelOutputWithNoAttention):
     r"""
     head_hidden_states (`tuple(torch.FloatTensor)`, *optional*, returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
@@ -361,6 +388,7 @@ class PPOCRV6SmallRecForTextRecognitionOutput(BaseModelOutputWithNoAttention):
 class PPOCRV6SmallRecForTextRecognition(PPOCRV6SmallRecPreTrainedModel):
     _keys_to_ignore_on_load_missing = ["num_batches_tracked"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPOCRV6SmallRecConfig):
         super().__init__(config)
         self.model = PPOCRV6SmallRecModel(config)
@@ -370,6 +398,7 @@ class PPOCRV6SmallRecForTextRecognition(PPOCRV6SmallRecPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向计算主逻辑
     def forward(
         self,
         pixel_values: torch.FloatTensor,

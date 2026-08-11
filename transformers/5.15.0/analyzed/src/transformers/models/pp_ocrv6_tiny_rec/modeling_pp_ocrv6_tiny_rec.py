@@ -27,9 +27,13 @@ from ...modeling_outputs import BaseModelOutputWithNoAttention
 from ...modeling_utils import PreTrainedModel
 from ...processing_utils import Unpack
 from ...utils import TransformersKwargs, auto_docstring, can_return_tuple
-from .configuration_pp_ocrv6_tiny_rec import PPOCRV6TinyRecConfig
+from .configuration_pp
+
+# PP-OCRv6 超轻量识别建模：轻量骨干 + 深度可分离识别头
+_ocrv6_tiny_rec import PPOCRV6TinyRecConfig
 
 
+# PPOCRV6TinyRecPreTrainedModel：超轻量识别预训练基类
 @auto_docstring
 class PPOCRV6TinyRecPreTrainedModel(PreTrainedModel):
     config: PPOCRV6TinyRecConfig
@@ -48,7 +52,9 @@ class PPOCRV6TinyRecPreTrainedModel(PreTrainedModel):
     input_modalities = ("image",)
 
 
+# PPOCRV6TinyRecHead：识别头：深度可分离 1D 卷积 + 全连接分类
 class PPOCRV6TinyRecHead(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         in_channels = config.backbone_config.block_configs[-1][-1][2]
@@ -74,6 +80,7 @@ class PPOCRV6TinyRecHead(nn.Module):
         self.fc1 = nn.Linear(in_channels, mid_channels)
         self.fc2 = nn.Linear(mid_channels, config.head_out_channels)
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states: torch.FloatTensor, **kwargs: Unpack[TransformersKwargs]):
         hidden_states = hidden_states.squeeze(2)
         hidden_states = self.act_fn(self.norm1(self.conv1(hidden_states)))
@@ -89,7 +96,9 @@ class PPOCRV6TinyRecHead(nn.Module):
 
 
 @auto_docstring(custom_intro="PPOCRV6TinyRec model, consisting of Backbone and Head networks.")
+# PPOCRV6TinyRecModel：识别骨干：PP-LCNet 特征图池化
 class PPOCRV6TinyRecModel(PPOCRV6TinyRecPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPOCRV6TinyRecConfig):
         super().__init__(config)
         self.backbone = load_backbone(config)
@@ -99,6 +108,7 @@ class PPOCRV6TinyRecModel(PPOCRV6TinyRecPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向计算主逻辑
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -115,9 +125,11 @@ class PPOCRV6TinyRecModel(PPOCRV6TinyRecPreTrainedModel):
 
 
 @auto_docstring(custom_intro="PPOCR6TinyRec model for text recognition tasks.")
+# PPOCRV6TinyRecForTextRecognition：端到端超轻量文本识别模型
 class PPOCRV6TinyRecForTextRecognition(PPOCRV6TinyRecPreTrainedModel):
     _keys_to_ignore_on_load_missing = ["num_batches_tracked"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPOCRV6TinyRecConfig):
         super().__init__(config)
         self.model = PPOCRV6TinyRecModel(config)
@@ -127,6 +139,7 @@ class PPOCRV6TinyRecForTextRecognition(PPOCRV6TinyRecPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向计算主逻辑
     def forward(
         self,
         pixel_values: torch.FloatTensor,

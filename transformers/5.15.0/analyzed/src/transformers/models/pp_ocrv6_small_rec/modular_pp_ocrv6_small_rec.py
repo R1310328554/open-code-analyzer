@@ -27,6 +27,8 @@ from ...image_utils import PILImageResampling, SizeDict
 from ...modeling_outputs import BaseModelOutputWithNoAttention
 from ...processing_utils import Unpack
 from ...utils import (
+
+# PP-OCRv6 小型识别模块化定义：配置、图像处理与 SVTR 建模
     TransformersKwargs,
     auto_docstring,
     logging,
@@ -45,6 +47,7 @@ logger = logging.get_logger(__name__)
 
 
 @auto_docstring(checkpoint="PaddlePaddle/PP-OCRv6_small_rec_safetensors")
+# PPOCRV6SmallRecConfig：小型识别配置：继承服务端配置并指定词表大小
 @strict
 class PPOCRV6SmallRecConfig(PPOCRV5ServerRecConfig):
     r"""
@@ -54,6 +57,7 @@ class PPOCRV6SmallRecConfig(PPOCRV5ServerRecConfig):
 
     head_out_channels: int = 18714
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         if self.conv_kernel_size is None:
             self.conv_kernel_size = [1, 7]
@@ -65,6 +69,7 @@ class PPOCRV6SmallRecConfig(PPOCRV5ServerRecConfig):
         PreTrainedConfig.__post_init__(**kwargs)
 
 
+# PPOCRV6SmallRecImageProcessor：图像处理器：动态宽高比缩放与 BGR 通道序
 class PPOCRV6SmallRecImageProcessor(PPOCRV5ServerRecImageProcessor):
     def _preprocess(
         self,
@@ -124,7 +129,9 @@ class PPOCRV6SmallRecImageProcessor(PPOCRV5ServerRecImageProcessor):
         return BatchFeature(data={"pixel_values": processed_images}, tensor_type=return_tensors)
 
 
+# PPOCRV6SmallRecConvLayer：卷积层：分组卷积适配 SVTR 编码器
 class PPOCRV6SmallRecConvLayer(PPOCRV5ServerRecConvLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         in_channels: int,
@@ -146,7 +153,9 @@ class PPOCRV6SmallRecConvLayer(PPOCRV5ServerRecConvLayer):
         )
 
 
+# PPOCRV6SmallRecEncoderWithSVTR：编码器：残差融合替代拼接融合
 class PPOCRV6SmallRecEncoderWithSVTR(PPOCRV5ServerRecEncoderWithSVTR):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         config,
@@ -175,6 +184,7 @@ class PPOCRV6SmallRecEncoderWithSVTR(PPOCRV5ServerRecEncoderWithSVTR):
             ]
         )
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states: torch.FloatTensor, **kwargs: Unpack[TransformersKwargs]):
         # PP-OCRv6_small_rec uses the output of the first conv block as the residual.
         residual = self.conv_block[0](hidden_states)
@@ -197,6 +207,7 @@ class PPOCRV6SmallRecEncoderWithSVTR(PPOCRV5ServerRecEncoderWithSVTR):
 
 
 @auto_docstring(custom_intro="PPOCR6SmallRec model for text recognition tasks.")
+# PPOCRV6SmallRecForTextRecognition：文本识别任务入口类
 class PPOCRV6SmallRecForTextRecognition(PPOCRV5ServerRecForTextRecognition):
     pass
 

@@ -21,11 +21,15 @@ from huggingface_hub.dataclasses import strict
 
 from ...backbone_utils import consolidate_backbone_kwargs_to_config
 from ...configuration_utils import PreTrainedConfig
-from ...utils import auto_docstring
+from ...utils import
+
+# PromptDepthAnything 配置：提示深度引导的单目深度估计
+ auto_docstring
 from ..auto.configuration_auto import AutoConfig
 
 
 @auto_docstring(checkpoint="LiheYoung/depth-anything-small-hf")
+# PromptDepthAnythingConfig：融合提示深度的 DINOv2 骨干配置
 @strict
 class PromptDepthAnythingConfig(PreTrainedConfig):
     r"""
@@ -77,6 +81,7 @@ class PromptDepthAnythingConfig(PreTrainedConfig):
     depth_estimation_type: str = "relative"
     max_depth: int | None = None
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         self.backbone_config, kwargs = consolidate_backbone_kwargs_to_config(
             backbone_config=self.backbone_config,
@@ -94,6 +99,7 @@ class PromptDepthAnythingConfig(PreTrainedConfig):
         self.max_depth = self.max_depth if self.max_depth else 1
         super().__post_init__(**kwargs)
 
+    # validate_architecture：校验深度估计类型为 relative 或 metric
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if self.depth_estimation_type not in ["relative", "metric"]:

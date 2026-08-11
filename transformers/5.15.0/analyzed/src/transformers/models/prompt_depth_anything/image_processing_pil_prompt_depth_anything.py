@@ -32,7 +32,10 @@ from ...image_utils import (
     get_image_size,
 )
 from ...processing_utils import ImagesKwargs, Unpack
-from ...utils import TensorType, auto_docstring
+from ...utils import
+
+# PromptDepthAnything PIL 图像预处理：提示深度对齐与 ImageNet 归一化
+ TensorType, auto_docstring
 from ...utils.import_utils import requires
 
 
@@ -80,6 +83,7 @@ def _get_resize_output_image_size(
 
 
 # Adapted from transformers.models.prompt_depth_anything.image_processing_prompt_depth_anything.PromptDepthAnythingImageProcessorKwargs
+# PromptDepthAnythingImageProcessorKwargs：PIL 处理器关键字参数类型
 class PromptDepthAnythingImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     keep_aspect_ratio (`bool`, *optional*):
@@ -98,6 +102,7 @@ class PromptDepthAnythingImageProcessorKwargs(ImagesKwargs, total=False):
     prompt_scale_to_meter: float
 
 
+# PromptDepthAnythingImageProcessorPil：PIL 后端处理器：RGB/深度图联合预处理
 @auto_docstring
 class PromptDepthAnythingImageProcessorPil(PilBackend):
     model_input_names = ["pixel_values", "prompt_depth"]
@@ -116,6 +121,7 @@ class PromptDepthAnythingImageProcessorPil(PilBackend):
     prompt_scale_to_meter = 0.001
     valid_kwargs = PromptDepthAnythingImageProcessorKwargs
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, **kwargs: Unpack[PromptDepthAnythingImageProcessorKwargs]):
         super().__init__(**kwargs)
 

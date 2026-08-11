@@ -36,10 +36,12 @@ from ..pp_ocrv6_small_rec.modeling_pp_ocrv6_small_rec import (
 )
 
 
+# PP-OCRv6 超轻量识别模块化定义：继承小型识别并精简 SVTR
 logger = logging.get_logger(__name__)
 
 
 @auto_docstring(checkpoint="PaddlePaddle/PP-OCRv6_tiny_rec_safetensors")
+# PPOCRV6TinyRecConfig：超轻量配置：覆盖服务端默认超参
 @strict
 class PPOCRV6TinyRecConfig(PPOCRV6SmallRecConfig):
     head_out_channels: int = 6625
@@ -52,6 +54,7 @@ class PPOCRV6TinyRecConfig(PPOCRV6SmallRecConfig):
     num_attention_heads = AttributeError()
     qkv_bias = AttributeError()
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         self.backbone_config, kwargs = consolidate_backbone_kwargs_to_config(
             backbone_config=self.backbone_config,
@@ -61,6 +64,7 @@ class PPOCRV6TinyRecConfig(PPOCRV6SmallRecConfig):
         PreTrainedConfig.__post_init__(**kwargs)
 
 
+# PPOCRV6TinyRecPreTrainedModel：预训练基类：禁用梯度检查点
 @auto_docstring
 class PPOCRV6TinyRecPreTrainedModel(PPOCRV6SmallRecPreTrainedModel):
     supports_gradient_checkpointing = False
@@ -68,7 +72,9 @@ class PPOCRV6TinyRecPreTrainedModel(PPOCRV6SmallRecPreTrainedModel):
     _can_record_outputs = {}
 
 
+# PPOCRV6TinyRecHead：轻量识别头：Hardswish 激活与 softmax 输出
 class PPOCRV6TinyRecHead(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         in_channels = config.backbone_config.block_configs[-1][-1][2]
@@ -94,6 +100,7 @@ class PPOCRV6TinyRecHead(nn.Module):
         self.fc1 = nn.Linear(in_channels, mid_channels)
         self.fc2 = nn.Linear(mid_channels, config.head_out_channels)
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states: torch.FloatTensor, **kwargs: Unpack[TransformersKwargs]):
         hidden_states = hidden_states.squeeze(2)
         hidden_states = self.act_fn(self.norm1(self.conv1(hidden_states)))
@@ -109,9 +116,11 @@ class PPOCRV6TinyRecHead(nn.Module):
 
 
 @auto_docstring(custom_intro="PPOCR6TinyRec model for text recognition tasks.")
+# PPOCRV6TinyRecForTextRecognition：文本识别前向：骨干 + 识别头串联
 class PPOCRV6TinyRecForTextRecognition(PPOCRV6SmallRecForTextRecognition):
     @can_return_tuple
     @auto_docstring
+    # forward：前向计算主逻辑
     def forward(
         self,
         pixel_values: torch.FloatTensor,
