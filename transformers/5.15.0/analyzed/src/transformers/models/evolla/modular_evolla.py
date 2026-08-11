@@ -64,6 +64,7 @@ from .configuration_evolla import EvollaConfig, SaProtConfig
 logger = logging.get_logger(__name__)
 
 
+# eager_attention_forward：SaProt 分支 eager 注意力
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -99,6 +100,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# EvollaSaProtEmbeddings：继承 EsmEmbeddings 的 SaProt 嵌入层
 class EvollaSaProtEmbeddings(EsmEmbeddings):
     def __init__(self, config):
         super().__init__(config)
@@ -106,6 +108,7 @@ class EvollaSaProtEmbeddings(EsmEmbeddings):
         del self.position_ids
 
 
+# EvollaSaProtRotaryEmbedding：继承 ESM RoPE 嵌入
 class EvollaSaProtRotaryEmbedding(EsmRotaryEmbedding):
     def __init__(self, config: SaProtConfig, device=None):
         super().__init__(config)
@@ -171,6 +174,7 @@ class EvollaSaProtPreTrainedModel(PreTrainedModel):
             init.copy_(getattr(module, "inv_freq"), curr_inv_freq)
 
 
+# EvollaSaProtProteinEncoder：SaProt 蛋白质序列编码器
 class EvollaSaProtProteinEncoder(EvollaSaProtPreTrainedModel):
     def __init__(self, config: SaProtConfig):
         super().__init__(config)
@@ -223,6 +227,7 @@ class EvollaSaProtProteinEncoder(EvollaSaProtPreTrainedModel):
         )
 
 
+# EvollaSequenceCompressorAttention：序列压缩 Perceiver 注意力
 class EvollaSequenceCompressorAttention(nn.Module):
     def __init__(self, dim, dim_head=64, heads=8):
         super().__init__()
@@ -295,6 +300,7 @@ class EvollaFeedForward(nn.Module):
         return self.fc2(self.activation(self.fc1(self.norm(x))))
 
 
+# EvollaSequenceCompressorResampler：固定 query 重采样压缩蛋白序列
 class EvollaSequenceCompressorResampler(nn.Module):
     def __init__(self, config: EvollaConfig):
         super().__init__()
@@ -352,6 +358,7 @@ class EvollaProteinEncoderModelOutput(ModelOutput):
     attentions: tuple[torch.FloatTensor, ...] | None = None
 
 
+# EvollaProteinEncoder：蛋白编码 + 压缩 + 重采样联合模块
 class EvollaProteinEncoder(nn.Module):
     def __init__(self, config: EvollaConfig):
         super().__init__()
@@ -370,6 +377,7 @@ class EvollaProteinEncoder(nn.Module):
         )
 
 
+# EvollaSequenceAlignerCrossAttention：蛋白特征与文本 hidden 交叉对齐
 class EvollaSequenceAlignerCrossAttention(nn.Module):
     def __init__(
         self,
@@ -608,6 +616,7 @@ class EvollaSequenceAlignerCrossAttention(nn.Module):
         return hidden_states
 
 
+# EvollaRMSNorm：Llama RMSNorm 别名
 class EvollaRMSNorm(LlamaRMSNorm):
     pass
 
@@ -710,6 +719,7 @@ class EvollaPreTrainedModel(LlamaPreTrainedModel):
             init.normal_(module.latents, mean=0.0, std=std)
 
 
+# EvollaModel：多模态主干，融合蛋白编码与 Llama 解码
 class EvollaModel(EvollaPreTrainedModel):
     def __init__(self, config: EvollaConfig):
         super().__init__(config)
@@ -837,6 +847,7 @@ class EvollaModel(EvollaPreTrainedModel):
         return output
 
 
+# EvollaForProteinText2Text：蛋白到文本条件生成任务头
 class EvollaForProteinText2Text(EvollaPreTrainedModel, GenerationMixin):
     def __init__(self, config):
         super().__init__(config)

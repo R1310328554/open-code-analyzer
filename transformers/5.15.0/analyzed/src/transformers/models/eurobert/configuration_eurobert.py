@@ -25,8 +25,10 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# EuroBertConfig：EuroBERT-210m checkpoint 默认超参
 @auto_docstring(checkpoint="EuroBERT/EuroBERT-210m")
 @strict
+# EuroBertConfig：vocab/hidden/层数 + mask_token_id 与 classifier_pooling
 class EuroBertConfig(PreTrainedConfig):
     r"""
     mask_token_id (`int`, *optional*, defaults to 128002):

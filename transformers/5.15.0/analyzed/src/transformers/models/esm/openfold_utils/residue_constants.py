@@ -28,11 +28,13 @@ import numpy as np
 
 
 # Distance from one CA to next CA [trans configuration: omega = 180].
+# ca_ca：反式构型相邻 CA-CA 距离（埃）
 ca_ca = 3.80209737096
 
 # Format: The list for each AA type contains chi1, chi2, chi3, chi4 in
 # this order (or a relevant subset from chi1 onwards). ALA and GLY don't have
 # chi angles so their chi angle lists are empty.
+# chi_angles_atoms：各氨基酸 chi1–chi4 定义原子名列表
 chi_angles_atoms: dict[str, list[list[str]]] = {
     "ALA": [],
     # Chi5 in arginine is always 0 +- 5 degrees, so ignore it.
@@ -59,6 +61,7 @@ chi_angles_atoms: dict[str, list[list[str]]] = {
 
 # If chi angles given in fixed-length array, this matrix determines how to mask
 # them for each AA type. The order is as per restype_order (see below).
+# chi_angles_mask：固定长度 chi 角掩码，按 restype_order 排列
 chi_angles_mask: list[list[float]] = [
     [0.0, 0.0, 0.0, 0.0],  # ALA
     [1.0, 1.0, 1.0, 1.0],  # ARG
@@ -384,6 +387,7 @@ BondAngle = collections.namedtuple(
 )
 
 
+# map_structure_with_atom_order：按标准 atom37 序重排嵌套结构
 def map_structure_with_atom_order(in_list: list, first_call: bool = True) -> list:
     # Maps strings in a nested list structure to their corresponding index in atom_order
     if first_call:
@@ -399,6 +403,7 @@ def map_structure_with_atom_order(in_list: list, first_call: bool = True) -> lis
 
 
 @functools.cache
+# load_stereo_chemical_props：加载键长/键角/二面角立体化学约束
 def load_stereo_chemical_props() -> tuple[
     Mapping[str, list[Bond]],
     Mapping[str, list[Bond]],
@@ -599,6 +604,7 @@ restypes_with_x: list[str] = restypes + ["X"]
 restype_order_with_x: dict[str, int] = {restype: i for i, restype in enumerate(restypes_with_x)}
 
 
+# sequence_to_onehot：氨基酸序列 one-hot 编码
 def sequence_to_onehot(sequence: str, mapping: Mapping[str, int], map_unknown_to_x: bool = False) -> np.ndarray:
     """Maps the given sequence into a one-hot encoded matrix.
 
@@ -763,6 +769,7 @@ STANDARD_ATOM_MASK = _make_standard_atom_mask()
 
 # A one hot representation for the first and second atoms defining the axis
 # of rotation for each chi-angle in each residue.
+# chi_angle_atom：返回指定 atom37 索引对应的 chi 角编号
 def chi_angle_atom(atom_index: int) -> np.ndarray:
     """Define chi-angle rigid groups via one-hot representations."""
     chi_angles_index = {}
@@ -908,6 +915,7 @@ def _make_rigid_group_constants() -> None:
 _make_rigid_group_constants()
 
 
+# make_atom14_dists_bounds：构建 atom14 距离上下界用于 violation 损失
 def make_atom14_dists_bounds(
     overlap_tolerance: float = 1.5,
     bond_length_tolerance_factor: int = 15,
@@ -975,5 +983,6 @@ def _make_atom14_ambiguity_feats() -> None:
 _make_atom14_ambiguity_feats()
 
 
+# aatype_to_str_sequence：整数 aatype 数组转单字母氨基酸序列
 def aatype_to_str_sequence(aatype: Sequence[int]) -> str:
     return "".join([restypes_with_x[aatype[i]] for i in range(len(aatype))])

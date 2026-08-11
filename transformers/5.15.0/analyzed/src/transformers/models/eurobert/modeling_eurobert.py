@@ -42,6 +42,7 @@ from .configuration_eurobert import EuroBertConfig
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# EuroBertRMSNorm：RMSNorm 层，等价 T5LayerNorm
 class EuroBertRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps=1e-5) -> None:
         """
@@ -62,6 +63,7 @@ class EuroBertRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# rotate_half：RoPE 半维旋转辅助函数
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -70,6 +72,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：对 Q/K 施加 RoPE 旋转位置编码
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -95,6 +98,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 重复 KV 头以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -107,6 +111,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：双向缩放点积注意力 eager 实现
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -133,6 +138,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# EuroBertAttention：双向多头自注意力（is_causal=False）
 class EuroBertAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -200,6 +206,7 @@ class EuroBertAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# EuroBertMLP：SwiGLU 风格门控前馈网络
 class EuroBertMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -216,6 +223,7 @@ class EuroBertMLP(nn.Module):
         return down_proj
 
 
+# EuroBertDecoderLayer：Pre-LN 自注意力 + MLP 残差块
 class EuroBertDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: EuroBertConfig, layer_idx: int):
         super().__init__()
@@ -260,6 +268,7 @@ class EuroBertDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# EuroBertPreTrainedModel：EuroBERT 权重初始化基类
 class EuroBertPreTrainedModel(PreTrainedModel):
     config: EuroBertConfig
     base_model_prefix = "model"
@@ -278,6 +287,7 @@ class EuroBertPreTrainedModel(PreTrainedModel):
     }
 
 
+# EuroBertRotaryEmbedding：RoPE 逆频率缓存与 dynamic_rope_update
 class EuroBertRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: EuroBertConfig, device=None):
@@ -336,6 +346,7 @@ class EuroBertRotaryEmbedding(nn.Module):
 
 
 @auto_docstring
+# EuroBertModel：embed + 双向 decoder 层堆叠，输出 last_hidden_state
 class EuroBertModel(EuroBertPreTrainedModel):
     def __init__(self, config: EuroBertConfig):
         super().__init__(config)
@@ -398,6 +409,7 @@ class EuroBertModel(EuroBertPreTrainedModel):
 
 
 @auto_docstring
+# EuroBertForMaskedLM：掩码语言建模 LM 头
 class EuroBertForMaskedLM(EuroBertPreTrainedModel):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
@@ -466,6 +478,7 @@ class EuroBertForMaskedLM(EuroBertPreTrainedModel):
 
 
 @auto_docstring
+# EuroBertForSequenceClassification：bos/mean/late 三种池化序列分类
 class EuroBertForSequenceClassification(EuroBertPreTrainedModel):
     def __init__(self, config: EuroBertConfig):
         super().__init__(config)
@@ -558,6 +571,7 @@ class EuroBertForSequenceClassification(EuroBertPreTrainedModel):
 
 
 @auto_docstring
+# EuroBertForTokenClassification：逐 token 标注分类头
 class EuroBertForTokenClassification(EuroBertPreTrainedModel):
     def __init__(self, config: EuroBertConfig):
         super().__init__(config)

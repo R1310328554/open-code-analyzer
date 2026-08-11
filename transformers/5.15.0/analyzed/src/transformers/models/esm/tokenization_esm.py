@@ -21,15 +21,18 @@ from ...utils import logging
 
 logger = logging.get_logger(__name__)
 
+# VOCAB_FILES_NAMES：词表文件名映射
 VOCAB_FILES_NAMES = {"vocab_file": "vocab.txt"}
 
 
+# load_vocab_file：逐行读取 vocab.txt 词表
 def load_vocab_file(vocab_file):
     with open(vocab_file, "r") as f:
         lines = f.read().splitlines()
         return [l.strip() for l in lines]
 
 
+# EsmTokenizer：ESM 氨基酸序列分词器，按空格/整 token 切分
 class EsmTokenizer(PreTrainedTokenizer):
     """
     Constructs an ESM tokenizer.
@@ -38,6 +41,7 @@ class EsmTokenizer(PreTrainedTokenizer):
     vocab_files_names = VOCAB_FILES_NAMES
     model_input_names = ["input_ids", "attention_mask"]
 
+# __init__：加载词表并注册 unique_no_split_tokens
     def __init__(
         self,
         vocab_file,
@@ -66,12 +70,15 @@ class EsmTokenizer(PreTrainedTokenizer):
         self.unique_no_split_tokens = self.all_tokens
         self._update_trie(self.unique_no_split_tokens)
 
+# _convert_id_to_token：索引到氨基酸 token 字符串
     def _convert_id_to_token(self, index: int) -> str:
         return self._id_to_token.get(index, self.unk_token)
 
+# _convert_token_to_id：token 到索引，未知回退 unk
     def _convert_token_to_id(self, token: str) -> int:
         return self._token_to_id.get(token, self._token_to_id.get(self.unk_token))
 
+# _tokenize：按空格拆分输入序列
     def _tokenize(self, text, **kwargs):
         return text.split()
 
@@ -86,6 +93,7 @@ class EsmTokenizer(PreTrainedTokenizer):
     def id_to_token(self, index: int) -> str:
         return self._id_to_token.get(index, self.unk_token)
 
+# build_inputs_with_special_tokens：cls + 序列 + eos 拼接
     def build_inputs_with_special_tokens(
         self, token_ids_0: list[int], token_ids_1: list[int] | None = None
     ) -> list[int]:
@@ -100,6 +108,7 @@ class EsmTokenizer(PreTrainedTokenizer):
             raise ValueError("Cannot tokenize multiple sequences when EOS token is not set!")
         return cls + token_ids_0 + sep + token_ids_1 + sep  # Multiple inputs always have an EOS token
 
+# get_special_tokens_mask：标记 cls/eos 等特殊 token 位置
     def get_special_tokens_mask(
         self, token_ids_0: list, token_ids_1: list | None = None, already_has_special_tokens: bool = False
     ) -> list[int]:
@@ -132,6 +141,7 @@ class EsmTokenizer(PreTrainedTokenizer):
             mask += [0] * len(token_ids_1) + [1]
         return mask
 
+# save_vocabulary：将词表写回 vocab.txt
     def save_vocabulary(self, save_directory, filename_prefix):
         vocab_file = os.path.join(save_directory, (filename_prefix + "-" if filename_prefix else "") + "vocab.txt")
         with open(vocab_file, "w") as f:

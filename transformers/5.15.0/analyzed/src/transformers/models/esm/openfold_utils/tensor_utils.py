@@ -22,6 +22,7 @@ import torch.nn as nn
 import torch.types
 
 
+# add：推理时可原地相加，checkpoint 首步禁用 inplace
 def add(m1: torch.Tensor, m2: torch.Tensor, inplace: bool) -> torch.Tensor:
     # The first operation in a checkpoint can't be in-place, but it's
     # nice to have in-place addition during inference. Thus...
@@ -33,21 +34,25 @@ def add(m1: torch.Tensor, m2: torch.Tensor, inplace: bool) -> torch.Tensor:
     return m1
 
 
+# permute_final_dims：仅置换末尾若干维度
 def permute_final_dims(tensor: torch.Tensor, inds: list[int]) -> torch.Tensor:
     zero_index = -1 * len(inds)
     first_inds = list(range(len(tensor.shape[:zero_index])))
     return tensor.permute(first_inds + [zero_index + i for i in inds])
 
 
+# flatten_final_dims：将末尾 no_dims 维展平为一维
 def flatten_final_dims(t: torch.Tensor, no_dims: int) -> torch.Tensor:
     return t.reshape(t.shape[:-no_dims] + (-1,))
 
 
+# masked_mean：沿指定维度的掩码加权平均
 def masked_mean(mask: torch.Tensor, value: torch.Tensor, dim: int, eps: float = 1e-4) -> torch.Tensor:
     mask = mask.expand(*value.shape)
     return torch.sum(mask * value, dim=dim) / (eps + torch.sum(mask, dim=dim))
 
 
+# pts_to_distogram：点对距离分桶为 distogram 类别
 def pts_to_distogram(
     pts: torch.Tensor, min_bin: torch.types.Number = 2.3125, max_bin: torch.types.Number = 21.6875, no_bins: int = 64
 ) -> torch.Tensor:
@@ -56,6 +61,7 @@ def pts_to_distogram(
     return torch.bucketize(dists, boundaries)
 
 
+# dict_multimap：对同键多字典值列表递归应用 fn
 def dict_multimap(fn: Callable[[list], Any], dicts: list[dict]) -> dict:
     first = dicts[0]
     new_dict = {}
@@ -69,6 +75,7 @@ def dict_multimap(fn: Callable[[list], Any], dicts: list[dict]) -> dict:
     return new_dict
 
 
+# one_hot：连续值按最近 bin 中心 one-hot 编码
 def one_hot(x: torch.Tensor, v_bins: torch.Tensor) -> torch.Tensor:
     reshaped_bins = v_bins.view(((1,) * len(x.shape)) + (len(v_bins),))
     diffs = x[..., None] - reshaped_bins
@@ -76,6 +83,7 @@ def one_hot(x: torch.Tensor, v_bins: torch.Tensor) -> torch.Tensor:
     return nn.functional.one_hot(am, num_classes=len(v_bins)).float()
 
 
+# batched_gather：带批维广播的高级 gather 索引
 def batched_gather(data: torch.Tensor, inds: torch.Tensor, dim: int = 0, no_batch_dims: int = 0) -> torch.Tensor:
     ranges: list[slice | torch.Tensor] = []
     for i, s in enumerate(data.shape[:no_batch_dims]):
@@ -94,6 +102,7 @@ def batched_gather(data: torch.Tensor, inds: torch.Tensor, dim: int = 0, no_batc
 T = TypeVar("T")
 
 
+# dict_map：递归对字典叶节点应用 fn
 def dict_map(
     fn: Callable[[T], Any], dic: dict[Any, dict | list | tuple | T], leaf_type: type[T]
 ) -> dict[Any, dict | list | tuple | Any]:
@@ -123,6 +132,7 @@ def tree_map(fn: Callable[[T], Any], tree: list, leaf_type: type[T]) -> list: ..
 def tree_map(fn: Callable[[T], Any], tree: tuple, leaf_type: type[T]) -> tuple: ...
 
 
+# tree_map：对 dict/list/tuple 树结构递归映射叶节点
 def tree_map(fn, tree, leaf_type):
     if isinstance(tree, dict):
         return dict_map(fn, tree, leaf_type)

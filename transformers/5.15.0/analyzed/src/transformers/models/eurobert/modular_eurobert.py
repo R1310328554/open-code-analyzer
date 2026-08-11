@@ -28,8 +28,10 @@ from ..llama.configuration_llama import LlamaConfig
 from ..llama.modeling_llama import LlamaAttention, LlamaModel, LlamaPreTrainedModel, LlamaRMSNorm
 
 
+# EuroBertConfig：EuroBERT-210m 模块化配置定义
 @auto_docstring(checkpoint="EuroBERT/EuroBERT-210m")
 @strict
+# EuroBertConfig：扩展 mask_token_id 与 classifier_pooling 策略
 class EuroBertConfig(LlamaConfig):
     r"""
     mask_token_id (`int`, *optional*, defaults to 128002):
@@ -81,22 +83,27 @@ class EuroBertConfig(LlamaConfig):
         super().__post_init__(**kwargs)
 
 
+# EuroBertRMSNorm：直接继承 LlamaRMSNorm
 class EuroBertRMSNorm(LlamaRMSNorm):
     def __init__(self, hidden_size, eps=1e-5):
         super().__init__(hidden_size, eps)
 
 
+# EuroBertAttention：继承 LlamaAttention 并设 is_causal=False
 class EuroBertAttention(LlamaAttention):
     def __init__(self, config: EuroBertConfig, layer_idx: int):
         super().__init__(config, layer_idx)
         self.is_causal = False
 
 
+# EuroBertPreTrainedModel：Llama 预训练基类别名
 class EuroBertPreTrainedModel(LlamaPreTrainedModel):
     pass
 
 
+# EuroBertModel：重写 forward，create_bidirectional_mask 双向注意力
 class EuroBertModel(LlamaModel):
+# forward：双向 mask + RoPE 编码器前向
     def forward(
         self,
         input_ids: torch.LongTensor = None,
@@ -139,6 +146,7 @@ class EuroBertModel(LlamaModel):
 
 
 @auto_docstring
+# EuroBertForMaskedLM：MLM 头，lm_head 与 embed 可选 tie
 class EuroBertForMaskedLM(EuroBertPreTrainedModel):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
@@ -207,6 +215,7 @@ class EuroBertForMaskedLM(EuroBertPreTrainedModel):
 
 
 @auto_docstring
+# EuroBertForSequenceClassification：bos/mean/late 池化 + 分类损失
 class EuroBertForSequenceClassification(EuroBertPreTrainedModel):
     def __init__(self, config: EuroBertConfig):
         super().__init__(config)
@@ -299,6 +308,7 @@ class EuroBertForSequenceClassification(EuroBertPreTrainedModel):
 
 
 @auto_docstring
+# EuroBertForTokenClassification：序列标注 token 分类头
 class EuroBertForTokenClassification(EuroBertPreTrainedModel):
     def __init__(self, config: EuroBertConfig):
         super().__init__(config)

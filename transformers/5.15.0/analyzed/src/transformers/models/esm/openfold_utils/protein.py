@@ -26,12 +26,16 @@ import numpy as np
 from . import residue_constants
 
 
+# FeatureDict：模型输入特征字典类型别名
 FeatureDict = Mapping[str, np.ndarray]
+# ModelOutput：嵌套模型输出字典类型别名
 ModelOutput = Mapping[str, Any]  # Is a nested dict.
+# PICO_TO_ANGSTROM：皮米到埃单位换算系数
 PICO_TO_ANGSTROM = 0.01
 
 
 @dataclasses.dataclass(frozen=True)
+# Protein：不可变 dataclass，封装 atom_positions/aatype/atom_mask 等结构字段
 class Protein:
     """Protein structure representation."""
 
@@ -69,6 +73,7 @@ class Protein:
     parents_chain_index: Sequence[int] | None = None
 
 
+# from_proteinnet_string：解析 ProteinNet 文本格式为 Protein 对象
 def from_proteinnet_string(proteinnet_str: str) -> Protein:
     tag_re = r"(\[[A-Z]+\]\n)"
     tags: list[str] = [tag.strip() for tag in re.split(tag_re, proteinnet_str) if len(tag) > 0]
@@ -118,6 +123,7 @@ def from_proteinnet_string(proteinnet_str: str) -> Protein:
     )
 
 
+# get_pdb_headers：生成 REMARK/PARENT 等 PDB 头部行
 def get_pdb_headers(prot: Protein, chain_id: int = 0) -> list[str]:
     pdb_headers: list[str] = []
 
@@ -138,6 +144,7 @@ def get_pdb_headers(prot: Protein, chain_id: int = 0) -> list[str]:
     return pdb_headers
 
 
+# add_pdb_headers：向已有 PDB 字符串注入多链 remark/parent 头
 def add_pdb_headers(prot: Protein, pdb_str: str) -> str:
     """Add pdb headers to an existing PDB string. Useful during multi-chain
     recycling
@@ -188,6 +195,7 @@ def add_pdb_headers(prot: Protein, pdb_str: str) -> str:
     return "\n".join(out_pdb_lines)
 
 
+# to_pdb：Protein 实例序列化为标准 PDB 格式字符串
 def to_pdb(prot: Protein) -> str:
     """Converts a `Protein` instance to a PDB string.
 
@@ -281,6 +289,7 @@ def to_pdb(prot: Protein) -> str:
     return "\n".join(pdb_lines)
 
 
+# ideal_atom_mask：按氨基酸序列计算理想重原子掩码（非 PDB 报告掩码）
 def ideal_atom_mask(prot: Protein) -> np.ndarray:
     """Computes an ideal atom mask.
 
@@ -296,6 +305,7 @@ def ideal_atom_mask(prot: Protein) -> np.ndarray:
     return residue_constants.STANDARD_ATOM_MASK[prot.aatype]
 
 
+# from_prediction：从模型 features/result 组装预测 Protein 结构
 def from_prediction(
     features: FeatureDict,
     result: ModelOutput,

@@ -49,6 +49,7 @@ from ...utils.output_capturing import OutputRecorder, capture_outputs
 from .configuration_evolla import EvollaConfig, SaProtConfig
 
 
+# create_position_ids_from_input_ids：非 padding 位置递增 position_ids
 def create_position_ids_from_input_ids(input_ids, padding_idx):
     """
     Replace non-padding symbols with their position numbers. Position numbers begin at padding_idx+1. Padding symbols
@@ -65,6 +66,7 @@ def create_position_ids_from_input_ids(input_ids, padding_idx):
     return incremental_indices.long() + padding_idx
 
 
+# EvollaSaProtEmbeddings：SaProt 词嵌入 + 可选 LayerNorm/token dropout
 class EvollaSaProtEmbeddings(nn.Module):
     """
     Same as BertEmbeddings with a tiny tweak for positional embeddings indexing.
@@ -157,6 +159,7 @@ class EvollaSaProtEmbeddings(nn.Module):
         return position_ids.unsqueeze(0).expand(input_shape)
 
 
+# EvollaSaProtRotaryEmbedding：SaProt 分支 RoPE 位置编码
 class EvollaSaProtRotaryEmbedding(nn.Module):
     """
     Rotary position embeddings.
@@ -248,6 +251,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed.to(original_dtype), k_embed.to(original_dtype)
 
 
+# eager_attention_forward：SaProt 双向注意力 eager 实现
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -494,6 +498,7 @@ class EvollaSaProtLayer(GradientCheckpointingLayer):
         return layer_output
 
 
+# EvollaSaProtEncoder：堆叠 SaProt Layer 的蛋白质序列编码器
 class EvollaSaProtEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -568,6 +573,7 @@ class EvollaSaProtPreTrainedModel(PreTrainedModel):
             init.copy_(getattr(module, "inv_freq"), curr_inv_freq)
 
 
+# EvollaSaProtProteinEncoder：SaProt 编码器 + pooler 输出蛋白表示
 class EvollaSaProtProteinEncoder(EvollaSaProtPreTrainedModel):
     def __init__(self, config: SaProtConfig):
         super().__init__(config)
@@ -692,6 +698,7 @@ class EvollaFeedForward(nn.Module):
         return self.fc2(self.activation(self.fc1(self.norm(x))))
 
 
+# EvollaSequenceCompressorResampler：Perceiver 式序列压缩重采样
 class EvollaSequenceCompressorResampler(nn.Module):
     def __init__(self, config: EvollaConfig):
         super().__init__()
@@ -749,6 +756,7 @@ class EvollaProteinEncoderModelOutput(ModelOutput):
     attentions: tuple[torch.FloatTensor, ...] | None = None
 
 
+# EvollaProteinEncoder：SaProt + compressor + resampler 蛋白特征提取
 class EvollaProteinEncoder(nn.Module):
     def __init__(self, config: EvollaConfig):
         super().__init__()
@@ -767,6 +775,7 @@ class EvollaProteinEncoder(nn.Module):
         )
 
 
+# EvollaSequenceAlignerCrossAttention：蛋白-文本交叉注意力对齐层
 class EvollaSequenceAlignerCrossAttention(nn.Module):
     def __init__(
         self,
@@ -1284,6 +1293,7 @@ class EvollaPreTrainedModel(PreTrainedModel):
             init.normal_(module.latents, mean=0.0, std=std)
 
 
+# EvollaModel：蛋白编码 + 对齐 + Llama 解码器多模态主干
 class EvollaModel(EvollaPreTrainedModel):
     def __init__(self, config: EvollaConfig):
         super().__init__(config)
@@ -1411,6 +1421,7 @@ class EvollaModel(EvollaPreTrainedModel):
         return output
 
 
+# EvollaForProteinText2Text：蛋白质条件文本生成，含 GenerationMixin
 class EvollaForProteinText2Text(EvollaPreTrainedModel, GenerationMixin):
     def __init__(self, config):
         super().__init__(config)

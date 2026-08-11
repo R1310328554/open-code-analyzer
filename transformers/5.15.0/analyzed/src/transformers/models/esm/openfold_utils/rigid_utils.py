@@ -23,6 +23,7 @@ import numpy as np
 import torch
 
 
+# rot_matmul：手写 3×3 旋转矩阵乘法，避免 AMP 降精度
 def rot_matmul(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     """
     Performs matrix multiplication of two rotation matrix tensors. Written out by hand to avoid AMP downcasting.
@@ -54,6 +55,7 @@ def rot_matmul(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     )
 
 
+# rot_vec_mul：旋转矩阵作用于 3D 坐标向量
 def rot_vec_mul(r: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     """
     Applies a rotation to a vector. Written out by hand to avoid AMP downcasting.
@@ -76,6 +78,7 @@ def rot_vec_mul(r: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
 
 
 @cache
+# identity_rot_mats：批量单位旋转矩阵（带 cache）
 def identity_rot_mats(
     batch_dims: tuple[int, ...],
     dtype: torch.dtype | None = None,
@@ -91,6 +94,7 @@ def identity_rot_mats(
 
 
 @cache
+# identity_trans：批量零平移向量
 def identity_trans(
     batch_dims: tuple[int, ...],
     dtype: torch.dtype | None = None,
@@ -102,6 +106,7 @@ def identity_trans(
 
 
 @cache
+# identity_quats：批量单位四元数 (1,0,0,0)
 def identity_quats(
     batch_dims: tuple[int, ...],
     dtype: torch.dtype | None = None,
@@ -142,6 +147,7 @@ _QTR_MAT[..., 2, 1] = _to_mat([("cd", 2), ("ab", 2)])
 _QTR_MAT[..., 2, 2] = _to_mat([("aa", 1), ("bb", -1), ("cc", -1), ("dd", 1)])
 
 
+# quat_to_rot：单位四元数转 3×3 旋转矩阵
 def quat_to_rot(quat: torch.Tensor) -> torch.Tensor:
     """
     Converts a quaternion to a rotation matrix.
@@ -165,6 +171,7 @@ def quat_to_rot(quat: torch.Tensor) -> torch.Tensor:
     return torch.sum(quat, dim=(-3, -4))
 
 
+# rot_to_quat：旋转矩阵转四元数（Shepperd 算法）
 def rot_to_quat(rot: torch.Tensor) -> torch.Tensor:
     if rot.shape[-2:] != (3, 3):
         raise ValueError("Input rotation is incorrectly shaped")
@@ -225,6 +232,7 @@ def _get_quat(quat_key: str, dtype: torch.dtype, device: torch.device) -> torch.
     return torch.tensor(_CACHED_QUATS[quat_key], dtype=dtype, device=device)
 
 
+# quat_multiply：Hamilton 积组合两个四元数旋转
 def quat_multiply(quat1: torch.Tensor, quat2: torch.Tensor) -> torch.Tensor:
     """Multiply a quaternion by another quaternion."""
     mat = _get_quat("_QUAT_MULTIPLY", dtype=quat1.dtype, device=quat1.device)
@@ -239,10 +247,12 @@ def quat_multiply_by_vec(quat: torch.Tensor, vec: torch.Tensor) -> torch.Tensor:
     return torch.sum(reshaped_mat * quat[..., :, None, None] * vec[..., None, :, None], dim=(-3, -2))
 
 
+# invert_rot_mat：旋转矩阵求逆（转置）
 def invert_rot_mat(rot_mat: torch.Tensor) -> torch.Tensor:
     return rot_mat.transpose(-1, -2)
 
 
+# invert_quat：四元数共轭求逆旋转
 def invert_quat(quat: torch.Tensor) -> torch.Tensor:
     quat_prime = quat.clone()
     quat_prime[..., 1:] *= -1
@@ -250,6 +260,7 @@ def invert_quat(quat: torch.Tensor) -> torch.Tensor:
     return inv
 
 
+# Rotation：3D 旋转容器，内部以矩阵或四元数存储，支持张量式索引
 class Rotation:
     """
     A 3D rotation. Depending on how the object is initialized, the rotation is represented by either a rotation matrix
@@ -727,6 +738,7 @@ class Rotation:
             raise ValueError("Both rotations are None")
 
 
+# Rigid：刚性变换（Rotation + 平移），用于局部坐标帧与结构模块
 class Rigid:
     """
     A class representing a rigid transformation. Little more than a wrapper around two objects: a Rotation object and a

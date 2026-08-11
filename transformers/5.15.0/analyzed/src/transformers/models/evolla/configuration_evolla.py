@@ -23,8 +23,10 @@ from ...utils import auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# SaProtConfig / EvollaConfig：Evolla-10B-hf checkpoint 默认超参
 @auto_docstring(checkpoint="westlake-repl/Evolla-10B-hf")
 @strict
+# SaProtConfig：SaProt 蛋白质序列 RoPE 编码器子配置
 class SaProtConfig(PreTrainedConfig):
     r"""
     mask_token_id (`int`, *optional*, defaults to 4):
@@ -61,6 +63,7 @@ class SaProtConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="westlake-repl/Evolla-10B-hf")
 @strict
+# EvollaConfig：组合 protein_encoder + aligner + resampler + llama 解码器
 class EvollaConfig(PreTrainedConfig):
     r"""
     protein_encoder_config (`dict`, *optional*):

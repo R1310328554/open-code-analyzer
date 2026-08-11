@@ -20,11 +20,14 @@ from ...processing_utils import ProcessorMixin
 from ...utils import auto_docstring
 
 
+# PROTEIN_VALID_KEYS：蛋白输入字典允许的键名
 PROTEIN_VALID_KEYS = ["aa_seq", "foldseek", "msa"]
 
 
 @auto_docstring
+# EvollaProcessor：蛋白 EsmTokenizer + 文本 chat tokenizer 联合预处理
 class EvollaProcessor(ProcessorMixin):
+# __init__：绑定蛋白/文本分词器并设置最大长度
     def __init__(self, protein_tokenizer, tokenizer=None, protein_max_length=1024, text_max_length=512, **kwargs):
         r"""
         protein_tokenizer (`EsmTokenizer`):
@@ -45,6 +48,7 @@ class EvollaProcessor(ProcessorMixin):
         self.protein_max_length = protein_max_length
         self.text_max_length = text_max_length
 
+# process_proteins：aa_seq 与 foldseek 交错拼接后 tokenize
     def process_proteins(self, proteins, protein_max_length=1024):
         sa_sequences = []
         for protein in proteins:
@@ -58,6 +62,7 @@ class EvollaProcessor(ProcessorMixin):
         )
         return sa_tokens
 
+# process_text：chat template 格式化后 tokenize 文本
     def process_text(
         self,
         texts,
@@ -83,6 +88,7 @@ class EvollaProcessor(ProcessorMixin):
         return prompt_inputs
 
     @auto_docstring
+# __call__：联合处理 proteins 与 messages_list 返回 BatchFeature
     def __call__(
         self,
         proteins: list[dict] | dict | None = None,
@@ -133,6 +139,7 @@ class EvollaProcessor(ProcessorMixin):
             }
         )
 
+# prepare_inputs_layout：统一 proteins/messages_list 为批列表格式
     def prepare_inputs_layout(
         self,
         proteins: list[dict] | dict | None = None,
@@ -147,6 +154,7 @@ class EvollaProcessor(ProcessorMixin):
             messages_list = [messages_list]
         return proteins, messages_list
 
+# validate_inputs：校验蛋白键与消息 role/content 结构
     def validate_inputs(
         self,
         proteins: list[dict] | dict | None = None,
@@ -185,6 +193,7 @@ class EvollaProcessor(ProcessorMixin):
                 f"The messages_list should be a list of lists of dictionaries, but it's {type(messages_list)}."
             )
 
+# protein_batch_decode：委托蛋白 tokenizer batch_decode
     def protein_batch_decode(self, *args, **kwargs):
         return self.protein_tokenizer.batch_decode(*args, **kwargs)
 
