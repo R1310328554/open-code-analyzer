@@ -18,13 +18,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from huggingface_hub.dataclasses import strict
+# PP-Chart2Table 配置：图表图像→表格的多模态 VLM 超参（SAM 视觉 + Qwen2 文本）
+
+from huggingface_hub.dataclasses import strictfrom huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# PPChart2TableVisionConfig：SAM 风格视觉编码器超参
 @auto_docstring(checkpoint="facebook/sam-vit-huge")
 @strict
 class PPChart2TableVisionConfig(PreTrainedConfig):
@@ -63,6 +66,7 @@ class PPChart2TableVisionConfig(PreTrainedConfig):
     mlp_dim: int = 3072
 
 
+# PPChart2TableConfig：PP-Chart2Table 图文表格生成联合配置
 @auto_docstring(checkpoint="PaddlePaddle/PP-Chart2Table_safetensors")
 @strict
 class PPChart2TableConfig(PreTrainedConfig):
@@ -94,6 +98,7 @@ class PPChart2TableConfig(PreTrainedConfig):
     image_seq_length: int = 576
     tie_word_embeddings: bool = True
 
+    # __post_init__：解析 vision/text 子配置默认值
     def __post_init__(self, **kwargs):
         if self.vision_config is None:
             self.vision_config = PPChart2TableVisionConfig()

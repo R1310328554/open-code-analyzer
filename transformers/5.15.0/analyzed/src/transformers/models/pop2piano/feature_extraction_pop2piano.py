@@ -13,6 +13,9 @@
 # limitations under the License.
 """Feature extractor class for Pop2Piano"""
 
+# Pop2Piano 特征提取：节拍检测 + log-mel 频谱预处理
+"""Feature extractor class for Pop2Piano"""
+
 import warnings
 
 import numpy
@@ -45,6 +48,7 @@ if is_scipy_available():
 logger = logging.get_logger(__name__)
 
 
+# Pop2PianoFeatureExtractor：节奏提取与 mel 频谱联合特征提取器
 @requires(backends=("essentia", "librosa", "scipy", "torch"))
 class Pop2PianoFeatureExtractor(SequenceFeatureExtractor):
     r"""
@@ -78,6 +82,7 @@ class Pop2PianoFeatureExtractor(SequenceFeatureExtractor):
 
     model_input_names = ["input_features", "beatsteps", "extrapolated_beatstep"]
 
+    # __init__：设置采样率、窗口、hop 与 mel 维度
     def __init__(
         self,
         sampling_rate: int = 22050,
@@ -112,6 +117,7 @@ class Pop2PianoFeatureExtractor(SequenceFeatureExtractor):
             mel_scale="htk",
         )
 
+    # mel_spectrogram：计算 log-mel 频谱图
     def mel_spectrogram(self, sequence: np.ndarray):
         """
         Generates MelSpectrogram.
@@ -137,6 +143,7 @@ class Pop2PianoFeatureExtractor(SequenceFeatureExtractor):
 
         return mel_specs
 
+    # extract_rhythm：Essentia RhythmExtractor2013 节拍检测
     def extract_rhythm(self, audio: np.ndarray):
         """
         This algorithm(`RhythmExtractor2013`) extracts the beat positions and estimates their confidence as well as
@@ -153,6 +160,7 @@ class Pop2PianoFeatureExtractor(SequenceFeatureExtractor):
 
         return bpm, beat_times, confidence, estimates, essentia_beat_intervals
 
+    # interpolate_beat_times：插值 beat 时间得到 beatstep
     def interpolate_beat_times(
         self, beat_times: numpy.ndarray, steps_per_beat: numpy.ndarray, n_extend: numpy.ndarray
     ):
@@ -183,6 +191,7 @@ class Pop2PianoFeatureExtractor(SequenceFeatureExtractor):
 
         return ext_beats
 
+    # preprocess_mel：按 beatstep 对齐 mel 频谱
     def preprocess_mel(self, audio: np.ndarray, beatstep: np.ndarray):
         """
         Preprocessing for log-mel-spectrogram
@@ -338,6 +347,7 @@ class Pop2PianoFeatureExtractor(SequenceFeatureExtractor):
 
         return outputs
 
+    # __call__：提取 input_features/beatsteps/extrapolated_beatstep
     def __call__(
         self,
         audio: np.ndarray | list[float] | list[np.ndarray] | list[list[float]],

@@ -13,6 +13,9 @@
 # limitations under the License.
 """PyTorch Pop2Piano model."""
 
+# Pop2Piano 建模：T5 风格编码器-解码器 + mel 条件钢琴 token 生成
+"""PyTorch Pop2Piano model."""
+
 import copy
 import math
 from collections.abc import Callable
@@ -42,6 +45,7 @@ logger = logging.get_logger(__name__)
 
 
 # Copied from transformers.models.t5.modeling_t5.eager_attention_forward
+# eager_attention_forward：Pop2Piano 标准缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -75,6 +79,7 @@ def eager_attention_forward(
 
 
 # Copied from transformers.models.t5.modeling_t5.T5LayerNorm with T5->Pop2Piano
+# Pop2PianoLayerNorm：RMS 风格 LayerNorm（无 bias）
 class Pop2PianoLayerNorm(nn.Module):
     def __init__(self, hidden_size, eps=1e-6):
         """
@@ -84,6 +89,7 @@ class Pop2PianoLayerNorm(nn.Module):
         self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
 
+    # forward：RMS LayerNorm 缩放
     def forward(self, hidden_states):
         # Pop2Piano uses a layer_norm which only scales and doesn't shift, which is also known as Root Mean
         # Square Layer Normalization https://huggingface.co/papers/1910.07467 thus variance is calculated
@@ -101,6 +107,7 @@ class Pop2PianoLayerNorm(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5DenseActDense with T5->Pop2Piano,t5->pop2piano
+# Pop2PianoDenseActDense：标准 FFN 前馈层
 class Pop2PianoDenseActDense(nn.Module):
     def __init__(self, config: Pop2PianoConfig):
         super().__init__()
@@ -124,6 +131,7 @@ class Pop2PianoDenseActDense(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5DenseGatedActDense with T5->Pop2Piano
+# Pop2PianoDenseGatedActDense：门控 GELU FFN 前馈层
 class Pop2PianoDenseGatedActDense(nn.Module):
     def __init__(self, config: Pop2PianoConfig):
         super().__init__()
@@ -154,6 +162,7 @@ class Pop2PianoDenseGatedActDense(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5LayerFF with T5->Pop2Piano
+# Pop2PianoLayerFF：FFN 子层封装
 class Pop2PianoLayerFF(nn.Module):
     def __init__(self, config: Pop2PianoConfig):
         super().__init__()
@@ -173,6 +182,7 @@ class Pop2PianoLayerFF(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5Attention with T5->Pop2Piano,t5->pop2piano
+# Pop2PianoAttention：相对位置偏置多头注意力
 class Pop2PianoAttention(nn.Module):
     def __init__(
         self,
@@ -370,6 +380,7 @@ class Pop2PianoAttention(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5LayerSelfAttention with T5->Pop2Piano,t5->pop2piano
+# Pop2PianoLayerSelfAttention：自注意力子层
 class Pop2PianoLayerSelfAttention(nn.Module):
     def __init__(self, config, has_relative_attention_bias=False, layer_idx: int | None = None):
         super().__init__()
@@ -403,6 +414,7 @@ class Pop2PianoLayerSelfAttention(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5LayerCrossAttention with T5->Pop2Piano,t5->pop2piano
+# Pop2PianoLayerCrossAttention：交叉注意力子层
 class Pop2PianoLayerCrossAttention(nn.Module):
     def __init__(self, config, layer_idx: int | None = None):
         super().__init__()
@@ -435,6 +447,7 @@ class Pop2PianoLayerCrossAttention(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5Block with T5->Pop2Piano,t5->pop2piano
+# Pop2PianoBlock：注意力 + FFN 变换器块
 class Pop2PianoBlock(GradientCheckpointingLayer):
     def __init__(self, config, has_relative_attention_bias=False, layer_idx: int | None = None):
         super().__init__()
@@ -515,6 +528,7 @@ class Pop2PianoBlock(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Pop2PianoPreTrainedModel：Pop2Piano 预训练基类
 class Pop2PianoPreTrainedModel(PreTrainedModel):
     config: Pop2PianoConfig
     base_model_prefix = "transformer"
@@ -598,6 +612,7 @@ class Pop2PianoPreTrainedModel(PreTrainedModel):
         return shifted_input_ids
 
 
+# Pop2PianoStack：编码器或解码器层堆叠
 class Pop2PianoStack(Pop2PianoPreTrainedModel):
     # Copied from transformers.models.t5.modeling_t5.T5Stack.__init__ with T5->Pop2Piano,t5->pop2piano
     def __init__(self, config):
@@ -741,6 +756,7 @@ class Pop2PianoStack(Pop2PianoPreTrainedModel):
         )
 
 
+# Pop2PianoConcatEmbeddingToMel：composer 嵌入与 mel 拼接
 class Pop2PianoConcatEmbeddingToMel(nn.Module):
     """Embedding Matrix for `composer` tokens."""
 
@@ -760,6 +776,7 @@ class Pop2PianoConcatEmbeddingToMel(nn.Module):
     Pop2Piano Model with a `language modeling` head on top.
     """
 )
+# Pop2PianoForConditionalGeneration：音频条件钢琴序列生成
 class Pop2PianoForConditionalGeneration(Pop2PianoPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {
         "encoder.embed_tokens.weight": "shared.weight",

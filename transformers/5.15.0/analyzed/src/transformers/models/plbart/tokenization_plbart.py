@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# PLBART 分词：编程语言到自然语言的 SentencePiece 多语言序列到序列分词器
+
 from typing import Any
 
 from ...tokenization_python import BatchEncoding
@@ -44,6 +46,7 @@ FAIRSEQ_LANGUAGE_CODES_MAP = {
 }
 
 
+# PLBartTokenizer：Fairseq 对齐的 PLBART 编程语言 BART 分词器
 @requires(backends=("sentencepiece",))
 class PLBartTokenizer(SentencePieceBackend):
     """
@@ -113,6 +116,7 @@ class PLBartTokenizer(SentencePieceBackend):
     prefix_tokens: list[int] = []
     suffix_tokens: list[int] = []
 
+    # __init__：初始化 SentencePiece 词表与语言码映射
     def __init__(
         self,
         vocab_file,
@@ -231,6 +235,7 @@ class PLBartTokenizer(SentencePieceBackend):
         self.set_src_lang_special_tokens(self._src_lang)
 
     @property
+    # vocab_size：返回含语言码与 mask 的 Fairseq 词表大小
     def vocab_size(self):
         lang_code_count = len(getattr(self, "lang_code_to_id", {}))
         fairseq_offset = getattr(self, "fairseq_offset", 1)
@@ -239,6 +244,7 @@ class PLBartTokenizer(SentencePieceBackend):
             return base_vocab + lang_code_count + fairseq_offset + 1  # +1 for mask token
         return base_vocab + lang_code_count + fairseq_offset
 
+    # get_vocab：返回 Fairseq 结构的完整词表映射
     def get_vocab(self):
         """Override to use fairseq vocabulary structure"""
         vocab = self.fairseq_tokens_to_ids.copy()
@@ -262,6 +268,7 @@ class PLBartTokenizer(SentencePieceBackend):
         self._src_lang = new_src_lang
         self.set_src_lang_special_tokens(self._src_lang)
 
+    # _build_translation_inputs：为翻译 pipeline 构造带 forced_bos 的输入
     def _build_translation_inputs(
         self, raw_inputs, return_tensors: str, src_lang: str | None, tgt_lang: str | None, **extra_kwargs
     ):
@@ -275,6 +282,7 @@ class PLBartTokenizer(SentencePieceBackend):
         inputs["forced_bos_token_id"] = tgt_lang_id
         return inputs
 
+    # _convert_token_to_id：将 token 字符串转为 Fairseq 对齐的 ID
     def _convert_token_to_id(self, token):
         """Converts a token (str) in an id using the vocab."""
         if token in self.fairseq_tokens_to_ids:
@@ -284,12 +292,14 @@ class PLBartTokenizer(SentencePieceBackend):
         # Need to return unknown token if the SP model returned 0
         return spm_id + self.fairseq_offset if spm_id else self.unk_token_id
 
+    # _convert_id_to_token：将 ID 转为 token 字符串
     def _convert_id_to_token(self, index):
         """Converts an index (integer) in a token (str) using the vocab."""
         if index in self.fairseq_ids_to_tokens:
             return self.fairseq_ids_to_tokens[index]
         return self.sp_model.IdToPiece(index - self.fairseq_offset)
 
+    # prepare_seq2seq_batch：批量构造 seq2seq 编码（源/目标语言码）
     def prepare_seq2seq_batch(
         self,
         src_texts: list[str],
@@ -308,6 +318,7 @@ class PLBartTokenizer(SentencePieceBackend):
     def _switch_to_target_mode(self):
         return self.set_tgt_lang_special_tokens(self.tgt_lang)
 
+    # set_src_lang_special_tokens：设置源语言后缀 [eos, lang_code]
     def set_src_lang_special_tokens(self, src_lang) -> None:
         """Reset the special tokens to the source lang setting. No prefix and suffix=[eos, src_lang_code]."""
         src_lang = self._convert_lang_code_special_format(src_lang)
@@ -318,6 +329,7 @@ class PLBartTokenizer(SentencePieceBackend):
         else:
             self.suffix_tokens = [self.eos_token_id]
 
+    # set_tgt_lang_special_tokens：设置目标语言后缀 [eos, lang_code]
     def set_tgt_lang_special_tokens(self, lang: str) -> None:
         """Reset the special tokens to the target language setting. No prefix and suffix=[eos, tgt_lang_code]."""
         lang = self._convert_lang_code_special_format(lang)
@@ -329,11 +341,13 @@ class PLBartTokenizer(SentencePieceBackend):
         else:
             self.suffix_tokens = [self.eos_token_id]
 
+    # _convert_lang_code_special_format：将语言码转为 Fairseq 特殊 token 格式
     def _convert_lang_code_special_format(self, lang: str) -> str:
         """Convert Language Codes to format tokenizer uses if required"""
         lang = FAIRSEQ_LANGUAGE_CODES_MAP.get(lang, lang)
         return lang
 
+    # decode：解码 token ID，默认使用实例的 clean_up 设置
     def decode(self, token_ids, skip_special_tokens=False, clean_up_tokenization_spaces=None, **kwargs):
         """Override to use self.clean_up_tokenization_spaces as default for batched input."""
         return super().decode(

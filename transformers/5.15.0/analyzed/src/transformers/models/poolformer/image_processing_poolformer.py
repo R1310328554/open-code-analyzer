@@ -13,6 +13,9 @@
 # limitations under the License.
 """Image processor class for PoolFormer."""
 
+# PoolFormer Torchvision 图像处理：crop_pct 缩放 + 批量分组加速
+"""Image processor class for PoolFormer."""
+
 import torch
 from torchvision.transforms.v2 import functional as tvF
 
@@ -30,6 +33,7 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# PoolFormerImageProcessorKwargs：PoolFormer 图像处理器 kwargs 类型
 class PoolFormerImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     crop_pct (`float`, *optional*, defaults to `self.crop_pct`):
@@ -39,6 +43,7 @@ class PoolFormerImageProcessorKwargs(ImagesKwargs, total=False):
     crop_pct: float
 
 
+# PoolFormerImageProcessor：Torchvision 后端 PoolFormer 图像预处理器
 @auto_docstring
 class PoolFormerImageProcessor(TorchvisionBackend):
     """Torchvision backend for PoolFormer with custom resize (crop_pct)."""
@@ -58,9 +63,11 @@ class PoolFormerImageProcessor(TorchvisionBackend):
     do_normalize = True
     do_convert_rgb = None
 
+    # __init__：初始化 resize/crop/normalize 默认参数
     def __init__(self, **kwargs: Unpack[PoolFormerImageProcessorKwargs]):
         super().__init__(**kwargs)
 
+    # resize：按 crop_pct 放大后再缩放到目标尺寸
     def resize(
         self,
         image: "torch.Tensor",
@@ -86,6 +93,7 @@ class PoolFormerImageProcessor(TorchvisionBackend):
             size = SizeDict(height=new_size[0], width=new_size[1])
         return super().resize(image, size=size, resample=resample, **kwargs)
 
+    # _preprocess：分组批量 resize/crop/归一化
     def _preprocess(
         self,
         images: list["torch.Tensor"],

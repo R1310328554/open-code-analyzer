@@ -13,12 +13,16 @@
 # limitations under the License.
 """Pop2Piano model configuration"""
 
+# Pop2Piano 配置：音频到钢琴 MIDI 的 T5 风格 seq2seq 超参
+"""Pop2Piano model configuration"""
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# Pop2PianoConfig：Pop2Piano 音频转钢琴序列生成模型超参
 @auto_docstring(checkpoint="sweetcocoa/pop2piano")
 @strict
 class Pop2PianoConfig(PreTrainedConfig):
@@ -61,6 +65,7 @@ class Pop2PianoConfig(PreTrainedConfig):
     is_decoder: bool = False
     tie_word_embeddings: bool = True
 
+    # __post_init__：解析门控 FFN 与解码器层数
     def __post_init__(self, **kwargs):
         self.num_decoder_layers = self.num_decoder_layers if self.num_decoder_layers is not None else self.num_layers
         self.is_gated_act = self.feed_forward_proj.split("-")[0] == "gated"

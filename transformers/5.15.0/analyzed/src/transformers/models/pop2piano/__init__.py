@@ -23,5 +23,6 @@ if TYPE_CHECKING:
 else:
     import sys
 
-    _file = globals()["__file__"]
+    # 运行时以 _LazyModule 延迟加载 Pop2PianoConfig / Pop2PianoForConditionalGeneration 等
+        _file = globals()["__file__"]
     sys.modules[__name__] = _LazyModule(__name__, _file, define_import_structure(_file), module_spec=__spec__)

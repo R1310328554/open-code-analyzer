@@ -13,6 +13,9 @@
 # limitations under the License.
 """Processor class for Pop2Piano."""
 
+# Pop2Piano 处理器：音频特征提取与 MIDI token 分词联合封装
+"""Processor class for Pop2Piano."""
+
 import os
 
 import numpy as np
@@ -24,13 +27,16 @@ from ...utils import TensorType, auto_docstring
 from ...utils.import_utils import requires
 
 
+# Pop2PianoProcessor：音频→mel/节拍 或 notes→token 联合处理器
 @requires(backends=("essentia", "librosa", "pretty_midi", "scipy", "torch"))
 @auto_docstring
 class Pop2PianoProcessor(ProcessorMixin):
+    # __init__：绑定 feature_extractor 与 tokenizer
     def __init__(self, feature_extractor, tokenizer):
         super().__init__(feature_extractor, tokenizer)
 
     @auto_docstring
+    # __call__：音频特征提取或 notes token 编码
     def __call__(
         self,
         audio: np.ndarray | list[float] | list[np.ndarray] = None,
@@ -95,6 +101,7 @@ class Pop2PianoProcessor(ProcessorMixin):
             inputs["token_ids"] = encoded_token_ids["token_ids"]
             return inputs
 
+    # batch_decode：批量 token 解码为 MIDI/notes
     def batch_decode(
         self,
         token_ids,

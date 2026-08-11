@@ -13,6 +13,9 @@
 # limitations under the License.
 """Image processor class for PoolFormer."""
 
+# PoolFormer PIL 图像处理：crop_pct 缩放 + ImageNet 归一化
+"""Image processor class for PoolFormer."""
+
 import numpy as np
 
 from ...image_processing_backends import PilBackend
@@ -30,6 +33,7 @@ from ...utils import TensorType, auto_docstring
 
 
 # Adapted from transformers.models.poolformer.image_processing_poolformer.PoolFormerImageProcessorKwargs
+# PoolFormerImageProcessorKwargs：PoolFormer 图像处理器 kwargs 类型
 class PoolFormerImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     crop_pct (`float`, *optional*, defaults to `self.crop_pct`):
@@ -39,6 +43,7 @@ class PoolFormerImageProcessorKwargs(ImagesKwargs, total=False):
     crop_pct: float
 
 
+# PoolFormerImageProcessorPil：PIL 后端 PoolFormer 图像预处理器
 @auto_docstring
 class PoolFormerImageProcessorPil(PilBackend):
     """PIL backend for PoolFormer with custom resize (crop_pct)."""
@@ -58,9 +63,11 @@ class PoolFormerImageProcessorPil(PilBackend):
     do_normalize = True
     do_convert_rgb = None
 
+    # __init__：初始化 resize/crop/normalize 默认参数
     def __init__(self, **kwargs: Unpack[PoolFormerImageProcessorKwargs]):
         super().__init__(**kwargs)
 
+    # resize：按 crop_pct 放大后再缩放到目标尺寸
     def resize(
         self,
         image: np.ndarray,
@@ -92,6 +99,7 @@ class PoolFormerImageProcessorPil(PilBackend):
             **kwargs,
         )
 
+    # _preprocess：PoolFormer 自定义预处理流水线
     def _preprocess(
         self,
         images: list[np.ndarray],

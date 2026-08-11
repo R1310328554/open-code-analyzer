@@ -13,12 +13,16 @@
 # limitations under the License.
 """PoolFormer model configuration"""
 
+# PoolFormer 配置：MetaFormer 无注意力池化视觉骨干超参
+"""PoolFormer model configuration"""
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# PoolFormerConfig：Sea AI Labs PoolFormer 图像分类模型超参
 @auto_docstring(checkpoint="sail/poolformer_s12")
 @strict
 class PoolFormerConfig(PreTrainedConfig):

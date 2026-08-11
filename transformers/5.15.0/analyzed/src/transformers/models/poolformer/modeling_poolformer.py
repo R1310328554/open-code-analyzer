@@ -13,6 +13,9 @@
 # limitations under the License.
 """PyTorch PoolFormer model."""
 
+# PoolFormer 建模：MetaFormer 池化 token 混合 + 卷积 MLP 视觉骨干
+"""PyTorch PoolFormer model."""
+
 import collections.abc
 
 import torch
@@ -29,6 +32,7 @@ from .configuration_poolformer import PoolFormerConfig
 logger = logging.get_logger(__name__)
 
 
+# PoolFormerEmbeddings：卷积 patch 嵌入与归一化
 class PoolFormerEmbeddings(nn.Module):
     """
     Construct Patch Embeddings.
@@ -43,12 +47,14 @@ class PoolFormerEmbeddings(nn.Module):
         self.projection = nn.Conv2d(num_channels, hidden_size, kernel_size=patch_size, stride=stride, padding=padding)
         self.norm = norm_layer(hidden_size) if norm_layer else nn.Identity()
 
+    # forward：卷积投影得到 patch 嵌入
     def forward(self, pixel_values):
         embeddings = self.projection(pixel_values)
         embeddings = self.norm(embeddings)
         return embeddings
 
 
+# PoolFormerGroupNorm：单组 GroupNorm（通道维归一化）
 class PoolFormerGroupNorm(nn.GroupNorm):
     """
     Group Normalization with 1 group. Input: tensor in shape [B, C, H, W]
@@ -58,16 +64,19 @@ class PoolFormerGroupNorm(nn.GroupNorm):
         super().__init__(1, num_channels, **kwargs)
 
 
+# PoolFormerPooling：平均池化残差（token 混合核心）
 class PoolFormerPooling(nn.Module):
     def __init__(self, pool_size):
         super().__init__()
         self.pool = nn.AvgPool2d(pool_size, stride=1, padding=pool_size // 2, count_include_pad=False)
 
+    # forward：池化残差 token 混合
     def forward(self, hidden_states):
         return self.pool(hidden_states) - hidden_states
 
 
 # Copied from transformers.models.swin.modular_swin.SwinDropPath with SwinDropPath->PoolFormerDropPath
+# PoolFormerDropPath：随机深度 DropPath 正则
 class PoolFormerDropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -92,6 +101,7 @@ class PoolFormerDropPath(nn.Module):
         return f"p={self.drop_prob}"
 
 
+# PoolFormerOutput：1×1 卷积 MLP 输出块
 class PoolFormerOutput(nn.Module):
     def __init__(self, config, dropout_prob, hidden_size, intermediate_size):
         super().__init__()
@@ -113,6 +123,7 @@ class PoolFormerOutput(nn.Module):
         return hidden_states
 
 
+# PoolFormerLayer：PoolFormer 块（池化 + MLP + 残差）
 class PoolFormerLayer(nn.Module):
     """This corresponds to the 'PoolFormerBlock' class in the original implementation."""
 
@@ -164,6 +175,7 @@ class PoolFormerLayer(nn.Module):
             return outputs
 
 
+# PoolFormerEncoder：多阶段 patch 嵌入与 PoolFormer 层堆叠
 class PoolFormerEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -208,6 +220,7 @@ class PoolFormerEncoder(nn.Module):
 
         self.block = nn.ModuleList(blocks)
 
+    # forward：编码器前向，可选返回各阶段隐状态
     def forward(self, pixel_values, output_hidden_states=False, return_dict=True):
         all_hidden_states = () if output_hidden_states else None
 
@@ -230,6 +243,7 @@ class PoolFormerEncoder(nn.Module):
         return BaseModelOutputWithNoAttention(last_hidden_state=hidden_states, hidden_states=all_hidden_states)
 
 
+# PoolFormerPreTrainedModel：PoolFormer 预训练基类与权重初始化
 @auto_docstring
 class PoolFormerPreTrainedModel(PreTrainedModel):
     config: PoolFormerConfig
@@ -248,6 +262,7 @@ class PoolFormerPreTrainedModel(PreTrainedModel):
                 init.constant_(module.layer_scale_2, self.config.layer_scale_init_value)
 
 
+# PoolFormerModel：PoolFormer 视觉骨干（无分类头）
 @auto_docstring
 class PoolFormerModel(PoolFormerPreTrainedModel):
     def __init__(self, config):
@@ -298,6 +313,7 @@ class PoolFormerModel(PoolFormerPreTrainedModel):
         )
 
 
+# PoolFormerFinalPooler：全局平均池化输出
 class PoolFormerFinalPooler(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -308,6 +324,7 @@ class PoolFormerFinalPooler(nn.Module):
         return output
 
 
+# PoolFormerForImageClassification：PoolFormer 图像分类头
 @auto_docstring(
     custom_intro="""
     PoolFormer Model transformer with an image classification head on top

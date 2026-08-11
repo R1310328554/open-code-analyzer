@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Tokenization class for Pop2Piano"""
+
+# Pop2Piano 分词：MIDI 事件与相对时间 token 互转
 """Tokenization class for Pop2Piano."""
 
 import json
@@ -35,6 +38,7 @@ VOCAB_FILES_NAMES = {
 }
 
 
+# token_time_to_note：时间偏移 token 转为音符时间索引
 def token_time_to_note(number, cutoff_time_idx, current_idx):
     current_idx += number
     if cutoff_time_idx is not None:
@@ -43,6 +47,7 @@ def token_time_to_note(number, cutoff_time_idx, current_idx):
     return current_idx
 
 
+# token_note_to_note：音符 token 转为 MIDI note 事件
 def token_note_to_note(number, current_velocity, default_velocity, note_onsets_ready, current_idx, notes):
     if note_onsets_ready[number] is not None:
         # offset with onset
@@ -58,6 +63,7 @@ def token_note_to_note(number, current_velocity, default_velocity, note_onsets_r
     return notes
 
 
+# Pop2PianoTokenizer：Pop2Piano 相对时间 MIDI token 分词器
 @requires(backends=("pretty_midi", "torch"))
 class Pop2PianoTokenizer(PreTrainedTokenizer):
     """
@@ -88,6 +94,7 @@ class Pop2PianoTokenizer(PreTrainedTokenizer):
     model_input_names = ["token_ids", "attention_mask"]
     vocab_files_names = VOCAB_FILES_NAMES
 
+    # __init__：加载 vocab 与默认 velocity/小节数
     def __init__(
         self,
         vocab,
@@ -165,6 +172,7 @@ class Pop2PianoTokenizer(PreTrainedTokenizer):
         """
         return self.encoder.get(f"{token}_{token_type}", int(self.unk_token))
 
+    # relative_batch_tokens_ids_to_notes：批量 token→notes
     def relative_batch_tokens_ids_to_notes(
         self,
         tokens: np.ndarray,
@@ -209,6 +217,7 @@ class Pop2PianoTokenizer(PreTrainedTokenizer):
             return []
         return notes
 
+    # relative_batch_tokens_ids_to_midi：批量 token→MIDI
     def relative_batch_tokens_ids_to_midi(
         self,
         tokens: np.ndarray,
@@ -245,6 +254,7 @@ class Pop2PianoTokenizer(PreTrainedTokenizer):
 
     # Taken from the original code
     # Please see https://github.com/sweetcocoa/pop2piano/blob/fac11e8dcfc73487513f4588e8d0c22a22f2fdc5/midi_tokenizer.py#L257
+    # relative_tokens_ids_to_notes：单序列 token→notes
     def relative_tokens_ids_to_notes(self, tokens: np.ndarray, start_idx: float, cutoff_time_idx: float | None = None):
         """
         Converts relative tokens to notes which will then be used to create Pretty Midi objects.
@@ -305,6 +315,7 @@ class Pop2PianoTokenizer(PreTrainedTokenizer):
             notes = notes[note_order.argsort()]
             return notes
 
+    # notes_to_midi：notes 数组转为 pretty_midi 对象
     def notes_to_midi(self, notes: np.ndarray, beatstep: np.ndarray, offset_sec: int = 0.0):
         """
         Converts notes to Midi.
@@ -470,6 +481,7 @@ class Pop2PianoTokenizer(PreTrainedTokenizer):
 
         return BatchEncoding({"token_ids": encoded_batch_token_ids})
 
+    # __call__：notes 编码为 token ID 序列
     def __call__(
         self,
         notes: np.ndarray | list[pretty_midi.Note] | list[list[pretty_midi.Note]],

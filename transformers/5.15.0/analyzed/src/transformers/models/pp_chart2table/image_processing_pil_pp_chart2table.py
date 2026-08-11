@@ -18,10 +18,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ...image_processing_backends import PilBackend
+# PP-Chart2Table PIL 图像处理：1024×1024 CLIP 风格 resize 与归一化
+
+from ...image_processing_backends import PilBackendfrom ...image_processing_backends import PilBackend
 from ...utils import auto_docstring
 
 
+# PPChart2TableImageProcessorPil：图表 OCR 视觉输入 PIL 预处理器
 @auto_docstring
 class PPChart2TableImageProcessorPil(PilBackend):
     resample = 3
