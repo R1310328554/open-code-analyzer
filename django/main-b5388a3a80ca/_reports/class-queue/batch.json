@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T04:34:38Z",
   "files": [
-    "django/conf/locale/es_PR/formats.py",
-    "django/conf/locale/et/__init__.py",
-    "django/conf/locale/et/formats.py",
-    "django/conf/locale/eu/__init__.py",
-    "django/conf/locale/eu/formats.py",
-    "django/conf/locale/fa/__init__.py",
-    "django/conf/locale/fa/formats.py",
-    "django/conf/locale/fi/__init__.py",
-    "django/conf/locale/fi/formats.py",
-    "django/conf/locale/fr/__init__.py",
-    "django/conf/locale/fr/formats.py",
-    "django/conf/locale/fr_BE/__init__.py",
-    "django/conf/locale/fr_BE/formats.py",
-    "django/conf/locale/fr_CA/__init__.py",
-    "django/conf/locale/fr_CA/formats.py",
     "django/conf/locale/fr_CH/__init__.py",
     "django/conf/locale/fr_CH/formats.py",
     "django/conf/locale/fy/__init__.py",
@@ -33,5 +18,5 @@
     "django/conf/locale/hr/__init__.py"
   ],
   "remaining_pending": 852,
-  "done": 60
+  "done": 75
 }
