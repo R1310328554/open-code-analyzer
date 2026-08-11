@@ -55,6 +55,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="skt/A.X-K2")
 @strict
+# AXK2Config：继承 DeepseekV32Config 的 A.X-K2 配置
 class AXK2Config(DeepseekV32Config):
     r"""
     n_group (`int`, *optional*):
@@ -180,10 +181,12 @@ class AXK2Config(DeepseekV32Config):
                 raise ValueError(f"`topk_group` ({self.topk_group}) cannot exceed `n_group` ({self.n_group}).")
 
 
+# AXK2RMSNorm：复用 DeepSeek-V3 RMSNorm
 class AXK2RMSNorm(DeepseekV3RMSNorm):
     pass
 
 
+# AXK2GateMLP：基于 CLIPMLP 的低秩门控 MLP
 class AXK2GateMLP(CLIPMLP):
     def __init__(self, config: AXK2Config):
         super().__init__(config)
@@ -192,6 +195,7 @@ class AXK2GateMLP(CLIPMLP):
         self.fc2 = nn.Linear(config.gated_norm_rank, config.hidden_size, bias=False)
 
 
+# AXK2GatedRMSNorm：RMSNorm + 输入相关 sigmoid 门 modular 定义
 class AXK2GatedRMSNorm(nn.Module):
     """RMSNorm followed by a low-rank input-dependent sigmoid gate (Megatron `GatedNormWrapper`):
 
@@ -209,14 +213,17 @@ class AXK2GatedRMSNorm(nn.Module):
         return (y * torch.sigmoid(self.mlp(y).float())).to(y.dtype)
 
 
+# AXK2RotaryEmbedding：复用 DeepSeek-V3.2 RoPE
 class AXK2RotaryEmbedding(DeepseekV32RotaryEmbedding):
     pass
 
 
+# AXK2Indexer：复用 DeepSeek-V3.2 DSA 索引器
 class AXK2Indexer(DeepseekV32Indexer):
     pass
 
 
+# AXK2TopkRouter：MoE 路由，Light 版可跳过分组 scoring
 class AXK2TopkRouter(DeepseekV32TopkRouter):
     def apply_group_scoring(self, scores_for_choice):
         """Apply DeepSeek style grouped scoring"""
@@ -256,14 +263,17 @@ class AXK2TopkRouter(DeepseekV32TopkRouter):
         return router_logits, topk_weights, topk_indices
 
 
+# AXK2Experts：复用 DeepSeek-V3.2 专家权重
 class AXK2Experts(DeepseekV32Experts):
     pass
 
 
+# AXK2MoE：复用 DeepSeek-V3.2 MoE 块
 class AXK2MoE(DeepseekV32MoE):
     pass
 
 
+# AXK2Attention：重写 forward，融合 q_gate 与 indexer 稀疏注意力
 class AXK2Attention(DeepseekV32Attention):
     def __init__(self, config: AXK2Config, layer_idx: int):
         nn.Module.__init__(self)
@@ -399,6 +409,7 @@ class AXK2Attention(DeepseekV32Attention):
         return attn_output, attn_weights
 
 
+# AXK2DecoderLayer：MoE 层 post_attention 使用 GatedRMSNorm
 class AXK2DecoderLayer(DeepseekV32DecoderLayer):
     def __init__(self, config: AXK2Config, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -410,6 +421,7 @@ class AXK2DecoderLayer(DeepseekV32DecoderLayer):
         )
 
 
+# AXK2PreTrainedModel：modular 预训练基类
 class AXK2PreTrainedModel(DeepseekV32PreTrainedModel):
     _keys_to_ignore_on_load_unexpected = ["inv_freq"]
 
@@ -424,10 +436,12 @@ class AXK2PreTrainedModel(DeepseekV32PreTrainedModel):
             init.normal_(module.down_proj, mean=0.0, std=self.config.initializer_range)
 
 
+# AXK2Model：A.X-K2 主干 modular 定义
 class AXK2Model(DeepseekV32Model):
     pass
 
 
+# AXK2ForCausalLM：因果 LM 头 modular 定义
 class AXK2ForCausalLM(DeepseekV32ForCausalLM):
     pass
 

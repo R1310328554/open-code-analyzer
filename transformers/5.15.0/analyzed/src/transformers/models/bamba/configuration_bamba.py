@@ -28,6 +28,7 @@ from ...utils import auto_docstring
     """,
     checkpoint="ibm-fms/Bamba-9.8b-2.2T-hf",
 )
+# BambaConfig：混合 Mamba2+Attention 的 PreTrainedConfig，含 attn_layer_indices
 class BambaConfig(PreTrainedConfig):
     r"""
     num_logits_to_keep (`int` or `None`, *optional*, defaults to 1):
@@ -111,3 +112,5 @@ class BambaConfig(PreTrainedConfig):
 
 
 __all__ = ["BambaConfig"]
+# 模块 src/transformers/models/bamba/configuration_bamba.py：Transformers 5.15.0 wave9a 中文文档注释。
+

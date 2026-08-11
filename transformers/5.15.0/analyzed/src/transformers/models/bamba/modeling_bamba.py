@@ -48,6 +48,7 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_bamba import BambaConfig
 
 
+# BambaRotaryEmbedding：RoPE 位置编码，供稀疏注意力层使用
 class BambaRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: BambaConfig, device=None):
@@ -190,6 +191,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# BambaAttention：全注意力层，GQA 多头自注意力 + RoPE
 class BambaAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -257,6 +259,7 @@ class BambaAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# BambaRMSNormGated：Mamba2 门控 RMSNorm，调制 SSM 输出
 class BambaRMSNormGated(torch.nn.Module):
     def __init__(self, hidden_size, eps=1e-6):
         super().__init__()
@@ -578,6 +581,7 @@ def mamba2_chunk_scan(
         mamba2_chunk_scan,
     ]
 )
+# BambaMixer：Mamba2 SSM 混合层，含 selective scan 与 causal conv
 class BambaMixer(nn.Module):
     """
     Compute ∆, A, B, C, and D the state space parameters and compute the `contextualized_states`.
@@ -795,6 +799,7 @@ class BambaMixer(nn.Module):
         return contextualized_states
 
 
+# BambaMLP：SwiGLU 前馈网络
 class BambaMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -812,6 +817,7 @@ class BambaMLP(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# BambaRMSNorm：标准 RMS 归一化层
 class BambaRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -832,6 +838,7 @@ class BambaRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# BambaDecoderLayer：按层类型切换 MambaMixer 或 Attention
 class BambaDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: BambaConfig, layer_idx: int, layer_type: str = "linear_attention"):
         super().__init__()
@@ -894,6 +901,7 @@ class BambaDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# BambaPreTrainedModel：预训练基类与权重初始化
 class BambaPreTrainedModel(PreTrainedModel):
     config: BambaConfig
     base_model_prefix = "model"
@@ -919,6 +927,7 @@ class BambaPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# BambaModel：Bamba 主干，输出 hidden states 与 past_key_values
 class BambaModel(BambaPreTrainedModel):
     def __init__(self, config: BambaConfig):
         super().__init__(config)
@@ -1001,6 +1010,7 @@ class BambaModel(BambaPreTrainedModel):
 
 
 @auto_docstring
+# BambaForCausalLM：因果 LM 头，支持 generate 与 z_loss
 class BambaForCausalLM(BambaPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}

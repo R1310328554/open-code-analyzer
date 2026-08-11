@@ -47,6 +47,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="skt/A.X-K1")
 @strict
+# AXK1Config：SK Telecom A.X-K1 MoE 配置，继承 DeepSeek-V3 超参
 class AXK1Config(DeepseekV3Config):
     r"""
     n_group (`int`, *optional*, defaults to 8):
@@ -103,26 +104,32 @@ class AXK1Config(DeepseekV3Config):
     num_mtp_layers = AttributeError()
 
 
+# AXK1RMSNorm：直接复用 DeepSeek-V3 RMSNorm
 class AXK1RMSNorm(DeepseekV3RMSNorm):
     pass
 
 
+# AXK1RotaryEmbedding：复用 DeepSeek-V3 RoPE 位置编码
 class AXK1RotaryEmbedding(DeepseekV3RotaryEmbedding):
     pass
 
 
+# AXK1MLP：密集层 FFN，用于前若干 dense 层
 class AXK1MLP(DeepseekV3MLP):
     pass
 
 
+# AXK1TopkRouter：分组 sigmoid top-k 路由，选择 MoE 专家
 class AXK1TopkRouter(DeepseekV3TopkRouter):
     pass
 
 
+# AXK1Experts：多专家权重堆叠，按路由索引 gather 计算
 class AXK1Experts(DeepseekV3Experts):
     pass
 
 
+# AXK1MoE：MoE 块，在共享专家残差后追加 post_mlp_layernorm（A.X-K1 唯一改动）
 class AXK1MoE(DeepseekV3MoE):
     """DeepSeek-V3 MoE with an extra `post_mlp_layernorm` on the block output (A.X-K1's single delta).
 
@@ -144,14 +151,17 @@ class AXK1MoE(DeepseekV3MoE):
         return self.post_mlp_layernorm(hidden_states)
 
 
+# AXK1Attention：多头潜注意力 MLA，继承 DeepSeek-V3
 class AXK1Attention(DeepseekV3Attention):
     pass
 
 
+# AXK1DecoderLayer：Decoder 层（Attn + MoE/dense MLP + 残差）
 class AXK1DecoderLayer(DeepseekV3DecoderLayer):
     pass
 
 
+# AXK1PreTrainedModel：预训练基类，含 router/experts 权重初始化
 class AXK1PreTrainedModel(DeepseekV3PreTrainedModel):
     _keys_to_ignore_on_load_unexpected = ["inv_freq"]
 
@@ -166,10 +176,12 @@ class AXK1PreTrainedModel(DeepseekV3PreTrainedModel):
             init.normal_(module.down_proj, mean=0.0, std=self.config.initializer_range)
 
 
+# AXK1Model：A.X-K1 主干，输出 hidden states 与 KV cache
 class AXK1Model(DeepseekV3Model):
     pass
 
 
+# AXK1ForCausalLM：因果语言建模头，支持 generate
 class AXK1ForCausalLM(DeepseekV3ForCausalLM):
     pass
 

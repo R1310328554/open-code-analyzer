@@ -35,6 +35,7 @@ from ..auto import AutoModel
 from .configuration_aya_vision import AyaVisionConfig
 
 
+# AyaVisionMultiModalProjector：视觉 patch 下采样并投影到 LLM 隐藏维度
 class AyaVisionMultiModalProjector(nn.Module):
     def __init__(self, config: AyaVisionConfig):
         super().__init__()
@@ -86,6 +87,7 @@ class AyaVisionMultiModalProjector(nn.Module):
 
 
 @auto_docstring
+# AyaVisionPreTrainedModel：多模态预训练基类与权重初始化
 class AyaVisionPreTrainedModel(PreTrainedModel):
     config: AyaVisionConfig
     base_model_prefix = "model"
@@ -106,6 +108,7 @@ class AyaVisionPreTrainedModel(PreTrainedModel):
     """
 )
 @dataclass
+# AyaVisionCausalLMOutputWithPast：条件生成输出（logits + past_key_values）
 class AyaVisionCausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -136,6 +139,7 @@ class AyaVisionCausalLMOutputWithPast(ModelOutput):
     """
 )
 @dataclass
+# AyaVisionModelOutputWithPast：多模态模型 forward 输出
 class AyaVisionModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     past_key_values (`Cache`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
@@ -156,6 +160,7 @@ class AyaVisionModelOutputWithPast(BaseModelOutputWithPast):
     The AyaVision model which consists of a vision backbone and a language model, without a language modeling head.
     """
 )
+# AyaVisionModel：融合视觉编码器、投影器与文本 LLM 的主干
 class AyaVisionModel(AyaVisionPreTrainedModel):
     def __init__(self, config: AyaVisionConfig):
         super().__init__(config)
@@ -288,6 +293,7 @@ class AyaVisionModel(AyaVisionPreTrainedModel):
     The AYA_VISION model which consists of a vision backbone and a language model.
     """
 )
+# AyaVisionForConditionalGeneration：图文条件生成，支持 generate 与 loss
 class AyaVisionForConditionalGeneration(AyaVisionPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
 

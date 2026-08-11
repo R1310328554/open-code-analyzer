@@ -36,6 +36,7 @@ from .configuration_aya_vision import AyaVisionConfig
 logger = logging.get_logger(__name__)
 
 
+# AyaVisionMultiModalProjector：patch 空间下采样 + LayerNorm + MLP 投影
 class AyaVisionMultiModalProjector(nn.Module):
     def __init__(self, config: AyaVisionConfig):
         super().__init__()
@@ -86,18 +87,22 @@ class AyaVisionMultiModalProjector(nn.Module):
         return image_features
 
 
+# AyaVisionPreTrainedModel：继承 Llava 预训练基类
 class AyaVisionPreTrainedModel(LlavaPreTrainedModel):
     _can_compile_fullgraph = False
 
 
+# AyaVisionCausalLMOutputWithPast：复用 Llava 条件生成输出
 class AyaVisionCausalLMOutputWithPast(LlavaCausalLMOutputWithPast):
     pass
 
 
+# AyaVisionModelOutputWithPast：复用 Llava 多模态输出
 class AyaVisionModelOutputWithPast(LlavaModelOutputWithPast):
     pass
 
 
+# AyaVisionModel：继承 LlavaModel 并替换多模态投影器
 class AyaVisionModel(LlavaModel):
     # Unlike LLaVA, the model doesn't have to deal with Pixtral-style image states
     @merge_with_config_defaults
@@ -194,6 +199,7 @@ class AyaVisionModel(LlavaModel):
         )
 
 
+# AyaVisionForConditionalGeneration：继承 Llava 条件生成头
 class AyaVisionForConditionalGeneration(LlavaForConditionalGeneration):
     def forward(
         self,

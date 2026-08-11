@@ -49,6 +49,7 @@ from .configuration_axk2 import AXK2Config
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# AXK2RMSNorm：RMS 归一化层，等价于 T5LayerNorm
 class AXK2RMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -69,6 +70,7 @@ class AXK2RMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# AXK2GateMLP：低秩门控 MLP，为 GatedRMSNorm 生成 sigmoid 门
 class AXK2GateMLP(nn.Module):
     def __init__(self, config: AXK2Config):
         super().__init__()
@@ -84,6 +86,7 @@ class AXK2GateMLP(nn.Module):
         return hidden_states
 
 
+# AXK2GatedRMSNorm：RMSNorm 后接输入相关 sigmoid 门（Megatron GatedNormWrapper）
 class AXK2GatedRMSNorm(nn.Module):
     """RMSNorm followed by a low-rank input-dependent sigmoid gate (Megatron `GatedNormWrapper`):
 
@@ -101,6 +104,7 @@ class AXK2GatedRMSNorm(nn.Module):
         return (y * torch.sigmoid(self.mlp(y).float())).to(y.dtype)
 
 
+# AXK2RotaryEmbedding：RoPE 位置编码，支持 YaRN 动态缩放
 class AXK2RotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: AXK2Config, device=None):
@@ -191,6 +195,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# AXK2Indexer：DSA 稀疏注意力索引器，选取 top-k token 参与注意力
 class AXK2Indexer(nn.Module):
     """
     DeepSeek Sparse Attention (DSA) indexer for selecting top-k tokens.
@@ -290,6 +295,7 @@ class AXK2Indexer(nn.Module):
         return index_scores.topk(topk, dim=-1).indices.to(torch.int32)  # [B, S, topk]
 
 
+# AXK2TopkRouter：MoE 路由，支持分组 scoring 与 sigmoid top-k
 class AXK2TopkRouter(nn.Module):
     def __init__(self, config: AXK2Config):
         super().__init__()
@@ -342,6 +348,7 @@ class AXK2TopkRouter(nn.Module):
 
 
 @use_experts_implementation
+# AXK2Experts：多专家 gate_up/down 投影，按 topk 索引 gather
 class AXK2Experts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
@@ -381,6 +388,7 @@ class AXK2Experts(nn.Module):
         return final_hidden_states
 
 
+# AXK2MLP：dense 层 SwiGLU 前馈网络
 class AXK2MLP(nn.Module):
     def __init__(self, config, intermediate_size=None):
         super().__init__()
@@ -397,6 +405,7 @@ class AXK2MLP(nn.Module):
         return down_proj
 
 
+# AXK2MoE：稀疏 MoE 块，组合 router、experts 与 shared_experts
 class AXK2MoE(nn.Module):
     """
     A mixed expert module containing shared experts.
@@ -513,6 +522,7 @@ def apply_rotary_pos_emb_interleave(q, k, cos, sin, position_ids=None, unsqueeze
     return q_embed, k_embed
 
 
+# AXK2Attention：MLA 自注意力，融合 q_gate 投影与 indexer 稀疏 mask
 class AXK2Attention(nn.Module):
     """
     DeepSeek-V3 MLA, with a DSA indexer whose top-k sparse mask is folded into the attention mask.
@@ -672,6 +682,7 @@ class AXK2Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# AXK2DecoderLayer：Decoder 层，MoE 层使用 GatedRMSNorm
 class AXK2DecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: AXK2Config, layer_idx: int):
         super().__init__()
@@ -722,6 +733,7 @@ class AXK2DecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# AXK2PreTrainedModel：预训练基类与 router/experts 权重初始化
 class AXK2PreTrainedModel(PreTrainedModel):
     config: AXK2Config
     base_model_prefix = "model"
@@ -754,6 +766,7 @@ class AXK2PreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# AXK2Model：A.X-K2 主干，输出 hidden states 与 past_key_values
 class AXK2Model(AXK2PreTrainedModel):
     def __init__(self, config: AXK2Config):
         super().__init__(config)
@@ -831,6 +844,7 @@ class AXK2Model(AXK2PreTrainedModel):
 
 
 @auto_docstring
+# AXK2ForCausalLM：因果 LM 头，支持 generate 与 loss
 class AXK2ForCausalLM(AXK2PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}

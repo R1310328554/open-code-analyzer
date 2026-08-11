@@ -22,6 +22,7 @@ from ..auto import CONFIG_MAPPING, AutoConfig
 
 @auto_docstring(checkpoint="CohereForAI/aya-vision-8b")
 @strict
+# AyaVisionConfig：多模态 PreTrainedConfig，sub_configs 含 text/vision
 class AyaVisionConfig(PreTrainedConfig):
     r"""
     downsample_factor (`int`, *optional*, defaults to 2):
@@ -78,3 +79,5 @@ class AyaVisionConfig(PreTrainedConfig):
 
 
 __all__ = ["AyaVisionConfig"]
+# 模块 src/transformers/models/aya_vision/configuration_aya_vision.py：Transformers 5.15.0 wave9a 中文文档注释。
+

@@ -26,6 +26,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="skt/A.X-K2")
 @strict
+# AXK2Config：A.X-K2 顶层 PreTrainedConfig，含 DSA indexer 与 gated norm 字段
 class AXK2Config(PreTrainedConfig, RotaryEmbeddingConfigMixin):
     r"""
     n_group (`int`, *optional*):

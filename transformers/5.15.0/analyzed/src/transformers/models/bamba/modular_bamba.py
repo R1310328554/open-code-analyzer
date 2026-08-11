@@ -49,6 +49,7 @@ from .configuration_bamba import BambaConfig
 logger = logging.get_logger(__name__)
 
 
+# BambaRotaryEmbedding：继承 Llama RoPE，自定义默认 rope 参数计算
 class BambaRotaryEmbedding(LlamaRotaryEmbedding):
     def compute_default_rope_parameters(config: BambaConfig, device=None, **kwargs) -> tuple[torch.Tensor, float]:
         """
@@ -111,14 +112,17 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
 
 
 @no_inherit_decorator
+# BambaAttention：直接继承 Llama 多头自注意力
 class BambaAttention(LlamaAttention):
     pass
 
 
+# BambaRMSNormGated：复用 Mamba2 门控 RMSNorm
 class BambaRMSNormGated(MambaRMSNormGated):
     pass
 
 
+# BambaMixer：继承 Mamba2Mixer 的 SSM 混合层
 class BambaMixer(Mamba2Mixer):
     """
     Compute ∆, A, B, C, and D the state space parameters and compute the `contextualized_states`.
@@ -173,14 +177,17 @@ class BambaMixer(Mamba2Mixer):
         init.ones_(self.dt_bias)
 
 
+# BambaMLP：复用 Llama SwiGLU FFN
 class BambaMLP(LlamaMLP):
     pass
 
 
+# BambaRMSNorm：复用 Llama RMSNorm
 class BambaRMSNorm(LlamaRMSNorm):
     pass
 
 
+# BambaDecoderLayer：继承 Jamba 层，按 config 切换 mixer/attention
 class BambaDecoderLayer(JambaAttentionDecoderLayer):
     def __init__(self, config: BambaConfig, layer_idx: int, layer_type: str = "linear_attention"):
         super().__init__(config, layer_idx)
@@ -243,6 +250,7 @@ class BambaDecoderLayer(JambaAttentionDecoderLayer):
 
 
 @auto_docstring
+# BambaPreTrainedModel：modular 预训练基类
 class BambaPreTrainedModel(PreTrainedModel):
     config: BambaConfig
     base_model_prefix = "model"
@@ -268,6 +276,7 @@ class BambaPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# BambaModel：Bamba 主干 modular forward
 class BambaModel(BambaPreTrainedModel):
     def __init__(self, config: BambaConfig):
         super().__init__(config)
@@ -349,6 +358,7 @@ class BambaModel(BambaPreTrainedModel):
         )
 
 
+# BambaForCausalLM：继承 Llama CausalLM 并绑定 BambaModel
 class BambaForCausalLM(LlamaForCausalLM):
     def __init__(self, config):
         super().__init__(config)

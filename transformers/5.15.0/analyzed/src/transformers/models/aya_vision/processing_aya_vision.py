@@ -17,6 +17,7 @@ from ...processing_utils import BatchFeature, MultiModalData, ProcessingKwargs, 
 from ...utils import auto_docstring
 
 
+# AyaVisionProcessorKwargs：文本/图像预处理默认参数（crop_to_patches 等）
 class AyaVisionProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -31,6 +32,7 @@ class AyaVisionProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# AyaVisionProcessor：图文联合预处理，将图像展开为 patch token 序列
 class AyaVisionProcessor(ProcessorMixin):
     valid_processor_kwargs = AyaVisionProcessorKwargs
 
