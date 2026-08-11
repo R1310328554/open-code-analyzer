@@ -39,6 +39,9 @@ from ...video_processing_utils import BaseVideoProcessor
 from ...video_utils import VideoMetadata, group_videos_by_shape, reorder_videos
 
 
+# GLM-GA 视频处理：动态 FPS 帧采样 + smart_resize + 时空 patch 化
+
+# GlmgaVideoProcessorInitKwargs：GLM-GA 视频处理器初始化参数字典
 class GlmgaVideoProcessorInitKwargs(VideosKwargs, total=False):
     r"""
     patch_size (`int`, *optional*, defaults to 14):
@@ -63,6 +66,7 @@ class GlmgaVideoProcessorInitKwargs(VideosKwargs, total=False):
     max_frames: int
 
 
+# smart_resize：按像素预算与 patch 因子约束动态 resize 图像/视频帧
 def smart_resize(
     num_frames: int,
     height: int,
@@ -100,6 +104,7 @@ def smart_resize(
 
 
 @auto_docstring
+# GlmgaVideoProcessor：GLM-GA 视频帧动态 FPS 采样与时空 patch 预处理
 class GlmgaVideoProcessor(BaseVideoProcessor):
     resample = PILImageResampling.BICUBIC
     size = {"shortest_edge": 112 * 112, "longest_edge": 28 * 28 * 2 * 55790}
@@ -126,6 +131,7 @@ class GlmgaVideoProcessor(BaseVideoProcessor):
     def __init__(self, **kwargs: Unpack[GlmgaVideoProcessorInitKwargs]):
         super().__init__(**kwargs)
 
+    # sample_frames：按视频时长与目标 FPS 抽取帧索引（最多 max_frames 帧）
     def sample_frames(
         self,
         metadata: VideoMetadata,

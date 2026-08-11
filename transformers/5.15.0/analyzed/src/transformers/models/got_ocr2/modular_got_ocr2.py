@@ -32,6 +32,7 @@ from ..llava.modeling_llava import (
     LlavaModelOutputWithPast,
     LlavaPreTrainedModel,
 )
+# modular 复用 SAM 视觉注意力/编码器与 Llava 多模态主干
 from ..sam.modeling_sam import (
     SamMLPBlock,
     SamPreTrainedModel,
@@ -44,8 +45,11 @@ from ..sam.modeling_sam import (
 logger = logging.get_logger(__name__)
 
 
+# GOT-OCR-2 modular 源：基于 SAM 视觉塔 + Llava/Qwen2 组合 OCR 多模态
+
 @auto_docstring(checkpoint="facebook/sam-vit-huge")
 @strict
+# GotOcr2VisionConfig：GOT-OCR-2 视觉 SAM ViT 编码器超参
 class GotOcr2VisionConfig(PreTrainedConfig):
     r"""
     output_channels (`int`, *optional*, defaults to 256):
@@ -84,6 +88,7 @@ class GotOcr2VisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="facebook/sam-vit-huge")
 @strict
+# GotOcr2Config：GOT-OCR-2 视觉+文本（Qwen2）多模态联合配置
 class GotOcr2Config(PreTrainedConfig):
     r"""
     Example:
@@ -147,14 +152,17 @@ class GotOcr2Config(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# GotOcr2MLPBlock：GOT-OCR-2 视觉 MLP 块（继承 SAM MLP）
 class GotOcr2MLPBlock(SamMLPBlock):
     pass
 
 
+# GotOcr2VisionAttention：GOT-OCR-2 视觉窗口/全局混合自注意力
 class GotOcr2VisionAttention(SamVisionAttention):
     pass
 
 
+# GotOcr2VisionLayer：GOT-OCR-2 视觉 Transformer 单层
 class GotOcr2VisionLayer(SamVisionLayer):
     def __init__(self, config, window_size):
         super().__init__(config, window_size)
@@ -165,14 +173,17 @@ class GotOcr2VisionLayer(SamVisionLayer):
         self.window_size = window_size
 
 
+# GotOcr2PreTrainedModel：GOT-OCR-2 预训练基类与权重初始化
 class GotOcr2PreTrainedModel(SamPreTrainedModel):
     input_modalities = ("image", "text")
 
 
+# GotOcr2VisionEncoder：GOT-OCR-2 SAM 风格视觉 ViT 编码器主干
 class GotOcr2VisionEncoder(SamVisionEncoder, GotOcr2PreTrainedModel):
     input_modalities = ("image",)
 
 
+# GotOcr2MultiModalProjector：GOT-OCR-2 视觉特征上采样投影到语言模型维度
 class GotOcr2MultiModalProjector(nn.Module):
     def __init__(self, config: GotOcr2Config):
         super().__init__()
@@ -194,14 +205,17 @@ class GotOcr2MultiModalProjector(nn.Module):
         return hidden_state
 
 
+# GotOcr2CausalLMOutputWithPast：GOT-OCR-2 因果 LM 输出 dataclass
 class GotOcr2CausalLMOutputWithPast(LlavaCausalLMOutputWithPast):
     pass
 
 
+# GotOcr2ModelOutputWithPast：GOT-OCR-2 多模态主干输出 dataclass
 class GotOcr2ModelOutputWithPast(LlavaModelOutputWithPast):
     pass
 
 
+# GotOcr2PreTrainedModel：GOT-OCR-2 预训练基类与权重初始化
 class GotOcr2PreTrainedModel(LlavaPreTrainedModel):
     _supports_flash_attn = False
     _supports_sdpa = False
@@ -219,6 +233,7 @@ class GotOcr2PreTrainedModel(LlavaPreTrainedModel):
                 init.zeros_(module.pos_embed)
 
 
+# GotOcr2Model：GOT-OCR-2 视觉塔 + Qwen2 语言模型联合多模态主干
 class GotOcr2Model(LlavaModel):
     def __init__(self, config: GotOcr2Config):
         super().__init__(config)
@@ -287,6 +302,7 @@ class GotOcr2Model(LlavaModel):
         )
 
 
+# GotOcr2ForConditionalGeneration：GOT-OCR-2 图文 OCR 条件生成
 class GotOcr2ForConditionalGeneration(LlavaForConditionalGeneration):
     @can_return_tuple
     @auto_docstring

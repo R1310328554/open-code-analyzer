@@ -27,6 +27,8 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring, logging, requires_backends
 
 
+# GLPN 图像处理：Torchvision 后端 resize 对齐 size_divisor
+
 if TYPE_CHECKING:
     from ...modeling_outputs import DepthEstimatorOutput
 
@@ -37,6 +39,7 @@ from torchvision.transforms.v2 import functional as tvF
 logger = logging.get_logger(__name__)
 
 
+# GLPNImageProcessorKwargs：GLPN 图像处理器可选参数字典类型
 class GLPNImageProcessorKwargs(ImagesKwargs, total=False):
     """
     size_divisor (`int`, *optional*, defaults to 32):
@@ -48,6 +51,7 @@ class GLPNImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# GLPNImageProcessor：Torchvision 后端 GLPN 深度估计图像预处理
 class GLPNImageProcessor(TorchvisionBackend):
     """Torchvision backend for GLPN with size_divisor resize."""
 

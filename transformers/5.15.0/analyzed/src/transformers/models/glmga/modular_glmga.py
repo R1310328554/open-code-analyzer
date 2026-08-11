@@ -32,12 +32,16 @@ from ...video_utils import VideoMetadata, group_videos_by_shape, reorder_videos
 from ..glm46v.configuration_glm46v import Glm46VConfig
 from ..glm46v.image_processing_glm46v import Glm46VImageProcessor
 from ..glm46v.image_processing_pil_glm46v import Glm46VImageProcessorPil
+# modular 复用 GLM-4.6V 图像/视频处理器基类，仅覆盖 GLM-GA 特有参数
 from ..glm46v.video_processing_glm46v import Glm46VVideoProcessor
 
+
+# GLM-GA modular 源：复用 GLM-4.6V 建模，独立配置与图像/视频 patch 处理器
 
 # Glmga reuses GLM-4.6V's modeling and processor as-is; only the config and the
 # image/video processors differ. The model and processor are wired to the glm46v
 # classes through the auto-mappings, so no modeling/processing classes live here.
+# GlmgaConfig：GLM-GA 图文/视频多模态配置（复用 GLM-4.6V 建模，独立图像/视频处理器）
 class GlmgaConfig(Glm46VConfig):
     r"""
     image_start_token_id (`int`, *optional*, defaults to 151339):
@@ -65,6 +69,7 @@ class GlmgaConfig(Glm46VConfig):
     model_type = "glmga"
 
 
+# GlmgaImageProcessorKwargs：GLM-GA 图像处理器可选参数字典类型
 class GlmgaImageProcessorKwargs(ImagesKwargs, total=False):
     """
     patch_size (`int`, *optional*, defaults to 14):
@@ -83,6 +88,7 @@ class GlmgaImageProcessorKwargs(ImagesKwargs, total=False):
     patch_expand_factor: int
 
 
+# GlmgaImageProcessor：Torchvision 后端 GLM-GA 图像 patch 预处理
 class GlmgaImageProcessor(Glm46VImageProcessor):
     patch_expand_factor = 1
 
@@ -152,6 +158,7 @@ class GlmgaImageProcessor(Glm46VImageProcessor):
         )
 
 
+# GlmgaImageProcessorPil：PIL 后端 GLM-GA 图像 patch 预处理
 class GlmgaImageProcessorPil(Glm46VImageProcessorPil):
     patch_expand_factor = 1
 
@@ -215,6 +222,7 @@ class GlmgaImageProcessorPil(Glm46VImageProcessorPil):
         )
 
 
+# GlmgaVideoProcessorInitKwargs：GLM-GA 视频处理器初始化参数字典
 class GlmgaVideoProcessorInitKwargs(VideosKwargs, total=False):
     r"""
     patch_size (`int`, *optional*, defaults to 14):
@@ -239,6 +247,7 @@ class GlmgaVideoProcessorInitKwargs(VideosKwargs, total=False):
     max_frames: int
 
 
+# GlmgaVideoProcessor：GLM-GA 视频帧动态 FPS 采样与时空 patch 预处理
 class GlmgaVideoProcessor(Glm46VVideoProcessor):
     size = {"shortest_edge": 112 * 112, "longest_edge": 28 * 28 * 2 * 55790}
     max_image_size = {"longest_edge": 28 * 28 * 2 * 55790}
@@ -246,6 +255,7 @@ class GlmgaVideoProcessor(Glm46VVideoProcessor):
     patch_expand_factor = 1
     max_frames = 640
 
+    # sample_frames：按视频时长与目标 FPS 抽取帧索引（最多 max_frames 帧）
     def sample_frames(
         self,
         metadata: VideoMetadata,

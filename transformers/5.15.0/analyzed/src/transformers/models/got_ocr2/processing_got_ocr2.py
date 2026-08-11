@@ -25,6 +25,9 @@ from ...utils import auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# GOT-OCR-2 Processor：分块 OCR 图像预处理与 chat 模板 prompt 组装
+
+# GotOcr2TextKwargs：GOT-OCR-2 文本输入可选参数字典（含 format 格式化输出）
 class GotOcr2TextKwargs(TextKwargs, total=False):
     """
     format (`bool`, *optional*, defaults to `False`):
@@ -35,6 +38,7 @@ class GotOcr2TextKwargs(TextKwargs, total=False):
     format: bool | None
 
 
+# GotOcr2ImagesKwargs：GOT-OCR-2 图像输入可选参数字典（分块/ROI 框等）
 class GotOcr2ImagesKwargs(ImagesKwargs, total=False):
     """
     crop_to_patches (`bool`, *optional*, defaults to `False`):
@@ -71,6 +75,7 @@ class GotOcr2ImagesKwargs(ImagesKwargs, total=False):
     multi_page: bool
 
 
+# GotOcr2ProcessorKwargs：GOT-OCR-2 Processor 联合可选参数字典类型
 class GotOcr2ProcessorKwargs(ProcessingKwargs, total=False):
     text_kwargs: GotOcr2TextKwargs
     images_kwargs: GotOcr2ImagesKwargs
@@ -89,6 +94,7 @@ class GotOcr2ProcessorKwargs(ProcessingKwargs, total=False):
     }
 
 
+# preprocess_box_annotation：将像素坐标 ROI 框归一化到 0-1000 尺度
 def preprocess_box_annotation(box: list | tuple, image_size: tuple[int, int]) -> list:
     """
     Convert box annotation to the format [x1, y1, x2, y2] in the range [0, 1000].
@@ -105,7 +111,9 @@ def preprocess_box_annotation(box: list | tuple, image_size: tuple[int, int]) ->
     return list(box)
 
 
+# GotOcr2Processor：封装分块图像 token 替换与 OCR chat prompt 组装
 @auto_docstring
+# GotOcr2Processor：GOT-OCR-2 图像预处理与分词器联合 OCR prompt 组装
 class GotOcr2Processor(ProcessorMixin):
     valid_processor_kwargs = GotOcr2ProcessorKwargs
 

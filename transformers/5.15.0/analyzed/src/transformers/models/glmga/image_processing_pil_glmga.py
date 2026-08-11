@@ -29,6 +29,9 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# GLM-GA PIL 图像处理：smart_resize + patch 网格 THW（由 modular 生成）
+
+# GlmgaImageProcessorKwargs：GLM-GA 图像处理器可选参数字典类型
 class GlmgaImageProcessorKwargs(ImagesKwargs, total=False):
     """
     patch_size (`int`, *optional*, defaults to 14):
@@ -47,6 +50,7 @@ class GlmgaImageProcessorKwargs(ImagesKwargs, total=False):
     patch_expand_factor: int
 
 
+# smart_resize：按像素预算与 patch 因子约束动态 resize 图像/视频帧
 def smart_resize(
     num_frames: int,
     height: int,
@@ -84,6 +88,7 @@ def smart_resize(
 
 
 @auto_docstring
+# GlmgaImageProcessorPil：PIL 后端 GLM-GA 图像 patch 预处理
 class GlmgaImageProcessorPil(PilBackend):
     do_resize = True
     resample = PILImageResampling.BICUBIC

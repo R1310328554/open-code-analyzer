@@ -26,8 +26,10 @@ from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# GotOcr2VisionConfig：SAM ViT 视觉编码器默认超参
 @auto_docstring(checkpoint="facebook/sam-vit-huge")
 @strict
+# GotOcr2VisionConfig：GOT-OCR-2 视觉 SAM ViT 编码器超参
 class GotOcr2VisionConfig(PreTrainedConfig):
     r"""
     output_channels (`int`, *optional*, defaults to 256):
@@ -64,8 +66,10 @@ class GotOcr2VisionConfig(PreTrainedConfig):
     mlp_dim: int = 3072
 
 
+# GotOcr2Config：GOT-OCR-2 视觉 SAM + Qwen2 文本多模态默认超参
 @auto_docstring(checkpoint="facebook/sam-vit-huge")
 @strict
+# GotOcr2Config：GOT-OCR-2 视觉+文本（Qwen2）多模态联合配置
 class GotOcr2Config(PreTrainedConfig):
     r"""
     Example:

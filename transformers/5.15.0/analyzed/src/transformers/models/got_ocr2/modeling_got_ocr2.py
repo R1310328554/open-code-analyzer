@@ -38,9 +38,13 @@ from ...utils import TransformersKwargs, auto_docstring, can_return_tuple, torch
 from ...utils.generic import merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
 from ..auto import AutoModel
+# modeling_got_ocr2 由 modular_got_ocr2.py 自动生成
 from .configuration_got_ocr2 import GotOcr2Config, GotOcr2VisionConfig
 
 
+# GOT-OCR-2 建模：SAM ViT 视觉编码 + 多模态投影 + Qwen2 文本解码（由 modular 生成）
+
+# GotOcr2MLPBlock：GOT-OCR-2 视觉 MLP 块（继承 SAM MLP）
 class GotOcr2MLPBlock(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -55,6 +59,7 @@ class GotOcr2MLPBlock(nn.Module):
         return hidden_states
 
 
+# GotOcr2VisionAttention：GOT-OCR-2 视觉窗口/全局混合自注意力
 class GotOcr2VisionAttention(nn.Module):
     """Multi-head Attention block with relative position embeddings."""
 
@@ -188,6 +193,7 @@ class GotOcr2VisionAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# GotOcr2VisionLayer：GOT-OCR-2 视觉 Transformer 单层
 class GotOcr2VisionLayer(GradientCheckpointingLayer):
     def __init__(self, config, window_size):
         super().__init__()
@@ -273,6 +279,7 @@ class GotOcr2VisionLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# GotOcr2PreTrainedModel：GOT-OCR-2 预训练基类与权重初始化
 class GotOcr2PreTrainedModel(PreTrainedModel):
     config: GotOcr2Config
     base_model_prefix = "model"
@@ -305,6 +312,7 @@ class GotOcr2PreTrainedModel(PreTrainedModel):
     """
 )
 @dataclass
+# GotOcr2VisionEncoderOutput：GOT-OCR-2 视觉编码器输出 dataclass
 class GotOcr2VisionEncoderOutput(ModelOutput):
     r"""
     image_embeds (`torch.FloatTensor` of shape `(batch_size, output_dim)` *optional* returned when model is initialized with `with_projection=True`):
@@ -317,6 +325,7 @@ class GotOcr2VisionEncoderOutput(ModelOutput):
     attentions: tuple[torch.FloatTensor, ...] | None = None
 
 
+# GotOcr2PatchEmbeddings：GOT-OCR-2 视觉 patch 卷积嵌入层
 class GotOcr2PatchEmbeddings(nn.Module):
     """
     This class turns `pixel_values` of shape `(batch_size, num_channels, height, width)` into the initial
@@ -352,6 +361,7 @@ class GotOcr2PatchEmbeddings(nn.Module):
         return embeddings
 
 
+# GotOcr2LayerNorm：GOT-OCR-2 视觉通道优先 LayerNorm
 class GotOcr2LayerNorm(nn.LayerNorm):
     r"""LayerNorm that supports two data formats: channels_last (default) or channels_first.
     The ordering of the dimensions in the inputs. channels_last corresponds to inputs with shape (batch_size, height,
@@ -378,6 +388,7 @@ class GotOcr2LayerNorm(nn.LayerNorm):
         return features
 
 
+# GotOcr2VisionNeck：GOT-OCR-2 视觉 neck 多尺度特征融合
 class GotOcr2VisionNeck(nn.Module):
     def __init__(self, config: GotOcr2VisionConfig):
         super().__init__()
@@ -398,6 +409,7 @@ class GotOcr2VisionNeck(nn.Module):
         return hidden_states
 
 
+# GotOcr2VisionEncoder：GOT-OCR-2 SAM 风格视觉 ViT 编码器主干
 class GotOcr2VisionEncoder(GotOcr2PreTrainedModel):
     _can_record_outputs = {"hidden_states": GotOcr2VisionLayer, "attentions": GotOcr2VisionAttention}
     input_modalities = ("image",)
@@ -455,6 +467,7 @@ class GotOcr2VisionEncoder(GotOcr2PreTrainedModel):
         )
 
 
+# GotOcr2MultiModalProjector：GOT-OCR-2 视觉特征上采样投影到语言模型维度
 class GotOcr2MultiModalProjector(nn.Module):
     def __init__(self, config: GotOcr2Config):
         super().__init__()
@@ -482,6 +495,7 @@ class GotOcr2MultiModalProjector(nn.Module):
     """
 )
 @dataclass
+# GotOcr2CausalLMOutputWithPast：GOT-OCR-2 因果 LM 输出 dataclass
 class GotOcr2CausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -512,6 +526,7 @@ class GotOcr2CausalLMOutputWithPast(ModelOutput):
     """
 )
 @dataclass
+# GotOcr2ModelOutputWithPast：GOT-OCR-2 多模态主干输出 dataclass
 class GotOcr2ModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     past_key_values (`Cache`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
@@ -532,6 +547,7 @@ class GotOcr2ModelOutputWithPast(BaseModelOutputWithPast):
     The GotOcr2 model which consists of a vision backbone and a language model, without a language modeling head.
     """
 )
+# GotOcr2Model：GOT-OCR-2 视觉塔 + Qwen2 语言模型联合多模态主干
 class GotOcr2Model(GotOcr2PreTrainedModel):
     def __init__(self, config: GotOcr2Config):
         super().__init__(config)
@@ -633,6 +649,7 @@ class GotOcr2Model(GotOcr2PreTrainedModel):
     The GOT_OCR2 model which consists of a vision backbone and a language model.
     """
 )
+# GotOcr2ForConditionalGeneration：GOT-OCR-2 图文 OCR 条件生成
 class GotOcr2ForConditionalGeneration(GotOcr2PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
 

@@ -31,7 +31,10 @@ if TYPE_CHECKING:
 logger = logging.get_logger(__name__)
 
 
+# GLPN PIL 图像处理：NumPy/PIL 后端深度估计预处理
+
 # Adapted from transformers.models.glpn.image_processing_glpn.GLPNImageProcessorKwargs
+# GLPNImageProcessorKwargs：GLPN 图像处理器可选参数字典类型
 class GLPNImageProcessorKwargs(ImagesKwargs, total=False):
     """
     size_divisor (`int`, *optional*, defaults to 32):
@@ -43,6 +46,7 @@ class GLPNImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# GLPNImageProcessorPil：PIL 后端 GLPN 深度估计图像预处理
 class GLPNImageProcessorPil(PilBackend):
     """PIL backend for GLPN with size_divisor resize."""
 

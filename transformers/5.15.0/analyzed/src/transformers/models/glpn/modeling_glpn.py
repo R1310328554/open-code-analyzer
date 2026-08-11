@@ -25,10 +25,13 @@ from ...utils import auto_docstring, logging
 from .configuration_glpn import GLPNConfig
 
 
+# GLPN 建模：Mix Transformer 编码器 + 选择性融合解码器深度估计
+
 logger = logging.get_logger(__name__)
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.segformer.modeling_segformer.SegformerOverlapPatchEmbeddings
+# GLPNOverlapPatchEmbeddings：GLPN 重叠 patch 卷积嵌入层
 class GLPNOverlapPatchEmbeddings(nn.Module):
     """Construct the overlapping patch embeddings."""
 
@@ -55,6 +58,7 @@ class GLPNOverlapPatchEmbeddings(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.segformer.modeling_segformer.SegformerEfficientSelfAttention
+# GLPNEfficientSelfAttention：GLPN 高效自注意力（序列降采样 sr_ratio）
 class GLPNEfficientSelfAttention(nn.Module):
     """SegFormer's efficient self-attention mechanism. Employs the sequence reduction process introduced in the [PvT
     paper](https://huggingface.co/papers/2102.12122)."""
@@ -135,6 +139,7 @@ class GLPNEfficientSelfAttention(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.segformer.modeling_segformer.SegformerSelfOutput
+# GLPNSelfOutput：GLPN 自注意力输出投影层
 class GLPNSelfOutput(nn.Module):
     def __init__(self, config, hidden_size):
         super().__init__()
@@ -148,6 +153,7 @@ class GLPNSelfOutput(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.segformer.modeling_segformer.SegformerAttention with Segformer->GLPN
+# GLPNAttention：GLPN 注意力模块（自注意力 + 输出投影）
 class GLPNAttention(nn.Module):
     def __init__(self, config, hidden_size, num_attention_heads, sequence_reduction_ratio):
         super().__init__()
@@ -168,6 +174,7 @@ class GLPNAttention(nn.Module):
 
 
 # Copied from transformers.models.segformer.modeling_segformer.SegformerDepthWiseConv with Segformer->GLPN
+# GLPNDepthWiseConv：GLPN 深度可分离卷积层
 class GLPNDepthWiseConv(nn.Module):
     """Depthwise convolution used in the Mix-FFN to implicitly encode positional information."""
 
@@ -184,6 +191,7 @@ class GLPNDepthWiseConv(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.segformer.modeling_segformer.SegformerMixFFN with Segformer->GLPN
+# GLPNMixFFN：GLPN Mix Transformer 前馈 MLP（深度卷积 + 线性）
 class GLPNMixFFN(nn.Module):
     def __init__(self, config, in_features, hidden_features=None, out_features=None):
         super().__init__()
@@ -208,6 +216,7 @@ class GLPNMixFFN(nn.Module):
 
 
 # Copied from transformers.models.swin.modular_swin.SwinDropPath with SwinDropPath->GlpnDropPath
+# GlpnDropPath：GLPN 随机深度 DropPath 正则化
 class GlpnDropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -233,6 +242,7 @@ class GlpnDropPath(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.segformer.modeling_segformer.SegformerLayer with Segformer->GLPN
+# GLPNLayer：GLPN Mix Transformer 编码器单层
 class GLPNLayer(nn.Module):
     """This corresponds to the Block class in the original implementation."""
 
@@ -276,6 +286,7 @@ class GLPNLayer(nn.Module):
         return outputs
 
 
+# GLPNEncoder：GLPN 多阶段 Mix Transformer 编码器堆叠
 class GLPNEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -365,6 +376,7 @@ class GLPNEncoder(nn.Module):
 
 
 @auto_docstring
+# GLPNPreTrainedModel：GLPN 预训练基类与权重初始化
 class GLPNPreTrainedModel(PreTrainedModel):
     config: GLPNConfig
     base_model_prefix = "glpn"
@@ -374,6 +386,7 @@ class GLPNPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# GLPNModel：GLPN 编码器主干（多尺度特征提取）
 class GLPNModel(GLPNPreTrainedModel):
     # Todo - Refactor as part of vision refactor. Copied from transformers.models.segformer.modeling_segformer.SegformerModel.__init__ with Segformer->GLPN
     def __init__(self, config):
@@ -420,6 +433,7 @@ class GLPNModel(GLPNPreTrainedModel):
         )
 
 
+# GLPNSelectiveFeatureFusion：GLPN 解码器选择性特征融合模块
 class GLPNSelectiveFeatureFusion(nn.Module):
     """
     Selective Feature Fusion module, as explained in the [paper](https://huggingface.co/papers/2201.07436) (section 3.4). This
@@ -464,6 +478,7 @@ class GLPNSelectiveFeatureFusion(nn.Module):
         return hybrid_features
 
 
+# GLPNDecoderStage：GLPN 解码器单阶段上采样与卷积
 class GLPNDecoderStage(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
@@ -484,6 +499,7 @@ class GLPNDecoderStage(nn.Module):
         return hidden_state
 
 
+# GLPNDecoder：GLPN 多阶段解码器（逐级上采样融合编码特征）
 class GLPNDecoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -511,6 +527,7 @@ class GLPNDecoder(nn.Module):
         return stage_hidden_states
 
 
+# SiLogLoss：GLPN 深度估计 SiLog 对数尺度不变损失
 class SiLogLoss(nn.Module):
     r"""
     Implements the Scale-invariant log scale loss [Eigen et al., 2014](https://huggingface.co/papers/1406.2283).
@@ -532,6 +549,7 @@ class SiLogLoss(nn.Module):
         return loss
 
 
+# GLPNDepthEstimationHead：GLPN 深度图预测头（上采样 + 1x1 卷积）
 class GLPNDepthEstimationHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -562,6 +580,7 @@ class GLPNDepthEstimationHead(nn.Module):
     GLPN Model transformer with a lightweight depth estimation head on top e.g. for KITTI, NYUv2.
     """
 )
+# GLPNForDepthEstimation：GLPN 单目深度估计完整模型
 class GLPNForDepthEstimation(GLPNPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

@@ -37,6 +37,7 @@ from ...utils import (
 
 
 # Adapted from transformers.models.got_ocr2.image_processing_got_ocr2.GotOcr2ImageProcessorKwargs
+# GotOcr2ImageProcessorKwargs：GOT-OCR-2 图像处理器可选参数字典
 class GotOcr2ImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     crop_to_patches (`bool`, *optional*, defaults to `self.crop_to_patches`):
@@ -57,6 +58,7 @@ class GotOcr2ImageProcessorKwargs(ImagesKwargs, total=False):
 
 # Adapted from transformers.models.got_ocr2.image_processing_got_ocr2.get_all_supported_aspect_ratios
 @lru_cache(maxsize=10)
+# get_all_supported_aspect_ratios：枚举 min/max tiles 约束下所有合法宽高比
 def get_all_supported_aspect_ratios(min_image_tiles: int, max_image_tiles: int) -> list[tuple[int, int]]:
     """
     Computes all allowed aspect ratios for a given minimum and maximum number of input tiles.
@@ -93,6 +95,7 @@ def get_all_supported_aspect_ratios(min_image_tiles: int, max_image_tiles: int) 
 
 # Adapted from transformers.models.got_ocr2.image_processing_got_ocr2.get_optimal_tiled_canvas
 @lru_cache(maxsize=100)
+# get_optimal_tiled_canvas：按目标宽高比选取最优分块画布尺寸
 def get_optimal_tiled_canvas(
     original_image_size: tuple[int, int],
     target_tile_size: tuple[int, int],
@@ -132,6 +135,7 @@ def get_optimal_tiled_canvas(
 
 
 @auto_docstring
+# GotOcr2ImageProcessorPil：PIL 后端 GOT-OCR-2 分块 OCR 图像预处理
 class GotOcr2ImageProcessorPil(PilBackend):
     valid_kwargs = GotOcr2ImageProcessorKwargs
     resample = PILImageResampling.BICUBIC

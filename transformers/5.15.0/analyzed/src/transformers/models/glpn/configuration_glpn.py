@@ -19,8 +19,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# GLPN 配置：Mix Transformer 编码器-解码器单目深度估计超参
+
+# GLPNConfig：vinvino02/glpn-kitti 单目深度估计默认超参
 @auto_docstring(checkpoint="vinvino02/glpn-kitti")
 @strict
+# GLPNConfig：GLPN 单目深度估计 Mix Transformer 编码器-解码器超参
 class GLPNConfig(PreTrainedConfig):
     r"""
     num_encoder_blocks (`int`, *optional*, defaults to 4):
