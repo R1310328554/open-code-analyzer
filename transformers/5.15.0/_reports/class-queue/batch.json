@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T03:10:01Z",
   "files": [
-    "src/transformers/models/rwkv/modeling_rwkv.py",
-    "src/transformers/models/sam/__init__.py",
-    "src/transformers/models/sam/configuration_sam.py",
-    "src/transformers/models/sam/image_processing_pil_sam.py",
-    "src/transformers/models/sam/image_processing_sam.py",
-    "src/transformers/models/sam/modeling_sam.py",
-    "src/transformers/models/sam/processing_sam.py",
-    "src/transformers/models/sam2/__init__.py",
-    "src/transformers/models/sam2/configuration_sam2.py",
-    "src/transformers/models/sam2/image_processing_sam2.py",
-    "src/transformers/models/sam2/modeling_sam2.py",
-    "src/transformers/models/sam2/modular_sam2.py",
-    "src/transformers/models/sam2/processing_sam2.py",
-    "src/transformers/models/sam2_video/__init__.py",
-    "src/transformers/models/sam2_video/configuration_sam2_video.py",
     "src/transformers/models/sam2_video/modeling_sam2_video.py",
     "src/transformers/models/sam2_video/modular_sam2_video.py",
     "src/transformers/models/sam2_video/processing_sam2_video.py",
@@ -33,5 +18,5 @@
     "src/transformers/models/sam3_tracker/__init__.py"
   ],
   "remaining_pending": 669,
-  "done": 1980
+  "done": 1995
 }
