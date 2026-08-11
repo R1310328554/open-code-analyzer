@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T05:11:30Z",
   "files": [
-    "django/contrib/messages/views.py",
-    "django/contrib/postgres/__init__.py",
-    "django/contrib/postgres/aggregates/__init__.py",
-    "django/contrib/postgres/aggregates/general.py",
-    "django/contrib/postgres/aggregates/mixins.py",
-    "django/contrib/postgres/aggregates/statistics.py",
-    "django/contrib/postgres/apps.py",
-    "django/contrib/postgres/constraints.py",
-    "django/contrib/postgres/expressions.py",
-    "django/contrib/postgres/fields/__init__.py",
-    "django/contrib/postgres/fields/array.py",
-    "django/contrib/postgres/fields/citext.py",
-    "django/contrib/postgres/fields/hstore.py",
-    "django/contrib/postgres/fields/jsonb.py",
-    "django/contrib/postgres/fields/ranges.py",
     "django/contrib/postgres/fields/utils.py",
     "django/contrib/postgres/forms/__init__.py",
     "django/contrib/postgres/forms/array.py",
@@ -33,5 +18,5 @@
     "django/contrib/redirects/__init__.py"
   ],
   "remaining_pending": 462,
-  "done": 450
+  "done": 465
 }
