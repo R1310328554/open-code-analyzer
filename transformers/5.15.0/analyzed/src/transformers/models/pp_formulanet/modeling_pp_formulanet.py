@@ -23,6 +23,8 @@ import math
 from collections.abc import Callable
 from dataclasses import dataclass
 
+# PP-FormulaNet 建模：SAM 视觉编码器 + MBart 文本解码器公式识别（自动生成）
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -57,6 +59,7 @@ from .configuration_pp_formulanet import PPFormulaNetConfig, PPFormulaNetVisionC
 logger = logging.get_logger(__name__)
 
 
+# PPFormulaNetPreTrainedModel：PP-FormulaNet 预训练基类与权重初始化
 class PPFormulaNetPreTrainedModel(PreTrainedModel):
     config: PPFormulaNetConfig
     base_model_prefix = "model"
@@ -68,6 +71,7 @@ class PPFormulaNetPreTrainedModel(PreTrainedModel):
     _supports_sdpa = True
 
     @torch.no_grad()
+    # _init_weights：按模块类型初始化权重
     def _init_weights(self, module):
         """Initialize the weights"""
         super()._init_weights(module)
@@ -86,13 +90,16 @@ class PPFormulaNetPreTrainedModel(PreTrainedModel):
 
 # overrider for PPFormulaNetModel's encoder output
 @dataclass
+# PPFormulaNetVisionEncoderOutput：视觉编码器输出 dataclass
 class PPFormulaNetVisionEncoderOutput(BaseModelOutputWithPooling):
     pass
 
 
+# PPFormulaNetVisionAttention：视觉多头注意力（含相对位置编码）
 class PPFormulaNetVisionAttention(nn.Module):
     """Multi-head Attention block with relative position embeddings."""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config, window_size):
         super().__init__()
         input_size = (
@@ -192,6 +199,7 @@ class PPFormulaNetVisionAttention(nn.Module):
 
         return decomposed_rel_pos
 
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.Tensor, output_attentions=None) -> tuple[torch.Tensor, torch.Tensor]:
         batch_size, height, width, _ = hidden_states.shape
         # qkv with shape (3, batch_size, nHead, height * width, channel)
@@ -223,7 +231,9 @@ class PPFormulaNetVisionAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# PPFormulaNetMultiModalProjector：视觉特征到文本隐空间的跨模态投影层
 class PPFormulaNetMultiModalProjector(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.conv1 = nn.Conv2d(
@@ -240,6 +250,7 @@ class PPFormulaNetMultiModalProjector(nn.Module):
         self.linear_1 = nn.Linear(config.post_conv_out_channels, config.post_conv_out_channels)
         self.linear_2 = nn.Linear(config.post_conv_out_channels, config.decoder_hidden_size)
 
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.Tensor, **kwargs: Unpack[TransformersKwargs]):
         hidden_states = self.conv1(hidden_states)
         hidden_states = self.conv2(hidden_states)
@@ -249,13 +260,16 @@ class PPFormulaNetMultiModalProjector(nn.Module):
         return hidden_states
 
 
+# PPFormulaNetMLPBlock：视觉编码器 MLP 前馈子块
 class PPFormulaNetMLPBlock(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.lin1 = nn.Linear(config.hidden_size, config.mlp_dim)
         self.lin2 = nn.Linear(config.mlp_dim, config.hidden_size)
         self.act = ACT2FN[config.hidden_act]
 
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.lin1(hidden_states)
         hidden_states = self.act(hidden_states)
@@ -263,7 +277,9 @@ class PPFormulaNetMLPBlock(nn.Module):
         return hidden_states
 
 
+# PPFormulaNetVisionLayer：视觉 Transformer 编码层（含窗口/全局注意力）
 class PPFormulaNetVisionLayer(GradientCheckpointingLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config, window_size):
         super().__init__()
         self.layer_norm1 = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
@@ -326,6 +342,7 @@ class PPFormulaNetVisionLayer(GradientCheckpointingLayer):
         hidden_states = hidden_states[:, :height, :width, :].contiguous()
         return hidden_states
 
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.Tensor) -> tuple[torch.FloatTensor]:
         residual = hidden_states
         hidden_states = self.layer_norm1(hidden_states)
@@ -347,6 +364,7 @@ class PPFormulaNetVisionLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# PPFormulaNetPatchEmbeddings：图像 patch 卷积嵌入层
 class PPFormulaNetPatchEmbeddings(nn.Module):
     """
     This class turns `pixel_values` of shape `(batch_size, num_channels, height, width)` into the initial
@@ -354,6 +372,7 @@ class PPFormulaNetPatchEmbeddings(nn.Module):
     Transformer.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         image_size, patch_size = config.image_size, config.patch_size
@@ -368,6 +387,7 @@ class PPFormulaNetPatchEmbeddings(nn.Module):
 
         self.projection = nn.Conv2d(num_channels, hidden_size, kernel_size=patch_size, stride=patch_size)
 
+    # forward：模块前向计算
     def forward(self, pixel_values):
         batch_size, num_channels, height, width = pixel_values.shape
         if num_channels != self.num_channels:
@@ -382,18 +402,21 @@ class PPFormulaNetPatchEmbeddings(nn.Module):
         return embeddings
 
 
+# PPFormulaNetLayerNorm：视觉编码器 LayerNorm（channels_first 变体）
 class PPFormulaNetLayerNorm(nn.LayerNorm):
     r"""LayerNorm that supports two data formats: channels_last (default) or channels_first.
     The ordering of the dimensions in the inputs. channels_last corresponds to inputs with shape (batch_size, height,
     width, channels) while channels_first corresponds to inputs with shape (batch_size, channels, height, width).
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, normalized_shape, *, eps=1e-6, data_format="channels_last", **kwargs):
         super().__init__(normalized_shape, eps=eps, **kwargs)
         if data_format not in ["channels_last", "channels_first"]:
             raise NotImplementedError(f"Unsupported data format: {data_format}")
         self.data_format = data_format
 
+    # forward：模块前向计算
     def forward(self, features: torch.Tensor) -> torch.Tensor:
         """
         Args:
@@ -408,7 +431,9 @@ class PPFormulaNetLayerNorm(nn.LayerNorm):
         return features
 
 
+# PPFormulaNetVisionNeck：视觉特征 neck 卷积降维模块
 class PPFormulaNetVisionNeck(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPFormulaNetVisionConfig):
         super().__init__()
         self.config = config
@@ -418,6 +443,7 @@ class PPFormulaNetVisionNeck(nn.Module):
         self.conv2 = nn.Conv2d(config.output_channels, config.output_channels, kernel_size=3, padding=1, bias=False)
         self.layer_norm2 = PPFormulaNetLayerNorm(config.output_channels, data_format="channels_first")
 
+    # forward：模块前向计算
     def forward(self, hidden_states):
         hidden_states = hidden_states.permute(0, 3, 1, 2)
         hidden_states = self.conv1(hidden_states)
@@ -428,10 +454,12 @@ class PPFormulaNetVisionNeck(nn.Module):
         return hidden_states
 
 
+# PPFormulaNetVisionModel：PP-FormulaNet 视觉编码器主干
 class PPFormulaNetVisionModel(PPFormulaNetPreTrainedModel):
     _can_record_outputs = {"hidden_states": PPFormulaNetVisionLayer, "attentions": PPFormulaNetVisionAttention}
     input_modalities = ("image",)
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPFormulaNetVisionConfig):
         super().__init__(config)
         self.config = config
@@ -469,6 +497,7 @@ class PPFormulaNetVisionModel(PPFormulaNetPreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs(tie_last_hidden_states=False)
+    # forward：模块前向计算
     def forward(
         self, pixel_values: torch.FloatTensor | None = None, **kwargs: Unpack[TransformersKwargs]
     ) -> tuple | BaseModelOutputWithPooling:
@@ -489,17 +518,20 @@ class PPFormulaNetVisionModel(PPFormulaNetPreTrainedModel):
         )
 
 
+# PPFormulaNetLearnedPositionalEmbedding：文本解码器可学习位置嵌入
 class PPFormulaNetLearnedPositionalEmbedding(nn.Embedding):
     """
     This module learns positional embeddings up to a fixed maximum size.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, num_embeddings: int, embedding_dim: int):
         # PPFormulaNet is set up so that if padding_idx is specified then offset the embedding ids by 2
         # and adjust num_embeddings appropriately. Other models don't have this hack
         self.offset = 2
         super().__init__(num_embeddings + self.offset, embedding_dim)
 
+    # forward：模块前向计算
     def forward(
         self, input_ids: torch.Tensor, past_key_values_length: int = 0, position_ids: torch.Tensor | None = None
     ):
@@ -516,15 +548,18 @@ class PPFormulaNetLearnedPositionalEmbedding(nn.Embedding):
         return super().forward(position_ids + self.offset)
 
 
+# PPFormulaNetScaledWordEmbedding：带缩放因子的词嵌入层
 class PPFormulaNetScaledWordEmbedding(nn.Embedding):
     """
     This module overrides nn.Embeddings' forward by multiplying with embeddings scale.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, num_embeddings: int, embedding_dim: int, padding_idx: int, embed_scale: float | None = 1.0):
         super().__init__(num_embeddings, embedding_dim, padding_idx)
         self.embed_scale = embed_scale
 
+    # forward：模块前向计算
     def forward(self, input_ids: torch.Tensor):
         return super().forward(input_ids) * self.embed_scale
 
@@ -557,9 +592,11 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# PPFormulaNetAttention：文本解码器自/交叉注意力模块
 class PPFormulaNetAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         embed_dim: int,
@@ -599,6 +636,7 @@ class PPFormulaNetAttention(nn.Module):
         self.q_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
         self.out_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -674,7 +712,9 @@ class PPFormulaNetAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# PPFormulaNetDecoderLayer：文本解码器 Transformer 层
 class PPFormulaNetDecoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPFormulaNetConfig, layer_idx: int | None = None):
         super().__init__()
         self.embed_dim = config.d_model
@@ -706,6 +746,7 @@ class PPFormulaNetDecoderLayer(GradientCheckpointingLayer):
         self.fc2 = nn.Linear(config.decoder_ffn_dim, self.embed_dim)
         self.final_layer_norm = nn.LayerNorm(self.embed_dim)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -768,6 +809,7 @@ class PPFormulaNetDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# PPFormulaNetTextModel：PP-FormulaNet 文本解码器（MBart 解码器）
 class PPFormulaNetTextModel(PPFormulaNetPreTrainedModel):
     """
     Transformer decoder consisting of *config.decoder_layers* layers. Each layer is a [`PPFormulaNetTextModelLayer`]
@@ -783,6 +825,7 @@ class PPFormulaNetTextModel(PPFormulaNetPreTrainedModel):
         "cross_attentions": OutputRecorder(PPFormulaNetAttention, index=1, layer_name="encoder_attn"),
     }
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPFormulaNetConfig):
         super().__init__(config)
         self.dropout = config.dropout
@@ -813,6 +856,7 @@ class PPFormulaNetTextModel(PPFormulaNetPreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -961,7 +1005,9 @@ def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int):
     return prev_output_tokens
 
 
+# PPFormulaNetModel：PP-FormulaNet 视觉-文本编码器-解码器主干
 class PPFormulaNetModel(PPFormulaNetPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__(config)
 
@@ -972,6 +1018,7 @@ class PPFormulaNetModel(PPFormulaNetPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         pixel_values: torch.FloatTensor | None = None,
@@ -1030,9 +1077,11 @@ class PPFormulaNetModel(PPFormulaNetPreTrainedModel):
 
 
 @auto_docstring
+# PPFormulaNetForConditionalGeneration：PP-FormulaNet 公式识别条件生成模型
 class PPFormulaNetForConditionalGeneration(PPFormulaNetPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {}
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPFormulaNetConfig):
         super().__init__(config)
         self.model = PPFormulaNetModel(config)
@@ -1044,6 +1093,7 @@ class PPFormulaNetForConditionalGeneration(PPFormulaNetPreTrainedModel, Generati
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         pixel_values: torch.FloatTensor | None = None,

@@ -20,6 +20,8 @@
 
 import re
 
+# PP-FormulaNet 处理器：LaTeX 公式后处理与图像联合编码（自动生成）
+
 from ...image_processing_utils import BatchFeature
 from ...image_utils import ImageInput
 from ...processing_utils import ProcessingKwargs, ProcessorMixin, Unpack
@@ -30,11 +32,13 @@ logger = logging.get_logger(__name__)
 
 
 # Don't copy default values from Nougat!
+# PPFormulaNetProcessorKwargs：PP-FormulaNet 处理器联合编码参数
 class PPFormulaNetProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {}
 
 
 @auto_docstring
+# PPFormulaNetProcessor：PP-FormulaNet 图像+分词器联合处理器
 class PPFormulaNetProcessor(ProcessorMixin):
     r"""
     [`PPFormulaNetProcessor`] offers all the functionalities of [`PPFormulaNetImageProcessor`] and [`NougatTokenizer`]. See the
@@ -43,6 +47,7 @@ class PPFormulaNetProcessor(ProcessorMixin):
 
     valid_processor_kwargs = PPFormulaNetProcessorKwargs
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, image_processor, tokenizer):
         super().__init__(image_processor, tokenizer)
 
@@ -61,6 +66,7 @@ class PPFormulaNetProcessor(ProcessorMixin):
         self._chinese_text_wrapping_pattern = re.compile(r"\\text\s*{([^{}]*[\u4e00-\u9fff]+[^{}]*)}")
 
     @auto_docstring
+    # __call__：联合编码多模态输入为模型 batch
     def __call__(
         self,
         images: ImageInput,
@@ -85,6 +91,7 @@ class PPFormulaNetProcessor(ProcessorMixin):
         image_inputs = self.image_processor(images=images, **output_kwargs["images_kwargs"])
         return BatchFeature({**image_inputs})
 
+    # post_process_generation：解码生成 LaTeX 并做公式规范化后处理
     def post_process_generation(self, text: str) -> str:
         """Post-processes a string by fixing text and normalizing it.
 
@@ -107,6 +114,7 @@ class PPFormulaNetProcessor(ProcessorMixin):
         text = self.normalize(text)
         return text
 
+    # normalize：规范化 LaTeX 空格与宏命令格式
     def normalize(self, text: str) -> str:
         """Normalizes a string by removing unnecessary spaces."""
         names = []
@@ -132,6 +140,7 @@ class PPFormulaNetProcessor(ProcessorMixin):
 
         return new_text.replace("XXXXXXX", " ")
 
+    # remove_chinese_text_wrapping：移除中文文本的 \text{} 包裹
     def remove_chinese_text_wrapping(self, formula: str) -> str:
         def replacer(match):
             return match.group(1)
@@ -139,6 +148,7 @@ class PPFormulaNetProcessor(ProcessorMixin):
         replaced_formula = self._chinese_text_wrapping_pattern.sub(replacer, formula)
         return replaced_formula.replace('"', "")
 
+    # post_process：批量解码生成结果并逐条后处理
     def post_process(self, generated_outputs, skip_special_tokens=True, **kwargs):
         """
         Post-process the output of the model to decode the text.

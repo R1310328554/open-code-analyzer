@@ -13,6 +13,8 @@
 # limitations under the License.
 from typing import TYPE_CHECKING
 
+# PP-LCNetV4 包：延迟加载大/小 stem 变体轻量骨干组件
+
 from ...utils import _LazyModule
 from ...utils.import_utils import define_import_structure
 

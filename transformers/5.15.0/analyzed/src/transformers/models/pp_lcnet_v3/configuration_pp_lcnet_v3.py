@@ -21,6 +21,8 @@
 
 from huggingface_hub.dataclasses import strict
 
+# PP-LCNetV3 配置：可学习仿射与重参数化卷积超参（自动生成）
+
 from ...backbone_utils import BackboneConfigMixin
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
@@ -28,6 +30,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="PaddlePaddle/Not_yet_released")
 @strict
+# PPLCNetV3Config：PP-LCNetV3 可重参数化轻量骨干配置
 class PPLCNetV3Config(BackboneConfigMixin, PreTrainedConfig):
     r"""
     scale (`float`, *optional*, defaults to 1.0):
@@ -67,6 +70,7 @@ class PPLCNetV3Config(BackboneConfigMixin, PreTrainedConfig):
 
     conv_symmetric_num: int = 4
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         # Default block configs for PP-LCNetV3
         # Each tuple: (kernel_size, in_channels, out_channels, stride, use_squeeze_excitation)

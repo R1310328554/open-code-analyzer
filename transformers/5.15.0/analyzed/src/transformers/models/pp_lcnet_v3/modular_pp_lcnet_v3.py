@@ -17,6 +17,8 @@ import torch
 import torch.nn as nn
 from huggingface_hub.dataclasses import strict
 
+# PP-LCNetV3 modular 源：V3 可重参数化骨干实现
+
 from ...activations import ACT2FN
 from ...configuration_utils import PreTrainedConfig
 from ...modeling_utils import PreTrainedModel
@@ -37,6 +39,7 @@ from ..pp_lcnet.modeling_pp_lcnet import (
 
 @auto_docstring(checkpoint="PaddlePaddle/Not_yet_released")
 @strict
+# PPLCNetV3Config：PP-LCNetV3 可重参数化轻量骨干配置
 class PPLCNetV3Config(PPLCNetConfig):
     r"""
     scale (`float`, *optional*, defaults to 1.0):
@@ -68,6 +71,7 @@ class PPLCNetV3Config(PPLCNetConfig):
     hidden_dropout_prob = AttributeError()
     class_expand = AttributeError()
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         # Default block configs for PP-LCNetV3
         # Each tuple: (kernel_size, in_channels, out_channels, stride, use_squeeze_excitation)
@@ -101,28 +105,34 @@ class PPLCNetV3Config(PPLCNetConfig):
         PreTrainedConfig.__post_init__(**kwargs)
 
 
+# PPLCNetV3ConvLayer：PP-LCNetV3 卷积基础层
 class PPLCNetV3ConvLayer(PPLCNetConvLayer):
     pass
 
 
+# PPLCNetV3LearnableAffineBlock：PP-LCNetV3 可学习仿射变换块（LAB）
 class PPLCNetV3LearnableAffineBlock(HGNetV2LearnableAffineBlock):
     pass
 
 
+# PPLCNetV3ActLearnableAffineBlock：PP-LCNetV3 激活+可学习仿射组合块
 class PPLCNetV3ActLearnableAffineBlock(nn.Module):
     """
     Activation block with a trainable affine transformation applied after the non-linear activation.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, activation="hardswish"):
         super().__init__()
         self.act = ACT2FN[activation]
         self.lab = PPLCNetV3LearnableAffineBlock()
 
+    # forward：模块前向计算
     def forward(self, hidden_state: torch.Tensor):
         return self.lab(self.act(hidden_state))
 
 
+# PPLCNetV3LearnableRepLayer：PP-LCNetV3 可重参数化多分支卷积层
 class PPLCNetV3LearnableRepLayer(nn.Module):
     """
     Learnable Reparameterization Layer (RepLayer) that fuses multiple convolution branches
@@ -130,6 +140,7 @@ class PPLCNetV3LearnableRepLayer(nn.Module):
     for efficient inference while maintaining training flexibility.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         in_channels: int,
@@ -176,6 +187,7 @@ class PPLCNetV3LearnableRepLayer(nn.Module):
         self.lab = PPLCNetV3LearnableAffineBlock()
         self.act = PPLCNetV3ActLearnableAffineBlock(activation=activation)
 
+    # forward：模块前向计算
     def forward(self, hidden_state: torch.Tensor):
         output = None
 
@@ -196,6 +208,7 @@ class PPLCNetV3LearnableRepLayer(nn.Module):
         return hidden_state
 
 
+# PPLCNetV3DepthwiseSeparableConvLayer：PP-LCNetV3 深度可分离卷积（含 Rep 层）
 class PPLCNetV3DepthwiseSeparableConvLayer(PPLCNetDepthwiseSeparableConvLayer):
     """
     Depthwise Separable Convolution Layer: Depthwise Conv -> SE Module (optional) -> Pointwise Conv
@@ -203,6 +216,7 @@ class PPLCNetV3DepthwiseSeparableConvLayer(PPLCNetDepthwiseSeparableConvLayer):
     the number of parameters and computational cost.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         in_channels,
@@ -232,8 +246,10 @@ class PPLCNetV3DepthwiseSeparableConvLayer(PPLCNetDepthwiseSeparableConvLayer):
         )
 
 
+# PPLCNetV3PreTrainedModel：PP-LCNetV3 预训练基类
 class PPLCNetV3PreTrainedModel(PPLCNetPreTrainedModel):
     @torch.no_grad()
+    # _init_weights：按模块类型初始化权重
     def _init_weights(self, module):
         PreTrainedModel._init_weights(module)
         if isinstance(module, (PPLCNetV3LearnableAffineBlock)):
@@ -241,11 +257,14 @@ class PPLCNetV3PreTrainedModel(PPLCNetPreTrainedModel):
             nn.init.zeros_(module.bias)
 
 
+# PPLCNetV3Backbone：PP-LCNetV3 视觉骨干网络
 class PPLCNetV3Backbone(PPLCNetBackbone):
     pass
 
 
+# PPLCNetV3Encoder：PP-LCNetV3 多阶段编码器
 class PPLCNetV3Encoder(PPLCNetEncoder):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPLCNetV3Config):
         super().__init__(config)
         self.config = config

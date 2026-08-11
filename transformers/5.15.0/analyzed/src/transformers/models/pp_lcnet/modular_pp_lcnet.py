@@ -14,6 +14,8 @@
 
 import math
 
+# PP-LCNet modular 源：配置/图像处理/分类骨干完整实现
+
 import torch
 import torch.nn as nn
 import torchvision.transforms.v2.functional as tvF
@@ -47,6 +49,7 @@ from ..resnet.modeling_resnet import ResNetConvLayer
 
 @auto_docstring(checkpoint="PaddlePaddle/PP-LCNet_x1_0_doc_ori_safetensors")
 @strict
+# PPLCNetConfig：PP-LCNet 轻量卷积骨干配置（含 SE 与 scale 缩放）
 class PPLCNetConfig(BackboneConfigMixin, PreTrainedConfig):
     r"""
     scale (`float`, *optional*, defaults to 1.0):
@@ -85,6 +88,7 @@ class PPLCNetConfig(BackboneConfigMixin, PreTrainedConfig):
     _out_indices: list[int] | None = None
     hidden_dropout_prob: float | int = 0.2
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         # Default block configs for PP-LCNet
         # Each tuple: (kernel_size, in_channels, out_channels, stride, use_squeeze_excitation)
@@ -125,6 +129,7 @@ class PPLCNetConfig(BackboneConfigMixin, PreTrainedConfig):
             raise ValueError(f"block_configs must have 5 stages, but got {len(self.block_configs)}")
 
 
+# PPLCNetImageProcessorKwargs：PP-LCNet 图像预处理可选参数
 class PPLCNetImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     resize_short (`int`, *optional*, defaults to 256):
@@ -139,6 +144,7 @@ class PPLCNetImageProcessorKwargs(ImagesKwargs, total=False):
 
 @auto_docstring
 @requires(backends=("torch",))
+# PPLCNetImageProcessor：PP-LCNet 图像预处理（短边缩放+中心裁剪）
 class PPLCNetImageProcessor(TorchvisionBackend):
     resample = 2
     image_mean = [0.406, 0.456, 0.485]
@@ -153,6 +159,7 @@ class PPLCNetImageProcessor(TorchvisionBackend):
     size_divisor = 1
     valid_kwargs = PPLCNetImageProcessorKwargs
 
+    # _preprocess：按尺寸分组执行 resize/归一化等图像预处理
     def _preprocess(
         self,
         images: list["torch.Tensor"],
@@ -222,7 +229,9 @@ class PPLCNetImageProcessor(TorchvisionBackend):
         return SizeDict(height=resized_height, width=resized_width)
 
 
+# PPLCNetConvLayer：PP-LCNet 标准卷积块（Conv+BN+激活）
 class PPLCNetConvLayer(ResNetConvLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         in_channels: int,
@@ -247,6 +256,7 @@ class PPLCNetConvLayer(ResNetConvLayer):
         )
 
 
+# PPLCNetDepthwiseSeparableConvLayer：PP-LCNet 深度可分离卷积层
 class PPLCNetDepthwiseSeparableConvLayer(GradientCheckpointingLayer):
     """
     Depthwise Separable Convolution Layer: Depthwise Conv -> SE Module (optional) -> Pointwise Conv
@@ -254,6 +264,7 @@ class PPLCNetDepthwiseSeparableConvLayer(GradientCheckpointingLayer):
     the number of parameters and computational cost.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         in_channels,
@@ -283,6 +294,7 @@ class PPLCNetDepthwiseSeparableConvLayer(GradientCheckpointingLayer):
             activation=config.hidden_act,
         )
 
+    # forward：模块前向计算
     def forward(self, hidden_state):
         hidden_state = self.depthwise_convolution(hidden_state)
         hidden_state = self.squeeze_excitation_module(hidden_state)
@@ -291,12 +303,14 @@ class PPLCNetDepthwiseSeparableConvLayer(GradientCheckpointingLayer):
         return hidden_state
 
 
+# PPLCNetSqueezeExcitationModule：PP-LCNet 通道注意力 SE 模块
 class PPLCNetSqueezeExcitationModule(nn.Module):
     """
     Squeeze-and-Excitation (SE) Module: Adaptive feature recalibration
     Enhances the model's ability to focus on important channels by learning channel-wise attention weights.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, channel, reduction=4):
         super().__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
@@ -318,6 +332,7 @@ class PPLCNetSqueezeExcitationModule(nn.Module):
             )
             self.convolutions.append(activation)
 
+    # forward：模块前向计算
     def forward(self, hidden_state):
         residual = hidden_state
         hidden_state = self.avg_pool(hidden_state)
@@ -328,7 +343,9 @@ class PPLCNetSqueezeExcitationModule(nn.Module):
         return hidden_state
 
 
+# PPLCNetBlock：PP-LCNet 重复堆叠的基础块（含 SE 可选）
 class PPLCNetBlock(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config, stage_index):
         super().__init__()
         self.config = config
@@ -350,6 +367,7 @@ class PPLCNetBlock(nn.Module):
             )
             self.layers.append(depthwise_block)
 
+    # forward：模块前向计算
     def forward(self, hidden_states):
         for layer in self.layers:
             hidden_states = layer(hidden_states)
@@ -357,6 +375,7 @@ class PPLCNetBlock(nn.Module):
 
 
 @auto_docstring
+# PPLCNetPreTrainedModel：PP-LCNet 预训练基类与权重初始化
 class PPLCNetPreTrainedModel(PreTrainedModel):
     """
     An abstract base class for PP-LCNet models that inherits from Hugging Face PreTrainedModel.
@@ -375,7 +394,9 @@ class PPLCNetPreTrainedModel(PreTrainedModel):
     }
 
 
+# PPLCNetEncoder：PP-LCNet 多阶段卷积编码器
 class PPLCNetEncoder(PPLCNetPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPLCNetConfig):
         super().__init__(config)
         self.config = config
@@ -398,6 +419,7 @@ class PPLCNetEncoder(PPLCNetPreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs
+    # forward：模块前向计算
     def forward(self, pixel_values: torch.Tensor, **kwargs) -> BaseModelOutputWithNoAttention:
         hidden_state = self.convolution(pixel_values)
         for block in self.blocks:
@@ -411,9 +433,11 @@ class PPLCNetEncoder(PPLCNetPreTrainedModel):
     PPLCNet backbone model for feature extraction.
     """
 )
+# PPLCNetBackbone：PP-LCNet 视觉骨干（BackboneMixin 多尺度输出）
 class PPLCNetBackbone(BackboneMixin, PPLCNetPreTrainedModel):
     has_attentions = False
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPLCNetConfig):
         super().__init__(config)
         num_features = [config.stem_channels]
@@ -427,6 +451,7 @@ class PPLCNetBackbone(BackboneMixin, PPLCNetPreTrainedModel):
     @can_return_tuple
     @filter_output_hidden_states
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         pixel_values: torch.Tensor,
@@ -464,9 +489,11 @@ class PPLCNetBackbone(BackboneMixin, PPLCNetPreTrainedModel):
 
 
 @auto_docstring
+# PPLCNetForImageClassification：PP-LCNet 图像分类头模型
 class PPLCNetForImageClassification(PPLCNetPreTrainedModel):
     _keys_to_ignore_on_load_missing = ["num_batches_tracked"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPLCNetConfig):
         super().__init__(config)
         self.encoder = PPLCNetEncoder(config)
@@ -493,6 +520,7 @@ class PPLCNetForImageClassification(PPLCNetPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         pixel_values: torch.FloatTensor | None = None,

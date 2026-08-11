@@ -20,6 +20,8 @@
 
 import math
 
+# PP-LCNet 图像处理：短边缩放+中心裁剪 ImageNet 归一化（自动生成）
+
 import torch
 import torchvision.transforms.v2.functional as tvF
 
@@ -33,6 +35,7 @@ from ...utils.generic import TensorType
 from ...utils.import_utils import requires
 
 
+# PPLCNetImageProcessorKwargs：PP-LCNet 图像预处理可选参数
 class PPLCNetImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     resize_short (`int`, *optional*, defaults to 256):
@@ -47,6 +50,7 @@ class PPLCNetImageProcessorKwargs(ImagesKwargs, total=False):
 
 @auto_docstring
 @requires(backends=("torch",))
+# PPLCNetImageProcessor：PP-LCNet 图像预处理（短边缩放+中心裁剪）
 class PPLCNetImageProcessor(TorchvisionBackend):
     resample = 2
     image_mean = [0.406, 0.456, 0.485]
@@ -61,6 +65,7 @@ class PPLCNetImageProcessor(TorchvisionBackend):
     size_divisor = 1
     valid_kwargs = PPLCNetImageProcessorKwargs
 
+    # _preprocess：按尺寸分组执行 resize/归一化等图像预处理
     def _preprocess(
         self,
         images: list["torch.Tensor"],

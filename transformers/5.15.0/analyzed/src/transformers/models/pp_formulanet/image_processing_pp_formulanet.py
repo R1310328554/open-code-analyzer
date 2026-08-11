@@ -22,6 +22,8 @@
 import torch
 from torchvision.transforms.v2 import functional as tvF
 
+# PP-FormulaNet 图像处理：公式图裁剪/对齐/缩略图与 768×768 预处理（自动生成）
+
 from ...image_processing_backends import TorchvisionBackend
 from ...image_processing_utils import BatchFeature
 from ...image_transforms import get_resize_output_image_size, group_images_by_shape, reorder_images
@@ -31,6 +33,7 @@ from ...utils import TensorType, auto_docstring
 from ...utils.import_utils import requires
 
 
+# PPFormulaNetImageProcessorKwargs：PP-FormulaNet 图像预处理可选参数字典
 class PPFormulaNetImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     do_crop_margin (`bool`, *optional*, defaults to `self.do_crop_margin`):
@@ -48,6 +51,7 @@ class PPFormulaNetImageProcessorKwargs(ImagesKwargs, total=False):
 
 @auto_docstring
 @requires(backends=("torch",))
+# PPFormulaNetImageProcessor：PP-FormulaNet 公式图像预处理（768×768 裁剪对齐）
 class PPFormulaNetImageProcessor(TorchvisionBackend):
     valid_kwargs = PPFormulaNetImageProcessorKwargs
     resample = PILImageResampling.BILINEAR
@@ -62,13 +66,16 @@ class PPFormulaNetImageProcessor(TorchvisionBackend):
     do_rescale = True
     do_crop_margin = True
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, **kwargs: Unpack[PPFormulaNetImageProcessorKwargs]):
         super().__init__(**kwargs)
 
     @auto_docstring
+    # preprocess：图像预处理入口：缩放、裁剪、归一化
     def preprocess(self, images: ImageInput, **kwargs: Unpack[PPFormulaNetImageProcessorKwargs]) -> BatchFeature:
         return super().preprocess(images, **kwargs)
 
+    # python_find_non_zero：等价于 cv2.findNonZero 的非零像素索引查找
     def python_find_non_zero(
         self,
         image: "torch.Tensor",
@@ -80,6 +87,7 @@ class PPFormulaNetImageProcessor(TorchvisionBackend):
         idxvec = idxvec.reshape(-1, 1, 2)
         return idxvec
 
+    # python_bounding_rect：由非零坐标计算最小外接矩形
     def python_bounding_rect(self, coordinates):
         """This is a reimplementation of a BoundingRect function equivalent to cv2."""
 
@@ -91,6 +99,7 @@ class PPFormulaNetImageProcessor(TorchvisionBackend):
         height = max_values[1] - y_min + 1
         return x_min, y_min, width, height
 
+    # crop_margin：裁剪公式图像空白边缘
     def crop_margin(
         self,
         image: "torch.Tensor",
@@ -121,6 +130,7 @@ class PPFormulaNetImageProcessor(TorchvisionBackend):
 
         return image
 
+    # align_long_axis：旋转图像使长边与目标尺寸长边对齐
     def align_long_axis(
         self,
         image: "torch.Tensor",
@@ -147,6 +157,7 @@ class PPFormulaNetImageProcessor(TorchvisionBackend):
 
         return image
 
+    # thumbnail：保持宽高比缩略图缩放
     def thumbnail(
         self,
         image: "torch.Tensor",
@@ -182,6 +193,7 @@ class PPFormulaNetImageProcessor(TorchvisionBackend):
 
         return tvF.resize(image, new_size, interpolation=tvF.InterpolationMode.BICUBIC)
 
+    # pad_images：填充图像至统一尺寸
     def pad_images(
         self,
         image: "torch.Tensor",
@@ -211,6 +223,7 @@ class PPFormulaNetImageProcessor(TorchvisionBackend):
         padding = (pad_left, pad_top, pad_right, pad_bottom)
         return tvF.pad(image, padding)
 
+    # resize：按目标尺寸缩放图像
     def resize(
         self,
         image: "torch.Tensor",
@@ -241,6 +254,7 @@ class PPFormulaNetImageProcessor(TorchvisionBackend):
             image, SizeDict(height=new_size[0], width=new_size[1]), resample=resample, antialias=antialias, **kwargs
         )
 
+    # _preprocess：按尺寸分组执行 resize/归一化等图像预处理
     def _preprocess(
         self,
         images: list["torch.Tensor"],

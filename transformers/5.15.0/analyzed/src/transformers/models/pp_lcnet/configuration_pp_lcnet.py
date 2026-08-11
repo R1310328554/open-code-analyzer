@@ -20,6 +20,8 @@
 
 from huggingface_hub.dataclasses import strict
 
+# PP-LCNet 配置：轻量级卷积骨干超参与 SE 模块参数（自动生成）
+
 from ...backbone_utils import BackboneConfigMixin
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
@@ -27,6 +29,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="PaddlePaddle/PP-LCNet_x1_0_doc_ori_safetensors")
 @strict
+# PPLCNetConfig：PP-LCNet 轻量卷积骨干配置（含 SE 与 scale 缩放）
 class PPLCNetConfig(BackboneConfigMixin, PreTrainedConfig):
     r"""
     scale (`float`, *optional*, defaults to 1.0):
@@ -65,6 +68,7 @@ class PPLCNetConfig(BackboneConfigMixin, PreTrainedConfig):
     _out_indices: list[int] | None = None
     hidden_dropout_prob: float | int = 0.2
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         # Default block configs for PP-LCNet
         # Each tuple: (kernel_size, in_channels, out_channels, stride, use_squeeze_excitation)

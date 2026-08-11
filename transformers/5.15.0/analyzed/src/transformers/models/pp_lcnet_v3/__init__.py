@@ -13,6 +13,8 @@
 # limitations under the License.
 from typing import TYPE_CHECKING
 
+# PP-LCNetV3 包：延迟加载可重参数化轻量骨干组件
+
 from ...utils import _LazyModule
 from ...utils.import_utils import define_import_structure
 

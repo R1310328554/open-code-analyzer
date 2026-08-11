@@ -21,6 +21,8 @@
 
 from collections.abc import Sequence
 
+# PP-LCNetV4 配置：大/小 stem 与可学习仿射块超参（自动生成）
+
 from huggingface_hub.dataclasses import strict
 
 from ...backbone_utils import BackboneConfigMixin
@@ -30,6 +32,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="PaddlePaddle/Not_yet_released")
 @strict
+# PPLCNetV4Config：PP-LCNetV4 大/小 stem 变体轻量骨干配置
 class PPLCNetV4Config(BackboneConfigMixin, PreTrainedConfig):
     r"""
     scale (`float`, *optional*, defaults to 1.0):
@@ -73,6 +76,7 @@ class PPLCNetV4Config(BackboneConfigMixin, PreTrainedConfig):
     stem_type: str = "large"
     use_learnable_affine_block: bool = False
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         # Default block configs for PP-LCNetV3
         # Each tuple: (kernel_size, in_channels, out_channels, stride, use_squeeze_excitation)

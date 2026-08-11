@@ -15,6 +15,8 @@
 import re
 from dataclasses import dataclass
 
+# PP-FormulaNet modular 源：公式识别配置/图像/处理器/建模完整实现
+
 import torch
 import torch.nn as nn
 from huggingface_hub.dataclasses import strict
@@ -63,6 +65,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="PaddlePaddle/PPFormulaNet_plus-L_safetensors")
 @strict
+# PPFormulaNetVisionConfig：PP-FormulaNet 视觉编码器（SAM/SLANeXt 风格）配置
 class PPFormulaNetVisionConfig(SLANeXtVisionConfig):
     r"""
     output_channels (`int`, *optional*, defaults to 256):
@@ -91,6 +94,7 @@ class PPFormulaNetVisionConfig(SLANeXtVisionConfig):
 
 @auto_docstring(checkpoint="PaddlePaddle/PPFormulaNet_plus-L_safetensors")
 @strict
+# PPFormulaNetTextConfig：PP-FormulaNet 文本解码器（MBart 风格）配置
 class PPFormulaNetTextConfig(MBartConfig):
     base_config_key = "text_config"
     vocab_size: int = 50000
@@ -110,6 +114,7 @@ class PPFormulaNetTextConfig(MBartConfig):
 
 @auto_docstring(checkpoint="PaddlePaddle/PPFormulaNet_plus-L_safetensors")
 @strict
+# PPFormulaNetConfig：PP-FormulaNet 公式识别多模态总配置
 class PPFormulaNetConfig(PreTrainedConfig):
     model_type = "pp_formulanet"
     sub_configs = {"text_config": PPFormulaNetTextConfig, "vision_config": PPFormulaNetVisionConfig}
@@ -118,6 +123,7 @@ class PPFormulaNetConfig(PreTrainedConfig):
     vision_config: dict | PPFormulaNetVisionConfig | None = None
     is_encoder_decoder: bool = True
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         if isinstance(self.text_config, dict):
             self.text_config = PPFormulaNetTextConfig(**self.text_config)
@@ -136,6 +142,7 @@ class PPFormulaNetConfig(PreTrainedConfig):
 
 @auto_docstring
 @requires(backends=("torch",))
+# PPFormulaNetImageProcessor：PP-FormulaNet 公式图像预处理（768×768 裁剪对齐）
 class PPFormulaNetImageProcessor(NougatImageProcessor):
     image_mean = [0.7931, 0.7931, 0.7931]
     image_std = [0.1738, 0.1738, 0.1738]
@@ -143,16 +150,19 @@ class PPFormulaNetImageProcessor(NougatImageProcessor):
 
 
 # Don't copy default values from Nougat!
+# PPFormulaNetProcessorKwargs：PP-FormulaNet 处理器联合编码参数
 class PPFormulaNetProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {}
 
 
+# PPFormulaNetProcessor：PP-FormulaNet 图像+分词器联合处理器
 class PPFormulaNetProcessor(NougatProcessor):
     r"""
     [`PPFormulaNetProcessor`] offers all the functionalities of [`PPFormulaNetImageProcessor`] and [`NougatTokenizer`]. See the
     [`~PPFormulaNetProcessor.__call__`] and [`~PPFormulaNetProcessor.decode`] for more information.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, image_processor, tokenizer):
         super().__init__(image_processor, tokenizer)
 
@@ -170,6 +180,7 @@ class PPFormulaNetProcessor(NougatProcessor):
         # remove_chinese_text_wrapping() regex
         self._chinese_text_wrapping_pattern = re.compile(r"\\text\s*{([^{}]*[\u4e00-\u9fff]+[^{}]*)}")
 
+    # __call__：联合编码多模态输入为模型 batch
     def __call__(
         self,
         images: ImageInput,
@@ -194,6 +205,7 @@ class PPFormulaNetProcessor(NougatProcessor):
         image_inputs = self.image_processor(images=images, **output_kwargs["images_kwargs"])
         return BatchFeature({**image_inputs})
 
+    # normalize：规范化 LaTeX 空格与宏命令格式
     def normalize(self, text: str) -> str:
         """Normalizes a string by removing unnecessary spaces."""
         names = []
@@ -219,6 +231,7 @@ class PPFormulaNetProcessor(NougatProcessor):
 
         return new_text.replace("XXXXXXX", " ")
 
+    # remove_chinese_text_wrapping：移除中文文本的 \text{} 包裹
     def remove_chinese_text_wrapping(self, formula: str) -> str:
         def replacer(match):
             return match.group(1)
@@ -226,6 +239,7 @@ class PPFormulaNetProcessor(NougatProcessor):
         replaced_formula = self._chinese_text_wrapping_pattern.sub(replacer, formula)
         return replaced_formula.replace('"', "")
 
+    # post_process_generation：解码生成 LaTeX 并做公式规范化后处理
     def post_process_generation(self, text: str) -> str:
         """Post-processes a string by fixing text and normalizing it.
 
@@ -248,6 +262,7 @@ class PPFormulaNetProcessor(NougatProcessor):
         text = self.normalize(text)
         return text
 
+    # post_process：批量解码生成结果并逐条后处理
     def post_process(self, generated_outputs, skip_special_tokens=True, **kwargs):
         """
         Post-process the output of the model to decode the text.
@@ -268,6 +283,7 @@ class PPFormulaNetProcessor(NougatProcessor):
         return [self.post_process_generation(text) for text in generated_texts]
 
 
+# PPFormulaNetPreTrainedModel：PP-FormulaNet 预训练基类与权重初始化
 class PPFormulaNetPreTrainedModel(SLANeXtPreTrainedModel):
     _keep_in_fp32_modules_strict = []
     base_model_prefix = "model"
@@ -275,6 +291,7 @@ class PPFormulaNetPreTrainedModel(SLANeXtPreTrainedModel):
     _supports_sdpa = True
 
     @torch.no_grad()
+    # _init_weights：按模块类型初始化权重
     def _init_weights(self, module):
         """Initialize the weights"""
         PreTrainedModel._init_weights(module)
@@ -293,15 +310,19 @@ class PPFormulaNetPreTrainedModel(SLANeXtPreTrainedModel):
 
 # overrider for PPFormulaNetModel's encoder output
 @dataclass
+# PPFormulaNetVisionEncoderOutput：视觉编码器输出 dataclass
 class PPFormulaNetVisionEncoderOutput(BaseModelOutputWithPooling):
     pass
 
 
+# PPFormulaNetVisionAttention：视觉多头注意力（含相对位置编码）
 class PPFormulaNetVisionAttention(SLANeXtVisionAttention):
     pass
 
 
+# PPFormulaNetMultiModalProjector：视觉特征到文本隐空间的跨模态投影层
 class PPFormulaNetMultiModalProjector(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.conv1 = nn.Conv2d(
@@ -318,6 +339,7 @@ class PPFormulaNetMultiModalProjector(nn.Module):
         self.linear_1 = nn.Linear(config.post_conv_out_channels, config.post_conv_out_channels)
         self.linear_2 = nn.Linear(config.post_conv_out_channels, config.decoder_hidden_size)
 
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.Tensor, **kwargs: Unpack[TransformersKwargs]):
         hidden_states = self.conv1(hidden_states)
         hidden_states = self.conv2(hidden_states)
@@ -327,13 +349,16 @@ class PPFormulaNetMultiModalProjector(nn.Module):
         return hidden_states
 
 
+# PPFormulaNetVisionModel：PP-FormulaNet 视觉编码器主干
 class PPFormulaNetVisionModel(SLANeXtVisionEncoder):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PPFormulaNetVisionConfig):
         super().__init__()
         self.multi_modal_projector = PPFormulaNetMultiModalProjector(config)
 
     @merge_with_config_defaults
     @capture_outputs(tie_last_hidden_states=False)
+    # forward：模块前向计算
     def forward(
         self, pixel_values: torch.FloatTensor | None = None, **kwargs: Unpack[TransformersKwargs]
     ) -> tuple | BaseModelOutputWithPooling:
@@ -355,11 +380,14 @@ class PPFormulaNetVisionModel(SLANeXtVisionEncoder):
 
 
 @auto_docstring
+# PPFormulaNetTextModel：PP-FormulaNet 文本解码器（MBart 解码器）
 class PPFormulaNetTextModel(MBartDecoder):
     pass
 
 
+# PPFormulaNetModel：PP-FormulaNet 视觉-文本编码器-解码器主干
 class PPFormulaNetModel(PPFormulaNetPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__(config)
 
@@ -370,6 +398,7 @@ class PPFormulaNetModel(PPFormulaNetPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         pixel_values: torch.FloatTensor | None = None,
@@ -428,11 +457,13 @@ class PPFormulaNetModel(PPFormulaNetPreTrainedModel):
 
 
 @auto_docstring
+# PPFormulaNetForConditionalGeneration：PP-FormulaNet 公式识别条件生成模型
 class PPFormulaNetForConditionalGeneration(Florence2ForConditionalGeneration):
     _tied_weights_keys = {}
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         pixel_values: torch.FloatTensor | None = None,
@@ -528,6 +559,7 @@ class PPFormulaNetForConditionalGeneration(Florence2ForConditionalGeneration):
     def get_image_features(self):
         raise AttributeError("The PPFormulaNet does not need `get_image_features`.")
 
+    # _prepare_encoder_decoder_kwargs_for_generation：执行该模块的核心逻辑
     def _prepare_encoder_decoder_kwargs_for_generation(self):
         raise AttributeError("The PPFormulaNet use default implementation.")
 
