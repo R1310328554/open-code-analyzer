@@ -1,4 +1,10 @@
-import datetime
+"""
+django.views.generic.dates — 基于日期的通用类视图与 Mixin。
+
+提供年/月/周/日归档、今日归档及按日期详情等视图组合。
+"""
+
+import datetimeimport datetime
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -18,6 +24,7 @@ from django.views.generic.list import (
 )
 
 
+# 年维度 Mixin：解析 URL 中的年份并计算相邻年
 class YearMixin:
     """Mixin for views manipulating year-based data."""
 
@@ -68,6 +75,7 @@ class YearMixin:
         return date.replace(month=1, day=1)
 
 
+# 月维度 Mixin：解析月份并计算相邻月
 class MonthMixin:
     """Mixin for views manipulating month-based data."""
 
@@ -121,6 +129,7 @@ class MonthMixin:
         return date.replace(day=1)
 
 
+# 日维度 Mixin：解析日并计算相邻日
 class DayMixin:
     """Mixin for views manipulating day-based data."""
 
@@ -168,6 +177,7 @@ class DayMixin:
         return date
 
 
+# 周维度 Mixin：解析 ISO/US 等周格式
 class WeekMixin:
     """Mixin for views manipulating week-based data."""
 
@@ -232,6 +242,7 @@ class WeekMixin:
             raise ValueError("unknown week format: %s" % week_format)
 
 
+# 日期字段 Mixin：DateField/DateTimeField 过滤与区间构造
 class DateMixin:
     """Mixin class for views manipulating date-based data."""
 
@@ -299,6 +310,7 @@ class DateMixin:
             return {date_field: date}
 
 
+# 日期列表视图基类：get_dated_items 由子类实现
 class BaseDateListView(MultipleObjectMixin, DateMixin, View):
     """
     Base class for date-based views displaying a list of objects.
@@ -390,6 +402,7 @@ class BaseDateListView(MultipleObjectMixin, DateMixin, View):
         return date_list
 
 
+# 归档索引基类：按日期聚合列出全部条目
 class BaseArchiveIndexView(BaseDateListView):
     """
     Base view for archives of date-based items.
@@ -410,12 +423,14 @@ class BaseArchiveIndexView(BaseDateListView):
         return (date_list, qs, {})
 
 
+# 带模板的顶层日期归档视图
 class ArchiveIndexView(MultipleObjectTemplateResponseMixin, BaseArchiveIndexView):
     """Top-level archive of date-based items."""
 
     template_name_suffix = "_archive"
 
 
+# 年度归档基类：可选是否展开当年全部对象
 class BaseYearArchiveView(YearMixin, BaseDateListView):
     """
     Base view for a list of objects published in a given year.
@@ -466,12 +481,14 @@ class BaseYearArchiveView(YearMixin, BaseDateListView):
         return self.make_object_list
 
 
+# 某年发布内容的列表视图
 class YearArchiveView(MultipleObjectTemplateResponseMixin, BaseYearArchiveView):
     """List of objects published in a given year."""
 
     template_name_suffix = "_archive_year"
 
 
+# 月度归档基类
 class BaseMonthArchiveView(YearMixin, MonthMixin, BaseDateListView):
     """
     Base view for a list of objects published in a given month.
@@ -512,12 +529,14 @@ class BaseMonthArchiveView(YearMixin, MonthMixin, BaseDateListView):
         )
 
 
+# 某月发布内容的列表视图
 class MonthArchiveView(MultipleObjectTemplateResponseMixin, BaseMonthArchiveView):
     """List of objects published in a given month."""
 
     template_name_suffix = "_archive_month"
 
 
+# 周归档基类：支持 %W/%U/%V 等周格式
 class BaseWeekArchiveView(YearMixin, WeekMixin, BaseDateListView):
     """
     Base view for a list of objects published in a given week.
@@ -574,12 +593,14 @@ class BaseWeekArchiveView(YearMixin, WeekMixin, BaseDateListView):
         )
 
 
+# 某周发布内容的列表视图
 class WeekArchiveView(MultipleObjectTemplateResponseMixin, BaseWeekArchiveView):
     """List of objects published in a given week."""
 
     template_name_suffix = "_archive_week"
 
 
+# 日归档基类
 class BaseDayArchiveView(YearMixin, MonthMixin, DayMixin, BaseDateListView):
     """
     Base view for a list of objects published on a given day.
@@ -625,12 +646,14 @@ class BaseDayArchiveView(YearMixin, MonthMixin, DayMixin, BaseDateListView):
         )
 
 
+# 某日发布内容的列表视图
 class DayArchiveView(MultipleObjectTemplateResponseMixin, BaseDayArchiveView):
     """List of objects published on a given day."""
 
     template_name_suffix = "_archive_day"
 
 
+# 今日归档基类：固定使用当天日期
 class BaseTodayArchiveView(BaseDayArchiveView):
     """
     Base view for a list of objects published today.
@@ -643,12 +666,14 @@ class BaseTodayArchiveView(BaseDayArchiveView):
         return self._get_dated_items(datetime.date.today())
 
 
+# 今日发布内容的列表视图
 class TodayArchiveView(MultipleObjectTemplateResponseMixin, BaseTodayArchiveView):
     """List of objects published today."""
 
     template_name_suffix = "_archive_day"
 
 
+# 按 URL 年月日定位单条记录的详情基类
 class BaseDateDetailView(YearMixin, MonthMixin, DayMixin, DateMixin, BaseDetailView):
     """
     Base detail view for a single object on a single date; this differs from
@@ -695,6 +720,7 @@ class BaseDateDetailView(YearMixin, MonthMixin, DayMixin, DateMixin, BaseDetailV
         return super().get_object(queryset=qs)
 
 
+# 带模板的按日期详情视图
 class DateDetailView(SingleObjectTemplateResponseMixin, BaseDateDetailView):
     """
     Detail view of a single object on a single date; this differs from the
@@ -704,6 +730,7 @@ class DateDetailView(SingleObjectTemplateResponseMixin, BaseDateDetailView):
     template_name_suffix = "_detail"
 
 
+# 按格式字符串解析 URL 中的年/月/日为 date，非法则 404
 def _date_from_string(
     year, year_format, month="", month_format="", day="", day_format="", delim="__"
 ):
@@ -725,6 +752,7 @@ def _date_from_string(
         )
 
 
+# 计算年/月/周/日的上一或下一有效日期（供导航链接）
 def _get_next_prev(generic_view, date, is_previous, period):
     """
     Get the next or the previous valid date. The idea is to allow links on
@@ -815,6 +843,7 @@ def _get_next_prev(generic_view, date, is_previous, period):
         return get_current(result)
 
 
+# 启用时区时使用 timezone.localdate，否则 date.today
 def timezone_today():
     """Return the current date in the current time zone."""
     if settings.USE_TZ:

@@ -1,7 +1,9 @@
-/* global QUnit */
+/* admin.inlines：tabular 内联 formset 增删与 min/max 约束 */
+/* global QUnit *//* global QUnit */
 "use strict";
 
-QUnit.module("admin.inlines: tabular formsets", {
+// 表格内联：prefix、addText 与 dynamic 行
+QUnit.module("admin.inlines: tabular formsets", {QUnit.module("admin.inlines: tabular formsets", {
     beforeEach: function () {
         const $ = django.jQuery;
 
@@ -18,11 +20,13 @@ QUnit.module("admin.inlines: tabular formsets", {
     },
 });
 
+// 初始仅模板行与添加链接
 QUnit.test("no forms", function (assert) {
     assert.ok(this.inlineRow.hasClass("dynamic-first"));
     assert.equal(this.table.find(".add-row a").text(), this.addText);
 });
 
+// 点击添加生成 first-N 新行
 QUnit.test("add form", function (assert) {
     const addButton = this.table.find(".add-row a");
     assert.equal(addButton.text(), this.addText);
@@ -30,6 +34,7 @@ QUnit.test("add form", function (assert) {
     assert.ok(this.table.find("#first-1"));
 });
 
+// 动态行显示 inline-deletelink
 QUnit.test("added form has remove button", function (assert) {
     const addButton = this.table.find(".add-row a");
     assert.equal(addButton.text(), this.addText);
@@ -37,6 +42,7 @@ QUnit.test("added form has remove button", function (assert) {
     assert.equal(this.table.find("#first-1 .inline-deletelink").length, 1);
 });
 
+// 触发 formset:added / formset:removed 事件
 QUnit.test("add/remove form events", function (assert) {
     assert.expect(5);
     const addButton = this.table.find(".add-row a");
@@ -62,6 +68,7 @@ QUnit.test("add/remove form events", function (assert) {
     deleteLink.click();
 });
 
+// 自定义 addButton 替代默认 add-row
 QUnit.test("existing add button", function (assert) {
     const $ = django.jQuery;
     $("#qunit-fixture").empty(); // Clear the table added in beforeEach
@@ -80,7 +87,8 @@ QUnit.test("existing add button", function (assert) {
     assert.ok(this.table.find("#first-1"));
 });
 
-QUnit.module("admin.inlines: tabular formsets with validation errors", {
+// 含校验错误与 has_original 行的 formset
+QUnit.module("admin.inlines: tabular formsets with validation errors", {QUnit.module("admin.inlines: tabular formsets with validation errors", {
     beforeEach: function () {
         const $ = django.jQuery;
 
@@ -95,6 +103,7 @@ QUnit.module("admin.inlines: tabular formsets with validation errors", {
     },
 });
 
+// 已有实例行用删除 checkbox 而非链接
 QUnit.test("first form has delete checkbox and no button", function (assert) {
     const tr = this.inlineRows.slice(0, 1);
     assert.ok(tr.hasClass("dynamic-second"));
@@ -103,6 +112,7 @@ QUnit.test("first form has delete checkbox and no button", function (assert) {
     assert.equal(tr.find("td.delete .inline-deletelink").length, 0);
 });
 
+// 非 original 动态行用删除链接
 QUnit.test("dynamic form has remove button", function (assert) {
     const tr = this.inlineRows.slice(1, 2);
     assert.ok(tr.hasClass("dynamic-second"));
@@ -110,6 +120,7 @@ QUnit.test("dynamic form has remove button", function (assert) {
     assert.equal(tr.find(".inline-deletelink").length, 1);
 });
 
+// empty-form 模板行无删除控件
 QUnit.test("dynamic template has nothing", function (assert) {
     const tr = this.inlineRows.slice(2, 3);
     assert.ok(tr.hasClass("empty-form"));
@@ -118,7 +129,9 @@ QUnit.test("dynamic template has nothing", function (assert) {
     assert.equal(tr.find("td.delete")[0].innerHTML, "");
 });
 
+// 删除行时一并移除 row-form-errors 行
 QUnit.test(
+    "removing a form-row also removed related row with non-field errors",QUnit.test(
     "removing a form-row also removed related row with non-field errors",
     function (assert) {
         const $ = django.jQuery;
@@ -132,7 +145,8 @@ QUnit.test(
     },
 );
 
-QUnit.module("admin.inlines: tabular formsets with max_num", {
+// max_num 达上限时隐藏添加按钮
+QUnit.module("admin.inlines: tabular formsets with max_num", {QUnit.module("admin.inlines: tabular formsets with max_num", {
     beforeEach: function () {
         const $ = django.jQuery;
         $("#qunit-fixture").append(
@@ -148,7 +162,9 @@ QUnit.module("admin.inlines: tabular formsets with max_num", {
     },
 });
 
+// 已达 max_num 时不显示添加
 QUnit.test(
+    "does not show the add button if already at max_num",QUnit.test(
     "does not show the add button if already at max_num",
     function (assert) {
         const addButton = this.table.find("tr.add_row > td > a");
@@ -156,6 +172,7 @@ QUnit.test(
     },
 );
 
+// 删除一行后仍受 max 限制（按钮不可见）
 QUnit.test("make addButton visible again", function (assert) {
     const $ = django.jQuery;
     const addButton = this.table.find("tr.add_row > td > a");
@@ -166,7 +183,8 @@ QUnit.test("make addButton visible again", function (assert) {
     assert.notOk(addButton.is(":visible"));
 });
 
-QUnit.module("admin.inlines: tabular formsets with min_num", {
+// min_num 达下限时隐藏删除按钮
+QUnit.module("admin.inlines: tabular formsets with min_num", {QUnit.module("admin.inlines: tabular formsets with min_num", {
     beforeEach: function () {
         const $ = django.jQuery;
         $("#qunit-fixture").append(
@@ -182,13 +200,16 @@ QUnit.module("admin.inlines: tabular formsets with min_num", {
     },
 });
 
+// 已达 min_num 时不显示删除链接
 QUnit.test(
+    "does not show the remove buttons if already at min_num",QUnit.test(
     "does not show the remove buttons if already at min_num",
     function (assert) {
         assert.notOk(this.table.find(".inline-deletelink:visible").length);
     },
 );
 
+// 添加一行后删除按钮重新可见
 QUnit.test("make removeButtons visible again", function (assert) {
     const $ = django.jQuery;
     const addButton = this.table.find("tr.add-row > td > a");

@@ -1,4 +1,10 @@
-from django.core.exceptions import ImproperlyConfigured
+"""
+django.views.generic.edit — 表单与 CRUD 类视图。
+
+涵盖 FormView、CreateView、UpdateView、DeleteView 及对应 Mixin。
+"""
+
+from django.core.exceptions import ImproperlyConfiguredfrom django.core.exceptions import ImproperlyConfigured
 from django.forms import Form
 from django.forms import models as model_forms
 from django.http import HttpResponseRedirect
@@ -10,6 +16,7 @@ from django.views.generic.detail import (
 )
 
 
+# 表单 Mixin：实例化、校验与成功跳转
 class FormMixin(ContextMixin):
     """Provide a way to show and handle a form in a request."""
 
@@ -73,6 +80,7 @@ class FormMixin(ContextMixin):
         return super().get_context_data(**kwargs)
 
 
+# ModelForm Mixin：按 model/fields 生成表单
 class ModelFormMixin(FormMixin, SingleObjectMixin):
     """Provide a way to show and handle a ModelForm in a request."""
 
@@ -134,6 +142,7 @@ class ModelFormMixin(FormMixin, SingleObjectMixin):
         return super().form_valid(form)
 
 
+# GET 展示表单、POST/PUT 处理提交
 class ProcessFormView(View):
     """Render a form on GET and processes it on POST."""
 
@@ -158,14 +167,17 @@ class ProcessFormView(View):
         return self.post(*args, **kwargs)
 
 
+# 纯表单视图基类
 class BaseFormView(FormMixin, ProcessFormView):
     """A base view for displaying a form."""
 
 
+# 带模板的通用表单视图
 class FormView(TemplateResponseMixin, BaseFormView):
     """A view for displaying a form and rendering a template response."""
 
 
+# 创建对象基类：object 初始为 None
 class BaseCreateView(ModelFormMixin, ProcessFormView):
     """
     Base view for creating a new object instance.
@@ -182,6 +194,7 @@ class BaseCreateView(ModelFormMixin, ProcessFormView):
         return super().post(request, *args, **kwargs)
 
 
+# 创建并渲染 _form 模板
 class CreateView(SingleObjectTemplateResponseMixin, BaseCreateView):
     """
     View for creating a new object, with a response rendered by a template.
@@ -190,6 +203,7 @@ class CreateView(SingleObjectTemplateResponseMixin, BaseCreateView):
     template_name_suffix = "_form"
 
 
+# 更新对象基类：先 get_object
 class BaseUpdateView(ModelFormMixin, ProcessFormView):
     """
     Base view for updating an existing object.
@@ -206,12 +220,14 @@ class BaseUpdateView(ModelFormMixin, ProcessFormView):
         return super().post(request, *args, **kwargs)
 
 
+# 编辑已有对象并渲染模板
 class UpdateView(SingleObjectTemplateResponseMixin, BaseUpdateView):
     """View for updating an object, with a response rendered by a template."""
 
     template_name_suffix = "_form"
 
 
+# 删除 Mixin：delete/post 与 success_url
 class DeletionMixin:
     """Provide the ability to delete objects."""
 
@@ -238,6 +254,7 @@ class DeletionMixin:
             raise ImproperlyConfigured("No URL to redirect to. Provide a success_url.")
 
 
+# 删除确认基类：POST 校验后删除
 class BaseDeleteView(DeletionMixin, FormMixin, BaseDetailView):
     """
     Base view for deleting an object.
@@ -265,6 +282,7 @@ class BaseDeleteView(DeletionMixin, FormMixin, BaseDetailView):
         return HttpResponseRedirect(success_url)
 
 
+# 带确认模板的删除视图
 class DeleteView(SingleObjectTemplateResponseMixin, BaseDeleteView):
     """
     View for deleting an object retrieved with self.get_object(), with a

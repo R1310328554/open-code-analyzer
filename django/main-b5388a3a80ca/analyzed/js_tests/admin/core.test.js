@@ -1,24 +1,30 @@
-/* global QUnit */
+/* admin.core：Date/String 原型扩展（十二小时制、strftime、strptime） */
+/* global QUnit *//* global QUnit */
 "use strict";
 
+// 管理后台日历/时间解析依赖的核心扩展
 QUnit.module("admin.core");
 
+// 0–23 点映射为 12 小时制 1–12
 QUnit.test("Date.getTwelveHours", function (assert) {
     assert.equal(new Date(2011, 0, 1, 0, 0).getTwelveHours(), 12, "0:00");
     assert.equal(new Date(2011, 0, 1, 11, 0).getTwelveHours(), 11, "11:00");
     assert.equal(new Date(2011, 0, 1, 16, 0).getTwelveHours(), 4, "16:00");
 });
 
+// 月份两位字符串 01–12
 QUnit.test("Date.getTwoDigitMonth", function (assert) {
     assert.equal(new Date(2011, 0, 1).getTwoDigitMonth(), "01", "jan 1");
     assert.equal(new Date(2011, 9, 1).getTwoDigitMonth(), "10", "oct 1");
 });
 
+// 日期两位字符串
 QUnit.test("Date.getTwoDigitDate", function (assert) {
     assert.equal(new Date(2011, 0, 1).getTwoDigitDate(), "01", "jan 1");
     assert.equal(new Date(2011, 0, 15).getTwoDigitDate(), "15", "jan 15");
 });
 
+// 12 小时制两位小时
 QUnit.test("Date.getTwoDigitTwelveHour", function (assert) {
     assert.equal(
         new Date(2011, 0, 1, 0, 0).getTwoDigitTwelveHour(),
@@ -37,6 +43,7 @@ QUnit.test("Date.getTwoDigitTwelveHour", function (assert) {
     );
 });
 
+// 24 小时制两位小时
 QUnit.test("Date.getTwoDigitHour", function (assert) {
     assert.equal(
         new Date(2014, 6, 1, 9, 0).getTwoDigitHour(),
@@ -50,6 +57,7 @@ QUnit.test("Date.getTwoDigitHour", function (assert) {
     );
 });
 
+// 分钟两位字符串
 QUnit.test("Date.getTwoDigitMinute", function (assert) {
     assert.equal(
         new Date(2014, 6, 1, 0, 5).getTwoDigitMinute(),
@@ -63,6 +71,7 @@ QUnit.test("Date.getTwoDigitMinute", function (assert) {
     );
 });
 
+// 秒两位字符串
 QUnit.test("Date.getTwoDigitSecond", function (assert) {
     assert.equal(
         new Date(2014, 6, 1, 0, 0, 2).getTwoDigitSecond(),
@@ -76,16 +85,19 @@ QUnit.test("Date.getTwoDigitSecond", function (assert) {
     );
 });
 
+// 缩写月份名 Jan/Oct
 QUnit.test("Date.getAbbrevMonthName", function (assert) {
     assert.equal(new Date(2020, 0, 26).getAbbrevMonthName(), "Jan", "jan 26");
     assert.equal(new Date(2020, 9, 26).getAbbrevMonthName(), "Oct", "oct 26");
 });
 
+// 完整月份名
 QUnit.test("Date.getFullMonthName", function (assert) {
     assert.equal(new Date(2020, 0, 26).getFullMonthName(), "January", "jan 26");
     assert.equal(new Date(2020, 9, 26).getFullMonthName(), "October", "oct 26");
 });
 
+// 缩写星期名
 QUnit.test("Date.getAbbrevDayName", function (assert) {
     assert.equal(
         new Date(2020, 0, 26).getAbbrevDayName(),
@@ -99,6 +111,7 @@ QUnit.test("Date.getAbbrevDayName", function (assert) {
     );
 });
 
+// 完整星期名
 QUnit.test("Date.getFullDayName", function (assert) {
     assert.equal(
         new Date(2020, 0, 26).getFullDayName(),
@@ -112,6 +125,7 @@ QUnit.test("Date.getFullDayName", function (assert) {
     );
 });
 
+// strftime 格式占位符输出
 QUnit.test("Date.strftime", function (assert) {
     const date = new Date(2014, 6, 1, 11, 0, 5);
     assert.equal(date.strftime("%Y-%m-%d %H:%M:%S"), "2014-07-01 11:00:05");
@@ -124,6 +138,7 @@ QUnit.test("Date.strftime", function (assert) {
     );
 });
 
+// strptime 解析与 UTC/时区边界
 QUnit.test("String.strptime", function (assert) {
     // Use UTC functions for extracting dates since the calendar uses them as
     // well. Month numbering starts with 0 (January).

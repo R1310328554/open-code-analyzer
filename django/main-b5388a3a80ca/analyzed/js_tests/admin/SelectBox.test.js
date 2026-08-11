@@ -1,8 +1,11 @@
-/* global QUnit, SelectBox */
+/* admin SelectBox：双列表多选框的缓存、过滤与移动 */
+/* global QUnit, SelectBox *//* global QUnit, SelectBox */
 "use strict";
 
+// SelectBox 工具对象行为测试
 QUnit.module("admin.SelectBox");
 
+// init 空 select 时 cache 为空数组
 QUnit.test("init: no options", function (assert) {
     const $ = django.jQuery;
     $('<select id="id"></select>').appendTo("#qunit-fixture");
@@ -10,6 +13,7 @@ QUnit.test("init: no options", function (assert) {
     assert.equal(SelectBox.cache.id.length, 0);
 });
 
+// filter 按文本过滤可见 option
 QUnit.test("filter", function (assert) {
     const $ = django.jQuery;
     $('<select id="id"></select>').appendTo("#qunit-fixture");
@@ -22,6 +26,7 @@ QUnit.test("filter", function (assert) {
     assert.equal($("#id option").text(), "A");
 });
 
+// move 后源列表保留滚动位置
 QUnit.test("preserve scroll position", function (assert) {
     const $ = django.jQuery;
     const optionsCount = 100;
@@ -49,6 +54,7 @@ QUnit.test("preserve scroll position", function (assert) {
     assert.notEqual(fromSelectBox.scrollTop, 0);
 });
 
+// redisplay 保留 optgroup 结构
 QUnit.test("retain optgroups", function (assert) {
     const $ = django.jQuery;
     $('<select id="id"></select>').appendTo("#qunit-fixture");
@@ -62,6 +68,7 @@ QUnit.test("retain optgroups", function (assert) {
     assert.equal($("#id optgroup").length, 1);
 });
 
+// 含 optgroup 时 cache 按组名与项排序
 QUnit.test("sort optgroups", function (assert) {
     const $ = django.jQuery;
     $('<select id="id"></select>').appendTo("#qunit-fixture");
@@ -87,6 +94,7 @@ QUnit.test("sort optgroups", function (assert) {
     assert.equal(SelectBox.cache.id[3].text, "Item 4");
 });
 
+// 无 optgroup 时保持 DOM 原始顺序
 QUnit.test("do not sort when no optgroups", function (assert) {
     const $ = django.jQuery;
     $('<select id="id"></select>').appendTo("#qunit-fixture");
@@ -104,6 +112,7 @@ QUnit.test("do not sort when no optgroups", function (assert) {
     assert.equal(SelectBox.cache.id[2].text, "Banana");
 });
 
+// move 到目标侧后按组排序
 QUnit.test("move with optgroups sorts", function (assert) {
     const $ = django.jQuery;
     $('<select id="from_id"></select>').appendTo("#qunit-fixture");
@@ -128,6 +137,7 @@ QUnit.test("move with optgroups sorts", function (assert) {
     assert.equal(SelectBox.cache.to_id[0].text, "Item 2");
 });
 
+// 无组时 move 不改变相对顺序
 QUnit.test("move without optgroups does not sort", function (assert) {
     const $ = django.jQuery;
     $('<select id="from_id"></select>').appendTo("#qunit-fixture");
@@ -158,6 +168,7 @@ QUnit.test("move without optgroups does not sort", function (assert) {
     assert.equal(SelectBox.cache.to_id[1].text, "Apple");
 });
 
+// move_all 整组迁移并排序
 QUnit.test("move_all with optgroups sorts", function (assert) {
     const $ = django.jQuery;
     $('<select id="from_id"></select>').appendTo("#qunit-fixture");
@@ -186,6 +197,7 @@ QUnit.test("move_all with optgroups sorts", function (assert) {
     assert.equal(SelectBox.cache.to_id[2].text, "Zebra");
 });
 
+// move_all 无组时仍保持原序
 QUnit.test("move_all without optgroups does not sort", function (assert) {
     const $ = django.jQuery;
     $('<select id="from_id"></select>').appendTo("#qunit-fixture");

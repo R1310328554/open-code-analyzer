@@ -1,4 +1,7 @@
 """
+django.views.static — 开发环境静态文件服务（生产勿用）。
+
+Views and functions for serving static files."""
 Views and functions for serving static files. These are only to be used
 during development, and SHOULD NOT be used in a production setting.
 """
@@ -15,6 +18,7 @@ from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
 
 
+# 内置目录索引等模板路径
 def builtin_template_path(name):
     """
     Return a path to a builtin template.
@@ -25,6 +29,7 @@ def builtin_template_path(name):
     return Path(__file__).parent / "templates" / name
 
 
+# 按 document_root 提供单文件，支持 304
 def serve(request, path, document_root=None, show_indexes=False):
     """
     Serve static files below a given point in the directory structure.
@@ -65,9 +70,11 @@ def serve(request, path, document_root=None, show_indexes=False):
 
 
 # Translatable string for static directory index template title.
+# 目录索引页标题的可翻译字符串
 template_translatable = gettext_lazy("Index of %(directory)s")
 
 
+# 列出目录下文件/子目录的 HTML 索引
 def directory_index(path, fullpath):
     try:
         t = loader.select_template(
@@ -100,6 +107,7 @@ def directory_index(path, fullpath):
     return HttpResponse(t.render(c))
 
 
+# 解析 If-Modified-Since 判断是否需重新发送
 def was_modified_since(header=None, mtime=0):
     """
     Was something modified since the user last downloaded it?

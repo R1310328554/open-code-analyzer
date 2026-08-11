@@ -1,4 +1,10 @@
-import json
+"""
+django.views.i18n — 国际化视图：语言切换与 JS/JSON 翻译目录。
+
+set_language 写 cookie；JavaScriptCatalog 输出 django.gettext 等。
+"""
+
+import jsonimport json
 import os
 import re
 from pathlib import Path
@@ -14,9 +20,11 @@ from django.utils.translation import check_for_language, get_language
 from django.utils.translation.trans_real import DjangoTranslation
 from django.views.generic import View
 
+# POST 参数名：所选语言代码
 LANGUAGE_QUERY_PARAMETER = "language"
 
 
+# 内置模板路径（避免模块级读 __file__）
 def builtin_template_path(name):
     """
     Return a path to a builtin template.
@@ -27,6 +35,7 @@ def builtin_template_path(name):
     return Path(__file__).parent / "templates" / name
 
 
+# POST 设置语言 cookie 并重定向 next URL
 def set_language(request):
     """
     Redirect to a given URL while setting the chosen language in the language
@@ -74,6 +83,7 @@ def set_language(request):
     return response
 
 
+# 收集 DATE/TIME 等格式字符串供 JS 使用
 def get_formats():
     """Return all formats strings required for i18n to work."""
     FORMAT_SETTINGS = (
@@ -95,6 +105,7 @@ def get_formats():
     return {attr: get_format(attr) for attr in FORMAT_SETTINGS}
 
 
+# 将翻译 catalog 渲染为 i18n_catalog.js
 class JavaScriptCatalog(View):
     """
     Return the selected language catalog as a JavaScript library.
@@ -231,6 +242,7 @@ class JavaScriptCatalog(View):
         )
 
 
+# 同 catalog 但以 JSON 响应返回
 class JSONCatalog(JavaScriptCatalog):
     """
     Return the selected language catalog as a JSON object.

@@ -1,7 +1,9 @@
-/* global QUnit, RelatedObjectLookups */
+/* admin RelatedObjectLookups：弹出层选择关联对象后回填字段 */
+/* global QUnit, RelatedObjectLookups *//* global QUnit, RelatedObjectLookups */
 "use strict";
 
-QUnit.module("admin.RelatedObjectLookups", {
+// 每个用例前注入单值与多对多 raw id 输入框
+QUnit.module("admin.RelatedObjectLookups", {QUnit.module("admin.RelatedObjectLookups", {
     beforeEach: function () {
         const $ = django.jQuery;
         $("#qunit-fixture").append(`
@@ -11,6 +13,7 @@ QUnit.module("admin.RelatedObjectLookups", {
     },
 });
 
+// dismissRelatedLookupPopup 应关闭弹出窗口
 QUnit.test("dismissRelatedLookupPopup closes popup window", function (assert) {
     const testId = "test_id";
     let windowClosed = false;
@@ -24,7 +27,9 @@ QUnit.test("dismissRelatedLookupPopup closes popup window", function (assert) {
     assert.true(windowClosed, "Popup window should be closed");
 });
 
+// 关闭后应从 relatedWindows 数组移除窗口引用
 QUnit.test(
+    "dismissRelatedLookupPopup removes window from relatedWindows array",QUnit.test(
     "dismissRelatedLookupPopup removes window from relatedWindows array",
     function (assert) {
         const testId = "test_id";
@@ -47,7 +52,9 @@ QUnit.test(
     },
 );
 
+// 单值字段回填新 id 并触发 change 事件
 QUnit.test(
+    "dismissRelatedLookupPopup triggers change event for single value field",QUnit.test(
     "dismissRelatedLookupPopup triggers change event for single value field",
     function (assert) {
         assert.timeout(1000);
@@ -70,7 +77,9 @@ QUnit.test(
     },
 );
 
+// 多对多字段应追加逗号分隔 id 并触发 change
 QUnit.test(
+    "dismissRelatedLookupPopup triggers change event for many-to-many field",QUnit.test(
     "dismissRelatedLookupPopup triggers change event for many-to-many field",
     function (assert) {
         assert.timeout(1000);

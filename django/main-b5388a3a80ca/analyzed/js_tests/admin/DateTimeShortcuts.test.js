@@ -1,7 +1,9 @@
-/* global QUnit, DateTimeShortcuts */
+/* admin DateTimeShortcuts 单元测试：日期时间快捷控件与日历 */
+/* global QUnit, DateTimeShortcuts *//* global QUnit, DateTimeShortcuts */
 "use strict";
 
-QUnit.module("admin.DateTimeShortcuts", {
+// 模块钩子：每个用例后清理 body 时区属性与警告 DOM
+QUnit.module("admin.DateTimeShortcuts", {QUnit.module("admin.DateTimeShortcuts", {
     afterEach: function () {
         const $ = django.jQuery;
         $("body")
@@ -11,6 +13,7 @@ QUnit.module("admin.DateTimeShortcuts", {
     },
 });
 
+// 初始化：vDateField 旁出现 Today 与日历按钮
 QUnit.test("init", function (assert) {
     const $ = django.jQuery;
 
@@ -31,6 +34,7 @@ QUnit.test("init", function (assert) {
     assert.equal(DateTimeShortcuts.timezoneOffset, 0);
 });
 
+// 自定义 clockHours 快捷项应出现在时间选择框
 QUnit.test("custom time shortcuts", function (assert) {
     const $ = django.jQuery;
     const timeField = $(
@@ -42,6 +46,7 @@ QUnit.test("custom time shortcuts", function (assert) {
     assert.equal($(".clockbox").find("a").first().text(), "3 a.m.");
 });
 
+// 单字段时间区与服务器不一致时显示警告文案
 QUnit.test("time zone offset warning - single field", function (assert) {
     const $ = django.jQuery;
     const savedOffset = $("body").attr("data-admin-utc-offset");
@@ -68,6 +73,7 @@ QUnit.test("time zone offset warning - single field", function (assert) {
     );
 });
 
+// DateTimeField 成对控件使用通用服务器时区提示
 QUnit.test("time zone offset warning - date and time field", function (assert) {
     const $ = django.jQuery;
     const savedOffset = $("body").attr("data-admin-utc-offset");
@@ -94,6 +100,7 @@ QUnit.test("time zone offset warning - date and time field", function (assert) {
     );
 });
 
+// 日历上一月/下一月链接的 aria-label 随当前月更新
 QUnit.test("update aria labels - previous and next months", function (assert) {
     const $ = django.jQuery;
     const dateField = $('<input type="text" class="vDateField">');
@@ -118,6 +125,7 @@ QUnit.test("update aria labels - previous and next months", function (assert) {
     assert.equal(nextLabel, "Next (February 2026)");
 });
 
+// Today 链接 aria-label 含本地化当前日期
 QUnit.test("today link has aria-label with current date", function (assert) {
     const $ = django.jQuery;
     const dateField = $(
@@ -138,6 +146,7 @@ QUnit.test("today link has aria-label with current date", function (assert) {
     assert.equal(todayLink.attr("aria-label"), expectedAriaLabel);
 });
 
+// 服务器 UTC 偏移与浏览器不同时，高亮格应对齐服务器“今天”
 QUnit.test("calendar today highlight with server offset", function (assert) {
     const $ = django.jQuery;
     const calDiv = $('<div id="test-calendar"></div>');

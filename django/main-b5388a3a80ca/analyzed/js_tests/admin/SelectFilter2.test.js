@@ -1,8 +1,11 @@
-/* global QUnit, SelectFilter */
+/* admin SelectFilter2：filter_horizontal 双栏选择与键盘过滤 */
+/* global QUnit, SelectFilter *//* global QUnit, SelectFilter */
 "use strict";
 
+// SelectFilter 初始化与交互测试
 QUnit.module("admin.SelectFilter2");
 
+// init 生成双栏 DOM、ARIA 与按钮文案
 QUnit.test("init", function (assert) {
     const $ = django.jQuery;
     $('<form id="test"></form>').appendTo("#qunit-fixture");
@@ -79,6 +82,7 @@ QUnit.test("init", function (assert) {
     assert.equal($('#test button:not([type="button"])').length, 0);
 });
 
+// 左侧过滤仅显示匹配可选项
 QUnit.test("filtering available options", function (assert) {
     const $ = django.jQuery;
     $('<form><select multiple id="select"></select></form>').appendTo(
@@ -104,6 +108,7 @@ QUnit.test("filtering available options", function (assert) {
     });
 });
 
+// 右侧过滤已选列表
 QUnit.test("filtering selected options", function (assert) {
     const $ = django.jQuery;
     $('<form><select multiple id="select"></select></form>').appendTo(
@@ -135,6 +140,7 @@ QUnit.test("filtering selected options", function (assert) {
     });
 });
 
+// 无匹配时可用列表为空
 QUnit.test("filtering available options to nothing", function (assert) {
     const $ = django.jQuery;
     $('<form><select multiple id="select"></select></form>').appendTo(
@@ -158,6 +164,7 @@ QUnit.test("filtering available options to nothing", function (assert) {
     });
 });
 
+// 无匹配时已选列表为空
 QUnit.test("filtering selected options to nothing", function (assert) {
     const $ = django.jQuery;
     $('<form><select multiple id="select"></select></form>').appendTo(
@@ -187,6 +194,7 @@ QUnit.test("filtering selected options to nothing", function (assert) {
     });
 });
 
+// 右方向键将选中项移到已选栏
 QUnit.test("selecting option", function (assert) {
     const $ = django.jQuery;
     $('<form><select multiple id="select"></select></form>').appendTo(
@@ -211,6 +219,7 @@ QUnit.test("selecting option", function (assert) {
     });
 });
 
+// 左方向键将项移回可用栏
 QUnit.test("deselecting option", function (assert) {
     const $ = django.jQuery;
     $('<form><select multiple id="select"></select></form>').appendTo(

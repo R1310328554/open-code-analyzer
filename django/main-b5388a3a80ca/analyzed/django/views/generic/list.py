@@ -1,4 +1,10 @@
-from django.core.exceptions import ImproperlyConfigured
+"""
+django.views.generic.list — 多对象列表类视图。
+
+MultipleObjectMixin 提供 queryset、分页与列表上下文。
+"""
+
+from django.core.exceptions import ImproperlyConfiguredfrom django.core.exceptions import ImproperlyConfigured
 from django.core.paginator import InvalidPage, Paginator
 from django.db.models import QuerySet
 from django.http import Http404
@@ -6,6 +12,7 @@ from django.utils.translation import gettext as _
 from django.views.generic.base import ContextMixin, TemplateResponseMixin, View
 
 
+# 多对象 Mixin：queryset、排序与分页
 class MultipleObjectMixin(ContextMixin):
     """A mixin for views manipulating multiple objects."""
 
@@ -147,6 +154,7 @@ class MultipleObjectMixin(ContextMixin):
         return super().get_context_data(**context)
 
 
+# 列表 GET 基类：allow_empty 时 404 逻辑
 class BaseListView(MultipleObjectMixin, View):
     """
     Base view for displaying a list of objects.
@@ -179,6 +187,7 @@ class BaseListView(MultipleObjectMixin, View):
         return self.render_to_response(context)
 
 
+# 列表模板名推断：<app>/<model>_list.html
 class MultipleObjectTemplateResponseMixin(TemplateResponseMixin):
     """Mixin for responding with a template and list of objects."""
 
@@ -217,6 +226,7 @@ class MultipleObjectTemplateResponseMixin(TemplateResponseMixin):
         return names
 
 
+# 渲染对象列表的完整视图
 class ListView(MultipleObjectTemplateResponseMixin, BaseListView):
     """
     Render some list of objects, set by `self.model` or `self.queryset`.

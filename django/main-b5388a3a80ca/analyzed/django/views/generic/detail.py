@@ -1,10 +1,17 @@
-from django.core.exceptions import ImproperlyConfigured
+"""
+django.views.generic.detail — 单对象详情类视图。
+
+SingleObjectMixin 负责按 pk/slug 取对象并注入上下文。
+"""
+
+from django.core.exceptions import ImproperlyConfiguredfrom django.core.exceptions import ImproperlyConfigured
 from django.db import models
 from django.http import Http404
 from django.utils.translation import gettext as _
 from django.views.generic.base import ContextMixin, TemplateResponseMixin, View
 
 
+# 单对象 Mixin：get_object/get_queryset 与上下文键名
 class SingleObjectMixin(ContextMixin):
     """
     Provide the ability to retrieve a single object for further manipulation.
@@ -101,6 +108,7 @@ class SingleObjectMixin(ContextMixin):
         return super().get_context_data(**context)
 
 
+# 详情 GET 基类：需混入响应 Mixin
 class BaseDetailView(SingleObjectMixin, View):
     """
     Base view for displaying a single object.
@@ -114,6 +122,7 @@ class BaseDetailView(SingleObjectMixin, View):
         return self.render_to_response(context)
 
 
+# 单对象模板名推断：<app>/<model>_detail.html
 class SingleObjectTemplateResponseMixin(TemplateResponseMixin):
     template_name_field = None
     template_name_suffix = "_detail"
@@ -181,6 +190,7 @@ class SingleObjectTemplateResponseMixin(TemplateResponseMixin):
         return names
 
 
+# 渲染单条对象详情的完整视图
 class DetailView(SingleObjectTemplateResponseMixin, BaseDetailView):
     """
     Render a "detail" view of an object.
