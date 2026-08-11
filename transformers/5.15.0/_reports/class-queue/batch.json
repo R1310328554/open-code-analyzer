@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T00:22:24Z",
-  "files": [
-    "src/transformers/models/camembert/__init__.py",
-    "src/transformers/models/camembert/configuration_camembert.py",
-    "src/transformers/models/camembert/modeling_camembert.py",
-    "src/transformers/models/camembert/modular_camembert.py",
-    "src/transformers/models/camembert/tokenization_camembert.py",
-    "src/transformers/models/canine/__init__.py",
-    "src/transformers/models/canine/configuration_canine.py",
-    "src/transformers/models/canine/modeling_canine.py",
-    "src/transformers/models/canine/tokenization_canine.py",
-    "src/transformers/models/chameleon/__init__.py",
-    "src/transformers/models/chameleon/configuration_chameleon.py",
-    "src/transformers/models/chameleon/image_processing_chameleon.py",
-    "src/transformers/models/chameleon/image_processing_pil_chameleon.py",
-    "src/transformers/models/chameleon/modeling_chameleon.py",
-    "src/transformers/models/chameleon/processing_chameleon.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2319,
-  "done": 345
+  "done": 360
 }
