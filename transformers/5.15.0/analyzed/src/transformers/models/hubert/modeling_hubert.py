@@ -36,12 +36,16 @@ from ...modeling_outputs import BaseModelOutput, CausalLMOutput, SequenceClassif
 from ...modeling_utils import ALL_ATTENTION_FUNCTIONS, PreTrainedModel, get_torch_context_manager_or_global_device
 from ...processing_utils import Unpack
 from ...utils import TransformersKwargs, auto_docstring, logging
+# modeling_hubert 由 modular_hubert.py 自动生成
 from .configuration_hubert import HubertConfig
 
+
+# HuBERT 建模：自监督语音表征（Wav2Vec2 风格卷积+Transformer，由 modular_hubert.py 自动生成）
 
 logger = logging.get_logger(__name__)
 
 
+# HubertPositionalConvEmbedding：HuBERT 1D 卷积位置编码（Wav2Vec2 风格）
 class HubertPositionalConvEmbedding(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -92,6 +96,7 @@ class HubertPositionalConvEmbedding(nn.Module):
         return hidden_states
 
 
+# HubertSamePadLayer：HuBERT 卷积 same-padding 裁剪层
 class HubertSamePadLayer(nn.Module):
     def __init__(self, num_conv_pos_embeddings):
         super().__init__()
@@ -103,6 +108,7 @@ class HubertSamePadLayer(nn.Module):
         return hidden_states
 
 
+# HubertNoLayerNormConvLayer：HuBERT 无 LayerNorm 卷积块
 class HubertNoLayerNormConvLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_id=0):
         super().__init__()
@@ -124,6 +130,7 @@ class HubertNoLayerNormConvLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# HubertLayerNormConvLayer：HuBERT 带 LayerNorm 的卷积块
 class HubertLayerNormConvLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_id=0):
         super().__init__()
@@ -151,6 +158,7 @@ class HubertLayerNormConvLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# HubertGroupNormConvLayer：HuBERT 带 GroupNorm 的卷积块
 class HubertGroupNormConvLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_id=0):
         super().__init__()
@@ -175,6 +183,7 @@ class HubertGroupNormConvLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# HubertFeatureEncoder：HuBERT 多阶段卷积特征编码器
 class HubertFeatureEncoder(nn.Module):
     """Construct the features from raw audio waveform"""
 
@@ -213,6 +222,7 @@ class HubertFeatureEncoder(nn.Module):
         return hidden_states
 
 
+# HubertFeatureProjection：HuBERT 卷积特征到 Transformer 隐藏维投影
 class HubertFeatureProjection(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -231,6 +241,7 @@ class HubertFeatureProjection(nn.Module):
         return hidden_states
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -259,6 +270,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# HubertAttention：HuBERT 双向多头自注意力
 class HubertAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -344,6 +356,7 @@ class HubertAttention(nn.Module):
         return attn_output, attn_weights, None
 
 
+# HubertFeedForward：HuBERT 前馈 MLP（LayerNorm + 激活）
 class HubertFeedForward(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -368,6 +381,7 @@ class HubertFeedForward(nn.Module):
         return hidden_states
 
 
+# HubertEncoderLayer：HuBERT Transformer 编码器单层
 class HubertEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config):
         super().__init__()
@@ -404,6 +418,7 @@ class HubertEncoderLayer(GradientCheckpointingLayer):
         return outputs
 
 
+# HubertEncoder：HuBERT 多层 Transformer 编码器堆叠
 class HubertEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -476,6 +491,7 @@ class HubertEncoder(nn.Module):
         )
 
 
+# HubertAttnAdapterLayer：HuBERT 注意力适配器层（可选微调）
 class HubertAttnAdapterLayer(nn.Module):
     def __init__(self, config):
         """
@@ -501,6 +517,7 @@ class HubertAttnAdapterLayer(nn.Module):
         return hidden_states
 
 
+# HubertEncoderLayerStableLayerNorm：HuBERT 稳定 LayerNorm 编码器层
 class HubertEncoderLayerStableLayerNorm(GradientCheckpointingLayer):
     def __init__(self, config):
         super().__init__()
@@ -547,6 +564,7 @@ class HubertEncoderLayerStableLayerNorm(GradientCheckpointingLayer):
         return outputs
 
 
+# HubertEncoderStableLayerNorm：HuBERT 稳定 LayerNorm 编码器堆叠
 class HubertEncoderStableLayerNorm(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -624,6 +642,7 @@ class HubertEncoderStableLayerNorm(nn.Module):
 
 
 @auto_docstring
+# HubertPreTrainedModel：HuBERT 预训练基类与权重初始化
 class HubertPreTrainedModel(PreTrainedModel):
     config: HubertConfig
     base_model_prefix = "hubert"
@@ -689,6 +708,7 @@ class HubertPreTrainedModel(PreTrainedModel):
         return attention_mask
 
 
+# _compute_mask_indices：HuBERT 自监督训练时 span 掩码索引采样
 def _compute_mask_indices(
     shape: tuple[int, int],
     mask_prob: float,
@@ -809,6 +829,7 @@ def _compute_mask_indices(
 
 
 @auto_docstring
+# HubertModel：HuBERT 自监督语音表征编码主干
 class HubertModel(HubertPreTrainedModel):
     def __init__(self, config: HubertConfig):
         super().__init__(config)
@@ -955,6 +976,7 @@ _HIDDEN_STATES_START_POSITION = 1
     Hubert Model with a `language modeling` head on top for Connectionist Temporal Classification (CTC).
     """
 )
+# HubertForCTC：HuBERT 连接时序分类（CTC）语音识别头
 class HubertForCTC(HubertPreTrainedModel):
     def __init__(self, config, target_lang: str | None = None):
         r"""
@@ -1103,6 +1125,7 @@ class HubertForCTC(HubertPreTrainedModel):
     SUPERB Keyword Spotting.
     """
 )
+# HubertForSequenceClassification：HuBERT 序列分类头
 class HubertForSequenceClassification(HubertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

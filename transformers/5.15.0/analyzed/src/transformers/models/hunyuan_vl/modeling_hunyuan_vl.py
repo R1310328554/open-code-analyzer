@@ -47,10 +47,14 @@ from ...utils.generic import (
 )
 from ...utils.output_capturing import capture_outputs
 from ...vision_utils import get_vision_attention_seqlens
+# modeling_hunyuan_vl 由 modular_hunyuan_vl.py 自动生成
 from .configuration_hunyuan_vl import HunYuanVLConfig, HunYuanVLTextConfig, HunYuanVLVisionConfig
 
 
+# HunYuanVL 建模：视觉 Transformer + 文本解码器多模态联合（由 modular_hunyuan_vl.py 自动生成）
+
 @dataclass
+# HunYuanVLModelOutputWithPast：HunYuanVL 多模态输出 dataclass（含 past_key_values）
 class HunYuanVLModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     image_hidden_states (`torch.FloatTensor`, *optional*):
@@ -61,6 +65,7 @@ class HunYuanVLModelOutputWithPast(BaseModelOutputWithPast):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# HunYuanVLRMSNorm：HunYuanVL RMS LayerNorm
 class HunYuanVLRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -81,6 +86,7 @@ class HunYuanVLRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# HunYuanVLRotaryEmbedding：HunYuanVL RoPE 旋转位置编码
 class HunYuanVLRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: HunYuanVLTextConfig, device=None):
@@ -152,6 +158,7 @@ class HunYuanVLRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# HunYuanVLVisionMLP：HunYuanVL 视觉塔前馈 MLP
 class HunYuanVLVisionMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -167,6 +174,7 @@ class HunYuanVLVisionMLP(nn.Module):
         return hidden_states
 
 
+# HunYuanVLVisionPatchEmbed：HunYuanVL 视觉 patch 卷积嵌入
 class HunYuanVLVisionPatchEmbed(nn.Module):
     def __init__(self, config: HunYuanVLVisionConfig):
         super().__init__()
@@ -224,6 +232,7 @@ class HunYuanVLVisionPatchEmbed(nn.Module):
         return torch.concat(image_embeddings_list, dim=0).unsqueeze(0)
 
 
+# HunYuanVLVisionPatchMerger：HunYuanVL 视觉 patch 合并投影到 LLM 维度
 class HunYuanVLVisionPatchMerger(nn.Module):
     def __init__(self, config: HunYuanVLVisionConfig):
         super().__init__()
@@ -282,6 +291,7 @@ class HunYuanVLVisionPatchMerger(nn.Module):
         return self.after_rms(hidden_states)
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -294,6 +304,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -319,6 +330,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# HunYuanVLVisionAttention：HunYuanVL 视觉塔多头自注意力
 class HunYuanVLVisionAttention(nn.Module):
     def __init__(self, config: HunYuanVLVisionConfig):
         super().__init__()
@@ -400,6 +412,7 @@ class HunYuanVLVisionAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# HunYuanVLVisionBlock：HunYuanVL 视觉 Transformer 单层
 class HunYuanVLVisionBlock(GradientCheckpointingLayer):
     def __init__(self, config: HunYuanVLVisionConfig):
         super().__init__()
@@ -434,6 +447,7 @@ class HunYuanVLVisionBlock(GradientCheckpointingLayer):
         return hidden_states
 
 
+# rotate_half：RoPE 中将向量后半部分旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -442,6 +456,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -467,6 +482,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# apply_multimodal_rotary_pos_emb：HunYuanVL 多模态 RoPE（mrope_section 分区）
 def apply_multimodal_rotary_pos_emb(q, k, cos, sin, mrope_section, unsqueeze_dim=1):
     """
     Apply HunYuan's multimodal rotary embedding to ``q`` and ``k``.
@@ -496,6 +512,7 @@ def apply_multimodal_rotary_pos_emb(q, k, cos, sin, mrope_section, unsqueeze_dim
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# HunYuanVLDenseV1Attention：HunYuanVL 文本骨干多头自注意力（含 mRoPE）
 class HunYuanVLDenseV1Attention(nn.Module):
     """
     HunYuan dense attention with optional multimodal rotary embeddings.
@@ -576,6 +593,7 @@ class HunYuanVLDenseV1Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# HunYuanVLMLP：HunYuanVL 文本骨干 SwiGLU 前馈 MLP
 class HunYuanVLMLP(nn.Module):
     def __init__(self, config: HunYuanVLConfig, layer_idx=None, is_shared_mlp=False):
         super().__init__()
@@ -593,6 +611,7 @@ class HunYuanVLMLP(nn.Module):
         return down_proj
 
 
+# HunYuanVLDenseV1DecoderLayer：HunYuanVL 文本解码器单层
 class HunYuanVLDenseV1DecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: HunYuanVLTextConfig, layer_idx: int):
         super().__init__()
@@ -637,6 +656,7 @@ class HunYuanVLDenseV1DecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# HunYuanVLPreTrainedModel：HunYuanVL 预训练基类与权重初始化
 class HunYuanVLPreTrainedModel(PreTrainedModel):
     config: HunYuanVLConfig
     base_model_prefix = "model"
@@ -686,6 +706,7 @@ class HunYuanVLPreTrainedModel(PreTrainedModel):
             init.normal_(module.image_sep, mean=0.0, std=embed_std)
 
 
+# HunYuanVLVisionTransformer：HunYuanVL 视觉 Transformer 编码塔
 class HunYuanVLVisionTransformer(HunYuanVLPreTrainedModel):
     """
     HunYuanVL vision tower: patch embedding -> transformer blocks -> per-image patch merger.
@@ -755,6 +776,7 @@ class HunYuanVLVisionTransformer(HunYuanVLPreTrainedModel):
 
 
 @auto_docstring
+# HunYuanVLTextModel：HunYuanVL 纯文本解码器主干
 class HunYuanVLTextModel(HunYuanVLPreTrainedModel):
     """Dense text backbone used inside [`HunYuanVLModel`]."""
 
@@ -856,6 +878,7 @@ class HunYuanVLTextModel(HunYuanVLPreTrainedModel):
     The HunYuanVL model which consists of a vision backbone and a language model, without a language modeling head.
     """
 )
+# HunYuanVLModel：HunYuanVL 视觉+文本多模态联合模型
 class HunYuanVLModel(HunYuanVLPreTrainedModel):
     base_model_prefix = "model"
     # Reference: fix gemma3 grad acc #37208
@@ -1124,6 +1147,7 @@ class HunYuanVLModel(HunYuanVLPreTrainedModel):
 
 
 @auto_docstring
+# HunYuanVLForConditionalGeneration：HunYuanVL 条件生成（OCR/文档理解）
 class HunYuanVLForConditionalGeneration(HunYuanVLPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_rep"}

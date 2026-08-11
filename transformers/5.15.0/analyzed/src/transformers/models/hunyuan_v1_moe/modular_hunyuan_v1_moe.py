@@ -38,6 +38,7 @@ from ..llama.modeling_llama import (
     apply_rotary_pos_emb,
     eager_attention_forward,
 )
+# modular 复用 Llama 解码层与 Mixtral 专家集合，并实现 Top-K 门控路由
 from ..mixtral.modeling_mixtral import MixtralExperts
 from .configuration_hunyuan_v1_moe import HunYuanMoEV1Config
 
@@ -45,10 +46,14 @@ from .configuration_hunyuan_v1_moe import HunYuanMoEV1Config
 logger = logging.get_logger(__name__)
 
 
+# HunYuan MoE V1 modular 源：复用 Llama/Mixtral 组件并实现 Top-K 专家路由
+
+# HunYuanMoEV1RMSNorm：HunYuan MoE V1 RMS LayerNorm
 class HunYuanMoEV1RMSNorm(LlamaRMSNorm):
     pass
 
 
+# HunYuanMoEV1MLP：HunYuan MoE V1 SwiGLU 前馈 MLP
 class HunYuanMoEV1MLP(LlamaMLP):
     def __init__(self, config: HunYuanMoEV1Config):
         super().__init__(config)
@@ -57,6 +62,7 @@ class HunYuanMoEV1MLP(LlamaMLP):
         self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=False)
 
 
+# HunYuanMoEV1Attention：HunYuan MoE V1 多头自注意力（GQA + RoPE）
 class HunYuanMoEV1Attention(LlamaAttention):
     def __init__(self, config: HunYuanMoEV1Config, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -106,6 +112,7 @@ class HunYuanMoEV1Attention(LlamaAttention):
         return attn_output, attn_weights
 
 
+# HunYuanMoEV1Gate：HunYuan MoE V1 专家路由门控（Top-K 选择）
 class HunYuanMoEV1Gate(nn.Module):
     def __init__(self, config: HunYuanMoEV1Config, layer_idx: int | None = None):
         super().__init__()
@@ -126,10 +133,12 @@ class HunYuanMoEV1Gate(nn.Module):
         return router_logits, routing_weights.to(router_logits.dtype), selected_experts
 
 
+# HunYuanMoEV1Experts：HunYuan MoE V1 多专家 SwiGLU 前馈集合
 class HunYuanMoEV1Experts(MixtralExperts):
     pass
 
 
+# HunYuanMoEV1Moe：HunYuan MoE V1 稀疏 MoE 层（门控 + 专家）
 class HunYuanMoEV1Moe(nn.Module):
     def __init__(self, config: HunYuanMoEV1Config, layer_idx: int | None = None):
         super().__init__()
@@ -149,6 +158,7 @@ class HunYuanMoEV1Moe(nn.Module):
         return final_hidden_states + hidden_states_mlp
 
 
+# HunYuanMoEV1DecoderLayer：HunYuan MoE V1 解码器单层（自注意力 + MoE）
 class HunYuanMoEV1DecoderLayer(LlamaDecoderLayer):
     def __init__(self, config: HunYuanMoEV1Config, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -160,6 +170,7 @@ class HunYuanMoEV1DecoderLayer(LlamaDecoderLayer):
         self.layer_idx = layer_idx
 
 
+# HunYuanMoEV1PreTrainedModel：HunYuan MoE V1 预训练基类与权重初始化
 class HunYuanMoEV1PreTrainedModel(LlamaPreTrainedModel):
     @torch.no_grad()
     def _init_weights(self, module):
@@ -187,18 +198,22 @@ class HunYuanMoEV1PreTrainedModel(LlamaPreTrainedModel):
             init.copy_(module.original_inv_freq, buffer_value)
 
 
+# HunYuanMoEV1RotaryEmbedding：HunYuan MoE V1 RoPE 旋转位置编码
 class HunYuanMoEV1RotaryEmbedding(HunYuanDenseV1RotaryEmbedding):
     pass
 
 
+# HunYuanMoEV1Model：HunYuan MoE V1 稀疏解码器主干
 class HunYuanMoEV1Model(LlamaModel):
     pass
 
 
+# HunYuanMoEV1ForCausalLM：HunYuan MoE V1 因果语言建模与文本生成
 class HunYuanMoEV1ForCausalLM(LlamaForCausalLM):
     pass
 
 
+# HunYuanMoEV1ForSequenceClassification：HunYuan MoE V1 序列分类头
 class HunYuanMoEV1ForSequenceClassification(LlamaForSequenceClassification):
     pass
 

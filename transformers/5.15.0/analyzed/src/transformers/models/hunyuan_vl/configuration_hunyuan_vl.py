@@ -22,8 +22,11 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...modeling_rope_utils import RopeParameters
+# configuration_hunyuan_vl 由 modular_hunyuan_vl.py 自动生成
 from ...utils import auto_docstring
 
+
+# HunYuanVL 配置：腾讯 OCR/文档理解图文多模态（视觉塔 + 文本骨干）超参
 
 @auto_docstring(
     custom_intro="""
@@ -31,7 +34,9 @@ from ...utils import auto_docstring
     """,
     checkpoint="tencent/HunyuanOCR",
 )
+# HunYuanVLVisionConfig：tencent/HunyuanOCR 视觉塔默认超参
 @strict
+# HunYuanVLVisionConfig：HunYuanVL 视觉塔超参（OCR/文档理解）
 class HunYuanVLVisionConfig(PreTrainedConfig):
     r"""
     interpolate_mode (`str`, *optional*, defaults to `"bilinear"`):
@@ -102,7 +107,9 @@ class HunYuanVLVisionConfig(PreTrainedConfig):
     """,
     checkpoint="tencent/HunyuanOCR",
 )
+# HunYuanVLTextConfig：tencent/HunyuanOCR 文本骨干默认超参
 @strict
+# HunYuanVLTextConfig：HunYuanVL 文本骨干超参（含多模态 RoPE mrope_section）
 class HunYuanVLTextConfig(PreTrainedConfig):
     r"""
     eod_token_id (`int`, *optional*, defaults to 3):
@@ -231,7 +238,9 @@ class HunYuanVLTextConfig(PreTrainedConfig):
     """,
     checkpoint="tencent/HunyuanOCR",
 )
+# HunYuanVLConfig：tencent/HunyuanOCR 图文多模态顶层默认超参
 @strict
+# HunYuanVLConfig：HunYuanVL 图文多模态顶层配置（视觉塔 + 文本骨干）
 class HunYuanVLConfig(PreTrainedConfig):
     r"""
     text_config (`HunYuanVLTextConfig` or `dict`, *optional*):

@@ -20,8 +20,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# HunYuan MoE V1 配置：腾讯 A13B 稀疏 MoE 因果解码器（Top-K 路由）超参
+
+# HunYuanMoEV1Config：tencent/Hunyuan-A13B-Instruct MoE 因果解码器默认超参
 @auto_docstring(checkpoint="tencent/Hunyuan-A13B-Instruct")
 @strict
+# HunYuanMoEV1Config：腾讯 HunYuan A13B MoE 因果解码器超参（Top-K 路由）
 class HunYuanMoEV1Config(PreTrainedConfig):
     r"""
     eod_token_id (int, *optional*, defaults to 3):

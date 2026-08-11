@@ -20,8 +20,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# HunYuan Dense V1 配置：腾讯 7B 稠密因果解码器（GQA + RoPE + SwiGLU）超参
+
+# HunYuanDenseV1Config：tencent/Hunyuan-7B-Instruct 稠密因果解码器默认超参
 @auto_docstring(checkpoint="tencent/Hunyuan-7B-Instruct")
 @strict
+# HunYuanDenseV1Config：腾讯 HunYuan 7B 稠密因果解码器超参（GQA + RoPE）
 class HunYuanDenseV1Config(PreTrainedConfig):
     r"""
     eod_token_id (int, *optional*, defaults to 3):

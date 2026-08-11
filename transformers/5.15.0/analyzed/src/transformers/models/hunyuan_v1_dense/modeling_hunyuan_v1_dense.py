@@ -40,10 +40,14 @@ from ...utils import TransformersKwargs, auto_docstring, can_return_tuple
 from ...utils.deprecation import deprecate_kwarg
 from ...utils.generic import maybe_autocast, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
+# modeling_hunyuan_v1_dense 由 modular_hunyuan_v1_dense.py 自动生成
 from .configuration_hunyuan_v1_dense import HunYuanDenseV1Config
 
 
+# HunYuan Dense V1 建模：Llama 风格解码器（由 modular_hunyuan_v1_dense.py 自动生成）
+
 @use_kernel_forward_from_hub("RMSNorm")
+# HunYuanDenseV1RMSNorm：HunYuan Dense V1 RMS LayerNorm
 class HunYuanDenseV1RMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -64,6 +68,7 @@ class HunYuanDenseV1RMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# HunYuanDenseV1MLP：HunYuan Dense V1 SwiGLU 前馈 MLP
 class HunYuanDenseV1MLP(nn.Module):
     def __init__(self, config: HunYuanDenseV1Config, layer_idx=None, is_shared_mlp=False):
         super().__init__()
@@ -81,6 +86,7 @@ class HunYuanDenseV1MLP(nn.Module):
         return down_proj
 
 
+# rotate_half：RoPE 中将向量后半部分旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -89,6 +95,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -114,6 +121,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -126,6 +134,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -152,6 +161,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# HunYuanDenseV1Attention：HunYuan Dense V1 多头自注意力（GQA + RoPE）
 class HunYuanDenseV1Attention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -223,6 +233,7 @@ class HunYuanDenseV1Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# HunYuanDenseV1DecoderLayer：HunYuan Dense V1 解码器单层（自注意力 + MLP）
 class HunYuanDenseV1DecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: HunYuanDenseV1Config, layer_idx: int):
         super().__init__()
@@ -268,6 +279,7 @@ class HunYuanDenseV1DecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# HunYuanDenseV1PreTrainedModel：HunYuan Dense V1 预训练基类与权重初始化
 class HunYuanDenseV1PreTrainedModel(PreTrainedModel):
     config: HunYuanDenseV1Config
     base_model_prefix = "model"
@@ -309,6 +321,7 @@ class HunYuanDenseV1PreTrainedModel(PreTrainedModel):
             init.copy_(module.original_inv_freq, buffer_value)
 
 
+# HunYuanDenseV1RotaryEmbedding：HunYuan Dense V1 RoPE 旋转位置编码
 class HunYuanDenseV1RotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: HunYuanDenseV1Config, device=None):
@@ -380,6 +393,7 @@ class HunYuanDenseV1RotaryEmbedding(nn.Module):
 
 
 @auto_docstring
+# HunYuanDenseV1Model：HunYuan Dense V1 纯文本解码器主干
 class HunYuanDenseV1Model(HunYuanDenseV1PreTrainedModel):
     def __init__(self, config: HunYuanDenseV1Config):
         super().__init__(config)
@@ -454,6 +468,7 @@ class HunYuanDenseV1Model(HunYuanDenseV1PreTrainedModel):
 
 
 @auto_docstring
+# HunYuanDenseV1ForCausalLM：HunYuan Dense V1 因果语言建模与文本生成
 class HunYuanDenseV1ForCausalLM(HunYuanDenseV1PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
@@ -528,6 +543,7 @@ class HunYuanDenseV1ForCausalLM(HunYuanDenseV1PreTrainedModel, GenerationMixin):
         )
 
 
+# HunYuanDenseV1ForSequenceClassification：HunYuan Dense V1 序列分类头
 class HunYuanDenseV1ForSequenceClassification(GenericForSequenceClassification, HunYuanDenseV1PreTrainedModel):
     pass
 

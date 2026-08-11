@@ -29,10 +29,14 @@ from ...image_processing_utils import BatchFeature
 from ...image_transforms import group_images_by_shape, reorder_images
 from ...image_utils import OPENAI_CLIP_MEAN, OPENAI_CLIP_STD, ImageInput, PILImageResampling, SizeDict
 from ...processing_utils import ImagesKwargs, Unpack
+# image_processing_hunyuan_vl 由 modular_hunyuan_vl.py 自动生成
 from ...utils import TensorType, auto_docstring
 
 
+# HunYuanVL 图像处理：Torchvision 后端智能缩放与 patch 化预处理
+
 # Adapted from transformers.models.hunyuan_vl.image_processing_hunyuan_vl.HunYuanVLImageProcessorKwargs
+# HunYuanVLImageProcessorKwargs：HunYuanVL 图像处理器可选参数字典类型
 class HunYuanVLImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     min_pixels (`int`, *optional*, defaults to `512 * 512`):
@@ -54,6 +58,7 @@ class HunYuanVLImageProcessorKwargs(ImagesKwargs, total=False):
     merge_size: int
 
 
+# smart_resize：按像素上下限与 patch 因子智能缩放图像尺寸
 def smart_resize(
     height: int, width: int, factor: int = 28, min_pixels: int = 56 * 56, max_pixels: int = 14 * 14 * 4 * 1280
 ):
@@ -84,6 +89,7 @@ def smart_resize(
 
 
 @auto_docstring
+# HunYuanVLImageProcessor：HunYuanVL Torchvision 后端图像预处理
 class HunYuanVLImageProcessor(TorchvisionBackend):
     do_resize = True
     resample = PILImageResampling.BICUBIC

@@ -28,11 +28,13 @@ from ...image_processing_backends import PilBackend
 from ...image_processing_utils import BatchFeature
 from ...image_utils import OPENAI_CLIP_MEAN, OPENAI_CLIP_STD, ImageInput, PILImageResampling, SizeDict
 from ...processing_utils import ImagesKwargs, Unpack
+# image_processing_pil_hunyuan_vl 由 modular_hunyuan_vl.py 自动生成
 from ...utils import TensorType, auto_docstring
 from ...utils.import_utils import requires
 
 
 # Adapted from transformers.models.hunyuan_vl.image_processing_hunyuan_vl.HunYuanVLImageProcessorKwargs
+# HunYuanVLImageProcessorKwargs：HunYuanVL 图像处理器可选参数字典类型
 class HunYuanVLImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     min_pixels (`int`, *optional*, defaults to `512 * 512`):
@@ -54,6 +56,7 @@ class HunYuanVLImageProcessorKwargs(ImagesKwargs, total=False):
     merge_size: int
 
 
+# smart_resize：按像素上下限与 patch 因子智能缩放图像尺寸
 def smart_resize(
     height: int, width: int, factor: int = 28, min_pixels: int = 56 * 56, max_pixels: int = 14 * 14 * 4 * 1280
 ):
@@ -84,6 +87,7 @@ def smart_resize(
 
 
 @requires(backends=("vision", "torchvision"))
+# HunYuanVLImageProcessorPil：HunYuanVL PIL 后端图像预处理
 class HunYuanVLImageProcessorPil(PilBackend):
     do_resize = True
     resample = PILImageResampling.BICUBIC

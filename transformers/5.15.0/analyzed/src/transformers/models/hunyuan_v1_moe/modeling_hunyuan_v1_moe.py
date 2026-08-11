@@ -39,10 +39,14 @@ from ...utils import TransformersKwargs, auto_docstring, can_return_tuple
 from ...utils.deprecation import deprecate_kwarg
 from ...utils.generic import maybe_autocast, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
+# modeling_hunyuan_v1_moe 由 modular_hunyuan_v1_moe.py 自动生成
 from .configuration_hunyuan_v1_moe import HunYuanMoEV1Config
 
 
+# HunYuan MoE V1 建模：稀疏 MoE 解码器（由 modular_hunyuan_v1_moe.py 自动生成）
+
 @use_kernel_forward_from_hub("RMSNorm")
+# HunYuanMoEV1RMSNorm：HunYuan MoE V1 RMS LayerNorm
 class HunYuanMoEV1RMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -63,6 +67,7 @@ class HunYuanMoEV1RMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# HunYuanMoEV1MLP：HunYuan MoE V1 SwiGLU 前馈 MLP
 class HunYuanMoEV1MLP(nn.Module):
     def __init__(self, config: HunYuanMoEV1Config):
         super().__init__()
@@ -79,6 +84,7 @@ class HunYuanMoEV1MLP(nn.Module):
         return down_proj
 
 
+# rotate_half：RoPE 中将向量后半部分旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -87,6 +93,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -112,6 +119,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -124,6 +132,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -150,6 +159,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# HunYuanMoEV1Attention：HunYuan MoE V1 多头自注意力（GQA + RoPE）
 class HunYuanMoEV1Attention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -221,6 +231,7 @@ class HunYuanMoEV1Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# HunYuanMoEV1Gate：HunYuan MoE V1 专家路由门控（Top-K 选择）
 class HunYuanMoEV1Gate(nn.Module):
     def __init__(self, config: HunYuanMoEV1Config, layer_idx: int | None = None):
         super().__init__()
@@ -242,6 +253,7 @@ class HunYuanMoEV1Gate(nn.Module):
 
 
 @use_experts_implementation
+# HunYuanMoEV1Experts：HunYuan MoE V1 多专家 SwiGLU 前馈集合
 class HunYuanMoEV1Experts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
@@ -281,6 +293,7 @@ class HunYuanMoEV1Experts(nn.Module):
         return final_hidden_states
 
 
+# HunYuanMoEV1Moe：HunYuan MoE V1 稀疏 MoE 层（门控 + 专家）
 class HunYuanMoEV1Moe(nn.Module):
     def __init__(self, config: HunYuanMoEV1Config, layer_idx: int | None = None):
         super().__init__()
@@ -300,6 +313,7 @@ class HunYuanMoEV1Moe(nn.Module):
         return final_hidden_states + hidden_states_mlp
 
 
+# HunYuanMoEV1DecoderLayer：HunYuan MoE V1 解码器单层（自注意力 + MoE）
 class HunYuanMoEV1DecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: HunYuanMoEV1Config, layer_idx: int):
         super().__init__()
@@ -343,6 +357,7 @@ class HunYuanMoEV1DecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# HunYuanMoEV1PreTrainedModel：HunYuan MoE V1 预训练基类与权重初始化
 class HunYuanMoEV1PreTrainedModel(PreTrainedModel):
     config: HunYuanMoEV1Config
     base_model_prefix = "model"
@@ -386,6 +401,7 @@ class HunYuanMoEV1PreTrainedModel(PreTrainedModel):
             init.copy_(module.original_inv_freq, buffer_value)
 
 
+# HunYuanMoEV1RotaryEmbedding：HunYuan MoE V1 RoPE 旋转位置编码
 class HunYuanMoEV1RotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: HunYuanMoEV1Config, device=None):
@@ -457,6 +473,7 @@ class HunYuanMoEV1RotaryEmbedding(nn.Module):
 
 
 @auto_docstring
+# HunYuanMoEV1Model：HunYuan MoE V1 稀疏解码器主干
 class HunYuanMoEV1Model(HunYuanMoEV1PreTrainedModel):
     def __init__(self, config: HunYuanMoEV1Config):
         super().__init__(config)
@@ -531,6 +548,7 @@ class HunYuanMoEV1Model(HunYuanMoEV1PreTrainedModel):
 
 
 @auto_docstring
+# HunYuanMoEV1ForCausalLM：HunYuan MoE V1 因果语言建模与文本生成
 class HunYuanMoEV1ForCausalLM(HunYuanMoEV1PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
@@ -605,6 +623,7 @@ class HunYuanMoEV1ForCausalLM(HunYuanMoEV1PreTrainedModel, GenerationMixin):
         )
 
 
+# HunYuanMoEV1ForSequenceClassification：HunYuan MoE V1 序列分类头
 class HunYuanMoEV1ForSequenceClassification(GenericForSequenceClassification, HunYuanMoEV1PreTrainedModel):
     pass
 

@@ -48,10 +48,14 @@ from .configuration_hunyuan_v1_dense import HunYuanDenseV1Config
 logger = logging.get_logger(__name__)
 
 
+# HunYuan Dense V1 modular 源：复用 Llama 组件并定制 RoPE 与 Attention
+
+# HunYuanDenseV1RMSNorm：HunYuan Dense V1 RMS LayerNorm
 class HunYuanDenseV1RMSNorm(LlamaRMSNorm):
     pass
 
 
+# HunYuanDenseV1MLP：HunYuan Dense V1 SwiGLU 前馈 MLP
 class HunYuanDenseV1MLP(LlamaMLP):
     def __init__(self, config: HunYuanDenseV1Config, layer_idx=None, is_shared_mlp=False):
         super().__init__(config)
@@ -61,6 +65,7 @@ class HunYuanDenseV1MLP(LlamaMLP):
         self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=False)
 
 
+# HunYuanDenseV1Attention：HunYuan Dense V1 多头自注意力（GQA + RoPE）
 class HunYuanDenseV1Attention(LlamaAttention):
     def __init__(self, config: HunYuanDenseV1Config, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -110,12 +115,14 @@ class HunYuanDenseV1Attention(LlamaAttention):
         return attn_output, attn_weights
 
 
+# HunYuanDenseV1DecoderLayer：HunYuan Dense V1 解码器单层（自注意力 + MLP）
 class HunYuanDenseV1DecoderLayer(LlamaDecoderLayer):
     def __init__(self, config: HunYuanDenseV1Config, layer_idx: int):
         super().__init__(config, layer_idx)
         self.layer_idx = layer_idx
 
 
+# HunYuanDenseV1PreTrainedModel：HunYuan Dense V1 预训练基类与权重初始化
 class HunYuanDenseV1PreTrainedModel(LlamaPreTrainedModel, PreTrainedModel):
     @torch.no_grad()
     def _init_weights(self, module):
@@ -141,6 +148,7 @@ class HunYuanDenseV1PreTrainedModel(LlamaPreTrainedModel, PreTrainedModel):
             init.copy_(module.original_inv_freq, buffer_value)
 
 
+# HunYuanDenseV1RotaryEmbedding：HunYuan Dense V1 RoPE 旋转位置编码
 class HunYuanDenseV1RotaryEmbedding(LlamaRotaryEmbedding):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: HunYuanDenseV1Config, device=None):
@@ -171,14 +179,17 @@ class HunYuanDenseV1RotaryEmbedding(LlamaRotaryEmbedding):
         self.original_inv_freq = nn.Buffer(inv_freq.clone(), persistent=False)
 
 
+# HunYuanDenseV1Model：HunYuan Dense V1 纯文本解码器主干
 class HunYuanDenseV1Model(LlamaModel):
     pass
 
 
+# HunYuanDenseV1ForCausalLM：HunYuan Dense V1 因果语言建模与文本生成
 class HunYuanDenseV1ForCausalLM(LlamaForCausalLM):
     pass
 
 
+# HunYuanDenseV1ForSequenceClassification：HunYuan Dense V1 序列分类头
 class HunYuanDenseV1ForSequenceClassification(LlamaForSequenceClassification):
     pass
 

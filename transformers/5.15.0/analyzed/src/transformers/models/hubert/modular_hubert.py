@@ -34,9 +34,12 @@ from ..wav2vec2.modeling_wav2vec2 import (
 from .configuration_hubert import HubertConfig
 
 
+# HuBERT modular 源：复用 Wav2Vec2 组件并定制位置卷积嵌入
+
 _HIDDEN_STATES_START_POSITION = 1
 
 
+# HubertPositionalConvEmbedding：HuBERT 1D 卷积位置编码（Wav2Vec2 风格）
 class HubertPositionalConvEmbedding(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -87,14 +90,17 @@ class HubertPositionalConvEmbedding(nn.Module):
         return hidden_states
 
 
+# HubertSamePadLayer：HuBERT 卷积 same-padding 裁剪层
 class HubertSamePadLayer(Wav2Vec2SamePadLayer):
     pass
 
 
+# HubertFeatureEncoder：HuBERT 多阶段卷积特征编码器
 class HubertFeatureEncoder(Wav2Vec2FeatureEncoder):
     pass
 
 
+# HubertFeatureProjection：HuBERT 卷积特征到 Transformer 隐藏维投影
 class HubertFeatureProjection(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -113,15 +119,18 @@ class HubertFeatureProjection(nn.Module):
         return hidden_states
 
 
+# HubertEncoder：HuBERT 多层 Transformer 编码器堆叠
 class HubertEncoder(Wav2Vec2Encoder):
     pass
 
 
+# HubertEncoderStableLayerNorm：HuBERT 稳定 LayerNorm 编码器堆叠
 class HubertEncoderStableLayerNorm(Wav2Vec2EncoderStableLayerNorm):
     pass
 
 
 @auto_docstring
+# HubertPreTrainedModel：HuBERT 预训练基类与权重初始化
 class HubertPreTrainedModel(PreTrainedModel):
     config: HubertConfig
     base_model_prefix = "hubert"
@@ -187,6 +196,7 @@ class HubertPreTrainedModel(PreTrainedModel):
         return attention_mask
 
 
+# HubertModel：HuBERT 自监督语音表征编码主干
 class HubertModel(Wav2Vec2Model, HubertPreTrainedModel):
     def __init__(self, config: HubertConfig):
         super().__init__(config)
@@ -282,10 +292,12 @@ class HubertModel(Wav2Vec2Model, HubertPreTrainedModel):
         )
 
 
+# HubertForCTC：HuBERT 连接时序分类（CTC）语音识别头
 class HubertForCTC(Wav2Vec2ForCTC):
     pass
 
 
+# HubertForSequenceClassification：HuBERT 序列分类头
 class HubertForSequenceClassification(Wav2Vec2ForSequenceClassification):
     pass
 
