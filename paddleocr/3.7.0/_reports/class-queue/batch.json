@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T06:52:07Z",
-  "files": [
-    "paddleocr-js/packages/core/src/pipelines/ocr/config.ts",
-    "paddleocr-js/packages/core/src/pipelines/ocr/core.ts",
-    "paddleocr-js/packages/core/src/pipelines/ocr/crop.ts",
-    "paddleocr-js/packages/core/src/pipelines/ocr/default-config.ts",
-    "paddleocr-js/packages/core/src/pipelines/ocr/index.ts",
-    "paddleocr-js/packages/core/src/pipelines/ocr/runtime-params.ts",
-    "paddleocr-js/packages/core/src/pipelines/ocr/shared.ts",
-    "paddleocr-js/packages/core/src/pipelines/ocr/worker-backed.ts",
-    "paddleocr-js/packages/core/src/pipelines/ocr/worker-entry.ts",
-    "paddleocr-js/packages/core/src/platform/browser.ts",
-    "paddleocr-js/packages/core/src/platform/worker.ts",
-    "paddleocr-js/packages/core/src/resources/index.ts",
-    "paddleocr-js/packages/core/src/resources/model-asset.ts",
-    "paddleocr-js/packages/core/src/resources/tar.ts",
-    "paddleocr-js/packages/core/src/runtime/index.ts"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 422,
-  "done": 165
+  "done": 180
 }
