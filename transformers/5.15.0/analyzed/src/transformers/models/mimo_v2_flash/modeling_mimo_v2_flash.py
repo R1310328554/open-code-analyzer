@@ -43,7 +43,10 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_mimo_v2_flash import MiMoV2FlashConfig
 
 
+# MiMo-V2-Flash 建模：Xiaomi MoE 解码器因果语言模型（由 modular 自动生成）
+
 @use_kernel_forward_from_hub("RMSNorm")
+# MiMoV2FlashRMSNorm：MiMo-V2-Flash RMS 层归一化（等价 T5LayerNorm）
 class MiMoV2FlashRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -64,6 +67,7 @@ class MiMoV2FlashRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# MiMoV2FlashRotaryEmbedding：MiMo-V2-Flash 旋转位置编码（RoPE）
 class MiMoV2FlashRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: MiMoV2FlashConfig, device=None):
@@ -137,6 +141,7 @@ class MiMoV2FlashRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# MiMoV2FlashTopkRouter：MiMo-V2-Flash MoE 分组 top-k 专家路由器
 class MiMoV2FlashTopkRouter(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -179,6 +184,7 @@ class MiMoV2FlashTopkRouter(nn.Module):
 
 
 @use_experts_implementation
+# MiMoV2FlashExperts：MiMo-V2-Flash MoE 多专家 FFN 并行计算模块
 class MiMoV2FlashExperts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
@@ -218,6 +224,7 @@ class MiMoV2FlashExperts(nn.Module):
         return final_hidden_states
 
 
+# MiMoV2FlashMoE：MiMo-V2-Flash 混合专家层（路由 + 专家 FFN）
 class MiMoV2FlashMoE(nn.Module):
     """
     Only difference from `DeepseekV3MoE` is that we have no shared experts.
@@ -237,6 +244,7 @@ class MiMoV2FlashMoE(nn.Module):
         return self.experts(hidden_states, topk_indices, topk_weights).view(*orig_shape)
 
 
+# MiMoV2FlashMLP：MiMo-V2-Flash 稠密前馈 MLP 子层
 class MiMoV2FlashMLP(nn.Module):
     def __init__(self, config, intermediate_size=None):
         super().__init__()
@@ -253,6 +261,7 @@ class MiMoV2FlashMLP(nn.Module):
         return down_proj
 
 
+# rotate_half：将张量后半维度旋转 180°（RoPE 辅助函数）
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -260,6 +269,7 @@ def rotate_half(x):
     return torch.cat((-x2, x1), dim=-1)
 
 
+# apply_rotary_pos_emb：将 RoPE cos/sin 应用到 query/key 张量
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -296,6 +306,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 下将 KV 头重复扩展以匹配 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -308,6 +319,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：MiMo-V2-Flash eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -342,6 +354,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# MiMoV2FlashAttention：MiMo-V2-Flash 多头因果自注意力（支持 GQA 与 v_head_dim）
 class MiMoV2FlashAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -416,6 +429,7 @@ class MiMoV2FlashAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# MiMoV2FlashDecoderLayer：MiMo-V2-Flash 解码器单层（注意力 + 稠密/MoE FFN）
 class MiMoV2FlashDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: MiMoV2FlashConfig, layer_idx: int):
         super().__init__()
@@ -463,6 +477,7 @@ class MiMoV2FlashDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# MiMoV2FlashPreTrainedModel：MiMo-V2-Flash 预训练基类与权重初始化
 class MiMoV2FlashPreTrainedModel(PreTrainedModel):
     config: MiMoV2FlashConfig
     base_model_prefix = "model"
@@ -506,6 +521,7 @@ class MiMoV2FlashPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# MiMoV2FlashModel：MiMo-V2-Flash MoE Transformer 解码器主干
 class MiMoV2FlashModel(MiMoV2FlashPreTrainedModel):
     def __init__(self, config: MiMoV2FlashConfig):
         super().__init__(config)
@@ -590,6 +606,7 @@ class MiMoV2FlashModel(MiMoV2FlashPreTrainedModel):
 
 
 @auto_docstring
+# MiMoV2FlashForCausalLM：MiMo-V2-Flash 因果语言建模条件生成
 class MiMoV2FlashForCausalLM(MiMoV2FlashPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}

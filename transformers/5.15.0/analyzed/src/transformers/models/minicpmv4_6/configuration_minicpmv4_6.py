@@ -26,8 +26,12 @@ from ...utils import auto_docstring
 from ..auto import CONFIG_MAPPING, AutoConfig
 
 
+# MiniCPM-V-4.6 配置：OpenBMB 多模态视觉-语言模型超参
+
+# MiniCPMV4_6VisionConfig：MiniCPM-V-4.6 视觉编码器（SigLIP 变体）超参
 @auto_docstring(checkpoint="openbmb/MiniCPM-V-4.6")
 @strict
+# MiniCPMV4_6VisionConfig：MiniCPM-V-4.6 视觉编码器（SigLIP 变体）超参
 class MiniCPMV4_6VisionConfig(PreTrainedConfig):
     r"""
     insert_layer_id (`int`, *optional*, defaults to 6):
@@ -61,8 +65,10 @@ class MiniCPMV4_6VisionConfig(PreTrainedConfig):
         return self.intermediate_size * self.window_kernel_size[0] * self.window_kernel_size[1]
 
 
+# MiniCPMV4_6Config：openbmb/MiniCPM-V-4.6 多模态视觉-语言默认超参
 @auto_docstring(checkpoint="openbmb/MiniCPM-V-4.6")
 @strict
+# MiniCPMV4_6Config：openbmb/MiniCPM-V-4.6 多模态视觉-语言默认超参
 class MiniCPMV4_6Config(PreTrainedConfig):
     r"""
     insert_layer_id (`int`, *optional*, defaults to 6):

@@ -26,8 +26,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# MiMo-V2-Flash 配置：Xiaomi MoE 分组 top-k 路由与 v_head_dim 超参
+
+# MiMoV2FlashConfig：Xiaomi MiMo-V2-Flash MoE 因果语言模型默认超参
 @auto_docstring(checkpoint="XiaomiMiMo/MiMo-V2-Flash")
 @strict
+# MiMoV2FlashConfig：Xiaomi MiMo-V2-Flash MoE 因果语言模型默认超参
 class MiMoV2FlashConfig(PreTrainedConfig):
     r"""
     n_group (`int`, *optional*, defaults to 1):

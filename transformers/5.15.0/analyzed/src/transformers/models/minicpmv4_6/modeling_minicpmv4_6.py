@@ -47,6 +47,9 @@ from ..auto import AutoModel
 from .configuration_minicpmv4_6 import MiniCPMV4_6Config, MiniCPMV4_6VisionConfig
 
 
+# MiniCPM-V-4.6 建模：可变分辨率 ViT + LLM 多模态条件生成（由 modular 自动生成）
+
+# MiniCPMV4_6VisionEmbeddings：MiniCPM-V-4.6 可变分辨率 patch 视觉嵌入
 class MiniCPMV4_6VisionEmbeddings(nn.Module):
     """
     This is a modified version of `siglip.modelign_siglip.SiglipVisionEmbeddings` to enable images of variable
@@ -93,6 +96,7 @@ class MiniCPMV4_6VisionEmbeddings(nn.Module):
         return embeddings
 
 
+# MiniCPMV4_6VisionMLP：MiniCPM-V-4.6 视觉编码器 FFN 子层
 class MiniCPMV4_6VisionMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -108,6 +112,7 @@ class MiniCPMV4_6VisionMLP(nn.Module):
         return hidden_states
 
 
+# repeat_kv：GQA 下将 KV 头重复扩展以匹配 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -120,6 +125,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：MiMo-V2-Flash eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -145,6 +151,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# MiniCPMV4_6VisionAttention：MiniCPM-V-4.6 视觉编码器多头自注意力
 class MiniCPMV4_6VisionAttention(nn.Module):
     def __init__(self, config) -> None:
         super().__init__()
@@ -234,6 +241,7 @@ class MiniCPMV4_6VisionAttention(nn.Module):
         return attn_output, None
 
 
+# MiniCPMV4_6VisionEncoderLayer：MiniCPM-V-4.6 视觉编码器单层（注意力 + MLP）
 class MiniCPMV4_6VisionEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: MiniCPMV4_6VisionConfig):
         super().__init__()
@@ -268,6 +276,7 @@ class MiniCPMV4_6VisionEncoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# MiniCPMV4_6VisionEncoder：MiniCPM-V-4.6 视觉 Transformer 编码器堆叠
 class MiniCPMV4_6VisionEncoder(nn.Module):
     """Transformer encoder consisting of `config.num_hidden_layers` [`MiniCPMV4_6VisionEncoderLayer`] layers."""
 
@@ -296,6 +305,7 @@ class MiniCPMV4_6VisionEncoder(nn.Module):
         return BaseModelOutput(last_hidden_state=hidden_states)
 
 
+# MiniCPMV4_6ViTWindowAttentionMerger：MiniCPM-V-4.6 窗口注意力特征合并器
 class MiniCPMV4_6ViTWindowAttentionMerger(nn.Module):
     def __init__(self, config: MiniCPMV4_6VisionConfig):
         super().__init__()
@@ -396,6 +406,7 @@ class MiniCPMV4_6ViTWindowAttentionMerger(nn.Module):
         return (hidden_state + residual).unsqueeze(0)
 
 
+# MiniCPMV4_6VisionPreTrainedModel：MiniCPM-V-4.6 视觉子模块预训练基类
 class MiniCPMV4_6VisionPreTrainedModel(PreTrainedModel):
     config_class = MiniCPMV4_6VisionConfig
     main_input_name = "pixel_values"
@@ -410,6 +421,7 @@ class MiniCPMV4_6VisionPreTrainedModel(PreTrainedModel):
     }
 
 
+# MiniCPMV4_6VisionModel：MiniCPM-V-4.6 可变分辨率视觉 Transformer 主干
 class MiniCPMV4_6VisionModel(MiniCPMV4_6VisionPreTrainedModel):
     def __init__(self, config: MiniCPMV4_6VisionConfig):
         super().__init__(config)
@@ -494,6 +506,7 @@ class MiniCPMV4_6VisionModel(MiniCPMV4_6VisionPreTrainedModel):
         return BaseModelOutputWithPooling(last_hidden_state=last_hidden_state)
 
 
+# MiniCPMV4_6DownsampleMLP：MiniCPM-V-4.6 视觉 token 下采样 MLP
 class MiniCPMV4_6DownsampleMLP(nn.Module):
     def __init__(self, hidden_size: int, llm_embed_dim: int):
         super().__init__()
@@ -513,6 +526,7 @@ class MiniCPMV4_6DownsampleMLP(nn.Module):
         return hidden_states
 
 
+# MiniCPMV4_6Merger：MiniCPM-V-4.6 视觉-语言特征合并投影层
 class MiniCPMV4_6Merger(nn.Module):
     def __init__(self, config: MiniCPMV4_6Config):
         super().__init__()
@@ -573,6 +587,7 @@ class MiniCPMV4_6Merger(nn.Module):
         return processed_features
 
 
+# MiniCPMV4_6PreTrainedModel：MiniCPM-V-4.6 多模态预训练基类
 class MiniCPMV4_6PreTrainedModel(PreTrainedModel):
     config_class = MiniCPMV4_6Config
     base_model_prefix = "model"
@@ -593,6 +608,7 @@ class MiniCPMV4_6PreTrainedModel(PreTrainedModel):
     The MiniCPMV4_6 model which consists of a vision backbone and a language model, without a language modeling head.
     """
 )
+# MiniCPMV4_6Model：MiniCPM-V-4.6 视觉-语言多模态主干（ViT + LLM）
 class MiniCPMV4_6Model(MiniCPMV4_6PreTrainedModel):
     def __init__(self, config: MiniCPMV4_6Config):
         super().__init__(config)
@@ -758,6 +774,7 @@ class MiniCPMV4_6Model(MiniCPMV4_6PreTrainedModel):
         return self.get_image_features(pixel_values, target_sizes, downsample_mode=downsample_mode)
 
 
+# MiniCPMV4_6ForConditionalGeneration：MiniCPM-V-4.6 图文/视频条件生成
 class MiniCPMV4_6ForConditionalGeneration(MiniCPMV4_6PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
 

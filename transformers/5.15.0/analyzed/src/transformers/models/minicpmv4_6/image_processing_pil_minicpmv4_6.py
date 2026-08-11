@@ -34,10 +34,14 @@ from ...utils import TensorType, auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# MiniCPM-V-4.6 图像预处理：PIL 后端高分辨率切片与归一化
+
+# ensure_divide：将长度对齐到 divisor 整数倍（至少为 divisor）
 def ensure_divide(length: int, divisor: int) -> int:
     return max(round(length / divisor) * divisor, divisor)
 
 
+# MiniCPMV4_6ImageProcessorPilKwargs：MiniCPM-V-4.6 PIL 图像处理器可选参数字典类型
 class MiniCPMV4_6ImageProcessorPilKwargs(ImagesKwargs, total=False):
     r"""
     max_slice_nums (`int`, *optional*, defaults to 9):
@@ -66,6 +70,7 @@ class MiniCPMV4_6ImageProcessorPilKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# MiniCPMV4_6ImageProcessorPil：MiniCPM-V-4.6 PIL 后端图像切片与预处理
 class MiniCPMV4_6ImageProcessorPil(PilBackend):
     resample = PILImageResampling.BICUBIC
     do_resize = True

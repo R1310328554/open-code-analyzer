@@ -44,8 +44,12 @@ from ..llama.modeling_llama import (
 logger = logging.get_logger(__name__)
 
 
+# MiniCPM3 modular 源：DeepSeek MLA + Llama 解码器因果 LM 实现
+
+# MiniCPM3Config：openbmb/MiniCPM3-4B 低秩多头潜注意力（MLA）默认超参
 @auto_docstring(checkpoint="openbmb/MiniCPM3-4B")
 @strict
+# MiniCPM3Config：openbmb/MiniCPM3-4B 低秩多头潜注意力（MLA）默认超参
 class MiniCPM3Config(LlamaConfig):
     r"""
     kv_lora_rank (`int`, *optional*, defaults to 256):
@@ -136,22 +140,27 @@ class MiniCPM3Config(LlamaConfig):
         return self.hidden_size / self.dim_model_base
 
 
+# MiniCPM3ScaledWordEmbedding：MiniCPM3 带 embed_scale 缩放的词嵌入
 class MiniCPM3ScaledWordEmbedding(Gemma3TextScaledWordEmbedding):
     pass
 
 
+# MiniCPM3RMSNorm：MiniCPM3 RMS 层归一化
 class MiniCPM3RMSNorm(LlamaRMSNorm):
     pass
 
 
+# MiniCPM3RotaryEmbedding：MiniCPM3 旋转位置编码（支持 YaRN 外推）
 class MiniCPM3RotaryEmbedding(LlamaRotaryEmbedding):
     pass
 
 
+# MiniCPM3MLP：MiniCPM3 SwiGLU 前馈 MLP 子层
 class MiniCPM3MLP(LlamaMLP):
     pass
 
 
+# MiniCPM3Attention：MiniCPM3 多头潜注意力（MLA，低秩 Q/KV 投影）
 class MiniCPM3Attention(DeepseekV2Attention):
     """
     Multi-head Latent Attention (MLA), structurally identical to `DeepseekV2Attention`.
@@ -217,6 +226,7 @@ class MiniCPM3Attention(DeepseekV2Attention):
         return attn_output, attn_weights
 
 
+# MiniCPM3DecoderLayer：MiniCPM3 解码器单层（MLA 自注意力 + MLP）
 class MiniCPM3DecoderLayer(LlamaDecoderLayer):
     def __init__(self, config: MiniCPM3Config, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -254,6 +264,7 @@ class MiniCPM3DecoderLayer(LlamaDecoderLayer):
         return hidden_states
 
 
+# MiniCPM3PreTrainedModel：MiniCPM3 预训练基类与权重初始化
 class MiniCPM3PreTrainedModel(LlamaPreTrainedModel):
     @torch.no_grad()
     def _init_weights(self, module):
@@ -263,6 +274,7 @@ class MiniCPM3PreTrainedModel(LlamaPreTrainedModel):
 
 
 @auto_docstring
+# MiniCPM3Model：MiniCPM3 因果 Transformer 解码器主干
 class MiniCPM3Model(LlamaModel):
     def __init__(self, config: MiniCPM3Config):
         super().__init__(config)
@@ -273,6 +285,7 @@ class MiniCPM3Model(LlamaModel):
 
 
 @auto_docstring
+# MiniCPM3ForCausalLM：MiniCPM3 因果语言建模
 class MiniCPM3ForCausalLM(LlamaForCausalLM):
     @can_return_tuple
     @auto_docstring
@@ -333,6 +346,7 @@ class MiniCPM3ForCausalLM(LlamaForCausalLM):
         )
 
 
+# MiniCPM3ForSequenceClassification：MiniCPM3 序列分类
 class MiniCPM3ForSequenceClassification(LlamaForSequenceClassification):
     pass
 

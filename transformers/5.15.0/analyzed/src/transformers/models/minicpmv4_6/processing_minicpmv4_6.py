@@ -24,6 +24,9 @@ from ...video_utils import VideoInput, make_batched_videos
 logger = logging.get_logger(__name__)
 
 
+# MiniCPM-V-4.6 处理器：图文/视频联合 token 化与占位符对齐
+
+# MiniCPMV4_6ProcessorKwargs：MiniCPM-V-4.6 多模态处理器可选参数字典类型
 class MiniCPMV4_6ProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "common_kwargs": {
@@ -39,6 +42,7 @@ class MiniCPMV4_6ProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# MiniCPMV4_6Processor：MiniCPM-V-4.6 图文/视频联合预处理与占位符生成
 class MiniCPMV4_6Processor(ProcessorMixin):
     valid_processor_kwargs = MiniCPMV4_6ProcessorKwargs
 

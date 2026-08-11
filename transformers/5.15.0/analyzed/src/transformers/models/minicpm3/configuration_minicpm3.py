@@ -27,8 +27,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# MiniCPM3 配置：openbmb/MiniCPM3-4B MLA 低秩 Q/KV 投影超参
+
+# MiniCPM3Config：openbmb/MiniCPM3-4B 低秩多头潜注意力（MLA）默认超参
 @auto_docstring(checkpoint="openbmb/MiniCPM3-4B")
 @strict
+# MiniCPM3Config：openbmb/MiniCPM3-4B 低秩多头潜注意力（MLA）默认超参
 class MiniCPM3Config(PreTrainedConfig):
     r"""
     kv_lora_rank (`int`, *optional*, defaults to 256):

@@ -42,6 +42,9 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_minicpm3 import MiniCPM3Config
 
 
+# MiniCPM3 建模：OpenBMB 低秩多头潜注意力（MLA）因果 LM（由 modular 自动生成）
+
+# MiniCPM3ScaledWordEmbedding：MiniCPM3 带 embed_scale 缩放的词嵌入
 class MiniCPM3ScaledWordEmbedding(nn.Embedding):
     """
     This module overrides nn.Embeddings' forward by multiplying with embeddings scale.
@@ -57,6 +60,7 @@ class MiniCPM3ScaledWordEmbedding(nn.Embedding):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# MiniCPM3RMSNorm：MiniCPM3 RMS 层归一化
 class MiniCPM3RMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -77,6 +81,7 @@ class MiniCPM3RMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# MiniCPM3RotaryEmbedding：MiniCPM3 旋转位置编码（支持 YaRN 外推）
 class MiniCPM3RotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: MiniCPM3Config, device=None):
@@ -134,6 +139,7 @@ class MiniCPM3RotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# MiniCPM3MLP：MiniCPM3 SwiGLU 前馈 MLP 子层
 class MiniCPM3MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -150,6 +156,7 @@ class MiniCPM3MLP(nn.Module):
         return down_proj
 
 
+# repeat_kv：GQA 下将 KV 头重复扩展以匹配 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -162,6 +169,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：MiMo-V2-Flash eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -187,12 +195,14 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# yarn_get_mscale：YaRN 外推缩放因子 mscale 计算
 def yarn_get_mscale(scale=1, mscale=1):
     if scale <= 1:
         return 1.0
     return 0.1 * mscale * math.log(scale) + 1.0
 
 
+# yarn_apply_mscale：YaRN 将 mscale 应用到 RoPE 参数
 def yarn_apply_mscale(rope_parameters, scaling):
     if rope_parameters.get("rope_type", "default") != "default":
         mscale_all_dim = rope_parameters.get("mscale_all_dim", 0)
@@ -203,6 +213,7 @@ def yarn_apply_mscale(rope_parameters, scaling):
     return scaling
 
 
+# rotate_half：将张量后半维度旋转 180°（RoPE 辅助函数）
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -211,6 +222,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：将 RoPE cos/sin 应用到 query/key 张量
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -236,6 +248,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# MiniCPM3Attention：MiniCPM3 多头潜注意力（MLA，低秩 Q/KV 投影）
 class MiniCPM3Attention(nn.Module):
     """
     Multi-head Latent Attention (MLA), structurally identical to `DeepseekV2Attention`.
@@ -365,6 +378,7 @@ class MiniCPM3Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# MiniCPM3DecoderLayer：MiniCPM3 解码器单层（MLA 自注意力 + MLP）
 class MiniCPM3DecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: MiniCPM3Config, layer_idx: int):
         super().__init__()
@@ -410,6 +424,7 @@ class MiniCPM3DecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# MiniCPM3PreTrainedModel：MiniCPM3 预训练基类与权重初始化
 class MiniCPM3PreTrainedModel(PreTrainedModel):
     config: MiniCPM3Config
     base_model_prefix = "model"
@@ -435,6 +450,7 @@ class MiniCPM3PreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# MiniCPM3Model：MiniCPM3 因果 Transformer 解码器主干
 class MiniCPM3Model(MiniCPM3PreTrainedModel):
     def __init__(self, config: MiniCPM3Config):
         super().__init__(config)
@@ -511,6 +527,7 @@ class MiniCPM3Model(MiniCPM3PreTrainedModel):
 
 
 @auto_docstring
+# MiniCPM3ForCausalLM：MiniCPM3 因果语言建模
 class MiniCPM3ForCausalLM(MiniCPM3PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
@@ -585,6 +602,7 @@ class MiniCPM3ForCausalLM(MiniCPM3PreTrainedModel, GenerationMixin):
         )
 
 
+# MiniCPM3ForSequenceClassification：MiniCPM3 序列分类
 class MiniCPM3ForSequenceClassification(GenericForSequenceClassification, MiniCPM3PreTrainedModel):
     pass
 

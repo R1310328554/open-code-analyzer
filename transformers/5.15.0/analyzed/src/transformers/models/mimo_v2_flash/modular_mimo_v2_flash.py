@@ -42,8 +42,12 @@ from ..mixtral.modeling_mixtral import MixtralRMSNorm
 from ..qwen2.modeling_qwen2 import Qwen2Attention
 
 
+# MiMo-V2-Flash modular 源：DeepSeek MoE + GLM4 混合专家因果 LM 实现
+
+# MiMoV2FlashConfig：Xiaomi MiMo-V2-Flash MoE 因果语言模型默认超参
 @auto_docstring(checkpoint="XiaomiMiMo/MiMo-V2-Flash")
 @strict
+# MiMoV2FlashConfig：Xiaomi MiMo-V2-Flash MoE 因果语言模型默认超参
 class MiMoV2FlashConfig(Glm4MoeConfig):
     r"""
     n_group (`int`, *optional*, defaults to 1):
@@ -133,10 +137,12 @@ class MiMoV2FlashConfig(Glm4MoeConfig):
         return kwargs
 
 
+# MiMoV2FlashRMSNorm：MiMo-V2-Flash RMS 层归一化（等价 T5LayerNorm）
 class MiMoV2FlashRMSNorm(MixtralRMSNorm):
     pass
 
 
+# MiMoV2FlashRotaryEmbedding：MiMo-V2-Flash 旋转位置编码（RoPE）
 class MiMoV2FlashRotaryEmbedding(Gemma3RotaryEmbedding):
     def __init__(self, config: MiMoV2FlashConfig, device=None):
         super().__init__(config)
@@ -168,14 +174,17 @@ class MiMoV2FlashRotaryEmbedding(Gemma3RotaryEmbedding):
         return inv_freq.to(device), attention_factor
 
 
+# MiMoV2FlashTopkRouter：MiMo-V2-Flash MoE 分组 top-k 专家路由器
 class MiMoV2FlashTopkRouter(DeepseekV3TopkRouter):
     pass
 
 
+# MiMoV2FlashExperts：MiMo-V2-Flash MoE 多专家 FFN 并行计算模块
 class MiMoV2FlashExperts(DeepseekV3Experts):
     pass
 
 
+# MiMoV2FlashMoE：MiMo-V2-Flash 混合专家层（路由 + 专家 FFN）
 class MiMoV2FlashMoE(DeepseekV3MoE):
     """
     Only difference from `DeepseekV3MoE` is that we have no shared experts.
@@ -193,10 +202,12 @@ class MiMoV2FlashMoE(DeepseekV3MoE):
         return self.experts(hidden_states, topk_indices, topk_weights).view(*orig_shape)
 
 
+# MiMoV2FlashMLP：MiMo-V2-Flash 稠密前馈 MLP 子层
 class MiMoV2FlashMLP(Glm4MoeMLP):
     pass
 
 
+# eager_attention_forward：MiMo-V2-Flash eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -232,6 +243,7 @@ def eager_attention_forward(
 
 
 @no_inherit_decorator
+# MiMoV2FlashAttention：MiMo-V2-Flash 多头因果自注意力（支持 GQA 与 v_head_dim）
 class MiMoV2FlashAttention(Qwen2Attention):
     def __init__(self, config: MiMoV2FlashConfig, layer_idx: int):
         # SWA layers double the kv heads vs full-attention and have attention sinks.
@@ -296,11 +308,13 @@ class MiMoV2FlashAttention(Qwen2Attention):
         return attn_output, attn_weights
 
 
+# MiMoV2FlashDecoderLayer：MiMo-V2-Flash 解码器单层（注意力 + 稠密/MoE FFN）
 class MiMoV2FlashDecoderLayer(Glm4MoeLiteDecoderLayer):
     pass
 
 
 @auto_docstring
+# MiMoV2FlashPreTrainedModel：MiMo-V2-Flash 预训练基类与权重初始化
 class MiMoV2FlashPreTrainedModel(DeepseekV3PreTrainedModel):
     _supports_sdpa = False  # disabling SDPA as it has no sink API atm (same as gpt-oss)
     _supports_flash_attn = True  # not compatible because of asymmetric qk/v head dims and/or sinks (for most FAs)
@@ -325,10 +339,12 @@ class MiMoV2FlashPreTrainedModel(DeepseekV3PreTrainedModel):
 
 
 @auto_docstring
+# MiMoV2FlashModel：MiMo-V2-Flash MoE Transformer 解码器主干
 class MiMoV2FlashModel(LagunaModel):
     pass
 
 
+# MiMoV2FlashForCausalLM：MiMo-V2-Flash 因果语言建模条件生成
 class MiMoV2FlashForCausalLM(DeepseekV3ForCausalLM):
     pass
 
