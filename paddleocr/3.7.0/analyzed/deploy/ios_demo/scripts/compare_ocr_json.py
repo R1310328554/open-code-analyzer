@@ -13,7 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Compare two OCR JSON files (reference vs device) using polygon IoU + CER.
+"""用多边形 IoU 与 CER 对比两份 OCR JSON（参考 vs 设备）。
+
+Compare two OCR JSON files (reference vs device) using polygon IoU + CER."""Compare two OCR JSON files (reference vs device) using polygon IoU + CER.
 
 Default thresholds (see argparse defaults) target a stricter CI gate than a loose
 0.5 IoU baseline: tighter box alignment, ~95% char-level headroom on mean CER,
@@ -33,6 +35,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Sequence, Tuple
 
 
+# 计算两字符串编辑距离
 def _levenshtein(a: str, b: str) -> int:
     if a == b:
         return 0
@@ -52,6 +55,7 @@ def _levenshtein(a: str, b: str) -> int:
     return prev[-1]
 
 
+# 字符错误率：编辑距离除以参考文本长度
 def _cer(ref: str, hyp: str) -> float:
     if not ref and not hyp:
         return 0.0
@@ -60,6 +64,7 @@ def _cer(ref: str, hyp: str) -> float:
     return _levenshtein(ref, hyp) / max(len(ref), 1)
 
 
+# 用 shapely 计算四边形 IoU
 def _polygon_iou(
     poly_a: Sequence[Sequence[float]], poly_b: Sequence[Sequence[float]]
 ) -> float:
@@ -89,6 +94,7 @@ def _polygon_iou(
     return float(inter / union)
 
 
+# 加载 JSON 并提取 items 数组
 def _load_items(path: Path) -> List[Dict[str, Any]]:
     with path.open("r", encoding="utf-8") as f:
         data = json.load(f)
@@ -98,6 +104,7 @@ def _load_items(path: Path) -> List[Dict[str, Any]]:
     return items
 
 
+# 按 IoU 降序贪心配对参考与假设检测框
 def _greedy_match(
     ref_items: List[Dict[str, Any]],
     hyp_items: List[Dict[str, Any]],
@@ -134,6 +141,7 @@ def _greedy_match(
     return pairs, unmatched_r, unmatched_h
 
 
+    # 主流程：匹配、统计 mean CER 与未匹配比例，输出 PASS/FAIL
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Compare OCR JSON outputs")
     parser.add_argument(

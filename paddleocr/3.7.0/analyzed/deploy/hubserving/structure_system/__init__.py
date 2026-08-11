@@ -11,3 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# PP-Structure 完整文档解析 HubServing 包：版面+表格+OCR 联合服务
+# limitations under the License.

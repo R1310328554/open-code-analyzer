@@ -13,7 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""QDQ quantization debug: align with ONNX Runtime ``qdq_loss_debug`` (official example flow).
+"""QDQ 量化调试：对齐 ONNX Runtime ``qdq_loss_debug`` 官方示例流程。
+
+QDQ quantization debug: align with ONNX Runtime ``qdq_loss_debug`` (official example flow)."""QDQ quantization debug: align with ONNX Runtime ``qdq_loss_debug`` (official example flow).
 
 This mirrors the *Debugging* section of:
 https://github.com/microsoft/onnxruntime-inference-examples/blob/main/quantization/image_classification/cpu/ReadMe.md
@@ -53,18 +55,21 @@ _script_dir = Path(__file__).resolve().parent
 if str(_script_dir) not in sys.path:
     sys.path.insert(0, str(_script_dir))
 
-from utils import build_npy_dir_reader, die
+# 工具：npy 目录读取器与 fatal 退出
+from utils import build_npy_dir_reader, diefrom utils import build_npy_dir_reader, die
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+# 解析逗号分隔的 ONNX 算子类型列表
 def _parse_op_types(s: str | None) -> list[str] | None:
     if not s or not s.strip():
         return None
     return [t.strip() for t in s.split(",") if t.strip()]
 
 
+# 安全计算权重量化 SQNR，兼容标量 dequantized 值
 def _safe_compute_weight_error(
     wmatch: dict[str, dict[str, Any]],
     err_func: Any,
@@ -102,6 +107,7 @@ def _safe_compute_weight_error(
     return out
 
 
+# 安全计算激活 SQNR，跳过缺失 float 中间结果
 def _safe_compute_activation_error(
     match: dict[str, dict[str, Any]],
     err_func: Any,
@@ -118,12 +124,14 @@ def _safe_compute_activation_error(
     return result
 
 
+# 选择用于排序的 SQNR 指标键
 def _sqnr_key(entry: dict[str, float], prefer_xmodel: bool) -> float:
     if prefer_xmodel and "xmodel_err" in entry:
         return entry["xmodel_err"]
     return entry.get("qdq_err", float("nan"))
 
 
+# 执行 QDQ 调试：增广模型、收集激活、匹配并打印 SQNR 报告
 def _run(
     float_model: Path,
     qdq_model: Path,
@@ -238,6 +246,7 @@ def _run(
         print(f"\nwrote {json_report}")
 
 
+    # CLI 入口：解析 float/QDQ 模型与校准 npy 目录
 def main() -> None:
     ap = argparse.ArgumentParser(
         description="ORT-style QDQ debug: float vs QDQ activations/weights (same .npy calib as quantize).",

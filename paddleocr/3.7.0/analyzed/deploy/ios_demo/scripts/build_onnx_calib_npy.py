@@ -13,7 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Build float32 NCHW ``.npy`` tensors for static ONNX quantization.
+"""为静态 ONNX 量化构建 float32 NCHW 校准 ``.npy`` 张量。
+
+Build float32 NCHW ``.npy`` tensors for static ONNX quantization."""Build float32 NCHW ``.npy`` tensors for static ONNX quantization.
 
 Note:
     Uses undocumented PaddleX predictor internals (e.g. ``pre_tfs``). May break when
@@ -51,9 +53,11 @@ _script_dir = Path(__file__).resolve().parent
 if str(_script_dir) not in sys.path:
     sys.path.insert(0, str(_script_dir))
 
-from utils import die
+# 脚本工具：错误退出
+from utils import diefrom utils import die
 
 
+# 从 inference.yml 读取 Global.model_name
 def _read_model_name(model_dir: Path) -> str:
     try:
         import yaml
@@ -70,6 +74,7 @@ def _read_model_name(model_dir: Path) -> str:
     return str(name)
 
 
+# 收集目录下常见图像后缀文件
 def _collect_images(image_dir: Path) -> list[Path]:
     exts = {".png", ".jpg", ".jpeg", ".bmp", ".webp", ".tif", ".tiff"}
     out: list[Path] = []
@@ -81,12 +86,14 @@ def _collect_images(image_dir: Path) -> list[Path]:
     return out
 
 
+# 生成安全的输出文件名前缀（序号+净化 stem）
 def _safe_stem(p: Path, idx: int) -> str:
     s = p.stem
     s = re.sub(r"[^\w\-.]+", "_", s)[:80]
     return f"{idx:04d}_{s}" if s else f"{idx:04d}"
 
 
+# 将 TextDetResult.dt_polys 规范为 (N,2) 顶点序列
 def _iter_text_boxes(dt_polys: Any) -> Iterator[np.ndarray]:
     """Turn ``dt_polys`` from a TextDetResult into a sequence of (N,2) point arrays."""
     if dt_polys is None:
@@ -108,6 +115,7 @@ def _iter_text_boxes(dt_polys: Any) -> Iterator[np.ndarray]:
             yield b
 
 
+    # 最小外接矩形透视裁剪，与 PP-OCR/PaddleX 文本行裁剪对齐
 def _minarea_rect_rotate_crop(img: np.ndarray, points: np.ndarray) -> np.ndarray:
     """
     Min-area rect crop aligned with PP-OCR (see PaddleX CropByPolys, quad).
@@ -164,6 +172,7 @@ def _minarea_rect_rotate_crop(img: np.ndarray, points: np.ndarray) -> np.ndarray
     return dst
 
 
+    # 复刻 TextDet 预处理链，输出 (1,C,H,W) float32
 def _tensor_det(pred, image_path: str) -> np.ndarray:
     """Mirror TextDetRunnerPredictor.process() preprocess, return (1,C,H,W) float32."""
     batches = list(pred.batch_sampler([image_path]))
@@ -183,6 +192,7 @@ def _tensor_det(pred, image_path: str) -> np.ndarray:
     return np.ascontiguousarray(x[0], dtype=np.float32)
 
 
+    # 复刻 TextRec 预处理链，输出单 batch 张量
 def _tensor_rec(pred, image_path: str) -> np.ndarray:
     from paddlex.inference.models.text_recognition.processors import (
         validate_text_rec_image_array,
@@ -200,6 +210,7 @@ def _tensor_rec(pred, image_path: str) -> np.ndarray:
     return np.ascontiguousarray(x[0], dtype=np.float32)
 
 
+    # 对 RGB ndarray（如 det 裁剪行）执行 rec 预处理
 def _tensor_rec_from_rgb_ndarray(rec_pred, img_rgb: np.ndarray) -> np.ndarray:
     """Same preprocessing as *path* input, for an RGB array (e.g. det crop on full page)."""
     from paddlex.inference.models.text_recognition.processors import (
@@ -217,6 +228,7 @@ def _tensor_rec_from_rgb_ndarray(rec_pred, img_rgb: np.ndarray) -> np.ndarray:
     return np.ascontiguousarray(x[0], dtype=np.float32)
 
 
+    # CLI：按 det/rec 任务写出校准 .npy，可选 det 辅助 rec 行裁剪
 def main() -> None:
     ap = argparse.ArgumentParser(
         description="Build float32 NCHW .npy files for static ONNX quantize."

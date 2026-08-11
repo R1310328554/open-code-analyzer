@@ -32,7 +32,9 @@ import paddlehub as hub
 from tools.infer.utility import base64_to_cv2
 from ppstructure.layout.predict_layout import LayoutPredictor as _LayoutPredictor
 from ppstructure.utility import parse_args
-from deploy.hubserving.structure_layout.params import read_params
+# PaddleHub 版面分析服务：封装 LayoutPredictor 区域检测
+
+from deploy.hubserving.structure_layout.params import read_paramsfrom deploy.hubserving.structure_layout.params import read_params
 
 
 @moduleinfo(
@@ -43,7 +45,9 @@ from deploy.hubserving.structure_layout.params import read_params
     author_email="paddle-dev@baidu.com",
     type="cv/structure_layout",
 )
+# 版面分析 Hub 模块：输出标题/正文/表格等区域 bbox 与类别
 class LayoutPredictor(hub.Module):
+    # 初始化 LayoutPredictor 并配置 GPU/MKLDNN
     def _initialize(self, use_gpu=False, enable_mkldnn=False):
         """
         initialize with the necessary elements
@@ -66,6 +70,7 @@ class LayoutPredictor(hub.Module):
 
         self.layout_predictor = _LayoutPredictor(cfg)
 
+    # 合并命令行默认配置与 params 中的版面模型参数
     def merge_configs(self):
         # default cfg
         backup_argv = copy.deepcopy(sys.argv)
@@ -80,6 +85,7 @@ class LayoutPredictor(hub.Module):
         sys.argv = copy.deepcopy(backup_argv)
         return cfg
 
+    # 从路径列表读取待分析文档图像
     def read_images(self, paths=[]):
         images = []
         for img_path in paths:
@@ -93,6 +99,7 @@ class LayoutPredictor(hub.Module):
             images.append(img)
         return images
 
+    # 对每张图运行版面检测，返回 layout 区域列表
     def predict(self, images=[], paths=[]):
         """
         Get the chinese texts in the predicted images.
@@ -130,6 +137,7 @@ class LayoutPredictor(hub.Module):
             all_results.append({"layout": res})
         return all_results
 
+    # HubServing：Base64 图像解码后调用 predict
     @serving
     def serving_method(self, images, **kwargs):
         """
@@ -140,6 +148,7 @@ class LayoutPredictor(hub.Module):
         return results
 
 
+# 本地调试入口
 if __name__ == "__main__":
     layout = LayoutPredictor()
     layout._initialize()

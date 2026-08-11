@@ -17,19 +17,23 @@ from __future__ import division
 from __future__ import print_function
 
 
+# OCR HubServing 推理配置容器（动态属性承载 det/rec/cls 参数）
 class Config(object):
     pass
 
 
+# 返回 PP-OCR 检测、识别与方向分类的默认模型路径与阈值
 def read_params():
     cfg = Config()
 
+    # 文本检测器：DB 算法、模型目录与边长限制
     # params for text detector
     cfg.det_algorithm = "DB"
     cfg.det_model_dir = "./inference/PP-OCRv3_mobile_det_infer/"
     cfg.det_limit_side_len = 960
     cfg.det_limit_type = "max"
 
+    # DB 后处理：二值化阈值、框阈值与 unclip 比例
     # DB params
     cfg.det_db_thresh = 0.3
     cfg.det_db_box_thresh = 0.5
@@ -42,6 +46,7 @@ def read_params():
     cfg.det_east_cover_thresh = 0.1
     cfg.det_east_nms_thresh = 0.2
 
+    # 文本识别器：CRNN、输入形状与字典路径
     # params for text recognizer
     cfg.rec_algorithm = "CRNN"
     cfg.rec_model_dir = "./inference/ch_PP-OCRv3_rec_infer/"
@@ -53,6 +58,7 @@ def read_params():
     cfg.rec_char_dict_path = "./ppocr/utils/ppocr_keys_v1.txt"
     cfg.use_space_char = True
 
+    # 方向分类器：是否启用、模型与 0/180 度标签
     # params for text classifier
     cfg.use_angle_cls = True
     cfg.cls_model_dir = "./inference/ch_ppocr_mobile_v2.0_cls_infer/"
@@ -61,6 +67,7 @@ def read_params():
     cfg.cls_batch_num = 30
     cfg.cls_thresh = 0.9
 
+    # 模型 HTTPS 下载地址（首次部署可自动拉取）
     # Model download URLs using HTTPS for secure transmission
     cfg.det_model_url = "https://paddle-ocr-models.bj.bcebos.com/dygraph_v2.0/ch/ch_pp-ocrv2_det_infer.tar"
     cfg.rec_model_url = "https://paddle-ocr-models.bj.bcebos.com/dygraph_v2.0/ch/ch_pp-ocrv2_rec_infer.tar"

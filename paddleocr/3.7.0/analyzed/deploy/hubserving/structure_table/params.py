@@ -16,12 +16,15 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+# 表格识别参数：在 OCR 系统配置基础上追加表格结构模型
 from deploy.hubserving.ocr_system.params import read_params as pp_ocr_read_params
 
 
+# 继承 PP-OCR 参数并设置表格结构模型与字典
 def read_params():
     cfg = pp_ocr_read_params()
 
+    # 表格结构：最大边长、模型目录与结构字典路径
     # params for table structure model
     cfg.table_max_len = 488
     cfg.table_model_dir = "./inference/en_ppocr_mobile_v2.0_table_structure_infer/"

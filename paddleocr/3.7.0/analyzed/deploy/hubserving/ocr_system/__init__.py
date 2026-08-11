@@ -11,3 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# PP-OCR 端到端 OCR 系统 HubServing 包：检测+识别+方向分类在线服务入口
+# limitations under the License.

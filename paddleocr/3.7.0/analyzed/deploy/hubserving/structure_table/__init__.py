@@ -11,3 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# PP-Structure 表格识别 HubServing 包：表格结构转 HTML 服务入口
+# limitations under the License.

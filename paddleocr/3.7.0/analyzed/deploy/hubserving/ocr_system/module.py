@@ -33,7 +33,9 @@ import paddlehub as hub
 from tools.infer.utility import base64_to_cv2
 from tools.infer.predict_system import TextSystem
 from tools.infer.utility import parse_args
-from deploy.hubserving.ocr_system.params import read_params
+# PaddleHub OCR 系统服务模块：封装 TextSystem 检测识别流水线
+
+from deploy.hubserving.ocr_system.params import read_paramsfrom deploy.hubserving.ocr_system.params import read_params
 
 
 @moduleinfo(
@@ -44,7 +46,9 @@ from deploy.hubserving.ocr_system.params import read_params
     author_email="paddle-dev@baidu.com",
     type="cv/PP-OCR_system",
 )
+# OCR 系统 Hub 模块：加载 PP-OCR 模型并提供 predict/serving 接口
 class OCRSystem(hub.Module):
+    # 初始化 TextSystem：合并配置、设置 GPU/MKLDNN 并构建推理引擎
     def _initialize(self, use_gpu=False, enable_mkldnn=False):
         """
         initialize with the necessary elements
@@ -68,6 +72,7 @@ class OCRSystem(hub.Module):
 
         self.text_sys = TextSystem(cfg)
 
+    # 合并 parse_args 默认项与 params.read_params 中的 Hub 专用配置
     def merge_configs(
         self,
     ):
@@ -84,6 +89,7 @@ class OCRSystem(hub.Module):
         sys.argv = copy.deepcopy(backup_argv)
         return cfg
 
+    # 从本地路径批量读取 OpenCV BGR 图像
     def read_images(self, paths=[]):
         images = []
         for img_path in paths:
@@ -97,6 +103,7 @@ class OCRSystem(hub.Module):
             images.append(img)
         return images
 
+    # 对图像列表执行 OCR，返回文本、置信度与四边形区域
     def predict(self, images=[], paths=[]):
         """
         Get the chinese texts in the predicted images.
@@ -144,6 +151,7 @@ class OCRSystem(hub.Module):
             all_results.append(rec_res_final)
         return all_results
 
+    # HubServing 入口：Base64 解码图像后调用 predict
     @serving
     def serving_method(self, images, **kwargs):
         """
@@ -154,6 +162,7 @@ class OCRSystem(hub.Module):
         return results
 
 
+# 本地调试：实例化模块并对示例图片推理
 if __name__ == "__main__":
     ocr = OCRSystem()
     ocr._initialize()

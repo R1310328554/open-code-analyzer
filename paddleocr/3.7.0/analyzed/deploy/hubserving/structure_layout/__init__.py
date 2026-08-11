@@ -11,3 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# PP-Structure 版面分析 HubServing 包：文档区域检测服务入口
+# limitations under the License.

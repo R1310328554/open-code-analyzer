@@ -34,7 +34,9 @@ from tools.infer.utility import base64_to_cv2
 from ppstructure.table.predict_table import TableSystem as _TableSystem
 from ppstructure.predict_system import save_structure_res
 from ppstructure.utility import parse_args
-from deploy.hubserving.structure_table.params import read_params
+# PaddleHub 表格识别服务：封装 TableSystem 结构+单元格 OCR
+
+from deploy.hubserving.structure_table.params import read_paramsfrom deploy.hubserving.structure_table.params import read_params
 
 
 @moduleinfo(
@@ -45,7 +47,9 @@ from deploy.hubserving.structure_table.params import read_params
     author_email="paddle-dev@baidu.com",
     type="cv/structure_table",
 )
+# 表格识别 Hub 模块：输入表格区域图像，输出 HTML 结构
 class TableSystem(hub.Module):
+    # 初始化 TableSystem 推理引擎
     def _initialize(self, use_gpu=False, enable_mkldnn=False):
         """
         initialize with the necessary elements
@@ -68,6 +72,7 @@ class TableSystem(hub.Module):
 
         self.table_sys = _TableSystem(cfg)
 
+    # 合并表格专用 det/rec/structure 配置
     def merge_configs(self):
         # default cfg
         backup_argv = copy.deepcopy(sys.argv)
@@ -82,6 +87,7 @@ class TableSystem(hub.Module):
         sys.argv = copy.deepcopy(backup_argv)
         return cfg
 
+    # 从路径读取表格截图
     def read_images(self, paths=[]):
         images = []
         for img_path in paths:
@@ -95,6 +101,7 @@ class TableSystem(hub.Module):
             images.append(img)
         return images
 
+    # 识别表格并返回 html 字段
     def predict(self, images=[], paths=[]):
         """
         Get the chinese texts in the predicted images.
@@ -130,6 +137,7 @@ class TableSystem(hub.Module):
             all_results.append({"html": res["html"]})
         return all_results
 
+    # HubServing：Base64 输入转 predict
     @serving
     def serving_method(self, images, **kwargs):
         """
@@ -140,6 +148,7 @@ class TableSystem(hub.Module):
         return results
 
 
+# 本地调试入口
 if __name__ == "__main__":
     table_system = TableSystem()
     table_system._initialize()

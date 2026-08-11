@@ -17,13 +17,16 @@ from __future__ import division
 from __future__ import print_function
 
 
+# 版面分析 HubServing 配置容器
 class Config(object):
     pass
 
 
+# 返回 PicoDet 版面模型路径、字典与 NMS/得分阈值
 def read_params():
     cfg = Config()
 
+    # 版面分析：模型目录、类别字典与过滤阈值
     # params for layout analysis
     cfg.layout_model_dir = "./inference/picodet_lcnet_x1_0_fgd_layout_infer/"
     cfg.layout_dict_path = "./ppocr/utils/dict/layout_dict/layout_publaynet_dict.txt"

@@ -34,7 +34,9 @@ from tools.infer.utility import base64_to_cv2
 from ppstructure.predict_system import StructureSystem as PPStructureSystem
 from ppstructure.predict_system import save_structure_res
 from ppstructure.utility import parse_args
-from deploy.hubserving.structure_system.params import read_params
+# PaddleHub 文档结构解析服务：封装 PPStructureSystem 全流程
+
+from deploy.hubserving.structure_system.params import read_paramsfrom deploy.hubserving.structure_system.params import read_params
 
 
 @moduleinfo(
@@ -45,7 +47,9 @@ from deploy.hubserving.structure_system.params import read_params
     author_email="paddle-dev@baidu.com",
     type="cv/structure_system",
 )
+# 文档结构 Hub 模块：版面分析、表格识别与 OCR 一体化
 class StructureSystem(hub.Module):
+    # 初始化 PPStructureSystem 并设置推理设备
     def _initialize(self, use_gpu=False, enable_mkldnn=False):
         """
         initialize with the necessary elements
@@ -69,6 +73,7 @@ class StructureSystem(hub.Module):
 
         self.table_sys = PPStructureSystem(cfg)
 
+    # 合并 structure 模式下的全局配置
     def merge_configs(self):
         # default cfg
         backup_argv = copy.deepcopy(sys.argv)
@@ -83,6 +88,7 @@ class StructureSystem(hub.Module):
         sys.argv = copy.deepcopy(backup_argv)
         return cfg
 
+    # 批量读取文档页面图像
     def read_images(self, paths=[]):
         images = []
         for img_path in paths:
@@ -96,6 +102,7 @@ class StructureSystem(hub.Module):
             images.append(img)
         return images
 
+    # 解析文档结构，返回各区域类型、坐标与识别内容
     def predict(self, images=[], paths=[]):
         """
         Get the chinese texts in the predicted images.
@@ -136,6 +143,7 @@ class StructureSystem(hub.Module):
             all_results.append({"regions": res_final})
         return all_results
 
+    # HubServing 在线推理入口
     @serving
     def serving_method(self, images, **kwargs):
         """
@@ -146,6 +154,7 @@ class StructureSystem(hub.Module):
         return results
 
 
+# 本地调试：对示例表格页运行 structure 推理
 if __name__ == "__main__":
     structure_system = StructureSystem()
     structure_system._initialize()
