@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T03:46:13Z",
-  "files": [
-    "src/transformers/models/vit_msn/modeling_vit_msn.py",
-    "src/transformers/models/vit_msn/modular_vit_msn.py",
-    "src/transformers/models/vitdet/__init__.py",
-    "src/transformers/models/vitdet/configuration_vitdet.py",
-    "src/transformers/models/vitdet/modeling_vitdet.py",
-    "src/transformers/models/vitmatte/__init__.py",
-    "src/transformers/models/vitmatte/configuration_vitmatte.py",
-    "src/transformers/models/vitmatte/image_processing_pil_vitmatte.py",
-    "src/transformers/models/vitmatte/image_processing_vitmatte.py",
-    "src/transformers/models/vitmatte/modeling_vitmatte.py",
-    "src/transformers/models/vitpose/__init__.py",
-    "src/transformers/models/vitpose/configuration_vitpose.py",
-    "src/transformers/models/vitpose/image_processing_pil_vitpose.py",
-    "src/transformers/models/vitpose/image_processing_vitpose.py",
-    "src/transformers/models/vitpose/modeling_vitpose.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 309,
-  "done": 2355
+  "done": 2370
 }
