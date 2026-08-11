@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T07:25:41Z",
-  "files": [
-    "ppocr/postprocess/rec_postprocess.py",
-    "ppocr/postprocess/sast_postprocess.py",
-    "ppocr/postprocess/table_postprocess.py",
-    "ppocr/postprocess/vqa_token_re_layoutlm_postprocess.py",
-    "ppocr/postprocess/vqa_token_ser_layoutlm_postprocess.py",
-    "ppocr/utils/__init__.py",
-    "ppocr/utils/e2e_metric/Deteval.py",
-    "ppocr/utils/e2e_metric/polygon_fast.py",
-    "ppocr/utils/e2e_utils/extract_batchsize.py",
-    "ppocr/utils/e2e_utils/extract_textpoint_fast.py",
-    "ppocr/utils/e2e_utils/extract_textpoint_slow.py",
-    "ppocr/utils/e2e_utils/pgnet_pp_utils.py",
-    "ppocr/utils/e2e_utils/visual.py",
-    "ppocr/utils/ema.py",
-    "ppocr/utils/export_model.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 92,
-  "done": 495
+  "done": 510
 }
