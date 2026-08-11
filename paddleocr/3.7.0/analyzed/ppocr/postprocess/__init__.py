@@ -20,6 +20,7 @@ from __future__ import unicode_literals
 import os
 import copy
 
+# 后处理工厂：按配置 name 实例化检测/识别/分类/VQA 等后处理器
 __all__ = ["build_post_process"]
 
 from .db_postprocess import DBPostProcess, DistillationDBPostProcess
@@ -117,5 +118,6 @@ def build_post_process(config, global_config=None):
     assert module_name in support_dict, Exception(
         "post process only support {}".format(support_dict)
     )
+    # 动态构造后处理类并传入剩余超参
     module_class = eval(module_name)(**config)
     return module_class

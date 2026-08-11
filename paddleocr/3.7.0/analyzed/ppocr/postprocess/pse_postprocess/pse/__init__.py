@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# PSE Cython 扩展：首次导入时就地编译 pse.pyx 加速连通域扩展
 import sys
 import os
 import subprocess

@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# PSENet 后处理：多核 progressive scale expansion + 轮廓/最小外接矩形
 """
 This code is refer from:
 https://github.com/whai362/PSENet/blob/python3/models/head/psenet_head.py
@@ -28,6 +29,7 @@ from paddle.nn import functional as F
 from ppocr.postprocess.pse_postprocess.pse import pse
 
 
+    # PSE 检测后处理：sigmoid 上采样→核扩展→quad/poly 框
 class PSEPostProcess(object):
     """
     The post process for PSE.
@@ -76,6 +78,7 @@ class PSEPostProcess(object):
         return boxes_batch
 
     def boxes_from_bitmap(self, score, kernels, shape):
+        # Cython PSE 按尺度核逐层扩展，得实例 label 图
         label = pse(kernels, self.min_area)
         return self.generate_box(score, label, shape)
 

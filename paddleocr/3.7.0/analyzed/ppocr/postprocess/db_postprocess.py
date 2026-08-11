@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# DBNet 后处理：概率图二值化→轮廓→unclip 扩框→quad/poly 输出
 """
 This code is referred from:
 https://github.com/WenmuZhou/DBNet.pytorch/blob/master/post_processing/seg_detector_representer.py
@@ -26,6 +27,7 @@ from shapely.geometry import Polygon
 import pyclipper
 
 
+    # DB 检测后处理：thresh 分割 + 轮廓/NMS + 坐标还原
 class DBPostProcess(object):
     """
     The post process for Differentiable Binarization (DB).
@@ -157,6 +159,7 @@ class DBPostProcess(object):
             scores.append(score)
         return np.array(boxes, dtype="int32"), scores
 
+    # pyclipper 按面积/周长比例向外扩展多边形
     def unclip(self, box, unclip_ratio):
         poly = Polygon(box)
         distance = poly.area * unclip_ratio / poly.length
@@ -256,6 +259,7 @@ class DBPostProcess(object):
         return boxes_batch
 
 
+    # 蒸馏 DB 后处理：对多子模型分别调用 DBPostProcess
 class DistillationDBPostProcess(object):
     def __init__(
         self,

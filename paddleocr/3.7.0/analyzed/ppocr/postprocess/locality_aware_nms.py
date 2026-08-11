@@ -1,4 +1,6 @@
 """
+# EAST 局部感知 NMS：相邻框加权合并后标准 IoU 抑制
+Locality aware nms."""
 Locality aware nms.
 This code is referred from: https://github.com/songdejia/EAST/blob/master/locality_aware_nms.py
 """
@@ -43,6 +45,7 @@ def intersection_iog(g, p):
         return inter / union
 
 
+    # 按置信度加权合并重叠四边形坐标与分数
 def weighted_merge(g, p):
     """
     Weighted merge.
@@ -170,6 +173,7 @@ def soft_nms(boxes_in, Nt_thres=0.3, threshold=0.8, sigma=0.5, method=2):
     return boxes[:N]
 
 
+    # 顺序扫描：IoU 超阈则 merge，否则入队后 standard_nms
 def nms_locality(polys, thres=0.3):
     """
     locality aware nms of EAST

@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# PicoDet 布局检测后处理：DFL 解码 + 多尺度 NMS + 标签去重
 import numpy as np
 from scipy.special import softmax
 
 
+    # 角点框 hard NMS，按分数降序保留 IoU 未超阈框
 def hard_nms(box_scores, iou_threshold, top_k=-1, candidate_size=200):
     """
     Args:
@@ -96,6 +98,7 @@ def calculate_containment(boxes0, boxes1):
     return overlap_area / np.minimum(area0, np.expand_dims(area1, axis=0))
 
 
+    # PicoDet 后处理：stride 网格解码→类别 NMS→布局标签冲突消解
 class PicoDetPostProcess(object):
     """
     Args:

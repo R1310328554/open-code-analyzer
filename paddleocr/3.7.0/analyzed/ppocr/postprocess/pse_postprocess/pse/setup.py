@@ -1,3 +1,4 @@
+# PSE 扩展构建脚本：Cython 编译 pse.pyx 为 C++ 加速模块
 from setuptools import setup, Extension
 from Cython.Build import cythonize
 import numpy

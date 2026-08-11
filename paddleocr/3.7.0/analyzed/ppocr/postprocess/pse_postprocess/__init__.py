@@ -12,4 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# PSENet 后处理包：导出 PSEPostProcess 渐进式尺度扩展实例分割
 from .pse_postprocess import PSEPostProcess

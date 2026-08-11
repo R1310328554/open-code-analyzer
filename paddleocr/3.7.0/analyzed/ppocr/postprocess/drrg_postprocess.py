@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# DRRG 后处理：组件图传播→连通聚类→最短路径拼接文本边界
 """
 This code is refer from:
 https://github.com/open-mmlab/mmocr/blob/main/mmocr/models/textdet/postprocess/drrg_postprocessor.py
@@ -25,6 +26,7 @@ from numpy.linalg import norm
 import cv2
 
 
+    # 图节点：维护组件索引与邻接 link 集合
 class Node:
     def __init__(self, ind):
         self.__ind = ind
@@ -43,6 +45,7 @@ class Node:
         link_node.__links.add(self)
 
 
+    # 边评分融合 + 距离过滤，构建组件邻接图
 def graph_propagation(edges, scores, text_comps, edge_len_thr=50.0):
     assert edges.ndim == 2
     assert edges.shape[1] == 2
@@ -142,6 +145,7 @@ def norm2(point1, point2):
     return ((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2) ** 0.5
 
 
+    # 贪心连接组件中心，得到阅读顺序最短路径
 def min_connect_path(points):
     assert isinstance(points, list)
     assert all([isinstance(point, list) for point in points])
@@ -262,6 +266,7 @@ def comps2boundaries(text_comps, comp_pred_labels):
     return boundaries
 
 
+    # DRRG 后处理：边图聚类→边界拼接→尺度还原
 class DRRGPostprocess(object):
     """Merge text components and construct boundaries of text instances.
 

@@ -11,9 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 方向分类后处理：argmax 取类别索引并映射为标签与置信度
 import paddle
 
 
+    # 文本方向分类后处理：logits→(label, score) 列表
 class ClsPostProcess(object):
     """Convert between text-label and text-index"""
 

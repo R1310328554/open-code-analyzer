@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 优化器权重衰减：L1/L2 正则及余弦退火 L2，供训练配置调用
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -20,6 +21,7 @@ from __future__ import unicode_literals
 import paddle
 
 
+    # L1 权重衰减：鼓励稀疏权重，返回 paddle.regularizer.L1Decay
 class L1Decay(object):
     """
     L1 Weight Decay Regularization, which encourages the weights to be sparse.
@@ -36,6 +38,7 @@ class L1Decay(object):
         return reg
 
 
+    # L2 权重衰减：返回系数供优化器 weight_decay 使用
 class L2Decay(object):
     """
     L2 Weight Decay Regularization, which helps to prevent the model over-fitting.
@@ -51,6 +54,7 @@ class L2Decay(object):
         return self.coeff
 
 
+    # 余弦退火 L2：训练步内从 factor 平滑降至 end_factor
 class CosineL2Decay(object):
     """
     L2 Weight Decay with cosine annealing schedule.

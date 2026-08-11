@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# PGNet 后处理：委托 PGNet_PostProcess 做端到端文本检测识别
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -25,6 +26,7 @@ sys.path.append(os.path.join(__dir__, ".."))
 from ppocr.utils.e2e_utils.pgnet_pp_utils import PGNet_PostProcess
 
 
+    # PGNet 后处理：fast/slow 模式调用 e2e 工具链
 class PGPostProcess(object):
     """
     The post process for PGNet.

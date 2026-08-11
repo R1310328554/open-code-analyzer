@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# Centripetal Text 后处理：核连通域 + 向心偏移聚类得文本框
 """
 This code is referred from:
 https://github.com/shengtao96/CentripetalText/blob/main/test.py
@@ -28,6 +29,7 @@ import paddle
 import pyclipper
 
 
+    # CT 检测后处理：maps/score→poly 或 rect 文本框
 class CTPostProcess(object):
     """
     The post process for Centripetal Text (CT).
@@ -70,6 +72,7 @@ class CTPostProcess(object):
 
             score = np.expand_dims(out_scores[idx], axis=0)
 
+            # 核图二值化 + loc 偏移场，经连通域与向心映射生成实例
             kernel = out[:, 0, :, :] > 0.2
             loc = out[:, 1:, :, :].astype("float32")
 

@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# FCENet 后处理：傅里叶系数逆变换重建多边形 + poly NMS
 """
 This code is refer from:
 https://github.com/open-mmlab/mmocr/blob/v0.3.0/mmocr/models/textdet/postprocess/wrapper.py
@@ -23,6 +24,7 @@ from numpy.fft import ifft
 from ppocr.utils.poly_nms import poly_nms, valid_boundary
 
 
+    # floodFill 填充文本区域 mask 内孔洞
 def fill_hole(input_mask):
     h, w = input_mask.shape
     canvas = np.zeros((h + 2, w + 2), np.uint8)
@@ -36,6 +38,7 @@ def fill_hole(input_mask):
     return ~canvas | input_mask
 
 
+    # 逆 FFT 将傅里叶系数重建为密集多边形顶点
 def fourier2poly(fourier_coeff, num_reconstr_points=50):
     """Inverse Fourier transform
     Args:
@@ -60,6 +63,7 @@ def fourier2poly(fourier_coeff, num_reconstr_points=50):
     return polygon.astype("int32").reshape((len(fourier_coeff), -1))
 
 
+    # FCENet 后处理：多尺度 score_map→傅里叶解码→边界 NMS
 class FCEPostProcess(object):
     """
     The post process for FCENet.

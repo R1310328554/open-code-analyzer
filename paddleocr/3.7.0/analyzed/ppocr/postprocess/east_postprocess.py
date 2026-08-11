@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# EAST 后处理：score/geo 图还原四边形 + locality-aware NMS
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -26,6 +27,7 @@ from ppocr.utils.utility import check_install
 import sys
 
 
+    # EAST 检测后处理：f_score/f_geo→排序 NMS→原图坐标
 class EASTPostProcess(object):
     """
     The post process for EAST.
@@ -59,6 +61,7 @@ class EASTPostProcess(object):
         geo_map = np.swapaxes(geo_map, 1, 0)
         geo_map = np.swapaxes(geo_map, 1, 2)
         # filter the score map
+        # 高分像素→几何偏移还原 quad→lanms 或 nms_locality 去重
         xy_text = np.argwhere(score_map > score_thresh)
         if len(xy_text) == 0:
             return []
