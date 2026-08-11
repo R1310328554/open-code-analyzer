@@ -15,6 +15,7 @@
 The Trainer class, to easily train a 🤗 Transformers from scratch or finetune it on a new task.
 """
 
+# Trainer 训练器：预训练/微调主循环、Accelerate 集成与 checkpoint 管理
 import contextlib
 import functools
 import glob
@@ -255,6 +256,7 @@ FSDP_MODEL_NAME = "pytorch_model_fsdp"
         "accelerate",
     )
 )
+# Trainer：训练主类：train/evaluate/predict 循环与 Hub 推送
 class Trainer:
     """
     Trainer is a simple but feature-complete training and eval loop for PyTorch, optimized for 🤗 Transformers.

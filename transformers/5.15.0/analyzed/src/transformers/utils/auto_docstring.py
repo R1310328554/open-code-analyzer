@@ -106,6 +106,7 @@ _re_placeholders = re.compile(r"{(.*?)}")
 _re_model_task = None  # built lazily because PT_SAMPLE_DOCSTRINGS isn't available yet
 
 
+# ImageProcessorArgs：图像处理器参数 doc 模板：resize/normalize/pad 等
 class ImageProcessorArgs:
     images = {
         "description": """
@@ -285,6 +286,7 @@ class ImageProcessorArgs:
 
 
 # Can inherit as they share common set of kwargs
+# VideoProcessorArgs：视频处理器参数 doc 模板：继承 ImageProcessorArgs 并扩展帧采样
 class VideoProcessorArgs(ImageProcessorArgs):
     videos = {
         "description": """
@@ -340,6 +342,7 @@ class VideoProcessorArgs(ImageProcessorArgs):
     }
 
 
+# ProcessorArgs：Processor __init__ 参数 doc 模板：tokenizer/image_processor 等
 class ProcessorArgs:
     # __init__ arguments
     image_processor = {
@@ -613,6 +616,7 @@ class ProcessorArgs:
     }
 
 
+# ConfigArgs：Config 类属性 doc 模板：output_hidden_states/attn_implementation 等
 class ConfigArgs:
     output_hidden_states = {
         "description": """
@@ -1929,6 +1933,7 @@ class ConfigArgs:
     text_vocab_size = vocab_size
 
 
+# ModelArgs：Model forward 参数 doc 模板：input_ids/attention_mask/pixel_values 等
 class ModelArgs:
     image_grid_thw = {
         "description": """
@@ -2276,6 +2281,7 @@ class ModelArgs:
     }
 
 
+# ModelOutputArgs：ModelOutput 字段 doc 模板：last_hidden_state/past_key_values 等
 class ModelOutputArgs:
     last_hidden_state = {
         "description": """
@@ -2543,6 +2549,7 @@ class ModelOutputArgs:
     }
 
 
+# ClassDocstring：模型类 docstring 模板：Config/PreTrainedModel/ForCausalLM 等
 class ClassDocstring:
     Config = r"""
     This is the configuration class to store the configuration of a {model_base_class}. It is used to instantiate a {model_name}
@@ -2638,6 +2645,7 @@ class ClassDocstring:
     """
 
 
+# ClassAttrs：模型类属性 doc 模板：base_model_prefix/_no_split_modules 等
 class ClassAttrs:
     # fmt: off
     base_model_prefix = r"""
@@ -4217,6 +4225,7 @@ def auto_method_docstring(
     Wrapper that automatically generates docstring.
     """
 
+# 自动 docstring：参数/输出模板与 @auto_docstring 装饰器实现
     # Use inspect to retrieve the method's signature
     sig = inspect.signature(func)
     indent_level = get_indent_level(func) if not parent_class else get_indent_level(parent_class)

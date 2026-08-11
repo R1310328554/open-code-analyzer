@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# utils 包入口：通用工具、docstring 与 import 辅助函数聚合导出
 from functools import lru_cache
 
 from packaging import version

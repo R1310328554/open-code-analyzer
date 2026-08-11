@@ -1,3 +1,4 @@
+# JIT checkpoint：SIGTERM 信号触发即时 checkpoint 保存
 import os
 import signal
 import threading
@@ -10,6 +11,7 @@ from .utils import logging
 logger = logging.get_logger(__name__)
 
 
+# CheckpointManager：JIT checkpoint 管理：SIGTERM 处理器与 grace period
 class CheckpointManager:
     def __init__(self, trainer, kill_wait: int = 3):
         """
@@ -76,6 +78,7 @@ class CheckpointManager:
             raise
 
 
+# JITCheckpointCallback：JIT checkpoint 回调：注册/注销信号处理器
 class JITCheckpointCallback(TrainerCallback):
     """
     Callback for Just-In-Time checkpointing on SIGTERM signals.

@@ -16,6 +16,7 @@ Tokenization classes for fast tokenizers (provided by HuggingFace's tokenizers l
 see tokenization_utils.py
 """
 
+# 快速分词工具：HuggingFace tokenizers 库后端封装与序列化
 import copy
 import json
 import os
@@ -82,6 +83,7 @@ VOCAB_FILES_NAMES = {"tokenizer_file": TOKENIZER_FILE, "vocab_file": TIKTOKEN_VO
 
 
 @add_end_docstrings(INIT_TOKENIZER_DOCSTRING)
+# TokenizersBackend：快速分词基类：tokenizers.Tokenizer 封装与 added tokens 统一管理
 class TokenizersBackend(PreTrainedTokenizerBase):
     """
     Base class for all fast tokenizers (wrapping HuggingFace tokenizers library).

@@ -15,6 +15,7 @@
 Torch utilities for the Trainer class.
 """
 
+# Trainer PyTorch 工具：分布式采样、标签平滑与 Accelerate 配置
 import contextlib
 import copy
 import datetime
@@ -323,6 +324,7 @@ def torch_distributed_zero_first(local_rank: int):
         dist.barrier()
 
 
+# DistributedSamplerWithLoop：分布式采样器：epoch 边界循环补齐 batch
 class DistributedSamplerWithLoop(DistributedSampler):
     """
     Like a torch.utils.data.distributed.DistributedSampler` but loops at the end back to the beginning of the shuffled
@@ -351,6 +353,7 @@ class DistributedSamplerWithLoop(DistributedSampler):
         return iter(indices)
 
 
+# EvalLoopContainer：评估循环容器：跨 step 累积 predictions/labels
 class EvalLoopContainer:
     """
     Container to store intermediate results of evaluation loop.
@@ -434,6 +437,7 @@ def nested_truncate(tensors, limit):
 
 
 @dataclass
+# LabelSmoother：标签平滑：交叉熵损失 epsilon 平滑
 class LabelSmoother:
     """
     Adds label-smoothing on a pre-computed output from a Transformers model.
@@ -518,6 +522,7 @@ def get_length_grouped_indices(lengths, batch_size, mega_batch_mult=None, genera
     return [i for megabatch in megabatches for i in megabatch]
 
 
+# LengthGroupedSampler：长度分组采样：相近序列长度组 batch 减少 padding
 class LengthGroupedSampler(Sampler):
     r"""
     Sampler that samples indices in a way that groups together features of the dataset of roughly the same length while
@@ -561,6 +566,7 @@ class LengthGroupedSampler(Sampler):
         return iter(indices)
 
 
+# DistributedLengthGroupedSampler：分布式长度分组采样：多卡长度分组
 class DistributedLengthGroupedSampler(DistributedSampler):
     r"""
     Distributed Sampler that samples indices in a way that groups together features of the dataset of roughly the same
@@ -646,6 +652,7 @@ class DistributedLengthGroupedSampler(DistributedSampler):
         return iter(indices)
 
 
+# ShardSampler：分片采样器：IterableDataset 按 worker 分片
 class ShardSampler(Sampler):
     """
     Sampler that shards batches between several processes. Dispatches indices batch by batch: on 2 processes with batch
@@ -693,6 +700,7 @@ class ShardSampler(Sampler):
         return self.total_num_samples // self.num_processes
 
 
+# IterableDatasetShard：IterableDataset 分片包装：分布式 worker 数据划分
 class IterableDatasetShard(IterableDataset):
     """
     Wraps a PyTorch `IterableDataset` to generate samples for one of the processes only. Instances of this class will
@@ -1121,6 +1129,7 @@ if is_sagemaker_mp_enabled():
 
 
 @dataclass
+# AcceleratorConfig：Accelerate 配置 dataclass：混合精度/FSDP/DeepSpeed 选项
 class AcceleratorConfig:
     """
     A subset of arguments relating to the underlying [`accelerate.Accelerator`]
@@ -1251,6 +1260,7 @@ class AcceleratorConfig:
         return self.__dict__.pop(key, default)
 
 
+# LayerWiseDummyOptimizer：逐层虚拟优化器：GaLore/APOLLO 等低秩优化占位
 class LayerWiseDummyOptimizer(torch.optim.Optimizer):
     """
     For Layer-wise optimizers such as GaLoRE optimizer, the optimization
@@ -1274,6 +1284,7 @@ class LayerWiseDummyOptimizer(torch.optim.Optimizer):
         pass
 
 
+# LayerWiseDummyScheduler：逐层虚拟调度器：配合 LayerWiseDummyOptimizer
 class LayerWiseDummyScheduler(LRScheduler):
     """
     For Layer-wise optimizers such as GaLoRE optimizer, the optimization and scheduling step

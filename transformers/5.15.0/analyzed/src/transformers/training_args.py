@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# TrainingArguments：训练超参 dataclass 与 OptimizerNames 枚举
 import contextlib
 import json
 import math
@@ -110,6 +111,7 @@ if is_sagemaker_mp_enabled():
     smp.init()
 
 
+# OptimizerNames：优化器名称枚举：adamw/adafactor/sgd/bnb 等
 class OptimizerNames(ExplicitEnum):
     """
     Stores the acceptable string identifiers for optimizers.
@@ -177,6 +179,7 @@ def _convert_str_dict(passed_value: dict):
 
 
 @dataclass
+# TrainingArguments：训练参数 dataclass：lr/batch/分布式/checkpoint 全量配置
 class TrainingArguments:
     """
     Configuration class for controlling all aspects of model training with the Trainer.
@@ -2882,6 +2885,7 @@ class TrainingArguments:
                 raise ValueError(f"Unknown `fsdp` option: {item}")
 
 
+# ParallelMode：并行模式枚举：NOT_PARALLEL/DISTRIBUTED/SAGEMAKER 等
 class ParallelMode(Enum):
     NOT_PARALLEL = "not_parallel"
     NOT_DISTRIBUTED = "not_distributed"

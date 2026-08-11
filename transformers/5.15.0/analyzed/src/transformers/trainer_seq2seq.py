@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Seq2SeqTrainer：序列到序列训练、生成式评估与 sortish 采样
 import contextlib
 from collections.abc import Callable
 from copy import deepcopy
@@ -52,6 +53,7 @@ if TYPE_CHECKING:
 logger = logging.get_logger(__name__)
 
 
+# Seq2SeqTrainer：Seq2Seq 训练器：generate 评估与 label smoothing 支持
 class Seq2SeqTrainer(Trainer):
     def __init__(
         self,

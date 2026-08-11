@@ -15,6 +15,7 @@
 Optimizer utilities for the Trainer class.
 """
 
+# Trainer 优化器工具：多后端优化器工厂与 OptimizerContext
 from __future__ import annotations
 
 import importlib.metadata
@@ -52,6 +53,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
+# OptimizerContext：优化器上下文：模型/参数/TrainingArguments 与 scheduler 工厂输入
 class OptimizerContext:
     """Context object passed to all optimizer handlers."""
 

@@ -14,6 +14,7 @@
 """Response parsing: convert model-emitted text into the assistant-message
 dict used by chat templates, driven by a declarative `response_template` spec."""
 
+# 聊天响应解析：response_template 驱动的 assistant 消息 dict 转换
 from .response_parser import ResponseParser, parse_response
 
 

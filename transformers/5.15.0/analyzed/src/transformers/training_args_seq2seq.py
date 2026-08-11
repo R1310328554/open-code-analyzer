@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Seq2SeqTrainingArguments：Seq2Seq 专用训练参数扩展
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -26,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 @add_start_docstrings(TrainingArguments.__doc__)
+# Seq2SeqTrainingArguments：Seq2Seq 训练参数：sortish_sampler/predict_with_generate
 class Seq2SeqTrainingArguments(TrainingArguments):
     """
         sortish_sampler (`bool`, *optional*, defaults to `False`):

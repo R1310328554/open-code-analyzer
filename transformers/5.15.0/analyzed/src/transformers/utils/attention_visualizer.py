@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 注意力可视化：从 attention mask 生成终端彩色矩阵
 import io
 
 import httpx
@@ -145,6 +146,7 @@ def generate_attention_matrix_from_mask(
     return "\n".join(output)
 
 
+# AttentionMaskVisualizer：注意力 mask 可视化：终端彩色矩阵与滑动窗口
 class AttentionMaskVisualizer:
     def __init__(self, model_name: str):
         config = AutoConfig.from_pretrained(model_name)

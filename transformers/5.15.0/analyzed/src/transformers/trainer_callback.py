@@ -15,6 +15,7 @@
 Callbacks to use with the Trainer class and customize the training loop.
 """
 
+# Trainer 回调：训练状态、控制信号与内置回调实现
 import dataclasses
 import json
 import math
@@ -32,6 +33,7 @@ logger = logging.get_logger(__name__)
 
 
 @dataclass
+# TrainerState：训练内部状态：epoch/global_step/checkpoint 与 log_history
 class TrainerState:
     """
     A class containing the [`Trainer`] inner state that will be saved along the model and optimizer when checkpointing
@@ -186,6 +188,7 @@ class TrainerState:
         self.is_world_process_zero = trainer.is_world_process_zero()
 
 
+# ExportableState：可导出状态 Mixin：checkpoint 时序列化回调状态
 class ExportableState:
     """
     A class for objects that include the ability to have its state
@@ -231,6 +234,7 @@ class ExportableState:
 
 
 @dataclass
+# TrainerControl：训练控制信号：should_training_stop/save/evaluate 等标志
 class TrainerControl(ExportableState):
     """
     A class that handles the [`Trainer`] control flow. This class is used by the [`TrainerCallback`] to activate some
@@ -292,6 +296,7 @@ class TrainerControl(ExportableState):
         }
 
 
+# TrainerCallback：回调基类：on_train/eval/save 等生命周期钩子
 class TrainerCallback:
     # no-format
     """
@@ -426,6 +431,7 @@ class TrainerCallback:
         """
 
 
+# CallbackHandler：回调聚合器：按序调用多个 TrainerCallback
 class CallbackHandler(TrainerCallback):
     """Internal class that just calls the list of callbacks in order."""
 
@@ -560,6 +566,7 @@ class CallbackHandler(TrainerCallback):
         return control
 
 
+# DefaultFlowCallback：默认流程回调：按 TrainingArguments 触发 log/save/eval
 class DefaultFlowCallback(TrainerCallback):
     """
     A [`TrainerCallback`] that handles the default flow of the training loop for logs, evaluation and checkpoints.
@@ -621,6 +628,7 @@ class DefaultFlowCallback(TrainerCallback):
         return control
 
 
+# ProgressCallback：进度条回调：tqdm 显示训练/评估进度
 class ProgressCallback(TrainerCallback):
     """
     A [`TrainerCallback`] that displays the progress of training or evaluation.
@@ -695,6 +703,7 @@ class ProgressCallback(TrainerCallback):
             self.training_bar = None
 
 
+# PrinterCallback：打印回调：将 log 输出到 stdout
 class PrinterCallback(TrainerCallback):
     """
     A bare [`TrainerCallback`] that just prints the logs.
@@ -708,6 +717,7 @@ class PrinterCallback(TrainerCallback):
             print(logs)
 
 
+# EarlyStoppingCallback：早停回调：监控 metric 无改善时终止训练
 class EarlyStoppingCallback(TrainerCallback, ExportableState):
     """
     A [`TrainerCallback`] that handles early stopping.

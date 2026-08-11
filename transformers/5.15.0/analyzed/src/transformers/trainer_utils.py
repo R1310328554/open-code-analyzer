@@ -15,6 +15,7 @@
 PyTorch-independent utilities for the Trainer class.
 """
 
+# Trainer 通用工具：评估输出、checkpoint 轮转与内存追踪
 import contextlib
 import copy
 import functools
@@ -207,6 +208,7 @@ def set_seed(seed: int, deterministic: bool = False):
         torch.xpu.manual_seed_all(seed)
 
 
+# EvalPrediction：评估预测容器：predictions/label_ids/metrics 三元组
 class EvalPrediction:
     """
     Evaluation output (always contains labels), to be used to compute metrics.
@@ -244,6 +246,7 @@ class EvalPrediction:
         return self.elements[idx]
 
 
+# EvalLoopOutput：评估循环输出 NamedTuple：metrics/num_samples 等
 class EvalLoopOutput(NamedTuple):
     predictions: np.ndarray | tuple[np.ndarray]
     label_ids: np.ndarray | tuple[np.ndarray] | None
@@ -251,12 +254,14 @@ class EvalLoopOutput(NamedTuple):
     num_samples: int | None
 
 
+# PredictionOutput：预测输出 NamedTuple：predictions/label_ids/metrics
 class PredictionOutput(NamedTuple):
     predictions: np.ndarray | tuple[np.ndarray]
     label_ids: np.ndarray | tuple[np.ndarray] | None
     metrics: dict[str, float] | None
 
 
+# TrainOutput：训练输出 NamedTuple：global_step/training_loss/metrics
 class TrainOutput(NamedTuple):
     global_step: int
     training_loss: float
@@ -386,12 +391,14 @@ def rotate_checkpoints(
             remaining -= 1
 
 
+# IntervalStrategy：间隔策略枚举：no/steps/epoch
 class IntervalStrategy(ExplicitEnum):
     NO = "no"
     STEPS = "steps"
     EPOCH = "epoch"
 
 
+# SaveStrategy：保存策略枚举：no/steps/epoch/best
 class SaveStrategy(ExplicitEnum):
     NO = "no"
     STEPS = "steps"
@@ -399,6 +406,7 @@ class SaveStrategy(ExplicitEnum):
     BEST = "best"
 
 
+# HubStrategy：Hub 推送策略枚举：end_of_epoch/every_save/checkpoint
 class HubStrategy(ExplicitEnum):
     END = "end"
     EVERY_SAVE = "every_save"
@@ -406,6 +414,7 @@ class HubStrategy(ExplicitEnum):
     ALL_CHECKPOINTS = "all_checkpoints"
 
 
+# BestRun：超参搜索最佳运行：hyperparameters/objective/run_id
 class BestRun(NamedTuple):
     """
     The best run found by a hyperparameter search (see [`~Trainer.hyperparameter_search`]).
@@ -495,6 +504,7 @@ def default_hp_space_wandb(trial) -> dict[str, Any]:
     }
 
 
+# HPSearchBackend：超参搜索后端枚举：optuna/ray/wandb
 class HPSearchBackend(ExplicitEnum):
     OPTUNA = "optuna"
     RAY = "ray"
@@ -558,6 +568,7 @@ def speed_metrics(split, start_time, num_samples=None, num_steps=None, num_token
     return result
 
 
+# SchedulerType：学习率调度器类型枚举：linear/cosine/polynomial 等
 class SchedulerType(ExplicitEnum):
     """
     Scheduler names for the parameter `lr_scheduler_type` in [`TrainingArguments`].
@@ -591,6 +602,7 @@ class SchedulerType(ExplicitEnum):
     GREEDY = "greedy"
 
 
+# TrainerMemoryTracker：训练内存追踪：CPU/GPU 峰值与阶段计时
 class TrainerMemoryTracker:
     """
     A helper class that tracks cpu and gpu memory.
@@ -966,6 +978,7 @@ def find_executable_batch_size(
     return functools.partial(function, batch_size=starting_batch_size)
 
 
+# FSDPOption：FSDP 选项枚举：full_shard/sharded_grad_op/offload
 class FSDPOption(ExplicitEnum):
     FULL_SHARD = "full_shard"
     SHARD_GRAD_OP = "shard_grad_op"
@@ -976,6 +989,7 @@ class FSDPOption(ExplicitEnum):
     AUTO_WRAP = "auto_wrap"
 
 
+# RemoveColumnsCollator：列移除 collator：保留 model forward 所需字段
 class RemoveColumnsCollator:
     """Wrap the data collator to remove unused columns before they are passed to the collator."""
 
