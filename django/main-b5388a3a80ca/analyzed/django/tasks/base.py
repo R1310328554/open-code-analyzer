@@ -1,4 +1,10 @@
-from collections.abc import Callable
+"""
+django.tasks.base — Task 定义、结果模型与 @task 装饰器。
+
+不可变 Task/TaskResult 数据类及 enqueue、get_result、call 桥接。
+"""
+
+from collections.abc import Callablefrom collections.abc import Callable
 from dataclasses import dataclass, field, fields, replace
 from datetime import datetime
 from inspect import isclass, iscoroutinefunction
@@ -30,6 +36,7 @@ TASK_REFRESH_ATTRS = {
 }
 
 
+# 任务结果状态枚举：READY/RUNNING/FAILED/SUCCESSFUL
 class TaskResultStatus(TextChoices):
     # The Task has just been enqueued, or is ready to be executed again.
     READY = ("READY", pgettext_lazy("Task", "Ready"))
@@ -41,7 +48,9 @@ class TaskResultStatus(TextChoices):
     SUCCESSFUL = ("SUCCESSFUL", pgettext_lazy("Task", "Successful"))
 
 
+# 不可变任务描述：func、priority、queue、run_after 与 backend
 @dataclass(frozen=True, slots=True, kw_only=True)
+class Task:@dataclass(frozen=True, slots=True, kw_only=True)
 class Task:
     func: Callable[..., Any]  # The Task function.
     priority: int = DEFAULT_TASK_PRIORITY
@@ -180,7 +189,9 @@ def task(
     return wrapper
 
 
+# 任务失败时的异常类型路径与 traceback 快照
 @dataclass(frozen=True, slots=True, kw_only=True)
+class TaskError:@dataclass(frozen=True, slots=True, kw_only=True)
 class TaskError:
     exception_class_path: str
     traceback: str
@@ -199,7 +210,9 @@ class TaskError:
         return exception_class
 
 
+# 单次任务执行结果：状态、时间戳、args/kwargs 与 errors
 @dataclass(frozen=True, slots=True, kw_only=True)
+class TaskResult:@dataclass(frozen=True, slots=True, kw_only=True)
 class TaskResult:
     task: Task
 
@@ -263,7 +276,9 @@ class TaskResult:
             object.__setattr__(self, attr, getattr(refreshed_task, attr))
 
 
+# 执行上下文：takes_context 任务的首参，含 task_result
 @dataclass(frozen=True, slots=True, kw_only=True)
+class TaskContext:@dataclass(frozen=True, slots=True, kw_only=True)
 class TaskContext:
     task_result: TaskResult
 

@@ -1,8 +1,15 @@
-from django.middleware import MiddlewareMixin
+"""
+django.middleware.http — 条件 GET（If-None-Match / If-Modified-Since）。
+
+为可缓存 GET 响应补 ETag 并可能返回 304 Not Modified。
+"""
+
+from django.middleware import MiddlewareMixinfrom django.middleware import MiddlewareMixin
 from django.utils.cache import get_conditional_response, set_response_etag
 from django.utils.http import parse_http_date_safe, split_directive_names
 
 
+# 条件 GET 中间件：needs_etag 与 get_conditional_response
 class ConditionalGetMiddleware(MiddlewareMixin):
     """
     Handle conditional GET operations. If the response has an ETag or

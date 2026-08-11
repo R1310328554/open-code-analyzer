@@ -1,4 +1,11 @@
 """
+django.middleware.csrf — 跨站请求伪造（CSRF）防护中间件。
+
+校验 Origin/Referer 与双提交 Cookie 令牌，配合 {% csrf_token %} 使用。
+"""
+
+"""
+Cross Site Request Forgery Middleware."""
 Cross Site Request Forgery Middleware.
 
 This module provides a middleware that implements protection
@@ -122,6 +129,7 @@ def rotate_token(request):
     _add_new_csrf_cookie(request)
 
 
+# CSRF 令牌长度或字符集非法时抛出
 class InvalidTokenFormat(Exception):
     def __init__(self, reason):
         self.reason = reason
@@ -157,11 +165,13 @@ def _does_token_match(request_csrf_token, csrf_secret):
     return constant_time_compare(request_csrf_token, csrf_secret)
 
 
+# 内部信号：携带拒绝原因供 _reject 渲染失败视图
 class RejectRequest(Exception):
     def __init__(self, reason):
         self.reason = reason
 
 
+# CSRF 视图中间件：process_view 校验 POST 等不安全方法
 class CsrfViewMiddleware(MiddlewareMixin):
     """
     Require a present and correct csrfmiddlewaretoken for POST requests that

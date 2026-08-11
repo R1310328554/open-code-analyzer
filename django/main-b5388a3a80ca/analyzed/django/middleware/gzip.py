@@ -1,4 +1,10 @@
-from django.middleware import MiddlewareMixin
+"""
+django.middleware.gzip — 按 Accept-Encoding 对响应体 gzip 压缩。
+
+支持缓冲与流式响应，并弱化强 ETag 以符合 RFC 9110。
+"""
+
+from django.middleware import MiddlewareMixinfrom django.middleware import MiddlewareMixin
 from django.utils.cache import patch_vary_headers
 from django.utils.regex_helper import _lazy_re_compile
 from django.utils.text import acompress_sequence, compress_sequence, compress_string
@@ -6,6 +12,7 @@ from django.utils.text import acompress_sequence, compress_sequence, compress_st
 re_accepts_gzip = _lazy_re_compile(r"\bgzip\b")
 
 
+# gzip 压缩中间件：Vary Accept-Encoding 与 Content-Encoding
 class GZipMiddleware(MiddlewareMixin):
     """
     Compress content if the browser allows gzip compression.

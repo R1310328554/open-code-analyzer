@@ -1,4 +1,10 @@
-import logging
+"""
+django.tasks.backends.immediate — 同步立即执行任务的后端。
+
+enqueue 时在同线程执行并更新 TaskResult 状态与信号。
+"""
+
+import loggingimport logging
 from traceback import format_exception
 
 from django.tasks.base import TaskContext, TaskError, TaskResult, TaskResultStatus
@@ -12,6 +18,7 @@ from .base import BaseTaskBackend
 logger = logging.getLogger(__name__)
 
 
+# 立即执行后端：_execute_task 同步跑完并记录错误
 class ImmediateBackend(BaseTaskBackend):
     supports_async_task = True
     supports_priority = True

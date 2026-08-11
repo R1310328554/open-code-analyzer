@@ -1,4 +1,10 @@
-from django.utils.connection import BaseConnectionHandler, ConnectionProxy
+"""
+django.tasks — 异步任务框架公共 API 与后端连接处理器。
+
+导出 @task 装饰器、TaskResult 及 default_task_backend 代理。
+"""
+
+from django.utils.connection import BaseConnectionHandler, ConnectionProxyfrom django.utils.connection import BaseConnectionHandler, ConnectionProxy
 from django.utils.module_loading import import_string
 
 from . import checks, signals  # NOQA
@@ -26,6 +32,7 @@ __all__ = [
 ]
 
 
+# TASKS 设置驱动的后端处理器：按别名实例化 BACKEND 类
 class TaskBackendHandler(BaseConnectionHandler):
     settings_name = "TASKS"
     exception_class = InvalidTaskBackend

@@ -1,4 +1,10 @@
-from django.core import checks
+"""
+django.tasks.checks — 系统检查：遍历 TASKS 后端执行 check()。
+
+注册 check_tasks 供 manage.py check 发现后端配置问题。
+"""
+
+from django.core import checksfrom django.core import checks
 
 
 @checks.register

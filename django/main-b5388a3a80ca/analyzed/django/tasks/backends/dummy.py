@@ -1,4 +1,10 @@
-from copy import deepcopy
+"""
+django.tasks.backends.dummy — 测试用内存任务后端（仅入队不执行）。
+
+将 TaskResult 存入 results 列表并发送 task_enqueued 信号。
+"""
+
+from copy import deepcopyfrom copy import deepcopy
 
 from django.tasks.base import TaskResult, TaskResultStatus
 from django.tasks.exceptions import TaskResultDoesNotExist
@@ -9,6 +15,7 @@ from django.utils.crypto import get_random_string
 from .base import BaseTaskBackend
 
 
+# 哑后端：支持 defer/async/priority，不实际运行任务
 class DummyBackend(BaseTaskBackend):
     supports_defer = True
     supports_async_task = True

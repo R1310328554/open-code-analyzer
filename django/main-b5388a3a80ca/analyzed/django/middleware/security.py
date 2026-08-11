@@ -1,10 +1,17 @@
-import re
+"""
+django.middleware.security — HTTPS 重定向与安全响应头。
+
+HSTS、X-Content-Type-Options、Referrer-Policy、COOP 等 SECURE_* 设置。
+"""
+
+import reimport re
 
 from django.conf import settings
 from django.http import HttpResponsePermanentRedirect
 from django.middleware import MiddlewareMixin
 
 
+# 安全中间件：SSL 重定向与 Strict-Transport-Security 等头
 class SecurityMiddleware(MiddlewareMixin):
     def __init__(self, get_response):
         super().__init__(get_response)

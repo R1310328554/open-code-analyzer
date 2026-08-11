@@ -1,4 +1,10 @@
-from abc import ABCMeta, abstractmethod
+"""
+django.tasks.backends.base — 任务后端抽象基类与能力标志。
+
+validate_task 校验 defer/async/priority/queue；子类实现 enqueue。
+"""
+
+from abc import ABCMeta, abstractmethodfrom abc import ABCMeta, abstractmethod
 from inspect import iscoroutinefunction
 
 from asgiref.sync import sync_to_async
@@ -16,6 +22,7 @@ from django.utils import timezone
 from django.utils.inspect import get_func_args, is_module_level_function
 
 
+# 任务后端 ABC：supports_* 能力与 enqueue/get_result
 class BaseTaskBackend(metaclass=ABCMeta):
     task_class = Task
 

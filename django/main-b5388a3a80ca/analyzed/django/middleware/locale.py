@@ -1,4 +1,10 @@
-from django.conf import settings
+"""
+django.middleware.locale — 按请求解析并激活界面语言。
+
+结合 i18n URL 前缀与 Accept-Language，设置 Content-Language 头。
+"""
+
+from django.conf import settingsfrom django.conf import settings
 from django.conf.urls.i18n import is_language_prefix_patterns_used
 from django.http import HttpResponseRedirect
 from django.middleware import MiddlewareMixin
@@ -7,6 +13,7 @@ from django.utils import translation
 from django.utils.cache import patch_vary_headers
 
 
+# 语言中间件：translation.activate 与缺失前缀重定向
 class LocaleMiddleware(MiddlewareMixin):
     """
     Parse a request and decide what translation object to install in the
