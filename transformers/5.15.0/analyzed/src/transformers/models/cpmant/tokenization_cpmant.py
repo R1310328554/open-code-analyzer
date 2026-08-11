@@ -31,6 +31,7 @@ logger = logging.get_logger(__name__)
 VOCAB_FILES_NAMES = {"vocab_file": "vocab.txt"}
 
 
+# load_vocab：逐行读取 vocab.txt 构建 token→index 有序字典
 def load_vocab(vocab_file):
     """Loads a vocabulary file into a dictionary."""
     vocab = collections.OrderedDict()
@@ -42,12 +43,14 @@ def load_vocab(vocab_file):
     return vocab
 
 
+# WordpieceTokenizer：贪心最长前缀匹配，超长词回退 unk
 class WordpieceTokenizer:
     def __init__(self, vocab, unk_token="<unk>", max_input_chars_per_word=200):
         self.vocab = vocab
         self.unk_token = unk_token
         self.max_input_chars_per_word = max_input_chars_per_word
 
+# tokenize：对单个 rjieba 词做字符级 WordPiece 子词切分
     def tokenize(self, token):
         chars = list(token)
         if len(chars) > self.max_input_chars_per_word:
@@ -74,6 +77,7 @@ class WordpieceTokenizer:
         return sub_tokens
 
 
+# CpmAntTokenizer：rjieba 分词 + WordPiece，含 bod/eod/newline 特殊 id
 class CpmAntTokenizer(PreTrainedTokenizer):
     """
     Construct a CPMAnt tokenizer. Based on byte-level Byte-Pair-Encoding.
@@ -172,6 +176,7 @@ class CpmAntTokenizer(PreTrainedTokenizer):
     def get_vocab(self):
         return dict(self.encoder, **self.added_tokens_encoder)
 
+# _tokenize：rjieba.cut → 每词 WordPiece → 过滤空 token
     def _tokenize(self, text):
         """Tokenize a string."""
         output_tokens = []
@@ -179,6 +184,7 @@ class CpmAntTokenizer(PreTrainedTokenizer):
             output_tokens.extend(self.wordpiece_tokenizer.tokenize(x))
         return output_tokens
 
+# _decode：id 转 token 后直接拼接（无 ## 前缀合并）
     def _decode(self, token_ids, **kwargs):
         """Decode ids into a string."""
         token_ids = [i for i in token_ids if i >= 0]

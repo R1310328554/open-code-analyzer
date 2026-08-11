@@ -50,6 +50,7 @@ class Cosmos3EdgeVideoProcessorInitKwargs(VideosKwargs, total=False):
     merge_size: int
 
 
+# smart_resize：按像素预算与 temporal_factor 动态缩放视频高宽
 def smart_resize(
     num_frames: int,
     height: int,
@@ -87,6 +88,7 @@ def smart_resize(
 
 
 @auto_docstring
+# Cosmos3EdgeVideoProcessor：BICUBIC 缩放、ImageNet 归一化、16×16 patch
 class Cosmos3EdgeVideoProcessor(BaseVideoProcessor):
     resample = PILImageResampling.BICUBIC
     size = {"shortest_edge": 64 * 64, "longest_edge": 24 * 1024 * 1024}
@@ -115,6 +117,7 @@ class Cosmos3EdgeVideoProcessor(BaseVideoProcessor):
         if kwargs.get("temporal_patch_size", self.temporal_patch_size) != 1:
             raise ValueError("Cosmos3 Edge only supports `temporal_patch_size=1`.")
 
+# sample_frames：默认 2fps 均匀采样，帧数夹在 min_frames 与 max_frames 间
     def sample_frames(
         self,
         metadata: VideoMetadata,
@@ -143,6 +146,7 @@ class Cosmos3EdgeVideoProcessor(BaseVideoProcessor):
 
         return np.linspace(0, total_num_frames - 1, num_frames).round().astype(int)
 
+# resize：按 smart_resize 计算目标尺寸后调用基类 resize
     def resize(
         self,
         videos: "torch.Tensor",
@@ -172,6 +176,7 @@ class Cosmos3EdgeVideoProcessor(BaseVideoProcessor):
             resample=resample,
         )
 
+# patchify：时间优先 block-major 展平 patch，不足 temporal_patch_size 时末帧填充
     def patchify(
         self,
         videos: "torch.Tensor",
@@ -213,6 +218,7 @@ class Cosmos3EdgeVideoProcessor(BaseVideoProcessor):
 
         return flatten_patches, grid_t, grid_h, grid_w
 
+# _preprocess：按形状分组 → resize → 归一化 → patchify → 拼接 pixel_values_videos
     def _preprocess(
         self,
         videos: list[torch.Tensor],

@@ -87,6 +87,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="nvidia/Cosmos3-Edge-Reasoner")
 @strict
+# Cosmos3EdgeTextConfig：Llama 派生文本配置，含 M-RoPE 分段与 GQA 头数
 class Cosmos3EdgeTextConfig(LlamaConfig):
     model_type = "cosmos3_edge_text"
     base_config_key = "text_config"
@@ -130,6 +131,7 @@ class Cosmos3EdgeTextConfig(LlamaConfig):
             }
         super().__post_init__(**kwargs)
 
+# validate_architecture：校验 rope_type 与 mrope_section 维度一致性
     def validate_architecture(self):
         super().validate_architecture()
         rope_type = self.rope_parameters["rope_type"]
@@ -146,6 +148,7 @@ class Cosmos3EdgeTextConfig(LlamaConfig):
 
 @auto_docstring(checkpoint="nvidia/Cosmos3-Edge-Reasoner")
 @strict
+# Cosmos3EdgeVisionConfig：SigLIP2 视觉塔配置，含 patch 数与 spatial_merge_size
 class Cosmos3EdgeVisionConfig(Siglip2VisionConfig):
     r"""
     num_patches (`int`, *optional*, defaults to 256):
@@ -163,6 +166,7 @@ class Cosmos3EdgeVisionConfig(Siglip2VisionConfig):
 
 @auto_docstring(checkpoint="nvidia/Cosmos3-Edge-Reasoner")
 @strict
+# Cosmos3EdgeConfig：多模态顶层配置，聚合 text/vision 子配置与投影维度
 class Cosmos3EdgeConfig(PreTrainedConfig):
     r"""
     projector_hidden_size (`int`, *optional*, defaults to 11520):
@@ -215,9 +219,11 @@ class Cosmos3EdgeConfig(PreTrainedConfig):
             raise TypeError("`vision_config` must be a `Cosmos3EdgeVisionConfig` or a dictionary.")
 
 
+# Cosmos3EdgeTextRotaryEmbedding：交错 M-RoPE，为时/高/宽三轴分配逆频率
 class Cosmos3EdgeTextRotaryEmbedding(LlamaRotaryEmbedding):
     """Interleaved M-RoPE used for Cosmos3 Edge text and visual tokens."""
 
+# compute_default_rope_parameters：按 mrope_section 构造三轴逆频率矩阵
     def compute_default_rope_parameters(
         config: Cosmos3EdgeTextConfig, device=None, **kwargs
     ) -> tuple[torch.Tensor, float]:
@@ -252,10 +258,12 @@ class Cosmos3EdgeTextRotaryEmbedding(LlamaRotaryEmbedding):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# Cosmos3EdgeTextAttention：密集 GQA 注意力，配合 Cosmos3 Edge M-RoPE
 class Cosmos3EdgeTextAttention(LlamaAttention):
     """Dense GQA attention with Cosmos3 Edge M-RoPE."""
 
 
+# Cosmos3EdgeTextMLP：ReLU² 双投影 MLP，Edge 检查点省略 MLP 偏置
 class Cosmos3EdgeTextMLP(CLIPMLP):
     """The dense two-projection ReLU-squared MLP used by Cosmos3 Edge."""
 
@@ -270,6 +278,7 @@ class Cosmos3EdgeTextRMSNorm(LlamaRMSNorm):
     pass
 
 
+# Cosmos3EdgeTextDecoderLayer：替换为 Edge 专用注意力/MLP/RMSNorm
 class Cosmos3EdgeTextDecoderLayer(LlamaDecoderLayer):
     def __init__(self, config: Cosmos3EdgeTextConfig, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -292,10 +301,12 @@ _COSMOS3_EDGE_DROPPED_GENERATOR_KEYS = [
 ]
 
 
+# Cosmos3EdgeVisionEmbeddings：SigLIP2 patch 嵌入 + 可学习位置插值
 class Cosmos3EdgeVisionEmbeddings(Siglip2VisionEmbeddings):
     """SigLIP2 patch and learned-position embeddings for packed Edge vision inputs."""
 
     @staticmethod
+# resize_positional_embeddings：逐帧双线性插值参考网格并按 block-major 排列
     def resize_positional_embeddings(
         positional_embeddings: torch.Tensor,
         grid_thw: torch.LongTensor,
@@ -363,6 +374,7 @@ class Cosmos3EdgeVisionEmbeddings(Siglip2VisionEmbeddings):
         return patch_embeds + position_embeddings
 
 
+# Cosmos3EdgeVisionAttention：打包非因果 SigLIP2 注意力，每图/帧独立序列
 class Cosmos3EdgeVisionAttention(Siglip2Attention):
     """Packed non-causal SigLIP2 attention with one sequence per image or video frame."""
 
@@ -429,6 +441,7 @@ class Cosmos3EdgeVisionAttention(Siglip2Attention):
         return self.out_proj(attn_output.reshape(sequence_length, -1).contiguous())
 
 
+# Cosmos3EdgeVisionEncoderLayer：视觉编码层，传入 cu_seqlens 分隔帧
 class Cosmos3EdgeVisionEncoderLayer(Siglip2EncoderLayer):
     def __init__(self, config: Cosmos3EdgeVisionConfig):
         super().__init__(config)
@@ -457,6 +470,7 @@ class Cosmos3EdgeVisionEncoderLayer(Siglip2EncoderLayer):
         return hidden_states
 
 
+# Cosmos3EdgeEncoder：多层视觉编码器，按 grid_thw 计算注意力序列长度
 class Cosmos3EdgeEncoder(Siglip2Encoder):
     def __init__(self, config: Cosmos3EdgeVisionConfig):
         super().__init__(config)
@@ -480,6 +494,7 @@ class Cosmos3EdgeEncoder(Siglip2Encoder):
         return hidden_states
 
 
+# Cosmos3EdgePreTrainedModel：Edge 预训练基类，忽略生成器塔权重
 class Cosmos3EdgePreTrainedModel(Qwen2VLPreTrainedModel):
     config_class = Cosmos3EdgeConfig
     input_modalities = ("image", "video", "text")
@@ -493,6 +508,7 @@ class Cosmos3EdgePreTrainedModel(Qwen2VLPreTrainedModel):
     _keys_to_ignore_on_load_unexpected = _COSMOS3_EDGE_DROPPED_GENERATOR_KEYS
 
 
+# Cosmos3EdgeTextModel：Llama 解码器栈 + Edge M-RoPE 与因果掩码
 class Cosmos3EdgeTextModel(LlamaModel, Cosmos3EdgePreTrainedModel):
     config_class = Cosmos3EdgeTextConfig
     input_modalities = ("text",)
@@ -563,6 +579,7 @@ class Cosmos3EdgeTextModel(LlamaModel, Cosmos3EdgePreTrainedModel):
         return BaseModelOutputWithPast(last_hidden_state=hidden_states, past_key_values=past_key_values)
 
 
+# Cosmos3EdgeVisionModel：可变分辨率 SigLIP2 视觉塔
 class Cosmos3EdgeVisionModel(Cosmos3EdgePreTrainedModel):
     """Packed variable-resolution SigLIP2 vision tower used by Cosmos3 Edge."""
 
@@ -593,6 +610,7 @@ class Cosmos3EdgeVisionModel(Cosmos3EdgePreTrainedModel):
         return BaseModelOutputWithPooling(last_hidden_state=last_hidden_state)
 
 
+# Cosmos3EdgePatchMerger：2×2 patch 合并后经 MLP 投影至语言隐藏维
 class Cosmos3EdgePatchMerger(Qwen3_5MoeVisionPatchMerger):
     def __init__(self, config: Cosmos3EdgeConfig):
         nn.Module.__init__(self)
@@ -610,6 +628,7 @@ class Cosmos3EdgePatchMerger(Qwen3_5MoeVisionPatchMerger):
         return super().forward(x)
 
 
+# Cosmos3EdgeModel：多模态融合，视觉特征 scatter 至文本嵌入占位符
 class Cosmos3EdgeModel(Qwen2VLModel, Cosmos3EdgePreTrainedModel):
     config_class = Cosmos3EdgeConfig
     accepts_loss_kwargs = False
@@ -647,6 +666,7 @@ class Cosmos3EdgeModel(Qwen2VLModel, Cosmos3EdgePreTrainedModel):
         # Video frames use the same vision tower and projector path as images.
         return self.get_image_features(pixel_values_videos, video_grid_thw, **kwargs)
 
+# get_rope_index：视频按帧拆分 temporal grid 后调用 Qwen2-VL 位置索引
     def get_rope_index(
         self,
         input_ids: torch.LongTensor,
@@ -735,11 +755,13 @@ class Cosmos3EdgeModel(Qwen2VLModel, Cosmos3EdgePreTrainedModel):
         )
 
 
+# Cosmos3EdgeForConditionalGeneration：条件生成头，含 M-RoPE 生成与 beam 扩展
 class Cosmos3EdgeForConditionalGeneration(Qwen2VLForConditionalGeneration, Cosmos3EdgePreTrainedModel):
     config_class = Cosmos3EdgeConfig
     _tied_weights_keys = {}
     accepts_loss_kwargs = False
 
+# _prepare_position_ids_for_generation：从 2D 文本位置扩展为 3 轴 M-RoPE
     def _prepare_position_ids_for_generation(self, inputs_tensor, model_kwargs):
         # Qwen2-VL exposes four axes (text plus three visual axes). Edge's interleaved M-RoPE consumes the three
         # visual axes directly, so start from the common 2D text positions rather than Qwen2-VL's four-axis helper.
@@ -780,6 +802,7 @@ class Cosmos3EdgeForConditionalGeneration(Qwen2VLForConditionalGeneration, Cosmo
 
         return position_ids
 
+# _expand_inputs_for_generation：beam search 时按帧/源视频计数扩展视觉张量
     def _expand_inputs_for_generation(
         self,
         expand_size: int = 1,
@@ -960,6 +983,7 @@ class Cosmos3EdgeImageProcessorKwargs(Glm4vImageProcessorKwargs):
     """
 
 
+# Cosmos3EdgeImageProcessor：图像 patchify，block-major 2×2 合并顺序
 class Cosmos3EdgeImageProcessor(Glm4vImageProcessor):
     size = {"shortest_edge": 256 * 256, "longest_edge": 4096 * 4096}
     image_mean = IMAGENET_STANDARD_MEAN
@@ -1002,6 +1026,7 @@ class Cosmos3EdgeImageProcessor(Glm4vImageProcessor):
         return flatten_patches, grid_h, grid_w
 
 
+# Cosmos3EdgeImageProcessorPil：PIL/numpy 路径的 Edge 图像 patchify
 class Cosmos3EdgeImageProcessorPil(Glm4vImageProcessorPil):
     size = {"shortest_edge": 256 * 256, "longest_edge": 4096 * 4096}
     image_mean = IMAGENET_STANDARD_MEAN
@@ -1065,6 +1090,7 @@ class Cosmos3EdgeVideoProcessorInitKwargs(VideosKwargs, total=False):
     merge_size: int
 
 
+# Cosmos3EdgeVideoProcessor：视频帧采样（默认 2fps）与 patchify
 class Cosmos3EdgeVideoProcessor(Glm4vVideoProcessor):
     size = {"shortest_edge": 64 * 64, "longest_edge": 24 * 1024 * 1024}
     image_mean = IMAGENET_STANDARD_MEAN
@@ -1123,6 +1149,7 @@ class Cosmos3EdgeVideoProcessor(Glm4vVideoProcessor):
 
         return flatten_patches, grid_t, grid_h, grid_w
 
+# sample_frames：均匀采样帧，缺 fps 时默认 24 并限制 min/max 帧数
     def sample_frames(
         self,
         metadata: VideoMetadata,
@@ -1153,6 +1180,7 @@ class Cosmos3EdgeVideoProcessor(Glm4vVideoProcessor):
 
 
 @auto_docstring
+# Cosmos3EdgeProcessor：多模态提示构建，视频展开为带时间戳的帧级视觉段
 class Cosmos3EdgeProcessor(Qwen3VLProcessor):
     """Construct a Cosmos3 Edge multimodal prompt from image, video, and text inputs."""
 
@@ -1164,6 +1192,7 @@ class Cosmos3EdgeProcessor(Qwen3VLProcessor):
         num_image_tokens = int(image_inputs["image_grid_thw"][image_idx].prod()) // merge_length
         return self.image_token * num_image_tokens
 
+# replace_video_token：每帧生成 <秒数><vision_start>...<vision_end> 片段
     def replace_video_token(self, video_inputs: dict, video_idx: int, **kwargs) -> str:
         """Expand a video into timestamped, frame-level vision segments."""
         grid_thw = video_inputs["video_grid_thw"][video_idx]
@@ -1204,6 +1233,7 @@ class Cosmos3EdgeProcessor(Qwen3VLProcessor):
         timestamps = [idx / video_fps for idx in indices]
         return [(timestamps[i] + timestamps[i + merge_size - 1]) / 2 for i in range(0, len(timestamps), merge_size)]
 
+# get_text_with_replacements：整段视频 wrapper 作为单一替换单元
     def get_text_with_replacements(
         self,
         text: list[str],

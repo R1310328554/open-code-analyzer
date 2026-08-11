@@ -30,11 +30,13 @@ logger = logging.get_logger(__name__)
 
 
 @auto_docstring
+# Cosmos3EdgeProcessor：组合 image/video processor 与 tokenizer 构建 Edge 提示
 class Cosmos3EdgeProcessor(ProcessorMixin):
     """Construct a Cosmos3 Edge multimodal prompt from image, video, and text inputs."""
 
     valid_processor_kwargs = ProcessingKwargs
 
+# __init__：注册 image/video/vision 特殊 token 及其 id
     def __init__(self, image_processor=None, tokenizer=None, video_processor=None, chat_template=None, **kwargs):
         self.image_token = "<|image_pad|>" if not hasattr(tokenizer, "image_token") else tokenizer.image_token
         self.video_token = "<|video_pad|>" if not hasattr(tokenizer, "video_token") else tokenizer.video_token
@@ -66,12 +68,14 @@ class Cosmos3EdgeProcessor(ProcessorMixin):
             else tokenizer.convert_tokens_to_ids(self.vision_end_token)
         )
 
+# replace_image_token：按 2×2 merge 组数展开 image_pad 占位符
     def replace_image_token(self, image_inputs: dict, image_idx: int, **kwargs) -> str:
         """Expand an image placeholder to one text token per projected 2×2 patch group."""
         merge_length = self.image_processor.merge_size**2
         num_image_tokens = int(image_inputs["image_grid_thw"][image_idx].prod()) // merge_length
         return self.image_token * num_image_tokens
 
+# replace_video_token：逐帧时间戳 + vision 包裹的视频 token 串
     def replace_video_token(self, video_inputs: dict, video_idx: int, **kwargs) -> str:
         """Expand a video into timestamped, frame-level vision segments."""
         grid_thw = video_inputs["video_grid_thw"][video_idx]
@@ -98,6 +102,7 @@ class Cosmos3EdgeProcessor(ProcessorMixin):
             for timestamp in timestamps
         )
 
+# _get_num_multimodal_tokens：不物化像素时估算占位 token 数（服务框架用）
     def _get_num_multimodal_tokens(self, image_sizes=None, video_sizes=None, **kwargs):
         """Compute placeholder counts for serving frameworks without materializing pixels."""
         vision_data = {}
@@ -123,6 +128,7 @@ class Cosmos3EdgeProcessor(ProcessorMixin):
 
         return MultiModalData(**vision_data)
 
+# post_process_image_text_to_text：generate 输出经 tokenizer batch_decode
     def post_process_image_text_to_text(
         self, generated_outputs, skip_special_tokens=True, clean_up_tokenization_spaces=False, **kwargs
     ):
@@ -168,6 +174,7 @@ class Cosmos3EdgeProcessor(ProcessorMixin):
         timestamps = [idx / video_fps for idx in indices]
         return [(timestamps[i] + timestamps[i + merge_size - 1]) / 2 for i in range(0, len(timestamps), merge_size)]
 
+# get_text_with_replacements：正则替换模板占位符并记录偏移
     def get_text_with_replacements(
         self,
         text: list[str],

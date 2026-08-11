@@ -60,6 +60,7 @@ _COSMOS3_DROPPED_UNIFIED_CHECKPOINT_KEYS = [
 
 
 @auto_docstring
+# Cosmos3OmniPreTrainedModel：支持 Flash/SDPA，忽略统一检查点多余模块
 class Cosmos3OmniPreTrainedModel(PreTrainedModel):
     config: Cosmos3OmniConfig
     base_model_prefix = "model"
@@ -85,6 +86,7 @@ class Cosmos3OmniPreTrainedModel(PreTrainedModel):
 
 @auto_docstring
 @dataclass
+# BaseModelOutputWithDeepstackFeatures：额外返回 deepstack 中间特征图列表
 class BaseModelOutputWithDeepstackFeatures(BaseModelOutputWithPooling):
     r"""
     deepstack_features (`List[torch.FloatTensor]`, *optional*):
@@ -96,6 +98,7 @@ class BaseModelOutputWithDeepstackFeatures(BaseModelOutputWithPooling):
 
 @auto_docstring
 @dataclass
+# Cosmos3OmniModelOutputWithPast：含 rope_deltas（多模态 RoPE 与序列长度差）
 class Cosmos3OmniModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     rope_deltas (`torch.LongTensor` of shape `(batch_size, )`, *optional*):
@@ -107,6 +110,7 @@ class Cosmos3OmniModelOutputWithPast(BaseModelOutputWithPast):
 
 
 @auto_docstring
+# Cosmos3OmniModel：AutoModel 实例化视觉/语言塔，融合图像视频嵌入
 class Cosmos3OmniModel(Cosmos3OmniPreTrainedModel):
     base_model_prefix = "model"
     # Reference: fix gemma3 grad acc #37208
@@ -121,6 +125,7 @@ class Cosmos3OmniModel(Cosmos3OmniPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+# get_vision_position_ids：由 T/H/W grid 生成 3D 视觉 token 位置索引
     def get_vision_position_ids(
         self,
         start_position: int,
@@ -173,6 +178,7 @@ class Cosmos3OmniModel(Cosmos3OmniPreTrainedModel):
         vision_position_ids[0] += start_position  # must be after time_interval multiply
         return vision_position_ids
 
+# get_rope_index：按 mm_token_type_ids 分段，视频 grid 按帧拆分后计算 M-RoPE
     def get_rope_index(
         self,
         input_ids: torch.LongTensor,
@@ -269,6 +275,7 @@ class Cosmos3OmniModel(Cosmos3OmniPreTrainedModel):
     @accepts_precomputed_kwargs(modality="video")
     @can_return_tuple
     @auto_docstring
+# get_video_features：与 get_image_features 共用视觉塔与投影路径
     def get_video_features(
         self,
         pixel_values_videos: torch.FloatTensor,
@@ -281,6 +288,7 @@ class Cosmos3OmniModel(Cosmos3OmniPreTrainedModel):
     @accepts_precomputed_kwargs(modality="image")
     @can_return_tuple
     @auto_docstring
+# get_image_features：视觉塔前向 + deepstack 特征 + projector 输出
     def get_image_features(
         self,
         pixel_values: torch.FloatTensor,
@@ -390,6 +398,7 @@ class Cosmos3OmniModel(Cosmos3OmniPreTrainedModel):
 
     @auto_docstring
     @can_return_tuple
+# forward：scatter 视觉嵌入 → 计算 3D position_ids → 语言模型前向
     def forward(
         self,
         input_ids: torch.LongTensor = None,
@@ -491,6 +500,7 @@ class Cosmos3OmniModel(Cosmos3OmniPreTrainedModel):
 
 @auto_docstring
 @dataclass
+# Cosmos3OmniCausalLMOutputWithPast：因果 LM 输出，含 rope_deltas 字段
 class Cosmos3OmniCausalLMOutputWithPast(CausalLMOutputWithPast):
     r"""
     rope_deltas (`torch.LongTensor` of shape `(batch_size, )`, *optional*):
@@ -501,6 +511,7 @@ class Cosmos3OmniCausalLMOutputWithPast(CausalLMOutputWithPast):
     rope_deltas: torch.LongTensor | None = None
 
 
+# Cosmos3OmniForConditionalGeneration：lm_head 投影 + 可选交叉熵损失
 class Cosmos3OmniForConditionalGeneration(Cosmos3OmniPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
     # Reference: fix gemma3 grad acc #37208
@@ -628,6 +639,7 @@ class Cosmos3OmniForConditionalGeneration(Cosmos3OmniPreTrainedModel, Generation
             rope_deltas=outputs.rope_deltas,
         )
 
+# _prepare_position_ids_for_generation：生成阶段计算或复用 3D M-RoPE 位置
     def _prepare_position_ids_for_generation(self, inputs_tensor, model_kwargs):
         # Overwritten -- requires 3D position ids
 

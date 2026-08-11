@@ -25,6 +25,7 @@ logger = logging.get_logger(__name__)
 VOCAB_FILES_NAMES = {"vocab_file": "spiece.model", "tokenizer_file": "tokenizer.json"}
 
 
+# CpmTokenizerFast：tokenizer.json 加速版，API 与 CpmTokenizer 对齐
 class CpmTokenizerFast(PreTrainedTokenizerFast):
     """Runs pre-tokenization with Jieba-RS segmentation tool. It is used in CPM models."""
 
@@ -142,6 +143,7 @@ class CpmTokenizerFast(PreTrainedTokenizerFast):
         self.jieba = rjieba
         self.translator = str.maketrans(" \n", "\u2582\u2583")
 
+# build_inputs_with_special_tokens：cls/sep 包裹序列
     def build_inputs_with_special_tokens(
         self, token_ids_0: list[int], token_ids_1: list[int] | None = None
     ) -> list[int]:
@@ -167,6 +169,7 @@ class CpmTokenizerFast(PreTrainedTokenizerFast):
             return token_ids_0 + sep + cls
         return token_ids_0 + sep + token_ids_1 + sep + cls
 
+# create_token_type_ids_from_sequences：句对 segment 类型 id
     def create_token_type_ids_from_sequences(
         self, token_ids_0: list[int], token_ids_1: list[int] | None = None
     ) -> list[int]:
@@ -197,6 +200,7 @@ class CpmTokenizerFast(PreTrainedTokenizerFast):
             return len(token_ids_0 + sep) * [0] + cls_segment_id
         return len(token_ids_0 + sep) * [0] + len(token_ids_1 + sep) * [1] + cls_segment_id
 
+# save_vocabulary：保存 spiece.model（fast 仍依赖 SentencePiece 词表）
     def save_vocabulary(self, save_directory: str, filename_prefix: str | None = None) -> tuple[str]:
         if not self.can_save_slow_tokenizer:
             raise ValueError(
@@ -216,6 +220,7 @@ class CpmTokenizerFast(PreTrainedTokenizerFast):
 
         return (out_vocab_file,)
 
+# _batch_encode_plus：批量编码前对文本做与慢速版相同的预处理
     def _batch_encode_plus(self, batch_text_or_text_pairs, *args, **kwargs):
         batch_text_or_text_pairs = [
             " ".join([x.translate(self.translator) for x in self.jieba.cut(text, False)])

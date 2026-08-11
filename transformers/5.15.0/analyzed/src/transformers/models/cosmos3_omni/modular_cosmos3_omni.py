@@ -28,6 +28,7 @@ from ..qwen3_vl.modeling_qwen3_vl import Qwen3VLForConditionalGeneration, Qwen3V
 
 @auto_docstring(checkpoint="nvidia/Cosmos3-Nano")
 @strict
+# Cosmos3OmniConfig：继承 Qwen3VLConfig，model_type 设为 cosmos3_omni
 class Cosmos3OmniConfig(Qwen3VLConfig):
     r"""
     Example:
@@ -89,6 +90,7 @@ _COSMOS3_DROPPED_UNIFIED_CHECKPOINT_KEYS = [
 ]
 
 
+# Cosmos3OmniPreTrainedModel：加载时忽略统一检查点中的生成器/音频/动作塔权重
 class Cosmos3OmniPreTrainedModel(Qwen3VLPreTrainedModel):
     # Unified Cosmos3 checkpoint also carries the Generator tower, sound/action towers,
     # and cross-modal adapters; those parameters are dropped when loading the Reasoner.
@@ -102,6 +104,7 @@ class Cosmos3OmniPreTrainedModel(Qwen3VLPreTrainedModel):
         PreTrainedModel._init_weights(module)
 
 
+# Cosmos3OmniForConditionalGeneration：Qwen3-VL 条件生成，无额外逻辑
 class Cosmos3OmniForConditionalGeneration(Qwen3VLForConditionalGeneration):
     pass
 

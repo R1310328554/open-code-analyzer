@@ -31,6 +31,7 @@ VOCAB_FILES_NAMES = {"vocab_file": "spiece.model"}
 
 
 @requires(backends=("sentencepiece",))
+# CpmTokenizer：CPM 慢速分词，Jieba-RS 切词后 SentencePiece 编码
 class CpmTokenizer(PreTrainedTokenizer):
     """Runs pre-tokenization with Jieba-RS segmentation tool. It is used in CPM models."""
 
@@ -179,6 +180,7 @@ class CpmTokenizer(PreTrainedTokenizer):
         self.sp_model = spm.SentencePieceProcessor(**self.sp_model_kwargs)
         self.sp_model.Load(self.vocab_file)
 
+# preprocess_text：去空格/重音、可选小写等文本规范化
     def preprocess_text(self, inputs):
         if self.remove_space:
             outputs = " ".join(inputs.strip().split())
@@ -194,6 +196,7 @@ class CpmTokenizer(PreTrainedTokenizer):
 
         return outputs
 
+# _tokenize：Jieba-RS 分词 → 每词 SentencePiece 子词
     def _tokenize(self, text: str) -> list[str]:
         """Tokenize a string."""
         text = self.preprocess_text(text)
@@ -227,6 +230,7 @@ class CpmTokenizer(PreTrainedTokenizer):
         out_string = "".join(tokens).replace(SPIECE_UNDERLINE, " ").strip()
         return out_string
 
+# build_inputs_with_special_tokens：cls + 序列 + sep 特殊 token 拼接
     def build_inputs_with_special_tokens(
         self, token_ids_0: list[int], token_ids_1: list[int] | None = None
     ) -> list[int]:
@@ -252,6 +256,7 @@ class CpmTokenizer(PreTrainedTokenizer):
             return token_ids_0 + sep + cls
         return token_ids_0 + sep + token_ids_1 + sep + cls
 
+# get_special_tokens_mask：标记特殊 token 位置供 loss/mask 使用
     def get_special_tokens_mask(
         self, token_ids_0: list[int], token_ids_1: list[int] | None = None, already_has_special_tokens: bool = False
     ) -> list[int]:
@@ -280,6 +285,7 @@ class CpmTokenizer(PreTrainedTokenizer):
             return ([0] * len(token_ids_0)) + [1] + ([0] * len(token_ids_1)) + [1, 1]
         return ([0] * len(token_ids_0)) + [1, 1]
 
+# create_token_type_ids_from_sequences：双句输入时生成 segment id
     def create_token_type_ids_from_sequences(
         self, token_ids_0: list[int], token_ids_1: list[int] | None = None
     ) -> list[int]:
@@ -310,6 +316,7 @@ class CpmTokenizer(PreTrainedTokenizer):
             return len(token_ids_0 + sep) * [0] + cls_segment_id
         return len(token_ids_0 + sep) * [0] + len(token_ids_1 + sep) * [1] + cls_segment_id
 
+# save_vocabulary：复制 spiece.model 至目标目录
     def save_vocabulary(self, save_directory: str, filename_prefix: str | None = None) -> tuple[str]:
         if not os.path.isdir(save_directory):
             logger.error(f"Vocabulary path ({save_directory}) should be a directory")

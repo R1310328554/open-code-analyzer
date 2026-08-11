@@ -33,6 +33,7 @@ from .configuration_cpmant import CpmAntConfig
 logger = logging.get_logger(__name__)
 
 
+# CpmAntLayerNorm：RMS LayerNorm，无均值中心化
 class CpmAntLayerNorm(nn.Module):
     """
     We use Root Mean Square (RMS) Layer Normalization, please see https://huggingface.co/papers/1910.07467 for details."
@@ -58,6 +59,7 @@ class CpmAntLayerNorm(nn.Module):
         return hidden_states
 
 
+# CpmAntAttention：多头注意力 + 可学习相对 position_bias
 class CpmAntAttention(nn.Module):
     def __init__(self, config: CpmAntConfig, layer_idx=None):
         super().__init__()
@@ -159,6 +161,7 @@ class CpmAntAttention(nn.Module):
         return score, attn_weights
 
 
+# CpmAntSelfAttentionBlock：Pre-LN 自注意力残差块
 class CpmAntSelfAttentionBlock(nn.Module):
     def __init__(self, config: CpmAntConfig, layer_idx=None):
         super().__init__()
@@ -213,6 +216,7 @@ class CpmAntSelfAttentionBlock(nn.Module):
         return hidden_states, attn_weights
 
 
+# CpmAntDenseGatedACT：SwiGLU 风格门控激活（两路线性 + 激活乘积）
 class CpmAntDenseGatedACT(nn.Module):
     def __init__(self, config: CpmAntConfig):
         super().__init__()
@@ -233,6 +237,7 @@ class CpmAntDenseGatedACT(nn.Module):
         return hidden_states
 
 
+# CpmAntFeedForward：dim_ff 扩展的前馈网络
 class CpmAntFeedForward(nn.Module):
     def __init__(self, config: CpmAntConfig):
         super().__init__()
@@ -259,6 +264,7 @@ class CpmAntFeedForward(nn.Module):
         return hidden_states
 
 
+# CpmAntFFNBlock：Pre-LN + 门控 FFN 残差块
 class CpmAntFFNBlock(nn.Module):
     def __init__(self, config: CpmAntConfig):
         super().__init__()
@@ -286,6 +292,7 @@ class CpmAntFFNBlock(nn.Module):
         return hidden_states
 
 
+# CpmAntTransformerBlock：自注意力块 + FFN 块串联
 class CpmAntTransformerBlock(nn.Module):
     def __init__(self, config: CpmAntConfig, layer_idx=None):
         super().__init__()
@@ -331,6 +338,7 @@ class CpmAntTransformerBlock(nn.Module):
         return hidden_states, attn_weights
 
 
+# CpmAntEncoder：堆叠 Transformer 块 + 最终 LayerNorm
 class CpmAntEncoder(nn.Module):
     def __init__(self, config: CpmAntConfig):
         super().__init__()
@@ -410,6 +418,7 @@ class CpmAntIntermediate(nn.Module):
         return hidden_states
 
 
+# CpmAntSegmentPositionEmbedding：分段类型 + 桶化相对位置偏置表
 class CpmAntSegmentPositionEmbedding(nn.Module):
     def __init__(self, config: CpmAntConfig):
         super().__init__()
@@ -503,6 +512,7 @@ class CpmAntSegmentPositionEmbedding(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOutput with Bert->CPMAnt
+# CpmAntOutput：词表线性投影（与输入嵌入 tie 可选）
 class CpmAntOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -518,6 +528,7 @@ class CpmAntOutput(nn.Module):
 
 
 @auto_docstring
+# CpmAntPreTrainedModel：CPMAnt 预训练基类，支持梯度检查点
 class CpmAntPreTrainedModel(PreTrainedModel):
     config: CpmAntConfig
     base_model_prefix = "cpmant"
@@ -533,6 +544,7 @@ class CpmAntPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# CpmAntModel：编码器 + 分段位置嵌入 + prompt 参数
 class CpmAntModel(CpmAntPreTrainedModel):
     def __init__(self, config: CpmAntConfig):
         super().__init__(config)
@@ -683,6 +695,7 @@ class CpmAntModel(CpmAntPreTrainedModel):
     The CPMAnt Model with a language modeling head on top (linear layer with weights tied to the input embeddings).
     """
 )
+# CpmAntForCausalLM：因果语言建模头，支持 past_key_values 缓存
 class CpmAntForCausalLM(CpmAntPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "cpmant.input_embedding.weight"}
 

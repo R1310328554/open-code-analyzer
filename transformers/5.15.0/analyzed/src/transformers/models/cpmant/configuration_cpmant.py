@@ -21,6 +21,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="openbmb/cpm-ant-10b")
 @strict
+# CpmAntConfig：48 层 4096 维，RMSNorm + 相对位置偏置 + prompt 嵌入
 class CpmAntConfig(PreTrainedConfig):
     r"""
     position_bias_num_buckets (`int`, *optional*, defaults to 512):

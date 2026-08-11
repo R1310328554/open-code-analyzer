@@ -27,6 +27,7 @@ from ..auto import CONFIG_MAPPING, AutoConfig
 
 @auto_docstring(checkpoint="nvidia/Cosmos3-Nano")
 @strict
+# Cosmos3OmniConfig：model_type=cosmos3_omni，默认 Qwen3-VL 视觉/文本子配置
 class Cosmos3OmniConfig(PreTrainedConfig):
     r"""
     Example:
@@ -56,6 +57,7 @@ class Cosmos3OmniConfig(PreTrainedConfig):
     vision_end_token_id: int = 151653
     tie_word_embeddings: bool = False
 
+# __post_init__：dict 子配置经 CONFIG_MAPPING 实例化为具体 Config 类
     def __post_init__(self, **kwargs):
         if isinstance(self.vision_config, dict):
             model_type = self.vision_config.pop("model_type", "qwen3_vl_vision")
