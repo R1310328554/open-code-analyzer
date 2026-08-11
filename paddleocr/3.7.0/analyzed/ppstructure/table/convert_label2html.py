@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 将 TableBank 等 JSONL 标注中的 token 化 HTML 结构还原为完整 HTML 字符串
 """
 convert table label to html
 """
@@ -20,11 +21,13 @@ import argparse
 from tqdm import tqdm
 
 
+# 以「文件名\tHTML」格式追加写入预测/转换结果
 def save_pred_txt(key, val, tmp_file_path):
     with open(tmp_file_path, "a+", encoding="utf-8") as f:
         f.write("{}\t{}\n".format(key, val))
 
 
+# 去除单元格文本中的样式标签与特殊空白，用于判断是否为空单元格
 def skip_char(text, sp_char_list):
     """
     skip empty cell
@@ -37,6 +40,7 @@ def skip_char(text, sp_char_list):
     return text
 
 
+# 在 <td> 标记处插入 OCR 单元格文本，包装为完整 HTML 文档
 def gen_html(img):
     """
     Formats HTML code from tokenized annotation of img
@@ -57,6 +61,7 @@ def gen_html(img):
     return html_code
 
 
+# 逐行读取 JSONL 标注，按 filename 索引为字典
 def load_gt_data(gt_path):
     """
     load gt
@@ -73,6 +78,7 @@ def load_gt_data(gt_path):
     return data_list
 
 
+# 批量将标注文件转换为 tab 分隔的 HTML 结果文件
 def convert(origin_gt_path, save_path):
     """
     gen html from label file
@@ -87,6 +93,7 @@ def convert(origin_gt_path, save_path):
     print("convert finish")
 
 
+# 解析原始标注路径与输出路径命令行参数
 def parse_args():
     parser = argparse.ArgumentParser(description="args for paddleserving")
     parser.add_argument("--ori_gt_path", type=str, required=True, help="label gt path")

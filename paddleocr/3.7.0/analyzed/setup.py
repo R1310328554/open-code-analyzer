@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# PaddleOCR 包安装入口：委托 setuptools 读取 pyproject/setup.cfg
 from setuptools import setup
 
 
+# 执行标准 setuptools 安装/打包配置
 setup()

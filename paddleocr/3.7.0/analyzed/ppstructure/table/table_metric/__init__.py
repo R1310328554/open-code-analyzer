@@ -10,7 +10,9 @@
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
+# 表格结构评测指标包：导出 TEDS（Tree Edit Distance based Similarity）
 # limitations under the License.
 
+# 对外仅暴露 TEDS 评测类
 __all__ = ["TEDS"]
 from .table_metric import TEDS

@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# TableMaster 专用匹配：中心点/IoU/距离多规则关联 OCR 与结构 token
 """
 This code is refer from:
 https://github.com/JiaquanYe/TableMASTER-mmocr/blob/master/table_recognition/match.py
@@ -32,6 +33,7 @@ Useful function in matching.
 """
 
 
+# 过滤结构模型输出的全零占位 bbox
 def remove_empty_bboxes(bboxes):
     """
     remove [0., 0., 0., 0.] in structure master bboxes.
@@ -47,6 +49,7 @@ def remove_empty_bboxes(bboxes):
     return np.array(new_bboxes)
 
 
+# 中心宽高格式转左上右下 xyxy
 def xywh2xyxy(bboxes):
     if len(bboxes.shape) == 1:
         new_bboxes = np.empty_like(bboxes)
@@ -66,6 +69,7 @@ def xywh2xyxy(bboxes):
         raise ValueError
 
 
+# 左上右下 xyxy 转中心宽高 xywh
 def xyxy2xywh(bboxes):
     if len(bboxes.shape) == 1:
         new_bboxes = np.empty_like(bboxes)
@@ -85,6 +89,7 @@ def xyxy2xywh(bboxes):
         raise ValueError
 
 
+# 从单文件或目录批量 pkl 加载推理缓存
 def pickle_load(path, prefix="end2end"):
     if os.path.isfile(path):
         data = pickle.load(open(path, "rb"))
@@ -100,6 +105,7 @@ def pickle_load(path, prefix="end2end"):
     return data
 
 
+# 两对角点矩形转为四顶点多边形坐标
 def convert_coord(xyxy):
     """
     Convert two points format to four points format.
@@ -114,6 +120,7 @@ def convert_coord(xyxy):
     return new_bbox
 
 
+# Shapely 凸包求两四边形 IoU
 def cal_iou(bbox1, bbox2):
     bbox1_poly = Polygon(bbox1).convex_hull
     bbox2_poly = Polygon(bbox2).convex_hull
@@ -131,6 +138,7 @@ def cal_iou(bbox1, bbox2):
     return iou
 
 
+# 欧氏距离，用于未匹配框的最近邻配对
 def cal_distance(p1, p2):
     delta_x = p1[0] - p2[0]
     delta_y = p1[1] - p2[1]
@@ -138,6 +146,7 @@ def cal_distance(p1, p2):
     return d
 
 
+# 判断中心点是否落在矩形 bbox 内
 def is_inside(center_point, corner_point):
     """
     Find if center_point inside the bbox(corner_point) or not.
@@ -161,6 +170,7 @@ def is_inside(center_point, corner_point):
         return False
 
 
+# 从已有匹配对中找出尚未配对的 end2end 或 master 索引
 def find_no_match(match_list, all_end2end_nums, type="end2end"):
     """
     Find out no match end2end bbox in previous match list.
@@ -318,6 +328,7 @@ def get_bboxes_list(end2end_result, structure_master_result):
     )
 
 
+# 规则1：OCR 框中心落在结构单元格内则配对
 def center_rule_match(end2end_xywh_bboxes, structure_master_xyxy_bboxes):
     """
     Judge end2end Bbox's center point is inside structure master Bbox or not,
@@ -343,6 +354,7 @@ def center_rule_match(end2end_xywh_bboxes, structure_master_xyxy_bboxes):
     return match_pairs_list
 
 
+# 规则2：对未匹配 OCR 框取 IoU 最大的结构单元格
 def iou_rule_match(
     end2end_xyxy_bboxes, end2end_xyxy_indexes, structure_master_xyxy_bboxes
 ):
@@ -375,6 +387,7 @@ def iou_rule_match(
     return match_pair_list
 
 
+# 规则3：剩余未匹配框按中心点最小距离配对
 def distance_rule_match(end2end_indexes, end2end_bboxes, master_indexes, master_bboxes):
     """
     Get matching between no-match end2end bboxes and no-match master bboxes.
@@ -404,6 +417,7 @@ def distance_rule_match(end2end_indexes, end2end_bboxes, master_indexes, master_
     return min_match_list
 
 
+# 为溢出 OCR 框创建虚拟 master 单元格索引
 def extra_match(no_match_end2end_indexes, master_bbox_nums):
     """
     This function will create some virtual master bboxes,
@@ -420,6 +434,7 @@ def extra_match(no_match_end2end_indexes, master_bbox_nums):
     return extra_match_list
 
 
+# 匹配对列表转为 master_index → [end2end_index] 字典
 def get_match_dict(match_list):
     """
     Convert match_list to a dict, where key is master bbox's index, value is end2end bbox index.
@@ -536,6 +551,7 @@ def merge_span_token(master_token_list):
     return new_master_token_list
 
 
+# 将 TableMaster 空单元格占位 token <eb*> 还原为标准 <td>
 def deal_eb_token(master_token):
     """
     post process with <eb></eb>, <eb1></eb1>, ...
@@ -571,6 +587,7 @@ def deal_eb_token(master_token):
     return master_token
 
 
+# 将 OCR 文本插入结构 token 的 <td> 标签内
 def insert_text_to_token(master_token_list, match_text_dict):
     """
     Insert OCR text result to structure token.
@@ -682,6 +699,7 @@ def deal_duplicate_bb(thead_part):
     return thead_part
 
 
+# 在 thead 区域自动补全 <b></b> 粗体标记
 def deal_bb(result_token):
     """
     In our opinion, <b></b> always occurs in <thead></thead> text's context.
@@ -758,6 +776,7 @@ def deal_bb(result_token):
     return result_token
 
 
+    # 离线批量匹配：加载 end2end/structure pkl，多规则配对并格式化输出
 class Matcher:
     def __init__(self, end2end_file, structure_master_file):
         """
@@ -965,6 +984,7 @@ class Matcher:
         return merged_results
 
 
+    # 在线 TableMaster 匹配：包装实时 OCR 与结构结果为 HTML
 class TableMasterMatcher(Matcher):
     def __init__(self):
         pass

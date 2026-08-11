@@ -1,7 +1,9 @@
+# 多进程 map 辅助：带进度条的 ProcessPoolExecutor 并行执行
 from tqdm import tqdm
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 
+# 可选串行预热后并行调用 function，返回与输入等长的结果列表
 def parallel_process(array, function, n_jobs=16, use_kwargs=False, front_num=0):
     """
     A parallel version of the map function with a progress bar.

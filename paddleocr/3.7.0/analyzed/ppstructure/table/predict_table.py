@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 端到端表格识别系统：结构预测 + 检测识别 + 匹配生成 HTML/Excel
 import os
 import sys
 
@@ -40,6 +41,7 @@ import ppstructure.table.predict_structure as predict_strture
 logger = get_logger()
 
 
+# 按像素扩展检测框并裁剪到图像边界内
 def expand(pix, det_box, shape):
     x0, y0, x1, y1 = det_box
     #     print(shape)
@@ -55,6 +57,7 @@ def expand(pix, det_box, shape):
     return x0_, y0_, x1_, y1_
 
 
+    # 表格 OCR 流水线：_structure/_ocr/match 串联并统计各阶段耗时
 class TableSystem(object):
     def __init__(self, args, text_detector=None, text_recognizer=None):
         self.args = args
@@ -147,12 +150,14 @@ class TableSystem(object):
         return dt_boxes, rec_res, det_elapse, rec_elapse
 
 
+# 调用 tablepyxl 将 HTML 表格写入 xlsx
 def to_excel(html_table, excel_path):
     from tablepyxl import tablepyxl
 
     tablepyxl.document_to_xl(html_table, excel_path)
 
 
+# 批量推理并生成 show.html 对比页与单张 xlsx
 def main(args):
     image_file_list = get_image_file_list(args.image_dir)
     image_file_list = image_file_list[args.process_id :: args.total_process_num]

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 表格识别端到端评测：缓存 OCR/结构中间结果并用 TEDS 对比 GT HTML
 import os
 import sys
 
@@ -31,12 +32,14 @@ from ppocr.utils.logging import get_logger
 logger = get_logger()
 
 
+# 扩展 ppstructure 通用参数，增加 --gt_path 标注文件路径
 def parse_args():
     parser = init_args()
     parser.add_argument("--gt_path", type=str)
     return parser.parse_args()
 
 
+# 读取 tab 分隔的「图片名\tHTML」真值或预测文件
 def load_txt(txt_path):
     pred_html_dict = {}
     if not os.path.exists(txt_path):
@@ -50,6 +53,7 @@ def load_txt(txt_path):
     return pred_html_dict
 
 
+# 从 pickle 加载已缓存的 OCR 或结构推理结果
 def load_result(path):
     data = {}
     if os.path.exists(path):
@@ -57,6 +61,7 @@ def load_result(path):
     return data
 
 
+# 合并写入 pickle，支持断点续跑评测
 def save_result(path, data):
     old_data = load_result(path)
     old_data.update(data)
@@ -64,6 +69,7 @@ def save_result(path, data):
         pickle.dump(old_data, f)
 
 
+# 逐图运行 TableSystem，匹配 HTML 后批量计算平均 TEDS
 def main(gt_path, img_root, args):
     os.makedirs(args.output, exist_ok=True)
     # init TableSystem

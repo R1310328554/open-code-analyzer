@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 表格结构单元格与 OCR 检测框匹配：IoU/L1 距离关联后填充 HTML
 import numpy as np
 from ppstructure.table.table_master_match import deal_eb_token, deal_bb
 import html
 
 
+# 两矩形框的 L1 角点距离组合度量，用于最近邻匹配
 def distance(box_1, box_2):
     x1, y1, x2, y2 = box_1
     x3, y3, x4, y4 = box_2
@@ -26,6 +28,7 @@ def distance(box_1, box_2):
     return dis + min(dis_2, dis_3)
 
 
+# 计算 (top,left,bottom,right) 格式矩形的交并比
 def compute_iou(rec1, rec2):
     """
     computing IoU
@@ -55,6 +58,7 @@ def compute_iou(rec1, rec2):
         return (intersect / (sum_area - intersect)) * 1.0
 
 
+    # 结构 token 与 OCR 框匹配器：支持 TableAttn 与 TableMaster 两种 HTML 生成
 class TableMatch:
     def __init__(self, filter_ocr_result=False, use_master=False):
         self.filter_ocr_result = filter_ocr_result

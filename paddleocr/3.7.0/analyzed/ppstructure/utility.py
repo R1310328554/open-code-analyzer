@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# ppstructure 通用工具：CLI 参数扩展、版面可视化与 OCR 字级框计算
 import random
 import ast
 import PIL
@@ -25,6 +26,7 @@ from tools.infer.utility import (
 import math
 
 
+# 在 infer init_args 基础上追加表格/公式/版面/KIE 等结构分析参数
 def init_args():
     parser = infer_args()
 
@@ -151,11 +153,13 @@ def init_args():
     return parser
 
 
+# 解析命令行并返回 args 命名空间
 def parse_args():
     parser = init_args()
     return parser.parse_args()
 
 
+# 在图像上绘制版面区域框、类型标签及 OCR 文字框
 def draw_structure_result(image, result, font_path):
     if isinstance(image, np.ndarray):
         image = Image.fromarray(image)
@@ -240,6 +244,7 @@ def draw_structure_result(image, result, font_path):
     return im_show
 
 
+# 根据识别字/词列信息与检测框推算每个词的四点坐标
 def cal_ocr_word_box(rec_str, box, rec_word_info):
     """Calculate the detection frame for each word based on the results of recognition and detection of ocr"""
 

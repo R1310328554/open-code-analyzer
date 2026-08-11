@@ -9,6 +9,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # Apache 2.0 License for more details.
 
+# TEDS 指标：HTML 表格转树后 APTED 编辑距离，支持并行批量评测
 from rapidfuzz.distance import Levenshtein
 from apted import APTED, Config
 from apted.helpers import Tree
@@ -18,6 +19,7 @@ from tqdm import tqdm
 from paddle.utils import try_import
 
 
+    # APTED 树节点：保存 tag/colspan/rowspan/单元格文本及子节点
 class TableTree(Tree):
     def __init__(self, tag, colspan=None, rowspan=None, content=None, *children):
         self.tag = tag
@@ -42,6 +44,7 @@ class TableTree(Tree):
         return "{{{}}}".format(result)
 
 
+    # 树编辑代价：标签/跨度不一致为 1，td 文本用归一化编辑距离
 class CustomConfig(Config):
     def rename(self, node1, node2):
         """Compares attributes of trees"""
@@ -59,6 +62,7 @@ class CustomConfig(Config):
         return 0.0
 
 
+    # 短文本 (<3 字符) 替换为占位符后再算编辑距离
 class CustomConfig_del_short(Config):
     def rename(self, node1, node2):
         """Compares attributes of trees"""
@@ -83,6 +87,7 @@ class CustomConfig_del_short(Config):
         return 0.0
 
 
+    # 比较前移除文本列表中的空格 token
 class CustomConfig_del_block(Config):
     def rename(self, node1, node2):
         """Compares attributes of trees"""
@@ -106,6 +111,7 @@ class CustomConfig_del_block(Config):
         return 0.0
 
 
+    # Tree Edit Distance Similarity：1 - 编辑距离/节点数，支持 structure_only
 class TEDS(object):
     """Tree Edit Distance basead Similarity"""
 

@@ -1,3 +1,4 @@
+# CSS 样式解析与 openpyxl NamedStyle 转换，支持父子级联
 # This is where we handle translating css styles into openpyxl styles
 # and cascading those from parent to child in the dom.
 
@@ -25,6 +26,7 @@ except:
 FORMAT_DATE_MMDDYYYY = "mm/dd/yyyy"
 
 
+# 颜色名映射，如 black → openpyxl BLACK
 def colormap(color):
     """
     Convenience for looking up known colors
@@ -33,6 +35,7 @@ def colormap(color):
     return cmap.get(color, color)
 
 
+# 将 inline style 字符串解析为 key:value 字典
 def style_string_to_dict(style):
     """
     Convert css style string to a python dictionary
@@ -55,6 +58,7 @@ def get_side(style, name):
 known_styles = {}
 
 
+# StyleDict → openpyxl NamedStyle，相同样式复用缓存
 def style_dict_to_named_style(style_dict, number_format=None):
     """
     Change css style (stored in a python dictionary) to openpyxl NamedStyle
@@ -125,6 +129,7 @@ def style_dict_to_named_style(style_dict, number_format=None):
     return known_styles[style_and_format_string]
 
 
+    # 带 parent 链的字典：子节点可继承父级 CSS 属性
 class StyleDict(dict):
     """
     It's like a dictionary, but it looks for items in the parent dictionary
@@ -179,6 +184,7 @@ class StyleDict(dict):
         return color
 
 
+    # HTML 元素基类：维护 StyleDict 并懒加载 openpyxl 样式
 class Element(object):
     """
     Our base class for representing an html element along with a cascading style.
@@ -217,6 +223,7 @@ class Element(object):
         return dimension
 
 
+    # 解析 <table>，构建 TableHead/TableBody 行树
 class Table(Element):
     """
     The concrete implementations of Elements are semantically named for the types of elements we are interested in.
@@ -239,6 +246,7 @@ class Table(Element):
         )
 
 
+    # <thead> 区域，包含 TableRow 列表
 class TableHead(Element):
     """
     This class maps to the `<th>` element of the html table.
@@ -249,6 +257,7 @@ class TableHead(Element):
         self.rows = [TableRow(tr, parent=self) for tr in head.findall("tr")]
 
 
+    # <tbody> 区域（缺省时用整个 table）
 class TableBody(Element):
     """
     This class maps to the `<tbody>` element of the html table.
@@ -259,6 +268,7 @@ class TableBody(Element):
         self.rows = [TableRow(tr, parent=self) for tr in body.findall("tr")]
 
 
+    # <tr> 行，聚合 th/td 为 TableCell
 class TableRow(Element):
     """
     This class maps to the `<tr>` element of the html table.
@@ -287,6 +297,7 @@ def _element_to_string(el):
     return text + string + "\n" + tail
 
 
+    # <td>/<th> 单元格：文本、数据类型与 number_format
 class TableCell(Element):
     """
     This class maps to the `<td>` element of the html table.

@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 表格结构识别推理：TableAttn/TableMaster 模型预测 HTML token 与单元格框
 import os
 import sys
 
@@ -36,6 +37,7 @@ from ppstructure.utility import parse_args
 logger = get_logger()
 
 
+# 按 table_algorithm 组装 Resize/Pad/Normalize 等预处理算子链
 def build_pre_process_list(args):
     resize_op = {
         "ResizeTableImage": {
@@ -68,6 +70,7 @@ def build_pre_process_list(args):
     return pre_process_list
 
 
+    # 表格结构预测器：预处理→推理→后处理，返回 token 列表与 bbox
 class TableStructurer(object):
     def __init__(self, args):
         self.args = args
@@ -166,6 +169,7 @@ class TableStructurer(object):
         return (structure_str_list, bbox_list), elapse
 
 
+# 批量图片推理，保存可视化框图与 infer.txt 结构结果
 def main(args):
     image_file_list = get_image_file_list(args.image_dir)
     table_structurer = TableStructurer(args)

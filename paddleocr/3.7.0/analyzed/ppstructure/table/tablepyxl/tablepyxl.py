@@ -1,4 +1,5 @@
 # Do imports like python3 so our package works for 2 and 3
+# HTML 文档中所有 <table> 解析并写入 openpyxl 工作簿
 from __future__ import absolute_import
 
 
@@ -6,12 +7,14 @@ from tablepyxl.style import Table
 from paddle.utils import try_import
 
 
+# 安全解析 colspan/rowspan 字符串为整数
 def string_to_int(s):
     if s.isdigit():
         return int(s)
     return 0
 
 
+# lxml 解析 HTML，去除注释后返回 Table 对象列表
 def get_Tables(doc):
     try_import("lxml")
     from lxml import etree, html
@@ -23,6 +26,7 @@ def get_Tables(doc):
     return [Table(table) for table in tree.xpath("//table")]
 
 
+# 将 thead/tbody 各行写入 sheet，处理合并单元格与列宽
 def write_rows(worksheet, elem, row, column=1):
     """
     Writes every tr child element of elem to a row in the worksheet
@@ -75,6 +79,7 @@ def write_rows(worksheet, elem, row, column=1):
     return row
 
 
+# 单张表新建 sheet 并写入，标题取自 table name 属性
 def table_to_sheet(table, wb):
     """
     Takes a table and workbook and writes the table to a new sheet.
@@ -84,6 +89,7 @@ def table_to_sheet(table, wb):
     insert_table(table, ws, 1, 1)
 
 
+# Premailer 内联 CSS 后逐表创建工作表
 def document_to_workbook(doc, wb=None, base_url=None):
     """
     Takes a string representation of an html document and writes one sheet for
@@ -110,6 +116,7 @@ def document_to_workbook(doc, wb=None, base_url=None):
     return wb
 
 
+# 构建 workbook 并保存为 xlsx 文件
 def document_to_xl(doc, filename, base_url=None):
     """
     Takes a string representation of an html document and writes one sheet for
@@ -119,6 +126,7 @@ def document_to_xl(doc, filename, base_url=None):
     wb.save(filename)
 
 
+# 在指定起始行列插入 thead 与 tbody
 def insert_table(table, worksheet, column, row):
     if table.head:
         row = write_rows(worksheet, table.head, row, column)
@@ -126,6 +134,7 @@ def insert_table(table, worksheet, column, row):
         row = write_rows(worksheet, table.body, row, column)
 
 
+# 以 openpyxl Cell 位置为锚点插入表格
 def insert_table_at_cell(table, cell):
     """
     Inserts a table at the location of an openpyxl Cell object.
