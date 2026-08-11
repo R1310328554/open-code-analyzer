@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T07:14:16Z",
   "files": [
-    "ppocr/metrics/__init__.py",
-    "ppocr/metrics/bleu.py",
-    "ppocr/metrics/cls_metric.py",
-    "ppocr/metrics/ct_metric.py",
-    "ppocr/metrics/det_metric.py",
-    "ppocr/metrics/distillation_metric.py",
-    "ppocr/metrics/e2e_metric.py",
-    "ppocr/metrics/eval_det_iou.py",
-    "ppocr/metrics/kie_metric.py",
-    "ppocr/metrics/rec_metric.py",
-    "ppocr/metrics/sr_metric.py",
-    "ppocr/metrics/table_metric.py",
-    "ppocr/metrics/vqa_token_re_metric.py",
-    "ppocr/metrics/vqa_token_ser_metric.py",
-    "ppocr/modeling/architectures/__init__.py",
     "ppocr/modeling/architectures/base_model.py",
     "ppocr/modeling/architectures/distillation_model.py",
     "ppocr/modeling/backbones/__init__.py",
@@ -33,5 +18,5 @@
     "ppocr/modeling/backbones/rec_hgnet.py"
   ],
   "remaining_pending": 212,
-  "done": 360
+  "done": 375
 }
