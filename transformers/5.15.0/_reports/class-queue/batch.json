@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T00:06:26Z",
   "files": [
-    "src/transformers/models/afmoe/modeling_afmoe.py",
-    "src/transformers/models/afmoe/modular_afmoe.py",
-    "src/transformers/models/aimv2/__init__.py",
-    "src/transformers/models/aimv2/configuration_aimv2.py",
-    "src/transformers/models/aimv2/modeling_aimv2.py",
-    "src/transformers/models/aimv2/modular_aimv2.py",
-    "src/transformers/models/albert/__init__.py",
-    "src/transformers/models/albert/configuration_albert.py",
-    "src/transformers/models/albert/modeling_albert.py",
-    "src/transformers/models/albert/tokenization_albert.py",
-    "src/transformers/models/align/__init__.py",
-    "src/transformers/models/align/configuration_align.py",
-    "src/transformers/models/align/modeling_align.py",
-    "src/transformers/models/align/processing_align.py",
-    "src/transformers/models/altclip/__init__.py",
     "src/transformers/models/altclip/configuration_altclip.py",
     "src/transformers/models/altclip/modeling_altclip.py",
     "src/transformers/models/altclip/modular_altclip.py",
@@ -33,5 +18,5 @@
     "src/transformers/models/aria/image_processing_aria.py"
   ],
   "remaining_pending": 2469,
-  "done": 180
+  "done": 195
 }
