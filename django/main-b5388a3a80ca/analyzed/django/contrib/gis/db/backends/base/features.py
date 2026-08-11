@@ -5,7 +5,9 @@ from django.contrib.gis.db import models
 from .operations import BaseSpatialOperations
 
 
+# 空间数据库能力描述基类：各后端通过类属性声明支持的 GIS 特性
 class BaseSpatialFeatures:
+    # 该后端是否启用 GIS 支持
     gis_enabled = True
 
     # Does the database contain a SpatialRefSys model to store SRID
@@ -62,18 +64,22 @@ class BaseSpatialFeatures:
     # for empty results?
     empty_intersection_returns_none = True
 
+    # 是否支持 crosses 空间查找
     @property
     def supports_crosses_lookup(self):
         return "crosses" in self.connection.ops.gis_operators
 
+    # 是否支持基于距离的空间查找
     @property
     def supports_distances_lookups(self):
         return self.has_Distance_function
 
+    # 是否支持 relate 空间关系查找
     @property
     def supports_relate_lookup(self):
         return "relate" in self.connection.ops.gis_operators
 
+    # 是否支持 isvalid 几何有效性查找
     @property
     def supports_isvalid_lookup(self):
         return self.has_IsValid_function
@@ -95,6 +101,7 @@ class BaseSpatialFeatures:
     def supports_union_aggr(self):
         return models.Union not in self.connection.ops.disallowed_aggregates
 
+    # 动态解析 has_<func>_function 形式的数据库函数能力探测
     def __getattr__(self, name):
         m = re.match(r"has_(\w*)_function$", name)
         if m:

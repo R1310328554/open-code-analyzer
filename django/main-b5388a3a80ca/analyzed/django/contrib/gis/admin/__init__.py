@@ -1,3 +1,4 @@
+# 重导出标准 Admin API，并附加 GISModelAdmin 供几何字段后台使用
 from django.contrib.admin import (
     HORIZONTAL,
     VERTICAL,

@@ -5,6 +5,7 @@ from django.utils.encoding import iri_to_uri
 from django.utils.translation import gettext_lazy as _
 
 
+# FlatPage 模型：存储站点级静态页面（URL、标题、HTML 内容与可见性设置）
 class FlatPage(models.Model):
     url = models.CharField(_("URL"), max_length=100, db_index=True)
     title = models.CharField(_("title"), max_length=200)
@@ -28,15 +29,18 @@ class FlatPage(models.Model):
     )
     sites = models.ManyToManyField(Site, verbose_name=_("sites"))
 
+    # 元数据：表名 django_flatpage，按 url 排序
     class Meta:
         db_table = "django_flatpage"
         verbose_name = _("flat page")
         verbose_name_plural = _("flat pages")
         ordering = ["url"]
 
+    # 返回「URL -- 标题」便于在 Admin 与 shell 中识别
     def __str__(self):
         return "%s -- %s" % (self.url, self.title)
 
+    # 解析 flatpage 视图的 URL；失败时手动拼接 SCRIPT_PREFIX
     def get_absolute_url(self):
         from .views import flatpage
 

@@ -6,7 +6,9 @@ from django.contrib.sites.shortcuts import get_current_site
 register = template.Library()
 
 
+# 模板节点：按当前站点与用户权限查询 FlatPage 并写入上下文变量
 class FlatpageNode(template.Node):
+    # 保存上下文变量名，以及可选的 URL 前缀与用户变量
     def __init__(self, context_name, starts_with=None, user=None):
         self.context_name = context_name
         if starts_with:
@@ -18,6 +20,7 @@ class FlatpageNode(template.Node):
         else:
             self.user = None
 
+    # 过滤站点、前缀与登录要求，将结果赋给 context_name
     def render(self, context):
         if "request" in context:
             site_pk = get_current_site(context["request"]).pk
@@ -43,6 +46,7 @@ class FlatpageNode(template.Node):
         return ""
 
 
+# 模板标签：{% get_flatpages ... as name %} 语法解析与 FlatpageNode 构造
 @register.tag
 def get_flatpages(parser, token):
     """

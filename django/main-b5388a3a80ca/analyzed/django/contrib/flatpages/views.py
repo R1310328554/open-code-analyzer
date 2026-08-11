@@ -7,6 +7,7 @@ from django.template import loader
 from django.utils.safestring import mark_safe
 from django.views.decorators.csrf import csrf_protect
 
+# 未指定 template_name 时使用的默认 flatpage 模板
 DEFAULT_TEMPLATE = "flatpages/default.html"
 
 # This view is called from FlatpageFallbackMiddleware.process_response
@@ -19,6 +20,7 @@ DEFAULT_TEMPLATE = "flatpages/default.html"
 # CSRF protect the internal implementation.
 
 
+# 公开入口：按 URL 与当前站点查找 FlatPage，必要时追加斜杠并重定向
 def flatpage(request, url):
     """
     Public interface to the flat page view.
@@ -45,6 +47,7 @@ def flatpage(request, url):
     return render_flatpage(request, f)
 
 
+# 内部渲染：校验登录、选择模板，并将 title/content 标记为 safe HTML
 @csrf_protect
 def render_flatpage(request, f):
     """
