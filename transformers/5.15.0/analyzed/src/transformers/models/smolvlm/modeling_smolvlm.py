@@ -40,9 +40,12 @@ from ...utils.generic import merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
 from ..auto import AutoModel
 from .configuration_smolvlm import SmolVLMConfig, SmolVLMVisionConfig
+# SmolVLM 建模：SigLIP 可变分辨率视觉编码 + Llama 文本解码，支持图像/视频多模态条件生成
+
 
 
 @auto_docstring
+# SmolVLMPreTrainedModel：SmolVLM 预训练基类：支持图像/文本双模态与 Flash/SDPA 注意力后端
 class SmolVLMPreTrainedModel(PreTrainedModel):
     config: SmolVLMConfig
     base_model_prefix = "model"
@@ -56,6 +59,7 @@ class SmolVLMPreTrainedModel(PreTrainedModel):
     _supports_attention_backend = True
 
 
+# SmolVLMVisionEmbeddings：SmolVLM 视觉嵌入：NaViT 风格可变分辨率 patch 投影与分数坐标位置编码
 class SmolVLMVisionEmbeddings(nn.Module):
     """
     This is a modified version of `siglip.modelign_siglip.SiglipVisionEmbeddings` to enable images of variable
@@ -67,6 +71,7 @@ class SmolVLMVisionEmbeddings(nn.Module):
     (which uses images of fixed-size square images) and adapt it by training on images of variable resolutions.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SmolVLMVisionConfig):
         super().__init__()
         self.embed_dim = config.hidden_size
@@ -86,6 +91,7 @@ class SmolVLMVisionEmbeddings(nn.Module):
         self.num_positions = self.num_patches
         self.position_embedding = nn.Embedding(self.num_positions, self.embed_dim)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values: torch.FloatTensor, patch_attention_mask: torch.BoolTensor) -> torch.Tensor:
         batch_size, _, max_im_h, max_im_w = pixel_values.shape
 
@@ -132,6 +138,7 @@ class SmolVLMVisionEmbeddings(nn.Module):
         return embeddings
 
 
+# eager_attention_forward：标准注意力前向：QK^T 缩放 softmax 加权 V
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -155,9 +162,11 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# SmolVLMVisionAttention：SmolVLM 视觉注意力：多头双向缩放点积自注意力（非因果）
 class SmolVLMVisionAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -180,6 +189,7 @@ class SmolVLMVisionAttention(nn.Module):
         # Ignore copy
         self.is_causal = False
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -214,7 +224,9 @@ class SmolVLMVisionAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# SmolVLMVisionMLP：SmolVLM 视觉 MLP：两层线性 + 激活的前馈子层
 class SmolVLMVisionMLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -222,6 +234,7 @@ class SmolVLMVisionMLP(nn.Module):
         self.fc1 = nn.Linear(config.hidden_size, config.intermediate_size)
         self.fc2 = nn.Linear(config.intermediate_size, config.hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.fc1(hidden_states)
         hidden_states = self.activation_fn(hidden_states)
@@ -229,7 +242,9 @@ class SmolVLMVisionMLP(nn.Module):
         return hidden_states
 
 
+# SmolVLMEncoderLayer：SmolVLM 视觉编码层：Pre-LN 自注意力 + MLP 残差堆叠
 class SmolVLMEncoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SmolVLMVisionConfig):
         super().__init__()
         self.embed_dim = config.hidden_size
@@ -239,6 +254,7 @@ class SmolVLMEncoderLayer(GradientCheckpointingLayer):
         self.layer_norm2 = nn.LayerNorm(self.embed_dim, eps=config.layer_norm_eps)
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -263,6 +279,7 @@ class SmolVLMEncoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# SmolVLMEncoder：SmolVLM 视觉编码器：堆叠多层 Transformer 编码块
 class SmolVLMEncoder(nn.Module):
     """
     Transformer encoder consisting of `config.num_hidden_layers` self attention layers. Each layer is a
@@ -272,6 +289,7 @@ class SmolVLMEncoder(nn.Module):
         config: SmolVLMConfig
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SmolVLMConfig):
         super().__init__()
         self.config = config
@@ -280,6 +298,7 @@ class SmolVLMEncoder(nn.Module):
 
     # Ignore copy
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         inputs_embeds,
@@ -302,6 +321,7 @@ class SmolVLMEncoder(nn.Module):
     The SmolVLM Vision Transformer Model outputting raw image embedding.
     """
 )
+# SmolVLMVisionTransformer：SmolVLM 视觉塔：SigLIP 风格 ViT 编码器输出 patch 隐状态
 class SmolVLMVisionTransformer(SmolVLMPreTrainedModel):
     config: SmolVLMVisionConfig
     input_modalities = ("image",)
@@ -310,6 +330,7 @@ class SmolVLMVisionTransformer(SmolVLMPreTrainedModel):
         "attentions": SmolVLMVisionAttention,
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SmolVLMVisionConfig):
         super().__init__(config)
         embed_dim = config.hidden_size
@@ -329,6 +350,7 @@ class SmolVLMVisionTransformer(SmolVLMPreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs(tie_last_hidden_states=False)
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values,
@@ -376,6 +398,7 @@ class SmolVLMVisionTransformer(SmolVLMPreTrainedModel):
     """
 )
 @dataclass
+# SmolVLMBaseModelOutputWithPast：SmolVLM 基模型输出：含 KV cache、隐状态与图像隐状态元组
 class SmolVLMBaseModelOutputWithPast(ModelOutput):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`):
@@ -395,18 +418,23 @@ class SmolVLMBaseModelOutputWithPast(ModelOutput):
     image_hidden_states: tuple[torch.FloatTensor] | None = None
 
 
+# SmolVLMSimpleMLP：SmolVLM 简单投影 MLP：pixel shuffle 后视觉维度映射到文本嵌入空间
 class SmolVLMSimpleMLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         input_size = config.vision_config.hidden_size * (config.scale_factor**2)
         output_size = config.text_config.hidden_size
         self.proj = nn.Linear(input_size, output_size, bias=False)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         return self.proj(x)
 
 
+# SmolVLMConnector：SmolVLM 连接器：pixel shuffle 降采样 + 模态投影对齐文本维度
 class SmolVLMConnector(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.scale_factor = config.scale_factor
@@ -423,6 +451,7 @@ class SmolVLMConnector(nn.Module):
         x = x.reshape(bsz, int(seq / (scale_factor**2)), embed_dim * (scale_factor**2))
         return x
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, image_hidden_states):
         image_hidden_states = self.pixel_shuffle(image_hidden_states, self.scale_factor)
         image_hidden_states = self.modality_projection(image_hidden_states)
@@ -434,12 +463,14 @@ class SmolVLMConnector(nn.Module):
     SmolVLM model consisting of a SIGLIP vision encoder and Llama3 language decoder
     """
 )
+# SmolVLMModel：SmolVLM 多模态模型：视觉塔 + 连接器 + 文本 LM，自定义 inputs_merger 融合图像 token
 class SmolVLMModel(SmolVLMPreTrainedModel):
     """
     A subclass of Idefics3Model. We do *not* remove or block the call to inputs_merger
     in forward. Instead, we override inputs_merger here with custom logic.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SmolVLMConfig):
         super().__init__(config)
         self.padding_idx = self.config.text_config.pad_token_id
@@ -508,6 +539,7 @@ class SmolVLMModel(SmolVLMPreTrainedModel):
     @auto_docstring(
         custom_intro="Encodes images into continuous embeddings that can be forwarded to the language model."
     )
+    # get_image_features：图像编码：过滤 padding 图像、视觉塔前向 + connector 模态投影
     def get_image_features(
         self,
         pixel_values: torch.FloatTensor,
@@ -573,6 +605,7 @@ class SmolVLMModel(SmolVLMPreTrainedModel):
         image_batch_size would be 7 when num_images_per_sample=[1, 3, 1, 2] and max_num_images would be 3.
         """
     )
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -647,6 +680,7 @@ class SmolVLMModel(SmolVLMPreTrainedModel):
     """
 )
 @dataclass
+# SmolVLMCausalLMOutputWithPast：SmolVLM 因果 LM 输出：损失、logits、KV cache 与图像隐状态
 class SmolVLMCausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -677,9 +711,11 @@ class SmolVLMCausalLMOutputWithPast(ModelOutput):
     The SmolVLM Model with a language modeling head. It is made up a SigLIP vision encoder, with a language modeling head on top.
     """
 )
+# SmolVLMForConditionalGeneration：SmolVLM 条件生成：视觉-语言联合模型 + lm_head 自回归解码
 class SmolVLMForConditionalGeneration(SmolVLMPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.text_model.embed_tokens.weight"}
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.model = SmolVLMModel(config)
@@ -698,6 +734,7 @@ class SmolVLMForConditionalGeneration(SmolVLMPreTrainedModel, GenerationMixin):
         self.model.text_model.set_input_embeddings(value)
 
     @auto_docstring
+    # get_image_features：图像编码：过滤 padding 图像、视觉塔前向 + connector 模态投影
     def get_image_features(
         self,
         pixel_values: torch.FloatTensor,
@@ -716,6 +753,7 @@ class SmolVLMForConditionalGeneration(SmolVLMPreTrainedModel, GenerationMixin):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,

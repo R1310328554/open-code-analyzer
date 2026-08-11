@@ -39,9 +39,13 @@ from ...utils.deprecation import deprecate_kwarg
 from ...utils.generic import maybe_autocast, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
 from .configuration_solar_open import SolarOpenConfig
+# SolarOpen 建模：分组 Top-K 路由 MoE + GQA 自回归 Transformer 解码器
 
 
+
+# SolarOpenDecoderLayer：SolarOpen 解码层：Pre-LN 自注意力 + MoE 前馈残差堆叠
 class SolarOpenDecoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SolarOpenConfig, layer_idx: int):
         super().__init__()
         self.hidden_size = config.hidden_size
@@ -51,6 +55,7 @@ class SolarOpenDecoderLayer(GradientCheckpointingLayer):
         self.input_layernorm = SolarOpenRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.post_attention_layernorm = SolarOpenRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -83,7 +88,9 @@ class SolarOpenDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# SolarOpenMLP：SolarOpen 稠密 MLP：SwiGLU 风格 gate/up/down 投影（共享专家用）
 class SolarOpenMLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, intermediate_size=None):
         super().__init__()
         self.config = config
@@ -94,12 +101,15 @@ class SolarOpenMLP(nn.Module):
         self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=False)
         self.act_fn = ACT2FN[config.hidden_act]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         down_proj = self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
         return down_proj
 
 
+# SolarOpenTopkRouter：SolarOpen Top-K 路由器：分组 sigmoid 评分 + 专家选择与权重归一化
 class SolarOpenTopkRouter(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SolarOpenConfig):
         super().__init__()
         self.top_k = config.num_experts_per_tok
@@ -112,6 +122,7 @@ class SolarOpenTopkRouter(nn.Module):
         self.norm_topk_prob = config.norm_topk_prob
         self.e_score_correction_bias = nn.Buffer(torch.zeros((self.num_experts), dtype=torch.float32))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = hidden_states.view(-1, self.hidden_dim)
         router_logits = F.linear(hidden_states.type(torch.float32), self.weight.type(torch.float32))
@@ -141,9 +152,11 @@ class SolarOpenTopkRouter(nn.Module):
 
 
 @use_experts_implementation
+# SolarOpenExperts：SolarOpen 路由专家集合：3D 参数张量存储各专家 gate_up/down 权重
 class SolarOpenExperts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.num_experts = config.num_local_experts
@@ -153,6 +166,7 @@ class SolarOpenExperts(nn.Module):
         self.down_proj = nn.Parameter(torch.empty(self.num_experts, self.hidden_dim, self.intermediate_dim))
         self.act_fn = ACT2FN[config.hidden_act]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -180,11 +194,13 @@ class SolarOpenExperts(nn.Module):
         return final_hidden_states
 
 
+# SolarOpenMoE：SolarOpen MoE 模块：Top-K 路由专家 + 共享专家残差融合
 class SolarOpenMoE(nn.Module):
     """
     A mixed expert module containing shared experts.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SolarOpenConfig):
         super().__init__()
         self.config = config
@@ -194,6 +210,7 @@ class SolarOpenMoE(nn.Module):
             config=config, intermediate_size=config.moe_intermediate_size * config.n_shared_experts
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         residuals = hidden_states
         orig_shape = hidden_states.shape
@@ -204,6 +221,7 @@ class SolarOpenMoE(nn.Module):
         return hidden_states
 
 
+# rotate_half：RoPE 辅助：将 hidden 维度对半旋转用于 sin/cos 位置编码
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -212,6 +230,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：应用 RoPE：对 Q/K 张量施加旋转位置嵌入
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -237,6 +256,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA KV 头扩展：将 key/value 头重复至与 query 头数对齐
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -249,6 +269,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：标准注意力前向：QK^T 缩放 softmax 加权 V
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -275,9 +296,11 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# SolarOpenAttention：SolarOpen 注意力：GQA 分组查询 + RoPE 因果自注意力
 class SolarOpenAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SolarOpenConfig, layer_idx: int):
         super().__init__()
         self.config = config
@@ -299,6 +322,7 @@ class SolarOpenAttention(nn.Module):
         )
         self.o_proj = nn.Linear(config.num_attention_heads * self.head_dim, config.hidden_size, bias=False)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -341,7 +365,9 @@ class SolarOpenAttention(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# SolarOpenRMSNorm：SolarOpen RMSNorm：均方根归一化层（等价 T5LayerNorm）
 class SolarOpenRMSNorm(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
         SolarOpenRMSNorm is equivalent to T5LayerNorm
@@ -350,6 +376,7 @@ class SolarOpenRMSNorm(nn.Module):
         self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         input_dtype = hidden_states.dtype
         hidden_states = hidden_states.to(torch.float32)
@@ -362,6 +389,7 @@ class SolarOpenRMSNorm(nn.Module):
 
 
 @auto_docstring
+# SolarOpenPreTrainedModel：SolarOpen 预训练基类：MoE/路由权重初始化与输出录制
 class SolarOpenPreTrainedModel(PreTrainedModel):
     config: SolarOpenConfig
     base_model_prefix = "model"
@@ -382,6 +410,7 @@ class SolarOpenPreTrainedModel(PreTrainedModel):
     _keys_to_ignore_on_load_unexpected = None
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层、嵌入与 MoE 专家权重
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, SolarOpenTopkRouter):
@@ -392,8 +421,10 @@ class SolarOpenPreTrainedModel(PreTrainedModel):
             init.normal_(module.down_proj, mean=0.0, std=self.config.initializer_range)
 
 
+# SolarOpenRotaryEmbedding：SolarOpen RoPE：可配置 rope_type 的旋转位置编码
 class SolarOpenRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SolarOpenConfig, device=None):
         super().__init__()
         self.max_seq_len_cached = config.max_position_embeddings
@@ -412,6 +443,7 @@ class SolarOpenRotaryEmbedding(nn.Module):
 
     @staticmethod
     @deprecate_kwarg("device", version="5.18")
+    # compute_default_rope_parameters：计算默认 RoPE 逆频率与 attention_scaling
     def compute_default_rope_parameters(config: SolarOpenConfig, device=None, **kwargs) -> tuple[torch.Tensor, float]:
         """
         Computes the inverse frequencies according to the original RoPE implementation
@@ -434,6 +466,7 @@ class SolarOpenRotaryEmbedding(nn.Module):
 
     @torch.no_grad()
     @dynamic_rope_update  # power user: used with advanced RoPE types (e.g. dynamic rope)
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x, position_ids):
         inv_freq_expanded = (
             self.inv_freq[None, :, None].expand(position_ids.shape[0], -1, 1).to(dtype=torch.float, device=x.device)
@@ -452,7 +485,9 @@ class SolarOpenRotaryEmbedding(nn.Module):
 
 
 @auto_docstring
+# SolarOpenModel：SolarOpen 基模型：词嵌入 + 多层 MoE 解码器 + RMSNorm
 class SolarOpenModel(SolarOpenPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SolarOpenConfig):
         super().__init__(config)
         self.padding_idx = config.pad_token_id
@@ -472,6 +507,7 @@ class SolarOpenModel(SolarOpenPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -526,12 +562,14 @@ class SolarOpenModel(SolarOpenPreTrainedModel):
 
 
 @auto_docstring
+# SolarOpenForCausalLM：SolarOpen 因果 LM：基模型 + lm_head，支持生成与 logits_to_keep
 class SolarOpenForCausalLM(SolarOpenPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
     _pp_plan = {"lm_head": (["hidden_states"], ["logits"])}
     _fsdp_plan = {"lm_head": "keep_full_weight"}
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.model = SolarOpenModel(config)
@@ -543,6 +581,7 @@ class SolarOpenForCausalLM(SolarOpenPreTrainedModel, GenerationMixin):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,

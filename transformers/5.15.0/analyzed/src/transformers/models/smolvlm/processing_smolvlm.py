@@ -20,6 +20,8 @@ from datetime import timedelta
 from ...image_utils import make_nested_list_of_images
 from ...processing_utils import ProcessingKwargs, ProcessorMixin
 from ...utils import auto_docstring, is_num2words_available, logging
+# SmolVLM 处理器：图像/视频 token 展开、聊天模板与多模态输入校验
+
 
 
 # Adapted from transformers.models.smolvlm.video_processing_smolvlm.DEFAULT_VIDEO_INTRO
@@ -44,6 +46,7 @@ else:
 DEFAULT_CHAT_TEMPLATE = "<|im_start|>{% for message in messages %}{{message['role'] | capitalize}}{% if message['content'][0]['type'] == 'image' %}{{':'}}{% else %}{{': '}}{% endif %}{% for line in message['content'] %}{% if line['type'] == 'text' %}{{line['text']}}{% elif line['type'] == 'image' %}{{ '<image>' }}{% elif line['type'] == 'video' %}{{ '<video>' }}{% endif %}{% endfor %}<end_of_utterance>\n{% endfor %}{% if add_generation_prompt %}{{ 'Assistant:' }}{% endif %}"
 
 
+# _prompt_split_image：分块图像 prompt：按 row/col 展开多 patch 图像 token 序列
 def _prompt_split_image(
     image_seq_len, image_rows, image_cols, fake_token_around_image, image_token, global_image_token
 ):
@@ -65,6 +68,7 @@ def _prompt_split_image(
     return text_split_images
 
 
+# _prompt_single_image：单图 prompt：global image token 包裹 image_seq_len 个 <image> token
 def _prompt_single_image(image_seq_len, fake_token_around_image, image_token, global_image_token):
     """Prompt with expanded image tokens for a single image."""
     return (
@@ -75,6 +79,7 @@ def _prompt_single_image(image_seq_len, fake_token_around_image, image_token, gl
     )
 
 
+# get_image_prompt_string：生成图像 prompt 字符串：按是否分块选择单图或分块模板
 def get_image_prompt_string(
     image_rows, image_cols, image_seq_len, fake_token_around_image, image_token, global_image_token
 ):
@@ -90,6 +95,7 @@ def get_image_prompt_string(
     )
 
 
+# SmolVLMProcessorKwargs：SmolVLM 处理器参数：文本/图像/视频默认 kwargs
 class SmolVLMProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -107,9 +113,11 @@ class SmolVLMProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# SmolVLMProcessor：SmolVLM 处理器：展开 <image>/<video> token、校验模态数量并应用聊天模板
 class SmolVLMProcessor(ProcessorMixin):
     valid_processor_kwargs = SmolVLMProcessorKwargs
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         image_processor,
@@ -140,12 +148,14 @@ class SmolVLMProcessor(ProcessorMixin):
 
         super().__init__(image_processor, tokenizer, video_processor, chat_template=chat_template, **kwargs)
 
+    # prepare_inputs_layout：输入布局：拉取图像并转为嵌套列表供后续预处理
     def prepare_inputs_layout(self, images=None, text=None, videos=None, **kwargs):
         if images is not None:
             images = self.image_processor.fetch_images(images)
             images = make_nested_list_of_images(images)
         return super().prepare_inputs_layout(images=images, text=text, videos=videos, **kwargs)
 
+    # validate_inputs：输入校验：text/images/videos 数量与 token 占位符一致性检查
     def validate_inputs(self, images=None, text=None, videos=None, **kwargs):
         super().validate_inputs(images=images, text=text, videos=videos, **kwargs)
         if text is None and images is None and videos is None:
@@ -171,6 +181,7 @@ class SmolVLMProcessor(ProcessorMixin):
                         f"The number of videos in the text {n_videos_per_sample} and videos {n_videos_in_videos} should be the same."
                     )
 
+    # replace_image_token：替换图像 token：按 row/col 信息展开为完整 image prompt 字符串
     def replace_image_token(self, image_inputs: dict, image_idx: int, **kwargs) -> str:
         rows = [row for row_list in image_inputs["rows"] for row in row_list]
         cols = [col for col_list in image_inputs["cols"] for col in col_list]
@@ -183,6 +194,7 @@ class SmolVLMProcessor(ProcessorMixin):
             global_image_token=self.global_image_token,
         )
 
+    # replace_video_token：替换视频 token：帧数/时长 intro + 逐帧时间戳与 image prompt
     def replace_video_token(self, video_inputs: dict, video_idx: int, **kwargs) -> str:
         num_frames = video_inputs["pixel_values"].shape[1]
         metadata = video_inputs["video_metadata"][video_idx]
@@ -208,6 +220,7 @@ class SmolVLMProcessor(ProcessorMixin):
             prompt += FRAME_TIMESTAMP_MESSAGE.format(timestamp=timestamp_str) + image_prompt_string
         return prompt + DEFAULT_MEDIA_OUTTRO
 
+    # apply_chat_template：聊天模板：Jinja 格式化对话，视频输入时切换默认模板
     def apply_chat_template(
         self,
         conversation: list[dict[str, str]] | list[list[dict[str, str]]],

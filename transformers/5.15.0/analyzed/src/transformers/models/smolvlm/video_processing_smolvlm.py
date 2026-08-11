@@ -19,6 +19,8 @@ from torch.nn import functional as F
 
 from ...image_processing_utils import BatchFeature, get_size_dict
 from ...image_utils import (
+# SmolVLM 视频处理：帧采样、缩放归一化、padding 与 pixel_attention_mask 生成
+
     IMAGENET_STANDARD_MEAN,
     IMAGENET_STANDARD_STD,
     PILImageResampling,
@@ -45,6 +47,7 @@ FRAME_TIMESTAMP_MESSAGE = "\nFrame from {timestamp}:"
 MAX_IMAGE_SIZE = 4096  # 4k resolution as absolute maximum
 
 
+# get_max_height_width：批内最大尺寸：取视频/图像 batch 中最大高宽用于 padding
 def get_max_height_width(videos: list["torch.Tensor"]) -> list[int]:
     """
     Get the maximum height and width across all videos in a batch.
@@ -57,6 +60,7 @@ def get_max_height_width(videos: list["torch.Tensor"]) -> list[int]:
     return (max_height, max_width)
 
 
+# get_resize_output_image_size：计算 resize 输出尺寸：最长边缩放并保持偶数宽高比
 def get_resize_output_image_size(
     video,
     resolution_max_side: int,
@@ -97,10 +101,12 @@ def get_resize_output_image_size(
     return height, width
 
 
+# SmolVLMVideoProcessorInitKwargs：SmolVLM 视频处理器初始化参数：max_image_size 等选项
 class SmolVLMVideoProcessorInitKwargs(VideosKwargs, total=False):
     max_image_size: dict[str, int]
 
 
+# SmolVLMVideoProcessor：SmolVLM 视频处理器：帧采样、双阶段 resize、padding 与归一化
 class SmolVLMVideoProcessor(BaseVideoProcessor):
     resample = PILImageResampling.LANCZOS
     size = {"longest_edge": 4 * 364}
@@ -116,6 +122,7 @@ class SmolVLMVideoProcessor(BaseVideoProcessor):
     valid_kwargs = SmolVLMVideoProcessorInitKwargs
     model_input_names = ["pixel_values", "pixel_attention_mask"]
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[SmolVLMVideoProcessorInitKwargs]):
         super().__init__(**kwargs)
         # For BC pop values from `config.video_sampling`. In official config `video_sampling` is guaranteed to be present
@@ -128,6 +135,7 @@ class SmolVLMVideoProcessor(BaseVideoProcessor):
             self.fps = kwargs["video_sampling"]["fps"]
             self.size = get_size_dict(kwargs["video_sampling"]["video_size"], default_to_square=self.default_to_square)
 
+    # resize：视频 resize：最长边缩放后再 square 至 max_image_size
     def resize(
         self,
         video: "torch.Tensor",
@@ -170,6 +178,7 @@ class SmolVLMVideoProcessor(BaseVideoProcessor):
         video = super().resize(video, max_size, resample=resample, antialias=antialias)
         return video
 
+    # pad：视频 padding：空间与帧维填充并生成 pixel_mask
     def pad(
         self,
         video: "torch.Tensor",
@@ -215,6 +224,7 @@ class SmolVLMVideoProcessor(BaseVideoProcessor):
 
         return video, pixel_mask
 
+    # sample_frames：帧采样：按 fps/num_frames 均匀采样并支持首尾 skip_secs
     def sample_frames(
         self,
         metadata: VideoMetadata,
@@ -280,6 +290,7 @@ class SmolVLMVideoProcessor(BaseVideoProcessor):
 
         return indices
 
+    # _preprocess：内部预处理：RGB 转换、resize、归一化、批内 padding 打包
     def _preprocess(
         self,
         videos: list["torch.Tensor"],

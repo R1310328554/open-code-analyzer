@@ -26,12 +26,15 @@ from ...utils import auto_docstring, logging
 from ..auto.configuration_auto import AutoConfig
 from ..auto.modeling_auto import AutoModel, AutoModelForCausalLM
 from .configuration_speech_encoder_decoder import SpeechEncoderDecoderConfig
+# SpeechEncoderDecoder 建模：通用语音编码器 + 因果 LM 解码器的 Seq2Seq 封装
+
 
 
 logger = logging.get_logger(__name__)
 
 
 # Copied from transformers.models.encoder_decoder.modeling_encoder_decoder.shift_tokens_right
+# shift_tokens_right：标签右移：构造 decoder 输入（首 token 为 decoder_start_token_id）
 def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start_token_id: int):
     """
     Shift input ids one token to the right.
@@ -51,6 +54,7 @@ def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start
 
 
 @auto_docstring
+# SpeechEncoderDecoderModel：SpeechEncoderDecoder 模型：AutoModel 编码器 + AutoModelForCausalLM 解码器 Seq2Seq
 class SpeechEncoderDecoderModel(PreTrainedModel, GenerationMixin):
     r"""
     [`SpeechEncoderDecoderModel`] is a generic model class that will be instantiated as a transformer architecture with
@@ -67,6 +71,7 @@ class SpeechEncoderDecoderModel(PreTrainedModel, GenerationMixin):
     _supports_flash_attn = True
     _supports_sdpa = True
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: PreTrainedConfig | None = None,
@@ -153,6 +158,7 @@ class SpeechEncoderDecoderModel(PreTrainedModel, GenerationMixin):
     def set_output_embeddings(self, new_embeddings):
         return self.decoder.set_output_embeddings(new_embeddings)
 
+    # freeze_feature_encoder：冻结特征编码器：禁用语音编码器特征提取层梯度
     def freeze_feature_encoder(self):
         """
         Calling this function will disable the gradient computation for the feature encoder of the speech encoder so
@@ -306,6 +312,7 @@ class SpeechEncoderDecoderModel(PreTrainedModel, GenerationMixin):
         return cls(encoder=encoder, decoder=decoder, config=config)
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         inputs: torch.FloatTensor | None = None,
@@ -482,9 +489,11 @@ class SpeechEncoderDecoderModel(PreTrainedModel, GenerationMixin):
             encoder_attentions=encoder_outputs.attentions,
         )
 
+    # prepare_decoder_input_ids_from_labels：从 labels 构造 decoder_input_ids（右移一位）
     def prepare_decoder_input_ids_from_labels(self, labels: torch.Tensor):
         return shift_tokens_right(labels, self.config.pad_token_id, self.config.decoder_start_token_id)
 
+    # resize_token_embeddings：不支持直接 resize：须通过 model.decoder 调用
     def resize_token_embeddings(self, *args, **kwargs):
         raise NotImplementedError(
             "Resizing the embedding layers via the SpeechEncoderDecoderModel directly is not supported. Please use the"

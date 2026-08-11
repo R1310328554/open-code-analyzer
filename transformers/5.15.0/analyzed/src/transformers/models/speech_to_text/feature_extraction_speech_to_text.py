@@ -21,6 +21,8 @@ from ...audio_utils import mel_filter_bank, spectrogram, window_function
 from ...feature_extraction_sequence_utils import SequenceFeatureExtractor
 from ...feature_extraction_utils import BatchFeature
 from ...utils import PaddingStrategy, TensorType, is_speech_available, logging
+# Speech2Text 特征提取：Kaldi 风格 log-mel fbank + 句级 CMVN 归一化
+
 
 
 if is_speech_available():
@@ -30,6 +32,7 @@ if is_speech_available():
 logger = logging.get_logger(__name__)
 
 
+# Speech2TextFeatureExtractor：Speech2Text 特征提取器：fbank 提取 + 句级 CMVN 归一化
 class Speech2TextFeatureExtractor(SequenceFeatureExtractor):
     r"""
     Constructs a Speech2Text feature extractor.
@@ -66,6 +69,7 @@ class Speech2TextFeatureExtractor(SequenceFeatureExtractor):
 
     model_input_names = ["input_features", "attention_mask"]
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         feature_size=80,
@@ -101,6 +105,7 @@ class Speech2TextFeatureExtractor(SequenceFeatureExtractor):
             self.mel_filters = mel_filters
             self.window = window_function(400, "povey", periodic=False)
 
+    # _extract_fbank_features：提取 fbank：TorchAudio Kaldi 或 numpy 回退实现 log-mel 特征
     def _extract_fbank_features(
         self,
         waveform: np.ndarray,
@@ -162,6 +167,7 @@ class Speech2TextFeatureExtractor(SequenceFeatureExtractor):
 
         return x
 
+    # normalize：批量 CMVN：对 padding 后的 input_features 做句级归一化
     def normalize(
         self, input_features: list[np.ndarray], attention_mask: np.ndarray | None = None
     ) -> list[np.ndarray]:
@@ -171,6 +177,7 @@ class Speech2TextFeatureExtractor(SequenceFeatureExtractor):
             for x, n in zip(input_features, lengths)
         ]
 
+    # __call__：特征提取入口：fbank 提取、padding、CMVN 并返回 BatchFeature
     def __call__(
         self,
         raw_speech: np.ndarray | list[float] | list[np.ndarray] | list[list[float]],

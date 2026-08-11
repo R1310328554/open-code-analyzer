@@ -23,10 +23,13 @@ from huggingface_hub.dataclasses import strict
 from ...configuration_utils import PreTrainedConfig
 from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
+# SolarOpen 配置：128 路由专家 MoE、RoPE 与 TP/PP/EP 并行计划超参数
+
 
 
 @auto_docstring(checkpoint="upstage/Solar-Open-100B")
 @strict
+# SolarOpenConfig：SolarOpen 配置：196K 词表、128 路由专家、8 top-k 与 RoPE 超参数
 class SolarOpenConfig(PreTrainedConfig):
     r"""
     n_group (`int`, *optional*, defaults to 1):
@@ -89,6 +92,7 @@ class SolarOpenConfig(PreTrainedConfig):
     default_theta = 1_000_000.0
     head_dim: int = 128
 
+    # __post_init__：后初始化：解析子配置、RoPE 参数与派生字段
     def __post_init__(self, **kwargs):
         kwargs.setdefault("partial_rotary_factor", 1.0)
         kwargs.setdefault("partial_rotary_factor", 0.5)  # assign default for BC

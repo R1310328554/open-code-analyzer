@@ -28,6 +28,8 @@ from ...masking_utils import create_bidirectional_mask, create_causal_mask
 from ...modeling_flash_attention_utils import FlashAttentionKwargs
 from ...modeling_layers import GradientCheckpointingLayer
 from ...modeling_outputs import (
+# Speech2Text 建模：Conv1d 下采样 + 正弦位置编码 + 编码器-解码器交叉注意力 ASR
+
     BaseModelOutput,
     BaseModelOutputWithPastAndCrossAttentions,
     Seq2SeqLMOutput,
@@ -49,6 +51,7 @@ logger = logging.get_logger(__name__)
 
 
 # Copied from transformers.models.bart.modeling_bart.shift_tokens_right
+# shift_tokens_right：标签右移：构造 decoder 输入（首 token 为 decoder_start_token_id）
 def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start_token_id: int):
     """
     Shift input ids one token to the right.
@@ -65,12 +68,14 @@ def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start
     return shifted_input_ids
 
 
+# Conv1dSubsampler：Speech2Text 卷积下采样：1D Conv + GLU 将 mel 帧序列降采样至 d_model
 class Conv1dSubsampler(nn.Module):
     """
     Convolutional subsampler: a stack of 1D convolution (along temporal dimension) followed by non-linear activation
     via gated linear units (https://huggingface.co/papers/1911.08460)
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -91,6 +96,7 @@ class Conv1dSubsampler(nn.Module):
             for i, k in enumerate(self.kernel_sizes)
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input_features):
         hidden_states = input_features.transpose(1, 2).contiguous()  # -> B x (C x D) x T
         for conv in self.conv_layers:
@@ -100,9 +106,11 @@ class Conv1dSubsampler(nn.Module):
         return hidden_states
 
 
+# Speech2TextSinusoidalPositionalEmbedding：Speech2Text 正弦位置编码：Fairseq 风格绝对位置嵌入
 class Speech2TextSinusoidalPositionalEmbedding(nn.Module):
     """This module produces sinusoidal positional embeddings of any length."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, num_positions: int, embedding_dim: int, padding_idx: int | None = None):
         super().__init__()
         self.offset = 2
@@ -111,6 +119,7 @@ class Speech2TextSinusoidalPositionalEmbedding(nn.Module):
         self.padding_idx = padding_idx
         self.make_weights(num_positions + self.offset, embedding_dim, padding_idx)
 
+    # make_weights：构建/扩展正弦位置嵌入权重缓冲
     def make_weights(self, num_embeddings: int, embedding_dim: int, padding_idx: int | None = None):
         emb_weights = self.get_embedding(num_embeddings, embedding_dim, padding_idx)
         if hasattr(self, "weights"):
@@ -120,6 +129,7 @@ class Speech2TextSinusoidalPositionalEmbedding(nn.Module):
         self.weights = nn.Buffer(emb_weights, persistent=False)
 
     @staticmethod
+    # get_embedding：生成正弦位置编码矩阵（sin/cos 交替拼接）
     def get_embedding(num_embeddings: int, embedding_dim: int, padding_idx: int | None = None):
         """
         Build sinusoidal embeddings. This matches the implementation in tensor2tensor, but differs slightly from the
@@ -138,6 +148,7 @@ class Speech2TextSinusoidalPositionalEmbedding(nn.Module):
         return emb.to(torch.get_default_dtype())
 
     @torch.no_grad()
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input_ids: torch.Tensor, past_key_values_length: int = 0):
         bsz, seq_len = input_ids.size()
         # Create the position ids from the input token ids. Any padded tokens remain padded.
@@ -152,6 +163,7 @@ class Speech2TextSinusoidalPositionalEmbedding(nn.Module):
 
         return self.weights.index_select(0, position_ids.view(-1)).view(bsz, seq_len, -1).detach()
 
+    # create_position_ids_from_input_ids：从 input_ids 生成位置 ID（padding 位置忽略）
     def create_position_ids_from_input_ids(
         self, input_ids: torch.Tensor, padding_idx: int, past_key_values_length: int | None = 0
     ):
@@ -170,6 +182,7 @@ class Speech2TextSinusoidalPositionalEmbedding(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.eager_attention_forward
+# eager_attention_forward：标准注意力前向：QK^T 缩放 softmax 加权 V
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -199,9 +212,11 @@ def eager_attention_forward(
 
 
 # Copied from transformers.models.musicgen.modeling_musicgen.MusicgenAttention with Musicgen->Speech2Text
+# Speech2TextAttention：Speech2Text 注意力：支持自注意力与编码器-解码器交叉注意力
 class Speech2TextAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         embed_dim: int,
@@ -235,6 +250,7 @@ class Speech2TextAttention(nn.Module):
         self.q_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
         self.out_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -312,7 +328,9 @@ class Speech2TextAttention(nn.Module):
 
 
 # Copied from transformers.models.mbart.modeling_mbart.MBartEncoderLayer with MBart->Speech2Text, MBART->SPEECH_TO_TEXT
+# Speech2TextEncoderLayer：Speech2Text 编码层：双向自注意力 + FFN 残差堆叠
 class Speech2TextEncoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Speech2TextConfig):
         super().__init__()
         self.embed_dim = config.d_model
@@ -331,6 +349,7 @@ class Speech2TextEncoderLayer(GradientCheckpointingLayer):
         self.fc2 = nn.Linear(config.encoder_ffn_dim, self.embed_dim)
         self.final_layer_norm = nn.LayerNorm(self.embed_dim)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -370,7 +389,9 @@ class Speech2TextEncoderLayer(GradientCheckpointingLayer):
 
 # copied from transformers.models.mbart.modeling_mbart.MBartDecoderLayer with MBart->Speech2Text, MBART->SPEECH_TO_TEXT
 # TODO: change copy when applying cache class
+# Speech2TextDecoderLayer：Speech2Text 解码层：因果自注意力 + 交叉注意力 + FFN
 class Speech2TextDecoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Speech2TextConfig, layer_idx=None):
         super().__init__()
         self.embed_dim = config.d_model
@@ -403,6 +424,7 @@ class Speech2TextDecoderLayer(GradientCheckpointingLayer):
         self.final_layer_norm = nn.LayerNorm(self.embed_dim)
 
     # Copied from transformers.models.musicgen.modeling_musicgen.MusicgenDecoderLayer.forward
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -465,6 +487,7 @@ class Speech2TextDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Speech2TextPreTrainedModel：Speech2Text 预训练基类：权重初始化与梯度检查点支持
 class Speech2TextPreTrainedModel(PreTrainedModel):
     config: Speech2TextConfig
     base_model_prefix = "model"
@@ -477,6 +500,7 @@ class Speech2TextPreTrainedModel(PreTrainedModel):
     _supports_sdpa = False
     _supports_flex_attn = False
 
+    # _init_weights：按配置策略初始化线性层、嵌入与 MoE 专家权重
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, Speech2TextSinusoidalPositionalEmbedding):
@@ -513,6 +537,7 @@ class Speech2TextPreTrainedModel(PreTrainedModel):
         return attention_mask
 
 
+# Speech2TextEncoder：Speech2Text 编码器：Conv 下采样 + 正弦位置 + 多层编码器
 class Speech2TextEncoder(Speech2TextPreTrainedModel):
     """
     Transformer encoder consisting of *config.encoder_layers* self attention layers. Each layer is a
@@ -529,6 +554,7 @@ class Speech2TextEncoder(Speech2TextPreTrainedModel):
         "attentions": Speech2TextAttention,
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Speech2TextConfig):
         super().__init__(config)
 
@@ -557,6 +583,7 @@ class Speech2TextEncoder(Speech2TextPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_features,
@@ -606,6 +633,7 @@ class Speech2TextEncoder(Speech2TextPreTrainedModel):
         )
 
 
+# Speech2TextDecoder：Speech2Text 解码器：词嵌入 + 正弦位置 + 多层解码器
 class Speech2TextDecoder(Speech2TextPreTrainedModel):
     """
     Transformer decoder consisting of *config.decoder_layers* layers. Each layer is a [`Speech2TextDecoderLayer`]
@@ -621,6 +649,7 @@ class Speech2TextDecoder(Speech2TextPreTrainedModel):
         "cross_attentions": OutputRecorder(Speech2TextAttention, index=1, layer_name="encoder_attn"),
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Speech2TextConfig):
         super().__init__(config)
         self.dropout = config.dropout
@@ -650,6 +679,7 @@ class Speech2TextDecoder(Speech2TextPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids=None,
@@ -717,7 +747,9 @@ class Speech2TextDecoder(Speech2TextPreTrainedModel):
 
 
 @auto_docstring
+# Speech2TextModel：Speech2Text 基模型：编码器-解码器联合前向与交叉注意力
 class Speech2TextModel(Speech2TextPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Speech2TextConfig):
         super().__init__(config)
 
@@ -736,6 +768,7 @@ class Speech2TextModel(Speech2TextPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_features: torch.LongTensor | None = None,
@@ -839,11 +872,13 @@ class Speech2TextModel(Speech2TextPreTrainedModel):
     The Speech2Text Model with a language modeling head. Can be used for summarization.
     """
 )
+# Speech2TextForConditionalGeneration：Speech2Text 条件生成：Seq2Seq LM 头 + 生成交互接口
 class Speech2TextForConditionalGeneration(Speech2TextPreTrainedModel, GenerationMixin):
     input_modalities = ("audio", "text")
     base_model_prefix = "model"
     _tied_weights_keys = {"lm_head.weight": "model.decoder.embed_tokens.weight"}
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Speech2TextConfig):
         super().__init__(config)
         self.model = Speech2TextModel(config)
@@ -855,6 +890,7 @@ class Speech2TextForConditionalGeneration(Speech2TextPreTrainedModel, Generation
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_features: torch.LongTensor | None = None,

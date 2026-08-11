@@ -19,6 +19,8 @@ from huggingface_hub.dataclasses import strict
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring, logging
 from ..auto.configuration_auto import AutoConfig
+# SpeechEncoderDecoder 配置：组合 AutoConfig 编码器/解码器子配置并启用交叉注意力
+
 
 
 logger = logging.get_logger(__name__)
@@ -26,6 +28,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="")
 @strict
+# SpeechEncoderDecoderConfig：SpeechEncoderDecoder 配置：封装 encoder/decoder AutoConfig 子配置
 class SpeechEncoderDecoderConfig(PreTrainedConfig):
     r"""
     Examples:
@@ -63,6 +66,7 @@ class SpeechEncoderDecoderConfig(PreTrainedConfig):
 
     is_encoder_decoder: bool | None = True
 
+    # __post_init__：后初始化：解析子配置、RoPE 参数与派生字段
     def __post_init__(self, **kwargs):
         if "encoder" not in kwargs or "decoder" not in kwargs:
             raise ValueError(

@@ -17,10 +17,13 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# Speech2Text 配置：卷积下采样 + 编码器-解码器 Transformer 的 ASR 超参数
+
 
 
 @auto_docstring(checkpoint="facebook/s2t-small-librispeech-asr")
 @strict
+# Speech2TextConfig：Speech2Text 配置：Conv1d 下采样、编码器/解码器层数与 mel 特征维度
 class Speech2TextConfig(PreTrainedConfig):
     r"""
     max_source_positions (`int`, *optional*, defaults to 6000):
@@ -94,6 +97,7 @@ class Speech2TextConfig(PreTrainedConfig):
     input_channels: int = 1
     tie_word_embeddings: bool = True
 
+    # validate_architecture：校验卷积层 kernel 列表与 num_conv_layers 长度匹配
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if len(self.conv_kernel_sizes) != self.num_conv_layers:

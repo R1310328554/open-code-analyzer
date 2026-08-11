@@ -29,6 +29,8 @@ from ..idefics3.configuration_idefics3 import Idefics3Config, Idefics3VisionConf
 from ..idefics3.image_processing_idefics3 import Idefics3ImageProcessor
 from ..idefics3.image_processing_pil_idefics3 import Idefics3ImageProcessorPil
 from ..idefics3.modeling_idefics3 import (
+# SmolVLM modular 源：复用 Idefics3 组件并定制 inputs_merger 与图像特征提取逻辑
+
     Idefics3BaseModelOutputWithPast,
     Idefics3ForConditionalGeneration,
     Idefics3Model,
@@ -42,6 +44,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="HuggingFaceTB/SmolVLM2-2.2B-Instruct")
 @strict
+# SmolVLMVisionConfig：SmolVLM 视觉配置：继承 Idefics3 视觉子配置
 class SmolVLMVisionConfig(Idefics3VisionConfig):
     r"""
     Example:
@@ -63,16 +66,19 @@ class SmolVLMVisionConfig(Idefics3VisionConfig):
     model_type = "smolvlm_vision"
 
 
+# SmolVLMPreTrainedModel：SmolVLM 预训练基类：支持图像/文本双模态与 Flash/SDPA 注意力后端
 class SmolVLMPreTrainedModel(Idefics3PreTrainedModel):
     pass
 
 
+# SmolVLMVisionTransformer：SmolVLM 视觉塔：SigLIP 风格 ViT 编码器输出 patch 隐状态
 class SmolVLMVisionTransformer(Idefics3VisionTransformer):
     pass
 
 
 @auto_docstring(checkpoint="HuggingFaceTB/SmolVLM2-2.2B-Instruct")
 @strict
+# SmolVLMConfig：SmolVLM 联合配置：scale_factor 控制 pixel shuffle 与 image_seq_len
 class SmolVLMConfig(Idefics3Config):
     r"""
     scale_factor (`int`, *optional*, defaults to 2):
@@ -92,18 +98,22 @@ class SmolVLMConfig(Idefics3Config):
     model_type = "smolvlm"
 
 
+# SmolVLMImageProcessor：SmolVLM Torchvision 图像处理器：复用 Idefics3 动态缩放与 patch 切分
 class SmolVLMImageProcessor(Idefics3ImageProcessor):
     pass
 
 
+# SmolVLMImageProcessorPil：SmolVLM PIL 图像处理器：复用 Idefics3 PIL 后端预处理
 class SmolVLMImageProcessorPil(Idefics3ImageProcessorPil):
     pass
 
 
+# SmolVLMBaseModelOutputWithPast：SmolVLM 基模型输出：含 KV cache、隐状态与图像隐状态元组
 class SmolVLMBaseModelOutputWithPast(Idefics3BaseModelOutputWithPast):
     pass
 
 
+# SmolVLMModel：SmolVLM 多模态模型：视觉塔 + 连接器 + 文本 LM，自定义 inputs_merger 融合图像 token
 class SmolVLMModel(Idefics3Model):
     """
     A subclass of Idefics3Model. We do *not* remove or block the call to inputs_merger
@@ -147,6 +157,7 @@ class SmolVLMModel(Idefics3Model):
     @auto_docstring(
         custom_intro="Encodes images into continuous embeddings that can be forwarded to the language model."
     )
+    # get_image_features：图像编码：过滤 padding 图像、视觉塔前向 + connector 模态投影
     def get_image_features(
         self,
         pixel_values: torch.FloatTensor,
@@ -212,6 +223,7 @@ class SmolVLMModel(Idefics3Model):
         image_batch_size would be 7 when num_images_per_sample=[1, 3, 1, 2] and max_num_images would be 3.
         """
     )
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -274,9 +286,11 @@ class SmolVLMModel(Idefics3Model):
         )
 
 
+# SmolVLMForConditionalGeneration：SmolVLM 条件生成：视觉-语言联合模型 + lm_head 自回归解码
 class SmolVLMForConditionalGeneration(Idefics3ForConditionalGeneration):
     _tied_weights_keys = {"lm_head.weight": "model.text_model.embed_tokens.weight"}
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.model = SmolVLMModel(config)
@@ -284,6 +298,7 @@ class SmolVLMForConditionalGeneration(Idefics3ForConditionalGeneration):
         self.lm_head = nn.Linear(config.text_config.hidden_size, config.text_config.vocab_size, bias=False)
         self.post_init()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, **super_kwargs):
         r"""
         pixel_attention_mask (`torch.Tensor` of shape `(batch_size, image_size, image_size)`, *optional*):
