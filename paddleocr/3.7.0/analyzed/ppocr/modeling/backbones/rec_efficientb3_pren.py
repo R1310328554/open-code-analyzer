@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# PREN 识别 EfficientNet-B3：MBConv + SE，输出三尺度 FPN 特征
 """
 Code is refer from:
 https://github.com/RuijieJ/pren/blob/main/Nets/EfficientNet.py
@@ -60,6 +61,8 @@ BlockArgs = collections.namedtuple(
 )
 
 
+    # 解析 EfficientNet block 字符串编码为 BlockArgs
+    # 将 k3_s11_e6 等字符串解码为 MBConv 结构参数
 class BlockDecoder:
     @staticmethod
     def _decode_block_string(block_string):
@@ -156,6 +159,7 @@ class EffUtils:
         return int(math.ceil(multiplier * repeats))
 
 
+    # Mobile Inverted Bottleneck：expand→DW→SE→project
 class MbConvBlock(nn.Layer):
     def __init__(self, block_args):
         super(MbConvBlock, self).__init__()
@@ -188,6 +192,7 @@ class MbConvBlock(nn.Layer):
         )
         self._bn1 = nn.BatchNorm(oup)
 
+        # SE 模块：全局池化→降维→Swish→升维→Sigmoid 门控
         # squeeze and excitation layer, if desired
         if self.has_se:
             num_squeezed_channels = max(
@@ -236,6 +241,7 @@ class MbConvBlock(nn.Layer):
         return x
 
 
+    # PREN 专用 B3：w=1.2/d=1.4，分辨率 64，三尺度输出
 class EfficientNetb3_PREN(nn.Layer):
     def __init__(self, in_channels):
         super(EfficientNetb3_PREN, self).__init__()
@@ -260,6 +266,7 @@ class EfficientNetb3_PREN(nn.Layer):
         # build blocks
         self._blocks = []
         # to extract three feature maps for fpn based on efficientnetb3 backbone
+        # 在第 7/17/25 块输出特征图供 FPN neck
         self._concerned_block_idxes = [7, 17, 25]
         _concerned_idx = 0
         for i, block_args in enumerate(self._blocks_args):

@@ -21,9 +21,11 @@ from paddle import ParamAttr
 import paddle.nn as nn
 import paddle.nn.functional as F
 
+# PGNet 端到端识别骨干：ResNet_vd 五 stage，逐级输出特征
 __all__ = ["ResNet"]
 
 
+    # PGNet ConvBN：带命名参数便于预训练权重对齐
 class ConvBNLayer(nn.Layer):
     def __init__(
         self,
@@ -71,6 +73,7 @@ class ConvBNLayer(nn.Layer):
         return y
 
 
+    # PGNet 瓶颈残差块
 class BottleneckBlock(nn.Layer):
     def __init__(
         self,
@@ -132,6 +135,7 @@ class BottleneckBlock(nn.Layer):
         return y
 
 
+    # PGNet 基础残差块
 class BasicBlock(nn.Layer):
     def __init__(
         self,
@@ -185,6 +189,7 @@ class BasicBlock(nn.Layer):
         return y
 
 
+    # PGNet E2E ResNet：五 stage 深度，forward 返回多尺度列表
 class ResNet(nn.Layer):
     def __init__(self, in_channels=3, layers=50, **kwargs):
         super(ResNet, self).__init__()
@@ -213,6 +218,7 @@ class ResNet(nn.Layer):
         )
         num_filters = [64, 128, 256, 512, 512]
 
+        # PGNet 使用 7×7 单卷积 stem（与 SAST 三层 stem 不同）
         self.conv1_1 = ConvBNLayer(
             in_channels=in_channels,
             out_channels=64,

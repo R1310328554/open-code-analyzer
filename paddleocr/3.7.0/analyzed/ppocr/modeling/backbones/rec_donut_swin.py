@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# Donut Swin Transformer 识别骨干：窗口自注意力 + 分层 Patch 合并
 """
 This code is refer from:
 https://github.com/huggingface/transformers/blob/main/src/transformers/models/donut/modeling_donut_swin.py
@@ -50,6 +51,7 @@ _CHECKPOINT_FOR_DOC = "https://huggingface.co/naver-clova-ix/donut-base"
 _EXPECTED_OUTPUT_SHAPE = [1, 49, 768]
 
 
+    # Donut Swin 超参：图像尺寸、patch、depths、window_size 等
 class DonutSwinConfig(object):
     model_type = "donut-swin"
 
@@ -109,6 +111,8 @@ class DonutSwinConfig(object):
 
 @dataclass
 # Copied from transformers.models.swin.modeling_swin.SwinEncoderOutput with Swin->DonutSwin
+    # 编码器输出容器：last_hidden_state、各层 hidden 与 attention
+    # 多 stage 编码器：逐层下采样并可选输出中间态
 class DonutSwinEncoderOutput(OrderedDict):
     last_hidden_state = None
     hidden_states = None
@@ -143,6 +147,8 @@ class DonutSwinEncoderOutput(OrderedDict):
 
 @dataclass
 # Copied from transformers.models.swin.modeling_swin.SwinModelOutput with Swin->DonutSwin
+    # 完整模型输出：序列特征 + 可选 pooler_output
+    # OCR 识别用 Donut Swin：Embeddings→Encoder→可选 Pooler
 class DonutSwinModelOutput(OrderedDict):
     last_hidden_state = None
     pooler_output = None
@@ -177,6 +183,7 @@ class DonutSwinModelOutput(OrderedDict):
 
 
 # Copied from transformers.models.swin.modeling_swin.window_partition
+    # 将特征图划分为不重叠 window，供局部自注意力计算
 def window_partition(input_feature, window_size):
     """
     Partitions the given input into windows.
@@ -199,6 +206,7 @@ def window_partition(input_feature, window_size):
 
 
 # Copied from transformers.models.swin.modeling_swin.window_reverse
+    # 将 window 注意力输出还原为完整空间特征图
 def window_reverse(windows, window_size, height, width):
     """
     Merges windows to produce higher resolution features.
@@ -221,6 +229,7 @@ def window_reverse(windows, window_size, height, width):
 
 
 # Copied from transformers.models.swin.modeling_swin.SwinEmbeddings with Swin->DonutSwin
+    # Patch 嵌入 + 可选 mask token 与绝对位置编码
 class DonutSwinEmbeddings(nn.Layer):
     """
     Construct the patch and position embeddings. Optionally, also the mask token.
@@ -268,6 +277,7 @@ class DonutSwinEmbeddings(nn.Layer):
         return embeddings, output_dimensions
 
 
+    # 自定义 Conv2d：显式 weight/bias 参数初始化
 class MyConv2d(nn.Conv2D):
     def __init__(
         self,
@@ -312,6 +322,7 @@ class MyConv2d(nn.Conv2D):
 
 
 # Copied from transformers.models.swin.modeling_swin.SwinPatchEmbeddings
+    # 非重叠 patch 卷积投影，必要时 pad 对齐
 class DonutSwinPatchEmbeddings(nn.Layer):
     """
     This class turns `pixel_values` of shape `(batch_size, num_channels, height, width)` into the initial
@@ -379,6 +390,7 @@ class DonutSwinPatchEmbeddings(nn.Layer):
 
 
 # Copied from transformers.models.swin.modeling_swin.SwinPatchMerging
+    # Patch 合并：2×2 邻域 concat 后 Linear 降采样
 class DonutSwinPatchMerging(nn.Layer):
     """
     Patch Merging Layer.
@@ -462,6 +474,7 @@ def drop_path(
 
 
 # Copied from transformers.models.swin.modeling_swin.SwinDropPath
+    # Stochastic Depth：训练时随机丢弃残差路径
 class DonutSwinDropPath(nn.Layer):
     """Drop paths (Stochastic Depth) per sample (when applied in main path of residual blocks)."""
 
@@ -476,6 +489,7 @@ class DonutSwinDropPath(nn.Layer):
         return "p={}".format(self.drop_prob)
 
 
+    # 窗口多头自注意力 + 相对位置偏置
 class DonutSwinSelfAttention(nn.Layer):
     def __init__(self, config, dim, num_heads, window_size):
         super().__init__()
@@ -549,6 +563,7 @@ class DonutSwinSelfAttention(nn.Layer):
 
         attention_scores = attention_scores / math.sqrt(self.attention_head_size)
 
+        # 可学习相对位置偏置表，注入 window 内 QK 分数
         relative_position_bias = self.relative_position_bias_table[
             self.relative_position_index.reshape([-1])
         ]
@@ -606,6 +621,7 @@ class DonutSwinSelfAttention(nn.Layer):
 
 
 # Copied from transformers.models.swin.modeling_swin.SwinSelfOutput
+    # 注意力输出投影 + dropout
 class DonutSwinSelfOutput(nn.Layer):
     def __init__(self, config, dim):
         super().__init__()
@@ -622,6 +638,7 @@ class DonutSwinSelfOutput(nn.Layer):
 
 
 # Copied from transformers.models.swin.modeling_swin.SwinAttention with Swin->DonutSwin
+    # Self-Attention + Output 残差前子模块
 class DonutSwinAttention(nn.Layer):
     def __init__(self, config, dim, num_heads, window_size):
         super().__init__()
@@ -647,6 +664,7 @@ class DonutSwinAttention(nn.Layer):
 
 
 # Copied from transformers.models.swin.modeling_swin.SwinIntermediate
+    # MLP 中间层：Linear 扩维 + GELU
 class DonutSwinIntermediate(nn.Layer):
     def __init__(self, config, dim):
         super().__init__()
@@ -660,6 +678,7 @@ class DonutSwinIntermediate(nn.Layer):
 
 
 # Copied from transformers.models.swin.modeling_swin.SwinOutput
+    # MLP 输出层：Linear 降维 + dropout
 class DonutSwinOutput(nn.Layer):
     def __init__(self, config, dim):
         super().__init__()
@@ -673,6 +692,7 @@ class DonutSwinOutput(nn.Layer):
 
 
 # Copied from transformers.models.swin.modeling_swin.SwinLayer with Swin->DonutSwin
+    # Swin Block：LN→W-MSA/SW-MSA→MLP，含 shift 与 pad 逻辑
 class DonutSwinLayer(nn.Layer):
     def __init__(self, config, dim, input_resolution, num_heads, shift_size=0):
         super().__init__()
@@ -798,6 +818,7 @@ class DonutSwinLayer(nn.Layer):
 
         _, height_pad, width_pad, _ = hidden_states.shape
 
+        # SW-MSA：奇数层 cyclic shift 实现跨 window 信息交互
         # cyclic shift
         if self.shift_size > 0:
             shift_value = (-self.shift_size, -self.shift_size)
@@ -809,6 +830,7 @@ class DonutSwinLayer(nn.Layer):
         else:
             shifted_hidden_states = hidden_states
 
+        # 划分 window 并计算相对位置偏置 attention
         # partition windows
         hidden_states_windows = window_partition(
             shifted_hidden_states, self.window_size
@@ -863,6 +885,7 @@ class DonutSwinLayer(nn.Layer):
 
 
 # Copied from transformers.models.swin.modeling_swin.SwinStage with Swin->DonutSwin
+    # 一个 stage：若干 SwinLayer + 可选 PatchMerging
 class DonutSwinStage(nn.Layer):
     def __init__(
         self, config, dim, input_resolution, depth, num_heads, drop_path, downsample
@@ -1068,6 +1091,7 @@ class DonutSwinEncoder(nn.Layer):
         )
 
 
+    # 预训练基类：权重初始化与 head_mask 处理
 class DonutSwinPreTrainedModel(nn.Layer):
     """
     An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
@@ -1255,6 +1279,7 @@ class DonutSwinModel(DonutSwinPreTrainedModel):
         if pixel_values is None:
             raise ValueError("You have to specify pixel_values")
         num_channels = pixel_values.shape[1]
+        # 灰度输入复制三通道以匹配预训练 RGB 权重
         if num_channels == 1:
             pixel_values = paddle.repeat_interleave(pixel_values, repeats=3, axis=1)
 

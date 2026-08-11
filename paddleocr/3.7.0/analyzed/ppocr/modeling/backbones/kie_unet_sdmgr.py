@@ -19,11 +19,13 @@ from __future__ import print_function
 import paddle
 from paddle import nn
 import numpy as np
+# KIE SDMGR 视觉骨干：UNet 编码解码 + ROI Align 提取文本框特征
 import cv2
 
 __all__ = ["Kie_backbone"]
 
 
+    # UNet 下采样：双 Conv+BN+ReLU 后 MaxPool
 class Encoder(nn.Layer):
     def __init__(self, num_channels, num_filters):
         super(Encoder, self).__init__()
@@ -58,6 +60,7 @@ class Encoder(nn.Layer):
         return x, x_pooled
 
 
+    # UNet 上采样：1×1 降维→双线性插值→与 skip concat→双 Conv
 class Decoder(nn.Layer):
     def __init__(self, num_channels, num_filters):
         super(Decoder, self).__init__()
@@ -95,6 +98,7 @@ class Decoder(nn.Layer):
     def forward(self, inputs_prev, inputs):
         x = self.conv0(inputs)
         x = self.bn0(x)
+        # 解码器上采样 2× 后与编码器 skip 拼接
         x = paddle.nn.functional.interpolate(
             x, scale_factor=2, mode="bilinear", align_corners=False
         )
@@ -106,6 +110,7 @@ class Decoder(nn.Layer):
         return x
 
 
+    # 五层 UNet：down1–5 + up1–4，输出 16 通道特征图
 class UNet(nn.Layer):
     def __init__(self):
         super(UNet, self).__init__()
@@ -135,6 +140,7 @@ class UNet(nn.Layer):
         return x
 
 
+    # KIE 主骨干：UNet 提特征→bbox2roi→ROI Align→7×7 maxpool
 class Kie_backbone(nn.Layer):
     def __init__(self, in_channels, **kwargs):
         super(Kie_backbone, self).__init__()

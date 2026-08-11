@@ -20,11 +20,13 @@ from paddle.nn import Conv2D, BatchNorm2D, ReLU, AdaptiveAvgPool2D, MaxPool2D
 from paddle.regularizer import L2Decay
 from paddle import ParamAttr
 
+# PP-HGNet 识别/检测骨干：HG_Block 密集连接 + ESE 通道注意力
 kaiming_normal_ = KaimingNormal()
 zeros_ = Constant(value=0.0)
 ones_ = Constant(value=1.0)
 
 
+    # NPU 兼容均值池化：展平后 mean 再 reshape
 class MeanPool2D(nn.Layer):
     def __init__(self, w, h):
         super().__init__()
@@ -39,6 +41,7 @@ class MeanPool2D(nn.Layer):
         return feat_mean
 
 
+    # Conv+BN+可选 ReLU 基础块
 class ConvBNAct(nn.Layer):
     def __init__(
         self, in_channels, out_channels, kernel_size, stride, groups=1, use_act=True
@@ -70,6 +73,7 @@ class ConvBNAct(nn.Layer):
         return x
 
 
+    # 有效 squeeze-excitation：1×1 卷积 + Sigmoid
 class ESEModule(nn.Layer):
     def __init__(self, channels):
         super().__init__()
@@ -94,6 +98,7 @@ class ESEModule(nn.Layer):
         return paddle.multiply(x=identity, y=x)
 
 
+    # HG 块：多层卷积密集连接→聚合→ESE→可选 identity
 class HG_Block(nn.Layer):
     def __init__(
         self,
@@ -125,6 +130,7 @@ class HG_Block(nn.Layer):
                 )
             )
 
+        # HG_Block：多层卷积输出 concat 后 1×1 聚合
         # feature aggregation
         total_channels = in_channels + layer_num * mid_channels
         self.aggregation_conv = ConvBNAct(
@@ -150,6 +156,7 @@ class HG_Block(nn.Layer):
         return x
 
 
+    # HG 阶段：可选 depthwise 下采样 + 多个 HG_Block
 class HG_Stage(nn.Layer):
     def __init__(
         self,
@@ -192,6 +199,7 @@ class HG_Stage(nn.Layer):
         return x
 
 
+    # PP-HGNet 主干：stem + 四 stage，det 模式多尺度输出
 class PPHGNet(nn.Layer):
     """
     PPHGNet

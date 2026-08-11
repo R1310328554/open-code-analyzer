@@ -21,11 +21,13 @@ from ppocr.modeling.backbones import build_backbone
 from ppocr.modeling.necks import build_neck
 from ppocr.modeling.heads import build_head
 from .base_model import BaseModel
+# 知识蒸馏容器：并行托管多个 BaseModel 子网络并汇总前向结果
 from ppocr.utils.save_load import load_pretrained_params
 
 __all__ = ["DistillationModel"]
 
 
+    # OCR 蒸馏模型：遍历 Models 配置实例化并可选加载预训练
 class DistillationModel(nn.Layer):
     def __init__(self, config):
         """
@@ -47,6 +49,7 @@ class DistillationModel(nn.Layer):
             model = BaseModel(model_config)
             if pretrained is not None:
                 load_pretrained_params(model, pretrained)
+            # 冻结子模型参数，仅作教师或固定特征提取
             if freeze_params:
                 for param in model.parameters():
                     param.trainable = False

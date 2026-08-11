@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# CAN 公式识别 DenseNet：密集连接 + Transition 降采样
 """
 This code is refer from:
 https://github.com/LBH1024/CAN/models/densenet.py
@@ -27,6 +28,7 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 
 
+    # 密集瓶颈层：1×1 扩通道→3×3 卷积→concat 输入
 class Bottleneck(nn.Layer):
     def __init__(self, nChannels, growthRate, use_dropout):
         super(Bottleneck, self).__init__()
@@ -49,10 +51,12 @@ class Bottleneck(nn.Layer):
         out = F.relu(self.bn2(self.conv2(out)))
         if self.use_dropout:
             out = self.dropout(out)
+        # DenseNet 核心：每层输出与输入通道拼接
         out = paddle.concat([x, out], 1)
         return out
 
 
+    # 单层密集块：3×3 卷积后直接 concat
 class SingleLayer(nn.Layer):
     def __init__(self, nChannels, growthRate, use_dropout):
         super(SingleLayer, self).__init__()
@@ -73,6 +77,7 @@ class SingleLayer(nn.Layer):
         return out
 
 
+    # 过渡层：1×1 降通道 + 2×2 平均池化
 class Transition(nn.Layer):
     def __init__(self, nChannels, out_channels, use_dropout):
         super(Transition, self).__init__()
@@ -89,6 +94,7 @@ class Transition(nn.Layer):
         return out
 
 
+    # 识别 DenseNet：三组 dense+trans，输出供 CAN 解码
 class DenseNet(nn.Layer):
     def __init__(
         self, growthRate, reduction, bottleneck, use_dropout, input_channel, **kwargs

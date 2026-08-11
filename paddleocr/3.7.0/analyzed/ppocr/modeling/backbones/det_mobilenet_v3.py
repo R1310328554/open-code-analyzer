@@ -20,11 +20,13 @@ import paddle
 from paddle import nn
 import paddle.nn.functional as F
 from paddle import ParamAttr
+# 检测用 MobileNetV3：多尺度 stage 输出供 FPN 等 neck 使用
 from ppocr.modeling.backbones.rec_hgnet import MeanPool2D
 
 __all__ = ["MobileNetV3"]
 
 
+    # 将通道数向上取整到 divisor 倍数，便于硬件对齐
 def make_divisible(v, divisor=8, min_value=None):
     if min_value is None:
         min_value = divisor
@@ -34,6 +36,7 @@ def make_divisible(v, divisor=8, min_value=None):
     return new_v
 
 
+    # 检测 MobileNetV3：large/small 两套 cfg，scale 缩放通道
 class MobileNetV3(nn.Layer):
     def __init__(
         self, in_channels=3, model_name="large", scale=0.5, disable_se=False, **kwargs
@@ -112,6 +115,7 @@ class MobileNetV3(nn.Layer):
         inplanes = make_divisible(inplanes * scale)
         for k, exp, c, se, nl, s in cfg:
             se = se and not self.disable_se
+            # stride=2 且过起始阈值时切 stage，记录 out_channels
             start_idx = 2 if model_name == "large" else 0
             if s == 2 and i > start_idx:
                 self.out_channels.append(inplanes)
@@ -156,6 +160,7 @@ class MobileNetV3(nn.Layer):
         return out_list
 
 
+    # Conv+BN+可选 ReLU/Hardswish 激活
 class ConvBNLayer(nn.Layer):
     def __init__(
         self,
@@ -201,6 +206,7 @@ class ConvBNLayer(nn.Layer):
         return x
 
 
+    # MBConv 残差单元：expand→depthwise→SE→linear，可 shortcut
 class ResidualUnit(nn.Layer):
     def __init__(
         self,
@@ -258,6 +264,7 @@ class ResidualUnit(nn.Layer):
         return x
 
 
+    # 挤压激励：全局池化→两层 1×1 卷积→通道重标定
 class SEModule(nn.Layer):
     def __init__(self, in_channels, reduction=4):
         super(SEModule, self).__init__()

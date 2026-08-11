@@ -23,6 +23,7 @@ from paddle.regularizer import L2Decay
 from paddle.nn.initializer import KaimingNormal
 from paddle.utils.download import get_path_from_url
 
+# PPLCNet 检测骨干：ImageNet 预训练权重 URL 与分块深度配置
 MODEL_URLS = {
     "PPLCNet_x0.25": "https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/legendary_models/PPLCNet_x0_25_pretrained.pdparams",
     "PPLCNet_x0.35": "https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/legendary_models/PPLCNet_x0_35_pretrained.pdparams",
@@ -40,6 +41,7 @@ MODEL_STAGES_PATTERN = {
 
 __all__ = list(MODEL_URLS.keys())
 
+# NET_CONFIG 各块：k/in_c/out_c/stride/use_se
 # Each element(list) represents a depthwise block, which is composed of k, in_c, out_c, s, use_se.
 # k: kernel_size
 # in_c: input channel number in depthwise block
@@ -74,6 +76,7 @@ def make_divisible(v, divisor=8, min_value=None):
     return new_v
 
 
+    # PPLCNet 基础卷积块：Kaiming 初始化 + BN + Hardswish
 class ConvBNLayer(nn.Layer):
     def __init__(self, num_channels, filter_size, num_filters, stride, num_groups=1):
         super().__init__()
@@ -103,6 +106,7 @@ class ConvBNLayer(nn.Layer):
         return x
 
 
+    # 深度可分离卷积：DW→可选 SE→PW
 class DepthwiseSeparable(nn.Layer):
     def __init__(self, num_channels, num_filters, stride, dw_size=3, use_se=False):
         super().__init__()
@@ -128,6 +132,7 @@ class DepthwiseSeparable(nn.Layer):
         return x
 
 
+    # 通道注意力：AdaptiveAvgPool→1×1 降维/升维→Hardsigmoid
 class SEModule(nn.Layer):
     def __init__(self, channel, reduction=4):
         super().__init__()
@@ -160,6 +165,7 @@ class SEModule(nn.Layer):
         return x
 
 
+    # 检测 PPLCNet：blocks2–6 逐级下采样，输出 4 级特征图
 class PPLCNet(nn.Layer):
     def __init__(self, in_channels=3, scale=1.0, pretrained=False, use_ssld=False):
         super().__init__()

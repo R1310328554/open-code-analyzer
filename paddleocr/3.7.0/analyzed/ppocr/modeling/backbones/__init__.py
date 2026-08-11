@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 骨干网络工厂：按 model_type 懒加载对应 backbone 类并实例化
 __all__ = ["build_backbone"]
 
 
 def build_backbone(config, model_type):
+    # 检测/表格任务：MobileNet、ResNet、PPLCNet、HGNet 等轻量骨干
     if model_type == "det" or model_type == "table":
         from .det_mobilenet_v3 import MobileNetV3
         from .det_resnet import ResNet
@@ -49,6 +51,7 @@ def build_backbone(config, model_type):
             from .table_master_resnet import TableResNetExtra
 
             support_dict.append("TableResNetExtra")
+    # 识别/分类：DenseNet、Swin、SVTR、EfficientNet 等序列/视觉骨干
     elif model_type == "rec" or model_type == "cls":
         from .rec_mobilenet_v3 import MobileNetV3
         from .rec_resnet_vd import ResNet
@@ -115,10 +118,12 @@ def build_backbone(config, model_type):
             "PPHGNetV2_B6_Formula",
             "Vary_VIT_B_Formula",
         ]
+    # 端到端 PGNet：五阶段 ResNet_vd 变体
     elif model_type == "e2e":
         from .e2e_resnet_vd_pg import ResNet
 
         support_dict = ["ResNet"]
+    # 关键信息抽取：UNet 视觉骨干或 LayoutLM 系列
     elif model_type == "kie":
         from .kie_unet_sdmgr import Kie_backbone
         from .vqa_layoutlm import (
@@ -146,6 +151,7 @@ def build_backbone(config, model_type):
     else:
         raise NotImplementedError
 
+    # 从配置弹出 name，eval 构造对应 backbone 实例
     module_name = config.pop("name")
     assert module_name in support_dict, Exception(
         "when model typs is {}, backbone only support {}".format(

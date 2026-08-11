@@ -21,9 +21,11 @@ from paddle import ParamAttr
 import paddle.nn as nn
 import paddle.nn.functional as F
 
+# SAST 检测骨干：ResNet_vd 变体，forward 返回全层特征列表
 __all__ = ["ResNet_SAST"]
 
 
+    # SAST 命名 ConvBN：权重/BN 参数带固定 name 便于加载
 class ConvBNLayer(nn.Layer):
     def __init__(
         self,
@@ -73,6 +75,7 @@ class ConvBNLayer(nn.Layer):
         return y
 
 
+    # SAST 瓶颈块：branch2a/b/c 与 branch1 命名规范
 class BottleneckBlock(nn.Layer):
     def __init__(
         self,
@@ -134,6 +137,7 @@ class BottleneckBlock(nn.Layer):
         return y
 
 
+    # SAST 基础残差块
 class BasicBlock(nn.Layer):
     def __init__(
         self,
@@ -187,6 +191,7 @@ class BasicBlock(nn.Layer):
         return y
 
 
+    # SAST 专用 ResNet_vd：五 stage，forward 返回逐级特征列表
 class ResNet_SAST(nn.Layer):
     def __init__(self, in_channels=3, layers=50, **kwargs):
         super(ResNet_SAST, self).__init__()
@@ -203,6 +208,7 @@ class ResNet_SAST(nn.Layer):
             depth = [2, 2, 2, 2]
         elif layers == 34 or layers == 50:
             # depth = [3, 4, 6, 3]
+            # SAST 专用五 stage 深度，末 stage 通道 512
             depth = [3, 4, 6, 3, 3]
         elif layers == 101:
             depth = [3, 4, 23, 3]
@@ -302,6 +308,7 @@ class ResNet_SAST(nn.Layer):
                 self.stages.append(nn.Sequential(*block_list))
 
     def forward(self, inputs):
+        # 收集原图、stem 输出及各 stage 特征供 SAST head
         out = [inputs]
         y = self.conv1_1(inputs)
         y = self.conv1_2(y)

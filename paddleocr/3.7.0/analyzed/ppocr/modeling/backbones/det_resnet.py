@@ -30,9 +30,11 @@ import math
 from paddle.vision.ops import DeformConv2D
 from paddle.regularizer import L2Decay
 from paddle.nn.initializer import Normal, Constant, XavierUniform
+# 检测 ResNet：标准 Bottleneck/BasicBlock，可选 DCN 可变形卷积
 from .det_resnet_vd import DeformableConvV2, ConvBNLayer
 
 
+    # 1×1→3×3(可 DCN)→1×1 瓶颈残差块，expansion=4
 class BottleneckBlock(nn.Layer):
     def __init__(self, num_channels, num_filters, stride, shortcut=True, is_dcn=False):
         super(BottleneckBlock, self).__init__()
@@ -86,6 +88,7 @@ class BottleneckBlock(nn.Layer):
         return y
 
 
+    # 两层 3×3 基础残差块，用于 ResNet-18/34
 class BasicBlock(nn.Layer):
     def __init__(self, num_channels, num_filters, stride, shortcut=True, name=None):
         super(BasicBlock, self).__init__()
@@ -124,6 +127,7 @@ class BasicBlock(nn.Layer):
         return y
 
 
+    # 检测 ResNet：7×7 stem + 四 stage，out_indices 多尺度输出
 class ResNet(nn.Layer):
     def __init__(self, in_channels=3, layers=50, out_indices=None, dcn_stage=None):
         super(ResNet, self).__init__()
@@ -173,6 +177,7 @@ class ResNet(nn.Layer):
             for block in range(len(depth)):
                 shortcut = False
                 block_list = []
+                # 按 stage 配置是否在 3×3 卷积使用 DCNv2
                 is_dcn = self.dcn_stage[block]
                 for i in range(depth[block]):
                     if layers in [101, 152] and block == 2:

@@ -24,6 +24,7 @@ from paddle.regularizer import L2Decay
 from paddle.nn.initializer import KaimingNormal
 from paddle.utils.download import get_path_from_url
 
+# PPLCNetV2：Rep 结构深度可分离 + 可选 split_pw/SE/shortcut
 MODEL_URLS = {
     "PPLCNetV2_small": "https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/legendary_models/PPLCNetV2_small_ssld_pretrained.pdparams",
     "PPLCNetV2_base": "https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/legendary_models/PPLCNetV2_base_ssld_pretrained.pdparams",
@@ -50,6 +51,7 @@ def make_divisible(v, divisor=8, min_value=None):
     return new_v
 
 
+    # V2 卷积块：可选 ReLU，groups 支持深度卷积
 class ConvBNLayer(nn.Layer):
     def __init__(
         self, in_channels, out_channels, kernel_size, stride, groups=1, use_act=True
@@ -83,6 +85,7 @@ class ConvBNLayer(nn.Layer):
         return x
 
 
+    # Sigmoid 门控的通道 SE 模块
 class SEModule(nn.Layer):
     def __init__(self, channel, reduction=4):
         super().__init__()
@@ -115,6 +118,7 @@ class SEModule(nn.Layer):
         return x
 
 
+    # 可重参数化 DW 块：训练多分支、推理单卷积
 class RepDepthwiseSeparable(nn.Layer):
     def __init__(
         self,
@@ -224,6 +228,7 @@ class RepDepthwiseSeparable(nn.Layer):
             x = x + input_x
         return x
 
+    # 推理前将多分支 DW 卷积融合为单卷积，加速部署
     def re_parameterize(self):
         if self.use_rep:
             self.is_repped = True
@@ -241,6 +246,7 @@ class RepDepthwiseSeparable(nn.Layer):
             bias_sum += bias
         return kernel_sum, bias_sum
 
+    # 将 ConvBN 分支的 BN 参数折叠进卷积核与偏置
     def _fuse_bn_tensor(self, branch):
         kernel = branch.conv.weight
         running_mean = branch.bn._mean
@@ -260,6 +266,7 @@ class RepDepthwiseSeparable(nn.Layer):
         return F.pad(tensor, [pad, pad, pad, pad])
 
 
+    # V2 主干：stem + 四 stage Rep 块，out_indx 控制输出层
 class PPLCNetV2(nn.Layer):
     def __init__(self, scale, depths, out_indx=[1, 2, 3, 4], **kwargs):
         super().__init__(**kwargs)

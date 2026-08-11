@@ -19,11 +19,13 @@ from paddle import nn
 from ppocr.modeling.transforms import build_transform
 from ppocr.modeling.backbones import build_backbone
 from ppocr.modeling.necks import build_neck
+# OCR 通用组装模型：Transform→Backbone→Neck→Head 四段式流水线
 from ppocr.modeling.heads import build_head
 
 __all__ = ["BaseModel"]
 
 
+    # PaddleOCR 标准模型骨架：按配置可选组装四段子模块
 class BaseModel(nn.Layer):
     def __init__(self, config):
         """
@@ -34,6 +36,7 @@ class BaseModel(nn.Layer):
         super(BaseModel, self).__init__()
         in_channels = config.get("in_channels", 3)
         model_type = config["model_type"]
+        # 识别可用 TPS 等几何变换；检测/分类默认 None
         # build transform,
         # for rec, transform can be TPS,None
         # for det and cls, transform should to be None,
@@ -46,6 +49,7 @@ class BaseModel(nn.Layer):
             self.transform = build_transform(config["Transform"])
             in_channels = self.transform.out_channels
 
+        # 骨干网络为检测/识别/分类共用特征提取器
         # build backbone, backbone is need for del, rec and cls
         if "Backbone" not in config or config["Backbone"] is None:
             self.use_backbone = False
@@ -55,6 +59,7 @@ class BaseModel(nn.Layer):
             self.backbone = build_backbone(config["Backbone"], model_type)
             in_channels = self.backbone.out_channels
 
+        # 识别常用 CNN/RNN；检测常用 FPN/BiFPN 等多尺度融合
         # build neck
         # for rec, neck can be cnn,rnn or reshape(None)
         # for det, neck can be FPN, BIFPN and so on.
@@ -67,6 +72,7 @@ class BaseModel(nn.Layer):
             self.neck = build_neck(config["Neck"])
             in_channels = self.neck.out_channels
 
+        # 任务头：检测框/文本序列/方向分类等最终输出
         # # build head, head is need for det, rec and cls
         if "Head" not in config or config["Head"] is None:
             self.use_head = False
@@ -97,6 +103,7 @@ class BaseModel(nn.Layer):
             final_name = "neck_out"
         if self.use_head:
             x = self.head(x, targets=data)
+            # 多头输出时保留 ctc_neck 供 UDML 蒸馏对齐
             # for multi head, save ctc neck out for udml
             if isinstance(x, dict) and "ctc_neck" in x.keys():
                 y["neck_out"] = x["ctc_neck"]

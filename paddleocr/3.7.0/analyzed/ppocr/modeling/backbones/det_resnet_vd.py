@@ -25,9 +25,11 @@ from paddle.vision.ops import DeformConv2D
 from paddle.regularizer import L2Decay
 from paddle.nn.initializer import Normal, Constant, XavierUniform
 
+# ResNet_vd：VD 结构（首层 3×3 堆叠 + avg downsample）与 DCN 支持
 __all__ = ["ResNet_vd", "ConvBNLayer", "DeformableConvV2"]
 
 
+    # 可变形卷积 v2：offset+mask 调制采样位置
 class DeformableConvV2(nn.Layer):
     def __init__(
         self,
@@ -94,6 +96,7 @@ class DeformableConvV2(nn.Layer):
 
     def forward(self, x):
         offset_mask = self.conv_offset(x)
+        # conv_offset 预测 offset 与 mask，驱动 DeformConv2D
         offset, mask = paddle.split(
             offset_mask,
             num_or_sections=[self.offset_channel, self.mask_channel],
@@ -104,6 +107,7 @@ class DeformableConvV2(nn.Layer):
         return y
 
 
+    # 通用 ConvBN，可选 VD 池化与 DCN 替换标准卷积
 class ConvBNLayer(nn.Layer):
     def __init__(
         self,
@@ -146,6 +150,7 @@ class ConvBNLayer(nn.Layer):
         self._batch_norm = nn.BatchNorm(out_channels, act=act)
 
     def forward(self, inputs):
+        # VD 下采样：先 AvgPool 再 1×1 卷积，减少信息损失
         if self.is_vd_mode:
             inputs = self._pool2d_avg(inputs)
         y = self._conv(inputs)
@@ -153,6 +158,7 @@ class ConvBNLayer(nn.Layer):
         return y
 
 
+    # ResNet_vd 瓶颈块：shortcut 非恒等时用 VD 模式对齐
 class BottleneckBlock(nn.Layer):
     def __init__(
         self,
@@ -212,6 +218,7 @@ class BottleneckBlock(nn.Layer):
         return y
 
 
+    # ResNet_vd 基础块：两层 3×3 + VD shortcut
 class BasicBlock(nn.Layer):
     def __init__(
         self,
@@ -258,6 +265,7 @@ class BasicBlock(nn.Layer):
         return y
 
 
+    # 检测 ResNet-VD：三层 3×3 stem，支持 18–200 层与 DCN stage
 class ResNet_vd(nn.Layer):
     def __init__(
         self, in_channels=3, layers=50, dcn_stage=None, out_indices=None, **kwargs
