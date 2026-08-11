@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T05:48:24Z",
-  "files": [
-    "django/utils/autoreload.py",
-    "django/utils/cache.py",
-    "django/utils/choices.py",
-    "django/utils/connection.py",
-    "django/utils/copy.py",
-    "django/utils/crypto.py",
-    "django/utils/csp.py",
-    "django/utils/datastructures.py",
-    "django/utils/dateformat.py",
-    "django/utils/dateparse.py",
-    "django/utils/dates.py",
-    "django/utils/deconstruct.py",
-    "django/utils/decorators.py",
-    "django/utils/deprecation.py",
-    "django/utils/duration.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 72,
-  "done": 855
+  "done": 870
 }
