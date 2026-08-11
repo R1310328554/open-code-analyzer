@@ -1,4 +1,10 @@
-import functools
+"""
+django.utils.inspect — 可调用对象签名与参数内省辅助。
+
+兼容 annotationlib 的 getfullargspec/signature 封装。
+"""
+
+import functoolsimport functools
 import inspect
 import threading
 from contextlib import contextmanager
@@ -39,11 +45,13 @@ ARG_KINDS = frozenset(
 )
 
 
+# 返回 positional/keyword 参数名列表
 def get_func_args(func):
     params = _get_callable_parameters(func)
     return [param.name for param in params if param.kind in ARG_KINDS]
 
 
+# 返回 (name, default) 元组列表
 def get_func_full_args(func):
     """
     Return a list of (argument name, default value) tuples. If the argument
@@ -68,11 +76,13 @@ def get_func_full_args(func):
     return args
 
 
+# 是否接受 **kwargs
 def func_accepts_kwargs(func):
     """Return True if function 'func' accepts keyword arguments **kwargs."""
     return any(p for p in _get_callable_parameters(func) if p.kind == p.VAR_KEYWORD)
 
 
+# 是否接受 *args
 def func_accepts_var_args(func):
     """
     Return True if function 'func' accepts positional arguments *args.
@@ -80,16 +90,19 @@ def func_accepts_var_args(func):
     return any(p for p in _get_callable_parameters(func) if p.kind == p.VAR_POSITIONAL)
 
 
+# 绑定方法除 self 外是否无参数
 def method_has_no_args(meth):
     """Return True if a method only accepts 'self'."""
     count = len([p for p in _get_callable_parameters(meth) if p.kind in ARG_KINDS])
     return count == 0 if inspect.ismethod(meth) else count == 1
 
 
+# 是否声明了指定名称的参数
 def func_supports_parameter(func, name):
     return any(param.name == name for param in _get_callable_parameters(func))
 
 
+# 是否为模块级函数（非 nested/lambda）
 def is_module_level_function(func):
     if not inspect.isfunction(func) or inspect.isbuiltin(func):
         return False
@@ -101,6 +114,7 @@ def is_module_level_function(func):
 
 
 @contextmanager
+# 上下文管理器：延迟解析 forward ref 注解
 def lazy_annotations():
     """
     inspect.getfullargspec eagerly evaluates type annotations. To add
@@ -124,6 +138,7 @@ def lazy_annotations():
             inspect._signature_from_callable = original_helper
 
 
+# inspect.getfullargspec 的 annotation 格式包装
 def getfullargspec(*args, annotation_format=None, **kwargs):
     """
     A wrapper around inspect.getfullargspec that leaves deferred annotations
@@ -140,6 +155,7 @@ def getfullargspec(*args, annotation_format=None, **kwargs):
         return inspect.getfullargspec(*args, **kwargs)
 
 
+# inspect.signature 的线程安全/格式包装
 def signature(obj):
     """
     A wrapper around inspect.signature that leaves deferred annotations

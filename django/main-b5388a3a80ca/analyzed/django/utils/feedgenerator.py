@@ -1,4 +1,7 @@
 """
+django.utils.feedgenerator — RSS/Atom 联合供稿（Syndication）生成库。
+
+Syndication feed generation library -- used for generating RSS, etc."""
 Syndication feed generation library -- used for generating RSS, etc.
 
 Sample usage:
@@ -33,18 +36,21 @@ from django.utils.encoding import iri_to_uri
 from django.utils.xmlutils import SimplerXMLGenerator
 
 
+# RSS 常用 RFC 2822 日期格式
 def rfc2822_date(date):
     if not isinstance(date, datetime.datetime):
         date = datetime.datetime.combine(date, datetime.time())
     return email.utils.format_datetime(date)
 
 
+# Atom 常用 RFC 3339 ISO 日期
 def rfc3339_date(date):
     if not isinstance(date, datetime.datetime):
         date = datetime.datetime.combine(date, datetime.time())
     return date.isoformat() + ("Z" if date.utcoffset() is None else "")
 
 
+# 构造 Tag URI 作为条目唯一标识
 def get_tag_uri(url, date):
     """
     Create a TagURI.
@@ -75,6 +81,7 @@ def _guess_stylesheet_mimetype(url):
     return mimetypedb.guess_type(url)
 
 
+# RSS 样式表：href/type/media 属性
 class Stylesheet:
     """An RSS stylesheet"""
 
@@ -107,6 +114,7 @@ class Stylesheet:
         return repr((self.url, self.mimetype, self.media))
 
 
+# 联合供稿基类：feed 元数据与 add_item/write 钩子
 class SyndicationFeed:
     "Base class for all syndication feeds. Subclasses should provide write()"
 
@@ -283,6 +291,7 @@ class SyndicationFeed:
         return latest_date or datetime.datetime.now(tz=datetime.UTC)
 
 
+# RSS enclosure：媒体附件 url/length/mime_type
 class Enclosure:
     """An RSS enclosure"""
 
@@ -292,6 +301,7 @@ class Enclosure:
         self.url = iri_to_uri(url)
 
 
+# RSS 2.0 基类：输出 <rss><channel> XML
 class RssFeed(SyndicationFeed):
     content_type = "application/rss+xml; charset=utf-8"
 
@@ -346,6 +356,7 @@ class RssFeed(SyndicationFeed):
         handler.endElement("channel")
 
 
+# RSS 0.91 Userland 方言
 class RssUserland091Feed(RssFeed):
     _version = "0.91"
 
@@ -356,6 +367,7 @@ class RssUserland091Feed(RssFeed):
             handler.addQuickElement("description", item["description"])
 
 
+# RSS 2.0.1 标准实现（最常用）
 class Rss201rev2Feed(RssFeed):
     # Spec: https://cyber.harvard.edu/rss/rss.html
     _version = "2.0"
@@ -416,6 +428,7 @@ class Rss201rev2Feed(RssFeed):
             handler.addQuickElement("category", cat)
 
 
+# Atom 1.0 feed 输出
 class Atom1Feed(SyndicationFeed):
     # Spec: https://tools.ietf.org/html/rfc4287
     content_type = "application/atom+xml; charset=utf-8"

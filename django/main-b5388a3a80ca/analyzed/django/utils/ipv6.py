@@ -1,4 +1,10 @@
-import ipaddress
+"""
+django.utils.ipv6 — IPv6 地址校验与规范化。
+
+压缩零段、小写 hextet，支持 IPv4-mapped 地址展开。
+"""
+
+import ipaddressimport ipaddress
 
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
@@ -14,6 +20,7 @@ def _ipv6_address_from_str(ip_str, max_length=MAX_IPV6_ADDRESS_LENGTH):
     return ipaddress.IPv6Address(int(ipaddress.IPv6Address(ip_str)))
 
 
+# 校验并规范化 IPv6，无效则 ValidationError
 def clean_ipv6_address(
     ip_str,
     unpack_ipv4=False,
@@ -51,6 +58,7 @@ def clean_ipv6_address(
     return str(addr)
 
 
+# 布尔判断 IPv6 字符串是否有效
 def is_valid_ipv6_address(ip_addr):
     """
     Return whether the `ip_addr` object is a valid IPv6 address.

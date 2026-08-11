@@ -1,9 +1,16 @@
-import copy
+"""
+django.utils.functional — 惰性求值、缓存属性与延迟对象代理。
+
+lazy/keep_lazy、cached_property、LazyObject/SimpleLazyObject 等。
+"""
+
+import copyimport copy
 import itertools
 import operator
 from functools import wraps
 
 
+# 描述符：首次访问时缓存方法返回值到实例 __dict__
 class cached_property:
     """
     Decorator that converts a method with a single self argument into a
@@ -48,6 +55,7 @@ class cached_property:
         return res
 
 
+# 类级 property，可直接在类上访问
 class classproperty:
     """
     Decorator that converts a method with a single cls argument into a property
@@ -65,6 +73,7 @@ class classproperty:
         return self
 
 
+# lazy() 生成的代理基类，用于识别惰性对象
 class Promise:
     """
     Base class for the proxy class created in the closure of the lazy function.
@@ -74,6 +83,7 @@ class Promise:
     pass
 
 
+# 将 callable 包装为按类型延迟求值的代理
 def lazy(func, *resultclasses):
     """
     Turn any callable into a lazy evaluated callable. result classes or types
@@ -208,6 +218,7 @@ def lazystr(text):
     return lazy(str, str)(text)
 
 
+# 装饰器：若任一参数为 Promise 则返回 lazy 包装
 def keep_lazy(*resultclasses):
     """
     A decorator that allows a function to be called with one or more lazy
@@ -235,6 +246,7 @@ def keep_lazy(*resultclasses):
     return decorator
 
 
+# keep_lazy(str) 的便捷别名
 def keep_lazy_text(func):
     """
     A decorator for functions that accept lazy arguments and return text.
@@ -245,6 +257,7 @@ def keep_lazy_text(func):
 empty = object()
 
 
+# 将方法调用转发到 _wrapped 对象
 def new_method_proxy(func):
     def inner(self, *args):
         if (_wrapped := self._wrapped) is empty:
@@ -256,6 +269,7 @@ def new_method_proxy(func):
     return inner
 
 
+# 延迟实例化包装器，子类实现 _setup()
 class LazyObject:
     """
     A wrapper for another class that can be used to delay instantiation of the
@@ -380,6 +394,7 @@ def unpickle_lazyobject(wrapped):
     return wrapped
 
 
+# 由 setup 函数按需构造被包装对象
 class SimpleLazyObject(LazyObject):
     """
     A lazy object initialized from any function.
@@ -441,6 +456,7 @@ class SimpleLazyObject(LazyObject):
         return other + self
 
 
+# 按谓词将可迭代对象分为 (True, False) 两组
 def partition(predicate, values):
     """
     Split the values into two sets, based on the return value of the function

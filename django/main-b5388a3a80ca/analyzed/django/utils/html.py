@@ -1,4 +1,7 @@
-"""HTML utilities suitable for global use."""
+"""
+django.utils.html — HTML 转义、标签剥离与 URL 自动链接。
+
+HTML utilities suitable for global use."""HTML utilities suitable for global use."""
 
 import html
 import json
@@ -50,6 +53,7 @@ long_open_tag_without_closing_re = _lazy_re_compile(r"<[a-zA-Z][^>]{1000,}")
 
 
 @keep_lazy(SafeString)
+# HTML 实体转义，返回 SafeString
 def escape(text):
     """
     Return the given text with ampersands, quotes and angle brackets encoded
@@ -85,6 +89,7 @@ _js_escapes.update(
 
 
 @keep_lazy(SafeString)
+# JavaScript 字符串字面量转义
 def escapejs(value):
     """Hex encode characters for use in JavaScript strings."""
     return mark_safe(str(value).translate(_js_escapes))
@@ -97,6 +102,7 @@ _json_script_escapes = {
 }
 
 
+# 生成 type=application/json 的 <script> 标签
 def json_script(value, element_id=None, encoder=None):
     """
     Escape all the HTML/XML special characters with their unicode escapes, so
@@ -117,6 +123,7 @@ def json_script(value, element_id=None, encoder=None):
     return format_html(template, *args)
 
 
+# 已是 SafeData 则跳过，否则 escape
 def conditional_escape(text):
     """
     Similar to escape(), except that it doesn't operate on pre-escaped strings.
@@ -132,6 +139,7 @@ def conditional_escape(text):
         return escape(text)
 
 
+# 类似 % 格式化但自动 escape 参数
 def format_html(format_string, *args, **kwargs):
     """
     Similar to str.format, but pass all arguments through conditional_escape(),
@@ -145,6 +153,7 @@ def format_html(format_string, *args, **kwargs):
     return mark_safe(format_string.format(*args_safe, **kwargs_safe))
 
 
+# 批量 format_html 并用 sep 连接
 def format_html_join(sep, format_string, args_generator):
     """
     A wrapper of format_html, for the common case of a group of arguments that
@@ -172,6 +181,7 @@ def format_html_join(sep, format_string, args_generator):
 
 
 @keep_lazy_text
+# 双换行转 <p>，单换行转 <br>
 def linebreaks(value, autoescape=False):
     """Convert newlines into <p> and <br>s."""
     value = normalize_newlines(value)
@@ -183,6 +193,7 @@ def linebreaks(value, autoescape=False):
     return "\n\n".join(paras)
 
 
+# HTMLParser 子类：收集文本节点用于 strip_tags
 class MLStripper(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=False)
@@ -213,6 +224,7 @@ def _strip_once(value):
 
 
 @keep_lazy_text
+# 移除 HTML 标签，保留文本内容
 def strip_tags(value):
     """Return the given HTML with all tags stripped."""
     value = str(value)
@@ -235,11 +247,13 @@ def strip_tags(value):
 
 
 @keep_lazy_text
+# 移除标签之间的空白
 def strip_spaces_between_tags(value):
     """Return the given HTML with spaces between tags removed."""
     return re.sub(r">\s+<", "><", str(value))
 
 
+# 按需 percent-encode URL 各段
 def smart_urlquote(url):
     """Quote a URL if it isn't already quoted."""
 
@@ -276,6 +290,7 @@ def smart_urlquote(url):
     return urlunsplit((scheme, netloc, path, query, fragment))
 
 
+# 懒计数 dict：__missing__ 统计子串出现次数
 class CountsDict(dict):
     def __init__(self, *args, word, **kwargs):
         super().__init__(*args, **kwargs)
@@ -286,6 +301,7 @@ class CountsDict(dict):
         return self[key]
 
 
+# 将文本中的 URL/email 转为可点击链接
 class Urlizer:
     """
     Convert any URLs in text into clickable links.
@@ -499,12 +515,14 @@ urlizer = Urlizer()
 
 
 @keep_lazy_text
+# Urlizer 的函数式入口
 def urlize(text, trim_url_limit=None, nofollow=False, autoescape=False):
     return urlizer(
         text, trim_url_limit=trim_url_limit, nofollow=nofollow, autoescape=autoescape
     )
 
 
+# 插入 WORD JOINER 防止浏览器断行
 def avoid_wrapping(value):
     """
     Avoid text wrapping in the middle of a phrase by adding non-breaking
@@ -513,6 +531,7 @@ def avoid_wrapping(value):
     return value.replace(" ", "\xa0")
 
 
+# 类装饰器：标记 __str__ 输出为 SafeString
 def html_safe(klass):
     """
     A decorator that defines the __html__ method. This helps non-Django

@@ -1,10 +1,17 @@
-import copy
+"""
+django.utils.module_loading — 动态导入与 autodiscover。
+
+import_string、cached_import 及 INSTALLED_APPS 模块扫描。
+"""
+
+import copyimport copy
 import os
 import sys
 from importlib import import_module
 from importlib.util import find_spec as importlib_find
 
 
+# 导入模块，已加载且初始化完成则复用 sys.modules
 def cached_import(module_path):
     # Check whether module is loaded and fully initialized.
     if not (
@@ -16,6 +23,7 @@ def cached_import(module_path):
     return module
 
 
+# 点分路径导入模块或属性/类
 def import_string(dotted_path):
     """
     Import a dotted module path and return the module or attribute/class
@@ -48,6 +56,7 @@ def import_string(dotted_path):
         return import_target
 
 
+# 扫描 INSTALLED_APPS 下指定模块名
 def autodiscover_modules(*args, **kwargs):
     """
     Auto-discover INSTALLED_APPS modules and fail silently when
@@ -84,6 +93,7 @@ def autodiscover_modules(*args, **kwargs):
                     raise
 
 
+# 包是否包含子模块（find_spec）
 def module_has_submodule(package, module_name):
     """See if 'module' is in 'package'."""
     try:
@@ -102,6 +112,7 @@ def module_has_submodule(package, module_name):
         return False
 
 
+# 返回模块所在目录路径
 def module_dir(module):
     """
     Find the name of the directory that contains a module, if possible.

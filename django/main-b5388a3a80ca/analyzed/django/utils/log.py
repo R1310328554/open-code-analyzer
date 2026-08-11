@@ -1,4 +1,10 @@
-import logging
+"""
+django.utils.log — Django 默认日志配置与请求/响应记录。
+
+AdminEmailHandler、ServerFormatter 及 log_response 辅助。
+"""
+
+import loggingimport logging
 import logging.config  # needed when logging_config doesn't start with logging.config
 import warnings
 from copy import copy
@@ -67,6 +73,7 @@ DEFAULT_LOGGING = {
 }
 
 
+# 按 settings 加载 logging 配置
 def configure_logging(logging_config, logging_settings):
     if logging_config:
         # First find the logging configuration function ...
@@ -79,6 +86,7 @@ def configure_logging(logging_config, logging_settings):
             logging_config_func(logging_settings)
 
 
+# 500 错误时向 ADMINS 发送邮件
 class AdminEmailHandler(logging.Handler):
     """An exception log handler that emails log entries to site admins.
 
@@ -184,6 +192,7 @@ class AdminEmailHandler(logging.Handler):
         return subject.replace("\n", "\\n").replace("\r", "\\r")
 
 
+# 用回调函数决定是否记录 LogRecord
 class CallbackFilter(logging.Filter):
     """
     A logging filter that checks the return value of a given callable (which
@@ -200,16 +209,19 @@ class CallbackFilter(logging.Filter):
         return 0
 
 
+# 仅 DEBUG=False 时通过
 class RequireDebugFalse(logging.Filter):
     def filter(self, record):
         return not settings.DEBUG
 
 
+# 仅 DEBUG=True 时通过
 class RequireDebugTrue(logging.Filter):
     def filter(self, record):
         return settings.DEBUG
 
 
+# runserver 彩色/简洁日志格式
 class ServerFormatter(logging.Formatter):
     default_time_format = "%d/%b/%Y %H:%M:%S"
 
@@ -249,6 +261,7 @@ class ServerFormatter(logging.Formatter):
         return self._fmt.find("{server_time}") >= 0
 
 
+# WSGI/ASGI 请求一行 access log
 def log_message(
     logger,
     message,
@@ -289,6 +302,7 @@ def log_message(
     )
 
 
+# 记录响应状态，4xx/5xx 用 warning/error 级别
 def log_response(
     message,
     *args,

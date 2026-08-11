@@ -1,4 +1,7 @@
 """
+django.utils.lorem_ipsum — 生成占位用 Lorem Ipsum 拉丁文。
+
+Utility functions for generating "lorem ipsum" Latin text."""
 Utility functions for generating "lorem ipsum" Latin text.
 """
 
@@ -222,6 +225,7 @@ COMMON_WORDS = (
 )
 
 
+# 随机生成一句 lorem（约 4–20 词）
 def sentence():
     """
     Return a randomly generated sentence of lorem ipsum text.
@@ -240,6 +244,7 @@ def sentence():
     return "%s%s%s" % (s[0].upper(), s[1:], random.choice("?."))
 
 
+# 随机生成一段（若干句）
 def paragraph():
     """
     Return a randomly generated paragraph of lorem ipsum text.
@@ -249,6 +254,7 @@ def paragraph():
     return " ".join(sentence() for i in range(random.randint(1, 4)))
 
 
+# 生成 count 段，common 时用经典 COMMON_P
 def paragraphs(count, common=True):
     """
     Return a list of paragraphs as returned by paragraph().
@@ -266,6 +272,7 @@ def paragraphs(count, common=True):
     return paras
 
 
+# 生成 count 个随机单词
 def words(count, common=True):
     """
     Return a string of `count` lorem ipsum words separated by a single space.

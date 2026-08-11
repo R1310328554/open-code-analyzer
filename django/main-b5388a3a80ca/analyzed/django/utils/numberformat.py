@@ -1,9 +1,16 @@
-from decimal import Decimal
+"""
+django.utils.numberformat — 按分隔符与分组规则格式化数字。
+
+供 formats.number_format 与模板过滤器底层调用。
+"""
+
+from decimal import Decimalfrom decimal import Decimal
 
 from django.conf import settings
 from django.utils.safestring import mark_safe
 
 
+# 核心数字格式化：小数位、千分位、grouping 序列
 def format(
     number,
     decimal_sep,

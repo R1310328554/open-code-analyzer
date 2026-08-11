@@ -1,4 +1,10 @@
-import base64
+"""
+django.utils.http — HTTP 日期、URL、ETag 与 Host 校验工具。
+
+urlencode、parse_http_date、url_has_allowed_host_and_scheme 等。
+"""
+
+import base64import base64
 import re
 import unicodedata
 from binascii import Error as BinasciiError
@@ -42,6 +48,7 @@ MAX_URL_LENGTH = 2048
 MAX_URL_REDIRECT_LENGTH = 16384
 
 
+# 扩展 urllib urlencode，支持 MultiValueDict
 def urlencode(query, doseq=False):
     """
     A version of Python's urllib.parse.urlencode() function that can operate on
@@ -83,6 +90,7 @@ def urlencode(query, doseq=False):
     return original_urlencode(query_params, doseq)
 
 
+# 生成 RFC 7231 HTTP 日期头
 def http_date(epoch_seconds=None):
     """
     Format the time to match the RFC 5322 date format as specified by RFC 9110
@@ -97,6 +105,7 @@ def http_date(epoch_seconds=None):
     return formatdate(epoch_seconds, usegmt=True)
 
 
+# 解析 RFC1123/RFC850/asctime 日期
 def parse_http_date(date):
     """
     Parse a date format as specified by HTTP RFC 9110 Section 5.6.7.
@@ -137,6 +146,7 @@ def parse_http_date(date):
         raise ValueError("%r is not a valid date" % date) from exc
 
 
+# parse_http_date 的安全包装，失败返回 None
 def parse_http_date_safe(date):
     """
     Same as parse_http_date, but return None if the input is invalid.
@@ -150,6 +160,7 @@ def parse_http_date_safe(date):
 # Base 36 functions: useful for generating compact URLs
 
 
+# base36 字符串转整数
 def base36_to_int(s):
     """
     Convert a base 36 string to an int. Raise ValueError if the input won't fit
@@ -163,6 +174,7 @@ def base36_to_int(s):
     return int(s, 36)
 
 
+# 整数转 base36 字符串
 def int_to_base36(i):
     """Convert an integer to a base36 string."""
     char_set = "0123456789abcdefghijklmnopqrstuvwxyz"
@@ -177,6 +189,7 @@ def int_to_base36(i):
     return "".join(reversed(b36_parts))
 
 
+# URL 安全 base64 编码
 def urlsafe_base64_encode(s):
     """
     Encode a bytestring to a base64 string for use in URLs. Strip any trailing
@@ -185,6 +198,7 @@ def urlsafe_base64_encode(s):
     return base64.urlsafe_b64encode(s).rstrip(b"\n=").decode("ascii")
 
 
+# URL 安全 base64 解码
 def urlsafe_base64_decode(s):
     """
     Decode a base64 encoded string. Add back any trailing equal signs that
@@ -223,6 +237,7 @@ def split_directive_names(value):
         yield part.split("=", 1)[0].strip().lower()
 
 
+# 解析 If-None-Match 等 ETag 列表
 def parse_etags(etag_str):
     """
     Parse a string of ETags given in an If-None-Match or If-Match header as
@@ -240,6 +255,7 @@ def parse_etags(etag_str):
         return [match[1] for match in etag_matches if match]
 
 
+# 为 ETag 值加引号
 def quote_etag(etag_str):
     """
     If the provided string is already a quoted ETag, return it. Otherwise, wrap
@@ -251,6 +267,7 @@ def quote_etag(etag_str):
         return '"%s"' % etag_str
 
 
+# 主机名是否匹配 allowed pattern（含子域）
 def is_same_domain(host, pattern):
     """
     Return ``True`` if the host is either an exact match or a match
@@ -271,6 +288,7 @@ def is_same_domain(host, pattern):
     )
 
 
+# 校验重定向 URL 的 host 与 scheme 是否安全
 def url_has_allowed_host_and_scheme(url, allowed_hosts, require_https=False):
     """
     Return ``True`` if the url uses an allowed host and a safe scheme.
@@ -334,6 +352,7 @@ def _url_has_allowed_host_and_scheme(url, allowed_hosts, require_https=False):
     )
 
 
+# 转义路径开头多余的斜杠
 def escape_leading_slashes(url):
     """
     If redirecting to an absolute path (two leading slashes), a slash must be
@@ -358,6 +377,7 @@ def _parseparam(s):
         s = s[end:]
 
 
+# 解析 Content-Type 等头的参数
 def parse_header_parameters(line, max_length=MAX_HEADER_LENGTH):
     """
     Parse a Content-type like header.
@@ -404,6 +424,7 @@ def parse_header_parameters(line, max_length=MAX_HEADER_LENGTH):
     return key, pdict
 
 
+# 构造 Content-Disposition 头
 def content_disposition_header(as_attachment, filename):
     """
     Construct a Content-Disposition HTTP header value from the given filename

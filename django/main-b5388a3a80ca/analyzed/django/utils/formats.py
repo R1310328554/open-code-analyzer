@@ -1,4 +1,10 @@
-import datetime
+"""
+django.utils.formats — 本地化日期/时间/数字格式与输入解析。
+
+按语言加载 format 模块，结合 settings 与 use_l10n 渲染。
+"""
+
+import datetimeimport datetime
 import decimal
 import functools
 import re
@@ -48,6 +54,7 @@ FORMAT_SETTINGS = frozenset(
 )
 
 
+# 清空 format 与 format_modules 缓存
 def reset_format_cache():
     """Clear any cached formats.
 
@@ -59,6 +66,7 @@ def reset_format_cache():
     _format_modules_cache = {}
 
 
+# 迭代某语言的 format 子模块
 def iter_format_modules(lang, format_module_path=None):
     """Find format modules."""
     if not check_for_language(lang):
@@ -86,6 +94,7 @@ def iter_format_modules(lang, format_module_path=None):
                 pass
 
 
+# 获取并缓存语言对应的 format 模块列表
 def get_format_modules(lang=None):
     """Return a list of the format modules found."""
     if lang is None:
@@ -97,6 +106,7 @@ def get_format_modules(lang=None):
     return _format_modules_cache[lang]
 
 
+# 读取 DECIMAL_SEPARATOR 等格式设置
 def get_format(format_type, lang=None, use_l10n=None):
     """
     For a specific format type, return the format for the current
@@ -144,6 +154,7 @@ def get_format(format_type, lang=None, use_l10n=None):
 get_format_lazy = lazy(get_format, str, list, tuple)
 
 
+# 按 locale 格式化 date/datetime
 def date_format(value, format=None, use_l10n=None):
     """
     Format a datetime.date or datetime.datetime object using a
@@ -157,6 +168,7 @@ def date_format(value, format=None, use_l10n=None):
     )
 
 
+# 按 locale 格式化 time/datetime
 def time_format(value, format=None, use_l10n=None):
     """
     Format a datetime.time object using a localizable format.
@@ -169,6 +181,7 @@ def time_format(value, format=None, use_l10n=None):
     )
 
 
+# 按 locale 格式化数字
 def number_format(value, decimal_pos=None, use_l10n=None, force_grouping=False):
     """
     Format a numeric value using localization settings.
@@ -190,6 +203,7 @@ def number_format(value, decimal_pos=None, use_l10n=None, force_grouping=False):
     )
 
 
+# 将 date/time/Decimal 转为本地化字符串
 def localize(value, use_l10n=None):
     """
     Check if value is a localizable type (date, number...) and return it
@@ -215,6 +229,7 @@ def localize(value, use_l10n=None):
     return value
 
 
+# 表单输入值本地化（如日期分隔符）
 def localize_input(value, default=None):
     """
     Check if an input value is a localizable type and return it
@@ -241,6 +256,7 @@ def localize_input(value, default=None):
 
 
 @functools.lru_cache
+# 清理 strftime 格式串中的非法字符
 def sanitize_strftime_format(fmt):
     """
     Ensure that certain specifiers are correctly padded with leading zeros.
@@ -273,6 +289,7 @@ def sanitize_strftime_format(fmt):
     )
 
 
+# 将 locale 分隔符统一为 ASCII 便于解析
 def sanitize_separators(value):
     """
     Sanitize a value according to the current decimal and

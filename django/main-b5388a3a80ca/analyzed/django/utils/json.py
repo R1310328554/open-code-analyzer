@@ -1,6 +1,13 @@
-from collections.abc import Mapping, Sequence
+"""
+django.utils.json — 递归将 Python 对象规范为 JSON 兼容类型。
+
+Mapping/Sequence 深度遍历，bytes 尝试 UTF-8 解码。
+"""
+
+from collections.abc import Mapping, Sequencefrom collections.abc import Mapping, Sequence
 
 
+# 递归规范化；不支持的类型抛出 TypeError/ValueError
 def normalize_json(obj):
     """Recursively normalize an object into JSON-compatible types."""
     match obj:

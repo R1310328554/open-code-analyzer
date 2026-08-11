@@ -1,4 +1,7 @@
 """
+django.utils.regex_helper — 正则反向展开（用于 reverse URL）。
+
+Functions for reversing a regular expression (used in reverse URL resolving)."""
 Functions for reversing a regular expression (used in reverse URL resolving).
 Used internally by Django and not intended for external use.
 
@@ -27,18 +30,22 @@ ESCAPE_MAPPINGS = {
 }
 
 
+# 模式展开时的多选分支
 class Choice(list):
     """Represent multiple possibilities at this point in a pattern string."""
 
 
+# 捕获组节点
 class Group(list):
     """Represent a capturing group in the pattern string."""
 
 
+# 非捕获组节点
 class NonCapture(list):
     """Represent a non-capturing group in the pattern string."""
 
 
+# 将正则规范化为可反向匹配的候选字符串集合
 def normalize(pattern):
     r"""
     Given a reg-exp pattern, normalize it to an iterable of forms that
@@ -286,6 +293,7 @@ def contains(source, inst):
     return False
 
 
+# 将 Choice/Group 树展平为字符串列表
 def flatten_result(source):
     """
     Turn the given source sequence into a list of reg-exp possibilities and
@@ -340,6 +348,7 @@ def flatten_result(source):
     return result, result_args
 
 
+# 延迟编译正则，settings 变更后可刷新
 def _lazy_re_compile(regex, flags=0):
     """Lazily compile a regex with flags."""
 
