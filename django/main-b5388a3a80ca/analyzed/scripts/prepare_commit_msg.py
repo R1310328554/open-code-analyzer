@@ -1,7 +1,13 @@
 #! /usr/bin/env python
 
 """
+Django 仓库 prepare-commit-msg Git 钩子脚本。
+
+任意分支：摘要行补句号；stable 分支：加 [A.B.x] 前缀与 cherry-pick 回溯说明。
+
 prepare-commit-msg hook for Django's repository.
+
+Adjusts commit messagesprepare-commit-msg hook for Django's repository.
 
 Adjusts commit messages on any branch:
 - Ensures the summary line ends with a period.
@@ -24,10 +30,12 @@ import subprocess
 import sys
 
 
+# 执行 shell 命令并返回 stdout 文本
 def run(cmd):
     return subprocess.run(cmd, capture_output=True, text=True).stdout.strip()
 
 
+# 规范化提交信息：前缀、句号、首字母大写、backport 附注
 def process_commit_message(lines, branch, cherry_sha=None):
     """Adjust commit message lines for a potential backport.
 
@@ -40,6 +48,7 @@ def process_commit_message(lines, branch, cherry_sha=None):
     Returns the modified lines (body + comments).
 
     """
+    # 自末尾向前分离正文与 Git 自动生成的 # 注释行
     # Separate body lines from trailing git comment lines.
     comment_start = len(lines)
     for i in range(len(lines) - 1, -1, -1):
@@ -51,22 +60,26 @@ def process_commit_message(lines, branch, cherry_sha=None):
     body_lines = lines[:comment_start]
     comment_lines = lines[comment_start:]
 
+    # 去掉正文首尾空行
     # Strip leading and trailing blank lines from the body.
     while body_lines and not body_lines[0].strip():
         body_lines.pop(0)
     while body_lines and not body_lines[-1].strip():
         body_lines.pop()
 
+    # 正文为空则原样返回
     # Nothing to do if the body is empty.
     if not body_lines:
         return lines
 
     summary = body_lines[0].strip()
 
+    # 摘要行末尾必须有句号
     # Ensure summary ends with a period.
     if not summary.endswith("."):
         summary += "."
 
+    # stable/* 分支为摘要添加版本前缀
     # On stable branches, add the [A.B.x] prefix if missing.
     prefix = None
     if branch.startswith("stable/"):
@@ -75,12 +88,14 @@ def process_commit_message(lines, branch, cherry_sha=None):
         if not summary.startswith(prefix):
             summary = prefix + summary
 
+    # 前缀之后的首字母大写
     # Capitalize the first character of the summary text (after any prefix).
     offset = len(prefix) if prefix else 0
     summary = summary[:offset] + summary[offset].upper() + summary[offset + 1 :]
 
     body_lines[0] = summary + "\n"
 
+    # cherry-pick 时在正文追加回溯说明
     # Add "Backport of <sha> from main." if cherry-picking and not present.
     if cherry_sha:
         backport_note = f"Backport of {cherry_sha} from main."
@@ -94,6 +109,7 @@ def process_commit_message(lines, branch, cherry_sha=None):
     return body_lines + comment_lines
 
 
+# 读取 COMMIT_EDITMSG、当前分支与 CHERRY_PICK_HEAD 并写回
 if __name__ == "__main__":
     msg_path = sys.argv[1]
 

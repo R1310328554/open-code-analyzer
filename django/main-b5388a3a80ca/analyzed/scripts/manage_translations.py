@@ -20,6 +20,14 @@
 #
 # Also each command supports a --verbosity option to get progress feedback.
 
+"""
+Django 翻译管理工具脚本。
+
+需在 Django 源码根目录运行，提供 update_catalogs、lang_stats、fetch 等子命令，与 Transifex API 及 makemessages/msgfmt 协作维护 .po/.mo 目录。
+"""
+
+import json# Also each command supports a --verbosity option to get progress feedback.
+
 import json
 import os
 import subprocess
@@ -35,7 +43,9 @@ import django
 from django.conf import settings
 from django.core.management import call_command
 
+# 需要单独维护 djangojs 域 .po 的 contrib 应用名
 HAVE_JS = ["admin"]
+# 本地 locale 目录名与 Transifex 语言代码的映射
 LANG_OVERRIDES = {
     "sr@latin": "sr_Latn",
     "zh_CN": "zh_Hans",
@@ -43,12 +53,14 @@ LANG_OVERRIDES = {
 }
 
 
+# 包装 subprocess.run，高 verbosity 时打印命令
 def run(*args, verbosity=0, **kwargs):
     if verbosity > 1:
         print(f"\n** subprocess.run ** command: {args=} {kwargs=}")
     return subprocess.run(*args, **kwargs)
 
 
+# 从环境变量或 ~/.transifexrc 读取 Transifex API token
 def get_api_token():
     # Read token from ENV, otherwise read from the ~/.transifexrc file.
     api_token = os.getenv("TRANSIFEX_API_TOKEN")
@@ -61,6 +73,7 @@ def get_api_token():
     return api_token
 
 
+# 调用 Transifex REST API 并返回 JSON data 字段
 def get_api_response(endpoint, api_token=None, params=None, verbosity=0):
     if api_token is None:
         api_token = get_api_token()
@@ -80,6 +93,7 @@ def get_api_response(endpoint, api_token=None, params=None, verbosity=0):
     return response.json()["data"]
 
 
+# 列出指定日期后有过翻译更新的资源与语言组合
 def list_resources_with_updates(
     date_since, resources=None, languages=None, verbosity=0
 ):
@@ -143,6 +157,7 @@ def list_resources_with_updates(
     return resource_lang_changed
 
 
+# 收集 core/contrib 下所有 locale 目录，可按 resources 过滤
 def _get_locale_dirs(resources, include_core=True):
     """
     Return a tuple (contrib name, absolute path) for all locale directories,
@@ -176,6 +191,7 @@ def _get_locale_dirs(resources, include_core=True):
     return dirs
 
 
+# 将本地资源名转为 Transifex slug（contrib 加前缀）
 def _tx_resource_slug_for_name(name):
     """Return the Transifex resource slug for the given name."""
     if name != "core":
@@ -183,11 +199,13 @@ def _tx_resource_slug_for_name(name):
     return name
 
 
+# 返回 tx pull 使用的完整资源名 django.<slug>
 def _tx_resource_for_name(name):
     """Return the Transifex resource name."""
     return "django." + _tx_resource_slug_for_name(name)
 
 
+# 用 git diff 统计 en catalog 中新增/变更的 msgid 条数
 def _check_diff(cat_name, base_path):
     """
     Output the approximate number of changed/added strings in the en catalog.
@@ -205,6 +223,7 @@ def _check_diff(cat_name, base_path):
     print("%d changed/added messages in '%s' catalog." % (num_changes, cat_name))
 
 
+# 运行 makemessages 更新 en 主域与 djangojs 域，并输出变更统计
 def update_catalogs(resources=None, languages=None, verbosity=0):
     """
     Update the en/LC_MESSAGES/django.po (main and contrib) files with
@@ -228,6 +247,7 @@ def update_catalogs(resources=None, languages=None, verbosity=0):
         _check_diff(name, dir_)
 
 
+# 对各 catalog 已提交的翻译文件运行 msgfmt -vc 输出完成度
 def lang_stats(resources=None, languages=None, verbosity=0):
     """
     Output language statistics of committed translation files for each
@@ -264,6 +284,7 @@ def lang_stats(resources=None, languages=None, verbosity=0):
                 )
 
 
+# 从 Transifex 拉取翻译、msgcat 换行、msgfmt 编译 .mo
 def fetch(resources=None, languages=None, date_since=None, verbosity=0):
     """
     Fetch translations from Transifex, wrap long lines, generate mo files.
@@ -337,6 +358,7 @@ def fetch(resources=None, languages=None, date_since=None, verbosity=0):
         print("\nCOMPLETED.")
 
 
+# 为子命令添加 --resources/--languages/--verbosity 公共参数
 def add_common_arguments(parser):
     parser.add_argument(
         "-r",
@@ -363,6 +385,7 @@ def add_common_arguments(parser):
     )
 
 
+# CLI 入口：解析子命令并通过 eval 分派
 if __name__ == "__main__":
     parser = ArgumentParser()
 

@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 """
+Django Pull Request 质量检查脚本。
+
+各检查函数相互独立，一次运行汇总全部问题；无 Trac 工单时跳过依赖 ticket 的状态与 has_patch 检查。
+
 PR quality checks for Django pull requests.
+
+Each check is an independentPR quality checks for Django pull requests.
 
 Each check is an independent function that returns None on success, or an
 error message on failure. Independent checks are all run so that all issues
@@ -48,26 +54,36 @@ from pr_quality.errors import (
     Message,
 )
 
+# GitHub API 分页大小
 GITHUB_PER_PAGE = 100
+# 超过此行数变更时 Trac 工单不可填 N/A
 LARGE_PR_THRESHOLD = 80  # additions + deletions
+# 分支描述与 AI 说明的最少词数
 MIN_WORDS = 5
+# 哨兵：检查不适用已跳过
 SKIPPED = object()  # Sentinel: check was not applicable and was skipped.
+# 哨兵：Trac 返回 404
 TICKET_NOT_FOUND = object()  # Sentinel: Trac returned HTTP 404 for the ticket.
 URLOPEN_TIMEOUT_SECONDS = 15
 # PRs opened before these dates predate PR template additions.
+# 早于此日期的 PR 无模板，跳过全部检查
 PR_TEMPLATE_DATE = date(2024, 3, 4)  # 3fcef50 -- PR template introduced
+# AI 披露区块引入日期
 AI_DISCLOSURE_DATE = date(2026, 1, 8)  # 4f580c4 -- AI disclosure added
 
+# Trac 工单允许提交 PR 的阶段
 ALLOWED_STAGES = ("Accepted", "Ready for checkin")
 
 logger = logging.getLogger(__name__)
 
 
+# 配置日志；GitHub Actions 下使用 ::notice:: 等前缀
 def setup_logging(logger, gha_formatter=True):
     logger.setLevel(logging.DEBUG)
 
     if not logger.handlers and gha_formatter:
 
+        # GitHub Actions 工作流日志格式器
         class GHAFormatter(logging.Formatter):
             _PREFIXES = {
                 logging.DEBUG: "::debug::",
@@ -86,6 +102,7 @@ def setup_logging(logger, gha_formatter=True):
         logger.addHandler(handler)
 
 
+# 带 Bearer token 的 GitHub REST API 请求
 def github_request(method, path, token, repo, data=None, params=None):
     """Make an authenticated GitHub API request."""
     url = f"https://api.github.com/repos/{repo}{path}"
@@ -107,6 +124,7 @@ def github_request(method, path, token, repo, data=None, params=None):
             return json.loads(response.read())
 
 
+# 统计作者近期提交数，用于判断是否资深贡献者
 def get_recent_commit_count(pr_author, repo, token, since_days, max_count):
     """Return the number of recent commits by the author, up to max_count."""
     if not pr_author:
@@ -125,6 +143,7 @@ def get_recent_commit_count(pr_author, repo, token, since_days, max_count):
     return len(results)
 
 
+# 分页累加 PR 文件变更行数（additions + deletions）
 def get_pr_total_changes(pr_number, repo, token):
     """Return total lines changed in the PR (additions + deletions)."""
     total_changes = 0
@@ -146,6 +165,7 @@ def get_pr_total_changes(pr_number, repo, token):
     return total_changes
 
 
+# 查找含 CHECKS_HEADER 的旧 bot 评论以便删除
 def get_comment_ids_to_delete(pr_number, repo, token):
     ids = []
     page = 1
@@ -166,17 +186,20 @@ def get_comment_ids_to_delete(pr_number, repo, token):
     return ids
 
 
+# 移除 HTML 注释，避免模板内 N/A 误判
 def strip_html_comments(text):
     """Return text with all HTML comments removed."""
     return re.sub(r"<!--.*?-->", "", text, flags=re.DOTALL)
 
 
+# 从 PR 正文提取 ticket-NNNNN 编号
 def extract_ticket_id(pr_body):
     """Return the Trac ticket ID string from the PR body, or None."""
     match = re.search(r"\bticket-(\d+)\b", pr_body, re.IGNORECASE)
     return match.group(1) if match else None
 
 
+# 调用 Trac JSON API；404 返回 TICKET_NOT_FOUND
 def fetch_trac_ticket(ticket_id):
     """Fetch ticket data from the Trac JSON API.
 
@@ -208,6 +231,7 @@ def fetch_trac_ticket(ticket_id):
         return None
 
 
+# 校验 Trac 工单引用；小 PR 可填 N/A
 def check_trac_ticket(pr_body, total_changes, threshold=LARGE_PR_THRESHOLD):
     """A Trac ticket must be referenced in the ticket section.
 
@@ -238,6 +262,7 @@ def check_trac_ticket(pr_body, total_changes, threshold=LARGE_PR_THRESHOLD):
     return Message(*MISSING_TRAC_TICKET, threshold=threshold)
 
 
+# 工单须 Accepted/Ready for checkin、assigned 且无 resolution
 def check_trac_status(ticket_id, ticket_data):
     """The referenced Trac ticket must be Accepted or Ready for checkin,
     unresolved, and assigned.
@@ -271,6 +296,7 @@ def check_trac_status(ticket_id, ticket_data):
     )
 
 
+# 校验 has_patch=1，可轮询等待 Trac 同步
 def check_trac_has_patch(ticket_id, initial_data, poll_interval=1, poll_timeout=10):
     """The referenced Trac ticket must have has_patch=1.
 
@@ -318,6 +344,7 @@ def check_trac_has_patch(ticket_id, initial_data, poll_interval=1, poll_timeout=
     return Message(*MISSING_HAS_PATCH_FLAG, ticket_id=ticket_id)
 
 
+# PR 标题须含 #ticket_id 以便 Trac 自动关联
 def check_pr_title_has_ticket(pr_title, ticket_id):
     """The PR title must include the ticket number (e.g. #36991).
 
@@ -329,6 +356,7 @@ def check_pr_title_has_ticket(pr_title, ticket_id):
     return Message(*MISSING_TICKET_IN_PR_TITLE, ticket_id=ticket_id)
 
 
+# 分支描述至少 MIN_WORDS 个词
 def check_branch_description(pr_body):
     """The branch description should be at least five words long."""
     description_match = re.search(
@@ -348,6 +376,7 @@ def check_branch_description(pr_body):
     return None
 
 
+# AI 披露须勾选且仅选一项；若使用 AI 须附说明
 def check_ai_disclosure(pr_body):
     """Exactly one AI disclosure checkbox must be selected.
 
@@ -388,6 +417,7 @@ def check_ai_disclosure(pr_body):
     return None
 
 
+# Checklist 前五项须全部勾选
 def check_checklist(pr_body):
     """The first five items in the Checklist section must be checked."""
     checklist_match = re.search(
@@ -404,6 +434,7 @@ def check_checklist(pr_body):
     return None
 
 
+# 将检查结果表格写入 GITHUB_STEP_SUMMARY
 def write_job_summary(pr_number, results, summary_file=None):
     """Write a Markdown job summary to the given file path (if provided)."""
     if not summary_file:
@@ -427,6 +458,7 @@ def write_job_summary(pr_number, results, summary_file=None):
         f.write("\n".join(lines) + "\n")
 
 
+# 主流程：按贡献者资历与 PR 日期决定检查集合并发帖/关 PR
 def main(
     repo,
     token,
@@ -568,6 +600,7 @@ def main(
     return 1
 
 
+# 从环境变量读取 PR 元数据并调用 main
 if __name__ == "__main__":
     sys.exit(
         main(

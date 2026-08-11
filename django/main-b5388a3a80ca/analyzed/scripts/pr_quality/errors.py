@@ -1,22 +1,33 @@
-"""Error and notification messages for PR quality checks.
+"""PR 质量检查的错误与通知消息模板。
+
+Message 常量为元组 (title, body)，body 支持 str.format 占位符。
+
+Error and notification messages for PR quality checks.
+
+Message constantsError and notification messages for PR quality checks.
 
 Message constants are plain 2-tuples of (title, body). Body strings use
 str.format() placeholders; kwargs are supplied at Message() construction time.
 
 """
 
+# 错误级别在摘要表格中的图标与标签
 LEVEL_ERROR = ("❗", "Error")
+# 警告级别在摘要表格中的图标与标签
 LEVEL_WARNING = ("⚠️", "Warning")
 
 
+# 绑定运行时 format 参数的 PR 检查消息
 class Message:
     """A PR quality check message bound to its runtime formatting kwargs."""
 
+    # 保存标题、正文模板与格式化关键字
     def __init__(self, title, body, **kwargs):
         self.title = title
         self.body = body
         self.kwargs = kwargs
 
+    # 渲染为 GitHub 评论用的 HTML details 块
     def as_details(self, level=LEVEL_ERROR):
         body = self.body.format(**self.kwargs) if self.kwargs else self.body
         symbol, label = level
@@ -33,17 +44,20 @@ FORUM_URL = "https://forum.djangoproject.com"
 TRAC_URL = "https://code.djangoproject.com"
 
 
+# 自动评论开头：感谢贡献并提示待办项
 CHECKS_HEADER = (
     "Thank you for your contribution to Django! This pull request has one or more "
     "items that need attention before it can be accepted for review."
 )
 
+# 自动评论结尾：指向贡献指南与论坛
 CHECKS_FOOTER = (
     "If you have questions about these requirements, please review the "
     f"[contributing guidelines]({SUBMITTING_URL}) or ask for help on the "
     f"[Django Forum]({FORUM_URL}/c/internals/mentorship/10)."
 )
 
+# Checklist 未完成时的标题与说明
 INCOMPLETE_CHECKLIST = (
     "Incomplete Checklist",
     "The items in the **Checklist** section must be all understood and checked "
@@ -53,6 +67,7 @@ INCOMPLETE_CHECKLIST = (
     "- Review each item and change `[ ]` to `[x]` once you have completed it.",
 )
 
+# Trac 工单状态不符合 PR 要求
 INVALID_TRAC_STATUS = (
     "Trac Ticket Not Ready for a Pull Request",
     "The referenced ticket **ticket-{ticket_id}** is not ready for a pull request. "
@@ -70,6 +85,7 @@ INVALID_TRAC_STATUS = (
     f"For more information on the Django triage process see {TRIAGING_URL}.",
 )
 
+# 勾选使用 AI 但未写说明
 MISSING_AI_DESCRIPTION = (
     "AI Tool Usage Not Described",
     "You indicated that AI tools were used in preparing this PR, but you have not "
@@ -93,6 +109,7 @@ MISSING_AI_DESCRIPTION = (
     "content in this PR, regardless of how it was generated.",
 )
 
+# AI 披露区块未正确勾选
 MISSING_AI_DISCLOSURE = (
     "AI Tool Usage Not Disclosed",
     "You must select exactly one checkbox in the AI Assistance Disclosure section of "
@@ -110,6 +127,7 @@ MISSING_AI_DISCLOSURE = (
     "- If selecting the second option, provide details of which AI tools were used.",
 )
 
+# 分支描述缺失或过短
 MISSING_DESCRIPTION = (
     "Missing PR Description",
     "Your PR description must be substantive and meaningful.\n\n"
@@ -122,6 +140,7 @@ MISSING_DESCRIPTION = (
     "quickly and increases the likelihood that your PR will be reviewed promptly.",
 )
 
+# Trac 未设置 Has patch
 MISSING_HAS_PATCH_FLAG = (
     "Incorrect Trac Ticket Flag",
     "The referenced ticket **ticket-{ticket_id}** does not have the *Has patch* "
@@ -134,6 +153,7 @@ MISSING_HAS_PATCH_FLAG = (
     f"For more information see {TRIAGING_URL}#has-patch.",
 )
 
+# PR 标题缺少 #ticket 编号
 MISSING_TICKET_IN_PR_TITLE = (
     "Ticket Number Missing from PR Title",
     "The PR title does not include the ticket number **#{ticket_id}**. Including "
@@ -143,6 +163,7 @@ MISSING_TICKET_IN_PR_TITLE = (
     "`Fixed #{ticket_id} -- <description>.`",
 )
 
+# 未提供有效 Trac 工单引用
 MISSING_TRAC_TICKET = (
     "Missing Trac Ticket",
     "This PR does not include a valid Trac ticket reference.\n\n"
