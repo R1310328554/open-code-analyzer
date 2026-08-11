@@ -21,11 +21,16 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...modeling_rope_utils import RopeParameters
+# configuration_granite_swa 由 modular_granite_swa.py 自动生成
 from ...utils import auto_docstring
 
 
+# Granite SWA 配置：滑动窗口注意力 + 可学习 attention sink 解码器超参
+
+# GraniteSWAConfig：ibm-granite-swash-2b 滑动窗口注意力+sink 解码器默认超参
 @auto_docstring(checkpoint="ibm-granite/granite-swash-2b")
 @strict
+# GraniteSWAConfig：IBM Granite SWA 滑动窗口注意力+可学习 sink 解码器超参
 class GraniteSWAConfig(PreTrainedConfig):
     r"""
     sliding_window (`int`, *optional*, defaults to 128):

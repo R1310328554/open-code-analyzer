@@ -40,10 +40,14 @@ from ...utils import TransformersKwargs, auto_docstring
 from ...utils.deprecation import deprecate_kwarg
 from ...utils.generic import can_return_tuple, maybe_autocast, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
+# modeling_granitemoe 由 modular_granitemoe.py 自动生成
 from .configuration_granitemoe import GraniteMoeConfig
 
 
+# Granite MoE 建模：由 modular_granitemoe.py 自动生成的稀疏 MoE 解码器
+
 @use_kernel_forward_from_hub("RMSNorm")
+# GraniteMoeRMSNorm：Granite MoE RMS LayerNorm
 class GraniteMoeRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -64,6 +68,7 @@ class GraniteMoeRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# GraniteMoeRotaryEmbedding：Granite MoE RoPE 旋转位置编码
 class GraniteMoeRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: GraniteMoeConfig, device=None):
@@ -121,6 +126,7 @@ class GraniteMoeRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# GraniteMoeTopKRouter：Granite MoE top-k 路由门控（返回路由决策不分组 token）
 class GraniteMoeTopKRouter(nn.Module):
     """Top-k gating that returns the routing decisions without grouping tokens by expert.
 
@@ -144,6 +150,7 @@ class GraniteMoeTopKRouter(nn.Module):
 
 
 @use_experts_implementation
+# GraniteMoeExperts：Granite MoE 专家 FFN 参数组
 class GraniteMoeExperts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
@@ -183,6 +190,7 @@ class GraniteMoeExperts(nn.Module):
         return final_hidden_states
 
 
+# GraniteMoeMoE：Granite MoE 稀疏专家层（路由 + 专家 FFN）
 class GraniteMoeMoE(nn.Module):
     """Sparsely-gated mixture-of-experts block: router decides, experts compute."""
 
@@ -200,6 +208,7 @@ class GraniteMoeMoE(nn.Module):
         return layer_output.view(bsz, length, self.input_size)
 
 
+# rotate_half：RoPE 中将向量后半部分旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -208,6 +217,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -233,6 +243,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -245,6 +256,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向（含 attention sink）
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -271,6 +283,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# GraniteMoeAttention：Granite MoE 多头自注意力（缩放 attention_multiplier）
 class GraniteMoeAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -338,6 +351,7 @@ class GraniteMoeAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# GraniteMoeDecoderLayer：Granite MoE 解码器单层（自注意力 + MoE FFN）
 class GraniteMoeDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: GraniteMoeConfig, layer_idx: int):
         super().__init__()
@@ -374,6 +388,7 @@ class GraniteMoeDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# GraniteMoePreTrainedModel：Granite MoE 预训练基类与权重初始化
 class GraniteMoePreTrainedModel(PreTrainedModel):
     config: GraniteMoeConfig
     base_model_prefix = "model"
@@ -401,6 +416,7 @@ class GraniteMoePreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# GraniteMoeModel：Granite MoE 纯文本解码器主干
 class GraniteMoeModel(GraniteMoePreTrainedModel):
     def __init__(self, config: GraniteMoeConfig):
         super().__init__(config)
@@ -478,6 +494,7 @@ class GraniteMoeModel(GraniteMoePreTrainedModel):
         )
 
 
+# load_balancing_loss_func：MoE 路由负载均衡辅助损失计算
 def load_balancing_loss_func(
     gate_logits: torch.Tensor | tuple[torch.Tensor] | None,
     num_experts: int | None = None,
@@ -561,6 +578,7 @@ def load_balancing_loss_func(
 
 
 @auto_docstring
+# GraniteMoeForCausalLM：Granite MoE 因果语言建模与文本生成
 class GraniteMoeForCausalLM(GraniteMoePreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}

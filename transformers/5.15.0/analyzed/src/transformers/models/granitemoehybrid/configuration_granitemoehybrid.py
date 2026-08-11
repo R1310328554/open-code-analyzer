@@ -21,8 +21,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# Granite MoE Hybrid 配置：Mamba2 + Attention + MoE 混合层解码器超参
+
+# GraniteMoeHybridConfig：Granite MoE Hybrid Mamba+Attention+MoE 混合解码器默认超参
 @auto_docstring(checkpoint="ibm-granite/granite-speech-3.2-8b")
 @strict
+# GraniteMoeHybridConfig：Granite MoE Hybrid Mamba+Attention+MoE 混合解码器超参
 class GraniteMoeHybridConfig(PreTrainedConfig):
     r"""
     embedding_multiplier (`float`, *optional*, defaults to 1.0):

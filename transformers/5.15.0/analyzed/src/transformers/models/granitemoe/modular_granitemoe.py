@@ -28,6 +28,7 @@ from ...utils.generic import can_return_tuple, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
 from ..granite.modeling_granite import GraniteRMSNorm, GraniteRotaryEmbedding
 from ..llama.modeling_llama import LlamaAttention, LlamaPreTrainedModel
+# modular 复用 Granite RMS/RoPE、Llama 注意力与 Mixtral MoE 解码层
 from ..mixtral.modeling_mixtral import (
     MixtralDecoderLayer,
     MixtralExperts,
@@ -38,14 +39,19 @@ from ..mixtral.modeling_mixtral import (
 from .configuration_granitemoe import GraniteMoeConfig
 
 
+# Granite MoE modular 源：复用 Granite/Llama/Mixtral 组件实现稀疏 MoE 解码器
+
+# GraniteMoeRMSNorm：Granite MoE RMS LayerNorm
 class GraniteMoeRMSNorm(GraniteRMSNorm):
     pass
 
 
+# GraniteMoeRotaryEmbedding：Granite MoE RoPE 旋转位置编码
 class GraniteMoeRotaryEmbedding(GraniteRotaryEmbedding):
     pass
 
 
+# GraniteMoeTopKRouter：Granite MoE top-k 路由门控（返回路由决策不分组 token）
 class GraniteMoeTopKRouter(nn.Module):
     """Top-k gating that returns the routing decisions without grouping tokens by expert.
 
@@ -68,10 +74,12 @@ class GraniteMoeTopKRouter(nn.Module):
         return top_k_index, top_k_weights, router_logits
 
 
+# GraniteMoeExperts：Granite MoE 专家 FFN 参数组
 class GraniteMoeExperts(MixtralExperts):
     pass
 
 
+# GraniteMoeMoE：Granite MoE 稀疏专家层（路由 + 专家 FFN）
 class GraniteMoeMoE(nn.Module):
     """Sparsely-gated mixture-of-experts block: router decides, experts compute."""
 
@@ -89,12 +97,14 @@ class GraniteMoeMoE(nn.Module):
         return layer_output.view(bsz, length, self.input_size)
 
 
+# GraniteMoeAttention：Granite MoE 多头自注意力（缩放 attention_multiplier）
 class GraniteMoeAttention(LlamaAttention):
     def __init__(self, config: GraniteMoeConfig, layer_idx: int):
         super().__init__(self, config, layer_idx)
         self.scaling = config.attention_multiplier  # Only diff with llama
 
 
+# GraniteMoeDecoderLayer：Granite MoE 解码器单层（自注意力 + MoE FFN）
 class GraniteMoeDecoderLayer(MixtralDecoderLayer):
     def __init__(self, config: GraniteMoeConfig, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -132,6 +142,7 @@ class GraniteMoeDecoderLayer(MixtralDecoderLayer):
 
 
 @auto_docstring
+# GraniteMoePreTrainedModel：Granite MoE 预训练基类与权重初始化
 class GraniteMoePreTrainedModel(LlamaPreTrainedModel, PreTrainedModel):
     config: GraniteMoeConfig
     base_model_prefix = "model"
@@ -153,6 +164,7 @@ class GraniteMoePreTrainedModel(LlamaPreTrainedModel, PreTrainedModel):
 
 
 @auto_docstring
+# GraniteMoeModel：Granite MoE 纯文本解码器主干
 class GraniteMoeModel(MixtralModel):
     def __init__(self, config: GraniteMoeConfig):
         super().__init__(config)
@@ -221,6 +233,7 @@ class GraniteMoeModel(MixtralModel):
         )
 
 
+# GraniteMoeForCausalLM：Granite MoE 因果语言建模与文本生成
 class GraniteMoeForCausalLM(MixtralForCausalLM):
     def __init__(self, config: GraniteMoeConfig):
         super().__init__(config)

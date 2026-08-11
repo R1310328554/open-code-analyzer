@@ -49,14 +49,18 @@ from ..granite.modeling_granite import (
     GranitePreTrainedModel,
     GraniteRotaryEmbedding,
 )
+# modular 复用 Granite 解码层与 Llama 注意力，注入滑动窗口与 attention sink
 from ..llama.modeling_llama import LlamaAttention, apply_rotary_pos_emb, repeat_kv
 
 
 logger = logging.get_logger(__name__)
 
 
+# Granite SWA modular 源：Granite 解码器 + 滑动窗口注意力与可学习 sink
+
 @auto_docstring(checkpoint="ibm-granite/granite-swash-2b")
 @strict
+# GraniteSWAConfig：IBM Granite SWA 滑动窗口注意力+可学习 sink 解码器超参
 class GraniteSWAConfig(GraniteConfig):
     r"""
     sliding_window (`int`, *optional*, defaults to 128):
@@ -127,6 +131,7 @@ class GraniteSWAConfig(GraniteConfig):
             self.layer_rope_theta = [self.rope_parameters["rope_theta"]] * self.num_hidden_layers
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向（含 attention sink）
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -158,6 +163,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# GraniteSWAAttention：Granite SWA 多头自注意力（滑动窗口 + 可学习 per-head sink）
 class GraniteSWAAttention(LlamaAttention):
     """Granite attention with per-layer sliding window and a learnable per-head attention sink.
     RoPE is applied only when the model passes ``position_embeddings`` (NoPE uses ``None``)."""
@@ -215,12 +221,14 @@ class GraniteSWAAttention(LlamaAttention):
         return attn_output, attn_weights
 
 
+# GraniteSWADecoderLayer：Granite SWA 解码器单层（全/滑动窗口注意力切换）
 class GraniteSWADecoderLayer(GraniteDecoderLayer):
     def __init__(self, config: GraniteSWAConfig, layer_idx: int):
         super().__init__(config, layer_idx)
         self.self_attn = GraniteSWAAttention(config=config, layer_idx=layer_idx)
 
 
+# GraniteSWAPreTrainedModel：Granite SWA 预训练基类与权重初始化
 class GraniteSWAPreTrainedModel(GranitePreTrainedModel):
     _supports_sdpa = False
     _compatible_flash_implementations = ["kernels-community/vllm-flash-attn3", "flash_attention_4"]
@@ -236,10 +244,12 @@ class GraniteSWAPreTrainedModel(GranitePreTrainedModel):
             init.zeros_(module.sinks)
 
 
+# GraniteSWARotaryEmbedding：Granite SWA RoPE 旋转位置编码（支持逐层 NoPE）
 class GraniteSWARotaryEmbedding(GraniteRotaryEmbedding):
     pass
 
 
+# GraniteSWAModel：Granite SWA 纯文本解码器主干
 class GraniteSWAModel(GraniteModel):
     def __init__(self, config: GraniteSWAConfig):
         super().__init__(config)
@@ -327,6 +337,7 @@ class GraniteSWAModel(GraniteModel):
         )
 
 
+# GraniteSWAForCausalLM：Granite SWA 因果语言建模与文本生成
 class GraniteSWAForCausalLM(GraniteForCausalLM):
     pass
 

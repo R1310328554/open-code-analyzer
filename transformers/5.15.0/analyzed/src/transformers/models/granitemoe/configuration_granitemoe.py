@@ -25,8 +25,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# Granite MoE 配置：IBM 缩放残差 + top-k 稀疏专家解码器超参
+
+# GraniteMoeConfig：IBM Granite MoE 稀疏解码器默认超参
 @auto_docstring(checkpoint="ibm-granite/granite-speech-3.2-8b")
 @strict
+# GraniteMoeConfig：IBM Granite MoE 稀疏解码器超参（缩放残差 + top-k 路由）
 class GraniteMoeConfig(PreTrainedConfig):
     r"""
     ```python

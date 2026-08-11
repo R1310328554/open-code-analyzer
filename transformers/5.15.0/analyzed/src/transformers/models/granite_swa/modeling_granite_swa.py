@@ -40,9 +40,13 @@ from ...utils import TransformersKwargs, auto_docstring, can_return_tuple
 from ...utils.deprecation import deprecate_kwarg
 from ...utils.generic import maybe_autocast, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
+# modeling_granite_swa 由 modular_granite_swa.py 自动生成
 from .configuration_granite_swa import GraniteSWAConfig
 
 
+# Granite SWA 建模：由 modular_granite_swa.py 自动生成的滑动窗口解码器
+
+# rotate_half：RoPE 中将向量后半部分旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -51,6 +55,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -76,6 +81,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -88,6 +94,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向（含 attention sink）
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -120,6 +127,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# GraniteSWAAttention：Granite SWA 多头自注意力（滑动窗口 + 可学习 per-head sink）
 class GraniteSWAAttention(nn.Module):
     """Granite attention with per-layer sliding window and a learnable per-head attention sink.
     RoPE is applied only when the model passes ``position_embeddings`` (NoPE uses ``None``)."""
@@ -197,6 +205,7 @@ class GraniteSWAAttention(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# GraniteSWARMSNorm：Granite SWA RMS LayerNorm
 class GraniteSWARMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -217,6 +226,7 @@ class GraniteSWARMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# GraniteSWAMLP：Granite SWA 前馈 MLP（SwiGLU 结构）
 class GraniteSWAMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -233,6 +243,7 @@ class GraniteSWAMLP(nn.Module):
         return down_proj
 
 
+# GraniteSWADecoderLayer：Granite SWA 解码器单层（全/滑动窗口注意力切换）
 class GraniteSWADecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: GraniteSWAConfig, layer_idx: int):
         super().__init__()
@@ -298,6 +309,7 @@ class GraniteSWADecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# GraniteSWAPreTrainedModel：Granite SWA 预训练基类与权重初始化
 class GraniteSWAPreTrainedModel(PreTrainedModel):
     config: GraniteSWAConfig
     base_model_prefix = "model"
@@ -323,6 +335,7 @@ class GraniteSWAPreTrainedModel(PreTrainedModel):
             init.zeros_(module.sinks)
 
 
+# GraniteSWARotaryEmbedding：Granite SWA RoPE 旋转位置编码（支持逐层 NoPE）
 class GraniteSWARotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: GraniteSWAConfig, device=None):
@@ -381,6 +394,7 @@ class GraniteSWARotaryEmbedding(nn.Module):
 
 
 @auto_docstring
+# GraniteSWAModel：Granite SWA 纯文本解码器主干
 class GraniteSWAModel(GraniteSWAPreTrainedModel):
     def __init__(self, config: GraniteSWAConfig):
         super().__init__(config)
@@ -480,6 +494,7 @@ class GraniteSWAModel(GraniteSWAPreTrainedModel):
 
 
 @auto_docstring
+# GraniteSWAForCausalLM：Granite SWA 因果语言建模与文本生成
 class GraniteSWAForCausalLM(GraniteSWAPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}

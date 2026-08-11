@@ -32,8 +32,12 @@ from ..granite_speech.modeling_granite_speech import (
 )
 
 
+# Granite Speech Plus modular 源：多层 Conformer 拼接 + 文本解码器语音识别
+
+# GraniteSpeechPlusEncoderConfig：ibm-granite-speech-4.1-plus Conformer 编码器默认超参
 @auto_docstring(checkpoint="ibm-granite/granite-speech-4.1-2b-plus")
 @strict
+# GraniteSpeechPlusEncoderConfig：Speech Plus Conformer 编码器超参（多层拼接 cat_hidden_layers）
 class GraniteSpeechPlusEncoderConfig(GraniteSpeechEncoderConfig):
     r"""
     feedforward_mult (`int`, *optional*, defaults to 4):
@@ -72,8 +76,10 @@ class GraniteSpeechPlusEncoderConfig(GraniteSpeechEncoderConfig):
     cat_hidden_layers: list[int] | None = None
 
 
+# GraniteSpeechPlusConfig：ibm-granite-speech-4.1-plus 音频+文本联合默认超参
 @auto_docstring(checkpoint="ibm-granite/granite-speech-4.1-2b-plus")
 @strict
+# GraniteSpeechPlusConfig：Granite Speech Plus 音频+文本联合配置
 class GraniteSpeechPlusConfig(GraniteSpeechConfig):
     r"""
     projector_config (`Union[AutoConfig, dict]`, *optional*, defaults to `Blip2QFormerConfig`):
@@ -120,12 +126,15 @@ class GraniteSpeechPlusConfig(GraniteSpeechConfig):
                 )
 
 
+# GraniteSpeechPlusPreTrainedModel：Granite Speech Plus 预训练基类与权重初始化
 class GraniteSpeechPlusPreTrainedModel(GraniteSpeechPreTrainedModel): ...
 
 
+# GraniteSpeechPlusModel：Granite Speech Plus 音频编码器+文本解码器联合主干
 class GraniteSpeechPlusModel(GraniteSpeechModel): ...
 
 
+# GraniteSpeechPlusCTCEncoder：Speech Plus CTC Conformer 编码器（多层拼接输出）
 class GraniteSpeechPlusCTCEncoder(GraniteSpeechCTCEncoder):
     @merge_with_config_defaults
     @capture_outputs
@@ -164,6 +173,7 @@ class GraniteSpeechPlusCTCEncoder(GraniteSpeechCTCEncoder):
     encoder's final hidden states with an arbitrary subset of its intermediate hidden states.
     """
 )
+# GraniteSpeechPlusForConditionalGeneration：Granite Speech Plus 语音识别条件生成
 class GraniteSpeechPlusForConditionalGeneration(GraniteSpeechForConditionalGeneration): ...
 
 

@@ -41,9 +41,13 @@ from ...utils import TransformersKwargs, auto_docstring, can_return_tuple
 from ...utils.deprecation import deprecate_kwarg
 from ...utils.generic import maybe_autocast, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
+# modeling_granitemoe_swa 由 modular_granitemoe_swa.py 自动生成
 from .configuration_granitemoe_swa import GraniteMoeSWAConfig
 
 
+# Granite MoE SWA 建模：由 modular_granitemoe_swa.py 自动生成的 SWA+MoE 解码器
+
+# GraniteMoeSWATopKRouter：Granite MoE SWA top-k 路由门控
 class GraniteMoeSWATopKRouter(nn.Module):
     """Top-k gating that returns the routing decisions without grouping tokens by expert.
 
@@ -69,6 +73,7 @@ class GraniteMoeSWATopKRouter(nn.Module):
 
 
 @use_experts_implementation
+# GraniteMoeSWAExperts：Granite MoE SWA 专家 FFN 参数组
 class GraniteMoeSWAExperts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
@@ -108,6 +113,7 @@ class GraniteMoeSWAExperts(nn.Module):
         return final_hidden_states
 
 
+# GraniteMoeSWAMoE：Granite MoE SWA 稀疏专家层
 class GraniteMoeSWAMoE(nn.Module):
     """Sparsely-gated mixture-of-experts block: router decides, experts compute."""
 
@@ -127,6 +133,7 @@ class GraniteMoeSWAMoE(nn.Module):
         return layer_output.view(bsz, length, self.input_size)
 
 
+# rotate_half：RoPE 中将向量后半部分旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -135,6 +142,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -160,6 +168,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -172,6 +181,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向（含 attention sink）
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -204,6 +214,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# GraniteMoeSWAAttention：Granite MoE SWA 滑动窗口自注意力（含 attention sink）
 class GraniteMoeSWAAttention(nn.Module):
     """Granite attention with per-layer sliding window and a learnable per-head attention sink.
     RoPE is applied only when the model passes ``position_embeddings`` (NoPE uses ``None``)."""
@@ -280,6 +291,7 @@ class GraniteMoeSWAAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# GraniteFlashAttentionKwargs：Granite Flash Attention 可选参数字典类型
 class GraniteFlashAttentionKwargs(TypedDict, total=False):
     """
     Keyword arguments for advanced Flash Attention, causal-conv1d, and mamba_ssm kernel usage.
@@ -304,6 +316,7 @@ class GraniteFlashAttentionKwargs(TypedDict, total=False):
     seq_idx: torch.IntTensor
 
 
+# GraniteMoeSWAMLP：Granite MoE SWA 共享/稠密前馈 MLP
 class GraniteMoeSWAMLP(nn.Module):
     """
     MLP layer for shared experts
@@ -331,6 +344,7 @@ class GraniteMoeSWAMLP(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# GraniteMoeSWARMSNorm：Granite MoE SWA RMS LayerNorm
 class GraniteMoeSWARMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -351,6 +365,7 @@ class GraniteMoeSWARMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# GraniteMoeSWADecoderLayer：Granite MoE SWA 解码器单层（SWA 注意力 + MoE）
 class GraniteMoeSWADecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: GraniteMoeSWAConfig, layer_idx: int):
         super().__init__()
@@ -403,6 +418,7 @@ class GraniteMoeSWADecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# GraniteMoeSWAPreTrainedModel：Granite MoE SWA 预训练基类与权重初始化
 class GraniteMoeSWAPreTrainedModel(PreTrainedModel):
     config: GraniteMoeSWAConfig
     base_model_prefix = "model"
@@ -432,6 +448,7 @@ class GraniteMoeSWAPreTrainedModel(PreTrainedModel):
             init.zeros_(module.sinks)
 
 
+# GraniteMoeSWARotaryEmbedding：Granite MoE SWA RoPE 旋转位置编码
 class GraniteMoeSWARotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: GraniteMoeSWAConfig, device=None):
@@ -492,6 +509,7 @@ class GraniteMoeSWARotaryEmbedding(nn.Module):
 
 
 @auto_docstring
+# GraniteMoeSWAModel：Granite MoE SWA 纯文本解码器主干
 class GraniteMoeSWAModel(GraniteMoeSWAPreTrainedModel):
     def __init__(self, config: GraniteMoeSWAConfig):
         super().__init__(config)
@@ -590,6 +608,7 @@ class GraniteMoeSWAModel(GraniteMoeSWAPreTrainedModel):
         )
 
 
+# load_balancing_loss_func：MoE 路由负载均衡辅助损失计算
 def load_balancing_loss_func(
     gate_logits: torch.Tensor | tuple[torch.Tensor] | None,
     num_experts: int | None = None,
@@ -673,6 +692,7 @@ def load_balancing_loss_func(
 
 
 @auto_docstring
+# GraniteMoeSWAForCausalLM：Granite MoE SWA 因果语言建模与文本生成
 class GraniteMoeSWAForCausalLM(GraniteMoeSWAPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}

@@ -21,11 +21,16 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...modeling_rope_utils import RopeParameters
+# configuration_granitemoe_swa 由 modular_granitemoe_swa.py 自动生成
 from ...utils import auto_docstring
 
 
+# Granite MoE SWA 配置：滑动窗口注意力 + MoE 稀疏专家解码器超参
+
+# GraniteMoeSWAConfig：ibm-granite-swash-3b-a600m 滑动窗口 MoE 解码器默认超参
 @auto_docstring(checkpoint="ibm-granite/granite-swash-3b-a600m")
 @strict
+# GraniteMoeSWAConfig：Granite MoE SWA 滑动窗口 MoE 解码器超参
 class GraniteMoeSWAConfig(PreTrainedConfig):
     r"""
     shared_intermediate_size (`int`, *optional*, defaults to 0):

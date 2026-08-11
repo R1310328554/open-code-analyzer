@@ -35,6 +35,7 @@ from ...processing_utils import Unpack
 from ...utils import TransformersKwargs, auto_docstring, logging
 from ...utils.generic import merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
+# modular 组合 GraniteMoeShared 与 GraniteSWA 滑动窗口 sink 注意力
 from ..granite_swa.modeling_granite_swa import GraniteSWAAttention
 from ..granitemoe.modeling_granitemoe import GraniteMoeMoE, GraniteMoeTopKRouter
 from ..granitemoeshared.configuration_granitemoeshared import GraniteMoeSharedConfig
@@ -50,8 +51,11 @@ from ..granitemoeshared.modeling_granitemoeshared import (
 logger = logging.get_logger(__name__)
 
 
+# Granite MoE SWA modular 源：GraniteMoeShared + GraniteSWA 滑动窗口 sink 注意力
+
 @auto_docstring(checkpoint="ibm-granite/granite-swash-3b-a600m")
 @strict
+# GraniteMoeSWAConfig：Granite MoE SWA 滑动窗口 MoE 解码器超参
 class GraniteMoeSWAConfig(GraniteMoeSharedConfig):
     r"""
     shared_intermediate_size (`int`, *optional*, defaults to 0):
@@ -123,6 +127,7 @@ class GraniteMoeSWAConfig(GraniteMoeSharedConfig):
             self.layer_rope_theta = [self.rope_parameters["rope_theta"]] * self.num_hidden_layers
 
 
+# GraniteMoeSWATopKRouter：Granite MoE SWA top-k 路由门控
 class GraniteMoeSWATopKRouter(GraniteMoeTopKRouter):
     def forward(self, hidden_states: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         # Only different return order (router_logits, router_scores, router_indices) to enable EP
@@ -133,6 +138,7 @@ class GraniteMoeSWATopKRouter(GraniteMoeTopKRouter):
         return router_logits, top_k_weights, top_k_index
 
 
+# GraniteMoeSWAMoE：Granite MoE SWA 稀疏专家层
 class GraniteMoeSWAMoE(GraniteMoeMoE):
     def forward(self, layer_input: torch.Tensor) -> torch.Tensor:
         # Only different return order (router_logits, router_scores, router_indices) to enable EP
@@ -144,16 +150,19 @@ class GraniteMoeSWAMoE(GraniteMoeMoE):
         return layer_output.view(bsz, length, self.input_size)
 
 
+# GraniteMoeSWAAttention：Granite MoE SWA 滑动窗口自注意力（含 attention sink）
 class GraniteMoeSWAAttention(GraniteSWAAttention):
     pass
 
 
+# GraniteMoeSWADecoderLayer：Granite MoE SWA 解码器单层（SWA 注意力 + MoE）
 class GraniteMoeSWADecoderLayer(GraniteMoeSharedDecoderLayer):
     def __init__(self, config: GraniteMoeSWAConfig, layer_idx: int):
         super().__init__(config, layer_idx)
         self.self_attn = GraniteMoeSWAAttention(config=config, layer_idx=layer_idx)
 
 
+# GraniteMoeSWAPreTrainedModel：Granite MoE SWA 预训练基类与权重初始化
 class GraniteMoeSWAPreTrainedModel(GraniteMoeSharedPreTrainedModel):
     _no_split_modules = ["GraniteMoeSWADecoderLayer"]
     _supports_sdpa = False
@@ -170,10 +179,12 @@ class GraniteMoeSWAPreTrainedModel(GraniteMoeSharedPreTrainedModel):
             init.zeros_(module.sinks)
 
 
+# GraniteMoeSWARotaryEmbedding：Granite MoE SWA RoPE 旋转位置编码
 class GraniteMoeSWARotaryEmbedding(GraniteMoeSharedRotaryEmbedding):
     pass
 
 
+# GraniteMoeSWAModel：Granite MoE SWA 纯文本解码器主干
 class GraniteMoeSWAModel(GraniteMoeSharedModel):
     def __init__(self, config: GraniteMoeSWAConfig):
         super().__init__(config)
@@ -261,6 +272,7 @@ class GraniteMoeSWAModel(GraniteMoeSharedModel):
         )
 
 
+# GraniteMoeSWAForCausalLM：Granite MoE SWA 因果语言建模与文本生成
 class GraniteMoeSWAForCausalLM(GraniteMoeSharedForCausalLM):
     pass
 
