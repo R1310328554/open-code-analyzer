@@ -15,16 +15,19 @@ from .utils import CheckPostgresInstalledMixin
 __all__ = ["ExclusionConstraint"]
 
 
+# 排除约束表达式片段：表达式与运算符以 WITH 连接
 class ExclusionConstraintExpression(IndexExpression):
     template = "%(expressions)s WITH %(operator)s"
 
 
+# PostgreSQL EXCLUDE 约束：GiST/Hash/SP-GiST 索引上的互斥条件
 class ExclusionConstraint(CheckPostgresInstalledMixin, BaseConstraint):
     template = (
         "CONSTRAINT %(name)s EXCLUDE USING %(index_type)s "
         "(%(expressions)s)%(include)s%(where)s%(deferrable)s"
     )
 
+    # 校验 index_type、expressions 元组列表及 condition/deferrable/include
     def __init__(
         self,
         *,
@@ -87,6 +90,7 @@ class ExclusionConstraint(CheckPostgresInstalledMixin, BaseConstraint):
             violation_error_message=violation_error_message,
         )
 
+    # 将 (表达式, 运算符) 转为 ExclusionConstraintExpression 列表
     def _get_expressions(self, schema_editor, query):
         expressions = []
         for idx, (expression, operator) in enumerate(self.expressions):
@@ -97,6 +101,7 @@ class ExclusionConstraint(CheckPostgresInstalledMixin, BaseConstraint):
             expressions.append(expression)
         return ExpressionList(*expressions).resolve_expression(query)
 
+    # 检查约束引用的字段是否存在于模型
     def check(self, model, connection):
         errors = super().check(model, connection)
         references = set()
@@ -107,6 +112,7 @@ class ExclusionConstraint(CheckPostgresInstalledMixin, BaseConstraint):
         errors.extend(self._check_references(model, references))
         return errors
 
+    # 将 Q 条件编译为 WHERE 子句 SQL
     def _get_condition_sql(self, compiler, schema_editor, query):
         if self.condition is None:
             return None
@@ -114,6 +120,7 @@ class ExclusionConstraint(CheckPostgresInstalledMixin, BaseConstraint):
         sql, params = where.as_sql(compiler, schema_editor.connection)
         return sql % tuple(schema_editor.quote_value(p) for p in params)
 
+    # 生成 EXCLUDE USING ... 约束 DDL 片段
     def constraint_sql(self, model, schema_editor):
         query = Query(model, alias_cols=False)
         compiler = query.get_compiler(connection=schema_editor.connection)
@@ -136,6 +143,7 @@ class ExclusionConstraint(CheckPostgresInstalledMixin, BaseConstraint):
             deferrable=schema_editor._deferrable_constraint_sql(self.deferrable),
         )
 
+    # 生成 ALTER TABLE ... ADD CONSTRAINT ... EXCLUDE 语句
     def create_sql(self, model, schema_editor):
         return Statement(
             "ALTER TABLE %(table)s ADD %(constraint)s",
@@ -143,6 +151,7 @@ class ExclusionConstraint(CheckPostgresInstalledMixin, BaseConstraint):
             constraint=self.constraint_sql(model, schema_editor),
         )
 
+    # 生成删除该排除约束的 DDL
     def remove_sql(self, model, schema_editor):
         return schema_editor._delete_constraint_sql(
             schema_editor.sql_delete_check,
@@ -150,6 +159,7 @@ class ExclusionConstraint(CheckPostgresInstalledMixin, BaseConstraint):
             schema_editor.quote_name(self.name),
         )
 
+    # 序列化为迁移可重建的 (path, args, kwargs)
     def deconstruct(self):
         path, args, kwargs = super().deconstruct()
         kwargs["expressions"] = self.expressions
@@ -199,6 +209,7 @@ class ExclusionConstraint(CheckPostgresInstalledMixin, BaseConstraint):
             ),
         )
 
+    # 在 Python 层校验实例是否违反排除约束
     def validate(self, model, instance, exclude=None, using=DEFAULT_DB_ALIAS):
         queryset = model._default_manager.using(using)
         replacement_map = instance._get_field_expression_map(

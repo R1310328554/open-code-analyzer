@@ -3,6 +3,7 @@ from django.db.models import CharField, EmailField, TextField
 __all__ = ["CICharField", "CIEmailField", "CITextField"]
 
 
+# 已移除：不区分大小写字符字段，仅保留历史迁移兼容
 class CICharField(CharField):
     system_check_removed_details = {
         "msg": (
@@ -17,6 +18,7 @@ class CICharField(CharField):
     }
 
 
+# 已移除：不区分大小写邮箱字段
 class CIEmailField(EmailField):
     system_check_removed_details = {
         "msg": (
@@ -31,6 +33,7 @@ class CIEmailField(EmailField):
     }
 
 
+# 已移除：不区分大小写文本字段，请改用 db_collation 非确定性排序规则
 class CITextField(TextField):
     system_check_removed_details = {
         "msg": (

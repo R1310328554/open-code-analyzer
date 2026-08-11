@@ -18,6 +18,7 @@ from .utils import AttributeSetter
 __all__ = ["ArrayField"]
 
 
+# PostgreSQL 数组字段：基于 base_field 构造 type[] 列
 class ArrayField(CheckPostgresInstalledMixin, CheckFieldDefaultMixin, Field):
     empty_strings_allowed = False
     default_error_messages = {
@@ -26,6 +27,7 @@ class ArrayField(CheckPostgresInstalledMixin, CheckFieldDefaultMixin, Field):
     }
     _default_hint = ("list", "[]")
 
+    # size 限制数组长度；若 base_field 有 from_db_value 则继承
     def __init__(self, base_field, size=None, **kwargs):
         self.base_field = base_field
         self.db_collation = getattr(self.base_field, "db_collation", None)
@@ -42,6 +44,7 @@ class ArrayField(CheckPostgresInstalledMixin, CheckFieldDefaultMixin, Field):
         super().__init__(**kwargs)
 
     @property
+    # 读写 model 时同步设置 base_field.model
     def model(self):
         try:
             return self.__dict__["model"]
@@ -59,6 +62,7 @@ class ArrayField(CheckPostgresInstalledMixin, CheckFieldDefaultMixin, Field):
     def _choices_is_value(cls, value):
         return isinstance(value, (list, tuple)) or super()._choices_is_value(value)
 
+    # 禁止关联字段作为 base_field，并聚合 base_field 的检查结果
     def check(self, **kwargs):
         errors = super().check(**kwargs)
         if self.base_field.remote_field:
@@ -111,6 +115,7 @@ class ArrayField(CheckPostgresInstalledMixin, CheckFieldDefaultMixin, Field):
     def description(self):
         return "Array of %s" % self.base_field.description
 
+    # 返回 base_field 数据库类型加 [size] 后缀
     def db_type(self, connection):
         size = self.size or ""
         return "%s[%s]" % (self.base_field.db_type(connection), size)
@@ -131,6 +136,7 @@ class ArrayField(CheckPostgresInstalledMixin, CheckFieldDefaultMixin, Field):
             return f"{sql}::{db_type}", params
         return f"%s::{db_type}", (value,)
 
+    # 逐元素调用 base_field.get_db_prep_value
     def get_db_prep_value(self, value, connection, prepared=False):
         if isinstance(value, (list, tuple)):
             return [
@@ -153,6 +159,7 @@ class ArrayField(CheckPostgresInstalledMixin, CheckFieldDefaultMixin, Field):
             kwargs["size"] = self.size
         return name, path, args, kwargs
 
+    # JSON 字符串反序列化后逐元素 to_python
     def to_python(self, value):
         if isinstance(value, str):
             # Assume we're deserializing
@@ -202,6 +209,7 @@ class ArrayField(CheckPostgresInstalledMixin, CheckFieldDefaultMixin, Field):
         else:
             return SliceTransformFactory(start, end)
 
+    # 校验每个元素及嵌套数组长度一致性
     def validate(self, value, model_instance):
         super().validate(value, model_instance)
         for index, part in enumerate(value):
@@ -234,6 +242,7 @@ class ArrayField(CheckPostgresInstalledMixin, CheckFieldDefaultMixin, Field):
                     params={"nth": index + 1},
                 )
 
+    # 默认使用 SimpleArrayField 表单控件
     def formfield(self, **kwargs):
         return super().formfield(
             **{
@@ -244,6 +253,7 @@ class ArrayField(CheckPostgresInstalledMixin, CheckFieldDefaultMixin, Field):
             }
         )
 
+    # 构造数组切片 Transform 表达式
     def slice_expression(self, expression, start, length):
         # If length is not provided, don't specify an end to slice to the end
         # of the array.
@@ -251,6 +261,7 @@ class ArrayField(CheckPostgresInstalledMixin, CheckFieldDefaultMixin, Field):
         return SliceTransform(start, end, expression)
 
 
+# 数组查找右侧预处理：非空列表包装为 ARRAY[...] 并 cast
 class ArrayRHSMixin:
     def __init__(self, lhs, rhs):
         # Don't wrap arrays that contains only None values, psycopg doesn't
@@ -283,26 +294,31 @@ class ArrayRHSMixin:
 
 
 @ArrayField.register_lookup
+# 数组包含查找 @>
 class ArrayContains(ArrayRHSMixin, lookups.DataContains):
     pass
 
 
 @ArrayField.register_lookup
+# 被数组包含查找 <@
 class ArrayContainedBy(ArrayRHSMixin, lookups.ContainedBy):
     pass
 
 
 @ArrayField.register_lookup
+# 数组精确相等
 class ArrayExact(ArrayRHSMixin, Exact):
     pass
 
 
 @ArrayField.register_lookup
+# 数组重叠查找 &&
 class ArrayOverlap(ArrayRHSMixin, lookups.Overlap):
     pass
 
 
 @ArrayField.register_lookup
+# 数组长度 transform：区分 NULL 与空数组
 class ArrayLenTransform(Transform):
     lookup_name = "len"
     output_field = IntegerField()
@@ -317,6 +333,7 @@ class ArrayLenTransform(Transform):
 
 
 @ArrayField.register_lookup
+# 数组 IN 查找：将列表 rhs 转为元组以满足可哈希要求
 class ArrayInLookup(In):
     def get_prep_lookup(self):
         values = super().get_prep_lookup()
@@ -333,6 +350,7 @@ class ArrayInLookup(In):
         return prepared_values
 
 
+# 按 1 基下标访问数组元素
 class IndexTransform(Transform):
     def __init__(self, index, base_field, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -350,6 +368,7 @@ class IndexTransform(Transform):
         return self.base_field
 
 
+# 工厂：由字段 lookup 名生成 IndexTransform
 class IndexTransformFactory:
     def __init__(self, index, base_field):
         self.index = index
@@ -359,6 +378,7 @@ class IndexTransformFactory:
         return IndexTransform(self.index, self.base_field, *args, **kwargs)
 
 
+# PostgreSQL 数组切片 [start:end]
 class SliceTransform(Transform):
     def __init__(self, start, end, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -374,6 +394,7 @@ class SliceTransform(Transform):
             return f"({lhs})[%s:%s]", (*params, self.start, self.end)
 
 
+# 工厂：由 start_end 查找名生成 SliceTransform
 class SliceTransformFactory:
     def __init__(self, start, end):
         self.start = start

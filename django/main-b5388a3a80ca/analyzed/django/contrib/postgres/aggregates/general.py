@@ -22,16 +22,19 @@ __all__ = [
 ]
 
 
+# 将行聚合为 PostgreSQL 数组（ARRAY_AGG）
 class ArrayAgg(Aggregate):
     function = "ARRAY_AGG"
     allow_distinct = True
     allow_order_by = True
 
     @property
+    # 输出字段为包裹源表达式类型的 ArrayField
     def output_field(self):
         return ArrayField(self.source_expressions[0].output_field)
 
 
+# 已弃用的 PostgreSQL 位与聚合，请改用 django.db.models.aggregates.BitAnd
 class BitAnd(_BitAnd):
     def __init__(self, expression, **extra):
         warnings.warn(
@@ -43,6 +46,7 @@ class BitAnd(_BitAnd):
         super().__init__(expression, **extra)
 
 
+# 已弃用的 PostgreSQL 位或聚合
 class BitOr(_BitOr):
     def __init__(self, expression, **extra):
         warnings.warn(
@@ -54,6 +58,7 @@ class BitOr(_BitOr):
         super().__init__(expression, **extra)
 
 
+# 已弃用的 PostgreSQL 位异或聚合
 class BitXor(_BitXor):
     def __init__(self, expression, **extra):
         warnings.warn(
@@ -65,16 +70,19 @@ class BitXor(_BitXor):
         super().__init__(expression, **extra)
 
 
+# 布尔与聚合：所有值为真时结果为真（BOOL_AND）
 class BoolAnd(Aggregate):
     function = "BOOL_AND"
     output_field = BooleanField()
 
 
+# 布尔或聚合：任一值为真时结果为真（BOOL_OR）
 class BoolOr(Aggregate):
     function = "BOOL_OR"
     output_field = BooleanField()
 
 
+# 将行聚合为 JSONB 数组（JSONB_AGG）
 class JSONBAgg(Aggregate):
     function = "JSONB_AGG"
     allow_distinct = True
@@ -83,8 +91,10 @@ class JSONBAgg(Aggregate):
 
 
 # RemovedInDjango70Warning: When the deprecation ends, remove completely.
+# 已弃用的字符串连接聚合，delimiter 在 Django 7.0 语义将变更
 class StringAgg(_StringAgg):
 
+    # 字符串 delimiter 会触发弃用警告并自动包装为 Value
     def __init__(self, expression, delimiter, **extra):
         if isinstance(delimiter, str):
             warnings.warn(

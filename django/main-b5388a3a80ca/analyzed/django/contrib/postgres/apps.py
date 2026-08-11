@@ -21,6 +21,7 @@ from .serializers import RangeSerializer
 from .signals import register_type_handlers
 
 
+# 当 override_settings 移除 postgres 应用时撤销 ready() 注册的查找与信号
 def uninstall_if_needed(setting, value, enter, **kwargs):
     """
     Undo the effects of PostgresConfig.ready() when django.contrib.postgres
@@ -49,10 +50,12 @@ def uninstall_if_needed(setting, value, enter, **kwargs):
         MigrationWriter.unregister_serializer(RANGE_TYPES)
 
 
+# PostgreSQL 扩展应用配置：注册类型处理器、查找与迁移序列化器
 class PostgresConfig(AppConfig):
     name = "django.contrib.postgres"
     verbose_name = _("PostgreSQL extensions")
 
+    # 连接 PostgreSQL 时注册范围类型映射、全文/三元组查找及索引包装器
     def ready(self):
         setting_changed.connect(uninstall_if_needed)
         # Connections may already exist before we are called.

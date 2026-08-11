@@ -11,6 +11,7 @@ from django.utils.translation import gettext_lazy as _
 __all__ = ["HStoreField"]
 
 
+# PostgreSQL hstore 键值映射字段（字符串到字符串或 null）
 class HStoreField(CheckPostgresInstalledMixin, CheckFieldDefaultMixin, Field):
     empty_strings_allowed = False
     description = _("Map of strings to strings/nulls")
@@ -19,15 +20,18 @@ class HStoreField(CheckPostgresInstalledMixin, CheckFieldDefaultMixin, Field):
     }
     _default_hint = ("dict", "{}")
 
+    # 数据库列类型为 hstore
     def db_type(self, connection):
         return "hstore"
 
+    # 未知 transform 名按 hstore 键访问（-> key）
     def get_transform(self, name):
         transform = super().get_transform(name)
         if transform:
             return transform
         return KeyTransformFactory(name)
 
+    # 校验每个值必须为 str 或 None
     def validate(self, value, model_instance):
         super().validate(value, model_instance)
         for key, val in value.items():
@@ -38,6 +42,7 @@ class HStoreField(CheckPostgresInstalledMixin, CheckFieldDefaultMixin, Field):
                     params={"key": key},
                 )
 
+    # JSON 字符串反序列化为 dict
     def to_python(self, value):
         if isinstance(value, str):
             value = json.loads(value)
@@ -54,6 +59,7 @@ class HStoreField(CheckPostgresInstalledMixin, CheckFieldDefaultMixin, Field):
             }
         )
 
+    # 将键值统一转为 str，None 保留
     def get_prep_value(self, value):
         value = super().get_prep_value(value)
 
@@ -79,6 +85,7 @@ HStoreField.register_lookup(lookups.HasKeys)
 HStoreField.register_lookup(lookups.HasAnyKeys)
 
 
+# hstore 单键取值 transform（lhs -> key）
 class KeyTransform(Transform):
     output_field = TextField()
 
@@ -91,6 +98,7 @@ class KeyTransform(Transform):
         return "(%s -> %%s)" % lhs, (*params, self.key_name)
 
 
+# 工厂：由键名生成 KeyTransform
 class KeyTransformFactory:
     def __init__(self, key_name):
         self.key_name = key_name
@@ -100,6 +108,7 @@ class KeyTransformFactory:
 
 
 @HStoreField.register_lookup
+# 返回 hstore 全部键的数组（akeys）
 class KeysTransform(Transform):
     lookup_name = "keys"
     function = "akeys"
@@ -107,6 +116,7 @@ class KeysTransform(Transform):
 
 
 @HStoreField.register_lookup
+# 返回 hstore 全部值的数组（avals）
 class ValuesTransform(Transform):
     lookup_name = "values"
     function = "avals"

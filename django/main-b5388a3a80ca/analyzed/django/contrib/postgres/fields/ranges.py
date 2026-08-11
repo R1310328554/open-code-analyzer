@@ -27,17 +27,21 @@ __all__ = [
 ]
 
 
+# 范围边界字面量：lower/upper 括号为 [ ] 或 ( )
 class RangeBoundary(models.Expression):
+    """表示 PostgreSQL 范围边界开闭的表达式（如 [) ）。"""
     """A class that represents range boundaries."""
 
     def __init__(self, inclusive_lower=True, inclusive_upper=False):
         self.lower = "[" if inclusive_lower else "("
         self.upper = "]" if inclusive_upper else ")"
 
+    # 输出边界字符串字面量 SQL
     def as_sql(self, compiler, connection):
         return "'%s%s'" % (self.lower, self.upper), []
 
 
+# PostgreSQL 范围运算符常量（=、@>、&&、<< 等）
 class RangeOperators:
     # https://www.postgresql.org/docs/current/functions-range.html#RANGE-OPERATORS-TABLE
     EQUAL = "="
@@ -52,6 +56,7 @@ class RangeOperators:
     ADJACENT_TO = "-|-"
 
 
+# 范围字段基类：封装 psycopg Range 与 base_field
 class RangeField(CheckPostgresInstalledMixin, models.Field):
     empty_strings_allowed = False
 
@@ -91,6 +96,7 @@ class RangeField(CheckPostgresInstalledMixin, models.Field):
             return f"{sql}::{db_type}", params
         return f"%s::{db_type}", (value,)
 
+    # 将 list/tuple 或 Range 实例规范为 range_type
     def get_prep_value(self, value):
         if value is None:
             return None
@@ -100,6 +106,7 @@ class RangeField(CheckPostgresInstalledMixin, models.Field):
             return self.range_type(value[0], value[1])
         return value
 
+    # JSON 或二元组反序列化为 Range 对象
     def to_python(self, value):
         if isinstance(value, str):
             # Assume we're deserializing
@@ -116,6 +123,7 @@ class RangeField(CheckPostgresInstalledMixin, models.Field):
         super().set_attributes_from_name(name)
         self.base_field.set_attributes_from_name(name)
 
+    # 序列化为含 bounds 与上下界的 JSON
     def value_to_string(self, obj):
         value = self.value_from_object(obj)
         if value is None:
@@ -141,6 +149,7 @@ class RangeField(CheckPostgresInstalledMixin, models.Field):
 CANONICAL_RANGE_BOUNDS = "[)"
 
 
+# 连续范围字段：支持 default_bounds 控制 list/tuple 输入的默认边界
 class ContinuousRangeField(RangeField):
     """
     Continuous range field. It allows specifying default bounds for list and
@@ -169,6 +178,7 @@ class ContinuousRangeField(RangeField):
         return name, path, args, kwargs
 
 
+# 32 位整数范围（int4range）
 class IntegerRangeField(RangeField):
     base_field = models.IntegerField
     range_type = NumericRange
@@ -178,6 +188,7 @@ class IntegerRangeField(RangeField):
         return "int4range"
 
 
+# 64 位整数范围（int8range）
 class BigIntegerRangeField(RangeField):
     base_field = models.BigIntegerField
     range_type = NumericRange
@@ -187,6 +198,7 @@ class BigIntegerRangeField(RangeField):
         return "int8range"
 
 
+# 数值范围（numrange）
 class DecimalRangeField(ContinuousRangeField):
     base_field = models.DecimalField
     range_type = NumericRange
@@ -196,6 +208,7 @@ class DecimalRangeField(ContinuousRangeField):
         return "numrange"
 
 
+# 带时区时间戳范围（tstzrange）
 class DateTimeRangeField(ContinuousRangeField):
     base_field = models.DateTimeField
     range_type = DateTimeTZRange
@@ -205,6 +218,7 @@ class DateTimeRangeField(ContinuousRangeField):
         return "tstzrange"
 
 
+# 日期范围（daterange）
 class DateRangeField(RangeField):
     base_field = models.DateField
     range_type = DateRange
@@ -214,6 +228,7 @@ class DateRangeField(RangeField):
         return "daterange"
 
 
+# 范围包含查找：非标量 rhs 时 Cast 到 base_field
 class RangeContains(lookups.DataContains):
     def get_prep_lookup(self):
         if not isinstance(self.rhs, (list, tuple, Range)):
@@ -226,6 +241,7 @@ RangeField.register_lookup(lookups.ContainedBy)
 RangeField.register_lookup(lookups.Overlap)
 
 
+# 日期/时间范围 contains：必要时 cast rhs 类型
 class DateTimeRangeContains(PostgresOperatorLookup):
     """
     Lookup for Date/DateTimeRange containment to cast the rhs to the correct
@@ -264,6 +280,7 @@ DateRangeField.register_lookup(DateTimeRangeContains)
 DateTimeRangeField.register_lookup(DateTimeRangeContains)
 
 
+# 标量被范围包含：按 lhs 类型 cast rhs 为对应 range 类型
 class RangeContainedBy(PostgresOperatorLookup):
     lookup_name = "contained_by"
     type_mapping = {
@@ -304,36 +321,42 @@ models.DecimalField.register_lookup(RangeContainedBy)
 
 
 @RangeField.register_lookup
+# 范围完全在左侧（<<）
 class FullyLessThan(PostgresOperatorLookup):
     lookup_name = "fully_lt"
     postgres_operator = RangeOperators.FULLY_LT
 
 
 @RangeField.register_lookup
+# 范围完全在右侧（>>）
 class FullGreaterThan(PostgresOperatorLookup):
     lookup_name = "fully_gt"
     postgres_operator = RangeOperators.FULLY_GT
 
 
 @RangeField.register_lookup
+# 不小于（&>）
 class NotLessThan(PostgresOperatorLookup):
     lookup_name = "not_lt"
     postgres_operator = RangeOperators.NOT_LT
 
 
 @RangeField.register_lookup
+# 不大于（&<）
 class NotGreaterThan(PostgresOperatorLookup):
     lookup_name = "not_gt"
     postgres_operator = RangeOperators.NOT_GT
 
 
 @RangeField.register_lookup
+# 相邻范围（-|-）
 class AdjacentToLookup(PostgresOperatorLookup):
     lookup_name = "adjacent_to"
     postgres_operator = RangeOperators.ADJACENT_TO
 
 
 @RangeField.register_lookup
+# 范围下界 lower(...)
 class RangeStartsWith(models.Transform):
     lookup_name = "startswith"
     function = "lower"
@@ -344,6 +367,7 @@ class RangeStartsWith(models.Transform):
 
 
 @RangeField.register_lookup
+# 范围上界 upper(...)
 class RangeEndsWith(models.Transform):
     lookup_name = "endswith"
     function = "upper"
@@ -354,6 +378,7 @@ class RangeEndsWith(models.Transform):
 
 
 @RangeField.register_lookup
+# 范围是否为空 isempty(...)
 class IsEmpty(models.Transform):
     lookup_name = "isempty"
     function = "isempty"
@@ -361,6 +386,7 @@ class IsEmpty(models.Transform):
 
 
 @RangeField.register_lookup
+# 下界是否闭区间 LOWER_INC
 class LowerInclusive(models.Transform):
     lookup_name = "lower_inc"
     function = "LOWER_INC"
@@ -368,6 +394,7 @@ class LowerInclusive(models.Transform):
 
 
 @RangeField.register_lookup
+# 下界是否无穷 LOWER_INF
 class LowerInfinite(models.Transform):
     lookup_name = "lower_inf"
     function = "LOWER_INF"
@@ -375,6 +402,7 @@ class LowerInfinite(models.Transform):
 
 
 @RangeField.register_lookup
+# 上界是否闭区间 UPPER_INC
 class UpperInclusive(models.Transform):
     lookup_name = "upper_inc"
     function = "UPPER_INC"
@@ -382,6 +410,7 @@ class UpperInclusive(models.Transform):
 
 
 @RangeField.register_lookup
+# 上界是否无穷 UPPER_INF
 class UpperInfinite(models.Transform):
     lookup_name = "upper_inf"
     function = "UPPER_INF"
