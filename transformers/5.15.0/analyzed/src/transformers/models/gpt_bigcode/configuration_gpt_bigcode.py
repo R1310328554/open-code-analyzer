@@ -19,8 +19,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# GPT-BigCode 配置：多查询注意力与 FP32 softmax 代码生成解码器超参
+
+# GPTBigCodeConfig：google/gpt_bigcode 代码生成解码器默认超参
 @auto_docstring(checkpoint="google/gpt_bigcode")
 @strict
+# GPTBigCodeConfig：BigCode GPT 解码器超参（多查询注意力与 FP32 softmax）
 class GPTBigCodeConfig(PreTrainedConfig):
     r"""
     scale_attn_weights (`bool`, *optional*, defaults to `True`):

@@ -22,12 +22,15 @@ from ...utils import logging
 
 logger = logging.get_logger(__name__)
 
+
+# GPT-2 分词器：字节级 BPE 词表与 merges 规则
 VOCAB_FILES_NAMES = {
     "vocab_file": "vocab.json",
     "merges_file": "merges.txt",
 }
 
 
+# GPT2Tokenizer：封装 vocab.json + merges.txt 字节级 BPE 编码
 class GPT2Tokenizer(TokenizersBackend):
     """
     Construct a GPT-2 tokenizer. Based on byte-level Byte-Pair-Encoding.

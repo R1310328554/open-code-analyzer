@@ -20,8 +20,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# GPT-2 配置：OpenAI 解码器 Transformer 层数、头数与序列摘要超参
+
+# GPT2Config：openai-community/gpt2 解码器 Transformer 默认超参
 @auto_docstring(checkpoint="openai-community/gpt2")
 @strict
+# GPT2Config：OpenAI GPT-2 解码器 Transformer 超参（含序列摘要选项）
 class GPT2Config(PreTrainedConfig):
     r"""
     summary_type (`string`, *optional*, defaults to `"cls_index"`):

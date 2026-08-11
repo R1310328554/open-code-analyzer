@@ -20,8 +20,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# GPT-NeoX 配置：并行残差 + RoPE 大参数量解码器超参
+
+# GPTNeoXConfig：EleutherAI GPT-NeoX-20B 并行残差解码器默认超参
 @auto_docstring(checkpoint="EleutherAI/gpt-neox-20b")
 @strict
+# GPTNeoXConfig：EleutherAI GPT-NeoX 解码器超参（并行残差 + RoPE）
 class GPTNeoXConfig(PreTrainedConfig):
     r"""
     use_parallel_residual (`bool`, *optional*, defaults to `True`):

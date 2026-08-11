@@ -19,8 +19,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# GPT-Neo 配置：全局/局部滑动窗口混合注意力解码器超参
+
+# GPTNeoConfig：EleutherAI GPT-Neo 全局/局部混合注意力默认超参
 @auto_docstring(checkpoint="EleutherAI/gpt-neo-1.3B")
 @strict
+# GPTNeoConfig：EleutherAI GPT-Neo 解码器超参（全局/局部混合注意力）
 class GPTNeoConfig(PreTrainedConfig):
     r"""
     attention_types (`list`, *optional*, defaults to `[[['global', 'local'], 12]]`):
@@ -97,6 +101,7 @@ class GPTNeoConfig(PreTrainedConfig):
         return attentions
 
 
+# custom_unfold：ONNX 导出兼容的 unfold 滑动窗口实现
 def custom_unfold(input, dimension, size, step):
     """Custom torch.Tensor.unfold implementation to enable the export to ONNX."""
     import torch
@@ -119,6 +124,7 @@ def custom_unfold(input, dimension, size, step):
     return sliced.permute(perm)
 
 
+# custom_get_block_length_and_num_blocks：局部注意力块长与块数（ONNX 友好）
 def custom_get_block_length_and_num_blocks(seq_length, window_size):
     """
     Custom implementation for GPTNeoAttentionMixin._get_block_length_and_num_blocks to enable the export to ONNX as

@@ -44,6 +44,8 @@ from ...utils.output_capturing import OutputRecorder, capture_outputs
 from .configuration_gpt_bigcode import GPTBigCodeConfig
 
 
+# GPT-BigCode 建模：MQA 解码器 + 融合 softmax 内核
+
 logger = logging.get_logger(__name__)
 
 
@@ -52,6 +54,7 @@ logger = logging.get_logger(__name__)
 # TODO: Could have better fused kernels depending on scaling and dropout.
 #  Is it doable without writing 32 functions?
 @torch.jit.script
+# upcast_masked_softmax：掩码 softmax 上转为 FP32 的融合内核
 def upcast_masked_softmax(
     x: torch.Tensor, mask: torch.Tensor, mask_value: torch.Tensor, scale: float, softmax_dtype: torch.dtype
 ):
@@ -63,6 +66,7 @@ def upcast_masked_softmax(
 
 
 @torch.jit.script
+# upcast_softmax：无掩码 softmax 上转为 FP32 的融合内核
 def upcast_softmax(x: torch.Tensor, scale: float, softmax_dtype: torch.dtype):
     input_dtype = x.dtype
     x = x.to(softmax_dtype) * scale
@@ -71,12 +75,14 @@ def upcast_softmax(x: torch.Tensor, scale: float, softmax_dtype: torch.dtype):
 
 
 @torch.jit.script
+# masked_softmax：带掩码的 softmax 融合内核
 def masked_softmax(x: torch.Tensor, mask: torch.Tensor, mask_value: torch.Tensor):
     x = torch.where(mask, x, mask_value)
     x = torch.nn.functional.softmax(x, dim=-1)
     return x
 
 
+# repeat_kv：多查询注意力中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -89,6 +95,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -115,6 +122,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# GPTBigCodeAttention：GPT-BigCode 多头注意力（MQA/GQA + 可选交叉注意力）
 class GPTBigCodeAttention(nn.Module):
     def __init__(self, config, is_cross_attention=False, layer_idx=None):
         super().__init__()
@@ -241,6 +249,7 @@ class GPTBigCodeAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# GPTBigCodeMLP：GPT-BigCode 前馈 MLP
 class GPTBigCodeMLP(nn.Module):
     def __init__(self, intermediate_size, config):
         super().__init__()
@@ -259,6 +268,7 @@ class GPTBigCodeMLP(nn.Module):
         return hidden_states
 
 
+# GPTBigCodeBlock：GPT-BigCode 解码器单层
 class GPTBigCodeBlock(GradientCheckpointingLayer):
     def __init__(self, config, layer_idx=None):
         super().__init__()
@@ -332,6 +342,7 @@ class GPTBigCodeBlock(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# GPTBigCodePreTrainedModel：GPT-BigCode 预训练基类与权重初始化
 class GPTBigCodePreTrainedModel(PreTrainedModel):
     config: GPTBigCodeConfig
     base_model_prefix = "transformer"
@@ -368,6 +379,7 @@ class GPTBigCodePreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# GPTBigCodeModel：GPT-BigCode 纯文本解码器主干
 class GPTBigCodeModel(GPTBigCodePreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -508,6 +520,7 @@ class GPTBigCodeModel(GPTBigCodePreTrainedModel):
     embeddings).
     """
 )
+# GPTBigCodeForCausalLM：GPT-BigCode 因果语言建模与代码生成
 class GPTBigCodeForCausalLM(GPTBigCodePreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "transformer.wte.weight"}
 
@@ -600,6 +613,7 @@ class GPTBigCodeForCausalLM(GPTBigCodePreTrainedModel, GenerationMixin):
     each row of the batch).
     """
 )
+# GPTBigCodeForSequenceClassification：GPT-BigCode 序列分类头
 class GPTBigCodeForSequenceClassification(GPTBigCodePreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -713,6 +727,7 @@ class GPTBigCodeForSequenceClassification(GPTBigCodePreTrainedModel):
 
 
 @auto_docstring
+# GPTBigCodeForTokenClassification：GPT-BigCode 逐 token 分类头
 class GPTBigCodeForTokenClassification(GPTBigCodePreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

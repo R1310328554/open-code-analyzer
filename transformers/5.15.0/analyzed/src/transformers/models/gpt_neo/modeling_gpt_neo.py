@@ -41,6 +41,8 @@ from ...utils import (
 from .configuration_gpt_neo import GPTNeoConfig
 
 
+# GPT-Neo 建模：EleutherAI 全局+局部注意力解码器
+
 if is_flash_attn_available():
     from ...modeling_flash_attention_utils import _flash_attention_forward
 
@@ -48,6 +50,7 @@ if is_flash_attn_available():
 logger = logging.get_logger(__name__)
 
 
+# GPTNeoSelfAttention：GPT-Neo 标准自注意力（全局或局部窗口）
 class GPTNeoSelfAttention(nn.Module):
     def __init__(self, config, attention_type, layer_id=None):
         super().__init__()
@@ -158,6 +161,7 @@ class GPTNeoSelfAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# GPTNeoFlashAttention2：GPT-Neo FlashAttention-2 加速自注意力
 class GPTNeoFlashAttention2(GPTNeoSelfAttention):
     """
     GPTNeo flash attention module. This module inherits from `GPTNeoSelfAttention` as the weights of the module stays
@@ -257,6 +261,7 @@ GPT_NEO_ATTENTION_CLASSES = {
 }
 
 
+# GPTNeoAttention：GPT-Neo 注意力封装（按配置选择 eager/flash）
 class GPTNeoAttention(nn.Module):
     def __init__(self, config, layer_id=0):
         super().__init__()
@@ -292,6 +297,7 @@ class GPTNeoAttention(nn.Module):
         )
 
 
+# GPTNeoMLP：GPT-Neo 前馈 MLP
 class GPTNeoMLP(nn.Module):
     def __init__(self, intermediate_size, config):  # in MLP: intermediate_size= 4 * hidden_size
         super().__init__()
@@ -309,6 +315,7 @@ class GPTNeoMLP(nn.Module):
         return hidden_states
 
 
+# GPTNeoBlock：GPT-Neo 解码器单层
 class GPTNeoBlock(GradientCheckpointingLayer):
     def __init__(self, config, layer_id=None):
         super().__init__()
@@ -351,6 +358,7 @@ class GPTNeoBlock(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# GPTNeoPreTrainedModel：GPT-Neo 预训练基类与权重初始化
 class GPTNeoPreTrainedModel(PreTrainedModel):
     config: GPTNeoConfig
     base_model_prefix = "transformer"
@@ -373,6 +381,7 @@ class GPTNeoPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# GPTNeoModel：GPT-Neo 纯文本解码器主干
 class GPTNeoModel(GPTNeoPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -515,6 +524,7 @@ class GPTNeoModel(GPTNeoPreTrainedModel):
     embeddings).
     """
 )
+# GPTNeoForCausalLM：GPT-Neo 因果语言建模与文本生成
 class GPTNeoForCausalLM(GPTNeoPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "transformer.wte.weight"}
 
@@ -613,6 +623,7 @@ class GPTNeoForCausalLM(GPTNeoPreTrainedModel, GenerationMixin):
     each row of the batch).
     """
 )
+# GPTNeoForSequenceClassification：GPT-Neo 序列分类头
 class GPTNeoForSequenceClassification(GPTNeoPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -733,6 +744,7 @@ class GPTNeoForSequenceClassification(GPTNeoPreTrainedModel):
 
 
 @auto_docstring
+# GPTNeoForTokenClassification：GPT-Neo 逐 token 分类头
 class GPTNeoForTokenClassification(GPTNeoPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -817,6 +829,7 @@ class GPTNeoForTokenClassification(GPTNeoPreTrainedModel):
 
 
 @auto_docstring
+# GPTNeoForQuestionAnswering：GPT-Neo 抽取式问答头
 class GPTNeoForQuestionAnswering(GPTNeoPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

@@ -29,12 +29,16 @@ from ...utils import TransformersKwargs, auto_docstring, can_return_tuple, loggi
 from ...utils.deprecation import deprecate_kwarg
 from ...utils.generic import maybe_autocast, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
+# modeling_gpt_neox 由 modular_gpt_neox.py 自动生成
 from .configuration_gpt_neox import GPTNeoXConfig
 
+
+# GPT-NeoX 建模：由 modular_gpt_neox.py 自动生成的并行残差解码器
 
 logger = logging.get_logger(__name__)
 
 
+# GPTNeoXMLP：GPT-NeoX 前馈 MLP（GELU 激活）
 class GPTNeoXMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -49,6 +53,7 @@ class GPTNeoXMLP(nn.Module):
         return hidden_states
 
 
+# GPTNeoXRotaryEmbedding：GPT-NeoX RoPE 旋转位置编码
 class GPTNeoXRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: GPTNeoXConfig, device=None):
@@ -108,6 +113,7 @@ class GPTNeoXRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# rotate_half：RoPE 中将向量后半部分旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -115,6 +121,7 @@ def rotate_half(x):
     return torch.cat((-x2, x1), dim=-1)
 
 
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -151,6 +158,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -177,6 +185,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# GPTNeoXAttention：GPT-NeoX 多头自注意力（RoPE + GQA）
 class GPTNeoXAttention(nn.Module):
     def __init__(self, config, layer_idx=None):
         super().__init__()
@@ -236,6 +245,7 @@ class GPTNeoXAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# GPTNeoXLayer：GPT-NeoX 解码器单层（并行残差结构）
 class GPTNeoXLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_idx):
         super().__init__()
@@ -282,6 +292,7 @@ class GPTNeoXLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# GPTNeoXPreTrainedModel：GPT-NeoX 预训练基类与权重初始化
 class GPTNeoXPreTrainedModel(PreTrainedModel):
     config: GPTNeoXConfig
     base_model_prefix = "gpt_neox"
@@ -302,6 +313,7 @@ class GPTNeoXPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# GPTNeoXModel：GPT-NeoX 纯文本解码器主干
 class GPTNeoXModel(GPTNeoXPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -384,6 +396,7 @@ class GPTNeoXModel(GPTNeoXPreTrainedModel):
     GPTNeoX Model with a `language modeling` head on top for CLM fine-tuning.
     """
 )
+# GPTNeoXForCausalLM：GPT-NeoX 因果语言建模与文本生成
 class GPTNeoXForCausalLM(GPTNeoXPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "gpt_neox.embed_in.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
@@ -482,6 +495,7 @@ class GPTNeoXForCausalLM(GPTNeoXPreTrainedModel, GenerationMixin):
     each row of the batch).
     """
 )
+# GPTNeoXForSequenceClassification：GPT-NeoX 序列分类头
 class GPTNeoXForSequenceClassification(GPTNeoXPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -556,6 +570,7 @@ class GPTNeoXForSequenceClassification(GPTNeoXPreTrainedModel):
         )
 
 
+# GPTNeoXForTokenClassification：GPT-NeoX 逐 token 分类头
 class GPTNeoXForTokenClassification(GPTNeoXPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -616,6 +631,7 @@ class GPTNeoXForTokenClassification(GPTNeoXPreTrainedModel):
 
 
 @auto_docstring
+# GPTNeoXForQuestionAnswering：GPT-NeoX 抽取式问答头
 class GPTNeoXForQuestionAnswering(GPTNeoXPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

@@ -48,9 +48,12 @@ from ...utils.output_capturing import OutputRecorder, capture_outputs
 from .configuration_gpt2 import GPT2Config
 
 
+# GPT-2 建模：Conv1D 自注意力解码器 + LM/分类/问答多任务头
+
 logger = logging.get_logger(__name__)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(module, query, key, value, attention_mask, scaling=None, dropout=0.0, **kwargs):
     if scaling is None:
         scaling = query.size(-1) ** -0.5
@@ -72,6 +75,7 @@ def eager_attention_forward(module, query, key, value, attention_mask, scaling=N
     return attn_output, attn_weights
 
 
+# GPT2Attention：GPT-2 多头自注意力（Conv1D QKV + 因果掩码）
 class GPT2Attention(nn.Module):
     def __init__(self, config, is_cross_attention=False, layer_idx=None):
         super().__init__()
@@ -226,6 +230,7 @@ class GPT2Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# GPT2MLP：GPT-2 前馈 MLP（Conv1D 扩展 + 激活 + 投影）
 class GPT2MLP(nn.Module):
     def __init__(self, intermediate_size, config):
         super().__init__()
@@ -243,6 +248,7 @@ class GPT2MLP(nn.Module):
         return hidden_states
 
 
+# GPT2Block：GPT-2 解码器单层（LayerNorm + 自注意力 + MLP）
 class GPT2Block(GradientCheckpointingLayer):
     def __init__(self, config, layer_idx=None):
         super().__init__()
@@ -310,6 +316,7 @@ class GPT2Block(GradientCheckpointingLayer):
 
 
 # Copied from transformers.models.xlm.modeling_xlm.XLMSequenceSummary with XLM->GPT2
+# GPT2SequenceSummary：序列级池化摘要头（用于多选/分类）
 class GPT2SequenceSummary(nn.Module):
     r"""
     Compute a single vector summary of a sequence hidden states.
@@ -410,6 +417,7 @@ class GPT2SequenceSummary(nn.Module):
 
 
 @auto_docstring
+# GPT2PreTrainedModel：GPT-2 预训练基类与 Conv1D 权重初始化
 class GPT2PreTrainedModel(PreTrainedModel):
     config: GPT2Config
     base_model_prefix = "transformer"
@@ -456,6 +464,7 @@ class GPT2PreTrainedModel(PreTrainedModel):
     """
 )
 @dataclass
+# GPT2DoubleHeadsModelOutput：双头 LM + 多选分类输出 dataclass
 class GPT2DoubleHeadsModelOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -483,6 +492,7 @@ class GPT2DoubleHeadsModelOutput(ModelOutput):
 
 
 @auto_docstring
+# GPT2Model：GPT-2 纯文本解码器主干（含位置嵌入与多层 Block）
 class GPT2Model(GPT2PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -634,6 +644,7 @@ class GPT2Model(GPT2PreTrainedModel):
     embeddings).
     """
 )
+# GPT2LMHeadModel：GPT-2 因果语言建模与文本生成
 class GPT2LMHeadModel(GPT2PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "transformer.wte.weight"}
 
@@ -725,6 +736,7 @@ class GPT2LMHeadModel(GPT2PreTrainedModel, GenerationMixin):
     input sequence).
     """
 )
+# GPT2DoubleHeadsModel：GPT-2 双头模型（LM + 多选分类）
 class GPT2DoubleHeadsModel(GPT2PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "transformer.wte.weight"}
 
@@ -856,6 +868,7 @@ class GPT2DoubleHeadsModel(GPT2PreTrainedModel, GenerationMixin):
     each row of the batch).
     """
 )
+# GPT2ForSequenceClassification：GPT-2 序列分类头
 class GPT2ForSequenceClassification(GPT2PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -966,6 +979,7 @@ class GPT2ForSequenceClassification(GPT2PreTrainedModel):
 
 
 @auto_docstring
+# GPT2ForTokenClassification：GPT-2 逐 token 分类头
 class GPT2ForTokenClassification(GPT2PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1046,6 +1060,7 @@ class GPT2ForTokenClassification(GPT2PreTrainedModel):
 
 
 @auto_docstring
+# GPT2ForQuestionAnswering：GPT-2 抽取式问答头
 class GPT2ForQuestionAnswering(GPT2PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

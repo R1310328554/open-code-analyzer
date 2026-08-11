@@ -22,9 +22,12 @@ from ...utils import logging
 
 logger = logging.get_logger(__name__)
 
+
+# GPT-NeoX 分词器：字节级 BPE 词表（NeoX-20B 训练格式）
 VOCAB_FILES_NAMES = {"vocab_file": "vocab.json", "merges_file": "merges.txt", "tokenizer_file": "tokenizer.json"}
 
 
+# GPTNeoXTokenizer：NeoX-20B 字节级 BPE 编码与空格前缀处理
 class GPTNeoXTokenizer(TokenizersBackend):
     """
     Construct a GPT-NeoX-20B tokenizer (backed by HuggingFace's tokenizers library). Based on byte-level
