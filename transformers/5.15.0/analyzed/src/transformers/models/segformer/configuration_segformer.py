@@ -17,10 +17,13 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# SegFormer 配置：Mix-Transformer 各阶段深度、通道与语义分割头超参数
+
 
 
 @auto_docstring(checkpoint="ByteDance-Seed/Seed-OSS-36B-Instruct")
 @strict
+# SegformerConfig：SegFormer 顶层配置：Mix-Transformer 各阶段与分割头超参数
 class SegformerConfig(PreTrainedConfig):
     r"""
     num_encoder_blocks (`int`, *optional*, defaults to 4):

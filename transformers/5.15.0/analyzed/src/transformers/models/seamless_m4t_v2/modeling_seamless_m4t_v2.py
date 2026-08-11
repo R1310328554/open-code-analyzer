@@ -30,6 +30,8 @@ from ...integrations.fsdp import is_fsdp_managed_module
 from ...masking_utils import create_bidirectional_mask, create_causal_mask
 from ...modeling_layers import GradientCheckpointingLayer
 from ...modeling_outputs import (
+# SeamlessM4Tv2 建模：Conformer 语音编码、多语言翻译/语音合成与 T2U 单元生成
+
     BaseModelOutput,
     BaseModelOutputWithPastAndCrossAttentions,
     Seq2SeqLMOutput,
@@ -83,6 +85,7 @@ SEAMLESS_M4T_V2_COMMON_CUSTOM_ARGS = r"""
 )
 @dataclass
 # Copied from transformers.models.seamless_m4t.modeling_seamless_m4t.SeamlessM4TGenerationOutput with SeamlessM4T->SeamlessM4Tv2
+# SeamlessM4Tv2GenerationOutput：SeamlessM4Tv2 生成输出：文本/语音 token 与波形等联合结果
 class SeamlessM4Tv2GenerationOutput(ModelOutput):
     r"""
     waveform (`torch.FloatTensor` of shape `(batch_size, sequence_length)`):
@@ -111,6 +114,7 @@ class SeamlessM4Tv2GenerationOutput(ModelOutput):
     """
 )
 @dataclass
+# SeamlessM4Tv2TextToUnitDecoderOutput：T2U 解码器输出：单元序列 logits 与隐状态
 class SeamlessM4Tv2TextToUnitDecoderOutput(ModelOutput):
     r"""
     padding_mask (`torch.Tensor` of shape `(batch_size, sequence_length)`, *optional*):
@@ -131,6 +135,7 @@ class SeamlessM4Tv2TextToUnitDecoderOutput(ModelOutput):
     """
 )
 @dataclass
+# SeamlessM4Tv2TextToUnitOutput：T2U 模型输出：单元预测、时长与中间隐状态
 class SeamlessM4Tv2TextToUnitOutput(ModelOutput):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`):
@@ -159,6 +164,7 @@ class SeamlessM4Tv2TextToUnitOutput(ModelOutput):
 
 
 # Copied from transformers.models.bart.modeling_bart.shift_tokens_right
+# shift_tokens_right：右移 token：decoder 输入添加 BOS 并右移一位
 def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start_token_id: int):
     """
     Shift input ids one token to the right.
@@ -175,6 +181,7 @@ def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start
     return shifted_input_ids
 
 
+# _compute_new_attention_mask：重算注意力掩码：按有效序列长度裁剪 padding
 def _compute_new_attention_mask(hidden_states: torch.Tensor, seq_lens: torch.Tensor):
     """
     Computes an attention mask of the form `(batch, seq_len)` with an attention for each element in the batch that
@@ -203,6 +210,7 @@ def _compute_new_attention_mask(hidden_states: torch.Tensor, seq_lens: torch.Ten
 
 
 # Copied from transformers.models.seamless_m4t.modeling_seamless_m4t.format_speech_generation_kwargs with SeamlessM4T->SeamlessM4Tv2
+# format_speech_generation_kwargs：格式化语音生成参数：统一 TTS/S2S 生成 kwargs
 def format_speech_generation_kwargs(kwargs):
     """
     Format kwargs for SeamlessM4Tv2 models that generate speech, attribute kwargs to either the text generation or the
@@ -245,14 +253,17 @@ def format_speech_generation_kwargs(kwargs):
 ############ SPEECH ENCODER related code ################
 
 
+# SeamlessM4Tv2ConformerFeatureProjection：Conformer 特征投影：将声学特征映射到隐藏维度
 class SeamlessM4Tv2ConformerFeatureProjection(nn.Module):
     # Copied from transformers.models.seamless_m4t.modeling_seamless_m4t.SeamlessM4TConformerFeatureProjection.__init__
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.layer_norm = nn.LayerNorm(config.feature_projection_input_dim, eps=config.layer_norm_eps)
         self.projection = nn.Linear(config.feature_projection_input_dim, config.hidden_size)
         self.dropout = nn.Dropout(config.speech_encoder_dropout)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         # non-projected hidden states are needed for quantization
         norm_hidden_states = self.layer_norm(hidden_states.to(self.layer_norm.weight.dtype))
@@ -262,7 +273,9 @@ class SeamlessM4Tv2ConformerFeatureProjection(nn.Module):
 
 
 # Copied from transformers.models.seamless_m4t.modeling_seamless_m4t.SeamlessM4TConformerFeedForward with SeamlessM4T->SeamlessM4Tv2
+# SeamlessM4Tv2ConformerFeedForward：Conformer FFN：Swish 激活的两层前馈子层
 class SeamlessM4Tv2ConformerFeedForward(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, act_fn=None, dropout=None):
         super().__init__()
         dropout = dropout if dropout is not None else config.speech_encoder_dropout
@@ -275,6 +288,7 @@ class SeamlessM4Tv2ConformerFeedForward(nn.Module):
         self.output_dense = nn.Linear(config.speech_encoder_intermediate_size, config.hidden_size)
         self.output_dropout = nn.Dropout(dropout)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = self.intermediate_dense(hidden_states)
         hidden_states = self.intermediate_act_fn(hidden_states)
@@ -285,11 +299,13 @@ class SeamlessM4Tv2ConformerFeedForward(nn.Module):
         return hidden_states
 
 
+# SeamlessM4Tv2ConformerConvolutionModule：Conformer 卷积模块：深度可分离 1D 卷积增强局部上下文
 class SeamlessM4Tv2ConformerConvolutionModule(nn.Module):
     """Convolution block used in the conformer block. Uses a causal depthwise convolution similar to that
     described in Section 2.1 of https://huggingface.co/papers/1609.03499
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         if (config.conv_depthwise_kernel_size - 1) % 2 == 1:
@@ -325,6 +341,7 @@ class SeamlessM4Tv2ConformerConvolutionModule(nn.Module):
         )
         self.dropout = nn.Dropout(config.speech_encoder_dropout)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states, attention_mask=None):
         hidden_states = self.layer_norm(hidden_states)
 
@@ -356,11 +373,13 @@ class SeamlessM4Tv2ConformerConvolutionModule(nn.Module):
         return hidden_states
 
 
+# SeamlessM4Tv2ConformerSelfAttention：Conformer 自注意力：相对位置编码的多头缩放点积注意力
 class SeamlessM4Tv2ConformerSelfAttention(nn.Module):
     """Construct a SeamlessM4Tv2ConformerSelfAttention object.
     Can be enhanced with relative position embeddings.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, use_position_embeddings=True):
         super().__init__()
 
@@ -381,6 +400,7 @@ class SeamlessM4Tv2ConformerSelfAttention(nn.Module):
             num_positions = self.left_max_position_embeddings + self.right_max_position_embeddings + 1
             self.distance_embedding = nn.Embedding(num_positions, self.head_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -441,10 +461,12 @@ class SeamlessM4Tv2ConformerSelfAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# SeamlessM4Tv2ConformerEncoderLayer：Conformer 编码层：Macaron FFN + 卷积 + 自注意力残差堆叠
 class SeamlessM4Tv2ConformerEncoderLayer(GradientCheckpointingLayer):
     """Conformer block based on https://huggingface.co/papers/2005.08100."""
 
     # Copied from transformers.models.wav2vec2_conformer.modeling_wav2vec2_conformer.Wav2Vec2ConformerEncoderLayer.__init__ with Wav2Vec2->SeamlessM4Tv2, attention_dropout->speech_encoder_dropout, torch.nn->nn
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         embed_dim = config.hidden_size
@@ -467,6 +489,7 @@ class SeamlessM4Tv2ConformerEncoderLayer(GradientCheckpointingLayer):
         self.ffn2 = SeamlessM4Tv2ConformerFeedForward(config)
         self.final_layer_norm = nn.LayerNorm(embed_dim)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -506,7 +529,9 @@ class SeamlessM4Tv2ConformerEncoderLayer(GradientCheckpointingLayer):
         return hidden_states, attn_weights
 
 
+# SeamlessM4Tv2ConformerEncoder：Conformer 语音编码器：多层 Conformer 提取声学表示
 class SeamlessM4Tv2ConformerEncoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -551,6 +576,7 @@ class SeamlessM4Tv2ConformerEncoder(nn.Module):
         attention_mask = attention_mask.to(dtype=hidden_states.dtype)
         return attention_mask
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -620,7 +646,9 @@ class SeamlessM4Tv2ConformerEncoder(nn.Module):
 
 
 # Copied from transformers.models.seamless_m4t.modeling_seamless_m4t.SeamlessM4TConformerAdapterLayer with SeamlessM4T->SeamlessM4Tv2
+# SeamlessM4Tv2ConformerAdapterLayer：Conformer 适配器层：卷积下采样压缩时序分辨率
 class SeamlessM4Tv2ConformerAdapterLayer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -666,6 +694,7 @@ class SeamlessM4Tv2ConformerAdapterLayer(nn.Module):
 
         return seq_lens.floor()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -722,7 +751,9 @@ class SeamlessM4Tv2ConformerAdapterLayer(nn.Module):
 
 
 # Copied from transformers.models.seamless_m4t.modeling_seamless_m4t.SeamlessM4TConformerAdapter with SeamlessM4T->SeamlessM4Tv2
+# SeamlessM4Tv2ConformerAdapter：Conformer 适配器：堆叠多层时序卷积适配网络
 class SeamlessM4Tv2ConformerAdapter(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
 
@@ -730,6 +761,7 @@ class SeamlessM4Tv2ConformerAdapter(nn.Module):
             SeamlessM4Tv2ConformerAdapterLayer(config) for _ in range(config.num_adapter_layers)
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states, attention_mask):
         # down project hidden_states if necessary
 
@@ -743,23 +775,28 @@ class SeamlessM4Tv2ConformerAdapter(nn.Module):
 
 
 # Copied from transformers.models.m2m_100.modeling_m2m_100.M2M100ScaledWordEmbedding with M2M100->SeamlessM4Tv2
+# SeamlessM4Tv2ScaledWordEmbedding：缩放词嵌入：Embedding 输出按 sqrt(d) 缩放
 class SeamlessM4Tv2ScaledWordEmbedding(nn.Embedding):
     """
     This module overrides nn.Embeddings' forward by multiplying with embeddings scale.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, num_embeddings: int, embedding_dim: int, padding_idx: int, embed_scale: float | None = 1.0):
         super().__init__(num_embeddings, embedding_dim, padding_idx)
         self.embed_scale = embed_scale
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input_ids: torch.Tensor):
         return super().forward(input_ids) * self.embed_scale
 
 
 # Copied from transformers.models.m2m_100.modeling_m2m_100.M2M100SinusoidalPositionalEmbedding with M2M100->SeamlessM4Tv2
+# SeamlessM4Tv2SinusoidalPositionalEmbedding：正弦位置嵌入：固定 sin/cos 序列位置编码
 class SeamlessM4Tv2SinusoidalPositionalEmbedding(nn.Module):
     """This module produces sinusoidal positional embeddings of any length."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, num_positions: int, embedding_dim: int, padding_idx: int | None = None):
         super().__init__()
         self.offset = 2
@@ -798,6 +835,7 @@ class SeamlessM4Tv2SinusoidalPositionalEmbedding(nn.Module):
         return emb.to(torch.get_default_dtype())
 
     @torch.no_grad()
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.Tensor | None = None,
@@ -859,10 +897,12 @@ class SeamlessM4Tv2SinusoidalPositionalEmbedding(nn.Module):
         return incremental_indices.long() + padding_idx
 
 
+# SeamlessM4Tv2Attention：SeamlessM4Tv2 注意力：标准多头缩放点积自/交叉注意力
 class SeamlessM4Tv2Attention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
     # Copied from transformers.models.bart.modeling_bart.BartAttention.__init__ with Bart->SeamlessM4Tv2
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         embed_dim: int,
@@ -902,6 +942,7 @@ class SeamlessM4Tv2Attention(nn.Module):
         self.q_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
         self.out_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -968,7 +1009,9 @@ class SeamlessM4Tv2Attention(nn.Module):
 
 
 # Copied from transformers.models.nllb_moe.modeling_nllb_moe.NllbMoeDenseActDense with NllbMoe->SeamlessM4Tv2,DenseActDense->FeedForwardNetwork, d_model->hidden_size
+# SeamlessM4Tv2FeedForwardNetwork：SeamlessM4Tv2 FFN：两层线性 + 激活的前馈网络
 class SeamlessM4Tv2FeedForwardNetwork(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SeamlessM4Tv2Config, ffn_dim: int):
         super().__init__()
         self.fc1 = nn.Linear(config.hidden_size, ffn_dim)
@@ -976,6 +1019,7 @@ class SeamlessM4Tv2FeedForwardNetwork(nn.Module):
         self.dropout = nn.Dropout(config.activation_dropout)
         self.act = ACT2FN[config.activation_function]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor):
         hidden_states = self.fc1(hidden_states)
         hidden_states = self.act(hidden_states)
@@ -991,7 +1035,9 @@ class SeamlessM4Tv2FeedForwardNetwork(nn.Module):
 
 
 # Copied from transformers.models.seamless_m4t.modeling_seamless_m4t.SeamlessM4TEncoderLayer with SeamlessM4T->SeamlessM4Tv2
+# SeamlessM4Tv2EncoderLayer：文本编码层：自注意力 + FFN 残差堆叠
 class SeamlessM4Tv2EncoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SeamlessM4Tv2Config, encoder_ffn_dim=None, encoder_attention_heads=None):
         super().__init__()
         encoder_ffn_dim = config.encoder_ffn_dim if encoder_ffn_dim is None else encoder_ffn_dim
@@ -1013,6 +1059,7 @@ class SeamlessM4Tv2EncoderLayer(GradientCheckpointingLayer):
         self.ffn_layer_norm = nn.LayerNorm(config.hidden_size)
         self.ffn_dropout = nn.Dropout(config.activation_dropout)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -1055,7 +1102,9 @@ class SeamlessM4Tv2EncoderLayer(GradientCheckpointingLayer):
 
 
 # Copied from transformers.models.seamless_m4t.modeling_seamless_m4t.SeamlessM4TDecoderLayer with SeamlessM4T->SeamlessM4Tv2
+# SeamlessM4Tv2DecoderLayer：文本解码层：自注意力 + 交叉注意力 + FFN 残差堆叠
 class SeamlessM4Tv2DecoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self, config: SeamlessM4Tv2Config, decoder_ffn_dim=None, decoder_attention_heads=None, layer_idx=None
     ):
@@ -1092,6 +1141,7 @@ class SeamlessM4Tv2DecoderLayer(GradientCheckpointingLayer):
         self.ffn_layer_norm = nn.LayerNorm(config.hidden_size)
         self.ffn_dropout = nn.Dropout(config.activation_dropout)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -1163,7 +1213,9 @@ class SeamlessM4Tv2DecoderLayer(GradientCheckpointingLayer):
         return hidden_states, self_attn_weights, cross_attn_weights
 
 
+# SeamlessM4Tv2TextToUnitDecoderLayer：T2U 解码层：文本到离散语音单元的 seq2seq 解码块
 class SeamlessM4Tv2TextToUnitDecoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SeamlessM4Tv2Config, decoder_ffn_dim=None, decoder_attention_heads=None):
         super().__init__()
         decoder_ffn_dim = config.decoder_ffn_dim if decoder_ffn_dim is None else decoder_ffn_dim
@@ -1188,6 +1240,7 @@ class SeamlessM4Tv2TextToUnitDecoderLayer(GradientCheckpointingLayer):
         self.conv_layer_norm = nn.LayerNorm(config.hidden_size)
         self.conv_dropout = nn.Dropout(self.dropout)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -1245,6 +1298,7 @@ class SeamlessM4Tv2TextToUnitDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# SeamlessM4Tv2PreTrainedModel：SeamlessM4Tv2 预训练基类：权重初始化与输出录制
 class SeamlessM4Tv2PreTrainedModel(PreTrainedModel):
     config: SeamlessM4Tv2Config
     base_model_prefix = "seamless_m4t_v2"
@@ -1257,6 +1311,7 @@ class SeamlessM4Tv2PreTrainedModel(PreTrainedModel):
     ]
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module: nn.Module):
         """Initialize the weights"""
         super()._init_weights(module)
@@ -1480,10 +1535,12 @@ class SeamlessM4Tv2PreTrainedModel(PreTrainedModel):
     """
 )
 # Copied from transformers.models.seamless_m4t.modeling_seamless_m4t.SeamlessM4TSpeechEncoder with SeamlessM4T->SeamlessM4Tv2
+# SeamlessM4Tv2SpeechEncoder：语音编码器：Conformer + 可选适配器提取声学特征
 class SeamlessM4Tv2SpeechEncoder(SeamlessM4Tv2PreTrainedModel):
     main_input_name = "input_features"
     input_modalities = "audio"
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SeamlessM4Tv2Config):
         super().__init__(config)
 
@@ -1496,6 +1553,7 @@ class SeamlessM4Tv2SpeechEncoder(SeamlessM4Tv2PreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_features: torch.Tensor | None,
@@ -1554,7 +1612,9 @@ class SeamlessM4Tv2SpeechEncoder(SeamlessM4Tv2PreTrainedModel):
     """
 )
 # Copied from transformers.models.seamless_m4t.modeling_seamless_m4t.SeamlessM4TEncoder with SeamlessM4T->SeamlessM4Tv2
+# SeamlessM4Tv2Encoder：文本编码器：多层 Transformer 编码多语言文本
 class SeamlessM4Tv2Encoder(SeamlessM4Tv2PreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: SeamlessM4Tv2Config,
@@ -1611,6 +1671,7 @@ class SeamlessM4Tv2Encoder(SeamlessM4Tv2PreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -1739,7 +1800,9 @@ class SeamlessM4Tv2Encoder(SeamlessM4Tv2PreTrainedModel):
     """
 )
 # Copied from transformers.models.seamless_m4t.modeling_seamless_m4t.SeamlessM4TDecoder with SeamlessM4T->SeamlessM4Tv2
+# SeamlessM4Tv2Decoder：文本解码器：自回归解码目标语言文本
 class SeamlessM4Tv2Decoder(SeamlessM4Tv2PreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: SeamlessM4Tv2Config,
@@ -1792,6 +1855,7 @@ class SeamlessM4Tv2Decoder(SeamlessM4Tv2PreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -1921,7 +1985,9 @@ class SeamlessM4Tv2Decoder(SeamlessM4Tv2PreTrainedModel):
     Transformer decoder consisting of *config.decoder_layers* layers. Each layer is a [`SeamlessM4Tv2DecoderLayer`].
     """
 )
+# SeamlessM4Tv2TextToUnitDecoder：T2U 解码器：将文本隐状态解码为离散语音单元
 class SeamlessM4Tv2TextToUnitDecoder(SeamlessM4Tv2PreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: SeamlessM4Tv2Config,
@@ -1984,6 +2050,7 @@ class SeamlessM4Tv2TextToUnitDecoder(SeamlessM4Tv2PreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         char_input_ids: torch.LongTensor | None = None,
@@ -2094,8 +2161,10 @@ class SeamlessM4Tv2TextToUnitDecoder(SeamlessM4Tv2PreTrainedModel):
     Transformer bare text-to-unit encoder-decoder. The encoder is a [`SeamlessM4Tv2Encoder`] without embeddings and the decoder is a [`SeamlessM4Tv2TextToUnitDecoder`].
     """
 )
+# SeamlessM4Tv2TextToUnitModel：T2U 模型：编码器-解码器生成语音单元序列
 class SeamlessM4Tv2TextToUnitModel(SeamlessM4Tv2PreTrainedModel):
     # Copied from transformers.models.seamless_m4t.modeling_seamless_m4t.SeamlessM4TTextToUnitModel.__init__ with SeamlessM4T->SeamlessM4Tv2, Decoder->TextToUnitDecoder
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: SeamlessM4Tv2Config,
@@ -2113,6 +2182,7 @@ class SeamlessM4Tv2TextToUnitModel(SeamlessM4Tv2PreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -2178,6 +2248,7 @@ class SeamlessM4Tv2TextToUnitModel(SeamlessM4Tv2PreTrainedModel):
     Transformer text-to-unit encoder-decoder with a language model head. The base encoder-decoder model is a [`SeamlessM4Tv2TextToUnitModel`].
     """
 )
+# SeamlessM4Tv2TextToUnitForConditionalGeneration：T2U 条件生成：带 GenerationMixin 的单元预测头
 class SeamlessM4Tv2TextToUnitForConditionalGeneration(SeamlessM4Tv2PreTrainedModel, GenerationMixin):
     _keys_to_ignore_on_load_missing = [
         "vocoder",
@@ -2188,6 +2259,7 @@ class SeamlessM4Tv2TextToUnitForConditionalGeneration(SeamlessM4Tv2PreTrainedMod
     _tied_weights_keys = {"lm_head.weight": "model.decoder.embed_tokens.weight"}
 
     # Copied from transformers.models.seamless_m4t.modeling_seamless_m4t.SeamlessM4TTextToUnitForConditionalGeneration.__init__ with SeamlessM4T->SeamlessM4Tv2
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config: SeamlessM4Tv2Config,
@@ -2228,6 +2300,7 @@ class SeamlessM4Tv2TextToUnitForConditionalGeneration(SeamlessM4Tv2PreTrainedMod
         self.model.decoder.embed_tokens = value
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -2298,7 +2371,9 @@ class SeamlessM4Tv2TextToUnitForConditionalGeneration(SeamlessM4Tv2PreTrainedMod
 
 
 # Copied from transformers.models.speecht5.modeling_speecht5.HifiGanResidualBlock
+# HifiGanResidualBlock：HiFi-GAN 残差块：扩张卷积堆叠生成高保真波形
 class HifiGanResidualBlock(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, channels, kernel_size=3, dilation=(1, 3, 5), leaky_relu_slope=0.1):
         super().__init__()
         self.leaky_relu_slope = leaky_relu_slope
@@ -2349,6 +2424,7 @@ class HifiGanResidualBlock(nn.Module):
         for layer in self.convs2:
             nn.utils.remove_weight_norm(layer)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         for conv1, conv2 in zip(self.convs1, self.convs2):
             residual = hidden_states
@@ -2360,7 +2436,9 @@ class HifiGanResidualBlock(nn.Module):
         return hidden_states
 
 
+# SeamlessM4Tv2VariancePredictor：时长方差预测器：预测 T2U 单元持续时间
 class SeamlessM4Tv2VariancePredictor(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, embed_dim, hidden_dim, kernel_size, var_pred_dropout):
         super().__init__()
 
@@ -2382,6 +2460,7 @@ class SeamlessM4Tv2VariancePredictor(nn.Module):
         self.ln2 = nn.LayerNorm(hidden_dim)
         self.proj = nn.Linear(hidden_dim, 1)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: Tensor, padding_mask: Tensor | None = None) -> Tensor:
         # Input: B x T x C; Output: B x T
         if padding_mask is not None:
@@ -2398,7 +2477,9 @@ class SeamlessM4Tv2VariancePredictor(nn.Module):
 
 
 # Copied from transformers.models.seamless_m4t.modeling_seamless_m4t.SeamlessM4THifiGan with SeamlessM4T->SeamlessM4Tv2
+# SeamlessM4Tv2HifiGan：HiFi-GAN 声码器：将离散单元映射为连续波形
 class SeamlessM4Tv2HifiGan(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SeamlessM4Tv2Config):
         super().__init__()
         model_in_dim = config.unit_embed_dim + config.lang_embed_dim + config.spkr_embed_dim
@@ -2433,6 +2514,7 @@ class SeamlessM4Tv2HifiGan(nn.Module):
 
         self.conv_post = nn.Conv1d(channels, 1, kernel_size=7, stride=1, padding=3)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, inputs_embeds: torch.FloatTensor) -> torch.FloatTensor:
         r"""
         Converts a log-mel spectrogram into a speech waveform. Passing a batch of log-mel spectrograms returns a batch
@@ -2475,12 +2557,14 @@ class SeamlessM4Tv2HifiGan(nn.Module):
     Code HiFi-GAN vocoder as described in this [repository](https://github.com/facebookresearch/speech-resynthesis).
     """
 )
+# SeamlessM4Tv2CodeHifiGan：Code HiFi-GAN：带预训练权重的单元到波形声码器
 class SeamlessM4Tv2CodeHifiGan(PreTrainedModel):
     config: SeamlessM4Tv2Config
     main_input_name = "inputs_embeds"
     input_modalities = "audio"
     _no_split_modules = []
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -2558,6 +2642,7 @@ class SeamlessM4Tv2CodeHifiGan(PreTrainedModel):
         return input_lengths
 
     # Copied from transformers.models.seamless_m4t.modeling_seamless_m4t.SeamlessM4TCodeHifiGan.forward with SeamlessM4T->SeamlessM4Tv2, spkr_id->speaker_id
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self, input_ids: torch.LongTensor, speaker_id: torch.Tensor, lang_id: torch.Tensor, **kwargs
     ) -> tuple[torch.Tensor]:
@@ -2639,6 +2724,7 @@ class SeamlessM4Tv2CodeHifiGan(PreTrainedModel):
     """
 )
 # Copied from transformers.models.seamless_m4t.modeling_seamless_m4t.SeamlessM4TForTextToText with SeamlessM4T->SeamlessM4Tv2,SeamlessM4Tv2Tokenizer->SeamlessM4TTokenizer, SeamlessM4Tv2Processor->SeamlessM4TProcessor, SEAMLESS_M4T->SEAMLESS_M4T_V2
+# SeamlessM4Tv2ForTextToText：文本到文本：多语言机器翻译 seq2seq 头
 class SeamlessM4Tv2ForTextToText(SeamlessM4Tv2PreTrainedModel, GenerationMixin):
     _keys_to_ignore_on_load_missing = ["speech_encoder", "t2u_model", "vocoder"]
     main_input_name = "input_ids"
@@ -2649,6 +2735,7 @@ class SeamlessM4Tv2ForTextToText(SeamlessM4Tv2PreTrainedModel, GenerationMixin):
         "text_decoder.embed_tokens.weight": "shared.weight",
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SeamlessM4Tv2Config):
         super().__init__(config)
 
@@ -2676,6 +2763,7 @@ class SeamlessM4Tv2ForTextToText(SeamlessM4Tv2PreTrainedModel, GenerationMixin):
         self.shared = value
 
     @auto_docstring(custom_args=SEAMLESS_M4T_V2_COMMON_CUSTOM_ARGS)
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -2890,6 +2978,7 @@ class SeamlessM4Tv2ForTextToText(SeamlessM4Tv2PreTrainedModel, GenerationMixin):
     The speech-to-text SeamlessM4Tv2 Model transformer which can be used for S2TT.
     """
 )
+# SeamlessM4Tv2ForSpeechToText：语音到文本：语音识别与翻译联合推理头
 class SeamlessM4Tv2ForSpeechToText(SeamlessM4Tv2PreTrainedModel, GenerationMixin):
     input_modalities = "audio"
     _keys_to_ignore_on_load_missing = ["text_encoder", "t2u_model", "vocoder"]
@@ -2901,6 +2990,7 @@ class SeamlessM4Tv2ForSpeechToText(SeamlessM4Tv2PreTrainedModel, GenerationMixin
     }
 
     # Copied from transformers.models.seamless_m4t.modeling_seamless_m4t.SeamlessM4TForSpeechToText.__init__ with SeamlessM4T->SeamlessM4Tv2
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SeamlessM4Tv2Config):
         super().__init__(config)
 
@@ -2930,6 +3020,7 @@ class SeamlessM4Tv2ForSpeechToText(SeamlessM4Tv2PreTrainedModel, GenerationMixin
 
     @auto_docstring(custom_args=SEAMLESS_M4T_V2_COMMON_CUSTOM_ARGS)
     # Copied from transformers.models.seamless_m4t.modeling_seamless_m4t.SeamlessM4TForSpeechToText.forward
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_features: torch.LongTensor | None = None,
@@ -3154,6 +3245,7 @@ class SeamlessM4Tv2ForSpeechToText(SeamlessM4Tv2PreTrainedModel, GenerationMixin
     The text-to-speech SeamlessM4Tv2 Model transformer which can be used for T2ST.
     """
 )
+# SeamlessM4Tv2ForTextToSpeech：文本到语音：T2U + HiFi-GAN 端到端合成头
 class SeamlessM4Tv2ForTextToSpeech(SeamlessM4Tv2PreTrainedModel, GenerationMixin):
     output_modalities = ("audio",)
     _keys_to_ignore_on_load_missing = ["speech_encoder"]
@@ -3166,6 +3258,7 @@ class SeamlessM4Tv2ForTextToSpeech(SeamlessM4Tv2PreTrainedModel, GenerationMixin
     }
 
     # Copied from transformers.models.seamless_m4t.modeling_seamless_m4t.SeamlessM4TForTextToSpeech.__init__ with SeamlessM4T->SeamlessM4Tv2
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SeamlessM4Tv2Config):
         super().__init__(config)
 
@@ -3201,6 +3294,7 @@ class SeamlessM4Tv2ForTextToSpeech(SeamlessM4Tv2PreTrainedModel, GenerationMixin
 
     @auto_docstring(custom_args=SEAMLESS_M4T_V2_COMMON_CUSTOM_ARGS)
     # Copied from transformers.models.seamless_m4t.modeling_seamless_m4t.SeamlessM4TForTextToSpeech.forward with SeamlessM4T->SeamlessM4Tv2
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -3508,6 +3602,7 @@ class SeamlessM4Tv2ForTextToSpeech(SeamlessM4Tv2PreTrainedModel, GenerationMixin
     The speech-to-speech SeamlessM4Tv2 Model transformer which can be used for S2ST.
     """
 )
+# SeamlessM4Tv2ForSpeechToSpeech：语音到语音：跨语言语音翻译端到端头
 class SeamlessM4Tv2ForSpeechToSpeech(SeamlessM4Tv2PreTrainedModel, GenerationMixin):
     input_modalities = "audio"
     output_modalities = ("audio",)
@@ -3517,6 +3612,7 @@ class SeamlessM4Tv2ForSpeechToSpeech(SeamlessM4Tv2PreTrainedModel, GenerationMix
     _tied_weights_keys = {"lm_head.weight": "shared.weight", "text_decoder.embed_tokens.weight": "shared.weight"}
 
     # Copied from transformers.models.seamless_m4t.modeling_seamless_m4t.SeamlessM4TForSpeechToSpeech.__init__ with SeamlessM4T->SeamlessM4Tv2
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -3547,6 +3643,7 @@ class SeamlessM4Tv2ForSpeechToSpeech(SeamlessM4Tv2PreTrainedModel, GenerationMix
 
     @auto_docstring(custom_args=SEAMLESS_M4T_V2_COMMON_CUSTOM_ARGS)
     # Copied from transformers.models.seamless_m4t.modeling_seamless_m4t.SeamlessM4TForSpeechToSpeech.forward with SeamlessM4T->SeamlessM4Tv2
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_features: torch.LongTensor | None = None,
@@ -3867,6 +3964,7 @@ class SeamlessM4Tv2ForSpeechToSpeech(SeamlessM4Tv2PreTrainedModel, GenerationMix
     The original SeamlessM4Tv2 Model transformer which can be used for every tasks available (S2ST, S2TT, T2TT, T2ST).
     """
 )
+# SeamlessM4Tv2Model：SeamlessM4Tv2 完整模型：语音/文本编解码 + T2U + 声码器
 class SeamlessM4Tv2Model(SeamlessM4Tv2PreTrainedModel, GenerationMixin):
     input_modalities = ("audio", "text")
     output_modalities = ("audio", "text")
@@ -3877,6 +3975,7 @@ class SeamlessM4Tv2Model(SeamlessM4Tv2PreTrainedModel, GenerationMixin):
     }
 
     # Copied from transformers.models.seamless_m4t.modeling_seamless_m4t.SeamlessM4TModel.__init__ with SeamlessM4T->SeamlessM4Tv2
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, current_modality="text"):
         r"""
         current_modality (`str`, *optional*, defaults to `"text"`):
@@ -3932,6 +4031,7 @@ class SeamlessM4Tv2Model(SeamlessM4Tv2PreTrainedModel, GenerationMixin):
 
     @auto_docstring(custom_args=SEAMLESS_M4T_V2_COMMON_CUSTOM_ARGS)
     # Copied from transformers.models.seamless_m4t.modeling_seamless_m4t.SeamlessM4TModel.forward with SeamlessM4T->SeamlessM4Tv2
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,

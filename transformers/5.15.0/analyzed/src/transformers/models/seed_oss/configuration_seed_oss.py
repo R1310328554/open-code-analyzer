@@ -18,10 +18,13 @@ from huggingface_hub.dataclasses import strict
 from ...configuration_utils import PreTrainedConfig
 from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
+# Seed-OSS 配置：RMSNorm、RoPE 与解码器层数等 LLM 超参数
+
 
 
 @auto_docstring(checkpoint="ByteDance-Seed/Seed-OSS-36B-Instruct")
 @strict
+# SeedOssConfig：Seed-OSS 顶层配置：隐藏维度、层数、RoPE 与词表大小
 class SeedOssConfig(PreTrainedConfig):
     r"""
     attention_out_bias (`bool`, *optional*, defaults to `False`):

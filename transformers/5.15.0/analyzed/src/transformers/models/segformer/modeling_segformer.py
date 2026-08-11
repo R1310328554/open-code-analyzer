@@ -35,9 +35,12 @@ from ...utils import TransformersKwargs, auto_docstring
 from ...utils.generic import can_return_tuple, merge_with_config_defaults
 from ...utils.output_capturing import OutputRecorder, capture_outputs
 from .configuration_segformer import SegformerConfig
+# SegFormer 建模：重叠 patch 嵌入、Mix-Transformer 编码与语义分割解码头
+
 
 
 @auto_docstring
+# SegFormerImageClassifierOutput：SegFormer 分类输出：logits 与可选隐藏状态
 class SegFormerImageClassifierOutput(ImageClassifierOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -62,9 +65,11 @@ class SegFormerImageClassifierOutput(ImageClassifierOutput):
     attentions: tuple[torch.FloatTensor] | None = None
 
 
+# SegformerOverlapPatchEmbeddings：重叠 patch 嵌入：Conv 投影带步长重叠分块
 class SegformerOverlapPatchEmbeddings(nn.Module):
     """Overlapping patch embeddings via strided convolution with symmetric padding."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, patch_size, stride, num_channels, hidden_size):
         super().__init__()
         self.proj = nn.Conv2d(
@@ -76,6 +81,7 @@ class SegformerOverlapPatchEmbeddings(nn.Module):
         )
         self.layer_norm = nn.LayerNorm(hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values):
         embeddings = self.proj(pixel_values)
         _, _, height, width = embeddings.shape
@@ -84,6 +90,7 @@ class SegformerOverlapPatchEmbeddings(nn.Module):
         return embeddings, height, width
 
 
+# SegformerSequenceReduction：序列降采样：空间分辨率压缩减少 token 数
 class SegformerSequenceReduction(nn.Module):
     """Spatially reduces key/value tokens via a strided convolution.
 
@@ -91,6 +98,7 @@ class SegformerSequenceReduction(nn.Module):
     This reduces the O(N²) attention cost of the original sequence.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, hidden_size: int, sequence_reduction_ratio: int):
         super().__init__()
         self.sequence_reduction = nn.Conv2d(
@@ -98,6 +106,7 @@ class SegformerSequenceReduction(nn.Module):
         )
         self.layer_norm = nn.LayerNorm(hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, height: int, width: int) -> torch.Tensor:
         batch_size, seq_len, num_channels = hidden_states.shape
         # (B, N, C) → (B, C, H, W) → strided conv → (B, C, H', W') → (B, H'W', C)
@@ -108,6 +117,7 @@ class SegformerSequenceReduction(nn.Module):
         return hidden_states
 
 
+# eager_attention_forward：标准注意力前向：QK^T 缩放 softmax 加权 V
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -136,6 +146,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# SegformerAttention：SegFormer 注意力：高效自注意力 + 序列降采样
 class SegformerAttention(nn.Module):
     """Efficient self-attention where keys/values are spatially reduced via strided convolution.
 
@@ -143,6 +154,7 @@ class SegformerAttention(nn.Module):
     sequence while key/value tokens are downsampled, reducing the O(N²) attention cost.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, hidden_size, num_attention_heads, sequence_reduction_ratio):
         super().__init__()
         self.config = config
@@ -161,6 +173,7 @@ class SegformerAttention(nn.Module):
         if sequence_reduction_ratio > 1:
             self.sequence_reduction = SegformerSequenceReduction(hidden_size, sequence_reduction_ratio)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -203,13 +216,16 @@ class SegformerAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# SegformerDepthWiseConv：SegFormer 深度卷积：逐通道 3×3 卷积增强局部特征
 class SegformerDepthWiseConv(nn.Module):
     """Depthwise convolution used in the Mix-FFN to implicitly encode positional information."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, dim=768):
         super().__init__()
         self.dwconv = nn.Conv2d(dim, dim, 3, 1, 1, groups=dim)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states, height, width):
         batch_size, seq_len, num_channels = hidden_states.shape
         hidden_states = hidden_states.transpose(1, 2).view(batch_size, num_channels, height, width)
@@ -218,6 +234,7 @@ class SegformerDepthWiseConv(nn.Module):
         return hidden_states
 
 
+# SegformerMixMLP：Mix-MLP：1×1 扩展 + 深度卷积 + 1×1 投影的前馈块
 class SegformerMixMLP(nn.Module):
     """Mix-FFN: fc1 → DWConv → activation → fc2.
 
@@ -225,6 +242,7 @@ class SegformerMixMLP(nn.Module):
     position embedding used in standard ViT/BeiT MLPs.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, in_features, hidden_features=None, out_features=None):
         super().__init__()
         out_features = out_features or in_features
@@ -234,6 +252,7 @@ class SegformerMixMLP(nn.Module):
         self.fc2 = nn.Linear(hidden_features, out_features)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states, height, width):
         hidden_states = self.fc1(hidden_states)
         hidden_states = self.dwconv(hidden_states, height, width)
@@ -244,6 +263,7 @@ class SegformerMixMLP(nn.Module):
         return hidden_states
 
 
+# SegformerDropPath：DropPath：随机深度正则化丢弃残差路径
 class SegformerDropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -251,10 +271,12 @@ class SegformerDropPath(nn.Module):
     <https://arxiv.org/abs/1603.09382>`_.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, drop_prob: float = 0.0) -> None:
         super().__init__()
         self.drop_prob = drop_prob
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         if self.drop_prob == 0.0 or not self.training:
             return hidden_states
@@ -268,9 +290,11 @@ class SegformerDropPath(nn.Module):
         return f"p={self.drop_prob}"
 
 
+# SegformerLayer：SegFormer 层：注意力 + Mix-MLP 残差堆叠
 class SegformerLayer(GradientCheckpointingLayer):
     """Transformer block with DropPath on both branches and a MixFFN instead of a plain MLP."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, hidden_size, num_attention_heads, drop_path, sequence_reduction_ratio, mlp_ratio):
         super().__init__()
         self.layernorm_before = nn.LayerNorm(hidden_size)
@@ -285,6 +309,7 @@ class SegformerLayer(GradientCheckpointingLayer):
         self.mlp = SegformerMixMLP(config, in_features=hidden_size, hidden_features=int(hidden_size * mlp_ratio))
         self.hidden_dropout = nn.Dropout(config.hidden_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -306,9 +331,11 @@ class SegformerLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# SegformerStage：SegFormer 阶段：堆叠多层 + 重叠 patch 嵌入
 class SegformerStage(nn.Module):
     """One encoder stage: OverlapPatchEmbeddings → SegformerLayer blocks → LayerNorm."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, stage_idx: int, drop_path_decays: list[float]):
         super().__init__()
         depth_start = sum(config.depths[:stage_idx])
@@ -335,6 +362,7 @@ class SegformerStage(nn.Module):
         )
         self.layer_norm = nn.LayerNorm(config.hidden_sizes[stage_idx])
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -352,6 +380,7 @@ class SegformerStage(nn.Module):
 
 
 @auto_docstring
+# SegformerPreTrainedModel：SegFormer 预训练基类：权重初始化与配置绑定
 class SegformerPreTrainedModel(PreTrainedModel):
     config: SegformerConfig
     base_model_prefix = "segformer"
@@ -373,7 +402,9 @@ class SegformerPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# SegformerModel：SegFormer 骨干：多阶段 Mix-Transformer 提取多尺度特征
 class SegformerModel(SegformerPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.config = config
@@ -390,6 +421,7 @@ class SegformerModel(SegformerPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -407,7 +439,9 @@ class SegformerModel(SegformerPreTrainedModel):
     states) e.g. for ImageNet.
     """
 )
+# SegformerForImageClassification：SegFormer 图像分类：全局池化 + 线性分类头
 class SegformerForImageClassification(SegformerPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
 
@@ -422,6 +456,7 @@ class SegformerForImageClassification(SegformerPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor | None = None,
@@ -462,20 +497,25 @@ class SegformerForImageClassification(SegformerPreTrainedModel):
         )
 
 
+# SegformerMLP：SegFormer MLP：1×1 卷积实现的轻量前馈层
 class SegformerMLP(nn.Module):
     """Projects each encoder stage's feature map to a common `decoder_hidden_size`."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SegformerConfig, input_dim):
         super().__init__()
         self.proj = nn.Linear(input_dim, config.decoder_hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor):
         hidden_states = hidden_states.flatten(2).transpose(1, 2)
         hidden_states = self.proj(hidden_states)
         return hidden_states
 
 
+# SegformerDecodeHead：SegFormer 解码头：多尺度特征融合上采样至像素级
 class SegformerDecodeHead(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         # linear layers which will unify the channel dimension of each of the encoder blocks to the same config.decoder_hidden_size
@@ -499,6 +539,7 @@ class SegformerDecodeHead(nn.Module):
 
         self.config = config
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, encoder_hidden_states: torch.FloatTensor, **kwargs) -> torch.Tensor:
         batch_size = encoder_hidden_states[-1].shape[0]
 
@@ -537,7 +578,9 @@ class SegformerDecodeHead(nn.Module):
     SegFormer Model transformer with an all-MLP decode head on top e.g. for ADE20k, CityScapes.
     """
 )
+# SegformerForSemanticSegmentation：SegFormer 语义分割：骨干 + 解码头端到端分割
 class SegformerForSemanticSegmentation(SegformerPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.segformer = SegformerModel(config)
@@ -549,6 +592,7 @@ class SegformerForSemanticSegmentation(SegformerPreTrainedModel):
     @can_return_tuple
     @filter_output_hidden_states
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,

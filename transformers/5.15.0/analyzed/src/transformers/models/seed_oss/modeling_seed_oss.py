@@ -29,6 +29,8 @@ from ...generation import GenerationMixin
 from ...integrations import use_kernel_forward_from_hub
 from ...masking_utils import create_causal_mask
 from ...modeling_layers import (
+# Seed-OSS 建模：Llama 风格解码器、RoPE 注意力与因果/分类任务头
+
     GenericForQuestionAnswering,
     GenericForSequenceClassification,
     GenericForTokenClassification,
@@ -46,7 +48,9 @@ from .configuration_seed_oss import SeedOssConfig
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# SeedOssRMSNorm：Seed-OSS RMSNorm：根均方归一化稳定训练
 class SeedOssRMSNorm(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
         SeedOssRMSNorm is equivalent to T5LayerNorm
@@ -55,6 +59,7 @@ class SeedOssRMSNorm(nn.Module):
         self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         input_dtype = hidden_states.dtype
         hidden_states = hidden_states.to(torch.float32)
@@ -66,7 +71,9 @@ class SeedOssRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# SeedOssMLP：Seed-OSS MLP：门控 SwiGLU 风格前馈子层
 class SeedOssMLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -78,12 +85,14 @@ class SeedOssMLP(nn.Module):
         self.act_fn = ACT2FN[config.hidden_act]
         self.residual_dropout = config.residual_dropout
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         down_proj = self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
         down_proj = nn.functional.dropout(down_proj, p=self.residual_dropout, training=self.training)
         return down_proj
 
 
+# rotate_half：旋转半维：RoPE 中将特征对半交换并取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -92,6 +101,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：应用 RoPE：对 Q/K 注入旋转位置编码
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -117,6 +127,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：重复 KV 头：GQA 中将 KV 头广播匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -129,6 +140,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：标准注意力前向：QK^T 缩放 softmax 加权 V
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -154,7 +166,9 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# SeedOssAttention：Seed-OSS 注意力：RoPE 多头缩放点积自注意力
 class SeedOssAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SeedOssConfig, layer_idx: int):
         super().__init__()
         self.config = config
@@ -182,6 +196,7 @@ class SeedOssAttention(nn.Module):
 
         self.residual_dropout = config.residual_dropout
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -225,7 +240,9 @@ class SeedOssAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# SeedOssDecoderLayer：Seed-OSS 解码层：自注意力 + MLP 残差堆叠
 class SeedOssDecoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SeedOssConfig, layer_idx: int):
         super().__init__()
         self.hidden_size = config.hidden_size
@@ -236,6 +253,7 @@ class SeedOssDecoderLayer(GradientCheckpointingLayer):
         self.input_layernorm = SeedOssRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.post_attention_layernorm = SeedOssRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -269,6 +287,7 @@ class SeedOssDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# SeedOssPreTrainedModel：Seed-OSS 预训练基类：权重初始化与配置绑定
 class SeedOssPreTrainedModel(PreTrainedModel):
     config: SeedOssConfig
     base_model_prefix = "model"
@@ -287,8 +306,10 @@ class SeedOssPreTrainedModel(PreTrainedModel):
     }
 
 
+# SeedOssRotaryEmbedding：Seed-OSS RoPE：旋转位置编码 cos/sin 缓存
 class SeedOssRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SeedOssConfig, device=None):
         super().__init__()
         self.max_seq_len_cached = config.max_position_embeddings
@@ -327,6 +348,7 @@ class SeedOssRotaryEmbedding(nn.Module):
 
     @torch.no_grad()
     @dynamic_rope_update  # power user: used with advanced RoPE types (e.g. dynamic rope)
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x, position_ids):
         inv_freq_expanded = (
             self.inv_freq[None, :, None].expand(position_ids.shape[0], -1, 1).to(dtype=torch.float, device=x.device)
@@ -345,7 +367,9 @@ class SeedOssRotaryEmbedding(nn.Module):
 
 
 @auto_docstring
+# SeedOssModel：Seed-OSS 骨干：多层解码器提取序列隐状态
 class SeedOssModel(SeedOssPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SeedOssConfig):
         super().__init__(config)
         self.padding_idx = config.pad_token_id
@@ -365,6 +389,7 @@ class SeedOssModel(SeedOssPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -419,12 +444,14 @@ class SeedOssModel(SeedOssPreTrainedModel):
 
 
 @auto_docstring
+# SeedOssForCausalLM：Seed-OSS 因果 LM：自回归 next-token 预测与生成
 class SeedOssForCausalLM(SeedOssPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
     _pp_plan = {"lm_head": (["hidden_states"], ["logits"])}
     _fsdp_plan = {"lm_head": "keep_full_weight"}
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.model = SeedOssModel(config)
@@ -436,6 +463,7 @@ class SeedOssForCausalLM(SeedOssPreTrainedModel, GenerationMixin):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -498,14 +526,17 @@ class SeedOssForCausalLM(SeedOssPreTrainedModel, GenerationMixin):
         )
 
 
+# SeedOssForSequenceClassification：Seed-OSS 序列分类：池化隐状态 + 分类头
 class SeedOssForSequenceClassification(GenericForSequenceClassification, SeedOssPreTrainedModel):
     pass
 
 
+# SeedOssForTokenClassification：Seed-OSS 词元分类：逐 token 标签预测头
 class SeedOssForTokenClassification(GenericForTokenClassification, SeedOssPreTrainedModel):
     pass
 
 
+# SeedOssForQuestionAnswering：Seed-OSS 问答：span 起止位置预测头
 class SeedOssForQuestionAnswering(GenericForQuestionAnswering, SeedOssPreTrainedModel):
     base_model_prefix = "transformer"  # For BC, where `transformer` was used instead of `model`
 

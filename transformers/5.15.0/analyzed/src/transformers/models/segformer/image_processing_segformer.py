@@ -29,6 +29,8 @@ from ...image_processing_outputs import SemanticSegmentationPostProcessorOutput
 from ...image_processing_utils import BatchFeature
 from ...image_transforms import group_images_by_shape, reorder_images
 from ...image_utils import (
+# SegFormer Torchvision 图像处理：张量预处理与分割标签打包
+
     IMAGENET_DEFAULT_MEAN,
     IMAGENET_DEFAULT_STD,
     ChannelDimension,
@@ -40,6 +42,7 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring, is_torch_available
 
 
+# SegformerImageProcessorKwargs：SegFormer 图像处理参数：Resize/Normalize 与标签选项
 class SegformerImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     do_reduce_labels (`bool`, *optional*, defaults to `self.do_reduce_labels`):
@@ -52,6 +55,7 @@ class SegformerImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# SegformerImageProcessor：SegFormer Torchvision 后端：张量图像与标签预处理
 class SegformerImageProcessor(TorchvisionBackend):
     """PIL backend for Segformer with reduce_label support."""
 
@@ -69,10 +73,12 @@ class SegformerImageProcessor(TorchvisionBackend):
     do_reduce_labels = False
     rescale_factor = 1 / 255
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[SegformerImageProcessorKwargs]):
         super().__init__(**kwargs)
 
     @auto_docstring
+    # preprocess：预处理：缩放归一化并打包为模型输入
     def preprocess(
         self,
         images: ImageInput,

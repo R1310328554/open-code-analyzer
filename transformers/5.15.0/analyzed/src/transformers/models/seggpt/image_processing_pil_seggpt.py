@@ -19,6 +19,8 @@ from ...image_processing_backends import PilBackend
 from ...image_processing_outputs import SemanticSegmentationPostProcessorOutput
 from ...image_processing_utils import BatchFeature
 from ...image_utils import (
+# SegGPT PIL 图像处理：提示/查询图像 Resize 与调色板标签编码
+
     IMAGENET_DEFAULT_MEAN,
     IMAGENET_DEFAULT_STD,
     ChannelDimension,
@@ -36,6 +38,7 @@ if is_torch_available():
 
 
 # Adapted from transformers.models.seggpt.image_processing_seggpt.SegGptImageProcessorKwargs
+# SegGptImageProcessorKwargs：SegGPT 图像处理参数：提示/查询 Resize 与调色板选项
 class SegGptImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     num_labels (`int`, *optional*):
@@ -51,6 +54,7 @@ class SegGptImageProcessorKwargs(ImagesKwargs, total=False):
 # Adapted from transformers.models.seggpt.image_processing_seggpt.build_palette
 # See https://huggingface.co/papers/2212.02499 at 3.1 Redefining Output Spaces as "Images" - Semantic Segmentation
 # Taken from https://github.com/Abdullah-Meda/Painter/blob/main/Painter/data/coco_semseg/gen_color_coco_panoptic_segm.py#L31
+# build_palette：构建调色板：为语义标签生成 RGB 颜色映射表
 def build_palette(num_labels: int) -> list[tuple[int, int, int]]:
     base = int(num_labels ** (1 / 3)) + 1
     margin = 256 // base
@@ -72,6 +76,7 @@ def build_palette(num_labels: int) -> list[tuple[int, int, int]]:
 
 
 @auto_docstring
+# SegGptImageProcessorPil：SegGPT PIL 后端：提示-查询图像对与掩码标签预处理
 class SegGptImageProcessorPil(PilBackend):
     valid_kwargs = SegGptImageProcessorKwargs
 
@@ -85,6 +90,7 @@ class SegGptImageProcessorPil(PilBackend):
     do_convert_rgb = True
     num_labels = None
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[SegGptImageProcessorKwargs]):
         super().__init__(**kwargs)
 
@@ -134,6 +140,7 @@ class SegGptImageProcessorPil(PilBackend):
         return rgb_mask
 
     @auto_docstring
+    # preprocess：预处理：缩放归一化并打包为模型输入
     def preprocess(
         self,
         images: ImageInput | None = None,

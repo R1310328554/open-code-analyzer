@@ -17,10 +17,13 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
+# SegGPT 配置：ViT 编码器/解码器、提示嵌入与 in-context 分割超参数
+
 
 
 @auto_docstring(checkpoint="BAAI/seggpt-vit-large")
 @strict
+# SegGptConfig：SegGPT 顶层配置：ViT 编解码器与 in-context 提示超参数
 class SegGptConfig(PreTrainedConfig):
     r"""
     mlp_dim (`int`, *optional*):

@@ -25,6 +25,8 @@ from ...modeling_utils import ALL_ATTENTION_FUNCTIONS
 from ...processing_utils import Unpack
 from ...utils import TransformersKwargs, logging
 from ..llama.modeling_llama import (
+# Seed-OSS modular 源：复用 Llama 组件并实现 Seed-OSS 专用逻辑
+
     LlamaDecoderLayer,
     LlamaForCausalLM,
     LlamaForQuestionAnswering,
@@ -44,11 +46,14 @@ logger = logging.get_logger(__name__)
 _CHECKPOINT_FOR_DOC = "ByteDance-Seed/Seed-OSS-36B-Instruct"
 
 
+# SeedOssRMSNorm：Seed-OSS RMSNorm：根均方归一化稳定训练
 class SeedOssRMSNorm(LlamaRMSNorm):
     pass
 
 
+# SeedOssMLP：Seed-OSS MLP：门控 SwiGLU 风格前馈子层
 class SeedOssMLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -60,13 +65,16 @@ class SeedOssMLP(nn.Module):
         self.act_fn = ACT2FN[config.hidden_act]
         self.residual_dropout = config.residual_dropout
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         down_proj = self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
         down_proj = nn.functional.dropout(down_proj, p=self.residual_dropout, training=self.training)
         return down_proj
 
 
+# SeedOssAttention：Seed-OSS 注意力：RoPE 多头缩放点积自注意力
 class SeedOssAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: SeedOssConfig, layer_idx: int):
         super().__init__()
         self.config = config
@@ -94,6 +102,7 @@ class SeedOssAttention(nn.Module):
 
         self.residual_dropout = config.residual_dropout
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -137,19 +146,24 @@ class SeedOssAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# SeedOssDecoderLayer：Seed-OSS 解码层：自注意力 + MLP 残差堆叠
 class SeedOssDecoderLayer(LlamaDecoderLayer):
     pass
 
 
+# SeedOssPreTrainedModel：Seed-OSS 预训练基类：权重初始化与配置绑定
 class SeedOssPreTrainedModel(LlamaPreTrainedModel):
     pass
 
 
+# SeedOssModel：Seed-OSS 骨干：多层解码器提取序列隐状态
 class SeedOssModel(LlamaModel):
     pass
 
 
+# SeedOssForCausalLM：Seed-OSS 因果 LM：自回归 next-token 预测与生成
 class SeedOssForCausalLM(LlamaForCausalLM):
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         **super_kwargs: Unpack[TransformersKwargs],
@@ -179,14 +193,17 @@ class SeedOssForCausalLM(LlamaForCausalLM):
         return super().forward(**super_kwargs)
 
 
+# SeedOssForSequenceClassification：Seed-OSS 序列分类：池化隐状态 + 分类头
 class SeedOssForSequenceClassification(LlamaForSequenceClassification):
     pass
 
 
+# SeedOssForTokenClassification：Seed-OSS 词元分类：逐 token 标签预测头
 class SeedOssForTokenClassification(LlamaForTokenClassification):
     pass
 
 
+# SeedOssForQuestionAnswering：Seed-OSS 问答：span 起止位置预测头
 class SeedOssForQuestionAnswering(LlamaForQuestionAnswering):
     pass
 
