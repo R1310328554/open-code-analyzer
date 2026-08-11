@@ -38,6 +38,7 @@ from .configuration_bit import BitConfig
 logger = logging.get_logger(__name__)
 
 
+# get_padding_value：解析 SAME/VALID 填充并判断是否需动态 padding
 def get_padding_value(padding=None, kernel_size=7, stride=1, dilation=1) -> tuple[tuple, bool]:
     r"""
     Utility function to get the tuple padding value given the kernel_size and padding.
@@ -79,6 +80,7 @@ def get_padding_value(padding=None, kernel_size=7, stride=1, dilation=1) -> tupl
     return padding, dynamic
 
 
+# WeightStandardizedConv2d：权重标准化 2D 卷积（ViT Hybrid 与 BiT 核心算子）
 class WeightStandardizedConv2d(nn.Conv2d):
     """Conv2d with Weight Standardization. Used for ViT Hybrid model.
 
@@ -127,6 +129,7 @@ class WeightStandardizedConv2d(nn.Conv2d):
         return hidden_state
 
 
+# BitGroupNormActivation：GroupNorm + 激活函数组合模块
 class BitGroupNormActivation(nn.GroupNorm):
     r"""
     A module that combines group normalization with an activation function.
@@ -145,6 +148,7 @@ class BitGroupNormActivation(nn.GroupNorm):
         return hidden_state
 
 
+# DynamicPad2d：按输入尺寸动态计算 SAME 风格对称 padding
 class DynamicPad2d(nn.Module):
     r"""
     A module that wraps dynamic padding of any input, given the parameters of the convolutional layer and the input
@@ -196,6 +200,7 @@ class DynamicPad2d(nn.Module):
         return input
 
 
+# BitMaxPool2d：可选动态 padding 的最大池化层
 class BitMaxPool2d(nn.MaxPool2d):
     def __init__(
         self,
@@ -223,6 +228,7 @@ class BitMaxPool2d(nn.MaxPool2d):
         )
 
 
+# BitEmbeddings：BiT stem（7×7 卷积 + 池化 + GroupNorm）
 class BitEmbeddings(nn.Module):
     """
     BiT Embeddings (stem) composed of a single aggressive convolution.
@@ -274,6 +280,7 @@ class BitEmbeddings(nn.Module):
 
 
 # Copied from transformers.models.swin.modular_swin.SwinDropPath with SwinDropPath->BitDropPath
+# BitDropPath：随机深度 DropPath，训练时按样本丢弃残差分支
 class BitDropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -298,6 +305,7 @@ class BitDropPath(nn.Module):
         return f"p={self.drop_prob}"
 
 
+# make_div：将通道数向上对齐到 divisor 的整数倍
 def make_div(value, divisor=8):
     min_value = divisor
     new_value = max(min_value, int(value + divisor / 2) // divisor * divisor)
@@ -306,6 +314,7 @@ def make_div(value, divisor=8):
     return new_value
 
 
+# BitPreActivationBottleneckLayer：ResNet-v2 预激活瓶颈块（1×1→3×3→1×1）
 class BitPreActivationBottleneckLayer(nn.Module):
     """Pre-activation (v2) bottleneck block.
     Follows the implementation of "Identity Mappings in Deep Residual Networks":
@@ -374,6 +383,7 @@ class BitPreActivationBottleneckLayer(nn.Module):
         return hidden_states + shortcut
 
 
+# BitBottleneckLayer：V1.5 风格非预激活瓶颈块（ViT Hybrid 使用）
 class BitBottleneckLayer(nn.Module):
     """Non Pre-activation bottleneck block, equivalent to V1.5/V1b bottleneck. Used for ViT Hybrid."""
 
@@ -447,6 +457,7 @@ class BitBottleneckLayer(nn.Module):
         return hidden_states
 
 
+# BitDownsampleConv：1×1 步长卷积下采样捷径分支
 class BitDownsampleConv(nn.Module):
     def __init__(
         self,
@@ -470,6 +481,7 @@ class BitDownsampleConv(nn.Module):
         return self.norm(self.conv(x))
 
 
+# BitStage：堆叠若干瓶颈层的 ResNet 阶段
 class BitStage(nn.Module):
     """
     A ResNet v2 stage composed by stacked layers.
@@ -544,6 +556,7 @@ class BitStage(nn.Module):
         return hidden_state
 
 
+# BitEncoder：多阶段 BiT 编码器，含 drop path 与 output_stride 控制
 class BitEncoder(nn.Module):
     def __init__(self, config: BitConfig):
         super().__init__()
@@ -615,6 +628,7 @@ class BitEncoder(nn.Module):
 
 
 @auto_docstring
+# BitPreTrainedModel：Conv2d/Linear 权重初始化基类
 class BitPreTrainedModel(PreTrainedModel):
     config: BitConfig
     base_model_prefix = "bit"
@@ -637,6 +651,7 @@ class BitPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# BitModel：BiT 完整视觉骨干（embedder + encoder + pooler）
 class BitModel(BitPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -696,6 +711,7 @@ class BitModel(BitPreTrainedModel):
     ImageNet.
     """
 )
+# BitForImageClassification：ImageNet 风格线性分类头
 class BitForImageClassification(BitPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -748,6 +764,7 @@ class BitForImageClassification(BitPreTrainedModel):
     BiT backbone, to be used with frameworks like DETR and MaskFormer.
     """
 )
+# BitBackbone：多尺度特征图输出，供 DETR/MaskFormer 等检测框架使用
 class BitBackbone(BackboneMixin, BitPreTrainedModel):
     has_attentions = False
 

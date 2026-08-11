@@ -21,6 +21,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="facebook/blenderbot-3B")
 @strict
+# BlenderbotConfig：d_model=2560，encoder_no_repeat_ngram_size=3 防重复
 class BlenderbotConfig(PreTrainedConfig):
     r"""
     encoder_no_repeat_ngram_size (`int`, *optional*, defaults to 3):
@@ -79,3 +80,5 @@ class BlenderbotConfig(PreTrainedConfig):
 
 
 __all__ = ["BlenderbotConfig"]
+# 模块 src/transformers/models/blenderbot/configuration_blenderbot.py：Transformers 5.15.0 wave11a 中文文档注释。
+

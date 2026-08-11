@@ -38,10 +38,12 @@ from .configuration_bitnet import BitNetConfig
 logger = logging.get_logger(__name__)
 
 
+# BitNetRMSNorm：直接继承 LlamaRMSNorm
 class BitNetRMSNorm(LlamaRMSNorm):
     pass
 
 
+# BitNetMLP：继承 GemmaMLP 并增加 ffn_sub_norm 子层归一化
 class BitNetMLP(GemmaMLP):
     def __init__(self, config: BitNetConfig):
         super().__init__(config)
@@ -52,6 +54,7 @@ class BitNetMLP(GemmaMLP):
         return down_proj
 
 
+# BitNetAttention：继承 LlamaAttention，输出经 attn_sub_norm
 class BitNetAttention(LlamaAttention):
     def __init__(self, config: BitNetConfig, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -99,14 +102,17 @@ class BitNetAttention(LlamaAttention):
         return attn_output, attn_weights
 
 
+# BitNetDecoderLayer：直接继承 LlamaDecoderLayer
 class BitNetDecoderLayer(LlamaDecoderLayer):
     pass
 
 
+# BitNetModel：直接继承 LlamaModel 解码器骨干
 class BitNetModel(LlamaModel):
     pass
 
 
+# BitNetForCausalLM：继承 LlamaForCausalLM 因果 LM 头
 class BitNetForCausalLM(LlamaForCausalLM):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = None

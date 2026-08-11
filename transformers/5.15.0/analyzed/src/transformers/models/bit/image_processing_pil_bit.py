@@ -19,6 +19,7 @@ from ...utils import auto_docstring
 
 
 @auto_docstring
+# BitImageProcessorPil：PIL 后端 224 最短边 resize、中心裁剪与 CLIP 均值/方差归一化
 class BitImageProcessorPil(PilBackend):
     resample = PILImageResampling.BICUBIC
     image_mean = OPENAI_CLIP_MEAN

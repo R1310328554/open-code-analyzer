@@ -32,6 +32,7 @@ VOCAB_FILES_NAMES = {
 }
 
 
+# get_pairs：提取 BPE 合并所需的相邻符号对
 def get_pairs(word):
     """
     Return set of symbol pairs in a word.
@@ -48,6 +49,7 @@ def get_pairs(word):
     return pairs
 
 
+# BlenderbotSmallTokenizer：vocab.json + merges.txt 的 Python BPE 分词器
 class BlenderbotSmallTokenizer(PreTrainedTokenizer):
     """
     Constructs a Blenderbot-90M tokenizer based on BPE (Byte-Pair-Encoding)
@@ -105,6 +107,7 @@ class BlenderbotSmallTokenizer(PreTrainedTokenizer):
     def get_vocab(self) -> dict:
         return dict(self.encoder, **self.added_tokens_encoder)
 
+# bpe：对单个词执行 BPE 合并，缓存结果加速
     def bpe(self, token: str) -> str:
         if token in self.cache:
             return self.cache[token]
@@ -165,6 +168,7 @@ class BlenderbotSmallTokenizer(PreTrainedTokenizer):
             words.append(word)
         return " ".join(words)
 
+# _tokenize：正则切词后逐词 BPE 分词
     def _tokenize(self, text: str) -> list[str]:
         """Split a string into tokens using BPE."""
         split_tokens = []

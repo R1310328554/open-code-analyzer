@@ -21,6 +21,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="microsoft/bitnet-b1.58-2B-4T")
 @strict
+# BitNetConfig：30 层 decoder-only，hidden_size=2560，5 KV 头 GQA
 class BitNetConfig(PreTrainedConfig):
     r"""
     ```python
@@ -60,6 +61,7 @@ class BitNetConfig(PreTrainedConfig):
     attention_dropout: float | int | None = 0.0
     rope_parameters: RopeParameters | dict | None = None
 
+# __post_init__：num_key_value_heads 缺省时回退为 num_attention_heads
     def __post_init__(self, **kwargs):
         # for backward compatibility
         if self.num_key_value_heads is None:

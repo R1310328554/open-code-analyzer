@@ -21,6 +21,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="facebook/blenderbot_small-90M")
 @strict
+# BlenderbotSmallConfig：vocab_size=50265，max_position_embeddings=512
 class BlenderbotSmallConfig(PreTrainedConfig):
     r"""
     Example:
@@ -75,3 +76,5 @@ class BlenderbotSmallConfig(PreTrainedConfig):
 
 
 __all__ = ["BlenderbotSmallConfig"]
+# 模块 src/transformers/models/blenderbot_small/configuration_blenderbot_small.py：Transformers 5.15.0 wave11a 中文文档注释。
+

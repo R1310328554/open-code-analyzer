@@ -46,6 +46,7 @@ logger = logging.get_logger(__name__)
 
 
 # Copied from transformers.models.bart.modeling_bart.shift_tokens_right
+# shift_tokens_right：解码器 teacher forcing 右移 input_ids
 def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start_token_id: int):
     """
     Shift input ids one token to the right.
@@ -63,6 +64,7 @@ def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start
 
 
 # Copied from transformers.models.blenderbot.modeling_blenderbot.BlenderbotLearnedPositionalEmbedding with Blenderbot->BlenderbotSmall
+# BlenderbotSmallLearnedPositionalEmbedding：可学习绝对位置嵌入
 class BlenderbotSmallLearnedPositionalEmbedding(nn.Embedding):
     """
     This module learns positional embeddings up to a fixed maximum size.
@@ -84,6 +86,7 @@ class BlenderbotSmallLearnedPositionalEmbedding(nn.Embedding):
 
 
 # Copied from transformers.models.bert.modeling_bert.eager_attention_forward
+# eager_attention_forward：标准 eager 多头注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -113,6 +116,7 @@ def eager_attention_forward(
 
 
 # Copied from transformers.models.bart.modeling_bart.BartAttention with Bart->BlenderbotSmall
+# BlenderbotSmallAttention：自注意力/交叉注意力（支持 KV cache）
 class BlenderbotSmallAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -231,6 +235,7 @@ class BlenderbotSmallAttention(nn.Module):
 
 
 # Copied from transformers.models.bart.modeling_bart.BartEncoderLayer with Bart->BlenderbotSmall, BART->BLENDERBOT_SMALL
+# BlenderbotSmallEncoderLayer：编码器单层（双向自注意力 + FFN）
 class BlenderbotSmallEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: BlenderbotSmallConfig, layer_idx: int | None = None):
         super().__init__()
@@ -283,6 +288,7 @@ class BlenderbotSmallEncoderLayer(GradientCheckpointingLayer):
 
 
 # Copied from transformers.models.bart.modeling_bart.BartDecoderLayer with Bart->BlenderbotSmall, BART->BLENDERBOT_SMALL
+# BlenderbotSmallDecoderLayer：解码器单层（因果自注意力 + 交叉注意力 + FFN）
 class BlenderbotSmallDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: BlenderbotSmallConfig, layer_idx: int | None = None):
         super().__init__()
@@ -366,6 +372,7 @@ class BlenderbotSmallDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# BlenderbotSmallPreTrainedModel：权重初始化基类
 class BlenderbotSmallPreTrainedModel(PreTrainedModel):
     config: BlenderbotSmallConfig
     base_model_prefix = "model"
@@ -392,6 +399,7 @@ class BlenderbotSmallPreTrainedModel(PreTrainedModel):
         return dummy_inputs
 
 
+# BlenderbotSmallEncoder：8 层双向 Transformer 编码器
 class BlenderbotSmallEncoder(BlenderbotSmallPreTrainedModel):
     """
     Transformer encoder consisting of *config.encoder_layers* self attention layers. Each layer is a
@@ -480,6 +488,7 @@ class BlenderbotSmallEncoder(BlenderbotSmallPreTrainedModel):
         )
 
 
+# BlenderbotSmallDecoder：8 层因果解码器堆叠
 class BlenderbotSmallDecoder(BlenderbotSmallPreTrainedModel):
     """
     Transformer decoder consisting of *config.decoder_layers* layers. Each layer is a [`BlenderbotSmallDecoderLayer`]
@@ -608,6 +617,7 @@ class BlenderbotSmallDecoder(BlenderbotSmallPreTrainedModel):
 
 
 @auto_docstring
+# BlenderbotSmallModel：完整编解码器骨干（无 LM head）
 class BlenderbotSmallModel(BlenderbotSmallPreTrainedModel):
     _tied_weights_keys = {
         "encoder.embed_tokens.weight": "shared.weight",
@@ -724,6 +734,7 @@ class BlenderbotSmallModel(BlenderbotSmallPreTrainedModel):
     The BlenderbotSmall Model with a language modeling head. Can be used for summarization.
     """
 )
+# BlenderbotSmallForConditionalGeneration：轻量对话条件文本生成
 class BlenderbotSmallForConditionalGeneration(BlenderbotSmallPreTrainedModel, GenerationMixin):
     base_model_prefix = "model"
     _keys_to_ignore_on_load_missing = ["final_logits_bias"]
@@ -869,6 +880,7 @@ class BlenderbotSmallForConditionalGeneration(BlenderbotSmallPreTrainedModel, Ge
 
 
 # Copied from transformers.models.bart.modeling_bart.BartDecoderWrapper with Bart->BlenderbotSmall
+# BlenderbotSmallDecoderWrapper：仅解码器包装
 class BlenderbotSmallDecoderWrapper(BlenderbotSmallPreTrainedModel):
     """
     This wrapper class is a helper class to correctly load pretrained checkpoints when the causal language model is
@@ -885,6 +897,7 @@ class BlenderbotSmallDecoderWrapper(BlenderbotSmallPreTrainedModel):
 
 
 # Copied from transformers.models.bart.modeling_bart.BartForCausalLM with Bart->BlenderbotSmall, facebook/bart-base->facebook/blenderbot_small-90M
+# BlenderbotSmallForCausalLM：仅解码器因果语言建模
 class BlenderbotSmallForCausalLM(BlenderbotSmallPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {
         "lm_head.weight": "model.decoder.embed_tokens.weight",

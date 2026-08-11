@@ -31,6 +31,7 @@ VOCAB_FILES_NAMES = {
 }
 
 
+# BlenderbotTokenizer：BPE + ByteLevel 预分词，add_prefix_space 控制句首空格
 class BlenderbotTokenizer(TokenizersBackend):
     """
     Construct a "fast" Blenderbot tokenizer (backed by HuggingFace's *tokenizers* library), derived from the GPT-2
