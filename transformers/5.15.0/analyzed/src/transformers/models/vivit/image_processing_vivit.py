@@ -13,6 +13,7 @@
 # limitations under the License.
 """Image processor class for Vivit."""
 
+# ViViT 图像处理器：视频帧 resize/crop 与 offset 归一化，输出 pixel_values
 import numpy as np
 
 from transformers.utils import is_vision_available
@@ -60,6 +61,7 @@ def make_batched(videos) -> list[list[ImageInput]]:
     raise ValueError(f"Could not make batched video from {videos}")
 
 
+# VivitImageProcessor：ViViT 图像处理器：resize/center_crop 与 offset 归一化
 class VivitImageProcessor(BaseImageProcessor):
     r"""
     Constructs a Vivit image processor.
@@ -103,6 +105,7 @@ class VivitImageProcessor(BaseImageProcessor):
 
     model_input_names = ["pixel_values"]
 
+    # __init__：初始化 resize/crop/offset 归一化超参数
     def __init__(
         self,
         do_resize: bool = True,
@@ -283,6 +286,7 @@ class VivitImageProcessor(BaseImageProcessor):
         return image
 
     @filter_out_non_signature_kwargs()
+    # preprocess：预处理入口：逐帧 resize/crop/归一化并打包 pixel_values
     def preprocess(
         self,
         videos: ImageInput,

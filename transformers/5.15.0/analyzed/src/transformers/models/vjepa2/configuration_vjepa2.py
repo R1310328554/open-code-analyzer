@@ -13,6 +13,7 @@
 # limitations under the License.
 """VJEPA 2 model configuration"""
 
+# VJEPA2 配置：自监督视频表征学习的 ViT 编码器与预测器超参数
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
@@ -21,6 +22,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="facebook/vjepa2-vitl-fpc64-256")
 @strict
+# VJEPA2Config：VJEPA2 主配置：ViT 编码器、池化器与预测器超参数
 class VJEPA2Config(PreTrainedConfig):
     r"""
     crop_size (`int`, *optional*, defaults to 256):

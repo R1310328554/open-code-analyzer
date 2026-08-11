@@ -13,6 +13,7 @@
 # limitations under the License.
 """VitPose backbone configuration"""
 
+# VitPose 骨干网络配置：人体姿态估计 ViT 骨干的超参数与 MoE 专家设置
 from huggingface_hub.dataclasses import strict
 
 from ...backbone_utils import BackboneConfigMixin
@@ -22,6 +23,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="usyd-community/vitpose-base-simple")
 @strict
+# VitPoseBackboneConfig：VitPose 骨干配置：图像尺寸、patch、MoE 专家数与输出 stage
 class VitPoseBackboneConfig(BackboneConfigMixin, PreTrainedConfig):
     r"""
     part_features (`int`, *optional*):
@@ -62,6 +64,7 @@ class VitPoseBackboneConfig(BackboneConfigMixin, PreTrainedConfig):
     _out_features: list[str] | None = None
     _out_indices: list[int] | None = None
 
+    # __post_init__：设置 stage 名称并解析 out_features/out_indices
     def __post_init__(self, **kwargs):
         self.stage_names = ["stem"] + [f"stage{idx}" for idx in range(1, self.num_hidden_layers + 1)]
         self.set_output_features_output_indices(

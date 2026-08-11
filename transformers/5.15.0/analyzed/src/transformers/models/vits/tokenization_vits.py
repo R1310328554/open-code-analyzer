@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tokenization class for VITS."""
 
+# VITS 分词器：音素化、空白插入与 MMS-TTS 多语言文本预处理
 import json
 import os
 import re
@@ -43,6 +44,7 @@ def has_non_roman_characters(input_string):
     return has_non_roman
 
 
+# VitsTokenizer：VITS 分词器：归一化、音素化、空白 token 插入与 vocab 映射
 class VitsTokenizer(PreTrainedTokenizer):
     """
     Construct a VITS tokenizer. Also supports MMS-TTS.
@@ -68,6 +70,7 @@ class VitsTokenizer(PreTrainedTokenizer):
     vocab_files_names = VOCAB_FILES_NAMES
     model_input_names = ["input_ids", "attention_mask"]
 
+    # __init__：加载 vocab、配置音素化与空白插入策略
     def __init__(
         self,
         vocab_file,

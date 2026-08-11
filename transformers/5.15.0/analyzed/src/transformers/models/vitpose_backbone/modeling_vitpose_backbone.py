@@ -18,6 +18,7 @@ This code is the same as the original Vision Transformer (ViT) with 2 modificati
 - addition of a mixture-of-experts MLP layer
 """
 
+# VitPose 骨干建模：带 padding=2 patch 嵌入与 MoE MLP 的 ViT 姿态骨干
 import collections.abc
 from collections.abc import Callable
 
@@ -40,6 +41,7 @@ from .configuration_vitpose_backbone import VitPoseBackboneConfig
 logger = logging.get_logger(__name__)
 
 
+# VitPoseBackbonePatchEmbeddings：patch 嵌入：Conv2d padding=2 将图像切分为 token
 class VitPoseBackbonePatchEmbeddings(nn.Module):
     """Image to Patch Embedding."""
 
@@ -72,6 +74,7 @@ class VitPoseBackbonePatchEmbeddings(nn.Module):
         return embeddings
 
 
+# VitPoseBackboneEmbeddings：组合 patch 与位置嵌入并 dropout
 class VitPoseBackboneEmbeddings(nn.Module):
     """
     Construct the position and patch embeddings.
@@ -126,6 +129,7 @@ def eager_attention_forward(
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTAttention with ViT->VitPoseBackbone
+# VitPoseBackboneSelfAttention：多头自注意力：Q/K/V 投影与 SDPA 接口
 class VitPoseBackboneSelfAttention(nn.Module):
     def __init__(self, config: VitPoseBackboneConfig):
         super().__init__()
@@ -182,6 +186,7 @@ class VitPoseBackboneSelfAttention(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTAttention with ViT->VitPoseBackbone
+# VitPoseBackboneSelfOutput：注意力输出投影（残差在 Layer 中连接）
 class VitPoseBackboneSelfOutput(nn.Module):
     """
     The residual connection is defined in VitPoseBackboneLayer instead of here (as is the case with other models), due to the
@@ -200,6 +205,7 @@ class VitPoseBackboneSelfOutput(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTAttention with ViT->VitPoseBackbone
+# VitPoseBackboneAttention：自注意力子模块 + 输出投影
 class VitPoseBackboneAttention(nn.Module):
     def __init__(self, config: VitPoseBackboneConfig):
         super().__init__()
@@ -216,6 +222,7 @@ class VitPoseBackboneAttention(nn.Module):
         return output
 
 
+# VitPoseNaiveMoe：朴素 MoE：按 dataset_index 路由至各专家线性层
 class VitPoseNaiveMoe(nn.ModuleList):
     def __init__(self, config):
         super().__init__()
@@ -238,6 +245,7 @@ class VitPoseNaiveMoe(nn.ModuleList):
         return expert_hidden_state
 
 
+# VitPoseBackboneMoeMLP：MoE MLP：共享 fc2 + 专家 part_features 拼接
 class VitPoseBackboneMoeMLP(nn.Module):
     def __init__(self, config: VitPoseBackboneConfig):
         super().__init__()
@@ -268,6 +276,7 @@ class VitPoseBackboneMoeMLP(nn.Module):
         return hidden_state
 
 
+# VitPoseBackboneMLP：标准两层 MLP 前馈网络
 class VitPoseBackboneMLP(nn.Module):
     def __init__(self, config: VitPoseBackboneConfig):
         super().__init__()
@@ -284,6 +293,7 @@ class VitPoseBackboneMLP(nn.Module):
         return hidden_state
 
 
+# VitPoseBackboneLayer：Transformer 层：Pre-LN 注意力 + MLP/MoE 双残差
 class VitPoseBackboneLayer(GradientCheckpointingLayer):
     def __init__(self, config: VitPoseBackboneConfig):
         super().__init__()
@@ -326,6 +336,7 @@ class VitPoseBackboneLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# VitPoseBackbonePreTrainedModel：VitPose 预训练基类：权重初始化与模块绑定
 class VitPoseBackbonePreTrainedModel(PreTrainedModel):
     config: VitPoseBackboneConfig
     base_model_prefix = "vit"
@@ -352,6 +363,7 @@ class VitPoseBackbonePreTrainedModel(PreTrainedModel):
             init.trunc_normal_(module.position_embeddings, mean=0.0, std=self.config.initializer_range)
 
 
+# VitPoseBackboneEncoder：堆叠 num_hidden_layers 个 VitPoseBackboneLayer
 class VitPoseBackboneEncoder(VitPoseBackbonePreTrainedModel):
     def __init__(self, config: VitPoseBackboneConfig):
         super().__init__(config)
@@ -377,6 +389,7 @@ class VitPoseBackboneEncoder(VitPoseBackbonePreTrainedModel):
     The VitPose backbone useful for downstream tasks.
     """
 )
+# VitPoseBackbone：VitPose 骨干：嵌入 + 编码器 + stage 特征图输出
 class VitPoseBackbone(BackboneMixin, VitPoseBackbonePreTrainedModel):
     def __init__(self, config: VitPoseBackboneConfig):
         super().__init__(config)
@@ -393,6 +406,7 @@ class VitPoseBackbone(BackboneMixin, VitPoseBackbonePreTrainedModel):
     @can_return_tuple
     @filter_output_hidden_states
     @auto_docstring
+    # forward：前向传播：嵌入 → 编码 → 按 stage 输出特征图
     def forward(
         self,
         pixel_values: torch.Tensor,

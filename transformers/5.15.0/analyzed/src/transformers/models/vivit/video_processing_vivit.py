@@ -13,10 +13,12 @@
 # limitations under the License.
 """Video processor class for Vivit."""
 
+# ViViT 视频处理器：帧级预处理并堆叠为 pixel_values 视频张量
 from ...image_utils import IMAGENET_STANDARD_MEAN, IMAGENET_STANDARD_STD, PILImageResampling
 from ...video_processing_utils import BaseVideoProcessor
 
 
+# VivitVideoProcessor：ViViT 视频处理器：帧级预处理并输出 pixel_values
 class VivitVideoProcessor(BaseVideoProcessor):
     resample = PILImageResampling.BILINEAR
     image_mean = IMAGENET_STANDARD_MEAN
@@ -41,6 +43,7 @@ class VivitVideoProcessor(BaseVideoProcessor):
             images = self.normalize(images.float(), image_mean, image_std)
         return images
 
+    # preprocess：调用基类预处理并将 pixel_values_videos 重命名为 pixel_values
     def preprocess(self, videos, **kwargs):
         batch = super().preprocess(videos, **kwargs)
         batch["pixel_values"] = batch.pop("pixel_values_videos")

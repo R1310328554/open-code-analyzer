@@ -13,6 +13,7 @@
 # limitations under the License.
 """PyTorch VITS model."""
 
+# VITS 建模：条件变分推断 + 流模型 + HiFi-GAN 的端到端语音合成
 import math
 from dataclasses import dataclass
 from typing import Any
@@ -42,6 +43,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# VitsModelOutput：VITS 模型输出：波形、序列长度、频谱与隐藏状态
 class VitsModelOutput(ModelOutput):
     r"""
     waveform (`torch.FloatTensor` of shape `(batch_size, sequence_length)`):
@@ -66,6 +68,7 @@ class VitsModelOutput(ModelOutput):
     """
 )
 @dataclass
+# VitsTextEncoderOutput：文本编码器输出：先验均值/方差与隐藏状态
 class VitsTextEncoderOutput(ModelOutput):
     r"""
     prior_means (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`):
@@ -302,6 +305,7 @@ def _rational_quadratic_spline(
         return outputs, -log_abs_det
 
 
+# VitsWaveNet：WaveNet 残差栈：膨胀卷积 + tanh/sigmoid 门控激活
 class VitsWaveNet(torch.nn.Module):
     def __init__(self, config: VitsConfig, num_layers: int):
         super().__init__()
@@ -382,6 +386,7 @@ class VitsWaveNet(torch.nn.Module):
             torch.nn.utils.remove_weight_norm(layer)
 
 
+# VitsPosteriorEncoder：后验编码器：频谱经 WaveNet 采样潜变量（训练用）
 class VitsPosteriorEncoder(nn.Module):
     def __init__(self, config: VitsConfig):
         super().__init__()
@@ -401,6 +406,7 @@ class VitsPosteriorEncoder(nn.Module):
 
 
 # Copied from transformers.models.speecht5.modeling_speecht5.HifiGanResidualBlock
+# HifiGanResidualBlock：HiFi-GAN 多膨胀率残差卷积块
 class HifiGanResidualBlock(nn.Module):
     def __init__(self, channels, kernel_size=3, dilation=(1, 3, 5), leaky_relu_slope=0.1):
         super().__init__()
@@ -463,6 +469,7 @@ class HifiGanResidualBlock(nn.Module):
         return hidden_states
 
 
+# VitsHifiGan：HiFi-GAN 解码器：上采样 + MRF 残差块生成波形
 class VitsHifiGan(nn.Module):
     def __init__(self, config: VitsConfig):
         super().__init__()
@@ -551,6 +558,7 @@ class VitsHifiGan(nn.Module):
         return waveform
 
 
+# VitsResidualCouplingLayer：残差耦合流层：WaveNet 仿射变换半通道
 class VitsResidualCouplingLayer(nn.Module):
     def __init__(self, config: VitsConfig):
         super().__init__()
@@ -578,6 +586,7 @@ class VitsResidualCouplingLayer(nn.Module):
             return outputs, None
 
 
+# VitsResidualCouplingBlock：堆叠耦合流层并交替 flip 通道
 class VitsResidualCouplingBlock(nn.Module):
     def __init__(self, config: VitsConfig):
         super().__init__()
@@ -597,6 +606,7 @@ class VitsResidualCouplingBlock(nn.Module):
         return inputs
 
 
+# VitsDilatedDepthSeparableConv：膨胀深度可分离卷积栈
 class VitsDilatedDepthSeparableConv(nn.Module):
     def __init__(self, config: VitsConfig, dropout_rate=0.0):
         super().__init__()
@@ -643,6 +653,7 @@ class VitsDilatedDepthSeparableConv(nn.Module):
         return inputs * padding_mask
 
 
+# VitsConvFlow：卷积流模块：有理二次样条可逆变换
 class VitsConvFlow(nn.Module):
     def __init__(self, config: VitsConfig):
         super().__init__()
@@ -686,6 +697,7 @@ class VitsConvFlow(nn.Module):
             return outputs, None
 
 
+# VitsElementwiseAffine：逐元素仿射流层：scale + translate
 class VitsElementwiseAffine(nn.Module):
     def __init__(self, config: VitsConfig):
         super().__init__()
@@ -704,6 +716,7 @@ class VitsElementwiseAffine(nn.Module):
             return outputs, None
 
 
+# VitsStochasticDurationPredictor：随机时长预测：Normalizing Flow 建模 log 时长
 class VitsStochasticDurationPredictor(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -804,6 +817,7 @@ class VitsStochasticDurationPredictor(nn.Module):
             return log_duration
 
 
+# VitsDurationPredictor：确定性时长预测：Conv1d 回归 log 时长
 class VitsDurationPredictor(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -841,6 +855,7 @@ class VitsDurationPredictor(nn.Module):
         return inputs * padding_mask
 
 
+# VitsAttention：相对位置多头自注意力（window_size 相对嵌入）
 class VitsAttention(nn.Module):
     """Multi-headed attention with relative positional representation."""
 
@@ -997,6 +1012,7 @@ class VitsAttention(nn.Module):
         return x_final
 
 
+# VitsFeedForward：Transformer FFN：1D 卷积 + LayerNorm + 激活
 class VitsFeedForward(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1039,6 +1055,7 @@ class VitsFeedForward(nn.Module):
         return hidden_states
 
 
+# VitsEncoderLayer：Transformer 编码层：自注意力 + FFN 双残差
 class VitsEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: VitsConfig):
         super().__init__()
@@ -1078,6 +1095,7 @@ class VitsEncoderLayer(GradientCheckpointingLayer):
         return outputs
 
 
+# VitsEncoder：堆叠 VitsEncoderLayer 的文本 Transformer 编码器
 class VitsEncoder(nn.Module):
     def __init__(self, config: VitsConfig):
         super().__init__()
@@ -1147,6 +1165,7 @@ class VitsEncoder(nn.Module):
         )
 
 
+# VitsTextEncoder：文本编码器：嵌入 + 编码器 + 先验分布投影
 class VitsTextEncoder(nn.Module):
     """
     Transformer encoder that uses relative positional representation instead of absolute positional encoding.
@@ -1198,6 +1217,7 @@ class VitsTextEncoder(nn.Module):
 
 
 @auto_docstring
+# VitsPreTrainedModel：VITS 预训练基类：Conv1d/Attention 权重初始化
 class VitsPreTrainedModel(PreTrainedModel):
     config: VitsConfig
     base_model_prefix = "vits"
@@ -1228,6 +1248,7 @@ class VitsPreTrainedModel(PreTrainedModel):
     The complete VITS model, for text-to-speech synthesis.
     """
 )
+# VitsModel：完整 VITS：文本编码 → 时长扩展 → 流模型 → HiFi-GAN 波形
 class VitsModel(VitsPreTrainedModel):
     def __init__(self, config: VitsConfig):
         super().__init__(config)

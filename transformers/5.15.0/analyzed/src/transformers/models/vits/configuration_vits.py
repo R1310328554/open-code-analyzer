@@ -13,6 +13,7 @@
 # limitations under the License.
 """VITS model configuration"""
 
+# VITS 配置：端到端 TTS 的文本编码、流模型、时长预测与 HiFi-GAN 解码超参数
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
@@ -21,6 +22,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="facebook/mms-tts-eng")
 @strict
+# VitsConfig：VITS 主配置：编码器、流模型、时长预测与 HiFi-GAN 解码参数
 class VitsConfig(PreTrainedConfig):
     r"""
     window_size (`int`, *optional*, defaults to 4):

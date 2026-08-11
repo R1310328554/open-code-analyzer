@@ -13,6 +13,7 @@
 # limitations under the License.
 """ViViT model configuration"""
 
+# ViViT 配置：视频 tubelet 尺寸、帧数与 ViT 编码器超参数
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
@@ -21,6 +22,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="google/vivit-b-16x2-kinetics400")
 @strict
+# VivitConfig：ViViT 主配置：tubelet 尺寸、帧数、隐藏维与池化参数
 class VivitConfig(PreTrainedConfig):
     r"""
     num_frames (`int`, *optional*, defaults to 32):

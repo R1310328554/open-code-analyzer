@@ -13,6 +13,7 @@
 # limitations under the License.
 """PyTorch ViViT model - modular file inheriting transformer core from ViT."""
 
+# ViViT 模块化建模：复用 ViT 核心组件的视频 Transformer 实现
 from collections.abc import Iterable
 
 import torch
@@ -41,6 +42,7 @@ from .configuration_vivit import VivitConfig
 logger = logging.get_logger(__name__)
 
 
+# VivitTubeletEmbeddings：3D Conv tubelet 嵌入：视频体素 patch 投影
 class VivitTubeletEmbeddings(nn.Module):
     """
     This class turns `pixel_values` of shape `(batch_size, num_frames, num_channels, height, width)` into the initial
@@ -72,6 +74,7 @@ class VivitTubeletEmbeddings(nn.Module):
         return self.projection(pixel_values).flatten(2).transpose(1, 2)
 
 
+# VivitEmbeddings：继承 ViTEmbeddings，替换为 tubelet patch 嵌入
 class VivitEmbeddings(ViTEmbeddings):
     """
     Construct the CLS token, position and tubelet patch embeddings for video input.
@@ -117,23 +120,28 @@ class VivitEmbeddings(ViTEmbeddings):
         return embeddings
 
 
+# VivitAttention：继承 ViTAttention 的视频自注意力
 class VivitAttention(ViTAttention):
     pass
 
 
+# VivitMLP：继承 ViTMLP 的前馈网络
 class VivitMLP(ViTMLP):
     pass
 
 
+# VivitLayer：继承 ViTLayer 的 Transformer 编码层
 class VivitLayer(ViTLayer):
     pass
 
 
+# VivitPooler：继承 ViTPooler 的 CLS 池化层
 class VivitPooler(ViTPooler):
     pass
 
 
 @auto_docstring
+# VivitPreTrainedModel：ViViT 预训练基类：复用 ViT 初始化逻辑
 class VivitPreTrainedModel(ViTPreTrainedModel):
     config: VivitConfig
     base_model_prefix = "vivit"
@@ -150,6 +158,7 @@ class VivitPreTrainedModel(ViTPreTrainedModel):
 
 
 @auto_docstring
+# VivitModel：继承 ViTModel 的视频 Transformer 基模型
 class VivitModel(ViTModel):
     def __init__(self, config: VivitConfig, add_pooling_layer: bool = True):
         r"""
@@ -273,6 +282,7 @@ class VivitModel(ViTModel):
         </Tip>
     """
 )
+# VivitForVideoClassification：ViViT 视频分类头：CLS 线性分类器
 class VivitForVideoClassification(VivitPreTrainedModel):
     def __init__(self, config: VivitConfig):
         super().__init__(config)
