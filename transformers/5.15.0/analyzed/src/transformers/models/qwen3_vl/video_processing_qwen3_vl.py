@@ -29,6 +29,8 @@ from ...processing_utils import Unpack, VideosKwargs
 from ...utils import TensorType, auto_docstring, is_torchvision_available, logging
 from ...video_processing_utils import BaseVideoProcessor
 from ...video_utils import VideoMetadata, group_videos_by_shape, reorder_videos
+# Qwen3-VL 视频预处理：智能缩放、时空 patch 分块与帧采样
+
 
 
 if is_torchvision_available():
@@ -38,6 +40,7 @@ if is_torchvision_available():
 logger = logging.get_logger(__name__)
 
 
+# Qwen3VLVideoProcessorInitKwargs：视频处理器初始化参数：patch 尺寸与帧数范围
 class Qwen3VLVideoProcessorInitKwargs(VideosKwargs, total=False):
     r"""
     patch_size (`int`, *optional*, defaults to 16):
@@ -55,6 +58,7 @@ class Qwen3VLVideoProcessorInitKwargs(VideosKwargs, total=False):
     max_frames: int
 
 
+# smart_resize：智能缩放：在像素上下限内对齐时空分辨率到 patch 因子
 def smart_resize(
     num_frames: int,
     height: int,
@@ -92,6 +96,7 @@ def smart_resize(
 
 
 @auto_docstring
+# Qwen3VLVideoProcessor：视频预处理器：采样、缩放、归一化与时空 patch 打包
 class Qwen3VLVideoProcessor(BaseVideoProcessor):
     resample = PILImageResampling.BICUBIC
     size = {"shortest_edge": 128 * 32 * 32, "longest_edge": 32 * 32 * 768}
@@ -115,6 +120,7 @@ class Qwen3VLVideoProcessor(BaseVideoProcessor):
     min_frames = 4
     max_frames = 768
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[Qwen3VLVideoProcessorInitKwargs]):
         super().__init__(**kwargs)
 

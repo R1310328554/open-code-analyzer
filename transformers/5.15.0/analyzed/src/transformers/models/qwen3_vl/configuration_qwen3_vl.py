@@ -22,10 +22,13 @@ from huggingface_hub.dataclasses import strict
 from ...configuration_utils import PreTrainedConfig
 from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
+# Qwen3-VL 配置：视觉 ViT、文本 LLM 与多模态 token 映射超参数
+
 
 
 @auto_docstring(checkpoint="Qwen/Qwen3-VL-4B-Instruct")
 @strict
+# Qwen3VLVisionConfig：视觉编码器配置：patch 尺寸、深度与 Deepstack 输出索引
 class Qwen3VLVisionConfig(PreTrainedConfig):
     r"""
     out_hidden_size (`int`, *optional*, defaults to 3584):
@@ -56,6 +59,7 @@ class Qwen3VLVisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="Qwen/Qwen3-VL-4B-Instruct")
 @strict
+# Qwen3VLTextConfig：文本解码器配置：隐藏维度、注意力头与 RoPE 参数
 class Qwen3VLTextConfig(PreTrainedConfig):
     r"""
     Example:
@@ -104,6 +108,7 @@ class Qwen3VLTextConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="Qwen/Qwen3-VL-4B-Instruct")
 @strict
+# Qwen3VLConfig：Qwen3-VL 联合配置：视觉/文本子配置与多模态 token 映射
 class Qwen3VLConfig(PreTrainedConfig):
     r"""
     Example:

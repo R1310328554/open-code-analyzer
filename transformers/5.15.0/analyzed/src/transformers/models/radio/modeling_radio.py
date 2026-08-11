@@ -35,9 +35,12 @@ from ...utils import TransformersKwargs, auto_docstring, can_return_tuple
 from ...utils.generic import merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
 from .configuration_radio import RadioConfig
+# RADIO 建模：条件化输入、ViT 编码堆栈与 summary 表征输出
+
 
 
 @dataclass
+# RadioModelOutput：RADIO 输出：patch 隐状态、summary 嵌入与 attentions
 class RadioModelOutput(ModelOutput):
     """Output of [`RadioModel`].
 
@@ -62,19 +65,23 @@ class RadioModelOutput(ModelOutput):
     attentions: tuple[torch.FloatTensor] | None = None
 
 
+# RadioInputConditioner：输入条件化：CLIP 风格像素归一化与通道缩放
 class RadioInputConditioner(nn.Module):
     """Normalizes pixel values; arithmetic is done in float32 then cast back."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RadioConfig):
         super().__init__()
         self.norm_mean = nn.Buffer(torch.tensor(config.norm_mean).view(-1, 1, 1), persistent=True)
         self.norm_std = nn.Buffer(torch.tensor(config.norm_std).view(-1, 1, 1), persistent=True)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
         normalized = (pixel_values.float() - self.norm_mean.float()) / self.norm_std.float()
         return normalized.to(pixel_values.dtype)
 
 
+# RadioPatchEmbeddings：Patch 嵌入：CPE 动态位置编码与 cls/register token
 class RadioPatchEmbeddings(nn.Module):
     """Cropped Position Embedding (CPE) patch generator.
 
@@ -82,6 +89,7 @@ class RadioPatchEmbeddings(nn.Module):
     absolute position embedding, and prepends learned cls + register tokens.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RadioConfig):
         super().__init__()
         self.patch_size = config.patch_size
@@ -119,6 +127,7 @@ class RadioPatchEmbeddings(nn.Module):
             pos = F.interpolate(pos.float(), size=tuple(input_dims), mode="bilinear", align_corners=False).to(dtype)
         return pos.flatten(2).permute(0, 2, 1)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
         patches = self.patch_projection(self._image_to_patches(pixel_values))
         input_dims = (pixel_values.shape[-2] // self.patch_size, pixel_values.shape[-1] // self.patch_size)
@@ -127,7 +136,9 @@ class RadioPatchEmbeddings(nn.Module):
         return torch.cat([prefix, patches], dim=1)
 
 
+# RadioMLP：标准 MLP 前馈：两层线性 + GELU 激活
 class RadioMLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config) -> None:
         super().__init__()
         in_features = out_features = config.hidden_size
@@ -139,6 +150,7 @@ class RadioMLP(nn.Module):
             self.activation = config.hidden_act
         self.fc2 = nn.Linear(hidden_features, out_features, bias=True)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state: torch.Tensor) -> torch.Tensor:
         hidden_state = self.fc1(hidden_state)
         hidden_state = self.activation(hidden_state)
@@ -146,15 +158,19 @@ class RadioMLP(nn.Module):
         return hidden_state
 
 
+# RadioLayerScale：LayerScale：可学习逐通道残差分支缩放
 class RadioLayerScale(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config) -> None:
         super().__init__()
         self.lambda1 = nn.Parameter(config.layerscale_value * torch.ones(config.hidden_size))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state: torch.Tensor) -> torch.Tensor:
         return hidden_state * self.lambda1
 
 
+# eager_attention_forward：标准注意力前向：QK^T 缩放 softmax 加权 V
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -184,7 +200,9 @@ def eager_attention_forward(
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTAttention with ViT->Radio
+# RadioSelfAttention：自注意力：多头缩放点积与 QKV 投影
 class RadioSelfAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RadioConfig):
         super().__init__()
         if config.hidden_size % config.num_attention_heads != 0 and not hasattr(config, "embedding_size"):
@@ -205,6 +223,7 @@ class RadioSelfAttention(nn.Module):
         self.key = nn.Linear(config.hidden_size, self.all_head_size, bias=config.qkv_bias)
         self.value = nn.Linear(config.hidden_size, self.all_head_size, bias=config.qkv_bias)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -240,17 +259,20 @@ class RadioSelfAttention(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTAttention with ViT->Radio
+# RadioSelfOutput：注意力输出投影：多头拼接后线性映射
 class RadioSelfOutput(nn.Module):
     """
     The residual connection is defined in RadioLayer instead of here (as is the case with other models), due to the
     layernorm applied before each block.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RadioConfig):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
@@ -258,12 +280,15 @@ class RadioSelfOutput(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTAttention with ViT->Radio
+# RadioAttention：完整注意力模块：自注意力 + 输出投影 + Dropout
 class RadioAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RadioConfig):
         super().__init__()
         self.attention = RadioSelfAttention(config)
         self.output = RadioSelfOutput(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -274,7 +299,9 @@ class RadioAttention(nn.Module):
         return output
 
 
+# RadioSwiGLUFFN：SwiGLU 前馈：gate/up/down 三分支激活
 class RadioSwiGLUFFN(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config) -> None:
         super().__init__()
         in_features = out_features = config.hidden_size
@@ -284,6 +311,7 @@ class RadioSwiGLUFFN(nn.Module):
         self.weights_in = nn.Linear(in_features, 2 * hidden_features, bias=True)
         self.weights_out = nn.Linear(hidden_features, out_features, bias=True)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state: torch.Tensor) -> torch.Tensor:
         hidden_state = self.weights_in(hidden_state)
         x1, x2 = hidden_state.chunk(2, dim=-1)
@@ -291,6 +319,7 @@ class RadioSwiGLUFFN(nn.Module):
         return self.weights_out(hidden)
 
 
+# RadioDropPath：DropPath 随机深度：训练时随机丢弃残差路径
 class RadioDropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -298,10 +327,12 @@ class RadioDropPath(nn.Module):
     <https://arxiv.org/abs/1603.09382>`_.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, drop_prob: float = 0.0) -> None:
         super().__init__()
         self.drop_prob = drop_prob
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         if self.drop_prob == 0.0 or not self.training:
             return hidden_states
@@ -311,13 +342,16 @@ class RadioDropPath(nn.Module):
         random_tensor = torch.floor(random_tensor + keep_prob)
         return hidden_states.div(keep_prob) * random_tensor
 
+    # extra_repr：模块_repr_ 补充：输出权重形状与 epsilon 等调试信息
     def extra_repr(self) -> str:
         return f"p={self.drop_prob}"
 
 
+# RadioLayer：Transformer 层：注意力 + FFN 残差与 LayerScale
 class RadioLayer(GradientCheckpointingLayer):
     """This corresponds to the Block class in the original implementation."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RadioConfig) -> None:
         super().__init__()
 
@@ -334,6 +368,7 @@ class RadioLayer(GradientCheckpointingLayer):
             self.mlp = RadioMLP(config)
         self.layer_scale2 = RadioLayerScale(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -357,6 +392,7 @@ class RadioLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# RadioPreTrainedModel：RADIO 预训练基类：ViT 权重初始化策略
 class RadioPreTrainedModel(PreTrainedModel):
     config_class = RadioConfig
     base_model_prefix = "model"
@@ -372,6 +408,7 @@ class RadioPreTrainedModel(PreTrainedModel):
     }
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module):
         # Use `transformers.initialization` (not in-place `.data` ops) so the
         # framework's `_is_hf_initialized` guard skips already-loaded params.
@@ -395,7 +432,9 @@ class RadioPreTrainedModel(PreTrainedModel):
             init.copy_(module.summary_idxs, torch.tensor(self.config.summary_idxs, dtype=torch.long))
 
 
+# RadioEncoder：编码器堆栈：多层 RadioLayer 提取 patch 表征
 class RadioEncoder(RadioPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RadioConfig):
         super().__init__(config)
         self.layer = nn.ModuleList([RadioLayer(config) for _ in range(config.num_hidden_layers)])
@@ -403,6 +442,7 @@ class RadioEncoder(RadioPreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs(tie_last_hidden_states=False)
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, **kwargs: Unpack[TransformersKwargs]) -> BaseModelOutput:
         for layer in self.layer:
             hidden_states = layer(hidden_states)
@@ -410,7 +450,9 @@ class RadioEncoder(RadioPreTrainedModel):
 
 
 @auto_docstring
+# RadioModel：RADIO 视觉模型：输入条件化 + 编码器 + summary 输出
 class RadioModel(RadioPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: RadioConfig):
         super().__init__(config)
         self.config = config
@@ -432,6 +474,7 @@ class RadioModel(RadioPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values: torch.Tensor, **kwargs: Unpack[TransformersKwargs]) -> RadioModelOutput:
         pixel_values = self.input_conditioner(pixel_values)
         hidden_states = self.embeddings(pixel_values)

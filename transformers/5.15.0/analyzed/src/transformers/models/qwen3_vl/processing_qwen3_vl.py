@@ -22,11 +22,14 @@ import numpy as np
 
 from ...processing_utils import MultiModalData, ProcessingKwargs, ProcessorMixin
 from ...utils import auto_docstring, logging
+# Qwen3-VL 处理器：图像/视频占位符、时间戳对齐与多模态 BatchFeature 组装
+
 
 
 logger = logging.get_logger(__name__)
 
 
+# Qwen3VLProcessorKwargs：VL 处理器参数：文本/视频子处理器默认选项
 class Qwen3VLProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -39,9 +42,11 @@ class Qwen3VLProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# Qwen3VLProcessor：VL 多模态处理器：图像/视频占位符与时间戳对齐
 class Qwen3VLProcessor(ProcessorMixin):
     valid_processor_kwargs = Qwen3VLProcessorKwargs
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, image_processor=None, tokenizer=None, video_processor=None, chat_template=None, **kwargs):
         self.image_token = "<|image_pad|>" if not hasattr(tokenizer, "image_token") else tokenizer.image_token
         self.video_token = "<|video_pad|>" if not hasattr(tokenizer, "video_token") else tokenizer.video_token
@@ -73,11 +78,13 @@ class Qwen3VLProcessor(ProcessorMixin):
             else tokenizer.convert_tokens_to_ids(self.vision_end_token)
         )
 
+    # replace_image_token：替换图像占位符：按 grid 尺寸计算 image_pad token 数量
     def replace_image_token(self, image_inputs: dict, image_idx: int, **kwargs) -> str:
         merge_length = self.image_processor.merge_size**2
         num_image_tokens = image_inputs["image_grid_thw"][image_idx].prod() // merge_length
         return self.image_token * num_image_tokens
 
+    # replace_video_token：替换视频占位符：逐帧注入时间戳与 vision 边界 token
     def replace_video_token(self, video_inputs: dict, video_idx: int, **kwargs) -> str:
         merge_length = self.video_processor.merge_size**2
         num_frames = video_inputs["video_grid_thw"][video_idx][0]
@@ -144,6 +151,7 @@ class Qwen3VLProcessor(ProcessorMixin):
 
         return MultiModalData(**vision_data)
 
+    # post_process_image_text_to_text：生成后处理：token id 解码为可读文本
     def post_process_image_text_to_text(
         self, generated_outputs, skip_special_tokens=True, clean_up_tokenization_spaces=False, **kwargs
     ):
@@ -172,6 +180,7 @@ class Qwen3VLProcessor(ProcessorMixin):
         )
 
     @property
+    # model_input_names：模型输入字段名：合并各子处理器所需键名
     def model_input_names(self):
         return super().model_input_names + ["mm_token_type_ids"]
 

@@ -18,6 +18,8 @@ from huggingface_hub.dataclasses import strict
 from ...configuration_utils import PreTrainedConfig
 from ...image_utils import OPENAI_CLIP_MEAN, OPENAI_CLIP_STD
 from ...utils import auto_docstring
+# RADIO 配置：CPE patch 生成、cls/register token 与 SwiGLU FFN 超参数
+
 
 
 __all__ = ["RadioConfig"]
@@ -25,6 +27,7 @@ __all__ = ["RadioConfig"]
 
 @auto_docstring(checkpoint="nvidia/C-RADIOv4-H")
 @strict
+# RadioConfig：RADIO 配置：CPE patch 生成、cls/register token 与 FFN 超参数
 class RadioConfig(PreTrainedConfig):
     r"""
     mlp_ratio (`float`, *optional*, defaults to 4.0):

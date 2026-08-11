@@ -29,10 +29,13 @@ from ...processing_utils import ProcessingKwargs, ProcessorMixin, VideosKwargs
 from ...tokenization_utils_base import TextInput
 from ...utils import auto_docstring
 from ...video_utils import VideoInput, make_batched_videos
+# Qwen3-Omni MoE 处理器：图像/视频/音频/文本联合预处理与多模态占位符注入
+
 
 
 # Redefine kwargs for videos because Qwen-Omni uses some kwargs for processing omni
 # and does not use them in video processor class
+# Qwen3OmniMoeVideosKwargs：Omni 视频处理参数：像素范围、patch 尺寸与音视频对齐选项
 class Qwen3OmniMoeVideosKwargs(VideosKwargs, total=False):
     """
     min_pixels (`int`, *optional*):
@@ -79,6 +82,7 @@ class Qwen3OmniMoeVideosKwargs(VideosKwargs, total=False):
     position_id_per_seconds: int | float
 
 
+# Qwen3OmniMoeProcessorKwargs：Omni 处理器关键字：文本/视频/音频子处理器默认选项
 class Qwen3OmniMoeProcessorKwargs(ProcessingKwargs, total=False):
     videos_kwargs: Qwen3OmniMoeVideosKwargs
     _defaults = {
@@ -105,6 +109,7 @@ class Qwen3OmniMoeProcessorKwargs(ProcessingKwargs, total=False):
     }
 
 
+# _get_feat_extract_output_lengths：计算 mel 特征下采样后的有效序列长度
 def _get_feat_extract_output_lengths(input_lengths, n_window=50):
     """
     Computes the output length of the convolutional layers and the output length of the audio encoder
@@ -116,9 +121,11 @@ def _get_feat_extract_output_lengths(input_lengths, n_window=50):
 
 
 @auto_docstring
+# Qwen3OmniMoeProcessor：Omni 多模态处理器：图像/视频/音频/文本联合调用与占位符注入
 class Qwen3OmniMoeProcessor(ProcessorMixin):
     valid_processor_kwargs = Qwen3OmniMoeProcessorKwargs
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self, image_processor=None, video_processor=None, feature_extractor=None, tokenizer=None, chat_template=None
     ):
@@ -132,6 +139,7 @@ class Qwen3OmniMoeProcessor(ProcessorMixin):
         self.audio_eos_token = self.tokenizer.audio_eos_token
 
     @auto_docstring
+    # __call__：处理器调用：联合处理多模态输入并返回 BatchFeature
     def __call__(
         self,
         text: TextInput = None,
@@ -323,6 +331,7 @@ class Qwen3OmniMoeProcessor(ProcessorMixin):
 
         return list(_iter())
 
+    # post_process_image_text_to_text：生成后处理：token id 解码为可读文本
     def post_process_image_text_to_text(self, generated_outputs, skip_special_tokens=True, **kwargs):
         """
         Post-process the output of a vlm to decode the text.
@@ -383,6 +392,7 @@ class Qwen3OmniMoeProcessor(ProcessorMixin):
             )
 
     @property
+    # model_input_names：模型输入字段名：合并各子处理器所需键名
     def model_input_names(self):
         tokenizer_input_names = self.tokenizer.model_input_names
         feature_extractor_input_names = self.feature_extractor.model_input_names

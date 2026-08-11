@@ -22,10 +22,13 @@ from huggingface_hub.dataclasses import strict
 from ...configuration_utils import PreTrainedConfig
 from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
+# Qwen3-VL MoE 配置：视觉编码器 + 稀疏 MoE 文本解码器联合超参数
+
 
 
 @auto_docstring(checkpoint="Qwen/Qwen3-VL-30B-A3B-Instruct")
 @strict
+# Qwen3VLMoeTextConfig：MoE 文本配置：专家数量、Top-K 路由与稀疏层间隔
 class Qwen3VLMoeTextConfig(PreTrainedConfig):
     r"""
     decoder_sparse_step (`int`, *optional*, defaults to 1):
@@ -118,6 +121,7 @@ class Qwen3VLMoeTextConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="Qwen/Qwen3-VL-30B-A3B-Instruct")
 @strict
+# Qwen3VLMoeVisionConfig：MoE 视觉配置：ViT 深度、patch 与 Deepstack 索引
 class Qwen3VLMoeVisionConfig(PreTrainedConfig):
     r"""
     out_hidden_size (`int`, *optional*, defaults to 3584):
@@ -148,6 +152,7 @@ class Qwen3VLMoeVisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="Qwen/Qwen3-VL-30B-A3B-Instruct")
 @strict
+# Qwen3VLMoeConfig：VL MoE 联合配置：视觉 + 稀疏 MoE 文本子配置
 class Qwen3VLMoeConfig(PreTrainedConfig):
     r"""
     Example:

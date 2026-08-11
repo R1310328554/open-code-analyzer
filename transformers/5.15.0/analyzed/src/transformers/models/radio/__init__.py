@@ -10,5 +10,6 @@ if TYPE_CHECKING:
 else:
     import sys
 
+    # 运行时以 _LazyModule 延迟加载子模块，避免循环导入并加快包导入速度
     _file = globals()["__file__"]
     sys.modules[__name__] = _LazyModule(__name__, _file, define_import_structure(_file), module_spec=__spec__)

@@ -37,6 +37,8 @@ from ...masking_utils import create_causal_mask
 from ...modeling_flash_attention_utils import FlashAttentionKwargs
 from ...modeling_layers import GradientCheckpointingLayer
 from ...modeling_outputs import (
+# Qwen3-VL MoE 建模：Deepstack 视觉 + Top-K 稀疏专家文本解码与生成
+
     BaseModelOutputWithPast,
     BaseModelOutputWithPooling,
     CausalLMOutputWithPast,
@@ -65,7 +67,9 @@ from .configuration_qwen3_vl_moe import Qwen3VLMoeConfig, Qwen3VLMoeTextConfig, 
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# Qwen3VLMoeTextRMSNorm：MoE 文本 RMS 层归一化
 class Qwen3VLMoeTextRMSNorm(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
         Qwen3VLMoeTextRMSNorm is equivalent to T5LayerNorm
@@ -74,6 +78,7 @@ class Qwen3VLMoeTextRMSNorm(nn.Module):
         self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         input_dtype = hidden_states.dtype
         hidden_states = hidden_states.to(torch.float32)
@@ -81,14 +86,17 @@ class Qwen3VLMoeTextRMSNorm(nn.Module):
         hidden_states = hidden_states * torch.rsqrt(variance + self.variance_epsilon)
         return self.weight * hidden_states.to(input_dtype)
 
+    # extra_repr：模块_repr_ 补充：输出权重形状与 epsilon 等调试信息
     def extra_repr(self):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
 @use_experts_implementation
+# Qwen3VLMoeTextExperts：MoE 专家集合：并行 FFN 专家与路由加权
 class Qwen3VLMoeTextExperts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.num_experts = config.num_experts
@@ -98,6 +106,7 @@ class Qwen3VLMoeTextExperts(nn.Module):
         self.down_proj = nn.Parameter(torch.empty(self.num_experts, self.hidden_dim, self.intermediate_dim))
         self.act_fn = ACT2FN[config.hidden_act]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -125,7 +134,9 @@ class Qwen3VLMoeTextExperts(nn.Module):
         return final_hidden_states
 
 
+# Qwen3VLMoeTextTopKRouter：Top-K 路由器：线性门控 softmax 选取活跃专家
 class Qwen3VLMoeTextTopKRouter(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.top_k = config.num_experts_per_tok
@@ -133,6 +144,7 @@ class Qwen3VLMoeTextTopKRouter(nn.Module):
         self.hidden_dim = config.hidden_size
         self.weight = nn.Parameter(torch.zeros(self.num_experts, self.hidden_dim))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         hidden_states = hidden_states.reshape(-1, self.hidden_dim)
         router_logits = F.linear(hidden_states, self.weight)  # (seq_len, num_experts)
@@ -144,12 +156,15 @@ class Qwen3VLMoeTextTopKRouter(nn.Module):
         return router_logits, router_scores, router_indices
 
 
+# Qwen3VLMoeTextSparseMoeBlock：稀疏 MoE 块：路由 + 专家 + 共享专家融合
 class Qwen3VLMoeTextSparseMoeBlock(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3VLMoeTextConfig):
         super().__init__()
         self.experts = Qwen3VLMoeTextExperts(config)
         self.gate = Qwen3VLMoeTextTopKRouter(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         batch_size, sequence_length, hidden_dim = hidden_states.shape
         hidden_states_reshaped = hidden_states.view(-1, hidden_dim)
@@ -158,6 +173,7 @@ class Qwen3VLMoeTextSparseMoeBlock(nn.Module):
         return final_hidden_states.reshape(batch_size, sequence_length, hidden_dim)
 
 
+# rotate_half：RoPE 辅助：将向量后半部分取负并与前半交换
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -165,6 +181,7 @@ def rotate_half(x):
     return torch.cat((-x2, x1), dim=-1)
 
 
+# repeat_kv：GQA 键值扩展：将 KV 头重复以匹配查询头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -177,6 +194,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：标准注意力前向：QK^T 缩放 softmax 加权 V
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -203,6 +221,7 @@ def eager_attention_forward(
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：应用 1D RoPE：对 Q/K 按位置旋转编码
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -229,9 +248,11 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# Qwen3VLMoeTextAttention：MoE 文本自注意力：GQA + RoPE
 class Qwen3VLMoeTextAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3VLMoeTextConfig, layer_idx: int):
         super().__init__()
         self.layer_type = config.layer_types[layer_idx] if hasattr(config, "layer_types") else None
@@ -262,6 +283,7 @@ class Qwen3VLMoeTextAttention(nn.Module):
             self.head_dim, eps=config.rms_norm_eps
         )  # thus post q_norm does not need reshape
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -303,7 +325,9 @@ class Qwen3VLMoeTextAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# Qwen3VLMoeTextMLP：MoE 稠密前馈：共享专家路径 SwiGLU
 class Qwen3VLMoeTextMLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, intermediate_size=None):
         super().__init__()
         self.config = config
@@ -314,12 +338,15 @@ class Qwen3VLMoeTextMLP(nn.Module):
         self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=False)
         self.act_fn = ACT2FN[config.hidden_act]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x):
         down_proj = self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
         return down_proj
 
 
+# Qwen3VLMoeTextDecoderLayer：MoE 解码层：自注意力 + 稀疏/稠密 FFN
 class Qwen3VLMoeTextDecoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3VLMoeTextConfig, layer_idx: int):
         super().__init__()
         self.self_attn = Qwen3VLMoeTextAttention(config, layer_idx)
@@ -333,6 +360,7 @@ class Qwen3VLMoeTextDecoderLayer(GradientCheckpointingLayer):
         self.post_attention_layernorm = Qwen3VLMoeTextRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.hidden_size = config.hidden_size
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -366,6 +394,7 @@ class Qwen3VLMoeTextDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Qwen3VLMoePreTrainedModel：VL MoE 预训练基类：稀疏专家权重初始化
 class Qwen3VLMoePreTrainedModel(PreTrainedModel):
     config: Qwen3VLMoeConfig
     base_model_prefix = "model"
@@ -386,6 +415,7 @@ class Qwen3VLMoePreTrainedModel(PreTrainedModel):
     input_modalities = ("text", "image", "video")
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module):
         """Initialize the weights."""
         super()._init_weights(module)
@@ -403,7 +433,9 @@ class Qwen3VLMoePreTrainedModel(PreTrainedModel):
             init.copy_(module.inv_freq, inv_freq)
 
 
+# Qwen3VLMoeVisionRotaryEmbedding：MoE 视觉 RoPE：2D 空间旋转编码
 class Qwen3VLMoeVisionRotaryEmbedding(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, dim: int, theta: float = 10000.0) -> None:
         super().__init__()
         self.dim = dim
@@ -411,10 +443,12 @@ class Qwen3VLMoeVisionRotaryEmbedding(nn.Module):
         inv_freq = 1.0 / (theta ** (torch.arange(0, dim, 2, dtype=torch.float) / dim))
         self.inv_freq = nn.Buffer(inv_freq, persistent=False)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, position_ids: torch.Tensor) -> torch.Tensor:
         return (position_ids.unsqueeze(-1) * self.inv_freq).flatten(1)
 
 
+# apply_rotary_pos_emb_vision：应用视觉 RoPE：2D 空间位置旋转编码
 def apply_rotary_pos_emb_vision(
     q: torch.Tensor, k: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor
 ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -429,7 +463,9 @@ def apply_rotary_pos_emb_vision(
     return q_embed, k_embed
 
 
+# Qwen3VLMoeVisionAttention：MoE 视觉自注意力：2D RoPE 与 Flash Attention
 class Qwen3VLMoeVisionAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3VLMoeVisionConfig) -> None:
         super().__init__()
         self.dim = config.hidden_size
@@ -443,6 +479,7 @@ class Qwen3VLMoeVisionAttention(nn.Module):
         self.attention_dropout = 0.0
         self.is_causal = False
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -512,7 +549,9 @@ class Qwen3VLMoeVisionAttention(nn.Module):
         return attn_output
 
 
+# Qwen3VLMoeVisionMLP：MoE 视觉 MLP：ViT 前馈网络
 class Qwen3VLMoeVisionMLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.hidden_size = config.hidden_size
@@ -521,11 +560,14 @@ class Qwen3VLMoeVisionMLP(nn.Module):
         self.linear_fc2 = nn.Linear(self.intermediate_size, self.hidden_size, bias=True)
         self.act_fn = ACT2FN[config.hidden_act]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state):
         return self.linear_fc2(self.act_fn(self.linear_fc1(hidden_state)))
 
 
+# Qwen3VLMoeVisionBlock：MoE 视觉 Transformer 块：注意力 + MLP
 class Qwen3VLMoeVisionBlock(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, attn_implementation: str = "sdpa") -> None:
         super().__init__()
         self.norm1 = nn.LayerNorm(config.hidden_size, eps=1e-6)
@@ -534,6 +576,7 @@ class Qwen3VLMoeVisionBlock(GradientCheckpointingLayer):
         self.mlp = Qwen3VLMoeVisionMLP(config=config)
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -557,6 +600,7 @@ class Qwen3VLMoeVisionBlock(GradientCheckpointingLayer):
 
 @auto_docstring
 @dataclass
+# BaseModelOutputWithDeepstackFeatures：Deepstack 输出：多层视觉特征与池化隐状态
 class BaseModelOutputWithDeepstackFeatures(BaseModelOutputWithPooling):
     r"""
     deepstack_features (`List[torch.FloatTensor]`, *optional*):
@@ -566,7 +610,9 @@ class BaseModelOutputWithDeepstackFeatures(BaseModelOutputWithPooling):
     deepstack_features: list[torch.FloatTensor] | None = None
 
 
+# Qwen3VLMoeVisionPatchEmbed：MoE Patch 嵌入：Conv3d 帧/图像 token 化
 class Qwen3VLMoeVisionPatchEmbed(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config) -> None:
         super().__init__()
         self.patch_size = config.patch_size
@@ -577,6 +623,7 @@ class Qwen3VLMoeVisionPatchEmbed(nn.Module):
         kernel_size = [self.temporal_patch_size, self.patch_size, self.patch_size]
         self.proj = nn.Conv3d(self.in_channels, self.embed_dim, kernel_size=kernel_size, stride=kernel_size, bias=True)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         target_dtype = self.proj.weight.dtype
         hidden_states = hidden_states.view(
@@ -586,7 +633,9 @@ class Qwen3VLMoeVisionPatchEmbed(nn.Module):
         return hidden_states
 
 
+# Qwen3VLMoeVisionPatchMerger：MoE Patch 合并：空间下采样特征聚合
 class Qwen3VLMoeVisionPatchMerger(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3VLMoeVisionConfig, use_postshuffle_norm=False) -> None:
         super().__init__()
         self.hidden_size = config.hidden_size * (config.spatial_merge_size**2)
@@ -596,12 +645,14 @@ class Qwen3VLMoeVisionPatchMerger(nn.Module):
         self.act_fn = nn.GELU()
         self.linear_fc2 = nn.Linear(self.hidden_size, config.out_hidden_size)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.norm(x.view(-1, self.hidden_size) if self.use_postshuffle_norm else x).view(-1, self.hidden_size)
         x = self.linear_fc2(self.act_fn(self.linear_fc1(x)))
         return x
 
 
+# Qwen3VLMoeVisionModel：MoE 视觉编码器：Deepstack 多层 ViT 表征
 class Qwen3VLMoeVisionModel(Qwen3VLMoePreTrainedModel):
     config: Qwen3VLMoeVisionConfig
     input_modalities = ("image", "video")
@@ -611,6 +662,7 @@ class Qwen3VLMoeVisionModel(Qwen3VLMoePreTrainedModel):
         "attentions": Qwen3VLMoeVisionAttention,
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, *inputs, **kwargs) -> None:
         super().__init__(config, *inputs, **kwargs)
         self.spatial_merge_size = config.spatial_merge_size
@@ -678,6 +730,7 @@ class Qwen3VLMoeVisionModel(Qwen3VLMoePreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self, hidden_states: torch.Tensor, grid_thw: torch.Tensor, **kwargs: Unpack[TransformersKwargs]
     ) -> tuple | BaseModelOutputWithDeepstackFeatures:
@@ -737,8 +790,10 @@ class Qwen3VLMoeVisionModel(Qwen3VLMoePreTrainedModel):
         )
 
 
+# Qwen3VLMoeTextRotaryEmbedding：MoE 文本 RoPE：旋转位置编码
 class Qwen3VLMoeTextRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3VLMoeTextConfig, device=None):
         super().__init__()
         self.max_seq_len_cached = config.max_position_embeddings
@@ -758,6 +813,7 @@ class Qwen3VLMoeTextRotaryEmbedding(nn.Module):
 
     @staticmethod
     @deprecate_kwarg("device", version="5.18")
+    # compute_default_rope_parameters：计算默认 RoPE 逆频率与注意力缩放因子
     def compute_default_rope_parameters(
         config: Qwen3VLMoeTextConfig, device=None, **kwargs
     ) -> tuple[torch.Tensor, float]:
@@ -780,6 +836,7 @@ class Qwen3VLMoeTextRotaryEmbedding(nn.Module):
 
     @torch.no_grad()
     @dynamic_rope_update  # power user: used with advanced RoPE types (e.g. dynamic rope)
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, x, position_ids):
         # In contrast to other models, Qwen3VLMoe has different position ids for the grids
         # So we expand the inv_freq to shape (3, ...)
@@ -824,10 +881,12 @@ class Qwen3VLMoeTextRotaryEmbedding(nn.Module):
         "not a pure text-only model, as DeepStack integrates visual features into the early hidden states."
     )
 )
+# Qwen3VLMoeTextModel：MoE 文本解码器：稀疏专家多层 Transformer
 class Qwen3VLMoeTextModel(Qwen3VLMoePreTrainedModel):
     config: Qwen3VLMoeTextConfig
     input_modalities = ("text",)
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3VLMoeTextConfig):
         super().__init__(config)
         self.padding_idx = config.pad_token_id
@@ -847,6 +906,7 @@ class Qwen3VLMoeTextModel(Qwen3VLMoePreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -945,6 +1005,7 @@ class Qwen3VLMoeTextModel(Qwen3VLMoePreTrainedModel):
 
 @auto_docstring
 @dataclass
+# Qwen3VLMoeModelOutputWithPast：MoE 多模态输出：隐状态、KV 缓存与 router_logits
 class Qwen3VLMoeModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     rope_deltas (`torch.LongTensor` of shape `(batch_size, )`, *optional*):
@@ -958,6 +1019,7 @@ class Qwen3VLMoeModelOutputWithPast(BaseModelOutputWithPast):
 
 @auto_docstring
 @dataclass
+# Qwen3VLMoeCausalLMOutputWithPast：MoE 因果 LM 输出：logits 与负载均衡损失
 class Qwen3VLMoeCausalLMOutputWithPast(CausalLMOutputWithPast):
     r"""
     rope_deltas (`torch.LongTensor` of shape `(batch_size, )`, *optional*):
@@ -971,11 +1033,13 @@ class Qwen3VLMoeCausalLMOutputWithPast(CausalLMOutputWithPast):
 
 
 @auto_docstring
+# Qwen3VLMoeModel：VL MoE 骨干：Deepstack 视觉 + 稀疏 MoE 文本融合
 class Qwen3VLMoeModel(Qwen3VLMoePreTrainedModel):
     base_model_prefix = "model"
     # Reference: fix gemma3 grad acc #37208
     accepts_loss_kwargs = False
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.visual = AutoModel.from_config(config.vision_config)
@@ -1254,6 +1318,7 @@ class Qwen3VLMoeModel(Qwen3VLMoePreTrainedModel):
 
     @auto_docstring
     @can_return_tuple
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor = None,
@@ -1353,6 +1418,7 @@ class Qwen3VLMoeModel(Qwen3VLMoePreTrainedModel):
         )
 
 
+# load_balancing_loss_func：MoE 负载均衡损失：鼓励专家均匀分配 token
 def load_balancing_loss_func(
     gate_logits: torch.Tensor | tuple[torch.Tensor] | None,
     num_experts: int | None = None,
@@ -1435,11 +1501,13 @@ def load_balancing_loss_func(
     return overall_loss * num_experts
 
 
+# Qwen3VLMoeForConditionalGeneration：MoE 条件生成：视觉-语言稀疏专家自回归解码
 class Qwen3VLMoeForConditionalGeneration(Qwen3VLMoePreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
     # Reference: fix gemma3 grad acc #37208
     accepts_loss_kwargs = False
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.model = Qwen3VLMoeModel(config)
@@ -1475,6 +1543,7 @@ class Qwen3VLMoeForConditionalGeneration(Qwen3VLMoePreTrainedModel, GenerationMi
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor = None,

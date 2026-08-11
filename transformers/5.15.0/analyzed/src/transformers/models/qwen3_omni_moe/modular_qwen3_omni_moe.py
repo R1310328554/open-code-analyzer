@@ -35,6 +35,8 @@ from ...image_utils import ImageInput
 from ...masking_utils import create_causal_mask
 from ...modeling_layers import GradientCheckpointingLayer
 from ...modeling_outputs import (
+# Qwen3-Omni MoE modular 源：复用 Qwen3-VL MoE 视觉/文本与 Qwen2.5-Omni 音频/Codec 组件
+
     BaseModelOutputWithPast,
     BaseModelOutputWithPooling,
     CausalLMOutputWithPast,
@@ -107,6 +109,7 @@ from ..qwen3_vl_moe.modeling_qwen3_vl_moe import (
 logger = logging.get_logger(__name__)
 
 
+# _get_feat_extract_output_lengths：计算 mel 特征下采样后的有效序列长度
 def _get_feat_extract_output_lengths(input_lengths, n_window=50):
     """
     Computes the output length of the convolutional layers and the output length of the audio encoder
@@ -117,6 +120,7 @@ def _get_feat_extract_output_lengths(input_lengths, n_window=50):
     return ((feat_lengths - 1) // 2 + 1 - 1) // 2 + 1 + (input_lengths // chunk_len) * 13
 
 
+# chunk_and_pad_features：分块并填充音频特征：对齐窗口长度
 def chunk_and_pad_features(
     input_features: torch.Tensor, feature_lens: torch.Tensor, n_window: int, kwargs: dict | None = None
 ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -152,6 +156,7 @@ def chunk_and_pad_features(
     return padded_feature, chunk_lengths
 
 
+# get_valid_indices：获取有效帧索引：过滤短于窗口的音频块
 def get_valid_indices(chunk_lengths: torch.Tensor, n_window: int, kwargs: dict | None = None) -> torch.Tensor:
     """Compute flat indices of valid (non-padding) positions after CNN extraction, or pop `"valid_indices"` from `kwargs` if precomputed.
 
@@ -171,6 +176,7 @@ def get_valid_indices(chunk_lengths: torch.Tensor, n_window: int, kwargs: dict |
     return mask.flatten().nonzero().squeeze(-1)
 
 
+# get_audio_cu_seqlens：计算变长音频 batch 的 cumulative sequence lengths
 def get_audio_cu_seqlens(
     chunk_lengths: torch.Tensor,
     feature_lens: torch.Tensor,
@@ -215,6 +221,7 @@ def get_audio_cu_seqlens(
 
 @auto_docstring
 @dataclass
+# BaseModelOutputWithDeepstackFeatures：Deepstack 输出：多层视觉特征与池化隐状态
 class BaseModelOutputWithDeepstackFeatures(BaseModelOutputWithPooling):
     r"""
     deepstack_features (`List[torch.FloatTensor]`, *optional*):
@@ -226,6 +233,7 @@ class BaseModelOutputWithDeepstackFeatures(BaseModelOutputWithPooling):
 
 @auto_docstring(checkpoint="Qwen/Qwen3-Omni-30B-A3B-Instruct")
 @strict
+# Qwen3OmniMoeAudioEncoderConfig：音频编码器配置：mel 维度、层数与窗口长度
 class Qwen3OmniMoeAudioEncoderConfig(Qwen2_5OmniAudioEncoderConfig):
     r"""
     max_source_positions (`int`, *optional*, defaults to 1500):
@@ -250,12 +258,14 @@ class Qwen3OmniMoeAudioEncoderConfig(Qwen2_5OmniAudioEncoderConfig):
 
 @auto_docstring(checkpoint="Qwen/Qwen3-Omni-30B-A3B-Instruct")
 @strict
+# Qwen3OmniMoeVisionEncoderConfig：视觉编码器配置：patch 尺寸、深度与 Deepstack 索引
 class Qwen3OmniMoeVisionEncoderConfig(Qwen3VLMoeVisionConfig):
     pass
 
 
 @auto_docstring(checkpoint="Qwen/Qwen3-Omni-30B-A3B-Instruct")
 @strict
+# Qwen3OmniMoeTextConfig：文本 Thinker 配置：MoE 稀疏参数与 RoPE 设置
 class Qwen3OmniMoeTextConfig(PreTrainedConfig):
     r"""
     decoder_sparse_step (`int`, *optional*, defaults to 1):
@@ -336,6 +346,7 @@ class Qwen3OmniMoeTextConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="Qwen/Qwen3-Omni-30B-A3B-Instruct")
 @strict
+# Qwen3OmniMoeThinkerConfig：Thinker 联合配置：音频/视觉/文本子配置聚合
 class Qwen3OmniMoeThinkerConfig(Qwen2_5OmniThinkerConfig):
     r"""
     position_id_per_seconds (`int`, *optional*, defaults to 25):
@@ -377,6 +388,7 @@ class Qwen3OmniMoeThinkerConfig(Qwen2_5OmniThinkerConfig):
 
 @auto_docstring(checkpoint="Qwen/Qwen3-Omni-30B-A3B-Instruct")
 @strict
+# Qwen3OmniMoeTalkerCodePredictorConfig：Talker 码预测器配置：离散语音 token 预测层
 class Qwen3OmniMoeTalkerCodePredictorConfig(Qwen3Config):
     r"""
     num_code_groups (`int`, *optional*, defaults to 32):
@@ -400,6 +412,7 @@ class Qwen3OmniMoeTalkerCodePredictorConfig(Qwen3Config):
 
 @auto_docstring(checkpoint="Qwen/Qwen3-Omni-30B-A3B-Instruct")
 @strict
+# Qwen3OmniMoeTalkerTextConfig：Talker 文本配置：MoE 解码器与语音生成超参数
 class Qwen3OmniMoeTalkerTextConfig(Qwen3MoeConfig):
     base_model_ep_plan = {
         "layers.*.mlp.gate": "ep_router",
@@ -425,6 +438,7 @@ class Qwen3OmniMoeTalkerTextConfig(Qwen3MoeConfig):
 
 @auto_docstring(checkpoint="Qwen/Qwen3-Omni-30B-A3B-Instruct")
 @strict
+# Qwen3OmniMoeTalkerConfig：Talker 联合配置：码预测器 + 文本 MoE 子配置
 class Qwen3OmniMoeTalkerConfig(PreTrainedConfig):
     r"""
     code_predictor_config (`dict`, *optional*):
@@ -520,6 +534,7 @@ class Qwen3OmniMoeTalkerConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="Qwen/Qwen3-Omni-30B-A3B-Instruct")
 @strict
+# Qwen3OmniMoeCode2WavConfig：Code2Wav 配置：神经 Codec 波形合成超参数
 class Qwen3OmniMoeCode2WavConfig(PreTrainedConfig):
     r"""
     num_quantizers (`int`, *optional*, defaults to 16):
@@ -576,6 +591,7 @@ class Qwen3OmniMoeCode2WavConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="Qwen/Qwen3-Omni-30B-A3B-Instruct")
 @strict
+# Qwen3OmniMoeConfig：Omni 顶层配置：Thinker/Talker/Code2Wav 与多模态 token id
 class Qwen3OmniMoeConfig(PreTrainedConfig):
     r"""
     thinker_config (`dict`, *optional*):
@@ -684,6 +700,7 @@ class Qwen3OmniMoeConfig(PreTrainedConfig):
         return self.thinker_config.get_text_config()
 
 
+# Qwen3OmniMoePreTrainedModel：Omni MoE 预训练基类：多模态权重初始化
 class Qwen3OmniMoePreTrainedModel(Qwen2_5OmniPreTrainedModel, PreTrainedModel):
     _no_split_modules = [
         "Qwen3OmniMoeThinkerTextDecoderLayer",
@@ -694,6 +711,7 @@ class Qwen3OmniMoePreTrainedModel(Qwen2_5OmniPreTrainedModel, PreTrainedModel):
     ]
 
     @torch.no_grad()
+    # _init_weights：按配置策略初始化线性层与卷积权重
     def _init_weights(self, module):
         PreTrainedModel._init_weights(self, module)
         std = getattr(self.config, "initializer_range", 0.02)
@@ -714,6 +732,7 @@ class Qwen3OmniMoePreTrainedModel(Qwen2_5OmniPreTrainedModel, PreTrainedModel):
             init.copy_(module.inv_freq, inv_freq)
 
 
+# Qwen3OmniMoePreTrainedModelForConditionalGeneration：条件生成基类：Thinker/Talker 共享初始化逻辑
 class Qwen3OmniMoePreTrainedModelForConditionalGeneration(Qwen2_5OmniPreTrainedModelForConditionalGeneration):
     def get_llm_pos_ids_for_vision(
         self,
@@ -982,13 +1001,17 @@ class Qwen3OmniMoePreTrainedModelForConditionalGeneration(Qwen2_5OmniPreTrainedM
             return position_ids, mrope_position_deltas
 
 
+# Qwen3OmniMoeAudioAttention：音频自注意力：多头缩放点积与变长序列支持
 class Qwen3OmniMoeAudioAttention(Qwen2_5OmniAudioAttention):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.k_proj = nn.Linear(self.embed_dim, self.embed_dim, bias=True)
 
 
+# Qwen3OmniMoeAudioEncoder：音频编码器：log-mel 特征到隐状态序列
 class Qwen3OmniMoeAudioEncoder(Qwen2_5OmniAudioEncoder):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeAudioEncoderConfig):
         super().__init__(config)
         del self.proj
@@ -1022,6 +1045,7 @@ class Qwen3OmniMoeAudioEncoder(Qwen2_5OmniAudioEncoder):
     def set_input_embeddings(self, value):
         self.conv2d1 = value
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input_features=None, feature_lens=None, **kwargs: Unpack[TransformersKwargs]):
         r"""
         feature_lens (`torch.LongTensor` of shape `(batch_size,)`):
@@ -1073,12 +1097,16 @@ class Qwen3OmniMoeAudioEncoder(Qwen2_5OmniAudioEncoder):
         return BaseModelOutputWithPooling(last_hidden_state=hidden_states)
 
 
+# Qwen3OmniMoeVisionAttention：视觉自注意力：2D RoPE 与 Flash Attention
 class Qwen3OmniMoeVisionAttention(Qwen3VLMoeVisionAttention):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeVisionEncoderConfig):
         super().__init__(config)
 
 
+# Qwen3OmniMoeVisionPatchMerger：Patch 合并：空间下采样合并相邻 patch 特征
 class Qwen3OmniMoeVisionPatchMerger(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeVisionEncoderConfig, use_postshuffle_norm=False) -> None:
         super().__init__()
         self.hidden_size = config.hidden_size * (config.spatial_merge_size**2)
@@ -1092,6 +1120,7 @@ class Qwen3OmniMoeVisionPatchMerger(nn.Module):
             ]
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden: torch.Tensor) -> torch.Tensor:
         hidden = self.ln_q(hidden.view(-1, self.hidden_size) if self.use_postshuffle_norm else hidden).view(
             -1, self.hidden_size
@@ -1101,13 +1130,16 @@ class Qwen3OmniMoeVisionPatchMerger(nn.Module):
         return hidden
 
 
+# Qwen3OmniMoeVisionRotaryEmbedding：视觉 RoPE：2D 空间位置旋转编码
 class Qwen3OmniMoeVisionRotaryEmbedding(Qwen3VLMoeVisionRotaryEmbedding):
     pass
 
 
+# Qwen3OmniMoeVisionEncoder：视觉编码器：多层 ViT 提取图像/视频表征
 class Qwen3OmniMoeVisionEncoder(Qwen3VLMoeVisionModel):
     config: Qwen3OmniMoeVisionEncoderConfig
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, *inputs, **kwargs):
         self.merger_list = nn.ModuleList(
             [
@@ -1126,45 +1158,57 @@ class Qwen3OmniMoeVisionEncoder(Qwen3VLMoeVisionModel):
         return self.merger_list
 
 
+# Qwen3OmniMoeThinkerTextRotaryEmbedding：Thinker 文本 RoPE：标准旋转位置编码
 class Qwen3OmniMoeThinkerTextRotaryEmbedding(Qwen3VLMoeTextRotaryEmbedding):
     pass
 
 
+# Qwen3OmniMoeThinkerTextExperts：Thinker MoE 专家集合：并行 FFN 专家
 class Qwen3OmniMoeThinkerTextExperts(Qwen3MoeExperts):
     """
     ModuleList of experts.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeThinkerConfig):
         super().__init__(config)
 
 
+# Qwen3OmniMoeThinkerTextTopKRouter：Thinker Top-K 路由：稀疏专家门控
 class Qwen3OmniMoeThinkerTextTopKRouter(Qwen3MoeTopKRouter):
     pass
 
 
+# Qwen3OmniMoeThinkerTextSparseMoeBlock：Thinker 稀疏 MoE 块：路由 + 专家聚合
 class Qwen3OmniMoeThinkerTextSparseMoeBlock(Qwen3MoeSparseMoeBlock):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeThinkerConfig):
         super().__init__(config)
 
 
+# Qwen3OmniMoeThinkerTextAttention：Thinker 自注意力：GQA + RoPE
 class Qwen3OmniMoeThinkerTextAttention(Qwen3MoeAttention):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_idx):
         super().__init__(config, layer_idx)
         self.sliding_window = None
 
 
+# Qwen3OmniMoeThinkerTextDecoderLayer：Thinker 解码层：自注意力 + MoE FFN
 class Qwen3OmniMoeThinkerTextDecoderLayer(Qwen3MoeDecoderLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_idx):
         super().__init__(config, layer_idx)
         self.self_attn = Qwen3OmniMoeThinkerTextAttention(config, layer_idx)
 
 
+# Qwen3OmniMoeThinkerTextPreTrainedModel：Thinker 文本预训练基类
 class Qwen3OmniMoeThinkerTextPreTrainedModel(Qwen3MoePreTrainedModel):
     config_class = Qwen3OmniMoeTextConfig
     config = Qwen3OmniMoeTextConfig
 
 
+# Qwen3OmniMoeThinkerTextModel：Thinker 文本解码器：MoE 多层 Transformer
 class Qwen3OmniMoeThinkerTextModel(Qwen3VLMoeTextModel):
     config_class = Qwen3OmniMoeTextConfig
     _can_record_outputs = {
@@ -1173,6 +1217,7 @@ class Qwen3OmniMoeThinkerTextModel(Qwen3VLMoeTextModel):
         "router_logits": OutputRecorder(Qwen3OmniMoeThinkerTextTopKRouter, index=0),
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeTextConfig):
         super().__init__(config)
         self.layers = nn.ModuleList(
@@ -1183,6 +1228,7 @@ class Qwen3OmniMoeThinkerTextModel(Qwen3VLMoeTextModel):
 
 @auto_docstring
 @dataclass
+# Qwen3OmniMoeThinkerCausalLMOutputWithPast：Thinker 因果 LM 输出：含 router_logits
 class Qwen3OmniMoeThinkerCausalLMOutputWithPast(MoeCausalLMOutputWithPast):
     r"""
     rope_deltas (`torch.LongTensor` of shape `(batch_size, )`, *optional*):
@@ -1193,6 +1239,7 @@ class Qwen3OmniMoeThinkerCausalLMOutputWithPast(MoeCausalLMOutputWithPast):
     rope_deltas: torch.LongTensor | None = None
 
 
+# Qwen3OmniMoeThinkerForConditionalGeneration：Thinker 条件生成：多模态理解与文本回复
 class Qwen3OmniMoeThinkerForConditionalGeneration(Qwen2_5OmniThinkerForConditionalGeneration):
     _no_split_modules = [
         "Qwen3OmniMoeAudioEncoder",
@@ -1205,6 +1252,7 @@ class Qwen3OmniMoeThinkerForConditionalGeneration(Qwen2_5OmniThinkerForCondition
         "router_logits": OutputRecorder(Qwen3OmniMoeThinkerTextTopKRouter, index=0),
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.num_experts = config.text_config.num_experts
@@ -1267,6 +1315,7 @@ class Qwen3OmniMoeThinkerForConditionalGeneration(Qwen2_5OmniThinkerForCondition
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids=None,
@@ -1425,18 +1474,22 @@ class Qwen3OmniMoeThinkerForConditionalGeneration(Qwen2_5OmniThinkerForCondition
         )
 
 
+# Qwen3OmniMoeTalkerResizeMLP：Talker 维度投影：Thinker 隐状态映射到 Talker 空间
 class Qwen3OmniMoeTalkerResizeMLP(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeTalkerConfig):
         super().__init__()
         self.linear_fc1 = nn.Linear(config.thinker_hidden_size, config.text_config.intermediate_size, bias=True)
         self.linear_fc2 = nn.Linear(config.text_config.intermediate_size, config.text_config.hidden_size, bias=True)
         self.act_fn = ACT2FN[config.text_config.hidden_act]
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state):
         return self.linear_fc2(self.act_fn(self.linear_fc1(hidden_state)))
 
 
 @dataclass
+# Qwen3OmniMoeTalkerCodePredictorOutputWithPast：码预测器输出：离散语音 token logits
 class Qwen3OmniMoeTalkerCodePredictorOutputWithPast(CausalLMOutputWithPast):
     r"""
     generation_steps (`int`, *optional*)
@@ -1446,20 +1499,25 @@ class Qwen3OmniMoeTalkerCodePredictorOutputWithPast(CausalLMOutputWithPast):
     generation_steps: int | None = None
 
 
+# Qwen3OmniMoeTalkerCodePredictorAttention：码预测器自注意力层
 class Qwen3OmniMoeTalkerCodePredictorAttention(Qwen3Attention):
     pass
 
 
+# Qwen3OmniMoeTalkerCodePredictorDecoderLayer：码预测器解码层：自注意力 + MLP
 class Qwen3OmniMoeTalkerCodePredictorDecoderLayer(Qwen3DecoderLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_idx):
         super().__init__(config, layer_idx)
         self.self_attn = Qwen3OmniMoeTalkerCodePredictorAttention(config=config, layer_idx=layer_idx)
 
 
+# Qwen3OmniMoeRotaryEmbedding：Omni 通用 RoPE 旋转位置编码
 class Qwen3OmniMoeRotaryEmbedding(Qwen3RotaryEmbedding):
     pass
 
 
+# Qwen3OmniMoeTalkerCodePredictorModel：码预测器骨干：离散语音 token 序列建模
 class Qwen3OmniMoeTalkerCodePredictorModel(Qwen3Model):
     config_class = Qwen3OmniMoeTalkerCodePredictorConfig
     base_model_prefix = "talker.code_predictor.model"
@@ -1468,6 +1526,7 @@ class Qwen3OmniMoeTalkerCodePredictorModel(Qwen3Model):
         "hidden_states": Qwen3OmniMoeTalkerCodePredictorDecoderLayer,
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeTalkerCodePredictorConfig):
         super().__init__(config)
         del self.embed_tokens
@@ -1487,6 +1546,7 @@ class Qwen3OmniMoeTalkerCodePredictorModel(Qwen3Model):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -1546,6 +1606,7 @@ class Qwen3OmniMoeTalkerCodePredictorModel(Qwen3Model):
         )
 
 
+# Qwen3OmniMoeTalkerCodePredictorModelForConditionalGeneration：码预测条件生成：自回归预测语音码本
 class Qwen3OmniMoeTalkerCodePredictorModelForConditionalGeneration(Qwen3ForCausalLM):
     config_class = Qwen3OmniMoeTalkerCodePredictorConfig
     base_model_prefix = "talker.code_predictor"
@@ -1554,6 +1615,7 @@ class Qwen3OmniMoeTalkerCodePredictorModelForConditionalGeneration(Qwen3ForCausa
         "hidden_states": Qwen3OmniMoeTalkerCodePredictorDecoderLayer,
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeTalkerCodePredictorConfig):
         super().__init__(config)
         self.model = Qwen3OmniMoeTalkerCodePredictorModel._from_config(config)
@@ -1564,6 +1626,7 @@ class Qwen3OmniMoeTalkerCodePredictorModelForConditionalGeneration(Qwen3ForCausa
     def get_input_embeddings(self):
         return self.model.get_input_embeddings()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids=None,
@@ -1624,6 +1687,7 @@ class Qwen3OmniMoeTalkerCodePredictorModelForConditionalGeneration(Qwen3ForCausa
 
 
 @dataclass
+# Qwen3OmniMoeTalkerOutputWithPast：Talker 输出：含 MoE router_logits 与 past KV
 class Qwen3OmniMoeTalkerOutputWithPast(MoeCausalLMOutputWithPast):
     r"""
     generation_step (`int`, *optional*):
@@ -1633,29 +1697,36 @@ class Qwen3OmniMoeTalkerOutputWithPast(MoeCausalLMOutputWithPast):
     generation_step: int | None = None
 
 
+# Qwen3OmniMoeTalkerRotaryEmbedding：Talker RoPE：继承 Thinker 文本旋转编码
 class Qwen3OmniMoeTalkerRotaryEmbedding(Qwen3OmniMoeThinkerTextRotaryEmbedding):
     pass
 
 
+# Qwen3OmniMoeTalkerTextMLP：Talker 文本 MLP：共享专家前馈
 class Qwen3OmniMoeTalkerTextMLP(Qwen3MoeMLP):
     pass
 
 
+# Qwen3OmniMoeTalkerTextTopKRouter：Talker Top-K 路由：稀疏专家选择
 class Qwen3OmniMoeTalkerTextTopKRouter(Qwen2MoeTopKRouter):
     pass
 
 
+# Qwen3OmniMoeTalkerTextSparseMoeBlock：Talker 稀疏 MoE 块
 class Qwen3OmniMoeTalkerTextSparseMoeBlock(Qwen2MoeSparseMoeBlock):
     pass
 
 
+# Qwen3OmniMoeTalkerDecoderLayer：Talker 解码层：自注意力 + MoE FFN
 class Qwen3OmniMoeTalkerDecoderLayer(Qwen3MoeDecoderLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config, layer_idx):
         super().__init__(config, layer_idx)
         self.self_attn = Qwen3OmniMoeThinkerTextAttention(config, layer_idx)
         self.mlp = Qwen3OmniMoeTalkerTextSparseMoeBlock(config)
 
 
+# Qwen3OmniMoeTalkerModel：Talker 文本解码器：MoE 语音 token 生成
 class Qwen3OmniMoeTalkerModel(Qwen3VLMoeTextModel):
     config_class = Qwen3OmniMoeTalkerTextConfig
     base_model_prefix = "talker.model"
@@ -1666,6 +1737,7 @@ class Qwen3OmniMoeTalkerModel(Qwen3VLMoeTextModel):
         "router_logits": OutputRecorder(Qwen3OmniMoeTalkerTextTopKRouter, index=0),
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeTalkerTextConfig):
         super().__init__(config)
         del self.embed_tokens
@@ -1679,6 +1751,7 @@ class Qwen3OmniMoeTalkerModel(Qwen3VLMoeTextModel):
         return self.codec_embedding
 
 
+# Qwen3OmniMoeTalkerForConditionalGeneration：Talker 条件生成：文本到离散语音 token
 class Qwen3OmniMoeTalkerForConditionalGeneration(Qwen3MoeForCausalLM):
     _tied_weights_keys = {"codec_head": "model.codec_embedding.weight"}
     _tp_plan = {"codec_head": "colwise_gather_output"}
@@ -1692,6 +1765,7 @@ class Qwen3OmniMoeTalkerForConditionalGeneration(Qwen3MoeForCausalLM):
         "router_logits": OutputRecorder(Qwen3OmniMoeTalkerTextTopKRouter, index=0),
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeTalkerConfig):
         super().__init__(config)
         del self.lm_head
@@ -1747,6 +1821,7 @@ class Qwen3OmniMoeTalkerForConditionalGeneration(Qwen3MoeForCausalLM):
     def get_input_embeddings(self):
         return self.model.get_input_embeddings()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids=None,
@@ -1937,7 +2012,9 @@ class Qwen3OmniMoeTalkerForConditionalGeneration(Qwen3MoeForCausalLM):
         return inputs
 
 
+# Qwen3OmniMoeCausalConvNet：因果 1D 卷积：Codec 波形合成基础块
 class Qwen3OmniMoeCausalConvNet(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         in_channels,
@@ -1967,13 +2044,16 @@ class Qwen3OmniMoeCausalConvNet(nn.Module):
         ideal_length = (math.ceil(n_frames) - 1) * self.stride + (self.kernel_size - self.padding)
         return ideal_length - length
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state):
         extra_padding = self._get_extra_padding_for_conv1d(hidden_state)
         hidden_state = F.pad(hidden_state, (self.padding, extra_padding), mode="constant", value=0)
         return self.conv(hidden_state).contiguous()
 
 
+# Qwen3OmniMoeCausalTransConvNet：因果转置卷积：上采样波形特征
 class Qwen3OmniMoeCausalTransConvNet(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, in_channels, out_channels, kernel_size, stride=1):
         super().__init__()
         self.conv = nn.ConvTranspose1d(in_channels, out_channels, kernel_size, stride=stride)
@@ -1982,13 +2062,16 @@ class Qwen3OmniMoeCausalTransConvNet(nn.Module):
         self.left_pad = math.ceil(pad)
         self.right_pad = pad = self.left_pad
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state):
         hidden_state = self.conv(hidden_state)
         hidden_state = hidden_state[..., self.left_pad : hidden_state.shape[-1] - self.right_pad]
         return hidden_state.contiguous()
 
 
+# Qwen3OmniMoeConvNeXtBlock：ConvNeXt 块：深度可分离卷积 + 通道 MLP
 class Qwen3OmniMoeConvNeXtBlock(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, dim: int):
         super().__init__()
         self.dwconv = Qwen3OmniMoeCausalConvNet(
@@ -2004,6 +2087,7 @@ class Qwen3OmniMoeConvNeXtBlock(nn.Module):
         self.pwconv2 = nn.Linear(4 * dim, dim)
         self.gamma = nn.Parameter(1e-6 * torch.ones(dim))
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         input = hidden_states
 
@@ -2023,7 +2107,9 @@ class Qwen3OmniMoeConvNeXtBlock(nn.Module):
         return hidden_states
 
 
+# Qwen3OmniMoeCode2WavAttention：Code2Wav 自注意力：波形 token 序列建模
 class Qwen3OmniMoeCode2WavAttention(Qwen3Attention):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeCode2WavConfig, layer_idx):
         super().__init__(config, layer_idx)
         self.q_norm = nn.Identity()
@@ -2031,19 +2117,24 @@ class Qwen3OmniMoeCode2WavAttention(Qwen3Attention):
         self.sliding_window = config.sliding_window
 
 
+# Qwen3OmniMoeCode2WavMlp：Code2Wav MLP：波形特征前馈网络
 class Qwen3OmniMoeCode2WavMlp(Qwen3MLP):
     pass
 
 
+# Qwen3OmniMoeCode2WavRMSNorm：Code2Wav RMS 层归一化
 class Qwen3OmniMoeCode2WavRMSNorm(Qwen3RMSNorm):
     pass
 
 
+# Qwen3OmniMoeCode2WavLayerScale：LayerScale：可学习逐通道缩放残差分支
 class Qwen3OmniMoeCode2WavLayerScale(MimiLayerScale):
     pass
 
 
+# Qwen3OmniMoeCode2WavTransformerLayer：Code2Wav Transformer 层：注意力 + MLP
 class Qwen3OmniMoeCode2WavTransformerLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeCode2WavConfig, layer_idx):
         super().__init__()
         self.hidden_size = config.hidden_size
@@ -2055,6 +2146,7 @@ class Qwen3OmniMoeCode2WavTransformerLayer(GradientCheckpointingLayer):
         self.mlp_layer_scale = Qwen3OmniMoeCode2WavLayerScale(config)
         self.attention_type = "sliding_attention"
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -2105,12 +2197,14 @@ class Qwen3OmniMoeCode2WavTransformerLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Qwen3OmniMoeCode2WavTransformerModel：Code2Wav Transformer：离散码到中间表征
 class Qwen3OmniMoeCode2WavTransformerModel(Qwen3Model):
     _can_record_outputs = {
         "hidden_states": Qwen3OmniMoeCode2WavTransformerLayer,
         "attentions": Qwen3OmniMoeCode2WavAttention,
     }
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeCode2WavConfig):
         super().__init__(config)
         del self.vocab_size
@@ -2121,6 +2215,7 @@ class Qwen3OmniMoeCode2WavTransformerModel(Qwen3Model):
             [Qwen3OmniMoeCode2WavTransformerLayer(config, layer_idx) for layer_idx in range(config.num_hidden_layers)]
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids=None,
@@ -2144,20 +2239,25 @@ class Qwen3OmniMoeCode2WavTransformerModel(Qwen3Model):
         )
 
 
+# Qwen3OmniMoeSnakeBeta：SnakeBeta 激活：可学习频率正弦非线性
 class Qwen3OmniMoeSnakeBeta(Qwen2_5OmniSnakeBeta):
     pass
 
 
 # Alias for BC
+# SnakeBeta：SnakeBeta 别名：Codec 解码器激活函数
 class SnakeBeta(Qwen3OmniMoeSnakeBeta):
     """Deprecated alias for `Qwen3OmniMoeSnakeBeta`; will be removed in a future release."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, *args, **kwargs):
         logger.warning_once("`SnakeBeta` is deprecated; please use `Qwen3OmniMoeSnakeBeta` instead.")
         super().__init__(*args, **kwargs)
 
 
+# Qwen3OmniMoeCode2WavDecoderResidualUnit：Codec 解码残差单元：因果卷积堆叠
 class Qwen3OmniMoeCode2WavDecoderResidualUnit(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, dim: int = 16, dilation: int = 1):
         super().__init__()
 
@@ -2166,6 +2266,7 @@ class Qwen3OmniMoeCode2WavDecoderResidualUnit(nn.Module):
         self.act2 = Qwen3OmniMoeSnakeBeta(dim)
         self.conv2 = Qwen3OmniMoeCausalConvNet(dim, dim, kernel_size=1)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state):
         residual = hidden_state
 
@@ -2176,7 +2277,9 @@ class Qwen3OmniMoeCode2WavDecoderResidualUnit(nn.Module):
         return hidden_state + residual
 
 
+# Qwen3OmniMoeCode2WavDecoderBlock：Codec 解码块：上采样 + 残差单元
 class Qwen3OmniMoeCode2WavDecoderBlock(Qwen3OmniMoePreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeCode2WavConfig, layer_idx):
         super().__init__(config)
         in_dim = config.decoder_dim // 2**layer_idx
@@ -2195,15 +2298,18 @@ class Qwen3OmniMoeCode2WavDecoderBlock(Qwen3OmniMoePreTrainedModel):
 
         self.post_init()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden, **kwargs):
         for block in self.block:
             hidden = block(hidden)
         return hidden
 
 
+# Qwen3OmniMoeCode2Wav：Code2Wav 完整管线：离散码到波形音频合成
 class Qwen3OmniMoeCode2Wav(Qwen3OmniMoePreTrainedModel):
     input_modalities = "audio"
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeCode2WavConfig):
         super().__init__(config)
         self.total_upsample = np.prod(config.upsample_rates + config.upsampling_ratios)
@@ -2237,6 +2343,7 @@ class Qwen3OmniMoeCode2Wav(Qwen3OmniMoePreTrainedModel):
 
         self.post_init()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, codes, **kwargs):
         if codes.shape[1] != self.config.num_quantizers:
             raise ValueError(f"Expected {self.config.num_quantizers} layer of codes, got {codes.shape[1]}")
@@ -2264,10 +2371,12 @@ class Qwen3OmniMoeCode2Wav(Qwen3OmniMoePreTrainedModel):
         return torch.cat(wavs, dim=-1)
 
 
+# Qwen3OmniMoeForConditionalGeneration：Omni 端到端：Thinker 理解 + Talker 语音 + Code2Wav 波形
 class Qwen3OmniMoeForConditionalGeneration(Qwen3OmniMoePreTrainedModel, GenerationMixin):
     config_class = Qwen3OmniMoeConfig
     output_modalities = ("text", "audio")
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Qwen3OmniMoeConfig):
         super().__init__(config)
 
@@ -2624,6 +2733,7 @@ class Qwen3OmniMoeForConditionalGeneration(Qwen3OmniMoePreTrainedModel, Generati
         return thinker_result.sequences, talker_wavs
 
 
+# Qwen3OmniMoeProcessorKwargs：Omni 处理器关键字：文本/视频/音频子处理器默认选项
 class Qwen3OmniMoeProcessorKwargs(Qwen2_5OmniProcessorKwargs):
     _defaults = {
         "text_kwargs": {
@@ -2649,6 +2759,7 @@ class Qwen3OmniMoeProcessorKwargs(Qwen2_5OmniProcessorKwargs):
     }
 
 
+# Qwen3OmniMoeProcessor：Omni 多模态处理器：图像/视频/音频/文本联合调用与占位符注入
 class Qwen3OmniMoeProcessor(Qwen2_5OmniProcessor, ProcessorMixin):
     def replace_multimodal_special_tokens(
         self,
@@ -2728,6 +2839,7 @@ class Qwen3OmniMoeProcessor(Qwen2_5OmniProcessor, ProcessorMixin):
             processed_text.append(sample)
         return processed_text
 
+    # __call__：处理器调用：联合处理多模态输入并返回 BatchFeature
     def __call__(
         self,
         text: TextInput = None,
