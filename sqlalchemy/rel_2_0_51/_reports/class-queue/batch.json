@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T06:07:40Z",
-  "files": [
-    ".github/workflows/scripts/can_install.py",
-    "lib/sqlalchemy/__init__.py",
-    "lib/sqlalchemy/connectors/__init__.py",
-    "lib/sqlalchemy/connectors/aioodbc.py",
-    "lib/sqlalchemy/connectors/asyncio.py",
-    "lib/sqlalchemy/connectors/pyodbc.py",
-    "lib/sqlalchemy/cyextension/__init__.py",
-    "lib/sqlalchemy/dialects/__init__.py",
-    "lib/sqlalchemy/dialects/_typing.py",
-    "lib/sqlalchemy/dialects/mssql/__init__.py",
-    "lib/sqlalchemy/dialects/mssql/aioodbc.py",
-    "lib/sqlalchemy/dialects/mssql/base.py",
-    "lib/sqlalchemy/dialects/mssql/information_schema.py",
-    "lib/sqlalchemy/dialects/mssql/json.py",
-    "lib/sqlalchemy/dialects/mssql/provision.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 202,
-  "done": 15
+  "done": 30
 }
