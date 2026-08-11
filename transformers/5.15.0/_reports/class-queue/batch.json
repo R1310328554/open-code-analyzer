@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T00:20:26Z",
   "files": [
-    "src/transformers/models/bit/image_processing_bit.py",
-    "src/transformers/models/bit/image_processing_pil_bit.py",
-    "src/transformers/models/bit/modeling_bit.py",
-    "src/transformers/models/bitnet/__init__.py",
-    "src/transformers/models/bitnet/configuration_bitnet.py",
-    "src/transformers/models/bitnet/modeling_bitnet.py",
-    "src/transformers/models/bitnet/modular_bitnet.py",
-    "src/transformers/models/blenderbot/__init__.py",
-    "src/transformers/models/blenderbot/configuration_blenderbot.py",
-    "src/transformers/models/blenderbot/modeling_blenderbot.py",
-    "src/transformers/models/blenderbot/tokenization_blenderbot.py",
-    "src/transformers/models/blenderbot_small/__init__.py",
-    "src/transformers/models/blenderbot_small/configuration_blenderbot_small.py",
-    "src/transformers/models/blenderbot_small/modeling_blenderbot_small.py",
-    "src/transformers/models/blenderbot_small/tokenization_blenderbot_small.py",
     "src/transformers/models/blip/__init__.py",
     "src/transformers/models/blip/configuration_blip.py",
     "src/transformers/models/blip/image_processing_blip.py",
@@ -33,5 +18,5 @@
     "src/transformers/models/blt/__init__.py"
   ],
   "remaining_pending": 2349,
-  "done": 300
+  "done": 315
 }
