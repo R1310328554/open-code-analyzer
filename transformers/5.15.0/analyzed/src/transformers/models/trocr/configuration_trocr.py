@@ -19,8 +19,11 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# TrOCR 配置：Transformer 解码器超参、可学习/正弦位置编码与 LayerNorm 嵌入
+
 @auto_docstring(checkpoint="microsoft/trocr-base-handwritten")
 @strict
+# TrOCRConfig：TrOCR 主配置：解码器层数/头数、位置编码类型与 tie_word_embeddings
 class TrOCRConfig(PreTrainedConfig):
     r"""
     use_learned_position_embeddings (`bool`, *optional*, defaults to `True`):

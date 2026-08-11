@@ -31,6 +31,9 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# TVP Torchvision 图像处理器：视频帧批量 resize 与归一化预处理
+
+# TvpImageProcessorKwargs：TVP 图像处理器 kwargs：resize 尺寸与归一化参数
 class TvpImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     do_flip_channel_order (`bool`, *optional*, defaults to `self.do_flip_channel_order`):
@@ -47,6 +50,7 @@ class TvpImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# TvpImageProcessor：TVP Torchvision 后端：与 PIL 版等价的张量预处理流程
 class TvpImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.BILINEAR
     image_mean = IMAGENET_STANDARD_MEAN
@@ -66,6 +70,7 @@ class TvpImageProcessor(TorchvisionBackend):
     do_flip_channel_order = True
     valid_kwargs = TvpImageProcessorKwargs
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[TvpImageProcessorKwargs]):
         super().__init__(**kwargs)
 

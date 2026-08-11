@@ -26,8 +26,11 @@ from ...utils import auto_docstring
 from ..auto import AutoConfig
 
 
+# Tipsv2-DPT 配置：DPT 颈部通道、深度分箱与语义分割损失 ignore_index
+
 @auto_docstring(checkpoint="google/tipsv2-b14-dpt")
 @strict
+# Tipsv2DptConfig：Tipsv2-DPT 主配置：颈部 hidden 尺寸、融合通道、深度分箱与骨干参数
 class Tipsv2DptConfig(PreTrainedConfig):
     r"""
     neck_hidden_sizes (`list[int]`, *optional*, defaults to `[96, 192, 384, 768]`):
@@ -74,6 +77,7 @@ class Tipsv2DptConfig(PreTrainedConfig):
     depth_decoder_activation: str = "relu"
     semantic_loss_ignore_index: int = 255
 
+    # __post_init__：后初始化：默认 neck 尺寸、重组因子与骨干配置合并
     def __post_init__(self, **kwargs):
         if self.neck_hidden_sizes is None:
             self.neck_hidden_sizes = [96, 192, 384, 768]

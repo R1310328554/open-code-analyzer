@@ -33,7 +33,10 @@ from ...utils import ModelOutput, TransformersKwargs, auto_docstring, can_return
 from .configuration_tipsv2_dpt import Tipsv2DptConfig
 
 
+# Tipsv2-DPT 建模（自动生成）：共享骨干 + 三头密集预测（深度/法线/语义分割）
+
 @dataclass
+# Tipsv2DptDensePredictorOutput：Tipsv2-DPT 密集预测输出：深度图、法线图与分割 logits 联合封装
 class Tipsv2DptDensePredictorOutput(ModelOutput):
     r"""
     predicted_depth (`torch.FloatTensor` of shape `(batch_size, height, width)`):
@@ -62,6 +65,7 @@ class Tipsv2DptDensePredictorOutput(ModelOutput):
     """
 )
 @dataclass
+# Tipsv2DptNormalEstimatorOutput：Tipsv2-DPT 法线估计输出：未归一化法线图与可选损失
 class Tipsv2DptNormalEstimatorOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -83,11 +87,14 @@ class Tipsv2DptNormalEstimatorOutput(ModelOutput):
     attentions: tuple[torch.FloatTensor, ...] | None = None
 
 
+# Tipsv2DptReadoutProjectLayer：Tipsv2-DPT readout 投影：CLS token 与 patch token 拼接后线性投影
 class Tipsv2DptReadoutProjectLayer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, in_dim: int, out_dim: int, activation: nn.Module) -> None:
         super().__init__()
         self.layers = nn.ModuleList([nn.Linear(in_dim, out_dim), activation])
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input: Tensor) -> Tensor:
         hidden_state = input
         for layer in self.layers:
@@ -95,6 +102,7 @@ class Tipsv2DptReadoutProjectLayer(nn.Module):
         return hidden_state
 
 
+# _get_backbone_hidden_size：获取骨干 hidden_size：优先 backbone_config 否则回退 config
 def _get_backbone_hidden_size(config):
     if config.backbone_config is not None and hasattr(config.backbone_config, "hidden_size"):
         return config.backbone_config.hidden_size
@@ -102,7 +110,9 @@ def _get_backbone_hidden_size(config):
         return config.hidden_size
 
 
+# Tipsv2DptReassembleLayer：Tipsv2-DPT 重组层：1×1 投影 + 按 factor 上/下采样恢复空间分辨率
 class Tipsv2DptReassembleLayer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Tipsv2DptConfig, channels: int, factor: int):
         super().__init__()
         # projection
@@ -118,12 +128,14 @@ class Tipsv2DptReassembleLayer(nn.Module):
             # so should downsample
             self.resize = nn.Conv2d(channels, channels, kernel_size=3, stride=int(1 / factor), padding=1)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state):
         hidden_state = self.projection(hidden_state)
         hidden_state = self.resize(hidden_state)
         return hidden_state
 
 
+# Tipsv2DptReassembleStage：Tipsv2-DPT 重组阶段：多尺度 backbone 隐状态重组为图像特征图
 class Tipsv2DptReassembleStage(nn.Module):
     """
     This class reassembles the hidden states of the backbone into image-like feature representations at various
@@ -139,6 +151,7 @@ class Tipsv2DptReassembleStage(nn.Module):
             Model configuration class defining the model architecture.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Tipsv2DptConfig):
         super().__init__()
         self.num_register_tokens = config.backbone_config.num_register_tokens
@@ -159,6 +172,7 @@ class Tipsv2DptReassembleStage(nn.Module):
             ]
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: list[torch.Tensor],
@@ -188,6 +202,7 @@ class Tipsv2DptReassembleStage(nn.Module):
         return out
 
 
+# Tipsv2DptPreActResidualLayer：Tipsv2-DPT 预激活残差卷积：PreAct + 双 3×3 Conv 残差单元
 class Tipsv2DptPreActResidualLayer(nn.Module):
     """
     ResidualConvUnit, pre-activate residual unit.
@@ -197,6 +212,7 @@ class Tipsv2DptPreActResidualLayer(nn.Module):
             Model configuration class defining the model architecture.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Tipsv2DptConfig):
         super().__init__()
 
@@ -210,6 +226,7 @@ class Tipsv2DptPreActResidualLayer(nn.Module):
             config.fusion_hidden_size, config.fusion_hidden_size, kernel_size=3, stride=1, padding=1, bias=False
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state: torch.Tensor) -> torch.Tensor:
         residual = hidden_state
         hidden_state = self.activation1(hidden_state)
@@ -220,6 +237,7 @@ class Tipsv2DptPreActResidualLayer(nn.Module):
         return hidden_state + residual
 
 
+# Tipsv2DptFeatureFusionLayer：Tipsv2-DPT 特征融合层：跨尺度残差融合 + 2× 双线性上采样
 class Tipsv2DptFeatureFusionLayer(nn.Module):
     """Feature fusion layer, merges feature maps from different stages.
 
@@ -230,6 +248,7 @@ class Tipsv2DptFeatureFusionLayer(nn.Module):
             The align_corner setting for bilinear upsample.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Tipsv2DptConfig, align_corners: bool = True, has_residual: bool = True):
         super().__init__()
 
@@ -239,6 +258,7 @@ class Tipsv2DptFeatureFusionLayer(nn.Module):
         self.residual_layer1 = Tipsv2DptPreActResidualLayer(config) if has_residual else nn.Identity()
         self.residual_layer2 = Tipsv2DptPreActResidualLayer(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state: torch.Tensor, residual: torch.Tensor | None = None) -> torch.Tensor:
         if residual is not None:
             if hidden_state.shape != residual.shape:
@@ -256,7 +276,9 @@ class Tipsv2DptFeatureFusionLayer(nn.Module):
         return hidden_state
 
 
+# Tipsv2DptFeatureFusionStage：Tipsv2-DPT 特征融合阶段：自顶向下逐层融合多尺度特征
 class Tipsv2DptFeatureFusionStage(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Tipsv2DptConfig):
         super().__init__()
         self.layers = nn.ModuleList(
@@ -266,6 +288,7 @@ class Tipsv2DptFeatureFusionStage(nn.Module):
             ]
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states):
         # reversing the hidden_states, we start from the last
         hidden_states = hidden_states[::-1]
@@ -283,6 +306,7 @@ class Tipsv2DptFeatureFusionStage(nn.Module):
         return fused_hidden_states
 
 
+# Tipsv2DptNeck：Tipsv2-DPT 颈部：重组 + 通道对齐 + 多尺度特征融合
 class Tipsv2DptNeck(nn.Module):
     """
     Tipsv2DptNeck. A neck is a module that is normally used between the backbone and the head. It takes a list of tensors as
@@ -295,6 +319,7 @@ class Tipsv2DptNeck(nn.Module):
         config (dict): config dict.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -308,6 +333,7 @@ class Tipsv2DptNeck(nn.Module):
         # fusion
         self.fusion_stage = Tipsv2DptFeatureFusionStage(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: list[torch.Tensor], patch_height=None, patch_width=None) -> list[torch.Tensor]:
         """
         Args:
@@ -331,13 +357,16 @@ class Tipsv2DptNeck(nn.Module):
         return output
 
 
+# Tipsv2DptDecoder：Tipsv2-DPT 解码头：Conv 投影 + Linear 逐像素分类/回归
 class Tipsv2DptDecoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Tipsv2DptConfig, out_channels: int, activation: str | None = None):
         super().__init__()
         self.project = nn.Conv2d(config.fusion_hidden_size, config.fusion_hidden_size, kernel_size=3, padding=1)
         self.activation = ACT2FN[activation] if activation is not None else nn.Identity()
         self.head = nn.Linear(config.fusion_hidden_size, out_channels)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_state: torch.Tensor) -> torch.Tensor:
         hidden_state = self.project(hidden_state)
         hidden_state = self.activation(hidden_state)
@@ -347,9 +376,11 @@ class Tipsv2DptDecoder(nn.Module):
         return hidden_state
 
 
+# Tipsv2DptFeaturesToDepth：Tipsv2-DPT 深度分箱回归：softmax 加权深度 bin 中心得到深度图
 class Tipsv2DptFeaturesToDepth(nn.Module):
     """Converts raw logits from the depth head into a depth map using depth bins."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Tipsv2DptConfig):
         super().__init__()
         self.min_depth = config.min_depth
@@ -358,6 +389,7 @@ class Tipsv2DptFeaturesToDepth(nn.Module):
         bin_centers = torch.linspace(config.min_depth, config.max_depth, config.num_depth_bins)
         self.bin_centers = nn.Buffer(bin_centers, persistent=False)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, depth_logits: torch.Tensor) -> torch.Tensor:
         probs = self.activation(depth_logits) + self.min_depth
         probs = probs / probs.sum(dim=1, keepdim=True)
@@ -366,6 +398,7 @@ class Tipsv2DptFeaturesToDepth(nn.Module):
 
 
 @auto_docstring
+# Tipsv2DptPreTrainedModel：Tipsv2-DPT 预训练基类：Kaiming 初始化与深度 bin 中心注册
 class Tipsv2DptPreTrainedModel(PreTrainedModel):
     config: Tipsv2DptConfig
     base_model_prefix = "backbone"
@@ -373,6 +406,7 @@ class Tipsv2DptPreTrainedModel(PreTrainedModel):
     input_modalities = ["image"]
     supports_gradient_checkpointing = True
 
+    # _init_weights：权重初始化：Linear/Conv Kaiming 正态、深度 bin 中心拷贝
     def _init_weights(self, module) -> None:
         super()._init_weights(module)
         if isinstance(module, (nn.Linear, nn.Conv2d, nn.ConvTranspose2d)):
@@ -388,7 +422,9 @@ class Tipsv2DptPreTrainedModel(PreTrainedModel):
     and semantic segmentation — running a single shared backbone forward pass.
     """
 )
+# Tipsv2DptForDensePrediction：Tipsv2-DPT 三头密集预测：单次前向输出深度/法线/分割
 class Tipsv2DptForDensePrediction(Tipsv2DptPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Tipsv2DptConfig):
         super().__init__(config)
         self.backbone = load_backbone(config)
@@ -403,11 +439,13 @@ class Tipsv2DptForDensePrediction(Tipsv2DptPreTrainedModel):
         self.segmentation_decoder = Tipsv2DptDecoder(config, out_channels=config.num_labels)
         self.post_init()
 
+    # get_input_embeddings：获取输入嵌入：返回 backbone 词/patch 嵌入层
     def get_input_embeddings(self):
         return self.backbone.get_input_embeddings()
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -478,9 +516,11 @@ class Tipsv2DptForDensePrediction(Tipsv2DptPreTrainedModel):
     TIPSv2-DPT Model with a monocular depth estimation head.
     """
 )
+# Tipsv2DptForDepthEstimation：Tipsv2-DPT 单目深度估计：DPT 颈部 + 分箱深度回归头
 class Tipsv2DptForDepthEstimation(Tipsv2DptPreTrainedModel):
     _keys_to_ignore_on_load_unexpected = {"normals_head", "segmentation_head"}
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Tipsv2DptConfig):
         super().__init__(config)
         self.backbone = load_backbone(config)
@@ -491,11 +531,13 @@ class Tipsv2DptForDepthEstimation(Tipsv2DptPreTrainedModel):
         self.bin_regressor = Tipsv2DptFeaturesToDepth(config)
         self.post_init()
 
+    # get_input_embeddings：获取输入嵌入：返回 backbone 词/patch 嵌入层
     def get_input_embeddings(self):
         return self.backbone.get_input_embeddings()
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -554,9 +596,11 @@ class Tipsv2DptForDepthEstimation(Tipsv2DptPreTrainedModel):
     TIPSv2-DPT Model with a surface normal estimation head.
     """
 )
+# Tipsv2DptForNormalEstimation：Tipsv2-DPT 表面法线估计：三通道未归一化法线输出
 class Tipsv2DptForNormalEstimation(Tipsv2DptPreTrainedModel):
     _keys_to_ignore_on_load_unexpected = {"depth_head", "segmentation_head"}
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Tipsv2DptConfig):
         super().__init__(config)
         self.backbone = load_backbone(config)
@@ -564,11 +608,13 @@ class Tipsv2DptForNormalEstimation(Tipsv2DptPreTrainedModel):
         self.decoder = Tipsv2DptDecoder(config, out_channels=3)
         self.post_init()
 
+    # get_input_embeddings：获取输入嵌入：返回 backbone 词/patch 嵌入层
     def get_input_embeddings(self):
         return self.backbone.get_input_embeddings()
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -626,9 +672,11 @@ class Tipsv2DptForNormalEstimation(Tipsv2DptPreTrainedModel):
     TIPSv2-DPT Model with a semantic segmentation head.
     """
 )
+# Tipsv2DptForSemanticSegmentation：Tipsv2-DPT 语义分割：逐像素交叉熵损失与 logits 输出
 class Tipsv2DptForSemanticSegmentation(Tipsv2DptPreTrainedModel):
     _keys_to_ignore_on_load_unexpected = {"depth_head", "normals_head"}
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: Tipsv2DptConfig):
         super().__init__(config)
         self.backbone = load_backbone(config)
@@ -636,11 +684,13 @@ class Tipsv2DptForSemanticSegmentation(Tipsv2DptPreTrainedModel):
         self.decoder = Tipsv2DptDecoder(config, out_channels=config.num_labels)
         self.post_init()
 
+    # get_input_embeddings：获取输入嵌入：返回 backbone 词/patch 嵌入层
     def get_input_embeddings(self):
         return self.backbone.get_input_embeddings()
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         pixel_values: torch.FloatTensor,

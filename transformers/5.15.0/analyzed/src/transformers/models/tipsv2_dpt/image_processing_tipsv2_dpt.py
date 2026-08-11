@@ -28,7 +28,10 @@ from ...image_utils import PILImageResampling
 from ...utils import TensorType, auto_docstring
 
 
+# Tipsv2-DPT 图像处理器：448×448 预处理与深度/法线/分割后处理
+
 @auto_docstring
+# Tipsv2DptImageProcessor：Tipsv2-DPT 图像处理器：448 固定尺寸 + 深度/法线/分割后处理
 class Tipsv2DptImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.BILINEAR
     size = {"height": 448, "width": 448}
@@ -37,6 +40,7 @@ class Tipsv2DptImageProcessor(TorchvisionBackend):
     do_normalize = False
     do_convert_rgb = True
 
+    # post_process_depth_estimation：深度后处理：可选双线性插值至目标分辨率
     def post_process_depth_estimation(
         self,
         outputs,
@@ -73,6 +77,7 @@ class Tipsv2DptImageProcessor(TorchvisionBackend):
             results.append({"predicted_depth": depth})
         return results
 
+    # post_process_normal_estimation：法线后处理：L2 归一化 + 可选插值至目标尺寸
     def post_process_normal_estimation(
         self,
         outputs,
@@ -110,6 +115,7 @@ class Tipsv2DptImageProcessor(TorchvisionBackend):
             results.append({"normals": normal})
         return results
 
+    # post_process_semantic_segmentation：分割后处理：argmax 类别图 + 可选插值与分数输出
     def post_process_semantic_segmentation(
         self,
         outputs,

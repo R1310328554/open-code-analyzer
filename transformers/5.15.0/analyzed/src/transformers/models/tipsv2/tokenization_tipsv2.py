@@ -24,9 +24,12 @@ from tokenizers.models import BPE
 from ...tokenization_utils_tokenizers import TokenizersBackend
 
 
+# Tipsv2 分词器：SentencePiece 风格 BPE + Metaspace 预分词与 byte fallback
+
 VOCAB_FILES_NAMES = {"vocab_file": "tokenizer.model"}
 
 
+# Tipsv2Tokenizer：Tipsv2 分词器：BPE + Metaspace 预分词，支持小写与 byte fallback
 class Tipsv2Tokenizer(TokenizersBackend):
     """Tipsv2 tokenizer backed by HuggingFace's *tokenizers* library, based on a BPE (SentencePiece) model."""
 
@@ -35,6 +38,7 @@ class Tipsv2Tokenizer(TokenizersBackend):
     model = BPE
     padding_side = "right"
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         vocab: dict[str, int] | None = None,

@@ -22,16 +22,22 @@ from ...tokenization_utils_base import PreTokenizedInput, TextInput
 from ...utils import auto_docstring
 
 
+# TrOCR 处理器：组合图像处理器与分词器，图像输入时 labels 来自文本 token
+
+# TrOCRProcessorKwargs：TrOCR 处理器参数：图像与文本 kwargs 默认值
 class TrOCRProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {}
 
 
 @auto_docstring
+# TrOCRProcessor：TrOCR 多模态处理器：图像 OCR 预处理 + 文本 labels 封装
 class TrOCRProcessor(ProcessorMixin):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, image_processor=None, tokenizer=None, **kwargs):
         super().__init__(image_processor, tokenizer)
 
     @auto_docstring
+    # __call__：联合调用：图像/文本预处理并返回 BatchFeature
     def __call__(
         self,
         images: ImageInput | None = None,

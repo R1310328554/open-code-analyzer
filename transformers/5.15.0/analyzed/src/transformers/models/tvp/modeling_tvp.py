@@ -30,11 +30,14 @@ from ...utils import auto_docstring, logging
 from .configuration_tvp import TvpConfig
 
 
+# TVP 建模：视觉-文本联合编码 + 时序定位头，预测视频片段起止时间
+
 logger = logging.get_logger(__name__)
 
 
 @auto_docstring
 @dataclass
+# TvpVideoGroundingOutput：TVP 视频定位输出：起止时间 logits 与可选距离/时长损失
 class TvpVideoGroundingOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `return_loss` is `True`):
@@ -53,6 +56,7 @@ class TvpVideoGroundingOutput(ModelOutput):
     attentions: tuple[torch.FloatTensor, ...] | None = None
 
 
+# TvpLoss：TVP 定位损失：IoU 距离损失 + 时长回归损失的加权组合
 class TvpLoss(nn.Module):
     """
     This class computes the losses for `TvpForVideoGrounding`. The process happens in two steps: 1) we compute
@@ -64,6 +68,7 @@ class TvpLoss(nn.Module):
             List of all the losses to be applied.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, losses):
         super().__init__()
         self.loss_map = {
@@ -110,6 +115,7 @@ class TvpLoss(nn.Module):
 
         return duration_diff
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, logits, labels):
         """
         This performs the loss computation.
@@ -133,7 +139,9 @@ class TvpLoss(nn.Module):
         return losses_dict
 
 
+# TvpVisionModel：TVP 视觉骨干：加载预训练 ViT 并输出帧级 patch 特征
 class TvpVisionModel(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.backbone = load_backbone(config)
@@ -157,6 +165,7 @@ class TvpVisionModel(nn.Module):
             bias=False,
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values):
         batch_size, num_frames, num_channels, height, width = pixel_values.shape
         # (batch_size * num_frames, num_channels, height, width)
@@ -173,11 +182,13 @@ class TvpVisionModel(nn.Module):
         return grid
 
 
+# TvpVisualInputEmbedding：TVP 视觉输入嵌入：帧 patch + 网格行列位置 + 视觉提示融合
 class TvpVisualInputEmbedding(nn.Module):
     """
     Takes input of both image and video (multi-frame)
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         # sequence embedding
@@ -254,6 +265,7 @@ class TvpVisualInputEmbedding(nn.Module):
             grid = grid + positional_embeddings
         return grid
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, grid, interpolate_pos_encoding: bool = False):
         """
         Args:
@@ -286,9 +298,11 @@ class TvpVisualInputEmbedding(nn.Module):
         return embeddings
 
 
+# TvpTextInputEmbeddings：Tvp 文本嵌入：词嵌入 + 位置嵌入 + LayerNorm
 class TvpTextInputEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.word_embeddings = nn.Embedding(config.vocab_size, config.hidden_size, padding_idx=config.pad_token_id)
@@ -297,6 +311,7 @@ class TvpTextInputEmbeddings(nn.Module):
         self.layer_norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input_ids=None, token_type_ids=None, position_ids=None, inputs_embeds=None):
         if input_ids is not None:
             input_shape = input_ids.size()
@@ -322,7 +337,9 @@ class TvpTextInputEmbeddings(nn.Module):
         return embeddings
 
 
+# TvpAttention：TVP 注意力：BERT 风格缩放点积多头自注意力
 class TvpAttention(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         if config.hidden_size % config.num_attention_heads != 0 and not hasattr(config, "embedding_size"):
@@ -350,6 +367,7 @@ class TvpAttention(nn.Module):
             .contiguous()
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -392,7 +410,9 @@ class TvpAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertIntermediate with Bert->Tvp
+# TvpIntermediate：TVP 中间层：Linear + 激活的前馈中间投影
 class TvpIntermediate(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.intermediate_size)
@@ -401,19 +421,23 @@ class TvpIntermediate(nn.Module):
         else:
             self.intermediate_act_fn = config.hidden_act
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.intermediate_act_fn(hidden_states)
         return hidden_states
 
 
+# TvpOutputLayer：TVP 输出层：Dense + Dropout + LayerNorm 残差输出
 class TvpOutputLayer(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.intermediate_size, config.hidden_size)
         self.layer_norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
@@ -421,13 +445,16 @@ class TvpOutputLayer(nn.Module):
         return hidden_states
 
 
+# TvpEncodeLayer：TVP 编码层：自注意力 + FFN 双残差，支持梯度检查点
 class TvpEncodeLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.attention = TvpAttention(config)
         self.intermediate = TvpIntermediate(config)
         self.output = TvpOutputLayer(config)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -447,13 +474,16 @@ class TvpEncodeLayer(GradientCheckpointingLayer):
         return outputs
 
 
+# TvpEncoder：TVP 编码器：堆叠 EncodeLayer 融合视觉-文本序列
 class TvpEncoder(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.config = config
         self.layer = nn.ModuleList([TvpEncodeLayer(config) for _ in range(config.num_hidden_layers)])
         self.gradient_checkpointing = False
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states,
@@ -500,12 +530,15 @@ class TvpEncoder(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPooler with Bert->Tvp
+# TvpPooler：TVP 池化层：CLS token Dense + Tanh 得到句子级表征
 class TvpPooler(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
         self.activation = nn.Tanh()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         # We "pool" the model by simply taking the hidden state corresponding
         # to the first token.
@@ -516,6 +549,7 @@ class TvpPooler(nn.Module):
 
 
 @auto_docstring
+# TvpPreTrainedModel：TVP 预训练基类：BERT 风格权重初始化与视觉提示支持
 class TvpPreTrainedModel(PreTrainedModel):
     config: TvpConfig
     base_model_prefix = "model"
@@ -523,6 +557,7 @@ class TvpPreTrainedModel(PreTrainedModel):
     supports_gradient_checkpointing = True
 
     @torch.no_grad()
+    # _init_weights：权重初始化：Linear/Conv Kaiming 正态、深度 bin 中心拷贝
     def _init_weights(self, module: nn.Module):
         """Initialize the weights"""
         super()._init_weights(module)
@@ -543,11 +578,13 @@ class TvpPreTrainedModel(PreTrainedModel):
             init.normal_(module.pad_right)
 
 
+# TvpFrameDownPadPrompter：TVP 帧下填充提示：在帧底部填充 visual prompt 区域
 class TvpFrameDownPadPrompter(nn.Module):
     """
     Pad frames extracted from videos only at the bottom.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         if config.visual_prompter_apply not in ("add", "replace", "remove"):
             raise ValueError("`visual_prompter_apply` must be in (add, replace, remove)")
@@ -562,6 +599,7 @@ class TvpFrameDownPadPrompter(nn.Module):
             torch.randn([1, config.frame_num, 3, config.visual_prompt_size, config.max_img_size])
         )
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values):
         if self.visual_prompter_apply != "add":
             visual_prompt_mask = torch.ones(
@@ -580,11 +618,13 @@ class TvpFrameDownPadPrompter(nn.Module):
         return pixel_values
 
 
+# TvpFramePadPrompter：TVP 帧周填充提示：在帧四边填充 visual prompt 区域
 class TvpFramePadPrompter(nn.Module):
     """
     Pad frames extracted from videos in the surroundings.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         if config.visual_prompter_apply not in ("add", "replace", "remove"):
             raise ValueError("`visual_prompter_apply` must be in (add, replace, remove)")
@@ -647,6 +687,7 @@ class TvpFramePadPrompter(nn.Module):
         prompt = prompt.reshape(batch, num_frames, channels, height, width)
         return prompt
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pixel_values, interpolate_pad_encoding: bool = False):
         height, width = (
             (pixel_values.shape[-2], pixel_values.shape[-1])
@@ -681,7 +722,9 @@ TVP_PROMPTER_CLASSES_MAPPING = {
     The bare Tvp Model transformer outputting BaseModelOutputWithPooling object without any specific head on top.
     """
 )
+# TvpModel：TVP 基模型：视觉-文本联合编码 + 池化输出
 class TvpModel(TvpPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.config = config
@@ -698,6 +741,7 @@ class TvpModel(TvpPreTrainedModel):
 
         self.post_init()
 
+    # get_input_embeddings：获取输入嵌入：返回 backbone 词/patch 嵌入层
     def get_input_embeddings(self):
         return self.embeddings.word_embeddings
 
@@ -705,6 +749,7 @@ class TvpModel(TvpPreTrainedModel):
         self.embeddings.word_embeddings = value
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -781,7 +826,9 @@ class TvpModel(TvpPreTrainedModel):
         )
 
 
+# TvpVideoGroundingHead：TVP 定位头：MLP 回归视频片段起止时间戳
 class TvpVideoGroundingHead(nn.Module):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__()
         self.layer_0 = nn.Linear(config.hidden_size, config.hidden_size * 2)
@@ -789,6 +836,7 @@ class TvpVideoGroundingHead(nn.Module):
         self.activation_0 = nn.ReLU()
         self.activation_1 = nn.Sigmoid()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, pooler_output):
         logits = self.activation_0(self.layer_0(pooler_output))
         logits = self.activation_1(self.layer_1(logits))
@@ -800,7 +848,9 @@ class TvpVideoGroundingHead(nn.Module):
     Tvp Model with a video grounding head on top computing IoU, distance, and duration loss.
     """
 )
+# TvpForVideoGrounding：TVP 视频定位：自然语言查询匹配视频时序片段
 class TvpForVideoGrounding(TvpPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.config = config
@@ -810,6 +860,7 @@ class TvpForVideoGrounding(TvpPreTrainedModel):
         self.post_init()
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,

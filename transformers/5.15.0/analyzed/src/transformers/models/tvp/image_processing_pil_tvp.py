@@ -33,6 +33,9 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# TVP PIL 图像处理器：视频帧 resize 对齐与 ImageNet 归一化
+
+# get_resize_output_image_size：计算 resize 输出尺寸：保持宽高比缩放至 max_img_size 内
 def get_resize_output_image_size(
     input_image: np.ndarray,
     max_size: int = 448,
@@ -53,6 +56,7 @@ def get_resize_output_image_size(
 
 
 # Adapted from transformers.models.tvp.image_processing_tvp.TvpImageProcessorKwargs
+# TvpImageProcessorKwargs：TVP 图像处理器 kwargs：resize 尺寸与归一化参数
 class TvpImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     do_flip_channel_order (`bool`, *optional*, defaults to `self.do_flip_channel_order`):
@@ -69,6 +73,7 @@ class TvpImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# TvpImageProcessorPil：TVP PIL 后端：视频帧 resize 至 max_img_size 并 ImageNet 归一化
 class TvpImageProcessorPil(PilBackend):
     resample = PILImageResampling.BILINEAR
     image_mean = IMAGENET_STANDARD_MEAN
@@ -88,6 +93,7 @@ class TvpImageProcessorPil(PilBackend):
     do_flip_channel_order = True
     valid_kwargs = TvpImageProcessorKwargs
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, **kwargs: Unpack[TvpImageProcessorKwargs]):
         super().__init__(**kwargs)
 

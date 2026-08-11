@@ -30,21 +30,26 @@ from ...utils import auto_docstring, logging
 from .configuration_trocr import TrOCRConfig
 
 
+# TrOCR 建模：视觉编码器交叉注意力解码器，支持因果语言建模生成 OCR 文本
+
 logger = logging.get_logger(__name__)
 
 
 # Copied from transformers.models.bart.modeling_bart.BartLearnedPositionalEmbedding with Bart->TrOCR
+# TrOCRLearnedPositionalEmbedding：TrOCR 可学习位置嵌入：nn.Embedding 查表式位置编码
 class TrOCRLearnedPositionalEmbedding(nn.Embedding):
     """
     This module learns positional embeddings up to a fixed maximum size.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, num_embeddings: int, embedding_dim: int):
         # TrOCR is set up so that if padding_idx is specified then offset the embedding ids by 2
         # and adjust num_embeddings appropriately. Other models don't have this hack
         self.offset = 2
         super().__init__(num_embeddings + self.offset, embedding_dim)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self, input_ids: torch.Tensor, past_key_values_length: int = 0, position_ids: torch.Tensor | None = None
     ):
@@ -62,22 +67,27 @@ class TrOCRLearnedPositionalEmbedding(nn.Embedding):
 
 
 # Copied from transformers.models.bart.modeling_bart.BartScaledWordEmbedding with Bart->TrOCR
+# TrOCRScaledWordEmbedding：TrOCR 缩放词嵌入：可选 sqrt(d_model) 缩放 token 嵌入
 class TrOCRScaledWordEmbedding(nn.Embedding):
     """
     This module overrides nn.Embeddings' forward by multiplying with embeddings scale.
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, num_embeddings: int, embedding_dim: int, padding_idx: int, embed_scale: float | None = 1.0):
         super().__init__(num_embeddings, embedding_dim, padding_idx)
         self.embed_scale = embed_scale
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input_ids: torch.Tensor):
         return super().forward(input_ids) * self.embed_scale
 
 
+# TrOCRSinusoidalPositionalEmbedding：TrOCR 正弦位置嵌入：固定 sin/cos 位置编码表
 class TrOCRSinusoidalPositionalEmbedding(nn.Module):
     """This module produces sinusoidal positional embeddings of any length."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, num_positions: int, embedding_dim: int, padding_idx: int | None = None):
         super().__init__()
         self.offset = 2
@@ -105,6 +115,7 @@ class TrOCRSinusoidalPositionalEmbedding(nn.Module):
         return emb.to(torch.get_default_dtype())
 
     @torch.no_grad()
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, input_ids: torch.Tensor, past_key_values_length: int = 0):
         bsz, seq_len = input_ids.size()
         # Create the position ids from the input token ids. Any padded tokens remain padded.
@@ -135,9 +146,11 @@ class TrOCRSinusoidalPositionalEmbedding(nn.Module):
         return incremental_indices.long() + padding_idx
 
 
+# TrOCRAttention：TrOCR 注意力：多头自/交叉注意力，支持 encoder 隐状态交叉注意力
 class TrOCRAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper."""
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(
         self,
         config,
@@ -173,6 +186,7 @@ class TrOCRAttention(nn.Module):
 
         self.out_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -276,7 +290,9 @@ class TrOCRAttention(nn.Module):
         return attn_output, attn_weights_reshaped
 
 
+# TrOCRDecoderLayer：TrOCR 解码层：自注意力 + 交叉注意力 + FFN 残差堆叠
 class TrOCRDecoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TrOCRConfig, layer_idx=None):
         super().__init__()
         self.embed_dim = config.hidden_size
@@ -313,6 +329,7 @@ class TrOCRDecoderLayer(GradientCheckpointingLayer):
         self.fc2 = nn.Linear(config.decoder_ffn_dim, self.embed_dim)
         self.final_layer_norm = nn.LayerNorm(self.embed_dim)
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -388,6 +405,7 @@ class TrOCRDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# TrOCRPreTrainedModel：TrOCR 预训练基类：解码器权重初始化与 KV cache 支持
 class TrOCRPreTrainedModel(PreTrainedModel):
     config: TrOCRConfig
     base_model_prefix = "model"
@@ -395,6 +413,7 @@ class TrOCRPreTrainedModel(PreTrainedModel):
     _no_split_modules = ["TrOCRDecoderLayer"]
 
 
+# TrOCRDecoder：TrOCR 解码器栈：词/位置嵌入 + 多层 DecoderLayer
 class TrOCRDecoder(TrOCRPreTrainedModel):
     """
     Transformer decoder consisting of *config.decoder_layers* layers. Each layer is a [`TrOCRDecoderLayer`]
@@ -403,6 +422,7 @@ class TrOCRDecoder(TrOCRPreTrainedModel):
         config: TrOCRConfig
     """
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config: TrOCRConfig):
         super().__init__(config)
         self.dropout = config.dropout
@@ -434,6 +454,7 @@ class TrOCRDecoder(TrOCRPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids=None,
@@ -621,12 +642,15 @@ class TrOCRDecoder(TrOCRPreTrainedModel):
     used in combination with the [`EncoderDecoderModel`] framework.
     """
 )
+# TrOCRDecoderWrapper：TrOCR 解码器包装：GenerationMixin 兼容的 decoder 封装
 class TrOCRDecoderWrapper(TrOCRPreTrainedModel):
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         super().__init__(config)
         self.decoder = TrOCRDecoder(config)
         self.post_init()
 
+    # forward：前向传播：组装特征并返回模型输出
     def forward(self, *args, **kwargs):
         return self.decoder(*args, **kwargs)
 
@@ -636,9 +660,11 @@ class TrOCRDecoderWrapper(TrOCRPreTrainedModel):
     The TrOCR Decoder with a language modeling head. Can be used as the decoder part of [`EncoderDecoderModel`] and
     """
 )
+# TrOCRForCausalLM：TrOCR 因果语言模型：视觉条件 OCR 文本自回归生成
 class TrOCRForCausalLM(TrOCRPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"output_projection.weight": "model.decoder.embed_tokens.weight"}
 
+    # __init__：初始化子模块、默认超参与可训练参数
     def __init__(self, config):
         config.is_decoder = True
         config.is_encoder_decoder = False
@@ -650,6 +676,7 @@ class TrOCRForCausalLM(TrOCRPreTrainedModel, GenerationMixin):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # get_input_embeddings：获取输入嵌入：返回 backbone 词/patch 嵌入层
     def get_input_embeddings(self):
         return self.model.decoder.embed_tokens
 
@@ -663,6 +690,7 @@ class TrOCRForCausalLM(TrOCRPreTrainedModel, GenerationMixin):
         self.output_projection = new_embeddings
 
     @auto_docstring
+    # forward：前向传播：组装特征并返回模型输出
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,

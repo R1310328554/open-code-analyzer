@@ -21,8 +21,11 @@ from ...utils import auto_docstring
 from ..auto import AutoConfig
 
 
+# TVP 配置：视觉提示类型、帧数/分辨率、距离-时长损失权重与 BERT 风格编码器
+
 @auto_docstring(checkpoint="Intel/tvp-base")
 @strict
+# TvpConfig：TVP 主配置：视觉提示、帧数/分辨率、损失权重与 BERT 编码器超参
 class TvpConfig(PreTrainedConfig):
     r"""
     distance_loss_weight (`float`, *optional*, defaults to 1.0):
@@ -77,6 +80,7 @@ class TvpConfig(PreTrainedConfig):
     attention_probs_dropout_prob: float | int = 0.1
     pad_token_id: int | None = None
 
+    # __post_init__：后初始化：默认 neck 尺寸、重组因子与骨干配置合并
     def __post_init__(self, **kwargs):
         self.backbone_config, kwargs = consolidate_backbone_kwargs_to_config(
             backbone_config=self.backbone_config,
