@@ -25,6 +25,7 @@ from ...utils import PaddingStrategy, TensorType, logging
 logger = logging.get_logger(__name__)
 
 
+# Gemma 3n 音频特征：Mel 滤波器组 fbank 提取与帧分块
 def create_fb_matrix(
     n_freqs: int,
     f_min: float,
@@ -86,6 +87,7 @@ def create_fb_matrix(
     return fb
 
 
+# _unfold：沿指定维度滑动窗口展开数组（音频帧分块）
 def _unfold(array: np.ndarray, dimension: int, size: int, step: int) -> np.ndarray:
     """A basic NumPy equivalent of PyTorch's unfold for 2D arrays along the last dim."""
     if array.ndim != 2:
@@ -105,6 +107,7 @@ def _unfold(array: np.ndarray, dimension: int, size: int, step: int) -> np.ndarr
     return np.lib.stride_tricks.as_strided(array, shape=output_shape, strides=output_strides)
 
 
+# Gemma3nAudioFeatureExtractor：Gemma 3n 音频 fbank 特征提取器
 class Gemma3nAudioFeatureExtractor(SequenceFeatureExtractor):
     """An audio feature extractor Universal Speech Models https://huggingface.co/papers/2303.01037.
 

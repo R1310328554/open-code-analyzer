@@ -23,6 +23,7 @@ logger = logging.get_logger(__name__)
 VOCAB_FILES_NAMES = {"tokenizer_file": "tokenizer.json"}
 
 
+# Gemma 分词：BPE + byte fallback，空格替换为 ▁ 的 SentencePiece 风格
 class GemmaTokenizer(TokenizersBackend):
     """
     Construct a fast Gemma tokenizer (backed by HuggingFace's tokenizers library).

@@ -35,6 +35,7 @@ from ...processing_utils import Unpack
 from ...utils import TransformersKwargs, auto_docstring, logging
 from ...utils.deprecation import deprecate_kwarg
 from ...utils.generic import maybe_autocast
+# modular 复用 Gemma 的注意力/MLP/解码器层实现
 from ..gemma.modeling_gemma import (
     GemmaAttention,
     GemmaForCausalLM,
@@ -53,8 +54,10 @@ from ..gemma.modeling_gemma import (
 logger = logging.get_logger(__name__)
 
 
+# Gemma 2 modular 源：基于 Gemma 模块扩展滑动窗口注意力与 softcapping
 @auto_docstring(checkpoint="google/gemma2-7b")
 @strict
+# Gemma2Config：Google Gemma 2 解码器-only Transformer 超参（含 softcapping 与滑动窗口）
 class Gemma2Config(PreTrainedConfig):
     r"""
     query_pre_attn_scalar (`float`, *optional*, defaults to 256):
@@ -136,16 +139,19 @@ class Gemma2Config(PreTrainedConfig):
             )
 
 
+# Gemma2RMSNorm：Gemma 2 专用 RMS LayerNorm（含 (1+weight) 缩放）
 class Gemma2RMSNorm(GemmaRMSNorm):
     pass
 
 
+# Gemma2MLP：Gemma 2 前馈 MLP（GELU-tanh 激活）
 class Gemma2MLP(GemmaMLP):
     def __init__(self, config):
         super().__init__(config)
         self.act_fn = ACT2FN[config.hidden_activation]
 
 
+# Gemma2RotaryEmbedding：Gemma 2 RoPE 旋转位置编码
 class Gemma2RotaryEmbedding(GemmaRotaryEmbedding):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: Gemma2Config, device=None):
@@ -180,6 +186,7 @@ class Gemma2RotaryEmbedding(GemmaRotaryEmbedding):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -214,6 +221,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# Gemma2Attention：Gemma 2 多头自注意力（滑动窗口 + logit softcapping）
 class Gemma2Attention(GemmaAttention):
     def __init__(self, config: Gemma2Config, layer_idx: int):
         self.layer_type = config.layer_types[layer_idx] if hasattr(config, "layer_types") else None
@@ -268,6 +276,7 @@ class Gemma2Attention(GemmaAttention):
         return attn_output, attn_weights
 
 
+# Gemma2DecoderLayer：Gemma 2 解码器单层（自注意力 + MLP + RMSNorm）
 class Gemma2DecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Gemma2Config, layer_idx: int):
         super().__init__()
@@ -315,10 +324,12 @@ class Gemma2DecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Gemma2PreTrainedModel：Gemma 2 预训练基类与权重初始化
 class Gemma2PreTrainedModel(GemmaPreTrainedModel):
     pass
 
 
+# Gemma2Model：Gemma 2 解码器-only 主干（堆叠 DecoderLayer）
 class Gemma2Model(GemmaModel):
     def __init__(self, config: Gemma2Config):
         super().__init__(config)
@@ -389,6 +400,7 @@ class Gemma2Model(GemmaModel):
         )
 
 
+# Gemma2ForCausalLM：Gemma 2 因果语言建模与文本生成
 class Gemma2ForCausalLM(GemmaForCausalLM):
     def __init__(self, config):
         super().__init__(config)
@@ -457,10 +469,12 @@ class Gemma2ForCausalLM(GemmaForCausalLM):
         )
 
 
+# Gemma2ForSequenceClassification：Gemma 2 序列分类下游任务头
 class Gemma2ForSequenceClassification(GemmaForSequenceClassification):
     pass
 
 
+# Gemma2ForTokenClassification：Gemma 2 Token 级序列标注头
 class Gemma2ForTokenClassification(GemmaForTokenClassification):
     pass
 

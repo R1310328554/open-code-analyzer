@@ -33,8 +33,10 @@ if is_timm_available():
 logger = logging.get_logger(__name__)
 
 
+# Gemma3nTextConfig：google/gemma-3n-E4B 文本解码器默认超参
 @auto_docstring(checkpoint="google/gemma-3n-E4B")
 @strict
+# Gemma3nTextConfig：Gemma 3n 文本解码器超参（AltUp + Laurel 等高效结构）
 class Gemma3nTextConfig(PreTrainedConfig):
     r"""
     vocab_size_per_layer_input (`int`, *optional*, defaults to 262144):
@@ -197,8 +199,10 @@ class Gemma3nTextConfig(PreTrainedConfig):
         return kwargs
 
 
+# Gemma3nAudioConfig：google/gemma-3n-E4B 音频 Conformer 编码器默认超参
 @auto_docstring(checkpoint="google/gemma-3n-E4B")
 @strict
+# Gemma3nAudioConfig：Gemma 3n 音频编码器 Conformer 超参
 class Gemma3nAudioConfig(PreTrainedConfig):
     r"""
     vocab_offset (`int`, *optional*, defaults to 262272):
@@ -297,8 +301,10 @@ class Gemma3nAudioConfig(PreTrainedConfig):
     )
 
 
+# Gemma3nVisionConfig：google/gemma-3n-E4B timm 视觉骨干默认超参
 @auto_docstring(checkpoint="google/gemma-3n-E4B")
 @strict
+# Gemma3nVisionConfig：Gemma 3n 视觉塔 timm 骨干超参
 class Gemma3nVisionConfig(PreTrainedConfig):
     r"""
     architecture (`str`, *optional*, defaults to `"resnet50"`):
@@ -390,8 +396,10 @@ class Gemma3nVisionConfig(PreTrainedConfig):
         return output
 
 
+# Gemma3nConfig：google/gemma-3n-E4B 文本+音频+视觉三模态联合默认超参
 @auto_docstring(checkpoint="google/gemma-3n-E4B")
 @strict
+# Gemma3nConfig：Gemma 3n 文本+音频+视觉三模态联合配置
 class Gemma3nConfig(PreTrainedConfig):
     r"""
     audio_soft_tokens_per_image (`int`, *optional*, defaults to 188):

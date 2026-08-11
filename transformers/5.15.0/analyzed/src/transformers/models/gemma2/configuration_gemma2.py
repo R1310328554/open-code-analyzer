@@ -25,8 +25,10 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# Gemma2Config：google/gemma2-7b 解码器-only 默认超参
 @auto_docstring(checkpoint="google/gemma2-7b")
 @strict
+# Gemma2Config：Google Gemma 2 解码器-only Transformer 超参（含 softcapping 与滑动窗口）
 class Gemma2Config(PreTrainedConfig):
     r"""
     query_pre_attn_scalar (`float`, *optional*, defaults to 256):

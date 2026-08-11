@@ -30,8 +30,10 @@ from ..siglip import SiglipVisionConfig
 logger = logging.get_logger(__name__)
 
 
+# Gemma3TextConfig：google/gemma-3-4b-it 文本解码器默认超参
 @auto_docstring(checkpoint="google/gemma-3-4b-it")
 @strict
+# Gemma3TextConfig：Gemma 3 文本解码器超参（滑动窗口 + softcapping）
 class Gemma3TextConfig(PreTrainedConfig):
     r"""
     query_pre_attn_scalar (`float`, *optional*, defaults to 256):
@@ -154,8 +156,10 @@ class Gemma3TextConfig(PreTrainedConfig):
         return kwargs
 
 
+# Gemma3Config：google/gemma-3-4b-it 多模态视觉-语言联合默认超参
 @auto_docstring(checkpoint="google/gemma-3-4b-it")
 @strict
+# Gemma3Config：Gemma 3 多模态联合配置（SigLIP 视觉塔 + 文本解码器）
 class Gemma3Config(PreTrainedConfig):
     r"""
     mm_tokens_per_image (`int`, *optional*, defaults to 256):

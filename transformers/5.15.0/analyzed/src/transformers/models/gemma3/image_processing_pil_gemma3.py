@@ -13,6 +13,8 @@
 # limitations under the License.
 """Image processor class for Gemma3."""
 
+# Gemma 3 图像处理：PIL 后端 resize/normalize/pan-and-scan 裁剪
+
 import itertools
 import math
 
@@ -36,6 +38,7 @@ from ...utils import (
 
 
 # Adapted from transformers.models.gemma3.image_processing_gemma3.Gemma3ImageProcessorKwargs
+# Gemma3ImageProcessorKwargs：图像处理器可选参数字典类型
 class Gemma3ImageProcessorKwargs(ImagesKwargs, total=False):
     """
     do_pan_and_scan (`bool`, *optional*):
@@ -55,6 +58,7 @@ class Gemma3ImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# Gemma3ImageProcessorPil：PIL 后端的 Gemma 3 图像预处理
 class Gemma3ImageProcessorPil(PilBackend):
     resample = PILImageResampling.BILINEAR
     image_mean = IMAGENET_STANDARD_MEAN

@@ -42,6 +42,7 @@ from ...processing_utils import Unpack
 from ...utils import TransformersKwargs, auto_docstring, can_return_tuple, logging
 from ...utils.generic import maybe_autocast
 from ..gemma2.configuration_gemma2 import Gemma2Config
+# modular 复用 Gemma2 的注意力/MLP/解码器层实现
 from ..gemma2.modeling_gemma2 import (
     Gemma2Attention,
     Gemma2ForCausalLM,
@@ -65,8 +66,10 @@ from ..siglip import SiglipVisionConfig
 logger = logging.get_logger(__name__)
 
 
+# Gemma 3 modular 源：基于 Gemma2/PaliGemma 扩展多模态掩码与视觉投影
 @auto_docstring(checkpoint="google/gemma-3-4b-it")
 @strict
+# Gemma3TextConfig：Gemma 3 文本解码器超参（滑动窗口 + softcapping）
 class Gemma3TextConfig(Gemma2Config, PreTrainedConfig):
     r"""
     query_pre_attn_scalar (`float`, *optional*, defaults to 256):
@@ -159,6 +162,7 @@ class Gemma3TextConfig(Gemma2Config, PreTrainedConfig):
 
 @auto_docstring(checkpoint="google/gemma-3-4b-it")
 @strict
+# Gemma3Config：Gemma 3 多模态联合配置（SigLIP 视觉塔 + 文本解码器）
 class Gemma3Config(PreTrainedConfig):
     r"""
     mm_tokens_per_image (`int`, *optional*, defaults to 256):
@@ -225,14 +229,17 @@ class Gemma3Config(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# Gemma3ModelOutputWithPast：含视觉隐状态的多模态主干输出 dataclass
 class Gemma3ModelOutputWithPast(PaligemmaModelOutputWithPast):
     pass
 
 
+# Gemma3CausalLMOutputWithPast：多模态因果 LM 输出 dataclass
 class Gemma3CausalLMOutputWithPast(PaliGemmaCausalLMOutputWithPast):
     pass
 
 
+# Gemma3TextScaledWordEmbedding：带 embed_scale 缩放的词嵌入层
 class Gemma3TextScaledWordEmbedding(nn.Embedding):
     """
     This module overrides nn.Embeddings' forward by multiplying with embeddings scale.
@@ -247,16 +254,19 @@ class Gemma3TextScaledWordEmbedding(nn.Embedding):
         return super().forward(input_ids) * self.embed_scale.to(self.weight.dtype)
 
 
+# Gemma3MLP：Gemma 3 前馈 MLP（GELU-tanh 激活）
 class Gemma3MLP(Gemma2MLP):
     def __init__(self, config: Gemma3TextConfig):
         super().__init__(config)
 
 
+# Gemma3RMSNorm：Gemma 3 专用 RMS LayerNorm
 class Gemma3RMSNorm(Gemma2RMSNorm):
     def __init__(self, dim: int, eps: float = 1e-6):
         super().__init__(dim=dim, eps=eps)
 
 
+# Gemma3RotaryEmbedding：Gemma 3 RoPE 旋转位置编码
 class Gemma3RotaryEmbedding(Gemma2RotaryEmbedding):
     def __init__(self, config: Gemma3TextConfig, device=None):
         nn.Module.__init__(self)
@@ -327,6 +337,7 @@ class Gemma3RotaryEmbedding(Gemma2RotaryEmbedding):
 
 
 # Weird way to inherit but otherwise the sliding window gets defined first and can't access `is_sliding`
+# Gemma3Attention：Gemma 3 多头自注意力（滑动窗口 + softcapping）
 class Gemma3Attention(Gemma2Attention):
     def __init__(self, config: Gemma3TextConfig, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -382,6 +393,7 @@ class Gemma3Attention(Gemma2Attention):
         return attn_output, attn_weights
 
 
+# Gemma3DecoderLayer：Gemma 3 解码器单层（自注意力 + MLP + RMSNorm）
 class Gemma3DecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Gemma3TextConfig, layer_idx: int):
         super().__init__()
@@ -431,6 +443,7 @@ class Gemma3DecoderLayer(GradientCheckpointingLayer):
 GEMMA3_START_DOCSTRING = None
 
 
+# Gemma3PreTrainedModel：Gemma 3 预训练基类与权重初始化
 class Gemma3PreTrainedModel(Gemma2PreTrainedModel):
     base_model_prefix = "model"
     input_modalities = ("image", "text")
@@ -456,6 +469,7 @@ class Gemma3PreTrainedModel(Gemma2PreTrainedModel):
                 init.copy_(getattr(module, f"{layer_type}_original_inv_freq"), curr_inv_freq)
 
 
+# _bidirectional_window_overlay：构造双向滑动窗口注意力掩码 overlay
 def _bidirectional_window_overlay(sliding_window: int) -> Callable[[int, int, int, int], bool]:
     """
     Enables a bidirectional mask within the sliding window.
@@ -469,6 +483,7 @@ def _bidirectional_window_overlay(sliding_window: int) -> Callable[[int, int, in
     return inner_mask
 
 
+# Gemma3TextModel：Gemma 3 纯文本解码器主干
 class Gemma3TextModel(Gemma2Model):
     config: Gemma3TextConfig
     input_modalities = ("text",)
@@ -551,6 +566,7 @@ class Gemma3TextModel(Gemma2Model):
         )
 
 
+# Gemma3ForCausalLM：Gemma 3 纯文本因果语言建模
 class Gemma3ForCausalLM(Gemma2ForCausalLM):
     config: Gemma3TextConfig
 
@@ -559,6 +575,7 @@ class Gemma3ForCausalLM(Gemma2ForCausalLM):
         self.model = Gemma3TextModel(config)
 
 
+# Gemma3MultiModalProjector：视觉特征投影到语言模型嵌入空间
 class Gemma3MultiModalProjector(nn.Module):
     def __init__(self, config: Gemma3Config):
         super().__init__()
@@ -595,6 +612,7 @@ class Gemma3MultiModalProjector(nn.Module):
         return projected_vision_outputs.type_as(vision_outputs)
 
 
+# get_block_sequence_ids_for_mask：按 token 类型生成 block 序列 ID 供掩码使用
 def get_block_sequence_ids_for_mask(token_type_ids: torch.Tensor, device: torch.device | None = None) -> torch.Tensor:
     # First find where a new image block starts: 1 if image and previous not image
     # The images cannot attend to future images, but can attend to all prev images and to itself bidirectionally
@@ -606,6 +624,7 @@ def get_block_sequence_ids_for_mask(token_type_ids: torch.Tensor, device: torch.
     return block_sequence_ids
 
 
+# create_masks_for_vision_model：为多模态输入构造因果/滑动窗口/双向掩码
 def create_masks_for_vision_model(
     config: PreTrainedConfig,
     inputs_embeds: torch.Tensor,
@@ -658,6 +677,7 @@ def create_masks_for_vision_model(
     }
 
 
+# Gemma3Model：SigLIP 视觉编码 + 文本解码器联合多模态主干
 class Gemma3Model(PaliGemmaModel):
     # we are filtering the logits/labels so we shouldn't divide the loss based on num_items_in_batch
     accepts_loss_kwargs = False
@@ -753,6 +773,7 @@ class Gemma3Model(PaliGemmaModel):
         )
 
 
+# Gemma3ForConditionalGeneration：Gemma 3 视觉-语言条件生成
 class Gemma3ForConditionalGeneration(PaliGemmaForConditionalGeneration):
     # we are filtering the logits/labels so we shouldn't divide the loss based on num_items_in_batch
     # Fix: https://github.com/huggingface/transformers/issues/40564
@@ -912,11 +933,13 @@ class Gemma3ForConditionalGeneration(PaliGemmaForConditionalGeneration):
 Gemma3TextForSequenceClassification is a text-only sequence classification model that works with Gemma3TextConfig.
 It uses the generic sequence classification implementation for efficiency and consistency."""
 )
+# Gemma3TextForSequenceClassification：Gemma 3 纯文本序列分类头
 class Gemma3TextForSequenceClassification(GenericForSequenceClassification, Gemma3PreTrainedModel):
     config: Gemma3TextConfig
     input_modalities = ("text",)
 
 
+# Gemma3ForSequenceClassification：Gemma 3 多模态序列分类头
 class Gemma3ForSequenceClassification(GenericForSequenceClassification, Gemma3PreTrainedModel):
     def forward(
         self,

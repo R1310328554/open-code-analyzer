@@ -54,8 +54,11 @@ from ...utils.deprecation import deprecate_kwarg
 from ...utils.generic import maybe_autocast, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
 from ..auto import AutoModel
+# modeling_gemma3 由 modular_gemma3.py 自动生成，此处为独立完整实现
 from .configuration_gemma3 import Gemma3Config, Gemma3TextConfig
 
+
+# Gemma 3 建模：SigLIP 视觉塔 + 文本解码器的多模态 VLM（pan-and-scan 支持）
 
 @auto_docstring(
     custom_intro="""
@@ -63,6 +66,7 @@ from .configuration_gemma3 import Gemma3Config, Gemma3TextConfig
     """
 )
 @dataclass
+# Gemma3ModelOutputWithPast：含视觉隐状态的多模态主干输出 dataclass
 class Gemma3ModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     image_hidden_states (`torch.FloatTensor`, *optional*):
@@ -79,6 +83,7 @@ class Gemma3ModelOutputWithPast(BaseModelOutputWithPast):
     """
 )
 @dataclass
+# Gemma3CausalLMOutputWithPast：多模态因果 LM 输出 dataclass
 class Gemma3CausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -103,6 +108,7 @@ class Gemma3CausalLMOutputWithPast(ModelOutput):
     image_hidden_states: torch.FloatTensor | None = None
 
 
+# Gemma3TextScaledWordEmbedding：带 embed_scale 缩放的词嵌入层
 class Gemma3TextScaledWordEmbedding(nn.Embedding):
     """
     This module overrides nn.Embeddings' forward by multiplying with embeddings scale.
@@ -117,6 +123,7 @@ class Gemma3TextScaledWordEmbedding(nn.Embedding):
         return super().forward(input_ids) * self.embed_scale.to(self.weight.dtype)
 
 
+# Gemma3MLP：Gemma 3 前馈 MLP（GELU-tanh 激活）
 class Gemma3MLP(nn.Module):
     def __init__(self, config: Gemma3TextConfig):
         super().__init__()
@@ -133,6 +140,7 @@ class Gemma3MLP(nn.Module):
         return down_proj
 
 
+# Gemma3RMSNorm：Gemma 3 专用 RMS LayerNorm
 class Gemma3RMSNorm(nn.Module):
     def __init__(self, dim: int, eps: float = 1e-6):
         super().__init__()
@@ -153,6 +161,7 @@ class Gemma3RMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.eps}"
 
 
+# Gemma3RotaryEmbedding：Gemma 3 RoPE 旋转位置编码
 class Gemma3RotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: Gemma3TextConfig, device=None):
@@ -225,6 +234,7 @@ class Gemma3RotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# rotate_half：RoPE 中将向量后半部分旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -233,6 +243,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -258,6 +269,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -270,6 +282,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -305,6 +318,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# Gemma3Attention：Gemma 3 多头自注意力（滑动窗口 + softcapping）
 class Gemma3Attention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -383,6 +397,7 @@ class Gemma3Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# Gemma3DecoderLayer：Gemma 3 解码器单层（自注意力 + MLP + RMSNorm）
 class Gemma3DecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Gemma3TextConfig, layer_idx: int):
         super().__init__()
@@ -430,6 +445,7 @@ class Gemma3DecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Gemma3PreTrainedModel：Gemma 3 预训练基类与权重初始化
 class Gemma3PreTrainedModel(PreTrainedModel):
     config: Gemma3Config
     base_model_prefix = "model"
@@ -468,6 +484,7 @@ class Gemma3PreTrainedModel(PreTrainedModel):
                 init.copy_(getattr(module, f"{layer_type}_original_inv_freq"), curr_inv_freq)
 
 
+# _bidirectional_window_overlay：构造双向滑动窗口注意力掩码 overlay
 def _bidirectional_window_overlay(sliding_window: int) -> Callable[[int, int, int, int], bool]:
     """
     Enables a bidirectional mask within the sliding window.
@@ -482,6 +499,7 @@ def _bidirectional_window_overlay(sliding_window: int) -> Callable[[int, int, in
 
 
 @auto_docstring
+# Gemma3TextModel：Gemma 3 纯文本解码器主干
 class Gemma3TextModel(Gemma3PreTrainedModel):
     config: Gemma3TextConfig
     input_modalities = ("text",)
@@ -579,6 +597,7 @@ class Gemma3TextModel(Gemma3PreTrainedModel):
 
 
 @auto_docstring
+# Gemma3ForCausalLM：Gemma 3 纯文本因果语言建模
 class Gemma3ForCausalLM(Gemma3PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
@@ -659,6 +678,7 @@ class Gemma3ForCausalLM(Gemma3PreTrainedModel, GenerationMixin):
         )
 
 
+# Gemma3MultiModalProjector：视觉特征投影到语言模型嵌入空间
 class Gemma3MultiModalProjector(nn.Module):
     def __init__(self, config: Gemma3Config):
         super().__init__()
@@ -695,6 +715,7 @@ class Gemma3MultiModalProjector(nn.Module):
         return projected_vision_outputs.type_as(vision_outputs)
 
 
+# get_block_sequence_ids_for_mask：按 token 类型生成 block 序列 ID 供掩码使用
 def get_block_sequence_ids_for_mask(token_type_ids: torch.Tensor, device: torch.device | None = None) -> torch.Tensor:
     # First find where a new image block starts: 1 if image and previous not image
     # The images cannot attend to future images, but can attend to all prev images and to itself bidirectionally
@@ -706,6 +727,7 @@ def get_block_sequence_ids_for_mask(token_type_ids: torch.Tensor, device: torch.
     return block_sequence_ids
 
 
+# create_masks_for_vision_model：为多模态输入构造因果/滑动窗口/双向掩码
 def create_masks_for_vision_model(
     config: PreTrainedConfig,
     inputs_embeds: torch.Tensor,
@@ -763,6 +785,7 @@ def create_masks_for_vision_model(
     The Base Gemma3 model which consists of a vision backbone and a language model without language modeling head.,
     """
 )
+# Gemma3Model：SigLIP 视觉编码 + 文本解码器联合多模态主干
 class Gemma3Model(Gemma3PreTrainedModel):
     # we are filtering the logits/labels so we shouldn't divide the loss based on num_items_in_batch
     accepts_loss_kwargs = False
@@ -922,6 +945,7 @@ class Gemma3Model(Gemma3PreTrainedModel):
     The Base Gemma3 model which consists of a vision backbone and a language model without language modeling head.,
     """
 )
+# Gemma3ForConditionalGeneration：Gemma 3 视觉-语言条件生成
 class Gemma3ForConditionalGeneration(Gemma3PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
     # we are filtering the logits/labels so we shouldn't divide the loss based on num_items_in_batch
@@ -1093,11 +1117,13 @@ class Gemma3ForConditionalGeneration(Gemma3PreTrainedModel, GenerationMixin):
 Gemma3TextForSequenceClassification is a text-only sequence classification model that works with Gemma3TextConfig.
 It uses the generic sequence classification implementation for efficiency and consistency."""
 )
+# Gemma3TextForSequenceClassification：Gemma 3 纯文本序列分类头
 class Gemma3TextForSequenceClassification(GenericForSequenceClassification, Gemma3PreTrainedModel):
     config: Gemma3TextConfig
     input_modalities = ("text",)
 
 
+# Gemma3ForSequenceClassification：Gemma 3 多模态序列分类头
 class Gemma3ForSequenceClassification(GenericForSequenceClassification, Gemma3PreTrainedModel):
     def forward(
         self,

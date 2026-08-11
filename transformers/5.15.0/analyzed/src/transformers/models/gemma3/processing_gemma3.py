@@ -20,6 +20,7 @@ from ...tokenization_utils_base import PreTokenizedInput, TextInput
 from ...utils import auto_docstring
 
 
+# Gemma3Processor：图像预处理与分词器联合的多模态输入组装
 class Gemma3ProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -37,6 +38,7 @@ class Gemma3ProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# Gemma3Processor：封装图像预处理、token 类型 ID 与 batch 组装的联合入口
 class Gemma3Processor(ProcessorMixin):
     valid_processor_kwargs = Gemma3ProcessorKwargs
 
