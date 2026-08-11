@@ -15,23 +15,8 @@
     "src/transformers/models/mgp_str/tokenization_mgp_str.py",
     "src/transformers/models/mimi/__init__.py",
     "src/transformers/models/mimi/configuration_mimi.py",
-    "src/transformers/models/mimi/modeling_mimi.py",
-    "src/transformers/models/mimo_v2_flash/__init__.py",
-    "src/transformers/models/mimo_v2_flash/configuration_mimo_v2_flash.py",
-    "src/transformers/models/mimo_v2_flash/modeling_mimo_v2_flash.py",
-    "src/transformers/models/mimo_v2_flash/modular_mimo_v2_flash.py",
-    "src/transformers/models/minicpm3/__init__.py",
-    "src/transformers/models/minicpm3/configuration_minicpm3.py",
-    "src/transformers/models/minicpm3/modeling_minicpm3.py",
-    "src/transformers/models/minicpm3/modular_minicpm3.py",
-    "src/transformers/models/minicpmv4_6/__init__.py",
-    "src/transformers/models/minicpmv4_6/configuration_minicpmv4_6.py",
-    "src/transformers/models/minicpmv4_6/image_processing_minicpmv4_6.py",
-    "src/transformers/models/minicpmv4_6/image_processing_pil_minicpmv4_6.py",
-    "src/transformers/models/minicpmv4_6/modeling_minicpmv4_6.py",
-    "src/transformers/models/minicpmv4_6/modular_minicpmv4_6.py",
-    "src/transformers/models/minicpmv4_6/processing_minicpmv4_6.py"
+    "src/transformers/models/mimi/modeling_mimi.py"
   ],
   "remaining_pending": 1299,
-  "done": 1350
+  "done": 1365
 }
