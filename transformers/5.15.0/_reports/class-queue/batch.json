@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T03:51:27Z",
   "files": [
-    "src/transformers/models/vjepa2/modeling_vjepa2.py",
-    "src/transformers/models/vjepa2/video_processing_vjepa2.py",
-    "src/transformers/models/voxtral/__init__.py",
-    "src/transformers/models/voxtral/configuration_voxtral.py",
-    "src/transformers/models/voxtral/modeling_voxtral.py",
-    "src/transformers/models/voxtral/modular_voxtral.py",
-    "src/transformers/models/voxtral/processing_voxtral.py",
-    "src/transformers/models/voxtral_realtime/__init__.py",
-    "src/transformers/models/voxtral_realtime/configuration_voxtral_realtime.py",
-    "src/transformers/models/voxtral_realtime/feature_extraction_voxtral_realtime.py",
-    "src/transformers/models/voxtral_realtime/modeling_voxtral_realtime.py",
-    "src/transformers/models/voxtral_realtime/modular_voxtral_realtime.py",
-    "src/transformers/models/voxtral_realtime/processing_voxtral_realtime.py",
-    "src/transformers/models/wav2vec2/__init__.py",
-    "src/transformers/models/wav2vec2/configuration_wav2vec2.py",
     "src/transformers/models/wav2vec2/feature_extraction_wav2vec2.py",
     "src/transformers/models/wav2vec2/modeling_wav2vec2.py",
     "src/transformers/models/wav2vec2/processing_wav2vec2.py",
@@ -33,5 +18,5 @@
     "src/transformers/models/wav2vec2_phoneme/tokenization_wav2vec2_phoneme.py"
   ],
   "remaining_pending": 279,
-  "done": 2370
+  "done": 2385
 }
