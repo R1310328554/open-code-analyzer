@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T02:36:50Z",
   "files": [
-    "src/transformers/models/perceiver/image_processing_pil_perceiver.py",
-    "src/transformers/models/perceiver/modeling_perceiver.py",
-    "src/transformers/models/perceiver/tokenization_perceiver.py",
-    "src/transformers/models/perception_lm/__init__.py",
-    "src/transformers/models/perception_lm/configuration_perception_lm.py",
-    "src/transformers/models/perception_lm/image_processing_perception_lm.py",
-    "src/transformers/models/perception_lm/modeling_perception_lm.py",
-    "src/transformers/models/perception_lm/modular_perception_lm.py",
-    "src/transformers/models/perception_lm/processing_perception_lm.py",
-    "src/transformers/models/perception_lm/video_processing_perception_lm.py",
-    "src/transformers/models/persimmon/__init__.py",
-    "src/transformers/models/persimmon/configuration_persimmon.py",
-    "src/transformers/models/persimmon/modeling_persimmon.py",
-    "src/transformers/models/phi/__init__.py",
-    "src/transformers/models/phi/configuration_phi.py",
     "src/transformers/models/phi/modeling_phi.py",
     "src/transformers/models/phi/modular_phi.py",
     "src/transformers/models/phi3/__init__.py",
@@ -33,5 +18,5 @@
     "src/transformers/models/phimoe/configuration_phimoe.py"
   ],
   "remaining_pending": 969,
-  "done": 1680
+  "done": 1695
 }
