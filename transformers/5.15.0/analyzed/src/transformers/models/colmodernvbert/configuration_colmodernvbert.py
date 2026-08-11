@@ -31,6 +31,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="ModernVBERT/colmodernvbert-merged")
 @strict
+# ColModernVBertConfig：vlm_config 默认 ModernVBert，embedding_dim 为多向量检索维度
 class ColModernVBertConfig(PreTrainedConfig):
     r"""
     Example:
@@ -50,6 +51,7 @@ class ColModernVBertConfig(PreTrainedConfig):
     embedding_dim: int = 128
     initializer_range: float = 0.02
 
+# __post_init__：将 dict vlm_config 实例化并同步 vocab_size
     def __post_init__(self, **kwargs):
         if self.vlm_config is None:
             self.vlm_config = CONFIG_MAPPING["modernvbert"]()
@@ -74,6 +76,7 @@ class ColModernVBertConfig(PreTrainedConfig):
 
         super().__post_init__(**kwargs)
 
+# get_text_config：代理到底层 VLM 的文本子配置
     def get_text_config(self, *args, **kwargs) -> PreTrainedConfig:
         return self.vlm_config.get_text_config(*args, **kwargs)
 

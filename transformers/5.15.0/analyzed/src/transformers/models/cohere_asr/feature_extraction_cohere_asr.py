@@ -35,6 +35,7 @@ logger = logging.get_logger(__name__)
 
 
 @requires(backends=("torch", "librosa"))
+# CohereAsrFeatureExtractor：16kHz 单声道 log-Mel 特征，与 torch.stft 数值对齐
 class CohereAsrFeatureExtractor(SequenceFeatureExtractor):
     r"""
     Constructs a CohereAsr feature extractor.
@@ -76,6 +77,7 @@ class CohereAsrFeatureExtractor(SequenceFeatureExtractor):
 
     model_input_names = ["input_features", "attention_mask"]
 
+# __init__：构建 librosa Mel 滤波器并缓存 hop/n_fft 等 STFT 参数
     def __init__(
         self,
         feature_size=128,
@@ -109,6 +111,7 @@ class CohereAsrFeatureExtractor(SequenceFeatureExtractor):
         )
         self.mel_filters = torch.from_numpy(mel_filters).to(torch.float32)
 
+# _find_split_point_energy：在搜索窗口内找能量最低的切分点
     def _find_split_point_energy(self, waveform: torch.Tensor, start_idx: int, end_idx: int) -> int:
         segment = waveform[start_idx:end_idx]
         if segment.shape[0] <= self.min_energy_window_samples:
@@ -125,6 +128,7 @@ class CohereAsrFeatureExtractor(SequenceFeatureExtractor):
                 quietest_idx = start_idx + i
         return quietest_idx
 
+# _split_audio_chunks_energy：超长音频按 max_audio_clip_s 与能量边界切分
     def _split_audio_chunks_energy(self, waveform: torch.Tensor) -> list[torch.Tensor]:
         chunk_size = max(1, int(round(self.max_audio_clip_s * self.sampling_rate)))
         boundary_context_size = max(1, int(round(self.overlap_chunk_second * self.sampling_rate)))
@@ -153,6 +157,7 @@ class CohereAsrFeatureExtractor(SequenceFeatureExtractor):
 
         return [waveform[start:end] for start, end in chunks_meta if end > start]
 
+# _apply_dither：按有效长度种子化的高斯抖动，提升数值鲁棒性
     def _apply_dither(self, waveform: torch.Tensor, audio_lengths: torch.Tensor) -> torch.Tensor:
         if self.dither <= 0:
             return waveform
@@ -166,6 +171,7 @@ class CohereAsrFeatureExtractor(SequenceFeatureExtractor):
             waveform[i, :valid_samples] += self.dither * noise
         return waveform
 
+# _torch_extract_fbank_features：Hann 窗 STFT → 功率谱 → log-Mel
     def _torch_extract_fbank_features(self, waveform, device="cpu"):
         # spectrogram
         window = torch.hann_window(self.win_length, periodic=False, device=device)
@@ -193,6 +199,7 @@ class CohereAsrFeatureExtractor(SequenceFeatureExtractor):
 
         return mel_spec
 
+# __call__：分块/填充/预加重/归一化，输出 input_features 与 attention_mask
     def __call__(
         self,
         raw_speech: np.ndarray | list[float] | list[np.ndarray] | list[list[float]],

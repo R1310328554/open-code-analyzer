@@ -28,6 +28,7 @@ from .configuration_colpali import ColPaliConfig
 
 
 @auto_docstring
+# ColPaliPreTrainedModel：ColVision 检索基类，支持 SDPA/Flash/Flex 注意力后端
 class ColPaliPreTrainedModel(PreTrainedModel):
     config: ColPaliConfig
     base_model_prefix = "model"
@@ -48,6 +49,7 @@ class ColPaliPreTrainedModel(PreTrainedModel):
     """
 )
 @dataclass
+# ColPaliForRetrievalOutput：检索 forward 输出（embeddings、image_hidden_states 等）
 class ColPaliForRetrievalOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -86,9 +88,11 @@ class ColPaliForRetrievalOutput(ModelOutput):
     [*ColPali: Efficient Document Retrieval with Vision Language Models*](https://huggingface.co/papers/2407.01449).
     """
 )
+# ColPaliForRetrieval：文档截图多向量嵌入 + ColBERT 迟交互检索
 class ColPaliForRetrieval(ColPaliPreTrainedModel):
     base_model_prefix = "vlm"
 
+# __init__：加载 PaliGemma VLM 并添加 embedding_dim 线性投影
     def __init__(self, config: ColPaliConfig):
         super().__init__(config)
         self.config = config
@@ -106,6 +110,7 @@ class ColPaliForRetrieval(ColPaliPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+# forward：VLM 前向 → 线性投影 → L2 归一化 → attention_mask 清零 padding 嵌入
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,

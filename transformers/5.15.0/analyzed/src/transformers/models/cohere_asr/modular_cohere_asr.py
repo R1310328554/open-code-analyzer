@@ -45,11 +45,13 @@ from ..moonshine.modeling_moonshine import (
 from .configuration_cohere_asr import CohereAsrConfig
 
 
+# CohereAsrDecoderMLP：继承 CLIPMLP 的两层前馈
 class CohereAsrDecoderMLP(CLIPMLP):
     pass
 
 
 # Modular automatically inherits RoPE, hence no inheritance for now
+# CohereAsrSelfAttention：模块化因果自注意力（替换 Moonshine RoPE）
 class CohereAsrSelfAttention(nn.Module):
     def __init__(self, config: CohereAsrConfig, layer_idx: int):
         super().__init__()
@@ -117,6 +119,7 @@ class CohereAsrSelfAttention(nn.Module):
 
 
 # Modular automatically inherits RoPE, hence no inheritance for now
+# CohereAsrCrossAttention：编码器-解码器交叉注意力，带 KV 缓存复用
 class CohereAsrCrossAttention(nn.Module):
     def __init__(self, config: CohereAsrConfig, layer_idx: int):
         super().__init__()
@@ -195,6 +198,7 @@ class CohereAsrCrossAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# CohereAsrDecoderLayer：自注意力 + 交叉注意力 + MLP
 class CohereAsrDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_idx=None):
         super().__init__()
@@ -247,11 +251,13 @@ class CohereAsrDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# CohereAsrPreTrainedModel：主输入改为 input_features
 class CohereAsrPreTrainedModel(MoonshinePreTrainedModel):
     main_input_name = "input_features"
     _keys_to_ignore_on_load_unexpected = [r"preprocessor\.featurizer\..*"]
 
 
+# CohereAsrDecoder：删除 rotary_emb，改用 nn.Embedding 固定位置编码
 class CohereAsrDecoder(MoonshineDecoder):
     _can_record_outputs = {
         "attentions": OutputRecorder(CohereAsrSelfAttention, index=1, layer_name="self_attn"),
@@ -344,6 +350,7 @@ class CohereAsrDecoder(MoonshineDecoder):
         )
 
 
+# CohereAsrModel：Parakeet 编码器 + 自定义 CohereAsrDecoder
 class CohereAsrModel(MoonshineModel):
     def __init__(self, config):
         super().__init__(config)
@@ -422,6 +429,7 @@ class CohereAsrModel(MoonshineModel):
         )
 
 
+# CohereAsrForConditionalGeneration：proj_out 线性头 + ASR 条件生成
 class CohereAsrForConditionalGeneration(MoonshineForConditionalGeneration):
     def __init__(self, config):
         super().__init__(config)

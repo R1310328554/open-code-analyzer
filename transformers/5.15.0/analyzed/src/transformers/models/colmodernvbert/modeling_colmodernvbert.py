@@ -32,6 +32,7 @@ from .configuration_colmodernvbert import ColModernVBertConfig
 
 
 @auto_docstring
+# ColModernVBertPreTrainedModel：图文多模态检索基类，支持 SDPA/Flash/Flex 注意力
 class ColModernVBertPreTrainedModel(PreTrainedModel):
     config: ColModernVBertConfig
     base_model_prefix = "model"
@@ -52,6 +53,7 @@ class ColModernVBertPreTrainedModel(PreTrainedModel):
     """
 )
 @dataclass
+# ColModernVBertForRetrievalOutput：检索 forward 输出（L2 归一化 embeddings 等）
 class ColModernVBertForRetrievalOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -88,9 +90,11 @@ class ColModernVBertForRetrievalOutput(ModelOutput):
     [*ColPali: Efficient Document Retrieval with Vision Language Models*](https://huggingface.co/papers/2407.01449).
     """
 )
+# ColModernVBertForRetrieval：ColPali 式 late interaction 文档页面向量检索
 class ColModernVBertForRetrieval(ColModernVBertPreTrainedModel):
     base_model_prefix = "vlm"
 
+# __init__：加载 VLM 骨干并添加 embedding_dim 线性投影层
     def __init__(self, config: ColModernVBertConfig):
         super().__init__(config)
         self.config = config
@@ -107,6 +111,7 @@ class ColModernVBertForRetrieval(ColModernVBertPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+# forward：VLM hidden states → 线性投影 → L2 归一化 → 掩码 padding 位置
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,

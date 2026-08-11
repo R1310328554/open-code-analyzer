@@ -43,6 +43,7 @@ from ..auto.modeling_auto import AutoModel
 from .configuration_cohere_asr import CohereAsrConfig
 
 
+# CohereAsrDecoderMLP：两层 FFN（fc1→激活→fc2）
 class CohereAsrDecoderMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -58,6 +59,7 @@ class CohereAsrDecoderMLP(nn.Module):
         return hidden_states
 
 
+# repeat_kv：GQA 下重复 KV 头匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -70,6 +72,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：标准 eager 多头注意力实现
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -96,6 +99,7 @@ def eager_attention_forward(
 
 
 # Modular automatically inherits RoPE, hence no inheritance for now
+# CohereAsrSelfAttention：解码器因果自注意力（无 RoPE，固定位置嵌入）
 class CohereAsrSelfAttention(nn.Module):
     def __init__(self, config: CohereAsrConfig, layer_idx: int):
         super().__init__()
@@ -163,6 +167,7 @@ class CohereAsrSelfAttention(nn.Module):
 
 
 # Modular automatically inherits RoPE, hence no inheritance for now
+# CohereAsrCrossAttention：编码器-解码器交叉注意力，KV 来自编码器输出
 class CohereAsrCrossAttention(nn.Module):
     def __init__(self, config: CohereAsrConfig, layer_idx: int):
         super().__init__()
@@ -241,6 +246,7 @@ class CohereAsrCrossAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# CohereAsrDecoderLayer：Pre-LN 自注意力 + 交叉注意力 + MLP 残差堆叠
 class CohereAsrDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_idx=None):
         super().__init__()
@@ -294,6 +300,7 @@ class CohereAsrDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# CohereAsrPreTrainedModel：ASR 基类，主输入 input_features，支持梯度检查点
 class CohereAsrPreTrainedModel(PreTrainedModel):
     config: CohereAsrConfig
     base_model_prefix = "model"
@@ -308,6 +315,7 @@ class CohereAsrPreTrainedModel(PreTrainedModel):
     _keys_to_ignore_on_load_unexpected = [r"preprocessor\.featurizer\..*"]
     # TODO arthur, how do we separate when it cross / self coming from different layer?
 
+# _get_feat_extract_output_lengths：根据 Parakeet 卷积下采样计算帧长度
     def _get_feat_extract_output_lengths(self, input_lengths: torch.LongTensor):
         """
         Computes the output length of the convolutional layers
@@ -320,6 +328,7 @@ class CohereAsrPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# CohereAsrDecoder：token 嵌入 + 固定位置嵌入 + N 层解码层
 class CohereAsrDecoder(CohereAsrPreTrainedModel):
     main_input_name = "input_ids"
     _can_record_outputs = {
@@ -423,6 +432,7 @@ class CohereAsrDecoder(CohereAsrPreTrainedModel):
 
 
 @auto_docstring
+# CohereAsrModel：AutoModel 编码器 + CohereAsrDecoder，seq2seq 骨干
 class CohereAsrModel(CohereAsrPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -437,6 +447,7 @@ class CohereAsrModel(CohereAsrPreTrainedModel):
     def set_input_embeddings(self, value):
         self.decoder.embed_tokens = value
 
+# freeze_encoder：冻结 Parakeet 编码器参数以微调解码器
     def freeze_encoder(self):
         """
         Calling this function will disable the gradient computation for the CohereAsr encoder so that its parameters will
@@ -524,6 +535,7 @@ class CohereAsrModel(CohereAsrPreTrainedModel):
         )
 
 
+# shift_tokens_right：teacher forcing 时将 labels 右移一位作为 decoder 输入
 def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start_token_id: int):
     """
     Shift input ids one token to the right.
@@ -545,6 +557,7 @@ def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start
     The CohereAsr Model with a language modeling head. Can be used for automatic speech recognition.
     """
 )
+# CohereAsrForConditionalGeneration：带 proj_out 的 ASR 生成模型，支持 generate 转写
 class CohereAsrForConditionalGeneration(CohereAsrPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"proj_out.weight": "model.decoder.embed_tokens.weight"}
 
@@ -658,6 +671,7 @@ class CohereAsrForConditionalGeneration(CohereAsrPreTrainedModel, GenerationMixi
             encoder_attentions=outputs.encoder_attentions,
         )
 
+# prepare_inputs_for_generation：吸收 processor 返回但未使用的 audio_chunk_index
     def prepare_inputs_for_generation(self, *args, audio_chunk_index=None, **kwargs):
         # audio_chunk_index is returned by the processor but not used by the model, absorb it here
         return super().prepare_inputs_for_generation(*args, **kwargs)

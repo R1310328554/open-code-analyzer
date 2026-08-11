@@ -30,6 +30,7 @@ _NO_SPACE_LANGS = {"ja", "zh"}
 logger = logging.get_logger(__name__)
 
 
+# CohereAsrProcessorKwargs：音频/文本/公共 kwargs 默认值（16kHz、longest 填充）
 class CohereAsrProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "audio_kwargs": {
@@ -48,6 +49,7 @@ class CohereAsrProcessorKwargs(ProcessingKwargs, total=False):
 
 @auto_docstring
 @requires(backends=("torch",))
+# CohereAsrProcessor：组合 feature_extractor + tokenizer，自动构造 decoder_input_ids
 class CohereAsrProcessor(ProcessorMixin):
     valid_processor_kwargs = CohereAsrProcessorKwargs
     skip_tensor_conversion = ["audio_chunk_index"]
@@ -55,6 +57,7 @@ class CohereAsrProcessor(ProcessorMixin):
     def __init__(self, feature_extractor, tokenizer):
         super().__init__(feature_extractor, tokenizer)
 
+# get_decoder_prompt_ids：按语言与标点开关构建转写上下文 prompt token
     def get_decoder_prompt_ids(self, language: str, punctuation: bool = True) -> list[int]:
         """Build the decoder prompt token IDs for the given language and punctuation settings."""
         if language not in LANGUAGES:
@@ -77,6 +80,7 @@ class CohereAsrProcessor(ProcessorMixin):
         return self.tokenizer.convert_tokens_to_ids(tokens)
 
     @auto_docstring
+# __call__：提取 Mel 特征并广播 decoder prompt 到 batch 维
     def __call__(
         self,
         audio: AudioInput,
@@ -114,6 +118,7 @@ class CohereAsrProcessor(ProcessorMixin):
 
         return model_inputs
 
+# decode：可选按 audio_chunk_index 将分块转写重新拼接为完整文本
     def decode(self, *args, audio_chunk_index=None, language=None, **kwargs):
         texts = self.tokenizer.decode(*args, **kwargs)
         if audio_chunk_index is None:
@@ -124,6 +129,7 @@ class CohereAsrProcessor(ProcessorMixin):
         return self._reassemble_chunk_texts(texts, audio_chunk_index, separator)
 
     @staticmethod
+# _reassemble_chunk_texts：按样本/块索引排序并 join 分块解码结果
     def _reassemble_chunk_texts(
         texts: list[str],
         audio_chunk_index: list[tuple[int, int | None]],
@@ -170,6 +176,7 @@ class CohereAsrProcessor(ProcessorMixin):
         return outputs
 
     @property
+# model_input_names：特征名 + labels（训练用）
     def model_input_names(self):
         feature_extractor_input_names = self.feature_extractor.model_input_names
         return feature_extractor_input_names + ["labels"]

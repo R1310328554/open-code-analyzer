@@ -37,6 +37,7 @@ if TYPE_CHECKING:
     from ...tokenization_utils_base import PreTokenizedInput
 
 
+# ColModernVBertProcessorKwargs：文本/图像/common 默认 kwargs
 class ColModernVBertProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -53,9 +54,11 @@ class ColModernVBertProcessorKwargs(ProcessingKwargs, total=False):
 
 @requires(backends=("torch",))
 @auto_docstring
+# ColModernVBertProcessor：管理 fake/image/global 特殊 token 与行列 patch 占位符
 class ColModernVBertProcessor(ProcessorMixin):
     valid_processor_kwargs = ColModernVBertProcessorKwargs
 
+# __init__：注册特殊 token、visual/query 前缀与 image_seq_len
     def __init__(
         self,
         image_processor,
@@ -110,6 +113,7 @@ class ColModernVBertProcessor(ProcessorMixin):
         self.query_augmentation_token = self.end_of_utterance_token
 
     @auto_docstring
+# __call__：图文联合 tokenize，支持 mm_token_type_ids 与 replacement offsets
     def __call__(
         self,
         images: ImageInput | list[ImageInput] | list[list[ImageInput]] = None,
@@ -174,6 +178,7 @@ class ColModernVBertProcessor(ProcessorMixin):
 
         return BatchFeature(data={**text_inputs, **image_inputs}, tensor_type=return_tensors)
 
+# prepare_inputs_layout：按 prompt 中 <image> 数量对齐图像 batch 结构
     def prepare_inputs_layout(
         self,
         images: ImageInput | None = None,
@@ -208,6 +213,7 @@ class ColModernVBertProcessor(ProcessorMixin):
 
         return images, text
 
+# validate_inputs：校验文本中 image token 数与传入图像数一致
     def validate_inputs(
         self,
         images: ImageInput | None = None,
@@ -233,6 +239,7 @@ class ColModernVBertProcessor(ProcessorMixin):
                     f"Found {sum(n_images_in_text)} {self.image_token} tokens in the text but no images were passed."
                 )
 
+# replace_image_token：按行列 patch 生成 global/row_col 图像占位符序列
     def replace_image_token(self, image_inputs: dict, image_idx: int, **kwargs) -> str:
         image_rows = [row for row_list in image_inputs["rows"] for row in row_list][image_idx]
         image_cols = [col for col_list in image_inputs["cols"] for col in col_list][image_idx]
@@ -262,6 +269,7 @@ class ColModernVBertProcessor(ProcessorMixin):
             )
             return text_split_images
 
+# create_mm_token_type_ids：标记多模态 token 区间（图像段 type=1）
     def create_mm_token_type_ids(self, input_ids: list, batch_image_seq_lengths: list[int]) -> list[list[int]]:
         # We have to iterate for each list separately because inputs
         # might be non-padded lists and we can't cast numpy on that!
@@ -283,6 +291,7 @@ class ColModernVBertProcessor(ProcessorMixin):
 
         return mm_token_type_ids
 
+# _get_num_multimodal_tokens：精确估算 split/global 图像占位 token 总数
     def _get_num_multimodal_tokens(self, image_sizes=None, **kwargs):
         """
         Computes the number of placeholder tokens needed for multimodal inputs with the given sizes.
@@ -326,6 +335,7 @@ class ColModernVBertProcessor(ProcessorMixin):
 
         return MultiModalData(**vision_data)
 
+# process_images：文档页图像 + visual prompt → pixel_values/input_ids
     def process_images(
         self,
         images: ImageInput | None = None,
@@ -392,6 +402,7 @@ class ColModernVBertProcessor(ProcessorMixin):
 
         return batch_doc
 
+# process_queries：查询文本 + 增强 suffix → 检索 query 嵌入输入
     def process_queries(
         self,
         text: TextInput | list[TextInput],
@@ -449,6 +460,7 @@ class ColModernVBertProcessor(ProcessorMixin):
 
         return batch_query
 
+# score_retrieval：查询/段落多向量嵌入的 MaxSim 相似度矩阵
     def score_retrieval(
         self,
         query_embeddings: Union["torch.Tensor", list["torch.Tensor"]],

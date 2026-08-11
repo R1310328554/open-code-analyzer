@@ -25,6 +25,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="vidore/colpali-v1.2")
 @strict
+# ColPaliConfig：vlm_config 默认 PaliGemma，text_config 同步自 VLM 文本塔
 class ColPaliConfig(PreTrainedConfig):
     r"""
     Example:
@@ -44,6 +45,7 @@ class ColPaliConfig(PreTrainedConfig):
     text_config: dict | PreTrainedConfig | None = None
     embedding_dim: int = 128
 
+# __post_init__：实例化 vlm_config/text_config 子配置对象
     def __post_init__(self, **kwargs):
         if self.vlm_config is None:
             self.vlm_config = CONFIG_MAPPING["paligemma"]()

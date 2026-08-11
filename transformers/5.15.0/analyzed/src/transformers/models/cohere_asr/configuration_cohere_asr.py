@@ -22,6 +22,7 @@ from ..parakeet.configuration_parakeet import ParakeetEncoderConfig
 
 @auto_docstring(checkpoint="CohereLabs/cohere-transcribe-03-2026")
 @strict
+# CohereAsrConfig：encoder_config 嵌套 ParakeetEncoderConfig，decoder 为 8 层 Transformer
 class CohereAsrConfig(PreTrainedConfig):
     r"""
     Example:
@@ -82,6 +83,7 @@ class CohereAsrConfig(PreTrainedConfig):
     tie_word_embeddings: bool = False
     head_dim: int | None = None
 
+# __post_init__：补全 head_dim/KV 头数，并将 dict 编码器配置实例化为 ParakeetEncoderConfig
     def __post_init__(self, **kwargs):
         if self.head_dim is None:
             self.head_dim = self.hidden_size // self.num_attention_heads

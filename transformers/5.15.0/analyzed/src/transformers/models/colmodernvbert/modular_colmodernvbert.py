@@ -38,6 +38,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="ModernVBERT/colmodernvbert-merged")
 @strict
+# ColModernVBertConfig：复用 ColQwen2 配置结构，vlm_config 指向 ModernVBert
 class ColModernVBertConfig(ColQwen2Config):
     r"""
     Example:
@@ -72,6 +73,7 @@ class ColModernVBertConfig(ColQwen2Config):
         super().__post_init__(**kwargs)
 
 
+# ColModernVBertProcessorKwargs：图像 row/col 信息与 channels_first 默认
 class ColModernVBertProcessorKwargs(Idefics3ProcessorKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -88,6 +90,7 @@ class ColModernVBertProcessorKwargs(Idefics3ProcessorKwargs, total=False):
 
 @requires(backends=("torch",))
 @auto_docstring
+# ColModernVBertProcessor：文档图像与查询的 ColPali 风格预处理
 class ColModernVBertProcessor(Idefics3Processor):
     def __init__(
         self,
@@ -123,6 +126,7 @@ class ColModernVBertProcessor(Idefics3Processor):
         self.query_prefix = query_prefix or ""
         self.query_augmentation_token = self.end_of_utterance_token
 
+# process_images：RGB 转换 + visual_prompt_prefix + 可选 suffix labels
     def process_images(
         self,
         images: ImageInput | None = None,
@@ -189,6 +193,7 @@ class ColModernVBertProcessor(Idefics3Processor):
 
         return batch_doc
 
+# process_queries：query_prefix + 查询增强 suffix token 填充
     def process_queries(
         self,
         text: TextInput | list[TextInput],
@@ -246,6 +251,7 @@ class ColModernVBertProcessor(Idefics3Processor):
 
         return batch_query
 
+# score_retrieval：ColBERT MaxSim 迟交互检索打分（分批 einsum）
     def score_retrieval(
         self,
         query_embeddings: Union["torch.Tensor", list["torch.Tensor"]],
@@ -312,6 +318,7 @@ class ColModernVBertProcessor(Idefics3Processor):
 
 
 @auto_docstring
+# ColModernVBertPreTrainedModel：继承 ColPali 预训练基类
 class ColModernVBertPreTrainedModel(ColPaliPreTrainedModel):
     config: ColModernVBertConfig
 
@@ -322,6 +329,7 @@ class ColModernVBertPreTrainedModel(ColPaliPreTrainedModel):
     """
 )
 @dataclass
+# ColModernVBertForRetrievalOutput：检索输出 dataclass
 class ColModernVBertForRetrievalOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -358,6 +366,7 @@ class ColModernVBertForRetrievalOutput(ModelOutput):
     [*ColPali: Efficient Document Retrieval with Vision Language Models*](https://huggingface.co/papers/2407.01449).
     """
 )
+# ColModernVBertForRetrieval：ModernVBert VLM + 投影层，生成归一化多向量嵌入
 class ColModernVBertForRetrieval(ColPaliForRetrieval):
     def __init__(self, config: ColModernVBertConfig):
         super().__init__(config)
