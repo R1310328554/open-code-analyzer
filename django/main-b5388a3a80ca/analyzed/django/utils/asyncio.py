@@ -1,10 +1,17 @@
-import os
+"""
+django.utils.asyncio — 异步上下文下的同步 API 防护。
+
+async_unsafe 装饰器在运行 event loop 时禁止调用阻塞 ORM 等。
+"""
+
+import osimport os
 from asyncio import get_running_loop
 from functools import wraps
 
 from django.core.exceptions import SynchronousOnlyOperation
 
 
+# 标记函数不可在 async 上下文直接调用
 def async_unsafe(message):
     """
     Decorator to mark functions as async-unsafe. Someone trying to access

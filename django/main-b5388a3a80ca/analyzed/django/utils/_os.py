@@ -1,4 +1,10 @@
-import os
+"""
+django.utils._os — 安全路径与目录创建工具。
+
+safe_join 防目录遍历；makedirs 补丁支持 parent_mode 与 chmod。
+"""
+
+import osimport os
 import tempfile
 from os.path import abspath, curdir, dirname, join, normcase, sep
 from pathlib import Path
@@ -10,6 +16,7 @@ from django.core.exceptions import SuspiciousFileOperation
 # https://github.com/python/cpython/pull/23901.
 # Python versions >= PY315 may include this fix, so periodic checks are needed
 # to remove this vendored copy of `makedirs` once solved upstream.
+# 递归建目录，中间层可用 parent_mode
 def makedirs(name, mode=0o777, exist_ok=False, *, parent_mode=None):
     """makedirs(name [, mode=0o777][, exist_ok=False][, parent_mode=None])
 
@@ -57,11 +64,13 @@ def makedirs(name, mode=0o777, exist_ok=False, *, parent_mode=None):
             raise
 
 
+# 各级目录均使用相同 mode
 def safe_makedirs(name, mode=0o777, exist_ok=False):
     """Create directories recursively with explicit `mode` on each level."""
     makedirs(name=name, mode=mode, exist_ok=exist_ok, parent_mode=mode)
 
 
+# 安全拼接路径，越界则 SuspiciousFileOperation
 def safe_join(base, *paths):
     """
     Join one or more path components to the base path component intelligently.
@@ -92,6 +101,7 @@ def safe_join(base, *paths):
     return final_path
 
 
+# 探测当前平台是否可创建符号链接
 def symlinks_supported():
     """
     Return whether or not creating symlinks are supported in the host platform
@@ -110,6 +120,7 @@ def symlinks_supported():
         return supported
 
 
+# 转为 pathlib.Path
 def to_path(value):
     """Convert value to a pathlib.Path instance, if not already a Path."""
     if isinstance(value, Path):

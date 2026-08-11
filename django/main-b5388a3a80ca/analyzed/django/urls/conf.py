@@ -1,4 +1,7 @@
-"""Functions for use in URLsconfs."""
+"""
+django.urls.conf — URLconf 辅助：include、path、re_path。
+
+Functions for use in URLsconfs."""Functions for use in URLsconfs."""
 
 from functools import partial
 from importlib import import_module
@@ -14,6 +17,7 @@ from .resolvers import (
 )
 
 
+# 嵌套 URLconf，返回 (module, app_name, namespace) 三元组
 def include(arg, namespace=None):
     app_name = None
     if isinstance(arg, tuple):
@@ -59,6 +63,7 @@ def include(arg, namespace=None):
     return (urlconf_module, app_name, namespace)
 
 
+# 内部工厂：Route/Regex 模式构建 URLPattern 或 URLResolver
 def _path(route, view, kwargs=None, name=None, Pattern=None):
     from django.views import View
 
@@ -92,5 +97,7 @@ def _path(route, view, kwargs=None, name=None, Pattern=None):
         )
 
 
+# path()：基于 RoutePattern 的路径语法
 path = partial(_path, Pattern=RoutePattern)
+# re_path()：基于正则的 URL 模式
 re_path = partial(_path, Pattern=RegexPattern)

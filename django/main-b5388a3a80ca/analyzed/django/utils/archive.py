@@ -1,4 +1,7 @@
 """
+django.utils.archive — tar/zip 归档解压工具。
+
+Based on "python-archive""""
 Based on "python-archive" -- https://pypi.org/project/python-archive/
 
 Copyright (c) 2010 Gary Wilson Jr. <gary.wilson@gmail.com> and contributors.
@@ -31,18 +34,21 @@ import zipfile
 from django.core.exceptions import SuspiciousOperation
 
 
+# 归档操作基类异常
 class ArchiveException(Exception):
     """
     Base exception class for all archive errors.
     """
 
 
+# 无法识别的归档格式
 class UnrecognizedArchiveFormat(ArchiveException):
     """
     Error raised when passed file is not a recognized archive format.
     """
 
 
+# 解压 tar 或 zip 到目标目录
 def extract(path, to_path):
     """
     Unpack the tar or zip file at the specified path to the directory
@@ -52,6 +58,7 @@ def extract(path, to_path):
         archive.extract(to_path)
 
 
+# 统一 API：按扩展名选择 Tar/Zip 实现
 class Archive:
     """
     The external API class that encapsulates an archive implementation.
@@ -99,6 +106,7 @@ class Archive:
         self._archive.close()
 
 
+# 归档基类：权限复制、路径校验与 leading dir 检测
 class BaseArchive:
     """
     Base Archive class. Implementations should inherit this class.
@@ -164,6 +172,7 @@ class BaseArchive:
         )
 
 
+# tarfile 解压实现
 class TarArchive(BaseArchive):
     def __init__(self, file):
         self._archive = tarfile.open(file)
@@ -207,6 +216,7 @@ class TarArchive(BaseArchive):
         self._archive.close()
 
 
+# zipfile 解压实现
 class ZipArchive(BaseArchive):
     def __init__(self, file):
         self._archive = zipfile.ZipFile(file)
@@ -242,6 +252,7 @@ class ZipArchive(BaseArchive):
         self._archive.close()
 
 
+# 扩展名 -> Archive 实现类
 extension_map = dict.fromkeys(
     (
         ".tar",

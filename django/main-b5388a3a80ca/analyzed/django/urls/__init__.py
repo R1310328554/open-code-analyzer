@@ -1,3 +1,8 @@
+"""
+django.urls — URL 路由与反向解析公共 API。
+
+导出 path/reverse/resolve、URLPattern/URLResolver 及转换器注册等。
+"""
 from .base import (
     clear_script_prefix,
     clear_url_caches,

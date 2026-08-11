@@ -1,4 +1,10 @@
-import functools
+"""
+django.urls.utils — URLconf 工具：视图导入与正则简化。
+
+get_callable 解析视图路径；simplify_regex 将模式转为可读路径。
+"""
+
+import functoolsimport functools
 import re
 from importlib import import_module
 
@@ -8,6 +14,7 @@ from django.utils.regex_helper import _lazy_re_compile
 from django.utils.translation import gettext as _
 
 
+# 将字符串路径或 callable 解析为视图函数
 @functools.cache
 def get_callable(lookup_view):
     """
@@ -59,6 +66,7 @@ def get_callable(lookup_view):
             return view_func
 
 
+# 'pkg.mod.view' -> ('pkg.mod', 'view')
 def get_mod_func(callback):
     # Convert 'django.views.news.stories.story_detail' to
     # ['django.views.news.stories', 'story_detail']
@@ -76,6 +84,7 @@ _NON_CAPTURING_GROUP_MATCHER = _lazy_re_compile(r"\(\?\:")
 _LITERAL_ESCAPE_RE = _lazy_re_compile(r"\\([./()_-])")
 
 
+# 移除未转义的正则元字符
 def replace_metacharacters(pattern):
     """Remove unescaped metacharacters from the pattern."""
     return re.sub(
@@ -112,6 +121,7 @@ def _find_groups(pattern, group_matcher):
             prev_end = end
 
 
+# 命名捕获组替换为 <name>
 def replace_named_groups(pattern):
     r"""
     Find named groups in `pattern` and replace them with the group name. E.g.,
@@ -129,6 +139,7 @@ def replace_named_groups(pattern):
     return pattern
 
 
+# 无名捕获组替换为 <var>
 def replace_unnamed_groups(pattern):
     r"""
     Find unnamed groups in `pattern` and replace them with '<var>'. E.g.,
@@ -145,6 +156,7 @@ def replace_unnamed_groups(pattern):
     return final_pattern + pattern[prev_end:]
 
 
+# 移除非捕获组 (?:…)
 def remove_non_capturing_groups(pattern):
     r"""
     Find non-capturing groups in the given `pattern` and remove them, e.g.
@@ -160,10 +172,12 @@ def remove_non_capturing_groups(pattern):
     return final_pattern + pattern[prev_end:]
 
 
+# 还原字面量转义
 def unescape_literals(pattern):
     return _LITERAL_ESCAPE_RE.sub(r"\1", pattern)
 
 
+# 递归提取 (callback, regex, namespace, name) 列表
 def extract_views_from_urlpatterns(urlpatterns, base="", namespace=None):
     """
     Return a list of views from a list of urlpatterns.
@@ -195,6 +209,7 @@ def extract_views_from_urlpatterns(urlpatterns, base="", namespace=None):
     return views
 
 
+# 将 urlpattern 正则简化为人类可读路径
 def simplify_regex(pattern):
     r"""
     Clean up urlpattern regexes into something more readable by humans. For

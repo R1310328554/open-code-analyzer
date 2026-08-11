@@ -1,9 +1,17 @@
-from django.template import Library, Node, TemplateSyntaxError
+"""
+django.templatetags.l10n — 模板本地化标签与过滤器。
+
+控制 context.use_l10n，强制数值/日期按 locale 或原始格式渲染。
+"""
+
+from django.template import Library, Node, TemplateSyntaxErrorfrom django.template import Library, Node, TemplateSyntaxError
 from django.utils import formats
 
+# 注册 l10n 模板标签库
 register = Library()
 
 
+# 过滤器：强制本地化渲染
 @register.filter(is_safe=False)
 def localize(value):
     """
@@ -12,6 +20,7 @@ def localize(value):
     return str(formats.localize(value, use_l10n=True))
 
 
+# 过滤器：强制非本地化（原始）渲染
 @register.filter(is_safe=False)
 def unlocalize(value):
     """
@@ -20,6 +29,7 @@ def unlocalize(value):
     return str(formats.localize(value, use_l10n=False))
 
 
+# {% localize on/off %}：块内切换 use_l10n
 class LocalizeNode(Node):
     def __init__(self, nodelist, use_l10n):
         self.nodelist = nodelist
@@ -36,6 +46,7 @@ class LocalizeNode(Node):
         return output
 
 
+# 标签：localize/endlocalize 块
 @register.tag("localize")
 def localize_tag(parser, token):
     """

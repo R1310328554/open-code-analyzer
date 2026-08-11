@@ -1,4 +1,10 @@
-from decimal import Decimal
+"""
+django.templatetags.i18n — 模板国际化标签与过滤器。
+
+提供 translate/blocktranslate、语言切换及 LANGUAGES 查询等 i18n 模板 API。
+"""
+
+from decimal import Decimalfrom decimal import Decimal
 
 from django.conf import settings
 from django.template import Library, Node, TemplateSyntaxError, Variable
@@ -7,9 +13,11 @@ from django.template.defaulttags import token_kwargs
 from django.utils import translation
 from django.utils.safestring import SafeData, SafeString, mark_safe
 
+# 注册 i18n 模板标签库
 register = Library()
 
 
+# {% get_available_languages as var %}：写入 settings.LANGUAGES 列表
 class GetAvailableLanguagesNode(Node):
     def __init__(self, variable):
         self.variable = variable
@@ -21,6 +29,7 @@ class GetAvailableLanguagesNode(Node):
         return ""
 
 
+# {% get_language_info for code as var %}：单语言信息字典
 class GetLanguageInfoNode(Node):
     def __init__(self, lang_code, variable):
         self.lang_code = lang_code
@@ -32,6 +41,7 @@ class GetLanguageInfoNode(Node):
         return ""
 
 
+# {% get_language_info_list for seq as var %}：批量语言信息
 class GetLanguageInfoListNode(Node):
     def __init__(self, languages, variable):
         self.languages = languages
@@ -51,6 +61,7 @@ class GetLanguageInfoListNode(Node):
         return ""
 
 
+# {% get_current_language as var %}：当前激活语言代码
 class GetCurrentLanguageNode(Node):
     def __init__(self, variable):
         self.variable = variable
@@ -60,6 +71,7 @@ class GetCurrentLanguageNode(Node):
         return ""
 
 
+# {% get_current_language_bidi as var %}：当前语言是否 RTL
 class GetCurrentLanguageBidiNode(Node):
     def __init__(self, variable):
         self.variable = variable
@@ -69,6 +81,7 @@ class GetCurrentLanguageBidiNode(Node):
         return ""
 
 
+# {% translate %} / {% trans %}：单字符串 gettext 翻译
 class TranslateNode(Node):
     child_nodelists = ()
 
@@ -101,6 +114,7 @@ class TranslateNode(Node):
             return value
 
 
+# {% blocktranslate %}：块级翻译，支持复数与 context
 class BlockTranslateNode(Node):
     def __init__(
         self,
@@ -204,6 +218,7 @@ class BlockTranslateNode(Node):
             return result
 
 
+# {% language %}：块内临时 override 语言
 class LanguageNode(Node):
     def __init__(self, nodelist, language):
         self.nodelist = nodelist
@@ -215,6 +230,7 @@ class LanguageNode(Node):
         return output
 
 
+# 标签：列出可用语言
 @register.tag("get_available_languages")
 def do_get_available_languages(parser, token):
     """
@@ -239,6 +255,7 @@ def do_get_available_languages(parser, token):
     return GetAvailableLanguagesNode(args[2])
 
 
+# 标签：查询单个语言元数据
 @register.tag("get_language_info")
 def do_get_language_info(parser, token):
     """
@@ -262,6 +279,7 @@ def do_get_language_info(parser, token):
     return GetLanguageInfoNode(parser.compile_filter(args[2]), args[4])
 
 
+# 标签：批量查询语言元数据
 @register.tag("get_language_info_list")
 def do_get_language_info_list(parser, token):
     """
@@ -289,27 +307,32 @@ def do_get_language_info_list(parser, token):
     return GetLanguageInfoListNode(parser.compile_filter(args[2]), args[4])
 
 
+# 过滤器：语言英文名称
 @register.filter
 def language_name(lang_code):
     return translation.get_language_info(lang_code)["name"]
 
 
+# 过滤器：当前 locale 下的语言名称
 @register.filter
 def language_name_translated(lang_code):
     english_name = translation.get_language_info(lang_code)["name"]
     return translation.gettext(english_name)
 
 
+# 过滤器：语言本地名称
 @register.filter
 def language_name_local(lang_code):
     return translation.get_language_info(lang_code)["name_local"]
 
 
+# 过滤器：语言是否双向（RTL）
 @register.filter
 def language_bidi(lang_code):
     return translation.get_language_info(lang_code)["bidi"]
 
 
+# 标签：当前语言代码
 @register.tag("get_current_language")
 def do_get_current_language(parser, token):
     """
@@ -332,6 +355,7 @@ def do_get_current_language(parser, token):
     return GetCurrentLanguageNode(args[2])
 
 
+# 标签：当前语言布局方向
 @register.tag("get_current_language_bidi")
 def do_get_current_language_bidi(parser, token):
     """
@@ -355,6 +379,7 @@ def do_get_current_language_bidi(parser, token):
     return GetCurrentLanguageBidiNode(args[2])
 
 
+# 标签：translate/trans 入口
 @register.tag("translate")
 @register.tag("trans")
 def do_translate(parser, token):
@@ -453,6 +478,7 @@ def do_translate(parser, token):
     return TranslateNode(message_string, noop, asvar, message_context)
 
 
+# 标签：blocktranslate/blocktrans 入口
 @register.tag("blocktranslate")
 @register.tag("blocktrans")
 def do_block_translate(parser, token):
@@ -596,6 +622,7 @@ def do_block_translate(parser, token):
     )
 
 
+# 标签：language/endlanguage 块
 @register.tag
 def language(parser, token):
     """

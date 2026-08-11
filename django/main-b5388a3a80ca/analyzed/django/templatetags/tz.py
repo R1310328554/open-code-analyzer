@@ -1,14 +1,22 @@
-import zoneinfo
+"""
+django.templatetags.tz — 模板时区标签与过滤器。
+
+localtime/utc/timezone 过滤器及 {% localtime %}/{% timezone %} 块控制 USE_TZ。
+"""
+
+import zoneinfoimport zoneinfo
 from datetime import UTC, datetime, tzinfo
 
 from django.template import Library, Node, TemplateSyntaxError
 from django.utils import timezone
 
+# 注册 tz 模板标签库
 register = Library()
 
 
 # HACK: datetime instances cannot be assigned new attributes. Define a subclass
 # in order to define new attributes in do_timezone().
+# 可附加 convert_to_local_time 标记的 datetime 子类
 class datetimeobject(datetime):
     pass
 
@@ -16,6 +24,7 @@ class datetimeobject(datetime):
 # Template filters
 
 
+# 过滤器：转为当前时区时间
 @register.filter
 def localtime(value):
     """
@@ -26,6 +35,7 @@ def localtime(value):
     return do_timezone(value, timezone.get_current_timezone())
 
 
+# 过滤器：转为 UTC
 @register.filter
 def utc(value):
     """
@@ -34,6 +44,7 @@ def utc(value):
     return do_timezone(value, UTC)
 
 
+# 过滤器：转为指定时区
 @register.filter("timezone")
 def do_timezone(value, arg):
     """
@@ -87,6 +98,7 @@ def do_timezone(value, arg):
 # Template tags
 
 
+# {% localtime on/off %}：块内切换 context.use_tz
 class LocalTimeNode(Node):
     """
     Template node class used by ``localtime_tag``.
@@ -104,6 +116,7 @@ class LocalTimeNode(Node):
         return output
 
 
+# {% timezone tz %}：块内 override 时区
 class TimezoneNode(Node):
     """
     Template node class used by ``timezone_tag``.
@@ -119,6 +132,7 @@ class TimezoneNode(Node):
         return output
 
 
+# {% get_current_timezone as var %}：当前时区名称
 class GetCurrentTimezoneNode(Node):
     """
     Template node class used by ``get_current_timezone_tag``.
@@ -132,6 +146,7 @@ class GetCurrentTimezoneNode(Node):
         return ""
 
 
+# 标签：localtime/endlocaltime 块
 @register.tag("localtime")
 def localtime_tag(parser, token):
     """
@@ -154,6 +169,7 @@ def localtime_tag(parser, token):
     return LocalTimeNode(nodelist, use_tz)
 
 
+# 标签：timezone/endtimezone 块
 @register.tag("timezone")
 def timezone_tag(parser, token):
     """
@@ -178,6 +194,7 @@ def timezone_tag(parser, token):
     return TimezoneNode(nodelist, tz)
 
 
+# 标签：获取当前时区名
 @register.tag("get_current_timezone")
 def get_current_timezone_tag(parser, token):
     """

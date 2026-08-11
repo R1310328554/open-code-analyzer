@@ -1,4 +1,10 @@
-from urllib.parse import unquote, urlencode, urlsplit, urlunsplit
+"""
+django.urls.base — URL 解析、反向解析与线程局部 URLconf。
+
+resolve/reverse 核心实现；set_urlconf 支持 per-request 路由表切换。
+"""
+
+from urllib.parse import unquote, urlencode, urlsplit, urlunsplitfrom urllib.parse import unquote, urlencode, urlsplit, urlunsplit
 
 from asgiref.local import Local
 
@@ -13,18 +19,22 @@ from .utils import get_callable
 # SCRIPT_NAME prefixes for each thread are stored here. If there's no entry for
 # the current thread (which is the only one we ever access), it is assumed to
 # be empty.
+# 线程局部 SCRIPT_NAME 前缀
 _prefixes = Local()
 
 # Overridden URLconfs for each thread are stored here.
+# 线程/async 任务局部 URLconf 覆盖
 _urlconfs = Local()
 
 
+# 解析路径为 ResolverMatch
 def resolve(path, urlconf=None):
     if urlconf is None:
         urlconf = get_urlconf()
     return get_resolver(urlconf).resolve(path)
 
 
+# 按 viewname/namespace 反向生成 URL，支持 query/fragment
 def reverse(
     viewname,
     urlconf=None,
@@ -108,15 +118,18 @@ def reverse(
     return resolved_url
 
 
+# 延迟求值的 reverse
 reverse_lazy = lazy(reverse, str)
 
 
+# 清空 resolver 与 get_callable 缓存
 def clear_url_caches():
     get_callable.cache_clear()
     _get_cached_resolver.cache_clear()
     get_ns_resolver.cache_clear()
 
 
+# 设置当前线程 SCRIPT_NAME 前缀
 def set_script_prefix(prefix):
     """
     Set the script prefix for the current thread.
@@ -126,6 +139,7 @@ def set_script_prefix(prefix):
     _prefixes.value = prefix
 
 
+# 读取当前 SCRIPT_NAME，默认 '/'
 def get_script_prefix():
     """
     Return the currently active script prefix. Useful for client code that
@@ -135,6 +149,7 @@ def get_script_prefix():
     return getattr(_prefixes, "value", "/")
 
 
+# 清除线程局部 SCRIPT 前缀
 def clear_script_prefix():
     """
     Unset the script prefix for the current thread.
@@ -145,6 +160,7 @@ def clear_script_prefix():
         pass
 
 
+# 覆盖或恢复当前 URLconf 模块
 def set_urlconf(urlconf_name):
     """
     Set the URLconf for the current thread or asyncio task (overriding the
@@ -158,6 +174,7 @@ def set_urlconf(urlconf_name):
             del _urlconfs.value
 
 
+# 读取被覆盖的 URLconf 名称
 def get_urlconf(default=None):
     """
     Return the root URLconf to use for the current thread or asyncio task if it
@@ -166,6 +183,7 @@ def get_urlconf(default=None):
     return getattr(_urlconfs, "value", default)
 
 
+# 路径可解析则返回 ResolverMatch，否则 False
 def is_valid_path(path, urlconf=None):
     """
     Return the ResolverMatch if the given path resolves against the default URL
@@ -178,6 +196,7 @@ def is_valid_path(path, urlconf=None):
         return False
 
 
+# 在指定语言下尝试反向翻译 URL
 def translate_url(url, lang_code):
     """
     Given a URL (absolute or relative), try to get its translated version in

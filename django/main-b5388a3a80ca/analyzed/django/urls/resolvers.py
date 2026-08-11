@@ -1,4 +1,7 @@
 """
+django.urls.resolvers — URL 模式匹配与 Resolver 实现。
+
+This module converts requested URLs to callback view functions."""
 This module converts requested URLs to callback view functions.
 
 URLResolver is the main class here. Its resolve() method takes a URL (as
@@ -31,6 +34,7 @@ from .exceptions import NoReverseMatch, Resolver404
 from .utils import get_callable
 
 
+# resolve 结果：视图、args/kwargs、命名空间与 route
 class ResolverMatch:
     def __init__(
         self,
@@ -105,6 +109,7 @@ class ResolverMatch:
         raise PicklingError(f"Cannot pickle {self.__class__.__qualname__}.")
 
 
+# 获取（缓存）根 URLResolver
 def get_resolver(urlconf=None):
     if urlconf is None:
         urlconf = settings.ROOT_URLCONF
@@ -112,11 +117,13 @@ def get_resolver(urlconf=None):
 
 
 @functools.cache
+# functools.cache 包装根 resolver 构造
 def _get_cached_resolver(urlconf=None):
     return URLResolver(RegexPattern(r"^/"), urlconf)
 
 
 @functools.cache
+# 构建带捕获组的命名空间 resolver
 def get_ns_resolver(ns_pattern, resolver, converters):
     # Build a namespaced resolver for the given parent URLconf pattern.
     # This makes it possible to have captured parameters in the parent
@@ -127,6 +134,7 @@ def get_ns_resolver(ns_pattern, resolver, converters):
     return URLResolver(RegexPattern(r"^/"), [ns_resolver])
 
 
+# 按当前语言编译 RegexPattern.regex
 class LocaleRegexDescriptor:
     def __get__(self, instance, cls=None):
         """
@@ -155,6 +163,7 @@ class LocaleRegexDescriptor:
             ) from e
 
 
+# URL 模式系统检查：斜杠、include 尾 $ 等
 class CheckURLMixin:
     def describe(self):
         """
@@ -189,6 +198,7 @@ class CheckURLMixin:
             return []
 
 
+# 正则 URL 模式：match/search 与 converters
 class RegexPattern(CheckURLMixin):
     regex = LocaleRegexDescriptor()
 
@@ -247,6 +257,7 @@ whitespace_set = frozenset(string.whitespace)
 
 
 @functools.lru_cache
+# 将 path 语法转为正则与 converter 映射
 def _route_to_regex(route, is_endpoint):
     """
     Convert a path pattern into a regular expression. Return the regular
@@ -290,6 +301,7 @@ def _route_to_regex(route, is_endpoint):
     return "".join(parts), converters
 
 
+# 按语言编译 RoutePattern.regex
 class LocaleRegexRouteDescriptor:
     def __get__(self, instance, cls=None):
         """
@@ -311,6 +323,7 @@ class LocaleRegexRouteDescriptor:
         return instance._regex_dict[language_code]
 
 
+# path() 路由模式：<converter:param> 语法
 class RoutePattern(CheckURLMixin):
     regex = LocaleRegexRouteDescriptor()
 
@@ -385,6 +398,7 @@ class RoutePattern(CheckURLMixin):
         return str(self._route)
 
 
+# i18n_patterns 语言前缀模式
 class LocalePrefixPattern:
     def __init__(self, prefix_default_language=True):
         self.prefix_default_language = prefix_default_language
@@ -419,6 +433,7 @@ class LocalePrefixPattern:
         return self.language_prefix
 
 
+# 叶子路由：pattern + callback + name
 class URLPattern:
     def __init__(self, pattern, callback, default_args=None, name=None):
         self.pattern = pattern
@@ -500,6 +515,7 @@ class URLPattern:
         return callback.__module__ + "." + callback.__qualname__
 
 
+# 嵌套 URLconf：聚合子模式、reverse_dict 与 namespace
 class URLResolver:
     def __init__(
         self, pattern, urlconf_name, default_kwargs=None, app_name=None, namespace=None

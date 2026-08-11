@@ -1,13 +1,21 @@
-from urllib.parse import quote, urljoin
+"""
+django.templatetags.static — 静态与媒体 URL 模板标签。
+
+{% static %} 拼接 STATIC_URL；{% get_static_prefix %} 等读取设置前缀。
+"""
+
+from urllib.parse import quote, urljoinfrom urllib.parse import quote, urljoin
 
 from django import template
 from django.apps import apps
 from django.utils.encoding import iri_to_uri
 from django.utils.html import conditional_escape
 
+# 注册 static 模板标签库
 register = template.Library()
 
 
+# 读取 settings 中 STATIC_URL/MEDIA_URL 等前缀
 class PrefixNode(template.Node):
     def __repr__(self):
         return "<PrefixNode for %r>" % self.name
@@ -56,6 +64,7 @@ class PrefixNode(template.Node):
         return ""
 
 
+# 标签：输出或绑定 STATIC_URL
 @register.tag
 def get_static_prefix(parser, token):
     """
@@ -74,6 +83,7 @@ def get_static_prefix(parser, token):
     return PrefixNode.handle_token(parser, token, "STATIC_URL")
 
 
+# 标签：输出或绑定 MEDIA_URL
 @register.tag
 def get_media_prefix(parser, token):
     """
@@ -92,6 +102,7 @@ def get_media_prefix(parser, token):
     return PrefixNode.handle_token(parser, token, "MEDIA_URL")
 
 
+# {% static path %}：拼接静态资源绝对 URL
 class StaticNode(template.Node):
     child_nodelists = ()
 
@@ -152,6 +163,7 @@ class StaticNode(template.Node):
         return cls(varname, path)
 
 
+# 标签：static 入口
 @register.tag("static")
 def do_static(parser, token):
     """
@@ -171,6 +183,7 @@ def do_static(parser, token):
     return StaticNode.handle_token(parser, token)
 
 
+# Python API：给定相对路径返回静态 URL
 def static(path):
     """
     Given a relative path to a static asset, return the absolute path to the
