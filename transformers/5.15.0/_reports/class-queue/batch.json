@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T04:03:25Z",
-  "files": [
-    "src/transformers/pipelines/base.py",
-    "src/transformers/pipelines/depth_estimation.py",
-    "src/transformers/pipelines/document_question_answering.py",
-    "src/transformers/pipelines/feature_extraction.py",
-    "src/transformers/pipelines/fill_mask.py",
-    "src/transformers/pipelines/image_classification.py",
-    "src/transformers/pipelines/image_feature_extraction.py",
-    "src/transformers/pipelines/image_segmentation.py",
-    "src/transformers/pipelines/image_text_to_text.py",
-    "src/transformers/pipelines/keypoint_matching.py",
-    "src/transformers/pipelines/mask_generation.py",
-    "src/transformers/pipelines/object_detection.py",
-    "src/transformers/pipelines/pt_utils.py",
-    "src/transformers/pipelines/table_question_answering.py",
-    "src/transformers/pipelines/text_classification.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 159,
-  "done": 2505
+  "done": 2520
 }
