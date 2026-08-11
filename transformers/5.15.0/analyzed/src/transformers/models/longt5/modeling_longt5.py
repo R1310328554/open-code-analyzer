@@ -47,10 +47,13 @@ from ...utils import (
 from .configuration_longt5 import LongT5Config
 
 
+# LongT5 建模：局部 block 注意力 + T5 编解码 seq2seq 长文档理解
+
 logger = logging.get_logger(__name__)
 
 
 # Copied from transformers.models.t5.modeling_t5.eager_attention_forward
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -86,6 +89,7 @@ def eager_attention_forward(
 # TODO: Update before the merge
 
 
+# _pad_to_multiple：沿指定维将张量 padding 到 block_len 整数倍
 def _pad_to_multiple(x: torch.Tensor, block_len: int, dim: int, pad_value: int = 0) -> torch.Tensor:
     """Pad a tensor so that a sequence length will be a multiple of `block_len`"""
     pad_len = -x.shape[dim] % block_len
@@ -102,6 +106,7 @@ def _pad_to_multiple(x: torch.Tensor, block_len: int, dim: int, pad_value: int =
     return x
 
 
+# _split_into_blocks：沿指定维将序列切分为固定长度 block
 def _split_into_blocks(x: torch.Tensor, block_len: int, dim: int) -> torch.Tensor:
     """Split an input tensor into blocks of a given `block_len` along the given `dim`. If the dimension length
     is not a multiple of `block_len`, it will be padded first with selected `pad_value`.
@@ -117,6 +122,7 @@ def _split_into_blocks(x: torch.Tensor, block_len: int, dim: int) -> torch.Tenso
     return x.reshape(output_shape)
 
 
+# _concatenate_3_blocks：拼接当前 block 与左右邻 block 供局部注意力使用
 def _concatenate_3_blocks(x: torch.Tensor, block_dim: int, sequence_dim: int, pad_value: int = 0) -> torch.Tensor:
     """Concatenate three consecutive blocks for each input block for local attention.
 
@@ -142,6 +148,7 @@ def _concatenate_3_blocks(x: torch.Tensor, block_dim: int, sequence_dim: int, pa
     return torch.cat(blocks_list, dim=sequence_dim)
 
 
+# _make_3block_relative_position_ids：生成三 block 局部相对位置 id
 def _make_3block_relative_position_ids(block_len: int) -> torch.Tensor:
     """Makes 3-blocked relative position ids for local attention."""
     position_ids = torch.arange(3 * block_len, dtype=torch.int32)
@@ -151,6 +158,7 @@ def _make_3block_relative_position_ids(block_len: int) -> torch.Tensor:
     return relative_position_ids
 
 
+# _mask_local_attention_mask：将局部注意力掩码限制在 block 邻域内
 def _mask_local_attention_mask(local_attention_mask: torch.Tensor, block_len: int) -> torch.Tensor:
     """Mask local attention mask to enforce that tokens are not allowed to attend tokens farther than ``local_radius."""
     relative_position_ids = _make_3block_relative_position_ids(block_len)
@@ -160,6 +168,7 @@ def _mask_local_attention_mask(local_attention_mask: torch.Tensor, block_len: in
     return torch.logical_and(local_attention_mask, locality_mask)
 
 
+# _get_local_attention_mask：由全局 attention_mask 构造局部 block 注意力掩码
 def _get_local_attention_mask(attention_mask: torch.Tensor, block_len: int, device: torch.device) -> torch.Tensor:
     """Prepare attention mask to be applied for a local attention."""
     # [batch_size, num_blocks, block_len]
@@ -176,6 +185,7 @@ def _get_local_attention_mask(attention_mask: torch.Tensor, block_len: int, devi
     return local_attention_mask.unsqueeze(1).to(device)
 
 
+# _make_global_fixed_block_ids：为瞬态全局注意力生成固定 block 全局 token id
 def _make_global_fixed_block_ids(
     attention_mask: torch.Tensor, global_block_size: int
 ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -225,6 +235,7 @@ def _make_global_fixed_block_ids(
     return global_block_ids.type(torch.int), global_segment_ids.type(torch.int)
 
 
+# _make_side_relative_position_ids：生成 side 相对位置 id（瞬态全局模式）
 def _make_side_relative_position_ids(attention_mask: torch.Tensor, global_block_size: int) -> torch.Tensor:
     """Create the relative position tensor for local -> global attention."""
     block_ids, global_segment_ids = _make_global_fixed_block_ids(attention_mask, global_block_size)
@@ -234,6 +245,7 @@ def _make_side_relative_position_ids(attention_mask: torch.Tensor, global_block_
     return side_relative_position.type(torch.int64)
 
 
+# _create_global_aggregates：将 block 内 token 聚合为全局 token 表示
 def _create_global_aggregates(
     hidden_states: torch.Tensor, block_ids: torch.Tensor, global_seq_len: int
 ) -> torch.Tensor:
@@ -247,6 +259,7 @@ def _create_global_aggregates(
 
 
 # Copied from transformers.models.t5.modeling_t5.T5LayerNorm with T5->LongT5
+# LongT5LayerNorm：LongT5 RMS 层归一化（无 bias）
 class LongT5LayerNorm(nn.Module):
     def __init__(self, hidden_size, eps=1e-6):
         """
@@ -273,6 +286,7 @@ class LongT5LayerNorm(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5DenseActDense with T5->LongT5
+# LongT5DenseActDense：LongT5 标准 ReLU 前馈 MLP（wi_0 + wi_1 + wo）
 class LongT5DenseActDense(nn.Module):
     def __init__(self, config: LongT5Config):
         super().__init__()
@@ -295,6 +309,7 @@ class LongT5DenseActDense(nn.Module):
         return hidden_states
 
 
+# LongT5DenseGatedActDense：LongT5 门控 GELU 前馈 MLP（gated-gelu）
 class LongT5DenseGatedActDense(nn.Module):
     def __init__(self, config: LongT5Config):
         super().__init__()
@@ -314,6 +329,7 @@ class LongT5DenseGatedActDense(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5LayerFF with T5->LongT5
+# LongT5LayerFF：LongT5 前馈子层（LayerNorm + Dense + 残差）
 class LongT5LayerFF(nn.Module):
     def __init__(self, config: LongT5Config):
         super().__init__()
@@ -333,6 +349,7 @@ class LongT5LayerFF(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5Attention with T5->LongT5
+# LongT5Attention：LongT5 注意力基类（相对位置 bias + 多头）
 class LongT5Attention(nn.Module):
     def __init__(
         self,
@@ -529,6 +546,7 @@ class LongT5Attention(nn.Module):
         return attn_output, position_bias, attn_weights
 
 
+# LongT5LocalAttention：LongT5 局部 block 邻域自注意力
 class LongT5LocalAttention(nn.Module):
     def __init__(self, config: LongT5Config, has_relative_attention_bias: bool = False) -> None:
         super().__init__()
@@ -701,6 +719,7 @@ class LongT5LocalAttention(nn.Module):
         return outputs
 
 
+# LongT5TransientGlobalAttention：LongT5 瞬态全局 block 聚合自注意力
 class LongT5TransientGlobalAttention(nn.Module):
     def __init__(self, config: LongT5Config, has_relative_attention_bias: bool = False) -> None:
         super().__init__()
@@ -941,6 +960,7 @@ class LongT5TransientGlobalAttention(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5LayerSelfAttention with T5->LongT5
+# LongT5LayerSelfAttention：LongT5 标准全局自注意力层
 class LongT5LayerSelfAttention(nn.Module):
     def __init__(self, config, has_relative_attention_bias=False, layer_idx: int | None = None):
         super().__init__()
@@ -973,6 +993,7 @@ class LongT5LayerSelfAttention(nn.Module):
         return attention_output, position_bias, attn_weights
 
 
+# LongT5LayerLocalSelfAttention：LongT5 局部自注意力层（encoder local 模式）
 class LongT5LayerLocalSelfAttention(nn.Module):
     """Local self attention used in encoder"""
 
@@ -1002,6 +1023,7 @@ class LongT5LayerLocalSelfAttention(nn.Module):
         return outputs
 
 
+# LongT5LayerTransientGlobalSelfAttention：LongT5 瞬态全局自注意力层
 class LongT5LayerTransientGlobalSelfAttention(nn.Module):
     """Transient-Global self attention used in encoder"""
 
@@ -1034,6 +1056,7 @@ class LongT5LayerTransientGlobalSelfAttention(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5LayerCrossAttention with T5->LongT5
+# LongT5LayerCrossAttention：LongT5 交叉注意力层（decoder 对 encoder）
 class LongT5LayerCrossAttention(nn.Module):
     def __init__(self, config, layer_idx: int | None = None):
         super().__init__()
@@ -1065,6 +1088,7 @@ class LongT5LayerCrossAttention(nn.Module):
         return layer_output, position_bias, attn_weights
 
 
+# LongT5Block：LongT5 单层（自/交叉注意力 + FFN，支持梯度检查点）
 class LongT5Block(GradientCheckpointingLayer):
     def __init__(self, config, has_relative_attention_bias=False, layer_idx: int | None = None):
         super().__init__()
@@ -1153,6 +1177,7 @@ class LongT5Block(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# LongT5PreTrainedModel：LongT5 预训练基类与权重初始化
 class LongT5PreTrainedModel(PreTrainedModel):
     config: LongT5Config
     base_model_prefix = "transformer"
@@ -1239,6 +1264,7 @@ class LongT5PreTrainedModel(PreTrainedModel):
         return shifted_input_ids
 
 
+# LongT5Stack：LongT5 多层 Block 堆叠（encoder 或 decoder）
 class LongT5Stack(LongT5PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1427,6 +1453,7 @@ class LongT5Stack(LongT5PreTrainedModel):
 
 
 @auto_docstring
+# LongT5Model：LongT5 编码器-解码器 seq2seq 主干
 class LongT5Model(LongT5PreTrainedModel):
     _keys_to_ignore_on_load_unexpected = [
         r"decoder.block.0.layer.1.EncDecAttention.relative_attention_bias.weight",
@@ -1583,6 +1610,7 @@ class LongT5Model(LongT5PreTrainedModel):
     LONGT5 Model with a `language modeling` head on top.
     """
 )
+# LongT5ForConditionalGeneration：LongT5 条件生成（翻译/摘要等）
 class LongT5ForConditionalGeneration(LongT5PreTrainedModel, GenerationMixin):
     _keys_to_ignore_on_load_unexpected = [
         r"decoder.block.0.layer.1.EncDecAttention.relative_attention_bias.weight",
@@ -1768,6 +1796,7 @@ class LongT5ForConditionalGeneration(LongT5PreTrainedModel, GenerationMixin):
 
 
 @auto_docstring
+# LongT5EncoderModel：LongT5 仅编码器模型
 class LongT5EncoderModel(LongT5PreTrainedModel):
     _tied_weights_keys = {
         "encoder.embed_tokens.weight": "shared.weight",

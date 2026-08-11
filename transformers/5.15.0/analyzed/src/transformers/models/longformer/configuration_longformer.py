@@ -19,8 +19,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# Longformer 配置：局部滑动窗口 + 全局 token 长文档 Transformer 超参
+
+# LongformerConfig：allenai/longformer-base-4096 局部+全局滑动窗口长文档默认超参
 @auto_docstring(checkpoint="allenai/longformer-base-4096")
 @strict
+# LongformerConfig：allenai/longformer-base-4096 局部+全局滑动窗口长文档 Transformer 超参
 class LongformerConfig(PreTrainedConfig):
     r"""
     attention_window (`int` or `list[int]`, *optional*, defaults to 512):

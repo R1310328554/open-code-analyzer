@@ -29,6 +29,8 @@ from ...utils import ModelOutput, auto_docstring, logging
 from .configuration_longformer import LongformerConfig
 
 
+# Longformer 建模：局部+全局混合注意力长文档编码与下游任务头
+
 logger = logging.get_logger(__name__)
 
 
@@ -38,6 +40,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# LongformerBaseModelOutput：Longformer 主干输出 dataclass（含局部/全局注意力权重）
 class LongformerBaseModelOutput(ModelOutput):
     r"""
     attentions (`tuple(torch.FloatTensor)`, *optional*, returned when `output_attentions=True` is passed or when `config.output_attentions=True`):
@@ -76,6 +79,7 @@ class LongformerBaseModelOutput(ModelOutput):
     """
 )
 @dataclass
+# LongformerBaseModelOutputWithPooling：Longformer 主干输出 dataclass（含 pooler 与注意力）
 class LongformerBaseModelOutputWithPooling(ModelOutput):
     r"""
     pooler_output (`torch.FloatTensor` of shape `(batch_size, hidden_size)`):
@@ -119,6 +123,7 @@ class LongformerBaseModelOutputWithPooling(ModelOutput):
     """
 )
 @dataclass
+# LongformerMaskedLMOutput：Longformer 掩码语言建模输出 dataclass
 class LongformerMaskedLMOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -162,6 +167,7 @@ class LongformerMaskedLMOutput(ModelOutput):
     """
 )
 @dataclass
+# LongformerQuestionAnsweringModelOutput：Longformer 抽取式问答输出 dataclass
 class LongformerQuestionAnsweringModelOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -204,6 +210,7 @@ class LongformerQuestionAnsweringModelOutput(ModelOutput):
     """
 )
 @dataclass
+# LongformerSequenceClassifierOutput：Longformer 序列分类输出 dataclass
 class LongformerSequenceClassifierOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -247,6 +254,7 @@ class LongformerSequenceClassifierOutput(ModelOutput):
     """
 )
 @dataclass
+# LongformerMultipleChoiceModelOutput：Longformer 多选分类输出 dataclass
 class LongformerMultipleChoiceModelOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape *(1,)*, *optional*, returned when `labels` is provided):
@@ -292,6 +300,7 @@ class LongformerMultipleChoiceModelOutput(ModelOutput):
     """
 )
 @dataclass
+# LongformerTokenClassifierOutput：Longformer 词元分类输出 dataclass
 class LongformerTokenClassifierOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -329,6 +338,7 @@ class LongformerTokenClassifierOutput(ModelOutput):
     global_attentions: tuple[torch.FloatTensor, ...] | None = None
 
 
+# _get_question_end_index：定位 QA 输入中问题段结束位置（SEP 前/后）
 def _get_question_end_index(input_ids, sep_token_id):
     """
     Computes the index of the first occurrence of `sep_token_id`.
@@ -345,6 +355,7 @@ def _get_question_end_index(input_ids, sep_token_id):
     return sep_token_indices.view(batch_size, 3, 2)[:, 0, 1]
 
 
+# _compute_global_attention_mask：根据 SEP 位置生成全局注意力掩码
 def _compute_global_attention_mask(input_ids, sep_token_id, before_sep_token=True):
     """
     Computes global attention mask by putting attention on all tokens before `sep_token_id` if `before_sep_token is
@@ -365,6 +376,7 @@ def _compute_global_attention_mask(input_ids, sep_token_id, before_sep_token=Tru
     return attention_mask
 
 
+# create_position_ids_from_input_ids：由 input_ids 生成位置 id（padding 处置零）
 def create_position_ids_from_input_ids(input_ids, padding_idx):
     """
     Replace non-padding symbols with their position numbers. Position numbers begin at padding_idx+1. Padding symbols
@@ -381,6 +393,7 @@ def create_position_ids_from_input_ids(input_ids, padding_idx):
     return incremental_indices.long() + padding_idx
 
 
+# LongformerEmbeddings：词嵌入 + 位置嵌入 + LayerNorm + Dropout
 class LongformerEmbeddings(nn.Module):
     """
     Same as BertEmbeddings with a tiny tweak for positional embeddings indexing.
@@ -443,6 +456,7 @@ class LongformerEmbeddings(nn.Module):
         return position_ids.unsqueeze(0).expand(input_shape)
 
 
+# LongformerSelfAttention：Longformer 局部窗口 + 全局 token 混合自注意力
 class LongformerSelfAttention(nn.Module):
     def __init__(self, config, layer_id):
         super().__init__()
@@ -1058,6 +1072,7 @@ class LongformerSelfAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertSelfOutput
+# LongformerSelfOutput：自注意力输出投影 + 残差 + LayerNorm
 class LongformerSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1072,6 +1087,7 @@ class LongformerSelfOutput(nn.Module):
         return hidden_states
 
 
+# LongformerAttention：封装 LongformerSelfAttention 与 SelfOutput
 class LongformerAttention(nn.Module):
     def __init__(self, config, layer_id=0):
         super().__init__()
@@ -1101,6 +1117,7 @@ class LongformerAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertIntermediate
+# LongformerIntermediate：Transformer FFN 中间层（升维 + 激活）
 class LongformerIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1117,6 +1134,7 @@ class LongformerIntermediate(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOutput
+# LongformerOutput：Transformer FFN 输出层（降维 + 残差 + LayerNorm）
 class LongformerOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1131,6 +1149,7 @@ class LongformerOutput(nn.Module):
         return hidden_states
 
 
+# LongformerLayer：Longformer 单层（自注意力 + FFN，支持梯度检查点）
 class LongformerLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_id=0):
         super().__init__()
@@ -1172,6 +1191,7 @@ class LongformerLayer(GradientCheckpointingLayer):
         return layer_output
 
 
+# LongformerEncoder：多层 LongformerLayer 堆叠编码器
 class LongformerEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1246,6 +1266,7 @@ class LongformerEncoder(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPooler
+# LongformerPooler：取 [CLS] 隐状态经线性+Tanh 得到句向量
 class LongformerPooler(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1262,6 +1283,7 @@ class LongformerPooler(nn.Module):
 
 
 # Copied from transformers.models.roberta.modeling_roberta.RobertaLMHead with Roberta->Longformer
+# LongformerLMHead：掩码 LM 预测头（dense + 解码器权重绑定）
 class LongformerLMHead(nn.Module):
     """Longformer Head for masked language modeling."""
 
@@ -1285,6 +1307,7 @@ class LongformerLMHead(nn.Module):
 
 
 @auto_docstring
+# LongformerPreTrainedModel：Longformer 预训练基类与权重初始化
 class LongformerPreTrainedModel(PreTrainedModel):
     config: LongformerConfig
     base_model_prefix = "longformer"
@@ -1293,6 +1316,7 @@ class LongformerPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# LongformerModel：Longformer 编码器主干（支持 global_attention_mask）
 class LongformerModel(LongformerPreTrainedModel):
     """
     This class copied code from [`RobertaModel`] and overwrote standard self-attention with longformer self-attention
@@ -1539,6 +1563,7 @@ class LongformerModel(LongformerPreTrainedModel):
 
 
 @auto_docstring
+# LongformerForMaskedLM：Longformer 掩码语言建模
 class LongformerForMaskedLM(LongformerPreTrainedModel):
     _tied_weights_keys = {
         "lm_head.decoder.weight": "longformer.embeddings.word_embeddings.weight",
@@ -1660,6 +1685,7 @@ class LongformerForMaskedLM(LongformerPreTrainedModel):
     pooled output) e.g. for GLUE tasks.
     """
 )
+# LongformerForSequenceClassification：Longformer 序列分类
 class LongformerForSequenceClassification(LongformerPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1763,6 +1789,7 @@ class LongformerForSequenceClassification(LongformerPreTrainedModel):
         )
 
 
+# LongformerClassificationHead：序列分类线性头（dense + dropout + proj）
 class LongformerClassificationHead(nn.Module):
     """Head for sentence-level classification tasks."""
 
@@ -1783,6 +1810,7 @@ class LongformerClassificationHead(nn.Module):
 
 
 @auto_docstring
+# LongformerForQuestionAnswering：Longformer 抽取式问答
 class LongformerForQuestionAnswering(LongformerPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1912,6 +1940,7 @@ class LongformerForQuestionAnswering(LongformerPreTrainedModel):
 
 
 @auto_docstring
+# LongformerForTokenClassification：Longformer 词元分类（NER 等）
 class LongformerForTokenClassification(LongformerPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1993,6 +2022,7 @@ class LongformerForTokenClassification(LongformerPreTrainedModel):
 
 
 @auto_docstring
+# LongformerForMultipleChoice：Longformer 多选分类
 class LongformerForMultipleChoice(LongformerPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

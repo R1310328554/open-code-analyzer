@@ -19,8 +19,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# LUKE 配置：实体增强 BERT 预训练与实体/关系下游任务超参
+
+# LukeConfig：studio-ousia/luke-base 实体增强 BERT 预训练与下游任务默认超参
 @auto_docstring(checkpoint="studio-ousia/luke-base")
 @strict
+# LukeConfig：studio-ousia/luke-base 实体增强 BERT 预训练与下游任务超参
 class LukeConfig(PreTrainedConfig):
     r"""
     entity_vocab_size (`int`, *optional*, defaults to 500000):

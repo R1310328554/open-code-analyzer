@@ -19,8 +19,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# LongT5 配置：长序列 T5 局部/瞬态全局注意力 seq2seq 超参
+
+# LongT5Config：google/long-t5-local-base 长序列 T5 局部/瞬态全局注意力默认超参
 @auto_docstring(checkpoint="google/long-t5-local-base")
 @strict
+# LongT5Config：google/long-t5-local-base 长序列 T5 局部/瞬态全局注意力 seq2seq 超参
 class LongT5Config(PreTrainedConfig):
     r"""
     d_ff (`int`, *optional*, defaults to 2048):

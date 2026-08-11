@@ -56,8 +56,12 @@ from ..vitdet.modeling_vitdet import (
 logger = logging.get_logger(__name__)
 
 
+# LwDETR modular 源：复用 ViTDet/Deformable DETR/RT-DETR 构建轻量目标检测
+
+# LwDetrViTConfig：AnnaZhang/lwdetr_small_60e_coco ViTDet 视觉骨干默认超参
 @auto_docstring(checkpoint="AnnaZhang/lwdetr_small_60e_coco")
 @strict
+# LwDetrViTConfig：AnnaZhang/lwdetr_small_60e_coco ViTDet 视觉骨干超参
 class LwDetrViTConfig(VitDetConfig):
     r"""
     pretrain_image_size (`int`, *optional*, defaults to 224):
@@ -114,8 +118,10 @@ class LwDetrViTConfig(VitDetConfig):
             )
 
 
+# LwDetrConfig：AnnaZhang/lwdetr_small_60e_coco 轻量 DETR 目标检测默认超参
 @auto_docstring(checkpoint="AnnaZhang/lwdetr_small_60e_coco")
 @strict
+# LwDetrConfig：AnnaZhang/lwdetr_small_60e_coco 轻量 DETR 目标检测超参
 class LwDetrConfig(PreTrainedConfig):
     r"""
     projector_scale_factors (`list[float]`, *optional*, defaults to `[]`):
@@ -233,6 +239,7 @@ class LwDetrConfig(PreTrainedConfig):
                 raise ValueError(f"Unsupported scale factor: {scale}")
 
 
+# LwDetrViTAttention：LwDETR ViT 骨干窗口/全局自注意力
 class LwDetrViTAttention(ViTAttention):
     """LwDetr ViT attention with k_proj bias=False and dropout from config.dropout_prob."""
 
@@ -243,10 +250,12 @@ class LwDetrViTAttention(ViTAttention):
         self.num_key_value_groups = 1
 
 
+# LwDetrViTMlp：LwDETR ViT 前馈 MLP
 class LwDetrViTMlp(VitDetMlp):
     pass
 
 
+# LwDetrViTLayer：LwDETR ViT 单层（注意力 + MLP，支持梯度检查点）
 class LwDetrViTLayer(GradientCheckpointingLayer):
     def __init__(
         self,
@@ -297,10 +306,12 @@ class LwDetrViTLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# LwDetrViTEmbeddings：LwDETR ViT patch 嵌入 + 位置嵌入
 class LwDetrViTEmbeddings(VitDetEmbeddings):
     pass
 
 
+# LwDetrViTPreTrainedModel：LwDETR ViT 骨干预训练基类
 class LwDetrViTPreTrainedModel(VitDetPreTrainedModel):
     config: LwDetrViTConfig
     base_model_prefix = "lw_detr_vit"
@@ -330,6 +341,7 @@ class LwDetrViTPreTrainedModel(VitDetPreTrainedModel):
             init.constant_(module.gamma_2, self.config.cae_init_values)
 
 
+# LwDetrViTEncoder：LwDETR ViT 多层编码器
 class LwDetrViTEncoder(LwDetrViTPreTrainedModel):
     def __init__(self, config: LwDetrViTConfig):
         super().__init__(config)
@@ -350,6 +362,7 @@ class LwDetrViTEncoder(LwDetrViTPreTrainedModel):
 
 
 @auto_docstring()
+# LwDetrViTBackbone：LwDETR ViT 视觉骨干（输出多尺度特征）
 class LwDetrViTBackbone(VitDetBackbone):
     def forward(self, pixel_values: torch.Tensor, **kwargs: Unpack[TransformersKwargs]) -> BackboneOutput:
         r"""
@@ -418,6 +431,7 @@ class LwDetrViTBackbone(VitDetBackbone):
         )
 
 
+# LwDetrConvNormLayer：LwDETR 卷积+BatchNorm+激活基础块
 class LwDetrConvNormLayer(RTDetrConvNormLayer):
     def __init__(
         self,
@@ -439,6 +453,7 @@ class LwDetrConvNormLayer(RTDetrConvNormLayer):
         )
 
 
+# LwDetrRepVggBlock：LwDETR RepVGG 风格重参数化卷积块
 class LwDetrRepVggBlock(nn.Module):
     def __init__(self, config: LwDetrConfig):
         super().__init__()
@@ -456,6 +471,7 @@ class LwDetrRepVggBlock(nn.Module):
         return y
 
 
+# LwDetrC2FLayer：LwDETR C2f 特征融合层（多分支卷积拼接）
 class LwDetrC2FLayer(nn.Module):
     # Inspired by RTDetrCSPRepLayer
     def __init__(self, config: LwDetrConfig, in_channels: int):
@@ -489,10 +505,12 @@ class LwDetrC2FLayer(nn.Module):
         return hidden_states
 
 
+# LwDetrLayerNorm：LwDETR 通道维 LayerNorm（ConvNeXt 风格）
 class LwDetrLayerNorm(ConvNextLayerNorm):
     pass
 
 
+# LwDetrSamplingLayer：LwDETR 多尺度特征采样/对齐层
 class LwDetrSamplingLayer(nn.Module):
     def __init__(self, config: LwDetrConfig, channel_size: int, scale: float):
         super().__init__()
@@ -517,6 +535,7 @@ class LwDetrSamplingLayer(nn.Module):
         return hidden_states
 
 
+# LwDetrScaleProjector：LwDETR 单尺度特征投影到统一通道
 class LwDetrScaleProjector(nn.Module):
     def __init__(self, config: LwDetrConfig, scale: float):
         super().__init__()
@@ -549,6 +568,7 @@ class LwDetrScaleProjector(nn.Module):
         return hidden_states
 
 
+# LwDetrMultiScaleProjector：LwDETR 多尺度特征金字塔投影器
 class LwDetrMultiScaleProjector(nn.Module):
     def __init__(self, config: LwDetrConfig):
         super().__init__()
@@ -565,6 +585,7 @@ class LwDetrMultiScaleProjector(nn.Module):
         return output_hidden_states
 
 
+# LwDetrConvEncoder：LwDETR 卷积编码器（C2f + 下采样）
 class LwDetrConvEncoder(nn.Module):
     def __init__(self, config: LwDetrConfig):
         super().__init__()
@@ -583,6 +604,7 @@ class LwDetrConvEncoder(nn.Module):
         return out
 
 
+# LwDetrAttention：LwDETR 解码器多头自/交叉注意力
 class LwDetrAttention(nn.Module):
     """LW-DETR self-attention with group-DETR training technique."""
 
@@ -658,10 +680,12 @@ class LwDetrAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# LwDetrMultiscaleDeformableAttention：LwDETR 解码器多尺度可变形交叉注意力
 class LwDetrMultiscaleDeformableAttention(DeformableDetrMultiscaleDeformableAttention):
     pass
 
 
+# LwDetrMLP：LwDETR 解码器前馈 MLP
 class LwDetrMLP(nn.Module):
     def __init__(self, config: LwDetrConfig):
         super().__init__()
@@ -681,6 +705,7 @@ class LwDetrMLP(nn.Module):
         return hidden_states
 
 
+# LwDetrDecoderLayer：LwDETR 解码器单层（自注意力 + 可变形交叉注意力 + FFN）
 class LwDetrDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: LwDetrConfig, layer_idx: int):
         nn.Module.__init__(self)
@@ -747,6 +772,7 @@ class LwDetrDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# LwDetrPreTrainedModel：LwDETR 预训练基类与权重初始化
 class LwDetrPreTrainedModel(PreTrainedModel):
     config: LwDetrConfig
     base_model_prefix = "model"
@@ -802,6 +828,7 @@ class LwDetrPreTrainedModel(PreTrainedModel):
             init.constant_(module.bbox_embed.layers[-1].bias, 0)
 
 
+# refine_bboxes：根据 query 预测 delta  refine 参考框坐标
 def refine_bboxes(reference_points, deltas):
     reference_points = reference_points.to(deltas.device)
     new_reference_points_cxcy = deltas[..., :2] * reference_points[..., 2:] + reference_points[..., :2]
@@ -819,10 +846,12 @@ def refine_bboxes(reference_points, deltas):
     """
 )
 @dataclass
+# LwDetrDecoderOutput：LwDETR 解码器输出 dataclass（含 cross_attentions）
 class LwDetrDecoderOutput(DeformableDetrDecoderOutput):
     pass
 
 
+# LwDetrDecoder：LwDETR 多层解码器（object query 迭代 refine）
 class LwDetrDecoder(LwDetrPreTrainedModel):
     """
     Transformer decoder consisting of *config.decoder_layers* layers. Each layer is a [`DeformableDetrDecoderLayer`].
@@ -925,6 +954,7 @@ class LwDetrDecoder(LwDetrPreTrainedModel):
     """
 )
 @dataclass
+# LwDetrModelOutput：LwDETR 检测主干输出 dataclass
 class LwDetrModelOutput(ModelOutput):
     r"""
     init_reference_points (`torch.FloatTensor` of shape  `(batch_size, num_queries, 4)`):
@@ -958,6 +988,7 @@ class LwDetrModelOutput(ModelOutput):
     hidden-states without any specific head on top.
     """
 )
+# LwDetrModel：LwDETR 视觉骨干 + 多尺度投影 + 解码器检测主干
 class LwDetrModel(DeformableDetrModel):
     def __init__(self, config: LwDetrConfig):
         PreTrainedModel.__init__(self, config)
@@ -1198,6 +1229,7 @@ class LwDetrModel(DeformableDetrModel):
         raise NotImplementedError("get_proposal_pos_embed is not used in LwDetrForObjectDetection")
 
 
+# LwDetrMLPPredictionHead：LwDETR 分类/框回归 MLP 预测头
 class LwDetrMLPPredictionHead(DeformableDetrMLPPredictionHead):
     pass
 
@@ -1208,6 +1240,7 @@ class LwDetrMLPPredictionHead(DeformableDetrMLPPredictionHead):
     """
 )
 @dataclass
+# LwDetrObjectDetectionOutput：LwDETR 目标检测输出 dataclass
 class LwDetrObjectDetectionOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` are provided)):
@@ -1263,6 +1296,7 @@ class LwDetrObjectDetectionOutput(ModelOutput):
     top, for tasks such as COCO detection.
     """
 )
+# LwDetrForObjectDetection：LwDETR 端到端目标检测模型
 class LwDetrForObjectDetection(DeformableDetrForObjectDetection):
     _tied_weights_keys = None
 

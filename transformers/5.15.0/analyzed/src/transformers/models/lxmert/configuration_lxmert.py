@@ -19,8 +19,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# LXMERT 配置：语言编码器 + 视觉编码器 + 跨模态融合预训练超参
+
+# LxmertConfig：unc-nlp/lxmert-base-uncased 视觉-语言跨模态预训练默认超参
 @auto_docstring(checkpoint="unc-nlp/lxmert-base-uncased")
 @strict
+# LxmertConfig：unc-nlp/lxmert-base-uncased 视觉-语言跨模态预训练超参
 class LxmertConfig(PreTrainedConfig):
     r"""
     num_qa_labels (`int`, *optional*, defaults to 9500):

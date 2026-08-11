@@ -40,6 +40,8 @@ from ...utils import add_end_docstrings, is_torch_tensor, logging
 
 logger = logging.get_logger(__name__)
 
+
+# LUKE 分词：词元序列与实体 mention span 联合编码
 EntitySpan = tuple[int, int]
 EntitySpanInput = list[EntitySpan]
 Entity = str
@@ -128,6 +130,7 @@ ENCODE_PLUS_ADDITIONAL_KWARGS_DOCSTRING = r"""
 """
 
 
+# LukeTokenizer：LUKE 词元+实体 span 联合分词与编码
 class LukeTokenizer(TokenizersBackend):
     """
     Constructs a LUKE tokenizer, derived from the GPT-2 tokenizer, using byte-level Byte-Pair-Encoding.

@@ -31,6 +31,8 @@ from ...utils import ModelOutput, auto_docstring, logging
 from .configuration_luke import LukeConfig
 
 
+# LUKE 建模：词元与实体 span 联合编码及实体感知下游任务
+
 logger = logging.get_logger(__name__)
 
 
@@ -40,6 +42,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# BaseLukeModelOutputWithPooling：LUKE 主干输出 dataclass（含 pooler 与实体隐状态）
 class BaseLukeModelOutputWithPooling(BaseModelOutputWithPooling):
     r"""
     pooler_output (`torch.FloatTensor` of shape `(batch_size, hidden_size)`):
@@ -63,6 +66,7 @@ class BaseLukeModelOutputWithPooling(BaseModelOutputWithPooling):
     """
 )
 @dataclass
+# BaseLukeModelOutput：LUKE 主干输出 dataclass（含实体隐状态）
 class BaseLukeModelOutput(BaseModelOutput):
     r"""
     entity_last_hidden_state (`torch.FloatTensor` of shape `(batch_size, entity_length, hidden_size)`):
@@ -83,6 +87,7 @@ class BaseLukeModelOutput(BaseModelOutput):
     """
 )
 @dataclass
+# LukeMaskedLMOutput：LUKE 掩码语言建模输出 dataclass
 class LukeMaskedLMOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -117,6 +122,7 @@ class LukeMaskedLMOutput(ModelOutput):
     """
 )
 @dataclass
+# EntityClassificationOutput：LUKE 实体分类输出 dataclass
 class EntityClassificationOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -142,6 +148,7 @@ class EntityClassificationOutput(ModelOutput):
     """
 )
 @dataclass
+# EntityPairClassificationOutput：LUKE 实体对关系分类输出 dataclass
 class EntityPairClassificationOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -167,6 +174,7 @@ class EntityPairClassificationOutput(ModelOutput):
     """
 )
 @dataclass
+# EntitySpanClassificationOutput：LUKE 实体跨度分类输出 dataclass
 class EntitySpanClassificationOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -192,6 +200,7 @@ class EntitySpanClassificationOutput(ModelOutput):
     """
 )
 @dataclass
+# LukeSequenceClassifierOutput：LUKE 序列分类输出 dataclass
 class LukeSequenceClassifierOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -217,6 +226,7 @@ class LukeSequenceClassifierOutput(ModelOutput):
     """
 )
 @dataclass
+# LukeTokenClassifierOutput：LUKE 词元分类输出 dataclass
 class LukeTokenClassifierOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -242,6 +252,7 @@ class LukeTokenClassifierOutput(ModelOutput):
     """
 )
 @dataclass
+# LukeQuestionAnsweringModelOutput：LUKE 抽取式问答输出 dataclass
 class LukeQuestionAnsweringModelOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -266,6 +277,7 @@ class LukeQuestionAnsweringModelOutput(ModelOutput):
     """
 )
 @dataclass
+# LukeMultipleChoiceModelOutput：LUKE 多选分类输出 dataclass
 class LukeMultipleChoiceModelOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape *(1,)*, *optional*, returned when `labels` is provided):
@@ -287,6 +299,7 @@ class LukeMultipleChoiceModelOutput(ModelOutput):
     attentions: tuple[torch.FloatTensor, ...] | None = None
 
 
+# LukeEmbeddings：词嵌入 + 位置嵌入 + 类型嵌入 + LayerNorm
 class LukeEmbeddings(nn.Module):
     """
     Same as BertEmbeddings with a tiny tweak for positional embeddings indexing.
@@ -358,6 +371,7 @@ class LukeEmbeddings(nn.Module):
         return position_ids.unsqueeze(0).expand(input_shape)
 
 
+# LukeEntityEmbeddings：实体 id 嵌入 + 实体位置/type 嵌入
 class LukeEntityEmbeddings(nn.Module):
     def __init__(self, config: LukeConfig):
         super().__init__()
@@ -401,6 +415,7 @@ class LukeEntityEmbeddings(nn.Module):
         return embeddings
 
 
+# LukeSelfAttention：LUKE 多头自注意力（词元与实体联合）
 class LukeSelfAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -510,6 +525,7 @@ class LukeSelfAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertSelfOutput
+# LukeSelfOutput：自注意力输出投影 + 残差 + LayerNorm
 class LukeSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -524,6 +540,7 @@ class LukeSelfOutput(nn.Module):
         return hidden_states
 
 
+# LukeAttention：封装 LukeSelfAttention 与 SelfOutput
 class LukeAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -566,6 +583,7 @@ class LukeAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertIntermediate
+# LukeIntermediate：Transformer FFN 中间层
 class LukeIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -582,6 +600,7 @@ class LukeIntermediate(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOutput
+# LukeOutput：Transformer FFN 输出层
 class LukeOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -596,6 +615,7 @@ class LukeOutput(nn.Module):
         return hidden_states
 
 
+# LukeLayer：LUKE 单层（自注意力 + FFN，支持梯度检查点）
 class LukeLayer(GradientCheckpointingLayer):
     def __init__(self, config):
         super().__init__()
@@ -646,6 +666,7 @@ class LukeLayer(GradientCheckpointingLayer):
         return layer_output
 
 
+# LukeEncoder：多层 LukeLayer 堆叠编码器
 class LukeEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -712,6 +733,7 @@ class LukeEncoder(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPooler
+# LukePooler：取 [CLS] 隐状态经线性+Tanh 得到句向量
 class LukePooler(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -727,6 +749,7 @@ class LukePooler(nn.Module):
         return pooled_output
 
 
+# EntityPredictionHeadTransform：实体 MLM 预测头中间变换（dense + 激活 + LayerNorm）
 class EntityPredictionHeadTransform(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -744,6 +767,7 @@ class EntityPredictionHeadTransform(nn.Module):
         return hidden_states
 
 
+# EntityPredictionHead：实体掩码语言建模预测头
 class EntityPredictionHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -760,6 +784,7 @@ class EntityPredictionHead(nn.Module):
 
 
 @auto_docstring
+# LukePreTrainedModel：LUKE 预训练基类与权重初始化
 class LukePreTrainedModel(PreTrainedModel):
     config: LukeConfig
     base_model_prefix = "luke"
@@ -785,6 +810,7 @@ class LukePreTrainedModel(PreTrainedModel):
     The bare LUKE model transformer outputting raw hidden-states for both word tokens and entities without any
     """
 )
+# LukeModel：LUKE 词元+实体联合编码主干
 class LukeModel(LukePreTrainedModel):
     def __init__(self, config: LukeConfig, add_pooling_layer: bool = True):
         r"""
@@ -971,6 +997,7 @@ class LukeModel(LukePreTrainedModel):
         )
 
 
+# create_position_ids_from_input_ids：由 input_ids 生成位置 id（padding 处置零）
 def create_position_ids_from_input_ids(input_ids, padding_idx):
     """
     Replace non-padding symbols with their position numbers. Position numbers begin at padding_idx+1. Padding symbols
@@ -988,6 +1015,7 @@ def create_position_ids_from_input_ids(input_ids, padding_idx):
 
 
 # Copied from transformers.models.roberta.modeling_roberta.RobertaLMHead
+# LukeLMHead：词元掩码 LM 预测头
 class LukeLMHead(nn.Module):
     """Roberta Head for masked language modeling."""
 
@@ -1016,6 +1044,7 @@ class LukeLMHead(nn.Module):
     masked entity prediction.
     """
 )
+# LukeForMaskedLM：LUKE 词元与实体联合掩码语言建模
 class LukeForMaskedLM(LukePreTrainedModel):
     _tied_weights_keys = {
         "entity_predictions.decoder.weight": "luke.entity_embeddings.entity_embeddings.weight",
@@ -1163,6 +1192,7 @@ class LukeForMaskedLM(LukePreTrainedModel):
     token) for entity classification tasks, such as Open Entity.
     """
 )
+# LukeForEntityClassification：LUKE 实体类型分类
 class LukeForEntityClassification(LukePreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1292,6 +1322,7 @@ class LukeForEntityClassification(LukePreTrainedModel):
     tokens) for entity pair classification tasks, such as TACRED.
     """
 )
+# LukeForEntityPairClassification：LUKE 实体对关系分类
 class LukeForEntityPairClassification(LukePreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1426,6 +1457,7 @@ class LukeForEntityPairClassification(LukePreTrainedModel):
     such as named entity recognition.
     """
 )
+# LukeForEntitySpanClassification：LUKE 实体跨度分类
 class LukeForEntitySpanClassification(LukePreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1584,6 +1616,7 @@ class LukeForEntitySpanClassification(LukePreTrainedModel):
     pooled output) e.g. for GLUE tasks.
     """
 )
+# LukeForSequenceClassification：LUKE 序列分类
 class LukeForSequenceClassification(LukePreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1710,6 +1743,7 @@ class LukeForSequenceClassification(LukePreTrainedModel):
     class.
     """
 )
+# LukeForTokenClassification：LUKE 词元分类
 class LukeForTokenClassification(LukePreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1813,6 +1847,7 @@ class LukeForTokenClassification(LukePreTrainedModel):
 
 
 @auto_docstring
+# LukeForQuestionAnswering：LUKE 抽取式问答
 class LukeForQuestionAnswering(LukePreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1931,6 +1966,7 @@ class LukeForQuestionAnswering(LukePreTrainedModel):
 
 
 @auto_docstring
+# LukeForMultipleChoice：LUKE 多选分类
 class LukeForMultipleChoice(LukePreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

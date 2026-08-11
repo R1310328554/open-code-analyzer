@@ -17,6 +17,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# configuration_lw_detr 由 modular_lw_detr.py 自动生成
 import math
 
 from huggingface_hub.dataclasses import strict
@@ -30,8 +31,10 @@ from ..auto import AutoConfig
 logger = logging.get_logger(__name__)
 
 
+# LwDetrViTConfig：AnnaZhang/lwdetr_small_60e_coco ViTDet 视觉骨干默认超参
 @auto_docstring(checkpoint="AnnaZhang/lwdetr_small_60e_coco")
 @strict
+# LwDetrViTConfig：AnnaZhang/lwdetr_small_60e_coco ViTDet 视觉骨干超参
 class LwDetrViTConfig(BackboneConfigMixin, PreTrainedConfig):
     r"""
     pretrain_image_size (`int`, *optional*, defaults to 224):
@@ -104,8 +107,10 @@ class LwDetrViTConfig(BackboneConfigMixin, PreTrainedConfig):
             )
 
 
+# LwDetrConfig：AnnaZhang/lwdetr_small_60e_coco 轻量 DETR 目标检测默认超参
 @auto_docstring(checkpoint="AnnaZhang/lwdetr_small_60e_coco")
 @strict
+# LwDetrConfig：AnnaZhang/lwdetr_small_60e_coco 轻量 DETR 目标检测超参
 class LwDetrConfig(PreTrainedConfig):
     r"""
     projector_scale_factors (`list[float]`, *optional*, defaults to `[]`):
