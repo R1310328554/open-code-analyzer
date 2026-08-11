@@ -42,19 +42,25 @@ from .configuration_olmoe import OlmoeConfig
 logger = logging.get_logger(__name__)
 
 
+# OLMoE modular 源：Llama/Gemma/Mixtral/Qwen2MoE 组件组合的 MoE LLM
+
+# OlmoeRMSNorm：OLMoE RMS 层归一化（Q/K 投影后额外 Norm）
 class OlmoeRMSNorm(LlamaRMSNorm):
     def __init__(self, hidden_size, eps=1e-5):
         super().__init__(hidden_size, eps)
 
 
+# OlmoeRotaryEmbedding：OLMoE RoPE 旋转位置编码
 class OlmoeRotaryEmbedding(LlamaRotaryEmbedding):
     pass
 
 
+# OlmoeMLP：OLMoE 单专家 SwiGLU 前馈 MLP
 class OlmoeMLP(GemmaMLP):
     pass
 
 
+# OlmoeAttention：OLMoE 多头自注意力（GQA + Q/K Norm）
 class OlmoeAttention(LlamaAttention):
     def __init__(self, config: OlmoeConfig, layer_idx: int | None = None):
         super().__init__(config, layer_idx)
@@ -113,14 +119,17 @@ class OlmoeAttention(LlamaAttention):
         return attn_output, attn_weights
 
 
+# OlmoeExperts：MoE 路由专家并行 MLP 组（batched expert 计算）
 class OlmoeExperts(MixtralExperts):
     pass
 
 
+# OlmoeTopKRouter：MoE token 到专家的 Top-K 路由与负载均衡
 class OlmoeTopKRouter(Qwen2MoeTopKRouter):
     pass
 
 
+# OlmoeSparseMoeBlock：OLMoE 稀疏 MoE 层（路由 + 专家聚合）
 class OlmoeSparseMoeBlock(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -137,6 +146,7 @@ class OlmoeSparseMoeBlock(nn.Module):
         return final_hidden_states
 
 
+# OlmoeDecoderLayer：OLMoE 解码器单层（自注意力 + MoE FFN）
 class OlmoeDecoderLayer(LlamaDecoderLayer):
     def __init__(self, config: OlmoeConfig, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -148,6 +158,7 @@ class OlmoeDecoderLayer(LlamaDecoderLayer):
 
 
 @auto_docstring
+# OlmoePreTrainedModel：OLMoE 预训练基类与权重初始化
 class OlmoePreTrainedModel(PreTrainedModel):
     config: OlmoeConfig
     base_model_prefix = "model"
@@ -176,6 +187,7 @@ class OlmoePreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# OlmoeModel：OLMoE 因果 Transformer 解码器主干
 class OlmoeModel(MixtralModel):
     def __init__(self, config: OlmoeConfig):
         super().__init__(config)
@@ -242,6 +254,7 @@ class OlmoeModel(MixtralModel):
         )
 
 
+# OlmoeForCausalLM：OLMoE 因果语言建模与 MoE 路由损失
 class OlmoeForCausalLM(MixtralForCausalLM, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
 

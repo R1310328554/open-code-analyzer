@@ -40,7 +40,10 @@ from ...utils.output_capturing import OutputRecorder, capture_outputs
 from .configuration_olmoe import OlmoeConfig
 
 
+# OLMoE 建模：稀疏 MoE 因果 Transformer 与负载均衡损失
+
 @use_kernel_forward_from_hub("RMSNorm")
+# OlmoeRMSNorm：OLMoE RMS 层归一化（Q/K 投影后额外 Norm）
 class OlmoeRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps=1e-5) -> None:
         """
@@ -61,6 +64,7 @@ class OlmoeRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# OlmoeRotaryEmbedding：OLMoE RoPE 旋转位置编码
 class OlmoeRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: OlmoeConfig, device=None):
@@ -81,6 +85,7 @@ class OlmoeRotaryEmbedding(nn.Module):
 
     @staticmethod
     @deprecate_kwarg("device", version="5.18")
+    # compute_default_rope_parameters：按层类型计算默认 RoPE 逆频率
     def compute_default_rope_parameters(config: OlmoeConfig, device=None, **kwargs) -> tuple[torch.Tensor, float]:
         """
         Computes the inverse frequencies according to the original RoPE implementation
@@ -118,6 +123,7 @@ class OlmoeRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# OlmoeMLP：OLMoE 单专家 SwiGLU 前馈 MLP
 class OlmoeMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -134,6 +140,7 @@ class OlmoeMLP(nn.Module):
         return down_proj
 
 
+# rotate_half：RoPE 中将向量后半维旋转 180°
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -142,6 +149,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：对 Q/K 张量应用 RoPE 旋转位置编码
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -167,6 +175,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -179,6 +188,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -205,6 +215,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# OlmoeAttention：OLMoE 多头自注意力（GQA + Q/K Norm）
 class OlmoeAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -286,6 +297,7 @@ class OlmoeAttention(nn.Module):
 
 
 @use_experts_implementation
+# OlmoeExperts：MoE 路由专家并行 MLP 组（batched expert 计算）
 class OlmoeExperts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
@@ -325,6 +337,7 @@ class OlmoeExperts(nn.Module):
         return final_hidden_states
 
 
+# OlmoeTopKRouter：MoE token 到专家的 Top-K 路由与负载均衡
 class OlmoeTopKRouter(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -346,6 +359,7 @@ class OlmoeTopKRouter(nn.Module):
         return router_logits, router_scores, router_indices
 
 
+# OlmoeSparseMoeBlock：OLMoE 稀疏 MoE 层（路由 + 专家聚合）
 class OlmoeSparseMoeBlock(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -362,6 +376,7 @@ class OlmoeSparseMoeBlock(nn.Module):
         return final_hidden_states
 
 
+# OlmoeDecoderLayer：OLMoE 解码器单层（自注意力 + MoE FFN）
 class OlmoeDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: OlmoeConfig, layer_idx: int):
         super().__init__()
@@ -404,6 +419,7 @@ class OlmoeDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# OlmoePreTrainedModel：OLMoE 预训练基类与权重初始化
 class OlmoePreTrainedModel(PreTrainedModel):
     config: OlmoeConfig
     base_model_prefix = "model"
@@ -432,6 +448,7 @@ class OlmoePreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# OlmoeModel：OLMoE 因果 Transformer 解码器主干
 class OlmoeModel(OlmoePreTrainedModel):
     def __init__(self, config: OlmoeConfig):
         super().__init__(config)
@@ -507,6 +524,7 @@ class OlmoeModel(OlmoePreTrainedModel):
         )
 
 
+# load_balancing_loss_func：MoE 专家负载均衡辅助损失
 def load_balancing_loss_func(
     gate_logits: torch.Tensor | tuple[torch.Tensor] | None,
     num_experts: int | None = None,
@@ -590,6 +608,7 @@ def load_balancing_loss_func(
 
 
 @auto_docstring
+# OlmoeForCausalLM：OLMoE 因果语言建模与 MoE 路由损失
 class OlmoeForCausalLM(OlmoePreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}

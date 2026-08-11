@@ -45,12 +45,15 @@ from .configuration_omdet_turbo import OmDetTurboConfig
 logger = logging.get_logger(__name__)
 
 
+# OmDet-Turbo 建模：开放词汇目标检测（混合编码器 + 可变形解码器）
+
 @auto_docstring(
     custom_intro="""
     Base class for outputs of the OmDetTurboHybridEncoder.
     """
 )
 @dataclass
+# OmDetTurboEncoderOutput：混合编码器输出（隐状态 + FPN/PAN 多尺度特征）
 class OmDetTurboEncoderOutput(ModelOutput):
     r"""
     last_hidden_state (`torch.FloatTensor`):
@@ -71,6 +74,7 @@ class OmDetTurboEncoderOutput(ModelOutput):
     """
 )
 @dataclass
+# OmDetTurboDecoderOutput：可变形 Transformer 解码器输出
 class OmDetTurboDecoderOutput(ModelOutput):
     r"""
     last_hidden_state (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`):
@@ -106,6 +110,7 @@ class OmDetTurboDecoderOutput(ModelOutput):
     """
 )
 @dataclass
+# OmDetTurboObjectDetectionOutput：开放词汇目标检测最终输出（框+类别+文本）
 class OmDetTurboObjectDetectionOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor`):
@@ -161,6 +166,7 @@ class OmDetTurboObjectDetectionOutput(ModelOutput):
 
 @use_kernel_forward_from_hub("MultiScaleDeformableAttention")
 # Copied from transformers.models.deformable_detr.modeling_deformable_detr.MultiScaleDeformableAttention
+# MultiScaleDeformableAttention：多尺度可变形注意力（Deformable DETR 核心）
 class MultiScaleDeformableAttention(nn.Module):
     def forward(
         self,
@@ -215,6 +221,7 @@ class MultiScaleDeformableAttention(nn.Module):
         return output.transpose(1, 2).contiguous()
 
 
+# OmDetTurboLRUCache：类别/提示文本嵌入 LRU 缓存
 class OmDetTurboLRUCache:
     def __init__(self, capacity: int):
         self.cache = OrderedDict()
@@ -250,6 +257,7 @@ class OmDetTurboLRUCache:
         self.cache.move_to_end(key)
 
 
+# OmDetTurboLanguageBackbone：CLIP 文本编码器骨干（开放词汇语义）
 class OmDetTurboLanguageBackbone(nn.Module):
     def __init__(self, config: OmDetTurboConfig):
         super().__init__()
@@ -274,6 +282,7 @@ class OmDetTurboLanguageBackbone(nn.Module):
             raise ValueError(f"encode_type {encode_type} is not supported")
 
 
+# OmDetTurboVisionBackbone：Swin/timm 视觉骨干与多尺度特征提取
 class OmDetTurboVisionBackbone(nn.Module):
     def __init__(self, config: OmDetTurboConfig):
         super().__init__()
@@ -295,6 +304,7 @@ class OmDetTurboVisionBackbone(nn.Module):
 
 
 # Copied from transformers.models.deformable_detr.modeling_deformable_detr.DeformableDetrMultiscaleDeformableAttention with DeformableDetr->OmDetTurbo, Deformable DETR->OmDet-Turbo
+# OmDetTurboMultiscaleDeformableAttention：OmDet 多尺度可变形注意力封装
 class OmDetTurboMultiscaleDeformableAttention(nn.Module):
     """
     Multiscale deformable attention as proposed in Deformable DETR.
@@ -404,6 +414,7 @@ class OmDetTurboMultiscaleDeformableAttention(nn.Module):
 
 
 # Copied from transformers.models.rt_detr.modeling_rt_detr.RTDetrConvNormLayer with RTDetr->OmDetTurbo
+# OmDetTurboConvNormLayer：卷积+归一化+激活基础块（编码器 FPN/PAN）
 class OmDetTurboConvNormLayer(nn.Module):
     def __init__(self, config, in_channels, out_channels, kernel_size, stride, padding=None, activation=None):
         super().__init__()
@@ -426,6 +437,7 @@ class OmDetTurboConvNormLayer(nn.Module):
 
 
 # Copied from transformers.models.rt_detr.modeling_rt_detr.RTDetrRepVggBlock with RTDetr->OmDetTurbo, activation_function->csp_activation
+# OmDetTurboRepVggBlock：RepVGG 风格可重参数化卷积块
 class OmDetTurboRepVggBlock(nn.Module):
     """
     RepVGG architecture block introduced by the work "RepVGG: Making VGG-style ConvNets Great Again".
@@ -446,6 +458,7 @@ class OmDetTurboRepVggBlock(nn.Module):
 
 
 # Copied from transformers.models.rt_detr.modeling_rt_detr.RTDetrCSPRepLayer with RTDetr->OmDetTurbo, activation_function->csp_activation
+# OmDetTurboCSPRepLayer：Cross Stage Partial Rep 层（多尺度特征融合）
 class OmDetTurboCSPRepLayer(nn.Module):
     """
     Cross Stage Partial (CSP) network layer with RepVGG blocks.
@@ -475,6 +488,7 @@ class OmDetTurboCSPRepLayer(nn.Module):
         return self.conv3(hidden_state_1 + hidden_state_2)
 
 
+# OmDetTurboMultiheadAttention：编码器标准多头自注意力
 class OmDetTurboMultiheadAttention(nn.Module):
     """Equivalent implementation of nn.MultiheadAttention with `batch_first=True`."""
 
@@ -542,6 +556,7 @@ class OmDetTurboMultiheadAttention(nn.Module):
         return outputs
 
 
+# OmDetTurboEncoderLayer：混合编码器 Transformer 单层
 class OmDetTurboEncoderLayer(nn.Module):
     def __init__(self, config: OmDetTurboConfig):
         super().__init__()
@@ -614,6 +629,7 @@ class OmDetTurboEncoderLayer(nn.Module):
         return (hidden_states,)
 
 
+# OmDetTurboEncoder：OmDet 混合编码器 Transformer 堆叠
 class OmDetTurboEncoder(nn.Module):
     def __init__(self, config: OmDetTurboConfig):
         super().__init__()
@@ -639,6 +655,7 @@ class OmDetTurboEncoder(nn.Module):
         return hidden_states, attention
 
 
+# OmDetTurboHybridEncoder：FPN/PAN + Transformer 混合编码器
 class OmDetTurboHybridEncoder(nn.Module):
     """
     Encoder consisting of channel projection layers, a set of `OmDetTurboEncoder`, a top-down Feature Pyramid Network
@@ -815,6 +832,7 @@ class OmDetTurboHybridEncoder(nn.Module):
         )
 
 
+# OmDetTurboMLPWithDropout：带 Dropout 的两层 MLP 前馈
 class OmDetTurboMLPWithDropout(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -827,6 +845,7 @@ class OmDetTurboMLPWithDropout(nn.Module):
         return self.linear2(self.dropout(self.activation(self.linear1(x))))
 
 
+# OmDetTurboMLP：OmDet 两层线性 MLP 前馈
 class OmDetTurboMLP(nn.Module):
     """Very simple multi-layer perceptron (also called FFN)"""
 
@@ -845,6 +864,7 @@ class OmDetTurboMLP(nn.Module):
         return x
 
 
+# OmDetTurboResidualLayer：残差连接包装层
 class OmDetTurboResidualLayer(nn.Module):
     """
     A residual connection followed by a layer norm.
@@ -859,6 +879,7 @@ class OmDetTurboResidualLayer(nn.Module):
         return self.norm1(x + self.dropout(y))
 
 
+# OmDetTurboTaskEncoder：任务/类别文本嵌入编码器
 class OmDetTurboTaskEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -871,6 +892,7 @@ class OmDetTurboTaskEncoder(nn.Module):
         return x
 
 
+# OmDetTurboDeformableTransformerDecoderLayer：可变形 Transformer 解码器单层
 class OmDetTurboDeformableTransformerDecoderLayer(GradientCheckpointingLayer):
     """
     A single layer of the Deformable Transformer Decoder.
@@ -981,6 +1003,7 @@ class OmDetTurboDeformableTransformerDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# OmDetTurboPreTrainedModel：OmDet-Turbo 预训练基类与权重初始化
 class OmDetTurboPreTrainedModel(PreTrainedModel):
     config: OmDetTurboConfig
     base_model_prefix = "model"
@@ -1121,6 +1144,7 @@ class OmDetTurboPreTrainedModel(PreTrainedModel):
         return class_embeddings, task_embeddings, task_mask
 
 
+# _cosine_similarity_scaled：缩放余弦相似度（开放词汇类别匹配）
 def _cosine_similarity_scaled(a, b, logit_scale):
     a = a / a.norm(dim=2, keepdim=True).clamp_min(1e-12)
     b = b / b.norm(dim=1, keepdim=True).clamp_min(1e-12)
@@ -1129,6 +1153,7 @@ def _cosine_similarity_scaled(a, b, logit_scale):
     return logits_per_image
 
 
+# get_class_similarity：按配置计算预测类别与文本嵌入相似度
 def get_class_similarity(class_distance_type, cls_feature, class_proj):
     logit_scale = torch.tensor(1 / 0.07).log()
     if class_distance_type == "cosine":
@@ -1140,6 +1165,7 @@ def get_class_similarity(class_distance_type, cls_feature, class_proj):
     return class_logits
 
 
+# _inverse_sigmoid：sigmoid 反函数（框坐标参数化）
 def _inverse_sigmoid(x, eps=1e-5):
     x = x.clamp(min=0, max=1)
     x1 = x.clamp(min=eps)
@@ -1147,6 +1173,7 @@ def _inverse_sigmoid(x, eps=1e-5):
     return torch.log(x1 / x2)
 
 
+# OmDetTurboDecoder：可变形 Transformer 解码器（多尺度 query 更新）
 class OmDetTurboDecoder(OmDetTurboPreTrainedModel):
     def __init__(self, config: OmDetTurboConfig):
         self.config = config
@@ -1461,6 +1488,7 @@ class OmDetTurboDecoder(OmDetTurboPreTrainedModel):
     bounding boxes and classes scores for tasks such as COCO detection.
     """
 )
+# OmDetTurboForObjectDetection：OmDet-Turbo 开放词汇目标检测端到端模型
 class OmDetTurboForObjectDetection(OmDetTurboPreTrainedModel):
     def __init__(self, config: OmDetTurboConfig):
         super().__init__(config)

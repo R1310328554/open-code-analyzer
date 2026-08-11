@@ -42,8 +42,12 @@ from ..olmo2.modeling_olmo2 import (
 )
 
 
+# OLMo3 modular 源：Olmo2/Gemma3 组件组合的滑动窗口混合 LLM
+
+# Olmo3Config：allenai/Olmo-3-7B-Instruct 滑动窗口+全注意力混合因果 LLM 超参
 @auto_docstring(checkpoint="allenai/Olmo-3-7B-Instruct")
 @strict
+# Olmo3Config：allenai/Olmo-3-7B-Instruct 滑动窗口+全注意力混合因果 LLM 超参
 class Olmo3Config(Olmo2Config):
     r"""
     Example:
@@ -83,6 +87,7 @@ class Olmo3Config(Olmo2Config):
     sliding_window: int | None = 4096
     layer_types: list[str] | None = None
 
+    # __post_init__：初始化后解析默认层类型、KV 头数与子配置
     def __post_init__(self, **kwargs):
         if self.num_key_value_heads is None:
             self.num_key_value_heads = self.num_attention_heads
@@ -94,6 +99,7 @@ class Olmo3Config(Olmo2Config):
 
         super().__post_init__(**kwargs)
 
+    # convert_rope_params_to_dict：将 RoPE 参数转为 sliding/full 注意力分层字典
     def convert_rope_params_to_dict(self, **kwargs):
         rope_scaling = kwargs.pop("rope_scaling", None)
 
@@ -122,12 +128,14 @@ class Olmo3Config(Olmo2Config):
         return kwargs
 
 
+# Olmo3RMSNorm：OLMo3 RMS 层归一化（等价 T5LayerNorm）
 class Olmo3RMSNorm(Olmo2RMSNorm):
     pass
 
 
 # Olmo3 attention is identical to OLMo 2 attention except:
 # - Sliding window attention is used for 3 out of 4 layers.
+# Olmo3Attention：OLMo3 多头自注意力（滑动窗口或全注意力，Q/K Norm）
 class Olmo3Attention(Olmo2Attention):
     def __init__(self, config: Olmo3Config, layer_idx: int):
         super().__init__(config, layer_idx=layer_idx)
@@ -180,14 +188,17 @@ class Olmo3Attention(Olmo2Attention):
         return attn_output, attn_weights
 
 
+# Olmo3DecoderLayer：OLMo3 解码器单层（自注意力 + MLP + 残差）
 class Olmo3DecoderLayer(Olmo2DecoderLayer):
     pass
 
 
+# Olmo3RotaryEmbedding：OLMo3 分层 RoPE（sliding/full 独立频率表）
 class Olmo3RotaryEmbedding(Gemma3RotaryEmbedding):
     def __init__(self, config: Olmo3Config, device=None):
         super().__init__(config)
 
+    # compute_default_rope_parameters：按层类型计算默认 RoPE 逆频率
     def compute_default_rope_parameters(
         config: Olmo3Config, device=None, layer_type: str | None = None, **kwargs
     ) -> tuple[torch.Tensor, float]:
@@ -213,6 +224,7 @@ class Olmo3RotaryEmbedding(Gemma3RotaryEmbedding):
         return cos, sin
 
 
+# Olmo3PreTrainedModel：OLMo3 预训练基类与 RoPE 权重初始化
 class Olmo3PreTrainedModel(Olmo2PreTrainedModel):
     def _init_weights(self, module):
         PreTrainedModel._init_weights(module)
@@ -229,6 +241,7 @@ class Olmo3PreTrainedModel(Olmo2PreTrainedModel):
 # The OLMo 3 model is identical to the OLMo 2 model, except:
 # - Sliding window attention is used for 3 out of 4 layers.
 # - RoPE scaling is not applied to sliding window attention layers.
+# Olmo3Model：OLMo3 因果 Transformer 解码器主干
 class Olmo3Model(Olmo2Model):
     def __init__(self, config: Olmo3Config):
         super().__init__(config)
@@ -300,10 +313,12 @@ class Olmo3Model(Olmo2Model):
         )
 
 
+# Olmo3ForCausalLM：OLMo3 因果语言建模与生成头
 class Olmo3ForCausalLM(Olmo2ForCausalLM):
     pass
 
 
+# Olmo3ForSequenceClassification：OLMo3 序列分类任务头
 class Olmo3ForSequenceClassification(Olmo2ForSequenceClassification):
     pass
 

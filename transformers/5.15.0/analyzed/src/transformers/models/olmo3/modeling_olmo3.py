@@ -41,7 +41,10 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_olmo3 import Olmo3Config
 
 
+# OLMo3 建模：滑动窗口/全注意力混合 RoPE 因果 Transformer
+
 @use_kernel_forward_from_hub("RMSNorm")
+# Olmo3RMSNorm：OLMo3 RMS 层归一化（等价 T5LayerNorm）
 class Olmo3RMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -62,6 +65,7 @@ class Olmo3RMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -74,6 +78,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -100,6 +105,7 @@ def eager_attention_forward(
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：对 Q/K 张量应用 RoPE 旋转位置编码
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -126,6 +132,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed.to(q_type), k_embed.to(k_type)
 
 
+# rotate_half：RoPE 中将向量后半维旋转 180°
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -134,6 +141,7 @@ def rotate_half(x):
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# Olmo3Attention：OLMo3 多头自注意力（滑动窗口或全注意力，Q/K Norm）
 class Olmo3Attention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -210,6 +218,7 @@ class Olmo3Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# Olmo3MLP：OLMo3 SwiGLU 前馈 MLP（gate/up/down 投影）
 class Olmo3MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -226,6 +235,7 @@ class Olmo3MLP(nn.Module):
         return down_proj
 
 
+# Olmo3DecoderLayer：OLMo3 解码器单层（自注意力 + MLP + 残差）
 class Olmo3DecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Olmo3Config, layer_idx: int):
         super().__init__()
@@ -267,6 +277,7 @@ class Olmo3DecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Olmo3RotaryEmbedding：OLMo3 分层 RoPE（sliding/full 独立频率表）
 class Olmo3RotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: Olmo3Config, device=None):
@@ -292,6 +303,7 @@ class Olmo3RotaryEmbedding(nn.Module):
 
     @staticmethod
     @deprecate_kwarg("device", version="5.18")
+    # compute_default_rope_parameters：按层类型计算默认 RoPE 逆频率
     def compute_default_rope_parameters(
         config: Olmo3Config, device=None, layer_type: str | None = None, **kwargs
     ) -> tuple[torch.Tensor, float]:
@@ -340,6 +352,7 @@ class Olmo3RotaryEmbedding(nn.Module):
 
 
 @auto_docstring
+# Olmo3PreTrainedModel：OLMo3 预训练基类与 RoPE 权重初始化
 class Olmo3PreTrainedModel(PreTrainedModel):
     config: Olmo3Config
     base_model_prefix = "model"
@@ -370,6 +383,7 @@ class Olmo3PreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# Olmo3Model：OLMo3 因果 Transformer 解码器主干
 class Olmo3Model(Olmo3PreTrainedModel):
     def __init__(self, config: Olmo3Config):
         super().__init__(config)
@@ -453,6 +467,7 @@ class Olmo3Model(Olmo3PreTrainedModel):
 
 
 @auto_docstring
+# Olmo3ForCausalLM：OLMo3 因果语言建模与生成头
 class Olmo3ForCausalLM(Olmo3PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
@@ -527,6 +542,7 @@ class Olmo3ForCausalLM(Olmo3PreTrainedModel, GenerationMixin):
         )
 
 
+# Olmo3ForSequenceClassification：OLMo3 序列分类任务头
 class Olmo3ForSequenceClassification(GenericForSequenceClassification, Olmo3PreTrainedModel):
     pass
 

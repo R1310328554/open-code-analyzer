@@ -45,7 +45,10 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_olmo_hybrid import OlmoHybridConfig
 
 
+# OLMo Hybrid 建模：GatedDeltaNet 线性注意力 + 全注意力混合因果 Transformer
+
 @use_kernel_forward_from_hub("RMSNormGated")
+# OlmoHybridRMSNormGated：带门控的 RMS 归一化（GatedDeltaNet 辅助）
 class OlmoHybridRMSNormGated(nn.Module):
     def __init__(self, hidden_size, eps=1e-6, **kwargs):
         super().__init__()
@@ -66,6 +69,7 @@ class OlmoHybridRMSNormGated(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# OlmoHybridRMSNorm：OLMo Hybrid RMS 层归一化
 class OlmoHybridRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -86,6 +90,7 @@ class OlmoHybridRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -98,6 +103,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -124,6 +130,7 @@ def eager_attention_forward(
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：对 Q/K 张量应用 RoPE 旋转位置编码
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -150,6 +157,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed.to(q_type), k_embed.to(k_type)
 
 
+# rotate_half：RoPE 中将向量后半维旋转 180°
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -158,6 +166,7 @@ def rotate_half(x):
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# OlmoHybridAttention：OLMo Hybrid 全注意力层（继承 OLMo3 注意力）
 class OlmoHybridAttention(nn.Module):
     """
     Multi-headed attention for OLMo Hybrid that supports optional RoPE (NoPE mode).
@@ -240,6 +249,7 @@ class OlmoHybridAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# OlmoHybridRotaryEmbedding：OLMo Hybrid RoPE 旋转位置编码
 class OlmoHybridRotaryEmbedding(nn.Module):
     """
     RoPE for OLMo Hybrid that returns float32 cos/sin to match OLMo-core.
@@ -264,6 +274,7 @@ class OlmoHybridRotaryEmbedding(nn.Module):
 
     @staticmethod
     @deprecate_kwarg("device", version="5.18")
+    # compute_default_rope_parameters：按层类型计算默认 RoPE 逆频率
     def compute_default_rope_parameters(config: OlmoHybridConfig, device=None, **kwargs) -> tuple[torch.Tensor, float]:
         """
         Computes the inverse frequencies according to the original RoPE implementation
@@ -299,6 +310,7 @@ class OlmoHybridRotaryEmbedding(nn.Module):
         return cos, sin
 
 
+# apply_mask_to_padding_states：用 attention_mask 清零 padding 位置隐状态
 def apply_mask_to_padding_states(hidden_states, attention_mask):
     """
     Tunes out the hidden states for padding tokens, see https://github.com/state-spaces/mamba/issues/66
@@ -312,6 +324,7 @@ def apply_mask_to_padding_states(hidden_states, attention_mask):
 
 
 @use_kernel_func_from_hub_with_fallback("causal_conv1d_update", "causal_conv1d")
+# causal_conv1d_update：因果 1D 卷积单步增量更新（线性注意力 mixer）
 def causal_conv1d_update(
     hidden_states: torch.Tensor,
     conv_state: torch.Tensor,
@@ -332,6 +345,7 @@ def causal_conv1d_update(
 
 
 @use_kernel_func_from_hub_with_fallback("causal_conv1d_fn", "causal_conv1d")
+# causal_conv1d_fn：因果 1D 卷积全序列前向（可选 fused kernel）
 def causal_conv1d_fn(
     hidden_states: torch.Tensor,
     weight: nn.Parameter,
@@ -354,6 +368,7 @@ def causal_conv1d_fn(
     return out.to(hidden_states.dtype)
 
 
+# l2norm：L2 范数归一化（GatedDeltaNet Q/K 预处理）
 def l2norm(x: torch.FloatTensor, dim: int = -1, eps: float = 1e-6):
     """This function is intended to align with the l2norm implementation in the FLA library."""
     inv_norm = torch.rsqrt((x * x).sum(dim=dim, keepdim=True) + eps)
@@ -361,6 +376,7 @@ def l2norm(x: torch.FloatTensor, dim: int = -1, eps: float = 1e-6):
 
 
 @use_kernel_func_from_hub_with_fallback("chunk_gated_delta_rule", "fla")
+# torch_chunk_gated_delta_rule：GatedDeltaNet 分块并行 delta 规则前向
 def torch_chunk_gated_delta_rule(
     query,
     key,
@@ -443,6 +459,7 @@ def torch_chunk_gated_delta_rule(
 
 
 @use_kernel_func_from_hub_with_fallback("recurrent_gated_delta_rule", "fla")
+# torch_recurrent_gated_delta_rule：GatedDeltaNet 逐步递推 delta 规则前向
 def torch_recurrent_gated_delta_rule(
     query,
     key,
@@ -498,6 +515,7 @@ def torch_recurrent_gated_delta_rule(
 @use_kernelized_func(
     [torch_recurrent_gated_delta_rule, torch_chunk_gated_delta_rule, causal_conv1d_fn, causal_conv1d_update]
 )
+# OlmoHybridGatedDeltaNet：GatedDeltaNet 线性注意力层（短卷积 + 状态空间）
 class OlmoHybridGatedDeltaNet(nn.Module):
     """
     GatedDeltaNet linear attention for OLMo Hybrid.
@@ -684,6 +702,7 @@ class OlmoHybridGatedDeltaNet(nn.Module):
         return output
 
 
+# OlmoHybridMLP：OLMo Hybrid SwiGLU 前馈 MLP
 class OlmoHybridMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -700,6 +719,7 @@ class OlmoHybridMLP(nn.Module):
         return down_proj
 
 
+# OlmoHybridAttentionDecoderLayer：全注意力解码器层（自注意力 + MLP）
 class OlmoHybridAttentionDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: OlmoHybridConfig, layer_idx: int):
         super().__init__()
@@ -741,6 +761,7 @@ class OlmoHybridAttentionDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# OlmoHybridLinearAttentionDecoderLayer：线性注意力解码器层（GatedDeltaNet + MLP）
 class OlmoHybridLinearAttentionDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: OlmoHybridConfig, layer_idx: int):
         super().__init__()
@@ -780,6 +801,7 @@ class OlmoHybridLinearAttentionDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# OlmoHybridPreTrainedModel：OLMo Hybrid 预训练基类与权重初始化
 class OlmoHybridPreTrainedModel(PreTrainedModel):
     config: OlmoHybridConfig
     base_model_prefix = "model"
@@ -814,6 +836,7 @@ class OlmoHybridPreTrainedModel(PreTrainedModel):
             init.copy_(module.dt_bias, inv_dt)
 
 
+# OlmoHybridModel：OLMo Hybrid 混合架构因果 Transformer 主干
 class OlmoHybridModel(OlmoHybridPreTrainedModel):
     def __init__(self, config: OlmoHybridConfig):
         super().__init__(config)
@@ -905,6 +928,7 @@ class OlmoHybridModel(OlmoHybridPreTrainedModel):
 
 
 @auto_docstring
+# OlmoHybridForCausalLM：OLMo Hybrid 因果语言建模与生成头
 class OlmoHybridForCausalLM(OlmoHybridPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}

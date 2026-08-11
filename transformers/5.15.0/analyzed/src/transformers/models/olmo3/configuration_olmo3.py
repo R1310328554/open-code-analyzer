@@ -25,8 +25,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# OLMo3 配置：3/4 层滑动窗口 + 1/4 层全注意力混合因果 LLM 超参
+
+# Olmo3Config：allenai/Olmo-3-7B-Instruct 滑动窗口+全注意力混合因果 LLM 超参
 @auto_docstring(checkpoint="allenai/Olmo-3-7B-Instruct")
 @strict
+# Olmo3Config：allenai/Olmo-3-7B-Instruct 滑动窗口+全注意力混合因果 LLM 超参
 class Olmo3Config(PreTrainedConfig):
     r"""
     Example:
@@ -86,6 +90,7 @@ class Olmo3Config(PreTrainedConfig):
     sliding_window: int | None = 4096
     layer_types: list[str] | None = None
 
+    # __post_init__：初始化后解析默认层类型、KV 头数与子配置
     def __post_init__(self, **kwargs):
         if self.num_key_value_heads is None:
             self.num_key_value_heads = self.num_attention_heads
@@ -98,6 +103,7 @@ class Olmo3Config(PreTrainedConfig):
             self.num_key_value_heads = self.num_attention_heads
         super().__post_init__(**kwargs)
 
+    # convert_rope_params_to_dict：将 RoPE 参数转为 sliding/full 注意力分层字典
     def convert_rope_params_to_dict(self, **kwargs):
         rope_scaling = kwargs.pop("rope_scaling", None)
 

@@ -26,8 +26,12 @@ from ...utils import auto_docstring
 from ...utils.type_validators import interval
 
 
+# OLMo Hybrid 配置：GatedDeltaNet 线性注意力 + 全注意力混合 LLM 超参
+
+# OlmoHybridConfig：allenai/Olmo-Hybrid-7B 线性注意力+全注意力混合 LLM 超参
 @auto_docstring(checkpoint="allenai/Olmo-Hybrid-7B")
 @strict
+# OlmoHybridConfig：allenai/Olmo-Hybrid-7B 线性注意力+全注意力混合 LLM 超参
 class OlmoHybridConfig(PreTrainedConfig):
     r"""
     linear_num_key_heads (`int`, *optional*):
@@ -118,6 +122,7 @@ class OlmoHybridConfig(PreTrainedConfig):
     linear_conv_kernel_dim: int = 4
     linear_allow_neg_eigval: bool = True
 
+    # __post_init__：初始化后解析默认层类型、KV 头数与子配置
     def __post_init__(self, **kwargs):
         if self.layer_types is None:
             # Default: linear attention for most layers, full attention every 4th layer
@@ -144,6 +149,7 @@ class OlmoHybridConfig(PreTrainedConfig):
 
         super().__post_init__(**kwargs)
 
+    # validate_architecture：@strict 校验至少含 linear_attention 与 full_attention 层
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if "linear_attention" not in self.layer_types:

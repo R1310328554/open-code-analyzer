@@ -26,8 +26,12 @@ from ..auto import CONFIG_MAPPING, AutoConfig
 logger = logging.get_logger(__name__)
 
 
+# OmDet-Turbo 配置：Swin 视觉骨干 + CLIP 文本 + 可变形 DETR 检测超参
+
+# OmDetTurboConfig：omlab/omdet-turbo 开放词汇目标检测联合超参
 @auto_docstring(checkpoint="omlab/omdet-turbo-swin-tiny-hf")
 @strict
+# OmDetTurboConfig：omlab/omdet-turbo 开放词汇目标检测联合超参
 class OmDetTurboConfig(PreTrainedConfig):
     r"""
     apply_layernorm_after_vision_backbone (`bool`, *optional*, defaults to `True`):
@@ -148,6 +152,7 @@ class OmDetTurboConfig(PreTrainedConfig):
     cache_size: int = 100
     is_encoder_decoder: bool = True
 
+    # __post_init__：初始化后解析默认层类型、KV 头数与子配置
     def __post_init__(self, **kwargs):
         # Init timm backbone with hardcoded values for BC
         timm_default_kwargs = {
@@ -180,6 +185,7 @@ class OmDetTurboConfig(PreTrainedConfig):
 
         super().__post_init__(**kwargs)
 
+    # to_dict：序列化配置为字典（排除 timm_kwargs 内部字段）
     def to_dict(self):
         output = super().to_dict()
         output.pop("timm_kwargs", None)

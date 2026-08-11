@@ -61,8 +61,12 @@ from ..qwen3_next.modeling_qwen3_next import (
 logger = logging.get_logger(__name__)
 
 
+# OLMo Hybrid modular 源：Olmo3/Qwen3Next/Llama 组件组合的混合 LLM
+
+# OlmoHybridConfig：allenai/Olmo-Hybrid-7B 线性注意力+全注意力混合 LLM 超参
 @auto_docstring(checkpoint="allenai/Olmo-Hybrid-7B")
 @strict
+# OlmoHybridConfig：allenai/Olmo-Hybrid-7B 线性注意力+全注意力混合 LLM 超参
 class OlmoHybridConfig(LlamaConfig):
     r"""
     linear_num_key_heads (`int`, *optional*):
@@ -144,6 +148,7 @@ class OlmoHybridConfig(LlamaConfig):
     mlp_bias = AttributeError()
     head_dim = AttributeError()
 
+    # __post_init__：初始化后解析默认层类型、KV 头数与子配置
     def __post_init__(self, **kwargs):
         if self.layer_types is None:
             # Default: linear attention for most layers, full attention every 4th layer
@@ -170,6 +175,7 @@ class OlmoHybridConfig(LlamaConfig):
 
         PreTrainedConfig.__post_init__(**kwargs)
 
+    # validate_architecture：@strict 校验至少含 linear_attention 与 full_attention 层
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if "linear_attention" not in self.layer_types:
@@ -178,14 +184,17 @@ class OlmoHybridConfig(LlamaConfig):
             raise ValueError("OLMoHybrid expects at least one attention layer.")
 
 
+# OlmoHybridRMSNormGated：带门控的 RMS 归一化（GatedDeltaNet 辅助）
 class OlmoHybridRMSNormGated(Qwen3NextRMSNormGated):
     pass
 
 
+# OlmoHybridRMSNorm：OLMo Hybrid RMS 层归一化
 class OlmoHybridRMSNorm(Olmo3RMSNorm):
     pass
 
 
+# OlmoHybridAttention：OLMo Hybrid 全注意力层（继承 OLMo3 注意力）
 class OlmoHybridAttention(Olmo3Attention):
     """
     Multi-headed attention for OLMo Hybrid that supports optional RoPE (NoPE mode).
@@ -249,6 +258,7 @@ class OlmoHybridAttention(Olmo3Attention):
         return attn_output, attn_weights
 
 
+# OlmoHybridRotaryEmbedding：OLMo Hybrid RoPE 旋转位置编码
 class OlmoHybridRotaryEmbedding(Olmo2RotaryEmbedding):
     """
     RoPE for OLMo Hybrid that returns float32 cos/sin to match OLMo-core.
@@ -272,6 +282,7 @@ class OlmoHybridRotaryEmbedding(Olmo2RotaryEmbedding):
 @use_kernelized_func(
     [torch_recurrent_gated_delta_rule, torch_chunk_gated_delta_rule, causal_conv1d_fn, causal_conv1d_update]
 )
+# OlmoHybridGatedDeltaNet：GatedDeltaNet 线性注意力层（短卷积 + 状态空间）
 class OlmoHybridGatedDeltaNet(nn.Module):
     """
     GatedDeltaNet linear attention for OLMo Hybrid.
@@ -458,16 +469,19 @@ class OlmoHybridGatedDeltaNet(nn.Module):
         return output
 
 
+# OlmoHybridMLP：OLMo Hybrid SwiGLU 前馈 MLP
 class OlmoHybridMLP(Olmo3MLP):
     pass
 
 
+# OlmoHybridAttentionDecoderLayer：全注意力解码器层（自注意力 + MLP）
 class OlmoHybridAttentionDecoderLayer(Olmo3DecoderLayer):
     def __init__(self, config: OlmoHybridConfig, layer_idx: int):
         super().__init__(config, layer_idx)
         self.self_attn = OlmoHybridAttention(config=config, layer_idx=layer_idx)
 
 
+# OlmoHybridLinearAttentionDecoderLayer：线性注意力解码器层（GatedDeltaNet + MLP）
 class OlmoHybridLinearAttentionDecoderLayer(LlamaDecoderLayer):
     def __init__(self, config: OlmoHybridConfig, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -507,6 +521,7 @@ class OlmoHybridLinearAttentionDecoderLayer(LlamaDecoderLayer):
         return hidden_states
 
 
+# OlmoHybridPreTrainedModel：OLMo Hybrid 预训练基类与权重初始化
 class OlmoHybridPreTrainedModel(Qwen3NextPreTrainedModel):
     _is_stateful = True
     _no_split_modules = ["OlmoHybridAttentionDecoderLayer", "OlmoHybridLinearAttentionDecoderLayer"]
@@ -533,6 +548,7 @@ class OlmoHybridPreTrainedModel(Qwen3NextPreTrainedModel):
             init.copy_(module.dt_bias, inv_dt)
 
 
+# OlmoHybridModel：OLMo Hybrid 混合架构因果 Transformer 主干
 class OlmoHybridModel(Qwen3NextModel):
     def __init__(self, config: OlmoHybridConfig):
         super().__init__(config)
@@ -619,6 +635,7 @@ class OlmoHybridModel(Qwen3NextModel):
         )
 
 
+# OlmoHybridForCausalLM：OLMo Hybrid 因果语言建模与生成头
 class OlmoHybridForCausalLM(Olmo3ForCausalLM):
     pass
 

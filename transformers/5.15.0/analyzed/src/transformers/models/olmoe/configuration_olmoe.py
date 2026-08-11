@@ -11,6 +11,8 @@
 # limitations under the License.
 """OLMoE model configuration"""
 
+# OLMoE 配置：64 专家 Top-8 稀疏 MoE 因果 LLM 超参
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
@@ -18,8 +20,10 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# OlmoeConfig：allenai/OLMoE-1B-7B-0924 稀疏 Top-K MoE 因果 LLM 超参
 @auto_docstring(checkpoint="allenai/OLMoE-1B-7B-0924")
 @strict
+# OlmoeConfig：allenai/OLMoE-1B-7B-0924 稀疏 Top-K MoE 因果 LLM 超参
 class OlmoeConfig(PreTrainedConfig):
     r"""
     clip_qkv (`float`, *optional*):
@@ -86,6 +90,7 @@ class OlmoeConfig(PreTrainedConfig):
     router_aux_loss_coef: float = 0.01
     norm_topk_prob: bool = False
 
+    # __post_init__：初始化后解析默认层类型、KV 头数与子配置
     def __post_init__(self, **kwargs):
         if self.num_key_value_heads is None:
             self.num_key_value_heads = self.num_attention_heads
