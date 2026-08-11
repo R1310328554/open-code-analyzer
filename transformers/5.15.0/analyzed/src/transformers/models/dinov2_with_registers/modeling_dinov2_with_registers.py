@@ -39,6 +39,7 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_dinov2_with_registers import Dinov2WithRegistersConfig
 
 
+# Dinov2WithRegistersPatchEmbeddings：与 DINOv2 相同的 patch 卷积投影
 class Dinov2WithRegistersPatchEmbeddings(nn.Module):
     """
     This class turns `pixel_values` of shape `(batch_size, num_channels, height, width)` into the initial
@@ -61,6 +62,7 @@ class Dinov2WithRegistersPatchEmbeddings(nn.Module):
 
         self.projection = nn.Conv2d(num_channels, hidden_size, kernel_size=patch_size, stride=patch_size)
 
+# forward：pixel_values 经 register ViT 编码
     def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
         num_channels = pixel_values.shape[1]
         if num_channels != self.num_channels:
@@ -72,6 +74,7 @@ class Dinov2WithRegistersPatchEmbeddings(nn.Module):
         return embeddings
 
 
+# Dinov2WithRegistersEmbeddings：CLS + register + patch 嵌入与位置插值
 class Dinov2WithRegistersEmbeddings(nn.Module):
     """
     Construct the CLS token, mask token, register tokens, position and patch embeddings.
@@ -171,6 +174,7 @@ class Dinov2WithRegistersEmbeddings(nn.Module):
         return embeddings
 
 
+# eager_attention_forward：标准缩放点积注意力
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -200,6 +204,7 @@ def eager_attention_forward(
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTAttention with ViT->Dinov2WithRegisters
+# Dinov2WithRegistersSelfAttention：多头自注意力（含 register token）
 class Dinov2WithRegistersSelfAttention(nn.Module):
     def __init__(self, config: Dinov2WithRegistersConfig):
         super().__init__()
@@ -256,6 +261,7 @@ class Dinov2WithRegistersSelfAttention(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTAttention with ViT->Dinov2WithRegisters
+# Dinov2WithRegistersSelfOutput：注意力输出投影
 class Dinov2WithRegistersSelfOutput(nn.Module):
     """
     The residual connection is defined in Dinov2WithRegistersLayer instead of here (as is the case with other models), due to the
@@ -274,6 +280,7 @@ class Dinov2WithRegistersSelfOutput(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTAttention with ViT->Dinov2WithRegisters
+# Dinov2WithRegistersAttention：SelfAttention + SelfOutput
 class Dinov2WithRegistersAttention(nn.Module):
     def __init__(self, config: Dinov2WithRegistersConfig):
         super().__init__()
@@ -290,6 +297,7 @@ class Dinov2WithRegistersAttention(nn.Module):
         return output
 
 
+# Dinov2WithRegistersLayerScale：LayerScale 缩放
 class Dinov2WithRegistersLayerScale(nn.Module):
     def __init__(self, config) -> None:
         super().__init__()
@@ -299,6 +307,7 @@ class Dinov2WithRegistersLayerScale(nn.Module):
         return hidden_state * self.lambda1
 
 
+# Dinov2WithRegistersMLP：标准 GELU MLP 前馈
 class Dinov2WithRegistersMLP(nn.Module):
     def __init__(self, config) -> None:
         super().__init__()
@@ -318,6 +327,7 @@ class Dinov2WithRegistersMLP(nn.Module):
         return hidden_state
 
 
+# Dinov2WithRegistersSwiGLUFFN：SwiGLU 门控前馈
 class Dinov2WithRegistersSwiGLUFFN(nn.Module):
     def __init__(self, config) -> None:
         super().__init__()
@@ -335,6 +345,7 @@ class Dinov2WithRegistersSwiGLUFFN(nn.Module):
         return self.weights_out(hidden)
 
 
+# Dinov2WithRegistersDropPath：随机深度 DropPath
 class Dinov2WithRegistersDropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -359,6 +370,7 @@ class Dinov2WithRegistersDropPath(nn.Module):
         return f"p={self.drop_prob}"
 
 
+# Dinov2WithRegistersLayer：Pre-LN 注意力 + MLP 残差块
 class Dinov2WithRegistersLayer(GradientCheckpointingLayer):
     """This corresponds to the Block class in the original implementation."""
 
@@ -403,6 +415,7 @@ class Dinov2WithRegistersLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Dinov2WithRegistersPreTrainedModel：含 register token 权重初始化
 class Dinov2WithRegistersPreTrainedModel(PreTrainedModel):
     config: Dinov2WithRegistersConfig
     base_model_prefix = "dinov2_with_registers"
@@ -436,6 +449,7 @@ class Dinov2WithRegistersPreTrainedModel(PreTrainedModel):
             init.constant_(module.lambda1, self.config.layerscale_value)
 
 
+# Dinov2WithRegistersEncoder：堆叠 Transformer 层
 class Dinov2WithRegistersEncoder(Dinov2WithRegistersPreTrainedModel):
     def __init__(self, config: Dinov2WithRegistersConfig):
         super().__init__(config)
@@ -452,6 +466,7 @@ class Dinov2WithRegistersEncoder(Dinov2WithRegistersPreTrainedModel):
 
 
 @auto_docstring
+# Dinov2WithRegistersModel：Embeddings + Encoder + LayerNorm
 class Dinov2WithRegistersModel(Dinov2WithRegistersPreTrainedModel):
     def __init__(self, config: Dinov2WithRegistersConfig):
         super().__init__(config)
@@ -505,6 +520,7 @@ class Dinov2WithRegistersModel(Dinov2WithRegistersPreTrainedModel):
     of the [CLS] token) e.g. for ImageNet.
     """
 )
+# Dinov2WithRegistersForImageClassification：CLS 线性分类头
 class Dinov2WithRegistersForImageClassification(Dinov2WithRegistersPreTrainedModel):
     def __init__(self, config: Dinov2WithRegistersConfig) -> None:
         super().__init__(config)
@@ -562,6 +578,7 @@ class Dinov2WithRegistersForImageClassification(Dinov2WithRegistersPreTrainedMod
     Dinov2WithRegisters backbone, to be used with frameworks like DETR and MaskFormer.
     """
 )
+# Dinov2WithRegistersBackbone：多 stage backbone 特征输出
 class Dinov2WithRegistersBackbone(BackboneMixin, Dinov2WithRegistersPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

@@ -31,6 +31,7 @@ logger = logging.get_logger(__name__)
 
 
 @auto_docstring
+# DINOv3ViTImageProcessor：ImageNet 均值方差，覆盖 _preprocess 变换顺序
 class DINOv3ViTImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.BILINEAR
     image_mean = IMAGENET_DEFAULT_MEAN
@@ -42,6 +43,7 @@ class DINOv3ViTImageProcessor(TorchvisionBackend):
 
     # Overridden for DINOv3 to preserve order of transforms
     # rescale -> resize -> normalize
+# _preprocess：先 rescale 再 resize 再 normalize，按尺寸分组批处理
     def _preprocess(
         self,
         images: list["torch.Tensor"],

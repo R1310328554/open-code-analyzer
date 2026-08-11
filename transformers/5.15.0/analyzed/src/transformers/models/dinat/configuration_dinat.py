@@ -20,8 +20,10 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# DinatConfig：shi-labs/dinat-mini-in1k-224 checkpoint，默认 4 stage 深度
 @auto_docstring(checkpoint="shi-labs/dinat-mini-in1k-224")
 @strict
+# DinatConfig：embed_dim/depths/num_heads/dilations 与 kernel_size=7 邻域注意力
 class DinatConfig(BackboneConfigMixin, PreTrainedConfig):
     r"""
     dilations (`list[list[int]]`, *optional*, defaults to `[[1, 8, 1], [1, 4, 1, 4], [1, 2, 1, 2, 1, 2], [1, 1, 1, 1, 1]]`):
@@ -68,6 +70,7 @@ class DinatConfig(BackboneConfigMixin, PreTrainedConfig):
     _out_features: list[str] | None = None
     _out_indices: list[int] | None = None
 
+# __post_init__：默认 dilations 列表、hidden_size 与 backbone 输出 stage 索引
     def __post_init__(self, **kwargs):
         self.num_layers = len(self.depths)
         self.dilations = self.dilations or [[1, 8, 1], [1, 4, 1, 4], [1, 2, 1, 2, 1, 2], [1, 1, 1, 1, 1]]

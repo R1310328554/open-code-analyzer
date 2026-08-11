@@ -20,8 +20,10 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# Dinov2Config：facebook/dinov2-base checkpoint，768 维 12 层
 @auto_docstring(checkpoint="facebook/dinov2-base")
 @strict
+# Dinov2Config：hidden_size/patch_size/layerscale/use_swiglu_ffn 等超参
 class Dinov2Config(BackboneConfigMixin, PreTrainedConfig):
     r"""
     layerscale_value (`float`, *optional*, defaults to 1.0):
@@ -76,6 +78,7 @@ class Dinov2Config(BackboneConfigMixin, PreTrainedConfig):
     reshape_hidden_states: bool = True
     use_mask_token: bool = True
 
+# __post_init__：stage_names 与 backbone out_indices/out_features 设置
     def __post_init__(self, **kwargs):
         self.stage_names = ["stem"] + [f"stage{idx}" for idx in range(1, self.num_hidden_layers + 1)]
         self.set_output_features_output_indices(

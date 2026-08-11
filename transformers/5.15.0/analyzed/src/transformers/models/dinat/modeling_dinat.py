@@ -51,6 +51,7 @@ else:
     """
 )
 @dataclass
+# DinatEncoderOutput：编码器输出，含 reshaped_hidden_states 空间特征图
 class DinatEncoderOutput(ModelOutput):
     r"""
     reshaped_hidden_states (`tuple(torch.FloatTensor)`, *optional*, returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
@@ -73,6 +74,7 @@ class DinatEncoderOutput(ModelOutput):
     """
 )
 @dataclass
+# DinatModelOutput：主干输出 + 可选 pooler_output 全局池化
 class DinatModelOutput(ModelOutput):
     r"""
     pooler_output (`torch.FloatTensor` of shape `(batch_size, hidden_size)`, *optional*, returned when `add_pooling_layer=True` is passed):
@@ -98,6 +100,7 @@ class DinatModelOutput(ModelOutput):
     """
 )
 @dataclass
+# DinatImageClassifierOutput：图像分类 logits 与 loss
 class DinatImageClassifierOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -119,6 +122,7 @@ class DinatImageClassifierOutput(ModelOutput):
     reshaped_hidden_states: tuple[torch.FloatTensor, ...] | None = None
 
 
+# DinatEmbeddings：patch 嵌入 + LayerNorm + Dropout
 class DinatEmbeddings(nn.Module):
     """
     Construct the patch and position embeddings.
@@ -132,6 +136,7 @@ class DinatEmbeddings(nn.Module):
         self.norm = nn.LayerNorm(config.embed_dim)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
+# forward：pixel_values 经邻域注意力编码输出 hidden states
     def forward(self, pixel_values: torch.FloatTensor | None) -> tuple[torch.Tensor]:
         embeddings = self.patch_embeddings(pixel_values)
         embeddings = self.norm(embeddings)
@@ -141,6 +146,7 @@ class DinatEmbeddings(nn.Module):
         return embeddings
 
 
+# DinatPatchEmbeddings：两层 3×3 卷积将 patch_size=4 图像转为 token
 class DinatPatchEmbeddings(nn.Module):
     """
     This class turns `pixel_values` of shape `(batch_size, num_channels, height, width)` into the initial
@@ -177,6 +183,7 @@ class DinatPatchEmbeddings(nn.Module):
         return embeddings
 
 
+# DinatDownsampler：3×3 stride=2 卷积下采样，通道翻倍
 class DinatDownsampler(nn.Module):
     """
     Convolutional Downsampling Layer.
@@ -200,6 +207,7 @@ class DinatDownsampler(nn.Module):
         return input_feature
 
 
+# NeighborhoodAttention：NATTEN 邻域注意力 + 可学习相对位置偏置 rpb
 class NeighborhoodAttention(nn.Module):
     def __init__(self, config, dim, num_heads, kernel_size, dilation):
         super().__init__()
@@ -259,6 +267,7 @@ class NeighborhoodAttention(nn.Module):
         return outputs
 
 
+# NeighborhoodAttentionOutput：注意力输出线性投影与 dropout
 class NeighborhoodAttentionOutput(nn.Module):
     def __init__(self, config, dim):
         super().__init__()
@@ -272,6 +281,7 @@ class NeighborhoodAttentionOutput(nn.Module):
         return hidden_states
 
 
+# NeighborhoodAttentionModule：NeighborhoodAttention + Output 封装
 class NeighborhoodAttentionModule(nn.Module):
     def __init__(self, config, dim, num_heads, kernel_size, dilation):
         super().__init__()
@@ -289,6 +299,7 @@ class NeighborhoodAttentionModule(nn.Module):
         return outputs
 
 
+# DinatIntermediate：MLP 中间层（mlp_ratio 扩展 + 激活）
 class DinatIntermediate(nn.Module):
     def __init__(self, config, dim):
         super().__init__()
@@ -304,6 +315,7 @@ class DinatIntermediate(nn.Module):
         return hidden_states
 
 
+# DinatOutput：MLP 输出投影与 dropout
 class DinatOutput(nn.Module):
     def __init__(self, config, dim):
         super().__init__()
@@ -317,6 +329,7 @@ class DinatOutput(nn.Module):
 
 
 # Copied from transformers.models.swin.modular_swin.SwinDropPath with SwinDropPath->DinatDropPath
+# DinatDropPath：随机深度 DropPath，训练时按样本丢弃残差分支
 class DinatDropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -341,6 +354,7 @@ class DinatDropPath(nn.Module):
         return f"p={self.drop_prob}"
 
 
+# DinatLayer：Pre-LN 邻域注意力 + MLP + layer scale + DropPath
 class DinatLayer(nn.Module):
     def __init__(self, config, dim, num_heads, dilation, drop_path_rate=0.0):
         super().__init__()
@@ -412,6 +426,7 @@ class DinatLayer(nn.Module):
         return layer_outputs
 
 
+# DinatStage：堆叠 DinatLayer，stage 末可选 DinatDownsampler
 class DinatStage(nn.Module):
     def __init__(self, config, dim, depth, num_heads, dilations, drop_path_rate, downsample):
         super().__init__()
@@ -459,6 +474,7 @@ class DinatStage(nn.Module):
         return stage_outputs
 
 
+# DinatEncoder：多 stage 编码器，线性递增 drop_path_rate
 class DinatEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -530,6 +546,7 @@ class DinatEncoder(nn.Module):
 
 
 @auto_docstring
+# DinatPreTrainedModel：依赖 natten 后端的预训练基类
 class DinatPreTrainedModel(PreTrainedModel):
     config: DinatConfig
     base_model_prefix = "dinat"
@@ -538,6 +555,7 @@ class DinatPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# DinatModel：Embeddings + Encoder + LayerNorm + 可选全局池化
 class DinatModel(DinatPreTrainedModel):
     def __init__(self, config, add_pooling_layer=True):
         r"""
@@ -619,6 +637,7 @@ class DinatModel(DinatPreTrainedModel):
     of the [CLS] token) e.g. for ImageNet.
     """
 )
+# DinatForImageClassification：DinatModel + 线性分类头
 class DinatForImageClassification(DinatPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -687,6 +706,7 @@ class DinatForImageClassification(DinatPreTrainedModel):
     NAT backbone, to be used with frameworks like DETR and MaskFormer.
     """
 )
+# DinatBackbone：BackboneMixin 多 stage 特征提取接口
 class DinatBackbone(BackboneMixin, DinatPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

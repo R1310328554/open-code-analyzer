@@ -20,8 +20,10 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# DINOv3ConvNextConfig：dinov3-convnext-tiny checkpoint 默认超参
 @auto_docstring(checkpoint="facebook/dinov3-convnext-tiny-pretrain-lvd1689m")
 @strict
+# DINOv3ConvNextConfig：hidden_sizes=[96,192,384,768]、depths=[3,3,9,3]
 class DINOv3ConvNextConfig(BackboneConfigMixin, PreTrainedConfig):
     r"""
     Example:
@@ -52,6 +54,7 @@ class DINOv3ConvNextConfig(BackboneConfigMixin, PreTrainedConfig):
     _out_features: list[str] | None = None
     _out_indices: list[int] | None = None
 
+# __post_init__：默认 hidden_sizes/depths 与 backbone 输出索引
     def __post_init__(self, **kwargs):
         self.hidden_sizes = [96, 192, 384, 768] if self.hidden_sizes is None else self.hidden_sizes
         self.depths = [3, 3, 9, 3] if self.depths is None else self.depths
@@ -62,6 +65,7 @@ class DINOv3ConvNextConfig(BackboneConfigMixin, PreTrainedConfig):
         super().__post_init__(**kwargs)
 
     @property
+# num_stages：返回 hidden_sizes 长度即 stage 数
     def num_stages(self) -> int:
         return len(self.hidden_sizes)
 

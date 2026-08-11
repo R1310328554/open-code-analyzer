@@ -32,6 +32,7 @@ from .configuration_dinov3_convnext import DINOv3ConvNextConfig
 logger = logging.get_logger(__name__)
 
 
+# DINOv3ConvNextLayerNorm：支持 channels_first/last 两种格式的 LayerNorm
 class DINOv3ConvNextLayerNorm(nn.LayerNorm):
     r"""LayerNorm that supports two data formats: channels_last (default) or channels_first.
     The ordering of the dimensions in the inputs. channels_last corresponds to inputs with shape (batch_size, height,
@@ -44,6 +45,7 @@ class DINOv3ConvNextLayerNorm(nn.LayerNorm):
             raise NotImplementedError(f"Unsupported data format: {data_format}")
         self.data_format = data_format
 
+# forward：pixel_values 经 ConvNeXt 编码输出特征
     def forward(self, features: torch.Tensor) -> torch.Tensor:
         """
         Args:
@@ -59,6 +61,7 @@ class DINOv3ConvNextLayerNorm(nn.LayerNorm):
 
 
 # Copied from transformers.models.swin.modular_swin.SwinDropPath with SwinDropPath->Dinov3ConvnextDropPath
+# Dinov3ConvnextDropPath：随机深度 DropPath
 class Dinov3ConvnextDropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -83,6 +86,7 @@ class Dinov3ConvnextDropPath(nn.Module):
         return f"p={self.drop_prob}"
 
 
+# DINOv3ConvNextLayer：DwConv 7×7 + LN + 两层 1×1 MLP + LayerScale
 class DINOv3ConvNextLayer(nn.Module):
     """This corresponds to the `Block` class in the original implementation.
 
@@ -129,6 +133,7 @@ class DINOv3ConvNextLayer(nn.Module):
         return features
 
 
+# DINOv3ConvNextStage：下采样 + 堆叠多个 ConvNext Block
 class DINOv3ConvNextStage(nn.Module):
     def __init__(self, config: DINOv3ConvNextConfig, stage_idx: int):
         super().__init__()
@@ -176,6 +181,7 @@ class DINOv3ConvNextStage(nn.Module):
 
 
 @auto_docstring
+# DINOv3ConvNextPreTrainedModel：ConvNeXt 权重初始化基类
 class DINOv3ConvNextPreTrainedModel(PreTrainedModel):
     config: DINOv3ConvNextConfig
     base_model_prefix = "model"
@@ -193,6 +199,7 @@ class DINOv3ConvNextPreTrainedModel(PreTrainedModel):
                 init.constant_(module.gamma, self.config.layer_scale_init_value)
 
 
+# DINOv3ConvNextEncoder：四 stage 编码器，线性 drop_path
 class DINOv3ConvNextEncoder(DINOv3ConvNextPreTrainedModel):
     def __init__(self, config: DINOv3ConvNextConfig):
         super().__init__(config)
@@ -214,6 +221,7 @@ class DINOv3ConvNextEncoder(DINOv3ConvNextPreTrainedModel):
 
 
 @auto_docstring
+# DINOv3ConvNextModel：Encoder + 全局平均池化
 class DINOv3ConvNextModel(DINOv3ConvNextPreTrainedModel):
     def __init__(self, config: DINOv3ConvNextConfig):
         super().__init__(config)
@@ -249,6 +257,7 @@ class DINOv3ConvNextModel(DINOv3ConvNextPreTrainedModel):
 
 
 @auto_docstring
+# DINOv3ConvNextBackbone：多 stage 卷积特征 backbone 输出
 class DINOv3ConvNextBackbone(BackboneMixin, DINOv3ConvNextPreTrainedModel):
     has_attentions = False
 

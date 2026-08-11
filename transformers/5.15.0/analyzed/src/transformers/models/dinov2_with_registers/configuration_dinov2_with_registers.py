@@ -27,8 +27,10 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# Dinov2WithRegistersConfig：facebook/dinov2-with-registers-base，默认 4 个 register
 @auto_docstring(checkpoint="facebook/dinov2-with-registers-base")
 @strict
+# Dinov2WithRegistersConfig：继承 DINOv2 超参并新增 num_register_tokens
 class Dinov2WithRegistersConfig(BackboneConfigMixin, PreTrainedConfig):
     r"""
     layerscale_value (`float`, *optional*, defaults to 1.0):
@@ -83,6 +85,7 @@ class Dinov2WithRegistersConfig(BackboneConfigMixin, PreTrainedConfig):
     apply_layernorm: bool = True
     reshape_hidden_states: bool = True
 
+# __post_init__：stage_names 与 backbone 输出索引配置
     def __post_init__(self, **kwargs):
         self.stage_names = ["stem"] + [f"stage{idx}" for idx in range(1, self.num_hidden_layers + 1)]
         self.set_output_features_output_indices(

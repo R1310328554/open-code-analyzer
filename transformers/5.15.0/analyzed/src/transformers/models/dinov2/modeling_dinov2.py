@@ -35,6 +35,7 @@ from .configuration_dinov2 import Dinov2Config
 logger = logging.get_logger(__name__)
 
 
+# Dinov2Embeddings：CLS/mask token + patch/position 嵌入，支持位置插值
 class Dinov2Embeddings(nn.Module):
     """
     Construct the CLS token, mask token, position and patch embeddings.
@@ -94,6 +95,7 @@ class Dinov2Embeddings(nn.Module):
 
         return torch.cat((class_pos_embed, patch_pos_embed), dim=1)
 
+# forward：pixel_values 经 ViT 编码输出 last_hidden_state
     def forward(self, pixel_values: torch.Tensor, bool_masked_pos: torch.Tensor | None = None) -> torch.Tensor:
         batch_size, _, height, width = pixel_values.shape
         target_dtype = self.patch_embeddings.projection.weight.dtype
@@ -116,6 +118,7 @@ class Dinov2Embeddings(nn.Module):
         return embeddings
 
 
+# Dinov2PatchEmbeddings：Conv2d patch 投影，输出 (B, seq, hidden)
 class Dinov2PatchEmbeddings(nn.Module):
     """
     This class turns `pixel_values` of shape `(batch_size, num_channels, height, width)` into the initial
@@ -150,6 +153,7 @@ class Dinov2PatchEmbeddings(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.eager_attention_forward
+# eager_attention_forward：标准缩放点积注意力实现
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -179,6 +183,7 @@ def eager_attention_forward(
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTAttention with ViT->Dinov2
+# Dinov2SelfAttention：多头自注意力，支持 SDPA/Flash 等后端
 class Dinov2SelfAttention(nn.Module):
     def __init__(self, config: Dinov2Config):
         super().__init__()
@@ -235,6 +240,7 @@ class Dinov2SelfAttention(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTAttention with ViT->Dinov2
+# Dinov2SelfOutput：注意力输出线性层（残差在 Dinov2Layer 中）
 class Dinov2SelfOutput(nn.Module):
     """
     The residual connection is defined in Dinov2Layer instead of here (as is the case with other models), due to the
@@ -253,6 +259,7 @@ class Dinov2SelfOutput(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.vit.modeling_vit.ViTAttention with ViT->Dinov2
+# Dinov2Attention：SelfAttention + SelfOutput 封装
 class Dinov2Attention(nn.Module):
     def __init__(self, config: Dinov2Config):
         super().__init__()
@@ -269,6 +276,7 @@ class Dinov2Attention(nn.Module):
         return output
 
 
+# Dinov2LayerScale：LayerScale 可学习缩放因子 lambda1
 class Dinov2LayerScale(nn.Module):
     def __init__(self, config) -> None:
         super().__init__()
@@ -278,6 +286,7 @@ class Dinov2LayerScale(nn.Module):
         return hidden_state * self.lambda1
 
 
+# Dinov2MLP：标准 GELU 前馈网络（fc1 → act → fc2）
 class Dinov2MLP(nn.Module):
     def __init__(self, config) -> None:
         super().__init__()
@@ -297,6 +306,7 @@ class Dinov2MLP(nn.Module):
         return hidden_state
 
 
+# Dinov2SwiGLUFFN：SwiGLU 门控前馈，hidden 对齐 8 倍数
 class Dinov2SwiGLUFFN(nn.Module):
     def __init__(self, config) -> None:
         super().__init__()
@@ -315,6 +325,7 @@ class Dinov2SwiGLUFFN(nn.Module):
 
 
 # Copied from transformers.models.swin.modular_swin.SwinDropPath with SwinDropPath->Dinov2DropPath
+# Dinov2DropPath：随机深度 DropPath 正则
 class Dinov2DropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -339,6 +350,7 @@ class Dinov2DropPath(nn.Module):
         return f"p={self.drop_prob}"
 
 
+# Dinov2Layer：Pre-LN 自注意力 + LayerScale + MLP 残差块
 class Dinov2Layer(GradientCheckpointingLayer):
     """This corresponds to the Block class in the original implementation."""
 
@@ -381,6 +393,7 @@ class Dinov2Layer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Dinov2PreTrainedModel：trunc_normal 初始化，支持 gradient checkpointing
 class Dinov2PreTrainedModel(PreTrainedModel):
     config: Dinov2Config
     base_model_prefix = "dinov2"
@@ -414,6 +427,7 @@ class Dinov2PreTrainedModel(PreTrainedModel):
             init.constant_(module.lambda1, self.config.layerscale_value)
 
 
+# Dinov2Encoder：堆叠 num_hidden_layers 个 Dinov2Layer
 class Dinov2Encoder(Dinov2PreTrainedModel):
     def __init__(self, config: Dinov2Config):
         super().__init__(config)
@@ -430,6 +444,7 @@ class Dinov2Encoder(Dinov2PreTrainedModel):
 
 
 @auto_docstring
+# Dinov2Model：Embeddings + Encoder + 最终 LayerNorm
 class Dinov2Model(Dinov2PreTrainedModel):
     def __init__(self, config: Dinov2Config):
         super().__init__(config)
@@ -483,6 +498,7 @@ class Dinov2Model(Dinov2PreTrainedModel):
     of the [CLS] token) e.g. for ImageNet.
     """
 )
+# Dinov2ForImageClassification：CLS token 线性分类头
 class Dinov2ForImageClassification(Dinov2PreTrainedModel):
     def __init__(self, config: Dinov2Config) -> None:
         super().__init__(config)
@@ -538,6 +554,7 @@ class Dinov2ForImageClassification(Dinov2PreTrainedModel):
     Dinov2 backbone, to be used with frameworks like DETR and MaskFormer.
     """
 )
+# Dinov2Backbone：多 stage 特征图输出，可选 reshape 为 4D
 class Dinov2Backbone(BackboneMixin, Dinov2PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

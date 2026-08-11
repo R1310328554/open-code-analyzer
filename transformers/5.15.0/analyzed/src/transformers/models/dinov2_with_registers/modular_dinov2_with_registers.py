@@ -38,8 +38,10 @@ from ...utils import TransformersKwargs, auto_docstring, logging, torch_int
 logger = logging.get_logger(__name__)
 
 
+# Dinov2WithRegistersConfig：modular 源中的配置定义
 @auto_docstring(checkpoint="facebook/dinov2-with-registers-base")
 @strict
+# Dinov2WithRegistersConfig：num_register_tokens 与 DINOv2 共用超参
 class Dinov2WithRegistersConfig(BackboneConfigMixin, PreTrainedConfig):
     r"""
     layerscale_value (`float`, *optional*, defaults to 1.0):
@@ -94,6 +96,7 @@ class Dinov2WithRegistersConfig(BackboneConfigMixin, PreTrainedConfig):
     apply_layernorm: bool = True
     reshape_hidden_states: bool = True
 
+# __post_init__：stage 命名与 backbone 输出特征索引
     def __post_init__(self, **kwargs):
         self.stage_names = ["stem"] + [f"stage{idx}" for idx in range(1, self.num_hidden_layers + 1)]
         self.set_output_features_output_indices(
@@ -102,10 +105,12 @@ class Dinov2WithRegistersConfig(BackboneConfigMixin, PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# Dinov2WithRegistersPatchEmbeddings：直接继承 DINOv2 patch 嵌入
 class Dinov2WithRegistersPatchEmbeddings(Dinov2PatchEmbeddings):
     pass
 
 
+# Dinov2WithRegistersEmbeddings：CLS 后插入 register token 的嵌入层
 class Dinov2WithRegistersEmbeddings(nn.Module):
     """
     Construct the CLS token, mask token, register tokens, position and patch embeddings.
@@ -205,6 +210,7 @@ class Dinov2WithRegistersEmbeddings(nn.Module):
         return embeddings
 
 
+# Dinov2WithRegistersPreTrainedModel：覆盖 _init_weights 含 register 初始化
 class Dinov2WithRegistersPreTrainedModel(Dinov2PreTrainedModel):
     @torch.no_grad()
     def _init_weights(self, module: nn.Linear | nn.Conv2d | nn.LayerNorm) -> None:
@@ -223,14 +229,17 @@ class Dinov2WithRegistersPreTrainedModel(Dinov2PreTrainedModel):
             init.constant_(module.lambda1, self.config.layerscale_value)
 
 
+# Dinov2WithRegistersEncoder：继承 DINOv2 编码器
 class Dinov2WithRegistersEncoder(Dinov2Encoder):
     pass
 
 
+# Dinov2WithRegistersModel：替换 embeddings 为 register 版本
 class Dinov2WithRegistersModel(Dinov2Model):
     pass
 
 
+# Dinov2WithRegistersForImageClassification：register 版图像分类
 class Dinov2WithRegistersForImageClassification(Dinov2ForImageClassification):
     def forward(
         self,
@@ -267,6 +276,7 @@ class Dinov2WithRegistersForImageClassification(Dinov2ForImageClassification):
         )
 
 
+# Dinov2WithRegistersBackbone：register 版 backbone 接口
 class Dinov2WithRegistersBackbone(Dinov2Backbone):
     def __init__(self, config):
         super().__init__(config)

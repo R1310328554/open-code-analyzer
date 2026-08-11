@@ -20,8 +20,10 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# DINOv3ViTConfig：dinov3-vits16 checkpoint，384 维 12 层
 @auto_docstring(checkpoint="facebook/dinov3-vits16-pretrain-lvd1689m")
 @strict
+# DINOv3ViTConfig：rope_theta、分头 bias、pos_embed 增强与 register token
 class DINOv3ViTConfig(BackboneConfigMixin, PreTrainedConfig):
     r"""
     rope_theta (`float`, *optional*, defaults to 100.0):
@@ -100,6 +102,7 @@ class DINOv3ViTConfig(BackboneConfigMixin, PreTrainedConfig):
     apply_layernorm: bool = True
     reshape_hidden_states: bool = True
 
+# __post_init__：stage 命名与 backbone out_indices/out_features
     def __post_init__(self, **kwargs):
         self.stage_names = ["stem"] + [f"stage{i}" for i in range(1, self.num_hidden_layers + 1)]
         self.set_output_features_output_indices(
