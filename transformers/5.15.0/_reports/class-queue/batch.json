@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T03:43:08Z",
   "files": [
-    "src/transformers/models/vilt/configuration_vilt.py",
-    "src/transformers/models/vilt/image_processing_pil_vilt.py",
-    "src/transformers/models/vilt/image_processing_vilt.py",
-    "src/transformers/models/vilt/modeling_vilt.py",
-    "src/transformers/models/vilt/processing_vilt.py",
-    "src/transformers/models/vipllava/__init__.py",
-    "src/transformers/models/vipllava/configuration_vipllava.py",
-    "src/transformers/models/vipllava/modeling_vipllava.py",
-    "src/transformers/models/vipllava/modular_vipllava.py",
-    "src/transformers/models/vision_encoder_decoder/__init__.py",
-    "src/transformers/models/vision_encoder_decoder/configuration_vision_encoder_decoder.py",
-    "src/transformers/models/vision_encoder_decoder/modeling_vision_encoder_decoder.py",
-    "src/transformers/models/vision_text_dual_encoder/__init__.py",
-    "src/transformers/models/vision_text_dual_encoder/configuration_vision_text_dual_encoder.py",
-    "src/transformers/models/vision_text_dual_encoder/modeling_vision_text_dual_encoder.py",
     "src/transformers/models/vision_text_dual_encoder/processing_vision_text_dual_encoder.py",
     "src/transformers/models/visual_bert/__init__.py",
     "src/transformers/models/visual_bert/configuration_visual_bert.py",
@@ -33,5 +18,5 @@
     "src/transformers/models/vit_msn/configuration_vit_msn.py"
   ],
   "remaining_pending": 339,
-  "done": 2310
+  "done": 2325
 }
