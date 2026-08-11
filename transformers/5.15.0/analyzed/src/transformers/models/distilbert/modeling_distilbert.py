@@ -59,6 +59,7 @@ logger = logging.get_logger(__name__)
 # UTILS AND BUILDING BLOCKS OF THE ARCHITECTURE #
 
 
+# create_sinusoidal_embeddings：DeepSpeed ZeRO-3 兼容的正弦位置编码写入
 def create_sinusoidal_embeddings(n_pos: int, dim: int, out: torch.Tensor):
     if is_deepspeed_zero3_enabled():
         import deepspeed
@@ -70,6 +71,7 @@ def create_sinusoidal_embeddings(n_pos: int, dim: int, out: torch.Tensor):
         return _create_sinusoidal_embeddings(n_pos=n_pos, dim=dim, out=out)
 
 
+# _create_sinusoidal_embeddings：正弦/余弦位置编码实际计算
 def _create_sinusoidal_embeddings(n_pos: int, dim: int, out: torch.Tensor):
     position_enc = np.array([[pos / np.power(10000, 2 * (j // 2) / dim) for j in range(dim)] for pos in range(n_pos)])
     out.requires_grad = False
@@ -79,6 +81,7 @@ def _create_sinusoidal_embeddings(n_pos: int, dim: int, out: torch.Tensor):
     return out
 
 
+# Embeddings：词嵌入 + 位置嵌入 + LayerNorm + Dropout
 class Embeddings(nn.Module):
     def __init__(self, config: PreTrainedConfig):
         super().__init__()
@@ -119,6 +122,7 @@ class Embeddings(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.eager_attention_forward
+# eager_attention_forward：双向缩放点积注意力
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -147,6 +151,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# DistilBertSelfAttention：多头自注意力，Q/K/V 线性投影
 class DistilBertSelfAttention(nn.Module):
     def __init__(self, config: PreTrainedConfig):
         super().__init__()
@@ -203,6 +208,7 @@ class DistilBertSelfAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# FFN：两层线性 + 激活的前馈网络
 class FFN(nn.Module):
     def __init__(self, config: PreTrainedConfig):
         super().__init__()
@@ -224,6 +230,7 @@ class FFN(nn.Module):
         return x
 
 
+# TransformerBlock：自注意力 + FFN 残差块，支持 gradient checkpointing
 class TransformerBlock(GradientCheckpointingLayer):
     def __init__(self, config: PreTrainedConfig):
         super().__init__()
@@ -259,6 +266,7 @@ class TransformerBlock(GradientCheckpointingLayer):
         return ffn_output
 
 
+# Transformer：堆叠 TransformerBlock 编码器
 class Transformer(nn.Module):
     def __init__(self, config: PreTrainedConfig):
         super().__init__()
@@ -284,6 +292,7 @@ class Transformer(nn.Module):
 
 # INTERFACE FOR ENCODER AND TASK SPECIFIC MODEL #
 @auto_docstring
+# DistilBertPreTrainedModel：权重初始化与注意力后端配置
 class DistilBertPreTrainedModel(PreTrainedModel):
     config: DistilBertConfig
     base_model_prefix = "distilbert"
@@ -315,6 +324,7 @@ class DistilBertPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# DistilBertModel：DistilBERT 编码器骨干，输出 last_hidden_state
 class DistilBertModel(DistilBertPreTrainedModel):
     def __init__(self, config: PreTrainedConfig):
         super().__init__(config)
@@ -426,6 +436,7 @@ class DistilBertModel(DistilBertPreTrainedModel):
     DistilBert Model with a `masked language modeling` head on top.
     """
 )
+# DistilBertForMaskedLM：掩码语言建模头，vocab 投影 + CrossEntropy
 class DistilBertForMaskedLM(DistilBertPreTrainedModel):
     _tied_weights_keys = {"vocab_projector.weight": "distilbert.embeddings.word_embeddings.weight"}
 
@@ -530,6 +541,7 @@ class DistilBertForMaskedLM(DistilBertPreTrainedModel):
     pooled output) e.g. for GLUE tasks.
     """
 )
+# DistilBertForSequenceClassification：序列分类，[CLS] 池化 + 线性分类器
 class DistilBertForSequenceClassification(DistilBertPreTrainedModel):
     def __init__(self, config: PreTrainedConfig):
         super().__init__(config)
@@ -628,6 +640,7 @@ class DistilBertForSequenceClassification(DistilBertPreTrainedModel):
 
 
 @auto_docstring
+# DistilBertForQuestionAnswering：抽取式 QA，预测 start/end 位置 logits
 class DistilBertForQuestionAnswering(DistilBertPreTrainedModel):
     def __init__(self, config: PreTrainedConfig):
         super().__init__(config)
@@ -730,6 +743,7 @@ class DistilBertForQuestionAnswering(DistilBertPreTrainedModel):
 
 
 @auto_docstring
+# DistilBertForTokenClassification：token 级序列标注（NER 等）
 class DistilBertForTokenClassification(DistilBertPreTrainedModel):
     def __init__(self, config: PreTrainedConfig):
         super().__init__(config)
@@ -805,6 +819,7 @@ class DistilBertForTokenClassification(DistilBertPreTrainedModel):
 
 
 @auto_docstring
+# DistilBertForMultipleChoice：多选任务，展平选项维度后分类
 class DistilBertForMultipleChoice(DistilBertPreTrainedModel):
     def __init__(self, config: PreTrainedConfig):
         super().__init__(config)

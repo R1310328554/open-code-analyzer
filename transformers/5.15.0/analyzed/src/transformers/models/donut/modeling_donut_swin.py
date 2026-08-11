@@ -41,6 +41,7 @@ logger = logging.get_logger(__name__)
 )
 @dataclass
 # Copied from transformers.models.swin.modeling_swin.SwinEncoderOutput with Swin->DonutSwin
+# DonutSwinEncoderOutput：编码器输出，含 hidden_states 与 attentions
 class DonutSwinEncoderOutput(ModelOutput):
     r"""
     reshaped_hidden_states (`tuple(torch.FloatTensor)`, *optional*, returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
@@ -64,6 +65,7 @@ class DonutSwinEncoderOutput(ModelOutput):
 )
 @dataclass
 # Copied from transformers.models.swin.modeling_swin.SwinModelOutput with Swin->DonutSwin
+# DonutSwinModelOutput：模型输出，含 last_hidden_state 与 pooler_output
 class DonutSwinModelOutput(ModelOutput):
     r"""
     pooler_output (`torch.FloatTensor` of shape `(batch_size, hidden_size)`, *optional*, returned when `add_pooling_layer=True` is passed):
@@ -90,6 +92,7 @@ class DonutSwinModelOutput(ModelOutput):
 )
 @dataclass
 # Copied from transformers.models.swin.modeling_swin.SwinImageClassifierOutput with Swin->DonutSwin
+# DonutSwinImageClassifierOutput：图像分类 logits 与 loss
 class DonutSwinImageClassifierOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -112,6 +115,7 @@ class DonutSwinImageClassifierOutput(ModelOutput):
 
 
 # Copied from transformers.models.swin.modeling_swin.window_partition
+# window_partition：将特征图划分为不重叠窗口
 def window_partition(input_feature, window_size):
     """
     Partitions the given input into windows.
@@ -125,6 +129,7 @@ def window_partition(input_feature, window_size):
 
 
 # Copied from transformers.models.swin.modeling_swin.window_reverse
+# window_reverse：将窗口特征还原为完整特征图
 def window_reverse(windows, window_size, height, width):
     """
     Merges windows to produce higher resolution features.
@@ -136,6 +141,7 @@ def window_reverse(windows, window_size, height, width):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinEmbeddings with Swin->DonutSwin
+# DonutSwinEmbeddings：patch 嵌入 + 可选绝对位置编码
 class DonutSwinEmbeddings(nn.Module):
     """
     Construct the patch and position embeddings. Optionally, also the mask token.
@@ -229,6 +235,7 @@ class DonutSwinEmbeddings(nn.Module):
 
 
 # Copied from transformers.models.swin.modeling_swin.SwinPatchEmbeddings with Swin->DonutSwin
+# DonutSwinPatchEmbeddings：Conv2d patch 投影
 class DonutSwinPatchEmbeddings(nn.Module):
     """
     This class turns `pixel_values` of shape `(batch_size, num_channels, height, width)` into the initial
@@ -272,6 +279,7 @@ class DonutSwinPatchEmbeddings(nn.Module):
 
 
 # Copied from transformers.models.swin.modeling_swin.SwinPatchMerging with Swin->DonutSwin
+# DonutSwinPatchMerging：patch 合并降采样 2×
 class DonutSwinPatchMerging(nn.Module):
     """
     Patch Merging Layer.
@@ -313,6 +321,7 @@ class DonutSwinPatchMerging(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinSelfAttention with Swin->DonutSwin
+# DonutSwinSelfAttention：窗口内缩放点积自注意力
 class DonutSwinSelfAttention(nn.Module):
     def __init__(self, config, dim, num_heads, window_size):
         super().__init__()
@@ -407,6 +416,7 @@ class DonutSwinSelfAttention(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinSelfOutput
+# DonutSwinSelfOutput：注意力输出投影 + Dropout
 class DonutSwinSelfOutput(nn.Module):
     def __init__(self, config, dim):
         super().__init__()
@@ -421,6 +431,7 @@ class DonutSwinSelfOutput(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinAttention with Swin->DonutSwin
+# DonutSwinAttention：自注意力 + 输出投影封装
 class DonutSwinAttention(nn.Module):
     def __init__(self, config, dim, num_heads, window_size):
         super().__init__()
@@ -440,6 +451,7 @@ class DonutSwinAttention(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinIntermediate
+# DonutSwinIntermediate：FFN 中间线性层 + 激活
 class DonutSwinIntermediate(nn.Module):
     def __init__(self, config, dim):
         super().__init__()
@@ -456,6 +468,7 @@ class DonutSwinIntermediate(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinOutput
+# DonutSwinOutput：FFN 输出投影 + Dropout
 class DonutSwinOutput(nn.Module):
     def __init__(self, config, dim):
         super().__init__()
@@ -469,6 +482,7 @@ class DonutSwinOutput(nn.Module):
 
 
 # Copied from transformers.models.swin.modular_swin.SwinDropPath with SwinDropPath->DonutDropPath
+# DonutDropPath：Stochastic Depth 随机丢弃路径
 class DonutDropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -494,6 +508,7 @@ class DonutDropPath(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinLayer with Swin->DonutSwin
+# DonutSwinLayer：窗口注意力 + FFN + DropPath 残差块
 class DonutSwinLayer(nn.Module):
     def __init__(self, config, dim, input_resolution, num_heads, drop_path_rate=0.0, shift_size=0):
         super().__init__()
@@ -615,6 +630,7 @@ class DonutSwinLayer(nn.Module):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinStage with Swin->DonutSwin
+# DonutSwinStage：一个 Swin stage，含多层 + PatchMerging
 class DonutSwinStage(GradientCheckpointingLayer):
     def __init__(self, config, dim, input_resolution, depth, num_heads, drop_path, downsample):
         super().__init__()
@@ -671,6 +687,7 @@ class DonutSwinStage(GradientCheckpointingLayer):
 
 
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinEncoder with Swin->DonutSwin
+# DonutSwinEncoder：堆叠多 stage Swin 编码器
 class DonutSwinEncoder(nn.Module):
     def __init__(self, config, grid_size):
         super().__init__()
@@ -759,6 +776,7 @@ class DonutSwinEncoder(nn.Module):
 
 @auto_docstring
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinPreTrainedModel with Swin->DonutSwin,swin->donut
+# DonutSwinPreTrainedModel：权重初始化基类
 class DonutSwinPreTrainedModel(PreTrainedModel):
     config: DonutSwinConfig
     base_model_prefix = "donut"
@@ -782,6 +800,7 @@ class DonutSwinPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# DonutSwinModel：Donut 视觉骨干，输出序列化 patch 特征
 class DonutSwinModel(DonutSwinPreTrainedModel):
     def __init__(self, config, add_pooling_layer=True, use_mask_token=False):
         r"""
@@ -878,6 +897,7 @@ class DonutSwinModel(DonutSwinPreTrainedModel):
     """
 )
 # Todo - Refactor as part of vision refactor. Copied from transformers.models.swin.modeling_swin.SwinForImageClassification with Swin->DonutSwin,swin->donut
+# DonutSwinForImageClassification：图像分类任务头
 class DonutSwinForImageClassification(DonutSwinPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

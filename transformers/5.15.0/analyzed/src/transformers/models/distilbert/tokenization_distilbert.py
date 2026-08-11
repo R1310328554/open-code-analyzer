@@ -19,9 +19,11 @@ from ...models.bert.tokenization_bert import BertTokenizer
 VOCAB_FILES_NAMES = {"vocab_file": "vocab.txt", "tokenizer_file": "tokenizer.json"}
 
 
+# DistilBertTokenizer：WordPiece 分词，do_lower_case 默认 True
 class DistilBertTokenizer(BertTokenizer):
     model_input_names = ["input_ids", "attention_mask"]
 
+# __init__：构造 DistilBERT 分词器，复用 BertTokenizer 主逻辑
     def __init__(self, *args, do_lower_case: bool = True, **kwargs):
         """
         Construct a DistilBERT tokenizer (backed by HuggingFace's tokenizers library). Based on WordPiece.

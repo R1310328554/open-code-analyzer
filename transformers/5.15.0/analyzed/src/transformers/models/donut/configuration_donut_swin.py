@@ -19,8 +19,10 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# DonutSwinConfig：naver-clova-ix/donut-base checkpoint 默认超参
 @auto_docstring(checkpoint="naver-clova-ix/donut-base")
 @strict
+# DonutSwinConfig：Swin 窗口注意力、depths/num_heads 与 hidden_size 推导
 class DonutSwinConfig(PreTrainedConfig):
     r"""
     window_size (`int`, *optional*, defaults to 7):
@@ -65,6 +67,7 @@ class DonutSwinConfig(PreTrainedConfig):
     initializer_range: float = 0.02
     layer_norm_eps: float = 1e-5
 
+# __post_init__：设置 num_layers 与 VisionEncoderDecoder 兼容 hidden_size
     def __post_init__(self, **kwargs):
         self.num_layers = len(self.depths)
         # we set the hidden_size attribute in order to make Swin work with VisionEncoderDecoderModel

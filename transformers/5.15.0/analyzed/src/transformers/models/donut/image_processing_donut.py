@@ -30,6 +30,7 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# DonutImageProcessorKwargs：do_thumbnail/do_align_long_axis 等 Donut 专用参数
 class DonutImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     do_thumbnail (`bool`, *optional*, defaults to `self.do_thumbnail`):
@@ -43,6 +44,7 @@ class DonutImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# DonutImageProcessor：默认 2560×1920，ImageNet 均值方差归一化
 class DonutImageProcessor(TorchvisionBackend):
     """Torchvision backend for Donut with align_long_axis, thumbnail, and pad_image."""
 
@@ -59,6 +61,7 @@ class DonutImageProcessor(TorchvisionBackend):
     do_align_long_axis = False
     do_pad = True
 
+# __init__：size 元组自动翻转 height/width 顺序
     def __init__(self, **kwargs: Unpack[DonutImageProcessorKwargs]):
         size = kwargs.pop("size", None)
         if isinstance(size, (tuple, list)):
@@ -68,6 +71,7 @@ class DonutImageProcessor(TorchvisionBackend):
         super().__init__(**kwargs)
 
     @auto_docstring
+# preprocess：入口，修正 size 后委托父类 preprocess
     def preprocess(
         self,
         images: ImageInput,
@@ -80,6 +84,7 @@ class DonutImageProcessor(TorchvisionBackend):
                 kwargs["size"] = size[::-1]
         return super().preprocess(images, **kwargs)
 
+# align_long_axis：旋转 90° 使图像长边与目标 size 长边对齐
     def align_long_axis(
         self,
         image: "torch.Tensor",
@@ -97,6 +102,7 @@ class DonutImageProcessor(TorchvisionBackend):
 
         return image
 
+# pad_image：居中或随机 padding 至目标尺寸
     def pad_image(
         self,
         image: "torch.Tensor",
@@ -123,6 +129,7 @@ class DonutImageProcessor(TorchvisionBackend):
         padding = (pad_left, pad_top, pad_right, pad_bottom)
         return tvF.pad(image, padding)
 
+# thumbnail：保持宽高比缩略图，不超过目标 size
     def thumbnail(
         self,
         image: "torch.Tensor",
@@ -152,6 +159,7 @@ class DonutImageProcessor(TorchvisionBackend):
             **kwargs,
         )
 
+# _preprocess：align_long_axis → thumbnail → resize → pad 流水线
     def _preprocess(
         self,
         images: list["torch.Tensor"],

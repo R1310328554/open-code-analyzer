@@ -54,6 +54,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# DINOv3ViTBackboneOutput：骨干输出 dataclass modular 源
 class DINOv3ViTBackboneOutput(BackboneOutput):
     r"""
     cls_tokens (`tuple(torch.FloatTensor)`, *optional*):
@@ -64,6 +65,7 @@ class DINOv3ViTBackboneOutput(BackboneOutput):
     cls_tokens: tuple[torch.FloatTensor] | None = None
 
 
+# DINOv3ViTEmbeddings：patch 嵌入与 register token modular 源
 class DINOv3ViTEmbeddings(nn.Module):
     """
     Construct the CLS token, mask token, position and patch embeddings.
@@ -100,6 +102,7 @@ class DINOv3ViTEmbeddings(nn.Module):
 
 
 @compile_compatible_method_lru_cache(maxsize=32)
+# get_patches_center_coordinates：patch 中心坐标计算
 def get_patches_center_coordinates(
     num_patches_h: int, num_patches_w: int, dtype: torch.dtype, device: torch.device
 ) -> torch.Tensor:
@@ -128,6 +131,7 @@ def get_patches_center_coordinates(
     return coords
 
 
+# augment_patches_center_coordinates：坐标数据增强
 def augment_patches_center_coordinates(
     coords: torch.Tensor,
     shift: float | None = None,
@@ -157,6 +161,7 @@ def augment_patches_center_coordinates(
     return coords
 
 
+# DINOv3ViTRopePositionEmbedding：2D RoPE 位置编码 modular 源
 class DINOv3ViTRopePositionEmbedding(nn.Module):
     inv_freq: torch.Tensor
 
@@ -207,6 +212,7 @@ class DINOv3ViTRopePositionEmbedding(nn.Module):
         return cos.to(dtype=dtype), sin.to(dtype=dtype)
 
 
+# apply_rotary_pos_emb：RoPE 应用到 Q/K
 def apply_rotary_pos_emb(
     q: torch.Tensor, k: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor, **kwargs
 ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -240,6 +246,7 @@ def apply_rotary_pos_emb(
     return q, k
 
 
+# DINOv3ViTAttention：继承 Pixtral 注意力并扩展 RoPE
 class DINOv3ViTAttention(PixtralAttention):
     def __init__(self, config: DINOv3ViTConfig):
         super().__init__(config)
@@ -292,22 +299,27 @@ class DINOv3ViTAttention(PixtralAttention):
         return attn_output, attn_weights
 
 
+# DINOv3ViTLayerScale：继承 DINOv2 LayerScale
 class DINOv3ViTLayerScale(Dinov2LayerScale):
     pass
 
 
+# DINOv3ViTMLP：继承 Arcee 标准 MLP
 class DINOv3ViTMLP(ArceeMLP):
     pass
 
 
+# DINOv3ViTGatedMLP：继承 Llama SwiGLU 前馈
 class DINOv3ViTGatedMLP(LlamaMLP):
     pass
 
 
+# Dinov3ViTDropPath：继承 Swin DropPath
 class Dinov3ViTDropPath(SwinDropPath):
     pass
 
 
+# DINOv3ViTLayer：ViT 编码层 modular 源
 class DINOv3ViTLayer(GradientCheckpointingLayer):
     """This corresponds to the Block class in the original implementation."""
 
@@ -357,6 +369,7 @@ class DINOv3ViTLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# DINOv3ViTPreTrainedModel：继承 DINOv2 预训练基类
 class DINOv3ViTPreTrainedModel(Dinov2PreTrainedModel):
     base_model_prefix = "model"
     _can_record_outputs = {
@@ -384,6 +397,7 @@ class DINOv3ViTPreTrainedModel(Dinov2PreTrainedModel):
             init.copy_(module.inv_freq, inv_freq)
 
 
+# DINOv3ViTEncoder：ViT 编码器堆叠
 class DINOv3ViTEncoder(DINOv3ViTPreTrainedModel):
     def __init__(self, config: DINOv3ViTConfig):
         super().__init__(config)
@@ -406,6 +420,7 @@ class DINOv3ViTEncoder(DINOv3ViTPreTrainedModel):
 
 
 @auto_docstring
+# DINOv3ViTModel：完整 DINOv3 ViT 模型
 class DINOv3ViTModel(DINOv3ViTPreTrainedModel):
     def __init__(self, config: DINOv3ViTConfig):
         super().__init__(config)
@@ -451,6 +466,7 @@ class DINOv3ViTModel(DINOv3ViTPreTrainedModel):
 
 
 @auto_docstring
+# DINOv3ViTBackbone：多尺度骨干输出接口
 class DINOv3ViTBackbone(BackboneMixin, DINOv3ViTPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

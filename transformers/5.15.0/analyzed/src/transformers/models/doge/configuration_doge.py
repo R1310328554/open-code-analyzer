@@ -26,8 +26,10 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# DogeConfig：SmallDoge/Doge-320M checkpoint，32 层 1024 维
 @auto_docstring(checkpoint="SmallDoge/Doge-320M")
 @strict
+# DogeConfig：keep_window_size 动态掩码、is_moe 跨域 MoE 与 TP/PP 并行计划
 class DogeConfig(PreTrainedConfig):
     r"""
     keep_window_size (`int`, *optional*, defaults to 2048):

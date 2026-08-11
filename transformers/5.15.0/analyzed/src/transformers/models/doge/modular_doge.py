@@ -55,8 +55,10 @@ if is_torch_flex_attn_available():
     from torch.nn.attention.flex_attention import BlockMask
 
 
+# DogeConfig：modular 源中的 SmallDoge LM 配置
 @auto_docstring(checkpoint="SmallDoge/Doge-320M")
 @strict
+# DogeConfig：keep_window_size/is_moe 与 TP/PP 并行计划
 class DogeConfig(PreTrainedConfig):
     r"""
     keep_window_size (`int`, *optional*, defaults to 2048):
@@ -136,14 +138,17 @@ class DogeConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# DogeRMSNorm：继承 Llama RMSNorm
 class DogeRMSNorm(LlamaRMSNorm):
     pass
 
 
+# DogeRotaryEmbedding：继承 Llama RoPE
 class DogeRotaryEmbedding(LlamaRotaryEmbedding):
     pass
 
 
+# flex_attention_forward：Flex Attention 动态掩码 modular 源
 def flex_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -194,6 +199,7 @@ ALL_ATTENTION_FUNCTIONS = AttentionInterface()
 ALL_ATTENTION_FUNCTIONS["doge_flex_attention"] = flex_attention_forward
 
 
+# DogeAttention：dt_proj 动态 token 路由自注意力 modular 源
 class DogeAttention(nn.Module):
     def __init__(self, config: DogeConfig, layer_idx: int | None = None):
         super().__init__()
@@ -316,10 +322,12 @@ class DogeAttention(nn.Module):
         return attn_mask
 
 
+# DogeMLP：继承 Llama SwiGLU 前馈
 class DogeMLP(LlamaMLP):
     pass
 
 
+# DogeCDMoE：Cross Domain MoE modular 源
 class DogeCDMoE(nn.Module):
     def __init__(self, config: DogeConfig):
         super().__init__()
@@ -377,6 +385,7 @@ class DogeCDMoE(nn.Module):
         return hidden_states, router_logits
 
 
+# DogeDecoderLayer：解码层 modular 源
 class DogeDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: DogeConfig, layer_idx: int | None = None):
         super().__init__()
@@ -425,6 +434,7 @@ class DogeDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# DogePreTrainedModel：继承 Llama 预训练基类
 class DogePreTrainedModel(LlamaPreTrainedModel):
     _supports_flash_attn = False
     _can_compile_fullgraph = False
@@ -448,10 +458,12 @@ class DogePreTrainedModel(LlamaPreTrainedModel):
                 init.ones_(module.post_attention_residual)
 
 
+# DogeModel：继承 MixtralModel 骨干结构
 class DogeModel(MixtralModel):
     pass
 
 
+# load_balancing_loss_func：MoE 负载均衡损失 modular 源
 def load_balancing_loss_func(
     gate_logits: torch.Tensor | tuple[torch.Tensor] | None,
     num_experts: int | None = None,
@@ -558,6 +570,7 @@ def load_balancing_loss_func(
     return overall_loss * num_experts
 
 
+# DogeForCausalLM：继承 Mixtral 因果 LM 头
 class DogeForCausalLM(MixtralForCausalLM):
     def __init__(self, config):
         super().__init__(config)
@@ -646,6 +659,7 @@ class DogeForCausalLM(MixtralForCausalLM):
         )
 
 
+# DogeForSequenceClassification：继承 Llama 序列分类头
 class DogeForSequenceClassification(LlamaForSequenceClassification):
     pass
 

@@ -30,6 +30,7 @@ from ...utils import TensorType, auto_docstring
 
 
 # Adapted from transformers.models.donut.image_processing_donut.DonutImageProcessorKwargs
+# DonutImageProcessorKwargs：PIL 后端共享的 Donut 图像处理 kwargs
 class DonutImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     do_thumbnail (`bool`, *optional*, defaults to `self.do_thumbnail`):
@@ -43,6 +44,7 @@ class DonutImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring
+# DonutImageProcessorPil：PIL 后端 Donut 图像处理器
 class DonutImageProcessorPil(PilBackend):
     """PIL backend for Donut with align_long_axis, thumbnail, and pad_image."""
 
@@ -59,6 +61,7 @@ class DonutImageProcessorPil(PilBackend):
     do_align_long_axis = False
     do_pad = True
 
+# __init__：size 元组翻转与父类初始化
     def __init__(self, **kwargs: Unpack[DonutImageProcessorKwargs]):
         size = kwargs.pop("size", None)
         if isinstance(size, (tuple, list)):
@@ -68,6 +71,7 @@ class DonutImageProcessorPil(PilBackend):
         super().__init__(**kwargs)
 
     @auto_docstring
+# preprocess：修正 size 后调用父类 preprocess
     def preprocess(
         self,
         images: ImageInput,
@@ -80,6 +84,7 @@ class DonutImageProcessorPil(PilBackend):
                 kwargs["size"] = size[::-1]
         return super().preprocess(images, **kwargs)
 
+# align_long_axis：np.rot90 旋转使长边对齐
     def align_long_axis(
         self,
         image: np.ndarray,
@@ -98,6 +103,7 @@ class DonutImageProcessorPil(PilBackend):
 
         return image
 
+# pad_image：numpy pad 至目标尺寸
     def pad_image(
         self,
         image: np.ndarray,
@@ -136,6 +142,7 @@ class DonutImageProcessorPil(PilBackend):
             input_data_format=ChannelDimension.FIRST,
         )
 
+# thumbnail：保持宽高比 PIL 缩略图
     def thumbnail(
         self,
         image: np.ndarray,
@@ -166,6 +173,7 @@ class DonutImageProcessorPil(PilBackend):
             resample=resample or PILImageResampling.BICUBIC,
         )
 
+# _preprocess：Donut 文档 OCR 图像预处理流水线
     def _preprocess(
         self,
         images: list[np.ndarray],

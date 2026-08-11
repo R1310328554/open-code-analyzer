@@ -47,6 +47,7 @@ from .configuration_dinov3_vit import DINOv3ViTConfig
     """
 )
 @dataclass
+# DINOv3ViTBackboneOutput：骨干输出，可选返回各 stage 的 CLS token
 class DINOv3ViTBackboneOutput(BackboneOutput):
     r"""
     cls_tokens (`tuple(torch.FloatTensor)`, *optional*):
@@ -57,6 +58,7 @@ class DINOv3ViTBackboneOutput(BackboneOutput):
     cls_tokens: tuple[torch.FloatTensor] | None = None
 
 
+# DINOv3ViTEmbeddings：CLS/mask/register token 与 patch 卷积嵌入
 class DINOv3ViTEmbeddings(nn.Module):
     """
     Construct the CLS token, mask token, position and patch embeddings.
@@ -93,6 +95,7 @@ class DINOv3ViTEmbeddings(nn.Module):
 
 
 @compile_compatible_method_lru_cache(maxsize=32)
+# get_patches_center_coordinates：计算 patch 中心归一化坐标 [-1,1]
 def get_patches_center_coordinates(
     num_patches_h: int, num_patches_w: int, dtype: torch.dtype, device: torch.device
 ) -> torch.Tensor:
@@ -121,6 +124,7 @@ def get_patches_center_coordinates(
     return coords
 
 
+# augment_patches_center_coordinates：训练时对 patch 坐标做随机平移增强
 def augment_patches_center_coordinates(
     coords: torch.Tensor,
     shift: float | None = None,
@@ -150,6 +154,7 @@ def augment_patches_center_coordinates(
     return coords
 
 
+# DINOv3ViTRopePositionEmbedding：基于 patch 中心坐标的 2D RoPE 位置编码
 class DINOv3ViTRopePositionEmbedding(nn.Module):
     inv_freq: torch.Tensor
 
@@ -200,6 +205,7 @@ class DINOv3ViTRopePositionEmbedding(nn.Module):
         return cos.to(dtype=dtype), sin.to(dtype=dtype)
 
 
+# rotate_half：RoPE 旋转辅助，交换半维并取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -207,6 +213,7 @@ def rotate_half(x):
     return torch.cat((-x2, x1), dim=-1)
 
 
+# eager_attention_forward：缩放点积注意力 eager 实现
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -235,6 +242,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# apply_rotary_pos_emb：对 Q/K 施加 2D RoPE cos/sin 旋转
 def apply_rotary_pos_emb(
     q: torch.Tensor, k: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor, **kwargs
 ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -268,6 +276,7 @@ def apply_rotary_pos_emb(
     return q, k
 
 
+# DINOv3ViTAttention：多头自注意力，集成 RoPE 与 per-head bias
 class DINOv3ViTAttention(nn.Module):
     """
     Multi-headed attention compatible with ALL_ATTENTION_FUNCTIONS.
@@ -334,6 +343,7 @@ class DINOv3ViTAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# DINOv3ViTLayerScale：可学习 LayerScale 残差缩放
 class DINOv3ViTLayerScale(nn.Module):
     def __init__(self, config) -> None:
         super().__init__()
@@ -343,6 +353,7 @@ class DINOv3ViTLayerScale(nn.Module):
         return hidden_state * self.lambda1
 
 
+# DINOv3ViTMLP：标准 GELU 前馈 MLP
 class DINOv3ViTMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -357,6 +368,7 @@ class DINOv3ViTMLP(nn.Module):
         return self.down_proj(self.act_fn(self.up_proj(x)))
 
 
+# DINOv3ViTGatedMLP：SwiGLU 门控前馈（gate/up/down 三线性）
 class DINOv3ViTGatedMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -373,6 +385,7 @@ class DINOv3ViTGatedMLP(nn.Module):
         return down_proj
 
 
+# Dinov3ViTDropPath：Stochastic Depth 随机丢弃残差路径
 class Dinov3ViTDropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -397,6 +410,7 @@ class Dinov3ViTDropPath(nn.Module):
         return f"p={self.drop_prob}"
 
 
+# DINOv3ViTLayer：Pre-LN 自注意力 + MLP/GatedMLP 残差块
 class DINOv3ViTLayer(GradientCheckpointingLayer):
     """This corresponds to the Block class in the original implementation."""
 
@@ -446,6 +460,7 @@ class DINOv3ViTLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# DINOv3ViTPreTrainedModel：权重初始化与 Flash/SDPA 注意力支持
 class DINOv3ViTPreTrainedModel(PreTrainedModel):
     config: DINOv3ViTConfig
     base_model_prefix = "model"
@@ -482,6 +497,7 @@ class DINOv3ViTPreTrainedModel(PreTrainedModel):
             init.copy_(module.inv_freq, inv_freq)
 
 
+# DINOv3ViTEncoder：堆叠 ViT 层，输出各层 hidden states
 class DINOv3ViTEncoder(DINOv3ViTPreTrainedModel):
     def __init__(self, config: DINOv3ViTConfig):
         super().__init__(config)
@@ -504,6 +520,7 @@ class DINOv3ViTEncoder(DINOv3ViTPreTrainedModel):
 
 
 @auto_docstring
+# DINOv3ViTModel：完整 ViT 骨干，含嵌入与编码器
 class DINOv3ViTModel(DINOv3ViTPreTrainedModel):
     def __init__(self, config: DINOv3ViTConfig):
         super().__init__(config)
@@ -549,6 +566,7 @@ class DINOv3ViTModel(DINOv3ViTPreTrainedModel):
 
 
 @auto_docstring
+# DINOv3ViTBackbone：BackboneMixin 多尺度特征提取接口
 class DINOv3ViTBackbone(BackboneMixin, DINOv3ViTPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

@@ -19,8 +19,10 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# DistilBertConfig：google/distilbert-base-uncased checkpoint 默认超参
 @auto_docstring(checkpoint="google/distilbert-base-uncased")
 @strict
+# DistilBertConfig：n_layers/n_heads/dim 与 qa/seq_classif dropout
 class DistilBertConfig(PreTrainedConfig):
     r"""
     sinusoidal_pos_embds (`boolean`, *optional*, defaults to `False`):

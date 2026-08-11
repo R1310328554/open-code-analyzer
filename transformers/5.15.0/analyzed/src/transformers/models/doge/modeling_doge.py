@@ -52,6 +52,7 @@ if is_torch_flex_attn_available():
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# DogeRMSNorm：RMS 归一化，等价 T5LayerNorm，可接入 hub 内核
 class DogeRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -72,6 +73,7 @@ class DogeRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# DogeRotaryEmbedding：可配置 rope_type 的 RoPE 位置编码
 class DogeRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: DogeConfig, device=None):
@@ -129,6 +131,7 @@ class DogeRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# rotate_half：RoPE 旋转辅助函数
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -137,6 +140,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：对 Q/K 施加 RoPE cos/sin
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -162,6 +166,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 场景重复 KV 头匹配 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -174,6 +179,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：标准缩放点积注意力
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -199,6 +205,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# flex_attention_forward：Flex Attention 后端，支持 BlockMask 动态掩码
 def flex_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -249,6 +256,7 @@ ALL_ATTENTION_FUNCTIONS = AttentionInterface()
 ALL_ATTENTION_FUNCTIONS["doge_flex_attention"] = flex_attention_forward
 
 
+# DogeAttention：多头自注意力，dt_proj 动态 token 路由与 sliding window 掩码
 class DogeAttention(nn.Module):
     def __init__(self, config: DogeConfig, layer_idx: int | None = None):
         super().__init__()
@@ -371,6 +379,7 @@ class DogeAttention(nn.Module):
         return attn_mask
 
 
+# DogeMLP：SwiGLU 门控前馈（gate/up/down 投影）
 class DogeMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -387,6 +396,7 @@ class DogeMLP(nn.Module):
         return down_proj
 
 
+# DogeCDMoE：Cross Domain Mixture of Experts，router_gate 路由多专家
 class DogeCDMoE(nn.Module):
     def __init__(self, config: DogeConfig):
         super().__init__()
@@ -444,6 +454,7 @@ class DogeCDMoE(nn.Module):
         return hidden_states, router_logits
 
 
+# DogeDecoderLayer：Pre-RMSNorm 自注意力 + MLP/MoE 残差块
 class DogeDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: DogeConfig, layer_idx: int | None = None):
         super().__init__()
@@ -493,6 +504,7 @@ class DogeDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# DogePreTrainedModel：权重初始化与 gradient checkpointing 基类
 class DogePreTrainedModel(PreTrainedModel):
     config: DogeConfig
     base_model_prefix = "model"
@@ -525,6 +537,7 @@ class DogePreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# DogeModel：token 嵌入 + 堆叠 DecoderLayer + 最终 RMSNorm
 class DogeModel(DogePreTrainedModel):
     def __init__(self, config: DogeConfig):
         super().__init__(config)
@@ -600,6 +613,7 @@ class DogeModel(DogePreTrainedModel):
         )
 
 
+# load_balancing_loss_func：MoE 专家负载均衡辅助损失
 def load_balancing_loss_func(
     gate_logits: torch.Tensor | tuple[torch.Tensor] | None,
     num_experts: int | None = None,
@@ -707,6 +721,7 @@ def load_balancing_loss_func(
 
 
 @auto_docstring
+# DogeForCausalLM：因果 LM 头，支持 generate 与 MoE aux loss
 class DogeForCausalLM(DogePreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
@@ -809,6 +824,7 @@ class DogeForCausalLM(DogePreTrainedModel, GenerationMixin):
         )
 
 
+# DogeForSequenceClassification：序列分类任务头
 class DogeForSequenceClassification(GenericForSequenceClassification, DogePreTrainedModel):
     pass
 
