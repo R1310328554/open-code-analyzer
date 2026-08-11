@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T01:05:11Z",
   "files": [
-    "src/transformers/models/exaone4/configuration_exaone4.py",
-    "src/transformers/models/exaone4/modeling_exaone4.py",
-    "src/transformers/models/exaone4/modular_exaone4.py",
-    "src/transformers/models/exaone4_5/__init__.py",
-    "src/transformers/models/exaone4_5/configuration_exaone4_5.py",
-    "src/transformers/models/exaone4_5/modeling_exaone4_5.py",
-    "src/transformers/models/exaone4_5/modular_exaone4_5.py",
-    "src/transformers/models/exaone4_5/processing_exaone4_5.py",
-    "src/transformers/models/exaone_moe/__init__.py",
-    "src/transformers/models/exaone_moe/configuration_exaone_moe.py",
-    "src/transformers/models/exaone_moe/modeling_exaone_moe.py",
-    "src/transformers/models/exaone_moe/modular_exaone_moe.py",
-    "src/transformers/models/falcon/__init__.py",
-    "src/transformers/models/falcon/configuration_falcon.py",
-    "src/transformers/models/falcon/modeling_falcon.py",
     "src/transformers/models/falcon_h1/__init__.py",
     "src/transformers/models/falcon_h1/configuration_falcon_h1.py",
     "src/transformers/models/falcon_h1/modeling_falcon_h1.py",
@@ -33,5 +18,5 @@
     "src/transformers/models/fastspeech2_conformer/modeling_fastspeech2_conformer.py"
   ],
   "remaining_pending": 1899,
-  "done": 750
+  "done": 765
 }
