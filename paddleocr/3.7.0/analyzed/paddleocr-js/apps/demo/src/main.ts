@@ -1,7 +1,9 @@
+// PaddleOCR JS 浏览器演示：加载模型、选图、运行 OCR 并可视化检测结果
 import { PaddleOCR } from "@paddleocr/paddleocr-js";
 import type { OcrResult, OcrResultItem } from "@paddleocr/paddleocr-js";
 import { OcrVisualizer } from "@paddleocr/paddleocr-js/viz";
 
+// 引擎实例类型：create 返回的可调用 OCR 对象
 type OcrEngine = Awaited<ReturnType<typeof PaddleOCR.create>>;
 
 const ORT_WASM_PATHS = "https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/";
@@ -12,12 +14,14 @@ const DEFAULT_RUNTIME_PARAMS = Object.freeze({
   textRecScoreThresh: 0.1
 });
 
+  // 跨源隔离环境下启用多线程 WASM，否则限制为单线程
 function getDemoThreadCount(): number {
   return self.crossOriginIsolated
     ? Math.min(4, Math.max(1, (navigator.hardwareConcurrency || 2) - 1))
     : 1;
 }
 
+  // DOM 控件引用：模型预设、阈值滑块、运行按钮与结果展示区
 const ui = {
   modelPreset: document.getElementById("modelPreset") as HTMLSelectElement,
   runtimeBackend: document.getElementById("runtimeBackend") as HTMLSelectElement,
@@ -35,6 +39,7 @@ const ui = {
   vizImage: document.getElementById("vizImage") as HTMLImageElement
 };
 
+  // 应用状态：当前图片、预览位图、上次 OCR 结果与引擎就绪标志
 interface AppState {
   imageFile: File | null;
   previewBitmap: ImageBitmap | null;
@@ -114,6 +119,7 @@ function getRuntimeOptions() {
   };
 }
 
+  // 按 UI 选择创建 det/rec 模型对，initialize 后更新 metrics 面板
 async function initializeOcrEngine(): Promise<void> {
   state.ocrReady = false;
   updateRunButtonState();
@@ -156,6 +162,7 @@ async function handleImageSelection(file: File | undefined): Promise<void> {
   setStatus(`Image selected: ${file.name}`);
 }
 
+  // 调用 predict 传入运行时阈值，渲染 side-by-side 可视化与文本列表
 async function runOcr(): Promise<void> {
   if (!state.ocrReady || !state.ocr || !state.imageFile) {
     setStatus("Wait for OCR engine initialization to finish, then choose an image.", true);
@@ -209,6 +216,7 @@ ui.chooseImageBtn.addEventListener("click", () => {
   ui.imageInput.click();
 });
 
+  // 启动流程：初始化引擎 → 加载可视化字体 → 更新按钮与状态文案
 async function initialize(): Promise<void> {
   try {
     ui.reinitializeBtn.disabled = true;

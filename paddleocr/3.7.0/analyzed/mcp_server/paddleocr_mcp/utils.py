@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""编码工具：URL/Base64 判定与解码，供 MCP 输入契约与推理适配层共用。"""
 """Encoding helpers shared by input contract and inference adapters."""
 
 from __future__ import annotations
@@ -22,6 +23,7 @@ from typing import Optional
 from urllib.parse import urlparse
 
 
+    # 判断字符串是否为合法 http/https URL（scheme + netloc 均非空）
 def is_url(value: str) -> bool:
     if not (value.startswith("http://") or value.startswith("https://")):
         return False
@@ -30,11 +32,13 @@ def is_url(value: str) -> bool:
     return all([result.scheme, result.netloc]) and result.scheme in ("http", "https")
 
 
+    # 用正则校验标准 Base64 字符集与可选 padding
 def is_base64(value: str) -> bool:
     pattern = r"^[A-Za-z0-9+/]+={0,2}$"
     return bool(re.fullmatch(pattern, value))
 
 
+    # 从 data URL 截取逗号后的 payload，否则原样返回
 def extract_base64_payload(input_data: str) -> str:
     if input_data.startswith("data:"):
         if "," not in input_data:
@@ -43,6 +47,7 @@ def extract_base64_payload(input_data: str) -> str:
     return input_data
 
 
+    # 严格 Base64 解码，失败时抛出带修复提示的 ValueError
 def decode_base64_payload(payload: str) -> bytes:
     try:
         return base64.b64decode(payload, validate=True)
@@ -53,6 +58,7 @@ def decode_base64_payload(payload: str) -> bytes:
         ) from e
 
 
+    # 根据 magic bytes 推断 image 或 pdf，无法识别返回 None
 def infer_file_type_from_bytes(data: bytes) -> Optional[str]:
     import puremagic
 

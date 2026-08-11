@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# OCR MCP 任务：将 InferenceResult/OCRResult 格式化为纯文本或 JSON 详情
 import json
 from typing import List, Union
 from typing_extensions import override
@@ -22,19 +23,23 @@ from ..inference.types import InferenceResult, OCRResult
 from .base import Task
 
 
+    # OCR 工具实现：tool_name 固定为 ocr，负责 _format_result 输出编排
 class OCRTask(Task):
     @property
     @override
+        # 返回 MCP 工具标识 ocr
     def tool_name(self) -> str:
         return "ocr"
 
     @override
+        # detailed=False 返回可读文本+置信度；detailed=True 输出完整 JSON
     def _format_result(
         self, result: InferenceResult, detailed: bool, **kwargs
     ) -> Union[str, List[Union[TextContent, ImageContent]]]:
         if not isinstance(result, OCRResult):
             raise TypeError(f"OCRTask expected OCRResult, got {type(result).__name__}")
 
+            # 未检测到文字时按 detailed 模式返回英文提示或 JSON error
         if not result.text.strip():
             return (
                 "No text detected"

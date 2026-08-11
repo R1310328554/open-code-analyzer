@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// 文本检测模型：YAML 配置解析、OpenCV 预处理、ORT 推理与 DB 后处理解码
 import type { OpenCv, Mat } from "@techstark/opencv-js";
 import type { InferenceSession, Tensor } from "onnxruntime-web";
 
@@ -49,6 +50,7 @@ export interface DetModelConfig {
   postprocess: DetPostprocessConfig;
 }
 
+  // 检测模型接口：predict 输入 Mat 批次，输出 DetResult 列表
 export interface DetModel {
   readonly kind: "det";
   readonly config: DetModelConfig;
@@ -181,6 +183,7 @@ function resolveDetParams(
   };
 }
 
+  // 工厂：加载 ONNX session，封装 predict/dispose 生命周期
 export async function createDetModel({
   ort,
   modelBytes,
@@ -279,6 +282,7 @@ function preprocess(
   return mats.map((mat) => preprocessSample(context, mat, params));
 }
 
+  // 单图预处理：limit_side 缩放、32 对齐、BGR 归一化并构造 ORT Tensor
 function preprocessSample(
   context: DetContext,
   sourceMat: Mat,
@@ -465,6 +469,7 @@ function postprocess(
   return items;
 }
 
+  // DB 解码：阈值化 → findContours → mini box 打分 → unclip → 映射回原图坐标
 function decodeDetOutput(
   context: { cv: OpenCv; config: DetModelConfig },
   detOutput: Tensor,

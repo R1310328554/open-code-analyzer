@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// 文本识别模型：裁剪条带预处理、变宽 batch 推理与 CTC 贪心解码
 import type { OpenCv, Mat } from "@techstark/opencv-js";
 import type { Tensor } from "onnxruntime-web";
 
@@ -28,6 +29,7 @@ export interface RecRuntimeOverrides {
   batchSize?: number;
 }
 
+  // 识别模型接口：predict 输入裁剪 Mat，输出 text+score 列表
 export interface RecModel {
   readonly kind: "rec";
   readonly config: RecModelConfig;
@@ -65,6 +67,7 @@ export const DEFAULT_REC_MODEL_CONFIG: Readonly<RecModelConfig> = Object.freeze(
   ...DEFAULT_REC_MODEL_PARSE_FALLBACKS
 });
 
+  // 从 inference.yml 读取 RecResizeImg.image_shape 与 character_dict
 export function parseRecModelConfigText(text: string): RecModelConfig {
   const parsed = parseInferenceConfigText(text);
   const preProcess = parsed.PreProcess as Record<string, unknown> | undefined;
@@ -98,6 +101,7 @@ interface CreateRecModelArgs {
   batchSize?: number;
 }
 
+  // 工厂：创建 ORT session，按宽度排序 batch 以提升 padding 效率
 export async function createRecModel({
   ort,
   modelBytes,
@@ -254,6 +258,7 @@ function packRecBatchTensor(ort: OrtModule, samples: RecSample[], targetH: numbe
   return createBatchTensor(ort, samples, maxW, targetH);
 }
 
+  // CTC 贪心解码：逐步 argmax，跳过 blank 与重复索引，平均概率为 score
 function decodeCTCSample(
   data: Float32Array,
   offset: number,

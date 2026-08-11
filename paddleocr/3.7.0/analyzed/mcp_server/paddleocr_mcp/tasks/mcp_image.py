@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""MCP ImageContent 格式化：将 URL / data URL / 裸 Base64 统一为 MCP 图片块。"""
 """MCP ImageContent formatting helpers for tool output."""
 
 from __future__ import annotations
@@ -29,6 +30,7 @@ from ..utils import (
 )
 
 
+    # 用 puremagic 从字节流推断 MIME，非 image/* 时回退 image/jpeg
 def _mime_type_from_image_bytes(data: bytes) -> str:
     if infer_file_type_from_bytes(data) != "image":
         return "image/jpeg"
@@ -40,12 +42,14 @@ def _mime_type_from_image_bytes(data: bytes) -> str:
     return "image/jpeg"
 
 
+    # 输入原始图片载荷，输出 (base64 字符串, mimeType)；无法解析时返回 None
 def normalize_mcp_image_payload(raw: str) -> Optional[Tuple[str, str]]:
     """Convert provider image payloads to MCP ImageContent (base64 + mimeType)."""
     value = raw.strip()
     if not value:
         return None
 
+        # HTTP(S) URL：同步 GET 下载后编码为 Base64 并推断 MIME
     if is_url(value):
         try:
             with httpx.Client(timeout=30.0) as client:
@@ -59,6 +63,7 @@ def normalize_mcp_image_payload(raw: str) -> Optional[Tuple[str, str]]:
         except Exception:
             return None
 
+        # data URL：解析 MIME 头与 payload，必要时二次推断真实类型
     if value.startswith("data:"):
         try:
             data = decode_base64_payload(extract_base64_payload(value))
@@ -74,6 +79,7 @@ def normalize_mcp_image_payload(raw: str) -> Optional[Tuple[str, str]]:
         except ValueError:
             return None
 
+    # 裸 Base64：校验解码成功后保留原串并补全 mimeType
     try:
         data = decode_base64_payload(value)
         return value, _mime_type_from_image_bytes(data)

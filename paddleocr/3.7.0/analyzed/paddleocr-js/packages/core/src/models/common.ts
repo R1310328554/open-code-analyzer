@@ -3,12 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// 模型公共工具：YAML 推理配置解析、CHW 张量转换与 DB 后处理几何运算
 import yaml from "js-yaml";
 import ClipperLib from "clipper-lib";
 import type { OpenCv, Mat } from "@techstark/opencv-js";
 
 import { clamp, distance2 } from "../utils/common";
 
+// 二维坐标点，用于多边形框与 MiniBox
 export type Point2D = [number, number];
 
 export interface NormalizeConfig {
@@ -22,6 +24,7 @@ export interface MiniBox {
   side: number;
 }
 
+  // 检测框：四点多边形 poly 与置信度 score
 export interface DetBox {
   poly: Point2D[];
   score: number;
@@ -34,6 +37,7 @@ function isPlainObject(value: unknown): value is YamlObject {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
+  // 将 inference.yml 文本解析为对象，非对象根节点时返回空 dict
 export function parseInferenceConfigText(text: string): YamlObject {
   const parsed = yaml.load(text);
   return isPlainObject(parsed) ? parsed : {};
@@ -107,6 +111,7 @@ export function extractInferenceModelName(configText: string): string | null {
   return findModelNameInYamlNode(parsed);
 }
 
+  // BGR HWC uint8 → 归一化 float32 CHW（按 mean/std/scale）
 export function toBgrFloatCHWFromBgr(
   bgr: Uint8Array,
   width: number,
@@ -194,6 +199,7 @@ function chooseMaxAreaPath(paths: ClipperPoint[][]): ClipperPoint[] | null {
   return best;
 }
 
+  // Clipper 多边形外扩：按面积×unclipRatio/周长 计算偏移距离
 export function unclip(poly: Point2D[], unclipRatio: number): Point2D[] | null {
   const area = polygonArea(poly);
   const perimeter = polygonPerimeter(poly);
@@ -209,6 +215,7 @@ export function unclip(poly: Point2D[], unclipRatio: number): Point2D[] | null {
   return best.map((pt) => [pt.X, pt.Y]);
 }
 
+  // OpenCV minAreaRect 求最小外接四边形并按阅读顺序排序
 export function getMiniBoxFromPoints(cv: OpenCv, points: Point2D[]): MiniBox {
   const flat: number[] = [];
   for (const p of points) flat.push(p[0], p[1]);
@@ -223,6 +230,7 @@ export function getMiniBoxFromPoints(cv: OpenCv, points: Point2D[]): MiniBox {
   return { box: ordered, side };
 }
 
+  // 在预测热力图 ROI 内对四边形 mask 求均值作为框分数
 export function boxScoreFast(cv: OpenCv, predMat: Mat, box: Point2D[]): number {
   const h = predMat.rows;
   const w = predMat.cols;
