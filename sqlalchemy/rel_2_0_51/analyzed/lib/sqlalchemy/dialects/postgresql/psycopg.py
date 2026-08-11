@@ -203,14 +203,17 @@ if TYPE_CHECKING:
 logger = logging.getLogger("sqlalchemy.dialects.postgresql")
 
 
+# psycopg3 字符串
 class _PGString(sqltypes.String):
     render_bind_cast = True
 
 
+# regconfig
 class _PGREGCONFIG(REGCONFIG):
     render_bind_cast = True
 
 
+# JSON
 class _PGJSON(JSON):
     def bind_processor(self, dialect):
         return self._make_bind_processor(None, dialect._psycopg_Json)
@@ -219,6 +222,7 @@ class _PGJSON(JSON):
         return None
 
 
+# JSONB
 class _PGJSONB(JSONB):
     def bind_processor(self, dialect):
         return self._make_bind_processor(None, dialect._psycopg_Jsonb)
@@ -227,58 +231,71 @@ class _PGJSONB(JSONB):
         return None
 
 
+# JSON 整数索引
 class _PGJSONIntIndexType(sqltypes.JSON.JSONIntIndexType):
     __visit_name__ = "json_int_index"
 
     render_bind_cast = True
 
 
+# JSON 字符串索引
 class _PGJSONStrIndexType(sqltypes.JSON.JSONStrIndexType):
     __visit_name__ = "json_str_index"
 
     render_bind_cast = True
 
 
+# JSONPath
 class _PGJSONPathType(JSONPathType):
     pass
 
 
+# INTERVAL
 class _PGInterval(INTERVAL):
     render_bind_cast = True
 
 
+# TIMESTAMP
 class _PGTimeStamp(sqltypes.DateTime):
     render_bind_cast = True
 
 
+# DATE
 class _PGDate(sqltypes.Date):
     render_bind_cast = True
 
 
+# TIME
 class _PGTime(sqltypes.Time):
     render_bind_cast = True
 
 
+# INTEGER
 class _PGInteger(sqltypes.Integer):
     render_bind_cast = True
 
 
+# SMALLINT
 class _PGSmallInteger(sqltypes.SmallInteger):
     render_bind_cast = True
 
 
+# NULL
 class _PGNullType(sqltypes.NullType):
     render_bind_cast = True
 
 
+# BIGINT
 class _PGBigInteger(sqltypes.BigInteger):
     render_bind_cast = True
 
 
+# BOOLEAN
 class _PGBoolean(sqltypes.Boolean):
     render_bind_cast = True
 
 
+# psycopg3 range 适配
 class _PsycopgRange(ranges.AbstractSingleRangeImpl):
     def bind_processor(self, dialect):
         psycopg_Range = cast(PGDialect_psycopg, dialect)._psycopg_Range
@@ -306,6 +323,7 @@ class _PsycopgRange(ranges.AbstractSingleRangeImpl):
         return to_range
 
 
+# multirange
 class _PsycopgMultiRange(ranges.AbstractMultiRangeImpl):
     def bind_processor(self, dialect):
         psycopg_Range = cast(PGDialect_psycopg, dialect)._psycopg_Range
@@ -351,22 +369,27 @@ class _PsycopgMultiRange(ranges.AbstractMultiRangeImpl):
         return to_range
 
 
+# psycopg3 执行上下文
 class PGExecutionContext_psycopg(_PGExecutionContext_common_psycopg):
     pass
 
 
+# psycopg3 编译器
 class PGCompiler_psycopg(PGCompiler):
     pass
 
 
+# 标识符预处理器
 class PGIdentifierPreparer_psycopg(PGIdentifierPreparer):
     pass
 
 
+# 记录 PG NOTICE 诊断消息
 def _log_notices(diagnostic):
     logger.info("%s: %s", diagnostic.severity, diagnostic.message_primary)
 
 
+# psycopg3 方言：AdaptersMap、JSON 序列化、async 变体
 class PGDialect_psycopg(_PGDialect_common_psycopg):
     driver = "psycopg"
 
@@ -449,6 +472,7 @@ class PGDialect_psycopg(_PGDialect_common_psycopg):
 
                 set_json_dumps(self._json_serializer, adapters_map)
 
+    # 注入 context=AdaptersMap 与 client_encoding
     def create_connect_args(self, url):
         # see https://github.com/psycopg/psycopg/issues/83
         cargs, cparams = super().create_connect_args(url)
@@ -491,6 +515,7 @@ class PGDialect_psycopg(_PGDialect_common_psycopg):
                 register_hstore(info, connection.connection.driver_connection)
 
     @classmethod
+    # 导入 psycopg >= 3.0.2
     def import_dbapi(cls):
         import psycopg
 
@@ -609,6 +634,7 @@ class PGDialect_psycopg(_PGDialect_common_psycopg):
         return ";"
 
 
+# psycopg asyncio 游标适配
 class AsyncAdapt_psycopg_cursor:
     __slots__ = ("_cursor", "await_", "_rows")
 
@@ -676,6 +702,7 @@ class AsyncAdapt_psycopg_cursor:
         return retval
 
 
+# 服务端游标
 class AsyncAdapt_psycopg_ss_cursor(AsyncAdapt_psycopg_cursor):
     def execute(self, query, params=None, **kw):
         self.await_(self._cursor.execute(query, params, **kw))
@@ -702,6 +729,7 @@ class AsyncAdapt_psycopg_ss_cursor(AsyncAdapt_psycopg_cursor):
                 break
 
 
+# asyncio 连接适配
 class AsyncAdapt_psycopg_connection(AdaptedConnection):
     _connection: AsyncConnection
     __slots__ = ()
@@ -769,11 +797,13 @@ class AsyncAdapt_psycopg_connection(AdaptedConnection):
         return self.await_(self._connection.tpc_recover())
 
 
+# async_fallback 连接
 class AsyncAdaptFallback_psycopg_connection(AsyncAdapt_psycopg_connection):
     __slots__ = ()
     await_ = staticmethod(await_fallback)
 
 
+# 伪 DBAPI：connect 返回 AsyncAdapt 连接
 class PsycopgAdaptDBAPI:
     def __init__(self, psycopg) -> None:
         self.psycopg = psycopg
@@ -797,6 +827,7 @@ class PsycopgAdaptDBAPI:
             )
 
 
+# postgresql+psycopg async 方言
 class PGDialectAsync_psycopg(PGDialect_psycopg):
     is_async = True
     supports_statement_cache = True
@@ -842,5 +873,7 @@ class PGDialectAsync_psycopg(PGDialect_psycopg):
         return connection._connection
 
 
+# 同步方言入口
 dialect = PGDialect_psycopg
+# 异步方言入口
 dialect_async = PGDialectAsync_psycopg

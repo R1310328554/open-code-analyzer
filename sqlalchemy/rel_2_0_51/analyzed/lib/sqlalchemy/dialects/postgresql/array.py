@@ -6,7 +6,9 @@
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
 
-from __future__ import annotations
+# PostgreSQL ARRAY 类型与字面量、Any/All 比较辅助函数
+
+from __future__ import annotationsfrom __future__ import annotations
 
 import re
 from typing import Any as typing_Any
@@ -47,6 +49,7 @@ _T = TypeVar("_T", bound=typing_Any)
 _CT = TypeVar("_CT", bound=typing_Any)
 
 
+# ARRAY 元素 any 比较的同义词（委托 Comparator.any）
 def Any(
     other: typing_Any,
     arrexpr: _ColumnExpressionArgument[_T],
@@ -60,6 +63,7 @@ def Any(
     return arrexpr.any(other, operator)  # type: ignore[no-any-return, union-attr]  # noqa: E501
 
 
+# ARRAY 元素 all 比较的同义词
 def All(
     other: typing_Any,
     arrexpr: _ColumnExpressionArgument[_T],
@@ -73,6 +77,7 @@ def All(
     return arrexpr.all(other, operator)  # type: ignore[no-any-return, union-attr]  # noqa: E501
 
 
+# PostgreSQL ARRAY 字面量表达式 ARRAY[1,2,3]
 class array(expression.ExpressionClauseList[_T]):
     """A PostgreSQL ARRAY literal.
 
@@ -235,6 +240,7 @@ class array(expression.ExpressionClauseList[_T]):
             return self
 
 
+# PostgreSQL ARRAY 列类型：绑定/结果处理、contains/overlap 比较器
 class ARRAY(sqltypes.ARRAY[_T]):
     """PostgreSQL ARRAY type.
 
@@ -486,6 +492,7 @@ class ARRAY(sqltypes.ARRAY[_T]):
         return process
 
 
+# 解析 ARRAY 字面量中 ENUM 元素的引号与 NULL
 def _split_enum_values(array_string: str) -> Sequence[Optional[str]]:
     if '"' not in array_string:
         # no escape char is present so it can just split on the comma

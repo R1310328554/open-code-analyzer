@@ -5,7 +5,9 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
-from __future__ import annotations
+# pg_catalog 系统表 ORM 映射与 catalog 专用类型
+
+from __future__ import annotationsfrom __future__ import annotations
 
 from typing import Any
 from typing import Optional
@@ -34,27 +36,32 @@ if TYPE_CHECKING:
     from ...sql.type_api import _ResultProcessorType
 
 
+# pg_catalog name 类型（64 字符 C collation）
 # types
 class NAME(TypeDecorator[str]):
     impl = String(64, collation="C")
     cache_ok = True
 
 
+# 解析树文本 pg_node_tree
 class PG_NODE_TREE(TypeDecorator[str]):
     impl = Text(collation="C")
     cache_ok = True
 
 
+# int2vector：小整数 OID 向量
 class INT2VECTOR(TypeDecorator[Sequence[int]]):
     impl = ARRAY(SmallInteger)
     cache_ok = True
 
 
+# oidvector
 class OIDVECTOR(TypeDecorator[Sequence[int]]):
     impl = ARRAY(OID)
     cache_ok = True
 
 
+# 空格分隔向量字符串转 int 列表
 class _SpaceVector:
     def result_processor(
         self, dialect: Dialect, coltype: object
@@ -67,8 +74,10 @@ class _SpaceVector:
         return process
 
 
+# regproc 别名 regclass
 REGPROC = REGCLASS  # seems an alias
 
+# pg_catalog 内置函数引用
 # functions
 _pg_cat = func.pg_catalog
 quote_ident = _pg_cat.quote_ident
@@ -82,15 +91,19 @@ pg_get_constraintdef = _pg_cat.pg_get_constraintdef
 pg_get_indexdef = _pg_cat.pg_get_indexdef
 
 # constants
+# relkind：普通表与分区表
 RELKINDS_TABLE_NO_FOREIGN = ("r", "p")
 RELKINDS_TABLE = RELKINDS_TABLE_NO_FOREIGN + ("f",)
+# 视图
 RELKINDS_VIEW = ("v",)
 RELKINDS_MAT_VIEW = ("m",)
 RELKINDS_ALL_TABLE_LIKE = RELKINDS_TABLE + RELKINDS_VIEW + RELKINDS_MAT_VIEW
 
 # tables
+# pg_catalog schema 元数据
 pg_catalog_meta = MetaData(schema="pg_catalog")
 
+# pg_namespace 命名空间表
 pg_namespace = Table(
     "pg_namespace",
     pg_catalog_meta,
@@ -99,6 +112,7 @@ pg_namespace = Table(
     Column("nspowner", OID),
 )
 
+# pg_class 关系（表/索引/视图等）
 pg_class = Table(
     "pg_class",
     pg_catalog_meta,
@@ -133,6 +147,7 @@ pg_class = Table(
     Column("reloptions", ARRAY(Text)),
 )
 
+# pg_type 类型定义
 pg_type = Table(
     "pg_type",
     pg_catalog_meta,
@@ -167,6 +182,7 @@ pg_type = Table(
     Column("typdefault", Text),
 )
 
+# pg_index 索引元数据
 pg_index = Table(
     "pg_index",
     pg_catalog_meta,
@@ -193,6 +209,7 @@ pg_index = Table(
     Column("indpred", PG_NODE_TREE),
 )
 
+# pg_attribute 列属性
 pg_attribute = Table(
     "pg_attribute",
     pg_catalog_meta,
@@ -219,6 +236,7 @@ pg_attribute = Table(
     Column("attcollation", OID, info={"server_version": (9, 1)}),
 )
 
+# pg_constraint 约束
 pg_constraint = Table(
     "pg_constraint",
     pg_catalog_meta,
@@ -276,6 +294,7 @@ pg_description = Table(
     Column("description", Text(collation="C")),
 )
 
+# pg_enum 枚举标签
 pg_enum = Table(
     "pg_enum",
     pg_catalog_meta,

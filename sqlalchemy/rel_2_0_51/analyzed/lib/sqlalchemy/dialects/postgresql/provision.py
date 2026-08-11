@@ -6,7 +6,9 @@
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 # mypy: ignore-errors
 
-import time
+# PostgreSQL 测试 provision：建库/删库、schema 与 upsert 钩子
+
+import timeimport time
 
 from ... import exc
 from ... import inspect
@@ -24,6 +26,7 @@ from ...testing.provision import temp_table_keyword_args
 from ...testing.provision import upsert
 
 
+# CREATE DATABASE ... TEMPLATE ...（并发冲突时重试）
 @create_db.for_db("postgresql")
 def _pg_create_db(cfg, eng, ident):
     template_db = cfg.options.postgresql_templatedb
@@ -59,6 +62,7 @@ def _pg_create_db(cfg, eng, ident):
                 break
 
 
+# 终止连接后 DROP DATABASE
 @drop_db.for_db("postgresql")
 def _pg_drop_db(cfg, eng, ident):
     with eng.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
@@ -74,11 +78,13 @@ def _pg_drop_db(cfg, eng, ident):
             conn.exec_driver_sql("DROP DATABASE %s" % ident)
 
 
+# 临时表 TEMPORARY 前缀
 @temp_table_keyword_args.for_db("postgresql")
 def _postgresql_temp_table_keyword_args(cfg, eng):
     return {"prefixes": ["TEMPORARY"]}
 
 
+# SET SESSION search_path
 @set_default_schema_on_connection.for_db("postgresql")
 def _postgresql_set_default_schema_on_connection(
     cfg, dbapi_connection, schema_name
@@ -91,6 +97,7 @@ def _postgresql_set_default_schema_on_connection(
     dbapi_connection.autocommit = existing_autocommit
 
 
+# 清理 prepared xacts
 @drop_all_schema_objects_pre_tables.for_db("postgresql")
 def drop_all_schema_objects_pre_tables(cfg, eng):
     with eng.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
@@ -101,6 +108,7 @@ def drop_all_schema_objects_pre_tables(cfg, eng):
             eng.dialect.do_rollback_twophase(conn, xid, recover=True)
 
 
+# 删除所有 ENUM 类型
 @drop_all_schema_objects_post_tables.for_db("postgresql")
 def drop_all_schema_objects_post_tables(cfg, eng):
     from sqlalchemy.dialects import postgresql
@@ -115,6 +123,7 @@ def drop_all_schema_objects_post_tables(cfg, eng):
             )
 
 
+# 检测 idle in transaction 阻塞 DROP
 @prepare_for_drop_tables.for_db("postgresql")
 def prepare_for_drop_tables(config, connection):
     """Ensure there are no locks on the current username/database."""
@@ -136,6 +145,7 @@ def prepare_for_drop_tables(config, connection):
         )
 
 
+# ON CONFLICT DO UPDATE/NOTHING 测试 upsert 语句
 @upsert.for_db("postgresql")
 def _upsert(
     cfg,
@@ -173,6 +183,7 @@ _extensions = [
 ]
 
 
+# 创建 citext/hstore 扩展
 @post_configure_engine.for_db("postgresql")
 def _create_citext_extension(url, engine, follower_ident):
     with engine.connect() as conn:

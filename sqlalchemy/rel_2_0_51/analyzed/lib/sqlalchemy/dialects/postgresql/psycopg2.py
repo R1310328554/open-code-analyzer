@@ -7,6 +7,9 @@
 # mypy: ignore-errors
 
 r"""
+postgresql+psycopg2 方言：成熟同步 DBAPI，支持多主机与 executemany 模式。
+
+.. dialect:: postgresql+psycopg2r"""
 .. dialect:: postgresql+psycopg2
     :name: psycopg2
     :dbapi: psycopg2
@@ -510,16 +513,19 @@ from ...util import parse_user_argument_for_enum
 logger = logging.getLogger("sqlalchemy.dialects.postgresql")
 
 
+# psycopg2 原生 JSON 解码
 class _PGJSON(JSON):
     def result_processor(self, dialect, coltype):
         return None
 
 
+# psycopg2 原生 JSONB
 class _PGJSONB(JSONB):
     def result_processor(self, dialect, coltype):
         return None
 
 
+# Range 与 psycopg2.extras.NumericRange 等互转
 class _Psycopg2Range(ranges.AbstractSingleRangeImpl):
     _psycopg2_range_cls = "none"
 
@@ -552,25 +558,31 @@ class _Psycopg2Range(ranges.AbstractSingleRangeImpl):
         return to_range
 
 
+# int4/int8/numrange
 class _Psycopg2NumericRange(_Psycopg2Range):
     _psycopg2_range_cls = "NumericRange"
 
 
+# daterange
 class _Psycopg2DateRange(_Psycopg2Range):
     _psycopg2_range_cls = "DateRange"
 
 
+# tsrange
 class _Psycopg2DateTimeRange(_Psycopg2Range):
     _psycopg2_range_cls = "DateTimeRange"
 
 
+# tstzrange
 class _Psycopg2DateTimeTZRange(_Psycopg2Range):
     _psycopg2_range_cls = "DateTimeTZRange"
 
 
+# psycopg2 执行上下文：NOTICE 日志
 class PGExecutionContext_psycopg2(_PGExecutionContext_common_psycopg):
     _psycopg2_fetched_rows = None
 
+    # 执行后输出 cursor.connection.notices
     def post_exec(self):
         self._log_notices(self.cursor)
 
@@ -592,10 +604,12 @@ class PGExecutionContext_psycopg2(_PGExecutionContext_common_psycopg):
         cursor.connection.notices[:] = []
 
 
+# psycopg2 标识符预处理器
 class PGIdentifierPreparer_psycopg2(PGIdentifierPreparer):
     pass
 
 
+# executemany 模式：values_only / values_plus_batch
 class ExecutemanyMode(FastIntFlag):
     EXECUTEMANY_VALUES = 0
     EXECUTEMANY_VALUES_PLUS_BATCH = 1
@@ -607,6 +621,7 @@ class ExecutemanyMode(FastIntFlag):
 ) = ExecutemanyMode.__members__.values()
 
 
+# psycopg2 方言：hstore OID、executemany、COPY
 class PGDialect_psycopg2(_PGDialect_common_psycopg):
     driver = "psycopg2"
 
@@ -640,6 +655,7 @@ class PGDialect_psycopg2(_PGDialect_common_psycopg):
         },
     )
 
+    # executemany_mode/batch_page_size；禁用 native_inet_types
     def __init__(
         self,
         executemany_mode="values_only",
@@ -680,6 +696,7 @@ class PGDialect_psycopg2(_PGDialect_common_psycopg):
                     "psycopg2 version 2.7 or higher is required."
                 )
 
+    # 检测 hstore OID 与 sane_multi_rowcount
     def initialize(self, connection):
         super().initialize(connection)
         self._has_native_hstore = (
@@ -693,6 +710,7 @@ class PGDialect_psycopg2(_PGDialect_common_psycopg):
         )
 
     @classmethod
+    # 导入 psycopg2 >= 2.7
     def import_dbapi(cls):
         import psycopg2
 
@@ -736,6 +754,7 @@ class PGDialect_psycopg2(_PGDialect_common_psycopg):
     def get_deferrable(self, connection):
         return connection.deferrable
 
+    # 连接钩子：注册 hstore/json、client_encoding、isolation_level
     def on_connect(self):
         extras = self._psycopg2_extras
 
@@ -788,6 +807,7 @@ class PGDialect_psycopg2(_PGDialect_common_psycopg):
         else:
             return None
 
+    # values_plus_batch 或 insertmanyvalues 路径
     def do_executemany(self, cursor, statement, parameters, context=None):
         if self.executemany_mode is EXECUTEMANY_VALUES_PLUS_BATCH:
             if self.executemany_batch_page_size:
@@ -812,6 +832,7 @@ class PGDialect_psycopg2(_PGDialect_common_psycopg):
         else:
             return None
 
+    # OperationalError 断连判定
     def is_disconnect(self, e, connection, cursor):
         if isinstance(e, self.dbapi.Error):
             # check the "closed" flag.  this might not be
@@ -863,4 +884,5 @@ class PGDialect_psycopg2(_PGDialect_common_psycopg):
         )
 
 
+# 方言入口 postgresql+psycopg2
 dialect = PGDialect_psycopg2

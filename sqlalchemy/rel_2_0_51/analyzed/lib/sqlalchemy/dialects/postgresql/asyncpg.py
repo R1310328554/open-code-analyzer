@@ -7,6 +7,9 @@
 # mypy: ignore-errors
 
 r"""
+postgresql+asyncpg 方言：asyncio 后端，基于 asyncpg DBAPI。
+
+.. dialect:: postgresql+asyncpgr"""
 .. dialect:: postgresql+asyncpg
     :name: asyncpg
     :dbapi: asyncpg
@@ -214,42 +217,52 @@ from ...util.concurrency import await_fallback
 from ...util.concurrency import await_only
 
 
+# asyncpg ARRAY 类型适配
 class AsyncpgARRAY(PGARRAY):
     render_bind_cast = True
 
 
+# asyncpg 字符串类型
 class AsyncpgString(sqltypes.String):
     render_bind_cast = True
 
 
+# 全文检索 regconfig 类型
 class AsyncpgREGCONFIG(REGCONFIG):
     render_bind_cast = True
 
 
+# TIME 类型 bind/result
 class AsyncpgTime(sqltypes.Time):
     render_bind_cast = True
 
 
+# BIT 类型
 class AsyncpgBit(BIT):
     render_bind_cast = True
 
 
+# BYTEA 二进制
 class AsyncpgByteA(BYTEA):
     render_bind_cast = True
 
 
+# DATE 类型
 class AsyncpgDate(sqltypes.Date):
     render_bind_cast = True
 
 
+# TIMESTAMP 类型
 class AsyncpgDateTime(sqltypes.DateTime):
     render_bind_cast = True
 
 
+# BOOLEAN 类型
 class AsyncpgBoolean(sqltypes.Boolean):
     render_bind_cast = True
 
 
+# INTERVAL 类型
 class AsyncPgInterval(INTERVAL):
     render_bind_cast = True
 
@@ -258,48 +271,58 @@ class AsyncPgInterval(INTERVAL):
         return AsyncPgInterval(precision=interval.second_precision)
 
 
+# ENUM 原生枚举
 class AsyncPgEnum(ENUM):
     render_bind_cast = True
 
 
+# INTEGER
 class AsyncpgInteger(sqltypes.Integer):
     render_bind_cast = True
 
 
+# SMALLINT
 class AsyncpgSmallInteger(sqltypes.SmallInteger):
     render_bind_cast = True
 
 
+# BIGINT
 class AsyncpgBigInteger(sqltypes.BigInteger):
     render_bind_cast = True
 
 
+# JSON：注册 json/jsonb 解码器
 class AsyncpgJSON(json.JSON):
     def result_processor(self, dialect, coltype):
         return None
 
 
+# JSONB 类型
 class AsyncpgJSONB(json.JSONB):
     def result_processor(self, dialect, coltype):
         return None
 
 
+# JSON 索引类型
 class AsyncpgJSONIndexType(sqltypes.JSON.JSONIndexType):
     pass
 
 
+# JSON 整数键索引
 class AsyncpgJSONIntIndexType(sqltypes.JSON.JSONIntIndexType):
     __visit_name__ = "json_int_index"
 
     render_bind_cast = True
 
 
+# JSON 字符串键索引
 class AsyncpgJSONStrIndexType(sqltypes.JSON.JSONStrIndexType):
     __visit_name__ = "json_str_index"
 
     render_bind_cast = True
 
 
+# JSONPath 类型
 class AsyncpgJSONPathType(json.JSONPathType):
     def bind_processor(self, dialect):
         def process(value):
@@ -316,6 +339,7 @@ class AsyncpgJSONPathType(json.JSONPathType):
         return process
 
 
+# Numeric/Float bind 与 decimal 结果处理
 class AsyncpgNumeric(sqltypes.Numeric):
     render_bind_cast = True
 
@@ -347,23 +371,28 @@ class AsyncpgNumeric(sqltypes.Numeric):
                 )
 
 
+# Float 类型
 class AsyncpgFloat(AsyncpgNumeric, sqltypes.Float):
     __visit_name__ = "float"
     render_bind_cast = True
 
 
+# regclass OID 类型
 class AsyncpgREGCLASS(REGCLASS):
     render_bind_cast = True
 
 
+# OID 类型
 class AsyncpgOID(OID):
     render_bind_cast = True
 
 
+# CHAR 类型
 class AsyncpgCHAR(sqltypes.CHAR):
     render_bind_cast = True
 
 
+# 单值 range 与 asyncpg Range 互转
 class _AsyncpgRange(ranges.AbstractSingleRangeImpl):
     def bind_processor(self, dialect):
         asyncpg_Range = dialect.dbapi.asyncpg.Range
@@ -397,6 +426,7 @@ class _AsyncpgRange(ranges.AbstractSingleRangeImpl):
         return to_range
 
 
+# multirange 绑定/结果
 class _AsyncpgMultiRange(ranges.AbstractMultiRangeImpl):
     def bind_processor(self, dialect):
         asyncpg_Range = dialect.dbapi.asyncpg.Range
@@ -444,6 +474,7 @@ class _AsyncpgMultiRange(ranges.AbstractMultiRangeImpl):
         return to_range_array
 
 
+# asyncpg 执行上下文：prepared statement 缓存
 class PGExecutionContext_asyncpg(PGExecutionContext):
     def handle_dbapi_exception(self, e):
         if isinstance(
@@ -470,14 +501,17 @@ class PGExecutionContext_asyncpg(PGExecutionContext):
         return self._dbapi_connection.cursor(server_side=True)
 
 
+# asyncpg SQL 编译器
 class PGCompiler_asyncpg(PGCompiler):
     pass
 
 
+# asyncpg 标识符预处理器
 class PGIdentifierPreparer_asyncpg(PGIdentifierPreparer):
     pass
 
 
+# asyncpg 游标 asyncio 适配：execute/fetch/executemany
 class AsyncAdapt_asyncpg_cursor:
     __slots__ = (
         "_adapt_connection",
@@ -617,6 +651,7 @@ class AsyncAdapt_asyncpg_cursor:
         return retval
 
 
+# asyncpg 服务端（流式）游标
 class AsyncAdapt_asyncpg_ss_cursor(AsyncAdapt_asyncpg_cursor):
     server_side = True
     __slots__ = ("_rowbuffer",)
@@ -696,6 +731,7 @@ class AsyncAdapt_asyncpg_ss_cursor(AsyncAdapt_asyncpg_cursor):
         )
 
 
+# asyncpg 连接适配：prepared cache、terminate、ping
 class AsyncAdapt_asyncpg_connection(AsyncAdapt_terminate, AdaptedConnection):
     __slots__ = (
         "dbapi",
@@ -921,12 +957,14 @@ class AsyncAdapt_asyncpg_connection(AsyncAdapt_terminate, AdaptedConnection):
         return None
 
 
+# async_fallback 模式连接
 class AsyncAdaptFallback_asyncpg_connection(AsyncAdapt_asyncpg_connection):
     __slots__ = ()
 
     await_ = staticmethod(await_fallback)
 
 
+# 伪 DBAPI 模块：connect 返回 AsyncAdapt 连接
 class AsyncAdapt_asyncpg_dbapi:
     def __init__(self, asyncpg):
         self.asyncpg = asyncpg
@@ -1024,6 +1062,7 @@ class AsyncAdapt_asyncpg_dbapi:
         return value
 
 
+# asyncpg 方言主类：多主机、prepared_statement_cache_size
 class PGDialect_asyncpg(PGDialect):
     driver = "asyncpg"
     supports_statement_cache = True
@@ -1094,6 +1133,7 @@ class PGDialect_asyncpg(PGDialect):
             return (99, 99, 99)
 
     @classmethod
+    # 导入 asyncpg 并校验版本
     def import_dbapi(cls):
         return AsyncAdapt_asyncpg_dbapi(__import__("asyncpg"))
 
@@ -1130,6 +1170,7 @@ class PGDialect_asyncpg(PGDialect):
     def do_terminate(self, dbapi_connection) -> None:
         dbapi_connection.terminate()
 
+    # 解析 host/port 多主机 query 参数
     def create_connect_args(self, url):
         opts = url.translate_connect_args(username="user")
         multihosts, multiports = self._split_multihost_from_url(url)
@@ -1173,6 +1214,7 @@ class PGDialect_asyncpg(PGDialect):
         else:
             return pool.AsyncAdaptedQueuePool
 
+    # 识别连接断开异常
     def is_disconnect(self, e, connection, cursor):
         if connection:
             return connection._connection.is_closed()
@@ -1284,4 +1326,5 @@ class PGDialect_asyncpg(PGDialect):
         return connection._connection
 
 
+# 方言入口 postgresql+asyncpg
 dialect = PGDialect_asyncpg

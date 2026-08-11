@@ -4,7 +4,9 @@
 #
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
-from __future__ import annotations
+# PostgreSQL INSERT ... ON CONFLICT 方言 DML 构造
+
+from __future__ import annotationsfrom __future__ import annotations
 
 from typing import Any
 from typing import List
@@ -38,6 +40,7 @@ from ...util.typing import Self
 __all__ = ("Insert", "insert")
 
 
+# 工厂函数：返回 PG 专用 Insert（支持 ON CONFLICT）
 def insert(table: _DMLTableArgument) -> Insert:
     """Construct a PostgreSQL-specific variant :class:`_postgresql.Insert`
     construct.
@@ -58,6 +61,7 @@ def insert(table: _DMLTableArgument) -> Insert:
     return Insert(table)
 
 
+# PG Insert：on_conflict_do_update/nothing、excluded 命名空间
 class Insert(StandardInsert):
     """PostgreSQL-specific implementation of INSERT.
 
@@ -211,6 +215,7 @@ class Insert(StandardInsert):
         return self
 
 
+# ON CONFLICT 子句基类：target 与 where
 class OnConflictClause(ClauseElement):
     stringify_dialect = "postgresql"
 
@@ -283,10 +288,12 @@ class OnConflictClause(ClauseElement):
             ) = None
 
 
+# ON CONFLICT DO NOTHING
 class OnConflictDoNothing(OnConflictClause):
     __visit_name__ = "on_conflict_do_nothing"
 
 
+# ON CONFLICT DO UPDATE SET ... WHERE ...
 class OnConflictDoUpdate(OnConflictClause):
     __visit_name__ = "on_conflict_do_update"
 

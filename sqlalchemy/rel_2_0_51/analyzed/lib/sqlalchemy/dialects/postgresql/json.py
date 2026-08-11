@@ -41,6 +41,7 @@ if TYPE_CHECKING:
 __all__ = ("JSON", "JSONB")
 
 
+# JSONPath 路径类型（#>> 等运算符）
 class JSONPathType(sqltypes.JSON.JSONPathType):
     def _processor(
         self, dialect: Dialect, super_proc: Optional[Callable[[Any], Any]]
@@ -71,6 +72,7 @@ class JSONPathType(sqltypes.JSON.JSONPathType):
         return self._processor(dialect, self.string_literal_processor(dialect))  # type: ignore[return-value]  # noqa: E501
 
 
+# jsonpath SQL 类型
 class JSONPATH(JSONPathType):
     """JSON Path Type.
 
@@ -89,6 +91,7 @@ class JSONPATH(JSONPathType):
     __visit_name__ = "JSONPATH"
 
 
+# PostgreSQL JSON 类型：astext、路径运算符
 class JSON(sqltypes.JSON):
     """Represent the PostgreSQL JSON type.
 
@@ -199,6 +202,7 @@ class JSON(sqltypes.JSON):
         if astext_type is not None:
             self.astext_type = astext_type
 
+    # JSON Comparator：astext 使用 ->> 运算符
     class Comparator(sqltypes.JSON.Comparator[_T]):
         """Define comparison operations for :class:`_types.JSON`."""
 
@@ -232,6 +236,7 @@ class JSON(sqltypes.JSON):
     comparator_factory = Comparator
 
 
+# JSONB：has_key/contains/delete_path/path_exists 等
 class JSONB(JSON):
     """Represent the PostgreSQL JSONB type.
 

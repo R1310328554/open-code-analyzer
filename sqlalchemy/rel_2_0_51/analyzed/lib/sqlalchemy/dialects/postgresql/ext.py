@@ -5,7 +5,9 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 # mypy: ignore-errors
-from __future__ import annotations
+# PostgreSQL 扩展：聚合 ORDER BY、EXCLUDE 约束、全文检索函数
+
+from __future__ import annotationsfrom __future__ import annotations
 
 from typing import Any
 from typing import Iterable
@@ -41,6 +43,7 @@ if TYPE_CHECKING:
 _T = TypeVar("_T", bound=Any)
 
 
+# array_agg/string_agg 内的 ORDER BY 表达式
 class aggregate_order_by(expression.ColumnElement[_T]):
     """Represent a PostgreSQL aggregate order by expression.
 
@@ -143,6 +146,7 @@ class aggregate_order_by(expression.ColumnElement[_T]):
         return self.target._from_objects + self.order_by._from_objects
 
 
+# EXCLUDE USING gist (...) 排他约束
 class ExcludeConstraint(ColumnCollectionConstraint):
     """A table-level EXCLUDE constraint.
 
@@ -334,6 +338,7 @@ class ExcludeConstraint(ColumnCollectionConstraint):
         return c
 
 
+# array_agg 聚合函数工厂
 def array_agg(*arg, **kw):
     """PostgreSQL-specific form of :class:`_functions.array_agg`, ensures
     return type is :class:`_postgresql.ARRAY` and not
@@ -345,6 +350,7 @@ def array_agg(*arg, **kw):
     return functions.func.array_agg(*arg, **kw)
 
 
+# 全文检索函数基类：首参 regconfig 类型
 class _regconfig_fn(functions.GenericFunction[_T]):
     inherit_cache = True
 
@@ -374,6 +380,7 @@ class _regconfig_fn(functions.GenericFunction[_T]):
         super().__init__(*(initial_arg + addtl_args), **kwargs)
 
 
+# to_tsvector(regconfig, document)
 class to_tsvector(_regconfig_fn):
     """The PostgreSQL ``to_tsvector`` SQL function.
 
@@ -396,6 +403,7 @@ class to_tsvector(_regconfig_fn):
     type = types.TSVECTOR
 
 
+# to_tsquery(regconfig, query)
 class to_tsquery(_regconfig_fn):
     """The PostgreSQL ``to_tsquery`` SQL function.
 
@@ -418,6 +426,7 @@ class to_tsquery(_regconfig_fn):
     type = types.TSQUERY
 
 
+# plainto_tsquery  plain 文本转 tsquery
 class plainto_tsquery(_regconfig_fn):
     """The PostgreSQL ``plainto_tsquery`` SQL function.
 
@@ -440,6 +449,7 @@ class plainto_tsquery(_regconfig_fn):
     type = types.TSQUERY
 
 
+# phraseto_tsquery 短语检索
 class phraseto_tsquery(_regconfig_fn):
     """The PostgreSQL ``phraseto_tsquery`` SQL function.
 
@@ -462,6 +472,7 @@ class phraseto_tsquery(_regconfig_fn):
     type = types.TSQUERY
 
 
+# websearch_to_tsquery  Web 搜索语法
 class websearch_to_tsquery(_regconfig_fn):
     """The PostgreSQL ``websearch_to_tsquery`` SQL function.
 
@@ -484,6 +495,7 @@ class websearch_to_tsquery(_regconfig_fn):
     type = types.TSQUERY
 
 
+# ts_headline 高亮摘要
 class ts_headline(_regconfig_fn):
     """The PostgreSQL ``ts_headline`` SQL function.
 

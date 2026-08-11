@@ -123,10 +123,12 @@ from ...sql import sqltypes
 from ...sql.elements import quoted_name
 
 
+# pg8000 字符串类型
 class _PGString(sqltypes.String):
     render_bind_cast = True
 
 
+# Numeric bind 处理器
 class _PGNumeric(sqltypes.Numeric):
     render_bind_cast = True
 
@@ -155,16 +157,19 @@ class _PGNumeric(sqltypes.Numeric):
                 )
 
 
+# Float
 class _PGFloat(_PGNumeric, sqltypes.Float):
     __visit_name__ = "float"
     render_bind_cast = True
 
 
+# 无 bind 的 Numeric（render_bind_cast 场景）
 class _PGNumericNoBind(_PGNumeric):
     def bind_processor(self, dialect):
         return None
 
 
+# JSON
 class _PGJSON(JSON):
     render_bind_cast = True
 
@@ -172,6 +177,7 @@ class _PGJSON(JSON):
         return None
 
 
+# JSONB
 class _PGJSONB(JSONB):
     render_bind_cast = True
 
@@ -179,34 +185,40 @@ class _PGJSONB(JSONB):
         return None
 
 
+# JSON 索引
 class _PGJSONIndexType(sqltypes.JSON.JSONIndexType):
     def get_dbapi_type(self, dbapi):
         raise NotImplementedError("should not be here")
 
 
+# JSON 整数索引
 class _PGJSONIntIndexType(sqltypes.JSON.JSONIntIndexType):
     __visit_name__ = "json_int_index"
 
     render_bind_cast = True
 
 
+# JSON 字符串索引
 class _PGJSONStrIndexType(sqltypes.JSON.JSONStrIndexType):
     __visit_name__ = "json_str_index"
 
     render_bind_cast = True
 
 
+# JSONPath
 class _PGJSONPathType(JSONPathType):
     pass
 
     # DBAPI type 1009
 
 
+# ENUM
 class _PGEnum(ENUM):
     def get_dbapi_type(self, dbapi):
         return dbapi.UNKNOWN
 
 
+# INTERVAL
 class _PGInterval(INTERVAL):
     render_bind_cast = True
 
@@ -218,46 +230,57 @@ class _PGInterval(INTERVAL):
         return _PGInterval(precision=interval.second_precision)
 
 
+# TIMESTAMP
 class _PGTimeStamp(sqltypes.DateTime):
     render_bind_cast = True
 
 
+# DATE
 class _PGDate(sqltypes.Date):
     render_bind_cast = True
 
 
+# TIME
 class _PGTime(sqltypes.Time):
     render_bind_cast = True
 
 
+# INTEGER
 class _PGInteger(sqltypes.Integer):
     render_bind_cast = True
 
 
+# SMALLINT
 class _PGSmallInteger(sqltypes.SmallInteger):
     render_bind_cast = True
 
 
+# NULL 占位
 class _PGNullType(sqltypes.NullType):
     pass
 
 
+# BIGINT
 class _PGBigInteger(sqltypes.BigInteger):
     render_bind_cast = True
 
 
+# BOOLEAN
 class _PGBoolean(sqltypes.Boolean):
     render_bind_cast = True
 
 
+# ARRAY
 class _PGARRAY(PGARRAY):
     render_bind_cast = True
 
 
+# oidvector
 class _PGOIDVECTOR(_SpaceVector, OIDVECTOR):
     pass
 
 
+# range 与 pg8000 Range 互转
 class _Pg8000Range(ranges.AbstractSingleRangeImpl):
     def bind_processor(self, dialect):
         pg8000_Range = dialect.dbapi.Range
@@ -285,6 +308,7 @@ class _Pg8000Range(ranges.AbstractSingleRangeImpl):
         return to_range
 
 
+# multirange
 class _Pg8000MultiRange(ranges.AbstractMultiRangeImpl):
     def bind_processor(self, dialect):
         pg8000_Range = dialect.dbapi.Range
@@ -323,6 +347,7 @@ class _Pg8000MultiRange(ranges.AbstractMultiRangeImpl):
 _server_side_id = util.counter()
 
 
+# pg8000 执行上下文
 class PGExecutionContext_pg8000(PGExecutionContext):
     def create_server_side_cursor(self):
         ident = "c_%s_%s" % (hex(id(self))[2:], hex(_server_side_id())[2:])
@@ -333,6 +358,7 @@ class PGExecutionContext_pg8000(PGExecutionContext):
             return
 
 
+# pg8000 服务端游标包装
 class ServerSideCursor:
     server_side = True
 
@@ -389,6 +415,7 @@ class ServerSideCursor:
         pass
 
 
+# pg8000 SQL 编译器
 class PGCompiler_pg8000(PGCompiler):
     def visit_mod_binary(self, binary, operator, **kw):
         return (
@@ -398,12 +425,14 @@ class PGCompiler_pg8000(PGCompiler):
         )
 
 
+# pg8000 不双写百分号
 class PGIdentifierPreparer_pg8000(PGIdentifierPreparer):
     def __init__(self, *args, **kwargs):
         PGIdentifierPreparer.__init__(self, *args, **kwargs)
         self._double_percents = False
 
 
+# pg8000 方言：format 参数风格、render_bind_cast
 class PGDialect_pg8000(PGDialect):
     driver = "pg8000"
     supports_statement_cache = True
@@ -497,9 +526,11 @@ class PGDialect_pg8000(PGDialect):
             return (99, 99, 99)
 
     @classmethod
+    # 导入 pg8000 并校验 >= 1.16.6
     def import_dbapi(cls):
         return __import__("pg8000")
 
+    # URL 转 pg8000 连接参数
     def create_connect_args(self, url):
         opts = url.translate_connect_args(username="user")
         if "port" in opts:
@@ -664,4 +695,5 @@ class PGDialect_pg8000(PGDialect):
         return ";"
 
 
+# 方言入口 postgresql+pg8000
 dialect = PGDialect_pg8000

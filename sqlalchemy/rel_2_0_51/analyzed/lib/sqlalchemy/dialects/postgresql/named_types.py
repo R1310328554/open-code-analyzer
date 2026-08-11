@@ -5,7 +5,9 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 # mypy: ignore-errors
-from __future__ import annotations
+# PostgreSQL 命名类型：ENUM、DOMAIN 及 CREATE/DROP DDL
+
+from __future__ import annotationsfrom __future__ import annotations
 
 from types import ModuleType
 from typing import Any
@@ -31,6 +33,7 @@ if TYPE_CHECKING:
     from ...sql._typing import _TypeEngineArgument
 
 
+# 命名类型基类：create/drop 与 DDL visitor 去重
 class NamedType(schema.SchemaVisitable, sqltypes.TypeEngine):
     """Base for named types."""
 
@@ -147,6 +150,7 @@ class NamedType(schema.SchemaVisitable, sqltypes.TypeEngine):
             self.drop(bind=bind, checkfirst=checkfirst)
 
 
+# CREATE TYPE 访问者
 class NamedTypeGenerator(InvokeCreateDDLBase):
     def __init__(self, dialect, connection, checkfirst=False, **kwargs):
         super().__init__(connection, **kwargs)
@@ -162,6 +166,7 @@ class NamedTypeGenerator(InvokeCreateDDLBase):
         )
 
 
+# DROP TYPE 访问者
 class NamedTypeDropper(InvokeDropDDLBase):
     def __init__(self, dialect, connection, checkfirst=False, **kwargs):
         super().__init__(connection, **kwargs)
@@ -177,6 +182,7 @@ class NamedTypeDropper(InvokeDropDDLBase):
         )
 
 
+# CREATE TYPE ... AS ENUM
 class EnumGenerator(NamedTypeGenerator):
     def visit_enum(self, enum):
         if not self._can_create_type(enum):
@@ -186,6 +192,7 @@ class EnumGenerator(NamedTypeGenerator):
             self.connection.execute(CreateEnumType(enum))
 
 
+# DROP ENUM
 class EnumDropper(NamedTypeDropper):
     def visit_enum(self, enum):
         if not self._can_drop_type(enum):
@@ -195,6 +202,7 @@ class EnumDropper(NamedTypeDropper):
             self.connection.execute(DropEnumType(enum))
 
 
+# PostgreSQL 原生 ENUM：labels、schema、create_type
 class ENUM(NamedType, type_api.NativeForEmulated, sqltypes.Enum):
     """PostgreSQL ENUM type.
 
@@ -395,6 +403,7 @@ class ENUM(NamedType, type_api.NativeForEmulated, sqltypes.Enum):
         return None
 
 
+# CREATE DOMAIN
 class DomainGenerator(NamedTypeGenerator):
     def visit_DOMAIN(self, domain):
         if not self._can_create_type(domain):
@@ -403,6 +412,7 @@ class DomainGenerator(NamedTypeGenerator):
             self.connection.execute(CreateDomainType(domain))
 
 
+# DROP DOMAIN
 class DomainDropper(NamedTypeDropper):
     def visit_DOMAIN(self, domain):
         if not self._can_drop_type(domain):
@@ -412,6 +422,7 @@ class DomainDropper(NamedTypeDropper):
             self.connection.execute(DropDomainType(domain))
 
 
+# PostgreSQL DOMAIN：底层类型与 CHECK 约束
 class DOMAIN(NamedType, sqltypes.SchemaType):
     r"""Represent the DOMAIN PostgreSQL type.
 
@@ -504,20 +515,24 @@ class DOMAIN(NamedType, sqltypes.SchemaType):
         return cls("name", sqltypes.Integer)
 
 
+# DDL 元素：CREATE ENUM
 class CreateEnumType(schema._CreateDropBase):
     __visit_name__ = "create_enum_type"
 
 
+# DDL 元素：DROP ENUM
 class DropEnumType(schema._CreateDropBase):
     __visit_name__ = "drop_enum_type"
 
 
+# DDL 元素：CREATE DOMAIN
 class CreateDomainType(schema._CreateDropBase):
     """Represent a CREATE DOMAIN statement."""
 
     __visit_name__ = "create_domain_type"
 
 
+# DDL 元素：DROP DOMAIN
 class DropDomainType(schema._CreateDropBase):
     """Represent a DROP DOMAIN statement."""
 

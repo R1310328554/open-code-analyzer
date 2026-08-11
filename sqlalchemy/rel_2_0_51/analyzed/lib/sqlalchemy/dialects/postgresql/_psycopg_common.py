@@ -5,7 +5,9 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 # mypy: ignore-errors
-from __future__ import annotations
+# psycopg/psycopg2 共享方言 mixin：类型 colspec、连接参数与两阶段提交
+
+from __future__ import annotationsfrom __future__ import annotations
 
 import decimal
 
@@ -27,6 +29,7 @@ from ...engine import processors
 _server_side_id = util.counter()
 
 
+# psycopg 系列 Numeric：按 OID 区分 float/decimal 结果处理器
 class _PsycopgNumeric(sqltypes.Numeric):
     def bind_processor(self, dialect):
         return None
@@ -56,10 +59,12 @@ class _PsycopgNumeric(sqltypes.Numeric):
                 )
 
 
+# psycopg Float 类型绑定
 class _PsycopgFloat(_PsycopgNumeric):
     __visit_name__ = "float"
 
 
+# HSTORE：有原生 hstore 时跳过自定义 bind/result 处理器
 class _PsycopgHStore(HSTORE):
     def bind_processor(self, dialect):
         if dialect._has_native_hstore:
@@ -74,19 +79,24 @@ class _PsycopgHStore(HSTORE):
             return super().result_processor(dialect, coltype)
 
 
+# ARRAY 启用 render_bind_cast 以生成 ::type[] 绑定
 class _PsycopgARRAY(PGARRAY):
     render_bind_cast = True
 
 
+# int2vector 结果处理器（空格分隔整数列表）
 class _PsycopgINT2VECTOR(_SpaceVector, INT2VECTOR):
     pass
 
 
+# oidvector 结果处理器
 class _PsycopgOIDVECTOR(_SpaceVector, OIDVECTOR):
     pass
 
 
+# psycopg 执行上下文：命名服务端游标 c_<id>_<counter>
 class _PGExecutionContext_common_psycopg(PGExecutionContext):
+    # 创建带唯一名称的服务端游标供流式读取
     def create_server_side_cursor(self):
         # use server-side cursors:
         # psycopg
@@ -97,6 +107,7 @@ class _PGExecutionContext_common_psycopg(PGExecutionContext):
         return self._dbapi_connection.cursor(ident)
 
 
+# psycopg/psycopg2 方言公共基类：多主机 URL、AUTOCOMMIT 与 TPC
 class _PGDialect_common_psycopg(PGDialect):
     supports_statement_cache = True
     supports_server_side_cursors = True
@@ -129,6 +140,7 @@ class _PGDialect_common_psycopg(PGDialect):
         self.use_native_hstore = use_native_hstore
         self.client_encoding = client_encoding
 
+    # URL 转关键字参数；多 host 合并为逗号分隔；无参数时 dsn=''
     def create_connect_args(self, url):
         opts = url.translate_connect_args(username="user", database="dbname")
 
@@ -152,6 +164,7 @@ class _PGDialect_common_psycopg(PGDialect):
             # requires that "dsn" be present as a blank string.
             return ([""], opts)
 
+    # 含 AUTOCOMMIT 的隔离级别列表
     def get_isolation_level_values(self, dbapi_connection):
         return (
             "AUTOCOMMIT",
@@ -161,6 +174,7 @@ class _PGDialect_common_psycopg(PGDialect):
             "SERIALIZABLE",
         )
 
+    # 设置连接 deferrable 属性
     def set_deferrable(self, connection, value):
         connection.deferrable = value
 
@@ -173,6 +187,7 @@ class _PGDialect_common_psycopg(PGDialect):
     def detect_autocommit_setting(self, dbapi_connection):
         return bool(dbapi_connection.autocommit)
 
+    # 临时 autocommit 执行 SELECT 1 探活
     def do_ping(self, dbapi_connection):
         before_autocommit = dbapi_connection.autocommit
 
@@ -188,6 +203,7 @@ class _PGDialect_common_psycopg(PGDialect):
 
         return True
 
+    # 两阶段提交：tpc_begin
     def do_begin_twophase(self, connection, xid):
         connection.connection.tpc_begin(xid)
 
@@ -221,5 +237,6 @@ class _PGDialect_common_psycopg(PGDialect):
             dbapi_conn, dbapi_conn.tpc_commit, xid, recover=recover
         )
 
+    # 恢复未完成的两阶段事务 xid 列表
     def do_recover_twophase(self, connection):
         return [str(row) for row in connection.connection.tpc_recover()]

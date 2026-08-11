@@ -22,6 +22,7 @@ from ...sql import functions as sqlfunc
 __all__ = ("HSTORE", "hstore")
 
 
+# PostgreSQL hstore 键值对类型：索引、contains、键/值访问
 class HSTORE(sqltypes.Indexable, sqltypes.Concatenable, sqltypes.TypeEngine):
     """Represent the PostgreSQL HSTORE type.
 
@@ -218,6 +219,7 @@ class HSTORE(sqltypes.Indexable, sqltypes.Concatenable, sqltypes.TypeEngine):
         return process
 
 
+# hstore() 构造函数
 class hstore(sqlfunc.GenericFunction):
     """Construct an hstore value within a SQL expression using the
     PostgreSQL ``hstore()`` function.
@@ -249,42 +251,49 @@ class hstore(sqlfunc.GenericFunction):
     inherit_cache = True
 
 
+# defined(hstore, key) 键是否存在
 class _HStoreDefinedFunction(sqlfunc.GenericFunction):
     type = sqltypes.Boolean
     name = "defined"
     inherit_cache = True
 
 
+# delete(hstore, key) 删除键
 class _HStoreDeleteFunction(sqlfunc.GenericFunction):
     type = HSTORE
     name = "delete"
     inherit_cache = True
 
 
+# slice(hstore, keys[]) 子集
 class _HStoreSliceFunction(sqlfunc.GenericFunction):
     type = HSTORE
     name = "slice"
     inherit_cache = True
 
 
+# akeys(hstore) 所有键
 class _HStoreKeysFunction(sqlfunc.GenericFunction):
     type = ARRAY(sqltypes.Text)
     name = "akeys"
     inherit_cache = True
 
 
+# avals(hstore) 所有值
 class _HStoreValsFunction(sqlfunc.GenericFunction):
     type = ARRAY(sqltypes.Text)
     name = "avals"
     inherit_cache = True
 
 
+# hstore_to_array
 class _HStoreArrayFunction(sqlfunc.GenericFunction):
     type = ARRAY(sqltypes.Text)
     name = "hstore_to_array"
     inherit_cache = True
 
 
+# hstore_to_matrix
 class _HStoreMatrixFunction(sqlfunc.GenericFunction):
     type = ARRAY(sqltypes.Text)
     name = "hstore_to_matrix"
@@ -321,6 +330,7 @@ HSTORE_DELIMITER_RE = re.compile(
 )
 
 
+# hstore 字面量解析错误消息
 def _parse_error(hstore_str, pos):
     """format an unmarshalling error."""
 
@@ -342,6 +352,7 @@ def _parse_error(hstore_str, pos):
     )
 
 
+# 解析 hstore 文本为 dict
 def _parse_hstore(hstore_str):
     """Parse an hstore from its literal string representation.
 
@@ -384,6 +395,7 @@ def _parse_hstore(hstore_str):
     return result
 
 
+# dict 序列化为 hstore 字面量
 def _serialize_hstore(val):
     """Serialize a dictionary into an hstore literal.  Keys and values must
     both be strings (except None for values).

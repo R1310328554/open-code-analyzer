@@ -1639,6 +1639,10 @@ itself:
 
 """  # noqa: E501
 
+# PostgreSQL 方言核心：编译器、DDL、类型映射、反射与 PG 特性
+
+from __future__ import annotations"""  # noqa: E501
+
 from __future__ import annotations
 
 from collections import defaultdict
@@ -1731,8 +1735,10 @@ from ...types import UUID as UUID
 from ...types import VARCHAR
 from ...util.typing import TypedDict
 
+# CREATE INDEX USING 子句合法访问方法名正则
 IDX_USING = re.compile(r"^(?:btree|hash|gist|gin|[\w_]+)$", re.I)
 
+# PostgreSQL 保留字集合（标识符引用判断）
 RESERVED_WORDS = {
     "all",
     "analyse",
@@ -1839,6 +1845,7 @@ RESERVED_WORDS = {
 }
 
 
+# SQLAlchemy 通用类型到 PG 方言类型的 colspec 映射
 colspecs = {
     sqltypes.ARRAY: _array.ARRAY,
     sqltypes.Interval: INTERVAL,
@@ -1849,6 +1856,7 @@ colspecs = {
 }
 
 
+# information_schema/pg_catalog 类型名到方言 TypeEngine 的反射映射
 ischema_names = {
     "_array": _array.ARRAY,
     "hstore": HSTORE,
@@ -1903,6 +1911,7 @@ ischema_names = {
 }
 
 
+# PostgreSQL SQL 编译：JSON/ARRAY、全文检索、ON CONFLICT、FOR UPDATE
 class PGCompiler(compiler.SQLCompiler):
     def visit_to_tsvector_func(self, element, **kw):
         return self._assert_pg_ts_ext(element, **kw)
@@ -1922,6 +1931,7 @@ class PGCompiler(compiler.SQLCompiler):
     def visit_ts_headline_func(self, element, **kw):
         return self._assert_pg_ts_ext(element, **kw)
 
+    # 全文检索函数须来自 postgresql.ext 包
     def _assert_pg_ts_ext(self, element, **kw):
         if not isinstance(element, _regconfig_fn):
             # other options here include trying to rewrite the function
@@ -1943,6 +1953,7 @@ class PGCompiler(compiler.SQLCompiler):
 
         return f"{element.name}{self.function_argspec(element, **kw)}"
 
+    # RENDER_CASTS：生成 value::type 绑定转换
     def render_bind_cast(self, type_, dbapi_type, sqltext):
         if dbapi_type._type_affinity is sqltypes.String and dbapi_type.length:
             # use VARCHAR with no length for VARCHAR cast.
@@ -1954,6 +1965,7 @@ class PGCompiler(compiler.SQLCompiler):
             )
         }"""
 
+    # ARRAY[]::type 或 ARRAY[expr,...] 字面量
     def visit_array(self, element, **kw):
         if not element.clauses and not element.type.item_type._isnull:
             return "ARRAY[]::%s" % element.type.compile(self.dialect)
@@ -1968,6 +1980,7 @@ class PGCompiler(compiler.SQLCompiler):
     def visit_bitwise_xor_op_binary(self, binary, operator, **kw):
         return self._generate_generic_binary(binary, " # ", **kw)
 
+    # JSON/JSONB -> 或 PG14+ 下标 [] 访问
     def visit_json_getitem_op_binary(
         self, binary, operator, _cast_applied=False, **kw
     ):
@@ -2029,6 +2042,7 @@ class PGCompiler(compiler.SQLCompiler):
             self.process(element.order_by, **kw),
         )
 
+    # @@ 全文检索匹配运算符
     def visit_match_op_binary(self, binary, operator, **kw):
         if "postgresql_regconfig" in binary.modifiers:
             regconfig = self.render_literal_value(
@@ -2048,6 +2062,7 @@ class PGCompiler(compiler.SQLCompiler):
     def visit_ilike_case_insensitive_operand(self, element, **kw):
         return element.element._compiler_dispatch(self, **kw)
 
+    # ILIKE 大小写不敏感 LIKE
     def visit_ilike_op_binary(self, binary, operator, **kw):
         escape = binary.modifiers.get("escape", None)
 
@@ -2088,6 +2103,7 @@ class PGCompiler(compiler.SQLCompiler):
             self.process(binary.right, **kw),
         )
 
+    # ~ 正则匹配
     def visit_regexp_match_op_binary(self, binary, operator, **kw):
         return self._regexp_match("~", binary, operator, kw)
 
@@ -2172,6 +2188,7 @@ class PGCompiler(compiler.SQLCompiler):
         else:
             return ""
 
+    # FOR UPDATE/SHARE [OF cols] [NOWAIT/SKIP LOCKED]
     def for_update_clause(self, select, **kw):
         if select._for_update_arg.read:
             if select._for_update_arg.key_share:
@@ -2244,6 +2261,7 @@ class PGCompiler(compiler.SQLCompiler):
 
         return target_text
 
+    # ON CONFLICT DO NOTHING 子句
     def visit_on_conflict_do_nothing(self, on_conflict, **kw):
         target_text = self._on_conflict_target(on_conflict, **kw)
 
@@ -2252,6 +2270,7 @@ class PGCompiler(compiler.SQLCompiler):
         else:
             return "ON CONFLICT DO NOTHING"
 
+    # ON CONFLICT DO UPDATE SET ... 子句
     def visit_on_conflict_do_update(self, on_conflict, **kw):
         clause = on_conflict
 
@@ -2347,6 +2366,7 @@ class PGCompiler(compiler.SQLCompiler):
             for t in extra_froms
         )
 
+    # FETCH FIRST n ROWS [ONLY|WITH TIES]
     def fetch_clause(self, select, **kw):
         # pg requires parens for non literal clauses. It's also required for
         # bind parameters if a ::type casts is used by the driver (asyncpg),
@@ -2369,7 +2389,9 @@ class PGCompiler(compiler.SQLCompiler):
         return text
 
 
+# PostgreSQL DDL：SERIAL/IDENTITY、索引 CONCURRENTLY、EXCLUDE
 class PGDDLCompiler(compiler.DDLCompiler):
+    # 列 DDL：SERIAL/BIGSERIAL、IDENTITY、COMPUTED
     def get_column_specification(self, column, **kwargs):
         colspec = self.preparer.format_column(column)
         impl_type = column.type.dialect_impl(self.dialect)
@@ -2492,6 +2514,7 @@ class PGDDLCompiler(compiler.DDLCompiler):
             constraint.ondelete, self._fk_ondelete_pattern
         )
 
+    # CREATE TYPE ... AS ENUM
     def visit_create_enum_type(self, create, **kw):
         type_ = create.element
 
@@ -2508,6 +2531,7 @@ class PGDDLCompiler(compiler.DDLCompiler):
 
         return "DROP TYPE %s" % (self.preparer.format_type(type_))
 
+    # CREATE DOMAIN ... AS type CHECK ...
     def visit_create_domain_type(self, create, **kw):
         domain: DOMAIN = create.element
 
@@ -2540,6 +2564,7 @@ class PGDDLCompiler(compiler.DDLCompiler):
         domain = drop.element
         return f"DROP DOMAIN {self.preparer.format_type(domain)}"
 
+    # CREATE INDEX [CONCURRENTLY] USING gist/gin...
     def visit_create_index(self, create, **kw):
         preparer = self.preparer
         index = create.element
@@ -2659,6 +2684,7 @@ class PGDDLCompiler(compiler.DDLCompiler):
         text += self._prepared_index_name(index, include_schema=True)
         return text
 
+    # EXCLUDE USING gist (...) WHERE ...
     def visit_exclude_constraint(self, constraint, **kw):
         text = ""
         if constraint.name is not None:
@@ -2778,6 +2804,7 @@ class PGDDLCompiler(compiler.DDLCompiler):
         )
 
 
+# PostgreSQL 类型 DDL：RANGE、JSONB、ARRAY、ENUM 等
 class PGTypeCompiler(compiler.GenericTypeCompiler):
     def visit_TSVECTOR(self, type_, **kw):
         return "TSVECTOR"
@@ -2884,11 +2911,13 @@ class PGTypeCompiler(compiler.GenericTypeCompiler):
         else:
             return self.visit_ENUM(type_, **kw)
 
+    # 原生 ENUM 类型名引用
     def visit_ENUM(self, type_, identifier_preparer=None, **kw):
         if identifier_preparer is None:
             identifier_preparer = self.dialect.identifier_preparer
         return identifier_preparer.format_type(type_)
 
+    # DOMAIN 类型名引用
     def visit_DOMAIN(self, type_, identifier_preparer=None, **kw):
         if identifier_preparer is None:
             identifier_preparer = self.dialect.identifier_preparer
@@ -2946,6 +2975,7 @@ class PGTypeCompiler(compiler.GenericTypeCompiler):
     def visit_BYTEA(self, type_, **kw):
         return "BYTEA"
 
+    # type[] 或 type(n)[] 数组 DDL
     def visit_ARRAY(self, type_, **kw):
         inner = self.process(type_.item_type, **kw)
         return re.sub(
@@ -2968,6 +2998,7 @@ class PGTypeCompiler(compiler.GenericTypeCompiler):
         return "JSONPATH"
 
 
+# PG 标识符：双引号引用、schema 限定与类型 format_type
 class PGIdentifierPreparer(compiler.IdentifierPreparer):
     reserved_words = RESERVED_WORDS
 
@@ -2978,6 +3009,7 @@ class PGIdentifierPreparer(compiler.IdentifierPreparer):
             )
         return value
 
+    # 带 schema 的类型名格式化
     def format_type(self, type_, use_schema=True):
         if not type_.name:
             raise exc.CompileError(
@@ -2996,6 +3028,7 @@ class PGIdentifierPreparer(compiler.IdentifierPreparer):
         return name
 
 
+# 反射命名类型（ENUM/DOMAIN）公共字段
 class ReflectedNamedType(TypedDict):
     """Represents a reflected named type."""
 
@@ -3007,6 +3040,7 @@ class ReflectedNamedType(TypedDict):
     """Indicates if this type is in the current search path."""
 
 
+# DOMAIN 上的 CHECK 约束反射结构
 class ReflectedDomainConstraint(TypedDict):
     """Represents a reflect check constraint of a domain."""
 
@@ -3016,6 +3050,7 @@ class ReflectedDomainConstraint(TypedDict):
     """The check constraint text."""
 
 
+# 反射 DOMAIN：底层类型、默认值与约束列表
 class ReflectedDomain(ReflectedNamedType):
     """Represents a reflected enum."""
 
@@ -3035,6 +3070,7 @@ class ReflectedDomain(ReflectedNamedType):
     """The collation for the domain."""
 
 
+# 反射 ENUM：labels 枚举值列表
 class ReflectedEnum(ReflectedNamedType):
     """Represents a reflected enum."""
 
@@ -3042,6 +3078,7 @@ class ReflectedEnum(ReflectedNamedType):
     """The labels that compose the enum."""
 
 
+# PG 专用 Inspector：OID、DOMAIN、ENUM、has_type
 class PGInspector(reflection.Inspector):
     dialect: PGDialect
 
@@ -3064,6 +3101,7 @@ class PGInspector(reflection.Inspector):
                 conn, table_name, schema, info_cache=self.info_cache
             )
 
+    # 反射 schema 下所有 DOMAIN
     def get_domains(
         self, schema: Optional[str] = None
     ) -> List[ReflectedDomain]:
@@ -3095,6 +3133,7 @@ class PGInspector(reflection.Inspector):
                 conn, schema, info_cache=self.info_cache
             )
 
+    # 反射 ENUM 类型
     def get_enums(self, schema: Optional[str] = None) -> List[ReflectedEnum]:
         """Return a list of ENUM objects.
 
@@ -3132,6 +3171,7 @@ class PGInspector(reflection.Inspector):
                 conn, schema, info_cache=self.info_cache
             )
 
+    # 检查命名类型是否存在
     def has_type(
         self, type_name: str, schema: Optional[str] = None, **kw: Any
     ) -> bool:
@@ -3152,7 +3192,9 @@ class PGInspector(reflection.Inspector):
             )
 
 
+# PG 执行上下文：SERIAL 序列 nextval、INSERT 默认值
 class PGExecutionContext(default.DefaultExecutionContext):
+    # select nextval('seq')
     def fire_sequence(self, seq, type_):
         return self._execute_scalar(
             (
@@ -3162,6 +3204,7 @@ class PGExecutionContext(default.DefaultExecutionContext):
             type_,
         )
 
+    # SERIAL 列预执行 nextval 或 server_default
     def get_insert_default(self, column):
         if column.primary_key and column is column.table._autoincrement_column:
             if column.server_default and column.server_default.has_argument:
@@ -3207,6 +3250,7 @@ class PGExecutionContext(default.DefaultExecutionContext):
         return super().get_insert_default(column)
 
 
+# 连接特性 postgresql_readonly：SET TRANSACTION READ ONLY
 class PGReadOnlyConnectionCharacteristic(
     characteristics.ConnectionCharacteristic
 ):
@@ -3222,6 +3266,7 @@ class PGReadOnlyConnectionCharacteristic(
         return dialect.get_readonly(dbapi_conn)
 
 
+# 连接特性 postgresql_deferrable：SET TRANSACTION DEFERRABLE
 class PGDeferrableConnectionCharacteristic(
     characteristics.ConnectionCharacteristic
 ):
@@ -3237,6 +3282,7 @@ class PGDeferrableConnectionCharacteristic(
         return dialect.get_deferrable(dbapi_conn)
 
 
+# PostgreSQL 方言主类：反射、隔离级别、RETURNING、IDENTITY
 class PGDialect(default.DefaultDialect):
     name = "postgresql"
     supports_statement_cache = True
@@ -3374,6 +3420,7 @@ class PGDialect(default.DefaultDialect):
         self._json_deserializer = json_deserializer
         self._json_serializer = json_serializer
 
+    # 版本检测：smallserial、JSONB 下标、identity 等能力
     def initialize(self, connection):
         super().initialize(connection)
 
@@ -3390,6 +3437,7 @@ class PGDialect(default.DefaultDialect):
 
         self._supports_jsonb_subscripting = self.server_version_info >= (14,)
 
+    # PG 支持的 SESSION 隔离级别
     def get_isolation_level_values(self, dbapi_conn):
         # note the generic dialect doesn't have AUTOCOMMIT, however
         # all postgresql dialects should include AUTOCOMMIT.
@@ -3400,6 +3448,7 @@ class PGDialect(default.DefaultDialect):
             "REPEATABLE READ",
         )
 
+    # SET SESSION CHARACTERISTICS AS TRANSACTION ISOLATION LEVEL
     def set_isolation_level(self, dbapi_connection, level):
         cursor = dbapi_connection.cursor()
         cursor.execute(
@@ -3428,6 +3477,7 @@ class PGDialect(default.DefaultDialect):
     def get_deferrable(self, connection):
         raise NotImplementedError()
 
+    # 解析 ?host=h1:5432&host=h2 多主机连接参数
     def _split_multihost_from_url(self, url: URL) -> Union[
         Tuple[None, None],
         Tuple[Tuple[Optional[str], ...], Tuple[Optional[int], ...]],
@@ -3618,6 +3668,7 @@ class PGDialect(default.DefaultDialect):
         )
 
     @reflection.cache
+    # pg_class 查询表是否存在
     def has_table(self, connection, table_name, schema=None, **kw):
         self._ensure_has_table_connection(connection)
         query = self._has_table_query(schema)
@@ -3656,6 +3707,7 @@ class PGDialect(default.DefaultDialect):
 
         return bool(connection.scalar(query))
 
+    # SELECT version() 解析 server_version_info
     def _get_server_version_info(self, connection):
         v = connection.exec_driver_sql("select pg_catalog.version()").scalar()
         m = re.match(
@@ -3813,6 +3865,7 @@ class PGDialect(default.DefaultDialect):
         return relkinds
 
     @reflection.cache
+    # 反射列：pg_attribute + 类型/domain/enum 解析
     def get_columns(self, connection, table_name, schema=None, **kw):
         data = self.get_multi_columns(
             connection,
@@ -4477,6 +4530,7 @@ class PGDialect(default.DefaultDialect):
         )
 
     @reflection.cache
+    # 反射外键：pg_constraint + condef 解析
     def get_foreign_keys(
         self,
         connection,
@@ -4708,6 +4762,7 @@ class PGDialect(default.DefaultDialect):
         return fkeys.items()
 
     @reflection.cache
+    # 反射索引：pg_index + 表达式/INCLUDE
     def get_indexes(self, connection, table_name, schema=None, **kw):
         data = self.get_multi_indexes(
             connection,
@@ -5304,6 +5359,7 @@ class PGDialect(default.DefaultDialect):
         return self._pg_type_filter_schema(query, schema)
 
     @reflection.cache
+    # 从 pg_enum 加载 ENUM 定义
     def _load_enums(self, connection, schema=None, **kw):
         if not self.supports_native_enum:
             return []
@@ -5383,6 +5439,7 @@ class PGDialect(default.DefaultDialect):
         return self._pg_type_filter_schema(query, schema)
 
     @reflection.cache
+    # 从 pg_type 加载 DOMAIN 定义
     def _load_domains(self, connection, schema=None, **kw):
         result = connection.execute(self._domain_query(schema))
 
@@ -5419,6 +5476,7 @@ class PGDialect(default.DefaultDialect):
 
         return domains
 
+    # standard_conforming_strings 决定 LIKE 转义行为
     def _set_backslash_escapes(self, connection):
         # this method is provided as an override hook for descendant
         # dialects (e.g. Redshift), so removing it may break them
