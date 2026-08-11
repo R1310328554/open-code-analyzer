@@ -29,7 +29,7 @@
 | loki | 3.7.6 | 1552 | 0 ✅ |
 | transformers | 5.15.0 | 2679 | 0 ✅ |
 | django | main-b5388a3a80ca | 942 | 0 ✅ |
-| sqlalchemy | rel_2_0_51 | 0 | 232 |
+| sqlalchemy | rel_2_0_51 | 232 | 0 ✅ |
 
-已完成：springframework / springboot / fastapi / rxjava / sentinel / rocketmq / redisson / flask / gson / hikaricp / disruptor / gin / arthas / netty / nacos / keycloak / harness / ollama / ragflow / prometheus / loki / transformers / django。  
-进行中：sqlalchemy rel_2_0_51（Python，pending=232）。
+已完成：springframework / springboot / fastapi / rxjava / sentinel / rocketmq / redisson / flask / gson / hikaricp / disruptor / gin / arthas / netty / nacos / keycloak / harness / ollama / ragflow / prometheus / loki / transformers / django / sqlalchemy。  
+进行中：paddleocr（待脚手架）。

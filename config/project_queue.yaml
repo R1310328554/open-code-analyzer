@@ -71,7 +71,7 @@ projects:
   url: https://github.com/sqlalchemy/sqlalchemy
   languages:
   - python
-  status: in_progress
+  status: complete
   version: rel_2_0_51
 - id: pytorch
   url: https://github.com/pytorch/pytorch
@@ -88,6 +88,7 @@ projects:
   url: https://github.com/PaddlePaddle/PaddleOCR
   languages:
   - python
+  status: pending
 - id: elasticsearch
   url: https://github.com/elastic/elasticsearch
   note: 超大仓，分模块
