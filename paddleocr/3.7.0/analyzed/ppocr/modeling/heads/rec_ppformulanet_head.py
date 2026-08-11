@@ -25,6 +25,7 @@ from collections import OrderedDict
 from typing import Optional, Tuple, Union, List, Dict, Any
 from dataclasses import dataclass, fields, is_dataclass
 from ppocr.modeling.backbones.rec_donut_swin import DonutSwinModelOutput
+# PP-FormulaNet 公式识别头：MBart 因果解码 + 并行/导出生成
 from ppocr.modeling.heads.rec_unimernet_head import (
     MBartForCausalLM,
     MBartDecoder,
@@ -45,6 +46,7 @@ from ppocr.modeling.heads.rec_unimernet_head import (
 
 
 @dataclass
+    # 注意力掩码转换器：2D→4D 因果/滑窗掩码
 class AttentionMaskConverter:
     """
     A class to convert attention masks based on specific configurations.
@@ -182,6 +184,7 @@ class AttentionMaskConverter:
         input_shape = (attention_mask_2d.shape[0], query_length)
 
         causal_4d_mask = None
+        # 并行解码：每步生成 parallel_step 个 token
         if use_parallel:
             step = parallel_step
         else:
@@ -402,6 +405,7 @@ def _prepare_4d_causal_attention_mask_export(
     return attention_mask
 
 
+    # 定制 MBart 解码器：支持并行步长与导出
 class CustomMBartDecoder(MBartDecoder):
     def __init__(self, config):
         super().__init__(config)
@@ -475,7 +479,8 @@ class CustomMBartDecoder(MBartDecoder):
             )
         else:
             # 4d mask is passed through the layers
-            if self.is_export:
+            # 导出模式：使用静态 shape 友好的 4D 因果掩码
+        if self.is_export:
                 attention_mask = _prepare_4d_causal_attention_mask_export(
                     attention_mask,
                     input_shape,
@@ -635,6 +640,7 @@ class CustomMBartDecoder(MBartDecoder):
         )
 
 
+    # 因果 LM 封装：替换为 CustomMBartDecoder
 class CustomMBartForCausalLM(MBartForCausalLM):
     def __init__(self, config):
         super().__init__(config)
@@ -697,6 +703,7 @@ class CustomMBartForCausalLM(MBartForCausalLM):
         )
 
 
+    # PP-FormulaNet 头：编码特征→MBart 自回归 LaTeX 生成
 class PPFormulaNet_Head(UniMERNetHead):
     """
     PPFormulaNet_Head

@@ -18,10 +18,12 @@ from paddle import nn
 import paddle.nn.functional as F
 from paddle.nn import Dropout, LayerNorm
 import numpy as np
+# NRTR 识别头：Transformer 编/解码器 + 贪心或 Beam 搜索推理
 from ppocr.modeling.backbones.rec_svtrnet import Mlp, zeros_
 from paddle.nn.initializer import XavierNormal as xavier_normal_
 
 
+    # NRTR 主模型：嵌入+位置编码+编/解码层+词表投影
 class Transformer(nn.Layer):
     """A transformer model. User is able to modify the attributes as needed. The architecture
     is based on the paper "Attention Is All You Need". Ashish Vaswani, Noam Shazeer,
@@ -149,11 +151,13 @@ class Transformer(nn.Layer):
             >>> output = transformer_model(src, tgt)
         """
 
+        # 训练：teacher forcing 解码，截断到真实标签长度
         if self.training:
             max_len = targets[1].max()
             tgt = targets[0][:, : 2 + max_len]
             return self.forward_train(src, tgt)
         else:
+            # 推理可选 Beam Search 提升准确率
             if self.beam_size > 0:
                 return self.forward_beam(src)
             else:
@@ -362,6 +366,7 @@ class Transformer(nn.Layer):
         return mask.unsqueeze([0, 1])
 
 
+    # 多头注意力：支持自注意力与交叉注意力
 class MultiheadAttention(nn.Layer):
     """Allows the model to jointly attend to information
     from different representation subspaces.
@@ -434,6 +439,7 @@ class MultiheadAttention(nn.Layer):
         return x
 
 
+    # Transformer 块：自/交叉注意力 + MLP 残差
 class TransformerBlock(nn.Layer):
     def __init__(
         self,
@@ -487,6 +493,7 @@ class TransformerBlock(nn.Layer):
         return tgt
 
 
+    # 1D 正弦位置编码
 class PositionalEncoding(nn.Layer):
     """Inject some information about the relative or absolute position of the tokens
         in the sequence. The positional encodings have the same dimension as
@@ -534,6 +541,7 @@ class PositionalEncoding(nn.Layer):
         return self.dropout(x).transpose([1, 0, 2])
 
 
+    # 2D 自适应位置编码：宽高方向分别编码
 class PositionalEncoding_2d(nn.Layer):
     """Inject some information about the relative or absolute position of the tokens
         in the sequence. The positional encodings have the same dimension as
@@ -603,6 +611,7 @@ class PositionalEncoding_2d(nn.Layer):
         return self.dropout(x)
 
 
+    # 词嵌入层，可选 √d_model 缩放
 class Embeddings(nn.Layer):
     def __init__(self, d_model, vocab, padding_idx=None, scale_embedding=True):
         super(Embeddings, self).__init__()
@@ -619,6 +628,7 @@ class Embeddings(nn.Layer):
         return self.embedding(x)
 
 
+    # Beam Search 状态机：维护候选序列与分数
 class Beam:
     """Beam search"""
 

@@ -36,6 +36,7 @@ from paddle.nn.initializer import (
 zeros_ = Constant(value=0.0)
 ones_ = Constant(value=1.0)
 normal_ = Normal(std=0.02)
+# LaTeX-OCR 识别头（pix2tex 移植）：Transformer 解码器 + 自回归生成
 DEFAULT_DIM_HEAD = 64
 
 Intermediates = namedtuple("Intermediates", ["pre_softmax_attn", "post_softmax_attn"])
@@ -118,6 +119,7 @@ def groupby_prefix_and_trim(prefix, d):
 # positional embeddings
 
 
+    # 深度可分离 1D 卷积：DWConv + 1×1 投影
 class DepthWiseConv1d(nn.Layer):
     def __init__(
         self, dim_in, dim_out, kernel_size, padding=0, stride=1, bias=True, groups=False
@@ -141,6 +143,7 @@ class DepthWiseConv1d(nn.Layer):
         return self.net(x)
 
 
+    # 可学习绝对位置编码
 class AbsolutePositionalEmbedding(nn.Layer):
     def __init__(self, dim, max_seq_len):
         super().__init__()
@@ -156,6 +159,7 @@ class AbsolutePositionalEmbedding(nn.Layer):
         return self.emb(n)[None, :, :]
 
 
+    # 固定正弦位置编码
 class FixedPositionalEmbedding(nn.Layer):
     def __init__(self, dim):
         super().__init__()
@@ -238,6 +242,7 @@ class GEGLU(nn.Layer):
         return x * F.gelu(gate)
 
 
+    # Transformer 前馈层：Linear→GELU/GEGLU→Linear
 class FeedForward(nn.Layer):
     def __init__(self, dim, dim_out=None, mult=4, glu=False, dropout=0.0):
         super().__init__()
@@ -257,6 +262,7 @@ class FeedForward(nn.Layer):
         return self.net(x)
 
 
+    # 多头注意力：支持因果/稀疏/talking heads 等变体
 class Attention(nn.Layer):
     def __init__(
         self,
@@ -287,6 +293,7 @@ class Attention(nn.Layer):
 
         # collaborative heads
         self.collab_heads = collab_heads
+        # 协作头：压缩 QK 维度并学习头间混合矩阵
         if self.collab_heads:
             qk_dim = int(collab_compression * qk_dim)
             self.collab_mixing = nn.Parameter(paddle.randn(heads, qk_dim))
@@ -424,6 +431,7 @@ class Attention(nn.Layer):
             dots.masked_fill_(~input_mask, mask_value)
             del input_mask
 
+        # 因果掩码：解码器只能 attend 到当前及之前位置
         if self.causal:
             i, j = dots.shape[-2:]
             r = paddle.arange(i)
@@ -479,6 +487,7 @@ class Attention(nn.Layer):
         return self.to_out(out), intermediates
 
 
+    # 堆叠注意力+FFN 层，可配置自/交叉注意力模式
 class AttentionLayers(nn.Layer):
     def __init__(
         self,
@@ -678,18 +687,21 @@ class AttentionLayers(nn.Layer):
         return x
 
 
+    # 非因果编码器堆叠
 class Encoder(AttentionLayers):
     def __init__(self, **kwargs):
         assert "causal" not in kwargs, "cannot set causality on encoder"
         super().__init__(causal=False, **kwargs)
 
 
+    # 因果解码器堆叠
 class Decoder(AttentionLayers):
     def __init__(self, **kwargs):
         assert "causal" not in kwargs, "cannot set causality on decoder"
         super().__init__(causal=True, **kwargs)
 
 
+    # 仅交叉注意力解码器
 class CrossAttender(AttentionLayers):
     def __init__(self, **kwargs):
         super().__init__(cross_attend=True, only_cross=True, **kwargs)
@@ -703,6 +715,7 @@ def create_latex_parameter(shape):
     )
 
 
+    # 带词嵌入与位置编码的 Transformer 解码器封装
 class TransformerDecoder(nn.Layer):
     def __init__(
         self,
@@ -835,6 +848,7 @@ def top_k(logits, thres=0.9):
     return probs
 
 
+    # LaTeX 公式 OCR 头：Transformer 解码 + top-k 自回归生成
 class LaTeXOCRHead(nn.Layer):
     """Implementation of LaTeX OCR decoder.
 

@@ -25,9 +25,11 @@ from paddle import ParamAttr
 import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle.nn.initializer import Normal, XavierNormal
+# VisionLAN 识别头：语言感知 MLM + 视觉-语言 Transformer 解码
 import numpy as np
 
 
+    # 正弦位置编码表
 class PositionalEncoding(nn.Layer):
     def __init__(self, d_hid, n_position=200):
         super(PositionalEncoding, self).__init__()
@@ -57,6 +59,7 @@ class PositionalEncoding(nn.Layer):
         return x + self.pos_table[:, : x.shape[1]].clone().detach()
 
 
+    # 缩放点积注意力
 class ScaledDotProductAttention(nn.Layer):
     "Scaled Dot-Product Attention"
 
@@ -89,6 +92,7 @@ class ScaledDotProductAttention(nn.Layer):
         return output
 
 
+    # 多头注意力封装
 class MultiHeadAttention(nn.Layer):
     "Multi-Head Attention module"
 
@@ -179,6 +183,7 @@ class PositionwiseFeedForward(nn.Layer):
         return x
 
 
+    # Transformer 编码层
 class EncoderLayer(nn.Layer):
     """Compose with two layers"""
 
@@ -193,6 +198,7 @@ class EncoderLayer(nn.Layer):
         return enc_output
 
 
+    # 多层 Transformer 编码器
 class Transformer_Encoder(nn.Layer):
     def __init__(
         self,
@@ -225,6 +231,7 @@ class Transformer_Encoder(nn.Layer):
         return enc_output
 
 
+    # 并行预测层：局部特征融合
 class PP_layer(nn.Layer):
     def __init__(self, n_dim=512, N_max_character=25, n_position=256):
         super(PP_layer, self).__init__()
@@ -256,6 +263,7 @@ class PP_layer(nn.Layer):
         return g_output
 
 
+    # 字符预测头：融合上下文与残差特征
 class Prediction(nn.Layer):
     def __init__(self, n_dim=512, n_position=256, N_max_character=25, n_class=37):
         super(Prediction, self).__init__()
@@ -290,6 +298,7 @@ class Prediction(nn.Layer):
             return g_output
 
 
+    # 掩码语言建模分支
 class MLM(nn.Layer):
     "Architecture of MLM"
 
@@ -340,6 +349,7 @@ def trans_1d_2d(x):
     return x
 
 
+    # MLM + VRM 联合：LA/SS/SL 多阶段训练
 class MLM_VRM(nn.Layer):
     """
     MLM+VRM, MLM is only used in training.
@@ -424,6 +434,7 @@ class MLM_VRM(nn.Layer):
                 return text_pre, test_rem, text_mas, mask_c_show
             else:
                 raise NotImplementedError
+        # 推理阶段 VRM：序列建模后直接预测字符
         else:  # VRM is only used in the testing stage
             f_res = 0
             f_sub = 0
@@ -435,6 +446,7 @@ class MLM_VRM(nn.Layer):
             return text_pre, x
 
 
+    # VisionLAN 识别头：MLM_VRM 封装，支持 LA 训练策略
 class VLHead(nn.Layer):
     """
     Architecture of VisionLAN

@@ -23,6 +23,7 @@ from paddle import ParamAttr, nn
 from paddle.nn import functional as F
 
 
+# CTC 识别头：序列特征线性映射 + 可选引导层，配合 CTC 损失解码
 def get_para_bias_attr(l2_decay, k):
     regularizer = paddle.regularizer.L2Decay(l2_decay)
     stdv = 1.0 / math.sqrt(k * 1.0)
@@ -32,6 +33,7 @@ def get_para_bias_attr(l2_decay, k):
     return [weight_attr, bias_attr]
 
 
+    # CTC 文本识别头：FC 投影到字符集，可选 mid 层与 guide 层
 class CTCHead(nn.Layer):
     def __init__(
         self,
@@ -98,6 +100,7 @@ class CTCHead(nn.Layer):
         self.return_feats = return_feats
 
     def forward(self, x, targets=None):
+        # 引导层：1D 深度可分离卷积增强序列特征
         if self.use_guide:
             x = x.transpose([0, 2, 1])
             x = self.guide_layer(x)
@@ -113,6 +116,7 @@ class CTCHead(nn.Layer):
             result = (x, predicts)
         else:
             result = predicts
+        # 推理阶段对时间步 logits 做 softmax
         if not self.training:
             predicts = F.softmax(predicts, axis=2)
             result = predicts

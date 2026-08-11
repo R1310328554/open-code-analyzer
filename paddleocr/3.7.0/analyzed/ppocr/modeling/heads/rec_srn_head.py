@@ -28,9 +28,11 @@ from ppocr.modeling.backbones.rec_resnet_fpn import ResNetFPN
 
 from collections import OrderedDict
 
+# SRN 识别头：PVAM 对齐 + GSRM 语义 + VSFD 融合（Transformer）
 gradient_clip = 10
 
 
+    # 位置视觉注意力模块：Transformer 编码 + 位置嵌入对齐
 class PVAM(nn.Layer):
     def __init__(
         self,
@@ -107,6 +109,7 @@ class PVAM(nn.Layer):
         attention_weight = paddle.reshape(
             attention_weight, shape=[-1, self.max_length, t]
         )
+        # PVAM：位置感知视觉注意力，对齐到固定长度序列
         attention_weight = F.softmax(attention_weight, axis=-1)
         pvam_features = paddle.matmul(
             attention_weight, word_features
@@ -114,6 +117,7 @@ class PVAM(nn.Layer):
         return pvam_features
 
 
+    # 全局语义推理模块：双路 Transformer 语义建模
 class GSRM(nn.Layer):
     def __init__(
         self,
@@ -214,6 +218,7 @@ class GSRM(nn.Layer):
         return gsrm_features, word_out, gsrm_out
 
 
+    # 视觉-语义融合解码：门控融合 PVAM/GSRM 后分类
 class VSFD(nn.Layer):
     def __init__(self, in_channels=512, pvam_ch=512, char_num=38):
         super(VSFD, self).__init__()
@@ -239,6 +244,7 @@ class VSFD(nn.Layer):
         return out
 
 
+    # SRN 头：PVAM→GSRM→VSFD 三阶段文本识别
 class SRNHead(nn.Layer):
     def __init__(
         self,

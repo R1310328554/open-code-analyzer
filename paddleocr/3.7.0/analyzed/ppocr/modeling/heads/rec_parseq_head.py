@@ -29,9 +29,12 @@ from .self_attention import WrapEncoder
 from collections import OrderedDict
 from typing import Optional
 import copy
+# ParseQ 识别头：Permutation 语言建模 + 双流 Transformer 解码
 from itertools import permutations
 
 
+    # ParseQ 解码层：双流 self-attn + cross-attn + FFN（Pre-LN）
+    # 多层双流解码器堆叠
 class DecoderLayer(paddle.nn.Layer):
     """A Transformer decoder layer supporting two-stream attention (XLNet)
     This implements a pre-LN decoder, as opposed to the post-LN default in PyTorch."""
@@ -180,6 +183,7 @@ class Decoder(paddle.nn.Layer):
         return query
 
 
+    # 字符 token 嵌入，带 √dim 缩放
 class TokenEmbedding(paddle.nn.Layer):
     def __init__(self, charset_size: int, embed_dim: int):
         super().__init__()
@@ -207,6 +211,7 @@ def kaiming_normal_init(param, **kwargs):
     initializer(param, param.block)
 
 
+    # ParseQ 头：排列训练 + 位置查询解码 + 可选 refine
 class ParseQHead(nn.Layer):
     def __init__(
         self,
@@ -327,6 +332,7 @@ class ParseQHead(nn.Layer):
             x=paddle.full(shape=(num_steps, num_steps), fill_value=float("-inf")),
             diagonal=1,
         )
+        # 自回归解码：逐步 argmax 填充后续 token
         if self.decode_ar:
             tgt_in = paddle.full(shape=(bs, num_steps), fill_value=self.pad_id).astype(
                 "int64"
@@ -361,6 +367,7 @@ class ParseQHead(nn.Layer):
             tgt_in = paddle.full(shape=(bs, 1), fill_value=self.bos_id).astype("int64")
             tgt_out = self.decode(tgt_in, memory, tgt_query=pos_queries)
             logits = self.head(tgt_out)
+        # 迭代 refine：用预测序列再次解码微调 logits
         if self.refine_iters:
             temp = paddle.triu(
                 x=paddle.ones(shape=[num_steps, num_steps], dtype="bool"), diagonal=2

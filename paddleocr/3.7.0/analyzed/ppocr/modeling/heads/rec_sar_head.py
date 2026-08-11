@@ -28,6 +28,8 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 
 
+# SAR 识别头：2D 注意力 + 并行解码（MMOCR 移植）
+    # SAR 编码器：水平池化 + RNN + 全局特征线性变换
 class SAREncoder(nn.Layer):
     """
     Args:
@@ -98,6 +100,7 @@ class SAREncoder(nn.Layer):
         feat_v = paddle.transpose(feat_v, perm=[0, 2, 1])  # bsz * W * C
         holistic_feat = self.rnn_encoder(feat_v)[0]  # bsz * T * C
 
+        # 按有效宽度选取 RNN 末步 holistic 特征
         if valid_ratios is not None:
             valid_hf = []
             T = paddle.shape(holistic_feat)[1]
@@ -115,6 +118,7 @@ class SAREncoder(nn.Layer):
         return holistic_feat
 
 
+    # 解码器基类：train/test 路由
 class BaseDecoder(nn.Layer):
     def __init__(self, **kwargs):
         super().__init__()
@@ -133,6 +137,7 @@ class BaseDecoder(nn.Layer):
         return self.forward_test(feat, out_enc, img_metas)
 
 
+    # SAR 并行解码器：2D 注意力 + 2D RNN 解码
 class ParallelSARDecoder(BaseDecoder):
     """
     Args:
@@ -345,6 +350,7 @@ class ParallelSARDecoder(BaseDecoder):
         return outputs
 
 
+    # SAR 识别头：编码 holistic 特征 + 并行注意力解码
 class SARHead(nn.Layer):
     def __init__(
         self,

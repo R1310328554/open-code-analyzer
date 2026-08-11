@@ -23,9 +23,11 @@ from __future__ import print_function
 
 import paddle
 import paddle.nn as nn
+# SPIN 注意力识别头：LSTM 注意力单元逐步解码字符
 import paddle.nn.functional as F
 
 
+    # SPIN 注意力头：逐步 LSTM 注意力解码
 class SPINAttentionHead(nn.Layer):
     def __init__(self, in_channels, out_channels, hidden_size, **kwargs):
         super(SPINAttentionHead, self).__init__()
@@ -51,6 +53,7 @@ class SPINAttentionHead(nn.Layer):
             paddle.zeros((batch_size, self.hidden_size)),
         )
         output_hiddens = []
+        # 训练：teacher forcing 逐步输入 GT 字符
         if self.training:  # for train
             targets = targets[0]
             for i in range(num_steps):
@@ -91,6 +94,7 @@ class SPINAttentionHead(nn.Layer):
         return probs
 
 
+    # 注意力 LSTM 单元：视觉注意力 + 字符 one-hot 输入
 class AttentionLSTMCell(nn.Layer):
     def __init__(self, input_size, hidden_size, num_embeddings, use_gru=False):
         super(AttentionLSTMCell, self).__init__()

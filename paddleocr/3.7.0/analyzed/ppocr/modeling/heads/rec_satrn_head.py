@@ -25,9 +25,11 @@ import paddle.nn.functional as F
 from paddle import ParamAttr, reshape, transpose
 from paddle.nn import Conv2D, BatchNorm, Linear, Dropout
 from paddle.nn import AdaptiveAvgPool2D, MaxPool2D, AvgPool2D
+# SATRN 识别头：局部感知 Transformer 编/解码（MMOCR 移植）
 from paddle.nn.initializer import KaimingNormal, Uniform, Constant
 
 
+    # Conv+BN+ReLU 基础块
 class ConvBNLayer(nn.Layer):
     def __init__(
         self, num_channels, filter_size, num_filters, stride, padding, num_groups=1
@@ -58,6 +60,8 @@ class ConvBNLayer(nn.Layer):
         return y
 
 
+    # SATRN 编码层：自注意力 + 局部 FFN
+    # SATRN 编码器：2D 位置编码 + 多层编码
 class SATRNEncoderLayer(nn.Layer):
     def __init__(
         self,
@@ -85,12 +89,14 @@ class SATRNEncoderLayer(nn.Layer):
         residual = x
         x = self.norm2(x)
         x = x.transpose([0, 2, 1]).reshape([n, c, h, w])
+        # 局部感知 FFN：1×1→深度 3×3→1×1 卷积
         x = self.feed_forward(x)
         x = x.reshape([n, c, hw]).transpose([0, 2, 1])
         x = residual + x
         return x
 
 
+    # 局部感知前馈：深度可分离卷积 FFN
 class LocalityAwareFeedforward(nn.Layer):
     def __init__(
         self,
@@ -115,6 +121,7 @@ class LocalityAwareFeedforward(nn.Layer):
         return x
 
 
+    # 2D 自适应正弦位置编码
 class Adaptive2DPositionalEncoding(nn.Layer):
     def __init__(self, d_hid=512, n_height=100, n_width=100, dropout=0.1):
         super().__init__()
@@ -196,6 +203,7 @@ class ScaledDotProductAttention(nn.Layer):
         return output, attn
 
 
+    # 缩放点积多头注意力
 class MultiHeadAttention(nn.Layer):
     def __init__(
         self, n_head=8, d_model=512, d_k=64, d_v=64, dropout=0.1, qkv_bias=False
@@ -353,6 +361,7 @@ class PositionalEncoding(nn.Layer):
         return self.dropout(x)
 
 
+    # Transformer 解码层：自/交叉注意力 + FFN
 class TFDecoderLayer(nn.Layer):
     def __init__(
         self,
@@ -448,6 +457,7 @@ class TFDecoderLayer(nn.Layer):
         return mlp_out
 
 
+    # SATRN 解码器：自回归字符预测
 class SATRNDecoder(nn.Layer):
     def __init__(
         self,
@@ -571,6 +581,7 @@ class SATRNDecoder(nn.Layer):
             return self.forward_test(feat, out_enc, valid_ratio)
 
 
+    # SATRN 识别头：编码器-解码器端到端文本识别
 class SATRNHead(nn.Layer):
     def __init__(self, enc_cfg, dec_cfg, **kwargs):
         super(SATRNHead, self).__init__()

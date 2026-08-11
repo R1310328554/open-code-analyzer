@@ -19,6 +19,7 @@ import paddle
 import paddle.nn as nn
 from paddle.nn.initializer import TruncatedNormal, Constant, Normal, KaimingNormal
 
+# RFL 识别头：计数分支预测长度 + 注意力序列分支解码
 from .rec_att_head import AttentionLSTM
 
 kaiming_init_ = KaimingNormal()
@@ -26,6 +27,7 @@ zeros_ = Constant(value=0.0)
 ones_ = Constant(value=1.0)
 
 
+    # 计数头：视觉特征融合后预测文本长度分布
 class CNTHead(nn.Layer):
     def __init__(self, embed_size=512, encode_length=26, out_channels=38, **kwargs):
         super(CNTHead, self).__init__()
@@ -49,6 +51,7 @@ class CNTHead(nn.Layer):
         return prediction_visual
 
 
+    # RFL 头：可选 CNT+SEQ 双分支，序列分支用 AttentionLSTM
 class RFLHead(nn.Layer):
     def __init__(
         self,

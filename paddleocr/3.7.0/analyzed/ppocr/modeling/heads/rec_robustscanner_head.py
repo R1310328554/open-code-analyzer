@@ -29,6 +29,7 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 
 
+    # 解码器基类：区分 train/test 前向
 class BaseDecoder(nn.Layer):
     def __init__(self, **kwargs):
         super().__init__()
@@ -57,6 +58,7 @@ class BaseDecoder(nn.Layer):
         return self.forward_test(feat, out_enc, valid_ratios, word_positions)
 
 
+    # 1×1 卷积通道降维编码器
 class ChannelReductionEncoder(nn.Layer):
     """Change the channel number with a one by one convoluational layer.
 
@@ -89,11 +91,13 @@ class ChannelReductionEncoder(nn.Layer):
         return self.layer(feat)
 
 
+# RobustScanner 识别头：位置感知 + 序列/混合注意力解码
 def masked_fill(x, mask, value):
     y = paddle.full(x.shape, value, x.dtype)
     return paddle.where(mask, y, x)
 
 
+    # 缩放点积注意力，支持 valid_ratio 掩码
 class DotProductAttentionLayer(nn.Layer):
     def __init__(self, dim_model=None):
         super().__init__()
@@ -106,6 +110,7 @@ class DotProductAttentionLayer(nn.Layer):
         n, c, t = logits.shape
         # reshape to (n, c, h, w)
         logits = paddle.reshape(logits, [n, c, h, w])
+        # 按 valid_ratio 屏蔽无效宽度区域的注意力
         if valid_ratios is not None:
             # cal mask of attention weight
             with paddle.base.framework._stride_in_no_check_dy2st_diff():
@@ -123,6 +128,7 @@ class DotProductAttentionLayer(nn.Layer):
         return glimpse
 
 
+    # 序列注意力解码器：RNN + 视觉注意力
 class SequenceAttentionDecoder(BaseDecoder):
     """Sequence attention decoder for RobustScanner.
 
@@ -324,6 +330,7 @@ class SequenceAttentionDecoder(BaseDecoder):
         return out
 
 
+    # 位置感知层：融合位置线索增强特征
 class PositionAwareLayer(nn.Layer):
     def __init__(self, dim_model, rnn_layers=2):
         super().__init__()
@@ -354,6 +361,7 @@ class PositionAwareLayer(nn.Layer):
         return out
 
 
+    # 位置注意力解码器分支
 class PositionAttentionDecoder(BaseDecoder):
     """Position attention decoder for RobustScanner.
 
@@ -505,6 +513,7 @@ class PositionAttentionDecoder(BaseDecoder):
         return self.prediction(attn_out)
 
 
+    # 融合序列与位置两路解码输出
 class RobustScannerFusionLayer(nn.Layer):
     def __init__(self, dim_model, dim=-1):
         super(RobustScannerFusionLayer, self).__init__()
@@ -521,6 +530,7 @@ class RobustScannerFusionLayer(nn.Layer):
         return output
 
 
+    # RobustScanner 双路解码器封装
 class RobustScannerDecoder(BaseDecoder):
     """Decoder for RobustScanner.
 
@@ -681,6 +691,7 @@ class RobustScannerDecoder(BaseDecoder):
         return outputs
 
 
+    # RobustScanner 识别头：通道压缩 + 双路解码
 class RobustScannerHead(nn.Layer):
     def __init__(
         self,

@@ -33,9 +33,11 @@ from ppocr.modeling.necks.rnn import (
 )
 from .rec_ctc_head import CTCHead
 from .rec_sar_head import SARHead
+# 多任务识别头：CTC + SAR/NRTR 联合训练，推理默认 CTC 输出
 from .rec_nrtr_head import Transformer
 
 
+    # 特征转置后线性投影，适配 NRTR 序列输入
 class FCTranspose(nn.Layer):
     def __init__(self, in_channels, out_channels, only_transpose=False):
         super().__init__()
@@ -50,6 +52,7 @@ class FCTranspose(nn.Layer):
             return self.fc(x.transpose([0, 2, 1]))
 
 
+    # 可学习解码位置编码加法
 class AddPos(nn.Layer):
     def __init__(self, dim, w):
         super().__init__()
@@ -64,6 +67,7 @@ class AddPos(nn.Layer):
         return x
 
 
+    # 多头组合：CTC 序列头 + SAR 或 NRTR 辅助监督头
 class MultiHead(nn.Layer):
     def __init__(self, in_channels, out_channels_list, **kwargs):
         super().__init__()
@@ -142,6 +146,7 @@ class MultiHead(nn.Layer):
         head_out["ctc"] = ctc_out
         head_out["ctc_neck"] = ctc_encoder
         # eval mode
+        # 推理阶段仅返回 CTC 分支结果
         if not self.training:
             return ctc_out
         if self.gtc_head == "sar":

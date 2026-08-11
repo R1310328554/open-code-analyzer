@@ -17,9 +17,11 @@ from __future__ import division
 from __future__ import print_function
 
 from paddle import nn
+# PREN 识别头：逐帧线性分类 + 推理 softmax
 from paddle.nn import functional as F
 
 
+    # PREN 头：序列特征直接 Linear 到字符 logits
 class PRENHead(nn.Layer):
     def __init__(self, in_channels, out_channels, **kwargs):
         super(PRENHead, self).__init__()

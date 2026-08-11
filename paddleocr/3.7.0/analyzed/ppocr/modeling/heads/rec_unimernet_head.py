@@ -40,6 +40,7 @@ from paddle.nn.initializer import (
     XavierNormal,
 )
 
+# UniMERNet 公式识别头：MBart 解码器 + 序列计数辅助（完整 HF 移植）
 zeros_ = Constant(value=0.0)
 ones_ = Constant(value=1.0)
 kaiming_normal_ = KaimingUniform(nonlinearity="relu")
@@ -48,6 +49,7 @@ xavier_uniform_ = XavierUniform()
 xavier_normal_ = XavierNormal()
 
 
+    # 模型输出基类：dataclass 风格有序字典
 class ModelOutput(OrderedDict):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -177,6 +179,7 @@ class Seq2SeqLMOutput(ModelOutput):
         super().__init__(*args, **kwargs)
 
 
+    # MBart 解码器配置：层数、维度、并行步长等
 class MBartConfig(object):
 
     model_type = "mbart"
@@ -530,6 +533,7 @@ class MBartPreTrainedModel(nn.Layer):
         return dummy_inputs
 
 
+    # MBart 多头注意力：自/交叉 + KV cache
 class MBartAttention(nn.Layer):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -663,6 +667,8 @@ MBART_ATTENTION_CLASSES = {
 }
 
 
+    # MBart 解码层：自注意力 + 交叉注意力 + FFN
+    # MBart 解码器堆叠：嵌入 + 多层解码 + LayerNorm
 class MBartDecoderLayer(nn.Layer):
     def __init__(self, config):
         super().__init__()
@@ -775,6 +781,7 @@ class MBartDecoderLayer(nn.Layer):
         return outputs
 
 
+    # MBart 因果语言模型：解码器 + lm_head
 class MBartForCausalLM(MBartPreTrainedModel):
     _tied_weights_keys = ["lm_head.weight"]
 
@@ -1057,6 +1064,7 @@ class MBartDecoder(MBartPreTrainedModel):
         if inputs_embeds is None:
             inputs_embeds = self.embed_tokens(input_ids) * self.embed_scale
 
+        # Flash Attention 2 路径：2D padding 掩码
         if self._use_flash_attention_2:
             attention_mask = (
                 attention_mask
@@ -1635,6 +1643,7 @@ class CausalLMOutputWithCrossAttentionsAndCounting(ModelOutput):
         super().__init__(*args, **kwargs)
 
 
+    # 定制解码器：并行生成与导出掩码
 class CustomMBartDecoder(MBartDecoder):
     """
     A custom MBartDecoder that includes additional processing layers.
@@ -1880,6 +1889,7 @@ class CustomMBartDecoder(MBartDecoder):
         )
 
 
+    # 自注意力块封装
 class SelfAttentionBlock(nn.Layer):
     """
     A self-attention block that implements multi-head self-attention
@@ -1904,6 +1914,7 @@ class SelfAttentionBlock(nn.Layer):
         return x
 
 
+    # 序列计数解码器：辅助预测公式 token 数量
 class SeqCountingDecoder(nn.Layer):
     """
     A custom sequence counting decoder that incorporates multi-head attention layers
@@ -1947,6 +1958,7 @@ class SeqCountingDecoder(nn.Layer):
         return x
 
 
+    # 因果 LM：集成 CustomMBartDecoder
 class CustomMBartForCausalLM(MBartForCausalLM):
     """
     Custom MBart model for causal language modeling with a custom decoder.
@@ -2031,6 +2043,7 @@ class CustomMBartForCausalLM(MBartForCausalLM):
         )
 
 
+    # UniMERNet 头：编码特征→MBart 自回归公式生成
 class UniMERNetHead(nn.Layer):
     """Implementation of UniMERNetHead decoder.
 
