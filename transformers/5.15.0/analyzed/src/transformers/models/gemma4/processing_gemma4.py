@@ -31,6 +31,7 @@ if is_vision_available():
 logger = logging.get_logger(__name__)
 
 
+# Gemma4Processor：音频/图像/视频/文本四模态输入联合预处理
 class Gemma4ProcessorKwargs(ProcessingKwargs, total=False):
     images_kwargs: Gemma4ImageProcessorKwargs
     _defaults = {
@@ -48,6 +49,7 @@ class Gemma4ProcessorKwargs(ProcessingKwargs, total=False):
 
 @auto_docstring
 @requires(backends=("vision",))
+# Gemma4Processor：封装音频/图像/视频预处理与四模态 batch 组装的联合入口
 class Gemma4Processor(ProcessorMixin):
     valid_processor_kwargs = Gemma4ProcessorKwargs
 

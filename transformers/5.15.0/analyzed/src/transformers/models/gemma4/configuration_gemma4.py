@@ -24,8 +24,10 @@ from ...utils.type_validators import interval
 logger = logging.get_logger(__name__)
 
 
+# Gemma4AudioConfig：google/gemma-4-e2b-it 音频编码器默认超参
 @auto_docstring(checkpoint="google/gemma-4-e2b-it")
 @strict
+# Gemma4AudioConfig：Gemma 4 音频编码器超参（分块注意力 + SSCP）
 class Gemma4AudioConfig(PreTrainedConfig):
     r"""
     subsampling_conv_channels (`list[int]`, defaults to `[128, 32]`):
@@ -82,8 +84,10 @@ class Gemma4AudioConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# Gemma4TextConfig：google/gemma-4-e2b-it 文本解码器默认超参
 @auto_docstring(checkpoint="google/gemma-4-e2b-it")
 @strict
+# Gemma4TextConfig：Gemma 4 文本解码器超参（PLE + MoE + 滑动窗口）
 class Gemma4TextConfig(PreTrainedConfig):
     r"""
     use_bidirectional_attention (`str`, *optional*):
@@ -229,8 +233,10 @@ class Gemma4TextConfig(PreTrainedConfig):
         return kwargs
 
 
+# Gemma4VisionConfig：google/gemma-4-e2b-it 视觉编码器默认超参
 @auto_docstring(checkpoint="google/gemma-4-e2b-it")
 @strict
+# Gemma4VisionConfig：Gemma 4 视觉编码器超参（patch 嵌入 + 多维 RoPE）
 class Gemma4VisionConfig(PreTrainedConfig):
     r"""
     pooling_kernel_size (`int`, *optional*):
@@ -286,8 +292,10 @@ class Gemma4VisionConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# Gemma4Config：google/gemma-4-e2b-it 四模态联合默认超参
 @auto_docstring(checkpoint="google/gemma-4-e2b-it")
 @strict
+# Gemma4Config：Gemma 4 文本+音频+视觉+视频四模态联合配置
 class Gemma4Config(PreTrainedConfig):
     r"""
     boi_token_id (`int`, *optional*, defaults to 255999):

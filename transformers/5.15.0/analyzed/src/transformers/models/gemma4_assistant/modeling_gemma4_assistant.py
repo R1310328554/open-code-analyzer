@@ -28,8 +28,11 @@ from ..auto.modeling_auto import AutoModel
 from .configuration_gemma4_assistant import Gemma4AssistantConfig
 
 
+# Gemma 4 Assistant 建模：轻量辅助模型（MaskedEmbedder + backbone 联合推理）
+
 @auto_docstring
 @dataclass
+# Gemma4AssistantOutput：Assistant 模型输出 dataclass（含 logits）
 class Gemma4AssistantOutput(BaseModelOutput):
     r"""
     logits (`torch.FloatTensor` of shape `(batch_size, sequence_length, config.vocab_size)`):
@@ -39,6 +42,7 @@ class Gemma4AssistantOutput(BaseModelOutput):
     logits: torch.FloatTensor | None = None
 
 
+# Gemma4AssistantMaskedEmbedder：带掩码的 per-token 嵌入查找层
 class Gemma4AssistantMaskedEmbedder(nn.Module):
     token_ordering: torch.Tensor
 
@@ -87,6 +91,7 @@ class Gemma4AssistantMaskedEmbedder(nn.Module):
         return output.scatter_(dim=-1, index=scatter_idx, src=selected_logits)
 
 
+# Gemma4AssistantPreTrainedModel：Gemma 4 Assistant 预训练基类
 class Gemma4AssistantPreTrainedModel(PreTrainedModel):
     config: Gemma4AssistantConfig
     base_model_prefix = "model"
@@ -107,6 +112,7 @@ class Gemma4AssistantPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring(custom_intro="A model for multi-token prediction-based assisted decoding with Gemma 4.")
+# Gemma4AssistantForCausalLM：Gemma 4 Assistant 因果 LM（辅助 backbone 推理）
 class Gemma4AssistantForCausalLM(Gemma4AssistantPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _fsdp_plan = {"lm_head": "keep_full_weight"}

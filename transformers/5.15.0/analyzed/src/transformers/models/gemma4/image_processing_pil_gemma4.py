@@ -33,6 +33,7 @@ logger = logging.get_logger(__name__)
 _SUPPORTED_SOFT_TOKENS = (70, 140, 280, 560, 1120)
 
 
+# get_aspect_ratio_preserving_size：保持宽高比的 resize 目标尺寸计算
 def get_aspect_ratio_preserving_size(
     height: int,
     width: int,
@@ -88,6 +89,7 @@ def get_aspect_ratio_preserving_size(
 
 
 # Copied from transformers.models.siglip2.image_processing_pil_siglip2.convert_image_to_patches
+# convert_image_to_patches：将图像张量切分为 patch 序列
 def convert_image_to_patches(image: np.ndarray, patch_size: int) -> np.ndarray:
     """
     Convert 3D array image of shape (num_channels, image_height, image_width) into 2D array of patches of shape
@@ -103,6 +105,7 @@ def convert_image_to_patches(image: np.ndarray, patch_size: int) -> np.ndarray:
 
 
 # Adopted from Siglip2 (mask -> position ids)
+# pad_along_first_dim：沿首维填充 patch 序列至目标长度
 def pad_along_first_dim(image: np.ndarray, positions: np.ndarray, target_length: int) -> tuple[np.ndarray, np.ndarray]:
     """
     Pad the image along the first dimension.
@@ -117,6 +120,7 @@ def pad_along_first_dim(image: np.ndarray, positions: np.ndarray, target_length:
     return image, positions
 
 
+# Gemma4ImageProcessorKwargs：图像处理器可选参数字典类型
 class Gemma4ImageProcessorKwargs(ImagesKwargs, total=False):
     """
     patch_size (`int`, *optional*):
@@ -134,6 +138,7 @@ class Gemma4ImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring(custom_intro="Constructs a Gemma4 image processor.")
+# Gemma4ImageProcessorPil：PIL 后端的 Gemma 4 图像 patch 预处理
 class Gemma4ImageProcessorPil(PilBackend):
     valid_kwargs = Gemma4ImageProcessorKwargs
     model_input_names = ["pixel_values", "image_position_ids", "num_soft_tokens_per_image"]

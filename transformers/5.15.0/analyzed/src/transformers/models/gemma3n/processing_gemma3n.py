@@ -22,6 +22,7 @@ from ...tokenization_utils_base import PreTokenizedInput, TextInput
 from ...utils import auto_docstring
 
 
+# Gemma3nProcessor：音频/图像/文本三模态输入联合预处理与 batch 组装
 class Gemma3nProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {"padding": False},
@@ -29,6 +30,7 @@ class Gemma3nProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# Gemma3nProcessor：封装音频/图像预处理、token 类型 ID 与 batch 组装的联合入口
 class Gemma3nProcessor(ProcessorMixin):
     def __init__(
         self,

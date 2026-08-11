@@ -24,8 +24,10 @@ from ..gemma4.configuration_gemma4 import Gemma4TextConfig
 logger = logging.get_logger(__name__)
 
 
+# Gemma4AssistantConfig：google/gemma-4-e2b-it Assistant 辅助模型默认超参
 @auto_docstring(checkpoint="google/gemma-4-e2b-it")
 @strict
+# Gemma4AssistantConfig：Gemma 4 Assistant 辅助模型超参（有序嵌入表选项）
 class Gemma4AssistantConfig(PreTrainedConfig):
     r"""
     backbone_hidden_size (`int`, defaults to 1536):

@@ -49,8 +49,11 @@ from ...utils.deprecation import deprecate_kwarg
 from ...utils.generic import maybe_autocast, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
 from ..auto import AutoModel
+# modeling_gemma3n 由 modular_gemma3n.py 自动生成，此处为独立完整实现
 from .configuration_gemma3n import Gemma3nAudioConfig, Gemma3nConfig, Gemma3nTextConfig, Gemma3nVisionConfig
 
+
+# Gemma 3n 建模：文本+音频+视觉三模态（Conformer 音频 + AltUp/Laurel 文本结构）
 
 if is_accelerate_available():
     from accelerate.hooks import add_hook_to_module
@@ -58,6 +61,7 @@ if is_accelerate_available():
 
 @auto_docstring
 @dataclass
+# Gemma3nAudioEncoderModelOutput：音频编码器输出 dataclass（含池化隐状态）
 class Gemma3nAudioEncoderModelOutput(BaseModelOutputWithPooling):
     r"""
     audio_mel_mask (`torch.BoolTensor`, *optional*):
@@ -73,6 +77,7 @@ class Gemma3nAudioEncoderModelOutput(BaseModelOutputWithPooling):
     """
 )
 @dataclass
+# Gemma3nModelOutputWithPast：三模态联合主干输出 dataclass（含 KV cache）
 class Gemma3nModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     past_key_values (`Cache`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
@@ -99,6 +104,7 @@ class Gemma3nModelOutputWithPast(BaseModelOutputWithPast):
     """
 )
 @dataclass
+# Gemma3nCausalLMOutputWithPast：多模态因果 LM 输出 dataclass
 class Gemma3nCausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -128,6 +134,7 @@ class Gemma3nCausalLMOutputWithPast(ModelOutput):
     audio_hidden_states: torch.FloatTensor | None = None
 
 
+# Gemma3nRMSNorm：Gemma 3n 专用 RMS LayerNorm（含 (1+weight) 缩放）
 class Gemma3nRMSNorm(nn.Module):
     def __init__(self, dim: int, eps: float = 1e-6, with_scale: bool = True):
         super().__init__()
@@ -152,6 +159,7 @@ class Gemma3nRMSNorm(nn.Module):
 # ==== Audio Encoder ====
 
 
+# Gemma3nAudioRelativePositionEmbedding：音频 Conformer 相对位置嵌入
 class Gemma3nAudioRelativePositionEmbedding(nn.Module):
     def __init__(self, config: Gemma3nAudioConfig):
         super().__init__()
@@ -318,6 +326,7 @@ class Gemma3nAudioRelativePositionEmbedding(nn.Module):
         return term_ac + term_bd_shifted
 
 
+# Gemma3nAudioAttention：音频 Conformer 分块相对位置自注意力
 class Gemma3nAudioAttention(nn.Module):
     def __init__(self, config: Gemma3nAudioConfig):
         super().__init__()
@@ -542,6 +551,7 @@ class Gemma3nAudioAttention(nn.Module):
         return context_vectors
 
 
+# Gemma3nAudioCumulativeGroupNorm：音频 SSCP 累积组归一化层
 class Gemma3nAudioCumulativeGroupNorm(nn.Module):
     """Applies Group Normalization cumulatively over the time dimension.
 
@@ -651,6 +661,7 @@ class Gemma3nAudioCumulativeGroupNorm(nn.Module):
         return final_output.to(input_dtype)
 
 
+# Gemma3nAudioSSCPConvBlock：Sub-Sample Conv Projection 卷积块
 class Gemma3nAudioSSCPConvBlock(nn.Module):
     """A single convolution block for the SubSampleConvProjection.
 
@@ -720,6 +731,7 @@ class Gemma3nAudioSSCPConvBlock(nn.Module):
         return self.activation(audio_encodings_normed)
 
 
+# Gemma3nAudioSubSampleConvProjection：音频下采样卷积投影（SSCP）
 class Gemma3nAudioSubSampleConvProjection(nn.Module):
     def __init__(self, config: Gemma3nAudioConfig):
         super().__init__()
@@ -793,6 +805,7 @@ class Gemma3nAudioSubSampleConvProjection(nn.Module):
         return output
 
 
+# Gemma3nAudioConformerAttention：Conformer 块内自注意力子层
 class Gemma3nAudioConformerAttention(nn.Module):
     def __init__(self, config: Gemma3nAudioConfig):
         super().__init__()
@@ -821,6 +834,7 @@ class Gemma3nAudioConformerAttention(nn.Module):
         return audio_encodings_input_to_attn + self.post_norm(audio_encodings)
 
 
+# Gemma3nAudioConformerFeedForward：Conformer 块内前馈 FFN 子层
 class Gemma3nAudioConformerFeedForward(nn.Module):
     def __init__(self, config: Gemma3nAudioConfig):
         super().__init__()
@@ -846,6 +860,7 @@ class Gemma3nAudioConformerFeedForward(nn.Module):
         return residual + (audio_encodings * self.post_layer_scale)
 
 
+# Gemma3nAudioConformerLightConv1d：Conformer 轻量深度可分离 1D 卷积
 class Gemma3nAudioConformerLightConv1d(nn.Module):
     def __init__(self, config: Gemma3nAudioConfig):
         super().__init__()
@@ -889,6 +904,7 @@ class Gemma3nAudioConformerLightConv1d(nn.Module):
         return output
 
 
+# Gemma3nAudioConformerBlock：Conformer 单层（注意力 + 卷积 + FFN）
 class Gemma3nAudioConformerBlock(nn.Module):
     def __init__(self, config: Gemma3nAudioConfig):
         super().__init__()
@@ -916,6 +932,7 @@ class Gemma3nAudioConformerBlock(nn.Module):
         return output
 
 
+# Gemma3nTextScaledWordEmbedding：带 embed_scale 缩放的词嵌入层
 class Gemma3nTextScaledWordEmbedding(nn.Embedding):
     """
     This module overrides nn.Embeddings' forward by multiplying with embeddings scale.
@@ -930,6 +947,7 @@ class Gemma3nTextScaledWordEmbedding(nn.Embedding):
         return super().forward(input_ids) * self.embed_scale.to(self.weight.dtype)
 
 
+# Gemma3nTextLaurelBlock：Laurel 低秩线性适配块（高效微调结构）
 class Gemma3nTextLaurelBlock(nn.Module):
     """Learned Augmented Residual Layer"""
 
@@ -948,6 +966,7 @@ class Gemma3nTextLaurelBlock(nn.Module):
         return hidden_states + normed_laurel_hidden_states
 
 
+# Gemma3nTextMLP：Gemma 3n 文本前馈 MLP（GELU-tanh 激活）
 class Gemma3nTextMLP(nn.Module):
     def __init__(self, config: Gemma3nTextConfig, layer_idx: int = 0):
         super().__init__()
@@ -986,6 +1005,7 @@ class Gemma3nTextMLP(nn.Module):
         return nn.functional.relu(inputs - cutoff_x)
 
 
+# Gemma3nTextAltUp：AltUp 多预测分支与校正融合模块
 class Gemma3nTextAltUp(nn.Module):
     """Alternating Updates (AltUp)
 
@@ -1085,6 +1105,7 @@ class Gemma3nTextAltUp(nn.Module):
         return self.forward(corrected)
 
 
+# rotate_half：RoPE 中将向量后半部分旋转取负
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -1092,6 +1113,7 @@ def rotate_half(x):
     return torch.cat((-x2, x1), dim=-1)
 
 
+# repeat_kv：GQA 中将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -1104,6 +1126,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -1138,6 +1161,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# apply_rotary_pos_emb：将 cos/sin 旋转位置编码应用到 Q/K
 def apply_rotary_pos_emb(x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor, unsqueeze_dim: int = 1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -1160,6 +1184,7 @@ def apply_rotary_pos_emb(x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor, 
     return (x * cos) + (rotate_half(x) * sin)
 
 
+# Gemma3nTextAttention：Gemma 3n 文本多头自注意力（滑动窗口 + GQA）
 class Gemma3nTextAttention(nn.Module):
     def __init__(self, config: Gemma3nTextConfig, layer_idx: int):
         super().__init__()
@@ -1271,6 +1296,7 @@ class Gemma3nTextAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# Gemma3nTextDecoderLayer：Gemma 3n 文本解码器单层（AltUp + Laurel + MLP）
 class Gemma3nTextDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Gemma3nTextConfig, layer_idx: int):
         super().__init__()
@@ -1348,6 +1374,7 @@ class Gemma3nTextDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Gemma3nPreTrainedModel：Gemma 3n 预训练基类与权重初始化
 class Gemma3nPreTrainedModel(PreTrainedModel):
     config: Gemma3nConfig
     base_model_prefix = "model"
@@ -1445,6 +1472,7 @@ class Gemma3nPreTrainedModel(PreTrainedModel):
             self.set_per_layer_input_embeddings(new_embeddings_per_layer)
 
 
+# Gemma3nAudioEncoder：Conformer 音频编码器主干
 class Gemma3nAudioEncoder(Gemma3nPreTrainedModel):
     """
     An audio encoder based on the [Universal Speech Model](https://huggingface.co/papers/2303.01037) architecture.
@@ -1526,6 +1554,7 @@ class Gemma3nAudioEncoder(Gemma3nPreTrainedModel):
         )
 
 
+# Gemma3nRotaryEmbedding：Gemma 3n RoPE 旋转位置编码
 class Gemma3nRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: Gemma3nTextConfig, device=None):
@@ -1599,6 +1628,7 @@ class Gemma3nRotaryEmbedding(nn.Module):
 
 
 @auto_docstring(custom_intro="The base Gemma 3n language model without a language modeling head.")
+# Gemma3nTextModel：Gemma 3n 纯文本解码器主干
 class Gemma3nTextModel(Gemma3nPreTrainedModel):
     config: Gemma3nTextConfig
     input_modalities = ("text",)
@@ -1810,6 +1840,7 @@ class Gemma3nTextModel(Gemma3nPreTrainedModel):
 
 
 @auto_docstring(custom_intro="The base Gemma 3n language model with a language modeling head.")
+# Gemma3nForCausalLM：Gemma 3n 纯文本因果语言建模
 class Gemma3nForCausalLM(Gemma3nPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
@@ -1890,6 +1921,7 @@ class Gemma3nForCausalLM(Gemma3nPreTrainedModel, GenerationMixin):
         )
 
 
+# Gemma3nMultimodalEmbedder：将音频/图像 token 嵌入注入文本序列
 class Gemma3nMultimodalEmbedder(nn.Module):
     """Embeds token ids or soft tokens for multimodal content into language model space."""
 
@@ -1946,6 +1978,7 @@ class Gemma3nMultimodalEmbedder(nn.Module):
     language modeling head.
     """
 )
+# Gemma3nModel：文本+音频+视觉三模态联合主干
 class Gemma3nModel(Gemma3nPreTrainedModel):
     # we are filtering the logits/labels so we shouldn't divide the loss based on num_items_in_batch
     accepts_loss_kwargs = False
@@ -2201,6 +2234,7 @@ class Gemma3nModel(Gemma3nPreTrainedModel):
     head.
     """
 )
+# Gemma3nForConditionalGeneration：Gemma 3n 三模态条件生成
 class Gemma3nForConditionalGeneration(Gemma3nPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
     accepts_loss_kwargs = False

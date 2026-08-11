@@ -45,6 +45,7 @@ elif is_torchvision_available():
 logger = logging.get_logger(__name__)
 
 
+# Gemma 4 视频处理：帧序列 patch 切分与 batch 填充
 class Gemma4VideoProcessorKwargs(VideosKwargs, total=False):
     """
     patch_size (`int`, *optional*):
@@ -65,6 +66,7 @@ _SUPPORTED_SOFT_TOKENS = (70, 140, 280, 560, 1120)
 
 
 # Copied from transformers.models.gemma4.image_processing_gemma4.get_aspect_ratio_preserving_size
+# get_aspect_ratio_preserving_size：保持宽高比的 resize 目标尺寸计算
 def get_aspect_ratio_preserving_size(
     height: int,
     width: int,
@@ -119,6 +121,7 @@ def get_aspect_ratio_preserving_size(
     return target_height, target_width
 
 
+# convert_video_to_patches：将视频帧张量切分为时空 patch 序列
 def convert_video_to_patches(video: "torch.Tensor", patch_size: int) -> "torch.Tensor":
     """
     Convert 4D tensor video of shape (num_frames, num_channels, height, width) into 3D tensor of patches of shape
@@ -135,6 +138,7 @@ def convert_video_to_patches(video: "torch.Tensor", patch_size: int) -> "torch.T
     return patched_video
 
 
+# pad_to_max_patches：视频 patch 序列填充至 batch 最大长度
 def pad_to_max_patches(
     video: "torch.Tensor", positions: "torch.Tensor", target_length: int
 ) -> tuple["torch.Tensor", "torch.Tensor"]:
@@ -152,6 +156,7 @@ def pad_to_max_patches(
 
 
 @auto_docstring
+# Gemma4VideoProcessor：Gemma 4 视频帧 patch 切分与填充预处理
 class Gemma4VideoProcessor(BaseVideoProcessor):
     resample = PILImageResampling.BICUBIC
     image_mean = [0.0, 0.0, 0.0]

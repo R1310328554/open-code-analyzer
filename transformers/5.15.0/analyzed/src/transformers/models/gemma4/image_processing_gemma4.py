@@ -26,10 +26,12 @@ from ...utils import TensorType, auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# Gemma 4 图像处理：Torchvision 后端 patch 切分与 soft token 尺寸对齐
 _SUPPORTED_SOFT_TOKENS = (70, 140, 280, 560, 1120)
 
 
 # Copied from transformers.models.gemma4.image_processing_gemma4.get_aspect_ratio_preserving_size
+# get_aspect_ratio_preserving_size：保持宽高比的 resize 目标尺寸计算
 def get_aspect_ratio_preserving_size(
     height: int,
     width: int,
@@ -85,6 +87,7 @@ def get_aspect_ratio_preserving_size(
 
 
 # Copied from transformers.models.siglip2.image_processing_siglip2.convert_image_to_patches
+# convert_image_to_patches：将图像张量切分为 patch 序列
 def convert_image_to_patches(image: "torch.Tensor", patch_size: int) -> "torch.Tensor":
     """
     Convert 3D tensor image of shape (num_channels, image_height, image_width) into 2D tensor of patches of shape
@@ -100,6 +103,7 @@ def convert_image_to_patches(image: "torch.Tensor", patch_size: int) -> "torch.T
 
 
 # Adopted from Siglip2 (mask -> position ids)
+# pad_along_first_dim：沿首维填充 patch 序列至目标长度
 def pad_along_first_dim(
     image: "torch.Tensor", positions: "torch.Tensor", target_length: int
 ) -> tuple["torch.Tensor", "torch.Tensor"]:
@@ -116,6 +120,7 @@ def pad_along_first_dim(
     return image, positions
 
 
+# Gemma4ImageProcessorKwargs：图像处理器可选参数字典类型
 class Gemma4ImageProcessorKwargs(ImagesKwargs, total=False):
     """
     patch_size (`int`, *optional*):
@@ -133,6 +138,7 @@ class Gemma4ImageProcessorKwargs(ImagesKwargs, total=False):
 
 
 @auto_docstring(custom_intro="Constructs a Gemma4 image processor.")
+# Gemma4ImageProcessor：Torchvision 后端的 Gemma 4 图像 patch 预处理
 class Gemma4ImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.BICUBIC
     image_mean = [0.0, 0.0, 0.0]

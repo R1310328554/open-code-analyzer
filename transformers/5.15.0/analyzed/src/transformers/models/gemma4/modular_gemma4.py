@@ -61,6 +61,7 @@ from ..gemma3.modeling_gemma3 import (
     Gemma3TextModel,
     Gemma3TextScaledWordEmbedding,
 )
+# modular 复用 Gemma3n 的多模态嵌入与音频/视觉组件
 from ..gemma3n.modeling_gemma3n import (
     Gemma3nCausalLMOutputWithPast,
     Gemma3nForConditionalGeneration,
@@ -85,6 +86,7 @@ if is_accelerate_available():
 logger = logging.get_logger(__name__)
 
 
+# Gemma 4 modular 源：基于 Gemma3n/Gemma3 扩展四模态与 MoE 解码器
 def create_masks_for_vision_model(
     config: PreTrainedConfig,
     inputs_embeds: torch.Tensor,
@@ -140,6 +142,7 @@ def create_masks_for_vision_model(
     }
 
 
+# Gemma4ModelOutputWithPast：四模态联合主干输出 dataclass（含 KV cache）
 class Gemma4ModelOutputWithPast(Gemma3nModelOutputWithPast):
     r"""
     past_key_values (`Cache`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
@@ -161,6 +164,7 @@ class Gemma4ModelOutputWithPast(Gemma3nModelOutputWithPast):
     shared_kv_states: dict[str, tuple[torch.Tensor, torch.Tensor]] | None = None
 
 
+# Gemma4CausalLMOutputWithPast：多模态因果 LM 输出 dataclass
 class Gemma4CausalLMOutputWithPast(Gemma3nCausalLMOutputWithPast):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -187,6 +191,7 @@ class Gemma4CausalLMOutputWithPast(Gemma3nCausalLMOutputWithPast):
 
 
 @dataclass
+# Gemma4TextModelOutputWithPast：纯文本解码器输出 dataclass
 class Gemma4TextModelOutputWithPast(BaseModelOutputWithPast):
     """
     BaseModelOutputWithPast extended with shared_kv_states for KV sharing.
@@ -202,6 +207,7 @@ class Gemma4TextModelOutputWithPast(BaseModelOutputWithPast):
 
 @auto_docstring
 @dataclass
+# Gemma4AudioModelOutput：音频编码器输出 dataclass（含池化隐状态）
 class Gemma4AudioModelOutput(BaseModelOutputWithPooling):
     r"""
     attention_mask (`torch.BoolTensor`, *optional*):
@@ -211,6 +217,7 @@ class Gemma4AudioModelOutput(BaseModelOutputWithPooling):
     attention_mask: torch.BoolTensor | None = None
 
 
+# Gemma4ClippableLinear：权重裁剪线性层（提升数值稳定性）
 class Gemma4ClippableLinear(nn.Module):
     def __init__(
         self,
@@ -240,10 +247,12 @@ class Gemma4ClippableLinear(nn.Module):
         return hidden_states
 
 
+# Gemma4RMSNorm：Gemma 4 专用 RMS LayerNorm
 class Gemma4RMSNorm(Gemma3nRMSNorm):
     pass
 
 
+# Gemma4AudioRelPositionalEncoding：音频相对位置编码
 class Gemma4AudioRelPositionalEncoding(nn.Module):
     """Sinusoidal relative positional encoding for the audio encoder.
 
@@ -275,6 +284,7 @@ class Gemma4AudioRelPositionalEncoding(nn.Module):
         return pos_embed.to(dtype=hidden_states.dtype)
 
 
+# Gemma4AudioAttention：音频分块相对位置自注意力
 class Gemma4AudioAttention(nn.Module):
     """Chunked local attention with relative position bias"""
 
@@ -383,6 +393,7 @@ class Gemma4AudioAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# Gemma4AudioSubSampleConvProjectionLayer：SSCP 单层卷积投影
 class Gemma4AudioSubSampleConvProjectionLayer(nn.Module):
     def __init__(self, in_channels, out_channels, norm_eps):
         super().__init__()
@@ -411,6 +422,7 @@ class Gemma4AudioSubSampleConvProjectionLayer(nn.Module):
         return hidden_states, mask
 
 
+# Gemma4AudioSubSampleConvProjection：音频下采样卷积投影（SSCP）
 class Gemma4AudioSubSampleConvProjection(nn.Module):
     def __init__(self, config: Gemma4AudioConfig):
         super().__init__()
@@ -441,6 +453,7 @@ class Gemma4AudioSubSampleConvProjection(nn.Module):
         return self.input_proj_linear(hidden_states), mask
 
 
+# Gemma4AudioFeedForward：音频编码器前馈 FFN 子层
 class Gemma4AudioFeedForward(nn.Module):
     def __init__(self, config: Gemma4AudioConfig):
         super().__init__()
@@ -477,6 +490,7 @@ class Gemma4AudioFeedForward(nn.Module):
 
 
 # TODO: this could be imported from Voxtral realtime
+# Gemma4AudioCausalConv1d：因果 1D 卷积（音频时序建模）
 class Gemma4AudioCausalConv1d(nn.Conv1d):
     # def __init__(
     #     self,
@@ -510,6 +524,7 @@ class Gemma4AudioCausalConv1d(nn.Conv1d):
         return super().forward(x)
 
 
+# Gemma4AudioLightConv1d：轻量深度可分离 1D 卷积
 class Gemma4AudioLightConv1d(nn.Module):
     def __init__(self, config: Gemma4AudioConfig):
         super().__init__()
@@ -551,6 +566,7 @@ class Gemma4AudioLightConv1d(nn.Module):
         return hidden_states
 
 
+# Gemma4AudioLayer：音频编码器单层（注意力 + 卷积 + FFN）
 class Gemma4AudioLayer(nn.Module):
     def __init__(self, config: Gemma4AudioConfig, layer_idx: int):
         super().__init__()
@@ -605,6 +621,7 @@ class Gemma4AudioLayer(nn.Module):
 # ---- Vision Encoder Layers ----
 
 
+# Gemma4VisionPatchEmbedder：视觉 patch 嵌入 + 2D 位置编码
 class Gemma4VisionPatchEmbedder(nn.Module):
     def __init__(self, config: Gemma4VisionConfig):
         super().__init__()
@@ -650,6 +667,7 @@ class Gemma4VisionPatchEmbedder(nn.Module):
         return hidden_states + position_embeddings
 
 
+# Gemma4VisionPooler：视觉 soft token 空间池化层
 class Gemma4VisionPooler(nn.Module):
     """Spatial pooling and ``sqrt(hidden_size)`` scaling for vision encodings.
 
@@ -717,6 +735,7 @@ class Gemma4VisionPooler(nn.Module):
         return hidden_states, padding_positions
 
 
+# Gemma4VisionMLP：视觉编码器前馈 MLP
 class Gemma4VisionMLP(Gemma3MLP):
     def __init__(self, config: Gemma4VisionConfig):
         super().__init__(self, config)
@@ -725,6 +744,7 @@ class Gemma4VisionMLP(Gemma3MLP):
         self.down_proj = Gemma4ClippableLinear(config, self.intermediate_size, self.hidden_size)
 
 
+# apply_multidimensional_rope：将多维 RoPE 应用到视觉 Q/K
 def apply_multidimensional_rope(
     x: torch.Tensor,
     cos: torch.Tensor,
@@ -781,6 +801,7 @@ def apply_multidimensional_rope(
     return torch.cat(y_parts, dim=-1)
 
 
+# Gemma4VisionRotaryEmbedding：视觉多维 RoPE 旋转位置编码
 class Gemma4VisionRotaryEmbedding(LlamaRotaryEmbedding):
     def compute_default_rope_parameters(
         config: Gemma4VisionConfig, device=None, **kwargs
@@ -833,6 +854,7 @@ class Gemma4VisionRotaryEmbedding(LlamaRotaryEmbedding):
 
 
 @no_inherit_decorator
+# Gemma4VisionAttention：视觉多头自注意力（多维 RoPE）
 class Gemma4VisionAttention(Gemma3Attention):
     def __init__(self, config: Gemma4VisionConfig, layer_idx: int):
         super().__init__(self, config, layer_idx)
@@ -895,6 +917,7 @@ class Gemma4VisionAttention(Gemma3Attention):
 
 
 # Same forward as Gemma3 but no cache
+# Gemma4VisionEncoderLayer：视觉编码器单层（自注意力 + MLP）
 class Gemma4VisionEncoderLayer(Gemma3DecoderLayer):
     def __init__(self, config: Gemma4VisionConfig, layer_idx: int):
         super().__init__(self, config, layer_idx)
@@ -932,6 +955,7 @@ class Gemma4VisionEncoderLayer(Gemma3DecoderLayer):
         return hidden_states
 
 
+# Gemma4VisionEncoder：视觉 Transformer 编码器堆叠
 class Gemma4VisionEncoder(nn.Module):
     def __init__(self, config: Gemma4VisionConfig):
         super().__init__()
@@ -979,6 +1003,7 @@ class Gemma4VisionEncoder(nn.Module):
 # ---- Text model ----
 
 
+# Gemma4TextMLP：Gemma 4 文本前馈 MLP
 class Gemma4TextMLP(Gemma3MLP):
     def __init__(self, config: Gemma4TextConfig, layer_idx: int):
         first_kv_shared_layer_idx = config.num_hidden_layers - config.num_kv_shared_layers
@@ -988,6 +1013,7 @@ class Gemma4TextMLP(Gemma3MLP):
         self.intermediate_size = config.intermediate_size * (2 if use_double_wide_mlp else 1)
 
 
+# Gemma4TextRotaryEmbedding：Gemma 4 文本 RoPE 旋转位置编码
 class Gemma4TextRotaryEmbedding(Gemma3RotaryEmbedding):
     def __init__(self, config: Gemma4TextConfig, device=None):
         nn.Module.__init__(self)
@@ -1021,6 +1047,7 @@ class Gemma4TextRotaryEmbedding(Gemma3RotaryEmbedding):
             setattr(self, f"{layer_type}_attention_scaling", curr_attention_scaling)
 
 
+# Gemma4TextAttention：Gemma 4 文本多头自注意力（滑动窗口 + GQA）
 class Gemma4TextAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -1137,6 +1164,7 @@ class Gemma4TextAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# Gemma4TextExperts：MoE 稀疏专家 FFN 集合
 class Gemma4TextExperts(MixtralExperts):
     def __init__(self, config: Gemma4TextConfig):
         super().__init__()
@@ -1145,6 +1173,7 @@ class Gemma4TextExperts(MixtralExperts):
         self.act_fn = ACT2FN[config.hidden_activation]
 
 
+# Gemma4TextRouter：MoE 路由门控（选择 top-k 专家）
 class Gemma4TextRouter(nn.Module):
     def __init__(self, config: Gemma4TextConfig):
         super().__init__()
@@ -1182,6 +1211,7 @@ class Gemma4TextRouter(nn.Module):
         return router_probabilities, top_k_weights, top_k_index
 
 
+# Gemma4TextDecoderLayer：Gemma 4 文本解码器单层（PLE + MoE + 注意力）
 class Gemma4TextDecoderLayer(Gemma3DecoderLayer):
     def __init__(self, config: Gemma4TextConfig | Gemma4VisionConfig, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -1264,6 +1294,7 @@ class Gemma4TextDecoderLayer(Gemma3DecoderLayer):
         return hidden_states
 
 
+# Gemma4TextScaledWordEmbedding：带 embed_scale 缩放的词嵌入层
 class Gemma4TextScaledWordEmbedding(Gemma3TextScaledWordEmbedding):
     pass
 
@@ -1271,6 +1302,7 @@ class Gemma4TextScaledWordEmbedding(Gemma3TextScaledWordEmbedding):
 # ---- Model Classes ----
 
 
+# Gemma4PreTrainedModel：Gemma 4 预训练基类与权重初始化
 class Gemma4PreTrainedModel(Gemma3nPreTrainedModel):
     _no_split_modules = [
         "Gemma4TextDecoderLayer",
@@ -1333,6 +1365,7 @@ class Gemma4PreTrainedModel(Gemma3nPreTrainedModel):
 
 
 @auto_docstring(custom_intro="The base Gemma 4 language model without a language modeling head.")
+# Gemma4TextModel：Gemma 4 纯文本解码器主干
 class Gemma4TextModel(Gemma3TextModel):
     config: Gemma4TextConfig
     _can_record_outputs = {
@@ -1552,6 +1585,7 @@ class Gemma4TextModel(Gemma3TextModel):
 
 
 @auto_docstring(custom_intro="The base Gemma 4 language model with a language modeling head.")
+# Gemma4ForCausalLM：Gemma 4 纯文本因果语言建模
 class Gemma4ForCausalLM(Gemma3ForCausalLM):
     base_model_prefix = "model"
 
@@ -1629,6 +1663,7 @@ class Gemma4ForCausalLM(Gemma3ForCausalLM):
         )
 
 
+# Gemma4AudioModel：Gemma 4 音频编码器主干
 class Gemma4AudioModel(Gemma4PreTrainedModel):
     """An audio encoder based on the [Universal Speech Model](https://huggingface.co/papers/2303.01037) architecture."""
 
@@ -1715,6 +1750,7 @@ class Gemma4AudioModel(Gemma4PreTrainedModel):
         return Gemma4AudioModelOutput(last_hidden_state=hidden_states, attention_mask=output_mask)
 
 
+# Gemma4VisionModel：Gemma 4 视觉编码器主干
 class Gemma4VisionModel(Gemma4PreTrainedModel):
     """The Gemma 4 Vision Encoder."""
 
@@ -1783,6 +1819,7 @@ class Gemma4VisionModel(Gemma4PreTrainedModel):
         return BaseModelOutputWithPast(last_hidden_state=hidden_states)
 
 
+# Gemma4MultimodalEmbedder：将音频/图像/视频 token 嵌入注入文本序列
 class Gemma4MultimodalEmbedder(Gemma3nMultimodalEmbedder):
     def __init__(
         self,
@@ -1814,6 +1851,7 @@ class Gemma4MultimodalEmbedder(Gemma3nMultimodalEmbedder):
 
 
 # Identical as Gemma3 but modular can't resolve if we simply import. FIXME: @cyril
+# token_type_ids_mask_function：按 token 类型 ID 构造注意力掩码函数
 def token_type_ids_mask_function(
     token_type_ids: torch.Tensor | None,
     image_group_ids: torch.Tensor | None,
@@ -1843,6 +1881,7 @@ def token_type_ids_mask_function(
     return inner_mask
 
 
+# get_block_sequence_ids_for_mask：按 token 类型生成 block 序列 ID 供掩码使用
 def get_block_sequence_ids_for_mask(mm_token_type_ids: torch.Tensor, device: torch.device) -> torch.Tensor:
     mm_token_type_ids = mm_token_type_ids.to(device)
 
@@ -1861,6 +1900,7 @@ def get_block_sequence_ids_for_mask(mm_token_type_ids: torch.Tensor, device: tor
     language modeling head.
     """
 )
+# Gemma4Model：文本+音频+视觉+视频四模态联合主干
 class Gemma4Model(Gemma3nModel):
     def __init__(self, config: Gemma4Config):
         super().__init__(config)
@@ -2186,6 +2226,7 @@ class Gemma4Model(Gemma3nModel):
     head.
     """
 )
+# Gemma4ForConditionalGeneration：Gemma 4 四模态条件生成
 class Gemma4ForConditionalGeneration(Gemma3nForConditionalGeneration):
     base_model_prefix = "model"
 
