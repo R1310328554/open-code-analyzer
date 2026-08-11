@@ -1,8 +1,15 @@
+"""
+django.contrib.contenttypes.prefetch — 通用外键批量预取。
+
+GenericPrefetch 为 GenericForeignKey 反向关系提供多 queryset 预取支持。
+"""
 from django.db.models import Prefetch
 from django.db.models.query import ModelIterable, RawQuerySet
 
 
+# 扩展 Prefetch：为 GFK 反向路径绑定多个可选 queryset
 class GenericPrefetch(Prefetch):
+    # 校验 querysets 不得使用 raw/values/values_list
     def __init__(self, lookup, querysets, to_attr=None):
         for queryset in querysets:
             if queryset is not None and (
@@ -18,6 +25,7 @@ class GenericPrefetch(Prefetch):
         self.querysets = querysets
         super().__init__(lookup, to_attr=to_attr)
 
+    # pickle 时链式复制 queryset 并标记 _prefetch_done 防提前求值
     def __getstate__(self):
         obj_dict = self.__dict__.copy()
         obj_dict["querysets"] = []
@@ -30,6 +38,7 @@ class GenericPrefetch(Prefetch):
                 obj_dict["querysets"].append(queryset)
         return obj_dict
 
+    # 仅在 prefetch_to 匹配当前层级时返回绑定的 querysets
     def get_current_querysets(self, level):
         if self.get_current_prefetch_to(level) == self.prefetch_to:
             return self.querysets

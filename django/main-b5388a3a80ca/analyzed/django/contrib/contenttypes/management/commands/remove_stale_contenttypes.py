@@ -1,3 +1,8 @@
+"""
+remove_stale_contenttypes — 清理数据库中过期的 ContentType 记录。
+
+删除已卸载应用或模型已移除但仍残留的 content type 行及其级联对象。
+"""
 import itertools
 
 from django.apps import apps
@@ -7,9 +12,11 @@ from django.db import DEFAULT_DB_ALIAS, connections, router
 from django.db.models.deletion import Collector
 
 
+# 管理命令：扫描并删除 model_class() 为 None 的 stale ContentType
 class Command(BaseCommand):
     help = "Deletes stale content types in the database."
 
+    # 支持 --noinput、--database 与 --include-stale-apps
     def add_arguments(self, parser):
         parser.add_argument(
             "--noinput",
@@ -34,6 +41,7 @@ class Command(BaseCommand):
             ),
         )
 
+    # 按 app_label 分组，交互式确认后批量 delete
     def handle(self, **options):
         db = options["database"]
         include_stale_apps = options["include_stale_apps"]

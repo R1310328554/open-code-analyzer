@@ -1,12 +1,15 @@
+# 初始迁移：创建 FlatPage 模型，依赖 sites.0001_initial
 from django.db import migrations, models
 
 
+# flatpages schema 初始化
 class Migration(migrations.Migration):
     dependencies = [
         ("sites", "0001_initial"),
     ]
 
     operations = [
+        # 创建 django_flatpage 表：url、title、content 及 sites M2M
         migrations.CreateModel(
             name="FlatPage",
             fields=[

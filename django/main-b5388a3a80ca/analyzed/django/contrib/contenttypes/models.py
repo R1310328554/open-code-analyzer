@@ -1,3 +1,8 @@
+"""
+django.contrib.contenttypes.models — ContentType 模型与管理器。
+
+为每个已安装模型维护 (app_label, model) 映射，支撑权限与通用外键。
+"""
 from collections import defaultdict
 
 from django.apps import apps
@@ -6,6 +11,7 @@ from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
 
+# 管理器：带 per-db 缓存的 get_for_model/get_for_models/get_for_id
 class ContentTypeManager(models.Manager):
     use_in_migrations = True
 
@@ -32,6 +38,7 @@ class ContentTypeManager(models.Manager):
         key = (opts.app_label, opts.model_name)
         return self._cache[self.db][key]
 
+    # 按模型类查找或创建 ContentType，结果写入缓存
     def get_for_model(self, model, for_concrete_model=True):
         """
         Return the ContentType object for a given model, creating the
@@ -60,6 +67,7 @@ class ContentTypeManager(models.Manager):
         self._add_to_cache(self.db, ct)
         return ct
 
+    # 批量解析多模型，合并 DB 查询以减少 round-trip
     def get_for_models(self, *models, for_concrete_models=True):
         """
         Given *models, return a dictionary mapping {model: content_type}.
@@ -115,6 +123,7 @@ class ContentTypeManager(models.Manager):
             self._add_to_cache(self.db, ct)
         return ct
 
+    # 清空内存缓存（迁移或 stale 清理后调用）
     def clear_cache(self):
         """
         Clear out the content-type cache.
@@ -131,6 +140,7 @@ class ContentTypeManager(models.Manager):
         self._cache.setdefault(using, {})[ct.id] = ct
 
 
+# 内容类型：app_label + model 唯一标识一个 Django 模型
 class ContentType(models.Model):
     app_label = models.CharField(max_length=100)
     model = models.CharField(_("python model class name"), max_length=100)
@@ -162,6 +172,7 @@ class ContentType(models.Model):
             model._meta.verbose_name,
         )
 
+    # 通过 apps.get_model 解析模型类，LookupError 时返回 None
     def model_class(self):
         """Return the model class for this type of content."""
         try:
@@ -169,6 +180,7 @@ class ContentType(models.Model):
         except LookupError:
             return None
 
+    # 代理调用对应模型 Manager.get()
     def get_object_for_this_type(self, using=None, **kwargs):
         """
         Return an object of this type for the keyword arguments given.

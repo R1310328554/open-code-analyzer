@@ -1,3 +1,8 @@
+"""
+django.contrib.contenttypes.views — ContentType 相关视图。
+
+shortcut 视图根据 content_type_id 与 object_id 重定向至对象绝对 URL。
+"""
 from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.shortcuts import get_current_site
@@ -6,6 +11,7 @@ from django.http import Http404, HttpResponseRedirect
 from django.utils.translation import gettext as _
 
 
+# 查找对象并调用 get_absolute_url()，必要时跨 Site 重定向
 def shortcut(request, content_type_id, object_id):
     """
     Redirect to an object's page based on a content-type ID and an object ID.

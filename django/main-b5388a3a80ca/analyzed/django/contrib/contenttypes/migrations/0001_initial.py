@@ -1,11 +1,14 @@
+# 初始迁移：创建 ContentType 模型及 (app_label, model) 唯一约束
 import django.contrib.contenttypes.models
 from django.db import migrations, models
 
 
+# contenttypes 应用 schema 初始化，无外部依赖
 class Migration(migrations.Migration):
     dependencies = []
 
     operations = [
+        # 创建 ContentType 表 django_content_type，含 name 字段（0002 移除）
         migrations.CreateModel(
             name="ContentType",
             fields=[

@@ -1,6 +1,8 @@
+# 迁移 0002：移除 name 字段，改为由 model_class() 动态推导
 from django.db import migrations, models
 
 
+# 回滚 RunPython：从模型 _meta.object_name 恢复 name 列
 def add_legacy_name(apps, schema_editor):
     alias = schema_editor.connection.alias
     ContentType = apps.get_model("contenttypes", "ContentType")
@@ -12,6 +14,7 @@ def add_legacy_name(apps, schema_editor):
         ct.save()
 
 
+# AlterField → RunPython noop → RemoveField name
 class Migration(migrations.Migration):
     dependencies = [
         ("contenttypes", "0001_initial"),

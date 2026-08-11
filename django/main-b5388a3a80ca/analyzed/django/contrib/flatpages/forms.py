@@ -1,3 +1,8 @@
+"""
+django.contrib.flatpages.forms — FlatPage 后台表单。
+
+校验 URL 格式、首尾斜杠规则及同站点 URL 唯一性。
+"""
 from django import forms
 from django.conf import settings
 from django.contrib.flatpages.models import FlatPage
@@ -6,6 +11,7 @@ from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 
 
+# ModelForm：RegexField 约束 url，clean 检查重复
 class FlatpageForm(forms.ModelForm):
     url = forms.RegexField(
         label=_("URL"),
@@ -34,12 +40,14 @@ class FlatpageForm(forms.ModelForm):
                 "Example: “/about/contact”. Make sure to have a leading slash."
             )
 
+    # APPEND_SLASH 且启用 CommonMiddleware 时要求尾部斜杠
     def _trailing_slash_required(self):
         return (
             settings.APPEND_SLASH
             and "django.middleware.common.CommonMiddleware" in settings.MIDDLEWARE
         )
 
+    # 校验 leading/trailing slash 规则
     def clean_url(self):
         url = self.cleaned_data["url"]
         if not url.startswith("/"):
@@ -54,6 +62,7 @@ class FlatpageForm(forms.ModelForm):
             )
         return url
 
+    # 同站点下 url 不得与已有 FlatPage 重复
     def clean(self):
         url = self.cleaned_data.get("url")
         sites = self.cleaned_data.get("sites")
