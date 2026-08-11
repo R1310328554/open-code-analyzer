@@ -1,4 +1,9 @@
 """
+Oracle 空间后端 GeometryColumns 与 SpatialRefSys 模型。
+
+Oracle 无 OGC 标准表名，分别映射 USER_SDO_GEOM_METADATA 与 SDO_COORD_REF_SYS。
+
+The GeometryColumns and SpatialRefSys models"""
 The GeometryColumns and SpatialRefSys models for the Oracle spatial
 backend.
 
@@ -12,6 +17,7 @@ from django.contrib.gis.db import models
 from django.contrib.gis.db.backends.base.models import SpatialRefSysMixin
 
 
+# 映射 Oracle USER_SDO_GEOM_METADATA 表的几何列元数据
 class OracleGeometryColumns(models.Model):
     "Maps to the Oracle USER_SDO_GEOM_METADATA table."
 
@@ -29,6 +35,7 @@ class OracleGeometryColumns(models.Model):
         return "%s - %s (SRID: %s)" % (self.table_name, self.column_name, self.srid)
 
     @classmethod
+    # 返回存储要素表名的元数据列名
     def table_name_col(cls):
         """
         Return the name of the metadata column used to store the feature table
@@ -37,6 +44,7 @@ class OracleGeometryColumns(models.Model):
         return "table_name"
 
     @classmethod
+    # 返回存储几何列名的元数据列名
     def geom_col_name(cls):
         """
         Return the name of the metadata column used to store the feature
@@ -45,6 +53,7 @@ class OracleGeometryColumns(models.Model):
         return "column_name"
 
 
+# 映射 Oracle MDSYS.CS_SRS 表的空间参考系统
 class OracleSpatialRefSys(models.Model, SpatialRefSysMixin):
     "Maps to the Oracle MDSYS.CS_SRS table."
 
@@ -63,5 +72,6 @@ class OracleSpatialRefSys(models.Model, SpatialRefSysMixin):
         managed = False
 
     @property
+    # wktext 字段的别名属性
     def wkt(self):
         return self.wktext

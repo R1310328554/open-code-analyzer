@@ -1,3 +1,8 @@
+"""
+django.contrib.gis.db.backends.mysql.schema — MySQL GIS Schema 编辑器。
+
+管理几何字段空间索引的创建、删除与字段变更时的索引同步。
+"""
 import logging
 
 from django.contrib.gis.db.models import GeometryField
@@ -7,14 +12,17 @@ from django.db.backends.mysql.schema import DatabaseSchemaEditor
 logger = logging.getLogger("django.contrib.gis")
 
 
+# MySQL GIS Schema 编辑器：CREATE/DROP SPATIAL INDEX
 class MySQLGISSchemaEditor(DatabaseSchemaEditor):
     sql_add_spatial_index = "CREATE SPATIAL INDEX %(index)s ON %(table)s(%(column)s)"
 
+    # 几何 Adapter 值需先转为 WKT 字符串再引用
     def quote_value(self, value):
         if isinstance(value, self.connection.ops.Adapter):
             return super().quote_value(str(value))
         return super().quote_value(value)
 
+    # 非空 GeometryField 且 spatial_index=True 时生成空间索引 SQL
     def _field_indexes_sql(self, model, field):
         if isinstance(field, GeometryField) and field.spatial_index and not field.null:
             with self.connection.cursor() as cursor:
@@ -34,6 +42,7 @@ class MySQLGISSchemaEditor(DatabaseSchemaEditor):
                 return []
         return super()._field_indexes_sql(model, field)
 
+    # 删除字段前先尝试移除关联的空间索引
     def remove_field(self, model, field):
         if isinstance(field, GeometryField) and field.spatial_index and not field.null:
             sql = self._delete_spatial_index_sql(model, field)
@@ -48,6 +57,7 @@ class MySQLGISSchemaEditor(DatabaseSchemaEditor):
 
         super().remove_field(model, field)
 
+    # 字段变更后同步空间索引：新增或移除
     def _alter_field(
         self,
         model,

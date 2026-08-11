@@ -1,20 +1,28 @@
+"""
+django.contrib.gis.db.backends.oracle.introspection — Oracle 几何内省。
+
+查询 USER_SDO_GEOM_METADATA 获取几何列 SRID 与维度信息。
+"""
 import oracledb
 
 from django.db.backends.oracle.introspection import DatabaseIntrospection
 from django.utils.functional import cached_property
 
 
+# Oracle 内省：DB_TYPE_OBJECT 映射为 GeometryField
 class OracleIntrospection(DatabaseIntrospection):
     # Associating any OBJECTVAR instances with GeometryField. This won't work
     # right on Oracle objects that aren't MDSYS.SDO_GEOMETRY, but it is the
     # only object type supported within Django anyways.
     @cached_property
+    # 将 Oracle OBJECT 类型关联到 GeometryField
     def data_types_reverse(self):
         return {
             **super().data_types_reverse,
             oracledb.DB_TYPE_OBJECT: "GeometryField",
         }
 
+    # 从 USER_SDO_GEOM_METADATA 读取 DIMINFO 与 SRID
     def get_geometry_type(self, table_name, description):
         with self.connection.cursor() as cursor:
             # Querying USER_SDO_GEOM_METADATA to get the SRID and dimension

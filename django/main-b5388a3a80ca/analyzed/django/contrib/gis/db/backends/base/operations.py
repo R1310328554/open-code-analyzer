@@ -1,3 +1,8 @@
+"""
+django.contrib.gis.db.backends.base.operations — 空间数据库操作基类。
+
+BaseSpatialOperations 定义各 GIS 后端共用的几何 SQL 生成、聚合与转换接口。
+"""
 from django.contrib.gis.db.models import GeometryField
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.measure import Area as AreaMeasure
@@ -6,6 +11,7 @@ from django.db import NotSupportedError
 from django.utils.functional import cached_property
 
 
+# 空间操作基类：后端标识、函数映射、占位符 SQL 与聚合转换
 class BaseSpatialOperations:
     # Quick booleans for the type of this spatial backend, and
     # an attribute for the spatial database version tuple (if applicable)
@@ -97,6 +103,7 @@ class BaseSpatialOperations:
         return "'%s'" % name
 
     # GeometryField operations
+    # 返回几何字段在该空间后端的数据库列类型
     def geo_db_type(self, f):
         """
         Return the database column type for the geometry field on
@@ -106,6 +113,7 @@ class BaseSpatialOperations:
             "subclasses of BaseSpatialOperations must provide a geo_db_type() method"
         )
 
+    # 根据几何字段、查找值与查找类型返回距离参数
     def get_distance(self, f, value, lookup_type):
         """
         Return the distance parameters for the given geometry field,
@@ -119,6 +127,7 @@ class BaseSpatialOperations:
     def _must_transform_value(value, field):
         return value is not None and value.srid != field.srid
 
+    # 生成几何字段 SQL 占位符，必要时调用 Transform 转换 SRID
     def get_geom_placeholder_sql(self, f, value, compiler):
         """
         Return the placeholder for the given geometry field with the given
@@ -157,6 +166,7 @@ class BaseSpatialOperations:
             "Aggregate support not implemented for this spatial backend."
         )
 
+    # 将 Django 函数名映射为后端空间函数名，不支持则抛 NotSupportedError
     def spatial_function_name(self, func_name):
         if func_name in self.unsupported_functions:
             raise NotSupportedError(
@@ -165,12 +175,14 @@ class BaseSpatialOperations:
         return self.function_names.get(func_name, self.geom_func_prefix + func_name)
 
     # Routines for getting the OGC-compliant models.
+    # 返回 OGC 兼容的 GeometryColumns 模型类
     def geometry_columns(self):
         raise NotImplementedError(
             "Subclasses of BaseSpatialOperations must provide a geometry_columns() "
             "method."
         )
 
+    # 返回 OGC 兼容的 SpatialRefSys 模型类
     def spatial_ref_sys(self):
         raise NotImplementedError(
             "subclasses of BaseSpatialOperations must a provide spatial_ref_sys() "
@@ -185,12 +197,14 @@ class BaseSpatialOperations:
             converters.append(self.get_geometry_converter(expression))
         return converters
 
+    # 返回将数据库值转换为 GEOS 几何对象的转换器
     def get_geometry_converter(self, expression):
         raise NotImplementedError(
             "Subclasses of BaseSpatialOperations must provide a "
             "get_geometry_converter() method."
         )
 
+    # 根据字段坐标系返回面积查找的单位属性名
     def get_area_att_for_field(self, field):
         if field.geodetic(self.connection):
             if self.connection.features.supports_area_geodetic:
@@ -203,6 +217,7 @@ class BaseSpatialOperations:
             if units_name:
                 return AreaMeasure.unit_attname(units_name)
 
+    # 根据字段坐标系返回距离查找的单位属性名
     def get_distance_att_for_field(self, field):
         dist_att = None
         if field.geodetic(self.connection):

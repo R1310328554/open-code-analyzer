@@ -1,4 +1,9 @@
 """
+Oracle Spatial 空间查找类型与 get_geo_where_clause 例程。
+
+注意：Oracle XE 缺少内部 JVM，WKT 构造不可用，本后端无法在 XE 上运行。
+
+This module contains the spatial lookup types"""
 This module contains the spatial lookup types, and the `get_geo_where_clause`
 routine for Oracle Spatial.
 
@@ -23,14 +28,17 @@ from django.utils.functional import cached_property
 DEFAULT_TOLERANCE = "0.05"
 
 
+# SDO 空间运算符基类：func(lhs, rhs) = 'TRUE' 模板
 class SDOOperator(SpatialOperator):
     sql_template = "%(func)s(%(lhs)s, %(rhs)s) = 'TRUE'"
 
 
+# SDO_WITHIN_DISTANCE 距离内查找运算符
 class SDODWithin(SpatialOperator):
     sql_template = "SDO_WITHIN_DISTANCE(%(lhs)s, %(rhs)s, %%s) = 'TRUE'"
 
 
+# SDO_GEOM.RELATE DISJOINT 不相交查找运算符
 class SDODisjoint(SpatialOperator):
     sql_template = (
         "SDO_GEOM.RELATE(%%(lhs)s, 'DISJOINT', %%(rhs)s, %s) = 'DISJOINT'"
@@ -38,6 +46,7 @@ class SDODisjoint(SpatialOperator):
     )
 
 
+# SDO_RELATE 拓扑关系查找，mask 参数指定关系掩码
 class SDORelate(SpatialOperator):
     sql_template = "SDO_RELATE(%(lhs)s, %(rhs)s, 'mask=%(mask)s') = 'TRUE'"
 
@@ -55,6 +64,7 @@ class SDORelate(SpatialOperator):
         return super().as_sql(connection, lookup, template_params, sql_params[:-1])
 
 
+# Oracle 空间操作：SDO_GEOM/SDO_UTIL 函数映射与 WKB 几何选择
 class OracleOperations(BaseSpatialOperations, DatabaseOperations):
     name = "oracle"
     oracle = True
@@ -145,6 +155,7 @@ class OracleOperations(BaseSpatialOperations, DatabaseOperations):
     def geo_quote_name(self, name):
         return super().geo_quote_name(name).upper()
 
+    # 将 SDO 聚合范围 CLOB 转为 (xmin, ymin, xmax, ymax) 四元组
     def convert_extent(self, clob):
         if clob:
             # Generally, Oracle returns a polygon for the extent -- however,
@@ -169,6 +180,7 @@ class OracleOperations(BaseSpatialOperations, DatabaseOperations):
         else:
             return None
 
+    # 所有几何类型统一使用 MDSYS.SDO_GEOMETRY
     def geo_db_type(self, f):
         """
         Return the geometry database type for Oracle. Unlike other spatial
@@ -177,6 +189,7 @@ class OracleOperations(BaseSpatialOperations, DatabaseOperations):
         """
         return "MDSYS.SDO_GEOMETRY"
 
+    # 测地坐标系隐式使用米；dwithin 需 distance= 前缀
     def get_distance(self, f, value, lookup_type):
         """
         Return the distance parameters given the value and the lookup type.
@@ -217,11 +230,13 @@ class OracleOperations(BaseSpatialOperations, DatabaseOperations):
         return getattr(self, agg_name)
 
     # Routines for getting the OGC-compliant models.
+    # 返回 OracleGeometryColumns 模型类
     def geometry_columns(self):
         from django.contrib.gis.db.backends.oracle.models import OracleGeometryColumns
 
         return OracleGeometryColumns
 
+    # 返回 OracleSpatialRefSys 模型类
     def spatial_ref_sys(self):
         from django.contrib.gis.db.backends.oracle.models import OracleSpatialRefSys
 
@@ -235,6 +250,7 @@ class OracleOperations(BaseSpatialOperations, DatabaseOperations):
             return []
         return super().modify_insert_params(placeholder, params)
 
+    # WKB 读取器将 Oracle LOB 转为 GEOSGeometryBase
     def get_geometry_converter(self, expression):
         read = wkb_r().read
         srid = expression.output_field.srid

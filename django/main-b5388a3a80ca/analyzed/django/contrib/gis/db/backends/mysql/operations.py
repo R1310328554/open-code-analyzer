@@ -1,3 +1,8 @@
+"""
+django.contrib.gis.db.backends.mysql.operations — MySQL 空间 SQL 操作。
+
+实现 ST_ 前缀空间函数、MBR 边界框运算符及 WKB 几何转换。
+"""
 from django.contrib.gis.db import models
 from django.contrib.gis.db.backends.base.adapter import WKTAdapter
 from django.contrib.gis.db.backends.base.operations import BaseSpatialOperations
@@ -9,6 +14,7 @@ from django.db.backends.mysql.operations import DatabaseOperations
 from django.utils.functional import cached_property
 
 
+# MySQL 空间操作：ST_AsBinary 选择、GeomFromText 构造与 gis_operators 映射
 class MySQLOperations(BaseSpatialOperations, DatabaseOperations):
     name = "mysql"
     geom_func_prefix = "ST_"
@@ -37,6 +43,7 @@ class MySQLOperations(BaseSpatialOperations, DatabaseOperations):
             return self.geom_func_prefix + "Collect"
 
     @cached_property
+    # 空间查找运算符：MariaDB 与 MySQL 在 coveredby/relate/covers 上略有差异
     def gis_operators(self):
         operators = {
             "bbcontains": SpatialOperator(
@@ -114,9 +121,11 @@ class MySQLOperations(BaseSpatialOperations, DatabaseOperations):
                 unsupported.update({"GeoHash", "IsValid"})
         return unsupported
 
+    # 返回几何字段的 OGC 类型名作为列类型
     def geo_db_type(self, f):
         return f.geom_type
 
+    # 测地坐标系仅允许以度为单位的数值距离
     def get_distance(self, f, value, lookup_type):
         value = value[0]
         if isinstance(value, Distance):
@@ -132,6 +141,7 @@ class MySQLOperations(BaseSpatialOperations, DatabaseOperations):
             dist_param = value
         return [dist_param]
 
+    # WKB 读取器将二进制几何转为 GEOSGeometryBase 实例
     def get_geometry_converter(self, expression):
         read = wkb_r().read
         srid = expression.output_field.srid
@@ -150,5 +160,6 @@ class MySQLOperations(BaseSpatialOperations, DatabaseOperations):
 
         return converter
 
+    # 按小写属性名获取对应的空间聚合 SQL 函数
     def spatial_aggregate_name(self, agg_name):
         return getattr(self, agg_name.lower())

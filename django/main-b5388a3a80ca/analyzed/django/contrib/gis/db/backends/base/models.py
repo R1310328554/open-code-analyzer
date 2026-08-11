@@ -1,7 +1,13 @@
+"""
+django.contrib.gis.db.backends.base.models — 空间参考系统 Mixin。
+
+SpatialRefSysMixin 为各数据库后端的 SpatialRefSys 模型提供共用属性与方法。
+"""
 from django.contrib.gis import gdal
 from django.utils.functional import cached_property
 
 
+# 空间参考系统 Mixin：通过 GDAL 解析 WKT/PROJ.4 并提供椭球体、单位等属性
 class SpatialRefSysMixin:
     """
     The SpatialRefSysMixin is a class used by the database-dependent
@@ -9,6 +15,7 @@ class SpatialRefSysMixin:
     """
 
     @cached_property
+    # 返回 GDAL SpatialReference 对象，依次尝试 WKT 与 PROJ.4
     def srs(self):
         """
         Return a GDAL SpatialReference object.
@@ -30,6 +37,7 @@ class SpatialRefSysMixin:
         )
 
     @property
+    # 椭球体参数：(长半轴, 短半轴, 扁率倒数)
     def ellipsoid(self):
         """
         Return a tuple of the ellipsoid parameters:
@@ -98,6 +106,7 @@ class SpatialRefSysMixin:
             return (None, None)
 
     @classmethod
+    # 类方法：从 WKT 解析单位值与单位名，无需访问数据库
     def get_units(cls, wkt):
         """
         Return a tuple of (unit_value, unit_name) for the given WKT without
@@ -106,6 +115,7 @@ class SpatialRefSysMixin:
         return gdal.SpatialReference(wkt).units
 
     @classmethod
+    # 类方法：GeometryField 初始化时从 WKT 提取 SPHEROID 参数
     def get_spheroid(cls, wkt, string=True):
         """
         Class method used by GeometryField on initialization to
@@ -125,6 +135,7 @@ class SpatialRefSysMixin:
                 radius, flattening = sphere_params
             return 'SPHEROID["%s",%s,%s]' % (sphere_name, radius, flattening)
 
+    # 返回 OGC WKT 格式的字符串表示
     def __str__(self):
         """
         Return the string representation, a 'pretty' OGC WKT.

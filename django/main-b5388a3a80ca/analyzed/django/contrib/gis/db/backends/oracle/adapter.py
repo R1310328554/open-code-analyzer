@@ -1,12 +1,19 @@
+"""
+django.contrib.gis.db.backends.oracle.adapter — Oracle 几何 WKT 适配器。
+
+Oracle 要求多边形外环逆时针、内环顺时针，写入前自动修正环方向。
+"""
 import oracledb
 
 from django.contrib.gis.db.backends.base.adapter import WKTAdapter
 from django.contrib.gis.geos import GeometryCollection, Polygon
 
 
+# Oracle 空间适配器：CLOB 输入，构造前修正 Polygon/GeometryCollection 方向
 class OracleSpatialAdapter(WKTAdapter):
     input_size = oracledb.CLOB
 
+    # 检测并修正多边形环方向后保存 wkt 与 srid
     def __init__(self, geom):
         """
         Oracle requires that polygon rings are in proper orientation. This
@@ -35,6 +42,7 @@ class OracleSpatialAdapter(WKTAdapter):
         )
 
     @classmethod
+    # 修正单个多边形：外环逆时针、内环顺时针
     def _fix_polygon(cls, poly, clone=True):
         """Fix single polygon orientation as described in __init__()."""
         if clone:
@@ -50,6 +58,7 @@ class OracleSpatialAdapter(WKTAdapter):
         return poly
 
     @classmethod
+    # 遍历集合中所有 Polygon 并修正环方向
     def _fix_geometry_collection(cls, coll):
         """
         Fix polygon orientations in geometry collections as described in
