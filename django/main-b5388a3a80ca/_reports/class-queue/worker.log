@@ -934,3 +934,9 @@
 2026-08-11T06:00:02Z DONE scripts/archive_eol_stable_branches.py wave32a Chinese class docs
 2026-08-11T06:00:02Z DONE scripts/check_migrations.py wave32a Chinese class docs
 2026-08-11T06:00:02Z DONE scripts/do_django_release.py wave32a Chinese class docs
+2026-08-11T06:00:32Z DONE scripts/manage_translations.py wave32b Chinese class docs
+2026-08-11T06:00:32Z DONE scripts/pr_quality/__init__.py wave32b Chinese class docs
+2026-08-11T06:00:32Z DONE scripts/pr_quality/check_pr.py wave32b Chinese class docs
+2026-08-11T06:00:32Z DONE scripts/pr_quality/errors.py wave32b Chinese class docs
+2026-08-11T06:00:32Z DONE scripts/prepare_commit_msg.py wave32b Chinese class docs
+2026-08-11T06:00:32Z DONE scripts/tests.py wave32b Chinese class docs

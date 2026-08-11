@@ -1,13 +1,6 @@
 {
-  "claimed_at": "2026-08-11T05:58:16Z",
-  "files": [
-    "scripts/manage_translations.py",
-    "scripts/pr_quality/__init__.py",
-    "scripts/pr_quality/check_pr.py",
-    "scripts/pr_quality/errors.py",
-    "scripts/prepare_commit_msg.py",
-    "scripts/tests.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 0,
-  "done": 936
+  "done": 942
 }
