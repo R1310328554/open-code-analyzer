@@ -15,23 +15,8 @@
     "src/transformers/models/vitpose/configuration_vitpose.py",
     "src/transformers/models/vitpose/image_processing_pil_vitpose.py",
     "src/transformers/models/vitpose/image_processing_vitpose.py",
-    "src/transformers/models/vitpose/modeling_vitpose.py",
-    "src/transformers/models/vitpose_backbone/__init__.py",
-    "src/transformers/models/vitpose_backbone/configuration_vitpose_backbone.py",
-    "src/transformers/models/vitpose_backbone/modeling_vitpose_backbone.py",
-    "src/transformers/models/vits/__init__.py",
-    "src/transformers/models/vits/configuration_vits.py",
-    "src/transformers/models/vits/modeling_vits.py",
-    "src/transformers/models/vits/tokenization_vits.py",
-    "src/transformers/models/vivit/__init__.py",
-    "src/transformers/models/vivit/configuration_vivit.py",
-    "src/transformers/models/vivit/image_processing_vivit.py",
-    "src/transformers/models/vivit/modeling_vivit.py",
-    "src/transformers/models/vivit/modular_vivit.py",
-    "src/transformers/models/vivit/video_processing_vivit.py",
-    "src/transformers/models/vjepa2/__init__.py",
-    "src/transformers/models/vjepa2/configuration_vjepa2.py"
+    "src/transformers/models/vitpose/modeling_vitpose.py"
   ],
   "remaining_pending": 309,
-  "done": 2340
+  "done": 2355
 }
