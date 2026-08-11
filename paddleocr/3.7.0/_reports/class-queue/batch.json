@@ -15,23 +15,8 @@
     "ppocr/modeling/heads/rec_aster_head.py",
     "ppocr/modeling/heads/rec_att_head.py",
     "ppocr/modeling/heads/rec_can_head.py",
-    "ppocr/modeling/heads/rec_cppd_head.py",
-    "ppocr/modeling/heads/rec_ctc_head.py",
-    "ppocr/modeling/heads/rec_latexocr_head.py",
-    "ppocr/modeling/heads/rec_multi_head.py",
-    "ppocr/modeling/heads/rec_nrtr_head.py",
-    "ppocr/modeling/heads/rec_parseq_head.py",
-    "ppocr/modeling/heads/rec_ppformulanet_head.py",
-    "ppocr/modeling/heads/rec_pren_head.py",
-    "ppocr/modeling/heads/rec_rfl_head.py",
-    "ppocr/modeling/heads/rec_robustscanner_head.py",
-    "ppocr/modeling/heads/rec_sar_head.py",
-    "ppocr/modeling/heads/rec_satrn_head.py",
-    "ppocr/modeling/heads/rec_spin_att_head.py",
-    "ppocr/modeling/heads/rec_srn_head.py",
-    "ppocr/modeling/heads/rec_unimernet_head.py",
-    "ppocr/modeling/heads/rec_visionlan_head.py"
+    "ppocr/modeling/heads/rec_cppd_head.py"
   ],
   "remaining_pending": 152,
-  "done": 420
+  "done": 435
 }
