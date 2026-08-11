@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T01:05:11Z",
-  "files": [
-    "src/transformers/models/falcon_h1/__init__.py",
-    "src/transformers/models/falcon_h1/configuration_falcon_h1.py",
-    "src/transformers/models/falcon_h1/modeling_falcon_h1.py",
-    "src/transformers/models/falcon_h1/modular_falcon_h1.py",
-    "src/transformers/models/falcon_mamba/__init__.py",
-    "src/transformers/models/falcon_mamba/configuration_falcon_mamba.py",
-    "src/transformers/models/falcon_mamba/modeling_falcon_mamba.py",
-    "src/transformers/models/falcon_mamba/modular_falcon_mamba.py",
-    "src/transformers/models/fast_vlm/__init__.py",
-    "src/transformers/models/fast_vlm/configuration_fast_vlm.py",
-    "src/transformers/models/fast_vlm/modeling_fast_vlm.py",
-    "src/transformers/models/fast_vlm/modular_fast_vlm.py",
-    "src/transformers/models/fastspeech2_conformer/__init__.py",
-    "src/transformers/models/fastspeech2_conformer/configuration_fastspeech2_conformer.py",
-    "src/transformers/models/fastspeech2_conformer/modeling_fastspeech2_conformer.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1899,
-  "done": 765
+  "done": 780
 }
