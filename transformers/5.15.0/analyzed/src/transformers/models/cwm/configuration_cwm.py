@@ -27,6 +27,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="facebook/cwm")
 @strict
+# CwmConfig：131K 上下文，每 4 层一次 full_attention 其余 sliding_attention
 class CwmConfig(PreTrainedConfig):
     r"""
     ```python
@@ -84,6 +85,7 @@ class CwmConfig(PreTrainedConfig):
     sliding_window: int = 8192
     layer_types: list[str] | None = None  # ["full_attention"|"sliding_attention"] per layer
 
+# __post_init__：默认 llama3 RoPE、layer_types 模式与 eos_token_id 列表
     def __post_init__(self, **kwargs):
         if self.rope_parameters is None:
             self.rope_parameters = {
@@ -113,6 +115,7 @@ class CwmConfig(PreTrainedConfig):
 
         super().__post_init__(**kwargs)
 
+# validate_architecture：@strict 校验 hidden_size 可被 num_attention_heads 整除
     def validate_architecture(self):
         """Part of `@strict`-powered validation. Validates the architecture of the config."""
         if self.hidden_size % self.num_attention_heads != 0:

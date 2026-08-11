@@ -36,6 +36,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# BaseModelOutputWithCLSToken：编码器输出含末 stage CLS token
 class BaseModelOutputWithCLSToken(ModelOutput):
     r"""
     cls_token_value (`torch.FloatTensor` of shape `(batch_size, 1, hidden_size)`):
@@ -47,6 +48,7 @@ class BaseModelOutputWithCLSToken(ModelOutput):
     hidden_states: tuple[torch.FloatTensor, ...] | None = None
 
 
+# CvtEmbeddings：Conv2d patch 嵌入 + Dropout
 class CvtEmbeddings(nn.Module):
     """
     Construct the CvT embeddings.
@@ -65,6 +67,7 @@ class CvtEmbeddings(nn.Module):
         return hidden_state
 
 
+# CvtConvEmbeddings：卷积投影后 LayerNorm，保持 2D 特征图
 class CvtConvEmbeddings(nn.Module):
     """
     Image to Conv Embedding.
@@ -90,6 +93,7 @@ class CvtConvEmbeddings(nn.Module):
         return pixel_values
 
 
+# CvtSelfAttentionConvProjection：深度可分离 Conv2d + BatchNorm QKV 投影
 class CvtSelfAttentionConvProjection(nn.Module):
     def __init__(self, embed_dim, kernel_size, padding, stride):
         super().__init__()
@@ -110,6 +114,7 @@ class CvtSelfAttentionConvProjection(nn.Module):
         return hidden_state
 
 
+# CvtSelfAttentionLinearProjection：2D 特征图展平为 token 序列
 class CvtSelfAttentionLinearProjection(nn.Module):
     def forward(self, hidden_state):
         batch_size, num_channels, height, width = hidden_state.shape
@@ -119,6 +124,7 @@ class CvtSelfAttentionLinearProjection(nn.Module):
         return hidden_state
 
 
+# CvtSelfAttentionProjection：dw_bn 或 avg 卷积投影 + 线性展平
 class CvtSelfAttentionProjection(nn.Module):
     def __init__(self, embed_dim, kernel_size, padding, stride, projection_method="dw_bn"):
         super().__init__()
@@ -132,6 +138,7 @@ class CvtSelfAttentionProjection(nn.Module):
         return hidden_state
 
 
+# CvtSelfAttention：卷积 QKV + 多头缩放点积，可选 CLS token 拼接
 class CvtSelfAttention(nn.Module):
     def __init__(
         self,
@@ -213,6 +220,7 @@ class CvtSelfAttention(nn.Module):
         return context
 
 
+# CvtSelfOutput：注意力输出线性 + Dropout（残差在 CvtLayer）
 class CvtSelfOutput(nn.Module):
     """
     The residual connection is defined in CvtLayer instead of here (as is the case with other models), due to the
@@ -230,6 +238,7 @@ class CvtSelfOutput(nn.Module):
         return hidden_state
 
 
+# CvtAttention：自注意力 + 输出投影封装
 class CvtAttention(nn.Module):
     def __init__(
         self,
@@ -268,6 +277,7 @@ class CvtAttention(nn.Module):
         return attention_output
 
 
+# CvtIntermediate：MLP 扩展层 GELU 激活
 class CvtIntermediate(nn.Module):
     def __init__(self, embed_dim, mlp_ratio):
         super().__init__()
@@ -280,6 +290,7 @@ class CvtIntermediate(nn.Module):
         return hidden_state
 
 
+# CvtOutput：MLP 投影回 embed_dim 并残差连接
 class CvtOutput(nn.Module):
     def __init__(self, embed_dim, mlp_ratio, drop_rate):
         super().__init__()
@@ -294,6 +305,7 @@ class CvtOutput(nn.Module):
 
 
 # Copied from transformers.models.swin.modular_swin.SwinDropPath with SwinDropPath->CvtDropPath
+# CvtDropPath：随机深度 DropPath，训练时按概率丢弃残差路径
 class CvtDropPath(nn.Module):
     """Stochastic depth (DropPath) per sample, for residual blocks.
 
@@ -318,6 +330,7 @@ class CvtDropPath(nn.Module):
         return f"p={self.drop_prob}"
 
 
+# CvtLayer：Pre/Post-LN 双 LayerNorm + 注意力 + MLP + DropPath
 class CvtLayer(nn.Module):
     """
     CvtLayer composed by attention layers, normalization and multi-layer perceptrons (mlps).
@@ -384,6 +397,7 @@ class CvtLayer(nn.Module):
         return layer_output
 
 
+# CvtStage：单阶段 patch 嵌入、可选 CLS、堆叠 CvtLayer
 class CvtStage(nn.Module):
     def __init__(self, config, stage):
         super().__init__()
@@ -447,6 +461,7 @@ class CvtStage(nn.Module):
         return hidden_state, cls_token
 
 
+# CvtEncoder：三 stage 级联，逐 stage 下采样并加深通道
 class CvtEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -476,6 +491,7 @@ class CvtEncoder(nn.Module):
 
 
 @auto_docstring
+# CvtPreTrainedModel：Linear/Conv2d 截断正态初始化，CLS token 特殊初始化
 class CvtPreTrainedModel(PreTrainedModel):
     config: CvtConfig
     base_model_prefix = "cvt"
@@ -496,6 +512,7 @@ class CvtPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# CvtModel：CvT 编码器骨干，输出末 stage 特征图与 CLS
 class CvtModel(CvtPreTrainedModel):
     def __init__(self, config, add_pooling_layer=True):
         r"""
@@ -546,6 +563,7 @@ class CvtModel(CvtPreTrainedModel):
     the [CLS] token) e.g. for ImageNet.
     """
 )
+# CvtForImageClassification：CLS 或全局均值池化 + 线性分类头
 class CvtForImageClassification(CvtPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

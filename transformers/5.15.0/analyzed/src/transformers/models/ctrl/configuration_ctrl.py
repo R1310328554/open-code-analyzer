@@ -21,6 +21,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="Salesforce/ctrl")
 @strict
+# CTRLConfig：n_positions=256，dff=8192，tie_word_embeddings 默认 True
 class CTRLConfig(PreTrainedConfig):
     r"""
     dff (`int`, *optional*, defaults to 8192):
@@ -68,3 +69,5 @@ class CTRLConfig(PreTrainedConfig):
 
 
 __all__ = ["CTRLConfig"]
+# 模块 src/transformers/models/ctrl/configuration_ctrl.py：Transformers 5.15.0 wave17a 中文文档注释。
+

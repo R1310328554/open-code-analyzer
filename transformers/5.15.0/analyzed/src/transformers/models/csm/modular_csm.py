@@ -52,6 +52,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# CsmOutputWithPast：联合输出 backbone 与 depth_decoder 的 loss/logits/KV 缓存
 class CsmOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -95,22 +96,27 @@ class CsmOutputWithPast(ModelOutput):
 
 
 # manually specify names for correct naming when converting from modular
+# CsmRMSNorm：Llama 风格 RMSNorm，供 backbone 与 depth_decoder 复用
 class CsmRMSNorm(LlamaRMSNorm):
     pass
 
 
+# CsmRotaryEmbedding：RoPE 位置编码，继承 Llama 实现
 class CsmRotaryEmbedding(LlamaRotaryEmbedding):
     pass
 
 
+# CsmMLP：SwiGLU 前馈网络，与 Llama 一致
 class CsmMLP(LlamaMLP):
     pass
 
 
+# CsmAttention：GQA 因果自注意力
 class CsmAttention(LlamaAttention):
     pass
 
 
+# CsmDecoderLayer：Pre-LN 解码层，注意力 + MLP 残差
 class CsmDecoderLayer(LlamaDecoderLayer):
     pass
 
@@ -121,6 +127,7 @@ class CsmDecoderLayer(LlamaDecoderLayer):
     """
 )
 @auto_docstring
+# CsmPreTrainedModel：CSM 预训练基类，支持 Flash/SDPA 与全图编译
 class CsmPreTrainedModel(PreTrainedModel):
     config: CsmConfig
     base_model_prefix = "model"
@@ -152,6 +159,7 @@ class CsmPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# CsmDepthDecoderModel：按码本位置嵌入 + backbone 隐状态投影的 Llama 解码器
 class CsmDepthDecoderModel(LlamaModel, CsmPreTrainedModel):
     config: CsmDepthDecoderConfig
 
@@ -244,6 +252,7 @@ class CsmDepthDecoderModel(LlamaModel, CsmPreTrainedModel):
         )
 
 
+# CsmCodebooksHead：每个码本位置独立的线性 LM 头（position-specific head）
 class CsmCodebooksHead(nn.Module):
     def __init__(self, hidden_size, num_codebooks, vocab_size):
         super().__init__()
@@ -271,6 +280,7 @@ class CsmCodebooksHead(nn.Module):
     (e.g. position 0 is the first codebook and uses the first codebook head, etc.)
     """
 )
+# CsmDepthDecoderForCausalLM：深度解码器因果 LM，用 CsmCodebooksHead 替代 lm_head
 class CsmDepthDecoderForCausalLM(LlamaForCausalLM, GenerationMixin):
     _tied_weights_keys = None
     _tp_plan = None
@@ -282,6 +292,7 @@ class CsmDepthDecoderForCausalLM(LlamaForCausalLM, GenerationMixin):
         self.codebooks_head = CsmCodebooksHead(config.hidden_size, config.num_codebooks, config.vocab_size)
         self.model = CsmDepthDecoderModel(config)
 
+# prepare_inputs_for_generation：生成首轮将文本+音频合并为 inputs_embeds
     def prepare_inputs_for_generation(
         self,
         input_ids: torch.LongTensor,
@@ -374,6 +385,7 @@ class CsmDepthDecoderForCausalLM(LlamaForCausalLM, GenerationMixin):
         )
 
 
+# CsmBackboneModelEmbeddings：文本 + 多码本音频 token 嵌入，含码本偏移
 class CsmBackboneModelEmbeddings(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -389,6 +401,7 @@ class CsmBackboneModelEmbeddings(nn.Module):
 
 
 @auto_docstring
+# CsmBackboneModel：预测首码本 token 的 Llama backbone
 class CsmBackboneModel(LlamaModel):
     def __init__(self, config):
         super().__init__(config)
@@ -418,6 +431,7 @@ class CsmBackboneModel(LlamaModel):
     The Csm model consists of two llama-like auto-regressive transformer models: a backbone model that predicts the first codebook token and a depth decoder that predicts the other codebook tokens.
     """
 )
+# CsmForConditionalGeneration：CSM 条件生成，融合 codec 编码与双塔训练/推理
 class CsmForConditionalGeneration(CsmPreTrainedModel, CsmGenerationMixin):
     _tied_weights_keys = {
         "backbone_model.embed_tokens.embed_audio_tokens.weight": "depth_decoder.model.embed_tokens.weight"
@@ -476,6 +490,7 @@ class CsmForConditionalGeneration(CsmPreTrainedModel, CsmGenerationMixin):
 
         super().save_pretrained(*args, **kwargs)
 
+# _merge_input_ids_with_input_values：codec 编码音频并 scatter 至文本嵌入占位符
     def _merge_input_ids_with_input_values(
         self,
         input_ids: torch.Tensor | None = None,

@@ -21,6 +21,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="microsoft/cvt-13")
 @strict
+# CvtConfig：三 stage 深度 [1,2,10]，末 stage 可选 CLS token
 class CvtConfig(PreTrainedConfig):
     r"""
     patch_stride (`list[int]`, *optional*, defaults to `[4, 2, 2]`):

@@ -54,6 +54,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# CsmOutputWithPast：backbone 与 depth_decoder 联合前向输出容器
 class CsmOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -97,6 +98,7 @@ class CsmOutputWithPast(ModelOutput):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# CsmRMSNorm：RMS LayerNorm，float32 方差计算后还原 dtype
 class CsmRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -117,6 +119,7 @@ class CsmRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# CsmRotaryEmbedding：动态 RoPE，支持 llama3 等 rope_type
 class CsmRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: CsmConfig, device=None):
@@ -174,6 +177,7 @@ class CsmRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# CsmMLP：gate/up/down 三线性 SwiGLU 前馈
 class CsmMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -190,6 +194,7 @@ class CsmMLP(nn.Module):
         return down_proj
 
 
+# rotate_half：RoPE 旋转所需的半维交换
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -198,6 +203,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：对 Q/K 施加旋转位置编码
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -223,6 +229,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 中将 KV 头重复至与 Q 头数对齐
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -235,6 +242,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：标准缩放点积注意力 eager 实现
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -261,6 +269,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# CsmAttention：多头 GQA，支持 Flash/SDPA 后端切换
 class CsmAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -328,6 +337,7 @@ class CsmAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# CsmDecoderLayer：带梯度检查点的 Pre-LN 解码层
 class CsmDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: CsmConfig, layer_idx: int):
         super().__init__()
@@ -377,6 +387,7 @@ class CsmDecoderLayer(GradientCheckpointingLayer):
     """
 )
 @auto_docstring
+# CsmPreTrainedModel：权重初始化含码本头与音频偏移特殊处理
 class CsmPreTrainedModel(PreTrainedModel):
     config: CsmConfig
     base_model_prefix = "model"
@@ -408,6 +419,7 @@ class CsmPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# CsmDepthDecoderModel：码本位置嵌入 + backbone 隐状态首 token 替换
 class CsmDepthDecoderModel(CsmPreTrainedModel):
     config: CsmDepthDecoderConfig
 
@@ -511,6 +523,7 @@ class CsmDepthDecoderModel(CsmPreTrainedModel):
         )
 
 
+# CsmCodebooksHead：逐码本独立线性分类头
 class CsmCodebooksHead(nn.Module):
     def __init__(self, hidden_size, num_codebooks, vocab_size):
         super().__init__()
@@ -538,6 +551,7 @@ class CsmCodebooksHead(nn.Module):
     (e.g. position 0 is the first codebook and uses the first codebook head, etc.)
     """
 )
+# CsmDepthDecoderForCausalLM：深度解码器生成，固定 num_codebooks-1 步
 class CsmDepthDecoderForCausalLM(CsmPreTrainedModel, GenerationMixin):
     _tied_weights_keys = None
     _tp_plan = None
@@ -645,6 +659,7 @@ class CsmDepthDecoderForCausalLM(CsmPreTrainedModel, GenerationMixin):
         return model_inputs
 
 
+# CsmBackboneModelEmbeddings：文本嵌入与多码本音频嵌入求和
 class CsmBackboneModelEmbeddings(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -660,6 +675,7 @@ class CsmBackboneModelEmbeddings(nn.Module):
 
 
 @auto_docstring
+# CsmBackboneModel：Llama 解码器栈，输出首码本 logits 所需隐状态
 class CsmBackboneModel(CsmPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -749,6 +765,7 @@ class CsmBackboneModel(CsmPreTrainedModel):
     The Csm model consists of two llama-like auto-regressive transformer models: a backbone model that predicts the first codebook token and a depth decoder that predicts the other codebook tokens.
     """
 )
+# CsmForConditionalGeneration：训练时 backbone+depth_decoder 联合 loss
 class CsmForConditionalGeneration(CsmPreTrainedModel, CsmGenerationMixin):
     _tied_weights_keys = {
         "backbone_model.embed_tokens.embed_audio_tokens.weight": "depth_decoder.model.embed_tokens.weight"
@@ -807,6 +824,7 @@ class CsmForConditionalGeneration(CsmPreTrainedModel, CsmGenerationMixin):
 
         super().save_pretrained(*args, **kwargs)
 
+# _merge_input_ids_with_input_values：Mimi codec 批量编码音频帧至嵌入
     def _merge_input_ids_with_input_values(
         self,
         input_ids: torch.Tensor | None = None,

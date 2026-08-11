@@ -42,6 +42,7 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_cwm import CwmConfig
 
 
+# CwmRotaryEmbedding：Llama3 动态 RoPE，支持 rope_theta 与频率因子
 class CwmRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: CwmConfig, device=None):
@@ -62,6 +63,7 @@ class CwmRotaryEmbedding(nn.Module):
 
     @staticmethod
     @deprecate_kwarg("device", version="5.18")
+# compute_default_rope_parameters：按 head_dim 计算逆频率
     def compute_default_rope_parameters(config: CwmConfig, device=None, **kwargs) -> tuple[torch.Tensor, float]:
         """
         Computes the inverse frequencies according to the original RoPE implementation
@@ -96,6 +98,7 @@ class CwmRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# rotate_half：RoPE 半维旋转变换
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -104,6 +107,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：对 Q/K 应用 cos/sin 旋转嵌入
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -129,6 +133,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA KV 头广播至 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -141,6 +146,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：支持 sliding_window 的 eager 注意力
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -167,6 +173,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# CwmAttention：按 layer_type 切换 full 或 sliding_window 因果掩码
 class CwmAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -229,6 +236,7 @@ class CwmAttention(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# CwmRMSNorm：RMSNorm，可 Hub 内核加速
 class CwmRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -249,6 +257,7 @@ class CwmRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# CwmMLP：SwiGLU 门控前馈（gate/up/down 三线性）
 class CwmMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -265,6 +274,7 @@ class CwmMLP(nn.Module):
         return down_proj
 
 
+# CwmDecoderLayer：Pre-LN 自注意力 + MLP 双残差
 class CwmDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: CwmConfig, layer_idx: int):
         super().__init__()
@@ -308,6 +318,7 @@ class CwmDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# CwmPreTrainedModel：支持 Flash/SDPA/Flex 与全图 torch.compile
 class CwmPreTrainedModel(PreTrainedModel):
     config: CwmConfig
     base_model_prefix = "model"
@@ -326,11 +337,13 @@ class CwmPreTrainedModel(PreTrainedModel):
     }
 
 
+# CwmModelOutputWithPast：CwmModel 前向输出类型别名
 class CwmModelOutputWithPast(BaseModelOutputWithPast):
     pass
 
 
 @auto_docstring
+# CwmModel：按 layer_types 为每层选择 full/sliding 因果掩码
 class CwmModel(CwmPreTrainedModel):
     config_class = CwmConfig
 
@@ -413,6 +426,7 @@ class CwmModel(CwmPreTrainedModel):
 
 
 @auto_docstring
+# CwmForCausalLM：因果语言建模头，embed 与 lm_head 可选 tie
 class CwmForCausalLM(CwmPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}

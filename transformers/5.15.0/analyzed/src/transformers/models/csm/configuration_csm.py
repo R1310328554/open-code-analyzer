@@ -26,6 +26,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="sesame/csm-1b")
 @strict
+# CsmDepthDecoderConfig：深度解码器配置，逐码本预测剩余 RVQ 层
 class CsmDepthDecoderConfig(PreTrainedConfig):
     r"""
     backbone_hidden_size (`int`, *optional*, defaults to 2048):
@@ -74,6 +75,7 @@ class CsmDepthDecoderConfig(PreTrainedConfig):
     mlp_bias: bool = False
     head_dim: int | None = None
 
+# __post_init__：校验 tie_word_embeddings、补全 GQA 头数与 head_dim
     def __post_init__(self, **kwargs):
         if kwargs.pop("tie_word_embeddings", False):
             raise ValueError("`tie_word_embeddings=True` is not supported for CsmDepthDecoderConfig")
@@ -87,6 +89,7 @@ class CsmDepthDecoderConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="sesame/csm-1b")
 @strict
+# CsmConfig：CSM 顶层配置，聚合 backbone/depth_decoder/codec 子配置
 class CsmConfig(PreTrainedConfig):
     r"""
     codebook_pad_token_id (`int`, *optional*, defaults to 2050):

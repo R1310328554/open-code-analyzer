@@ -34,6 +34,7 @@ from ...processing_utils import AudioKwargs, ProcessingKwargs, ProcessorMixin, U
 from ...tokenization_utils_base import PreTokenizedInput, TextInput
 
 
+# CsmAudioKwargs：encoded_length_kwargs 用于估算每段音频的 token 帧数
 class CsmAudioKwargs(AudioKwargs, total=False):
     """
     encoded_length_kwargs (`dict[str, Any]`, *optional*):
@@ -46,6 +47,7 @@ class CsmAudioKwargs(AudioKwargs, total=False):
     encoded_length_kwargs: dict[str, Any] | None
 
 
+# CsmProcessorKwargs：默认 24kHz 采样与 Mimi 卷积链编码长度参数
 class CsmProcessorKwargs(ProcessingKwargs, total=False):
     audio_kwargs: CsmAudioKwargs
     _defaults = {
@@ -69,6 +71,7 @@ class CsmProcessorKwargs(ProcessingKwargs, total=False):
 
 @requires(backends=("torch",))
 @auto_docstring
+# CsmProcessor：组合 feature_extractor 与 tokenizer 构建多轮对话输入
 class CsmProcessor(ProcessorMixin):
     def __init__(
         self,
@@ -93,6 +96,7 @@ class CsmProcessor(ProcessorMixin):
         super().__init__(feature_extractor, tokenizer, chat_template=chat_template)
 
     @staticmethod
+# _get_encoded_length：按 Mimi 因果卷积链推算编码后序列长度
     def _get_encoded_length(audio_length, kernel_sizes=None, strides=None, dilations=None, use_causal_conv=None):
         """
         Compute the length of the encoded audio sequence.
@@ -130,6 +134,7 @@ class CsmProcessor(ProcessorMixin):
 
         return cur_length
 
+# save_audio：将生成波形以 soundfile 写入磁盘
     def save_audio(
         self,
         audio: AudioInput,
@@ -164,6 +169,7 @@ class CsmProcessor(ProcessorMixin):
             sf.write(p, audio_value, sampling_rate)
 
     @auto_docstring
+# __call__：展开 audio token、拼接 input_values 与可选 labels
     def __call__(
         self,
         text: TextInput | PreTokenizedInput | list[TextInput] | list[PreTokenizedInput] | None,
@@ -310,6 +316,7 @@ class CsmProcessor(ProcessorMixin):
         return BatchFeature(data=data, tensor_type=return_tensors)
 
     @property
+# model_input_names：模型输入名含 input_values_cutoffs
     def model_input_names(self):
         tokenizer_input_names = self.tokenizer.model_input_names
         feature_extractor_input_names = self.feature_extractor.model_input_names

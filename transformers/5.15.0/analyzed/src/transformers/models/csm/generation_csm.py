@@ -38,6 +38,7 @@ logger = logging.get_logger(__name__)
 
 
 @dataclass
+# CsmGenerateOutput：generate 输出，额外携带解码后的 audio 波形列表
 class CsmGenerateOutput(GenerateDecoderOnlyOutput):
     """
     Outputs of CsmForConditionalGeneration.generate.
@@ -69,7 +70,9 @@ class CsmGenerateOutput(GenerateDecoderOnlyOutput):
     audio: list[torch.Tensor] | None = None
 
 
+# CsmGenerationMixin：CSM 专用采样循环，仅支持 greedy/sample 与 MaxLength 停止
 class CsmGenerationMixin(GenerationMixin):
+# _get_stopping_criteria：过滤非 MaxLength 停止条件并告警
     def _get_stopping_criteria(
         self,
         *args,
@@ -87,6 +90,7 @@ class CsmGenerationMixin(GenerationMixin):
                 kept_criteria.append(criterion)
         return kept_criteria
 
+# _prepare_generation_config：拆分 depth_decoder_* 参数并校验码本步数
     def _prepare_generation_config(
         self, generation_config: GenerationConfig | None, **kwargs: Any
     ) -> tuple[GenerationConfig, dict]:
@@ -143,6 +147,7 @@ class CsmGenerationMixin(GenerationMixin):
 
         return generation_config, model_kwargs
 
+# _sample：交替 backbone 首码本与 depth_decoder 剩余码本的自回归采样
     def _sample(
         self,
         input_ids: torch.LongTensor,
@@ -331,6 +336,7 @@ class CsmGenerationMixin(GenerationMixin):
         else:
             return input_ids
 
+# generate：支持文本/音频输入，可选 output_audio 经 codec 解码为波形
     def generate(
         self,
         input_ids: torch.Tensor | None = None,

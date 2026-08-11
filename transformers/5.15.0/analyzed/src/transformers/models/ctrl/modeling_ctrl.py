@@ -42,11 +42,13 @@ from .configuration_ctrl import CTRLConfig
 logger = logging.get_logger(__name__)
 
 
+# angle_defn：Transformer 原始正弦位置编码的角度速率
 def angle_defn(pos, i, d_model_size):
     angle_rates = 1 / torch.pow(10000, (2 * (i // 2)) / d_model_size)
     return pos * angle_rates
 
 
+# positional_encoding：生成固定正弦/余弦位置编码矩阵
 def positional_encoding(position, d_model_size, dtype):
     # create the sinusoidal pattern for the positional encoding
     angle_rads = angle_defn(
@@ -63,6 +65,7 @@ def positional_encoding(position, d_model_size, dtype):
 
 
 # Copied from transformers.models.bert.modeling_bert.eager_attention_forward
+# eager_attention_forward：缩放点积注意力 eager 路径
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -91,6 +94,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# MultiHeadAttention：Wq/Wk/Wv 线性投影 + 输出 dense，支持 KV 缓存
 class MultiHeadAttention(nn.Module):
     def __init__(self, config, layer_idx=None):
         super().__init__()
@@ -147,10 +151,12 @@ class MultiHeadAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# point_wise_feed_forward_network：两层 ReLU 前馈（dff 扩展维）
 def point_wise_feed_forward_network(d_model_size, dff):
     return nn.Sequential(nn.Linear(d_model_size, dff), nn.ReLU(), nn.Linear(dff, d_model_size))
 
 
+# EncoderLayer：Pre-LN 自注意力 + FFN 双残差块
 class EncoderLayer(nn.Module):
     def __init__(self, config, layer_idx=None):
         super().__init__()
@@ -192,6 +198,7 @@ class EncoderLayer(nn.Module):
 
 
 @auto_docstring
+# CTRLPreTrainedModel：初始化时将 pos_encoding 设为预计算正弦表
 class CTRLPreTrainedModel(PreTrainedModel):
     config: CTRLConfig
     base_model_prefix = "transformer"
@@ -213,6 +220,7 @@ class CTRLPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# CTRLModel：词嵌入 + 48 层 EncoderLayer + 最终 LayerNorm
 class CTRLModel(CTRLPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -343,6 +351,7 @@ class CTRLModel(CTRLPreTrainedModel):
     embeddings).
     """
 )
+# CTRLLMHeadModel：语言建模头，lm_head 与词嵌入 tie
 class CTRLLMHeadModel(CTRLPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "transformer.w.weight"}
 
@@ -433,6 +442,7 @@ class CTRLLMHeadModel(CTRLPreTrainedModel, GenerationMixin):
             attentions=transformer_outputs.attentions,
         )
 
+# prepare_inputs_for_generation：token_type_ids 由 forward 内部构造故移除
     def prepare_inputs_for_generation(
         self, input_ids, past_key_values=None, use_cache=None, is_first_iteration=False, **kwargs
     ):
@@ -463,6 +473,7 @@ class CTRLLMHeadModel(CTRLPreTrainedModel, GenerationMixin):
     value in each row of the batch).
     """
 )
+# CTRLForSequenceClassification：取末 token 隐状态做序列分类
 class CTRLForSequenceClassification(CTRLPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

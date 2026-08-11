@@ -88,6 +88,7 @@ CONTROL_CODES = {
 }
 
 
+# get_pairs：BPE 合并算法中提取相邻符号对
 def get_pairs(word):
     """
     Return set of symbol pairs in a word.
@@ -104,6 +105,7 @@ def get_pairs(word):
     return pairs
 
 
+# CTRLTokenizer：vocab.json + merges.txt BPE，首 token 通常为 control code
 class CTRLTokenizer(PreTrainedTokenizer):
     """
     Construct a CTRL tokenizer. Based on Byte-Pair-Encoding.
@@ -149,6 +151,7 @@ class CTRLTokenizer(PreTrainedTokenizer):
     def get_vocab(self):
         return dict(self.encoder, **self.added_tokens_encoder)
 
+# bpe：按 bpe_ranks 贪心合并子词，@@ 标记词内边界
     def bpe(self, token):
         if token in self.cache:
             return self.cache[token]
@@ -193,6 +196,7 @@ class CTRLTokenizer(PreTrainedTokenizer):
         self.cache[token] = word
         return word
 
+# _tokenize：正则分词后对每词执行 BPE
     def _tokenize(self, text):
         """Tokenize a string."""
         split_tokens = []
@@ -203,6 +207,7 @@ class CTRLTokenizer(PreTrainedTokenizer):
             split_tokens.extend(list(self.bpe(token).split(" ")))
         return split_tokens
 
+# _convert_token_to_id：未知 token 映射至 unk
     def _convert_token_to_id(self, token):
         """Converts a token (str) in an id using the vocab."""
         return self.encoder.get(token, self.encoder.get(self.unk_token))
@@ -211,6 +216,7 @@ class CTRLTokenizer(PreTrainedTokenizer):
         """Converts an index (integer) in a token (str) using the vocab."""
         return self.decoder.get(index, self.unk_token)
 
+# convert_tokens_to_string：去除 @@ 后缀并拼接为字符串
     def convert_tokens_to_string(self, tokens):
         """Converts a sequence of tokens (string) in a single string."""
         out_string = " ".join(tokens).replace("@@ ", "").strip()
