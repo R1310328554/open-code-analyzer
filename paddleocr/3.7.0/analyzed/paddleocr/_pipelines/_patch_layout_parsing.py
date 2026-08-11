@@ -20,6 +20,7 @@ Patches for paddlex layout parsing utilities to fix:
 - ValueError in calculate_minimum_enclosing_bbox when the bounding box list
   is empty, which can happen when overflow causes all overlap matches to fail.
 
+# paddlex 版面解析运行时补丁：修复大坐标整数溢出与空 bbox 异常
 See: https://github.com/PaddlePaddle/PaddleOCR/issues/17503
 """
 
@@ -32,6 +33,7 @@ logger = logging.getLogger(__name__)
 _patched = False
 
 
+    # 修复版重叠率：坐标转 float64 避免 doc_unwarping 后整型溢出
 def _fixed_calculate_overlap_ratio(bbox1, bbox2, mode="union"):
     """
     Calculate the overlap ratio between two bounding boxes.
@@ -73,6 +75,7 @@ def _fixed_calculate_overlap_ratio(bbox1, bbox2, mode="union"):
     return inter_area / ref_area
 
 
+    # 修复版最小外接框：空列表返回退化框而非抛 ValueError
 def _fixed_calculate_minimum_enclosing_bbox(bboxes):
     """
     Calculate the minimum enclosing bounding box for a list of bounding boxes.
@@ -98,6 +101,7 @@ def _fixed_calculate_minimum_enclosing_bbox(bboxes):
     return np.array([min_x, min_y, max_x, max_y])
 
 
+    # 幂等替换 paddlex layout_parsing utils 与 pipeline_v2 中的同名函数
 def apply_patches():
     """
     Apply patches to paddlex layout parsing utilities to fix integer overflow

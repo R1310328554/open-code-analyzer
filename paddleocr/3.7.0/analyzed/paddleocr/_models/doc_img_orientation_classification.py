@@ -12,14 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 文档图像方向分类：判断扫描页 0/90/180/270 度旋转并校正
 from ._image_classification import (
     ImageClassification,
     ImageClassificationSubcommandExecutor,
 )
 
 
+    # 默认 PP-LCNet_x1_0_doc_ori，继承 ImageClassification 推理链路
 class DocImgOrientationClassification(ImageClassification):
     @property
+        # 返回 PaddleX 预置文档方向分类模型名称
     def default_model_name(self):
         return "PP-LCNet_x1_0_doc_ori"
 
@@ -28,13 +31,16 @@ class DocImgOrientationClassification(ImageClassification):
         return DocImgOrientationClassificationSubcommandExecutor()
 
 
+    # doc_img_orientation_classification CLI 子命令执行器
 class DocImgOrientationClassificationSubcommandExecutor(
     ImageClassificationSubcommandExecutor
 ):
     @property
+        # argparse 子命令名 doc_img_orientation_classification
     def subparser_name(self):
         return "doc_img_orientation_classification"
 
     @property
+        # 绑定 DocImgOrientationClassification 包装类供 CLI 实例化
     def wrapper_cls(self):
         return DocImgOrientationClassification

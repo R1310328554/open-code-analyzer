@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 文本识别：将裁剪后的文字行图像转为 Unicode 字符串
 from .._utils.cli import (
     add_simple_inference_args,
     get_subcommand_args,
@@ -20,6 +21,7 @@ from .._utils.cli import (
 from .base import PaddleXPredictorWrapper, PredictorCLISubcommandExecutor
 
 
+    # 默认 PP-OCRv6_medium_rec，可选 input_shape 覆盖输入尺寸
 class TextRecognition(PaddleXPredictorWrapper):
     def __init__(
         self,
@@ -40,10 +42,12 @@ class TextRecognition(PaddleXPredictorWrapper):
     def get_cli_subcommand_executor(cls):
         return TextRecognitionSubcommandExecutor()
 
+        # 将 input_shape 等 kwargs 注入 create_predictor
     def _get_extra_paddlex_predictor_init_args(self):
         return self._extra_init_args
 
 
+    # text_recognition CLI：支持 --input_shape C H W 三元组
 class TextRecognitionSubcommandExecutor(PredictorCLISubcommandExecutor):
     @property
     def subparser_name(self):
@@ -59,6 +63,7 @@ class TextRecognitionSubcommandExecutor(PredictorCLISubcommandExecutor):
             help="Input shape of the model.",
         )
 
+        # 解析识别参数并执行单次推理
     def execute_with_args(self, args):
         params = get_subcommand_args(args)
         perform_simple_inference(TextRecognition, params)

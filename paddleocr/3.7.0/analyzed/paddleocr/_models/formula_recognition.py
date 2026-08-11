@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 公式识别模型：将数学公式图像转为 LaTeX 字符串
 from .._utils.cli import (
     add_simple_inference_args,
     get_subcommand_args,
@@ -20,6 +21,7 @@ from .._utils.cli import (
 from .base import PaddleXPredictorWrapper, PredictorCLISubcommandExecutor
 
 
+    # 默认 PP-FormulaNet_plus-M，封装 PaddleX 公式识别 predictor
 class FormulaRecognition(PaddleXPredictorWrapper):
     def __init__(
         self,
@@ -37,10 +39,12 @@ class FormulaRecognition(PaddleXPredictorWrapper):
     def get_cli_subcommand_executor(cls):
         return FormulaRecognitionSubcommandExecutor()
 
+        # 透传额外初始化参数至 create_predictor
     def _get_extra_paddlex_predictor_init_args(self):
         return self._extra_init_args
 
 
+    # formula_recognition CLI：单张图像推理并输出 LaTeX
 class FormulaRecognitionSubcommandExecutor(PredictorCLISubcommandExecutor):
     @property
     def subparser_name(self):
@@ -49,6 +53,7 @@ class FormulaRecognitionSubcommandExecutor(PredictorCLISubcommandExecutor):
     def _update_subparser(self, subparser):
         add_simple_inference_args(subparser)
 
+        # 解析 CLI 参数并委托 perform_simple_inference 执行
     def execute_with_args(self, args):
         params = get_subcommand_args(args)
         perform_simple_inference(FormulaRecognition, params)

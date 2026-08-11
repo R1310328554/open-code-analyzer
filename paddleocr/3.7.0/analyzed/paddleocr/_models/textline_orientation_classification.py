@@ -12,14 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 文本行方向分类：判断单行文字 0/180 度朝向以便识别前旋转
 from ._image_classification import (
     ImageClassification,
     ImageClassificationSubcommandExecutor,
 )
 
 
+    # 默认 PP-LCNet_x0_25_textline_ori 轻量方向分类
 class TextLineOrientationClassification(ImageClassification):
     @property
+        # 返回文本行方向 LCNet 预置模型名
     def default_model_name(self):
         return "PP-LCNet_x0_25_textline_ori"
 
@@ -28,6 +31,7 @@ class TextLineOrientationClassification(ImageClassification):
         return TextLineOrientationClassificationSubcommandExecutor()
 
 
+    # textline_orientation_classification CLI 子命令
 class TextLineOrientationClassificationSubcommandExecutor(
     ImageClassificationSubcommandExecutor
 ):
@@ -36,5 +40,6 @@ class TextLineOrientationClassificationSubcommandExecutor(
         return "textline_orientation_classification"
 
     @property
+        # 绑定 TextLineOrientationClassification 包装类
     def wrapper_cls(self):
         return TextLineOrientationClassification

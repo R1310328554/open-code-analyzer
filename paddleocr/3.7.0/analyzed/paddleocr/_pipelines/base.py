@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# PaddleX 组合流水线包装基类：配置合并、create_pipeline 与 CLI 子命令
 import abc
 
 import yaml
@@ -30,6 +31,7 @@ from .._common_args import (
 _DEFAULT_ENABLE_HPI = None
 
 
+    # 递归合并 PaddleX 配置 dict，子 dict 深度合并
 def _merge_dicts(d1, d2):
     res = d1.copy()
     for k, v in d2.items():
@@ -40,6 +42,7 @@ def _merge_dicts(d1, d2):
     return res
 
 
+    # 将 AttrDict/nested dict 转为可 yaml 序列化的内置类型
 def _to_builtin(obj):
     if isinstance(obj, AttrDict):
         return {k: _to_builtin(v) for k, v in obj.items()}
@@ -51,6 +54,7 @@ def _to_builtin(obj):
         return obj
 
 
+    # 抽象流水线包装：加载/覆盖 paddlex_config 并创建 paddlex_pipeline
 class PaddleXPipelineWrapper(metaclass=abc.ABCMeta):
     def __init__(
         self,
@@ -71,6 +75,7 @@ class PaddleXPipelineWrapper(metaclass=abc.ABCMeta):
     def _paddlex_pipeline_name(self):
         raise NotImplementedError
 
+        # 将合并后的配置导出为 YAML 文件
     def export_paddlex_config_to_yaml(self, yaml_path):
         with open(yaml_path, "w", encoding="utf-8") as f:
             config = _to_builtin(self._merged_paddlex_config)
@@ -99,6 +104,7 @@ class PaddleXPipelineWrapper(metaclass=abc.ABCMeta):
 
         return _merge_dicts(config, overrides)
 
+        # 调用 create_pipeline，DependencyError 转为友好 RuntimeError
     def _create_paddlex_pipeline(self):
         kwargs = prepare_common_init_args(None, self._common_args)
         try:
@@ -109,12 +115,14 @@ class PaddleXPipelineWrapper(metaclass=abc.ABCMeta):
             ) from e
 
 
+    # 流水线 CLI 基类：注册 paddlex_config 与通用设备/推理选项
 class PipelineCLISubcommandExecutor(CLISubcommandExecutor):
     @property
     @abc.abstractmethod
     def subparser_name(self):
         raise NotImplementedError
 
+        # 创建子解析器并挂载 _update_subparser 扩展点
     def add_subparser(self, subparsers):
         subparser = subparsers.add_parser(name=self.subparser_name)
         self._update_subparser(subparser)

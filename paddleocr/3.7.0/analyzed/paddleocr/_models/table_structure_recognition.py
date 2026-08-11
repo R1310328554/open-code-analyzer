@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 表格结构识别 SLANet：预测表格 HTML/结构序列
 from .._utils.cli import (
     add_simple_inference_args,
     get_subcommand_args,
@@ -20,6 +21,7 @@ from .._utils.cli import (
 from .base import PaddleXPredictorWrapper, PredictorCLISubcommandExecutor
 
 
+    # 默认 SLANet，将表格图像转为结构化 markup
 class TableStructureRecognition(PaddleXPredictorWrapper):
     def __init__(
         self,
@@ -37,10 +39,12 @@ class TableStructureRecognition(PaddleXPredictorWrapper):
     def get_cli_subcommand_executor(cls):
         return TableStructureRecognitionSubcommandExecutor()
 
+        # 透传额外 predictor 初始化参数
     def _get_extra_paddlex_predictor_init_args(self):
         return self._extra_init_args
 
 
+    # table_structure_recognition CLI 子命令
 class TableStructureRecognitionSubcommandExecutor(PredictorCLISubcommandExecutor):
     @property
     def subparser_name(self):
@@ -49,6 +53,7 @@ class TableStructureRecognitionSubcommandExecutor(PredictorCLISubcommandExecutor
     def _update_subparser(self, subparser):
         add_simple_inference_args(subparser)
 
+        # 解析参数并执行单次表格结构推理
     def execute_with_args(self, args):
         params = get_subcommand_args(args)
         perform_simple_inference(TableStructureRecognition, params)

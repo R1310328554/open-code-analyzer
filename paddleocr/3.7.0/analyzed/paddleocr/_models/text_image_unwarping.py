@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 文档图像矫正 UVDoc：消除透视/卷曲畸变，展平扫描页
 from .._utils.cli import (
     add_simple_inference_args,
     get_subcommand_args,
@@ -20,6 +21,7 @@ from .._utils.cli import (
 from .base import PaddleXPredictorWrapper, PredictorCLISubcommandExecutor
 
 
+    # 默认 UVDoc 模型，输出几何校正后的文档图像
 class TextImageUnwarping(PaddleXPredictorWrapper):
     def __init__(
         self,
@@ -37,10 +39,12 @@ class TextImageUnwarping(PaddleXPredictorWrapper):
     def get_cli_subcommand_executor(cls):
         return TextImageUnwarpingSubcommandExecutor()
 
+        # 透传额外初始化参数
     def _get_extra_paddlex_predictor_init_args(self):
         return self._extra_init_args
 
 
+    # text_image_unwarping CLI 子命令
 class TextImageUnwarpingSubcommandExecutor(PredictorCLISubcommandExecutor):
     @property
     def subparser_name(self):
@@ -49,6 +53,7 @@ class TextImageUnwarpingSubcommandExecutor(PredictorCLISubcommandExecutor):
     def _update_subparser(self, subparser):
         add_simple_inference_args(subparser)
 
+        # 解析 CLI 参数并执行文档展平推理
     def execute_with_args(self, args):
         params = get_subcommand_args(args)
         perform_simple_inference(TextImageUnwarping, params)

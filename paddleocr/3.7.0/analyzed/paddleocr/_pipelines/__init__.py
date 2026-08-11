@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# _pipelines 子包公共导出：OCR、版面解析、表格、VLM 等组合流水线
 from .doc_preprocessor import DocPreprocessor
 from .doc_understanding import DocUnderstanding
 from .formula_recognition import FormulaRecognitionPipeline
@@ -23,6 +24,7 @@ from .pp_structurev3 import PPStructureV3
 from .seal_recognition import SealRecognition
 from .table_recognition_v2 import TableRecognitionPipelineV2
 
+    # 对外公开的全部 Pipeline 类：DocPreprocessor、PaddleOCR、PPStructureV3 等
 __all__ = [
     "DocPreprocessor",
     "DocUnderstanding",
