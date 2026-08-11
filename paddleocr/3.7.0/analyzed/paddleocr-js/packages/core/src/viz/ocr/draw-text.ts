@@ -3,24 +3,28 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// 文本面板绘制：右侧面板描边检测框并按方向渲染识别文本
 import type { OcrResultItem } from "../../pipelines/ocr/core";
 import type { Point2D } from "../../models/common";
 import type { RgbColor } from "../types";
 import type { BoxStyleOptions } from "./types";
 import { deterministicColor } from "../color";
 
+// 右侧面板默认白底，可通过 textPanelBackground 覆盖
 const DEFAULT_BG = "#ffffff";
 const OUTLINE_LINE_WIDTH = 1;
 const TEXT_COLOR = "#000000";
 const ROTATION_THRESHOLD_DEG = 5;
 const VERTICAL_LINE_SPACING = 2;
 
+  // 计算 poly 顶边（p0→p1）与水平轴夹角，用于旋转文本
 function topEdgeAngle(poly: Point2D[]): number {
   const dx = poly[1][0] - poly[0][0];
   const dy = poly[1][1] - poly[0][1];
   return Math.atan2(dy, dx);
 }
 
+  // 计算四边形外接矩形 bounds，供字号与布局估算
 function polyBounds(poly: Point2D[]): {
   minX: number;
   minY: number;
@@ -55,6 +59,7 @@ function drawPolygonPath(
   ctx.closePath();
 }
 
+  // 竖排文本：逐字符纵向堆叠绘制
 function drawVerticalText(
   ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   text: string,
@@ -71,6 +76,7 @@ function drawVerticalText(
   }
 }
 
+  // 右侧面板：填充背景、描边 poly、按水平/竖排/旋转策略绘制 text
 export function drawTextPanel(
   ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   offsetX: number,
@@ -97,6 +103,7 @@ export function drawTextPanel(
     const absDeg = Math.abs(angle * (180 / Math.PI));
     const needsRotation = absDeg > ROTATION_THRESHOLD_DEG && absDeg < 180 - ROTATION_THRESHOLD_DEG;
 
+    // 竖排判定：高度大于宽度两倍且高度超过 30px
     // Detect vertical text: height > 2 * width and height > 30px
     const isVertical = bounds.height > 2 * bounds.width && bounds.height > 30;
 

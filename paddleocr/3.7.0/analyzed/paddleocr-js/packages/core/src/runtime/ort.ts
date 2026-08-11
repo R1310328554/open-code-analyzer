@@ -3,13 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// ONNX Runtime Web 运行时封装：WebGPU/WASM 探测、环境配置与 InferenceSession 创建
 export type OrtModule = typeof import("onnxruntime-web");
 
+  // WebGPU 可用性探测结果：available 标志与不可用时的原因说明
 export interface WebGpuState {
   available: boolean;
   reason: string;
 }
 
+  // ORT 初始化选项：backend 选择、wasm 路径、线程数与 proxy 开关
 export interface OrtOptions {
   backend?: "webgpu" | "wasm" | "auto" | (string & {});
   wasmPaths?: string;
@@ -19,12 +22,14 @@ export interface OrtOptions {
   disableWasmProxy?: boolean;
 }
 
+  // initOrtRuntime 返回值：ort 模块实例、WebGPU 状态与解析后的 backend
 export interface OrtRuntimeResult {
   ort: OrtModule;
   webgpuState: WebGpuState;
   backend: string;
 }
 
+  // 成功创建的推理会话及其 execution provider 名称
 export interface SessionState {
   session: import("onnxruntime-web").InferenceSession;
   provider: string;
@@ -32,6 +37,7 @@ export interface SessionState {
 
 let ortModulePromise: Promise<OrtModule> | null = null;
 
+  // 动态 import onnxruntime-web，单例缓存模块 Promise
 async function loadOrtModule(): Promise<OrtModule> {
   if (ortModulePromise) {
     return ortModulePromise;
@@ -44,6 +50,7 @@ interface GpuLike {
   requestAdapter(): Promise<unknown>;
 }
 
+  // 通过 navigator.gpu.requestAdapter 检测浏览器 WebGPU 支持
 export async function detectWebGpuAvailability(): Promise<WebGpuState> {
   const gpu = (globalThis.navigator as (Navigator & { gpu?: GpuLike }) | undefined)?.gpu;
   if (!gpu?.requestAdapter) {
@@ -72,6 +79,7 @@ export async function detectWebGpuAvailability(): Promise<WebGpuState> {
   }
 }
 
+  // 按 backend（webgpu/wasm/auto）生成 executionProviders 候选列表
 export function getProviderCandidates(backend: string, webgpuState: WebGpuState): string[][] {
   if (backend === "webgpu") {
     if (!webgpuState.available) {
@@ -85,6 +93,7 @@ export function getProviderCandidates(backend: string, webgpuState: WebGpuState)
   return webgpuState.available ? [["webgpu"], ["wasm"]] : [["wasm"]];
 }
 
+  // 将 wasmPaths/numThreads/simd/proxy 写入 ort.env.wasm
 function applyOrtEnvironmentOptions(ort: OrtModule, ortOptions: OrtOptions): void {
   const wasmOptions = ort.env.wasm;
 
@@ -105,6 +114,7 @@ function applyOrtEnvironmentOptions(ort: OrtModule, ortOptions: OrtOptions): voi
   }
 }
 
+  // 加载 ORT 模块、探测 WebGPU、应用环境选项并返回运行时摘要
 export async function initOrtRuntime(
   ortOptions: OrtOptions | string = {}
 ): Promise<OrtRuntimeResult> {
@@ -126,6 +136,7 @@ export async function initOrtRuntime(
   };
 }
 
+  // 按 provider 候选顺序尝试创建 InferenceSession，失败则回退下一组
 export async function createSession(
   ort: OrtModule,
   modelBytes: Uint8Array,
@@ -146,6 +157,7 @@ export async function createSession(
   throw lastErr instanceof Error ? lastErr : new Error("Failed to create ONNX session.");
 }
 
+  // 并行调用 session.release() 释放 det/rec 等 ORT 会话资源
 export async function releaseSessions(
   ...sessions: Array<import("onnxruntime-web").InferenceSession | null | undefined>
 ): Promise<void> {

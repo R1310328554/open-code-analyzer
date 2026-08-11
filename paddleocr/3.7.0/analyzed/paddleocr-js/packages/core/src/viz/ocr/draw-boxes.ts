@@ -3,16 +3,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// 检测框面板绘制：在原图上叠加半透明多边形填充
 import type { OcrResultItem } from "../../pipelines/ocr/core";
 import type { Point2D } from "../../models/common";
 import type { RgbColor } from "../types";
 import type { BoxStyleOptions } from "./types";
 import { deterministicColor } from "../color";
 
+// 默认填充透明度，可通过 BoxStyleOptions.fillOpacity 覆盖
 const DEFAULT_FILL_OPACITY = 0.5;
 
 type DrawableImage = ImageBitmap | HTMLImageElement;
 
+  // 按 poly 顶点顺序构建闭合路径
 function drawPolygonPath(
   ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   poly: Point2D[]
@@ -25,6 +28,7 @@ function drawPolygonPath(
   ctx.closePath();
 }
 
+  // 左侧面板：绘制原图 + 逐框半透明 fill（source-over 混合）
 export function drawBoxesPanel(
   ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   image: DrawableImage,
@@ -34,6 +38,7 @@ export function drawBoxesPanel(
   const fillOpacity = style.fillOpacity ?? DEFAULT_FILL_OPACITY;
   const getColor = style.colorFn ?? deterministicColor;
 
+  // 先绘制底图
   // Draw original image
   ctx.drawImage(image, 0, 0);
 

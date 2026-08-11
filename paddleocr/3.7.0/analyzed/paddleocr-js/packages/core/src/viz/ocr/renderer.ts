@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// OCR 可视化渲染器：封装字体加载、并排渲染与 Blob 导出
 import type { OcrResult } from "../../pipelines/ocr/core";
 import type { OcrVisualizerOptions } from "./types";
 import { loadFontFace, removeFontFace } from "../font";
@@ -16,6 +17,7 @@ const DEFAULT_OUTPUT_FORMAT = "png";
 const DEFAULT_OUTPUT_QUALITY = 0.92;
 const DEFAULT_TEXT_PANEL_BG = "#ffffff";
 
+  // 合并 OcrVisualizerOptions 与单次调用 overrides 为 SideBySideOptions
 function resolveOptions(
   base: OcrVisualizerOptions,
   overrides?: Partial<OcrVisualizerOptions>
@@ -30,6 +32,7 @@ function resolveOptions(
   };
 }
 
+  // 可复用可视化实例：可选自定义字体，renderSideBySide/toBlob 输出结果
 export class OcrVisualizer {
   private options: OcrVisualizerOptions;
   private loadedFace: FontFace | null = null;
@@ -38,12 +41,14 @@ export class OcrVisualizer {
     this.options = options ?? {};
   }
 
+    // 若配置了 font 则懒加载 FontFace，已加载则跳过
   async loadFont(): Promise<void> {
     if (!this.options.font) return;
     if (this.loadedFace) return;
     this.loadedFace = await loadFontFace(this.options.font);
   }
 
+    // 渲染左图右文并排 ImageBitmap
   async renderSideBySide(
     image: DrawableImage,
     result: OcrResult,
@@ -54,6 +59,7 @@ export class OcrVisualizer {
     return renderSideBySideToImageBitmap(image, result, opts);
   }
 
+    // 渲染并排视图并编码为 image/png|jpeg|webp Blob
   async toBlob(
     image: DrawableImage,
     result: OcrResult,
@@ -64,6 +70,7 @@ export class OcrVisualizer {
     return renderSideBySideToBlob(image, result, opts);
   }
 
+    // 移除已注册的自定义 FontFace
   dispose(): void {
     if (this.loadedFace) {
       removeFontFace(this.loadedFace);
@@ -72,6 +79,7 @@ export class OcrVisualizer {
   }
 }
 
+  // 便捷函数：创建临时 OcrVisualizer，toBlob 后自动 dispose
 export async function renderOcrToBlob(
   image: DrawableImage,
   result: OcrResult,

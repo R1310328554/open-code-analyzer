@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// @techstark/opencv-js 精简类型增强：覆盖 OCR 流水线实际调用的 Mat/OpenCv API
 declare module "@techstark/opencv-js" {
+    // OpenCV Mat 子集：尺寸、通道、clone/roi/delete 与像素缓冲访问
   export interface Mat {
     rows: number;
     cols: number;
@@ -16,6 +18,7 @@ declare module "@techstark/opencv-js" {
     roi(rect: Rect): Mat;
   }
 
+    // Mat 向量容器，用于 findContours 等 API 输出
   export interface MatVector {
     push_back(mat: Mat): void;
     size(): number;
@@ -45,6 +48,7 @@ declare module "@techstark/opencv-js" {
     angle: number;
   }
 
+    // OCR 依赖的 OpenCv 命名空间：构造器、图像变换与轮廓检测
   export interface OpenCv {
     Mat: {
       new (): Mat;
@@ -84,6 +88,7 @@ declare module "@techstark/opencv-js" {
     ): void;
     rotate(src: Mat, dst: Mat, rotateCode: number): void;
 
+    // Mat 数据类型常量（CV_8UC4 等）
     // Mat type constants
     CV_32FC1: number;
     CV_32FC2: number;
@@ -91,6 +96,7 @@ declare module "@techstark/opencv-js" {
     CV_8UC1: number;
     CV_8UC4: number;
 
+    // 颜色空间转换码（RGBA2BGR、GRAY2BGR）
     // Color conversion codes
     COLOR_RGBA2BGR: number;
     COLOR_GRAY2BGR: number;
@@ -112,6 +118,7 @@ declare module "@techstark/opencv-js" {
     ROTATE_90_COUNTERCLOCKWISE: number;
   }
 
+  // 默认导出模块类型：同步 OpenCv 或 Promise，含 WASM 就绪回调
   export type CvModule = OpenCv & { onRuntimeInitialized?: () => void };
 
   const cv: CvModule | Promise<CvModule>;
