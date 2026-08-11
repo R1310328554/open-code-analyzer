@@ -16,6 +16,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+# 文本识别评测入口：支持 SRN/SAR/RobustScanner/CAN/LaTeXOCR 等多算法
 import numpy as np
 
 import os
@@ -38,6 +39,7 @@ from ppocr.utils.utility import get_image_file_list
 import tools.program as program
 
 
+# 按算法调整 Head out_channels，逐图推理并写入 tab 分隔识别结果
 def main():
     global_config = config["Global"]
     if config["Architecture"].get("algorithm") in [

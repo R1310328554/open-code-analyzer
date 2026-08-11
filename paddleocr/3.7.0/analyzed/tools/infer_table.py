@@ -16,6 +16,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+# 表格结构识别评测：输出 HTML 结构 token 与单元格 bbox
 import numpy as np
 
 import os
@@ -43,6 +44,7 @@ import cv2
 
 
 @paddle.no_grad()
+# 构建 TableAttn 模型，逐图推理并保存 infer.txt 与可视化
 def main(config, device, logger, vdl_writer):
     global_config = config["Global"]
 

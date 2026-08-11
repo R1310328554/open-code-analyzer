@@ -16,6 +16,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+# SDMGR 图结构 KIE 推理：节点分类 + 边关系预测
 import numpy as np
 import paddle.nn.functional as F
 
@@ -38,6 +39,7 @@ import tools.program as program
 import time
 
 
+# 读取类别 id→名称映射文件
 def read_class_list(filepath):
     ret = {}
     with open(filepath, "r") as f:
@@ -47,6 +49,7 @@ def read_class_list(filepath):
     return ret
 
 
+# 可视化节点分类结果：原图与预测标签并排展示
 def draw_kie_result(batch, node, idx_to_cls, count):
     img = batch[6].copy()
     boxes = batch[7]
@@ -97,6 +100,7 @@ def draw_kie_result(batch, node, idx_to_cls, count):
     logger.info("The Kie Image saved in {}".format(save_path))
 
 
+# 按预测 label 排序写入 JSON 行，含 transcription/score/points
 def write_kie_result(fout, node, data):
     """
     Write infer result to output file, sorted by the predict label of each line.
@@ -123,6 +127,7 @@ def write_kie_result(fout, node, data):
     fout.writelines([json.dumps(res, ensure_ascii=False) + "\n"])
 
 
+# 构建 KIE 模型，逐行读取 infer_img 并统计推理 IPS
 def main():
     global_config = config["Global"]
 

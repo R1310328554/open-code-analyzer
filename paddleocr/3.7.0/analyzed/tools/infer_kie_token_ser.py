@@ -16,6 +16,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+# KIE 语义实体识别（SER）训练/推理：OCR + VQA Token LayoutLM
 import numpy as np
 
 import os
@@ -39,6 +40,7 @@ from ppocr.utils.utility import get_image_file_list, load_vqa_bio_label_maps
 import tools.program as program
 
 
+# 将 batch 中 ndarray/数值项转为 paddle.Tensor
 def to_tensor(data):
     import numbers
     from collections import defaultdict
@@ -56,6 +58,7 @@ def to_tensor(data):
     return list(data_dict.values())
 
 
+    # SER 预测器：PaddleOCR 检测识别 + VQAToken 预处理与 LayoutLM 后处理
 class SerPredictor(object):
     def __init__(self, config):
         global_config = config["Global"]

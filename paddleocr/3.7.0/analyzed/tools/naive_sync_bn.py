@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 朴素跨卡 SyncBatchNorm：all_gather 统计量实现多卡 BN 同步
 import paddle.distributed as dist
 import math
 import paddle
 import paddle.nn as nn
 
 
+    # 自定义 PyLayer：前向 all_gather 求和，反向 all_reduce 梯度
 class _AllReduce(paddle.autograd.PyLayer):
     @staticmethod
     def forward(ctx, input):
@@ -33,6 +35,7 @@ class _AllReduce(paddle.autograd.PyLayer):
         return grad_output
 
 
+# dist.all_reduce 的可微封装，单卡或未初始化时原样返回
 def differentiable_all_reduce(input):
     """
     Differentiable counterpart of `dist.all_reduce`.
@@ -46,6 +49,7 @@ def differentiable_all_reduce(input):
     return _AllReduce.apply(input)
 
 
+    # 跨卡同步 BN：训练时聚合各卡 mean/var 再归一化
 class NaiveSyncBatchNorm(nn.BatchNorm2D):
     def __init__(self, *args, stats_mode="", **kwargs):
         super().__init__(*args, **kwargs)
@@ -109,6 +113,7 @@ class NaiveSyncBatchNorm(nn.BatchNorm2D):
         return ret
 
 
+# 递归将模型中 BatchNorm2D 替换为 NaiveSyncBatchNorm
 def convert_syncbn(model):
     for n, m in model.named_children():
         if isinstance(m, nn.layer.norm._BatchNormBase):

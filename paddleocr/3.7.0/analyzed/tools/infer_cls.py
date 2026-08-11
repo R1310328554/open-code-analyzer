@@ -16,6 +16,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+# 方向分类评测入口：加载 YAML 配置，在 infer_img 上批量预测类别
 import numpy as np
 
 import os
@@ -37,6 +38,7 @@ from ppocr.utils.utility import get_image_file_list
 import tools.program as program
 
 
+# 构建 model/postprocess/data ops，逐图推理并打印分类结果
 def main():
     global_config = config["Global"]
 

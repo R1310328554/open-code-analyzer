@@ -21,6 +21,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(__dir__, "../..")))
 
 os.environ["FLAGS_allocator_strategy"] = "auto_growth"
 
+# 文本识别推理：支持 CRNN/SVTR/SRN/SAR/LaTeXOCR 等多算法预处理与 CTC 解码
 import cv2
 import numpy as np
 import math
@@ -36,6 +37,7 @@ from ppocr.utils.utility import get_image_file_list, check_and_read
 logger = get_logger()
 
 
+# 文本识别器：加载 rec 模型，按算法配置预处理/后处理并批量解码
 class TextRecognizer(object):
     def __init__(self, args, logger=None):
         if os.path.exists(f"{args.rec_model_dir}/inference.yml"):
@@ -580,6 +582,7 @@ class TextRecognizer(object):
         img = img.astype("float32")
         return img
 
+    # 按宽高比排序分批推理，按算法分支调用对应 resize 与后处理
     def __call__(self, img_list):
         img_num = len(img_list)
         # Calculate the aspect ratio of all text bars
@@ -861,6 +864,7 @@ class TextRecognizer(object):
         return rec_res, time.time() - st
 
 
+# CLI：遍历 image_dir 批量识别并输出文本与置信度
 def main(args):
     image_file_list = get_image_file_list(args.image_dir)
     valid_image_file_list = []

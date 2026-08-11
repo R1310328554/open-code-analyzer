@@ -16,6 +16,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+# PGNet 端到端评测：同时输出检测点集与识别文本
 import numpy as np
 
 import os
@@ -41,6 +42,7 @@ from PIL import Image, ImageDraw, ImageFont
 import math
 
 
+# 中文可视化：左右对比原图着色框与 PIL 绘制文本
 def draw_e2e_res_for_chinese(
     image, boxes, txts, config, img_name, font_path="./doc/simfang.ttf"
 ):
@@ -74,6 +76,7 @@ def draw_e2e_res_for_chinese(
     logger.info("The e2e Image saved in {}".format(save_path))
 
 
+# 英文可视化：OpenCV 绘制框与 putText
 def draw_e2e_res(dt_boxes, strs, config, img, img_name):
     if len(dt_boxes) > 0:
         src_im = img
@@ -99,6 +102,7 @@ def draw_e2e_res(dt_boxes, strs, config, img, img_name):
         logger.info("The e2e Image saved in {}".format(save_path))
 
 
+# 构建 e2e model/postprocess，逐图推理并保存 JSON 与可视化
 def main():
     global_config = config["Global"]
 

@@ -21,6 +21,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(__dir__, "../..")))
 
 os.environ["FLAGS_allocator_strategy"] = "auto_growth"
 
+# 超分辨率推理：低分辨率文本图像放大，输出 sr/lr 对比可视化
 import cv2
 import numpy as np
 import math
@@ -36,6 +37,7 @@ from ppocr.utils.utility import get_image_file_list, check_and_read
 logger = get_logger()
 
 
+# 文本超分辨率：加载 sr 模型，对低清文本条带做放大重建
 class TextSR(object):
     def __init__(self, args):
         if os.path.exists(f"{args.sr_model_dir}/inference.yml"):
@@ -83,6 +85,7 @@ class TextSR(object):
         img_numpy = img_numpy.transpose((2, 0, 1)) / 255
         return img_numpy
 
+    # 分批 resize 归一化后推理，返回 sr_img 与 lr_img 张量列表
     def __call__(self, img_list):
         img_num = len(img_list)
         batch_num = self.sr_batch_num
@@ -120,6 +123,7 @@ class TextSR(object):
         return all_result, time.time() - st
 
 
+# CLI：遍历 image_dir 执行超分并保存 infer_result/sr_*.jpg
 def main(args):
     image_file_list = get_image_file_list(args.image_dir)
     text_recognizer = TextSR(args)

@@ -16,6 +16,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+# 文本检测评测入口：加载模型在验证集/单图上输出检测框 JSON
 import numpy as np
 
 import os
@@ -39,6 +40,7 @@ from ppocr.utils.utility import get_image_file_list
 import tools.program as program
 
 
+# 在图像上绘制检测多边形并保存可视化结果
 def draw_det_res(dt_boxes, config, img, img_name, save_path):
     import cv2
 
@@ -54,6 +56,7 @@ def draw_det_res(dt_boxes, config, img, img_name, save_path):
 
 
 @paddle.no_grad()
+# 构建 det model/postprocess，逐图推理并写入 tab 分隔 JSON 结果
 def main():
     global_config = config["Global"]
 

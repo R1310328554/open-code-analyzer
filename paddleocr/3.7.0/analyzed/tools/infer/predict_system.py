@@ -21,6 +21,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(__dir__, "../..")))
 
 os.environ["FLAGS_allocator_strategy"] = "auto_growth"
 
+# PP-OCR 端到端系统：检测→（可选）方向分类→识别，支持大图分片
 import cv2
 import copy
 import numpy as np
@@ -45,6 +46,7 @@ from tools.infer.utility import (
 logger = get_logger()
 
 
+# OCR 全流程编排：TextDetector + TextRecognizer + 可选 TextClassifier
 class TextSystem(object):
     def __init__(self, args):
         if not args.show_log:
@@ -73,6 +75,7 @@ class TextSystem(object):
             logger.debug(f"{bno}, {rec_res[bno]}")
         self.crop_image_res_index += bbox_num
 
+    # 串联 det/cls/rec，可选 slice 滑动窗口检测与框合并
     def __call__(self, img, cls=True, slice={}):
         time_dict = {"det": 0, "rec": 0, "cls": 0, "all": 0}
 
@@ -157,6 +160,7 @@ class TextSystem(object):
         return filter_boxes, filter_rec_res, time_dict
 
 
+# 检测框按从上到下、从左到右排序，同行微调交换
 def sorted_boxes(dt_boxes):
     """
     Sort text boxes in order from top to bottom, left to right
@@ -182,6 +186,7 @@ def sorted_boxes(dt_boxes):
     return _boxes
 
 
+# CLI：批量 OCR 推理，绘制可视化并保存 json 结果
 def main(args):
     image_file_list = get_image_file_list(args.image_dir)
     image_file_list = image_file_list[args.process_id :: args.total_process_num]

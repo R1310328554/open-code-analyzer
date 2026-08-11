@@ -16,6 +16,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+# PaddleOCR 训练/评测主程序：配置解析、train/eval 循环与 checkpoint 管理
 import os
 import gc
 import sys
@@ -41,6 +42,7 @@ from ppocr.data import build_dataloader
 from ppocr.utils.export_model import export
 
 
+    # 扩展 ArgumentParser：-c 配置文件、-o 覆盖项与 profiler 选项
 class ArgsParser(ArgumentParser):
     def __init__(self):
         super(ArgsParser, self).__init__(formatter_class=RawDescriptionHelpFormatter)
@@ -72,6 +74,7 @@ class ArgsParser(ArgumentParser):
         return config
 
 
+# 从 yml/yaml 加载训练配置 dict
 def load_config(file_path):
     """
     Load config from yml/yaml file.
@@ -85,6 +88,7 @@ def load_config(file_path):
     return config
 
 
+# 将 -o 点号键值对合并进 config
 def merge_config(config, opts):
     """
     Merge config into global config.
@@ -115,6 +119,7 @@ def merge_config(config, opts):
     return config
 
 
+# 校验 use_gpu/xpu/npu/mlu/gcu 等与 Paddle 编译能力匹配
 def check_device(
     use_gpu,
     use_xpu=False,
@@ -177,6 +182,7 @@ def check_device(
         pass
 
 
+# 递归将预测 dict/list/Tensor 转为 float32
 def to_float32(preds):
     if isinstance(preds, dict):
         for k in preds:
@@ -197,6 +203,7 @@ def to_float32(preds):
     return preds
 
 
+# 主训练循环：dataloader、AMP、分布式、metric 与定期 save_model
 def train(
     config,
     train_dataloader,
@@ -706,6 +713,7 @@ def train(
     return
 
 
+# 验证集评测：逐 batch 推理、postprocess 与 metric 累计
 def eval(
     model,
     valid_dataloader,
@@ -818,6 +826,7 @@ def eval(
     return metric
 
 
+# 识别正确样本上累加字符 embedding 均值用于 center loss
 def update_center(char_center, post_result, preds):
     result, label = post_result
     feats, logits = preds
@@ -841,6 +850,7 @@ def update_center(char_center, post_result, preds):
     return char_center
 
 
+# 遍历 eval 集统计各字符特征中心并返回 dict
 def get_center(model, eval_dataloader, post_process_class):
     pbar = tqdm(total=len(eval_dataloader), desc="get center:")
     max_iter = (
@@ -870,6 +880,7 @@ def get_center(model, eval_dataloader, post_process_class):
     return char_center
 
 
+# CLI 入口：解析 config、检查设备、创建 logger 与 dataloader 依赖
 def preprocess(is_train=False):
     FLAGS = ArgsParser().parse_args()
     profiler_options = FLAGS.profiler_options

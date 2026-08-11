@@ -16,6 +16,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+# 文本超分辨率评测：低清输入经 SR 模型放大并保存可视化
 import numpy as np
 
 import os
@@ -40,6 +41,7 @@ from ppocr.utils.utility import get_image_file_list
 import tools.program as program
 
 
+# 构建 SR model/postprocess，逐图推理并保存 sr_*.jpg
 def main():
     global_config = config["Global"]
 

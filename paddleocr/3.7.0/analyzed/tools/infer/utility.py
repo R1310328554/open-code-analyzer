@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 推理通用工具：CLI 参数、Predictor 创建、可视化与图像裁剪辅助
 import argparse
 import os
 import sys
@@ -27,14 +28,17 @@ import yaml
 from ppocr.utils.logging import get_logger
 
 
+# 将命令行布尔字符串解析为 Python bool
 def str2bool(v):
     return v.lower() in ("true", "yes", "t", "y", "1")
 
 
+# 逗号分隔整数字符串转 tuple
 def str2int_tuple(v):
     return tuple([int(i.strip()) for i in v.split(",")])
 
 
+# 定义 det/rec/cls/e2e/sr 等推理引擎全部 CLI 参数
 def init_args():
     parser = argparse.ArgumentParser()
     # params for prediction engine
@@ -169,11 +173,13 @@ def init_args():
     return parser
 
 
+# 解析命令行并返回 args 命名空间
 def parse_args():
     parser = init_args()
     return parser.parse_args()
 
 
+# 按 mode 加载 inference 模型，配置 GPU/TRT/MKLDNN/ONNX 并返回 Predictor
 def create_predictor(args, mode, logger):
     if mode == "det":
         model_dir = args.det_model_dir
@@ -438,6 +444,7 @@ def create_predictor(args, mode, logger):
         return predictor, input_tensor, output_tensors, config
 
 
+# TensorRT 子图转换：设置 workspace、精度与 dynamic shape
 def _convert_trt(
     trt_cfg_setting,
     pp_model_file,
@@ -517,6 +524,7 @@ def _convert_trt(
     convert(pp_model_path, trt_config)
 
 
+# Paddle dtype 枚举转 numpy dtype
 def _pd_dtype_to_np_dtype(pd_dtype):
     if pd_dtype == inference.DataType.FLOAT64:
         return np.float64
@@ -534,6 +542,7 @@ def _pd_dtype_to_np_dtype(pd_dtype):
         raise TypeError(f"Unsupported data type: {pd_dtype}")
 
 
+# 从 inference.yml 加载模型部署配置
 def load_config(file_path):
     _, ext = os.path.splitext(file_path)
     if ext not in [".yml", ".yaml"]:
@@ -543,6 +552,7 @@ def load_config(file_path):
     return config
 
 
+# 获取 Predictor 输出 Tensor 句柄列表
 def get_output_tensors(args, mode, predictor):
     output_names = predictor.get_output_names()
     output_tensors = []
@@ -561,6 +571,7 @@ def get_output_tensors(args, mode, predictor):
     return output_tensors
 
 
+# 读取 CUDA_VISIBLE_DEVICES 首个 GPU id
 def get_infer_gpuid():
     """
     Get the GPU ID to be used for inference.
@@ -581,6 +592,7 @@ def get_infer_gpuid():
     return int(gpu_ids[0])
 
 
+# 在图像上绘制端到端检测框与识别文本
 def draw_e2e_res(dt_boxes, strs, img_path):
     src_im = cv2.imread(img_path)
     for box, str in zip(dt_boxes, strs):
@@ -598,6 +610,7 @@ def draw_e2e_res(dt_boxes, strs, img_path):
     return src_im
 
 
+# 仅绘制文本检测多边形框
 def draw_text_det_res(dt_boxes, img):
     for box in dt_boxes:
         box = np.array(box).astype(np.int32).reshape(-1, 2)
@@ -605,6 +618,7 @@ def draw_text_det_res(dt_boxes, img):
     return img
 
 
+# 等比缩放图像使短边为 input_size
 def resize_img(img, input_size=600):
     """
     resize img and limit the longest side of the image to input_size
@@ -617,6 +631,7 @@ def resize_img(img, input_size=600):
     return img
 
 
+# 在原图上绘制 OCR 框、置信度与识别文本
 def draw_ocr(
     image,
     boxes,
@@ -660,6 +675,7 @@ def draw_ocr(
     return image
 
 
+# 绘制检测框并在右侧白底区域排列识别文本
 def draw_ocr_box_txt(
     image,
     boxes,
@@ -692,6 +708,7 @@ def draw_ocr_box_txt(
     return np.array(img_show)
 
 
+# 在指定 box 内精细绘制带背景条的文字
 def draw_box_txt_fine(img_size, box, txt, font_path="./doc/fonts/simfang.ttf"):
     box_height = int(
         math.sqrt((box[0][0] - box[3][0]) ** 2 + (box[0][1] - box[3][1]) ** 2)
@@ -732,6 +749,7 @@ def draw_box_txt_fine(img_size, box, txt, font_path="./doc/fonts/simfang.ttf"):
     return img_right_text
 
 
+# 按文本长度自适应字号创建 PIL 字体
 def create_font(txt, sz, font_path="./doc/fonts/simfang.ttf"):
     font_size = int(sz[1] * 0.99)
     font = ImageFont.truetype(font_path, font_size, encoding="utf-8")
@@ -746,6 +764,7 @@ def create_font(txt, sz, font_path="./doc/fonts/simfang.ttf"):
     return font
 
 
+# 统计字符串中英文字符与 CJK 字符数量
 def str_count(s):
     """
     Count the number of Chinese characters,
@@ -771,6 +790,7 @@ def str_count(s):
     return s_len - math.ceil(en_dg_count / 2)
 
 
+# 将 OCR 结果渲染为表格化 HTML 可视化
 def text_visual(
     texts, scores, img_h=400, img_w=600, threshold=0.0, font_path="./doc/simfang.ttf"
 ):
@@ -845,6 +865,7 @@ def text_visual(
     return np.array(blank_img)
 
 
+# Base64 字符串解码为 OpenCV BGR 图像
 def base64_to_cv2(b64str):
     import base64
 
@@ -854,6 +875,7 @@ def base64_to_cv2(b64str):
     return data
 
 
+# 绘制矩形框并按 drop_score 过滤低分框
 def draw_boxes(image, boxes, scores=None, drop_score=0.5):
     if scores is None:
         scores = [1] * len(boxes)
@@ -865,6 +887,7 @@ def draw_boxes(image, boxes, scores=None, drop_score=0.5):
     return image
 
 
+# 按四边形透视变换裁剪并校正文本行图像
 def get_rotate_crop_image(img, points):
     """
     img_height, img_width = img.shape[0:2]
@@ -909,6 +932,7 @@ def get_rotate_crop_image(img, points):
     return dst_img
 
 
+# 最小外接矩形裁剪文本区域
 def get_minarea_rect_crop(img, points):
     bounding_box = cv2.minAreaRect(np.array(points).astype(np.int32))
     points = sorted(list(cv2.boxPoints(bounding_box)), key=lambda x: x[0])
@@ -932,6 +956,7 @@ def get_minarea_rect_crop(img, points):
     return crop_img
 
 
+# 大图滑动窗口生成器，yield 切片与偏移量
 def slice_generator(image, horizontal_stride, vertical_stride, maximum_slices=500):
     if not isinstance(image, np.ndarray):
         image = np.array(image)
@@ -972,6 +997,7 @@ def slice_generator(image, horizontal_stride, vertical_stride, maximum_slices=50
             yield (horizontal_slice, v_start, h_start)
 
 
+# 计算检测框宽高
 def calculate_box_extents(box):
     min_x = box[0][0]
     max_x = box[1][0]
@@ -980,6 +1006,7 @@ def calculate_box_extents(box):
     return min_x, max_x, min_y, max_y
 
 
+# 邻近框合并为外接四边形
 def merge_boxes(box1, box2, x_threshold, y_threshold):
     min_x1, max_x1, min_y1, max_y1 = calculate_box_extents(box1)
     min_x2, max_x2, min_y2, max_y2 = calculate_box_extents(box2)
@@ -1003,6 +1030,7 @@ def merge_boxes(box1, box2, x_threshold, y_threshold):
         return None
 
 
+# 分片检测后按距离阈值合并碎片化框
 def merge_fragmented(boxes, x_threshold=10, y_threshold=10):
     merged_boxes = []
     visited = set()
@@ -1030,6 +1058,7 @@ def merge_fragmented(boxes, x_threshold=10, y_threshold=10):
         return merge_fragmented(merged_boxes, x_threshold, y_threshold)
 
 
+# 校验 Paddle 是否编译 CUDA，未编译且 use_gpu 时退出
 def check_gpu(use_gpu):
     if use_gpu and (
         not paddle.is_compiled_with_cuda() or paddle.device.get_device() == "cpu"
