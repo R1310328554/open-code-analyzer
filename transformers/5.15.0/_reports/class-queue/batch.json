@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T01:20:48Z",
   "files": [
-    "src/transformers/models/glm4v/modular_glm4v.py",
-    "src/transformers/models/glm4v/processing_glm4v.py",
-    "src/transformers/models/glm4v/video_processing_glm4v.py",
-    "src/transformers/models/glm4v_moe/__init__.py",
-    "src/transformers/models/glm4v_moe/configuration_glm4v_moe.py",
-    "src/transformers/models/glm4v_moe/modeling_glm4v_moe.py",
-    "src/transformers/models/glm4v_moe/modular_glm4v_moe.py",
-    "src/transformers/models/glm_image/__init__.py",
-    "src/transformers/models/glm_image/configuration_glm_image.py",
-    "src/transformers/models/glm_image/image_processing_glm_image.py",
-    "src/transformers/models/glm_image/image_processing_pil_glm_image.py",
-    "src/transformers/models/glm_image/modeling_glm_image.py",
-    "src/transformers/models/glm_image/modular_glm_image.py",
-    "src/transformers/models/glm_image/processing_glm_image.py",
-    "src/transformers/models/glm_moe_dsa/__init__.py",
     "src/transformers/models/glm_moe_dsa/configuration_glm_moe_dsa.py",
     "src/transformers/models/glm_moe_dsa/modeling_glm_moe_dsa.py",
     "src/transformers/models/glm_moe_dsa/modular_glm_moe_dsa.py",
@@ -33,5 +18,5 @@
     "src/transformers/models/glmga/image_processing_glmga.py"
   ],
   "remaining_pending": 1749,
-  "done": 900
+  "done": 915
 }
