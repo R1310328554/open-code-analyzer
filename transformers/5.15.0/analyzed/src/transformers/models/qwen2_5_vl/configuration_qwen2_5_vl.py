@@ -28,10 +28,14 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...modeling_rope_utils import RopeParameters
-from ...utils import auto_docstring
+from ...utils import
+
+# Qwen2.5-VL 配置：视觉 ViT + 文本 MRoPE 解码器
+ auto_docstring
 
 
 @auto_docstring(checkpoint="Qwen/Qwen2-VL-7B-Instruct")
+# Qwen2_5_VLVisionConfig：视觉编码器配置：patch 大小、窗口与 MRoPE
 @strict
 class Qwen2_5_VLVisionConfig(PreTrainedConfig):
     r"""
@@ -65,6 +69,7 @@ class Qwen2_5_VLVisionConfig(PreTrainedConfig):
 
 
 @auto_docstring(checkpoint="Qwen/Qwen2-VL-7B-Instruct")
+# Qwen2_5_VLTextConfig：文本解码器配置：隐藏维度与 RoPE 参数
 @strict
 class Qwen2_5_VLTextConfig(PreTrainedConfig):
     r"""
@@ -124,6 +129,7 @@ class Qwen2_5_VLTextConfig(PreTrainedConfig):
     eos_token_id: int | list[int] | None = 151645
     pad_token_id: int | None = None
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         self.sliding_window = self.sliding_window if self.use_sliding_window else None
 
@@ -155,6 +161,7 @@ class Qwen2_5_VLTextConfig(PreTrainedConfig):
 
 
 @auto_docstring(checkpoint="Qwen/Qwen2-VL-7B-Instruct")
+# Qwen2_5_VLConfig：Qwen2.5-VL 顶层配置：视觉 + 文本子配置聚合
 @strict
 class Qwen2_5_VLConfig(PreTrainedConfig):
     r"""
@@ -185,6 +192,7 @@ class Qwen2_5_VLConfig(PreTrainedConfig):
     vision_end_token_id: int = 151653
     tie_word_embeddings: bool = False
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         if isinstance(self.vision_config, dict):
             self.vision_config = self.sub_configs["vision_config"](**self.vision_config)

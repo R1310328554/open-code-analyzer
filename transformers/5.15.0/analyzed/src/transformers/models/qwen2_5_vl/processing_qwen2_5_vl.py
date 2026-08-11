@@ -24,9 +24,11 @@
 # limitations under the License.
 from ...processing_utils import MultiModalData, ProcessingKwargs, ProcessorMixin
 from ...utils import auto_docstring
+# Qwen2.5-VL 处理器：图像/视频与文本联合 tokenization
 from ...video_utils import VideoInput
 
 
+# Qwen2_5_VLProcessorKwargs：VL 处理器关键字：返回多模态 token 类型 id
 class Qwen2_5_VLProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -37,10 +39,12 @@ class Qwen2_5_VLProcessorKwargs(ProcessingKwargs, total=False):
     }
 
 
+# Qwen2_5_VLProcessor：VL 处理器：视觉占位符与 chat 模板对齐
 @auto_docstring
 class Qwen2_5_VLProcessor(ProcessorMixin):
     valid_processor_kwargs = Qwen2_5_VLProcessorKwargs
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, image_processor=None, tokenizer=None, video_processor=None, chat_template=None, **kwargs):
         self.image_token = "<|image_pad|>" if not hasattr(tokenizer, "image_token") else tokenizer.image_token
         self.video_token = "<|video_pad|>" if not hasattr(tokenizer, "video_token") else tokenizer.video_token

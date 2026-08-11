@@ -14,6 +14,9 @@
 # limitations under the License.
 """PyTorch Qwen2.5Omni model (Audio, Image, Video)."""
 
+# Qwen2.5-Omni 模块化定义：复用 Qwen2.5-VL 并扩展音频与语音合成
+
+
 import math
 import warnings
 from collections.abc import Callable
@@ -171,6 +174,8 @@ def get_pool_indices(feature_lens: torch.Tensor, kwargs: dict | None = None) -> 
 
 
 @auto_docstring(checkpoint="Qwen/Qwen2.5-Omni-7B")
+# Qwen2_5OmniVisionEncoderConfig：视觉编码器配置：窗口注意力与 patch 合并参数
+# Qwen2_5OmniVisionEncoder：继承 Qwen2.5-VL 视觉 Transformer
 @strict
 class Qwen2_5OmniVisionEncoderConfig(Qwen2_5_VLVisionConfig):
     r"""
@@ -202,6 +207,8 @@ class Qwen2_5OmniVisionEncoderConfig(Qwen2_5_VLVisionConfig):
 
 
 @auto_docstring(checkpoint="Qwen/Qwen2.5-Omni-7B")
+# Qwen2_5OmniAudioEncoderConfig：音频编码器配置：Mel 频谱维度与层数
+# Qwen2_5OmniAudioEncoder：音频编码器：Mel 频谱卷积 + Transformer 堆叠
 @strict
 class Qwen2_5OmniAudioEncoderConfig(Qwen2AudioEncoderConfig):
     r"""
@@ -235,6 +242,7 @@ class Qwen2_5OmniAudioEncoderConfig(Qwen2AudioEncoderConfig):
 
 
 @auto_docstring(checkpoint="Qwen/Qwen2.5-Omni-7B")
+# Qwen2_5OmniTextConfig：文本解码器配置：隐藏维度、RoPE 与 MRoPE 段
 @strict
 class Qwen2_5OmniTextConfig(PreTrainedConfig):
     r"""
@@ -302,6 +310,7 @@ class Qwen2_5OmniTextConfig(PreTrainedConfig):
     eos_token_id: int | list[int] | None = None
     tie_word_embeddings: bool = True
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         self.sliding_window = self.sliding_window if self.use_sliding_window else None
         if self.num_key_value_heads is None:
@@ -319,6 +328,7 @@ class Qwen2_5OmniTextConfig(PreTrainedConfig):
 
 
 @auto_docstring(checkpoint="Qwen/Qwen2.5-Omni-7B")
+# Qwen2_5OmniThinkerConfig：Thinker 子模型配置：视觉/音频/文本联合理解
 @strict
 class Qwen2_5OmniThinkerConfig(PreTrainedConfig):
     r"""
@@ -383,6 +393,7 @@ class Qwen2_5OmniThinkerConfig(PreTrainedConfig):
     initializer_range: float = 0.02
     tie_word_embeddings: bool = False
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         if isinstance(self.vision_config, dict):
             self.vision_config = Qwen2_5OmniVisionEncoderConfig(**self.vision_config)
@@ -403,6 +414,7 @@ class Qwen2_5OmniThinkerConfig(PreTrainedConfig):
 
 
 @auto_docstring(checkpoint="Qwen/Qwen2.5-Omni-7B")
+# Qwen2_5OmniTalkerConfig：Talker 子模型配置：语音 token 生成与 codec 维度
 @strict
 class Qwen2_5OmniTalkerConfig(PreTrainedConfig):
     r"""
@@ -498,6 +510,7 @@ class Qwen2_5OmniTalkerConfig(PreTrainedConfig):
     layer_types: list[str] | None = None
     pad_token_id: int | None = None
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         self.sliding_window = self.sliding_window if self.use_sliding_window else None
 
@@ -516,6 +529,7 @@ class Qwen2_5OmniTalkerConfig(PreTrainedConfig):
 
 
 @auto_docstring(checkpoint="Qwen/Qwen2.5-Omni-7B")
+# Qwen2_5OmniDiTConfig：DiT 扩散解码器配置：时间步嵌入与层数
 @strict
 class Qwen2_5OmniDiTConfig(PreTrainedConfig):
     r"""
@@ -581,6 +595,7 @@ class Qwen2_5OmniDiTConfig(PreTrainedConfig):
 
 
 @auto_docstring(checkpoint="Qwen/Qwen2.5-Omni-7B")
+# Qwen2_5OmniBigVGANConfig：BigVGAN 声码器配置：上采样率与通道数
 @strict
 class Qwen2_5OmniBigVGANConfig(PreTrainedConfig):
     r"""
@@ -609,6 +624,7 @@ class Qwen2_5OmniBigVGANConfig(PreTrainedConfig):
 
 
 @auto_docstring(checkpoint="Qwen/Qwen2.5-Omni-7B")
+# Qwen2_5OmniToken2WavConfig：Token2Wav 配置：DiT + BigVGAN 联合波形合成
 @strict
 class Qwen2_5OmniToken2WavConfig(PreTrainedConfig):
     r"""
@@ -656,6 +672,7 @@ class Qwen2_5OmniToken2WavConfig(PreTrainedConfig):
     dit_config: dict | PreTrainedConfig | None = None
     bigvgan_config: dict | PreTrainedConfig | None = None
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         if self.dit_config is None:
             self.dit_config = Qwen2_5OmniDiTConfig()
@@ -671,6 +688,7 @@ class Qwen2_5OmniToken2WavConfig(PreTrainedConfig):
 
 
 @auto_docstring(checkpoint="Qwen/Qwen2.5-Omni-7B")
+# Qwen2_5OmniConfig：Omni 顶层配置：聚合 Thinker/Talker/Token2Wav 子配置
 @strict
 class Qwen2_5OmniConfig(PreTrainedConfig):
     r"""
@@ -725,6 +743,7 @@ class Qwen2_5OmniConfig(PreTrainedConfig):
     token2wav_config: dict | PreTrainedConfig | None = None
     enable_audio_output: bool = True
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         if self.thinker_config is None:
             self.thinker_config = Qwen2_5OmniThinkerConfig()
@@ -761,6 +780,7 @@ class Qwen2_5OmniConfig(PreTrainedConfig):
         return self.thinker_config.get_text_config(*args, **kwargs)
 
 
+# Qwen2_5OmniPreTrainedModel：Omni 预训练基类：多模态权重加载与 dtype 转换
 class Qwen2_5OmniPreTrainedModel(Qwen2_5_VLPreTrainedModel):
     config: Qwen2_5OmniConfig
     input_modalities = ("image", "video", "audio", "text")
@@ -782,6 +802,7 @@ class Qwen2_5OmniPreTrainedModel(Qwen2_5_VLPreTrainedModel):
             init.copy_(module.inv_freq, inv_freq)
 
 
+# Qwen2_5OmniPreTrainedModelForConditionalGeneration：条件生成基类：统一多模态输入预处理
 class Qwen2_5OmniPreTrainedModelForConditionalGeneration(Qwen2_5OmniPreTrainedModel):
     input_modalities = ("image", "video", "audio", "text")
 
@@ -1139,6 +1160,7 @@ class Qwen2_5OmniPreTrainedModelForConditionalGeneration(Qwen2_5OmniPreTrainedMo
 
 @auto_docstring
 @dataclass
+# Qwen2_5OmniThinkerCausalLMOutputWithPast：Thinker 输出容器：logits 与 past_key_values
 class Qwen2_5OmniThinkerCausalLMOutputWithPast(CausalLMOutputWithPast):
     r"""
     rope_deltas (`torch.LongTensor` of shape `(batch_size, )`, *optional*):
@@ -1149,9 +1171,11 @@ class Qwen2_5OmniThinkerCausalLMOutputWithPast(CausalLMOutputWithPast):
     rope_deltas: torch.LongTensor | None = None
 
 
+# Qwen2_5OmniAudioAttention：音频自注意力：支持变长序列与 Flash Attention
 class Qwen2_5OmniAudioAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         config: Qwen2_5OmniAudioEncoderConfig,
@@ -1179,6 +1203,7 @@ class Qwen2_5OmniAudioAttention(nn.Module):
         self.q_proj = nn.Linear(self.embed_dim, self.embed_dim, bias=True)
         self.out_proj = nn.Linear(self.embed_dim, self.embed_dim, bias=True)
 
+    # forward：前向计算主逻辑
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -1248,11 +1273,14 @@ class Qwen2_5OmniAudioAttention(nn.Module):
         return attn_output
 
 
+# Qwen2_5OmniAudioEncoderLayer：继承 Qwen2Audio 编码层并适配 Omni 维度
 class Qwen2_5OmniAudioEncoderLayer(Qwen2AudioEncoderLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen2_5OmniAudioEncoderConfig):
         super().__init__(config)
         self.self_attn = Qwen2_5OmniAudioAttention(config)
 
+    # forward：前向计算主逻辑
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -1283,7 +1311,9 @@ class Qwen2_5OmniAudioEncoderLayer(Qwen2AudioEncoderLayer):
         return outputs
 
 
+# SinusoidsPositionEmbedding：正弦位置嵌入：Whisper 风格绝对位置编码
 class SinusoidsPositionEmbedding(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, length, channels, max_timescale=10000):
         super().__init__()
         self.length = length
@@ -1300,6 +1330,7 @@ class SinusoidsPositionEmbedding(nn.Module):
         scaled_time = torch.arange(self.length)[:, np.newaxis] * inv_timescales[np.newaxis, :]
         return torch.cat([torch.sin(scaled_time), torch.cos(scaled_time)], dim=1)
 
+    # forward：前向计算主逻辑
     def forward(self, seqlen: int):
         return self.positional_embedding[:seqlen, :]
 
@@ -1321,6 +1352,7 @@ class Qwen2_5OmniAudioEncoder(Qwen2_5OmniPreTrainedModel):
         "attentions": Qwen2_5OmniAudioAttention,
     }
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen2_5OmniAudioEncoderConfig):
         super().__init__(config)
         self.dropout = config.dropout
@@ -1356,6 +1388,7 @@ class Qwen2_5OmniAudioEncoder(Qwen2_5OmniPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs(tie_last_hidden_states=False)
     @auto_docstring
+    # forward：前向计算主逻辑
     def forward(
         self, input_features=None, feature_lens=None, aftercnn_lens=None, **kwargs: Unpack[TransformersKwargs]
     ):
@@ -1466,7 +1499,9 @@ def apply_rotary_pos_emb_vision(tensor: torch.Tensor, freqs: torch.Tensor) -> to
     return output
 
 
+# Qwen2_5OmniVisionAttention：视觉自注意力：窗口/全局注意力切换
 class Qwen2_5OmniVisionAttention(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen2_5OmniVisionEncoderConfig = None) -> None:
         super().__init__()
         self.dim = config.hidden_size
@@ -1483,6 +1518,7 @@ class Qwen2_5OmniVisionAttention(nn.Module):
         self.is_causal = False
 
     @deprecate_kwarg("rotary_pos_emb", version="v5.20", new_name="position_embeddings")
+    # forward：前向计算主逻辑
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -1553,12 +1589,15 @@ class Qwen2_5OmniVisionAttention(nn.Module):
         return attn_output
 
 
+# Qwen2_5OmniVisionBlock：继承 Qwen2.5-VL 视觉块
 class Qwen2_5OmniVisionBlock(Qwen2_5_VLVisionBlock):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen2_5OmniVisionEncoderConfig) -> None:
         super().__init__(config, config._attn_implementation)
         self.attn = Qwen2_5OmniVisionAttention(config=config)
 
     @deprecate_kwarg("rotary_pos_emb", version="v5.20", new_name="position_embeddings")
+    # forward：前向计算主逻辑
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -1576,6 +1615,7 @@ class Qwen2_5OmniVisionBlock(Qwen2_5_VLVisionBlock):
         return hidden_states
 
 
+# Qwen2_5_VisionRotaryEmbedding：2D 视觉 RoPE：按高宽网格编码位置
 class Qwen2_5_VisionRotaryEmbedding(Qwen2_5_VisionRotaryEmbedding):
     pass
 
@@ -1590,12 +1630,14 @@ class Qwen2_5OmniVisionEncoder(Qwen2_5_VisionTransformerPretrainedModel):
         "attentions": Qwen2_5OmniVisionAttention,
     }
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen2_5OmniVisionEncoderConfig, *inputs, **kwargs) -> None:
         super().__init__(config, *inputs, **kwargs)
         self.blocks = nn.ModuleList([Qwen2_5OmniVisionBlock(config) for _ in range(config.depth)])
 
     @merge_with_config_defaults
     @capture_outputs
+    # forward：前向计算主逻辑
     def forward(
         self, hidden_states: torch.Tensor, grid_thw: torch.Tensor, **kwargs: Unpack[TransformersKwargs]
     ) -> tuple | BaseModelOutputWithPooling:
@@ -1661,13 +1703,16 @@ class Qwen2_5OmniVisionEncoder(Qwen2_5_VisionTransformerPretrainedModel):
         )
 
 
+# Qwen2_5OmniRotaryEmbedding：继承 Qwen2VL MRoPE 实现
 class Qwen2_5OmniRotaryEmbedding(Qwen2VLRotaryEmbedding):
     pass
 
 
 # It's same as `Qwen2_5_VLAttention`, but talker model's hidden_size isn't divisible by num_heads.
 # Removes the value error as a workaround.
+# Qwen2_5OmniAttention：继承 Qwen2.5-VL 注意力并扩展 Omni 逻辑
 class Qwen2_5OmniAttention(Qwen2_5_VLAttention):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen2_5OmniConfig, layer_idx: int | None = None):
         nn.Module.__init__(self)
         self.config = config
@@ -1697,14 +1742,17 @@ class Qwen2_5OmniAttention(Qwen2_5_VLAttention):
         self.sliding_window = config.sliding_window if self.layer_type == "sliding_attention" else None
 
 
+# Qwen2MLP：继承 Qwen2.5-VL MLP
 class Qwen2MLP(Qwen2_5_VLMLP):
     pass
 
 
+# Qwen2_5OmniThinkerTextModel：继承 Qwen2.5-VL 文本模型
 class Qwen2_5OmniThinkerTextModel(Qwen2_5_VLTextModel):
     config: Qwen2_5OmniTextConfig
     _no_split_modules = ["Qwen2_5OmniDecoderLayer"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen2_5OmniTextConfig):
         super().__init__(config)
 
@@ -1714,12 +1762,14 @@ class Qwen2_5OmniThinkerTextModel(Qwen2_5_VLTextModel):
     The Qwen2.5OmniThinker model which consists of an audio backbone and a language model.
     """
 )
+# Qwen2_5OmniThinkerForConditionalGeneration：Thinker 条件生成：理解图像/音频/视频并输出文本
 class Qwen2_5OmniThinkerForConditionalGeneration(Qwen2_5OmniPreTrainedModelForConditionalGeneration, GenerationMixin):
     config: Qwen2_5OmniThinkerConfig
     base_model_prefix = "thinker"
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _no_split_modules = ["Qwen2_5OmniAudioEncoder", "Qwen2_5OmniVisionEncoder"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen2_5OmniThinkerConfig):
         super().__init__(config)
         self.audio_tower = Qwen2_5OmniAudioEncoder._from_config(config.audio_config)
@@ -1861,6 +1911,7 @@ class Qwen2_5OmniThinkerForConditionalGeneration(Qwen2_5OmniPreTrainedModelForCo
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向计算主逻辑
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -2029,6 +2080,7 @@ class Qwen2_5OmniThinkerForConditionalGeneration(Qwen2_5OmniPreTrainedModelForCo
 
 @auto_docstring
 @dataclass
+# Qwen2_5OmniTalkerCausalLMOutputWithPast：Talker 输出容器：语音 token logits
 class Qwen2_5OmniTalkerCausalLMOutputWithPast(CausalLMOutputWithPast):
     r"""
     rope_deltas (`torch.LongTensor` of shape `(batch_size, )`, *optional*):
@@ -2044,22 +2096,26 @@ class Qwen2_5OmniTalkerCausalLMOutputWithPast(CausalLMOutputWithPast):
     thinker_reply_part: torch.FloatTensor | None = None
 
 
+# Qwen2_5OmniTalkerModel：Talker 文本模型：基于 VL 文本堆叠
 class Qwen2_5OmniTalkerModel(Qwen2_5_VLTextModel):
     config: Qwen2_5OmniTalkerConfig
     input_modalities = ("image", "video", "audio", "text")
 
     _no_split_modules = ["Qwen2_5OmniDecoderLayer"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen2_5OmniTalkerConfig):
         super().__init__(config)
         self.embed_tokens = nn.Embedding(config.vocab_size, config.embedding_size, self.padding_idx)
 
 
+# Qwen2_5OmniTalkerForConditionalGeneration：Talker 条件生成：文本转离散语音 token
 class Qwen2_5OmniTalkerForConditionalGeneration(Qwen2_5OmniPreTrainedModelForConditionalGeneration, GenerationMixin):
     config: Qwen2_5OmniTalkerConfig
     base_model_prefix = "talker"
     output_modalities = ("audio",)
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen2_5OmniTalkerConfig):
         super().__init__(config)
 
@@ -2091,6 +2147,7 @@ class Qwen2_5OmniTalkerForConditionalGeneration(Qwen2_5OmniPreTrainedModelForCon
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向计算主逻辑
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -2247,6 +2304,7 @@ class Qwen2_5OmniTalkerForConditionalGeneration(Qwen2_5OmniPreTrainedModelForCon
 ############################
 
 
+# Qwen2_5OmniDiTRotaryEmbedding：继承 Llama RoPE 用于 DiT
 class Qwen2_5OmniDiTRotaryEmbedding(LlamaRotaryEmbedding):
     pass
 
@@ -2258,7 +2316,9 @@ def deinterleave_head_dim(x: torch.Tensor) -> torch.Tensor:
     return torch.cat((x[..., 0::2], x[..., 1::2]), dim=-1)
 
 
+# TimeDelayNetBlock：时延网络块：一维卷积捕获局部时序
 class TimeDelayNetBlock(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         in_channels,
@@ -2277,11 +2337,14 @@ class TimeDelayNetBlock(nn.Module):
         )
         self.activation = nn.ReLU()
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states: torch.Tensor):
         return self.activation(self.conv(hidden_states))
 
 
+# Res2NetBlock：Res2Net 多尺度卷积块
 class Res2NetBlock(torch.nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, in_channels, out_channels, scale=8, kernel_size=3, dilation=1):
         super().__init__()
 
@@ -2301,6 +2364,7 @@ class Res2NetBlock(torch.nn.Module):
         )
         self.scale = scale
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states):
         outputs = []
         for i, hidden_part in enumerate(torch.chunk(hidden_states, self.scale, dim=1)):
@@ -2315,7 +2379,9 @@ class Res2NetBlock(torch.nn.Module):
         return output
 
 
+# SqueezeExcitationBlock：SE 通道注意力：全局池化后重标定
 class SqueezeExcitationBlock(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, in_channels, se_channels, out_channels):
         super().__init__()
 
@@ -2336,6 +2402,7 @@ class SqueezeExcitationBlock(nn.Module):
         )
         self.sigmoid = nn.Sigmoid()
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states):
         hidden_states_mean = hidden_states.mean(dim=2, keepdim=True)
 
@@ -2345,11 +2412,13 @@ class SqueezeExcitationBlock(nn.Module):
         return hidden_states * hidden_states_mean
 
 
+# AttentiveStatisticsPooling：注意力统计池化：聚合帧级说话人特征
 class AttentiveStatisticsPooling(nn.Module):
     """This class implements an attentive statistic pooling layer for each channel.
     It returns the concatenated mean and std of the input tensor.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, channels, attention_channels=128):
         super().__init__()
 
@@ -2400,6 +2469,7 @@ class AttentiveStatisticsPooling(nn.Module):
         std = torch.sqrt((m * (x - mean.unsqueeze(dim)).pow(2)).sum(dim).clamp(self.eps))
         return mean, std
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states):
         seq_length = hidden_states.shape[-1]
         lengths = torch.ones(hidden_states.shape[0], device=hidden_states.device)
@@ -2434,11 +2504,13 @@ class AttentiveStatisticsPooling(nn.Module):
         return pooled_stats
 
 
+# SqueezeExcitationRes2NetBlock：SE + Res2Net 联合块：ECAPA 风格特征提取
 class SqueezeExcitationRes2NetBlock(nn.Module):
     """An implementation of building block in ECAPA-TDNN, i.e.,
     TDNN-Res2Net-TDNN-SqueezeExcitationBlock.
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         in_channels,
@@ -2465,6 +2537,7 @@ class SqueezeExcitationRes2NetBlock(nn.Module):
         )
         self.se_block = SqueezeExcitationBlock(out_channels, se_channels, out_channels)
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_state):
         residual = hidden_state
 
@@ -2476,12 +2549,14 @@ class SqueezeExcitationRes2NetBlock(nn.Module):
         return hidden_state + residual
 
 
+# ECAPA_TimeDelayNet：ECAPA-TDNN 说话人编码器骨干
 class ECAPA_TimeDelayNet(torch.nn.Module):
     """An implementation of the speaker embedding model in a paper.
     "ECAPA-TDNN: Emphasized Channel Attention, Propagation and Aggregation in
     TDNN Based Speaker Verification" (https://huggingface.co/papers/2005.07143).
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen2_5OmniDiTConfig):
         super().__init__()
         if len(config.enc_channels) != len(config.enc_kernel_sizes) or len(config.enc_channels) != len(
@@ -2537,6 +2612,7 @@ class ECAPA_TimeDelayNet(torch.nn.Module):
             padding_mode="reflect",
         )
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states):
         # Minimize transpose for efficiency
         hidden_states = hidden_states.transpose(1, 2)
@@ -2560,7 +2636,9 @@ class ECAPA_TimeDelayNet(torch.nn.Module):
         return hidden_states
 
 
+# DiTInputEmbedding：DiT 输入嵌入：融合 codec token 与条件
 class DiTInputEmbedding(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen2_5OmniDiTConfig):
         super().__init__()
         self.proj = nn.Linear(
@@ -2569,6 +2647,7 @@ class DiTInputEmbedding(nn.Module):
         )
         self.spk_encoder = ECAPA_TimeDelayNet(config)
 
+    # forward：前向计算主逻辑
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -2594,12 +2673,15 @@ class DiTInputEmbedding(nn.Module):
 
 
 # Transformer backbone using DiT blocks
+# DiTCodecEmbedding：Codec token 嵌入层
 class DiTCodecEmbedding(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, codec_num_embeds, codec_dim, repeats):
         super().__init__()
         self.repeats = repeats
         self.codec_embed = nn.Embedding(codec_num_embeds + 1, codec_dim)
 
+    # forward：前向计算主逻辑
     def forward(self, code, drop_code=False):
         if drop_code:
             code = torch.zeros_like(code)
@@ -2611,7 +2693,9 @@ class DiTCodecEmbedding(nn.Module):
 
 # AdaLayerNormZero
 # return with modulated x for attn input, and params for later mlp modulation
+# Qwen2_5_OmniAdaLayerNormZero：AdaLN-Zero：按时间步调制归一化参数
 class Qwen2_5_OmniAdaLayerNormZero(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, dim):
         super().__init__()
 
@@ -2620,6 +2704,7 @@ class Qwen2_5_OmniAdaLayerNormZero(nn.Module):
 
         self.norm = nn.LayerNorm(dim, elementwise_affine=False, eps=1e-6)
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states, emb=None):
         emb = self.linear(self.silu(emb))
         shift_msa, scale_msa, gate_msa, shift_mlp, scale_mlp, gate_mlp = torch.chunk(emb, 6, dim=1)
@@ -2630,7 +2715,9 @@ class Qwen2_5_OmniAdaLayerNormZero(nn.Module):
 
 # AdaLayerNormZero for final layer
 # return only with modulated x for attn input, cuz no more mlp modulation
+# Qwen2_5_OmniAdaLayerNormZero_Final：最终 AdaLN-Zero：输出层前调制
 class Qwen2_5_OmniAdaLayerNormZero_Final(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, dim):
         super().__init__()
 
@@ -2639,6 +2726,7 @@ class Qwen2_5_OmniAdaLayerNormZero_Final(nn.Module):
 
         self.norm = nn.LayerNorm(dim, elementwise_affine=False, eps=1e-6)
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states, emb):
         emb = self.linear(self.silu(emb))
         scale, shift = torch.chunk(emb, 2, dim=1)
@@ -2648,7 +2736,9 @@ class Qwen2_5_OmniAdaLayerNormZero_Final(nn.Module):
 
 
 # FeedForward
+# DiTMLP：DiT 前馈网络：GELU 激活
 class DiTMLP(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, dim, mult=4, dropout=0.0):
         super().__init__()
         inner_dim = int(dim * mult)
@@ -2662,13 +2752,16 @@ class DiTMLP(nn.Module):
             ]
         )
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states):
         for layer in self.ff:
             hidden_states = layer(hidden_states)
         return hidden_states
 
 
+# DiTAttention：DiT 自注意力：扩散 Transformer 核心
 class DiTAttention(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen2_5OmniDiTConfig):
         super().__init__()
 
@@ -2685,6 +2778,7 @@ class DiTAttention(nn.Module):
 
         self.to_out = nn.ModuleList([nn.Linear(self.inner_dim, config.hidden_size), nn.Dropout(config.dropout)])
 
+    # forward：前向计算主逻辑
     def forward(
         self,
         hidden_states,  # noised input x
@@ -2735,11 +2829,14 @@ class DiTAttention(nn.Module):
 
 
 # time step conditioning embedding
+# SinusPositionEmbedding：扩散时间步正弦嵌入
 class SinusPositionEmbedding(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, dim):
         super().__init__()
         self.dim = dim
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states, scale=1000):
         device = hidden_states.device
         half_dim = self.dim // 2
@@ -2750,12 +2847,15 @@ class SinusPositionEmbedding(nn.Module):
         return emb.type_as(hidden_states)
 
 
+# DiTTimestepEmbedding：时间步 MLP 嵌入：正弦 + 线性投影
 class DiTTimestepEmbedding(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, dim, freq_embed_dim=256):
         super().__init__()
         self.time_embed = SinusPositionEmbedding(freq_embed_dim)
         self.time_mlp = nn.ModuleList([nn.Linear(freq_embed_dim, dim), nn.SiLU(), nn.Linear(dim, dim)])
 
+    # forward：前向计算主逻辑
     def forward(self, timestep):
         time_hidden = self.time_embed(timestep)
         time_hidden = time_hidden.to(timestep.dtype)
@@ -2764,7 +2864,9 @@ class DiTTimestepEmbedding(nn.Module):
         return time_hidden
 
 
+# DiTDecoderLayer：DiT 解码层：AdaLN + 注意力 + MLP
 class DiTDecoderLayer(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen2_5OmniDiTConfig, look_ahead_block=0, look_backward_block=0):
         super().__init__()
         self.attn_norm = Qwen2_5_OmniAdaLayerNormZero(config.hidden_size)
@@ -2775,6 +2877,7 @@ class DiTDecoderLayer(nn.Module):
         self.ff_norm = nn.LayerNorm(config.hidden_size, elementwise_affine=False, eps=1e-6)
         self.ff = DiTMLP(dim=config.hidden_size, mult=config.ff_mult, dropout=config.dropout)
 
+    # forward：前向计算主逻辑
     def forward(
         self, hidden_states, timestep, position_embeddings=None, block_diff=None
     ):  # x: noised input, t: time embedding
@@ -2799,6 +2902,7 @@ class DiTDecoderLayer(nn.Module):
         return hidden_states
 
 
+# Qwen2_5OmniSnakeBeta：SnakeBeta 激活：可学习频率的正弦非线性
 class Qwen2_5OmniSnakeBeta(nn.Module):
     """
     A modified Snake function which uses separate parameters for the magnitude of the periodic components
@@ -2813,6 +2917,7 @@ class Qwen2_5OmniSnakeBeta(nn.Module):
         https://huggingface.co/papers/2006.08195
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, in_features, alpha=1.0):
         super().__init__()
         self.in_features = in_features
@@ -2823,6 +2928,7 @@ class Qwen2_5OmniSnakeBeta(nn.Module):
 
         self.no_div_by_zero = 0.000000001
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states):
         """
         Forward pass of the function.
@@ -2886,7 +2992,9 @@ def kaiser_sinc_filter1d(cutoff, half_width, kernel_size):
     return normalized_filter.view(1, 1, kernel_size)
 
 
+# Qwen2_5OmniUpSample1d：一维上采样：转置卷积扩大时间分辨率
 class Qwen2_5OmniUpSample1d(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, ratio=2, kernel_size=None):
         super().__init__()
         self.ratio = ratio
@@ -2899,6 +3007,7 @@ class Qwen2_5OmniUpSample1d(nn.Module):
         filter = kaiser_sinc_filter1d(cutoff=0.5 / ratio, half_width=0.6 / ratio, kernel_size=self.kernel_size)
         self.filter = nn.Buffer(filter, persistent=False)
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states):
         channels = hidden_states.shape[1]
 
@@ -2911,7 +3020,9 @@ class Qwen2_5OmniUpSample1d(nn.Module):
         return hidden_states
 
 
+# Qwen2_5OmniDownSample1d：一维下采样：步幅卷积压缩时间轴
 class Qwen2_5OmniDownSample1d(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, ratio=2, kernel_size=None):
         super().__init__()
         cutoff = 0.5 / ratio
@@ -2932,6 +3043,7 @@ class Qwen2_5OmniDownSample1d(nn.Module):
         filter = kaiser_sinc_filter1d(cutoff, half_width, kernel_size)
         self.filter = nn.Buffer(filter, persistent=False)
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states):
         channels = hidden_states.shape[1]
         hidden_states = F.pad(hidden_states, (self.pad_left, self.pad_right), mode="replicate")
@@ -2939,7 +3051,9 @@ class Qwen2_5OmniDownSample1d(nn.Module):
         return out
 
 
+# Qwen2_5OmniAntiAliasedActivation1d：抗混叠激活：低通滤波后 Snake 激活
 class Qwen2_5OmniAntiAliasedActivation1d(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         activation,
@@ -2955,6 +3069,7 @@ class Qwen2_5OmniAntiAliasedActivation1d(nn.Module):
         self.upsample = Qwen2_5OmniUpSample1d(up_ratio, up_kernel_size)
         self.downsample = Qwen2_5OmniDownSample1d(down_ratio, down_kernel_size)
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states):
         hidden_states = self.upsample(hidden_states)
         hidden_states = self.act(hidden_states)
@@ -2963,7 +3078,9 @@ class Qwen2_5OmniAntiAliasedActivation1d(nn.Module):
         return hidden_states
 
 
+# Qwen2_5OmniAMPBlock：BigVGAN 残差块：上/下采样 +  dilated 卷积
 class Qwen2_5OmniAMPBlock(torch.nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         channels,
@@ -3042,6 +3159,7 @@ class Qwen2_5OmniAMPBlock(torch.nn.Module):
     def _get_padding(self, kernel_size, dilation=1):
         return int((kernel_size * dilation - dilation) / 2)
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states):
         acts1, acts2 = self.activations[::2], self.activations[1::2]
         for conv1, conv2, act1, act2 in zip(self.convs1, self.convs2, acts1, acts2):
@@ -3056,41 +3174,51 @@ class Qwen2_5OmniAMPBlock(torch.nn.Module):
 
 
 # Alias for BC
+# Activation1d：抗混叠激活别名类
 class Activation1d(Qwen2_5OmniAntiAliasedActivation1d):
     """Deprecated alias for `Qwen2_5OmniAntiAliasedActivation1d`; will be removed in a future release."""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, *args, **kwargs):
         logger.warning_once("`Activation1d` is deprecated; please use `Qwen2_5OmniAntiAliasedActivation1d` instead.")
         super().__init__(*args, **kwargs)
 
 
+# UpSample1d：上采样别名类
 class UpSample1d(Qwen2_5OmniUpSample1d):
     """Deprecated alias for `Qwen2_5OmniUpSample1d`; will be removed in a future release."""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, *args, **kwargs):
         logger.warning_once("`UpSample1d` is deprecated; please use `Qwen2_5OmniUpSample1d` instead.")
         super().__init__(*args, **kwargs)
 
 
+# DownSample1d：下采样别名类
 class DownSample1d(Qwen2_5OmniDownSample1d):
     """Deprecated alias for `Qwen2_5OmniDownSample1d`; will be removed in a future release."""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, *args, **kwargs):
         logger.warning_once("`DownSample1d` is deprecated; please use `Qwen2_5OmniDownSample1d` instead.")
         super().__init__(*args, **kwargs)
 
 
+# SnakeBeta：SnakeBeta 激活别名类
 class SnakeBeta(Qwen2_5OmniSnakeBeta):
     """Deprecated alias for `Qwen2_5OmniSnakeBeta`; will be removed in a future release."""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, *args, **kwargs):
         logger.warning_once("`SnakeBeta` is deprecated; please use `Qwen2_5OmniSnakeBeta` instead.")
         super().__init__(*args, **kwargs)
 
 
+# AMPBlock：AMP 残差块别名类
 class AMPBlock(Qwen2_5OmniAMPBlock):
     """Deprecated alias for `Qwen2_5OmniAMPBlock`; will be removed in a future release."""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, *args, **kwargs):
         logger.warning_once("`AMPBlock` is deprecated; please use `Qwen2_5OmniAMPBlock` instead.")
         super().__init__(*args, **kwargs)
@@ -3101,10 +3229,12 @@ class AMPBlock(Qwen2_5OmniAMPBlock):
     The full Qwen2.5Omni Token2WavBigVGAN model. Which take mel spectrogram as input and predict waveform.
     """
 )
+# Qwen2_5OmniToken2WavBigVGANModel：BigVGAN 声码器：Mel/codec 特征转波形
 class Qwen2_5OmniToken2WavBigVGANModel(Qwen2_5OmniPreTrainedModel):
     config: Qwen2_5OmniBigVGANConfig
     input_modalities = "audio"
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen2_5OmniBigVGANConfig):
         super().__init__(config)
         self.num_residual_blocks = len(config.resblock_kernel_sizes)
@@ -3160,6 +3290,7 @@ class Qwen2_5OmniToken2WavBigVGANModel(Qwen2_5OmniPreTrainedModel):
         decibel_spectrum = self.amplitude_to_db(amplitude_spectrum, -115) - 20
         return self.normalize_spectrogram(decibel_spectrum, 1, -115)
 
+    # forward：前向计算主逻辑
     def forward(self, mel_spectrogram, **kwargs):
         processed_spectrogram = self.process_mel_spectrogram(mel_spectrogram)
         hidden_representation = self.conv_pre(processed_spectrogram)
@@ -3178,7 +3309,9 @@ class Qwen2_5OmniToken2WavBigVGANModel(Qwen2_5OmniPreTrainedModel):
         return torch.clamp(output_waveform, min=-1.0, max=1.0).squeeze().cpu()
 
 
+# RungeKutta4ODESolver：RK4 ODE 求解器：Flow Matching 采样步进
 class RungeKutta4ODESolver:
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, function, initial_value):
         self.function = function
         self.initial_value = initial_value
@@ -3239,11 +3372,13 @@ class RungeKutta4ODESolver:
     The full Qwen2.5Omni Token2WavDiT model. Which take speech tokens as input and predict mel spectrogram.
     """
 )
+# Qwen2_5OmniToken2WavDiTModel：DiT 扩散模型：codec token 转 Mel 特征
 class Qwen2_5OmniToken2WavDiTModel(Qwen2_5OmniPreTrainedModel):
     config: Qwen2_5OmniDiTConfig
     input_modalities = "audio"
     _no_split_modules = ["DiTDecoderLayer"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen2_5OmniDiTConfig):
         super().__init__(config)
         self.mel_dim = config.mel_dim
@@ -3285,6 +3420,7 @@ class Qwen2_5OmniToken2WavDiTModel(Qwen2_5OmniPreTrainedModel):
 
         return block_diff.expand(batch, self.num_attention_heads, seq_len, seq_len)
 
+    # forward：前向计算主逻辑
     def forward(
         self,
         hidden_states,
@@ -3410,12 +3546,14 @@ class Qwen2_5OmniToken2WavDiTModel(Qwen2_5OmniPreTrainedModel):
     The full Qwen2.5Omni Token2Wav model. Consists a DiT model take speech tokens as input and predict mel spectrogram and a BigVGAN vocoder take mel spectrogram as input and predict waveform.
     """
 )
+# Qwen2_5OmniToken2WavModel：Token2Wav 联合模型：DiT + BigVGAN 端到端
 class Qwen2_5OmniToken2WavModel(Qwen2_5OmniPreTrainedModel):
     config: Qwen2_5OmniToken2WavConfig
     base_model_prefix = "model"
     input_modalities = "audio"
     _no_split_modules = ["Qwen2_5OmniToken2WavDiTModel", "Qwen2_5OmniToken2WavBigVGANModel"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen2_5OmniToken2WavConfig):
         super().__init__(config)
         attn_impl = config._attn_implementation
@@ -3439,6 +3577,7 @@ class Qwen2_5OmniToken2WavModel(Qwen2_5OmniPreTrainedModel):
 
         self.post_init()
 
+    # forward：前向计算主逻辑
     def forward(
         self,
         code,
@@ -3481,6 +3620,7 @@ class Qwen2_5OmniToken2WavModel(Qwen2_5OmniPreTrainedModel):
     a DiT model take speech tokens as input and predict mel spectrogram and a BigVGAN vocoder take mel spectrogram as input and predict waveform.
     """
 )
+# Qwen2_5OmniForConditionalGeneration：Omni 顶层模型：Thinker + Talker + Token2Wav 流水线
 class Qwen2_5OmniForConditionalGeneration(Qwen2_5OmniPreTrainedModel, GenerationMixin):
     config: Qwen2_5OmniConfig
     output_modalities = ("audio", "text")
@@ -3489,6 +3629,7 @@ class Qwen2_5OmniForConditionalGeneration(Qwen2_5OmniPreTrainedModel, Generation
         "Qwen2_5OmniToken2WavModel",
     ]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__(config)
 

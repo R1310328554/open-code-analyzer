@@ -25,10 +25,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring, logging
 
 
+# Qwen2.5-Omni 配置：Thinker/Talker/Token2Wav 多子模型参数
 logger = logging.get_logger(__name__)
 
 
 @auto_docstring(checkpoint="Qwen/Qwen2.5-Omni-7B")
+# Qwen2_5OmniVisionEncoderConfig：视觉编码器配置：窗口注意力与 patch 合并参数
 @strict
 class Qwen2_5OmniVisionEncoderConfig(PreTrainedConfig):
     r"""
@@ -73,6 +75,7 @@ class Qwen2_5OmniVisionEncoderConfig(PreTrainedConfig):
 
 
 @auto_docstring(checkpoint="Qwen/Qwen2.5-Omni-7B")
+# Qwen2_5OmniAudioEncoderConfig：音频编码器配置：Mel 频谱维度与层数
 @strict
 class Qwen2_5OmniAudioEncoderConfig(PreTrainedConfig):
     r"""
@@ -124,6 +127,7 @@ class Qwen2_5OmniAudioEncoderConfig(PreTrainedConfig):
 
 
 @auto_docstring(checkpoint="Qwen/Qwen2.5-Omni-7B")
+# Qwen2_5OmniTextConfig：文本解码器配置：隐藏维度、RoPE 与 MRoPE 段
 @strict
 class Qwen2_5OmniTextConfig(PreTrainedConfig):
     r"""
@@ -191,6 +195,7 @@ class Qwen2_5OmniTextConfig(PreTrainedConfig):
     eos_token_id: int | list[int] | None = None
     tie_word_embeddings: bool = True
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         self.sliding_window = self.sliding_window if self.use_sliding_window else None
         if self.num_key_value_heads is None:
@@ -208,6 +213,7 @@ class Qwen2_5OmniTextConfig(PreTrainedConfig):
 
 
 @auto_docstring(checkpoint="Qwen/Qwen2.5-Omni-7B")
+# Qwen2_5OmniThinkerConfig：Thinker 子模型配置：视觉/音频/文本联合理解
 @strict
 class Qwen2_5OmniThinkerConfig(PreTrainedConfig):
     r"""
@@ -272,6 +278,7 @@ class Qwen2_5OmniThinkerConfig(PreTrainedConfig):
     initializer_range: float = 0.02
     tie_word_embeddings: bool = False
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         if isinstance(self.vision_config, dict):
             self.vision_config = Qwen2_5OmniVisionEncoderConfig(**self.vision_config)
@@ -292,6 +299,7 @@ class Qwen2_5OmniThinkerConfig(PreTrainedConfig):
 
 
 @auto_docstring(checkpoint="Qwen/Qwen2.5-Omni-7B")
+# Qwen2_5OmniTalkerConfig：Talker 子模型配置：语音 token 生成与 codec 维度
 @strict
 class Qwen2_5OmniTalkerConfig(PreTrainedConfig):
     r"""
@@ -387,6 +395,7 @@ class Qwen2_5OmniTalkerConfig(PreTrainedConfig):
     layer_types: list[str] | None = None
     pad_token_id: int | None = None
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         self.sliding_window = self.sliding_window if self.use_sliding_window else None
 
@@ -405,6 +414,7 @@ class Qwen2_5OmniTalkerConfig(PreTrainedConfig):
 
 
 @auto_docstring(checkpoint="Qwen/Qwen2.5-Omni-7B")
+# Qwen2_5OmniDiTConfig：DiT 扩散解码器配置：时间步嵌入与层数
 @strict
 class Qwen2_5OmniDiTConfig(PreTrainedConfig):
     r"""
@@ -470,6 +480,7 @@ class Qwen2_5OmniDiTConfig(PreTrainedConfig):
 
 
 @auto_docstring(checkpoint="Qwen/Qwen2.5-Omni-7B")
+# Qwen2_5OmniBigVGANConfig：BigVGAN 声码器配置：上采样率与通道数
 @strict
 class Qwen2_5OmniBigVGANConfig(PreTrainedConfig):
     r"""
@@ -498,6 +509,7 @@ class Qwen2_5OmniBigVGANConfig(PreTrainedConfig):
 
 
 @auto_docstring(checkpoint="Qwen/Qwen2.5-Omni-7B")
+# Qwen2_5OmniToken2WavConfig：Token2Wav 配置：DiT + BigVGAN 联合波形合成
 @strict
 class Qwen2_5OmniToken2WavConfig(PreTrainedConfig):
     r"""
@@ -545,6 +557,7 @@ class Qwen2_5OmniToken2WavConfig(PreTrainedConfig):
     dit_config: dict | PreTrainedConfig | None = None
     bigvgan_config: dict | PreTrainedConfig | None = None
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         if self.dit_config is None:
             self.dit_config = Qwen2_5OmniDiTConfig()
@@ -560,6 +573,7 @@ class Qwen2_5OmniToken2WavConfig(PreTrainedConfig):
 
 
 @auto_docstring(checkpoint="Qwen/Qwen2.5-Omni-7B")
+# Qwen2_5OmniConfig：Omni 顶层配置：聚合 Thinker/Talker/Token2Wav 子配置
 @strict
 class Qwen2_5OmniConfig(PreTrainedConfig):
     r"""
@@ -614,6 +628,7 @@ class Qwen2_5OmniConfig(PreTrainedConfig):
     token2wav_config: dict | PreTrainedConfig | None = None
     enable_audio_output: bool = True
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         if self.thinker_config is None:
             self.thinker_config = Qwen2_5OmniThinkerConfig()

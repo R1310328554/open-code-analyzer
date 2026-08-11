@@ -29,10 +29,15 @@ from ...utils import TransformersKwargs, auto_docstring, can_return_tuple
 from ...utils.deprecation import deprecate_kwarg
 from ...utils.generic import maybe_autocast, merge_with_config_defaults
 from ...utils.output_capturing import capture_outputs
-from .configuration_qwen2 import Qwen2Config
+from .configuration_qwen
+
+# Qwen2 建模：RoPE 解码器堆叠与因果 LM 任务头
+2 import Qwen2Config
 
 
+# Qwen2MLP：SwiGLU 前馈网络：门控与上投影逐元素相乘后下投影
 class Qwen2MLP(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -43,13 +48,16 @@ class Qwen2MLP(nn.Module):
         self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=False)
         self.act_fn = ACT2FN[config.hidden_act]
 
+    # forward：前向计算主逻辑
     def forward(self, x):
         down_proj = self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
         return down_proj
 
 
+# Qwen2RotaryEmbedding：RoPE 旋转位置编码：按序列长度缓存 cos/sin
 class Qwen2RotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen2Config, device=None):
         super().__init__()
         self.max_seq_len_cached = config.max_position_embeddings
@@ -88,6 +96,7 @@ class Qwen2RotaryEmbedding(nn.Module):
 
     @torch.no_grad()
     @dynamic_rope_update  # power user: used with advanced RoPE types (e.g. dynamic rope)
+    # forward：前向计算主逻辑
     def forward(self, x, position_ids):
         inv_freq_expanded = self.inv_freq[None, :, None].float().expand(position_ids.shape[0], -1, 1).to(x.device)
         position_ids_expanded = position_ids[:, None, :].float()
@@ -102,6 +111,7 @@ class Qwen2RotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# rotate_half：RoPE 旋转辅助，交换并取反半维
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -147,6 +157,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：标准缩放点积注意力实现
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -173,9 +184,11 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# Qwen2Attention：多头自注意力：支持 GQA 与滑动窗口掩码
 class Qwen2Attention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen2Config, layer_idx: int):
         super().__init__()
         self.layer_type = config.layer_types[layer_idx] if hasattr(config, "layer_types") else None
@@ -192,6 +205,7 @@ class Qwen2Attention(nn.Module):
         self.o_proj = nn.Linear(config.num_attention_heads * self.head_dim, config.hidden_size, bias=False)
         self.sliding_window = config.sliding_window if self.layer_type == "sliding_attention" else None
 
+    # forward：前向计算主逻辑
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -235,7 +249,9 @@ class Qwen2Attention(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# Qwen2RMSNorm：RMS 层归一化：按最后一维缩放隐藏状态
 class Qwen2RMSNorm(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
         Qwen2RMSNorm is equivalent to T5LayerNorm
@@ -244,6 +260,7 @@ class Qwen2RMSNorm(nn.Module):
         self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         input_dtype = hidden_states.dtype
         hidden_states = hidden_states.to(torch.float32)
@@ -255,7 +272,9 @@ class Qwen2RMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# Qwen2DecoderLayer：解码器层：自注意力 + MLP 残差连接
 class Qwen2DecoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen2Config, layer_idx: int):
         super().__init__()
         self.hidden_size = config.hidden_size
@@ -266,6 +285,7 @@ class Qwen2DecoderLayer(GradientCheckpointingLayer):
         self.input_layernorm = Qwen2RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.post_attention_layernorm = Qwen2RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
+    # forward：前向计算主逻辑
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -298,6 +318,7 @@ class Qwen2DecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Qwen2PreTrainedModel：Qwen2 预训练基类：权重初始化与配置绑定
 @auto_docstring
 class Qwen2PreTrainedModel(PreTrainedModel):
     config: Qwen2Config
@@ -317,8 +338,10 @@ class Qwen2PreTrainedModel(PreTrainedModel):
     }
 
 
+# Qwen2Model：Qwen2 主干：嵌入层 + 多层解码器堆叠
 @auto_docstring
 class Qwen2Model(Qwen2PreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen2Config):
         super().__init__(config)
         self.padding_idx = config.pad_token_id
@@ -339,6 +362,7 @@ class Qwen2Model(Qwen2PreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向计算主逻辑
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -402,6 +426,7 @@ class Qwen2Model(Qwen2PreTrainedModel):
         )
 
 
+# Qwen2ForCausalLM：因果语言建模：lm_head 预测下一 token
 @auto_docstring
 class Qwen2ForCausalLM(Qwen2PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
@@ -409,6 +434,7 @@ class Qwen2ForCausalLM(Qwen2PreTrainedModel, GenerationMixin):
     _pp_plan = {"lm_head": (["hidden_states"], ["logits"])}
     _fsdp_plan = {"lm_head": "keep_full_weight"}
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__(config)
         self.model = Qwen2Model(config)
@@ -420,6 +446,7 @@ class Qwen2ForCausalLM(Qwen2PreTrainedModel, GenerationMixin):
 
     @can_return_tuple
     @auto_docstring
+    # forward：前向计算主逻辑
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -477,14 +504,17 @@ class Qwen2ForCausalLM(Qwen2PreTrainedModel, GenerationMixin):
         )
 
 
+# Qwen2ForSequenceClassification：序列分类：池化隐藏状态后线性分类
 class Qwen2ForSequenceClassification(GenericForSequenceClassification, Qwen2PreTrainedModel):
     pass
 
 
+# Qwen2ForTokenClassification：Token 分类：逐位置线性分类头
 class Qwen2ForTokenClassification(GenericForTokenClassification, Qwen2PreTrainedModel):
     pass
 
 
+# Qwen2ForQuestionAnswering：抽取式问答：预测答案起止位置
 class Qwen2ForQuestionAnswering(GenericForQuestionAnswering, Qwen2PreTrainedModel):
     base_model_prefix = "transformer"  # For BC, where `transformer` was used instead of `model`
 

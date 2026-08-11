@@ -31,10 +31,13 @@ from ..mistral.modeling_mistral import MistralModel
 from .configuration_qwen2 import Qwen2Config
 
 
+# Qwen2 模块化定义：在 Llama/Mistral 基类上定制 Qwen2 行为
 logger = logging.get_logger(__name__)
 
 
+# Qwen2MLP：继承 LlamaMLP 并去除线性层 bias
 class Qwen2MLP(LlamaMLP):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__(config)
         self.gate_proj = nn.Linear(self.hidden_size, self.intermediate_size, bias=False)
@@ -42,11 +45,14 @@ class Qwen2MLP(LlamaMLP):
         self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=False)
 
 
+# Qwen2RotaryEmbedding：继承 Gemma2 RoPE 实现
 class Qwen2RotaryEmbedding(Gemma2RotaryEmbedding):
     pass
 
 
+# Qwen2Attention：继承 Llama 注意力并适配 Qwen2 掩码逻辑
 class Qwen2Attention(LlamaAttention):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen2Config, layer_idx: int):
         self.layer_type = config.layer_types[layer_idx] if hasattr(config, "layer_types") else None
         super().__init__(config, layer_idx)
@@ -56,6 +62,7 @@ class Qwen2Attention(LlamaAttention):
         self.o_proj = nn.Linear(config.num_attention_heads * self.head_dim, config.hidden_size, bias=False)
         self.sliding_window = config.sliding_window if self.layer_type == "sliding_attention" else None
 
+    # forward：前向计算主逻辑
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -98,15 +105,19 @@ class Qwen2Attention(LlamaAttention):
         return attn_output, attn_weights
 
 
+# Qwen2DecoderLayer：解码器层：复用 Llama 残差结构
 class Qwen2DecoderLayer(LlamaDecoderLayer):
     pass
 
 
+# Qwen2PreTrainedModel：预训练基类：指定 config_class 为 Qwen2Config
 class Qwen2PreTrainedModel(LlamaPreTrainedModel):
     pass
 
 
+# Qwen2Model：继承 MistralModel 并注入 Qwen2 滑动窗口掩码
 class Qwen2Model(MistralModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen2Config):
         super().__init__(config)
         self.has_sliding_layers = "sliding_attention" in self.config.layer_types
@@ -114,6 +125,7 @@ class Qwen2Model(MistralModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：前向计算主逻辑
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -177,18 +189,22 @@ class Qwen2Model(MistralModel):
         )
 
 
+# Qwen2ForCausalLM：因果 LM 任务入口
 class Qwen2ForCausalLM(LlamaForCausalLM):
     pass
 
 
+# Qwen2ForSequenceClassification：序列分类任务入口
 class Qwen2ForSequenceClassification(LlamaForSequenceClassification):
     pass
 
 
+# Qwen2ForTokenClassification：Token 分类任务入口
 class Qwen2ForTokenClassification(LlamaForTokenClassification):
     pass
 
 
+# Qwen2ForQuestionAnswering：问答任务入口
 class Qwen2ForQuestionAnswering(LlamaForQuestionAnswering):
     pass
 

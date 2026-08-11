@@ -28,8 +28,10 @@ from ...utils import auto_docstring
 from ...video_utils import VideoInput
 
 
+# Omni 多模态处理器：统一文本/图像/音频/视频预处理
 # Redefine kwargs for videos because Qwen-Omni uses some kwargs for processing omni
 # and does not use them in video processor class
+# Qwen2_5_OmniVideosKwargs：视频预处理关键字：像素上下限与帧率控制
 class Qwen2_5_OmniVideosKwargs(VideosKwargs, total=False):
     """
     min_pixels (`int`, *optional*):
@@ -76,6 +78,7 @@ class Qwen2_5_OmniVideosKwargs(VideosKwargs, total=False):
     position_id_per_seconds: int | float
 
 
+# Qwen2_5OmniProcessorKwargs：处理器总关键字：各模态 kwargs 默认值
 class Qwen2_5OmniProcessorKwargs(ProcessingKwargs, total=False):
     videos_kwargs: Qwen2_5_OmniVideosKwargs
 
@@ -101,10 +104,12 @@ class Qwen2_5OmniProcessorKwargs(ProcessingKwargs, total=False):
     }
 
 
+# Qwen2_5OmniProcessor：Omni 处理器：多模态输入对齐与 chat 模板填充
 @auto_docstring
 class Qwen2_5OmniProcessor(ProcessorMixin):
     valid_processor_kwargs = Qwen2_5OmniProcessorKwargs
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self, image_processor=None, video_processor=None, feature_extractor=None, tokenizer=None, chat_template=None
     ):

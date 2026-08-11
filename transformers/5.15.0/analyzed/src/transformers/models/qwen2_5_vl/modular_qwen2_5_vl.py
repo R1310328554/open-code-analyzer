@@ -18,6 +18,9 @@
 # limitations under the License.
 """PyTorch Qwen2.5-VL model."""
 
+# Qwen2.5-VL 模块化定义：在 Qwen2-VL 上扩展窗口视觉与 MRoPE
+
+
 import itertools
 import warnings
 
@@ -63,6 +66,7 @@ logger = logging.get_logger(__name__)
 
 
 @auto_docstring(checkpoint="Qwen/Qwen2-VL-7B-Instruct")
+# Qwen2_5_VLVisionConfig：视觉编码器配置：patch 大小、窗口与 MRoPE
 @strict
 class Qwen2_5_VLVisionConfig(PreTrainedConfig):
     r"""
@@ -95,19 +99,24 @@ class Qwen2_5_VLVisionConfig(PreTrainedConfig):
     initializer_range: float = 0.02
 
 
+# Qwen2_5_VLTextConfig：继承 Qwen2VL 文本配置
 class Qwen2_5_VLTextConfig(Qwen2VLTextConfig):
     pass
 
 
+# Qwen2_5_VLConfig：继承 Qwen2VL 顶层配置
 class Qwen2_5_VLConfig(Qwen2VLConfig):
     pass
 
 
+# Qwen2_5_VLRMSNorm：继承 Llama RMSNorm
 class Qwen2_5_VLRMSNorm(LlamaRMSNorm):
     pass
 
 
+# Qwen2_5_VLMLP：VL MLP 实现
 class Qwen2_5_VLMLP(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config, bias: bool = False):
         super().__init__()
         self.hidden_size = config.hidden_size
@@ -117,31 +126,40 @@ class Qwen2_5_VLMLP(nn.Module):
         self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=bias)
         self.act_fn = ACT2FN[config.hidden_act]
 
+    # forward：前向计算主逻辑
     def forward(self, hidden_state):
         return self.down_proj(self.act_fn(self.gate_proj(hidden_state)) * self.up_proj(hidden_state))
 
 
+# Qwen2_5_VisionPatchEmbed：继承通用 PatchEmbed
 class Qwen2_5_VisionPatchEmbed(PatchEmbed):
     pass
 
 
+# Qwen2_5_VisionRotaryEmbedding：继承 VisionRotaryEmbedding
 class Qwen2_5_VisionRotaryEmbedding(VisionRotaryEmbedding):
     pass
 
 
+# Qwen2_5_VLPatchMerger：继承 PatchMerger
 class Qwen2_5_VLPatchMerger(PatchMerger):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, dim: int, context_dim: int, spatial_merge_size: int = 2) -> None:
         super().__init__(dim, context_dim, spatial_merge_size)
         self.ln_q = Qwen2_5_VLRMSNorm(context_dim, eps=1e-6)
 
 
+# Qwen2_5_VLVisionAttention：继承 VisionAttention 并定制 Omni/VL 逻辑
 class Qwen2_5_VLVisionAttention(VisionAttention):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: Qwen2_5_VLVisionConfig) -> None:
         super().__init__(config)
         self.dim = config.hidden_size
 
 
+# Qwen2_5_VLVisionBlock：视觉块：注意力 + MLP 残差
 class Qwen2_5_VLVisionBlock(GradientCheckpointingLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config, attn_implementation: str = "sdpa") -> None:
         super().__init__()
         self.norm1 = Qwen2_5_VLRMSNorm(config.hidden_size, eps=1e-6)
@@ -150,6 +168,7 @@ class Qwen2_5_VLVisionBlock(GradientCheckpointingLayer):
         self.mlp = Qwen2_5_VLMLP(config, bias=True)
 
     @auto_docstring
+    # forward：前向计算主逻辑
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -171,6 +190,7 @@ class Qwen2_5_VLVisionBlock(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Qwen2_5_VLPreTrainedModel：继承 Qwen2VL 预训练基类
 class Qwen2_5_VLPreTrainedModel(Qwen2VLPreTrainedModel):
     def _init_weights(self, module):
         PreTrainedModel._init_weights(self, module)
@@ -179,6 +199,7 @@ class Qwen2_5_VLPreTrainedModel(Qwen2VLPreTrainedModel):
             init.copy_(module.inv_freq, inv_freq)
 
 
+# Qwen2_5_VisionTransformerPretrainedModel：视觉 Transformer 模块化定义
 class Qwen2_5_VisionTransformerPretrainedModel(Qwen2_5_VLPreTrainedModel):
     config: Qwen2_5_VLVisionConfig
     _no_split_modules = ["Qwen2_5_VLVisionBlock"]
@@ -188,6 +209,7 @@ class Qwen2_5_VisionTransformerPretrainedModel(Qwen2_5_VLPreTrainedModel):
         "attentions": Qwen2_5_VLVisionAttention,
     }
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config, *inputs, **kwargs) -> None:
         super().__init__(config, *inputs, **kwargs)
         self.spatial_merge_size = config.spatial_merge_size
@@ -242,6 +264,7 @@ class Qwen2_5_VisionTransformerPretrainedModel(Qwen2_5_VLPreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs
+    # forward：前向计算主逻辑
     def forward(
         self, hidden_states: torch.Tensor, grid_thw: torch.Tensor, **kwargs: Unpack[TransformersKwargs]
     ) -> tuple | BaseModelOutputWithPooling:
@@ -308,6 +331,8 @@ class Qwen2_5_VisionTransformerPretrainedModel(Qwen2_5_VLPreTrainedModel):
         )
 
 
+# Qwen2_5_VLModelOutputWithPast：继承 Qwen2VL 输出 dataclass
+# Qwen2_5_VLModel：继承 Qwen2VLModel 并扩展 2.5 特性
 class Qwen2_5_VLModelOutputWithPast(Qwen2VLModelOutputWithPast):
     pass
 
@@ -319,6 +344,7 @@ class Qwen2_5_VLModel(Qwen2VLModel):
     # Reference: fix gemma3 grad acc #37208
     accepts_loss_kwargs = False
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__(config)
         self.visual = Qwen2_5_VisionTransformerPretrainedModel._from_config(config.vision_config)
@@ -487,6 +513,7 @@ class Qwen2_5_VLModel(Qwen2VLModel):
             position_ids = None
         return position_ids
 
+    # forward：前向计算主逻辑
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -558,14 +585,17 @@ class Qwen2_5_VLModel(Qwen2VLModel):
         )
 
 
+# Qwen2_5_VLCausalLMOutputWithPast：继承 Qwen2VL 因果 LM 输出
 class Qwen2_5_VLCausalLMOutputWithPast(Qwen2VLCausalLMOutputWithPast):
     pass
 
 
+# Qwen2_5_VLForConditionalGeneration：继承 Qwen2VL 条件生成入口
 class Qwen2_5_VLForConditionalGeneration(Qwen2VLForConditionalGeneration):
     # Reference: fix gemma3 grad acc #37208
     accepts_loss_kwargs = False
 
+    # forward：前向计算主逻辑
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -663,6 +693,8 @@ class Qwen2_5_VLForConditionalGeneration(Qwen2VLForConditionalGeneration):
         )
 
 
+# Qwen2_5_VLProcessorKwargs：处理器关键字参数默认值
+# Qwen2_5_VLProcessor：继承 Qwen2VL 处理器并适配 2.5 模板
 class Qwen2_5_VLProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {

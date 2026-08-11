@@ -17,10 +17,14 @@ from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
 from ...modeling_rope_utils import RopeParameters
-from ...utils import auto_docstring
+from ...utils import
+
+# Qwen2 配置：Llama 风格解码器，支持滑动窗口与 GQA
+ auto_docstring
 
 
 @auto_docstring(checkpoint="Qwen/Qwen2-7B")
+# Qwen2Config：Qwen2 解码器超参与 TP/PP 并行计划
 @strict
 class Qwen2Config(PreTrainedConfig):
     r"""
@@ -80,6 +84,7 @@ class Qwen2Config(PreTrainedConfig):
     bos_token_id: int | None = None
     eos_token_id: int | list[int] | None = None
 
+    # __post_init__：校验并规范化配置字段
     def __post_init__(self, **kwargs):
         self.sliding_window = self.sliding_window if self.use_sliding_window else None
         if self.num_key_value_heads is None:

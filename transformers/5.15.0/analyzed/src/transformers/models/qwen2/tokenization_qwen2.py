@@ -20,6 +20,7 @@ from ...tokenization_utils_tokenizers import TokenizersBackend
 from ...utils import logging
 
 
+# Qwen2 BPE 分词器：ByteLevel 解码与 Qwen 正则预分词
 logger = logging.get_logger(__name__)
 
 VOCAB_FILES_NAMES = {
@@ -33,11 +34,13 @@ MAX_MODEL_INPUT_SIZES = {"qwen/qwen-tokenizer": 32768}
 PRETOKENIZE_REGEX = r"""(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+"""
 
 
+# Qwen2Tokenizer：Qwen2 分词器：BPE 词表与特殊 token 处理
 class Qwen2Tokenizer(TokenizersBackend):
     vocab_files_names = VOCAB_FILES_NAMES
     model_input_names = ["input_ids", "attention_mask"]
     model = BPE
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(
         self,
         vocab: str | dict[str, int] | None = None,

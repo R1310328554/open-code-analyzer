@@ -24,5 +24,6 @@ if TYPE_CHECKING:
 else:
     import sys
 
+    # 运行时以 _LazyModule 延迟加载 Qwen2.5-Omni 各子模块
     _file = globals()["__file__"]
     sys.modules[__name__] = _LazyModule(__name__, _file, define_import_structure(_file), module_spec=__spec__)
