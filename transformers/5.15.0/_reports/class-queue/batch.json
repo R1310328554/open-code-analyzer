@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T03:35:06Z",
   "files": [
-    "src/transformers/models/unispeech_sat/modeling_unispeech_sat.py",
-    "src/transformers/models/unispeech_sat/modular_unispeech_sat.py",
-    "src/transformers/models/univnet/__init__.py",
-    "src/transformers/models/univnet/configuration_univnet.py",
-    "src/transformers/models/univnet/feature_extraction_univnet.py",
-    "src/transformers/models/univnet/modeling_univnet.py",
-    "src/transformers/models/upernet/__init__.py",
-    "src/transformers/models/upernet/configuration_upernet.py",
-    "src/transformers/models/upernet/modeling_upernet.py",
-    "src/transformers/models/uvdoc/__init__.py",
-    "src/transformers/models/uvdoc/configuration_uvdoc.py",
-    "src/transformers/models/uvdoc/image_processing_uvdoc.py",
-    "src/transformers/models/uvdoc/modeling_uvdoc.py",
-    "src/transformers/models/uvdoc/modular_uvdoc.py",
-    "src/transformers/models/vaultgemma/__init__.py",
     "src/transformers/models/vaultgemma/configuration_vaultgemma.py",
     "src/transformers/models/vaultgemma/modeling_vaultgemma.py",
     "src/transformers/models/vaultgemma/modular_vaultgemma.py",
@@ -33,5 +18,5 @@
     "src/transformers/models/video_llama_3/configuration_video_llama_3.py"
   ],
   "remaining_pending": 399,
-  "done": 2250
+  "done": 2265
 }
