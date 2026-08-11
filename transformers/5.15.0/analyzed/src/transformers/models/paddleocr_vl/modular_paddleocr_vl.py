@@ -86,6 +86,9 @@ from ..video_llama_3.modeling_video_llama_3 import (
 logger = logging.get_logger(__name__)
 
 
+# PaddleOCR-VL modular 源：Qwen2VL/Ernie4.5/Siglip 组件组合的多模态 OCR
+
+# smart_resize：按像素上下限与 patch 因子自适应 resize 高宽
 def smart_resize(
     height: int,
     width: int,
@@ -118,6 +121,7 @@ def smart_resize(
     return h_bar, w_bar
 
 
+# PaddleOCRVLImageProcessorKwargs：PaddleOCR-VL 图像预处理 kwargs（patch/merge 尺寸）
 class PaddleOCRVLImageProcessorKwargs(Qwen2VLImageProcessorKwargs):
     r"""
     patch_size (`int`, *optional*, defaults to 14):
@@ -129,10 +133,12 @@ class PaddleOCRVLImageProcessorKwargs(Qwen2VLImageProcessorKwargs):
     """
 
 
+# PaddleOCRVLImageProcessorPil：PaddleOCR-VL PIL 后端动态分辨率 patchify
 class PaddleOCRVLImageProcessorPil(Qwen2VLImageProcessorPil):
     size = {"shortest_edge": 384 * 384, "longest_edge": 1536 * 1536}
     temporal_patch_size = 1
 
+    # patchify：将图像切分为 4D patch 网格供视觉编码器消费
     def patchify(
         self,
         image: np.ndarray,
@@ -171,10 +177,12 @@ class PaddleOCRVLImageProcessorPil(Qwen2VLImageProcessorPil):
         return flatten_patches, grid_h, grid_w
 
 
+# PaddleOCRVLImageProcessor：PaddleOCR-VL Torchvision 后端动态分辨率 patchify
 class PaddleOCRVLImageProcessor(Qwen2VLImageProcessor):
     size = {"shortest_edge": 384 * 384, "longest_edge": 1536 * 1536}
     temporal_patch_size = 1
 
+    # patchify：将图像切分为 4D patch 网格供视觉编码器消费
     def patchify(
         self,
         images: "torch.Tensor",
@@ -211,6 +219,7 @@ class PaddleOCRVLImageProcessor(Qwen2VLImageProcessor):
         return flatten_patches, grid_h, grid_w
 
 
+# PaddleOCRVLProcessorKwargs：PaddleOCR-VL 处理器默认 text 参数
 class PaddleOCRVLProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -220,6 +229,7 @@ class PaddleOCRVLProcessorKwargs(ProcessingKwargs, total=False):
     }
 
 
+# PaddleOCRVLProcessor：PaddleOCR-VL 图像处理器与 tokenizer 联合封装
 class PaddleOCRVLProcessor(ProcessorMixin):
     r"""
     [`PaddleOCRVLProcessor`] offers all the functionalities of [`PaddleOCRVLImageProcessor`] and [`LLamaTokenizerFast`]. See the
@@ -237,19 +247,23 @@ class PaddleOCRVLProcessor(ProcessorMixin):
     tokenizer_class = "AutoTokenizer"
     valid_processor_kwargs = PaddleOCRVLProcessorKwargs
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, image_processor=None, tokenizer=None, chat_template=None, **kwargs):
         self.image_token = tokenizer.image_token
         self.image_token_id = tokenizer.image_token_id
         super().__init__(image_processor, tokenizer, chat_template=chat_template)
 
+    # replace_image_token：按 image_grid_thw 计算并展开图像占位 token 串
     def replace_image_token(self, image_inputs: dict, image_idx: int, **kwargs) -> str:
         merge_size = self.image_processor.merge_size
         num_tokens = int(image_inputs["image_grid_thw"][image_idx].prod()) // (merge_size * merge_size)
         return self.image_token * num_tokens
 
 
+# PaddleOCRVisionConfig：PaddleOCR-VL Siglip 风格视觉 ViT 超参
 @auto_docstring(checkpoint="PaddlePaddle/PaddleOCR-VL")
 @strict
+# PaddleOCRVisionConfig：PaddleOCR-VL Siglip 风格视觉 ViT 超参
 class PaddleOCRVisionConfig(SiglipVisionConfig):
     r"""
     Example:
@@ -280,14 +294,18 @@ class PaddleOCRVisionConfig(SiglipVisionConfig):
     spatial_merge_size: int = 2
 
 
+# PaddleOCRTextConfig：PaddleOCR-VL Ernie4.5 风格文本 LLM 超参
 @auto_docstring(checkpoint="PaddlePaddle/PaddleOCR-VL")
 @strict
+# PaddleOCRTextConfig：PaddleOCR-VL Ernie4.5 风格文本 LLM 超参
 class PaddleOCRTextConfig(Ernie4_5Config):
     model_type = "paddleocr_vl_text"
 
 
+# PaddleOCRVLConfig：PaddleOCR-VL 视觉+文本多模态 OCR 联合超参
 @auto_docstring(checkpoint="PaddlePaddle/PaddleOCR-VL")
 @strict
+# PaddleOCRVLConfig：PaddleOCR-VL 视觉+文本多模态 OCR 联合超参
 class PaddleOCRVLConfig(Qwen2VLConfig):
     r"""
     Example:
@@ -314,7 +332,9 @@ class PaddleOCRVLConfig(Qwen2VLConfig):
     tie_word_embeddings: bool = True
 
 
+# PaddleOCRProjector：视觉 patch 特征经 MLP 投影到文本 hidden 维
 class PaddleOCRProjector(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PaddleOCRVLConfig):
         super().__init__()
         self.merge_kernel_size = (config.vision_config.spatial_merge_size, config.vision_config.spatial_merge_size)
@@ -326,6 +346,7 @@ class PaddleOCRProjector(nn.Module):
         self.act = GELUActivation()
         self.linear_2 = nn.Linear(hidden_size, config.text_config.hidden_size, bias=True)
 
+    # forward：模块前向计算
     def forward(self, image_features: torch.Tensor, image_grid_thw: torch.Tensor) -> torch.Tensor:
         image_features_chunks = image_features.split(image_grid_thw.prod(dim=1).tolist(), dim=0)
         m1, m2 = self.merge_kernel_size
@@ -350,20 +371,26 @@ class PaddleOCRProjector(nn.Module):
         return torch.cat(processed_features, dim=0)
 
 
+# PaddleOCRVisionRotaryEmbedding：视觉编码器 RoPE 旋转位置编码
 class PaddleOCRVisionRotaryEmbedding(VisionRotaryEmbedding):
     pass
 
 
+# PaddleOCRRotaryEmbedding：文本 LLM 多维 RoPE（mRoPE）旋转位置编码
 class PaddleOCRRotaryEmbedding(Qwen2VLRotaryEmbedding):
     pass
 
 
+# PaddleOCRMLP：PaddleOCR-VL 文本 SwiGLU 前馈 MLP
 class PaddleOCRMLP(Ernie4_5MLP):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PaddleOCRTextConfig):
         super().__init__()
 
 
+# PaddleOCRAttention：PaddleOCR-VL 文本 GQA 自注意力
 class PaddleOCRAttention(Qwen2_5OmniAttention):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PaddleOCRVLConfig, layer_idx: int | None = None):
         super().__init__()
 
@@ -374,16 +401,20 @@ class PaddleOCRAttention(Qwen2_5OmniAttention):
         self.o_proj = nn.Linear(self.num_heads * self.head_dim, self.hidden_size, bias=config.use_bias)
 
 
+# PaddleOCRRMSNorm：PaddleOCR-VL RMS 层归一化
 class PaddleOCRRMSNorm(Ernie4_5RMSNorm):
     pass
 
 
+# PaddleOCRDecoderLayer：PaddleOCR-VL 文本解码器单层（Attn+MLP）
 class PaddleOCRDecoderLayer(Ernie4_5DecoderLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PaddleOCRTextConfig, layer_idx: int):
         super().__init__()
 
 
 @auto_docstring
+# PaddleOCRVLPreTrainedModel：PaddleOCR-VL 预训练基类与权重初始化
 class PaddleOCRVLPreTrainedModel(PreTrainedModel):
     config: PaddleOCRVLConfig
     base_model_prefix = "model"
@@ -402,6 +433,7 @@ class PaddleOCRVLPreTrainedModel(PreTrainedModel):
         "attentions": PaddleOCRAttention,
     }
 
+    # _init_weights：按模块类型初始化权重
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, PaddleOCRVisionEmbeddings):
@@ -411,13 +443,16 @@ class PaddleOCRVLPreTrainedModel(PreTrainedModel):
             init.copy_(module.inv_freq, inv_freq)
 
 
+# PaddleOCRTextModel：PaddleOCR-VL 因果文本 LLM 主干
 class PaddleOCRTextModel(PaddleOCRVLPreTrainedModel, Ernie4_5Model):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PaddleOCRTextConfig):
         super().__init__(config)
 
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -479,7 +514,9 @@ class PaddleOCRTextModel(PaddleOCRVLPreTrainedModel, Ernie4_5Model):
         )
 
 
+# PaddleOCRVisionEmbeddings：PaddleOCR-VL 视觉 patch 嵌入与 2D RoPE
 class PaddleOCRVisionEmbeddings(SiglipVisionEmbeddings):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PaddleOCRVisionConfig):
         super().__init__()
         # How the (square) learned position grid is resampled to each image's grid.
@@ -504,6 +541,7 @@ class PaddleOCRVisionEmbeddings(SiglipVisionEmbeddings):
         )
         return (self.position_embedding(interp_indices) * interp_weights[:, :, None]).sum(1).unsqueeze(0)
 
+    # forward：模块前向计算
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -538,22 +576,30 @@ class PaddleOCRVisionEmbeddings(SiglipVisionEmbeddings):
         return embeddings
 
 
+# PaddleOCRVisionAttention：PaddleOCR-VL 视觉多头自注意力
 class PaddleOCRVisionAttention(VideoLlama3VisionAttention):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PaddleOCRVisionConfig):
         super().__init__()
 
 
+# PaddleOCRVisionMLP：PaddleOCR-VL 视觉 GELU 前馈 MLP
 class PaddleOCRVisionMLP(SiglipMLP):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PaddleOCRVisionConfig):
         super().__init__()
 
 
+# PaddleOCRVisionEncoderLayer：PaddleOCR-VL 视觉 Transformer 编码器单层
 class PaddleOCRVisionEncoderLayer(VideoLlama3VisionEncoderLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PaddleOCRVisionConfig):
         super().__init__()
 
 
+# PaddleOCRVisionEncoder：PaddleOCR-VL 视觉 Transformer 编码器堆叠
 class PaddleOCRVisionEncoder(VideoLlama3VisionEncoder):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PaddleOCRVisionConfig):
         super().__init__()
         embed_dim = config.hidden_size
@@ -563,6 +609,7 @@ class PaddleOCRVisionEncoder(VideoLlama3VisionEncoder):
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         inputs_embeds: torch.FloatTensor,
@@ -609,6 +656,7 @@ class PaddleOCRVisionEncoder(VideoLlama3VisionEncoder):
         )
 
 
+# PaddleOCRVisionTransformer：PaddleOCR-VL 完整视觉 ViT 骨干
 class PaddleOCRVisionTransformer(PaddleOCRVLPreTrainedModel):
     config: PaddleOCRVisionConfig
     main_input_name = "pixel_values"
@@ -618,6 +666,7 @@ class PaddleOCRVisionTransformer(PaddleOCRVLPreTrainedModel):
         "attentions": PaddleOCRVisionAttention,
     }
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PaddleOCRVisionConfig):
         super().__init__(config)
         self.config = config
@@ -631,6 +680,7 @@ class PaddleOCRVisionTransformer(PaddleOCRVLPreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs(tie_last_hidden_states=False)
+    # forward：模块前向计算
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -664,11 +714,13 @@ class PaddleOCRVisionTransformer(PaddleOCRVLPreTrainedModel):
         )
 
 
+# PaddleOCRVisionModel：PaddleOCR-VL 视觉编码器封装
 class PaddleOCRVisionModel(PaddleOCRVLPreTrainedModel):
     config: PaddleOCRVisionConfig
     main_input_name = "pixel_values"
     input_modalities = "image"
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PaddleOCRVisionConfig):
         super().__init__(config)
 
@@ -677,6 +729,7 @@ class PaddleOCRVisionModel(PaddleOCRVLPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # forward：模块前向计算
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -693,17 +746,21 @@ class PaddleOCRVisionModel(PaddleOCRVLPreTrainedModel):
         return self.vision_model(pixel_values=pixel_values, grid_thw=grid_thw, **kwargs)
 
 
+# PaddleOCRVLModelOutputWithPast：PaddleOCR-VL 多模态前向输出（含 KV cache）
 class PaddleOCRVLModelOutputWithPast(Qwen2VLModelOutputWithPast):
     pass
 
 
+# PaddleOCRVLCausalLMOutputWithPast：PaddleOCR-VL 条件生成输出（logits + past）
 class PaddleOCRVLCausalLMOutputWithPast(Qwen2VLCausalLMOutputWithPast):
     pass
 
 
+# PaddleOCRVLModel：PaddleOCR-VL 视觉+文本多模态融合模型
 class PaddleOCRVLModel(Qwen2VLModel):
     _keys_to_ignore_on_load_unexpected = ["packing_position_embedding", "vision_model.head"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PaddleOCRVLConfig):
         super().__init__(config)
         self.visual = PaddleOCRVisionModel._from_config(config.vision_config)
@@ -755,6 +812,7 @@ class PaddleOCRVLModel(Qwen2VLModel):
         )
         return special_image_mask
 
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor = None,
@@ -810,12 +868,14 @@ class PaddleOCRVLModel(Qwen2VLModel):
         return output
 
 
+# PaddleOCRVLForConditionalGeneration：PaddleOCR-VL 文档 OCR 条件生成
 class PaddleOCRVLForConditionalGeneration(Qwen2VLForConditionalGeneration):
     _keys_to_ignore_on_load_unexpected = ["packing_position_embedding", "vision_model.head"]
 
     def get_video_features(self):
         raise AttributeError("PaddleOCRVLForConditionalGeneration does not support video.")
 
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,

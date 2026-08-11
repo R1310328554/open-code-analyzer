@@ -32,8 +32,12 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# PaddleOCR-VL 配置：Siglip 视觉 + Ernie4.5 文本多模态 OCR 超参
+
+# PaddleOCRVisionConfig：PaddleOCR-VL Siglip 风格视觉 ViT 超参
 @auto_docstring(checkpoint="PaddlePaddle/PaddleOCR-VL")
 @strict
+# PaddleOCRVisionConfig：PaddleOCR-VL Siglip 风格视觉 ViT 超参
 class PaddleOCRVisionConfig(PreTrainedConfig):
     r"""
     Example:
@@ -68,8 +72,10 @@ class PaddleOCRVisionConfig(PreTrainedConfig):
     spatial_merge_size: int = 2
 
 
+# PaddleOCRTextConfig：PaddleOCR-VL Ernie4.5 风格文本 LLM 超参
 @auto_docstring(checkpoint="PaddlePaddle/PaddleOCR-VL")
 @strict
+# PaddleOCRTextConfig：PaddleOCR-VL Ernie4.5 风格文本 LLM 超参
 class PaddleOCRTextConfig(PreTrainedConfig):
     r"""
     use_bias (`bool`, *optional*, defaults to `False`):
@@ -128,6 +134,7 @@ class PaddleOCRTextConfig(PreTrainedConfig):
     use_bias: bool | None = False
     head_dim: int | None = 128
 
+    # __post_init__：初始化后解析 text/vision 子配置对象
     def __post_init__(self, **kwargs):
         if self.num_key_value_heads is None:
             self.num_key_value_heads = self.num_attention_heads
@@ -136,8 +143,10 @@ class PaddleOCRTextConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# PaddleOCRVLConfig：PaddleOCR-VL 视觉+文本多模态 OCR 联合超参
 @auto_docstring(checkpoint="PaddlePaddle/PaddleOCR-VL")
 @strict
+# PaddleOCRVLConfig：PaddleOCR-VL 视觉+文本多模态 OCR 联合超参
 class PaddleOCRVLConfig(PreTrainedConfig):
     r"""
     Example:
@@ -169,6 +178,7 @@ class PaddleOCRVLConfig(PreTrainedConfig):
     vision_end_token_id: int = 101306
     tie_word_embeddings: bool = True
 
+    # __post_init__：初始化后解析 text/vision 子配置对象
     def __post_init__(self, **kwargs):
         if isinstance(self.vision_config, dict):
             self.vision_config = self.sub_configs["vision_config"](**self.vision_config)

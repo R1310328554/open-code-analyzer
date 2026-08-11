@@ -67,10 +67,14 @@ from ...vision_utils import (
 from .configuration_paddleocr_vl import PaddleOCRTextConfig, PaddleOCRVisionConfig, PaddleOCRVLConfig
 
 
+# PaddleOCR-VL 建模：视觉 ViT + 文本 LLM 多模态文档 OCR 条件生成
+
 logger = logging.get_logger(__name__)
 
 
+# PaddleOCRProjector：视觉 patch 特征经 MLP 投影到文本 hidden 维
 class PaddleOCRProjector(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PaddleOCRVLConfig):
         super().__init__()
         self.merge_kernel_size = (config.vision_config.spatial_merge_size, config.vision_config.spatial_merge_size)
@@ -82,6 +86,7 @@ class PaddleOCRProjector(nn.Module):
         self.act = GELUActivation()
         self.linear_2 = nn.Linear(hidden_size, config.text_config.hidden_size, bias=True)
 
+    # forward：模块前向计算
     def forward(self, image_features: torch.Tensor, image_grid_thw: torch.Tensor) -> torch.Tensor:
         image_features_chunks = image_features.split(image_grid_thw.prod(dim=1).tolist(), dim=0)
         m1, m2 = self.merge_kernel_size
@@ -106,7 +111,9 @@ class PaddleOCRProjector(nn.Module):
         return torch.cat(processed_features, dim=0)
 
 
+# PaddleOCRVisionRotaryEmbedding：视觉编码器 RoPE 旋转位置编码
 class PaddleOCRVisionRotaryEmbedding(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, dim: int, theta: float = 10000.0) -> None:
         super().__init__()
         self.dim = dim
@@ -114,12 +121,15 @@ class PaddleOCRVisionRotaryEmbedding(nn.Module):
         inv_freq = 1.0 / (theta ** (torch.arange(0, dim, 2, dtype=torch.float) / dim))
         self.inv_freq = nn.Buffer(inv_freq, persistent=False)
 
+    # forward：模块前向计算
     def forward(self, position_ids: torch.Tensor) -> torch.Tensor:
         return (position_ids.unsqueeze(-1) * self.inv_freq).flatten(1)
 
 
+# PaddleOCRRotaryEmbedding：文本 LLM 多维 RoPE（mRoPE）旋转位置编码
 class PaddleOCRRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PaddleOCRVLConfig, device=None):
         super().__init__()
         self.max_seq_len_cached = config.max_position_embeddings
@@ -159,6 +169,7 @@ class PaddleOCRRotaryEmbedding(nn.Module):
         return inv_freq.to(device), attention_factor
 
     # Ignore copy
+    # forward：模块前向计算
     def forward(self, x, position_ids):
         # In contrast to other models, PaddleOCR has different position ids for the grids
         # So we expand the inv_freq to shape (3, ...)
@@ -175,7 +186,9 @@ class PaddleOCRRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# PaddleOCRMLP：PaddleOCR-VL 文本 SwiGLU 前馈 MLP
 class PaddleOCRMLP(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PaddleOCRTextConfig):
         super().__init__()
         self.config = config
@@ -187,11 +200,13 @@ class PaddleOCRMLP(nn.Module):
         self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=config.use_bias)
         self.act_fn = ACT2FN[config.hidden_act]
 
+    # forward：模块前向计算
     def forward(self, x):
         down_proj = self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
         return down_proj
 
 
+# repeat_kv：GQA 中将 KV 头重复扩展以匹配 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -204,6 +219,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -229,6 +245,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# rotate_half：RoPE 中将向量后半维取负并与前半维交换
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -236,6 +253,7 @@ def rotate_half(x):
     return torch.cat((-x2, x1), dim=-1)
 
 
+# apply_multimodal_rotary_pos_emb：对 Q/K 应用多模态分段 RoPE
 def apply_multimodal_rotary_pos_emb(q, k, cos, sin, mrope_section, unsqueeze_dim=1):
     """Applies Rotary Position Embedding with Multimodal Sections to the query and key tensors (https://qwenlm.github.io/blog/qwen2-vl/).
 
@@ -281,12 +299,14 @@ def apply_multimodal_rotary_pos_emb(q, k, cos, sin, mrope_section, unsqueeze_dim
     return q_embed, k_embed
 
 
+# PaddleOCRAttention：PaddleOCR-VL 文本 GQA 自注意力
 class PaddleOCRAttention(nn.Module):
     """
     Multi-headed attention from 'Attention Is All You Need' paper. Modified to use sliding window attention: Longformer
     and "Generating Long Sequences with Sparse Transformers".
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PaddleOCRVLConfig, layer_idx: int | None = None):
         super().__init__()
         self.config = config
@@ -315,6 +335,7 @@ class PaddleOCRAttention(nn.Module):
         self.layer_type = config.layer_types[layer_idx] if hasattr(config, "layer_types") else None
         self.sliding_window = config.sliding_window if self.layer_type == "sliding_attention" else None
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -367,7 +388,9 @@ class PaddleOCRAttention(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# PaddleOCRRMSNorm：PaddleOCR-VL RMS 层归一化
 class PaddleOCRRMSNorm(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
         PaddleOCRRMSNorm is equivalent to T5LayerNorm
@@ -376,6 +399,7 @@ class PaddleOCRRMSNorm(nn.Module):
         self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
 
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         input_dtype = hidden_states.dtype
         hidden_states = hidden_states.to(torch.float32)
@@ -387,7 +411,9 @@ class PaddleOCRRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# PaddleOCRDecoderLayer：PaddleOCR-VL 文本解码器单层（Attn+MLP）
 class PaddleOCRDecoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PaddleOCRTextConfig, layer_idx: int):
         super().__init__()
         self.hidden_size = config.hidden_size
@@ -398,6 +424,7 @@ class PaddleOCRDecoderLayer(GradientCheckpointingLayer):
         self.input_layernorm = PaddleOCRRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.post_attention_layernorm = PaddleOCRRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -431,6 +458,7 @@ class PaddleOCRDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# PaddleOCRVLPreTrainedModel：PaddleOCR-VL 预训练基类与权重初始化
 class PaddleOCRVLPreTrainedModel(PreTrainedModel):
     config: PaddleOCRVLConfig
     base_model_prefix = "model"
@@ -449,6 +477,7 @@ class PaddleOCRVLPreTrainedModel(PreTrainedModel):
         "attentions": PaddleOCRAttention,
     }
 
+    # _init_weights：按模块类型初始化权重
     def _init_weights(self, module):
         super()._init_weights(module)
         if isinstance(module, PaddleOCRVisionEmbeddings):
@@ -459,7 +488,9 @@ class PaddleOCRVLPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# PaddleOCRTextModel：PaddleOCR-VL 因果文本 LLM 主干
 class PaddleOCRTextModel(PaddleOCRVLPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PaddleOCRTextConfig):
         super().__init__(config)
         self.padding_idx = config.pad_token_id
@@ -479,6 +510,7 @@ class PaddleOCRTextModel(PaddleOCRVLPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -540,7 +572,9 @@ class PaddleOCRTextModel(PaddleOCRVLPreTrainedModel):
         )
 
 
+# PaddleOCRVisionEmbeddings：PaddleOCR-VL 视觉 patch 嵌入与 2D RoPE
 class PaddleOCRVisionEmbeddings(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PaddleOCRVisionConfig):
         super().__init__()
         self.config = config
@@ -590,6 +624,7 @@ class PaddleOCRVisionEmbeddings(nn.Module):
         )
         return (self.position_embedding(interp_indices) * interp_weights[:, :, None]).sum(1).unsqueeze(0)
 
+    # forward：模块前向计算
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -624,6 +659,7 @@ class PaddleOCRVisionEmbeddings(nn.Module):
         return embeddings
 
 
+# apply_rotary_pos_emb_vision：视觉注意力 Q/K 应用 2D RoPE
 def apply_rotary_pos_emb_vision(
     q: torch.Tensor, k: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor
 ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -638,9 +674,11 @@ def apply_rotary_pos_emb_vision(
     return q_embed, k_embed
 
 
+# PaddleOCRVisionAttention：PaddleOCR-VL 视觉多头自注意力
 class PaddleOCRVisionAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PaddleOCRVisionConfig):
         super().__init__()
         self.config = config
@@ -662,6 +700,7 @@ class PaddleOCRVisionAttention(nn.Module):
         self.scaling = self.head_dim**-0.5
         self.attention_dropout = config.attention_dropout
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -744,7 +783,9 @@ class PaddleOCRVisionAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# PaddleOCRVisionMLP：PaddleOCR-VL 视觉 GELU 前馈 MLP
 class PaddleOCRVisionMLP(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PaddleOCRVisionConfig):
         super().__init__()
         self.config = config
@@ -752,6 +793,7 @@ class PaddleOCRVisionMLP(nn.Module):
         self.fc1 = nn.Linear(config.hidden_size, config.intermediate_size)
         self.fc2 = nn.Linear(config.intermediate_size, config.hidden_size)
 
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.fc1(hidden_states)
         hidden_states = self.activation_fn(hidden_states)
@@ -759,7 +801,9 @@ class PaddleOCRVisionMLP(nn.Module):
         return hidden_states
 
 
+# PaddleOCRVisionEncoderLayer：PaddleOCR-VL 视觉 Transformer 编码器单层
 class PaddleOCRVisionEncoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PaddleOCRVisionConfig):
         super().__init__()
         self.embed_dim = config.hidden_size
@@ -769,6 +813,7 @@ class PaddleOCRVisionEncoderLayer(GradientCheckpointingLayer):
         self.mlp = PaddleOCRVisionMLP(config=config)
 
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -801,6 +846,7 @@ class PaddleOCRVisionEncoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# PaddleOCRVisionEncoder：PaddleOCR-VL 视觉 Transformer 编码器堆叠
 class PaddleOCRVisionEncoder(nn.Module):
     """
     Transformer encoder consisting of `config.num_hidden_layers` self attention layers. Each layer is a
@@ -810,6 +856,7 @@ class PaddleOCRVisionEncoder(nn.Module):
         config: PaddleOCRVisionConfig
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PaddleOCRVisionConfig):
         super().__init__()
         self.config = config
@@ -823,6 +870,7 @@ class PaddleOCRVisionEncoder(nn.Module):
     # Ignore copy
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         inputs_embeds: torch.FloatTensor,
@@ -869,6 +917,7 @@ class PaddleOCRVisionEncoder(nn.Module):
         )
 
 
+# PaddleOCRVisionTransformer：PaddleOCR-VL 完整视觉 ViT 骨干
 class PaddleOCRVisionTransformer(PaddleOCRVLPreTrainedModel):
     config: PaddleOCRVisionConfig
     main_input_name = "pixel_values"
@@ -878,6 +927,7 @@ class PaddleOCRVisionTransformer(PaddleOCRVLPreTrainedModel):
         "attentions": PaddleOCRVisionAttention,
     }
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PaddleOCRVisionConfig):
         super().__init__(config)
         self.config = config
@@ -891,6 +941,7 @@ class PaddleOCRVisionTransformer(PaddleOCRVLPreTrainedModel):
 
     @merge_with_config_defaults
     @capture_outputs(tie_last_hidden_states=False)
+    # forward：模块前向计算
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -924,11 +975,13 @@ class PaddleOCRVisionTransformer(PaddleOCRVLPreTrainedModel):
         )
 
 
+# PaddleOCRVisionModel：PaddleOCR-VL 视觉编码器封装
 class PaddleOCRVisionModel(PaddleOCRVLPreTrainedModel):
     config: PaddleOCRVisionConfig
     main_input_name = "pixel_values"
     input_modalities = "image"
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PaddleOCRVisionConfig):
         super().__init__(config)
 
@@ -937,6 +990,7 @@ class PaddleOCRVisionModel(PaddleOCRVLPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    # forward：模块前向计算
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -955,6 +1009,7 @@ class PaddleOCRVisionModel(PaddleOCRVLPreTrainedModel):
 
 @auto_docstring
 @dataclass
+# PaddleOCRVLModelOutputWithPast：PaddleOCR-VL 多模态前向输出（含 KV cache）
 class PaddleOCRVLModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     rope_deltas (`torch.LongTensor` of shape `(batch_size, )`, *optional*):
@@ -967,6 +1022,7 @@ class PaddleOCRVLModelOutputWithPast(BaseModelOutputWithPast):
 
 @auto_docstring
 @dataclass
+# PaddleOCRVLCausalLMOutputWithPast：PaddleOCR-VL 条件生成输出（logits + past）
 class PaddleOCRVLCausalLMOutputWithPast(CausalLMOutputWithPast):
     r"""
     rope_deltas (`torch.LongTensor` of shape `(batch_size, )`, *optional*):
@@ -978,12 +1034,14 @@ class PaddleOCRVLCausalLMOutputWithPast(CausalLMOutputWithPast):
 
 
 @auto_docstring
+# PaddleOCRVLModel：PaddleOCR-VL 视觉+文本多模态融合模型
 class PaddleOCRVLModel(PaddleOCRVLPreTrainedModel):
     base_model_prefix = "model"
     # Reference: fix gemma3 grad acc #37208
     accepts_loss_kwargs = False
     _keys_to_ignore_on_load_unexpected = ["packing_position_embedding", "vision_model.head"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: PaddleOCRVLConfig):
         super().__init__(config)
         self.visual = PaddleOCRVisionModel._from_config(config.vision_config)
@@ -1243,6 +1301,7 @@ class PaddleOCRVLModel(PaddleOCRVLPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor = None,
@@ -1298,10 +1357,12 @@ class PaddleOCRVLModel(PaddleOCRVLPreTrainedModel):
         return output
 
 
+# PaddleOCRVLForConditionalGeneration：PaddleOCR-VL 文档 OCR 条件生成
 class PaddleOCRVLForConditionalGeneration(PaddleOCRVLPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
     _keys_to_ignore_on_load_unexpected = ["packing_position_embedding", "vision_model.head"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__(config)
         self.model = PaddleOCRVLModel(config)
@@ -1324,6 +1385,7 @@ class PaddleOCRVLForConditionalGeneration(PaddleOCRVLPreTrainedModel, Generation
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,

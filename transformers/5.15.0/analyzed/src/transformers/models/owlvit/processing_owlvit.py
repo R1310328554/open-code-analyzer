@@ -15,6 +15,8 @@
 Image/Text processor class for OWL-ViT
 """
 
+# OWL-ViT 处理器：开放词汇检测图像+文本联合编码与检测后处理
+
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -35,6 +37,7 @@ if TYPE_CHECKING:
     from .modeling_owlvit import OwlViTImageGuidedObjectDetectionOutput, OwlViTObjectDetectionOutput
 
 
+# OwlViTImagesKwargs：OWL-ViT 图像 kwargs（含 query_images 图像引导检测）
 class OwlViTImagesKwargs(ImagesKwargs, total=False):
     """
     query_images (`ImageInput`, *optional*):
@@ -46,6 +49,7 @@ class OwlViTImagesKwargs(ImagesKwargs, total=False):
     query_images: ImageInput | None
 
 
+# OwlViTProcessorKwargs：OWL-ViT 联合处理器默认 text/images 参数
 class OwlViTProcessorKwargs(ProcessingKwargs, total=False):
     images_kwargs: OwlViTImagesKwargs
     _defaults = {
@@ -59,11 +63,14 @@ class OwlViTProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# OwlViTProcessor：OWL-ViT 图像处理器与 CLIP tokenizer 联合封装
 class OwlViTProcessor(ProcessorMixin):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, image_processor=None, tokenizer=None, **kwargs):
         super().__init__(image_processor, tokenizer)
 
     @auto_docstring
+    # __call__：联合编码图像与文本为模型 batch 输入
     def __call__(
         self,
         images: ImageInput | None = None,
@@ -146,6 +153,7 @@ class OwlViTProcessor(ProcessorMixin):
         """
         return self.image_processor.post_process(*args, **kwargs)
 
+    # post_process_grounded_object_detection：文本引导检测输出转最终框与 text_labels
     def post_process_grounded_object_detection(
         self,
         outputs: "OwlViTObjectDetectionOutput",
@@ -194,6 +202,7 @@ class OwlViTProcessor(ProcessorMixin):
 
         return output
 
+    # post_process_image_guided_detection：图像引导检测输出转 COCO 格式框
     def post_process_image_guided_detection(
         self,
         outputs: "OwlViTImageGuidedObjectDetectionOutput",

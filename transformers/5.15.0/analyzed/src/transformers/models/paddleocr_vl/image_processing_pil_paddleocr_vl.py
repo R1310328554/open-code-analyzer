@@ -35,6 +35,9 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# PaddleOCR-VL 图像处理：动态分辨率 smart_resize 与 patchify（PIL）
+
+# PaddleOCRVLImageProcessorKwargs：PaddleOCR-VL 图像预处理 kwargs（patch/merge 尺寸）
 class PaddleOCRVLImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     patch_size (`int`, *optional*, defaults to 14):
@@ -52,6 +55,7 @@ class PaddleOCRVLImageProcessorKwargs(ImagesKwargs, total=False):
     merge_size: int
 
 
+# smart_resize：按像素上下限与 patch 因子自适应 resize 高宽
 def smart_resize(
     height: int,
     width: int,
@@ -85,6 +89,7 @@ def smart_resize(
 
 
 @auto_docstring
+# PaddleOCRVLImageProcessorPil：PaddleOCR-VL PIL 后端动态分辨率 patchify
 class PaddleOCRVLImageProcessorPil(PilBackend):
     do_resize = True
     resample = PILImageResampling.BICUBIC
@@ -101,6 +106,7 @@ class PaddleOCRVLImageProcessorPil(PilBackend):
     valid_kwargs = PaddleOCRVLImageProcessorKwargs
     model_input_names = ["pixel_values", "image_grid_thw"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, **kwargs: Unpack[PaddleOCRVLImageProcessorKwargs]):
         # backward compatibility: override size with min_pixels and max_pixels if they are provided
         size = kwargs.pop("size", None)
@@ -124,6 +130,7 @@ class PaddleOCRVLImageProcessorPil(PilBackend):
             size = SizeDict(shortest_edge=min_pixels, longest_edge=max_pixels)
         return super()._standardize_kwargs(size=size, **kwargs)
 
+    # resize：带抗锯齿高斯模糊的 resize（对齐原版实现）
     def resize(
         self,
         image: np.ndarray,
@@ -150,6 +157,7 @@ class PaddleOCRVLImageProcessorPil(PilBackend):
             resample=resample,
         )
 
+    # patchify：将图像切分为 4D patch 网格供视觉编码器消费
     def patchify(
         self,
         image: np.ndarray,
@@ -195,6 +203,7 @@ class PaddleOCRVLImageProcessorPil(PilBackend):
     ) -> BatchFeature:
         return super().preprocess(images, **kwargs)
 
+    # _preprocess：OWLv2 图像预处理流水线（归一化→pad→resize）
     def _preprocess(
         self,
         images: list[np.ndarray],

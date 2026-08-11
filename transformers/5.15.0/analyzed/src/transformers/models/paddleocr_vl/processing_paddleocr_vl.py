@@ -26,6 +26,9 @@
 from ...processing_utils import ProcessingKwargs, ProcessorMixin
 
 
+# PaddleOCR-VL 处理器：图像 patch token 占位与 tokenizer 联合预处理
+
+# PaddleOCRVLProcessorKwargs：PaddleOCR-VL 处理器默认 text 参数
 class PaddleOCRVLProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -35,6 +38,7 @@ class PaddleOCRVLProcessorKwargs(ProcessingKwargs, total=False):
     }
 
 
+# PaddleOCRVLProcessor：PaddleOCR-VL 图像处理器与 tokenizer 联合封装
 class PaddleOCRVLProcessor(ProcessorMixin):
     r"""
     [`PaddleOCRVLProcessor`] offers all the functionalities of [`PaddleOCRVLImageProcessor`] and [`LLamaTokenizerFast`]. See the
@@ -52,11 +56,13 @@ class PaddleOCRVLProcessor(ProcessorMixin):
     tokenizer_class = "AutoTokenizer"
     valid_processor_kwargs = PaddleOCRVLProcessorKwargs
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, image_processor=None, tokenizer=None, chat_template=None, **kwargs):
         self.image_token = tokenizer.image_token
         self.image_token_id = tokenizer.image_token_id
         super().__init__(image_processor, tokenizer, chat_template=chat_template)
 
+    # replace_image_token：按 image_grid_thw 计算并展开图像占位 token 串
     def replace_image_token(self, image_inputs: dict, image_idx: int, **kwargs) -> str:
         merge_size = self.image_processor.merge_size
         num_tokens = int(image_inputs["image_grid_thw"][image_idx].prod()) // (merge_size * merge_size)

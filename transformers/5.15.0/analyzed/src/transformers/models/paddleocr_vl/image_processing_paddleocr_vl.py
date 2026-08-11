@@ -37,6 +37,9 @@ from ...processing_utils import ImagesKwargs, Unpack
 from ...utils import TensorType, auto_docstring
 
 
+# PaddleOCR-VL 图像处理：动态分辨率 smart_resize 与 patchify（Torchvision）
+
+# PaddleOCRVLImageProcessorKwargs：PaddleOCR-VL 图像预处理 kwargs（patch/merge 尺寸）
 class PaddleOCRVLImageProcessorKwargs(ImagesKwargs, total=False):
     r"""
     patch_size (`int`, *optional*, defaults to 14):
@@ -54,6 +57,7 @@ class PaddleOCRVLImageProcessorKwargs(ImagesKwargs, total=False):
     merge_size: int
 
 
+# smart_resize：按像素上下限与 patch 因子自适应 resize 高宽
 def smart_resize(
     height: int,
     width: int,
@@ -87,6 +91,7 @@ def smart_resize(
 
 
 @auto_docstring
+# PaddleOCRVLImageProcessor：PaddleOCR-VL Torchvision 后端动态分辨率 patchify
 class PaddleOCRVLImageProcessor(TorchvisionBackend):
     do_resize = True
     resample = PILImageResampling.BICUBIC
@@ -103,6 +108,7 @@ class PaddleOCRVLImageProcessor(TorchvisionBackend):
     valid_kwargs = PaddleOCRVLImageProcessorKwargs
     model_input_names = ["pixel_values", "image_grid_thw"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, **kwargs: Unpack[PaddleOCRVLImageProcessorKwargs]):
         # backward compatibility: override size with min_pixels and max_pixels if they are provided
         size = kwargs.pop("size", None)
@@ -134,6 +140,7 @@ class PaddleOCRVLImageProcessor(TorchvisionBackend):
     ) -> BatchFeature:
         return super().preprocess(images, **kwargs)
 
+    # resize：带抗锯齿高斯模糊的 resize（对齐原版实现）
     def resize(
         self,
         images: "torch.Tensor",
@@ -160,6 +167,7 @@ class PaddleOCRVLImageProcessor(TorchvisionBackend):
             resample=resample,
         )
 
+    # patchify：将图像切分为 4D patch 网格供视觉编码器消费
     def patchify(
         self,
         images: "torch.Tensor",
@@ -195,6 +203,7 @@ class PaddleOCRVLImageProcessor(TorchvisionBackend):
         )
         return flatten_patches, grid_h, grid_w
 
+    # _preprocess：OWLv2 图像预处理流水线（归一化→pad→resize）
     def _preprocess(
         self,
         images: list["torch.Tensor"],

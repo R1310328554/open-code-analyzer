@@ -48,6 +48,9 @@ if is_scipy_available():
     from scipy import ndimage as ndi
 
 
+# OWLv2 modular 源：继承 OwlViT 图像处理器并扩展方形 pad 与高分辨率 resize
+
+# _preprocess_resize_output_shape：校验 resize 输出尺寸与输入图像维度对齐
 def _preprocess_resize_output_shape(image, output_shape):
     """Validate resize output shape according to input image.
 
@@ -87,6 +90,7 @@ def _preprocess_resize_output_shape(image, output_shape):
     return image, output_shape
 
 
+# _clip_warp_output：仿射变换后将输出裁剪到输入图像数值范围
 def _clip_warp_output(input_image, output_image):
     """Clip output image to range of values of input image.
 
@@ -117,6 +121,7 @@ def _clip_warp_output(input_image, output_image):
     return output_image
 
 
+# _scale_boxes：将归一化框坐标缩放到目标图像尺寸
 def _scale_boxes(boxes, target_sizes):
     """
     Scale batch of bounding boxes to the target sizes.
@@ -149,6 +154,7 @@ def _scale_boxes(boxes, target_sizes):
 
 
 @auto_docstring
+# Owlv2ImageProcessor：OWLv2 Torchvision 后端方形 pad 与高分辨率 resize
 class Owlv2ImageProcessor(OwlViTImageProcessor):
     resample = PILImageResampling.BILINEAR
     image_mean = OPENAI_CLIP_MEAN
@@ -162,6 +168,7 @@ class Owlv2ImageProcessor(OwlViTImageProcessor):
     crop_size = None
     do_center_crop = None
 
+    # _pad_images：将图像零填充为正方形（短边对齐）
     def _pad_images(self, images: "torch.Tensor", constant_value: float = 0.0) -> "torch.Tensor":
         """
         Pad an image with zeros to the given size.
@@ -175,6 +182,7 @@ class Owlv2ImageProcessor(OwlViTImageProcessor):
         padded_image = tvF.pad(images, padding, fill=constant_value)
         return padded_image
 
+    # pad：OWLv2 将每张图像填充为正方形（非 batch 最大尺寸）
     def pad(
         self,
         images: list["torch.Tensor"],
@@ -199,6 +207,7 @@ class Owlv2ImageProcessor(OwlViTImageProcessor):
 
         return processed_images
 
+    # resize：带抗锯齿高斯模糊的 resize（对齐原版实现）
     def resize(
         self,
         image: "torch.Tensor",
@@ -253,6 +262,7 @@ class Owlv2ImageProcessor(OwlViTImageProcessor):
 
         return TorchvisionBackend.resize(filtered, size=size, antialias=False)
 
+    # _preprocess：OWLv2 图像预处理流水线（归一化→pad→resize）
     def _preprocess(
         self,
         images: list["torch.Tensor"],
@@ -313,6 +323,7 @@ class Owlv2ImageProcessor(OwlViTImageProcessor):
 
 @auto_docstring
 @requires(backends=("torch",))
+# Owlv2ImageProcessorPil：OWLv2 PIL/scipy 后端方形 pad 与高分辨率 resize
 class Owlv2ImageProcessorPil(OwlViTImageProcessorPil):
     resample = PILImageResampling.BILINEAR
     image_mean = OPENAI_CLIP_MEAN
@@ -326,6 +337,7 @@ class Owlv2ImageProcessorPil(OwlViTImageProcessorPil):
     crop_size = None
     do_center_crop = None
 
+    # pad：OWLv2 将每张图像填充为正方形（非 batch 最大尺寸）
     def pad(self, image: np.ndarray, constant_value: float = 0.0) -> np.ndarray:
         """
         Pad an image with zeros to the given size.
@@ -341,6 +353,7 @@ class Owlv2ImageProcessorPil(OwlViTImageProcessorPil):
         )
         return image
 
+    # resize：带抗锯齿高斯模糊的 resize（对齐原版实现）
     def resize(
         self,
         image: np.ndarray,
@@ -398,6 +411,7 @@ class Owlv2ImageProcessorPil(OwlViTImageProcessorPil):
         image = to_channel_dimension_format(image, ChannelDimension.FIRST)
         return image
 
+    # _preprocess：OWLv2 图像预处理流水线（归一化→pad→resize）
     def _preprocess(
         self,
         images: list[np.ndarray],

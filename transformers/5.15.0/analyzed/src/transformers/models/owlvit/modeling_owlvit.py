@@ -13,6 +13,8 @@
 # limitations under the License.
 """PyTorch OWL-ViT model."""
 
+# OWL-ViT 建模：CLIP 图文对比 + 开放词汇零样本目标检测
+
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
@@ -51,11 +53,13 @@ logger = logging.get_logger(__name__)
 
 
 # Copied from transformers.models.clip.modeling_clip.contrastive_loss with clip->owlvit
+# contrastive_loss：CLIP 风格对称对比学习损失
 def contrastive_loss(logits: torch.Tensor) -> torch.Tensor:
     return nn.functional.cross_entropy(logits, torch.arange(len(logits), device=logits.device))
 
 
 # Copied from transformers.models.clip.modeling_clip.image_text_contrastive_loss
+# image_text_contrastive_loss：图文双向对比损失（image↔text）
 def image_text_contrastive_loss(similarity: torch.Tensor) -> torch.Tensor:
     caption_loss = contrastive_loss(similarity)
     image_loss = contrastive_loss(similarity.T)
@@ -64,6 +68,7 @@ def image_text_contrastive_loss(similarity: torch.Tensor) -> torch.Tensor:
 
 @auto_docstring
 @dataclass
+# OwlViTOutput：OWL-ViT 图文对比模型输出（logits + 嵌入）
 class OwlViTOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `return_loss` is `True`):
@@ -101,6 +106,7 @@ class OwlViTOutput(ModelOutput):
 
 
 # Copied from transformers.loss.loss_for_object_detection._upcast
+# _upcast：数值运算前上转型以避免溢出
 def _upcast(t: Tensor) -> Tensor:
     # Protects from numerical overflows in multiplications by upcasting to the equivalent higher type
     if t.is_floating_point():
@@ -110,6 +116,7 @@ def _upcast(t: Tensor) -> Tensor:
 
 
 # Copied from transformers.loss.loss_for_object_detection.box_area
+# box_area：计算 axis-aligned 边界框面积
 def box_area(boxes: Tensor) -> Tensor:
     """
     Computes the area of a set of bounding boxes, which are specified by its (x1, y1, x2, y2) coordinates.
@@ -127,6 +134,7 @@ def box_area(boxes: Tensor) -> Tensor:
 
 
 # Copied from transformers.loss.loss_for_object_detection.box_iou
+# box_iou：计算两组边界框的 IoU 矩阵
 def box_iou(boxes1, boxes2):
     area1 = box_area(boxes1)
     area2 = box_area(boxes2)
@@ -144,6 +152,7 @@ def box_iou(boxes1, boxes2):
 
 
 # Copied from transformers.loss.loss_for_object_detection.generalized_box_iou
+# generalized_box_iou：广义 IoU（含不相交框惩罚项）
 def generalized_box_iou(boxes1, boxes2):
     """
     Generalized IoU from https://giou.stanford.edu/. The boxes should be in [x0, y0, x1, y1] (corner) format.
@@ -174,6 +183,7 @@ def generalized_box_iou(boxes1, boxes2):
     """
 )
 @dataclass
+# OwlViTObjectDetectionOutput：OWL-ViT 文本引导目标检测输出
 class OwlViTObjectDetectionOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` are provided)):
@@ -226,6 +236,7 @@ class OwlViTObjectDetectionOutput(ModelOutput):
     """
 )
 @dataclass
+# OwlViTImageGuidedObjectDetectionOutput：OWL-ViT 图像引导目标检测输出
 class OwlViTImageGuidedObjectDetectionOutput(ModelOutput):
     r"""
     logits (`torch.FloatTensor` of shape `(batch_size, num_patches, num_queries)`):
@@ -271,7 +282,9 @@ class OwlViTImageGuidedObjectDetectionOutput(ModelOutput):
         )
 
 
+# OwlViTVisionEmbeddings：OWL-ViT 视觉 patch/class 嵌入
 class OwlViTVisionEmbeddings(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: OwlViTVisionConfig):
         super().__init__()
         self.patch_size = config.patch_size
@@ -331,6 +344,7 @@ class OwlViTVisionEmbeddings(nn.Module):
         patch_pos_embed = patch_pos_embed.permute(0, 2, 3, 1).view(1, -1, dim)
         return torch.cat((class_pos_embed, patch_pos_embed), dim=1)
 
+    # forward：模块前向计算
     def forward(self, pixel_values: torch.FloatTensor, interpolate_pos_encoding: bool = False) -> torch.Tensor:
         batch_size, _, height, width = pixel_values.shape
         patch_embeds = self.patch_embedding(pixel_values)  # shape = [batch_size, num_channels, height, width]
@@ -344,7 +358,9 @@ class OwlViTVisionEmbeddings(nn.Module):
         return embeddings
 
 
+# OwlViTTextEmbeddings：OWL-ViT 文本 token + 位置嵌入
 class OwlViTTextEmbeddings(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: OwlViTTextConfig):
         super().__init__()
         self.token_embedding = nn.Embedding(config.vocab_size, config.hidden_size)
@@ -353,6 +369,7 @@ class OwlViTTextEmbeddings(nn.Module):
         # position_ids (1, len position emb) is contiguous in memory and exported when serialized
         self.position_ids = nn.Buffer(torch.arange(config.max_position_embeddings).expand((1, -1)), persistent=False)
 
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -374,6 +391,7 @@ class OwlViTTextEmbeddings(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.eager_attention_forward
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -402,9 +420,11 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# OwlViTAttention：OWL-ViT 多头自注意力
 class OwlViTAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -425,6 +445,7 @@ class OwlViTAttention(nn.Module):
         self.q_proj = nn.Linear(self.embed_dim, self.embed_dim)
         self.out_proj = nn.Linear(self.embed_dim, self.embed_dim)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -460,7 +481,9 @@ class OwlViTAttention(nn.Module):
 
 
 # Copied from transformers.models.clip.modeling_clip.CLIPMLP with CLIP->OwlViT
+# OwlViTMLP：OWL-ViT 两层 MLP 前馈
 class OwlViTMLP(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -468,6 +491,7 @@ class OwlViTMLP(nn.Module):
         self.fc1 = nn.Linear(config.hidden_size, config.intermediate_size)
         self.fc2 = nn.Linear(config.intermediate_size, config.hidden_size)
 
+    # forward：模块前向计算
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.fc1(hidden_states)
         hidden_states = self.activation_fn(hidden_states)
@@ -476,7 +500,9 @@ class OwlViTMLP(nn.Module):
 
 
 # Copied from transformers.models.clip.modeling_clip.CLIPEncoderLayer with CLIP->OwlViT
+# OwlViTEncoderLayer：OWL-ViT Transformer 编码器单层
 class OwlViTEncoderLayer(GradientCheckpointingLayer):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: OwlViTVisionConfig | OwlViTTextConfig):
         super().__init__()
         self.embed_dim = config.hidden_size
@@ -485,6 +511,7 @@ class OwlViTEncoderLayer(GradientCheckpointingLayer):
         self.mlp = OwlViTMLP(config)
         self.layer_norm2 = nn.LayerNorm(self.embed_dim, eps=config.layer_norm_eps)
 
+    # forward：模块前向计算
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -510,6 +537,7 @@ class OwlViTEncoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# OwlViTPreTrainedModel：OWL-ViT 预训练基类与权重初始化
 class OwlViTPreTrainedModel(PreTrainedModel):
     config: OwlViTConfig
     base_model_prefix = "owlvit"
@@ -526,6 +554,7 @@ class OwlViTPreTrainedModel(PreTrainedModel):
     }
 
     @torch.no_grad()
+    # _init_weights：按模块类型初始化权重
     def _init_weights(self, module: nn.Module):
         """Initialize the weights"""
         super()._init_weights(module)
@@ -566,6 +595,7 @@ class OwlViTPreTrainedModel(PreTrainedModel):
 
 
 # Copied from transformers.models.clip.modeling_clip.CLIPEncoder with CLIP->OwlViT
+# OwlViTEncoder：OWL-ViT Transformer 编码器堆叠
 class OwlViTEncoder(nn.Module):
     """
     Transformer encoder consisting of `config.num_hidden_layers` self attention layers. Each layer is a
@@ -575,12 +605,14 @@ class OwlViTEncoder(nn.Module):
         config: OwlViTConfig
     """
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: OwlViTConfig):
         super().__init__()
         self.config = config
         self.layers = nn.ModuleList([OwlViTEncoderLayer(config) for _ in range(config.num_hidden_layers)])
         self.gradient_checkpointing = False
 
+    # forward：模块前向计算
     def forward(
         self,
         inputs_embeds,
@@ -600,7 +632,9 @@ class OwlViTEncoder(nn.Module):
         )
 
 
+# OwlViTTextTransformer：OWL-ViT 文本 Transformer 编码器
 class OwlViTTextTransformer(OwlViTPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: OwlViTTextConfig):
         super().__init__(config)
 
@@ -615,6 +649,7 @@ class OwlViTTextTransformer(OwlViTPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs(tie_last_hidden_states=False)
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.Tensor | None = None,
@@ -663,10 +698,12 @@ class OwlViTTextTransformer(OwlViTPreTrainedModel):
         )
 
 
+# OwlViTTextModel：OWL-ViT 文本编码器封装
 class OwlViTTextModel(OwlViTPreTrainedModel):
     config: OwlViTTextConfig
     input_modalities = ("text",)
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: OwlViTTextConfig):
         super().__init__(config)
         self.text_model = OwlViTTextTransformer(config)
@@ -680,6 +717,7 @@ class OwlViTTextModel(OwlViTPreTrainedModel):
         self.text_model.embeddings.token_embedding = value
 
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.Tensor | None = None,
@@ -713,7 +751,9 @@ class OwlViTTextModel(OwlViTPreTrainedModel):
         )
 
 
+# OwlViTVisionTransformer：OWL-ViT 视觉 Transformer 编码器
 class OwlViTVisionTransformer(OwlViTPreTrainedModel):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: OwlViTVisionConfig):
         super().__init__(config)
 
@@ -728,6 +768,7 @@ class OwlViTVisionTransformer(OwlViTPreTrainedModel):
     @merge_with_config_defaults
     @capture_outputs(tie_last_hidden_states=False)
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         pixel_values: torch.FloatTensor,
@@ -756,11 +797,13 @@ class OwlViTVisionTransformer(OwlViTPreTrainedModel):
         )
 
 
+# OwlViTVisionModel：OWL-ViT 视觉编码器封装
 class OwlViTVisionModel(OwlViTPreTrainedModel):
     config: OwlViTVisionConfig
     main_input_name = "pixel_values"
     input_modalities = ("image",)
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: OwlViTVisionConfig):
         super().__init__(config)
         self.vision_model = OwlViTVisionTransformer(config)
@@ -771,6 +814,7 @@ class OwlViTVisionModel(OwlViTPreTrainedModel):
         return self.vision_model.embeddings.patch_embedding
 
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         pixel_values: torch.FloatTensor | None = None,
@@ -806,9 +850,11 @@ class OwlViTVisionModel(OwlViTPreTrainedModel):
 
 
 @auto_docstring
+# OwlViTModel：OWL-ViT 图文对比双塔模型
 class OwlViTModel(OwlViTPreTrainedModel):
     config: OwlViTConfig
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: OwlViTConfig):
         super().__init__(config)
 
@@ -902,6 +948,7 @@ class OwlViTModel(OwlViTPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -980,7 +1027,9 @@ class OwlViTModel(OwlViTPreTrainedModel):
         )
 
 
+# OwlViTBoxPredictionHead：OWL-ViT 检测框回归预测头
 class OwlViTBoxPredictionHead(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: OwlViTConfig, out_dim: int = 4):
         super().__init__()
 
@@ -990,6 +1039,7 @@ class OwlViTBoxPredictionHead(nn.Module):
         self.gelu = nn.GELU()
         self.dense2 = nn.Linear(width, out_dim)
 
+    # forward：模块前向计算
     def forward(self, image_features: torch.Tensor) -> torch.FloatTensor:
         output = self.dense0(image_features)
         output = self.gelu(output)
@@ -999,7 +1049,9 @@ class OwlViTBoxPredictionHead(nn.Module):
         return output
 
 
+# OwlViTClassPredictionHead：OWL-ViT 开放词汇类别匹配预测头
 class OwlViTClassPredictionHead(nn.Module):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: OwlViTConfig):
         super().__init__()
 
@@ -1011,6 +1063,7 @@ class OwlViTClassPredictionHead(nn.Module):
         self.logit_scale = nn.Linear(self.query_dim, 1)
         self.elu = nn.ELU()
 
+    # forward：模块前向计算
     def forward(
         self,
         image_embeds: torch.FloatTensor,
@@ -1047,9 +1100,11 @@ class OwlViTClassPredictionHead(nn.Module):
         return (pred_logits, image_class_embeds)
 
 
+# OwlViTForObjectDetection：OWL-ViT 开放词汇零样本目标检测
 class OwlViTForObjectDetection(OwlViTPreTrainedModel):
     config: OwlViTConfig
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, config: OwlViTConfig):
         super().__init__(config)
 
@@ -1374,6 +1429,7 @@ class OwlViTForObjectDetection(OwlViTPreTrainedModel):
 
     @can_return_tuple
     @auto_docstring
+    # forward：模块前向计算
     def forward(
         self,
         input_ids: torch.Tensor,

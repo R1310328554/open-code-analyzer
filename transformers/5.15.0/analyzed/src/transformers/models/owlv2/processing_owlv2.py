@@ -15,6 +15,8 @@
 Image/Text processor class for OWLv2
 """
 
+# OWLv2 处理器：开放词汇检测图像+文本联合编码与检测后处理
+
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -35,6 +37,7 @@ if TYPE_CHECKING:
     from .modeling_owlv2 import Owlv2ImageGuidedObjectDetectionOutput, Owlv2ObjectDetectionOutput
 
 
+# Owlv2ImagesKwargs：OWLv2 图像 kwargs（含 query_images 图像引导检测）
 class Owlv2ImagesKwargs(ImagesKwargs, total=False):
     """
     query_images (`ImageInput`, *optional*):
@@ -46,6 +49,7 @@ class Owlv2ImagesKwargs(ImagesKwargs, total=False):
     query_images: ImageInput | None
 
 
+# Owlv2ProcessorKwargs：OWLv2 联合处理器默认 text/images 参数
 class Owlv2ProcessorKwargs(ProcessingKwargs, total=False):
     images_kwargs: Owlv2ImagesKwargs
     _defaults = {
@@ -59,12 +63,15 @@ class Owlv2ProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# Owlv2Processor：OWLv2 图像处理器与 CLIP tokenizer 联合封装
 class Owlv2Processor(ProcessorMixin):
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, image_processor, tokenizer, **kwargs):
         super().__init__(image_processor, tokenizer)
 
     @auto_docstring
     # Copied from transformers.models.owlvit.processing_owlvit.OwlViTProcessor.__call__ with OwlViT->Owlv2
+    # __call__：联合编码图像与文本为模型 batch 输入
     def __call__(
         self,
         images: ImageInput | None = None,
@@ -141,6 +148,7 @@ class Owlv2Processor(ProcessorMixin):
         return BatchFeature(data=data, tensor_type=return_tensors)
 
     # Copied from transformers.models.owlvit.processing_owlvit.OwlViTProcessor.post_process_grounded_object_detection with OwlViT->Owlv2
+    # post_process_grounded_object_detection：文本引导检测输出转最终框与 text_labels
     def post_process_grounded_object_detection(
         self,
         outputs: "Owlv2ObjectDetectionOutput",
@@ -190,6 +198,7 @@ class Owlv2Processor(ProcessorMixin):
         return output
 
     # Copied from transformers.models.owlvit.processing_owlvit.OwlViTProcessor.post_process_image_guided_detection with OwlViT->Owlv2
+    # post_process_image_guided_detection：图像引导检测输出转 COCO 格式框
     def post_process_image_guided_detection(
         self,
         outputs: "Owlv2ImageGuidedObjectDetectionOutput",

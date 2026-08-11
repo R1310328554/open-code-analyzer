@@ -13,6 +13,8 @@
 # limitations under the License.
 """Image processor class for OwlViT"""
 
+# OWL-ViT 图像处理：768 分辨率 resize 与检测框坐标变换（PIL）
+
 from typing import TYPE_CHECKING
 
 from ...image_processing_backends import PilBackend
@@ -23,6 +25,7 @@ from ...utils import TensorType, auto_docstring, logging
 from ...utils.import_utils import requires
 
 
+# _upcast：数值运算前上转型以避免溢出
 def _upcast(t):
     # Protects from numerical overflows in multiplications by upcasting to the equivalent higher type
     import torch
@@ -34,6 +37,7 @@ def _upcast(t):
 
 
 # Adapted from transformers.models.owlvit.image_processing_owlvit._scale_boxes
+# _scale_boxes：将归一化框坐标缩放到目标图像尺寸
 def _scale_boxes(boxes, target_sizes):
     """
     Scale batch of bounding boxes to the target sizes.
@@ -63,6 +67,7 @@ def _scale_boxes(boxes, target_sizes):
     return boxes
 
 
+# box_area：计算 axis-aligned 边界框面积
 def box_area(boxes):
     """
     Computes the area of a set of bounding boxes, which are specified by its (x1, y1, x2, y2) coordinates.
@@ -79,6 +84,7 @@ def box_area(boxes):
 
 
 # Adapted from transformers.models.owlvit.image_processing_owlvit.box_iou
+# box_iou：计算两组边界框的 IoU 矩阵
 def box_iou(boxes1, boxes2):
     import torch
 
@@ -105,6 +111,7 @@ logger = logging.get_logger(__name__)
 
 
 @auto_docstring
+# OwlViTImageProcessorPil：OWL-ViT PIL 后端图像预处理与检测后处理
 class OwlViTImageProcessorPil(PilBackend):
     resample = PILImageResampling.BICUBIC
     image_mean = OPENAI_CLIP_MEAN
@@ -119,6 +126,7 @@ class OwlViTImageProcessorPil(PilBackend):
     do_convert_rgb = True
     model_input_names = ["pixel_values"]
 
+    # __init__：初始化模块/处理器默认参数与依赖组件
     def __init__(self, **kwargs: Unpack[ImagesKwargs]):
         # Early versions of the OWL-ViT config on the hub had "rescale" as a flag. This clashes with the
         # vision image processor method `rescale` as it would be set as an attribute during the super().__init__
@@ -130,6 +138,7 @@ class OwlViTImageProcessorPil(PilBackend):
         super().__init__(**kwargs)
 
     @requires(backends=("torch",))
+    # post_process_object_detection：文本引导检测 raw 输出转最终边界框
     def post_process_object_detection(
         self,
         outputs: "OwlViTObjectDetectionOutput",
@@ -186,6 +195,7 @@ class OwlViTImageProcessorPil(PilBackend):
         return results
 
     @requires(backends=("torch",))
+    # post_process_image_guided_detection：图像引导检测输出转 COCO 格式框
     def post_process_image_guided_detection(self, outputs, threshold=0.0, nms_threshold=0.3, target_sizes=None):
         """
         Converts the output of [`OwlViTForObjectDetection.image_guided_detection`] into the format expected by the COCO

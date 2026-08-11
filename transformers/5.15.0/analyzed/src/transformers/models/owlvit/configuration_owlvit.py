@@ -13,6 +13,8 @@
 # limitations under the License.
 """OWL-ViT model configuration"""
 
+# OWL-ViT 配置：CLIP 双塔 + 开放词汇零样本检测超参
+
 from huggingface_hub.dataclasses import strict
 
 from ...configuration_utils import PreTrainedConfig
@@ -22,8 +24,10 @@ from ...utils import auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# OwlViTTextConfig：OWL-ViT CLIP 风格文本编码器超参
 @auto_docstring(checkpoint="google/owlvit-base-patch16")
 @strict
+# OwlViTTextConfig：OWL-ViT CLIP 风格文本编码器超参
 class OwlViTTextConfig(PreTrainedConfig):
     r"""
     Example:
@@ -60,8 +64,10 @@ class OwlViTTextConfig(PreTrainedConfig):
     eos_token_id: int | list[int] | None = 49407
 
 
+# OwlViTVisionConfig：OWL-ViT CLIP 风格视觉 ViT 超参
 @auto_docstring(checkpoint="google/owlvit-base-patch16")
 @strict
+# OwlViTVisionConfig：OWL-ViT CLIP 风格视觉 ViT 超参
 class OwlViTVisionConfig(PreTrainedConfig):
     r"""
     Example:
@@ -96,8 +102,10 @@ class OwlViTVisionConfig(PreTrainedConfig):
     initializer_factor: float = 1.0
 
 
+# OwlViTConfig：OWL-ViT 图文对比 + 开放词汇检测联合超参
 @auto_docstring(checkpoint="google/owlvit-base-patch16")
 @strict
+# OwlViTConfig：OWL-ViT 图文对比 + 开放词汇检测联合超参
 class OwlViTConfig(PreTrainedConfig):
     model_type = "owlvit"
     sub_configs = {"text_config": OwlViTTextConfig, "vision_config": OwlViTVisionConfig}
@@ -109,6 +117,7 @@ class OwlViTConfig(PreTrainedConfig):
     return_dict: bool = True
     initializer_factor: float = 1.0
 
+    # __post_init__：初始化后解析 text/vision 子配置对象
     def __post_init__(self, **kwargs):
         if self.text_config is None:
             self.text_config = OwlViTTextConfig()
