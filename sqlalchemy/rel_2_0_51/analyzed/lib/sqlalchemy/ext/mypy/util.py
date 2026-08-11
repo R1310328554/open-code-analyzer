@@ -5,6 +5,10 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
+# mypy 插件工具：TypeInfo 元数据、CallExpr 解析与类型序列化
+
+# mypy 插件工具：TypeInfo 元数据、CallExpr 解析与类型序列化
+
 from __future__ import annotations
 
 import re
@@ -59,6 +63,8 @@ mypy_14 = _vers >= (1, 4)
 _TArgType = TypeVar("_TArgType", bound=Union[CallExpr, NameExpr])
 
 
+# 序列化/反序列化的 ORM 属性描述（名、行号、类型）
+# 序列化/反序列化的 ORM 属性描述（名、行号、类型）
 class SQLAlchemyAttribute:
     def __init__(
         self,
@@ -74,6 +80,8 @@ class SQLAlchemyAttribute:
         self.type = typ
         self.info = info
 
+    # 将属性类型序列化存入 TypeInfo.metadata
+    # 将属性类型序列化存入 TypeInfo.metadata
     def serialize(self) -> JsonDict:
         assert self.type
         return {
@@ -83,6 +91,8 @@ class SQLAlchemyAttribute:
             "type": serialize_type(self.type),
         }
 
+    # 子类继承泛型 super 时展开 TypeVar
+    # 子类继承泛型 super 时展开 TypeVar
     def expand_typevar_from_subtype(self, sub_type: TypeInfo) -> None:
         """Expands type vars in the context of a subtype when an attribute is
         inherited from a generic super type.
@@ -93,6 +103,8 @@ class SQLAlchemyAttribute:
         self.type = map_type_from_supertype(self.type, sub_type, self.info)
 
     @classmethod
+    # 从 metadata 恢复 SQLAlchemyAttribute
+    # 从 metadata 恢复 SQLAlchemyAttribute
     def deserialize(
         cls,
         info: TypeInfo,
@@ -104,6 +116,8 @@ class SQLAlchemyAttribute:
         return cls(typ=typ, info=info, **data)
 
 
+# 判断是否为双下划线特殊名
+# 判断是否为双下划线特殊名
 def name_is_dunder(name: str) -> bool:
     return bool(re.match(r"^__.+?__$", name))
 
@@ -125,10 +139,14 @@ def _get_info_mro_metadata(info: TypeInfo, key: str) -> Optional[Any]:
     return None
 
 
+# 初始化 TypeInfo 的 sqlalchemy metadata 命名空间
+# 初始化 TypeInfo 的 sqlalchemy metadata 命名空间
 def establish_as_sqlalchemy(info: TypeInfo) -> None:
     info.metadata.setdefault("sqlalchemy", {})
 
 
+# 标记 TypeInfo 为 Declarative Base
+# 标记 TypeInfo 为 Declarative Base
 def set_is_base(info: TypeInfo) -> None:
     _set_info_metadata(info, "is_base", True)
 
@@ -138,6 +156,8 @@ def get_is_base(info: TypeInfo) -> bool:
     return is_base is True
 
 
+# MRO 上是否存在 declarative base 标记
+# MRO 上是否存在 declarative base 标记
 def has_declarative_base(info: TypeInfo) -> bool:
     is_base = _get_info_mro_metadata(info, "is_base")
     return is_base is True
@@ -152,6 +172,8 @@ def get_has_table(info: TypeInfo) -> bool:
     return is_base is True
 
 
+# 读取并反序列化类上已缓存的 mapped 属性列表
+# 读取并反序列化类上已缓存的 mapped 属性列表
 def get_mapped_attributes(
     info: TypeInfo, api: SemanticAnalyzerPluginInterface
 ) -> Optional[List[SQLAlchemyAttribute]]:
@@ -178,6 +200,8 @@ def format_type(typ_: Type, options: Options) -> str:
         return _mypy_format_type(typ_)  # type: ignore
 
 
+# 将 mapped 属性列表序列化写入 metadata
+# 将 mapped 属性列表序列化写入 metadata
 def set_mapped_attributes(
     info: TypeInfo, attributes: List[SQLAlchemyAttribute]
 ) -> None:
@@ -188,11 +212,15 @@ def set_mapped_attributes(
     )
 
 
+# 带 [SQLAlchemy Mypy plugin] 前缀的 api.fail
+# 带 [SQLAlchemy Mypy plugin] 前缀的 api.fail
 def fail(api: SemanticAnalyzerPluginInterface, msg: str, ctx: Context) -> None:
     msg = "[SQLAlchemy Mypy plugin] %s" % msg
     return api.fail(msg, ctx)
 
 
+# 向当前模块全局符号表注入 ORM 符号
+# 向当前模块全局符号表注入 ORM 符号
 def add_global(
     ctx: Union[ClassDefContext, DynamicClassDefContext],
     module: str,
@@ -210,6 +238,8 @@ def add_global(
 
 
 @overload
+# 从 CallExpr 按名提取关键字参数表达式
+# 从 CallExpr 按名提取关键字参数表达式
 def get_callexpr_kwarg(
     callexpr: CallExpr, name: str, *, expr_types: None = ...
 ) -> Optional[Union[CallExpr, NameExpr]]: ...
@@ -244,6 +274,8 @@ def get_callexpr_kwarg(
     return None
 
 
+# 展开 if TYPE_CHECKING 块内语句
+# 展开 if TYPE_CHECKING 块内语句
 def flatten_typechecking(stmts: Iterable[Statement]) -> Iterator[Statement]:
     for stmt in stmts:
         if (
@@ -256,6 +288,8 @@ def flatten_typechecking(stmts: Iterable[Statement]) -> Iterator[Statement]:
             yield stmt
 
 
+# 解析被调对象的 Instance/TypeInfo
+# 解析被调对象的 Instance/TypeInfo
 def type_for_callee(callee: Expression) -> Optional[Union[Instance, TypeInfo]]:
     if isinstance(callee, (MemberExpr, NameExpr)):
         if isinstance(callee.node, FuncDef):
@@ -275,6 +309,8 @@ def type_for_callee(callee: Expression) -> Optional[Union[Instance, TypeInfo]]:
     return None
 
 
+# 将 UnboundType/Optional 转为 Instance 供赋值推断
+# 将 UnboundType/Optional 转为 Instance 供赋值推断
 def unbound_to_instance(
     api: SemanticAnalyzerPluginInterface, typ: Type
 ) -> Type:
@@ -325,6 +361,8 @@ def unbound_to_instance(
         return typ
 
 
+# 从 ClassDef 获取 TypeInfo（含延迟解析）
+# 从 ClassDef 获取 TypeInfo（含延迟解析）
 def info_for_cls(
     cls: ClassDef, api: SemanticAnalyzerPluginInterface
 ) -> Optional[TypeInfo]:
@@ -338,6 +376,8 @@ def info_for_cls(
     return cls.info
 
 
+# 兼容 mypy 版本的 Type.serialize 封装
+# 兼容 mypy 版本的 Type.serialize 封装
 def serialize_type(typ: Type) -> Union[str, JsonDict]:
     try:
         return typ.serialize()

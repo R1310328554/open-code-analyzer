@@ -6,7 +6,11 @@
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
 """
-Mypy plugin for SQLAlchemy ORM.
+# SQLAlchemy ORM 的 Mypy 插件入口：Declarative/Mapped 静态类型支持
+
+# SQLAlchemy ORM 的 Mypy 插件入口：Declarative/Mapped 静态类型支持
+
+Mypy plugin for SQLAlchemy ORM.Mypy plugin for SQLAlchemy ORM.Mypy plugin for SQLAlchemy ORM.
 
 """
 
@@ -57,7 +61,11 @@ else:
     )
 
 
+# Mypy Plugin 主类：注册各类 ORM 语义分析钩子
+# Mypy Plugin 主类：注册各类 ORM 语义分析钩子
 class SQLAlchemyPlugin(Plugin):
+    # declarative_base() 动态生成 Base 类时的钩子
+    # declarative_base() 动态生成 Base 类时的钩子
     def get_dynamic_class_hook(
         self, fullname: str
     ) -> Optional[Callable[[DynamicClassDefContext], None]]:
@@ -65,11 +73,15 @@ class SQLAlchemyPlugin(Plugin):
             return _dynamic_class_hook
         return None
 
+    # 为 registry.map_class/as_declarative_base 填充 decorator fullname
+    # 为 registry.map_class/as_declarative_base 填充 decorator fullname
     def get_customize_class_mro_hook(
         self, fullname: str
     ) -> Optional[Callable[[ClassDefContext], None]]:
         return _fill_in_decorators
 
+    # @mapped/@as_declarative/@declarative_mixin 装饰器钩子
+    # @mapped/@as_declarative/@declarative_mixin 装饰器钩子
     def get_class_decorator_hook(
         self, fullname: str
     ) -> Optional[Callable[[ClassDefContext], None]]:
@@ -89,6 +101,8 @@ class SQLAlchemyPlugin(Plugin):
 
         return None
 
+    # DeclarativeMeta 元类声明时将类标记为 declarative
+    # DeclarativeMeta 元类声明时将类标记为 declarative
     def get_metaclass_hook(
         self, fullname: str
     ) -> Optional[Callable[[ClassDefContext], None]]:
@@ -99,6 +113,8 @@ class SQLAlchemyPlugin(Plugin):
 
         return None
 
+    # 继承 DeclarativeBase 的子类扫描 ORM 属性类型
+    # 继承 DeclarativeBase 的子类扫描 ORM 属性类型
     def get_base_class_hook(
         self, fullname: str
     ) -> Optional[Callable[[ClassDefContext], None]]:
@@ -113,6 +129,8 @@ class SQLAlchemyPlugin(Plugin):
 
         return None
 
+    # QueryableAttribute 属性访问类型钩子
+    # QueryableAttribute 属性访问类型钩子
     def get_attribute_hook(
         self, fullname: str
     ) -> Optional[Callable[[AttributeContext], Type]]:
@@ -123,6 +141,8 @@ class SQLAlchemyPlugin(Plugin):
 
         return None
 
+    # 声明插件依赖的 sqlalchemy.orm 子模块
+    # 声明插件依赖的 sqlalchemy.orm 子模块
     def get_additional_deps(
         self, file: MypyFile
     ) -> List[Tuple[int, str, int]]:
@@ -134,10 +154,14 @@ class SQLAlchemyPlugin(Plugin):
         ]
 
 
+# Mypy 插件工厂：返回 SQLAlchemyPlugin 类
+# Mypy 插件工厂：返回 SQLAlchemyPlugin 类
 def plugin(version: str) -> TypingType[SQLAlchemyPlugin]:
     return SQLAlchemyPlugin
 
 
+# 动态创建 declarative Base 并设置 DeclarativeMeta
+# 动态创建 declarative Base 并设置 DeclarativeMeta
 def _dynamic_class_hook(ctx: DynamicClassDefContext) -> None:
     """Generate a declarative Base class when the declarative_base() function
     is encountered."""
@@ -177,6 +201,8 @@ def _dynamic_class_hook(ctx: DynamicClassDefContext) -> None:
     util.set_is_base(info)
 
 
+# 补全 registry 装饰器的 fullname 以触发 class decorator hook
+# 补全 registry 装饰器的 fullname 以触发 class decorator hook
 def _fill_in_decorators(ctx: ClassDefContext) -> None:
     for decorator in ctx.cls.decorators:
         # set the ".fullname" attribute of a class decorator
@@ -231,6 +257,8 @@ def _fill_in_decorators(ctx: ClassDefContext) -> None:
                 )
 
 
+# registry.map_class() 装饰器：扫描并应用 ORM 属性类型
+# registry.map_class() 装饰器：扫描并应用 ORM 属性类型
 def _cls_decorator_hook(ctx: ClassDefContext) -> None:
     _add_globals(ctx)
     assert isinstance(ctx.reason, nodes.MemberExpr)
@@ -248,6 +276,8 @@ def _cls_decorator_hook(ctx: ClassDefContext) -> None:
     decl_class.scan_declarative_assignments_and_apply_types(ctx.cls, ctx.api)
 
 
+# as_declarative_base()：设置 metaclass 并扫描 mixin
+# as_declarative_base()：设置 metaclass 并扫描 mixin
 def _base_cls_decorator_hook(ctx: ClassDefContext) -> None:
     _add_globals(ctx)
 
@@ -261,6 +291,8 @@ def _base_cls_decorator_hook(ctx: ClassDefContext) -> None:
     )
 
 
+# @declarative_mixin 标记 mixin 并扫描属性
+# @declarative_mixin 标记 mixin 并扫描属性
 def _declarative_mixin_hook(ctx: ClassDefContext) -> None:
     _add_globals(ctx)
     util.set_is_base(ctx.cls.info)
@@ -269,21 +301,29 @@ def _declarative_mixin_hook(ctx: ClassDefContext) -> None:
     )
 
 
+# 显式 metaclass=DeclarativeMeta 时标记为 declarative base
+# 显式 metaclass=DeclarativeMeta 时标记为 declarative base
 def _metaclass_cls_hook(ctx: ClassDefContext) -> None:
     util.set_is_base(ctx.cls.info)
 
 
+# 继承已有 DeclarativeBase 时扫描类体赋值
+# 继承已有 DeclarativeBase 时扫描类体赋值
 def _base_cls_hook(ctx: ClassDefContext) -> None:
     _add_globals(ctx)
     decl_class.scan_declarative_assignments_and_apply_types(ctx.cls, ctx.api)
 
 
+# QueryableAttribute 未知属性访问的默认类型
+# QueryableAttribute 未知属性访问的默认类型
 def _queryable_getattr_hook(ctx: AttributeContext) -> Type:
     # how do I....tell it it has no attribute of a certain name?
     # can't find any Type that seems to match that
     return ctx.default_attr_type
 
 
+# 向模块全局注入 __sa_Mapped 符号
+# 向模块全局注入 __sa_Mapped 符号
 def _add_globals(ctx: Union[ClassDefContext, DynamicClassDefContext]) -> None:
     """Add __sa_DeclarativeMeta and __sa_Mapped symbol to the global space
     for all class defs
@@ -293,6 +333,8 @@ def _add_globals(ctx: Union[ClassDefContext, DynamicClassDefContext]) -> None:
     util.add_global(ctx, "sqlalchemy.orm", "Mapped", "__sa_Mapped")
 
 
+# 为 declarative 类设置 DeclarativeMeta 元类
+# 为 declarative 类设置 DeclarativeMeta 元类
 def _set_declarative_metaclass(
     api: SemanticAnalyzerPluginInterface, target_cls: ClassDef
 ) -> None:

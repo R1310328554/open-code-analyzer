@@ -29,6 +29,10 @@ in a forwards-compatible way.
 
 """
 
+# 运行时检查 API：inspect() 统一入口与类型注册表
+
+# 运行时检查 API：inspect() 统一入口与类型注册表
+
 from __future__ import annotations
 
 from typing import Any
@@ -54,6 +58,8 @@ _IN = TypeVar("_IN", bound=Any)
 _registrars: Dict[type, Union[Literal[True], Callable[[Any], Any]]] = {}
 
 
+# 标记可 inspect 的类型，用于 typing 与 overload 联动
+# 标记可 inspect 的类型，用于 typing 与 overload 联动
 class Inspectable(Generic[_T]):
     """define a class as inspectable.
 
@@ -69,6 +75,8 @@ class Inspectable(Generic[_T]):
     __slots__ = ()
 
 
+# 类传入 inspect() 时调用 _sa_inspect_type 的协议
+# 类传入 inspect() 时调用 _sa_inspect_type 的协议
 class _InspectableTypeProtocol(Protocol[_TCov]):
     """a protocol defining a method that's used when a type (ie the class
     itself) is passed to inspect().
@@ -78,6 +86,8 @@ class _InspectableTypeProtocol(Protocol[_TCov]):
     def _sa_inspect_type(self) -> _TCov: ...
 
 
+# 实例传入 inspect() 时调用 _sa_inspect_instance 的协议
+# 实例传入 inspect() 时调用 _sa_inspect_instance 的协议
 class _InspectableProtocol(Protocol[_TCov]):
     """a protocol defining a method that's used when an instance is
     passed to inspect().
@@ -108,6 +118,8 @@ def inspect(subject: Any, raiseerr: Literal[False] = ...) -> Optional[Any]: ...
 
 
 @overload
+# 根据 subject 类型查找注册表并返回 Inspector/Mapper 等
+# 根据 subject 类型查找注册表并返回 Inspector/Mapper 等
 def inspect(subject: Any, raiseerr: bool = True) -> Any: ...
 
 
@@ -152,6 +164,8 @@ def inspect(subject: Any, raiseerr: bool = True) -> Any:
     return ret
 
 
+# 装饰器：为类型注册 inspect 回调函数
+# 装饰器：为类型注册 inspect 回调函数
 def _inspects(
     *types: Type[Any],
 ) -> Callable[[_F], _F]:
@@ -168,6 +182,8 @@ def _inspects(
 _TT = TypeVar("_TT", bound="Type[Any]")
 
 
+# 装饰器：inspect 直接返回原对象（如 Mapper/QueryableAttribute）
+# 装饰器：inspect 直接返回原对象（如 Mapper/QueryableAttribute）
 def _self_inspects(cls: _TT) -> _TT:
     if cls in _registrars:
         raise AssertionError("Type %s is already registered" % cls)

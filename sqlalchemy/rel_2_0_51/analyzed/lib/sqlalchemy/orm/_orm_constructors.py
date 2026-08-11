@@ -5,6 +5,10 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
+# ORM 映射构造器：relationship/mapped_column/composite 等工厂函数
+
+# ORM 映射构造器：relationship/mapped_column/composite 等工厂函数
+
 from __future__ import annotations
 
 import typing
@@ -95,6 +99,8 @@ def contains_alias(alias: Union[Alias, Subquery]) -> AliasOption:
     return AliasOption(alias)
 
 
+# 声明式 mapped_column：Column 与 ORM 选项的一体化构造
+# 声明式 mapped_column：Column 与 ORM 选项的一体化构造
 def mapped_column(
     __name_pos: Optional[
         Union[str, _TypeEngineArgument[Any], SchemaEventTarget]
@@ -456,6 +462,8 @@ def orm_insert_sentinel(
         for arg in ("init", "kw_only", "default", "default_factory")
     }
 )
+# 将 SQL 表达式映射为只读/持久化属性
+# 将 SQL 表达式映射为只读/持久化属性
 def column_property(
     column: _ORMColumnExprArgument[_T],
     *additional_columns: _ORMColumnExprArgument[Any],
@@ -630,6 +638,8 @@ def column_property(
 
 
 @overload
+# 将多列组合为单一 Python 复合属性
+# 将多列组合为单一 Python 复合属性
 def composite(
     _class_or_attr: _CompositeAttrType[Any],
     *attrs: _CompositeAttrType[Any],
@@ -828,6 +838,8 @@ def composite(
     )
 
 
+# 全局/选项级 loader 额外 WHERE 条件
+# 全局/选项级 loader 额外 WHERE 条件
 def with_loader_criteria(
     entity_or_base: _EntityType[Any],
     where_criteria: Union[
@@ -1027,6 +1039,8 @@ def with_loader_criteria(
     )
 
 
+# 声明实体间 relationship 关系属性
+# 声明实体间 relationship 关系属性
 def relationship(
     argument: Optional[_RelationshipArgumentType[Any]] = None,
     secondary: Optional[_RelationshipSecondaryArgument] = None,
@@ -1935,6 +1949,8 @@ def relationship(
     )
 
 
+# 属性同义词：将列/属性映射到另一个属性名
+# 属性同义词：将列/属性映射到另一个属性名
 def synonym(
     name: str,
     *,
@@ -2078,6 +2094,8 @@ def synonym(
     )
 
 
+# 便捷工厂：创建绑定 Engine 的 Session
+# 便捷工厂：创建绑定 Engine 的 Session
 def create_session(
     bind: Optional[_SessionBind] = None, **kwargs: Any
 ) -> Session:
@@ -2165,6 +2183,8 @@ def dynamic_loader(
     return relationship(argument, **kw)
 
 
+# 双向 relationship 的 backref 参数构造
+# 双向 relationship 的 backref 参数构造
 def backref(name: str, **kwargs: Any) -> ORMBackrefArgument:
     """When using the :paramref:`_orm.relationship.backref` parameter,
     provides specific parameters to be used when the new
@@ -2189,6 +2209,8 @@ def backref(name: str, **kwargs: Any) -> ORMBackrefArgument:
     return (name, kwargs)
 
 
+# 延迟加载列/属性的构造器包装
+# 延迟加载列/属性的构造器包装
 def deferred(
     column: _ORMColumnExprArgument[_T],
     *additional_columns: _ORMColumnExprArgument[Any],
@@ -2300,6 +2322,8 @@ def query_expression(
     return prop
 
 
+# 清除所有 Mapper 配置（测试/重建用）
+# 清除所有 Mapper 配置（测试/重建用）
 def clear_mappers() -> None:
     """Remove all mappers from all classes.
 
@@ -2336,6 +2360,8 @@ AliasedType = Annotated[Type[_O], "aliased"]
 
 
 @overload
+# 创建带别名的 ORM 实体/查询目标
+# 创建带别名的 ORM 实体/查询目标
 def aliased(
     element: Type[_O],
     alias: Optional[FromClause] = None,
@@ -2487,6 +2513,8 @@ def aliased(
     )
 
 
+# 多态加载：一次查询多个子类
+# 多态加载：一次查询多个子类
 def with_polymorphic(
     base: Union[Type[_O], Mapper[_O]],
     classes: Union[Literal["*"], Iterable[Type[Any]]],
@@ -2587,6 +2615,8 @@ def with_polymorphic(
     )
 
 
+# ORM 风格 join 辅助（实体/属性驱动）
+# ORM 风格 join 辅助（实体/属性驱动）
 def join(
     left: _FromClauseArgument,
     right: _FromClauseArgument,

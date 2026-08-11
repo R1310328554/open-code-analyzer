@@ -127,6 +127,10 @@ start numbering at 1 or some other integer, provide ``count_from=1``.
 
 """
 
+# 有序 relationship 集合：自动同步列表位置到排序列
+
+# 有序 relationship 集合：自动同步列表位置到排序列
+
 from __future__ import annotations
 
 from typing import Any
@@ -152,6 +156,8 @@ OrderingFunc = Callable[[int, Sequence[_T]], object]
 __all__ = ["ordering_list"]
 
 
+# 工厂：返回用作 relationship collection_class 的 OrderingList 构造器
+# 工厂：返回用作 relationship collection_class 的 OrderingList 构造器
 def ordering_list(
     attr: str,
     count_from: Optional[int] = None,
@@ -203,18 +209,24 @@ def ordering_list(
 # Ordering utility functions
 
 
+# 排序函数：从 0 开始的连续整数
+# 排序函数：从 0 开始的连续整数
 def count_from_0(index: int, collection: object) -> int:
     """Numbering function: consecutive integers starting at 0."""
 
     return index
 
 
+# 排序函数：从 1 开始的连续整数
+# 排序函数：从 1 开始的连续整数
 def count_from_1(index: int, collection: object) -> int:
     """Numbering function: consecutive integers starting at 1."""
 
     return index + 1
 
 
+# 排序函数工厂：从任意 start 开始编号
+# 排序函数工厂：从任意 start 开始编号
 def count_from_n_factory(start: int) -> OrderingFunc[Any]:
     """Numbering function: consecutive integers starting at arbitrary start."""
 
@@ -246,6 +258,8 @@ def _unsugar_count_from(**kw: Any) -> Dict[str, Any]:
     return kw
 
 
+# 自定义 list：拦截 append/insert 等操作并同步 ordering_attr
+# 自定义 list：拦截 append/insert 等操作并同步 ordering_attr
 class OrderingList(List[_T]):
     """A custom list that manages position information for its children.
 
@@ -328,6 +342,8 @@ class OrderingList(List[_T]):
     def _set_order_value(self, entity: _T, value: Any) -> None:
         setattr(entity, self.ordering_attr, value)
 
+    # 全量重算集合中每个元素的排序值
+    # 全量重算集合中每个元素的排序值
     def reorder(self) -> None:
         """Synchronize ordering for the entire collection.
 
@@ -354,6 +370,8 @@ class OrderingList(List[_T]):
         if have != should_be:
             self._set_order_value(entity, should_be)
 
+    # append 后按 reorder_on_append 策略更新排序
+    # append 后按 reorder_on_append 策略更新排序
     def append(self, entity: _T) -> None:
         super().append(entity)
         self._order_entity(len(self) - 1, entity, self.reorder_on_append)
@@ -365,10 +383,14 @@ class OrderingList(List[_T]):
 
     _raw_append = collection.adds(1)(_raw_append)
 
+    # insert 后重排受影响元素的排序值
+    # insert 后重排受影响元素的排序值
     def insert(self, index: SupportsIndex, entity: _T) -> None:
         super().insert(index, entity)
         self._reorder()
 
+    # remove 后重排剩余元素
+    # remove 后重排剩余元素
     def remove(self, entity: _T) -> None:
         super().remove(entity)
 
@@ -376,12 +398,16 @@ class OrderingList(List[_T]):
         if adapter and adapter._referenced_by_owner:
             self._reorder()
 
+    # pop 后重排剩余元素
+    # pop 后重排剩余元素
     def pop(self, index: SupportsIndex = -1) -> _T:
         entity = super().pop(index)
         self._reorder()
         return entity
 
     @overload
+    # 赋值替换时同步新旧元素排序
+    # 赋值替换时同步新旧元素排序
     def __setitem__(self, index: SupportsIndex, entity: _T) -> None: ...
 
     @overload

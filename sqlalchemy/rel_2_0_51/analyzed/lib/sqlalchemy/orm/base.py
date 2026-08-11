@@ -7,6 +7,10 @@
 
 """Constants and rudimental functions used throughout the ORM."""
 
+# ORM 基础常量、PassiveFlag 与 Mapped/InspectionAttr 类型
+
+# ORM 基础常量、PassiveFlag 与 Mapped/InspectionAttr 类型
+
 from __future__ import annotations
 
 from enum import Enum
@@ -60,6 +64,8 @@ _T_co = TypeVar("_T_co", bound=Any, covariant=True)
 _O = TypeVar("_O", bound=object)
 
 
+# loader 返回值符号：PASSIVE_NO_RESULT/NO_VALUE 等
+# loader 返回值符号：PASSIVE_NO_RESULT/NO_VALUE 等
 class LoaderCallableStatus(Enum):
     PASSIVE_NO_RESULT = 0
     """Symbol returned by a loader callable or other attribute/history
@@ -107,6 +113,8 @@ class LoaderCallableStatus(Enum):
 NEVER_SET = NO_VALUE
 
 
+# loader 调用位标志：是否允许 SQL/callable/初始化
+# loader 调用位标志：是否允许 SQL/callable/初始化
 class PassiveFlag(FastIntFlag):
     """Bitflag interface that passes options onto loader callables"""
 
@@ -207,6 +215,8 @@ DEFAULT_MANAGER_ATTR = "_sa_class_manager"
 DEFAULT_STATE_ATTR = "_sa_instance_state"
 
 
+# ORM 事件扩展常量：EXT_CONTINUE/EXT_STOP/NO_KEY
+# ORM 事件扩展常量：EXT_CONTINUE/EXT_STOP/NO_KEY
 class EventConstants(Enum):
     EXT_CONTINUE = 1
     EXT_STOP = 2
@@ -223,6 +233,8 @@ class EventConstants(Enum):
 EXT_CONTINUE, EXT_STOP, EXT_SKIP, NO_KEY = tuple(EventConstants)
 
 
+# relationship 方向枚举：ONE/MANY 组合
+# relationship 方向枚举：ONE/MANY 组合
 class RelationshipDirection(Enum):
     """enumeration which indicates the 'direction' of a
     :class:`_orm.RelationshipProperty`.
@@ -261,11 +273,17 @@ class RelationshipDirection(Enum):
 ONETOMANY, MANYTOONE, MANYTOMANY = tuple(RelationshipDirection)
 
 
+# InspectionAttr 扩展类型标记枚举
+# inspect() 可返回对象的布尔类型检查基类
+# InspectionAttr 扩展类型标记枚举
+# inspect() 可返回对象的布尔类型检查基类
 class InspectionAttrExtensionType(Enum):
     """Symbols indicating the type of extension that a
     :class:`.InspectionAttr` is part of."""
 
 
+# 非 sqlalchemy.ext 扩展的 InspectionAttr 标记
+# 非 sqlalchemy.ext 扩展的 InspectionAttr 标记
 class NotExtension(InspectionAttrExtensionType):
     NOT_EXTENSION = "not_extension"
     """Symbol indicating an :class:`InspectionAttr` that's
@@ -381,6 +399,8 @@ def state_attribute_str(state: InstanceState[Any], attribute: str) -> str:
     return state_str(state) + "." + attribute
 
 
+# 从实例获取其 Mapper
+# 从实例获取其 Mapper
 def object_mapper(instance: _T) -> Mapper[_T]:
     """Given an object, return the primary Mapper associated with the object
     instance.
@@ -400,6 +420,8 @@ def object_mapper(instance: _T) -> Mapper[_T]:
     return object_state(instance).mapper
 
 
+# 从实例获取 InstanceState
+# 从实例获取 InstanceState
 def object_state(instance: _T) -> InstanceState[_T]:
     """Given an object, return the :class:`.InstanceState`
     associated with the object.
@@ -537,6 +559,8 @@ def _parse_mapper_argument(arg: Union[Mapper[_O], Type[_O]]) -> Mapper[_O]:
     raise sa_exc.ArgumentError(f"Mapper or mapped class expected, got {arg!r}")
 
 
+# 从 mapped class 获取 Mapper（必要时 configure）
+# 从 mapped class 获取 Mapper（必要时 configure）
 def class_mapper(class_: Type[_O], configure: bool = True) -> Mapper[_O]:
     """Given a class, return the primary :class:`_orm.Mapper` associated
     with the key.
@@ -641,6 +665,8 @@ class InspectionAttr:
     """
 
 
+# 带 .info 字典的 InspectionAttr 子类
+# 带 .info 字典的 InspectionAttr 子类
 class InspectionAttrInfo(InspectionAttr):
     """Adds the ``.info`` attribute to :class:`.InspectionAttr`.
 
@@ -673,6 +699,8 @@ class InspectionAttrInfo(InspectionAttr):
         return {}
 
 
+# ORM SQL 操作 typing mixin（TypingOnly）
+# ORM SQL 操作 typing mixin（TypingOnly）
 class SQLORMOperations(SQLCoreOperations[_T_co], TypingOnly):
     __slots__ = ()
 
@@ -699,6 +727,8 @@ class SQLORMOperations(SQLCoreOperations[_T_co], TypingOnly):
         ) -> ColumnElement[bool]: ...
 
 
+# ORM 描述符 typing 协议
+# ORM 描述符 typing 协议
 class ORMDescriptor(Generic[_T_co], TypingOnly):
     """Represent any Python descriptor that provides a SQL expression
     construct at the class level."""
@@ -725,6 +755,8 @@ class ORMDescriptor(Generic[_T_co], TypingOnly):
         ) -> Union[ORMDescriptor[_T_co], SQLCoreOperations[_T_co], _T_co]: ...
 
 
+# Mapped 注解基类（Dynamic/WriteOnly 共用）
+# Mapped 注解基类（Dynamic/WriteOnly 共用）
 class _MappedAnnotationBase(Generic[_T_co], TypingOnly):
     """common class for Mapped and similar ORM container classes.
 
@@ -737,6 +769,8 @@ class _MappedAnnotationBase(Generic[_T_co], TypingOnly):
     __slots__ = ()
 
 
+# ORM 列表达式 typing 联合
+# ORM 列表达式 typing 联合
 class SQLORMExpression(
     SQLORMOperations[_T_co], SQLColumnExpression[_T_co], TypingOnly
 ):
@@ -759,6 +793,8 @@ class SQLORMExpression(
     __slots__ = ()
 
 
+# Declarative Mapped[] 泛型描述符与类型注解
+# Declarative Mapped[] 泛型描述符与类型注解
 class Mapped(
     SQLORMExpression[_T_co],
     ORMDescriptor[_T_co],
@@ -827,6 +863,8 @@ class Mapped(
         def __delete__(self, instance: Any) -> None: ...
 
 
+# Mapped 内部属性 typing 基类
+# Mapped 内部属性 typing 基类
 class _MappedAttribute(Generic[_T_co], TypingOnly):
     """Mixin for attributes which should be replaced by mapper-assigned
     attributes.
@@ -836,6 +874,8 @@ class _MappedAttribute(Generic[_T_co], TypingOnly):
     __slots__ = ()
 
 
+# Declarative 用 Mapped 与 _MappedAttribute 合并
+# Declarative 用 Mapped 与 _MappedAttribute 合并
 class _DeclarativeMapped(Mapped[_T_co], _MappedAttribute[_T_co]):
     """Mixin for :class:`.MapperProperty` subclasses that allows them to
     be compatible with ORM-annotated declarative mappings.
@@ -861,6 +901,8 @@ class _DeclarativeMapped(Mapped[_T_co], _MappedAttribute[_T_co]):
         return NotImplemented
 
 
+# Dynamic 集合 relationship 的 Mapped 注解
+# Dynamic 集合 relationship 的 Mapped 注解
 class DynamicMapped(_MappedAnnotationBase[_T_co]):
     """Represent the ORM mapped attribute type for a "dynamic" relationship.
 
@@ -917,6 +959,8 @@ class DynamicMapped(_MappedAnnotationBase[_T_co]):
         ) -> None: ...
 
 
+# WriteOnly 集合 relationship 的 Mapped 注解
+# WriteOnly 集合 relationship 的 Mapped 注解
 class WriteOnlyMapped(_MappedAnnotationBase[_T_co]):
     """Represent the ORM mapped attribute type for a "write only" relationship.
 

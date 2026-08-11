@@ -15,6 +15,10 @@ defines a large part of the ORM's interactivity.
 
 """
 
+# ORM 属性 instrumentation：QueryableAttribute 与 AttributeImpl 层次
+
+# ORM 属性 instrumentation：QueryableAttribute 与 AttributeImpl 层次
+
 from __future__ import annotations
 
 import dataclasses
@@ -132,6 +136,8 @@ _UNKNOWN_ATTR_KEY = object()
 
 
 @inspection._self_inspects
+# ORM 可查询属性描述符：拦截 get/set 并参与 SQL 构造
+# ORM 可查询属性描述符：拦截 get/set 并参与 SQL 构造
 class QueryableAttribute(
     _DeclarativeMapped[_T_co],
     SQLORMExpression[_T_co],
@@ -506,6 +512,8 @@ def _queryable_attribute_unreduce(
         return getattr(entity, key)
 
 
+# 类绑定 InstrumentedAttribute：实现 __get__/__set__/__delete__
+# 类绑定 InstrumentedAttribute：实现 __get__/__set__/__delete__
 class InstrumentedAttribute(QueryableAttribute[_T_co]):
     """Class bound instrumented attribute which adds basic
     :term:`descriptor` methods.
@@ -570,6 +578,8 @@ class InstrumentedAttribute(QueryableAttribute[_T_co]):
 
 
 @dataclasses.dataclass(frozen=True)
+# 临时 HasCacheKey 包装：携带 entity_namespace
+# 临时 HasCacheKey 包装：携带 entity_namespace
 class AdHocHasEntityNamespace(HasCacheKey):
     _traverse_internals: ClassVar[_TraverseInternalsType] = [
         ("_entity_namespace", InternalTraversal.dp_has_cache_key),
@@ -586,6 +596,8 @@ class AdHocHasEntityNamespace(HasCacheKey):
         return self._entity_namespace.entity_namespace
 
 
+# 创建委托用户 descriptor 的 QueryableAttribute 子类
+# 创建委托用户 descriptor 的 QueryableAttribute 子类
 def create_proxied_attribute(
     descriptor: Any,
 ) -> Callable[..., QueryableAttribute[Any]]:
@@ -770,6 +782,8 @@ OP_BULK_REPLACE = util.symbol("BULK_REPLACE")
 OP_MODIFIED = util.symbol("MODIFIED")
 
 
+# 属性事件链传播令牌（append/set/remove  initiator）
+# 属性事件链传播令牌（append/set/remove  initiator）
 class AttributeEventToken:
     """A token propagated throughout the course of a chain of attribute
     events.
@@ -825,6 +839,8 @@ AttributeEvent = AttributeEventToken  # legacy
 Event = AttributeEventToken  # legacy
 
 
+# instrumented 属性内部实现：loader、history、dispatch
+# instrumented 属性内部实现：loader、history、dispatch
 class AttributeImpl:
     """internal implementation for instrumented attributes."""
 
@@ -1212,6 +1228,8 @@ class AttributeImpl:
         return value
 
 
+# 标量值 AttributeImpl：非集合、非 object 引用
+# 标量值 AttributeImpl：非集合、非 object 引用
 class ScalarAttributeImpl(AttributeImpl):
     """represents a scalar value-holding InstrumentedAttribute."""
 
@@ -1315,6 +1333,8 @@ class ScalarAttributeImpl(AttributeImpl):
             fn(state, value, initiator or self._remove_token)
 
 
+# 标量对象引用 AttributeImpl：uses_objects=True
+# 标量对象引用 AttributeImpl：uses_objects=True
 class ScalarObjectAttributeImpl(ScalarAttributeImpl):
     """represents a scalar-holding InstrumentedAttribute,
     where the target object is also instrumented.
@@ -1526,6 +1546,8 @@ class ScalarObjectAttributeImpl(ScalarAttributeImpl):
         return value
 
 
+# 集合属性 mixin：CollectionAdapter 生命周期
+# 集合属性 mixin：CollectionAdapter 生命周期
 class HasCollectionAdapter:
     __slots__ = ()
 
@@ -1605,6 +1627,8 @@ else:
     _is_collection_attribute_impl = operator.attrgetter("collection")
 
 
+# 集合 AttributeImpl：membership 变更 instrumentation
+# 集合 AttributeImpl：membership 变更 instrumentation
 class CollectionAttributeImpl(HasCollectionAdapter, AttributeImpl):
     """A collection-holding attribute that instruments changes in membership.
 
@@ -2317,6 +2341,8 @@ _NO_HISTORY = util.symbol("NO_HISTORY")
 _NO_STATE_SYMBOLS = frozenset([id(PASSIVE_NO_RESULT), id(NO_VALUE)])
 
 
+# 属性变更三元组 (added, unchanged, deleted)
+# 属性变更三元组 (added, unchanged, deleted)
 class History(NamedTuple):
     """A 3-tuple of added, unchanged and deleted values,
     representing the changes which have occurred on an instrumented

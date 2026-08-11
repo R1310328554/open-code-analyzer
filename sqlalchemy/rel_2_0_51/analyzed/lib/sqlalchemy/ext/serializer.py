@@ -6,7 +6,11 @@
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 # mypy: ignore-errors
 
-"""Serializer/Deserializer objects for usage with SQLAlchemy query structures,
+# 旧版查询结构 pickle 序列化：Mapper/Table/Session 等以 ID 引用
+
+# 旧版查询结构 pickle 序列化：Mapper/Table/Session 等以 ID 引用
+
+"""Serializer/Deserializer objects for usage with SQLAlchemy query structures,"""Serializer/Deserializer objects for usage with SQLAlchemy query structures,"""Serializer/Deserializer objects for usage with SQLAlchemy query structures,
 allowing "contextual" deserialization.
 
 .. legacy::
@@ -85,8 +89,12 @@ from ..util import b64encode
 __all__ = ["Serializer", "Deserializer", "dumps", "loads"]
 
 
+# Pickler 子类：将 ORM/SQL 对象转为 persistent_id 令牌
+# Pickler 子类：将 ORM/SQL 对象转为 persistent_id 令牌
 class Serializer(pickle.Pickler):
 
+    # 序列化 Mapper/Table/Column/Session/Engine 等为字符串 ID
+    # 序列化 Mapper/Table/Column/Session/Engine 等为字符串 ID
     def persistent_id(self, obj):
         # print "serializing:", repr(obj)
         if isinstance(obj, Mapper) and not obj.non_primary:
@@ -122,6 +130,8 @@ our_ids = re.compile(
 )
 
 
+# Unpickler 子类：凭 metadata/session 重建查询中的对象引用
+# Unpickler 子类：凭 metadata/session 重建查询中的对象引用
 class Deserializer(pickle.Unpickler):
 
     def __init__(self, file, metadata=None, scoped_session=None, engine=None):
@@ -138,6 +148,8 @@ class Deserializer(pickle.Unpickler):
         else:
             return None
 
+    # 反序列化时从 metadata/mapper 恢复对象
+    # 反序列化时从 metadata/mapper 恢复对象
     def persistent_load(self, id_):
         m = our_ids.match(str(id_))
         if not m:
@@ -171,6 +183,8 @@ class Deserializer(pickle.Unpickler):
                 raise Exception("Unknown token: %s" % type_)
 
 
+# 序列化 SQLAlchemy 查询/表达式结构为 bytes
+# 序列化 SQLAlchemy 查询/表达式结构为 bytes
 def dumps(obj, protocol=pickle.HIGHEST_PROTOCOL):
     buf = BytesIO()
     pickler = Serializer(buf, protocol)
@@ -178,6 +192,8 @@ def dumps(obj, protocol=pickle.HIGHEST_PROTOCOL):
     return buf.getvalue()
 
 
+# 反序列化 bytes 并绑定 metadata 与 session/engine
+# 反序列化 bytes 并绑定 metadata 与 session/engine
 def loads(data, metadata=None, scoped_session=None, engine=None):
     buf = BytesIO(data)
     unpickler = Deserializer(buf, metadata, scoped_session, engine)

@@ -18,6 +18,10 @@ instance only.
 
 """
 
+# SQLAlchemy 日志：Identified 基类、InstanceLogger 与 echo 属性
+
+# SQLAlchemy 日志：Identified 基类、InstanceLogger 与 echo 属性
+
 from __future__ import annotations
 
 import logging
@@ -73,6 +77,8 @@ def _qual_logger_name_for_cls(cls: Type[Identified]) -> str:
     )
 
 
+# 类装饰器：为 Identified 子类绑定命名 logger
+# 类装饰器：为 Identified 子类绑定命名 logger
 def class_logger(cls: Type[_IT]) -> Type[_IT]:
     logger = logging.getLogger(_qual_logger_name_for_cls(cls))
     cls._should_log_debug = lambda self: logger.isEnabledFor(  # type: ignore[method-assign]  # noqa: E501
@@ -89,6 +95,8 @@ def class_logger(cls: Type[_IT]) -> Type[_IT]:
 _IdentifiedLoggerType = Union[logging.Logger, "InstanceLogger"]
 
 
+# 可识别日志命名空间的 mixin：logger 与 echo 状态
+# 可识别日志命名空间的 mixin：logger 与 echo 状态
 class Identified:
     __slots__ = ()
 
@@ -105,6 +113,8 @@ class Identified:
         return self.logger.isEnabledFor(logging.INFO)
 
 
+# 按实例 echo 设置过滤级别的 logger 适配器
+# 按实例 echo 设置过滤级别的 logger 适配器
 class InstanceLogger:
     """A logger adapter (wrapper) for :class:`.Identified` subclasses.
 
@@ -225,6 +235,8 @@ class InstanceLogger:
         return level
 
 
+# 为 Identified 实例创建 Logger 或 InstanceLogger
+# 为 Identified 实例创建 Logger 或 InstanceLogger
 def instance_logger(
     instance: Identified, echoflag: _EchoFlagType = None
 ) -> None:
@@ -255,6 +267,8 @@ def instance_logger(
     instance.logger = logger  # type: ignore
 
 
+# 描述符：读写 Engine/Pool 等元素的 echo 日志级别
+# 描述符：读写 Engine/Pool 等元素的 echo 日志级别
 class echo_property:
     __doc__ = """\
     When ``True``, enable log output for this element.

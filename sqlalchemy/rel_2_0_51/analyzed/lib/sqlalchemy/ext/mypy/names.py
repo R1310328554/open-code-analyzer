@@ -5,6 +5,10 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
+# mypy 插件：ORM 构造器符号 ID 与 MRO/全名解析
+
+# mypy 插件：ORM 构造器符号 ID 与 MRO/全名解析
+
 from __future__ import annotations
 
 from typing import Dict
@@ -34,6 +38,8 @@ from mypy.types import UnboundType
 
 from ... import util
 
+# ORM 构造器类型 ID 常量（Column/relationship/Mapped 等）
+# ORM 构造器类型 ID 常量（Column/relationship/Mapped 等）
 COLUMN: int = util.symbol("COLUMN")
 RELATIONSHIP: int = util.symbol("RELATIONSHIP")
 REGISTRY: int = util.symbol("REGISTRY")
@@ -66,6 +72,8 @@ _RelFullNames = {
     "sqlalchemy.orm.RelationshipProperty",
 }
 
+# 短名 -> (type_id, 可能的全限定名集合)
+# 短名 -> (type_id, 可能的全限定名集合)
 _lookup: Dict[str, Tuple[int, Set[str]]] = {
     "Column": (
         COLUMN,
@@ -209,6 +217,8 @@ _lookup: Dict[str, Tuple[int, Set[str]]] = {
 }
 
 
+# 判断 TypeInfo MRO 是否包含指定 SQLAlchemy 构造器基类
+# 判断 TypeInfo MRO 是否包含指定 SQLAlchemy 构造器基类
 def has_base_type_id(info: TypeInfo, type_id: int) -> bool:
     for mr in info.mro:
         check_type_id, fullnames = _lookup.get(mr.name, (None, None))
@@ -223,6 +233,8 @@ def has_base_type_id(info: TypeInfo, type_id: int) -> bool:
     return mr.fullname in fullnames
 
 
+# 在 MRO 列表中查找 type_id
+# 在 MRO 列表中查找 type_id
 def mro_has_id(mro: List[TypeInfo], type_id: int) -> bool:
     for mr in mro:
         check_type_id, fullnames = _lookup.get(mr.name, (None, None))
@@ -237,6 +249,8 @@ def mro_has_id(mro: List[TypeInfo], type_id: int) -> bool:
     return mr.fullname in fullnames
 
 
+# 从 UnboundType 解析 ORM 构造器 type_id
+# 从 UnboundType 解析 ORM 构造器 type_id
 def type_id_for_unbound_type(
     type_: UnboundType, cls: ClassDef, api: SemanticAnalyzerPluginInterface
 ) -> Optional[int]:
@@ -252,6 +266,8 @@ def type_id_for_unbound_type(
     return None
 
 
+# 从 CallExpr 被调对象解析构造器 type_id
+# 从 CallExpr 被调对象解析构造器 type_id
 def type_id_for_callee(callee: Expression) -> Optional[int]:
     if isinstance(callee, (MemberExpr, NameExpr)):
         if isinstance(callee.node, Decorator) and isinstance(
@@ -296,6 +312,8 @@ def type_id_for_callee(callee: Expression) -> Optional[int]:
     return None
 
 
+# 从 Var/FuncDef/TypeInfo 等命名节点解析 type_id
+# 从 Var/FuncDef/TypeInfo 等命名节点解析 type_id
 def type_id_for_named_node(
     node: Union[NameExpr, MemberExpr, SymbolNode],
 ) -> Optional[int]:
@@ -309,6 +327,8 @@ def type_id_for_named_node(
         return None
 
 
+# 从全限定名查找 ORM 构造器 type_id
+# 从全限定名查找 ORM 构造器 type_id
 def type_id_for_fullname(fullname: str) -> Optional[int]:
     tokens = fullname.split(".")
     immediate = tokens[-1]
@@ -323,6 +343,8 @@ def type_id_for_fullname(fullname: str) -> Optional[int]:
         return None
 
 
+# 将 mapped() 装饰器表达式规范为 CallExpr
+# 将 mapped() 装饰器表达式规范为 CallExpr
 def expr_to_mapped_constructor(expr: Expression) -> CallExpr:
     column_descriptor = NameExpr("__sa_Mapped")
     column_descriptor.fullname = NAMED_TYPE_SQLA_MAPPED

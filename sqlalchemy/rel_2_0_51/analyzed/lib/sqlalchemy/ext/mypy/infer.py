@@ -5,6 +5,10 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
+# mypy 插件：从 relationship/Mapped/column 等 RHS 推断 ORM 属性 Python 类型
+
+# mypy 插件：从 relationship/Mapped/column 等 RHS 推断 ORM 属性 Python 类型
+
 from __future__ import annotations
 
 from typing import Optional
@@ -37,6 +41,8 @@ from . import names
 from . import util
 
 
+# 根据 RHS 构造器（Mapped/Column/relationship 等）分发类型推断
+# 根据 RHS 构造器（Mapped/Column/relationship 等）分发类型推断
 def infer_type_from_right_hand_nameexpr(
     api: SemanticAnalyzerPluginInterface,
     stmt: AssignmentStmt,
@@ -77,6 +83,8 @@ def infer_type_from_right_hand_nameexpr(
     return python_type_for_type
 
 
+# 从 relationship() 调用推断 Mapped 或 List 目标类型
+# 从 relationship() 调用推断 Mapped 或 List 目标类型
 def _infer_type_from_relationship(
     api: SemanticAnalyzerPluginInterface,
     stmt: AssignmentStmt,
@@ -243,6 +251,8 @@ def _infer_type_from_relationship(
         return python_type_for_type
 
 
+# 从 composite() 声明推断复合属性 Python 类型
+# 从 composite() 声明推断复合属性 Python 类型
 def _infer_type_from_decl_composite_property(
     api: SemanticAnalyzerPluginInterface,
     stmt: AssignmentStmt,
@@ -275,6 +285,8 @@ def _infer_type_from_decl_composite_property(
         return python_type_for_type
 
 
+# 从 Mapped[] 泛型参数提取 Python 类型
+# 从 Mapped[] 泛型参数提取 Python 类型
 def _infer_type_from_mapped(
     api: SemanticAnalyzerPluginInterface,
     stmt: AssignmentStmt,
@@ -307,6 +319,8 @@ def _infer_type_from_mapped(
     )
 
 
+# 从 column_property() 推断列表达式属性类型
+# 从 column_property() 推断列表达式属性类型
 def _infer_type_from_decl_column_property(
     api: SemanticAnalyzerPluginInterface,
     stmt: AssignmentStmt,
@@ -356,6 +370,8 @@ def _infer_type_from_decl_column_property(
     )
 
 
+# 从 Column()/mapped_column() 推断标量列类型
+# 从 Column()/mapped_column() 推断标量列类型
 def _infer_type_from_decl_column(
     api: SemanticAnalyzerPluginInterface,
     stmt: AssignmentStmt,
@@ -455,6 +471,8 @@ def _infer_type_from_decl_column(
         )
 
 
+# 合并显式 LHS 注解与 RHS 推断结果
+# 合并显式 LHS 注解与 RHS 推断结果
 def _infer_type_from_left_and_inferred_right(
     api: SemanticAnalyzerPluginInterface,
     node: Var,
@@ -497,6 +515,8 @@ def _infer_type_from_left_and_inferred_right(
     return orig_left_hand_type
 
 
+# 处理集合类 relationship 的 LHS/RHS 类型合并
+# 处理集合类 relationship 的 LHS/RHS 类型合并
 def _infer_collection_type_from_left_and_inferred_right(
     api: SemanticAnalyzerPluginInterface,
     node: Var,
@@ -526,6 +546,8 @@ def _infer_collection_type_from_left_and_inferred_right(
     )
 
 
+# 仅使用 LHS 显式类型（如 synonym）
+# 仅使用 LHS 显式类型（如 synonym）
 def infer_type_from_left_hand_type_only(
     api: SemanticAnalyzerPluginInterface,
     node: Var,
@@ -555,6 +577,8 @@ def infer_type_from_left_hand_type_only(
         return left_hand_explicit_type
 
 
+# 从 TypeEngine 实例/类提取对应 Python 类型
+# 从 TypeEngine 实例/类提取对应 Python 类型
 def extract_python_type_from_typeengine(
     api: SemanticAnalyzerPluginInterface,
     node: TypeInfo,

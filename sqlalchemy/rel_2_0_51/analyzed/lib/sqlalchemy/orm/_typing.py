@@ -5,6 +5,10 @@
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
+# ORM 内部 typing 别名、Protocol 与 TypeGuard 辅助
+
+# ORM 内部 typing 别名、Protocol 与 TypeGuard 辅助
+
 from __future__ import annotations
 
 import operator
@@ -53,6 +57,8 @@ _T = TypeVar("_T", bound=Any)
 
 _T_co = TypeVar("_T_co", bound=Any, covariant=True)
 
+# ORM 映射对象类型变量
+# ORM 映射对象类型变量
 _O = TypeVar("_O", bound=object)
 """The 'ORM mapped object' type.
 
@@ -86,6 +92,8 @@ _ORMColumnExprArgument = Union[
 _ORMCOLEXPR = TypeVar("_ORMCOLEXPR", bound=ColumnElement[Any])
 
 
+# ORM 已知 execution_options 键的 TypedDict
+# ORM 已知 execution_options 键的 TypedDict
 class _OrmKnownExecutionOptions(_CoreKnownExecutionOptions, total=False):
     populate_existing: bool
     autoflush: bool
@@ -101,6 +109,8 @@ OrmExecuteOptionsParameter = Union[
 ]
 
 
+# AliasedInsp._orm_adapt_element 适配协议
+# AliasedInsp._orm_adapt_element 适配协议
 class _ORMAdapterProto(Protocol):
     """protocol for the :class:`.AliasedInsp._orm_adapt_element` method
     which is a synonym for :class:`.AliasedInsp._adapt_element`.
@@ -111,24 +121,32 @@ class _ORMAdapterProto(Protocol):
     def __call__(self, obj: _CE, key: Optional[str] = None) -> _CE: ...
 
 
+# 属性 loader 可调用：(state, passive) -> value
+# 属性 loader 可调用：(state, passive) -> value
 class _LoaderCallable(Protocol):
     def __call__(
         self, state: InstanceState[Any], passive: PassiveFlag
     ) -> Any: ...
 
 
+# TypeGuard：ExecutableOption 是否为 ORMOption
+# TypeGuard：ExecutableOption 是否为 ORMOption
 def is_orm_option(
     opt: ExecutableOption,
 ) -> TypeGuard[ORMOption]:
     return not opt._is_core
 
 
+# TypeGuard：是否为用户定义的 ORM 加载选项
+# TypeGuard：是否为用户定义的 ORM 加载选项
 def is_user_defined_option(
     opt: ExecutableOption,
 ) -> TypeGuard[UserDefinedOption]:
     return not opt._is_core and opt._is_user_defined  # type: ignore
 
 
+# 判断对象是否为 composite/dataclass 复合类型
+# 判断对象是否为 composite/dataclass 复合类型
 def is_composite_class(obj: Any) -> bool:
     # inlining is_dataclass(obj)
     return hasattr(obj, "__composite_values__") or hasattr(
