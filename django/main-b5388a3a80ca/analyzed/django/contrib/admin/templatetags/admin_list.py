@@ -1,3 +1,8 @@
+"""
+django.contrib.admin.templatetags.admin_list — changelist 页模板标签与辅助函数。
+
+负责分页、表头排序、结果行、日期层级、搜索框、过滤器与批量动作区域。
+"""
 import datetime
 
 from django.contrib.admin.templatetags.admin_urls import add_preserved_filters
@@ -34,6 +39,7 @@ from .base import InclusionAdminNode
 register = Library()
 
 
+# 生成单个分页页码链接（含省略号与当前页标记）
 @register.simple_tag
 def paginator_number(cl, i):
     """
@@ -54,6 +60,7 @@ def paginator_number(cl, i):
         )
 
 
+# 构建分页导航所需的页码范围与「显示全部」链接
 def pagination(cl):
     """
     Generate the series of links to the pages in a paginated list.
@@ -85,6 +92,7 @@ def pagination_tag(parser, token):
     )
 
 
+# 生成 list_display 列标题，含排序状态与切换 URL
 def result_headers(cl):
     """
     Generate the list column headers.
@@ -202,6 +210,7 @@ def _coerce_field_name(field_name, field_index):
     return field_name
 
 
+# 为 changelist 单行逐列生成 HTML（含可编辑字段与链接列）
 def items_for_result(cl, result, form):
     """
     Generate the actual list of data.
@@ -319,6 +328,7 @@ def items_for_result(cl, result, form):
         yield format_html("<td>{}</td>", form[cl.model._meta.pk.name])
 
 
+# 包装结果行并附带 formset 表单，供 list_editable 模板兼容使用
 class ResultList(list):
     """
     Wrapper class used to return items in a list_editable changelist, annotated
@@ -347,6 +357,7 @@ def result_hidden_fields(cl):
                 yield mark_safe(form[cl.model._meta.pk.name])
 
 
+# 组合表头、隐藏主键字段与数据行，供 change_list_results 模板渲染
 def result_list(cl):
     """
     Display the headers and data list together.
@@ -377,6 +388,7 @@ def result_list_tag(parser, token):
     )
 
 
+# 按年/月/日钻取构建 date_hierarchy 导航链接
 def date_hierarchy(cl):
     """
     Display the date hierarchy for date drill-down functionality.
@@ -498,6 +510,7 @@ def date_hierarchy_tag(parser, token):
     )
 
 
+# 为 changelist 搜索框提供上下文（含结果计数差异提示）
 def search_form(cl):
     """
     Display a search form for searching the list.
@@ -523,6 +536,7 @@ def search_form_tag(parser, token):
     )
 
 
+# 渲染单个 ListFilter 侧边栏片段
 @register.simple_tag
 def admin_list_filter(cl, spec):
     tpl = get_template(spec.template)
@@ -535,6 +549,7 @@ def admin_list_filter(cl, spec):
     )
 
 
+# 递增 action_index，区分页面上多个批量动作下拉框
 def admin_actions(context):
     """
     Track the number of times the action field has been rendered on the page,

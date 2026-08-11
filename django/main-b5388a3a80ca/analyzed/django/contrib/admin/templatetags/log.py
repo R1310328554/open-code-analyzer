@@ -1,8 +1,14 @@
+"""
+django.contrib.admin.templatetags.log — 在模板中加载管理操作日志。
+
+get_admin_log 标签将 LogEntry 查询结果写入指定上下文变量。
+"""
 from django import template
 
 register = template.Library()
 
 
+# 按条数、可选用户过滤 admin 日志并写入模板变量
 class AdminLogNode(template.Node):
     def __init__(self, limit, varname, user):
         self.limit = limit
@@ -23,6 +29,7 @@ class AdminLogNode(template.Node):
         return ""
 
 
+# 模板标签：{% get_admin_log [limit] as var for_user [user] %}
 @register.tag
 def get_admin_log(parser, token):
     """

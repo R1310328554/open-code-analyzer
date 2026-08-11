@@ -1,6 +1,8 @@
+// 将标题等文本转为 URL slug：多语言字符映射、降级与截断
 /*global XRegExp*/
 "use strict";
 {
+    // 拉丁字母及变音符号到 ASCII 的映射表
     const LATIN_MAP = {
         À: "A",
         Á: "A",
@@ -466,6 +468,7 @@
         ჰ: "h",
     };
 
+    // 合并各语言字符映射表供 downcode 一次性构建正则
     const ALL_DOWNCODE_MAPS = [
         LATIN_MAP,
         LATIN_SYMBOLS_MAP,
@@ -485,6 +488,7 @@
         GEORGIAN_MAP,
     ];
 
+    // 懒加载合并映射并编译全局替换正则
     const Downcoder = {
         Initialize: function () {
             if (Downcoder.map) {
@@ -502,6 +506,7 @@
         },
     };
 
+    // 将非 ASCII 字符按 Downcoder.map 替换为拉丁等价形式
     function downcode(slug) {
         Downcoder.Initialize();
         return slug.replace(Downcoder.regex, function (m) {
@@ -509,6 +514,7 @@
         });
     }
 
+    // 小写化、去非法字符、空白转连字符并按 num_chars 截断
     function URLify(s, num_chars, allowUnicode) {
         // changes, e.g., "Petty theft" to "petty-theft"
         if (!allowUnicode) {
@@ -528,5 +534,6 @@
         s = s.substring(0, num_chars); // trim to first num_chars chars
         return s.replace(/-+$/g, ""); // trim any trailing hyphens
     }
+// 暴露全局 URLify，供 prepopulate.js 等脚本调用
     window.URLify = URLify;
 }

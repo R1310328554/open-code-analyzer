@@ -1,3 +1,4 @@
+// Django admin 内联 formset：动态增删 tabular/stacked 内联表单
 /*global DateTimeShortcuts, SelectFilter*/
 /**
  * Django admin inlines
@@ -18,10 +19,12 @@
 "use strict";
 {
     const $ = django.jQuery;
+    // jQuery 插件：管理 TOTAL_FORMS 计数、克隆空表单与删除重排索引
     $.fn.formset = function (opts) {
         const options = $.extend({}, $.fn.formset.defaults, opts);
         const $this = $(this);
         const $parent = $this.parent();
+        // 将 name/id/for 中的 formset 序号替换为新索引
         const updateElementIndex = function (el, prefix, ndx) {
             const id_regex = new RegExp("(" + prefix + "-(\\d+|__prefix__))");
             const replacement = prefix + "-" + ndx;
@@ -89,6 +92,7 @@
             addButton.on("click", addInlineClickHandler);
         };
 
+        // 克隆 empty 模板、插入新行并触发 formset:added 事件
         const addInlineClickHandler = function (e) {
             e.preventDefault();
             const template = $("#" + options.prefix + "-empty");
@@ -172,6 +176,7 @@
             );
         };
 
+        // 移除内联行、重算 TOTAL_FORMS 并重排剩余控件序号
         const inlineDeleteHandler = function (e1) {
             e1.preventDefault();
             const deleteButton = $(e1.target);
@@ -265,6 +270,7 @@
         return this;
     };
 
+    // formset 插件默认选项（前缀、文案、CSS 类与回调）
     /* Setup plugin defaults */
     $.fn.formset.defaults = {
         prefix: "form", // The form prefix for your django formset
@@ -279,7 +285,9 @@
         addButton: null, // Existing add button to use
     };
 
+    // 表格型内联：增删行后重建日期快捷方式、SelectFilter 与 prepopulate
     // Tabular inlines ---------------------------------------------------------
+    // 初始化 tabular inline 的 formset 行为
     $.fn.tabularFormset = function (selector, options) {
         const $rows = $(this);
 
@@ -343,7 +351,9 @@
         return $rows;
     };
 
+    // 堆叠型内联：额外更新 inline 标题中的 #序号
     // Stacked inlines ---------------------------------------------------------
+    // 初始化 stacked inline 的 formset 行为
     $.fn.stackedFormset = function (selector, options) {
         const $rows = $(this);
         const updateInlineLabel = function (row) {
@@ -429,6 +439,7 @@
         return $rows;
     };
 
+    // 扫描 .js-inline-admin-formset，按 inlineType 绑定对应 formset
     $(document).ready(function () {
         $(".js-inline-admin-formset").each(function () {
             const data = $(this).data(),

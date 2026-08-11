@@ -1,3 +1,8 @@
+"""
+django.contrib.admin.templatetags.admin_modify — 变更表单与内联表单的 inclusion 标签。
+
+生成 prepopulated 字段 JS 配置、提交按钮行、内联列数等变更页片段。
+"""
 import json
 
 from django import template
@@ -8,6 +13,7 @@ from .base import InclusionAdminNode
 register = template.Library()
 
 
+# 汇总主表单与内联中的 prepopulated 字段，序列化为前端 JSON
 def prepopulated_fields_js(context):
     """
     Create a list of prepopulated_fields that should render JavaScript for
@@ -59,6 +65,7 @@ def prepopulated_fields_js_tag(parser, token):
     )
 
 
+# 计算保存/删除/另存为等按钮的可见性与权限上下文
 def submit_row(context):
     """
     Display the row of buttons for delete and save.
@@ -132,6 +139,7 @@ def change_form_object_tools_tag(parser, token):
     )
 
 
+# 统计表格型内联一行占用的可见单元格数（含删除列）
 @register.filter
 def cell_count(inline_admin_form):
     """Return the number of cells used in a tabular inline."""

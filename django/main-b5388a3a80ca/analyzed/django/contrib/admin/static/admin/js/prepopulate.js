@@ -1,7 +1,9 @@
+// jQuery 插件：监听依赖字段，自动 URLify 填充 slug 等 prepopulated 字段
 /*global URLify*/
 "use strict";
 {
     const $ = django.jQuery;
+    // 依赖 urlify.js；用户手动修改目标字段后停止自动填充
     $.fn.prepopulate = function (dependencies, maxLength, allowUnicode) {
         /*
             Depends on urlify.js
@@ -14,6 +16,7 @@
         return this.each(function () {
             const prepopulatedField = $(this);
 
+            // 拼接依赖字段值，经 URLify 截断后写入当前输入框
             const populate = function () {
                 // Bail if the field's value has been changed by the user
                 if (prepopulatedField.data("_changed")) {

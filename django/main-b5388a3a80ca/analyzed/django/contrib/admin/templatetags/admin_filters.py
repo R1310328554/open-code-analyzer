@@ -1,3 +1,8 @@
+"""
+django.contrib.admin.templatetags.admin_filters — changelist 与删除确认页展示过滤器。
+
+将对象值格式化为 admin 可读文本，并截断渲染关联对象的无序列表。
+"""
 from django import template
 from django.contrib.admin.options import EMPTY_VALUE_STRING
 from django.contrib.admin.utils import display_for_value
@@ -9,12 +14,14 @@ from django.utils.translation import ngettext
 register = template.Library()
 
 
+# 将字符串值格式化为 admin 列表/详情中的显示文本
 @register.filter
 @stringfilter
 def to_object_display_value(value):
     return display_for_value(str(value), EMPTY_VALUE_STRING)
 
 
+# 渲染无序列表，超出 max_items 时追加「还有 N 个对象」提示
 @register.filter(is_safe=True, needs_autoescape=True)
 def truncated_unordered_list(value, max_items, autoescape=True):
     """
