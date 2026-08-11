@@ -3,6 +3,7 @@ from django.core.checks import Error
 from django.core.exceptions import ValidationError
 
 
+# 系统检查：验证 SITE_ID 设置存在时类型与值合法
 def check_site_id(app_configs, **kwargs):
     # Inner import avoids AppRegistryNotReady
     from django.contrib.sites.models import Site

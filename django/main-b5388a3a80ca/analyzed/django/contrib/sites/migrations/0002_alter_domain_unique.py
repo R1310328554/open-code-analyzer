@@ -2,6 +2,7 @@ import django.contrib.sites.models
 from django.db import migrations, models
 
 
+# 迁移：为 Site.domain 添加唯一约束
 class Migration(migrations.Migration):
     dependencies = [
         ("sites", "0001_initial"),

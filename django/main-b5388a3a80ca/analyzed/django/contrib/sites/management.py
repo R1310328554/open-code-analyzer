@@ -2,12 +2,18 @@
 Creates the default Site object.
 """
 
+# 迁移后信号处理：数据库无站点时创建 example.com 默认站点
+"""
+Creates the default Site object.
+"""
+
 from django.apps import apps as global_apps
 from django.conf import settings
 from django.core.management.color import no_style
 from django.db import DEFAULT_DB_ALIAS, connections, router
 
 
+# post_migrate 回调：在允许迁移的库上插入 pk=SITE_ID 的默认 Site
 def create_default_site(
     app_config,
     verbosity=2,

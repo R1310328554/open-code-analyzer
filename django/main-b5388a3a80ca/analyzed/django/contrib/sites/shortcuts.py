@@ -3,6 +3,7 @@ from django.apps import apps
 from .requests import RequestSite
 
 
+# 已安装 sites 时返回 Site.objects.get_current，否则返回 RequestSite
 def get_current_site(request):
     """
     Check if contrib.sites is installed and return either the current

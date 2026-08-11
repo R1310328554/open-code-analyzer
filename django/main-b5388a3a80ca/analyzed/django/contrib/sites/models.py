@@ -9,6 +9,7 @@ from django.utils.translation import gettext_lazy as _
 SITE_CACHE = {}
 
 
+# 域名校验器：禁止空白字符以防常见输入错误
 def _simple_domain_name_validator(value):
     """
     Validate that the given value contains no whitespaces to prevent common
@@ -22,15 +23,18 @@ def _simple_domain_name_validator(value):
         )
 
 
+# Site 默认管理器：按 ID 或请求 Host 解析当前站点并缓存
 class SiteManager(models.Manager):
     use_in_migrations = True
 
+    # 按主键查站点，结果写入 SITE_CACHE
     def _get_site_by_id(self, site_id):
         if site_id not in SITE_CACHE:
             site = self.get(pk=site_id)
             SITE_CACHE[site_id] = site
         return SITE_CACHE[site_id]
 
+    # 按 request.get_host() 匹配 domain，支持去端口回退
     def _get_site_by_request(self, request):
         host = request.get_host()
         try:
@@ -45,6 +49,7 @@ class SiteManager(models.Manager):
                 SITE_CACHE[domain] = self.get(domain__iexact=domain)
             return SITE_CACHE[domain]
 
+    # 优先 SITE_ID，否则按请求 Host；均未配置时抛出 ImproperlyConfigured
     def get_current(self, request=None):
         """
         Return the current Site based on the SITE_ID in the project's settings.
@@ -67,15 +72,18 @@ class SiteManager(models.Manager):
             "Site.objects.get_current() to fix this error."
         )
 
+    # 清空模块级 SITE_CACHE 字典
     def clear_cache(self):
         """Clear the ``Site`` object cache."""
         global SITE_CACHE
         SITE_CACHE = {}
 
+    # 反序列化 fixture 时按 domain 查找站点
     def get_by_natural_key(self, domain):
         return self.get(domain=domain)
 
 
+# 站点模型：domain 唯一域名，name 为显示名称
 class Site(models.Model):
     domain = models.CharField(
         _("domain name"),
@@ -87,19 +95,23 @@ class Site(models.Model):
 
     objects = SiteManager()
 
+    # 表 django_site；按 domain 排序
     class Meta:
         db_table = "django_site"
         verbose_name = _("site")
         verbose_name_plural = _("sites")
         ordering = ["domain"]
 
+    # 返回 domain 字符串
     def __str__(self):
         return self.domain
 
+    # 序列化时导出 (domain,) 元组
     def natural_key(self):
         return (self.domain,)
 
 
+# 信号处理：保存或删除 Site 时清除 SITE_CACHE 中相关项
 def clear_site_cache(sender, **kwargs):
     """
     Clear the cache (if primed) each time a site is saved or deleted.

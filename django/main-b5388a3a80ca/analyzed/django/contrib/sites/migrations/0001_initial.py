@@ -3,6 +3,7 @@ from django.contrib.sites.models import _simple_domain_name_validator
 from django.db import migrations, models
 
 
+# 初始迁移：创建 django_site 表及 Site 模型字段
 class Migration(migrations.Migration):
     dependencies = []
 

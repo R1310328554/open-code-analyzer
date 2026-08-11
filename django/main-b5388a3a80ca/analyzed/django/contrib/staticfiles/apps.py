@@ -4,11 +4,13 @@ from django.core import checks
 from django.utils.translation import gettext_lazy as _
 
 
+# staticfiles 应用配置：注册静态文件查找与存储系统检查
 class StaticFilesConfig(AppConfig):
     name = "django.contrib.staticfiles"
     verbose_name = _("Static Files")
     ignore_patterns = ["CVS", ".*", "*~"]
 
+    # 注册 check_finders 与 check_storages 到 staticfiles 标签
     def ready(self):
         checks.register(check_finders, checks.Tags.staticfiles)
         checks.register(check_storages, checks.Tags.staticfiles)

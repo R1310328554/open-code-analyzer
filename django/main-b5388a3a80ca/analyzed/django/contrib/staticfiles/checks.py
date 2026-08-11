@@ -8,6 +8,7 @@ E005 = Error(
 )
 
 
+# 系统检查：遍历已注册 finder 并汇总其 check() 错误
 def check_finders(app_configs, **kwargs):
     """Check all registered staticfiles finders."""
     errors = []
@@ -21,6 +22,7 @@ def check_finders(app_configs, **kwargs):
     return errors
 
 
+# 系统检查：STORAGES 中必须定义 staticfiles 别名存储
 def check_storages(app_configs, **kwargs):
     """Ensure staticfiles is defined in STORAGES setting."""
     errors = []
