@@ -19,6 +19,7 @@ from ...utils import auto_docstring
 
 
 @auto_docstring
+# BlipImageProcessor：resize/rescale/normalize 与 RGB 转换
 class BlipImageProcessor(TorchvisionBackend):
     resample = PILImageResampling.BICUBIC
     image_mean = OPENAI_CLIP_MEAN
@@ -32,3 +33,5 @@ class BlipImageProcessor(TorchvisionBackend):
 
 
 __all__ = ["BlipImageProcessor"]
+# 模块 src/transformers/models/blip/image_processing_blip.py：Transformers 5.15.0 wave11b 中文文档注释。
+

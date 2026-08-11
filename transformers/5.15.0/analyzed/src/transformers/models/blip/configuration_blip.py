@@ -24,6 +24,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="Salesforce/blip-vqa-base")
 @strict
+# BlipTextConfig：文本侧 BERT 风格解码器配置（VQA/生成任务）
 class BlipTextConfig(PreTrainedConfig):
     r"""
     label_smoothing (float, *optional*):
@@ -74,6 +75,7 @@ class BlipTextConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="Salesforce/blip-vqa-base")
 @strict
+# BlipVisionConfig：ViT 视觉编码器配置（384 分辨率、16 patch）
 class BlipVisionConfig(PreTrainedConfig):
     r"""
     Example:
@@ -109,6 +111,7 @@ class BlipVisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="Salesforce/blip-vqa-base")
 @strict
+# BlipConfig：顶层 BLIP 配置，聚合 text/vision 与 projection_dim
 class BlipConfig(PreTrainedConfig):
     r"""
     image_text_hidden_size (`int`, *optional*, defaults to 256):
@@ -154,6 +157,7 @@ class BlipConfig(PreTrainedConfig):
     initializer_factor: float = 1.0
     initializer_range: float = 0.02
 
+# __post_init__：补全默认子配置并同步 encoder_hidden_size
     def __post_init__(self, **kwargs):
         if self.text_config is None:
             self.text_config = BlipTextConfig()

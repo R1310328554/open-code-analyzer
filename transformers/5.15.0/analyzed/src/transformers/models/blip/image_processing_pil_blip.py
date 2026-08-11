@@ -19,6 +19,7 @@ from ...utils import auto_docstring
 
 
 @auto_docstring
+# BlipImageProcessorPil：PIL 路径的 resize/normalize 流水线
 class BlipImageProcessorPil(PilBackend):
     resample = PILImageResampling.BICUBIC
     image_mean = OPENAI_CLIP_MEAN

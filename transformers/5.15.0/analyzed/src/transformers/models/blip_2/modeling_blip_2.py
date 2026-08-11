@@ -58,6 +58,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring
 @dataclass
+# BaseModelOutputWithVisionQformerOutputs：含 Q-Former 输出的编码器返回结构
 class BaseModelOutputWithVisionQformerOutputs(BaseModelOutputWithPooling):
     r"""
     vision_outputs (`BaseModelOutputWithPooling`):
@@ -76,6 +77,7 @@ class BaseModelOutputWithVisionQformerOutputs(BaseModelOutputWithPooling):
     """
 )
 @dataclass
+# Blip2ForConditionalGenerationModelOutput：条件生成 loss 与 logits
 class Blip2ForConditionalGenerationModelOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor`, *optional*, returned when `labels` is provided, `torch.FloatTensor` of shape `(1,)`):
@@ -107,6 +109,7 @@ class Blip2ForConditionalGenerationModelOutput(ModelOutput):
 
 @auto_docstring
 @dataclass
+# Blip2ImageTextMatchingModelOutput：ITM 匹配 logits 输出
 class Blip2ImageTextMatchingModelOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `return_loss` is `True`):
@@ -149,6 +152,7 @@ class Blip2ImageTextMatchingModelOutput(ModelOutput):
 )
 @dataclass
 # Copied from transformers.models.clip.modeling_clip.CLIPTextModelOutput with CLIP->Blip2
+# Blip2TextModelOutput：文本塔 hidden states 输出
 class Blip2TextModelOutput(ModelOutput):
     r"""
     text_embeds (`torch.FloatTensor` of shape `(batch_size, output_dim)` *optional* returned when model is initialized with `with_projection=True`):
@@ -168,6 +172,7 @@ class Blip2TextModelOutput(ModelOutput):
 )
 @dataclass
 # Copied from transformers.models.clip.modeling_clip.CLIPVisionModelOutput with CLIP->Blip2
+# Blip2VisionModelOutput：视觉塔 hidden states 与 pooler 输出
 class Blip2VisionModelOutput(ModelOutput):
     r"""
     image_embeds (`torch.FloatTensor` of shape `(batch_size, output_dim)` *optional* returned when model is initialized with `with_projection=True`):
@@ -181,6 +186,7 @@ class Blip2VisionModelOutput(ModelOutput):
 
 
 # Copied from transformers.models.blip.modeling_blip.BlipVisionEmbeddings with Blip->Blip2
+# Blip2VisionEmbeddings：ViT patch 嵌入 + 位置编码
 class Blip2VisionEmbeddings(nn.Module):
     def __init__(self, config: Blip2VisionConfig):
         super().__init__()
@@ -256,6 +262,7 @@ class Blip2VisionEmbeddings(nn.Module):
 
 
 # Adapted from transformers.models.siglip.modeling_siglip.eager_attention_forward -> BLIP doesn't cast attn weights to fp32
+# eager_attention_forward：标准 eager 多头注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -279,6 +286,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# Blip2Attention：ViT 侧多头自注意力
 class Blip2Attention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -354,6 +362,7 @@ class Blip2Attention(nn.Module):
 
 
 # Copied from transformers.models.blip.modeling_blip.BlipMLP
+# Blip2MLP：ViT Transformer FFN
 class Blip2MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -370,6 +379,7 @@ class Blip2MLP(nn.Module):
 
 
 # Copied from transformers.models.blip.modeling_blip.BlipEncoderLayer with Blip->Blip2
+# Blip2EncoderLayer：ViT 单层（自注意力 + FFN）
 class Blip2EncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Blip2Config):
         super().__init__()
@@ -403,6 +413,7 @@ class Blip2EncoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Blip2PreTrainedModel：权重初始化与 checkpoint 映射基类
 class Blip2PreTrainedModel(PreTrainedModel):
     config: Blip2Config
     base_model_prefix = "blip"
@@ -446,6 +457,7 @@ class Blip2PreTrainedModel(PreTrainedModel):
 
 
 # Copied from transformers.models.blip.modeling_blip.BlipEncoder with Blip->Blip2
+# Blip2Encoder：ViT 编码器层堆叠
 class Blip2Encoder(nn.Module):
     """
     Transformer encoder consisting of `config.num_hidden_layers` self attention layers. Each layer is a
@@ -479,6 +491,7 @@ class Blip2Encoder(nn.Module):
 
 
 @auto_docstring
+# Blip2VisionModel：冻结/可训 ViT 视觉骨干
 class Blip2VisionModel(Blip2PreTrainedModel):
     main_input_name = "pixel_values"
     input_modalities = ("image",)
@@ -533,6 +546,7 @@ class Blip2VisionModel(Blip2PreTrainedModel):
         return self.embeddings
 
 
+# Blip2QFormerMultiHeadAttention：Q-Former 自/交叉注意力核心
 class Blip2QFormerMultiHeadAttention(nn.Module):
     def __init__(self, config, is_cross_attention=False):
         super().__init__()
@@ -606,6 +620,7 @@ class Blip2QFormerMultiHeadAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertSelfOutput with Bert->Blip2QFormer
+# Blip2QFormerSelfOutput：Q-Former 注意力输出投影与 LayerNorm
 class Blip2QFormerSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -620,6 +635,7 @@ class Blip2QFormerSelfOutput(nn.Module):
         return hidden_states
 
 
+# Blip2QFormerAttention：Q-Former 注意力封装
 class Blip2QFormerAttention(nn.Module):
     def __init__(self, config, is_cross_attention=False):
         super().__init__()
@@ -646,6 +662,7 @@ class Blip2QFormerAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertIntermediate with Bert->Blip2QFormer
+# Blip2QFormerIntermediate：Q-Former FFN 中间层
 class Blip2QFormerIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -662,6 +679,7 @@ class Blip2QFormerIntermediate(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOutput with Bert->Blip2QFormer
+# Blip2QFormerOutput：Q-Former FFN 输出与残差
 class Blip2QFormerOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -676,6 +694,7 @@ class Blip2QFormerOutput(nn.Module):
         return hidden_states
 
 
+# Blip2QFormerLayer：Q-Former 单层（自注意力 + 可选交叉注意力 + FFN）
 class Blip2QFormerLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_idx):
         super().__init__()
@@ -762,6 +781,7 @@ class Blip2QFormerLayer(GradientCheckpointingLayer):
         return layer_output
 
 
+# Blip2QFormerEncoder：堆叠 Q-Former 层，周期性交叉注意力到视觉
 class Blip2QFormerEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -798,6 +818,7 @@ class Blip2QFormerEncoder(nn.Module):
         )
 
 
+# Blip2TextEmbeddings：Q-Former 查询 token 与文本嵌入
 class Blip2TextEmbeddings(nn.Module):
     """Construct the embeddings from word and position embeddings."""
 
@@ -846,6 +867,7 @@ class Blip2TextEmbeddings(nn.Module):
     BLIP-2 Querying Transformer (Q-Former).
     """
 )
+# Blip2QFormerModel：可学习 query tokens 桥接视觉与 LLM
 class Blip2QFormerModel(Blip2PreTrainedModel):
     config: Blip2QFormerConfig
 
@@ -955,6 +977,7 @@ class Blip2QFormerModel(Blip2PreTrainedModel):
     (Q-Former) and a language model.
     """
 )
+# Blip2Model：完整 BLIP-2 骨干（vision + Q-Former + 可选 text projection）
 class Blip2Model(Blip2PreTrainedModel):
     config: Blip2Config
     main_input_name = "pixel_values"
@@ -1277,6 +1300,7 @@ class Blip2Model(Blip2PreTrainedModel):
 
 
 @auto_docstring
+# Blip2TextModelWithProjection：文本塔 + 对比学习投影头
 class Blip2TextModelWithProjection(Blip2PreTrainedModel):
     supports_gradient_checkpointing = False
     _keep_in_fp32_modules = ["query_tokens", "qformer"]
@@ -1362,6 +1386,7 @@ class Blip2TextModelWithProjection(Blip2PreTrainedModel):
 
 
 @auto_docstring
+# Blip2VisionModelWithProjection：视觉塔 + 对比学习投影头
 class Blip2VisionModelWithProjection(Blip2PreTrainedModel):
     main_input_name = "pixel_values"
     input_modalities = ("image",)
@@ -1463,6 +1488,7 @@ class Blip2VisionModelWithProjection(Blip2PreTrainedModel):
     </Tip>
     """
 )
+# Blip2ForConditionalGeneration：多模态指令/描述条件生成（LLM 解码）
 class Blip2ForConditionalGeneration(Blip2PreTrainedModel, GenerationMixin):
     config: Blip2Config
     main_input_name = "pixel_values"
@@ -1834,6 +1860,7 @@ class Blip2ForConditionalGeneration(Blip2PreTrainedModel, GenerationMixin):
     the image.
     """
 )
+# Blip2ForImageTextRetrieval：BLIP-2 图文检索（ITC + ITM）
 class Blip2ForImageTextRetrieval(Blip2PreTrainedModel):
     main_input_name = "pixel_values"
     input_modalities = ("image",)

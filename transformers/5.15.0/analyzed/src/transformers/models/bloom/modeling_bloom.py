@@ -42,6 +42,7 @@ from .configuration_bloom import BloomConfig
 logger = logging.get_logger(__name__)
 
 
+# build_alibi_tensor：构造 ALiBi 线性位置偏置张量
 def build_alibi_tensor(attention_mask: torch.Tensor, num_heads: int, dtype: torch.dtype) -> torch.Tensor:
     """
     Link to paper: https://huggingface.co/papers/2108.12409 Alibi tensor is not causal as the original paper mentions, it
@@ -89,6 +90,7 @@ def build_alibi_tensor(attention_mask: torch.Tensor, num_heads: int, dtype: torc
     return alibi.reshape(batch_size * num_heads, 1, seq_length).to(dtype)
 
 
+# dropout_add：Bloom 并行残差路径的 dropout+add 融合
 def dropout_add(x: torch.Tensor, residual: torch.Tensor, prob: float, training: bool) -> torch.Tensor:
     """
     Dropout add function
@@ -108,6 +110,7 @@ def dropout_add(x: torch.Tensor, residual: torch.Tensor, prob: float, training: 
     return out
 
 
+# bloom_gelu_forward：Bloom 定制 GELU 前向（带 clamp）
 def bloom_gelu_forward(x: torch.Tensor) -> torch.Tensor:
     """
     Custom bias GELU function. Adapted from Megatron-DeepSpeed code. Here we use a simple implementation (inference) to
@@ -120,6 +123,7 @@ def bloom_gelu_forward(x: torch.Tensor) -> torch.Tensor:
     return x * 0.5 * (1.0 + torch.tanh(0.79788456 * x * (1 + 0.044715 * x * x)))
 
 
+# bloom_gelu_back：Bloom GELU 自定义反向传播
 def bloom_gelu_back(g: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
     """
     gradient of tanh approximation of gelu gradient of actual gelu is: 0.5 * (1. + torch.erf(x * 0.70710678)) +
@@ -138,6 +142,7 @@ def bloom_gelu_back(g: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
     return ff * g
 
 
+# GeLUFunction：可 autograd 的 Bloom GELU 算子
 class GeLUFunction(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input: torch.Tensor) -> torch.Tensor:
@@ -151,6 +156,7 @@ class GeLUFunction(torch.autograd.Function):
         return tmp
 
 
+# BloomGelu：Bloom GELU 激活模块封装
 class BloomGelu(nn.Module):
     """
     Partly copied from Megatron-DeepSpeed code and adapted for our needs
@@ -163,6 +169,7 @@ class BloomGelu(nn.Module):
         return GeLUFunction.apply(x)
 
 
+# BloomAttention：ALiBi 因果自注意力（支持 slow_but_exact 模式）
 class BloomAttention(nn.Module):
     def __init__(self, config: BloomConfig, layer_idx: int | None = None):
         super().__init__()
@@ -310,6 +317,7 @@ class BloomAttention(nn.Module):
         return output_tensor, attention_probs
 
 
+# BloomMLP：并行残差 FFN（Dense-GELU-Dense）
 class BloomMLP(nn.Module):
     def __init__(self, config: BloomConfig):
         super().__init__()
@@ -341,6 +349,7 @@ class BloomMLP(nn.Module):
         return output
 
 
+# BloomBlock：单层 Bloom（LayerNorm + 注意力 + MLP 并行残差）
 class BloomBlock(GradientCheckpointingLayer):
     def __init__(self, config: BloomConfig, layer_idx: int | None = None):
         super().__init__()
@@ -403,6 +412,7 @@ class BloomBlock(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# BloomPreTrainedModel：权重初始化与 Megatron checkpoint 映射
 class BloomPreTrainedModel(PreTrainedModel):
     config: BloomConfig
     base_model_prefix = "transformer"
@@ -413,6 +423,7 @@ class BloomPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# BloomModel：BLOOM decoder-only 骨干（无 LM head）
 class BloomModel(BloomPreTrainedModel):
     def __init__(self, config: BloomConfig):
         super().__init__(config)
@@ -557,6 +568,7 @@ class BloomModel(BloomPreTrainedModel):
     embeddings).
     """
 )
+# BloomForCausalLM：多语言因果语言建模与文本生成
 class BloomForCausalLM(BloomPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "transformer.word_embeddings.weight"}
 
@@ -692,6 +704,7 @@ class BloomForCausalLM(BloomPreTrainedModel, GenerationMixin):
     each row of the batch).
     """
 )
+# BloomForSequenceClassification：序列级分类（取最后 token）
 class BloomForSequenceClassification(BloomPreTrainedModel):
     def __init__(self, config: BloomConfig):
         super().__init__(config)
@@ -808,6 +821,7 @@ class BloomForSequenceClassification(BloomPreTrainedModel):
 
 
 @auto_docstring
+# BloomForTokenClassification：逐 token 命名实体/词性标注
 class BloomForTokenClassification(BloomPreTrainedModel):
     def __init__(self, config: BloomConfig):
         super().__init__(config)
@@ -897,6 +911,7 @@ class BloomForTokenClassification(BloomPreTrainedModel):
 
 
 @auto_docstring
+# BloomForQuestionAnswering：抽取式阅读理解 span 预测
 class BloomForQuestionAnswering(BloomPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

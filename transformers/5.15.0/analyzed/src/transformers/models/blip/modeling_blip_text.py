@@ -43,6 +43,7 @@ logger = logging.get_logger(__name__)
 
 
 # Adapted from https://github.com/salesforce/BLIP/blob/main/models/med.py#L52
+# BlipTextEmbeddings：词/位置嵌入与 LayerNorm+Dropout
 class BlipTextEmbeddings(nn.Module):
     """Construct the embeddings from word and position embeddings."""
 
@@ -90,6 +91,7 @@ class BlipTextEmbeddings(nn.Module):
 
 
 # Adapted from https://github.com/salesforce/BLIP/blob/main/models/med.py#L97
+# BlipTextSelfAttention：标准 BERT 自注意力（含 past KV cache）
 class BlipTextSelfAttention(nn.Module):
     def __init__(self, config, is_cross_attention, layer_idx=None):
         super().__init__()
@@ -199,6 +201,7 @@ class BlipTextSelfAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertSelfOutput with Bert -> BlipText
+# BlipTextSelfOutput：注意力输出投影与残差 LayerNorm
 class BlipTextSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -214,6 +217,7 @@ class BlipTextSelfOutput(nn.Module):
 
 
 # Adapted from https://github.com/salesforce/BLIP/blob/main/models/med.py#242
+# BlipTextAttention：自注意力封装（分发 eager/SDPA）
 class BlipTextAttention(nn.Module):
     def __init__(self, config, is_cross_attention=False, layer_idx=None):
         super().__init__()
@@ -239,6 +243,7 @@ class BlipTextAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertIntermediate with Bert -> BlipText
+# BlipTextIntermediate：FFN 中间 Dense+激活
 class BlipTextIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -255,6 +260,7 @@ class BlipTextIntermediate(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOutput with Bert -> BlipText
+# BlipTextOutput：FFN 输出投影与残差 LayerNorm
 class BlipTextOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -269,6 +275,7 @@ class BlipTextOutput(nn.Module):
         return hidden_states
 
 
+# BlipTextLayer：单层 BERT Transformer（自注意力 + FFN）
 class BlipTextLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_num):
         super().__init__()
@@ -318,6 +325,7 @@ class BlipTextLayer(GradientCheckpointingLayer):
 
 
 # Adapted from https://github.com/salesforce/BLIP/blob/main/models/med.py#L386
+# BlipTextEncoder：堆叠 BlipTextLayer 文本编码器
 class BlipTextEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -369,6 +377,7 @@ class BlipTextEncoder(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPooler with Bert->BlipText
+# BlipTextPooler：取 [CLS] 的 Dense+Tanh 池化
 class BlipTextPooler(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -385,6 +394,7 @@ class BlipTextPooler(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPredictionHeadTransform with Bert->BlipText
+# BlipTextPredictionHeadTransform：MLM head 前 Dense+激活+LayerNorm
 class BlipTextPredictionHeadTransform(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -403,6 +413,7 @@ class BlipTextPredictionHeadTransform(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertLMPredictionHead with Bert->BlipText
+# BlipTextLMPredictionHead：带 bias 的 MLM 预测头
 class BlipTextLMPredictionHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -420,6 +431,7 @@ class BlipTextLMPredictionHead(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOnlyMLMHead with Bert->BlipText
+# BlipTextOnlyMLMHead：仅 MLM 预测头封装
 class BlipTextOnlyMLMHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -431,6 +443,7 @@ class BlipTextOnlyMLMHead(nn.Module):
 
 
 # Adapted from https://github.com/salesforce/BLIP/blob/main/models/med.py#L548
+# BlipTextPreTrainedModel：文本侧权重初始化基类
 class BlipTextPreTrainedModel(PreTrainedModel):
     """
     An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
@@ -457,6 +470,7 @@ class BlipTextPreTrainedModel(PreTrainedModel):
 
 
 # Adapted from https://github.com/salesforce/BLIP/blob/3a29b7410476bf5f2ba0955827390eb6ea1f4f9d/models/med.py#L571
+# BlipTextModel：纯文本 BERT 编码器骨干
 class BlipTextModel(BlipTextPreTrainedModel):
     """
     The model can behave as an encoder (with only self-attention) as well as a decoder, in which case a layer of
@@ -579,6 +593,7 @@ class BlipTextModel(BlipTextPreTrainedModel):
 
 
 # Adapted from https://github.com/salesforce/BLIP/blob/main/models/med.py#L811
+# BlipTextLMHeadModel：带 LM head 的因果文本生成
 class BlipTextLMHeadModel(BlipTextPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {
         "cls.predictions.decoder.bias": "cls.predictions.bias",

@@ -25,6 +25,7 @@ from ...utils import auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# Blip2ProcessorKwargs：文本分词默认 kwargs
 class Blip2ProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -42,7 +43,9 @@ class Blip2ProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# Blip2Processor：注册 <image> 特殊 token 并在文本前插入查询占位
 class Blip2Processor(ProcessorMixin):
+# __init__：添加 image token 并记录 num_query_tokens
     def __init__(self, image_processor, tokenizer, num_query_tokens=None, **kwargs):
         r"""
         num_query_tokens (`int`, *optional*):
@@ -59,6 +62,7 @@ class Blip2Processor(ProcessorMixin):
         super().__init__(image_processor, tokenizer)
 
     @auto_docstring
+# __call__：合并图像 pixel_values 与含查询 token 的 input_ids
     def __call__(
         self,
         images: ImageInput | None = None,

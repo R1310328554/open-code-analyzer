@@ -42,11 +42,13 @@ logger = logging.get_logger(__name__)
 
 
 # Copied from transformers.models.clip.modeling_clip.contrastive_loss
+# contrastive_loss：对称 InfoNCE 对比损失（图像-文本双向）
 def contrastive_loss(logits: torch.Tensor) -> torch.Tensor:
     return nn.functional.cross_entropy(logits, torch.arange(len(logits), device=logits.device))
 
 
 # Copied from transformers.models.clip.modeling_clip.image_text_contrastive_loss
+# image_text_contrastive_loss：基于相似度矩阵的 ITC 损失
 def image_text_contrastive_loss(similarity: torch.Tensor) -> torch.Tensor:
     caption_loss = contrastive_loss(similarity)
     image_loss = contrastive_loss(similarity.T)
@@ -60,6 +62,7 @@ def image_text_contrastive_loss(similarity: torch.Tensor) -> torch.Tensor:
     """
 )
 @dataclass
+# BlipForConditionalGenerationModelOutput：条件生成 loss 与 logits 输出
 class BlipForConditionalGenerationModelOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor`, *optional*, returned when `labels` is provided, `torch.FloatTensor` of shape `(1,)`):
@@ -85,6 +88,7 @@ class BlipForConditionalGenerationModelOutput(ModelOutput):
     """
 )
 @dataclass
+# BlipTextVisionModelOutput：跨模态编码器 hidden states 输出
 class BlipTextVisionModelOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -108,6 +112,7 @@ class BlipTextVisionModelOutput(ModelOutput):
     """
 )
 @dataclass
+# BlipImageTextMatchingModelOutput：ITM 二分类 logits 输出
 class BlipImageTextMatchingModelOutput(ModelOutput):
     r"""
     itm_score (`torch.FloatTensor`):
@@ -134,6 +139,7 @@ class BlipImageTextMatchingModelOutput(ModelOutput):
 
 @auto_docstring
 @dataclass
+# BlipOutput：ITC+ITM 联合训练的多任务输出结构
 class BlipOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `return_loss` is `True`):
@@ -169,6 +175,7 @@ class BlipOutput(ModelOutput):
         )
 
 
+# BlipVisionEmbeddings：ViT patch 嵌入 + 可学习位置编码
 class BlipVisionEmbeddings(nn.Module):
     def __init__(self, config: BlipVisionConfig):
         super().__init__()
@@ -244,6 +251,7 @@ class BlipVisionEmbeddings(nn.Module):
 
 
 # Copied from transformers.models.clip.modeling_clip.CLIPTextEmbeddings with CLIP->Blip
+# BlipTextEmbeddings：词嵌入 + 位置嵌入 + LayerNorm
 class BlipTextEmbeddings(nn.Module):
     def __init__(self, config: BlipTextConfig):
         super().__init__()
@@ -282,6 +290,7 @@ class BlipTextEmbeddings(nn.Module):
         return embeddings
 
 
+# BlipAttention：多头自注意力（支持 cross-attention 到视觉特征）
 class BlipAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -345,6 +354,7 @@ class BlipAttention(nn.Module):
 
 
 # Copied from transformers.models.clip.modeling_clip.CLIPMLP with CLIP->Blip
+# BlipMLP：Transformer FFN 中间层与输出投影
 class BlipMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -360,6 +370,7 @@ class BlipMLP(nn.Module):
         return hidden_states
 
 
+# BlipEncoderLayer：单层 Transformer（自/交叉注意力 + FFN）
 class BlipEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: BlipConfig):
         super().__init__()
@@ -393,6 +404,7 @@ class BlipEncoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# BlipPreTrainedModel：权重初始化与 checkpoint 键名映射基类
 class BlipPreTrainedModel(PreTrainedModel):
     config: BlipConfig
     base_model_prefix = "blip"
@@ -415,6 +427,7 @@ class BlipPreTrainedModel(PreTrainedModel):
             init.copy_(module.position_ids, torch.arange(module.position_ids.shape[-1]).expand((1, -1)))
 
 
+# BlipEncoder：堆叠 BlipEncoderLayer 的编码器
 class BlipEncoder(nn.Module):
     """
     Transformer encoder consisting of `config.num_hidden_layers` self attention layers. Each layer is a
@@ -447,6 +460,7 @@ class BlipEncoder(nn.Module):
         return BaseModelOutput(last_hidden_state=hidden_states)
 
 
+# BlipVisionModel：纯视觉 ViT 骨干（pooler 输出）
 class BlipVisionModel(BlipPreTrainedModel):
     main_input_name = "pixel_values"
     input_modalities = ("image",)
@@ -506,6 +520,7 @@ class BlipVisionModel(BlipPreTrainedModel):
     This model is going to be deprecated in future versions. Please use `BlipForConditionalGeneration`, `BlipForQuestionAnswering` or `BlipForImageTextRetrieval` depending on your usecase.
     """
 )
+# BlipModel：视觉-文本联合编码（ITC/ITM 对比与匹配）
 class BlipModel(BlipPreTrainedModel):
     config: BlipConfig
 
@@ -766,6 +781,7 @@ class BlipModel(BlipPreTrainedModel):
     from the text input. If no text input is provided, the decoder will start with the [BOS] token only.
     """
 )
+# BlipForConditionalGeneration：图像描述/VQA 条件文本生成
 class BlipForConditionalGeneration(BlipPreTrainedModel, GenerationMixin):
     config: BlipConfig
     main_input_name = "pixel_values"
@@ -939,6 +955,7 @@ class BlipForConditionalGeneration(BlipPreTrainedModel, GenerationMixin):
     with the encoding of the image, and the text decoder will output the answer to the question.
     """
 )
+# BlipForQuestionAnswering：开放域视觉问答（decoder 生成答案）
 class BlipForQuestionAnswering(BlipPreTrainedModel, GenerationMixin):
     config: BlipConfig
     _tied_weights_keys = {
@@ -1162,6 +1179,7 @@ class BlipForQuestionAnswering(BlipPreTrainedModel, GenerationMixin):
     the image.
     """
 )
+# BlipForImageTextRetrieval：图文检索（ITC 相似度 + ITM 重排序）
 class BlipForImageTextRetrieval(BlipPreTrainedModel):
     config: BlipConfig
 

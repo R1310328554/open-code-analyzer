@@ -26,6 +26,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="Salesforce/blip2-opt-2.7b")
 @strict
+# Blip2VisionConfig：EVA-CLIP 风格 ViT（224、14 patch、1408 维）
 class Blip2VisionConfig(PreTrainedConfig):
     r"""
     Example:
@@ -61,6 +62,7 @@ class Blip2VisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="Salesforce/blip2-opt-2.7b")
 @strict
+# Blip2QFormerConfig：Q-Former 查询 token 与交叉注意力频率
 class Blip2QFormerConfig(PreTrainedConfig):
     r"""
     cross_attention_frequency (`int`, *optional*, defaults to 2):
@@ -104,6 +106,7 @@ class Blip2QFormerConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="Salesforce/blip2-opt-2.7b")
 @strict
+# Blip2Config：顶层配置，聚合 vision/qformer/text 与 num_query_tokens
 class Blip2Config(PreTrainedConfig):
     r"""
     qformer_config (`dict`, *optional*):
@@ -158,6 +161,7 @@ class Blip2Config(PreTrainedConfig):
     initializer_factor: float = 1.0
     initializer_range: float = 0.02
 
+# __post_init__：补全子配置、同步 encoder 维度并判定 decoder-only LLM
     def __post_init__(self, **kwargs):
         if self.text_config is None:
             self.text_config = CONFIG_MAPPING["opt"]()

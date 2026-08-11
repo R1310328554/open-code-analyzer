@@ -19,6 +19,7 @@ from ...processing_utils import ProcessingKwargs, ProcessorMixin
 from ...utils import auto_docstring
 
 
+# BlipProcessorKwargs：文本分词默认 kwargs（padding、special tokens 等）
 class BlipProcessorKwargs(ProcessingKwargs, total=False):
     _defaults = {
         "text_kwargs": {
@@ -36,14 +37,17 @@ class BlipProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# BlipProcessor：组合 image_processor 与 tokenizer，禁用 token_type_ids
 class BlipProcessor(ProcessorMixin):
     valid_processor_kwargs = BlipProcessorKwargs
 
+# __init__：强制 tokenizer 不返回 token_type_ids
     def __init__(self, image_processor, tokenizer, **kwargs):
         tokenizer.return_token_type_ids = False
         super().__init__(image_processor, tokenizer)
 
     @property
+# unused_input_names：声明模型不使用的输入字段
     def unused_input_names(self) -> list[str]:
         return ["token_type_ids"]
 

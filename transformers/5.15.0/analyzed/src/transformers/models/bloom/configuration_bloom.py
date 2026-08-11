@@ -21,6 +21,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="bigscience/bloom")
 @strict
+# BloomConfig：n_layer/n_head、ALiBi、Megatron TP 兼容等配置
 class BloomConfig(PreTrainedConfig):
     r"""
     apply_residual_connection_post_layernorm (`bool`, *optional*, defaults to `False`):
@@ -72,6 +73,7 @@ class BloomConfig(PreTrainedConfig):
     slow_but_exact: bool = False
     tie_word_embeddings: bool = True
 
+# __post_init__：兼容旧版 n_embed 字段映射到 hidden_size
     def __post_init__(self, **kwargs):
         # Backward compatibility with n_embed kwarg
         n_embed = kwargs.pop("n_embed", None)
