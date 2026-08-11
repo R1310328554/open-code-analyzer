@@ -46,9 +46,12 @@ from .configuration_mra import MraConfig
 
 logger = logging.get_logger(__name__)
 
+
+# MRA 建模：多分辨率近似稀疏注意力 BERT 与多种下游任务头
 mra_cuda_kernel = None
 
 
+# load_cuda_kernels：加载 MRA 稀疏注意力 CUDA 自定义算子
 def load_cuda_kernels():
     global mra_cuda_kernel
     if not is_kernels_available():
@@ -58,6 +61,7 @@ def load_cuda_kernels():
     mra_cuda_kernel = get_kernel("kernels-community/mra", version=1)
 
 
+# sparse_max：MRA 稀疏块级 softmax 最大值聚合
 def sparse_max(sparse_qk_prod, indices, query_num_block, key_num_block):
     """
     Computes maximum values for softmax stability.
@@ -86,6 +90,7 @@ def sparse_max(sparse_qk_prod, indices, query_num_block, key_num_block):
     return max_vals, max_vals_scatter
 
 
+# sparse_mask：MRA 按块索引提取稀疏注意力掩码
 def sparse_mask(mask, indices, block_size=32):
     """
     Converts attention mask to a sparse mask for high resolution logits.
@@ -109,6 +114,7 @@ def sparse_mask(mask, indices, block_size=32):
     return mask
 
 
+# mm_to_sparse：MRA 稠密 Q/K 矩阵乘转稀疏块表示
 def mm_to_sparse(dense_query, dense_key, indices, block_size=32):
     """
     Performs Sampled Dense Matrix Multiplication.
@@ -149,6 +155,7 @@ def mm_to_sparse(dense_query, dense_key, indices, block_size=32):
     return mra_cuda_kernel.mm_to_sparse(dense_query, dense_key, indices.int())
 
 
+# sparse_dense_mm：MRA 稀疏 Q 与稠密 K 矩阵乘
 def sparse_dense_mm(sparse_query, indices, dense_key, query_num_block, block_size=32):
     """
     Performs matrix multiplication of a sparse matrix with a dense matrix.
@@ -189,10 +196,12 @@ def sparse_dense_mm(sparse_query, indices, dense_key, query_num_block, block_siz
     return dense_qk_prod
 
 
+# transpose_indices：MRA 转置稀疏块索引（键-查询维度互换）
 def transpose_indices(indices, dim_1_block, dim_2_block):
     return ((indices % dim_2_block) * dim_1_block + torch.div(indices, dim_2_block, rounding_mode="floor")).long()
 
 
+# MraSampledDenseMatMul：MRA 采样稠密矩阵乘 autograd 函数
 class MraSampledDenseMatMul(torch.autograd.Function):
     @staticmethod
     def forward(ctx, dense_query, dense_key, indices, block_size):
@@ -217,6 +226,7 @@ class MraSampledDenseMatMul(torch.autograd.Function):
         return MraSampledDenseMatMul.apply(dense_query, dense_key, indices, block_size)
 
 
+# MraSparseDenseMatMul：MRA 稀疏-稠密矩阵乘 autograd 函数
 class MraSparseDenseMatMul(torch.autograd.Function):
     @staticmethod
     def forward(ctx, sparse_query, indices, dense_key, query_num_block):
@@ -240,6 +250,7 @@ class MraSparseDenseMatMul(torch.autograd.Function):
         return MraSparseDenseMatMul.apply(sparse_query, indices, dense_key, query_num_block)
 
 
+# MraReduceSum：MRA 稀疏块求和归约算子
 class MraReduceSum:
     @staticmethod
     def operator_call(sparse_query, indices, query_num_block, key_num_block):
@@ -269,6 +280,7 @@ class MraReduceSum:
         return output
 
 
+# get_low_resolution_logit：MRA 低分辨率全局注意力 logits 计算
 def get_low_resolution_logit(query, key, block_size, mask=None, value=None):
     """
     Compute low resolution approximation.
@@ -309,6 +321,7 @@ def get_low_resolution_logit(query, key, block_size, mask=None, value=None):
     return low_resolution_logit, token_count, low_resolution_logit_row_max, value_hat
 
 
+# get_block_idxes：MRA 选取高分辨率稀疏注意力块索引
 def get_block_idxes(
     low_resolution_logit, num_blocks, approx_mode, initial_prior_first_n_blocks, initial_prior_diagonal_n_blocks
 ):
@@ -347,6 +360,7 @@ def get_block_idxes(
     return indices, high_resolution_mask
 
 
+# mra2_attention：MRA-2 多分辨率混合注意力前向（低/高分辨率融合）
 def mra2_attention(
     query,
     key,
@@ -462,6 +476,7 @@ def mra2_attention(
     return context_layer
 
 
+# MraEmbeddings：MRA 词嵌入 + 位置嵌入 + LayerNorm
 class MraEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
@@ -515,6 +530,7 @@ class MraEmbeddings(nn.Module):
         return embeddings
 
 
+# MraSelfAttention：MRA 多分辨率近似自注意力
 class MraSelfAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -612,6 +628,7 @@ class MraSelfAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertSelfOutput
+# MraSelfOutput：MRA 自注意力输出投影与残差 Dropout
 class MraSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -626,6 +643,7 @@ class MraSelfOutput(nn.Module):
         return hidden_states
 
 
+# MraAttention：MRA 完整自注意力子层（MraSelfAttention + MraSelfOutput）
 class MraAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -640,6 +658,7 @@ class MraAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertIntermediate
+# MraIntermediate：MRA 前馈中间层（Dense + 激活）
 class MraIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -656,6 +675,7 @@ class MraIntermediate(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOutput
+# MraOutput：MRA 前馈输出投影与残差 Dropout
 class MraOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -670,6 +690,7 @@ class MraOutput(nn.Module):
         return hidden_states
 
 
+# MraLayer：MRA 编码器单层（注意力 + FFN + 残差）
 class MraLayer(GradientCheckpointingLayer):
     def __init__(self, config):
         super().__init__()
@@ -699,6 +720,7 @@ class MraLayer(GradientCheckpointingLayer):
         return layer_output
 
 
+# MraEncoder：MRA Transformer 编码器堆叠
 class MraEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -735,6 +757,7 @@ class MraEncoder(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPredictionHeadTransform
+# MraPredictionHeadTransform：MRA MLM 预测头变换（Dense + 激活 + LayerNorm）
 class MraPredictionHeadTransform(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -753,6 +776,7 @@ class MraPredictionHeadTransform(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertLMPredictionHead with Bert->Mra
+# MraLMPredictionHead：MRA 语言建模预测头（变换 + 词表投影）
 class MraLMPredictionHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -770,6 +794,7 @@ class MraLMPredictionHead(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOnlyMLMHead with Bert->Mra
+# MraOnlyMLMHead：MRA 仅 MLM 头包装（不含嵌入绑定）
 class MraOnlyMLMHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -782,6 +807,7 @@ class MraOnlyMLMHead(nn.Module):
 
 @auto_docstring
 # Copied from transformers.models.yoso.modeling_yoso.YosoPreTrainedModel with Yoso->Mra,yoso->mra
+# MraPreTrainedModel：MRA 预训练基类与权重初始化
 class MraPreTrainedModel(PreTrainedModel):
     config: MraConfig
     base_model_prefix = "mra"
@@ -799,6 +825,7 @@ class MraPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# MraModel：MRA 多分辨率近似 BERT 编码器主干
 class MraModel(MraPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -892,6 +919,7 @@ class MraModel(MraPreTrainedModel):
 
 
 @auto_docstring
+# MraForMaskedLM：MRA 掩码语言建模
 class MraForMaskedLM(MraPreTrainedModel):
     _tied_weights_keys = {
         "cls.predictions.decoder.bias": "cls.predictions.bias",
@@ -966,6 +994,7 @@ class MraForMaskedLM(MraPreTrainedModel):
 
 
 # Copied from transformers.models.yoso.modeling_yoso.YosoClassificationHead with Yoso->Mra
+# MraClassificationHead：MRA 序列分类头（池化 + 线性层）
 class MraClassificationHead(nn.Module):
     """Head for sentence-level classification tasks."""
 
@@ -993,6 +1022,7 @@ class MraClassificationHead(nn.Module):
     the pooled output) e.g. for GLUE tasks.
     """
 )
+# MraForSequenceClassification：MRA 序列分类
 class MraForSequenceClassification(MraPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1072,6 +1102,7 @@ class MraForSequenceClassification(MraPreTrainedModel):
 
 
 @auto_docstring
+# MraForMultipleChoice：MRA 多项选择
 class MraForMultipleChoice(MraPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1175,6 +1206,7 @@ class MraForMultipleChoice(MraPreTrainedModel):
 
 
 @auto_docstring
+# MraForTokenClassification：MRA 词元分类
 class MraForTokenClassification(MraPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1248,6 +1280,7 @@ class MraForTokenClassification(MraPreTrainedModel):
 
 
 @auto_docstring
+# MraForQuestionAnswering：MRA 抽取式问答
 class MraForQuestionAnswering(MraPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

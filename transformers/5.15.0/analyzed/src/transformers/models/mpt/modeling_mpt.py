@@ -39,6 +39,9 @@ from .configuration_mpt import MptConfig
 logger = logging.get_logger(__name__)
 
 
+# MPT 建模：ALiBi 因果 Transformer 解码器与多种下游任务头
+
+# build_mpt_alibi_tensor：构建 MPT ALiBi 位置偏置张量（替代绝对位置编码）
 def build_mpt_alibi_tensor(num_heads, sequence_length, alibi_bias_max=8, device=None):
     r"""
     Link to paper: https://huggingface.co/papers/2108.12409 - Alibi tensor is not causal as the original paper mentions, it
@@ -62,6 +65,7 @@ def build_mpt_alibi_tensor(num_heads, sequence_length, alibi_bias_max=8, device=
     return alibi.squeeze(0)
 
 
+# MptAttention：MPT 多头自注意力（可选 ALiBi 偏置与 QK LayerNorm）
 class MptAttention(nn.Module):
     """Multi-head self attention.
     Using torch or triton attention implementation enables user to also use additive bias.
@@ -134,6 +138,7 @@ class MptAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# MptMLP：MPT 前馈 MLP（expansion_ratio 扩展 + GELU）
 class MptMLP(nn.Module):
     def __init__(self, config: MptConfig):
         super().__init__()
@@ -155,6 +160,7 @@ class MptMLP(nn.Module):
         return output
 
 
+# MptBlock：MPT 解码器单层（注意力 + MLP + 残差）
 class MptBlock(GradientCheckpointingLayer):
     def __init__(self, config: MptConfig, layer_idx: int | None = None):
         super().__init__()
@@ -213,6 +219,7 @@ class MptBlock(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# MptPreTrainedModel：MPT 预训练基类与权重初始化
 class MptPreTrainedModel(PreTrainedModel):
     config: MptConfig
     base_model_prefix = "transformer"
@@ -221,6 +228,7 @@ class MptPreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# MptModel：MPT 因果 Transformer 解码器主干
 class MptModel(MptPreTrainedModel):
     def __init__(self, config: MptConfig):
         super().__init__(config)
@@ -247,6 +255,7 @@ class MptModel(MptPreTrainedModel):
     def get_input_embeddings(self):
         return self.wte
 
+    # build_mpt_alibi_tensor：构建 MPT ALiBi 位置偏置张量（替代绝对位置编码）
     def build_mpt_alibi_tensor(self, num_heads, sequence_length, alibi_bias_max=8, device=None):
         return build_mpt_alibi_tensor(num_heads, sequence_length, alibi_bias_max, device)
 
@@ -365,6 +374,7 @@ class MptModel(MptPreTrainedModel):
     embeddings).
     """
 )
+# MptForCausalLM：MPT 因果语言建模条件生成
 class MptForCausalLM(MptPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "transformer.wte.weight"}
 
@@ -460,6 +470,7 @@ class MptForCausalLM(MptPreTrainedModel, GenerationMixin):
     each row of the batch).
     """
 )
+# MptForSequenceClassification：MPT 序列分类
 class MptForSequenceClassification(MptPreTrainedModel):
     def __init__(self, config: MptConfig):
         super().__init__(config)
@@ -579,6 +590,7 @@ class MptForSequenceClassification(MptPreTrainedModel):
 
 
 @auto_docstring
+# MptForTokenClassification：MPT 词元分类
 class MptForTokenClassification(MptPreTrainedModel):
     def __init__(self, config: MptConfig):
         super().__init__(config)
@@ -668,6 +680,7 @@ class MptForTokenClassification(MptPreTrainedModel):
 
 
 @auto_docstring
+# MptForQuestionAnswering：MPT 抽取式问答
 class MptForQuestionAnswering(MptPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

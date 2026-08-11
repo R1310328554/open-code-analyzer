@@ -47,7 +47,10 @@ from .configuration_mt5 import MT5Config
 logger = logging.get_logger(__name__)
 
 
+# mT5 建模：多语言 T5 编码器-解码器与条件生成/分类任务头
+
 # Copied from transformers.models.t5.modeling_t5.eager_attention_forward
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -81,6 +84,7 @@ def eager_attention_forward(
 
 
 # Copied from transformers.models.t5.modeling_t5.T5LayerNorm with T5->MT5
+# MT5LayerNorm：mT5 RMS 风格层归一化（无偏置）
 class MT5LayerNorm(nn.Module):
     def __init__(self, hidden_size, eps=1e-6):
         """
@@ -107,6 +111,7 @@ class MT5LayerNorm(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5DenseActDense with T5->MT5
+# MT5DenseActDense：mT5 标准前馈 Dense-激活-Dense 子层
 class MT5DenseActDense(nn.Module):
     def __init__(self, config: MT5Config):
         super().__init__()
@@ -130,6 +135,7 @@ class MT5DenseActDense(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5DenseGatedActDense with T5->MT5
+# MT5DenseGatedActDense：mT5 门控 GELU 前馈子层（gated-gelu）
 class MT5DenseGatedActDense(nn.Module):
     def __init__(self, config: MT5Config):
         super().__init__()
@@ -160,6 +166,7 @@ class MT5DenseGatedActDense(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5LayerFF with T5->MT5
+# MT5LayerFF：mT5 前馈网络层（按 feed_forward_proj 选择实现）
 class MT5LayerFF(nn.Module):
     def __init__(self, config: MT5Config):
         super().__init__()
@@ -179,6 +186,7 @@ class MT5LayerFF(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5Attention with T5->MT5
+# MT5Attention：mT5 相对位置偏置多头注意力
 class MT5Attention(nn.Module):
     def __init__(
         self,
@@ -376,6 +384,7 @@ class MT5Attention(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5LayerSelfAttention with T5->MT5
+# MT5LayerSelfAttention：mT5 自注意力子层（含 LayerNorm + 残差）
 class MT5LayerSelfAttention(nn.Module):
     def __init__(self, config, has_relative_attention_bias=False, layer_idx: int | None = None):
         super().__init__()
@@ -409,6 +418,7 @@ class MT5LayerSelfAttention(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5LayerCrossAttention with T5->MT5
+# MT5LayerCrossAttention：mT5 交叉注意力子层（解码器关注编码器）
 class MT5LayerCrossAttention(nn.Module):
     def __init__(self, config, layer_idx: int | None = None):
         super().__init__()
@@ -441,6 +451,7 @@ class MT5LayerCrossAttention(nn.Module):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5Block with T5->MT5
+# MT5Block：mT5 编码器/解码器块（自注意力 + 可选交叉注意力 + FFN）
 class MT5Block(GradientCheckpointingLayer):
     def __init__(self, config, has_relative_attention_bias=False, layer_idx: int | None = None):
         super().__init__()
@@ -519,6 +530,7 @@ class MT5Block(GradientCheckpointingLayer):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5ClassificationHead with T5->MT5
+# MT5ClassificationHead：mT5 序列分类头（池化 + 线性层）
 class MT5ClassificationHead(nn.Module):
     """Head for sentence-level classification tasks."""
 
@@ -539,6 +551,7 @@ class MT5ClassificationHead(nn.Module):
 
 @auto_docstring
 # Copied from transformers.models.t5.modeling_t5.T5PreTrainedModel with T5->MT5, t5->mt5
+# MT5PreTrainedModel：mT5 预训练基类与权重初始化
 class MT5PreTrainedModel(PreTrainedModel):
     config: MT5Config
     base_model_prefix = "transformer"
@@ -649,6 +662,7 @@ class MT5PreTrainedModel(PreTrainedModel):
 
 
 # Copied from transformers.models.t5.modeling_t5.T5Stack with T5->MT5
+# MT5Stack：mT5 编码器或解码器 Transformer 堆叠
 class MT5Stack(MT5PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -763,6 +777,7 @@ class MT5Stack(MT5PreTrainedModel):
 
 
 @auto_docstring
+# MT5Model：mT5 编码器-解码器 seq2seq 主干
 class MT5Model(MT5PreTrainedModel):
     r"""
     Examples:
@@ -928,6 +943,7 @@ class MT5Model(MT5PreTrainedModel):
     MT5 Model with a `language modeling` head on top.
     """
 )
+# MT5ForConditionalGeneration：mT5 条件文本生成
 class MT5ForConditionalGeneration(MT5PreTrainedModel, GenerationMixin):
     r"""
     Examples:
@@ -1119,6 +1135,7 @@ class MT5ForConditionalGeneration(MT5PreTrainedModel, GenerationMixin):
 
 
 @auto_docstring
+# MT5EncoderModel：mT5 仅编码器模型（特征提取）
 class MT5EncoderModel(MT5PreTrainedModel):
     r"""
     Examples:
@@ -1211,6 +1228,7 @@ class MT5EncoderModel(MT5PreTrainedModel):
     tasks.
     """
 )
+# MT5ForSequenceClassification：mT5 序列分类
 class MT5ForSequenceClassification(MT5PreTrainedModel):
     _keys_to_ignore_on_load_unexpected = ["decoder.block.0.layer.1.EncDecAttention.relative_attention_bias.weight"]
 
@@ -1355,6 +1373,7 @@ class MT5ForSequenceClassification(MT5PreTrainedModel):
 
 
 @auto_docstring
+# MT5ForTokenClassification：mT5 词元分类
 class MT5ForTokenClassification(MT5PreTrainedModel):
     # Copied from transformers.models.t5.modeling_t5.T5ForTokenClassification.__init__ with T5->MT5
     def __init__(self, config: MT5Config):
@@ -1418,6 +1437,7 @@ class MT5ForTokenClassification(MT5PreTrainedModel):
 
 
 @auto_docstring
+# MT5ForQuestionAnswering：mT5 抽取式问答
 class MT5ForQuestionAnswering(MT5PreTrainedModel):
     _keys_to_ignore_on_load_unexpected = ["decoder.block.0.layer.1.EncDecAttention.relative_attention_bias.weight"]
     _tied_weights_keys = {

@@ -27,8 +27,12 @@ from ...utils import auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# Muse-Glimmer 配置：视觉-语言多模态联合超参（Gemma2 文本 + Kimi 视觉）
+
+# MuseGlimmerVisionConfig：meta-models/Muse-Glimmer-30B 视觉编码器超参
 @auto_docstring(checkpoint="meta-models/Muse-Glimmer-30B")
 @strict
+# MuseGlimmerVisionConfig：meta-models/Muse-Glimmer-30B 视觉编码器超参
 class MuseGlimmerVisionConfig(PreTrainedConfig):
     r"""
     pos_emb_height (`int`, *optional*):
@@ -68,8 +72,10 @@ class MuseGlimmerVisionConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# MuseGlimmerTextConfig：meta-models/Muse-Glimmer-30B 文本解码器超参（GQA + 滑动窗口）
 @auto_docstring(checkpoint="meta-models/Muse-Glimmer-30B")
 @strict
+# MuseGlimmerTextConfig：meta-models/Muse-Glimmer-30B 文本解码器超参（GQA + 滑动窗口）
 class MuseGlimmerTextConfig(PreTrainedConfig):
     r"""
     final_logit_softcapping (`float`, *optional*, defaults to 20.0):
@@ -162,8 +168,10 @@ class MuseGlimmerTextConfig(PreTrainedConfig):
             )
 
 
+# MuseGlimmerConfig：meta-models/Muse-Glimmer-30B 多模态视觉-语言联合超参
 @auto_docstring(checkpoint="meta-models/Muse-Glimmer-30B")
 @strict
+# MuseGlimmerConfig：meta-models/Muse-Glimmer-30B 多模态视觉-语言联合超参
 class MuseGlimmerConfig(PreTrainedConfig):
     r"""
     out_hidden_size (`int`, *optional*, defaults to 6144):

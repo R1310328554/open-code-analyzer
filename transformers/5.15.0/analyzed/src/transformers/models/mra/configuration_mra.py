@@ -19,8 +19,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# MRA 配置：多分辨率近似注意力 BERT 编码器超参
+
+# MraConfig：uw-madison/mra-base-512-4 多分辨率近似注意力 BERT 超参
 @auto_docstring(checkpoint="uw-madison/mra-base-512-4")
 @strict
+# MraConfig：uw-madison/mra-base-512-4 多分辨率近似注意力 BERT 超参
 class MraConfig(PreTrainedConfig):
     r"""
     block_per_row (`int`, *optional*, defaults to 4):

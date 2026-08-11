@@ -14,6 +14,8 @@
 # limitations under the License.
 """Tokenization classes for MPNet."""
 
+# MPNet 分词：microsoft/mpnet-base WordPiece 分词器（tokenizers 后端）
+
 from tokenizers import Tokenizer, decoders, normalizers, pre_tokenizers, processors
 from tokenizers.models import WordPiece
 
@@ -27,6 +29,7 @@ logger = logging.get_logger(__name__)
 VOCAB_FILES_NAMES = {"vocab_file": "vocab.txt", "tokenizer_file": "tokenizer.json"}
 
 
+# MPNetTokenizer：microsoft/mpnet-base WordPiece 分词器（tokenizers 后端）
 class MPNetTokenizer(TokenizersBackend):
     r"""
     Construct a MPNet tokenizer (backed by HuggingFace's *tokenizers* library). Based on WordPiece.

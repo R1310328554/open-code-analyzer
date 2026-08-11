@@ -54,12 +54,15 @@ from ..auto import AutoModel
 from .configuration_muse_glimmer import MuseGlimmerConfig, MuseGlimmerTextConfig, MuseGlimmerVisionConfig
 
 
+# Muse-Glimmer 建模：视觉-语言多模态因果生成（GQA 文本 + 窗口视觉注意力）
+
 @auto_docstring(
     custom_intro="""
     Base class for MuseGlimmer outputs, with hidden states and attentions.
     """
 )
 @dataclass
+# MuseGlimmerModelOutputWithPast：Muse-Glimmer 多模态模型输出（含 image_hidden_states）
 class MuseGlimmerModelOutputWithPast(BaseModelOutputWithPast):
     r"""
     image_hidden_states (`torch.FloatTensor`, *optional*):
@@ -76,6 +79,7 @@ class MuseGlimmerModelOutputWithPast(BaseModelOutputWithPast):
     """
 )
 @dataclass
+# MuseGlimmerCausalLMOutputWithPast：Muse-Glimmer 条件生成输出（含 logits 与 past）
 class MuseGlimmerCausalLMOutputWithPast(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
@@ -100,6 +104,7 @@ class MuseGlimmerCausalLMOutputWithPast(ModelOutput):
     image_hidden_states: torch.FloatTensor | None = None
 
 
+# MuseGlimmerRMSNorm：Muse-Glimmer RMS 层归一化
 class MuseGlimmerRMSNorm(nn.Module):
     def __init__(self, dim: int | None = None, eps: float = 1e-6, with_scale: bool = True):
         super().__init__()
@@ -121,6 +126,7 @@ class MuseGlimmerRMSNorm(nn.Module):
         return normed_output.type_as(hidden_states)
 
 
+# MuseGlimmerTextCenteredRMSNorm：Muse-Glimmer 文本中心化 RMS 归一化
 class MuseGlimmerTextCenteredRMSNorm(nn.Module):
     def __init__(self, dim: int, eps: float = 1e-6):
         super().__init__()
@@ -141,6 +147,7 @@ class MuseGlimmerTextCenteredRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.eps}"
 
 
+# MuseGlimmerTextMLP：Muse-Glimmer 文本 SwiGLU 前馈 MLP
 class MuseGlimmerTextMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -157,6 +164,7 @@ class MuseGlimmerTextMLP(nn.Module):
         return down_proj
 
 
+# MuseGlimmerTextRotaryEmbedding：Muse-Glimmer 文本 RoPE 位置编码
 class MuseGlimmerTextRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: MuseGlimmerConfig, device=None):
@@ -213,6 +221,7 @@ class MuseGlimmerTextRotaryEmbedding(nn.Module):
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
 
 
+# rotate_half：将张量后半维度旋转 180°（RoPE 辅助函数）
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -221,6 +230,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：将 RoPE cos/sin 应用到 query/key 张量
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -246,6 +256,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 下将 KV 头重复扩展以匹配 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -258,6 +269,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：eager 模式缩放点积注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -284,6 +296,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# MuseGlimmerTextAttention：Muse-Glimmer 文本 GQA 因果自注意力（含 gate 投影）
 class MuseGlimmerTextAttention(nn.Module):
     """
     Multi-headed attention module with optional sliding window and gating.
@@ -371,6 +384,7 @@ class MuseGlimmerTextAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# MuseGlimmerTextDecoderLayer：Muse-Glimmer 文本解码器单层（注意力 + MLP）
 class MuseGlimmerTextDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: MuseGlimmerTextConfig, layer_idx: int):
         super().__init__()
@@ -418,6 +432,7 @@ class MuseGlimmerTextDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# MuseGlimmerPreTrainedModel：Muse-Glimmer 预训练基类与权重初始化
 class MuseGlimmerPreTrainedModel(PreTrainedModel):
     config: MuseGlimmerConfig
     base_model_prefix = "model"
@@ -433,6 +448,7 @@ class MuseGlimmerPreTrainedModel(PreTrainedModel):
     _can_record_outputs = None  # set on children directly as they are different for text and vision
 
 
+# MuseGlimmerTextNormedEmbedding：Muse-Glimmer 带 RMS 归一化的词嵌入层
 class MuseGlimmerTextNormedEmbedding(nn.Embedding):
     def __init__(self, num_embeddings: int, embedding_dim: int, padding_idx: int, norm_eps: float = 1e-6):
         super().__init__(num_embeddings, embedding_dim, padding_idx)
@@ -445,6 +461,7 @@ class MuseGlimmerTextNormedEmbedding(nn.Embedding):
 
 
 @auto_docstring
+# MuseGlimmerTextModel：Muse-Glimmer 文本因果 Transformer 解码器主干
 class MuseGlimmerTextModel(MuseGlimmerPreTrainedModel):
     config: MuseGlimmerTextConfig
     _can_record_outputs = {
@@ -531,6 +548,7 @@ class MuseGlimmerTextModel(MuseGlimmerPreTrainedModel):
         )
 
 
+# apply_rotary_pos_emb_vision：Muse-Glimmer 将 RoPE 应用到视觉 Q/K
 def apply_rotary_pos_emb_vision(
     q: torch.Tensor, k: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor
 ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -545,6 +563,7 @@ def apply_rotary_pos_emb_vision(
     return q_embed, k_embed
 
 
+# MuseGlimmerVisionAttention：Muse-Glimmer 视觉编码器多头自注意力
 class MuseGlimmerVisionAttention(nn.Module):
     def __init__(self, config: MuseGlimmerVisionConfig) -> None:
         super().__init__()
@@ -632,6 +651,7 @@ class MuseGlimmerVisionAttention(nn.Module):
         return attn_output
 
 
+# MuseGlimmerVisionMLP：Muse-Glimmer 视觉编码器 FFN 子层
 class MuseGlimmerVisionMLP(nn.Module):
     def __init__(self, dim: int, hidden_dim: int, hidden_act: str) -> None:
         super().__init__()
@@ -643,6 +663,7 @@ class MuseGlimmerVisionMLP(nn.Module):
         return self.fc2(self.act(self.fc1(x)))
 
 
+# MuseGlimmerVisionEncoderLayer：Muse-Glimmer 视觉编码器单层（注意力 + MLP）
 class MuseGlimmerVisionEncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config) -> None:
         super().__init__()
@@ -671,6 +692,7 @@ class MuseGlimmerVisionEncoderLayer(GradientCheckpointingLayer):
 # override the fn from `vision_utils.py` since muse_glimmer uses `F.grid_sample` in ref
 # and `grid_sample` applies padding unlike `f.interpolate`. Custom interpolation
 # export-friendly code used in muse_glimmer, thus kept in model file
+# get_vision_bilinear_indices_and_weights：Muse-Glimmer 视觉双线性插值索引与权重
 def get_vision_bilinear_indices_and_weights(
     grid_thw: torch.Tensor,
     num_grid_per_side: int,
@@ -744,6 +766,7 @@ def get_vision_bilinear_indices_and_weights(
     return bilinear_indices, bilinear_weights
 
 
+# MuseGlimmerVisionPatchEmbedder：Muse-Glimmer 3D patch 视觉嵌入（时空 patch 化）
 class MuseGlimmerVisionPatchEmbedder(nn.Module):
     def __init__(self, config: MuseGlimmerVisionConfig):
         super().__init__()
@@ -815,6 +838,7 @@ class MuseGlimmerVisionPatchEmbedder(nn.Module):
         return embeddings
 
 
+# MuseGlimmerVisionRotaryEmbedding：Muse-Glimmer 视觉 RoPE 位置编码
 class MuseGlimmerVisionRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: MuseGlimmerVisionConfig, device=None):
@@ -881,6 +905,7 @@ class MuseGlimmerVisionRotaryEmbedding(nn.Module):
         return cos.to(x.dtype), sin.to(x.dtype)
 
 
+# MuseGlimmerVisionModel：Muse-Glimmer 视觉 Transformer 编码器堆叠
 class MuseGlimmerVisionModel(MuseGlimmerPreTrainedModel):
     config: MuseGlimmerVisionConfig
     main_input_name = "pixel_values"
@@ -984,6 +1009,7 @@ class MuseGlimmerVisionModel(MuseGlimmerPreTrainedModel):
         return BaseModelOutputWithPooling(last_hidden_state=hidden_states)
 
 
+# MuseGlimmerVisionAdapter：Muse-Glimmer 视觉-语言特征适配投影层
 class MuseGlimmerVisionAdapter(nn.Module):
     def __init__(self, config: MuseGlimmerConfig) -> None:
         super().__init__()
@@ -995,6 +1021,7 @@ class MuseGlimmerVisionAdapter(nn.Module):
         return self.act(self.fc2(self.act(self.fc1(x))))
 
 
+# MuseGlimmerModel：Muse-Glimmer 多模态主干（视觉塔 + 文本 LLM）
 class MuseGlimmerModel(MuseGlimmerPreTrainedModel):
     def __init__(self, config: MuseGlimmerConfig):
         super().__init__(config)
@@ -1141,6 +1168,7 @@ class MuseGlimmerModel(MuseGlimmerPreTrainedModel):
         )
 
 
+# MuseGlimmerForConditionalGeneration：Muse-Glimmer 图文/视频条件生成
 class MuseGlimmerForConditionalGeneration(MuseGlimmerPreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.language_model.embed_tokens.weight"}
     # Reference: fix gemma3 grad acc #37208

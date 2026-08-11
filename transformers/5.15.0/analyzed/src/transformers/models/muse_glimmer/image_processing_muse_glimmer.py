@@ -33,6 +33,9 @@ from ...utils import TensorType, auto_docstring
 from ...utils.constants import IMAGENET_STANDARD_MEAN, IMAGENET_STANDARD_STD
 
 
+# Muse-Glimmer 图像预处理：动态分辨率 patch 化与 token 上限缩放
+
+# MuseGlimmerImageProcessorKwargs：Muse-Glimmer 图像处理器可选参数字典类型
 class MuseGlimmerImageProcessorKwargs(ImagesKwargs, total=False):
     """
     patch_size (`int`, *optional*, defaults to 14):
@@ -52,6 +55,7 @@ class MuseGlimmerImageProcessorKwargs(ImagesKwargs, total=False):
     max_image_tokens: int
 
 
+# smart_resize：Muse-Glimmer 按 token 上限智能缩放图像 patch 网格
 def smart_resize(
     height: int,
     width: int,
@@ -88,6 +92,7 @@ def smart_resize(
 
 
 @auto_docstring
+# MuseGlimmerImageProcessor：Muse-Glimmer 动态分辨率图像预处理（patch 合并）
 class MuseGlimmerImageProcessor(TorchvisionBackend):
     do_resize = True
     resample = PILImageResampling.LANCZOS

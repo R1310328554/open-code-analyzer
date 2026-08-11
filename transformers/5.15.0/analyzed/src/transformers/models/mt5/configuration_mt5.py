@@ -19,8 +19,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# mT5 配置：多语言 T5 编码器-解码器 seq2seq 超参
+
+# MT5Config：google/mt5-small 多语言 T5 编码器-解码器超参
 @auto_docstring(checkpoint="google/mt5-small")
 @strict
+# MT5Config：google/mt5-small 多语言 T5 编码器-解码器超参
 class MT5Config(PreTrainedConfig):
     r"""
     relative_attention_num_buckets (`int`, *optional*, defaults to 32):

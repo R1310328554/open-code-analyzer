@@ -21,8 +21,12 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# MPT 配置：MosaicML 因果 Transformer 与 ALiBi 注意力超参
+
+# MptAttentionConfig：mosaicml/mpt-7b 注意力子配置（ALiBi / MQA / Flash）
 @auto_docstring(checkpoint="mosaicml/mpt-7b")
 @strict
+# MptAttentionConfig：mosaicml/mpt-7b 注意力子配置（ALiBi / MQA / Flash）
 class MptAttentionConfig(PreTrainedConfig):
     r"""
     attn_type (`str`, *optional*, defaults to `"multihead_attention"`):
@@ -66,8 +70,10 @@ class MptAttentionConfig(PreTrainedConfig):
     alibi_bias_max: int = 8
 
 
+# MptConfig：mosaicml/mpt-7b 因果 Transformer 语言模型超参
 @auto_docstring(checkpoint="mosaicml/mpt-7b")
 @strict
+# MptConfig：mosaicml/mpt-7b 因果 Transformer 语言模型超参
 class MptConfig(PreTrainedConfig):
     r"""
     expansion_ratio (`int`, *optional*, defaults to 4):

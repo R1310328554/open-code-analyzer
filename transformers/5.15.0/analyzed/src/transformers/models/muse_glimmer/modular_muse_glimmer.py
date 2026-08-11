@@ -76,6 +76,9 @@ from ..paddleocr_vl.modeling_paddleocr_vl import PaddleOCRVisionEmbeddings
 logger = logging.get_logger(__name__)
 
 
+# Muse-Glimmer modular 源：Gemma2 文本 + Kimi-K25 视觉 + Glm4v 图像处理组合
+
+# smart_resize：Muse-Glimmer 按 token 上限智能缩放图像 patch 网格
 def smart_resize(
     height: int,
     width: int,
@@ -111,6 +114,7 @@ def smart_resize(
     return patches_height * patch_size, patches_width * patch_size
 
 
+# MuseGlimmerImageProcessorKwargs：Muse-Glimmer 图像处理器可选参数字典类型
 class MuseGlimmerImageProcessorKwargs(Glm4vImageProcessorKwargs):
     """
     patch_size (`int`, *optional*, defaults to 14):
@@ -126,6 +130,7 @@ class MuseGlimmerImageProcessorKwargs(Glm4vImageProcessorKwargs):
     max_image_tokens: int
 
 
+# MuseGlimmerImageProcessor：Muse-Glimmer 动态分辨率图像预处理（patch 合并）
 class MuseGlimmerImageProcessor(Glm4vImageProcessor):
     resample = PILImageResampling.LANCZOS
     image_mean = IMAGENET_STANDARD_MEAN
@@ -287,6 +292,7 @@ class MuseGlimmerImageProcessor(Glm4vImageProcessor):
         return grid_h * grid_w
 
 
+# MuseGlimmerVideoProcessorInitKwargs：Muse-Glimmer 视频处理器可选参数字典类型
 class MuseGlimmerVideoProcessorInitKwargs(VideosKwargs, total=False):
     """
     patch_size (`int`, *optional*):
@@ -306,6 +312,7 @@ class MuseGlimmerVideoProcessorInitKwargs(VideosKwargs, total=False):
 
 
 @auto_docstring
+# MuseGlimmerVideoProcessor：Muse-Glimmer 视频帧采样与 patch 化预处理
 class MuseGlimmerVideoProcessor(BaseVideoProcessor):
     resample = PILImageResampling.LANCZOS
     image_mean = IMAGENET_STANDARD_MEAN
@@ -506,16 +513,20 @@ class MuseGlimmerVideoProcessor(BaseVideoProcessor):
         )
 
 
+# MuseGlimmerModelOutputWithPast：Muse-Glimmer 多模态模型输出（含 image_hidden_states）
 class MuseGlimmerModelOutputWithPast(Gemma3ModelOutputWithPast):
     pass
 
 
+# MuseGlimmerCausalLMOutputWithPast：Muse-Glimmer 条件生成输出（含 logits 与 past）
 class MuseGlimmerCausalLMOutputWithPast(Gemma3CausalLMOutputWithPast):
     pass
 
 
+# MuseGlimmerVisionConfig：meta-models/Muse-Glimmer-30B 视觉编码器超参
 @auto_docstring(checkpoint="meta-models/Muse-Glimmer-30B")
 @strict
+# MuseGlimmerVisionConfig：meta-models/Muse-Glimmer-30B 视觉编码器超参
 class MuseGlimmerVisionConfig(Kimi_K25VisionConfig):
     r"""
     pos_emb_height (`int`, *optional*):
@@ -553,8 +564,10 @@ class MuseGlimmerVisionConfig(Kimi_K25VisionConfig):
         PreTrainedConfig.__post_init__(self, **kwargs)
 
 
+# MuseGlimmerTextConfig：meta-models/Muse-Glimmer-30B 文本解码器超参（GQA + 滑动窗口）
 @auto_docstring(checkpoint="meta-models/Muse-Glimmer-30B")
 @strict
+# MuseGlimmerTextConfig：meta-models/Muse-Glimmer-30B 文本解码器超参（GQA + 滑动窗口）
 class MuseGlimmerTextConfig(Gemma2Config, PreTrainedConfig):
     r"""
     final_logit_softcapping (`float`, *optional*, defaults to 20.0):
@@ -631,8 +644,10 @@ class MuseGlimmerTextConfig(Gemma2Config, PreTrainedConfig):
             ]
 
 
+# MuseGlimmerConfig：meta-models/Muse-Glimmer-30B 多模态视觉-语言联合超参
 @auto_docstring(checkpoint="meta-models/Muse-Glimmer-30B")
 @strict
+# MuseGlimmerConfig：meta-models/Muse-Glimmer-30B 多模态视觉-语言联合超参
 class MuseGlimmerConfig(PreTrainedConfig):
     r"""
     out_hidden_size (`int`, *optional*, defaults to 6144):
@@ -682,23 +697,28 @@ class MuseGlimmerConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# MuseGlimmerRMSNorm：Muse-Glimmer RMS 层归一化
 class MuseGlimmerRMSNorm(Gemma4RMSNorm):
     def __init__(self, dim: int | None = None, eps: float = 1e-6, with_scale: bool = True):
         super().__init__(dim, eps, with_scale)
 
 
+# MuseGlimmerTextCenteredRMSNorm：Muse-Glimmer 文本中心化 RMS 归一化
 class MuseGlimmerTextCenteredRMSNorm(Gemma2RMSNorm):
     pass
 
 
+# MuseGlimmerTextMLP：Muse-Glimmer 文本 SwiGLU 前馈 MLP
 class MuseGlimmerTextMLP(Gemma2MLP):
     pass
 
 
+# MuseGlimmerTextRotaryEmbedding：Muse-Glimmer 文本 RoPE 位置编码
 class MuseGlimmerTextRotaryEmbedding(Gemma2RotaryEmbedding):
     pass
 
 
+# MuseGlimmerTextAttention：Muse-Glimmer 文本 GQA 因果自注意力（含 gate 投影）
 class MuseGlimmerTextAttention(AfmoeAttention):
     def __init__(self, config: MuseGlimmerTextConfig, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -755,6 +775,7 @@ class MuseGlimmerTextAttention(AfmoeAttention):
         return attn_output, attn_weights
 
 
+# MuseGlimmerTextDecoderLayer：Muse-Glimmer 文本解码器单层（注意力 + MLP）
 class MuseGlimmerTextDecoderLayer(Gemma2DecoderLayer):
     def __init__(self, config: MuseGlimmerTextConfig, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -766,6 +787,7 @@ class MuseGlimmerTextDecoderLayer(Gemma2DecoderLayer):
         self.post_feedforward_layernorm = MuseGlimmerTextCenteredRMSNorm(config.hidden_size, eps=config.post_norm_eps)
 
 
+# MuseGlimmerPreTrainedModel：Muse-Glimmer 预训练基类与权重初始化
 class MuseGlimmerPreTrainedModel(Gemma2PreTrainedModel):
     _no_split_modules = ["MuseGlimmerTextDecoderLayer", "MuseGlimmerVisionEncoderLayer"]
     _can_record_outputs = None  # set on children directly as they are different for text and vision
@@ -774,6 +796,7 @@ class MuseGlimmerPreTrainedModel(Gemma2PreTrainedModel):
         raise NotImplementedError("No need to inherit, we can use the base one")
 
 
+# MuseGlimmerTextNormedEmbedding：Muse-Glimmer 带 RMS 归一化的词嵌入层
 class MuseGlimmerTextNormedEmbedding(nn.Embedding):
     def __init__(self, num_embeddings: int, embedding_dim: int, padding_idx: int, norm_eps: float = 1e-6):
         super().__init__(num_embeddings, embedding_dim, padding_idx)
@@ -785,6 +808,7 @@ class MuseGlimmerTextNormedEmbedding(nn.Embedding):
         return self.embed_norm(super().forward(input_ids))
 
 
+# MuseGlimmerTextModel：Muse-Glimmer 文本因果 Transformer 解码器主干
 class MuseGlimmerTextModel(Gemma2Model):
     config: MuseGlimmerTextConfig
     _can_record_outputs = {
@@ -866,14 +890,17 @@ class MuseGlimmerTextModel(Gemma2Model):
         )
 
 
+# MuseGlimmerVisionAttention：Muse-Glimmer 视觉编码器多头自注意力
 class MuseGlimmerVisionAttention(Kimi_K25VisionAttention):
     pass
 
 
+# MuseGlimmerVisionMLP：Muse-Glimmer 视觉编码器 FFN 子层
 class MuseGlimmerVisionMLP(Kimi_K25VisionMLP):
     pass
 
 
+# MuseGlimmerVisionEncoderLayer：Muse-Glimmer 视觉编码器单层（注意力 + MLP）
 class MuseGlimmerVisionEncoderLayer(Kimi_K25VisionEncoderLayer):
     pass
 
@@ -881,6 +908,7 @@ class MuseGlimmerVisionEncoderLayer(Kimi_K25VisionEncoderLayer):
 # override the fn from `vision_utils.py` since muse_glimmer uses `F.grid_sample` in ref
 # and `grid_sample` applies padding unlike `f.interpolate`. Custom interpolation
 # export-friendly code used in muse_glimmer, thus kept in model file
+# get_vision_bilinear_indices_and_weights：Muse-Glimmer 视觉双线性插值索引与权重
 def get_vision_bilinear_indices_and_weights(
     grid_thw: torch.Tensor,
     num_grid_per_side: int,
@@ -954,6 +982,7 @@ def get_vision_bilinear_indices_and_weights(
     return bilinear_indices, bilinear_weights
 
 
+# MuseGlimmerVisionPatchEmbedder：Muse-Glimmer 3D patch 视觉嵌入（时空 patch 化）
 class MuseGlimmerVisionPatchEmbedder(PaddleOCRVisionEmbeddings):
     def __init__(self, config: MuseGlimmerVisionConfig):
         nn.Module.__init__(self)
@@ -1000,6 +1029,7 @@ class MuseGlimmerVisionPatchEmbedder(PaddleOCRVisionEmbeddings):
         return embeddings
 
 
+# MuseGlimmerVisionRotaryEmbedding：Muse-Glimmer 视觉 RoPE 位置编码
 class MuseGlimmerVisionRotaryEmbedding(Gemma4VisionRotaryEmbedding):
     def forward(self, x, position_ids):
         # We interleave as `[freq_w, freq_h, freq_w, freq_h]` in MuseGlimmer
@@ -1020,6 +1050,7 @@ class MuseGlimmerVisionRotaryEmbedding(Gemma4VisionRotaryEmbedding):
         return cos.to(x.dtype), sin.to(x.dtype)
 
 
+# MuseGlimmerVisionModel：Muse-Glimmer 视觉 Transformer 编码器堆叠
 class MuseGlimmerVisionModel(MuseGlimmerPreTrainedModel):
     config: MuseGlimmerVisionConfig
     main_input_name = "pixel_values"
@@ -1123,6 +1154,7 @@ class MuseGlimmerVisionModel(MuseGlimmerPreTrainedModel):
         return BaseModelOutputWithPooling(last_hidden_state=hidden_states)
 
 
+# MuseGlimmerVisionAdapter：Muse-Glimmer 视觉-语言特征适配投影层
 class MuseGlimmerVisionAdapter(nn.Module):
     def __init__(self, config: MuseGlimmerConfig) -> None:
         super().__init__()
@@ -1134,6 +1166,7 @@ class MuseGlimmerVisionAdapter(nn.Module):
         return self.act(self.fc2(self.act(self.fc1(x))))
 
 
+# MuseGlimmerModel：Muse-Glimmer 多模态主干（视觉塔 + 文本 LLM）
 class MuseGlimmerModel(Kimi_K25Model):
     def __init__(self, config: MuseGlimmerConfig):
         super().__init__(config)
@@ -1161,6 +1194,7 @@ class MuseGlimmerModel(Kimi_K25Model):
         return vision_outputs
 
 
+# MuseGlimmerForConditionalGeneration：Muse-Glimmer 图文/视频条件生成
 class MuseGlimmerForConditionalGeneration(Kimi_K25ForConditionalGeneration):
     def forward(
         self,
