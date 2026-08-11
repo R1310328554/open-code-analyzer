@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-11T06:18:40Z",
-  "files": [
-    "lib/sqlalchemy/ext/asyncio/scoping.py",
-    "lib/sqlalchemy/ext/asyncio/session.py",
-    "lib/sqlalchemy/ext/automap.py",
-    "lib/sqlalchemy/ext/baked.py",
-    "lib/sqlalchemy/ext/compiler.py",
-    "lib/sqlalchemy/ext/declarative/__init__.py",
-    "lib/sqlalchemy/ext/declarative/extensions.py",
-    "lib/sqlalchemy/ext/horizontal_shard.py",
-    "lib/sqlalchemy/ext/hybrid.py",
-    "lib/sqlalchemy/ext/indexable.py",
-    "lib/sqlalchemy/ext/instrumentation.py",
-    "lib/sqlalchemy/ext/mutable.py",
-    "lib/sqlalchemy/ext/mypy/__init__.py",
-    "lib/sqlalchemy/ext/mypy/apply.py",
-    "lib/sqlalchemy/ext/mypy/decl_class.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 112,
-  "done": 105
+  "done": 120
 }
