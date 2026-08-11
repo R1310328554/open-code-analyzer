@@ -47,8 +47,10 @@ from ..eomt.modeling_eomt import (
 )
 
 
+# EomtDinov3Config：tue-mps/coco_panoptic_eomt_large_640_dinov3 checkpoint 默认超参
 @auto_docstring(checkpoint="tue-mps/coco_panoptic_eomt_large_640_dinov3")
 @strict
+# EomtDinov3Config：DINOv3 骨干 + EoMT query 分割，RoPE/register/gated MLP 选项
 class EomtDinov3Config(EomtConfig):
     r"""
     layerscale_value (`float`, *optional*, defaults to 1.0):
@@ -130,24 +132,30 @@ class EomtDinov3Config(EomtConfig):
     use_swiglu_ffn = AttributeError()
 
 
+# EomtDinov3Attention：直接继承 DINOv3ViT 多头 RoPE 自注意力
 class EomtDinov3Attention(DINOv3ViTAttention):
     pass
 
 
+# EomtDinov3Embeddings：CLS + register token 前缀，num_prefix_tokens=1+num_register
 class EomtDinov3Embeddings(DINOv3ViTEmbeddings):
+# __init__：设置 num_prefix_tokens 覆盖 DINOv3 嵌入前缀长度
     def __init__(self, config: EomtDinov3Config):
         super().__init__(config)
         self.num_prefix_tokens = 1 + config.num_register_tokens
 
 
+# EomtDinov3Layer：继承 DINOv3 ViT 编码层（Pre-LN + RoPE 注意力 + MLP）
 class EomtDinov3Layer(DINOv3ViTLayer):
     pass
 
 
+# EomtDinov3LayerScale：继承 DINOv3 LayerScale 残差缩放
 class EomtDinov3LayerScale(DINOv3ViTLayerScale):
     pass
 
 
+# EomtDinov3RotaryEmbedding：仅支持 default RoPE，覆盖 compute_default_rope_parameters
 class EomtDinov3RotaryEmbedding(DINOv3ViTRopePositionEmbedding):
     inv_freq: Tensor
 
@@ -167,6 +175,7 @@ class EomtDinov3RotaryEmbedding(DINOv3ViTRopePositionEmbedding):
 
     @staticmethod
     @deprecate_kwarg("device", version="5.18")
+# compute_default_rope_parameters：按 head_dim 计算 RoPE 逆频率 inv_freq
     def compute_default_rope_parameters(config: EomtDinov3Config, device=None, **kwargs) -> torch.Tensor:
         """
         Computes the inverse frequencies according to the original RoPE implementation
@@ -186,14 +195,17 @@ class EomtDinov3RotaryEmbedding(DINOv3ViTRopePositionEmbedding):
         return inv_freq.to(device), attention_factor
 
 
+# EomtDinov3Loss：继承 EoMT 分类+mask+dice 加权损失
 class EomtDinov3Loss(EomtLoss):
     pass
 
 
+# EomtDinov3ForUniversalSegmentationOutput：分割输出 dataclass 别名
 class EomtDinov3ForUniversalSegmentationOutput(EomtForUniversalSegmentationOutput):
     pass
 
 
+# EomtDinov3PreTrainedModel：LayerScale/CLS/register/loss 权重初始化
 class EomtDinov3PreTrainedModel(EomtPreTrainedModel):
     config_class = EomtDinov3Config
     base_model_prefix = "eomt_dinov3"
@@ -203,6 +215,7 @@ class EomtDinov3PreTrainedModel(EomtPreTrainedModel):
         "attentions": EomtDinov3Attention,
     }
 
+# _init_weights：LayerScale lambda1、CLS/register token 与 attn_mask_probs 初始化
     def _init_weights(self, module: nn.Module) -> None:
         PreTrainedModel._init_weights(module)
         std = self.config.initializer_range
@@ -225,6 +238,7 @@ class EomtDinov3PreTrainedModel(EomtPreTrainedModel):
     The EoMT-DINOv3 model with head on top for instance/semantic/panoptic segmentation.
     """,
 )
+# EomtDinov3ForUniversalSegmentation：DINOv3 RoPE 骨干 + query 全景/实例/语义统一分割
 class EomtDinov3ForUniversalSegmentation(EomtDinov3PreTrainedModel, EomtForUniversalSegmentation):
     def __init__(self, config: EomtDinov3Config):
         super().__init__(config)
@@ -244,6 +258,7 @@ class EomtDinov3ForUniversalSegmentation(EomtDinov3PreTrainedModel, EomtForUnive
     @merge_with_config_defaults
     @capture_outputs
     @auto_docstring
+# forward：RoPE 编码 + 末 num_blocks 层注入 query，插值 mask 引导注意力掩码
     def forward(
         self,
         pixel_values: Tensor,

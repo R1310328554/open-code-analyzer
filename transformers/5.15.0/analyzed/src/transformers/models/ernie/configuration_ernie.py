@@ -20,8 +20,10 @@ from ...configuration_utils import PreTrainedConfig
 from ...utils import auto_docstring
 
 
+# ErnieConfig：nghuyong/ernie-3.0-base-zh checkpoint，768 维 12 层
 @auto_docstring(checkpoint="nghuyong/ernie-3.0-base-zh")
 @strict
+# ErnieConfig：BERT 兼容超参 + task_type_vocab_size/use_task_id 多任务选项
 class ErnieConfig(PreTrainedConfig):
     r"""
     task_type_vocab_size (`int`, *optional*, defaults to 3):

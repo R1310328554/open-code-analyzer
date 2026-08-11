@@ -20,8 +20,10 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# Ernie4_5_MoeConfig：baidu/ERNIE-4.5-21B-A3B-PT checkpoint 默认超参
 @auto_docstring(checkpoint="baidu/ERNIE-4.5-21B-A3B-PT")
 @strict
+# Ernie4_5_MoeConfig：moe_k/moe_num_experts/shared_experts/layer 区间与 TP/EP plan
 class Ernie4_5_MoeConfig(PreTrainedConfig):
     r"""
     use_bias (`bool`, *optional*, defaults to `False`):
@@ -117,6 +119,7 @@ class Ernie4_5_MoeConfig(PreTrainedConfig):
     output_router_logits: bool | None = False
     router_aux_loss_coef: float | None = 0.001
 
+# __post_init__：moe_layer_end_index=-1 时设为 num_hidden_layers-1
     def __post_init__(self, **kwargs):
         self.moe_layer_end_index = (
             self.num_hidden_layers - 1 if self.moe_layer_end_index == -1 else self.moe_layer_end_index

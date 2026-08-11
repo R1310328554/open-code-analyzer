@@ -54,6 +54,7 @@ from .configuration_ernie import ErnieConfig
 logger = logging.get_logger(__name__)
 
 
+# ErnieEmbeddings：词/位置/segment 嵌入 + 可选 task_type 嵌入
 class ErnieEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
@@ -73,6 +74,7 @@ class ErnieEmbeddings(nn.Module):
         if config.use_task_id:
             self.task_type_embeddings = nn.Embedding(config.task_type_vocab_size, config.hidden_size)
 
+# forward：input_ids 经 ERNIE 编码输出 hidden states 与任务 logits
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -127,6 +129,7 @@ class ErnieEmbeddings(nn.Module):
         return embeddings
 
 
+# eager_attention_forward：标准缩放点积注意力 eager 实现
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -155,6 +158,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# ErnieSelfAttention：多头自注意力，支持 SDPA/Flash 等后端
 class ErnieSelfAttention(nn.Module):
     def __init__(self, config, is_causal=False, layer_idx=None):
         super().__init__()
@@ -222,6 +226,7 @@ class ErnieSelfAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# ErnieCrossAttention：交叉注意力（encoder-decoder 场景）
 class ErnieCrossAttention(nn.Module):
     def __init__(self, config, is_causal=False, layer_idx=None):
         super().__init__()
@@ -298,6 +303,7 @@ class ErnieCrossAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# ErnieSelfOutput：注意力输出线性投影与 dropout
 class ErnieSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -312,6 +318,7 @@ class ErnieSelfOutput(nn.Module):
         return hidden_states
 
 
+# ErnieAttention：SelfAttention + SelfOutput 封装
 class ErnieAttention(nn.Module):
     def __init__(self, config, is_causal=False, layer_idx=None, is_cross_attention=False):
         super().__init__()
@@ -341,6 +348,7 @@ class ErnieAttention(nn.Module):
         return attention_output, attn_weights
 
 
+# ErnieIntermediate：MLP 中间层（hidden → intermediate 扩展）
 class ErnieIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -356,6 +364,7 @@ class ErnieIntermediate(nn.Module):
         return hidden_states
 
 
+# ErnieOutput：MLP 输出投影与 dropout
 class ErnieOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -370,6 +379,7 @@ class ErnieOutput(nn.Module):
         return hidden_states
 
 
+# ErnieLayer：Pre-LN 自注意力 + 交叉注意力 + MLP 残差块
 class ErnieLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_idx=None):
         super().__init__()
@@ -435,6 +445,7 @@ class ErnieLayer(GradientCheckpointingLayer):
         return layer_output
 
 
+# ErniePooler：CLS token 线性池化输出 sentence 表示
 class ErniePooler(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -450,6 +461,7 @@ class ErniePooler(nn.Module):
         return pooled_output
 
 
+# ErniePredictionHeadTransform：MLM 预测头前的 Dense+激活+LayerNorm
 class ErniePredictionHeadTransform(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -467,6 +479,7 @@ class ErniePredictionHeadTransform(nn.Module):
         return hidden_states
 
 
+# ErnieLMPredictionHead：MLM 词表投影头（含 bias）
 class ErnieLMPredictionHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -483,6 +496,7 @@ class ErnieLMPredictionHead(nn.Module):
         return hidden_states
 
 
+# ErnieEncoder：堆叠 num_hidden_layers 个 ErnieLayer
 class ErnieEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -516,6 +530,7 @@ class ErnieEncoder(nn.Module):
 
 
 @auto_docstring
+# ErniePreTrainedModel：trunc_normal 初始化，支持 gradient checkpointing
 class ErniePreTrainedModel(PreTrainedModel):
     config_class = ErnieConfig
     base_model_prefix = "ernie"
@@ -553,6 +568,7 @@ class ErniePreTrainedModel(PreTrainedModel):
     `add_cross_attention` set to `True`; an `encoder_hidden_states` is then expected as an input to the forward pass.
     """
 )
+# ErnieModel：Embeddings + Encoder + Pooler，输出 last_hidden_state
 class ErnieModel(ErniePreTrainedModel):
     _no_split_modules = ["ErnieLayer"]
 
@@ -695,6 +711,7 @@ class ErnieModel(ErniePreTrainedModel):
     """
 )
 @dataclass
+# ErnieForPreTrainingOutput：MLM + NSP 预训练联合输出
 class ErnieForPreTrainingOutput(ModelOutput):
     r"""
     loss (*optional*, returned when `labels` is provided, `torch.FloatTensor` of shape `(1,)`):
@@ -714,6 +731,7 @@ class ErnieForPreTrainingOutput(ModelOutput):
     attentions: tuple[torch.FloatTensor] | None = None
 
 
+# ErniePreTrainingHeads：MLM 与 NSP 双预测头
 class ErniePreTrainingHeads(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -732,6 +750,7 @@ class ErniePreTrainingHeads(nn.Module):
     sentence prediction (classification)` head.
     """
 )
+# ErnieForPreTraining：MLM + NSP 联合预训练任务头
 class ErnieForPreTraining(ErniePreTrainedModel):
     _tied_weights_keys = {
         "cls.predictions.decoder.bias": "cls.predictions.bias",
@@ -831,6 +850,7 @@ class ErnieForPreTraining(ErniePreTrainedModel):
         )
 
 
+# ErnieOnlyMLMHead：仅 MLM 预测头封装
 class ErnieOnlyMLMHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -846,6 +866,7 @@ class ErnieOnlyMLMHead(nn.Module):
     Ernie Model with a `language modeling` head on top for CLM fine-tuning.
     """
 )
+# ErnieForCausalLM：因果语言建模 + 文本生成接口
 class ErnieForCausalLM(ErniePreTrainedModel, GenerationMixin):
     _tied_weights_keys = {
         "cls.predictions.decoder.weight": "ernie.embeddings.word_embeddings.weight",
@@ -938,6 +959,7 @@ class ErnieForCausalLM(ErniePreTrainedModel, GenerationMixin):
 
 
 @auto_docstring
+# ErnieForMaskedLM：掩码语言建模微调头
 class ErnieForMaskedLM(ErniePreTrainedModel):
     _tied_weights_keys = {
         "cls.predictions.decoder.bias": "cls.predictions.bias",
@@ -1021,6 +1043,7 @@ class ErnieForMaskedLM(ErniePreTrainedModel):
         )
 
 
+# ErnieOnlyNSPHead：下一句预测 NSP 二分类头
 class ErnieOnlyNSPHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1036,6 +1059,7 @@ class ErnieOnlyNSPHead(nn.Module):
     Ernie Model with a `next sentence prediction (classification)` head on top.
     """
 )
+# ErnieForNextSentencePrediction：NSP 句子关系预测
 class ErnieForNextSentencePrediction(ErniePreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1125,6 +1149,7 @@ class ErnieForNextSentencePrediction(ErniePreTrainedModel):
     output) e.g. for GLUE tasks.
     """
 )
+# ErnieForSequenceClassification：序列分类（单标签/多标签）
 class ErnieForSequenceClassification(ErniePreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1213,6 +1238,7 @@ class ErnieForSequenceClassification(ErniePreTrainedModel):
 
 
 @auto_docstring
+# ErnieForMultipleChoice：多选阅读理解分类
 class ErnieForMultipleChoice(ErniePreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1318,6 +1344,7 @@ class ErnieForMultipleChoice(ErniePreTrainedModel):
 
 
 @auto_docstring
+# ErnieForTokenClassification：序列标注（NER 等）
 class ErnieForTokenClassification(ErniePreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -1385,6 +1412,7 @@ class ErnieForTokenClassification(ErniePreTrainedModel):
 
 
 @auto_docstring
+# ErnieForQuestionAnswering：抽取式问答 span 预测
 class ErnieForQuestionAnswering(ErniePreTrainedModel):
     def __init__(self, config):
         super().__init__(config)

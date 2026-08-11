@@ -20,8 +20,10 @@ from ...modeling_rope_utils import RopeParameters
 from ...utils import auto_docstring
 
 
+# Ernie4_5Config：baidu/ERNIE-4.5-0.3B-PT checkpoint，1024 维 18 层
 @auto_docstring(checkpoint="baidu/ERNIE-4.5-0.3B-PT")
 @strict
+# Ernie4_5Config：vocab/hidden/GQA head_dim/rope_parameters/use_bias 等超参
 class Ernie4_5Config(PreTrainedConfig):
     r"""
     use_bias (`bool`, *optional*, defaults to `False`):
@@ -80,6 +82,7 @@ class Ernie4_5Config(PreTrainedConfig):
     use_bias: bool | None = False
     head_dim: int | None = 128
 
+# __post_init__：补全 num_key_value_heads 与 head_dim 默认值
     def __post_init__(self, **kwargs):
         if self.num_key_value_heads is None:
             self.num_key_value_heads = self.num_attention_heads

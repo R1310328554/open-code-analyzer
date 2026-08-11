@@ -40,10 +40,12 @@ from .configuration_ernie4_5_moe import Ernie4_5_MoeConfig
 logger = logging.get_logger(__name__)
 
 
+# Ernie4_5_MoeRMSNorm：直接继承 LlamaRMSNorm
 class Ernie4_5_MoeRMSNorm(LlamaRMSNorm):
     pass
 
 
+# Ernie4_5_MoeMLP：继承 Qwen3MoeMLP，按 use_bias 重建投影层
 class Ernie4_5_MoeMLP(Qwen3MoeMLP):
     def __init__(self, config, intermediate_size=None):
         super().__init__(config, intermediate_size)
@@ -53,11 +55,13 @@ class Ernie4_5_MoeMLP(Qwen3MoeMLP):
         self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=config.use_bias)
 
 
+# Ernie4_5_MoeRotaryEmbedding：复用 Ernie4_5 RoPE 实现
 class Ernie4_5_MoeRotaryEmbedding(Ernie4_5RotaryEmbedding):
     pass
 
 
 @no_inherit_decorator
+# Ernie4_5_MoeAttention：继承 LlamaAttention，GQA + use_bias 投影
 class Ernie4_5_MoeAttention(LlamaAttention):
     def __init__(self, config: Ernie4_5_MoeConfig, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -70,6 +74,7 @@ class Ernie4_5_MoeAttention(LlamaAttention):
         self.o_proj = nn.Linear(config.num_attention_heads * self.head_dim, config.hidden_size, bias=config.use_bias)
 
 
+# Ernie4_5_MoeStatics：MoE 路由 e_score_correction_bias 参数与 TP 兼容 forward
 class Ernie4_5_MoeStatics(nn.Module):
     """
     Stores MoE (Mixture of Experts) statistics
@@ -97,6 +102,7 @@ class Ernie4_5_MoeStatics(nn.Module):
         return hidden_states + self.e_score_correction_bias.squeeze()
 
 
+# Ernie4_5_MoeExperts：继承 MixtralExperts grouped GEMM 专家权重
 class Ernie4_5_MoeExperts(MixtralExperts):
     def __init__(self, config):
         super().__init__()
@@ -104,6 +110,7 @@ class Ernie4_5_MoeExperts(MixtralExperts):
         self.intermediate_dim = config.moe_intermediate_size
 
 
+# Ernie4_5_MoeTopKRouter：Top-K softmax 路由 + correction bias 校正
 class Ernie4_5_MoeTopKRouter(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -132,6 +139,7 @@ class Ernie4_5_MoeTopKRouter(nn.Module):
         return router_logits, routing_weights, selected_experts
 
 
+# Ernie4_5_MoeSparseMoeBlock：gate 路由 + 稀疏/共享专家加权求和
 class Ernie4_5_MoeSparseMoeBlock(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -162,6 +170,7 @@ class Ernie4_5_MoeSparseMoeBlock(nn.Module):
         return final_hidden_states.to(hidden_states.dtype)
 
 
+# Ernie4_5_MoeDecoderLayer：继承 Qwen3Moe 解码层，替换 MLP 为 MoE/Dense
 class Ernie4_5_MoeDecoderLayer(Qwen3MoeDecoderLayer):
     def __init__(self, config, layer_idx):
         nn.Module.__init__(self)
@@ -183,6 +192,7 @@ class Ernie4_5_MoeDecoderLayer(Qwen3MoeDecoderLayer):
 
 
 @auto_docstring
+# Ernie4_5_MoePreTrainedModel：继承 Mixtral 预训练基类
 class Ernie4_5_MoePreTrainedModel(MixtralPreTrainedModel):
     config: Ernie4_5_MoeConfig
     _no_split_modules = ["Ernie4_5_MoeDecoderLayer"]
@@ -206,6 +216,7 @@ class Ernie4_5_MoePreTrainedModel(MixtralPreTrainedModel):
 
 
 @auto_docstring
+# Ernie4_5_MoeModel：modular 源完整 MoE 解码器实现
 class Ernie4_5_MoeModel(Ernie4_5_MoePreTrainedModel):
     def __init__(self, config: Ernie4_5_MoeConfig):
         super().__init__(config)
@@ -283,6 +294,7 @@ class Ernie4_5_MoeModel(Ernie4_5_MoePreTrainedModel):
 
 
 @auto_docstring
+# Ernie4_5_MoeForCausalLM：继承 MixtralForCausalLM 因果 LM 头
 class Ernie4_5_MoeForCausalLM(MixtralForCausalLM):
     def __init__(self, config):
         PreTrainedModel.__init__(self, config)

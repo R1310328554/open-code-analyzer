@@ -59,6 +59,7 @@ from .configuration_ernie import ErnieConfig
 logger = logging.get_logger(__name__)
 
 
+# ErnieEmbeddings：继承 BertEmbeddings，新增 task_type_embeddings
 class ErnieEmbeddings(BertEmbeddings):
     """Construct the embeddings from word, position and token_type embeddings."""
 
@@ -123,31 +124,38 @@ class ErnieEmbeddings(BertEmbeddings):
         return embeddings
 
 
+# ErnieSelfAttention：直接继承 BERT 自注意力
 class ErnieSelfAttention(BertSelfAttention):
     pass
 
 
+# ErnieCrossAttention：继承 BERT 交叉注意力
 class ErnieCrossAttention(BertCrossAttention):
     pass
 
 
+# ErnieLayer：继承 BERT 编码层
 class ErnieLayer(BertLayer):
     pass
 
 
+# ErniePooler：继承 BERT CLS 池化
 class ErniePooler(BertPooler):
     pass
 
 
+# ErnieLMPredictionHead：继承 BERT MLM 预测头
 class ErnieLMPredictionHead(BertLMPredictionHead):
     pass
 
 
+# ErnieEncoder：继承 BERT 编码器堆叠
 class ErnieEncoder(BertEncoder):
     pass
 
 
 @auto_docstring
+# ErniePreTrainedModel：覆盖 _init_weights 与 gradient checkpointing 支持
 class ErniePreTrainedModel(PreTrainedModel):
     config_class = ErnieConfig
     base_model_prefix = "ernie"
@@ -173,6 +181,7 @@ class ErniePreTrainedModel(PreTrainedModel):
             init.zeros_(module.token_type_ids)
 
 
+# ErnieModel：继承 BertModel，forward 传递 task_type_ids
 class ErnieModel(BertModel):
     _no_split_modules = ["ErnieLayer"]
 
@@ -267,10 +276,12 @@ class ErnieModel(BertModel):
         )
 
 
+# ErnieForPreTrainingOutput：预训练输出 dataclass 别名
 class ErnieForPreTrainingOutput(BertForPreTrainingOutput):
     pass
 
 
+# ErnieForPreTraining：继承 BERT 联合预训练头
 class ErnieForPreTraining(BertForPreTraining):
     _tied_weights_keys = {
         "cls.predictions.decoder.bias": "cls.predictions.bias",
@@ -354,6 +365,7 @@ class ErnieForPreTraining(BertForPreTraining):
         )
 
 
+# ErnieForCausalLM：继承 BertLMHeadModel 因果 LM
 class ErnieForCausalLM(BertLMHeadModel):
     @can_return_tuple
     @auto_docstring
@@ -421,6 +433,7 @@ class ErnieForCausalLM(BertLMHeadModel):
         )
 
 
+# ErnieForMaskedLM：继承 BERT 掩码 LM 微调头
 class ErnieForMaskedLM(BertForMaskedLM):
     _tied_weights_keys = {
         "cls.predictions.decoder.bias": "cls.predictions.bias",
@@ -482,6 +495,7 @@ class ErnieForMaskedLM(BertForMaskedLM):
         )
 
 
+# ErnieForNextSentencePrediction：继承 BERT NSP 头
 class ErnieForNextSentencePrediction(BertForNextSentencePrediction):
     @can_return_tuple
     @auto_docstring
@@ -556,6 +570,7 @@ class ErnieForNextSentencePrediction(BertForNextSentencePrediction):
         )
 
 
+# ErnieForSequenceClassification：继承 BERT 序列分类
 class ErnieForSequenceClassification(BertForSequenceClassification):
     @can_return_tuple
     @auto_docstring
@@ -628,6 +643,7 @@ class ErnieForSequenceClassification(BertForSequenceClassification):
         )
 
 
+# ErnieForMultipleChoice：继承 BERT 多选分类
 class ErnieForMultipleChoice(BertForMultipleChoice):
     @can_return_tuple
     @auto_docstring
@@ -719,6 +735,7 @@ class ErnieForMultipleChoice(BertForMultipleChoice):
         )
 
 
+# ErnieForTokenClassification：继承 BERT token 分类
 class ErnieForTokenClassification(BertForTokenClassification):
     @can_return_tuple
     @auto_docstring
@@ -771,6 +788,7 @@ class ErnieForTokenClassification(BertForTokenClassification):
         )
 
 
+# ErnieForQuestionAnswering：继承 BERT 抽取式 QA
 class ErnieForQuestionAnswering(BertForQuestionAnswering):
     @can_return_tuple
     @auto_docstring

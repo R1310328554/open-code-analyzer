@@ -27,8 +27,10 @@ from ...utils import auto_docstring, logging
 logger = logging.get_logger(__name__)
 
 
+# Ernie4_5_VLMoe 系列：baidu/ERNIE-4.5-VL-28B-A3B-PT checkpoint 默认超参
 @auto_docstring(checkpoint="baidu/ERNIE-4.5-VL-28B-A3B-PT")
 @strict
+# Ernie4_5_VLMoeVisionConfig：ViT 视觉塔，patch=14、spatial/temporal merge
 class Ernie4_5_VLMoeVisionConfig(PreTrainedConfig):
     r"""
     temporal_merge_size (`int`, *optional*, defaults to 2):
@@ -61,6 +63,7 @@ class Ernie4_5_VLMoeVisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="baidu/ERNIE-4.5-VL-28B-A3B-PT")
 @strict
+# Ernie4_5_VLMoeTextConfig：文本 MoE 解码器，mlp_layer_types 逐层 dense/sparse
 class Ernie4_5_VLMoeTextConfig(PreTrainedConfig):
     r"""
     use_bias (`bool`, *optional*, defaults to `False`):
@@ -135,6 +138,7 @@ class Ernie4_5_VLMoeTextConfig(PreTrainedConfig):
 
     mlp_layer_types: list[str] | None = None
 
+# __post_init__：默认 mlp_layer_types 首层 dense 其余 sparse，moe_intermediate_size
     def __post_init__(self, **kwargs):
         if self.mlp_layer_types is None:
             self.mlp_layer_types = ["dense"] + ["sparse"] * (self.num_hidden_layers - 1)
@@ -147,6 +151,7 @@ class Ernie4_5_VLMoeTextConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="baidu/ERNIE-4.5-VL-28B-A3B-PT")
 @strict
+# Ernie4_5_VLMoeConfig：组合 vision_config + text_config，图像/视频 token 边界 ID
 class Ernie4_5_VLMoeConfig(PreTrainedConfig):
     r"""
     image_start_token_id (`int`, *optional*, defaults to 101304):
@@ -205,6 +210,7 @@ class Ernie4_5_VLMoeConfig(PreTrainedConfig):
         super().__post_init__(**kwargs)
 
 
+# Ernie4_5_VL_MoeConfig：已弃用别名，请改用 Ernie4_5_VLMoeConfig
 class Ernie4_5_VL_MoeConfig(Ernie4_5_VLMoeConfig):
     def __init__(self, *args, **kwargs):
         logger.warning_once(
@@ -213,6 +219,7 @@ class Ernie4_5_VL_MoeConfig(Ernie4_5_VLMoeConfig):
         super().__init__(*args, **kwargs)
 
 
+# Ernie4_5_VL_MoeTextConfig：已弃用文本配置别名
 class Ernie4_5_VL_MoeTextConfig(Ernie4_5_VLMoeTextConfig):
     def __init__(self, *args, **kwargs):
         logger.warning_once(
@@ -221,6 +228,7 @@ class Ernie4_5_VL_MoeTextConfig(Ernie4_5_VLMoeTextConfig):
         super().__init__(*args, **kwargs)
 
 
+# Ernie4_5_VL_MoeVisionConfig：已弃用视觉配置别名
 class Ernie4_5_VL_MoeVisionConfig(Ernie4_5_VLMoeVisionConfig):
     def __init__(self, *args, **kwargs):
         logger.warning_once(

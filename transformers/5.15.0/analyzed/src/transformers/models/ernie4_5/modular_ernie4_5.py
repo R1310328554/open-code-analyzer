@@ -29,6 +29,7 @@ from ..olmo.modeling_olmo import OlmoRotaryEmbedding
 from .configuration_ernie4_5 import Ernie4_5Config
 
 
+# Ernie4_5RotaryEmbedding：继承 OlmoRotaryEmbedding，覆盖 forward 全精度 cos/sin
 class Ernie4_5RotaryEmbedding(OlmoRotaryEmbedding):
     @torch.no_grad()
     @dynamic_rope_update  # power user: used with advanced RoPE types (e.g. dynamic rope)
@@ -47,6 +48,7 @@ class Ernie4_5RotaryEmbedding(OlmoRotaryEmbedding):
         return cos, sin
 
 
+# apply_rotary_pos_emb：GLM 风格 interleave RoPE（modular 源定义）
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -81,6 +83,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed.to(original_dtype), k_embed.to(original_dtype)
 
 
+# Ernie4_5MLP：继承 LlamaMLP，按 use_bias 重建 gate/up/down 线性层
 class Ernie4_5MLP(LlamaMLP):
     def __init__(self, config: Ernie4_5Config):
         super().__init__(config)
@@ -90,7 +93,9 @@ class Ernie4_5MLP(LlamaMLP):
         self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=config.use_bias)
 
 
+# no_inherit_decorator：阻止装饰器继承到生成类
 @no_inherit_decorator
+# Ernie4_5Attention：继承 LlamaAttention，attention_dropout=0，按 use_bias 投影
 class Ernie4_5Attention(LlamaAttention):
     def __init__(self, config: Ernie4_5Config, layer_idx: int):
         super().__init__(config, layer_idx)
@@ -103,6 +108,7 @@ class Ernie4_5Attention(LlamaAttention):
         self.o_proj = nn.Linear(config.num_attention_heads * self.head_dim, config.hidden_size, bias=config.use_bias)
 
 
+# Ernie4_5ForCausalLM：继承 LlamaForCausalLM，委托 super().forward
 class Ernie4_5ForCausalLM(LlamaForCausalLM):
     @can_return_tuple
     @auto_docstring

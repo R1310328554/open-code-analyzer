@@ -40,6 +40,7 @@ from ...utils.output_capturing import capture_outputs
 from .configuration_ernie4_5 import Ernie4_5Config
 
 
+# Ernie4_5RotaryEmbedding：RoPE 逆频率缓存，支持 dynamic_rope_update
 class Ernie4_5RotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: Ernie4_5Config, device=None):
@@ -80,6 +81,7 @@ class Ernie4_5RotaryEmbedding(nn.Module):
 
     @torch.no_grad()
     @dynamic_rope_update  # power user: used with advanced RoPE types (e.g. dynamic rope)
+# forward：input_ids 经 RoPE 解码器输出 logits 与 past_key_values
     def forward(self, x, position_ids):
         inv_freq_expanded = self.inv_freq[None, :, None].float().expand(position_ids.shape[0], -1, 1).to(x.device)
         position_ids_expanded = position_ids[:, None, :].float()
@@ -95,6 +97,7 @@ class Ernie4_5RotaryEmbedding(nn.Module):
         return cos, sin
 
 
+# Ernie4_5MLP：SwiGLU 门控前馈（gate/up/down_proj + silu 激活）
 class Ernie4_5MLP(nn.Module):
     def __init__(self, config: Ernie4_5Config):
         super().__init__()
@@ -112,6 +115,7 @@ class Ernie4_5MLP(nn.Module):
         return down_proj
 
 
+# rotate_half：RoPE 向量半维旋转辅助函数
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., 0::2]
@@ -119,6 +123,7 @@ def rotate_half(x):
     return torch.stack((-x2, x1), dim=-1).flatten(-2)
 
 
+# repeat_kv：GQA 将 KV 头重复扩展至 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -131,6 +136,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：GQA 缩放点积注意力 eager 实现
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -156,6 +162,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# apply_rotary_pos_emb：GLM 风格全维 interleave RoPE 施加于 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -190,6 +197,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed.to(original_dtype), k_embed.to(original_dtype)
 
 
+# Ernie4_5Attention：GQA 多头注意力，Q/K/V/O 线性投影 + RoPE
 class Ernie4_5Attention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -251,6 +259,7 @@ class Ernie4_5Attention(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# Ernie4_5RMSNorm：RMS 层归一化（无 bias，按 hidden 均方根缩放）
 class Ernie4_5RMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -271,6 +280,7 @@ class Ernie4_5RMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# Ernie4_5DecoderLayer：Pre-RMSNorm 自注意力 + SwiGLU MLP 残差块
 class Ernie4_5DecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Ernie4_5Config, layer_idx: int):
         super().__init__()
@@ -315,6 +325,7 @@ class Ernie4_5DecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Ernie4_5PreTrainedModel：权重初始化与 tensor/pipeline parallel plan
 class Ernie4_5PreTrainedModel(PreTrainedModel):
     config: Ernie4_5Config
     base_model_prefix = "model"
@@ -334,6 +345,7 @@ class Ernie4_5PreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# Ernie4_5Model：embed_tokens + 堆叠 DecoderLayer + 最终 RMSNorm
 class Ernie4_5Model(Ernie4_5PreTrainedModel):
     def __init__(self, config: Ernie4_5Config):
         super().__init__(config)
@@ -408,6 +420,7 @@ class Ernie4_5Model(Ernie4_5PreTrainedModel):
 
 
 @auto_docstring
+# Ernie4_5ForCausalLM：因果 LM 头 + GenerationMixin 文本生成
 class Ernie4_5ForCausalLM(Ernie4_5PreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}

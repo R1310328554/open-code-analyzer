@@ -43,6 +43,7 @@ from .configuration_ernie4_5_moe import Ernie4_5_MoeConfig
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# Ernie4_5_MoeRMSNorm：RMS 层归一化
 class Ernie4_5_MoeRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -52,6 +53,7 @@ class Ernie4_5_MoeRMSNorm(nn.Module):
         self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
 
+# forward：稀疏路由前向，可选 output_router_logits 与 aux loss
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         input_dtype = hidden_states.dtype
         hidden_states = hidden_states.to(torch.float32)
@@ -63,6 +65,7 @@ class Ernie4_5_MoeRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# Ernie4_5_MoeMLP：Dense SwiGLU 前馈（非 MoE 层使用）
 class Ernie4_5_MoeMLP(nn.Module):
     def __init__(self, config, intermediate_size=None):
         super().__init__()
@@ -80,6 +83,7 @@ class Ernie4_5_MoeMLP(nn.Module):
         return down_proj
 
 
+# Ernie4_5_MoeRotaryEmbedding：RoPE 位置编码，复用 Ernie4_5 逆频率计算
 class Ernie4_5_MoeRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: Ernie4_5_MoeConfig, device=None):
@@ -215,6 +219,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# Ernie4_5_MoeAttention：GQA 多头注意力 + RoPE
 class Ernie4_5_MoeAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -275,6 +280,7 @@ class Ernie4_5_MoeAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# Ernie4_5_MoeStatics：MoE 路由统计，存储 e_score_correction_bias 校正偏置
 class Ernie4_5_MoeStatics(nn.Module):
     """
     Stores MoE (Mixture of Experts) statistics
@@ -303,6 +309,7 @@ class Ernie4_5_MoeStatics(nn.Module):
 
 
 @use_experts_implementation
+# Ernie4_5_MoeExperts：Grouped GEMM 多专家 SwiGLU 前馈权重
 class Ernie4_5_MoeExperts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
@@ -342,6 +349,7 @@ class Ernie4_5_MoeExperts(nn.Module):
         return final_hidden_states
 
 
+# Ernie4_5_MoeTopKRouter：Top-K 专家路由 gate，含 correction bias 与 aux loss
 class Ernie4_5_MoeTopKRouter(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -370,6 +378,7 @@ class Ernie4_5_MoeTopKRouter(nn.Module):
         return router_logits, routing_weights, selected_experts
 
 
+# Ernie4_5_MoeSparseMoeBlock：路由 + 稀疏专家 + 共享专家融合
 class Ernie4_5_MoeSparseMoeBlock(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -400,6 +409,7 @@ class Ernie4_5_MoeSparseMoeBlock(nn.Module):
         return final_hidden_states.to(hidden_states.dtype)
 
 
+# Ernie4_5_MoeDecoderLayer：自注意力 + Dense/MoE MLP（按层索引切换）
 class Ernie4_5_MoeDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config, layer_idx):
         super().__init__()
@@ -452,6 +462,7 @@ class Ernie4_5_MoeDecoderLayer(GradientCheckpointingLayer):
 
 
 @auto_docstring
+# Ernie4_5_MoePreTrainedModel：MoE 权重初始化与 router aux loss 系数
 class Ernie4_5_MoePreTrainedModel(PreTrainedModel):
     config: Ernie4_5_MoeConfig
     base_model_prefix = "model"
@@ -484,6 +495,7 @@ class Ernie4_5_MoePreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# Ernie4_5_MoeModel：embed + MoE 解码层堆叠，输出 MoeModelOutputWithPast
 class Ernie4_5_MoeModel(Ernie4_5_MoePreTrainedModel):
     def __init__(self, config: Ernie4_5_MoeConfig):
         super().__init__(config)
@@ -643,6 +655,7 @@ def load_balancing_loss_func(
 
 
 @auto_docstring
+# Ernie4_5_MoeForCausalLM：MoE 因果 LM + 文本生成
 class Ernie4_5_MoeForCausalLM(Ernie4_5_MoePreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}
