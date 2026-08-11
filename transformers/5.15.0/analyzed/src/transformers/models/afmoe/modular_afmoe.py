@@ -44,18 +44,22 @@ from .configuration_afmoe import AfmoeConfig
 logger = logging.get_logger(__name__)
 
 
+# AfmoeRotaryEmbedding：直接继承 Llama RoPE
 class AfmoeRotaryEmbedding(LlamaRotaryEmbedding):
     pass
 
 
+# AfmoeRMSNorm：复用 GptOss RMSNorm 实现
 class AfmoeRMSNorm(GptOssRMSNorm):
     pass
 
 
+# AfmoeMLP：复用 Qwen2MoE 的 MLP 结构
 class AfmoeMLP(Qwen2MoeMLP):
     pass
 
 
+# AfmoeTokenChoiceRouter：token-choice 路由（modular 中完整实现）
 class AfmoeTokenChoiceRouter(nn.Module):
     """
     Token-choice top-K router for MoE routing.
@@ -86,10 +90,12 @@ class AfmoeTokenChoiceRouter(nn.Module):
         return router_logits, top_scores, selected_experts
 
 
+# AfmoeExperts：复用 Qwen2MoE 专家权重布局
 class AfmoeExperts(Qwen2MoeExperts):
     pass
 
 
+# AfmoeSparseMoeBlock：MoE 块 modular 定义
 class AfmoeSparseMoeBlock(nn.Module):
     """
     Mixture of Experts (MoE) module for AFMoE.
@@ -121,6 +127,7 @@ class AfmoeSparseMoeBlock(nn.Module):
         return shared_output + routed_output
 
 
+# AfmoeAttention：在 LlamaAttention 上扩展 sliding/global 掩码
 class AfmoeAttention(LlamaAttention):
     """
     Multi-headed attention module with optional sliding window and gating.
@@ -190,6 +197,7 @@ class AfmoeAttention(LlamaAttention):
         return attn_output, attn_weights
 
 
+# AfmoeDecoderLayer：Decoder 层 modular 组装
 class AfmoeDecoderLayer(GradientCheckpointingLayer):
     """
     AFMoE decoder layer with dual normalization.
@@ -256,6 +264,7 @@ class AfmoeDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# AfmoePreTrainedModel：modular 预训练基类
 class AfmoePreTrainedModel(PreTrainedModel):
     """
     An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
@@ -302,6 +311,7 @@ class AfmoePreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# AfmoeModel：modular 主干 forward
 class AfmoeModel(AfmoePreTrainedModel):
     """
     Transformer decoder consisting of *config.num_hidden_layers* layers. Each layer is a [`AfmoeDecoderLayer`]
@@ -391,6 +401,7 @@ class AfmoeModel(AfmoePreTrainedModel):
         )
 
 
+# AfmoeForCausalLM：多继承 Llama CausalLM 与 AFMoE 基类
 class AfmoeForCausalLM(LlamaForCausalLM, AfmoePreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}

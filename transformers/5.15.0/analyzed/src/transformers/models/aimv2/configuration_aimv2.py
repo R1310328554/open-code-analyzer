@@ -29,6 +29,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="apple/aimv2-large-patch14-224-lit")
 @strict
+# Aimv2VisionConfig：视觉塔超参（patch、use_head、is_native 等）
 class Aimv2VisionConfig(PreTrainedConfig):
     r"""
     use_head (`str`, *optional*, defaults to `True`):
@@ -73,6 +74,7 @@ class Aimv2VisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="apple/aimv2-large-patch14-224-lit")
 @strict
+# Aimv2TextConfig：文本塔超参（hidden、层数、max_position 等）
 class Aimv2TextConfig(PreTrainedConfig):
     r"""
     Example:
@@ -112,6 +114,7 @@ class Aimv2TextConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="apple/aimv2-large-patch14-224-lit")
 @strict
+# Aimv2Config：组合 vision_config 与 text_config 的顶层配置
 class Aimv2Config(PreTrainedConfig):
     r"""
     max_logit_scale (`float`, *optional*, defaults to `100.0`):

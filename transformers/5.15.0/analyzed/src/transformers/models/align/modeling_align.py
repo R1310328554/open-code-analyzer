@@ -49,6 +49,7 @@ logger = logging.get_logger(__name__)
     """
 )
 @dataclass
+# AlignVisionModelOutput：视觉塔输出（pooler、hidden states）
 class AlignVisionModelOutput(ModelOutput):
     r"""
     image_embeds (`torch.FloatTensor` of shape `(batch_size, output_dim)` *optional* returned when model is initialized with `with_projection=True`):
@@ -66,6 +67,7 @@ class AlignVisionModelOutput(ModelOutput):
     """
 )
 @dataclass
+# AlignTextModelOutput：文本塔输出
 class AlignTextModelOutput(ModelOutput):
     r"""
     text_embeds (`torch.FloatTensor` of shape `(batch_size, output_dim)` *optional* returned when model is initialized with `with_projection=True`):
@@ -80,6 +82,7 @@ class AlignTextModelOutput(ModelOutput):
 
 @auto_docstring
 @dataclass
+# AlignOutput：双塔联合输出与对比 logits
 class AlignOutput(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `return_loss` is `True`):
@@ -117,10 +120,12 @@ class AlignOutput(ModelOutput):
 
 # contrastive loss function, adapted from
 # https://sachinruk.github.io/blog/pytorch/pytorch%20lightning/loss%20function/gpu/2021/03/07/CLIP.html
+# contrastive_loss：对称 InfoNCE 风格对比损失
 def contrastive_loss(logits: torch.Tensor) -> torch.Tensor:
     return nn.functional.cross_entropy(logits, torch.arange(len(logits), device=logits.device), label_smoothing=0.1)
 
 
+# align_loss：ALIGN 图文相似度矩阵上的损失
 def align_loss(similarity: torch.Tensor) -> torch.Tensor:
     caption_loss = contrastive_loss(similarity)
     image_loss = contrastive_loss(similarity.t())
@@ -128,6 +133,7 @@ def align_loss(similarity: torch.Tensor) -> torch.Tensor:
 
 
 # Copied from transformers.models.efficientnet.modeling_efficientnet.round_filters with EfficientNet->AlignVision
+# round_filters：EfficientNet 通道数按 divisor 对齐
 def round_filters(config: AlignVisionConfig, num_channels: int):
     r"""
     Round number of filters based on depth multiplier.
@@ -144,6 +150,7 @@ def round_filters(config: AlignVisionConfig, num_channels: int):
 
 
 # Copied from transformers.models.efficientnet.modeling_efficientnet.correct_pad
+# correct_pad：深度可分离卷积 SAME 填充
 def correct_pad(kernel_size: int | tuple, adjust: bool = True):
     r"""
     Utility function to get the tuple padding value for the depthwise convolution.
@@ -165,6 +172,7 @@ def correct_pad(kernel_size: int | tuple, adjust: bool = True):
 
 
 # Copied from transformers.models.efficientnet.modeling_efficientnet.EfficientNetEmbeddings with EfficientNet->AlignVision
+# AlignVisionEmbeddings：stem 卷积 + patch 化
 class AlignVisionEmbeddings(nn.Module):
     r"""
     A module that corresponds to the stem module of the original work.
@@ -191,6 +199,7 @@ class AlignVisionEmbeddings(nn.Module):
 
 
 # Copied from transformers.models.efficientnet.modeling_efficientnet.EfficientNetDepthwiseConv2d with EfficientNet->AlignVision
+# AlignVisionDepthwiseConv2d：带 SAME 填充的深度卷积
 class AlignVisionDepthwiseConv2d(nn.Conv2d):
     def __init__(
         self,
@@ -218,6 +227,7 @@ class AlignVisionDepthwiseConv2d(nn.Conv2d):
 
 
 # Copied from transformers.models.efficientnet.modeling_efficientnet.EfficientNetExpansionLayer with EfficientNet->AlignVision
+# AlignVisionExpansionLayer：MBConv 扩展 1x1 卷积
 class AlignVisionExpansionLayer(nn.Module):
     r"""
     This corresponds to the expansion phase of each block in the original implementation.
@@ -245,6 +255,7 @@ class AlignVisionExpansionLayer(nn.Module):
 
 
 # Copied from transformers.models.efficientnet.modeling_efficientnet.EfficientNetDepthwiseLayer with EfficientNet->AlignVision
+# AlignVisionDepthwiseLayer：深度卷积 + BN + 激活
 class AlignVisionDepthwiseLayer(nn.Module):
     r"""
     This corresponds to the depthwise convolution phase of each block in the original implementation.
@@ -285,6 +296,7 @@ class AlignVisionDepthwiseLayer(nn.Module):
 
 
 # Copied from transformers.models.efficientnet.modeling_efficientnet.EfficientNetSqueezeExciteLayer with EfficientNet->AlignVision
+# AlignVisionSqueezeExciteLayer：SE 通道注意力
 class AlignVisionSqueezeExciteLayer(nn.Module):
     r"""
     This corresponds to the Squeeze and Excitement phase of each block in the original implementation.
@@ -324,6 +336,7 @@ class AlignVisionSqueezeExciteLayer(nn.Module):
         return hidden_states
 
 
+# AlignVisionFinalBlockLayer：MBConv 投影 1x1 卷积
 class AlignVisionFinalBlockLayer(nn.Module):
     r"""
     This corresponds to the final phase of each block in the original implementation.
@@ -357,6 +370,7 @@ class AlignVisionFinalBlockLayer(nn.Module):
         return hidden_states
 
 
+# AlignVisionBlock：完整 MBConv block（expand/dw/se/project）
 class AlignVisionBlock(nn.Module):
     r"""
     This corresponds to the block module of the original EfficientNet vision encoder implementation.
@@ -438,6 +452,7 @@ class AlignVisionBlock(nn.Module):
         return hidden_states
 
 
+# AlignVisionEncoder：堆叠 EfficientNet 风格 stage
 class AlignVisionEncoder(nn.Module):
     r"""
     Forward propagates the embeddings through each vision encoder (EfficientNet) block.
@@ -503,6 +518,7 @@ class AlignVisionEncoder(nn.Module):
         )
 
 
+# AlignTextEmbeddings：BERT 式词/位置/类型嵌入
 class AlignTextEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
@@ -559,6 +575,7 @@ class AlignTextEmbeddings(nn.Module):
         return embeddings
 
 
+# eager_attention_forward：文本塔标准注意力
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -581,6 +598,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# AlignTextSelfAttention：BERT 自注意力
 class AlignTextSelfAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -636,6 +654,7 @@ class AlignTextSelfAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertSelfOutput with Bert->AlignText
+# AlignTextSelfOutput：注意力输出投影 + 残差 LayerNorm
 class AlignTextSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -650,6 +669,7 @@ class AlignTextSelfOutput(nn.Module):
         return hidden_states
 
 
+# AlignTextAttention：SelfAttn + SelfOutput 组合
 class AlignTextAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -673,6 +693,7 @@ class AlignTextAttention(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertIntermediate with Bert->AlignText
+# AlignTextIntermediate：FFN 中间层（gelu）
 class AlignTextIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -689,6 +710,7 @@ class AlignTextIntermediate(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertOutput with Bert->AlignText
+# AlignTextOutput：FFN 输出投影 + 残差 LayerNorm
 class AlignTextOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -703,6 +725,7 @@ class AlignTextOutput(nn.Module):
         return hidden_states
 
 
+# AlignTextLayer：单层 BERT Encoder
 class AlignTextLayer(GradientCheckpointingLayer):
     def __init__(self, config):
         super().__init__()
@@ -736,6 +759,7 @@ class AlignTextLayer(GradientCheckpointingLayer):
         return layer_output
 
 
+# AlignTextEncoder：堆叠 AlignTextLayer
 class AlignTextEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -762,6 +786,7 @@ class AlignTextEncoder(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.BertPooler with Bert -> AlignText
+# AlignTextPooler：取 [CLS] 经 tanh 的 pooler 向量
 class AlignTextPooler(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -778,6 +803,7 @@ class AlignTextPooler(nn.Module):
 
 
 @auto_docstring
+# AlignPreTrainedModel：ALIGN 预训练基类
 class AlignPreTrainedModel(PreTrainedModel):
     config: AlignConfig
     base_model_prefix = "align"
@@ -802,6 +828,7 @@ class AlignPreTrainedModel(PreTrainedModel):
     The text model from ALIGN without any head or projection on top.
     """
 )
+# AlignTextModel：仅文本塔
 class AlignTextModel(AlignPreTrainedModel):
     config: AlignTextConfig
     input_modalities = ("text",)
@@ -908,6 +935,7 @@ class AlignTextModel(AlignPreTrainedModel):
     The vision model from ALIGN without any head or projection on top.
     """
 )
+# AlignVisionModel：仅视觉塔
 class AlignVisionModel(AlignPreTrainedModel):
     config: AlignVisionConfig
     main_input_name = "pixel_values"
@@ -985,6 +1013,7 @@ class AlignVisionModel(AlignPreTrainedModel):
 
 
 @auto_docstring
+# AlignModel：双塔对比 forward 与 loss
 class AlignModel(AlignPreTrainedModel):
     config: AlignConfig
 

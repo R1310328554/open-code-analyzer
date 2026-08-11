@@ -22,6 +22,7 @@ from ...utils import auto_docstring
 
 @auto_docstring(checkpoint="albert/albert-xxlarge-v2")
 @strict
+# AlbertConfig：ALBERT 架构超参（embedding 因子分解、共享层组等）
 class AlbertConfig(PreTrainedConfig):
     r"""
     num_hidden_groups (`int`, *optional*, defaults to 1):

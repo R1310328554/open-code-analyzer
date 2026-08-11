@@ -24,6 +24,7 @@ logger = logging.get_logger(__name__)
 
 @auto_docstring(checkpoint="kakaobrain/align-base")
 @strict
+# AlignTextConfig：文本塔超参（vocab、层数、hidden 等）
 class AlignTextConfig(PreTrainedConfig):
     r"""
     Example:
@@ -63,6 +64,7 @@ class AlignTextConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="kakaobrain/align-base")
 @strict
+# AlignVisionConfig：EfficientNet 复合缩放系数与 block 结构
 class AlignVisionConfig(PreTrainedConfig):
     r"""
     width_coefficient (`float`, *optional*, defaults to 2.0):
@@ -154,6 +156,7 @@ class AlignVisionConfig(PreTrainedConfig):
 
 @auto_docstring(checkpoint="kakaobrain/align-base")
 @strict
+# AlignConfig：组合 text_config 与 vision_config
 class AlignConfig(PreTrainedConfig):
     r"""
     temperature_init_value (`float`, *optional*, defaults to 1.0):

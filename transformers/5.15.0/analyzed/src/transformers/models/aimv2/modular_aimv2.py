@@ -40,6 +40,7 @@ from ..vit_mae.modeling_vit_mae import build_2d_sinusoidal_position_embedding
 
 @auto_docstring(checkpoint="apple/aimv2-large-patch14-224-lit")
 @strict
+# Aimv2VisionConfig：基于 SiglipVisionConfig 扩展 AIMv2 字段
 class Aimv2VisionConfig(SiglipVisionConfig):
     r"""
     use_head (`str`, *optional*, defaults to `True`):
@@ -81,6 +82,7 @@ class Aimv2VisionConfig(SiglipVisionConfig):
 
 @auto_docstring(checkpoint="apple/aimv2-large-patch14-224-lit")
 @strict
+# Aimv2TextConfig：基于 SiglipTextConfig
 class Aimv2TextConfig(SiglipTextConfig):
     vocab_size: int = 49408
     hidden_size: int = 768
@@ -104,6 +106,7 @@ class Aimv2TextConfig(SiglipTextConfig):
 
 @auto_docstring(checkpoint="apple/aimv2-large-patch14-224-lit")
 @strict
+# Aimv2Config：组合 vision/text 的 SiglipConfig 子类
 class Aimv2Config(SiglipConfig):
     r"""
     max_logit_scale (`float`, *optional*, defaults to `100.0`):
@@ -138,18 +141,22 @@ class Aimv2Config(SiglipConfig):
     max_logit_scale: float = 100.0
 
 
+# Aimv2Output：输出 dataclass 继承 SiglipOutput
 class Aimv2Output(SiglipOutput):
     pass
 
 
+# Aimv2RMSNorm：复用 Llama RMSNorm
 class Aimv2RMSNorm(LlamaRMSNorm):
     pass
 
 
+# Aimv2MLP：复用 Llama MLP
 class Aimv2MLP(LlamaMLP):
     pass
 
 
+# Aimv2VisionEmbeddings：modular 中完整定义的视觉嵌入
 class Aimv2VisionEmbeddings(nn.Module):
     def __init__(self, config: Aimv2VisionConfig):
         super().__init__()
@@ -190,10 +197,12 @@ class Aimv2VisionEmbeddings(nn.Module):
         return hidden_states
 
 
+# Aimv2TextEmbeddings：复用 CLIP 文本嵌入
 class Aimv2TextEmbeddings(CLIPTextEmbeddings):
     pass
 
 
+# Aimv2Attention：复用 Siglip 注意力
 class Aimv2Attention(SiglipAttention):
     def __init__(self, config):
         super().__init__(config)
@@ -203,6 +212,7 @@ class Aimv2Attention(SiglipAttention):
         self.out_proj = nn.Linear(self.embed_dim, self.embed_dim, bias=config.qkv_bias)
 
 
+# Aimv2EncoderLayer：Encoder 层 modular 定义
 class Aimv2EncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Aimv2VisionConfig):
         super().__init__()
@@ -228,10 +238,12 @@ class Aimv2EncoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Aimv2Encoder：复用 SiglipEncoder 堆叠
 class Aimv2Encoder(SiglipEncoder):
     pass
 
 
+# Aimv2AttentionPoolingHead：attention pooling 头
 class Aimv2AttentionPoolingHead(nn.Module):
     def __init__(self, config: Aimv2VisionConfig):
         super().__init__()
@@ -267,6 +279,7 @@ class Aimv2AttentionPoolingHead(nn.Module):
 
 
 @auto_docstring
+# Aimv2PreTrainedModel：modular 预训练基类
 class Aimv2PreTrainedModel(PreTrainedModel):
     """
     An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
@@ -306,6 +319,7 @@ class Aimv2PreTrainedModel(PreTrainedModel):
     The Vision model from AIMv2 without any head or projection on top.
     """
 )
+# Aimv2VisionModel：视觉塔 modular
 class Aimv2VisionModel(Aimv2PreTrainedModel):
     config: Aimv2VisionConfig
     main_input_name = "pixel_values"
@@ -384,6 +398,7 @@ class Aimv2VisionModel(Aimv2PreTrainedModel):
     The text model from AIMv2 without any head or projection on top.
     """
 )
+# Aimv2TextModel：文本塔 modular
 class Aimv2TextModel(Aimv2PreTrainedModel):
     main_input_name = "input_ids"
 
@@ -454,6 +469,7 @@ class Aimv2TextModel(Aimv2PreTrainedModel):
 
 
 @auto_docstring
+# Aimv2Model：继承 CLIPModel 的双塔 forward
 class Aimv2Model(CLIPModel):
     _supports_flash_attn = True
 

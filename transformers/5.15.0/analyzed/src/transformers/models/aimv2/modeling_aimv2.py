@@ -44,6 +44,7 @@ from .configuration_aimv2 import Aimv2Config, Aimv2TextConfig, Aimv2VisionConfig
 
 @auto_docstring
 @dataclass
+# Aimv2Output：双塔联合输出（logits、text/vision 嵌入等）
 class Aimv2Output(ModelOutput):
     r"""
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `return_loss` is `True`):
@@ -77,6 +78,7 @@ class Aimv2Output(ModelOutput):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# Aimv2RMSNorm：RMS 归一化
 class Aimv2RMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -97,6 +99,7 @@ class Aimv2RMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# Aimv2MLP：Transformer FFN 子层
 class Aimv2MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -113,6 +116,7 @@ class Aimv2MLP(nn.Module):
         return down_proj
 
 
+# build_2d_sinusoidal_position_embedding：构建 2D 正弦 patch 位置编码
 def build_2d_sinusoidal_position_embedding(
     height: int,
     width: int,
@@ -161,6 +165,7 @@ def build_2d_sinusoidal_position_embedding(
     return pos_embed.to(dtype)
 
 
+# Aimv2VisionEmbeddings：patch 嵌入 + 2D 位置编码
 class Aimv2VisionEmbeddings(nn.Module):
     def __init__(self, config: Aimv2VisionConfig):
         super().__init__()
@@ -201,6 +206,7 @@ class Aimv2VisionEmbeddings(nn.Module):
         return hidden_states
 
 
+# Aimv2TextEmbeddings：词嵌入 + 位置/类型嵌入
 class Aimv2TextEmbeddings(nn.Module):
     def __init__(self, config: Aimv2TextConfig):
         super().__init__()
@@ -239,6 +245,7 @@ class Aimv2TextEmbeddings(nn.Module):
         return embeddings
 
 
+# eager_attention_forward：标准注意力实现
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -262,6 +269,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# Aimv2Attention：多头自注意力
 class Aimv2Attention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
@@ -320,6 +328,7 @@ class Aimv2Attention(nn.Module):
         return attn_output, attn_weights
 
 
+# Aimv2EncoderLayer：Encoder 层（Attn + MLP）
 class Aimv2EncoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Aimv2VisionConfig):
         super().__init__()
@@ -345,6 +354,7 @@ class Aimv2EncoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# Aimv2Encoder：堆叠多层 EncoderLayer
 class Aimv2Encoder(nn.Module):
     """
     Transformer encoder consisting of `config.num_hidden_layers` self attention layers. Each layer is a
@@ -379,6 +389,7 @@ class Aimv2Encoder(nn.Module):
         return BaseModelOutput(last_hidden_state=hidden_states)
 
 
+# Aimv2AttentionPoolingHead：可学习 query 的 attention pooling
 class Aimv2AttentionPoolingHead(nn.Module):
     def __init__(self, config: Aimv2VisionConfig):
         super().__init__()
@@ -414,6 +425,7 @@ class Aimv2AttentionPoolingHead(nn.Module):
 
 
 @auto_docstring
+# Aimv2PreTrainedModel：预训练基类与初始化
 class Aimv2PreTrainedModel(PreTrainedModel):
     """
     An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
@@ -453,6 +465,7 @@ class Aimv2PreTrainedModel(PreTrainedModel):
     The Vision model from AIMv2 without any head or projection on top.
     """
 )
+# Aimv2VisionModel：仅视觉塔
 class Aimv2VisionModel(Aimv2PreTrainedModel):
     config: Aimv2VisionConfig
     main_input_name = "pixel_values"
@@ -531,6 +544,7 @@ class Aimv2VisionModel(Aimv2PreTrainedModel):
     The text model from AIMv2 without any head or projection on top.
     """
 )
+# Aimv2TextModel：仅文本塔
 class Aimv2TextModel(Aimv2PreTrainedModel):
     main_input_name = "input_ids"
 
@@ -600,6 +614,7 @@ class Aimv2TextModel(Aimv2PreTrainedModel):
         )
 
 
+# _get_vector_norm：L2 归一化嵌入向量
 def _get_vector_norm(tensor: torch.Tensor) -> torch.Tensor:
     """
     This method is equivalent to tensor.norm(p=2, dim=-1, keepdim=True) and used to make
@@ -612,6 +627,7 @@ def _get_vector_norm(tensor: torch.Tensor) -> torch.Tensor:
 
 
 @auto_docstring
+# Aimv2Model：双塔对比学习/联合 forward
 class Aimv2Model(Aimv2PreTrainedModel):
     _supports_flash_attn = True
 

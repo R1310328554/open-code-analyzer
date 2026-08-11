@@ -25,6 +25,7 @@ logger = logging.get_logger(__name__)
 VOCAB_FILES_NAMES = {"vocab_file": "spiece.model", "tokenizer_file": "tokenizer.json"}
 
 
+# AlbertTokenizer：基于 tokenizers 库的 ALBERT 分词器
 class AlbertTokenizer(TokenizersBackend):
     """
     Construct a "fast" ALBERT tokenizer (backed by HuggingFace's *tokenizers* library). Based on

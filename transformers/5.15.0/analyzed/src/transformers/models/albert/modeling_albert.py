@@ -46,6 +46,7 @@ from .configuration_albert import AlbertConfig
 logger = logging.get_logger(__name__)
 
 
+# AlbertEmbeddings：词/位置/类型嵌入 + LayerNorm + Dropout
 class AlbertEmbeddings(nn.Module):
     """
     Construct the embeddings from word, position and token_type embeddings.
@@ -107,6 +108,7 @@ class AlbertEmbeddings(nn.Module):
 
 
 # Copied from transformers.models.bert.modeling_bert.eager_attention_forward
+# eager_attention_forward：标准自注意力前向
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -135,6 +137,7 @@ def eager_attention_forward(
     return attn_output, attn_weights
 
 
+# AlbertAttention：多头自注意力（含 ALBERT 特有投影）
 class AlbertAttention(nn.Module):
     def __init__(self, config: AlbertConfig):
         super().__init__()
@@ -200,6 +203,7 @@ class AlbertAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# AlbertLayer：单层 Attn + FFN + 残差
 class AlbertLayer(nn.Module):
     def __init__(self, config: AlbertConfig):
         super().__init__()
@@ -238,6 +242,7 @@ class AlbertLayer(nn.Module):
         return ffn_output
 
 
+# AlbertLayerGroup：同一组内 inner_group_num 次 Attn+FFN 重复
 class AlbertLayerGroup(nn.Module):
     def __init__(self, config: AlbertConfig):
         super().__init__()
@@ -255,6 +260,7 @@ class AlbertLayerGroup(nn.Module):
         return hidden_states
 
 
+# AlbertTransformer：按 num_hidden_groups 堆叠 LayerGroup
 class AlbertTransformer(nn.Module):
     def __init__(self, config: AlbertConfig):
         super().__init__()
@@ -285,6 +291,7 @@ class AlbertTransformer(nn.Module):
 
 
 @auto_docstring
+# AlbertPreTrainedModel：预训练基类
 class AlbertPreTrainedModel(PreTrainedModel):
     config_class = AlbertConfig
     base_model_prefix = "albert"
@@ -314,6 +321,7 @@ class AlbertPreTrainedModel(PreTrainedModel):
     """
 )
 @dataclass
+# AlbertForPreTrainingOutput：SOP+MLM 联合预训练输出
 class AlbertForPreTrainingOutput(ModelOutput):
     r"""
     loss (*optional*, returned when `labels` is provided, `torch.FloatTensor` of shape `(1,)`):
@@ -334,6 +342,7 @@ class AlbertForPreTrainingOutput(ModelOutput):
 
 
 @auto_docstring
+# AlbertModel：ALBERT 编码器主干
 class AlbertModel(AlbertPreTrainedModel):
     config_class = AlbertConfig
     base_model_prefix = "albert"
@@ -414,6 +423,7 @@ class AlbertModel(AlbertPreTrainedModel):
     `sentence order prediction (classification)` head.
     """
 )
+# AlbertForPreTraining：SOP 句子顺序 + MLM 掩码语言建模
 class AlbertForPreTraining(AlbertPreTrainedModel):
     _tied_weights_keys = {
         "predictions.decoder.weight": "albert.embeddings.word_embeddings.weight",
@@ -509,6 +519,7 @@ class AlbertForPreTraining(AlbertPreTrainedModel):
         )
 
 
+# AlbertMLMHead：掩码语言建模预测头
 class AlbertMLMHead(nn.Module):
     def __init__(self, config: AlbertConfig):
         super().__init__()
@@ -530,6 +541,7 @@ class AlbertMLMHead(nn.Module):
         return prediction_scores
 
 
+# AlbertSOPHead：句子顺序预测（二分类）头
 class AlbertSOPHead(nn.Module):
     def __init__(self, config: AlbertConfig):
         super().__init__()
@@ -544,6 +556,7 @@ class AlbertSOPHead(nn.Module):
 
 
 @auto_docstring
+# AlbertForMaskedLM：仅 MLM 微调头
 class AlbertForMaskedLM(AlbertPreTrainedModel):
     _tied_weights_keys = {
         "predictions.decoder.weight": "albert.embeddings.word_embeddings.weight",
@@ -648,6 +661,7 @@ class AlbertForMaskedLM(AlbertPreTrainedModel):
     output) e.g. for GLUE tasks.
     """
 )
+# AlbertForSequenceClassification：序列分类
 class AlbertForSequenceClassification(AlbertPreTrainedModel):
     def __init__(self, config: AlbertConfig):
         super().__init__(config)
@@ -726,6 +740,7 @@ class AlbertForSequenceClassification(AlbertPreTrainedModel):
 
 
 @auto_docstring
+# AlbertForTokenClassification：token 级分类（NER 等）
 class AlbertForTokenClassification(AlbertPreTrainedModel):
     def __init__(self, config: AlbertConfig):
         super().__init__(config)
@@ -788,6 +803,7 @@ class AlbertForTokenClassification(AlbertPreTrainedModel):
 
 
 @auto_docstring
+# AlbertForQuestionAnswering：抽取式问答 span 预测
 class AlbertForQuestionAnswering(AlbertPreTrainedModel):
     def __init__(self, config: AlbertConfig):
         super().__init__(config)
@@ -856,6 +872,7 @@ class AlbertForQuestionAnswering(AlbertPreTrainedModel):
 
 
 @auto_docstring
+# AlbertForMultipleChoice：多选分类
 class AlbertForMultipleChoice(AlbertPreTrainedModel):
     def __init__(self, config: AlbertConfig):
         super().__init__(config)

@@ -41,6 +41,7 @@ from ...utils.output_capturing import OutputRecorder, capture_outputs
 from .configuration_afmoe import AfmoeConfig
 
 
+# AfmoeRotaryEmbedding：RoPE 位置编码，支持 dynamic rope 等高级变体
 class AfmoeRotaryEmbedding(nn.Module):
     @deprecate_kwarg("device", version="5.18")
     def __init__(self, config: AfmoeConfig, device=None):
@@ -99,6 +100,7 @@ class AfmoeRotaryEmbedding(nn.Module):
 
 
 @use_kernel_forward_from_hub("RMSNorm")
+# AfmoeRMSNorm：RMS 归一化层，等价于 T5LayerNorm
 class AfmoeRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps: float = 1e-6) -> None:
         """
@@ -119,6 +121,7 @@ class AfmoeRMSNorm(nn.Module):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
 
 
+# AfmoeMLP：稠密前馈子层（非 MoE 层使用）
 class AfmoeMLP(nn.Module):
     def __init__(self, config, intermediate_size=None):
         super().__init__()
@@ -135,6 +138,7 @@ class AfmoeMLP(nn.Module):
         return down_proj
 
 
+# AfmoeTokenChoiceRouter：按 token 选择 top-k 专家并计算路由权重
 class AfmoeTokenChoiceRouter(nn.Module):
     """
     Token-choice top-K router for MoE routing.
@@ -166,6 +170,7 @@ class AfmoeTokenChoiceRouter(nn.Module):
 
 
 @use_experts_implementation
+# AfmoeExperts：多专家 MLP 权重堆叠，按路由索引 gather 计算
 class AfmoeExperts(nn.Module):
     """Collection of expert weights stored as 3D tensors."""
 
@@ -205,6 +210,7 @@ class AfmoeExperts(nn.Module):
         return final_hidden_states
 
 
+# AfmoeSparseMoeBlock：稀疏 MoE 块，组合 router 与 experts
 class AfmoeSparseMoeBlock(nn.Module):
     """
     Mixture of Experts (MoE) module for AFMoE.
@@ -236,6 +242,7 @@ class AfmoeSparseMoeBlock(nn.Module):
         return shared_output + routed_output
 
 
+# rotate_half：RoPE 旋转操作中拆分并交换张量半维
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
@@ -244,6 +251,7 @@ def rotate_half(x):
 
 
 @use_kernel_forward_from_hub("rotary_pos_emb")
+# apply_rotary_pos_emb：将 cos/sin 施加到 Q/K
 def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """Applies Rotary Position Embedding to the query and key tensors.
 
@@ -269,6 +277,7 @@ def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+# repeat_kv：GQA 下将 KV 头重复以匹配 Q 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -281,6 +290,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_attention_forward：标准点积注意力前向（非 flash/sdpa）
 def eager_attention_forward(
     module: nn.Module,
     query: torch.Tensor,
@@ -307,6 +317,7 @@ def eager_attention_forward(
 
 
 @use_kernelized_func(apply_rotary_pos_emb)
+# AfmoeAttention：多头自注意力，支持 sliding window 与 global 层
 class AfmoeAttention(nn.Module):
     """
     Multi-headed attention module with optional sliding window and gating.
@@ -396,6 +407,7 @@ class AfmoeAttention(nn.Module):
         return attn_output, attn_weights
 
 
+# AfmoeDecoderLayer：Decoder 层（Attn + MoE/MLP + 残差）
 class AfmoeDecoderLayer(GradientCheckpointingLayer):
     """
     AFMoE decoder layer with dual normalization.
@@ -462,6 +474,7 @@ class AfmoeDecoderLayer(GradientCheckpointingLayer):
         return hidden_states
 
 
+# AfmoePreTrainedModel：权重初始化与 _no_split_modules 基类
 class AfmoePreTrainedModel(PreTrainedModel):
     """
     An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
@@ -508,6 +521,7 @@ class AfmoePreTrainedModel(PreTrainedModel):
 
 
 @auto_docstring
+# AfmoeModel：AFMoE 主干，输出 last_hidden_state 与 KV cache
 class AfmoeModel(AfmoePreTrainedModel):
     """
     Transformer decoder consisting of *config.num_hidden_layers* layers. Each layer is a [`AfmoeDecoderLayer`]
@@ -598,6 +612,7 @@ class AfmoeModel(AfmoePreTrainedModel):
 
 
 @auto_docstring
+# AfmoeForCausalLM：因果 LM 头，支持 generate 与 loss
 class AfmoeForCausalLM(AfmoePreTrainedModel, GenerationMixin):
     _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
     _tp_plan = {"lm_head": "colwise_gather_output"}

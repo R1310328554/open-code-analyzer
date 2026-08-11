@@ -19,6 +19,7 @@ from ...processing_utils import ProcessingKwargs, ProcessorMixin
 from ...utils import auto_docstring
 
 
+# AlignProcessorKwargs：Align 预处理参数默认值
 class AlignProcessorKwargs(ProcessingKwargs, total=False):
     # see processing_utils.ProcessingKwargs documentation for usage.
     _defaults = {
@@ -30,6 +31,7 @@ class AlignProcessorKwargs(ProcessingKwargs, total=False):
 
 
 @auto_docstring
+# AlignProcessor：图文联合预处理入口
 class AlignProcessor(ProcessorMixin):
     valid_processor_kwargs = AlignProcessorKwargs
 
