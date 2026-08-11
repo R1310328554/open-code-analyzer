@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-11T05:08:02Z",
   "files": [
-    "django/contrib/gis/serializers/__init__.py",
-    "django/contrib/gis/serializers/geojson.py",
-    "django/contrib/gis/shortcuts.py",
-    "django/contrib/gis/sitemaps/__init__.py",
-    "django/contrib/gis/sitemaps/kml.py",
-    "django/contrib/gis/sitemaps/views.py",
-    "django/contrib/gis/static/gis/js/OLMapWidget.js",
-    "django/contrib/gis/utils/__init__.py",
-    "django/contrib/gis/utils/layermapping.py",
-    "django/contrib/gis/utils/ogrinfo.py",
-    "django/contrib/gis/utils/ogrinspect.py",
-    "django/contrib/gis/utils/srs.py",
-    "django/contrib/gis/views.py",
-    "django/contrib/humanize/__init__.py",
-    "django/contrib/humanize/apps.py",
     "django/contrib/humanize/templatetags/__init__.py",
     "django/contrib/humanize/templatetags/humanize.py",
     "django/contrib/messages/__init__.py",
@@ -33,5 +18,5 @@
     "django/contrib/messages/utils.py"
   ],
   "remaining_pending": 492,
-  "done": 420
+  "done": 435
 }
